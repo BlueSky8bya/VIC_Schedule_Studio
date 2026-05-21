@@ -1,0 +1,126 @@
+.poster-page {
+  min-height: 100vh;
+  padding: 24px;
+  background: #eef6f6;
+}
+
+.poster-surface {
+  width: min(1120px, 100%);
+  margin: 0 auto;
+  border: 1px solid #cfe1e2;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 28px;
+}
+
+.poster-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+}
+
+.poster-header h1 {
+  margin: 8px 0 0;
+  font-size: clamp(32px, 5vw, 58px);
+  line-height: 1.05;
+}
+
+.poster-month {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-weight: 800;
+}
+
+.poster-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+
+.poster-day {
+  min-height: 126px;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 10px;
+}
+
+.poster-date {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #edf8f8;
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+.poster-events {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.poster-event {
+  display: grid;
+  gap: 2px;
+  border-left: 4px solid var(--accent);
+  border-radius: 6px;
+  background: #f6fbfb;
+  padding: 7px;
+  font-size: 12px;
+}
+
+.poster-event.collab {
+  border-left-color: var(--violet);
+  background: #f6f3ff;
+}
+
+.poster-event.support {
+  border-left-color: var(--amber);
+  background: #fff8e6;
+}
+
+.poster-event span {
+  color: var(--muted);
+}
+
+.poster-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.poster-footer a {
+  color: var(--accent-strong);
+}
+
+@media (max-width: 760px) {
+  .poster-page {
+    padding: 10px;
+  }
+
+  .poster-surface {
+    padding: 16px;
+  }
+
+  .poster-header {
+    display: grid;
+  }
+
+  .poster-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .poster-day {
+    min-height: 86px;
+  }
+}
