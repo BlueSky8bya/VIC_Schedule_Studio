@@ -1,345 +1,858 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  LockKeyhole,
+  Save,
+  Trash2,
+  X
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { FormEvent, useMemo, useRef, useState, useTransition } from "react";
 import type {
+  EventCategory,
   EventStatus,
+  EventVisibilityScope,
+  MembershipRole,
   StudioSchedule,
   StudioScheduleEvent
 } from "@/lib/domain/schedule-types";
+import type { CurrentActor } from "@/lib/auth/actor";
+import {
+  assignSupportLanes,
+  buildCalendarMonth,
+  buildLinkChain,
+  classifyDay,
+  getAdjacentMonth,
+  getEventDateKey,
+  getEventsForDate,
+  getEventSpan,
+  getLinkedChainIds,
+  getMonthLabel,
+  getTodayKst,
+  splitEventTitle
+} from "@/lib/calendar/month";
+import {
+  canDecorate,
+  canEditSchedule,
+  canReadOwnerPrivate,
+  canReadPrivateLayer
+} from "@/lib/permissions/roles";
+import { deleteEventAction, saveEventAction } from "@/lib/schedules/event-actions";
+import { linkChainAction, unlinkPairAction } from "@/lib/schedules/link-actions";
+import { updateTagsAction } from "@/lib/schedules/tag-actions";
+import { PublicPoster } from "@/components/poster/public-poster";
+import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
+import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
+import { TrustedMembersPanel } from "@/components/trusted-members/trusted-members-panel";
+import { setPasscodeAction } from "@/lib/private-layer/actions";
 
 type StudioShellProps = {
+  actor: CurrentActor;
   schedule: StudioSchedule;
-  viewerRole?: "viewer" | "owner" | "manager" | "worker";
+  hasUnlockSession: boolean;
 };
 
-type CalendarMode = "general" | "work";
-
-type DraftForm = {
+type EventForm = {
+  id?: string;
   publicTitle: string;
-  startsAt: string;
-  endsAt: string;
-  category: StudioScheduleEvent["category"];
+  endDateKey: string;
+  isSupport: boolean;
+  supportUrl: string;
+  category: EventCategory;
+  status: EventStatus;
+  visibilityScope: EventVisibilityScope;
+  tagIds: string[];
+  primaryTagIds: string[];
+};
+
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+// #3: 업 도움 기간 빠른 선택(종료일 = 시작일 + days)
+const SUPPORT_DURATIONS = [
+  { days: 1, label: "2일" },
+  { days: 2, label: "3일" },
+  { days: 4, label: "5일" },
+  { days: 6, label: "1주" },
+  { days: 13, label: "2주" }
+];
+
+function addDaysIso(iso: string, days: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d + days));
+  return [
+    dt.getUTCFullYear(),
+    String(dt.getUTCMonth() + 1).padStart(2, "0"),
+    String(dt.getUTCDate()).padStart(2, "0")
+  ].join("-");
+}
+
+
+const ROLE_LABEL: Record<MembershipRole, string> = {
+  owner: "소유자",
+  developer: "개발자",
+  manager: "매니저",
+  worker: "작업자",
+  viewer: "시청자"
 };
 
 export function StudioShell({
+  actor,
   schedule,
-  viewerRole = "viewer"
+  hasUnlockSession
 }: StudioShellProps) {
-  const canUseWorkToggle = ["owner", "manager", "worker"].includes(viewerRole);
-  const [mode, setMode] = useState<CalendarMode>("general");
-  const [localEvents, setLocalEvents] = useState<StudioScheduleEvent[]>([]);
-  const [selectedDate, setSelectedDate] = useState(() => `${schedule.calendar.month}-01`);
-  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<DraftForm>(() => createDraftForm());
-
-  const allEvents = useMemo(
-    () => [...schedule.events, ...localEvents],
-    [schedule.events, localEvents]
-  );
-  const visibleEvents = useMemo(
+  const router = useRouter();
+  const today = getTodayKst();
+  const [pending, startTransition] = useTransition();
+  const [actionError, setActionError] = useState<string | null>(null);
+  // 방송사고 방지: 새로고침/진입 시 항상 공개(일반) 모드가 기본. 잠금 세션이 있어도
+  // 사용자가 직접 토글해야 비공개 일정이 보인다.
+  const [showPrivate, setShowPrivate] = useState(false);
+  const [modal, setModal] = useState<null | "passcode" | "tags" | "members">(null);
+  const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
+  // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
+  const [viewerMode, setViewerMode] = useState(false);
+  const events = schedule.events;
+  // #3: "기타" 태그는 색상 안내·태그 선택 모두에서 항상 맨 끝.
+  const legendTags = useMemo(
     () =>
-      mode === "work"
-        ? allEvents
-        : allEvents.filter((event) => event.status !== "draft"),
-    [allEvents, mode]
+      [...schedule.tags].sort(
+        (a, b) => Number(a.displayName === "기타") - Number(b.displayName === "기타")
+      ),
+    [schedule.tags]
   );
-  const days = useMemo(
-    () => buildMonthDays(schedule.calendar.month),
-    [schedule.calendar.month]
-  );
-  const selectedDateEvents = visibleEvents.filter((event) =>
-    event.startsAt.startsWith(selectedDate)
-  );
-  const selectedEvent =
-    allEvents.find((event) => event.id === selectedEventId) ??
-    selectedDateEvents[0] ??
-    null;
 
-  function handleDayClick(date: string) {
-    setSelectedDate(date);
-    setSelectedEventId(null);
-    setDraft(createDraftForm());
+  // 카드 클릭:
+  // - 선택된 일정과 인접+이미 이어진 카드를 누르면 → 그 이음새 하나만 끊는다(토글).
+  // - 선택된 일정과 사이가 "매일 연속 + 같은 색"이면 → 그 구간 전체를 한 번에 잇는다.
+  // - 그 외에는 그냥 그 일정을 선택(편집)한다.
+  function handlePillClick(eventId: string) {
+    const target = events.find((e) => e.id === eventId);
+    if (!target) return;
+
+    const anchor =
+      selectedEventId && selectedEventId !== eventId
+        ? events.find((e) => e.id === selectedEventId)
+        : undefined;
+
+    if (canEdit && anchor) {
+      const [earlier, later] =
+        getEventDateKey(anchor) <= getEventDateKey(target)
+          ? [anchor, target]
+          : [target, anchor];
+      const alreadyLinked = earlier.linkNext === later.id;
+
+      if (alreadyLinked) {
+        startTransition(async () => {
+          const result = await unlinkPairAction(earlier.id);
+          if (!result.ok) setActionError(result.error);
+          else router.refresh();
+        });
+      } else {
+        const chain = buildLinkChain(anchor, target, events);
+        if (chain) {
+          startTransition(async () => {
+            const result = await linkChainAction(chain);
+            if (!result.ok) setActionError(result.error);
+            else router.refresh();
+          });
+        }
+      }
+    }
+
+    selectEvent(target);
+  }
+  const [view, setView] = useState({
+    year: schedule.calendar.defaultYear,
+    month: schedule.calendar.defaultMonth
+  });
+  const [selectedDate, setSelectedDate] = useState(
+    `${schedule.calendar.defaultYear}-${String(schedule.calendar.defaultMonth).padStart(2, "0")}-01`
+  );
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const canEdit = canEditSchedule(actor.role);
+  const canDecorateCalendar = canDecorate(actor.role);
+  const canTogglePrivateLayer = actor.role !== "viewer";
+  const canReadPrivate = canReadPrivateLayer(actor.role, hasUnlockSession) && showPrivate;
+
+  function togglePrivateLayer() {
+    if (hasUnlockSession) {
+      setShowPrivate((value) => !value);
+    } else {
+      setModal("passcode");
+    }
   }
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const visibleEvents = useMemo(
+    () =>
+      events.filter((event) => {
+        if (event.visibilityScope === "public") {
+          return true;
+        }
+        if (!canReadPrivate) {
+          return false;
+        }
+        if (event.visibilityScope === "owner_private") {
+          return canReadOwnerPrivate(actor.role);
+        }
+        return true;
+      }),
+    [actor.role, canReadPrivate, events]
+  );
+  const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
+  const supportLanes = useMemo(() => assignSupportLanes(visibleEvents), [visibleEvents]);
+  // 선택한 일정이 속한 연결 체인 전체를 하이라이트 대상으로 삼는다.
+  const selectedChainIds = useMemo(
+    () => getLinkedChainIds(selectedEventId, visibleEvents),
+    [selectedEventId, visibleEvents]
+  );
+  const [form, setForm] = useState<EventForm>(() => createEmptyForm());
+
+  function eventColor(event: StudioScheduleEvent) {
+    const tagId = event.primaryTagIds[0] ?? event.tagIds[0];
+    const tag = tagId ? schedule.tags.find((t) => t.id === tagId) : undefined;
+    return tag ? schedule.palette.find((p) => p.key === tag.colorKey) : undefined;
+  }
+
+  function moveMonth(offset: number) {
+    setView((current) => {
+      const next = getAdjacentMonth(current.year, current.month, offset);
+      setSelectedDate(`${next.year}-${String(next.month).padStart(2, "0")}-01`);
+      setSelectedEventId(null);
+      setForm(createEmptyForm());
+      return next;
+    });
+  }
+
+  function selectDate(isoDate: string) {
+    setSelectedDate(isoDate);
+    setSelectedEventId(null);
+    setForm(createEmptyForm());
+  }
+
+  function selectEvent(event: StudioScheduleEvent) {
+    setSelectedDate(event.startsAt.slice(0, 10));
+    setSelectedEventId(event.id);
+    setForm({
+      id: event.id,
+      publicTitle: event.publicTitle,
+      endDateKey: event.endDateKey ?? "",
+      isSupport: event.isSupport ?? false,
+      supportUrl: event.supportUrl ?? "",
+      category: event.category,
+      status: event.status,
+      visibilityScope: event.visibilityScope,
+      tagIds: event.tagIds,
+      primaryTagIds: event.primaryTagIds
+    });
+  }
+
+  function saveEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!canEdit) {
+      return;
+    }
 
-    const nextEvent: StudioScheduleEvent = {
-      id: `local-${Date.now()}`,
-      startsAt: toKstDateTime(selectedDate, draft.startsAt),
-      endsAt: toKstDateTime(selectedDate, draft.endsAt),
-      publicTitle: draft.publicTitle || "새 일정",
-      status: "scheduled",
-      category: draft.category
-    };
+    setActionError(null);
+    startTransition(async () => {
+      const result = await saveEventAction({
+        id: form.id,
+        dateKey: selectedDate,
+        endDateKey: form.isSupport ? form.endDateKey : "",
+        startTime: "",
+        endTime: "",
+        isAllDay: true,
+        publicTitle: form.publicTitle,
+        publicDescription: "",
+        category: form.category,
+        status: form.status,
+        // 비공개 레이어를 풀지 않았으면 공개 범위는 무조건 "모두(public)"로 강제.
+        // 엠바고/작업자/나만은 비공개 모드(비밀번호 해제)에서만 지정할 수 있다.
+        visibilityScope: canReadPrivate ? form.visibilityScope : "public",
+        tagIds: form.tagIds,
+        primaryTagIds: form.primaryTagIds.slice(0, 2),
+        isSupport: form.isSupport,
+        supportUrl: form.supportUrl
+      });
 
-    setLocalEvents((events) => [...events, nextEvent]);
-    setSelectedEventId(nextEvent.id);
-    setDraft(createDraftForm());
+      if (!result.ok) {
+        setActionError(result.error);
+        return;
+      }
+
+      setSelectedEventId(null);
+      setForm(createEmptyForm());
+      router.refresh();
+    });
+  }
+
+  function deleteEvent(targetId: string) {
+    if (!canEdit) {
+      return;
+    }
+
+    setActionError(null);
+    startTransition(async () => {
+      const result = await deleteEventAction(targetId);
+      if (!result.ok) {
+        setActionError(result.error);
+        return;
+      }
+      if (selectedEventId === targetId) {
+        setSelectedEventId(null);
+        setForm(createEmptyForm());
+      }
+      router.refresh();
+    });
+  }
+
+  // 일정 하나에 태그 하나. 같은 태그를 다시 누르면 해제.
+  function selectTag(tagId: string) {
+    setForm((current) => {
+      const selected = current.tagIds[0] === tagId;
+      return {
+        ...current,
+        tagIds: selected ? [] : [tagId],
+        primaryTagIds: selected ? [] : [tagId]
+      };
+    });
+  }
+
+  // 시청자 화면 전체보기: 스튜디오 UI를 숨기고 공개 화면만 그대로 보여준다.
+  if (viewerMode) {
+    return (
+      <div className="viewer-fullscreen">
+        <div className="viewer-fullscreen-bar">
+          <button className="button" onClick={() => setViewerMode(false)} type="button">
+            <ChevronLeft aria-hidden="true" size={16} />
+            편집실로 돌아가기
+          </button>
+          <span className="viewer-fullscreen-label">
+            <Eye aria-hidden="true" size={15} />
+            시청자가 보는 공개 화면입니다 (비공개 일정 미포함)
+          </span>
+        </div>
+        <PublicPoster
+          initialMonth={view.month}
+          initialYear={view.year}
+          schedule={schedule.viewerModePreview}
+        />
+      </div>
+    );
   }
 
   return (
     <main className="studio-shell">
-      <aside className="studio-sidebar" aria-label="Calendar tools">
-        <p className="eyebrow">Calendar</p>
-        <h1>{schedule.calendar.displayName}</h1>
-
-        {canUseWorkToggle ? (
-          <div className="mode-toggle" aria-label="Calendar mode">
-            <button
-              className={mode === "general" ? "active" : ""}
-              onClick={() => setMode("general")}
-              type="button"
-            >
-              일반
-            </button>
-            <button
-              className={mode === "work" ? "active" : ""}
-              onClick={() => setMode("work")}
-              type="button"
-            >
-              작업
-            </button>
-          </div>
-        ) : null}
-
-        <nav aria-label="Studio sections">
-          <a href="#calendar">월간 달력</a>
-          <a href="#day-editor">일정 설정</a>
-          <a href="#requests">요청함</a>
-          <a href="#proposals">제안</a>
-        </nav>
-
-        <section className="sidebar-block">
-          <h2>운영 요약</h2>
-          <dl className="metric-list">
-            <div>
-              <dt>공개 일정</dt>
-              <dd>{visibleEvents.length}</dd>
-            </div>
-            <div>
-              <dt>요청</dt>
-              <dd>{schedule.requests.length}</dd>
-            </div>
-            <div>
-              <dt>제안</dt>
-              <dd>{schedule.proposals.length}</dd>
-            </div>
-          </dl>
-        </section>
-      </aside>
-
-      <section className="studio-main" id="calendar">
-        <header className="studio-toolbar">
-          <div>
-            <strong>{schedule.calendar.month}</strong>
-            <span>Asia/Seoul fixed · {mode === "general" ? "일반 모드" : "작업 모드"}</span>
-          </div>
-          <div className="studio-mode">{selectedDate}</div>
-        </header>
-
-        <div className="calendar-weekdays" aria-hidden="true">
-          {["월", "화", "수", "목", "금", "토", "일"].map((weekday) => (
-            <span key={weekday}>{weekday}</span>
-          ))}
+      <header className="studio-topbar">
+        <div>
+          <p className="eyebrow">빅토리 편집실</p>
+          <h1>{schedule.calendar.title}</h1>
         </div>
 
-        <div className="studio-calendar" aria-label="Monthly calendar">
-          {days.map((day) => {
-            const events = visibleEvents.filter((event) =>
-              event.startsAt.startsWith(day.isoDate)
-            );
-            const isSelected = day.isoDate === selectedDate;
+        <div className="studio-month-nav" aria-label="월 이동">
+          <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+            <ChevronLeft aria-hidden="true" size={18} />
+          </button>
+          <strong>{getMonthLabel(view.year, view.month)}</strong>
+          <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+            <ChevronRight aria-hidden="true" size={18} />
+          </button>
+        </div>
 
-            return (
-              <button
-                className={`calendar-day ${isSelected ? "selected" : ""}`}
-                key={day.isoDate}
-                onClick={() => handleDayClick(day.isoDate)}
-                type="button"
-              >
-                <span className="calendar-date">{day.dayOfMonth}</span>
-                <span className="calendar-events">
-                  {events.slice(0, 3).map((event) => (
-                    <span
-                      className={`calendar-event ${event.category}`}
-                      key={event.id}
-                      onClick={(clickEvent) => {
-                        clickEvent.stopPropagation();
-                        setSelectedDate(day.isoDate);
-                        setSelectedEventId(event.id);
-                      }}
-                    >
-                      {event.publicTitle}
-                    </span>
-                  ))}
-                  {events.length > 3 ? (
-                    <span className="calendar-more">+{events.length - 3}</span>
-                  ) : null}
-                </span>
+        <div className="studio-role-tools">
+          <div className={`actor-badge ${actor.role}`}>
+            <strong>{ROLE_LABEL[actor.role]}</strong>
+            <span>{actor.email ?? "비로그인"}</span>
+          </div>
+          <button
+            className={canReadPrivate ? "private-toggle active" : "private-toggle"}
+            disabled={!canTogglePrivateLayer}
+            onClick={togglePrivateLayer}
+            type="button"
+          >
+            {canReadPrivate ? <EyeOff size={16} /> : <Eye size={16} />}
+            {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
+          </button>
+          {/* 시청자가 보는 공개 화면 전체보기 — 개발자·매니저·작업자 등 모든 역할이 본다. */}
+          <button className="button" onClick={() => setViewerMode(true)} type="button">
+            <Eye aria-hidden="true" size={16} />
+            시청자 화면 보기
+          </button>
+          {actor.isAuthenticated ? (
+            <form action="/api/auth/logout" method="post">
+              <button className="button" type="submit">
+                로그아웃
               </button>
-            );
-          })}
+            </form>
+          ) : (
+            <Link className="button" href="/login">
+              로그인
+            </Link>
+          )}
         </div>
+      </header>
 
-        <section className="studio-queues">
-          <div id="proposals">
-            <h2>Viewer Proposals</h2>
-            {schedule.proposals.map((proposal) => (
-              <p key={proposal.id}>
-                {proposal.content} · {proposal.voteCount} votes
-              </p>
+      {actor.role === "developer" ? (
+        <div className="developer-warning">
+          <LockKeyhole aria-hidden="true" size={17} />
+          🛠 개발자 세션입니다. 전체 캘린더를 관리 권한으로 보고 있습니다.
+        </div>
+      ) : null}
+
+      {canReadPrivate ? (
+        <div className="private-warning">
+          <LockKeyhole aria-hidden="true" size={17} />
+          ⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.
+        </div>
+      ) : null}
+
+      <section className="studio-workspace">
+        <aside className="studio-left-panel">
+          <section>
+            <h2>색상 안내</h2>
+            <TagLegendEditor
+              canEdit={false}
+              palette={schedule.palette}
+              tags={schedule.tags}
+              updateTagsAction={updateTagsAction}
+            />
+          </section>
+
+          {canEdit ? (
+            <section>
+              <h2>관리</h2>
+              <button className="button" onClick={() => setModal("tags")} type="button">
+                태그 이름 · 색상 편집
+              </button>
+              <button className="button" onClick={() => setModal("members")} type="button">
+                매니저 · 작업자 관리
+              </button>
+            </section>
+          ) : null}
+
+          {/* 꾸미기는 신뢰 멤버(매니저·작업자)도 가능 — 일정 편집 권한과 별개. */}
+          {canDecorateCalendar ? (
+            <section>
+              <h2>꾸미기</h2>
+              <Link className="button" href={`/studio/decorate/${view.year}/${view.month}`}>
+                달력 꾸미기
+              </Link>
+            </section>
+          ) : null}
+        </aside>
+
+        <section className="studio-calendar-panel">
+          <div className="studio-weekdays" aria-hidden="true">
+            {WEEKDAYS.map((weekday, index) => (
+              <span
+                className={index === 0 ? "sunday" : index === 6 ? "saturday" : ""}
+                key={weekday}
+              >
+                {weekday}
+              </span>
             ))}
           </div>
-          <div id="requests">
-            <h2>Request Inbox</h2>
-            {schedule.requests.map((request) => (
-              <p key={request.id}>
-                {request.title} · {request.state}
-              </p>
-            ))}
+          <div className="studio-month-grid" aria-label="월간 달력">
+            {cells.map((cell) => {
+              const covering = getEventsForDate(visibleEvents, cell.isoDate);
+              const supportHere = covering.filter((e) => e.isSupport);
+              const dateEvents = covering.filter((e) => !e.isSupport);
+              const day = classifyDay(cell.isoDate, cell.weekday, today);
+
+              const dayClass = [
+                "studio-day",
+                cell.inCurrentMonth ? "" : "outside",
+                selectedDate === cell.isoDate ? "selected" : "",
+                day.isPast ? "past" : "future",
+                day.isToday ? "today" : ""
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              const numClass = day.isRed ? "red" : day.isSaturday ? "saturday" : "";
+
+              return (
+                <article
+                  className={dayClass}
+                  key={cell.isoDate}
+                  onClick={() => selectDate(cell.isoDate)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") selectDate(cell.isoDate);
+                  }}
+                >
+                  {supportHere.map((s) => {
+                    const lane = supportLanes.lanes.get(s.id) ?? 0;
+                    const start = getEventDateKey(s);
+                    const end = s.endDateKey ?? start;
+                    const isStart = cell.isoDate === start;
+                    const isEnd = cell.isoDate === end;
+                    // 주 경계(토→일)에서도 끈을 끊지 않음 → 시작/끝일에만 둥글게
+                    const left = isStart;
+                    const right = isEnd;
+                    return (
+                      <div
+                        className="support-bar"
+                        key={s.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          selectEvent(s);
+                        }}
+                        style={{
+                          top: 26 + lane * 20,
+                          left: left ? 3 : 0,
+                          right: right ? 3 : 0,
+                          borderTopLeftRadius: left ? 9 : 0,
+                          borderBottomLeftRadius: left ? 9 : 0,
+                          borderTopRightRadius: right ? 9 : 0,
+                          borderBottomRightRadius: right ? 9 : 0
+                        }}
+                      >
+                        {isStart || isEnd ? <span>🌱 {s.publicTitle}</span> : null}
+                      </div>
+                    );
+                  })}
+                  <div className="studio-day-head">
+                    <strong className={numClass}>{cell.dayOfMonth}</strong>
+                    {day.markName ? <em className="day-mark">{day.markName}</em> : null}
+                  </div>
+                  <div
+                    className="studio-event-list"
+                    style={
+                      supportLanes.count > 0
+                        ? { paddingTop: 8 + supportLanes.count * 20 }
+                        : undefined
+                    }
+                  >
+                    {dateEvents.map((event) => {
+                      const color = eventColor(event);
+                      const isSel = selectedEventId === event.id;
+                      // 연결된 체인이면 체인 전체에 선택 테두리를 입힌다.
+                      const inSelChain = selectedChainIds.has(event.id);
+                      const { main, subs } = splitEventTitle(event.publicTitle);
+                      const span = getEventSpan(
+                        event,
+                        cell.isoDate,
+                        cell.weekday,
+                        visibleEvents
+                      );
+                      const pillClass = [
+                        "studio-event-pill",
+                        event.visibilityScope,
+                        inSelChain ? "selected" : "",
+                        span.isMulti ? "span" : "",
+                        span.isMulti && !span.roundLeft ? "no-left" : "",
+                        span.isMulti && !span.roundRight ? "no-right" : ""
+                      ]
+                        .filter(Boolean)
+                        .join(" ");
+                      return (
+                        <div
+                          className={pillClass}
+                          data-color={color?.key}
+                          key={event.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePillClick(event.id);
+                          }}
+                          role="button"
+                          style={
+                            color
+                              ? {
+                                  backgroundColor: color.bgColor,
+                                  color: color.textColor,
+                                  borderColor: color.borderColor
+                                }
+                              : undefined
+                          }
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.stopPropagation();
+                              handlePillClick(event.id);
+                            }
+                          }}
+                        >
+                          <div className="pill-main">
+                            {span.showTitle ? (
+                              <strong>{main}</strong>
+                            ) : (
+                              <strong className="span-cont">&nbsp;</strong>
+                            )}
+                            {span.showTitle && isSel && canEdit ? (
+                              <button
+                                aria-label="일정 삭제"
+                                className="pill-delete"
+                                disabled={pending}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteEvent(event.id);
+                                }}
+                                title="이 일정 삭제"
+                                type="button"
+                              >
+                                <Trash2 aria-hidden="true" size={16} />
+                              </button>
+                            ) : null}
+                          </div>
+                          {/* 일정 카드는 항상 펼침 고정 — 토글 없음(시청자·꾸미기와 통일). */}
+                          {span.showTitle && subs.length > 0 ? (
+                            <ul className="pill-subs">
+                              {subs.map((sub, i) => (
+                                <li key={i}>{sub}</li>
+                              ))}
+                            </ul>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </article>
+              );
+            })}
           </div>
         </section>
-      </section>
 
-      <aside className="studio-drawer" id="day-editor" aria-label="Design and event editor">
-        <section className="drawer-block">
-          <p className="eyebrow">Design</p>
-          <h2>포스터 스타일</h2>
-          <div className="style-swatches" aria-label="Poster color options">
-            <button className="swatch mint" type="button" aria-label="Mint" />
-            <button className="swatch coral" type="button" aria-label="Coral" />
-            <button className="swatch amber" type="button" aria-label="Amber" />
-          </div>
-          <p className="drawer-note">공개 포스터는 같은 일정 데이터를 사용해 안정적으로 렌더링됩니다.</p>
-        </section>
+        <aside className="event-editor-panel">
+          <form onSubmit={saveEvent}>
+            <div className="editor-heading">
+              <div>
+                <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
+                <h2>{selectedDate}</h2>
+              </div>
+              <button className="button primary" disabled={!canEdit || pending} type="submit">
+                <Save aria-hidden="true" size={16} />
+                {pending ? "저장 중…" : "저장"}
+              </button>
+            </div>
 
-        <section className="drawer-block">
-          <p className="eyebrow">Selected Day</p>
-          <h2>{selectedDate}</h2>
-          <form className="event-form" onSubmit={handleSubmit}>
+            {actionError ? <div className="auth-warning">{actionError}</div> : null}
+
             <label>
-              일정 제목
-              <input
+              제목
+              <textarea
+                disabled={!canEdit}
                 onChange={(event) =>
-                  setDraft((value) => ({ ...value, publicTitle: event.target.value }))
+                  setForm((current) => ({ ...current, publicTitle: event.target.value }))
                 }
-                placeholder="방송 제목"
-                value={draft.publicTitle}
+                placeholder="예: 풀트뱅"
+                value={form.publicTitle}
               />
             </label>
-            <div className="time-row">
-              <label>
-                시작
-                <input
-                  onChange={(event) =>
-                    setDraft((value) => ({ ...value, startsAt: event.target.value }))
-                  }
-                  type="time"
-                  value={draft.startsAt}
-                />
-              </label>
-              <label>
-                종료
-                <input
-                  onChange={(event) =>
-                    setDraft((value) => ({ ...value, endsAt: event.target.value }))
-                  }
-                  type="time"
-                  value={draft.endsAt}
-                />
-              </label>
-            </div>
-            <label>
-              분류
-              <select
-                onChange={(event) =>
-                  setDraft((value) => ({
-                    ...value,
-                    category: event.target.value as DraftForm["category"]
-                  }))
-                }
-                value={draft.category}
-              >
-                <option value="stream">방송</option>
-                <option value="collab">합방</option>
-                <option value="notice">공지</option>
-                <option value="support">후원</option>
-              </select>
-            </label>
-            <button className="button primary" type="submit">
-              일정 설정
-            </button>
-          </form>
-        </section>
 
-        <section className="drawer-block">
-          <p className="eyebrow">Selected Event</p>
-          <h2>{selectedEvent?.publicTitle ?? "일정 없음"}</h2>
-          {selectedEvent ? (
-            <dl>
-              <div>
-                <dt>공개 제목</dt>
-                <dd>{selectedEvent.publicTitle}</dd>
-              </div>
-              <div>
-                <dt>상태</dt>
-                <dd>{formatStatus(selectedEvent.status)}</dd>
-              </div>
-              {mode === "work" ? (
-                <>
-                  <div>
-                    <dt>비공개 제목</dt>
-                    <dd>{selectedEvent.privateMeta?.privateTitle ?? "없음"}</dd>
+            <label>
+              공개 범위
+              {canReadPrivate ? (
+                <select
+                  disabled={!canEdit}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      visibilityScope: event.target.value as EventVisibilityScope
+                    }))
+                  }
+                  value={form.visibilityScope}
+                >
+                  <option value="public">모두</option>
+                  <option value="embargo">엠바고</option>
+                  <option value="work">작업자</option>
+                  {actor.role === "owner" ? <option value="owner_private">나만</option> : null}
+                </select>
+              ) : (
+                // 비공개 레이어 잠김: 공개 범위는 "모두"로 고정. 비밀번호로 풀어야 토글이 열린다.
+                <select disabled value="public" title="비공개 레이어를 풀면 엠바고·작업자·나만을 지정할 수 있습니다">
+                  <option value="public">모두</option>
+                </select>
+              )}
+            </label>
+
+            <div className="support-toggle">
+              <span>🌱 업 도움 설정</span>
+              <button
+                aria-checked={form.isSupport}
+                className={`switch ${form.isSupport ? "on" : ""}`}
+                disabled={!canEdit}
+                onClick={() =>
+                  setForm((current) => ({ ...current, isSupport: !current.isSupport }))
+                }
+                role="switch"
+                type="button"
+              >
+                <span className="switch-knob" />
+              </button>
+            </div>
+
+            {form.isSupport ? (
+              <>
+                <div className="support-duration">
+                  <span className="duration-title">업 도움 기간</span>
+                  <div className="duration-chips">
+                    {SUPPORT_DURATIONS.map((opt) => {
+                      const end = addDaysIso(selectedDate, opt.days);
+                      const active = (form.endDateKey || selectedDate) === end;
+                      return (
+                        <button
+                          className={active ? "active" : ""}
+                          disabled={!canEdit}
+                          key={opt.days}
+                          onClick={() =>
+                            setForm((current) => ({ ...current, endDateKey: end }))
+                          }
+                          type="button"
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div>
-                    <dt>코드네임</dt>
-                    <dd>{selectedEvent.privateMeta?.codename ?? "없음"}</dd>
+                  <div className="duration-manual">
+                    <span>종료일 직접 선택</span>
+                    <input
+                      disabled={!canEdit}
+                      min={selectedDate}
+                      onChange={(event) =>
+                        setForm((current) => ({ ...current, endDateKey: event.target.value }))
+                      }
+                      type="date"
+                      value={form.endDateKey || selectedDate}
+                    />
                   </div>
-                </>
-              ) : null}
-            </dl>
-          ) : null}
-        </section>
-      </aside>
+                </div>
+                <label>
+                  업 도움 링크
+                  <input
+                    disabled={!canEdit}
+                    onChange={(event) =>
+                      setForm((current) => ({ ...current, supportUrl: event.target.value }))
+                    }
+                    placeholder="숲 게시글 URL"
+                    type="url"
+                    value={form.supportUrl}
+                  />
+                </label>
+              </>
+            ) : null}
+
+            <section className="tag-picker" aria-label="태그 선택">
+              <h3>태그</h3>
+              <div>
+                {legendTags.map((tag) => {
+                  const color = schedule.palette.find((item) => item.key === tag.colorKey);
+                  const selected = form.tagIds[0] === tag.id;
+                  return color ? (
+                    <button
+                      className={selected ? "selected" : ""}
+                      data-color={color.key}
+                      disabled={!canEdit}
+                      key={tag.id}
+                      onClick={() => selectTag(tag.id)}
+                      style={{
+                        backgroundColor: color.bgColor,
+                        borderColor: color.borderColor,
+                        color: color.textColor
+                      }}
+                      type="button"
+                    >
+                      {tag.displayName}
+                    </button>
+                  ) : null;
+                })}
+              </div>
+            </section>
+
+            {selectedEventId &&
+            canEdit &&
+            events.find((e) => e.id === selectedEventId)?.isSupport ? (
+              <button
+                className="button danger"
+                disabled={pending}
+                onClick={() => deleteEvent(selectedEventId)}
+                type="button"
+              >
+                <Trash2 aria-hidden="true" size={15} />이 업 도움 삭제
+              </button>
+            ) : null}
+          </form>
+        </aside>
+      </section>
+
+      {modal ? (
+        <div
+          className="modal-backdrop"
+          // 텍스트를 드래그 선택하다 배경에서 마우스를 떼도 닫히지 않도록,
+          // 누름과 뗌이 모두 배경(자기 자신)에서 일어났을 때만 닫는다.
+          onMouseDown={(e) => {
+            backdropPressRef.current = e.target === e.currentTarget;
+          }}
+          onMouseUp={(e) => {
+            if (backdropPressRef.current && e.target === e.currentTarget) {
+              setModal(null);
+            }
+            backdropPressRef.current = false;
+          }}
+          role="presentation"
+        >
+          <div
+            className={`modal-card ${modal === "tags" ? "modal-card-wide" : ""}`}
+            role="dialog"
+          >
+            <div className="modal-head">
+              <h2>
+                {modal === "passcode"
+                  ? "비공개 일정"
+                  : modal === "tags"
+                    ? "태그 이름 · 색상 편집"
+                    : "매니저 · 작업자 관리"}
+              </h2>
+              <button
+                aria-label="닫기"
+                className="modal-close"
+                onClick={() => setModal(null)}
+                type="button"
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </div>
+
+            {modal === "passcode" ? (
+              <PrivateLayerPanel
+                canManage={canEdit}
+                onDone={() => setModal(null)}
+                onUnlocked={() => setShowPrivate(true)}
+                setPasscodeAction={setPasscodeAction}
+              />
+            ) : null}
+            {modal === "tags" ? (
+              <TagLegendEditor
+                canEdit
+                palette={schedule.palette}
+                tags={schedule.tags}
+                updateTagsAction={updateTagsAction}
+              />
+            ) : null}
+            {modal === "members" ? <TrustedMembersPanel /> : null}
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }
 
-function buildMonthDays(month: string) {
-  const [year, monthNumber] = month.split("-").map(Number);
-  const lastDate = new Date(year, monthNumber, 0).getDate();
-
-  return Array.from({ length: lastDate }, (_, index) => {
-    const dayOfMonth = index + 1;
-    return {
-      dayOfMonth,
-      isoDate: `${month}-${String(dayOfMonth).padStart(2, "0")}`
-    };
-  });
-}
-
-function createDraftForm(): DraftForm {
+function createEmptyForm(): EventForm {
   return {
     publicTitle: "",
-    startsAt: "20:00",
-    endsAt: "22:00",
-    category: "stream"
+    endDateKey: "",
+    isSupport: false,
+    supportUrl: "",
+    category: "stream",
+    status: "scheduled",
+    visibilityScope: "public",
+    tagIds: [],
+    primaryTagIds: []
   };
-}
-
-function toKstDateTime(date: string, time: string) {
-  return `${date}T${time}:00+09:00`;
-}
-
-function formatStatus(status: EventStatus) {
-  const labels: Record<EventStatus, string> = {
-    draft: "초안",
-    scheduled: "예정",
-    live: "진행 중",
-    done: "완료",
-    cancelled: "취소"
-  };
-
-  return labels[status];
 }

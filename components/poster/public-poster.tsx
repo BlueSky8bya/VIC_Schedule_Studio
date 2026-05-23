@@ -1,78 +1,1804 @@
-import type { PublicSchedule } from "@/lib/domain/schedule-types";
+"use client";
+
+import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
+  BringToFront,
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  ExternalLink,
+  FlipHorizontal,
+  FlipVertical,
+  Keyboard,
+  Redo2,
+  SendToBack,
+  Sparkles,
+  Trash2,
+  Type,
+  Undo2,
+  Upload
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { PosterExportActions } from "@/components/poster/poster-export-actions";
+import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
+import {
+  POSTER_THEMES,
+  type PublicSchedule,
+  type PublicScheduleEvent,
+  type StickerAsset,
+  type StickerInstance
+} from "@/lib/domain/schedule-types";
+import type { ThemeResult } from "@/lib/schedules/theme-actions";
+import type {
+  SaveStickerInput,
+  StickerResult
+} from "@/lib/schedules/sticker-actions";
+import type { StickerAssetResult } from "@/lib/schedules/sticker-asset-actions";
+import { getDayMark } from "@/lib/calendar/holidays";
+import {
+  assignSupportLanes,
+  buildCalendarMonth,
+  classifyDay,
+  getAdjacentMonth,
+  getEventDateKey,
+  getEventsForDate,
+  getEventSpan,
+  getMonthLabel,
+  getTodayKst,
+  splitEventTitle,
+  type MonthCell
+} from "@/lib/calendar/month";
 
 type PublicPosterProps = {
   schedule: PublicSchedule;
+  initialYear?: number;
+  initialMonth?: number;
+  canExport?: boolean;
+  decorate?: boolean;
+  saveStickerAction?: (input: SaveStickerInput) => Promise<StickerResult>;
+  deleteStickerAction?: (id: string) => Promise<StickerResult>;
+  uploadStickerAssetAction?: (formData: FormData) => Promise<StickerAssetResult>;
+  deleteStickerAssetAction?: (id: string) => Promise<StickerAssetResult>;
+  setPosterThemeAction?: (theme: string) => Promise<ThemeResult>;
 };
 
-export function PublicPoster({ schedule }: PublicPosterProps) {
-  const days = buildMonthDays(schedule.calendar.month);
+const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
-  return (
-    <main className="poster-page">
-      <section className="poster-surface" data-export-surface>
-        <header className="poster-header">
-          <div>
-            <p className="eyebrow">KST Monthly Poster</p>
-            <h1>{schedule.calendar.displayName}</h1>
-          </div>
-          <div className="poster-month">{schedule.calendar.month}</div>
-        </header>
+// 추천 이모지 팔레트 — 카테고리 탭으로 나눠 관리(#5b). 종류를 대폭 확충.
+const EMOJI_CATEGORIES: { key: string; label: string; emojis: string[] }[] = [
+  {
+    key: "face",
+    label: "표정",
+    emojis: [
+      "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃",
+      "🫠", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "☺️", "😚",
+      "😙", "🥲", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭",
+      "🫢", "🫣", "🤫", "🤔", "🫡", "🤐", "🤨", "😐", "😑", "😶",
+      "🫥", "😶‍🌫️", "😏", "😒", "🙄", "😬", "😮‍💨", "🤥", "🫨", "😌",
+      "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧",
+      "🥵", "🥶", "🥴", "😵", "😵‍💫", "🤯", "🤠", "🥳", "🥸", "😎",
+      "🤓", "🧐", "😕", "🫤", "😟", "🙁", "☹️", "😮", "😯", "😲",
+      "😳", "🥺", "🥹", "😦", "😧", "😨", "😰", "😥", "😢", "😭",
+      "😱", "😖", "😣", "😞", "😓", "😩", "😫", "🥱", "😤", "😡",
+      "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡", "👹", "👺",
+      "👻", "👽", "👾", "🤖", "😺", "😸", "😹", "😻", "😼", "😽",
+      "🙀", "😿", "😾", "🙈", "🙉", "🙊", "💋", "💯", "🫶", "🥶"
+    ]
+  },
+  {
+    key: "hand",
+    label: "손짓·사람",
+    emojis: [
+      "👍", "👎", "👏", "🙌", "🙏", "🤝", "✌️", "🤟", "🤙", "👋",
+      "💪", "🦾", "🫶", "👌", "🤌", "🤏", "🤞", "🫰", "✊", "👊",
+      "🤛", "🤜", "🖐️", "✋", "🖖", "🫲", "🫱", "👐", "🤲", "🫳",
+      "🫴", "☝️", "👆", "👇", "👈", "👉", "✍️", "🤚", "🖕", "🦵",
+      "🦶", "👂", "👃", "👀", "👁️", "👄", "🦷", "🧠", "🫀", "🗣️",
+      "👶", "🧒", "👦", "👧", "🧑", "👨", "👩", "🧓", "👮", "🦸",
+      "🦹", "🧙", "🧚", "🧛", "🧜", "🧝", "🧞", "🧟", "💃", "🕺",
+      "👯", "🧖", "🧗", "🏃", "🚶", "🧘", "👫", "👬", "👭", "👪"
+    ]
+  },
+  {
+    key: "heart",
+    label: "하트",
+    emojis: [
+      "❤️", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "🤍", "🩷",
+      "🩵", "🩶", "💖", "💕", "💗", "💓", "💞", "💘", "💝", "💟",
+      "❣️", "💌", "💋", "❤️‍🔥", "❤️‍🩹", "💔", "♥️", "💑", "💏", "🫶",
+      "😍", "🥰", "😘", "💐", "🌹", "💒"
+    ]
+  },
+  {
+    key: "spark",
+    label: "반짝·기호",
+    emojis: [
+      "⭐", "🌟", "✨", "💫", "⚡", "🔥", "💥", "🌈", "💯", "❗",
+      "❕", "‼️", "⁉️", "💢", "💦", "💨", "🕳️", "💬", "💭", "🗯️",
+      "♨️", "🌀", "✅", "✔️", "❌", "⭕", "🚫", "❓", "❔", "❎",
+      "➕", "➖", "➗", "✖️", "🟰", "💲", "💱", "⚠️", "🔱", "♻️",
+      "🔰", "✳️", "✴️", "❇️", "🆗", "🆕", "🆒", "🆙", "🔟", "🔢",
+      "▶️", "⏸️", "⏯️", "⏹️", "🔼", "🔽", "⏫", "⏬", "🔀", "🔁",
+      "🔂", "🔄", "🔃", "➡️", "⬅️", "⬆️", "⬇️", "↗️", "↘️", "↩️",
+      "🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "⚪", "🟥", "🟦"
+    ]
+  },
+  {
+    key: "party",
+    label: "축하·놀이",
+    emojis: [
+      "🎉", "🎊", "🎈", "🎁", "🎀", "🥇", "🥈", "🥉", "🏆", "🏅",
+      "🎖️", "🎯", "🎮", "🕹️", "🎲", "🃏", "🀄", "🧩", "🎰", "🎳",
+      "🎫", "🎟️", "🪅", "🪩", "🎏", "🎐", "🧧", "🎆", "🎇", "🧨",
+      "🎄", "🎃", "🎗️", "🎠", "🎡", "🎢", "🎪", "🤹", "🎭", "🪄",
+      "🧸", "🪀", "🪁", "🔮", "🎴", "🥏", "🪃", "🛝", "🎺", "📣"
+    ]
+  },
+  {
+    key: "music",
+    label: "음악·취미",
+    emojis: [
+      "🎤", "🎧", "🎼", "🎹", "🥁", "🪘", "🎷", "🎺", "🎸", "🪕",
+      "🎻", "🪗", "📯", "🎙️", "🎚️", "🎛️", "🎬", "📷", "📸", "📹",
+      "🎥", "📽️", "🎨", "🖌️", "🖍️", "🖊️", "🖋️", "✏️", "📝", "📚",
+      "📖", "📕", "📗", "📘", "📙", "🏀", "⚽", "🏈", "⚾", "🥎",
+      "🎾", "🏐", "🏉", "🥏", "🎱", "🪀", "🏓", "🏸", "🥊", "🥋",
+      "⛳", "🏌️", "⛸️", "🎣", "🤿", "🛹", "🛼", "🛷", "🥌", "🎽",
+      "🏆", "🚴", "🏊", "🏄", "🧗", "🤸", "⛷️", "🏂", "🏋️", "🤺"
+    ]
+  },
+  {
+    key: "animal",
+    label: "동물",
+    emojis: [
+      "🐰", "🐱", "🐶", "🐻", "🐻‍❄️", "🐼", "🐨", "🐯", "🦁", "🐸",
+      "🐧", "🐥", "🐣", "🐤", "🦄", "🦋", "🐢", "🐳", "🐋", "🐬",
+      "🐙", "🦑", "🦐", "🦀", "🐡", "🐠", "🐟", "🦈", "🦊", "🐭",
+      "🐹", "🐰", "🐮", "🐷", "🐗", "🐔", "🦉", "🦅", "🦆", "🦢",
+      "🦩", "🦚", "🦜", "🐝", "🐞", "🦗", "🕷️", "🦂", "🐌", "🦕",
+      "🦖", "🐉", "🐲", "🦔", "🐺", "🐴", "🦓", "🦒", "🐘", "🦣",
+      "🦛", "🦏", "🐪", "🐫", "🦙", "🐑", "🐐", "🦌", "🐕", "🦮",
+      "🐩", "🐈", "🐈‍⬛", "🐓", "🦃", "🕊️", "🐇", "🦝", "🦨", "🦡",
+      "🦦", "🦥", "🐿️", "🦔", "🦇", "🐾", "🦤", "🪲", "🐛", "🦂"
+    ]
+  },
+  {
+    key: "plant",
+    label: "식물·꽃",
+    emojis: [
+      "🌸", "💮", "🏵️", "🌹", "🥀", "🌺", "🌻", "🌼", "🌷", "🪷",
+      "💐", "🌱", "🪴", "🌲", "🌳", "🌴", "🌵", "🌾", "🌿", "☘️",
+      "🍀", "🎍", "🎋", "🍃", "🍂", "🍁", "🪺", "🍄", "🌰", "🪻",
+      "🌽", "🫛", "🥬", "🥦", "🌶️", "🫚", "🌊", "🪸", "🪹", "🌍"
+    ]
+  },
+  {
+    key: "food",
+    label: "음식",
+    emojis: [
+      "🍓", "🫐", "🍒", "🍑", "🥭", "🍍", "🥥", "🍎", "🍏", "🍐",
+      "🍊", "🍋", "🍌", "🍉", "🍇", "🍈", "🥝", "🍅", "🥑", "🍆",
+      "🥕", "🌽", "🥔", "🍠", "🥐", "🍞", "🥖", "🥨", "🧀", "🥞",
+      "🧇", "🍳", "🥚", "🍕", "🍔", "🌭", "🥪", "🌮", "🌯", "🍟",
+      "🍜", "🍝", "🍲", "🍛", "🍣", "🍱", "🍙", "🍚", "🍘", "🍢",
+      "🍡", "🍧", "🍨", "🍦", "🥧", "🧁", "🍰", "🎂", "🍮", "🍭",
+      "🍬", "🍫", "🍩", "🍪", "🌰", "🍯", "🍿", "🥛", "☕", "🍵",
+      "🧋", "🥤", "🧃", "🧉", "🍶", "🍺", "🍻", "🥂", "🍷", "🍸"
+    ]
+  },
+  {
+    key: "season",
+    label: "계절·날씨",
+    emojis: [
+      "🌸", "🌷", "🐝", "🦋", "🌱", "🐣", "☀️", "🌊", "🏖️", "🍉",
+      "🍧", "⛱️", "🩴", "🕶️", "🌴", "🍁", "🍂", "🌾", "🎃", "🌰",
+      "🍄", "❄️", "⛄", "☃️", "🎄", "🎅", "🤶", "🦌", "🧣", "🧤",
+      "🌙", "🌛", "🌜", "🌝", "🌞", "⭐", "🌟", "☁️", "⛅", "🌥️",
+      "🌦️", "🌧️", "⛈️", "🌩️", "🌨️", "🌬️", "🌪️", "🌫️", "🌈", "☔",
+      "💧", "💦", "🌊", "🔥", "❄️", "⚡", "🌠", "🌌", "🪐", "🌍"
+    ]
+  },
+  {
+    key: "travel",
+    label: "여행·탈것",
+    emojis: [
+      "🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐",
+      "🛻", "🚚", "🚛", "🚜", "🛵", "🏍️", "🛺", "🚲", "🛴", "🚨",
+      "🚝", "🚄", "🚅", "🚈", "🚂", "🚆", "🚇", "🚊", "🚉", "✈️",
+      "🛫", "🛬", "🛩️", "🚁", "🚀", "🛸", "🛶", "⛵", "🚤", "🛥️",
+      "🚢", "⚓", "🗺️", "🧭", "🏔️", "⛰️", "🌋", "🏕️", "🏖️", "🏝️",
+      "🏞️", "🗽", "🗼", "🏰", "🏯", "🎡", "🎢", "🎠", "⛲", "🌁"
+    ]
+  },
+  {
+    key: "object",
+    label: "사물",
+    emojis: [
+      "💎", "👑", "💍", "🔮", "📌", "📍", "💌", "🔔", "🔕", "🧸",
+      "🪄", "🫧", "🎐", "🛍️", "🎒", "👜", "👛", "👝", "🎁", "👗",
+      "👚", "👕", "👖", "🧥", "👔", "👒", "🎩", "🧢", "👑", "🕶️",
+      "👓", "💄", "💅", "📱", "💻", "🖥️", "⌨️", "🖱️", "🖨️", "📷",
+      "📺", "📻", "⏰", "⏲️", "⏳", "🕰️", "🔑", "🗝️", "🔒", "🔓",
+      "💡", "🔦", "🕯️", "🧷", "📎", "🖇️", "✂️", "📏", "📐", "🪙",
+      "💰", "💵", "💸", "💳", "🧧", "📦", "📫", "✉️", "📨", "🔭",
+      "🔬", "🧲", "🧪", "💊", "🩹", "🩺", "🌡️", "🧹", "🪥", "🧼"
+    ]
+  }
+];
 
-        <div className="poster-grid" aria-label="Monthly public schedule">
-          {days.map((day) => {
-            const events = schedule.events.filter((event) =>
-              event.startsAt.startsWith(day.isoDate)
-            );
+// #7: 텍스트 스티커 글꼴/굵기 선택지
+const TEXT_FONTS = [
+  { key: "sans", label: "기본" },
+  { key: "round", label: "손글씨" },
+  { key: "display", label: "제목" },
+  { key: "serif", label: "명조" },
+  { key: "jua", label: "둥근" },
+  { key: "dohyeon", label: "고딕" },
+  { key: "pen", label: "펜글씨" },
+  { key: "gamja", label: "감자" },
+  { key: "gugi", label: "붓글씨" },
+  { key: "melody", label: "멜로디" }
+];
+const TEXT_WEIGHTS = [
+  { w: 400, label: "보통" },
+  { w: 700, label: "굵게" },
+  { w: 900, label: "두껍게" }
+];
 
+export function PublicPoster({
+  initialMonth,
+  initialYear,
+  schedule,
+  canExport = false,
+  decorate = false,
+  saveStickerAction,
+  deleteStickerAction,
+  uploadStickerAssetAction,
+  deleteStickerAssetAction,
+  setPosterThemeAction
+}: PublicPosterProps) {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [textDraft, setTextDraft] = useState(""); // C6: 추가할 텍스트 스티커 문구
+  const [emojiCat, setEmojiCat] = useState(EMOJI_CATEGORIES[0].key); // #5b: 선택된 이모지 카테고리
+  const activeEmojis =
+    EMOJI_CATEGORIES.find((c) => c.key === emojiCat)?.emojis ?? EMOJI_CATEGORIES[0].emojis;
+  const [view, setView] = useState({
+    year: initialYear ?? schedule.calendar.defaultYear,
+    month: initialMonth ?? schedule.calendar.defaultMonth
+  });
+  const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
+  const today = getTodayKst();
+  const supportLanes = useMemo(() => assignSupportLanes(schedule.events), [schedule.events]);
+  const supportEvents = schedule.events.filter((e) => e.isSupport);
+  // #1: 색상 안내에서 "기타"는 항상 맨 마지막으로(나머지는 기존 정렬 유지).
+  const legendTags = useMemo(
+    () =>
+      [...schedule.tags].sort(
+        (a, b) => Number(a.displayName === "기타") - Number(b.displayName === "기타")
+      ),
+    [schedule.tags]
+  );
+
+  // B1: 오늘이 데뷔 기념일·D+·생일이면 축하 연출(컨페티)을 1회 띄운다.
+  const todayCelebration = useMemo(() => {
+    const mark = getDayMark(today);
+    return mark && /🎉|🎂|🎈/.test(mark.name) ? mark.name : null;
+  }, [today]);
+  const [celebrate, setCelebrate] = useState(false);
+  const confetti = useMemo(
+    () =>
+      Array.from({ length: 28 }, (_, i) => ({
+        left: Math.round(Math.random() * 100),
+        delay: Math.round(Math.random() * 900),
+        dur: 2600 + Math.round(Math.random() * 1600),
+        color: ["#f472b6", "#fbbf24", "#34d399", "#60a5fa", "#a78bfa", "#f87171"][i % 6]
+      })),
+    []
+  );
+  useEffect(() => {
+    if (!todayCelebration) {
+      return;
+    }
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    setCelebrate(true);
+    const timer = setTimeout(() => setCelebrate(false), 4800);
+    return () => clearTimeout(timer);
+  }, [todayCelebration]);
+
+  // C9/C10: 포스터 테마(계절/배경). 소유자만 바꿀 수 있고 모든 시청자에게 반영된다.
+  const [posterTheme, setPosterTheme] = useState(schedule.calendar.posterTheme);
+  async function changeTheme(theme: string) {
+    if (!setPosterThemeAction) {
+      return;
+    }
+    const prev = posterTheme;
+    setPosterTheme(theme as typeof posterTheme); // 낙관적 반영
+    const result = await setPosterThemeAction(theme);
+    if (!result.ok) {
+      setPosterTheme(prev);
+      setStickerError(result.error);
+    }
+  }
+
+  // 스티커는 달(월)마다 따로 — 현재 보는 달의 스티커만 로컬 상태로 다룬다.
+  const monthStickers = (year: number, month: number) =>
+    schedule.stickers.filter((s) => s.year === year && s.month === month);
+  const [stickers, setStickers] = useState<StickerInstance[]>(() =>
+    monthStickers(view.year, view.month)
+  );
+  const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
+  // C3: 다중 선택 — 기본(primary) 선택 외에 추가로 선택된 스티커들.
+  const [multiIds, setMultiIds] = useState<string[]>([]);
+  const [stickerError, setStickerError] = useState<string | null>(null);
+  // A2: 범례에서 태그를 누르면 그 태그 일정만 강조(나머지는 흐리게). 시청자 화면 전용.
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  // 키보드 미세이동 등에서 최신 스티커 배열을 읽기 위한 ref + 저장 디바운스 타이머
+  const stickersRef = useRef<StickerInstance[]>([]);
+  const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nudgeBurstRef = useRef(0); // 방향키 연속 입력을 한 단위로 묶기 위한 타임스탬프
+  stickersRef.current = stickers;
+  // C2: 실행취소/다시실행 — 현재 달 스티커 배열 스냅샷 스택.
+  const [undoStack, setUndoStack] = useState<StickerInstance[][]>([]);
+  const [redoStack, setRedoStack] = useState<StickerInstance[][]>([]);
+
+  // 달을 바꿀 때만 해당 달 스티커로 다시 시드한다.
+  // (스티커 저장 시 서버 revalidate로 schedule이 갱신되어도 로컬 상태가 우선 —
+  //  그렇지 않으면 추가/이동/회전 직후 선택이 풀려 패널·핸들이 사라진다.)
+  useEffect(() => {
+    setStickers(schedule.stickers.filter((s) => s.year === view.year && s.month === view.month));
+    setSelectedSticker(null);
+    setMultiIds([]);
+    setTagFilter(null);
+    setUndoStack([]); // 달이 바뀌면 실행취소 히스토리는 초기화
+    setRedoStack([]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view.year, view.month]);
+
+  // 꾸미기 중 스티커 키보드 조작: Delete 삭제 · 화살표 이동(Shift=크게) · Ctrl/Cmd+D 복제.
+  useEffect(() => {
+    if (!decorate || !selectedSticker) {
+      return;
+    }
+    function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      // 입력 칸에서 누른 경우는 무시(텍스트 편집 보호)
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && (event.key === "d" || event.key === "D")) {
+        event.preventDefault();
+        duplicateSelected();
+        return;
+      }
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        void deleteSelected();
+        return;
+      }
+      const step = event.shiftKey ? 0.02 : 0.004;
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        nudgeSelected(0, -step);
+      } else if (event.key === "ArrowDown") {
+        event.preventDefault();
+        nudgeSelected(0, step);
+      } else if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        nudgeSelected(-step, 0);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        nudgeSelected(step, 0);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decorate, selectedSticker, multiIds]);
+
+  // C2: 실행취소/다시실행 단축키(선택 여부와 무관하게 동작).
+  useEffect(() => {
+    if (!decorate) {
+      return;
+    }
+    function onKey(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey)) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+      const key = event.key.toLowerCase();
+      if (key === "z" && !event.shiftKey) {
+        event.preventDefault();
+        undo();
+      } else if (key === "y" || (key === "z" && event.shiftKey)) {
+        event.preventDefault();
+        redo();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decorate, undoStack, redoStack]);
+
+  // C3: 현재 선택된 모든 스티커 id(primary + 추가 선택). primary가 항상 맨 앞.
+  const selectedIds = selectedSticker
+    ? [selectedSticker, ...multiIds.filter((id) => id !== selectedSticker)]
+    : multiIds;
+
+  // 선택 핸들러: Shift/Ctrl 클릭=토글(다중), 일반 클릭=단일.
+  function handleSelect(id: string | null, additive?: boolean) {
+    if (!id) {
+      setSelectedSticker(null);
+      setMultiIds([]);
+      return;
+    }
+    if (!additive) {
+      setSelectedSticker(id);
+      setMultiIds([]);
+      return;
+    }
+    if (id === selectedSticker) {
+      // primary를 토글로 끄면 추가 선택의 첫 항목을 primary로 승격.
+      setSelectedSticker(multiIds[0] ?? null);
+      setMultiIds((prev) => prev.slice(1));
+      return;
+    }
+    setMultiIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    if (!selectedSticker) {
+      setSelectedSticker(id);
+    }
+  }
+
+  function clearSelection() {
+    setSelectedSticker(null);
+    setMultiIds([]);
+  }
+
+  function updateStickerLocal(updated: StickerInstance) {
+    setStickers((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+  }
+
+  async function commitSticker(sticker: StickerInstance) {
+    if (!saveStickerAction || sticker.id.startsWith("temp-")) {
+      return; // 아직 insert 진행 중인 신규 스티커는 id 확정 후 저장됨
+    }
+    const result = await saveStickerAction({
+      id: sticker.id,
+      year: view.year,
+      month: view.month,
+      emoji: sticker.kind === "emoji" ? sticker.label : undefined,
+      assetId: sticker.kind === "image" ? sticker.assetId : undefined,
+      text: sticker.kind === "text" ? sticker.label : undefined,
+      textColor: sticker.textColor,
+      fontWeight: sticker.fontWeight,
+      fontFamily: sticker.fontFamily,
+      textAlign: sticker.textAlign,
+      textBg: sticker.textBg,
+      italic: sticker.italic,
+      outline: sticker.outline,
+      shadow: sticker.shadow,
+      xRatio: sticker.xRatio,
+      yRatio: sticker.yRatio,
+      widthRatio: sticker.widthRatio,
+      rotationDeg: sticker.rotationDeg,
+      flipX: sticker.flipX,
+      flipY: sticker.flipY,
+      opacity: sticker.opacity,
+      zIndex: sticker.zIndex
+    });
+    if (!result.ok) {
+      setStickerError(result.error);
+    }
+  }
+
+  async function addEmoji(emoji: string) {
+    const value = emoji.trim();
+    if (!value || !saveStickerAction) {
+      return;
+    }
+    pushHistory();
+    const tempId = `temp-${Math.random().toString(36).slice(2)}`;
+    const nextZ = stickers.reduce((max, s) => Math.max(max, s.zIndex), 0) + 1;
+    const fresh: StickerInstance = {
+      id: tempId,
+      kind: "emoji",
+      label: value,
+      year: view.year,
+      month: view.month,
+      xRatio: 0.5,
+      yRatio: 0.5,
+      widthRatio: 0.08,
+      rotationDeg: 0,
+      flipX: false,
+      flipY: false,
+      opacity: 1,
+      zIndex: nextZ,
+      visiblePublicly: true
+    };
+    setStickers((prev) => [...prev, fresh]);
+    setSelectedSticker(tempId);
+    const result = await saveStickerAction({
+      year: fresh.year,
+      month: fresh.month,
+      emoji: fresh.label,
+      xRatio: fresh.xRatio,
+      yRatio: fresh.yRatio,
+      widthRatio: fresh.widthRatio,
+      rotationDeg: fresh.rotationDeg,
+      flipX: fresh.flipX,
+      flipY: fresh.flipY,
+      opacity: fresh.opacity,
+      zIndex: fresh.zIndex
+    });
+    if (result.ok) {
+      setStickers((prev) => prev.map((s) => (s.id === tempId ? { ...s, id: result.id } : s)));
+      setSelectedSticker((cur) => (cur === tempId ? result.id : cur));
+    } else {
+      setStickers((prev) => prev.filter((s) => s.id !== tempId));
+      setStickerError(result.error);
+    }
+  }
+
+  // C6: 텍스트 스티커를 달력에 올린다. 기본은 흰 외곽선(가독성)으로 시작.
+  async function addText() {
+    const value = textDraft.trim();
+    if (!value || !saveStickerAction) {
+      return;
+    }
+    pushHistory();
+    setTextDraft("");
+    await persistNewSticker({
+      id: `temp-${Math.random().toString(36).slice(2)}`,
+      kind: "text",
+      label: value,
+      textColor: "#1f2937",
+      fontWeight: 700,
+      fontFamily: "sans",
+      textAlign: "left",
+      outline: false,
+      shadow: false,
+      year: view.year,
+      month: view.month,
+      xRatio: 0.5,
+      yRatio: 0.5,
+      widthRatio: 0.16,
+      rotationDeg: 0,
+      flipX: false,
+      flipY: false,
+      opacity: 1,
+      zIndex: nextZIndex(),
+      visiblePublicly: true
+    });
+  }
+
+  // 업로드한 커스텀 이모지(이미지)를 달력에 올린다.
+  async function addImageSticker(asset: StickerAsset) {
+    if (!saveStickerAction) {
+      return;
+    }
+    pushHistory();
+    const tempId = `temp-${Math.random().toString(36).slice(2)}`;
+    const nextZ = stickers.reduce((max, s) => Math.max(max, s.zIndex), 0) + 1;
+    const fresh: StickerInstance = {
+      id: tempId,
+      kind: "image",
+      label: asset.name,
+      imageUrl: asset.fileUrl,
+      assetId: asset.id,
+      year: view.year,
+      month: view.month,
+      xRatio: 0.5,
+      yRatio: 0.5,
+      widthRatio: 0.12,
+      rotationDeg: 0,
+      flipX: false,
+      flipY: false,
+      opacity: 1,
+      zIndex: nextZ,
+      visiblePublicly: true
+    };
+    setStickers((prev) => [...prev, fresh]);
+    setSelectedSticker(tempId);
+    const result = await saveStickerAction({
+      year: fresh.year,
+      month: fresh.month,
+      assetId: asset.id,
+      xRatio: fresh.xRatio,
+      yRatio: fresh.yRatio,
+      widthRatio: fresh.widthRatio,
+      rotationDeg: fresh.rotationDeg,
+      flipX: fresh.flipX,
+      flipY: fresh.flipY,
+      opacity: fresh.opacity,
+      zIndex: fresh.zIndex
+    });
+    if (result.ok) {
+      setStickers((prev) => prev.map((s) => (s.id === tempId ? { ...s, id: result.id } : s)));
+      setSelectedSticker((cur) => (cur === tempId ? result.id : cur));
+    } else {
+      setStickers((prev) => prev.filter((s) => s.id !== tempId));
+      setStickerError(result.error);
+    }
+  }
+
+  // 이미지 파일 업로드 → 커스텀 이모지로 등록. 여러 개를 한 번에(파일 선택·드래그앤드롭).
+  async function handleUploadFiles(files: File[]) {
+    if (!uploadStickerAssetAction) {
+      return;
+    }
+    const images = files.filter((f) => f.type.startsWith("image/"));
+    if (images.length === 0) {
+      if (files.length > 0) {
+        setStickerError("이미지 파일만 올릴 수 있습니다.");
+      }
+      return;
+    }
+    setStickerError(null);
+    setUploading(true);
+    let lastError: string | null = null;
+    // 순차 업로드 (서버·스토리지 부하를 줄이고 실패 메시지를 모은다)
+    for (const file of images) {
+      const formData = new FormData();
+      formData.append("file", file);
+      const result = await uploadStickerAssetAction(formData);
+      if (!result.ok) {
+        lastError = result.error;
+      }
+    }
+    setUploading(false);
+    if (lastError) {
+      setStickerError(lastError);
+    }
+    router.refresh(); // 새 에셋들이 schedule.stickerAssets에 반영되도록
+  }
+
+  // 업로드한 커스텀 이모지 삭제 (이를 쓰는 스티커도 함께 사라짐).
+  async function removeAsset(assetId: string) {
+    if (!deleteStickerAssetAction) {
+      return;
+    }
+    setStickers((prev) => prev.filter((s) => s.assetId !== assetId));
+    const result = await deleteStickerAssetAction(assetId);
+    if (result.ok) {
+      router.refresh();
+    } else {
+      setStickerError(result.error);
+    }
+  }
+
+  async function deleteSelected() {
+    const ids = selectedIds;
+    if (ids.length === 0 || !deleteStickerAction) {
+      return;
+    }
+    pushHistory();
+    const idSet = new Set(ids);
+    setStickers((prev) => prev.filter((s) => !idSet.has(s.id)));
+    clearSelection();
+    for (const id of ids) {
+      if (!id.startsWith("temp-")) {
+        const result = await deleteStickerAction(id);
+        if (!result.ok) {
+          setStickerError(result.error);
+        }
+      }
+    }
+  }
+
+  function changeOpacity(value: number) {
+    const id = selectedSticker;
+    if (!id) {
+      return;
+    }
+    const sticker = stickers.find((s) => s.id === id);
+    if (sticker) {
+      updateStickerLocal({ ...sticker, opacity: value });
+    }
+  }
+
+  // 좌우/상하 대칭 토글. 토글 즉시 저장.
+  function toggleFlip(axis: "x" | "y") {
+    const id = selectedSticker;
+    if (!id) {
+      return;
+    }
+    const sticker = stickers.find((s) => s.id === id);
+    if (!sticker) {
+      return;
+    }
+    pushHistory();
+    const updated =
+      axis === "x"
+        ? { ...sticker, flipX: !sticker.flipX }
+        : { ...sticker, flipY: !sticker.flipY };
+    updateStickerLocal(updated);
+    void commitSticker(updated);
+  }
+
+  // C6: 텍스트 스티커 글자색 변경(즉시 저장).
+  function changeTextColor(color: string) {
+    const sticker = stickers.find((s) => s.id === selectedSticker);
+    if (!sticker) {
+      return;
+    }
+    const updated = { ...sticker, textColor: color };
+    updateStickerLocal(updated);
+    void commitSticker(updated);
+  }
+
+  // #7: 텍스트 스티커 전용 — 문구/굵기/글꼴/크기 변경.
+  function patchSelected(patch: Partial<StickerInstance>, commit = true) {
+    const sticker = stickers.find((s) => s.id === selectedSticker);
+    if (!sticker) {
+      return;
+    }
+    const updated = { ...sticker, ...patch };
+    updateStickerLocal(updated);
+    if (commit) {
+      void commitSticker(updated);
+    }
+  }
+  function changeText(value: string) {
+    patchSelected({ label: value }, false);
+  }
+  function changeTextSize(widthRatio: number) {
+    patchSelected({ widthRatio }, false);
+  }
+
+  // C7: 외곽선/그림자 효과 토글(즉시 저장).
+  function toggleEffect(effect: "outline" | "shadow") {
+    const sticker = stickers.find((s) => s.id === selectedSticker);
+    if (!sticker) {
+      return;
+    }
+    pushHistory();
+    const updated =
+      effect === "outline"
+        ? { ...sticker, outline: !sticker.outline }
+        : { ...sticker, shadow: !sticker.shadow };
+    updateStickerLocal(updated);
+    void commitSticker(updated);
+  }
+
+  const selected = stickers.find((s) => s.id === selectedSticker) ?? null;
+
+  // 신규 스티커를 로컬에 추가하고 저장 후 실제 id로 교체(복제 등에서 재사용).
+  async function persistNewSticker(fresh: StickerInstance) {
+    if (!saveStickerAction) {
+      return;
+    }
+    setStickers((prev) => [...prev, fresh]);
+    setSelectedSticker(fresh.id);
+    const result = await saveStickerAction({
+      year: fresh.year,
+      month: fresh.month,
+      emoji: fresh.kind === "emoji" ? fresh.label : undefined,
+      assetId: fresh.kind === "image" ? fresh.assetId : undefined,
+      text: fresh.kind === "text" ? fresh.label : undefined,
+      textColor: fresh.textColor,
+      fontWeight: fresh.fontWeight,
+      fontFamily: fresh.fontFamily,
+      textAlign: fresh.textAlign,
+      textBg: fresh.textBg,
+      italic: fresh.italic,
+      outline: fresh.outline,
+      shadow: fresh.shadow,
+      xRatio: fresh.xRatio,
+      yRatio: fresh.yRatio,
+      widthRatio: fresh.widthRatio,
+      rotationDeg: fresh.rotationDeg,
+      flipX: fresh.flipX,
+      flipY: fresh.flipY,
+      opacity: fresh.opacity,
+      zIndex: fresh.zIndex
+    });
+    if (result.ok) {
+      setStickers((prev) => prev.map((s) => (s.id === fresh.id ? { ...s, id: result.id } : s)));
+      setSelectedSticker((cur) => (cur === fresh.id ? result.id : cur));
+    } else {
+      setStickers((prev) => prev.filter((s) => s.id !== fresh.id));
+      setStickerError(result.error);
+    }
+  }
+
+  function nextZIndex() {
+    return stickersRef.current.reduce((max, s) => Math.max(max, s.zIndex), 0) + 1;
+  }
+
+  // ── C2: 실행취소/다시실행 ──────────────────────────────────────────
+  // 변형(추가·삭제·이동·크기·회전·대칭·순서·복제) 직전에 현재 상태를 스냅샷한다.
+  function snapshot(): StickerInstance[] {
+    return stickersRef.current.map((s) => ({ ...s }));
+  }
+  function pushHistory() {
+    setUndoStack((prev) => [...prev.slice(-49), snapshot()]);
+    setRedoStack([]);
+  }
+  // 재삽입으로 새 id가 발급되면 로컬 상태·히스토리 스택의 옛 id를 모두 새 id로 바꾼다.
+  function remapId(oldId: string, newId: string) {
+    const swap = (arr: StickerInstance[]) =>
+      arr.map((s) => (s.id === oldId ? { ...s, id: newId } : s));
+    setStickers((prev) => swap(prev));
+    setUndoStack((prev) => prev.map(swap));
+    setRedoStack((prev) => prev.map(swap));
+    setSelectedSticker((cur) => (cur === oldId ? newId : cur));
+  }
+  // 스냅샷(target) 상태로 되돌리고, 그 차이를 서버에도 반영(삭제·재삽입·수정).
+  async function applySnapshot(target: StickerInstance[]) {
+    const current = stickersRef.current;
+    setStickers(target);
+    clearSelection();
+    const targetIds = new Set(target.map((s) => s.id));
+    const curIds = new Set(current.map((s) => s.id));
+    // 1) target에 없는 현재 스티커 → 서버에서 삭제
+    for (const s of current) {
+      if (!targetIds.has(s.id) && !s.id.startsWith("temp-") && deleteStickerAction) {
+        await deleteStickerAction(s.id);
+      }
+    }
+    // 2) 현재에 없는 target 스티커 → 재삽입(새 id 발급 후 remap)
+    for (const s of target) {
+      if (!curIds.has(s.id) && saveStickerAction) {
+        const result = await saveStickerAction({
+          year: s.year,
+          month: s.month,
+          emoji: s.kind === "emoji" ? s.label : undefined,
+          assetId: s.kind === "image" ? s.assetId : undefined,
+          text: s.kind === "text" ? s.label : undefined,
+          textColor: s.textColor,
+          fontWeight: s.fontWeight,
+          fontFamily: s.fontFamily,
+          textAlign: s.textAlign,
+          textBg: s.textBg,
+          italic: s.italic,
+          outline: s.outline,
+          shadow: s.shadow,
+          xRatio: s.xRatio,
+          yRatio: s.yRatio,
+          widthRatio: s.widthRatio,
+          rotationDeg: s.rotationDeg,
+          flipX: s.flipX,
+          flipY: s.flipY,
+          opacity: s.opacity,
+          zIndex: s.zIndex
+        });
+        if (result.ok) {
+          remapId(s.id, result.id);
+        } else {
+          setStickerError(result.error);
+        }
+      }
+    }
+    // 3) 양쪽에 다 있는 스티커 → 값 저장(이동/크기 등 되돌림 반영)
+    for (const s of target) {
+      if (curIds.has(s.id)) {
+        await commitSticker(s);
+      }
+    }
+  }
+  function undo() {
+    if (undoStack.length === 0) {
+      return;
+    }
+    const target = undoStack[undoStack.length - 1];
+    setUndoStack((prev) => prev.slice(0, -1));
+    setRedoStack((prev) => [...prev, snapshot()]);
+    void applySnapshot(target);
+  }
+  function redo() {
+    if (redoStack.length === 0) {
+      return;
+    }
+    const target = redoStack[redoStack.length - 1];
+    setRedoStack((prev) => prev.slice(0, -1));
+    setUndoStack((prev) => [...prev, snapshot()]);
+    void applySnapshot(target);
+  }
+
+  // 복제: 선택한 스티커를 살짝 옮긴 위치에 똑같이 하나 더.
+  function duplicateSelected() {
+    const sources = selectedIds
+      .map((id) => stickersRef.current.find((x) => x.id === id))
+      .filter((s): s is StickerInstance => Boolean(s));
+    if (sources.length === 0) {
+      return;
+    }
+    pushHistory();
+    let z = nextZIndex();
+    for (const s of sources) {
+      void persistNewSticker({
+        ...s,
+        id: `temp-${Math.random().toString(36).slice(2)}`,
+        xRatio: Math.min(1, s.xRatio + 0.03),
+        yRatio: Math.min(1, s.yRatio + 0.03),
+        zIndex: z++
+      });
+    }
+  }
+
+  // 레이어 순서: 맨 앞 / 맨 뒤로 보내기.
+  function reorderSelected(toFront: boolean) {
+    const s = stickersRef.current.find((x) => x.id === selectedSticker);
+    if (!s) {
+      return;
+    }
+    pushHistory();
+    const zs = stickersRef.current.map((x) => x.zIndex);
+    const updated = {
+      ...s,
+      zIndex: toFront ? Math.max(0, ...zs) + 1 : Math.min(0, ...zs) - 1
+    };
+    updateStickerLocal(updated);
+    void commitSticker(updated);
+  }
+
+  function scheduleCommit(stickersToSave: StickerInstance | StickerInstance[]) {
+    const list = Array.isArray(stickersToSave) ? stickersToSave : [stickersToSave];
+    if (commitTimerRef.current) {
+      clearTimeout(commitTimerRef.current);
+    }
+    commitTimerRef.current = setTimeout(() => {
+      for (const s of list) {
+        void commitSticker(s);
+      }
+    }, 350);
+  }
+
+  // 키보드 미세 이동(저장은 디바운스). 다중 선택 시 선택 전체를 함께 옮긴다.
+  function nudgeSelected(dx: number, dy: number) {
+    const ids = selectedIds;
+    if (ids.length === 0) {
+      return;
+    }
+    // 연속된 방향키 입력은 하나의 실행취소 단위로 묶는다(0.5초 간격 기준).
+    const now = Date.now();
+    if (now - nudgeBurstRef.current > 500) {
+      pushHistory();
+    }
+    nudgeBurstRef.current = now;
+    const updatedList: StickerInstance[] = [];
+    for (const id of ids) {
+      const s = stickersRef.current.find((x) => x.id === id);
+      if (!s) {
+        continue;
+      }
+      const updated = {
+        ...s,
+        xRatio: Math.min(1, Math.max(0, s.xRatio + dx)),
+        yRatio: Math.min(1, Math.max(0, s.yRatio + dy))
+      };
+      updateStickerLocal(updated);
+      updatedList.push(updated);
+    }
+    scheduleCommit(updatedList);
+  }
+
+  function eventColor(event: PublicScheduleEvent) {
+    const tagId = event.primaryTagIds[0] ?? event.tagIds[0];
+    const tag = tagId ? schedule.tags.find((t) => t.id === tagId) : undefined;
+    return tag ? schedule.palette.find((p) => p.key === tag.colorKey) : undefined;
+  }
+
+  // A2: 현재 태그 필터에 안 맞는 일정인지(흐리게 처리 대상)
+  function isDimmedByFilter(event: PublicScheduleEvent) {
+    if (!tagFilter) {
+      return false;
+    }
+    return !(event.primaryTagIds.includes(tagFilter) || event.tagIds.includes(tagFilter));
+  }
+
+  function moveMonth(offset: number) {
+    setView((current) => getAdjacentMonth(current.year, current.month, offset));
+  }
+
+  // 날짜 칸 렌더러.
+  function renderDayCell(cell: MonthCell) {
+    const covering = getEventsForDate(schedule.events, cell.isoDate);
+    const supportHere = covering.filter((e) => e.isSupport);
+    const events = covering.filter((e) => !e.isSupport);
+    const day = classifyDay(cell.isoDate, cell.weekday, today);
+
+    return (
+      <article
+        className={`public-day ${cell.inCurrentMonth ? "" : "outside"} ${
+          day.isToday ? "today" : ""
+        }`}
+        key={cell.isoDate}
+      >
+        {supportHere.map((s) => {
+          const lane = supportLanes.lanes.get(s.id) ?? 0;
+          const start = getEventDateKey(s);
+          const end = s.endDateKey ?? start;
+          const isStart = cell.isoDate === start;
+          const isEnd = cell.isoDate === end;
+          const left = isStart;
+          const right = isEnd;
+          return (
+            <div
+              className="support-bar"
+              key={s.id}
+              style={{
+                top: 26 + lane * 20,
+                left: left ? 3 : 0,
+                right: right ? 3 : 0,
+                borderTopLeftRadius: left ? 9 : 0,
+                borderBottomLeftRadius: left ? 9 : 0,
+                borderTopRightRadius: right ? 9 : 0,
+                borderBottomRightRadius: right ? 9 : 0
+              }}
+            >
+              {isStart || isEnd ? <span>🌱 {s.publicTitle}</span> : null}
+            </div>
+          );
+        })}
+        <div className="day-strip">
+          <strong className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}>
+            {cell.dayOfMonth} 일
+          </strong>
+          {day.markName ? <em className="day-mark">{day.markName}</em> : null}
+        </div>
+        <div
+          className="day-events"
+          style={
+            supportLanes.count > 0 ? { paddingTop: 8 + supportLanes.count * 20 } : undefined
+          }
+        >
+          {events.map((event) => {
+            const color = eventColor(event);
+            const { main, subs } = splitEventTitle(event.publicTitle);
+            const span = getEventSpan(event, cell.isoDate, cell.weekday, schedule.events);
+            const eventClass = [
+              "public-event",
+              span.isMulti ? "span" : "",
+              span.isMulti && !span.roundLeft ? "no-left" : "",
+              span.isMulti && !span.roundRight ? "no-right" : "",
+              isDimmedByFilter(event) ? "dimmed" : ""
+            ]
+              .filter(Boolean)
+              .join(" ");
             return (
-              <article className="poster-day" key={day.isoDate}>
-                <span className="poster-date">{day.dayOfMonth}</span>
-                <div className="poster-events">
-                  {events.map((event) => (
-                    <div className={`poster-event ${event.category}`} key={event.id}>
-                      <strong>{event.publicTitle}</strong>
-                      <span>
-                        {formatTime(event.startsAt)} - {formatTime(event.endsAt)}
-                      </span>
-                    </div>
-                  ))}
+              <div
+                className={eventClass}
+                data-color={color?.key}
+                key={event.id}
+                style={
+                  color
+                    ? {
+                        backgroundColor: color.bgColor,
+                        color: color.textColor,
+                        borderColor: color.borderColor
+                      }
+                    : undefined
+                }
+              >
+                <div className="event-main">
+                  {span.showTitle ? <p>{main}</p> : <p className="span-cont">&nbsp;</p>}
                 </div>
-              </article>
+                {span.showTitle && subs.length > 0 ? (
+                  <ul className="event-subs">
+                    {subs.map((sub, i) => (
+                      <li key={i}>{sub}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
             );
           })}
         </div>
+      </article>
+    );
+  }
 
-        <footer className="poster-footer">
-          <span>Asia/Seoul</span>
-          {schedule.supportCampaigns.map((campaign) => (
-            <a href={campaign.url} key={campaign.id}>
-              {campaign.label}
-            </a>
+  return (
+    <main className="poster-page" data-poster-theme={posterTheme}>
+      {celebrate ? (
+        <div className="celebrate-overlay" aria-hidden="true">
+          {confetti.map((c, i) => (
+            <span
+              className="confetti"
+              key={i}
+              style={{
+                left: `${c.left}%`,
+                background: c.color,
+                animationDelay: `${c.delay}ms`,
+                animationDuration: `${c.dur}ms`
+              }}
+            />
           ))}
-        </footer>
+          <div className="celebrate-toast">🎉 {todayCelebration}</div>
+        </div>
+      ) : null}
+      <section className="public-calendar-shell">
+        <header className="public-calendar-header">
+          <div className="month-controls" aria-label="월 이동">
+            <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+              <ChevronLeft aria-hidden="true" size={18} />
+            </button>
+            <strong>{getMonthLabel(view.year, view.month)}</strong>
+            <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+              <ChevronRight aria-hidden="true" size={18} />
+            </button>
+          </div>
+
+          <div className="viewer-actions">
+            {decorate ? (
+              <Link className="button" href="/studio">
+                <ChevronLeft aria-hidden="true" size={16} />
+                편집실로 돌아가기
+              </Link>
+            ) : null}
+          </div>
+        </header>
+
+        {decorate ? (
+          <div className="decorate-toolbar" aria-label="꾸미기 도구">
+            <div className="decorate-history" role="group" aria-label="실행취소/다시실행">
+              <button
+                className="button icon-only"
+                disabled={undoStack.length === 0}
+                onClick={undo}
+                title="실행취소 (Ctrl+Z)"
+                type="button"
+              >
+                <Undo2 aria-hidden="true" size={15} />
+              </button>
+              <button
+                className="button icon-only"
+                disabled={redoStack.length === 0}
+                onClick={redo}
+                title="다시실행 (Ctrl+Y)"
+                type="button"
+              >
+                <Redo2 aria-hidden="true" size={15} />
+              </button>
+
+              {/* C9/C10: 포스터 테마 — 소유자만(액션이 있을 때만) 노출 */}
+              {setPosterThemeAction ? (
+                <div className="theme-switch" role="group" aria-label="포스터 테마">
+                  {POSTER_THEMES.map((theme) => (
+                    <button
+                      aria-pressed={posterTheme === theme.key}
+                      className={posterTheme === theme.key ? "active" : ""}
+                      key={theme.key}
+                      onClick={() => void changeTheme(theme.key)}
+                      type="button"
+                    >
+                      {theme.label}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="decorate-cols">
+              <div className="decorate-col-left">
+                <div className="palette-group">
+              <span className="palette-label">기본 이모지</span>
+              <div className="emoji-tabs" role="tablist" aria-label="이모지 분류">
+                {EMOJI_CATEGORIES.map((cat) => (
+                  <button
+                    aria-pressed={emojiCat === cat.key}
+                    className={emojiCat === cat.key ? "active" : ""}
+                    key={cat.key}
+                    onClick={() => setEmojiCat(cat.key)}
+                    type="button"
+                  >
+                    {cat.label}
+                  </button>
+                ))}
+              </div>
+              <div className="emoji-palette">
+                {activeEmojis.map((emoji, i) => (
+                  <button
+                    className="emoji-chip"
+                    key={`${emoji}-${i}`}
+                    onClick={() => addEmoji(emoji)}
+                    title={`${emoji} 추가`}
+                    type="button"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="palette-group">
+              <span className="palette-label">내 이모지</span>
+
+              {/* 저장 칸: 업로드해 둔 이모지 보관함 */}
+              {schedule.stickerAssets.length > 0 ? (
+                <div className="emoji-palette asset-palette">
+                  {schedule.stickerAssets.map((asset) => (
+                    <div className="asset-chip" key={asset.id}>
+                      <button
+                        className="emoji-chip"
+                        onClick={() => addImageSticker(asset)}
+                        title={`${asset.name} 추가`}
+                        type="button"
+                      >
+                        {/* 업로드 이미지 미리보기 — 동적 URL이라 next/image 부적합 */}
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img alt={asset.name} src={asset.fileUrl} />
+                      </button>
+                      <button
+                        aria-label={`${asset.name} 삭제`}
+                        className="asset-del"
+                        onClick={() => removeAsset(asset.id)}
+                        title="이 이모지 삭제"
+                        type="button"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {/* 업로드 칸: 드래그 앤 드롭 또는 클릭 (저장 칸과 분리) */}
+              <label
+                className={`upload-drop ${dragOver ? "dragover" : ""} ${uploading ? "busy" : ""}`}
+                onDragLeave={() => setDragOver(false)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (!dragOver) setDragOver(true);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  void handleUploadFiles(Array.from(e.dataTransfer.files));
+                }}
+              >
+                <input
+                  accept="image/png,image/webp,image/gif,image/jpeg"
+                  disabled={uploading}
+                  hidden
+                  multiple
+                  onChange={(e) => {
+                    void handleUploadFiles(Array.from(e.target.files ?? []));
+                    e.target.value = "";
+                  }}
+                  ref={fileInputRef}
+                  type="file"
+                />
+                <span className="upload-drop-icon" aria-hidden="true">
+                  <Upload size={20} />
+                </span>
+                <span className="upload-drop-title">
+                  {uploading
+                    ? "올리는 중…"
+                    : dragOver
+                      ? "여기에 놓으면 업로드돼요"
+                      : "이미지를 끌어다 놓거나 클릭해서 업로드"}
+                </span>
+                <span className="upload-drop-hint">
+                  정사각형 · 투명 배경 PNG 권장 · PNG·WebP·GIF·JPG · 2MB 이하 · 여러 개 가능
+                </span>
+              </label>
+            </div>
+              </div>
+
+              <div className="decorate-col-right">
+                <div className="palette-group">
+              <span className="palette-label">텍스트</span>
+              <div className="text-add-row">
+                <input
+                  className="text-add-input"
+                  maxLength={60}
+                  onChange={(event) => setTextDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void addText();
+                    }
+                  }}
+                  placeholder="문구를 입력하고 Enter (추가 후 줄바꿈·들여쓰기 편집 가능)"
+                  type="text"
+                  value={textDraft}
+                />
+                <button
+                  className="button"
+                  disabled={!textDraft.trim()}
+                  onClick={() => void addText()}
+                  type="button"
+                >
+                  <Type aria-hidden="true" size={15} />
+                  추가
+                </button>
+              </div>
+            </div>
+
+            {selectedIds.length > 1 ? (
+              <div className="sticker-panel" aria-label="여러 스티커 조절">
+                <span className="sticker-group-count">{selectedIds.length}개 선택됨</span>
+                <span className="sticker-panel-divider" aria-hidden="true" />
+                <button
+                  className="button icon-only"
+                  onClick={duplicateSelected}
+                  title="모두 복제 (Ctrl+D)"
+                  type="button"
+                >
+                  <Copy aria-hidden="true" size={15} />
+                </button>
+                <button
+                  className="button danger"
+                  onClick={deleteSelected}
+                  title="모두 삭제 (Delete)"
+                  type="button"
+                >
+                  <Trash2 aria-hidden="true" size={15} />
+                  삭제
+                </button>
+              </div>
+            ) : selected && selected.kind === "text" ? (
+              <div className="text-panel" aria-label="텍스트 조절">
+                <div className="text-panel-row grow">
+                  <textarea
+                    aria-label="텍스트 내용"
+                    className="text-edit-input"
+                    maxLength={200}
+                    onBlur={() => commitSticker(selected)}
+                    onChange={(event) => changeText(event.target.value)}
+                    onFocus={() => pushHistory()}
+                    rows={4}
+                    value={selected.label}
+                  />
+                  <label className="text-color-control" title="글자색">
+                    <input
+                      onChange={(event) => changeTextColor(event.target.value)}
+                      type="color"
+                      value={selected.textColor ?? "#1f2937"}
+                    />
+                  </label>
+                </div>
+                <div className="text-controls">
+                  <div className="text-field">
+                    <span className="text-panel-label">글꼴</span>
+                    <div className="text-font-group">
+                      {TEXT_FONTS.map((f) => (
+                        <button
+                          className={(selected.fontFamily ?? "sans") === f.key ? "active" : ""}
+                          key={f.key}
+                          onClick={() => {
+                            pushHistory();
+                            patchSelected({ fontFamily: f.key });
+                          }}
+                          style={{ fontFamily: TEXT_FONT_STACK[f.key] }}
+                          type="button"
+                        >
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-field">
+                    <span className="text-panel-label">굵기</span>
+                    <div className="text-weight-group">
+                      {TEXT_WEIGHTS.map((w) => (
+                        <button
+                          className={(selected.fontWeight ?? 700) === w.w ? "active" : ""}
+                          key={w.w}
+                          onClick={() => {
+                            pushHistory();
+                            patchSelected({ fontWeight: w.w });
+                          }}
+                          style={{ fontWeight: w.w }}
+                          type="button"
+                        >
+                          {w.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-field">
+                    <span className="text-panel-label">정렬</span>
+                    <div className="text-align-group">
+                      {(
+                        [
+                          { key: "left", Icon: AlignLeft },
+                          { key: "center", Icon: AlignCenter },
+                          { key: "right", Icon: AlignRight }
+                        ] as const
+                      ).map(({ key, Icon }) => (
+                        <button
+                          aria-label={`${key} 정렬`}
+                          className={(selected.textAlign ?? "left") === key ? "active" : ""}
+                          key={key}
+                          onClick={() => {
+                            pushHistory();
+                            patchSelected({ textAlign: key });
+                          }}
+                          type="button"
+                        >
+                          <Icon aria-hidden="true" size={15} />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-row">
+                  <div className="text-field">
+                    <span className="text-panel-label">기울임</span>
+                    <button
+                      aria-pressed={Boolean(selected.italic)}
+                      className={`text-toggle-btn ${selected.italic ? "active" : ""}`}
+                      onClick={() => {
+                        pushHistory();
+                        patchSelected({ italic: !selected.italic });
+                      }}
+                      style={{ fontStyle: "italic" }}
+                      title="기울임"
+                      type="button"
+                    >
+                      가
+                    </button>
+                  </div>
+                  <div className="text-field">
+                    <span className="text-panel-label">배경</span>
+                    <button
+                      aria-pressed={Boolean(selected.textBg)}
+                      className={`text-toggle-btn ${selected.textBg ? "active" : ""}`}
+                      onClick={() => {
+                        pushHistory();
+                        patchSelected({ textBg: selected.textBg ? undefined : "#fff3a0" });
+                      }}
+                      title="글자 배경(하이라이트)"
+                      type="button"
+                    >
+                      {selected.textBg ? "켜짐" : "꺼짐"}
+                    </button>
+                    {selected.textBg ? (
+                      <label className="text-color-control" title="배경색">
+                        <input
+                          onChange={(event) => patchSelected({ textBg: event.target.value })}
+                          type="color"
+                          value={selected.textBg}
+                        />
+                      </label>
+                    ) : null}
+                  </div>
+                  </div>
+                  <div className="text-row">
+                  <label className="text-field text-size-control">
+                    크기
+                    <input
+                      max={0.4}
+                      min={0.06}
+                      onChange={(event) => changeTextSize(Number(event.target.value))}
+                      onPointerDown={() => pushHistory()}
+                      onPointerUp={() => commitSticker(selected)}
+                      step={0.005}
+                      type="range"
+                      value={selected.widthRatio}
+                    />
+                  </label>
+                  <label className="text-field text-size-control">
+                    투명도
+                    <input
+                      max={1}
+                      min={0.1}
+                      onChange={(event) => changeOpacity(Number(event.target.value))}
+                      onPointerDown={() => pushHistory()}
+                      onPointerUp={() => commitSticker(selected)}
+                      step={0.05}
+                      type="range"
+                      value={selected.opacity}
+                    />
+                  </label>
+                  </div>
+                </div>
+                <div className="text-panel-row text-panel-actions">
+                  <button className="button" onClick={duplicateSelected} type="button">
+                    <Copy aria-hidden="true" size={15} />
+                    복제
+                  </button>
+                  <button className="button danger" onClick={deleteSelected} type="button">
+                    <Trash2 aria-hidden="true" size={15} />
+                    삭제
+                  </button>
+                </div>
+              </div>
+            ) : selected ? (
+              <div className="sticker-panel" aria-label="선택한 스티커 조절">
+                {selected.kind === "image" && selected.imageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    alt={selected.label}
+                    className="sticker-preview-img"
+                    src={selected.imageUrl}
+                  />
+                ) : (
+                  <span className="sticker-preview">{selected.label}</span>
+                )}
+                <label className="opacity-control">
+                  투명도
+                  <input
+                    max={1}
+                    min={0.1}
+                    onChange={(event) => changeOpacity(Number(event.target.value))}
+                    onPointerDown={() => pushHistory()}
+                    onPointerUp={() => commitSticker(selected)}
+                    step={0.05}
+                    type="range"
+                    value={selected.opacity}
+                  />
+                </label>
+                <button
+                  aria-pressed={selected.flipX}
+                  className={`button ${selected.flipX ? "active" : ""}`}
+                  onClick={() => toggleFlip("x")}
+                  title="좌우 대칭"
+                  type="button"
+                >
+                  <FlipHorizontal aria-hidden="true" size={15} />
+                  좌우
+                </button>
+                <button
+                  aria-pressed={selected.flipY}
+                  className={`button ${selected.flipY ? "active" : ""}`}
+                  onClick={() => toggleFlip("y")}
+                  title="상하 대칭"
+                  type="button"
+                >
+                  <FlipVertical aria-hidden="true" size={15} />
+                  상하
+                </button>
+                <button
+                  aria-pressed={Boolean(selected.outline)}
+                  className={`button ${selected.outline ? "active" : ""}`}
+                  onClick={() => toggleEffect("outline")}
+                  title="흰 외곽선"
+                  type="button"
+                >
+                  <Sparkles aria-hidden="true" size={15} />
+                  외곽선
+                </button>
+                <button
+                  aria-pressed={Boolean(selected.shadow)}
+                  className={`button ${selected.shadow ? "active" : ""}`}
+                  onClick={() => toggleEffect("shadow")}
+                  title="진한 그림자"
+                  type="button"
+                >
+                  그림자
+                </button>
+                <span className="sticker-panel-divider" aria-hidden="true" />
+                <button
+                  className="button icon-only"
+                  onClick={() => reorderSelected(true)}
+                  title="맨 앞으로"
+                  type="button"
+                >
+                  <BringToFront aria-hidden="true" size={15} />
+                </button>
+                <button
+                  className="button icon-only"
+                  onClick={() => reorderSelected(false)}
+                  title="맨 뒤로"
+                  type="button"
+                >
+                  <SendToBack aria-hidden="true" size={15} />
+                </button>
+                <button
+                  className="button icon-only"
+                  onClick={duplicateSelected}
+                  title="복제 (Ctrl+D)"
+                  type="button"
+                >
+                  <Copy aria-hidden="true" size={15} />
+                </button>
+                <button
+                  className="button danger"
+                  onClick={deleteSelected}
+                  title="삭제 (Delete)"
+                  type="button"
+                >
+                  <Trash2 aria-hidden="true" size={15} />
+                  삭제
+                </button>
+              </div>
+            ) : (
+              <p className="decorate-hint">
+                이모지·텍스트를 눌러 추가하고, 달력 위에서 끌어 옮기세요. 선택하면 모서리로
+                크기·회전을 조절할 수 있어요.
+              </p>
+            )}
+              </div>
+            </div>
+
+            {/* #8: 단축키 안내 */}
+            <div className="shortcut-help" aria-label="단축키 안내">
+              <span className="shortcut-help-title">
+                <Keyboard aria-hidden="true" size={14} />
+                단축키
+              </span>
+              <ul className="shortcut-help-list">
+                <li>
+                  <kbd>Del</kbd> 삭제
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd>+<kbd>D</kbd> 복제
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd>+<kbd>Z</kbd> 실행취소
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd>+<kbd>Y</kbd> 다시실행
+                </li>
+                <li>
+                  <kbd>←↑↓→</kbd> 미세 이동
+                </li>
+                <li>
+                  <kbd>Shift</kbd>+클릭 여러 개 선택
+                </li>
+              </ul>
+            </div>
+
+            {stickerError ? <span className="poster-action-error">{stickerError}</span> : null}
+          </div>
+        ) : null}
+
+        {/* #1: 캡쳐 버튼을 월간 일정표 바로 위에 둬, 달력을 보면서 누르기 쉽게 한다. */}
+        {canExport ? (
+          <div className="poster-capture-row">
+            <PosterExportActions
+              onBeforeCapture={() => {
+                clearSelection();
+                setTagFilter(null);
+              }}
+            />
+          </div>
+        ) : null}
+
+        <section className="poster-surface" data-export-surface data-poster-theme={posterTheme}>
+          <div className="poster-heading">
+            <span aria-hidden="true">✦</span>
+            <h1>{schedule.calendar.title}</h1>
+            <span aria-hidden="true">✦</span>
+            <em>
+              {view.year}년 {view.month}월
+            </em>
+          </div>
+
+          <StickerLayer
+            avoidSelector="[data-sticker-avoid]"
+            editable={decorate}
+            onChange={updateStickerLocal}
+            onCommit={commitSticker}
+            onGestureStart={pushHistory}
+            onSelect={handleSelect}
+            selectedIds={selectedIds}
+            stickers={stickers}
+          />
+
+          <aside className="public-side" aria-label="메모">
+            {/* #2: 메모 영역은 색으로 구분된 메모지처럼 항상 보여, 텍스트로 꾸밀 공간임을 알 수 있게.
+               (시청자 화면에선 내용이 있을 때만 표시) */}
+            {decorate || schedule.calendar.publicMemo.trim() ? (
+              <div className="public-memo">
+                <strong>메모</strong>
+                <div className="memo-body">
+                  {schedule.calendar.publicMemo.trim()
+                    ? schedule.calendar.publicMemo
+                        .split("\n")
+                        .filter((line) => line.trim())
+                        .map((line, index) => <p key={index}>{line}</p>)
+                    : null}
+                </div>
+              </div>
+            ) : null}
+          </aside>
+
+          <section className="public-calendar-area">
+            <div className="weekday-row" aria-hidden="true">
+              {WEEKDAYS.map((weekday, index) => (
+                <span
+                  className={index === 0 ? "sunday" : index === 6 ? "saturday" : ""}
+                  key={weekday}
+                >
+                  {weekday}
+                </span>
+              ))}
+            </div>
+
+            <div className="public-month-grid" aria-label="월간 공개 일정">
+              {cells.map((cell) => renderDayCell(cell))}
+            </div>
+          </section>
+
+          <aside className="public-right" aria-label="업 도움과 색상 안내">
+            {supportEvents.map((s) => {
+              const start = getEventDateKey(s);
+              const end = s.endDateKey ?? start;
+              return (
+                <div className="support-card" key={s.id}>
+                  <span>🌱 {s.publicTitle}</span>
+                  <strong>
+                    {formatShortDate(start)} ~ {formatShortDate(end)}
+                  </strong>
+                  {s.supportUrl ? (
+                    <a
+                      data-sticker-avoid
+                      href={s.supportUrl}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      도우러 가기
+                      <ExternalLink aria-hidden="true" size={14} />
+                    </a>
+                  ) : null}
+                </div>
+              );
+            })}
+
+            <div className="public-legend-vertical" aria-label="콘텐츠 색상 안내">
+              <strong className="legend-title">색상 안내</strong>
+              {legendTags.map((tag) => {
+                const color = schedule.palette.find((item) => item.key === tag.colorKey);
+                if (!color) {
+                  return null;
+                }
+                const swatch = (
+                  <i
+                    data-color={color.key}
+                    style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+                  />
+                );
+                // 꾸미기 모드에선 스티커 레이어가 덮어 클릭이 막히므로 정적 표시.
+                if (decorate) {
+                  return (
+                    <span key={tag.id}>
+                      {swatch}
+                      {tag.displayName}
+                    </span>
+                  );
+                }
+                const cls = [
+                  "legend-item",
+                  tagFilter === tag.id ? "active" : "",
+                  tagFilter && tagFilter !== tag.id ? "dim" : ""
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+                return (
+                  <button
+                    aria-pressed={tagFilter === tag.id}
+                    className={cls}
+                    key={tag.id}
+                    onClick={() => setTagFilter((prev) => (prev === tag.id ? null : tag.id))}
+                    type="button"
+                  >
+                    {swatch}
+                    {tag.displayName}
+                  </button>
+                );
+              })}
+              {tagFilter ? (
+                <button className="legend-clear" onClick={() => setTagFilter(null)} type="button">
+                  필터 해제
+                </button>
+              ) : null}
+            </div>
+          </aside>
+        </section>
       </section>
     </main>
   );
 }
 
-function buildMonthDays(month: string) {
-  const [year, monthNumber] = month.split("-").map(Number);
-  const lastDate = new Date(year, monthNumber, 0).getDate();
+function formatShortDate(value: string) {
+  const [, month, day] = value.split("-");
 
-  return Array.from({ length: lastDate }, (_, index) => {
-    const dayOfMonth = index + 1;
-    return {
-      dayOfMonth,
-      isoDate: `${month}-${String(dayOfMonth).padStart(2, "0")}`
-    };
-  });
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Seoul"
-  }).format(new Date(value));
+  return `${Number(month)}.${Number(day)}`;
 }

@@ -3,12 +3,15 @@ import { getPublicSchedule } from "@/lib/schedules/public-loader";
 
 const forbiddenPrivateKeys = [
   "privateTitle",
-  "privateNotes",
+  "privateMemo",
   "codename",
   "embargoUntil",
   "editorNote",
   "workState",
-  "privateMeta"
+  "privateMeta",
+  "owner_private",
+  "embargo",
+  "work"
 ];
 
 describe("public schedule DTO", () => {

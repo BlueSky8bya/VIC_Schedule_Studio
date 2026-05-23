@@ -2,33 +2,36 @@
 
 ## Sprint 1: Foundation And Security Core
 
-- Scaffold Next.js App Router route groups.
-- Add `CLAUDE.md`, `AGENTS.md`, and project docs.
-- Define public and studio DTOs.
-- Draft Supabase schema and RLS policies.
-- Add public API leakage tests.
+- [x] Scaffold Next.js App Router route groups.
+- [x] Add `CLAUDE.md`, `AGENTS.md`, and project docs.
+- [x] Define public and studio DTOs.
+- [x] Draft Supabase schema and RLS policies.
+- [x] Add public API leakage tests.
 
 ## Sprint 2: MVP Calendar
 
-- Add studio month/week/list calendar with FullCalendar.
-- Add owner-only event create/edit/delete.
-- Add read-only trusted member mode.
-- Add event detail drawer on desktop and bottom sheet on mobile.
+- [x] Add studio monthly calendar surface.
+- [x] Add owner-only local event draft creation and deletion.
+- [x] Add read-only trusted member and viewer preview modes.
+- [x] Add event detail drawer on desktop and responsive stacked layout on mobile.
+- [ ] Replace local sample mutations with Supabase-backed persistence.
 
 ## Sprint 3: Private Planning
 
-- Add `event_private_meta`.
-- Add private-layer unlock sessions.
-- Add embargo and codename fields.
-- Add A/B variant groups and promotion flow.
-- Add proposal and request inbox moderation.
+- [x] Add `event_private_meta` in types and schema.
+- [x] Add private-layer unlock UI.
+- [x] Add embargo and codename fields to private metadata.
+- [x] Add A/B variant groups and studio summary.
+- [x] Add proposal and request inbox moderation UI.
+- [ ] Persist unlock sessions and moderation actions.
 
 ## Sprint 4: Export And Mobile
 
-- Build poster export surface.
-- Add Playwright PNG export path.
-- Add browser clipboard PNG convenience path.
-- Add mobile poster and studio interaction checks.
+- [x] Build poster export surface.
+- [x] Add Playwright visual regression path.
+- [x] Add browser clipboard PNG convenience path.
+- [x] Add mobile poster screenshot baseline.
+- [ ] Add canonical server/CI PNG artifact generation endpoint.
 
 ## Sprint 5: Hardening
 

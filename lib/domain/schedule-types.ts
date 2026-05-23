@@ -1,17 +1,69 @@
 export const PRODUCT_TIMEZONE = "Asia/Seoul" as const;
 
-export type MembershipRole = "owner" | "trusted_member" | "viewer";
+// "developer"는 플랫폼 레벨 슈퍼관리자(시스템 유지보수자)로, "owner"(스트리머)와 구분된다.
+// 개발자는 모든 캘린더를 읽고/편집할 수 있지만, 공개 API 출력은 동일하게 유지되고
+// 비공개 레이어 읽기에는 여전히 잠금해제 세션이 필요하다.
+export type MembershipRole = "developer" | "owner" | "manager" | "worker" | "viewer";
 
 export type EventStatus = "draft" | "scheduled" | "live" | "done" | "cancelled";
+
+export type EventVisibilityScope = "public" | "embargo" | "work" | "owner_private";
+
+export type EventCategory = "stream" | "collab" | "notice" | "support" | "dayoff";
+
+export type VariantPromotionState = "draft" | "active" | "promoted" | "archived";
+
+export type ColorKey =
+  | "gray"
+  | "lavender"
+  | "blue"
+  | "pink"
+  | "mint"
+  | "yellow"
+  | "orange"
+  | "beige"
+  | "sky"
+  | "lime"
+  | "red"
+  | "indigo"
+  | "teal";
+
+export type ColorPaletteEntry = {
+  key: ColorKey;
+  name: string;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+  sortOrder: number;
+};
+
+export type BroadcastTag = {
+  id: string;
+  tagKey: string;
+  displayName: string;
+  colorKey: ColorKey;
+  sortOrder: number;
+  isDefault: boolean;
+  isActive: boolean;
+};
 
 export type PublicScheduleEvent = {
   id: string;
   startsAt: string;
-  endsAt: string;
+  endsAt?: string;
+  endDateKey?: string; // 멀티데이 일정의 종료일(YYYY-MM-DD). 없으면 단일 날짜.
+  linkNext?: string; // 다음날 일정 id. 인접 쌍을 이으면 연속 막대로 그려진다.
+  isSupport?: boolean; // 업 도움 기간이면 true
+  supportUrl?: string; // 업 도움 링크(숲 게시글)
+  isAllDay: boolean;
   publicTitle: string;
   publicDescription?: string;
   status: Exclude<EventStatus, "draft">;
-  category: "stream" | "collab" | "notice" | "support";
+  visibilityScope: "public";
+  category: EventCategory;
+  tagIds: string[];
+  primaryTagIds: string[];
+  sortOrder: number;
   variantGroupId?: string;
   variantLabel?: string;
 };
@@ -19,49 +71,129 @@ export type PublicScheduleEvent = {
 export type PrivateEventMeta = {
   eventId: string;
   privateTitle?: string;
-  privateNotes?: string;
-  codename?: string;
-  embargoUntil?: string;
+  privateMemo?: string;
   editorNote?: string;
-  workState?: "idea" | "waiting" | "confirmed" | "blocked";
 };
 
-export type StudioScheduleEvent = Omit<PublicScheduleEvent, "status"> & {
+export type StudioScheduleEvent = Omit<PublicScheduleEvent, "status" | "visibilityScope"> & {
   status: EventStatus;
+  visibilityScope: EventVisibilityScope;
   privateMeta?: PrivateEventMeta;
 };
 
-export type PublicSchedule = {
-  calendar: {
-    slug: string;
-    displayName: string;
-    timezone: typeof PRODUCT_TIMEZONE;
-    month: string;
-  };
-  events: PublicScheduleEvent[];
-  supportCampaigns: Array<{
-    id: string;
-    label: string;
-    url: string;
-    startsOn: string;
-    endsOn: string;
-  }>;
+export type VariantGroup = {
+  id: string;
+  name: string;
+  promotionState: VariantPromotionState;
+  promotedEventId?: string;
 };
 
-export type StudioSchedule = Omit<PublicSchedule, "events"> & {
+export type Proposal = {
+  id: string;
+  type: "slot" | "content" | "collab";
+  content: string;
+  voteCount: number;
+  state: "new" | "reviewing" | "accepted" | "rejected";
+  suggestedDate?: string;
+};
+
+export type RequestItem = {
+  id: string;
+  source: "collab" | "sponsor" | "guest" | "manual";
+  title: string;
+  state: "new" | "triaged" | "scheduled" | "closed";
+  receivedAt: string;
+  summary: string;
+};
+
+export type SupportCampaign = {
+  id: string;
+  title: string;
+  description: string;
+  label: string;
+  url: string;
+  startsOn: string;
+  endsOn: string;
+  highlightColorKey: ColorKey;
+  isPublic: boolean;
+  isActive: boolean;
+};
+
+// 업로드한 커스텀 이모지(이미지 에셋). 캘린더 단위로 공유된다.
+export type StickerAsset = {
+  id: string;
+  name: string;
+  fileUrl: string;
+  fileType: string;
+};
+
+export type StickerInstance = {
+  id: string;
+  kind: "emoji" | "image" | "text"; // emoji=기본 이모지, image=업로드 커스텀 이모지, text=텍스트 스티커
+  label: string; // emoji면 이모지 문자, image면 에셋 이름, text면 표시 문구
+  imageUrl?: string; // kind=image일 때 그릴 이미지 URL
+  assetId?: string; // kind=image일 때 sticker_assets 참조
+  textColor?: string; // kind=text일 때 글자색(hex)
+  fontWeight?: number; // kind=text일 때 글꼴 굵기(400/700/900)
+  fontFamily?: string; // kind=text일 때 글꼴 종류 키
+  textAlign?: "left" | "center" | "right"; // kind=text일 때 정렬
+  textBg?: string; // kind=text일 때 글자 배경(하이라이트) 색, 없으면 미적용
+  italic?: boolean; // kind=text일 때 기울임
+  outline?: boolean; // C7: 흰 외곽선(다이컷 스티커 느낌)
+  shadow?: boolean; // C7: 진한 그림자
+  year: number; // 스티커는 달(월)마다 따로 적용된다
+  month: number;
+  xRatio: number;
+  yRatio: number;
+  widthRatio: number;
+  rotationDeg: number;
+  flipX: boolean; // 좌우 대칭
+  flipY: boolean; // 상하 대칭
+  opacity: number;
+  zIndex: number;
+  visiblePublicly: boolean;
+};
+
+// C9/C10: 포스터 테마 팩(계절/배경). 미리 정의된 키만 허용한다.
+export const POSTER_THEMES = [
+  { key: "none", label: "기본" },
+  { key: "sakura", label: "봄" },
+  { key: "summer", label: "여름" },
+  { key: "autumn", label: "가을" },
+  { key: "winter", label: "겨울" }
+] as const;
+export type PosterThemeKey = (typeof POSTER_THEMES)[number]["key"];
+export function isPosterThemeKey(value: string): value is PosterThemeKey {
+  return POSTER_THEMES.some((theme) => theme.key === value);
+}
+
+export type CalendarMeta = {
+  slug: string;
+  displayName: string;
+  title: string;
+  timezone: typeof PRODUCT_TIMEZONE;
+  defaultYear: number;
+  defaultMonth: number;
+  publicMemo: string;
+  posterTheme: PosterThemeKey; // C9/C10: 적용된 포스터 테마
+};
+
+export type PublicSchedule = {
+  calendar: CalendarMeta;
+  events: PublicScheduleEvent[];
+  tags: BroadcastTag[];
+  palette: ColorPaletteEntry[];
+  supportCampaigns: SupportCampaign[];
+  stickers: StickerInstance[];
+  stickerAssets: StickerAsset[]; // 업로드한 커스텀 이모지 목록(캘린더 공유)
+  heartCount: number; // B2: 시청자 하트 누적 수(숫자는 노출하지 않고 비율 표시에만 사용)
+};
+
+export type StudioSchedule = Omit<PublicSchedule, "events" | "stickers"> & {
   viewerModePreview: PublicSchedule;
   events: StudioScheduleEvent[];
-  proposals: Array<{
-    id: string;
-    type: "slot" | "content" | "collab";
-    content: string;
-    voteCount: number;
-    state: "new" | "reviewing" | "accepted" | "rejected";
-  }>;
-  requests: Array<{
-    id: string;
-    source: "collab" | "sponsor" | "guest" | "manual";
-    title: string;
-    state: "new" | "triaged" | "scheduled" | "closed";
-  }>;
+  variantGroups: VariantGroup[];
+  proposals: Proposal[];
+  requests: RequestItem[];
+  stickers: StickerInstance[];
 };

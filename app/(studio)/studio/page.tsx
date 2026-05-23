@@ -1,8 +1,20 @@
 import { StudioShell } from "@/components/studio/studio-shell";
+import { resolveCurrentActor } from "@/lib/auth/actor";
 import { getStudioSchedule } from "@/lib/schedules/studio-loader";
+import { getUnlockState } from "@/lib/private-layer/unlock";
 
 export default async function StudioPage() {
-  const schedule = await getStudioSchedule("vic");
+  const [actor, schedule, unlock] = await Promise.all([
+    resolveCurrentActor("vic"),
+    getStudioSchedule("vic"),
+    getUnlockState("vic")
+  ]);
 
-  return <StudioShell schedule={schedule} viewerRole="owner" />;
+  return (
+    <StudioShell
+      actor={actor}
+      hasUnlockSession={unlock.hasUnlockSession}
+      schedule={schedule}
+    />
+  );
 }

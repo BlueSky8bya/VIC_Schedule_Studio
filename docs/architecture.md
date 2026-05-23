@@ -21,6 +21,19 @@ The studio can use FullCalendar for month, week, and list workflows. The public 
 - Public DTOs and private DTOs are distinct types.
 - Public routes must not import private loaders.
 
+## Current Implementation
+
+The first MVP pass is intentionally local-data-first. `sample-data.ts` acts as the domain fixture, while `public-loader.ts` constructs explicit viewer-safe DTOs. This keeps the public/private boundary testable before Supabase persistence is wired in.
+
+Studio state mutations are currently client-local:
+- create a draft event
+- delete the selected event
+- change status
+- promote a viewer proposal to a draft
+- advance request state
+
+The next implementation pass should replace those local mutations with server actions backed by Supabase Auth and RLS.
+
 ## Export Pipeline
 
 Use two export paths:
