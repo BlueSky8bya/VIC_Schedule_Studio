@@ -43,6 +43,7 @@ import {
   canReadPrivateLayer
 } from "@/lib/permissions/roles";
 import { deleteEventAction, saveEventAction } from "@/lib/schedules/event-actions";
+import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { linkChainAction, unlinkPairAction } from "@/lib/schedules/link-actions";
 import { updateTagsAction } from "@/lib/schedules/tag-actions";
 import { PublicPoster } from "@/components/poster/public-poster";
@@ -340,6 +341,7 @@ export function StudioShell({
           initialMonth={view.month}
           initialYear={view.year}
           schedule={schedule.viewerModePreview}
+          toggleHeartAction={toggleEventHeartAction}
         />
       </div>
     );

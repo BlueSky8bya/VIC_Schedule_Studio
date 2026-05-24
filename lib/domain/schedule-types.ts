@@ -66,6 +66,7 @@ export type PublicScheduleEvent = {
   sortOrder: number;
   variantGroupId?: string;
   variantLabel?: string;
+  heartCount?: number; // A: 일정별 관심(하트) 집계 수. 숫자 자체는 노출하지 않고 "관심 높음" 판정에만 쓴다.
 };
 
 export type PrivateEventMeta = {
@@ -187,6 +188,7 @@ export type PublicSchedule = {
   stickers: StickerInstance[];
   stickerAssets: StickerAsset[]; // 업로드한 커스텀 이모지 목록(캘린더 공유)
   heartCount: number; // B2: 시청자 하트 누적 수(숫자는 노출하지 않고 비율 표시에만 사용)
+  myHeartIds?: string[]; // A: 현재 로그인 사용자가 관심 표시한 일정 id 목록(본인 것만, 개인 상태 복원용)
 };
 
 export type StudioSchedule = Omit<PublicSchedule, "events" | "stickers"> & {

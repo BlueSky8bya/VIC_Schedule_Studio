@@ -10,13 +10,16 @@ The product is designed around one core rule:
 
 ## Current Routes
 
-- `/`: Google-auth gate, then server-side role routing
-- `/vic`: legacy public calendar route
-- `/s/vic`: canonical public calendar route
-- `/s/vic/2026/06`: canonical public calendar route for a specific month
+- `/`: Google-auth gate, then server-side role routing (viewer → public poster, owner/staff → studio)
 - `/studio`: owner-first studio with month navigation and date-based event editing
-- `/api/public/vic/events`: public schedule DTO
-- `/api/public-calendar?slug=vic`: public schedule DTO alias
+- `/studio/decorate/[year]/[month]`: sticker/text decoration + poster capture
+- `/studio/tags`, `/studio/trusted-members`, `/studio/private-layer`: owner settings
+- `/api/public/[slug]/events`: public schedule DTO (private fields excluded)
+
+## Deployment
+
+See [docs/deployment.md](docs/deployment.md) for the full production runbook
+(Vercel + Supabase, owner handoff to Victory, OAuth/redirect setup, read-heavy caching).
 
 ## Current MVP Surface
 

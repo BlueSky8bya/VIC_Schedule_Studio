@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import type { ColorKey } from "@/lib/domain/schedule-types";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
@@ -43,6 +44,7 @@ export async function updateTagAction(
 
   revalidatePath("/");
   revalidatePath("/studio");
+  revalidatePublicSchedule();
   return { ok: true };
 }
 
@@ -87,5 +89,6 @@ export async function updateTagsAction(
 
   revalidatePath("/");
   revalidatePath("/studio");
+  revalidatePublicSchedule();
   return { ok: true };
 }

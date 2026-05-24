@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import type {
   EventCategory,
   EventStatus,
@@ -148,6 +149,7 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
 
   revalidatePath("/");
   revalidatePath("/studio");
+  revalidatePublicSchedule();
 
   return { ok: true, id: eventId };
 }
@@ -172,6 +174,7 @@ export async function deleteEventAction(eventId: string): Promise<ActionResult> 
 
   revalidatePath("/");
   revalidatePath("/studio");
+  revalidatePublicSchedule();
 
   return { ok: true, id: eventId };
 }

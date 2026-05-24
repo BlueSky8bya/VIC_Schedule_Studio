@@ -22,7 +22,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type MouseEvent as ReactMouseEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import { PosterExportActions } from "@/components/poster/poster-export-actions";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
 import {
@@ -38,6 +45,7 @@ import type {
   StickerResult
 } from "@/lib/schedules/sticker-actions";
 import type { StickerAssetResult } from "@/lib/schedules/sticker-asset-actions";
+import type { HeartResult } from "@/lib/schedules/heart-actions";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
   assignSupportLanes,
@@ -64,9 +72,25 @@ type PublicPosterProps = {
   uploadStickerAssetAction?: (formData: FormData) => Promise<StickerAssetResult>;
   deleteStickerAssetAction?: (id: string) => Promise<StickerAssetResult>;
   setPosterThemeAction?: (theme: string) => Promise<ThemeResult>;
+  // A: 일정 관심(하트) 토글. 주어지면 서버 집계 연동, 없으면 기기별 localStorage로만 동작.
+  toggleHeartAction?: (eventId: string) => Promise<HeartResult>;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+// 관심 일정 북마크 저장 키 — 캘린더 슬러그가 하나(vic)라 단일 키로 충분하다.
+const BOOKMARK_STORAGE_KEY = "vic:bookmarks:v1";
+
+// 하트를 누를 때 떠오르는 ♥ 입자 하나. 화면 좌표(fixed)와 약간의 무작위성으로 자연스럽게 흩어진다.
+type HeartFloater = {
+  id: string;
+  x: number; // 시작 좌표(clientX)
+  y: number; // 시작 좌표(clientY)
+  dx: number; // 떠오르며 좌우로 흘러가는 양(px)
+  dur: number; // 지속 시간(ms)
+  size: number; // 글자 크기(px)
+  delay: number; // 시작 지연(ms) — 한 번에 여러 개가 살짝 시차를 두고 오른다
+};
 
 // 추천 이모지 팔레트 — 카테고리 탭으로 나눠 관리(#5b). 종류를 대폭 확충.
 const EMOJI_CATEGORIES: { key: string; label: string; emojis: string[] }[] = [
@@ -259,7 +283,8 @@ export function PublicPoster({
   deleteStickerAction,
   uploadStickerAssetAction,
   deleteStickerAssetAction,
-  setPosterThemeAction
+  setPosterThemeAction,
+  toggleHeartAction
 }: PublicPosterProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -339,8 +364,30 @@ export function PublicPoster({
   // C3: 다중 선택 — 기본(primary) 선택 외에 추가로 선택된 스티커들.
   const [multiIds, setMultiIds] = useState<string[]>([]);
   const [stickerError, setStickerError] = useState<string | null>(null);
-  // A2: 범례에서 태그를 누르면 그 태그 일정만 강조(나머지는 흐리게). 시청자 화면 전용.
-  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  // A2 고도화: 여러 태그를 동시에 고르고, "관심만 보기"까지 더해 보고 싶은 일정만 추려 본다.
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
+  const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
+  // A: 관심(하트). toggleHeartAction이 있으면 서버 집계(1인 1하트)와 연동되고,
+  //    없으면(샘플/오프라인) 기기별 localStorage로만 동작한다. 둘 다 "내가 누른 일정" 집합으로 관리.
+  const serverHearts = Boolean(toggleHeartAction);
+  const [bookmarks, setBookmarks] = useState<string[]>(() =>
+    serverHearts ? (schedule.myHeartIds ?? []) : []
+  );
+  const [bookmarksReady, setBookmarksReady] = useState(serverHearts);
+  // A: 일정별 관심 집계 수(서버에서 받아 낙관적으로 갱신). "관심 높음" 배지 판정에 쓴다.
+  const [heartCounts, setHeartCounts] = useState<Record<string, number>>(() => {
+    const map: Record<string, number> = {};
+    for (const event of schedule.events) {
+      if (typeof event.heartCount === "number") {
+        map[event.id] = event.heartCount;
+      }
+    }
+    return map;
+  });
+  // 하트를 누를 때 화면에 떠오르는 ♥ 입자들(틱톡식 좋아요 연출). 잠깐 떴다 사라진다.
+  const [floaters, setFloaters] = useState<HeartFloater[]>([]);
+  // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
+  const interactive = !decorate;
   // 키보드 미세이동 등에서 최신 스티커 배열을 읽기 위한 ref + 저장 디바운스 타이머
   const stickersRef = useRef<StickerInstance[]>([]);
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -357,11 +404,124 @@ export function PublicPoster({
     setStickers(schedule.stickers.filter((s) => s.year === view.year && s.month === view.month));
     setSelectedSticker(null);
     setMultiIds([]);
-    setTagFilter(null);
+    setTagFilters([]);
+    setBookmarkedOnly(false);
     setUndoStack([]); // 달이 바뀌면 실행취소 히스토리는 초기화
     setRedoStack([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.year, view.month]);
+
+  // 서버 연동이 없을 때만(샘플/오프라인) 기기별 localStorage를 쓴다 — 마운트 시 한 번 불러온다.
+  useEffect(() => {
+    if (serverHearts) {
+      return; // 서버 집계 모드에선 schedule.myHeartIds가 권위값.
+    }
+    try {
+      const raw = window.localStorage.getItem(BOOKMARK_STORAGE_KEY);
+      if (raw) {
+        const parsed: unknown = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          setBookmarks(parsed.filter((id): id is string => typeof id === "string"));
+        }
+      }
+    } catch {
+      // 손상된 값/사생활 모드 등은 조용히 무시 — 북마크는 부가 기능.
+    }
+    setBookmarksReady(true);
+  }, [serverHearts]);
+
+  // 북마크가 바뀌면 저장(localStorage 모드만). 초기 로드 전에는 덮어쓰지 않도록 ready 이후에만.
+  useEffect(() => {
+    if (serverHearts || !bookmarksReady) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(BOOKMARK_STORAGE_KEY, JSON.stringify(bookmarks));
+    } catch {
+      // 저장 실패는 무시.
+    }
+  }, [bookmarks, bookmarksReady, serverHearts]);
+
+  // 하트를 켤 때 누른 자리에서 ♥들이 스멀스멀 떠오르게 한다(움직임 최소화 설정이면 생략).
+  function spawnHearts(x: number, y: number) {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    const batch: HeartFloater[] = Array.from({ length: 6 }, (_, i) => ({
+      id: `${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+      x,
+      y,
+      dx: Math.round((Math.random() - 0.5) * 64),
+      dur: 1100 + Math.round(Math.random() * 800),
+      size: 12 + Math.round(Math.random() * 14),
+      delay: Math.round(Math.random() * 220)
+    }));
+    setFloaters((prev) => [...prev, ...batch]);
+    const ids = new Set(batch.map((b) => b.id));
+    // 가장 긴 입자(지연+지속)보다 넉넉히 뒤에 정리한다.
+    window.setTimeout(() => {
+      setFloaters((prev) => prev.filter((f) => !ids.has(f.id)));
+    }, 2300);
+  }
+
+  // 관심 토글 — 낙관적으로 즉시 반영하고, 서버 모드면 호출 후 집계 수를 권위값으로 보정한다.
+  function toggleBookmark(id: string, ev?: ReactMouseEvent<HTMLButtonElement>) {
+    const wasOn = bookmarks.includes(id);
+    if (!wasOn && ev) {
+      // 이벤트 풀링 영향을 피하려 좌표를 동기적으로 먼저 읽는다.
+      const rect = ev.currentTarget.getBoundingClientRect();
+      spawnHearts(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+    setBookmarks((prev) => (wasOn ? prev.filter((x) => x !== id) : [...prev, id]));
+    setHeartCounts((prev) => ({
+      ...prev,
+      [id]: Math.max(0, (prev[id] ?? 0) + (wasOn ? -1 : 1))
+    }));
+    if (!toggleHeartAction) {
+      return; // localStorage 모드: 개인 표시만, 집계 없음.
+    }
+    void toggleHeartAction(id).then((result) => {
+      if (result.ok) {
+        setHeartCounts((prev) => ({ ...prev, [id]: result.count }));
+      } else {
+        // 실패 → 낙관적 변경을 되돌린다.
+        setBookmarks((prev) => (wasOn ? [...prev, id] : prev.filter((x) => x !== id)));
+        setHeartCounts((prev) => ({
+          ...prev,
+          [id]: Math.max(0, (prev[id] ?? 0) + (wasOn ? 1 : -1))
+        }));
+      }
+    });
+  }
+  const isBookmarked = (id: string) => bookmarks.includes(id);
+
+  // A: "관심 높음" 판정 — 현재 달력 데이터의 최다 하트 대비 절반 이상이면서 최소 2개 모인 일정.
+  // 절대 수치 대신 상대 기준이라 스트리머 규모와 무관하게 적당히 표시된다.
+  const popularHeartIds = useMemo(() => {
+    const counts = Object.values(heartCounts);
+    const top = counts.length > 0 ? Math.max(...counts) : 0;
+    if (top < 2) {
+      return new Set<string>();
+    }
+    const threshold = Math.max(2, Math.ceil(top * 0.5));
+    return new Set(
+      Object.entries(heartCounts)
+        .filter(([, count]) => count >= threshold)
+        .map(([eventId]) => eventId)
+    );
+  }, [heartCounts]);
+
+  // 태그 칩 토글(다중 선택).
+  function toggleTagFilter(id: string) {
+    setTagFilters((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+  function clearFilters() {
+    setTagFilters([]);
+    setBookmarkedOnly(false);
+  }
+  const filterActive = tagFilters.length > 0 || bookmarkedOnly;
 
   // 꾸미기 중 스티커 키보드 조작: Delete 삭제 · 화살표 이동(Shift=크게) · Ctrl/Cmd+D 복제.
   useEffect(() => {
@@ -992,12 +1152,15 @@ export function PublicPoster({
     return tag ? schedule.palette.find((p) => p.key === tag.colorKey) : undefined;
   }
 
-  // A2: 현재 태그 필터에 안 맞는 일정인지(흐리게 처리 대상)
+  // A2 고도화: 현재 필터(태그 다중 + 관심만)에 안 맞는 일정은 흐리게 처리할지 판정.
   function isDimmedByFilter(event: PublicScheduleEvent) {
-    if (!tagFilter) {
-      return false;
-    }
-    return !(event.primaryTagIds.includes(tagFilter) || event.tagIds.includes(tagFilter));
+    const matchesTag =
+      tagFilters.length === 0 ||
+      tagFilters.some(
+        (id) => event.primaryTagIds.includes(id) || event.tagIds.includes(id)
+      );
+    const matchesBookmark = !bookmarkedOnly || isBookmarked(event.id);
+    return !(matchesTag && matchesBookmark);
   }
 
   function moveMonth(offset: number) {
@@ -1060,12 +1223,18 @@ export function PublicPoster({
             const color = eventColor(event);
             const { main, subs } = splitEventTitle(event.publicTitle);
             const span = getEventSpan(event, cell.isoDate, cell.weekday, schedule.events);
+            const bookmarked = isBookmarked(event.id);
+            // 하트는 시작 칸(제목 보이는 칸)에서만, 시청자 상호작용 모드에서만 노출.
+            const showHeart = interactive && span.showTitle;
+            // "관심 높음" 배지 — 집계 기반, 숫자는 노출하지 않는다(시청자 화면 전용).
+            const showPopular = interactive && span.showTitle && popularHeartIds.has(event.id);
             const eventClass = [
               "public-event",
               span.isMulti ? "span" : "",
               span.isMulti && !span.roundLeft ? "no-left" : "",
               span.isMulti && !span.roundRight ? "no-right" : "",
-              isDimmedByFilter(event) ? "dimmed" : ""
+              isDimmedByFilter(event) ? "dimmed" : "",
+              bookmarked ? "bookmarked" : ""
             ]
               .filter(Boolean)
               .join(" ");
@@ -1086,7 +1255,27 @@ export function PublicPoster({
               >
                 <div className="event-main">
                   {span.showTitle ? <p>{main}</p> : <p className="span-cont">&nbsp;</p>}
+                  {showHeart ? (
+                    <button
+                      aria-label={bookmarked ? "관심 일정에서 빼기" : "관심 일정으로 표시"}
+                      aria-pressed={bookmarked}
+                      className="event-heart"
+                      onClick={(ev) => toggleBookmark(event.id, ev)}
+                      title={bookmarked ? "관심 해제" : "관심 일정"}
+                      type="button"
+                    >
+                      {bookmarked ? "♥" : "♡"}
+                    </button>
+                  ) : null}
                 </div>
+                {showPopular ? (
+                  <span className="event-popular" title="관심을 많이 받은 일정">
+                    <span className="flame" aria-hidden="true">
+                      🔥
+                    </span>{" "}
+                    관심 높음
+                  </span>
+                ) : null}
                 {span.showTitle && subs.length > 0 ? (
                   <ul className="event-subs">
                     {subs.map((sub, i) => (
@@ -1119,6 +1308,28 @@ export function PublicPoster({
             />
           ))}
           <div className="celebrate-toast">🎉 {todayCelebration}</div>
+        </div>
+      ) : null}
+      {floaters.length > 0 ? (
+        <div className="heart-floaters" aria-hidden="true">
+          {floaters.map((f) => (
+            <span
+              className="heart-floater"
+              key={f.id}
+              style={
+                {
+                  left: f.x,
+                  top: f.y,
+                  fontSize: f.size,
+                  animationDuration: `${f.dur}ms`,
+                  animationDelay: `${f.delay}ms`,
+                  "--dx": `${f.dx}px`
+                } as CSSProperties
+              }
+            >
+              ♥
+            </span>
+          ))}
         </div>
       ) : null}
       <section className="public-calendar-shell">
@@ -1655,7 +1866,7 @@ export function PublicPoster({
             <PosterExportActions
               onBeforeCapture={() => {
                 clearSelection();
-                setTagFilter(null);
+                clearFilters();
               }}
             />
           </div>
@@ -1764,19 +1975,21 @@ export function PublicPoster({
                     </span>
                   );
                 }
+                // A2 고도화: 다중 선택과 동기화. 선택된 게 있으면 안 고른 항목은 흐리게.
+                const on = tagFilters.includes(tag.id);
                 const cls = [
                   "legend-item",
-                  tagFilter === tag.id ? "active" : "",
-                  tagFilter && tagFilter !== tag.id ? "dim" : ""
+                  on ? "active" : "",
+                  tagFilters.length > 0 && !on ? "dim" : ""
                 ]
                   .filter(Boolean)
                   .join(" ");
                 return (
                   <button
-                    aria-pressed={tagFilter === tag.id}
+                    aria-pressed={on}
                     className={cls}
                     key={tag.id}
-                    onClick={() => setTagFilter((prev) => (prev === tag.id ? null : tag.id))}
+                    onClick={() => toggleTagFilter(tag.id)}
                     type="button"
                   >
                     {swatch}
@@ -1784,8 +1997,23 @@ export function PublicPoster({
                   </button>
                 );
               })}
-              {tagFilter ? (
-                <button className="legend-clear" onClick={() => setTagFilter(null)} type="button">
+              {/* 관심 일정(북마크)만 보기 — 색상 안내와 같은 자리에서 함께 거른다. */}
+              {!decorate ? (
+                <button
+                  aria-pressed={bookmarkedOnly}
+                  className={`legend-item heart ${bookmarkedOnly ? "active" : ""}`}
+                  onClick={() => setBookmarkedOnly((v) => !v)}
+                  title="관심 표시한 일정만 보기"
+                  type="button"
+                >
+                  <i className="heart-mark" aria-hidden="true">
+                    ♥
+                  </i>
+                  관심만{bookmarks.length > 0 ? ` (${bookmarks.length})` : ""}
+                </button>
+              ) : null}
+              {filterActive ? (
+                <button className="legend-clear" onClick={clearFilters} type="button">
                   필터 해제
                 </button>
               ) : null}

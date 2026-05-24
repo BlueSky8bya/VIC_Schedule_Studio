@@ -10,6 +10,8 @@
 | 항목 | 내용 | 핵심 파일 |
 | --- | --- | --- |
 | A2 | 범례 태그 클릭 → 해당 태그 강조/흐림 | `public-poster.tsx` |
+| A2+ | **태그 필터 고도화** — 다중 선택 칩바(모바일 우선)·흐리게/숨기기 모드 전환·"관심만 보기"·범례 다중선택 동기화 | `public-poster.tsx`, `public-poster.css` |
+| B2+ | **관심 일정 하트/북마크 + 집계형 인기 표시(A)** — 일정별 ♥ 토글(1인 1하트, 서버 집계), "관심만 보기" 필터, 숫자 비노출 "🔥 관심 높음" 배지(최다 대비 상대 기준). 로그인 사용자별 `event_hearts`(RLS, user_id 비노출 집계 함수). Supabase 미설정 시 기기별 `localStorage` 폴백. 꾸미기/캡쳐 표면엔 비노출 | `0016_event_hearts.sql`, `heart-actions.ts`, `public-loader.ts`, `public-poster.tsx` |
 | A3 | 보기 전환(월/주/목록) | `public-poster.tsx` |
 | A5 | ~~다크 모드~~ — 도입했다 사용자 요청으로 **제거**(편집실 표시 충돌). |  |
 | B1 | 기념일 컨페티 축하 | `public-poster.tsx` |

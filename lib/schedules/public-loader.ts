@@ -9,112 +9,181 @@ import type {
 } from "@/lib/domain/schedule-types";
 import { PRODUCT_TIMEZONE, isPosterThemeKey } from "@/lib/domain/schedule-types";
 import type { PosterThemeKey } from "@/lib/domain/schedule-types";
+import { createClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
+import { createSupabaseServerClient } from "@/lib/auth/server";
+import { isSupabaseConfigured } from "@/lib/auth/config";
+import { PUBLIC_SCHEDULE_CACHE_TAG } from "@/lib/schedules/cache";
 
 function coercePosterTheme(value: unknown): PosterThemeKey {
   return typeof value === "string" && isPosterThemeKey(value) ? value : "none";
 }
-import { createSupabaseServerClient } from "@/lib/auth/server";
+
+// 익명 공개 데이터는 모든 시청자에게 동일하므로 Data Cache에 짧게 캐시한다.
+// 수백 명이 동시에 봐도 DB는 이 주기마다 한 번만 조회된다(읽기 위주 트래픽 최적화).
+// 소유자가 스튜디오에서 한 편집은 최대 이 시간만큼 뒤 시청자 화면에 반영된다.
+const PUBLIC_SCHEDULE_REVALIDATE_SECONDS = 30;
+
+// 쿠키 없는 anon 클라이언트 — 캐시 가능한 익명 쿼리 전용(요청 컨텍스트에 묶이지 않음).
+// 공개 RLS 정책 + anon SELECT 권한으로 공개 행만 읽힌다(비공개 데이터는 RLS가 차단).
+function createPublicReadClient() {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
 
 export async function getPublicSchedule(calendarSlug: string): Promise<PublicSchedule> {
-  const supabase = await createSupabaseServerClient();
-
   // Supabase 미설정(키 없음)이면 샘플 데이터로 폴백한다 — 개발/테스트 보호.
-  if (!supabase) {
+  if (!isSupabaseConfigured()) {
     return samplePublicSchedule(calendarSlug);
   }
 
-  const { data: calendar } = await supabase
-    .from("calendars")
-    .select("id, slug, display_name, title, public_memo, poster_theme")
-    .eq("slug", calendarSlug)
-    .eq("is_public", true)
-    .maybeSingle();
+  // 익명 공개 묶음(캐시 대상) + 로그인 사용자의 개인 관심 목록(비캐시)을 합친다.
+  const [data, myHeartIds] = await Promise.all([
+    loadPublicScheduleData(calendarSlug),
+    loadMyHeartIds()
+  ]);
 
-  const { year, month } = currentKstYearMonth();
+  return { ...data, myHeartIds };
+}
 
-  if (!calendar) {
+// 익명 공개 묶음 로더 — 캐시된다. myHeartIds는 사용자별이라 여기 포함하지 않는다(빈 배열).
+const loadPublicScheduleData = unstable_cache(
+  async (calendarSlug: string): Promise<PublicSchedule> => {
+    const supabase = createPublicReadClient();
+    const { year, month } = currentKstYearMonth();
+
+    if (!supabase) {
+      return samplePublicSchedule(calendarSlug);
+    }
+
+    const { data: calendar } = await supabase
+      .from("calendars")
+      .select("id, slug, display_name, title, public_memo, poster_theme")
+      .eq("slug", calendarSlug)
+      .eq("is_public", true)
+      .maybeSingle();
+
+    if (!calendar) {
+      return {
+        calendar: {
+          slug: calendarSlug,
+          displayName: calendarSlug,
+          title: calendarSlug,
+          timezone: PRODUCT_TIMEZONE,
+          defaultYear: year,
+          defaultMonth: month,
+          publicMemo: "",
+          posterTheme: "none"
+        },
+        events: [],
+        tags: [],
+        palette: [],
+        supportCampaigns: [],
+        stickers: [],
+        stickerAssets: [],
+        heartCount: 0,
+        myHeartIds: []
+      };
+    }
+
+    // RLS 공개 정책이 1차 방어선이지만, 쿼리에서도 명시적으로 공개분만 조회한다.
+    const [tagsRes, paletteRes, eventsRes, campaignsRes, stickersRes, assetsRes, heartsRes, eventHeartsRes] =
+      await Promise.all([
+        supabase
+          .from("broadcast_tags")
+          .select("id, tag_key, display_name, color_key, sort_order, is_default, is_active")
+          .eq("is_active", true)
+          .order("sort_order"),
+        supabase
+          .from("color_palette")
+          .select("key, name, bg_color, text_color, border_color, sort_order")
+          .order("sort_order"),
+        supabase
+          .from("events")
+          .select(
+            "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, public_title, public_description, status, sort_order, category, event_tags(tag_id, is_primary, sort_order)"
+          )
+          .eq("visibility_scope", "public")
+          .neq("status", "draft")
+          .order("date_key")
+          .order("created_at"),
+        supabase
+          .from("support_campaigns")
+          .select(
+            "id, title, description, url, starts_on, ends_on, public_cta_label, highlight_color_key, is_public, is_active"
+          )
+          .eq("is_public", true)
+          .eq("is_active", true),
+        supabase
+          .from("sticker_instances")
+          .select(
+            "id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, italic, outline, shadow, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)"
+          )
+          .eq("is_visible", true),
+        supabase
+          .from("sticker_assets")
+          .select("id, name, file_url, file_type")
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("calendar_hearts")
+          .select("count")
+          .eq("calendar_id", calendar.id)
+          .maybeSingle(),
+        // A: 일정별 관심 집계(공개 안전 — user_id 비노출). 함수가 공개 일정만 집계한다.
+        supabase.rpc("get_event_heart_counts", { p_calendar_id: calendar.id })
+      ]);
+
+    // 일정 id → 관심 집계 수 맵. 인기 배지 판정에 쓴다.
+    const heartCountByEvent = new Map<string, number>(
+      ((eventHeartsRes.data as { event_id: string; count: number }[] | null) ?? []).map((row) => [
+        row.event_id,
+        Number(row.count)
+      ])
+    );
+
     return {
       calendar: {
-        slug: calendarSlug,
-        displayName: calendarSlug,
-        title: calendarSlug,
+        slug: calendar.slug,
+        displayName: calendar.display_name,
+        title: calendar.title,
         timezone: PRODUCT_TIMEZONE,
         defaultYear: year,
         defaultMonth: month,
-        publicMemo: "",
-        posterTheme: "none"
+        publicMemo: calendar.public_memo ?? "",
+        posterTheme: coercePosterTheme(calendar.poster_theme)
       },
-      events: [],
-      tags: [],
-      palette: [],
-      supportCampaigns: [],
-      stickers: [],
-      stickerAssets: [],
-      heartCount: 0
+      tags: (tagsRes.data ?? []).map(mapTag),
+      palette: (paletteRes.data ?? []).map(mapPalette),
+      events: (eventsRes.data ?? []).map((row) => ({
+        ...mapEvent(row),
+        heartCount: heartCountByEvent.get(row.id) ?? 0
+      })),
+      supportCampaigns: (campaignsRes.data ?? []).map(mapCampaign),
+      stickers: (stickersRes.data ?? []).map(mapSticker),
+      stickerAssets: (assetsRes.data ?? []).map(mapStickerAsset),
+      heartCount: Number(heartsRes.data?.count ?? 0),
+      myHeartIds: []
     };
+  },
+  ["public-schedule-data"],
+  { revalidate: PUBLIC_SCHEDULE_REVALIDATE_SECONDS, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
+);
+
+// 로그인 사용자가 관심 표시한 일정 id(본인 것만, RLS로 보장). 캐시하지 않는다(사용자별).
+async function loadMyHeartIds(): Promise<string[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return [];
   }
-
-  // RLS 공개 정책이 1차 방어선이지만, 쿼리에서도 명시적으로 공개분만 조회한다.
-  const [tagsRes, paletteRes, eventsRes, campaignsRes, stickersRes, assetsRes, heartsRes] =
-    await Promise.all([
-    supabase
-      .from("broadcast_tags")
-      .select("id, tag_key, display_name, color_key, sort_order, is_default, is_active")
-      .eq("is_active", true)
-      .order("sort_order"),
-    supabase
-      .from("color_palette")
-      .select("key, name, bg_color, text_color, border_color, sort_order")
-      .order("sort_order"),
-    supabase
-      .from("events")
-      .select(
-        "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, public_title, public_description, status, sort_order, category, event_tags(tag_id, is_primary, sort_order)"
-      )
-      .eq("visibility_scope", "public")
-      .neq("status", "draft")
-      .order("date_key")
-      .order("created_at"),
-    supabase
-      .from("support_campaigns")
-      .select(
-        "id, title, description, url, starts_on, ends_on, public_cta_label, highlight_color_key, is_public, is_active"
-      )
-      .eq("is_public", true)
-      .eq("is_active", true),
-    supabase
-      .from("sticker_instances")
-      .select(
-        "id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, italic, outline, shadow, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)"
-      )
-      .eq("is_visible", true),
-    supabase
-      .from("sticker_assets")
-      .select("id, name, file_url, file_type")
-      .order("created_at", { ascending: false }),
-    supabase.from("calendar_hearts").select("count").eq("calendar_id", calendar.id).maybeSingle()
-  ]);
-
-  return {
-    calendar: {
-      slug: calendar.slug,
-      displayName: calendar.display_name,
-      title: calendar.title,
-      timezone: PRODUCT_TIMEZONE,
-      defaultYear: year,
-      defaultMonth: month,
-      publicMemo: calendar.public_memo ?? "",
-      posterTheme: coercePosterTheme(calendar.poster_theme)
-    },
-    tags: (tagsRes.data ?? []).map(mapTag),
-    palette: (paletteRes.data ?? []).map(mapPalette),
-    events: (eventsRes.data ?? []).map(mapEvent),
-    supportCampaigns: (campaignsRes.data ?? []).map(mapCampaign),
-    stickers: (stickersRes.data ?? []).map(mapSticker),
-    stickerAssets: (assetsRes.data ?? []).map(mapStickerAsset),
-    heartCount: Number(heartsRes.data?.count ?? 0)
-  };
+  const { data } = await supabase.from("event_hearts").select("event_id");
+  return ((data as { event_id: string }[] | null) ?? []).map((row) => row.event_id);
 }
 
 function mapStickerAsset(row: {

@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canEditSchedule } from "@/lib/permissions/roles";
@@ -44,6 +45,7 @@ export async function linkChainAction(orderedIds: string[]): Promise<LinkResult>
 
   revalidatePath("/");
   revalidatePath("/studio");
+  revalidatePublicSchedule();
   return { ok: true };
 }
 
@@ -60,6 +62,7 @@ export async function unlinkPairAction(earlierId: string): Promise<LinkResult> {
 
   revalidatePath("/");
   revalidatePath("/studio");
+  revalidatePublicSchedule();
   return { ok: true };
 }
 
@@ -83,5 +86,6 @@ export async function unlinkEventAction(id: string): Promise<LinkResult> {
 
   revalidatePath("/");
   revalidatePath("/studio");
+  revalidatePublicSchedule();
   return { ok: true };
 }

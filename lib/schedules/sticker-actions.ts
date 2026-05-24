@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canDecorate } from "@/lib/permissions/roles";
@@ -124,6 +125,7 @@ export async function saveStickerAction(input: SaveStickerInput): Promise<Sticke
 
   revalidatePath("/");
   revalidatePath("/studio/decorate", "layout");
+  revalidatePublicSchedule();
 
   return { ok: true, id: stickerId };
 }
@@ -147,6 +149,7 @@ export async function deleteStickerAction(stickerId: string): Promise<StickerRes
 
   revalidatePath("/");
   revalidatePath("/studio/decorate", "layout");
+  revalidatePublicSchedule();
 
   return { ok: true, id: stickerId };
 }

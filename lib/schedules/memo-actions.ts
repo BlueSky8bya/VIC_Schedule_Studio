@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canEditSchedule } from "@/lib/permissions/roles";
@@ -32,5 +33,6 @@ export async function updateMemoAction(memo: string): Promise<MemoResult> {
 
   revalidatePath("/");
   revalidatePath("/studio");
+  revalidatePublicSchedule();
   return { ok: true };
 }

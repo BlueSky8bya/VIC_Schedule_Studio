@@ -2,6 +2,7 @@
 
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canDecorate } from "@/lib/permissions/roles";
@@ -82,6 +83,7 @@ export async function uploadStickerAssetAction(formData: FormData): Promise<Stic
 
   revalidatePath("/");
   revalidatePath("/studio/decorate", "layout");
+  revalidatePublicSchedule();
   return { ok: true, id: data.id };
 }
 
@@ -119,5 +121,6 @@ export async function deleteStickerAssetAction(assetId: string): Promise<Sticker
 
   revalidatePath("/");
   revalidatePath("/studio/decorate", "layout");
+  revalidatePublicSchedule();
   return { ok: true, id: assetId };
 }

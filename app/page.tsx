@@ -2,6 +2,7 @@ import { PublicPoster } from "@/components/poster/public-poster";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { resolveCurrentActor } from "@/lib/auth/actor";
+import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { getStudioSchedule } from "@/lib/schedules/studio-loader";
 import { getUnlockState } from "@/lib/private-layer/unlock";
@@ -32,7 +33,7 @@ export default async function HomePage() {
 
   const schedule = await getPublicSchedule("vic");
 
-  return <PublicPoster schedule={schedule} />;
+  return <PublicPoster schedule={schedule} toggleHeartAction={toggleEventHeartAction} />;
 }
 
 function GoogleLogo() {
