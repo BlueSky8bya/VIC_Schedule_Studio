@@ -381,6 +381,12 @@ export function PublicPoster({
   // 공개 메모 — 소유자/개발자가 꾸미기에서 편집(updateMemoAction이 있을 때만). 시청자 화면에 그대로 노출.
   const [memo, setMemo] = useState(schedule.calendar.publicMemo);
   const [memoSaved, setMemoSaved] = useState(true);
+  // 시청자/미리보기에선 서버 메모가 갱신되면 로컬도 맞춘다(편집 중인 소유자 입력은 건드리지 않음).
+  useEffect(() => {
+    if (!updateMemoAction) {
+      setMemo(schedule.calendar.publicMemo);
+    }
+  }, [schedule.calendar.publicMemo, updateMemoAction]);
   const memoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   function changeMemo(value: string) {
     setMemo(value);

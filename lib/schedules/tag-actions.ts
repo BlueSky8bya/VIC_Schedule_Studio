@@ -129,7 +129,10 @@ export async function addTagAction(): Promise<TagUpdateResult> {
   }
 
   const [{ data: palette }, { data: tags }] = await Promise.all([
-    supabase.from("color_palette").select("bg_color, sort_order").eq("calendar_id", calendar.id),
+    supabase
+      .from("color_palette")
+      .select("key, bg_color, sort_order")
+      .eq("calendar_id", calendar.id),
     supabase.from("broadcast_tags").select("sort_order").eq("calendar_id", calendar.id)
   ]);
 
@@ -141,8 +144,14 @@ export async function addTagAction(): Promise<TagUpdateResult> {
   const borderColor = hslToHex(hue, 52, 68);
   const textColor = hslToHex(hue, 55, 28); // 같은 hue의 어두운 글씨
 
+  // 연한 톤은 색만으로 비슷해 보일 수 있어, 생성 색엔 무늬(대각선/점/격자)를 번갈아 입힌다.
+  // (key 접두사로 globals.css의 무늬 규칙과 매칭. 세로무늬는 가독성 때문에 안 쓴다.)
+  const patterns = ["diag", "dots", "grid"] as const;
+  const genCount = (palette ?? []).filter((p) => p.key?.startsWith("gen-")).length;
+  const pattern = patterns[genCount % patterns.length];
+
   const rand = Math.random().toString(36).slice(2, 8);
-  const key = `gen-${rand}`;
+  const key = `gen-${pattern}-${rand}`;
   const paletteSort = Math.max(0, ...(palette ?? []).map((p) => p.sort_order ?? 0)) + 1;
   const tagSort = Math.max(0, ...(tags ?? []).map((t) => t.sort_order ?? 0)) + 1;
 
@@ -170,6 +179,55 @@ export async function addTagAction(): Promise<TagUpdateResult> {
   });
   if (tagErr) {
     return { ok: false, error: tagErr.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/studio");
+  revalidatePublicSchedule();
+  return { ok: true };
+}
+
+// #6: 태그 삭제. 이 태그가 쓰던 생성 색(gen-)을 아무도 안 쓰면 팔레트에서도 정리한다.
+// (event_tags는 FK on delete cascade로 함께 정리되어 일정은 태그만 빠진다.)
+export async function removeTagAction(tagId: string): Promise<TagUpdateResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!canEditSchedule(actor.role)) {
+    return { ok: false, error: "owner 또는 developer만 태그를 삭제할 수 있습니다." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
+  }
+
+  const { data: tag } = await supabase
+    .from("broadcast_tags")
+    .select("id, calendar_id, color_key")
+    .eq("id", tagId)
+    .maybeSingle();
+  if (!tag) {
+    return { ok: false, error: "태그를 찾을 수 없습니다." };
+  }
+
+  const { error } = await supabase.from("broadcast_tags").delete().eq("id", tagId);
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  // 생성 색이고 더 이상 쓰는 태그가 없으면 팔레트 항목도 삭제(스와치 정리).
+  if (typeof tag.color_key === "string" && tag.color_key.startsWith("gen-")) {
+    const { count } = await supabase
+      .from("broadcast_tags")
+      .select("id", { count: "exact", head: true })
+      .eq("calendar_id", tag.calendar_id)
+      .eq("color_key", tag.color_key);
+    if (!count) {
+      await supabase
+        .from("color_palette")
+        .delete()
+        .eq("calendar_id", tag.calendar_id)
+        .eq("key", tag.color_key);
+    }
   }
 
   revalidatePath("/");

@@ -1,5 +1,6 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { BroadcastTag, ColorKey, ColorPaletteEntry } from "@/lib/domain/schedule-types";
@@ -14,6 +15,8 @@ type TagLegendEditorProps = {
   ) => Promise<TagUpdateResult>;
   // #6: 태그 추가(있을 때만 "추가" 버튼 노출). 새 태그엔 기존과 구별되는 연한 색이 자동 배정된다.
   addTagAction?: () => Promise<TagUpdateResult>;
+  // #6: 태그 삭제(있을 때만 행마다 삭제 버튼 노출).
+  removeTagAction?: (tagId: string) => Promise<TagUpdateResult>;
 };
 
 type Draft = { name: string; colorKey: ColorKey | "" };
@@ -23,17 +26,36 @@ export function TagLegendEditor({
   palette,
   canEdit,
   updateTagsAction,
-  addTagAction
+  addTagAction,
+  removeTagAction
 }: TagLegendEditorProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  // 추가/삭제는 저장과 별도의 진행 상태로 둬, "전체 저장" 버튼이 "저장 중…"으로 잘못 바뀌지 않게 한다.
+  const [busy, startBusy] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
   function addTag() {
     if (!addTagAction) return;
     setError(null);
-    startTransition(async () => {
+    startBusy(async () => {
       const result = await addTagAction();
+      if (result.ok) {
+        router.refresh();
+      } else {
+        setError(result.error);
+      }
+    });
+  }
+
+  function removeTag(tagId: string, name: string) {
+    if (!removeTagAction) return;
+    if (!window.confirm(`'${name}' 태그를 삭제할까요? 이 태그가 달린 일정에서도 태그가 빠집니다.`)) {
+      return;
+    }
+    setError(null);
+    startBusy(async () => {
+      const result = await removeTagAction(tagId);
       if (result.ok) {
         router.refresh();
       } else {
@@ -140,6 +162,18 @@ export function TagLegendEditor({
                 );
               })}
             </div>
+            {removeTagAction ? (
+              <button
+                aria-label={`${d.name} 삭제`}
+                className="tag-editor-remove"
+                disabled={busy}
+                onClick={() => removeTag(tag.id, d.name)}
+                title="이 태그 삭제"
+                type="button"
+              >
+                <Trash2 aria-hidden="true" size={15} />
+              </button>
+            ) : null}
           </div>
         );
       })}
@@ -148,13 +182,13 @@ export function TagLegendEditor({
       {anyEmpty ? <p className="tag-editor-hint warn">색상이 비어 있는 태그가 있습니다.</p> : null}
       <div className="tag-editor-actions">
         {addTagAction ? (
-          <button className="button" disabled={pending} onClick={addTag} type="button">
-            + 태그 추가
+          <button className="button" disabled={busy} onClick={addTag} type="button">
+            {busy ? "처리 중…" : "+ 태그 추가"}
           </button>
         ) : null}
         <button
           className="button primary"
-          disabled={pending || anyEmpty || !dirty}
+          disabled={pending || busy || anyEmpty || !dirty}
           onClick={saveAll}
           type="button"
         >

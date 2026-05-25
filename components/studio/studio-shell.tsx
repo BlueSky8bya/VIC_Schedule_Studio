@@ -11,7 +11,6 @@ import {
   X
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type {
   EventCategory,
@@ -45,7 +44,7 @@ import {
 import { deleteEventAction, saveEventAction } from "@/lib/schedules/event-actions";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { linkChainAction, unlinkPairAction } from "@/lib/schedules/link-actions";
-import { addTagAction, updateTagsAction } from "@/lib/schedules/tag-actions";
+import { addTagAction, removeTagAction, updateTagsAction } from "@/lib/schedules/tag-actions";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
@@ -129,7 +128,6 @@ export function StudioShell({
   schedule,
   hasUnlockSession
 }: StudioShellProps) {
-  const router = useRouter();
   const today = getTodayKst();
   const [pending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
@@ -140,7 +138,12 @@ export function StudioShell({
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
   const [viewerMode, setViewerMode] = useState(false);
-  const events = schedule.events;
+  // 일정은 로컬 상태로 들고 낙관적으로 갱신한다 — 잇기·복붙·저장·삭제가 서버 왕복/새로고침을
+  // 기다리지 않고 화면에 즉시 반영되게 해서 "하는 맛"을 살린다. 서버 데이터가 바뀌면 다시 맞춘다.
+  const [events, setEvents] = useState(schedule.events);
+  useEffect(() => {
+    setEvents(schedule.events);
+  }, [schedule.events]);
   // #3: "기타" 태그는 색상 안내·태그 선택 모두에서 항상 맨 끝.
   const legendTags = useMemo(
     () =>
@@ -169,20 +172,37 @@ export function StudioShell({
           ? [anchor, target]
           : [target, anchor];
       const alreadyLinked = earlier.linkNext === later.id;
+      const snapshot = events; // 실패 시 되돌릴 직전 상태
 
       if (alreadyLinked) {
-        startTransition(async () => {
-          const result = await unlinkPairAction(earlier.id);
-          if (!result.ok) setActionError(result.error);
-          else router.refresh();
+        // 낙관적으로 이음새를 끊고, 서버엔 백그라운드로 반영(새로고침 없이 즉시 반응).
+        setEvents((prev) =>
+          prev.map((e) => (e.id === earlier.id ? { ...e, linkNext: undefined } : e))
+        );
+        setActionError(null);
+        void unlinkPairAction(earlier.id).then((result) => {
+          if (!result.ok) {
+            setActionError(result.error);
+            setEvents(snapshot);
+          }
         });
       } else {
         const chain = buildLinkChain(anchor, target, events);
         if (chain) {
-          startTransition(async () => {
-            const result = await linkChainAction(chain);
-            if (!result.ok) setActionError(result.error);
-            else router.refresh();
+          // 낙관적으로 체인 연결(각 일정 linkNext = 다음 id).
+          const linkMap = new Map<string, string>();
+          for (let i = 0; i < chain.length - 1; i += 1) {
+            linkMap.set(chain[i], chain[i + 1]);
+          }
+          setEvents((prev) =>
+            prev.map((e) => (linkMap.has(e.id) ? { ...e, linkNext: linkMap.get(e.id) } : e))
+          );
+          setActionError(null);
+          void linkChainAction(chain).then((result) => {
+            if (!result.ok) {
+              setActionError(result.error);
+              setEvents(snapshot);
+            }
           });
         }
       }
@@ -281,36 +301,67 @@ export function StudioShell({
       return;
     }
 
-    setActionError(null);
-    startTransition(async () => {
-      const result = await saveEventAction({
-        id: form.id,
-        dateKey: selectedDate,
-        endDateKey: form.isSupport ? form.endDateKey : "",
-        startTime: "",
-        endTime: "",
-        isAllDay: true,
-        publicTitle: form.publicTitle,
-        publicDescription: "",
-        category: form.category,
-        status: form.status,
-        // 비공개 레이어를 풀지 않았으면 공개 범위는 무조건 "모두(public)"로 강제.
-        // 엠바고/작업자/나만은 비공개 모드(비밀번호 해제)에서만 지정할 수 있다.
-        visibilityScope: canReadPrivate ? form.visibilityScope : "public",
-        tagIds: form.tagIds,
-        primaryTagIds: form.primaryTagIds.slice(0, 2),
-        isSupport: form.isSupport,
-        supportUrl: form.supportUrl
-      });
+    const existing = events.find((e) => e.id === form.id);
+    const isNew = !form.id;
+    const tempId = form.id ?? `temp-${Math.random().toString(36).slice(2)}`;
+    const scope: EventVisibilityScope = canReadPrivate ? form.visibilityScope : "public";
+    const endDateKey =
+      form.isSupport && form.endDateKey ? form.endDateKey : undefined;
+    // 낙관적 일정 객체(서버 응답 전 화면에 바로 그린다).
+    const optimistic: StudioScheduleEvent = {
+      id: tempId,
+      startsAt: `${selectedDate}T00:00:00+09:00`,
+      endDateKey,
+      linkNext: existing?.linkNext,
+      isSupport: form.isSupport,
+      supportUrl: form.supportUrl || undefined,
+      isAllDay: true,
+      publicTitle: form.publicTitle,
+      status: form.status,
+      visibilityScope: scope,
+      category: form.category,
+      tagIds: form.tagIds,
+      primaryTagIds: form.primaryTagIds.slice(0, 2),
+      sortOrder: existing?.sortOrder ?? 0
+    };
+    // 서버로 보낼 입력은 폼 초기화 전에 미리 만들어 둔다.
+    const payload = {
+      id: form.id,
+      dateKey: selectedDate,
+      endDateKey: form.isSupport ? form.endDateKey : "",
+      startTime: "",
+      endTime: "",
+      isAllDay: true,
+      publicTitle: form.publicTitle,
+      publicDescription: "",
+      category: form.category,
+      status: form.status,
+      visibilityScope: scope,
+      tagIds: form.tagIds,
+      primaryTagIds: form.primaryTagIds.slice(0, 2),
+      isSupport: form.isSupport,
+      supportUrl: form.supportUrl
+    };
+    const snapshot = events;
 
+    setEvents((prev) =>
+      isNew ? [...prev, optimistic] : prev.map((e) => (e.id === tempId ? optimistic : e))
+    );
+    setSelectedEventId(null);
+    setForm(createEmptyForm());
+    setActionError(null);
+
+    startTransition(async () => {
+      const result = await saveEventAction(payload);
       if (!result.ok) {
         setActionError(result.error);
+        setEvents(snapshot); // 실패 → 되돌림
         return;
       }
-
-      setSelectedEventId(null);
-      setForm(createEmptyForm());
-      router.refresh();
+      // 새 일정이면 임시 id를 실제 id로 교체(전체 새로고침 없이 정합성 유지).
+      if (isNew && result.id) {
+        setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: result.id } : e)));
+      }
     });
   }
 
@@ -319,18 +370,24 @@ export function StudioShell({
       return;
     }
 
+    const snapshot = events;
+    // 낙관적 제거 + 이 일정을 가리키던 linkNext도 함께 정리.
+    setEvents((prev) =>
+      prev
+        .filter((e) => e.id !== targetId)
+        .map((e) => (e.linkNext === targetId ? { ...e, linkNext: undefined } : e))
+    );
+    if (selectedEventId === targetId) {
+      setSelectedEventId(null);
+      setForm(createEmptyForm());
+    }
     setActionError(null);
     startTransition(async () => {
       const result = await deleteEventAction(targetId);
       if (!result.ok) {
         setActionError(result.error);
-        return;
+        setEvents(snapshot); // 실패 → 되돌림
       }
-      if (selectedEventId === targetId) {
-        setSelectedEventId(null);
-        setForm(createEmptyForm());
-      }
-      router.refresh();
     });
   }
 
@@ -374,15 +431,37 @@ export function StudioShell({
   function pasteCopiedEvent() {
     if (!clipboard || !canEdit) return;
     const payload = clipboard;
+    const scope: EventVisibilityScope = canReadPrivate ? payload.visibilityScope : "public";
+    const endDateKey =
+      payload.isSupport && payload.spanDays > 0
+        ? addDaysIso(selectedDate, payload.spanDays)
+        : undefined;
+    const tempId = `temp-${Math.random().toString(36).slice(2)}`;
+    // 낙관적으로 즉시 붙여넣고, 서버엔 백그라운드 반영(새로고침 없이).
+    const optimistic: StudioScheduleEvent = {
+      id: tempId,
+      startsAt: `${selectedDate}T00:00:00+09:00`,
+      endDateKey,
+      isSupport: payload.isSupport,
+      supportUrl: payload.supportUrl || undefined,
+      isAllDay: true,
+      publicTitle: payload.publicTitle,
+      status: payload.status,
+      visibilityScope: scope,
+      category: payload.category,
+      tagIds: payload.tagIds,
+      primaryTagIds: payload.primaryTagIds.slice(0, 2),
+      sortOrder: 0
+    };
+    const snapshot = events;
+    setEvents((prev) => [...prev, optimistic]);
+    flashToast(`${selectedDate}에 붙여넣음`);
     setActionError(null);
     startTransition(async () => {
       const result = await saveEventAction({
         id: undefined,
         dateKey: selectedDate,
-        endDateKey:
-          payload.isSupport && payload.spanDays > 0
-            ? addDaysIso(selectedDate, payload.spanDays)
-            : "",
+        endDateKey: endDateKey ?? "",
         startTime: "",
         endTime: "",
         isAllDay: true,
@@ -390,8 +469,7 @@ export function StudioShell({
         publicDescription: "",
         category: payload.category,
         status: payload.status,
-        // 비공개 모드가 아니면 공개로 강제(저장 로직과 동일 규칙).
-        visibilityScope: canReadPrivate ? payload.visibilityScope : "public",
+        visibilityScope: scope,
         tagIds: payload.tagIds,
         primaryTagIds: payload.primaryTagIds.slice(0, 2),
         isSupport: payload.isSupport,
@@ -399,10 +477,12 @@ export function StudioShell({
       });
       if (!result.ok) {
         setActionError(result.error);
+        setEvents(snapshot);
         return;
       }
-      flashToast(`${selectedDate}에 붙여넣음`);
-      router.refresh();
+      if (result.id) {
+        setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: result.id } : e)));
+      }
     });
   }
 
@@ -959,6 +1039,7 @@ export function StudioShell({
                 canEdit
                 key={schedule.tags.map((t) => t.id).join(",")}
                 palette={schedule.palette}
+                removeTagAction={removeTagAction}
                 tags={schedule.tags}
                 updateTagsAction={updateTagsAction}
               />

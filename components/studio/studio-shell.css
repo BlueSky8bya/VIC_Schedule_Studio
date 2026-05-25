@@ -457,14 +457,16 @@
 
 /* 선택된 일정 — 테두리 색만 진하게(연결된 좌/우는 테두리 두께가 0이라 자동으로 표시 안 됨).
    인라인 borderColor(태그색)보다 우선해야 하므로 !important. 두께는 그대로라 레이아웃 흔들림 없음. */
+/* 선택(연결된 체인 전체) — 노란 테두리 + 옅은 노란 배경.
+   span 세그먼트는 이음매 쪽 좌우 테두리가 없어, 위/아래 노란 선이 끊김 없이 이어진다. */
 .studio-event-pill.selected {
-  border-color: #111827 !important;
+  border-color: #f59e0b !important;
+  background: rgb(251 191 36 / 16%);
 }
-/* #2: 현재 선택된(편집 중) 일정 카드 — 노란색으로 확실히 강조. */
+/* 현재 편집 중인(클릭한) 카드 — 더 진한 배경 + 안쪽 테두리(바깥 outline은 이음매를 끊으므로 쓰지 않음). */
 .studio-event-pill.primary-selected {
-  outline: 3px solid #f59e0b !important;
-  outline-offset: 1px;
-  box-shadow: 0 0 0 3px rgb(251 191 36 / 45%) !important;
+  background: rgb(251 191 36 / 32%);
+  box-shadow: inset 0 0 0 2px #f59e0b;
 }
 
 /* #2: 복사/붙여넣기 알림 토스트 */
@@ -698,6 +700,7 @@ textarea:disabled {
 }
 .tag-editor-row {
   display: grid;
+  grid-template-columns: 1fr auto;
   gap: 6px;
   padding-bottom: 10px;
   border-bottom: 1px solid var(--line);
@@ -707,13 +710,38 @@ textarea:disabled {
   padding-bottom: 0;
 }
 .tag-editor-row input {
+  grid-column: 1;
+  grid-row: 1;
   min-height: 34px;
   border: 1px solid var(--line);
   border-radius: 7px;
   padding: 0 9px;
   font-weight: 800;
 }
+/* #6: 태그 행 삭제 버튼(이름 칸 오른쪽). */
+.tag-editor-remove {
+  grid-column: 2;
+  grid-row: 1;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+}
+.tag-editor-remove:hover:not(:disabled) {
+  border-color: #f3a3a3;
+  background: #fee2e2;
+  color: #b42318;
+}
+.tag-editor-remove:disabled {
+  opacity: 0.5;
+}
 .tag-editor-swatches {
+  grid-column: 1 / -1;
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
@@ -909,6 +937,11 @@ textarea:disabled {
   margin-left: -7px;
   margin-right: -7px;
   border-radius: 0;
+}
+/* 이어진 막대는 hover 시 살짝 들리면 이음매가 어긋나 보이므로, 들림(transform)을 끈다. */
+.studio-event-pill.span:hover {
+  transform: none;
+  box-shadow: 0 1px 2px rgb(17 24 39 / 5%);
 }
 .studio-event-pill.span.no-left {
   border-left: 0;

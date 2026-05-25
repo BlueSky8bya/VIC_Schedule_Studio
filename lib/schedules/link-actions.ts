@@ -32,15 +32,18 @@ export async function linkChainAction(orderedIds: string[]): Promise<LinkResult>
   if (orderedIds.length < 2) return { ok: false, error: "이을 일정이 부족합니다." };
 
   const now = new Date().toISOString();
-  for (let i = 0; i < orderedIds.length - 1; i += 1) {
-    const curId = orderedIds[i];
-    const nextId = orderedIds[i + 1];
-    if (!curId || !nextId) continue;
-    const { error } = await g.supabase
-      .from("events")
-      .update({ link_next: nextId, updated_at: now })
-      .eq("id", curId);
-    if (error) return { ok: false, error: error.message };
+  // 각 이음을 병렬로 보낸다(순차 왕복 누적 방지).
+  const results = await Promise.all(
+    orderedIds.slice(0, -1).map((curId, i) =>
+      g.supabase
+        .from("events")
+        .update({ link_next: orderedIds[i + 1], updated_at: now })
+        .eq("id", curId)
+    )
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) {
+    return { ok: false, error: failed.error.message };
   }
 
   revalidatePath("/");

@@ -599,3 +599,21 @@ select {
   background-image: radial-gradient(rgb(0 0 0 / 18%) 1.4px, transparent 1.6px) !important;
   background-size: 7px 7px !important;
 }
+/* #6: 추가된 생성 색(gen-)은 연한 톤이라 비슷해 보일 수 있어 무늬로 추가 구분.
+   key 접두사로 무늬를 정한다(대각선/점/격자). 세로무늬는 가독성 때문에 쓰지 않는다. */
+[data-color^="gen-diag-"] {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgb(0 0 0 / 14%) 0 2px,
+    transparent 2px 7px
+  ) !important;
+}
+[data-color^="gen-dots-"] {
+  background-image: radial-gradient(rgb(0 0 0 / 16%) 1.4px, transparent 1.6px) !important;
+  background-size: 7px 7px !important;
+}
+[data-color^="gen-grid-"] {
+  background-image:
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 12%) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 12%) 0 1px, transparent 1px 8px) !important;
+}
