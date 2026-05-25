@@ -231,8 +231,8 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
                 <strong>URL 칸</strong>의 내용을 전부 지운 뒤 <strong>①에서 복사한 코드를
                 붙여넣어주세요!</strong> → 그리고 저장
               </li>
-                <strong>이제 이 “자동공지” 북마크가 자동입력 버튼이 됐습니다 &lt;😎</strong>
             </ol>
+            <strong>이제 이 “자동공지” 북마크가 자동입력 버튼이 됐습니다 &lt;😎</strong>
           </details>
 
           <ol className="notice-steps3">

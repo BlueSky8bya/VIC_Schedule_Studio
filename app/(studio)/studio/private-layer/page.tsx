@@ -12,7 +12,7 @@ export default async function PrivateLayerPage() {
         <h1>비공개 일정</h1>
         {actor.role === "viewer" || !actor.isAuthenticated ? (
           <div className="auth-warning">
-            비공개 일정은 소유자/개발자/매니저/작업자만 사용할 수 있습니다.
+            비공개 일정은 토리님/매니저/작업자만 사용할 수 있습니다.
           </div>
         ) : (
           <PrivateLayerPanel

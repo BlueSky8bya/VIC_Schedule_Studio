@@ -618,18 +618,13 @@ select {
     repeating-linear-gradient(90deg, rgb(0 0 0 / 12%) 0 1px, transparent 1px 8px) !important;
 }
 
-/* D: 2색 일정칸의 반쪽 무늬 오버레이. data-color가 붙어 위 무늬 규칙이 그대로 적용되고,
-   배경색은 투명이라 칸 자체의 색 그라데이션이 비쳐 보인다(= 색은 섞이고, 무늬는 각 쪽에 남음). */
+/* D: 2색 일정칸의 무늬 오버레이. data-color가 붙어 위 무늬 규칙이 그대로 적용되고,
+   배경색은 투명이라 칸 자체의 색 그라데이션이 비쳐 보인다(= 색은 섞이고, 무늬는 각 쪽에 남음).
+   반쪽 분할은 호출부에서 clip-path 인라인으로(이어진 칸 가운데가 경계). */
 .evt-pat {
   position: absolute;
   inset: 0;
   z-index: 0;
   background-color: transparent;
   pointer-events: none;
-}
-.evt-pat.left {
-  clip-path: polygon(0 0, 58% 0, 42% 100%, 0 100%);
-}
-.evt-pat.right {
-  clip-path: polygon(58% 0, 100% 0, 100% 100%, 42% 100%);
 }

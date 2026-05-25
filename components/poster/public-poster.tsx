@@ -61,7 +61,10 @@ import {
   getEventSpan,
   getEventTagColors,
   getMonthLabel,
+  getSpanRun,
   getTodayKst,
+  mixedEventPatterns,
+  mixedEventStyle,
   splitEventTitle,
   type MonthCell
 } from "@/lib/calendar/month";
@@ -1305,23 +1308,41 @@ export function PublicPoster({
             ]
               .filter(Boolean)
               .join(" ");
+            const mixed = colors.length >= 2;
+            // 이어진 칸 전체 기준으로 그라데이션·무늬 경계를 잡는다(2칸=이음새, 3칸=가운데).
+            const run = mixed ? getSpanRun(event, cell.isoDate, cell.weekday) : null;
             return (
               <div
                 className={eventClass}
-                data-color={colors.length >= 2 ? undefined : colors[0]?.key}
-                data-mixed={colors.length >= 2 ? "" : undefined}
+                data-color={mixed ? undefined : colors[0]?.key}
+                data-mixed={mixed ? "" : undefined}
                 key={event.id}
-                style={colors.length > 0 ? eventColorStyle(colors) : undefined}
+                style={
+                  mixed
+                    ? mixedEventStyle(colors, run!)
+                    : colors.length > 0
+                      ? eventColorStyle(colors)
+                      : undefined
+                }
               >
-                {colors.length >= 2 ? (
-                  <>
-                    {/* 그라데이션 위로 각 색의 무늬만 반쪽씩 — 무늬 있는 색은 자기 쪽에 무늬 유지 */}
-                    <span className="evt-pat left" data-color={colors[0].key} aria-hidden="true" />
-                    <span className="evt-pat right" data-color={colors[1].key} aria-hidden="true" />
-                  </>
-                ) : null}
+                {mixed
+                  ? mixedEventPatterns(colors, run!).map((p, pi) => (
+                      <span
+                        aria-hidden="true"
+                        className="evt-pat"
+                        data-color={p.key}
+                        key={pi}
+                        style={p.clipPath ? { clipPath: p.clipPath } : undefined}
+                      />
+                    ))
+                  : null}
                 <div className="event-main">
-                  {span.showTitle ? <p>{main}</p> : <p className="span-cont">&nbsp;</p>}
+                  {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다(이음새 어긋남 방지). */}
+                  {span.showTitle ? (
+                    <p>{main}</p>
+                  ) : (
+                    <p className="span-cont">{main || " "}</p>
+                  )}
                   {showHeart ? (
                     <button
                       aria-label={bookmarked ? "관심 일정에서 빼기" : "관심 일정으로 표시"}
@@ -1346,8 +1367,8 @@ export function PublicPoster({
                     {tier.label}
                   </span>
                 ) : null}
-                {span.showTitle && subs.length > 0 ? (
-                  <ul className="event-subs">
+                {subs.length > 0 ? (
+                  <ul className={`event-subs${span.showTitle ? "" : " span-cont"}`}>
                     {subs.map((sub, i) => (
                       <li key={i}>{sub}</li>
                     ))}
@@ -1465,7 +1486,6 @@ export function PublicPoster({
             </div>
 
             <div className="decorate-cols">
-              <div className="decorate-col-left">
                 <div className="palette-group">
               <span className="palette-label">기본 이모지</span>
               <div className="emoji-tabs" role="tablist" aria-label="이모지 분류">
@@ -1569,36 +1589,6 @@ export function PublicPoster({
                 </span>
               </label>
             </div>
-              </div>
-
-              <div className="decorate-col-right">
-                <div className="palette-group">
-              <span className="palette-label">텍스트</span>
-              <div className="text-add-row">
-                <input
-                  className="text-add-input"
-                  maxLength={60}
-                  onChange={(event) => setTextDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      void addText();
-                    }
-                  }}
-                  placeholder="문구를 입력하고 Enter (추가 후 줄바꿈·들여쓰기 편집 가능)"
-                  type="text"
-                  value={textDraft}
-                />
-                <button
-                  className="button"
-                  disabled={!textDraft.trim()}
-                  onClick={() => void addText()}
-                  type="button"
-                >
-                  <Type aria-hidden="true" size={15} />
-                  추가
-                </button>
-              </div>
             </div>
 
             {anchorId && mounted ? (
@@ -1810,6 +1800,23 @@ export function PublicPoster({
                             value={selected.opacity}
                           />
                         </label>
+                        <span className="stf-spacer" />
+                        <button
+                          className="stf-btn"
+                          onClick={duplicateSelected}
+                          title="복제 (Ctrl+D)"
+                          type="button"
+                        >
+                          <Copy aria-hidden="true" size={15} />
+                        </button>
+                        <button
+                          className="stf-btn danger"
+                          onClick={deleteSelected}
+                          title="삭제 (Delete)"
+                          type="button"
+                        >
+                          <Trash2 aria-hidden="true" size={15} />
+                        </button>
                       </div>
                       <div className="stf-row stf-icons">
                         <button
@@ -1855,36 +1862,13 @@ export function PublicPoster({
                         >
                           <SendToBack aria-hidden="true" size={15} />
                         </button>
-                        <button
-                          className="stf-btn"
-                          onClick={duplicateSelected}
-                          title="복제 (Ctrl+D)"
-                          type="button"
-                        >
-                          <Copy aria-hidden="true" size={15} />
-                        </button>
-                        <button
-                          className="stf-btn danger"
-                          onClick={deleteSelected}
-                          title="삭제 (Delete)"
-                          type="button"
-                        >
-                          <Trash2 aria-hidden="true" size={15} />
-                        </button>
                       </div>
                     </div>
                   ) : null}
                 </div>,
                 document.body
               )
-            ) : !anchorId ? (
-              <p className="decorate-hint">
-                이모지·텍스트를 눌러 추가하고, 달력 위에서 끌어 옮기세요. 선택하면 스티커 바로
-                옆에 작은 편집 바가 떠요 — 색·정렬·효과를 바꾸고, 크기는 모서리 손잡이로!
-              </p>
             ) : null}
-              </div>
-            </div>
 
             {/* #8: 단축키 안내 */}
             <div className="shortcut-help" aria-label="단축키 안내">
@@ -1918,15 +1902,46 @@ export function PublicPoster({
           </div>
         ) : null}
 
-        {/* #1: 캡쳐 버튼을 월간 일정표 바로 위에 둬, 달력을 보면서 누르기 쉽게 한다. */}
-        {canExport ? (
+        {/* 텍스트 추가(왼쪽) + 캡쳐 버튼(오른쪽)을 같은 줄에. 달력을 보면서 누르기 쉽게. */}
+        {decorate || canExport ? (
           <div className="poster-capture-row">
-            <PosterExportActions
-              onBeforeCapture={() => {
-                clearSelection();
-                clearFilters();
-              }}
-            />
+            {decorate ? (
+              <div className="text-add-row">
+                <input
+                  className="text-add-input"
+                  maxLength={60}
+                  onChange={(event) => setTextDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void addText();
+                    }
+                  }}
+                  placeholder="문구 입력 후 Enter 또는 추가 → 달력에 텍스트 스티커로 올라가요"
+                  type="text"
+                  value={textDraft}
+                />
+                <button
+                  className="button"
+                  disabled={!textDraft.trim()}
+                  onClick={() => void addText()}
+                  type="button"
+                >
+                  <Type aria-hidden="true" size={15} />
+                  추가
+                </button>
+              </div>
+            ) : (
+              <span />
+            )}
+            {canExport ? (
+              <PosterExportActions
+                onBeforeCapture={() => {
+                  clearSelection();
+                  clearFilters();
+                }}
+              />
+            ) : null}
           </div>
         ) : null}
 

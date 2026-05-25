@@ -182,27 +182,91 @@ export function getEventTagColors(
     .filter((color): color is ColorPaletteEntry => Boolean(color));
 }
 
-// D: 모은 색으로 일정칸 인라인 스타일을 만든다. 2색이면 두 색을 그라데이션으로 부드럽게 섞고,
-// 1색이면 단색. 무늬는 색을 덮지 않고, 호출부에서 각 색 반쪽에 data-color 스팬으로 따로 얹는다
-// (= 무늬 있는 색은 자기 쪽에 무늬 유지, 색은 그라데이션으로 섞임).
+// D: 단색 일정칸 인라인 스타일. 2색(혼합)은 mixedEventStyle/mixedEventPatterns로 따로 그린다.
 export function eventColorStyle(colors: ColorPaletteEntry[]): {
   backgroundColor?: string;
-  backgroundImage?: string;
   color?: string;
   borderColor?: string;
 } {
-  if (colors.length === 0) {
+  const a = colors[0];
+  if (!a) {
     return {};
   }
-  const [a, b] = colors;
-  if (b) {
-    return {
-      backgroundImage: `linear-gradient(135deg, ${a.bgColor} 0%, ${a.bgColor} 35%, ${b.bgColor} 65%, ${b.bgColor} 100%)`,
-      color: a.textColor,
-      borderColor: a.borderColor
-    };
-  }
   return { backgroundColor: a.bgColor, color: a.textColor, borderColor: a.borderColor };
+}
+
+function diffDays(a: string, b: string): number {
+  const [ya, ma, da] = a.split("-").map(Number);
+  const [yb, mb, db] = b.split("-").map(Number);
+  return Math.round((Date.UTC(yb, mb - 1, db) - Date.UTC(ya, ma - 1, da)) / 86400000);
+}
+
+// D: 한 일정이 같은 주(週) 행에서 차지하는 칸들 중 이 칸의 위치/총개수. 이어진 칸 전체에
+// 하나의 그라데이션을 깔고 경계를 가운데에 두기 위해 쓴다(주 경계에서 행이 바뀌면 행별로 계산).
+export function getSpanRun(
+  event: PublicScheduleEvent | StudioScheduleEvent,
+  isoDate: string,
+  weekday: number
+): { index: number; length: number } {
+  const start = getEventDateKey(event);
+  const end = eventEndKey(event);
+  const weekStart = addDays(isoDate, -weekday);
+  const weekEnd = addDays(isoDate, 6 - weekday);
+  const rowStart = start > weekStart ? start : weekStart;
+  const rowEnd = end < weekEnd ? end : weekEnd;
+  return {
+    index: Math.max(0, diffDays(rowStart, isoDate)),
+    length: Math.max(1, diffDays(rowStart, rowEnd) + 1)
+  };
+}
+
+// D: 혼합(2색) 칸 배경 — 두 색을 좌→우 그라데이션으로 섞되, 이어진 칸 전체 기준으로 그려
+// 경계가 칸 묶음의 가운데(2칸=이음새, 3칸=가운데칸 중앙)에 오게 한다. 경계는 수직이라
+// 칸 높이가 달라도 무늬 경계와 기울기가 어긋나지 않는다.
+export function mixedEventStyle(
+  colors: ColorPaletteEntry[],
+  run: { index: number; length: number }
+): {
+  backgroundImage: string;
+  backgroundSize: string;
+  backgroundPositionX: string;
+  backgroundRepeat: string;
+  color?: string;
+  borderColor?: string;
+} {
+  const [a, b] = colors;
+  const length = Math.max(1, run.length);
+  return {
+    backgroundImage: `linear-gradient(to right, ${a.bgColor} 0%, ${a.bgColor} 38%, ${b.bgColor} 62%, ${b.bgColor} 100%)`,
+    backgroundSize: `${length * 100}% 100%`,
+    backgroundPositionX: length > 1 ? `${(run.index / (length - 1)) * 100}%` : "center",
+    backgroundRepeat: "no-repeat",
+    color: a.textColor,
+    borderColor: a.borderColor
+  };
+}
+
+// D: 혼합 칸에 얹을 반쪽 무늬 스팬 정보. 칸 묶음 가운데를 경계로, 이 칸이 A쪽이면 A무늬만,
+// B쪽이면 B무늬만, 경계가 칸 안을 지나면 그 지점에서 좌(A)·우(B)로 나눈다.
+export function mixedEventPatterns(
+  colors: ColorPaletteEntry[],
+  run: { index: number; length: number }
+): { key: string; clipPath?: string }[] {
+  const [a, b] = colors;
+  const length = Math.max(1, run.length);
+  const cellStart = run.index / length;
+  const cellEnd = (run.index + 1) / length;
+  if (cellEnd <= 0.5 + 1e-6) {
+    return [{ key: a.key }];
+  }
+  if (cellStart >= 0.5 - 1e-6) {
+    return [{ key: b.key }];
+  }
+  const local = ((0.5 - cellStart) * length * 100).toFixed(2);
+  return [
+    { key: a.key, clipPath: `polygon(0 0, ${local}% 0, ${local}% 100%, 0 100%)` },
+    { key: b.key, clipPath: `polygon(${local}% 0, 100% 0, 100% 100%, ${local}% 100%)` }
+  ];
 }
 
 // 업 도움(support) 일정에 레인(끈 세로 위치)을 배정한다.

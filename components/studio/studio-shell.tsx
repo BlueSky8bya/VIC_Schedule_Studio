@@ -37,7 +37,10 @@ import {
   getEventTagColors,
   getLinkedChainIds,
   getMonthLabel,
+  getSpanRun,
   getTodayKst,
+  mixedEventPatterns,
+  mixedEventStyle,
   splitEventTitle
 } from "@/lib/calendar/month";
 import {
@@ -121,7 +124,7 @@ function addDaysIso(iso: string, days: number): string {
 
 
 const ROLE_LABEL: Record<MembershipRole, string> = {
-  owner: "소유자",
+  owner: "토리님님",
   developer: "개발자",
   manager: "매니저",
   worker: "작업자",
@@ -791,18 +794,28 @@ export function StudioShell({
                       ]
                         .filter(Boolean)
                         .join(" ");
+                      const mixed = colors.length >= 2;
+                      const run = mixed
+                        ? getSpanRun(event, cell.isoDate, cell.weekday)
+                        : null;
                       return (
                         <div
                           className={pillClass}
-                          data-color={colors.length >= 2 ? undefined : colors[0]?.key}
-                          data-mixed={colors.length >= 2 ? "" : undefined}
+                          data-color={mixed ? undefined : colors[0]?.key}
+                          data-mixed={mixed ? "" : undefined}
                           key={event.id}
                           onClick={(e) => {
                             e.stopPropagation();
                             handlePillClick(event.id);
                           }}
                           role="button"
-                          style={colors.length > 0 ? eventColorStyle(colors) : undefined}
+                          style={
+                            mixed
+                              ? mixedEventStyle(colors, run!)
+                              : colors.length > 0
+                                ? eventColorStyle(colors)
+                                : undefined
+                          }
                           tabIndex={0}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
@@ -811,32 +824,28 @@ export function StudioShell({
                             }
                           }}
                         >
-                          {colors.length >= 2 ? (
-                            <>
-                              {/* 그라데이션 위로 각 색의 무늬만 반쪽씩 (무늬 있는 색은 자기 쪽 유지) */}
-                              <span
-                                className="evt-pat left"
-                                data-color={colors[0].key}
-                                aria-hidden="true"
-                              />
-                              <span
-                                className="evt-pat right"
-                                data-color={colors[1].key}
-                                aria-hidden="true"
-                              />
-                            </>
-                          ) : null}
+                          {mixed
+                            ? mixedEventPatterns(colors, run!).map((p, pi) => (
+                                <span
+                                  aria-hidden="true"
+                                  className="evt-pat"
+                                  data-color={p.key}
+                                  key={pi}
+                                  style={p.clipPath ? { clipPath: p.clipPath } : undefined}
+                                />
+                              ))
+                            : null}
                           <div className="pill-main">
+                            {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (
                               <strong>{main}</strong>
                             ) : (
-                              <strong className="span-cont">&nbsp;</strong>
+                              <strong className="span-cont">{main || " "}</strong>
                             )}
                             {span.showTitle && isSel && canEdit ? (
                               <button
                                 aria-label="일정 삭제"
                                 className="pill-delete"
-                                disabled={pending}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   deleteEvent(event.id);
@@ -848,9 +857,9 @@ export function StudioShell({
                               </button>
                             ) : null}
                           </div>
-                          {/* 일정 카드는 항상 펼침 고정 — 토글 없음(시청자·꾸미기와 통일). */}
-                          {span.showTitle && subs.length > 0 ? (
-                            <ul className="pill-subs">
+                          {/* 일정 카드는 항상 펼침 고정. 이어지는 칸은 투명으로 높이만 맞춘다. */}
+                          {subs.length > 0 ? (
+                            <ul className={`pill-subs${span.showTitle ? "" : " span-cont"}`}>
                               {subs.map((sub, i) => (
                                 <li key={i}>{sub}</li>
                               ))}
@@ -1023,7 +1032,6 @@ export function StudioShell({
             events.find((e) => e.id === selectedEventId)?.isSupport ? (
               <button
                 className="button danger"
-                disabled={pending}
                 onClick={() => deleteEvent(selectedEventId)}
                 type="button"
               >

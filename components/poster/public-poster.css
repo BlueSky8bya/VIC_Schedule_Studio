@@ -217,9 +217,15 @@
 /* #1: 월간 일정표 바로 위 캡쳐 버튼 줄 */
 .poster-capture-row {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   margin-bottom: 10px;
+}
+.poster-capture-row .text-add-row {
+  flex: 1 1 320px;
+  min-width: 0;
 }
 
 .poster-surface {
@@ -1252,23 +1258,21 @@
   gap: 12px;
   min-width: 0;
 }
-/* 왼쪽 칼럼의 마지막 묶음(내 이모지+업로드)이 남는 높이를 채운다. */
-.decorate-col-left > .palette-group:last-child {
-  flex: 1;
+/* 오른쪽 묶음(내 이모지+업로드)이 칸 높이를 채운다(이모지 칸과 밑단 맞춤). */
+.decorate-cols > .palette-group:last-child {
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-height: 0;
 }
-/* 저장된 내 이모지 박스: 남는 높이를 더 많이 차지하되, 많아지면 박스 안에서만 스크롤
-   → 업로드를 아무리 많이 해도 왼쪽 칼럼 자체는 길어지지 않는다. */
-.decorate-col-left > .palette-group:last-child .asset-palette {
+/* 저장된 내 이모지 박스: 남는 높이를 더 많이 차지하되, 많아지면 박스 안에서만 스크롤. */
+.decorate-cols > .palette-group:last-child .asset-palette {
   flex: 2 1 0;
   min-height: 96px;
   max-height: none;
 }
 /* 업로드 드롭존: 바닥 쪽에 일정 크기로(저장 박스가 없으면 남는 공간을 채움) */
-.decorate-col-left > .palette-group:last-child .upload-drop {
+.decorate-cols > .palette-group:last-child .upload-drop {
   flex: 1 1 0;
   min-height: 120px;
   align-content: center;
