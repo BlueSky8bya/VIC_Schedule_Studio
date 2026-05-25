@@ -53,6 +53,7 @@ import { getDayMark } from "@/lib/calendar/holidays";
 import {
   assignSupportLanes,
   buildCalendarMonth,
+  buildChainKeys,
   classifyDay,
   eventColorStyle,
   getAdjacentMonth,
@@ -68,6 +69,7 @@ import {
   splitEventTitle,
   type MonthCell
 } from "@/lib/calendar/month";
+import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 
 type PublicPosterProps = {
   schedule: PublicSchedule;
@@ -330,6 +332,10 @@ export function PublicPoster({
   const today = getTodayKst();
   const supportLanes = useMemo(() => assignSupportLanes(schedule.events), [schedule.events]);
   const supportEvents = schedule.events.filter((e) => e.isSupport);
+  // 이어진 일정 묶음 키 — 같은 묶음 칸들의 높이를 맞추는 데 쓴다(아래 useEqualChainHeights).
+  const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
+  const monthGridRef = useRef<HTMLDivElement>(null);
+  useEqualChainHeights(monthGridRef, [schedule.events, view]);
   // #1: 색상 안내에서 "기타"는 항상 맨 마지막으로(나머지는 기존 정렬 유지).
   const legendTags = useMemo(
     () =>
@@ -1314,6 +1320,7 @@ export function PublicPoster({
             return (
               <div
                 className={eventClass}
+                data-chain={chainKeys.get(event.id)}
                 data-color={mixed ? undefined : colors[0]?.key}
                 data-mixed={mixed ? "" : undefined}
                 key={event.id}
@@ -1986,7 +1993,7 @@ export function PublicPoster({
               ))}
             </div>
 
-            <div className="public-month-grid" aria-label="월간 공개 일정">
+            <div className="public-month-grid" aria-label="월간 공개 일정" ref={monthGridRef}>
               {cells.map((cell) => renderDayCell(cell))}
             </div>
           </section>

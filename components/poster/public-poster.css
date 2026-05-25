@@ -1827,6 +1827,10 @@
 .stf-icons {
   gap: 5px;
 }
+/* 아랫줄 버튼들을 늘려 줄 너비를 꽉 채워, 윗줄(투명도·복제·삭제)과 양끝을 맞춘다. */
+.stf-icons .stf-btn {
+  flex: 1 1 auto;
+}
 .stf-select {
   flex: 1 1 auto;
   min-width: 92px;

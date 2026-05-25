@@ -195,6 +195,40 @@ export function eventColorStyle(colors: ColorPaletteEntry[]): {
   return { backgroundColor: a.bgColor, color: a.textColor, borderColor: a.borderColor };
 }
 
+// 이어진 일정(같은 멀티데이 일정의 여러 칸 + link_next로 묶인 일정들)을 한 묶음으로 보고
+// 같은 키를 준다. 이 키로 DOM에서 묶어 높이를 가장 큰 칸에 맞춘다(어긋난 이음새 방지).
+export function buildChainKeys(
+  events: Array<PublicScheduleEvent | StudioScheduleEvent>
+): Map<string, string> {
+  const next = new Map<string, string>();
+  const hasPrev = new Set<string>();
+  for (const e of events) {
+    if (e.linkNext) {
+      next.set(e.id, e.linkNext);
+      hasPrev.add(e.linkNext);
+    }
+  }
+  const keys = new Map<string, string>();
+  for (const e of events) {
+    if (hasPrev.has(e.id)) {
+      continue; // 체인 시작점만에서 출발
+    }
+    let cur: string | undefined = e.id;
+    const guard = new Set<string>();
+    while (cur && !guard.has(cur)) {
+      guard.add(cur);
+      keys.set(cur, e.id);
+      cur = next.get(cur);
+    }
+  }
+  for (const e of events) {
+    if (!keys.has(e.id)) {
+      keys.set(e.id, e.id);
+    }
+  }
+  return keys;
+}
+
 function diffDays(a: string, b: string): number {
   const [ya, ma, da] = a.split("-").map(Number);
   const [yb, mb, db] = b.split("-").map(Number);

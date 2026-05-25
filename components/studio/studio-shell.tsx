@@ -27,6 +27,7 @@ import type { CurrentActor } from "@/lib/auth/actor";
 import {
   assignSupportLanes,
   buildCalendarMonth,
+  buildChainKeys,
   buildLinkChain,
   classifyDay,
   eventColorStyle,
@@ -43,6 +44,7 @@ import {
   mixedEventStyle,
   splitEventTitle
 } from "@/lib/calendar/month";
+import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import {
   canDecorate,
   canEditSchedule,
@@ -266,6 +268,10 @@ export function StudioShell({
   );
   const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
   const supportLanes = useMemo(() => assignSupportLanes(visibleEvents), [visibleEvents]);
+  // 이어진 일정 묶음 키 + 묶음 칸 높이 맞추기(글자 수 달라도 이음새 안 어긋나게).
+  const chainKeys = useMemo(() => buildChainKeys(visibleEvents), [visibleEvents]);
+  const monthGridRef = useRef<HTMLDivElement>(null);
+  useEqualChainHeights(monthGridRef, [visibleEvents, view]);
   // 선택한 일정이 속한 연결 체인 전체를 하이라이트 대상으로 삼는다.
   const selectedChainIds = useMemo(
     () => getLinkedChainIds(selectedEventId, visibleEvents),
@@ -698,7 +704,7 @@ export function StudioShell({
               </span>
             ))}
           </div>
-          <div className="studio-month-grid" aria-label="월간 달력">
+          <div className="studio-month-grid" aria-label="월간 달력" ref={monthGridRef}>
             {cells.map((cell) => {
               const covering = getEventsForDate(visibleEvents, cell.isoDate);
               const supportHere = covering.filter((e) => e.isSupport);
@@ -801,6 +807,7 @@ export function StudioShell({
                       return (
                         <div
                           className={pillClass}
+                          data-chain={chainKeys.get(event.id)}
                           data-color={mixed ? undefined : colors[0]?.key}
                           data-mixed={mixed ? "" : undefined}
                           key={event.id}
