@@ -41,8 +41,8 @@ import {
   getMonthLabel,
   getSpanRunRange,
   getTodayKst,
-  mixedEventPatterns,
   mixedEventStyle,
+  mixedPatternMaskStyle,
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
@@ -858,6 +858,7 @@ export function StudioShell({
                         mixed && pg
                           ? getSpanRunRange(pg.start, pg.end, cell.isoDate, cell.weekday)
                           : null;
+                      const mixStyle = mixed && run ? mixedEventStyle(colors, run) : null;
                       return (
                         <div
                           className={pillClass}
@@ -871,11 +872,7 @@ export function StudioShell({
                           }}
                           role="button"
                           style={
-                            mixed
-                              ? mixedEventStyle(colors, run!)
-                              : colors.length > 0
-                                ? eventColorStyle(colors)
-                                : undefined
+                            mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined)
                           }
                           tabIndex={0}
                           onKeyDown={(e) => {
@@ -885,17 +882,23 @@ export function StudioShell({
                             }
                           }}
                         >
-                          {mixed
-                            ? mixedEventPatterns(colors, run!).map((p, pi) => (
-                                <span
-                                  aria-hidden="true"
-                                  className="evt-pat"
-                                  data-color={p.key}
-                                  key={pi}
-                                  style={p.clipPath ? { clipPath: p.clipPath } : undefined}
-                                />
-                              ))
-                            : null}
+                          {mixStyle ? (
+                            <>
+                              {/* 무늬도 색과 같은 위치에서 부드럽게 사라지게(마스크) — 경계 흐릿 */}
+                              <span
+                                aria-hidden="true"
+                                className="evt-pat"
+                                data-color={colors[0].key}
+                                style={mixedPatternMaskStyle(mixStyle, "a")}
+                              />
+                              <span
+                                aria-hidden="true"
+                                className="evt-pat"
+                                data-color={colors[1].key}
+                                style={mixedPatternMaskStyle(mixStyle, "b")}
+                              />
+                            </>
+                          ) : null}
                           <div className="pill-main">
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (

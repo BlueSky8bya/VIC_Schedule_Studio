@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, type RefObject } from "react";
+import { useLayoutEffect, type RefObject } from "react";
 
 // 이어진 일정(같은 data-chain) 칸들의 높이를 그 묶음에서 가장 큰 칸에 맞춘다.
 // 글자 수가 달라 높이가 다른 카드들이 이어질 때 이음새가 어긋나 보이는 걸 막는다.
@@ -9,7 +9,7 @@ export function useEqualChainHeights(
   ref: RefObject<HTMLElement | null>,
   deps: unknown[]
 ) {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = ref.current;
     if (!root) {
       return;

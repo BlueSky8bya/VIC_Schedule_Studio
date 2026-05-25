@@ -7,6 +7,7 @@ import type {
 } from "@/lib/domain/schedule-types";
 import { PRODUCT_TIMEZONE } from "@/lib/domain/schedule-types";
 import { getDayMark } from "@/lib/calendar/holidays";
+import type { CSSProperties } from "react";
 
 export type MonthCell = {
   isoDate: string;
@@ -350,27 +351,28 @@ export function mixedEventStyle(
   };
 }
 
-// D: 혼합 칸에 얹을 반쪽 무늬 스팬 정보. 칸 묶음 가운데를 경계로, 이 칸이 A쪽이면 A무늬만,
-// B쪽이면 B무늬만, 경계가 칸 안을 지나면 그 지점에서 좌(A)·우(B)로 나눈다.
-export function mixedEventPatterns(
-  colors: ColorPaletteEntry[],
-  run: { index: number; length: number }
-): { key: string; clipPath?: string }[] {
-  const [a, b] = colors;
-  const length = Math.max(1, run.length);
-  const cellStart = run.index / length;
-  const cellEnd = (run.index + 1) / length;
-  if (cellEnd <= 0.5 + 1e-6) {
-    return [{ key: a.key }];
-  }
-  if (cellStart >= 0.5 - 1e-6) {
-    return [{ key: b.key }];
-  }
-  const local = ((0.5 - cellStart) * length * 100).toFixed(2);
-  return [
-    { key: a.key, clipPath: `polygon(0 0, ${local}% 0, ${local}% 100%, 0 100%)` },
-    { key: b.key, clipPath: `polygon(${local}% 0, 100% 0, 100% 100%, ${local}% 100%)` }
-  ];
+// D: 혼합 칸 무늬 오버레이 스타일. 색 그라데이션과 똑같은 윈도잉(크기·위치)으로 마스크를 깔아,
+// 무늬가 색과 같은 위치(가운데 38~62%)에서 부드럽게 사라지게 한다 → 무늬 경계도 색처럼 흐릿.
+// A는 왼쪽에서 불투명→가운데서 사라짐, B는 가운데서 나타나→오른쪽 불투명.
+export function mixedPatternMaskStyle(
+  win: { backgroundSize: string; backgroundPositionX: string },
+  side: "a" | "b"
+): CSSProperties {
+  const grad =
+    side === "a"
+      ? "linear-gradient(to right, #000 38%, transparent 62%)"
+      : "linear-gradient(to right, transparent 38%, #000 62%)";
+  const pos = `${win.backgroundPositionX} center`;
+  return {
+    WebkitMaskImage: grad,
+    maskImage: grad,
+    WebkitMaskSize: win.backgroundSize,
+    maskSize: win.backgroundSize,
+    WebkitMaskPosition: pos,
+    maskPosition: pos,
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat"
+  };
 }
 
 // 업 도움(support) 일정에 레인(끈 세로 위치)을 배정한다.
