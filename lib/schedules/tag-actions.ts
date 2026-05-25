@@ -36,19 +36,48 @@ function hexToHue(hex: string): number | null {
   return (h + 360) % 360;
 }
 
-// 이미 쓰인 hue들에서 원형 거리상 가장 먼 hue(가장 안 겹치는 색)를 고른다.
-function farthestHue(used: number[]): number {
-  if (used.length === 0) return Math.floor(Math.random() * 360);
-  let best = 0;
-  let bestDist = -1;
+type Pat = "plain" | "diag" | "dots" | "grid";
+// 색 key로 무늬 종류를 추정한다(생성색 gen-* 접두사 + 기본색 중 무늬 있는 것).
+function patternOf(key: string): Pat {
+  if (key.startsWith("gen-diag-")) return "diag";
+  if (key.startsWith("gen-dots-")) return "dots";
+  if (key.startsWith("gen-grid-")) return "grid";
+  if (key === "indigo" || key === "mint") return "diag";
+  if (key === "sky") return "dots";
+  return "plain";
+}
+// 두 hue의 원형 거리(0~180).
+function hueDist(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360;
+  return Math.min(d, 360 - d);
+}
+
+// 새 색의 (hue, 무늬) 조합을 고른다. 핵심: "같은 무늬를 쓰는 기존 색"과 hue가 최대한 멀어지게 한다.
+// → 색조가 비슷해도 무늬가 다르면 구분되고, 무늬가 같으면 색조를 멀리 띄운다(둘 다 비슷한 경우 회피).
+// 아직 안 쓴 무늬(또는 그 무늬에서 hue가 텅 빈 쪽)를 우선 잡고, 동점이면 전체 색과도 멀게.
+function pickColorSlot(existing: { hue: number; pat: Pat }[]): { hue: number; pat: Pat } {
+  const pats: Pat[] = ["plain", "diag", "dots", "grid"];
+  let best = { hue: Math.floor(Math.random() * 360), pat: "diag" as Pat, score: -1 };
   for (let h = 0; h < 360; h += 5) {
-    const dist = Math.min(...used.map((u) => Math.min(Math.abs(h - u), 360 - Math.abs(h - u))));
-    if (dist > bestDist) {
-      bestDist = dist;
-      best = h;
+    for (const pat of pats) {
+      let sameMin = Infinity; // 같은 무늬 색들과의 최소 hue 거리
+      let allMin = Infinity; // 모든 색과의 최소 hue 거리(미적 분산용)
+      for (const e of existing) {
+        const hd = hueDist(h, e.hue);
+        allMin = Math.min(allMin, hd);
+        if (e.pat === pat) {
+          sameMin = Math.min(sameMin, hd);
+        }
+      }
+      // 같은 무늬와의 거리(주)를 크게, 전체 분산(부)을 작게 가중. 같은 무늬가 없으면 360으로 친다.
+      const score =
+        (sameMin === Infinity ? 360 : sameMin) * 2 + (allMin === Infinity ? 360 : allMin);
+      if (score > best.score) {
+        best = { hue: h, pat, score };
+      }
     }
   }
-  return best;
+  return { hue: best.hue, pat: best.pat };
 }
 
 function hslToHex(h: number, s: number, l: number): string {
@@ -140,20 +169,16 @@ export async function addTagAction(): Promise<AddTagResult> {
     supabase.from("broadcast_tags").select("sort_order").eq("calendar_id", calendar.id)
   ]);
 
-  const usedHues = (palette ?? [])
-    .map((p) => hexToHue(p.bg_color))
-    .filter((h): h is number => h !== null);
-  const hue = farthestHue(usedHues);
+  // 기존 색을 (hue, 무늬)로 정리해, 같은 무늬와 색조가 겹치지 않는 슬롯을 고른다.
+  const existing = (palette ?? [])
+    .map((p) => ({ hue: hexToHue(p.bg_color), pat: patternOf(p.key ?? "") }))
+    .filter((e): e is { hue: number; pat: Pat } => e.hue !== null);
+  const { hue, pat: pattern } = pickColorSlot(existing);
   const bgColor = hslToHex(hue, 62, 86); // 연한 배경
   const borderColor = hslToHex(hue, 52, 68);
   const textColor = hslToHex(hue, 55, 28); // 같은 hue의 어두운 글씨
 
-  // 연한 톤은 색만으로 비슷해 보일 수 있어, 생성 색엔 무늬(대각선/점/격자)를 번갈아 입힌다.
-  // (key 접두사로 globals.css의 무늬 규칙과 매칭. 세로무늬는 가독성 때문에 안 쓴다.)
-  const patterns = ["diag", "dots", "grid"] as const;
-  const genCount = (palette ?? []).filter((p) => p.key?.startsWith("gen-")).length;
-  const pattern = patterns[genCount % patterns.length];
-
+  // (key 접두사로 globals.css 무늬 규칙과 매칭. gen-plain-은 규칙이 없어 민무늬가 된다.)
   const rand = Math.random().toString(36).slice(2, 8);
   const key = `gen-${pattern}-${rand}`;
   const paletteSort = Math.max(0, ...(palette ?? []).map((p) => p.sort_order ?? 0)) + 1;
