@@ -10,9 +10,13 @@
   --paper: #f7f8fc;
   --surface: #ffffff;
   --surface-2: #f9fafe;
-  --accent: #0f8b8d;
-  --accent-strong: #0a6f71;
-  --accent-soft: #e6f4f3;
+  /* 빅토리 시그니처: 화사한 골드 옐로(주) + 그린(포인트). 노랑 위 글자는 짙은 갈색으로. */
+  --accent: #f5b81b;
+  --accent-strong: #a9760a;
+  --accent-soft: #fff3d2;
+  --on-accent: #4a3500;
+  --green: #4e9d3f;
+  --green-soft: #e9f5e1;
   --coral: #f26d5b;
   --amber: #f4b740;
   --violet: #7c5cff;
@@ -239,12 +243,14 @@ select {
 
 .button.primary {
   border-color: transparent;
-  background: linear-gradient(180deg, #16a3a5, var(--accent));
-  color: white;
+  background: linear-gradient(180deg, #ffd44f, var(--accent));
+  color: var(--on-accent);
+  font-weight: 900;
 }
 
 .button.primary:hover:not(:disabled) {
-  background: linear-gradient(180deg, var(--accent), var(--accent-strong));
+  background: linear-gradient(180deg, var(--accent), #e0a414);
+  color: var(--on-accent);
   border-color: transparent;
 }
 
@@ -659,6 +665,7 @@ select {
   position: absolute;
   inset: 0;
   z-index: 0;
+  border-radius: inherit; /* 칸 모서리에 맞춰 둥글게 → overflow:hidden 없이도 무늬가 안 삐져나옴 */
   background-color: transparent;
   pointer-events: none;
 }

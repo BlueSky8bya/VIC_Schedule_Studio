@@ -1127,7 +1127,6 @@
 /* D: 2색 칸은 그라데이션(칸 배경) 위에 반쪽 무늬를 깔고, 글자는 그 위로 올린다. */
 .public-event[data-mixed] {
   position: relative;
-  overflow: hidden;
 }
 .public-event[data-mixed] > :not(.evt-pat) {
   position: relative;
@@ -1652,10 +1651,13 @@
 .emoji-tabs {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-start; /* 줄이 늘어나도 버튼이 세로로 늘어나지 않게 */
+  align-content: flex-start;
   gap: 4px;
 }
 .emoji-tabs button {
-  min-height: 30px;
+  flex: 0 0 auto;
+  height: 30px; /* 고정 높이 — 선택/포커스 시 높이가 확장되던 버그 방지 */
   border: 1px solid var(--line);
   border-radius: var(--r-pill);
   background: var(--surface);
@@ -1663,10 +1665,12 @@
   color: var(--muted);
   font-size: 12.5px;
   font-weight: 800;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background var(--dur-1) var(--ease),
-    color var(--dur-1) var(--ease);
+    color var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease);
 }
 .emoji-tabs button:hover {
   color: var(--ink);
@@ -1861,15 +1865,15 @@
 .text-toggle-btn.active {
   border-color: var(--accent);
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 .text-weight-group button.active,
 .text-font-group button.active,
 .text-align-group button.active {
   border-color: var(--accent);
   background: var(--accent);
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgb(15 139 141 / 35%);
+  color: var(--on-accent);
+  box-shadow: 0 2px 6px rgb(245 184 27 / 38%);
 }
 .text-size-control {
   display: inline-flex;
@@ -2015,7 +2019,7 @@
 .stf-btn[aria-pressed="true"] {
   border-color: var(--accent);
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 .stf-btn.danger {
   border-color: #fca5a5;
