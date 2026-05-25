@@ -19,6 +19,12 @@ import { PUBLIC_SCHEDULE_CACHE_TAG } from "@/lib/schedules/cache";
 function coercePosterTheme(value: unknown): PosterThemeKey {
   return typeof value === "string" && isPosterThemeKey(value) ? value : "none";
 }
+function coerceMemoAlign(value: unknown): "left" | "center" | "right" {
+  return value === "center" || value === "right" ? value : "left";
+}
+function coerceMemoVAlign(value: unknown): "top" | "center" | "bottom" {
+  return value === "center" || value === "bottom" ? value : "top";
+}
 
 // 익명 공개 데이터는 모든 시청자에게 동일하므로 Data Cache에 짧게 캐시한다.
 // 수백 명이 동시에 봐도 DB는 이 주기마다 한 번만 조회된다(읽기 위주 트래픽 최적화).
@@ -65,7 +71,9 @@ const loadPublicScheduleData = unstable_cache(
 
     const { data: calendar } = await supabase
       .from("calendars")
-      .select("id, slug, display_name, title, public_memo, poster_theme")
+      .select(
+        "id, slug, display_name, title, public_memo, poster_theme, public_memo_align, public_memo_valign"
+      )
       .eq("slug", calendarSlug)
       .eq("is_public", true)
       .maybeSingle();
@@ -157,7 +165,9 @@ const loadPublicScheduleData = unstable_cache(
         defaultYear: year,
         defaultMonth: month,
         publicMemo: calendar.public_memo ?? "",
-        posterTheme: coercePosterTheme(calendar.poster_theme)
+        posterTheme: coercePosterTheme(calendar.poster_theme),
+        memoAlign: coerceMemoAlign(calendar.public_memo_align),
+        memoVAlign: coerceMemoVAlign(calendar.public_memo_valign)
       },
       tags: (tagsRes.data ?? []).map(mapTag),
       palette: (paletteRes.data ?? []).map(mapPalette),

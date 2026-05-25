@@ -36,3 +36,37 @@ export async function updateMemoAction(memo: string): Promise<MemoResult> {
   revalidatePublicSchedule();
   return { ok: true };
 }
+
+// #5: 메모 정렬(가로)·위치(세로)를 저장.
+export async function setMemoLayoutAction(
+  align: "left" | "center" | "right",
+  valign: "top" | "center" | "bottom"
+): Promise<MemoResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!canEditSchedule(actor.role)) {
+    return { ok: false, error: "owner 또는 developer만 메모를 수정할 수 있습니다." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
+  }
+
+  const { error } = await supabase
+    .from("calendars")
+    .update({
+      public_memo_align: align,
+      public_memo_valign: valign,
+      updated_at: new Date().toISOString()
+    })
+    .eq("slug", SLUG);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/studio");
+  revalidatePublicSchedule();
+  return { ok: true };
+}

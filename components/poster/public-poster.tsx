@@ -76,6 +76,11 @@ type PublicPosterProps = {
   toggleHeartAction?: (eventId: string) => Promise<HeartResult>;
   // 공개 메모 저장(소유자/개발자만). 주어지면 꾸미기에서 메모 박스를 편집할 수 있다.
   updateMemoAction?: (memo: string) => Promise<MemoResult>;
+  // #5: 메모 정렬(가로)·위치(세로) 저장.
+  setMemoLayoutAction?: (
+    align: "left" | "center" | "right",
+    valign: "top" | "center" | "bottom"
+  ) => Promise<MemoResult>;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -307,7 +312,8 @@ export function PublicPoster({
   deleteStickerAssetAction,
   setPosterThemeAction,
   toggleHeartAction,
-  updateMemoAction
+  updateMemoAction,
+  setMemoLayoutAction
 }: PublicPosterProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -406,6 +412,29 @@ export function PublicPoster({
       }
     }, 600);
   }
+
+  // #5: 메모 정렬(가로)·위치(세로). 버튼으로 즉시 반영하고 저장.
+  const [memoAlign, setMemoAlign] = useState(schedule.calendar.memoAlign ?? "left");
+  const [memoVAlign, setMemoVAlign] = useState(schedule.calendar.memoVAlign ?? "top");
+  useEffect(() => {
+    if (!setMemoLayoutAction) {
+      setMemoAlign(schedule.calendar.memoAlign ?? "left");
+      setMemoVAlign(schedule.calendar.memoVAlign ?? "top");
+    }
+  }, [schedule.calendar.memoAlign, schedule.calendar.memoVAlign, setMemoLayoutAction]);
+  function changeMemoLayout(
+    align: "left" | "center" | "right",
+    valign: "top" | "center" | "bottom"
+  ) {
+    setMemoAlign(align);
+    setMemoVAlign(valign);
+    void setMemoLayoutAction?.(align, valign);
+  }
+  const memoVAlignCss: Record<string, string> = {
+    top: "start",
+    center: "center",
+    bottom: "end"
+  };
 
   // 스티커는 달(월)마다 따로 — 현재 보는 달의 스티커만 로컬 상태로 다룬다.
   const monthStickers = (year: number, month: number) =>
@@ -1904,15 +1933,61 @@ export function PublicPoster({
         {/* 메모 편집 바 — 포스터 표면 밖이라 스티커 레이어에 안 막히고 글이 써진다(소유자 전용). */}
         {updateMemoAction ? (
           <div className="memo-edit-bar">
-            <span className="memo-edit-label">메모</span>
+            <div className="memo-edit-head">
+              <span className="memo-edit-label">메모</span>
+              {setMemoLayoutAction ? (
+                <div className="memo-edit-tools">
+                  <div className="memo-align-group" role="group" aria-label="가로 정렬">
+                    {(
+                      [
+                        { key: "left", Icon: AlignLeft },
+                        { key: "center", Icon: AlignCenter },
+                        { key: "right", Icon: AlignRight }
+                      ] as const
+                    ).map(({ key, Icon }) => (
+                      <button
+                        aria-label={`${key} 정렬`}
+                        aria-pressed={memoAlign === key}
+                        className={memoAlign === key ? "active" : ""}
+                        key={key}
+                        onClick={() => changeMemoLayout(key, memoVAlign)}
+                        type="button"
+                      >
+                        <Icon aria-hidden="true" size={14} />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="memo-align-group" role="group" aria-label="세로 위치">
+                    {(
+                      [
+                        { key: "top", label: "↑" },
+                        { key: "center", label: "↕" },
+                        { key: "bottom", label: "↓" }
+                      ] as const
+                    ).map(({ key, label }) => (
+                      <button
+                        aria-label={`세로 ${key}`}
+                        aria-pressed={memoVAlign === key}
+                        className={memoVAlign === key ? "active" : ""}
+                        key={key}
+                        onClick={() => changeMemoLayout(memoAlign, key)}
+                        type="button"
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+              <span className="memo-edit-state">{memoSaved ? "저장됨" : "저장 중…"}</span>
+            </div>
             <textarea
               className="memo-edit-input"
               onChange={(event) => changeMemo(event.target.value)}
               placeholder="시청자 화면에 보일 메모를 적어주세요 (한 줄에 하나씩)"
-              rows={2}
+              rows={3}
               value={memo}
             />
-            <span className="memo-edit-state">{memoSaved ? "저장됨" : "저장 중…"}</span>
           </div>
         ) : null}
 
@@ -1955,7 +2030,10 @@ export function PublicPoster({
             {updateMemoAction || decorate || memo.trim() ? (
               <div className="public-memo">
                 <strong>메모</strong>
-                <div className="memo-body">
+                <div
+                  className="memo-body"
+                  style={{ textAlign: memoAlign, alignContent: memoVAlignCss[memoVAlign] }}
+                >
                   {memo.trim() ? (
                     memo
                       .split("\n")

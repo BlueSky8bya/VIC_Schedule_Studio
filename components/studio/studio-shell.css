@@ -297,8 +297,9 @@
   z-index: 1;
 }
 
+/* #7: 7번째 칸도 1px 테두리 폭을 유지하되 색만 투명 → 모든 칸 안쪽 너비 동일(줄바꿈 일관). */
 .studio-day:nth-child(7n) {
-  border-right: 0;
+  border-right-color: transparent;
 }
 
 /* 오늘 이전: 살짝 흐린 회색 / 오늘 이후: 흰색 */
@@ -463,10 +464,13 @@
   border-color: #f59e0b !important;
   background: rgb(251 191 36 / 16%);
 }
-/* 현재 편집 중인(클릭한) 카드 — 배경만 더 진하게. 박스(outline/ring)는 이음매를 끊으므로 쓰지 않는다.
-   span의 이어진 쪽은 좌우 테두리가 없어 위/아래 노란 선만 끊김 없이 이어진다. */
+/* 현재 편집 중인(클릭한) 카드 — 이어진 일정에서도 "어느 날짜를 골랐는지" 확실히 보이게
+   진한 배경 + 굵은 호박색 링으로 또렷이 강조한다. (체인 전체는 위 .selected로 옅게 표시) */
 .studio-event-pill.primary-selected {
-  background: rgb(251 191 36 / 34%);
+  background: rgb(251 191 36 / 36%);
+  outline: 2.5px solid #d97706;
+  outline-offset: -1px;
+  border-radius: 8px;
 }
 
 /* #2: 복사/붙여넣기 알림 토스트 */
@@ -741,26 +745,31 @@ textarea:disabled {
 .tag-editor-remove:disabled {
   opacity: 0.5;
 }
-/* 색 스와치: 얇은 직사각형이라 20가지+도 한 줄에 들어간다(넘치면 가로 스크롤). */
+/* 색 스와치: 칸 수에 따라 너비가 유동적으로 늘고 줄어든다(flex 1 1 0, 9~34px). 한 줄 유지.
+   overflow를 쓰지 않아 선택 테두리가 잘리지 않는다. */
 .tag-editor-swatches {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
   flex-wrap: nowrap;
-  gap: 3px;
-  overflow-x: auto;
-  padding-bottom: 2px;
+  gap: 4px;
+  padding: 2px;
 }
 .tag-editor-swatches button {
-  flex: 0 0 auto;
-  width: 13px;
+  flex: 1 1 0;
+  min-width: 9px;
+  max-width: 34px;
   height: 26px;
   border: 1.5px solid;
-  border-radius: 3px;
+  border-radius: 4px;
+  padding: 0;
   cursor: pointer;
 }
 .tag-editor-swatches button.selected {
+  position: relative;
+  z-index: 1;
   box-shadow: 0 0 0 2px #111827;
+  transform: scaleY(1.12);
 }
 .tag-editor-row .button {
   justify-self: start;
@@ -1559,4 +1568,10 @@ textarea:disabled {
 }
 .tag-editor-actions .button.primary {
   flex: 1;
+}
+/* #4: 저장 성공을 확실히 알리는 초록 피드백(잠깐). */
+.tag-editor-actions .button.primary.saved {
+  border-color: #16a34a !important;
+  background: #16a34a !important;
+  color: #fff !important;
 }

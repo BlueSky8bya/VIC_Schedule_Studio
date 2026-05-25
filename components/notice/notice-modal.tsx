@@ -24,48 +24,29 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
   const [time, setTime] = useState(""); // 예: "4시", "5시반"
   const [brief, setBrief] = useState(""); // 방송 내용(간략)
   const [detail, setDetail] = useState(""); // 자세한 내용
-  const [copied, setCopied] = useState<"title" | "body" | "emoticon" | null>(null);
-
-  // 이모티콘을 클립보드에 이미지로 복사(되면 SOOP 본문에 바로 붙여넣기). 막히면 URL을 복사한다.
-  async function copyEmoticon() {
-    try {
-      const res = await fetch(EMOTICON_URL, { mode: "cors" });
-      const blob = await res.blob();
-      if (navigator.clipboard && "write" in navigator.clipboard && window.ClipboardItem) {
-        await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
-        setCopied("emoticon");
-        window.setTimeout(() => setCopied(null), 1500);
-        return;
-      }
-      throw new Error("clipboard image unsupported");
-    } catch {
-      // 이미지 복사가 막히면(브라우저/CORS) URL을 대신 복사한다.
-      try {
-        await navigator.clipboard.writeText(EMOTICON_URL);
-        setCopied("emoticon");
-        window.setTimeout(() => setCopied(null), 1500);
-      } catch {
-        /* 무시 */
-      }
-    }
-  }
+  const [copied, setCopied] = useState<"title" | "body" | null>(null);
 
   const shownTime = time.trim() || "N시";
   const title = `${formatNoticeDate(dateKey)} - ${shownTime} 뱅온!`;
-  // 템플릿대로 본문을 조립한다. 비워둔 칸은 자리표시 문구를 넣어 어디를 채울지 보이게 한다.
+  // 빈 줄은 공백(nbsp)으로 채워야 SOOP 에디터에 붙여넣을 때 빈 줄이 그대로 남는다(빈 문자열은 합쳐져 사라짐).
+  const NB = " ";
+  // 템플릿대로 본문을 조립한다. 빈 줄 간격(들여쓰기)은 스펙대로 2·1·2·1줄. 이모티콘은 사용자가 직접 추가.
   const body = [
     "안녕하세요 빅토리입니다~!!",
-    "",
+    NB,
+    NB,
     "오늘의 뱅온 시간은~!",
     `${ampm} ${shownTime}에`,
     "키겠습니다!",
-    "",
+    NB,
     "방송 내용은~!",
     brief.trim() || "(방송 내용 간단하게)",
     "합니다!",
-    "",
+    NB,
+    NB,
     detail.trim() || "(조금 자세한 내용)",
-    "좀따 만나요~!!"
+    "좀따 만나요~!!",
+    NB
   ].join("\n");
 
   async function copy(kind: "title" | "body", text: string) {
@@ -159,11 +140,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img alt="마지막에 붙일 이모티콘" src={EMOTICON_URL} />
           <div className="notice-emoticon-text">
-            <span>본문 맨 끝에 붙일 이모티콘이에요.</span>
-            <button className="button" onClick={copyEmoticon} type="button">
-              <Copy aria-hidden="true" size={13} />
-              {copied === "emoticon" ? "복사됨" : "이모티콘 복사"}
-            </button>
+            <span>본문을 붙여넣은 뒤, 맨 끝에 이 이모티콘을 직접 추가하세요.</span>
           </div>
         </div>
       </div>

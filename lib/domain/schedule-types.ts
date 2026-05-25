@@ -166,6 +166,8 @@ export type CalendarMeta = {
   defaultMonth: number;
   publicMemo: string;
   posterTheme: PosterThemeKey; // C9/C10: 적용된 포스터 테마
+  memoAlign?: "left" | "center" | "right"; // #5: 메모 가로 정렬
+  memoVAlign?: "top" | "center" | "bottom"; // #5: 메모 세로 위치
 };
 
 export type PublicSchedule = {
