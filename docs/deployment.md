@@ -46,9 +46,10 @@
   - `NEXT_PUBLIC_SUPABASE_URL`
   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
   - `SUPABASE_SERVICE_ROLE_KEY` (비밀)
-  - `OWNER_EMAIL` = 빅토리님 구글 이메일
+  - `OWNER_EMAIL` = `toryvac2@gmail.com` (빅토리/토리님 구글 계정)
   - `PRIVATE_LAYER_UNLOCK_SECRET` (비밀, 로컬 값 그대로)
-  - `SUPABASE_STORAGE_BUCKET` = `stickers`
+  - `SUPABASE_STORAGE_BUCKET` = `vic-schedule-assets`
+  - 💡 위 값들은 `.env.vercel.local`에 붙여넣기용으로 정리해 둠 → Vercel 입력칸에 통째로 붙여넣으면 됨
   - `NEXT_PUBLIC_SITE_URL` = 배포 도메인 (첫 배포 후 도메인 확정되면 채우고 재배포.
     비워둬도 Vercel 프로덕션 도메인으로 자동 폴백되게 코드에 처리해 둠)
 - [ ] **Deploy** 클릭 → 빌드 성공 확인 → 도메인 확인
@@ -73,7 +74,7 @@ Google Cloud Console → 해당 프로젝트 → **APIs & Services → OAuth con
 
 ### E. Supabase Storage (스티커 이미지)
 Supabase 대시보드 → **Storage**
-- [ ] `stickers` 버킷이 있는지 확인(같은 프로젝트 재사용이면 이미 있음)
+- [ ] `vic-schedule-assets` 버킷이 있는지 확인(같은 프로젝트 재사용이면 이미 있음)
 - [ ] 공개 읽기 가능해야 시청자에게 스티커 이미지가 보임
 
 ### F. (선택) 커스텀 도메인
