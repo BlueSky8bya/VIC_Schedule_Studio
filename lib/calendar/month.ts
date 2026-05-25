@@ -243,63 +243,60 @@ function diffDays(a: string, b: string): number {
   return Math.round((Date.UTC(yb, mb - 1, db) - Date.UTC(ya, ma - 1, da)) / 86400000);
 }
 
-export type ChainInfo = { colors: ColorPaletteEntry[]; start: string; end: string };
-
-// D: 이어진 묶음(chain)을 하나의 일정처럼 본다 — 묶음의 대표색(최대 2)과 전체 날짜 범위.
-// 단일 일정이면 그 일정의 대표색(최대 2)을, 여러 일정이 이어졌으면 "첫 일정 색 → 끝 일정 색"
-// 두 가지로 잡아 묶음 전체에 그라데이션 하나(경계는 가운데)가 깔리게 한다.
-export function buildChainInfo(
-  events: Array<PublicScheduleEvent | StudioScheduleEvent>,
-  tags: BroadcastTag[],
-  palette: ColorPaletteEntry[]
-): Map<string, ChainInfo> {
-  const keys = buildChainKeys(events);
-  const groups = new Map<string, Array<PublicScheduleEvent | StudioScheduleEvent>>();
-  for (const e of events) {
-    const k = keys.get(e.id) ?? e.id;
-    const g = groups.get(k);
-    if (g) {
-      g.push(e);
-    } else {
-      groups.set(k, [e]);
+// D: "칠 묶음(paint group)" 날짜 범위. 같은 대표 태그 구성으로 이어진(link_next) 일정들을
+// 한 그라데이션으로 그리기 위해, 각 일정 id → 그 묶음의 전체 날짜 범위(start~end)를 준다.
+// - 단일 멀티데이 일정: 자기 범위(여러 칸) → 그 일정 칸들에 그라데이션 하나(경계 가운데).
+// - 같은 태그 구성으로 이어진 일정들: 합친 범위 → 하나의 그라데이션(경계 가운데).
+// - 태그 구성이 다른 이어짐(예: 월드컵|종겜 + 종겜): 묶이지 않음 → 각자 자기 색으로(이음새는
+//   맞닿는 색이 같아 자연히 매끄럽다).
+export function buildPaintGroups(
+  events: Array<PublicScheduleEvent | StudioScheduleEvent>
+): Map<string, { start: string; end: string }> {
+  const repKey = (e: PublicScheduleEvent | StudioScheduleEvent) =>
+    (e.primaryTagIds.length > 0 ? e.primaryTagIds : e.tagIds).slice(0, 2).join(",");
+  const byId = new Map(events.map((e) => [e.id, e] as const));
+  const parent = new Map<string, string>();
+  events.forEach((e) => parent.set(e.id, e.id));
+  const find = (x: string): string => {
+    let r = x;
+    while (parent.get(r) !== r) {
+      r = parent.get(r)!;
     }
-  }
-  const colorOf = (tagId: string | undefined) => {
-    if (!tagId) {
-      return undefined;
-    }
-    const tag = tags.find((t) => t.id === tagId);
-    return tag ? palette.find((p) => p.key === tag.colorKey) : undefined;
+    parent.set(x, r);
+    return r;
   };
-  const info = new Map<string, ChainInfo>();
-  for (const [key, listRaw] of groups) {
-    const list = [...listRaw].sort((a, b) =>
-      getEventDateKey(a).localeCompare(getEventDateKey(b))
-    );
-    let start = getEventDateKey(list[0]);
-    let end = eventEndKey(list[0]);
-    for (const e of list) {
-      const s = getEventDateKey(e);
-      const en = eventEndKey(e);
-      if (s < start) start = s;
-      if (en > end) end = en;
+  const union = (a: string, b: string) => {
+    const ra = find(a);
+    const rb = find(b);
+    if (ra !== rb) parent.set(ra, rb);
+  };
+  // 같은 대표 태그 구성으로 link된 인접 일정만 한 묶음으로 합친다.
+  for (const e of events) {
+    if (e.linkNext && byId.has(e.linkNext)) {
+      const n = byId.get(e.linkNext)!;
+      if (repKey(e) === repKey(n)) {
+        union(e.id, e.linkNext);
+      }
     }
-    let colors: ColorPaletteEntry[];
-    if (list.length === 1) {
-      colors = getEventTagColors(list[0], tags, palette); // 단일 일정: 자기 대표색(최대 2)
-    } else {
-      // 이어진 일정: 첫 일정 색 → 끝 일정 색 (같으면 단색)
-      const first = list[0];
-      const last = list[list.length - 1];
-      const c1 = colorOf(first.primaryTagIds[0] ?? first.tagIds[0]);
-      const c2 = colorOf(last.primaryTagIds[0] ?? last.tagIds[0]);
-      colors = [];
-      if (c1) colors.push(c1);
-      if (c2 && c2.key !== c1?.key) colors.push(c2);
-    }
-    info.set(key, { colors, start, end });
   }
-  return info;
+  const ranges = new Map<string, { start: string; end: string }>();
+  for (const e of events) {
+    const r = find(e.id);
+    const s = getEventDateKey(e);
+    const en = eventEndKey(e);
+    const cur = ranges.get(r);
+    if (!cur) {
+      ranges.set(r, { start: s, end: en });
+    } else {
+      if (s < cur.start) cur.start = s;
+      if (en > cur.end) cur.end = en;
+    }
+  }
+  const out = new Map<string, { start: string; end: string }>();
+  for (const e of events) {
+    out.set(e.id, ranges.get(find(e.id))!);
+  }
+  return out;
 }
 
 // D: 주어진 날짜 범위(start~end)가 같은 주(週) 행에서 차지하는 칸 중 이 칸의 위치/총개수.
@@ -420,15 +417,15 @@ export function buildLinkChain<T extends PublicScheduleEvent | StudioScheduleEve
     }
     const nextDay = addDays(eventEndKey(cur), 1);
     const want = rightEdgeTag(cur); // 이 일정의 오른쪽 변 색
-    if (!want) {
-      return null;
-    }
+    const curKey = repTagIds(cur).join(","); // 대표 태그 구성(동일 구성도 연결 허용)
     const next = allEvents.find(
       (e) =>
-        e.id !== cur.id && getEventDateKey(e) === nextDay && leftEdgeTag(e) === want
+        e.id !== cur.id &&
+        getEventDateKey(e) === nextDay &&
+        ((want && leftEdgeTag(e) === want) || repTagIds(e).join(",") === curKey)
     );
     if (!next) {
-      return null; // 연속이 끊기거나 맞닿는 색이 다름
+      return null; // 연속이 끊기거나 맞닿는 색·구성이 다름
     }
     chain.push(next);
     cur = next;

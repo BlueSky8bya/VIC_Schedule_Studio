@@ -29,6 +29,7 @@ import {
   buildCalendarMonth,
   buildChainKeys,
   buildLinkChain,
+  buildPaintGroups,
   classifyDay,
   eventColorStyle,
   getAdjacentMonth,
@@ -38,7 +39,7 @@ import {
   getEventTagColors,
   getLinkedChainIds,
   getMonthLabel,
-  getSpanRun,
+  getSpanRunRange,
   getTodayKst,
   mixedEventPatterns,
   mixedEventStyle,
@@ -146,6 +147,17 @@ export function StudioShell({
   const [showPrivate, setShowPrivate] = useState(false);
   const [modal, setModal] = useState<null | "passcode" | "tags" | "members" | "notice">(null);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
+  // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
+  // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
+  const pendingSavesRef = useRef<Map<string, Promise<string | null>>>(new Map());
+  // temp id면 저장 약속을 기다려 실제 id로, 실패면 null. 실제 id는 그대로.
+  async function resolveEventId(id: string): Promise<string | null> {
+    if (!id.startsWith("temp-")) {
+      return id;
+    }
+    const p = pendingSavesRef.current.get(id);
+    return p ? await p : null;
+  }
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
   const [viewerMode, setViewerMode] = useState(false);
   // 일정은 로컬 상태로 들고 낙관적으로 갱신한다 — 잇기·복붙·저장·삭제가 서버 왕복/새로고침을
@@ -199,12 +211,19 @@ export function StudioShell({
           prev.map((e) => (e.id === earlier.id ? { ...e, linkNext: undefined } : e))
         );
         setActionError(null);
-        void unlinkPairAction(earlier.id).then((result) => {
+        void (async () => {
+          const realId = await resolveEventId(earlier.id);
+          if (!realId) {
+            setActionError("저장 중이에요. 잠시 후 다시 시도해 주세요.");
+            setEvents(snapshot);
+            return;
+          }
+          const result = await unlinkPairAction(realId);
           if (!result.ok) {
             setActionError(result.error);
             setEvents(snapshot);
           }
-        });
+        })();
       } else {
         const chain = buildLinkChain(anchor, target, events);
         if (chain) {
@@ -217,12 +236,20 @@ export function StudioShell({
             prev.map((e) => (linkMap.has(e.id) ? { ...e, linkNext: linkMap.get(e.id) } : e))
           );
           setActionError(null);
-          void linkChainAction(chain).then((result) => {
+          // 서버에는 실제 id로 보낸다. 새 일정이 아직 저장 중이면 끝나길 기다렸다 잇는다.
+          void (async () => {
+            const resolved = await Promise.all(chain.map(resolveEventId));
+            if (resolved.some((id) => !id)) {
+              setActionError("저장 중이에요. 잠시 후 다시 시도해 주세요.");
+              setEvents(snapshot);
+              return;
+            }
+            const result = await linkChainAction(resolved as string[]);
             if (!result.ok) {
               setActionError(result.error);
               setEvents(snapshot);
             }
-          });
+          })();
         }
       }
     }
@@ -270,6 +297,7 @@ export function StudioShell({
   const supportLanes = useMemo(() => assignSupportLanes(visibleEvents), [visibleEvents]);
   // 이어진 일정 묶음 키 + 묶음 칸 높이 맞추기(글자 수 달라도 이음새 안 어긋나게).
   const chainKeys = useMemo(() => buildChainKeys(visibleEvents), [visibleEvents]);
+  const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [visibleEvents, view]);
   // 선택한 일정이 속한 연결 체인 전체를 하이라이트 대상으로 삼는다.
@@ -373,16 +401,39 @@ export function StudioShell({
     setForm(createEmptyForm());
     setActionError(null);
 
+    // 저장이 끝나면 실제 id(또는 실패 시 null)로 풀리는 약속 — "잇기"가 이걸 기다린다.
+    let resolveSave: (id: string | null) => void = () => {};
+    if (isNew) {
+      pendingSavesRef.current.set(
+        tempId,
+        new Promise<string | null>((r) => {
+          resolveSave = r;
+        })
+      );
+    }
+
     startTransition(async () => {
       const result = await saveEventAction(payload);
       if (!result.ok) {
         setActionError(result.error);
         setEvents(snapshot); // 실패 → 되돌림
+        resolveSave(null);
+        pendingSavesRef.current.delete(tempId);
         return;
       }
-      // 새 일정이면 임시 id를 실제 id로 교체(전체 새로고침 없이 정합성 유지).
+      // 새 일정이면 임시 id를 실제 id로 교체 + 이 임시 id를 가리키던 linkNext도 함께 교체.
       if (isNew && result.id) {
-        setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: result.id } : e)));
+        const realId = result.id;
+        setEvents((prev) =>
+          prev.map((e) => {
+            let next = e;
+            if (e.id === tempId) next = { ...next, id: realId };
+            if (e.linkNext === tempId) next = { ...next, linkNext: realId };
+            return next;
+          })
+        );
+        resolveSave(realId);
+        pendingSavesRef.current.delete(tempId);
       }
     });
   }
@@ -801,10 +852,12 @@ export function StudioShell({
                         .filter(Boolean)
                         .join(" ");
                       const mixed = colors.length >= 2;
-                      // 한 일정이 여러 날이면 그 일정 칸들 기준으로 경계를 가운데에 둔다.
-                      const run = mixed
-                        ? getSpanRun(event, cell.isoDate, cell.weekday)
-                        : null;
+                      // 칠 묶음(같은 태그 구성으로 이어진 칸들) 전체 기준으로 경계를 가운데에.
+                      const pg = paintGroups.get(event.id);
+                      const run =
+                        mixed && pg
+                          ? getSpanRunRange(pg.start, pg.end, cell.isoDate, cell.weekday)
+                          : null;
                       return (
                         <div
                           className={pillClass}

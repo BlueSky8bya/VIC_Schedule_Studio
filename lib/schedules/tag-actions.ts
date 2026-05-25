@@ -36,12 +36,16 @@ function hexToHue(hex: string): number | null {
   return (h + 360) % 360;
 }
 
-type Pat = "plain" | "diag" | "dots" | "grid";
+type Pat = "plain" | "diag" | "dots" | "grid" | "cross" | "dash";
+// 생성에 쓰는 무늬 종류(민무늬 제외). 다양성을 위해 종류를 늘렸다.
+const DECO_PATS: Pat[] = ["diag", "dots", "grid", "cross", "dash"];
 // 색 key로 무늬 종류를 추정한다(생성색 gen-* 접두사 + 기본색 중 무늬 있는 것).
 function patternOf(key: string): Pat {
   if (key.startsWith("gen-diag-")) return "diag";
   if (key.startsWith("gen-dots-")) return "dots";
   if (key.startsWith("gen-grid-")) return "grid";
+  if (key.startsWith("gen-cross-")) return "cross";
+  if (key.startsWith("gen-dash-")) return "dash";
   if (key === "indigo" || key === "mint") return "diag";
   if (key === "sky") return "dots";
   return "plain";
@@ -63,7 +67,7 @@ function pickFrom<T>(arr: T[]): T {
 // 리롤(삭제 후 재추가) 때마다 달라지도록, 규칙을 어기지 않는 후보들 중 무작위로 고른다.
 const FAMILY = 38; // 같은 색상 계열로 보는 hue 거리(°)
 function pickColorSlot(existing: { hue: number; pat: Pat }[]): { hue: number; pat: Pat } {
-  const decoPats: Pat[] = ["diag", "dots", "grid"];
+  const decoPats = DECO_PATS;
 
   // (hue, 민무늬여부) 후보 중, 같은 계열에 같은 종류(민무늬/무늬)가 없는 것만 모은다.
   const valid: { hue: number; plain: boolean }[] = [];
@@ -102,14 +106,18 @@ function pickColorSlot(existing: { hue: number; pat: Pat }[]): { hue: number; pa
 
   let pat: Pat = "plain";
   if (!plain) {
-    // 무늬 종류: 근처 계열에서 안 쓰는 무늬를 우선, 없으면 아무거나 무작위(다양성).
+    // 무늬 종류: ① 근처 계열에서 안 쓰는 것 우선 → ② 그중 전역에서 가장 적게 쓴 것 → ③ 무작위.
+    // (전역 최소사용 기준이라 5가지 무늬가 고르게 돌아가며 나온다.)
     const near = new Set(
       existing
         .filter((e) => e.pat !== "plain" && hueDist(hue, e.hue) < FAMILY * 2)
         .map((e) => e.pat)
     );
-    const free = decoPats.filter((p) => !near.has(p));
-    pat = pickFrom(free.length ? free : decoPats);
+    const count = (p: Pat) => existing.filter((e) => e.pat === p).length;
+    const notNear = decoPats.filter((p) => !near.has(p));
+    const candidates = notNear.length > 0 ? notNear : decoPats;
+    const min = Math.min(...candidates.map(count));
+    pat = pickFrom(candidates.filter((p) => count(p) === min));
   }
   const jitter = Math.floor(Math.random() * 7) - 3; // ±3° 미세 흔들기
   return { hue: (hue + jitter + 360) % 360, pat };

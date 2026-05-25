@@ -54,6 +54,7 @@ import {
   assignSupportLanes,
   buildCalendarMonth,
   buildChainKeys,
+  buildPaintGroups,
   classifyDay,
   eventColorStyle,
   getAdjacentMonth,
@@ -62,7 +63,7 @@ import {
   getEventSpan,
   getEventTagColors,
   getMonthLabel,
-  getSpanRun,
+  getSpanRunRange,
   getTodayKst,
   mixedEventPatterns,
   mixedEventStyle,
@@ -334,6 +335,8 @@ export function PublicPoster({
   const supportEvents = schedule.events.filter((e) => e.isSupport);
   // 이어진 일정 묶음 키 — 같은 묶음 칸들의 높이를 맞추는 데 쓴다(아래 useEqualChainHeights).
   const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
+  // 같은 태그 구성으로 이어진 묶음은 하나의 그라데이션으로(경계 가운데). 묶음별 날짜 범위.
+  const paintGroups = useMemo(() => buildPaintGroups(schedule.events), [schedule.events]);
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [schedule.events, view]);
   // #1: 색상 안내에서 "기타"는 항상 맨 마지막으로(나머지는 기존 정렬 유지).
@@ -1315,8 +1318,12 @@ export function PublicPoster({
               .filter(Boolean)
               .join(" ");
             const mixed = colors.length >= 2;
-            // 한 일정이 여러 날이면 그 일정 칸들 기준으로 경계를 가운데에 둔다.
-            const run = mixed ? getSpanRun(event, cell.isoDate, cell.weekday) : null;
+            // 칠 묶음(같은 태그 구성으로 이어진 칸들) 전체 기준으로 경계를 가운데에 둔다.
+            const pg = paintGroups.get(event.id);
+            const run =
+              mixed && pg
+                ? getSpanRunRange(pg.start, pg.end, cell.isoDate, cell.weekday)
+                : null;
             return (
               <div
                 className={eventClass}

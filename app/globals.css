@@ -617,6 +617,20 @@ select {
     repeating-linear-gradient(0deg, rgb(0 0 0 / 12%) 0 1px, transparent 1px 8px),
     repeating-linear-gradient(90deg, rgb(0 0 0 / 12%) 0 1px, transparent 1px 8px) !important;
 }
+/* 크로스해치(빗금 ×): 두 방향 대각선 — diag/grid와 구분되는 또 다른 무늬 */
+[data-color^="gen-cross-"] {
+  background-image:
+    repeating-linear-gradient(45deg, rgb(0 0 0 / 12%) 0 2px, transparent 2px 8px),
+    repeating-linear-gradient(-45deg, rgb(0 0 0 / 12%) 0 2px, transparent 2px 8px) !important;
+}
+/* 가로줄: 세로 글자 가독성을 해치지 않는 수평 점선 띠 */
+[data-color^="gen-dash-"] {
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgb(0 0 0 / 13%) 0 2px,
+    transparent 2px 8px
+  ) !important;
+}
 
 /* D: 2색 일정칸의 무늬 오버레이. data-color가 붙어 위 무늬 규칙이 그대로 적용되고,
    배경색은 투명이라 칸 자체의 색 그라데이션이 비쳐 보인다(= 색은 섞이고, 무늬는 각 쪽에 남음).
