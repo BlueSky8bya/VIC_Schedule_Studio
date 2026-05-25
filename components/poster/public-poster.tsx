@@ -62,6 +62,7 @@ import {
   getEventSpan,
   getEventTagColors,
   getMonthLabel,
+  getSeamColors,
   getSpanRun,
   getTodayKst,
   mixedEventPatterns,
@@ -1317,12 +1318,27 @@ export function PublicPoster({
             const mixed = colors.length >= 2;
             // 이어진 칸 전체 기준으로 그라데이션·무늬 경계를 잡는다(2칸=이음새, 3칸=가운데).
             const run = mixed ? getSpanRun(event, cell.isoDate, cell.weekday) : null;
+            // 이어진(link) 일정의 이음새를 옆 일정 색으로 옅게 번지게 섞는다.
+            const seam = getSeamColors(
+              event,
+              cell.isoDate,
+              schedule.events,
+              schedule.tags,
+              schedule.palette
+            );
+            const seamBg = [
+              seam.left ? `linear-gradient(to right, ${seam.left}b3, transparent 30px)` : "",
+              seam.right ? `linear-gradient(to left, ${seam.right}b3, transparent 30px)` : ""
+            ]
+              .filter(Boolean)
+              .join(", ");
             return (
               <div
                 className={eventClass}
                 data-chain={chainKeys.get(event.id)}
                 data-color={mixed ? undefined : colors[0]?.key}
                 data-mixed={mixed ? "" : undefined}
+                data-seam={seamBg ? "" : undefined}
                 key={event.id}
                 style={
                   mixed
@@ -1343,6 +1359,9 @@ export function PublicPoster({
                       />
                     ))
                   : null}
+                {seamBg ? (
+                  <span aria-hidden="true" className="evt-seam" style={{ backgroundImage: seamBg }} />
+                ) : null}
                 <div className="event-main">
                   {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다(이음새 어긋남 방지). */}
                   {span.showTitle ? (

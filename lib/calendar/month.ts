@@ -229,6 +229,37 @@ export function buildChainKeys(
   return keys;
 }
 
+// D: 이어진(link) 일정의 이음새를 부드럽게 — 이 칸의 연결된 변에서 "옆 일정의 맞닿는 색"을 구한다.
+// 그 색을 이 칸 가장자리에 옅게 번지게(evt-seam) 깔면 서로 다른 두 색이 자연스럽게 섞여 보인다.
+// 같은 멀티데이 일정의 칸 사이는 이미 하나의 그라데이션이라 대상에서 제외(linkNext 경계만).
+export function getSeamColors(
+  event: PublicScheduleEvent | StudioScheduleEvent,
+  isoDate: string,
+  allEvents: Array<PublicScheduleEvent | StudioScheduleEvent>,
+  tags: BroadcastTag[],
+  palette: ColorPaletteEntry[]
+): { left?: string; right?: string } {
+  const start = getEventDateKey(event);
+  const end = eventEndKey(event);
+  const out: { left?: string; right?: string } = {};
+  if (isoDate === end && event.linkNext) {
+    const next = allEvents.find((e) => e.id === event.linkNext);
+    const c = next ? getEventTagColors(next, tags, palette) : [];
+    if (c[0]) {
+      out.right = c[0].bgColor; // 다음 일정의 왼쪽(시작) 색
+    }
+  }
+  if (isoDate === start) {
+    const prev = allEvents.find((e) => e.linkNext === event.id);
+    const c = prev ? getEventTagColors(prev, tags, palette) : [];
+    const last = c[c.length - 1];
+    if (last) {
+      out.left = last.bgColor; // 이전 일정의 오른쪽(끝) 색
+    }
+  }
+  return out;
+}
+
 function diffDays(a: string, b: string): number {
   const [ya, ma, da] = a.split("-").map(Number);
   const [yb, mb, db] = b.split("-").map(Number);

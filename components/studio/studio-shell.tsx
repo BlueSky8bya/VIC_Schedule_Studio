@@ -38,6 +38,7 @@ import {
   getEventTagColors,
   getLinkedChainIds,
   getMonthLabel,
+  getSeamColors,
   getSpanRun,
   getTodayKst,
   mixedEventPatterns,
@@ -126,7 +127,7 @@ function addDaysIso(iso: string, days: number): string {
 
 
 const ROLE_LABEL: Record<MembershipRole, string> = {
-  owner: "토리님님",
+  owner: "소유자",
   developer: "개발자",
   manager: "매니저",
   worker: "작업자",
@@ -804,12 +805,30 @@ export function StudioShell({
                       const run = mixed
                         ? getSpanRun(event, cell.isoDate, cell.weekday)
                         : null;
+                      const seam = getSeamColors(
+                        event,
+                        cell.isoDate,
+                        visibleEvents,
+                        tags,
+                        palette
+                      );
+                      const seamBg = [
+                        seam.left
+                          ? `linear-gradient(to right, ${seam.left}b3, transparent 30px)`
+                          : "",
+                        seam.right
+                          ? `linear-gradient(to left, ${seam.right}b3, transparent 30px)`
+                          : ""
+                      ]
+                        .filter(Boolean)
+                        .join(", ");
                       return (
                         <div
                           className={pillClass}
                           data-chain={chainKeys.get(event.id)}
                           data-color={mixed ? undefined : colors[0]?.key}
                           data-mixed={mixed ? "" : undefined}
+                          data-seam={seamBg ? "" : undefined}
                           key={event.id}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -842,6 +861,13 @@ export function StudioShell({
                                 />
                               ))
                             : null}
+                          {seamBg ? (
+                            <span
+                              aria-hidden="true"
+                              className="evt-seam"
+                              style={{ backgroundImage: seamBg }}
+                            />
+                          ) : null}
                           <div className="pill-main">
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (

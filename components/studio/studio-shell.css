@@ -401,12 +401,15 @@
   transform: translateY(-1px);
   box-shadow: var(--shadow-2);
 }
-/* D: 2색 칸은 그라데이션 위에 반쪽 무늬를 깔고, 내용은 그 위로 올린다. */
-.studio-event-pill[data-mixed] {
+/* D: 2색 칸은 그라데이션 위에 반쪽 무늬를 깔고, 내용은 그 위로 올린다.
+   이어진 칸(data-seam)도 같은 스택 — 이음새 번짐(evt-seam)은 내용 아래. */
+.studio-event-pill[data-mixed],
+.studio-event-pill[data-seam] {
   position: relative;
   overflow: hidden;
 }
-.studio-event-pill[data-mixed] > :not(.evt-pat) {
+.studio-event-pill[data-mixed] > :not(.evt-pat):not(.evt-seam),
+.studio-event-pill[data-seam] > :not(.evt-pat):not(.evt-seam) {
   position: relative;
   z-index: 1;
 }
