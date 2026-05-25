@@ -12,12 +12,13 @@ const EMOTICON_URL = "https://stimg.sooplive.com/NORMAL_BBS/1/26636711/15676a0ac
 // 제목 입력칸과 본문 에디터에 채워 넣는다. (다른 사이트라 우리 페이지가 직접 못 하므로 북마클릿 방식)
 // 셀렉터는 추정치 — 실제 작성 페이지 구조에 맞게 다듬을 수 있다.
 const BOOKMARKLET =
-  'javascript:(async()=>{try{const d=JSON.parse(await navigator.clipboard.readText());' +
-  'const t=document.querySelector(\'input[placeholder*="제목"],textarea[placeholder*="제목"],[class*="PostTitle"] input,[class*="PostTitle"] textarea\');' +
-  "if(t){const s=Object.getOwnPropertyDescriptor(t.constructor.prototype,'value').set;s.call(t,d.title);t.dispatchEvent(new Event('input',{bubbles:true}));t.dispatchEvent(new Event('change',{bubbles:true}));}" +
-  'const e=document.querySelector(\'.soop-editor-content,[class*="editor-content"],[contenteditable="true"]\');' +
-  "if(e){e.focus();document.execCommand('selectAll',false);document.execCommand('insertText',false,d.body);}" +
-  "if(!t&&!e){alert('입력칸을 못 찾았어요. 작성 페이지에서 눌렀는지 확인해 주세요.');}" +
+  'javascript:(async()=>{try{var d=JSON.parse(await navigator.clipboard.readText());' +
+  'var t=document.querySelector(\'textarea[placeholder*="제목"],input[placeholder*="제목"],[class*="Subject"] textarea,[class*="Subject"] input\');' +
+  "if(t){var s=Object.getOwnPropertyDescriptor(t.constructor.prototype,'value').set;s.call(t,d.title);t.dispatchEvent(new Event('input',{bubbles:true}));t.dispatchEvent(new Event('change',{bubbles:true}));}" +
+  'var done=false,C=window.CKEDITOR;' +
+  'if(C&&C.instances){var k=Object.keys(C.instances)[0];if(k){C.instances[k].setData(d.html);done=true;}}' +
+  "if(!done){var f=document.querySelector('iframe.cke_wysiwyg_frame,.cke_contents iframe');if(f&&f.contentDocument&&f.contentDocument.body){f.contentDocument.body.innerHTML=d.html;done=true;}}" +
+  "if(!t&&!done){alert('입력칸을 못 찾았어요. 작성 페이지에서 눌렀는지 확인해 주세요.');}" +
   "}catch(x){alert('자동입력 실패: '+(x&&x.message?x.message:x));}})()";
 
 type NoticeModalProps = {
@@ -70,8 +71,20 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
       // 클립보드 권한이 없으면 무시(사용자가 직접 선택 복사 가능).
     }
   }
-  // 북마클릿이 읽을 자동입력 페이로드(제목+본문).
-  const autofillPayload = JSON.stringify({ title, body });
+  // 자동 입력용 본문 HTML — CKEditor에 넣을 가운데 정렬 <p>들 + 맨 끝 이모티콘 이미지.
+  const escapeHtml = (s: string) =>
+    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const bodyHtml =
+    body
+      .split("\n")
+      .map(
+        (line) =>
+          `<p style="text-align:center;">${line.trim() ? escapeHtml(line) : "&nbsp;"}</p>`
+      )
+      .join("") +
+    `<p style="text-align:center;"><img src="${EMOTICON_URL}" alt="" /></p>`;
+  // 북마클릿이 읽을 자동입력 페이로드(제목 + 본문 HTML).
+  const autofillPayload = JSON.stringify({ title, html: bodyHtml });
 
   return (
     <div className="notice-modal">
@@ -188,7 +201,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
           </li>
           <li>
             <strong>숲 공지 페이지</strong>를 열고, 만들어 둔 <strong>북마크를 클릭</strong>하면
-            제목·본문이 자동으로 채워집니다. (이모티콘은 직접 추가)
+            제목·본문이 <strong>가운데 정렬 + 이모티콘까지</strong> 자동으로 채워집니다.
           </li>
         </ol>
         <p className="notice-autofill-note">
