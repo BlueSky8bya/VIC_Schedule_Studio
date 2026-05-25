@@ -50,6 +50,7 @@ import { PublicPoster } from "@/components/poster/public-poster";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { TrustedMembersPanel } from "@/components/trusted-members/trusted-members-panel";
+import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 
 type StudioShellProps = {
@@ -135,7 +136,7 @@ export function StudioShell({
   // 방송사고 방지: 새로고침/진입 시 항상 공개(일반) 모드가 기본. 잠금 세션이 있어도
   // 사용자가 직접 토글해야 비공개 일정이 보인다.
   const [showPrivate, setShowPrivate] = useState(false);
-  const [modal, setModal] = useState<null | "passcode" | "tags" | "members">(null);
+  const [modal, setModal] = useState<null | "passcode" | "tags" | "members" | "notice">(null);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
   const [viewerMode, setViewerMode] = useState(false);
@@ -889,6 +890,17 @@ export function StudioShell({
                 <Trash2 aria-hidden="true" size={15} />이 업 도움 삭제
               </button>
             ) : null}
+
+            {/* #1: 선택한 날짜로 숲 공지 초안을 만든다(소유자/개발자 전용). */}
+            {canEdit ? (
+              <button
+                className="button notice-open"
+                onClick={() => setModal("notice")}
+                type="button"
+              >
+                📢 {selectedDate} 공지 쓰기
+              </button>
+            ) : null}
           </form>
         </aside>
       </section>
@@ -910,7 +922,7 @@ export function StudioShell({
           role="presentation"
         >
           <div
-            className={`modal-card ${modal === "tags" ? "modal-card-wide" : ""}`}
+            className={`modal-card ${modal === "tags" || modal === "notice" ? "modal-card-wide" : ""}`}
             role="dialog"
           >
             <div className="modal-head">
@@ -919,7 +931,9 @@ export function StudioShell({
                   ? "비공개 일정"
                   : modal === "tags"
                     ? "태그 이름 · 색상 편집"
-                    : "매니저 · 작업자 관리"}
+                    : modal === "notice"
+                      ? "숲 공지 쓰기"
+                      : "매니저 · 작업자 관리"}
               </h2>
               <button
                 aria-label="닫기"
@@ -948,6 +962,9 @@ export function StudioShell({
               />
             ) : null}
             {modal === "members" ? <TrustedMembersPanel /> : null}
+            {modal === "notice" ? (
+              <NoticeModal dateKey={selectedDate} onClose={() => setModal(null)} />
+            ) : null}
           </div>
         </div>
       ) : null}

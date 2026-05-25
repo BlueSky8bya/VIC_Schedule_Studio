@@ -1407,3 +1407,130 @@ textarea:disabled {
   font-size: 13px;
   font-weight: 700;
 }
+
+/* #1: 숲 공지 쓰기 — 폼 카드 아래 버튼 + 모달 */
+.notice-open {
+  width: 100%;
+  margin-top: 6px;
+  justify-content: center;
+  border-color: #f4b740;
+  background: #fff7e6;
+  color: #92400e;
+  font-weight: 800;
+}
+.notice-modal {
+  display: grid;
+  gap: 14px;
+}
+.notice-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.notice-fields {
+  display: grid;
+  gap: 12px;
+}
+.notice-field {
+  display: grid;
+  gap: 5px;
+}
+.notice-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+.notice-field input,
+.notice-field textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: #fff;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+.notice-time-row {
+  display: flex;
+  gap: 8px;
+}
+.notice-time-row input {
+  flex: 1;
+}
+.ampm-segment {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: #fff;
+  padding: 3px;
+}
+.ampm-segment button {
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  padding: 0 14px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.ampm-segment button.active {
+  background: var(--accent);
+  color: #fff;
+}
+.notice-preview {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface, #fbfaf6);
+  padding: 12px 14px;
+}
+.notice-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.notice-preview-title {
+  border-radius: var(--r-md);
+  background: #fff;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 800;
+}
+.notice-preview-body {
+  margin: 0;
+  border-radius: var(--r-md);
+  background: #fff;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.notice-emoticon {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+.notice-emoticon img {
+  width: 56px;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm, 8px);
+  background: #fff;
+}
+.notice-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
