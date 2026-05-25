@@ -145,13 +145,13 @@ export function TagLegendEditor({
       colorKey: t.colorKey
     }));
     onTagsUpdated?.(updates); // 낙관적 반영(달력 색 즉시 갱신)
-    flashSaved();
     startTransition(async () => {
       const result = await updateTagsAction(updates);
-      if (!result.ok) {
+      if (result.ok) {
+        flashSaved(); // 성공 시점에 "저장됨" 표시(저장 중 타이밍과 어긋나지 않게)
+      } else {
         setError(result.error);
         onTagsUpdated?.(prev); // 실패 → 되돌림
-        setSaved(false);
       }
     });
   }
@@ -218,12 +218,12 @@ export function TagLegendEditor({
           </button>
         ) : null}
         <button
-          className={`button primary ${saved ? "saved" : ""}`}
+          className={`button primary ${saved && !dirty ? "saved" : ""}`}
           disabled={pending || busy || anyEmpty || (!dirty && !saved)}
           onClick={saveAll}
           type="button"
         >
-          {pending ? "저장 중…" : saved ? "✓ 저장됨" : "전체 저장"}
+          {pending ? "저장 중…" : saved && !dirty ? "✓ 저장됨" : "전체 저장"}
         </button>
       </div>
     </div>

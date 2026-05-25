@@ -140,7 +140,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img alt="마지막에 붙일 이모티콘" src={EMOTICON_URL} />
           <div className="notice-emoticon-text">
-            <span>본문을 붙여넣은 뒤, 맨 끝에 이 이모티콘을 직접 추가하세요.</span>
+            <span>{"<- 이 이모티콘은 복사 안됨. 직접 추가 바람!"}</span>
           </div>
         </div>
       </div>
