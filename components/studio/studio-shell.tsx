@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useMemo, useRef, useState, useTransition } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type {
   EventCategory,
   EventStatus,
@@ -70,6 +70,28 @@ type EventForm = {
   tagIds: string[];
   primaryTagIds: string[];
 };
+
+// #2: Ctrl+C로 복사해 둔 일정 내용(날짜·id 제외). 기간은 일수로 저장해 붙여넣는 날짜 기준으로 재계산.
+type CopiedEvent = {
+  publicTitle: string;
+  spanDays: number;
+  isSupport: boolean;
+  supportUrl: string;
+  category: EventCategory;
+  status: EventStatus;
+  visibilityScope: EventVisibilityScope;
+  tagIds: string[];
+  primaryTagIds: string[];
+};
+
+// 두 YYYY-MM-DD 사이의 일수 차이(later - earlier).
+function daysBetweenIso(start: string, end: string): number {
+  const [ys, ms, ds] = start.split("-").map(Number);
+  const [ye, me, de] = end.split("-").map(Number);
+  const a = Date.UTC(ys, ms - 1, ds);
+  const b = Date.UTC(ye, me - 1, de);
+  return Math.round((b - a) / 86400000);
+}
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -323,6 +345,88 @@ export function StudioShell({
     });
   }
 
+  // #2: 일정 카드 복사/붙여넣기 — 선택한 일정을 Ctrl+C로 복사, 다른 날짜를 고르고 Ctrl+V.
+  const [clipboard, setClipboard] = useState<CopiedEvent | null>(null);
+  const [copyToast, setCopyToast] = useState<string | null>(null);
+  function flashToast(message: string) {
+    setCopyToast(message);
+    window.setTimeout(() => setCopyToast(null), 1600);
+  }
+  function copySelectedEvent() {
+    if (!selectedEventId) return;
+    const ev = events.find((e) => e.id === selectedEventId);
+    if (!ev) return;
+    const start = getEventDateKey(ev);
+    setClipboard({
+      publicTitle: ev.publicTitle,
+      spanDays: ev.endDateKey ? Math.max(0, daysBetweenIso(start, ev.endDateKey)) : 0,
+      isSupport: ev.isSupport ?? false,
+      supportUrl: ev.supportUrl ?? "",
+      category: ev.category,
+      status: ev.status,
+      visibilityScope: ev.visibilityScope,
+      tagIds: ev.tagIds,
+      primaryTagIds: ev.primaryTagIds
+    });
+    flashToast("일정 복사됨 · 날짜 고르고 Ctrl+V");
+  }
+  function pasteCopiedEvent() {
+    if (!clipboard || !canEdit) return;
+    const payload = clipboard;
+    setActionError(null);
+    startTransition(async () => {
+      const result = await saveEventAction({
+        id: undefined,
+        dateKey: selectedDate,
+        endDateKey:
+          payload.isSupport && payload.spanDays > 0
+            ? addDaysIso(selectedDate, payload.spanDays)
+            : "",
+        startTime: "",
+        endTime: "",
+        isAllDay: true,
+        publicTitle: payload.publicTitle,
+        publicDescription: "",
+        category: payload.category,
+        status: payload.status,
+        // 비공개 모드가 아니면 공개로 강제(저장 로직과 동일 규칙).
+        visibilityScope: canReadPrivate ? payload.visibilityScope : "public",
+        tagIds: payload.tagIds,
+        primaryTagIds: payload.primaryTagIds.slice(0, 2),
+        isSupport: payload.isSupport,
+        supportUrl: payload.supportUrl
+      });
+      if (!result.ok) {
+        setActionError(result.error);
+        return;
+      }
+      flashToast(`${selectedDate}에 붙여넣음`);
+      router.refresh();
+    });
+  }
+
+  // 일정 복사/붙여넣기 단축키. 입력칸·팝업·텍스트선택 중에는 가로채지 않는다.
+  useEffect(() => {
+    if (!canEdit) return;
+    function onKey(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable || modal) return;
+      const key = e.key.toLowerCase();
+      if (key === "c" && selectedEventId && !window.getSelection()?.toString()) {
+        e.preventDefault();
+        copySelectedEvent();
+      } else if (key === "v" && clipboard) {
+        e.preventDefault();
+        pasteCopiedEvent();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events]);
+
   // 시청자 화면 전체보기: 스튜디오 UI를 숨기고 공개 화면만 그대로 보여준다.
   if (viewerMode) {
     return (
@@ -349,6 +453,11 @@ export function StudioShell({
 
   return (
     <main className="studio-shell">
+      {copyToast ? (
+        <div className="copy-toast" role="status">
+          {copyToast}
+        </div>
+      ) : null}
       <header className="studio-topbar">
         <div>
           <p className="eyebrow">빅토리 편집실</p>
@@ -547,6 +656,7 @@ export function StudioShell({
                         "studio-event-pill",
                         event.visibilityScope,
                         inSelChain ? "selected" : "",
+                        isSel ? "primary-selected" : "",
                         span.isMulti ? "span" : "",
                         span.isMulti && !span.roundLeft ? "no-left" : "",
                         span.isMulti && !span.roundRight ? "no-right" : ""

@@ -877,6 +877,29 @@
   height: 1px;
   transform: translateY(-0.5px);
 }
+/* #4: 회전 수평 가이드 — 호박색 점선 + "수평" 라벨로 정렬됐음을 알린다. */
+.sticker-guide.level {
+  left: 0;
+  right: 0;
+  height: 0;
+  background: transparent;
+  border-top: 2px dashed #f59e0b;
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+.sticker-guide.level em {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: var(--r-pill, 999px);
+  background: #f59e0b;
+  padding: 1px 8px;
+  color: #fff;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
+}
 
 .sticker-emoji {
   font-size: inherit;

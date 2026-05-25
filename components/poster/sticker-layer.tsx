@@ -180,6 +180,8 @@ export function StickerLayer({
     x: null,
     y: null
   });
+  // #4: 회전 중 "수평" 가이드선(스티커 중심을 지나는 가로선). 수평에 스냅됐을 때만 표시.
+  const [levelGuideY, setLevelGuideY] = useState<number | null>(null);
 
   // 최신 값을 ref로 들고 있어 전역 포인터 리스너를 한 번만 등록한다.
   const stickersRef = useRef(stickers);
@@ -336,7 +338,18 @@ export function StickerLayer({
         if (sticker.flipX !== sticker.flipY) {
           delta = -delta;
         }
-        onChangeRef.current?.({ ...sticker, rotationDeg: Math.round(drag.origRotation + delta) });
+        let rotationDeg = Math.round(drag.origRotation + delta);
+        // #4: 수평(180° 배수)에 가까우면 딱 맞춰 스냅하고, 중심을 지나는 수평 가이드선을 보여준다.
+        const SNAP_DEG = 5;
+        const mod = ((rotationDeg % 180) + 180) % 180; // [0,180)
+        const distToLevel = Math.min(mod, 180 - mod);
+        if (distToLevel <= SNAP_DEG) {
+          rotationDeg = Math.round(rotationDeg / 180) * 180;
+          setLevelGuideY(cy);
+        } else {
+          setLevelGuideY(null);
+        }
+        onChangeRef.current?.({ ...sticker, rotationDeg });
       }
     }
 
@@ -355,6 +368,7 @@ export function StickerLayer({
       }
       dragRef.current = null;
       setGuides({ x: null, y: null });
+      setLevelGuideY(null);
     }
 
     window.addEventListener("pointermove", onMove);
@@ -451,6 +465,11 @@ export function StickerLayer({
       ) : null}
       {guides.y != null ? (
         <span className="sticker-guide horizontal" style={{ top: guides.y }} aria-hidden="true" />
+      ) : null}
+      {levelGuideY != null ? (
+        <span className="sticker-guide level" style={{ top: levelGuideY }} aria-hidden="true">
+          <em>수평</em>
+        </span>
       ) : null}
       {stickers.map((sticker) => {
         const size = sticker.widthRatio * layerWidth;

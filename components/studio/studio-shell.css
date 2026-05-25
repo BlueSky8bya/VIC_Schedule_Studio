@@ -460,6 +460,39 @@
 .studio-event-pill.selected {
   border-color: #111827 !important;
 }
+/* #2: 현재 선택된(편집 중) 일정 카드 — 노란색으로 확실히 강조. */
+.studio-event-pill.primary-selected {
+  outline: 3px solid #f59e0b !important;
+  outline-offset: 1px;
+  box-shadow: 0 0 0 3px rgb(251 191 36 / 45%) !important;
+}
+
+/* #2: 복사/붙여넣기 알림 토스트 */
+.copy-toast {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 80;
+  transform: translateX(-50%);
+  border-radius: var(--r-pill, 999px);
+  background: #1f2937;
+  padding: 8px 16px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 6px 20px rgb(17 24 39 / 25%);
+  animation: copy-toast-in 160ms ease-out;
+}
+@keyframes copy-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
 
 /* 일정 박스 안의 삭제 아이콘 */
 .pill-delete {
