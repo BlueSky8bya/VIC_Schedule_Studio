@@ -4,7 +4,7 @@ import { Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 // 숲(SOOP) 공지 작성 페이지(토리님 방송국). 새 탭으로 열어 붙여넣는다.
-const SOOP_WRITE_URL = "https://www.sooplive.com/station/toryvac/post/write/117337785";
+const SOOP_WRITE_URL = "https://www.sooplive.com/station/tim917799/post/write/121444601";
 // 본문 맨 끝에 항상 붙이는 이모티콘(숲 스티커).
 const EMOTICON_URL = "https://stimg.sooplive.com/NORMAL_BBS/1/26636711/15676a0ac2a5d4955.gif";
 
@@ -24,7 +24,31 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
   const [time, setTime] = useState(""); // 예: "4시", "5시반"
   const [brief, setBrief] = useState(""); // 방송 내용(간략)
   const [detail, setDetail] = useState(""); // 자세한 내용
-  const [copied, setCopied] = useState<"title" | "body" | null>(null);
+  const [copied, setCopied] = useState<"title" | "body" | "emoticon" | null>(null);
+
+  // 이모티콘을 클립보드에 이미지로 복사(되면 SOOP 본문에 바로 붙여넣기). 막히면 URL을 복사한다.
+  async function copyEmoticon() {
+    try {
+      const res = await fetch(EMOTICON_URL, { mode: "cors" });
+      const blob = await res.blob();
+      if (navigator.clipboard && "write" in navigator.clipboard && window.ClipboardItem) {
+        await navigator.clipboard.write([new ClipboardItem({ [blob.type]: blob })]);
+        setCopied("emoticon");
+        window.setTimeout(() => setCopied(null), 1500);
+        return;
+      }
+      throw new Error("clipboard image unsupported");
+    } catch {
+      // 이미지 복사가 막히면(브라우저/CORS) URL을 대신 복사한다.
+      try {
+        await navigator.clipboard.writeText(EMOTICON_URL);
+        setCopied("emoticon");
+        window.setTimeout(() => setCopied(null), 1500);
+      } catch {
+        /* 무시 */
+      }
+    }
+  }
 
   const shownTime = time.trim() || "N시";
   const title = `${formatNoticeDate(dateKey)} - ${shownTime} 뱅온!`;
@@ -132,10 +156,15 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
         <pre className="notice-preview-body">{body}</pre>
 
         <div className="notice-emoticon">
-          {/* 숲 자체 스티커라 텍스트 복사로는 안 옮겨짐 — 붙여넣은 뒤 본문 맨 끝에 이 이모티콘을 추가하세요. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img alt="마지막에 붙일 이모티콘" src={EMOTICON_URL} />
-          <span>본문 맨 끝에 이 이모티콘을 추가하세요 (숲 스티커)</span>
+          <div className="notice-emoticon-text">
+            <span>본문 맨 끝에 붙일 이모티콘이에요.</span>
+            <button className="button" onClick={copyEmoticon} type="button">
+              <Copy aria-hidden="true" size={13} />
+              {copied === "emoticon" ? "복사됨" : "이모티콘 복사"}
+            </button>
+          </div>
         </div>
       </div>
 

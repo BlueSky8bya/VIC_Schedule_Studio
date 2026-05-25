@@ -14,7 +14,6 @@ import {
   Keyboard,
   Redo2,
   SendToBack,
-  Sparkles,
   Trash2,
   Type,
   Undo2,
@@ -1818,16 +1817,6 @@ export function PublicPoster({
                   상하
                 </button>
                 <button
-                  aria-pressed={Boolean(selected.outline)}
-                  className={`button ${selected.outline ? "active" : ""}`}
-                  onClick={() => toggleEffect("outline")}
-                  title="흰 외곽선"
-                  type="button"
-                >
-                  <Sparkles aria-hidden="true" size={15} />
-                  외곽선
-                </button>
-                <button
                   aria-pressed={Boolean(selected.shadow)}
                   className={`button ${selected.shadow ? "active" : ""}`}
                   onClick={() => toggleEffect("shadow")}
@@ -1912,6 +1901,21 @@ export function PublicPoster({
           </div>
         ) : null}
 
+        {/* 메모 편집 바 — 포스터 표면 밖이라 스티커 레이어에 안 막히고 글이 써진다(소유자 전용). */}
+        {updateMemoAction ? (
+          <div className="memo-edit-bar">
+            <span className="memo-edit-label">메모</span>
+            <textarea
+              className="memo-edit-input"
+              onChange={(event) => changeMemo(event.target.value)}
+              placeholder="시청자 화면에 보일 메모를 적어주세요 (한 줄에 하나씩)"
+              rows={2}
+              value={memo}
+            />
+            <span className="memo-edit-state">{memoSaved ? "저장됨" : "저장 중…"}</span>
+          </div>
+        ) : null}
+
         {/* #1: 캡쳐 버튼을 월간 일정표 바로 위에 둬, 달력을 보면서 누르기 쉽게 한다. */}
         {canExport ? (
           <div className="poster-capture-row">
@@ -1946,31 +1950,20 @@ export function PublicPoster({
           />
 
           <aside className="public-side" aria-label="메모">
-            {/* 소유자는 꾸미기에서 직접 메모를 편집(updateMemoAction). 시청자 화면엔 내용이 있을 때만 표시. */}
-            {updateMemoAction ? (
-              <div className="public-memo editing">
-                <strong>
-                  메모
-                  <span className="memo-save-state">{memoSaved ? "저장됨" : "저장 중…"}</span>
-                </strong>
-                <textarea
-                  className="memo-edit"
-                  onChange={(event) => changeMemo(event.target.value)}
-                  placeholder="시청자 화면에 보일 메모를 적어주세요. (한 줄에 하나씩)"
-                  rows={5}
-                  value={memo}
-                />
-              </div>
-            ) : decorate || memo.trim() ? (
+            {/* 노트는 "표시 전용". 편집은 표면 밖 메모 바에서 한다(스티커 레이어에 안 막히게).
+               시청자 화면엔 내용이 있을 때만 표시. */}
+            {updateMemoAction || decorate || memo.trim() ? (
               <div className="public-memo">
                 <strong>메모</strong>
                 <div className="memo-body">
-                  {memo.trim()
-                    ? memo
-                        .split("\n")
-                        .filter((line) => line.trim())
-                        .map((line, index) => <p key={index}>{line}</p>)
-                    : null}
+                  {memo.trim() ? (
+                    memo
+                      .split("\n")
+                      .filter((line) => line.trim())
+                      .map((line, index) => <p key={index}>{line}</p>)
+                  ) : updateMemoAction ? (
+                    <p className="memo-placeholder">위 메모 칸에 적으면 여기에 표시돼요</p>
+                  ) : null}
                 </div>
               </div>
             ) : null}

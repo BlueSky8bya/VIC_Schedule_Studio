@@ -395,34 +395,46 @@
   opacity: 1;
 }
 
-/* #5: 꾸미기에서 소유자가 직접 쓰는 공개 메모 입력칸 */
-.public-memo.editing strong {
+/* #1/#5: 메모 편집 바 — 포스터 표면 밖(캡쳐 버튼 줄 근처). 스티커 레이어에 안 막혀 입력 가능. */
+.memo-edit-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  gap: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #f0e6c8;
+  border-radius: var(--r-lg, 14px);
+  background: #fffdf5;
+  padding: 8px 12px;
 }
-.public-memo .memo-save-state {
-  color: var(--muted, #9ca3af);
-  font-size: 11px;
-  font-weight: 700;
+.memo-edit-label {
+  flex: 0 0 auto;
+  color: #6b5b34;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
 }
-.public-memo .memo-edit {
-  width: 100%;
-  margin: 8px 0 0;
-  border: 1px solid var(--line, #e5e0d4);
+.memo-edit-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1px solid #efe3c2;
   border-radius: var(--r-sm, 8px);
-  background: #fffdf7;
-  padding: 8px 10px;
-  color: inherit;
+  background: #fffef9;
+  padding: 7px 10px;
+  color: #5b5234;
   font: inherit;
   font-size: 13px;
   line-height: 1.5;
   resize: vertical;
 }
-.public-memo .memo-edit:focus {
+.memo-edit-input:focus {
   outline: 2px solid #f4b740;
   outline-offset: 1px;
+}
+.memo-edit-state {
+  flex: 0 0 auto;
+  color: var(--muted, #b0a578);
+  font-size: 11px;
+  font-weight: 800;
 }
 
 /* A: "관심 높음" 배지 — 집계 기반(숫자 비노출). 시청자 화면에서만 보인다.
@@ -1658,11 +1670,16 @@
   margin-right: -7px;
   border-radius: 0;
 }
+/* #7: 열린(이어지는) 쪽은 음수 마진(-7px)으로 옆 칸과 겹쳐 붙는다.
+   그만큼 글자 영역이 넓어져 줄바꿈이 칸마다 달라지므로, 열린 쪽 패딩을 +7px 보정해
+   모든 세그먼트의 글자 영역 폭을 똑같이 맞춘다(주 경계 넘는 일정도 동일하게 줄바꿈). */
 .public-event.span.no-left {
   border-left: 0;
+  padding-left: 15px;
 }
 .public-event.span.no-right {
   border-right: 0;
+  padding-right: 15px;
 }
 .public-event.span:not(.no-left) {
   margin-left: 0;

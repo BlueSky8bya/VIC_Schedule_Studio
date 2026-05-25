@@ -274,6 +274,13 @@ export function StickerLayer({
         const others = stickersRef.current.filter((s) => s.id !== drag.id);
         const xLines = [rect.width / 2, ...others.map((s) => s.xRatio * rect.width)];
         const yLines = [rect.height / 2, ...others.map((s) => s.yRatio * rect.height)];
+        // 메모지 중심선도 스냅 대상에 추가(텍스트를 메모지 가운데에 맞추기 쉽게).
+        const memoEl = layer.ownerDocument.querySelector(".public-memo");
+        if (memoEl) {
+          const mr = memoEl.getBoundingClientRect();
+          xLines.push(mr.left - rect.left + mr.width / 2);
+          yLines.push(mr.top - rect.top + mr.height / 2);
+        }
         let gx: number | null = null;
         let gy: number | null = null;
         for (const lx of xLines) {

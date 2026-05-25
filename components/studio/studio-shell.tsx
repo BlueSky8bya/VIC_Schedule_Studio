@@ -13,6 +13,9 @@ import {
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type {
+  BroadcastTag,
+  ColorKey,
+  ColorPaletteEntry,
   EventCategory,
   EventStatus,
   EventVisibilityScope,
@@ -144,13 +147,22 @@ export function StudioShell({
   useEffect(() => {
     setEvents(schedule.events);
   }, [schedule.events]);
+  // 태그·색 팔레트도 로컬 상태로 — 추가/삭제/저장을 새로고침 없이 즉시 반영(달력 색도 바로 갱신).
+  const [tags, setTags] = useState(schedule.tags);
+  const [palette, setPalette] = useState(schedule.palette);
+  useEffect(() => {
+    setTags(schedule.tags);
+  }, [schedule.tags]);
+  useEffect(() => {
+    setPalette(schedule.palette);
+  }, [schedule.palette]);
   // #3: "기타" 태그는 색상 안내·태그 선택 모두에서 항상 맨 끝.
   const legendTags = useMemo(
     () =>
-      [...schedule.tags].sort(
+      [...tags].sort(
         (a, b) => Number(a.displayName === "기타") - Number(b.displayName === "기타")
       ),
-    [schedule.tags]
+    [tags]
   );
 
   // 카드 클릭:
@@ -258,8 +270,8 @@ export function StudioShell({
 
   function eventColor(event: StudioScheduleEvent) {
     const tagId = event.primaryTagIds[0] ?? event.tagIds[0];
-    const tag = tagId ? schedule.tags.find((t) => t.id === tagId) : undefined;
-    return tag ? schedule.palette.find((p) => p.key === tag.colorKey) : undefined;
+    const tag = tagId ? tags.find((t) => t.id === tagId) : undefined;
+    return tag ? palette.find((p) => p.key === tag.colorKey) : undefined;
   }
 
   function moveMonth(offset: number) {
@@ -401,6 +413,30 @@ export function StudioShell({
         primaryTagIds: selected ? [] : [tagId]
       };
     });
+  }
+
+  // #4: 태그 추가/삭제/저장을 새로고침 없이 로컬 상태에 즉시 반영(달력 색도 바로 갱신).
+  function applyTagAdd(tag: BroadcastTag, color: ColorPaletteEntry) {
+    setTags((prev) => [...prev, tag]);
+    setPalette((prev) => (prev.some((c) => c.key === color.key) ? prev : [...prev, color]));
+  }
+  function applyTagRemove(tagId: string) {
+    const removed = tags.find((t) => t.id === tagId);
+    setTags((prev) => prev.filter((t) => t.id !== tagId));
+    if (removed && removed.colorKey.startsWith("gen-")) {
+      const stillUsed = tags.some((t) => t.id !== tagId && t.colorKey === removed.colorKey);
+      if (!stillUsed) {
+        setPalette((prev) => prev.filter((c) => c.key !== removed.colorKey));
+      }
+    }
+  }
+  function applyTagUpdates(updates: { id: string; displayName: string; colorKey: ColorKey }[]) {
+    setTags((prev) =>
+      prev.map((t) => {
+        const u = updates.find((x) => x.id === t.id);
+        return u ? { ...t, displayName: u.displayName, colorKey: u.colorKey } : t;
+      })
+    );
   }
 
   // #2: 일정 카드 복사/붙여넣기 — 선택한 일정을 Ctrl+C로 복사, 다른 날짜를 고르고 Ctrl+V.
@@ -608,8 +644,8 @@ export function StudioShell({
             <h2>색상 안내</h2>
             <TagLegendEditor
               canEdit={false}
-              palette={schedule.palette}
-              tags={schedule.tags}
+              palette={palette}
+              tags={tags}
               updateTagsAction={updateTagsAction}
             />
           </section>
@@ -935,7 +971,7 @@ export function StudioShell({
               <h3>태그</h3>
               <div>
                 {legendTags.map((tag) => {
-                  const color = schedule.palette.find((item) => item.key === tag.colorKey);
+                  const color = palette.find((item) => item.key === tag.colorKey);
                   const selected = form.tagIds[0] === tag.id;
                   return color ? (
                     <button
@@ -1037,10 +1073,12 @@ export function StudioShell({
               <TagLegendEditor
                 addTagAction={addTagAction}
                 canEdit
-                key={schedule.tags.map((t) => t.id).join(",")}
-                palette={schedule.palette}
+                onTagAdded={applyTagAdd}
+                onTagRemoved={applyTagRemove}
+                onTagsUpdated={applyTagUpdates}
+                palette={palette}
                 removeTagAction={removeTagAction}
-                tags={schedule.tags}
+                tags={tags}
                 updateTagsAction={updateTagsAction}
               />
             ) : null}

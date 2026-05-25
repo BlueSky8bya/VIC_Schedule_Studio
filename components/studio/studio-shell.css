@@ -463,10 +463,10 @@
   border-color: #f59e0b !important;
   background: rgb(251 191 36 / 16%);
 }
-/* 현재 편집 중인(클릭한) 카드 — 더 진한 배경 + 안쪽 테두리(바깥 outline은 이음매를 끊으므로 쓰지 않음). */
+/* 현재 편집 중인(클릭한) 카드 — 배경만 더 진하게. 박스(outline/ring)는 이음매를 끊으므로 쓰지 않는다.
+   span의 이어진 쪽은 좌우 테두리가 없어 위/아래 노란 선만 끊김 없이 이어진다. */
 .studio-event-pill.primary-selected {
-  background: rgb(251 191 36 / 32%);
-  box-shadow: inset 0 0 0 2px #f59e0b;
+  background: rgb(251 191 36 / 34%);
 }
 
 /* #2: 복사/붙여넣기 알림 토스트 */
@@ -698,11 +698,12 @@ textarea:disabled {
   display: grid;
   gap: 12px;
 }
+/* #3: 태그 한 줄 레이아웃 — 이름(좁게) + 색 스와치(얇은 직사각형, 한 줄) + 삭제. */
 .tag-editor-row {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px;
-  padding-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--line);
 }
 .tag-editor-row:last-child {
@@ -710,22 +711,22 @@ textarea:disabled {
   padding-bottom: 0;
 }
 .tag-editor-row input {
-  grid-column: 1;
-  grid-row: 1;
-  min-height: 34px;
+  flex: 0 0 96px;
+  width: 96px;
+  min-height: 32px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  padding: 0 9px;
+  padding: 0 8px;
+  font-size: 13px;
   font-weight: 800;
 }
-/* #6: 태그 행 삭제 버튼(이름 칸 오른쪽). */
+/* #6→#3: 태그 행 삭제 버튼. */
 .tag-editor-remove {
-  grid-column: 2;
-  grid-row: 1;
+  flex: 0 0 auto;
   display: inline-grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: #fff;
@@ -740,17 +741,22 @@ textarea:disabled {
 .tag-editor-remove:disabled {
   opacity: 0.5;
 }
+/* 색 스와치: 얇은 직사각형이라 20가지+도 한 줄에 들어간다(넘치면 가로 스크롤). */
 .tag-editor-swatches {
-  grid-column: 1 / -1;
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  flex-wrap: nowrap;
+  gap: 3px;
+  overflow-x: auto;
+  padding-bottom: 2px;
 }
 .tag-editor-swatches button {
-  width: 22px;
-  height: 22px;
-  border: 2px solid;
-  border-radius: 5px;
+  flex: 0 0 auto;
+  width: 13px;
+  height: 26px;
+  border: 1.5px solid;
+  border-radius: 3px;
   cursor: pointer;
 }
 .tag-editor-swatches button.selected {
@@ -826,15 +832,7 @@ textarea:disabled {
   font-size: 13px;
   font-weight: 700;
 }
-.modal-card-wide .tag-editor-row {
-  display: grid;
-  grid-template-columns: 120px 1fr auto;
-  align-items: center;
-  gap: 12px;
-}
-.modal-card-wide .tag-editor-swatches {
-  flex-wrap: nowrap;
-}
+/* 태그 편집 행은 기본 flex 한 줄 레이아웃(.tag-editor-row)을 그대로 쓴다. */
 
 /* hover 피드백 */
 .studio-month-nav button,
@@ -943,11 +941,14 @@ textarea:disabled {
   transform: none;
   box-shadow: 0 1px 2px rgb(17 24 39 / 5%);
 }
+/* #7: 열린 쪽 음수 마진만큼 글자 영역이 넓어지는 걸 패딩으로 보정해, 칸마다 줄바꿈이 같게 한다. */
 .studio-event-pill.span.no-left {
   border-left: 0;
+  padding-left: 16px;
 }
 .studio-event-pill.span.no-right {
   border-right: 0;
+  padding-right: 16px;
 }
 .studio-event-pill.span:not(.no-left) {
   margin-left: 0;
@@ -1258,39 +1259,13 @@ textarea:disabled {
   padding: 20px;
 }
 
-/* 태그 편집기 — 카드형 행 */
-.modal-card-wide .tag-editor-row {
-  grid-template-columns: 150px 1fr;
-  gap: 14px;
-  align-items: center;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: #fbfcfe;
-}
-.tag-editor-row input {
-  min-height: 38px;
-  font-size: 14px;
-}
-.tag-editor-swatches button {
-  width: 26px;
-  height: 26px;
-  border-radius: var(--r-md);
-  transition:
-    transform var(--dur-1) var(--ease),
-    box-shadow var(--dur-1) var(--ease);
-}
-.tag-editor-swatches button.selected {
-  box-shadow: 0 0 0 3px #111827;
-  transform: scale(1.08);
-}
+/* 태그 편집기는 위의 한 줄(flex) 레이아웃을 그대로 사용한다(.tag-editor-row 등). */
 .tag-editor-swatches button:disabled {
   opacity: 0.32;
 }
 .tag-editor .button.primary {
-  min-height: 44px;
-  justify-self: stretch;
+  min-height: 40px;
+  flex: 1;
 }
 
 /* 매니저/작업자 관리 — 모던 카드형 (.members-hint 스타일은 위 통일 규칙 사용) */
@@ -1561,6 +1536,14 @@ textarea:disabled {
   border: 1px solid var(--line);
   border-radius: var(--r-sm, 8px);
   background: #fff;
+}
+.notice-emoticon-text {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+.notice-emoticon-text .button {
+  min-height: 30px;
 }
 .notice-actions {
   display: flex;

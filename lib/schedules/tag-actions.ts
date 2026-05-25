@@ -2,12 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { revalidatePublicSchedule } from "@/lib/schedules/cache";
-import type { ColorKey } from "@/lib/domain/schedule-types";
+import type { BroadcastTag, ColorKey, ColorPaletteEntry } from "@/lib/domain/schedule-types";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canEditSchedule } from "@/lib/permissions/roles";
 
 export type TagUpdateResult = { ok: true } | { ok: false; error: string };
+// 추가는 생성된 태그/색을 돌려줘, 화면을 새로고침 없이 낙관적으로 갱신하게 한다.
+export type AddTagResult =
+  | { ok: true; tag: BroadcastTag; color: ColorPaletteEntry }
+  | { ok: false; error: string };
 
 const SLUG = "vic";
 
@@ -108,7 +112,7 @@ export async function updateTagAction(
 
 // #6: 태그 추가 — 기존 색들과 hue가 가장 먼 연한 파스텔 색을 새로 만들어 함께 등록한다.
 // (연한 톤 + 어두운 글씨라 색 위에 글자가 잘 보인다. 세로무늬 없이 색으로 구분.)
-export async function addTagAction(): Promise<TagUpdateResult> {
+export async function addTagAction(): Promise<AddTagResult> {
   const actor = await resolveCurrentActor(SLUG);
   if (!canEditSchedule(actor.role)) {
     return { ok: false, error: "owner 또는 developer만 태그를 추가할 수 있습니다." };
@@ -168,23 +172,47 @@ export async function addTagAction(): Promise<TagUpdateResult> {
     return { ok: false, error: palErr.message };
   }
 
-  const { error: tagErr } = await supabase.from("broadcast_tags").insert({
-    calendar_id: calendar.id,
-    tag_key: `tag-${rand}`,
-    display_name: "새 태그",
-    color_key: key,
-    sort_order: tagSort,
-    is_default: false,
-    is_active: true
-  });
-  if (tagErr) {
-    return { ok: false, error: tagErr.message };
+  const tagKey = `tag-${rand}`;
+  const { data: inserted, error: tagErr } = await supabase
+    .from("broadcast_tags")
+    .insert({
+      calendar_id: calendar.id,
+      tag_key: tagKey,
+      display_name: "새 태그",
+      color_key: key,
+      sort_order: tagSort,
+      is_default: false,
+      is_active: true
+    })
+    .select("id")
+    .single();
+  if (tagErr || !inserted) {
+    return { ok: false, error: tagErr?.message ?? "태그 생성 실패" };
   }
 
   revalidatePath("/");
   revalidatePath("/studio");
   revalidatePublicSchedule();
-  return { ok: true };
+  return {
+    ok: true,
+    tag: {
+      id: inserted.id,
+      tagKey,
+      displayName: "새 태그",
+      colorKey: key,
+      sortOrder: tagSort,
+      isDefault: false,
+      isActive: true
+    },
+    color: {
+      key,
+      name: "새 색",
+      bgColor,
+      textColor,
+      borderColor,
+      sortOrder: paletteSort
+    }
+  };
 }
 
 // #6: 태그 삭제. 이 태그가 쓰던 생성 색(gen-)을 아무도 안 쓰면 팔레트에서도 정리한다.
