@@ -8,6 +8,7 @@ import {
   uploadStickerAssetAction
 } from "@/lib/schedules/sticker-asset-actions";
 import { setPosterThemeAction } from "@/lib/schedules/theme-actions";
+import { updateMemoAction } from "@/lib/schedules/memo-actions";
 
 type StudioDecoratePageProps = {
   params: Promise<{ year: string; month: string }>;
@@ -41,6 +42,7 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
       saveStickerAction={saveStickerAction}
       schedule={schedule}
       setPosterThemeAction={canEditSchedule(actor.role) ? setPosterThemeAction : undefined}
+      updateMemoAction={canEditSchedule(actor.role) ? updateMemoAction : undefined}
       uploadStickerAssetAction={uploadStickerAssetAction}
     />
   );

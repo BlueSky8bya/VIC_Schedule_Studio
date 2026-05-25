@@ -44,13 +44,16 @@ export function TrustedMembersPanel() {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<"manager" | "worker">("manager");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true); // 첫 조회 전엔 "없어요" 대신 로딩 표시
   const [pending, startTransition] = useTransition();
 
   useEffect(() => {
-    listTrustedMembersAction().then((r) => {
-      if (r.ok) setMembers(r.members);
-      else setError(r.error);
-    });
+    listTrustedMembersAction()
+      .then((r) => {
+        if (r.ok) setMembers(r.members);
+        else setError(r.error);
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   function add() {
@@ -121,7 +124,12 @@ export function TrustedMembersPanel() {
       {error ? <div className="auth-warning">{error}</div> : null}
 
       <ul className="members-list">
-        {members.length === 0 ? (
+        {loading ? (
+          <li className="members-empty">
+            <Users aria-hidden="true" size={22} />
+            불러오는 중…
+          </li>
+        ) : members.length === 0 ? (
           <li className="members-empty">
             <Users aria-hidden="true" size={22} />
             아직 등록된 사람이 없어요.

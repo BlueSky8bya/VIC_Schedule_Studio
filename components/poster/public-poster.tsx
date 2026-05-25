@@ -46,6 +46,7 @@ import type {
 } from "@/lib/schedules/sticker-actions";
 import type { StickerAssetResult } from "@/lib/schedules/sticker-asset-actions";
 import type { HeartResult } from "@/lib/schedules/heart-actions";
+import type { MemoResult } from "@/lib/schedules/memo-actions";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
   assignSupportLanes,
@@ -74,6 +75,8 @@ type PublicPosterProps = {
   setPosterThemeAction?: (theme: string) => Promise<ThemeResult>;
   // A: 일정 관심(하트) 토글. 주어지면 서버 집계 연동, 없으면 기기별 localStorage로만 동작.
   toggleHeartAction?: (eventId: string) => Promise<HeartResult>;
+  // 공개 메모 저장(소유자/개발자만). 주어지면 꾸미기에서 메모 박스를 편집할 수 있다.
+  updateMemoAction?: (memo: string) => Promise<MemoResult>;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -284,7 +287,8 @@ export function PublicPoster({
   uploadStickerAssetAction,
   deleteStickerAssetAction,
   setPosterThemeAction,
-  toggleHeartAction
+  toggleHeartAction,
+  updateMemoAction
 }: PublicPosterProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -352,6 +356,30 @@ export function PublicPoster({
       setPosterTheme(prev);
       setStickerError(result.error);
     }
+  }
+
+  // 공개 메모 — 소유자/개발자가 꾸미기에서 편집(updateMemoAction이 있을 때만). 시청자 화면에 그대로 노출.
+  const [memo, setMemo] = useState(schedule.calendar.publicMemo);
+  const [memoSaved, setMemoSaved] = useState(true);
+  const memoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  function changeMemo(value: string) {
+    setMemo(value);
+    setMemoSaved(false);
+    if (!updateMemoAction) {
+      return;
+    }
+    if (memoTimerRef.current) {
+      clearTimeout(memoTimerRef.current);
+    }
+    // 타이핑이 멈추면 저장(디바운스) — 매 글자마다 서버를 때리지 않는다.
+    memoTimerRef.current = setTimeout(async () => {
+      const result = await updateMemoAction(value);
+      if (result.ok) {
+        setMemoSaved(true);
+      } else {
+        setStickerError(result.error);
+      }
+    }, 600);
   }
 
   // 스티커는 달(월)마다 따로 — 현재 보는 달의 스티커만 로컬 상태로 다룬다.
@@ -1894,14 +1922,27 @@ export function PublicPoster({
           />
 
           <aside className="public-side" aria-label="메모">
-            {/* #2: 메모 영역은 색으로 구분된 메모지처럼 항상 보여, 텍스트로 꾸밀 공간임을 알 수 있게.
-               (시청자 화면에선 내용이 있을 때만 표시) */}
-            {decorate || schedule.calendar.publicMemo.trim() ? (
+            {/* 소유자는 꾸미기에서 직접 메모를 편집(updateMemoAction). 시청자 화면엔 내용이 있을 때만 표시. */}
+            {updateMemoAction ? (
+              <div className="public-memo editing">
+                <strong>
+                  메모
+                  <span className="memo-save-state">{memoSaved ? "저장됨" : "저장 중…"}</span>
+                </strong>
+                <textarea
+                  className="memo-edit"
+                  onChange={(event) => changeMemo(event.target.value)}
+                  placeholder="시청자 화면에 보일 메모를 적어주세요. (한 줄에 하나씩)"
+                  rows={5}
+                  value={memo}
+                />
+              </div>
+            ) : decorate || memo.trim() ? (
               <div className="public-memo">
                 <strong>메모</strong>
                 <div className="memo-body">
-                  {schedule.calendar.publicMemo.trim()
-                    ? schedule.calendar.publicMemo
+                  {memo.trim()
+                    ? memo
                         .split("\n")
                         .filter((line) => line.trim())
                         .map((line, index) => <p key={index}>{line}</p>)

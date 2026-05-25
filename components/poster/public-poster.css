@@ -395,6 +395,36 @@
   opacity: 1;
 }
 
+/* #5: 꾸미기에서 소유자가 직접 쓰는 공개 메모 입력칸 */
+.public-memo.editing strong {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.public-memo .memo-save-state {
+  color: var(--muted, #9ca3af);
+  font-size: 11px;
+  font-weight: 700;
+}
+.public-memo .memo-edit {
+  width: 100%;
+  margin: 8px 0 0;
+  border: 1px solid var(--line, #e5e0d4);
+  border-radius: var(--r-sm, 8px);
+  background: #fffdf7;
+  padding: 8px 10px;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: vertical;
+}
+.public-memo .memo-edit:focus {
+  outline: 2px solid #f4b740;
+  outline-offset: 1px;
+}
+
 /* A: "관심 높음" 배지 — 집계 기반(숫자 비노출). 시청자 화면에서만 보인다.
    임계값을 넘는 순간 딱 켜지지 않고, 살짝 떠오르며 부드럽게 나타난다(스멀스멀). */
 .event-popular {

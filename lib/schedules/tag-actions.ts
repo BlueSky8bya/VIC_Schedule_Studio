@@ -73,18 +73,20 @@ export async function updateTagsAction(
     return { ok: false, error: "Supabase가 설정되지 않았습니다." };
   }
 
-  for (const u of updates) {
-    const { error } = await supabase
-      .from("broadcast_tags")
-      .update({
-        display_name: u.displayName.trim(),
-        color_key: u.colorKey,
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", u.id);
-    if (error) {
-      return { ok: false, error: error.message };
-    }
+  // 태그를 하나씩 순차 update하면 왕복 지연이 누적돼 느리다(10개면 5초+).
+  // 서로 독립적이라 한꺼번에 병렬로 보낸다 → 사실상 1회 왕복 시간으로 끝난다.
+  const now = new Date().toISOString();
+  const results = await Promise.all(
+    updates.map((u) =>
+      supabase
+        .from("broadcast_tags")
+        .update({ display_name: u.displayName.trim(), color_key: u.colorKey, updated_at: now })
+        .eq("id", u.id)
+    )
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) {
+    return { ok: false, error: failed.error.message };
   }
 
   revalidatePath("/");
