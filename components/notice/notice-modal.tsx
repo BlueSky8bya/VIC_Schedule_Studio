@@ -8,6 +8,18 @@ const SOOP_WRITE_URL = "https://www.sooplive.com/station/tim917799/post/write/12
 // 본문 맨 끝에 항상 붙이는 이모티콘(숲 스티커).
 const EMOTICON_URL = "https://stimg.sooplive.com/NORMAL_BBS/1/26636711/15676a0ac2a5d4955.gif";
 
+// 자동 입력 북마클릿: SOOP 작성 페이지에서 클릭하면 클립보드(JSON: title/body)를 읽어
+// 제목 입력칸과 본문 에디터에 채워 넣는다. (다른 사이트라 우리 페이지가 직접 못 하므로 북마클릿 방식)
+// 셀렉터는 추정치 — 실제 작성 페이지 구조에 맞게 다듬을 수 있다.
+const BOOKMARKLET =
+  'javascript:(async()=>{try{const d=JSON.parse(await navigator.clipboard.readText());' +
+  'const t=document.querySelector(\'input[placeholder*="제목"],textarea[placeholder*="제목"],[class*="PostTitle"] input,[class*="PostTitle"] textarea\');' +
+  "if(t){const s=Object.getOwnPropertyDescriptor(t.constructor.prototype,'value').set;s.call(t,d.title);t.dispatchEvent(new Event('input',{bubbles:true}));t.dispatchEvent(new Event('change',{bubbles:true}));}" +
+  'const e=document.querySelector(\'.soop-editor-content,[class*="editor-content"],[contenteditable="true"]\');' +
+  "if(e){e.focus();document.execCommand('selectAll',false);document.execCommand('insertText',false,d.body);}" +
+  "if(!t&&!e){alert('입력칸을 못 찾았어요. 작성 페이지에서 눌렀는지 확인해 주세요.');}" +
+  "}catch(x){alert('자동입력 실패: '+(x&&x.message?x.message:x));}})()";
+
 type NoticeModalProps = {
   dateKey: string; // 선택한 날짜 YYYY-MM-DD
   onClose: () => void;
@@ -24,7 +36,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
   const [time, setTime] = useState(""); // 예: "4시", "5시반"
   const [brief, setBrief] = useState(""); // 방송 내용(간략)
   const [detail, setDetail] = useState(""); // 자세한 내용
-  const [copied, setCopied] = useState<"title" | "body" | null>(null);
+  const [copied, setCopied] = useState<"title" | "body" | "payload" | "mark" | null>(null);
 
   const shownTime = time.trim() || "N시";
   const title = `${formatNoticeDate(dateKey)} - ${shownTime} 뱅온!`;
@@ -49,7 +61,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
     NB
   ].join("\n");
 
-  async function copy(kind: "title" | "body", text: string) {
+  async function copy(kind: "title" | "body" | "payload" | "mark", text: string) {
     try {
       await navigator.clipboard.writeText(text);
       setCopied(kind);
@@ -58,6 +70,8 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
       // 클립보드 권한이 없으면 무시(사용자가 직접 선택 복사 가능).
     }
   }
+  // 북마클릿이 읽을 자동입력 페이로드(제목+본문).
+  const autofillPayload = JSON.stringify({ title, body });
 
   return (
     <div className="notice-modal">
@@ -144,6 +158,43 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
           </div>
         </div>
       </div>
+
+      {/* 자동 입력(북마클릿) — 한 번만 설정하면 SOOP 작성페이지에서 클릭만으로 제목·본문이 채워진다. */}
+      <details className="notice-autofill">
+        <summary>⚡ 자동 입력 설정 (북마클릿 · 한 번만)</summary>
+        <ol className="notice-autofill-steps">
+          <li>
+            아래 북마클릿 코드를 <strong>복사</strong>한 뒤, 브라우저 북마크를 새로 만들고
+            URL 칸에 붙여넣어 저장하세요. (이름은 “VIC 공지자동입력” 등)
+            <div className="notice-autofill-row">
+              <button className="button" onClick={() => copy("mark", BOOKMARKLET)} type="button">
+                <Copy aria-hidden="true" size={13} />
+                {copied === "mark" ? "복사됨" : "북마클릿 코드 복사"}
+              </button>
+            </div>
+          </li>
+          <li>
+            이 창에서 <strong>“제목+본문 한 번에 복사”</strong>를 누르세요.
+            <div className="notice-autofill-row">
+              <button
+                className="button primary"
+                onClick={() => copy("payload", autofillPayload)}
+                type="button"
+              >
+                <Copy aria-hidden="true" size={13} />
+                {copied === "payload" ? "복사됨" : "제목+본문 한 번에 복사"}
+              </button>
+            </div>
+          </li>
+          <li>
+            <strong>숲 공지 페이지</strong>를 열고, 만들어 둔 <strong>북마크를 클릭</strong>하면
+            제목·본문이 자동으로 채워집니다. (이모티콘은 직접 추가)
+          </li>
+        </ol>
+        <p className="notice-autofill-note">
+          숲 페이지 구조에 따라 한 번에 안 들어갈 수 있어요. 그러면 알려주시면 맞게 다듬을게요.
+        </p>
+      </details>
 
       <div className="notice-actions">
         <a

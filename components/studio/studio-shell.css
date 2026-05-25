@@ -1551,6 +1551,36 @@ textarea:disabled {
 .notice-emoticon-text .button {
   min-height: 30px;
 }
+
+/* 자동 입력(북마클릿) 안내 */
+.notice-autofill {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface, #fbfaf6);
+  padding: 10px 14px;
+}
+.notice-autofill > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-soft, #475569);
+}
+.notice-autofill-steps {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.notice-autofill-row {
+  margin-top: 6px;
+}
+.notice-autofill-note {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
 .notice-actions {
   display: flex;
   gap: 8px;
