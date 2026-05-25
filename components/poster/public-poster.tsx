@@ -84,6 +84,26 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 // 관심 일정 북마크 저장 키 — 캘린더 슬러그가 하나(vic)라 단일 키로 충분하다.
 const BOOKMARK_STORAGE_KEY = "vic:bookmarks:v1";
 
+// #3: 관심 하트 단계(불꽃 게이지). 최소 3개부터 표시하고, 이번 달 최다 대비 비율로 단계를 올린다.
+type HeartTier = { key: "warm" | "hot" | "blaze" | "top"; flames: string; label: string };
+function heartTier(count: number, max: number): HeartTier | null {
+  if (count < 3) {
+    return null; // 너무 적으면 표시하지 않는다(노이즈 방지).
+  }
+  // 이번 달 1위(그리고 어느 정도 모였을 때)는 왕관으로 특별 취급.
+  if (count === max && max >= 5) {
+    return { key: "top", flames: "👑", label: "최고 인기" };
+  }
+  const ratio = max > 0 ? count / max : 0;
+  if (ratio >= 0.8) {
+    return { key: "blaze", flames: "🔥🔥🔥", label: "폭발적 관심" };
+  }
+  if (ratio >= 0.5) {
+    return { key: "hot", flames: "🔥🔥", label: "높은 관심" };
+  }
+  return { key: "warm", flames: "🔥", label: "관심" };
+}
+
 // 하트를 누를 때 떠오르는 ♥ 입자 하나. 화면 좌표(fixed)와 약간의 무작위성으로 자연스럽게 흩어진다.
 type HeartFloater = {
   id: string;
@@ -523,20 +543,12 @@ export function PublicPoster({
   }
   const isBookmarked = (id: string) => bookmarks.includes(id);
 
-  // A: "관심 높음" 판정 — 현재 달력 데이터의 최다 하트 대비 절반 이상이면서 최소 2개 모인 일정.
-  // 절대 수치 대신 상대 기준이라 스트리머 규모와 무관하게 적당히 표시된다.
-  const popularHeartIds = useMemo(() => {
+  // A(#3): 관심 단계는 "이번 달 최다 하트" 대비 상대 + 최소 절대 기준의 혼합으로 정한다.
+  // 50~100명 규모에서 한두 명 차이로 단계가 출렁이지 않게 상대(ratio)를 쓰고,
+  // 최소 3개 floor로 노이즈를 막는다. maxHeart는 현재 보이는 집계의 최댓값.
+  const maxHeart = useMemo(() => {
     const counts = Object.values(heartCounts);
-    const top = counts.length > 0 ? Math.max(...counts) : 0;
-    if (top < 2) {
-      return new Set<string>();
-    }
-    const threshold = Math.max(2, Math.ceil(top * 0.5));
-    return new Set(
-      Object.entries(heartCounts)
-        .filter(([, count]) => count >= threshold)
-        .map(([eventId]) => eventId)
-    );
+    return counts.length > 0 ? Math.max(...counts) : 0;
   }, [heartCounts]);
 
   // 태그 칩 토글(다중 선택).
@@ -1254,8 +1266,11 @@ export function PublicPoster({
             const bookmarked = isBookmarked(event.id);
             // 하트는 시작 칸(제목 보이는 칸)에서만, 시청자 상호작용 모드에서만 노출.
             const showHeart = interactive && span.showTitle;
-            // "관심 높음" 배지 — 집계 기반, 숫자는 노출하지 않는다(시청자 화면 전용).
-            const showPopular = interactive && span.showTitle && popularHeartIds.has(event.id);
+            // #3: 관심 단계 배지 — 집계 기반, 숫자는 노출하지 않고 불꽃 게이지로(시청자 화면 전용).
+            const tier =
+              interactive && span.showTitle
+                ? heartTier(heartCounts[event.id] ?? 0, maxHeart)
+                : null;
             const eventClass = [
               "public-event",
               span.isMulti ? "span" : "",
@@ -1296,12 +1311,15 @@ export function PublicPoster({
                     </button>
                   ) : null}
                 </div>
-                {showPopular ? (
-                  <span className="event-popular" title="관심을 많이 받은 일정">
+                {tier ? (
+                  <span
+                    className={`event-popular tier-${tier.key}`}
+                    title="관심을 많이 받은 일정"
+                  >
                     <span className="flame" aria-hidden="true">
-                      🔥
+                      {tier.flames}
                     </span>{" "}
-                    관심 높음
+                    {tier.label}
                   </span>
                 ) : null}
                 {span.showTitle && subs.length > 0 ? (
