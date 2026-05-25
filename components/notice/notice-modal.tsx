@@ -89,8 +89,8 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
   return (
     <div className="notice-modal">
       <p className="notice-hint">
-        날짜·템플릿은 이미 채워져 있어요. <strong>시간·내용만</strong> 적으면 공지가 완성됩니다. 그 다음
-        아래 <strong>두 방법 중 편한 것</strong>으로 숲에 올리세요.
+        토리님! 날짜랑 템플릿은 이미 채워뒀어요. <strong>시간이랑 내용만</strong> 적으면 공지 완성!
+        그 다음 아래 <strong>두 방법 중 편한 걸</strong>로 숲에 올리면 돼요. (방법 2 추천!)
       </p>
 
       <div className="notice-fields">
@@ -164,10 +164,11 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
           <header className="notice-method-head">
             <span className="notice-method-no">방법 1</span>
             <strong>직접 붙여넣기</strong>
-            <span className="notice-method-tag">간단</span>
+            <span className="notice-method-tag">간단 · 비추천</span>
           </header>
           <p className="notice-method-desc">
-            제목·본문을 각각 복사해 숲에 붙여넣어요. 가운데 정렬·이모티콘은 직접.
+            토리님, 제목이랑 본문을 따로 복사해서 숲에 붙여넣는 방법이에요. 매번 두 번 붙여넣고
+            가운데정렬·이모티콘도 직접 해야 해서 살짝 번거로워요!
           </p>
           <div className="notice-method-actions">
             <button className="button" onClick={() => copy("title", title)} type="button">
@@ -197,16 +198,16 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
             <span className="notice-method-tag hot">추천 · 클릭 3번</span>
           </header>
           <p className="notice-method-desc">
-            처음 <strong>한 번만</strong> 북마크를 설정하면, 그 다음부터는{" "}
-            <strong>복사 → 페이지 열기 → 북마크 클릭</strong> 3번으로 제목·본문·
-            <strong>가운데정렬·이모티콘까지</strong> 한 번에 들어가요.
+            토리님! 처음 <strong>딱 한 번만</strong> 북마크를 만들어두면, 그 다음부터는{" "}
+            <strong>복사 → 페이지 열기 → 북마크 클릭</strong> 세 번이면 끝이에요. 제목·본문은
+            물론 <strong>가운데정렬이랑 이모티콘까지</strong> 알아서 쏙 들어갑니다!
           </p>
 
           <details className="notice-setup">
-            <summary>🔧 맨 처음 한 번만: 북마크 설정하기</summary>
+            <summary>🔧 맨 처음 딱 한 번만: 북마크 만들기 (자세히)</summary>
             <ol className="notice-autofill-steps">
               <li>
-                아래 코드를 복사하고
+                먼저 아래 코드를 복사해요!
                 <div className="notice-autofill-row">
                   <button
                     className="button"
@@ -214,13 +215,25 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
                     type="button"
                   >
                     <Copy aria-hidden="true" size={13} />
-                    {copied === "mark" ? "복사됨" : "북마클릿 코드 복사"}
+                    {copied === "mark" ? "복사됨!" : "① 북마클릿 코드 복사"}
                   </button>
                 </div>
               </li>
               <li>
-                브라우저에서 북마크를 <strong>새로 추가</strong> → 이름은 “VIC 공지”,{" "}
-                <strong>URL 칸에 붙여넣고</strong> 저장하세요. (한 번만 하면 끝)
+                브라우저 <strong>주소창 오른쪽 끝의 별표(☆)</strong>를 눌러 북마크를 하나
+                저장해요. (지금 이 페이지 그대로 저장하면 돼요!)
+              </li>
+              <li>
+                방금 만든 북마크를 <strong>마우스 우클릭 → “수정”</strong>을 눌러요. (북마크바에
+                보이면 거기서, 안 보이면 별표를 다시 눌러 “수정”)
+              </li>
+              <li>
+                <strong>이름</strong>은 <strong>“VIC 자동공지”</strong>로 바꾸고,{" "}
+                <strong>URL 칸</strong>의 내용을 전부 지운 뒤 <strong>①에서 복사한 코드를
+                붙여넣어요</strong> → 저장!
+              </li>
+              <li>
+                이제 끝이에요 토리님! 이 “VIC 자동공지” 북마크가 자동입력 버튼이 된 거예요 😎
               </li>
             </ol>
           </details>
@@ -251,7 +264,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
             </li>
             <li>
               <span className="notice-step-num">3</span>
-              <span className="notice-step-text">북마크 클릭 → 끝! ✨</span>
+              <span className="notice-step-text">“VIC 자동공지” 북마크 클릭 → 끝! ✨</span>
             </li>
           </ol>
         </section>

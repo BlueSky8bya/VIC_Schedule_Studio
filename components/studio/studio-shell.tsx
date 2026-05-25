@@ -522,14 +522,20 @@ export function StudioShell({
     });
   }
 
-  // 일정 복사/붙여넣기 단축키. 입력칸·팝업·텍스트선택 중에는 가로채지 않는다.
+  // 일정 단축키(소유자만). 입력칸·팝업·텍스트선택 중에는 가로채지 않는다.
   useEffect(() => {
     if (!canEdit) return;
     function onKey(e: KeyboardEvent) {
-      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
       const t = e.target as HTMLElement | null;
       const tag = t?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable || modal) return;
+      // Delete 키: 선택한 일정 삭제(버튼 없이도).
+      if (e.key === "Delete" && selectedEventId) {
+        e.preventDefault();
+        deleteEvent(selectedEventId);
+        return;
+      }
+      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
       const key = e.key.toLowerCase();
       if (key === "c" && selectedEventId && !window.getSelection()?.toString()) {
         e.preventDefault();
