@@ -985,15 +985,12 @@
   transform: translateY(-1px);
   box-shadow: var(--shadow-2);
 }
-/* D: 2색 칸은 그라데이션(칸 배경) 위에 반쪽 무늬를 깔고, 글자는 그 위로 올린다.
-   이어진 칸(data-seam)도 같은 스택 구조 — 이음새 번짐(evt-seam)은 글자 아래. */
-.public-event[data-mixed],
-.public-event[data-seam] {
+/* D: 2색 칸은 그라데이션(칸 배경) 위에 반쪽 무늬를 깔고, 글자는 그 위로 올린다. */
+.public-event[data-mixed] {
   position: relative;
   overflow: hidden;
 }
-.public-event[data-mixed] > :not(.evt-pat):not(.evt-seam),
-.public-event[data-seam] > :not(.evt-pat):not(.evt-seam) {
+.public-event[data-mixed] > :not(.evt-pat) {
   position: relative;
   z-index: 1;
 }

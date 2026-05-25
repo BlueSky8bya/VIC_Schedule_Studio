@@ -27,6 +27,7 @@ import type { CurrentActor } from "@/lib/auth/actor";
 import {
   assignSupportLanes,
   buildCalendarMonth,
+  buildChainInfo,
   buildChainKeys,
   buildLinkChain,
   classifyDay,
@@ -35,11 +36,9 @@ import {
   getEventDateKey,
   getEventsForDate,
   getEventSpan,
-  getEventTagColors,
   getLinkedChainIds,
   getMonthLabel,
-  getSeamColors,
-  getSpanRun,
+  getSpanRunRange,
   getTodayKst,
   mixedEventPatterns,
   mixedEventStyle,
@@ -271,6 +270,10 @@ export function StudioShell({
   const supportLanes = useMemo(() => assignSupportLanes(visibleEvents), [visibleEvents]);
   // 이어진 일정 묶음 키 + 묶음 칸 높이 맞추기(글자 수 달라도 이음새 안 어긋나게).
   const chainKeys = useMemo(() => buildChainKeys(visibleEvents), [visibleEvents]);
+  const chainInfo = useMemo(
+    () => buildChainInfo(visibleEvents, tags, palette),
+    [visibleEvents, tags, palette]
+  );
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [visibleEvents, view]);
   // 선택한 일정이 속한 연결 체인 전체를 하이라이트 대상으로 삼는다.
@@ -280,9 +283,10 @@ export function StudioShell({
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
 
-  // D: 대표 태그(최대 2개)의 색. 2개면 그라데이션으로 칠한다.
+  // D: 이 일정이 속한 묶음(chain)의 대표색(최대 2). 2개면 묶음 전체에 그라데이션 하나.
   function eventColors(event: StudioScheduleEvent) {
-    return getEventTagColors(event, tags, palette);
+    const key = chainKeys.get(event.id) ?? event.id;
+    return chainInfo.get(key)?.colors ?? [];
   }
 
   function moveMonth(offset: number) {
@@ -802,33 +806,18 @@ export function StudioShell({
                         .filter(Boolean)
                         .join(" ");
                       const mixed = colors.length >= 2;
-                      const run = mixed
-                        ? getSpanRun(event, cell.isoDate, cell.weekday)
-                        : null;
-                      const seam = getSeamColors(
-                        event,
-                        cell.isoDate,
-                        visibleEvents,
-                        tags,
-                        palette
-                      );
-                      const seamBg = [
-                        seam.left
-                          ? `linear-gradient(to right, ${seam.left}b3, transparent 30px)`
-                          : "",
-                        seam.right
-                          ? `linear-gradient(to left, ${seam.right}b3, transparent 30px)`
-                          : ""
-                      ]
-                        .filter(Boolean)
-                        .join(", ");
+                      const chainKey = chainKeys.get(event.id) ?? event.id;
+                      const chain = chainInfo.get(chainKey);
+                      const run =
+                        mixed && chain
+                          ? getSpanRunRange(chain.start, chain.end, cell.isoDate, cell.weekday)
+                          : null;
                       return (
                         <div
                           className={pillClass}
-                          data-chain={chainKeys.get(event.id)}
+                          data-chain={chainKey}
                           data-color={mixed ? undefined : colors[0]?.key}
                           data-mixed={mixed ? "" : undefined}
-                          data-seam={seamBg ? "" : undefined}
                           key={event.id}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -861,13 +850,6 @@ export function StudioShell({
                                 />
                               ))
                             : null}
-                          {seamBg ? (
-                            <span
-                              aria-hidden="true"
-                              className="evt-seam"
-                              style={{ backgroundImage: seamBg }}
-                            />
-                          ) : null}
                           <div className="pill-main">
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (

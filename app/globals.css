@@ -628,11 +628,3 @@ select {
   background-color: transparent;
   pointer-events: none;
 }
-/* D: 이어진 일정의 이음새 — 가장자리를 옆 일정 색으로 옅게 번지게 해 색이 섞인 듯 보이게.
-   그라데이션/무늬 위, 글자 아래에 깔린다(호출부에서 backgroundImage 인라인 지정). */
-.evt-seam {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}

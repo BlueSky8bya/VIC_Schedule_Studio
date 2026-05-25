@@ -229,52 +229,79 @@ export function buildChainKeys(
   return keys;
 }
 
-// D: 이어진(link) 일정의 이음새를 부드럽게 — 이 칸의 연결된 변에서 "옆 일정의 맞닿는 색"을 구한다.
-// 그 색을 이 칸 가장자리에 옅게 번지게(evt-seam) 깔면 서로 다른 두 색이 자연스럽게 섞여 보인다.
-// 같은 멀티데이 일정의 칸 사이는 이미 하나의 그라데이션이라 대상에서 제외(linkNext 경계만).
-export function getSeamColors(
-  event: PublicScheduleEvent | StudioScheduleEvent,
-  isoDate: string,
-  allEvents: Array<PublicScheduleEvent | StudioScheduleEvent>,
-  tags: BroadcastTag[],
-  palette: ColorPaletteEntry[]
-): { left?: string; right?: string } {
-  const start = getEventDateKey(event);
-  const end = eventEndKey(event);
-  const out: { left?: string; right?: string } = {};
-  if (isoDate === end && event.linkNext) {
-    const next = allEvents.find((e) => e.id === event.linkNext);
-    const c = next ? getEventTagColors(next, tags, palette) : [];
-    if (c[0]) {
-      out.right = c[0].bgColor; // 다음 일정의 왼쪽(시작) 색
-    }
-  }
-  if (isoDate === start) {
-    const prev = allEvents.find((e) => e.linkNext === event.id);
-    const c = prev ? getEventTagColors(prev, tags, palette) : [];
-    const last = c[c.length - 1];
-    if (last) {
-      out.left = last.bgColor; // 이전 일정의 오른쪽(끝) 색
-    }
-  }
-  return out;
-}
-
 function diffDays(a: string, b: string): number {
   const [ya, ma, da] = a.split("-").map(Number);
   const [yb, mb, db] = b.split("-").map(Number);
   return Math.round((Date.UTC(yb, mb - 1, db) - Date.UTC(ya, ma - 1, da)) / 86400000);
 }
 
-// D: 한 일정이 같은 주(週) 행에서 차지하는 칸들 중 이 칸의 위치/총개수. 이어진 칸 전체에
-// 하나의 그라데이션을 깔고 경계를 가운데에 두기 위해 쓴다(주 경계에서 행이 바뀌면 행별로 계산).
-export function getSpanRun(
-  event: PublicScheduleEvent | StudioScheduleEvent,
+export type ChainInfo = { colors: ColorPaletteEntry[]; start: string; end: string };
+
+// D: 이어진 묶음(chain)을 하나의 일정처럼 본다 — 묶음의 대표색(최대 2)과 전체 날짜 범위.
+// 단일 일정이면 그 일정의 대표색(최대 2)을, 여러 일정이 이어졌으면 "첫 일정 색 → 끝 일정 색"
+// 두 가지로 잡아 묶음 전체에 그라데이션 하나(경계는 가운데)가 깔리게 한다.
+export function buildChainInfo(
+  events: Array<PublicScheduleEvent | StudioScheduleEvent>,
+  tags: BroadcastTag[],
+  palette: ColorPaletteEntry[]
+): Map<string, ChainInfo> {
+  const keys = buildChainKeys(events);
+  const groups = new Map<string, Array<PublicScheduleEvent | StudioScheduleEvent>>();
+  for (const e of events) {
+    const k = keys.get(e.id) ?? e.id;
+    const g = groups.get(k);
+    if (g) {
+      g.push(e);
+    } else {
+      groups.set(k, [e]);
+    }
+  }
+  const colorOf = (tagId: string | undefined) => {
+    if (!tagId) {
+      return undefined;
+    }
+    const tag = tags.find((t) => t.id === tagId);
+    return tag ? palette.find((p) => p.key === tag.colorKey) : undefined;
+  };
+  const info = new Map<string, ChainInfo>();
+  for (const [key, listRaw] of groups) {
+    const list = [...listRaw].sort((a, b) =>
+      getEventDateKey(a).localeCompare(getEventDateKey(b))
+    );
+    let start = getEventDateKey(list[0]);
+    let end = eventEndKey(list[0]);
+    for (const e of list) {
+      const s = getEventDateKey(e);
+      const en = eventEndKey(e);
+      if (s < start) start = s;
+      if (en > end) end = en;
+    }
+    let colors: ColorPaletteEntry[];
+    if (list.length === 1) {
+      colors = getEventTagColors(list[0], tags, palette); // 단일 일정: 자기 대표색(최대 2)
+    } else {
+      // 이어진 일정: 첫 일정 색 → 끝 일정 색 (같으면 단색)
+      const first = list[0];
+      const last = list[list.length - 1];
+      const c1 = colorOf(first.primaryTagIds[0] ?? first.tagIds[0]);
+      const c2 = colorOf(last.primaryTagIds[0] ?? last.tagIds[0]);
+      colors = [];
+      if (c1) colors.push(c1);
+      if (c2 && c2.key !== c1?.key) colors.push(c2);
+    }
+    info.set(key, { colors, start, end });
+  }
+  return info;
+}
+
+// D: 주어진 날짜 범위(start~end)가 같은 주(週) 행에서 차지하는 칸 중 이 칸의 위치/총개수.
+// 이어진 칸 전체에 하나의 그라데이션을 깔고 경계를 가운데에 두기 위해 쓴다.
+export function getSpanRunRange(
+  start: string,
+  end: string,
   isoDate: string,
   weekday: number
 ): { index: number; length: number } {
-  const start = getEventDateKey(event);
-  const end = eventEndKey(event);
   const weekStart = addDays(isoDate, -weekday);
   const weekEnd = addDays(isoDate, 6 - weekday);
   const rowStart = start > weekStart ? start : weekStart;
@@ -283,6 +310,13 @@ export function getSpanRun(
     index: Math.max(0, diffDays(rowStart, isoDate)),
     length: Math.max(1, diffDays(rowStart, rowEnd) + 1)
   };
+}
+export function getSpanRun(
+  event: PublicScheduleEvent | StudioScheduleEvent,
+  isoDate: string,
+  weekday: number
+): { index: number; length: number } {
+  return getSpanRunRange(getEventDateKey(event), eventEndKey(event), isoDate, weekday);
 }
 
 // D: 혼합(2색) 칸 배경 — 두 색을 좌→우 그라데이션으로 섞되, 이어진 칸 전체 기준으로 그려

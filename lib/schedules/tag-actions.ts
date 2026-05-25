@@ -57,7 +57,7 @@ function hueDist(a: number, b: number): number {
 // 아직 안 쓴 무늬(또는 그 무늬에서 hue가 텅 빈 쪽)를 우선 잡고, 동점이면 전체 색과도 멀게.
 function pickColorSlot(existing: { hue: number; pat: Pat }[]): { hue: number; pat: Pat } {
   const pats: Pat[] = ["plain", "diag", "dots", "grid"];
-  let best = { hue: Math.floor(Math.random() * 360), pat: "diag" as Pat, score: -1 };
+  const candidates: { hue: number; pat: Pat; score: number }[] = [];
   for (let h = 0; h < 360; h += 5) {
     for (const pat of pats) {
       let sameMin = Infinity; // 같은 무늬 색들과의 최소 hue 거리
@@ -72,12 +72,17 @@ function pickColorSlot(existing: { hue: number; pat: Pat }[]): { hue: number; pa
       // 같은 무늬와의 거리(주)를 크게, 전체 분산(부)을 작게 가중. 같은 무늬가 없으면 360으로 친다.
       const score =
         (sameMin === Infinity ? 360 : sameMin) * 2 + (allMin === Infinity ? 360 : allMin);
-      if (score > best.score) {
-        best = { hue: h, pat, score };
-      }
+      candidates.push({ hue: h, pat, score });
     }
   }
-  return { hue: best.hue, pat: best.pat };
+  // 결정적으로 1등만 고르면 삭제 후 재추가(리롤) 때 매번 같은 색·무늬가 나온다.
+  // 최고점 근처(충분히 안 겹치는) 후보 풀에서 무작위로 골라 리롤마다 달라지게 한다.
+  const best = Math.max(...candidates.map((c) => c.score));
+  const pool = candidates.filter((c) => c.score >= best - 30);
+  const chosen = pool[Math.floor(Math.random() * pool.length)] ?? candidates[0];
+  // hue 미세 흔들기(±4°) — 같은 슬롯이라도 색이 조금씩 달라지게.
+  const jitter = Math.floor(Math.random() * 9) - 4;
+  return { hue: (chosen.hue + jitter + 360) % 360, pat: chosen.pat };
 }
 
 function hslToHex(h: number, s: number, l: number): string {

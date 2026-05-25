@@ -53,6 +53,7 @@ import { getDayMark } from "@/lib/calendar/holidays";
 import {
   assignSupportLanes,
   buildCalendarMonth,
+  buildChainInfo,
   buildChainKeys,
   classifyDay,
   eventColorStyle,
@@ -60,10 +61,8 @@ import {
   getEventDateKey,
   getEventsForDate,
   getEventSpan,
-  getEventTagColors,
   getMonthLabel,
-  getSeamColors,
-  getSpanRun,
+  getSpanRunRange,
   getTodayKst,
   mixedEventPatterns,
   mixedEventStyle,
@@ -335,6 +334,11 @@ export function PublicPoster({
   const supportEvents = schedule.events.filter((e) => e.isSupport);
   // 이어진 일정 묶음 키 — 같은 묶음 칸들의 높이를 맞추는 데 쓴다(아래 useEqualChainHeights).
   const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
+  // 이어진 묶음을 하나의 일정처럼: 묶음 대표색(최대 2)·전체 범위 → 그라데이션 하나(경계 가운데).
+  const chainInfo = useMemo(
+    () => buildChainInfo(schedule.events, schedule.tags, schedule.palette),
+    [schedule.events, schedule.tags, schedule.palette]
+  );
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [schedule.events, view]);
   // #1: 색상 안내에서 "기타"는 항상 맨 마지막으로(나머지는 기존 정렬 유지).
@@ -1221,9 +1225,10 @@ export function PublicPoster({
     scheduleCommit(updatedList);
   }
 
-  // D: 대표 태그(최대 2개)의 색. 2개면 그라데이션으로 칠한다.
+  // D: 이 일정이 속한 묶음(chain)의 대표색(최대 2). 2개면 묶음 전체에 그라데이션 하나.
   function eventColors(event: PublicScheduleEvent) {
-    return getEventTagColors(event, schedule.tags, schedule.palette);
+    const key = chainKeys.get(event.id) ?? event.id;
+    return chainInfo.get(key)?.colors ?? [];
   }
 
   // A2 고도화: 현재 필터(태그 다중 + 관심만)에 안 맞는 일정은 흐리게 처리할지 판정.
@@ -1316,29 +1321,19 @@ export function PublicPoster({
               .filter(Boolean)
               .join(" ");
             const mixed = colors.length >= 2;
-            // 이어진 칸 전체 기준으로 그라데이션·무늬 경계를 잡는다(2칸=이음새, 3칸=가운데).
-            const run = mixed ? getSpanRun(event, cell.isoDate, cell.weekday) : null;
-            // 이어진(link) 일정의 이음새를 옆 일정 색으로 옅게 번지게 섞는다.
-            const seam = getSeamColors(
-              event,
-              cell.isoDate,
-              schedule.events,
-              schedule.tags,
-              schedule.palette
-            );
-            const seamBg = [
-              seam.left ? `linear-gradient(to right, ${seam.left}b3, transparent 30px)` : "",
-              seam.right ? `linear-gradient(to left, ${seam.right}b3, transparent 30px)` : ""
-            ]
-              .filter(Boolean)
-              .join(", ");
+            // 이어진 묶음 전체 기준으로 그라데이션·무늬 경계를 잡는다(2칸=이음새, 3칸=가운데).
+            const chainKey = chainKeys.get(event.id) ?? event.id;
+            const chain = chainInfo.get(chainKey);
+            const run =
+              mixed && chain
+                ? getSpanRunRange(chain.start, chain.end, cell.isoDate, cell.weekday)
+                : null;
             return (
               <div
                 className={eventClass}
-                data-chain={chainKeys.get(event.id)}
+                data-chain={chainKey}
                 data-color={mixed ? undefined : colors[0]?.key}
                 data-mixed={mixed ? "" : undefined}
-                data-seam={seamBg ? "" : undefined}
                 key={event.id}
                 style={
                   mixed
@@ -1359,9 +1354,6 @@ export function PublicPoster({
                       />
                     ))
                   : null}
-                {seamBg ? (
-                  <span aria-hidden="true" className="evt-seam" style={{ backgroundImage: seamBg }} />
-                ) : null}
                 <div className="event-main">
                   {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다(이음새 어긋남 방지). */}
                   {span.showTitle ? (
