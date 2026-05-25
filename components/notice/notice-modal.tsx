@@ -90,7 +90,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
     <div className="notice-modal">
       <p className="notice-hint">
         <strong>시간이랑 내용만</strong> 적으면 공지 완성!
-        그 다음 아래 <strong>두 방법 중 편한 걸</strong>로 숲에 올리면 돼요. (방법 2 추천!)
+        그 다음 아래 <strong>두 방법 중 편한 걸</strong>로 숲에 올리면 됩니다.
       </p>
 
       <div className="notice-fields">
@@ -227,13 +227,11 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
                 방금 만든 북마크에 <strong>마우스 우클릭 → “수정...”</strong> 누르기. (북마크바가 안 보이면 Ctrl+Shift+B로 켜주세요)
               </li>
               <li>
-                <strong>이름</strong>은 <strong>“(예시: VIC 자동공지, 암거나 하셔도 됨)”</strong>로 바꾸고,{" "}
+                <strong>이름</strong>은 원하시는 걸로 바꾸시고<strong>(예: VIC 자동공지)</strong>,{" "}
                 <strong>URL 칸</strong>의 내용을 전부 지운 뒤 <strong>①에서 복사한 코드를
-                붙여넣어요</strong> → 저장!
+                붙여넣어주세요!</strong> → 그리고 저장
               </li>
-              <li>
-                이제 이 “자동공지” 북마크가 자동입력 버튼이 됐습니다 &lt;😎
-              </li>
+                <strong>이제 이 “자동공지” 북마크가 자동입력 버튼이 됐습니다 &lt;😎</strong>
             </ol>
           </details>
 

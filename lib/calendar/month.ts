@@ -182,39 +182,12 @@ export function getEventTagColors(
     .filter((color): color is ColorPaletteEntry => Boolean(color));
 }
 
-// D: 일부 색은 비슷해 보여서 무늬(빗금·점·격자)로 구분한다. globals.css의 !important 규칙과
-// 같은 무늬를 인라인으로도 쓸 수 있게 정의 — 2색 그라데이션 칸은 data-color를 비우므로(=무늬
-// !important 규칙이 안 먹음) 여기서 무늬를 그라데이션과 함께 직접 깔아준다.
-export function tagTextureCss(key: string): { image: string; size?: string } | null {
-  if (key === "indigo") {
-    return { image: "repeating-linear-gradient(-45deg, rgb(255 255 255 / 34%) 0 2px, transparent 2px 7px)" };
-  }
-  if (key === "mint") {
-    return { image: "repeating-linear-gradient(-45deg, rgb(0 0 0 / 16%) 0 2px, transparent 2px 7px)" };
-  }
-  if (key === "sky") {
-    return { image: "radial-gradient(rgb(0 0 0 / 18%) 1.4px, transparent 1.6px)", size: "7px 7px" };
-  }
-  if (key.startsWith("gen-diag-")) {
-    return { image: "repeating-linear-gradient(-45deg, rgb(0 0 0 / 14%) 0 2px, transparent 2px 7px)" };
-  }
-  if (key.startsWith("gen-dots-")) {
-    return { image: "radial-gradient(rgb(0 0 0 / 16%) 1.4px, transparent 1.6px)", size: "7px 7px" };
-  }
-  if (key.startsWith("gen-grid-")) {
-    return {
-      image:
-        "repeating-linear-gradient(0deg, rgb(0 0 0 / 12%) 0 1px, transparent 1px 8px), repeating-linear-gradient(90deg, rgb(0 0 0 / 12%) 0 1px, transparent 1px 8px)"
-    };
-  }
-  return null;
-}
-
-// D: 모은 색으로 일정칸 인라인 스타일을 만든다. 2색이면 대각선 그라데이션(+무늬 유지), 1색이면 단색.
+// D: 모은 색으로 일정칸 인라인 스타일을 만든다. 2색이면 두 색을 그라데이션으로 부드럽게 섞고,
+// 1색이면 단색. 무늬는 색을 덮지 않고, 호출부에서 각 색 반쪽에 data-color 스팬으로 따로 얹는다
+// (= 무늬 있는 색은 자기 쪽에 무늬 유지, 색은 그라데이션으로 섞임).
 export function eventColorStyle(colors: ColorPaletteEntry[]): {
   backgroundColor?: string;
   backgroundImage?: string;
-  backgroundSize?: string;
   color?: string;
   borderColor?: string;
 } {
@@ -223,19 +196,11 @@ export function eventColorStyle(colors: ColorPaletteEntry[]): {
   }
   const [a, b] = colors;
   if (b) {
-    // 두 색을 좁은 띠로 섞어 "두 가지"임이 분명하게 보이도록.
-    const gradient = `linear-gradient(135deg, ${a.bgColor} 0%, ${a.bgColor} 44%, ${b.bgColor} 56%, ${b.bgColor} 100%)`;
-    // 무늬는 두 태그 중 무늬가 있는 쪽(앞 태그 우선)을 그라데이션 위에 얹어 비슷한 색 구분을 살린다.
-    const texture = tagTextureCss(a.key) ?? tagTextureCss(b.key);
-    if (texture) {
-      return {
-        backgroundImage: `${texture.image}, ${gradient}`,
-        backgroundSize: texture.size ? `${texture.size}, auto` : undefined,
-        color: a.textColor,
-        borderColor: a.borderColor
-      };
-    }
-    return { backgroundImage: gradient, color: a.textColor, borderColor: a.borderColor };
+    return {
+      backgroundImage: `linear-gradient(135deg, ${a.bgColor} 0%, ${a.bgColor} 35%, ${b.bgColor} 65%, ${b.bgColor} 100%)`,
+      color: a.textColor,
+      borderColor: a.borderColor
+    };
   }
   return { backgroundColor: a.bgColor, color: a.textColor, borderColor: a.borderColor };
 }

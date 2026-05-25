@@ -401,6 +401,15 @@
   transform: translateY(-1px);
   box-shadow: var(--shadow-2);
 }
+/* D: 2색 칸은 그라데이션 위에 반쪽 무늬를 깔고, 내용은 그 위로 올린다. */
+.studio-event-pill[data-mixed] {
+  position: relative;
+  overflow: hidden;
+}
+.studio-event-pill[data-mixed] > :not(.evt-pat) {
+  position: relative;
+  z-index: 1;
+}
 
 .pill-main {
   display: flex;

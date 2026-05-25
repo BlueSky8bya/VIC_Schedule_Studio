@@ -811,6 +811,21 @@ export function StudioShell({
                             }
                           }}
                         >
+                          {colors.length >= 2 ? (
+                            <>
+                              {/* 그라데이션 위로 각 색의 무늬만 반쪽씩 (무늬 있는 색은 자기 쪽 유지) */}
+                              <span
+                                className="evt-pat left"
+                                data-color={colors[0].key}
+                                aria-hidden="true"
+                              />
+                              <span
+                                className="evt-pat right"
+                                data-color={colors[1].key}
+                                aria-hidden="true"
+                              />
+                            </>
+                          ) : null}
                           <div className="pill-main">
                             {span.showTitle ? (
                               <strong>{main}</strong>

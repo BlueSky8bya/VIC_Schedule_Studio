@@ -226,7 +226,7 @@
   position: relative;
   isolation: isolate; /* 테마 장식(::before/::after, z-index:-1)이 이 표면 안에서만 깔리도록 */
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 230px;
+  grid-template-columns: 248px minmax(0, 1fr) 230px;
   gap: 16px;
   align-items: stretch;
   min-height: calc(100vh - 96px);
@@ -978,6 +978,15 @@
 .public-event:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-2);
+}
+/* D: 2색 칸은 그라데이션(칸 배경) 위에 반쪽 무늬를 깔고, 글자는 그 위로 올린다. */
+.public-event[data-mixed] {
+  position: relative;
+  overflow: hidden;
+}
+.public-event[data-mixed] > :not(.evt-pat) {
+  position: relative;
+  z-index: 1;
 }
 
 .public-event .event-main {
@@ -1745,18 +1754,165 @@
 .sticker-toolbar-float {
   z-index: 70;
   width: max-content;
-  max-width: min(440px, 92vw);
+  max-width: min(296px, 92vw);
+  border: 1px solid rgb(15 23 42 / 10%);
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: 0 14px 36px rgb(17 24 39 / 24%);
   animation: sticker-toolbar-pop 150ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  overflow: hidden;
 }
-.sticker-toolbar-float .text-panel {
-  width: 380px;
-  max-width: 92vw;
-  align-self: auto;
-  box-shadow: 0 14px 36px rgb(17 24 39 / 24%);
+/* 헤더: 종류 라벨 + 접기 버튼 */
+.stf-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid rgb(15 23 42 / 8%);
+  background: linear-gradient(#f8fafc, #f1f5f9);
+  padding: 4px 5px 4px 11px;
 }
-.sticker-toolbar-float .sticker-panel {
-  align-self: auto;
-  box-shadow: 0 14px 36px rgb(17 24 39 / 24%);
+.stf-title {
+  font-size: 12px;
+  font-weight: 900;
+  color: #475569;
+}
+.stf-collapse {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 24px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+.stf-collapse:hover {
+  background: rgb(15 23 42 / 7%);
+}
+.stf-body {
+  display: grid;
+  gap: 7px;
+  padding: 9px 10px 10px;
+}
+.stf-text-top {
+  display: flex;
+  gap: 6px;
+}
+.stf-textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 38px;
+  max-height: 120px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 6px 9px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  resize: vertical;
+}
+.stf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.stf-icons {
+  gap: 5px;
+}
+.stf-select {
+  flex: 1 1 auto;
+  min-width: 92px;
+  height: 30px;
+  border: 1.5px solid #d4dae4;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0 8px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.stf-group {
+  display: inline-flex;
+  gap: 4px;
+}
+.stf-group button,
+.stf-btn {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  height: 30px;
+  border: 1.5px solid #d4dae4;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 0 8px;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease);
+}
+.stf-group button:hover,
+.stf-btn:hover {
+  border-color: #a9b2c2;
+  background: #f8fafc;
+}
+.stf-group button.active,
+.stf-btn.active,
+.stf-btn[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #ffffff;
+}
+.stf-btn.danger {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #b42318;
+}
+.stf-btn.danger:hover {
+  background: #fee2e2;
+}
+.stf-color {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  border: 1.5px solid #d4dae4;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.stf-color input {
+  width: 150%;
+  height: 150%;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+.stf-opacity {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #475569;
+}
+.stf-opacity input[type="range"] {
+  width: 92px;
+  height: 6px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.stf-spacer {
+  flex: 1 1 auto;
 }
 @keyframes sticker-toolbar-pop {
   from {

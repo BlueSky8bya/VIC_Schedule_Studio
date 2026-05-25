@@ -81,8 +81,8 @@ export function TrustedMembersPanel() {
   return (
     <div className="members-panel">
       <p className="members-hint">
-        구글 이메일을 등록하면 그 사람이 비공개 레이어를 열고 달력을 꾸밀 수 있어요. 일정 편집은
-        소유자만 가능합니다.
+        구글 이메일을 등록하면 해당 인원은 비공개 레이어를 열고 달력을 꾸밀 수 있어요. 일정 편집은
+        토리님만 가능합니다.
       </p>
 
       <div className="members-add">

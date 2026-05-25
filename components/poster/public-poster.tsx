@@ -5,8 +5,10 @@ import {
   AlignLeft,
   AlignRight,
   BringToFront,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Copy,
   ExternalLink,
   FlipHorizontal,
@@ -929,9 +931,6 @@ export function PublicPoster({
   function changeText(value: string) {
     patchSelected({ label: value }, false);
   }
-  function changeTextSize(widthRatio: number) {
-    patchSelected({ widthRatio }, false);
-  }
 
   // C7: 외곽선/그림자 효과 토글(즉시 저장).
   function toggleEffect(effect: "outline" | "shadow") {
@@ -960,6 +959,9 @@ export function PublicPoster({
   // 가로채 엉뚱한 곳에 뜨던 문제를 없앤다. (포털은 클라이언트 마운트 후에만)
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  // 편집 바 접기 — 옮기거나 모서리로 크기 조절할 때 가리지 않게. 새 스티커를 고르면 다시 펼친다.
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  useEffect(() => setToolbarCollapsed(false), [anchorId]);
   useLayoutEffect(() => {
     if (!decorate || !anchorId) {
       setFloatStyle(null);
@@ -996,7 +998,7 @@ export function PublicPoster({
       window.removeEventListener("scroll", place, true);
       window.removeEventListener("resize", place);
     };
-  }, [decorate, anchorId, selectedIds.length, stickers, view]);
+  }, [decorate, anchorId, selectedIds.length, stickers, view, toolbarCollapsed, selected?.kind]);
 
   // 신규 스티커를 로컬에 추가하고 저장 후 실제 id로 교체(복제 등에서 재사용).
   async function persistNewSticker(fresh: StickerInstance) {
@@ -1311,6 +1313,13 @@ export function PublicPoster({
                 key={event.id}
                 style={colors.length > 0 ? eventColorStyle(colors) : undefined}
               >
+                {colors.length >= 2 ? (
+                  <>
+                    {/* 그라데이션 위로 각 색의 무늬만 반쪽씩 — 무늬 있는 색은 자기 쪽에 무늬 유지 */}
+                    <span className="evt-pat left" data-color={colors[0].key} aria-hidden="true" />
+                    <span className="evt-pat right" data-color={colors[1].key} aria-hidden="true" />
+                  </>
+                ) : null}
                 <div className="event-main">
                   {span.showTitle ? <p>{main}</p> : <p className="span-cont">&nbsp;</p>}
                   {showHeart ? (
@@ -1599,292 +1608,279 @@ export function PublicPoster({
                   ref={floatRef}
                   style={floatStyle ?? { position: "fixed", top: -9999, left: -9999 }}
                 >
-                {selectedIds.length > 1 ? (
-              <div className="sticker-panel" aria-label="여러 스티커 조절">
-                <span className="sticker-group-count">{selectedIds.length}개 선택됨</span>
-                <span className="sticker-panel-divider" aria-hidden="true" />
-                <button
-                  className="button icon-only"
-                  onClick={duplicateSelected}
-                  title="모두 복제 (Ctrl+D)"
-                  type="button"
-                >
-                  <Copy aria-hidden="true" size={15} />
-                </button>
-                <button
-                  className="button danger"
-                  onClick={deleteSelected}
-                  title="모두 삭제 (Delete)"
-                  type="button"
-                >
-                  <Trash2 aria-hidden="true" size={15} />
-                  삭제
-                </button>
-              </div>
-            ) : selected && selected.kind === "text" ? (
-              <div className="text-panel" aria-label="텍스트 조절">
-                <div className="text-panel-row grow">
-                  <textarea
-                    aria-label="텍스트 내용"
-                    className="text-edit-input"
-                    maxLength={200}
-                    onBlur={() => commitSticker(selected)}
-                    onChange={(event) => changeText(event.target.value)}
-                    onFocus={() => pushHistory()}
-                    rows={4}
-                    value={selected.label}
-                  />
-                  <label className="text-color-control" title="글자색">
-                    <input
-                      onChange={(event) => changeTextColor(event.target.value)}
-                      type="color"
-                      value={selected.textColor ?? "#1f2937"}
-                    />
-                  </label>
-                </div>
-                <div className="text-controls">
-                  <div className="text-field">
-                    <span className="text-panel-label">글꼴</span>
-                    <div className="text-font-group">
-                      {TEXT_FONTS.map((f) => (
-                        <button
-                          className={(selected.fontFamily ?? "sans") === f.key ? "active" : ""}
-                          key={f.key}
-                          onClick={() => {
-                            pushHistory();
-                            patchSelected({ fontFamily: f.key });
-                          }}
-                          style={{ fontFamily: TEXT_FONT_STACK[f.key] }}
-                          type="button"
-                        >
-                          {f.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="text-field">
-                    <span className="text-panel-label">굵기</span>
-                    <div className="text-weight-group">
-                      {TEXT_WEIGHTS.map((w) => (
-                        <button
-                          className={(selected.fontWeight ?? 700) === w.w ? "active" : ""}
-                          key={w.w}
-                          onClick={() => {
-                            pushHistory();
-                            patchSelected({ fontWeight: w.w });
-                          }}
-                          style={{ fontWeight: w.w }}
-                          type="button"
-                        >
-                          {w.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="text-field">
-                    <span className="text-panel-label">정렬</span>
-                    <div className="text-align-group">
-                      {(
-                        [
-                          { key: "left", Icon: AlignLeft },
-                          { key: "center", Icon: AlignCenter },
-                          { key: "right", Icon: AlignRight }
-                        ] as const
-                      ).map(({ key, Icon }) => (
-                        <button
-                          aria-label={`${key} 정렬`}
-                          className={(selected.textAlign ?? "left") === key ? "active" : ""}
-                          key={key}
-                          onClick={() => {
-                            pushHistory();
-                            patchSelected({ textAlign: key });
-                          }}
-                          type="button"
-                        >
-                          <Icon aria-hidden="true" size={15} />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="text-row">
-                  <div className="text-field">
-                    <span className="text-panel-label">기울임</span>
+                  <div className="stf-head">
+                    <span className="stf-title">
+                      {selectedIds.length > 1
+                        ? `${selectedIds.length}개 선택`
+                        : selected?.kind === "text"
+                          ? "텍스트"
+                          : "스티커"}
+                    </span>
                     <button
-                      aria-pressed={Boolean(selected.italic)}
-                      className={`text-toggle-btn ${selected.italic ? "active" : ""}`}
-                      onClick={() => {
-                        pushHistory();
-                        patchSelected({ italic: !selected.italic });
-                      }}
-                      style={{ fontStyle: "italic" }}
-                      title="기울임"
+                      className="stf-collapse"
+                      onClick={() => setToolbarCollapsed((v) => !v)}
+                      title={toolbarCollapsed ? "펼치기" : "접기 (옮기거나 크기 조절할 때)"}
                       type="button"
                     >
-                      가
+                      {toolbarCollapsed ? (
+                        <ChevronDown aria-hidden="true" size={15} />
+                      ) : (
+                        <ChevronUp aria-hidden="true" size={15} />
+                      )}
                     </button>
                   </div>
-                  <div className="text-field">
-                    <span className="text-panel-label">배경</span>
-                    <button
-                      aria-pressed={Boolean(selected.textBg)}
-                      className={`text-toggle-btn ${selected.textBg ? "active" : ""}`}
-                      onClick={() => {
-                        pushHistory();
-                        patchSelected({ textBg: selected.textBg ? undefined : "#fff3a0" });
-                      }}
-                      title="글자 배경(하이라이트)"
-                      type="button"
-                    >
-                      {selected.textBg ? "켜짐" : "꺼짐"}
-                    </button>
-                    {selected.textBg ? (
-                      <label className="text-color-control" title="배경색">
-                        <input
-                          onChange={(event) => patchSelected({ textBg: event.target.value })}
-                          type="color"
-                          value={selected.textBg}
+
+                  {toolbarCollapsed ? null : selectedIds.length > 1 ? (
+                    <div className="stf-body stf-row">
+                      <button
+                        className="stf-btn"
+                        onClick={duplicateSelected}
+                        title="모두 복제 (Ctrl+D)"
+                        type="button"
+                      >
+                        <Copy aria-hidden="true" size={15} />
+                      </button>
+                      <button
+                        className="stf-btn danger"
+                        onClick={deleteSelected}
+                        title="모두 삭제 (Delete)"
+                        type="button"
+                      >
+                        <Trash2 aria-hidden="true" size={15} />
+                      </button>
+                    </div>
+                  ) : selected && selected.kind === "text" ? (
+                    <div className="stf-body">
+                      <div className="stf-text-top">
+                        <textarea
+                          aria-label="텍스트 내용"
+                          className="stf-textarea"
+                          maxLength={200}
+                          onBlur={() => commitSticker(selected)}
+                          onChange={(event) => changeText(event.target.value)}
+                          onFocus={() => pushHistory()}
+                          rows={2}
+                          value={selected.label}
                         />
-                      </label>
-                    ) : null}
-                  </div>
-                  </div>
-                  <div className="text-row">
-                  <label className="text-field text-size-control">
-                    크기
-                    <input
-                      max={0.4}
-                      min={0.06}
-                      onChange={(event) => changeTextSize(Number(event.target.value))}
-                      onPointerDown={() => pushHistory()}
-                      onPointerUp={() => commitSticker(selected)}
-                      step={0.005}
-                      type="range"
-                      value={selected.widthRatio}
-                    />
-                  </label>
-                  <label className="text-field text-size-control">
-                    투명도
-                    <input
-                      max={1}
-                      min={0.1}
-                      onChange={(event) => changeOpacity(Number(event.target.value))}
-                      onPointerDown={() => pushHistory()}
-                      onPointerUp={() => commitSticker(selected)}
-                      step={0.05}
-                      type="range"
-                      value={selected.opacity}
-                    />
-                  </label>
-                  </div>
-                </div>
-                <div className="text-panel-row text-panel-actions">
-                  <button className="button" onClick={duplicateSelected} type="button">
-                    <Copy aria-hidden="true" size={15} />
-                    복제
-                  </button>
-                  <button className="button danger" onClick={deleteSelected} type="button">
-                    <Trash2 aria-hidden="true" size={15} />
-                    삭제
-                  </button>
-                </div>
-              </div>
-            ) : selected ? (
-              <div className="sticker-panel" aria-label="선택한 스티커 조절">
-                {selected.kind === "image" && selected.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    alt={selected.label}
-                    className="sticker-preview-img"
-                    src={selected.imageUrl}
-                  />
-                ) : (
-                  <span className="sticker-preview">{selected.label}</span>
-                )}
-                <label className="opacity-control">
-                  투명도
-                  <input
-                    max={1}
-                    min={0.1}
-                    onChange={(event) => changeOpacity(Number(event.target.value))}
-                    onPointerDown={() => pushHistory()}
-                    onPointerUp={() => commitSticker(selected)}
-                    step={0.05}
-                    type="range"
-                    value={selected.opacity}
-                  />
-                </label>
-                <button
-                  aria-pressed={selected.flipX}
-                  className={`button ${selected.flipX ? "active" : ""}`}
-                  onClick={() => toggleFlip("x")}
-                  title="좌우 대칭"
-                  type="button"
-                >
-                  <FlipHorizontal aria-hidden="true" size={15} />
-                  좌우
-                </button>
-                <button
-                  aria-pressed={selected.flipY}
-                  className={`button ${selected.flipY ? "active" : ""}`}
-                  onClick={() => toggleFlip("y")}
-                  title="상하 대칭"
-                  type="button"
-                >
-                  <FlipVertical aria-hidden="true" size={15} />
-                  상하
-                </button>
-                <button
-                  aria-pressed={Boolean(selected.shadow)}
-                  className={`button ${selected.shadow ? "active" : ""}`}
-                  onClick={() => toggleEffect("shadow")}
-                  title="진한 그림자"
-                  type="button"
-                >
-                  그림자
-                </button>
-                <span className="sticker-panel-divider" aria-hidden="true" />
-                <button
-                  className="button icon-only"
-                  onClick={() => reorderSelected(true)}
-                  title="맨 앞으로"
-                  type="button"
-                >
-                  <BringToFront aria-hidden="true" size={15} />
-                </button>
-                <button
-                  className="button icon-only"
-                  onClick={() => reorderSelected(false)}
-                  title="맨 뒤로"
-                  type="button"
-                >
-                  <SendToBack aria-hidden="true" size={15} />
-                </button>
-                <button
-                  className="button icon-only"
-                  onClick={duplicateSelected}
-                  title="복제 (Ctrl+D)"
-                  type="button"
-                >
-                  <Copy aria-hidden="true" size={15} />
-                </button>
-                <button
-                  className="button danger"
-                  onClick={deleteSelected}
-                  title="삭제 (Delete)"
-                  type="button"
-                >
-                  <Trash2 aria-hidden="true" size={15} />
-                  삭제
-                </button>
-              </div>
-                ) : null}
+                        <label className="stf-color" title="글자색">
+                          <input
+                            onChange={(event) => changeTextColor(event.target.value)}
+                            type="color"
+                            value={selected.textColor ?? "#1f2937"}
+                          />
+                        </label>
+                      </div>
+                      <div className="stf-row">
+                        <select
+                          aria-label="글꼴"
+                          className="stf-select"
+                          onChange={(event) => {
+                            pushHistory();
+                            patchSelected({ fontFamily: event.target.value });
+                          }}
+                          value={selected.fontFamily ?? "sans"}
+                        >
+                          {TEXT_FONTS.map((f) => (
+                            <option key={f.key} style={{ fontFamily: TEXT_FONT_STACK[f.key] }} value={f.key}>
+                              {f.label}
+                            </option>
+                          ))}
+                        </select>
+                        <div className="stf-group" role="group" aria-label="굵기">
+                          {TEXT_WEIGHTS.map((w) => (
+                            <button
+                              className={(selected.fontWeight ?? 700) === w.w ? "active" : ""}
+                              key={w.w}
+                              onClick={() => {
+                                pushHistory();
+                                patchSelected({ fontWeight: w.w });
+                              }}
+                              style={{ fontWeight: w.w }}
+                              type="button"
+                            >
+                              {w.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="stf-row">
+                        <div className="stf-group" role="group" aria-label="정렬">
+                          {(
+                            [
+                              { key: "left", Icon: AlignLeft },
+                              { key: "center", Icon: AlignCenter },
+                              { key: "right", Icon: AlignRight }
+                            ] as const
+                          ).map(({ key, Icon }) => (
+                            <button
+                              aria-label={`${key} 정렬`}
+                              className={(selected.textAlign ?? "left") === key ? "active" : ""}
+                              key={key}
+                              onClick={() => {
+                                pushHistory();
+                                patchSelected({ textAlign: key });
+                              }}
+                              type="button"
+                            >
+                              <Icon aria-hidden="true" size={14} />
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          aria-pressed={Boolean(selected.italic)}
+                          className="stf-btn"
+                          onClick={() => {
+                            pushHistory();
+                            patchSelected({ italic: !selected.italic });
+                          }}
+                          style={{ fontStyle: "italic" }}
+                          title="기울임"
+                          type="button"
+                        >
+                          가
+                        </button>
+                        <button
+                          aria-pressed={Boolean(selected.textBg)}
+                          className="stf-btn"
+                          onClick={() => {
+                            pushHistory();
+                            patchSelected({ textBg: selected.textBg ? undefined : "#fff3a0" });
+                          }}
+                          title="글자 배경(하이라이트)"
+                          type="button"
+                        >
+                          배경
+                        </button>
+                        {selected.textBg ? (
+                          <label className="stf-color" title="배경색">
+                            <input
+                              onChange={(event) => patchSelected({ textBg: event.target.value })}
+                              type="color"
+                              value={selected.textBg}
+                            />
+                          </label>
+                        ) : null}
+                      </div>
+                      <div className="stf-row">
+                        <label className="stf-opacity" title="투명도">
+                          투명도
+                          <input
+                            max={1}
+                            min={0.1}
+                            onChange={(event) => changeOpacity(Number(event.target.value))}
+                            onPointerDown={() => pushHistory()}
+                            onPointerUp={() => commitSticker(selected)}
+                            step={0.05}
+                            type="range"
+                            value={selected.opacity}
+                          />
+                        </label>
+                        <span className="stf-spacer" />
+                        <button
+                          className="stf-btn"
+                          onClick={duplicateSelected}
+                          title="복제 (Ctrl+D)"
+                          type="button"
+                        >
+                          <Copy aria-hidden="true" size={15} />
+                        </button>
+                        <button
+                          className="stf-btn danger"
+                          onClick={deleteSelected}
+                          title="삭제 (Delete)"
+                          type="button"
+                        >
+                          <Trash2 aria-hidden="true" size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : selected ? (
+                    <div className="stf-body">
+                      <div className="stf-row">
+                        <label className="stf-opacity" title="투명도">
+                          투명도
+                          <input
+                            max={1}
+                            min={0.1}
+                            onChange={(event) => changeOpacity(Number(event.target.value))}
+                            onPointerDown={() => pushHistory()}
+                            onPointerUp={() => commitSticker(selected)}
+                            step={0.05}
+                            type="range"
+                            value={selected.opacity}
+                          />
+                        </label>
+                      </div>
+                      <div className="stf-row stf-icons">
+                        <button
+                          aria-pressed={selected.flipX}
+                          className="stf-btn"
+                          onClick={() => toggleFlip("x")}
+                          title="좌우 대칭"
+                          type="button"
+                        >
+                          <FlipHorizontal aria-hidden="true" size={15} />
+                        </button>
+                        <button
+                          aria-pressed={selected.flipY}
+                          className="stf-btn"
+                          onClick={() => toggleFlip("y")}
+                          title="상하 대칭"
+                          type="button"
+                        >
+                          <FlipVertical aria-hidden="true" size={15} />
+                        </button>
+                        <button
+                          aria-pressed={Boolean(selected.shadow)}
+                          className="stf-btn"
+                          onClick={() => toggleEffect("shadow")}
+                          title="진한 그림자"
+                          type="button"
+                        >
+                          그림자
+                        </button>
+                        <button
+                          className="stf-btn"
+                          onClick={() => reorderSelected(true)}
+                          title="맨 앞으로"
+                          type="button"
+                        >
+                          <BringToFront aria-hidden="true" size={15} />
+                        </button>
+                        <button
+                          className="stf-btn"
+                          onClick={() => reorderSelected(false)}
+                          title="맨 뒤로"
+                          type="button"
+                        >
+                          <SendToBack aria-hidden="true" size={15} />
+                        </button>
+                        <button
+                          className="stf-btn"
+                          onClick={duplicateSelected}
+                          title="복제 (Ctrl+D)"
+                          type="button"
+                        >
+                          <Copy aria-hidden="true" size={15} />
+                        </button>
+                        <button
+                          className="stf-btn danger"
+                          onClick={deleteSelected}
+                          title="삭제 (Delete)"
+                          type="button"
+                        >
+                          <Trash2 aria-hidden="true" size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>,
                 document.body
               )
             ) : !anchorId ? (
               <p className="decorate-hint">
                 이모지·텍스트를 눌러 추가하고, 달력 위에서 끌어 옮기세요. 선택하면 스티커 바로
-                옆에 뜨는 편집 바에서 색·크기·정렬·효과를 바꿀 수 있어요.
+                옆에 작은 편집 바가 떠요 — 색·정렬·효과를 바꾸고, 크기는 모서리 손잡이로!
               </p>
             ) : null}
               </div>
@@ -1954,6 +1950,14 @@ export function PublicPoster({
             selectedIds={selectedIds}
             stickers={stickers}
           />
+
+          {/* 메모지 — 빈 노트로 띄워두고, 토리님이 이 위에 텍스트 스티커로 하고 싶은 말을 적는다. */}
+          <aside className="public-side" aria-label="메모">
+            <div className="public-memo">
+              <strong>메모</strong>
+              <div className="memo-body" />
+            </div>
+          </aside>
 
           <section className="public-calendar-area">
             <div className="weekday-row" aria-hidden="true">
