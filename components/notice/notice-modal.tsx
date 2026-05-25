@@ -89,8 +89,8 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
   return (
     <div className="notice-modal">
       <p className="notice-hint">
-        날짜·템플릿이 자동으로 채워져 있어요. 시간·내용만 적고 <strong>복사</strong> 후{" "}
-        <strong>숲 공지 페이지</strong>에 붙여넣으세요.
+        날짜·템플릿은 이미 채워져 있어요. <strong>시간·내용만</strong> 적으면 공지가 완성됩니다. 그 다음
+        아래 <strong>두 방법 중 편한 것</strong>으로 숲에 올리세요.
       </p>
 
       <div className="notice-fields">
@@ -144,81 +144,120 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
         </div>
       </div>
 
+      {/* 완성 미리보기(읽기 전용) — 실제로 올라갈 모습 */}
       <div className="notice-preview">
-        <div className="notice-preview-head">
-          <span className="notice-label">제목</span>
-          <button className="button" onClick={() => copy("title", title)} type="button">
-            <Copy aria-hidden="true" size={14} />
-            {copied === "title" ? "복사됨" : "제목 복사"}
-          </button>
-        </div>
+        <span className="notice-label">완성 미리보기</span>
         <div className="notice-preview-title">{title}</div>
-
-        <div className="notice-preview-head">
-          <span className="notice-label">본문</span>
-          <button className="button" onClick={() => copy("body", body)} type="button">
-            <Copy aria-hidden="true" size={14} />
-            {copied === "body" ? "복사됨" : "본문 복사"}
-          </button>
-        </div>
         <pre className="notice-preview-body">{body}</pre>
-
         <div className="notice-emoticon">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt="마지막에 붙일 이모티콘" src={EMOTICON_URL} />
+          <img alt="맨 끝 이모티콘" src={EMOTICON_URL} />
           <div className="notice-emoticon-text">
-            <span>{"<- 이 이모티콘은 복사 안됨. 직접 추가 바람!"}</span>
+            <span>맨 끝 이모티콘 — 방법 1은 직접 추가, 방법 2는 자동으로 들어가요.</span>
           </div>
         </div>
       </div>
 
-      {/* 자동 입력(북마클릿) — 한 번만 설정하면 SOOP 작성페이지에서 클릭만으로 제목·본문이 채워진다. */}
-      <details className="notice-autofill">
-        <summary>⚡ 자동 입력 설정 (북마클릿 · 한 번만)</summary>
-        <ol className="notice-autofill-steps">
-          <li>
-            아래 북마클릿 코드를 <strong>복사</strong>한 뒤, 브라우저 북마크를 새로 만들고
-            URL 칸에 붙여넣어 저장하세요. (이름은 “VIC 공지자동입력” 등)
-            <div className="notice-autofill-row">
-              <button className="button" onClick={() => copy("mark", BOOKMARKLET)} type="button">
-                <Copy aria-hidden="true" size={13} />
-                {copied === "mark" ? "복사됨" : "북마클릿 코드 복사"}
-              </button>
-            </div>
-          </li>
-          <li>
-            이 창에서 <strong>“제목+본문 한 번에 복사”</strong>를 누르세요.
-            <div className="notice-autofill-row">
+      {/* 숲에 올리는 두 가지 방법 — 토리님이 처음 봐도 고를 수 있게 안내 */}
+      <div className="notice-methods">
+        <section className="notice-method">
+          <header className="notice-method-head">
+            <span className="notice-method-no">방법 1</span>
+            <strong>직접 붙여넣기</strong>
+            <span className="notice-method-tag">간단</span>
+          </header>
+          <p className="notice-method-desc">
+            제목·본문을 각각 복사해 숲에 붙여넣어요. 가운데 정렬·이모티콘은 직접.
+          </p>
+          <div className="notice-method-actions">
+            <button className="button" onClick={() => copy("title", title)} type="button">
+              <Copy aria-hidden="true" size={14} />
+              {copied === "title" ? "복사됨" : "제목 복사"}
+            </button>
+            <button className="button" onClick={() => copy("body", body)} type="button">
+              <Copy aria-hidden="true" size={14} />
+              {copied === "body" ? "복사됨" : "본문 복사"}
+            </button>
+            <a
+              className="button"
+              href={SOOP_WRITE_URL}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <ExternalLink aria-hidden="true" size={14} />
+              숲 공지 페이지 열기
+            </a>
+          </div>
+        </section>
+
+        <section className="notice-method recommended">
+          <header className="notice-method-head">
+            <span className="notice-method-no auto">방법 2</span>
+            <strong>자동 입력</strong>
+            <span className="notice-method-tag hot">추천 · 클릭 3번</span>
+          </header>
+          <p className="notice-method-desc">
+            처음 <strong>한 번만</strong> 북마크를 설정하면, 그 다음부터는{" "}
+            <strong>복사 → 페이지 열기 → 북마크 클릭</strong> 3번으로 제목·본문·
+            <strong>가운데정렬·이모티콘까지</strong> 한 번에 들어가요.
+          </p>
+
+          <details className="notice-setup">
+            <summary>🔧 맨 처음 한 번만: 북마크 설정하기</summary>
+            <ol className="notice-autofill-steps">
+              <li>
+                아래 코드를 복사하고
+                <div className="notice-autofill-row">
+                  <button
+                    className="button"
+                    onClick={() => copy("mark", BOOKMARKLET)}
+                    type="button"
+                  >
+                    <Copy aria-hidden="true" size={13} />
+                    {copied === "mark" ? "복사됨" : "북마클릿 코드 복사"}
+                  </button>
+                </div>
+              </li>
+              <li>
+                브라우저에서 북마크를 <strong>새로 추가</strong> → 이름은 “VIC 공지”,{" "}
+                <strong>URL 칸에 붙여넣고</strong> 저장하세요. (한 번만 하면 끝)
+              </li>
+            </ol>
+          </details>
+
+          <ol className="notice-steps3">
+            <li>
+              <span className="notice-step-num">1</span>
               <button
                 className="button primary"
                 onClick={() => copy("payload", autofillPayload)}
                 type="button"
               >
-                <Copy aria-hidden="true" size={13} />
-                {copied === "payload" ? "복사됨" : "제목+본문 한 번에 복사"}
+                <Copy aria-hidden="true" size={14} />
+                {copied === "payload" ? "복사됨!" : "제목+본문 한 번에 복사"}
               </button>
-            </div>
-          </li>
-          <li>
-            <strong>숲 공지 페이지</strong>를 열고, 만들어 둔 <strong>북마크를 클릭</strong>하면
-            제목·본문이 <strong>가운데 정렬 + 이모티콘까지</strong> 자동으로 채워집니다.
-          </li>
-        </ol>
-        <p className="notice-autofill-note">
-          숲 페이지 구조에 따라 한 번에 안 들어갈 수 있어요. 그러면 알려주시면 맞게 다듬을게요.
-        </p>
-      </details>
+            </li>
+            <li>
+              <span className="notice-step-num">2</span>
+              <a
+                className="button"
+                href={SOOP_WRITE_URL}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <ExternalLink aria-hidden="true" size={14} />
+                숲 공지 페이지 열기
+              </a>
+            </li>
+            <li>
+              <span className="notice-step-num">3</span>
+              <span className="notice-step-text">북마크 클릭 → 끝! ✨</span>
+            </li>
+          </ol>
+        </section>
+      </div>
 
       <div className="notice-actions">
-        <a
-          className="button primary"
-          href={SOOP_WRITE_URL}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          <ExternalLink aria-hidden="true" size={15} />
-          숲 공지 페이지 열기
-        </a>
         <button className="button" onClick={onClose} type="button">
           닫기
         </button>

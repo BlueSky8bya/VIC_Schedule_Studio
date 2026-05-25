@@ -1552,18 +1552,110 @@ textarea:disabled {
   min-height: 30px;
 }
 
-/* 자동 입력(북마클릿) 안내 */
-.notice-autofill {
+/* 숲에 올리는 두 가지 방법 카드 */
+.notice-methods {
+  display: grid;
+  gap: 12px;
+}
+.notice-method {
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  background: var(--surface, #fbfaf6);
-  padding: 10px 14px;
+  background: #fff;
+  padding: 14px;
 }
-.notice-autofill > summary {
+.notice-method.recommended {
+  border-color: #f4b740;
+  background: #fffdf3;
+  box-shadow: 0 2px 10px rgb(244 183 64 / 14%);
+}
+.notice-method-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.notice-method-head strong {
+  font-size: 15px;
+}
+.notice-method-no {
+  border-radius: var(--r-pill, 999px);
+  background: #eef2f7;
+  padding: 2px 10px;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 900;
+}
+.notice-method-no.auto {
+  background: #f4b740;
+  color: #4a3a10;
+}
+.notice-method-tag {
+  margin-left: auto;
+  border-radius: var(--r-pill, 999px);
+  background: #f1f5f9;
+  padding: 2px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+.notice-method-tag.hot {
+  background: #ffe4e6;
+  color: #be123c;
+}
+.notice-method-desc {
+  margin: 0 0 10px;
+  color: var(--ink-soft, #475569);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.notice-method-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+/* 방법 2: 처음 한 번 설정(접이식) */
+.notice-setup {
+  margin-bottom: 12px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-md);
+  background: #fff;
+  padding: 8px 12px;
+}
+.notice-setup > summary {
   cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--muted);
+}
+/* 방법 2: 매번 하는 3단계 */
+.notice-steps3 {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.notice-steps3 > li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.notice-step-num {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-pill, 999px);
+  background: #f4b740;
+  color: #4a3a10;
+  font-size: 13px;
+  font-weight: 900;
+}
+.notice-step-text {
   font-size: 13px;
   font-weight: 800;
-  color: var(--ink-soft, #475569);
+  color: #b45309;
 }
 .notice-autofill-steps {
   margin: 10px 0 0;
