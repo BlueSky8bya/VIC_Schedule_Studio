@@ -973,7 +973,7 @@ export function StudioShell({
 
             <section className="tag-picker" aria-label="태그 선택">
               <h3>
-                태그 <span className="tag-picker-hint">최대 2개 — 2개 고르면 일정칸에 두 색이 섞여요</span>
+                태그 <span className="tag-picker-hint">최대 2개</span>
               </h3>
               <div>
                 {legendTags.map((tag) => {

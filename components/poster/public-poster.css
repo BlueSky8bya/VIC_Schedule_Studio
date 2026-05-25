@@ -226,7 +226,7 @@
   position: relative;
   isolation: isolate; /* 테마 장식(::before/::after, z-index:-1)이 이 표면 안에서만 깔리도록 */
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr) 230px;
+  grid-template-columns: minmax(0, 1fr) 230px;
   gap: 16px;
   align-items: stretch;
   min-height: calc(100vh - 96px);

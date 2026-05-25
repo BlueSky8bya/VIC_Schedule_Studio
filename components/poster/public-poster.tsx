@@ -20,6 +20,7 @@ import {
   Upload
 } from "lucide-react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
@@ -34,7 +35,6 @@ import { PosterExportActions } from "@/components/poster/poster-export-actions";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
 import {
   POSTER_THEMES,
-  type MemoLine,
   type PublicSchedule,
   type PublicScheduleEvent,
   type StickerAsset,
@@ -47,7 +47,6 @@ import type {
 } from "@/lib/schedules/sticker-actions";
 import type { StickerAssetResult } from "@/lib/schedules/sticker-asset-actions";
 import type { HeartResult } from "@/lib/schedules/heart-actions";
-import type { MemoResult } from "@/lib/schedules/memo-actions";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
   assignSupportLanes,
@@ -78,13 +77,6 @@ type PublicPosterProps = {
   setPosterThemeAction?: (theme: string) => Promise<ThemeResult>;
   // A: 일정 관심(하트) 토글. 주어지면 서버 집계 연동, 없으면 기기별 localStorage로만 동작.
   toggleHeartAction?: (eventId: string) => Promise<HeartResult>;
-  // B: 메모를 줄별(텍스트·가로 정렬·들여쓰기)로 저장(소유자/개발자만). 주어지면 줄 단위 편집기를 쓴다.
-  updateMemoLinesAction?: (lines: MemoLine[]) => Promise<MemoResult>;
-  // #5: 메모 정렬(가로)·위치(세로) 저장.
-  setMemoLayoutAction?: (
-    align: "left" | "center" | "right",
-    valign: "top" | "center" | "bottom"
-  ) => Promise<MemoResult>;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -315,9 +307,7 @@ export function PublicPoster({
   uploadStickerAssetAction,
   deleteStickerAssetAction,
   setPosterThemeAction,
-  toggleHeartAction,
-  updateMemoLinesAction,
-  setMemoLayoutAction
+  toggleHeartAction
 }: PublicPosterProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -386,114 +376,6 @@ export function PublicPoster({
       setStickerError(result.error);
     }
   }
-
-  // B: 공개 메모 — 줄별(텍스트·가로 정렬·들여쓰기). 소유자가 꾸미기에서 편집, 시청자엔 그대로 노출.
-  //    저장된 줄 데이터가 없으면 publicMemo 줄바꿈을 폴백으로 변환한다.
-  const editMemo = Boolean(updateMemoLinesAction);
-  function deriveMemoLines(): MemoLine[] {
-    if (schedule.calendar.memoLines && schedule.calendar.memoLines.length > 0) {
-      return schedule.calendar.memoLines;
-    }
-    return (schedule.calendar.publicMemo ?? "")
-      .split("\n")
-      .filter((line) => line.trim())
-      .map((line) => ({
-        text: line,
-        align: schedule.calendar.memoAlign ?? "left",
-        indent: 0
-      }));
-  }
-  const [memoLines, setMemoLines] = useState<MemoLine[]>(deriveMemoLines);
-  const [memoSaved, setMemoSaved] = useState(true);
-  // 시청자/미리보기에선 서버 메모가 갱신되면 로컬도 맞춘다(편집 중인 소유자 입력은 건드리지 않음).
-  useEffect(() => {
-    if (!editMemo) {
-      setMemoLines(deriveMemoLines());
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [schedule.calendar.memoLines, schedule.calendar.publicMemo, editMemo]);
-
-  const memoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // 줄 데이터가 바뀌면 즉시 화면 반영 + 디바운스 저장(매 글자마다 서버를 때리지 않는다).
-  function commitMemoLines(next: MemoLine[]) {
-    setMemoLines(next);
-    setMemoSaved(false);
-    if (!updateMemoLinesAction) {
-      return;
-    }
-    if (memoTimerRef.current) {
-      clearTimeout(memoTimerRef.current);
-    }
-    memoTimerRef.current = setTimeout(async () => {
-      const result = await updateMemoLinesAction(next);
-      if (result.ok) {
-        setMemoSaved(true);
-      } else {
-        setStickerError(result.error);
-      }
-    }, 600);
-  }
-  function setLineText(i: number, text: string) {
-    commitMemoLines(memoLines.map((l, idx) => (idx === i ? { ...l, text } : l)));
-  }
-  function setLineAlign(i: number, align: MemoLine["align"]) {
-    commitMemoLines(memoLines.map((l, idx) => (idx === i ? { ...l, align } : l)));
-  }
-  function nudgeLineIndent(i: number, delta: number) {
-    commitMemoLines(
-      memoLines.map((l, idx) =>
-        idx === i ? { ...l, indent: Math.min(4, Math.max(0, l.indent + delta)) } : l
-      )
-    );
-  }
-  function addMemoLine(after?: number) {
-    const line: MemoLine = { text: "", align: "left", indent: 0 };
-    if (after == null) {
-      commitMemoLines([...memoLines, line]);
-      return;
-    }
-    const next = [...memoLines];
-    next.splice(after + 1, 0, line);
-    commitMemoLines(next);
-  }
-  function removeMemoLine(i: number) {
-    commitMemoLines(memoLines.filter((_, idx) => idx !== i));
-  }
-  function moveMemoLine(i: number, dir: -1 | 1) {
-    const j = i + dir;
-    if (j < 0 || j >= memoLines.length) {
-      return;
-    }
-    const next = [...memoLines];
-    [next[i], next[j]] = [next[j], next[i]];
-    commitMemoLines(next);
-  }
-  // B: 들여쓰기 한 단계 px. 시청자/편집 모두 같은 값으로 맞춘다.
-  const MEMO_INDENT_STEP = 18;
-  const hasMemoContent = memoLines.some((l) => l.text.trim());
-
-  // #5: 메모 정렬(가로)·위치(세로). 버튼으로 즉시 반영하고 저장.
-  const [memoAlign, setMemoAlign] = useState(schedule.calendar.memoAlign ?? "left");
-  const [memoVAlign, setMemoVAlign] = useState(schedule.calendar.memoVAlign ?? "top");
-  useEffect(() => {
-    if (!setMemoLayoutAction) {
-      setMemoAlign(schedule.calendar.memoAlign ?? "left");
-      setMemoVAlign(schedule.calendar.memoVAlign ?? "top");
-    }
-  }, [schedule.calendar.memoAlign, schedule.calendar.memoVAlign, setMemoLayoutAction]);
-  function changeMemoLayout(
-    align: "left" | "center" | "right",
-    valign: "top" | "center" | "bottom"
-  ) {
-    setMemoAlign(align);
-    setMemoVAlign(valign);
-    void setMemoLayoutAction?.(align, valign);
-  }
-  const memoVAlignCss: Record<string, string> = {
-    top: "start",
-    center: "center",
-    bottom: "end"
-  };
 
   // 스티커는 달(월)마다 따로 — 현재 보는 달의 스티커만 로컬 상태로 다룬다.
   const monthStickers = (year: number, month: number) =>
@@ -1074,6 +956,10 @@ export function PublicPoster({
   const anchorId = selectedIds[0] ?? null;
   const floatRef = useRef<HTMLDivElement>(null);
   const [floatStyle, setFloatStyle] = useState<CSSProperties | null>(null);
+  // 편집 바는 document.body로 포털 렌더한다 — 위쪽 도구바의 backdrop-filter가 fixed 기준을
+  // 가로채 엉뚱한 곳에 뜨던 문제를 없앤다. (포털은 클라이언트 마운트 후에만)
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   useLayoutEffect(() => {
     if (!decorate || !anchorId) {
       setFloatStyle(null);
@@ -1706,12 +1592,13 @@ export function PublicPoster({
               </div>
             </div>
 
-            {anchorId ? (
-              <div
-                className="sticker-toolbar-float"
-                ref={floatRef}
-                style={floatStyle ?? { position: "fixed", top: -9999, left: -9999 }}
-              >
+            {anchorId && mounted ? (
+              createPortal(
+                <div
+                  className="sticker-toolbar-float"
+                  ref={floatRef}
+                  style={floatStyle ?? { position: "fixed", top: -9999, left: -9999 }}
+                >
                 {selectedIds.length > 1 ? (
               <div className="sticker-panel" aria-label="여러 스티커 조절">
                 <span className="sticker-group-count">{selectedIds.length}개 선택됨</span>
@@ -1991,13 +1878,15 @@ export function PublicPoster({
                 </button>
               </div>
                 ) : null}
-              </div>
-            ) : (
+                </div>,
+                document.body
+              )
+            ) : !anchorId ? (
               <p className="decorate-hint">
                 이모지·텍스트를 눌러 추가하고, 달력 위에서 끌어 옮기세요. 선택하면 스티커 바로
                 옆에 뜨는 편집 바에서 색·크기·정렬·효과를 바꿀 수 있어요.
               </p>
-            )}
+            ) : null}
               </div>
             </div>
 
@@ -2033,141 +1922,6 @@ export function PublicPoster({
           </div>
         ) : null}
 
-        {/* B: 메모 줄별 편집 바 — 포스터 표면 밖이라 스티커 레이어에 안 막힌다(소유자 전용).
-           각 줄마다 가로 정렬(좌/중/우)·들여쓰기 단계를 따로 정하고, 순서도 위아래로 바꾼다. */}
-        {editMemo ? (
-          <div className="memo-edit-bar">
-            <div className="memo-edit-head">
-              <span className="memo-edit-label">메모 · 줄별 정렬/들여쓰기</span>
-              {setMemoLayoutAction ? (
-                <div className="memo-edit-tools">
-                  <div className="memo-align-group" role="group" aria-label="세로 위치">
-                    {(
-                      [
-                        { key: "top", label: "↑" },
-                        { key: "center", label: "↕" },
-                        { key: "bottom", label: "↓" }
-                      ] as const
-                    ).map(({ key, label }) => (
-                      <button
-                        aria-label={`세로 ${key}`}
-                        aria-pressed={memoVAlign === key}
-                        className={memoVAlign === key ? "active" : ""}
-                        key={key}
-                        onClick={() => changeMemoLayout(memoAlign, key)}
-                        title={`메모 전체를 ${key === "top" ? "위" : key === "center" ? "가운데" : "아래"}로`}
-                        type="button"
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-              <span className="memo-edit-state">{memoSaved ? "저장됨" : "저장 중…"}</span>
-            </div>
-
-            <div className="memo-line-editor">
-              {memoLines.length === 0 ? (
-                <p className="memo-line-empty">
-                  아직 줄이 없어요. 아래 “＋ 줄 추가”로 시작해요!
-                </p>
-              ) : null}
-              {memoLines.map((line, i) => (
-                <div className="memo-line-row" key={i}>
-                  <div className="memo-line-move" role="group" aria-label="순서 바꾸기">
-                    <button
-                      aria-label="위로"
-                      disabled={i === 0}
-                      onClick={() => moveMemoLine(i, -1)}
-                      type="button"
-                    >
-                      ↑
-                    </button>
-                    <button
-                      aria-label="아래로"
-                      disabled={i === memoLines.length - 1}
-                      onClick={() => moveMemoLine(i, 1)}
-                      type="button"
-                    >
-                      ↓
-                    </button>
-                  </div>
-                  <input
-                    className="memo-line-input"
-                    onChange={(event) => setLineText(i, event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        addMemoLine(i);
-                      }
-                    }}
-                    placeholder="이 줄 내용 (Enter로 아래에 새 줄)"
-                    style={{
-                      textAlign: line.align,
-                      paddingInlineStart: 9 + line.indent * MEMO_INDENT_STEP
-                    }}
-                    value={line.text}
-                  />
-                  <div className="memo-line-align" role="group" aria-label="가로 정렬">
-                    {(
-                      [
-                        { key: "left", Icon: AlignLeft },
-                        { key: "center", Icon: AlignCenter },
-                        { key: "right", Icon: AlignRight }
-                      ] as const
-                    ).map(({ key, Icon }) => (
-                      <button
-                        aria-label={`${key} 정렬`}
-                        aria-pressed={line.align === key}
-                        className={line.align === key ? "active" : ""}
-                        key={key}
-                        onClick={() => setLineAlign(i, key)}
-                        type="button"
-                      >
-                        <Icon aria-hidden="true" size={13} />
-                      </button>
-                    ))}
-                  </div>
-                  <div className="memo-line-indent" role="group" aria-label="들여쓰기">
-                    <button
-                      aria-label="내어쓰기"
-                      disabled={line.indent === 0}
-                      onClick={() => nudgeLineIndent(i, -1)}
-                      title="내어쓰기"
-                      type="button"
-                    >
-                      ⇤
-                    </button>
-                    <span className="memo-indent-level">{line.indent}</span>
-                    <button
-                      aria-label="들여쓰기"
-                      disabled={line.indent >= 4}
-                      onClick={() => nudgeLineIndent(i, 1)}
-                      title="들여쓰기"
-                      type="button"
-                    >
-                      ⇥
-                    </button>
-                  </div>
-                  <button
-                    aria-label="이 줄 삭제"
-                    className="memo-line-del"
-                    onClick={() => removeMemoLine(i)}
-                    title="이 줄 삭제"
-                    type="button"
-                  >
-                    <Trash2 aria-hidden="true" size={14} />
-                  </button>
-                </div>
-              ))}
-              <button className="button memo-line-add" onClick={() => addMemoLine()} type="button">
-                ＋ 줄 추가
-              </button>
-            </div>
-          </div>
-        ) : null}
-
         {/* #1: 캡쳐 버튼을 월간 일정표 바로 위에 둬, 달력을 보면서 누르기 쉽게 한다. */}
         {canExport ? (
           <div className="poster-capture-row">
@@ -2200,41 +1954,6 @@ export function PublicPoster({
             selectedIds={selectedIds}
             stickers={stickers}
           />
-
-          <aside className="public-side" aria-label="메모">
-            {/* 노트는 "표시 전용". 편집은 표면 밖 줄별 편집기에서 한다(스티커 레이어에 안 막히게).
-               줄마다 가로 정렬·들여쓰기를 그대로 반영하고, 빈 줄은 간격으로 남긴다. */}
-            {editMemo || decorate || hasMemoContent ? (
-              <div className="public-memo">
-                <strong>메모</strong>
-                <div className="memo-body" style={{ alignContent: memoVAlignCss[memoVAlign] }}>
-                  {hasMemoContent ? (
-                    memoLines.map((line, index) =>
-                      line.text.trim() ? (
-                        <p
-                          key={index}
-                          style={{
-                            textAlign: line.align,
-                            paddingInlineStart: line.indent * MEMO_INDENT_STEP
-                          }}
-                        >
-                          {line.text}
-                        </p>
-                      ) : (
-                        <p className="memo-blank" key={index}>
-                          &nbsp;
-                        </p>
-                      )
-                    )
-                  ) : editMemo ? (
-                    <p className="memo-placeholder">
-                      위 편집기에서 줄을 추가하면 여기에 표시돼요
-                    </p>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-          </aside>
 
           <section className="public-calendar-area">
             <div className="weekday-row" aria-hidden="true">
@@ -2334,7 +2053,7 @@ export function PublicPoster({
                   <i className="heart-mark" aria-hidden="true">
                     ♥
                   </i>
-                  내 관심 일정만 보기{bookmarks.length > 0 ? ` (${bookmarks.length})` : ""}
+                  내 관심 일정{bookmarks.length > 0 ? ` (${bookmarks.length})` : ""}
                 </button>
               ) : null}
               {filterActive ? (
@@ -2342,15 +2061,11 @@ export function PublicPoster({
                   필터 해제
                 </button>
               ) : null}
-              {/* 아무것도 모르는 시청자도 ♥의 의미와 인기 단계를 한눈에 알 수 있게 안내. */}
+              {/* 관심(♥)을 많이 받은 일정의 인기 배지 단계만 간단히 안내. */}
               {!decorate ? (
                 <div className="legend-heart-help">
-                  <p>
-                    마음에 드는 일정의 <b className="hm">♥</b> 를 누르면 내 관심 일정으로
-                    모여요. 누가 눌렀는지는 안 보이니 편하게 눌러요!
-                  </p>
                   <p className="legend-tier-line">
-                    관심을 많이 받은 일정엔 인기 배지가 붙어요:
+                    관심(♥)을 많이 받은 일정엔 인기 배지가 붙어요:
                   </p>
                   <ul className="legend-tiers">
                     <li>
