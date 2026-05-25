@@ -14,9 +14,9 @@
   display: grid;
   grid-template-columns: 52px minmax(0, 1fr);
   gap: 8px;
-  border: 1px solid #efe9dd;
+  border: 1px solid #ece2cd;
   border-radius: 14px;
-  background: #ffffff;
+  background: #fffdf6;
   padding: 10px;
   box-shadow: var(--shadow-2);
 }
@@ -71,7 +71,7 @@
   align-items: stretch;
   gap: 9px;
   border-radius: 10px;
-  background: #fbfaf7;
+  background: #faf4e7;
   padding: 7px 9px 7px 0;
   overflow: hidden;
 }
@@ -140,8 +140,8 @@
 .poster-page {
   min-height: 100vh;
   background:
-    radial-gradient(120% 80% at 50% -10%, #fff7ef 0%, transparent 60%),
-    linear-gradient(180deg, #fbf7f1, #f6f4fb);
+    radial-gradient(120% 80% at 50% -12%, #fff1cf 0%, transparent 58%),
+    linear-gradient(180deg, #fbf2df, #f6ecd6);
   color: #111827;
 }
 
@@ -376,7 +376,7 @@
   align-items: stretch;
   min-height: calc(100vh - 96px);
   border-radius: var(--r-xl);
-  background: #ffffff;
+  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
   padding: 18px;
   box-shadow: var(--shadow-2);
 }
@@ -436,9 +436,9 @@
 .public-legend-vertical {
   display: grid;
   gap: 10px;
-  border: 1px solid #efe9dd;
+  border: 1px solid #ece2cd;
   border-radius: var(--r-lg);
-  background: #ffffff;
+  background: #fffdf6;
   padding: 14px 16px;
   box-shadow: var(--shadow-2);
 }
@@ -891,9 +891,9 @@
 
 .public-memo,
 .support-card {
-  border: 1px solid #efe9dd;
+  border: 1px solid #ece2cd;
   border-radius: var(--r-lg);
-  background: #ffffff;
+  background: #fffdf6;
   box-shadow: var(--shadow-2);
   overflow: hidden;
 }
@@ -1015,9 +1015,9 @@
 .public-day {
   position: relative;
   min-height: 130px;
-  border-right: 1px solid #f1ece1;
-  border-bottom: 1px solid #f1ece1;
-  background: #ffffff;
+  border-right: 1px solid #efe6d3;
+  border-bottom: 1px solid #efe6d3;
+  background: #fffefb;
 }
 
 .public-day .day-strip,
@@ -1033,7 +1033,7 @@
 }
 
 .public-day.outside {
-  background: #f3f4f6;
+  background: #f1e9d8;
 }
 /* 흐림은 셀 opacity(그룹 합성) 대신 반투명 흰 베일로. 셀마다 베일이 맞물려 깔려
    스패닝 일정 막대는 불투명하게 이어지고 그 위 베일만 균일하게 흐려진다 → 경계 세로선 제거.
