@@ -4,7 +4,7 @@ import { Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
 // 숲(SOOP) 공지 작성 페이지(토리님 방송국). 새 탭으로 열어 붙여넣는다.
-const SOOP_WRITE_URL = "https://www.sooplive.com/station/tim917799/post/write/121444601";
+const SOOP_WRITE_URL = "https://www.sooplive.com/station/toryvac/post/write/117337785";
 // 본문 맨 끝에 항상 붙이는 이모티콘(숲 스티커).
 const EMOTICON_URL = "https://stimg.sooplive.com/NORMAL_BBS/1/26636711/15676a0ac2a5d4955.gif";
 
@@ -89,7 +89,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
   return (
     <div className="notice-modal">
       <p className="notice-hint">
-        토리님! 날짜랑 템플릿은 이미 채워뒀어요. <strong>시간이랑 내용만</strong> 적으면 공지 완성!
+        <strong>시간이랑 내용만</strong> 적으면 공지 완성!
         그 다음 아래 <strong>두 방법 중 편한 걸</strong>로 숲에 올리면 돼요. (방법 2 추천!)
       </p>
 
@@ -153,7 +153,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img alt="맨 끝 이모티콘" src={EMOTICON_URL} />
           <div className="notice-emoticon-text">
-            <span>맨 끝 이모티콘 — 방법 1은 직접 추가, 방법 2는 자동으로 들어가요.</span>
+            <span> ← 맨 끝 이모티콘 — 방법 1은 직접 추가, 방법 2는 자동</span>
           </div>
         </div>
       </div>
@@ -167,8 +167,8 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
             <span className="notice-method-tag">간단 · 비추천</span>
           </header>
           <p className="notice-method-desc">
-            토리님, 제목이랑 본문을 따로 복사해서 숲에 붙여넣는 방법이에요. 매번 두 번 붙여넣고
-            가운데정렬·이모티콘도 직접 해야 해서 살짝 번거로워요!
+            제목이랑 본문을 따로 복사해서 숲에 붙여넣는 방법. 매번 두 번 붙여넣고
+            가운데정렬·이모티콘도 직접 해야 해서 살짝 번거로워요! (비추천)
           </p>
           <div className="notice-method-actions">
             <button className="button" onClick={() => copy("title", title)} type="button">
@@ -198,8 +198,8 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
             <span className="notice-method-tag hot">추천 · 클릭 3번</span>
           </header>
           <p className="notice-method-desc">
-            토리님! 처음 <strong>딱 한 번만</strong> 북마크를 만들어두면, 그 다음부터는{" "}
-            <strong>복사 → 페이지 열기 → 북마크 클릭</strong> 세 번이면 끝이에요. 제목·본문은
+            처음 <strong>딱 한 번만</strong> 북마크를 만들어두면, 그 다음부터는{" "}
+            <strong>복사 → 페이지 열기 → 북마크 클릭</strong> 세 번이면 끝입니다. 제목·본문은
             물론 <strong>가운데정렬이랑 이모티콘까지</strong> 알아서 쏙 들어갑니다!
           </p>
 
@@ -207,7 +207,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
             <summary>🔧 맨 처음 딱 한 번만: 북마크 만들기 (자세히)</summary>
             <ol className="notice-autofill-steps">
               <li>
-                먼저 아래 코드를 복사해요!
+                먼저 아래 코드를 복사해주세요!
                 <div className="notice-autofill-row">
                   <button
                     className="button"
@@ -221,19 +221,18 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
               </li>
               <li>
                 브라우저 <strong>주소창 오른쪽 끝의 별표(☆)</strong>를 눌러 북마크를 하나
-                저장해요. (지금 이 페이지 그대로 저장하면 돼요!)
+                저장해주세요. (지금 이 페이지 그대로 해주셔도 됩니다!)
               </li>
               <li>
-                방금 만든 북마크를 <strong>마우스 우클릭 → “수정”</strong>을 눌러요. (북마크바에
-                보이면 거기서, 안 보이면 별표를 다시 눌러 “수정”)
+                방금 만든 북마크에 <strong>마우스 우클릭 → “수정...”</strong> 누르기. (북마크바가 안 보이면 Ctrl+Shift+B로 켜주세요)
               </li>
               <li>
-                <strong>이름</strong>은 <strong>“VIC 자동공지”</strong>로 바꾸고,{" "}
+                <strong>이름</strong>은 <strong>“(예시: VIC 자동공지, 암거나 하셔도 됨)”</strong>로 바꾸고,{" "}
                 <strong>URL 칸</strong>의 내용을 전부 지운 뒤 <strong>①에서 복사한 코드를
                 붙여넣어요</strong> → 저장!
               </li>
               <li>
-                이제 끝이에요 토리님! 이 “VIC 자동공지” 북마크가 자동입력 버튼이 된 거예요 😎
+                이제 이 “자동공지” 북마크가 자동입력 버튼이 됐습니다 &lt;😎
               </li>
             </ol>
           </details>
@@ -264,7 +263,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
             </li>
             <li>
               <span className="notice-step-num">3</span>
-              <span className="notice-step-text">“VIC 자동공지” 북마크 클릭 → 끝! ✨</span>
+              <span className="notice-step-text">“자동공지” 북마크 클릭 → 끝! ✨</span>
             </li>
           </ol>
         </section>

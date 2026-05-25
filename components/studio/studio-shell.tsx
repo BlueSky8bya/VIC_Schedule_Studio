@@ -29,10 +29,12 @@ import {
   buildCalendarMonth,
   buildLinkChain,
   classifyDay,
+  eventColorStyle,
   getAdjacentMonth,
   getEventDateKey,
   getEventsForDate,
   getEventSpan,
+  getEventTagColors,
   getLinkedChainIds,
   getMonthLabel,
   getTodayKst,
@@ -268,10 +270,9 @@ export function StudioShell({
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
 
-  function eventColor(event: StudioScheduleEvent) {
-    const tagId = event.primaryTagIds[0] ?? event.tagIds[0];
-    const tag = tagId ? tags.find((t) => t.id === tagId) : undefined;
-    return tag ? palette.find((p) => p.key === tag.colorKey) : undefined;
+  // D: 대표 태그(최대 2개)의 색. 2개면 그라데이션으로 칠한다.
+  function eventColors(event: StudioScheduleEvent) {
+    return getEventTagColors(event, tags, palette);
   }
 
   function moveMonth(offset: number) {
@@ -403,15 +404,19 @@ export function StudioShell({
     });
   }
 
-  // 일정 하나에 태그 하나. 같은 태그를 다시 누르면 해제.
+  // D: 일정 하나에 태그 최대 2개. 같은 태그를 다시 누르면 해제, 2개 찬 뒤 새 태그는 무시.
+  // 고른 태그는 모두 대표(primary)로 — 2개면 일정칸에 두 색이 그라데이션으로 섞인다.
   function selectTag(tagId: string) {
     setForm((current) => {
-      const selected = current.tagIds[0] === tagId;
-      return {
-        ...current,
-        tagIds: selected ? [] : [tagId],
-        primaryTagIds: selected ? [] : [tagId]
-      };
+      if (current.tagIds.includes(tagId)) {
+        const next = current.tagIds.filter((id) => id !== tagId);
+        return { ...current, tagIds: next, primaryTagIds: next };
+      }
+      if (current.tagIds.length >= 2) {
+        return current; // 최대 2개까지
+      }
+      const next = [...current.tagIds, tagId];
+      return { ...current, tagIds: next, primaryTagIds: next };
     });
   }
 
@@ -764,7 +769,7 @@ export function StudioShell({
                     }
                   >
                     {dateEvents.map((event) => {
-                      const color = eventColor(event);
+                      const colors = eventColors(event);
                       const isSel = selectedEventId === event.id;
                       // 연결된 체인이면 체인 전체에 선택 테두리를 입힌다.
                       const inSelChain = selectedChainIds.has(event.id);
@@ -789,22 +794,15 @@ export function StudioShell({
                       return (
                         <div
                           className={pillClass}
-                          data-color={color?.key}
+                          data-color={colors.length >= 2 ? undefined : colors[0]?.key}
+                          data-mixed={colors.length >= 2 ? "" : undefined}
                           key={event.id}
                           onClick={(e) => {
                             e.stopPropagation();
                             handlePillClick(event.id);
                           }}
                           role="button"
-                          style={
-                            color
-                              ? {
-                                  backgroundColor: color.bgColor,
-                                  color: color.textColor,
-                                  borderColor: color.borderColor
-                                }
-                              : undefined
-                          }
+                          style={colors.length > 0 ? eventColorStyle(colors) : undefined}
                           tabIndex={0}
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
@@ -974,16 +972,19 @@ export function StudioShell({
             ) : null}
 
             <section className="tag-picker" aria-label="태그 선택">
-              <h3>태그</h3>
+              <h3>
+                태그 <span className="tag-picker-hint">최대 2개 — 2개 고르면 일정칸에 두 색이 섞여요</span>
+              </h3>
               <div>
                 {legendTags.map((tag) => {
                   const color = palette.find((item) => item.key === tag.colorKey);
-                  const selected = form.tagIds[0] === tag.id;
+                  const selected = form.tagIds.includes(tag.id);
+                  const full = !selected && form.tagIds.length >= 2;
                   return color ? (
                     <button
                       className={selected ? "selected" : ""}
                       data-color={color.key}
-                      disabled={!canEdit}
+                      disabled={!canEdit || full}
                       key={tag.id}
                       onClick={() => selectTag(tag.id)}
                       style={{
@@ -991,8 +992,10 @@ export function StudioShell({
                         borderColor: color.borderColor,
                         color: color.textColor
                       }}
+                      title={full ? "태그는 최대 2개까지 고를 수 있어요" : tag.displayName}
                       type="button"
                     >
+                      {selected ? `${form.tagIds.indexOf(tag.id) + 1}. ` : ""}
                       {tag.displayName}
                     </button>
                   ) : null;

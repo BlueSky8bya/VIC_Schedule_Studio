@@ -167,6 +167,43 @@ function colorIdOf(event: PublicScheduleEvent | StudioScheduleEvent) {
   return event.primaryTagIds[0] ?? event.tagIds[0];
 }
 
+// D: 일정칸에 칠할 색을 최대 2개까지 모은다(대표 태그 우선). 2개면 호출부에서 그라데이션으로 표시.
+export function getEventTagColors(
+  event: PublicScheduleEvent | StudioScheduleEvent,
+  tags: BroadcastTag[],
+  palette: ColorPaletteEntry[]
+): ColorPaletteEntry[] {
+  const ids = (event.primaryTagIds.length > 0 ? event.primaryTagIds : event.tagIds).slice(0, 2);
+  return ids
+    .map((id) => {
+      const tag = tags.find((t) => t.id === id);
+      return tag ? palette.find((p) => p.key === tag.colorKey) : undefined;
+    })
+    .filter((color): color is ColorPaletteEntry => Boolean(color));
+}
+
+// D: 모은 색으로 일정칸 인라인 스타일을 만든다. 2색이면 대각선 그라데이션, 1색이면 단색.
+export function eventColorStyle(colors: ColorPaletteEntry[]): {
+  backgroundColor?: string;
+  backgroundImage?: string;
+  color?: string;
+  borderColor?: string;
+} {
+  if (colors.length === 0) {
+    return {};
+  }
+  const [a, b] = colors;
+  if (b) {
+    return {
+      // 두 색을 좁은 띠로 섞어 "두 가지"임이 분명하게 보이도록.
+      backgroundImage: `linear-gradient(135deg, ${a.bgColor} 0%, ${a.bgColor} 44%, ${b.bgColor} 56%, ${b.bgColor} 100%)`,
+      color: a.textColor,
+      borderColor: a.borderColor
+    };
+  }
+  return { backgroundColor: a.bgColor, color: a.textColor, borderColor: a.borderColor };
+}
+
 // 업 도움(support) 일정에 레인(끈 세로 위치)을 배정한다.
 // 시작일이 이른 것이 위(낮은 lane), 겹치는 것은 아래로. (구간 패킹)
 export function assignSupportLanes<T extends PublicScheduleEvent | StudioScheduleEvent>(

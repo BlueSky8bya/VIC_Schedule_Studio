@@ -572,6 +572,15 @@
   margin: 0;
   font-size: 15px;
 }
+.tag-picker-hint {
+  margin-left: 6px;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.tag-picker button:disabled {
+  cursor: not-allowed;
+}
 
 .tag-picker div {
   display: flex;

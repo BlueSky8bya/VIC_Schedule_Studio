@@ -157,6 +157,13 @@ export function isPosterThemeKey(value: string): value is PosterThemeKey {
   return POSTER_THEMES.some((theme) => theme.key === value);
 }
 
+// B: 메모 한 줄 — 줄마다 가로 정렬과 들여쓰기 단계를 따로 갖는다.
+export type MemoLine = {
+  text: string;
+  align: "left" | "center" | "right";
+  indent: number; // 0~4 단계, 단계당 일정 px 들여쓰기
+};
+
 export type CalendarMeta = {
   slug: string;
   displayName: string;
@@ -168,6 +175,7 @@ export type CalendarMeta = {
   posterTheme: PosterThemeKey; // C9/C10: 적용된 포스터 테마
   memoAlign?: "left" | "center" | "right"; // #5: 메모 가로 정렬
   memoVAlign?: "top" | "center" | "bottom"; // #5: 메모 세로 위치
+  memoLines?: MemoLine[]; // B: 줄별 정렬·들여쓰기. 있으면 이걸로 렌더, 없으면 publicMemo 줄바꿈 폴백
 };
 
 export type PublicSchedule = {

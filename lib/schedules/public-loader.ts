@@ -1,6 +1,7 @@
 import type {
   BroadcastTag,
   ColorPaletteEntry,
+  MemoLine,
   PublicSchedule,
   PublicScheduleEvent,
   StickerInstance,
@@ -24,6 +25,26 @@ function coerceMemoAlign(value: unknown): "left" | "center" | "right" {
 }
 function coerceMemoVAlign(value: unknown): "top" | "center" | "bottom" {
   return value === "center" || value === "bottom" ? value : "top";
+}
+// B: 저장된 줄별 메모(jsonb)를 안전하게 MemoLine[]로. 없거나 비면 undefined → publicMemo 폴백.
+function coerceMemoLines(value: unknown): MemoLine[] | undefined {
+  if (!Array.isArray(value)) {
+    return undefined;
+  }
+  const lines = value
+    .filter((item): item is Record<string, unknown> => Boolean(item) && typeof item === "object")
+    .map((item) => ({
+      text: typeof item.text === "string" ? item.text : "",
+      align:
+        item.align === "center" || item.align === "right"
+          ? (item.align as "center" | "right")
+          : ("left" as const),
+      indent:
+        typeof item.indent === "number"
+          ? Math.min(4, Math.max(0, Math.round(item.indent)))
+          : 0
+    }));
+  return lines.length > 0 ? lines : undefined;
 }
 
 // 익명 공개 데이터는 모든 시청자에게 동일하므로 Data Cache에 짧게 캐시한다.
@@ -72,7 +93,7 @@ const loadPublicScheduleData = unstable_cache(
     const { data: calendar } = await supabase
       .from("calendars")
       .select(
-        "id, slug, display_name, title, public_memo, poster_theme, public_memo_align, public_memo_valign"
+        "id, slug, display_name, title, public_memo, public_memo_lines, poster_theme, public_memo_align, public_memo_valign"
       )
       .eq("slug", calendarSlug)
       .eq("is_public", true)
@@ -167,7 +188,8 @@ const loadPublicScheduleData = unstable_cache(
         publicMemo: calendar.public_memo ?? "",
         posterTheme: coercePosterTheme(calendar.poster_theme),
         memoAlign: coerceMemoAlign(calendar.public_memo_align),
-        memoVAlign: coerceMemoVAlign(calendar.public_memo_valign)
+        memoVAlign: coerceMemoVAlign(calendar.public_memo_valign),
+        memoLines: coerceMemoLines(calendar.public_memo_lines)
       },
       tags: (tagsRes.data ?? []).map(mapTag),
       palette: (paletteRes.data ?? []).map(mapPalette),
