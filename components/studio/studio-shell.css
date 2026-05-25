@@ -1534,3 +1534,13 @@ textarea:disabled {
   gap: 8px;
   justify-content: flex-end;
 }
+
+/* #6: 태그 편집 하단 버튼 행(추가 + 전체 저장) */
+.tag-editor-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+.tag-editor-actions .button.primary {
+  flex: 1;
+}

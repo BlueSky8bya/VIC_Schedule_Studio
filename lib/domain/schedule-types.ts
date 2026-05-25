@@ -13,20 +13,9 @@ export type EventCategory = "stream" | "collab" | "notice" | "support" | "dayoff
 
 export type VariantPromotionState = "draft" | "active" | "promoted" | "archived";
 
-export type ColorKey =
-  | "gray"
-  | "lavender"
-  | "blue"
-  | "pink"
-  | "mint"
-  | "yellow"
-  | "orange"
-  | "beige"
-  | "sky"
-  | "lime"
-  | "red"
-  | "indigo"
-  | "teal";
+// 팔레트 색 키. 기본 13색(gray·lavender·blue·pink·mint·yellow·orange·beige·sky·lime·red·indigo·teal)에
+// 더해, 태그 추가 시 동적으로 생성되는 색(gen-XXXX)도 있으므로 string으로 둔다.
+export type ColorKey = string;
 
 export type ColorPaletteEntry = {
   key: ColorKey;

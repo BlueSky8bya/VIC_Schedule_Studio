@@ -12,6 +12,8 @@ type TagLegendEditorProps = {
   updateTagsAction: (
     updates: { id: string; displayName: string; colorKey: ColorKey }[]
   ) => Promise<TagUpdateResult>;
+  // #6: 태그 추가(있을 때만 "추가" 버튼 노출). 새 태그엔 기존과 구별되는 연한 색이 자동 배정된다.
+  addTagAction?: () => Promise<TagUpdateResult>;
 };
 
 type Draft = { name: string; colorKey: ColorKey | "" };
@@ -20,11 +22,25 @@ export function TagLegendEditor({
   tags,
   palette,
   canEdit,
-  updateTagsAction
+  updateTagsAction,
+  addTagAction
 }: TagLegendEditorProps) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+
+  function addTag() {
+    if (!addTagAction) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await addTagAction();
+      if (result.ok) {
+        router.refresh();
+      } else {
+        setError(result.error);
+      }
+    });
+  }
   const [draft, setDraft] = useState<Record<string, Draft>>(() =>
     Object.fromEntries(tags.map((t) => [t.id, { name: t.displayName, colorKey: t.colorKey }]))
   );
@@ -130,14 +146,21 @@ export function TagLegendEditor({
 
       {error ? <div className="auth-warning">{error}</div> : null}
       {anyEmpty ? <p className="tag-editor-hint warn">색상이 비어 있는 태그가 있습니다.</p> : null}
-      <button
-        className="button primary"
-        disabled={pending || anyEmpty || !dirty}
-        onClick={saveAll}
-        type="button"
-      >
-        {pending ? "저장 중…" : "전체 저장"}
-      </button>
+      <div className="tag-editor-actions">
+        {addTagAction ? (
+          <button className="button" disabled={pending} onClick={addTag} type="button">
+            + 태그 추가
+          </button>
+        ) : null}
+        <button
+          className="button primary"
+          disabled={pending || anyEmpty || !dirty}
+          onClick={saveAll}
+          type="button"
+        >
+          {pending ? "저장 중…" : "전체 저장"}
+        </button>
+      </div>
     </div>
   );
 }

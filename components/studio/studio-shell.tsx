@@ -45,7 +45,7 @@ import {
 import { deleteEventAction, saveEventAction } from "@/lib/schedules/event-actions";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { linkChainAction, unlinkPairAction } from "@/lib/schedules/link-actions";
-import { updateTagsAction } from "@/lib/schedules/tag-actions";
+import { addTagAction, updateTagsAction } from "@/lib/schedules/tag-actions";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
@@ -955,7 +955,9 @@ export function StudioShell({
             ) : null}
             {modal === "tags" ? (
               <TagLegendEditor
+                addTagAction={addTagAction}
                 canEdit
+                key={schedule.tags.map((t) => t.id).join(",")}
                 palette={schedule.palette}
                 tags={schedule.tags}
                 updateTagsAction={updateTagsAction}
