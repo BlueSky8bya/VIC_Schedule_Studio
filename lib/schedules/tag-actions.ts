@@ -52,37 +52,67 @@ function hueDist(a: number, b: number): number {
   return Math.min(d, 360 - d);
 }
 
-// 새 색의 (hue, 무늬) 조합을 고른다. 핵심: "같은 무늬를 쓰는 기존 색"과 hue가 최대한 멀어지게 한다.
-// → 색조가 비슷해도 무늬가 다르면 구분되고, 무늬가 같으면 색조를 멀리 띄운다(둘 다 비슷한 경우 회피).
-// 아직 안 쓴 무늬(또는 그 무늬에서 hue가 텅 빈 쪽)를 우선 잡고, 동점이면 전체 색과도 멀게.
+function pickFrom<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+// 새 색의 (hue, 무늬)를 고른다.
+// 규칙: 한 "색상 계열(hue 근처)" 안에는 [민무늬 1개] + [무늬 1개]까지만 둔다. 무늬 종류는
+//   대각선/점/격자 3가지뿐이라, 같은 계열에 이미 민무늬+무늬가 다 있으면 새 색을 안 만든다
+//   (예: 민무늬 보라 + 대각선 보라가 있으면 격자 보라는 안 나옴).
+// 리롤(삭제 후 재추가) 때마다 달라지도록, 규칙을 어기지 않는 후보들 중 무작위로 고른다.
+const FAMILY = 38; // 같은 색상 계열로 보는 hue 거리(°)
 function pickColorSlot(existing: { hue: number; pat: Pat }[]): { hue: number; pat: Pat } {
-  const pats: Pat[] = ["plain", "diag", "dots", "grid"];
-  const candidates: { hue: number; pat: Pat; score: number }[] = [];
+  const decoPats: Pat[] = ["diag", "dots", "grid"];
+
+  // (hue, 민무늬여부) 후보 중, 같은 계열에 같은 종류(민무늬/무늬)가 없는 것만 모은다.
+  const valid: { hue: number; plain: boolean }[] = [];
   for (let h = 0; h < 360; h += 5) {
-    for (const pat of pats) {
-      let sameMin = Infinity; // 같은 무늬 색들과의 최소 hue 거리
-      let allMin = Infinity; // 모든 색과의 최소 hue 거리(미적 분산용)
-      for (const e of existing) {
-        const hd = hueDist(h, e.hue);
-        allMin = Math.min(allMin, hd);
-        if (e.pat === pat) {
-          sameMin = Math.min(sameMin, hd);
-        }
+    for (const plain of [true, false]) {
+      const clash = existing.some(
+        (e) => hueDist(h, e.hue) < FAMILY && (e.pat === "plain") === plain
+      );
+      if (!clash) {
+        valid.push({ hue: h, plain });
       }
-      // 같은 무늬와의 거리(주)를 크게, 전체 분산(부)을 작게 가중. 같은 무늬가 없으면 360으로 친다.
-      const score =
-        (sameMin === Infinity ? 360 : sameMin) * 2 + (allMin === Infinity ? 360 : allMin);
-      candidates.push({ hue: h, pat, score });
     }
   }
-  // 결정적으로 1등만 고르면 삭제 후 재추가(리롤) 때 매번 같은 색·무늬가 나온다.
-  // 최고점 근처(충분히 안 겹치는) 후보 풀에서 무작위로 골라 리롤마다 달라지게 한다.
-  const best = Math.max(...candidates.map((c) => c.score));
-  const pool = candidates.filter((c) => c.score >= best - 30);
-  const chosen = pool[Math.floor(Math.random() * pool.length)] ?? candidates[0];
-  // hue 미세 흔들기(±4°) — 같은 슬롯이라도 색이 조금씩 달라지게.
-  const jitter = Math.floor(Math.random() * 9) - 4;
-  return { hue: (chosen.hue + jitter + 360) % 360, pat: chosen.pat };
+
+  let hue: number;
+  let plain: boolean;
+  if (valid.length > 0) {
+    const pick = pickFrom(valid);
+    hue = pick.hue;
+    plain = pick.plain;
+  } else {
+    // 팔레트가 꽉 참(모든 계열에 민무늬+무늬 다 있음): 같은 종류 색과 가장 먼 슬롯으로.
+    let best = { hue: Math.floor(Math.random() * 360), plain: true, sep: -1 };
+    for (let h = 0; h < 360; h += 5) {
+      for (const p of [true, false]) {
+        const same = existing.filter((e) => (e.pat === "plain") === p).map((e) => e.hue);
+        const sep = same.length ? Math.min(...same.map((u) => hueDist(h, u))) : 360;
+        if (sep > best.sep) {
+          best = { hue: h, plain: p, sep };
+        }
+      }
+    }
+    hue = best.hue;
+    plain = best.plain;
+  }
+
+  let pat: Pat = "plain";
+  if (!plain) {
+    // 무늬 종류: 근처 계열에서 안 쓰는 무늬를 우선, 없으면 아무거나 무작위(다양성).
+    const near = new Set(
+      existing
+        .filter((e) => e.pat !== "plain" && hueDist(hue, e.hue) < FAMILY * 2)
+        .map((e) => e.pat)
+    );
+    const free = decoPats.filter((p) => !near.has(p));
+    pat = pickFrom(free.length ? free : decoPats);
+  }
+  const jitter = Math.floor(Math.random() * 7) - 3; // ±3° 미세 흔들기
+  return { hue: (hue + jitter + 360) % 360, pat };
 }
 
 function hslToHex(h: number, s: number, l: number): string {

@@ -163,8 +163,16 @@ export function areAdjacentEvents(
   return bStart === addDays(aEnd, 1) || aStart === addDays(bEnd, 1);
 }
 
-function colorIdOf(event: PublicScheduleEvent | StudioScheduleEvent) {
-  return event.primaryTagIds[0] ?? event.tagIds[0];
+// 일정의 대표 태그(최대 2개) — 칸을 칠하는 색 순서. [0]=왼쪽 변, 마지막=오른쪽 변.
+function repTagIds(event: PublicScheduleEvent | StudioScheduleEvent): string[] {
+  return (event.primaryTagIds.length > 0 ? event.primaryTagIds : event.tagIds).slice(0, 2);
+}
+function leftEdgeTag(event: PublicScheduleEvent | StudioScheduleEvent): string | undefined {
+  return repTagIds(event)[0];
+}
+function rightEdgeTag(event: PublicScheduleEvent | StudioScheduleEvent): string | undefined {
+  const reps = repTagIds(event);
+  return reps[reps.length - 1];
 }
 
 // D: 일정칸에 칠할 색을 최대 2개까지 모은다(대표 태그 우선). 2개면 호출부에서 그라데이션으로 표시.
@@ -394,7 +402,8 @@ export function assignSupportLanes<T extends PublicScheduleEvent | StudioSchedul
   return { lanes, count: laneEnds.length };
 }
 
-// a~b 사이가 "매일 연속 + 같은 색"이면 이을 일정 id 체인(날짜순)을 반환, 아니면 null.
+// a~b 사이가 "매일 연속 + 맞닿는 변의 색이 일치"하면 이을 일정 id 체인(날짜순)을 반환, 아니면 null.
+// 맞닿는 변 일치: 앞 일정의 오른쪽 변 색 == 뒤 일정의 왼쪽 변 색. (예: 28일 월드컵|종겜 → 29일 종겜)
 export function buildLinkChain<T extends PublicScheduleEvent | StudioScheduleEvent>(
   a: T,
   b: T,
@@ -402,10 +411,6 @@ export function buildLinkChain<T extends PublicScheduleEvent | StudioScheduleEve
 ): string[] | null {
   const from = getEventDateKey(a) <= getEventDateKey(b) ? a : b;
   const to = from === a ? b : a;
-  const colorId = colorIdOf(from);
-  if (!colorId || colorIdOf(to) !== colorId) {
-    return null;
-  }
 
   const chain: T[] = [from];
   let cur = from;
@@ -414,11 +419,16 @@ export function buildLinkChain<T extends PublicScheduleEvent | StudioScheduleEve
       return chain.map((e) => e.id);
     }
     const nextDay = addDays(eventEndKey(cur), 1);
+    const want = rightEdgeTag(cur); // 이 일정의 오른쪽 변 색
+    if (!want) {
+      return null;
+    }
     const next = allEvents.find(
-      (e) => e.id !== cur.id && getEventDateKey(e) === nextDay && colorIdOf(e) === colorId
+      (e) =>
+        e.id !== cur.id && getEventDateKey(e) === nextDay && leftEdgeTag(e) === want
     );
     if (!next) {
-      return null; // 연속이 끊기거나 색이 다름
+      return null; // 연속이 끊기거나 맞닿는 색이 다름
     }
     chain.push(next);
     cur = next;
