@@ -25,9 +25,13 @@ export function PrivateLayerPanel({
   const [changing, setChanging] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
+  // 잠금 해제 진행/성공 상태 — 확인을 눌렀을 때 적용 여부가 분명히 보이게.
+  const [unlocking, setUnlocking] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
 
   async function unlock() {
     setError(null);
+    setUnlocking(true);
     const res = await fetch("/api/unlock-private-layer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -35,10 +39,14 @@ export function PrivateLayerPanel({
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
+      setUnlocked(true); // "✓ 잠금 해제됨" 잠깐 보여주고 닫기/갱신
       onUnlocked?.();
-      onDone?.();
-      router.refresh();
+      setTimeout(() => {
+        onDone?.();
+        router.refresh();
+      }, 650);
     } else {
+      setUnlocking(false);
       setError(data.error ?? "잠금 해제에 실패했습니다.");
     }
   }
@@ -77,10 +85,17 @@ export function PrivateLayerPanel({
               type="password"
               value={passcode}
             />
-            <button className="button primary" disabled={!passcode || pending} type="submit">
-              확인
+            <button
+              className={`button primary ${unlocked ? "saved" : ""}`}
+              disabled={!passcode || unlocking || unlocked}
+              type="submit"
+            >
+              {unlocked ? "✓ 잠금 해제됨" : unlocking ? "확인 중…" : "확인"}
             </button>
           </form>
+          {unlocked ? (
+            <div className="auth-success">비공개 일정이 표시됩니다.</div>
+          ) : null}
           {error ? <div className="auth-warning">{error}</div> : null}
           {canManage ? (
             <button className="button" onClick={() => setChanging(true)} type="button">

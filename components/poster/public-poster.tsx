@@ -425,10 +425,9 @@ export function PublicPoster({
   const [floaters, setFloaters] = useState<HeartFloater[]>([]);
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
   const interactive = !decorate;
-  // 모바일(좁은 화면)에선 가독성을 위해 아젠다(목록) 뷰가 기본. "월간 보기"로 그리드 전환 가능.
-  // (캡쳐용 포스터 이미지는 그대로 — 아젠다는 보는 전용이라 꾸미기 모드엔 적용 안 함.)
+  // 모바일(좁은 화면) 시청자는 세로 아젠다(목록) 전용 — 월간 그리드/캡쳐는 PC로 유도.
+  // (꾸미기 모드엔 적용 안 함: 꾸미기는 PC 전용.)
   const [isNarrow, setIsNarrow] = useState(false);
-  const [forceGrid, setForceGrid] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)");
     const update = () => setIsNarrow(mq.matches);
@@ -436,7 +435,7 @@ export function PublicPoster({
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
-  const showAgenda = isNarrow && !forceGrid && !decorate;
+  const showAgenda = isNarrow && !decorate;
   // 키보드 미세이동 등에서 최신 스티커 배열을 읽기 위한 ref + 저장 디바운스 타이머
   const stickersRef = useRef<StickerInstance[]>([]);
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1409,122 +1408,146 @@ export function PublicPoster({
     );
   }
 
-  // 모바일 아젠다(목록) 뷰 — 날짜별 세로 목록. 시작일 기준으로 한 번씩만 보여준다(멀티데이 반복 방지).
+  // 모바일 아젠다(목록) 뷰 — 이번 달 1일~말일만, 일정이 있는 날을 세로로. 시작일 기준 한 번씩.
+  // 왼쪽: 스크롤을 따라오는 색상 안내(sticky). 각 줄: [날짜·요일·하트] [색 막대] [내용].
   function renderAgenda() {
-    const rows = cells
-      .filter((cell) => cell.inCurrentMonth)
-      .map((cell) => {
-        const evs = schedule.events.filter(
-          (e) => !e.isSupport && getEventDateKey(e) === cell.isoDate
-        );
-        const support = schedule.events.filter(
-          (e) => e.isSupport && getEventDateKey(e) === cell.isoDate
-        );
-        return { cell, evs, support };
-      })
-      .filter((r) => r.evs.length > 0 || r.support.length > 0);
+    type Item = {
+      cell: MonthCell;
+      event: PublicScheduleEvent;
+      support: boolean;
+      firstOfDay: boolean;
+    };
+    const items: Item[] = [];
+    for (const cell of cells.filter((c) => c.inCurrentMonth)) {
+      const support = schedule.events.filter(
+        (e) => e.isSupport && getEventDateKey(e) === cell.isoDate
+      );
+      const evs = schedule.events.filter(
+        (e) => !e.isSupport && getEventDateKey(e) === cell.isoDate
+      );
+      const dayList = [
+        ...support.map((e) => ({ e, support: true })),
+        ...evs.map((e) => ({ e, support: false }))
+      ];
+      dayList.forEach((d, i) => {
+        items.push({ cell, event: d.e, support: d.support, firstOfDay: i === 0 });
+      });
+    }
 
     return (
       <section className="agenda">
-        {rows.length === 0 ? (
-          <p className="agenda-empty">이 달엔 공개된 일정이 아직 없어요. 🍃</p>
-        ) : (
-          rows.map(({ cell, evs, support }) => {
-            const day = classifyDay(cell.isoDate, cell.weekday, today);
-            return (
-              <div className="agenda-day" key={cell.isoDate}>
-                <div className={`agenda-date ${day.isToday ? "today" : ""}`}>
-                  <strong className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}>
-                    {cell.dayOfMonth}
-                  </strong>
-                  <span>{WEEKDAYS[cell.weekday]}</span>
-                  {day.markName ? <em>{day.markName}</em> : null}
+        {interactive && legendTags.length > 0 ? (
+          <aside className="agenda-legend" aria-label="색상 안내">
+            <strong>색상</strong>
+            {legendTags.map((tag) => {
+              const color = schedule.palette.find((p) => p.key === tag.colorKey);
+              return color ? (
+                <span key={tag.id}>
+                  <i
+                    data-color={color.key}
+                    style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+                  />
+                  {tag.displayName}
+                </span>
+              ) : null;
+            })}
+          </aside>
+        ) : null}
+
+        <div className="agenda-flow">
+          {items.length === 0 ? (
+            <p className="agenda-empty">이 달엔 공개된 일정이 아직 없어요. 🍃</p>
+          ) : (
+            items.map(({ cell, event, support, firstOfDay }) => {
+              const day = classifyDay(cell.isoDate, cell.weekday, today);
+              const colors = eventColors(event);
+              const { main, subs } = splitEventTitle(event.publicTitle);
+              const bookmarked = isBookmarked(event.id);
+              const tier =
+                interactive && !support ? heartTier(heartCounts[event.id] ?? 0, maxHeart) : null;
+              const barStyle = support
+                ? { background: "#84b74f" }
+                : colors.length >= 2
+                  ? {
+                      background: `linear-gradient(180deg, ${colors[0].bgColor}, ${colors[1].bgColor})`
+                    }
+                  : colors[0]
+                    ? { background: colors[0].bgColor }
+                    : undefined;
+              const end = event.endDateKey;
+              return (
+                <div
+                  className={`agenda-row ${firstOfDay ? "day-start" : ""}`}
+                  key={(support ? "s-" : "") + event.id}
+                >
+                  <div className={`agenda-when ${day.isToday ? "today" : ""}`}>
+                    <strong
+                      className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}
+                    >
+                      {firstOfDay ? cell.dayOfMonth : ""}
+                    </strong>
+                    <span className="agenda-wd-row">
+                      <span className="agenda-wd">
+                        {firstOfDay ? WEEKDAYS[cell.weekday] : ""}
+                      </span>
+                      {interactive && !support ? (
+                        <button
+                          aria-label={bookmarked ? "관심 해제" : "관심 일정"}
+                          aria-pressed={bookmarked}
+                          className={`event-heart agenda-heart ${bookmarked ? "bookmarked" : ""}`}
+                          onClick={(ev) => toggleBookmark(event.id, ev)}
+                          type="button"
+                        >
+                          {bookmarked ? "♥" : "♡"}
+                        </button>
+                      ) : null}
+                    </span>
+                  </div>
+                  <span className="agenda-bar" style={barStyle} />
+                  <div className="agenda-content">
+                    <p className="agenda-title">
+                      {support ? `🌱 ${event.publicTitle}` : main}
+                    </p>
+                    {support ? (
+                      <p className="agenda-sub">
+                        {formatShortDate(cell.isoDate)} ~{" "}
+                        {formatShortDate(event.endDateKey ?? cell.isoDate)}
+                      </p>
+                    ) : end && end !== cell.isoDate ? (
+                      <p className="agenda-sub">~ {formatShortDate(end)}까지</p>
+                    ) : null}
+                    {!support && subs.length > 0 ? (
+                      <ul className="agenda-subs">
+                        {subs.map((sub, i) => (
+                          <li key={i}>{sub}</li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {support && event.supportUrl ? (
+                      <a
+                        className="agenda-link"
+                        href={event.supportUrl}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        도우러 가기
+                        <ExternalLink aria-hidden="true" size={13} />
+                      </a>
+                    ) : null}
+                    {tier ? (
+                      <span className={`event-popular tier-${tier.key}`}>
+                        <span className="flame" aria-hidden="true">
+                          {tier.flames}
+                        </span>{" "}
+                        {tier.label}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
-                <ul className="agenda-items">
-                  {support.map((s) => {
-                    const end = s.endDateKey ?? cell.isoDate;
-                    return (
-                      <li className="agenda-item support" key={s.id}>
-                        <span className="agenda-bar" style={{ background: "#84b74f" }} />
-                        <div className="agenda-body">
-                          <p className="agenda-title">🌱 {s.publicTitle}</p>
-                          <p className="agenda-sub">
-                            {formatShortDate(cell.isoDate)} ~ {formatShortDate(end)}
-                          </p>
-                          {s.supportUrl ? (
-                            <a
-                              className="agenda-link"
-                              href={s.supportUrl}
-                              rel="noopener noreferrer"
-                              target="_blank"
-                            >
-                              도우러 가기
-                              <ExternalLink aria-hidden="true" size={13} />
-                            </a>
-                          ) : null}
-                        </div>
-                      </li>
-                    );
-                  })}
-                  {evs.map((event) => {
-                    const colors = eventColors(event);
-                    const { main, subs } = splitEventTitle(event.publicTitle);
-                    const bookmarked = isBookmarked(event.id);
-                    const tier = interactive
-                      ? heartTier(heartCounts[event.id] ?? 0, maxHeart)
-                      : null;
-                    const barStyle =
-                      colors.length >= 2
-                        ? {
-                            background: `linear-gradient(180deg, ${colors[0].bgColor}, ${colors[1].bgColor})`
-                          }
-                        : colors[0]
-                          ? { background: colors[0].bgColor }
-                          : undefined;
-                    const end = event.endDateKey;
-                    return (
-                      <li className="agenda-item" key={event.id}>
-                        <span className="agenda-bar" style={barStyle} />
-                        <div className="agenda-body">
-                          <p className="agenda-title">{main}</p>
-                          {end && end !== cell.isoDate ? (
-                            <p className="agenda-sub">~ {formatShortDate(end)}까지</p>
-                          ) : null}
-                          {subs.length > 0 ? (
-                            <ul className="agenda-subs">
-                              {subs.map((sub, i) => (
-                                <li key={i}>{sub}</li>
-                              ))}
-                            </ul>
-                          ) : null}
-                          {tier ? (
-                            <span className={`event-popular tier-${tier.key}`}>
-                              <span className="flame" aria-hidden="true">
-                                {tier.flames}
-                              </span>{" "}
-                              {tier.label}
-                            </span>
-                          ) : null}
-                        </div>
-                        {interactive ? (
-                          <button
-                            aria-label={bookmarked ? "관심 해제" : "관심 일정"}
-                            aria-pressed={bookmarked}
-                            className={`event-heart agenda-heart ${bookmarked ? "bookmarked" : ""}`}
-                            onClick={(ev) => toggleBookmark(event.id, ev)}
-                            type="button"
-                          >
-                            {bookmarked ? "♥" : "♡"}
-                          </button>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            );
-          })
-        )}
+              );
+            })
+          )}
+        </div>
       </section>
     );
   }
@@ -1583,11 +1606,6 @@ export function PublicPoster({
           </div>
 
           <div className="viewer-actions">
-            {isNarrow && !decorate ? (
-              <button className="button" onClick={() => setForceGrid((v) => !v)} type="button">
-                {forceGrid ? "목록 보기" : "월간(이미지) 보기"}
-              </button>
-            ) : null}
             {decorate ? (
               <Link className="button" href="/studio">
                 <ChevronLeft aria-hidden="true" size={16} />

@@ -1,8 +1,50 @@
 /* ── 모바일 아젠다(목록) 뷰 ── */
+/* 왼쪽: 스크롤 따라오는 색상 안내(sticky) · 오른쪽: 날짜별 일정 목록 */
 .agenda {
-  display: grid;
+  display: flex;
+  align-items: flex-start;
   gap: 10px;
   margin-top: 4px;
+}
+.agenda-legend {
+  position: sticky;
+  top: 8px;
+  flex: 0 0 64px;
+  display: grid;
+  gap: 7px;
+  border: 1px solid #ece2cd;
+  border-radius: 12px;
+  background: #fffdf6;
+  padding: 9px 8px;
+  box-shadow: var(--shadow-2);
+}
+.agenda-legend strong {
+  font-size: 11px;
+  font-weight: 900;
+  color: #8a7a4a;
+  letter-spacing: 0.04em;
+}
+.agenda-legend span {
+  display: grid;
+  grid-template-columns: 12px 1fr;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #4b4636;
+  line-height: 1.2;
+}
+.agenda-legend i {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgb(0 0 0 / 12%);
+  border-radius: 4px;
+}
+.agenda-flow {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 5px;
 }
 .agenda-empty {
   margin: 24px 0;
@@ -10,70 +52,60 @@
   color: var(--muted, #9aa0ab);
   font-weight: 700;
 }
-.agenda-day {
-  display: grid;
-  grid-template-columns: 52px minmax(0, 1fr);
-  gap: 8px;
-  border: 1px solid #ece2cd;
-  border-radius: 14px;
-  background: #fffdf6;
-  padding: 10px;
-  box-shadow: var(--shadow-2);
-}
-.agenda-date {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 1px;
-  padding-top: 2px;
-}
-.agenda-date strong {
-  font-size: 20px;
-  font-weight: 900;
-  line-height: 1;
-}
-.agenda-date strong.red {
-  color: #e2483d;
-}
-.agenda-date strong.saturday {
-  color: #2f6bd8;
-}
-.agenda-date span {
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--muted, #9aa0ab);
-}
-.agenda-date em {
-  font-style: normal;
-  font-size: 10px;
-  font-weight: 800;
-  color: #c2410c;
-  text-align: center;
-}
-.agenda-date.today strong {
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 999px;
-  background: var(--accent, #0e8c8e);
-  color: #fff;
-}
-.agenda-items {
-  display: grid;
-  gap: 7px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.agenda-item {
+/* 한 일정 = 한 줄: [날짜·요일·하트] [색막대] [내용] */
+.agenda-row {
   display: flex;
   align-items: stretch;
   gap: 9px;
-  border-radius: 10px;
-  background: #faf4e7;
-  padding: 7px 9px 7px 0;
-  overflow: hidden;
+  border-radius: 12px;
+  background: #fffdf6;
+  border: 1px solid #ece2cd;
+  padding: 8px 10px 8px 8px;
+}
+.agenda-row:not(.day-start) {
+  /* 같은 날의 두 번째 일정부터는 위 칸과 붙여 한 묶음처럼 */
+  margin-top: -3px;
+  border-top-color: transparent;
+}
+.agenda-when {
+  flex: 0 0 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.agenda-when strong {
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1;
+  min-height: 14px;
+}
+.agenda-when strong.red {
+  color: #e2483d;
+}
+.agenda-when strong.saturday {
+  color: #2f6bd8;
+}
+.agenda-wd-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.agenda-wd {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--muted, #9aa0ab);
+  min-height: 12px;
+}
+.agenda-when.today strong {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .agenda-bar {
   flex: 0 0 auto;
@@ -81,7 +113,7 @@
   border-radius: 6px;
   align-self: stretch;
 }
-.agenda-body {
+.agenda-content {
   flex: 1;
   min-width: 0;
   display: grid;
@@ -119,20 +151,21 @@
 }
 .agenda-heart {
   flex: 0 0 auto;
-  align-self: center;
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 24px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
-  color: #cbd0d8;
-  font-size: 20px;
+  color: #cbb9a0;
+  font-size: 17px;
+  line-height: 1;
+  padding: 0;
   cursor: pointer;
 }
 .agenda-heart.bookmarked {
   color: #e11d48;
 }
-.agenda-item .event-popular {
+.agenda-content .event-popular {
   justify-self: start;
   margin-top: 2px;
 }

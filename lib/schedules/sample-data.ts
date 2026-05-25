@@ -43,7 +43,7 @@ export const sampleStudioSchedule: StudioSchedule = {
   calendar: {
     slug: "vic",
     displayName: "빅토리 일정표",
-    title: "빅토리 월간 일정표",
+    title: "빅토리 일정표",
     timezone: PRODUCT_TIMEZONE,
     defaultYear: 2026,
     defaultMonth: 6,
@@ -268,7 +268,7 @@ export const sampleStudioSchedule: StudioSchedule = {
     calendar: {
       slug: "vic",
       displayName: "빅토리 일정표",
-      title: "빅토리 월간 일정표",
+      title: "빅토리 일정표",
       timezone: PRODUCT_TIMEZONE,
       defaultYear: 2026,
       defaultMonth: 6,
