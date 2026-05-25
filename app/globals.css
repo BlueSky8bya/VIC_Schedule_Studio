@@ -369,6 +369,12 @@ select {
   gap: 8px;
   margin-top: 2px;
 }
+.inapp-hint {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  opacity: 0.85;
+}
 
 .auth-success {
   border: 1px solid #a8d5b1;
