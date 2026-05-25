@@ -150,6 +150,8 @@ export function StudioShell({
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
   const pendingSavesRef = useRef<Map<string, Promise<string | null>>>(new Map());
+  // 실수로 지운 일정을 Ctrl+Z로 되살리기 위한 스택(삭제된 일정 내용 보관).
+  const deletedStackRef = useRef<StudioScheduleEvent[]>([]);
   // temp id면 저장 약속을 기다려 실제 id로, 실패면 null. 실제 id는 그대로.
   async function resolveEventId(id: string): Promise<string | null> {
     if (!id.startsWith("temp-")) {
@@ -444,6 +446,7 @@ export function StudioShell({
     }
 
     const snapshot = events;
+    const removed = events.find((e) => e.id === targetId) ?? null;
     // 낙관적 제거 + 이 일정을 가리키던 linkNext도 함께 정리.
     setEvents((prev) =>
       prev
@@ -455,11 +458,78 @@ export function StudioShell({
       setForm(createEmptyForm());
     }
     setActionError(null);
+    // Ctrl+Z 복구용으로 삭제 내용을 보관.
+    if (removed) {
+      deletedStackRef.current.push(removed);
+    }
     startTransition(async () => {
-      const result = await deleteEventAction(targetId);
+      // 아직 저장 안 된(temp) 일정이면 실제 id로 바꿔 삭제(잘못된 uuid 방지).
+      const realId = await resolveEventId(targetId);
+      if (!realId) {
+        return; // 서버에 아직 없음 → 로컬 제거로 충분
+      }
+      const result = await deleteEventAction(realId);
       if (!result.ok) {
         setActionError(result.error);
         setEvents(snapshot); // 실패 → 되돌림
+        deletedStackRef.current.pop(); // 복구 스택도 되돌림
+      }
+    });
+  }
+
+  // Ctrl+Z: 가장 최근에 지운 일정을 내용 그대로 되살린다(새 id로 다시 만든다).
+  function restoreLastDelete() {
+    if (!canEdit) {
+      return;
+    }
+    const ev = deletedStackRef.current.pop();
+    if (!ev) {
+      flashToast("되돌릴 삭제가 없어요");
+      return;
+    }
+    const dateKey = getEventDateKey(ev);
+    const tempId = `temp-${Math.random().toString(36).slice(2)}`;
+    setEvents((prev) => [...prev, { ...ev, id: tempId, linkNext: undefined }]);
+    setActionError(null);
+    flashToast("삭제 취소됨 (Ctrl+Z)");
+
+    let resolveSave: (id: string | null) => void = () => {};
+    pendingSavesRef.current.set(
+      tempId,
+      new Promise<string | null>((r) => {
+        resolveSave = r;
+      })
+    );
+    startTransition(async () => {
+      const result = await saveEventAction({
+        id: undefined,
+        dateKey,
+        endDateKey: ev.endDateKey ?? "",
+        startTime: "",
+        endTime: "",
+        isAllDay: true,
+        publicTitle: ev.publicTitle,
+        publicDescription: "",
+        category: ev.category,
+        status: ev.status,
+        visibilityScope: ev.visibilityScope,
+        tagIds: ev.tagIds,
+        primaryTagIds: ev.primaryTagIds.slice(0, 2),
+        isSupport: ev.isSupport ?? false,
+        supportUrl: ev.supportUrl ?? ""
+      });
+      if (!result.ok) {
+        setActionError(result.error);
+        setEvents((prev) => prev.filter((e) => e.id !== tempId));
+        resolveSave(null);
+        pendingSavesRef.current.delete(tempId);
+        return;
+      }
+      if (result.id) {
+        const realId = result.id;
+        setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)));
+        resolveSave(realId);
+        pendingSavesRef.current.delete(tempId);
       }
     });
   }
@@ -602,7 +672,11 @@ export function StudioShell({
       }
       if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
       const key = e.key.toLowerCase();
-      if (key === "c" && selectedEventId && !window.getSelection()?.toString()) {
+      if (key === "z") {
+        // 실수로 지운 일정 되살리기(편집 중 텍스트는 위 INPUT/TEXTAREA 가드로 보호됨).
+        e.preventDefault();
+        restoreLastDelete();
+      } else if (key === "c" && selectedEventId && !window.getSelection()?.toString()) {
         e.preventDefault();
         copySelectedEvent();
       } else if (key === "v" && clipboard) {

@@ -1,4 +1,5 @@
 import { isSupabaseConfigured } from "@/lib/auth/config";
+import { InAppBrowserNotice } from "@/components/auth/in-app-browser-notice";
 
 type LoginPageProps = {
   searchParams: Promise<{
@@ -30,6 +31,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         ) : null}
 
         {params.error ? <div className="auth-warning">{params.error}</div> : null}
+
+        <InAppBrowserNotice />
 
         <form action="/api/auth/login" method="post">
           <input name="next" type="hidden" value={next} />

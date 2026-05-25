@@ -343,6 +343,26 @@ select {
   background: #fff7ed;
   color: #9a3412;
 }
+.inapp-notice {
+  display: grid;
+  gap: 8px;
+  text-align: left;
+}
+.inapp-notice p {
+  margin: 0;
+  font-weight: 600;
+}
+.inapp-steps {
+  margin: 0;
+  padding-left: 18px;
+  font-weight: 600;
+}
+.inapp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
 
 .auth-success {
   border: 1px solid #a8d5b1;
