@@ -26,12 +26,12 @@
   margin: 0;
   font-size: 24px;
 }
-/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + 오른쪽 아래 끝선에 "토리님 편집실" */
+/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + "토리님 편집실"을 제목의 아래 텍스트 선(베이스라인)에 맞춤 */
 .studio-left {
   grid-column: 1;
   justify-self: start;
   display: flex;
-  align-items: baseline; /* 작은 "토리님 편집실"이 제목 아래 끝선(베이스라인)에 붙게 */
+  align-items: baseline;
   gap: 12px;
   min-width: 0;
 }
@@ -56,7 +56,8 @@
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  font-size: clamp(60px, 7.2vw, 140px);
+  /* 1.5배로 키움 */
+  font-size: clamp(90px, 10.8vw, 200px);
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -65,8 +66,8 @@
 }
 .studio-poster-title span {
   color: #d59a93;
-  /* 글자 높이와 이모지 높이가 비슷하게 — 이모지는 글리프가 커서 0.5em이면 텍스트와 맞는다. */
-  font-size: 0.5em;
+  /* 이모지 글리프(≈0.86×폰트)와 한글(≈0.72×폰트) 높이를 같게: 0.72/0.86 ≈ 0.83em */
+  font-size: 0.83em;
   font-weight: 900;
 }
 
