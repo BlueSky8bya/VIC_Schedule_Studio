@@ -938,11 +938,8 @@ export function StudioShell({
                         const sEnd = event.endDateKey ?? cell.isoDate;
                         return (
                           <div className={`agenda-event m-support${dimCls}`} key={event.id}>
-                            <span
-                              className="agenda-bar"
-                              data-color={colors.length < 2 ? colors[0]?.key : undefined}
-                              style={barStyle}
-                            />
+                            {/* 시청자 화면과 동일한 초록 세로 바(업 도움 고정색). */}
+                            <span className="agenda-bar" style={{ background: "#84b74f" }} />
                             <div className="agenda-content">
                               <p className="agenda-title">
                                 <span className="agenda-title-text">🌱 {event.publicTitle}</span>
@@ -955,26 +952,29 @@ export function StudioShell({
                               <p className="agenda-sub">
                                 {formatShortDate(cell.isoDate)} ~ {formatShortDate(sEnd)}
                               </p>
-                              {event.supportUrl ? (
-                                <a
-                                  className="agenda-link"
-                                  href={event.supportUrl}
-                                  rel="noopener noreferrer"
-                                  target="_blank"
-                                >
-                                  도우러 가기
-                                  <ExternalLink aria-hidden="true" size={13} />
-                                </a>
-                              ) : null}
-                              {canEdit ? (
-                                <button
-                                  className="m-support-edit"
-                                  onClick={() => openMobileEdit(event)}
-                                  type="button"
-                                >
-                                  수정
-                                </button>
-                              ) : null}
+                              {/* 도우러 가기 + 수정을 한 줄에 둬 카드 높이를 줄인다. */}
+                              <div className="m-support-actions">
+                                {event.supportUrl ? (
+                                  <a
+                                    className="agenda-link"
+                                    href={event.supportUrl}
+                                    rel="noopener noreferrer"
+                                    target="_blank"
+                                  >
+                                    도우러 가기
+                                    <ExternalLink aria-hidden="true" size={13} />
+                                  </a>
+                                ) : null}
+                                {canEdit ? (
+                                  <button
+                                    className="m-support-edit"
+                                    onClick={() => openMobileEdit(event)}
+                                    type="button"
+                                  >
+                                    수정
+                                  </button>
+                                ) : null}
+                              </div>
                             </div>
                           </div>
                         );
@@ -1087,6 +1087,88 @@ export function StudioShell({
     );
   }
 
+  // 업 도움(후원) 편집 — 켜기/끄기 + 기간 + 링크 + 링크 확인. 웹 폼과 모바일 편집 시트 공용.
+  function renderSupportEditor() {
+    return (
+      <>
+        <div className="support-toggle">
+          <span>🌱 업 도움 설정</span>
+          <button
+            aria-checked={form.isSupport}
+            className={`switch ${form.isSupport ? "on" : ""}`}
+            disabled={!canEdit}
+            onClick={() => setForm((current) => ({ ...current, isSupport: !current.isSupport }))}
+            role="switch"
+            type="button"
+          >
+            <span className="switch-knob" />
+          </button>
+        </div>
+
+        {form.isSupport ? (
+          <>
+            <div className="support-duration">
+              <span className="duration-title">업 도움 기간</span>
+              <div className="duration-chips">
+                {SUPPORT_DURATIONS.map((opt) => {
+                  const end = addDaysIso(selectedDate, opt.days);
+                  const active = (form.endDateKey || selectedDate) === end;
+                  return (
+                    <button
+                      className={active ? "active" : ""}
+                      disabled={!canEdit}
+                      key={opt.days}
+                      onClick={() => setForm((current) => ({ ...current, endDateKey: end }))}
+                      type="button"
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="duration-manual">
+                <span>종료일 직접 선택</span>
+                <input
+                  disabled={!canEdit}
+                  min={selectedDate}
+                  onChange={(event) =>
+                    setForm((current) => ({ ...current, endDateKey: event.target.value }))
+                  }
+                  type="date"
+                  value={form.endDateKey || selectedDate}
+                />
+              </div>
+            </div>
+            <label>
+              업 도움 링크
+              <input
+                disabled={!canEdit}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, supportUrl: event.target.value }))
+                }
+                placeholder="숲 게시글 URL"
+                type="url"
+                value={form.supportUrl}
+              />
+            </label>
+            {/* 이미 설정된 링크는 편집실에서 바로 눌러 확인할 수 있게 한다. */}
+            {form.supportUrl.trim() ? (
+              <a
+                className="button support-visit"
+                href={form.supportUrl}
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                <ExternalLink aria-hidden="true" size={15} />
+                도우러 가기 (링크 확인용)
+              </a>
+            ) : null}
+          </>
+        ) : null}
+      </>
+    );
+  }
+
   function renderMobileEditSheet() {
     return (
       <div
@@ -1142,6 +1224,8 @@ export function StudioShell({
                 {actor.role === "owner" ? <option value="owner_private">나만</option> : null}
               </select>
             </label>
+
+            {renderSupportEditor()}
 
             <section className="tag-picker" aria-label="태그 선택">
               <h3>
@@ -1599,84 +1683,7 @@ export function StudioShell({
               )}
             </label>
 
-            <div className="support-toggle">
-              <span>🌱 업 도움 설정</span>
-              <button
-                aria-checked={form.isSupport}
-                className={`switch ${form.isSupport ? "on" : ""}`}
-                disabled={!canEdit}
-                onClick={() =>
-                  setForm((current) => ({ ...current, isSupport: !current.isSupport }))
-                }
-                role="switch"
-                type="button"
-              >
-                <span className="switch-knob" />
-              </button>
-            </div>
-
-            {form.isSupport ? (
-              <>
-                <div className="support-duration">
-                  <span className="duration-title">업 도움 기간</span>
-                  <div className="duration-chips">
-                    {SUPPORT_DURATIONS.map((opt) => {
-                      const end = addDaysIso(selectedDate, opt.days);
-                      const active = (form.endDateKey || selectedDate) === end;
-                      return (
-                        <button
-                          className={active ? "active" : ""}
-                          disabled={!canEdit}
-                          key={opt.days}
-                          onClick={() =>
-                            setForm((current) => ({ ...current, endDateKey: end }))
-                          }
-                          type="button"
-                        >
-                          {opt.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="duration-manual">
-                    <span>종료일 직접 선택</span>
-                    <input
-                      disabled={!canEdit}
-                      min={selectedDate}
-                      onChange={(event) =>
-                        setForm((current) => ({ ...current, endDateKey: event.target.value }))
-                      }
-                      type="date"
-                      value={form.endDateKey || selectedDate}
-                    />
-                  </div>
-                </div>
-                <label>
-                  업 도움 링크
-                  <input
-                    disabled={!canEdit}
-                    onChange={(event) =>
-                      setForm((current) => ({ ...current, supportUrl: event.target.value }))
-                    }
-                    placeholder="숲 게시글 URL"
-                    type="url"
-                    value={form.supportUrl}
-                  />
-                </label>
-                {/* 이미 설정된 링크는 편집실에서 바로 눌러 확인할 수 있게 한다. */}
-                {form.supportUrl.trim() ? (
-                  <a
-                    className="button support-visit"
-                    href={form.supportUrl}
-                    rel="noopener noreferrer"
-                    target="_blank"
-                  >
-                    <ExternalLink aria-hidden="true" size={15} />
-                    도우러 가기 (링크 확인)
-                  </a>
-                ) : null}
-              </>
-            ) : null}
+            {renderSupportEditor()}
 
             <section className="tag-picker" aria-label="태그 선택">
               <h3>

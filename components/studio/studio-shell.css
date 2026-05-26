@@ -2161,10 +2161,18 @@ textarea:disabled {
 .m-event .agenda-title-text {
   color: #2b2f38;
 }
-/* 모바일 업 도움 카드: 기간 + 도우러가기 링크를 시청자 화면처럼 보이고, 작은 "수정" 버튼만 따로. */
+/* 모바일 업 도움 카드: 기간 + (도우러가기 + 수정)을 한 줄에 둬 높이를 최대한 줄인다. */
+.m-support-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.m-support-actions .agenda-link {
+  margin: 0;
+}
 .m-support-edit {
-  justify-self: start;
-  margin-top: 4px;
   border: 1px solid var(--line);
   border-radius: 7px;
   background: #fff;
@@ -2236,6 +2244,10 @@ textarea:disabled {
 .m-edit-backdrop {
   position: fixed;
   inset: 0;
+  /* 모바일 주소창이 접히고 펴질 때 가시 영역에 맞춰, 시트가 화면 바닥에 정확히 붙게 한다
+     (vh는 큰 뷰포트 기준이라 아래가 뚫리거나 버튼이 화면 밖으로 밀리던 문제). */
+  height: 100vh;
+  height: 100dvh;
   z-index: 40;
   display: flex;
   align-items: flex-end;
@@ -2244,6 +2256,7 @@ textarea:disabled {
 .m-edit-sheet {
   width: 100%;
   max-height: 86vh;
+  max-height: 86dvh;
   overflow-y: auto;
   border-radius: 18px 18px 0 0;
   background: #fff;
