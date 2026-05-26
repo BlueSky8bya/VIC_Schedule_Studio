@@ -47,6 +47,7 @@ export default async function HomePage() {
   return (
     <PublicPoster
       accountSwitch
+      accountEmail={actor.email}
       schedule={schedule}
       toggleHeartAction={toggleEventHeartAction}
     />
@@ -91,7 +92,11 @@ function AuthFirstPage({
         {/* 숲·카톡 등 앱 안 브라우저(웹뷰)에서는 Google이 OAuth를 막으므로, 감지되면
             기본 브라우저(Chrome/Safari)로 열도록 안내·전환한다(공지 링크 접속의 핵심).
             인앱이면 로그인 버튼은 어차피 안 되므로 숨기고 안내만 보여준다. */}
-        <InAppBrowserNotice initialAndroid={initialAndroid} initialInApp={initialInApp}>
+        <InAppBrowserNotice
+          autoSubmit={configured}
+          initialAndroid={initialAndroid}
+          initialInApp={initialInApp}
+        >
           <form action="/api/auth/login" method="post">
             <input name="next" type="hidden" value="/" />
             <button className="button google-login" disabled={!configured} type="submit">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 
 // 현재 주소를 안드로이드 크롬으로 여는 인텐트 URL.
@@ -17,12 +17,16 @@ type Props = {
   initialAndroid?: boolean;
   // 인앱이 아닐 때만 보여줄 내용(보통 Google 로그인 버튼). 인앱이면 숨긴다(어차피 로그인 불가).
   children?: React.ReactNode;
+  // true이면 인앱이 아님이 확정될 때 children 안의 폼을 자동 제출한다(흰 화면+버튼 한 번 더
+  // 누르지 않고 바로 구글 계정 선택 화면으로). 인앱/미설정 환경에선 동작하지 않는다.
+  autoSubmit?: boolean;
 };
 
 export function InAppBrowserNotice({
   initialInApp = false,
   initialAndroid = false,
-  children
+  children,
+  autoSubmit = false
 }: Props) {
   // 안드로이드 웹뷰는 크롬 자동전환을 먼저 시도하므로 "trying"(여는 중)으로 시작 — 카드는
   // 전환이 실패했을 때만 보여준다. iOS 등 자동전환 불가 환경은 바로 카드.
@@ -30,6 +34,32 @@ export function InAppBrowserNotice({
     !initialInApp ? "children" : initialAndroid ? "trying" : "card"
   );
   const [android, setAndroid] = useState(initialAndroid);
+  const formWrapRef = useRef<HTMLDivElement>(null);
+  const autoTried = useRef(false);
+
+  // 인앱이 아님이 확정되면(phase=children) 로그인 폼을 한 번 자동 제출한다.
+  // 단, 이 브라우저 세션에서 이미 한 번 시도했으면 자동 제출하지 않고 버튼만 보여준다 —
+  // 구글에서 로그인을 취소하거나 뒤로가기로 돌아왔을 때 다시 구글로 튕겨 무한 루프가 되는 걸 막는다.
+  useEffect(() => {
+    if (phase !== "children" || !autoSubmit || autoTried.current) {
+      return;
+    }
+    autoTried.current = true;
+    let alreadyTried = false;
+    try {
+      alreadyTried = Boolean(sessionStorage.getItem("vic-autologin"));
+      if (!alreadyTried) {
+        sessionStorage.setItem("vic-autologin", "1");
+      }
+    } catch {
+      // sessionStorage 불가(사생활 모드 등)면 자동 제출은 건너뛰고 버튼을 보여준다.
+      alreadyTried = true;
+    }
+    if (alreadyTried) {
+      return;
+    }
+    formWrapRef.current?.querySelector("form")?.requestSubmit();
+  }, [phase, autoSubmit]);
 
   useEffect(() => {
     const det = detectInAppBrowser(navigator.userAgent || "");
@@ -67,7 +97,12 @@ export function InAppBrowserNotice({
   }, []);
 
   if (phase === "children") {
-    return <>{children}</>;
+    // display:contents로 레이아웃엔 영향 없이, 자동 제출용으로 폼을 감싸는 ref만 둔다.
+    return (
+      <div ref={formWrapRef} style={{ display: "contents" }}>
+        {children}
+      </div>
+    );
   }
 
   if (phase === "trying") {

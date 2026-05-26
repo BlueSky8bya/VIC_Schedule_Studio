@@ -88,6 +88,8 @@ type PublicPosterProps = {
   toggleHeartAction?: (eventId: string) => Promise<HeartResult>;
   // 시청자 화면에서 계정 변경(로그아웃) 버튼을 보일지. 실제 시청자 페이지에서만 true.
   accountSwitch?: boolean;
+  // 현재 로그인한 구글 이메일 — "계정변경" 옆에 표시해 어떤 계정으로 들어와 있는지 보여준다.
+  accountEmail?: string | null;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -327,7 +329,8 @@ export function PublicPoster({
   deleteStickerAssetAction,
   setPosterThemeAction,
   toggleHeartAction,
-  accountSwitch = false
+  accountSwitch = false,
+  accountEmail = null
 }: PublicPosterProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1801,6 +1804,11 @@ export function PublicPoster({
             </h1>
             {accountSwitch ? (
               <form action="/api/auth/logout" className="agenda-account" method="post">
+                {accountEmail ? (
+                  <span className="account-email" title={accountEmail}>
+                    {accountEmail}
+                  </span>
+                ) : null}
                 <button onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")} type="submit">
                   계정변경
                 </button>
@@ -1838,7 +1846,12 @@ export function PublicPoster({
                 </Link>
               ) : null}
               {accountSwitch ? (
-                <form action="/api/auth/logout" method="post">
+                <form className="account-form" action="/api/auth/logout" method="post">
+                  {accountEmail ? (
+                    <span className="account-email" title={accountEmail}>
+                      {accountEmail}
+                    </span>
+                  ) : null}
                   <button
                     className="button"
                     onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}

@@ -352,6 +352,7 @@
 
 .studio-weekdays span {
   padding: 8px 5px;
+  font-size: clamp(13px, 0.85vw, 18px);
   font-weight: 800;
   letter-spacing: 0.04em;
   text-align: center;
@@ -484,7 +485,9 @@
 }
 
 .studio-day-head strong {
-  font-size: 13px;
+  /* 큰 모니터일수록 화면 폭에 비례해 커진다(작은 화면·모바일은 13px 그대로 = floor).
+     편집실만 적용 — 포스터/꾸미기 캔버스는 손대지 않는다. */
+  font-size: clamp(13px, 0.95vw, 20px);
 }
 
 .studio-day-head strong.red {
@@ -521,7 +524,7 @@
   border-radius: 10px;
   background: rgb(255 255 255 / 72%);
   cursor: pointer;
-  padding: 6px 9px;
+  padding: clamp(6px, 0.45vw, 10px) clamp(9px, 0.6vw, 14px);
   text-align: left;
   box-shadow: 0 1px 2px rgb(17 24 39 / 5%);
   transition:
@@ -551,7 +554,7 @@
   flex: 1;
   overflow: hidden;
   white-space: pre-line;
-  font-size: 13px;
+  font-size: clamp(13px, 0.9vw, 19px);
   font-weight: 900;
   line-height: 1.22;
 }
