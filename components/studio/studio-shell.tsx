@@ -8,6 +8,7 @@ import {
   EyeOff,
   LockKeyhole,
   Save,
+  Sparkles,
   Trash2,
   X
 } from "lucide-react";
@@ -1558,8 +1559,18 @@ export function StudioShell({
           </span>
           <button className="button" onClick={() => setViewerMode(false)} type="button">
             <ChevronLeft aria-hidden="true" size={16} />
-            {isNarrow ? "편집실로" : "편집실로 돌아가기"}
+            {isNarrow ? "편집실" : "편집실로 가기"}
           </button>
+          {canDecorateCalendar ? (
+            <Link
+              className="button"
+              href={`/studio/decorate/${view.year}/${view.month}`}
+              onClick={() => startNav("꾸미기 화면을 여는 중입니다…")}
+            >
+              <Sparkles aria-hidden="true" size={16} />
+              {isNarrow ? "꾸미기" : "꾸미기로 가기"}
+            </Link>
+          ) : null}
         </div>
         <PublicPoster
           initialMonth={view.month}

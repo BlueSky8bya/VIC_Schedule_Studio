@@ -17,6 +17,7 @@ import {
   Keyboard,
   Redo2,
   SendToBack,
+  Sparkles,
   Trash2,
   Type,
   Undo2,
@@ -1884,10 +1885,10 @@ export function PublicPoster({
                   <Link
                     className="button"
                     href="/studio"
-                    onClick={() => startNav("편집실로 돌아가는 중입니다…")}
+                    onClick={() => startNav("편집실로 가는 중입니다…")}
                   >
                     <ChevronLeft aria-hidden="true" size={16} />
-                    편집실로 돌아가기
+                    편집실로 가기
                   </Link>
                   {previewing ? (
                     <button
@@ -1895,8 +1896,8 @@ export function PublicPoster({
                       onClick={() => setPreviewing(false)}
                       type="button"
                     >
-                      <ChevronLeft aria-hidden="true" size={16} />
-                      꾸미기로 돌아가기
+                      <Sparkles aria-hidden="true" size={16} />
+                      꾸미기로 가기
                     </button>
                   ) : (
                     <button
