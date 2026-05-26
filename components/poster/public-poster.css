@@ -190,7 +190,17 @@
   line-height: 1.15;
   color: var(--accent-strong, #a9760a);
   letter-spacing: 0.01em;
-  white-space: nowrap;
+  text-align: center;
+}
+/* 편집실(모바일)은 h1 안에 보조줄 span("토리님 편집실 · N월")을 둔다 — 제목 아래 작게.
+   (뷰어 헤더는 월/이메일을 별도 그리드 칸으로 빼서 h1 안에 span이 없으므로 영향 없음.) */
+.agenda-header h1 span {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  font-weight: 700;
+  color: rgb(20 20 20 / 42%);
+  font-variant-numeric: tabular-nums;
 }
 /* 연·월 — 제목 아래(2행) 가운데, 작게·연한 검정 */
 .agenda-month {

@@ -422,6 +422,10 @@ export function StudioShell({
   const modalIsStackable = modal !== null && modal !== "passcode";
   const overlayDepth = (mobileEditId !== null ? 1 : 0) + (modalIsStackable ? 1 : 0);
   const overlayLocked = overlayDepth > 0;
+  // 히스토리 스택 깊이 = 오버레이(편집 시트·공지) + 시청자 미리보기(viewerMode).
+  // viewerMode도 한 칸 쌓아야, 휴대폰 뒤로가기를 누를 때 로그인 흐름으로 빠지지 않고
+  // 편집실로 돌아온다. (스크롤 잠금은 overlayLocked만 사용 — 미리보기 자체 스크롤은 살린다.)
+  const stackDepth = overlayDepth + (viewerMode ? 1 : 0);
   const depthRef = useRef(0);
   const ignorePopRef = useRef(0); // 우리가 정리용으로 부른 history.back의 popstate는 무시
   const backClosingRef = useRef(false); // 뒤로가기로 닫히는 중인지
@@ -460,24 +464,24 @@ export function StudioShell({
   // (2) 레이어 수(depth)에 맞춰 히스토리 항목을 쌓고/정리한다.
   useEffect(() => {
     const prev = depthRef.current;
-    if (overlayDepth > prev) {
-      for (let i = prev; i < overlayDepth; i += 1) {
+    if (stackDepth > prev) {
+      for (let i = prev; i < stackDepth; i += 1) {
         window.history.pushState({ vicOverlay: true }, "");
       }
-    } else if (overlayDepth < prev) {
+    } else if (stackDepth < prev) {
       if (backClosingRef.current) {
         // 뒤로가기로 닫힘 → 브라우저가 이미 항목을 뺐으니 동기화만.
         backClosingRef.current = false;
       } else {
-        // X·취소 등으로 닫힘 → 우리가 쌓은 항목을 그만큼 정리(그때 나는 popstate는 무시).
-        for (let i = overlayDepth; i < prev; i += 1) {
+        // X·취소·버튼 등으로 닫힘 → 우리가 쌓은 항목을 그만큼 정리(그때 나는 popstate는 무시).
+        for (let i = stackDepth; i < prev; i += 1) {
           ignorePopRef.current += 1;
           window.history.back();
         }
       }
     }
-    depthRef.current = overlayDepth;
-  }, [overlayDepth]);
+    depthRef.current = stackDepth;
+  }, [stackDepth]);
 
   // (3) 뒤로가기(popstate) → 맨 위 레이어 하나만 닫는다.
   useEffect(() => {
@@ -493,11 +497,14 @@ export function StudioShell({
         setMobileEditId(null);
         setSelectedEventId(null);
         setForm(createEmptyForm());
+      } else if (viewerMode) {
+        // 시청자 미리보기에서 뒤로가기 → 로그인 흐름으로 빠지지 않고 편집실로 복귀.
+        setViewerMode(false);
       }
     }
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [modalIsStackable, mobileEditId]);
+  }, [modalIsStackable, mobileEditId, viewerMode]);
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: StudioScheduleEvent) {
