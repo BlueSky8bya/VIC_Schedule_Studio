@@ -230,26 +230,20 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
                   </div>
                 </li>
                 <li>
-                  화면 <strong>아래 바에서 오른쪽에서 3번째</strong>,{" "}
-                  <strong>별표(☆)에 줄(三)이 그려진 아이콘</strong>을 눌러 이 페이지를 북마크에
-                  저장해주세요.
+                  화면 <strong>맨 위 왼쪽의 별표(☆)</strong>를 누르면 바로 <strong>북마크 편집
+                  화면</strong>이 떠요. <strong>이름</strong>을 짧게 바꾸고<strong>(예: 공지)</strong>,{" "}
+                  <strong>주소(URL) 칸</strong>을 전부 지운 뒤 <strong>①에서 복사한 코드를 붙여넣고</strong>{" "}
+                  저장!
                 </li>
                 <li>
-                  <strong>북마크 목록</strong>에서 방금 만든 북마크를 <strong>길게 눌러 → “편집”</strong>을
-                  여세요. (크롬: ⋮ → 북마크, 삼성 인터넷: ≡ → 북마크)
-                </li>
-                <li>
-                  <strong>이름</strong>을 짧게 바꾸고<strong>(예: 공지)</strong>,{" "}
-                  <strong>URL(주소) 칸</strong>을 전부 지운 뒤 <strong>①에서 복사한 코드를
-                  붙여넣고</strong> 저장!
-                </li>
-                <li>
-                  쓸 때는 <strong>주소창에 그 이름(예: “공지”)을 입력</strong>하면 뜨는{" "}
-                  <strong>북마크를 탭</strong>해서 실행합니다. (주소창에 코드를 붙여넣어도 됩니다)
+                  쓸 때는 <strong>숲 공지 페이지를 먼저 연 다음</strong>(아래 2·3번),{" "}
+                  <strong>북마크 목록</strong>에서 그 북마크를 <strong>탭</strong>하세요. (삼성 인터넷:
+                  아래 바의 북마크 아이콘 → 북마크 / 크롬: ⋮ → 북마크)
                 </li>
               </ol>
               <strong style={{ display: "block", marginTop: "12px" }}>
-                이제 이 “공지” 북마크가 자동입력 버튼이 됐습니다 &lt;😎
+                ⚠ <strong>주소창에 입력하면 검색이 돼버려요.</strong> 꼭 <strong>북마크 목록에서</strong>{" "}
+                탭해서 실행해 주세요!
               </strong>
             </details>
           ) : (
@@ -307,7 +301,7 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
               <span className="notice-step-num">3</span>
               <span className="notice-step-text">
                 {mobile
-                  ? "주소창에 북마크 이름 입력 → 북마크 탭 → 끝! ✨"
+                  ? "북마크 목록에서 그 북마크 탭 → 끝! ✨ (주소창 입력 X)"
                   : "“자동공지” 북마크 클릭 → 끝! ✨"}
               </span>
             </li>
