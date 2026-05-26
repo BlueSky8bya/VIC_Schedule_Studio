@@ -1089,7 +1089,19 @@ textarea:disabled {
 /* 왼쪽 사이드바 넘침 방지 */
 .studio-left-panel {
   min-width: 0;
-  /* 색상 안내·관리·꾸미기 바의 총 높이가 달력 높이와 같도록 위/아래로 분산 정렬. */
+  /* 박스 사이 빈 공간 대신, 색상 안내 박스를 늘려서 달력 끝선까지 채운다. */
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.studio-left-panel > section:first-child {
+  flex: 1; /* 색상 안내 박스가 남는 높이를 흡수 → 관리/꾸미기는 자연스레 아래에 */
+  display: flex;
+  flex-direction: column;
+}
+/* 색상 안내 목록이 박스 높이를 채우도록 스와치를 위/아래로 고르게 펼친다(빈 공간 제거). */
+.studio-left-panel > section:first-child .studio-tag-legend {
+  flex: 1;
   align-content: space-between;
 }
 .studio-left-panel section {
