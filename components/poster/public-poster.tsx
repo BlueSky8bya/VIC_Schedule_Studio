@@ -807,7 +807,8 @@ export function PublicPoster({
       month: view.month,
       xRatio: 0.5,
       yRatio: 0.5,
-      widthRatio: 0.16,
+      // 처음엔 작게 시작(예전 0.16은 너무 커서 창을 넘어 크기 핸들을 못 누르던 문제). 툴바 "크기"로 조절.
+      widthRatio: 0.1,
       rotationDeg: 0,
       flipX: false,
       flipY: false,
@@ -2129,6 +2130,23 @@ export function PublicPoster({
                             />
                           </label>
                         ) : null}
+                      </div>
+                      <div className="stf-row">
+                        <label className="stf-opacity" title="글자 크기">
+                          크기
+                          <input
+                            max={0.45}
+                            min={0.04}
+                            onChange={(event) =>
+                              patchSelected({ widthRatio: Number(event.target.value) }, false)
+                            }
+                            onPointerDown={() => pushHistory()}
+                            onPointerUp={() => commitSticker(selected)}
+                            step={0.005}
+                            type="range"
+                            value={selected.widthRatio}
+                          />
+                        </label>
                       </div>
                       <div className="stf-row">
                         <label className="stf-opacity" title="투명도">
