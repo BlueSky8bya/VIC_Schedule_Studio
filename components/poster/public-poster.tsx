@@ -1453,8 +1453,9 @@ export function PublicPoster({
         ...evs.map((event) => ({ event, support: false }))
       ];
       const mark = getDayMark(cell.isoDate);
-      // 일정이 있는 날, 또는 (필터가 없을 때) 공휴일/대체공휴일은 라벨만이라도 표시한다.
-      if (list.length > 0 || (!filtering && mark?.isHoliday)) {
+      // 필터가 없으면 1일~말일 모든 날을 보여준다(빈 날은 "예정된 공개 일정 없음").
+      // 필터 중이면 조건에 맞는 일정이 있는 날만 남긴다.
+      if (list.length > 0 || !filtering) {
         groups.push({
           cell,
           day: classifyDay(cell.isoDate, cell.weekday, today),
