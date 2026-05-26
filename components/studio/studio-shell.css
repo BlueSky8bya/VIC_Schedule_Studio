@@ -1911,6 +1911,10 @@ textarea:disabled {
   font-size: 12px;
   font-weight: 700;
 }
+/* 모바일: 설명 없이 이모티콘만 가운데로. */
+.notice-emoticon.center {
+  justify-content: center;
+}
 .notice-emoticon img {
   width: 56px;
   height: auto;

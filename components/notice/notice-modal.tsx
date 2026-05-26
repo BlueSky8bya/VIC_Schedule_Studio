@@ -192,7 +192,7 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
         <span className="notice-label">완성 미리보기</span>
         <div className="notice-preview-title">{title}</div>
         <pre className="notice-preview-body">{body}</pre>
-        <div className="notice-emoticon">
+        <div className={mobile ? "notice-emoticon center" : "notice-emoticon"}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img alt="맨 끝 이모티콘" src={EMOTICON_URL} />
           {mobile ? null : (
@@ -238,6 +238,10 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
                 </button>
               </li>
             </ol>
+            <p className="notice-method-desc">
+              💡 첫 붙여넣기 뒤엔 화면 아래 <strong>탭(▣) 버튼</strong>으로 이 창과 숲을 오가며
+              붙여넣으세요. (뒤로가기 ✕)
+            </p>
           </section>
         ) : (
           <>
@@ -292,15 +296,15 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
                   </li>
                   <li>
                     브라우저 <strong>주소창 오른쪽 끝의 별표(☆)</strong>를 눌러 북마크를 하나
-                    저장해주세요. (지금 이 페이지 그대로 해주셔도 됩니다!)
+                    저장해주세요.
                   </li>
                   <li>
-                    방금 만든 북마크에 <strong>마우스 우클릭 → “수정...”</strong> 누르기. (북마크바가 안 보이면 Ctrl+Shift+B로 켜주세요)
+                    방금 만든 북마크에 <strong>마우스 우클릭 → “수정..”</strong> 누르기. (북마크바가 안 보이면 Ctrl+Shift+B)
                   </li>
                   <li>
                     <strong>이름</strong>은 원하시는 걸로 바꾸시고<strong>(예: VIC 자동공지)</strong>,{" "}
                     <strong>URL 칸</strong>의 내용을 전부 지운 뒤 <strong>①에서 복사한 코드를
-                    붙여넣어주세요!</strong> → 그리고 저장
+                    붙여넣고 저장해주세요!</strong>
                   </li>
                 </ol>
                 <strong style={{ display: "block", marginTop: "12px" }}>

@@ -416,15 +416,19 @@ export function StudioShell({
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
 
-  // 모바일 편집 시트·모달(공지 등)이 열려 있는 동안:
-  //  ① 휴대폰 뒤로가기로 페이지가 통째로 뒤로 가(계정 선택 화면으로 튐) 버리지 않게, 히스토리
-  //     항목을 하나 쌓아 두고 popstate에서는 오버레이만 닫는다.
-  //  ② 뒤 배경(달력) 스크롤·당겨서 새로고침을 잠가, 시트 아래가 뚫리거나 새로고침되지 않게 한다.
-  // passcode 모달만 제외 — 잠금 해제 직후 onUnlocked가 setModal(null)+router.refresh를 하는데,
-  // 모달을 닫으며 history.back을 하면 그 refresh가 취소돼 비공개 일정이 안 들어오던 문제가 있었다.
-  const overlayOpen = mobileEditId !== null || (modal !== null && modal !== "passcode");
+  // 모바일 오버레이 스택: 편집 시트 → (그 위에) 공지 모달. 레이어마다 히스토리 항목을 하나씩 쌓아,
+  // 휴대폰 뒤로가기를 누르면 맨 위 레이어만 닫힌다(공지 → 편집 시트 → 스튜디오). passcode 모달은
+  // 제외 — 잠금 해제 직후 onUnlocked의 router.refresh를 history.back이 취소하던 문제 방지.
+  const modalIsStackable = modal !== null && modal !== "passcode";
+  const overlayDepth = (mobileEditId !== null ? 1 : 0) + (modalIsStackable ? 1 : 0);
+  const overlayLocked = overlayDepth > 0;
+  const depthRef = useRef(0);
+  const ignorePopRef = useRef(0); // 우리가 정리용으로 부른 history.back의 popstate는 무시
+  const backClosingRef = useRef(false); // 뒤로가기로 닫히는 중인지
+
+  // (1) 오버레이가 하나라도 열려 있으면 배경 스크롤·당겨서 새로고침을 잠근다.
   useEffect(() => {
-    if (!overlayOpen) return;
+    if (!overlayLocked) return;
     const scrollY = window.scrollY;
     const body = document.body;
     const root = document.documentElement;
@@ -441,20 +445,8 @@ export function StudioShell({
     body.style.left = "0";
     body.style.right = "0";
     body.style.width = "100%";
-    // 시트가 열린 채 아래로 확 밀어도 브라우저 당겨서 새로고침(pull-to-refresh)이 안 돌게 막는다.
     root.style.overscrollBehavior = "none";
-
-    window.history.pushState({ vicOverlay: true }, "");
-    const onPop = () => {
-      setMobileEditId(null);
-      setSelectedEventId(null);
-      setForm(createEmptyForm());
-      setModal(null);
-    };
-    window.addEventListener("popstate", onPop);
-
     return () => {
-      window.removeEventListener("popstate", onPop);
       body.style.position = saved.position;
       body.style.top = saved.top;
       body.style.left = saved.left;
@@ -462,12 +454,50 @@ export function StudioShell({
       body.style.width = saved.width;
       root.style.overscrollBehavior = saved.overscroll;
       window.scrollTo(0, scrollY);
-      // X·배경 클릭 등(뒤로가기가 아닌 경로)으로 닫았으면, 우리가 쌓은 히스토리 항목을 정리한다.
-      if (window.history.state && window.history.state.vicOverlay) {
-        window.history.back();
-      }
     };
-  }, [overlayOpen]);
+  }, [overlayLocked]);
+
+  // (2) 레이어 수(depth)에 맞춰 히스토리 항목을 쌓고/정리한다.
+  useEffect(() => {
+    const prev = depthRef.current;
+    if (overlayDepth > prev) {
+      for (let i = prev; i < overlayDepth; i += 1) {
+        window.history.pushState({ vicOverlay: true }, "");
+      }
+    } else if (overlayDepth < prev) {
+      if (backClosingRef.current) {
+        // 뒤로가기로 닫힘 → 브라우저가 이미 항목을 뺐으니 동기화만.
+        backClosingRef.current = false;
+      } else {
+        // X·취소 등으로 닫힘 → 우리가 쌓은 항목을 그만큼 정리(그때 나는 popstate는 무시).
+        for (let i = overlayDepth; i < prev; i += 1) {
+          ignorePopRef.current += 1;
+          window.history.back();
+        }
+      }
+    }
+    depthRef.current = overlayDepth;
+  }, [overlayDepth]);
+
+  // (3) 뒤로가기(popstate) → 맨 위 레이어 하나만 닫는다.
+  useEffect(() => {
+    function onPop() {
+      if (ignorePopRef.current > 0) {
+        ignorePopRef.current -= 1;
+        return;
+      }
+      backClosingRef.current = true;
+      if (modalIsStackable) {
+        setModal(null);
+      } else if (mobileEditId !== null) {
+        setMobileEditId(null);
+        setSelectedEventId(null);
+        setForm(createEmptyForm());
+      }
+    }
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [modalIsStackable, mobileEditId]);
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: StudioScheduleEvent) {
@@ -1470,14 +1500,12 @@ export function StudioShell({
               </div>
             </section>
 
-            {/* 선택한 날짜로 숲 공지 초안 만들기 (소유자/개발자). 시트를 닫고 공지 창을 연다. */}
+            {/* 선택한 날짜로 숲 공지 초안 만들기 (소유자/개발자). 편집 시트는 그대로 두고 그 위에
+                공지 창을 띄운다 → 공지에서 뒤로가기를 누르면 편집 시트로 돌아온다(스택). */}
             {canEdit ? (
               <button
                 className="button notice-open"
-                onClick={() => {
-                  setMobileEditId(null);
-                  setModal("notice");
-                }}
+                onClick={() => setModal("notice")}
                 type="button"
               >
                 📢 {selectedDate} 공지 쓰기
