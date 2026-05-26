@@ -766,6 +766,32 @@ textarea:disabled {
   }
 }
 
+/* 모바일: 태그 편집 행이 화면을 뚫지 않게 줄바꿈 — 이름 줄 + 스와치 줄로 나눈다. */
+@media (max-width: 640px) {
+  .tag-editor-row {
+    flex-wrap: wrap;
+    row-gap: 6px;
+  }
+  .tag-editor-row input {
+    flex: 1 1 auto;
+    width: auto;
+  }
+  .tag-editor-swatches {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+  .tag-editor-swatches button {
+    flex: 0 0 auto;
+    width: 30px;
+    max-width: none;
+    height: 30px;
+  }
+  .modal-card {
+    max-width: 96vw;
+    padding: 16px;
+  }
+}
+
 @media (max-width: 860px) {
   .studio-topbar,
   .studio-workspace {
@@ -868,13 +894,15 @@ textarea:disabled {
   flex: 0 0 auto;
   display: inline-grid;
   place-items: center;
-  width: 26px;
-  height: 32px;
+  width: 28px;
+  height: 36px;
   border: 0;
   border-radius: 7px;
   background: transparent;
   color: var(--muted, #9aa0ab);
   cursor: grab;
+  /* 모바일에서 손잡이를 끌 때 스크롤 대신 순서 변경(터치)이 되게 */
+  touch-action: none;
 }
 .tag-drag-handle:hover {
   background: var(--surface-2, #fdf6e8);
@@ -1899,43 +1927,81 @@ textarea:disabled {
 .studio-mobile {
   padding: 0 14px calc(80px + env(safe-area-inset-bottom, 0px));
 }
-/* 역할 바: 역할 배지 + 비공개 보기 + 시청자 화면 + 로그아웃 — 한 줄(넘치면 가로 스크롤) */
+/* 헤더+역할바는 스크롤을 따라온다(관리 창 바로 위까지). m-scroll-region 안에서만 sticky. */
+.m-scroll-region {
+  position: relative;
+}
+.m-topstick {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  margin: 0 -14px;
+  padding: 6px 14px 8px;
+  background: linear-gradient(180deg, #f4f6fb 88%, rgb(244 246 251 / 0%));
+}
+/* 스튜디오 헤더는 컴팩트하게(고정 영역을 너무 키우지 않게) */
+.studio-mobile .agenda-header {
+  position: static;
+  margin: 0 0 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.studio-mobile .agenda-header h1 {
+  font-size: 20px;
+}
+.studio-mobile .agenda-header h1 span {
+  font-size: 12px;
+}
+/* 역할 바: 유동 너비 — 한 줄에 나눠 갖고 스크롤 없이 보이게(넘치면 어쩔 수 없이 줄어듦) */
 .m-rolebar {
   display: flex;
   flex-wrap: nowrap;
-  align-items: center;
-  gap: 6px;
-  margin: 4px 0 10px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
+  align-items: stretch;
+  gap: 5px;
+  margin: 0;
 }
-.m-rolebar::-webkit-scrollbar {
-  display: none;
-}
-.m-rolebar > * {
+.m-rolebar .actor-badge {
   flex: 0 0 auto;
+  align-self: center;
+}
+.m-rolebar .button,
+.m-rolebar form {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.m-rolebar form {
+  display: flex;
+}
+.m-rolebar form .button {
+  width: 100%;
 }
 .m-rolebar .button {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 3px;
   min-height: 36px;
-  padding: 0 10px;
-  font-size: 12.5px;
+  padding: 0 6px;
+  font-size: 12px;
   white-space: nowrap;
-}
-.m-rolebar form {
-  flex: 0 0 auto;
+  overflow: hidden;
 }
 .studio-mobile .developer-warning,
 .studio-mobile .private-warning {
-  margin-bottom: 10px;
+  margin: 8px 0;
   font-size: 13px;
 }
-/* 스튜디오 아젠다: 색상 필터 레일 없이 목록만(좌우 반전 해제) */
+/* 스튜디오 아젠다: 오른쪽 색상 필터 레일 + 목록 */
 .agenda.agenda-studio {
-  flex-direction: row;
+  flex-direction: row-reverse;
+  margin-top: 8px;
+}
+/* 색상 필터 레일은 고정 헤더(약 96px) 아래에 붙어 함께 스크롤 */
+.agenda-legend-studio {
+  top: 96px;
+  max-height: calc(100vh - 168px);
+  max-height: calc(100dvh - 168px);
 }
 /* 일정 카드(탭하면 편집) */
 .m-event {

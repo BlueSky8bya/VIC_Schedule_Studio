@@ -86,6 +86,8 @@ type PublicPosterProps = {
   setPosterThemeAction?: (theme: string) => Promise<ThemeResult>;
   // A: 일정 관심(하트) 토글. 주어지면 서버 집계 연동, 없으면 기기별 localStorage로만 동작.
   toggleHeartAction?: (eventId: string) => Promise<HeartResult>;
+  // 시청자 화면에서 계정 변경(로그아웃) 버튼을 보일지. 실제 시청자 페이지에서만 true.
+  accountSwitch?: boolean;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -324,7 +326,8 @@ export function PublicPoster({
   uploadStickerAssetAction,
   deleteStickerAssetAction,
   setPosterThemeAction,
-  toggleHeartAction
+  toggleHeartAction,
+  accountSwitch = false
 }: PublicPosterProps) {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1734,6 +1737,11 @@ export function PublicPoster({
                 {view.year}년 {view.month}월
               </span>
             </h1>
+            {accountSwitch ? (
+              <form action="/api/auth/logout" className="agenda-account" method="post">
+                <button type="submit">계정 변경</button>
+              </form>
+            ) : null}
           </header>
         ) : null}
         {showAgenda ? null : (
@@ -1754,6 +1762,13 @@ export function PublicPoster({
                   <ChevronLeft aria-hidden="true" size={16} />
                   편집실로 돌아가기
                 </Link>
+              ) : null}
+              {accountSwitch ? (
+                <form action="/api/auth/logout" method="post">
+                  <button className="button" type="submit">
+                    계정 변경
+                  </button>
+                </form>
               ) : null}
             </div>
           </header>

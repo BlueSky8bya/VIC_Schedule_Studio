@@ -784,77 +784,106 @@ export function StudioShell({
 
   function renderMobile() {
     const monthCells = cells.filter((c) => c.inCurrentMonth);
+    const filtering = tagFilters.length > 0;
     return (
       <div className="studio-mobile">
-        <header className="agenda-header">
-          <h1>
-            ✨️ {schedule.calendar.title} ✨️
-            <span>
-              토리님 편집실 · {view.year}년 {view.month}월
-            </span>
-          </h1>
-        </header>
+        {/* 헤더 + 역할 바 — 스크롤해도 관리 창 바로 위까지 같이 따라온다(sticky). */}
+        <div className="m-scroll-region">
+          <div className="m-topstick">
+            <header className="agenda-header">
+              <h1>
+                ✨️ {schedule.calendar.title} ✨️
+                <span>
+                  토리님 편집실 · {view.year}년 {view.month}월
+                </span>
+              </h1>
+            </header>
 
-        <div className="m-rolebar">
-          <span className={`actor-badge ${actor.role}`}>
-            <strong>{ROLE_LABEL[actor.role]}</strong>
-          </span>
-          {canTogglePrivateLayer ? (
-            <button
-              className={canReadPrivate ? "button primary" : "button"}
-              onClick={togglePrivateLayer}
-              type="button"
-            >
-              {canReadPrivate ? <EyeOff size={15} /> : <Eye size={15} />}
-              {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
-            </button>
-          ) : null}
-          <button className="button" onClick={() => setViewerMode(true)} type="button">
-            <Eye size={15} /> 시청자 화면
-          </button>
-          {actor.isAuthenticated ? (
-            <form action="/api/auth/logout" method="post">
-              <button className="button" type="submit">
-                로그아웃
+            <div className="m-rolebar">
+              <span className={`actor-badge ${actor.role}`}>
+                <strong>{ROLE_LABEL[actor.role]}</strong>
+              </span>
+              {canTogglePrivateLayer ? (
+                <button
+                  className={canReadPrivate ? "button primary" : "button"}
+                  onClick={togglePrivateLayer}
+                  type="button"
+                >
+                  {canReadPrivate ? <EyeOff size={14} /> : <Eye size={14} />}
+                  {canReadPrivate ? "비공개 중" : "비공개 일정"}
+                </button>
+              ) : null}
+              <button className="button" onClick={() => setViewerMode(true)} type="button">
+                <Eye size={14} /> 시청자
               </button>
-            </form>
-          ) : (
-            <Link className="button" href="/login">
-              로그인
-            </Link>
-          )}
-        </div>
-
-        {actor.role === "developer" ? (
-          <div className="developer-warning">🛠 개발자 세션 — 관리 권한으로 보고 있어요.</div>
-        ) : null}
-        {/* 비공개 경고 배너는 화면을 공유하는 소유자에게만 — 작업자/매니저/개발자는 표시하지 않음. */}
-        {canReadPrivate && actor.role === "owner" ? (
-          <div className="private-warning">
-            <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중 — 방송 화면 공유에
-            주의하세요.
+              {actor.isAuthenticated ? (
+                <form action="/api/auth/logout" method="post">
+                  <button className="button" type="submit">
+                    로그아웃
+                  </button>
+                </form>
+              ) : (
+                <Link className="button" href="/login">
+                  로그인
+                </Link>
+              )}
+            </div>
           </div>
-        ) : null}
 
-        {/* 색상 안내 · 필터 — 가로 스크롤 칩(모든 역할) */}
-        <div className="m-filter">
-          <TagLegendEditor
-            canEdit={false}
-            filterIds={tagFilters}
-            onToggleFilter={toggleTagFilter}
-            palette={palette}
-            tags={tags}
-            updateTagsAction={updateTagsAction}
-          />
-        </div>
+          {actor.role === "developer" ? (
+            <div className="developer-warning">🛠 개발자 세션 — 관리 권한으로 보고 있어요.</div>
+          ) : null}
+          {/* 비공개 경고 배너는 화면을 공유하는 소유자에게만 — 작업자/매니저/개발자는 표시하지 않음. */}
+          {canReadPrivate && actor.role === "owner" ? (
+            <div className="private-warning">
+              <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중 — 방송 화면 공유에
+              주의하세요.
+            </div>
+          ) : null}
 
-        <section
-          className="agenda agenda-studio"
-          onTouchEnd={onAgendaTouchEnd}
-          onTouchStart={onAgendaTouchStart}
-        >
-          <div className="agenda-flow">
-            {monthCells.map((cell) => {
+          <section
+            className="agenda agenda-studio"
+            onTouchEnd={onAgendaTouchEnd}
+            onTouchStart={onAgendaTouchStart}
+          >
+            {/* 오른쪽 색상 필터 레일 — 스크롤을 따라온다(시청자 화면과 동일). */}
+            <aside className="agenda-legend agenda-legend-studio" aria-label="색상 필터">
+              <strong>색상 필터</strong>
+              {legendTags.map((tag) => {
+                const color = palette.find((p) => p.key === tag.colorKey);
+                if (!color) return null;
+                const on = tagFilters.includes(tag.id);
+                return (
+                  <button
+                    aria-pressed={on}
+                    className={`agenda-legend-tag ${on ? "on" : ""} ${
+                      filtering && !on ? "dim" : ""
+                    }`}
+                    key={tag.id}
+                    onClick={() => toggleTagFilter(tag.id)}
+                    type="button"
+                  >
+                    <i
+                      data-color={color.key}
+                      style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+                    />
+                    {tag.displayName}
+                  </button>
+                );
+              })}
+              {filtering ? (
+                <button
+                  className="agenda-legend-clear"
+                  onClick={() => setTagFilters([])}
+                  type="button"
+                >
+                  필터 해제
+                </button>
+              ) : null}
+            </aside>
+
+            <div className="agenda-flow">
+              {monthCells.map((cell) => {
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const mark = getDayMark(cell.isoDate);
               const dayEvents = mobileAgendaEvents.filter(
@@ -946,7 +975,8 @@ export function StudioShell({
               );
             })}
           </div>
-        </section>
+          </section>
+        </div>
 
         {canEdit ? (
           <section className="m-manage">

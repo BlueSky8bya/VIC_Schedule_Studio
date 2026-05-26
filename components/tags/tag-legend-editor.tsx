@@ -1,7 +1,14 @@
 "use client";
 
 import { GripVertical, Trash2 } from "lucide-react";
-import { type DragEvent as ReactDragEvent, useEffect, useRef, useState, useTransition } from "react";
+import {
+  type DragEvent as ReactDragEvent,
+  type TouchEvent as ReactTouchEvent,
+  useEffect,
+  useRef,
+  useState,
+  useTransition
+} from "react";
 import type { BroadcastTag, ColorKey, ColorPaletteEntry } from "@/lib/domain/schedule-types";
 import type { AddTagResult, TagUpdateResult } from "@/lib/schedules/tag-actions";
 
@@ -105,6 +112,22 @@ export function TagLegendEditor({
     if (!dragId.current) return;
     e.preventDefault();
     if (dragId.current !== overId) {
+      setOrderIds((cur) => moveBefore(cur, dragId.current as string, overId));
+    }
+  }
+  // 모바일 터치 순서 변경 — 네이티브 DnD는 터치에서 안 먹으므로 손잡이에 터치 핸들러를 단다.
+  // 손잡이엔 touch-action:none을 줘서 스크롤 대신 끌기가 되게 한다.
+  function onHandleTouchStart(id: string) {
+    dragId.current = id;
+    setDraggingId(id);
+  }
+  function onHandleTouchMove(e: ReactTouchEvent) {
+    if (!dragId.current) return;
+    const t = e.touches[0];
+    const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null;
+    const row = el?.closest("[data-tagid]") as HTMLElement | null;
+    const overId = row?.getAttribute("data-tagid");
+    if (overId && overId !== dragId.current) {
       setOrderIds((cur) => moveBefore(cur, dragId.current as string, overId));
     }
   }
@@ -252,6 +275,7 @@ export function TagLegendEditor({
         return (
           <div
             className={`tag-editor-row ${draggingId === tag.id ? "dragging" : ""}`}
+            data-tagid={tag.id}
             key={tag.id}
             onDragOver={(e) => onDragOverRow(e, tag.id)}
             onDrop={endDrag}
@@ -262,6 +286,9 @@ export function TagLegendEditor({
               draggable
               onDragEnd={endDrag}
               onDragStart={(e) => onDragStartRow(e, tag.id)}
+              onTouchEnd={endDrag}
+              onTouchMove={onHandleTouchMove}
+              onTouchStart={() => onHandleTouchStart(tag.id)}
               title="끌어서 순서 변경"
               type="button"
             >

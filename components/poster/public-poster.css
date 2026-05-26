@@ -157,6 +157,22 @@
   background: linear-gradient(180deg, #fbf2df 72%, #f7eddb);
   border-bottom: 1px solid #e3d6bb;
 }
+/* 시청자 화면 계정 변경(로그아웃) — 헤더 오른쪽 위 작은 버튼 */
+.agenda-account {
+  position: absolute;
+  top: 8px;
+  right: 14px;
+}
+.agenda-account button {
+  border: 1px solid #e3d6bb;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 70%);
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #8a7a4a;
+  cursor: pointer;
+}
 .agenda-header h1 {
   margin: 0;
   font-size: 28px;

@@ -33,7 +33,13 @@ export default async function HomePage() {
 
   const schedule = await getPublicSchedule("vic");
 
-  return <PublicPoster schedule={schedule} toggleHeartAction={toggleEventHeartAction} />;
+  return (
+    <PublicPoster
+      accountSwitch
+      schedule={schedule}
+      toggleHeartAction={toggleEventHeartAction}
+    />
+  );
 }
 
 function GoogleLogo() {
