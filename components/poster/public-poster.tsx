@@ -1484,7 +1484,19 @@ export function PublicPoster({
                 </button>
               );
             })}
-            {tagFilters.length > 0 ? (
+            {/* 웹처럼 '내 관심 일정 ♥'도 같은 자리에서 함께 거른다. */}
+            <button
+              aria-pressed={bookmarkedOnly}
+              className={`agenda-legend-tag heart ${bookmarkedOnly ? "on" : ""}`}
+              onClick={() => setBookmarkedOnly((v) => !v)}
+              type="button"
+            >
+              <i className="agenda-legend-heart" aria-hidden="true">
+                ♥
+              </i>
+              내 관심{bookmarks.length > 0 ? ` (${bookmarks.length})` : ""}
+            </button>
+            {filterActive ? (
               <button className="agenda-legend-clear" onClick={clearFilters} type="button">
                 필터 해제
               </button>
@@ -1631,8 +1643,8 @@ export function PublicPoster({
           ))}
         </div>
       ) : null}
-      <section className="public-calendar-shell">
-        <header className="public-calendar-header">
+      <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
+        <header className={`public-calendar-header ${showAgenda ? "agenda-sticky" : ""}`}>
           <div className="month-controls" aria-label="월 이동">
             <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
               <ChevronLeft aria-hidden="true" size={18} />

@@ -8,11 +8,17 @@
 }
 .agenda-legend {
   position: sticky;
-  top: 8px;
+  /* 고정 헤더(26.05 등) 바로 아래에 붙고, 아래로는 화면 끝까지 길게. */
+  top: 58px;
+  align-self: flex-start;
+  height: calc(100vh - 66px);
+  height: calc(100dvh - 66px);
+  overflow-y: auto;
   flex: 0 0 86px;
   display: grid;
+  align-content: start;
   gap: 5px;
-  border: 1px solid #ece2cd;
+  border: 1px solid #e3d6bb;
   border-radius: 12px;
   background: #fffdf6;
   padding: 9px 7px;
@@ -57,6 +63,28 @@
   border: 1px solid rgb(0 0 0 / 12%);
   border-radius: 4px;
 }
+.agenda-legend-tag.heart {
+  margin-top: 3px;
+  border-top: 1px solid var(--line-soft, #f4ecdb);
+  border-radius: 0 0 8px 8px;
+  padding-top: 6px;
+}
+.agenda-legend-tag.heart .agenda-legend-heart {
+  display: inline-grid;
+  place-items: center;
+  width: 12px;
+  height: 12px;
+  border: 0;
+  border-radius: 0;
+  font-size: 12px;
+  color: #d7b9a6;
+}
+.agenda-legend-tag.heart.on {
+  color: #be123c;
+}
+.agenda-legend-tag.heart.on .agenda-legend-heart {
+  color: #e11d48;
+}
 .agenda-legend-clear {
   margin-top: 2px;
   border: 1px solid var(--line, #ece2cd);
@@ -67,6 +95,19 @@
   font-weight: 800;
   color: #8a7a4a;
   cursor: pointer;
+}
+
+/* 모바일 아젠다: 월 이동 헤더(26.05)를 화면 맨 위에 고정해 스크롤해도 따라옴 */
+.public-calendar-header.agenda-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  min-height: 0;
+  margin: 0 -22px;
+  padding: 8px 22px 9px;
+  background: linear-gradient(180deg, #fbf2df 70%, #f7eddb);
+  border-bottom: 1px solid #e3d6bb;
+  box-shadow: 0 5px 14px rgb(74 53 0 / 9%);
 }
 .agenda-flow {
   flex: 1;
