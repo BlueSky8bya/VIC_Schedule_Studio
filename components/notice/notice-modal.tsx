@@ -6,8 +6,10 @@ import { useState } from "react";
 // 숲(SOOP) 공지 작성 페이지. 새 탭으로 열어 붙여넣는다.
 // TODO: 테스트 끝나면 토리님 방송국으로 교체 → https://www.sooplive.com/station/toryvac/post/write/117337785
 const SOOP_WRITE_URL = "https://www.sooplive.com/station/tim917799/post/write/121444601";
-// 본문 맨 끝에 항상 붙이는 이모티콘(숲 스티커).
-const EMOTICON_URL = "https://stimg.sooplive.com/NORMAL_BBS/1/26636711/15676a0ac2a5d4955.gif";
+// 본문 맨 끝에 붙이는 이모티콘(숲 스티커). 공지 종류마다 다르다.
+const EMOTICON_URL = "https://stimg.sooplive.com/NORMAL_BBS/1/26636711/15676a0ac2a5d4955.gif"; // 뱅온
+const UP_EMOTICON_URL =
+  "https://ogqmarket.img.sooplive.com/sticker/647d872091c8b/23_160.png?version=1"; // 업 도움
 
 // 자동 입력 북마클릿: SOOP 작성 페이지에서 클릭하면 클립보드(JSON: title/body)를 읽어
 // 제목 입력칸과 본문 에디터에 채워 넣는다. (다른 사이트라 우리 페이지가 직접 못 하므로 북마클릿 방식)
@@ -41,18 +43,25 @@ function formatNoticeDate(iso: string) {
 }
 
 export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalProps) {
+  // 공지 종류 — 뱅온 공지 / 업 도움 공지(탭 전환).
+  const [kind, setKind] = useState<"bangon" | "up">("bangon");
   const [ampm, setAmpm] = useState<"오전" | "오후">("오후");
   const [time, setTime] = useState(""); // 예: "4시", "5시반"
   const [brief, setBrief] = useState(""); // 방송 내용(간략)
   const [detail, setDetail] = useState(""); // 자세한 내용
+  // 업 도움 공지 입력
+  const [upTarget, setUpTarget] = useState(""); // 제목 뒷부분(예: 연초록님 황제 배생아 대회)
+  const [upLink, setUpLink] = useState(""); // UP 게시글 링크(본문에 3번 자동 반복)
+  const [upComment, setUpComment] = useState(""); // 자유 멘트(여러 줄)
   const [copied, setCopied] = useState<"title" | "body" | "payload" | "mark" | null>(null);
 
+  const isUp = kind === "up";
   const shownTime = time.trim() || "N시";
-  const title = `${formatNoticeDate(dateKey)} - ${shownTime} 뱅온!`;
   // 빈 줄은 공백(nbsp)으로 채워야 SOOP 에디터에 붙여넣을 때 빈 줄이 그대로 남는다(빈 문자열은 합쳐져 사라짐).
   const NB = " ";
   // 템플릿대로 본문을 조립한다. 빈 줄 간격(들여쓰기)은 스펙대로 2·1·2·1줄. 이모티콘은 사용자가 직접 추가.
-  const body = [
+  const bangonTitle = `${formatNoticeDate(dateKey)} - ${shownTime} 뱅온!`;
+  const bangonBody = [
     "안녕하세요 빅토리입니다~!!",
     NB,
     NB,
@@ -69,6 +78,16 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
     "좀따 만나요~!!",
     NB
   ].join("\n");
+
+  // ── 업 도움 공지 템플릿 ── 링크 3회 반복 + 자유 멘트, 가운데 정렬, 끝 이모티콘.
+  const upTitle = `UP 부탁드립니다!! - ${upTarget.trim() || "[대상/이벤트]"}`;
+  const upLinkVal = upLink.trim() || "(UP 게시글 링크)";
+  const upCommentLines = upComment.trim() ? upComment.split("\n") : ["(하고 싶은 말 — 자유)"];
+  const upBody = [upLinkVal, upLinkVal, upLinkVal, NB, NB, ...upCommentLines, NB].join("\n");
+
+  const title = isUp ? upTitle : bangonTitle;
+  const body = isUp ? upBody : bangonBody;
+  const emoticonUrl = isUp ? UP_EMOTICON_URL : EMOTICON_URL;
 
   async function copy(kind: "title" | "body" | "payload" | "mark", text: string) {
     try {
@@ -90,7 +109,7 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
           `<p style="text-align:center;">${line.trim() ? escapeHtml(line) : "&nbsp;"}</p>`
       )
       .join("") +
-    `<p style="text-align:center;"><img src="${EMOTICON_URL}" alt="" /></p>`;
+    `<p style="text-align:center;"><img src="${emoticonUrl}" alt="" /></p>`;
   // 북마클릿이 읽을 자동입력 페이로드(제목 + 본문 HTML).
   const autofillPayload = JSON.stringify({ title, html: bodyHtml });
 
@@ -123,8 +142,16 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
 
   return (
     <div className="notice-modal">
+      <div className="notice-tabs" role="group" aria-label="공지 종류">
+        <button className={!isUp ? "active" : ""} onClick={() => setKind("bangon")} type="button">
+          뱅온 공지
+        </button>
+        <button className={isUp ? "active" : ""} onClick={() => setKind("up")} type="button">
+          업 도움 공지
+        </button>
+      </div>
       <p className="notice-hint">
-        <strong>시간이랑 내용만</strong> 적으면 공지 완성!
+        <strong>{isUp ? "대상·링크·할 말만" : "시간이랑 내용만"}</strong> 적으면 공지 완성!
         {mobile ? (
           <>
             {" "}그 다음 아래 <strong>복사 → 붙여넣기</strong> 순서대로만 하면 숲에 올라갑니다.
@@ -137,54 +164,89 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
       </p>
 
       <div className="notice-fields">
-        <div className="notice-field">
-          <span className="notice-label">뱅온 시간</span>
-          <div className="notice-time-row">
-            <div className="ampm-segment" role="group" aria-label="오전/오후">
-              <button
-                className={ampm === "오전" ? "active" : ""}
-                onClick={() => setAmpm("오전")}
-                type="button"
-              >
-                오전
-              </button>
-              <button
-                className={ampm === "오후" ? "active" : ""}
-                onClick={() => setAmpm("오후")}
-                type="button"
-              >
-                오후
-              </button>
+        {isUp ? (
+          <>
+            <div className="notice-field">
+              <span className="notice-label">대상 / 이벤트 (제목)</span>
+              <input
+                onChange={(e) => setUpTarget(e.target.value)}
+                placeholder="예: 연초록님 황제 배생아 대회"
+                type="text"
+                value={upTarget}
+              />
             </div>
-            <input
-              aria-label="시간"
-              onChange={(e) => setTime(e.target.value)}
-              placeholder="예: 4시 / 5시반"
-              type="text"
-              value={time}
-            />
-          </div>
-        </div>
+            <div className="notice-field">
+              <span className="notice-label">UP 게시글 링크 (본문에 3번 자동)</span>
+              <input
+                inputMode="url"
+                onChange={(e) => setUpLink(e.target.value)}
+                placeholder="예: https://www.sooplive.com/station/.../post/..."
+                type="url"
+                value={upLink}
+              />
+            </div>
+            <div className="notice-field">
+              <span className="notice-label">하고 싶은 말 (자유)</span>
+              <textarea
+                onChange={(e) => setUpComment(e.target.value)}
+                placeholder="예: 신청할 자신감이 생겼는데 up 눌러주셔야겠죠 하하"
+                rows={3}
+                value={upComment}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="notice-field">
+              <span className="notice-label">뱅온 시간</span>
+              <div className="notice-time-row">
+                <div className="ampm-segment" role="group" aria-label="오전/오후">
+                  <button
+                    className={ampm === "오전" ? "active" : ""}
+                    onClick={() => setAmpm("오전")}
+                    type="button"
+                  >
+                    오전
+                  </button>
+                  <button
+                    className={ampm === "오후" ? "active" : ""}
+                    onClick={() => setAmpm("오후")}
+                    type="button"
+                  >
+                    오후
+                  </button>
+                </div>
+                <input
+                  aria-label="시간"
+                  onChange={(e) => setTime(e.target.value)}
+                  placeholder="예: 4시 / 5시반"
+                  type="text"
+                  value={time}
+                />
+              </div>
+            </div>
 
-        <div className="notice-field">
-          <span className="notice-label">방송 내용 (간략)</span>
-          <input
-            onChange={(e) => setBrief(e.target.value)}
-            placeholder="예: 명조 2장 8막 ~ 2장 9막 보기!"
-            type="text"
-            value={brief}
-          />
-        </div>
+            <div className="notice-field">
+              <span className="notice-label">방송 내용 (간략)</span>
+              <input
+                onChange={(e) => setBrief(e.target.value)}
+                placeholder="예: 명조 2장 8막 ~ 2장 9막 보기!"
+                type="text"
+                value={brief}
+              />
+            </div>
 
-        <div className="notice-field">
-          <span className="notice-label">자세한 내용</span>
-          <textarea
-            onChange={(e) => setDetail(e.target.value)}
-            placeholder="예: 오늘 빅밥은 파스타! 맛있네요 냠냠~ 준비해서 키도록 하겠습니당!!"
-            rows={3}
-            value={detail}
-          />
-        </div>
+            <div className="notice-field">
+              <span className="notice-label">자세한 내용</span>
+              <textarea
+                onChange={(e) => setDetail(e.target.value)}
+                placeholder="예: 오늘 빅밥은 파스타! 맛있네요 냠냠~ 준비해서 키도록 하겠습니당!!"
+                rows={3}
+                value={detail}
+              />
+            </div>
+          </>
+        )}
       </div>
 
       {/* 완성 미리보기(읽기 전용) — 실제로 올라갈 모습 */}
@@ -194,7 +256,7 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
         <pre className="notice-preview-body">{body}</pre>
         <div className={mobile ? "notice-emoticon center" : "notice-emoticon"}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt="맨 끝 이모티콘" src={EMOTICON_URL} />
+          <img alt="맨 끝 이모티콘" src={emoticonUrl} />
           {mobile ? null : (
             <div className="notice-emoticon-text">
               <span> ← 맨 끝 이모티콘 — 방법 1은 직접 추가, 방법 2는 자동</span>

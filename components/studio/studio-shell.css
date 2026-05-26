@@ -1808,6 +1808,31 @@ textarea:disabled {
   display: grid;
   gap: 14px;
 }
+/* 공지 종류 탭: [뱅온 공지 | 업 도움 공지] */
+.notice-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill, 999px);
+  background: #fff;
+  padding: 4px;
+}
+.notice-tabs button {
+  border: 0;
+  border-radius: var(--r-pill, 999px);
+  background: transparent;
+  padding: 9px 0;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background var(--dur-1, 120ms) var(--ease, ease);
+}
+.notice-tabs button.active {
+  background: var(--accent);
+  color: var(--on-accent);
+}
 .notice-hint {
   margin: 0;
   color: var(--muted);
