@@ -239,13 +239,13 @@
 .studio-left-panel h2,
 .event-editor-panel h2 {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .studio-left-panel p {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 14.5px;
   line-height: 1.5;
 }
 
@@ -263,7 +263,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
 }
 
@@ -291,7 +291,7 @@
   border-radius: 8px;
   background: transparent;
   padding: 3px 6px;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 800;
   color: #334155;
   text-align: left;
@@ -312,7 +312,7 @@
   border-radius: 8px;
   background: var(--surface-2, #f5f7fb);
   padding: 5px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 800;
   color: #64748b;
   cursor: pointer;
@@ -731,7 +731,7 @@
 .event-editor-panel label {
   display: grid;
   gap: 6px;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 900;
 }
 
@@ -739,7 +739,7 @@
 .event-editor-panel select,
 .event-editor-panel input,
 .event-editor-panel textarea {
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .event-editor-panel textarea {
@@ -1849,7 +1849,7 @@ textarea:disabled {
   background: transparent;
   padding: 9px 0;
   color: var(--muted);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
   cursor: pointer;
   transition: background var(--dur-1, 120ms) var(--ease, ease);
@@ -1861,7 +1861,7 @@ textarea:disabled {
 .notice-hint {
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 15px;
   line-height: 1.5;
 }
 .notice-fields {
@@ -1874,7 +1874,7 @@ textarea:disabled {
 }
 .notice-label {
   color: var(--muted);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
 }
 .notice-field input,
@@ -1885,7 +1885,7 @@ textarea:disabled {
   background: #fff;
   padding: 9px 11px;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   resize: vertical;
 }
 .notice-time-row {
