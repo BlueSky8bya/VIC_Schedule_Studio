@@ -721,26 +721,26 @@ export function StudioShell({
         </div>
       ) : null}
       <header className="studio-topbar">
-        <div className="studio-title-block">
-          <p className="eyebrow">토리님 편집실</p>
-          <h1 className="studio-poster-title">
-            <span aria-hidden="true">✨️</span>
-            {schedule.calendar.title}
-            <span aria-hidden="true">✨️</span>
-          </h1>
-        </div>
+        <p className="eyebrow studio-eyebrow">토리님 편집실</p>
 
-        <div className="studio-month-nav" aria-label="월 이동">
-          <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
-            <ChevronLeft aria-hidden="true" size={18} />
-          </button>
-          <strong>{getMonthLabel(view.year, view.month)}</strong>
-          <button onClick={() => moveMonth(1)} title="다음 달" type="button">
-            <ChevronRight aria-hidden="true" size={18} />
-          </button>
-        </div>
+        <h1 className="studio-poster-title">
+          <span aria-hidden="true">✨️</span>
+          {schedule.calendar.title}
+          <span aria-hidden="true">✨️</span>
+        </h1>
 
-        <div className="studio-role-tools">
+        <div className="studio-topbar-right">
+          <div className="studio-month-nav" aria-label="월 이동">
+            <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+              <ChevronLeft aria-hidden="true" size={18} />
+            </button>
+            <strong>{getMonthLabel(view.year, view.month)}</strong>
+            <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+              <ChevronRight aria-hidden="true" size={18} />
+            </button>
+          </div>
+
+          <div className="studio-role-tools">
           <div className={`actor-badge ${actor.role}`}>
             <strong>{ROLE_LABEL[actor.role]}</strong>
             <span>{actor.email ?? "비로그인"}</span>
@@ -770,6 +770,7 @@ export function StudioShell({
               로그인
             </Link>
           )}
+          </div>
         </div>
       </header>
 
