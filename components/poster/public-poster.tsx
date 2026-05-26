@@ -1510,6 +1510,22 @@ export function PublicPoster({
                 필터 해제
               </button>
             ) : null}
+            {/* 남는 공간에 인기 배지 단계 안내(웹과 동일, 모바일용으로 간결하게). */}
+            <div className="agenda-tier-help">
+              <strong>♥ 많이 받으면</strong>
+              <span>
+                <b className="flame">🔥</b> 관심
+              </span>
+              <span>
+                <b className="flame">🔥🔥</b> 높은 관심
+              </span>
+              <span>
+                <b className="flame">🔥🔥🔥</b> 폭발적
+              </span>
+              <span>
+                <b className="flame">👑</b> 이 달 1위
+              </span>
+            </div>
           </aside>
         ) : null}
 

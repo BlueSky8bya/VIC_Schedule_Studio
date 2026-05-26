@@ -104,6 +104,35 @@
   color: #8a7a4a;
   cursor: pointer;
 }
+/* 색상 필터 아래 남는 공간: 인기 배지 단계 안내(간결판) */
+.agenda-tier-help {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line-soft, #f4ecdb);
+  display: grid;
+  gap: 4px;
+}
+.agenda-tier-help strong {
+  font-size: 10.5px;
+  font-weight: 900;
+  color: #8a7a4a;
+  letter-spacing: 0.01em;
+}
+.agenda-tier-help span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #6b6450;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+.agenda-tier-help .flame {
+  flex: 0 0 auto;
+  font-size: 10.5px;
+  letter-spacing: -1.5px;
+}
 
 /* 모바일 아젠다: 월 이동 헤더(26.05)를 화면 맨 위에 고정해 스크롤해도 따라옴 */
 .public-calendar-header.agenda-sticky {
