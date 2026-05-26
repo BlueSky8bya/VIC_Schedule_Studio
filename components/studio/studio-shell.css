@@ -766,21 +766,22 @@ textarea:disabled {
   }
 }
 
-/* 모바일: 태그 편집 행이 화면을 뚫지 않게 줄바꿈 — 이름 줄 + 스와치 줄로 나눈다. */
+/* 모바일: 태그 편집 행이 화면을 뚫지 않게 줄바꿈 — 이름 줄 + 스와치 줄로 나눈다.
+   (선택자 specificity를 한 단계 높여, 파일 뒤쪽 base 규칙에 덮이지 않게.) */
 @media (max-width: 640px) {
-  .tag-editor-row {
+  .tag-editor .tag-editor-row {
     flex-wrap: wrap;
     row-gap: 6px;
   }
-  .tag-editor-row input {
+  .tag-editor .tag-editor-row input {
     flex: 1 1 auto;
     width: auto;
   }
-  .tag-editor-swatches {
+  .tag-editor .tag-editor-row .tag-editor-swatches {
     flex: 1 1 100%;
     flex-wrap: wrap;
   }
-  .tag-editor-swatches button {
+  .tag-editor .tag-editor-row .tag-editor-swatches button {
     flex: 0 0 auto;
     width: 30px;
     max-width: none;
@@ -922,8 +923,20 @@ textarea:disabled {
 }
 /* 드래그 중인 원래 자리는 들려 나간 듯 흐린 placeholder로(고스트=행 전체가 커서를 따라감). */
 .tag-editor-row.dragging {
-  opacity: 0.35;
-  transform: scale(0.99);
+  opacity: 0.3;
+}
+/* 손가락/커서를 따라 떠다니는 복제본 — 실제로 카드를 들어 옮기는 느낌. */
+.tag-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  margin: 0;
+  pointer-events: none;
+  border-bottom: 0;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 14px 30px rgb(17 24 39 / 28%);
+  transform: scale(1.03) rotate(-1deg);
+  opacity: 0.97;
 }
 .tag-editor-row input {
   flex: 0 0 96px;
@@ -1963,11 +1976,19 @@ textarea:disabled {
 }
 .m-rolebar .actor-badge {
   flex: 0 0 auto;
-  align-self: center;
+  align-self: stretch;
+  min-width: 0; /* 기본 178px 고정 폭 해제 — 내용("소유자")만큼만 */
+  min-height: 36px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+}
+.m-rolebar .actor-badge strong {
+  font-size: 12px;
 }
 .m-rolebar .button,
 .m-rolebar form {
-  flex: 1 1 auto;
+  flex: 1 1 0; /* 남는 폭을 버튼들이 고르게 나눠 가짐(소유자 오른쪽 빈 공간 제거) */
   min-width: 0;
 }
 .m-rolebar form {

@@ -1739,7 +1739,7 @@ export function PublicPoster({
             </h1>
             {accountSwitch ? (
               <form action="/api/auth/logout" className="agenda-account" method="post">
-                <button type="submit">계정 변경</button>
+                <button type="submit">계정변경</button>
               </form>
             ) : null}
           </header>
@@ -1766,7 +1766,7 @@ export function PublicPoster({
               {accountSwitch ? (
                 <form action="/api/auth/logout" method="post">
                   <button className="button" type="submit">
-                    계정 변경
+                    계정변경
                   </button>
                 </form>
               ) : null}

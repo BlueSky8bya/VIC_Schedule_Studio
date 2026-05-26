@@ -2,8 +2,7 @@
 
 import { GripVertical, Trash2 } from "lucide-react";
 import {
-  type DragEvent as ReactDragEvent,
-  type TouchEvent as ReactTouchEvent,
+  type PointerEvent as ReactPointerEvent,
   useEffect,
   useRef,
   useState,
@@ -83,9 +82,27 @@ export function TagLegendEditor({
     .map((id) => tags.find((t) => t.id === id))
     .filter((t): t is BroadcastTag => Boolean(t));
 
-  // 드래그 순서 변경(네이티브 DnD). 핸들을 끌면 dragId, 다른 행 위로 오면 그 앞으로 이동.
+  // 순서 변경 — 포인터(마우스+터치) 통합. 손잡이를 누르면 행을 그대로 복제한 "유령(ghost)"이
+  // 손가락/커서를 따라 들려 움직이고(웹·모바일 동일), 화면 가장자리에선 자동 스크롤된다.
   const dragId = useRef<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const ghostRef = useRef<HTMLElement | null>(null);
+  const offsetRef = useRef({ x: 0, y: 0 });
+  const scrollerRef = useRef<HTMLElement | Window | null>(null);
+  const scrollDirRef = useRef(0);
+  const rafRef = useRef<number | null>(null);
+  const moveHandlerRef = useRef<((e: PointerEvent) => void) | null>(null);
+  // 드래그 중 언마운트되면 떠다니던 ghost·리스너·애니메이션을 정리한다.
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      ghostRef.current?.remove();
+      if (moveHandlerRef.current) {
+        window.removeEventListener("pointermove", moveHandlerRef.current);
+      }
+    };
+  }, []);
+
   function moveBefore(list: string[], from: string, before: string) {
     if (from === before) return list;
     const next = list.filter((id) => id !== from);
@@ -93,43 +110,77 @@ export function TagLegendEditor({
     next.splice(idx, 0, from);
     return next;
   }
-  function onDragStartRow(e: ReactDragEvent, id: string) {
-    dragId.current = id;
-    setDraggingId(id);
-    e.dataTransfer.effectAllowed = "move";
-    // 손잡이만이 아니라 행 카드 전체가 "들려서" 따라오도록 드래그 이미지를 행으로 지정.
-    const row = (e.currentTarget as HTMLElement).closest(".tag-editor-row");
-    if (row) {
-      const r = row.getBoundingClientRect();
-      e.dataTransfer.setDragImage(row, e.clientX - r.left, e.clientY - r.top);
+  // 가장 가까운 스크롤 가능한 조상(모달 내부 스크롤 vs 페이지)을 찾는다.
+  function findScroller(el: HTMLElement | null): HTMLElement | Window {
+    let n = el?.parentElement ?? null;
+    while (n) {
+      const oy = getComputedStyle(n).overflowY;
+      if ((oy === "auto" || oy === "scroll") && n.scrollHeight > n.clientHeight + 4) {
+        return n;
+      }
+      n = n.parentElement;
     }
+    return window;
+  }
+  function autoScrollLoop() {
+    const dir = scrollDirRef.current;
+    const sc = scrollerRef.current;
+    if (dir !== 0 && sc) {
+      if (sc === window) window.scrollBy(0, 11 * dir);
+      else (sc as HTMLElement).scrollTop += 11 * dir;
+    }
+    rafRef.current = requestAnimationFrame(autoScrollLoop);
+  }
+  function onPointerMove(e: PointerEvent) {
+    const ghost = ghostRef.current;
+    if (!ghost) return;
+    ghost.style.left = `${e.clientX - offsetRef.current.x}px`;
+    ghost.style.top = `${e.clientY - offsetRef.current.y}px`;
+    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const overId = el?.closest("[data-tagid]")?.getAttribute("data-tagid");
+    if (overId && dragId.current && overId !== dragId.current) {
+      setOrderIds((cur) => moveBefore(cur, dragId.current as string, overId));
+    }
+    const margin = 90;
+    scrollDirRef.current =
+      e.clientY < margin ? -1 : e.clientY > window.innerHeight - margin ? 1 : 0;
   }
   function endDrag() {
+    if (moveHandlerRef.current) {
+      window.removeEventListener("pointermove", moveHandlerRef.current);
+      moveHandlerRef.current = null;
+    }
+    scrollDirRef.current = 0;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    ghostRef.current?.remove();
+    ghostRef.current = null;
     dragId.current = null;
     setDraggingId(null);
   }
-  function onDragOverRow(e: ReactDragEvent, overId: string) {
-    if (!dragId.current) return;
+  function onHandlePointerDown(e: ReactPointerEvent, id: string) {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    const row = (e.currentTarget as HTMLElement).closest(".tag-editor-row") as HTMLElement | null;
+    if (!row) return;
     e.preventDefault();
-    if (dragId.current !== overId) {
-      setOrderIds((cur) => moveBefore(cur, dragId.current as string, overId));
-    }
-  }
-  // 모바일 터치 순서 변경 — 네이티브 DnD는 터치에서 안 먹으므로 손잡이에 터치 핸들러를 단다.
-  // 손잡이엔 touch-action:none을 줘서 스크롤 대신 끌기가 되게 한다.
-  function onHandleTouchStart(id: string) {
+    const rect = row.getBoundingClientRect();
+    const ghost = row.cloneNode(true) as HTMLElement;
+    ghost.classList.add("tag-drag-ghost");
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.top = `${rect.top}px`;
+    document.body.appendChild(ghost);
+    ghostRef.current = ghost;
+    offsetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    scrollerRef.current = findScroller(row);
     dragId.current = id;
     setDraggingId(id);
-  }
-  function onHandleTouchMove(e: ReactTouchEvent) {
-    if (!dragId.current) return;
-    const t = e.touches[0];
-    const el = document.elementFromPoint(t.clientX, t.clientY) as HTMLElement | null;
-    const row = el?.closest("[data-tagid]") as HTMLElement | null;
-    const overId = row?.getAttribute("data-tagid");
-    if (overId && overId !== dragId.current) {
-      setOrderIds((cur) => moveBefore(cur, dragId.current as string, overId));
-    }
+    scrollDirRef.current = 0;
+    rafRef.current = requestAnimationFrame(autoScrollLoop);
+    moveHandlerRef.current = onPointerMove;
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", endDrag, { once: true });
+    window.addEventListener("pointercancel", endDrag, { once: true });
   }
 
   // 읽기 전용(좌측 패널): 색상 안내. onToggleFilter가 있으면 필터 버튼으로 동작한다.
@@ -277,18 +328,11 @@ export function TagLegendEditor({
             className={`tag-editor-row ${draggingId === tag.id ? "dragging" : ""}`}
             data-tagid={tag.id}
             key={tag.id}
-            onDragOver={(e) => onDragOverRow(e, tag.id)}
-            onDrop={endDrag}
           >
             <button
               aria-label="순서 변경"
               className="tag-drag-handle"
-              draggable
-              onDragEnd={endDrag}
-              onDragStart={(e) => onDragStartRow(e, tag.id)}
-              onTouchEnd={endDrag}
-              onTouchMove={onHandleTouchMove}
-              onTouchStart={() => onHandleTouchStart(tag.id)}
+              onPointerDown={(e) => onHandlePointerDown(e, tag.id)}
               title="끌어서 순서 변경"
               type="button"
             >
