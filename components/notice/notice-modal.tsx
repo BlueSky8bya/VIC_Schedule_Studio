@@ -130,13 +130,21 @@ export function NoticeModal({
   // 자동 입력용 본문 HTML — CKEditor에 넣을 가운데 정렬 <p>들 + 맨 끝 이모티콘 이미지.
   const escapeHtml = (s: string) =>
     s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // URL만 있는 줄은 진짜 링크(<a>)로 만든다. 단순 텍스트로 넣으면 SOOP 에디터에서 자동
+  // 링크가 안 걸려 클릭이 안 되기 때문(앵커로 넣으면 붙여넣어도 그대로 링크가 유지된다).
+  const lineToHtml = (line: string) => {
+    const t = line.trim();
+    if (!t) return "&nbsp;";
+    if (/^https?:\/\/\S+$/.test(t)) {
+      const safe = escapeHtml(t);
+      return `<a href="${safe}">${safe}</a>`;
+    }
+    return escapeHtml(t);
+  };
   const bodyHtml =
     body
       .split("\n")
-      .map(
-        (line) =>
-          `<p style="text-align:center;">${line.trim() ? escapeHtml(line) : "&nbsp;"}</p>`
-      )
+      .map((line) => `<p style="text-align:center;">${lineToHtml(line)}</p>`)
       .join("") +
     `<p style="text-align:center;"><img src="${emoticonUrl}" alt="" /></p>`;
   // 북마클릿이 읽을 자동입력 페이로드(제목 + 본문 HTML).
