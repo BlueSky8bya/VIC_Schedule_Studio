@@ -1,5 +1,7 @@
+import { headers } from "next/headers";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { InAppBrowserNotice } from "@/components/auth/in-app-browser-notice";
+import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 
 type LoginPageProps = {
   searchParams: Promise<{
@@ -12,6 +14,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams;
   const configured = isSupabaseConfigured();
   const next = sanitizeNextPath(params.next ?? "/");
+  const inApp = detectInAppBrowser((await headers()).get("user-agent") ?? "");
 
   return (
     <main className="auth-page">
@@ -32,14 +35,14 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
         {params.error ? <div className="auth-warning">{params.error}</div> : null}
 
-        <InAppBrowserNotice />
-
-        <form action="/api/auth/login" method="post">
-          <input name="next" type="hidden" value={next} />
-          <button className="button primary" disabled={!configured} type="submit">
-            Google로 로그인
-          </button>
-        </form>
+        <InAppBrowserNotice initialAndroid={inApp.android} initialInApp={inApp.inApp}>
+          <form action="/api/auth/login" method="post">
+            <input name="next" type="hidden" value={next} />
+            <button className="button primary" disabled={!configured} type="submit">
+              Google로 로그인
+            </button>
+          </form>
+        </InAppBrowserNotice>
       </section>
     </main>
   );

@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
-// 카카오톡·인스타·숲 등 "앱 안의 브라우저(웹뷰)"에서는 구글이 OAuth를 막는다
-// (403 disallowed_useragent). 이 경우 기본 브라우저(Chrome/Safari)로 열도록 한다.
-const IN_APP = /KAKAOTALK|Instagram|FBAN|FBAV|FB_IAB|Line\/|NAVER\(inapp|DaumApps|Snapchat|Discord|everytime|afreeca|SOOP|musical_ly|TikTok|; ?wv\)/i;
+import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 
 // 현재 주소를 안드로이드 크롬으로 다시 여는 인텐트 URL.
 function chromeIntentUrl() {
@@ -12,32 +9,60 @@ function chromeIntentUrl() {
   return `intent://${bare}#Intent;scheme=https;package=com.android.chrome;end`;
 }
 
-export function InAppBrowserNotice() {
-  const [state, setState] = useState<{ show: boolean; android: boolean }>({
-    show: false,
-    android: false
-  });
+type Phase = "children" | "checking" | "notice";
+
+type Props = {
+  // 서버에서 요청 UA로 미리 감지한 값(첫 페인트 깜빡임 방지).
+  initialInApp?: boolean;
+  initialAndroid?: boolean;
+  // 인앱이 아닐 때만 보여줄 내용(보통 Google 로그인 버튼). 인앱이면 숨긴다(어차피 로그인 불가).
+  children?: React.ReactNode;
+};
+
+export function InAppBrowserNotice({
+  initialInApp = false,
+  initialAndroid = false,
+  children
+}: Props) {
+  // 안드로이드 인앱은 크롬 자동 전환을 먼저 시도하므로 배너를 바로 띄우지 않고 "checking"으로 숨긴다.
+  const [phase, setPhase] = useState<Phase>(
+    !initialInApp ? "children" : initialAndroid ? "checking" : "notice"
+  );
+  const [android, setAndroid] = useState(initialAndroid);
 
   useEffect(() => {
-    const ua = navigator.userAgent || "";
-    // iOS 인앱(WKWebView)은 UA에 "Safari" 토큰이 없다. 정식 Safari·Chrome(CriOS)·
-    // Firefox(FxiOS)는 모두 "Safari"를 포함하므로, iOS면서 Safari가 없으면 웹뷰로 본다.
-    const isIOS = /iPhone|iPad|iPod/i.test(ua);
-    const iosInApp = isIOS && !/Safari/i.test(ua);
-    const inApp = IN_APP.test(ua) || iosInApp;
-    const android = /Android/i.test(ua);
-    setState({ show: inApp, android });
+    const det = detectInAppBrowser(navigator.userAgent || "");
+    setAndroid(det.android);
 
-    // 안드로이드 웹뷰면 크롬으로 한 번 자동 전환 시도(실패하면 배너로 수동 안내).
-    if (inApp && android && !sessionStorage.getItem("vic-chrome-try")) {
-      sessionStorage.setItem("vic-chrome-try", "1");
-      setTimeout(() => {
-        window.location.href = chromeIntentUrl();
-      }, 400);
+    if (!det.inApp) {
+      setPhase("children");
+      return;
     }
+
+    if (det.android) {
+      // 크롬으로 자동 전환을 먼저 시도하고, 전환이 안 됐을 때만(여전히 이 화면이면) 배너를 띄운다.
+      if (!sessionStorage.getItem("vic-chrome-try")) {
+        sessionStorage.setItem("vic-chrome-try", "1");
+        setPhase("checking");
+        window.location.href = chromeIntentUrl();
+        const timer = window.setTimeout(() => {
+          if (!document.hidden) setPhase("notice");
+        }, 1600);
+        return () => window.clearTimeout(timer);
+      }
+      // 이미 시도한 세션(크롬에서 돌아옴 등) → 바로 배너.
+      setPhase("notice");
+      return;
+    }
+
+    // iOS 등 → 바로 배너.
+    setPhase("notice");
   }, []);
 
-  if (!state.show) {
+  if (phase === "children") {
+    return <>{children}</>;
+  }
+  if (phase === "checking") {
     return null;
   }
 
@@ -54,40 +79,19 @@ export function InAppBrowserNotice() {
 
   return (
     <div className="auth-warning inapp-notice">
-      <strong>앱 안에서는 Google 로그인이 막혀요 🙏 기본 브라우저로 열어주세요</strong>
-      <p>
-        카카오톡·인스타·숲 같은 앱에서 바로 열면 Google 보안정책으로 로그인이 차단돼요.
-        <b> Chrome·Safari</b>로 열면 정상 작동합니다.
-      </p>
-      {state.android ? (
-        <>
-          <div className="inapp-actions">
-            <button className="button primary" onClick={openInChrome} type="button">
-              📲 Chrome으로 열기
-            </button>
-            <button className="button" onClick={copyLink} type="button">
-              링크 복사
-            </button>
-          </div>
-          <p className="inapp-hint">
-            자동으로 안 열리면 위 버튼을 누르거나, 오른쪽 위 ⋮ → “다른 브라우저로 열기”를 눌러요.
-          </p>
-        </>
-      ) : (
-        <>
-          <ul className="inapp-steps">
-            <li>
-              화면의 <b>공유/메뉴 버튼</b> → <b>“Safari로 열기”</b>를 눌러주세요.
-            </li>
-            <li>또는 아래 “링크 복사” 후 Safari 주소창에 붙여넣기.</li>
-          </ul>
-          <div className="inapp-actions">
-            <button className="button primary" onClick={copyLink} type="button">
-              링크 복사
-            </button>
-          </div>
-        </>
-      )}
+      <strong>기본 브라우저로 열어주세요</strong>
+      <p>Google 보안정책으로 로그인이 차단됩니다.</p>
+      <p>Chrome이나 Safari로 열어주세요.</p>
+      <div className="inapp-actions">
+        {android ? (
+          <button className="button primary" onClick={openInChrome} type="button">
+            📲 Chrome으로 열기
+          </button>
+        ) : null}
+        <button className={android ? "button" : "button primary"} onClick={copyLink} type="button">
+          링크 복사
+        </button>
+      </div>
     </div>
   );
 }

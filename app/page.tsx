@@ -1,6 +1,8 @@
+import { headers } from "next/headers";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { InAppBrowserNotice } from "@/components/auth/in-app-browser-notice";
+import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
@@ -12,7 +14,15 @@ export default async function HomePage() {
   const actor = await resolveCurrentActor("vic");
 
   if (!actor.isAuthenticated) {
-    return <AuthFirstPage configured={isSupabaseConfigured()} />;
+    const ua = (await headers()).get("user-agent") ?? "";
+    const inApp = detectInAppBrowser(ua);
+    return (
+      <AuthFirstPage
+        configured={isSupabaseConfigured()}
+        initialInApp={inApp.inApp}
+        initialAndroid={inApp.android}
+      />
+    );
   }
 
   // 시청자가 아닌 모든 인증 사용자(owner/developer/manager/worker)는 스튜디오로.
@@ -66,20 +76,30 @@ function GoogleLogo() {
   );
 }
 
-function AuthFirstPage({ configured }: { configured: boolean }) {
+function AuthFirstPage({
+  configured,
+  initialInApp,
+  initialAndroid
+}: {
+  configured: boolean;
+  initialInApp: boolean;
+  initialAndroid: boolean;
+}) {
   return (
     <main className="auth-page">
       <section className="auth-panel auth-minimal">
         {/* 숲·카톡 등 앱 안 브라우저(웹뷰)에서는 Google이 OAuth를 막으므로, 감지되면
-            기본 브라우저(Chrome/Safari)로 열도록 안내·전환한다. 공지 링크 접속의 핵심. */}
-        <InAppBrowserNotice />
-        <form action="/api/auth/login" method="post">
-          <input name="next" type="hidden" value="/" />
-          <button className="button google-login" disabled={!configured} type="submit">
-            <GoogleLogo />
-            Google로 로그인
-          </button>
-        </form>
+            기본 브라우저(Chrome/Safari)로 열도록 안내·전환한다(공지 링크 접속의 핵심).
+            인앱이면 로그인 버튼은 어차피 안 되므로 숨기고 안내만 보여준다. */}
+        <InAppBrowserNotice initialAndroid={initialAndroid} initialInApp={initialInApp}>
+          <form action="/api/auth/login" method="post">
+            <input name="next" type="hidden" value="/" />
+            <button className="button google-login" disabled={!configured} type="submit">
+              <GoogleLogo />
+              Google로 로그인
+            </button>
+          </form>
+        </InAppBrowserNotice>
       </section>
     </main>
   );

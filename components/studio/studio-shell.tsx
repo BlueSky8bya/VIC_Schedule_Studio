@@ -1020,8 +1020,7 @@ export function StudioShell({
           {/* 비공개 경고 배너는 화면을 공유하는 소유자에게만 — 작업자/매니저/개발자는 표시하지 않음. */}
           {canReadPrivate && actor.role === "owner" ? (
             <div className="private-warning">
-              <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중 — 방송 화면 공유에
-              주의하세요.
+              <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중
             </div>
           ) : null}
 
