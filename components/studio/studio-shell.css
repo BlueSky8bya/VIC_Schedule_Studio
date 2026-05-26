@@ -22,24 +22,36 @@
 }
 
 .studio-topbar h1 {
-  margin: 3px 0 0;
+  margin: 0;
   font-size: 24px;
 }
-/* 시청자 포스터처럼 ✨ + 큰 글씨로 꾸민 제목 */
+/* "토리님 편집실" · 큰 제목 · 월 이동을 한 줄(동일선상)에 둔다. */
+.studio-title-block {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.studio-title-block .eyebrow {
+  margin: 0;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+/* 시청자 포스터처럼 ✨ + 아주 큰 글씨로 꾸민 제목 */
 .studio-poster-title {
   display: inline-flex;
   align-items: baseline;
-  gap: 12px;
-  font-size: 40px;
+  gap: 14px;
+  font-size: 64px;
   font-weight: 900;
   letter-spacing: -0.01em;
-  line-height: 1.05;
+  line-height: 1.02;
   color: var(--ink, #1c2433);
   white-space: nowrap;
 }
 .studio-poster-title span {
   color: #d59a93;
-  font-size: 28px;
+  font-size: 42px;
   font-weight: 900;
 }
 
@@ -678,6 +690,18 @@ textarea:disabled {
   .studio-topbar,
   .studio-workspace {
     grid-template-columns: 1fr;
+  }
+
+  .studio-title-block {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+  .studio-poster-title {
+    font-size: 34px;
+    white-space: normal;
+  }
+  .studio-poster-title span {
+    font-size: 24px;
   }
 
   .studio-role-tools,

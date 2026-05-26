@@ -721,7 +721,7 @@ export function StudioShell({
         </div>
       ) : null}
       <header className="studio-topbar">
-        <div>
+        <div className="studio-title-block">
           <p className="eyebrow">토리님 편집실</p>
           <h1 className="studio-poster-title">
             <span aria-hidden="true">✨️</span>
