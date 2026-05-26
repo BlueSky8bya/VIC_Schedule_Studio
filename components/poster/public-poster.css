@@ -64,10 +64,18 @@
   border-radius: 4px;
 }
 .agenda-legend-tag.heart {
-  margin-top: 3px;
-  border-top: 1px solid var(--line-soft, #f4ecdb);
-  border-radius: 0 0 8px 8px;
+  /* 위 태그 목록과 확실히 띄워 눌렀을 때 윗부분이 잘려 보이지 않게 한다. */
+  position: relative;
+  margin-top: 10px;
   padding-top: 6px;
+  padding-bottom: 6px;
+  border-radius: 8px;
+}
+.agenda-legend-tag.heart::before {
+  content: "";
+  position: absolute;
+  inset: -6px 4px auto;
+  border-top: 1px solid var(--line-soft, #f4ecdb);
 }
 .agenda-legend-tag.heart .agenda-legend-heart {
   display: inline-grid;

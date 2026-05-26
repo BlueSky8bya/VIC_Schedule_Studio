@@ -1517,7 +1517,7 @@ export function PublicPoster({
           {groups.length === 0 ? (
             <p className="agenda-empty">
               {bookmarkedOnly && tagFilters.length === 0
-                ? "관심 표시한 일정이 아직 없어요. 🍃"
+                ? "아직 아무것도 관심 표현을 안 했어요. 🍃"
                 : filtering
                   ? "해당 태그 일정이 아직 없어요. 🍃"
                   : "이 달엔 공개된 일정이 아직 없어요. 🍃"}
