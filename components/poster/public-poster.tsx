@@ -27,6 +27,7 @@ import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
+  type TouchEvent as ReactTouchEvent,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -1254,6 +1255,24 @@ export function PublicPoster({
     setView((current) => getAdjacentMonth(current.year, current.month, offset));
   }
 
+  // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
+  function onAgendaTouchStart(e: ReactTouchEvent) {
+    const t = e.touches[0];
+    swipeRef.current = { x: t.clientX, y: t.clientY };
+  }
+  function onAgendaTouchEnd(e: ReactTouchEvent) {
+    const start = swipeRef.current;
+    swipeRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      moveMonth(dx < 0 ? 1 : -1);
+    }
+  }
+
   // 날짜 칸 렌더러.
   function renderDayCell(cell: MonthCell) {
     const covering = getEventsForDate(schedule.events, cell.isoDate);
@@ -1408,16 +1427,15 @@ export function PublicPoster({
     );
   }
 
-  // 모바일 아젠다(목록) 뷰 — 이번 달 1일~말일만, 일정이 있는 날을 세로로. 시작일 기준 한 번씩.
-  // 왼쪽: 스크롤을 따라오는 색상 안내(sticky). 각 줄: [날짜·요일·하트] [색 막대] [내용].
+  // 모바일 아젠다(목록) 뷰 — 이번 달 1일~말일만. 하루 = 한 카드, 그 안에 일정 여러 개.
+  // 하트는 각 일정 제목 바로 오른쪽에. 왼쪽: 스크롤 따라오는 색상 안내(sticky). 좌/우 스와이프로 월 이동.
   function renderAgenda() {
-    type Item = {
+    type DayGroup = {
       cell: MonthCell;
-      event: PublicScheduleEvent;
-      support: boolean;
-      firstOfDay: boolean;
+      day: ReturnType<typeof classifyDay>;
+      list: { event: PublicScheduleEvent; support: boolean }[];
     };
-    const items: Item[] = [];
+    const groups: DayGroup[] = [];
     for (const cell of cells.filter((c) => c.inCurrentMonth)) {
       const support = schedule.events.filter(
         (e) => e.isSupport && getEventDateKey(e) === cell.isoDate
@@ -1425,17 +1443,21 @@ export function PublicPoster({
       const evs = schedule.events.filter(
         (e) => !e.isSupport && getEventDateKey(e) === cell.isoDate
       );
-      const dayList = [
-        ...support.map((e) => ({ e, support: true })),
-        ...evs.map((e) => ({ e, support: false }))
+      const list = [
+        ...support.map((event) => ({ event, support: true })),
+        ...evs.map((event) => ({ event, support: false }))
       ];
-      dayList.forEach((d, i) => {
-        items.push({ cell, event: d.e, support: d.support, firstOfDay: i === 0 });
-      });
+      if (list.length > 0) {
+        groups.push({ cell, day: classifyDay(cell.isoDate, cell.weekday, today), list });
+      }
     }
 
     return (
-      <section className="agenda">
+      <section
+        className="agenda"
+        onTouchEnd={onAgendaTouchEnd}
+        onTouchStart={onAgendaTouchStart}
+      >
         {interactive && legendTags.length > 0 ? (
           <aside className="agenda-legend" aria-label="색상 안내">
             <strong>색상</strong>
@@ -1455,97 +1477,97 @@ export function PublicPoster({
         ) : null}
 
         <div className="agenda-flow">
-          {items.length === 0 ? (
+          {groups.length === 0 ? (
             <p className="agenda-empty">이 달엔 공개된 일정이 아직 없어요. 🍃</p>
           ) : (
-            items.map(({ cell, event, support, firstOfDay }) => {
-              const day = classifyDay(cell.isoDate, cell.weekday, today);
-              const colors = eventColors(event);
-              const { main, subs } = splitEventTitle(event.publicTitle);
-              const bookmarked = isBookmarked(event.id);
-              const tier =
-                interactive && !support ? heartTier(heartCounts[event.id] ?? 0, maxHeart) : null;
-              const barStyle = support
-                ? { background: "#84b74f" }
-                : colors.length >= 2
-                  ? {
-                      background: `linear-gradient(180deg, ${colors[0].bgColor}, ${colors[1].bgColor})`
-                    }
-                  : colors[0]
-                    ? { background: colors[0].bgColor }
-                    : undefined;
-              const end = event.endDateKey;
-              return (
-                <div
-                  className={`agenda-row ${firstOfDay ? "day-start" : ""}`}
-                  key={(support ? "s-" : "") + event.id}
-                >
-                  <div className={`agenda-when ${day.isToday ? "today" : ""}`}>
-                    <strong
-                      className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}
-                    >
-                      {firstOfDay ? cell.dayOfMonth : ""}
-                    </strong>
-                    <span className="agenda-wd-row">
-                      <span className="agenda-wd">
-                        {firstOfDay ? WEEKDAYS[cell.weekday] : ""}
-                      </span>
-                      {interactive && !support ? (
-                        <button
-                          aria-label={bookmarked ? "관심 해제" : "관심 일정"}
-                          aria-pressed={bookmarked}
-                          className={`event-heart agenda-heart ${bookmarked ? "bookmarked" : ""}`}
-                          onClick={(ev) => toggleBookmark(event.id, ev)}
-                          type="button"
-                        >
-                          {bookmarked ? "♥" : "♡"}
-                        </button>
-                      ) : null}
-                    </span>
-                  </div>
-                  <span className="agenda-bar" style={barStyle} />
-                  <div className="agenda-content">
-                    <p className="agenda-title">
-                      {support ? `🌱 ${event.publicTitle}` : main}
-                    </p>
-                    {support ? (
-                      <p className="agenda-sub">
-                        {formatShortDate(cell.isoDate)} ~{" "}
-                        {formatShortDate(event.endDateKey ?? cell.isoDate)}
-                      </p>
-                    ) : end && end !== cell.isoDate ? (
-                      <p className="agenda-sub">~ {formatShortDate(end)}까지</p>
-                    ) : null}
-                    {!support && subs.length > 0 ? (
-                      <ul className="agenda-subs">
-                        {subs.map((sub, i) => (
-                          <li key={i}>{sub}</li>
-                        ))}
-                      </ul>
-                    ) : null}
-                    {support && event.supportUrl ? (
-                      <a
-                        className="agenda-link"
-                        href={event.supportUrl}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                      >
-                        도우러 가기
-                        <ExternalLink aria-hidden="true" size={13} />
-                      </a>
-                    ) : null}
-                    {tier ? (
-                      <span className={`event-popular tier-${tier.key}`}>
-                        <span className="flame" aria-hidden="true">
-                          {tier.flames}
-                        </span>{" "}
-                        {tier.label}
-                      </span>
-                    ) : null}
-                  </div>
+            groups.map(({ cell, day, list }) => (
+              <div className={`agenda-day ${day.isToday ? "today" : ""}`} key={cell.isoDate}>
+                <div className="agenda-when">
+                  <strong className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}>
+                    {cell.dayOfMonth}
+                  </strong>
+                  <span className="agenda-wd">{WEEKDAYS[cell.weekday]}</span>
                 </div>
-              );
-            })
+                <div className="agenda-day-list">
+                  {list.map(({ event, support }) => {
+                    const colors = eventColors(event);
+                    const { main, subs } = splitEventTitle(event.publicTitle);
+                    const bookmarked = isBookmarked(event.id);
+                    const tier =
+                      interactive && !support
+                        ? heartTier(heartCounts[event.id] ?? 0, maxHeart)
+                        : null;
+                    const barStyle = support
+                      ? { background: "#84b74f" }
+                      : colors.length >= 2
+                        ? {
+                            background: `linear-gradient(180deg, ${colors[0].bgColor}, ${colors[1].bgColor})`
+                          }
+                        : colors[0]
+                          ? { background: colors[0].bgColor }
+                          : undefined;
+                    const end = event.endDateKey;
+                    return (
+                      <div className="agenda-event" key={(support ? "s-" : "") + event.id}>
+                        <span className="agenda-bar" style={barStyle} />
+                        <div className="agenda-content">
+                          <p className="agenda-title">
+                            <span className="agenda-title-text">
+                              {support ? `🌱 ${event.publicTitle}` : main}
+                            </span>
+                            {interactive && !support ? (
+                              <button
+                                aria-label={bookmarked ? "관심 해제" : "관심 일정"}
+                                aria-pressed={bookmarked}
+                                className={`event-heart agenda-heart ${bookmarked ? "bookmarked" : ""}`}
+                                onClick={(ev) => toggleBookmark(event.id, ev)}
+                                type="button"
+                              >
+                                {bookmarked ? "♥" : "♡"}
+                              </button>
+                            ) : null}
+                          </p>
+                          {support ? (
+                            <p className="agenda-sub">
+                              {formatShortDate(cell.isoDate)} ~{" "}
+                              {formatShortDate(event.endDateKey ?? cell.isoDate)}
+                            </p>
+                          ) : end && end !== cell.isoDate ? (
+                            <p className="agenda-sub">~ {formatShortDate(end)}까지</p>
+                          ) : null}
+                          {!support && subs.length > 0 ? (
+                            <ul className="agenda-subs">
+                              {subs.map((sub, i) => (
+                                <li key={i}>{sub}</li>
+                              ))}
+                            </ul>
+                          ) : null}
+                          {support && event.supportUrl ? (
+                            <a
+                              className="agenda-link"
+                              href={event.supportUrl}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                            >
+                              도우러 가기
+                              <ExternalLink aria-hidden="true" size={13} />
+                            </a>
+                          ) : null}
+                          {tier ? (
+                            <span className={`event-popular tier-${tier.key}`}>
+                              <span className="flame" aria-hidden="true">
+                                {tier.flames}
+                              </span>{" "}
+                              {tier.label}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
           )}
         </div>
       </section>

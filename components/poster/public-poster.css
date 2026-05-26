@@ -44,7 +44,7 @@
   flex: 1;
   min-width: 0;
   display: grid;
-  gap: 5px;
+  gap: 8px;
 }
 .agenda-empty {
   margin: 24px 0;
@@ -52,33 +52,33 @@
   color: var(--muted, #9aa0ab);
   font-weight: 700;
 }
-/* 한 일정 = 한 줄: [날짜·요일·하트] [색막대] [내용] */
-.agenda-row {
+/* 하루 = 한 카드: [날짜·요일] [그 날의 일정 목록] */
+.agenda-day {
   display: flex;
-  align-items: stretch;
-  gap: 9px;
-  border-radius: 12px;
+  align-items: flex-start;
+  gap: 10px;
+  border-radius: 14px;
   background: #fffdf6;
   border: 1px solid #ece2cd;
-  padding: 8px 10px 8px 8px;
+  padding: 10px 12px 10px 10px;
+  box-shadow: var(--shadow-2);
 }
-.agenda-row:not(.day-start) {
-  /* 같은 날의 두 번째 일정부터는 위 칸과 붙여 한 묶음처럼 */
-  margin-top: -3px;
-  border-top-color: transparent;
+.agenda-day.today {
+  border-color: var(--accent);
+  background: var(--accent-soft, #fff3d2);
 }
 .agenda-when {
-  flex: 0 0 38px;
+  flex: 0 0 34px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
+  padding-top: 2px;
 }
 .agenda-when strong {
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 900;
   line-height: 1;
-  min-height: 14px;
 }
 .agenda-when strong.red {
   color: #e2483d;
@@ -86,19 +86,12 @@
 .agenda-when strong.saturday {
   color: #2f6bd8;
 }
-.agenda-wd-row {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
 .agenda-wd {
   font-size: 11px;
   font-weight: 800;
   color: var(--muted, #9aa0ab);
-  min-height: 12px;
 }
-.agenda-when.today strong {
+.agenda-day.today .agenda-when strong {
   display: inline-grid;
   place-items: center;
   width: 28px;
@@ -107,11 +100,28 @@
   background: var(--accent);
   color: var(--on-accent);
 }
+/* 한 날 안의 개별 일정: [색막대] [내용+하트] */
+.agenda-day-list {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+.agenda-event {
+  display: flex;
+  align-items: stretch;
+  gap: 9px;
+}
+.agenda-event + .agenda-event {
+  border-top: 1px solid var(--line-soft, #f4ecdb);
+  padding-top: 7px;
+}
 .agenda-bar {
   flex: 0 0 auto;
   width: 6px;
   border-radius: 6px;
   align-self: stretch;
+  min-height: 22px;
 }
 .agenda-content {
   flex: 1;
@@ -122,10 +132,17 @@
 }
 .agenda-title {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   font-size: 14px;
   font-weight: 800;
   color: #2b2f38;
   line-height: 1.3;
+}
+.agenda-title-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .agenda-sub {
   margin: 0;
@@ -151,13 +168,14 @@
 }
 .agenda-heart {
   flex: 0 0 auto;
-  width: 26px;
-  height: 24px;
+  margin-left: auto;
+  width: 24px;
+  height: 22px;
   border: 0;
-  border-radius: 8px;
+  border-radius: 7px;
   background: transparent;
   color: #cbb9a0;
-  font-size: 17px;
+  font-size: 16px;
   line-height: 1;
   padding: 0;
   cursor: pointer;
