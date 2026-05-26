@@ -1437,11 +1437,12 @@ export function PublicPoster({
     };
     const groups: DayGroup[] = [];
     for (const cell of cells.filter((c) => c.inCurrentMonth)) {
+      // 색상 안내에서 태그를 고르면, 그 태그에 맞는 일정만 남긴다(필터에 안 맞으면 제외).
       const support = schedule.events.filter(
-        (e) => e.isSupport && getEventDateKey(e) === cell.isoDate
+        (e) => e.isSupport && getEventDateKey(e) === cell.isoDate && !isDimmedByFilter(e)
       );
       const evs = schedule.events.filter(
-        (e) => !e.isSupport && getEventDateKey(e) === cell.isoDate
+        (e) => !e.isSupport && getEventDateKey(e) === cell.isoDate && !isDimmedByFilter(e)
       );
       const list = [
         ...support.map((event) => ({ event, support: true })),
@@ -1459,20 +1460,35 @@ export function PublicPoster({
         onTouchStart={onAgendaTouchStart}
       >
         {interactive && legendTags.length > 0 ? (
-          <aside className="agenda-legend" aria-label="색상 안내">
+          <aside className="agenda-legend" aria-label="색상 안내(태그 필터)">
             <strong>색상</strong>
             {legendTags.map((tag) => {
               const color = schedule.palette.find((p) => p.key === tag.colorKey);
-              return color ? (
-                <span key={tag.id}>
+              if (!color) return null;
+              const on = tagFilters.includes(tag.id);
+              return (
+                <button
+                  aria-pressed={on}
+                  className={`agenda-legend-tag ${on ? "on" : ""} ${
+                    tagFilters.length > 0 && !on ? "dim" : ""
+                  }`}
+                  key={tag.id}
+                  onClick={() => toggleTagFilter(tag.id)}
+                  type="button"
+                >
                   <i
                     data-color={color.key}
                     style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
                   />
                   {tag.displayName}
-                </span>
-              ) : null;
+                </button>
+              );
             })}
+            {tagFilters.length > 0 ? (
+              <button className="agenda-legend-clear" onClick={clearFilters} type="button">
+                필터 해제
+              </button>
+            ) : null}
           </aside>
         ) : null}
 
