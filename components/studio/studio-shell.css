@@ -766,26 +766,67 @@ textarea:disabled {
   }
 }
 
-/* 모바일: 태그 편집 행이 화면을 뚫지 않게 줄바꿈 — 이름 줄 + 스와치 줄로 나눈다.
+/* 모바일: 태그 편집 행을 2줄로 — 1줄: 손잡이 + 이름(늘어남) + 삭제(오른쪽 끝),
+   2줄: 작은 정사각형 색 스와치(한 줄에 모두).
+   드래그 고스트(.tag-drag-ghost)는 body 직속이라 `.tag-editor` 스코프 밖이므로
+   같은 규칙을 함께 지정한다. 그렇지 않으면 base(한 줄 nowrap) 규칙으로 떨어져 너비를 뚫는다.
    (선택자 specificity를 한 단계 높여, 파일 뒤쪽 base 규칙에 덮이지 않게.) */
 @media (max-width: 640px) {
-  .tag-editor .tag-editor-row {
+  .tag-editor .tag-editor-row,
+  .tag-drag-ghost {
     flex-wrap: wrap;
-    row-gap: 6px;
+    align-items: center;
+    column-gap: 8px;
+    row-gap: 8px;
   }
-  .tag-editor .tag-editor-row input {
+  /* 1줄 정렬: 손잡이(1) → 이름(2, 늘어남) → 삭제(3, 오른쪽 끝). 스와치(4)는 다음 줄. */
+  .tag-editor .tag-editor-row .tag-drag-handle,
+  .tag-drag-ghost .tag-drag-handle {
+    order: 1;
+    height: 34px;
+  }
+  .tag-editor .tag-editor-row input,
+  .tag-drag-ghost input {
+    order: 2;
     flex: 1 1 auto;
     width: auto;
   }
+  .tag-editor .tag-editor-row .tag-editor-remove,
+  .tag-drag-ghost .tag-editor-remove {
+    order: 3;
+  }
+  /* 2줄: 색 스와치를 다음 줄 전체 폭으로. 일반 행은 작은 정사각형 한 줄에 모두 담는다. */
   .tag-editor .tag-editor-row .tag-editor-swatches {
+    order: 4;
     flex: 1 1 100%;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    gap: 3px;
   }
   .tag-editor .tag-editor-row .tag-editor-swatches button {
-    flex: 0 0 auto;
-    width: 30px;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 18px;
+    height: 16px;
+    border-width: 1px;
+    border-radius: 3px;
+  }
+  /* 고스트는 들려 있는 카드라 가로로 길어지지 않게 작은 정사각형 2행(9칸 격자)으로 모은다. */
+  .tag-drag-ghost .tag-editor-swatches {
+    order: 4;
+    flex: 1 1 100%;
+    display: grid;
+    grid-template-columns: repeat(9, 16px);
+    grid-auto-rows: 16px;
+    justify-content: start;
+    gap: 3px;
+  }
+  .tag-drag-ghost .tag-editor-swatches button {
+    width: 16px;
+    min-width: 0;
     max-width: none;
-    height: 30px;
+    height: 16px;
+    border-width: 1px;
+    border-radius: 3px;
   }
   .modal-card {
     max-width: 96vw;
