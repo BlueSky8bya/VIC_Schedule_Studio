@@ -882,16 +882,23 @@ export function PublicPoster({
     setStickerError(null);
     setUploading(true);
     let lastError: string | null = null;
-    // 순차 업로드 (서버·스토리지 부하를 줄이고 실패 메시지를 모은다)
-    for (const file of images) {
-      const formData = new FormData();
-      formData.append("file", file);
-      const result = await uploadStickerAssetAction(formData);
-      if (!result.ok) {
-        lastError = result.error;
+    // 순차 업로드 (서버·스토리지 부하를 줄이고 실패 메시지를 모은다).
+    // try/finally로 감싸 어떤 이유로 액션이 throw해도 "올리는 중…"이 안 멈추게 한다(에러 표시).
+    try {
+      for (const file of images) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const result = await uploadStickerAssetAction(formData);
+        if (!result.ok) {
+          lastError = result.error;
+        }
       }
+    } catch {
+      lastError =
+        "업로드에 실패했어요. 파일이 너무 크거나(2MB 이하) 네트워크 문제일 수 있어요.";
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
     if (lastError) {
       setStickerError(lastError);
     }
