@@ -3,9 +3,9 @@
 import { Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
 
-// 숲(SOOP) 공지 작성 페이지. 새 탭으로 열어 붙여넣는다.
-// TODO: 테스트 끝나면 토리님 방송국으로 교체 → https://www.sooplive.com/station/toryvac/post/write/117337785
-const SOOP_WRITE_URL = "https://www.sooplive.com/station/tim917799/post/write/121444601";
+// 숲(SOOP) 공지 작성 페이지. 새 탭으로 열어 붙여넣는다. 공지 종류마다 글 작성 위치가 다르다.
+const SOOP_WRITE_URL_BANGON = "https://www.sooplive.com/station/toryvac/post/write/117337785"; // 뱅온
+const SOOP_WRITE_URL_UP = "https://www.sooplive.com/station/toryvac/post/write/117377779"; // 업 도움
 // 본문 맨 끝에 붙이는 이모티콘(숲 스티커). 공지 종류마다 다르다.
 const EMOTICON_URL = "https://stimg.sooplive.com/NORMAL_BBS/1/26636711/15676a0ac2a5d4955.gif"; // 뱅온
 const UP_EMOTICON_URL =
@@ -115,6 +115,7 @@ export function NoticeModal({
   const title = isUp ? upTitle : bangonTitle;
   const body = isUp ? upBody : bangonBody;
   const emoticonUrl = isUp ? UP_EMOTICON_URL : EMOTICON_URL;
+  const soopWriteUrl = isUp ? SOOP_WRITE_URL_UP : SOOP_WRITE_URL_BANGON;
   // 북마크 추천 이름(공지 종류별).
   const bookmarkName = isUp ? "VIC 업공지" : "VIC 뱅온공지";
 
@@ -319,7 +320,7 @@ export function NoticeModal({
               </li>
               <li>
                 <span className="notice-step-num">2</span>
-                <a className="button" href={SOOP_WRITE_URL} rel="noopener noreferrer" target="_blank">
+                <a className="button" href={soopWriteUrl} rel="noopener noreferrer" target="_blank">
                   <ExternalLink aria-hidden="true" size={14} />
                   숲 공지 페이지 열기
                 </a>
@@ -403,7 +404,7 @@ export function NoticeModal({
               </li>
               <li>
                 <span className="notice-step-num">2</span>
-                <a className="button" href={SOOP_WRITE_URL} rel="noopener noreferrer" target="_blank">
+                <a className="button" href={soopWriteUrl} rel="noopener noreferrer" target="_blank">
                   <ExternalLink aria-hidden="true" size={14} />
                   숲 공지 페이지 열기
                 </a>
