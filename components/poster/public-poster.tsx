@@ -2135,16 +2135,16 @@ export function PublicPoster({
                         <label className="stf-opacity" title="글자 크기">
                           크기
                           <input
-                            max={0.45}
+                            max={0.15}
                             min={0.04}
                             onChange={(event) =>
                               patchSelected({ widthRatio: Number(event.target.value) }, false)
                             }
                             onPointerDown={() => pushHistory()}
                             onPointerUp={() => commitSticker(selected)}
-                            step={0.005}
+                            step={0.0025}
                             type="range"
-                            value={selected.widthRatio}
+                            value={Math.min(selected.widthRatio, 0.15)}
                           />
                         </label>
                       </div>
