@@ -723,7 +723,11 @@ export function StudioShell({
       <header className="studio-topbar">
         <div>
           <p className="eyebrow">토리님 편집실</p>
-          <h1>{schedule.calendar.title}</h1>
+          <h1 className="studio-poster-title">
+            <span aria-hidden="true">✨️</span>
+            {schedule.calendar.title}
+            <span aria-hidden="true">✨️</span>
+          </h1>
         </div>
 
         <div className="studio-month-nav" aria-label="월 이동">

@@ -22,7 +22,7 @@ begin
 
   -- 1) 캘린더 (slug = vic)
   insert into public.calendars (owner_id, slug, display_name, title, timezone, is_public)
-  values (v_owner, 'vic', '빅토리 일정표', '빅토리 월간 일정표', 'Asia/Seoul', true)
+  values (v_owner, 'vic', '빅토리 일정표', '빅토리 일정표', 'Asia/Seoul', true)
   on conflict (slug) do update set owner_id = excluded.owner_id
   returning id into v_cal;
 

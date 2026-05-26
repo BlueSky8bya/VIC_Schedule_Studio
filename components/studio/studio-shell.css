@@ -25,6 +25,22 @@
   margin: 3px 0 0;
   font-size: 24px;
 }
+/* 시청자 포스터처럼 ✨ + 큰 글씨로 꾸민 제목 */
+.studio-poster-title {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+  color: var(--ink, #1c2433);
+}
+.studio-poster-title span {
+  color: #d59a93;
+  font-size: 21px;
+  font-weight: 900;
+}
 
 .studio-month-nav,
 .studio-role-tools {

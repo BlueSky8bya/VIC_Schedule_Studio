@@ -1693,7 +1693,7 @@ export function PublicPoster({
         {showAgenda ? (
           <header className="agenda-header">
             <h1>
-              ✦ 빅토리 일정표 ✦{" "}
+              ✨️ 빅토리 일정표 ✨️{" "}
               <span>
                 {view.year}년 {view.month}월
               </span>
@@ -2228,9 +2228,9 @@ export function PublicPoster({
         {showAgenda ? null : (
         <section className="poster-surface" data-export-surface data-poster-theme={posterTheme}>
           <div className="poster-heading">
-            <span aria-hidden="true">✦</span>
+              <span aria-hidden="true">✨️</span>
             <h1>{schedule.calendar.title}</h1>
-            <span aria-hidden="true">✦</span>
+              <span aria-hidden="true">✨️</span>
             <em>
               {view.year}년 {view.month}월
             </em>
