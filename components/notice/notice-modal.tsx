@@ -22,6 +22,11 @@ const BOOKMARKLET =
   "if(!t&&!done){alert('입력칸을 못 찾았어요. 작성 페이지에서 눌렀는지 확인해 주세요.');}" +
   "}catch(x){alert('자동입력 실패: '+(x&&x.message?x.message:x));}})()";
 
+// 모바일 브라우저(삼성 인터넷 등)는 북마크 URL에 공백을 거부한다("URL에는 공백을 포함할 수 없습니다").
+// 공백만 %20으로 인코딩하면 저장이 되고, 실행 시 브라우저가 javascript: URL을 디코딩해 원래대로
+// 동작한다(코드에 '%' 리터럴이 없어 인코딩 충돌도 없다). 데스크톱에서도 동일하게 동작.
+const BOOKMARKLET_SAFE = BOOKMARKLET.replace(/ /g, "%20");
+
 type NoticeModalProps = {
   dateKey: string; // 선택한 날짜 YYYY-MM-DD
   onClose: () => void;
@@ -218,15 +223,16 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
                 <li>
                   먼저 아래 코드를 복사해주세요!
                   <div className="notice-autofill-row">
-                    <button className="button" onClick={() => copy("mark", BOOKMARKLET)} type="button">
+                    <button className="button" onClick={() => copy("mark", BOOKMARKLET_SAFE)} type="button">
                       <Copy aria-hidden="true" size={13} />
                       {copied === "mark" ? "복사됨!" : "① 북마클릿 코드 복사"}
                     </button>
                   </div>
                 </li>
                 <li>
-                  브라우저 <strong>메뉴(⋮ 또는 공유) → “북마크 추가/저장(☆)”</strong>으로 아무
-                  페이지나 북마크에 저장해주세요. (지금 이 페이지 그대로도 OK!)
+                  화면 <strong>아래 바에서 오른쪽에서 3번째</strong>,{" "}
+                  <strong>별표(☆)에 줄(三)이 그려진 아이콘</strong>을 눌러 이 페이지를 북마크에
+                  저장해주세요.
                 </li>
                 <li>
                   <strong>북마크 목록</strong>에서 방금 만든 북마크를 <strong>길게 눌러 → “편집”</strong>을
@@ -253,7 +259,7 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
                 <li>
                   먼저 아래 코드를 복사해주세요!
                   <div className="notice-autofill-row">
-                    <button className="button" onClick={() => copy("mark", BOOKMARKLET)} type="button">
+                    <button className="button" onClick={() => copy("mark", BOOKMARKLET_SAFE)} type="button">
                       <Copy aria-hidden="true" size={13} />
                       {copied === "mark" ? "복사됨!" : "① 북마클릿 코드 복사"}
                     </button>
