@@ -571,6 +571,9 @@ select {
 }
 .passcode-input-row input {
   flex: 1;
+  /* 입력칸이 콘텐츠 기본 최소폭(min-width:auto)에 막혀 안 줄면, "확인 중…" 버튼이 모달 밖으로
+     밀려 잘린다. 0으로 풀어 입력칸이 양보하고 버튼이 항상 안에 들어오게 한다. */
+  min-width: 0;
   min-height: 46px;
   border: 1px solid var(--line);
   border-radius: 10px;
