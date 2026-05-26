@@ -255,6 +255,15 @@
   border: 1px solid;
   border-radius: 4px;
 }
+/* "비공개" 필터 칩 표식 — 색이 아니라 비공개를 뜻하는 회색 빗금 무늬. */
+.legend-private-swatch {
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #b9bfca;
+  border-radius: 4px;
+  background: repeating-linear-gradient(45deg, #cdd2db 0 3px, #eef1f6 3px 6px);
+}
 /* 색상 안내를 필터로 쓸 때(클릭 토글) */
 .tag-legend-filter {
   display: inline-flex;

@@ -152,6 +152,9 @@ const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
   owner_private: "나만"
 };
 
+// 색상 필터에 섞어 쓰는 특수 필터 id — 태그가 아니라 "비공개(공개 아님) 일정"을 골라본다.
+const PRIVATE_FILTER = "__private__";
+
 // YYYY-MM-DD → "M.D" (업 도움 기간 표시용 — 시청자 화면과 동일 형식)
 function formatShortDate(value: string) {
   const [, month, day] = value.split("-");
@@ -237,9 +240,14 @@ export function StudioShell({
   }
   function isDimmedByFilter(event: StudioScheduleEvent) {
     if (tagFilters.length === 0) return false;
-    return !tagFilters.some(
-      (id) => event.primaryTagIds.includes(id) || event.tagIds.includes(id)
+    const matchesPrivate =
+      tagFilters.includes(PRIVATE_FILTER) && event.visibilityScope !== "public";
+    const matchesTag = tagFilters.some(
+      (id) =>
+        id !== PRIVATE_FILTER &&
+        (event.primaryTagIds.includes(id) || event.tagIds.includes(id))
     );
+    return !(matchesPrivate || matchesTag);
   }
 
   // 카드 클릭:
@@ -934,6 +942,20 @@ export function StudioShell({
                   </button>
                 );
               })}
+              {/* 비공개(공개 아님) 일정만 골라보기 — 잠금 해제로 비공개가 보일 때만. */}
+              {canReadPrivate ? (
+                <button
+                  aria-pressed={tagFilters.includes(PRIVATE_FILTER)}
+                  className={`agenda-legend-tag ${tagFilters.includes(PRIVATE_FILTER) ? "on" : ""} ${
+                    filtering && !tagFilters.includes(PRIVATE_FILTER) ? "dim" : ""
+                  }`}
+                  onClick={() => toggleTagFilter(PRIVATE_FILTER)}
+                  type="button"
+                >
+                  <i className="legend-private-swatch" aria-hidden="true" />
+                  비공개
+                </button>
+              ) : null}
               {filtering ? (
                 <button
                   className="agenda-legend-clear"
@@ -1459,6 +1481,20 @@ export function StudioShell({
               tags={tags}
               updateTagsAction={updateTagsAction}
             />
+            {/* 비공개(공개 아님) 일정만 골라보기 — 잠금 해제로 비공개가 보일 때만(개발자·소유자·매니저·작업자). */}
+            {canReadPrivate ? (
+              <button
+                aria-pressed={tagFilters.includes(PRIVATE_FILTER)}
+                className={`tag-legend-filter ${tagFilters.includes(PRIVATE_FILTER) ? "on" : ""} ${
+                  tagFilters.length > 0 && !tagFilters.includes(PRIVATE_FILTER) ? "dim" : ""
+                }`}
+                onClick={() => toggleTagFilter(PRIVATE_FILTER)}
+                type="button"
+              >
+                <i className="legend-private-swatch" aria-hidden="true" />
+                비공개
+              </button>
+            ) : null}
           </section>
 
           {canEdit ? (
