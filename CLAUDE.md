@@ -27,7 +27,7 @@ Build a web app where:
 ## Non-Negotiable Rules
 
 1. All time is KST / Asia/Seoul.
-2. Only the configured owner (or a platform developer/superadmin) can create, edit, or delete schedules. Trusted members never can.
+2. Only the configured owner (or a platform developer/superadmin) can create, edit, or delete schedules. Trusted members never can. The owner may be configured as more than one Google account of the same streamer (`OWNER_EMAIL` is a comma-separated list; extra accounts are synced into `calendar_co_owners` and recognized by `is_calendar_owner`). These co-owner accounts are fully equivalent to the owner, including `owner_private` access.
 3. Everyone authenticates with Google at the root (`/`); after login, role decides the screen (owner/staff → studio, viewer → public calendar). Viewers can only see public data.
 4. Managers and workers are read-only for schedule data (events, tags, members, passcode). EXCEPTION: they may decorate — add/move/resize/flip/delete emoji stickers (`sticker_instances`). Sticker image assets (`sticker_assets`) remain owner/developer-only.
 5. Managers/workers may see the private-layer toggle only after Google authentication.
@@ -73,6 +73,7 @@ Includes managers and workers.
 The streamer.
 
 - Must authenticate with Google OAuth
+- May use more than one Google account: list them comma-separated in `OWNER_EMAIL`. The first is the primary owner (`calendars.owner_id`); the rest are synced into `calendar_co_owners`. All such accounts have identical owner rights (including `owner_private`).
 - Can edit all schedules
 - Can manage trusted members
 - Can set/change private-layer passcode

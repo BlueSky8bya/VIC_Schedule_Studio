@@ -40,13 +40,13 @@ The app resolves the current role on the server.
 
 1. No Supabase session means the user sees the Google login gate.
 2. Supabase sessions are trusted for elevated roles only when they come from Google OAuth.
-3. Google email matching `OWNER_EMAIL` means `owner`.
+3. A Google email listed in `OWNER_EMAIL` means `owner`. `OWNER_EMAIL` is a comma-separated list, so one streamer can use multiple Google accounts as the same owner.
 4. Google email listed in active `trusted_members` means `manager` or `worker`.
 5. Any other authenticated Google email is treated as `viewer`.
 
 Only `owner` can write. `manager` and `worker` are read-only and can only see private-layer data after a valid unlock session.
 
-In local development, set `OWNER_EMAIL` to your Google account. Before handoff, replace it with Victory's Google account email. If Supabase environment variables are empty, Google login is disabled.
+In local development, set `OWNER_EMAIL` to your Google account. Before handoff, replace it with Victory's Google account email (or several, comma-separated, if the streamer uses more than one account). When more than one is listed, the first is the primary owner (`calendars.owner_id`) and the rest are synced into `calendar_co_owners` by `db/seeds/0013_sync_co_owners.sql`. If Supabase environment variables are empty, Google login is disabled.
 
 ## Getting Started
 

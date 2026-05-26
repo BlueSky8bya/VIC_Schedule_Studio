@@ -104,6 +104,15 @@ Supabase 대시보드 → **Storage**
        둔 뒤 `node scripts/apply-db.mjs db/seeds/0003_transfer_owner.sql` — apply-db가
        `.env.local`의 `OWNER_EMAIL`을 `app.owner_email` GUC로 자동 주입한다.
      - 샘플 일정은 그대로 유지됩니다(데이터는 건드리지 않고 owner_id만 바꿈).
+- **한 사람이 계정 2개로 동일한 소유자 권한**을 원하면: `OWNER_EMAIL`에 콤마로
+  여러 계정을 넣는다(예: `toryvac@gmail.com,toryvac2@gmail.com`). 첫 번째가 주 소유자
+  (`calendars.owner_id`)이고, 나머지는 `calendar_co_owners`에 등록돼 동일한 owner 권한을
+  갖는다("나만"/owner_private까지 공유). 적용 순서:
+  1. 각 계정이 앱에 **구글 로그인 1회**(auth.users에 행 생성)
+  2. Vercel·`.env.local`의 `OWNER_EMAIL`을 콤마 목록으로 설정(+Vercel은 재배포)
+  3. `node scripts/apply-db.mjs db/seeds/0013_sync_co_owners.sql` — apply-db가 목록을
+     `app.owner_emails` GUC로 주입해 `calendar_co_owners`를 동기화한다(멱등; 목록에서
+     빠진 계정은 공동 소유자에서 자동 제거됨).
 - **개발자(developer/슈퍼관리자)** 는 `platform_admins` 테이블로 관리되며,
   현재 `blackspace665@gmail.com`(나)이 등록돼 있어 유지보수 권한을 계속 가집니다.
   - 개발자도 공개 API에는 비공개 데이터가 안 나오고, 비공개 레이어 열람은 잠금해제가 필요(설계 규칙).

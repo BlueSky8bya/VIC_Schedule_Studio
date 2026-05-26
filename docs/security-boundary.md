@@ -63,13 +63,15 @@ Role resolution is server-side only.
 2. If no user exists, show the Google login gate at `/`.
 3. Elevated roles require a Supabase user whose provider or identity is `google`.
 4. If the verified Google email is in `platform_admins`, return developer (checked first, cross-calendar).
-5. Else if the verified Google email matches `OWNER_EMAIL`, return owner.
+5. Else if the verified Google email is in `OWNER_EMAIL` (a comma-separated list — a streamer may use more than one account), return owner.
 6. Otherwise query `trusted_members` by calendar slug and Google email with the service-role client.
 7. Active trusted members resolve to `manager` or `worker`.
 8. Everyone else resolves to viewer.
 
 In the database, `is_developer()` reads `platform_admins`, and `is_calendar_admin()`
-= owner OR developer. Management/write policies and owner_private reads use
+= owner OR developer. `is_calendar_owner()` is true for `calendars.owner_id` (the
+primary owner) OR any account in `calendar_co_owners` (co-owners — extra accounts of
+the same streamer). Management/write policies and owner_private reads use
 `is_calendar_admin()`; embargo/work/owner_private reads still require `has_private_unlock()`.
 
 Knowing the owner's email address is not enough to get owner permissions. The

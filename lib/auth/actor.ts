@@ -1,7 +1,7 @@
 import { cache } from "react";
 import type { MembershipRole } from "@/lib/domain/schedule-types";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
-import { getOwnerEmail, normalizeEmail } from "@/lib/auth/config";
+import { isOwnerEmail, normalizeEmail } from "@/lib/auth/config";
 import { getCurrentSupabaseUser } from "@/lib/auth/server";
 import type { User } from "@supabase/supabase-js";
 
@@ -51,7 +51,7 @@ async function _resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor>
     };
   }
 
-  if (email === getOwnerEmail()) {
+  if (isOwnerEmail(email)) {
     return {
       email,
       isAuthenticated: true,

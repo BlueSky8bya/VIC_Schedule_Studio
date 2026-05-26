@@ -74,8 +74,16 @@ if (!client) {
 // 시드(0002/0003)는 소유자 이메일을 GUC(app.owner_email)에서 읽는다(공개 저장소에
 // 개인 이메일을 박지 않기 위함). .env.local의 OWNER_EMAIL을 이 세션에 주입해 둔다.
 if (env.OWNER_EMAIL) {
-  await client.query("select set_config('app.owner_email', $1, false)", [env.OWNER_EMAIL]);
-  console.log(`\napp.owner_email = ${env.OWNER_EMAIL} (.env.local의 OWNER_EMAIL) 주입`);
+  // OWNER_EMAIL은 콤마로 여러 계정을 담을 수 있다(공동 소유자).
+  //  - app.owner_email  = 첫 번째(주 소유자). 0002/0003 seed가 owner_id를 잡는 기준.
+  //  - app.owner_emails = 전체 목록. 0013 seed가 calendar_co_owners를 동기화하는 기준.
+  const emails = env.OWNER_EMAIL.split(",").map((e) => e.trim()).filter(Boolean);
+  await client.query("select set_config('app.owner_email', $1, false)", [emails[0]]);
+  await client.query("select set_config('app.owner_emails', $1, false)", [emails.join(",")]);
+  console.log(`\napp.owner_email = ${emails[0]} (주 소유자)`);
+  if (emails.length > 1) {
+    console.log(`app.owner_emails = ${emails.join(", ")} (공동 소유자 포함)`);
+  }
 }
 
 for (const file of files) {
