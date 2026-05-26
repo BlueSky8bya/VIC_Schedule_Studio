@@ -1549,6 +1549,12 @@ export function StudioShell({
   if (viewerMode) {
     return (
       <div className="viewer-fullscreen">
+        {navMsg ? (
+          <div className="private-loading" role="status" aria-live="polite">
+            <span className="private-loading-spinner" aria-hidden="true" />
+            {navMsg}
+          </div>
+        ) : null}
         <div className="viewer-fullscreen-bar">
           {/* 라벨은 왼쪽, "편집실로 돌아가기"는 우측 상단으로(버튼 위치 통일). */}
           <span className="viewer-fullscreen-label">
