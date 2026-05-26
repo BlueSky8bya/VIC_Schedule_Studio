@@ -1285,6 +1285,12 @@ export function PublicPoster({
 
   // 월 전환 슬라이드 방향(아젠다): 다음 달=왼쪽으로, 이전 달=오른쪽으로 밀려 들어온다.
   const [monthDir, setMonthDir] = useState<"next" | "prev">("next");
+  // 페이지 이동(편집실로 돌아가기·계정 변경)은 서버 왕복이라 즉시 안 바뀐다 → 눌렀다는 신호를 띄운다.
+  const [navMsg, setNavMsg] = useState<string | null>(null);
+  function startNav(message: string) {
+    setNavMsg(message);
+    window.setTimeout(() => setNavMsg(null), 8000);
+  }
   function moveMonth(offset: number) {
     setMonthDir(offset >= 0 ? "next" : "prev");
     setView((current) => getAdjacentMonth(current.year, current.month, offset));
@@ -1702,6 +1708,12 @@ export function PublicPoster({
 
   return (
     <main className="poster-page" data-poster-theme={posterTheme}>
+      {navMsg ? (
+        <div className="private-loading" role="status" aria-live="polite">
+          <span className="private-loading-spinner" aria-hidden="true" />
+          {navMsg}
+        </div>
+      ) : null}
       {celebrate ? (
         <div className="celebrate-overlay" aria-hidden="true">
           {confetti.map((c, i) => (
@@ -1752,7 +1764,9 @@ export function PublicPoster({
             </h1>
             {accountSwitch ? (
               <form action="/api/auth/logout" className="agenda-account" method="post">
-                <button type="submit">계정변경</button>
+                <button onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")} type="submit">
+                  계정변경
+                </button>
               </form>
             ) : null}
           </header>
@@ -1777,14 +1791,22 @@ export function PublicPoster({
             {/* 편집실로 돌아가기는 우측 상단(계정변경 옆)에 둔다. */}
             <div className="viewer-actions">
               {decorate ? (
-                <Link className="button" href="/studio">
+                <Link
+                  className="button"
+                  href="/studio"
+                  onClick={() => startNav("편집실로 돌아가는 중입니다…")}
+                >
                   <ChevronLeft aria-hidden="true" size={16} />
                   편집실로 돌아가기
                 </Link>
               ) : null}
               {accountSwitch ? (
                 <form action="/api/auth/logout" method="post">
-                  <button className="button" type="submit">
+                  <button
+                    className="button"
+                    onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}
+                    type="submit"
+                  >
                     계정변경
                   </button>
                 </form>

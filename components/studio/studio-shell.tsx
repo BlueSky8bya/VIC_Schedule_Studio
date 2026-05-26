@@ -159,6 +159,11 @@ const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
 // 색상 필터에 섞어 쓰는 특수 필터 id — 태그가 아니라 "비공개(공개 아님) 일정"을 골라본다.
 const PRIVATE_FILTER = "__private__";
 
+// 잠금 해제 직후 router.refresh()로 비공개 일정을 다시 불러올 때, "방금 풀었으니 보여줘"라는 의도를
+// 새 렌더(또는 리마운트)까지 전달하기 위한 모듈 플래그. router.refresh()는 같은 JS 컨텍스트라 이 값이
+// 유지되지만, 실제 새로고침(F5)은 모듈을 새로 로드해 false로 리셋된다 → 방송사고 방지 규칙(진입 시 공개 기본) 유지.
+let pendingUnlockReveal = false;
+
 // YYYY-MM-DD → "M.D" (업 도움 기간 표시용 — 시청자 화면과 동일 형식)
 function formatShortDate(value: string) {
   const [, month, day] = value.split("-");
@@ -176,11 +181,26 @@ export function StudioShell({
   const [actionError, setActionError] = useState<string | null>(null);
   // 비밀번호 확인 후 팝업이 닫히고 비공개 일정이 서버에서 다시 불러와지는 동안 "불러오는 중" 표시.
   const [loadingPrivate, startLoadingPrivate] = useTransition();
+  // 페이지 이동(꾸미기·계정 변경 등)은 서버 왕복이라 즉시 안 바뀐다 → 눌렀다는 신호를 띄운다.
+  const [navMsg, setNavMsg] = useState<string | null>(null);
+  function startNav(message: string) {
+    setNavMsg(message);
+    // 이동이 실패/취소돼 화면이 안 바뀌는 경우를 대비한 안전 해제(보통은 이동하며 언마운트됨).
+    window.setTimeout(() => setNavMsg(null), 8000);
+  }
   // 모바일 아젠다 월 전환 방향(시청자 화면과 동일한 슬라이드 애니메이션용).
   const [monthDir, setMonthDir] = useState<"next" | "prev">("next");
   // 방송사고 방지: 새로고침/진입 시 항상 공개(일반) 모드가 기본. 잠금 세션이 있어도
   // 사용자가 직접 토글해야 비공개 일정이 보인다.
   const [showPrivate, setShowPrivate] = useState(false);
+  // 방금 잠금 해제했다면(=pendingUnlockReveal), refresh로 세션이 반영(hasUnlockSession=true)되는
+  // 즉시 비공개 표시를 켠다. refresh 과정에서 showPrivate 상태가 유실되더라도 확실히 다시 켜진다.
+  useEffect(() => {
+    if (pendingUnlockReveal && hasUnlockSession) {
+      pendingUnlockReveal = false;
+      setShowPrivate(true);
+    }
+  }, [hasUnlockSession]);
   const [modal, setModal] = useState<null | "passcode" | "tags" | "members" | "notice">(null);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
@@ -948,7 +968,11 @@ export function StudioShell({
               </button>
               {actor.isAuthenticated ? (
                 <form action="/api/auth/logout" method="post">
-                  <button className="button" type="submit">
+                  <button
+                    className="button"
+                    onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}
+                    type="submit"
+                  >
                     계정변경
                   </button>
                 </form>
@@ -1512,6 +1536,12 @@ export function StudioShell({
           일정을 불러오는 중입니다…
         </div>
       ) : null}
+      {navMsg ? (
+        <div className="private-loading" role="status" aria-live="polite">
+          <span className="private-loading-spinner" aria-hidden="true" />
+          {navMsg}
+        </div>
+      ) : null}
       {isNarrow ? (
         renderMobile()
       ) : (
@@ -1560,7 +1590,11 @@ export function StudioShell({
           </button>
           {actor.isAuthenticated ? (
             <form action="/api/auth/logout" method="post">
-              <button className="button" type="submit">
+              <button
+                className="button"
+                onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}
+                type="submit"
+              >
                 계정변경
               </button>
             </form>
@@ -1630,7 +1664,11 @@ export function StudioShell({
           {canDecorateCalendar ? (
             <section>
               <h2>꾸미기</h2>
-              <Link className="button" href={`/studio/decorate/${view.year}/${view.month}`}>
+              <Link
+                className="button"
+                href={`/studio/decorate/${view.year}/${view.month}`}
+                onClick={() => startNav("꾸미기 화면을 여는 중입니다…")}
+              >
                 달력 꾸미기
               </Link>
             </section>
@@ -2000,6 +2038,8 @@ export function StudioShell({
                 onDone={() => setModal(null)}
                 onUnlocked={() => {
                   // 팝업을 닫고, 서버에서 비공개 일정을 다시 불러오는 동안 "불러오는 중" 표시.
+                  // pendingUnlockReveal: refresh 후 세션이 반영되면 위 useEffect가 표시를 확실히 켠다.
+                  pendingUnlockReveal = true;
                   setModal(null);
                   setShowPrivate(true);
                   startLoadingPrivate(() => {
