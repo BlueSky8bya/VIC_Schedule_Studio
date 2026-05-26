@@ -1146,9 +1146,15 @@ textarea:disabled {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  /* 라벨이 남는 공간을 채워 "편집실로 돌아가기" 버튼을 오른쪽 끝으로 민다. */
+  flex: 1 1 auto;
+  min-width: 0;
   color: #2b6a6a;
   font-size: 13px;
   font-weight: 700;
+}
+.viewer-fullscreen-bar > .button {
+  flex: 0 0 auto;
 }
 /* 모바일: 상단 바를 최대한 좁게 — 버튼·간격·글자 줄이고, 라벨이 줄바꿈 없이 한 줄에 들어가게. */
 @media (max-width: 640px) {
@@ -2261,6 +2267,8 @@ textarea:disabled {
   max-height: 86vh;
   max-height: 86dvh;
   overflow-y: auto;
+  /* 시트 내부 스크롤이 끝까지 가도 페이지로 전파(당겨서 새로고침)되지 않게. */
+  overscroll-behavior: contain;
   border-radius: 18px 18px 0 0;
   background: #fff;
   padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));

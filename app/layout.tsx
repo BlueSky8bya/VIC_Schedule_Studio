@@ -44,7 +44,10 @@ const hiMelody = Hi_Melody({ weight: "400", variable: "--font-himelody", display
 
 export const metadata: Metadata = {
   title: "VIC Schedule Studio",
-  description: "Streamer-first schedule studio and public poster."
+  description: "Streamer-first schedule studio and public poster.",
+  // 화면에 표시된 이메일(계정 배지의 로그인 이메일 등)을 모바일 브라우저가 자동으로 mailto
+  // 링크로 바꿔 탭하면 메일 작성창이 열리던 문제 방지(이메일·전화·주소 자동감지 끄기).
+  formatDetection: { email: false, telephone: false, address: false }
 };
 
 export default function RootLayout({

@@ -374,18 +374,22 @@ export function StudioShell({
     if (!overlayOpen) return;
     const scrollY = window.scrollY;
     const body = document.body;
+    const root = document.documentElement;
     const saved = {
       position: body.style.position,
       top: body.style.top,
       left: body.style.left,
       right: body.style.right,
-      width: body.style.width
+      width: body.style.width,
+      overscroll: root.style.overscrollBehavior
     };
     body.style.position = "fixed";
     body.style.top = `-${scrollY}px`;
     body.style.left = "0";
     body.style.right = "0";
     body.style.width = "100%";
+    // 시트가 열린 채 아래로 확 밀어도 브라우저 당겨서 새로고침(pull-to-refresh)이 안 돌게 막는다.
+    root.style.overscrollBehavior = "none";
 
     window.history.pushState({ vicOverlay: true }, "");
     const onPop = () => {
@@ -403,6 +407,7 @@ export function StudioShell({
       body.style.left = saved.left;
       body.style.right = saved.right;
       body.style.width = saved.width;
+      root.style.overscrollBehavior = saved.overscroll;
       window.scrollTo(0, scrollY);
       // X·배경 클릭 등(뒤로가기가 아닌 경로)으로 닫았으면, 우리가 쌓은 히스토리 항목을 정리한다.
       if (window.history.state && window.history.state.vicOverlay) {
@@ -819,13 +824,9 @@ export function StudioShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events]);
 
-  // 모바일 아젠다에 쓸 일정: 소유자/개발자는 본인 관리 화면이라 (잠금 없이) 자신이 볼 수 있는
-  // 범위를 전부 보여주고, 작업자/매니저는 잠금 해제(비공개 일정 보기) 전까지 공개만 본다.
-  const mobileAgendaEvents = canEdit
-    ? events.filter(
-        (e) => e.visibilityScope !== "owner_private" || canReadOwnerPrivate(actor.role)
-      )
-    : visibleEvents;
+  // 모바일 아젠다도 데스크톱과 동일하게 — 비공개 일정은 "비공개 일정 보기"로 직접 켜기 전까진
+  // 누구에게도(개발자·소유자 포함) 보이지 않는다. 방송사고 방지: 진입/새로고침 시 항상 공개 기본.
+  const mobileAgendaEvents = visibleEvents;
 
   function openMobileEdit(event: StudioScheduleEvent) {
     selectEvent(event);
@@ -1335,16 +1336,17 @@ export function StudioShell({
     return (
       <div className="viewer-fullscreen">
         <div className="viewer-fullscreen-bar">
-          <button className="button" onClick={() => setViewerMode(false)} type="button">
-            <ChevronLeft aria-hidden="true" size={16} />
-            {isNarrow ? "편집실로" : "편집실로 돌아가기"}
-          </button>
+          {/* 라벨은 왼쪽, "편집실로 돌아가기"는 우측 상단으로(버튼 위치 통일). */}
           <span className="viewer-fullscreen-label">
             {isNarrow ? null : <Eye aria-hidden="true" size={15} />}
             {isNarrow
               ? "시청자가 보는 화면(비공개 일정 미포함)"
               : "시청자가 보는 공개 화면입니다 (비공개 일정 미포함)"}
           </span>
+          <button className="button" onClick={() => setViewerMode(false)} type="button">
+            <ChevronLeft aria-hidden="true" size={16} />
+            {isNarrow ? "편집실로" : "편집실로 돌아가기"}
+          </button>
         </div>
         <PublicPoster
           initialMonth={view.month}
