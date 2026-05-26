@@ -13,6 +13,9 @@ import type { AddTagResult, TagUpdateResult } from "@/lib/schedules/tag-actions"
 
 type TagUpdate = { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number };
 
+// 태그는 최대 20개까지. (서버 addTagAction에서도 동일하게 막는다.)
+const MAX_TAGS = 20;
+
 type TagLegendEditorProps = {
   tags: BroadcastTag[];
   palette: ColorPaletteEntry[];
@@ -384,9 +387,17 @@ export function TagLegendEditor({
       {anyEmpty ? <p className="tag-editor-hint warn">색상이 비어 있는 태그가 있습니다.</p> : null}
       <div className="tag-editor-actions">
         {addTagAction ? (
-          <button className="button" disabled={busy} onClick={addTag} type="button">
-            {busy ? "처리 중…" : "+ 태그 추가"}
-          </button>
+          <span className="tag-editor-add">
+            <button
+              className="button"
+              disabled={busy || tags.length >= MAX_TAGS}
+              onClick={addTag}
+              type="button"
+            >
+              {busy ? "처리 중…" : "+ 태그 추가"}
+            </button>
+            <span className="tag-editor-add-note">최대 {MAX_TAGS}개</span>
+          </span>
         ) : null}
         <button
           className={`button primary ${saved && !dirty ? "saved" : ""}`}

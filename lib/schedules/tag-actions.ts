@@ -212,6 +212,11 @@ export async function addTagAction(): Promise<AddTagResult> {
     supabase.from("broadcast_tags").select("sort_order").eq("calendar_id", calendar.id)
   ]);
 
+  // 태그는 최대 20개까지만. (클라이언트 버튼 비활성화와 별개로 서버에서도 막는다.)
+  if ((tags ?? []).length >= 20) {
+    return { ok: false, error: "태그는 최대 20개까지만 만들 수 있습니다." };
+  }
+
   // 기존 색을 (hue, 무늬)로 정리해, 같은 무늬와 색조가 겹치지 않는 슬롯을 고른다.
   const existing = (palette ?? [])
     .map((p) => ({ hue: hexToHue(p.bg_color), pat: patternOf(p.key ?? "") }))

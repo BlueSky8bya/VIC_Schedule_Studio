@@ -814,7 +814,7 @@ export function StudioShell({
                 </button>
               ) : null}
               <button className="button" onClick={() => setViewerMode(true)} type="button">
-                <Eye size={14} /> 시청자
+                <Eye size={14} /> 시청자 화면
               </button>
               {actor.isAuthenticated ? (
                 <form action="/api/auth/logout" method="post">
@@ -1147,11 +1147,13 @@ export function StudioShell({
         <div className="viewer-fullscreen-bar">
           <button className="button" onClick={() => setViewerMode(false)} type="button">
             <ChevronLeft aria-hidden="true" size={16} />
-            편집실로 돌아가기
+            {isNarrow ? "편집실로" : "편집실로 돌아가기"}
           </button>
           <span className="viewer-fullscreen-label">
-            <Eye aria-hidden="true" size={15} />
-            시청자가 보는 공개 화면입니다 (비공개 일정 미포함)
+            {isNarrow ? null : <Eye aria-hidden="true" size={15} />}
+            {isNarrow
+              ? "시청자가 보는 화면(비공개 일정 비포함)"
+              : "시청자가 보는 공개 화면입니다 (비공개 일정 미포함)"}
           </span>
         </div>
         <PublicPoster

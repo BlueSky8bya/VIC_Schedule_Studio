@@ -810,20 +810,19 @@ textarea:disabled {
     border-width: 1px;
     border-radius: 3px;
   }
-  /* 고스트는 들려 있는 카드라 가로로 길어지지 않게 작은 정사각형 2행(9칸 격자)으로 모은다. */
+  /* 고스트(드래그 복제본)도 일반 행과 똑같이 한 줄. 색이 늘면(최대 20개) 정사각형이
+     높이는 유지한 채 가로로 좁아져 직사각형이 되며 한 줄을 지킨다. */
   .tag-drag-ghost .tag-editor-swatches {
     order: 4;
     flex: 1 1 100%;
-    display: grid;
-    grid-template-columns: repeat(9, 16px);
-    grid-auto-rows: 16px;
-    justify-content: start;
+    display: flex;
+    flex-wrap: nowrap;
     gap: 3px;
   }
   .tag-drag-ghost .tag-editor-swatches button {
-    width: 16px;
+    flex: 1 1 0;
     min-width: 0;
-    max-width: none;
+    max-width: 18px;
     height: 16px;
     border-width: 1px;
     border-radius: 3px;
@@ -1105,6 +1104,27 @@ textarea:disabled {
   color: #2b6a6a;
   font-size: 13px;
   font-weight: 700;
+}
+/* 모바일: 상단 바를 최대한 좁게 — 버튼·간격·글자 줄이고, 라벨이 줄바꿈 없이 한 줄에 들어가게. */
+@media (max-width: 640px) {
+  .viewer-fullscreen-bar {
+    gap: 8px;
+    padding: 8px 10px;
+  }
+  .viewer-fullscreen-bar > .button {
+    flex: 0 0 auto;
+    padding: 0 10px;
+    white-space: nowrap;
+  }
+  .viewer-fullscreen-label {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 0;
+    font-size: 11.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 }
 /* 태그 편집 행은 기본 flex 한 줄 레이아웃(.tag-editor-row)을 그대로 쓴다. */
 
@@ -1970,6 +1990,19 @@ textarea:disabled {
 .tag-editor-actions .button.primary {
   flex: 1;
 }
+/* 태그 추가 버튼 + "최대 20개" 짧은 안내 */
+.tag-editor-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+}
+.tag-editor-add-note {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
 /* #4: 저장 성공을 확실히 알리는 초록 피드백(잠깐). */
 .tag-editor-actions .button.primary.saved {
   border-color: #16a34a !important;
@@ -2001,11 +2034,12 @@ textarea:disabled {
   border: 0;
   background: none;
 }
+/* 시청자 화면(.agenda-header h1: 28px/13px)과 동일한 크기로 맞춘다. */
 .studio-mobile .agenda-header h1 {
-  font-size: 20px;
+  font-size: 28px;
 }
 .studio-mobile .agenda-header h1 span {
-  font-size: 12px;
+  font-size: 13px;
 }
 /* 역할 바: 유동 너비 — 한 줄에 나눠 갖고 스크롤 없이 보이게(넘치면 어쩔 수 없이 줄어듦) */
 .m-rolebar {
