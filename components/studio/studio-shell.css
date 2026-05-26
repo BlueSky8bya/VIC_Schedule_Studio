@@ -253,6 +253,66 @@
   border: 1px solid;
   border-radius: 4px;
 }
+/* 색상 안내를 필터로 쓸 때(클릭 토글) */
+.tag-legend-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  padding: 3px 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #334155;
+  text-align: left;
+  cursor: pointer;
+  word-break: keep-all;
+}
+.tag-legend-filter.on {
+  border-color: var(--accent, #f5b81b);
+  background: var(--accent-soft, #fff3d2);
+  color: var(--accent-strong, #a9760a);
+}
+.tag-legend-filter.dim {
+  opacity: 0.4;
+}
+.tag-legend-clear {
+  margin-top: 2px;
+  border: 1px solid var(--line, #e3e7ef);
+  border-radius: 8px;
+  background: var(--surface-2, #f5f7fb);
+  padding: 5px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #64748b;
+  cursor: pointer;
+}
+/* 필터에 안 맞는 일정은 흐리게(편집실 그리드·모바일 아젠다 공용) */
+.studio-event-pill.filter-dim,
+.agenda-event.filter-dim {
+  opacity: 0.26;
+  filter: grayscale(0.5);
+}
+/* 모바일 색상 필터 줄 — 가로 스크롤 칩 */
+.m-filter {
+  margin: 0 0 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.m-filter::-webkit-scrollbar {
+  display: none;
+}
+.m-filter .studio-tag-legend {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px;
+  width: max-content;
+}
+.m-filter .tag-legend-filter {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
 
 .studio-calendar-panel {
   min-width: 0;

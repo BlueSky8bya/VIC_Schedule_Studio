@@ -215,6 +215,20 @@ export function StudioShell({
     [tags]
   );
 
+  // 색상 안내 필터 — 편집실에서도 특정 태그 색만 골라볼 수 있게(시청자 화면과 동일 동작).
+  const [tagFilters, setTagFilters] = useState<string[]>([]);
+  function toggleTagFilter(id: string) {
+    setTagFilters((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  }
+  function isDimmedByFilter(event: StudioScheduleEvent) {
+    if (tagFilters.length === 0) return false;
+    return !tagFilters.some(
+      (id) => event.primaryTagIds.includes(id) || event.tagIds.includes(id)
+    );
+  }
+
   // 카드 클릭:
   // - 선택된 일정과 인접+이미 이어진 카드를 누르면 → 그 이음새 하나만 끊는다(토글).
   // - 선택된 일정과 사이가 "매일 연속 + 같은 색"이면 → 그 구간 전체를 한 번에 잇는다.
@@ -822,6 +836,18 @@ export function StudioShell({
           </div>
         ) : null}
 
+        {/* 색상 안내 · 필터 — 가로 스크롤 칩(모든 역할) */}
+        <div className="m-filter">
+          <TagLegendEditor
+            canEdit={false}
+            filterIds={tagFilters}
+            onToggleFilter={toggleTagFilter}
+            palette={palette}
+            tags={tags}
+            updateTagsAction={updateTagsAction}
+          />
+        </div>
+
         <section
           className="agenda agenda-studio"
           onTouchEnd={onAgendaTouchEnd}
@@ -890,9 +916,10 @@ export function StudioShell({
                           </div>
                         </>
                       );
+                      const dimCls = isDimmedByFilter(event) ? " filter-dim" : "";
                       return canEdit ? (
                         <button
-                          className="agenda-event m-event"
+                          className={`agenda-event m-event${dimCls}`}
                           key={event.id}
                           onClick={() => openMobileEdit(event)}
                           type="button"
@@ -900,7 +927,7 @@ export function StudioShell({
                           {inner}
                         </button>
                       ) : (
-                        <div className="agenda-event" key={event.id}>
+                        <div className={`agenda-event${dimCls}`} key={event.id}>
                           {inner}
                         </div>
                       );
@@ -1181,7 +1208,7 @@ export function StudioShell({
         </div>
       ) : null}
 
-      {canReadPrivate ? (
+      {canReadPrivate && actor.role === "owner" ? (
         <div className="private-warning">
           <LockKeyhole aria-hidden="true" size={17} />
           ⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.
@@ -1191,9 +1218,11 @@ export function StudioShell({
       <section className="studio-workspace">
         <aside className="studio-left-panel">
           <section>
-            <h2>색상 안내</h2>
+            <h2>색상 안내 · 필터</h2>
             <TagLegendEditor
               canEdit={false}
+              filterIds={tagFilters}
+              onToggleFilter={toggleTagFilter}
               palette={palette}
               tags={tags}
               updateTagsAction={updateTagsAction}
@@ -1324,6 +1353,7 @@ export function StudioShell({
                         event.visibilityScope,
                         inSelChain ? "selected" : "",
                         isSel ? "primary-selected" : "",
+                        isDimmedByFilter(event) ? "filter-dim" : "",
                         span.isMulti ? "span" : "",
                         span.isMulti && !span.roundLeft ? "no-left" : "",
                         span.isMulti && !span.roundRight ? "no-right" : ""

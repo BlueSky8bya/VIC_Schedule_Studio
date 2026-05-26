@@ -20,6 +20,9 @@ type TagLegendEditorProps = {
   onTagAdded?: (tag: BroadcastTag, color: ColorPaletteEntry) => void;
   onTagRemoved?: (tagId: string) => void;
   onTagsUpdated?: (updates: TagUpdate[]) => void;
+  // 읽기 전용 색상 안내를 "필터"로도 쓸 때(편집실/시청자). 누르면 그 태그만 골라본다.
+  filterIds?: string[];
+  onToggleFilter?: (tagId: string) => void;
 };
 
 type Draft = { name: string; colorKey: ColorKey | "" };
@@ -33,7 +36,9 @@ export function TagLegendEditor({
   removeTagAction,
   onTagAdded,
   onTagRemoved,
-  onTagsUpdated
+  onTagsUpdated,
+  filterIds,
+  onToggleFilter
 }: TagLegendEditorProps) {
   const [pending, startTransition] = useTransition();
   // 추가/삭제는 저장과 별도 진행 상태 — "전체 저장" 버튼이 "저장 중…"으로 잘못 바뀌지 않게.
@@ -104,22 +109,51 @@ export function TagLegendEditor({
     }
   }
 
-  // 읽기 전용(좌측 패널): 색상 안내만
+  // 읽기 전용(좌측 패널): 색상 안내. onToggleFilter가 있으면 필터 버튼으로 동작한다.
   if (!canEdit) {
+    const filtering = (filterIds?.length ?? 0) > 0;
     return (
       <div className="studio-tag-legend">
         {orderedTags.map((tag) => {
           const color = colorOf(tag.colorKey);
-          return color ? (
-            <span key={tag.id}>
+          if (!color) return null;
+          if (!onToggleFilter) {
+            return (
+              <span key={tag.id}>
+                <i
+                  data-color={color.key}
+                  style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+                />
+                {tag.displayName}
+              </span>
+            );
+          }
+          const on = filterIds?.includes(tag.id) ?? false;
+          return (
+            <button
+              aria-pressed={on}
+              className={`tag-legend-filter ${on ? "on" : ""} ${filtering && !on ? "dim" : ""}`}
+              key={tag.id}
+              onClick={() => onToggleFilter(tag.id)}
+              type="button"
+            >
               <i
                 data-color={color.key}
                 style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
               />
               {tag.displayName}
-            </span>
-          ) : null;
+            </button>
+          );
         })}
+        {filtering ? (
+          <button
+            className="tag-legend-clear"
+            onClick={() => filterIds?.forEach((id) => onToggleFilter?.(id))}
+            type="button"
+          >
+            필터 해제
+          </button>
+        ) : null}
       </div>
     );
   }
