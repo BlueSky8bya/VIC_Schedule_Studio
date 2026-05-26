@@ -13,6 +13,15 @@
   user-select: none;
 }
 
+/* 모바일은 하단 고정 바에 가려져 안 보여서 왼쪽 위로 올린다. */
+@media (max-width: 640px) {
+  .build-tag {
+    top: 4px;
+    bottom: auto;
+    z-index: 60;
+  }
+}
+
 :root {
   color-scheme: light;
 
