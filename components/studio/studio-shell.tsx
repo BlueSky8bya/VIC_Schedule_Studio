@@ -2105,17 +2105,30 @@ export function StudioShell({
               />
             ) : null}
             {modal === "members" ? <TrustedMembersPanel /> : null}
-            {modal === "notice" ? (
-              <NoticeModal
-                dateKey={selectedDate}
-                initialUpLink={
-                  getEventsForDate(events, selectedDate).find((e) => e.isSupport && e.supportUrl)
-                    ?.supportUrl ?? ""
-                }
-                mobile={isNarrow}
-                onClose={() => setModal(null)}
-              />
-            ) : null}
+            {modal === "notice"
+              ? (() => {
+                  // 업 공지 자동 채움: 지금 편집 중인 폼이 업 도움이면 (저장 전이라도) 폼 값을, 아니면
+                  // 그 날짜에 저장된 업 도움 일정의 값을 쓴다. 제목→대상, 업 도움 링크→링크.
+                  const savedSupport = getEventsForDate(events, selectedDate).find(
+                    (e) => e.isSupport
+                  );
+                  const upTarget = form.isSupport
+                    ? form.publicTitle
+                    : (savedSupport?.publicTitle ?? "");
+                  const upLink = form.isSupport
+                    ? form.supportUrl
+                    : (savedSupport?.supportUrl ?? "");
+                  return (
+                    <NoticeModal
+                      dateKey={selectedDate}
+                      initialUpLink={upLink}
+                      initialUpTarget={upTarget}
+                      mobile={isNarrow}
+                      onClose={() => setModal(null)}
+                    />
+                  );
+                })()
+              : null}
           </div>
         </div>
       ) : null}

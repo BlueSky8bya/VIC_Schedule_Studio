@@ -60,7 +60,13 @@ export default function RootLayout({
       lang="ko"
       className={`${gaegu.variable} ${blackHanSans.variable} ${nanumMyeongjo.variable} ${jua.variable} ${doHyeon.variable} ${nanumPen.variable} ${gamja.variable} ${gugi.variable} ${hiMelody.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* 배포 확인용 — 이번 배포가 반영됐는지 알 수 있게 커밋 해시를 아주 연하게 표시. */}
+        <span className="build-tag" aria-hidden="true">
+          {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev"}
+        </span>
+      </body>
     </html>
   );
 }

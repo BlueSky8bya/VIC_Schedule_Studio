@@ -38,8 +38,9 @@ type NoticeModalProps = {
   onClose: () => void;
   // 모바일: 직접 붙여넣기(방법 1)는 너무 번거로워 빼고, 북마클릿 자동 입력만 안내한다.
   mobile?: boolean;
-  // 이 날짜의 업 도움 일정에 이미 링크가 있으면 업 공지 링크칸을 미리 채운다(두 번 일 안 하게).
+  // 이 날짜의 업 도움 일정 값이 있으면 업 공지 칸을 미리 채운다(두 번 일 안 하게).
   initialUpLink?: string;
+  initialUpTarget?: string; // 업 도움 일정의 제목 → 업 공지 제목(대상)
 };
 
 // "YYYY-MM-DD" → "YY년 M월 d일" (월·일은 0 없이, 연도는 두 자리).
@@ -52,7 +53,8 @@ export function NoticeModal({
   dateKey,
   onClose,
   mobile = false,
-  initialUpLink = ""
+  initialUpLink = "",
+  initialUpTarget = ""
 }: NoticeModalProps) {
   // 공지 종류 — 뱅온 공지 / 업 도움 공지(탭 전환).
   const [kind, setKind] = useState<"bangon" | "up">("bangon");
@@ -61,7 +63,7 @@ export function NoticeModal({
   const [brief, setBrief] = useState(""); // 방송 내용(간략)
   const [detail, setDetail] = useState(""); // 자세한 내용
   // 업 도움 공지 입력
-  const [upTarget, setUpTarget] = useState(""); // 제목 뒷부분(예: 연초록님 황제 배생아 대회)
+  const [upTarget, setUpTarget] = useState(initialUpTarget); // 제목(예: 연초록님 황제 배생아 대회)
   const [upLink, setUpLink] = useState(initialUpLink); // UP 게시글 링크(본문에 3번 자동 반복)
   const [upComment, setUpComment] = useState(""); // 자유 멘트(여러 줄)
   const [copied, setCopied] = useState<"title" | "body" | "payload" | "mark" | null>(null);
@@ -180,7 +182,7 @@ export function NoticeModal({
         {isUp ? (
           <>
             <div className="notice-field">
-              <span className="notice-label">대상 / 이벤트 (제목)</span>
+              <span className="notice-label">제목</span>
               <input
                 onChange={(e) => setUpTarget(e.target.value)}
                 placeholder="예: 연초록님 황제 배생아 대회"
@@ -189,7 +191,7 @@ export function NoticeModal({
               />
             </div>
             <div className="notice-field">
-              <span className="notice-label">UP 게시글 링크 (본문에 3번 자동)</span>
+              <span className="notice-label">업 도움 링크 (본문에 3번 들어감)</span>
               <input
                 inputMode="url"
                 onChange={(e) => setUpLink(e.target.value)}
