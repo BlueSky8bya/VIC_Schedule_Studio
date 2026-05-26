@@ -463,6 +463,25 @@
   color: #111827;
 }
 
+/* 시청자 화면(accountSwitch)에서는 글자 선택·복사를 막아 포스터처럼 보이게 한다.
+   버튼/하트/필터 클릭은 영향 없고(선택만 차단), 모바일 길게 누르기 복사 메뉴도 막는다.
+   스튜디오·꾸미기·포스터 내보내기에는 적용되지 않는다(이 클래스가 없음). */
+.poster-readonly,
+.poster-readonly * {
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* 텍스트 입력 칸(있다면)은 예외 — 시청자에 입력 UI는 없지만 안전하게 풀어둔다. */
+.poster-readonly input,
+.poster-readonly textarea {
+  -webkit-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
 .public-calendar-shell {
   width: min(1840px, 100%);
   margin: 0 auto;

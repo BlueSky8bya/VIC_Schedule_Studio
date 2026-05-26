@@ -1715,7 +1715,10 @@ export function PublicPoster({
   }
 
   return (
-    <main className="poster-page" data-poster-theme={posterTheme}>
+    <main
+      className={`poster-page${accountSwitch ? " poster-readonly" : ""}`}
+      data-poster-theme={posterTheme}
+    >
       {navMsg ? (
         <div className="private-loading" role="status" aria-live="polite">
           <span className="private-loading-spinner" aria-hidden="true" />
