@@ -1011,7 +1011,10 @@ export function StudioShell({
                     onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}
                     type="submit"
                   >
-                    계정변경
+                    {/* 모바일은 폭이 좁아 넘칠 수 있어 "계정/변경" 2줄로 — 버튼이 좁아져 잘 들어간다. */}
+                    <span style={{ whiteSpace: "pre-line", lineHeight: 1.12, textAlign: "center" }}>
+                      {"계정\n변경"}
+                    </span>
                   </button>
                 </form>
               ) : (
@@ -1567,14 +1570,15 @@ export function StudioShell({
             <ChevronLeft aria-hidden="true" size={16} />
             {isNarrow ? "편집실" : "편집실로 가기"}
           </button>
-          {canDecorateCalendar ? (
+          {/* 꾸미기는 PC 전용 — 모바일(isNarrow)에선 진입 버튼을 숨긴다. */}
+          {canDecorateCalendar && !isNarrow ? (
             <Link
               className="button"
               href={`/studio/decorate/${view.year}/${view.month}`}
               onClick={() => startNav("꾸미기 화면을 여는 중입니다…")}
             >
               <Sparkles aria-hidden="true" size={16} />
-              {isNarrow ? "꾸미기" : "꾸미기로 가기"}
+              꾸미기로 가기
             </Link>
           ) : null}
         </div>
