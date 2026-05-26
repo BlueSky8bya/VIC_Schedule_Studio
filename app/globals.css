@@ -1,7 +1,7 @@
-/* 배포 버전(커밋 해시) — 오른쪽 아래 아주 연하고 작게. 클릭/캡처 방해 안 함. */
+/* 배포 버전(커밋 해시) — 왼쪽 아래 아주 연하고 작게. 클릭/캡처 방해 안 함. */
 .build-tag {
   position: fixed;
-  right: 6px;
+  left: 6px;
   bottom: 5px;
   z-index: 1;
   color: rgb(120 120 120 / 32%);
