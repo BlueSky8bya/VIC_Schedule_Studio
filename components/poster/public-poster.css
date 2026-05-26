@@ -176,6 +176,25 @@
   display: grid;
   gap: 7px;
 }
+/* 공휴일·기념일·절기 표기. 공휴일은 빨강 배지, 그 외는 차분한 회색 텍스트. */
+.agenda-mark {
+  justify-self: start;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #8a7a4a;
+}
+.agenda-mark.holiday {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fdecec;
+  border: 1px solid #f4c9c5;
+  color: #d23b30;
+}
+.agenda-noevent {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted, #9aa0ab);
+}
 .agenda-event {
   display: flex;
   align-items: stretch;

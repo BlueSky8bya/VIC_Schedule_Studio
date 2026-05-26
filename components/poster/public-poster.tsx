@@ -1433,8 +1433,10 @@ export function PublicPoster({
     type DayGroup = {
       cell: MonthCell;
       day: ReturnType<typeof classifyDay>;
+      mark: ReturnType<typeof getDayMark>;
       list: { event: PublicScheduleEvent; support: boolean }[];
     };
+    const filtering = filterActive;
     const groups: DayGroup[] = [];
     for (const cell of cells.filter((c) => c.inCurrentMonth)) {
       // 색상 안내에서 태그를 고르면, 그 태그에 맞는 일정만 남긴다(필터에 안 맞으면 제외).
@@ -1448,8 +1450,15 @@ export function PublicPoster({
         ...support.map((event) => ({ event, support: true })),
         ...evs.map((event) => ({ event, support: false }))
       ];
-      if (list.length > 0) {
-        groups.push({ cell, day: classifyDay(cell.isoDate, cell.weekday, today), list });
+      const mark = getDayMark(cell.isoDate);
+      // 일정이 있는 날, 또는 (필터가 없을 때) 공휴일/대체공휴일은 라벨만이라도 표시한다.
+      if (list.length > 0 || (!filtering && mark?.isHoliday)) {
+        groups.push({
+          cell,
+          day: classifyDay(cell.isoDate, cell.weekday, today),
+          mark,
+          list
+        });
       }
     }
 
@@ -1461,7 +1470,7 @@ export function PublicPoster({
       >
         {interactive && legendTags.length > 0 ? (
           <aside className="agenda-legend" aria-label="색상 안내(태그 필터)">
-            <strong>색상</strong>
+            <strong>색상 필터</strong>
             {legendTags.map((tag) => {
               const color = schedule.palette.find((p) => p.key === tag.colorKey);
               if (!color) return null;
@@ -1508,7 +1517,7 @@ export function PublicPoster({
           {groups.length === 0 ? (
             <p className="agenda-empty">이 달엔 공개된 일정이 아직 없어요. 🍃</p>
           ) : (
-            groups.map(({ cell, day, list }) => (
+            groups.map(({ cell, day, mark, list }) => (
               <div className={`agenda-day ${day.isToday ? "today" : ""}`} key={cell.isoDate}>
                 <div className="agenda-when">
                   <strong className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}>
@@ -1517,6 +1526,14 @@ export function PublicPoster({
                   <span className="agenda-wd">{WEEKDAYS[cell.weekday]}</span>
                 </div>
                 <div className="agenda-day-list">
+                  {mark ? (
+                    <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>
+                      {mark.name}
+                    </span>
+                  ) : null}
+                  {list.length === 0 ? (
+                    <span className="agenda-noevent">예정된 공개 일정 없음</span>
+                  ) : null}
                   {list.map(({ event, support }) => {
                     const colors = eventColors(event);
                     const { main, subs } = splitEventTitle(event.publicTitle);
