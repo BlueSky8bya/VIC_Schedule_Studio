@@ -2200,7 +2200,7 @@ textarea:disabled {
   color: var(--muted);
   cursor: pointer;
 }
-/* 편집실 업 도움 편집칸의 "도우러 가기(링크 확인)" 버튼 */
+/* 편집실 업 도움 편집칸의 "도우러 가기(링크 확인용)" 버튼 */
 .support-visit {
   width: 100%;
   text-decoration: none;

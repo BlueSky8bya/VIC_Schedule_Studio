@@ -344,6 +344,21 @@ export function PublicPoster({
   const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
   const today = getTodayKst();
   const supportLanes = useMemo(() => assignSupportLanes(schedule.events), [schedule.events]);
+  // 업 도움 띠 줄 수를 "주별"로 — 띠 없는 주는 0이라 그 주 일정이 위로 붙는다(높이 낭비 방지).
+  const weekSupportLaneCount = useMemo(() => {
+    const perWeek: number[] = [];
+    for (let w = 0; w * 7 < cells.length; w += 1) {
+      let maxLane = -1;
+      for (const c of cells.slice(w * 7, w * 7 + 7)) {
+        for (const s of getEventsForDate(schedule.events, c.isoDate)) {
+          if (!s.isSupport) continue;
+          maxLane = Math.max(maxLane, supportLanes.lanes.get(s.id) ?? 0);
+        }
+      }
+      perWeek[w] = maxLane + 1;
+    }
+    return perWeek;
+  }, [cells, schedule.events, supportLanes]);
   const supportEvents = schedule.events.filter((e) => e.isSupport);
   // 이어진 일정 묶음 키 — 같은 묶음 칸들의 높이를 맞추는 데 쓴다(아래 useEqualChainHeights).
   const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
@@ -1294,7 +1309,7 @@ export function PublicPoster({
   }
 
   // 날짜 칸 렌더러.
-  function renderDayCell(cell: MonthCell) {
+  function renderDayCell(cell: MonthCell, weekSupCount: number) {
     const covering = getEventsForDate(schedule.events, cell.isoDate);
     const supportHere = covering.filter((e) => e.isSupport);
     const events = covering.filter((e) => !e.isSupport);
@@ -1341,9 +1356,7 @@ export function PublicPoster({
         </div>
         <div
           className="day-events"
-          style={
-            supportLanes.count > 0 ? { paddingTop: 8 + supportLanes.count * 20 } : undefined
-          }
+          style={weekSupCount > 0 ? { paddingTop: 8 + weekSupCount * 20 } : undefined}
         >
           {events.map((event) => {
             const colors = eventColors(event);
@@ -2325,7 +2338,9 @@ export function PublicPoster({
             </div>
 
             <div className="public-month-grid" aria-label="월간 공개 일정" ref={monthGridRef}>
-              {cells.map((cell) => renderDayCell(cell))}
+              {cells.map((cell, i) =>
+                renderDayCell(cell, weekSupportLaneCount[Math.floor(i / 7)] ?? 0)
+              )}
             </div>
           </section>
 

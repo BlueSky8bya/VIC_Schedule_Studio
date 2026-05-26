@@ -361,6 +361,22 @@ export function StudioShell({
   );
   const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
   const supportLanes = useMemo(() => assignSupportLanes(visibleEvents), [visibleEvents]);
+  // 업 도움 띠가 차지하는 줄 수를 "주(週)별"로 센다. 띠가 없는 주는 0 → 그 주의 일정들이 위로
+  // 붙는다(예전엔 달 전체 최대 줄 수를 모든 칸에 적용해, 띠 없는 주도 공중에 떠 높이만 낭비됨).
+  const weekSupportLaneCount = useMemo(() => {
+    const perWeek: number[] = [];
+    for (let w = 0; w * 7 < cells.length; w += 1) {
+      let maxLane = -1;
+      for (const c of cells.slice(w * 7, w * 7 + 7)) {
+        for (const s of getEventsForDate(visibleEvents, c.isoDate)) {
+          if (!s.isSupport) continue;
+          maxLane = Math.max(maxLane, supportLanes.lanes.get(s.id) ?? 0);
+        }
+      }
+      perWeek[w] = maxLane + 1;
+    }
+    return perWeek;
+  }, [cells, visibleEvents, supportLanes]);
   // 이어진 일정 묶음 키 + 묶음 칸 높이 맞추기(글자 수 달라도 이음새 안 어긋나게).
   const chainKeys = useMemo(() => buildChainKeys(visibleEvents), [visibleEvents]);
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
@@ -1532,11 +1548,13 @@ export function StudioShell({
             ))}
           </div>
           <div className="studio-month-grid" aria-label="월간 달력" ref={monthGridRef}>
-            {cells.map((cell) => {
+            {cells.map((cell, cellIndex) => {
               const covering = getEventsForDate(visibleEvents, cell.isoDate);
               const supportHere = covering.filter((e) => e.isSupport);
               const dateEvents = covering.filter((e) => !e.isSupport);
               const day = classifyDay(cell.isoDate, cell.weekday, today);
+              // 이 칸이 속한 주의 업 도움 줄 수만큼만 위 여백을 둔다(띠 없는 주는 0).
+              const weekSupCount = weekSupportLaneCount[Math.floor(cellIndex / 7)] ?? 0;
 
               const dayClass = [
                 "studio-day",
@@ -1599,9 +1617,7 @@ export function StudioShell({
                   <div
                     className="studio-event-list"
                     style={
-                      supportLanes.count > 0
-                        ? { paddingTop: 8 + supportLanes.count * 20 }
-                        : undefined
+                      weekSupCount > 0 ? { paddingTop: 8 + weekSupCount * 20 } : undefined
                     }
                   >
                     {dateEvents.map((event) => {
