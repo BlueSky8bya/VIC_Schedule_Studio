@@ -301,8 +301,12 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
               </li>
             </ol>
             <p className="notice-method-desc">
-              💡 첫 붙여넣기 뒤엔 화면 아래 <strong>탭(▣) 버튼</strong>으로 이 창과 숲을 오가며
-              붙여넣으세요. (뒤로가기 ✕)
+              💡 첫 붙여넣기 뒤엔 화면 아래{" "}
+              <strong>
+                탭 버튼
+                <Copy aria-hidden="true" size={13} style={{ verticalAlign: "-2px", margin: "0 2px" }} />
+              </strong>
+              으로 이 창과 숲을 오가며 붙여넣으세요. (뒤로가기 ✕)
             </p>
           </section>
         ) : (
