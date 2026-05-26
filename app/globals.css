@@ -400,6 +400,31 @@ select {
   opacity: 0.85;
 }
 
+/* 크롬 자동전환 중 짧게 보이는 표시(빈 화면 방지). 전환되면 곧 사라진다. */
+.inapp-trying {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px 8px;
+  color: var(--muted, #6b5b34);
+  font-size: 14px;
+  font-weight: 700;
+}
+.inapp-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid rgb(120 120 120 / 25%);
+  border-top-color: rgb(120 120 120 / 80%);
+  border-radius: 50%;
+  animation: inapp-spin 0.7s linear infinite;
+}
+@keyframes inapp-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .auth-success {
   border: 1px solid #a8d5b1;
   background: #f0f9f1;
