@@ -1230,7 +1230,7 @@ export function StudioShell({
   // 업 도움 기간·링크 입력부. editable=true면 신뢰 멤버도 고칠 수 있다(토글은 별도, 소유자 전용).
   function renderSupportFields(editable: boolean) {
     return (
-      <>
+      <div className="support-fields">
         <div className="support-duration">
           <span className="duration-title">업 도움 기간</span>
           <div className="duration-chips">
@@ -1263,31 +1263,36 @@ export function StudioShell({
             />
           </div>
         </div>
-        <label>
-          업 도움 링크
+        <label className="support-link-field">
+          <span className="support-link-label">
+            <ExternalLink aria-hidden="true" size={13} />
+            업 도움 링크
+          </span>
           <input
+            className="support-link-input"
             disabled={!editable}
+            inputMode="url"
             onChange={(event) =>
               setForm((current) => ({ ...current, supportUrl: event.target.value }))
             }
-            placeholder="숲 게시글 URL"
+            placeholder="숲 게시글 URL 붙여넣기"
             type="url"
             value={form.supportUrl}
           />
+          {/* 이미 설정된 링크는 바로 눌러 확인할 수 있게(같은 줄 끝에 작게). */}
+          {form.supportUrl.trim() ? (
+            <a
+              className="support-visit"
+              href={form.supportUrl}
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <ExternalLink aria-hidden="true" size={13} />
+              링크 열어 확인
+            </a>
+          ) : null}
         </label>
-        {/* 이미 설정된 링크는 편집실에서 바로 눌러 확인할 수 있게 한다. */}
-        {form.supportUrl.trim() ? (
-          <a
-            className="button support-visit"
-            href={form.supportUrl}
-            rel="noopener noreferrer"
-            target="_blank"
-          >
-            <ExternalLink aria-hidden="true" size={15} />
-            도우러 가기 (링크 확인용)
-          </a>
-        ) : null}
-      </>
+      </div>
     );
   }
 

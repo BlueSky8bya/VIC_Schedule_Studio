@@ -2203,10 +2203,78 @@ textarea:disabled {
   color: var(--muted);
   cursor: pointer;
 }
-/* 편집실 업 도움 편집칸의 "도우러 가기(링크 확인용)" 버튼 */
-.support-visit {
+/* ── 업 도움 편집 필드(편집실 + 수정 시트 공용) ───────────────────────────── */
+.support-fields {
+  display: grid;
+  gap: 14px;
+}
+/* 업 도움 링크: 라벨 위 / 전체 폭 입력칸 아래로 깔끔하게 쌓는다. */
+.support-link-field {
+  display: grid;
+  gap: 7px;
+}
+.support-link-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #7a6a52;
+}
+.support-link-label svg {
+  color: #a9760a;
+}
+.support-link-input {
   width: 100%;
+  min-height: 46px;
+  border: 1px solid #e7dcc4;
+  border-radius: 12px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #2b2f38;
+  background: #fffdf7;
+  transition:
+    border-color var(--dur-1, 120ms) var(--ease, ease),
+    box-shadow var(--dur-1, 120ms) var(--ease, ease),
+    background var(--dur-1, 120ms) var(--ease, ease);
+}
+.support-link-input::placeholder {
+  color: #bcb3a1;
+  font-weight: 500;
+}
+.support-link-input:focus {
+  outline: none;
+  border-color: #f5b81b;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgb(245 184 27 / 22%);
+}
+.support-link-input:disabled {
+  background: #f6f4ee;
+  color: #9aa0ab;
+}
+/* "링크 열어 확인" — 입력칸 아래 작은 보조 링크(점선 알약). */
+.support-visit {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px dashed #e7c98a;
+  border-radius: 999px;
+  background: #fffaf0;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #a9760a;
   text-decoration: none;
+  cursor: pointer;
+  transition:
+    background var(--dur-1, 120ms) var(--ease, ease),
+    border-color var(--dur-1, 120ms) var(--ease, ease);
+}
+.support-visit:hover {
+  background: #fff2d6;
+  border-color: #f0c768;
 }
 /* 비공개 범위 배지 */
 .m-scope-badge {
