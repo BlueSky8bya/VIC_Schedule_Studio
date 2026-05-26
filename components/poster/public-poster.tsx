@@ -1571,25 +1571,36 @@ export function PublicPoster({
                       interactive && !support
                         ? heartTier(heartCounts[event.id] ?? 0, maxHeart)
                         : null;
-                    const barStyle = support
+                    const single = support
                       ? { background: "#84b74f" }
-                      : colors.length >= 2
-                        ? {
-                            background: `linear-gradient(180deg, ${colors[0].bgColor}, ${colors[1].bgColor})`
-                          }
-                        : colors[0]
-                          ? { background: colors[0].bgColor }
-                          : undefined;
+                      : colors[0]
+                        ? { background: colors[0].bgColor }
+                        : undefined;
+                    const twoColor = !support && colors.length >= 2;
                     const end = event.endDateKey;
                     return (
                       <div className="agenda-event" key={(support ? "s-" : "") + event.id}>
-                        <span
-                          className="agenda-bar"
-                          data-color={
-                            !support && colors.length < 2 ? colors[0]?.key : undefined
-                          }
-                          style={barStyle}
-                        />
+                        {twoColor ? (
+                          // 2색: 위/아래 반반 + 각 무늬, 가운데 경계는 마스크로 흐릿하게.
+                          <span className="agenda-bar agenda-bar-2">
+                            <i
+                              className="agenda-bar-half top"
+                              data-color={colors[0].key}
+                              style={{ background: colors[0].bgColor }}
+                            />
+                            <i
+                              className="agenda-bar-half bottom"
+                              data-color={colors[1].key}
+                              style={{ background: colors[1].bgColor }}
+                            />
+                          </span>
+                        ) : (
+                          <span
+                            className="agenda-bar"
+                            data-color={!support ? colors[0]?.key : undefined}
+                            style={single}
+                          />
+                        )}
                         <div className="agenda-content">
                           <p className="agenda-title">
                             <span className="agenda-title-text">
@@ -2370,9 +2381,7 @@ export function PublicPoster({
               {/* 관심(♥)을 많이 받은 일정의 인기 배지 단계만 간단히 안내. */}
               {!decorate ? (
                 <div className="legend-heart-help">
-                  <p className="legend-tier-line">
-                    관심(♥)을 많이 받은 일정엔 인기 배지가 붙어요:
-                  </p>
+                  <p className="legend-tier-line">관심(♥) 인기도:</p>
                   <ul className="legend-tiers">
                     <li>
                       <span className="flame">🔥</span> 관심

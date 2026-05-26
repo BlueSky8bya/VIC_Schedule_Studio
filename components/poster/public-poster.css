@@ -347,11 +347,32 @@
 }
 .agenda-bar {
   flex: 0 0 auto;
-  /* 무늬(패턴)가 제대로 보이도록 너비를 2배로 — 비슷한 색끼리 혼동 방지. */
-  width: 12px;
+  /* 무늬(패턴)가 보이도록 넉넉한 너비 — 비슷한 색끼리 혼동 방지. */
+  width: 10px;
   border-radius: 6px;
   align-self: stretch;
   min-height: 22px;
+}
+/* 2색 바: 위/아래 반쪽에 각자 색+무늬, 가운데 경계는 마스크 페이드로 흐릿하게 섞이게. */
+.agenda-bar-2 {
+  position: relative;
+  overflow: hidden;
+}
+.agenda-bar-2 .agenda-bar-half {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 60%;
+}
+.agenda-bar-2 .agenda-bar-half.top {
+  top: 0;
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 70%, transparent 100%);
+}
+.agenda-bar-2 .agenda-bar-half.bottom {
+  bottom: 0;
+  -webkit-mask-image: linear-gradient(0deg, #000 70%, transparent 100%);
+  mask-image: linear-gradient(0deg, #000 70%, transparent 100%);
 }
 .agenda-content {
   flex: 1;
@@ -698,12 +719,15 @@
   gap: 14px;
 }
 
-/* 오른쪽: 업 도움 카드(들) + 색상 안내 */
+/* 오른쪽: 업 도움 카드(들) + 색상 안내. 달력 맨 밑줄까지 늘어지게(끝 선 정렬). */
 .public-right {
-  display: grid;
-  align-content: start;
-  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-self: stretch;
   gap: 14px;
+}
+.public-right .public-legend-vertical {
+  flex: 1; /* 색상 안내 박스가 남는 높이를 채워 달력 바닥에 끝 선을 맞춘다 */
 }
 .legend-title {
   display: block;
