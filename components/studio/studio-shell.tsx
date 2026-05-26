@@ -819,7 +819,7 @@ export function StudioShell({
               {actor.isAuthenticated ? (
                 <form action="/api/auth/logout" method="post">
                   <button className="button" type="submit">
-                    로그아웃
+                    계정 변경
                   </button>
                 </form>
               ) : (
@@ -1220,7 +1220,7 @@ export function StudioShell({
           {actor.isAuthenticated ? (
             <form action="/api/auth/logout" method="post">
               <button className="button" type="submit">
-                로그아웃
+                계정 변경
               </button>
             </form>
           ) : (
