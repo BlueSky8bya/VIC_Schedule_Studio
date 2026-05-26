@@ -1,23 +1,32 @@
 -- 캘린더 + 기본 팔레트 10색 + 기본 태그 10개 + 샘플 공개 일정 시드.
 --
--- 사전 조건: 소유자(whiteheaven231233@gmail.com)가 앱에서 구글 로그인을 1회 완료해
--- auth.users에 행이 있어야 한다. calendars.owner_id가 그 사용자를 참조하기 때문.
+-- 사전 조건: 소유자(OWNER_EMAIL 계정)가 앱에서 구글 로그인을 1회 완료해 auth.users에
+-- 행이 있어야 한다. calendars.owner_id가 그 사용자를 참조하기 때문.
 -- (로그인 전 실행하면 아래에서 명시적 오류를 던진다.)
 --
--- 멱등(idempotent): 여러 번 실행해도 중복 생성되지 않는다.
+-- 소유자 이메일은 GUC로 주입한다(공개 저장소에 개인 이메일을 박지 않기 위함):
+--   set app.owner_email = 'owner@example.com';   -- 실제 소유자 구글 이메일
+--   \i db/seeds/0002_calendar_and_defaults.sql    (또는 Supabase SQL 에디터에 함께 실행)
+-- 소유자를 바꿀 때(예: 운영 핸드오프)도 새 이메일로 set 후 다시 실행하면 owner_id가
+-- 그 계정으로 이전된다(on conflict do update). 멱등이라 여러 번 실행해도 안전하다.
 
 do $$
 declare
+  v_owner_email text := nullif(current_setting('app.owner_email', true), '');
   v_owner uuid;
   v_cal uuid;
 begin
+  if v_owner_email is null then
+    raise exception '소유자 이메일이 설정되지 않았습니다. 먼저 "set app.owner_email = ''소유자구글이메일'';"을 실행한 뒤 다시 시도하세요.';
+  end if;
+
   select id into v_owner
   from auth.users
-  where lower(email) = 'whiteheaven231233@gmail.com'
+  where lower(email) = lower(v_owner_email)
   limit 1;
 
   if v_owner is null then
-    raise exception '소유자 계정이 auth.users에 없습니다. 먼저 whiteheaven231233@gmail.com으로 앱에 1회 로그인한 뒤 다시 실행하세요.';
+    raise exception '소유자 계정(%)이 auth.users에 없습니다. 먼저 그 계정으로 앱에 1회 로그인한 뒤 다시 실행하세요.', v_owner_email;
   end if;
 
   -- 1) 캘린더 (slug = vic)

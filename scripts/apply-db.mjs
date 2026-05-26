@@ -71,6 +71,13 @@ if (!client) {
   process.exit(2);
 }
 
+// 시드(0002/0003)는 소유자 이메일을 GUC(app.owner_email)에서 읽는다(공개 저장소에
+// 개인 이메일을 박지 않기 위함). .env.local의 OWNER_EMAIL을 이 세션에 주입해 둔다.
+if (env.OWNER_EMAIL) {
+  await client.query("select set_config('app.owner_email', $1, false)", [env.OWNER_EMAIL]);
+  console.log(`\napp.owner_email = ${env.OWNER_EMAIL} (.env.local의 OWNER_EMAIL) 주입`);
+}
+
 for (const file of files) {
   const sql = readFileSync(file, "utf8");
   process.stdout.write(`\n실행: ${file} ... `);

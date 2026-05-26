@@ -87,6 +87,23 @@ Supabase 대시보드 → **Storage**
 
 - **소유자(owner)** 는 코드가 아니라 **`OWNER_EMAIL` 환경변수**로 정해집니다.
   Vercel에 `OWNER_EMAIL = 빅토리님 이메일`만 넣으면 빅토리님이 전체 편집 권한을 가집니다.
+- ⚠️ **중요(기존 DB 재사용 시)**: 앱 권한은 `OWNER_EMAIL`로 결정되지만, **DB의 RLS는
+  `calendars.owner_id`** 로 소유자를 판별합니다(일정 저장은 사용자 세션으로 실행 →
+  RLS 적용). 기존 DB의 `owner_id`가 예전(테스트) 계정을 가리키고 있으면, `OWNER_EMAIL`만
+  바꿔도 빅토리님 화면엔 편집 UI가 보이지만 **저장이 RLS에 막힙니다.** 그래서 소유자
+  이전은 아래 두 가지를 **둘 다** 맞춰야 합니다:
+  1. Vercel `OWNER_EMAIL = toryvac2@gmail.com` (앱 권한)
+  2. `calendars.owner_id`를 토리님 계정으로 이전 (DB/RLS) — **순서 주의**:
+     - (1) 위 환경변수 설정 후 배포 → (2) **토리님이 한 번 구글 로그인**(auth.users에 행 생성)
+       → (3) Supabase SQL 에디터에서 아래 실행:
+       ```sql
+       set app.owner_email = 'toryvac2@gmail.com';
+       -- 그리고 db/seeds/0003_transfer_owner.sql 내용을 이어서 실행
+       ```
+     - 로컬에서 한다면(권장, 더 간단): `.env.local`의 `OWNER_EMAIL`을 `toryvac2@gmail.com`으로
+       둔 뒤 `node scripts/apply-db.mjs db/seeds/0003_transfer_owner.sql` — apply-db가
+       `.env.local`의 `OWNER_EMAIL`을 `app.owner_email` GUC로 자동 주입한다.
+     - 샘플 일정은 그대로 유지됩니다(데이터는 건드리지 않고 owner_id만 바꿈).
 - **개발자(developer/슈퍼관리자)** 는 `platform_admins` 테이블로 관리되며,
   현재 `blackspace665@gmail.com`(나)이 등록돼 있어 유지보수 권한을 계속 가집니다.
   - 개발자도 공개 API에는 비공개 데이터가 안 나오고, 비공개 레이어 열람은 잠금해제가 필요(설계 규칙).
