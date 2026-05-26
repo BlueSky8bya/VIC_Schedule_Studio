@@ -2106,7 +2106,15 @@ export function StudioShell({
             ) : null}
             {modal === "members" ? <TrustedMembersPanel /> : null}
             {modal === "notice" ? (
-              <NoticeModal dateKey={selectedDate} mobile={isNarrow} onClose={() => setModal(null)} />
+              <NoticeModal
+                dateKey={selectedDate}
+                initialUpLink={
+                  getEventsForDate(events, selectedDate).find((e) => e.isSupport && e.supportUrl)
+                    ?.supportUrl ?? ""
+                }
+                mobile={isNarrow}
+                onClose={() => setModal(null)}
+              />
             ) : null}
           </div>
         </div>

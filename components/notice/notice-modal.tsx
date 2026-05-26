@@ -34,6 +34,8 @@ type NoticeModalProps = {
   onClose: () => void;
   // 모바일: 직접 붙여넣기(방법 1)는 너무 번거로워 빼고, 북마클릿 자동 입력만 안내한다.
   mobile?: boolean;
+  // 이 날짜의 업 도움 일정에 이미 링크가 있으면 업 공지 링크칸을 미리 채운다(두 번 일 안 하게).
+  initialUpLink?: string;
 };
 
 // "YYYY-MM-DD" → "YY년 M월 d일" (월·일은 0 없이, 연도는 두 자리).
@@ -42,7 +44,12 @@ function formatNoticeDate(iso: string) {
   return `${String(y).slice(2)}년 ${m}월 ${d}일`;
 }
 
-export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalProps) {
+export function NoticeModal({
+  dateKey,
+  onClose,
+  mobile = false,
+  initialUpLink = ""
+}: NoticeModalProps) {
   // 공지 종류 — 뱅온 공지 / 업 도움 공지(탭 전환).
   const [kind, setKind] = useState<"bangon" | "up">("bangon");
   const [ampm, setAmpm] = useState<"오전" | "오후">("오후");
@@ -51,7 +58,7 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
   const [detail, setDetail] = useState(""); // 자세한 내용
   // 업 도움 공지 입력
   const [upTarget, setUpTarget] = useState(""); // 제목 뒷부분(예: 연초록님 황제 배생아 대회)
-  const [upLink, setUpLink] = useState(""); // UP 게시글 링크(본문에 3번 자동 반복)
+  const [upLink, setUpLink] = useState(initialUpLink); // UP 게시글 링크(본문에 3번 자동 반복)
   const [upComment, setUpComment] = useState(""); // 자유 멘트(여러 줄)
   const [copied, setCopied] = useState<"title" | "body" | "payload" | "mark" | null>(null);
 
@@ -88,6 +95,8 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
   const title = isUp ? upTitle : bangonTitle;
   const body = isUp ? upBody : bangonBody;
   const emoticonUrl = isUp ? UP_EMOTICON_URL : EMOTICON_URL;
+  // 북마크 추천 이름(공지 종류별).
+  const bookmarkName = isUp ? "VIC 업공지" : "VIC 뱅온공지";
 
   async function copy(kind: "title" | "body" | "payload" | "mark", text: string) {
     try {
@@ -254,14 +263,9 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
         <span className="notice-label">완성 미리보기</span>
         <div className="notice-preview-title">{title}</div>
         <pre className="notice-preview-body">{body}</pre>
-        <div className={mobile ? "notice-emoticon center" : "notice-emoticon"}>
+        <div className="notice-emoticon center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img alt="맨 끝 이모티콘" src={emoticonUrl} />
-          {mobile ? null : (
-            <div className="notice-emoticon-text">
-              <span> ← 맨 끝 이모티콘 — 방법 1은 직접 추가, 방법 2는 자동</span>
-            </div>
-          )}
         </div>
       </div>
 
@@ -310,100 +314,72 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
             </p>
           </section>
         ) : (
-          <>
-            <section className="notice-method">
-              <header className="notice-method-head">
-                <span className="notice-method-no">방법 1</span>
-                <strong>직접 붙여넣기</strong>
-                <span className="notice-method-tag">비추천</span>
-              </header>
-              <p className="notice-method-desc">
-                제목이랑 본문을 따로 복사해서 숲에 붙여넣는 방법. 매번 두 번 붙여넣고
-                가운데정렬·이모티콘도 직접 해야 해서 살짝 번거로워요!
-              </p>
-              <div className="notice-method-actions">
-                <button className="button" onClick={() => copy("title", title)} type="button">
+          <section className="notice-method recommended">
+            <header className="notice-method-head">
+              <strong>북마클릿 자동 입력</strong>
+              <span className="notice-method-tag hot">추천 · 클릭 3번</span>
+            </header>
+            <p className="notice-method-desc">
+              처음 <strong>한 번만</strong> 북마크를 만들어두면,{" "}
+              <strong>복사 → 페이지 열기 → 북마크 실행</strong> 세 번이면 끝입니다! 제목·본문은
+              물론 <strong>가운데정렬이랑 이모티콘까지</strong> 알아서 쏙 들어갑니다.
+            </p>
+
+            <details className="notice-setup">
+              <summary>🔧 맨 처음 딱 한 번만: 북마크 만들기 (자세히)</summary>
+              <ol className="notice-autofill-steps">
+                <li>
+                  먼저 아래 코드를 복사해주세요!
+                  <div className="notice-autofill-row">
+                    <button className="button" onClick={() => copy("mark", BOOKMARKLET_SAFE)} type="button">
+                      <Copy aria-hidden="true" size={13} />
+                      {copied === "mark" ? "복사됨!" : "① 북마클릿 코드 복사"}
+                    </button>
+                  </div>
+                </li>
+                <li>
+                  브라우저 <strong>주소창 오른쪽 끝의 별표(☆)</strong>를 눌러 북마크를 하나
+                  저장해주세요.
+                </li>
+                <li>
+                  방금 만든 북마크에 <strong>마우스 우클릭 → “수정..”</strong> 누르기. (북마크바가 안 보이면 Ctrl+Shift+B)
+                </li>
+                <li>
+                  <strong>이름</strong>은 <strong>“{bookmarkName}”</strong>으로 바꾸시고,{" "}
+                  <strong>URL 칸</strong>의 내용을 전부 지운 뒤 <strong>①에서 복사한 코드를
+                  붙여넣고 저장해주세요!</strong>
+                </li>
+              </ol>
+              <strong style={{ display: "block", marginTop: "12px" }}>
+                이제 이 “{bookmarkName}” 북마크가 자동입력 버튼이 됐습니다 &lt;😎
+              </strong>
+            </details>
+
+            <ol className="notice-steps3">
+              <li>
+                <span className="notice-step-num">1</span>
+                <button
+                  className="button primary"
+                  onClick={() => copy("payload", autofillPayload)}
+                  type="button"
+                >
                   <Copy aria-hidden="true" size={14} />
-                  {copied === "title" ? "복사됨" : "제목 복사"}
+                  {copied === "payload" ? "복사됨!" : "제목+본문 한 번에 복사"}
                 </button>
-                <button className="button" onClick={() => copy("body", body)} type="button">
-                  <Copy aria-hidden="true" size={14} />
-                  {copied === "body" ? "복사됨" : "본문 복사"}
-                </button>
+              </li>
+              <li>
+                <span className="notice-step-num">2</span>
                 <a className="button" href={SOOP_WRITE_URL} rel="noopener noreferrer" target="_blank">
                   <ExternalLink aria-hidden="true" size={14} />
                   숲 공지 페이지 열기
                 </a>
-              </div>
-            </section>
-
-            <section className="notice-method recommended">
-              <header className="notice-method-head">
-                <span className="notice-method-no auto">방법 2</span>
-                <strong>자동 입력</strong>
-                <span className="notice-method-tag hot">추천 · 클릭 3번</span>
-              </header>
-              <p className="notice-method-desc">
-                처음 <strong>한 번만</strong> 북마크를 만들어두면,{" "}
-                <strong>복사 → 페이지 열기 → 북마크 실행</strong> 세 번이면 끝입니다!
-              </p>
-
-              <details className="notice-setup">
-                <summary>🔧 맨 처음 딱 한 번만: 북마크 만들기 (자세히)</summary>
-                <ol className="notice-autofill-steps">
-                  <li>
-                    먼저 아래 코드를 복사해주세요!
-                    <div className="notice-autofill-row">
-                      <button className="button" onClick={() => copy("mark", BOOKMARKLET_SAFE)} type="button">
-                        <Copy aria-hidden="true" size={13} />
-                        {copied === "mark" ? "복사됨!" : "① 북마클릿 코드 복사"}
-                      </button>
-                    </div>
-                  </li>
-                  <li>
-                    브라우저 <strong>주소창 오른쪽 끝의 별표(☆)</strong>를 눌러 북마크를 하나
-                    저장해주세요.
-                  </li>
-                  <li>
-                    방금 만든 북마크에 <strong>마우스 우클릭 → “수정..”</strong> 누르기. (북마크바가 안 보이면 Ctrl+Shift+B)
-                  </li>
-                  <li>
-                    <strong>이름</strong>은 원하시는 걸로 바꾸시고<strong>(예: VIC 자동공지)</strong>,{" "}
-                    <strong>URL 칸</strong>의 내용을 전부 지운 뒤 <strong>①에서 복사한 코드를
-                    붙여넣고 저장해주세요!</strong>
-                  </li>
-                </ol>
-                <strong style={{ display: "block", marginTop: "12px" }}>
-                  이제 이 “자동공지” 북마크가 자동입력 버튼이 됐습니다 &lt;😎
-                </strong>
-              </details>
-
-              <ol className="notice-steps3">
-                <li>
-                  <span className="notice-step-num">1</span>
-                  <button
-                    className="button primary"
-                    onClick={() => copy("payload", autofillPayload)}
-                    type="button"
-                  >
-                    <Copy aria-hidden="true" size={14} />
-                    {copied === "payload" ? "복사됨!" : "제목+본문 한 번에 복사"}
-                  </button>
-                </li>
-                <li>
-                  <span className="notice-step-num">2</span>
-                  <a className="button" href={SOOP_WRITE_URL} rel="noopener noreferrer" target="_blank">
-                    <ExternalLink aria-hidden="true" size={14} />
-                    숲 공지 페이지 열기
-                  </a>
-                </li>
-                <li>
-                  <span className="notice-step-num">3</span>
-                  <span className="notice-step-text">“자동공지” 북마크 클릭 → 끝! ✨</span>
-                </li>
-              </ol>
-            </section>
-          </>
+              </li>
+              <li>
+                <span className="notice-step-num">3</span>
+                <span className="notice-step-text">“{bookmarkName}” 북마크 클릭 → 끝! ✨</span>
+              </li>
+            </ol>
+          </section>
         )}
       </div>
 
