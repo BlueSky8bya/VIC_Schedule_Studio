@@ -1839,20 +1839,34 @@ textarea:disabled {
 .studio-mobile {
   padding: 0 14px calc(80px + env(safe-area-inset-bottom, 0px));
 }
-/* 역할 바: 역할 배지 + 비공개 보기 + 시청자 화면 */
+/* 역할 바: 역할 배지 + 비공개 보기 + 시청자 화면 + 로그아웃 — 한 줄(넘치면 가로 스크롤) */
 .m-rolebar {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   margin: 4px 0 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.m-rolebar::-webkit-scrollbar {
+  display: none;
+}
+.m-rolebar > * {
+  flex: 0 0 auto;
 }
 .m-rolebar .button {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  min-height: 38px;
-  font-size: 13px;
+  gap: 4px;
+  min-height: 36px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.m-rolebar form {
+  flex: 0 0 auto;
 }
 .studio-mobile .developer-warning,
 .studio-mobile .private-warning {

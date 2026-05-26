@@ -11,7 +11,15 @@ import {
   X
 } from "lucide-react";
 import Link from "next/link";
-import { FormEvent, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import {
+  type FormEvent,
+  type TouchEvent as ReactTouchEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition
+} from "react";
 import type {
   BroadcastTag,
   ColorKey,
@@ -343,6 +351,24 @@ export function StudioShell({
       setForm(createEmptyForm());
       return next;
     });
+  }
+
+  // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
+  const swipeRef = useRef<{ x: number; y: number } | null>(null);
+  function onAgendaTouchStart(e: ReactTouchEvent) {
+    const t = e.touches[0];
+    swipeRef.current = { x: t.clientX, y: t.clientY };
+  }
+  function onAgendaTouchEnd(e: ReactTouchEvent) {
+    const start = swipeRef.current;
+    swipeRef.current = null;
+    if (!start) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      moveMonth(dx < 0 ? 1 : -1);
+    }
   }
 
   function selectDate(isoDate: string) {
@@ -748,8 +774,7 @@ export function StudioShell({
       <div className="studio-mobile">
         <header className="agenda-header">
           <h1>
-            <span aria-hidden="true">✨️</span> {schedule.calendar.title}{" "}
-            <span aria-hidden="true">✨️</span>
+            ✨️ {schedule.calendar.title} ✨️
             <span>
               토리님 편집실 · {view.year}년 {view.month}월
             </span>
@@ -773,19 +798,35 @@ export function StudioShell({
           <button className="button" onClick={() => setViewerMode(true)} type="button">
             <Eye size={15} /> 시청자 화면
           </button>
+          {actor.isAuthenticated ? (
+            <form action="/api/auth/logout" method="post">
+              <button className="button" type="submit">
+                로그아웃
+              </button>
+            </form>
+          ) : (
+            <Link className="button" href="/login">
+              로그인
+            </Link>
+          )}
         </div>
 
         {actor.role === "developer" ? (
           <div className="developer-warning">🛠 개발자 세션 — 관리 권한으로 보고 있어요.</div>
         ) : null}
-        {canReadPrivate ? (
+        {/* 비공개 경고 배너는 화면을 공유하는 소유자에게만 — 작업자/매니저/개발자는 표시하지 않음. */}
+        {canReadPrivate && actor.role === "owner" ? (
           <div className="private-warning">
             <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중 — 방송 화면 공유에
             주의하세요.
           </div>
         ) : null}
 
-        <section className="agenda agenda-studio">
+        <section
+          className="agenda agenda-studio"
+          onTouchEnd={onAgendaTouchEnd}
+          onTouchStart={onAgendaTouchStart}
+        >
           <div className="agenda-flow">
             {monthCells.map((cell) => {
               const day = classifyDay(cell.isoDate, cell.weekday, today);
