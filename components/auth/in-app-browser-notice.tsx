@@ -36,6 +36,9 @@ export function InAppBrowserNotice({
   const [android, setAndroid] = useState(initialAndroid);
   const formWrapRef = useRef<HTMLDivElement>(null);
   const autoTried = useRef(false);
+  // autoSubmit이면 첫 렌더부터 "로딩"으로 시작해 로그인 버튼이 잠깐 보였다 사라지는 깜빡임을 없앤다.
+  // (이미 시도했던 세션이면 아래 효과에서 false로 바꿔 버튼을 노출 → 취소/뒤로가기 탈출구.)
+  const [autoStarting, setAutoStarting] = useState(autoSubmit);
 
   // 인앱이 아님이 확정되면(phase=children) 로그인 폼을 한 번 자동 제출한다.
   // 단, 이 브라우저 세션에서 이미 한 번 시도했으면 자동 제출하지 않고 버튼만 보여준다 —
@@ -56,6 +59,7 @@ export function InAppBrowserNotice({
       alreadyTried = true;
     }
     if (alreadyTried) {
+      setAutoStarting(false); // 이미 시도함 → 로딩 대신 버튼 노출(수동 진입 가능)
       return;
     }
     formWrapRef.current?.querySelector("form")?.requestSubmit();
@@ -97,6 +101,19 @@ export function InAppBrowserNotice({
   }, []);
 
   if (phase === "children") {
+    // 자동 로그인 중에는 버튼을 그리지 않고 로딩만 보여준다(폼은 숨겨둔 채 자동 제출).
+    // → 링크 진입 후 구글 계정창이 뜨기 전 "로그인 버튼이 깜빡" 하는 현상 제거.
+    if (autoStarting) {
+      return (
+        <div className="inapp-trying" role="status" aria-live="polite">
+          <span className="inapp-spinner" aria-hidden="true" />
+          <span>Google 계정으로 이동 중…</span>
+          <div ref={formWrapRef} style={{ display: "none" }}>
+            {children}
+          </div>
+        </div>
+      );
+    }
     // display:contents로 레이아웃엔 영향 없이, 자동 제출용으로 폼을 감싸는 ref만 둔다.
     return (
       <div ref={formWrapRef} style={{ display: "contents" }}>

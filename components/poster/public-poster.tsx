@@ -1796,23 +1796,21 @@ export function PublicPoster({
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
         {showAgenda ? (
           <header className="agenda-header">
-            <h1>
-              ✨️ 빅토리 일정표 ✨️{" "}
-              <span>
-                {view.year}년 {view.month}월
-              </span>
-            </h1>
+            <h1 className="agenda-title">✨️ 빅토리 일정표 ✨️</h1>
             {accountSwitch ? (
               <form action="/api/auth/logout" className="agenda-account" method="post">
-                {accountEmail ? (
-                  <span className="account-email" title={accountEmail}>
-                    {accountEmail}
-                  </span>
-                ) : null}
                 <button onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")} type="submit">
                   계정변경
                 </button>
               </form>
+            ) : null}
+            <span className="agenda-month">
+              {view.year}년 {view.month}월
+            </span>
+            {accountSwitch && accountEmail ? (
+              <span className="account-email agenda-email" title={accountEmail}>
+                {accountEmail}
+              </span>
             ) : null}
           </header>
         ) : null}

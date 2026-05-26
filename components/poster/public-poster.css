@@ -153,15 +153,22 @@
   z-index: 8;
   margin: 0 -22px 8px;
   padding: 9px 22px 10px;
-  text-align: center;
   background: linear-gradient(180deg, #fbf2df 72%, #f7eddb);
   border-bottom: 1px solid #e3d6bb;
+  /* 2행 그리드: [여백 | 제목·월(가운데) | 계정변경·이메일(오른쪽)].
+     1행=제목/계정변경, 2행=월/이메일 → 버튼이 제목 이모티콘을 가리지 않고,
+     이메일은 버튼 왼쪽이 아니라 "2026년 N월" 라인(아래)에 맞춰 오른쪽에 놓인다. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 2px;
 }
-/* 시청자 화면 계정 변경(로그아웃) — 헤더 오른쪽 위 작은 버튼 */
+/* 시청자 화면 계정 변경(로그아웃) — 우상단(1행 오른쪽 칸) */
 .agenda-account {
-  position: absolute;
-  top: 8px;
-  right: 14px;
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
 }
 .agenda-account button {
   border: 1px solid #e3d6bb;
@@ -174,21 +181,35 @@
   cursor: pointer;
 }
 .agenda-header h1 {
+  grid-column: 2;
+  grid-row: 1;
   margin: 0;
-  font-size: 28px;
+  /* 오른쪽에 계정변경 버튼 자리를 비워두므로, 좁은 폰에선 폭에 맞춰 줄어든다(겹침 방지). */
+  font-size: clamp(19px, 6vw, 28px);
   font-weight: 900;
   line-height: 1.15;
   color: var(--accent-strong, #a9760a);
   letter-spacing: 0.01em;
+  white-space: nowrap;
 }
-.agenda-header h1 span {
-  /* 연·월은 한 줄 아래 작게·연한 검정으로 */
-  display: block;
-  margin-top: 3px;
+/* 연·월 — 제목 아래(2행) 가운데, 작게·연한 검정 */
+.agenda-month {
+  grid-column: 2;
+  grid-row: 2;
+  justify-self: center;
   font-size: 13px;
   font-weight: 700;
   color: rgb(20 20 20 / 42%);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* 현재 로그인 이메일 — 2행 오른쪽(계정변경 버튼 바로 아래, 월 라인에 맞춤) */
+.agenda-email {
+  grid-column: 3;
+  grid-row: 2;
+  justify-self: end;
+  max-width: 42vw;
+  font-size: 11px;
 }
 /* 푸터: 연결 바 없이 좌·우 화살표 버튼만 떠 있게 한다. */
 .agenda-monthbar {
@@ -695,16 +716,6 @@
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-/* 모바일 아젠다: 우상단 절대배치 안에서 이메일 + 버튼을 한 줄로. */
-.agenda-account {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.agenda-account .account-email {
-  max-width: 40vw;
-}
-
 .poster-actions .button {
   gap: 7px;
 }
