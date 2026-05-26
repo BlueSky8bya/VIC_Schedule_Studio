@@ -26,14 +26,18 @@ const BOOKMARKLET =
   "if(ti){try{var sv=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ti),'value').set;sv.call(ti,d.title);}catch(e){ti.value=d.title;}ti.dispatchEvent(new Event('input',{bubbles:true}));ti.dispatchEvent(new Event('change',{bubbles:true}));tOk=true;}" +
   "else{var tc=doc.querySelector('[class*=\"PostTitle\"] [contenteditable]');if(tc){tc.focus();doc.execCommand('selectAll',false,null);doc.execCommand('insertText',false,d.title);tOk=true;}}}" +
   "if(!bOk){var be=doc.querySelector('.soop-editor-content')||doc.querySelector('.ck-editor__editable')||doc.querySelector('[contenteditable=\"true\"]')||((doc.body&&doc.body.isContentEditable)?doc.body:null);" +
-  "if(be){be.focus();var sel=win.getSelection();var rg=doc.createRange();rg.selectNodeContents(be);sel.removeAllRanges();sel.addRange(rg);" +
+  "if(be){be.focus();var filled=function(){return be.textContent.replace(/\\s/g,'').length>=2;};" +
+  "var ed=be.ckeditorInstance||(be.closest?((be.closest('.ck-editor__editable')||{}).ckeditorInstance):null);" +
+  "if(ed&&ed.setData){try{ed.setData(d.html);}catch(e){}}" +
+  "if(!filled()){var sel=win.getSelection();var rg=doc.createRange();rg.selectNodeContents(be);sel.removeAllRanges();sel.addRange(rg);" +
   "var dt=new DataTransfer();dt.setData('text/html',d.html);if(d.text)dt.setData('text/plain',d.text);" +
   "var pe=new ClipboardEvent('paste',{clipboardData:dt,bubbles:true,cancelable:true});be.dispatchEvent(pe);" +
-  "if(!pe.defaultPrevented){if(!doc.execCommand('insertHTML',false,d.html)){be.innerHTML=d.html;be.dispatchEvent(new Event('input',{bubbles:true}));}}bOk=true;}}}" +
+  "if(!filled()&&!pe.defaultPrevented){if(!doc.execCommand('insertHTML',false,d.html)){be.innerHTML=d.html;be.dispatchEvent(new Event('input',{bubbles:true}));}}}" +
+  "if(filled())bOk=true;}}}" +
   "if(tOk&&bOk)return;" +
   "var L=['[VIC진단] title='+tOk+' body='+bOk+' docs='+docs.length,location.href];" +
   "for(var j=0;j<docs.length;j++){try{var dd=docs[j];var ce=dd.querySelectorAll('[contenteditable]');var ip=dd.querySelectorAll('input,textarea');L.push('doc'+j+' CE='+ce.length+' INP='+ip.length);" +
-  "for(var a=0;a<ce.length&&a<4;a++)L.push(' CE'+a+' <'+ce[a].tagName+' class=\"'+ce[a].className+'\">');" +
+  "for(var a=0;a<ce.length&&a<4;a++)L.push(' CE'+a+' <'+ce[a].tagName+' class=\"'+ce[a].className+'\">'+(ce[a].ckeditorInstance?' [CKE5]':''));" +
   "for(var b=0;b<ip.length&&b<6;b++)L.push(' INP'+b+' <'+ip[b].tagName+' ph=\"'+(ip[b].placeholder||'')+'\" class=\"'+ip[b].className+'\">');}catch(e){L.push('doc'+j+' (접근불가)');}}" +
   "var rep=L.join('\\n');try{await navigator.clipboard.writeText(rep);}catch(e){}" +
   "alert('입력칸을 일부/전부 못 찾았어요.\\n진단 정보를 클립보드에 복사했으니 개발자에게 붙여넣어 주세요.\\n\\n'+rep);" +
@@ -329,6 +333,12 @@ export function NoticeModal({
               </strong>
               으로 이 창과 숲을 오가며 붙여넣으세요. (뒤로가기 ✕)
             </p>
+            {isUp ? (
+              <p className="notice-method-desc">
+                ※ 모바일은 <strong>링크가 자동 적용 안 돼요.</strong> 붙여넣은 뒤 링크 줄을 눌러 직접
+                적용해 주세요.
+              </p>
+            ) : null}
           </section>
         ) : (
           <section className="notice-method recommended">
