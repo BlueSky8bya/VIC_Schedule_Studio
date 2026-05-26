@@ -1,5 +1,6 @@
 import { PublicPoster } from "@/components/poster/public-poster";
 import { StudioShell } from "@/components/studio/studio-shell";
+import { InAppBrowserNotice } from "@/components/auth/in-app-browser-notice";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
@@ -69,6 +70,9 @@ function AuthFirstPage({ configured }: { configured: boolean }) {
   return (
     <main className="auth-page">
       <section className="auth-panel auth-minimal">
+        {/* 숲·카톡 등 앱 안 브라우저(웹뷰)에서는 Google이 OAuth를 막으므로, 감지되면
+            기본 브라우저(Chrome/Safari)로 열도록 안내·전환한다. 공지 링크 접속의 핵심. */}
+        <InAppBrowserNotice />
         <form action="/api/auth/login" method="post">
           <input name="next" type="hidden" value="/" />
           <button className="button google-login" disabled={!configured} type="submit">

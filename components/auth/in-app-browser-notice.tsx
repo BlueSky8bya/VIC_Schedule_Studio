@@ -20,7 +20,11 @@ export function InAppBrowserNotice() {
 
   useEffect(() => {
     const ua = navigator.userAgent || "";
-    const inApp = IN_APP.test(ua);
+    // iOS 인앱(WKWebView)은 UA에 "Safari" 토큰이 없다. 정식 Safari·Chrome(CriOS)·
+    // Firefox(FxiOS)는 모두 "Safari"를 포함하므로, iOS면서 Safari가 없으면 웹뷰로 본다.
+    const isIOS = /iPhone|iPad|iPod/i.test(ua);
+    const iosInApp = isIOS && !/Safari/i.test(ua);
+    const inApp = IN_APP.test(ua) || iosInApp;
     const android = /Android/i.test(ua);
     setState({ show: inApp, android });
 
