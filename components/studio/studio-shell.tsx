@@ -1027,7 +1027,6 @@ export function StudioShell({
   }
 
   function renderMobileEditSheet() {
-    const editing = events.find((e) => e.id === selectedEventId);
     return (
       <div
         className="m-edit-backdrop"

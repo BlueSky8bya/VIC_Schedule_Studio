@@ -236,7 +236,8 @@
 
 .studio-tag-legend {
   display: grid;
-  gap: 7px;
+  /* 유동 간격의 최소값(floor). 공간이 빠듯하면 여기까지 좁아지고, 남으면 space-between으로 벌어진다. */
+  gap: 4px;
 }
 
 .studio-tag-legend span {
@@ -1278,22 +1279,28 @@ textarea:disabled {
   box-shadow: 0 0 0 3px #2563eb;
 }
 
-/* 왼쪽 사이드바 넘침 방지 */
+/* 왼쪽 사이드바: 색상 안내·관리·꾸미기 박스의 밑 끝선을 달력 끝선에 맞춘다.
+   달력 칸이 보통 더 높으므로(.studio-day min-height) 그리드 stretch로 이 칸이 달력 높이까지
+   늘어나고, 남는 세로 공간은 "색상 안내"의 태그 행 사이 간격이 유동적으로 흡수한다. */
 .studio-left-panel {
   min-width: 0;
-  /* 박스 사이 빈 공간 대신, 색상 안내 박스를 늘려서 달력 끝선까지 채운다. */
   display: flex;
   flex-direction: column;
   gap: 12px;
+  align-self: stretch; /* 그리드 행(=달력) 높이까지 확실히 늘림 */
 }
 .studio-left-panel > section:first-child {
-  flex: 1; /* 색상 안내 박스가 남는 높이를 흡수 → 관리/꾸미기는 자연스레 아래에 */
+  /* 색상 안내 박스가 남는 높이를 흡수 → 관리/꾸미기는 자연스레 아래 끝선에 붙는다. */
+  flex: 1 1 auto;
+  min-height: 0; /* flex 자식의 기본 min-height:auto 때문에 높이가 안 늘던 문제 해소 */
   display: flex;
   flex-direction: column;
 }
-/* 색상 안내 목록이 박스 높이를 채우도록 스와치를 위/아래로 고르게 펼친다(빈 공간 제거). */
+/* 태그 목록이 박스 높이를 채우도록, 행 사이 간격을 위/아래로 고르게 벌린다(유동 간격).
+   공간이 빠듯하면 기본 간격(아래 base의 gap)까지 줄고, 남으면 space-between으로 벌어진다. */
 .studio-left-panel > section:first-child .studio-tag-legend {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
   align-content: space-between;
 }
 .studio-left-panel section {

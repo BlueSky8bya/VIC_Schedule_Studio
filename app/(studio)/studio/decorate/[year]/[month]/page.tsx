@@ -17,7 +17,12 @@ type StudioDecoratePageProps = {
 // canExport로 캡처도 할 수 있다. 스티커는 달(월)마다 따로 저장된다.
 export default async function StudioDecoratePage({ params }: StudioDecoratePageProps) {
   const { year, month } = await params;
-  const actor = await resolveCurrentActor("vic");
+  // 권한 확인(actor)과 공개 일정 로드를 병렬로 — 공개 데이터는 캐시되어 있어 권한 없는
+  // 사용자가 잠깐 함께 불러도 비용이 거의 없고, 통과하는 대부분의 경우 왕복 한 번을 줄인다.
+  const [actor, schedule] = await Promise.all([
+    resolveCurrentActor("vic"),
+    getPublicSchedule("vic")
+  ]);
 
   if (!canDecorate(actor.role)) {
     return (
@@ -27,8 +32,6 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
       </main>
     );
   }
-
-  const schedule = await getPublicSchedule("vic");
 
   return (
     <PublicPoster

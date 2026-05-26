@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { MembershipRole } from "@/lib/domain/schedule-types";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmail, normalizeEmail } from "@/lib/auth/config";
@@ -18,7 +19,11 @@ export const anonymousActor: CurrentActor = {
   trustedRole: null
 };
 
-export async function resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor> {
+// 한 요청 안에서 페이지와 여러 로더가 각자 actor를 물어봐도 getUser·역할 조회를
+// 한 번만 하도록 React cache로 묶는다(중복 네트워크 왕복 제거).
+export const resolveCurrentActor = cache(_resolveCurrentActor);
+
+async function _resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor> {
   const user = await getCurrentSupabaseUser();
   const email = normalizeEmail(user?.email);
 

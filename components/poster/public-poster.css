@@ -2501,6 +2501,18 @@
     grid-template-columns: 1fr;
   }
 
+  /* 한 줄(컬럼)로 쌓이게 — 명시적 grid-column 배치를 풀어 DOM 순서대로(편집실로→월이동→계정) */
+  .public-calendar-header .header-left,
+  .public-calendar-header .month-controls,
+  .public-calendar-header .viewer-actions {
+    grid-column: 1;
+    justify-self: center;
+  }
+  /* 빈 좌측 칸이 자리를 차지하지 않게 */
+  .public-calendar-header .header-left:empty {
+    display: none;
+  }
+
   .viewer-actions,
   .month-controls {
     justify-content: center;

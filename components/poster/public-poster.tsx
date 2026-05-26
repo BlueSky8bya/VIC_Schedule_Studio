@@ -1746,6 +1746,16 @@ export function PublicPoster({
         ) : null}
         {showAgenda ? null : (
           <header className="public-calendar-header">
+            {/* 편집실로 돌아가기는 시청자 화면과 동일하게 항상 좌측 상단에 둔다(버튼 위치 통일). */}
+            <div className="header-left">
+              {decorate ? (
+                <Link className="button" href="/studio">
+                  <ChevronLeft aria-hidden="true" size={16} />
+                  편집실로 돌아가기
+                </Link>
+              ) : null}
+            </div>
+
             <div className="month-controls" aria-label="월 이동">
               <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
                 <ChevronLeft aria-hidden="true" size={18} />
@@ -1757,12 +1767,6 @@ export function PublicPoster({
             </div>
 
             <div className="viewer-actions">
-              {decorate ? (
-                <Link className="button" href="/studio">
-                  <ChevronLeft aria-hidden="true" size={16} />
-                  편집실로 돌아가기
-                </Link>
-              ) : null}
               {accountSwitch ? (
                 <form action="/api/auth/logout" method="post">
                   <button className="button" type="submit">

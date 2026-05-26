@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import type { SetAllCookies } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { cache } from "react";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 
 export async function createSupabaseServerClient() {
@@ -32,7 +33,9 @@ export async function createSupabaseServerClient() {
   );
 }
 
-export async function getCurrentSupabaseUser() {
+// auth.getUser()는 Supabase Auth 서버로의 네트워크 왕복이라 느리다. 한 요청(렌더) 안에서
+// 여러 곳(페이지·로더·언락 확인)이 호출해도 React cache로 단 한 번만 실행되게 묶는다.
+export const getCurrentSupabaseUser = cache(async () => {
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
@@ -44,4 +47,4 @@ export async function getCurrentSupabaseUser() {
   } = await supabase.auth.getUser();
 
   return user;
-}
+});
