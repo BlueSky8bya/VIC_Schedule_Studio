@@ -25,15 +25,14 @@ const BOOKMARKLET =
   "if(!tOk){var ti=doc.querySelector('[class*=\"PostTitle\"] input,[class*=\"PostTitle\"] textarea')||doc.querySelector('input[placeholder*=\"제목\"],textarea[placeholder*=\"제목\"]');" +
   "if(ti){try{var sv=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ti),'value').set;sv.call(ti,d.title);}catch(e){ti.value=d.title;}ti.dispatchEvent(new Event('input',{bubbles:true}));ti.dispatchEvent(new Event('change',{bubbles:true}));tOk=true;}" +
   "else{var tc=doc.querySelector('[class*=\"PostTitle\"] [contenteditable]');if(tc){tc.focus();doc.execCommand('selectAll',false,null);doc.execCommand('insertText',false,d.title);tOk=true;}}}" +
-  "if(!bOk){var be=doc.querySelector('.soop-editor-content')||doc.querySelector('.ck-editor__editable')||doc.querySelector('[contenteditable=\"true\"]')||((doc.body&&doc.body.isContentEditable)?doc.body:null);" +
-  "if(be){be.focus();var filled=function(){return be.textContent.replace(/\\s/g,'').length>=2;};" +
-  "var ed=be.ckeditorInstance||(be.closest?((be.closest('.ck-editor__editable')||{}).ckeditorInstance):null);" +
-  "if(ed&&ed.setData){try{ed.setData(d.html);}catch(e){}}" +
-  "if(!filled()){var sel=win.getSelection();var rg=doc.createRange();rg.selectNodeContents(be);sel.removeAllRanges();sel.addRange(rg);" +
-  "var dt=new DataTransfer();dt.setData('text/html',d.html);if(d.text)dt.setData('text/plain',d.text);" +
-  "var pe=new ClipboardEvent('paste',{clipboardData:dt,bubbles:true,cancelable:true});be.dispatchEvent(pe);" +
-  "if(!filled()&&!pe.defaultPrevented){if(!doc.execCommand('insertHTML',false,d.html)){be.innerHTML=d.html;be.dispatchEvent(new Event('input',{bubbles:true}));}}}" +
-  "if(filled())bOk=true;}}}" +
+  "if(!bOk){var be=doc.querySelector('.soop-editor-content')||doc.querySelector('.cke_editable')||doc.querySelector('.ck-editor__editable')||doc.querySelector('[contenteditable=\"true\"]')||((doc.body&&doc.body.isContentEditable)?doc.body:null);" +
+  "if(be){var filled=function(){return be.textContent.replace(/\\s/g,'').length>=2;};be.focus();var did=false;" +
+  "var ed=be.ckeditorInstance||(be.closest?((be.closest('.ck-editor__editable')||{}).ckeditorInstance):null);if(ed&&ed.setData){try{ed.setData(d.html);did=true;}catch(e){}}" +
+  "if(!did){try{var CK=win.CKEDITOR||(win.parent&&win.parent.CKEDITOR)||(win.top&&win.top.CKEDITOR);if(CK&&CK.instances){for(var k in CK.instances){try{CK.instances[k].setData(d.html);did=true;}catch(e){}}}}catch(e){}}" +
+  "if(!did){var sel=win.getSelection();var rg=doc.createRange();rg.selectNodeContents(be);sel.removeAllRanges();sel.addRange(rg);try{doc.execCommand('selectAll',false,null);}catch(e){}try{doc.execCommand('insertHTML',false,d.html);}catch(e){}if(filled())did=true;}" +
+  "if(!did){var dt=new DataTransfer();dt.setData('text/html',d.html);if(d.text)dt.setData('text/plain',d.text);var pe=new ClipboardEvent('paste',{clipboardData:dt,bubbles:true,cancelable:true});be.dispatchEvent(pe);if(filled())did=true;}" +
+  "if(!did){be.innerHTML=d.html;be.dispatchEvent(new Event('input',{bubbles:true}));}" +
+  "if(did||filled())bOk=true;}}}" +
   "if(tOk&&bOk)return;" +
   "var L=['[VIC진단] title='+tOk+' body='+bOk+' docs='+docs.length,location.href];" +
   "for(var j=0;j<docs.length;j++){try{var dd=docs[j];var ce=dd.querySelectorAll('[contenteditable]');var ip=dd.querySelectorAll('input,textarea');L.push('doc'+j+' CE='+ce.length+' INP='+ip.length);" +
