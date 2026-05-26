@@ -11,10 +11,10 @@
   /* 화면 위에 붙고, 아래로는 하단 월 이동 바 직전까지 길게.
      높이는 svh(고정 = 툴바 보이는 기준)로 한 번만 계산 — dvh처럼 스크롤마다
      재계산/리플로우하지 않게 한다(주소창 숨김 시 아래 약간 여백만 생김). */
-  top: 8px;
+  top: 48px;
   align-self: flex-start;
-  height: calc(100vh - 78px);
-  height: calc(100svh - 78px);
+  height: calc(100vh - 118px);
+  height: calc(100svh - 118px);
   overflow-y: auto;
   flex: 0 0 86px;
   display: grid;
@@ -142,10 +142,16 @@
   /* 하단 고정 바에 마지막 카드가 가리지 않도록 여유. (안전영역 포함) */
   padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
 }
-/* 모바일 아젠다 헤더: 포스터 제목 + 현재 연·월 */
+/* 모바일 아젠다 헤더: 포스터 제목 + 현재 연·월. 스크롤해도 위에 고정. */
 .agenda-header {
-  margin: 2px 0 8px;
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  margin: 0 -22px 8px;
+  padding: 9px 22px 10px;
   text-align: center;
+  background: linear-gradient(180deg, #fbf2df 72%, #f7eddb);
+  border-bottom: 1px solid #e3d6bb;
 }
 .agenda-header h1 {
   margin: 0;
@@ -160,33 +166,32 @@
   color: var(--ink, #1c2433);
   font-variant-numeric: tabular-nums;
 }
+/* 푸터: 연결 바 없이 좌·우 화살표 버튼만 떠 있게 한다. */
 .agenda-monthbar {
   position: fixed;
   left: 12px;
   right: 12px;
-  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  padding: 7px 12px;
-  border-radius: 999px;
-  background: linear-gradient(180deg, #fffdf6, #fdf3df);
-  border: 1px solid #e3d6bb;
-  box-shadow: 0 10px 26px rgb(74 53 0 / 22%);
+  pointer-events: none;
 }
 .agenda-monthbar button {
+  pointer-events: auto;
   display: inline-grid;
   place-items: center;
-  width: 46px;
-  height: 46px;
-  border: 0;
+  width: 48px;
+  height: 48px;
+  border: 1px solid #e3d6bb;
   border-radius: 999px;
   background: var(--accent, #f5b81b);
   color: var(--on-accent, #4a3500);
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
+  box-shadow:
+    0 8px 20px rgb(74 53 0 / 26%),
+    inset 0 1px 0 rgb(255 255 255 / 55%);
   transition: transform var(--dur-1, 120ms) var(--ease);
 }
 .agenda-monthbar button:active {

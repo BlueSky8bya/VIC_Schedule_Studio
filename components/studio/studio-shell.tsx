@@ -722,7 +722,7 @@ export function StudioShell({
       ) : null}
       <header className="studio-topbar">
         <div>
-          <p className="eyebrow">빅토리 편집실</p>
+          <p className="eyebrow">토리님 편집실</p>
           <h1>{schedule.calendar.title}</h1>
         </div>
 
