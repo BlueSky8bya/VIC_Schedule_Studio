@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import {
   Black_Han_Sans,
   Do_Hyeon,
@@ -69,6 +70,8 @@ export default function RootLayout({
         </span>
         {/* Vercel Web Analytics — 방문자/페이지뷰 집계(쿠키리스, 개인정보 친화). */}
         <Analytics />
+        {/* Vercel Speed Insights — 실제 사용자 로딩 속도(웹 바이탈) 측정. */}
+        <SpeedInsights />
       </body>
     </html>
   );
