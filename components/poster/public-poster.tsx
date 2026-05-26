@@ -1515,7 +1515,13 @@ export function PublicPoster({
 
         <div className="agenda-flow">
           {groups.length === 0 ? (
-            <p className="agenda-empty">이 달엔 공개된 일정이 아직 없어요. 🍃</p>
+            <p className="agenda-empty">
+              {bookmarkedOnly && tagFilters.length === 0
+                ? "관심 표시한 일정이 아직 없어요. 🍃"
+                : filtering
+                  ? "해당 태그 일정이 아직 없어요. 🍃"
+                  : "이 달엔 공개된 일정이 아직 없어요. 🍃"}
+            </p>
           ) : (
             groups.map(({ cell, day, mark, list }) => (
               <div className={`agenda-day ${day.isToday ? "today" : ""}`} key={cell.isoDate}>
