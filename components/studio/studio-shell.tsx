@@ -721,26 +721,29 @@ export function StudioShell({
         </div>
       ) : null}
       <header className="studio-topbar">
-        <p className="eyebrow studio-eyebrow">토리님 편집실</p>
+        {/* 왼쪽 칸: "토리님 편집실"은 맨 왼쪽, 제목은 이 칸 가운데(= 편집실과 월 이동 사이) */}
+        <div className="studio-left">
+          <p className="eyebrow studio-eyebrow">토리님 편집실</p>
+          <h1 className="studio-poster-title">
+            <span aria-hidden="true">✨️</span>
+            {schedule.calendar.title}
+            <span aria-hidden="true">✨️</span>
+          </h1>
+        </div>
 
-        <h1 className="studio-poster-title">
-          <span aria-hidden="true">✨️</span>
-          {schedule.calendar.title}
-          <span aria-hidden="true">✨️</span>
-        </h1>
+        {/* 가운데: 월 이동 */}
+        <div className="studio-month-nav" aria-label="월 이동">
+          <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+            <ChevronLeft aria-hidden="true" size={18} />
+          </button>
+          <strong>{getMonthLabel(view.year, view.month)}</strong>
+          <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+            <ChevronRight aria-hidden="true" size={18} />
+          </button>
+        </div>
 
-        <div className="studio-topbar-right">
-          <div className="studio-month-nav" aria-label="월 이동">
-            <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
-              <ChevronLeft aria-hidden="true" size={18} />
-            </button>
-            <strong>{getMonthLabel(view.year, view.month)}</strong>
-            <button onClick={() => moveMonth(1)} title="다음 달" type="button">
-              <ChevronRight aria-hidden="true" size={18} />
-            </button>
-          </div>
-
-          <div className="studio-role-tools">
+        {/* 오른쪽: 역할·도구 */}
+        <div className="studio-role-tools">
           <div className={`actor-badge ${actor.role}`}>
             <strong>{ROLE_LABEL[actor.role]}</strong>
             <span>{actor.email ?? "비로그인"}</span>
@@ -770,7 +773,6 @@ export function StudioShell({
               로그인
             </Link>
           )}
-          </div>
         </div>
       </header>
 
