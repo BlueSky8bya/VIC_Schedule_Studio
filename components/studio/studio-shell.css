@@ -2161,6 +2161,24 @@ textarea:disabled {
 .m-event .agenda-title-text {
   color: #2b2f38;
 }
+/* 모바일 업 도움 카드: 기간 + 도우러가기 링크를 시청자 화면처럼 보이고, 작은 "수정" 버튼만 따로. */
+.m-support-edit {
+  justify-self: start;
+  margin-top: 4px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #fff;
+  padding: 3px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+  cursor: pointer;
+}
+/* 편집실 업 도움 편집칸의 "도우러 가기(링크 확인)" 버튼 */
+.support-visit {
+  width: 100%;
+  text-decoration: none;
+}
 /* 비공개 범위 배지 */
 .m-scope-badge {
   flex: 0 0 auto;

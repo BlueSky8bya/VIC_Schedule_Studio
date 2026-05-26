@@ -3,6 +3,7 @@
 import {
   ChevronLeft,
   ChevronRight,
+  ExternalLink,
   Eye,
   EyeOff,
   LockKeyhole,
@@ -150,6 +151,12 @@ const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
   work: "작업자",
   owner_private: "나만"
 };
+
+// YYYY-MM-DD → "M.D" (업 도움 기간 표시용 — 시청자 화면과 동일 형식)
+function formatShortDate(value: string) {
+  const [, month, day] = value.split("-");
+  return `${Number(month)}.${Number(day)}`;
+}
 
 export function StudioShell({
   actor,
@@ -924,6 +931,54 @@ export function StudioShell({
                           : colors[0]
                             ? { background: colors[0].bgColor }
                             : undefined;
+                      const dimCls = isDimmedByFilter(event) ? " filter-dim" : "";
+                      // 업 도움: 시청자 화면처럼 기간 + "도우러 가기" 링크를 인라인으로 보여준다.
+                      // (링크를 누르려면 <a>가 필요해 편집 버튼으로 감싸지 않고, 따로 "수정"을 둔다.)
+                      if (event.isSupport) {
+                        const sEnd = event.endDateKey ?? cell.isoDate;
+                        return (
+                          <div className={`agenda-event m-support${dimCls}`} key={event.id}>
+                            <span
+                              className="agenda-bar"
+                              data-color={colors.length < 2 ? colors[0]?.key : undefined}
+                              style={barStyle}
+                            />
+                            <div className="agenda-content">
+                              <p className="agenda-title">
+                                <span className="agenda-title-text">🌱 {event.publicTitle}</span>
+                                {event.visibilityScope !== "public" ? (
+                                  <span className={`m-scope-badge ${event.visibilityScope}`}>
+                                    {SCOPE_LABEL[event.visibilityScope]}
+                                  </span>
+                                ) : null}
+                              </p>
+                              <p className="agenda-sub">
+                                {formatShortDate(cell.isoDate)} ~ {formatShortDate(sEnd)}
+                              </p>
+                              {event.supportUrl ? (
+                                <a
+                                  className="agenda-link"
+                                  href={event.supportUrl}
+                                  rel="noopener noreferrer"
+                                  target="_blank"
+                                >
+                                  도우러 가기
+                                  <ExternalLink aria-hidden="true" size={13} />
+                                </a>
+                              ) : null}
+                              {canEdit ? (
+                                <button
+                                  className="m-support-edit"
+                                  onClick={() => openMobileEdit(event)}
+                                  type="button"
+                                >
+                                  수정
+                                </button>
+                              ) : null}
+                            </div>
+                          </div>
+                        );
+                      }
                       const inner = (
                         <>
                           <span
@@ -952,7 +1007,6 @@ export function StudioShell({
                           </div>
                         </>
                       );
-                      const dimCls = isDimmedByFilter(event) ? " filter-dim" : "";
                       return canEdit ? (
                         <button
                           className={`agenda-event m-event${dimCls}`}
@@ -1277,10 +1331,10 @@ export function StudioShell({
             <section>
               <h2>관리</h2>
               <button className="button" onClick={() => setModal("tags")} type="button">
-                태그 이름 · 색상 편집
+                태그 편집
               </button>
               <button className="button" onClick={() => setModal("members")} type="button">
-                매니저 · 작업자 관리
+                멤버 관리
               </button>
             </section>
           ) : null}
@@ -1609,6 +1663,18 @@ export function StudioShell({
                     value={form.supportUrl}
                   />
                 </label>
+                {/* 이미 설정된 링크는 편집실에서 바로 눌러 확인할 수 있게 한다. */}
+                {form.supportUrl.trim() ? (
+                  <a
+                    className="button support-visit"
+                    href={form.supportUrl}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <ExternalLink aria-hidden="true" size={15} />
+                    도우러 가기 (링크 확인)
+                  </a>
+                ) : null}
               </>
             ) : null}
 

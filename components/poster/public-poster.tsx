@@ -1756,15 +1756,20 @@ export function PublicPoster({
               ) : null}
             </div>
 
-            <div className="month-controls" aria-label="월 이동">
-              <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
-                <ChevronLeft aria-hidden="true" size={18} />
-              </button>
-              <strong>{getMonthLabel(view.year, view.month)}</strong>
-              <button onClick={() => moveMonth(1)} title="다음 달" type="button">
-                <ChevronRight aria-hidden="true" size={18} />
-              </button>
-            </div>
+            {/* 꾸미기에서는 월 이동을 맨 위가 아니라 달력 가까운 하단 플로팅 바로 옮긴다(누르기 쉽게). */}
+            {decorate ? (
+              <strong className="header-month-label">{getMonthLabel(view.year, view.month)}</strong>
+            ) : (
+              <div className="month-controls" aria-label="월 이동">
+                <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+                  <ChevronLeft aria-hidden="true" size={18} />
+                </button>
+                <strong>{getMonthLabel(view.year, view.month)}</strong>
+                <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+                  <ChevronRight aria-hidden="true" size={18} />
+                </button>
+              </div>
+            )}
 
             <div className="viewer-actions">
               {accountSwitch ? (
@@ -2442,8 +2447,9 @@ export function PublicPoster({
         )}
       </section>
 
-      {/* 모바일 아젠다: 월 이동 버튼만 하단 좌·우에 둔다(가운데는 브라우저 '맨 위로' 버튼과 안 겹치게 비움). */}
-      {showAgenda ? (
+      {/* 월 이동 버튼을 하단 좌·우에 띄운다(가운데는 비워 '맨 위로' 버튼과 안 겹치게).
+          아젠다(모바일 시청자)와 꾸미기 모두에서, 달력을 보며 엄지로 누르기 쉽게 한다. */}
+      {showAgenda || decorate ? (
         <nav className="agenda-monthbar" aria-label="월 이동">
           <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
             <ChevronLeft aria-hidden="true" size={22} />
