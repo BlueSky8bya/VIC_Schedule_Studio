@@ -11,6 +11,7 @@ import {
   X
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   type FormEvent,
   type TouchEvent as ReactTouchEvent,
@@ -156,8 +157,13 @@ export function StudioShell({
   hasUnlockSession
 }: StudioShellProps) {
   const today = getTodayKst();
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [actionError, setActionError] = useState<string | null>(null);
+  // 비밀번호 확인 후 팝업이 닫히고 비공개 일정이 서버에서 다시 불러와지는 동안 "불러오는 중" 표시.
+  const [loadingPrivate, startLoadingPrivate] = useTransition();
+  // 모바일 아젠다 월 전환 방향(시청자 화면과 동일한 슬라이드 애니메이션용).
+  const [monthDir, setMonthDir] = useState<"next" | "prev">("next");
   // 방송사고 방지: 새로고침/진입 시 항상 공개(일반) 모드가 기본. 잠금 세션이 있어도
   // 사용자가 직접 토글해야 비공개 일정이 보인다.
   const [showPrivate, setShowPrivate] = useState(false);
@@ -358,6 +364,7 @@ export function StudioShell({
   }
 
   function moveMonth(offset: number) {
+    setMonthDir(offset >= 0 ? "next" : "prev"); // 슬라이드 방향(시청자 화면과 동일)
     setView((current) => {
       const next = getAdjacentMonth(current.year, current.month, offset);
       setSelectedDate(`${next.year}-${String(next.month).padStart(2, "0")}-01`);
@@ -882,7 +889,7 @@ export function StudioShell({
               ) : null}
             </aside>
 
-            <div className="agenda-flow">
+            <div className="agenda-flow" data-enter={monthDir} key={`${view.year}-${view.month}`}>
               {monthCells.map((cell) => {
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const mark = getDayMark(cell.isoDate);
@@ -1151,7 +1158,7 @@ export function StudioShell({
           <span className="viewer-fullscreen-label">
             {isNarrow ? null : <Eye aria-hidden="true" size={15} />}
             {isNarrow
-              ? "시청자가 보는 화면(비공개 일정 비포함)"
+              ? "시청자가 보는 화면(비공개 일정 미포함)"
               : "시청자가 보는 공개 화면입니다 (비공개 일정 미포함)"}
           </span>
         </div>
@@ -1170,6 +1177,12 @@ export function StudioShell({
       {copyToast ? (
         <div className="copy-toast" role="status">
           {copyToast}
+        </div>
+      ) : null}
+      {loadingPrivate ? (
+        <div className="private-loading" role="status" aria-live="polite">
+          <span className="private-loading-spinner" aria-hidden="true" />
+          일정을 불러오는 중입니다…
         </div>
       ) : null}
       {isNarrow ? (
@@ -1703,7 +1716,14 @@ export function StudioShell({
               <PrivateLayerPanel
                 canManage={canEdit}
                 onDone={() => setModal(null)}
-                onUnlocked={() => setShowPrivate(true)}
+                onUnlocked={() => {
+                  // 팝업을 닫고, 서버에서 비공개 일정을 다시 불러오는 동안 "불러오는 중" 표시.
+                  setModal(null);
+                  setShowPrivate(true);
+                  startLoadingPrivate(() => {
+                    router.refresh();
+                  });
+                }}
                 setPasscodeAction={setPasscodeAction}
               />
             ) : null}

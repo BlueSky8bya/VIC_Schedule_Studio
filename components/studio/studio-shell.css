@@ -188,7 +188,8 @@
 
 .studio-workspace {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr) 370px;
+  /* 양옆 레일을 합쳐 ~21px 줄여, 가운데 달력(7칸 1fr)이 칸당 약 3px씩 넓어지게 한다. */
+  grid-template-columns: 210px minmax(0, 1fr) 359px;
   gap: 14px;
   padding: 14px;
 }
@@ -237,7 +238,7 @@
 .studio-tag-legend {
   display: grid;
   /* 유동 간격의 최소값(floor). 공간이 빠듯하면 여기까지 좁아지고, 남으면 space-between으로 벌어진다. */
-  gap: 4px;
+  gap: 3px;
 }
 
 .studio-tag-legend span {
@@ -317,6 +318,10 @@
 
 .studio-calendar-panel {
   min-width: 0;
+  /* 달력 칸이 사이드바보다 짧은 달(5주 등)에는 달력 그리드를 칸 높이까지 늘려, 사이드바
+     밑선과 달력 밑선이 항상 맞게 한다(반대로 달력이 더 길면 사이드바 색상 안내가 늘어남). */
+  display: flex;
+  flex-direction: column;
 }
 
 .studio-weekdays,
@@ -359,6 +364,9 @@
   border-radius: var(--r-lg);
   background: #ffffff;
   box-shadow: var(--shadow-1);
+  /* 칸 패널 높이를 채워 사이드바와 밑선을 맞춘다(행은 align-content:stretch 기본값으로 늘어남). */
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .studio-day {
@@ -613,6 +621,39 @@
   to {
     opacity: 1;
     transform: translate(-50%, 0);
+  }
+}
+
+/* 비밀번호 확인 후, 비공개 일정을 서버에서 다시 불러오는 동안 보이는 안내(웹·모바일 공통). */
+.private-loading {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 85;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: var(--r-pill, 999px);
+  background: #1f2937;
+  padding: 9px 18px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 6px 20px rgb(17 24 39 / 28%);
+  animation: copy-toast-in 160ms ease-out;
+}
+.private-loading-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgb(255 255 255 / 35%);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: private-loading-spin 720ms linear infinite;
+}
+@keyframes private-loading-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -2007,8 +2048,10 @@ textarea:disabled {
 .tag-editor-add-note {
   font-size: 11.5px;
   font-weight: 700;
+  line-height: 1.35;
   color: var(--muted);
   white-space: nowrap;
+  text-align: center;
 }
 /* #4: 저장 성공을 확실히 알리는 초록 피드백(잠깐). */
 .tag-editor-actions .button.primary.saved {

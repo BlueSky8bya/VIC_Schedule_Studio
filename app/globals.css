@@ -580,6 +580,9 @@ select {
 .passcode-input-row .button {
   min-height: 46px;
   padding: 0 18px;
+  /* 좁은 화면에서도 "확인"이 한 글자씩 줄바꿈되지 않게(입력칸에 눌려도 버튼 폭 유지). */
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 /* 메모 편집기 (스튜디오 좌측) */

@@ -689,7 +689,8 @@
   position: relative;
   isolation: isolate; /* 테마 장식(::before/::after, z-index:-1)이 이 표면 안에서만 깔리도록 */
   display: grid;
-  grid-template-columns: 248px minmax(0, 1fr) 230px;
+  /* 양옆 레일을 합쳐 ~20px 줄여, 가운데 달력(7칸 1fr)이 칸당 약 3px씩 넓어지게 한다. */
+  grid-template-columns: 238px minmax(0, 1fr) 220px;
   gap: 16px;
   align-items: stretch;
   min-height: calc(100vh - 96px);
@@ -1511,7 +1512,8 @@
   display: grid;
   align-content: start;
   gap: 10px;
-  align-self: start;
+  /* 제목이 짧아도 카드 폭은 아래 색상 안내와 같게(사이드바 전체 폭) — 세로 정렬만 start. */
+  align-self: stretch;
   padding: 14px;
 }
 

@@ -396,7 +396,11 @@ export function TagLegendEditor({
             >
               {busy ? "처리 중…" : "+ 태그 추가"}
             </button>
-            <span className="tag-editor-add-note">최대 {MAX_TAGS}개</span>
+            <span className="tag-editor-add-note">
+              최대 {MAX_TAGS}개
+              <br />
+              현재 {tags.length}개
+            </span>
           </span>
         ) : null}
         <button
