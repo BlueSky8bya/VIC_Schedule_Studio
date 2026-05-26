@@ -693,7 +693,10 @@
   grid-template-columns: 238px minmax(0, 1fr) 220px;
   gap: 16px;
   align-items: stretch;
-  min-height: calc(100vh - 96px);
+  /* 스티커 위치(yRatio)는 이 표면 높이에 비례한다. 예전엔 100vh에 묶여 있어 창/모바일
+     주소창 높이가 바뀌면 스티커가 세로로 어긋났다. 뷰포트와 무관한 고정 높이로 바꿔
+     기준면을 안정화한다(달력 내용이 더 길면 자연히 늘어나며, 그 경우도 월별로 일정). */
+  min-height: 780px;
   border-radius: var(--r-xl);
   background: linear-gradient(180deg, #fffdf6, #fdf6e6);
   padding: 18px;
