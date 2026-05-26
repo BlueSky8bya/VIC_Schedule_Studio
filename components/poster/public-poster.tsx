@@ -373,6 +373,16 @@ export function PublicPoster({
     [schedule.tags]
   );
 
+  // 살아있는 커스텀 이모지(에셋) id 집합. 삭제된 에셋을 가리키는 이미지 스티커를 다시
+  // 저장하면 FK 위반(sticker_instances_asset_id_fkey)이 난다 — undo/복제 등 어떤 경로로든
+  // 죽은 에셋을 되살리기 전에 이 집합으로 걸러낸다.
+  const liveAssetIds = useMemo(
+    () => new Set(schedule.stickerAssets.map((a) => a.id)),
+    [schedule.stickerAssets]
+  );
+  const isStickerAssetAlive = (s: StickerInstance) =>
+    s.kind !== "image" || (s.assetId != null && liveAssetIds.has(s.assetId));
+
   // B1: 오늘이 데뷔 기념일·D+·생일이면 축하 연출(컨페티)을 1회 띄운다.
   const todayCelebration = useMemo(() => {
     const mark = getDayMark(today);
@@ -912,6 +922,12 @@ export function PublicPoster({
       return;
     }
     setStickers((prev) => prev.filter((s) => s.assetId !== assetId));
+    // 실행취소/다시실행 히스토리에서도 이 에셋을 쓰는 스티커를 함께 비운다 —
+    // 그렇지 않으면 Undo가 죽은 에셋을 되살리려다 FK 오류를 낸다.
+    const scrub = (stacks: StickerInstance[][]) =>
+      stacks.map((snap) => snap.filter((s) => s.assetId !== assetId));
+    setUndoStack(scrub);
+    setRedoStack(scrub);
     const result = await deleteStickerAssetAction(assetId);
     if (result.ok) {
       router.refresh();
@@ -1044,12 +1060,17 @@ export function PublicPoster({
       const margin = 8;
       const vw = window.innerWidth;
       const vh = window.innerHeight;
+      // 편집 바(불투명·z-index 70·body 포털)가 헤더 띠(편집실로 돌아가기·계정변경 버튼)를
+      // 덮으면 그 버튼의 첫 클릭을 가로채 "두 번 눌러야 넘어가는" 문제가 생긴다. 그래서
+      // 헤더 아래쪽을 상단 한계로 삼아, 바가 헤더 영역으로 올라가지 않게 한다.
+      const header = document.querySelector<HTMLElement>(".public-calendar-header");
+      const topLimit = (header ? header.getBoundingClientRect().bottom : 0) + margin;
       let top = r.top - gap - bh; // 기본: 스티커 위
-      if (top < margin) {
-        top = r.bottom + gap; // 위가 좁으면 아래로
+      if (top < topLimit) {
+        top = r.bottom + gap; // 위가 좁거나 헤더를 침범하면 스티커 아래로
       }
       if (top + bh > vh - margin) {
-        top = Math.max(margin, vh - margin - bh);
+        top = Math.max(topLimit, vh - margin - bh);
       }
       let left = r.left + r.width / 2 - bw / 2; // 스티커 중심 정렬
       left = Math.min(Math.max(margin, left), Math.max(margin, vw - margin - bw));
@@ -1126,7 +1147,10 @@ export function PublicPoster({
     setSelectedSticker((cur) => (cur === oldId ? newId : cur));
   }
   // 스냅샷(target) 상태로 되돌리고, 그 차이를 서버에도 반영(삭제·재삽입·수정).
-  async function applySnapshot(target: StickerInstance[]) {
+  async function applySnapshot(rawTarget: StickerInstance[]) {
+    // 삭제된 커스텀 이모지를 가리키는 이미지 스티커는 되돌려도 재삽입할 수 없으므로(FK)
+    // 스냅샷에서 제외한다 — 죽은 에셋만 빠지고 나머지 되돌리기는 정상 동작한다.
+    const target = rawTarget.filter(isStickerAssetAlive);
     const current = stickersRef.current;
     setStickers(target);
     clearSelection();
@@ -1201,7 +1225,9 @@ export function PublicPoster({
   function duplicateSelected() {
     const sources = selectedIds
       .map((id) => stickersRef.current.find((x) => x.id === id))
-      .filter((s): s is StickerInstance => Boolean(s));
+      .filter((s): s is StickerInstance => Boolean(s))
+      // 삭제된 커스텀 이모지를 가리키는 스티커는 복제해도 저장이 막히므로(FK) 제외.
+      .filter(isStickerAssetAlive);
     if (sources.length === 0) {
       return;
     }

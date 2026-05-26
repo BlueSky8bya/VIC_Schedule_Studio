@@ -97,6 +97,13 @@ export async function saveStickerAction(input: SaveStickerInput): Promise<Sticke
     updated_at: new Date().toISOString()
   };
 
+  // 삭제된 커스텀 이모지(에셋)를 가리키는 이미지 스티커를 저장하려 하면 FK 위반이 난다.
+  // 날 Postgres 오류 대신 사용자가 이해할 수 있는 메시지로 바꾼다.
+  const friendly = (error: { code?: string; message: string }) =>
+    error.code === "23503" || /asset_id_fkey/.test(error.message)
+      ? "삭제된 커스텀 이모지라 추가/되살릴 수 없어요. 새로고침 후 다시 시도해 주세요."
+      : error.message;
+
   let stickerId = input.id;
 
   if (stickerId) {
@@ -105,7 +112,7 @@ export async function saveStickerAction(input: SaveStickerInput): Promise<Sticke
       .update(row)
       .eq("id", stickerId);
     if (error) {
-      return { ok: false, error: error.message };
+      return { ok: false, error: friendly(error) };
     }
   } else {
     const { data, error } = await supabase
@@ -114,7 +121,7 @@ export async function saveStickerAction(input: SaveStickerInput): Promise<Sticke
       .select("id")
       .single();
     if (error || !data) {
-      return { ok: false, error: error?.message ?? "스티커 생성 실패" };
+      return { ok: false, error: error ? friendly(error) : "스티커 생성 실패" };
     }
     stickerId = data.id;
   }
