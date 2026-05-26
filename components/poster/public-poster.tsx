@@ -453,8 +453,7 @@ export function PublicPoster({
     setStickers(schedule.stickers.filter((s) => s.year === view.year && s.month === view.month));
     setSelectedSticker(null);
     setMultiIds([]);
-    setTagFilters([]);
-    setBookmarkedOnly(false);
+    // 색상 필터/관심만 보기는 달을 넘겨도 그대로 유지한다(사용자가 선택을 다시 안 해도 되게).
     setUndoStack([]); // 달이 바뀌면 실행취소 히스토리는 초기화
     setRedoStack([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
