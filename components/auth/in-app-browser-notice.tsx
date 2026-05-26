@@ -30,6 +30,12 @@ export function InAppBrowserNotice({
     const det = detectInAppBrowser(navigator.userAgent || "");
     setInApp(det.inApp);
     setAndroid(det.android);
+    // 안드로이드 웹뷰면 크롬으로 자동 전환을 한 번 시도한다(세션당 1회). 화면을 비우지 않고
+    // 아래 안내를 그대로 띄워둔 채 시도하므로, 크롬이 열리면 넘어가고 안 열리면 안내가 남는다.
+    if (det.inApp && det.android && !sessionStorage.getItem("vic-chrome-try")) {
+      sessionStorage.setItem("vic-chrome-try", "1");
+      window.location.href = chromeIntentUrl();
+    }
   }, []);
 
   // 인앱이 아니면 평소대로 로그인 버튼을 보여준다.
