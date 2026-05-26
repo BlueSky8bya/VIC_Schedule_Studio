@@ -1273,6 +1273,13 @@
 
 .public-calendar-area {
   min-width: 0;
+  /* 달력이 자기 칸(stretch된 행 높이)을 가득 채우게 해서, 양옆 메모·색상안내 박스와
+     끝선이 달(주 수)에 상관없이 항상 정확히 일치하도록 한다. */
+  display: flex;
+  flex-direction: column;
+}
+.public-calendar-area .public-month-grid {
+  flex: 1;
 }
 
 .weekday-row,
@@ -1774,6 +1781,9 @@
 .palette-group {
   display: grid;
   gap: 8px;
+  /* 칼럼이 늘어나도 라벨·탭·팔레트 행을 위로 모은다(카테고리 전환 시 탭 버튼 위아래로
+     빈 공간이 벌어지던 문제 방지 — grid stretch가 탭 행에 여백을 분배하던 게 원인). */
+  align-content: start;
 }
 .palette-label {
   font-size: 12px;
