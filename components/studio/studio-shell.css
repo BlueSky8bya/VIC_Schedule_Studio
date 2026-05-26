@@ -29,16 +29,17 @@
 .studio-poster-title {
   display: inline-flex;
   align-items: baseline;
-  gap: 10px;
-  font-size: 30px;
+  gap: 12px;
+  font-size: 40px;
   font-weight: 900;
   letter-spacing: -0.01em;
-  line-height: 1.1;
+  line-height: 1.05;
   color: var(--ink, #1c2433);
+  white-space: nowrap;
 }
 .studio-poster-title span {
   color: #d59a93;
-  font-size: 21px;
+  font-size: 28px;
   font-weight: 900;
 }
 
