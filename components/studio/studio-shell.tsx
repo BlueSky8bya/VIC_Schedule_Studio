@@ -1470,6 +1470,20 @@ export function StudioShell({
               </div>
             </section>
 
+            {/* 선택한 날짜로 숲 공지 초안 만들기 (소유자/개발자). 시트를 닫고 공지 창을 연다. */}
+            {canEdit ? (
+              <button
+                className="button notice-open"
+                onClick={() => {
+                  setMobileEditId(null);
+                  setModal("notice");
+                }}
+                type="button"
+              >
+                📢 {selectedDate} 공지 쓰기
+              </button>
+            ) : null}
+
             <div className="m-edit-actions">
               {selectedEventId ? (
                 <button
@@ -2064,7 +2078,7 @@ export function StudioShell({
             ) : null}
             {modal === "members" ? <TrustedMembersPanel /> : null}
             {modal === "notice" ? (
-              <NoticeModal dateKey={selectedDate} onClose={() => setModal(null)} />
+              <NoticeModal dateKey={selectedDate} mobile={isNarrow} onClose={() => setModal(null)} />
             ) : null}
           </div>
         </div>

@@ -1597,6 +1597,7 @@ textarea:disabled {
   display: flex;
   flex-direction: column;
   max-height: 88vh;
+  max-height: 88dvh;
   border: 1px solid rgb(15 23 42 / 6%);
   border-radius: var(--r-xl);
   padding: 0;
