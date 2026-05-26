@@ -721,14 +721,14 @@ export function StudioShell({
         </div>
       ) : null}
       <header className="studio-topbar">
-        {/* 왼쪽 칸: "토리님 편집실"은 맨 왼쪽, 제목은 이 칸 가운데(= 편집실과 월 이동 사이) */}
+        {/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + 그 오른쪽 아래 끝선에 "토리님 편집실" */}
         <div className="studio-left">
-          <p className="eyebrow studio-eyebrow">토리님 편집실</p>
           <h1 className="studio-poster-title">
             <span aria-hidden="true">✨️</span>
             {schedule.calendar.title}
             <span aria-hidden="true">✨️</span>
           </h1>
+          <p className="eyebrow studio-eyebrow">토리님 편집실</p>
         </div>
 
         {/* 가운데: 월 이동 */}

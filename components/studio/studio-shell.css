@@ -26,18 +26,16 @@
   margin: 0;
   font-size: 24px;
 }
-/* 왼쪽 칸: "토리님 편집실"은 맨 왼쪽, 제목은 이 칸의 가운데(편집실과 월 이동 사이) */
+/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + 오른쪽 아래 끝선에 "토리님 편집실" */
 .studio-left {
   grid-column: 1;
-  position: relative;
+  justify-self: start;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: baseline; /* 작은 "토리님 편집실"이 제목 아래 끝선(베이스라인)에 붙게 */
+  gap: 12px;
   min-width: 0;
 }
 .studio-eyebrow {
-  position: absolute;
-  left: 0;
   margin: 0;
   white-space: nowrap;
 }
@@ -53,12 +51,12 @@
   flex-wrap: wrap;
   justify-content: flex-end;
 }
-/* 시청자 포스터처럼 ✨ + 아주 큰 글씨. 넓은 화면일수록 더 크게(약 3배). 별은 작게. */
+/* 큰 제목(왼쪽). 별 이모지는 글자 높이에 맞춰 작게(0.5em). */
 .studio-poster-title {
   display: inline-flex;
   align-items: center;
   gap: 14px;
-  font-size: clamp(48px, 6vw, 116px);
+  font-size: clamp(60px, 7.2vw, 140px);
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -67,7 +65,8 @@
 }
 .studio-poster-title span {
   color: #d59a93;
-  font-size: clamp(24px, 2.6vw, 48px);
+  /* 글자 높이와 이모지 높이가 비슷하게 — 이모지는 글리프가 커서 0.5em이면 텍스트와 맞는다. */
+  font-size: 0.5em;
   font-weight: 900;
 }
 
@@ -200,6 +199,10 @@
   align-content: start;
   gap: 12px;
   min-width: 0;
+}
+/* 새 일정 생성 카드는 달력 끝선에 맞출 필요 없음 — 자기 높이만큼만. */
+.event-editor-panel {
+  align-self: start;
 }
 
 .studio-left-panel section,
@@ -1085,6 +1088,8 @@ textarea:disabled {
 /* 왼쪽 사이드바 넘침 방지 */
 .studio-left-panel {
   min-width: 0;
+  /* 색상 안내·관리·꾸미기 바의 총 높이가 달력 높이와 같도록 위/아래로 분산 정렬. */
+  align-content: space-between;
 }
 .studio-left-panel section {
   min-width: 0;
