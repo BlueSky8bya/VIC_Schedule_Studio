@@ -8,11 +8,11 @@
 }
 .agenda-legend {
   position: sticky;
-  /* 고정 헤더(26.05 등) 바로 아래에 붙고, 아래로는 화면 끝까지 길게. */
-  top: 58px;
+  /* 화면 위에 붙고, 아래로는 하단 월 이동 바 직전까지 길게. */
+  top: 8px;
   align-self: flex-start;
-  height: calc(100vh - 66px);
-  height: calc(100dvh - 66px);
+  height: calc(100vh - 78px);
+  height: calc(100dvh - 78px);
   overflow-y: auto;
   flex: 0 0 86px;
   display: grid;
@@ -134,17 +134,91 @@
   letter-spacing: -1.5px;
 }
 
-/* 모바일 아젠다: 월 이동 헤더(26.05)를 화면 맨 위에 고정해 스크롤해도 따라옴 */
-.public-calendar-header.agenda-sticky {
-  position: sticky;
-  top: 0;
-  z-index: 6;
-  min-height: 0;
-  margin: 0 -22px;
-  padding: 8px 22px 9px;
-  background: linear-gradient(180deg, #fbf2df 70%, #f7eddb);
-  border-bottom: 1px solid #e3d6bb;
-  box-shadow: 0 5px 14px rgb(74 53 0 / 9%);
+/* 모바일 아젠다: 월 이동을 엄지로 닿기 쉬운 하단 고정 바로. */
+.public-calendar-shell.agenda-mode {
+  padding-top: 10px;
+  /* 하단 고정 바에 마지막 카드가 가리지 않도록 여유. (안전영역 포함) */
+  padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+}
+.agenda-monthbar {
+  position: fixed;
+  left: 50%;
+  bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fffdf6, #fdf3df);
+  border: 1px solid #e3d6bb;
+  box-shadow: 0 10px 26px rgb(74 53 0 / 22%);
+}
+.agenda-monthbar strong {
+  min-width: 78px;
+  text-align: center;
+  font-size: 17px;
+  font-weight: 900;
+  color: var(--ink, #1c2433);
+  font-variant-numeric: tabular-nums;
+}
+.agenda-monthbar button {
+  display: inline-grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent, #f5b81b);
+  color: var(--on-accent, #4a3500);
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
+  transition: transform var(--dur-1, 120ms) var(--ease);
+}
+.agenda-monthbar button:active {
+  transform: scale(0.92);
+}
+
+/* 월 전환 시 슬라이드로 들어와 "넘어간다"는 느낌을 준다. */
+.agenda-flow[data-enter="next"] {
+  animation: agendaInNext 280ms var(--ease, ease) both;
+}
+.agenda-flow[data-enter="prev"] {
+  animation: agendaInPrev 280ms var(--ease, ease) both;
+}
+@keyframes agendaInNext {
+  from {
+    opacity: 0;
+    transform: translateX(34px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes agendaInPrev {
+  from {
+    opacity: 0;
+    transform: translateX(-34px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .agenda-flow[data-enter] {
+    animation: agendaFade 200ms ease both;
+  }
+  @keyframes agendaFade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
 }
 .agenda-flow {
   flex: 1;

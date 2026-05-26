@@ -1251,7 +1251,10 @@ export function PublicPoster({
     return !(matchesTag && matchesBookmark);
   }
 
+  // 월 전환 슬라이드 방향(아젠다): 다음 달=왼쪽으로, 이전 달=오른쪽으로 밀려 들어온다.
+  const [monthDir, setMonthDir] = useState<"next" | "prev">("next");
   function moveMonth(offset: number) {
+    setMonthDir(offset >= 0 ? "next" : "prev");
     setView((current) => getAdjacentMonth(current.year, current.month, offset));
   }
 
@@ -1529,7 +1532,11 @@ export function PublicPoster({
           </aside>
         ) : null}
 
-        <div className="agenda-flow">
+        <div
+          className="agenda-flow"
+          data-enter={monthDir}
+          key={`${view.year}-${view.month}`}
+        >
           {groups.length === 0 ? (
             <p className="agenda-empty">
               {bookmarkedOnly && tagFilters.length === 0
@@ -1683,26 +1690,28 @@ export function PublicPoster({
         </div>
       ) : null}
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
-        <header className={`public-calendar-header ${showAgenda ? "agenda-sticky" : ""}`}>
-          <div className="month-controls" aria-label="월 이동">
-            <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
-              <ChevronLeft aria-hidden="true" size={18} />
-            </button>
-            <strong>{getMonthLabel(view.year, view.month)}</strong>
-            <button onClick={() => moveMonth(1)} title="다음 달" type="button">
-              <ChevronRight aria-hidden="true" size={18} />
-            </button>
-          </div>
+        {showAgenda ? null : (
+          <header className="public-calendar-header">
+            <div className="month-controls" aria-label="월 이동">
+              <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+                <ChevronLeft aria-hidden="true" size={18} />
+              </button>
+              <strong>{getMonthLabel(view.year, view.month)}</strong>
+              <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+                <ChevronRight aria-hidden="true" size={18} />
+              </button>
+            </div>
 
-          <div className="viewer-actions">
-            {decorate ? (
-              <Link className="button" href="/studio">
-                <ChevronLeft aria-hidden="true" size={16} />
-                편집실로 돌아가기
-              </Link>
-            ) : null}
-          </div>
-        </header>
+            <div className="viewer-actions">
+              {decorate ? (
+                <Link className="button" href="/studio">
+                  <ChevronLeft aria-hidden="true" size={16} />
+                  편집실로 돌아가기
+                </Link>
+              ) : null}
+            </div>
+          </header>
+        )}
 
         {showAgenda ? renderAgenda() : null}
 
@@ -2369,6 +2378,19 @@ export function PublicPoster({
         </section>
         )}
       </section>
+
+      {/* 모바일 아젠다: 월 이동을 엄지로 누르기 쉬운 하단 고정 바로 옮긴다. */}
+      {showAgenda ? (
+        <nav className="agenda-monthbar" aria-label="월 이동">
+          <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+            <ChevronLeft aria-hidden="true" size={22} />
+          </button>
+          <strong>{getMonthLabel(view.year, view.month)}</strong>
+          <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+            <ChevronRight aria-hidden="true" size={22} />
+          </button>
+        </nav>
+      ) : null}
     </main>
   );
 }
