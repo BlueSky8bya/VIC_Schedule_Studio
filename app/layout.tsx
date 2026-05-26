@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import {
   Black_Han_Sans,
   Do_Hyeon,
@@ -66,6 +67,8 @@ export default function RootLayout({
         <span className="build-tag" aria-hidden="true">
           {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev"}
         </span>
+        {/* Vercel Web Analytics — 방문자/페이지뷰 집계(쿠키리스, 개인정보 친화). */}
+        <Analytics />
       </body>
     </html>
   );
