@@ -142,26 +142,30 @@
 }
 .agenda-monthbar {
   position: fixed;
-  left: 50%;
+  left: 12px;
+  right: 12px;
   bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
   z-index: 20;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  padding: 7px 10px;
+  padding: 7px 10px 7px 20px;
   border-radius: 999px;
   background: linear-gradient(180deg, #fffdf6, #fdf3df);
   border: 1px solid #e3d6bb;
   box-shadow: 0 10px 26px rgb(74 53 0 / 22%);
 }
 .agenda-monthbar strong {
-  min-width: 78px;
-  text-align: center;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 900;
   color: var(--ink, #1c2433);
   font-variant-numeric: tabular-nums;
+}
+.agenda-monthbar .mb-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 .agenda-monthbar button {
   display: inline-grid;

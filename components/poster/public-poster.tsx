@@ -1539,10 +1539,10 @@ export function PublicPoster({
           {groups.length === 0 ? (
             <p className="agenda-empty">
               {bookmarkedOnly && tagFilters.length === 0
-                ? "아직 아무것도 관심 표현을 안 했어요. 🍃"
+                ? "아무것도 관심 표현을 안 했어요. 🍃"
                 : filtering
-                  ? "해당 태그 일정이 아직 없어요. 🍃"
-                  : "이 달엔 공개된 일정이 아직 없어요. 🍃"}
+                  ? "해당 태그 일정이 없어요. 🍃"
+                  : "이 달엔 공개된 일정이 없어요. 🍃"}
             </p>
           ) : (
             groups.map(({ cell, day, mark, list }) => (
@@ -2378,16 +2378,19 @@ export function PublicPoster({
         )}
       </section>
 
-      {/* 모바일 아젠다: 월 이동을 엄지로 누르기 쉬운 하단 고정 바로 옮긴다. */}
+      {/* 모바일 아젠다: 월 이동을 엄지로 누르기 쉬운 하단 고정 바로 옮긴다.
+          가운데는 브라우저의 '맨 위로' 버튼과 겹치지 않게 비워두고, 달 라벨은 왼쪽·버튼은 오른쪽. */}
       {showAgenda ? (
         <nav className="agenda-monthbar" aria-label="월 이동">
-          <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
-            <ChevronLeft aria-hidden="true" size={22} />
-          </button>
           <strong>{getMonthLabel(view.year, view.month)}</strong>
-          <button onClick={() => moveMonth(1)} title="다음 달" type="button">
-            <ChevronRight aria-hidden="true" size={22} />
-          </button>
+          <div className="mb-actions">
+            <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+              <ChevronLeft aria-hidden="true" size={22} />
+            </button>
+            <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+              <ChevronRight aria-hidden="true" size={22} />
+            </button>
+          </div>
         </nav>
       ) : null}
     </main>
