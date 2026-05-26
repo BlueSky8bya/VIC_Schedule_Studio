@@ -12,20 +12,31 @@ const UP_EMOTICON_URL =
   "https://ogqmarket.img.sooplive.com/sticker/647d872091c8b/23_160.png?version=1"; // 업 도움
 
 // 자동 입력 북마클릿: SOOP 작성 페이지에서 실행하면 클립보드(JSON: title/html/text)를 읽어
-// 제목([class*="PostTitle"])과 본문(.soop-editor-content)에 채운다. 본문은 직접 붙여넣기가 잘
-// 먹히는 에디터라 paste 이벤트를 흉내 내 HTML(가운데정렬·이모티콘 포함)을 넣는다(실패 시 execCommand→innerHTML 폴백).
+// 제목과 본문 에디터에 채운다. SOOP 에디터가 iframe 안에 있을 수 있어 같은 출처(iframe) 문서까지
+// 함께 뒤지고, 제목/본문 셀렉터도 여러 후보를 시도한다. 본문은 paste 이벤트를 흉내 내 HTML(가운데
+// 정렬·이모티콘 포함)을 넣는다(실패 시 execCommand→innerHTML 폴백). 그래도 못 찾으면 실제 DOM 구조를
+// 진단 텍스트로 클립보드에 복사해 개발자가 한 번에 고칠 수 있게 한다.
 const BOOKMARKLET =
   "javascript:(async()=>{try{" +
-  "var d=JSON.parse(await navigator.clipboard.readText());var ok=false;" +
-  "var tw=document.querySelector('[class*=\"PostTitle\"]');" +
-  "var ti=tw?(tw.querySelector('input,textarea')||tw.querySelector('[contenteditable]')||(tw.isContentEditable?tw:null)):null;" +
-  "if(ti){if(ti.tagName=='INPUT'||ti.tagName=='TEXTAREA'){var sv=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ti),'value').set;sv.call(ti,d.title);ti.dispatchEvent(new Event('input',{bubbles:true}));ti.dispatchEvent(new Event('change',{bubbles:true}));}else{ti.focus();document.execCommand('selectAll',false,null);document.execCommand('insertText',false,d.title);}ok=true;}" +
-  "var be=document.querySelector('.soop-editor-content');" +
-  "if(be){be.focus();var sel=window.getSelection();var rg=document.createRange();rg.selectNodeContents(be);sel.removeAllRanges();sel.addRange(rg);" +
+  "var d=JSON.parse(await navigator.clipboard.readText());" +
+  "var docs=[document];try{document.querySelectorAll('iframe,frame').forEach(function(f){try{if(f.contentDocument)docs.push(f.contentDocument);}catch(e){}});}catch(e){}" +
+  "var tOk=false,bOk=false;" +
+  "for(var i=0;i<docs.length;i++){var doc=docs[i];var win=doc.defaultView||window;" +
+  "if(!tOk){var ti=doc.querySelector('[class*=\"PostTitle\"] input,[class*=\"PostTitle\"] textarea')||doc.querySelector('input[placeholder*=\"제목\"],textarea[placeholder*=\"제목\"]');" +
+  "if(ti){try{var sv=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ti),'value').set;sv.call(ti,d.title);}catch(e){ti.value=d.title;}ti.dispatchEvent(new Event('input',{bubbles:true}));ti.dispatchEvent(new Event('change',{bubbles:true}));tOk=true;}" +
+  "else{var tc=doc.querySelector('[class*=\"PostTitle\"] [contenteditable]');if(tc){tc.focus();doc.execCommand('selectAll',false,null);doc.execCommand('insertText',false,d.title);tOk=true;}}}" +
+  "if(!bOk){var be=doc.querySelector('.soop-editor-content')||doc.querySelector('.ck-editor__editable')||doc.querySelector('[contenteditable=\"true\"]')||((doc.body&&doc.body.isContentEditable)?doc.body:null);" +
+  "if(be){be.focus();var sel=win.getSelection();var rg=doc.createRange();rg.selectNodeContents(be);sel.removeAllRanges();sel.addRange(rg);" +
   "var dt=new DataTransfer();dt.setData('text/html',d.html);if(d.text)dt.setData('text/plain',d.text);" +
   "var pe=new ClipboardEvent('paste',{clipboardData:dt,bubbles:true,cancelable:true});be.dispatchEvent(pe);" +
-  "if(!pe.defaultPrevented){if(!document.execCommand('insertHTML',false,d.html)){be.innerHTML=d.html;be.dispatchEvent(new Event('input',{bubbles:true}));}}ok=true;}" +
-  "if(!ok){alert('입력칸을 못 찾았어요. 작성 페이지에서 눌렀는지 확인해 주세요.');}" +
+  "if(!pe.defaultPrevented){if(!doc.execCommand('insertHTML',false,d.html)){be.innerHTML=d.html;be.dispatchEvent(new Event('input',{bubbles:true}));}}bOk=true;}}}" +
+  "if(tOk&&bOk)return;" +
+  "var L=['[VIC진단] title='+tOk+' body='+bOk+' docs='+docs.length,location.href];" +
+  "for(var j=0;j<docs.length;j++){try{var dd=docs[j];var ce=dd.querySelectorAll('[contenteditable]');var ip=dd.querySelectorAll('input,textarea');L.push('doc'+j+' CE='+ce.length+' INP='+ip.length);" +
+  "for(var a=0;a<ce.length&&a<4;a++)L.push(' CE'+a+' <'+ce[a].tagName+' class=\"'+ce[a].className+'\">');" +
+  "for(var b=0;b<ip.length&&b<6;b++)L.push(' INP'+b+' <'+ip[b].tagName+' ph=\"'+(ip[b].placeholder||'')+'\" class=\"'+ip[b].className+'\">');}catch(e){L.push('doc'+j+' (접근불가)');}}" +
+  "var rep=L.join('\\n');try{await navigator.clipboard.writeText(rep);}catch(e){}" +
+  "alert('입력칸을 일부/전부 못 찾았어요.\\n진단 정보를 클립보드에 복사했으니 개발자에게 붙여넣어 주세요.\\n\\n'+rep);" +
   "}catch(x){alert('자동입력 실패: '+(x&&x.message?x.message:x));}})()";
 
 // 모바일 브라우저(삼성 인터넷 등)는 북마크 URL에 공백을 거부한다("URL에는 공백을 포함할 수 없습니다").
