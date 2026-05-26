@@ -1011,10 +1011,7 @@ export function StudioShell({
                     onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}
                     type="submit"
                   >
-                    {/* 모바일은 폭이 좁아 넘칠 수 있어 "계정/변경" 2줄로 — 버튼이 좁아져 잘 들어간다. */}
-                    <span style={{ whiteSpace: "pre-line", lineHeight: 1.12, textAlign: "center" }}>
-                      {"계정\n변경"}
-                    </span>
+                    계정변경
                   </button>
                 </form>
               ) : (
