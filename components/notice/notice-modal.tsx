@@ -195,9 +195,11 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
         <div className="notice-emoticon">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img alt="맨 끝 이모티콘" src={EMOTICON_URL} />
-          <div className="notice-emoticon-text">
-            <span> ← 맨 끝 이모티콘 — 방법 1은 직접 추가, 방법 2는 자동</span>
-          </div>
+          {mobile ? null : (
+            <div className="notice-emoticon-text">
+              <span> ← 맨 끝 이모티콘 — 방법 1은 직접 추가, 방법 2는 자동</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -211,17 +213,12 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
               <span className="notice-method-tag hot">모바일</span>
             </header>
             <p className="notice-method-desc">
-              아래 순서대로 <strong>복사 → 페이지 열기 → 붙여넣기</strong>만 하면 돼요. (모바일
-              브라우저는 보안상 자동입력 북마클릿을 막아서, 붙여넣기로 올립니다.)
+              아래 순서대로 <strong>복사 → 페이지 열기 → 붙여넣기</strong>
             </p>
             <ol className="notice-steps3">
               <li>
                 <span className="notice-step-num">1</span>
-                <button
-                  className="button primary"
-                  onClick={() => copy("title", title)}
-                  type="button"
-                >
+                <button className="button primary" onClick={() => copy("title", title)} type="button">
                   <Copy aria-hidden="true" size={14} />
                   {copied === "title" ? "제목 복사됨!" : "제목 복사"}
                 </button>
@@ -230,25 +227,17 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
                 <span className="notice-step-num">2</span>
                 <a className="button" href={SOOP_WRITE_URL} rel="noopener noreferrer" target="_blank">
                   <ExternalLink aria-hidden="true" size={14} />
-                  숲 공지 페이지 열기 → 제목칸에 붙여넣기
+                  숲 공지 페이지 열기
                 </a>
               </li>
               <li>
                 <span className="notice-step-num">3</span>
                 <button className="button primary" onClick={copyBodyRich} type="button">
                   <Copy aria-hidden="true" size={14} />
-                  {copied === "body" ? "본문 복사됨!" : "본문 복사 (서식 포함)"}
+                  {copied === "body" ? "본문 복사됨!" : "본문 복사"}
                 </button>
               </li>
-              <li>
-                <span className="notice-step-num">4</span>
-                <span className="notice-step-text">본문칸에 붙여넣기 → 끝! ✨</span>
-              </li>
             </ol>
-            <p className="notice-method-desc">
-              혹시 <strong>가운데 정렬이나 이모티콘이 안 따라오면</strong>, 본문을 붙여넣은 뒤
-              직접 가운데 정렬하고 위 미리보기의 <strong>맨 끝 이모티콘</strong>만 추가해 주세요!
-            </p>
           </section>
         ) : (
           <>
@@ -285,9 +274,8 @@ export function NoticeModal({ dateKey, onClose, mobile = false }: NoticeModalPro
                 <span className="notice-method-tag hot">추천 · 클릭 3번</span>
               </header>
               <p className="notice-method-desc">
-                처음 <strong>딱 한 번만</strong> 북마크를 만들어두면, 그 다음부터는{" "}
-                <strong>복사 → 페이지 열기 → 북마크 실행</strong> 세 번이면 끝입니다. 제목·본문은
-                물론 <strong>가운데정렬이랑 이모티콘까지</strong> 알아서 쏙 들어갑니다!
+                처음 <strong>한 번만</strong> 북마크를 만들어두면,{" "}
+                <strong>복사 → 페이지 열기 → 북마크 실행</strong> 세 번이면 끝입니다!
               </p>
 
               <details className="notice-setup">

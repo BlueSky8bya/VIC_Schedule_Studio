@@ -416,13 +416,13 @@ export function StudioShell({
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
 
-  // 모바일 편집 시트가 열려 있는 동안:
+  // 모바일 편집 시트·모달(공지 등)이 열려 있는 동안:
   //  ① 휴대폰 뒤로가기로 페이지가 통째로 뒤로 가(계정 선택 화면으로 튐) 버리지 않게, 히스토리
-  //     항목을 하나 쌓아 두고 popstate에서는 시트만 닫는다.
+  //     항목을 하나 쌓아 두고 popstate에서는 오버레이만 닫는다.
   //  ② 뒤 배경(달력) 스크롤·당겨서 새로고침을 잠가, 시트 아래가 뚫리거나 새로고침되지 않게 한다.
-  // (passcode 등 모달은 제외 — 모달을 닫으며 history.back을 하면 잠금 해제 직후의 router.refresh가
-  //  취소돼 "일정을 불러오는 중"이 안 뜨고 비공개 일정이 안 들어오던 문제가 있었다.)
-  const overlayOpen = mobileEditId !== null;
+  // passcode 모달만 제외 — 잠금 해제 직후 onUnlocked가 setModal(null)+router.refresh를 하는데,
+  // 모달을 닫으며 history.back을 하면 그 refresh가 취소돼 비공개 일정이 안 들어오던 문제가 있었다.
+  const overlayOpen = mobileEditId !== null || (modal !== null && modal !== "passcode");
   useEffect(() => {
     if (!overlayOpen) return;
     const scrollY = window.scrollY;
