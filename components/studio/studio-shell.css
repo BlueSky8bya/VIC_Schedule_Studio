@@ -1834,3 +1834,175 @@ textarea:disabled {
   background: #16a34a !important;
   color: #fff !important;
 }
+
+/* ── 모바일 편집실(아젠다 + 인라인 편집) ── */
+.studio-mobile {
+  padding: 0 14px calc(80px + env(safe-area-inset-bottom, 0px));
+}
+/* 역할 바: 역할 배지 + 비공개 보기 + 시청자 화면 */
+.m-rolebar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
+.m-rolebar .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 38px;
+  font-size: 13px;
+}
+.studio-mobile .developer-warning,
+.studio-mobile .private-warning {
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+/* 스튜디오 아젠다: 색상 필터 레일 없이 목록만(좌우 반전 해제) */
+.agenda.agenda-studio {
+  flex-direction: row;
+}
+/* 일정 카드(탭하면 편집) */
+.m-event {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.m-event .agenda-title-text {
+  color: #2b2f38;
+}
+/* 비공개 범위 배지 */
+.m-scope-badge {
+  flex: 0 0 auto;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  background: #eef0f4;
+  color: #5b6472;
+}
+.m-scope-badge.embargo {
+  background: #fdeccd;
+  color: #9a6a06;
+}
+.m-scope-badge.work {
+  background: #e3edff;
+  color: #2f5bd0;
+}
+.m-scope-badge.owner_private {
+  background: #fde2e7;
+  color: #c0334c;
+}
+.m-add-event {
+  margin-top: 2px;
+  border: 1px dashed var(--line, #d8dee9);
+  border-radius: 8px;
+  background: transparent;
+  padding: 7px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--muted, #8a93a3);
+  cursor: pointer;
+}
+.m-add-event:hover {
+  background: #fff;
+  color: var(--ink, #1c2433);
+}
+/* 하단 관리 영역 */
+.m-manage {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--line, #e3e7ef);
+  border-radius: 12px;
+  background: #fff;
+}
+.m-manage h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+/* 인라인 편집 바텀시트 */
+.m-edit-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  background: rgb(17 24 39 / 38%);
+}
+.m-edit-sheet {
+  width: 100%;
+  max-height: 86vh;
+  overflow-y: auto;
+  border-radius: 18px 18px 0 0;
+  background: #fff;
+  padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -10px 30px rgb(17 24 39 / 24%);
+  animation: m-sheet-up 220ms var(--ease, ease) both;
+}
+@keyframes m-sheet-up {
+  from {
+    transform: translateY(16px);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.m-edit-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.m-edit-head strong {
+  font-size: 16px;
+}
+.m-edit-head span {
+  color: var(--muted, #8a93a3);
+  font-weight: 700;
+  font-size: 13px;
+}
+.m-edit-head button {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  color: var(--muted, #8a93a3);
+  cursor: pointer;
+}
+.m-edit-sheet label {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 12px;
+  font-weight: 800;
+  font-size: 13px;
+}
+.m-edit-sheet textarea,
+.m-edit-sheet select {
+  border: 1px solid var(--line, #d8dee9);
+  border-radius: 9px;
+  padding: 9px 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.m-edit-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+.m-edit-actions .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+}

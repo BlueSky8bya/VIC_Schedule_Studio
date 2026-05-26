@@ -46,6 +46,7 @@ import {
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
+import { getDayMark } from "@/lib/calendar/holidays";
 import {
   canDecorate,
   canEditSchedule,
@@ -134,6 +135,13 @@ const ROLE_LABEL: Record<MembershipRole, string> = {
   viewer: "시청자"
 };
 
+const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
+  public: "모두",
+  embargo: "엠바고",
+  work: "작업자",
+  owner_private: "나만"
+};
+
 export function StudioShell({
   actor,
   schedule,
@@ -162,6 +170,19 @@ export function StudioShell({
   }
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
   const [viewerMode, setViewerMode] = useState(false);
+  // 모바일(좁은 화면): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
+  const [isNarrow, setIsNarrow] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const apply = () => setIsNarrow(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  // 모바일에서 일정 카드를 눌렀을 때 펼치는 인라인 편집 시트(소유자/개발자).
+  const [mobileEditId, setMobileEditId] = useState<string | null>(null);
+  // 모바일 하단 관리(태그·멤버) 펼침 상태.
+  const [mobileMgmt, setMobileMgmt] = useState<null | "tags" | "members">(null);
   // 일정은 로컬 상태로 들고 낙관적으로 갱신한다 — 잇기·복붙·저장·삭제가 서버 왕복/새로고침을
   // 기다리지 않고 화면에 즉시 반영되게 해서 "하는 맛"을 살린다. 서버 데이터가 바뀌면 다시 맞춘다.
   const [events, setEvents] = useState(schedule.events);
@@ -356,7 +377,10 @@ export function StudioShell({
     const existing = events.find((e) => e.id === form.id);
     const isNew = !form.id;
     const tempId = form.id ?? `temp-${Math.random().toString(36).slice(2)}`;
-    const scope: EventVisibilityScope = canReadPrivate ? form.visibilityScope : "public";
+    // 데스크톱은 안전상 비공개 레이어를 풀어야 비공개 범위를 지정한다.
+    // 모바일(소유자/개발자 본인 기기)은 잠금 없이 바로 공개 범위를 지정할 수 있다.
+    const scope: EventVisibilityScope =
+      canReadPrivate || isNarrow ? form.visibilityScope : "public";
     const endDateKey =
       form.isSupport && form.endDateKey ? form.endDateKey : undefined;
     // 낙관적 일정 객체(서버 응답 전 화면에 바로 그린다).
@@ -695,6 +719,329 @@ export function StudioShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events]);
 
+  // 모바일 아젠다에 쓸 일정: 소유자/개발자는 본인 관리 화면이라 (잠금 없이) 자신이 볼 수 있는
+  // 범위를 전부 보여주고, 작업자/매니저는 잠금 해제(비공개 일정 보기) 전까지 공개만 본다.
+  const mobileAgendaEvents = canEdit
+    ? events.filter(
+        (e) => e.visibilityScope !== "owner_private" || canReadOwnerPrivate(actor.role)
+      )
+    : visibleEvents;
+
+  function openMobileEdit(event: StudioScheduleEvent) {
+    selectEvent(event);
+    setMobileEditId(event.id);
+  }
+  function openMobileAdd(isoDate: string) {
+    selectDate(isoDate);
+    setForm(createEmptyForm());
+    setMobileEditId("new");
+  }
+  function closeMobileEdit() {
+    setMobileEditId(null);
+    setSelectedEventId(null);
+    setForm(createEmptyForm());
+  }
+
+  function renderMobile() {
+    const monthCells = cells.filter((c) => c.inCurrentMonth);
+    return (
+      <div className="studio-mobile">
+        <header className="agenda-header">
+          <h1>
+            <span aria-hidden="true">✨️</span> {schedule.calendar.title}{" "}
+            <span aria-hidden="true">✨️</span>
+            <span>
+              토리님 편집실 · {view.year}년 {view.month}월
+            </span>
+          </h1>
+        </header>
+
+        <div className="m-rolebar">
+          <span className={`actor-badge ${actor.role}`}>
+            <strong>{ROLE_LABEL[actor.role]}</strong>
+          </span>
+          {canTogglePrivateLayer ? (
+            <button
+              className={canReadPrivate ? "button primary" : "button"}
+              onClick={togglePrivateLayer}
+              type="button"
+            >
+              {canReadPrivate ? <EyeOff size={15} /> : <Eye size={15} />}
+              {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
+            </button>
+          ) : null}
+          <button className="button" onClick={() => setViewerMode(true)} type="button">
+            <Eye size={15} /> 시청자 화면
+          </button>
+        </div>
+
+        {actor.role === "developer" ? (
+          <div className="developer-warning">🛠 개발자 세션 — 관리 권한으로 보고 있어요.</div>
+        ) : null}
+        {canReadPrivate ? (
+          <div className="private-warning">
+            <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중 — 방송 화면 공유에
+            주의하세요.
+          </div>
+        ) : null}
+
+        <section className="agenda agenda-studio">
+          <div className="agenda-flow">
+            {monthCells.map((cell) => {
+              const day = classifyDay(cell.isoDate, cell.weekday, today);
+              const mark = getDayMark(cell.isoDate);
+              const dayEvents = mobileAgendaEvents.filter(
+                (e) => getEventDateKey(e) === cell.isoDate
+              );
+              return (
+                <div className={`agenda-day ${day.isToday ? "today" : ""}`} key={cell.isoDate}>
+                  <div className="agenda-when">
+                    <strong className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}>
+                      {cell.dayOfMonth}
+                    </strong>
+                    <span className="agenda-wd">{WEEKDAYS[cell.weekday]}</span>
+                  </div>
+                  <div className="agenda-day-list">
+                    {mark ? (
+                      <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>
+                        {mark.name}
+                      </span>
+                    ) : null}
+                    {dayEvents.length === 0 ? (
+                      <span className="agenda-noevent">예정된 일정 없음</span>
+                    ) : null}
+                    {dayEvents.map((event) => {
+                      const colors = eventColors(event);
+                      const { main, subs } = splitEventTitle(event.publicTitle);
+                      const barStyle =
+                        colors.length >= 2
+                          ? {
+                              background: `linear-gradient(180deg, ${colors[0].bgColor}, ${colors[1].bgColor})`
+                            }
+                          : colors[0]
+                            ? { background: colors[0].bgColor }
+                            : undefined;
+                      const inner = (
+                        <>
+                          <span
+                            className="agenda-bar"
+                            data-color={colors.length < 2 ? colors[0]?.key : undefined}
+                            style={barStyle}
+                          />
+                          <div className="agenda-content">
+                            <p className="agenda-title">
+                              <span className="agenda-title-text">
+                                {event.isSupport ? `🌱 ${event.publicTitle}` : main}
+                              </span>
+                              {event.visibilityScope !== "public" ? (
+                                <span className={`m-scope-badge ${event.visibilityScope}`}>
+                                  {SCOPE_LABEL[event.visibilityScope]}
+                                </span>
+                              ) : null}
+                            </p>
+                            {!event.isSupport && subs.length > 0 ? (
+                              <ul className="agenda-subs">
+                                {subs.map((s, i) => (
+                                  <li key={i}>{s}</li>
+                                ))}
+                              </ul>
+                            ) : null}
+                          </div>
+                        </>
+                      );
+                      return canEdit ? (
+                        <button
+                          className="agenda-event m-event"
+                          key={event.id}
+                          onClick={() => openMobileEdit(event)}
+                          type="button"
+                        >
+                          {inner}
+                        </button>
+                      ) : (
+                        <div className="agenda-event" key={event.id}>
+                          {inner}
+                        </div>
+                      );
+                    })}
+                    {canEdit ? (
+                      <button
+                        className="m-add-event"
+                        onClick={() => openMobileAdd(cell.isoDate)}
+                        type="button"
+                      >
+                        + 일정 추가
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {canEdit ? (
+          <section className="m-manage">
+            <h2>관리</h2>
+            <button
+              className="button"
+              onClick={() => setMobileMgmt(mobileMgmt === "tags" ? null : "tags")}
+              type="button"
+            >
+              태그 이름 · 색상 · 순서 {mobileMgmt === "tags" ? "▲" : "▼"}
+            </button>
+            {mobileMgmt === "tags" ? (
+              <TagLegendEditor
+                addTagAction={addTagAction}
+                canEdit
+                onTagAdded={applyTagAdd}
+                onTagRemoved={applyTagRemove}
+                onTagsUpdated={applyTagUpdates}
+                palette={palette}
+                removeTagAction={removeTagAction}
+                tags={tags}
+                updateTagsAction={updateTagsAction}
+              />
+            ) : null}
+            <button
+              className="button"
+              onClick={() => setMobileMgmt(mobileMgmt === "members" ? null : "members")}
+              type="button"
+            >
+              매니저 · 작업자 관리 {mobileMgmt === "members" ? "▲" : "▼"}
+            </button>
+            {mobileMgmt === "members" ? <TrustedMembersPanel /> : null}
+          </section>
+        ) : null}
+
+        <nav className="agenda-monthbar" aria-label="월 이동">
+          <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+            <ChevronLeft aria-hidden="true" size={22} />
+          </button>
+          <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+            <ChevronRight aria-hidden="true" size={22} />
+          </button>
+        </nav>
+
+        {canEdit && mobileEditId !== null ? renderMobileEditSheet() : null}
+      </div>
+    );
+  }
+
+  function renderMobileEditSheet() {
+    const editing = events.find((e) => e.id === selectedEventId);
+    return (
+      <div
+        className="m-edit-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) closeMobileEdit();
+        }}
+        role="presentation"
+      >
+        <div className="m-edit-sheet" role="dialog">
+          <div className="m-edit-head">
+            <strong>{selectedEventId ? "일정 수정" : "새 일정"}</strong>
+            <span>{selectedDate}</span>
+            <button aria-label="닫기" onClick={closeMobileEdit} type="button">
+              <X aria-hidden="true" size={18} />
+            </button>
+          </div>
+
+          {actionError ? <div className="auth-warning">{actionError}</div> : null}
+
+          <form
+            onSubmit={(e) => {
+              saveEvent(e);
+              setMobileEditId(null);
+            }}
+          >
+            <label>
+              제목
+              <textarea
+                onChange={(e) =>
+                  setForm((cur) => ({ ...cur, publicTitle: e.target.value }))
+                }
+                placeholder="예: 풀트뱅 / 첫 줄은 제목, 다음 줄부터 세부"
+                rows={2}
+                value={form.publicTitle}
+              />
+            </label>
+
+            <label>
+              공개 범위
+              <select
+                onChange={(e) =>
+                  setForm((cur) => ({
+                    ...cur,
+                    visibilityScope: e.target.value as EventVisibilityScope
+                  }))
+                }
+                value={form.visibilityScope}
+              >
+                <option value="public">모두</option>
+                <option value="embargo">엠바고</option>
+                <option value="work">작업자</option>
+                {actor.role === "owner" ? <option value="owner_private">나만</option> : null}
+              </select>
+            </label>
+
+            <section className="tag-picker" aria-label="태그 선택">
+              <h3>
+                태그 <span className="tag-picker-hint">최대 2개</span>
+              </h3>
+              <div>
+                {legendTags.map((tag) => {
+                  const color = palette.find((item) => item.key === tag.colorKey);
+                  const selected = form.tagIds.includes(tag.id);
+                  const full = !selected && form.tagIds.length >= 2;
+                  return color ? (
+                    <button
+                      className={selected ? "selected" : ""}
+                      data-color={color.key}
+                      disabled={full}
+                      key={tag.id}
+                      onClick={() => selectTag(tag.id)}
+                      style={{
+                        backgroundColor: color.bgColor,
+                        borderColor: color.borderColor,
+                        color: color.textColor
+                      }}
+                      type="button"
+                    >
+                      {selected ? `${form.tagIds.indexOf(tag.id) + 1}. ` : ""}
+                      {tag.displayName}
+                    </button>
+                  ) : null;
+                })}
+              </div>
+            </section>
+
+            <div className="m-edit-actions">
+              {selectedEventId ? (
+                <button
+                  className="button danger"
+                  onClick={() => {
+                    deleteEvent(selectedEventId);
+                    closeMobileEdit();
+                  }}
+                  type="button"
+                >
+                  <Trash2 aria-hidden="true" size={15} /> 삭제
+                </button>
+              ) : (
+                <span />
+              )}
+              <button className="button primary" disabled={pending} type="submit">
+                <Save aria-hidden="true" size={15} />
+                {pending ? "저장 중…" : "저장"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   // 시청자 화면 전체보기: 스튜디오 UI를 숨기고 공개 화면만 그대로 보여준다.
   if (viewerMode) {
     return (
@@ -726,6 +1073,10 @@ export function StudioShell({
           {copyToast}
         </div>
       ) : null}
+      {isNarrow ? (
+        renderMobile()
+      ) : (
+        <>
       <header className="studio-topbar">
         {/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + 그 오른쪽 아래 끝선에 "토리님 편집실" */}
         <div className="studio-left">
@@ -1203,6 +1554,8 @@ export function StudioShell({
           </form>
         </aside>
       </section>
+        </>
+      )}
 
       {modal ? (
         <div

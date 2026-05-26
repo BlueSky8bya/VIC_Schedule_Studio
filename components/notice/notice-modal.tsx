@@ -168,7 +168,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
           </header>
           <p className="notice-method-desc">
             제목이랑 본문을 따로 복사해서 숲에 붙여넣는 방법. 매번 두 번 붙여넣고
-            가운데정렬·이모티콘도 직접 해야 해서 살짝 번거로워요! (비추천)
+            가운데정렬·이모티콘도 직접 해야 해서 살짝 번거로워요!
           </p>
           <div className="notice-method-actions">
             <button className="button" onClick={() => copy("title", title)} type="button">
