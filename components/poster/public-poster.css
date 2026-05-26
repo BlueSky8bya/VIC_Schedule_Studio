@@ -8,11 +8,13 @@
 }
 .agenda-legend {
   position: sticky;
-  /* 화면 위에 붙고, 아래로는 하단 월 이동 바 직전까지 길게. */
+  /* 화면 위에 붙고, 아래로는 하단 월 이동 바 직전까지 길게.
+     높이는 svh(고정 = 툴바 보이는 기준)로 한 번만 계산 — dvh처럼 스크롤마다
+     재계산/리플로우하지 않게 한다(주소창 숨김 시 아래 약간 여백만 생김). */
   top: 8px;
   align-self: flex-start;
   height: calc(100vh - 78px);
-  height: calc(100dvh - 78px);
+  height: calc(100svh - 78px);
   overflow-y: auto;
   flex: 0 0 86px;
   display: grid;
