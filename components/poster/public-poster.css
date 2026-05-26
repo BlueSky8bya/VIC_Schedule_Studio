@@ -347,7 +347,8 @@
 }
 .agenda-bar {
   flex: 0 0 auto;
-  width: 6px;
+  /* 무늬(패턴)가 제대로 보이도록 너비를 2배로 — 비슷한 색끼리 혼동 방지. */
+  width: 12px;
   border-radius: 6px;
   align-self: stretch;
   min-height: 22px;

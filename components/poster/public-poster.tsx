@@ -1583,7 +1583,13 @@ export function PublicPoster({
                     const end = event.endDateKey;
                     return (
                       <div className="agenda-event" key={(support ? "s-" : "") + event.id}>
-                        <span className="agenda-bar" style={barStyle} />
+                        <span
+                          className="agenda-bar"
+                          data-color={
+                            !support && colors.length < 2 ? colors[0]?.key : undefined
+                          }
+                          style={barStyle}
+                        />
                         <div className="agenda-content">
                           <p className="agenda-title">
                             <span className="agenda-title-text">
