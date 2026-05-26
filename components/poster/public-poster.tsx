@@ -1690,6 +1690,16 @@ export function PublicPoster({
         </div>
       ) : null}
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
+        {showAgenda ? (
+          <header className="agenda-header">
+            <h1>
+              ✦ 빅토리 일정표 ✦{" "}
+              <span>
+                {view.year}년 {view.month}월
+              </span>
+            </h1>
+          </header>
+        ) : null}
         {showAgenda ? null : (
           <header className="public-calendar-header">
             <div className="month-controls" aria-label="월 이동">
@@ -2379,19 +2389,15 @@ export function PublicPoster({
         )}
       </section>
 
-      {/* 모바일 아젠다: 월 이동을 엄지로 누르기 쉬운 하단 고정 바로 옮긴다.
-          가운데는 브라우저의 '맨 위로' 버튼과 겹치지 않게 비워두고, 달 라벨은 왼쪽·버튼은 오른쪽. */}
+      {/* 모바일 아젠다: 월 이동 버튼만 하단 좌·우에 둔다(가운데는 브라우저 '맨 위로' 버튼과 안 겹치게 비움). */}
       {showAgenda ? (
         <nav className="agenda-monthbar" aria-label="월 이동">
-          <strong>{getMonthLabel(view.year, view.month)}</strong>
-          <div className="mb-actions">
-            <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
-              <ChevronLeft aria-hidden="true" size={22} />
-            </button>
-            <button onClick={() => moveMonth(1)} title="다음 달" type="button">
-              <ChevronRight aria-hidden="true" size={22} />
-            </button>
-          </div>
+          <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+            <ChevronLeft aria-hidden="true" size={22} />
+          </button>
+          <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+            <ChevronRight aria-hidden="true" size={22} />
+          </button>
         </nav>
       ) : null}
     </main>
