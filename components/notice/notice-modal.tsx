@@ -196,7 +196,7 @@ export function NoticeModal({
           </>
         ) : (
           <>
-            {" "}그 다음 아래 <strong>두 방법 중 편한 걸</strong>로 숲에 올리면 됩니다.
+            {" "}그 다음 아래 <strong>북마클릿 자동 입력</strong>으로 숲에 올리면 됩니다.
           </>
         )}
       </p>
@@ -352,7 +352,7 @@ export function NoticeModal({
           <section className="notice-method recommended">
             <header className="notice-method-head">
               <strong>북마클릿 자동 입력</strong>
-              <span className="notice-method-tag hot">추천 · 클릭 3번</span>
+              <span className="notice-method-tag hot">웹</span>
             </header>
             <p className="notice-method-desc">
               처음 <strong>한 번만</strong> 북마크를 만들어두면,{" "}
