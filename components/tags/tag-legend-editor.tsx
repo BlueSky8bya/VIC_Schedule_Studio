@@ -73,12 +73,28 @@ export function TagLegendEditor({
 
   // 드래그 순서 변경(네이티브 DnD). 핸들을 끌면 dragId, 다른 행 위로 오면 그 앞으로 이동.
   const dragId = useRef<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   function moveBefore(list: string[], from: string, before: string) {
     if (from === before) return list;
     const next = list.filter((id) => id !== from);
     const idx = next.indexOf(before);
     next.splice(idx, 0, from);
     return next;
+  }
+  function onDragStartRow(e: ReactDragEvent, id: string) {
+    dragId.current = id;
+    setDraggingId(id);
+    e.dataTransfer.effectAllowed = "move";
+    // 손잡이만이 아니라 행 카드 전체가 "들려서" 따라오도록 드래그 이미지를 행으로 지정.
+    const row = (e.currentTarget as HTMLElement).closest(".tag-editor-row");
+    if (row) {
+      const r = row.getBoundingClientRect();
+      e.dataTransfer.setDragImage(row, e.clientX - r.left, e.clientY - r.top);
+    }
+  }
+  function endDrag() {
+    dragId.current = null;
+    setDraggingId(null);
   }
   function onDragOverRow(e: ReactDragEvent, overId: string) {
     if (!dragId.current) return;
@@ -156,11 +172,12 @@ export function TagLegendEditor({
 
   const anyEmpty = Object.values(draft).some((d) => d.colorKey === "");
   const orderChanged = orderIds.some((id, i) => tags[i]?.id !== id);
-  const dirty =
-    orderChanged ||
-    tags.some(
-      (t) => draft[t.id]?.name !== t.displayName || draft[t.id]?.colorKey !== t.colorKey
-    );
+  const contentChanged = tags.some(
+    (t) => draft[t.id]?.name !== t.displayName || draft[t.id]?.colorKey !== t.colorKey
+  );
+  const dirty = orderChanged || contentChanged;
+  // 순서만 바뀌었으면 "변경된 순서 저장", 이름·색 등도 같이 바뀌었으면 "전체 저장".
+  const saveLabel = orderChanged && !contentChanged ? "변경된 순서 저장" : "전체 저장";
 
   function saveAll() {
     setError(null);
@@ -200,23 +217,17 @@ export function TagLegendEditor({
         if (!d) return null;
         return (
           <div
-            className="tag-editor-row"
+            className={`tag-editor-row ${draggingId === tag.id ? "dragging" : ""}`}
             key={tag.id}
             onDragOver={(e) => onDragOverRow(e, tag.id)}
-            onDrop={() => {
-              dragId.current = null;
-            }}
+            onDrop={endDrag}
           >
             <button
               aria-label="순서 변경"
               className="tag-drag-handle"
               draggable
-              onDragEnd={() => {
-                dragId.current = null;
-              }}
-              onDragStart={() => {
-                dragId.current = tag.id;
-              }}
+              onDragEnd={endDrag}
+              onDragStart={(e) => onDragStartRow(e, tag.id)}
               title="끌어서 순서 변경"
               type="button"
             >
@@ -278,7 +289,7 @@ export function TagLegendEditor({
           onClick={saveAll}
           type="button"
         >
-          {pending ? "저장 중…" : saved && !dirty ? "✓ 저장됨" : "전체 저장"}
+          {pending ? "저장 중…" : saved && !dirty ? "✓ 저장됨" : saveLabel}
         </button>
       </div>
     </div>

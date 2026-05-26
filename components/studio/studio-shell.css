@@ -827,6 +827,16 @@ textarea:disabled {
   border-bottom: 0;
   padding-bottom: 0;
 }
+.tag-editor-row {
+  transition:
+    opacity 140ms var(--ease, ease),
+    transform 140ms var(--ease, ease);
+}
+/* 드래그 중인 원래 자리는 들려 나간 듯 흐린 placeholder로(고스트=행 전체가 커서를 따라감). */
+.tag-editor-row.dragging {
+  opacity: 0.35;
+  transform: scale(0.99);
+}
 .tag-editor-row input {
   flex: 0 0 96px;
   width: 96px;

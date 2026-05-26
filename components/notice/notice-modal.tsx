@@ -164,7 +164,7 @@ export function NoticeModal({ dateKey, onClose }: NoticeModalProps) {
           <header className="notice-method-head">
             <span className="notice-method-no">방법 1</span>
             <strong>직접 붙여넣기</strong>
-            <span className="notice-method-tag">간단 · 비추천</span>
+            <span className="notice-method-tag">비추천</span>
           </header>
           <p className="notice-method-desc">
             제목이랑 본문을 따로 복사해서 숲에 붙여넣는 방법. 매번 두 번 붙여넣고
