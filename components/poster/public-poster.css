@@ -13,8 +13,10 @@
      재계산/리플로우하지 않게 한다(주소창 숨김 시 아래 약간 여백만 생김). */
   top: 48px;
   align-self: flex-start;
-  height: calc(100vh - 118px);
-  height: calc(100svh - 118px);
+  /* 고정 높이가 아니라 상한(max-height): 내용만큼만 차지하되(빈 공간 없음),
+     화면에 여유가 생기면 그만큼 더 길게 늘어난다(dvh = 동적). */
+  max-height: calc(100vh - 124px);
+  max-height: calc(100dvh - 124px);
   overflow-y: auto;
   flex: 0 0 86px;
   display: grid;
@@ -184,14 +186,15 @@
   place-items: center;
   width: 48px;
   height: 48px;
-  border: 1px solid #e3d6bb;
+  border: 1px solid rgb(227 214 187 / 70%);
   border-radius: 999px;
-  background: var(--accent, #f5b81b);
-  color: var(--on-accent, #4a3500);
+  /* 채도를 낮추고 살짝 투명하게 — 뒤 일정 카드가 비쳐 안 가린다. */
+  background: rgb(245 184 27 / 62%);
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  color: var(--accent-strong, #a9760a);
   cursor: pointer;
-  box-shadow:
-    0 8px 20px rgb(74 53 0 / 26%),
-    inset 0 1px 0 rgb(255 255 255 / 55%);
+  box-shadow: 0 6px 16px rgb(74 53 0 / 16%);
   transition: transform var(--dur-1, 120ms) var(--ease);
 }
 .agenda-monthbar button:active {
