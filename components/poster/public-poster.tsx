@@ -11,6 +11,7 @@ import {
   ChevronUp,
   Copy,
   ExternalLink,
+  Eye,
   FlipHorizontal,
   FlipVertical,
   Keyboard,
@@ -321,8 +322,8 @@ export function PublicPoster({
   initialMonth,
   initialYear,
   schedule,
-  canExport = false,
-  decorate = false,
+  canExport: canExportProp = false,
+  decorate: decorateProp = false,
   saveStickerAction,
   deleteStickerAction,
   uploadStickerAssetAction,
@@ -333,6 +334,12 @@ export function PublicPoster({
   accountEmail = null
 }: PublicPosterProps) {
   const router = useRouter();
+  // 꾸미기 화면에서 "시청자 화면 보기"로 잠깐 미리보기 — 꾸미기/내보내기 도구를 숨기고
+  // 시청자 시점으로 본다. previewing 동안에는 effective decorate/canExport를 꺼서, 아래의
+  // 모든 꾸미기 로직(도구바·키보드·스티커 편집·내보내기)이 자동으로 비활성화된다.
+  const [previewing, setPreviewing] = useState(false);
+  const decorate = decorateProp && !previewing;
+  const canExport = canExportProp && !previewing;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -463,6 +470,45 @@ export function PublicPoster({
   const [floaters, setFloaters] = useState<HeartFloater[]>([]);
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
   const interactive = !decorate;
+
+  // "시청자 화면 보기" 미리보기는 히스토리에 한 칸 쌓아, 휴대폰/브라우저 뒤로가기를 누르면
+  // 페이지를 떠나지 않고 꾸미기로 돌아온다(편집실 오버레이 스택과 같은 방식).
+  const previewDepthRef = useRef(0);
+  const ignorePreviewPop = useRef(false);
+  const previewBackClosing = useRef(false);
+  useEffect(() => {
+    const depth = previewing ? 1 : 0;
+    const prev = previewDepthRef.current;
+    if (depth > prev) {
+      window.history.pushState({ vicPreview: true }, "");
+    } else if (depth < prev) {
+      if (previewBackClosing.current) {
+        previewBackClosing.current = false; // 뒤로가기로 닫힘 → 브라우저가 이미 정리함
+      } else {
+        ignorePreviewPop.current = true; // 버튼으로 닫힘 → 쌓은 항목 정리(그 popstate는 무시)
+        window.history.back();
+      }
+    }
+    previewDepthRef.current = depth;
+  }, [previewing]);
+  useEffect(() => {
+    function onPop() {
+      if (ignorePreviewPop.current) {
+        ignorePreviewPop.current = false;
+        return;
+      }
+      // 미리보기 중일 때만 처리 — 아니면 일반 뒤로가기를 방해하지 않는다.
+      setPreviewing((cur) => {
+        if (cur) {
+          previewBackClosing.current = true;
+          return false;
+        }
+        return cur;
+      });
+    }
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
   // 모바일(좁은 화면) 시청자는 세로 아젠다(목록) 전용 — 월간 그리드/캡쳐는 PC로 유도.
   // (꾸미기 모드엔 적용 안 함: 꾸미기는 PC 전용.)
   const [isNarrow, setIsNarrow] = useState(false);
@@ -1831,17 +1877,38 @@ export function PublicPoster({
               </div>
             )}
 
-            {/* 편집실로 돌아가기는 우측 상단(계정변경 옆)에 둔다. */}
+            {/* 편집실로 돌아가기 + 시청자 화면 보기(미리보기 토글)는 우측 상단(계정변경 옆)에 둔다. */}
             <div className="viewer-actions">
-              {decorate ? (
-                <Link
-                  className="button"
-                  href="/studio"
-                  onClick={() => startNav("편집실로 돌아가는 중입니다…")}
-                >
-                  <ChevronLeft aria-hidden="true" size={16} />
-                  편집실로 돌아가기
-                </Link>
+              {decorateProp ? (
+                <>
+                  <Link
+                    className="button"
+                    href="/studio"
+                    onClick={() => startNav("편집실로 돌아가는 중입니다…")}
+                  >
+                    <ChevronLeft aria-hidden="true" size={16} />
+                    편집실로 돌아가기
+                  </Link>
+                  {previewing ? (
+                    <button
+                      className="button"
+                      onClick={() => setPreviewing(false)}
+                      type="button"
+                    >
+                      <ChevronLeft aria-hidden="true" size={16} />
+                      꾸미기로 돌아가기
+                    </button>
+                  ) : (
+                    <button
+                      className="button"
+                      onClick={() => setPreviewing(true)}
+                      type="button"
+                    >
+                      <Eye aria-hidden="true" size={16} />
+                      시청자 화면 보기
+                    </button>
+                  )}
+                </>
               ) : null}
               {accountSwitch ? (
                 <form className="account-form" action="/api/auth/logout" method="post">

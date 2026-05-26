@@ -242,6 +242,14 @@
   font-size: 20px;
 }
 
+/* 일정 편집 패널: 주제목(날짜)은 살짝 작게, 부제목(새 일정/일정 수정)은 살짝 크게. */
+.event-editor-panel h2 {
+  font-size: 18px;
+}
+.event-editor-panel .eyebrow {
+  font-size: 15px;
+}
+
 .studio-left-panel p {
   margin: 0;
   color: var(--muted);
