@@ -11,17 +11,21 @@ const EMOTICON_URL = "https://stimg.sooplive.com/NORMAL_BBS/1/26636711/15676a0ac
 const UP_EMOTICON_URL =
   "https://ogqmarket.img.sooplive.com/sticker/647d872091c8b/23_160.png?version=1"; // 업 도움
 
-// 자동 입력 북마클릿: SOOP 작성 페이지에서 클릭하면 클립보드(JSON: title/body)를 읽어
-// 제목 입력칸과 본문 에디터에 채워 넣는다. (다른 사이트라 우리 페이지가 직접 못 하므로 북마클릿 방식)
-// 셀렉터는 추정치 — 실제 작성 페이지 구조에 맞게 다듬을 수 있다.
+// 자동 입력 북마클릿: SOOP 작성 페이지에서 실행하면 클립보드(JSON: title/html/text)를 읽어
+// 제목([class*="PostTitle"])과 본문(.soop-editor-content)에 채운다. 본문은 직접 붙여넣기가 잘
+// 먹히는 에디터라 paste 이벤트를 흉내 내 HTML(가운데정렬·이모티콘 포함)을 넣는다(실패 시 execCommand→innerHTML 폴백).
 const BOOKMARKLET =
-  'javascript:(async()=>{try{var d=JSON.parse(await navigator.clipboard.readText());' +
-  'var t=document.querySelector(\'textarea[placeholder*="제목"],input[placeholder*="제목"],[class*="Subject"] textarea,[class*="Subject"] input\');' +
-  "if(t){var s=Object.getOwnPropertyDescriptor(t.constructor.prototype,'value').set;s.call(t,d.title);t.dispatchEvent(new Event('input',{bubbles:true}));t.dispatchEvent(new Event('change',{bubbles:true}));}" +
-  'var done=false,C=window.CKEDITOR;' +
-  'if(C&&C.instances){var k=Object.keys(C.instances)[0];if(k){C.instances[k].setData(d.html);done=true;}}' +
-  "if(!done){var f=document.querySelector('iframe.cke_wysiwyg_frame,.cke_contents iframe');if(f&&f.contentDocument&&f.contentDocument.body){f.contentDocument.body.innerHTML=d.html;done=true;}}" +
-  "if(!t&&!done){alert('입력칸을 못 찾았어요. 작성 페이지에서 눌렀는지 확인해 주세요.');}" +
+  "javascript:(async()=>{try{" +
+  "var d=JSON.parse(await navigator.clipboard.readText());var ok=false;" +
+  "var tw=document.querySelector('[class*=\"PostTitle\"]');" +
+  "var ti=tw?(tw.querySelector('input,textarea')||tw.querySelector('[contenteditable]')||(tw.isContentEditable?tw:null)):null;" +
+  "if(ti){if(ti.tagName=='INPUT'||ti.tagName=='TEXTAREA'){var sv=Object.getOwnPropertyDescriptor(Object.getPrototypeOf(ti),'value').set;sv.call(ti,d.title);ti.dispatchEvent(new Event('input',{bubbles:true}));ti.dispatchEvent(new Event('change',{bubbles:true}));}else{ti.focus();document.execCommand('selectAll',false,null);document.execCommand('insertText',false,d.title);}ok=true;}" +
+  "var be=document.querySelector('.soop-editor-content');" +
+  "if(be){be.focus();var sel=window.getSelection();var rg=document.createRange();rg.selectNodeContents(be);sel.removeAllRanges();sel.addRange(rg);" +
+  "var dt=new DataTransfer();dt.setData('text/html',d.html);if(d.text)dt.setData('text/plain',d.text);" +
+  "var pe=new ClipboardEvent('paste',{clipboardData:dt,bubbles:true,cancelable:true});be.dispatchEvent(pe);" +
+  "if(!pe.defaultPrevented){if(!document.execCommand('insertHTML',false,d.html)){be.innerHTML=d.html;be.dispatchEvent(new Event('input',{bubbles:true}));}}ok=true;}" +
+  "if(!ok){alert('입력칸을 못 찾았어요. 작성 페이지에서 눌렀는지 확인해 주세요.');}" +
   "}catch(x){alert('자동입력 실패: '+(x&&x.message?x.message:x));}})()";
 
 // 모바일 브라우저(삼성 인터넷 등)는 북마크 URL에 공백을 거부한다("URL에는 공백을 포함할 수 없습니다").
@@ -120,7 +124,7 @@ export function NoticeModal({
       .join("") +
     `<p style="text-align:center;"><img src="${emoticonUrl}" alt="" /></p>`;
   // 북마클릿이 읽을 자동입력 페이로드(제목 + 본문 HTML).
-  const autofillPayload = JSON.stringify({ title, html: bodyHtml });
+  const autofillPayload = JSON.stringify({ title, html: bodyHtml, text: body });
 
   // 모바일 붙여넣기용: 본문을 서식(가운데정렬·이모티콘) 포함 HTML로 클립보드에 넣는다.
   // 에디터가 HTML 붙여넣기를 받으면 정렬·이모티콘까지 한 번에 들어간다(안 받으면 글자는 그대로).
