@@ -116,7 +116,7 @@ function daysSinceDebut(isoDate: string): number {
 
 // 스트리머(빅토리) 기념일 — 매년 같은 양력 날짜에 표기.
 const STREAMER_ANNUAL: Record<string, (isoDate: string) => string | null> = {
-  "02-19": () => "🎂 생일"
+  "02-19": () => "🎂 토리님 생일"
 };
 
 // 데뷔 표기: 데뷔 당일, 매년 데뷔일(10/1)은 "N년차", 그 외 100일 단위는 "D+".
