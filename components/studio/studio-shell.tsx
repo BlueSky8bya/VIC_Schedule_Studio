@@ -63,7 +63,11 @@ import {
   canReadOwnerPrivate,
   canReadPrivateLayer
 } from "@/lib/permissions/roles";
-import { deleteEventAction, saveEventAction } from "@/lib/schedules/event-actions";
+import {
+  deleteEventAction,
+  saveEventAction,
+  updateSupportSettingsAction
+} from "@/lib/schedules/event-actions";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { linkChainAction, unlinkPairAction } from "@/lib/schedules/link-actions";
 import { addTagAction, removeTagAction, updateTagsAction } from "@/lib/schedules/tag-actions";
@@ -205,6 +209,9 @@ export function StudioShell({
   }, []);
   // 모바일에서 일정 카드를 눌렀을 때 펼치는 인라인 편집 시트(소유자/개발자).
   const [mobileEditId, setMobileEditId] = useState<string | null>(null);
+  // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 전용 시트(웹·모바일 공용).
+  const [supportSheetId, setSupportSheetId] = useState<string | null>(null);
+  const [supportSaving, setSupportSaving] = useState(false);
   // 모바일 하단 관리(태그·멤버) 펼침 상태.
   const [mobileMgmt, setMobileMgmt] = useState<null | "tags" | "members">(null);
   // 일정은 로컬 상태로 들고 낙관적으로 갱신한다 — 잇기·복붙·저장·삭제가 서버 왕복/새로고침을
@@ -869,6 +876,42 @@ export function StudioShell({
     setForm(createEmptyForm());
   }
 
+  // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 시트 열기/닫기/저장.
+  function openSupportSheet(event: StudioScheduleEvent) {
+    selectEvent(event); // form에 이 업 도움의 기간·링크가 채워진다
+    setSupportSheetId(event.id);
+  }
+  function closeSupportSheet() {
+    setSupportSheetId(null);
+    setSelectedEventId(null);
+    setForm(createEmptyForm());
+  }
+  function saveSupportSettings() {
+    if (!supportSheetId) return;
+    const id = supportSheetId;
+    setActionError(null);
+    setSupportSaving(true);
+    setEvents((cur) =>
+      cur.map((e) =>
+        e.id === id
+          ? { ...e, endDateKey: form.endDateKey || undefined, supportUrl: form.supportUrl || undefined }
+          : e
+      )
+    ); // 낙관적 반영
+    startTransition(async () => {
+      const result = await updateSupportSettingsAction(id, {
+        endDateKey: form.endDateKey,
+        supportUrl: form.supportUrl
+      });
+      setSupportSaving(false);
+      if (result.ok) {
+        closeSupportSheet();
+      } else {
+        setActionError(result.error);
+      }
+    });
+  }
+
   function renderMobile() {
     const monthCells = cells.filter((c) => c.inCurrentMonth);
     const filtering = tagFilters.length > 0;
@@ -1052,10 +1095,19 @@ export function StudioShell({
                                     <ExternalLink aria-hidden="true" size={13} />
                                   </a>
                                 ) : null}
+                                {/* 소유자·개발자는 전체 편집, 매니저·작업자는 업 도움 설정만 수정. */}
                                 {canEdit ? (
                                   <button
                                     className="m-support-edit"
                                     onClick={() => openMobileEdit(event)}
+                                    type="button"
+                                  >
+                                    수정
+                                  </button>
+                                ) : canDecorateCalendar ? (
+                                  <button
+                                    className="m-support-edit"
+                                    onClick={() => openSupportSheet(event)}
                                     type="button"
                                   >
                                     수정
@@ -1175,6 +1227,70 @@ export function StudioShell({
   }
 
   // 업 도움(후원) 편집 — 켜기/끄기 + 기간 + 링크 + 링크 확인. 웹 폼과 모바일 편집 시트 공용.
+  // 업 도움 기간·링크 입력부. editable=true면 신뢰 멤버도 고칠 수 있다(토글은 별도, 소유자 전용).
+  function renderSupportFields(editable: boolean) {
+    return (
+      <>
+        <div className="support-duration">
+          <span className="duration-title">업 도움 기간</span>
+          <div className="duration-chips">
+            {SUPPORT_DURATIONS.map((opt) => {
+              const end = addDaysIso(selectedDate, opt.days);
+              const active = (form.endDateKey || selectedDate) === end;
+              return (
+                <button
+                  className={active ? "active" : ""}
+                  disabled={!editable}
+                  key={opt.days}
+                  onClick={() => setForm((current) => ({ ...current, endDateKey: end }))}
+                  type="button"
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="duration-manual">
+            <span>종료일 직접 선택</span>
+            <input
+              disabled={!editable}
+              min={selectedDate}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, endDateKey: event.target.value }))
+              }
+              type="date"
+              value={form.endDateKey || selectedDate}
+            />
+          </div>
+        </div>
+        <label>
+          업 도움 링크
+          <input
+            disabled={!editable}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, supportUrl: event.target.value }))
+            }
+            placeholder="숲 게시글 URL"
+            type="url"
+            value={form.supportUrl}
+          />
+        </label>
+        {/* 이미 설정된 링크는 편집실에서 바로 눌러 확인할 수 있게 한다. */}
+        {form.supportUrl.trim() ? (
+          <a
+            className="button support-visit"
+            href={form.supportUrl}
+            rel="noopener noreferrer"
+            target="_blank"
+          >
+            <ExternalLink aria-hidden="true" size={15} />
+            도우러 가기 (링크 확인용)
+          </a>
+        ) : null}
+      </>
+    );
+  }
+
   function renderSupportEditor() {
     return (
       <>
@@ -1191,68 +1307,48 @@ export function StudioShell({
             <span className="switch-knob" />
           </button>
         </div>
-
-        {form.isSupport ? (
-          <>
-            <div className="support-duration">
-              <span className="duration-title">업 도움 기간</span>
-              <div className="duration-chips">
-                {SUPPORT_DURATIONS.map((opt) => {
-                  const end = addDaysIso(selectedDate, opt.days);
-                  const active = (form.endDateKey || selectedDate) === end;
-                  return (
-                    <button
-                      className={active ? "active" : ""}
-                      disabled={!canEdit}
-                      key={opt.days}
-                      onClick={() => setForm((current) => ({ ...current, endDateKey: end }))}
-                      type="button"
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
-              <div className="duration-manual">
-                <span>종료일 직접 선택</span>
-                <input
-                  disabled={!canEdit}
-                  min={selectedDate}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, endDateKey: event.target.value }))
-                  }
-                  type="date"
-                  value={form.endDateKey || selectedDate}
-                />
-              </div>
-            </div>
-            <label>
-              업 도움 링크
-              <input
-                disabled={!canEdit}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, supportUrl: event.target.value }))
-                }
-                placeholder="숲 게시글 URL"
-                type="url"
-                value={form.supportUrl}
-              />
-            </label>
-            {/* 이미 설정된 링크는 편집실에서 바로 눌러 확인할 수 있게 한다. */}
-            {form.supportUrl.trim() ? (
-              <a
-                className="button support-visit"
-                href={form.supportUrl}
-                rel="noopener noreferrer"
-                target="_blank"
-              >
-                <ExternalLink aria-hidden="true" size={15} />
-                도우러 가기 (링크 확인용)
-              </a>
-            ) : null}
-          </>
-        ) : null}
+        {form.isSupport ? renderSupportFields(canEdit) : null}
       </>
+    );
+  }
+
+  // 신뢰 멤버(매니저·작업자)용 "업 도움 수정" 시트 — 기간·링크만 고친다(토글·삭제 없음).
+  function renderSupportSheet() {
+    return (
+      <div
+        className="modal-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) closeSupportSheet();
+        }}
+        role="presentation"
+      >
+        <div className="modal-card" role="dialog">
+          <div className="modal-head">
+            <h2>🌱 업 도움 수정</h2>
+            <button aria-label="닫기" className="modal-close" onClick={closeSupportSheet} type="button">
+              <X aria-hidden="true" size={18} />
+            </button>
+          </div>
+          <div className="passcode-box">
+            {actionError ? <div className="auth-warning">{actionError}</div> : null}
+            {renderSupportFields(true)}
+            <div className="passcode-actions">
+              <button className="button" onClick={closeSupportSheet} type="button">
+                취소
+              </button>
+              <button
+                className="button primary"
+                disabled={supportSaving}
+                onClick={saveSupportSettings}
+                type="button"
+              >
+                <Save aria-hidden="true" size={15} />
+                {supportSaving ? "저장 중…" : "저장"}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     );
   }
 
@@ -1594,7 +1690,12 @@ export function StudioShell({
                         key={s.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          selectEvent(s);
+                          // 매니저·작업자는 업 도움 설정 수정 시트를 띄운다(전체 편집 불가).
+                          if (!canEdit && canDecorateCalendar) {
+                            openSupportSheet(s);
+                          } else {
+                            selectEvent(s);
+                          }
                         }}
                         style={{
                           top: 26 + lane * 20,
@@ -1847,6 +1948,7 @@ export function StudioShell({
         </>
       )}
 
+      {supportSheetId !== null ? renderSupportSheet() : null}
       {modal ? (
         <div
           className="modal-backdrop"

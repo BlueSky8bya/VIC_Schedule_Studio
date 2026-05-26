@@ -9,7 +9,8 @@ import type {
 } from "@/lib/domain/schedule-types";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
-import { canEditSchedule } from "@/lib/permissions/roles";
+import { createSupabaseAdminClient } from "@/lib/auth/admin";
+import { canDecorate, canEditSchedule } from "@/lib/permissions/roles";
 
 export type SaveEventInput = {
   id?: string;
@@ -168,6 +169,62 @@ export async function deleteEventAction(eventId: string): Promise<ActionResult> 
 
   // event_tags / event_private_meta는 FK on delete cascade로 함께 삭제됨
   const { error } = await supabase.from("events").delete().eq("id", eventId);
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/studio");
+  revalidatePublicSchedule();
+
+  return { ok: true, id: eventId };
+}
+
+// 최초 업 도움 "생성"은 소유자(owner)만 가능하지만, 이미 만들어진 업 도움의 "설정 수정"
+// (기간·링크)은 신뢰 멤버(매니저·작업자)도 할 수 있게 한다.
+// 보안: 대상이 실제 '업 도움(is_support)' 일정이고 vic 캘린더 소속일 때만, end_date_key·
+// support_url 두 필드만 admin 클라이언트로 갱신한다(다른 일정/필드는 절대 못 건드림).
+export async function updateSupportSettingsAction(
+  eventId: string,
+  input: { endDateKey?: string; supportUrl?: string }
+): Promise<ActionResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!canDecorate(actor.role)) {
+    return { ok: false, error: "업 도움을 수정할 권한이 없습니다." };
+  }
+
+  const admin = createSupabaseAdminClient();
+  if (!admin) {
+    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
+  }
+
+  const { data: calendar } = await admin
+    .from("calendars")
+    .select("id")
+    .eq("slug", SLUG)
+    .maybeSingle();
+  if (!calendar) {
+    return { ok: false, error: "캘린더를 찾을 수 없습니다." };
+  }
+
+  const { data: ev } = await admin
+    .from("events")
+    .select("id, is_support, calendar_id")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (!ev || ev.calendar_id !== calendar.id || !ev.is_support) {
+    return { ok: false, error: "업 도움 일정이 아닙니다." };
+  }
+
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (input.endDateKey !== undefined) {
+    patch.end_date_key = input.endDateKey || null;
+  }
+  if (input.supportUrl !== undefined) {
+    patch.support_url = input.supportUrl.trim() || null;
+  }
+
+  const { error } = await admin.from("events").update(patch).eq("id", eventId);
   if (error) {
     return { ok: false, error: error.message };
   }
