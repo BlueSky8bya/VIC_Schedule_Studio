@@ -803,6 +803,26 @@ textarea:disabled {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--line);
 }
+/* 끌어서 순서 변경 손잡이 */
+.tag-drag-handle {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 32px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted, #9aa0ab);
+  cursor: grab;
+}
+.tag-drag-handle:hover {
+  background: var(--surface-2, #fdf6e8);
+  color: var(--ink, #1c2433);
+}
+.tag-drag-handle:active {
+  cursor: grabbing;
+}
 .tag-editor-row:last-child {
   border-bottom: 0;
   padding-bottom: 0;

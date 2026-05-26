@@ -1,11 +1,11 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { GripVertical, Trash2 } from "lucide-react";
+import { type DragEvent as ReactDragEvent, useEffect, useRef, useState, useTransition } from "react";
 import type { BroadcastTag, ColorKey, ColorPaletteEntry } from "@/lib/domain/schedule-types";
 import type { AddTagResult, TagUpdateResult } from "@/lib/schedules/tag-actions";
 
-type TagUpdate = { id: string; displayName: string; colorKey: ColorKey };
+type TagUpdate = { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number };
 
 type TagLegendEditorProps = {
   tags: BroadcastTag[];
@@ -56,10 +56,37 @@ export function TagLegendEditor({
   }, [tags]);
 
   const colorOf = (key: ColorKey) => palette.find((p) => p.key === key);
-  // #3: "기타"는 항상 맨 끝(나머지 순서 유지).
-  const orderedTags = [...tags].sort(
-    (a, b) => Number(a.displayName === "기타") - Number(b.displayName === "기타")
-  );
+
+  // 드래그로 바꾸는 표시 순서(태그 id 배열). 저장 시 sort_order로 반영된다.
+  const [orderIds, setOrderIds] = useState<string[]>(() => tags.map((t) => t.id));
+  useEffect(() => {
+    setOrderIds((cur) => {
+      const ids = tags.map((t) => t.id);
+      const kept = cur.filter((id) => ids.includes(id));
+      const added = ids.filter((id) => !kept.includes(id));
+      return [...kept, ...added];
+    });
+  }, [tags]);
+  const orderedTags = orderIds
+    .map((id) => tags.find((t) => t.id === id))
+    .filter((t): t is BroadcastTag => Boolean(t));
+
+  // 드래그 순서 변경(네이티브 DnD). 핸들을 끌면 dragId, 다른 행 위로 오면 그 앞으로 이동.
+  const dragId = useRef<string | null>(null);
+  function moveBefore(list: string[], from: string, before: string) {
+    if (from === before) return list;
+    const next = list.filter((id) => id !== from);
+    const idx = next.indexOf(before);
+    next.splice(idx, 0, from);
+    return next;
+  }
+  function onDragOverRow(e: ReactDragEvent, overId: string) {
+    if (!dragId.current) return;
+    e.preventDefault();
+    if (dragId.current !== overId) {
+      setOrderIds((cur) => moveBefore(cur, dragId.current as string, overId));
+    }
+  }
 
   // 읽기 전용(좌측 패널): 색상 안내만
   if (!canEdit) {
@@ -128,21 +155,27 @@ export function TagLegendEditor({
   }
 
   const anyEmpty = Object.values(draft).some((d) => d.colorKey === "");
-  const dirty = tags.some(
-    (t) => draft[t.id]?.name !== t.displayName || draft[t.id]?.colorKey !== t.colorKey
-  );
+  const orderChanged = orderIds.some((id, i) => tags[i]?.id !== id);
+  const dirty =
+    orderChanged ||
+    tags.some(
+      (t) => draft[t.id]?.name !== t.displayName || draft[t.id]?.colorKey !== t.colorKey
+    );
 
   function saveAll() {
     setError(null);
-    const updates: TagUpdate[] = tags.map((t) => ({
+    // 드래그 순서대로 sort_order를 0,1,2…로 부여해 저장.
+    const updates: TagUpdate[] = orderedTags.map((t, index) => ({
       id: t.id,
       displayName: draft[t.id].name,
-      colorKey: draft[t.id].colorKey as ColorKey
+      colorKey: draft[t.id].colorKey as ColorKey,
+      sortOrder: index
     }));
     const prev: TagUpdate[] = tags.map((t) => ({
       id: t.id,
       displayName: t.displayName,
-      colorKey: t.colorKey
+      colorKey: t.colorKey,
+      sortOrder: t.sortOrder
     }));
     onTagsUpdated?.(updates); // 낙관적 반영(달력 색 즉시 갱신)
     startTransition(async () => {
@@ -159,14 +192,36 @@ export function TagLegendEditor({
   return (
     <div className="tag-editor">
       <p className="tag-editor-hint">
-        색을 바꾸려면 먼저 같은 색을 쓰는 태그의 색을 한 번 더 눌러 해제한 뒤 다시 고르세요. 한 색은
-        한 태그만 쓸 수 있습니다.
+        왼쪽 손잡이(⋮⋮)를 끌어 순서를 바꿀 수 있어요. 색을 바꾸려면 먼저 같은 색을 쓰는 태그의 색을
+        한 번 더 눌러 해제한 뒤 다시 고르세요. 한 색은 한 태그만 쓸 수 있습니다.
       </p>
       {orderedTags.map((tag) => {
         const d = draft[tag.id];
         if (!d) return null;
         return (
-          <div className="tag-editor-row" key={tag.id}>
+          <div
+            className="tag-editor-row"
+            key={tag.id}
+            onDragOver={(e) => onDragOverRow(e, tag.id)}
+            onDrop={() => {
+              dragId.current = null;
+            }}
+          >
+            <button
+              aria-label="순서 변경"
+              className="tag-drag-handle"
+              draggable
+              onDragEnd={() => {
+                dragId.current = null;
+              }}
+              onDragStart={() => {
+                dragId.current = tag.id;
+              }}
+              title="끌어서 순서 변경"
+              type="button"
+            >
+              <GripVertical aria-hidden="true" size={16} />
+            </button>
             <input
               aria-label="태그 이름"
               onChange={(e) =>

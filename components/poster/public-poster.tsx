@@ -341,11 +341,9 @@ export function PublicPoster({
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [schedule.events, view]);
   // #1: 색상 안내에서 "기타"는 항상 맨 마지막으로(나머지는 기존 정렬 유지).
+  // 색상 안내 순서 = 태그 sort_order(편집실에서 드래그로 정한 순서). 단일 진실 소스.
   const legendTags = useMemo(
-    () =>
-      [...schedule.tags].sort(
-        (a, b) => Number(a.displayName === "기타") - Number(b.displayName === "기타")
-      ),
+    () => [...schedule.tags].sort((a, b) => a.sortOrder - b.sortOrder),
     [schedule.tags]
   );
 

@@ -334,7 +334,7 @@ export async function removeTagAction(tagId: string): Promise<TagUpdateResult> {
 
 // 여러 태그를 한 번에 저장. 색상 중복을 서버에서도 막는다.
 export async function updateTagsAction(
-  updates: { id: string; displayName: string; colorKey: ColorKey }[]
+  updates: { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number }[]
 ): Promise<TagUpdateResult> {
   const actor = await resolveCurrentActor(SLUG);
   if (!canEditSchedule(actor.role)) {
@@ -364,7 +364,12 @@ export async function updateTagsAction(
     updates.map((u) =>
       supabase
         .from("broadcast_tags")
-        .update({ display_name: u.displayName.trim(), color_key: u.colorKey, updated_at: now })
+        .update({
+          display_name: u.displayName.trim(),
+          color_key: u.colorKey,
+          ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }),
+          updated_at: now
+        })
         .eq("id", u.id)
     )
   );

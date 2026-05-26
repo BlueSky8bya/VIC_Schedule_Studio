@@ -565,13 +565,19 @@ export function StudioShell({
       }
     }
   }
-  function applyTagUpdates(updates: { id: string; displayName: string; colorKey: ColorKey }[]) {
-    setTags((prev) =>
-      prev.map((t) => {
+  function applyTagUpdates(
+    updates: { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number }[]
+  ) {
+    setTags((prev) => {
+      const mapped = prev.map((t) => {
         const u = updates.find((x) => x.id === t.id);
-        return u ? { ...t, displayName: u.displayName, colorKey: u.colorKey } : t;
-      })
-    );
+        return u
+          ? { ...t, displayName: u.displayName, colorKey: u.colorKey, sortOrder: u.sortOrder ?? t.sortOrder }
+          : t;
+      });
+      // 드래그로 바뀐 순서(sort_order)를 즉시 반영 — 달력·색상 안내가 새로고침 없이 갱신.
+      return [...mapped].sort((a, b) => a.sortOrder - b.sortOrder);
+    });
   }
 
   // #2: 일정 카드 복사/붙여넣기 — 선택한 일정을 Ctrl+C로 복사, 다른 날짜를 고르고 Ctrl+V.
