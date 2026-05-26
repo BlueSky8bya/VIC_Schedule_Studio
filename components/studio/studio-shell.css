@@ -119,18 +119,21 @@
 }
 
 .actor-badge {
-  display: grid;
-  min-width: 178px;
-  align-content: center;
-  gap: 2px;
+  /* 역할과 이메일을 "소유자(email)"처럼 한 줄로 — 이메일이 길면 말줄임. */
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 340px;
   background: #ffffff;
 }
 
 .actor-badge strong {
+  flex: 0 0 auto;
   font-size: 13px;
 }
 
 .actor-badge span {
+  min-width: 0;
   overflow: hidden;
   color: var(--muted);
   font-size: 12px;

@@ -1537,7 +1537,7 @@ export function StudioShell({
         <div className="studio-role-tools">
           <div className={`actor-badge ${actor.role}`}>
             <strong>{ROLE_LABEL[actor.role]}</strong>
-            <span>{actor.email ?? "비로그인"}</span>
+            <span>{actor.email ? `(${actor.email})` : "(비로그인)"}</span>
           </div>
           <button
             className={canReadPrivate ? "private-toggle active" : "private-toggle"}
