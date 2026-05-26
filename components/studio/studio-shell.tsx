@@ -997,12 +997,7 @@ export function StudioShell({
                 <Eye size={14} /> 시청자 화면
               </button>
               {actor.isAuthenticated ? (
-                <form className="account-form" action="/api/auth/logout" method="post">
-                  {actor.email ? (
-                    <span className="account-email" title={actor.email}>
-                      {actor.email}
-                    </span>
-                  ) : null}
+                <form action="/api/auth/logout" method="post">
                   <button
                     className="button"
                     onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}
@@ -1635,12 +1630,7 @@ export function StudioShell({
             시청자 화면 보기
           </button>
           {actor.isAuthenticated ? (
-            <form className="account-form" action="/api/auth/logout" method="post">
-              {actor.email ? (
-                <span className="account-email" title={actor.email}>
-                  {actor.email}
-                </span>
-              ) : null}
+            <form action="/api/auth/logout" method="post">
               <button
                 className="button"
                 onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}
