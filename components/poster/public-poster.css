@@ -2,6 +2,8 @@
 /* 왼쪽: 스크롤 따라오는 색상 안내(sticky) · 오른쪽: 날짜별 일정 목록 */
 .agenda {
   display: flex;
+  /* 색상 필터(범례)를 오른쪽 레일로 — 콘텐츠 우선 + 엄지(오른손) 접근성. */
+  flex-direction: row-reverse;
   align-items: flex-start;
   gap: 10px;
   margin-top: 4px;
