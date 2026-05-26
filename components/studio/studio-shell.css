@@ -1086,6 +1086,9 @@ textarea:disabled {
 /* 비공개 비밀번호 박스 (미니멀) */
 .passcode-box {
   display: grid;
+  /* 단일 auto 칸은 내용(입력칸+'확인 중…' 버튼)의 max-content로 부풀어 모달 밖으로 넘쳤다.
+     minmax(0,1fr)로 칸을 모달 폭에 묶어, 안의 입력칸이 줄고 버튼이 항상 안에 들어오게 한다. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 .passcode-box input {

@@ -365,6 +365,52 @@ export function StudioShell({
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
 
+  // 모바일 오버레이(편집 시트·모달)가 열려 있는 동안:
+  //  ① 휴대폰 뒤로가기로 페이지가 통째로 뒤로 가(계정 선택 화면으로 튐) 버리지 않게, 히스토리
+  //     항목을 하나 쌓아 두고 popstate에서는 오버레이만 닫는다.
+  //  ② 뒤 배경(달력) 스크롤을 잠가, 시트 아래가 뚫려 보이거나 배경이 밀리지 않게 한다.
+  const overlayOpen = mobileEditId !== null || modal !== null;
+  useEffect(() => {
+    if (!overlayOpen) return;
+    const scrollY = window.scrollY;
+    const body = document.body;
+    const saved = {
+      position: body.style.position,
+      top: body.style.top,
+      left: body.style.left,
+      right: body.style.right,
+      width: body.style.width
+    };
+    body.style.position = "fixed";
+    body.style.top = `-${scrollY}px`;
+    body.style.left = "0";
+    body.style.right = "0";
+    body.style.width = "100%";
+
+    window.history.pushState({ vicOverlay: true }, "");
+    const onPop = () => {
+      setMobileEditId(null);
+      setSelectedEventId(null);
+      setForm(createEmptyForm());
+      setModal(null);
+    };
+    window.addEventListener("popstate", onPop);
+
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      body.style.position = saved.position;
+      body.style.top = saved.top;
+      body.style.left = saved.left;
+      body.style.right = saved.right;
+      body.style.width = saved.width;
+      window.scrollTo(0, scrollY);
+      // X·배경 클릭 등(뒤로가기가 아닌 경로)으로 닫았으면, 우리가 쌓은 히스토리 항목을 정리한다.
+      if (window.history.state && window.history.state.vicOverlay) {
+        window.history.back();
+      }
+    };
+  }, [overlayOpen]);
+
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: StudioScheduleEvent) {
     return getEventTagColors(event, tags, palette);

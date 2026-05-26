@@ -1746,20 +1746,10 @@ export function PublicPoster({
         ) : null}
         {showAgenda ? null : (
           <header className="public-calendar-header">
-            {/* 편집실로 돌아가기는 시청자 화면과 동일하게 항상 좌측 상단에 둔다(버튼 위치 통일). */}
-            <div className="header-left">
-              {decorate ? (
-                <Link className="button" href="/studio">
-                  <ChevronLeft aria-hidden="true" size={16} />
-                  편집실로 돌아가기
-                </Link>
-              ) : null}
-            </div>
+            <div className="header-left" />
 
-            {/* 꾸미기에서는 월 이동을 맨 위가 아니라 달력 가까운 하단 플로팅 바로 옮긴다(누르기 쉽게). */}
-            {decorate ? (
-              <strong className="header-month-label">{getMonthLabel(view.year, view.month)}</strong>
-            ) : (
+            {/* 꾸미기: 월 이동은 하단 플로팅 바로, 월 표시는 포스터 제목(✨️ … N월)에 이미 있어 헤더 가운데는 비운다. */}
+            {decorate ? null : (
               <div className="month-controls" aria-label="월 이동">
                 <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
                   <ChevronLeft aria-hidden="true" size={18} />
@@ -1771,7 +1761,14 @@ export function PublicPoster({
               </div>
             )}
 
+            {/* 편집실로 돌아가기는 우측 상단(계정변경 옆)에 둔다. */}
             <div className="viewer-actions">
+              {decorate ? (
+                <Link className="button" href="/studio">
+                  <ChevronLeft aria-hidden="true" size={16} />
+                  편집실로 돌아가기
+                </Link>
+              ) : null}
               {accountSwitch ? (
                 <form action="/api/auth/logout" method="post">
                   <button className="button" type="submit">

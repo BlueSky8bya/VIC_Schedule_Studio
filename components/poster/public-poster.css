@@ -490,14 +490,6 @@
   grid-column: 1;
   justify-self: start;
 }
-/* 꾸미기: 헤더 가운데엔 월 표시만(이동 버튼은 하단 플로팅 바로 이동). */
-.public-calendar-header .header-month-label {
-  grid-column: 2;
-  justify-self: center;
-  font-size: 18px;
-  font-weight: 900;
-  color: var(--accent-strong, #a9760a);
-}
 
 /* A3: 보기 전환 세그먼트 컨트롤 */
 .view-switch {
