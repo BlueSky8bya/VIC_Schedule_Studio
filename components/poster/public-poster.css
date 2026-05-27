@@ -483,12 +483,13 @@
    줄 높이는 거의 그대로). 모바일에서 손끝으로 정확히 누르기 쉽게. */
 .agenda-heart {
   flex: 0 0 auto;
-  /* 위/아래만 음수 마진으로 줄 높이 유지. 오른쪽 벽에서 확실히 띄워(margin-right) 한쪽으로
-     쏠려 보이는 불균형을 줄인다. 탭 영역(40×40)은 그대로라 누르기 편하다. */
-  margin: -10px 12px -10px auto;
+  /* ♥ 글리프를 카드 오른쪽 끝(왼쪽 색바 inset ~10px와 대칭)에 flex-end로 붙이고, 40×40 탭
+     영역은 왼쪽으로만 확장한다. → 좌우 여백 균형 + 행이 양옆으로 꽉 차 뚱뚱해 보이지 않음.
+     위/아래 음수 마진으로 줄 높이는 유지. */
+  margin: -10px -2px -10px auto;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-end;
   width: 40px;
   height: 40px;
   border: 0;
