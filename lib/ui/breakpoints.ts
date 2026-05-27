@@ -9,7 +9,8 @@
  *   studioNarrow  <= 1180px : 태블릿 가로/작은 노트북 (달력 + 일부 패널 접힘)
  *   (그 이상)               : 데스크톱 스튜디오
  *
- * (대형 화면 zoom 대응은 Phase 4에서 제거됨 — studio-shell.css는 작업영역 max-width로 대체.)
+ * (대형 화면 zoom(1700/2400px)은 studio-shell.css에서 유지 — Phase 4에서 제거 시도했으나
+ *  밀도가 너무 커져 되돌렸다. zoom이 이 앱에선 실제 문제를 안 일으킴.)
  *
  * CSS 쪽 동일 분기점은 각 CSS 파일 상단의 "Responsive policy" 주석과 맞춘다.
  */

@@ -53,14 +53,13 @@
 - [x] `npx playwright test tests/e2e --project=chromium` 10개 그린.
 - 후속(인증 필요): 실제 포스터(16:9)·꾸미기·비공개 스냅샷은 테스트 인증 경로가 생기면 추가.
 
-### Phase 4 — studio zoom 제거 ✅ (사용자 확인 대기)
-- [x] `studio-shell.css`의 1700/2400px `zoom` @media 제거(JS 의존 없음 확인).
-- [x] 대체: `.studio-workspace { max-width: 2200px; margin-inline: auto }` — 큰 모니터에서
-      달력이 옆으로 퍼지지 않게 가운데로 모음. 상단바·액션바는 풀폭 유지(헤더 패턴).
-- [x] sticky 좌패널 `top:72px` 관계는 zoom이 균일 축소였어 그대로 유지됨(조정 불필요).
-- [x] Phase 3 가드 재실행 — 6 viewport 가로 오버플로 0(회귀 없음).
-- 주의/후속: zoom 제거로 사용자 모니터(≈1920)에서 UI가 ~10% 커짐 — 밀도/타이틀 크기는
-      눈으로 보고 미세조정. 드래그/캡쳐는 좌표계가 1배라 더 정확(사용자 확인 필요).
+### Phase 4 — studio zoom 제거 실험 → ❌ 되돌림 (zoom 유지)
+- 시도: 1700/2400px `zoom` @media 제거 + `.studio-workspace { max-width }` 대체.
+- 결과: 사용자 모니터(≈1920)에서 UI 밀도가 너무 커졌다("전체 밀도가 너무 크다").
+- 결정: **zoom 유지.** zoom은 이 앱에서 실제 문제(드래그·캡쳐·sticky)를 일으키지 않으므로
+  보고서의 우려는 일반론에 그쳤고, 검증된 zoom 방식이 사용자가 좋아한 밀도를 준다.
+- 교훈: zoom 제거를 "제대로" 하려면 전 요소를 ~10% 작게 재튜닝해야 하는데, 그 이득(좌표계
+  정리)이 작업량·리스크 대비 미미. 실제 zoom 버그가 나타나면 그때 재튜닝과 함께 다시 검토.
 
 ### Phase 5 — 컨테이너 쿼리 점진 도입
 - [ ] 우선순위: poster-surface → public-calendar-area → studio-calendar-panel →
