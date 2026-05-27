@@ -1,5 +1,6 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { PublicPoster } from "@/components/poster/public-poster";
+import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { InAppBrowserNotice } from "@/components/auth/in-app-browser-notice";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
@@ -31,12 +32,20 @@ export default async function HomePage() {
     // actor는 위에서 이미 구했으니, unlock만 구해 loader에 함께 주입(중복 조회 방지).
     const unlock = await getUnlockState("vic");
     const schedule = await getStudioSchedule("vic", { actor, unlock });
+    // 새로고침 복원: 쿠키에서 직전 달·시청자 모드를 읽어 서버 렌더 초기값으로 넘긴다(깜빡임 없음).
+    const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
 
     return (
       <StudioShell
         actor={actor}
         hasUnlockSession={unlock.hasUnlockSession}
         schedule={schedule}
+        initialView={
+          typeof mem.sy === "number" && typeof mem.sm === "number"
+            ? { year: mem.sy, month: mem.sm }
+            : undefined
+        }
+        initialViewerMode={mem.v === 1}
       />
     );
   }

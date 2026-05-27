@@ -82,11 +82,15 @@ import { DeveloperPanel } from "@/components/developer/developer-panel";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
+import { writeViewCookie } from "@/lib/ui/view-cookie";
 
 type StudioShellProps = {
   actor: CurrentActor;
   schedule: StudioSchedule;
   hasUnlockSession: boolean;
+  // 새로고침 복원용 초기값(서버가 쿠키에서 읽어 넘긴다). 없으면 기본(현재 달/편집실).
+  initialView?: { year: number; month: number };
+  initialViewerMode?: boolean;
 };
 
 type EventForm = {
@@ -178,7 +182,9 @@ function formatShortDate(value: string) {
 export function StudioShell({
   actor,
   schedule,
-  hasUnlockSession
+  hasUnlockSession,
+  initialView,
+  initialViewerMode = false
 }: StudioShellProps) {
   const today = getTodayKst();
   const router = useRouter();
@@ -224,7 +230,7 @@ export function StudioShell({
     return p ? await p : null;
   }
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
-  const [viewerMode, setViewerMode] = useState(false);
+  const [viewerMode, setViewerMode] = useState(initialViewerMode);
   // 모바일(좁은 화면): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
   const [isNarrow, setIsNarrow] = useState(false);
   useEffect(() => {
@@ -356,16 +362,27 @@ export function StudioShell({
 
     selectEvent(target);
   }
-  const [view, setView] = useState({
-    year: schedule.calendar.defaultYear,
-    month: schedule.calendar.defaultMonth
-  });
+  const [view, setView] = useState(
+    initialView ?? {
+      year: schedule.calendar.defaultYear,
+      month: schedule.calendar.defaultMonth
+    }
+  );
   const [selectedDate, setSelectedDate] = useState(() => {
-    // 기본 표시 달이 "이번 달"이면 오늘 날짜 칸을, 아니면 그 달 1일을 선택한다.
-    const ym = `${schedule.calendar.defaultYear}-${String(schedule.calendar.defaultMonth).padStart(2, "0")}`;
+    // 복원된(또는 기본) 표시 달이 "이번 달"이면 오늘 날짜 칸을, 아니면 그 달 1일을 선택한다.
+    const y = initialView?.year ?? schedule.calendar.defaultYear;
+    const m = initialView?.month ?? schedule.calendar.defaultMonth;
+    const ym = `${y}-${String(m).padStart(2, "0")}`;
     return today.startsWith(`${ym}-`) ? today : `${ym}-01`;
   });
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+  // 보던 달·시청자 미리보기 상태를 쿠키에 기록 → 새로고침 때 서버가 읽어 그대로 복원.
+  // 초기값이 이미 쿠키에서 온 값이라 첫 기록은 같은 값(무해) — 덮어쓰기 걱정 없음.
+  useEffect(() => {
+    writeViewCookie({ sy: view.year, sm: view.month, v: viewerMode ? 1 : 0 });
+  }, [view, viewerMode]);
+
   // 새 일정/일정 수정 카드는 달력에서 날짜(또는 일정)를 "선택했을 때"만 보여준다.
   // 편집실 진입 시엔 카드를 띄우지 않고, 칸을 클릭하면 그제서야 나온다.
   const [editorVisible, setEditorVisible] = useState(false);
@@ -1929,7 +1946,11 @@ export function StudioShell({
             <Link
               className="button"
               href={`/studio/decorate/${view.year}/${view.month}`}
-              onClick={() => startNav("꾸미기 화면을 여는 중입니다…")}
+              onClick={() => {
+                // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
+                writeViewCookie({ dy: view.year, dm: view.month });
+                startNav("꾸미기 화면을 여는 중입니다…");
+              }}
             >
               <Sparkles aria-hidden="true" size={16} />
               꾸미러 가기
@@ -2058,7 +2079,11 @@ export function StudioShell({
             <Link
               className="button"
               href={`/studio/decorate/${view.year}/${view.month}`}
-              onClick={() => startNav("꾸미기 화면을 여는 중입니다…")}
+              onClick={() => {
+                // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
+                writeViewCookie({ dy: view.year, dm: view.month });
+                startNav("꾸미기 화면을 여는 중입니다…");
+              }}
             >
               달력 꾸미기
             </Link>

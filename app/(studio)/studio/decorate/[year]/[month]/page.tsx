@@ -1,5 +1,7 @@
+import { cookies } from "next/headers";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { resolveCurrentActor } from "@/lib/auth/actor";
+import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
 import { canDecorate, canEditSchedule } from "@/lib/permissions/roles";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import {
@@ -38,6 +40,12 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
     );
   }
 
+  // 새로고침 복원: 쿠키에 기록된 마지막 꾸미기 달이 있으면 그 달로 연다(없으면 URL의 연·월).
+  // 진입 버튼이 쿠키를 진입 월로 세팅하므로, 새 진입은 의도한 달, 이후 월 이동·새로고침은 그 달.
+  const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
+  const initialYear = mem.dy ?? Number(year);
+  const initialMonth = mem.dm ?? Number(month);
+
   return (
     <PublicPoster
       canExport
@@ -45,8 +53,8 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
       deleteStickerAction={deleteStickerAction}
       deleteStickerAssetAction={deleteStickerAssetAction}
       deleteStickerBatchAction={deleteStickerBatchAction}
-      initialMonth={Number(month)}
-      initialYear={Number(year)}
+      initialMonth={initialMonth}
+      initialYear={initialYear}
       saveStickerAction={saveStickerAction}
       saveStickerBatchAction={saveStickerBatchAction}
       schedule={schedule}

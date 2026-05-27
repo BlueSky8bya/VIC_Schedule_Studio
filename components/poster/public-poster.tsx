@@ -73,6 +73,7 @@ import {
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
+import { writeViewCookie } from "@/lib/ui/view-cookie";
 
 type PublicPosterProps = {
   schedule: PublicSchedule;
@@ -1500,6 +1501,10 @@ export function PublicPoster({
     const next = getAdjacentMonth(view.year, view.month, offset);
     setView(next);
     onViewChange?.(next.year, next.month); // 부모(편집실)에 바뀐 달 알림
+    // 꾸미기는 보던 달을 쿠키에 기록 → 새로고침 시 서버가 읽어 그 달로 바로 렌더(URL·라우터 안 건드림).
+    if (decorateProp) {
+      writeViewCookie({ dy: next.year, dm: next.month });
+    }
   }
 
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
