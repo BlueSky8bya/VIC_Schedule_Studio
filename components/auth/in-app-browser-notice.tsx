@@ -80,18 +80,23 @@ export function InAppBrowserNotice({
       setPhase("card"); // 자동전환 불가(iOS 등) → 안내 바로
       return;
     }
-    // 안드로이드 웹뷰: 이미 크롬 전환을 시도한 세션.
+    // 안드로이드 웹뷰: 이미 크롬 전환을 시도한 세션에서 이 redirect 페이지를 "다시" 보고 있다
+    // = 사실상 뒤로가기로 들어온 것. 머무르지 말고 한 칸 건너뛰어 원래(링크 눌렀던) 화면으로.
+    // 숲(SOOP) 등 일부 웹뷰는 뒤로가기를 back_forward 타입으로 안 줘서, 타입에 의존하지 않고
+    // 시도하되 1.2초 루프 가드로 무한 바운스를 막는다(가드에 걸리면 안내 카드 = 수동 탈출구).
     if (sessionStorage.getItem("vic-chrome-try")) {
-      // 뒤로/앞으로 내비게이션으로 이 redirect 페이지에 "다시" 도달한 경우(크롬 갔다 돌아옴 등)
-      // → 머무르지 말고 한 칸 건너뛰어 원래(링크 눌렀던) 화면으로 바로 보낸다.
-      // 새 링크 클릭(navigate)은 type이 다르므로 영향받지 않는다.
       const navEntry = performance.getEntriesByType("navigation")[0] as
         | PerformanceNavigationTiming
         | undefined;
-      if (navEntry?.type === "back_forward" && window.history.length > 1) {
+      const isBackForward = navEntry?.type === "back_forward";
+      const lastSkip = Number(sessionStorage.getItem("vic-skip-ts") || "0");
+      const now = Date.now();
+      const canSkip = window.history.length > 1 && (isBackForward || now - lastSkip > 1200);
+      if (canSkip) {
+        sessionStorage.setItem("vic-skip-ts", String(now));
         window.history.back();
         // 뒤로가기가 막힌(이동 안 되는) 환경이면 무한 대기 없이 안내 카드로.
-        window.setTimeout(() => setPhase("card"), 700);
+        window.setTimeout(() => setPhase("card"), 800);
         return;
       }
       setPhase("card");
