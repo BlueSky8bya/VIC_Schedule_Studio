@@ -607,15 +607,15 @@ export function StudioShell({
     } else if (ghost) {
       const pos = edPosRef.current;
       const t = edTargetRef.current;
-      pos.x += (t.x - pos.x) * 0.3; // 위치는 가볍게 관성 추종
-      pos.y += (t.y - pos.y) * 0.3;
+      pos.x += (t.x - pos.x) * 0.18; // 위치도 관성 있게 더 부드럽게 뒤따른다
+      pos.y += (t.y - pos.y) * 0.18;
       // 진자: pivot = 잡은 점(카드 좌상단 + 오프셋). 추(bob)를 Verlet로 적분 + 막대 길이 구속.
       const pivotX = pos.x + edOffRef.current.x;
       const pivotY = pos.y + edOffRef.current.y;
       const bob = edBobRef.current;
       const prev = edBobPrevRef.current;
-      const G = 0.5; // 달처럼 약한 중력(천천히 내려감)
-      const DAMP = 0.95; // 공기저항(서서히 정착)
+      const G = 0.28; // 달보다 더 약한 중력(아주 천천히 내려감)
+      const DAMP = 0.975; // 공기저항을 줄여 관성(스윙)이 더 오래 유지되게
       const vx = (bob.x - prev.x) * DAMP;
       const vy = (bob.y - prev.y) * DAMP;
       prev.x = bob.x;
