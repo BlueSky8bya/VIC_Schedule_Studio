@@ -534,7 +534,7 @@ export function StickerLayer({
               <>
                 <button
                   aria-label="회전"
-                  className="sticker-handle rotate"
+                  className={`sticker-handle rotate ${sticker.yRatio < 0.5 ? "bottom" : "top"}`}
                   onPointerDown={(event) => startDrag(event, sticker, "rotate")}
                   type="button"
                 >
@@ -542,7 +542,7 @@ export function StickerLayer({
                 </button>
                 <button
                   aria-label="크기 조절"
-                  className="sticker-handle resize"
+                  className={`sticker-handle resize ${sticker.xRatio < 0.5 ? "right" : "left"}`}
                   onPointerDown={(event) => startDrag(event, sticker, "resize")}
                   type="button"
                 >

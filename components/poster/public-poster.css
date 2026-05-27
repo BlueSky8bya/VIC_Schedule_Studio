@@ -1753,15 +1753,28 @@
   background: var(--violet-soft);
   transform: scale(1.1);
 }
+/* 핸들 위치는 일정표(스티커 레이어) 사분면에 따라 안쪽(중앙)으로 배치 — 캔버스 밖으로 안 나가게.
+   세로 핸들(회전)은 위/아래, 가로 핸들(크기)은 좌/우. 가운데 정렬은 margin으로(hover scale과 충돌 방지). */
 .sticker-handle.rotate {
-  top: -11px;
   left: 50%;
-  transform: translateX(-50%);
+  margin-left: -12px;
+}
+.sticker-handle.rotate.top {
+  top: -11px;
+}
+.sticker-handle.rotate.bottom {
+  bottom: -11px;
 }
 .sticker-handle.resize {
-  right: -11px;
-  bottom: -11px;
+  top: 50%;
+  margin-top: -12px;
   cursor: nwse-resize;
+}
+.sticker-handle.resize.left {
+  left: -11px;
+}
+.sticker-handle.resize.right {
+  right: -11px;
 }
 
 /* ── 꾸미기 도구 모음 ── */
