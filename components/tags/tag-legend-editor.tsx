@@ -4,27 +4,34 @@ import { GripVertical, Trash2 } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
   useEffect,
+  useMemo,
   useRef,
   useState,
   useTransition
 } from "react";
 import type { BroadcastTag, ColorKey, ColorPaletteEntry } from "@/lib/domain/schedule-types";
-import type { AddTagResult, TagUpdateResult } from "@/lib/schedules/tag-actions";
+import type { SaveTagsResult, TagCreateInput } from "@/lib/schedules/tag-actions";
+import { generateTagColor } from "@/lib/tags/color-gen";
 
 type TagUpdate = { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number };
 
-// 태그는 최대 20개까지. (서버 addTagAction에서도 동일하게 막는다.)
+// 태그는 최대 20개까지. (서버 saveTagsAction에서도 동일하게 막는다.)
 const MAX_TAGS = 20;
+// 저장 전 새 태그(드래프트)의 임시 id 접두사.
+const NEW_PREFIX = "new:";
+const isNew = (id: string) => id.startsWith(NEW_PREFIX);
 
 type TagLegendEditorProps = {
   tags: BroadcastTag[];
   palette: ColorPaletteEntry[];
   canEdit: boolean;
-  updateTagsAction: (updates: TagUpdate[]) => Promise<TagUpdateResult>;
-  // #6: 태그 추가(있을 때만 "추가" 버튼). 새 태그엔 기존과 구별되는 연한 색이 자동 배정된다.
-  addTagAction?: () => Promise<AddTagResult>;
+  // #4: "전체 저장" — 기존 태그 수정 + 새 태그 생성을 한 번에. (편집 모드에서만 필요.)
+  saveTagsAction?: (input: {
+    updates: TagUpdate[];
+    creates: TagCreateInput[];
+  }) => Promise<SaveTagsResult>;
   // #6: 태그 삭제(있을 때만 행마다 삭제 버튼).
-  removeTagAction?: (tagId: string) => Promise<TagUpdateResult>;
+  removeTagAction?: (tagId: string) => Promise<{ ok: true } | { ok: false; error: string }>;
   // #4: 새로고침 없이 부모(달력) 상태를 낙관적으로 갱신하기 위한 콜백.
   onTagAdded?: (tag: BroadcastTag, color: ColorPaletteEntry) => void;
   onTagRemoved?: (tagId: string) => void;
@@ -40,8 +47,7 @@ export function TagLegendEditor({
   tags,
   palette,
   canEdit,
-  updateTagsAction,
-  addTagAction,
+  saveTagsAction,
   removeTagAction,
   onTagAdded,
   onTagRemoved,
@@ -50,39 +56,52 @@ export function TagLegendEditor({
   onToggleFilter
 }: TagLegendEditorProps) {
   const [pending, startTransition] = useTransition();
-  // 추가/삭제는 저장과 별도 진행 상태 — "전체 저장" 버튼이 "저장 중…"으로 잘못 바뀌지 않게.
+  // 삭제는 저장과 별도 진행 상태 — "전체 저장" 버튼이 "저장 중…"으로 잘못 바뀌지 않게.
   const [busy, startBusy] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+
+  // #4: 새로 추가한 태그/색은 "저장" 전까지 팝업 안에서만 존재한다(달력·다른 패널엔 반영 안 함).
+  const [newTags, setNewTags] = useState<BroadcastTag[]>([]);
+  const [newColors, setNewColors] = useState<ColorPaletteEntry[]>([]);
+
+  // 편집 대상 = 기존 태그 + 드래프트 태그. 스와치 팔레트도 드래프트 색을 포함한다.
+  const allTags = useMemo(() => [...tags, ...newTags], [tags, newTags]);
+  const effectivePalette = useMemo(() => [...palette, ...newColors], [palette, newColors]);
+
   const [draft, setDraft] = useState<Record<string, Draft>>(() =>
     Object.fromEntries(tags.map((t) => [t.id, { name: t.displayName, colorKey: t.colorKey }]))
   );
 
-  // 부모 태그 목록이 바뀌면(추가/삭제) 드래프트도 맞춘다. 기존 편집값은 유지.
+  // 부모 태그 목록이 바뀌면(저장 반영) 드래프트도 맞춘다. 기존 편집값·드래프트 항목은 유지.
   useEffect(() => {
     setDraft((cur) => {
       const next: Record<string, Draft> = {};
       for (const t of tags) {
         next[t.id] = cur[t.id] ?? { name: t.displayName, colorKey: t.colorKey };
       }
+      // 아직 저장 안 한 드래프트(new:) 항목은 그대로 보존.
+      for (const id of Object.keys(cur)) {
+        if (!next[id] && isNew(id)) next[id] = cur[id];
+      }
       return next;
     });
   }, [tags]);
 
-  const colorOf = (key: ColorKey) => palette.find((p) => p.key === key);
+  const colorOf = (key: ColorKey) => effectivePalette.find((p) => p.key === key);
 
   // 드래그로 바꾸는 표시 순서(태그 id 배열). 저장 시 sort_order로 반영된다.
   const [orderIds, setOrderIds] = useState<string[]>(() => tags.map((t) => t.id));
   useEffect(() => {
     setOrderIds((cur) => {
-      const ids = tags.map((t) => t.id);
+      const ids = [...tags.map((t) => t.id), ...newTags.map((t) => t.id)];
       const kept = cur.filter((id) => ids.includes(id));
       const added = ids.filter((id) => !kept.includes(id));
       return [...kept, ...added];
     });
-  }, [tags]);
+  }, [tags, newTags]);
   const orderedTags = orderIds
-    .map((id) => tags.find((t) => t.id === id))
+    .map((id) => allTags.find((t) => t.id === id))
     .filter((t): t is BroadcastTag => Boolean(t));
 
   // 순서 변경 — 포인터(마우스+터치) 통합. 손잡이를 누르면 행을 그대로 복제한 "유령(ghost)"이
@@ -240,20 +259,46 @@ export function TagLegendEditor({
     window.setTimeout(() => setSaved(false), 1800);
   }
 
+  // #4: 태그 추가는 "팝업 안에서만" — 서버 호출도, 달력/다른 패널 반영도 없이 즉시 드래프트로 뜬다.
+  // 색은 클라이언트에서 기존 색과 안 겹치게 생성하고, "전체 저장" 때 한꺼번에 DB에 반영한다.
   function addTag() {
-    if (!addTagAction) return;
+    if (allTags.length >= MAX_TAGS) return;
     setError(null);
-    startBusy(async () => {
-      const result = await addTagAction();
-      if (result.ok) {
-        onTagAdded?.(result.tag, result.color); // 부모 상태에 즉시 반영(새로고침 X)
-      } else {
-        setError(result.error);
-      }
-    });
+    const gen = generateTagColor(
+      effectivePalette.map((c) => ({ key: c.key, bgColor: c.bgColor }))
+    );
+    const color: ColorPaletteEntry = { ...gen, sortOrder: 0 };
+    const tempId = `${NEW_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const tag: BroadcastTag = {
+      id: tempId,
+      tagKey: tempId,
+      displayName: "새 태그",
+      colorKey: gen.key,
+      sortOrder: 9999,
+      isDefault: false,
+      isActive: true
+    };
+    setNewColors((prev) => [...prev, color]);
+    setNewTags((prev) => [...prev, tag]);
+    setDraft((cur) => ({ ...cur, [tempId]: { name: "새 태그", colorKey: gen.key } }));
+    setOrderIds((cur) => [...cur, tempId]);
   }
 
   function removeTag(tagId: string) {
+    // 드래프트(저장 전) 태그는 로컬에서만 지운다 — 서버 호출 없음.
+    if (isNew(tagId)) {
+      setNewTags((prev) => prev.filter((t) => t.id !== tagId));
+      setDraft((cur) => {
+        const next = { ...cur };
+        delete next[tagId];
+        // 더 이상 아무 행도 안 쓰는 드래프트 색은 스와치에서도 정리.
+        const usedKeys = new Set(Object.values(next).map((d) => d.colorKey));
+        setNewColors((cols) => cols.filter((c) => usedKeys.has(c.key)));
+        return next;
+      });
+      setOrderIds((cur) => cur.filter((id) => id !== tagId));
+      return;
+    }
     if (!removeTagAction) return;
     const tag = tags.find((t) => t.id === tagId);
     const color = tag ? palette.find((c) => c.key === tag.colorKey) : undefined;
@@ -282,34 +327,77 @@ export function TagLegendEditor({
   }
 
   const anyEmpty = Object.values(draft).some((d) => d.colorKey === "");
-  const orderChanged = orderIds.some((id, i) => tags[i]?.id !== id);
+  const existingOrder = orderIds.filter((id) => !isNew(id));
+  const orderChanged = existingOrder.some((id, i) => tags[i]?.id !== id);
   const contentChanged = tags.some(
     (t) => draft[t.id]?.name !== t.displayName || draft[t.id]?.colorKey !== t.colorKey
   );
-  const dirty = orderChanged || contentChanged;
-  // 순서만 바뀌었으면 "변경된 순서 저장", 이름·색 등도 같이 바뀌었으면 "전체 저장".
-  const saveLabel = orderChanged && !contentChanged ? "변경된 순서 저장" : "전체 저장";
+  const hasNew = newTags.length > 0;
+  const dirty = orderChanged || contentChanged || hasNew;
+  // 순서만 바뀌었으면 "변경된 순서 저장", 그 외(이름·색·새 태그)는 "전체 저장".
+  const saveLabel =
+    orderChanged && !contentChanged && !hasNew ? "변경된 순서 저장" : "전체 저장";
 
   function saveAll() {
+    if (!saveTagsAction) return;
     setError(null);
-    // 드래그 순서대로 sort_order를 0,1,2…로 부여해 저장.
-    const updates: TagUpdate[] = orderedTags.map((t, index) => ({
-      id: t.id,
-      displayName: draft[t.id].name,
-      colorKey: draft[t.id].colorKey as ColorKey,
-      sortOrder: index
-    }));
+    const updates: TagUpdate[] = [];
+    const creates: TagCreateInput[] = [];
+    // 드래그 순서대로 sort_order를 0,1,2…로 부여. 기존은 updates, 새 태그는 creates로 나눈다.
+    orderedTags.forEach((t, index) => {
+      const d = draft[t.id];
+      if (!d) return;
+      if (isNew(t.id)) {
+        const c = newColors.find((x) => x.key === d.colorKey);
+        creates.push({
+          tempId: t.id,
+          displayName: d.name,
+          colorKey: d.colorKey as ColorKey,
+          bgColor: c?.bgColor ?? "#eeeeee",
+          textColor: c?.textColor ?? "#333333",
+          borderColor: c?.borderColor ?? "#cccccc",
+          sortOrder: index
+        });
+      } else {
+        updates.push({
+          id: t.id,
+          displayName: d.name,
+          colorKey: d.colorKey as ColorKey,
+          sortOrder: index
+        });
+      }
+    });
     const prev: TagUpdate[] = tags.map((t) => ({
       id: t.id,
       displayName: t.displayName,
       colorKey: t.colorKey,
       sortOrder: t.sortOrder
     }));
-    onTagsUpdated?.(updates); // 낙관적 반영(달력 색 즉시 갱신)
+    onTagsUpdated?.(updates); // 기존 태그 변경은 낙관적 반영(달력 색 즉시 갱신)
     startTransition(async () => {
-      const result = await updateTagsAction(updates);
+      const result = await saveTagsAction({ updates, creates });
       if (result.ok) {
-        flashSaved(); // 성공 시점에 "저장됨" 표시(저장 중 타이밍과 어긋나지 않게)
+        // 새 태그는 진짜 id가 생긴 뒤 부모(달력)에 반영.
+        for (const c of result.created) {
+          onTagAdded?.(c.tag, c.color);
+        }
+        // 드래프트 정리 + 임시 id → 진짜 id로 치환(순서·드래프트맵 동기화).
+        if (result.created.length > 0) {
+          setOrderIds((cur) =>
+            cur.map((id) => result.created.find((c) => c.tempId === id)?.tag.id ?? id)
+          );
+          setDraft((cur) => {
+            const next = { ...cur };
+            for (const c of result.created) {
+              delete next[c.tempId];
+              next[c.tag.id] = { name: c.tag.displayName, colorKey: c.tag.colorKey };
+            }
+            return next;
+          });
+        }
+        setNewTags([]);
+        setNewColors([]);
+        flashSaved();
       } else {
         setError(result.error);
         onTagsUpdated?.(prev); // 실패 → 되돌림
@@ -321,14 +409,17 @@ export function TagLegendEditor({
     <div className="tag-editor">
       <p className="tag-editor-hint">
         왼쪽 손잡이(⋮⋮)를 끌어 순서를 바꿀 수 있어요. 색을 바꾸려면 먼저 같은 색을 쓰는 태그의 색을
-        한 번 더 눌러 해제한 뒤 다시 고르세요. 한 색은 한 태그만 쓸 수 있습니다.
+        한 번 더 눌러 해제한 뒤 다시 고르세요. 한 색은 한 태그만 쓸 수 있습니다. 새 태그는 “전체 저장”을
+        눌러야 달력에 반영됩니다.
       </p>
       {orderedTags.map((tag) => {
         const d = draft[tag.id];
         if (!d) return null;
         return (
           <div
-            className={`tag-editor-row ${draggingId === tag.id ? "dragging" : ""}`}
+            className={`tag-editor-row ${draggingId === tag.id ? "dragging" : ""} ${
+              isNew(tag.id) ? "is-new" : ""
+            }`}
             data-tagid={tag.id}
             key={tag.id}
           >
@@ -349,7 +440,7 @@ export function TagLegendEditor({
               value={d.name}
             />
             <div className="tag-editor-swatches">
-              {palette.map((c) => {
+              {effectivePalette.map((c) => {
                 const selected = d.colorKey === c.key;
                 const blocked = usedByOther(tag.id, c.key);
                 return (
@@ -367,18 +458,16 @@ export function TagLegendEditor({
                 );
               })}
             </div>
-            {removeTagAction ? (
-              <button
-                aria-label={`${d.name} 삭제`}
-                className="tag-editor-remove"
-                disabled={busy}
-                onClick={() => removeTag(tag.id)}
-                title="이 태그 삭제"
-                type="button"
-              >
-                <Trash2 aria-hidden="true" size={15} />
-              </button>
-            ) : null}
+            <button
+              aria-label={`${d.name} 삭제`}
+              className="tag-editor-remove"
+              disabled={busy}
+              onClick={() => removeTag(tag.id)}
+              title="이 태그 삭제"
+              type="button"
+            >
+              <Trash2 aria-hidden="true" size={15} />
+            </button>
           </div>
         );
       })}
@@ -386,23 +475,21 @@ export function TagLegendEditor({
       {error ? <div className="auth-warning">{error}</div> : null}
       {anyEmpty ? <p className="tag-editor-hint warn">색상이 비어 있는 태그가 있습니다.</p> : null}
       <div className="tag-editor-actions">
-        {addTagAction ? (
-          <span className="tag-editor-add">
-            <button
-              className="button"
-              disabled={busy || tags.length >= MAX_TAGS}
-              onClick={addTag}
-              type="button"
-            >
-              {busy ? "처리 중…" : "+ 태그 추가"}
-            </button>
-            <span className="tag-editor-add-note">
-              최대 {MAX_TAGS}개
-              <br />
-              현재 {tags.length}개
-            </span>
+        <span className="tag-editor-add">
+          <button
+            className="button"
+            disabled={allTags.length >= MAX_TAGS}
+            onClick={addTag}
+            type="button"
+          >
+            + 태그 추가
+          </button>
+          <span className="tag-editor-add-note">
+            최대 {MAX_TAGS}개
+            <br />
+            현재 {allTags.length}개
           </span>
-        ) : null}
+        </span>
         <button
           className={`button primary ${saved && !dirty ? "saved" : ""}`}
           disabled={pending || busy || anyEmpty || (!dirty && !saved)}

@@ -93,11 +93,25 @@ export function InAppBrowserNotice({
     const timer = window.setTimeout(() => {
       if (!opened && !document.hidden) setPhase("card"); // 전환 실패 → 그제서야 안내
     }, 1200);
-    window.location.href = chromeIntentUrl();
+    // replace로 보내 intent:// 주소가 히스토리에 안 남게 한다 — 크롬에서 뒤로가기로 돌아왔을 때
+    // 이 주소로 되돌아가 다시 크롬을 띄우는(무한 "여는 중") 현상을 막는다.
+    window.location.replace(chromeIntentUrl());
     return () => {
       document.removeEventListener("visibilitychange", onVis);
       window.clearTimeout(timer);
     };
+  }, []);
+
+  // 뒤로가기로 이 페이지가 bfcache에서 복원될 때(useEffect는 다시 안 돎) "여는 중…" 스피너가
+  // 그대로 얼어붙어 무한로딩처럼 보이는 문제 방지 — 복원되면 즉시 탈출구(카드/버튼)를 보여준다.
+  useEffect(() => {
+    function onPageShow(e: PageTransitionEvent) {
+      if (!e.persisted) return;
+      setAutoStarting(false);
+      setPhase((p) => (p === "trying" ? "card" : p));
+    }
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
   }, []);
 
   if (phase === "children") {
@@ -133,7 +147,8 @@ export function InAppBrowserNotice({
   }
 
   function openInChrome() {
-    window.location.href = chromeIntentUrl();
+    // replace로 보내 뒤로가기 시 intent:// 주소로 되돌아가 다시 크롬이 열리는 루프를 막는다.
+    window.location.replace(chromeIntentUrl());
   }
   async function copyLink() {
     try {

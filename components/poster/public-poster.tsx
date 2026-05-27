@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
@@ -334,7 +333,6 @@ export function PublicPoster({
   accountSwitch = false,
   accountEmail = null
 }: PublicPosterProps) {
-  const router = useRouter();
   // 꾸미기 화면에서 "시청자 화면 보기"로 잠깐 미리보기 — 꾸미기/내보내기 도구를 숨기고
   // 시청자 시점으로 본다. previewing 동안에는 effective decorate/canExport를 꺼서, 아래의
   // 모든 꾸미기 로직(도구바·키보드·스티커 편집·내보내기)이 자동으로 비활성화된다.
@@ -384,13 +382,19 @@ export function PublicPoster({
     [schedule.tags]
   );
 
+  // "내 이모지" 보관함 — 로컬 상태로 들고 있어 업로드·삭제를 새로고침(왕복) 없이 즉시 반영한다.
+  // (서버 router.refresh를 기다리면 몇 초씩 늦게 떠/늦게 사라져 답답하다.)
+  const [assets, setAssets] = useState<StickerAsset[]>(schedule.stickerAssets);
+  useEffect(() => {
+    setAssets(schedule.stickerAssets);
+  }, [schedule.stickerAssets]);
+  // 업로드 진행 중인(아직 서버 저장 전) 임시 에셋 id — 스피너 표시 + 클릭(스티커 추가) 차단용.
+  const [pendingAssetIds, setPendingAssetIds] = useState<Set<string>>(() => new Set());
+
   // 살아있는 커스텀 이모지(에셋) id 집합. 삭제된 에셋을 가리키는 이미지 스티커를 다시
   // 저장하면 FK 위반(sticker_instances_asset_id_fkey)이 난다 — undo/복제 등 어떤 경로로든
-  // 죽은 에셋을 되살리기 전에 이 집합으로 걸러낸다.
-  const liveAssetIds = useMemo(
-    () => new Set(schedule.stickerAssets.map((a) => a.id)),
-    [schedule.stickerAssets]
-  );
+  // 죽은 에셋을 되살리기 전에 이 집합으로 걸러낸다. (저장 전 임시 에셋도 살아있는 것으로 본다.)
+  const liveAssetIds = useMemo(() => new Set(assets.map((a) => a.id)), [assets]);
   const isStickerAssetAlive = (s: StickerInstance) =>
     s.kind !== "image" || (s.assetId != null && liveAssetIds.has(s.assetId));
 
@@ -947,12 +951,36 @@ export function PublicPoster({
     // try/finally로 감싸 어떤 이유로 액션이 throw해도 "올리는 중…"이 안 멈추게 한다(에러 표시).
     try {
       for (const file of images) {
+        // 낙관적 표시: 로컬 미리보기(objectURL)로 "내 이모지"에 즉시 띄우고,
+        // 서버 저장이 끝나면 진짜 에셋(id·URL)으로 교체한다 — 업로드가 바로 보이게.
+        const tempId = `temp-asset-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const previewUrl = URL.createObjectURL(file);
+        const tempAsset: StickerAsset = {
+          id: tempId,
+          name: file.name.replace(/\.[^.]+$/, "") || "커스텀 이모지",
+          fileUrl: previewUrl,
+          fileType: file.type
+        };
+        setAssets((prev) => [...prev, tempAsset]);
+        setPendingAssetIds((prev) => new Set(prev).add(tempId));
+
         const formData = new FormData();
         formData.append("file", file);
         const result = await uploadStickerAssetAction(formData);
-        if (!result.ok) {
-          lastError = result.error;
+        setPendingAssetIds((prev) => {
+          const next = new Set(prev);
+          next.delete(tempId);
+          return next;
+        });
+        if (result.ok && result.asset) {
+          const saved = result.asset;
+          setAssets((prev) => prev.map((a) => (a.id === tempId ? saved : a)));
+        } else {
+          // 실패 → 임시 미리보기 제거.
+          setAssets((prev) => prev.filter((a) => a.id !== tempId));
+          if (!result.ok) lastError = result.error;
         }
+        URL.revokeObjectURL(previewUrl);
       }
     } catch {
       lastError =
@@ -963,7 +991,6 @@ export function PublicPoster({
     if (lastError) {
       setStickerError(lastError);
     }
-    router.refresh(); // 새 에셋들이 schedule.stickerAssets에 반영되도록
   }
 
   // 업로드한 커스텀 이모지 삭제 (이를 쓰는 스티커도 함께 사라짐).
@@ -971,6 +998,9 @@ export function PublicPoster({
     if (!deleteStickerAssetAction) {
       return;
     }
+    // 낙관적 삭제: 보관함에서 즉시 빼고(새로고침 대기 없이 바로 사라짐), 이를 쓰는 스티커도 함께 정리.
+    const removed = assets.find((a) => a.id === assetId);
+    setAssets((prev) => prev.filter((a) => a.id !== assetId));
     setStickers((prev) => prev.filter((s) => s.assetId !== assetId));
     // 실행취소/다시실행 히스토리에서도 이 에셋을 쓰는 스티커를 함께 비운다 —
     // 그렇지 않으면 Undo가 죽은 에셋을 되살리려다 FK 오류를 낸다.
@@ -979,10 +1009,9 @@ export function PublicPoster({
     setUndoStack(scrub);
     setRedoStack(scrub);
     const result = await deleteStickerAssetAction(assetId);
-    if (result.ok) {
-      router.refresh();
-    } else {
+    if (!result.ok) {
       setStickerError(result.error);
+      if (removed) setAssets((prev) => [...prev, removed]); // 실패 → 되돌림
     }
   }
 
@@ -2011,31 +2040,41 @@ export function PublicPoster({
               <span className="palette-label">내 이모지</span>
 
               {/* 저장 칸: 업로드해 둔 이모지 보관함 */}
-              {schedule.stickerAssets.length > 0 ? (
+              {assets.length > 0 ? (
                 <div className="emoji-palette asset-palette">
-                  {schedule.stickerAssets.map((asset) => (
-                    <div className="asset-chip" key={asset.id}>
-                      <button
-                        className="emoji-chip"
-                        onClick={() => addImageSticker(asset)}
-                        title={`${asset.name} 추가`}
-                        type="button"
+                  {assets.map((asset) => {
+                    const pending = pendingAssetIds.has(asset.id);
+                    return (
+                      <div
+                        className={`asset-chip ${pending ? "uploading" : ""}`}
+                        key={asset.id}
                       >
-                        {/* 업로드 이미지 미리보기 — 동적 URL이라 next/image 부적합 */}
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img alt={asset.name} src={asset.fileUrl} />
-                      </button>
-                      <button
-                        aria-label={`${asset.name} 삭제`}
-                        className="asset-del"
-                        onClick={() => removeAsset(asset.id)}
-                        title="이 이모지 삭제"
-                        type="button"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                        <button
+                          className="emoji-chip"
+                          disabled={pending}
+                          onClick={() => addImageSticker(asset)}
+                          title={pending ? "올리는 중…" : `${asset.name} 추가`}
+                          type="button"
+                        >
+                          {/* 업로드 이미지 미리보기 — 동적 URL이라 next/image 부적합 */}
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img alt={asset.name} src={asset.fileUrl} />
+                          {pending ? <span className="asset-spinner" aria-hidden="true" /> : null}
+                        </button>
+                        {!pending ? (
+                          <button
+                            aria-label={`${asset.name} 삭제`}
+                            className="asset-del"
+                            onClick={() => removeAsset(asset.id)}
+                            title="이 이모지 삭제"
+                            type="button"
+                          >
+                            ×
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : null}
 

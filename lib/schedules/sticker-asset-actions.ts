@@ -7,7 +7,12 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canDecorate } from "@/lib/permissions/roles";
 
-export type StickerAssetResult = { ok: true; id: string } | { ok: false; error: string };
+import type { StickerAsset } from "@/lib/domain/schedule-types";
+
+// 업로드는 만들어진 에셋 전체(id·이름·URL·타입)를 돌려준다 — 새로고침 없이 "내 이모지"에 즉시 그릴 수 있게.
+export type StickerAssetResult =
+  | { ok: true; id: string; asset?: StickerAsset }
+  | { ok: false; error: string };
 
 const SLUG = "vic";
 const BUCKET = "sticker-assets";
@@ -84,7 +89,11 @@ export async function uploadStickerAssetAction(formData: FormData): Promise<Stic
   revalidatePath("/");
   revalidatePath("/studio/decorate", "layout");
   revalidatePublicSchedule();
-  return { ok: true, id: data.id };
+  return {
+    ok: true,
+    id: data.id,
+    asset: { id: data.id, name, fileUrl: publicUrl, fileType: file.type }
+  };
 }
 
 // 커스텀 이모지 삭제 — 업로드 가능한 사람 모두. 행을 지우면 이를 쓰는 스티커도 함께 삭제(on delete cascade).

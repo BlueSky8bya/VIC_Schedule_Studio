@@ -71,11 +71,12 @@ import {
 } from "@/lib/schedules/event-actions";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { linkChainAction, unlinkPairAction } from "@/lib/schedules/link-actions";
-import { addTagAction, removeTagAction, updateTagsAction } from "@/lib/schedules/tag-actions";
+import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { TrustedMembersPanel } from "@/components/trusted-members/trusted-members-panel";
+import { DeveloperPanel } from "@/components/developer/developer-panel";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 
@@ -202,7 +203,9 @@ export function StudioShell({
       setShowPrivate(true);
     }
   }, [hasUnlockSession]);
-  const [modal, setModal] = useState<null | "passcode" | "tags" | "members" | "notice">(null);
+  const [modal, setModal] = useState<
+    null | "passcode" | "tags" | "members" | "notice" | "developer"
+  >(null);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
@@ -1023,7 +1026,16 @@ export function StudioShell({
           </div>
 
           {actor.role === "developer" ? (
-            <div className="developer-warning">🛠 개발자 세션 — 관리 권한으로 보고 있어요.</div>
+            <div className="developer-warning">
+              🛠 개발자 세션 — 관리 권한으로 보고 있어요.
+              <button
+                className="developer-warning-btn"
+                onClick={() => setModal("developer")}
+                type="button"
+              >
+                접속자 현황
+              </button>
+            </div>
           ) : null}
           {/* 비공개 경고 배너는 화면을 공유하는 소유자에게만 — 작업자/매니저/개발자는 표시하지 않음. */}
           {canReadPrivate && actor.role === "owner" ? (
@@ -1094,6 +1106,14 @@ export function StudioShell({
               const dayEvents = mobileAgendaEvents.filter(
                 (e) => getEventDateKey(e) === cell.isoDate
               );
+              // 모바일 색상 필터: 필터가 켜지면 흐림이 아니라 "걸러진 일정만" 보여준다.
+              // 매칭 일정이 하나도 없는 날 카드는 아예 렌더하지 않는다(예: 짧뱅 필터 → 5일·15일만).
+              const shownEvents = filtering
+                ? dayEvents.filter((e) => !isDimmedByFilter(e))
+                : dayEvents;
+              if (filtering && shownEvents.length === 0) {
+                return null;
+              }
               return (
                 <div className={`agenda-day ${day.isToday ? "today" : ""}`} key={cell.isoDate}>
                   <div className="agenda-when">
@@ -1111,7 +1131,7 @@ export function StudioShell({
                     {dayEvents.length === 0 ? (
                       <span className="agenda-noevent">예정된 일정 없음</span>
                     ) : null}
-                    {dayEvents.map((event) => {
+                    {shownEvents.map((event) => {
                       const colors = eventColors(event);
                       const { main, subs } = splitEventTitle(event.publicTitle);
                       const barStyle =
@@ -1222,7 +1242,7 @@ export function StudioShell({
                         </div>
                       );
                     })}
-                    {canEdit ? (
+                    {canEdit && !filtering ? (
                       <button
                         className="m-add-event"
                         onClick={() => openMobileAdd(cell.isoDate)}
@@ -1251,15 +1271,14 @@ export function StudioShell({
             </button>
             {mobileMgmt === "tags" ? (
               <TagLegendEditor
-                addTagAction={addTagAction}
                 canEdit
                 onTagAdded={applyTagAdd}
                 onTagRemoved={applyTagRemove}
                 onTagsUpdated={applyTagUpdates}
                 palette={palette}
                 removeTagAction={removeTagAction}
+                saveTagsAction={saveTagsAction}
                 tags={tags}
-                updateTagsAction={updateTagsAction}
               />
             ) : null}
             <button
@@ -1696,7 +1715,6 @@ export function StudioShell({
               onToggleFilter={toggleTagFilter}
               palette={palette}
               tags={tags}
-              updateTagsAction={updateTagsAction}
             />
             {/* 비공개(공개 아님) 일정만 골라보기 — 잠금 해제로 비공개가 보일 때만(개발자·소유자·매니저·작업자). */}
             {canReadPrivate ? (
@@ -1722,6 +1740,16 @@ export function StudioShell({
               </button>
               <button className="button" onClick={() => setModal("members")} type="button">
                 멤버 관리
+              </button>
+            </section>
+          ) : null}
+
+          {/* 개발자 전용 — 지금 접속 중인 사용자 현황(역할별 인원)을 여닫는다. */}
+          {actor.role === "developer" ? (
+            <section>
+              <h2>개발자</h2>
+              <button className="button" onClick={() => setModal("developer")} type="button">
+                🛠 접속자 현황
               </button>
             </section>
           ) : null}
@@ -2086,7 +2114,9 @@ export function StudioShell({
                     ? "태그 이름 · 색상 편집"
                     : modal === "notice"
                       ? "숲 공지 쓰기"
-                      : "매니저 · 작업자 관리"}
+                      : modal === "developer"
+                        ? "접속자 현황"
+                        : "매니저 · 작업자 관리"}
               </h2>
               <button
                 aria-label="닫기"
@@ -2117,18 +2147,18 @@ export function StudioShell({
             ) : null}
             {modal === "tags" ? (
               <TagLegendEditor
-                addTagAction={addTagAction}
                 canEdit
                 onTagAdded={applyTagAdd}
                 onTagRemoved={applyTagRemove}
                 onTagsUpdated={applyTagUpdates}
                 palette={palette}
                 removeTagAction={removeTagAction}
+                saveTagsAction={saveTagsAction}
                 tags={tags}
-                updateTagsAction={updateTagsAction}
               />
             ) : null}
             {modal === "members" ? <TrustedMembersPanel /> : null}
+            {modal === "developer" ? <DeveloperPanel /> : null}
             {modal === "notice"
               ? (() => {
                   // 업 공지 자동 채움: 지금 편집 중인 폼이 업 도움이면 (저장 전이라도) 폼 값을, 아니면

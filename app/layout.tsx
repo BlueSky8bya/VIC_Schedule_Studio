@@ -16,6 +16,8 @@ import "./globals.css";
 import "./home.css";
 import "@/components/poster/public-poster.css";
 import "@/components/studio/studio-shell.css";
+import { PresenceBeacon } from "@/components/presence/presence-beacon";
+import { resolveCurrentActor } from "@/lib/auth/actor";
 
 // #7: 텍스트 스티커 글꼴 선택지(한글 지원). next/font로 로드해 CSS 변수로 노출한다.
 // preload:false + subsets 미지정 → 전체 글리프(한글 포함) 로드, 경고 없이.
@@ -52,11 +54,13 @@ export const metadata: Metadata = {
   formatDetection: { email: false, telephone: false, address: false }
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // 로그인 사용자만 실시간 프레즌스에 등록(개발자 창 접속자 현황용). 비로그인은 집계 제외.
+  const actor = await resolveCurrentActor("vic");
   return (
     <html
       lang="ko"
@@ -64,6 +68,7 @@ export default function RootLayout({
     >
       <body>
         {children}
+        {actor.isAuthenticated ? <PresenceBeacon role={actor.role} /> : null}
         {/* 배포 확인용 — 이번 배포가 반영됐는지 알 수 있게 커밋 해시를 아주 연하게 표시. */}
         <span className="build-tag" aria-hidden="true">
           {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev"}
