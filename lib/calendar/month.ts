@@ -331,23 +331,28 @@ export function getSpanRun(
 export function mixedEventStyle(
   colors: ColorPaletteEntry[],
   run: { index: number; length: number }
-): {
-  backgroundImage: string;
-  backgroundSize: string;
-  backgroundPositionX: string;
-  backgroundRepeat: string;
-  color?: string;
-  borderColor?: string;
-} {
+): CSSProperties {
   const [a, b] = colors;
   const length = Math.max(1, run.length);
+  const size = `${length * 100}% 100%`;
+  const positionX = length > 1 ? `${(run.index / (length - 1)) * 100}%` : "center";
+  // 배경은 padding-box(안쪽), 테두리는 border-box(테두리 영역)에 각각 좌→우 그라데이션을 깔아
+  // 2색일 때 테두리도 반반으로 각 태그색이 되게 한다. background-clip 기법이라 둥근 모서리 유지.
+  const bgGrad = `linear-gradient(to right, ${a.bgColor} 0%, ${a.bgColor} 38%, ${b.bgColor} 62%, ${b.bgColor} 100%)`;
+  const borderGrad = `linear-gradient(to right, ${a.borderColor} 0%, ${a.borderColor} 38%, ${b.borderColor} 62%, ${b.borderColor} 100%)`;
+  // 크기·위치는 단일값으로 둔다(모든 배경 레이어에 동일 적용) → 무늬 마스크(mixedPatternMaskStyle)도
+  // 같은 윈도잉을 그대로 읽어 쓸 수 있다. clip·origin·image만 레이어별(콤마)로 지정.
   return {
-    backgroundImage: `linear-gradient(to right, ${a.bgColor} 0%, ${a.bgColor} 38%, ${b.bgColor} 62%, ${b.bgColor} 100%)`,
-    backgroundSize: `${length * 100}% 100%`,
-    backgroundPositionX: length > 1 ? `${(run.index / (length - 1)) * 100}%` : "center",
+    backgroundImage: `${bgGrad}, ${borderGrad}`,
+    backgroundClip: "padding-box, border-box",
+    WebkitBackgroundClip: "padding-box, border-box",
+    backgroundOrigin: "padding-box, border-box",
+    backgroundSize: size,
+    backgroundPositionX: positionX,
     backgroundRepeat: "no-repeat",
     color: a.textColor,
-    borderColor: a.borderColor
+    // 실제 테두리는 투명으로 두고, 위 border-box 그라데이션이 테두리처럼 보이게 한다.
+    borderColor: "transparent"
   };
 }
 
@@ -355,19 +360,20 @@ export function mixedEventStyle(
 // 무늬가 색과 같은 위치(가운데 38~62%)에서 부드럽게 사라지게 한다 → 무늬 경계도 색처럼 흐릿.
 // A는 왼쪽에서 불투명→가운데서 사라짐, B는 가운데서 나타나→오른쪽 불투명.
 export function mixedPatternMaskStyle(
-  win: { backgroundSize: string; backgroundPositionX: string },
+  win: Pick<CSSProperties, "backgroundSize" | "backgroundPositionX">,
   side: "a" | "b"
 ): CSSProperties {
   const grad =
     side === "a"
       ? "linear-gradient(to right, #000 38%, transparent 62%)"
       : "linear-gradient(to right, transparent 38%, #000 62%)";
-  const pos = `${win.backgroundPositionX} center`;
+  const size = String(win.backgroundSize ?? "100% 100%");
+  const pos = `${String(win.backgroundPositionX ?? "center")} center`;
   return {
     WebkitMaskImage: grad,
     maskImage: grad,
-    WebkitMaskSize: win.backgroundSize,
-    maskSize: win.backgroundSize,
+    WebkitMaskSize: size,
+    maskSize: size,
     WebkitMaskPosition: pos,
     maskPosition: pos,
     WebkitMaskRepeat: "no-repeat",
