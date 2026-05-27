@@ -719,6 +719,31 @@
   background: #e9faf1 !important;
   box-shadow: inset 0 0 0 2px #57c98a;
 }
+/* 드롭 삽입선 — 어느 카드 사이에 들어갈지 보여주는 민트 막대(은은히 깜빡). */
+.drop-insert-line {
+  height: 4px;
+  margin: 2px 1px;
+  border-radius: 999px;
+  background: #2bb67c;
+  box-shadow:
+    0 0 0 2px rgb(43 182 124 / 22%),
+    0 1px 4px rgb(43 182 124 / 45%);
+  animation: drop-line-pulse 0.85s ease-in-out infinite;
+}
+@keyframes drop-line-pulse {
+  0%,
+  100% {
+    opacity: 0.65;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drop-insert-line {
+    animation: none;
+  }
+}
 /* D: 2색 칸은 그라데이션 위에 반쪽 무늬를 깔고, 내용은 그 위로 올린다. */
 .studio-event-pill[data-mixed] {
   position: relative;

@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  Fragment,
   type FormEvent,
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
@@ -563,6 +564,12 @@ export function StudioShell({
   const dropDateRef = useRef<string | null>(null);
   // 같은 날 안에서 어느 카드 위/아래에 떨어뜨릴지(순서 변경). null이면 맨 끝에 둠.
   const dropOverRef = useRef<{ id: string; after: boolean } | null>(null);
+  // 드롭될 위치 표시(삽입선) — 어느 날, 어느 카드 기준 위/아래인지.
+  const [dropSlot, setDropSlot] = useState<{
+    day: string;
+    overId: string | null;
+    after: boolean;
+  } | null>(null);
   const dragGhostRef = useRef<HTMLElement | null>(null);
   const dragInfoRef = useRef<{
     id: string;
@@ -660,6 +667,7 @@ export function StudioShell({
     const over = dropOverRef.current;
     setDragEventId(null);
     setDropDate(null);
+    setDropSlot(null);
     dropDateRef.current = null;
     dropOverRef.current = null;
     if (info?.started) {
@@ -738,6 +746,23 @@ export function StudioShell({
     } else {
       dropOverRef.current = null;
     }
+    // 삽입선 위치 갱신(바뀔 때만 state 변경 → 불필요한 재렌더 방지).
+    const nextSlot = iso
+      ? { day: iso, overId: dropOverRef.current?.id ?? null, after: dropOverRef.current?.after ?? false }
+      : null;
+    setDropSlot((prev) => {
+      if (prev === nextSlot) return prev;
+      if (
+        prev &&
+        nextSlot &&
+        prev.day === nextSlot.day &&
+        prev.overId === nextSlot.overId &&
+        prev.after === nextSlot.after
+      ) {
+        return prev;
+      }
+      return nextSlot;
+    });
     const margin = 80;
     dragScrollDir.current =
       e.clientY < margin ? -1 : e.clientY > window.innerHeight - margin ? 1 : 0;
@@ -2071,6 +2096,19 @@ export function StudioShell({
               const covering = getEventsForDate(visibleEvents, cell.isoDate);
               const supportHere = covering.filter((e) => e.isSupport);
               const dateEvents = covering.filter((e) => !e.isSupport);
+              // 드롭 삽입선이 이 칸의 어느 카드 앞에 올지(없으면 undefined, null이면 맨 끝).
+              let dropLineBeforeId: string | null | undefined = undefined;
+              if (dragEventId && dropSlot && dropSlot.day === cell.isoDate) {
+                if (!dropSlot.overId) {
+                  dropLineBeforeId = null;
+                } else {
+                  const oi = dateEvents.findIndex((e) => e.id === dropSlot.overId);
+                  if (oi >= 0) {
+                    const li = dropSlot.after ? oi + 1 : oi;
+                    dropLineBeforeId = li >= dateEvents.length ? null : dateEvents[li].id;
+                  }
+                }
+              }
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               // 이 칸이 속한 주의 업 도움 줄 수만큼만 위 여백을 둔다(띠 없는 주는 0).
               const weekSupCount = weekSupportLaneCount[Math.floor(cellIndex / 7)] ?? 0;
@@ -2183,13 +2221,16 @@ export function StudioShell({
                           : null;
                       const mixStyle = mixed && run ? mixedEventStyle(colors, run) : null;
                       return (
-                        <div
+                        <Fragment key={event.id}>
+                          {dropLineBeforeId === event.id ? (
+                            <div className="drop-insert-line" aria-hidden="true" />
+                          ) : null}
+                          <div
                           className={pillClass}
                           data-chain={chainKeys.get(event.id)}
                           data-color={mixed ? undefined : colors[0]?.key}
                           data-eventid={event.id}
                           data-mixed={mixed ? "" : undefined}
-                          key={event.id}
                           onClick={(e) => {
                             e.stopPropagation();
                             // 방금 드래그로 옮겼다면 이 클릭(선택)은 1회 무시한다.
@@ -2261,9 +2302,13 @@ export function StudioShell({
                               ))}
                             </ul>
                           ) : null}
-                        </div>
+                          </div>
+                        </Fragment>
                       );
                     })}
+                    {dropLineBeforeId === null ? (
+                      <div className="drop-insert-line" aria-hidden="true" />
+                    ) : null}
                   </div>
                 </article>
               );
