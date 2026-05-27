@@ -15,11 +15,14 @@
 @media (min-width: 1700px) {
   .studio-shell {
     zoom: 0.9;
+    /* zoom이 min-height까지 축소시켜 하단에 body(베이지) 바탕이 드러나므로 줌 배율만큼 보정한다. */
+    min-height: calc(100vh / 0.9);
   }
 }
 @media (min-width: 2400px) {
   .studio-shell {
     zoom: 0.8;
+    min-height: calc(100vh / 0.8);
   }
 }
 
