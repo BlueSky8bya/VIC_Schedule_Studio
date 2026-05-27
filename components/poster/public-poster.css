@@ -45,11 +45,13 @@
   display: grid;
   grid-template-columns: 12px 1fr;
   align-items: center;
-  gap: 5px;
-  border: 1px solid transparent;
-  border-radius: 8px;
+  gap: 6px;
+  /* [Phase 6] 선택 시 2px 테두리로 바뀌어도 안 밀리도록 기본 테두리도 2px 투명. */
+  border: 2px solid transparent;
+  border-radius: 9px;
   background: transparent;
-  padding: 3px 4px;
+  /* [Phase 6] 모바일 터치 영역 — 패딩을 키워 손가락으로 누르기 편하게. */
+  padding: 7px 7px;
   font-size: 11px;
   font-weight: 700;
   color: #4b4636;
@@ -59,10 +61,13 @@
   /* 4글자(타스뱅송)까지는 한 줄 유지, 더 길면 줄바꿈 허용 */
   word-break: keep-all;
 }
+/* [Phase 6] 선택 상태를 더 또렷하게 — 진한 테두리 + 굵은 글씨 + 살짝 떠 보이는 그림자. */
 .agenda-legend-tag.on {
   border-color: var(--accent);
   background: var(--accent-soft, #fff3d2);
   color: var(--accent-strong, #a9760a);
+  font-weight: 900;
+  box-shadow: 0 1px 5px rgb(169 118 10 / 22%);
 }
 .agenda-legend-tag.dim {
   opacity: 0.4;
@@ -329,7 +334,8 @@
   background: var(--accent-soft, #fff3d2);
 }
 .agenda-when {
-  flex: 0 0 34px;
+  /* [Phase 6] 날짜 칸을 살짝 키워 각 날(그룹)의 날짜가 한눈에 들어오게. */
+  flex: 0 0 40px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -337,7 +343,7 @@
   padding-top: 2px;
 }
 .agenda-when strong {
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 900;
   line-height: 1;
 }
@@ -355,8 +361,8 @@
 .agenda-day.today .agenda-when strong {
   display: inline-grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  width: 31px;
+  height: 31px;
   border-radius: 999px;
   background: var(--accent);
   color: var(--on-accent);
@@ -459,25 +465,35 @@
   font-weight: 600;
   color: #5b606b;
 }
+/* [Phase 6] "도우러 가기"를 탭 가능한 칩으로 — 최소 40px 높이 터치 영역 + 옅은 배경. */
 .agenda-link {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 3px;
+  gap: 5px;
+  margin-top: 5px;
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 10px;
+  background: #eaf7e3;
   color: #2f7d12;
-  font-size: 12.5px;
+  font-size: 13.5px;
   font-weight: 800;
 }
+/* [Phase 6] 관심(♥) 버튼: 시각 크기는 유지하되 탭 영역을 40×40으로 확장(음수 마진으로
+   줄 높이는 거의 그대로). 모바일에서 손끝으로 정확히 누르기 쉽게. */
 .agenda-heart {
   flex: 0 0 auto;
-  margin-left: auto;
-  width: 24px;
-  height: 22px;
+  margin: -9px -8px -9px auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
   border: 0;
-  border-radius: 7px;
+  border-radius: 11px;
   background: transparent;
   color: #cbb9a0;
-  font-size: 16px;
+  font-size: 19px;
   line-height: 1;
   padding: 0;
   cursor: pointer;
