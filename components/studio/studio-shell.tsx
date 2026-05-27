@@ -417,6 +417,40 @@ export function StudioShell({
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [visibleEvents, view]);
+  // 16:9 한 화면 맞춤: 칸 높이가 고정되면 일정이 많은 날은 내용이 칸을 넘친다. 칸마다 측정해
+  // 넘치면 그 칸 일정 글자를 자동으로 줄여(--evt-scale) 높이 안에 들어오게 한다.
+  useEffect(() => {
+    const grid = monthGridRef.current;
+    if (!grid) return;
+    let raf = 0;
+    const fit = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const days = Array.from(grid.querySelectorAll<HTMLElement>(".studio-day"));
+        for (const d of days) d.style.setProperty("--evt-scale", "1");
+        void grid.offsetHeight; // 스케일 1 기준으로 다시 측정하도록 리플로우
+        const scales = days.map((day) => {
+          const list = day.querySelector<HTMLElement>(".studio-event-list");
+          if (!list) return 1;
+          const avail = day.clientHeight - list.offsetTop - 6;
+          const needed = list.scrollHeight;
+          return needed > avail && needed > 0 && avail > 0
+            ? Math.max(0.6, avail / needed)
+            : 1;
+        });
+        days.forEach((day, i) => day.style.setProperty("--evt-scale", String(scales[i])));
+      });
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(grid);
+    window.addEventListener("resize", fit);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      window.removeEventListener("resize", fit);
+    };
+  }, [visibleEvents, view]);
   // 선택한 일정이 속한 연결 체인 전체를 하이라이트 대상으로 삼는다.
   const selectedChainIds = useMemo(
     () => getLinkedChainIds(selectedEventId, visibleEvents),

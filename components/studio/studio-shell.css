@@ -813,7 +813,8 @@
   flex: 1;
   overflow: hidden;
   white-space: pre-line;
-  font-size: clamp(13px, 0.9vw, 19px);
+  /* --evt-scale: 일정이 많아 칸 높이를 넘치면 그 칸의 글자를 자동으로 줄여 맞춘다(JS가 칸별로 설정). */
+  font-size: calc(clamp(13px, 0.9vw, 19px) * var(--evt-scale, 1));
   font-weight: 900;
   line-height: 1.22;
 }
@@ -844,7 +845,7 @@
   font-weight: 800;
 }
 .pill-subs li {
-  font-size: 12px;
+  font-size: calc(12px * var(--evt-scale, 1));
   font-weight: 800;
   line-height: 1.3;
 }
@@ -1634,6 +1635,8 @@ textarea:disabled {
   flex: 1 1 auto;
   min-height: 0;
   align-content: space-between;
+  /* 태그가 박스 높이를 넘치면 박스 밖으로 삐져나가지 않고 이 목록 안에서 스크롤되게. */
+  overflow-y: auto;
 }
 .studio-left-panel section {
   min-width: 0;
