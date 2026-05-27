@@ -2,7 +2,12 @@ import { PublicPoster } from "@/components/poster/public-poster";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { canDecorate, canEditSchedule } from "@/lib/permissions/roles";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
-import { deleteStickerAction, saveStickerAction } from "@/lib/schedules/sticker-actions";
+import {
+  deleteStickerAction,
+  deleteStickerBatchAction,
+  saveStickerAction,
+  saveStickerBatchAction
+} from "@/lib/schedules/sticker-actions";
 import {
   deleteStickerAssetAction,
   uploadStickerAssetAction
@@ -39,9 +44,11 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
       decorate
       deleteStickerAction={deleteStickerAction}
       deleteStickerAssetAction={deleteStickerAssetAction}
+      deleteStickerBatchAction={deleteStickerBatchAction}
       initialMonth={Number(month)}
       initialYear={Number(year)}
       saveStickerAction={saveStickerAction}
+      saveStickerBatchAction={saveStickerBatchAction}
       schedule={schedule}
       setPosterThemeAction={canEditSchedule(actor.role) ? setPosterThemeAction : undefined}
       uploadStickerAssetAction={uploadStickerAssetAction}

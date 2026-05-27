@@ -84,6 +84,13 @@ type PublicPosterProps = {
   decorate?: boolean;
   saveStickerAction?: (input: SaveStickerInput) => Promise<StickerResult>;
   deleteStickerAction?: (id: string) => Promise<StickerResult>;
+  // 다중 동작(다중 삭제·undo/redo)을 한 번에 저장/삭제 — 권한확인·캐시무효화를 1회로 묶는다.
+  saveStickerBatchAction?: (
+    inputs: SaveStickerInput[]
+  ) => Promise<{ ok: true; ids: string[] } | { ok: false; error: string }>;
+  deleteStickerBatchAction?: (
+    ids: string[]
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
   uploadStickerAssetAction?: (formData: FormData) => Promise<StickerAssetResult>;
   deleteStickerAssetAction?: (id: string) => Promise<StickerAssetResult>;
   setPosterThemeAction?: (theme: string) => Promise<ThemeResult>;
@@ -101,6 +108,40 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 // export는 이 원본 크기로 캡쳐한다. 작은 화면에서도 내부 비율·스티커 위치가 절대 안 바뀐다.
 const POSTER_DESIGN_W = 1840;
 const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
+
+// StickerInstance → 저장 입력(SaveStickerInput). 배치/단건 저장이 같은 매핑을 쓰게 모은다.
+// year/month는 호출 맥락에 따라 다름(수정=현재 보기 월, 재삽입=스티커 자체 월)이라 인자로 받는다.
+function stickerToSaveInput(
+  s: StickerInstance,
+  year: number,
+  month: number,
+  withId: boolean
+): SaveStickerInput {
+  return {
+    id: withId ? s.id : undefined,
+    year,
+    month,
+    emoji: s.kind === "emoji" ? s.label : undefined,
+    assetId: s.kind === "image" ? s.assetId : undefined,
+    text: s.kind === "text" ? s.label : undefined,
+    textColor: s.textColor,
+    fontWeight: s.fontWeight,
+    fontFamily: s.fontFamily,
+    textAlign: s.textAlign,
+    textBg: s.textBg,
+    italic: s.italic,
+    outline: s.outline,
+    shadow: s.shadow,
+    xRatio: s.xRatio,
+    yRatio: s.yRatio,
+    widthRatio: s.widthRatio,
+    rotationDeg: s.rotationDeg,
+    flipX: s.flipX,
+    flipY: s.flipY,
+    opacity: s.opacity,
+    zIndex: s.zIndex
+  };
+}
 
 // 관심 일정 북마크 저장 키 — 캘린더 슬러그가 하나(vic)라 단일 키로 충분하다.
 const BOOKMARK_STORAGE_KEY = "vic:bookmarks:v1";
@@ -334,6 +375,8 @@ export function PublicPoster({
   decorate: decorateProp = false,
   saveStickerAction,
   deleteStickerAction,
+  saveStickerBatchAction,
+  deleteStickerBatchAction,
   uploadStickerAssetAction,
   deleteStickerAssetAction,
   setPosterThemeAction,
@@ -1053,15 +1096,26 @@ export function PublicPoster({
 
   async function deleteSelected() {
     const ids = selectedIds;
-    if (ids.length === 0 || !deleteStickerAction) {
+    if (ids.length === 0 || (!deleteStickerAction && !deleteStickerBatchAction)) {
       return;
     }
     pushHistory();
     const idSet = new Set(ids);
     setStickers((prev) => prev.filter((s) => !idSet.has(s.id)));
     clearSelection();
-    for (const id of ids) {
-      if (!id.startsWith("temp-")) {
+    // 임시(미저장) 스티커는 서버 호출 없이 로컬에서만 제거된다.
+    const realIds = ids.filter((id) => !id.startsWith("temp-"));
+    if (realIds.length === 0) {
+      return;
+    }
+    // 다중 삭제는 배치(.in() 단일 쿼리 + 무효화 1회)로 — 동접 중 캐시 thrash를 줄인다.
+    if (deleteStickerBatchAction) {
+      const result = await deleteStickerBatchAction(realIds);
+      if (!result.ok) {
+        setStickerError(result.error);
+      }
+    } else if (deleteStickerAction) {
+      for (const id of realIds) {
         const result = await deleteStickerAction(id);
         if (!result.ok) {
           setStickerError(result.error);
@@ -1271,38 +1325,23 @@ export function PublicPoster({
     clearSelection();
     const targetIds = new Set(target.map((s) => s.id));
     const curIds = new Set(current.map((s) => s.id));
-    // 1) target에 없는 현재 스티커 → 서버에서 삭제
-    for (const s of current) {
-      if (!targetIds.has(s.id) && !s.id.startsWith("temp-") && deleteStickerAction) {
-        await deleteStickerAction(s.id);
+    // 1) target에 없는 현재 스티커 → 서버에서 삭제(배치 한 번).
+    const toDelete = current
+      .filter((s) => !targetIds.has(s.id) && !s.id.startsWith("temp-"))
+      .map((s) => s.id);
+    if (toDelete.length > 0) {
+      if (deleteStickerBatchAction) {
+        const r = await deleteStickerBatchAction(toDelete);
+        if (!r.ok) setStickerError(r.error);
+      } else if (deleteStickerAction) {
+        for (const id of toDelete) await deleteStickerAction(id);
       }
     }
-    // 2) 현재에 없는 target 스티커 → 재삽입(새 id 발급 후 remap)
+    // 2) 현재에 없는 target 스티커 → 재삽입(새 id 발급 후 remap). 인덱스로 id를 되짚어야 해
+    //    안전하게 단건 호출을 유지한다(배치로 묶으면 remap 인덱스 어긋남 위험).
     for (const s of target) {
       if (!curIds.has(s.id) && saveStickerAction) {
-        const result = await saveStickerAction({
-          year: s.year,
-          month: s.month,
-          emoji: s.kind === "emoji" ? s.label : undefined,
-          assetId: s.kind === "image" ? s.assetId : undefined,
-          text: s.kind === "text" ? s.label : undefined,
-          textColor: s.textColor,
-          fontWeight: s.fontWeight,
-          fontFamily: s.fontFamily,
-          textAlign: s.textAlign,
-          textBg: s.textBg,
-          italic: s.italic,
-          outline: s.outline,
-          shadow: s.shadow,
-          xRatio: s.xRatio,
-          yRatio: s.yRatio,
-          widthRatio: s.widthRatio,
-          rotationDeg: s.rotationDeg,
-          flipX: s.flipX,
-          flipY: s.flipY,
-          opacity: s.opacity,
-          zIndex: s.zIndex
-        });
+        const result = await saveStickerAction(stickerToSaveInput(s, s.year, s.month, false));
         if (result.ok) {
           remapId(s.id, result.id);
         } else {
@@ -1310,10 +1349,18 @@ export function PublicPoster({
         }
       }
     }
-    // 3) 양쪽에 다 있는 스티커 → 값 저장(이동/크기 등 되돌림 반영)
-    for (const s of target) {
-      if (curIds.has(s.id)) {
-        await commitSticker(s);
+    // 3) 양쪽에 다 있는 스티커 → 값 저장(이동/크기 등 되돌림 반영). 배치 한 번으로.
+    const toUpdate = target.filter((s) => curIds.has(s.id) && !s.id.startsWith("temp-"));
+    if (toUpdate.length > 0 && saveStickerBatchAction) {
+      const r = await saveStickerBatchAction(
+        toUpdate.map((s) => stickerToSaveInput(s, view.year, view.month, true))
+      );
+      if (!r.ok) setStickerError(r.error);
+    } else {
+      for (const s of target) {
+        if (curIds.has(s.id)) {
+          await commitSticker(s);
+        }
       }
     }
   }
