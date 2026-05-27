@@ -792,6 +792,15 @@ export function StudioShell({
     window.addEventListener("pointercancel", endEventDrag, { once: true });
   }
 
+  // "끈"(이어진 일정): 멀티데이거나 link로 앞뒤가 이어진 일정. 같은 날에서 항상 위로 정렬된다.
+  function isConnectedEvent(e: StudioScheduleEvent) {
+    return (
+      (e.endDateKey != null && e.endDateKey > getEventDateKey(e)) ||
+      Boolean(e.linkNext) ||
+      events.some((o) => o.linkNext === e.id)
+    );
+  }
+
   // 드롭: 일정을 target 날짜로(필요 시) 옮기고, 같은 날 안에서 over(위/아래) 위치에 끼워 순서 변경.
   async function dropEventInto(
     id: string,
@@ -809,6 +818,9 @@ export function StudioShell({
       const idx = dayEvents.findIndex((e) => e.id === over.id);
       if (idx >= 0) insertIdx = over.after ? idx + 1 : idx;
     }
+    // 끈(이어진/멀티데이 일정)은 항상 맨 위에 고정 — 그 위로는 못 끼운다. 끈 아래로만 배치.
+    const connectedCount = dayEvents.filter((e) => isConnectedEvent(e)).length;
+    insertIdx = Math.max(insertIdx, connectedCount);
     const orderedIds = [
       ...dayEvents.slice(0, insertIdx).map((e) => e.id),
       id,
@@ -2099,15 +2111,17 @@ export function StudioShell({
               // 드롭 삽입선이 이 칸의 어느 카드 앞에 올지(없으면 undefined, null이면 맨 끝).
               let dropLineBeforeId: string | null | undefined = undefined;
               if (dragEventId && dropSlot && dropSlot.day === cell.isoDate) {
+                // 끈(이어진 일정)은 위에 고정 — 안내선은 끈 아래에서만 뜬다.
+                const connectedCount = dateEvents.filter((e) => isConnectedEvent(e)).length;
+                let li: number;
                 if (!dropSlot.overId) {
-                  dropLineBeforeId = null;
+                  li = dateEvents.length;
                 } else {
                   const oi = dateEvents.findIndex((e) => e.id === dropSlot.overId);
-                  if (oi >= 0) {
-                    const li = dropSlot.after ? oi + 1 : oi;
-                    dropLineBeforeId = li >= dateEvents.length ? null : dateEvents[li].id;
-                  }
+                  li = oi < 0 ? dateEvents.length : dropSlot.after ? oi + 1 : oi;
                 }
+                li = Math.max(li, connectedCount); // 끈 위로는 못 올라감
+                dropLineBeforeId = li >= dateEvents.length ? null : dateEvents[li].id;
               }
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               // 이 칸이 속한 주의 업 도움 줄 수만큼만 위 여백을 둔다(띠 없는 주는 0).
