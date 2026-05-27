@@ -610,8 +610,20 @@ export function PublicPoster({
   const nudgeBurstRef = useRef(0); // 방향키 연속 입력을 한 단위로 묶기 위한 타임스탬프
   stickersRef.current = stickers;
   // C2: 실행취소/다시실행 — 현재 달 스티커 배열 스냅샷 스택.
+  // ref를 단일 진실 소스로 둔다: 비동기 undo/redo(applySnapshot→remapId) 도중 setState
+  // 타이밍/클로저로 인해 redo 스택 push가 유실되던 문제를 막는다. state는 버튼 활성화
+  // 렌더링용 거울일 뿐이고, 스택 로직은 항상 ref를 읽고 쓴다.
+  const undoRef = useRef<StickerInstance[][]>([]);
+  const redoRef = useRef<StickerInstance[][]>([]);
   const [undoStack, setUndoStack] = useState<StickerInstance[][]>([]);
   const [redoStack, setRedoStack] = useState<StickerInstance[][]>([]);
+  // ref(진실) + state(렌더용)를 함께 갱신한다.
+  function commitStacks(undo: StickerInstance[][], redo: StickerInstance[][]) {
+    undoRef.current = undo;
+    redoRef.current = redo;
+    setUndoStack(undo);
+    setRedoStack(redo);
+  }
 
   // 달을 바꿀 때만 해당 달 스티커로 다시 시드한다.
   // (스티커 저장 시 서버 revalidate로 schedule이 갱신되어도 로컬 상태가 우선 —
@@ -621,8 +633,7 @@ export function PublicPoster({
     setSelectedSticker(null);
     setMultiIds([]);
     // 색상 필터/관심만 보기는 달을 넘겨도 그대로 유지한다(사용자가 선택을 다시 안 해도 되게).
-    setUndoStack([]); // 달이 바뀌면 실행취소 히스토리는 초기화
-    setRedoStack([]);
+    commitStacks([], []); // 달이 바뀌면 실행취소/다시실행 히스토리는 초기화
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.year, view.month]);
 
@@ -1085,8 +1096,7 @@ export function PublicPoster({
     // 그렇지 않으면 Undo가 죽은 에셋을 되살리려다 FK 오류를 낸다.
     const scrub = (stacks: StickerInstance[][]) =>
       stacks.map((snap) => snap.filter((s) => s.assetId !== assetId));
-    setUndoStack(scrub);
-    setRedoStack(scrub);
+    commitStacks(scrub(undoRef.current), scrub(redoRef.current));
     const result = await deleteStickerAssetAction(assetId);
     if (!result.ok) {
       setStickerError(result.error);
@@ -1303,16 +1313,15 @@ export function PublicPoster({
     return stickersRef.current.map((s) => ({ ...s }));
   }
   function pushHistory() {
-    setUndoStack((prev) => [...prev.slice(-49), snapshot()]);
-    setRedoStack([]);
+    // 새 변형은 redo 가지를 무효화한다(표준 undo/redo 동작).
+    commitStacks([...undoRef.current.slice(-49), snapshot()], []);
   }
   // 재삽입으로 새 id가 발급되면 로컬 상태·히스토리 스택의 옛 id를 모두 새 id로 바꾼다.
   function remapId(oldId: string, newId: string) {
     const swap = (arr: StickerInstance[]) =>
       arr.map((s) => (s.id === oldId ? { ...s, id: newId } : s));
     setStickers((prev) => swap(prev));
-    setUndoStack((prev) => prev.map(swap));
-    setRedoStack((prev) => prev.map(swap));
+    commitStacks(undoRef.current.map(swap), redoRef.current.map(swap));
     setSelectedSticker((cur) => (cur === oldId ? newId : cur));
   }
   // 스냅샷(target) 상태로 되돌리고, 그 차이를 서버에도 반영(삭제·재삽입·수정).
@@ -1365,21 +1374,20 @@ export function PublicPoster({
     }
   }
   function undo() {
-    if (undoStack.length === 0) {
+    if (undoRef.current.length === 0) {
       return;
     }
-    const target = undoStack[undoStack.length - 1];
-    setUndoStack((prev) => prev.slice(0, -1));
-    setRedoStack((prev) => [...prev, snapshot()]);
+    const target = undoRef.current[undoRef.current.length - 1];
+    // 현재 상태를 redo 스택으로 올리고 undo 스택에서 하나 뺀다(ref가 진실, 동기 갱신).
+    commitStacks(undoRef.current.slice(0, -1), [...redoRef.current, snapshot()]);
     void applySnapshot(target);
   }
   function redo() {
-    if (redoStack.length === 0) {
+    if (redoRef.current.length === 0) {
       return;
     }
-    const target = redoStack[redoStack.length - 1];
-    setRedoStack((prev) => prev.slice(0, -1));
-    setUndoStack((prev) => [...prev, snapshot()]);
+    const target = redoRef.current[redoRef.current.length - 1];
+    commitStacks([...undoRef.current, snapshot()], redoRef.current.slice(0, -1));
     void applySnapshot(target);
   }
 
