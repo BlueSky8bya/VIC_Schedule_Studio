@@ -36,6 +36,9 @@ export function InAppBrowserNotice({
   const [android, setAndroid] = useState(initialAndroid);
   const formWrapRef = useRef<HTMLDivElement>(null);
   const autoTried = useRef(false);
+  // 크롬 자동전환 상태 공유(여러 효과에서). opened=크롬이 떠 웹뷰가 가려짐, returned=복귀 처리 1회만.
+  const openedRef = useRef(false);
+  const returnedRef = useRef(false);
   // autoSubmit이면 첫 렌더부터 "로딩"으로 시작해 로그인 버튼이 잠깐 보였다 사라지는 깜빡임을 없앤다.
   // (이미 시도했던 세션이면 아래 효과에서 false로 바꿔 버튼을 노출 → 취소/뒤로가기 탈출구.)
   const [autoStarting, setAutoStarting] = useState(autoSubmit);
@@ -85,16 +88,24 @@ export function InAppBrowserNotice({
     // 크롬으로 자동 전환 시도. 성공하면 화면이 백그라운드로 가(visibilitychange) 카드를 안 띄운다.
     sessionStorage.setItem("vic-chrome-try", "1");
     setPhase("trying");
-    let opened = false;
     const onVis = () => {
-      if (document.hidden) opened = true; // 크롬이 열려 이 웹뷰가 가려짐
+      if (document.hidden) {
+        openedRef.current = true; // 크롬이 열려 이 웹뷰가 가려짐
+      } else if (openedRef.current && !returnedRef.current) {
+        // 크롬에서 이 웹뷰로 돌아옴 → "여는 중" redirect 화면을 히스토리에서 건너뛰어
+        // 원래(링크를 눌렀던) 화면으로 바로 보낸다. (뒤로가기 두 번·무한 스피너 모두 해소.)
+        returnedRef.current = true;
+        if (window.history.length > 1) window.history.back();
+        else setPhase("card"); // 돌아갈 곳이 없으면 무한 스피너 대신 안내 카드
+      }
     };
     document.addEventListener("visibilitychange", onVis);
+    // 전환 자체가 실패(크롬 안 열림)했을 땐 안내 카드로(무한 "여는 중" 방지). 크롬이 열렸으면
+    // document.hidden=true라 여기선 건드리지 않고, 복귀는 위 visibilitychange가 처리한다.
     const timer = window.setTimeout(() => {
-      if (!opened && !document.hidden) setPhase("card"); // 전환 실패 → 그제서야 안내
-    }, 1200);
-    // replace로 보내 intent:// 주소가 히스토리에 안 남게 한다 — 크롬에서 뒤로가기로 돌아왔을 때
-    // 이 주소로 되돌아가 다시 크롬을 띄우는(무한 "여는 중") 현상을 막는다.
+      if (!openedRef.current && !document.hidden) setPhase("card");
+    }, 1500);
+    // replace로 보내 intent:// 주소가 히스토리에 안 남게 한다.
     window.location.replace(chromeIntentUrl());
     return () => {
       document.removeEventListener("visibilitychange", onVis);
@@ -102,13 +113,24 @@ export function InAppBrowserNotice({
     };
   }, []);
 
-  // 뒤로가기로 이 페이지가 bfcache에서 복원될 때(useEffect는 다시 안 돎) "여는 중…" 스피너가
-  // 그대로 얼어붙어 무한로딩처럼 보이는 문제 방지 — 복원되면 즉시 탈출구(카드/버튼)를 보여준다.
+  // bfcache로 redirect 화면이 복원되는 경우(웹뷰가 visibilitychange 대신 pageshow를 쏠 때)도
+  // 동일하게 원래 화면으로 건너뛴다. 크롬 전환을 시도했던 세션에서만 동작.
   useEffect(() => {
     function onPageShow(e: PageTransitionEvent) {
-      if (!e.persisted) return;
-      setAutoStarting(false);
-      setPhase((p) => (p === "trying" ? "card" : p));
+      if (!e.persisted || returnedRef.current) return;
+      let tried = false;
+      try {
+        tried = Boolean(sessionStorage.getItem("vic-chrome-try"));
+      } catch {
+        tried = false;
+      }
+      if (!tried) return;
+      returnedRef.current = true;
+      if (window.history.length > 1) window.history.back();
+      else {
+        setAutoStarting(false);
+        setPhase("card");
+      }
     }
     window.addEventListener("pageshow", onPageShow);
     return () => window.removeEventListener("pageshow", onPageShow);

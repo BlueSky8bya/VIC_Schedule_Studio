@@ -1027,7 +1027,7 @@ export function StudioShell({
 
           {actor.role === "developer" ? (
             <div className="developer-warning">
-              🛠 개발자 세션 — 관리 권한으로 보고 있어요.
+              🛠 개발자 세션
               <button
                 className="developer-warning-btn"
                 onClick={() => setModal("developer")}
@@ -1580,7 +1580,7 @@ export function StudioShell({
             {isNarrow ? null : <Eye aria-hidden="true" size={15} />}
             {isNarrow
               ? "시청자가 보는 화면(비공개 일정 미포함)"
-              : "시청자가 보는 공개 화면입니다 (비공개 일정 미포함)"}
+              : "시청자가 보는 공개 화면입니다"}
           </span>
           <button className="button" onClick={() => setViewerMode(false)} type="button">
             <ChevronLeft aria-hidden="true" size={16} />

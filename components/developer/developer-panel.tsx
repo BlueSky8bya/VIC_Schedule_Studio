@@ -22,7 +22,7 @@ export function DeveloperPanel() {
   return (
     <div className="developer-panel">
       <p className="developer-panel-hint">
-        지금 사이트에 접속 중인 사용자입니다. 실시간으로 갱신돼요. (개인정보 없이 역할별 인원만)
+        지금 사이트에 접속 중인 사용자입니다. (실시간 갱신)
       </p>
       <div className="developer-panel-total">
         <strong>{c ? c.total : "…"}</strong>
