@@ -32,20 +32,10 @@
   .studio-calendar-panel {
     min-height: 0;
   }
-  /* 주 행이 남는 높이를 균등히 채운다(빈 공간 없이 한 화면). */
+  /* 달력 그리드가 남는 높이를 채운다(행은 align-content:stretch 기본값으로 균등히 늘어남 →
+     큰 화면에서 빈 공간 없이 꽉 참). 아주 빽빽한 달이면 "그리드 한 곳"에서만 스크롤(칸마다 X). */
   .studio-month-grid {
-    grid-auto-rows: minmax(0, 1fr);
-  }
-  /* 칸은 배정된 높이만큼만, 일정이 넘치면 그 칸 안에서만 스크롤. */
-  .studio-day {
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .studio-day .studio-event-list {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow-y: auto;
+    overflow: auto;
   }
   /* 사이드 패널도 화면을 넘으면 패널 안에서만 스크롤(페이지 스크롤 방지). */
   .studio-left-panel,
