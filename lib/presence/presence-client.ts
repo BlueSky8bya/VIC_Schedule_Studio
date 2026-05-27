@@ -9,6 +9,8 @@ import type { MembershipRole } from "@/lib/domain/schedule-types";
 // (마이그레이션 불필요). 모든 로그인 사용자가 자기 "역할"만 track하고, 개발자 패널이 합산한다.
 // 개인정보(이메일 등)는 절대 싣지 않는다 — 역할 카운트만(공개 채널이라 누구나 구독 가능).
 
+export type DeviceKind = "desktop" | "android" | "ios" | "mobile";
+
 export type PresenceCounts = {
   viewer: number;
   worker: number;
@@ -16,6 +18,8 @@ export type PresenceCounts = {
   owner: number;
   developer: number;
   total: number;
+  // 기기별 합계 — 웹(데스크톱) / 안드로이드 / iOS / 기타 모바일.
+  devices: { desktop: number; android: number; ios: number; mobile: number };
 };
 
 const EMPTY: PresenceCounts = {
@@ -24,8 +28,18 @@ const EMPTY: PresenceCounts = {
   manager: 0,
   owner: 0,
   developer: 0,
-  total: 0
+  total: 0,
+  devices: { desktop: 0, android: 0, ios: 0, mobile: 0 }
 };
+
+// 클라이언트 UA로 기기 종류를 판별한다(웹/안드로이드/iOS/기타 모바일).
+function detectDevice(): DeviceKind {
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
+  if (/Android/i.test(ua)) return "android";
+  if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
+  if (/Mobi|Mobile/i.test(ua)) return "mobile";
+  return "desktop";
+}
 
 const CHANNEL = "presence:vic";
 
@@ -41,14 +55,18 @@ function notify() {
 
 function recompute() {
   if (!channel) return;
-  const state = channel.presenceState<{ role?: string }>();
-  const next: PresenceCounts = { ...EMPTY };
+  const state = channel.presenceState<{ role?: string; device?: string }>();
+  const next: PresenceCounts = { ...EMPTY, devices: { ...EMPTY.devices } };
   for (const key of Object.keys(state)) {
     for (const entry of state[key]) {
       const role = entry.role as MembershipRole | undefined;
       if (role && role in next) {
         next[role] += 1;
         next.total += 1;
+      }
+      const device = entry.device as DeviceKind | undefined;
+      if (device && device in next.devices) {
+        next.devices[device] += 1;
       }
     }
   }
@@ -78,7 +96,7 @@ export function startPresence(role: MembershipRole) {
       .on("presence", { event: "leave" }, recompute)
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
-          void channel?.track({ role });
+          void channel?.track({ role, device: detectDevice() });
         }
       });
   } catch {

@@ -1,9 +1,11 @@
 .studio-shell {
   min-height: 100vh;
+  /* 차가운 회색 대신 따뜻한 크림 톤(앱 토큰·파스텔 태그와 조화). 위쪽에 은은한 복숭아빛 글로우. */
   background:
-    radial-gradient(100% 60% at 50% -5%, #fbfcff 0%, transparent 55%),
-    linear-gradient(180deg, #f4f6fb, #eef1f7);
-  color: #172033;
+    radial-gradient(120% 60% at 50% -8%, #fff6e6 0%, transparent 52%),
+    radial-gradient(90% 50% at 100% 0%, #fdeef0 0%, transparent 45%),
+    linear-gradient(180deg, #fbf4e6, #f6efe0);
+  color: var(--ink, #2a2018);
 }
 
 /* 편집실 전용: 넓은 화면(큰 모니터)에서 살짝 축소해, 칸이 거대해지고 내용이 작아 보이는
@@ -106,8 +108,8 @@
   justify-content: center;
   gap: 6px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
+  border-radius: 10px;
+  background: var(--surface, #fffdf6);
   cursor: pointer;
   font-weight: 800;
 }
@@ -128,8 +130,8 @@
 .event-editor-panel textarea {
   min-height: 40px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
+  border-radius: 10px;
+  background: #fffefa;
   padding: 0 10px;
 }
 
@@ -139,7 +141,7 @@
   align-items: center;
   min-width: 0;
   max-width: 340px;
-  background: #ffffff;
+  background: #fffefa;
 }
 
 .actor-badge strong {
@@ -229,6 +231,14 @@
   color: #6b7280;
   font-size: 13px;
 }
+.developer-panel-subhead {
+  margin: 4px 0 -2px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #8b7a59;
+  text-transform: none;
+}
 .developer-panel-total {
   display: flex;
   align-items: baseline;
@@ -301,15 +311,18 @@
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #ffffff;
-  padding: 14px;
+  border-radius: 16px;
+  background: var(--surface, #fffdf6);
+  padding: 16px;
+  box-shadow: var(--shadow-1);
 }
 
 .studio-left-panel h2,
 .event-editor-panel h2 {
   margin: 0;
   font-size: 20px;
+  color: #5b4a2f;
+  letter-spacing: -0.01em;
 }
 
 /* 일정 편집 패널: 주제목(날짜)은 살짝 작게, 부제목(새 일정/일정 수정)은 살짝 크게. */
@@ -437,19 +450,20 @@
 
 .studio-weekdays {
   margin-bottom: 8px;
-  border: 1px solid #e8ebf2;
-  border-radius: var(--r-lg);
-  background: #f6f8fc;
+  border: 1px solid var(--line, #ece0c9);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fdf3df, #faecd2);
   overflow: hidden;
+  box-shadow: var(--shadow-1);
 }
 
 .studio-weekdays span {
-  padding: 8px 5px;
+  padding: 9px 5px;
   font-size: clamp(13px, 0.85vw, 18px);
   font-weight: 800;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-align: center;
-  color: #6b7384;
+  color: #9c8a68;
 }
 
 .studio-weekdays span:last-child {
@@ -466,10 +480,10 @@
 
 .studio-month-grid {
   overflow: hidden;
-  border: 1px solid #e8ebf2;
-  border-radius: var(--r-lg);
-  background: #ffffff;
-  box-shadow: var(--shadow-1);
+  border: 1px solid var(--line, #ece0c9);
+  border-radius: 16px;
+  background: var(--surface, #fffdf6);
+  box-shadow: var(--shadow-2);
   /* 칸 패널 높이를 채워 사이드바와 밑선을 맞춘다(행은 align-content:stretch 기본값으로 늘어남). */
   flex: 1 1 auto;
   min-height: 0;
@@ -478,16 +492,16 @@
 .studio-day {
   position: relative;
   min-height: 132px;
-  border-right: 1px solid #eef0f5;
-  border-bottom: 1px solid #eef0f5;
-  background: #ffffff;
+  border-right: 1px solid var(--line-soft, #f4ecdb);
+  border-bottom: 1px solid var(--line-soft, #f4ecdb);
+  background: var(--surface, #fffdf6);
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
 /* #1: 날짜 칸 호버 시 칸 배경뿐 아니라 안의 일정 카드·업도움 띠도 함께 톤이 바뀌어
    "이 날 전체가 선택 대상"임을 분명히 보여준다. */
 .studio-day:not(.outside):hover {
-  background: #e9f0ff;
+  background: #fff2d3;
 }
 .studio-day:not(.outside):hover .studio-event-pill,
 .studio-day:not(.outside):hover .support-bar {
@@ -526,17 +540,17 @@
   border-right-color: transparent;
 }
 
-/* 오늘 이전: 살짝 흐린 회색 / 오늘 이후: 흰색 */
+/* 오늘 이전: 살짝 가라앉은 따뜻한 톤 / 오늘 이후: 밝은 크림 */
 .studio-day.past {
-  background: #f0f1f5;
+  background: #f2ead9;
 }
 
 .studio-day.future {
-  background: #ffffff;
+  background: var(--surface, #fffdf6);
 }
 
 .studio-day.outside {
-  background: #eef0f3;
+  background: #efe7d6;
 }
 /* 흐림은 셀 전체 opacity(그룹 합성) 대신 반투명 흰 베일을 한 겹 덮어서 낸다.
    셀마다 베일이 정확히 맞물려 깔리므로(겹침 없음) 스패닝 일정 막대는 불투명하게
@@ -548,22 +562,30 @@
   inset: 0 -1px -1px 0;
   /* 스티커 레이어보다 아래(셀 콘텐츠보다는 위)로 둬, 스티커는 흐려지지 않게 한다. */
   z-index: 4;
-  background: rgb(247 248 250 / 60%);
+  background: rgb(244 236 219 / 62%);
   pointer-events: none;
 }
 
-/* 다른 달 날짜는 토/일 색도 회색으로 (그대로 진하지 않게) */
+/* 다른 달 날짜는 토/일 색도 흐린 베이지로 (그대로 진하지 않게) */
 .studio-day.outside .studio-day-head strong {
-  color: #aab0ba;
+  color: #c2b291;
 }
 
-/* 오늘: 부드러운 테두리 하이라이트 */
+/* 오늘: 따뜻한 골드 테두리 하이라이트 + 살짝 강조 배경 */
 .studio-day.today {
-  box-shadow: inset 0 0 0 2px #f6c560;
+  box-shadow: inset 0 0 0 2px var(--accent, #f5b81b);
+  background: #fff7e0;
 }
 
+/* 선택: 골드(오늘)와 구분되는 따뜻한 로즈/코랄 테두리 */
 .studio-day.selected {
-  box-shadow: inset 0 0 0 2px #7aa9ef;
+  box-shadow: inset 0 0 0 2px #e0907e;
+}
+/* 오늘이면서 선택된 경우: 두 색을 겹쳐(안쪽 골드 + 바깥 로즈) 둘 다 보이게. */
+.studio-day.today.selected {
+  box-shadow:
+    inset 0 0 0 2px var(--accent, #f5b81b),
+    inset 0 0 0 4px #e0907e;
 }
 
 .studio-day-head {
@@ -597,7 +619,7 @@
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
-  color: #6b7280;
+  color: #a8966f;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -614,12 +636,12 @@
   flex-direction: column;
   gap: 3px;
   border: 1px solid rgb(0 0 0 / 7%);
-  border-radius: 10px;
+  border-radius: 12px;
   background: rgb(255 255 255 / 72%);
   cursor: pointer;
-  padding: clamp(6px, 0.45vw, 10px) clamp(9px, 0.6vw, 14px);
+  padding: clamp(7px, 0.5vw, 11px) clamp(10px, 0.65vw, 15px);
   text-align: left;
-  box-shadow: 0 1px 2px rgb(17 24 39 / 5%);
+  box-shadow: 0 1px 2px rgb(17 24 39 / 6%);
   transition:
     transform var(--dur-1) var(--ease),
     box-shadow var(--dur-2) var(--ease);

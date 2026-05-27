@@ -1596,7 +1596,7 @@ export function StudioShell({
               onClick={() => startNav("꾸미기 화면을 여는 중입니다…")}
             >
               <Sparkles aria-hidden="true" size={16} />
-              꾸미기로 가기
+              꾸미러 가기
             </Link>
           ) : null}
         </div>
