@@ -53,10 +53,14 @@
 - [x] `npx playwright test tests/e2e --project=chromium` 10개 그린.
 - 후속(인증 필요): 실제 포스터(16:9)·꾸미기·비공개 스냅샷은 테스트 인증 경로가 생기면 추가.
 
-### Phase 4 — studio zoom 제거 실험
-- [ ] `zoom` @media 제거, 작업영역 `width: min(100%, 1720px); margin-inline: auto`
-- [ ] 큰 화면 cell/sidebar/editor min·max 조정, 타이틀 작업 UI 기준으로 축소
-- [ ] 드래그/sticky/export 재검증(각 해상도) — Phase 3 스냅샷으로 회귀 확인
+### Phase 4 — studio zoom 제거 ✅ (사용자 확인 대기)
+- [x] `studio-shell.css`의 1700/2400px `zoom` @media 제거(JS 의존 없음 확인).
+- [x] 대체: `.studio-workspace { max-width: 2200px; margin-inline: auto }` — 큰 모니터에서
+      달력이 옆으로 퍼지지 않게 가운데로 모음. 상단바·액션바는 풀폭 유지(헤더 패턴).
+- [x] sticky 좌패널 `top:72px` 관계는 zoom이 균일 축소였어 그대로 유지됨(조정 불필요).
+- [x] Phase 3 가드 재실행 — 6 viewport 가로 오버플로 0(회귀 없음).
+- 주의/후속: zoom 제거로 사용자 모니터(≈1920)에서 UI가 ~10% 커짐 — 밀도/타이틀 크기는
+      눈으로 보고 미세조정. 드래그/캡쳐는 좌표계가 1배라 더 정확(사용자 확인 필요).
 
 ### Phase 5 — 컨테이너 쿼리 점진 도입
 - [ ] 우선순위: poster-surface → public-calendar-area → studio-calendar-panel →

@@ -15,26 +15,11 @@
   color: #2c2740;
 }
 
-/* [임시/TEMP — Phase 4에서 제거 예정] 보고서(responsive-design-audit-report.md §3.1)상
-   zoom은 포인터 좌표·드래그·sticky·export와 충돌 위험이 있어 장기적으로 제거하고
-   작업영역 max-width + container query 밀도 제어로 대체한다. 그때까지만 유지.
-   편집실 전용: 넓은 화면(큰 모니터)에서 살짝 축소해, 칸이 거대해지고 내용이 작아 보이는
-   "엉성함"을 줄이고 80% 줌과 비슷한 균형 잡힌 구도로 만든다. (브라우저 줌은 100% 기준 권장.)
-   작은 모니터·모바일(<1700px)은 그대로 두고, zoom은 sticky를 깨지 않아 상단바 고정이 유지된다.
-   수치/분기점은 실제 화면 보고 미세조정 가능. 포스터·꾸미기 캔버스에는 적용되지 않는다. */
-@media (min-width: 1700px) {
-  .studio-shell {
-    zoom: 0.9;
-    /* zoom이 min-height까지 축소시켜 하단에 body(베이지) 바탕이 드러나므로 줌 배율만큼 보정한다. */
-    min-height: calc(100vh / 0.9);
-  }
-}
-@media (min-width: 2400px) {
-  .studio-shell {
-    zoom: 0.8;
-    min-height: calc(100vh / 0.8);
-  }
-}
+/* [Phase 4] zoom 제거 완료. 예전엔 큰 화면에서 .studio-shell { zoom } 으로 전체를 축소해
+   칸이 거대해지는 걸 막았지만, zoom은 포인터 좌표·드래그·sticky·export와 충돌 위험이 있었다.
+   대신 작업영역(.studio-workspace)에 최대폭을 줘 가운데로 모은다 — 큰 모니터에서 달력이
+   옆으로 끝없이 퍼져 칸이 거대해지는 걸 막고, 좌표계는 1배(논리=실제)라 드래그가 더 정확하다.
+   상단바·액션바는 풀폭 그대로(배경/구분선이 화면 끝까지 가도록 — 흔한 앱 헤더 패턴). */
 
 .studio-topbar {
   position: sticky;
@@ -303,6 +288,10 @@
      gap은 0으로 두고 좌측은 margin, 우측은 패딩으로 간격을 줘서 닫혔을 때 달력이 끝까지 가게 한다. */
   grid-template-columns: 188px minmax(0, 1fr) 0px;
   gap: 0;
+  /* zoom 대신: 큰 모니터에서 달력이 옆으로 끝없이 퍼지지 않게 작업영역을 가운데로 모은다.
+     (예전 zoom 0.9가 1920에서 ~2133 논리폭이던 감각과 비슷하게 잡고, 화면 보며 미세조정.) */
+  max-width: 2200px;
+  margin-inline: auto;
   padding: 18px;
   transition: grid-template-columns 0.28s ease;
 }
