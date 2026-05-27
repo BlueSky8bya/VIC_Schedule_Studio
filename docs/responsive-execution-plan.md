@@ -41,11 +41,17 @@
 - [ ] 비례좌표(xRatio/yRatio/widthRatio)가 16:9 표면에서 자연스러운지 확인
 - [ ] 운영 DB에 기존 스티커 있으면 시각 위치 점검(필요 시 호환 처리)
 
-### Phase 3 — 시각 회귀 안전망
-- [ ] Playwright 핵심 표면 스냅샷: viewer agenda / viewer calendar / studio owner /
-      poster export. 자동 체크: horizontal overflow 없음, 버튼 화면 밖 없음, 포스터 비어있지
-      않음, 스티커 표면 밖 없음, viewer에 private 미노출.
-- [ ] viewport 세트: 390×844, 768×1024, 1366×768, 1920×1080, 2560×1440, 3440×1440
+### Phase 3 — 시각 회귀 안전망 ✅ (로그인 불필요 범위로 한정)
+- 결정: 인증 장벽 때문에 헤드리스로 도달 가능한 표면만 다룬다. `/`는 Supabase 설정 시
+  자동으로 Google OAuth로 넘어가 못 잡고, 실제 포스터·꾸미기·비공개 레이어는 로그인 필요.
+  `/studio`(읽기전용 스튜디오 셸)는 로그인 없이 렌더 — zoom(Phase 4) 대상 표면이라 가장 가치.
+- 결정: 사진 비교(스냅샷)는 OS/폰트에 취약 → **측정값 검사(assertion)** 중심.
+  `tests/e2e/responsive-layout.spec.ts`: viewport 세트 × `/studio`에서 가로 오버플로 없음 +
+  달력 노출 + 비공개 경고 미노출. (390/768/1366/1920/2560/3440)
+- [x] 스테일 `/vic` 스냅샷 테스트 제거(`/vic`는 라우트가 아니라 캘린더 slug였음).
+- [x] 스테일 `calendar-ui.spec.ts` 현행화(헤딩 문구, `/` 자동 리다이렉트, 날짜 하드코딩 제거).
+- [x] `npx playwright test tests/e2e --project=chromium` 10개 그린.
+- 후속(인증 필요): 실제 포스터(16:9)·꾸미기·비공개 스냅샷은 테스트 인증 경로가 생기면 추가.
 
 ### Phase 4 — studio zoom 제거 실험
 - [ ] `zoom` @media 제거, 작업영역 `width: min(100%, 1720px); margin-inline: auto`

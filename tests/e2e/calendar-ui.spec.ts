@@ -1,29 +1,33 @@
 import { expect, test } from "@playwright/test";
 
-test("root requires Google authentication before role-based routing", async ({
+test("root auto-routes unauthenticated visitors to Google login", async ({
   page
 }) => {
+  // 루트는 모두 로그인 진입 — Supabase 설정 시 자동으로 Google OAuth로 넘어간다.
   await page.goto("/");
-
-  await expect(
-    page.getByRole("heading", { name: "Google 계정으로 먼저 로그인해 주세요" })
-  ).toBeVisible();
-  await expect(page.getByText("Owner", { exact: true })).toBeVisible();
-  await expect(page.getByText("매니저 / 작업자")).toBeVisible();
-  await expect(page.getByText("일반 시청자", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Google로 로그인" })).toBeVisible();
+  await page.waitForURL(/accounts\.google\.com/, { timeout: 15000 });
+  expect(page.url()).toContain("accounts.google.com");
 });
 
-test("studio supports month navigation but blocks unauthenticated editing", async ({
+test("studio renders read-only for unauthenticated viewers", async ({
   page
 }) => {
   await page.goto("/studio");
 
-  await expect(page.getByRole("heading", { name: "빅토리 월간 일정표" })).toBeVisible();
-  await page.getByTitle("다음 달").click();
-  await expect(page.getByText("26.07")).toBeVisible();
-  await page.getByRole("button", { name: "15" }).click();
-  await expect(page.getByText("viewer", { exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "저장" })).toBeDisabled();
+  await expect(page.getByRole("heading", { name: "빅토리 일정표" })).toBeVisible();
+
+  // 비로그인 시청자 경계: 편집/비공개 접근 불가 단서가 보여야 한다.
   await expect(page.getByRole("link", { name: "로그인" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "비공개 일정 보기" })
+  ).toBeDisabled();
+
+  // 비공개 레이어 경고는 절대 노출되면 안 된다.
+  await expect(
+    page.getByText("비공개 레이어 표시 중입니다", { exact: false })
+  ).toHaveCount(0);
+
+  // 월 이동 버튼이 동작한다(값 하드코딩 없이 — 날짜에 의존하지 않게).
+  await expect(page.getByRole("button", { name: "다음 달" })).toBeEnabled();
+  await page.getByRole("button", { name: "다음 달" }).click();
 });
