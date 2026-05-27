@@ -614,8 +614,8 @@ export function StudioShell({
       const pivotY = pos.y + edOffRef.current.y;
       const bob = edBobRef.current;
       const prev = edBobPrevRef.current;
-      const G = 0.28; // 달보다 더 약한 중력(아주 천천히 내려감)
-      const DAMP = 0.975; // 공기저항을 줄여 관성(스윙)이 더 오래 유지되게
+      const G = 0.22; // 아주 약한 중력(천천히 내려감)
+      const DAMP = 0.9; // 저항을 충분히 줘 발발거림·과한 스윙을 잡는다(관성은 남기되 절제)
       const vx = (bob.x - prev.x) * DAMP;
       const vy = (bob.y - prev.y) * DAMP;
       prev.x = bob.x;
@@ -701,7 +701,9 @@ export function StudioShell({
       edOffRef.current = { x: info.offX, y: info.offY };
       const lvx = rect.width / 2 - info.offX;
       const lvy = rect.height / 2 - info.offY;
-      edLenRef.current = Math.max(24, Math.hypot(lvx, lvy));
+      // 진자 길이를 넉넉히(최소 80px) — 짧으면 작은 손움직임에도 크게 휘둘려(특히 중앙 잡을 때
+      // 옆으로만 움직여도 빙글) 과민해진다. 길게 두면 같은 움직임에도 회전이 완만해진다.
+      edLenRef.current = Math.max(80, Math.hypot(lvx, lvy));
       edPhi0Ref.current = Math.atan2(lvy, lvx);
       const pivotX = rect.left + info.offX;
       const pivotY = rect.top + info.offY;
