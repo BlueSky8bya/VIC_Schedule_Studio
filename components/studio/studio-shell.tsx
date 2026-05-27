@@ -616,15 +616,15 @@ export function StudioShell({
       const prev = edBobPrevRef.current;
       const G = 0.5; // 달처럼 약한 중력(천천히 내려감)
       const DAMP = 0.95; // 공기저항(서서히 정착)
-      let vx = (bob.x - prev.x) * DAMP;
-      let vy = (bob.y - prev.y) * DAMP;
+      const vx = (bob.x - prev.x) * DAMP;
+      const vy = (bob.y - prev.y) * DAMP;
       prev.x = bob.x;
       prev.y = bob.y;
       bob.x += vx;
       bob.y += vy + G; // 중력은 아래로
       // 막대 길이 구속: pivot에서 항상 L 거리에 있게 당긴다(원운동 → 빙빙 돌리면 360° 가능).
-      let dx = bob.x - pivotX;
-      let dy = bob.y - pivotY;
+      const dx = bob.x - pivotX;
+      const dy = bob.y - pivotY;
       const dist = Math.hypot(dx, dy) || 1;
       const L = edLenRef.current;
       bob.x = pivotX + (dx / dist) * L;
