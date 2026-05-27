@@ -1952,8 +1952,6 @@ export function StudioShell({
                 selectedDate === cell.isoDate ? "selected" : "",
                 day.isPast ? "past" : "future",
                 day.isToday ? "today" : "",
-                // 빈 칸이면 호버 시 "+ 일정" 추가 힌트를 보여준다.
-                dateEvents.length === 0 && supportHere.length === 0 ? "empty-day" : "",
                 // 드래그 중 이 칸 위에 있으면 "여기에 놓기" 강조.
                 dragEventId && dropDate === cell.isoDate ? "drop-target" : ""
               ]

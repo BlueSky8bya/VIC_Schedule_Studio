@@ -30,12 +30,12 @@
   display: grid;
   /* 양쪽 1fr 사이 가운데 auto → 제목이 헤더 정중앙에 온다. */
   grid-template-columns: 1fr auto 1fr;
-  gap: 16px;
+  gap: 18px;
   align-items: center;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid #ece9f5;
   background: var(--glass-strong);
-  padding: 14px 20px;
-  box-shadow: var(--shadow-1);
+  padding: 17px 26px;
+  box-shadow: 0 2px 12px rgb(120 110 160 / 8%);
   backdrop-filter: blur(10px);
 }
 
@@ -93,7 +93,7 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .studio-role-tools {
@@ -146,14 +146,14 @@
 
 .actor-badge strong {
   flex: 0 0 auto;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .actor-badge span {
   min-width: 0;
   overflow: hidden;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13.5px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -286,10 +286,10 @@
 
 .studio-workspace {
   display: grid;
-  /* 양옆 레일을 합쳐 ~21px 줄여, 가운데 달력(7칸 1fr)이 칸당 약 3px씩 넓어지게 한다. */
-  grid-template-columns: 210px minmax(0, 1fr) 359px;
-  gap: 14px;
-  padding: 14px;
+  /* 좌/우 레일을 달력과 더 균형 있게 — 너무 좁아 "찌부"되지 않도록 넉넉히. */
+  grid-template-columns: 248px minmax(0, 1fr) 372px;
+  gap: 18px;
+  padding: 18px;
 }
 
 .studio-left-panel,
@@ -297,7 +297,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
-  gap: 12px;
+  gap: 14px;
   min-width: 0;
 }
 /* 새 일정 생성 카드는 달력 끝선에 맞출 필요 없음 — 자기 높이만큼만. */
@@ -309,20 +309,37 @@
 .event-editor-panel form {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  gap: 12px;
+  gap: 14px;
   border: 1px solid #ece9f5;
   border-radius: 16px;
   background: #ffffff;
-  padding: 16px;
+  padding: 18px;
   box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
 }
 
 .studio-left-panel h2,
 .event-editor-panel h2 {
   margin: 0;
-  font-size: 20px;
+  font-size: 22px;
   color: #574f6b;
   letter-spacing: -0.01em;
+}
+
+/* 헤더·사이드바 글씨가 전반적으로 작다는 피드백 → 편집실 한정으로 키운다(시청자/포스터 영향 없음). */
+.studio-eyebrow {
+  font-size: 16px;
+}
+.studio-role-tools .button,
+.private-toggle,
+.studio-month-nav button {
+  font-size: 15.5px;
+}
+.studio-month-nav strong {
+  font-size: 17px;
+}
+.studio-left-panel .button {
+  min-height: 44px;
+  font-size: 16.5px;
 }
 
 /* 일정 편집 패널: 주제목(날짜)은 살짝 작게, 부제목(새 일정/일정 수정)은 살짝 크게. */
@@ -336,8 +353,8 @@
 .studio-left-panel p {
   margin: 0;
   color: var(--muted);
-  font-size: 14.5px;
-  line-height: 1.5;
+  font-size: 15.5px;
+  line-height: 1.55;
 }
 
 .selected-date-label {
@@ -381,10 +398,10 @@
   border: 1px solid transparent;
   border-radius: 8px;
   background: transparent;
-  padding: 3px 6px;
-  font-size: 17px;
+  padding: 4px 7px;
+  font-size: 18px;
   font-weight: 800;
-  color: #334155;
+  color: #3a3550;
   text-align: left;
   cursor: pointer;
   word-break: keep-all;
@@ -715,25 +732,6 @@
   background: #e9faf1 !important;
   box-shadow: inset 0 0 0 2px #57c98a;
 }
-/* 빈 칸 호버 시 "+ 일정" 추가 힌트(클릭하면 그 날짜로 새 일정 작성). */
-.studio-day.empty-day:not(.outside)::before {
-  content: "+ 일정";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 10px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 800;
-  color: #cdb6e6;
-  opacity: 0;
-  transition: opacity var(--dur-1, 0.15s) var(--ease, ease);
-  pointer-events: none;
-  z-index: 1;
-}
-.studio-day.empty-day:not(.outside):hover::before {
-  opacity: 1;
-}
 /* D: 2색 칸은 그라데이션 위에 반쪽 무늬를 깔고, 내용은 그 위로 올린다. */
 .studio-event-pill[data-mixed] {
   position: relative;
@@ -875,21 +873,22 @@
    (선택 시 버튼이 레이아웃을 밀어 높이가 들썩이고, 이어진 칸 높이맞춤이 출렁이던 문제 방지) */
 .pill-delete {
   position: absolute;
-  top: 2px;
-  right: 2px;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
   z-index: 2;
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border: 2px solid #ffffff;
-  border-radius: 999px;
+  border-radius: 9px;
   background: #ef4444;
   color: #ffffff;
   cursor: pointer;
-  box-shadow: 0 2px 5px rgb(0 0 0 / 28%);
+  box-shadow: 0 2px 6px rgb(0 0 0 / 28%);
 }
 
 .pill-delete:hover {
