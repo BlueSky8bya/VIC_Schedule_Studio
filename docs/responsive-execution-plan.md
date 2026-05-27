@@ -61,13 +61,18 @@
 - 교훈: zoom 제거를 "제대로" 하려면 전 요소를 ~10% 작게 재튜닝해야 하는데, 그 이득(좌표계
   정리)이 작업량·리스크 대비 미미. 실제 zoom 버그가 나타나면 그때 재튜닝과 함께 다시 검토.
 
-### Phase 5 — 컨테이너 쿼리 점진 도입
-- [ ] 우선순위: poster-surface → public-calendar-area → studio-calendar-panel →
-      event-editor-panel → tag-editor → decorate-toolbar (값 주는 곳만)
+### Phase 5 — 컨테이너 쿼리 점진 도입 ✅ (값 주는 곳만)
+- [x] `.studio-calendar-panel`을 컨테이너(inline-size)로. 새 일정 카드가 열려 달력이
+      좁아질 때, 일정 제목·요일 헤더 글자가 `cqi`(달력 칸 폭)로 줄고 늘게(기존 `vw` 대체).
+- poster-surface는 Phase 2에서 고정 캔버스가 되어 내부 폭이 안 변하므로 대상에서 제외.
+- 드래그 고스트는 `document.body`에 붙어 패널 layout containment 영향 없음(확인).
 
-### Phase 6 — 모바일 agenda UX 다듬기
-- [ ] 공개 모바일 agenda 기본 유지·날짜 grouping 강화·필터 chip rail 선택상태 강화
-- [ ] 하트/링크 최소 40px 터치, 모바일 private warning sticky 유지
+### Phase 6 — 모바일 agenda UX 다듬기 ✅
+- [x] 관심(♥) 버튼·"도우러 가기" 링크 ≥40px 터치 영역(♥는 음수 마진으로 줄 높이 유지).
+- [x] 필터 칩 선택 상태 강화(2px 테두리·굵은 글씨·그림자, 기본도 2px 투명이라 reflow 없음) + 탭 패딩 확대.
+- [x] 날짜 칸 폭·숫자 키워 per-day 그룹 스캔성 향상.
+- 비공개 warning sticky는 기존 동작 유지(별도 변경 없음).
+- 주의: agenda는 인증 시청자(`/`)에서만 렌더 → 헤드리스 스냅샷 불가. 실기기 확인 필요.
 
 ## 보안 경계 (매 단계 공통)
 - 모바일 agenda 전환 시 private 필드가 public DTO에 섞이지 않을 것
