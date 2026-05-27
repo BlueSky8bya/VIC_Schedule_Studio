@@ -64,7 +64,6 @@ import {
   getEventsForDate,
   getEventSpan,
   getEventTagColors,
-  getMonthLabel,
   getSpanRunRange,
   getTodayKst,
   mixedEventStyle,
@@ -1936,18 +1935,8 @@ export function PublicPoster({
           <header className="public-calendar-header">
             <div className="header-left" />
 
-            {/* 꾸미기: 월 이동은 하단 플로팅 바로, 월 표시는 포스터 제목(✨️ … N월)에 이미 있어 헤더 가운데는 비운다. */}
-            {decorate ? null : (
-              <div className="month-controls" aria-label="월 이동">
-                <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
-                  <ChevronLeft aria-hidden="true" size={18} />
-                </button>
-                <strong>{getMonthLabel(view.year, view.month)}</strong>
-                <button onClick={() => moveMonth(1)} title="다음 달" type="button">
-                  <ChevronRight aria-hidden="true" size={18} />
-                </button>
-              </div>
-            )}
+            {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).
+                현재 월 표시는 포스터 제목(✨️ … N월)에 이미 있어 헤더 가운데는 비운다. */}
 
             {/* 편집실로 돌아가기 + 시청자 화면 보기(미리보기 토글)는 우측 상단(계정변경 옆)에 둔다. */}
             <div className="viewer-actions">
@@ -2713,17 +2702,15 @@ export function PublicPoster({
       </section>
 
       {/* 월 이동 버튼을 하단 좌·우에 띄운다(가운데는 비워 '맨 위로' 버튼과 안 겹치게).
-          아젠다(모바일 시청자)와 꾸미기 모두에서, 달력을 보며 엄지로 누르기 쉽게 한다. */}
-      {showAgenda || decorate ? (
-        <nav className="agenda-monthbar" aria-label="월 이동">
-          <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
-            <ChevronLeft aria-hidden="true" size={22} />
-          </button>
-          <button onClick={() => moveMonth(1)} title="다음 달" type="button">
-            <ChevronRight aria-hidden="true" size={22} />
-          </button>
-        </nav>
-      ) : null}
+          시청자·아젠다·꾸미기 모두 — 달력을 보며 월을 넘기기 쉽게(HCI). 상단 월 pill은 폐지. */}
+      <nav className="agenda-monthbar" aria-label="월 이동">
+        <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+          <ChevronLeft aria-hidden="true" size={22} />
+        </button>
+        <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+          <ChevronRight aria-hidden="true" size={22} />
+        </button>
+      </nav>
     </main>
   );
 }
