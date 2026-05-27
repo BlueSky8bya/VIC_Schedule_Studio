@@ -366,6 +366,45 @@ export function StudioShell({
     return today.startsWith(`${ym}-`) ? today : `${ym}-01`;
   });
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+
+  // 새로고침해도 직전에 보던 달 + 시청자 미리보기 상태를 복원한다(세션 한정 — 탭을 닫으면 초기화).
+  // sessionStorage라 "이 세션에서 보던 화면으로 새로고침", 새 탭/재시작은 현재 달부터.
+  const viewMemFirstSave = useRef(true);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("vic:studio:view");
+      if (raw) {
+        const mem = JSON.parse(raw) as { year?: number; month?: number; viewerMode?: boolean };
+        if (typeof mem.year === "number" && typeof mem.month === "number") {
+          setView({ year: mem.year, month: mem.month });
+          const ym = `${mem.year}-${String(mem.month).padStart(2, "0")}`;
+          setSelectedDate(today.startsWith(`${ym}-`) ? today : `${ym}-01`);
+        }
+        if (mem.viewerMode) {
+          setViewerMode(true);
+        }
+      }
+    } catch {
+      /* 저장소 접근 불가(시크릿 등) — 무시하고 기본값 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  useEffect(() => {
+    // 첫 마운트 저장은 건너뛴다(복원 전 기본값으로 덮어쓰지 않도록). 이후 변경만 기록.
+    if (viewMemFirstSave.current) {
+      viewMemFirstSave.current = false;
+      return;
+    }
+    try {
+      sessionStorage.setItem(
+        "vic:studio:view",
+        JSON.stringify({ year: view.year, month: view.month, viewerMode })
+      );
+    } catch {
+      /* 무시 */
+    }
+  }, [view, viewerMode]);
+
   // 새 일정/일정 수정 카드는 달력에서 날짜(또는 일정)를 "선택했을 때"만 보여준다.
   // 편집실 진입 시엔 카드를 띄우지 않고, 칸을 클릭하면 그제서야 나온다.
   const [editorVisible, setEditorVisible] = useState(false);

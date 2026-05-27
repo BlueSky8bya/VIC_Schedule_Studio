@@ -1500,6 +1500,11 @@ export function PublicPoster({
     const next = getAdjacentMonth(view.year, view.month, offset);
     setView(next);
     onViewChange?.(next.year, next.month); // 부모(편집실)에 바뀐 달 알림
+    // 꾸미기는 URL에 연·월이 있으므로, 월을 넘기면 주소도 맞춘다(재마운트 없이 replaceState).
+    // → 이 상태에서 새로고침하면 보던 달로 그대로 다시 뜬다. 진입은 링크 URL을 존중.
+    if (decorateProp && typeof window !== "undefined") {
+      window.history.replaceState(null, "", `/studio/decorate/${next.year}/${next.month}`);
+    }
   }
 
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
