@@ -98,6 +98,11 @@ type PublicPosterProps = {
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
+// 포스터 고정 캔버스 설계 크기(16:9). 화면에선 이 크기를 통째로 축소해 보여주고,
+// export는 이 원본 크기로 캡쳐한다. 작은 화면에서도 내부 비율·스티커 위치가 절대 안 바뀐다.
+const POSTER_DESIGN_W = 1840;
+const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
+
 // 관심 일정 북마크 저장 키 — 캘린더 슬러그가 하나(vic)라 단일 키로 충분하다.
 const BOOKMARK_STORAGE_KEY = "vic:bookmarks:v1";
 
@@ -529,6 +534,34 @@ export function PublicPoster({
     return () => mq.removeEventListener("change", update);
   }, []);
   const showAgenda = isNarrow && !decorate;
+
+  // 포스터(시청자/꾸미기/export 표면)는 화면마다 reflow되면 안 된다 — 소유자가 찍은
+  // 스티커·텍스트 위치가 틀어지고 글자가 가려질 수 있다. 그래서 내부는 고정 16:9 캔버스
+  // (POSTER_DESIGN_W×H)로 설계하고, 화면 폭에 맞춰 통째로 축소(transform: scale)만 한다.
+  // export는 변형 없는 .poster-surface를 원본 해상도로 캡쳐하므로 화질에 영향 없다.
+  const posterStageRef = useRef<HTMLDivElement | null>(null);
+  const [posterScale, setPosterScale] = useState(1);
+  useEffect(() => {
+    if (showAgenda) {
+      return; // 모바일 아젠다(목록)는 고정 캔버스를 쓰지 않는다.
+    }
+    const stage = posterStageRef.current;
+    if (!stage) {
+      return;
+    }
+    const apply = (width: number) => {
+      if (width > 0) {
+        // 폭에 맞춰 축소(큰 화면에선 1배로 두고 가운데 정렬).
+        setPosterScale(Math.min(1, width / POSTER_DESIGN_W));
+      }
+    };
+    apply(stage.clientWidth);
+    // contentRect.width는 자식 scale(높이 변경)에 영향받지 않아 피드백 루프가 없다.
+    const ro = new ResizeObserver((entries) => apply(entries[0]?.contentRect.width ?? 0));
+    ro.observe(stage);
+    return () => ro.disconnect();
+  }, [showAgenda]);
+
   // 키보드 미세이동 등에서 최신 스티커 배열을 읽기 위한 ref + 저장 디바운스 타이머
   const stickersRef = useRef<StickerInstance[]>([]);
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -2499,6 +2532,21 @@ export function PublicPoster({
         ) : null}
 
         {showAgenda ? null : (
+        <div
+          className="poster-stage"
+          ref={posterStageRef}
+          style={{ height: POSTER_DESIGN_H * posterScale }}
+        >
+        <div
+          className="poster-scaler"
+          style={
+            {
+              "--poster-scale": posterScale,
+              width: POSTER_DESIGN_W,
+              height: POSTER_DESIGN_H
+            } as CSSProperties
+          }
+        >
         <section className="poster-surface" data-export-surface data-poster-theme={posterTheme}>
           <div className="poster-heading">
               <span aria-hidden="true">✨️</span>
@@ -2659,6 +2707,8 @@ export function PublicPoster({
             </div>
           </aside>
         </section>
+        </div>
+        </div>
         )}
       </section>
 
