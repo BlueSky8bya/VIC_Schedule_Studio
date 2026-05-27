@@ -928,6 +928,20 @@
   position: sticky;
   top: 12px;
 }
+/* 날짜 미선택 시 새 일정 카드 자리에 보이는 안내(달력에서 날짜를 누르면 폼이 뜬다). */
+.editor-empty {
+  display: grid;
+  place-items: center;
+  padding: 28px 18px;
+  border: 1px dashed #d9d3ea;
+  border-radius: 16px;
+  background: #fbfaff;
+  color: #8b86a3;
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.6;
+}
 
 .editor-heading {
   display: flex;

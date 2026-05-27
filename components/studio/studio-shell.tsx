@@ -365,6 +365,9 @@ export function StudioShell({
     return today.startsWith(`${ym}-`) ? today : `${ym}-01`;
   });
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  // 새 일정/일정 수정 카드는 달력에서 날짜(또는 일정)를 "선택했을 때"만 보여준다.
+  // 편집실 진입 시엔 카드를 띄우지 않고, 칸을 클릭하면 그제서야 나온다.
+  const [editorVisible, setEditorVisible] = useState(false);
   const canEdit = canEditSchedule(actor.role);
   const canDecorateCalendar = canDecorate(actor.role);
   const canTogglePrivateLayer = actor.role !== "viewer";
@@ -552,6 +555,7 @@ export function StudioShell({
     setSelectedDate(isoDate);
     setSelectedEventId(null);
     setForm(createEmptyForm());
+    setEditorVisible(true);
   }
 
   // ── 일정 카드 드래그 이동 ────────────────────────────────────────────────
@@ -882,6 +886,7 @@ export function StudioShell({
       tagIds: event.tagIds,
       primaryTagIds: event.primaryTagIds
     });
+    setEditorVisible(true);
   }
 
   function saveEvent(event: FormEvent<HTMLFormElement>) {
@@ -2129,7 +2134,7 @@ export function StudioShell({
               const dayClass = [
                 "studio-day",
                 cell.inCurrentMonth ? "" : "outside",
-                selectedDate === cell.isoDate ? "selected" : "",
+                editorVisible && selectedDate === cell.isoDate ? "selected" : "",
                 day.isPast ? "past" : "future",
                 day.isToday ? "today" : "",
                 // 드래그 중 이 칸 위에 있으면 "여기에 놓기" 강조.
@@ -2330,6 +2335,7 @@ export function StudioShell({
         </section>
 
         <aside className="event-editor-panel">
+          {editorVisible ? (
           <form onSubmit={saveEvent}>
             <div className="editor-heading">
               <div>
@@ -2439,6 +2445,11 @@ export function StudioShell({
               </button>
             ) : null}
           </form>
+          ) : (
+            <div className="editor-empty">
+              <p>달력에서 날짜를 선택하면 일정을 추가할 수 있어요.</p>
+            </div>
+          )}
         </aside>
       </section>
         </>
