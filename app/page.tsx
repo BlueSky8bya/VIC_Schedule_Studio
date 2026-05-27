@@ -26,14 +26,15 @@ export default async function HomePage() {
     );
   }
 
+  // 새로고침 복원: 쿠키에서 직전 화면 상태를 읽어 서버 렌더 초기값으로 넘긴다(깜빡임 없음).
+  const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
+
   // 시청자가 아닌 모든 인증 사용자(owner/developer/manager/worker)는 스튜디오로.
   // 스튜디오 내부에서 역할별 편집/열람 권한을 다시 제어한다.
   if (actor.role !== "viewer") {
     // actor는 위에서 이미 구했으니, unlock만 구해 loader에 함께 주입(중복 조회 방지).
     const unlock = await getUnlockState("vic");
     const schedule = await getStudioSchedule("vic", { actor, unlock });
-    // 새로고침 복원: 쿠키에서 직전 달·시청자 모드를 읽어 서버 렌더 초기값으로 넘긴다(깜빡임 없음).
-    const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
 
     return (
       <StudioShell
@@ -52,10 +53,13 @@ export default async function HomePage() {
 
   const schedule = await getPublicSchedule("vic");
 
+  // 일반 시청자도 보던 달(py/pm)을 새로고침 때 복원한다.
   return (
     <PublicPoster
       accountSwitch
       accountEmail={actor.email}
+      initialYear={typeof mem.py === "number" ? mem.py : undefined}
+      initialMonth={typeof mem.pm === "number" ? mem.pm : undefined}
       schedule={schedule}
       toggleHeartAction={toggleEventHeartAction}
     />

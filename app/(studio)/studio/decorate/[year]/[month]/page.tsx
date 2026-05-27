@@ -50,6 +50,7 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
     <PublicPoster
       canExport
       decorate
+      initialPreviewing={mem.dp === 1}
       deleteStickerAction={deleteStickerAction}
       deleteStickerAssetAction={deleteStickerAssetAction}
       deleteStickerBatchAction={deleteStickerBatchAction}

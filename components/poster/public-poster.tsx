@@ -83,6 +83,8 @@ type PublicPosterProps = {
   onViewChange?: (year: number, month: number) => void;
   canExport?: boolean;
   decorate?: boolean;
+  // 꾸미기에서 "시청자 화면 보기" 중이었는지(새로고침 복원용 초기값).
+  initialPreviewing?: boolean;
   saveStickerAction?: (input: SaveStickerInput) => Promise<StickerResult>;
   deleteStickerAction?: (id: string) => Promise<StickerResult>;
   // 다중 동작(다중 삭제·undo/redo)을 한 번에 저장/삭제 — 권한확인·캐시무효화를 1회로 묶는다.
@@ -374,6 +376,7 @@ export function PublicPoster({
   schedule,
   canExport: canExportProp = false,
   decorate: decorateProp = false,
+  initialPreviewing = false,
   saveStickerAction,
   deleteStickerAction,
   saveStickerBatchAction,
@@ -388,9 +391,16 @@ export function PublicPoster({
   // 꾸미기 화면에서 "시청자 화면 보기"로 잠깐 미리보기 — 꾸미기/내보내기 도구를 숨기고
   // 시청자 시점으로 본다. previewing 동안에는 effective decorate/canExport를 꺼서, 아래의
   // 모든 꾸미기 로직(도구바·키보드·스티커 편집·내보내기)이 자동으로 비활성화된다.
-  const [previewing, setPreviewing] = useState(false);
+  const [previewing, setPreviewing] = useState(initialPreviewing);
   const decorate = decorateProp && !previewing;
   const canExport = canExportProp && !previewing;
+  // 꾸미기에서 미리보기 상태를 쿠키에 기록 → 새로고침 시 서버가 그 화면(미리보기/꾸미기)으로 바로 렌더.
+  useEffect(() => {
+    if (decorateProp) {
+      writeViewCookie({ dp: previewing ? 1 : 0 });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewing]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -605,6 +615,9 @@ export function PublicPoster({
     return () => ro.disconnect();
   }, [showAgenda]);
 
+  // 이 세션에서 삭제한 스티커 id. 달을 다시 시드할 때 schedule prop(서버 스냅샷)이 캐시 탓에
+  // 아직 그 스티커를 들고 있을 수 있어, 지운 게 월 이동 후 되살아나는 걸 막는다.
+  const deletedStickerIdsRef = useRef<Set<string>>(new Set());
   // 키보드 미세이동 등에서 최신 스티커 배열을 읽기 위한 ref + 저장 디바운스 타이머
   const stickersRef = useRef<StickerInstance[]>([]);
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -630,7 +643,14 @@ export function PublicPoster({
   // (스티커 저장 시 서버 revalidate로 schedule이 갱신되어도 로컬 상태가 우선 —
   //  그렇지 않으면 추가/이동/회전 직후 선택이 풀려 패널·핸들이 사라진다.)
   useEffect(() => {
-    setStickers(schedule.stickers.filter((s) => s.year === view.year && s.month === view.month));
+    setStickers(
+      schedule.stickers.filter(
+        (s) =>
+          s.year === view.year &&
+          s.month === view.month &&
+          !deletedStickerIdsRef.current.has(s.id)
+      )
+    );
     setSelectedSticker(null);
     setMultiIds([]);
     // 색상 필터/관심만 보기는 달을 넘겨도 그대로 유지한다(사용자가 선택을 다시 안 해도 되게).
@@ -1093,6 +1113,11 @@ export function PublicPoster({
     const removed = assets.find((a) => a.id === assetId);
     setAssets((prev) => prev.filter((a) => a.id !== assetId));
     setStickers((prev) => prev.filter((s) => s.assetId !== assetId));
+    // 에셋 삭제는 이를 쓰는 스티커를 서버에서 함께 지운다(FK cascade) → 월 재시드 때 stale prop
+    // 에서 되살아나지 않도록 그 id들도 기억한다(모든 달 포함).
+    schedule.stickers
+      .filter((s) => s.assetId === assetId)
+      .forEach((s) => deletedStickerIdsRef.current.add(s.id));
     // 실행취소/다시실행 히스토리에서도 이 에셋을 쓰는 스티커를 함께 비운다 —
     // 그렇지 않으면 Undo가 죽은 에셋을 되살리려다 FK 오류를 낸다.
     const scrub = (stacks: StickerInstance[][]) =>
@@ -1119,6 +1144,8 @@ export function PublicPoster({
     if (realIds.length === 0) {
       return;
     }
+    // 월 재시드 때 stale prop에서 되살아나지 않도록 삭제 id를 기억한다.
+    realIds.forEach((id) => deletedStickerIdsRef.current.add(id));
     // 다중 삭제는 배치(.in() 단일 쿼리 + 무효화 1회)로 — 동접 중 캐시 thrash를 줄인다.
     if (deleteStickerBatchAction) {
       const result = await deleteStickerBatchAction(realIds);
@@ -1501,9 +1528,13 @@ export function PublicPoster({
     const next = getAdjacentMonth(view.year, view.month, offset);
     setView(next);
     onViewChange?.(next.year, next.month); // 부모(편집실)에 바뀐 달 알림
-    // 꾸미기는 보던 달을 쿠키에 기록 → 새로고침 시 서버가 읽어 그 달로 바로 렌더(URL·라우터 안 건드림).
+    // 보던 달을 쿠키에 기록 → 새로고침 시 서버가 읽어 그 달로 바로 렌더(URL·라우터 안 건드림).
+    // 꾸미기(dy/dm)와 일반 시청자 공개화면(py/pm)은 키를 분리한다. 편집실 미리보기는
+    // accountSwitch=false라 여기서 안 쓰고, onViewChange로 편집실 쿠키(sy/sm)가 처리한다.
     if (decorateProp) {
       writeViewCookie({ dy: next.year, dm: next.month });
+    } else if (accountSwitch) {
+      writeViewCookie({ py: next.year, pm: next.month });
     }
   }
 

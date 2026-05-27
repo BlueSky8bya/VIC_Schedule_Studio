@@ -9,6 +9,9 @@ export type ViewMemory = {
   v?: 0 | 1; // 시청자 미리보기 여부
   dy?: number; // 꾸미기 연도
   dm?: number; // 꾸미기 월
+  dp?: 0 | 1; // 꾸미기에서 "시청자 화면 보기"(미리보기) 중인지
+  py?: number; // 일반 시청자(공개 화면) 연도
+  pm?: number; // 일반 시청자(공개 화면) 월
 };
 
 // 쿠키 값(문자열) → ViewMemory. 서버/클라 양쪽에서 쓰는 순수 함수.

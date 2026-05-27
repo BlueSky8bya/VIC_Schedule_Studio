@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
@@ -138,8 +137,9 @@ export async function saveStickerAction(input: SaveStickerInput): Promise<Sticke
     return { ok: false, error: "스티커 ID를 확정할 수 없습니다." };
   }
 
-  revalidatePath("/");
-  revalidatePath("/studio/decorate", "layout");
+  // 공개 데이터 캐시만 무효화한다(시청자는 다음 로드 때 최신 반영). 소유자 현재 화면은
+  // 낙관적 로컬 상태로 이미 최신이라, revalidatePath로 라우트를 즉시 새로고침하지 않는다 —
+  // 그 새로고침이 "편집실로 가기" 같은 이동과 경합해 한 번에 안 넘어가던 문제를 없앤다.
   revalidatePublicSchedule();
 
   return { ok: true, id: stickerId };
@@ -206,8 +206,9 @@ export async function saveStickerBatchAction(
     }
   }
 
-  revalidatePath("/");
-  revalidatePath("/studio/decorate", "layout");
+  // 공개 데이터 캐시만 무효화한다(시청자는 다음 로드 때 최신 반영). 소유자 현재 화면은
+  // 낙관적 로컬 상태로 이미 최신이라, revalidatePath로 라우트를 즉시 새로고침하지 않는다 —
+  // 그 새로고침이 "편집실로 가기" 같은 이동과 경합해 한 번에 안 넘어가던 문제를 없앤다.
   revalidatePublicSchedule();
 
   return { ok: true, ids };
@@ -237,8 +238,9 @@ export async function deleteStickerBatchAction(
     return { ok: false, error: error.message };
   }
 
-  revalidatePath("/");
-  revalidatePath("/studio/decorate", "layout");
+  // 공개 데이터 캐시만 무효화한다(시청자는 다음 로드 때 최신 반영). 소유자 현재 화면은
+  // 낙관적 로컬 상태로 이미 최신이라, revalidatePath로 라우트를 즉시 새로고침하지 않는다 —
+  // 그 새로고침이 "편집실로 가기" 같은 이동과 경합해 한 번에 안 넘어가던 문제를 없앤다.
   revalidatePublicSchedule();
 
   return { ok: true };
@@ -261,8 +263,9 @@ export async function deleteStickerAction(stickerId: string): Promise<StickerRes
     return { ok: false, error: error.message };
   }
 
-  revalidatePath("/");
-  revalidatePath("/studio/decorate", "layout");
+  // 공개 데이터 캐시만 무효화한다(시청자는 다음 로드 때 최신 반영). 소유자 현재 화면은
+  // 낙관적 로컬 상태로 이미 최신이라, revalidatePath로 라우트를 즉시 새로고침하지 않는다 —
+  // 그 새로고침이 "편집실로 가기" 같은 이동과 경합해 한 번에 안 넘어가던 문제를 없앤다.
   revalidatePublicSchedule();
 
   return { ok: true, id: stickerId };
