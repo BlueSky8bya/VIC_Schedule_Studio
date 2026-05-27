@@ -600,6 +600,7 @@ export function StudioShell({
     dragRaf.current = null;
     dragGhostRef.current?.remove();
     dragGhostRef.current = null;
+    document.body.style.userSelect = "";
     const info = dragInfoRef.current;
     const target = dropDateRef.current;
     setDragEventId(null);
@@ -626,6 +627,8 @@ export function StudioShell({
       document.body.appendChild(ghost);
       dragGhostRef.current = ghost;
       setDragEventId(info.id);
+      // 드래그 동안 어디서도 글자가 선택(긁힘)되지 않게.
+      document.body.style.userSelect = "none";
       dragRaf.current = requestAnimationFrame(dragAutoScroll);
     }
     const ghost = dragGhostRef.current;
@@ -2118,7 +2121,7 @@ export function StudioShell({
                                 title="이 일정 삭제"
                                 type="button"
                               >
-                                <Trash2 aria-hidden="true" size={16} />
+                                <X aria-hidden="true" size={17} strokeWidth={3} />
                               </button>
                             ) : null}
                           </div>

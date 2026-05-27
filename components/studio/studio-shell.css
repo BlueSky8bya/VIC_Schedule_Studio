@@ -671,6 +671,9 @@
 .studio-event-pill.draggable {
   cursor: grab;
   touch-action: none; /* 터치에서 스크롤 대신 드래그가 잡히게 */
+  /* 드래그 중 글자가 파랗게 선택(긁힘)되지 않게 — 카드는 텍스트 선택 대상이 아님. */
+  user-select: none;
+  -webkit-user-select: none;
 }
 .studio-event-pill.draggable:active {
   cursor: grabbing;
@@ -686,6 +689,8 @@
   z-index: 9999;
   margin: 0;
   pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
   opacity: 0.97;
   box-shadow: 0 18px 36px rgb(90 70 140 / 32%);
   transform-origin: center;
@@ -870,21 +875,21 @@
    (선택 시 버튼이 레이아웃을 밀어 높이가 들썩이고, 이어진 칸 높이맞춤이 출렁이던 문제 방지) */
 .pill-delete {
   position: absolute;
-  top: 3px;
-  right: 3px;
+  top: 2px;
+  right: 2px;
   z-index: 2;
   display: inline-flex;
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
-  width: 21px;
-  height: 21px;
-  border: 0;
-  border-radius: 6px;
-  background: #dc2626;
+  width: 26px;
+  height: 26px;
+  border: 2px solid #ffffff;
+  border-radius: 999px;
+  background: #ef4444;
   color: #ffffff;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 25%);
+  box-shadow: 0 2px 5px rgb(0 0 0 / 28%);
 }
 
 .pill-delete:hover {
