@@ -420,6 +420,21 @@ export function StudioShell({
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [visibleEvents, view]);
+  // 새 일정 카드: 카드/날짜 칸 바깥을 클릭하면 닫는다(슬라이드 아웃). 여는 클릭이 바로 닫지 않게
+  // 다음 틱부터 문서 클릭을 듣는다.
+  useEffect(() => {
+    if (!editorVisible) return;
+    const onDocClick = (e: MouseEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t?.closest(".event-editor-panel") || t?.closest(".studio-day")) return;
+      setEditorVisible(false);
+    };
+    const id = window.setTimeout(() => document.addEventListener("click", onDocClick), 0);
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener("click", onDocClick);
+    };
+  }, [editorVisible]);
   // 선택한 일정이 속한 연결 체인 전체를 하이라이트 대상으로 삼는다.
   const selectedChainIds = useMemo(
     () => getLinkedChainIds(selectedEventId, visibleEvents),
