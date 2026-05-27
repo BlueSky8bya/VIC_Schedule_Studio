@@ -114,6 +114,13 @@ export function TagLegendEditor({
   const scrollDirRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const moveHandlerRef = useRef<((e: PointerEvent) => void) | null>(null);
+  // 들었을 때의 "물리감"용 — 유령이 커서를 관성 있게 뒤따르고(지연), 움직임 방향으로 기울며(모멘텀),
+  // 살짝 랜덤하게 흔들린다. target=커서 따라갈 목표 좌표, pos=현재 좌표(보간), rot=현재 기울기.
+  const dragTargetRef = useRef({ x: 0, y: 0 });
+  const dragPosRef = useRef({ x: 0, y: 0 });
+  const dragRotRef = useRef(0);
+  const dragWobbleRef = useRef(0); // 랜덤 흔들림 위상(매 프레임 조금씩 흐른다)
+  const dragReducedRef = useRef(false); // 모션 최소화 환경이면 흔들림·관성을 끈다
   // 드래그 중 언마운트되면 떠다니던 ghost·리스너·애니메이션을 정리한다.
   useEffect(() => {
     return () => {
@@ -144,20 +151,49 @@ export function TagLegendEditor({
     }
     return window;
   }
-  function autoScrollLoop() {
+  // 자동 스크롤 + 유령 물리(관성·모멘텀 기울기·랜덤 흔들림)를 한 프레임 루프에서 처리한다.
+  function dragLoop() {
     const dir = scrollDirRef.current;
     const sc = scrollerRef.current;
     if (dir !== 0 && sc) {
       if (sc === window) window.scrollBy(0, 11 * dir);
       else (sc as HTMLElement).scrollTop += 11 * dir;
     }
-    rafRef.current = requestAnimationFrame(autoScrollLoop);
+    const ghost = ghostRef.current;
+    if (ghost && dragReducedRef.current) {
+      // 모션 최소화: 흔들림·관성 없이 그대로 따라가게.
+      const target = dragTargetRef.current;
+      ghost.style.left = `${target.x}px`;
+      ghost.style.top = `${target.y}px`;
+    } else if (ghost) {
+      const pos = dragPosRef.current;
+      const target = dragTargetRef.current;
+      const prevX = pos.x;
+      // 관성: 목표(커서)로 천천히 보간돼 살짝 뒤따른다.
+      pos.x += (target.x - pos.x) * 0.22;
+      pos.y += (target.y - pos.y) * 0.22;
+      const vx = pos.x - prevX; // 가로 속도 → 움직이는 방향으로 기운다(모멘텀)
+      const tilt = Math.max(-15, Math.min(15, vx * 0.7));
+      dragRotRef.current += (tilt - dragRotRef.current) * 0.15;
+      // 랜덤 흔들림: 두 주기의 사인 + 미세 난수로 자연스럽게 떨리게.
+      dragWobbleRef.current += 0.12;
+      const w = dragWobbleRef.current;
+      const wobble =
+        Math.sin(w) * 1.4 + Math.sin(w * 1.7 + 0.6) * 0.9 + (Math.random() - 0.5) * 0.8;
+      ghost.style.left = `${pos.x}px`;
+      ghost.style.top = `${pos.y}px`;
+      ghost.style.transform = `rotate(${dragRotRef.current + wobble}deg) scale(1.06)`;
+    }
+    rafRef.current = requestAnimationFrame(dragLoop);
   }
   function onPointerMove(e: PointerEvent) {
     const ghost = ghostRef.current;
     if (!ghost) return;
-    ghost.style.left = `${e.clientX - offsetRef.current.x}px`;
-    ghost.style.top = `${e.clientY - offsetRef.current.y}px`;
+    // 직접 위치를 박지 않고 "목표"만 갱신 → dragLoop이 관성 있게 따라간다.
+    dragTargetRef.current = {
+      x: e.clientX - offsetRef.current.x,
+      y: e.clientY - offsetRef.current.y
+    };
     const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     const overId = el?.closest("[data-tagid]")?.getAttribute("data-tagid");
     if (overId && dragId.current && overId !== dragId.current) {
@@ -194,11 +230,18 @@ export function TagLegendEditor({
     document.body.appendChild(ghost);
     ghostRef.current = ghost;
     offsetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    // 물리 초기화: 현재 위치=목표=잡은 자리, 기울기·흔들림 0에서 시작.
+    dragPosRef.current = { x: rect.left, y: rect.top };
+    dragTargetRef.current = { x: rect.left, y: rect.top };
+    dragRotRef.current = 0;
+    dragWobbleRef.current = 0;
+    dragReducedRef.current =
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     scrollerRef.current = findScroller(row);
     dragId.current = id;
     setDraggingId(id);
     scrollDirRef.current = 0;
-    rafRef.current = requestAnimationFrame(autoScrollLoop);
+    rafRef.current = requestAnimationFrame(dragLoop);
     moveHandlerRef.current = onPointerMove;
     window.addEventListener("pointermove", onPointerMove);
     window.addEventListener("pointerup", endDrag, { once: true });
