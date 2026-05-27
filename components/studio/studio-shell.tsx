@@ -668,7 +668,7 @@ export function StudioShell({
       ghost.style.left = `${rect.left}px`;
       ghost.style.top = `${rect.top}px`;
       // 중력: 잡은 지점을 회전축(pivot)으로. 그 지점이 카드 중심에서 가로로 벗어난 만큼 강하게
-      // 매달린 듯 기운다(왼쪽을 잡으면 오른쪽이 아래로 확 처짐). 최대 약 ±36°.
+      // 매달린 듯 기운다(가장자리를 잡으면 반대쪽이 거의 수직으로 처짐). 최대 약 ±90°.
       ghost.style.transformOrigin = `${info.offX}px ${info.offY}px`;
       ghost.appendChild(inner);
       document.body.appendChild(ghost);
@@ -681,7 +681,7 @@ export function StudioShell({
       edRotVelRef.current = 0;
       edWobRef.current = 0;
       const fracX = rect.width > 0 ? info.offX / rect.width : 0.5;
-      edGravityRef.current = (0.5 - fracX) * 72;
+      edGravityRef.current = (0.5 - fracX) * 180;
       edReducedRef.current =
         window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
       // 드래그 동안 어디서도 글자가 선택(긁힘)되지 않게.
