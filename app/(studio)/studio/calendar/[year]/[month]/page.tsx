@@ -4,11 +4,11 @@ import { getStudioSchedule } from "@/lib/schedules/studio-loader";
 import { getUnlockState } from "@/lib/private-layer/unlock";
 
 export default async function StudioMonthPage() {
-  const [actor, schedule, unlock] = await Promise.all([
+  const [actor, unlock] = await Promise.all([
     resolveCurrentActor("vic"),
-    getStudioSchedule("vic"),
     getUnlockState("vic")
   ]);
+  const schedule = await getStudioSchedule("vic", { actor, unlock });
 
   return (
     <StudioShell

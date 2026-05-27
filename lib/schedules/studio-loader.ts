@@ -36,7 +36,17 @@ function filterEventsForViewer(
   });
 }
 
-export async function getStudioSchedule(calendarSlug: string): Promise<StudioSchedule> {
+// 같은 요청에서 page가 이미 구한 actor/unlock을 주입하면 loader가 중복 조회하지 않는다.
+// (없으면 기존대로 직접 조회 — 호출부 호환 유지.)
+type StudioScheduleContext = {
+  actor?: Awaited<ReturnType<typeof resolveCurrentActor>>;
+  unlock?: Awaited<ReturnType<typeof getUnlockState>>;
+};
+
+export async function getStudioSchedule(
+  calendarSlug: string,
+  context?: StudioScheduleContext
+): Promise<StudioSchedule> {
   const supabase = await createSupabaseServerClient();
 
   // Supabase 미설정이면 샘플로 폴백 (개발/테스트 보호)
@@ -56,8 +66,8 @@ export async function getStudioSchedule(calendarSlug: string): Promise<StudioSch
   const { year, month } = currentKstYearMonth();
   const [viewerModePreview, actor, unlock] = await Promise.all([
     getPublicSchedule(calendarSlug),
-    resolveCurrentActor(calendarSlug),
-    getUnlockState(calendarSlug)
+    context?.actor ?? resolveCurrentActor(calendarSlug),
+    context?.unlock ?? getUnlockState(calendarSlug)
   ]);
 
   if (!calendar) {

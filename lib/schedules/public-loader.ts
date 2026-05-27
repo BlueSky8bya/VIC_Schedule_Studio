@@ -74,7 +74,7 @@ export async function getPublicSchedule(calendarSlug: string): Promise<PublicSch
   // 익명 공개 묶음(캐시 대상) + 로그인 사용자의 개인 관심 목록(비캐시)을 합친다.
   const [data, myHeartIds] = await Promise.all([
     loadPublicScheduleData(calendarSlug),
-    loadMyHeartIds()
+    loadMyHeartIds(calendarSlug)
   ]);
 
   return { ...data, myHeartIds };
@@ -125,20 +125,26 @@ const loadPublicScheduleData = unstable_cache(
     // RLS 공개 정책이 1차 방어선이지만, 쿼리에서도 명시적으로 공개분만 조회한다.
     const [tagsRes, paletteRes, eventsRes, campaignsRes, stickersRes, assetsRes, heartsRes, eventHeartsRes] =
       await Promise.all([
+        // 모든 공개 쿼리를 이 캘린더로 한정한다. RLS는 공개 행을 허용할 뿐 캘린더별로
+        // 막지 않으므로, 캘린더가 2개 이상이 되면 application-level 스코프가 없으면 다른
+        // 공개 캘린더의 태그·팔레트·일정·스티커가 섞인다(공개 데이터끼리의 교차 혼입).
         supabase
           .from("broadcast_tags")
           .select("id, tag_key, display_name, color_key, sort_order, is_default, is_active")
+          .eq("calendar_id", calendar.id)
           .eq("is_active", true)
           .order("sort_order"),
         supabase
           .from("color_palette")
           .select("key, name, bg_color, text_color, border_color, sort_order")
+          .eq("calendar_id", calendar.id)
           .order("sort_order"),
         supabase
           .from("events")
           .select(
             "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, public_title, public_description, status, sort_order, category, event_tags(tag_id, is_primary, sort_order)"
           )
+          .eq("calendar_id", calendar.id)
           .eq("visibility_scope", "public")
           .neq("status", "draft")
           .order("date_key")
@@ -148,6 +154,7 @@ const loadPublicScheduleData = unstable_cache(
           .select(
             "id, title, description, url, starts_on, ends_on, public_cta_label, highlight_color_key, is_public, is_active"
           )
+          .eq("calendar_id", calendar.id)
           .eq("is_public", true)
           .eq("is_active", true),
         supabase
@@ -155,10 +162,12 @@ const loadPublicScheduleData = unstable_cache(
           .select(
             "id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, italic, outline, shadow, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)"
           )
+          .eq("calendar_id", calendar.id)
           .eq("is_visible", true),
         supabase
           .from("sticker_assets")
           .select("id, name, file_url, file_type")
+          .eq("calendar_id", calendar.id)
           .order("created_at", { ascending: false }),
         supabase
           .from("calendar_hearts")
@@ -209,12 +218,17 @@ const loadPublicScheduleData = unstable_cache(
 );
 
 // 로그인 사용자가 관심 표시한 일정 id(본인 것만, RLS로 보장). 캐시하지 않는다(사용자별).
-async function loadMyHeartIds(): Promise<string[]> {
+// RLS가 본인 행으로 제한하지만, 캘린더 교차 혼입을 막기 위해 events→calendars 조인으로
+// 이 캘린더(slug)의 일정으로 한정한다.
+async function loadMyHeartIds(calendarSlug: string): Promise<string[]> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
     return [];
   }
-  const { data } = await supabase.from("event_hearts").select("event_id");
+  const { data } = await supabase
+    .from("event_hearts")
+    .select("event_id, events!inner(calendars!inner(slug))")
+    .eq("events.calendars.slug", calendarSlug);
   return ((data as { event_id: string }[] | null) ?? []).map((row) => row.event_id);
 }
 

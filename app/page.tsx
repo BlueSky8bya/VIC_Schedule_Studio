@@ -28,10 +28,9 @@ export default async function HomePage() {
   // 시청자가 아닌 모든 인증 사용자(owner/developer/manager/worker)는 스튜디오로.
   // 스튜디오 내부에서 역할별 편집/열람 권한을 다시 제어한다.
   if (actor.role !== "viewer") {
-    const [schedule, unlock] = await Promise.all([
-      getStudioSchedule("vic"),
-      getUnlockState("vic")
-    ]);
+    // actor는 위에서 이미 구했으니, unlock만 구해 loader에 함께 주입(중복 조회 방지).
+    const unlock = await getUnlockState("vic");
+    const schedule = await getStudioSchedule("vic", { actor, unlock });
 
     return (
       <StudioShell
