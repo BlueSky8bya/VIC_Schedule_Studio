@@ -580,9 +580,13 @@ export function StudioShell({
   // CSS 애니메이션 대신 JS로 transform을 직접 칠해, 2색(그라데이션) 카드에도 확실히 적용된다.
   const edPosRef = useRef({ x: 0, y: 0 });
   const edTargetRef = useRef({ x: 0, y: 0 });
-  const edRotRef = useRef(0);
-  const edRotVelRef = useRef(0); // 회전 속도(스프링) — 매달린 듯 swing
-  const edGravityRef = useRef(0); // 잡은 지점이 중심에서 벗어난 만큼의 "매달림" 기울기
+  // 진자(pendulum) 물리 — 잡은 점(pivot)에 매달린 추(카드 중심)를 Verlet로 시뮬레이션한다.
+  // 마우스를 빙빙 돌리면 추가 휙휙 돌아 360° 회전(헬리콥터), 멈추면 달처럼 천천히 아래로 정착.
+  const edBobRef = useRef({ x: 0, y: 0 }); // 추 현재 위치
+  const edBobPrevRef = useRef({ x: 0, y: 0 }); // 추 이전 위치(Verlet 속도용)
+  const edOffRef = useRef({ x: 0, y: 0 }); // 잡은 지점(pivot)의 카드 내 오프셋
+  const edLenRef = useRef(1); // 진자 길이(잡은 점→카드 중심 거리)
+  const edPhi0Ref = useRef(0); // 카드 로컬에서 (잡은 점→중심) 벡터의 각도(rad)
   const edWobRef = useRef(0);
   const edReducedRef = useRef(false);
 
@@ -603,23 +607,37 @@ export function StudioShell({
     } else if (ghost) {
       const pos = edPosRef.current;
       const t = edTargetRef.current;
-      const prevX = pos.x;
-      pos.x += (t.x - pos.x) * 0.22; // 관성(지연)
-      pos.y += (t.y - pos.y) * 0.22;
-      const vx = pos.x - prevX;
-      const momentum = Math.max(-18, Math.min(18, vx * 0.8)); // 움직이는 방향으로 기울기
-      // 매달림(중력) 각도 + 움직임 모멘텀을 목표로, 스프링으로 swing(확 기울었다 살짝 넘쳐 정착).
-      const targetAngle = edGravityRef.current + momentum;
-      edRotVelRef.current += (targetAngle - edRotRef.current) * 0.14;
-      edRotVelRef.current *= 0.78;
-      edRotRef.current += edRotVelRef.current;
+      pos.x += (t.x - pos.x) * 0.3; // 위치는 가볍게 관성 추종
+      pos.y += (t.y - pos.y) * 0.3;
+      // 진자: pivot = 잡은 점(카드 좌상단 + 오프셋). 추(bob)를 Verlet로 적분 + 막대 길이 구속.
+      const pivotX = pos.x + edOffRef.current.x;
+      const pivotY = pos.y + edOffRef.current.y;
+      const bob = edBobRef.current;
+      const prev = edBobPrevRef.current;
+      const G = 0.5; // 달처럼 약한 중력(천천히 내려감)
+      const DAMP = 0.95; // 공기저항(서서히 정착)
+      let vx = (bob.x - prev.x) * DAMP;
+      let vy = (bob.y - prev.y) * DAMP;
+      prev.x = bob.x;
+      prev.y = bob.y;
+      bob.x += vx;
+      bob.y += vy + G; // 중력은 아래로
+      // 막대 길이 구속: pivot에서 항상 L 거리에 있게 당긴다(원운동 → 빙빙 돌리면 360° 가능).
+      let dx = bob.x - pivotX;
+      let dy = bob.y - pivotY;
+      const dist = Math.hypot(dx, dy) || 1;
+      const L = edLenRef.current;
+      bob.x = pivotX + (dx / dist) * L;
+      bob.y = pivotY + (dy / dist) * L;
+      // 카드 회전 = (pivot→추) 월드각 − 로컬(잡은점→중심)각. 미세 흔들림 추가.
+      const worldAngle = Math.atan2(bob.y - pivotY, bob.x - pivotX);
       edWobRef.current += 0.12;
       const w = edWobRef.current;
-      const wobble =
-        Math.sin(w) * 1.4 + Math.sin(w * 1.7 + 0.6) * 0.9 + (Math.random() - 0.5) * 0.8;
+      const wobble = Math.sin(w) * 1.1 + (Math.random() - 0.5) * 0.7; // deg
+      const deg = ((worldAngle - edPhi0Ref.current) * 180) / Math.PI + wobble;
       ghost.style.left = `${pos.x}px`;
       ghost.style.top = `${pos.y}px`;
-      ghost.style.transform = `rotate(${edRotRef.current + wobble}deg) scale(1.06)`;
+      ghost.style.transform = `rotate(${deg}deg) scale(1.06)`;
     }
     dragRaf.current = requestAnimationFrame(dragAutoScroll);
   }
@@ -674,14 +692,21 @@ export function StudioShell({
       document.body.appendChild(ghost);
       dragGhostRef.current = ghost;
       setDragEventId(info.id);
-      // 물리 초기화 — 현재 위치=목표=잡은 자리에서 시작.
+      // 진자 물리 초기화. pivot=잡은 점, 추=카드 중심. 길이 L=잡은점→중심 거리(최소 24px),
+      // φ0=로컬에서 그 벡터의 각도. 처음엔 카드가 똑바로 선 상태(추=중심 실제 위치)에서 시작해
+      // 중력으로 천천히 매달린다.
       edPosRef.current = { x: rect.left, y: rect.top };
       edTargetRef.current = { x: rect.left, y: rect.top };
-      edRotRef.current = 0;
-      edRotVelRef.current = 0;
       edWobRef.current = 0;
-      const fracX = rect.width > 0 ? info.offX / rect.width : 0.5;
-      edGravityRef.current = (0.5 - fracX) * 180;
+      edOffRef.current = { x: info.offX, y: info.offY };
+      const lvx = rect.width / 2 - info.offX;
+      const lvy = rect.height / 2 - info.offY;
+      edLenRef.current = Math.max(24, Math.hypot(lvx, lvy));
+      edPhi0Ref.current = Math.atan2(lvy, lvx);
+      const pivotX = rect.left + info.offX;
+      const pivotY = rect.top + info.offY;
+      edBobRef.current = { x: pivotX + lvx, y: pivotY + lvy };
+      edBobPrevRef.current = { x: pivotX + lvx, y: pivotY + lvy };
       edReducedRef.current =
         window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
       // 드래그 동안 어디서도 글자가 선택(긁힘)되지 않게.
