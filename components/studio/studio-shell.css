@@ -695,10 +695,12 @@
 .studio-event-pill.draggable:active {
   cursor: grabbing;
 }
-/* 드래그 중인 원본 카드: 자리만 흐리게 남겨 "들려 나간" 느낌. */
+/* 드래그 중인 원본 카드: 자리만 흐리게 남겨 "들려 나간" 느낌. hit-test에서 빼 elementFromPoint가
+   뒤의 칸/카드를 정확히 짚게 한다(원본이 가로채 안내선이 튀는 것 방지). */
 .studio-event-pill.dragging-src {
   opacity: 0.32;
   filter: grayscale(0.4);
+  pointer-events: none;
 }
 /* 손끝을 따라오는 유령 카드 — 살짝 키우고 기울이며 부드럽게 흔들린다(들고 옮기는 촉감). */
 .event-drag-ghost {
@@ -719,16 +721,27 @@
   background: #e9faf1 !important;
   box-shadow: inset 0 0 0 2px #57c98a;
 }
-/* 드롭 삽입선 — 어느 카드 사이에 들어갈지 보여주는 민트 막대(은은히 깜빡). */
+/* 드롭 삽입선 — 어느 카드 사이에 들어갈지 보여주는 민트 막대(은은히 깜빡).
+   레이아웃을 차지하지 않는 절대 오버레이(카드 위/아래 틈에 겹쳐 그림) + pointer-events:none →
+   선이 카드를 밀어내거나 hit-test를 가로채 깜빡이는 피드백 루프가 생기지 않게 한다. */
 .drop-insert-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -4px;
   height: 4px;
-  margin: 2px 1px;
   border-radius: 999px;
   background: #2bb67c;
   box-shadow:
     0 0 0 2px rgb(43 182 124 / 22%),
     0 1px 4px rgb(43 182 124 / 45%);
+  pointer-events: none;
+  z-index: 6;
   animation: drop-line-pulse 0.85s ease-in-out infinite;
+}
+.drop-insert-line.end {
+  top: auto;
+  bottom: -4px;
 }
 @keyframes drop-line-pulse {
   0%,

@@ -15,7 +15,6 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Fragment,
   type FormEvent,
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
@@ -2199,7 +2198,7 @@ export function StudioShell({
                       weekSupCount > 0 ? { paddingTop: 8 + weekSupCount * 20 } : undefined
                     }
                   >
-                    {dateEvents.map((event) => {
+                    {dateEvents.map((event, eventIndex) => {
                       const colors = eventColors(event);
                       const isSel = selectedEventId === event.id;
                       // 연결된 체인이면 체인 전체에 선택 테두리를 입힌다.
@@ -2235,16 +2234,13 @@ export function StudioShell({
                           : null;
                       const mixStyle = mixed && run ? mixedEventStyle(colors, run) : null;
                       return (
-                        <Fragment key={event.id}>
-                          {dropLineBeforeId === event.id ? (
-                            <div className="drop-insert-line" aria-hidden="true" />
-                          ) : null}
-                          <div
+                        <div
                           className={pillClass}
                           data-chain={chainKeys.get(event.id)}
                           data-color={mixed ? undefined : colors[0]?.key}
                           data-eventid={event.id}
                           data-mixed={mixed ? "" : undefined}
+                          key={event.id}
                           onClick={(e) => {
                             e.stopPropagation();
                             // 방금 드래그로 옮겼다면 이 클릭(선택)은 1회 무시한다.
@@ -2269,6 +2265,13 @@ export function StudioShell({
                             }
                           }}
                         >
+                          {/* 드롭 안내선 — 카드 위/아래 틈에 겹치는 절대 오버레이(레이아웃 영향 없음). */}
+                          {dropLineBeforeId === event.id ? (
+                            <span className="drop-insert-line" aria-hidden="true" />
+                          ) : null}
+                          {dropLineBeforeId === null && eventIndex === dateEvents.length - 1 ? (
+                            <span className="drop-insert-line end" aria-hidden="true" />
+                          ) : null}
                           {mixStyle ? (
                             <>
                               {/* 무늬도 색과 같은 위치에서 부드럽게 사라지게(마스크) — 경계 흐릿 */}
@@ -2316,13 +2319,9 @@ export function StudioShell({
                               ))}
                             </ul>
                           ) : null}
-                          </div>
-                        </Fragment>
+                        </div>
                       );
                     })}
-                    {dropLineBeforeId === null ? (
-                      <div className="drop-insert-line" aria-hidden="true" />
-                    ) : null}
                   </div>
                 </article>
               );
