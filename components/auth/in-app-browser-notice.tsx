@@ -42,6 +42,9 @@ export function InAppBrowserNotice({
   // autoSubmit이면 첫 렌더부터 "로딩"으로 시작해 로그인 버튼이 잠깐 보였다 사라지는 깜빡임을 없앤다.
   // (이미 시도했던 세션이면 아래 효과에서 false로 바꿔 버튼을 노출 → 취소/뒤로가기 탈출구.)
   const [autoStarting, setAutoStarting] = useState(autoSubmit);
+  // 강제 뒤로가기로 빠져나가는 짧은 순간엔 아무것도 안 그린다 — "기본 브라우저로 열어주세요"
+  // 카드(또는 스피너)가 0.x초 깜빡이는 걸 없애기 위함.
+  const [leaving, setLeaving] = useState(false);
 
   // 크롬으로 보낸 뒤 이 redirect 화면으로 돌아온 경우, 사용자가 "한 번 더 누르는 뒤로가기"를
   // 자동으로 대신한다. ① 웹 히스토리가 있으면 history.back(). ② 숲·카카오처럼 웹 히스토리가
@@ -58,6 +61,7 @@ export function InAppBrowserNotice({
     const now = Date.now();
     if (now - last < 1500) {
       // 방금 빠져나가려 했는데 또 이 화면 = 더는 못 빠져나감 → 카드로.
+      setLeaving(false);
       setAutoStarting(false);
       setPhase("card");
       return;
@@ -68,6 +72,8 @@ export function InAppBrowserNotice({
     } catch {
       // 무시
     }
+    // 빠져나가는 순간 화면을 비워(빈 화면) 카드 깜빡임 제거 → 곧바로 뒤로/닫기.
+    setLeaving(true);
     if (window.history.length > 1) {
       window.history.back();
     } else {
@@ -81,6 +87,7 @@ export function InAppBrowserNotice({
     // 위 시도가 안 먹히는 환경이면(여전히 이 화면) 잠깐 뒤 카드로 — 무한 빈 화면 방지.
     window.setTimeout(() => {
       returnedRef.current = false;
+      setLeaving(false);
       setAutoStarting(false);
       setPhase("card");
     }, 800);
@@ -170,6 +177,11 @@ export function InAppBrowserNotice({
     window.addEventListener("pageshow", onPageShow);
     return () => window.removeEventListener("pageshow", onPageShow);
   }, [forceBack]);
+
+  // 강제 뒤로가기로 빠져나가는 짧은 순간: 카드도 스피너도 그리지 않아 깜빡임이 없다.
+  if (leaving) {
+    return null;
+  }
 
   if (phase === "children") {
     // 자동 로그인 중에는 버튼을 그리지 않고 로딩만 보여준다(폼은 숨겨둔 채 자동 제출).
