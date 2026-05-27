@@ -2013,12 +2013,41 @@ export function StudioShell({
         </div>
       </header>
 
-      {actor.role === "developer" ? (
-        <div className="developer-warning">
-          <LockKeyhole aria-hidden="true" size={17} />
-          🛠 개발자 세션입니다. 전체 캘린더를 관리 권한으로 보고 있습니다.
+      {/* 상단 액션바: (개발자면) 세션 안내 + 같은 줄에 관리/개발자/꾸미기 버튼을 역할별로 나열. */}
+      <div className="studio-actionbar">
+        {actor.role === "developer" ? (
+          <span className="studio-actionbar-dev">
+            <LockKeyhole aria-hidden="true" size={16} />
+            🛠 개발자 세션입니다. 전체 캘린더를 관리 권한으로 보고 있습니다.
+          </span>
+        ) : null}
+        <div className="studio-actionbar-tools">
+          {canEdit ? (
+            <button className="button" onClick={() => setModal("tags")} type="button">
+              태그 편집
+            </button>
+          ) : null}
+          {canEdit ? (
+            <button className="button" onClick={() => setModal("members")} type="button">
+              멤버 관리
+            </button>
+          ) : null}
+          {actor.role === "developer" ? (
+            <button className="button" onClick={() => setModal("developer")} type="button">
+              🛠 접속자 현황
+            </button>
+          ) : null}
+          {canDecorateCalendar ? (
+            <Link
+              className="button"
+              href={`/studio/decorate/${view.year}/${view.month}`}
+              onClick={() => startNav("꾸미기 화면을 여는 중입니다…")}
+            >
+              달력 꾸미기
+            </Link>
+          ) : null}
         </div>
-      ) : null}
+      </div>
 
       {canReadPrivate && actor.role === "owner" ? (
         <div className="private-warning">
@@ -2027,10 +2056,10 @@ export function StudioShell({
         </div>
       ) : null}
 
-      <section className="studio-workspace">
+      <section className={`studio-workspace ${editorVisible ? "editor-open" : ""}`}>
         <aside className="studio-left-panel">
           <section>
-            <h2>색상 안내 · 필터</h2>
+            <h2>색상 필터</h2>
             <TagLegendEditor
               canEdit={false}
               filterIds={tagFilters}
@@ -2053,42 +2082,6 @@ export function StudioShell({
               </button>
             ) : null}
           </section>
-
-          {canEdit ? (
-            <section>
-              <h2>관리</h2>
-              <button className="button" onClick={() => setModal("tags")} type="button">
-                태그 편집
-              </button>
-              <button className="button" onClick={() => setModal("members")} type="button">
-                멤버 관리
-              </button>
-            </section>
-          ) : null}
-
-          {/* 개발자 전용 — 지금 접속 중인 사용자 현황(역할별 인원)을 여닫는다. */}
-          {actor.role === "developer" ? (
-            <section>
-              <h2>개발자</h2>
-              <button className="button" onClick={() => setModal("developer")} type="button">
-                🛠 접속자 현황
-              </button>
-            </section>
-          ) : null}
-
-          {/* 꾸미기는 신뢰 멤버(매니저·작업자)도 가능 — 일정 편집 권한과 별개. */}
-          {canDecorateCalendar ? (
-            <section>
-              <h2>꾸미기</h2>
-              <Link
-                className="button"
-                href={`/studio/decorate/${view.year}/${view.month}`}
-                onClick={() => startNav("꾸미기 화면을 여는 중입니다…")}
-              >
-                달력 꾸미기
-              </Link>
-            </section>
-          ) : null}
         </aside>
 
         <section className="studio-calendar-panel">
@@ -2335,7 +2328,6 @@ export function StudioShell({
         </section>
 
         <aside className="event-editor-panel">
-          {editorVisible ? (
           <form onSubmit={saveEvent}>
             <div className="editor-heading">
               <div>
@@ -2445,11 +2437,6 @@ export function StudioShell({
               </button>
             ) : null}
           </form>
-          ) : (
-            <div className="editor-empty">
-              <p>달력에서 날짜를 선택하면 일정을 추가할 수 있어요.</p>
-            </div>
-          )}
         </aside>
       </section>
         </>
