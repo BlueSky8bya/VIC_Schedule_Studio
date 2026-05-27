@@ -607,11 +607,11 @@ export function StudioShell({
       pos.x += (t.x - pos.x) * 0.22; // 관성(지연)
       pos.y += (t.y - pos.y) * 0.22;
       const vx = pos.x - prevX;
-      const momentum = Math.max(-15, Math.min(15, vx * 0.7)); // 움직이는 방향으로 기울기
-      // 매달림(중력) 각도 + 움직임 모멘텀을 목표로, 스프링으로 swing(살짝 넘쳤다 정착).
+      const momentum = Math.max(-18, Math.min(18, vx * 0.8)); // 움직이는 방향으로 기울기
+      // 매달림(중력) 각도 + 움직임 모멘텀을 목표로, 스프링으로 swing(확 기울었다 살짝 넘쳐 정착).
       const targetAngle = edGravityRef.current + momentum;
-      edRotVelRef.current += (targetAngle - edRotRef.current) * 0.1;
-      edRotVelRef.current *= 0.8;
+      edRotVelRef.current += (targetAngle - edRotRef.current) * 0.14;
+      edRotVelRef.current *= 0.78;
       edRotRef.current += edRotVelRef.current;
       edWobRef.current += 0.12;
       const w = edWobRef.current;
@@ -656,11 +656,21 @@ export function StudioShell({
       if (Math.hypot(e.clientX - info.startX, e.clientY - info.startY) < 6) return;
       info.started = true;
       const rect = info.node.getBoundingClientRect();
-      const ghost = info.node.cloneNode(true) as HTMLElement;
-      ghost.classList.add("event-drag-ghost");
+      // 카드(그라데이션 inline 스타일)에 직접 transform을 걸면 2색 카드에서 흔들림이 안 보이는
+      // 경우가 있어, 깨끗한 래퍼 div에 transform을 걸고 그 안에 카드 복제본을 넣는다.
+      const inner = info.node.cloneNode(true) as HTMLElement;
+      inner.style.margin = "0";
+      inner.style.width = "100%";
+      inner.style.transform = "none";
+      const ghost = document.createElement("div");
+      ghost.className = "event-drag-ghost";
       ghost.style.width = `${rect.width}px`;
       ghost.style.left = `${rect.left}px`;
       ghost.style.top = `${rect.top}px`;
+      // 중력: 잡은 지점을 회전축(pivot)으로. 그 지점이 카드 중심에서 가로로 벗어난 만큼 강하게
+      // 매달린 듯 기운다(왼쪽을 잡으면 오른쪽이 아래로 확 처짐). 최대 약 ±36°.
+      ghost.style.transformOrigin = `${info.offX}px ${info.offY}px`;
+      ghost.appendChild(inner);
       document.body.appendChild(ghost);
       dragGhostRef.current = ghost;
       setDragEventId(info.id);
@@ -670,11 +680,8 @@ export function StudioShell({
       edRotRef.current = 0;
       edRotVelRef.current = 0;
       edWobRef.current = 0;
-      // 중력: 잡은 지점을 회전축(pivot)으로 두고, 그 지점이 카드 중심에서 가로로 벗어난 만큼
-      // 매달린 듯 기운다(왼쪽을 잡으면 오른쪽이 아래로 처짐). 최대 ±20°.
-      ghost.style.transformOrigin = `${info.offX}px ${info.offY}px`;
       const fracX = rect.width > 0 ? info.offX / rect.width : 0.5;
-      edGravityRef.current = (0.5 - fracX) * 40;
+      edGravityRef.current = (0.5 - fracX) * 72;
       edReducedRef.current =
         window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
       // 드래그 동안 어디서도 글자가 선택(긁힘)되지 않게.

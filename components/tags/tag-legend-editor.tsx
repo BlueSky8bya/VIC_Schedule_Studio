@@ -242,12 +242,9 @@ export function TagLegendEditor({
     dragRotRef.current = 0;
     dragRotVelRef.current = 0;
     dragWobbleRef.current = 0;
-    // 중력: 잡은 지점을 회전축으로, 중심에서 가로로 벗어난 만큼 매달린 듯 기운다(얇은 바라 ±13°로 절제).
-    const offX = e.clientX - rect.left;
-    const offY = e.clientY - rect.top;
-    ghost.style.transformOrigin = `${offX}px ${offY}px`;
-    const fracX = rect.width > 0 ? offX / rect.width : 0.5;
-    dragGravityRef.current = (0.5 - fracX) * 26;
+    // 태그 순서 변경은 잡은 위치 축·중력을 쓰지 않는다(중앙 축, 가벼운 흔들림만).
+    ghost.style.transformOrigin = "center";
+    dragGravityRef.current = 0;
     dragReducedRef.current =
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     scrollerRef.current = findScroller(row);
