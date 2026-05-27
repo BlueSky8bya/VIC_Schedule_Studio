@@ -3,7 +3,7 @@ import { PublicPoster } from "@/components/poster/public-poster";
 import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { InAppBrowserNotice } from "@/components/auth/in-app-browser-notice";
-import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
+import { detectInAppBrowser, isMobileUserAgent } from "@/lib/auth/in-app-browser";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
@@ -28,6 +28,8 @@ export default async function HomePage() {
 
   // 새로고침 복원: 쿠키에서 직전 화면 상태를 읽어 서버 렌더 초기값으로 넘긴다(깜빡임 없음).
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
+  // 휴대폰이면 모바일 레이아웃을 서버에서 처음부터 그려 데스크톱 레이아웃 깜빡임을 없앤다.
+  const narrow = isMobileUserAgent((await headers()).get("user-agent") ?? "");
 
   // 시청자가 아닌 모든 인증 사용자(owner/developer/manager/worker)는 스튜디오로.
   // 스튜디오 내부에서 역할별 편집/열람 권한을 다시 제어한다.
@@ -47,6 +49,7 @@ export default async function HomePage() {
             : undefined
         }
         initialViewerMode={mem.v === 1}
+        initialNarrow={narrow}
       />
     );
   }
@@ -60,6 +63,7 @@ export default async function HomePage() {
       accountEmail={actor.email}
       initialYear={typeof mem.py === "number" ? mem.py : undefined}
       initialMonth={typeof mem.pm === "number" ? mem.pm : undefined}
+      initialNarrow={narrow}
       schedule={schedule}
       toggleHeartAction={toggleEventHeartAction}
     />

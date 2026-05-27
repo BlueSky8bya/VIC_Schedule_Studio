@@ -91,6 +91,8 @@ type StudioShellProps = {
   // 새로고침 복원용 초기값(서버가 쿠키에서 읽어 넘긴다). 없으면 기본(현재 달/편집실).
   initialView?: { year: number; month: number };
   initialViewerMode?: boolean;
+  // 서버 UA 판정 휴대폰 여부 — 모바일 레이아웃을 처음부터 그려 깜빡임을 없앤다(클라가 보정).
+  initialNarrow?: boolean;
 };
 
 type EventForm = {
@@ -184,7 +186,8 @@ export function StudioShell({
   schedule,
   hasUnlockSession,
   initialView,
-  initialViewerMode = false
+  initialViewerMode = false,
+  initialNarrow = false
 }: StudioShellProps) {
   const today = getTodayKst();
   const router = useRouter();
@@ -232,7 +235,7 @@ export function StudioShell({
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
   const [viewerMode, setViewerMode] = useState(initialViewerMode);
   // 모바일(좁은 화면): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
-  const [isNarrow, setIsNarrow] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(initialNarrow);
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_QUERY);
     const apply = () => setIsNarrow(mq.matches);

@@ -85,6 +85,8 @@ type PublicPosterProps = {
   decorate?: boolean;
   // 꾸미기에서 "시청자 화면 보기" 중이었는지(새로고침 복원용 초기값).
   initialPreviewing?: boolean;
+  // 서버 UA 판정 휴대폰 여부 — 모바일 아젠다를 처음부터 그려 깜빡임을 없앤다(클라가 보정).
+  initialNarrow?: boolean;
   saveStickerAction?: (input: SaveStickerInput) => Promise<StickerResult>;
   deleteStickerAction?: (id: string) => Promise<StickerResult>;
   // 다중 동작(다중 삭제·undo/redo)을 한 번에 저장/삭제 — 권한확인·캐시무효화를 1회로 묶는다.
@@ -377,6 +379,7 @@ export function PublicPoster({
   canExport: canExportProp = false,
   decorate: decorateProp = false,
   initialPreviewing = false,
+  initialNarrow = false,
   saveStickerAction,
   deleteStickerAction,
   saveStickerBatchAction,
@@ -578,7 +581,7 @@ export function PublicPoster({
   }, []);
   // 모바일(좁은 화면) 시청자는 세로 아젠다(목록) 전용 — 월간 그리드/캡쳐는 PC로 유도.
   // (꾸미기 모드엔 적용 안 함: 꾸미기는 PC 전용.)
-  const [isNarrow, setIsNarrow] = useState(false);
+  const [isNarrow, setIsNarrow] = useState(initialNarrow);
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_QUERY);
     const update = () => setIsNarrow(mq.matches);

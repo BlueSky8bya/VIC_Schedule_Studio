@@ -11,6 +11,13 @@ export type InAppBrowserInfo = {
   ios: boolean;
 };
 
+// 휴대폰 여부(UA 휴리스틱). 모바일 레이아웃을 서버에서 처음부터 그리게 해, 데스크톱 레이아웃이
+// 잠깐 비쳤다 모바일로 바뀌는 깜빡임을 없앤다. 정확한 폭 판정은 클라의 matchMedia가 마운트 후 보정.
+// (iPad는 데스크톱 UA를 쓰는 경우가 많아 일부러 제외 — 태블릿은 넓은 레이아웃이 자연스럽다.)
+export function isMobileUserAgent(ua: string): boolean {
+  return /Mobi|Android|iPhone|iPod/i.test(ua);
+}
+
 export function detectInAppBrowser(ua: string): InAppBrowserInfo {
   const isIOS = /iPhone|iPad|iPod/i.test(ua);
   // iOS 인앱(WKWebView)은 UA에 "Safari" 토큰이 없다. 정식 Safari·Chrome(CriOS)·
