@@ -37,6 +37,64 @@ export type ActionResult = { ok: true; id: string } | { ok: false; error: string
 
 const SLUG = "vic";
 
+// 날짜키(YYYY-MM-DD) 사이의 일수 차 / 일수 더하기 — 드래그 이동 시 종료일을 같은 폭으로 옮긴다.
+function diffDaysKey(from: string, to: string): number {
+  const a = new Date(`${from}T00:00:00Z`).getTime();
+  const b = new Date(`${to}T00:00:00Z`).getTime();
+  return Math.round((b - a) / 86400000);
+}
+function addDaysKey(key: string, days: number): string {
+  const d = new Date(`${key}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+// 일정 카드를 다른 날짜로 끌어 옮기기 — 시작일을 새 날짜로, 멀티데이면 종료일도 같은 폭으로.
+// (전체 폼 저장과 별개의 가벼운 액션 — 드래그 한 번에 빠르게 반영.)
+export async function moveEventAction(eventId: string, newDateKey: string): Promise<ActionResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!canEditSchedule(actor.role)) {
+    return { ok: false, error: "owner 또는 developer만 일정을 옮길 수 있습니다." };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateKey)) {
+    return { ok: false, error: "날짜 형식이 올바르지 않습니다." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
+  }
+
+  const { data: ev } = await supabase
+    .from("events")
+    .select("id, date_key, end_date_key")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (!ev) {
+    return { ok: false, error: "일정을 찾을 수 없습니다." };
+  }
+  if (ev.date_key === newDateKey) {
+    return { ok: true, id: eventId };
+  }
+
+  const delta = diffDaysKey(ev.date_key as string, newDateKey);
+  const newEnd =
+    typeof ev.end_date_key === "string" ? addDaysKey(ev.end_date_key, delta) : null;
+
+  const { error } = await supabase
+    .from("events")
+    .update({ date_key: newDateKey, end_date_key: newEnd, updated_at: new Date().toISOString() })
+    .eq("id", eventId);
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/studio");
+  revalidatePublicSchedule();
+  return { ok: true, id: eventId };
+}
+
 export async function saveEventAction(input: SaveEventInput): Promise<ActionResult> {
   const actor = await resolveCurrentActor(SLUG);
 

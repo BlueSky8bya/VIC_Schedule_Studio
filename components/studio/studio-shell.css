@@ -1,11 +1,11 @@
 .studio-shell {
   min-height: 100vh;
-  /* 차가운 회색 대신 따뜻한 크림 톤(앱 토큰·파스텔 태그와 조화). 위쪽에 은은한 복숭아빛 글로우. */
+  /* 밝고 귀여운 톤: 거의 흰 바탕 + 위쪽에 은은한 핑크·라벤더·하늘빛 글로우(파스텔 태그가 잘 살게). */
   background:
-    radial-gradient(120% 60% at 50% -8%, #fff6e6 0%, transparent 52%),
-    radial-gradient(90% 50% at 100% 0%, #fdeef0 0%, transparent 45%),
-    linear-gradient(180deg, #fbf4e6, #f6efe0);
-  color: var(--ink, #2a2018);
+    radial-gradient(120% 55% at 12% -6%, #ffeef7 0%, transparent 46%),
+    radial-gradient(120% 55% at 88% -6%, #eaf1ff 0%, transparent 46%),
+    linear-gradient(180deg, #fffafd 0%, #f5f7ff 100%);
+  color: #2c2740;
 }
 
 /* 편집실 전용: 넓은 화면(큰 모니터)에서 살짝 축소해, 칸이 거대해지고 내용이 작아 보이는
@@ -107,9 +107,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid var(--line);
+  border: 1px solid #e6e2f0;
   border-radius: 10px;
-  background: var(--surface, #fffdf6);
+  background: #ffffff;
   cursor: pointer;
   font-weight: 800;
 }
@@ -129,9 +129,9 @@
 .event-editor-panel input,
 .event-editor-panel textarea {
   min-height: 40px;
-  border: 1px solid var(--line);
+  border: 1px solid #e6e2f0;
   border-radius: 10px;
-  background: #fffefa;
+  background: #ffffff;
   padding: 0 10px;
 }
 
@@ -141,7 +141,7 @@
   align-items: center;
   min-width: 0;
   max-width: 340px;
-  background: #fffefa;
+  background: #ffffff;
 }
 
 .actor-badge strong {
@@ -310,18 +310,18 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 12px;
-  border: 1px solid var(--line);
+  border: 1px solid #ece9f5;
   border-radius: 16px;
-  background: var(--surface, #fffdf6);
+  background: #ffffff;
   padding: 16px;
-  box-shadow: var(--shadow-1);
+  box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
 }
 
 .studio-left-panel h2,
 .event-editor-panel h2 {
   margin: 0;
   font-size: 20px;
-  color: #5b4a2f;
+  color: #574f6b;
   letter-spacing: -0.01em;
 }
 
@@ -450,11 +450,11 @@
 
 .studio-weekdays {
   margin-bottom: 8px;
-  border: 1px solid var(--line, #ece0c9);
+  border: 1px solid #ece9f5;
   border-radius: 14px;
-  background: linear-gradient(180deg, #fdf3df, #faecd2);
+  background: linear-gradient(180deg, #fdf1fb, #eef3ff);
   overflow: hidden;
-  box-shadow: var(--shadow-1);
+  box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
 }
 
 .studio-weekdays span {
@@ -463,7 +463,7 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   text-align: center;
-  color: #9c8a68;
+  color: #8e93a8;
 }
 
 .studio-weekdays span:last-child {
@@ -480,28 +480,45 @@
 
 .studio-month-grid {
   overflow: hidden;
-  border: 1px solid var(--line, #ece0c9);
-  border-radius: 16px;
-  background: var(--surface, #fffdf6);
-  box-shadow: var(--shadow-2);
+  border: 1px solid #ece9f5;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 26px rgb(120 110 160 / 12%);
   /* 칸 패널 높이를 채워 사이드바와 밑선을 맞춘다(행은 align-content:stretch 기본값으로 늘어남). */
   flex: 1 1 auto;
   min-height: 0;
+  /* 달을 바꿀 때(키 변경으로 재마운트) 부드럽게 떠오르는 등장 애니메이션. */
+  animation: studio-grid-enter 0.32s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+@keyframes studio-grid-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-month-grid {
+    animation: none;
+  }
 }
 
 .studio-day {
   position: relative;
   min-height: 132px;
-  border-right: 1px solid var(--line-soft, #f4ecdb);
-  border-bottom: 1px solid var(--line-soft, #f4ecdb);
-  background: var(--surface, #fffdf6);
+  border-right: 1px solid #f1eff8;
+  border-bottom: 1px solid #f1eff8;
+  background: #ffffff;
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
 /* #1: 날짜 칸 호버 시 칸 배경뿐 아니라 안의 일정 카드·업도움 띠도 함께 톤이 바뀌어
    "이 날 전체가 선택 대상"임을 분명히 보여준다. */
 .studio-day:not(.outside):hover {
-  background: #fff2d3;
+  background: #fff1f7;
 }
 .studio-day:not(.outside):hover .studio-event-pill,
 .studio-day:not(.outside):hover .support-bar {
@@ -540,17 +557,17 @@
   border-right-color: transparent;
 }
 
-/* 오늘 이전: 살짝 가라앉은 따뜻한 톤 / 오늘 이후: 밝은 크림 */
+/* 오늘 이전: 아주 옅은 라벤더그레이 / 오늘 이후: 흰색 */
 .studio-day.past {
-  background: #f2ead9;
+  background: #f7f6fc;
 }
 
 .studio-day.future {
-  background: var(--surface, #fffdf6);
+  background: #ffffff;
 }
 
 .studio-day.outside {
-  background: #efe7d6;
+  background: #f2f0f8;
 }
 /* 흐림은 셀 전체 opacity(그룹 합성) 대신 반투명 흰 베일을 한 겹 덮어서 낸다.
    셀마다 베일이 정확히 맞물려 깔리므로(겹침 없음) 스패닝 일정 막대는 불투명하게
@@ -562,30 +579,30 @@
   inset: 0 -1px -1px 0;
   /* 스티커 레이어보다 아래(셀 콘텐츠보다는 위)로 둬, 스티커는 흐려지지 않게 한다. */
   z-index: 4;
-  background: rgb(244 236 219 / 62%);
+  background: rgb(242 240 248 / 60%);
   pointer-events: none;
 }
 
-/* 다른 달 날짜는 토/일 색도 흐린 베이지로 (그대로 진하지 않게) */
+/* 다른 달 날짜는 토/일 색도 흐린 회보라로 (그대로 진하지 않게) */
 .studio-day.outside .studio-day-head strong {
-  color: #c2b291;
+  color: #bcbed0;
 }
 
-/* 오늘: 따뜻한 골드 테두리 하이라이트 + 살짝 강조 배경 */
+/* 오늘: 밝은 골드 테두리 하이라이트 + 살짝 강조 배경 */
 .studio-day.today {
-  box-shadow: inset 0 0 0 2px var(--accent, #f5b81b);
-  background: #fff7e0;
+  box-shadow: inset 0 0 0 2px #ffc63d;
+  background: #fff9e6;
 }
 
-/* 선택: 골드(오늘)와 구분되는 따뜻한 로즈/코랄 테두리 */
+/* 선택: 골드(오늘)와 구분되는 귀여운 핑크 테두리 */
 .studio-day.selected {
-  box-shadow: inset 0 0 0 2px #e0907e;
+  box-shadow: inset 0 0 0 2px #f48fb1;
 }
-/* 오늘이면서 선택된 경우: 두 색을 겹쳐(안쪽 골드 + 바깥 로즈) 둘 다 보이게. */
+/* 오늘이면서 선택된 경우: 두 색을 겹쳐(안쪽 골드 + 바깥 핑크) 둘 다 보이게. */
 .studio-day.today.selected {
   box-shadow:
-    inset 0 0 0 2px var(--accent, #f5b81b),
-    inset 0 0 0 4px #e0907e;
+    inset 0 0 0 2px #ffc63d,
+    inset 0 0 0 4px #f48fb1;
 }
 
 .studio-day-head {
@@ -619,7 +636,7 @@
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
-  color: #a8966f;
+  color: #a6a9bd;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -649,6 +666,68 @@
 .studio-event-pill:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-2);
+}
+/* 끌 수 있는 카드: 손 모양 커서로 "옮길 수 있다"는 걸 알린다. */
+.studio-event-pill.draggable {
+  cursor: grab;
+  touch-action: none; /* 터치에서 스크롤 대신 드래그가 잡히게 */
+}
+.studio-event-pill.draggable:active {
+  cursor: grabbing;
+}
+/* 드래그 중인 원본 카드: 자리만 흐리게 남겨 "들려 나간" 느낌. */
+.studio-event-pill.dragging-src {
+  opacity: 0.32;
+  filter: grayscale(0.4);
+}
+/* 손끝을 따라오는 유령 카드 — 살짝 키우고 기울이며 부드럽게 흔들린다(들고 옮기는 촉감). */
+.event-drag-ghost {
+  position: fixed;
+  z-index: 9999;
+  margin: 0;
+  pointer-events: none;
+  opacity: 0.97;
+  box-shadow: 0 18px 36px rgb(90 70 140 / 32%);
+  transform-origin: center;
+  animation: event-ghost-wobble 0.6s ease-in-out infinite alternate;
+}
+@keyframes event-ghost-wobble {
+  from {
+    transform: rotate(-3.2deg) scale(1.06);
+  }
+  to {
+    transform: rotate(3.2deg) scale(1.06);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-drag-ghost {
+    animation: none;
+    transform: rotate(-2deg) scale(1.04);
+  }
+}
+/* 드롭 대상 칸 — "여기에 놓기" 민트빛 강조(오늘=골드·선택=핑크와 구분). */
+.studio-day.drop-target {
+  background: #e9faf1 !important;
+  box-shadow: inset 0 0 0 2px #57c98a;
+}
+/* 빈 칸 호버 시 "+ 일정" 추가 힌트(클릭하면 그 날짜로 새 일정 작성). */
+.studio-day.empty-day:not(.outside)::before {
+  content: "+ 일정";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 10px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  color: #cdb6e6;
+  opacity: 0;
+  transition: opacity var(--dur-1, 0.15s) var(--ease, ease);
+  pointer-events: none;
+  z-index: 1;
+}
+.studio-day.empty-day:not(.outside):hover::before {
+  opacity: 1;
 }
 /* D: 2색 칸은 그라데이션 위에 반쪽 무늬를 깔고, 내용은 그 위로 올린다. */
 .studio-event-pill[data-mixed] {

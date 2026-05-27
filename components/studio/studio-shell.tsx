@@ -16,6 +16,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   type FormEvent,
+  type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
   useEffect,
   useMemo,
@@ -66,6 +67,7 @@ import {
 } from "@/lib/permissions/roles";
 import {
   deleteEventAction,
+  moveEventAction,
   saveEventAction,
   updateSupportSettingsAction
 } from "@/lib/schedules/event-actions";
@@ -550,6 +552,151 @@ export function StudioShell({
     setSelectedDate(isoDate);
     setSelectedEventId(null);
     setForm(createEmptyForm());
+  }
+
+  // ── 일정 카드 드래그 이동 ────────────────────────────────────────────────
+  // 카드를 끌어 다른 날짜 칸에 놓으면 그 날짜로 옮긴다. 들면 카드가 살짝 기울고 흔들리는
+  // "유령(ghost)"이 손끝을 따라오고(웹·터치 공용), 가장자리에선 자동 스크롤된다.
+  // (멀티데이 막대는 칸마다 쪼개 그려 드래그가 까다로워 제외 — 단일일 카드만 끌 수 있다.)
+  const [dragEventId, setDragEventId] = useState<string | null>(null);
+  const [dropDate, setDropDate] = useState<string | null>(null);
+  const dropDateRef = useRef<string | null>(null);
+  const dragGhostRef = useRef<HTMLElement | null>(null);
+  const dragInfoRef = useRef<{
+    id: string;
+    sourceDate: string;
+    node: HTMLElement;
+    startX: number;
+    startY: number;
+    offX: number;
+    offY: number;
+    started: boolean;
+  } | null>(null);
+  const dragScrollDir = useRef(0);
+  const dragRaf = useRef<number | null>(null);
+  const dragMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
+  const justDraggedRef = useRef(false);
+
+  useEffect(() => {
+    return () => {
+      if (dragRaf.current) cancelAnimationFrame(dragRaf.current);
+      dragGhostRef.current?.remove();
+      if (dragMoveRef.current) window.removeEventListener("pointermove", dragMoveRef.current);
+    };
+  }, []);
+
+  function dragAutoScroll() {
+    if (dragScrollDir.current !== 0) window.scrollBy(0, 13 * dragScrollDir.current);
+    dragRaf.current = requestAnimationFrame(dragAutoScroll);
+  }
+
+  function endEventDrag() {
+    if (dragMoveRef.current) {
+      window.removeEventListener("pointermove", dragMoveRef.current);
+      dragMoveRef.current = null;
+    }
+    dragScrollDir.current = 0;
+    if (dragRaf.current) cancelAnimationFrame(dragRaf.current);
+    dragRaf.current = null;
+    dragGhostRef.current?.remove();
+    dragGhostRef.current = null;
+    const info = dragInfoRef.current;
+    const target = dropDateRef.current;
+    setDragEventId(null);
+    setDropDate(null);
+    dropDateRef.current = null;
+    if (info?.started) {
+      justDraggedRef.current = true; // 다음 click(선택) 1회 무시
+      if (target && target !== info.sourceDate) {
+        void moveEventToDate(info.id, target);
+      }
+    }
+    dragInfoRef.current = null;
+  }
+
+  function onEventDragMove(e: PointerEvent) {
+    const info = dragInfoRef.current;
+    if (!info) return;
+    if (!info.started) {
+      if (Math.hypot(e.clientX - info.startX, e.clientY - info.startY) < 6) return;
+      info.started = true;
+      const ghost = info.node.cloneNode(true) as HTMLElement;
+      ghost.classList.add("event-drag-ghost");
+      ghost.style.width = `${info.node.getBoundingClientRect().width}px`;
+      document.body.appendChild(ghost);
+      dragGhostRef.current = ghost;
+      setDragEventId(info.id);
+      dragRaf.current = requestAnimationFrame(dragAutoScroll);
+    }
+    const ghost = dragGhostRef.current;
+    if (ghost) {
+      ghost.style.left = `${e.clientX - info.offX}px`;
+      ghost.style.top = `${e.clientY - info.offY}px`;
+    }
+    const under = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+    const dayEl = under?.closest("[data-isodate]") as HTMLElement | null;
+    const iso = dayEl?.getAttribute("data-isodate") ?? null;
+    if (iso !== dropDateRef.current) {
+      dropDateRef.current = iso;
+      setDropDate(iso);
+    }
+    const margin = 80;
+    dragScrollDir.current =
+      e.clientY < margin ? -1 : e.clientY > window.innerHeight - margin ? 1 : 0;
+  }
+
+  function onPillPointerDown(e: ReactPointerEvent<HTMLDivElement>, event: StudioScheduleEvent) {
+    if (!canEdit) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    // 카드 안 버튼(삭제 등)을 누른 경우엔 드래그하지 않는다.
+    if ((e.target as HTMLElement).closest("button")) return;
+    const node = e.currentTarget as HTMLElement;
+    const rect = node.getBoundingClientRect();
+    justDraggedRef.current = false;
+    dragInfoRef.current = {
+      id: event.id,
+      sourceDate: getEventDateKey(event),
+      node,
+      startX: e.clientX,
+      startY: e.clientY,
+      offX: e.clientX - rect.left,
+      offY: e.clientY - rect.top,
+      started: false
+    };
+    dragMoveRef.current = onEventDragMove;
+    window.addEventListener("pointermove", onEventDragMove);
+    window.addEventListener("pointerup", endEventDrag, { once: true });
+    window.addEventListener("pointercancel", endEventDrag, { once: true });
+  }
+
+  async function moveEventToDate(id: string, targetDate: string) {
+    const snapshot = events;
+    const moved = events.find((ev) => ev.id === id);
+    if (!moved) return;
+    const oldDate = getEventDateKey(moved);
+    const delta = Math.round(
+      (new Date(`${targetDate}T00:00:00Z`).getTime() -
+        new Date(`${oldDate}T00:00:00Z`).getTime()) /
+        86400000
+    );
+    setEvents((prev) =>
+      prev.map((ev) =>
+        ev.id === id
+          ? {
+              ...ev,
+              startsAt: ev.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, targetDate),
+              endDateKey: ev.endDateKey ? addDaysIso(ev.endDateKey, delta) : ev.endDateKey
+            }
+          : ev
+      )
+    );
+    setSelectedDate(targetDate);
+    flashToast(`${targetDate}로 옮겼어요`);
+    const result = await moveEventAction(id, targetDate);
+    if (!result.ok) {
+      setEvents(snapshot);
+      setActionError(result.error);
+    }
   }
 
   function selectEvent(event: StudioScheduleEvent) {
@@ -1782,7 +1929,12 @@ export function StudioShell({
               </span>
             ))}
           </div>
-          <div className="studio-month-grid" aria-label="월간 달력" ref={monthGridRef}>
+          <div
+            className="studio-month-grid"
+            aria-label="월간 달력"
+            key={`${view.year}-${view.month}`}
+            ref={monthGridRef}
+          >
             {cells.map((cell, cellIndex) => {
               const covering = getEventsForDate(visibleEvents, cell.isoDate);
               const supportHere = covering.filter((e) => e.isSupport);
@@ -1796,7 +1948,11 @@ export function StudioShell({
                 cell.inCurrentMonth ? "" : "outside",
                 selectedDate === cell.isoDate ? "selected" : "",
                 day.isPast ? "past" : "future",
-                day.isToday ? "today" : ""
+                day.isToday ? "today" : "",
+                // 빈 칸이면 호버 시 "+ 일정" 추가 힌트를 보여준다.
+                dateEvents.length === 0 && supportHere.length === 0 ? "empty-day" : "",
+                // 드래그 중 이 칸 위에 있으면 "여기에 놓기" 강조.
+                dragEventId && dropDate === cell.isoDate ? "drop-target" : ""
               ]
                 .filter(Boolean)
                 .join(" ");
@@ -1806,6 +1962,7 @@ export function StudioShell({
               return (
                 <article
                   className={dayClass}
+                  data-isodate={cell.isoDate}
                   key={cell.isoDate}
                   onClick={() => selectDate(cell.isoDate)}
                   role="button"
@@ -1872,6 +2029,7 @@ export function StudioShell({
                         cell.weekday,
                         visibleEvents
                       );
+                      const draggable = canEdit && !span.isMulti;
                       const pillClass = [
                         "studio-event-pill",
                         event.visibilityScope,
@@ -1880,7 +2038,9 @@ export function StudioShell({
                         isDimmedByFilter(event) ? "filter-dim" : "",
                         span.isMulti ? "span" : "",
                         span.isMulti && !span.roundLeft ? "no-left" : "",
-                        span.isMulti && !span.roundRight ? "no-right" : ""
+                        span.isMulti && !span.roundRight ? "no-right" : "",
+                        draggable ? "draggable" : "",
+                        dragEventId === event.id ? "dragging-src" : ""
                       ]
                         .filter(Boolean)
                         .join(" ");
@@ -1901,8 +2061,16 @@ export function StudioShell({
                           key={event.id}
                           onClick={(e) => {
                             e.stopPropagation();
+                            // 방금 드래그로 옮겼다면 이 클릭(선택)은 1회 무시한다.
+                            if (justDraggedRef.current) {
+                              justDraggedRef.current = false;
+                              return;
+                            }
                             handlePillClick(event.id);
                           }}
+                          onPointerDown={
+                            draggable ? (e) => onPillPointerDown(e, event) : undefined
+                          }
                           role="button"
                           style={
                             mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined)
