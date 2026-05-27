@@ -1,157 +1,71 @@
-# VIC Schedule Studio 서버 통신 및 서버 최적화 평가 보고서
+# VIC Schedule Studio 서버 통신 및 서버 최적화 재평가 보고서
 
 작성일: 2026-05-27 KST  
-대상 영역:
+재평가 사유: 포스터/모바일 UI 수정 이후 서버 통신 영향 재점검  
+확인한 현재 변경사항: `components/poster/public-poster.css`의 agenda 월 표시 스타일 변경
 
-- Next.js App Router page/server action/route handler
-- Supabase Postgres/RLS/RPC/Storage
-- 공개 viewer 데이터 로딩
-- studio/editor 데이터 로딩
-- sticker/tag/event mutation 흐름
-- private layer unlock 흐름
+## 1. 이번 재평가 결론
 
-주요 참고 자료:
+이번에 확인된 미커밋 UI 변경은 `.agenda-month`의 글자 크기, 굵기, 색상 조정이다.
 
-- Next.js Caching and Revalidating: https://nextjs.org/docs/app/getting-started/caching-and-revalidating
-- Next.js Caching deep dive: https://nextjs.org/docs/app/deep-dive/caching
-- Next.js `useRouter` reference: https://nextjs.org/docs/app/api-reference/functions/use-router
-- Supabase Row Level Security: https://supabase.com/docs/guides/database/postgres/row-level-security
-- Supabase Auth/RLS performance guidance: https://supabase.com/docs/guides/auth/auth-deep-dive/auth-row-level-security
+```diff
+-.agenda-month { font-size: 13px; font-weight: 700; color: rgb(20 20 20 / 42%); }
++.agenda-month { font-size: 14px; font-weight: 900; color: #1b1f29; }
+```
 
-## 1. 결론 요약
+이 변경은 순수 CSS 변경이라 서버 요청 수, server action 호출 빈도, Supabase query shape, 캐시 무효화에는 직접 영향을 주지 않는다.
 
-현재 서버 구조는 방향이 나쁘지 않다. 공개 viewer 데이터는 `unstable_cache`로 30초 캐시하고, 수정 server action 이후 `revalidateTag`로 공개 캐시를 무효화한다. 하트 토글/집계도 Postgres RPC로 묶어둔 점이 좋다. 비공개 레이어도 서버에서 actor/unlock 상태를 판단하고, client-only 숨김에 의존하지 않으려는 설계가 보인다.
+다만 재검토 과정에서 `PublicPoster`의 현재 구조를 다시 확인한 결과, 이전 보고서보다 더 정확하게 반영해야 할 점이 있다.
 
-하지만 지금 구조에서 가장 먼저 손봐야 할 서버 최적화 포인트는 세 가지다.
+- 포스터는 현재 `POSTER_DESIGN_W = 1840`, `POSTER_DESIGN_H = 1035`의 16:9 고정 캔버스로 설계되어 있다.
+- 화면 폭이 좁아질 때 `.poster-scaler`가 `transform: scale(...)`로 통째로 축소한다.
+- 스티커 키보드 미세 이동은 `scheduleCommit()`으로 350ms debounce 저장을 한다.
+- 하지만 색상/효과/정렬/복제/undo/redo/삭제 등은 여전히 개별 `saveStickerAction` 또는 `deleteStickerAction`을 여러 번 호출할 수 있다.
 
-1. 공개 loader의 calendar scope를 모든 쿼리에 명시해야 한다.
-2. studio/page와 loader 사이에서 actor/unlock/public schedule 로딩이 중복된다.
-3. 이벤트/태그/스티커 저장이 여러 round trip으로 쪼개져 있어, transaction/RPC로 묶을 여지가 크다.
+따라서 서버 최적화의 우선순위는 기존과 거의 같다. UI 수정 자체보다 중요한 서버 리스크는 여전히 다음 세 가지다.
 
-현재는 VIC 단일 캘린더 전제라 문제가 작게 보일 수 있다. 하지만 캘린더가 2개 이상이 되거나 공개 viewer 트래픽이 늘면, overfetch와 RLS 비용이 바로 병목이 된다. 특히 `public-loader.ts`는 `calendars`에서 특정 slug를 찾은 뒤에도 `events`, `broadcast_tags`, `color_palette`, `sticker_instances`, `sticker_assets` 일부 쿼리에 `calendar_id = calendar.id` 필터가 빠져 있다. 이건 성능 이슈이면서 동시에 public/private boundary 관점에서도 조심해야 하는 부분이다.
+1. `public-loader.ts`의 공개 데이터 쿼리에 `calendar_id` scope가 빠진 부분.
+2. studio page와 loader 사이의 actor/unlock/public schedule 중복 조회.
+3. event/tag/sticker mutation이 여러 DB round trip과 broad cache invalidation으로 나뉘어 있는 점.
 
-권장 우선순위:
+가장 먼저 고칠 것은 여전히 `public-loader.ts`의 calendar scoping이다. 이는 성능 최적화이면서 public/private 데이터 경계 안정성 문제이기도 하다.
 
-1. `getPublicSchedule` 쿼리 calendar scoping 수정.
-2. DB 인덱스 보강.
-3. `getStudioSchedule`에 이미 구한 actor/unlock을 주입해 중복 resolve 제거.
-4. save/reorder/tag/sticker mutation을 RPC 또는 batch endpoint로 통합.
-5. 공개 캐시 tag를 calendar/month 단위로 세분화.
-6. visual/export와 별도로 API response size 및 query count 관측 추가.
-
-## 2. 현재 구조 개요
+## 2. 서버 통신 구조 요약
 
 ## 2.1 공개 viewer 로딩
 
 파일: `lib/schedules/public-loader.ts`
 
-흐름:
+현재 흐름:
 
 1. `getPublicSchedule(calendarSlug)` 호출.
 2. Supabase 미설정이면 sample data 반환.
-3. `loadPublicScheduleData(calendarSlug)`는 `unstable_cache`로 30초 캐시.
-4. 로그인 사용자의 `myHeartIds`는 별도 uncached query로 로딩.
-5. 공개 데이터는 anon Supabase client로 조회.
+3. 공개 공통 데이터는 `loadPublicScheduleData(calendarSlug)`에서 `unstable_cache`로 30초 캐시.
+4. 로그인 사용자별 `myHeartIds`는 `loadMyHeartIds()`로 별도 조회.
+5. 공개 데이터 조회에는 anon Supabase client를 사용한다.
 
 좋은 점:
 
-- 공개 데이터와 사용자별 데이터가 분리되어 있다.
-- 공개 데이터는 캐시되고, 사용자별 하트 목록은 캐시하지 않는다.
-- 공개 client는 anon key + RLS 기반이라 service role overexposure 위험이 낮다.
-- heart count는 `get_event_heart_counts` RPC를 사용해 user_id를 노출하지 않는다.
+- 공개 공통 데이터와 사용자별 하트 상태가 분리되어 있다.
+- 공개 데이터는 cacheable path로 묶여 있다.
+- 하트 집계는 `get_event_heart_counts` RPC를 사용해 user_id를 노출하지 않는다.
+- owner/studio 수정 후 `revalidatePublicSchedule()`로 공개 캐시를 무효화한다.
 
-문제점:
+중요 문제:
 
-- 공개 데이터 쿼리 중 calendar scope가 빠진 곳이 있다.
-- 캐시 tag가 `public-schedule` 하나라 캘린더/월별 세분화가 안 되어 있다.
-- `loadMyHeartIds()`가 모든 `event_hearts`를 가져온다. RLS가 본인 것만 보이게 하더라도 calendar/event 범위 필터가 없어 사용자 활동이 많아질수록 불필요한 데이터가 늘어난다.
-- public API route `/api/public/[calendarSlug]/events`가 전체 schedule DTO를 그대로 반환한다. 필요 API가 "events"라면 response가 과하다.
+`loadPublicScheduleData()`는 먼저 calendar를 찾지만, 이후 병렬 쿼리 일부에서 `calendar_id = calendar.id`를 명시하지 않는다.
 
-## 2.2 Studio 로딩
-
-파일: `lib/schedules/studio-loader.ts`
-
-흐름:
-
-1. `createSupabaseServerClient()`
-2. calendar 조회.
-3. `getPublicSchedule(calendarSlug)`, `resolveCurrentActor(calendarSlug)`, `getUnlockState(calendarSlug)` 병렬 호출.
-4. tags/palette/events/support_campaigns 조회.
-5. 서버에서 role/unlock 기준으로 private event를 한번 더 필터링.
-
-좋은 점:
-
-- private data를 client CSS로 숨기는 방식이 아니라 서버 응답에서 필터링한다.
-- RLS와 서버 필터를 함께 사용한다.
-- Supabase query를 `Promise.all`로 병렬화한다.
-- `event_private_meta`를 studio loader에서만 포함한다.
-
-문제점:
-
-- `app/page.tsx`와 `app/(studio)/studio/page.tsx`에서 이미 actor/unlock을 구하는데, `getStudioSchedule()` 안에서 다시 `resolveCurrentActor()`와 `getUnlockState()`를 호출한다.
-- `getStudioSchedule()`이 `getPublicSchedule()`을 호출하고, public loader는 다시 `loadMyHeartIds()`를 호출할 수 있다. Studio preview에 개인 하트 ID가 꼭 필요하지 않다면 불필요한 쿼리다.
-- studio events는 한 번에 전체 events를 가져온다. 데이터가 커지면 기본 월 또는 인접 월 범위로 제한하는 전략이 필요하다.
-- sticker data는 studio schedule의 top-level에서는 비어 있고 viewer preview에만 들어간다. 의도라면 괜찮지만, decorate/studio page별 loader를 더 명확히 나누면 쿼리와 DTO가 줄어든다.
-
-## 2.3 Mutation 흐름
-
-주요 파일:
-
-- `lib/schedules/event-actions.ts`
-- `lib/schedules/tag-actions.ts`
-- `lib/schedules/sticker-actions.ts`
-- `lib/schedules/sticker-asset-actions.ts`
-- `lib/schedules/theme-actions.ts`
-- `lib/schedules/link-actions.ts`
-- `lib/schedules/heart-actions.ts`
-- `lib/private-layer/actions.ts`
-
-좋은 점:
-
-- 대부분 server action에서 role 검사를 먼저 한다.
-- 수정 후 `revalidatePath("/")`, `revalidatePath("/studio")`, `revalidatePublicSchedule()`를 호출해 viewer/studio 반영을 맞춘다.
-- 하트 토글은 RPC로 처리되어 insert/delete/count가 한 서버-side transaction 안에서 처리된다.
-- sticker upload 실패 시 storage 파일을 제거하는 보정 로직이 있다.
-
-문제점:
-
-- `saveEventAction`은 event upsert, event_tags delete, event_tags insert, private_meta upsert/delete가 여러 네트워크 round trip으로 나뉜다.
-- 중간 단계 실패 시 부분 반영 가능성이 있다. 예를 들어 event update는 성공했는데 tag insert가 실패하면 UI/DB 상태가 어긋날 수 있다.
-- `reorderEventsAction`, `updateTagsAction`, `saveTagsAction`은 여러 update를 `Promise.all`로 날린다. 병렬이라 빠르지만 요청 수는 많고 transaction consistency가 없다.
-- sticker drag/resize 저장이 자주 발생하면 매번 `revalidatePath`와 public cache invalidation이 발생한다.
-- 모든 공개 수정이 동일한 broad invalidation을 사용한다.
-
-## 3. 가장 중요한 발견: 공개 loader calendar scoping
-
-현재 `loadPublicScheduleData()`는 먼저 calendar를 찾는다.
-
-```ts
-const { data: calendar } = await supabase
-  .from("calendars")
-  .select(...)
-  .eq("slug", calendarSlug)
-  .eq("is_public", true)
-  .maybeSingle();
-```
-
-그런데 이후 병렬 쿼리 일부에는 `calendar_id = calendar.id`가 없다.
-
-예:
+현재 문제가 되는 쿼리:
 
 ```ts
 supabase.from("broadcast_tags").select(...).eq("is_active", true)
 supabase.from("color_palette").select(...).order("sort_order")
-supabase.from("events").select(...).eq("visibility_scope", "public").neq("status", "draft")
+supabase.from("events").select(...).eq("visibility_scope", "public")
 supabase.from("sticker_instances").select(...).eq("is_visible", true)
 supabase.from("sticker_assets").select(...).order("created_at", { ascending: false })
 ```
 
-현재 VIC 단일 캘린더라면 실사용에서 티가 덜 날 수 있다. 하지만 멀티 캘린더가 되면 다음 문제가 생긴다.
-
-- 다른 공개 캘린더의 이벤트/태그/스티커가 섞일 수 있다.
-- 데이터가 많아질수록 공개 viewer 요청이 모든 캘린더 데이터를 훑는다.
-- RLS policy가 public row를 허용하므로, application-level scoping이 더 중요하다.
-- cache도 calendar별 data가 아닌 aggregate public data처럼 커진다.
+단일 VIC 캘린더에서는 티가 덜 나지만, 캘린더가 2개 이상이 되는 순간 다른 공개 캘린더의 태그, 팔레트, 이벤트, 스티커가 섞일 수 있다. RLS가 public row를 허용하는 구조이므로 application-level calendar scoping은 반드시 필요하다.
 
 권장 수정:
 
@@ -171,7 +85,7 @@ supabase
 
 supabase
   .from("events")
-  .select(...)
+  .select("id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, public_title, public_description, status, sort_order, category, event_tags(tag_id, is_primary, sort_order)")
   .eq("calendar_id", calendar.id)
   .eq("visibility_scope", "public")
   .neq("status", "draft")
@@ -180,7 +94,7 @@ supabase
 
 supabase
   .from("sticker_instances")
-  .select(...)
+  .select("id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, italic, outline, shadow, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)")
   .eq("calendar_id", calendar.id)
   .eq("is_visible", true);
 
@@ -191,140 +105,419 @@ supabase
   .order("created_at", { ascending: false });
 ```
 
-이건 서버 최적화 보고서의 1순위 수정사항이다. 성능보다도 데이터 경계가 더 중요하다.
-
-## 4. 캐싱 평가
-
-## 4.1 현재 캐싱
-
-현재 공개 schedule은 다음과 같이 캐시된다.
+`support_campaigns`도 현재 public/is_active filter만 있으므로 calendar scope를 추가하는 것이 맞다.
 
 ```ts
-const PUBLIC_SCHEDULE_REVALIDATE_SECONDS = 30;
-
-const loadPublicScheduleData = unstable_cache(
-  async (calendarSlug: string): Promise<PublicSchedule> => { ... },
-  ["public-schedule-data"],
-  { revalidate: PUBLIC_SCHEDULE_REVALIDATE_SECONDS, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
-);
+.eq("calendar_id", calendar.id)
+.eq("is_public", true)
+.eq("is_active", true)
 ```
 
-그리고 mutation 후:
+## 2.2 Studio 로딩
 
-```ts
-revalidatePath("/");
-revalidatePath("/studio");
-revalidatePublicSchedule();
-```
+파일: `lib/schedules/studio-loader.ts`
+
+현재 흐름:
+
+1. server Supabase client 생성.
+2. calendar 조회.
+3. `getPublicSchedule(calendarSlug)`, `resolveCurrentActor(calendarSlug)`, `getUnlockState(calendarSlug)` 병렬 호출.
+4. tags/palette/events/support_campaigns 병렬 조회.
+5. 서버에서 role/unlock 기준으로 private event를 한 번 더 필터링.
 
 좋은 점:
 
-- 공개 viewer traffic을 DB에서 분리하려는 의도가 명확하다.
-- owner가 수정하면 30초 TTL을 기다리지 않고 공개 캐시를 무효화한다.
-- 사용자별 하트 목록은 public cache에 섞지 않는다.
+- private data를 클라이언트에서 숨기는 방식이 아니라 서버 응답에서 제거한다.
+- RLS와 서버 DTO 필터를 함께 사용한다.
+- 주요 reads를 `Promise.all`로 병렬화한다.
+
+중복 문제:
+
+`app/page.tsx`와 `app/(studio)/studio/page.tsx`에서도 actor/unlock을 조회하고, `getStudioSchedule()` 내부에서도 다시 actor/unlock을 조회한다.
+
+예:
+
+```ts
+const [actor, schedule, unlock] = await Promise.all([
+  resolveCurrentActor("vic"),
+  getStudioSchedule("vic"),
+  getUnlockState("vic")
+]);
+```
+
+그런데 `getStudioSchedule("vic")` 내부에서 다시:
+
+```ts
+const [viewerModePreview, actor, unlock] = await Promise.all([
+  getPublicSchedule(calendarSlug),
+  resolveCurrentActor(calendarSlug),
+  getUnlockState(calendarSlug)
+]);
+```
+
+권장:
+
+`getStudioSchedule()`에 context를 주입한다.
+
+```ts
+export async function getStudioSchedule(
+  calendarSlug: string,
+  context?: {
+    actor?: CurrentActor;
+    unlock?: UnlockState;
+    includeViewerHeartIds?: boolean;
+  }
+): Promise<StudioSchedule> {
+  ...
+}
+```
+
+그리고 page에서는 이미 구한 값을 전달한다.
+
+```ts
+const [actor, unlock] = await Promise.all([
+  resolveCurrentActor("vic"),
+  getUnlockState("vic")
+]);
+const schedule = await getStudioSchedule("vic", {
+  actor,
+  unlock,
+  includeViewerHeartIds: false
+});
+```
+
+Studio preview에서 개인 하트 ID가 꼭 필요하지 않다면 `getPublicSchedule(..., { includeMyHeartIds: false })` 형태도 고려할 수 있다.
+
+## 2.3 Private layer unlock
+
+파일:
+
+- `app/api/unlock-private-layer/route.ts`
+- `lib/private-layer/unlock.ts`
+- `components/private-layer/private-layer-panel.tsx`
+
+현재 흐름:
+
+1. 클라이언트에서 `/api/unlock-private-layer` POST.
+2. 서버에서 calendar/settings 조회.
+3. passcode hash 검증.
+4. 기존 unlock session delete.
+5. 새 unlock session insert.
+6. 클라이언트에서 `router.refresh()`.
+
+좋은 점:
+
+- passcode를 plaintext로 저장하지 않는다.
+- `passcode_version`, `expires_at` 기반으로 session invalidation을 처리한다.
+- unlock 후 private data를 다시 서버 렌더로 받아오므로 client-only permission check가 아니다.
 
 개선점:
 
-1. tag 세분화
+- `getUnlockState()`는 calendar, private_layer_settings, unlock_sessions를 순차 조회한다.
+- page와 loader에서 중복 호출될 수 있다.
+- `unlock_sessions(user_id, calendar_id, passcode_version, expires_at)` 계열 index가 있으면 unlock check 비용이 줄어든다.
 
-현재 tag는 하나다.
+권장 인덱스:
 
-```ts
-export const PUBLIC_SCHEDULE_CACHE_TAG = "public-schedule";
+```sql
+create index if not exists unlock_sessions_user_calendar_version_expires_idx
+  on public.unlock_sessions (user_id, calendar_id, passcode_version, expires_at);
 ```
 
-단일 VIC 캘린더만 유지한다면 괜찮다. 하지만 확장성을 생각하면 다음이 좋다.
+만료 세션 cleanup도 필요하다.
 
-```ts
-public-schedule:vic
-public-schedule:vic:2026-05
-public-schedule:vic:stickers
-public-schedule:vic:palette
+```sql
+delete from public.unlock_sessions where expires_at < now();
 ```
 
-2. mutation별 invalidation 분리
+## 3. UI 수정 이후 서버 영향 평가
 
-- event/tag/palette 수정: 공개 schedule invalidation 필요.
-- sticker 위치 수정: 공개 schedule invalidation 필요하지만, 아주 잦으면 debounce/batch 필요.
-- heart toggle: 공개 schedule cache invalidation을 하지 않는 현재 구조가 맞다. 하트는 RPC response로 즉시 count를 받고, 전체 공개 schedule 캐시를 매번 날리면 캐시가 무의미해진다.
-- private-only 수정: public cache invalidation이 꼭 필요한지 판단해야 한다. `visibilityScope`가 public이 아니고 공개 필드가 바뀌지 않았다면 public schedule invalidation은 피할 수 있다.
+## 3.1 현재 dirty CSS 변경 영향
 
-3. `revalidateTag` 동작 확인
+현재 변경된 `components/poster/public-poster.css`는 agenda 월 표시 스타일만 바꾼다.
 
-Next.js 최신 문서에서는 `revalidateTag(tag, "max")`를 stale-while-revalidate 방식으로 권장하고, Server Action에서 즉시 read-your-own-writes가 필요하면 `updateTag`를 설명한다. 현재 프로젝트는 Next 15라 Cache Components 전환 전 모델을 쓰고 있지만, 향후 Next 업그레이드 시 cache API 정책을 재검토해야 한다.
+서버 영향:
 
-## 4.2 API route caching
+- 추가 fetch 없음.
+- server action 호출 없음.
+- `router.refresh()` 추가 없음.
+- export/action payload 변경 없음.
+- cache invalidation 변경 없음.
 
-`app/api/public/[calendarSlug]/events/route.ts`는 `getPublicSchedule()`을 그대로 JSON으로 반환한다.
+결론: 서버 최적화 우선순위에는 영향이 없다.
+
+## 3.2 고정 포스터 캔버스 구조의 서버 영향
+
+현재 `PublicPoster`는 다음 상수를 사용한다.
 
 ```ts
-const schedule = await getPublicSchedule(calendarSlug);
-return NextResponse.json(schedule);
+const POSTER_DESIGN_W = 1840;
+const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035
 ```
 
-이 route가 외부 공개 API라면 다음을 고려할 수 있다.
+그리고 화면에서는 `posterScale`을 계산해 `.poster-scaler`에 scale을 적용한다.
 
-- HTTP `Cache-Control` 헤더 추가.
-- `events` endpoint라면 events만 반환하거나 query param으로 필요한 slice를 받기.
-- `ETag` 또는 `Last-Modified` 계열 사용.
-- `calendarSlug`, `year`, `month` 기반 DTO 제공.
+서버 관점에서 좋은 점:
 
-주의:
+- 포스터 표면의 실제 좌표/비율이 viewport에 따라 reflow되지 않는다.
+- 스티커 `xRatio`, `yRatio`, `widthRatio`가 더 안정적으로 유지된다.
+- 화면 크기 변화 때문에 불필요한 sticker save가 발생하지 않는다.
 
-Next.js의 server cache와 CDN cache는 다르다. 공식 문서에서도 CDN-level cache는 `revalidateTag`/`revalidatePath`와 별도로 동작할 수 있다고 설명한다. Vercel/Next cache와 CDN header를 같이 쓸 때는 "owner 수정 직후 공개 페이지 즉시 반영" 요구를 해치지 않도록 TTL을 짧게 잡거나 SWR 전략을 써야 한다.
+주의할 점:
 
-## 5. 데이터베이스/RLS 성능 평가
+- 고정 캔버스가 되면서 sticker payload 자체는 변하지 않지만, 사용자가 꾸미기 모드에서 더 정밀하게 조작할 가능성이 커진다.
+- 조작이 잦아질수록 `saveStickerAction` 호출 빈도가 성능 병목이 될 수 있다.
 
-## 5.1 현재 RLS 구조
+## 3.3 스티커 저장 흐름 평가
 
-RLS는 모든 주요 테이블에 enable되어 있다.
+현재 저장 흐름:
 
-- calendars
-- trusted_members
-- private_layer_settings
-- unlock_sessions
-- color_palette
-- broadcast_tags
-- events
-- event_private_meta
-- event_tags
-- support_campaigns
-- sticker_assets
-- sticker_instances
+- 새 emoji/text/image sticker 추가: 즉시 `saveStickerAction`
+- sticker drag/gesture commit: `commitSticker`
+- 키보드 미세 이동: `scheduleCommit()`으로 350ms debounce
+- flip/effect/color/z-index 변경: 대부분 즉시 `commitSticker`
+- undo/redo: 삭제/생성/수정을 순차로 서버 반영
+- 여러 sticker 삭제: `for` loop로 `deleteStickerAction` 반복
 
 좋은 점:
 
-- Supabase public schema 노출 기준으로 RLS를 켠 것은 맞다.
-- public/private boundary를 DB layer에서도 방어한다.
-- private unlock은 `unlock_sessions`, `private_layer_settings.passcode_version`, `expires_at`를 함께 본다.
-- owner_private은 별도 scope로 분리되어 있다.
+- 키보드 미세 이동에 debounce가 있다.
+- temp id로 optimistic UI를 보여준다.
+- 저장 실패 시 error를 표시한다.
+- 삭제된 asset을 참조하는 sticker를 undo/복제에서 걸러 FK 오류를 줄인다.
 
-## 5.2 RLS 함수 비용
+병목 가능성:
 
-RLS policy에서 다음 함수들이 자주 쓰인다.
+- 다중 선택 삭제는 sticker 개수만큼 server action을 호출한다.
+- undo/redo는 snapshot diff를 순차 처리하므로 sticker 수가 늘면 느려질 수 있다.
+- text color, effect, z-index 같은 작은 변경도 매번 전체 public cache invalidation을 유발한다.
+- `saveStickerAction`은 성공할 때마다 `revalidatePath("/")`, `revalidatePath("/studio/decorate", "layout")`, `revalidatePublicSchedule()`를 호출한다.
 
-- `is_developer()`
-- `is_calendar_owner(target_calendar_id)`
-- `is_calendar_admin(target_calendar_id)`
-- `is_active_trusted_member(target_calendar_id)`
-- `has_private_unlock(target_calendar_id)`
+권장:
 
-Supabase 공식 문서에서도 RLS policy에 사용되는 컬럼에는 index를 추가하라고 안내한다. 현재 schema에는 primary key/unique key 외에 명시 index가 많지 않다. 특히 row가 늘어날 수 있는 테이블은 인덱스를 보강해야 한다.
+1. `saveStickerBatchAction` 추가.
+2. `deleteStickerBatchAction` 추가.
+3. undo/redo의 server 반영을 batch로 묶기.
+4. sticker 저장의 cache invalidation을 debounce하거나 batch action 마지막에 한 번만 호출.
 
-권장 인덱스:
+예:
+
+```ts
+export type StickerBatchInput = {
+  upserts: SaveStickerInput[];
+  deletes: string[];
+};
+
+export async function saveStickerBatchAction(input: StickerBatchInput) {
+  // permission check once
+  // calendar lookup once
+  // upsert/delete in transaction or RPC
+  // revalidate once
+}
+```
+
+## 4. Mutation 최적화 평가
+
+## 4.1 Event 저장
+
+파일: `lib/schedules/event-actions.ts`
+
+현재 `saveEventAction`은 다음 단계를 별도 쿼리로 실행한다.
+
+1. actor resolve.
+2. calendar id 조회.
+3. event insert/update.
+4. 기존 `event_tags` delete.
+5. 새 `event_tags` insert.
+6. private meta upsert/delete.
+7. cache/path revalidate.
+
+문제:
+
+- DB round trip이 많다.
+- 중간 실패 시 부분 저장 가능성이 있다.
+- event/tag/private meta가 사용자는 "한 번 저장"으로 느끼는 작업인데 transaction이 아니다.
+
+권장:
+
+`save_event_with_tags` RPC로 묶는다.
+
+효과:
+
+- network round trip 감소.
+- transaction consistency 확보.
+- server action 코드 단순화.
+- event update 성공 후 tag insert 실패 같은 중간 상태 방지.
+
+## 4.2 Event reorder
+
+현재 `reorderEventsAction`은 `orderedIds.map(...update...)`를 `Promise.all`로 날린다.
+
+좋은 점:
+
+- 병렬이라 단일 순차 update보다는 빠르다.
+
+문제:
+
+- update 개수만큼 요청이 생긴다.
+- 전체 reorder가 하나의 transaction이 아니다.
+- 일부 update 실패 시 sort_order가 어긋날 수 있다.
+
+권장:
+
+`reorder_events` RPC를 만든다.
+
+입력 예:
+
+```json
+{
+  "dateKey": "2026-05-27",
+  "movedId": "event-id",
+  "orderedIds": ["a", "b", "c"]
+}
+```
+
+DB에서는 `unnest` 또는 `jsonb_to_recordset`으로 한 번에 update한다.
+
+## 4.3 Tag 저장
+
+현재 `saveTagsAction`은 다음을 수행한다.
+
+- 태그 중복/이름 validation.
+- calendar id 조회.
+- 새 태그가 있으면 tag count 확인.
+- 필요 시 palette insert.
+- 새 tag insert 반복.
+- 기존 tag update 병렬 처리.
+- revalidate.
+
+태그는 최대 20개라 지금도 성능상 아주 큰 문제는 아니다. 하지만 palette/tag 생성과 기존 update가 하나의 "저장" 작업이므로 transaction으로 묶는 것이 더 안전하다.
+
+권장:
+
+- 단기: 유지 가능.
+- 중기: `save_tags` RPC로 palette insert + tag insert/update를 한 transaction으로 묶기.
+
+## 4.4 Theme 변경
+
+파일: `lib/schedules/theme-actions.ts`
+
+poster theme 변경은 단일 update라 구조가 적절하다. 다만 테마 버튼을 연속 클릭하면 action이 여러 번 날아갈 수 있다.
+
+권장:
+
+- client에서 pending 상태 동안 버튼 disable.
+- 마지막 선택만 저장하는 debounce 고려.
+
+## 4.5 Heart toggle
+
+파일: `lib/schedules/heart-actions.ts`, `db/migrations/0016_event_hearts.sql`
+
+좋은 구조다.
+
+- `toggle_event_heart` RPC가 insert/delete/count를 묶는다.
+- public event에만 heart를 허용한다.
+- user_id는 공개 DTO에 노출하지 않는다.
+- heart toggle은 public schedule cache를 무효화하지 않는다.
+
+개선점:
+
+`loadMyHeartIds()`가 `event_hearts` 전체에서 본인 row를 가져온다. RLS 때문에 본인 것만 보이지만, calendar 범위를 제한하면 더 낫다.
+
+권장:
+
+- 현재 calendar의 public event IDs로 제한.
+- 또는 RPC `get_my_event_heart_ids(p_calendar_id)` 추가.
+
+```sql
+select h.event_id
+from public.event_hearts h
+join public.events e on e.id = h.event_id
+where h.user_id = auth.uid()
+  and e.calendar_id = p_calendar_id
+  and e.is_public;
+```
+
+## 5. 캐싱 전략 평가
+
+## 5.1 현재 구조
+
+파일: `lib/schedules/cache.ts`
+
+```ts
+export const PUBLIC_SCHEDULE_CACHE_TAG = "public-schedule";
+
+export function revalidatePublicSchedule() {
+  revalidateTag(PUBLIC_SCHEDULE_CACHE_TAG);
+}
+```
+
+좋은 점:
+
+- 공개 viewer traffic을 매번 DB에 태우지 않는다.
+- owner/studio 수정 직후 공개 캐시를 명시적으로 무효화한다.
+
+문제:
+
+- tag가 전체 공개 schedule 하나뿐이다.
+- 캘린더가 여러 개가 되면 한 캘린더 수정이 모든 공개 schedule cache를 무효화한다.
+- sticker 미세 수정도 전체 공개 schedule cache를 무효화한다.
+
+권장:
+
+```ts
+export function publicScheduleCacheTag(slug: string) {
+  return `public-schedule:${slug}`;
+}
+
+export function publicScheduleMonthCacheTag(slug: string, year: number, month: number) {
+  return `public-schedule:${slug}:${year}-${String(month).padStart(2, "0")}`;
+}
+```
+
+단기적으로는 slug 단위만 도입해도 충분하다.
+
+## 5.2 월별 캐시 분리
+
+현재 public schedule은 모든 events/stickers/assets를 가져온다. 데이터가 적을 때는 단순해서 좋다. 하지만 일정과 스티커가 누적되면 월별 조회가 필요하다.
+
+권장 분리:
+
+- public shell: calendar/title/theme/tags/palette
+- public month: events/support/stickers for visible month
+- public assets: sticker assets list, 필요 시 lazy load
+
+주의:
+
+너무 빨리 API를 쪼개면 request 수가 늘어난다. 서버 컴포넌트 내부에서는 병렬 query를 묶는 것이 좋고, 클라이언트 API는 실제 필요한 화면 단위로만 분리한다.
+
+## 6. DB/RLS 성능 평가
+
+## 6.1 현재 장점
+
+- 주요 테이블에 RLS가 켜져 있다.
+- public/private/event_private_meta 경계가 DB policy에도 있다.
+- private unlock은 `passcode_version`과 `expires_at`을 함께 본다.
+- heart count는 security definer RPC로 public aggregate만 노출한다.
+
+## 6.2 인덱스 보강 필요
+
+현재 schema는 primary key/unique key 외에 성능용 index가 많지 않다. RLS 함수와 public/studio queries가 자주 쓰는 컬럼에는 index가 필요하다.
+
+권장 migration:
 
 ```sql
 create index if not exists calendars_slug_public_idx
   on public.calendars (slug, is_public);
 
-create index if not exists events_calendar_date_idx
+create index if not exists events_calendar_date_sort_idx
   on public.events (calendar_id, date_key, sort_order);
 
 create index if not exists events_public_calendar_date_idx
   on public.events (calendar_id, date_key, sort_order)
   where visibility_scope = 'public' and status <> 'draft';
 
-create index if not exists broadcast_tags_calendar_sort_idx
+create index if not exists broadcast_tags_calendar_sort_active_idx
   on public.broadcast_tags (calendar_id, sort_order)
   where is_active = true;
 
@@ -342,420 +535,223 @@ create index if not exists sticker_instances_calendar_month_visible_idx
 create index if not exists sticker_assets_calendar_created_idx
   on public.sticker_assets (calendar_id, created_at desc);
 
-create index if not exists unlock_sessions_user_calendar_expires_idx
-  on public.unlock_sessions (user_id, calendar_id, expires_at);
+create index if not exists unlock_sessions_user_calendar_version_expires_idx
+  on public.unlock_sessions (user_id, calendar_id, passcode_version, expires_at);
 
-create index if not exists trusted_members_calendar_email_active_idx
-  on public.trusted_members (calendar_id, lower(email))
+create index if not exists event_tags_tag_sort_idx
+  on public.event_tags (tag_id, sort_order);
+```
+
+`trusted_members`는 현재 email 기반 join을 사용하므로 장기적으로 `user_id`를 추가하는 것이 좋다.
+
+장기 권장:
+
+```sql
+alter table public.trusted_members
+  add column if not exists user_id uuid references auth.users(id);
+
+create index if not exists trusted_members_calendar_user_active_idx
+  on public.trusted_members (calendar_id, user_id)
   where is_active = true;
 ```
 
-주의:
+## 7. API/DTO 최적화
 
-- `trusted_members`의 `lower(email)` index는 expression index라 실제 migration에서 문법 확인이 필요하다.
-- `events_public_calendar_date_idx`는 public viewer 최적화용 partial index다.
-- month별 sticker query를 도입한다면 `year, month` index 효율이 좋아진다.
+## 7.1 Public events API
 
-## 5.3 Email join 개선
-
-현재 trusted member 판단은 `trusted_members.email`과 `auth.users.email`을 lower-case join하는 방식이다.
-
-이 방식은 구현이 단순하지만, 성능과 안정성 면에서 장기적으로는 `user_id`를 저장하는 편이 좋다.
-
-권장:
-
-- `trusted_members.user_id uuid references auth.users(id)` 추가.
-- 초대/등록 단계에서 email을 user_id로 resolve.
-- 기존 email은 표시/초대용으로 유지.
-- RLS 함수는 `user_id = auth.uid()`를 우선 사용.
-
-이렇게 하면 RLS 함수가 auth.users join과 lower 비교를 덜 하게 된다.
-
-## 6. Query shape와 DTO 최적화
-
-## 6.1 Public DTO
-
-현재 public schedule DTO는 꽤 크다.
-
-포함:
-
-- calendar
-- tags
-- palette
-- events
-- supportCampaigns
-- stickers
-- stickerAssets
-- heartCount
-- myHeartIds
-
-공개 viewer 첫 화면에는 이 전체가 필요할 수 있지만, API endpoint나 모바일 agenda에는 전부 필요하지 않을 수 있다.
-
-권장 DTO 분리:
-
-- `getPublicScheduleFull(slug)`: 현재 viewer/page용
-- `getPublicEvents(slug, year, month)`: 외부 API/agenda용
-- `getPosterDecoration(slug, year, month)`: stickers/assets/theme용
-- `getPaletteAndTags(slug)`: tags/palette용
-
-단, 너무 빨리 쪼개면 요청 수가 늘 수 있다. 서버 컴포넌트에서는 내부적으로 병렬 query를 묶을 수 있으므로, "외부 API response size"와 "서버 내부 query count"를 따로 판단해야 한다.
-
-## 6.2 Month range filtering
-
-현재 public/studio events query는 전체 이벤트를 가져온다.
-
-초기에는 괜찮다. 하지만 일정이 1년 이상 쌓이면 viewer는 이번 달과 인접 월 일부만 필요하다.
-
-월간 캘린더에 필요한 범위:
-
-- 보이는 달의 첫 번째 주 시작일
-- 보이는 달의 마지막 주 종료일
-- multi-day event가 앞에서 시작해 현재 달까지 걸치는 경우
-
-간단한 1차 개선:
-
-```ts
-.gte("date_key", visibleStart)
-.lte("date_key", visibleEnd)
-```
-
-하지만 multi-day event가 visibleStart 이전에 시작해서 visibleStart 이후에 끝나는 경우가 빠질 수 있다. 더 정확한 조건은 다음 형태다.
-
-```sql
-date_key <= visible_end
-and coalesce(end_date_key, date_key) >= visible_start
-```
-
-Supabase query builder에서는 `or` 조건이 복잡해질 수 있으므로, 월간 이벤트 조회 RPC를 만드는 편이 더 깔끔하다.
-
-예:
-
-```sql
-create or replace function public.get_public_month_schedule(
-  p_calendar_id uuid,
-  p_visible_start date,
-  p_visible_end date
-)
-returns setof public.events
-...
-```
-
-## 7. Mutation 최적화 제안
-
-## 7.1 `saveEventAction`
+파일: `app/api/public/[calendarSlug]/events/route.ts`
 
 현재:
 
-1. actor resolve
-2. calendar id 조회
-3. event insert/update
-4. event_tags delete
-5. event_tags insert
-6. private_meta upsert/delete
-7. revalidate
-
-권장:
-
-Postgres RPC `save_event_with_tags`로 묶는다.
-
-장점:
-
-- 네트워크 round trip 감소.
-- transaction consistency 확보.
-- 서버 액션 코드 단순화.
-- tag/private meta 실패 시 event만 저장되는 중간 상태 방지.
-
-개략:
-
-```sql
-begin
-  -- check calendar/permission can remain in app or be repeated in function
-  -- upsert events
-  -- delete/insert event_tags
-  -- upsert/delete event_private_meta
-  return event_id;
-end;
+```ts
+const schedule = await getPublicSchedule(calendarSlug);
+return NextResponse.json(schedule);
 ```
 
-보안상 주의:
+route 이름은 `events`인데 실제로는 전체 schedule DTO를 반환한다.
 
-- RPC를 `security definer`로 만들 경우 내부 권한 검사를 반드시 넣는다.
-- 아니면 server action에서 role 검사 후 service/admin client로 RPC를 호출하되, 입력값 검증을 더 엄격하게 한다.
-- owner_private 생성 제한은 DB 함수에도 중복 방어가 있으면 좋다.
+문제:
 
-## 7.2 `reorderEventsAction`
-
-현재는 `orderedIds.map(update)`를 `Promise.all`로 보낸다. 이벤트가 10개면 update 10개다.
+- 외부 API 소비자가 events만 필요해도 tags/palette/stickers/assets/heartCount까지 받는다.
+- response size가 커질 수 있다.
+- API 의미가 모호하다.
 
 권장:
 
-`jsonb_to_recordset` 또는 `unnest(uuid[], int[])` 기반 RPC.
-
-예:
-
-```sql
-create or replace function public.reorder_events(
-  p_calendar_id uuid,
-  p_date_key date,
-  p_items jsonb
-)
-returns void
-...
-```
-
-장점:
-
-- 요청 1회.
-- 한 transaction.
-- moved event date update와 sort_order update를 같이 처리.
-- 실패 시 전체 rollback.
-
-## 7.3 `saveTagsAction` / `updateTagsAction`
-
-현재 tag updates는 병렬 update다. tag는 최대 20개라 큰 문제는 아니지만, 색상 중복/생성/삭제까지 포함하면 transaction으로 묶는 편이 안전하다.
-
-권장:
-
-- 지금 구조를 유지하되, 태그 수 20개 제한이면 성능보다 consistency를 우선해 RPC 전환.
-- palette 생성 + tag 생성 + update를 한 transaction으로 묶기.
-
-## 7.4 Sticker 저장
-
-현재 sticker 저장은 단일 sticker 기준으로 잘 작성되어 있다. 다만 꾸미기 모드에서 drag/resize/toolbar 조작이 잦다면 server action 호출과 cache invalidation이 많아질 수 있다.
-
-권장:
-
-1. drag 중에는 local state만 변경.
-2. pointer up 또는 toolbar commit 때만 저장.
-3. 여러 sticker 선택 이동/삭제/복제는 batch action 제공.
-4. sticker 위치 수정은 공개 캐시를 즉시 날리되, 연속 commit에 debounce를 둘 수 있는지 검토.
+1. 유지할 거면 route 이름을 schedule에 맞춘다.
+2. events endpoint라면 events만 반환한다.
+3. query param으로 year/month를 받을 수 있게 한다.
 
 예:
 
 ```ts
-saveStickerBatchAction({
-  updates: [{ id, xRatio, yRatio, widthRatio, ... }]
-})
+GET /api/public/vic/events?year=2026&month=5
+GET /api/public/vic/schedule
+GET /api/public/vic/decorations?year=2026&month=5
 ```
 
-## 8. Private Layer 서버 최적화
+## 7.2 Studio DTO
 
-현재 unlock 흐름:
+`getStudioSchedule()`은 studio shell에 필요한 데이터를 한 번에 주는 구조다. 초기 개발에는 좋다. 하지만 기능이 늘어나면 다음처럼 분리할 수 있다.
 
-- `/api/unlock-private-layer` POST
-- calendar id 조회
-- private_layer_settings 조회
-- passcode verify
-- 기존 session delete
-- unlock_sessions insert
-- client `router.refresh()`
+- `getStudioMonthSchedule`
+- `getStudioTagsAndPalette`
+- `getStudioPrivateState`
+- `getDecorateSchedule`
 
-좋은 점:
+단, 분리할 때는 client fetch를 늘리는 방식보다 server component/page에서 병렬로 묶는 방식이 좋다.
 
-- passcode hash를 사용한다.
-- unlock session에 version과 expires_at이 있다.
-- passcode 변경 시 기존 session invalidation 구조가 있다.
+## 8. 측정/관측 제안
 
-개선점:
+최적화 전에 다음을 측정하면 방향이 선명해진다.
 
-1. unlock 상태 확인 쿼리 최적화
+## 8.1 Loader duration
 
-`getUnlockState()`는 `calendars`, `private_layer_settings`, `unlock_sessions`를 조회한다. 페이지와 studio loader에서 중복 호출되는 경우가 있으므로 상위에서 한 번만 조회해 전달하는 게 좋다.
-
-2. unlock_sessions 정리
-
-매 unlock 시 해당 user/calendar session을 delete하고 insert한다. 괜찮은 방식이다. 다만 만료 세션이 쌓일 수 있으므로 주기적 cleanup을 고려한다.
-
-```sql
-delete from public.unlock_sessions where expires_at < now();
-```
-
-3. index
-
-`unlock_sessions(user_id, calendar_id, expires_at)` index는 unlock check에 중요하다.
-
-## 9. Server Component / Client Refresh 평가
-
-현재 client에서는 private unlock 후 `router.refresh()`를 사용한다. Next.js 공식 문서 기준으로 `router.refresh()`는 현재 route의 client cache를 새로고침하지만, server-side cache 자체를 무효화하지 않는다. 서버 캐시는 `revalidatePath`/`revalidateTag`가 담당한다.
-
-이 앱에서는 unlock 후 private data가 사용자별 dynamic data이므로 `router.refresh()`가 적절하다. 다만 같은 페이지에서 이미 actor/unlock을 여러 번 resolve하면 refresh 비용이 커진다.
-
-권장:
-
-- `getStudioSchedule(calendarSlug, context)`처럼 actor/unlock을 인자로 받을 수 있게 한다.
-- page에서 actor/unlock을 한 번만 resolve한다.
-- loader 내부에서 필요 시 fallback으로만 resolve한다.
-
-예:
-
-```ts
-export async function getStudioSchedule(
-  calendarSlug: string,
-  context?: { actor: CurrentActor; unlock: UnlockState }
-) {
-  const [viewerModePreview, actor, unlock] = await Promise.all([
-    getPublicSchedule(calendarSlug, { includeMyHeartIds: false }),
-    context?.actor ?? resolveCurrentActor(calendarSlug),
-    context?.unlock ?? getUnlockState(calendarSlug)
-  ]);
-}
-```
-
-## 10. 관측/측정 제안
-
-최적화는 측정 없이 하면 위험하다. 다음을 추가하면 좋다.
-
-## 10.1 Query count logging
-
-개발 환경에서 loader별 query count와 duration을 기록한다.
-
-대상:
+개발 환경에서 다음 함수의 duration을 로깅한다.
 
 - `getPublicSchedule`
+- `loadPublicScheduleData`
+- `loadMyHeartIds`
 - `getStudioSchedule`
+- `getUnlockState`
 - `saveEventAction`
 - `saveStickerAction`
 - `saveTagsAction`
-- `unlock-private-layer`
 
-간단한 방식:
+간단 예:
 
-- action 시작/끝에서 `performance.now()` 측정.
-- Supabase query wrapper를 만들기 어렵다면 주요 block 단위만 기록.
-- production에서는 sampling 또는 disabled.
+```ts
+const started = performance.now();
+try {
+  ...
+} finally {
+  if (process.env.NODE_ENV === "development") {
+    console.log("[server-timing] getStudioSchedule", performance.now() - started);
+  }
+}
+```
 
-## 10.2 Response size 확인
+## 8.2 Response size
 
-공개 schedule JSON size를 체크한다.
+public schedule JSON size를 측정한다.
 
-목표:
+권장 기준:
 
-- 모바일 viewer initial payload가 과도하게 커지지 않게 한다.
-- sticker asset list가 커질 때 lazy load/월별 load로 전환할 기준을 잡는다.
+- 200KB 이하: 양호.
+- 500KB 이상: DTO split 검토.
+- 1MB 이상: 월별 query/asset lazy loading 우선 도입.
 
-권장 threshold:
+## 8.3 Query explain
 
-- public schedule JSON 200KB 이하 유지.
-- 500KB를 넘으면 DTO split 검토.
-- 1MB를 넘으면 즉시 쿼리 범위/asset strategy 재검토.
-
-## 10.3 Database explain
-
-Supabase SQL editor에서 주요 쿼리 `explain analyze`를 확인한다.
-
-우선 확인:
+Supabase SQL editor에서 다음을 `explain analyze`로 확인한다.
 
 - public events by calendar/date
 - studio events by calendar/date
+- sticker_instances by calendar/year/month/visible
 - unlock session check
-- event heart counts
+- event heart count RPC
 - broadcast_tags by calendar/sort
-- sticker_instances by calendar/month/visible
 
-## 11. 단계별 개선 로드맵
+## 9. 수정 로드맵
 
-## Phase 1: 안전한 스코프와 인덱스
+## Phase 1: 즉시 수정 권장
 
-목표: 데이터 경계와 기본 성능을 바로잡는다.
+목표: 데이터 경계와 overfetch를 바로잡는다.
 
 작업:
 
-1. `public-loader.ts` 모든 query에 `calendar_id` 필터 추가.
-2. `loadMyHeartIds()`에 calendar/event 범위 제한 추가.
-3. DB 인덱스 migration 추가.
-4. public events API response가 정말 full schedule이어야 하는지 재검토.
+- `public-loader.ts` 모든 public query에 `.eq("calendar_id", calendar.id)` 추가.
+- `loadMyHeartIds()`를 calendar-scoped RPC 또는 join query로 변경.
+- public events API가 full schedule을 반환하는 이유를 정리하고, 필요 시 DTO 축소.
 
 위험도: 낮음  
 효과: 높음
 
-## Phase 2: 중복 loader 제거
+## Phase 2: 중복 조회 제거
 
 목표: 같은 request 안에서 actor/unlock/public schedule을 반복 조회하지 않는다.
 
 작업:
 
-1. `getStudioSchedule()`에 optional context 인자 추가.
-2. `app/page.tsx`, `app/(studio)/studio/page.tsx`에서 actor/unlock 전달.
-3. Studio preview용 `getPublicSchedule(..., { includeMyHeartIds: false })` 옵션 추가.
-4. `resolveCurrentActor` 내부 결과가 같은 request 안에서 memoize 가능한지 검토.
+- `getStudioSchedule()`에 actor/unlock context 주입.
+- page에서 이미 구한 actor/unlock을 loader에 전달.
+- studio preview에서는 `includeMyHeartIds: false` 옵션 검토.
 
 위험도: 중간  
 효과: 중간~높음
 
-## Phase 3: Mutation RPC화
+## Phase 3: 인덱스 추가
 
-목표: event/tag/reorder 저장의 round trip과 부분 실패를 줄인다.
-
-작업:
-
-1. `save_event_with_tags` RPC 설계.
-2. `reorder_events` RPC 설계.
-3. `save_tags` RPC 설계.
-4. server action은 validation/permission/error mapping 중심으로 축소.
-
-위험도: 중간~높음  
-효과: 높음
-
-## Phase 4: 캐시 세분화
-
-목표: 작은 변경이 전체 공개 캐시를 매번 날리지 않게 한다.
+목표: public/studio 주요 read와 RLS check를 안정화한다.
 
 작업:
 
-1. cache tag를 `public-schedule:${slug}`로 변경.
-2. 필요하면 `public-schedule:${slug}:${year}-${month}` 추가.
-3. public loader를 full/month/decorations로 나눌지 결정.
-4. Next 업그레이드 시 `revalidateTag(tag, "max")` 또는 `updateTag` 전략 검토.
+- events public partial index.
+- sticker_instances month/visible index.
+- unlock_sessions user/calendar/version/expires index.
+- tags/palette sort index.
+- support campaigns public active index.
 
-위험도: 중간  
-효과: 트래픽 증가 시 높음
-
-## Phase 5: 데이터 범위 제한
-
-목표: 일정이 누적되어도 월간 viewer/studio가 빠르게 유지되도록 한다.
-
-작업:
-
-1. 월간 visible range 계산을 서버 loader로 이동하거나 공유 util화.
-2. public/studio events query를 range 기반으로 제한.
-3. multi-day overlap 조건을 RPC로 처리.
-4. 필요 시 과거 월은 pagination/lazy loading.
-
-위험도: 중간  
+위험도: 낮음~중간  
 효과: 데이터 증가 시 높음
 
-## 12. 구체 수정 후보 체크리스트
+## Phase 4: Sticker batch 저장
 
-바로 할 수 있는 것:
+목표: 꾸미기 모드에서 server action 호출 수와 cache invalidation 횟수를 줄인다.
 
-- [ ] `public-loader.ts`의 tags/palette/events/stickers/assets query에 `.eq("calendar_id", calendar.id)` 추가.
-- [ ] `loadMyHeartIds()`가 현재 calendar의 public event만 대상으로 하도록 수정.
-- [ ] `PUBLIC_SCHEDULE_CACHE_TAG`를 slug 기반으로 확장할 수 있게 함수화.
-- [ ] `getStudioSchedule()`에 actor/unlock context 주입.
-- [ ] `app/page.tsx`와 `app/(studio)/studio/page.tsx`의 중복 actor/unlock 조회 제거.
-- [ ] 인덱스 migration 추가.
+작업:
 
-그 다음 할 것:
+- `saveStickerBatchAction`.
+- `deleteStickerBatchAction`.
+- undo/redo server 반영 batch화.
+- batch action 마지막에만 `revalidatePublicSchedule()`.
 
-- [ ] `saveEventAction` RPC화.
-- [ ] `reorderEventsAction` RPC화.
-- [ ] sticker batch save 추가.
-- [ ] public API route DTO 축소.
-- [ ] loader duration logging 추가.
+위험도: 중간  
+효과: 꾸미기 모드 체감 성능 개선
 
-장기 과제:
+## Phase 5: Event/tag RPC화
 
-- [ ] trusted_members에 `user_id` 추가.
-- [ ] 월별 schedule loader로 분리.
-- [ ] cache tag 월별 세분화.
-- [ ] Supabase Edge Function 또는 Postgres RPC로 public schedule aggregation 검토.
+목표: transaction consistency와 round trip 감소.
 
-## 13. 최종 권장안
+작업:
 
-서버 최적화의 첫 단계는 "더 빠르게"가 아니라 "덜 가져오게" 만드는 것이다. 현재 public loader가 단일 VIC 캘린더에서는 잘 동작해도, 쿼리 scope가 캘린더에 고정되어 있지 않은 부분이 있어 멀티 캘린더/데이터 증가 상황에서 가장 먼저 병목과 경계 문제가 된다. 이 부분을 고치는 것이 1순위다.
+- `save_event_with_tags` RPC.
+- `reorder_events` RPC.
+- `save_tags` RPC.
 
-두 번째는 중복 조회 제거다. 지금 page에서 actor/unlock을 구하고, studio loader 안에서 다시 actor/unlock을 구하는 구조가 있다. private layer unlock 후 `router.refresh()`가 들어갈 때 이런 중복은 체감 속도에 바로 영향을 준다.
+위험도: 중간~높음  
+효과: 편집 안정성/성능 개선
 
-세 번째는 mutation transaction화다. 이벤트 저장, 태그 저장, 정렬 변경은 사용자가 "한 번 저장"으로 인식하지만 서버에서는 여러 요청으로 쪼개져 있다. RPC로 묶으면 속도뿐 아니라 실패 일관성도 좋아진다.
+## Phase 6: 월별 loader/cache 분리
 
-현재 구조에서 이미 잘하고 있는 부분도 분명하다. 공개 데이터 캐시, 사용자별 하트 분리, heart RPC, server-side private filtering은 좋은 기반이다. 여기에 calendar scoping, 인덱스, 중복 loader 제거, mutation RPC화를 얹으면 서버 비용과 응답 지연이 꽤 안정적으로 줄어들 것이다.
+목표: 일정/스티커 데이터가 누적되어도 viewer/studio가 가볍게 유지되게 한다.
+
+작업:
+
+- visible month range 계산 서버 util화.
+- event overlap 조건을 RPC로 처리.
+- public schedule cache tag를 slug/month 단위로 세분화.
+- asset list lazy loading 검토.
+
+위험도: 중간  
+효과: 장기 확장성 개선
+
+## 10. 최종 권장안
+
+이번 UI 변경은 서버 통신에 직접 영향을 주지 않는다. 하지만 현재 포스터가 고정 캔버스와 꾸미기 도구 중심으로 더 명확해진 만큼, 앞으로 서버 최적화는 "viewer read 최적화"와 "decorate mutation 최적화"를 분리해서 봐야 한다.
+
+가장 먼저 할 일은 `public-loader.ts`의 calendar scoping이다. 이건 속도 문제이면서 동시에 공개 데이터 경계 문제다.
+
+그 다음은 studio loader 중복 조회 제거다. private layer unlock 후 `router.refresh()`가 들어가는 흐름에서는 actor/unlock 중복 조회가 체감 속도에 영향을 줄 수 있다.
+
+꾸미기 모드는 현재 키보드 미세 이동에 debounce가 있어 방향이 좋다. 다음 단계는 다중 삭제, undo/redo, 복제, 연속 스타일 변경을 batch 저장으로 묶고 cache invalidation을 마지막에 한 번만 하는 것이다.
+
+정리하면 우선순위는 다음과 같다.
+
+1. Public loader calendar scope 보강.
+2. Public/myHeartIds query 범위 제한.
+3. Studio actor/unlock 중복 조회 제거.
+4. DB index migration 추가.
+5. Sticker batch action 도입.
+6. Event/tag 저장 RPC화.
+7. 월별 loader/cache 분리.

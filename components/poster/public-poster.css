@@ -483,7 +483,9 @@
    줄 높이는 거의 그대로). 모바일에서 손끝으로 정확히 누르기 쉽게. */
 .agenda-heart {
   flex: 0 0 auto;
-  margin: -9px -8px -9px auto;
+  /* 위/아래만 음수 마진으로 줄 높이 유지. 오른쪽 벽에서 확실히 띄워(margin-right) 한쪽으로
+     쏠려 보이는 불균형을 줄인다. 탭 영역(40×40)은 그대로라 누르기 편하다. */
+  margin: -10px 12px -10px auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
