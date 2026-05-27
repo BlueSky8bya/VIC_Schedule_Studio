@@ -516,6 +516,10 @@
      밑선과 달력 밑선이 항상 맞게 한다(반대로 달력이 더 길면 사이드바 색상 안내가 늘어남). */
   display: flex;
   flex-direction: column;
+  /* [Phase 5] 컨테이너 쿼리 기준면. 새 일정 카드가 열리면 이 달력 칸이 ~390px 좁아지는데,
+     화면(vw)은 그대로라 미디어쿼리는 이를 모른다. 칸 자신을 컨테이너로 삼아, 안의 일정 글자가
+     "달력 칸 폭"(cqi)에 맞춰 줄고 늘게 한다. (드래그 고스트는 document.body에 붙어 영향 없음.) */
+  container: studioCal / inline-size;
 }
 
 .studio-weekdays,
@@ -535,7 +539,8 @@
 
 .studio-weekdays span {
   padding: 9px 5px;
-  font-size: clamp(13px, 0.85vw, 18px);
+  /* [Phase 5] 요일 헤더도 달력 칸 폭(cqi) 기준으로 — 일정 글자와 같은 박자로 줄고 늘게. */
+  font-size: clamp(13px, 0.95cqi, 18px);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-align: center;
@@ -835,7 +840,9 @@
   flex: 1;
   overflow: hidden;
   white-space: pre-line;
-  font-size: clamp(13px, 0.9vw, 19px);
+  /* [Phase 5] vw(화면 전체) → cqi(달력 칸 폭). 새 일정 카드가 열려 달력이 좁아지면 글자도
+     같이 작아져 답답함을 줄인다. clamp 경계(13~19)로 어떤 폭에서도 과하지 않게 보장. */
+  font-size: clamp(13px, 1.1cqi, 19px);
   font-weight: 900;
   line-height: 1.22;
 }
