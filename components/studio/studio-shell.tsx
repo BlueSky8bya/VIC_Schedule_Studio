@@ -417,38 +417,87 @@ export function StudioShell({
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [visibleEvents, view]);
-  // 16:9 한 화면 맞춤: 칸 높이가 고정되면 일정이 많은 날은 내용이 칸을 넘친다. 칸마다 측정해
-  // 넘치면 그 칸 일정 글자를 자동으로 줄여(--evt-scale) 높이 안에 들어오게 한다.
+  // 16:9 한 화면 맞춤(단계적). 일정이 칸 높이를 넘치면:
+  //  1) 달력 "전체"에 같은 글자 배율(--evt-scale)을 적용해 통일성 있게 줄여 맞춘다.
+  //  2) 최소 배율(0.62)에도 안 들어가면 좌우 사이드바 너비를 희생(달력을 넓혀 줄바꿈을 줄임).
+  //  3) 그래도 안 되면 16:9를 깨고(높이 고정 해제) 페이지 스크롤을 허용한다.
+  // 한 번의 effect에서 폭을 바꿔가며 동기 측정 → 상태 재렌더 루프/깜빡임 없이 결정한다.
   useEffect(() => {
     const grid = monthGridRef.current;
     if (!grid) return;
+    const workspace = grid.closest<HTMLElement>(".studio-workspace");
+    const shell = grid.closest<HTMLElement>(".studio-shell");
+    if (!workspace || !shell) return;
+
+    const MIN = 0.62;
+    const COLS_NORMAL = "248px minmax(0, 1fr) 372px";
+    const COLS_NARROW = "172px minmax(0, 1fr) 280px";
+
+    const reset = () => {
+      grid.style.removeProperty("--evt-scale");
+      workspace.style.gridTemplateColumns = "";
+      shell.style.height = "";
+      shell.style.minHeight = "";
+      shell.style.overflow = "";
+    };
+
+    // 현재 폭에서 모든 칸이 들어가려면 필요한 "최소 배율"(≤1). 1이면 줄일 필요 없음.
+    const measureWorst = () => {
+      grid.style.setProperty("--evt-scale", "1");
+      void grid.offsetHeight;
+      let worst = 1;
+      grid.querySelectorAll<HTMLElement>(".studio-day").forEach((day) => {
+        const list = day.querySelector<HTMLElement>(".studio-event-list");
+        if (!list) return;
+        const avail = day.clientHeight - list.offsetTop - 6;
+        const needed = list.scrollHeight;
+        if (needed > avail && needed > 0 && avail > 0) worst = Math.min(worst, avail / needed);
+      });
+      return worst;
+    };
+
     let raf = 0;
-    const fit = () => {
+    const solve = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const days = Array.from(grid.querySelectorAll<HTMLElement>(".studio-day"));
-        for (const d of days) d.style.setProperty("--evt-scale", "1");
-        void grid.offsetHeight; // 스케일 1 기준으로 다시 측정하도록 리플로우
-        const scales = days.map((day) => {
-          const list = day.querySelector<HTMLElement>(".studio-event-list");
-          if (!list) return 1;
-          const avail = day.clientHeight - list.offsetTop - 6;
-          const needed = list.scrollHeight;
-          return needed > avail && needed > 0 && avail > 0
-            ? Math.max(0.6, avail / needed)
-            : 1;
-        });
-        days.forEach((day, i) => day.style.setProperty("--evt-scale", String(scales[i])));
+        // 데스크톱 한 화면 맞춤은 1000px↑에서만. 그 외엔 자연 스크롤(인라인 해제).
+        if (window.innerWidth < 1000) {
+          reset();
+          return;
+        }
+        // 깨짐 상태 초기화 후 기본 폭에서 측정.
+        shell.style.height = "";
+        shell.style.minHeight = "";
+        shell.style.overflow = "";
+        workspace.style.gridTemplateColumns = COLS_NORMAL;
+        let worst = measureWorst();
+        if (worst >= MIN) {
+          grid.style.setProperty("--evt-scale", String(Math.min(1, worst)));
+          return;
+        }
+        // 1단계로 부족 → 사이드바 너비 희생(달력 넓힘) 후 재측정.
+        workspace.style.gridTemplateColumns = COLS_NARROW;
+        worst = measureWorst();
+        if (worst >= MIN) {
+          grid.style.setProperty("--evt-scale", String(Math.min(1, worst)));
+          return;
+        }
+        // 그래도 부족 → 최소 글자 + 좁은 사이드바 유지하고 16:9를 깬다(스크롤 허용).
+        grid.style.setProperty("--evt-scale", String(MIN));
+        shell.style.height = "auto";
+        shell.style.minHeight = "100vh";
+        shell.style.overflow = "visible";
       });
     };
-    fit();
-    const ro = new ResizeObserver(fit);
-    ro.observe(grid);
-    window.addEventListener("resize", fit);
+
+    solve();
+    // ResizeObserver는 쓰지 않는다 — 깨짐(height 변경)이 다시 관측을 트리거해 무한 루프가 되므로.
+    // 뷰포트 변화는 window resize로, 내용 변화는 effect deps로 다시 푼다.
+    window.addEventListener("resize", solve);
     return () => {
       cancelAnimationFrame(raf);
-      ro.disconnect();
-      window.removeEventListener("resize", fit);
+      window.removeEventListener("resize", solve);
+      reset();
     };
   }, [visibleEvents, view]);
   // 선택한 일정이 속한 연결 체인 전체를 하이라이트 대상으로 삼는다.
