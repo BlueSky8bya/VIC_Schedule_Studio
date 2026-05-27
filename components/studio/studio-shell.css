@@ -808,8 +808,8 @@
   flex: 1;
   overflow: hidden;
   white-space: pre-line;
-  /* --evt-scale: 일정이 많아 칸 높이를 넘치면 그 칸의 글자를 자동으로 줄여 맞춘다(JS가 칸별로 설정). */
-  font-size: calc(clamp(13px, 0.9vw, 19px) * var(--evt-scale, 1));
+  /* --evt-scale: 일정이 많아 칸 높이를 넘치면 달력 전체 글자를 같은 배율로 줄여 맞춘다(JS 설정). */
+  font-size: calc(clamp(14px, 1vw, 21px) * var(--evt-scale, 1));
   font-weight: 900;
   line-height: 1.22;
 }
@@ -840,7 +840,7 @@
   font-weight: 800;
 }
 .pill-subs li {
-  font-size: calc(12px * var(--evt-scale, 1));
+  font-size: calc(13px * var(--evt-scale, 1));
   font-weight: 800;
   line-height: 1.3;
 }

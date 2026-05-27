@@ -427,18 +427,23 @@ export function StudioShell({
     if (!grid) return;
     const workspace = grid.closest<HTMLElement>(".studio-workspace");
     const shell = grid.closest<HTMLElement>(".studio-shell");
+    const weekdays = grid
+      .closest<HTMLElement>(".studio-calendar-panel")
+      ?.querySelector<HTMLElement>(".studio-weekdays");
     if (!workspace || !shell) return;
 
-    const MIN = 0.62;
+    // 글자는 80%까지만 줄인다(그 이하로 작아지면 차라리 스크롤). 더 못 줄이면 사이드바를 좁히고,
+    // 그래도 안 되면 "그리드만" 세로 스크롤(헤더·요일·사이드바·페이지는 고정, 글자는 큼).
+    const MIN = 0.8;
     const COLS_NORMAL = "248px minmax(0, 1fr) 372px";
     const COLS_NARROW = "172px minmax(0, 1fr) 280px";
 
     const reset = () => {
       grid.style.removeProperty("--evt-scale");
+      grid.style.overflowY = "";
+      grid.style.alignContent = "";
       workspace.style.gridTemplateColumns = "";
-      shell.style.height = "";
-      shell.style.minHeight = "";
-      shell.style.overflow = "";
+      if (weekdays) weekdays.style.paddingRight = "";
     };
 
     // 현재 폭에서 모든 칸이 들어가려면 필요한 "최소 배율"(≤1). 1이면 줄일 필요 없음.
@@ -465,10 +470,10 @@ export function StudioShell({
           reset();
           return;
         }
-        // 깨짐 상태 초기화 후 기본 폭에서 측정.
-        shell.style.height = "";
-        shell.style.minHeight = "";
-        shell.style.overflow = "";
+        // 스크롤/깨짐 상태 초기화 후 기본 폭(채움 모드)에서 측정.
+        grid.style.overflowY = "";
+        grid.style.alignContent = "";
+        if (weekdays) weekdays.style.paddingRight = "";
         workspace.style.gridTemplateColumns = COLS_NORMAL;
         let worst = measureWorst();
         if (worst >= MIN) {
@@ -482,11 +487,18 @@ export function StudioShell({
           grid.style.setProperty("--evt-scale", String(Math.min(1, worst)));
           return;
         }
-        // 그래도 부족 → 최소 글자 + 좁은 사이드바 유지하고 16:9를 깬다(스크롤 허용).
-        grid.style.setProperty("--evt-scale", String(MIN));
-        shell.style.height = "auto";
-        shell.style.minHeight = "100vh";
-        shell.style.overflow = "visible";
+        // 그래도 부족 → 사이드바 정상 복원 + 글자는 크게(100%) 두고, "달력 그리드만" 세로 스크롤.
+        // (페이지·헤더·요일은 고정. 행을 위로 정렬해 stretch 대신 자연 높이로 쌓여 넘치면 스크롤.)
+        workspace.style.gridTemplateColumns = COLS_NORMAL;
+        grid.style.setProperty("--evt-scale", "1");
+        grid.style.alignContent = "start";
+        grid.style.overflowY = "auto";
+        void grid.offsetHeight;
+        // 스크롤바가 차지한 폭만큼 요일 헤더에 여백을 줘 7칸 정렬을 맞춘다.
+        if (weekdays) {
+          const sb = grid.offsetWidth - grid.clientWidth;
+          weekdays.style.paddingRight = sb > 0 ? `${sb}px` : "";
+        }
       });
     };
 
