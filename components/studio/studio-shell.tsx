@@ -614,7 +614,7 @@ export function StudioShell({
       const pivotY = pos.y + edOffRef.current.y;
       const bob = edBobRef.current;
       const prev = edBobPrevRef.current;
-      const G = 0.22; // 아주 약한 중력(천천히 내려감)
+      const G = 0.3; // 중력
       const DAMP = 0.9; // 저항을 충분히 줘 발발거림·과한 스윙을 잡는다(관성은 남기되 절제)
       const vx = (bob.x - prev.x) * DAMP;
       const vy = (bob.y - prev.y) * DAMP;
