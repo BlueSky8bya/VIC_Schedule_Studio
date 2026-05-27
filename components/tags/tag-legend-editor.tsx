@@ -119,6 +119,8 @@ export function TagLegendEditor({
   const dragTargetRef = useRef({ x: 0, y: 0 });
   const dragPosRef = useRef({ x: 0, y: 0 });
   const dragRotRef = useRef(0);
+  const dragRotVelRef = useRef(0); // 회전 속도(스프링) — 매달린 듯 swing
+  const dragGravityRef = useRef(0); // 잡은 지점이 중심에서 벗어난 만큼의 "매달림" 기울기
   const dragWobbleRef = useRef(0); // 랜덤 흔들림 위상(매 프레임 조금씩 흐른다)
   const dragReducedRef = useRef(false); // 모션 최소화 환경이면 흔들림·관성을 끈다
   // 드래그 중 언마운트되면 떠다니던 ghost·리스너·애니메이션을 정리한다.
@@ -173,16 +175,20 @@ export function TagLegendEditor({
       pos.x += (target.x - pos.x) * 0.22;
       pos.y += (target.y - pos.y) * 0.22;
       const vx = pos.x - prevX; // 가로 속도 → 움직이는 방향으로 기운다(모멘텀)
-      const tilt = Math.max(-15, Math.min(15, vx * 0.7));
-      dragRotRef.current += (tilt - dragRotRef.current) * 0.15;
-      // 랜덤 흔들림: 두 주기의 사인 + 미세 난수로 자연스럽게 떨리게.
+      const momentum = Math.max(-11, Math.min(11, vx * 0.5));
+      // 매달림(중력) 각도 + 모멘텀을 목표로 스프링 swing. (얇은 바라 모멘텀도 약하게.)
+      const targetAngle = dragGravityRef.current + momentum;
+      dragRotVelRef.current += (targetAngle - dragRotRef.current) * 0.1;
+      dragRotVelRef.current *= 0.8;
+      dragRotRef.current += dragRotVelRef.current;
+      // 랜덤 흔들림 — 얇은 바라 기존의 약 1/3 세기로만.
       dragWobbleRef.current += 0.12;
       const w = dragWobbleRef.current;
       const wobble =
-        Math.sin(w) * 1.4 + Math.sin(w * 1.7 + 0.6) * 0.9 + (Math.random() - 0.5) * 0.8;
+        Math.sin(w) * 0.47 + Math.sin(w * 1.7 + 0.6) * 0.3 + (Math.random() - 0.5) * 0.27;
       ghost.style.left = `${pos.x}px`;
       ghost.style.top = `${pos.y}px`;
-      ghost.style.transform = `rotate(${dragRotRef.current + wobble}deg) scale(1.06)`;
+      ghost.style.transform = `rotate(${dragRotRef.current + wobble}deg) scale(1.05)`;
     }
     rafRef.current = requestAnimationFrame(dragLoop);
   }
@@ -234,7 +240,14 @@ export function TagLegendEditor({
     dragPosRef.current = { x: rect.left, y: rect.top };
     dragTargetRef.current = { x: rect.left, y: rect.top };
     dragRotRef.current = 0;
+    dragRotVelRef.current = 0;
     dragWobbleRef.current = 0;
+    // 중력: 잡은 지점을 회전축으로, 중심에서 가로로 벗어난 만큼 매달린 듯 기운다(얇은 바라 ±13°로 절제).
+    const offX = e.clientX - rect.left;
+    const offY = e.clientY - rect.top;
+    ghost.style.transformOrigin = `${offX}px ${offY}px`;
+    const fracX = rect.width > 0 ? offX / rect.width : 0.5;
+    dragGravityRef.current = (0.5 - fracX) * 26;
     dragReducedRef.current =
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     scrollerRef.current = findScroller(row);

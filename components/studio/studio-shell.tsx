@@ -576,6 +576,15 @@ export function StudioShell({
   const dragRaf = useRef<number | null>(null);
   const dragMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
   const justDraggedRef = useRef(false);
+  // 유령 물리감(태그 편집과 동일): 관성 지연 + 움직임 방향 기울기 + 랜덤 흔들림.
+  // CSS 애니메이션 대신 JS로 transform을 직접 칠해, 2색(그라데이션) 카드에도 확실히 적용된다.
+  const edPosRef = useRef({ x: 0, y: 0 });
+  const edTargetRef = useRef({ x: 0, y: 0 });
+  const edRotRef = useRef(0);
+  const edRotVelRef = useRef(0); // 회전 속도(스프링) — 매달린 듯 swing
+  const edGravityRef = useRef(0); // 잡은 지점이 중심에서 벗어난 만큼의 "매달림" 기울기
+  const edWobRef = useRef(0);
+  const edReducedRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -587,6 +596,31 @@ export function StudioShell({
 
   function dragAutoScroll() {
     if (dragScrollDir.current !== 0) window.scrollBy(0, 13 * dragScrollDir.current);
+    const ghost = dragGhostRef.current;
+    if (ghost && edReducedRef.current) {
+      ghost.style.left = `${edTargetRef.current.x}px`;
+      ghost.style.top = `${edTargetRef.current.y}px`;
+    } else if (ghost) {
+      const pos = edPosRef.current;
+      const t = edTargetRef.current;
+      const prevX = pos.x;
+      pos.x += (t.x - pos.x) * 0.22; // 관성(지연)
+      pos.y += (t.y - pos.y) * 0.22;
+      const vx = pos.x - prevX;
+      const momentum = Math.max(-15, Math.min(15, vx * 0.7)); // 움직이는 방향으로 기울기
+      // 매달림(중력) 각도 + 움직임 모멘텀을 목표로, 스프링으로 swing(살짝 넘쳤다 정착).
+      const targetAngle = edGravityRef.current + momentum;
+      edRotVelRef.current += (targetAngle - edRotRef.current) * 0.1;
+      edRotVelRef.current *= 0.8;
+      edRotRef.current += edRotVelRef.current;
+      edWobRef.current += 0.12;
+      const w = edWobRef.current;
+      const wobble =
+        Math.sin(w) * 1.4 + Math.sin(w * 1.7 + 0.6) * 0.9 + (Math.random() - 0.5) * 0.8;
+      ghost.style.left = `${pos.x}px`;
+      ghost.style.top = `${pos.y}px`;
+      ghost.style.transform = `rotate(${edRotRef.current + wobble}deg) scale(1.06)`;
+    }
     dragRaf.current = requestAnimationFrame(dragAutoScroll);
   }
 
@@ -621,21 +655,34 @@ export function StudioShell({
     if (!info.started) {
       if (Math.hypot(e.clientX - info.startX, e.clientY - info.startY) < 6) return;
       info.started = true;
+      const rect = info.node.getBoundingClientRect();
       const ghost = info.node.cloneNode(true) as HTMLElement;
       ghost.classList.add("event-drag-ghost");
-      ghost.style.width = `${info.node.getBoundingClientRect().width}px`;
+      ghost.style.width = `${rect.width}px`;
+      ghost.style.left = `${rect.left}px`;
+      ghost.style.top = `${rect.top}px`;
       document.body.appendChild(ghost);
       dragGhostRef.current = ghost;
       setDragEventId(info.id);
+      // 물리 초기화 — 현재 위치=목표=잡은 자리에서 시작.
+      edPosRef.current = { x: rect.left, y: rect.top };
+      edTargetRef.current = { x: rect.left, y: rect.top };
+      edRotRef.current = 0;
+      edRotVelRef.current = 0;
+      edWobRef.current = 0;
+      // 중력: 잡은 지점을 회전축(pivot)으로 두고, 그 지점이 카드 중심에서 가로로 벗어난 만큼
+      // 매달린 듯 기운다(왼쪽을 잡으면 오른쪽이 아래로 처짐). 최대 ±20°.
+      ghost.style.transformOrigin = `${info.offX}px ${info.offY}px`;
+      const fracX = rect.width > 0 ? info.offX / rect.width : 0.5;
+      edGravityRef.current = (0.5 - fracX) * 40;
+      edReducedRef.current =
+        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
       // 드래그 동안 어디서도 글자가 선택(긁힘)되지 않게.
       document.body.style.userSelect = "none";
       dragRaf.current = requestAnimationFrame(dragAutoScroll);
     }
-    const ghost = dragGhostRef.current;
-    if (ghost) {
-      ghost.style.left = `${e.clientX - info.offX}px`;
-      ghost.style.top = `${e.clientY - info.offY}px`;
-    }
+    // 직접 위치를 박지 않고 "목표"만 갱신 → dragAutoScroll 루프가 관성 있게 따라간다.
+    edTargetRef.current = { x: e.clientX - info.offX, y: e.clientY - info.offY };
     const under = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     const dayEl = under?.closest("[data-isodate]") as HTMLElement | null;
     const iso = dayEl?.getAttribute("data-isodate") ?? null;
