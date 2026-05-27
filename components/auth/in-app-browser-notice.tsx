@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 
 // 현재 주소를 안드로이드 크롬으로 여는 인텐트 URL.
@@ -43,6 +43,49 @@ export function InAppBrowserNotice({
   // (이미 시도했던 세션이면 아래 효과에서 false로 바꿔 버튼을 노출 → 취소/뒤로가기 탈출구.)
   const [autoStarting, setAutoStarting] = useState(autoSubmit);
 
+  // 크롬으로 보낸 뒤 이 redirect 화면으로 돌아온 경우, 사용자가 "한 번 더 누르는 뒤로가기"를
+  // 자동으로 대신한다. ① 웹 히스토리가 있으면 history.back(). ② 숲·카카오처럼 웹 히스토리가
+  // 1개뿐인(뒤로 갈 웹 페이지가 없는) 단일 웹뷰면 시스템 뒤로가기 대용으로 window.close()를 시도.
+  // 둘 다 못 빠져나가면 잠깐 뒤 안내 카드(수동 탈출구)를 보여준다. 무한 바운스는 1.5초 가드로 방지.
+  const forceBack = useCallback(() => {
+    if (returnedRef.current) return;
+    let last = 0;
+    try {
+      last = Number(sessionStorage.getItem("vic-skip-ts") || "0");
+    } catch {
+      last = 0;
+    }
+    const now = Date.now();
+    if (now - last < 1500) {
+      // 방금 빠져나가려 했는데 또 이 화면 = 더는 못 빠져나감 → 카드로.
+      setAutoStarting(false);
+      setPhase("card");
+      return;
+    }
+    returnedRef.current = true;
+    try {
+      sessionStorage.setItem("vic-skip-ts", String(now));
+    } catch {
+      // 무시
+    }
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      try {
+        window.open("", "_self");
+        window.close();
+      } catch {
+        // 닫기 불가
+      }
+    }
+    // 위 시도가 안 먹히는 환경이면(여전히 이 화면) 잠깐 뒤 카드로 — 무한 빈 화면 방지.
+    window.setTimeout(() => {
+      returnedRef.current = false;
+      setAutoStarting(false);
+      setPhase("card");
+    }, 800);
+  }, []);
+
   // 인앱이 아님이 확정되면(phase=children) 로그인 폼을 한 번 자동 제출한다.
   // 단, 이 브라우저 세션에서 이미 한 번 시도했으면 자동 제출하지 않고 버튼만 보여준다 —
   // 구글에서 로그인을 취소하거나 뒤로가기로 돌아왔을 때 다시 구글로 튕겨 무한 루프가 되는 걸 막는다.
@@ -81,25 +124,9 @@ export function InAppBrowserNotice({
       return;
     }
     // 안드로이드 웹뷰: 이미 크롬 전환을 시도한 세션에서 이 redirect 페이지를 "다시" 보고 있다
-    // = 사실상 뒤로가기로 들어온 것. 머무르지 말고 한 칸 건너뛰어 원래(링크 눌렀던) 화면으로.
-    // 숲(SOOP) 등 일부 웹뷰는 뒤로가기를 back_forward 타입으로 안 줘서, 타입에 의존하지 않고
-    // 시도하되 1.2초 루프 가드로 무한 바운스를 막는다(가드에 걸리면 안내 카드 = 수동 탈출구).
+    // = 사실상 뒤로가기로 들어온 것. 머무르지 말고 "한 번 더 뒤로"를 자동으로 대신한다.
     if (sessionStorage.getItem("vic-chrome-try")) {
-      const navEntry = performance.getEntriesByType("navigation")[0] as
-        | PerformanceNavigationTiming
-        | undefined;
-      const isBackForward = navEntry?.type === "back_forward";
-      const lastSkip = Number(sessionStorage.getItem("vic-skip-ts") || "0");
-      const now = Date.now();
-      const canSkip = window.history.length > 1 && (isBackForward || now - lastSkip > 1200);
-      if (canSkip) {
-        sessionStorage.setItem("vic-skip-ts", String(now));
-        window.history.back();
-        // 뒤로가기가 막힌(이동 안 되는) 환경이면 무한 대기 없이 안내 카드로.
-        window.setTimeout(() => setPhase("card"), 800);
-        return;
-      }
-      setPhase("card");
+      forceBack();
       return;
     }
     // 크롬으로 자동 전환 시도. 성공하면 화면이 백그라운드로 가(visibilitychange) 카드를 안 띄운다.
@@ -108,12 +135,9 @@ export function InAppBrowserNotice({
     const onVis = () => {
       if (document.hidden) {
         openedRef.current = true; // 크롬이 열려 이 웹뷰가 가려짐
-      } else if (openedRef.current && !returnedRef.current) {
-        // 크롬에서 이 웹뷰로 돌아옴 → "여는 중" redirect 화면을 히스토리에서 건너뛰어
-        // 원래(링크를 눌렀던) 화면으로 바로 보낸다. (뒤로가기 두 번·무한 스피너 모두 해소.)
-        returnedRef.current = true;
-        if (window.history.length > 1) window.history.back();
-        else setPhase("card"); // 돌아갈 곳이 없으면 무한 스피너 대신 안내 카드
+      } else if (openedRef.current) {
+        // 크롬에서 이 웹뷰로 돌아옴 → "한 번 더 뒤로"를 자동으로 대신해 원래 화면으로.
+        forceBack();
       }
     };
     document.addEventListener("visibilitychange", onVis);
@@ -128,10 +152,10 @@ export function InAppBrowserNotice({
       document.removeEventListener("visibilitychange", onVis);
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [forceBack]);
 
   // bfcache로 redirect 화면이 복원되는 경우(웹뷰가 visibilitychange 대신 pageshow를 쏠 때)도
-  // 동일하게 원래 화면으로 건너뛴다. 크롬 전환을 시도했던 세션에서만 동작.
+  // 동일하게 "한 번 더 뒤로"로 원래 화면으로. 크롬 전환을 시도했던 세션에서만 동작.
   useEffect(() => {
     function onPageShow(e: PageTransitionEvent) {
       if (!e.persisted || returnedRef.current) return;
@@ -141,17 +165,11 @@ export function InAppBrowserNotice({
       } catch {
         tried = false;
       }
-      if (!tried) return;
-      returnedRef.current = true;
-      if (window.history.length > 1) window.history.back();
-      else {
-        setAutoStarting(false);
-        setPhase("card");
-      }
+      if (tried) forceBack();
     }
     window.addEventListener("pageshow", onPageShow);
     return () => window.removeEventListener("pageshow", onPageShow);
-  }, []);
+  }, [forceBack]);
 
   if (phase === "children") {
     // 자동 로그인 중에는 버튼을 그리지 않고 로딩만 보여준다(폼은 숨겨둔 채 자동 제출).
