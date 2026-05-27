@@ -288,14 +288,14 @@
   display: grid;
   /* 좌: 색상 필터(최소 폭) / 가운데: 달력(오른쪽 끝까지) / 우: 새 일정 카드(닫힘=0 → 슬라이드 인).
      gap은 0으로 두고 좌측은 margin, 우측은 패딩으로 간격을 줘서 닫혔을 때 달력이 끝까지 가게 한다. */
-  grid-template-columns: 150px minmax(0, 1fr) 0px;
+  grid-template-columns: 188px minmax(0, 1fr) 0px;
   gap: 0;
   padding: 18px;
   transition: grid-template-columns 0.28s ease;
 }
 /* 날짜를 선택하면 우측 카드(폼 372 + 좌측 간격 18)가 밀고 들어온다. */
 .studio-workspace.editor-open {
-  grid-template-columns: 150px minmax(0, 1fr) 390px;
+  grid-template-columns: 188px minmax(0, 1fr) 390px;
 }
 
 .studio-left-panel,

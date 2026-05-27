@@ -78,6 +78,8 @@ type PublicPosterProps = {
   schedule: PublicSchedule;
   initialYear?: number;
   initialMonth?: number;
+  // 월을 바꿀 때 부모(편집실)에 알린다 — 시청자 미리보기에서 본 달을 편집실로 돌아갈 때 잇기 위함.
+  onViewChange?: (year: number, month: number) => void;
   canExport?: boolean;
   decorate?: boolean;
   saveStickerAction?: (input: SaveStickerInput) => Promise<StickerResult>;
@@ -321,6 +323,7 @@ const TEXT_WEIGHTS = [
 export function PublicPoster({
   initialMonth,
   initialYear,
+  onViewChange,
   schedule,
   canExport: canExportProp = false,
   decorate: decorateProp = false,
@@ -1406,7 +1409,9 @@ export function PublicPoster({
   }
   function moveMonth(offset: number) {
     setMonthDir(offset >= 0 ? "next" : "prev");
-    setView((current) => getAdjacentMonth(current.year, current.month, offset));
+    const next = getAdjacentMonth(view.year, view.month, offset);
+    setView(next);
+    onViewChange?.(next.year, next.month); // 부모(편집실)에 바뀐 달 알림
   }
 
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.

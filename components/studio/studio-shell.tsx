@@ -1938,6 +1938,7 @@ export function StudioShell({
         <PublicPoster
           initialMonth={view.month}
           initialYear={view.year}
+          onViewChange={(year, month) => setView({ year, month })}
           schedule={schedule.viewerModePreview}
           toggleHeartAction={toggleEventHeartAction}
         />
