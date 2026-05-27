@@ -357,9 +357,11 @@ export function StudioShell({
     year: schedule.calendar.defaultYear,
     month: schedule.calendar.defaultMonth
   });
-  const [selectedDate, setSelectedDate] = useState(
-    `${schedule.calendar.defaultYear}-${String(schedule.calendar.defaultMonth).padStart(2, "0")}-01`
-  );
+  const [selectedDate, setSelectedDate] = useState(() => {
+    // 기본 표시 달이 "이번 달"이면 오늘 날짜 칸을, 아니면 그 달 1일을 선택한다.
+    const ym = `${schedule.calendar.defaultYear}-${String(schedule.calendar.defaultMonth).padStart(2, "0")}`;
+    return today.startsWith(`${ym}-`) ? today : `${ym}-01`;
+  });
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const canEdit = canEditSchedule(actor.role);
   const canDecorateCalendar = canDecorate(actor.role);
@@ -1579,7 +1581,7 @@ export function StudioShell({
           <span className="viewer-fullscreen-label">
             {isNarrow ? null : <Eye aria-hidden="true" size={15} />}
             {isNarrow
-              ? "시청자가 보는 화면(비공개 일정 미포함)"
+              ? "시청자가 보는 화면"
               : "시청자가 보는 공개 화면입니다"}
           </span>
           <button className="button" onClick={() => setViewerMode(false)} type="button">
@@ -2175,6 +2177,7 @@ export function StudioShell({
                   return (
                     <NoticeModal
                       dateKey={selectedDate}
+                      initialKind={form.isSupport ? "up" : "bangon"}
                       initialUpLink={upLink}
                       initialUpTarget={upTarget}
                       mobile={isNarrow}

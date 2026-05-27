@@ -55,6 +55,8 @@ type NoticeModalProps = {
   // 이 날짜의 업 도움 일정 값이 있으면 업 공지 칸을 미리 채운다(두 번 일 안 하게).
   initialUpLink?: string;
   initialUpTarget?: string; // 업 도움 일정의 제목 → 업 공지 제목(대상)
+  // 처음 열 때 보여줄 공지 종류. 업 도움 토글이 켜진 채 열면 "업 도움 공지"부터 보여준다.
+  initialKind?: "bangon" | "up";
 };
 
 // "YYYY-MM-DD" → "YY년 M월 d일" (월·일은 0 없이, 연도는 두 자리).
@@ -68,10 +70,11 @@ export function NoticeModal({
   onClose,
   mobile = false,
   initialUpLink = "",
-  initialUpTarget = ""
+  initialUpTarget = "",
+  initialKind = "bangon"
 }: NoticeModalProps) {
-  // 공지 종류 — 뱅온 공지 / 업 도움 공지(탭 전환).
-  const [kind, setKind] = useState<"bangon" | "up">("bangon");
+  // 공지 종류 — 뱅온 공지 / 업 도움 공지(탭 전환). 업 도움 토글이 켜진 채 열면 업 공지부터.
+  const [kind, setKind] = useState<"bangon" | "up">(initialKind);
   const [ampm, setAmpm] = useState<"오전" | "오후">("오후");
   const [time, setTime] = useState(""); // 예: "4시", "5시반"
   const [brief, setBrief] = useState(""); // 방송 내용(간략)
