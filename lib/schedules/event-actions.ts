@@ -95,6 +95,65 @@ export async function moveEventAction(eventId: string, newDateKey: string): Prom
   return { ok: true, id: eventId };
 }
 
+// 같은 날 안에서 일정 카드 순서 바꾸기(드래그). 다른 날에서 끌어온 경우 그 일정의 날짜도 함께
+// 옮긴다. orderedIds 순서대로 sort_order를 0,1,2…로 부여한다(같은 날 표시 순서를 결정).
+export async function reorderEventsAction(input: {
+  dateKey: string;
+  orderedIds: string[];
+  movedId?: string; // 다른 날에서 이 날로 옮겨온 일정(있으면 date_key도 갱신)
+}): Promise<ActionResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!canEditSchedule(actor.role)) {
+    return { ok: false, error: "owner 또는 developer만 일정을 옮길 수 있습니다." };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.dateKey)) {
+    return { ok: false, error: "날짜 형식이 올바르지 않습니다." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
+  }
+
+  // 다른 날에서 끌어온 일정이면 먼저 날짜를 옮긴다(단일일 카드만 드래그 가능 → 종료일 그대로).
+  if (input.movedId) {
+    const { data: ev } = await supabase
+      .from("events")
+      .select("date_key, end_date_key")
+      .eq("id", input.movedId)
+      .maybeSingle();
+    if (ev && ev.date_key !== input.dateKey) {
+      const delta = diffDaysKey(ev.date_key as string, input.dateKey);
+      const newEnd =
+        typeof ev.end_date_key === "string" ? addDaysKey(ev.end_date_key, delta) : null;
+      const { error: moveErr } = await supabase
+        .from("events")
+        .update({ date_key: input.dateKey, end_date_key: newEnd })
+        .eq("id", input.movedId);
+      if (moveErr) {
+        return { ok: false, error: moveErr.message };
+      }
+    }
+  }
+
+  // 새 순서대로 sort_order 부여(병렬).
+  const now = new Date().toISOString();
+  const results = await Promise.all(
+    input.orderedIds.map((id, index) =>
+      supabase.from("events").update({ sort_order: index, updated_at: now }).eq("id", id)
+    )
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) {
+    return { ok: false, error: failed.error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/studio");
+  revalidatePublicSchedule();
+  return { ok: true, id: input.movedId ?? input.orderedIds[0] ?? "" };
+}
+
 export async function saveEventAction(input: SaveEventInput): Promise<ActionResult> {
   const actor = await resolveCurrentActor(SLUG);
 

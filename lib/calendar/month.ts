@@ -128,7 +128,9 @@ export function getEventsForDate<T extends PublicScheduleEvent | StudioScheduleE
 
   return events
     .filter((event) => getEventDateKey(event) <= isoDate && isoDate <= eventEndKey(event))
-    .sort((a, b) => connected(b) - connected(a));
+    // 연결/멀티데이를 위로, 그 다음은 sortOrder(같은 날 안에서 드래그로 바꾼 순서). 동률이면
+    // 원래 로드 순서 유지(안정 정렬). sortOrder가 모두 0이면 기존과 동일하게 동작.
+    .sort((a, b) => connected(b) - connected(a) || a.sortOrder - b.sortOrder);
 }
 
 export type EventSpan = {

@@ -67,7 +67,7 @@ import {
 } from "@/lib/permissions/roles";
 import {
   deleteEventAction,
-  moveEventAction,
+  reorderEventsAction,
   saveEventAction,
   updateSupportSettingsAction
 } from "@/lib/schedules/event-actions";
@@ -561,6 +561,8 @@ export function StudioShell({
   const [dragEventId, setDragEventId] = useState<string | null>(null);
   const [dropDate, setDropDate] = useState<string | null>(null);
   const dropDateRef = useRef<string | null>(null);
+  // 같은 날 안에서 어느 카드 위/아래에 떨어뜨릴지(순서 변경). null이면 맨 끝에 둠.
+  const dropOverRef = useRef<{ id: string; after: boolean } | null>(null);
   const dragGhostRef = useRef<HTMLElement | null>(null);
   const dragInfoRef = useRef<{
     id: string;
@@ -655,13 +657,15 @@ export function StudioShell({
     document.body.style.userSelect = "";
     const info = dragInfoRef.current;
     const target = dropDateRef.current;
+    const over = dropOverRef.current;
     setDragEventId(null);
     setDropDate(null);
     dropDateRef.current = null;
+    dropOverRef.current = null;
     if (info?.started) {
       justDraggedRef.current = true; // 다음 click(선택) 1회 무시
-      if (target && target !== info.sourceDate) {
-        void moveEventToDate(info.id, target);
+      if (target) {
+        void dropEventInto(info.id, info.sourceDate, target, over);
       }
     }
     dragInfoRef.current = null;
@@ -724,6 +728,16 @@ export function StudioShell({
       dropDateRef.current = iso;
       setDropDate(iso);
     }
+    // 같은/다른 날 안에서 어느 카드 위·아래에 놓을지 판단(순서 변경). 카드 위쪽 절반=그 앞,
+    // 아래쪽 절반=그 뒤. 카드가 아니면(빈 공간) null → 맨 끝.
+    const pillEl = under?.closest("[data-eventid]") as HTMLElement | null;
+    const overId = pillEl?.getAttribute("data-eventid") ?? null;
+    if (overId && overId !== info.id) {
+      const r = pillEl!.getBoundingClientRect();
+      dropOverRef.current = { id: overId, after: e.clientY > r.top + r.height / 2 };
+    } else {
+      dropOverRef.current = null;
+    }
     const margin = 80;
     dragScrollDir.current =
       e.clientY < margin ? -1 : e.clientY > window.innerHeight - margin ? 1 : 0;
@@ -753,30 +767,64 @@ export function StudioShell({
     window.addEventListener("pointercancel", endEventDrag, { once: true });
   }
 
-  async function moveEventToDate(id: string, targetDate: string) {
-    const snapshot = events;
+  // 드롭: 일정을 target 날짜로(필요 시) 옮기고, 같은 날 안에서 over(위/아래) 위치에 끼워 순서 변경.
+  async function dropEventInto(
+    id: string,
+    sourceDate: string,
+    targetDate: string,
+    over: { id: string; after: boolean } | null
+  ) {
     const moved = events.find((ev) => ev.id === id);
     if (!moved) return;
-    const oldDate = getEventDateKey(moved);
+
+    // target 날짜의 (드래그 중인 카드를 뺀) 현재 표시 순서.
+    const dayEvents = getEventsForDate(events, targetDate).filter((e) => e.id !== id);
+    let insertIdx = dayEvents.length; // 기본: 맨 끝
+    if (over && over.id !== id) {
+      const idx = dayEvents.findIndex((e) => e.id === over.id);
+      if (idx >= 0) insertIdx = over.after ? idx + 1 : idx;
+    }
+    const orderedIds = [
+      ...dayEvents.slice(0, insertIdx).map((e) => e.id),
+      id,
+      ...dayEvents.slice(insertIdx).map((e) => e.id)
+    ];
+
+    // 바뀐 게 없으면(같은 날 + 같은 순서) 아무것도 안 한다.
+    const currentIds = getEventsForDate(events, targetDate).map((e) => e.id);
+    if (targetDate === sourceDate && orderedIds.join() === currentIds.join()) {
+      return;
+    }
+
+    const snapshot = events;
     const delta = Math.round(
       (new Date(`${targetDate}T00:00:00Z`).getTime() -
-        new Date(`${oldDate}T00:00:00Z`).getTime()) /
+        new Date(`${getEventDateKey(moved)}T00:00:00Z`).getTime()) /
         86400000
     );
+    const orderPos = new Map(orderedIds.map((eid, i) => [eid, i] as const));
     setEvents((prev) =>
-      prev.map((ev) =>
-        ev.id === id
-          ? {
-              ...ev,
-              startsAt: ev.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, targetDate),
-              endDateKey: ev.endDateKey ? addDaysIso(ev.endDateKey, delta) : ev.endDateKey
-            }
-          : ev
-      )
+      prev.map((ev) => {
+        let next = ev;
+        if (ev.id === id && targetDate !== sourceDate) {
+          next = {
+            ...next,
+            startsAt: next.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, targetDate),
+            endDateKey: next.endDateKey ? addDaysIso(next.endDateKey, delta) : next.endDateKey
+          };
+        }
+        const pos = orderPos.get(ev.id);
+        if (pos !== undefined) next = { ...next, sortOrder: pos };
+        return next;
+      })
     );
     setSelectedDate(targetDate);
-    flashToast(`${targetDate}로 옮겼어요`);
-    const result = await moveEventAction(id, targetDate);
+    flashToast(targetDate === sourceDate ? "순서를 바꿨어요" : `${targetDate}로 옮겼어요`);
+    const result = await reorderEventsAction({
+      dateKey: targetDate,
+      orderedIds,
+      movedId: targetDate !== sourceDate ? id : undefined
+    });
     if (!result.ok) {
       setEvents(snapshot);
       setActionError(result.error);
@@ -2139,6 +2187,7 @@ export function StudioShell({
                           className={pillClass}
                           data-chain={chainKeys.get(event.id)}
                           data-color={mixed ? undefined : colors[0]?.key}
+                          data-eventid={event.id}
                           data-mixed={mixed ? "" : undefined}
                           key={event.id}
                           onClick={(e) => {
