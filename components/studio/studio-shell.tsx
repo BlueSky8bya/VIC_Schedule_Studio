@@ -81,6 +81,7 @@ import { TrustedMembersPanel } from "@/components/trusted-members/trusted-member
 import { DeveloperPanel } from "@/components/developer/developer-panel";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
+import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 
 type StudioShellProps = {
   actor: CurrentActor;
@@ -227,7 +228,7 @@ export function StudioShell({
   // 모바일(좁은 화면): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
   const [isNarrow, setIsNarrow] = useState(false);
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 640px)");
+    const mq = window.matchMedia(MOBILE_QUERY);
     const apply = () => setIsNarrow(mq.matches);
     apply();
     mq.addEventListener("change", apply);

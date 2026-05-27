@@ -1,3 +1,7 @@
+/* Responsive policy (단일 출처: lib/ui/breakpoints.ts · docs/responsive-design-audit-report.md)
+   mobile <= 640px (agenda/list) · compact <= 860px · studio narrow <= 1180px · 그 이상 데스크톱.
+   포스터(.poster-surface)는 Phase 2에서 4:5 고정 비율 캔버스로 전환 예정 — 화면 흐름과 분리한다. */
+
 /* ── 모바일 아젠다(목록) 뷰 ── */
 /* 왼쪽: 스크롤 따라오는 색상 안내(sticky) · 오른쪽: 날짜별 일정 목록 */
 .agenda {

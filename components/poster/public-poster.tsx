@@ -73,6 +73,7 @@ import {
   type MonthCell
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
+import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 
 type PublicPosterProps = {
   schedule: PublicSchedule;
@@ -521,7 +522,7 @@ export function PublicPoster({
   // (꾸미기 모드엔 적용 안 함: 꾸미기는 PC 전용.)
   const [isNarrow, setIsNarrow] = useState(false);
   useEffect(() => {
-    const mq = window.matchMedia("(max-width: 640px)");
+    const mq = window.matchMedia(MOBILE_QUERY);
     const update = () => setIsNarrow(mq.matches);
     update();
     mq.addEventListener("change", update);
