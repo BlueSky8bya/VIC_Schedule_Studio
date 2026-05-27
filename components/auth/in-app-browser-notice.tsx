@@ -80,8 +80,20 @@ export function InAppBrowserNotice({
       setPhase("card"); // 자동전환 불가(iOS 등) → 안내 바로
       return;
     }
-    // 안드로이드 웹뷰: 같은 세션에서 이미 시도했으면(크롬에서 돌아옴 등) 바로 카드.
+    // 안드로이드 웹뷰: 이미 크롬 전환을 시도한 세션.
     if (sessionStorage.getItem("vic-chrome-try")) {
+      // 뒤로/앞으로 내비게이션으로 이 redirect 페이지에 "다시" 도달한 경우(크롬 갔다 돌아옴 등)
+      // → 머무르지 말고 한 칸 건너뛰어 원래(링크 눌렀던) 화면으로 바로 보낸다.
+      // 새 링크 클릭(navigate)은 type이 다르므로 영향받지 않는다.
+      const navEntry = performance.getEntriesByType("navigation")[0] as
+        | PerformanceNavigationTiming
+        | undefined;
+      if (navEntry?.type === "back_forward" && window.history.length > 1) {
+        window.history.back();
+        // 뒤로가기가 막힌(이동 안 되는) 환경이면 무한 대기 없이 안내 카드로.
+        window.setTimeout(() => setPhase("card"), 700);
+        return;
+      }
       setPhase("card");
       return;
     }
