@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { InAppBrowserNotice } from "@/components/auth/in-app-browser-notice";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
+import { friendlyAuthMessage, normalizeAuthErrorCode } from "@/lib/auth/auth-errors";
 
 type LoginPageProps = {
   searchParams: Promise<{
@@ -15,6 +16,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
   const configured = isSupabaseConfigured();
   const next = sanitizeNextPath(params.next ?? "/");
   const inApp = detectInAppBrowser((await headers()).get("user-agent") ?? "");
+  const errorMessage = params.error ? friendlyAuthMessage(normalizeAuthErrorCode(params.error)) : null;
 
   return (
     <main className="auth-page">
@@ -33,7 +35,12 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
         ) : null}
 
-        {params.error ? <div className="auth-warning">{params.error}</div> : null}
+        {errorMessage ? (
+          <div className="auth-error-card" role="alert">
+            <span className="auth-error-emoji" aria-hidden="true">🔁</span>
+            <p>{errorMessage}</p>
+          </div>
+        ) : null}
 
         <InAppBrowserNotice initialAndroid={inApp.android} initialInApp={inApp.inApp}>
           <form action="/api/auth/login" method="post">

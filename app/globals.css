@@ -373,6 +373,27 @@ select {
   background: #fff7ed;
   color: #9a3412;
 }
+/* OAuth 실패를 날 것의 쿼리스트링 대신 친절한 복구 카드로. 바로 아래 로그인 버튼이 재시도. */
+.auth-error-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid #f3b9b1;
+  border-radius: 12px;
+  background: #fff5f3;
+  padding: 12px 14px;
+}
+.auth-error-card .auth-error-emoji {
+  font-size: 18px;
+  line-height: 1.4;
+}
+.auth-error-card p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #b4453a;
+}
 .inapp-notice {
   display: grid;
   gap: 8px;
