@@ -484,12 +484,24 @@ export function getEventSpan<T extends PublicScheduleEvent | StudioScheduleEvent
 ): EventSpan {
   const start = getEventDateKey(event);
   const end = eventEndKey(event);
-  const nextEvent = event.linkNext
+  // link_next로 묶였더라도 맞닿는 변의 색(대표 태그)이 같을 때만 "이어진 것"으로 본다.
+  // (앞 일정의 오른쪽 변 == 뒤 일정의 왼쪽 변, 또는 대표 태그 구성이 동일.) buildLinkChain이
+  // 이을 때 쓰는 기준과 동일 → 칠(buildPaintGroups)과 모서리가 항상 일치한다. 그래야 색이 다른
+  // 두 일정(예: 옛 엠바고 + 다른 태그)이 억지로 붙어 보이지 않는다. "A|B"+"B"는 이어지고(B==B),
+  // "A|B"+"C"는 끊긴다. (태그를 바꿔 색이 어긋난 옛 link_next도 자동으로 끊겨 보인다.)
+  const edgesMatch = (left: T, right: T) => {
+    const r = rightEdgeTag(left);
+    const l = leftEdgeTag(right);
+    return (Boolean(r) && r === l) || repTagIds(left).join(",") === repTagIds(right).join(",");
+  };
+  const linkedNext = event.linkNext
     ? allEvents.find((e) => e.id === event.linkNext)
     : undefined;
-  const prevEvent = allEvents.find((e) => e.linkNext === event.id);
+  const linkedPrev = allEvents.find((e) => e.linkNext === event.id);
+  const nextEvent = linkedNext && edgesMatch(event, linkedNext) ? linkedNext : undefined;
+  const prevEvent = linkedPrev && edgesMatch(linkedPrev, event) ? linkedPrev : undefined;
 
-  // 오른쪽 이어짐: 자체 멀티데이가 계속되거나, 끝날의 다음날을 link_next 상대가 덮을 때
+  // 오른쪽 이어짐: 자체 멀티데이가 계속되거나, 끝날의 다음날을 (색이 맞는) link_next 상대가 덮을 때
   const connectRight =
     isoDate < end ||
     (isoDate === end && Boolean(nextEvent) && covers(nextEvent!, addDays(isoDate, 1)));
