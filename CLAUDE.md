@@ -19,6 +19,15 @@ The product is built around **immersion**:
   decoration feel cute, alive, and fun without hurting clarity or accessibility.
 - **Role-specific flow**: owner, manager, worker, developer, and viewer should
   each feel they are in the right place with the right tools.
+- **Design unity**: keep one visual language across the whole app — consistent
+  spacing, symmetric left/right padding, a shared motion vocabulary, reused
+  tokens/components. **Imbalance is the worst** (mismatched paddings, ad-hoc
+  one-off styles, inconsistent button shapes) — treat it as a defect, not a
+  minor detail. New UI must look like it was always part of the app.
+
+User immersion is the top tie-breaker: when options are otherwise equal, choose
+the one that deepens immersion and keeps the UI uniform. A cold "admin panel"
+feel is a regression.
 
 Core promise:
 
@@ -61,6 +70,15 @@ High-frequency facts so you rarely need to reopen `docs/sop.md`:
   width on a phone?" — if not, trim or hide it.
 - Visible owner role label is "관리자" (the role key stays `owner`); the support
   feature term is "업 도움".
+- **Optimistic writes are queued, not raced.** Rapid repeat actions (drag-move,
+  reorder, repeated saves) must persist through a *serialized queue* so the
+  **last** action is the saved truth — never "whichever request reaches the
+  server first." Don't let server revalidation (fresh props) overwrite in-flight
+  optimistic state. Warn on unload (`beforeunload`) only while a critical write
+  is genuinely in flight (count real in-flight ops; never a fixed timer).
+- **Gate UI affordances narrowly.** Never disable/relabel a control from a broad
+  shared flag (e.g. a global `pending`): a background save must not block
+  unrelated actions like creating a new card. Gate on the specific condition.
 
 ## Role Guide
 
@@ -148,6 +166,13 @@ Check before finishing:
 - private-layer warning is clear
 - poster/export output has no admin UI
 - perceived performance and motion states are purposeful
+- **regression review**: after any structural change, re-verify that prior
+  features still work under the new structure — create / drag / reorder / save
+  ordering, optimistic-vs-server-prop sync, button enabled-state scope, and the
+  layout/padding of nearby surfaces you touched. A change is "done" only once
+  you've confirmed it didn't quietly break or unbalance an existing flow.
+- design unity holds: spacing/padding symmetric, styles consistent with
+  neighbors, no one-off imbalance introduced
 - tests or manual verification are noted
 
 ## Workflow
