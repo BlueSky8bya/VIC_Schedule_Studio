@@ -15,6 +15,7 @@ import {
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  type CSSProperties,
   type FormEvent,
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
@@ -301,6 +302,21 @@ export function StudioShell({
   const [supportSaving, setSupportSaving] = useState(false);
   // 모바일에서 매니저가 일정의 태그만 고치는 전용 시트(데스크톱 읽기전용 상세의 태그 편집과 동치).
   const [tagSheetId, setTagSheetId] = useState<string | null>(null);
+  // 즐거운 모션: 방금 저장·생성된 카드는 통통 착지하며 반짝(just-saved), 삭제되는 카드는
+  // 톡 줄어들며 사라진다(deleting). 둘 다 "내가 누른 게 먹혔다"는 확신을 준다.
+  const [justSavedId, setJustSavedId] = useState<string | null>(null);
+  const justSavedTimer = useRef<number | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
+  // 첫 진입(스켈레톤 직후) 한 번만 날짜칸·일정이 차르륵 순차로 등장하게 한다. 달 이동은 기존
+  // 슬라이드 그대로 — 그래서 첫 등장에선 컨테이너 슬라이드를 끄고 칸 스태거로 대체한다.
+  const firstLoadRef = useRef(true);
+  const isFirstReveal = firstLoadRef.current;
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      firstLoadRef.current = false;
+    }, 1300);
+    return () => window.clearTimeout(t);
+  }, []);
   // 모바일 하단 관리(태그·멤버) 펼침 상태.
   const [mobileMgmt, setMobileMgmt] = useState<null | "tags" | "members">(null);
   // 일정은 로컬 상태로 들고 낙관적으로 갱신한다 — 잇기·복붙·저장·삭제가 서버 왕복/새로고침을
@@ -1415,6 +1431,7 @@ export function StudioShell({
     setSelectedEventId(null);
     setForm(createEmptyForm());
     setActionError(null);
+    markJustSaved(tempId); // 카드가 통통 착지하며 반짝
 
     // 저장이 끝나면 실제 id(또는 실패 시 null)로 풀리는 약속 — "잇기"가 이걸 기다린다.
     let resolveSave: (id: string | null) => void = () => {};
@@ -1447,10 +1464,23 @@ export function StudioShell({
             return next;
           })
         );
+        // 착지 반짝이 임시 id에 걸려 있었다면 실제 id로 이어준다(키가 바뀌어도 끊기지 않게).
+        setJustSavedId((p) => (p === tempId ? realId : p));
         resolveSave(realId);
         pendingSavesRef.current.delete(tempId);
       }
     });
+  }
+
+  function prefersReducedMotion() {
+    return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  }
+  // 저장·생성 직후 그 카드를 잠깐 "방금 저장됨"으로 표시 → CSS가 통통 착지+반짝을 입힌다.
+  function markJustSaved(id: string) {
+    if (prefersReducedMotion()) return;
+    setJustSavedId(id);
+    if (justSavedTimer.current) window.clearTimeout(justSavedTimer.current);
+    justSavedTimer.current = window.setTimeout(() => setJustSavedId(null), 650);
   }
 
   function deleteEvent(targetId: string) {
@@ -1458,9 +1488,26 @@ export function StudioShell({
     if (!canEdit) {
       return;
     }
+    if (!events.some((e) => e.id === targetId)) return;
+    // 톡! 줄어들며 사라지는 동안만 잠깐 카드를 남겼다가 실제로 제거한다(reduced-motion이면 즉시).
+    if (!prefersReducedMotion() && !deletingIds.has(targetId)) {
+      const snapshot = events;
+      setDeletingIds((prev) => new Set(prev).add(targetId));
+      window.setTimeout(() => commitDelete(targetId, snapshot), 230);
+      return;
+    }
+    commitDelete(targetId, events);
+  }
 
-    const snapshot = events;
-    const removed = events.find((e) => e.id === targetId) ?? null;
+  function commitDelete(targetId: string, snapshot: StudioScheduleEvent[]) {
+    const removed = snapshot.find((e) => e.id === targetId) ?? null;
+    // poof가 끝났으니 표시를 거둔다(실패해 되살아날 때 정상 모습으로 돌아오게).
+    setDeletingIds((prev) => {
+      if (!prev.has(targetId)) return prev;
+      const next = new Set(prev);
+      next.delete(targetId);
+      return next;
+    });
     // 낙관적 제거 + 이 일정을 가리키던 linkNext도 함께 정리.
     setEvents((prev) =>
       prev
@@ -1505,6 +1552,7 @@ export function StudioShell({
     const tempId = `temp-${Math.random().toString(36).slice(2)}`;
     setEvents((prev) => [...prev, { ...ev, id: tempId, linkNext: undefined }]);
     setActionError(null);
+    markJustSaved(tempId); // 되살아난 카드도 통통 착지하며 반짝
     flashToast("삭제 취소됨 (Ctrl+Z)");
 
     let resolveSave: (id: string | null) => void = () => {};
@@ -1895,8 +1943,12 @@ export function StudioShell({
               ) : null}
             </aside>
 
-            <div className="agenda-flow" data-enter={monthDir} key={`${view.year}-${view.month}`}>
-              {monthCells.map((cell) => {
+            <div
+              className={`agenda-flow${isFirstReveal ? " cal-reveal" : ""}`}
+              data-enter={monthDir}
+              key={`${view.year}-${view.month}`}
+            >
+              {monthCells.map((cell, agendaIndex) => {
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const mark = getDayMark(cell.isoDate);
               const dayEvents = mobileAgendaEvents.filter(
@@ -1911,7 +1963,11 @@ export function StudioShell({
                 return null;
               }
               return (
-                <div className={`agenda-day ${day.isToday ? "today" : ""}`} key={cell.isoDate}>
+                <div
+                  className={`agenda-day ${day.isToday ? "today" : ""}`}
+                  key={cell.isoDate}
+                  style={isFirstReveal ? ({ "--ri": agendaIndex } as CSSProperties) : undefined}
+                >
                   <div className="agenda-when">
                     <strong className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}>
                       {cell.dayOfMonth}
@@ -2676,7 +2732,7 @@ export function StudioShell({
             ))}
           </div>
           <div
-            className="studio-month-grid"
+            className={`studio-month-grid${isFirstReveal ? " cal-reveal" : ""}`}
             aria-label="월간 달력"
             data-enter={monthDir}
             key={`${view.year}-${view.month}`}
@@ -2729,6 +2785,7 @@ export function StudioShell({
                   key={cell.isoDate}
                   onClick={() => selectDate(cell.isoDate)}
                   role="button"
+                  style={isFirstReveal ? ({ "--ri": cellIndex } as CSSProperties) : undefined}
                   tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") selectDate(cell.isoDate);
@@ -2803,7 +2860,9 @@ export function StudioShell({
                         span.isMulti && !span.roundLeft ? "no-left" : "",
                         span.isMulti && !span.roundRight ? "no-right" : "",
                         draggable ? "draggable" : "",
-                        dragEventId === event.id ? "dragging-src" : ""
+                        dragEventId === event.id ? "dragging-src" : "",
+                        justSavedId === event.id ? "just-saved" : "",
+                        deletingIds.has(event.id) ? "deleting" : ""
                       ]
                         .filter(Boolean)
                         .join(" ");

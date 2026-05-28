@@ -140,6 +140,18 @@ select {
 .fade-up {
   animation: fade-up var(--dur-3) var(--ease) both;
 }
+/* 첫 진입 스태거 등장에 쓰는 공통 키프레임(편집실 그리드·아젠다 공용). 칸마다 --ri 인덱스로
+   딜레이를 줘 "차르륵" 순차로 떠오른다. */
+@keyframes cal-cell-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
 
 /* B1 기념일 축하 연출(컨페티 + 토스트) */
 .celebrate-overlay {

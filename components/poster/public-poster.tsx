@@ -1914,7 +1914,7 @@ export function PublicPoster({
         ) : null}
 
         <div
-          className="agenda-flow"
+          className={`agenda-flow${popIntro ? " cal-reveal" : ""}`}
           data-enter={monthDir}
           key={`${view.year}-${view.month}`}
         >
@@ -1927,8 +1927,12 @@ export function PublicPoster({
                   : "이 달엔 공개된 일정이 없어요. 🍃"}
             </p>
           ) : (
-            groups.map(({ cell, day, mark, list }) => (
-              <div className={`agenda-day ${day.isToday ? "today" : ""}`} key={cell.isoDate}>
+            groups.map(({ cell, day, mark, list }, agendaIndex) => (
+              <div
+                className={`agenda-day ${day.isToday ? "today" : ""}`}
+                key={cell.isoDate}
+                style={popIntro ? ({ "--ri": agendaIndex } as CSSProperties) : undefined}
+              >
                 <div className="agenda-when">
                   <strong className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}>
                     {cell.dayOfMonth}

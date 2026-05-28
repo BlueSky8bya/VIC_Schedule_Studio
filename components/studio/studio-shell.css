@@ -185,6 +185,22 @@
   /* 이모지 글리프(≈0.86×폰트)와 한글(≈0.72×폰트) 높이를 같게: 0.72/0.86 ≈ 0.83em */
   font-size: 0.83em;
   font-weight: 900;
+  display: inline-block;
+  transform-origin: center;
+  /* 제목 양옆 ✨가 천천히 반짝/둥실 — 시청자·편집실 공통 시그니처(좌우 엇갈리게). */
+  animation: studio-spark-twinkle 2.8s ease-in-out infinite;
+}
+.studio-poster-title span:last-of-type {
+  animation-delay: 1.4s;
+}
+@keyframes studio-spark-twinkle {
+  0%, 100% { opacity: 0.62; transform: scale(0.92) rotate(-7deg); }
+  50% { opacity: 1; transform: scale(1.1) rotate(7deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-poster-title span {
+    animation: none;
+  }
 }
 
 .studio-month-nav,
@@ -376,6 +392,33 @@
   padding: 10px 18px;
   color: #9a3412;
   font-weight: 900;
+  /* 잠금 해제 직후 배너가 위에서 슬라이드되며 한 번 환하게 번쩍 — "방송 공유 주의" 환기. */
+  animation:
+    private-banner-in 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both,
+    private-banner-flash 1s var(--ease, ease) 0.34s 1;
+}
+/* 자물쇠 아이콘이 톡 열리듯 팝 — "찰칵" 느낌. */
+.private-warning svg {
+  animation: lock-pop 0.5s var(--ease, ease-out) 0.12s both;
+}
+@keyframes private-banner-in {
+  0% { transform: translateY(-12px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+@keyframes private-banner-flash {
+  0%, 100% { background: #fff7ed; }
+  40% { background: #ffe1b8; }
+}
+@keyframes lock-pop {
+  0% { transform: scale(0.5) rotate(-14deg); opacity: 0; }
+  60% { transform: scale(1.18) rotate(7deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .private-warning,
+  .private-warning svg {
+    animation: none;
+  }
 }
 
 .developer-warning {
@@ -1001,6 +1044,16 @@
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
+/* 첫 진입 한 번만: 날짜 칸이 왼쪽 위→오른쪽 아래로 차르륵 순차 등장(슬라이드 대신). */
+.studio-month-grid.cal-reveal .studio-day {
+  animation: cal-cell-rise 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  animation-delay: calc(var(--ri, 0) * 11ms);
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-month-grid.cal-reveal .studio-day {
+    animation: none;
+  }
+}
 /* #1: 날짜 칸 호버 시 칸 배경뿐 아니라 안의 일정 카드·업도움 띠도 함께 톤이 바뀌어
    "이 날 전체가 선택 대상"임을 분명히 보여준다. */
 .studio-day:not(.outside):hover {
@@ -1190,6 +1243,50 @@
   opacity: 0.32;
   filter: grayscale(0.4);
   pointer-events: none;
+}
+/* 저장·생성 직후: 카드가 통통 착지하며 한 번 반짝(노란 링) — "먹혔다"는 확신 + 귀여움. */
+.studio-event-pill.just-saved {
+  animation: pill-settle 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  z-index: 2;
+}
+.studio-event-pill.just-saved::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 14px;
+  border: 2px solid #f6b73c;
+  box-shadow: 0 0 12px 2px rgb(246 183 60 / 50%);
+  pointer-events: none;
+  animation: pill-settle-ring 0.6s var(--ease, ease-out) both;
+}
+@keyframes pill-settle {
+  0% { transform: scale(0.8); }
+  55% { transform: scale(1.06); }
+  78% { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+@keyframes pill-settle-ring {
+  0% { opacity: 0.85; transform: scale(0.92); }
+  100% { opacity: 0; transform: scale(1.16); }
+}
+/* 삭제: 그냥 사라지지 않고 톡 줄어들며 사라진다(귀여운 poof). */
+.studio-event-pill.deleting {
+  animation: pill-poof 0.23s ease-in forwards;
+  pointer-events: none;
+  z-index: 2;
+}
+@keyframes pill-poof {
+  0% { transform: scale(1); opacity: 1; }
+  35% { transform: scale(1.06) rotate(-1.5deg); }
+  100% { transform: scale(0.3) rotate(7deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-event-pill.just-saved,
+  .studio-event-pill.just-saved::after,
+  .studio-event-pill.deleting {
+    animation: none;
+  }
+  .studio-event-pill.just-saved::after { display: none; }
 }
 /* 손끝을 따라오는 유령 카드 — 살짝 키우고 기울이며 부드럽게 흔들린다(들고 옮기는 촉감). */
 .event-drag-ghost {
