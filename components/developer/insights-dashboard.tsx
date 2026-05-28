@@ -49,6 +49,8 @@ const PANELS = [
   { key: "security", label: "보안", icon: Lock },
   { key: "system", label: "시스템", icon: Cog }
 ] as const;
+// 탭/패널 격자 열 수 — CSS의 .insights-tabs(repeat(4,1fr))와 방향키·스와이프 행 이동에 함께 쓴다.
+const GRID_COLS = 4;
 
 function kst(iso: string | null): Date | null {
   if (!iso) return null;
@@ -82,8 +84,9 @@ function fmtMonthDay(dateKey: string): string {
 }
 
 function StatTile({ value, label, tone }: { value: number | string; label: string; tone?: string }) {
+  const isText = typeof value !== "number";
   return (
-    <div className="insight-tile" data-tone={tone}>
+    <div className="insight-tile" data-tone={tone} data-text={isText ? "" : undefined}>
       <strong>{typeof value === "number" ? value.toLocaleString() : value}</strong>
       <span>{label}</span>
     </div>
@@ -188,12 +191,20 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      // 탭이 4×2 격자라 방향키도 격자처럼: ←→는 ±1(순서), ↑↓는 ±4(행 이동). 끝에서 막힘.
+      const LEN = PANELS.length;
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         setIndex((i) => Math.max(0, i - 1));
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        setIndex((i) => Math.min(PANELS.length - 1, i + 1));
+        setIndex((i) => Math.min(LEN - 1, i + 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setIndex((i) => (i - GRID_COLS >= 0 ? i - GRID_COLS : i));
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setIndex((i) => (i + GRID_COLS < LEN ? i + GRID_COLS : i));
       }
     };
     window.addEventListener("keydown", onKey);
@@ -210,8 +221,17 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
     if (!s) return;
     const dx = e.clientX - s.x;
     const dy = e.clientY - s.y;
-    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-      setIndex((i) => Math.max(0, Math.min(PANELS.length - 1, i + (dx < 0 ? 1 : -1))));
+    const ax = Math.abs(dx);
+    const ay = Math.abs(dy);
+    const LEN = PANELS.length;
+    // 가로 스와이프 = ±1, 세로 스와이프 = ±4(행 이동). 격자(4×2)를 상하좌우로 넘긴다.
+    if (ax > 45 && ax > ay * 1.3) {
+      setIndex((i) => Math.max(0, Math.min(LEN - 1, i + (dx < 0 ? 1 : -1))));
+    } else if (ay > 56 && ay > ax * 1.3) {
+      setIndex((i) => {
+        const n = i + (dy < 0 ? GRID_COLS : -GRID_COLS); // 위로 밀면 다음 행
+        return n >= 0 && n < LEN ? n : i;
+      });
     }
   };
 
