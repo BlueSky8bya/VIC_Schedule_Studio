@@ -307,6 +307,12 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
       { key: "content", label: "🗓️ 컨텐츠", values: trend.content },
       { key: "hearts", label: "💗 하트", values: data.engagement.monthly.map((x) => x.count) }
     ];
+    // x축 라벨: 첫 칸과 연도가 바뀌는 칸엔 "YY년"을 윗줄에 작게(예: 26년 1월), 나머진 "M월".
+    const xLabels = trend.months.map((mk, i) => {
+      const [yy, mm] = mk.split("-").map(Number);
+      const prevYy = i > 0 ? Number(trend.months[i - 1].split("-")[0]) : null;
+      return { showYear: i === 0 || yy !== prevYy, yy: yy % 100, mm };
+    });
     return (
       <>
         <p className="insight-note">최근 6개월 추이 · 배지는 지난달 대비 변화</p>
@@ -338,7 +344,10 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
                         style={{ height: `${(v / max) * 100}%` }}
                       />
                     </div>
-                    <span>{Number(trend.months[i].slice(5, 7))}</span>
+                    <span className="trend-x">
+                      {xLabels[i].showYear ? <em>{xLabels[i].yy}년</em> : null}
+                      {xLabels[i].mm}월
+                    </span>
                   </div>
                 ))}
               </div>
@@ -380,7 +389,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
           <strong>{peakHour && peakHour.c > 0 ? `${peakHour.h}시 · ${peakHour.c}명` : "—"}</strong>
         </div>
         <div className="highlight-card">
-          <span>💗 인기 일정</span>
+          <span>💗 인기 컨텐츠</span>
           <strong>{top ? `${top.title} ♥${top.count}` : "—"}</strong>
         </div>
         <div className="highlight-card">
@@ -416,7 +425,11 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
         onPointerDown={onSwipeStart}
         onPointerUp={onSwipeEnd}
       >
-        <div className="insights-track" style={{ transform: `translateX(-${index * 100}%)` }}>
+        <div
+          className="insights-track"
+          data-active={index}
+          style={{ transform: `translateX(-${index * 100}%)` }}
+        >
           {/* 1) 실시간 */}
           <section className="insights-panel">
             <DeveloperPanel />
@@ -462,6 +475,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
                       <span>이번 달 컨텐츠 수</span>
                     </div>
                     <StatTile value={d.content.daysWithContent} label="컨텐츠 있는 날" />
+                    <StatTile value={d.content.restDays} label="휴뱅 날" />
                     <StatTile value={weekdayLabel(d.content.busiestWeekday)} label="가장 바쁜 요일" />
                     <StatTile value={weekdayLabel(d.content.quietestWeekday)} label="가장 한가한 요일" />
                   </div>
@@ -517,7 +531,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
                       </div>
                     ))}
                   </div>
-                  <h4 className="insight-subhead">이번 달 인기 일정 TOP</h4>
+                  <h4 className="insight-subhead">이번 달 인기 컨텐츠 TOP</h4>
                   {d.engagement.topEvents.length === 0 ? (
                     <p className="insight-empty">이 달엔 하트를 받은 일정이 없어요.</p>
                   ) : (
@@ -633,8 +647,8 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
                     <strong>{d.system.commit ?? "로컬"}</strong>
                   </li>
                   <li>
-                    <span>기준 시각(KST)</span>
-                    <strong>{fmtDateTime(d.system.generatedAt)}</strong>
+                    <span>배포 시각(KST)</span>
+                    <strong>{fmtDateTime(d.system.deployedAt)}</strong>
                   </li>
                 </ul>
               </>

@@ -19,6 +19,7 @@ export type InsightsData = {
     thisMonthContent: number; // 이번 달 컨텐츠 수(공개·휴뱅 제외)
     lastMonthContent: number; // 지난 달(추세 비교)
     daysWithContent: number; // 컨텐츠 있는 날 수
+    restDays: number; // 휴뱅(방송 안 함) 날 수
     busiestWeekday: number | null; // 0=일..6=토
     quietestWeekday: number | null;
     tags: { name: string; count: number; bgColor: string; borderColor: string }[]; // 컨텐츠 순위
@@ -41,7 +42,7 @@ export type InsightsData = {
     dbOwnerEmail: string | null;
     bindingOk: boolean;
     commit: string | null;
-    generatedAt: string;
+    deployedAt: string; // 빌드(배포) 시각
   };
 };
 
@@ -59,6 +60,10 @@ function pad(n: number): string {
 function weekdayOf(dateKey: string): number {
   const [yy, mm, dd] = dateKey.split("-").map(Number);
   return new Date(Date.UTC(yy, mm - 1, dd)).getUTCDay();
+}
+// 제목은 첫 줄(첫 엔터 직전)까지만 — 일정 추가 시 엔터로 세부를 다음 줄에 적는 경우 대비.
+function firstLine(s: string): string {
+  return (s ?? "").split("\n")[0].trim();
 }
 
 const ROLE_ORDER = ["viewer", "worker", "manager", "owner", "developer"] as const;
@@ -184,6 +189,11 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   const thisMonthContent = thisMonthEvents.length;
   const lastMonthContent = lastMonthEvents.length;
   const daysWithContent = new Set(thisMonthEvents.map((e) => e.date_key)).size;
+  const restDays = new Set(
+    eventsRange
+      .filter((e) => e.date_key >= monthStart && e.date_key < nextMonthStart && restEventIds.has(e.id))
+      .map((e) => e.date_key)
+  ).size;
 
   const wd = Array(7).fill(0) as number[];
   for (const e of thisMonthEvents) wd[weekdayOf(e.date_key)] += 1;
@@ -234,7 +244,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
     );
     if (isRest) continue;
     const list = byDate.get(ev.date_key) ?? [];
-    list.push(ev.public_title);
+    list.push(firstLine(ev.public_title));
     byDate.set(ev.date_key, list);
   }
   const firstDate = [...byDate.keys()].sort()[0];
@@ -273,7 +283,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
     if (monthlyMap.has(ym)) monthlyMap.set(ym, (monthlyMap.get(ym) ?? 0) + Number(h.count));
     if (ym === curYm) {
       monthHearts += Number(h.count);
-      topThisMonth.push({ title: info.title, count: Number(h.count) });
+      topThisMonth.push({ title: firstLine(info.title), count: Number(h.count) });
     }
   }
   const monthly = monthKeys.map((k) => ({ ym: k, count: monthlyMap.get(k) ?? 0 }));
@@ -329,6 +339,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         thisMonthContent,
         lastMonthContent,
         daysWithContent,
+        restDays,
         busiestWeekday,
         quietestWeekday,
         tags
@@ -346,7 +357,8 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         dbOwnerEmail,
         bindingOk,
         commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
-        generatedAt: new Date().toISOString()
+        // 빌드(배포) 시각 — next.config의 BUILD_TIME(빌드 시점 UTC). 로컬은 현재 시각으로 폴백.
+        deployedAt: process.env.BUILD_TIME ?? new Date().toISOString()
       }
     }
   };

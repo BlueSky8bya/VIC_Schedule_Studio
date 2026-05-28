@@ -1051,10 +1051,27 @@
   font-weight: 800;
   color: #2f3a6b;
 }
-/* 인기 일정(제목) 막대: 웹에선 제목을 더 보여주려 막대 폭을 양보한다. */
+/* 인기 컨텐츠(제목) 막대: 제목 길이에 맞춰 막대가 유동적으로 늘고 줄게(flex). 제목이 짧으면
+   막대가 길어지고, 길면 제목이 최대폭까지 → 그만큼 막대가 짧아진다. */
+.insight-bars.titles li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.insight-bars.titles .insight-bar-label {
+  flex: 0 1 auto;
+  max-width: 62%; /* 모바일: 제목을 넉넉히(막대는 짧게) */
+}
+.insight-bars.titles .insight-bar-track {
+  flex: 1 1 auto;
+}
+.insight-bars.titles .insight-bar-count {
+  flex: 0 0 auto;
+}
 @media (min-width: 641px) {
-  .insight-bars.titles li {
-    grid-template-columns: minmax(0, 1fr) 96px auto;
+  /* 웹: 제목 최대폭을 줄여 막대를 더 길게 보여준다. */
+  .insight-bars.titles .insight-bar-label {
+    max-width: 50%;
   }
 }
 /* 신뢰 멤버: 이메일이 길면 이메일을 말줄임 — 역할 태그(매니저/작업자)는 안 잘리게. */
@@ -1133,6 +1150,14 @@
   font-size: 9px;
   font-weight: 700;
   color: #b3acc6;
+  line-height: 1.15;
+}
+/* 연도 바뀌는 칸: "26년"을 윗줄에 작게(예: 26년 / 1월). */
+.trend-x em {
+  display: block;
+  font-style: normal;
+  font-size: 7.5px;
+  color: #c5bfd6;
 }
 /* 하이라이트 카드 */
 .highlight-grid {
@@ -1164,6 +1189,57 @@
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 58%;
+}
+/* 활성 패널 진입 시 내용이 살짝 떠오르며 순차로 — 정적이지 않고 생기 있게(HCI: 피드백). */
+@keyframes ins-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.insights-track[data-active="0"] > .insights-panel:nth-child(1) > *,
+.insights-track[data-active="1"] > .insights-panel:nth-child(2) > *,
+.insights-track[data-active="2"] > .insights-panel:nth-child(3) > *,
+.insights-track[data-active="3"] > .insights-panel:nth-child(4) > *,
+.insights-track[data-active="4"] > .insights-panel:nth-child(5) > *,
+.insights-track[data-active="5"] > .insights-panel:nth-child(6) > *,
+.insights-track[data-active="6"] > .insights-panel:nth-child(7) > *,
+.insights-track[data-active="7"] > .insights-panel:nth-child(8) > * {
+  animation: ins-rise 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+.insights-panel > *:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.insights-panel > *:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.insights-panel > *:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.insights-panel > *:nth-child(5) {
+  animation-delay: 0.2s;
+}
+.insights-panel > *:nth-child(6) {
+  animation-delay: 0.25s;
+}
+/* 타일·카드 호버 시 살짝 떠오름(상호작용 피드백). */
+.insight-tile,
+.highlight-card {
+  transition: transform 0.15s var(--ease, ease), box-shadow 0.15s var(--ease, ease);
+}
+.insight-tile:hover,
+.highlight-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px -10px rgb(80 60 140 / 40%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .insights-track > .insights-panel > * {
+    animation: none;
+  }
 }
 .vt-hlabel {
   margin-top: 3px;
