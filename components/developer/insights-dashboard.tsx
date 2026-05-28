@@ -108,12 +108,14 @@ function StackBar({
     <div className="vt-col">
       <div className="vt-barwrap">
         <div className="vt-bar" data-v={`${total}명`} style={{ height: `${(total / max) * 100}%` }}>
-          {meta.map((s) => {
-            const c = counts[s.key] ?? 0;
-            return c > 0 ? (
-              <span className="vt-seg" key={s.key} style={{ flexGrow: c, background: s.color }} />
-            ) : null;
-          })}
+          <div className="vt-fill">
+            {meta.map((s) => {
+              const c = counts[s.key] ?? 0;
+              return c > 0 ? (
+                <span className="vt-seg" key={s.key} style={{ flexGrow: c, background: s.color }} />
+              ) : null;
+            })}
+          </div>
         </div>
       </div>
       <span className="vt-day">{label}</span>
