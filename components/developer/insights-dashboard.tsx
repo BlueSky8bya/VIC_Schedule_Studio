@@ -10,7 +10,7 @@ import {
   Radio,
   TrendingUp
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { DeveloperPanel } from "@/components/developer/developer-panel";
 import {
   getInsightsAction,
@@ -41,13 +41,27 @@ const PANELS = [
   { key: "system", label: "시스템", icon: Cog }
 ] as const;
 
-function fmtDate(iso: string | null): string {
-  if (!iso) return "—";
-  // KST 날짜로만 간단히 표기.
+function kst(iso: string | null): Date | null {
+  if (!iso) return null;
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  const k = new Date(d.getTime() + 9 * 3600 * 1000);
-  return `${k.getUTCFullYear()}.${k.getUTCMonth() + 1}.${k.getUTCDate()}`;
+  if (Number.isNaN(d.getTime())) return null;
+  return new Date(d.getTime() + 9 * 3600 * 1000);
+}
+function fmtDate(iso: string | null): string {
+  const k = kst(iso);
+  return k ? `${k.getUTCFullYear()}.${k.getUTCMonth() + 1}.${k.getUTCDate()}` : "—";
+}
+function fmtTime(iso: string | null): string {
+  const k = kst(iso);
+  return k
+    ? `${String(k.getUTCHours()).padStart(2, "0")}:${String(k.getUTCMinutes()).padStart(2, "0")}`
+    : "—";
+}
+function fmtDateTime(iso: string | null): string {
+  const k = kst(iso);
+  return k
+    ? `${k.getUTCMonth() + 1}.${k.getUTCDate()} ${String(k.getUTCHours()).padStart(2, "0")}:${String(k.getUTCMinutes()).padStart(2, "0")}`
+    : "—";
 }
 
 function StatTile({ value, label, tone }: { value: number | string; label: string; tone?: string }) {
@@ -91,6 +105,39 @@ export function InsightsDashboard() {
   }, []);
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
+
+  // 웹: 좌/우 방향키로 패널 이동(모달 열린 동안). 입력칸 포커스 땐 무시.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setIndex((i) => Math.max(0, i - 1));
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setIndex((i) => Math.min(PANELS.length - 1, i + 1));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // 모바일/웹: 좌우로 밀어(스와이프) 패널 이동. 세로 드래그(스크롤)는 무시.
+  const swipeStart = useRef<{ x: number; y: number } | null>(null);
+  const onSwipeStart = (e: ReactPointerEvent) => {
+    swipeStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const onSwipeEnd = (e: ReactPointerEvent) => {
+    const s = swipeStart.current;
+    swipeStart.current = null;
+    if (!s) return;
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
+      setIndex((i) => Math.max(0, Math.min(PANELS.length - 1, i + (dx < 0 ? 1 : -1))));
+    }
+  };
 
   // 패널 2~5 공통: 로딩 스켈레톤 / 오류 / 데이터.
   function withData(render: (d: InsightsData) => React.ReactNode) {
@@ -200,7 +247,12 @@ export function InsightsDashboard() {
         ))}
       </div>
 
-      <div className="insights-viewport">
+      <div
+        className="insights-viewport"
+        onPointerCancel={() => (swipeStart.current = null)}
+        onPointerDown={onSwipeStart}
+        onPointerUp={onSwipeEnd}
+      >
         <div className="insights-track" style={{ transform: `translateX(-${index * 100}%)` }}>
           {/* 1) 실시간 — 기존 프레즌스 패널 그대로(즉시 갱신) */}
           <section className="insights-panel">
@@ -221,7 +273,6 @@ export function InsightsDashboard() {
                   <StatTile value={d.content.stickerCount} label="이번 달 스티커" />
                   <StatTile value={d.content.assetCount} label="커스텀 이모지" />
                 </div>
-                <p className="insight-note">비공개 = 엠바고·작업 · “나만” 일정은 집계에서 제외돼요.</p>
                 <h4 className="insight-subhead">이번 달 태그 사용</h4>
                 {d.content.tags.length === 0 ? (
                   <p className="insight-empty">아직 태그가 붙은 일정이 없어요.</p>
@@ -233,8 +284,11 @@ export function InsightsDashboard() {
                         <span className="insight-bar-track">
                           <span
                             className="insight-bar-fill"
-                            data-color={t.colorKey}
-                            style={{ width: `${Math.round((t.count / tagMax) * 100)}%` }}
+                            style={{
+                              width: `${Math.round((t.count / tagMax) * 100)}%`,
+                              background: t.bgColor,
+                              borderColor: t.borderColor
+                            }}
                           />
                         </span>
                         <span className="insight-bar-count">{t.count}</span>
@@ -246,31 +300,105 @@ export function InsightsDashboard() {
             ))}
           </section>
 
-          {/* 3) 참여·인기(하트) */}
+          {/* 4) 참여·인기(하트) */}
+          <section className="insights-panel">
+            {withData((d) => {
+              const monMax = Math.max(1, ...d.engagement.monthly.map((x) => x.count));
+              return (
+                <>
+                  <div className="insight-grid">
+                    <StatTile value={d.engagement.thisMonthHearts} label="이번 달 하트" tone="heart" />
+                    <StatTile value={d.engagement.totalHearts} label="누적 하트" tone="heart" />
+                    <StatTile value={d.engagement.calendarHearts} label="달력 응원 ♥" />
+                  </div>
+                  <h4 className="insight-subhead">월별 하트 (최근 6개월)</h4>
+                  <div className="vt-chart" role="img" aria-label="월별 하트 그래프">
+                    {d.engagement.monthly.map((mo) => (
+                      <div className="vt-col" key={mo.ym} title={`${mo.ym} · ♥ ${mo.count}`}>
+                        <div className="vt-barwrap">
+                          <div
+                            className="vt-bar heart"
+                            style={{ height: `${(mo.count / monMax) * 100}%` }}
+                          />
+                        </div>
+                        <span className="vt-day">{Number(mo.ym.slice(5, 7))}월</span>
+                      </div>
+                    ))}
+                  </div>
+                  <h4 className="insight-subhead">인기 일정 TOP</h4>
+                  {d.engagement.topEvents.length === 0 ? (
+                    <p className="insight-empty">아직 하트를 받은 일정이 없어요.</p>
+                  ) : (
+                    <ul className="insight-bars">
+                      {d.engagement.topEvents.map((e, i) => (
+                        <li key={`${e.title}-${i}`}>
+                          <span className="insight-bar-label" title={e.title}>
+                            {i + 1}. {e.title}
+                          </span>
+                          <span className="insight-bar-track">
+                            <span
+                              className="insight-bar-fill heart"
+                              style={{ width: `${Math.round((e.count / heartMax) * 100)}%` }}
+                            />
+                          </span>
+                          <span className="insight-bar-count">♥ {e.count}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              );
+            })}
+          </section>
+
+          {/* 5) 보안·접근 */}
           <section className="insights-panel">
             {withData((d) => (
               <>
-                <div className="insight-grid">
-                  <StatTile value={d.engagement.eventHeartTotal} label="일정 하트 합계" tone="heart" />
-                  <StatTile value={d.engagement.calendarHearts} label="달력 누적 하트" tone="heart" />
+                <div
+                  className={`insight-banner ${d.security.activeUnlocks.length > 0 ? "warn" : "ok"}`}
+                >
+                  {d.security.activeUnlocks.length > 0
+                    ? `지금 비공개를 연 계정 ${d.security.activeUnlocks.length} — 방송 공유 주의`
+                    : "지금 비공개를 연 계정 없음"}
                 </div>
-                <h4 className="insight-subhead">인기 일정 TOP</h4>
-                {d.engagement.topEvents.length === 0 ? (
-                  <p className="insight-empty">아직 하트를 받은 일정이 없어요.</p>
+                {d.security.activeUnlocks.length > 0 ? (
+                  <ul className="insight-rows">
+                    {d.security.activeUnlocks.map((u, i) => (
+                      <li key={i}>
+                        <span>{u.email}</span>
+                        <strong>~ {fmtTime(u.expiresAt)} 만료</strong>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <h4 className="insight-subhead">비공개 잠금 암호</h4>
+                <ul className="insight-rows">
+                  <li>
+                    <span>암호 버전</span>
+                    <strong>v{d.security.passcodeVersion ?? "—"}</strong>
+                  </li>
+                  <li>
+                    <span>마지막 변경</span>
+                    <strong>{fmtDate(d.security.passcodeUpdatedAt)}</strong>
+                  </li>
+                  <li>
+                    <span>잠금 유효 시간</span>
+                    <strong>{d.security.unlockDurationMinutes ?? "—"}분</strong>
+                  </li>
+                </ul>
+                <h4 className="insight-subhead">신뢰 멤버 ({d.security.members.length})</h4>
+                {d.security.members.length === 0 ? (
+                  <p className="insight-empty">등록된 매니저·작업자가 없어요.</p>
                 ) : (
-                  <ul className="insight-bars">
-                    {d.engagement.topEvents.map((e, i) => (
-                      <li key={`${e.title}-${i}`}>
-                        <span className="insight-bar-label" title={e.title}>
-                          {i + 1}. {e.title}
-                        </span>
-                        <span className="insight-bar-track">
-                          <span
-                            className="insight-bar-fill heart"
-                            style={{ width: `${Math.round((e.count / heartMax) * 100)}%` }}
-                          />
-                        </span>
-                        <span className="insight-bar-count">♥ {e.count}</span>
+                  <ul className="insight-rows">
+                    {d.security.members.map((mem) => (
+                      <li key={mem.email}>
+                        <span>{mem.email}</span>
+                        <strong className="insight-roletags">
+                          {mem.manager ? <em className="rt manager">매니저</em> : null}
+                          {mem.worker ? <em className="rt worker">작업자</em> : null}
+                        </strong>
                       </li>
                     ))}
                   </ul>
@@ -279,63 +407,43 @@ export function InsightsDashboard() {
             ))}
           </section>
 
-          {/* 4) 보안·접근 */}
+          {/* 6) 시스템·운영 */}
           <section className="insights-panel">
             {withData((d) => (
               <>
-                <div className="insight-grid">
-                  <StatTile
-                    value={d.security.activeUnlocks}
-                    label="열린 비공개 세션"
-                    tone={d.security.activeUnlocks > 0 ? "warn" : undefined}
-                  />
-                  <StatTile value={d.security.managers} label="매니저" />
-                  <StatTile value={d.security.workers} label="작업자" />
+                <div className={`insight-banner ${d.system.bindingOk ? "ok" : "warn"}`}>
+                  {d.system.bindingOk
+                    ? "✅ 소유자 바인딩 정상"
+                    : "⚠ 소유자 바인딩 불일치 — owner 저장이 실패할 수 있어요"}
                 </div>
-                <ul className="insight-rows">
+                <h4 className="insight-subhead">소유자</h4>
+                <ul className="insight-rows wrap">
                   <li>
-                    <span>패스코드 버전</span>
-                    <strong>v{d.security.passcodeVersion ?? "—"}</strong>
+                    <span>설정(OWNER_EMAIL)</span>
+                    <strong>
+                      {d.system.ownerEmails.length ? d.system.ownerEmails.join(", ") : "—"}
+                    </strong>
                   </li>
                   <li>
-                    <span>패스코드 변경일</span>
-                    <strong>{fmtDate(d.security.passcodeUpdatedAt)}</strong>
+                    <span>DB 주 소유자</span>
+                    <strong>{d.system.dbOwnerEmail ?? "—"}</strong>
                   </li>
+                  {d.system.coOwnerEmails.length ? (
+                    <li>
+                      <span>DB 공동 소유자</span>
+                      <strong>{d.system.coOwnerEmails.join(", ")}</strong>
+                    </li>
+                  ) : null}
                 </ul>
-                {d.security.activeUnlocks > 0 ? (
-                  <p className="insight-note warn">
-                    지금 비공개 레이어가 열린 세션이 있어요. 방송 화면 공유에 주의하세요.
-                  </p>
-                ) : null}
-              </>
-            ))}
-          </section>
-
-          {/* 5) 시스템·운영 */}
-          <section className="insights-panel">
-            {withData((d) => (
-              <>
-                <div className={`insight-banner ${d.system.ownerBindingOk ? "ok" : "warn"}`}>
-                  {d.system.ownerBindingOk
-                    ? "✅ 소유자 바인딩 정상 (OWNER_EMAIL ↔ 달력 소유자 일치)"
-                    : "⚠ 소유자 바인딩 불일치 — 소유자 저장이 실패할 수 있어요."}
-                </div>
+                <h4 className="insight-subhead">배포</h4>
                 <ul className="insight-rows">
                   <li>
-                    <span>설정 소유자</span>
-                    <strong>{d.system.ownerEmail ?? "—"}</strong>
-                  </li>
-                  <li>
-                    <span>달력 소유 계정</span>
-                    <strong>{d.system.calendarOwnerEmail ?? "—"}</strong>
-                  </li>
-                  <li>
-                    <span>배포 버전</span>
+                    <span>버전(커밋)</span>
                     <strong>{d.system.commit ?? "로컬"}</strong>
                   </li>
                   <li>
                     <span>기준 시각(KST)</span>
-                    <strong>{fmtDate(d.system.generatedAt)}</strong>
+                    <strong>{fmtDateTime(d.system.generatedAt)}</strong>
                   </li>
                 </ul>
               </>

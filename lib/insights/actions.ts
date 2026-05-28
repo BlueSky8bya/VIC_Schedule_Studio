@@ -2,7 +2,7 @@
 
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
-import { getOwnerEmail, normalizeEmail } from "@/lib/auth/config";
+import { getOwnerEmails, normalizeEmail } from "@/lib/auth/config";
 
 // 개발자 전용 "인사이트" 대시보드용 집계. 모든 값은 합계/개수만 — 비공개·owner_private 일정의
 // 내용(제목)은 절대 내보내지 않는다(개발자는 owner-only 콘텐츠를 못 본다는 규칙 유지).
@@ -17,24 +17,28 @@ export type InsightsData = {
     upcoming7: number; // 앞으로 7일 공개 일정
     stickerCount: number; // 이번 달 포스터 스티커
     assetCount: number; // 커스텀 스티커 에셋
-    tags: { name: string; count: number; colorKey: string }[]; // 이번 달 태그 사용 분포(상위)
+    // 이번 달 태그 사용 분포(상위) — 실제 태그 색을 함께 보낸다.
+    tags: { name: string; count: number; bgColor: string; borderColor: string }[];
   };
   engagement: {
-    calendarHearts: number; // 달력 전체 누적 하트
-    eventHeartTotal: number; // 공개 일정 하트 합계
+    thisMonthHearts: number; // 이번 달 공개 일정이 받은 하트
+    totalHearts: number; // 공개 일정 누적 하트(전체)
+    calendarHearts: number; // 달력 응원 하트(일정과 별개의 캘린더 단위 하트)
+    monthly: { ym: string; count: number }[]; // 최근 6개월 일정 하트(오래된→최신)
     topEvents: { title: string; count: number }[]; // 하트 많은 공개 일정 상위
   };
   security: {
-    activeUnlocks: number; // 지금 유효한 비공개 잠금 세션 수
-    managers: number;
-    workers: number;
-    passcodeVersion: number | null;
+    passcodeVersion: number | null; // 비공개 레이어 잠금 암호 버전
     passcodeUpdatedAt: string | null;
+    unlockDurationMinutes: number | null; // 잠금 해제 1회 유효 시간(분)
+    activeUnlocks: { email: string; expiresAt: string }[]; // 지금 비공개를 연 계정 + 만료
+    members: { email: string; manager: boolean; worker: boolean }[]; // 신뢰 멤버 목록
   };
   system: {
-    ownerEmail: string | null; // 설정(OWNER_EMAIL) 주 소유자
-    calendarOwnerEmail: string | null; // calendars.owner_id가 가리키는 실제 계정
-    ownerBindingOk: boolean; // 둘이 일치하는가(어긋나면 저장 실패 위험)
+    ownerEmails: string[]; // 설정(OWNER_EMAIL)에 등록된 소유자 계정 전부
+    dbOwnerEmail: string | null; // DB calendars.owner_id 주 소유자
+    coOwnerEmails: string[]; // DB calendar_co_owners 공동 소유자
+    bindingOk: boolean; // 설정 주 소유자 = DB 주 소유자 (어긋나면 owner 저장 실패 위험)
     commit: string | null;
     generatedAt: string; // KST ISO
   };
@@ -173,29 +177,32 @@ export async function getInsightsAction(): Promise<InsightsResult> {
   }
   const calendarId = cal.id as string;
 
-  // 이번 달(KST) 범위 + 오늘/7일 뒤.
+  // 이번 달(KST) 범위 + 오늘/7일 뒤 + 하트 6개월 범위.
   const now = kstNow();
   const y = now.getUTCFullYear();
   const m = now.getUTCMonth() + 1;
   const monthStart = `${y}-${String(m).padStart(2, "0")}-01`;
-  const nextMonth = new Date(Date.UTC(y, m, 1)); // m은 1-base라 다음 달 1일
-  const nextMonthStart = ymd(nextMonth);
+  const nextMonthStart = ymd(new Date(Date.UTC(y, m, 1)));
   const todayKey = ymd(now);
-  const in7 = new Date(now.getTime() + 7 * 86400000);
-  const in7Key = ymd(in7);
+  const in7Key = ymd(new Date(now.getTime() + 7 * 86400000));
   const nowIso = new Date().toISOString();
+  const heartsFromIso = new Date(Date.UTC(y, m - 1 - 5, 1)).toISOString(); // 약 6개월 전 1일
+  const curYm = `${y}-${String(m).padStart(2, "0")}`;
 
   const [
     monthEventsRes,
     upcomingRes,
     tagRowsRes,
+    paletteRes,
     stickerRes,
     assetRes,
-    heartsRes,
+    calHeartRes,
     eventHeartRes,
+    heartRowsRes,
     unlockRes,
     membersRes,
-    passcodeRes
+    passcodeRes,
+    coOwnerRes
   ] = await Promise.all([
     supabase
       .from("events")
@@ -216,6 +223,7 @@ export async function getInsightsAction(): Promise<InsightsResult> {
       .eq("events.calendar_id", calendarId)
       .gte("events.date_key", monthStart)
       .lt("events.date_key", nextMonthStart),
+    supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
     supabase
       .from("sticker_instances")
       .select("*", { count: "exact", head: true })
@@ -230,35 +238,50 @@ export async function getInsightsAction(): Promise<InsightsResult> {
     supabase.from("calendar_hearts").select("count").eq("calendar_id", calendarId).maybeSingle(),
     supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
     supabase
+      .from("event_hearts")
+      .select("created_at, events!inner(calendar_id)")
+      .eq("events.calendar_id", calendarId)
+      .gte("created_at", heartsFromIso),
+    supabase
       .from("unlock_sessions")
-      .select("*", { count: "exact", head: true })
+      .select("user_id, expires_at")
       .eq("calendar_id", calendarId)
-      .gt("expires_at", nowIso),
+      .gt("expires_at", nowIso)
+      .order("expires_at", { ascending: true }),
     supabase
       .from("trusted_members")
-      .select("is_manager, is_worker, trusted_role")
+      .select("email, is_manager, is_worker, trusted_role")
       .eq("calendar_id", calendarId)
       .eq("is_active", true),
     supabase
       .from("private_layer_settings")
-      .select("passcode_version, passcode_updated_at")
+      .select("passcode_version, passcode_updated_at, unlock_duration_minutes")
       .eq("calendar_id", calendarId)
-      .maybeSingle()
+      .maybeSingle(),
+    supabase.from("calendar_co_owners").select("owner_id").eq("calendar_id", calendarId)
   ]);
 
-  // 콘텐츠: 이번 달 공개/비공개 개수 (owner_private는 카운트에서 제외).
-  const monthEvents = monthEventsRes.data ?? [];
+  // 콘텐츠: 이번 달 공개/비공개 개수 (owner_private "나만"은 의도적으로 제외).
   let publicCount = 0;
   let privateCount = 0;
-  for (const e of monthEvents) {
+  for (const e of monthEventsRes.data ?? []) {
     const scope = (e as { visibility_scope: string }).visibility_scope;
     if (scope === "public") publicCount += 1;
     else if (scope === "embargo" || scope === "work") privateCount += 1;
-    // owner_private("나만")은 의도적으로 세지 않는다.
   }
 
-  // 태그 사용 분포(이번 달) — 상위 8개.
-  const tagMap = new Map<string, { name: string; count: number; colorKey: string }>();
+  // 팔레트 색 맵(key → 실제 색) — 태그 막대에 진짜 태그 색을 입히기 위함.
+  const colorMap = new Map<string, { bg: string; border: string }>();
+  for (const c of paletteRes.data ?? []) {
+    colorMap.set((c as { key: string }).key, {
+      bg: (c as { bg_color: string }).bg_color,
+      border: (c as { border_color: string }).border_color
+    });
+  }
+  const tagMap = new Map<
+    string,
+    { name: string; count: number; bgColor: string; borderColor: string }
+  >();
   for (const row of tagRowsRes.data ?? []) {
     const tag = (row as { broadcast_tags?: { display_name?: string; color_key?: string } })
       .broadcast_tags;
@@ -266,15 +289,23 @@ export async function getInsightsAction(): Promise<InsightsResult> {
     if (!tag?.display_name) continue;
     const cur = tagMap.get(id);
     if (cur) cur.count += 1;
-    else tagMap.set(id, { name: tag.display_name, count: 1, colorKey: tag.color_key ?? "" });
+    else {
+      const col = colorMap.get(tag.color_key ?? "");
+      tagMap.set(id, {
+        name: tag.display_name,
+        count: 1,
+        bgColor: col?.bg ?? "#cdc6ec",
+        borderColor: col?.border ?? "#b3a9dd"
+      });
+    }
   }
   const tags = [...tagMap.values()].sort((a, b) => b.count - a.count).slice(0, 8);
 
-  // 참여(하트).
-  const calendarHearts = Number((heartsRes.data as { count?: number } | null)?.count ?? 0);
-  const heartRows = (eventHeartRes.data ?? []) as { event_id: string; count: number }[];
-  const eventHeartTotal = heartRows.reduce((s, r) => s + Number(r.count), 0);
-  const topHeart = [...heartRows].sort((a, b) => Number(b.count) - Number(a.count)).slice(0, 5);
+  // 참여(하트): 전체 합계 + 인기 일정 + 최근 6개월 월별 + 이번 달.
+  const calendarHearts = Number((calHeartRes.data as { count?: number } | null)?.count ?? 0);
+  const heartCounts = (eventHeartRes.data ?? []) as { event_id: string; count: number }[];
+  const totalHearts = heartCounts.reduce((s, r) => s + Number(r.count), 0);
+  const topHeart = [...heartCounts].sort((a, b) => Number(b.count) - Number(a.count)).slice(0, 5);
   let topEvents: { title: string; count: number }[] = [];
   if (topHeart.length > 0) {
     const { data: titleRows } = await supabase
@@ -283,43 +314,75 @@ export async function getInsightsAction(): Promise<InsightsResult> {
       .in("id", topHeart.map((r) => r.event_id));
     const titleMap = new Map(
       (titleRows ?? [])
-        .filter((t) => (t as { is_public?: boolean }).is_public) // 공개 일정만(안전)
+        .filter((t) => (t as { is_public?: boolean }).is_public)
         .map((t) => [(t as { id: string }).id, (t as { public_title: string }).public_title])
     );
     topEvents = topHeart
       .map((r) => ({ title: titleMap.get(r.event_id) ?? "", count: Number(r.count) }))
       .filter((e) => e.title);
   }
-
-  // 보안.
-  const members = membersRes.data ?? [];
-  let managers = 0;
-  let workers = 0;
-  for (const mem of members) {
-    const isM = (mem as { is_manager?: boolean; trusted_role?: string }).is_manager;
-    const isW = (mem as { is_worker?: boolean }).is_worker;
-    const role = (mem as { trusted_role?: string }).trusted_role;
-    if (isM ?? role === "manager") managers += 1;
-    if (isW ?? role === "worker") workers += 1;
+  const monthKeys: string[] = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const d = new Date(Date.UTC(y, m - 1 - i, 1));
+    monthKeys.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
   }
-  const passcode = passcodeRes.data as
-    | { passcode_version?: number; passcode_updated_at?: string }
-    | null;
+  const monthlyMap = new Map<string, number>(monthKeys.map((k) => [k, 0]));
+  for (const row of heartRowsRes.data ?? []) {
+    const t = new Date((row as { created_at: string }).created_at).getTime();
+    if (Number.isNaN(t)) continue;
+    const k = new Date(t + 9 * 3600 * 1000);
+    const ym = `${k.getUTCFullYear()}-${String(k.getUTCMonth() + 1).padStart(2, "0")}`;
+    if (monthlyMap.has(ym)) monthlyMap.set(ym, (monthlyMap.get(ym) ?? 0) + 1);
+  }
+  const monthly = monthKeys.map((k) => ({ ym: k, count: monthlyMap.get(k) ?? 0 }));
+  const thisMonthHearts = monthlyMap.get(curYm) ?? 0;
 
-  // 시스템: 소유자 바인딩 점검.
-  const ownerEmail = getOwnerEmail();
-  let calendarOwnerEmail: string | null = null;
-  if (cal.owner_id) {
+  // user_id → 이메일 해석(중복 제거 + 캐시).
+  const emailCache = new Map<string, string | null>();
+  async function emailFor(id: string | null | undefined): Promise<string | null> {
+    if (!id) return null;
+    if (emailCache.has(id)) return emailCache.get(id) ?? null;
+    let email: string | null = null;
     try {
-      const { data: u } = await supabase.auth.admin.getUserById(cal.owner_id as string);
-      calendarOwnerEmail = normalizeEmail(u?.user?.email);
+      const { data } = await supabase!.auth.admin.getUserById(id);
+      email = normalizeEmail(data?.user?.email);
     } catch {
-      calendarOwnerEmail = null;
+      email = null;
     }
+    emailCache.set(id, email);
+    return email;
   }
-  const ownerBindingOk = Boolean(
-    ownerEmail && calendarOwnerEmail && ownerEmail === calendarOwnerEmail
+
+  // 보안: 신뢰 멤버 목록 + 지금 비공개를 연 계정(만료 시각).
+  const members = (membersRes.data ?? []).map((mem) => {
+    const role = (mem as { trusted_role?: string }).trusted_role;
+    return {
+      email: (mem as { email: string }).email,
+      manager: Boolean((mem as { is_manager?: boolean }).is_manager ?? role === "manager"),
+      worker: Boolean((mem as { is_worker?: boolean }).is_worker ?? role === "worker")
+    };
+  });
+  const unlockRows = (unlockRes.data ?? []) as { user_id: string; expires_at: string }[];
+  const activeUnlocks = await Promise.all(
+    unlockRows.map(async (u) => ({
+      email: (await emailFor(u.user_id)) ?? "(알 수 없음)",
+      expiresAt: u.expires_at
+    }))
   );
+  const passcode = passcodeRes.data as {
+    passcode_version?: number;
+    passcode_updated_at?: string;
+    unlock_duration_minutes?: number;
+  } | null;
+
+  // 시스템: 설정 소유자 전부 + DB 주/공동 소유자 + 바인딩 일치 여부.
+  const ownerEmails = getOwnerEmails();
+  const dbOwnerEmail = await emailFor(cal.owner_id as string | undefined);
+  const coOwnerIds = (coOwnerRes.data ?? []).map((c) => (c as { owner_id: string }).owner_id);
+  const coOwnerEmails = (await Promise.all(coOwnerIds.map((id) => emailFor(id)))).filter(
+    (e): e is string => Boolean(e)
+  );
+  const bindingOk = Boolean(ownerEmails[0] && dbOwnerEmail && ownerEmails[0] === dbOwnerEmail);
 
   return {
     ok: true,
@@ -332,22 +395,19 @@ export async function getInsightsAction(): Promise<InsightsResult> {
         assetCount: assetRes.count ?? 0,
         tags
       },
-      engagement: {
-        calendarHearts,
-        eventHeartTotal,
-        topEvents
-      },
+      engagement: { thisMonthHearts, totalHearts, calendarHearts, monthly, topEvents },
       security: {
-        activeUnlocks: unlockRes.count ?? 0,
-        managers,
-        workers,
         passcodeVersion: passcode?.passcode_version ?? null,
-        passcodeUpdatedAt: passcode?.passcode_updated_at ?? null
+        passcodeUpdatedAt: passcode?.passcode_updated_at ?? null,
+        unlockDurationMinutes: passcode?.unlock_duration_minutes ?? null,
+        activeUnlocks,
+        members
       },
       system: {
-        ownerEmail,
-        calendarOwnerEmail,
-        ownerBindingOk,
+        ownerEmails,
+        dbOwnerEmail,
+        coOwnerEmails,
+        bindingOk,
         commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
         generatedAt: now.toISOString()
       }

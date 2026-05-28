@@ -721,6 +721,8 @@
   display: block;
   height: 100%;
   border-radius: 999px;
+  border: 1px solid transparent; /* 인라인 borderColor(태그 색)로 윤곽선 */
+  box-sizing: border-box;
   background: linear-gradient(90deg, #8b7cf0, #6b5bd6);
   transition: width 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
@@ -895,6 +897,37 @@
   border-radius: 3px 3px 0 0;
   background: linear-gradient(180deg, #8b7cf0, #6b5bd6);
   transition: height 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+/* 월별 하트 막대(분홍) — 빈 막대 하나로 높이만 표시. */
+.vt-bar.heart {
+  background: linear-gradient(180deg, #fb7aa5, #e11d54);
+}
+/* 신뢰 멤버 역할 칩 */
+.insight-roletags {
+  display: inline-flex;
+  gap: 4px;
+}
+.insight-roletags .rt {
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.insight-roletags .rt.manager {
+  background: #efeafd;
+  color: #6b5bd6;
+}
+.insight-roletags .rt.worker {
+  background: #fff3e0;
+  color: #b5651d;
+}
+/* 긴 값(소유자 이메일 여러 개)은 줄바꿈 허용 */
+.insight-rows.wrap li strong {
+  white-space: normal;
+  max-width: 64%;
+  text-align: right;
+  word-break: break-all;
 }
 .vt-hlabel {
   margin-top: 3px;
@@ -2878,6 +2911,8 @@ textarea:disabled {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
+  /* 모달 안에서 스크롤이 끝까지 가도 뒤 배경(일정 목록)으로 스크롤이 새지/뚫리지 않게 한다. */
+  overscroll-behavior: contain;
 }
 .modal-head h2 {
   font-size: 18px;
