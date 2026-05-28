@@ -250,6 +250,9 @@
 }
 .role-help-q {
   flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 18px;
   height: 18px;
   margin-left: 6px;
@@ -328,14 +331,6 @@
   font-size: 15px;
 }
 
-.actor-badge span {
-  min-width: 0;
-  overflow: hidden;
-  color: var(--muted);
-  font-size: 13.5px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 .actor-badge.owner {
   border-color: #8fd6bd;
