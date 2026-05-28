@@ -31,6 +31,12 @@ const ROLE_META: { key: string; label: string; color: string }[] = [
   { key: "owner", label: "관리자", color: "#34d399" },
   { key: "developer", label: "개발자", color: "#60a5fa" }
 ];
+const DEVICE_META: { key: string; label: string; color: string }[] = [
+  { key: "desktop", label: "웹", color: "#6b8cef" },
+  { key: "android", label: "안드로이드", color: "#3ddc84" },
+  { key: "ios", label: "iOS", color: "#a1a1aa" },
+  { key: "mobile", label: "기타", color: "#f59e0b" }
+];
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
 
 const PANELS = [
@@ -84,26 +90,28 @@ function StatTile({ value, label, tone }: { value: number | string; label: strin
   );
 }
 
-// 역할 스택 막대 한 줄(방문 그래프 공용).
+// 스택 막대 한 줄(방문 그래프 공용 — 역할/기기 등 meta로 구분). 호버 시 수치(data-v)가 뜬다.
 function StackBar({
-  roles,
+  meta,
+  counts,
   total,
   max,
   label
 }: {
-  roles: Record<string, number>;
+  meta: { key: string; color: string }[];
+  counts: Record<string, number>;
   total: number;
   max: number;
   label: string;
 }) {
   return (
-    <div className="vt-col" title={`${label} · ${total}명`}>
+    <div className="vt-col">
       <div className="vt-barwrap">
-        <div className="vt-bar" style={{ height: `${(total / max) * 100}%` }}>
-          {ROLE_META.map((r) => {
-            const c = roles[r.key] ?? 0;
+        <div className="vt-bar" data-v={`${total}명`} style={{ height: `${(total / max) * 100}%` }}>
+          {meta.map((s) => {
+            const c = counts[s.key] ?? 0;
             return c > 0 ? (
-              <span className="vt-seg" key={r.key} style={{ flexGrow: c, background: r.color }} />
+              <span className="vt-seg" key={s.key} style={{ flexGrow: c, background: s.color }} />
             ) : null;
           })}
         </div>
@@ -121,6 +129,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
   const [visits, setVisits] = useState<VisitTrends | null>(null);
   const [visitsLoading, setVisitsLoading] = useState(true);
   const [visitView, setVisitView] = useState<"day" | "week">("day");
+  const [visitDim, setVisitDim] = useState<"role" | "device">("role");
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
 
@@ -229,44 +238,74 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
     }
     const series = visitView === "day" ? visits.days : visits.weeks;
     const max = Math.max(1, ...series.map((s) => s.total));
+    const meta = visitDim === "role" ? ROLE_META : DEVICE_META;
+    const countsOf = (s: { roles: Record<string, number>; devices: Record<string, number> }) =>
+      visitDim === "role" ? s.roles : s.devices;
+    const hm = Math.max(1, ...visits.hours);
     return (
       <>
         <div className="insight-grid">
           <StatTile value={visits.total} label={`${month}월 방문`} tone="soon" />
         </div>
-        <div className="insights-subtabs">
-          <button
-            className={visitView === "day" ? "active" : ""}
-            onClick={() => setVisitView("day")}
-            type="button"
-          >
-            일별
-          </button>
-          <button
-            className={visitView === "week" ? "active" : ""}
-            onClick={() => setVisitView("week")}
-            type="button"
-          >
-            주별
-          </button>
+        <div className="insights-toolbar">
+          <div className="insights-subtabs">
+            <button
+              className={visitView === "day" ? "active" : ""}
+              onClick={() => setVisitView("day")}
+              type="button"
+            >
+              일별
+            </button>
+            <button
+              className={visitView === "week" ? "active" : ""}
+              onClick={() => setVisitView("week")}
+              type="button"
+            >
+              주별
+            </button>
+          </div>
+          <div className="insights-subtabs">
+            <button
+              className={visitDim === "role" ? "active" : ""}
+              onClick={() => setVisitDim("role")}
+              type="button"
+            >
+              역할별
+            </button>
+            <button
+              className={visitDim === "device" ? "active" : ""}
+              onClick={() => setVisitDim("device")}
+              type="button"
+            >
+              기기별
+            </button>
+          </div>
         </div>
-        <div className="vt-chart" role="img" aria-label="날짜별 역할 방문 그래프">
+        <div className="vt-chart" role="img" aria-label="방문 그래프">
           {visitView === "day"
             ? visits.days.map((d) => (
                 <StackBar
+                  counts={countsOf(d)}
                   key={d.day}
                   label={d.day % 5 === 0 || d.day === 1 ? String(d.day) : ""}
                   max={max}
-                  roles={d.roles}
+                  meta={meta}
                   total={d.total}
                 />
               ))
             : visits.weeks.map((w) => (
-                <StackBar key={w.label} label={w.label} max={max} roles={w.roles} total={w.total} />
+                <StackBar
+                  counts={countsOf(w)}
+                  key={w.label}
+                  label={w.label}
+                  max={max}
+                  meta={meta}
+                  total={w.total}
+                />
               ))}
         </div>
         <ul className="vt-legend">
-          {ROLE_META.map((r) => (
+          {meta.map((r) => (
             <li key={r.key}>
               <span style={{ background: r.color }} />
               {r.label}
@@ -275,15 +314,12 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
         </ul>
         <h4 className="insight-subhead">시간대 분포 (KST)</h4>
         <div className="vt-hours" role="img" aria-label="시간대별 방문 분포">
-          {visits.hours.map((c, h) => {
-            const hm = Math.max(1, ...visits.hours);
-            return (
-              <div className="vt-hcol" key={h} title={`${h}시 · ${c}명`}>
-                <div className="vt-hbar" style={{ height: `${(c / hm) * 100}%` }} />
-                <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
-              </div>
-            );
-          })}
+          {visits.hours.map((c, h) => (
+            <div className="vt-hcol" key={h}>
+              <div className="vt-hbar" data-v={`${c}명`} style={{ height: `${(c / hm) * 100}%` }} />
+              <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
+            </div>
+          ))}
         </div>
       </>
     );
@@ -337,10 +373,11 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
               </div>
               <div className="trend-spark">
                 {s.values.map((v, i) => (
-                  <div className="trend-bcol" key={i} title={`${trend.months[i]} · ${v}`}>
+                  <div className="trend-bcol" key={i}>
                     <div className="trend-bwrap">
                       <div
                         className={`trend-bar ${i === s.values.length - 1 ? "cur" : ""}`}
+                        data-v={`${v}`}
                         style={{ height: `${(v / max) * 100}%` }}
                       />
                     </div>
@@ -376,26 +413,54 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
       ? visits.hours.reduce((best, c, h) => (c > best.c ? { h, c } : best), { h: -1, c: 0 })
       : null;
     const top = data.engagement.topEvents[0] ?? null;
+    const cards = [
+      {
+        key: "day",
+        emoji: "🗓️",
+        tone: "day",
+        label: "방문 최다일",
+        main: peakDay && peakDay.total > 0 ? `${month}/${peakDay.day}` : "—",
+        sub: peakDay && peakDay.total > 0 ? `${peakDay.total}명` : ""
+      },
+      {
+        key: "hour",
+        emoji: "⏰",
+        tone: "hour",
+        label: "최고 시간대",
+        main: peakHour && peakHour.c > 0 ? `${peakHour.h}시` : "—",
+        sub: peakHour && peakHour.c > 0 ? `${peakHour.c}명` : ""
+      },
+      {
+        key: "top",
+        emoji: "💗",
+        tone: "top",
+        label: "인기 컨텐츠",
+        main: top ? top.title : "—",
+        sub: top ? `♥ ${top.count}` : ""
+      },
+      {
+        key: "wd",
+        emoji: "🔥",
+        tone: "wd",
+        label: "방송 최다 요일",
+        main: weekdayLabel(data.content.busiestWeekday),
+        sub: ""
+      }
+    ];
     return (
       <div className="highlight-grid">
-        <div className="highlight-card">
-          <span>🗓️ 방문 최다일</span>
-          <strong>
-            {peakDay && peakDay.total > 0 ? `${month}/${peakDay.day} · ${peakDay.total}명` : "—"}
-          </strong>
-        </div>
-        <div className="highlight-card">
-          <span>⏰ 최고 시간대</span>
-          <strong>{peakHour && peakHour.c > 0 ? `${peakHour.h}시 · ${peakHour.c}명` : "—"}</strong>
-        </div>
-        <div className="highlight-card">
-          <span>💗 인기 컨텐츠</span>
-          <strong>{top ? `${top.title} ♥${top.count}` : "—"}</strong>
-        </div>
-        <div className="highlight-card">
-          <span>🔥 방송 최다 요일</span>
-          <strong>{weekdayLabel(data.content.busiestWeekday)}</strong>
-        </div>
+        {cards.map((c) => (
+          <div className="highlight-card" data-tone={c.tone} key={c.key}>
+            <span className="hl-emoji" aria-hidden="true">
+              {c.emoji}
+            </span>
+            <span className="hl-label">{c.label}</span>
+            <strong className="hl-main" title={c.main}>
+              {c.main}
+            </strong>
+            {c.sub ? <span className="hl-sub">{c.sub}</span> : null}
+          </div>
+        ))}
       </div>
     );
   }

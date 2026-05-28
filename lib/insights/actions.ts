@@ -444,11 +444,16 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
   };
 }
 
+type VisitSlot = {
+  roles: Record<string, number>;
+  devices: Record<string, number>;
+  total: number;
+};
 export type VisitTrends = {
   ready: boolean; // visit_log 접근 가능(테이블 적용) 여부
   hasData: boolean; // 이 달 방문 기록이 있는지
-  days: { day: number; roles: Record<string, number>; total: number }[]; // 이 달 1..말일
-  weeks: { label: string; roles: Record<string, number>; total: number }[]; // 1주차..
+  days: ({ day: number } & VisitSlot)[]; // 이 달 1..말일
+  weeks: ({ label: string } & VisitSlot)[]; // 1주차..
   hours: number[]; // 24칸(KST)
   total: number; // 이 달 방문 총합
 };
@@ -472,16 +477,17 @@ export async function getVisitTrendsAction(
   const monthStart = `${y}-${pad(m)}-01`;
   const nextMonthStart = ymd(new Date(Date.UTC(y, m, 1)));
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const emptySlot = (): VisitSlot => ({
+    roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
+    devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
+    total: 0
+  });
   const emptyDays = () =>
-    Array.from({ length: daysInMonth }, (_, i) => ({
-      day: i + 1,
-      roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
-      total: 0
-    }));
+    Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, ...emptySlot() }));
 
   const { data, error } = await supabase
     .from("visit_log")
-    .select("day, role, occurred_at")
+    .select("day, role, device, occurred_at")
     .gte("day", monthStart)
     .lt("day", nextMonthStart);
 
@@ -491,31 +497,31 @@ export async function getVisitTrendsAction(
       data: { ready: false, hasData: false, days: emptyDays(), weeks: [], hours: Array(24).fill(0), total: 0 }
     };
   }
-  const rows = (data ?? []) as { day: string; role: string; occurred_at: string }[];
+  const rows = (data ?? []) as { day: string; role: string; device: string; occurred_at: string }[];
 
   const days = emptyDays();
-  const weekMap = new Map<number, { roles: Record<string, number>; total: number }>();
+  const weekMap = new Map<number, VisitSlot>();
   const hours = Array(24).fill(0) as number[];
+  const bump = (slot: VisitSlot, role: string, device: string) => {
+    if (role in slot.roles) slot.roles[role] += 1;
+    if (device in slot.devices) slot.devices[device] += 1;
+    slot.total += 1;
+  };
   for (const row of rows) {
     const d = Number(row.day.slice(8, 10));
-    if (d >= 1 && d <= daysInMonth) {
-      const slot = days[d - 1];
-      if (row.role in slot.roles) slot.roles[row.role] += 1;
-      slot.total += 1;
-    }
+    if (d >= 1 && d <= daysInMonth) bump(days[d - 1], row.role, row.device);
     const wi = Math.floor((d - 1) / 7); // 0~4 → 1주차~5주차
-    const wk = weekMap.get(wi) ?? { roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])), total: 0 };
-    if (row.role in wk.roles) wk.roles[row.role] += 1;
-    wk.total += 1;
+    const wk = weekMap.get(wi) ?? emptySlot();
+    bump(wk, row.role, row.device);
     weekMap.set(wi, wk);
     const t = new Date(row.occurred_at).getTime();
     if (!Number.isNaN(t)) hours[new Date(t + 9 * 3600 * 1000).getUTCHours()] += 1;
   }
   const weekCount = Math.ceil(daysInMonth / 7);
-  const weeks = Array.from({ length: weekCount }, (_, i) => {
-    const wk = weekMap.get(i) ?? { roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])), total: 0 };
-    return { label: `${i + 1}주`, roles: wk.roles, total: wk.total };
-  });
+  const weeks = Array.from({ length: weekCount }, (_, i) => ({
+    label: `${i + 1}주`,
+    ...(weekMap.get(i) ?? emptySlot())
+  }));
 
   return {
     ok: true,

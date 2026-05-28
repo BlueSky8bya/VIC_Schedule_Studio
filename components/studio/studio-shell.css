@@ -627,7 +627,7 @@
 .insight-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
-  gap: 8px;
+  gap: 11px;
 }
 .insight-tile {
   display: flex;
@@ -691,7 +691,7 @@
   font-weight: 800;
 }
 .insight-subhead {
-  margin: 14px 0 8px;
+  margin: 20px 0 11px;
   font-size: 12px;
   font-weight: 800;
   color: #8b7a59;
@@ -703,7 +703,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 7px;
+  gap: 11px;
 }
 .insight-bars li {
   display: grid;
@@ -751,7 +751,7 @@
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 .insight-rows li {
   display: flex;
@@ -1008,6 +1008,13 @@
   letter-spacing: 0.01em;
 }
 /* 방문 패널 일별/주별 토글 */
+.insights-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 10px;
+}
 .insights-subtabs {
   display: inline-flex;
   gap: 4px;
@@ -1015,6 +1022,9 @@
   padding: 3px;
   border-radius: 999px;
   background: #f1edfb;
+}
+.insights-toolbar .insights-subtabs {
+  margin: 0;
 }
 .insights-subtabs button {
   border: 0;
@@ -1051,28 +1061,27 @@
   font-weight: 800;
   color: #2f3a6b;
 }
-/* 인기 컨텐츠(제목) 막대: 제목 길이에 맞춰 막대가 유동적으로 늘고 줄게(flex). 제목이 짧으면
-   막대가 길어지고, 길면 제목이 최대폭까지 → 그만큼 막대가 짧아진다. */
+/* 인기 컨텐츠(제목) 막대: 제목은 윗줄에 전체폭으로(길어도 됨), 막대는 아랫줄에 전체폭으로 —
+   모든 막대가 같은 x(왼쪽)에서 시작해 정렬되고, 값에 비례해 길게 그려진다. */
 .insight-bars.titles li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
   align-items: center;
-  gap: 8px;
+  column-gap: 8px;
+  row-gap: 5px;
 }
 .insight-bars.titles .insight-bar-label {
-  flex: 0 1 auto;
-  max-width: 62%; /* 모바일: 제목을 넉넉히(막대는 짧게) */
+  grid-column: 1 / -1;
+  max-width: 100%;
 }
 .insight-bars.titles .insight-bar-track {
-  flex: 1 1 auto;
+  grid-column: 1;
+  grid-row: 2;
 }
 .insight-bars.titles .insight-bar-count {
-  flex: 0 0 auto;
-}
-@media (min-width: 641px) {
-  /* 웹: 제목 최대폭을 줄여 막대를 더 길게 보여준다. */
-  .insight-bars.titles .insight-bar-label {
-    max-width: 50%;
-  }
+  grid-column: 2;
+  grid-row: 2;
 }
 /* 신뢰 멤버: 이메일이 길면 이메일을 말줄임 — 역할 태그(매니저/작업자)는 안 잘리게. */
 .insight-rows li span {
@@ -1146,6 +1155,8 @@
 }
 .trend-bcol > span {
   margin-top: 3px;
+  /* 1줄("5월")이든 2줄("26년/1월")이든 같은 높이를 차지해 막대 시작(바닥선)이 어긋나지 않게. */
+  height: 20px;
   text-align: center;
   font-size: 9px;
   font-weight: 700;
@@ -1162,33 +1173,120 @@
 /* 하이라이트 카드 */
 .highlight-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 8px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }
 .highlight-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 13px 15px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 15px 13px;
   border: 1px solid #efeaf9;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #fbfaff, #f4f1fd);
+  border-radius: 16px;
+  background: linear-gradient(155deg, #fbfaff, #f1eefb);
 }
-.highlight-card > span {
-  font-size: 13px;
+.highlight-card .hl-emoji {
+  font-size: 22px;
+  line-height: 1;
+  margin-bottom: 5px;
+}
+.highlight-card .hl-label {
+  font-size: 11.5px;
   font-weight: 800;
-  color: #6b6480;
+  color: #8a82a6;
 }
-.highlight-card > strong {
-  font-size: 14px;
+.highlight-card .hl-main {
+  font-size: 17px;
   font-weight: 900;
   color: #3a3550;
-  text-align: right;
+  line-height: 1.25;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 58%;
+}
+.highlight-card .hl-sub {
+  margin-top: 1px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b5bd6;
+}
+.highlight-card[data-tone="day"] {
+  background: linear-gradient(155deg, #f1f7ff, #e2ecff);
+  border-color: #d3e2fb;
+}
+.highlight-card[data-tone="day"] .hl-sub {
+  color: #2f6bd8;
+}
+.highlight-card[data-tone="hour"] {
+  background: linear-gradient(155deg, #fff7ed, #ffe9cf);
+  border-color: #f7d9b0;
+}
+.highlight-card[data-tone="hour"] .hl-sub {
+  color: #c2410c;
+}
+.highlight-card[data-tone="top"] {
+  background: linear-gradient(155deg, #fff1f5, #ffdfe9);
+  border-color: #fbcdda;
+}
+.highlight-card[data-tone="top"] .hl-sub {
+  color: #d11d54;
+}
+.highlight-card[data-tone="wd"] {
+  background: linear-gradient(155deg, #f0fbf3, #e0f4e7);
+  border-color: #cdeed6;
+}
+.highlight-card[data-tone="wd"] .hl-main {
+  color: #2f7d4f;
+}
+/* 막대 호버: 살짝 강조 + 수치 칩(data-v)을 위에 띄워 "지금 보고 있다"는 느낌을 준다. */
+.vt-bar,
+.vt-hbar,
+.trend-bar {
+  position: relative;
+}
+.vt-col,
+.vt-hcol,
+.trend-bcol {
+  cursor: default;
+}
+.vt-col:hover .vt-bar,
+.vt-hcol:hover .vt-hbar,
+.trend-bcol:hover .trend-bar {
+  filter: brightness(1.12) saturate(1.1);
+  box-shadow: 0 0 0 2px rgb(107 91 214 / 28%);
+}
+.vt-bar::after,
+.vt-hbar::after,
+.trend-bar::after {
+  content: attr(data-v);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%) scale(0.8);
+  transform-origin: bottom center;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  background: #3a3550;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 7px;
+  transition: opacity 0.12s var(--ease, ease), transform 0.12s var(--ease, ease);
+  z-index: 6;
+}
+.vt-col:hover .vt-bar::after,
+.vt-hcol:hover .vt-hbar::after,
+.trend-bcol:hover .trend-bar::after {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
+}
+.insight-bars li:hover .insight-bar-fill {
+  filter: brightness(1.06);
+}
+.insight-bars li:hover .insight-bar-track {
+  box-shadow: 0 0 0 2px rgb(107 91 214 / 14%);
 }
 /* 활성 패널 진입 시 내용이 살짝 떠오르며 순차로 — 정적이지 않고 생기 있게(HCI: 피드백). */
 @keyframes ins-rise {
