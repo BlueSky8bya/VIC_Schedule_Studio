@@ -103,8 +103,9 @@ Victory / streamer.
 Platform/system maintainer.
 
 - Can debug and maintain the system.
-- Can use developer-only diagnostics (live presence panel). Role-preview tooling
-  is planned, not yet built — don't assume it exists.
+- Can use developer-only diagnostics (live presence panel) and role preview (view
+  as owner/manager/worker/viewer). Role preview is read-only, client-only (no route
+  or cookie change, resets on refresh), and never escalates real permissions.
 - Must not gain access to owner-only schedule content unless the product rule
   explicitly changes.
 - Public API behavior must remain private-free for developers too.

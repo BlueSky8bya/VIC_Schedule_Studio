@@ -440,17 +440,26 @@ export function StudioShell({
   // 새 일정/일정 수정 카드는 달력에서 날짜(또는 일정)를 "선택했을 때"만 보여준다.
   // 편집실 진입 시엔 카드를 띄우지 않고, 칸을 클릭하면 그제서야 나온다.
   const [editorVisible, setEditorVisible] = useState(false);
-  const canEdit = canEditSchedule(actor.role);
-  const canDecorateCalendar = canDecorate(actor.role);
-  // 매니저(방송 운영)는 업 도움 기간/링크 수정 가능, 작업자(worker)는 읽기 전용.
-  const canEditSupportThing = canEditSupport(actor.role);
-  // 매니저는 일정별 태그 할당도 편집할 수 있다(태그 자체 생성/삭제는 여전히 관리자/개발자 전용).
-  const canEditTagsThing = canEditEventTags(actor.role);
-  const canTogglePrivateLayer = actor.role !== "viewer";
 
-  // 이중 역할(매니저+작업자) 계정은 배지·팝오버·데스크 라벨에 두 역할을 함께 보여준다
-  // (effective role은 manager지만, 본인 화면에도 두 역할이 드러나야 한다).
-  const isDualRole = Boolean(actor.isManager && actor.isWorker);
+  // 개발자 전용 "역할 미리보기"(보기 전용). 클라이언트 한정 — 쿠키/라우트는 절대 안 건드린다.
+  // previewRole이 있으면 UI를 그 역할처럼 그린다(데이터·서버 권한은 그대로, 변경은 차단).
+  // 새로고침하면 자동 해제(SSR은 항상 실제 역할로 렌더)되어 라우팅/쿠키 엉킴이 없다.
+  const isDeveloper = actor.role === "developer";
+  const [previewRole, setPreviewRole] = useState<MembershipRole | null>(null);
+  const effectiveRole: MembershipRole = previewRole ?? actor.role;
+  // 미리보기 화면이 보는 역할이 관리자인가(관리자 본인 + "관리자 미리보기" 둘 다 포함).
+  const isEffectivelyOwner = effectiveRole === "owner";
+
+  const canEdit = canEditSchedule(effectiveRole);
+  const canDecorateCalendar = canDecorate(effectiveRole);
+  // 매니저(방송 운영)는 업 도움 기간/링크 수정 가능, 작업자(worker)는 읽기 전용.
+  const canEditSupportThing = canEditSupport(effectiveRole);
+  // 매니저는 일정별 태그 할당도 편집할 수 있다(태그 자체 생성/삭제는 여전히 관리자/개발자 전용).
+  const canEditTagsThing = canEditEventTags(effectiveRole);
+  const canTogglePrivateLayer = effectiveRole !== "viewer";
+
+  // 이중 역할(매니저+작업자)은 실제 계정이 둘 다일 때만(미리보기 중엔 단일 역할로 본다).
+  const isDualRole = !previewRole && Boolean(actor.isManager && actor.isWorker);
   const roleDisplay = isDualRole
     ? {
         label: "매니저 · 작업자",
@@ -464,14 +473,39 @@ export function StudioShell({
         ]
       }
     : {
-        label: ROLE_LABEL[actor.role],
-        summary: ROLE_DESC[actor.role].summary,
-        can: ROLE_DESC[actor.role].can
+        label: ROLE_LABEL[effectiveRole],
+        summary: ROLE_DESC[effectiveRole].summary,
+        can: ROLE_DESC[effectiveRole].can
       };
-  const deskLabel = isDualRole ? "매니저 · 작업자" : DESK_LABEL[actor.role];
+  const deskLabel = isDualRole ? "매니저 · 작업자" : DESK_LABEL[effectiveRole];
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
   const [roleHelpOpen, setRoleHelpOpen] = useState(false);
-  const canReadPrivate = canReadPrivateLayer(actor.role, hasUnlockSession) && showPrivate;
+  const canReadPrivate = canReadPrivateLayer(effectiveRole, hasUnlockSession) && showPrivate;
+
+  // 미리보기 중 변경 차단(보기 전용). 막았으면 true.
+  function blockedByPreview(): boolean {
+    if (previewRole) {
+      flashToast("미리보기 중에는 변경할 수 없어요. 미리보기를 나가면 됩니다.");
+      return true;
+    }
+    return false;
+  }
+  // 역할 미리보기 적용/해제. 시청자는 기존 viewerMode 경로 재사용, 나머지는 previewRole.
+  function applyPreview(role: MembershipRole | "") {
+    setRoleHelpOpen(false);
+    if (role === "" || role === effectiveRole) {
+      setPreviewRole(null);
+      setViewerMode(false);
+      return;
+    }
+    if (role === "viewer") {
+      setPreviewRole(null);
+      setViewerMode(true);
+      return;
+    }
+    setViewerMode(false);
+    setPreviewRole(role);
+  }
 
   function togglePrivateLayer() {
     if (hasUnlockSession) {
@@ -1101,6 +1135,7 @@ export function StudioShell({
 
   // #3: 매니저용 — 일정의 태그 할당을 토글한다(최대 2개). 낙관적 반영 후 실패 시 롤백.
   function toggleEventTag(event: StudioScheduleEvent, tagId: string) {
+    if (blockedByPreview()) return;
     const has = event.tagIds.includes(tagId);
     const nextTagIds = has
       ? event.tagIds.filter((id) => id !== tagId)
@@ -1249,6 +1284,7 @@ export function StudioShell({
 
   function saveEvent(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (blockedByPreview()) return;
     if (!canEdit) {
       return;
     }
@@ -1344,6 +1380,7 @@ export function StudioShell({
   }
 
   function deleteEvent(targetId: string) {
+    if (blockedByPreview()) return;
     if (!canEdit) {
       return;
     }
@@ -1629,6 +1666,7 @@ export function StudioShell({
     setForm(createEmptyForm());
   }
   function saveSupportSettings() {
+    if (blockedByPreview()) return;
     if (!supportSheetId) return;
     const id = supportSheetId;
     setActionError(null);
@@ -1703,20 +1741,48 @@ export function StudioShell({
             </div>
           </div>
 
-          {actor.role === "developer" ? (
-            <div className="developer-warning">
-              🛠 개발자 세션
-              <button
-                className="developer-warning-btn"
-                onClick={() => setModal("developer")}
-                type="button"
+          {isDeveloper ? (
+            <div className={`developer-warning${previewRole ? " previewing" : ""}`}>
+              {previewRole ? (
+                <>
+                  🛠 미리보기: {ROLE_LABEL[previewRole]} (보기 전용)
+                  <button
+                    className="developer-warning-btn"
+                    onClick={() => applyPreview("")}
+                    type="button"
+                  >
+                    나가기
+                  </button>
+                </>
+              ) : (
+                <>
+                  🛠 개발자 세션
+                  <button
+                    className="developer-warning-btn"
+                    onClick={() => setModal("developer")}
+                    type="button"
+                  >
+                    접속자 현황
+                  </button>
+                </>
+              )}
+              {/* 역할 미리보기 드롭다운 — 여러 역할 화면을 골라 점검(보기 전용). */}
+              <select
+                aria-label="역할 미리보기"
+                className="role-preview-select"
+                onChange={(event) => applyPreview(event.target.value as MembershipRole | "")}
+                value={previewRole ?? ""}
               >
-                접속자 현황
-              </button>
+                <option value="">미리보기…</option>
+                <option value="owner">관리자 화면</option>
+                <option value="manager">매니저 화면</option>
+                <option value="worker">작업자 화면</option>
+                <option value="viewer">시청자 화면</option>
+              </select>
             </div>
           ) : null}
           {/* 비공개 경고 배너는 화면을 공유하는 소유자에게만 — 작업자/매니저/개발자는 표시하지 않음. */}
-          {canReadPrivate && actor.role === "owner" ? (
+          {canReadPrivate && isEffectivelyOwner ? (
             <div className="private-warning">
               <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중
             </div>
@@ -2167,7 +2233,7 @@ export function StudioShell({
                 <option value="public">모두</option>
                 <option value="embargo">엠바고</option>
                 <option value="work">작업자</option>
-                {actor.role === "owner" ? <option value="owner_private">나만</option> : null}
+                {isEffectivelyOwner ? <option value="owner_private">나만</option> : null}
               </select>
             </label>
 
@@ -2382,30 +2448,65 @@ export function StudioShell({
         </div>
       </header>
 
-      {/* 상단 액션바: (개발자면) 세션 안내 + 같은 줄에 관리/개발자/꾸미기 버튼을 역할별로 나열. */}
+      {/* 상단 액션바: (개발자면) 세션/미리보기 안내 + 같은 줄에 관리/개발자/꾸미기 버튼. */}
       <div className="studio-actionbar">
-        {actor.role === "developer" ? (
-          <span className="studio-actionbar-dev">
-            <LockKeyhole aria-hidden="true" size={16} />
-            🛠 개발자 세션입니다. 전체 캘린더를 관리 권한으로 보고 있습니다.
-          </span>
+        {isDeveloper ? (
+          <div className="studio-dev-bar">
+            {previewRole ? (
+              <>
+                <span className="studio-dev-preview">
+                  🛠 개발자 미리보기: <strong>{ROLE_LABEL[previewRole]}</strong> 화면 (보기 전용)
+                </span>
+                <button className="button" onClick={() => applyPreview("")} type="button">
+                  미리보기 나가기
+                </button>
+              </>
+            ) : (
+              <span className="studio-actionbar-dev">
+                <LockKeyhole aria-hidden="true" size={16} />
+                🛠 개발자 세션입니다. 전체 캘린더를 관리 권한으로 보고 있습니다.
+              </span>
+            )}
+            {/* 역할 미리보기 전환기 — 항상 실제 개발자 기준으로 노출(미리보기 중에도 빠져나올 수 있게). */}
+            <div className="role-preview-switch" role="group" aria-label="역할 미리보기">
+              {(["owner", "manager", "worker", "viewer"] as const).map((r) => (
+                <button
+                  aria-pressed={previewRole === r || (r === "viewer" && viewerMode)}
+                  className={`button${previewRole === r ? " primary" : ""}`}
+                  key={r}
+                  onClick={() => applyPreview(r)}
+                  type="button"
+                >
+                  {ROLE_LABEL[r]}
+                </button>
+              ))}
+            </div>
+          </div>
         ) : null}
         <div className="studio-actionbar-tools">
-          {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자는
-              비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}
-          {canEdit || actor.role === "developer" ? (
+          {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자(또는
+              그 역할 미리보기 중)는 비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}
+          {canEdit || (isDeveloper && !previewRole) ? (
             <div className="studio-manage-group" role="group" aria-label="관리">
               {canEdit ? (
-                <button className="button" onClick={() => setModal("tags")} type="button">
+                <button
+                  className="button"
+                  onClick={() => (blockedByPreview() ? null : setModal("tags"))}
+                  type="button"
+                >
                   태그 편집
                 </button>
               ) : null}
               {canEdit ? (
-                <button className="button" onClick={() => setModal("members")} type="button">
+                <button
+                  className="button"
+                  onClick={() => (blockedByPreview() ? null : setModal("members"))}
+                  type="button"
+                >
                   멤버 관리
                 </button>
               ) : null}
-              {actor.role === "developer" ? (
+              {isDeveloper && !previewRole ? (
                 <button className="button" onClick={() => setModal("developer")} type="button">
                   🛠 접속자 현황
                 </button>
@@ -2431,7 +2532,7 @@ export function StudioShell({
         </div>
       </div>
 
-      {canReadPrivate && actor.role === "owner" ? (
+      {canReadPrivate && isEffectivelyOwner ? (
         <div className="private-warning">
           <LockKeyhole aria-hidden="true" size={17} />
           ⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.
@@ -2761,7 +2862,7 @@ export function StudioShell({
                   <option value="public">모두</option>
                   <option value="embargo">엠바고</option>
                   <option value="work">작업자</option>
-                  {actor.role === "owner" ? <option value="owner_private">나만</option> : null}
+                  {isEffectivelyOwner ? <option value="owner_private">나만</option> : null}
                 </select>
               ) : (
                 // 비공개 레이어 잠김: 공개 범위는 "모두"로 고정. 비밀번호로 풀어야 토글이 열린다.
