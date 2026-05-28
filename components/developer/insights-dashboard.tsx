@@ -45,13 +45,15 @@ const DEVICE_META: { key: string; label: string; color: string }[] = [
 ];
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
 
+// 통일성: 비개발자에게 배포하는 4패널(일정·참여·트렌드·하이라이트)을 2×4 격자 윗줄에 두고,
+// 개발자 전용(실시간·방문·보안·시스템)은 아랫줄에. 아래 트랙 섹션 순서도 이와 일치해야 한다.
 const PANELS = [
-  { key: "live", label: "실시간", icon: Radio },
-  { key: "visits", label: "방문", icon: TrendingUp },
   { key: "content", label: "일정", icon: CalendarDays },
   { key: "engagement", label: "참여", icon: Heart },
   { key: "trend", label: "트렌드", icon: LineChart },
   { key: "highlight", label: "하이라이트", icon: Trophy },
+  { key: "live", label: "실시간", icon: Radio },
+  { key: "visits", label: "방문", icon: TrendingUp },
   { key: "security", label: "보안", icon: Lock },
   { key: "system", label: "시스템", icon: Cog }
 ] as const;
@@ -574,15 +576,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
           data-active={index}
           style={{ transform: `translateX(-${index * 100}%)` }}
         >
-          {/* 1) 실시간 */}
-          <section className="insights-panel">
-            <DeveloperPanel />
-          </section>
-
-          {/* 2) 방문(이 달) */}
-          <section className="insights-panel">{renderVisits()}</section>
-
-          {/* 3) 일정·콘텐츠(이 달) */}
+          {/* 1) 일정·콘텐츠(이 달) — 공유 4패널 윗줄 */}
           <section className="insights-panel">
             {withData((d) => {
               const trend = d.content.thisMonthContent - d.content.lastMonthContent;
@@ -705,8 +699,16 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
           {/* 5) 트렌드(최근 6개월) */}
           <section className="insights-panel">{renderTrend()}</section>
 
-          {/* 6) 이 달의 하이라이트 */}
+          {/* 4) 이 달의 하이라이트 */}
           <section className="insights-panel">{renderHighlights()}</section>
+
+          {/* 5) 실시간 — 개발자 전용(아랫줄) */}
+          <section className="insights-panel">
+            <DeveloperPanel />
+          </section>
+
+          {/* 6) 방문(이 달) — 개발자 전용 */}
+          <section className="insights-panel">{renderVisits()}</section>
 
           {/* 7) 보안·접근 */}
           <section className="insights-panel">

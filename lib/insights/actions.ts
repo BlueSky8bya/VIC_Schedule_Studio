@@ -532,3 +532,252 @@ export async function getVisitTrendsAction(
     data: { ready: true, hasData: rows.length > 0, days, weeks, hours, total: rows.length }
   };
 }
+
+// ── 멤버용(관리자·매니저·작업자) 월별 인사이트 — 수치 없는 4패널(일정·참여·트렌드·하이라이트) ──
+// 보안 경계: 보안/시스템/방문 원시 데이터는 이 타입에 아예 없다. 바 크기는 0~1 비율만 보내(원시 수치
+// 미노출), 허용된 하트 합계(이 달/누적)만 숫자로 준다. 하이라이트의 방문 최다일·시간대는 "날짜·시"만.
+export type MemberInsightsData = {
+  month: { year: number; month: number };
+  content: {
+    nextBroadcast: { dateKey: string; titles: string[] } | null;
+    busiestWeekday: number | null;
+    quietestWeekday: number | null;
+    tags: { name: string; ratio: number; bgColor: string; borderColor: string }[];
+  };
+  engagement: {
+    monthHearts: number;
+    totalHearts: number;
+    monthly: { ym: string; ratio: number }[];
+    topTitles: string[];
+  };
+  trend: {
+    months: string[];
+    content: number[]; // 0~1 정규화 막대 높이
+    hearts: number[];
+  };
+  highlight: {
+    peakDay: string | null; // 방문 최다일(YYYY-MM-DD) — 수치 없음
+    peakHour: number | null; // 최고 시간대(0~23)
+    topTitle: string | null; // 인기 컨텐츠 제목
+    busiestWeekday: number | null;
+  };
+};
+export type MemberInsightsResult =
+  | { ok: true; data: MemberInsightsData }
+  | { ok: false; error: string };
+
+export async function getMemberInsightsAction(
+  year: number,
+  month: number
+): Promise<MemberInsightsResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  // 시청자/비로그인 제외 — 관리자·매니저·작업자·개발자만(개발자는 보통 전체 버전을 쓴다).
+  if (!actor.isAuthenticated || actor.role === "viewer") {
+    return { ok: false, error: "권한이 없습니다." };
+  }
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase 서비스 키가 설정되지 않았습니다." };
+  }
+  const { data: cal } = await supabase
+    .from("calendars")
+    .select("id")
+    .eq("slug", SLUG)
+    .maybeSingle();
+  if (!cal) {
+    return { ok: false, error: "캘린더를 찾을 수 없습니다." };
+  }
+  const calendarId = cal.id as string;
+
+  const y = year;
+  const m = month;
+  const monthStart = `${y}-${pad(m)}-01`;
+  const nextMonthStart = ymd(new Date(Date.UTC(y, m, 1)));
+  const todayKey = ymd(kstNow());
+  const curYm = `${y}-${pad(m)}`;
+  const monthKeys: string[] = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const d = new Date(Date.UTC(y, m - 1 - i, 1));
+    monthKeys.push(`${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`);
+  }
+  const sixStart = `${monthKeys[0]}-01`;
+
+  const [eventsRes, tagsRes, nextRes, paletteRes, heartsRes, visitRes] = await Promise.all([
+    supabase
+      .from("events")
+      .select("id, date_key, is_public")
+      .eq("calendar_id", calendarId)
+      .eq("is_public", true)
+      .gte("date_key", sixStart)
+      .lt("date_key", nextMonthStart),
+    supabase
+      .from("event_tags")
+      .select("event_id, broadcast_tags(display_name, color_key), events!inner(calendar_id, date_key)")
+      .eq("events.calendar_id", calendarId)
+      .gte("events.date_key", monthStart)
+      .lt("events.date_key", nextMonthStart),
+    supabase
+      .from("events")
+      .select("date_key, public_title, event_tags(broadcast_tags(display_name))")
+      .eq("calendar_id", calendarId)
+      .eq("is_public", true)
+      .gte("date_key", todayKey)
+      .order("date_key", { ascending: true })
+      .limit(40),
+    supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
+    supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
+    supabase.from("visit_log").select("day, occurred_at").gte("day", monthStart).lt("day", nextMonthStart)
+  ]);
+
+  // 휴뱅 일정 id + 태그(이 달) 집계.
+  const tagRows = (tagsRes.data ?? []) as {
+    event_id: string;
+    broadcast_tags?: { display_name?: string; color_key?: string };
+  }[];
+  const restIds = new Set<string>();
+  for (const row of tagRows) {
+    if (row.broadcast_tags?.display_name === REST_TAG) restIds.add(row.event_id);
+  }
+  const allEvents = (eventsRes.data ?? []) as { id: string; date_key: string }[];
+  const isContent = (e: { id: string }) => !restIds.has(e.id);
+  const thisMonth = allEvents.filter(
+    (e) => e.date_key >= monthStart && e.date_key < nextMonthStart && isContent(e)
+  );
+  const thisMonthIds = new Set(thisMonth.map((e) => e.id));
+
+  // 요일 분포.
+  const wd = Array(7).fill(0) as number[];
+  for (const e of thisMonth) wd[weekdayOf(e.date_key)] += 1;
+  const maxWd = Math.max(...wd, 0);
+  const minWd = Math.min(...wd);
+  const busiestWeekday = thisMonth.length > 0 ? wd.indexOf(maxWd) : null;
+  const quietestWeekday = thisMonth.length > 0 && maxWd !== minWd ? wd.indexOf(minWd) : null;
+
+  // 태그 순위(이 달) → 비율만.
+  const colorMap = new Map<string, { bg: string; border: string }>();
+  for (const c of paletteRes.data ?? []) {
+    colorMap.set((c as { key: string }).key, {
+      bg: (c as { bg_color: string }).bg_color,
+      border: (c as { border_color: string }).border_color
+    });
+  }
+  const tagCount = new Map<string, { name: string; count: number; bgColor: string; borderColor: string }>();
+  for (const row of tagRows) {
+    const name = row.broadcast_tags?.display_name;
+    if (!name || name === REST_TAG || !thisMonthIds.has(row.event_id)) continue;
+    const cur = tagCount.get(name);
+    if (cur) cur.count += 1;
+    else {
+      const col = colorMap.get(row.broadcast_tags?.color_key ?? "");
+      tagCount.set(name, { name, count: 1, bgColor: col?.bg ?? "#cdc6ec", borderColor: col?.border ?? "#b3a9dd" });
+    }
+  }
+  const tagArr = [...tagCount.values()].sort((a, b) => b.count - a.count).slice(0, 8);
+  const tagMax = Math.max(1, ...tagArr.map((t) => t.count));
+  const tags = tagArr.map((t) => ({
+    name: t.name,
+    ratio: t.count / tagMax,
+    bgColor: t.bgColor,
+    borderColor: t.borderColor
+  }));
+
+  // 다음 방송(휴뱅 제외).
+  const upcoming = (nextRes.data ?? []) as {
+    date_key: string;
+    public_title: string;
+    event_tags?: { broadcast_tags?: { display_name?: string } }[];
+  }[];
+  const byDate = new Map<string, string[]>();
+  for (const ev of upcoming) {
+    if ((ev.event_tags ?? []).some((t) => t.broadcast_tags?.display_name === REST_TAG)) continue;
+    const list = byDate.get(ev.date_key) ?? [];
+    list.push(firstLine(ev.public_title));
+    byDate.set(ev.date_key, list);
+  }
+  const firstDate = [...byDate.keys()].sort()[0];
+  const nextBroadcast = firstDate ? { dateKey: firstDate, titles: byDate.get(firstDate)! } : null;
+
+  // 하트: 이 달/누적 합계(허용) + 월별 비율 + 인기 제목.
+  const heartCounts = (heartsRes.data ?? []) as { event_id: string; count: number }[];
+  const totalHearts = heartCounts.reduce((s, r) => s + Number(r.count), 0);
+  const infoMap = new Map<string, { dateKey: string; title: string }>();
+  if (heartCounts.length > 0) {
+    const { data: rows } = await supabase
+      .from("events")
+      .select("id, date_key, public_title, is_public")
+      .in("id", heartCounts.map((h) => h.event_id));
+    for (const e of rows ?? []) {
+      if ((e as { is_public?: boolean }).is_public) {
+        infoMap.set((e as { id: string }).id, {
+          dateKey: (e as { date_key: string }).date_key,
+          title: (e as { public_title: string }).public_title
+        });
+      }
+    }
+  }
+  const monthlyMap = new Map<string, number>(monthKeys.map((k) => [k, 0]));
+  let monthHearts = 0;
+  const topThisMonth: { title: string; count: number }[] = [];
+  for (const h of heartCounts) {
+    const info = infoMap.get(h.event_id);
+    if (!info) continue;
+    const ym = info.dateKey.slice(0, 7);
+    if (monthlyMap.has(ym)) monthlyMap.set(ym, (monthlyMap.get(ym) ?? 0) + Number(h.count));
+    if (ym === curYm) {
+      monthHearts += Number(h.count);
+      topThisMonth.push({ title: firstLine(info.title), count: Number(h.count) });
+    }
+  }
+  const monthlyCounts = monthKeys.map((k) => monthlyMap.get(k) ?? 0);
+  const monthlyMax = Math.max(1, ...monthlyCounts);
+  const monthly = monthKeys.map((k, i) => ({ ym: k, ratio: monthlyCounts[i] / monthlyMax }));
+  const topSorted = topThisMonth.sort((a, b) => b.count - a.count);
+  const topTitles = topSorted.slice(0, 5).map((t) => t.title);
+  const topTitle = topSorted[0]?.title ?? null;
+
+  // 트렌드(6개월) — 컨텐츠·하트만, 0~1 정규화(원시 수치 미노출).
+  const contentByMonth = new Map<string, number>(monthKeys.map((k) => [k, 0]));
+  for (const e of allEvents) {
+    if (restIds.has(e.id)) continue;
+    const ym = e.date_key.slice(0, 7);
+    if (contentByMonth.has(ym)) contentByMonth.set(ym, (contentByMonth.get(ym) ?? 0) + 1);
+  }
+  const contentCounts = monthKeys.map((k) => contentByMonth.get(k) ?? 0);
+  const contentMax = Math.max(1, ...contentCounts);
+  const heartsMax = Math.max(1, ...monthlyCounts);
+
+  // 하이라이트: 방문 최다일·최고 시간대(날짜·시만, 수치 없음).
+  const visitRows = (visitRes.data ?? []) as { day: string; occurred_at: string }[];
+  const dayTally = new Map<string, number>();
+  const hourTally = Array(24).fill(0) as number[];
+  for (const row of visitRows) {
+    dayTally.set(row.day, (dayTally.get(row.day) ?? 0) + 1);
+    const t = new Date(row.occurred_at).getTime();
+    if (!Number.isNaN(t)) hourTally[new Date(t + 9 * 3600 * 1000).getUTCHours()] += 1;
+  }
+  let peakDay: string | null = null;
+  let peakDayCount = 0;
+  for (const [day, c] of dayTally) {
+    if (c > peakDayCount) {
+      peakDayCount = c;
+      peakDay = day;
+    }
+  }
+  const peakHourCount = Math.max(0, ...hourTally);
+  const peakHour = peakHourCount > 0 ? hourTally.indexOf(peakHourCount) : null;
+
+  return {
+    ok: true,
+    data: {
+      month: { year: y, month: m },
+      content: { nextBroadcast, busiestWeekday, quietestWeekday, tags },
+      engagement: { monthHearts, totalHearts, monthly, topTitles },
+      trend: {
+        months: monthKeys,
+        content: contentCounts.map((c) => c / contentMax),
+        hearts: monthlyCounts.map((c) => c / heartsMax)
+      },
+      highlight: { peakDay, peakHour, topTitle, busiestWeekday }
+    }
+  };
+}

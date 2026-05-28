@@ -83,6 +83,7 @@ import { PrivateLayerPanel } from "@/components/private-layer/private-layer-pane
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { TrustedMembersPanel } from "@/components/trusted-members/trusted-members-panel";
 import { InsightsDashboard } from "@/components/developer/insights-dashboard";
+import { MemberInsights } from "@/components/studio/member-insights";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
@@ -500,6 +501,12 @@ export function StudioShell({
   const effectiveRole: MembershipRole = previewRole ?? actor.role;
   // 미리보기 화면이 보는 역할이 관리자인가(관리자 본인 + "관리자 미리보기" 둘 다 포함).
   const isEffectivelyOwner = effectiveRole === "owner";
+  // 인사이트: 개발자(실제, 미리보기 아님)는 전체(8패널·수치), 그 외 관리자·매니저·작업자(또는 그
+  // 역할 미리보기)는 수치 없는 4패널(멤버 인사이트)을 본다. 시청자는 인사이트 없음.
+  const isDevInsights = isDeveloper && !previewRole;
+  const canMemberInsights =
+    !isDevInsights &&
+    (effectiveRole === "owner" || effectiveRole === "manager" || effectiveRole === "worker");
 
   const canEdit = canEditSchedule(effectiveRole);
   const canDecorateCalendar = canDecorate(effectiveRole);
@@ -2728,6 +2735,12 @@ export function StudioShell({
               ) : null}
             </div>
           ) : null}
+          {/* 관리자·매니저·작업자(또는 그 역할 미리보기) — 수치 없는 4패널 멤버 인사이트. */}
+          {canMemberInsights ? (
+            <button className="button" onClick={() => setModal("developer")} type="button">
+              📊 월별 인사이트
+            </button>
+          ) : null}
           {/* 우측 묶음: 비공개 일정 보기(토글) + 달력 꾸미기 — 꾸미기 바로 왼쪽에 비공개 토글. */}
           <div className="studio-actionbar-right">
             {canTogglePrivateLayer ? (
@@ -3224,7 +3237,9 @@ export function StudioShell({
                     : modal === "notice"
                       ? "숲 공지 쓰기"
                       : modal === "developer"
-                        ? "🛠 월별 인사이트"
+                        ? isDevInsights
+                          ? "🛠 월별 인사이트"
+                          : "📊 월별 인사이트"
                         : "매니저 · 작업자 관리"}
               </h2>
               <button
@@ -3268,7 +3283,11 @@ export function StudioShell({
             ) : null}
             {modal === "members" ? <TrustedMembersPanel /> : null}
             {modal === "developer" ? (
-              <InsightsDashboard month={view.month} year={view.year} />
+              isDevInsights ? (
+                <InsightsDashboard month={view.month} year={view.year} />
+              ) : (
+                <MemberInsights month={view.month} year={view.year} />
+              )
             ) : null}
             {modal === "notice"
               ? (() => {
