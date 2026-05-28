@@ -55,6 +55,9 @@ export async function POST(request: Request) {
       email,
       is_active: true,
       trusted_role: trustedRole,
+      // 이중 역할 플래그도 함께 맞춘다(이 경로는 단일 역할 추가 — 모달 패널에서 두 역할 토글 가능).
+      is_manager: trustedRole === "manager",
+      is_worker: trustedRole === "worker",
       updated_at: new Date().toISOString()
     },
     {

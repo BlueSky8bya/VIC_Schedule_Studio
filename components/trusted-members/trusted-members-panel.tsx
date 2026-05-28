@@ -33,16 +33,18 @@ function avatarFor(email: string) {
   };
 }
 import {
-  addTrustedMemberAction,
   listTrustedMembersAction,
   removeTrustedMemberAction,
+  setTrustedMemberRolesAction,
   type TrustedMember
 } from "@/lib/trusted-members/actions";
 
 export function TrustedMembersPanel() {
   const [members, setMembers] = useState<TrustedMember[]>([]);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"manager" | "worker">("manager");
+  // 한 계정에 매니저·작업자 둘 다 가능 — 추가 시 어느 역할(들)로 시작할지.
+  const [addManager, setAddManager] = useState(true);
+  const [addWorker, setAddWorker] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true); // 첫 조회 전엔 "없어요" 대신 로딩 표시
   const [pending, startTransition] = useTransition();
@@ -58,14 +60,32 @@ export function TrustedMembersPanel() {
 
   function add() {
     setError(null);
+    if (!addManager && !addWorker) {
+      setError("매니저·작업자 중 하나 이상을 선택하세요.");
+      return;
+    }
     startTransition(async () => {
-      const r = await addTrustedMemberAction(email, role);
+      const r = await setTrustedMemberRolesAction(email, addManager, addWorker);
       if (r.ok) {
         setMembers(r.members);
         setEmail("");
       } else {
         setError(r.error);
       }
+    });
+  }
+
+  // 기존 멤버의 매니저/작업자 역할을 켜고 끈다(둘 다 끄려 하면 막는다).
+  function setRoles(member: TrustedMember, isManager: boolean, isWorker: boolean) {
+    setError(null);
+    if (!isManager && !isWorker) {
+      setError("멤버는 적어도 한 역할이 필요해요. 빼려면 삭제하세요.");
+      return;
+    }
+    startTransition(async () => {
+      const r = await setTrustedMemberRolesAction(member.email, isManager, isWorker);
+      if (r.ok) setMembers(r.members);
+      else setError(r.error);
     });
   }
 
@@ -93,17 +113,20 @@ export function TrustedMembersPanel() {
           value={email}
         />
         <div className="members-add-controls">
-          <div className="role-segment" role="group" aria-label="역할">
+          {/* 다중 선택 — 한 계정에 매니저·작업자 둘 다 줄 수 있다. */}
+          <div className="role-segment" role="group" aria-label="역할(복수 선택 가능)">
             <button
-              className={role === "manager" ? "active" : ""}
-              onClick={() => setRole("manager")}
+              aria-pressed={addManager}
+              className={addManager ? "active" : ""}
+              onClick={() => setAddManager((v) => !v)}
               type="button"
             >
               매니저
             </button>
             <button
-              className={role === "worker" ? "active" : ""}
-              onClick={() => setRole("worker")}
+              aria-pressed={addWorker}
+              className={addWorker ? "active" : ""}
+              onClick={() => setAddWorker((v) => !v)}
               type="button"
             >
               작업자
@@ -148,9 +171,27 @@ export function TrustedMembersPanel() {
             </span>
             <div className="member-info">
               <strong>{m.email}</strong>
-              <span className={`member-role ${m.trustedRole}`}>
-                {m.trustedRole === "manager" ? "매니저" : "작업자"}
-              </span>
+              {/* 역할 토글 — 켜진 역할은 색 태그처럼 보이고, 누르면 즉시 켜고/끈다. */}
+              <div className="member-role-toggles" role="group" aria-label="역할">
+                <button
+                  aria-pressed={m.isManager}
+                  className={`member-role-toggle manager ${m.isManager ? "on" : ""}`}
+                  disabled={pending}
+                  onClick={() => setRoles(m, !m.isManager, m.isWorker)}
+                  type="button"
+                >
+                  매니저
+                </button>
+                <button
+                  aria-pressed={m.isWorker}
+                  className={`member-role-toggle worker ${m.isWorker ? "on" : ""}`}
+                  disabled={pending}
+                  onClick={() => setRoles(m, m.isManager, !m.isWorker)}
+                  type="button"
+                >
+                  작업자
+                </button>
+              </div>
             </div>
             <button
               aria-label="삭제"

@@ -2396,6 +2396,36 @@ textarea:disabled {
   background: var(--green-soft);
   color: #2f6b25;
 }
+/* 멤버별 역할 토글 — 켜지면 색 태그, 꺼지면 옅은 점선 윤곽(추가 가능함을 암시). */
+.member-role-toggles {
+  display: inline-flex;
+  gap: 6px;
+}
+.member-role-toggle {
+  border-radius: var(--r-pill);
+  padding: 3px 11px;
+  border: 1px dashed #d6d2e4;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.member-role-toggle:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.member-role-toggle.manager.on {
+  border: 1px solid transparent;
+  background: #eef2ff;
+  color: #4338ca;
+}
+.member-role-toggle.worker.on {
+  border: 1px solid transparent;
+  background: var(--green-soft);
+  color: #2f6b25;
+}
 .member-remove {
   display: inline-grid;
   flex: 0 0 auto;
