@@ -1345,6 +1345,26 @@ export function PublicPoster({
     };
   }, [decorate, anchorId, selectedIds.length, stickers, view, toolbarCollapsed, selected?.kind]);
 
+  // 편집 바는 예전엔 달력(스티커 레이어) 배경을 클릭해야만 닫혔다. 화면 어디를 눌러도 닫히게
+  // 한다 — 단, 스티커 자체나 편집 바 위 클릭은 제외(그건 선택/조작이라 닫으면 안 된다).
+  useEffect(() => {
+    if (!decorate || !anchorId) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) {
+        return;
+      }
+      if (target.closest(".sticker-item") || target.closest(".sticker-toolbar-float")) {
+        return;
+      }
+      clearSelection();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [decorate, anchorId]);
+
   // 신규 스티커를 로컬에 추가하고 저장 후 실제 id로 교체(복제 등에서 재사용).
   async function persistNewSticker(fresh: StickerInstance) {
     if (!saveStickerAction) {

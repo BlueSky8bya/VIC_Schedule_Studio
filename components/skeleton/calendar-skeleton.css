@@ -1,5 +1,7 @@
-/* 라우트 로딩 스켈레톤. 포스터톤 배경 + shimmer 칸으로 "곧 달력이 뜬다"를 즉시 전달한다.
-   실제 콘텐츠가 마운트되면 통째로 교체되므로 픽셀 일치보다 "모양"과 즉시성이 목표다. */
+/* 라우트 로딩 스켈레톤.
+   웹(>640px): 목적지 텍스트만 가운데 — 풀 달력 뼈대는 실제 화면과 괴리감이 커서 안 쓴다.
+   모바일(≤640px): 달력 뼈대 + 텍스트.
+   배경색은 목적지(studio/poster)에 맞춘다. 실제 화면이 마운트되면 통째로 교체된다. */
 
 @keyframes cal-skel-shimmer {
   0% {
@@ -9,163 +11,177 @@
     background-position: 480px 0;
   }
 }
+@keyframes cal-skel-note-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
 
 .cal-skel-stage {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: flex-start;
+  /* 웹 기본: 텍스트만 보이므로 화면 가운데 정렬 */
+  justify-content: center;
   gap: 14px;
   padding: clamp(16px, 4vw, 48px) 16px 40px;
-  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
 }
 
+/* 목적지별 배경색(웹·모바일 공통) */
+.cal-skel-stage-poster {
+  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
+}
+.cal-skel-stage-studio {
+  /* 편집실(studio-shell)과 동일 톤 */
+  background:
+    radial-gradient(120% 55% at 12% -6%, #ffeef7 0%, transparent 46%),
+    radial-gradient(120% 55% at 88% -6%, #eaf1ff 0%, transparent 46%),
+    linear-gradient(180deg, #fffafd 0%, #f5f7ff 100%);
+}
+
+/* 달력 카드: 모바일에서만 보인다 */
 .cal-skel-card {
-  width: 100%;
-  max-width: 1180px;
-  display: grid;
-  gap: 16px;
-  border-radius: 22px;
-  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
-  padding: clamp(14px, 2.5vw, 22px);
-  box-shadow: 0 18px 48px -28px rgba(60, 40, 20, 0.45);
-}
-
-/* 시청자/포스터: 양옆 레일(메모·범례 자리) + 가운데 달력 */
-.cal-skel-poster {
-  grid-template-columns: minmax(0, 1fr);
-}
-@media (min-width: 880px) {
-  .cal-skel-poster {
-    grid-template-columns: 200px minmax(0, 1fr) 190px;
-    align-items: stretch;
-  }
-}
-
-/* 스튜디오: 가운데 달력 + 우측 편집 패널 자리 */
-.cal-skel-studio {
-  grid-template-columns: minmax(0, 1fr);
-}
-@media (min-width: 980px) {
-  .cal-skel-studio {
-    grid-template-columns: minmax(0, 1fr) 320px;
-    align-items: stretch;
-  }
-}
-
-.cal-skel-rail,
-.cal-skel-editor {
   display: none;
-  border-radius: 16px;
-  background: rgba(120, 90, 60, 0.06);
-  min-height: 360px;
-}
-@media (min-width: 880px) {
-  .cal-skel-poster .cal-skel-rail {
-    display: block;
-  }
-}
-@media (min-width: 980px) {
-  .cal-skel-studio .cal-skel-editor {
-    display: block;
-  }
-}
-
-.cal-skel-main {
-  min-width: 0;
-}
-
-.cal-skel-heading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 4px 0 12px;
-}
-.cal-skel-spark {
-  font-size: clamp(18px, 2vw, 24px);
-  opacity: 0.7;
-}
-.cal-skel-title {
-  font-size: clamp(20px, 2.6vw, 30px);
-  font-weight: 900;
-  letter-spacing: -0.01em;
-  color: #3a2f25;
-  opacity: 0.85;
-}
-
-.cal-skel-monthbar {
-  display: flex;
-  justify-content: center;
-  padding-bottom: 14px;
-}
-.cal-skel-month {
-  display: block;
-  width: clamp(120px, 16vw, 180px);
-  height: clamp(22px, 2.4vw, 32px);
-  border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    rgba(120, 90, 60, 0.08) 25%,
-    rgba(120, 90, 60, 0.16) 37%,
-    rgba(120, 90, 60, 0.08) 63%
-  );
-  background-size: 480px 100%;
-  animation: cal-skel-shimmer 1.4s ease-in-out infinite;
-}
-
-.cal-skel-weekrow {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-  margin-bottom: 6px;
-}
-.cal-skel-weekday {
-  text-align: center;
-  font-size: 12px;
-  font-weight: 800;
-  color: rgba(58, 47, 37, 0.45);
-}
-
-.cal-skel-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 6px;
-}
-.cal-skel-cell {
-  aspect-ratio: 1 / 1;
-  border-radius: 10px;
-  background: linear-gradient(
-    90deg,
-    rgba(120, 90, 60, 0.05) 25%,
-    rgba(120, 90, 60, 0.12) 37%,
-    rgba(120, 90, 60, 0.05) 63%
-  );
-  background-size: 480px 100%;
-  animation: cal-skel-shimmer 1.4s ease-in-out infinite;
-}
-/* 칸마다 살짝 위상차를 줘서 물결치듯 보이게(앞 14칸만 지정해도 충분) */
-.cal-skel-cell:nth-child(7n + 2) {
-  animation-delay: 0.1s;
-}
-.cal-skel-cell:nth-child(7n + 4) {
-  animation-delay: 0.2s;
-}
-.cal-skel-cell:nth-child(7n + 6) {
-  animation-delay: 0.3s;
 }
 
 .cal-skel-note {
-  margin: 4px 0 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: rgba(58, 47, 37, 0.5);
+  margin: 0;
+  font-weight: 800;
+  /* 웹: 단독 표시라 크게 */
+  font-size: clamp(18px, 2.2vw, 26px);
+  letter-spacing: -0.01em;
+  animation: cal-skel-note-pulse 1.5s ease-in-out infinite;
+}
+.cal-skel-stage-poster .cal-skel-note {
+  color: #6b4f3a;
+}
+.cal-skel-stage-studio .cal-skel-note {
+  color: #4a4566;
+}
+
+/* ── 모바일(≤640px): 달력 뼈대 + 캡션 ── */
+@media (max-width: 640px) {
+  .cal-skel-stage {
+    justify-content: flex-start;
+  }
+  .cal-skel-card {
+    display: grid;
+    width: 100%;
+    max-width: 1180px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, #fffdf6, #fdf6e6);
+    padding: clamp(14px, 2.5vw, 22px);
+    box-shadow: 0 18px 48px -28px rgba(60, 40, 20, 0.45);
+  }
+  .cal-skel-stage-studio .cal-skel-card {
+    background: #ffffff;
+  }
+  .cal-skel-note {
+    /* 모바일: 뼈대 아래 캡션이라 작게 */
+    font-size: 14px;
+    font-weight: 700;
+    order: 2;
+  }
+
+  .cal-skel-rail,
+  .cal-skel-editor {
+    display: none;
+  }
+  .cal-skel-main {
+    min-width: 0;
+  }
+
+  .cal-skel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 4px 0 12px;
+  }
+  .cal-skel-spark {
+    font-size: clamp(18px, 2vw, 24px);
+    opacity: 0.7;
+  }
+  .cal-skel-title {
+    font-size: clamp(20px, 2.6vw, 30px);
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    color: #3a2f25;
+    opacity: 0.85;
+  }
+
+  .cal-skel-monthbar {
+    display: flex;
+    justify-content: center;
+    padding-bottom: 14px;
+  }
+  .cal-skel-month {
+    display: block;
+    width: clamp(120px, 16vw, 180px);
+    height: clamp(22px, 2.4vw, 32px);
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      rgba(120, 90, 60, 0.08) 25%,
+      rgba(120, 90, 60, 0.16) 37%,
+      rgba(120, 90, 60, 0.08) 63%
+    );
+    background-size: 480px 100%;
+    animation: cal-skel-shimmer 1.4s ease-in-out infinite;
+  }
+
+  .cal-skel-weekrow {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .cal-skel-weekday {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: rgba(58, 47, 37, 0.45);
+  }
+
+  .cal-skel-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+  }
+  .cal-skel-cell {
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    background: linear-gradient(
+      90deg,
+      rgba(120, 90, 60, 0.05) 25%,
+      rgba(120, 90, 60, 0.12) 37%,
+      rgba(120, 90, 60, 0.05) 63%
+    );
+    background-size: 480px 100%;
+    animation: cal-skel-shimmer 1.4s ease-in-out infinite;
+  }
+  .cal-skel-cell:nth-child(7n + 2) {
+    animation-delay: 0.1s;
+  }
+  .cal-skel-cell:nth-child(7n + 4) {
+    animation-delay: 0.2s;
+  }
+  .cal-skel-cell:nth-child(7n + 6) {
+    animation-delay: 0.3s;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .cal-skel-month,
-  .cal-skel-cell {
+  .cal-skel-cell,
+  .cal-skel-note {
     animation: none;
   }
 }
