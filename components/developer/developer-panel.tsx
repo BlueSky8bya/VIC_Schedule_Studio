@@ -8,7 +8,7 @@ import { subscribePresence, type PresenceCounts } from "@/lib/presence/presence-
 // 실시간(Supabase Presence)으로 갱신되며, 별도 새로고침 없이 들어오고 나갈 때 숫자가 바뀐다.
 type RoleKey = "owner" | "manager" | "worker" | "viewer" | "developer";
 const ROWS: { key: RoleKey; label: string; icon: typeof Users }[] = [
-  { key: "owner", label: "소유자", icon: ShieldCheck },
+  { key: "owner", label: "관리자", icon: ShieldCheck },
   { key: "manager", label: "매니저", icon: UserCog },
   { key: "worker", label: "작업자", icon: Hammer },
   { key: "viewer", label: "시청자", icon: Eye },

@@ -153,7 +153,7 @@ function addDaysIso(iso: string, days: number): string {
 
 
 const ROLE_LABEL: Record<MembershipRole, string> = {
-  owner: "소유자",
+  owner: "관리자",
   developer: "개발자",
   manager: "매니저",
   worker: "작업자",
@@ -171,25 +171,22 @@ const VISIBILITY_LABEL: Record<EventVisibilityScope, string> = {
 
 // A3: 역할 배지의 "?"를 누르면 뜨는 한 줄 책임 + 할 수 있는 것/없는 것. 빈 버튼으로 권한을
 // 추론하게 두지 않고, 특히 매니저·작업자가 자기 역할을 바로 이해하게 한다.
-const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[]; cant?: string[] }> = {
+const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] }> = {
   owner: {
     summary: "일정 발행과 전체 관리를 맡아요.",
     can: ["일정·태그·멤버·비밀번호 편집", "후원·꾸미기·포스터 내보내기", "비공개 레이어 보기(‘나만’ 포함)"]
   },
   developer: {
     summary: "시스템 유지보수자예요.",
-    can: ["일정·태그·멤버 편집(유지보수)", "꾸미기·포스터"],
-    cant: ["‘나만’ 일정은 볼 수 없어요"]
+    can: ["일정·태그·멤버 편집(유지보수)", "꾸미기·포스터"]
   },
   manager: {
     summary: "방송 운영을 도와요.",
-    can: ["후원 기간/링크 수정", "꾸미기·포스터 내보내기", "비공개 일정 보기(잠금 해제 시)"],
-    cant: ["일정·태그 편집은 불가"]
+    can: ["후원 기간/링크 수정", "꾸미기·포스터 내보내기", "비공개 일정 보기(잠금 해제 시)"]
   },
   worker: {
     summary: "제작을 도와요.",
-    can: ["꾸미기·이미지·포스터", "작업 일정 참고", "비공개 일정 보기(잠금 해제 시)"],
-    cant: ["일정·후원 편집은 불가"]
+    can: ["꾸미기·이미지·포스터", "작업 일정 참고", "비공개 일정 보기(잠금 해제 시)"]
   },
   viewer: {
     summary: "공개 일정을 봐요.",
@@ -503,13 +500,6 @@ export function StudioShell({
                 <li key={item}>{item}</li>
               ))}
             </ul>
-            {desc.cant && desc.cant.length > 0 ? (
-              <ul className="role-help-cant">
-                {desc.cant.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            ) : null}
           </div>
         ) : null}
       </div>
@@ -1055,7 +1045,9 @@ export function StudioShell({
     }
   }
 
-  function selectEvent(event: StudioScheduleEvent) {
+  // showPanel=false면 오른쪽 편집/상세 패널을 열지 않고 form만 채운다(후원 시트처럼 팝업만
+  // 띄울 때 — 패널이 같이 슬라이드 인 하는 군더더기를 없앤다).
+  function selectEvent(event: StudioScheduleEvent, showPanel = true) {
     setSelectedDate(event.startsAt.slice(0, 10));
     setSelectedEventId(event.id);
     setForm({
@@ -1070,7 +1062,9 @@ export function StudioShell({
       tagIds: event.tagIds,
       primaryTagIds: event.primaryTagIds
     });
-    setEditorVisible(true);
+    if (showPanel) {
+      setEditorVisible(true);
+    }
   }
 
   // A1: 매니저·작업자용 읽기전용 일정 상세. owner 편집 폼을 회색으로 보여주는 대신,
@@ -1081,7 +1075,7 @@ export function StudioShell({
       ? events.find((event) => event.id === selectedEventId)
       : null;
     return (
-      <div className="event-detail-readonly" key={selectedDate}>
+      <div className="event-detail-readonly" key={`${selectedDate}:${selectedEventId ?? "new"}`}>
         <div className="editor-heading">
           <div>
             <p className="eyebrow">일정 보기</p>
@@ -1530,7 +1524,8 @@ export function StudioShell({
 
   // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 시트 열기/닫기/저장.
   function openSupportSheet(event: StudioScheduleEvent) {
-    selectEvent(event); // form에 이 업 도움의 기간·링크가 채워진다
+    // 팝업(시트)만 띄우면 충분 — 오른쪽 패널은 열지 않는다(showPanel=false).
+    selectEvent(event, false); // form에 이 업 도움의 기간·링크가 채워진다
     setSupportSheetId(event.id);
   }
   function closeSupportSheet() {
@@ -2617,7 +2612,7 @@ export function StudioShell({
             renderReadonlyDetail()
           ) : (
           /* key로 날짜가 바뀔 때마다 카드 내용이 재마운트 → 카드 전체가 살짝 쑥 내려오는 애니메이션. */
-          <form onSubmit={saveEvent} key={selectedDate}>
+          <form onSubmit={saveEvent} key={`${selectedDate}:${selectedEventId ?? "new"}`}>
             <div className="editor-heading">
               <div>
                 <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>

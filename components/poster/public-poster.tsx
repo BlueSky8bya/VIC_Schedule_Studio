@@ -1113,21 +1113,35 @@ export function PublicPoster({
           fileUrl: previewUrl,
           fileType: file.type
         };
-        setAssets((prev) => [...prev, tempAsset]);
+        // 서버는 created_at DESC(최신순)로 내려주므로 새 에셋은 결국 맨 왼쪽에 온다.
+        // 로딩 자리표시도 처음부터 맨 왼쪽(prepend)에 둬, 완료 시 좌우로 튀지 않게 한다.
+        setAssets((prev) => [tempAsset, ...prev]);
         setPendingAssetIds((prev) => new Set(prev).add(tempId));
 
         const formData = new FormData();
         formData.append("file", file);
         const result = await uploadStickerAssetAction(formData);
-        setPendingAssetIds((prev) => {
-          const next = new Set(prev);
-          next.delete(tempId);
-          return next;
-        });
         if (result.ok && result.asset) {
           const saved = result.asset;
+          // 실제 저장 이미지(스토리지 URL)를 먼저 디코드한 뒤 교체 → src 교체 시 깜빡임 제거.
+          await new Promise<void>((resolve) => {
+            const img = new Image();
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            img.src = saved.fileUrl;
+          });
           setAssets((prev) => prev.map((a) => (a.id === tempId ? saved : a)));
+          setPendingAssetIds((prev) => {
+            const next = new Set(prev);
+            next.delete(tempId);
+            return next;
+          });
         } else {
+          setPendingAssetIds((prev) => {
+            const next = new Set(prev);
+            next.delete(tempId);
+            return next;
+          });
           // 실패 → 임시 미리보기 제거.
           setAssets((prev) => prev.filter((a) => a.id !== tempId));
           if (!result.ok) lastError = result.error;
