@@ -182,14 +182,24 @@ function heartTier(count: number, max: number, isSoleTop: boolean): HeartTier | 
   return { key: "warm", flames: "🔥", label: "관심" };
 }
 
-// "내 관심" 하트 농도색 — 이 달 (휴뱅 제외) 일정 중 내가 하트 누른 비율(0~1)에 따라
-// 흑색(관심 0)에서 선명한 빨강(이 달 전부 누름)으로 짙어진다. 적색 계열에서 채도·명도를 함께 올린다.
 const REST_TAG_NAME = "휴뱅";
-function interestHeartColor(ratio: number): string {
-  const r = Math.max(0, Math.min(1, ratio));
-  const sat = Math.round(22 + r * 68); // 22% → 90%
-  const light = Math.round(7 + r * 45); // 7%(거의 흑) → 52%(선명 빨강)
-  return `hsl(353, ${sat}%, ${light}%)`;
+
+// "내 관심" 어항 하트 — 이 달 (휴뱅 제외) 일정 중 내가 하트 누른 비율(0~1)만큼 붉은 물이 차고
+// 표면이 출렁인다. 비어있는 하트(연분홍 실루엣, 마스크로 오림)에서 비율만큼 빨갛게 차오르는 게이지.
+// 물결이 보이려면 커야 해서 레일에선 큼직하게(48px 안팎) 쓴다. 색은 인라인 CSS 변수로 채움 높이만.
+function LiquidHeart({ ratio }: { ratio: number }) {
+  const fill = Math.round(Math.max(0, Math.min(1, ratio)) * 100);
+  return (
+    <span
+      className="liquid-heart"
+      aria-hidden="true"
+      style={{ "--lh-fill": `${fill}%` } as CSSProperties}
+    >
+      <span className="lh-water" />
+      <span className="lh-wave lh-wave-1" />
+      <span className="lh-wave lh-wave-2" />
+    </span>
+  );
 }
 
 // 하트를 누를 때 떠오르는 ♥ 입자 하나. 화면 좌표(fixed)와 약간의 무작위성으로 자연스럽게 흩어진다.
@@ -865,7 +875,6 @@ export function PublicPoster({
     [monthHeartable, bookmarks]
   );
   const interestRatio = monthHeartableCount > 0 ? myMonthHearts / monthHeartableCount : 0;
-  const interestColor = interestHeartColor(interestRatio);
 
   // 태그 칩 토글(다중 선택).
   function toggleTagFilter(id: string) {
@@ -1983,9 +1992,7 @@ export function PublicPoster({
               onClick={() => setBookmarkedOnly((v) => !v)}
               type="button"
             >
-              <i className="agenda-legend-heart" aria-hidden="true" style={{ color: interestColor }}>
-                ♥
-              </i>
+              <LiquidHeart ratio={interestRatio} />
               내 관심
             </button>
             {filterActive ? (
@@ -2972,10 +2979,8 @@ export function PublicPoster({
                   title="내가 ♥ 누른 일정만 모아서 보기"
                   type="button"
                 >
-                  <i className="heart-mark" aria-hidden="true" style={{ color: interestColor }}>
-                    ♥
-                  </i>
-                  내 관심 일정{monthHeartableCount > 0 ? ` (${myMonthHearts}/${monthHeartableCount})` : ""}
+                  <LiquidHeart ratio={interestRatio} />
+                  내 관심
                 </button>
               ) : null}
               {filterActive ? (
