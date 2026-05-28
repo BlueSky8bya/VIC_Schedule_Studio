@@ -30,6 +30,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type TouchEvent as ReactTouchEvent,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -185,20 +186,58 @@ function heartTier(count: number, max: number, isSoleTop: boolean): HeartTier | 
 const REST_TAG_NAME = "휴뱅";
 
 // "내 관심" 어항 하트 — 이 달 (휴뱅 제외) 일정 중 내가 하트 누른 비율(0~1)만큼 붉은 물이 차고
-// 표면이 출렁인다. 비어있는 하트(연분홍 실루엣, 마스크로 오림)에서 비율만큼 빨갛게 차오르는 게이지.
-// 물결이 보이려면 커야 해서 레일에선 큼직하게(48px 안팎) 쓴다. 색은 인라인 CSS 변수로 채움 높이만.
+// 표면이 출렁인다. SVG로 물결 곡선 "아래쪽을 바닥까지" 채워(채움의 윗변 자체가 물결) 평평한
+// 직선이 원천적으로 안 생긴다. 물결 두 겹이 서로 다른 속도·방향으로 흘러 출렁임을 만든다.
 function LiquidHeart({ ratio }: { ratio: number }) {
-  const fill = Math.round(Math.max(0, Math.min(1, ratio)) * 100);
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const r = Math.max(0, Math.min(1, ratio));
+  // 물 표면 y(viewBox 0~120). r=0이면 바닥 아래(물 안 보임), r=1이면 거의 꼭대기.
+  const surface = 116 - r * 112;
+  const heart =
+    "M60 104 C 22 76 8 56 8 36 C 8 18 21 8 35 8 C 47 8 55 16 60 26 C 65 16 73 8 85 8 C 99 8 112 18 112 36 C 112 56 98 76 60 104 Z";
+  // 폭 240(=뷰박스 2배), 파장 60 → -60 이동하면 한 파장이라 매끈하게 반복. 윗변은 물결, 아래는 바닥까지 채움.
+  const wave =
+    "M0 8 q 15 -9 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 t 30 0 L240 230 L0 230 Z";
   return (
-    <span
-      className="liquid-heart"
-      aria-hidden="true"
-      style={{ "--lh-fill": `${fill}%` } as CSSProperties}
-    >
-      <span className="lh-water" />
-      <span className="lh-wave lh-wave-1" />
-      <span className="lh-wave lh-wave-2" />
-    </span>
+    <svg className="liquid-heart" viewBox="0 0 120 120" aria-hidden="true">
+      <defs>
+        <clipPath id={`lhc-${uid}`}>
+          <path d={heart} />
+        </clipPath>
+        <linearGradient id={`lhg-${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ff5d7e" />
+          <stop offset="1" stopColor="#e30b34" />
+        </linearGradient>
+      </defs>
+      {/* 비어있는 하트 바탕(연분홍) */}
+      <path d={heart} fill="#f3dde2" />
+      <g clipPath={`url(#lhc-${uid})`}>
+        <g transform={`translate(0 ${surface})`}>
+          <path d={wave} fill={`url(#lhg-${uid})`}>
+            <animateTransform
+              attributeName="transform"
+              attributeType="XML"
+              dur="2.4s"
+              from="0 0"
+              repeatCount="indefinite"
+              to="-60 0"
+              type="translate"
+            />
+          </path>
+          <path d={wave} fill="#ff6f8d" opacity="0.45">
+            <animateTransform
+              attributeName="transform"
+              attributeType="XML"
+              dur="3.7s"
+              from="-60 0"
+              repeatCount="indefinite"
+              to="0 0"
+              type="translate"
+            />
+          </path>
+        </g>
+      </g>
+    </svg>
   );
 }
 

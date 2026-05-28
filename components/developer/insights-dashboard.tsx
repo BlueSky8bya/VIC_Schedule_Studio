@@ -531,11 +531,13 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
             <span className="hl-emoji" aria-hidden="true">
               {c.emoji}
             </span>
-            <span className="hl-label">{c.label}</span>
-            <strong className="hl-main" title={c.main}>
-              {c.main}
-            </strong>
-            {c.sub ? <span className="hl-sub">{c.sub}</span> : null}
+            <span className="hl-body">
+              <span className="hl-label">{c.label}</span>
+              <strong className="hl-main" title={c.main}>
+                {c.main}
+              </strong>
+              {c.sub ? <span className="hl-sub">{c.sub}</span> : null}
+            </span>
           </div>
         ))}
       </div>

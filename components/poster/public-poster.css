@@ -1079,58 +1079,13 @@
 }
 
 /* ── "내 관심" 어항 하트 ─────────────────────────────────────────────
-   비어있는 하트(연분홍 실루엣)에 이 달 내가 누른 비율(--lh-fill)만큼 붉은 물이 차고
-   표면이 출렁인다. 물결이 보이려면 커야 해서 버튼을 세로로(하트 위, 라벨 아래) 큼직하게. */
+   SVG 안에서 물결 곡선 아래를 바닥까지 채워(채움의 윗변이 곧 물결) 평평한 직선이 안 생긴다.
+   물결이 보이려면 커야 해서 버튼을 세로로(하트 위, 라벨 아래) 큼직하게. */
 .liquid-heart {
-  position: relative;
   display: block;
   width: var(--lh-size, 48px);
   height: var(--lh-size, 48px);
   flex: none;
-  overflow: hidden;
-  background: #f3dde2;
-  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 89C18 64 5 47 5 30 5 16 16 6 29 6 38 6 46 12 50 20 54 12 62 6 71 6 84 6 95 16 95 30 95 47 82 64 50 89Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M50 89C18 64 5 47 5 30 5 16 16 6 29 6 38 6 46 12 50 20 54 12 62 6 71 6 84 6 95 16 95 30 95 47 82 64 50 89Z' fill='black'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
-}
-.lh-water {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: var(--lh-fill, 0%);
-  background: linear-gradient(180deg, #ff5d7e, #e30b34);
-  transition: height 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-.lh-wave {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 12px;
-  bottom: var(--lh-fill, 0%);
-  /* 물결의 채워진 아랫부분이 물 윗면을 덮도록(아래로 안 내림) → 물 표면에 평평한 직선이 안 보인다. */
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='12' viewBox='0 0 28 12'%3E%3Cpath d='M0 6 q 7 -5 14 0 t 14 0 V12 H0Z' fill='%23ff5d7e'/%3E%3C/svg%3E") repeat-x;
-  background-size: 28px 12px;
-  transition: bottom 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
-  animation: lh-wave-move 2.1s linear infinite;
-}
-.lh-wave-2 {
-  height: 14px;
-  opacity: 0.5;
-  animation: lh-wave-move 3.3s linear infinite reverse;
-  animation-delay: -1s;
-}
-@keyframes lh-wave-move {
-  from {
-    background-position-x: 0;
-  }
-  to {
-    background-position-x: 28px;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .lh-wave {
-    animation: none;
-  }
 }
 /* 하트 버튼(웹·모바일 공통) — 세로 정렬로 큰 하트 + 라벨을 가운데에. */
 .public-legend-vertical .legend-item.heart {
