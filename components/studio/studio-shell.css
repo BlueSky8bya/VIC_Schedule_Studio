@@ -517,38 +517,21 @@
   color: #5b21b6;
   font-weight: 900;
 }
-/* 개발자 바: 세션/미리보기 안내 + 역할 미리보기 전환기를 한 줄로. */
-.studio-dev-bar {
-  display: inline-flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-.studio-dev-preview {
+/* 헤더 미리보기 표시 칩(헤더에만 둔다 — 아래 화면이 미리보기 대상). */
+.preview-flag {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  color: #9a3412;
+  gap: 4px;
+  border-radius: 999px;
+  background: #fff1e6;
+  border: 1px solid #f3c79a;
+  padding: 3px 10px;
+  font-size: 12.5px;
   font-weight: 900;
+  color: #9a3412;
+  white-space: nowrap;
 }
-.role-preview-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  border-radius: 14px;
-  background: rgba(120, 110, 160, 0.07);
-}
-.role-preview-switch .button {
-  min-height: 32px;
-}
-/* 미리보기 중에는 화면 가장자리에 옅은 표시(점검 중 분위기). */
-.studio-shell:has(.studio-dev-preview) .studio-calendar-panel {
-  outline: 2px dashed rgba(154, 52, 18, 0.28);
-  outline-offset: -2px;
-  border-radius: 12px;
-}
-/* 모바일 역할 미리보기 드롭다운 — 버튼처럼 보이게. */
+/* 통합 역할 미리보기 드롭다운(헤더). 버튼처럼 보이고, 미리보기 중이면 강조색. */
 .role-preview-select {
   min-height: 34px;
   border: 1px solid var(--line);
@@ -560,9 +543,16 @@
   color: #5b21b6;
   cursor: pointer;
 }
-.developer-warning.previewing {
-  background: #fff5ed;
+.role-preview-select.previewing {
+  border-color: #f3c79a;
+  background: #fff1e6;
   color: #9a3412;
+}
+/* 미리보기 중에는 화면 가장자리에 옅은 점검 표시. */
+.studio-shell:has(.preview-flag) .studio-calendar-panel {
+  outline: 2px dashed rgba(154, 52, 18, 0.28);
+  outline-offset: -2px;
+  border-radius: 12px;
 }
 .studio-actionbar-tools {
   display: flex;

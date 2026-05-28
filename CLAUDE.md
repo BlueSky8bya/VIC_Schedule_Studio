@@ -54,8 +54,11 @@ High-frequency facts so you rarely need to reopen `docs/sop.md`:
   Both may decorate (stickers). Tag create/delete/recolor is owner/developer-only.
 - A trusted member can be manager AND worker at once (`is_manager`/`is_worker`);
   effective role is manager when `is_manager`.
-- Mobile = `≤640px` (`BREAKPOINTS.mobile` / `MOBILE_QUERY`); on mobile, cut copy
-  and controls — don't just shrink them.
+- **모바일은 컴팩트가 생명 (mobile is compact-first).** Mobile = `≤640px`
+  (`BREAKPOINTS.mobile` / `MOBILE_QUERY`). On mobile, *cut* copy and controls —
+  shorten labels, drop helper/parenthetical text, hide non-essential buttons.
+  Never just shrink the desktop layout. When adding text, ask "does this earn its
+  width on a phone?" — if not, trim or hide it.
 - Visible owner role label is "관리자" (the role key stays `owner`); the support
   feature term is "업 도움".
 
