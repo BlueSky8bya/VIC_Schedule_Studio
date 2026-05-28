@@ -472,6 +472,9 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
           );
         })}
         <StackTrendChart data={trend.contentByTag} title="🗓️ 태그별 컨텐츠" />
+        <StackTrendChart data={trend.heartsByTag} title="💗 하트 받은 태그" />
+        <StackTrendChart data={trend.visitsByRole} title="👀 방문 — 역할별" />
+        <StackTrendChart data={trend.visitsByDevice} title="👀 방문 — 기기별" />
       </>
     );
   }

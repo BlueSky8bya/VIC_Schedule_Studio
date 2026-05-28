@@ -68,6 +68,20 @@ function firstLine(s: string): string {
 
 const ROLE_ORDER = ["viewer", "worker", "manager", "owner", "developer"] as const;
 const DEVICE_SET = new Set(["desktop", "android", "ios", "mobile"]);
+// 트렌드 누적 막대용 역할/기기 카테고리(라벨·색) — 클라이언트 ROLE_META/DEVICE_META와 동일.
+const ROLE_TREND_META = [
+  { key: "viewer", label: "시청자", color: "#9aa0ab" },
+  { key: "worker", label: "작업자", color: "#f59e0b" },
+  { key: "manager", label: "매니저", color: "#7c6cf0" },
+  { key: "owner", label: "관리자", color: "#34d399" },
+  { key: "developer", label: "개발자", color: "#60a5fa" }
+];
+const DEVICE_TREND_META = [
+  { key: "desktop", label: "웹", color: "#6b8cef" },
+  { key: "android", label: "안드로이드", color: "#3ddc84" },
+  { key: "ios", label: "iOS", color: "#a1a1aa" },
+  { key: "mobile", label: "기타", color: "#f59e0b" }
+];
 
 // 방문 1회 기록(브라우저가 하루 1회 호출). 역할은 서버에서 실제 actor로 다시 확인해 위조를 막고,
 // 기기/세션 식별자만 클라이언트에서 받는다. 개인정보(이메일·user_id)는 저장하지 않는다.
@@ -374,6 +388,9 @@ export type TrendData = {
   visits: number[];
   content: number[]; // 휴뱅 제외 공개 일정
   contentByTag: TrendStack; // 태그별 컨텐츠 6개월(휴뱅 포함)
+  heartsByTag: TrendStack; // 하트 받은 태그 6개월(컨텐츠 방영월 기준)
+  visitsByRole: TrendStack; // 방문 역할별 6개월(개발자 전용)
+  visitsByDevice: TrendStack; // 방문 기기별 6개월(개발자 전용)
 };
 
 // 카테고리별 6개월 누적 트렌드를 만든다. rows: {ym, key, n}. cats: 표시 순서/이름/색.
@@ -426,8 +443,12 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
   const fromStart = `${monthKeys[0]}-01`;
   const nextMonthStart = ymd(new Date(Date.UTC(year, month, 1)));
 
-  const [visitRes, eventsRes, tagsRes, paletteRes] = await Promise.all([
-    supabase.from("visit_log").select("day").gte("day", fromStart).lt("day", nextMonthStart),
+  const [visitRes, eventsRes, tagsRes, paletteRes, heartsRes] = await Promise.all([
+    supabase
+      .from("visit_log")
+      .select("day, role, device")
+      .gte("day", fromStart)
+      .lt("day", nextMonthStart),
     supabase
       .from("events")
       .select("id, date_key")
@@ -441,7 +462,8 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       .eq("events.calendar_id", calendarId)
       .gte("events.date_key", fromStart)
       .lt("events.date_key", nextMonthStart),
-    supabase.from("color_palette").select("key, bg_color").eq("calendar_id", calendarId)
+    supabase.from("color_palette").select("key, bg_color").eq("calendar_id", calendarId),
+    supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId })
   ]);
 
   const tagRows2 = (tagsRes.data ?? []) as {
@@ -492,13 +514,52 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     .sort((a, b) => b[1].total - a[1].total)
     .map(([key, v]) => ({ key, label: v.name, color: v.color }));
 
+  // 하트 받은 태그 6개월 — 각 일정의 하트(총합)를 그 일정의 방영월·태그에 합산.
+  const heartByEvent = new Map<string, number>();
+  for (const r of (heartsRes.data ?? []) as { event_id: string; count: number }[]) {
+    heartByEvent.set(r.event_id, Number(r.count));
+  }
+  const heartTagInfo = new Map<string, { name: string; color: string; total: number }>();
+  const heartTagRows: { ym: string; key: string; n: number }[] = [];
+  for (const row of tagRows2) {
+    const bt = row.broadcast_tags;
+    const ym = eventMonth.get(row.event_id);
+    if (!bt?.id || !ym) continue;
+    const h = heartByEvent.get(row.event_id) ?? 0;
+    if (h <= 0) continue;
+    heartTagRows.push({ ym, key: bt.id, n: h });
+    const cur = heartTagInfo.get(bt.id);
+    if (cur) cur.total += h;
+    else
+      heartTagInfo.set(bt.id, {
+        name: bt.display_name ?? "?",
+        color: palette.get(bt.color_key ?? "") ?? "#f7a8c0",
+        total: h
+      });
+  }
+  const heartCats = [...heartTagInfo.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([key, v]) => ({ key, label: v.name, color: v.color }));
+
+  // 방문 역할별/기기별 6개월(개발자 전용).
+  const roleRows: { ym: string; key: string; n: number }[] = [];
+  const devRows: { ym: string; key: string; n: number }[] = [];
+  for (const row of (visitRes.data ?? []) as { day: string; role: string; device: string }[]) {
+    const ym = row.day.slice(0, 7);
+    roleRows.push({ ym, key: row.role, n: 1 });
+    devRows.push({ ym, key: row.device, n: 1 });
+  }
+
   return {
     ok: true,
     data: {
       months: monthKeys,
       visits: monthKeys.map((k) => vMap.get(k) ?? 0),
       content: monthKeys.map((k) => cMap.get(k) ?? 0),
-      contentByTag: buildTrendStack(monthKeys, contentCats, contentTagRows)
+      contentByTag: buildTrendStack(monthKeys, contentCats, contentTagRows),
+      heartsByTag: buildTrendStack(monthKeys, heartCats, heartTagRows),
+      visitsByRole: buildTrendStack(monthKeys, ROLE_TREND_META, roleRows),
+      visitsByDevice: buildTrendStack(monthKeys, DEVICE_TREND_META, devRows)
     }
   };
 }
@@ -620,6 +681,7 @@ export type MemberInsightsData = {
     content: number[]; // 월별 컨텐츠 수(집계)
     hearts: number[]; // 월별 하트 합계(집계)
     contentByTag: TrendStack; // 태그별 컨텐츠 6개월(수치 노출 OK)
+    heartsByTag: TrendStack; // 하트 받은 태그 6개월 — 비율만(정규화, 정확 수 숨김)
   };
   highlight: {
     peakDay: string | null; // 방문 최다일(YYYY-MM-DD) — 인원수 없음(방문 수는 민감)
@@ -841,6 +903,47 @@ export async function getMemberInsightsAction(
   const topTitles = topSorted.slice(0, 5).map((t) => t.title);
   const topTitle = topSorted[0]?.title ?? null;
 
+  // 하트 받은 태그 6개월 — 비율만(정규화로 정확 수 숨김, 막대 비율·높이만 유지). showNumbers=false.
+  const memHeartByEvent = new Map<string, number>(
+    heartCounts.map((h) => [h.event_id, Number(h.count)])
+  );
+  const hbtInfo = new Map<string, { name: string; color: string; total: number }>();
+  const hbtRows: { ym: string; key: string; n: number }[] = [];
+  for (const row of tagRows) {
+    const bt = row.broadcast_tags;
+    const ym = eventMonth.get(row.event_id);
+    if (!bt?.id || !ym) continue;
+    const h = memHeartByEvent.get(row.event_id) ?? 0;
+    if (h <= 0) continue;
+    hbtRows.push({ ym, key: bt.id, n: h });
+    const cur = hbtInfo.get(bt.id);
+    if (cur) cur.total += h;
+    else
+      hbtInfo.set(bt.id, {
+        name: bt.display_name ?? "?",
+        color: colorMap.get(bt.color_key ?? "")?.bg ?? "#f7a8c0",
+        total: h
+      });
+  }
+  const hbtRaw = buildTrendStack(
+    monthKeys,
+    [...hbtInfo.entries()]
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([key, v]) => ({ key, label: v.name, color: v.color })),
+    hbtRows
+  );
+  const hbtGmax = Math.max(1, ...hbtRaw.months.map((m) => m.total));
+  const heartsByTag: TrendStack = {
+    cats: hbtRaw.cats,
+    months: hbtRaw.months.map((m) => ({
+      ym: m.ym,
+      total: Math.round((m.total / hbtGmax) * 100),
+      counts: Object.fromEntries(
+        Object.entries(m.counts).map(([k, v]) => [k, Math.round((v / hbtGmax) * 100)])
+      )
+    }))
+  };
+
   // 트렌드(6개월) — 컨텐츠·하트 월별 집계 수치(노출 OK). 방문은 개발자 전용이라 여기 없음.
   const contentByMonth = new Map<string, number>(monthKeys.map((k) => [k, 0]));
   for (const e of allEvents) {
@@ -885,7 +988,7 @@ export async function getMemberInsightsAction(
         tags
       },
       engagement: { monthHearts, totalHearts, monthly, topTitles },
-      trend: { months: monthKeys, content: contentCounts, hearts: monthlyCounts, contentByTag },
+      trend: { months: monthKeys, content: contentCounts, hearts: monthlyCounts, contentByTag, heartsByTag },
       highlight: { peakDay, peakHour, topTitle, busiestWeekday }
     }
   };

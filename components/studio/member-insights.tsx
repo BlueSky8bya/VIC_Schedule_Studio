@@ -278,6 +278,7 @@ export function MemberInsights({ year, month }: { year: number; month: number })
           );
         })}
         <StackTrendChart data={d.trend.contentByTag} title="🗓️ 태그별 컨텐츠" />
+        <StackTrendChart data={d.trend.heartsByTag} title="💗 하트 받은 태그" showNumbers={false} />
       </>
     );
   }
