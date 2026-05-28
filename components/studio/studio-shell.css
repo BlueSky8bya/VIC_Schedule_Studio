@@ -632,12 +632,16 @@
 .insight-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  /* 모든 줄 높이를 같게 → 칸이 여러 줄로 접혀도 타일 높이가 전부 일치한다. */
+  grid-auto-rows: 1fr;
   gap: 11px;
 }
 .insight-tile {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  /* 값은 위(바닥 기준선 정렬), 라벨은 아래로 벌려 빈 공간을 채운다(텅 빈 느낌 감소). */
+  justify-content: space-between;
+  gap: 6px;
   padding: 12px 14px;
   border: 1px solid #efeaf9;
   border-radius: 14px;
@@ -648,8 +652,12 @@
   font-weight: 900;
   line-height: 1;
   color: #4a3f72;
-  /* 숫자/요일 값은 한 줄로 — "금요일"이 "금/요일"로 잘리지 않게. */
+  /* 숫자/요일 값은 한 줄로 — "금요일"이 "금/요일"로 잘리지 않게. 폰트가 달라도(숫자 26 vs 요일 20)
+     바닥 기준선에 맞춰 윗줄(29·22·월요일…)이 들쭉날쭉하지 않게 한다. */
   white-space: nowrap;
+  display: flex;
+  align-items: flex-end;
+  min-height: 28px;
 }
 /* 값이 텍스트(요일 등)면 숫자보다 작게 — 좁은 칸에서도 한 줄로 들어간다. */
 .insight-tile[data-text] strong {
@@ -1195,36 +1203,41 @@
   font-size: 7.5px;
   color: #c5bfd6;
 }
-/* 하이라이트 카드 */
+/* 하이라이트 카드 — 내용을 위·아래로 벌리고(빈 공간 최소화) 글씨를 키워 카드를 꽉 채운다. */
 .highlight-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  /* 네 카드 높이를 모두 같게. */
+  grid-auto-rows: 1fr;
   gap: 10px;
 }
 .highlight-card {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  /* 이모지·라벨은 위, 큰 값은 아래로 — 카드 안을 위아래로 채워 텅 빈 느낌을 없앤다. */
+  justify-content: space-between;
+  gap: 4px;
+  min-height: 104px;
   padding: 14px 15px 13px;
   border: 1px solid #efeaf9;
   border-radius: 16px;
   background: linear-gradient(155deg, #fbfaff, #f1eefb);
 }
 .highlight-card .hl-emoji {
-  font-size: 22px;
+  font-size: 26px;
   line-height: 1;
-  margin-bottom: 5px;
 }
 .highlight-card .hl-label {
-  font-size: 11.5px;
+  font-size: 12.5px;
   font-weight: 800;
   color: #8a82a6;
 }
 .highlight-card .hl-main {
-  font-size: 17px;
+  margin-top: auto;
+  font-size: 22px;
   font-weight: 900;
   color: #3a3550;
-  line-height: 1.25;
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1470,18 +1483,19 @@
   /* 하이라이트 패널은 카드가 커서 글씨도 넉넉히 — 웹에서 또렷하게. */
   .highlight-card {
     padding: 18px 18px 16px;
+    min-height: 124px;
   }
   .highlight-card .hl-emoji {
-    font-size: 28px;
+    font-size: 34px;
   }
   .hl-label {
     font-size: 15px;
   }
   .hl-main {
-    font-size: 27px;
+    font-size: 32px;
   }
   .hl-sub {
-    font-size: 15.5px;
+    font-size: 16px;
   }
 }
 /* 모바일: 탭 8개가 4열에 들어가도록 아이콘은 숨기고 라벨만(컴팩트). */

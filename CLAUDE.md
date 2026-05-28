@@ -31,6 +31,13 @@ The product is built around **immersion**:
   where the real content will land, so the eye doesn't jump on load). Respect
   Fitts's/Hick's law; never make the user hunt.
 
+- **No wasted space**: every card, tile, and panel should feel *filled*, not
+  hollow. A big card holding one small number with empty margins is a defect —
+  fill it (scale type up, distribute content top-to-bottom, or rethink the
+  layout). Sibling cards/tiles should share one height (don't let ragged
+  heights or stray empty bottoms creep in). Density over emptiness — but never
+  cramped; balance fill with the breathing room the rest of the app uses.
+
 User immersion is the top tie-breaker: when options are otherwise equal, choose
 the one that deepens immersion and keeps the UI uniform. A cold "admin panel"
 feel is a regression.
