@@ -10,15 +10,23 @@ type Hover = { x: number; ym: string; total: number; counts: Record<string, numb
 export function StackTrendChart({
   data,
   title,
-  showNumbers = true
+  showNumbers = true,
+  showLegend = true
 }: {
   data: TrendStack;
   title: string;
   showNumbers?: boolean;
+  showLegend?: boolean;
 }) {
   const [hover, setHover] = useState<Hover | null>(null);
   const max = Math.max(1, ...data.months.map((m) => m.total));
   const empty = data.cats.length === 0 || data.months.every((m) => m.total === 0);
+  // 범례를 숨긴 차트(태그 많음)는 호버 툴팁을 2열로 + 그 달 값이 큰 순으로 정렬해(왼쪽위→오른쪽아래)
+  // 수치가 없어도 비율 높낮이를 한눈에. (방문 트렌드처럼 범례 있는 차트는 카테고리 순서 그대로.)
+  const tipCats = (h: Hover) =>
+    showLegend
+      ? data.cats
+      : [...data.cats].sort((a, b) => (h.counts[b.key] ?? 0) - (h.counts[a.key] ?? 0));
 
   return (
     <div className="trend-row">
@@ -67,29 +75,40 @@ export function StackTrendChart({
               );
             })}
             {hover && hover.total > 0 ? (
-              <div className="vt-tip" style={{ "--tip-x": `${hover.x}%` } as CSSProperties}>
-                {showNumbers ? <strong>{hover.total}</strong> : null}
-                {data.cats.map((c) => {
-                  const n = hover.counts[c.key] ?? 0;
-                  return n > 0 ? (
-                    <span className="vt-tip-row" key={c.key}>
-                      <i style={{ background: c.color }} />
-                      {c.label}
-                      {showNumbers ? <b>{n}</b> : null}
-                    </span>
-                  ) : null;
-                })}
+              <div
+                className={`vt-tip${showLegend ? "" : " vt-tip-grid"}`}
+                style={{ "--tip-x": `${hover.x}%` } as CSSProperties}
+              >
+                {showNumbers ? (
+                  <strong>{hover.total}</strong>
+                ) : !showLegend ? (
+                  <strong className="vt-tip-note">비율 높은 순 ↓</strong>
+                ) : null}
+                <div className="vt-tip-rows">
+                  {tipCats(hover).map((c) => {
+                    const n = hover.counts[c.key] ?? 0;
+                    return n > 0 ? (
+                      <span className="vt-tip-row" key={c.key}>
+                        <i style={{ background: c.color }} />
+                        {c.label}
+                        {showNumbers ? <b>{n}</b> : null}
+                      </span>
+                    ) : null;
+                  })}
+                </div>
               </div>
             ) : null}
           </div>
-          <ul className="vt-legend">
-            {data.cats.map((c) => (
-              <li key={c.key}>
-                <span style={{ background: c.color }} />
-                {c.label}
-              </li>
-            ))}
-          </ul>
+          {showLegend ? (
+            <ul className="vt-legend">
+              {data.cats.map((c) => (
+                <li key={c.key}>
+                  <span style={{ background: c.color }} />
+                  {c.label}
+                </li>
+              ))}
+            </ul>
+          ) : null}
         </>
       )}
     </div>
