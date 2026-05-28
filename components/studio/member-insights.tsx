@@ -97,6 +97,7 @@ export function MemberInsights({ year, month }: { year: number; month: number })
   }
 
   function renderContent(d: MemberInsightsData) {
+    const contentTrend = d.content.thisMonthContent - d.content.lastMonthContent;
     return (
       <>
         <div className="insight-next">
@@ -117,6 +118,26 @@ export function MemberInsights({ year, month }: { year: number; month: number })
           )}
         </div>
         <div className="insight-grid">
+          <div className="insight-tile" data-tone="public">
+            <strong>
+              {d.content.thisMonthContent}
+              {contentTrend !== 0 ? (
+                <em className={`insight-trend ${contentTrend > 0 ? "up" : "down"}`}>
+                  {contentTrend > 0 ? "▲" : "▼"}
+                  {Math.abs(contentTrend)}
+                </em>
+              ) : null}
+            </strong>
+            <span>이번 달 컨텐츠</span>
+          </div>
+          <div className="insight-tile">
+            <strong>{d.content.daysWithContent}</strong>
+            <span>컨텐츠 있는 날</span>
+          </div>
+          <div className="insight-tile">
+            <strong>{d.content.restDays}</strong>
+            <span>휴뱅 날</span>
+          </div>
           <div className="insight-tile" data-text="">
             <strong>{weekdayLabel(d.content.busiestWeekday)}</strong>
             <span>바쁜 요일</span>
@@ -167,14 +188,21 @@ export function MemberInsights({ year, month }: { year: number; month: number })
         </div>
         <h4 className="insight-subhead">월별 하트 (최근 6개월)</h4>
         <div className="vt-chart" role="img" aria-label="월별 하트 그래프">
-          {d.engagement.monthly.map((mo) => (
-            <div className="vt-col" key={mo.ym}>
-              <div className="vt-barwrap">
-                <div className="vt-bar heart" style={{ height: `${Math.round(mo.ratio * 100)}%` }} />
+          {(() => {
+            const monMax = Math.max(1, ...d.engagement.monthly.map((m) => m.count));
+            return d.engagement.monthly.map((mo) => (
+              <div className="vt-col" key={mo.ym}>
+                <div className="vt-barwrap">
+                  <div
+                    className="vt-bar heart"
+                    data-v={`♥ ${mo.count}`}
+                    style={{ height: `${Math.round((mo.count / monMax) * 100)}%` }}
+                  />
+                </div>
+                <span className="vt-day">{Number(mo.ym.slice(5, 7))}월</span>
               </div>
-              <span className="vt-day">{Number(mo.ym.slice(5, 7))}월</span>
-            </div>
-          ))}
+            ));
+          })()}
         </div>
         <h4 className="insight-subhead">이번 달 인기 컨텐츠 TOP</h4>
         {d.engagement.topTitles.length === 0 ? (
@@ -206,30 +234,48 @@ export function MemberInsights({ year, month }: { year: number; month: number })
     ];
     return (
       <>
-        <p className="insight-note">최근 6개월 흐름</p>
-        {series.map((s) => (
-          <div className="trend-row" key={s.key}>
-            <div className="trend-head">
-              <span>{s.label}</span>
-            </div>
-            <div className="trend-spark">
-              {s.values.map((v, i) => (
-                <div className="trend-bcol" key={i}>
-                  <div className="trend-bwrap">
-                    <div
-                      className={`trend-bar ${i === s.values.length - 1 ? "cur" : ""}`}
-                      style={{ height: `${Math.max(4, Math.round(v * 100))}%` }}
-                    />
+        <p className="insight-note">최근 6개월 추이 · 배지는 지난달 대비 변화</p>
+        {series.map((s) => {
+          const cur = s.values[s.values.length - 1] ?? 0;
+          const prev = s.values[s.values.length - 2] ?? 0;
+          const delta = prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
+          const max = Math.max(1, ...s.values);
+          return (
+            <div className="trend-row" key={s.key}>
+              <div className="trend-head">
+                <span>{s.label}</span>
+                <strong>{cur.toLocaleString()}</strong>
+                {delta === null ? (
+                  <em className="trend-new">신규</em>
+                ) : delta === 0 ? (
+                  <em className="insight-trend flat">—</em>
+                ) : (
+                  <em className={`insight-trend ${delta > 0 ? "up" : "down"}`}>
+                    {delta > 0 ? "▲" : "▼"}
+                    {Math.abs(delta)}%
+                  </em>
+                )}
+              </div>
+              <div className="trend-spark">
+                {s.values.map((v, i) => (
+                  <div className="trend-bcol" key={i}>
+                    <div className="trend-bwrap">
+                      <div
+                        className={`trend-bar ${i === s.values.length - 1 ? "cur" : ""}`}
+                        data-v={`${v}`}
+                        style={{ height: `${Math.max(4, Math.round((v / max) * 100))}%` }}
+                      />
+                    </div>
+                    <span className="trend-x">
+                      {xLabels[i].showYear ? <em>{xLabels[i].yy}년</em> : null}
+                      {xLabels[i].mm}월
+                    </span>
                   </div>
-                  <span className="trend-x">
-                    {xLabels[i].showYear ? <em>{xLabels[i].yy}년</em> : null}
-                    {xLabels[i].mm}월
-                  </span>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </>
     );
   }

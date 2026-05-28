@@ -2639,6 +2639,12 @@ export function StudioShell({
       ) : (
         <>
       <header className="studio-topbar">
+        {/* 모바일 전용: 개발자 배포 버전(커밋) — 헤더 좌상단에 직접(액션바 fixed가 안 보여서). */}
+        {isDeveloper && !previewRole ? (
+          <span className="studio-build-tag-m" aria-hidden="true">
+            {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
+          </span>
+        ) : null}
         {/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + 그 오른쪽 아래 끝선에 "토리님 편집실" */}
         <div className="studio-left">
           <h1 className="studio-poster-title">

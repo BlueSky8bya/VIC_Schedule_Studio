@@ -540,23 +540,29 @@ export type MemberInsightsData = {
   month: { year: number; month: number };
   content: {
     nextBroadcast: { dateKey: string; titles: string[] } | null;
+    // 집계 수치는 줄세우기와 무관 → 노출 OK.
+    thisMonthContent: number;
+    lastMonthContent: number;
+    daysWithContent: number;
+    restDays: number;
     busiestWeekday: number | null;
     quietestWeekday: number | null;
+    // 태그 순위의 "정확한 개수"는 줄세우기가 될 수 있어 비율(막대 길이)만.
     tags: { name: string; ratio: number; bgColor: string; borderColor: string }[];
   };
   engagement: {
     monthHearts: number;
     totalHearts: number;
-    monthly: { ym: string; ratio: number }[];
-    topTitles: string[];
+    monthly: { ym: string; count: number }[]; // 월별 하트 합계(집계) — 노출 OK
+    topTitles: string[]; // 인기 컨텐츠는 제목만(개별 하트 수는 줄세우기라 숨김)
   };
   trend: {
     months: string[];
-    content: number[]; // 0~1 정규화 막대 높이
-    hearts: number[];
+    content: number[]; // 월별 컨텐츠 수(집계)
+    hearts: number[]; // 월별 하트 합계(집계)
   };
   highlight: {
-    peakDay: string | null; // 방문 최다일(YYYY-MM-DD) — 수치 없음
+    peakDay: string | null; // 방문 최다일(YYYY-MM-DD) — 인원수 없음(방문 수는 민감)
     peakHour: number | null; // 최고 시간대(0~23)
     topTitle: string | null; // 인기 컨텐츠 제목
     busiestWeekday: number | null;
@@ -653,6 +659,19 @@ export async function getMemberInsightsAction(
   const busiestWeekday = thisMonth.length > 0 ? wd.indexOf(maxWd) : null;
   const quietestWeekday = thisMonth.length > 0 && maxWd !== minWd ? wd.indexOf(minWd) : null;
 
+  // 집계 수치(줄세우기 무관) — 노출 OK.
+  const thisMonthContent = thisMonth.length;
+  const daysWithContent = new Set(thisMonth.map((e) => e.date_key)).size;
+  const restDays = new Set(
+    allEvents
+      .filter((e) => e.date_key >= monthStart && e.date_key < nextMonthStart && restIds.has(e.id))
+      .map((e) => e.date_key)
+  ).size;
+  const lastYm = monthKeys[monthKeys.length - 2]; // 직전 달(추세 비교용)
+  const lastMonthContent = allEvents.filter(
+    (e) => e.date_key.slice(0, 7) === lastYm && !restIds.has(e.id)
+  ).length;
+
   // 태그 순위(이 달) → 비율만.
   const colorMap = new Map<string, { bg: string; border: string }>();
   for (const c of paletteRes.data ?? []) {
@@ -729,13 +748,12 @@ export async function getMemberInsightsAction(
     }
   }
   const monthlyCounts = monthKeys.map((k) => monthlyMap.get(k) ?? 0);
-  const monthlyMax = Math.max(1, ...monthlyCounts);
-  const monthly = monthKeys.map((k, i) => ({ ym: k, ratio: monthlyCounts[i] / monthlyMax }));
+  const monthly = monthKeys.map((k, i) => ({ ym: k, count: monthlyCounts[i] }));
   const topSorted = topThisMonth.sort((a, b) => b.count - a.count);
   const topTitles = topSorted.slice(0, 5).map((t) => t.title);
   const topTitle = topSorted[0]?.title ?? null;
 
-  // 트렌드(6개월) — 컨텐츠·하트만, 0~1 정규화(원시 수치 미노출).
+  // 트렌드(6개월) — 컨텐츠·하트 월별 집계 수치(노출 OK). 방문은 개발자 전용이라 여기 없음.
   const contentByMonth = new Map<string, number>(monthKeys.map((k) => [k, 0]));
   for (const e of allEvents) {
     if (restIds.has(e.id)) continue;
@@ -743,8 +761,6 @@ export async function getMemberInsightsAction(
     if (contentByMonth.has(ym)) contentByMonth.set(ym, (contentByMonth.get(ym) ?? 0) + 1);
   }
   const contentCounts = monthKeys.map((k) => contentByMonth.get(k) ?? 0);
-  const contentMax = Math.max(1, ...contentCounts);
-  const heartsMax = Math.max(1, ...monthlyCounts);
 
   // 하이라이트: 방문 최다일·최고 시간대(날짜·시만, 수치 없음).
   const visitRows = (visitRes.data ?? []) as { day: string; occurred_at: string }[];
@@ -770,13 +786,18 @@ export async function getMemberInsightsAction(
     ok: true,
     data: {
       month: { year: y, month: m },
-      content: { nextBroadcast, busiestWeekday, quietestWeekday, tags },
-      engagement: { monthHearts, totalHearts, monthly, topTitles },
-      trend: {
-        months: monthKeys,
-        content: contentCounts.map((c) => c / contentMax),
-        hearts: monthlyCounts.map((c) => c / heartsMax)
+      content: {
+        nextBroadcast,
+        thisMonthContent,
+        lastMonthContent,
+        daysWithContent,
+        restDays,
+        busiestWeekday,
+        quietestWeekday,
+        tags
       },
+      engagement: { monthHearts, totalHearts, monthly, topTitles },
+      trend: { months: monthKeys, content: contentCounts, hearts: monthlyCounts },
       highlight: { peakDay, peakHour, topTitle, busiestWeekday }
     }
   };
