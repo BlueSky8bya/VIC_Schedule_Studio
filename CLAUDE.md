@@ -211,6 +211,68 @@ Owner DTO may include all editable data after owner verification.
 
 Avoid FullCalendar for MVP unless the custom grid becomes insufficient.
 
+## Experience Principles (체감 성능 · 몰입)
+
+These are first-class product goals, not polish-if-time. Build every screen and
+interaction with **intent** toward two things: (A) maximizing *perceived
+performance* and the feeling that the system is responsive and connected to the
+user, and (B) using animation to *augment immersion* — never as decoration for
+its own sake. The audience is a live-stream calendar opened by dozens of viewers
+on mobile from chat links, plus the streamer planning on air. Both must feel
+instant, alive, and trustworthy.
+
+### A. Perceived performance & user–system connectedness
+
+- **Never show a blank wait.** Any route that resolves auth/role/data must paint a
+  public-safe shell first. Route-level `loading.tsx` renders the shared
+  `<CalendarSkeleton variant>` (title + month + shimmer grid). Skeletons carry NO
+  private data and NO edit/unlock controls — the data boundary still applies to
+  loading states.
+- **Optimistic-first.** User actions (events, stickers, tags, hearts) update local
+  state immediately and reconcile with the server in the background, with rollback
+  on failure. Optimistic UI is *perception only* — server remains the sole
+  authority for permissions and persistence (see Non-Negotiable Rules).
+- **No-flash SSR restore.** Persist last-viewed state (month, view, decorate) in a
+  cookie the server can read, so the correct screen renders on first paint. Do NOT
+  use `history.replaceState` for path segments — it nulls the App Router state and
+  caused a routing tangle that had to be reverted. Reading from cookie in the
+  Server Component is the established, flash-free pattern.
+- **Name the phase, every time.** Multi-step async work (OAuth handshake, private
+  unlock, poster export, navigation) must show *which* step is happening
+  (verifying → opening → active; preparing → rendering → copying), not a generic
+  spinner. A long operation should read as "working," never "broken."
+- **Friendly, recoverable failure.** Surface errors as human-readable, actionable
+  cards with a retry path. Never leak raw technical messages or query-string codes
+  to the user, and on a privacy-sensitive failure (unlock) reveal nothing — no
+  counts, titles, or timing.
+- **Keep heavy work honest.** Some work (e.g. html2canvas) blocks the main thread
+  and an overlay can't truly un-block it; give clear staged feedback instead of
+  pretending it's non-blocking.
+
+### B. Immersion-augmenting animation
+
+- **Motion must mean something.** Animate to communicate a state change the user
+  caused — month slid left/right, this date is now selected, this card just
+  arrived, this tier is popular. Motion that doesn't encode meaning is noise; cut
+  it.
+- **Spatial continuity.** Directional slides (next/prev) and parallax (farther-from-
+  center moves slightly more) keep the user oriented across transitions. The poster
+  is a fixed 16:9 canvas scaled as a whole, so motion never reflows sticker/text
+  positions.
+- **Re-trigger via keyed remount** for CSS enter animations; keep refs as the
+  source of truth for async-safe state. Animations are fast and light — they should
+  feel like the UI breathing, not like waiting.
+- **Always honor `prefers-reduced-motion`.** Every animation needs a reduced-motion
+  fallback. Accessibility and immersion are not in tension.
+- **Viewer mode stays cute & clean; studio may be operational.** Delight (heart-tier
+  intros, sparkles, slides) belongs on the poster/viewer surface. Poster export and
+  reduced chrome must never carry admin/technical noise.
+
+When unsure whether an enhancement is worth it: prefer the highest-leverage,
+lowest-risk perceived-performance win, and skip motion/markers that add noise at
+this app's scale. State the judgment honestly rather than rubber-stamping every
+"best practice."
+
 ## Done Definition
 
 A task is not done unless:
@@ -226,3 +288,6 @@ A task is not done unless:
 9. Tag colors do not leak private information.
 10. Poster mode does not include admin UI.
 11. Relevant docs are updated.
+12. No new blank-wait: routes resolving auth/role/data have a public-safe loading shell; loading states carry no private data.
+13. New async flows name their phase and fail into a friendly, recoverable (privacy-safe) state.
+14. New animation encodes a real state change and has a `prefers-reduced-motion` fallback.
