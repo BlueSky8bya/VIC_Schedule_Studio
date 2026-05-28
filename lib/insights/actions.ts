@@ -364,11 +364,38 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   };
 }
 
+// 카테고리(태그/역할/기기)별 6개월 누적 막대 트렌드. months[i].counts[catKey] = 그 달 그 카테고리 값.
+export type TrendStack = {
+  cats: { key: string; label: string; color: string }[];
+  months: { ym: string; counts: Record<string, number>; total: number }[];
+};
 export type TrendData = {
   months: string[]; // 6개월(YYYY-MM, 오래된→최신, 타깃 월로 끝남)
   visits: number[];
   content: number[]; // 휴뱅 제외 공개 일정
+  contentByTag: TrendStack; // 태그별 컨텐츠 6개월(휴뱅 포함)
 };
+
+// 카테고리별 6개월 누적 트렌드를 만든다. rows: {ym, key, n}. cats: 표시 순서/이름/색.
+function buildTrendStack(
+  monthKeys: string[],
+  cats: { key: string; label: string; color: string }[],
+  rows: { ym: string; key: string; n: number }[]
+): TrendStack {
+  const months = monthKeys.map((ym) => ({
+    ym,
+    counts: Object.fromEntries(cats.map((c) => [c.key, 0])) as Record<string, number>,
+    total: 0
+  }));
+  const idx = new Map(monthKeys.map((k, i) => [k, i]));
+  for (const r of rows) {
+    const i = idx.get(r.ym);
+    if (i === undefined || !(r.key in months[i].counts)) continue;
+    months[i].counts[r.key] += r.n;
+    months[i].total += r.n;
+  }
+  return { cats, months };
+}
 export type TrendResult = { ok: true; data: TrendData } | { ok: false; error: string };
 
 // 트렌드 패널용 — 방문·컨텐츠의 최근 6개월 월별 추이. (하트 6개월은 getInsightsAction이 이미 줌.)
@@ -399,7 +426,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
   const fromStart = `${monthKeys[0]}-01`;
   const nextMonthStart = ymd(new Date(Date.UTC(year, month, 1)));
 
-  const [visitRes, eventsRes, tagsRes] = await Promise.all([
+  const [visitRes, eventsRes, tagsRes, paletteRes] = await Promise.all([
     supabase.from("visit_log").select("day").gte("day", fromStart).lt("day", nextMonthStart),
     supabase
       .from("events")
@@ -410,36 +437,68 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       .lt("date_key", nextMonthStart),
     supabase
       .from("event_tags")
-      .select("event_id, broadcast_tags(display_name), events!inner(calendar_id, date_key)")
+      .select("event_id, broadcast_tags(id, display_name, color_key), events!inner(calendar_id, date_key)")
       .eq("events.calendar_id", calendarId)
       .gte("events.date_key", fromStart)
-      .lt("events.date_key", nextMonthStart)
+      .lt("events.date_key", nextMonthStart),
+    supabase.from("color_palette").select("key, bg_color").eq("calendar_id", calendarId)
   ]);
 
+  const tagRows2 = (tagsRes.data ?? []) as {
+    event_id: string;
+    broadcast_tags?: { id?: string; display_name?: string; color_key?: string };
+  }[];
   const restIds = new Set<string>();
-  for (const row of tagsRes.data ?? []) {
-    if ((row as { broadcast_tags?: { display_name?: string } }).broadcast_tags?.display_name === REST_TAG) {
-      restIds.add((row as { event_id: string }).event_id);
-    }
+  for (const row of tagRows2) {
+    if (row.broadcast_tags?.display_name === REST_TAG) restIds.add(row.event_id);
   }
   const vMap = new Map(monthKeys.map((k) => [k, 0]));
   for (const row of visitRes.data ?? []) {
     const ym = (row as { day: string }).day.slice(0, 7);
     if (vMap.has(ym)) vMap.set(ym, (vMap.get(ym) ?? 0) + 1);
   }
+  const eventMonth = new Map<string, string>();
   const cMap = new Map(monthKeys.map((k) => [k, 0]));
   for (const e of eventsRes.data ?? []) {
-    if (restIds.has((e as { id: string }).id)) continue;
+    const id = (e as { id: string }).id;
     const ym = (e as { date_key: string }).date_key.slice(0, 7);
+    eventMonth.set(id, ym);
+    if (restIds.has(id)) continue;
     if (cMap.has(ym)) cMap.set(ym, (cMap.get(ym) ?? 0) + 1);
   }
+
+  // 태그별 컨텐츠 6개월(휴뱅 포함) — 태그 id 기준 집계(rename은 현재 이름으로 자동 반영).
+  const palette = new Map<string, string>();
+  for (const c of paletteRes.data ?? []) {
+    palette.set((c as { key: string }).key, (c as { bg_color: string }).bg_color);
+  }
+  const tagInfo = new Map<string, { name: string; color: string; total: number }>();
+  const contentTagRows: { ym: string; key: string; n: number }[] = [];
+  for (const row of tagRows2) {
+    const bt = row.broadcast_tags;
+    const ym = eventMonth.get(row.event_id); // 공개 일정만(비공개는 매핑 없음 → 제외)
+    if (!bt?.id || !ym) continue;
+    contentTagRows.push({ ym, key: bt.id, n: 1 });
+    const cur = tagInfo.get(bt.id);
+    if (cur) cur.total += 1;
+    else
+      tagInfo.set(bt.id, {
+        name: bt.display_name ?? "?",
+        color: palette.get(bt.color_key ?? "") ?? "#cdc6ec",
+        total: 1
+      });
+  }
+  const contentCats = [...tagInfo.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([key, v]) => ({ key, label: v.name, color: v.color }));
 
   return {
     ok: true,
     data: {
       months: monthKeys,
       visits: monthKeys.map((k) => vMap.get(k) ?? 0),
-      content: monthKeys.map((k) => cMap.get(k) ?? 0)
+      content: monthKeys.map((k) => cMap.get(k) ?? 0),
+      contentByTag: buildTrendStack(monthKeys, contentCats, contentTagRows)
     }
   };
 }
@@ -560,6 +619,7 @@ export type MemberInsightsData = {
     months: string[];
     content: number[]; // 월별 컨텐츠 수(집계)
     hearts: number[]; // 월별 하트 합계(집계)
+    contentByTag: TrendStack; // 태그별 컨텐츠 6개월(수치 노출 OK)
   };
   highlight: {
     peakDay: string | null; // 방문 최다일(YYYY-MM-DD) — 인원수 없음(방문 수는 민감)
@@ -618,9 +678,9 @@ export async function getMemberInsightsAction(
       .lt("date_key", nextMonthStart),
     supabase
       .from("event_tags")
-      .select("event_id, broadcast_tags(display_name, color_key), events!inner(calendar_id, date_key)")
+      .select("event_id, broadcast_tags(id, display_name, color_key), events!inner(calendar_id, date_key)")
       .eq("events.calendar_id", calendarId)
-      .gte("events.date_key", monthStart)
+      .gte("events.date_key", sixStart)
       .lt("events.date_key", nextMonthStart),
     supabase
       .from("events")
@@ -635,10 +695,10 @@ export async function getMemberInsightsAction(
     supabase.from("visit_log").select("day, occurred_at").gte("day", monthStart).lt("day", nextMonthStart)
   ]);
 
-  // 휴뱅 일정 id + 태그(이 달) 집계.
+  // 휴뱅 일정 id + 태그(6개월) 집계.
   const tagRows = (tagsRes.data ?? []) as {
     event_id: string;
-    broadcast_tags?: { display_name?: string; color_key?: string };
+    broadcast_tags?: { id?: string; display_name?: string; color_key?: string };
   }[];
   const restIds = new Set<string>();
   for (const row of tagRows) {
@@ -680,6 +740,34 @@ export async function getMemberInsightsAction(
       border: (c as { border_color: string }).border_color
     });
   }
+  // 태그별 컨텐츠 6개월(휴뱅 포함) — 태그 id 기준 집계(rename 자동 반영). 컨텐츠 수치는 노출 OK.
+  const eventMonth = new Map<string, string>(
+    allEvents.map((e) => [e.id, e.date_key.slice(0, 7)])
+  );
+  const ctTagInfo = new Map<string, { name: string; color: string; total: number }>();
+  const ctRows: { ym: string; key: string; n: number }[] = [];
+  for (const row of tagRows) {
+    const bt = row.broadcast_tags;
+    const ym = eventMonth.get(row.event_id);
+    if (!bt?.id || !ym) continue;
+    ctRows.push({ ym, key: bt.id, n: 1 });
+    const cur = ctTagInfo.get(bt.id);
+    if (cur) cur.total += 1;
+    else
+      ctTagInfo.set(bt.id, {
+        name: bt.display_name ?? "?",
+        color: colorMap.get(bt.color_key ?? "")?.bg ?? "#cdc6ec",
+        total: 1
+      });
+  }
+  const contentByTag = buildTrendStack(
+    monthKeys,
+    [...ctTagInfo.entries()]
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([key, v]) => ({ key, label: v.name, color: v.color })),
+    ctRows
+  );
+
   const tagCount = new Map<string, { name: string; count: number; bgColor: string; borderColor: string }>();
   for (const row of tagRows) {
     const name = row.broadcast_tags?.display_name;
@@ -797,7 +885,7 @@ export async function getMemberInsightsAction(
         tags
       },
       engagement: { monthHearts, totalHearts, monthly, topTitles },
-      trend: { months: monthKeys, content: contentCounts, hearts: monthlyCounts },
+      trend: { months: monthKeys, content: contentCounts, hearts: monthlyCounts, contentByTag },
       highlight: { peakDay, peakHour, topTitle, busiestWeekday }
     }
   };

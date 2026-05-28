@@ -20,6 +20,7 @@ import {
   useState
 } from "react";
 import { DeveloperPanel } from "@/components/developer/developer-panel";
+import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import {
   getInsightsAction,
   getTrendAction,
@@ -470,6 +471,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
             </div>
           );
         })}
+        <StackTrendChart data={trend.contentByTag} title="🗓️ 태그별 컨텐츠" />
       </>
     );
   }

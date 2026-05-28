@@ -9,6 +9,7 @@ import {
   useState
 } from "react";
 import { getMemberInsightsAction, type MemberInsightsData } from "@/lib/insights/actions";
+import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 
 // 관리자·매니저·작업자용 월별 인사이트 — 수치 없는 4패널(일정·참여·트렌드·하이라이트).
 // 데이터는 getMemberInsightsAction이 이미 수치를 빼고(보안/시스템/방문 원시값 없음, 막대는 0~1 비율)
@@ -276,6 +277,7 @@ export function MemberInsights({ year, month }: { year: number; month: number })
             </div>
           );
         })}
+        <StackTrendChart data={d.trend.contentByTag} title="🗓️ 태그별 컨텐츠" />
       </>
     );
   }
