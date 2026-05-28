@@ -1140,6 +1140,8 @@ export function PublicPoster({
     }
     pushHistory();
     const idSet = new Set(ids);
+    // 실패 시 되돌릴 수 있게, 지우기 전 대상 스티커를 보관한다.
+    const removedStickers = stickersRef.current.filter((s) => idSet.has(s.id));
     setStickers((prev) => prev.filter((s) => !idSet.has(s.id)));
     clearSelection();
     // 임시(미저장) 스티커는 서버 호출 없이 로컬에서만 제거된다.
@@ -1149,17 +1151,27 @@ export function PublicPoster({
     }
     // 월 재시드 때 stale prop에서 되살아나지 않도록 삭제 id를 기억한다.
     realIds.forEach((id) => deletedStickerIdsRef.current.add(id));
+    // 서버 삭제가 실패하면(권한·대상 문제) 낙관적 제거를 되돌려 "지워진 척" 가리지 않게 한다.
+    const rollback = (message: string) => {
+      setStickerError(message);
+      realIds.forEach((id) => deletedStickerIdsRef.current.delete(id));
+      setStickers((prev) => {
+        const have = new Set(prev.map((s) => s.id));
+        const restored = removedStickers.filter((s) => !have.has(s.id));
+        return restored.length > 0 ? [...prev, ...restored] : prev;
+      });
+    };
     // 다중 삭제는 배치(.in() 단일 쿼리 + 무효화 1회)로 — 동접 중 캐시 thrash를 줄인다.
     if (deleteStickerBatchAction) {
       const result = await deleteStickerBatchAction(realIds);
       if (!result.ok) {
-        setStickerError(result.error);
+        rollback(result.error);
       }
     } else if (deleteStickerAction) {
       for (const id of realIds) {
         const result = await deleteStickerAction(id);
         if (!result.ok) {
-          setStickerError(result.error);
+          rollback(result.error);
         }
       }
     }

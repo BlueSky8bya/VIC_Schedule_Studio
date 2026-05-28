@@ -233,9 +233,20 @@ export async function deleteStickerBatchAction(
     return { ok: false, error: "Supabase가 설정되지 않았습니다." };
   }
 
-  const { error } = await supabase.from("sticker_instances").delete().in("id", realIds);
+  const { data, error } = await supabase
+    .from("sticker_instances")
+    .delete()
+    .in("id", realIds)
+    .select("id");
   if (error) {
     return { ok: false, error: error.message };
+  }
+  // RLS로 대상이 0행이면 에러 없이 "성공"하며 아무것도 안 지워진다(조용한 실패) → 명시적으로 잡는다.
+  if (!data || data.length === 0) {
+    return {
+      ok: false,
+      error: "스티커가 삭제되지 않았습니다(권한 또는 대상 확인). 새로고침 후 다시 시도해 주세요."
+    };
   }
 
   // 공개 데이터 캐시만 무효화한다(시청자는 다음 로드 때 최신 반영). 소유자 현재 화면은
@@ -258,9 +269,19 @@ export async function deleteStickerAction(stickerId: string): Promise<StickerRes
     return { ok: false, error: "Supabase가 설정되지 않았습니다." };
   }
 
-  const { error } = await supabase.from("sticker_instances").delete().eq("id", stickerId);
+  const { data, error } = await supabase
+    .from("sticker_instances")
+    .delete()
+    .eq("id", stickerId)
+    .select("id");
   if (error) {
     return { ok: false, error: error.message };
+  }
+  if (!data || data.length === 0) {
+    return {
+      ok: false,
+      error: "스티커가 삭제되지 않았습니다(권한 또는 대상 확인). 새로고침 후 다시 시도해 주세요."
+    };
   }
 
   // 공개 데이터 캐시만 무효화한다(시청자는 다음 로드 때 최신 반영). 소유자 현재 화면은
