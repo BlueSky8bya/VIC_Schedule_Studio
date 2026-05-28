@@ -19,7 +19,7 @@ import {
   type VisitTrends
 } from "@/lib/insights/actions";
 
-// 방문 추이 그래프의 역할 색·표기.
+// 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
 const ROLE_META: { key: string; label: string; color: string }[] = [
   { key: "viewer", label: "시청자", color: "#9aa0ab" },
   { key: "worker", label: "작업자", color: "#f59e0b" },
@@ -27,10 +27,7 @@ const ROLE_META: { key: string; label: string; color: string }[] = [
   { key: "owner", label: "관리자", color: "#34d399" },
   { key: "developer", label: "개발자", color: "#60a5fa" }
 ];
-
-// 개발자 전용 "🛠 인사이트" — 비슷한 지표끼리 패널로 묶어 좌우로 슬라이딩하며 본다.
-// 실시간 패널은 Supabase Presence(즉시), 나머지는 서버 집계(getInsightsAction)로 채운다.
-// 모든 값은 합계/개수만 — 비공개·owner_private 일정의 '내용'은 절대 노출하지 않는다.
+const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
 
 const PANELS = [
   { key: "live", label: "실시간", icon: Radio },
@@ -63,9 +60,10 @@ function fmtDateTime(iso: string | null): string {
     ? `${k.getUTCMonth() + 1}.${k.getUTCDate()} ${String(k.getUTCHours()).padStart(2, "0")}:${String(k.getUTCMinutes()).padStart(2, "0")}`
     : "—";
 }
-const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
+function weekdayLabel(wd: number | null): string {
+  return wd !== null ? `${WEEKDAY[wd]}요일` : "—";
+}
 function fmtMonthDay(dateKey: string): string {
-  // "YYYY-MM-DD" → "M/D(요일)"
   const [yy, mm, dd] = dateKey.split("-").map(Number);
   const wd = WEEKDAY[new Date(Date.UTC(yy, mm - 1, dd)).getUTCDay()] ?? "";
   return `${mm}/${dd}(${wd})`;
@@ -80,17 +78,47 @@ function StatTile({ value, label, tone }: { value: number | string; label: strin
   );
 }
 
-export function InsightsDashboard() {
+// 역할 스택 막대 한 줄(방문 그래프 공용).
+function StackBar({
+  roles,
+  total,
+  max,
+  label
+}: {
+  roles: Record<string, number>;
+  total: number;
+  max: number;
+  label: string;
+}) {
+  return (
+    <div className="vt-col" title={`${label} · ${total}명`}>
+      <div className="vt-barwrap">
+        <div className="vt-bar" style={{ height: `${(total / max) * 100}%` }}>
+          {ROLE_META.map((r) => {
+            const c = roles[r.key] ?? 0;
+            return c > 0 ? (
+              <span className="vt-seg" key={r.key} style={{ flexGrow: c, background: r.color }} />
+            ) : null;
+          })}
+        </div>
+      </div>
+      <span className="vt-day">{label}</span>
+    </div>
+  );
+}
+
+export function InsightsDashboard({ year, month }: { year: number; month: number }) {
   const [index, setIndex] = useState(0);
   const [data, setData] = useState<InsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [visits, setVisits] = useState<VisitTrends | null>(null);
   const [visitsLoading, setVisitsLoading] = useState(true);
+  const [visitView, setVisitView] = useState<"day" | "week">("day");
 
   useEffect(() => {
     let alive = true;
-    getInsightsAction()
+    getInsightsAction(year, month)
       .then((r) => {
         if (!alive) return;
         if (r.ok) setData(r.data);
@@ -99,7 +127,7 @@ export function InsightsDashboard() {
       .finally(() => {
         if (alive) setLoading(false);
       });
-    getVisitTrendsAction()
+    getVisitTrendsAction(year, month)
       .then((r) => {
         if (alive && r.ok) setVisits(r.data);
       })
@@ -109,11 +137,10 @@ export function InsightsDashboard() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [year, month]);
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
 
-  // 웹: 좌/우 방향키로 패널 이동(모달 열린 동안). 입력칸 포커스 땐 무시.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -130,7 +157,6 @@ export function InsightsDashboard() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // 모바일/웹: 좌우로 밀어(스와이프) 패널 이동. 세로 드래그(스크롤)는 무시.
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const onSwipeStart = (e: ReactPointerEvent) => {
     swipeStart.current = { x: e.clientX, y: e.clientY };
@@ -146,7 +172,6 @@ export function InsightsDashboard() {
     }
   };
 
-  // 패널 2~5 공통: 로딩 스켈레톤 / 오류 / 데이터.
   function withData(render: (d: InsightsData) => React.ReactNode) {
     if (loading) {
       return (
@@ -177,43 +202,53 @@ export function InsightsDashboard() {
       );
     }
     if (!visits || !visits.ready) {
+      return <p className="insight-empty">방문 데이터를 불러올 수 없어요.</p>;
+    }
+    if (!visits.hasData) {
       return (
         <p className="insight-empty">
-          아직 방문 데이터가 없어요. 마이그레이션(0023_visit_log)을 적용하면 하루 단위로 쌓여
-          여기에 날짜별·역할별 그래프가 그려집니다.
+          {month}월 방문 기록이 아직 없어요. 방문하면 하루 단위로 쌓여 여기에 날짜별·역할별
+          그래프가 그려져요.
         </p>
       );
     }
-    const maxTotal = Math.max(1, ...visits.days.map((d) => d.total));
-    const maxHour = Math.max(1, ...visits.hours);
-    const total14 = visits.days.reduce((s, d) => s + d.total, 0);
+    const series = visitView === "day" ? visits.days : visits.weeks;
+    const max = Math.max(1, ...series.map((s) => s.total));
     return (
       <>
         <div className="insight-grid">
-          <StatTile value={visits.todayTotal} label="오늘 방문" tone="soon" />
-          <StatTile value={total14} label="최근 14일" />
+          <StatTile value={visits.total} label={`${month}월 방문`} tone="soon" />
         </div>
-        <h4 className="insight-subhead">날짜별 방문 (역할 누적)</h4>
+        <div className="insights-subtabs">
+          <button
+            className={visitView === "day" ? "active" : ""}
+            onClick={() => setVisitView("day")}
+            type="button"
+          >
+            일별
+          </button>
+          <button
+            className={visitView === "week" ? "active" : ""}
+            onClick={() => setVisitView("week")}
+            type="button"
+          >
+            주별
+          </button>
+        </div>
         <div className="vt-chart" role="img" aria-label="날짜별 역할 방문 그래프">
-          {visits.days.map((d) => (
-            <div className="vt-col" key={d.day} title={`${d.day} · ${d.total}명`}>
-              <div className="vt-barwrap">
-                <div className="vt-bar" style={{ height: `${(d.total / maxTotal) * 100}%` }}>
-                  {ROLE_META.map((r) => {
-                    const c = d.roles[r.key] ?? 0;
-                    return c > 0 ? (
-                      <span
-                        className="vt-seg"
-                        key={r.key}
-                        style={{ flexGrow: c, background: r.color }}
-                      />
-                    ) : null;
-                  })}
-                </div>
-              </div>
-              <span className="vt-day">{Number(d.day.slice(8, 10))}</span>
-            </div>
-          ))}
+          {visitView === "day"
+            ? visits.days.map((d) => (
+                <StackBar
+                  key={d.day}
+                  label={d.day % 5 === 0 || d.day === 1 ? String(d.day) : ""}
+                  max={max}
+                  roles={d.roles}
+                  total={d.total}
+                />
+              ))
+            : visits.weeks.map((w) => (
+                <StackBar key={w.label} label={w.label} max={max} roles={w.roles} total={w.total} />
+              ))}
         </div>
         <ul className="vt-legend">
           {ROLE_META.map((r) => (
@@ -223,14 +258,17 @@ export function InsightsDashboard() {
             </li>
           ))}
         </ul>
-        <h4 className="insight-subhead">시간대 분포 (KST · 최근 30일)</h4>
+        <h4 className="insight-subhead">시간대 분포 (KST)</h4>
         <div className="vt-hours" role="img" aria-label="시간대별 방문 분포">
-          {visits.hours.map((c, h) => (
-            <div className="vt-hcol" key={h} title={`${h}시 · ${c}명`}>
-              <div className="vt-hbar" style={{ height: `${(c / maxHour) * 100}%` }} />
-              <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
-            </div>
-          ))}
+          {visits.hours.map((c, h) => {
+            const hm = Math.max(1, ...visits.hours);
+            return (
+              <div className="vt-hcol" key={h} title={`${h}시 · ${c}명`}>
+                <div className="vt-hbar" style={{ height: `${(c / hm) * 100}%` }} />
+                <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
+              </div>
+            );
+          })}
         </div>
       </>
     );
@@ -238,6 +276,7 @@ export function InsightsDashboard() {
 
   return (
     <div className="insights">
+      <p className="insights-month">{month}월 인사이트</p>
       <div className="insights-tabs" role="tablist" aria-label="인사이트 영역">
         {PANELS.map((p, i) => (
           <button
@@ -261,34 +300,41 @@ export function InsightsDashboard() {
         onPointerUp={onSwipeEnd}
       >
         <div className="insights-track" style={{ transform: `translateX(-${index * 100}%)` }}>
-          {/* 1) 실시간 — 기존 프레즌스 패널 그대로(즉시 갱신) */}
+          {/* 1) 실시간 */}
           <section className="insights-panel">
             <DeveloperPanel />
           </section>
 
-          {/* 2) 방문 추이 — 날짜×역할 스택 그래프 + 시간대 분포 */}
+          {/* 2) 방문(이 달) */}
           <section className="insights-panel">{renderVisits()}</section>
 
-          {/* 3) 일정·콘텐츠 */}
+          {/* 3) 일정·콘텐츠(이 달) */}
           <section className="insights-panel">
             {withData((d) => {
-              const trend = d.content.thisMonthPublic - d.content.lastMonthPublic;
+              const trend = d.content.thisMonthContent - d.content.lastMonthContent;
               return (
                 <>
                   <div className="insight-next">
                     <span>다음 방송</span>
-                    {d.content.nextEvent ? (
-                      <strong>
-                        {fmtMonthDay(d.content.nextEvent.dateKey)} · {d.content.nextEvent.title}
-                      </strong>
+                    {d.content.nextBroadcast ? (
+                      <div className="insight-next-body">
+                        <strong>{fmtMonthDay(d.content.nextBroadcast.dateKey)}</strong>
+                        <div className="insight-chips">
+                          {d.content.nextBroadcast.titles.map((t, i) => (
+                            <span className="insight-chip" key={`${t}-${i}`}>
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
                     ) : (
-                      <strong className="muted">예정된 공개 일정 없음</strong>
+                      <strong className="muted">예정된 방송 없음</strong>
                     )}
                   </div>
                   <div className="insight-grid">
                     <div className="insight-tile" data-tone="public">
                       <strong>
-                        {d.content.thisMonthPublic}
+                        {d.content.thisMonthContent}
                         {trend !== 0 ? (
                           <em className={`insight-trend ${trend > 0 ? "up" : "down"}`}>
                             {trend > 0 ? "▲" : "▼"}
@@ -296,22 +342,15 @@ export function InsightsDashboard() {
                           </em>
                         ) : null}
                       </strong>
-                      <span>이번 달 방송</span>
+                      <span>이번 달 컨텐츠 수</span>
                     </div>
-                    <StatTile value={d.content.daysWithStream} label="방송 있는 날" />
-                    <StatTile value={d.content.emptyDays} label="빈 날" />
-                    <StatTile
-                      value={
-                        d.content.busiestWeekday !== null
-                          ? `${WEEKDAY[d.content.busiestWeekday]}요일`
-                          : "—"
-                      }
-                      label="가장 바쁜 요일"
-                    />
+                    <StatTile value={d.content.daysWithContent} label="컨텐츠 있는 날" />
+                    <StatTile value={weekdayLabel(d.content.busiestWeekday)} label="가장 바쁜 요일" />
+                    <StatTile value={weekdayLabel(d.content.quietestWeekday)} label="가장 한가한 요일" />
                   </div>
-                  <h4 className="insight-subhead">이번 달 태그 사용</h4>
+                  <h4 className="insight-subhead">이번 달 컨텐츠 순위</h4>
                   {d.content.tags.length === 0 ? (
-                    <p className="insight-empty">아직 태그가 붙은 일정이 없어요.</p>
+                    <p className="insight-empty">집계할 컨텐츠가 아직 없어요.</p>
                   ) : (
                     <ul className="insight-bars">
                       {d.content.tags.map((t) => (
@@ -337,14 +376,14 @@ export function InsightsDashboard() {
             })}
           </section>
 
-          {/* 4) 참여·인기(하트) */}
+          {/* 4) 참여·인기(이 달) */}
           <section className="insights-panel">
             {withData((d) => {
               const monMax = Math.max(1, ...d.engagement.monthly.map((x) => x.count));
               return (
                 <>
                   <div className="insight-grid">
-                    <StatTile value={d.engagement.thisMonthHearts} label="이번 달 하트" tone="heart" />
+                    <StatTile value={d.engagement.monthHearts} label={`${month}월 하트`} tone="heart" />
                     <StatTile value={d.engagement.totalHearts} label="누적 하트" tone="heart" />
                   </div>
                   <h4 className="insight-subhead">월별 하트 (최근 6개월)</h4>
@@ -361,11 +400,11 @@ export function InsightsDashboard() {
                       </div>
                     ))}
                   </div>
-                  <h4 className="insight-subhead">인기 일정 TOP</h4>
+                  <h4 className="insight-subhead">이번 달 인기 일정 TOP</h4>
                   {d.engagement.topEvents.length === 0 ? (
-                    <p className="insight-empty">아직 하트를 받은 일정이 없어요.</p>
+                    <p className="insight-empty">이 달엔 하트를 받은 일정이 없어요.</p>
                   ) : (
-                    <ul className="insight-bars">
+                    <ul className="insight-bars titles">
                       {d.engagement.topEvents.map((e, i) => (
                         <li key={`${e.title}-${i}`}>
                           <span className="insight-bar-label" title={e.title}>
@@ -447,7 +486,6 @@ export function InsightsDashboard() {
           <section className="insights-panel">
             {withData((d) => (
               <>
-                {/* 평소엔 소유자 계정만 깔끔히. 설정과 실제 DB 소유자가 다를 때만 경고를 띄운다. */}
                 {d.system.bindingOk ? null : (
                   <div className="insight-banner warn">
                     ⚠ 등록된 소유자와 실제 DB 소유자가 달라요 — 소유자 저장이 실패할 수 있어요.

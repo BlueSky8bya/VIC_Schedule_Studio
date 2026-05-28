@@ -4,55 +4,61 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails, normalizeEmail } from "@/lib/auth/config";
 
-// 개발자 전용 "인사이트" 대시보드용 집계. 모든 값은 합계/개수만 — 비공개·owner_private 일정의
-// 내용(제목)은 절대 내보내지 않는다(개발자는 owner-only 콘텐츠를 못 본다는 규칙 유지).
-// "나만"(owner_private)은 카운트에서도 제외한다(요청).
+// 개발자 전용 "월별 인사이트" — 보고 있는 달(year/month) 기준 집계.
+// 모든 값은 합계/개수만 — 비공개·owner_private 일정의 내용은 절대 내보내지 않는다.
+// "나만"(owner_private)은 카운트 제외. "휴뱅"(방송을 안 한 표시) 태그가 붙은 일정은
+// 콘텐츠/방송 집계에서 제외한다.
 
 const SLUG = "vic";
+const REST_TAG = "휴뱅";
 
 export type InsightsData = {
+  month: { year: number; month: number };
   content: {
-    nextEvent: { dateKey: string; title: string } | null; // 다음 공개(방송) 일정
-    thisMonthPublic: number; // 이번 달 방송(공개 일정) 수
-    lastMonthPublic: number; // 지난 달 방송 수(추세 비교)
-    daysWithStream: number; // 이번 달 방송 있는 날 수
-    emptyDays: number; // 이번 달 방송 없는 날 수
-    busiestWeekday: number | null; // 이번 달 가장 방송 많은 요일(0=일..6=토)
-    // 이번 달 태그 사용 분포(상위) — 실제 태그 색을 함께 보낸다.
-    tags: { name: string; count: number; bgColor: string; borderColor: string }[];
+    nextBroadcast: { dateKey: string; titles: string[] } | null; // 다음 방송(휴뱅 제외, 같은 날 여러 개)
+    thisMonthContent: number; // 이번 달 컨텐츠 수(공개·휴뱅 제외)
+    lastMonthContent: number; // 지난 달(추세 비교)
+    daysWithContent: number; // 컨텐츠 있는 날 수
+    busiestWeekday: number | null; // 0=일..6=토
+    quietestWeekday: number | null;
+    tags: { name: string; count: number; bgColor: string; borderColor: string }[]; // 컨텐츠 순위
   };
   engagement: {
-    thisMonthHearts: number; // 이번 달 공개 일정이 받은 하트
-    totalHearts: number; // 공개 일정 누적 하트(전체)
-    monthly: { ym: string; count: number }[]; // 최근 6개월 일정 하트(오래된→최신)
-    topEvents: { title: string; count: number }[]; // 하트 많은 공개 일정 상위
+    monthHearts: number; // 이 달 일정이 받은 하트
+    totalHearts: number; // 전체 공개 일정 누적 하트
+    monthly: { ym: string; count: number }[]; // 6개월(타깃 월로 끝남)
+    topEvents: { title: string; count: number }[]; // 이 달 인기 일정 TOP
   };
   security: {
-    passcodeVersion: number | null; // 비공개 레이어 잠금 암호 버전
+    passcodeVersion: number | null;
     passcodeUpdatedAt: string | null;
-    unlockDurationMinutes: number | null; // 잠금 해제 1회 유효 시간(분)
-    activeUnlocks: { email: string; expiresAt: string }[]; // 지금 비공개를 연 계정 + 만료
-    members: { email: string; manager: boolean; worker: boolean }[]; // 신뢰 멤버 목록
+    unlockDurationMinutes: number | null;
+    activeUnlocks: { email: string; expiresAt: string }[];
+    members: { email: string; manager: boolean; worker: boolean }[];
   };
   system: {
-    ownerEmails: string[]; // 설정(OWNER_EMAIL)에 등록된 소유자 계정 전부
-    dbOwnerEmail: string | null; // DB calendars.owner_id 주 소유자
-    coOwnerEmails: string[]; // DB calendar_co_owners 공동 소유자
-    bindingOk: boolean; // 설정 주 소유자 = DB 주 소유자 (어긋나면 owner 저장 실패 위험)
+    ownerEmails: string[];
+    dbOwnerEmail: string | null;
+    bindingOk: boolean;
     commit: string | null;
-    generatedAt: string; // KST ISO
+    generatedAt: string;
   };
 };
 
-export type InsightsResult =
-  | { ok: true; data: InsightsData }
-  | { ok: false; error: string };
+export type InsightsResult = { ok: true; data: InsightsData } | { ok: false; error: string };
 
 function kstNow(): Date {
   return new Date(Date.now() + 9 * 3600 * 1000);
 }
 function ymd(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+function pad(n: number): string {
+  return String(n).padStart(2, "0");
+}
+function weekdayOf(dateKey: string): number {
+  const [yy, mm, dd] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(yy, mm - 1, dd)).getUTCDay();
 }
 
 const ROLE_ORDER = ["viewer", "worker", "manager", "owner", "developer"] as const;
@@ -78,23 +84,12 @@ export async function logVisitAction(
       session_hash: safeHash
     });
   } catch {
-    // 방문 로그는 보조 기능 — 실패해도 앱 동작에 영향 없음(테이블 미적용 등).
     return { ok: false };
   }
   return { ok: true };
 }
 
-export type VisitTrends = {
-  ready: boolean; // visit_log 준비(마이그레이션 적용 + 데이터) 여부
-  days: { day: string; roles: Record<string, number>; total: number }[]; // 최근 14일
-  hours: number[]; // 24칸, 시간대별 방문(최근 30일, KST)
-  todayTotal: number;
-};
-export type VisitTrendsResult =
-  | { ok: true; data: VisitTrends }
-  | { ok: false; error: string };
-
-export async function getVisitTrendsAction(): Promise<VisitTrendsResult> {
+export async function getInsightsAction(year: number, month: number): Promise<InsightsResult> {
   const actor = await resolveCurrentActor(SLUG);
   if (actor.role !== "developer") {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
@@ -103,73 +98,9 @@ export async function getVisitTrendsAction(): Promise<VisitTrendsResult> {
   if (!supabase) {
     return { ok: false, error: "Supabase 서비스 키가 설정되지 않았습니다." };
   }
-
-  const now = kstNow();
-  const todayKey = ymd(now);
-  const from30 = ymd(new Date(now.getTime() - 29 * 86400000));
-
-  const { data, error } = await supabase
-    .from("visit_log")
-    .select("day, role, occurred_at")
-    .gte("day", from30)
-    .order("occurred_at", { ascending: true });
-
-  // 테이블 미적용/데이터 없음 → 친절한 빈 상태로(오류 대신).
-  if (error) {
-    return {
-      ok: true,
-      data: { ready: false, days: [], hours: Array(24).fill(0), todayTotal: 0 }
-    };
-  }
-
-  const rows = (data ?? []) as { day: string; role: string; occurred_at: string }[];
-
-  // 최근 14일 날짜축(빈 날도 0으로 채워 연속 그래프).
-  const dayList: string[] = [];
-  for (let i = 13; i >= 0; i -= 1) {
-    dayList.push(ymd(new Date(now.getTime() - i * 86400000)));
-  }
-  const dayMap = new Map<string, Record<string, number>>();
-  for (const d of dayList) {
-    dayMap.set(d, Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])));
-  }
-  const hours = Array(24).fill(0) as number[];
-  let todayTotal = 0;
-
-  for (const row of rows) {
-    const roles = dayMap.get(row.day);
-    if (roles && row.role in roles) roles[row.role] += 1;
-    if (row.day === todayKey) todayTotal += 1;
-    // 시간대(KST) 분포 — 최근 30일 전체.
-    const t = new Date(row.occurred_at).getTime();
-    if (!Number.isNaN(t)) {
-      const h = new Date(t + 9 * 3600 * 1000).getUTCHours();
-      hours[h] += 1;
-    }
-  }
-
-  const days = dayList.map((day) => {
-    const roles = dayMap.get(day) ?? {};
-    const total = Object.values(roles).reduce((s, n) => s + n, 0);
-    return { day, roles, total };
-  });
-
-  return { ok: true, data: { ready: rows.length > 0, days, hours, todayTotal } };
-}
-
-export async function getInsightsAction(): Promise<InsightsResult> {
-  const actor = await resolveCurrentActor(SLUG);
-  if (actor.role !== "developer") {
-    return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
-  }
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) {
-    return { ok: false, error: "Supabase 서비스 키가 설정되지 않았습니다." };
-  }
-
   const { data: cal } = await supabase
     .from("calendars")
-    .select("id, owner_id, title")
+    .select("id, owner_id")
     .eq("slug", SLUG)
     .maybeSingle();
   if (!cal) {
@@ -177,102 +108,92 @@ export async function getInsightsAction(): Promise<InsightsResult> {
   }
   const calendarId = cal.id as string;
 
-  // 이번 달(KST) 범위 + 지난 달 + 오늘 + 하트 6개월 범위.
-  const now = kstNow();
-  const y = now.getUTCFullYear();
-  const m = now.getUTCMonth() + 1;
-  const monthStart = `${y}-${String(m).padStart(2, "0")}-01`;
+  const y = year;
+  const m = month;
+  const monthStart = `${y}-${pad(m)}-01`;
   const nextMonthStart = ymd(new Date(Date.UTC(y, m, 1)));
   const lastMonthStart = ymd(new Date(Date.UTC(y, m - 2, 1)));
-  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
-  const todayKey = ymd(now);
-  const nowIso = new Date().toISOString();
-  const heartsFromIso = new Date(Date.UTC(y, m - 1 - 5, 1)).toISOString(); // 약 6개월 전 1일
-  const curYm = `${y}-${String(m).padStart(2, "0")}`;
+  const todayKey = ymd(kstNow());
+  const curYm = `${y}-${pad(m)}`;
 
-  const [
-    monthEventsRes,
-    lastMonthRes,
-    nextEventRes,
-    tagRowsRes,
-    paletteRes,
-    eventHeartRes,
-    heartRowsRes,
-    unlockRes,
-    membersRes,
-    passcodeRes,
-    coOwnerRes
-  ] = await Promise.all([
-    supabase
-      .from("events")
-      .select("date_key, is_public")
-      .eq("calendar_id", calendarId)
-      .gte("date_key", monthStart)
-      .lt("date_key", nextMonthStart),
-    supabase
-      .from("events")
-      .select("*", { count: "exact", head: true })
-      .eq("calendar_id", calendarId)
-      .eq("is_public", true)
-      .gte("date_key", lastMonthStart)
-      .lt("date_key", monthStart),
-    supabase
-      .from("events")
-      .select("date_key, public_title")
-      .eq("calendar_id", calendarId)
-      .eq("is_public", true)
-      .gte("date_key", todayKey)
-      .order("date_key", { ascending: true })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("event_tags")
-      .select("tag_id, broadcast_tags(display_name, color_key), events!inner(calendar_id, date_key)")
-      .eq("events.calendar_id", calendarId)
-      .gte("events.date_key", monthStart)
-      .lt("events.date_key", nextMonthStart),
-    supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
-    supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
-    supabase
-      .from("event_hearts")
-      .select("created_at, events!inner(calendar_id)")
-      .eq("events.calendar_id", calendarId)
-      .gte("created_at", heartsFromIso),
-    supabase
-      .from("unlock_sessions")
-      .select("user_id, expires_at")
-      .eq("calendar_id", calendarId)
-      .gt("expires_at", nowIso)
-      .order("expires_at", { ascending: true }),
-    supabase
-      .from("trusted_members")
-      .select("email, is_manager, is_worker, trusted_role")
-      .eq("calendar_id", calendarId)
-      .eq("is_active", true),
-    supabase
-      .from("private_layer_settings")
-      .select("passcode_version, passcode_updated_at, unlock_duration_minutes")
-      .eq("calendar_id", calendarId)
-      .maybeSingle(),
-    supabase.from("calendar_co_owners").select("owner_id").eq("calendar_id", calendarId)
-  ]);
+  const [eventsRangeRes, tagsRangeRes, nextRes, paletteRes, heartCountsRes, unlockRes, membersRes, passcodeRes] =
+    await Promise.all([
+      supabase
+        .from("events")
+        .select("id, date_key, is_public")
+        .eq("calendar_id", calendarId)
+        .gte("date_key", lastMonthStart)
+        .lt("date_key", nextMonthStart),
+      supabase
+        .from("event_tags")
+        .select("event_id, broadcast_tags(display_name, color_key), events!inner(calendar_id, date_key)")
+        .eq("events.calendar_id", calendarId)
+        .gte("events.date_key", monthStart)
+        .lt("events.date_key", nextMonthStart),
+      supabase
+        .from("events")
+        .select("date_key, public_title, event_tags(broadcast_tags(display_name))")
+        .eq("calendar_id", calendarId)
+        .eq("is_public", true)
+        .gte("date_key", todayKey)
+        .order("date_key", { ascending: true })
+        .limit(40),
+      supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
+      supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
+      supabase
+        .from("unlock_sessions")
+        .select("user_id, expires_at")
+        .eq("calendar_id", calendarId)
+        .gt("expires_at", new Date().toISOString())
+        .order("expires_at", { ascending: true }),
+      supabase
+        .from("trusted_members")
+        .select("email, is_manager, is_worker, trusted_role")
+        .eq("calendar_id", calendarId)
+        .eq("is_active", true),
+      supabase
+        .from("private_layer_settings")
+        .select("passcode_version, passcode_updated_at, unlock_duration_minutes")
+        .eq("calendar_id", calendarId)
+        .maybeSingle()
+    ]);
 
-  // 콘텐츠: 이번 달 방송(공개 일정) 통계 + 다음 방송.
-  const monthRows = (monthEventsRes.data ?? []) as { date_key: string; is_public: boolean }[];
-  const publicRows = monthRows.filter((e) => e.is_public);
-  const thisMonthPublic = publicRows.length;
-  const daysWithStream = new Set(publicRows.map((e) => e.date_key)).size;
-  const emptyDays = Math.max(0, daysInMonth - daysWithStream);
-  const weekdayCount = Array(7).fill(0) as number[];
-  for (const e of publicRows) {
-    weekdayCount[new Date(`${e.date_key}T00:00:00Z`).getUTCDay()] += 1;
+  // 휴뱅(방송 안 함) 일정 id 집합 — 콘텐츠/방송 집계에서 제외.
+  const tagsRange = (tagsRangeRes.data ?? []) as {
+    event_id: string;
+    broadcast_tags?: { display_name?: string; color_key?: string };
+  }[];
+  const restEventIds = new Set<string>();
+  for (const row of tagsRange) {
+    if (row.broadcast_tags?.display_name === REST_TAG) restEventIds.add(row.event_id);
   }
-  const maxWd = Math.max(...weekdayCount);
-  const busiestWeekday = maxWd > 0 ? weekdayCount.indexOf(maxWd) : null;
-  const nextEv = nextEventRes.data as { date_key: string; public_title: string } | null;
-  const nextEvent = nextEv ? { dateKey: nextEv.date_key, title: nextEv.public_title } : null;
 
-  // 팔레트 색 맵(key → 실제 색) — 태그 막대에 진짜 태그 색을 입히기 위함.
+  const eventsRange = (eventsRangeRes.data ?? []) as {
+    id: string;
+    date_key: string;
+    is_public: boolean;
+  }[];
+  const isContent = (e: { id: string; is_public: boolean }) =>
+    e.is_public && !restEventIds.has(e.id);
+  const thisMonthEvents = eventsRange.filter(
+    (e) => e.date_key >= monthStart && e.date_key < nextMonthStart && isContent(e)
+  );
+  const lastMonthEvents = eventsRange.filter(
+    (e) => e.date_key >= lastMonthStart && e.date_key < monthStart && isContent(e)
+  );
+  const thisMonthContent = thisMonthEvents.length;
+  const lastMonthContent = lastMonthEvents.length;
+  const daysWithContent = new Set(thisMonthEvents.map((e) => e.date_key)).size;
+
+  const wd = Array(7).fill(0) as number[];
+  for (const e of thisMonthEvents) wd[weekdayOf(e.date_key)] += 1;
+  const maxWd = Math.max(...wd);
+  const minWd = Math.min(...wd);
+  const busiestWeekday = thisMonthContent > 0 ? wd.indexOf(maxWd) : null;
+  const quietestWeekday =
+    thisMonthContent > 0 && maxWd !== minWd ? wd.indexOf(minWd) : null;
+
+  // 이번 달 컨텐츠 순위(태그) — 휴뱅 태그 자체는 제외, 실제 색 입힘.
   const colorMap = new Map<string, { bg: string; border: string }>();
   for (const c of paletteRes.data ?? []) {
     colorMap.set((c as { key: string }).key, {
@@ -280,21 +201,18 @@ export async function getInsightsAction(): Promise<InsightsResult> {
       border: (c as { border_color: string }).border_color
     });
   }
-  const tagMap = new Map<
-    string,
-    { name: string; count: number; bgColor: string; borderColor: string }
-  >();
-  for (const row of tagRowsRes.data ?? []) {
-    const tag = (row as { broadcast_tags?: { display_name?: string; color_key?: string } })
-      .broadcast_tags;
-    const id = (row as { tag_id: string }).tag_id;
-    if (!tag?.display_name) continue;
-    const cur = tagMap.get(id);
+  const thisMonthContentIds = new Set(thisMonthEvents.map((e) => e.id));
+  const tagMap = new Map<string, { name: string; count: number; bgColor: string; borderColor: string }>();
+  for (const row of tagsRange) {
+    const name = row.broadcast_tags?.display_name;
+    if (!name || name === REST_TAG) continue;
+    if (!thisMonthContentIds.has(row.event_id)) continue;
+    const cur = tagMap.get(name);
     if (cur) cur.count += 1;
     else {
-      const col = colorMap.get(tag.color_key ?? "");
-      tagMap.set(id, {
-        name: tag.display_name,
+      const col = colorMap.get(row.broadcast_tags?.color_key ?? "");
+      tagMap.set(name, {
+        name,
         count: 1,
         bgColor: col?.bg ?? "#cdc6ec",
         borderColor: col?.border ?? "#b3a9dd"
@@ -303,42 +221,65 @@ export async function getInsightsAction(): Promise<InsightsResult> {
   }
   const tags = [...tagMap.values()].sort((a, b) => b.count - a.count).slice(0, 8);
 
-  // 참여(하트): 전체 합계 + 인기 일정 + 최근 6개월 월별 + 이번 달.
-  const heartCounts = (eventHeartRes.data ?? []) as { event_id: string; count: number }[];
-  const totalHearts = heartCounts.reduce((s, r) => s + Number(r.count), 0);
-  const topHeart = [...heartCounts].sort((a, b) => Number(b.count) - Number(a.count)).slice(0, 5);
-  let topEvents: { title: string; count: number }[] = [];
-  if (topHeart.length > 0) {
-    const { data: titleRows } = await supabase
-      .from("events")
-      .select("id, public_title, is_public")
-      .in("id", topHeart.map((r) => r.event_id));
-    const titleMap = new Map(
-      (titleRows ?? [])
-        .filter((t) => (t as { is_public?: boolean }).is_public)
-        .map((t) => [(t as { id: string }).id, (t as { public_title: string }).public_title])
+  // 다음 방송(휴뱅 제외) — 가장 이른 날, 그 날의 일정 제목들.
+  const upcoming = (nextRes.data ?? []) as {
+    date_key: string;
+    public_title: string;
+    event_tags?: { broadcast_tags?: { display_name?: string } }[];
+  }[];
+  const byDate = new Map<string, string[]>();
+  for (const ev of upcoming) {
+    const isRest = (ev.event_tags ?? []).some(
+      (t) => t.broadcast_tags?.display_name === REST_TAG
     );
-    topEvents = topHeart
-      .map((r) => ({ title: titleMap.get(r.event_id) ?? "", count: Number(r.count) }))
-      .filter((e) => e.title);
+    if (isRest) continue;
+    const list = byDate.get(ev.date_key) ?? [];
+    list.push(ev.public_title);
+    byDate.set(ev.date_key, list);
+  }
+  const firstDate = [...byDate.keys()].sort()[0];
+  const nextBroadcast = firstDate ? { dateKey: firstDate, titles: byDate.get(firstDate)! } : null;
+
+  // 참여(하트) — 이 달 일정 기준. 하트가 달린 일정의 날짜를 받아 월별로 묶는다.
+  const heartCounts = (heartCountsRes.data ?? []) as { event_id: string; count: number }[];
+  const totalHearts = heartCounts.reduce((s, r) => s + Number(r.count), 0);
+  const infoMap = new Map<string, { dateKey: string; title: string }>();
+  if (heartCounts.length > 0) {
+    const { data: rows } = await supabase
+      .from("events")
+      .select("id, date_key, public_title, is_public")
+      .in("id", heartCounts.map((h) => h.event_id));
+    for (const e of rows ?? []) {
+      if ((e as { is_public?: boolean }).is_public) {
+        infoMap.set((e as { id: string }).id, {
+          dateKey: (e as { date_key: string }).date_key,
+          title: (e as { public_title: string }).public_title
+        });
+      }
+    }
   }
   const monthKeys: string[] = [];
   for (let i = 5; i >= 0; i -= 1) {
     const d = new Date(Date.UTC(y, m - 1 - i, 1));
-    monthKeys.push(`${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`);
+    monthKeys.push(`${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`);
   }
   const monthlyMap = new Map<string, number>(monthKeys.map((k) => [k, 0]));
-  for (const row of heartRowsRes.data ?? []) {
-    const t = new Date((row as { created_at: string }).created_at).getTime();
-    if (Number.isNaN(t)) continue;
-    const k = new Date(t + 9 * 3600 * 1000);
-    const ym = `${k.getUTCFullYear()}-${String(k.getUTCMonth() + 1).padStart(2, "0")}`;
-    if (monthlyMap.has(ym)) monthlyMap.set(ym, (monthlyMap.get(ym) ?? 0) + 1);
+  let monthHearts = 0;
+  const topThisMonth: { title: string; count: number }[] = [];
+  for (const h of heartCounts) {
+    const info = infoMap.get(h.event_id);
+    if (!info) continue;
+    const ym = info.dateKey.slice(0, 7);
+    if (monthlyMap.has(ym)) monthlyMap.set(ym, (monthlyMap.get(ym) ?? 0) + Number(h.count));
+    if (ym === curYm) {
+      monthHearts += Number(h.count);
+      topThisMonth.push({ title: info.title, count: Number(h.count) });
+    }
   }
   const monthly = monthKeys.map((k) => ({ ym: k, count: monthlyMap.get(k) ?? 0 }));
-  const thisMonthHearts = monthlyMap.get(curYm) ?? 0;
+  const topEvents = topThisMonth.sort((a, b) => b.count - a.count).slice(0, 5);
 
-  // user_id → 이메일 해석(중복 제거 + 캐시).
+  // 이메일 해석.
   const emailCache = new Map<string, string | null>();
   async function emailFor(id: string | null | undefined): Promise<string | null> {
     if (!id) return null;
@@ -354,7 +295,6 @@ export async function getInsightsAction(): Promise<InsightsResult> {
     return email;
   }
 
-  // 보안: 신뢰 멤버 목록 + 지금 비공개를 연 계정(만료 시각).
   const members = (membersRes.data ?? []).map((mem) => {
     const role = (mem as { trusted_role?: string }).trusted_role;
     return {
@@ -376,28 +316,24 @@ export async function getInsightsAction(): Promise<InsightsResult> {
     unlock_duration_minutes?: number;
   } | null;
 
-  // 시스템: 설정 소유자 전부 + DB 주/공동 소유자 + 바인딩 일치 여부.
   const ownerEmails = getOwnerEmails();
   const dbOwnerEmail = await emailFor(cal.owner_id as string | undefined);
-  const coOwnerIds = (coOwnerRes.data ?? []).map((c) => (c as { owner_id: string }).owner_id);
-  const coOwnerEmails = (await Promise.all(coOwnerIds.map((id) => emailFor(id)))).filter(
-    (e): e is string => Boolean(e)
-  );
   const bindingOk = Boolean(ownerEmails[0] && dbOwnerEmail && ownerEmails[0] === dbOwnerEmail);
 
   return {
     ok: true,
     data: {
+      month: { year: y, month: m },
       content: {
-        nextEvent,
-        thisMonthPublic,
-        lastMonthPublic: lastMonthRes.count ?? 0,
-        daysWithStream,
-        emptyDays,
+        nextBroadcast,
+        thisMonthContent,
+        lastMonthContent,
+        daysWithContent,
         busiestWeekday,
+        quietestWeekday,
         tags
       },
-      engagement: { thisMonthHearts, totalHearts, monthly, topEvents },
+      engagement: { monthHearts, totalHearts, monthly, topEvents },
       security: {
         passcodeVersion: passcode?.passcode_version ?? null,
         passcodeUpdatedAt: passcode?.passcode_updated_at ?? null,
@@ -408,12 +344,89 @@ export async function getInsightsAction(): Promise<InsightsResult> {
       system: {
         ownerEmails,
         dbOwnerEmail,
-        coOwnerEmails,
         bindingOk,
         commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
-        // 실제 UTC 시각 — fmtDateTime이 KST(+9h)로 한 번만 변환한다(이전엔 이중 변환 버그).
         generatedAt: new Date().toISOString()
       }
     }
+  };
+}
+
+export type VisitTrends = {
+  ready: boolean; // visit_log 접근 가능(테이블 적용) 여부
+  hasData: boolean; // 이 달 방문 기록이 있는지
+  days: { day: number; roles: Record<string, number>; total: number }[]; // 이 달 1..말일
+  weeks: { label: string; roles: Record<string, number>; total: number }[]; // 1주차..
+  hours: number[]; // 24칸(KST)
+  total: number; // 이 달 방문 총합
+};
+export type VisitTrendsResult = { ok: true; data: VisitTrends } | { ok: false; error: string };
+
+export async function getVisitTrendsAction(
+  year: number,
+  month: number
+): Promise<VisitTrendsResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (actor.role !== "developer") {
+    return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
+  }
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase 서비스 키가 설정되지 않았습니다." };
+  }
+
+  const y = year;
+  const m = month;
+  const monthStart = `${y}-${pad(m)}-01`;
+  const nextMonthStart = ymd(new Date(Date.UTC(y, m, 1)));
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  const emptyDays = () =>
+    Array.from({ length: daysInMonth }, (_, i) => ({
+      day: i + 1,
+      roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
+      total: 0
+    }));
+
+  const { data, error } = await supabase
+    .from("visit_log")
+    .select("day, role, occurred_at")
+    .gte("day", monthStart)
+    .lt("day", nextMonthStart);
+
+  if (error) {
+    return {
+      ok: true,
+      data: { ready: false, hasData: false, days: emptyDays(), weeks: [], hours: Array(24).fill(0), total: 0 }
+    };
+  }
+  const rows = (data ?? []) as { day: string; role: string; occurred_at: string }[];
+
+  const days = emptyDays();
+  const weekMap = new Map<number, { roles: Record<string, number>; total: number }>();
+  const hours = Array(24).fill(0) as number[];
+  for (const row of rows) {
+    const d = Number(row.day.slice(8, 10));
+    if (d >= 1 && d <= daysInMonth) {
+      const slot = days[d - 1];
+      if (row.role in slot.roles) slot.roles[row.role] += 1;
+      slot.total += 1;
+    }
+    const wi = Math.floor((d - 1) / 7); // 0~4 → 1주차~5주차
+    const wk = weekMap.get(wi) ?? { roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])), total: 0 };
+    if (row.role in wk.roles) wk.roles[row.role] += 1;
+    wk.total += 1;
+    weekMap.set(wi, wk);
+    const t = new Date(row.occurred_at).getTime();
+    if (!Number.isNaN(t)) hours[new Date(t + 9 * 3600 * 1000).getUTCHours()] += 1;
+  }
+  const weekCount = Math.ceil(daysInMonth / 7);
+  const weeks = Array.from({ length: weekCount }, (_, i) => {
+    const wk = weekMap.get(i) ?? { roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])), total: 0 };
+    return { label: `${i + 1}주`, roles: wk.roles, total: wk.total };
+  });
+
+  return {
+    ok: true,
+    data: { ready: true, hasData: rows.length > 0, days, weeks, hours, total: rows.length }
   };
 }

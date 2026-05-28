@@ -971,10 +971,10 @@
   font-style: normal;
 }
 .insight-trend.up {
-  color: #2f9e57;
+  color: #e0322f; /* 올라가면 빨강(주식 관례) */
 }
 .insight-trend.down {
-  color: #d05a5a;
+  color: #2f6bd8; /* 내려가면 파랑 */
 }
 /* 소유자 계정 목록 — 한 줄에 한 이메일(이메일 중간에서 줄이 잘리지 않게). */
 .insight-list {
@@ -998,6 +998,76 @@
 .insight-list li.muted {
   color: #9aa0ab;
   font-weight: 600;
+}
+/* 월 표기 헤더 */
+.insights-month {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+  color: #6b5bd6;
+  letter-spacing: 0.01em;
+}
+/* 방문 패널 일별/주별 토글 */
+.insights-subtabs {
+  display: inline-flex;
+  gap: 4px;
+  margin: 2px 0 8px;
+  padding: 3px;
+  border-radius: 999px;
+  background: #f1edfb;
+}
+.insights-subtabs button {
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b5b95;
+  cursor: pointer;
+}
+.insights-subtabs button.active {
+  background: #fff;
+  color: #4a3f72;
+  box-shadow: 0 1px 4px rgb(107 91 214 / 22%);
+}
+/* 다음 방송: 날짜 + 일정 제목 칩들(콤마 나열 대신 둥근 박스). */
+.insight-next-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.insight-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.insight-chip {
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid #d7e3fb;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #2f3a6b;
+}
+/* 인기 일정(제목) 막대: 웹에선 제목을 더 보여주려 막대 폭을 양보한다. */
+@media (min-width: 641px) {
+  .insight-bars.titles li {
+    grid-template-columns: minmax(0, 1fr) 96px auto;
+  }
+}
+/* 신뢰 멤버: 이메일이 길면 이메일을 말줄임 — 역할 태그(매니저/작업자)는 안 잘리게. */
+.insight-rows li span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.insight-roletags {
+  flex: 0 0 auto;
+  max-width: none;
 }
 .vt-hlabel {
   margin-top: 3px;

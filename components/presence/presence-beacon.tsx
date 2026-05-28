@@ -8,7 +8,7 @@ import { logVisitAction } from "@/lib/insights/actions";
 // 모든 로그인 사용자 화면에 1개 깔리는 보이지 않는 컴포넌트.
 // 1) 실시간 프레즌스에 자기 역할만 등록(개발자 창의 실시간 패널 합산용).
 // 2) "방문 추이"용으로 브라우저당 하루 1회 익명 방문을 기록(역할·기기·날짜만, 개인정보 없음).
-const VISIT_KEY = "vic:visitDay";
+const VISIT_KEY = "vic:visitDay2";
 
 export function PresenceBeacon({ role }: { role: MembershipRole }) {
   useEffect(() => {

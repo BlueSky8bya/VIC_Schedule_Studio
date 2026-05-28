@@ -1937,7 +1937,7 @@ export function StudioShell({
                 onClick={() => setModal("developer")}
                 type="button"
               >
-                인사이트
+                월별 인사이트
               </button>
             </div>
           ) : null}
@@ -2711,7 +2711,7 @@ export function StudioShell({
               ) : null}
               {isDeveloper && !previewRole ? (
                 <button className="button" onClick={() => setModal("developer")} type="button">
-                  🛠 인사이트
+                  🛠 월별 인사이트
                 </button>
               ) : null}
             </div>
@@ -3211,7 +3211,7 @@ export function StudioShell({
                     : modal === "notice"
                       ? "숲 공지 쓰기"
                       : modal === "developer"
-                        ? "🛠 인사이트"
+                        ? "🛠 월별 인사이트"
                         : "매니저 · 작업자 관리"}
               </h2>
               <button
@@ -3254,7 +3254,9 @@ export function StudioShell({
               />
             ) : null}
             {modal === "members" ? <TrustedMembersPanel /> : null}
-            {modal === "developer" ? <InsightsDashboard /> : null}
+            {modal === "developer" ? (
+              <InsightsDashboard month={view.month} year={view.year} />
+            ) : null}
             {modal === "notice"
               ? (() => {
                   // 업 공지 자동 채움: 지금 편집 중인 폼이 업 도움이면 (저장 전이라도) 폼 값을, 아니면
