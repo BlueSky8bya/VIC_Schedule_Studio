@@ -299,6 +299,8 @@ export function StudioShell({
   // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 전용 시트(웹·모바일 공용).
   const [supportSheetId, setSupportSheetId] = useState<string | null>(null);
   const [supportSaving, setSupportSaving] = useState(false);
+  // 모바일에서 매니저가 일정의 태그만 고치는 전용 시트(데스크톱 읽기전용 상세의 태그 편집과 동치).
+  const [tagSheetId, setTagSheetId] = useState<string | null>(null);
   // 모바일 하단 관리(태그·멤버) 펼침 상태.
   const [mobileMgmt, setMobileMgmt] = useState<null | "tags" | "members">(null);
   // 일정은 로컬 상태로 들고 낙관적으로 갱신한다 — 잇기·복붙·저장·삭제가 서버 왕복/새로고침을
@@ -526,7 +528,6 @@ export function StudioShell({
           onClick={() => setPreviewMenuOpen((value) => !value)}
           type="button"
         >
-          <Eye aria-hidden="true" size={15} />
           {previewRole ? `${ROLE_LABEL[previewRole]} 화면` : "미리보기"}
           <span aria-hidden="true" className="preview-dd-caret">
             ▾
@@ -2028,6 +2029,16 @@ export function StudioShell({
                         >
                           {inner}
                         </button>
+                      ) : canEditTagsThing ? (
+                        // 매니저: 일정을 누르면 태그만 고치는 시트가 열린다(데스크톱 상세의 태그 편집과 동치).
+                        <button
+                          className={`agenda-event m-event${dimCls}`}
+                          key={event.id}
+                          onClick={() => setTagSheetId(event.id)}
+                          type="button"
+                        >
+                          {inner}
+                        </button>
                       ) : (
                         <div className={`agenda-event${dimCls}`} key={event.id}>
                           {inner}
@@ -2190,6 +2201,64 @@ export function StudioShell({
   }
 
   // 신뢰 멤버(매니저·작업자)용 "업 도움 수정" 시트 — 기간·링크만 고친다(토글·삭제 없음).
+  // 모바일 매니저용 태그 수정 시트 — 일정의 태그 할당(최대 2개)만 고친다. toggleEventTag가
+  // 낙관적 반영 + 서버 저장 + 미리보기 차단을 모두 처리한다.
+  function renderMobileTagSheet() {
+    const event = tagSheetId ? events.find((e) => e.id === tagSheetId) : null;
+    if (!event) {
+      return null;
+    }
+    return (
+      <div
+        className="modal-backdrop"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) setTagSheetId(null);
+        }}
+        role="presentation"
+      >
+        <div className="modal-card" role="dialog">
+          <div className="modal-head">
+            <h2>태그 수정</h2>
+            <button aria-label="닫기" className="modal-close" onClick={() => setTagSheetId(null)} type="button">
+              <X aria-hidden="true" size={18} />
+            </button>
+          </div>
+          <div className="passcode-box">
+            <p className="detail-value">{event.publicTitle || "(제목 없음)"}</p>
+            <div className="tag-picker">
+              <div>
+                {legendTags.map((tag) => {
+                  const color = palette.find((c) => c.key === tag.colorKey);
+                  const selected = event.tagIds.includes(tag.id);
+                  const full = !selected && event.tagIds.length >= 2;
+                  return color ? (
+                    <button
+                      className={selected ? "selected" : ""}
+                      data-color={color.key}
+                      disabled={full}
+                      key={tag.id}
+                      onClick={() => toggleEventTag(event, tag.id)}
+                      style={{
+                        backgroundColor: color.bgColor,
+                        borderColor: color.borderColor,
+                        color: color.textColor
+                      }}
+                      title={full ? "태그는 최대 2개까지 고를 수 있어요" : tag.displayName}
+                      type="button"
+                    >
+                      {selected ? `${event.tagIds.indexOf(tag.id) + 1}. ` : ""}
+                      {tag.displayName}
+                    </button>
+                  ) : null;
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   function renderSupportSheet() {
     return (
       <div
@@ -2980,6 +3049,8 @@ export function StudioShell({
       )}
 
       {supportSheetId !== null ? renderSupportSheet() : null}
+      {/* 모바일 매니저 태그 수정 시트 — 매니저(태그 편집 가능 + 일정 미편집)일 때만. */}
+      {tagSheetId !== null && canEditTagsThing && !canEdit ? renderMobileTagSheet() : null}
       {modal ? (
         <div
           className="modal-backdrop"
