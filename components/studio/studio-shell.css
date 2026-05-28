@@ -392,26 +392,33 @@
   padding: 10px 18px;
   color: #9a3412;
   font-weight: 900;
-  /* 잠금 해제 직후 배너가 위에서 슬라이드되며 한 번 환하게 번쩍 — "방송 공유 주의" 환기. */
+  /* 잠금 해제 직후 배너가 위에서 뚝 떨어지듯 들어와 한 번 환하게 번쩍 — "방송 공유 주의" 환기.
+     순서: 드롭인 → (끝나면) 호박색 번쩍 + 테두리 글로우. 자물쇠는 톡 열리듯 팝. */
   animation:
-    private-banner-in 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both,
-    private-banner-flash 1s var(--ease, ease) 0.34s 1;
+    private-banner-in 0.5s var(--ease, cubic-bezier(0.34, 1.4, 0.64, 1)) 0.05s both,
+    private-banner-flash 1.1s ease 0.52s 1 both;
 }
-/* 자물쇠 아이콘이 톡 열리듯 팝 — "찰칵" 느낌. */
 .private-warning svg {
-  animation: lock-pop 0.5s var(--ease, ease-out) 0.12s both;
+  animation: lock-pop 0.55s var(--ease, ease-out) 0.2s both;
 }
 @keyframes private-banner-in {
-  0% { transform: translateY(-12px); opacity: 0; }
+  0% { transform: translateY(-100%); opacity: 0; }
+  70% { transform: translateY(3px); opacity: 1; }
   100% { transform: translateY(0); opacity: 1; }
 }
 @keyframes private-banner-flash {
-  0%, 100% { background: #fff7ed; }
-  40% { background: #ffe1b8; }
+  0%, 100% { background: #fff7ed; box-shadow: none; }
+  25% {
+    background: #ffd8a0;
+    box-shadow: inset 0 0 0 2px rgb(234 88 12 / 45%), 0 6px 18px -6px rgb(234 88 12 / 55%);
+  }
+  55% { background: #fff7ed; box-shadow: none; }
+  75% { background: #ffe8c4; }
 }
 @keyframes lock-pop {
-  0% { transform: scale(0.5) rotate(-14deg); opacity: 0; }
-  60% { transform: scale(1.18) rotate(7deg); opacity: 1; }
+  0% { transform: scale(0.4) rotate(-20deg); opacity: 0; }
+  55% { transform: scale(1.3) rotate(10deg); opacity: 1; }
+  78% { transform: scale(0.94) rotate(-4deg); }
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -2107,7 +2107,11 @@ export function PublicPoster({
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
         {showAgenda ? (
           <header className="agenda-header">
-            <h1 className="agenda-title">✨️ 빅토리 일정표 ✨️</h1>
+            <h1 className="agenda-title">
+              <span className="title-spark" aria-hidden="true">✨️</span>
+              빅토리 일정표
+              <span className="title-spark" aria-hidden="true">✨️</span>
+            </h1>
             {accountSwitch ? (
               <form action="/api/auth/logout" className="agenda-account" method="post">
                 <button onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")} type="submit">
