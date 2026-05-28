@@ -2687,6 +2687,12 @@ export function StudioShell({
           (개발자 역할 표시는 헤더의 역할 배지로 충분 — 별도 세션 안내 줄은 두지 않는다.) */}
       <div className="studio-actionbar">
         <div className="studio-actionbar-tools">
+          {/* 배포 확인용 버전(커밋) — 개발자 화면에서만, 액션바 가운데에 연하게. */}
+          {isDeveloper && !previewRole ? (
+            <span className="studio-build-tag" aria-hidden="true">
+              {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
+            </span>
+          ) : null}
           {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자(또는
               그 역할 미리보기 중)는 비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}
           {canEdit || (isDeveloper && !previewRole) ? (

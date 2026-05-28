@@ -1500,12 +1500,26 @@
   border-radius: 12px;
 }
 .studio-actionbar-tools {
+  position: relative; /* 가운데 버전 태그(.studio-build-tag) 기준 */
   display: flex;
   flex: 1 1 auto; /* 남는 폭을 채워, 관리 묶음=왼쪽 / 꾸미기=오른쪽 끝으로 가르게 한다. */
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+/* 개발자 전용 배포 버전 — 액션바 가운데에 아주 연하게(클릭 안 됨). */
+.studio-build-tag {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #b6b0c6;
+  pointer-events: none;
+  white-space: nowrap;
 }
 .studio-actionbar .button {
   min-height: 36px;

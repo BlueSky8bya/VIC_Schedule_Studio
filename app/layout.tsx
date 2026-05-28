@@ -69,10 +69,7 @@ export default async function RootLayout({
       <body>
         {children}
         {actor.isAuthenticated ? <PresenceBeacon role={actor.role} /> : null}
-        {/* 배포 확인용 — 이번 배포가 반영됐는지 알 수 있게 커밋 해시를 아주 연하게 표시. */}
-        <span className="build-tag" aria-hidden="true">
-          {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? "dev"}
-        </span>
+        {/* 배포 확인용 커밋 해시는 개발자 화면(편집실 액션바 중앙)에만 표시한다(studio-shell). */}
         {/* Vercel Web Analytics — 방문자/페이지뷰 집계(쿠키리스, 개인정보 친화). */}
         <Analytics />
         {/* Vercel Speed Insights — 실제 사용자 로딩 속도(웹 바이탈) 측정. */}
