@@ -182,6 +182,16 @@ function heartTier(count: number, max: number, isSoleTop: boolean): HeartTier | 
   return { key: "warm", flames: "🔥", label: "관심" };
 }
 
+// "내 관심" 하트 농도색 — 이 달 (휴뱅 제외) 일정 중 내가 하트 누른 비율(0~1)에 따라
+// 흑색(관심 0)에서 선명한 빨강(이 달 전부 누름)으로 짙어진다. 적색 계열에서 채도·명도를 함께 올린다.
+const REST_TAG_NAME = "휴뱅";
+function interestHeartColor(ratio: number): string {
+  const r = Math.max(0, Math.min(1, ratio));
+  const sat = Math.round(22 + r * 68); // 22% → 90%
+  const light = Math.round(7 + r * 45); // 7%(거의 흑) → 52%(선명 빨강)
+  return `hsl(353, ${sat}%, ${light}%)`;
+}
+
 // 하트를 누를 때 떠오르는 ♥ 입자 하나. 화면 좌표(fixed)와 약간의 무작위성으로 자연스럽게 흩어진다.
 type HeartFloater = {
   id: string;
@@ -836,6 +846,26 @@ export function PublicPoster({
     const tops = entries.filter(([, c]) => c === maxHeart);
     return tops.length === 1 ? tops[0][0] : null;
   }, [heartCounts, maxHeart]);
+
+  // "내 관심"은 보고 있는 달 기준으로 따로 센다. 휴뱅(방송 안 함) 일정은 하트 대상이 아니라 제외.
+  // 분모 = 이 달 휴뱅 제외 일정 수(내가 누를 수 있는 최대), 분자 = 그중 내가 ♥ 누른 수.
+  const restTagId = useMemo(
+    () => schedule.tags.find((t) => t.displayName === REST_TAG_NAME)?.id ?? null,
+    [schedule.tags]
+  );
+  const monthKey = `${view.year}-${String(view.month).padStart(2, "0")}`;
+  const monthHeartable = useMemo(() => {
+    const isRest = (e: PublicScheduleEvent) =>
+      restTagId ? e.tagIds.includes(restTagId) || e.primaryTagIds.includes(restTagId) : false;
+    return schedule.events.filter((e) => e.startsAt.slice(0, 7) === monthKey && !isRest(e));
+  }, [schedule.events, monthKey, restTagId]);
+  const monthHeartableCount = monthHeartable.length;
+  const myMonthHearts = useMemo(
+    () => monthHeartable.filter((e) => bookmarks.includes(e.id)).length,
+    [monthHeartable, bookmarks]
+  );
+  const interestRatio = monthHeartableCount > 0 ? myMonthHearts / monthHeartableCount : 0;
+  const interestColor = interestHeartColor(interestRatio);
 
   // 태그 칩 토글(다중 선택).
   function toggleTagFilter(id: string) {
@@ -1953,7 +1983,7 @@ export function PublicPoster({
               onClick={() => setBookmarkedOnly((v) => !v)}
               type="button"
             >
-              <i className="agenda-legend-heart" aria-hidden="true">
+              <i className="agenda-legend-heart" aria-hidden="true" style={{ color: interestColor }}>
                 ♥
               </i>
               내 관심
@@ -2942,10 +2972,10 @@ export function PublicPoster({
                   title="내가 ♥ 누른 일정만 모아서 보기"
                   type="button"
                 >
-                  <i className="heart-mark" aria-hidden="true">
+                  <i className="heart-mark" aria-hidden="true" style={{ color: interestColor }}>
                     ♥
                   </i>
-                  내 관심 일정{bookmarks.length > 0 ? ` (${bookmarks.length})` : ""}
+                  내 관심 일정{monthHeartableCount > 0 ? ` (${myMonthHearts}/${monthHeartableCount})` : ""}
                 </button>
               ) : null}
               {filterActive ? (
