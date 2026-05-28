@@ -25,6 +25,12 @@ The product is built around **immersion**:
   one-off styles, inconsistent button shapes) — treat it as a defect, not a
   minor detail. New UI must look like it was always part of the app.
 
+- **HCI fundamentals**: UI/UX must honor Human-Computer Interaction basics —
+  minimize eye and pointer travel, keep related things spatially close, and
+  **preserve position across state changes** (e.g. a loading skeleton should sit
+  where the real content will land, so the eye doesn't jump on load). Respect
+  Fitts's/Hick's law; never make the user hunt.
+
 User immersion is the top tie-breaker: when options are otherwise equal, choose
 the one that deepens immersion and keeps the UI uniform. A cold "admin panel"
 feel is a regression.

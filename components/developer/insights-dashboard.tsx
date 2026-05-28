@@ -63,6 +63,13 @@ function fmtDateTime(iso: string | null): string {
     ? `${k.getUTCMonth() + 1}.${k.getUTCDate()} ${String(k.getUTCHours()).padStart(2, "0")}:${String(k.getUTCMinutes()).padStart(2, "0")}`
     : "—";
 }
+const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
+function fmtMonthDay(dateKey: string): string {
+  // "YYYY-MM-DD" → "M/D(요일)"
+  const [yy, mm, dd] = dateKey.split("-").map(Number);
+  const wd = WEEKDAY[new Date(Date.UTC(yy, mm - 1, dd)).getUTCDay()] ?? "";
+  return `${mm}/${dd}(${wd})`;
+}
 
 function StatTile({ value, label, tone }: { value: number | string; label: string; tone?: string }) {
   return (
@@ -264,40 +271,70 @@ export function InsightsDashboard() {
 
           {/* 3) 일정·콘텐츠 */}
           <section className="insights-panel">
-            {withData((d) => (
-              <>
-                <div className="insight-grid">
-                  <StatTile value={d.content.publicCount} label="이번 달 공개" tone="public" />
-                  <StatTile value={d.content.privateCount} label="이번 달 비공개" tone="private" />
-                  <StatTile value={d.content.upcoming7} label="앞으로 7일" tone="soon" />
-                  <StatTile value={d.content.stickerCount} label="이번 달 스티커" />
-                  <StatTile value={d.content.assetCount} label="커스텀 이모지" />
-                </div>
-                <h4 className="insight-subhead">이번 달 태그 사용</h4>
-                {d.content.tags.length === 0 ? (
-                  <p className="insight-empty">아직 태그가 붙은 일정이 없어요.</p>
-                ) : (
-                  <ul className="insight-bars">
-                    {d.content.tags.map((t) => (
-                      <li key={t.name}>
-                        <span className="insight-bar-label">{t.name}</span>
-                        <span className="insight-bar-track">
-                          <span
-                            className="insight-bar-fill"
-                            style={{
-                              width: `${Math.round((t.count / tagMax) * 100)}%`,
-                              background: t.bgColor,
-                              borderColor: t.borderColor
-                            }}
-                          />
-                        </span>
-                        <span className="insight-bar-count">{t.count}</span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            ))}
+            {withData((d) => {
+              const trend = d.content.thisMonthPublic - d.content.lastMonthPublic;
+              return (
+                <>
+                  <div className="insight-next">
+                    <span>다음 방송</span>
+                    {d.content.nextEvent ? (
+                      <strong>
+                        {fmtMonthDay(d.content.nextEvent.dateKey)} · {d.content.nextEvent.title}
+                      </strong>
+                    ) : (
+                      <strong className="muted">예정된 공개 일정 없음</strong>
+                    )}
+                  </div>
+                  <div className="insight-grid">
+                    <div className="insight-tile" data-tone="public">
+                      <strong>
+                        {d.content.thisMonthPublic}
+                        {trend !== 0 ? (
+                          <em className={`insight-trend ${trend > 0 ? "up" : "down"}`}>
+                            {trend > 0 ? "▲" : "▼"}
+                            {Math.abs(trend)}
+                          </em>
+                        ) : null}
+                      </strong>
+                      <span>이번 달 방송</span>
+                    </div>
+                    <StatTile value={d.content.daysWithStream} label="방송 있는 날" />
+                    <StatTile value={d.content.emptyDays} label="빈 날" />
+                    <StatTile
+                      value={
+                        d.content.busiestWeekday !== null
+                          ? `${WEEKDAY[d.content.busiestWeekday]}요일`
+                          : "—"
+                      }
+                      label="가장 바쁜 요일"
+                    />
+                  </div>
+                  <h4 className="insight-subhead">이번 달 태그 사용</h4>
+                  {d.content.tags.length === 0 ? (
+                    <p className="insight-empty">아직 태그가 붙은 일정이 없어요.</p>
+                  ) : (
+                    <ul className="insight-bars">
+                      {d.content.tags.map((t) => (
+                        <li key={t.name}>
+                          <span className="insight-bar-label">{t.name}</span>
+                          <span className="insight-bar-track">
+                            <span
+                              className="insight-bar-fill"
+                              style={{
+                                width: `${Math.round((t.count / tagMax) * 100)}%`,
+                                background: t.bgColor,
+                                borderColor: t.borderColor
+                              }}
+                            />
+                          </span>
+                          <span className="insight-bar-count">{t.count}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              );
+            })}
           </section>
 
           {/* 4) 참여·인기(하트) */}
@@ -309,7 +346,6 @@ export function InsightsDashboard() {
                   <div className="insight-grid">
                     <StatTile value={d.engagement.thisMonthHearts} label="이번 달 하트" tone="heart" />
                     <StatTile value={d.engagement.totalHearts} label="누적 하트" tone="heart" />
-                    <StatTile value={d.engagement.calendarHearts} label="달력 응원 ♥" />
                   </div>
                   <h4 className="insight-subhead">월별 하트 (최근 6개월)</h4>
                   <div className="vt-chart" role="img" aria-label="월별 하트 그래프">
@@ -411,30 +447,24 @@ export function InsightsDashboard() {
           <section className="insights-panel">
             {withData((d) => (
               <>
-                <div className={`insight-banner ${d.system.bindingOk ? "ok" : "warn"}`}>
-                  {d.system.bindingOk
-                    ? "✅ 소유자 바인딩 정상"
-                    : "⚠ 소유자 바인딩 불일치 — owner 저장이 실패할 수 있어요"}
-                </div>
-                <h4 className="insight-subhead">소유자</h4>
-                <ul className="insight-rows wrap">
-                  <li>
-                    <span>설정(OWNER_EMAIL)</span>
-                    <strong>
-                      {d.system.ownerEmails.length ? d.system.ownerEmails.join(", ") : "—"}
-                    </strong>
-                  </li>
-                  <li>
-                    <span>DB 주 소유자</span>
-                    <strong>{d.system.dbOwnerEmail ?? "—"}</strong>
-                  </li>
-                  {d.system.coOwnerEmails.length ? (
-                    <li>
-                      <span>DB 공동 소유자</span>
-                      <strong>{d.system.coOwnerEmails.join(", ")}</strong>
-                    </li>
-                  ) : null}
-                </ul>
+                {/* 평소엔 소유자 계정만 깔끔히. 설정과 실제 DB 소유자가 다를 때만 경고를 띄운다. */}
+                {d.system.bindingOk ? null : (
+                  <div className="insight-banner warn">
+                    ⚠ 등록된 소유자와 실제 DB 소유자가 달라요 — 소유자 저장이 실패할 수 있어요.
+                    <br />
+                    실제 DB 소유자: {d.system.dbOwnerEmail ?? "—"}
+                  </div>
+                )}
+                <h4 className="insight-subhead">소유자 계정 ({d.system.ownerEmails.length})</h4>
+                {d.system.ownerEmails.length === 0 ? (
+                  <p className="insight-empty">등록된 소유자 계정이 없어요.</p>
+                ) : (
+                  <ul className="insight-list">
+                    {d.system.ownerEmails.map((e) => (
+                      <li key={e}>{e}</li>
+                    ))}
+                  </ul>
+                )}
                 <h4 className="insight-subhead">배포</h4>
                 <ul className="insight-rows">
                   <li>

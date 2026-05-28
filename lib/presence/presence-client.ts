@@ -57,17 +57,19 @@ function recompute() {
   if (!channel) return;
   const state = channel.presenceState<{ role?: string; device?: string }>();
   const next: PresenceCounts = { ...EMPTY, devices: { ...EMPTY.devices } };
+  // 프레즌스 키 1개 = 브라우저 1대. 새로고침으로 같은 키의 옛/새 연결이 잠깐 겹쳐도(엔트리 2개)
+  // 키당 1명으로만 센다 → "한 계정 2기기 = 2", 새로고침해도 수가 부풀지 않는다.
   for (const key of Object.keys(state)) {
-    for (const entry of state[key]) {
-      const role = entry.role as MembershipRole | undefined;
-      if (role && role in next) {
-        next[role] += 1;
-        next.total += 1;
-      }
-      const device = entry.device as DeviceKind | undefined;
-      if (device && device in next.devices) {
-        next.devices[device] += 1;
-      }
+    const entry = state[key][0];
+    if (!entry) continue;
+    const role = entry.role as MembershipRole | undefined;
+    if (role && role in next) {
+      next[role] += 1;
+      next.total += 1;
+    }
+    const device = entry.device as DeviceKind | undefined;
+    if (device && device in next.devices) {
+      next.devices[device] += 1;
     }
   }
   counts = next;
@@ -85,10 +87,23 @@ export function startPresence(role: MembershipRole) {
   started = true;
   try {
     client = createBrowserClient(url, anon);
-    const presenceKey =
-      typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random()}`;
+    // 브라우저당 '고정' 프레즌스 키 — 새로고침해도 같은 키를 재사용해 중복 카운트를 막는다.
+    let presenceKey = "";
+    try {
+      presenceKey = window.localStorage.getItem("vic:presenceKey") ?? "";
+      if (!presenceKey) {
+        presenceKey =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random()}`;
+        window.localStorage.setItem("vic:presenceKey", presenceKey);
+      }
+    } catch {
+      presenceKey =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random()}`;
+    }
     channel = client.channel(CHANNEL, { config: { presence: { key: presenceKey } } });
     channel
       .on("presence", { event: "sync" }, recompute)

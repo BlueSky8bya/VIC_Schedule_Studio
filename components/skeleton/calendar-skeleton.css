@@ -68,6 +68,9 @@
 @media (max-width: 640px) {
   .cal-skel-stage {
     justify-content: flex-start;
+    /* 로딩 뼈대를 실제 첫 화면의 1일 카드 부근까지 살짝 내려, 로딩→완료 시 시선 이동을 줄인다
+       (HCI: 상태 전환에도 시선 위치를 보존). */
+    padding-top: clamp(56px, 13vh, 120px);
   }
   .cal-skel-card {
     display: grid;

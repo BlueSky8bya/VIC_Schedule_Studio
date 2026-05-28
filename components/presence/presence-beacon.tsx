@@ -17,12 +17,22 @@ export function PresenceBeacon({ role }: { role: MembershipRole }) {
     try {
       const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
       if (window.localStorage.getItem(VISIT_KEY) !== today) {
-        window.localStorage.setItem(VISIT_KEY, today);
         const sessionHash =
           typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
             : `${Date.now()}-${Math.random()}`;
-        void logVisitAction(detectDevice(), sessionHash);
+        // 플래그는 '성공했을 때만' 찍는다 → 한 번 실패하면 다음 방문에 다시 시도(누락 방지).
+        logVisitAction(detectDevice(), sessionHash)
+          .then((r) => {
+            if (r?.ok) {
+              try {
+                window.localStorage.setItem(VISIT_KEY, today);
+              } catch {
+                /* ignore */
+              }
+            }
+          })
+          .catch(() => {});
       }
     } catch {
       // localStorage 차단 환경 등 — 방문 기록은 보조 기능이라 조용히 무시.

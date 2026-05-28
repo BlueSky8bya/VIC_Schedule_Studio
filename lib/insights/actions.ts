@@ -12,18 +12,18 @@ const SLUG = "vic";
 
 export type InsightsData = {
   content: {
-    publicCount: number; // 이번 달 공개 일정
-    privateCount: number; // 이번 달 비공개(엠바고+작업) — owner_private 제외
-    upcoming7: number; // 앞으로 7일 공개 일정
-    stickerCount: number; // 이번 달 포스터 스티커
-    assetCount: number; // 커스텀 스티커 에셋
+    nextEvent: { dateKey: string; title: string } | null; // 다음 공개(방송) 일정
+    thisMonthPublic: number; // 이번 달 방송(공개 일정) 수
+    lastMonthPublic: number; // 지난 달 방송 수(추세 비교)
+    daysWithStream: number; // 이번 달 방송 있는 날 수
+    emptyDays: number; // 이번 달 방송 없는 날 수
+    busiestWeekday: number | null; // 이번 달 가장 방송 많은 요일(0=일..6=토)
     // 이번 달 태그 사용 분포(상위) — 실제 태그 색을 함께 보낸다.
     tags: { name: string; count: number; bgColor: string; borderColor: string }[];
   };
   engagement: {
     thisMonthHearts: number; // 이번 달 공개 일정이 받은 하트
     totalHearts: number; // 공개 일정 누적 하트(전체)
-    calendarHearts: number; // 달력 응원 하트(일정과 별개의 캘린더 단위 하트)
     monthly: { ym: string; count: number }[]; // 최근 6개월 일정 하트(오래된→최신)
     topEvents: { title: string; count: number }[]; // 하트 많은 공개 일정 상위
   };
@@ -177,26 +177,25 @@ export async function getInsightsAction(): Promise<InsightsResult> {
   }
   const calendarId = cal.id as string;
 
-  // 이번 달(KST) 범위 + 오늘/7일 뒤 + 하트 6개월 범위.
+  // 이번 달(KST) 범위 + 지난 달 + 오늘 + 하트 6개월 범위.
   const now = kstNow();
   const y = now.getUTCFullYear();
   const m = now.getUTCMonth() + 1;
   const monthStart = `${y}-${String(m).padStart(2, "0")}-01`;
   const nextMonthStart = ymd(new Date(Date.UTC(y, m, 1)));
+  const lastMonthStart = ymd(new Date(Date.UTC(y, m - 2, 1)));
+  const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
   const todayKey = ymd(now);
-  const in7Key = ymd(new Date(now.getTime() + 7 * 86400000));
   const nowIso = new Date().toISOString();
   const heartsFromIso = new Date(Date.UTC(y, m - 1 - 5, 1)).toISOString(); // 약 6개월 전 1일
   const curYm = `${y}-${String(m).padStart(2, "0")}`;
 
   const [
     monthEventsRes,
-    upcomingRes,
+    lastMonthRes,
+    nextEventRes,
     tagRowsRes,
     paletteRes,
-    stickerRes,
-    assetRes,
-    calHeartRes,
     eventHeartRes,
     heartRowsRes,
     unlockRes,
@@ -206,7 +205,7 @@ export async function getInsightsAction(): Promise<InsightsResult> {
   ] = await Promise.all([
     supabase
       .from("events")
-      .select("visibility_scope")
+      .select("date_key, is_public")
       .eq("calendar_id", calendarId)
       .gte("date_key", monthStart)
       .lt("date_key", nextMonthStart),
@@ -215,8 +214,17 @@ export async function getInsightsAction(): Promise<InsightsResult> {
       .select("*", { count: "exact", head: true })
       .eq("calendar_id", calendarId)
       .eq("is_public", true)
+      .gte("date_key", lastMonthStart)
+      .lt("date_key", monthStart),
+    supabase
+      .from("events")
+      .select("date_key, public_title")
+      .eq("calendar_id", calendarId)
+      .eq("is_public", true)
       .gte("date_key", todayKey)
-      .lte("date_key", in7Key),
+      .order("date_key", { ascending: true })
+      .limit(1)
+      .maybeSingle(),
     supabase
       .from("event_tags")
       .select("tag_id, broadcast_tags(display_name, color_key), events!inner(calendar_id, date_key)")
@@ -224,18 +232,6 @@ export async function getInsightsAction(): Promise<InsightsResult> {
       .gte("events.date_key", monthStart)
       .lt("events.date_key", nextMonthStart),
     supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
-    supabase
-      .from("sticker_instances")
-      .select("*", { count: "exact", head: true })
-      .eq("calendar_id", calendarId)
-      .eq("year", y)
-      .eq("month", m)
-      .eq("is_visible", true),
-    supabase
-      .from("sticker_assets")
-      .select("*", { count: "exact", head: true })
-      .eq("calendar_id", calendarId),
-    supabase.from("calendar_hearts").select("count").eq("calendar_id", calendarId).maybeSingle(),
     supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
     supabase
       .from("event_hearts")
@@ -261,14 +257,20 @@ export async function getInsightsAction(): Promise<InsightsResult> {
     supabase.from("calendar_co_owners").select("owner_id").eq("calendar_id", calendarId)
   ]);
 
-  // 콘텐츠: 이번 달 공개/비공개 개수 (owner_private "나만"은 의도적으로 제외).
-  let publicCount = 0;
-  let privateCount = 0;
-  for (const e of monthEventsRes.data ?? []) {
-    const scope = (e as { visibility_scope: string }).visibility_scope;
-    if (scope === "public") publicCount += 1;
-    else if (scope === "embargo" || scope === "work") privateCount += 1;
+  // 콘텐츠: 이번 달 방송(공개 일정) 통계 + 다음 방송.
+  const monthRows = (monthEventsRes.data ?? []) as { date_key: string; is_public: boolean }[];
+  const publicRows = monthRows.filter((e) => e.is_public);
+  const thisMonthPublic = publicRows.length;
+  const daysWithStream = new Set(publicRows.map((e) => e.date_key)).size;
+  const emptyDays = Math.max(0, daysInMonth - daysWithStream);
+  const weekdayCount = Array(7).fill(0) as number[];
+  for (const e of publicRows) {
+    weekdayCount[new Date(`${e.date_key}T00:00:00Z`).getUTCDay()] += 1;
   }
+  const maxWd = Math.max(...weekdayCount);
+  const busiestWeekday = maxWd > 0 ? weekdayCount.indexOf(maxWd) : null;
+  const nextEv = nextEventRes.data as { date_key: string; public_title: string } | null;
+  const nextEvent = nextEv ? { dateKey: nextEv.date_key, title: nextEv.public_title } : null;
 
   // 팔레트 색 맵(key → 실제 색) — 태그 막대에 진짜 태그 색을 입히기 위함.
   const colorMap = new Map<string, { bg: string; border: string }>();
@@ -302,7 +304,6 @@ export async function getInsightsAction(): Promise<InsightsResult> {
   const tags = [...tagMap.values()].sort((a, b) => b.count - a.count).slice(0, 8);
 
   // 참여(하트): 전체 합계 + 인기 일정 + 최근 6개월 월별 + 이번 달.
-  const calendarHearts = Number((calHeartRes.data as { count?: number } | null)?.count ?? 0);
   const heartCounts = (eventHeartRes.data ?? []) as { event_id: string; count: number }[];
   const totalHearts = heartCounts.reduce((s, r) => s + Number(r.count), 0);
   const topHeart = [...heartCounts].sort((a, b) => Number(b.count) - Number(a.count)).slice(0, 5);
@@ -388,14 +389,15 @@ export async function getInsightsAction(): Promise<InsightsResult> {
     ok: true,
     data: {
       content: {
-        publicCount,
-        privateCount,
-        upcoming7: upcomingRes.count ?? 0,
-        stickerCount: stickerRes.count ?? 0,
-        assetCount: assetRes.count ?? 0,
+        nextEvent,
+        thisMonthPublic,
+        lastMonthPublic: lastMonthRes.count ?? 0,
+        daysWithStream,
+        emptyDays,
+        busiestWeekday,
         tags
       },
-      engagement: { thisMonthHearts, totalHearts, calendarHearts, monthly, topEvents },
+      engagement: { thisMonthHearts, totalHearts, monthly, topEvents },
       security: {
         passcodeVersion: passcode?.passcode_version ?? null,
         passcodeUpdatedAt: passcode?.passcode_updated_at ?? null,
@@ -409,7 +411,8 @@ export async function getInsightsAction(): Promise<InsightsResult> {
         coOwnerEmails,
         bindingOk,
         commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
-        generatedAt: now.toISOString()
+        // 실제 UTC 시각 — fmtDateTime이 KST(+9h)로 한 번만 변환한다(이전엔 이중 변환 버그).
+        generatedAt: new Date().toISOString()
       }
     }
   };
