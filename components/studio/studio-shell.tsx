@@ -169,6 +169,34 @@ const VISIBILITY_LABEL: Record<EventVisibilityScope, string> = {
   owner_private: "나만"
 };
 
+// A3: 역할 배지의 "?"를 누르면 뜨는 한 줄 책임 + 할 수 있는 것/없는 것. 빈 버튼으로 권한을
+// 추론하게 두지 않고, 특히 매니저·작업자가 자기 역할을 바로 이해하게 한다.
+const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[]; cant?: string[] }> = {
+  owner: {
+    summary: "일정 발행과 전체 관리를 맡아요.",
+    can: ["일정·태그·멤버·비밀번호 편집", "후원·꾸미기·포스터 내보내기", "비공개 레이어 보기(‘나만’ 포함)"]
+  },
+  developer: {
+    summary: "시스템 유지보수자예요.",
+    can: ["일정·태그·멤버 편집(유지보수)", "꾸미기·포스터"],
+    cant: ["‘나만’ 일정은 볼 수 없어요"]
+  },
+  manager: {
+    summary: "방송 운영을 도와요.",
+    can: ["후원 기간/링크 수정", "꾸미기·포스터 내보내기", "비공개 일정 보기(잠금 해제 시)"],
+    cant: ["일정·태그 편집은 불가"]
+  },
+  worker: {
+    summary: "제작을 도와요.",
+    can: ["꾸미기·이미지·포스터", "작업 일정 참고", "비공개 일정 보기(잠금 해제 시)"],
+    cant: ["일정·후원 편집은 불가"]
+  },
+  viewer: {
+    summary: "공개 일정을 봐요.",
+    can: ["일정 보기 · 하트 · 후원 링크"]
+  }
+};
+
 const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
   public: "모두",
   embargo: "엠바고",
@@ -403,6 +431,8 @@ export function StudioShell({
   // 매니저(방송 운영)는 후원 기간/링크 수정 가능, 작업자(worker)는 읽기 전용.
   const canEditSupportThing = canEditSupport(actor.role);
   const canTogglePrivateLayer = actor.role !== "viewer";
+  // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
+  const [roleHelpOpen, setRoleHelpOpen] = useState(false);
   const canReadPrivate = canReadPrivateLayer(actor.role, hasUnlockSession) && showPrivate;
 
   function togglePrivateLayer() {
@@ -411,6 +441,69 @@ export function StudioShell({
     } else {
       setModal("passcode");
     }
+  }
+
+  // 역할 도움말 팝오버: 배지 바깥을 누르거나 Esc로 닫는다.
+  useEffect(() => {
+    if (!roleHelpOpen) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (!(event.target as HTMLElement | null)?.closest(".actor-badge-wrap")) {
+        setRoleHelpOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setRoleHelpOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [roleHelpOpen]);
+
+  // A3: 역할 배지 + "?" 도움말 팝오버. 데스크톱 배지는 이메일도 보여준다.
+  function renderRoleBadge(showEmail: boolean) {
+    const desc = ROLE_DESC[actor.role];
+    return (
+      <div className="actor-badge-wrap">
+        <span className={`actor-badge ${actor.role}`}>
+          <strong>{ROLE_LABEL[actor.role]}</strong>
+          {showEmail ? <span>{actor.email ? `(${actor.email})` : "(비로그인)"}</span> : null}
+          <button
+            aria-expanded={roleHelpOpen}
+            aria-label="역할 권한 보기"
+            className="role-help-q"
+            onClick={() => setRoleHelpOpen((value) => !value)}
+            type="button"
+          >
+            ?
+          </button>
+        </span>
+        {roleHelpOpen ? (
+          <div className="role-help-pop" role="dialog" aria-label="역할 권한">
+            <strong className="role-help-title">{ROLE_LABEL[actor.role]}</strong>
+            <p className="role-help-summary">{desc.summary}</p>
+            <ul className="role-help-can">
+              {desc.can.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+            {desc.cant && desc.cant.length > 0 ? (
+              <ul className="role-help-cant">
+                {desc.cant.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
+    );
   }
 
   const visibleEvents = useMemo(
@@ -1479,9 +1572,7 @@ export function StudioShell({
             </header>
 
             <div className="m-rolebar">
-              <span className={`actor-badge ${actor.role}`}>
-                <strong>{ROLE_LABEL[actor.role]}</strong>
-              </span>
+              {renderRoleBadge(false)}
               {canTogglePrivateLayer ? (
                 <button
                   className={canReadPrivate ? "button primary" : "button"}
@@ -2156,10 +2247,7 @@ export function StudioShell({
 
         {/* 오른쪽: 역할·도구 */}
         <div className="studio-role-tools">
-          <div className={`actor-badge ${actor.role}`}>
-            <strong>{ROLE_LABEL[actor.role]}</strong>
-            <span>{actor.email ? `(${actor.email})` : "(비로그인)"}</span>
-          </div>
+          {renderRoleBadge(true)}
           <button
             className={canReadPrivate ? "private-toggle active" : "private-toggle"}
             disabled={!canTogglePrivateLayer}

@@ -234,6 +234,80 @@
   background: #ffffff;
 }
 
+/* A3: 역할 도움말 팝오버 래퍼 + "?" 트리거 + 팝오버 */
+.actor-badge-wrap {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+}
+.role-help-q {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted, #8a8077);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.6;
+}
+.role-help-q:hover {
+  opacity: 1;
+}
+.role-help-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 90;
+  width: max-content;
+  max-width: min(300px, calc(100vw - 32px));
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #e6e2f0;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 12px 14px;
+  box-shadow: 0 14px 40px -18px rgba(40, 30, 60, 0.5);
+  animation: editor-card-enter 0.2s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+.role-help-title {
+  font-size: 14px;
+  font-weight: 900;
+}
+.role-help-summary {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted, #8a8077);
+}
+.role-help-can,
+.role-help-cant {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.role-help-can li {
+  list-style: "✓ ";
+}
+.role-help-cant li {
+  list-style: "✕ ";
+  color: #b4544b;
+}
+@media (prefers-reduced-motion: reduce) {
+  .role-help-pop {
+    animation: none;
+  }
+}
+
 .actor-badge strong {
   flex: 0 0 auto;
   font-size: 15px;
