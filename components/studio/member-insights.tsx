@@ -235,34 +235,36 @@ export function MemberInsights({ year, month }: { year: number; month: number })
   }
 
   function renderHighlights(d: MemberInsightsData) {
-    const cards = [
+    const bw = d.highlight.busiestWeekday;
+    const cards: { key: string; emoji: string; tone: string; label: [string, string]; main: string; sub?: string }[] = [
       {
         key: "day",
         emoji: "🗓️",
         tone: "day",
-        label: "방문 최다일",
+        label: ["방문", "최다일"],
         main: d.highlight.peakDay ? fmtMonthDay(d.highlight.peakDay) : "—"
       },
       {
         key: "hour",
         emoji: "⏰",
         tone: "hour",
-        label: "최고 시간대",
+        label: ["최고", "시간대"],
         main: d.highlight.peakHour !== null ? `${d.highlight.peakHour}시` : "—"
       },
       {
         key: "top",
         emoji: "💗",
         tone: "top",
-        label: "인기 컨텐츠",
+        label: ["인기", "컨텐츠"],
         main: d.highlight.topTitle ?? "—"
       },
       {
         key: "wd",
         emoji: "🔥",
         tone: "wd",
-        label: "컨텐츠 최다 요일",
-        main: weekdayLabel(d.highlight.busiestWeekday)
+        label: ["컨텐츠", "최다요일"],
+        main: "",
+        sub: bw !== null ? WEEKDAY[bw] : "—"
       }
     ];
     return (
@@ -273,11 +275,18 @@ export function MemberInsights({ year, month }: { year: number; month: number })
               {c.emoji}
             </span>
             <span className="hl-body">
-              <span className="hl-label">{c.label}</span>
-              <strong className="hl-main" title={c.main}>
-                {c.main}
-              </strong>
+              <span className="hl-label">
+                {c.label[0]}
+                <i className="hl-lbreak" aria-hidden="true" />
+                {c.label[1]}
+              </span>
+              {c.main ? (
+                <strong className="hl-main" title={c.main}>
+                  {c.main}
+                </strong>
+              ) : null}
             </span>
+            {c.sub ? <span className="hl-sub">{c.sub}</span> : null}
           </div>
         ))}
       </div>

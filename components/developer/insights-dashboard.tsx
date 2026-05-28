@@ -492,12 +492,22 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
       ? visits.hours.reduce((best, c, h) => (c > best.c ? { h, c } : best), { h: -1, c: 0 })
       : null;
     const top = data.engagement.topEvents[0] ?? null;
-    const cards = [
+    const bw = data.content.busiestWeekday;
+    // 라벨은 [윗줄, 아랫줄] 2분할(모바일은 항상 두 줄, 웹은 긴 것만). 오른쪽 큰 수치는 sub.
+    const cards: {
+      key: string;
+      emoji: string;
+      tone: string;
+      label: [string, string];
+      main: string;
+      sub: string;
+      heart?: boolean;
+    }[] = [
       {
         key: "day",
         emoji: "🗓️",
         tone: "day",
-        label: "방문 최다일",
+        label: ["방문", "최다일"],
         main: peakDay && peakDay.total > 0 ? `${month}/${peakDay.day}` : "—",
         sub: peakDay && peakDay.total > 0 ? `${peakDay.total}명` : ""
       },
@@ -505,7 +515,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
         key: "hour",
         emoji: "⏰",
         tone: "hour",
-        label: "최고 시간대",
+        label: ["최고", "시간대"],
         main: peakHour && peakHour.c > 0 ? `${peakHour.h}시` : "—",
         sub: peakHour && peakHour.c > 0 ? `${peakHour.c}명` : ""
       },
@@ -513,17 +523,19 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
         key: "top",
         emoji: "💗",
         tone: "top",
-        label: "인기 컨텐츠",
+        label: ["인기", "컨텐츠"],
         main: top ? top.title : "—",
-        sub: top ? `♥ ${top.count}` : ""
+        sub: top ? `${top.count}` : "",
+        heart: true
       },
       {
+        // 요일은 오른쪽에 큰 글자로(다른 카드의 수치 자리). 본문은 비우고 라벨만.
         key: "wd",
         emoji: "🔥",
         tone: "wd",
-        label: "컨텐츠 최다 요일",
-        main: weekdayLabel(data.content.busiestWeekday),
-        sub: ""
+        label: ["컨텐츠", "최다요일"],
+        main: "",
+        sub: bw !== null ? WEEKDAY[bw] : "—"
       }
     ];
     return (
@@ -534,12 +546,27 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
               {c.emoji}
             </span>
             <span className="hl-body">
-              <span className="hl-label">{c.label}</span>
-              <strong className="hl-main" title={c.main}>
-                {c.main}
-              </strong>
+              <span className="hl-label">
+                {c.label[0]}
+                <i className="hl-lbreak" aria-hidden="true" />
+                {c.label[1]}
+              </span>
+              {c.main ? (
+                <strong className="hl-main" title={c.main}>
+                  {c.main}
+                </strong>
+              ) : null}
             </span>
-            {c.sub ? <span className="hl-sub">{c.sub}</span> : null}
+            {c.sub ? (
+              <span className="hl-sub">
+                {c.heart ? (
+                  <i className="hl-heart" aria-hidden="true">
+                    ♥
+                  </i>
+                ) : null}
+                {c.sub}
+              </span>
+            ) : null}
           </div>
         ))}
       </div>

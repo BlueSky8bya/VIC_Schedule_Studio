@@ -689,9 +689,19 @@
 .insight-tile[data-tone="heart"] {
   background: linear-gradient(180deg, #fff1f5, #ffe3ec);
   border-color: #fbcdda;
+  /* 하트 박스(2열, 넓음)는 라벨 왼쪽 + 큰 수치 오른쪽 가로 배치로 — 좌우로 길게 채운다. */
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 .insight-tile[data-tone="heart"] strong {
   color: #d11d54;
+  align-items: center;
+  min-height: 0;
+}
+.insight-tile[data-tone="heart"] span {
+  order: -1; /* 라벨을 왼쪽으로 */
 }
 .insight-tile[data-tone="warn"] {
   background: linear-gradient(180deg, #fff7ed, #ffe9cf);
@@ -1165,7 +1175,7 @@
 .trend-spark {
   display: flex;
   align-items: stretch;
-  gap: 4px;
+  gap: 9px;
   height: 56px;
 }
 .trend-bcol {
@@ -1223,6 +1233,8 @@
   align-items: center;
   gap: 9px;
   min-height: 64px;
+  /* 그리드 아이템이 내용 폭 이하로 줄 수 있게 → 긴 제목은 박스를 늘리지 않고 …로 잘린다. */
+  min-width: 0;
   padding: 11px 12px;
   border: 1px solid #efeaf9;
   border-radius: 16px;
@@ -1261,6 +1273,23 @@
   line-height: 1;
   color: #6b5bd6;
   white-space: nowrap;
+}
+/* 라벨은 [윗줄]<lbreak>[아랫줄] 구조 — 기본(모바일)은 항상 두 줄로 폭을 아낀다. */
+.highlight-card .hl-label {
+  white-space: normal;
+  word-break: keep-all;
+}
+.hl-lbreak {
+  display: block;
+  height: 0;
+}
+/* 인기 컨텐츠 ♥ 아이콘은 옆의 큰 수치보다 작게(부호일 뿐). */
+.hl-heart {
+  font-style: normal;
+  font-size: 0.45em;
+  color: #e11d48;
+  margin-right: 3px;
+  vertical-align: 0.18em;
 }
 .highlight-card[data-tone="day"] {
   background: linear-gradient(155deg, #f1f7ff, #e2ecff);
@@ -1503,12 +1532,28 @@
   .highlight-card .hl-sub {
     font-size: 48px;
   }
+  /* 웹은 라벨을 한 줄로(공백). 단 긴 '컨텐츠 최다요일'(wd)은 그대로 두 줄. */
+  .hl-lbreak {
+    display: inline;
+    height: auto;
+  }
+  .hl-lbreak::before {
+    content: "\00a0";
+  }
+  .highlight-card[data-tone="wd"] .hl-lbreak {
+    display: block;
+    height: 0;
+  }
+  .highlight-card[data-tone="wd"] .hl-lbreak::before {
+    content: none;
+  }
   /* 트렌드(웹) — 시리즈 라벨·x축·막대를 키워 또렷하게(모바일 기본은 작게 둔다). */
   .trend-head > span {
     font-size: 16px;
   }
   .trend-spark {
     height: 72px;
+    gap: 13px;
   }
   .trend-bcol > span {
     height: 28px;
@@ -1762,15 +1807,18 @@
   pointer-events: none;
   white-space: nowrap;
 }
-/* 모바일: 액션바 가운데 태그는 좁아서 잘 안 보여 → 화면 좌상단 코너에 고정(이전 위치). */
+/* 모바일: 액션바 가운데 태그는 좁아서 잘 안 보여 → 화면 좌상단 코너에 또렷한 펄로 고정. */
 @media (max-width: 640px) {
   .studio-build-tag {
     position: fixed;
-    left: 7px;
-    top: 7px;
+    left: 8px;
+    top: 8px;
     transform: none;
-    z-index: 60;
-    color: #c4bed4;
+    z-index: 200;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgb(124 108 240 / 16%);
+    color: #6b5bd6;
   }
 }
 .studio-actionbar .button {
