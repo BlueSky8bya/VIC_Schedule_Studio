@@ -114,6 +114,9 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 const POSTER_DESIGN_W = 1840;
 const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
 
+// 관심 단계 순위(높을수록 인기). 한 칸의 "대표 인기 단계"를 고를 때 쓴다.
+const POP_RANK: Record<string, number> = { warm: 1, hot: 2, blaze: 3, top: 4 };
+
 // StickerInstance → 저장 입력(SaveStickerInput). 배치/단건 저장이 같은 매핑을 쓰게 모은다.
 // year/month는 호출 맥락에 따라 다름(수정=현재 보기 월, 재삽입=스티커 자체 월)이라 인자로 받는다.
 function stickerToSaveInput(
@@ -404,6 +407,13 @@ export function PublicPoster({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewing]);
+  // 처음 화면에 들어왔을 때만 잠깐, 인기(관심) 단계별로 날짜 칸을 부각하는 애니메이션을 켠다.
+  // 이후(월 이동 등)엔 꺼서 산만하지 않게 한다.
+  const [popIntro, setPopIntro] = useState(true);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setPopIntro(false), 2600);
+    return () => window.clearTimeout(timer);
+  }, []);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -1607,11 +1617,25 @@ export function PublicPoster({
     const events = covering.filter((e) => !e.isSupport);
     const day = classifyDay(cell.isoDate, cell.weekday, today);
 
+    // 이 칸의 대표 관심 단계 — 진입 시 단계별로 칸을 부각하는 애니메이션(data-pop)에 쓴다.
+    let popTier: string | null = null;
+    if (interactive) {
+      let bestRank = 0;
+      for (const e of events) {
+        const t = heartTier(heartCounts[e.id] ?? 0, maxHeart, e.id === soleTopEventId);
+        if (t && POP_RANK[t.key] > bestRank) {
+          bestRank = POP_RANK[t.key];
+          popTier = t.key;
+        }
+      }
+    }
+
     return (
       <article
         className={`public-day ${cell.inCurrentMonth ? "" : "outside"} ${
           day.isToday ? "today" : ""
         }`}
+        data-pop={popTier ?? undefined}
         key={cell.isoDate}
       >
         {supportHere.map((s) => {
@@ -2675,12 +2699,16 @@ export function PublicPoster({
             } as CSSProperties
           }
         >
-        <section className="poster-surface" data-export-surface data-poster-theme={posterTheme}>
+        <section
+          className={`poster-surface${popIntro ? " pop-intro" : ""}`}
+          data-export-surface
+          data-poster-theme={posterTheme}
+        >
           <div className="poster-heading">
               <span aria-hidden="true">✨️</span>
             <h1>{schedule.calendar.title}</h1>
               <span aria-hidden="true">✨️</span>
-            <em>
+            <em data-enter={monthDir} key={`m-${view.year}-${view.month}`}>
               {view.year}년 {view.month}월
             </em>
           </div>
@@ -2716,7 +2744,13 @@ export function PublicPoster({
               ))}
             </div>
 
-            <div className="public-month-grid" aria-label="월간 공개 일정" ref={monthGridRef}>
+            <div
+              className="public-month-grid"
+              aria-label="월간 공개 일정"
+              data-enter={monthDir}
+              key={`${view.year}-${view.month}`}
+              ref={monthGridRef}
+            >
               {cells.map((cell, i) =>
                 renderDayCell(cell, weekSupportLaneCount[Math.floor(i / 7)] ?? 0)
               )}

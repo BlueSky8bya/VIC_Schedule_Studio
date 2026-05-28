@@ -839,6 +839,23 @@
   font-style: normal;
   font-weight: 800;
 }
+/* 월 바뀔 때 연·월 텍스트가 방향대로 살짝 슬라이드(편집실과 통일). */
+.poster-heading em[data-enter="next"] {
+  display: inline-block;
+  animation: poster-month-next 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+.poster-heading em[data-enter="prev"] {
+  display: inline-block;
+  animation: poster-month-prev 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+@keyframes poster-month-next {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes poster-month-prev {
+  from { opacity: 0; transform: translateX(-16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 
 .public-side {
   display: flex;
@@ -1450,6 +1467,76 @@
   border-radius: 18px;
   background: #ffffff;
   box-shadow: 0 4px 16px rgb(120 90 60 / 8%);
+}
+/* 월 바뀔 때 방향대로 좌/우 슬라이드(편집실과 통일). 포스터 표면이 overflow:hidden이라 잘린다. */
+.public-month-grid[data-enter="next"] {
+  animation: public-grid-next 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+.public-month-grid[data-enter="prev"] {
+  animation: public-grid-prev 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+@keyframes public-grid-next {
+  from { opacity: 0; transform: translateX(38px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes public-grid-prev {
+  from { opacity: 0; transform: translateX(-38px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* 진입 직후, 관심(인기) 단계별로 날짜 칸을 잠깐 부각 — 단계마다 다른 움직임으로 재미를 준다.
+   슬라이드가 끝난 뒤(딜레이) 한 번만 재생되고, .pop-intro가 사라지면(2.6초) 더는 안 뜬다. */
+.pop-intro .public-day[data-pop] {
+  z-index: 2; /* 애니메이션 중 이웃 칸 위로 살짝 떠 보이게 */
+}
+.pop-intro .public-day[data-pop="warm"] {
+  animation: pop-warm 0.9s ease 0.35s both;
+}
+.pop-intro .public-day[data-pop="hot"] {
+  animation: pop-hot 0.95s ease 0.4s both;
+}
+.pop-intro .public-day[data-pop="blaze"] {
+  animation: pop-blaze 1s ease 0.45s both;
+}
+.pop-intro .public-day[data-pop="top"] {
+  animation: pop-top 1.15s cubic-bezier(0.3, 1.4, 0.5, 1) 0.5s both;
+}
+/* 🔥 관심 — 은은한 글로우 한 번 */
+@keyframes pop-warm {
+  0%, 100% { box-shadow: none; }
+  45% { box-shadow: 0 0 0 3px rgb(255 150 60 / 35%); }
+}
+/* 🔥🔥 높은 관심 — 글로우 + 살짝 커짐 */
+@keyframes pop-hot {
+  0%, 100% { box-shadow: none; transform: scale(1); }
+  40% { box-shadow: 0 0 0 4px rgb(255 120 40 / 45%); transform: scale(1.035); }
+}
+/* 🔥🔥🔥 폭발적 관심 — 주황 글로우 + 부르르 흔들림 */
+@keyframes pop-blaze {
+  0% { box-shadow: none; transform: translateX(0) rotate(0); }
+  15% { box-shadow: 0 0 0 4px rgb(255 90 30 / 50%); transform: translateX(-4px) rotate(-1deg); }
+  32% { transform: translateX(4px) rotate(1deg); }
+  50% { transform: translateX(-3px) rotate(-0.6deg); }
+  68% { transform: translateX(3px) rotate(0.6deg); }
+  100% { box-shadow: none; transform: translateX(0) rotate(0); }
+}
+/* 👑 최고 인기 — 금빛 글로우 + 통통 튀어 오름 */
+@keyframes pop-top {
+  0% { box-shadow: none; transform: translateY(0) scale(1); }
+  30% {
+    box-shadow: 0 0 0 5px rgb(255 200 40 / 65%), 0 10px 26px rgb(240 170 20 / 38%);
+    transform: translateY(-9px) scale(1.06);
+  }
+  55% { transform: translateY(0) scale(1); }
+  72% { transform: translateY(-3px) scale(1.02); }
+  100% { box-shadow: none; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-month-grid[data-enter],
+  .poster-heading em[data-enter],
+  .pop-intro .public-day[data-pop] {
+    animation: none;
+  }
 }
 
 .public-day {

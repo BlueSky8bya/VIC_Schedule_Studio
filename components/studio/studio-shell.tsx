@@ -616,6 +616,11 @@ export function StudioShell({
   }
 
   function selectDate(isoDate: string) {
+    // 이미 그 날짜의 새 일정 카드가 열려 있는데 같은 날짜를 또 누르면 → 선택 해제(카드 닫기).
+    if (editorVisible && selectedDate === isoDate && selectedEventId === null) {
+      setEditorVisible(false);
+      return;
+    }
     setSelectedDate(isoDate);
     setSelectedEventId(null);
     setForm(createEmptyForm());
