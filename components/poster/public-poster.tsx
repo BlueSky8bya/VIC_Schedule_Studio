@@ -2701,14 +2701,16 @@ export function PublicPoster({
         >
         <section
           className={`poster-surface${popIntro ? " pop-intro" : ""}`}
+          data-enter={monthDir}
           data-export-surface
           data-poster-theme={posterTheme}
+          key={`surface-${view.year}-${view.month}`}
         >
           <div className="poster-heading">
               <span aria-hidden="true">✨️</span>
             <h1>{schedule.calendar.title}</h1>
               <span aria-hidden="true">✨️</span>
-            <em data-enter={monthDir} key={`m-${view.year}-${view.month}`}>
+            <em>
               {view.year}년 {view.month}월
             </em>
           </div>
@@ -2744,13 +2746,7 @@ export function PublicPoster({
               ))}
             </div>
 
-            <div
-              className="public-month-grid"
-              aria-label="월간 공개 일정"
-              data-enter={monthDir}
-              key={`${view.year}-${view.month}`}
-              ref={monthGridRef}
-            >
+            <div className="public-month-grid" aria-label="월간 공개 일정" ref={monthGridRef}>
               {cells.map((cell, i) =>
                 renderDayCell(cell, weekSupportLaneCount[Math.floor(i / 7)] ?? 0)
               )}

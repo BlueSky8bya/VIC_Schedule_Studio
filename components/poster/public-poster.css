@@ -839,23 +839,6 @@
   font-style: normal;
   font-weight: 800;
 }
-/* 월 바뀔 때 연·월 텍스트가 방향대로 살짝 슬라이드(편집실과 통일). */
-.poster-heading em[data-enter="next"] {
-  display: inline-block;
-  animation: poster-month-next 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
-}
-.poster-heading em[data-enter="prev"] {
-  display: inline-block;
-  animation: poster-month-prev 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
-}
-@keyframes poster-month-next {
-  from { opacity: 0; transform: translateX(16px); }
-  to { opacity: 1; transform: translateX(0); }
-}
-@keyframes poster-month-prev {
-  from { opacity: 0; transform: translateX(-16px); }
-  to { opacity: 1; transform: translateX(0); }
-}
 
 .public-side {
   display: flex;
@@ -1468,19 +1451,44 @@
   background: #ffffff;
   box-shadow: 0 4px 16px rgb(120 90 60 / 8%);
 }
-/* 월 바뀔 때 방향대로 좌/우 슬라이드(편집실과 통일). 포스터 표면이 overflow:hidden이라 잘린다. */
-.public-month-grid[data-enter="next"] {
-  animation: public-grid-next 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+/* 월 바뀔 때 포스터 표면 전체가 함께 좌/우 슬라이드 — 제목·메모·달력·색상안내·텍스트·스티커가
+   다 같이 움직인다(표면을 월마다 재마운트해 재생). 중심에서 멀수록(양옆 패널) 슬라이드 폭을
+   아주 살짝 더 줘서 패럴랙스 느낌. 표면이 overflow:hidden이라 넘침은 잘린다. */
+.poster-surface[data-enter] .poster-heading {
+  --ps: 24px;
 }
-.public-month-grid[data-enter="prev"] {
-  animation: public-grid-prev 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+.poster-surface[data-enter] .public-calendar-area {
+  --ps: 30px;
 }
-@keyframes public-grid-next {
-  from { opacity: 0; transform: translateX(38px); }
+.poster-surface[data-enter] .sticker-layer {
+  --ps: 34px;
+}
+.poster-surface[data-enter] .public-side {
+  --ps: 42px; /* 왼쪽 끝(메모) — 중심에서 멀어 더 많이 */
+}
+.poster-surface[data-enter] .public-right {
+  --ps: 42px; /* 오른쪽 끝(색상 안내) — 더 많이 */
+}
+.poster-surface[data-enter="next"] .poster-heading,
+.poster-surface[data-enter="next"] .public-calendar-area,
+.poster-surface[data-enter="next"] .sticker-layer,
+.poster-surface[data-enter="next"] .public-side,
+.poster-surface[data-enter="next"] .public-right {
+  animation: poster-slide-next 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+.poster-surface[data-enter="prev"] .poster-heading,
+.poster-surface[data-enter="prev"] .public-calendar-area,
+.poster-surface[data-enter="prev"] .sticker-layer,
+.poster-surface[data-enter="prev"] .public-side,
+.poster-surface[data-enter="prev"] .public-right {
+  animation: poster-slide-prev 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+@keyframes poster-slide-next {
+  from { opacity: 0; transform: translateX(var(--ps, 30px)); }
   to { opacity: 1; transform: translateX(0); }
 }
-@keyframes public-grid-prev {
-  from { opacity: 0; transform: translateX(-38px); }
+@keyframes poster-slide-prev {
+  from { opacity: 0; transform: translateX(calc(-1 * var(--ps, 30px))); }
   to { opacity: 1; transform: translateX(0); }
 }
 
@@ -1532,8 +1540,11 @@
   100% { box-shadow: none; transform: translateY(0) scale(1); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .public-month-grid[data-enter],
-  .poster-heading em[data-enter],
+  .poster-surface[data-enter] .poster-heading,
+  .poster-surface[data-enter] .public-calendar-area,
+  .poster-surface[data-enter] .sticker-layer,
+  .poster-surface[data-enter] .public-side,
+  .poster-surface[data-enter] .public-right,
   .pop-intro .public-day[data-pop] {
     animation: none;
   }
