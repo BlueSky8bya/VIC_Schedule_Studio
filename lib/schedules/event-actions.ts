@@ -306,9 +306,9 @@ export async function updateSupportSettingsAction(
   input: { endDateKey?: string; supportUrl?: string }
 ): Promise<ActionResult> {
   const actor = await resolveCurrentActor(SLUG);
-  // 매니저(방송 운영)는 후원 기간/링크를 손볼 수 있지만, 작업자(worker)는 읽기 전용.
+  // 매니저(방송 운영)는 업 도움 기간/링크를 손볼 수 있지만, 작업자(worker)는 읽기 전용.
   if (!canEditSupport(actor.role)) {
-    return { ok: false, error: "후원 정보를 수정할 권한이 없습니다." };
+    return { ok: false, error: "업 도움 정보를 수정할 권한이 없습니다." };
   }
 
   const admin = createSupabaseAdminClient();

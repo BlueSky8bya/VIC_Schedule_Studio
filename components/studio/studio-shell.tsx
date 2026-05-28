@@ -176,7 +176,7 @@ const VISIBILITY_LABEL: Record<EventVisibilityScope, string> = {
 const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] }> = {
   owner: {
     summary: "일정 발행과 전체 관리를 맡아요.",
-    can: ["일정·태그·멤버·비밀번호 편집", "후원·꾸미기·포스터 내보내기", "비공개 레이어 보기(‘나만’ 포함)"]
+    can: ["일정·태그·멤버·비밀번호 편집", "업 도움·꾸미기·포스터 내보내기", "비공개 레이어 보기(‘나만’ 포함)"]
   },
   developer: {
     summary: "시스템 유지보수자예요.",
@@ -185,7 +185,7 @@ const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] }> = {
   manager: {
     summary: "방송 운영을 도와요.",
     can: [
-      "후원 기간/링크 수정",
+      "업 도움 기간/링크 수정",
       "일정별 태그 편집",
       "꾸미기·포스터 내보내기",
       "비공개 일정 보기(잠금 해제 시)"
@@ -197,7 +197,7 @@ const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] }> = {
   },
   viewer: {
     summary: "공개 일정을 봐요.",
-    can: ["일정 보기 · 하트 · 후원 링크"]
+    can: ["일정 보기 · 하트 · 업 도움 링크"]
   }
 };
 
@@ -442,7 +442,7 @@ export function StudioShell({
   const [editorVisible, setEditorVisible] = useState(false);
   const canEdit = canEditSchedule(actor.role);
   const canDecorateCalendar = canDecorate(actor.role);
-  // 매니저(방송 운영)는 후원 기간/링크 수정 가능, 작업자(worker)는 읽기 전용.
+  // 매니저(방송 운영)는 업 도움 기간/링크 수정 가능, 작업자(worker)는 읽기 전용.
   const canEditSupportThing = canEditSupport(actor.role);
   // 매니저는 일정별 태그 할당도 편집할 수 있다(태그 자체 생성/삭제는 여전히 관리자/개발자 전용).
   const canEditTagsThing = canEditEventTags(actor.role);
@@ -456,7 +456,7 @@ export function StudioShell({
         label: "매니저 · 작업자",
         summary: "방송 운영과 제작을 함께 도와요.",
         can: [
-          "후원 기간/링크 수정",
+          "업 도움 기간/링크 수정",
           "일정별 태그 편집",
           "꾸미기·이미지·포스터",
           "작업 일정 참고",
@@ -504,13 +504,13 @@ export function StudioShell({
     };
   }, [roleHelpOpen]);
 
-  // A3: 역할 배지 + "?" 도움말 팝오버. 데스크톱 배지는 이메일도 보여준다.
-  function renderRoleBadge(showEmail: boolean) {
+  // A3: 역할 배지 + "?" 도움말 팝오버. 이메일은 배지에 인라인으로 두지 않고(폭 절약·깔끔)
+  // 팝오버 안 역할 라벨 아래에 보여준다.
+  function renderRoleBadge() {
     return (
       <div className="actor-badge-wrap">
         <span className={`actor-badge ${actor.role}`}>
           <strong>{roleDisplay.label}</strong>
-          {showEmail ? <span>{actor.email ? `(${actor.email})` : "(비로그인)"}</span> : null}
           <button
             aria-expanded={roleHelpOpen}
             aria-label="역할 권한 보기"
@@ -524,6 +524,7 @@ export function StudioShell({
         {roleHelpOpen ? (
           <div className="role-help-pop" role="dialog" aria-label="역할 권한">
             <strong className="role-help-title">{roleDisplay.label}</strong>
+            <span className="role-help-email">{actor.email ?? "비로그인"}</span>
             <p className="role-help-summary">{roleDisplay.summary}</p>
             <ul className="role-help-can">
               {roleDisplay.can.map((item) => (
@@ -1075,7 +1076,7 @@ export function StudioShell({
     }
   }
 
-  // showPanel=false면 오른쪽 편집/상세 패널을 열지 않고 form만 채운다(후원 시트처럼 팝업만
+  // showPanel=false면 오른쪽 편집/상세 패널을 열지 않고 form만 채운다(업 도움 시트처럼 팝업만
   // 띄울 때 — 패널이 같이 슬라이드 인 하는 군더더기를 없앤다).
   function selectEvent(event: StudioScheduleEvent, showPanel = true) {
     setSelectedDate(event.startsAt.slice(0, 10));
@@ -1126,8 +1127,8 @@ export function StudioShell({
   }
 
   // A1: 매니저·작업자용 읽기전용 일정 상세. owner 편집 폼을 회색으로 보여주는 대신,
-  // 제목·날짜·공개범위·태그·후원 링크만 깔끔히 보여준다. owner_private는 애초에 비-owner에게
-  // 로드되지 않는다. 매니저(canEditSupportThing)는 후원 이벤트에 한해 "후원 수정"을 쓸 수 있다.
+  // 제목·날짜·공개범위·태그·업 도움 링크만 깔끔히 보여준다. owner_private는 애초에 비-owner에게
+  // 로드되지 않는다. 매니저(canEditSupportThing)는 업 도움 이벤트에 한해 "업 도움 수정"을 쓸 수 있다.
   function renderReadonlyDetail() {
     const selectedEvent = selectedEventId
       ? events.find((event) => event.id === selectedEventId)
@@ -1236,7 +1237,7 @@ export function StudioShell({
                 onClick={() => openSupportSheet(selectedEvent)}
                 type="button"
               >
-                후원 기간/링크 수정
+                업 도움 기간/링크 수정
               </button>
             ) : null}
           </>
@@ -1670,7 +1671,7 @@ export function StudioShell({
             </header>
 
             <div className="m-rolebar">
-              {renderRoleBadge(false)}
+              {renderRoleBadge()}
               {canTogglePrivateLayer ? (
                 <button
                   className={canReadPrivate ? "button primary" : "button"}
@@ -1853,7 +1854,7 @@ export function StudioShell({
                                     <ExternalLink aria-hidden="true" size={13} />
                                   </a>
                                 ) : null}
-                                {/* 소유자·개발자는 전체 편집, 매니저는 후원 설정만 수정. 작업자는 읽기 전용. */}
+                                {/* 소유자·개발자는 전체 편집, 매니저는 업 도움 설정만 수정. 작업자는 읽기 전용. */}
                                 {canEdit ? (
                                   <button
                                     className="m-support-edit"
@@ -1983,7 +1984,7 @@ export function StudioShell({
     );
   }
 
-  // 업 도움(후원) 편집 — 켜기/끄기 + 기간 + 링크 + 링크 확인. 웹 폼과 모바일 편집 시트 공용.
+  // 업 도움 편집 — 켜기/끄기 + 기간 + 링크 + 링크 확인. 웹 폼과 모바일 편집 시트 공용.
   // 업 도움 기간·링크 입력부. editable=true면 신뢰 멤버도 고칠 수 있다(토글은 별도, 소유자 전용).
   function renderSupportFields(editable: boolean) {
     return (
@@ -2345,7 +2346,7 @@ export function StudioShell({
 
         {/* 오른쪽: 역할·도구 */}
         <div className="studio-role-tools">
-          {renderRoleBadge(true)}
+          {renderRoleBadge()}
           <button
             className={canReadPrivate ? "private-toggle active" : "private-toggle"}
             disabled={!canTogglePrivateLayer}
@@ -2537,7 +2538,7 @@ export function StudioShell({
                         key={s.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          // 매니저는 후원 설정 수정 시트를 띄운다(전체 편집 불가). 작업자는 읽기 전용.
+                          // 매니저는 업 도움 설정 수정 시트를 띄운다(전체 편집 불가). 작업자는 읽기 전용.
                           if (!canEdit && canEditSupportThing) {
                             openSupportSheet(s);
                           } else {

@@ -17,8 +17,8 @@ export function canDecorate(role: MembershipRole) {
   return role === "owner" || role === "developer" || role === "manager" || role === "worker";
 }
 
-// 후원(support) 이벤트의 기간/링크 편집. 매니저는 "방송 운영" 역할이라 후원 정보를 손볼 수
-// 있지만, 작업자(worker)는 "제작"(에셋/꾸미기) 역할이라 후원은 읽기 전용이다.
+// 업 도움(support) 이벤트의 기간/링크 편집. 매니저는 "방송 운영" 역할이라 업 도움 정보를 손볼 수
+// 있지만, 작업자(worker)는 "제작"(에셋/꾸미기) 역할이라 업 도움은 읽기 전용이다.
 // (일반 일정 자체의 생성/수정/삭제는 여전히 canEditSchedule = owner/developer 전용)
 export function canEditSupport(role: MembershipRole) {
   return role === "owner" || role === "developer" || role === "manager";
