@@ -33,7 +33,7 @@ const EMPTY: PresenceCounts = {
 };
 
 // 클라이언트 UA로 기기 종류를 판별한다(웹/안드로이드/iOS/기타 모바일).
-function detectDevice(): DeviceKind {
+export function detectDevice(): DeviceKind {
   const ua = typeof navigator !== "undefined" ? navigator.userAgent || "" : "";
   if (/Android/i.test(ua)) return "android";
   if (/iPhone|iPad|iPod/i.test(ua)) return "ios";

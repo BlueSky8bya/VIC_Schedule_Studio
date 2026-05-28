@@ -51,6 +51,108 @@ function ymd(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+const ROLE_ORDER = ["viewer", "worker", "manager", "owner", "developer"] as const;
+const DEVICE_SET = new Set(["desktop", "android", "ios", "mobile"]);
+
+// 방문 1회 기록(브라우저가 하루 1회 호출). 역할은 서버에서 실제 actor로 다시 확인해 위조를 막고,
+// 기기/세션 식별자만 클라이언트에서 받는다. 개인정보(이메일·user_id)는 저장하지 않는다.
+export async function logVisitAction(
+  device: string,
+  sessionHash: string
+): Promise<{ ok: boolean }> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!actor.isAuthenticated) return { ok: false };
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return { ok: false };
+  const safeDevice = DEVICE_SET.has(device) ? device : "desktop";
+  const safeHash = (sessionHash || "").slice(0, 64) || `${Date.now()}`;
+  try {
+    await supabase.from("visit_log").insert({
+      day: ymd(kstNow()),
+      role: actor.role,
+      device: safeDevice,
+      session_hash: safeHash
+    });
+  } catch {
+    // 방문 로그는 보조 기능 — 실패해도 앱 동작에 영향 없음(테이블 미적용 등).
+    return { ok: false };
+  }
+  return { ok: true };
+}
+
+export type VisitTrends = {
+  ready: boolean; // visit_log 준비(마이그레이션 적용 + 데이터) 여부
+  days: { day: string; roles: Record<string, number>; total: number }[]; // 최근 14일
+  hours: number[]; // 24칸, 시간대별 방문(최근 30일, KST)
+  todayTotal: number;
+};
+export type VisitTrendsResult =
+  | { ok: true; data: VisitTrends }
+  | { ok: false; error: string };
+
+export async function getVisitTrendsAction(): Promise<VisitTrendsResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (actor.role !== "developer") {
+    return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
+  }
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase 서비스 키가 설정되지 않았습니다." };
+  }
+
+  const now = kstNow();
+  const todayKey = ymd(now);
+  const from30 = ymd(new Date(now.getTime() - 29 * 86400000));
+
+  const { data, error } = await supabase
+    .from("visit_log")
+    .select("day, role, occurred_at")
+    .gte("day", from30)
+    .order("occurred_at", { ascending: true });
+
+  // 테이블 미적용/데이터 없음 → 친절한 빈 상태로(오류 대신).
+  if (error) {
+    return {
+      ok: true,
+      data: { ready: false, days: [], hours: Array(24).fill(0), todayTotal: 0 }
+    };
+  }
+
+  const rows = (data ?? []) as { day: string; role: string; occurred_at: string }[];
+
+  // 최근 14일 날짜축(빈 날도 0으로 채워 연속 그래프).
+  const dayList: string[] = [];
+  for (let i = 13; i >= 0; i -= 1) {
+    dayList.push(ymd(new Date(now.getTime() - i * 86400000)));
+  }
+  const dayMap = new Map<string, Record<string, number>>();
+  for (const d of dayList) {
+    dayMap.set(d, Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])));
+  }
+  const hours = Array(24).fill(0) as number[];
+  let todayTotal = 0;
+
+  for (const row of rows) {
+    const roles = dayMap.get(row.day);
+    if (roles && row.role in roles) roles[row.role] += 1;
+    if (row.day === todayKey) todayTotal += 1;
+    // 시간대(KST) 분포 — 최근 30일 전체.
+    const t = new Date(row.occurred_at).getTime();
+    if (!Number.isNaN(t)) {
+      const h = new Date(t + 9 * 3600 * 1000).getUTCHours();
+      hours[h] += 1;
+    }
+  }
+
+  const days = dayList.map((day) => {
+    const roles = dayMap.get(day) ?? {};
+    const total = Object.values(roles).reduce((s, n) => s + n, 0);
+    return { day, roles, total };
+  });
+
+  return { ok: true, data: { ready: rows.length > 0, days, hours, todayTotal } };
+}
+
 export async function getInsightsAction(): Promise<InsightsResult> {
   const actor = await resolveCurrentActor(SLUG);
   if (actor.role !== "developer") {

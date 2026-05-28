@@ -7,11 +7,26 @@ import {
   Cog,
   Heart,
   Lock,
-  Radio
+  Radio,
+  TrendingUp
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { DeveloperPanel } from "@/components/developer/developer-panel";
-import { getInsightsAction, type InsightsData } from "@/lib/insights/actions";
+import {
+  getInsightsAction,
+  getVisitTrendsAction,
+  type InsightsData,
+  type VisitTrends
+} from "@/lib/insights/actions";
+
+// 방문 추이 그래프의 역할 색·표기.
+const ROLE_META: { key: string; label: string; color: string }[] = [
+  { key: "viewer", label: "시청자", color: "#9aa0ab" },
+  { key: "worker", label: "작업자", color: "#f59e0b" },
+  { key: "manager", label: "매니저", color: "#7c6cf0" },
+  { key: "owner", label: "관리자", color: "#34d399" },
+  { key: "developer", label: "개발자", color: "#60a5fa" }
+];
 
 // 개발자 전용 "🛠 인사이트" — 비슷한 지표끼리 패널로 묶어 좌우로 슬라이딩하며 본다.
 // 실시간 패널은 Supabase Presence(즉시), 나머지는 서버 집계(getInsightsAction)로 채운다.
@@ -19,6 +34,7 @@ import { getInsightsAction, type InsightsData } from "@/lib/insights/actions";
 
 const PANELS = [
   { key: "live", label: "실시간", icon: Radio },
+  { key: "visits", label: "방문", icon: TrendingUp },
   { key: "content", label: "일정", icon: CalendarDays },
   { key: "engagement", label: "참여", icon: Heart },
   { key: "security", label: "보안", icon: Lock },
@@ -48,6 +64,8 @@ export function InsightsDashboard() {
   const [data, setData] = useState<InsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [visits, setVisits] = useState<VisitTrends | null>(null);
+  const [visitsLoading, setVisitsLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -59,6 +77,13 @@ export function InsightsDashboard() {
       })
       .finally(() => {
         if (alive) setLoading(false);
+      });
+    getVisitTrendsAction()
+      .then((r) => {
+        if (alive && r.ok) setVisits(r.data);
+      })
+      .finally(() => {
+        if (alive) setVisitsLoading(false);
       });
     return () => {
       alive = false;
@@ -87,6 +112,76 @@ export function InsightsDashboard() {
   const tagMax = Math.max(1, ...(data?.content.tags.map((t) => t.count) ?? [1]));
   const heartMax = Math.max(1, ...(data?.engagement.topEvents.map((t) => t.count) ?? [1]));
 
+  function renderVisits() {
+    if (visitsLoading) {
+      return (
+        <div className="insight-skel" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+      );
+    }
+    if (!visits || !visits.ready) {
+      return (
+        <p className="insight-empty">
+          아직 방문 데이터가 없어요. 마이그레이션(0023_visit_log)을 적용하면 하루 단위로 쌓여
+          여기에 날짜별·역할별 그래프가 그려집니다.
+        </p>
+      );
+    }
+    const maxTotal = Math.max(1, ...visits.days.map((d) => d.total));
+    const maxHour = Math.max(1, ...visits.hours);
+    const total14 = visits.days.reduce((s, d) => s + d.total, 0);
+    return (
+      <>
+        <div className="insight-grid">
+          <StatTile value={visits.todayTotal} label="오늘 방문" tone="soon" />
+          <StatTile value={total14} label="최근 14일" />
+        </div>
+        <h4 className="insight-subhead">날짜별 방문 (역할 누적)</h4>
+        <div className="vt-chart" role="img" aria-label="날짜별 역할 방문 그래프">
+          {visits.days.map((d) => (
+            <div className="vt-col" key={d.day} title={`${d.day} · ${d.total}명`}>
+              <div className="vt-barwrap">
+                <div className="vt-bar" style={{ height: `${(d.total / maxTotal) * 100}%` }}>
+                  {ROLE_META.map((r) => {
+                    const c = d.roles[r.key] ?? 0;
+                    return c > 0 ? (
+                      <span
+                        className="vt-seg"
+                        key={r.key}
+                        style={{ flexGrow: c, background: r.color }}
+                      />
+                    ) : null;
+                  })}
+                </div>
+              </div>
+              <span className="vt-day">{Number(d.day.slice(8, 10))}</span>
+            </div>
+          ))}
+        </div>
+        <ul className="vt-legend">
+          {ROLE_META.map((r) => (
+            <li key={r.key}>
+              <span style={{ background: r.color }} />
+              {r.label}
+            </li>
+          ))}
+        </ul>
+        <h4 className="insight-subhead">시간대 분포 (KST · 최근 30일)</h4>
+        <div className="vt-hours" role="img" aria-label="시간대별 방문 분포">
+          {visits.hours.map((c, h) => (
+            <div className="vt-hcol" key={h} title={`${h}시 · ${c}명`}>
+              <div className="vt-hbar" style={{ height: `${(c / maxHour) * 100}%` }} />
+              <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
+
   return (
     <div className="insights">
       <div className="insights-tabs" role="tablist" aria-label="인사이트 영역">
@@ -112,7 +207,10 @@ export function InsightsDashboard() {
             <DeveloperPanel />
           </section>
 
-          {/* 2) 일정·콘텐츠 */}
+          {/* 2) 방문 추이 — 날짜×역할 스택 그래프 + 시간대 분포 */}
+          <section className="insights-panel">{renderVisits()}</section>
+
+          {/* 3) 일정·콘텐츠 */}
           <section className="insights-panel">
             {withData((d) => (
               <>

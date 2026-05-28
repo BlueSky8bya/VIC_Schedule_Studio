@@ -815,10 +815,101 @@
     background-position: -40% 0;
   }
 }
+/* 방문 추이: 날짜×역할 스택 막대 + 시간대 분포 */
+.vt-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  height: 132px;
+}
+.vt-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.vt-barwrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+}
+.vt-bar {
+  width: 100%;
+  min-height: 2px;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: 5px 5px 2px 2px;
+  overflow: hidden;
+  background: #f0ecf9;
+  transition: height 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+.vt-seg {
+  width: 100%;
+}
+.vt-day {
+  margin-top: 4px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #9a93ad;
+}
+.vt-legend {
+  list-style: none;
+  margin: 9px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.vt-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #6b6480;
+}
+.vt-legend li span {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.vt-hours {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 64px;
+}
+.vt-hcol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  height: 100%;
+}
+.vt-hbar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: linear-gradient(180deg, #8b7cf0, #6b5bd6);
+  transition: height 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+.vt-hlabel {
+  margin-top: 3px;
+  text-align: center;
+  font-size: 8.5px;
+  font-weight: 700;
+  color: #b3acc6;
+  height: 10px;
+}
 @media (prefers-reduced-motion: reduce) {
   .insights-track,
   .insight-bar-fill,
-  .insights-dots span {
+  .insights-dots span,
+  .vt-bar,
+  .vt-hbar {
     transition: none;
   }
   .insight-skel span {
