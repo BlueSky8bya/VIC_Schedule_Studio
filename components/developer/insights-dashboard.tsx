@@ -6,16 +6,20 @@ import {
   ChevronRight,
   Cog,
   Heart,
+  LineChart,
   Lock,
   Radio,
-  TrendingUp
+  TrendingUp,
+  Trophy
 } from "lucide-react";
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { DeveloperPanel } from "@/components/developer/developer-panel";
 import {
   getInsightsAction,
+  getTrendAction,
   getVisitTrendsAction,
   type InsightsData,
+  type TrendData,
   type VisitTrends
 } from "@/lib/insights/actions";
 
@@ -34,6 +38,8 @@ const PANELS = [
   { key: "visits", label: "방문", icon: TrendingUp },
   { key: "content", label: "일정", icon: CalendarDays },
   { key: "engagement", label: "참여", icon: Heart },
+  { key: "trend", label: "트렌드", icon: LineChart },
+  { key: "highlight", label: "하이라이트", icon: Trophy },
   { key: "security", label: "보안", icon: Lock },
   { key: "system", label: "시스템", icon: Cog }
 ] as const;
@@ -115,6 +121,8 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
   const [visits, setVisits] = useState<VisitTrends | null>(null);
   const [visitsLoading, setVisitsLoading] = useState(true);
   const [visitView, setVisitView] = useState<"day" | "week">("day");
+  const [trend, setTrend] = useState<TrendData | null>(null);
+  const [trendLoading, setTrendLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
@@ -133,6 +141,13 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
       })
       .finally(() => {
         if (alive) setVisitsLoading(false);
+      });
+    getTrendAction(year, month)
+      .then((r) => {
+        if (alive && r.ok) setTrend(r.data);
+      })
+      .finally(() => {
+        if (alive) setTrendLoading(false);
       });
     return () => {
       alive = false;
@@ -271,6 +286,108 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
           })}
         </div>
       </>
+    );
+  }
+
+  function renderTrend() {
+    if (trendLoading || loading) {
+      return (
+        <div className="insight-skel" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+      );
+    }
+    if (!trend || !data) {
+      return <p className="insight-empty">추이를 불러오지 못했어요.</p>;
+    }
+    const series = [
+      { key: "visits", label: "👀 방문", values: trend.visits },
+      { key: "content", label: "🗓️ 컨텐츠", values: trend.content },
+      { key: "hearts", label: "💗 하트", values: data.engagement.monthly.map((x) => x.count) }
+    ];
+    return (
+      <>
+        <p className="insight-note">최근 6개월 추이 · 배지는 지난달 대비 변화</p>
+        {series.map((s) => {
+          const cur = s.values[s.values.length - 1] ?? 0;
+          const prev = s.values[s.values.length - 2] ?? 0;
+          const delta = prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
+          const max = Math.max(1, ...s.values);
+          return (
+            <div className="trend-row" key={s.key}>
+              <div className="trend-head">
+                <span>{s.label}</span>
+                <strong>{cur.toLocaleString()}</strong>
+                {delta !== null ? (
+                  <em className={`insight-trend ${delta >= 0 ? "up" : "down"}`}>
+                    {delta >= 0 ? "▲" : "▼"}
+                    {Math.abs(delta)}%
+                  </em>
+                ) : (
+                  <em className="trend-new">신규</em>
+                )}
+              </div>
+              <div className="trend-spark">
+                {s.values.map((v, i) => (
+                  <div className="trend-bcol" key={i} title={`${trend.months[i]} · ${v}`}>
+                    <div className="trend-bwrap">
+                      <div
+                        className={`trend-bar ${i === s.values.length - 1 ? "cur" : ""}`}
+                        style={{ height: `${(v / max) * 100}%` }}
+                      />
+                    </div>
+                    <span>{Number(trend.months[i].slice(5, 7))}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </>
+    );
+  }
+
+  function renderHighlights() {
+    if (loading || visitsLoading) {
+      return (
+        <div className="insight-skel" aria-hidden="true">
+          <span />
+          <span />
+        </div>
+      );
+    }
+    if (!data) {
+      return <p className="insight-empty">불러오지 못했어요.</p>;
+    }
+    const peakDay =
+      visits?.hasData ? [...visits.days].sort((a, b) => b.total - a.total)[0] : null;
+    const peakHour = visits?.hasData
+      ? visits.hours.reduce((best, c, h) => (c > best.c ? { h, c } : best), { h: -1, c: 0 })
+      : null;
+    const top = data.engagement.topEvents[0] ?? null;
+    return (
+      <div className="highlight-grid">
+        <div className="highlight-card">
+          <span>🗓️ 방문 최다일</span>
+          <strong>
+            {peakDay && peakDay.total > 0 ? `${month}/${peakDay.day} · ${peakDay.total}명` : "—"}
+          </strong>
+        </div>
+        <div className="highlight-card">
+          <span>⏰ 최고 시간대</span>
+          <strong>{peakHour && peakHour.c > 0 ? `${peakHour.h}시 · ${peakHour.c}명` : "—"}</strong>
+        </div>
+        <div className="highlight-card">
+          <span>💗 인기 일정</span>
+          <strong>{top ? `${top.title} ♥${top.count}` : "—"}</strong>
+        </div>
+        <div className="highlight-card">
+          <span>🔥 방송 최다 요일</span>
+          <strong>{weekdayLabel(data.content.busiestWeekday)}</strong>
+        </div>
+      </div>
     );
   }
 
@@ -426,7 +543,13 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
             })}
           </section>
 
-          {/* 5) 보안·접근 */}
+          {/* 5) 트렌드(최근 6개월) */}
+          <section className="insights-panel">{renderTrend()}</section>
+
+          {/* 6) 이 달의 하이라이트 */}
+          <section className="insights-panel">{renderHighlights()}</section>
+
+          {/* 7) 보안·접근 */}
           <section className="insights-panel">
             {withData((d) => (
               <>

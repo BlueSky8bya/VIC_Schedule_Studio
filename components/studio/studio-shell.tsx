@@ -2901,9 +2901,11 @@ export function StudioShell({
                   >
                     {dateEvents.map((event, eventIndex) => {
                       const colors = eventColors(event);
-                      const isSel = selectedEventId === event.id;
+                      // 선택 강조(테두리·X)는 오른쪽 편집/상세 패널이 열려 있을 때만 — 패널이
+                      // 닫히면(다른 버튼으로 슬라이드-아웃) 카드 선택 표시도 함께 사라지게.
+                      const isSel = editorVisible && selectedEventId === event.id;
                       // 연결된 체인이면 체인 전체에 선택 테두리를 입힌다.
-                      const inSelChain = selectedChainIds.has(event.id);
+                      const inSelChain = editorVisible && selectedChainIds.has(event.id);
                       const { main, subs } = splitEventTitle(event.publicTitle);
                       const span = getEventSpan(
                         event,

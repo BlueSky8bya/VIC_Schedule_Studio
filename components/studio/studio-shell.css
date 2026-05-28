@@ -1069,6 +1069,102 @@
   flex: 0 0 auto;
   max-width: none;
 }
+/* 트렌드 패널: 항목별 6개월 스파크 막대 + 지난달 대비 배지 */
+.trend-row {
+  margin-bottom: 14px;
+}
+.trend-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.trend-head > span {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #6b6480;
+}
+.trend-head > strong {
+  font-size: 18px;
+  font-weight: 900;
+  color: #3a3550;
+}
+.trend-head .insight-trend,
+.trend-new {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 800;
+  font-style: normal;
+}
+.trend-new {
+  color: #9aa0ab;
+}
+.trend-spark {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  height: 56px;
+}
+.trend-bcol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.trend-bwrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+}
+.trend-bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 4px 4px 1px 1px;
+  background: #d7d0ec;
+  transition: height 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+.trend-bar.cur {
+  background: linear-gradient(180deg, #8b7cf0, #6b5bd6);
+}
+.trend-bcol > span {
+  margin-top: 3px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #b3acc6;
+}
+/* 하이라이트 카드 */
+.highlight-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.highlight-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 15px;
+  border: 1px solid #efeaf9;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfaff, #f4f1fd);
+}
+.highlight-card > span {
+  font-size: 13px;
+  font-weight: 800;
+  color: #6b6480;
+}
+.highlight-card > strong {
+  font-size: 14px;
+  font-weight: 900;
+  color: #3a3550;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 58%;
+}
 .vt-hlabel {
   margin-top: 3px;
   text-align: center;
@@ -1082,7 +1178,8 @@
   .insight-bar-fill,
   .insights-dots span,
   .vt-bar,
-  .vt-hbar {
+  .vt-hbar,
+  .trend-bar {
     transition: none;
   }
   .insight-skel span {

@@ -352,6 +352,86 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   };
 }
 
+export type TrendData = {
+  months: string[]; // 6개월(YYYY-MM, 오래된→최신, 타깃 월로 끝남)
+  visits: number[];
+  content: number[]; // 휴뱅 제외 공개 일정
+};
+export type TrendResult = { ok: true; data: TrendData } | { ok: false; error: string };
+
+// 트렌드 패널용 — 방문·컨텐츠의 최근 6개월 월별 추이. (하트 6개월은 getInsightsAction이 이미 줌.)
+export async function getTrendAction(year: number, month: number): Promise<TrendResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (actor.role !== "developer") {
+    return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
+  }
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase 서비스 키가 설정되지 않았습니다." };
+  }
+  const { data: cal } = await supabase
+    .from("calendars")
+    .select("id")
+    .eq("slug", SLUG)
+    .maybeSingle();
+  if (!cal) {
+    return { ok: false, error: "캘린더를 찾을 수 없습니다." };
+  }
+  const calendarId = cal.id as string;
+
+  const monthKeys: string[] = [];
+  for (let i = 5; i >= 0; i -= 1) {
+    const d = new Date(Date.UTC(year, month - 1 - i, 1));
+    monthKeys.push(`${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}`);
+  }
+  const fromStart = `${monthKeys[0]}-01`;
+  const nextMonthStart = ymd(new Date(Date.UTC(year, month, 1)));
+
+  const [visitRes, eventsRes, tagsRes] = await Promise.all([
+    supabase.from("visit_log").select("day").gte("day", fromStart).lt("day", nextMonthStart),
+    supabase
+      .from("events")
+      .select("id, date_key")
+      .eq("calendar_id", calendarId)
+      .eq("is_public", true)
+      .gte("date_key", fromStart)
+      .lt("date_key", nextMonthStart),
+    supabase
+      .from("event_tags")
+      .select("event_id, broadcast_tags(display_name), events!inner(calendar_id, date_key)")
+      .eq("events.calendar_id", calendarId)
+      .gte("events.date_key", fromStart)
+      .lt("events.date_key", nextMonthStart)
+  ]);
+
+  const restIds = new Set<string>();
+  for (const row of tagsRes.data ?? []) {
+    if ((row as { broadcast_tags?: { display_name?: string } }).broadcast_tags?.display_name === REST_TAG) {
+      restIds.add((row as { event_id: string }).event_id);
+    }
+  }
+  const vMap = new Map(monthKeys.map((k) => [k, 0]));
+  for (const row of visitRes.data ?? []) {
+    const ym = (row as { day: string }).day.slice(0, 7);
+    if (vMap.has(ym)) vMap.set(ym, (vMap.get(ym) ?? 0) + 1);
+  }
+  const cMap = new Map(monthKeys.map((k) => [k, 0]));
+  for (const e of eventsRes.data ?? []) {
+    if (restIds.has((e as { id: string }).id)) continue;
+    const ym = (e as { date_key: string }).date_key.slice(0, 7);
+    if (cMap.has(ym)) cMap.set(ym, (cMap.get(ym) ?? 0) + 1);
+  }
+
+  return {
+    ok: true,
+    data: {
+      months: monthKeys,
+      visits: monthKeys.map((k) => vMap.get(k) ?? 0),
+      content: monthKeys.map((k) => cMap.get(k) ?? 0)
+    }
+  };
+}
+
 export type VisitTrends = {
   ready: boolean; // visit_log 접근 가능(테이블 적용) 여부
   hasData: boolean; // 이 달 방문 기록이 있는지
