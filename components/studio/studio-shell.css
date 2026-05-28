@@ -2362,6 +2362,73 @@ textarea:disabled {
   box-shadow: var(--shadow-2);
   transform: translateY(-1px);
 }
+/* 새 멤버 행은 살짝 떠오르며 들어온다(목록 첫 표시·추가 시). */
+.member-row {
+  animation: member-row-in 0.32s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+@keyframes member-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+/* 삭제 시: 서버 확정 전까지 행이 위로 접히며 사라지는 느낌(실패하면 도로 펼쳐진다). */
+.member-row.removing {
+  overflow: hidden;
+  pointer-events: none;
+  animation: member-row-out 0.34s var(--ease, cubic-bezier(0.4, 0, 0.2, 1)) forwards;
+}
+@keyframes member-row-out {
+  from {
+    opacity: 1;
+    max-height: 80px;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-top: -10px;
+    transform: translateX(14px);
+  }
+}
+/* 동기화 중 작은 점 — 이메일 옆에서 은은히 깜빡(저장 중 신호). */
+.member-sync-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 7px;
+  border-radius: 999px;
+  background: var(--accent, #fb7185);
+  vertical-align: middle;
+  animation: member-sync-pulse 1s ease-in-out infinite;
+}
+@keyframes member-sync-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .member-row,
+  .member-row.removing,
+  .member-sync-dot {
+    animation: none;
+  }
+  .member-row.removing {
+    opacity: 0;
+  }
+}
 .members-list li .member-avatar {
   display: block;
   flex: 0 0 auto;

@@ -47,7 +47,11 @@ export function TrustedMembersPanel() {
   const [addWorker, setAddWorker] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true); // 첫 조회 전엔 "없어요" 대신 로딩 표시
-  const [pending, startTransition] = useTransition();
+  // 체감 성능: 모든 동작을 화면에 먼저 반영하고(낙관적) 서버와 조용히 맞춘다. 동기화 중인
+  // 이메일엔 작은 점, 빠지는 행엔 접힘 애니메이션 — "내가 누른 게 바로 반영된다"는 유대감.
+  const [syncing, setSyncing] = useState<Set<string>>(() => new Set());
+  const [removingIds, setRemovingIds] = useState<Set<string>>(() => new Set());
+  const [, startTransition] = useTransition();
 
   useEffect(() => {
     listTrustedMembersAction()
@@ -58,41 +62,94 @@ export function TrustedMembersPanel() {
       .finally(() => setLoading(false));
   }, []);
 
+  function markSync(memberEmail: string, on: boolean) {
+    setSyncing((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(memberEmail);
+      else next.delete(memberEmail);
+      return next;
+    });
+  }
+
   function add() {
     setError(null);
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setError("이메일을 입력하세요.");
+      return;
+    }
     if (!addManager && !addWorker) {
       setError("매니저·작업자 중 하나 이상을 선택하세요.");
       return;
     }
+    const snapshot = members;
+    const optimistic: TrustedMember = {
+      id: `temp-${cleanEmail}`,
+      email: cleanEmail,
+      displayName: null,
+      trustedRole: addManager ? "manager" : "worker",
+      isManager: addManager,
+      isWorker: addWorker,
+      isActive: true
+    };
+    // 이미 있는 이메일이면 역할만 갱신(중복 행 방지), 아니면 맨 아래에 바로 추가.
+    setMembers((prev) =>
+      prev.some((m) => m.email === cleanEmail)
+        ? prev.map((m) => (m.email === cleanEmail ? { ...m, ...optimistic, id: m.id } : m))
+        : [...prev, optimistic]
+    );
+    markSync(cleanEmail, true);
+    setEmail("");
     startTransition(async () => {
-      const r = await setTrustedMemberRolesAction(email, addManager, addWorker);
-      if (r.ok) {
-        setMembers(r.members);
-        setEmail("");
-      } else {
+      const r = await setTrustedMemberRolesAction(cleanEmail, addManager, addWorker);
+      markSync(cleanEmail, false);
+      if (r.ok) setMembers(r.members);
+      else {
+        setMembers(snapshot);
         setError(r.error);
       }
     });
   }
 
-  // 기존 멤버의 매니저/작업자 역할을 켜고 끈다(둘 다 끄려 하면 막는다).
+  // 역할 토글 — 칩이 즉시 바뀌고(낙관적), 뒤에서 서버와 맞춘다. 둘 다 끄려 하면 막는다.
   function setRoles(member: TrustedMember, isManager: boolean, isWorker: boolean) {
     setError(null);
     if (!isManager && !isWorker) {
       setError("멤버는 적어도 한 역할이 필요해요. 빼려면 삭제하세요.");
       return;
     }
+    const snapshot = members;
+    setMembers((prev) =>
+      prev.map((m) =>
+        m.id === member.id
+          ? { ...m, isManager, isWorker, trustedRole: isManager ? "manager" : "worker" }
+          : m
+      )
+    );
+    markSync(member.email, true);
     startTransition(async () => {
       const r = await setTrustedMemberRolesAction(member.email, isManager, isWorker);
+      markSync(member.email, false);
       if (r.ok) setMembers(r.members);
-      else setError(r.error);
+      else {
+        setMembers(snapshot);
+        setError(r.error);
+      }
     });
   }
 
-  function remove(id: string) {
+  // 삭제 — 행을 접히는 애니메이션으로 보내고(바로 사라지는 느낌), 서버 확정 후 목록에서 뺀다.
+  // 실패하면 접힘을 풀어 행이 되살아난다.
+  function remove(member: TrustedMember) {
     setError(null);
+    setRemovingIds((prev) => new Set(prev).add(member.id));
     startTransition(async () => {
-      const r = await removeTrustedMemberAction(id);
+      const r = await removeTrustedMemberAction(member.id);
+      setRemovingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(member.id);
+        return next;
+      });
       if (r.ok) setMembers(r.members);
       else setError(r.error);
     });
@@ -134,7 +191,7 @@ export function TrustedMembersPanel() {
           </div>
           <button
             className="button primary"
-            disabled={!email || pending}
+            disabled={!email.trim()}
             onClick={add}
             type="button"
           >
@@ -160,8 +217,13 @@ export function TrustedMembersPanel() {
         ) : null}
         {members.map((m) => {
           const avatar = avatarFor(m.email);
+          const isSyncing = syncing.has(m.email);
+          const isRemoving = removingIds.has(m.id);
           return (
-          <li key={m.id}>
+          <li
+            className={`member-row${isRemoving ? " removing" : ""}${isSyncing ? " syncing" : ""}`}
+            key={m.email}
+          >
             <span
               className="member-avatar"
               aria-hidden="true"
@@ -170,13 +232,17 @@ export function TrustedMembersPanel() {
               {avatar.emoji}
             </span>
             <div className="member-info">
-              <strong>{m.email}</strong>
-              {/* 역할 토글 — 켜진 역할은 색 태그처럼 보이고, 누르면 즉시 켜고/끈다. */}
+              <strong>
+                {m.email}
+                {/* 동기화 중 작은 점 — "저장되고 있다"는 신호(차단하지 않음). */}
+                {isSyncing ? <span className="member-sync-dot" title="저장 중…" aria-hidden="true" /> : null}
+              </strong>
+              {/* 역할 토글 — 켜진 역할은 색 태그처럼 보이고, 누르면 즉시 켜고/끈다(낙관적). */}
               <div className="member-role-toggles" role="group" aria-label="역할">
                 <button
                   aria-pressed={m.isManager}
                   className={`member-role-toggle manager ${m.isManager ? "on" : ""}`}
-                  disabled={pending}
+                  disabled={isSyncing || isRemoving}
                   onClick={() => setRoles(m, !m.isManager, m.isWorker)}
                   type="button"
                 >
@@ -185,7 +251,7 @@ export function TrustedMembersPanel() {
                 <button
                   aria-pressed={m.isWorker}
                   className={`member-role-toggle worker ${m.isWorker ? "on" : ""}`}
-                  disabled={pending}
+                  disabled={isSyncing || isRemoving}
                   onClick={() => setRoles(m, m.isManager, !m.isWorker)}
                   type="button"
                 >
@@ -196,8 +262,8 @@ export function TrustedMembersPanel() {
             <button
               aria-label="삭제"
               className="member-remove"
-              disabled={pending}
-              onClick={() => remove(m.id)}
+              disabled={isRemoving}
+              onClick={() => remove(m)}
               title="삭제"
               type="button"
             >
