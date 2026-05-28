@@ -1100,6 +1100,27 @@
   box-shadow: 0 6px 20px rgb(17 24 39 / 28%);
   animation: copy-toast-in 160ms ease-out;
 }
+/* 잠금해제 "여는 중" 단계: 두 줄(주 메시지 + 안내)로 핸드셰이크 단계를 또렷하게 */
+.private-unlocking {
+  align-items: flex-start;
+  max-width: min(440px, calc(100vw - 32px));
+  text-align: left;
+}
+.private-unlocking-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.private-unlocking-text strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+.private-unlocking-text em {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+  color: rgb(255 255 255 / 72%);
+}
 .private-loading-spinner {
   width: 15px;
   height: 15px;

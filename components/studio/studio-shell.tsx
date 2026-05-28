@@ -2013,9 +2013,14 @@ export function StudioShell({
         </div>
       ) : null}
       {loadingPrivate ? (
-        <div className="private-loading" role="status" aria-live="polite">
+        // 잠금해제 핸드셰이크 2단계(여는 중). 패널의 "확인 중…"(검증)과 ⚠배너(활성) 사이
+        // 단계를 명확히 보여 "확인됐는데 아직 안 보이는" 모호한 순간을 없앤다.
+        <div className="private-loading private-unlocking" role="status" aria-live="polite">
           <span className="private-loading-spinner" aria-hidden="true" />
-          일정을 불러오는 중입니다…
+          <span className="private-unlocking-text">
+            <strong>🔓 비공개 레이어를 여는 중입니다…</strong>
+            <em>비밀번호가 확인됐어요. 비공개 일정을 불러오고 있습니다.</em>
+          </span>
         </div>
       ) : null}
       {navMsg ? (
