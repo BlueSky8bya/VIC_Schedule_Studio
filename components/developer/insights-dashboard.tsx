@@ -364,13 +364,16 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
               <div className="trend-head">
                 <span>{s.label}</span>
                 <strong>{cur.toLocaleString()}</strong>
-                {delta !== null ? (
-                  <em className={`insight-trend ${delta >= 0 ? "up" : "down"}`}>
-                    {delta >= 0 ? "▲" : "▼"}
+                {delta === null ? (
+                  <em className="trend-new">신규</em>
+                ) : delta === 0 ? (
+                  // 지난달과 동률이면 방향색(빨강/파랑) 대신 중립 대시로 — "변화 없음".
+                  <em className="insight-trend flat">—</em>
+                ) : (
+                  <em className={`insight-trend ${delta > 0 ? "up" : "down"}`}>
+                    {delta > 0 ? "▲" : "▼"}
                     {Math.abs(delta)}%
                   </em>
-                ) : (
-                  <em className="trend-new">신규</em>
                 )}
               </div>
               <div className="trend-spark">
@@ -444,7 +447,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
         key: "wd",
         emoji: "🔥",
         tone: "wd",
-        label: "방송 최다 요일",
+        label: "컨텐츠 최다 요일",
         main: weekdayLabel(data.content.busiestWeekday),
         sub: ""
       }

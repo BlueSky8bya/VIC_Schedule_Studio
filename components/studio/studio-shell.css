@@ -986,6 +986,9 @@
 .insight-trend.down {
   color: #2f6bd8; /* 내려가면 파랑 */
 }
+.insight-trend.flat {
+  color: #9aa0ab; /* 동률(변화 없음)은 중립 회색 — 방향색 안 씀 */
+}
 /* 소유자 계정 목록 — 한 줄에 한 이메일(이메일 중간에서 줄이 잘리지 않게). */
 .insight-list {
   list-style: none;
