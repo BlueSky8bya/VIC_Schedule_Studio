@@ -46,7 +46,7 @@ export default async function TrustedMembersPage() {
           <label>
             Google 이메일
             <input
-              disabled={actor.role !== "owner" || !supabase}
+              disabled={!canEditSchedule(actor.role) || !supabase}
               name="email"
               placeholder="manager@example.com"
               required
@@ -56,21 +56,21 @@ export default async function TrustedMembersPage() {
           <label>
             표시 이름
             <input
-              disabled={actor.role !== "owner" || !supabase}
+              disabled={!canEditSchedule(actor.role) || !supabase}
               name="displayName"
               placeholder="매니저"
             />
           </label>
           <label>
             역할
-            <select disabled={actor.role !== "owner" || !supabase} name="trustedRole">
+            <select disabled={!canEditSchedule(actor.role) || !supabase} name="trustedRole">
               <option value="manager">manager</option>
               <option value="worker">worker</option>
             </select>
           </label>
           <button
             className="button primary"
-            disabled={actor.role !== "owner" || !supabase}
+            disabled={!canEditSchedule(actor.role) || !supabase}
             type="submit"
           >
             등록 / 갱신
