@@ -1897,6 +1897,12 @@ export function StudioShell({
         <div className="m-scroll-region">
           <div className="m-topstick">
             <header className="agenda-header">
+              {/* 개발자 배포 버전(커밋) — 헤더 그리드 1열(제목 왼쪽·같은 줄). */}
+              {isDeveloper && !previewRole ? (
+                <span className="studio-build-tag-m" aria-hidden="true">
+                  {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
+                </span>
+              ) : null}
               <h1>
                 ✨️ {schedule.calendar.title} ✨️
                 <span>
@@ -1922,6 +1928,12 @@ export function StudioShell({
                   type="button"
                 >
                   {canReadPrivate ? "비공개 중" : "비공개 일정"}
+                </button>
+              ) : null}
+              {/* 비개발자(관리자·매니저·작업자)도 모바일에서 월별 인사이트 — 개발자는 아래 세션 블록에 있음. */}
+              {canMemberInsights ? (
+                <button className="button" onClick={() => setModal("developer")} type="button">
+                  📊 월별 인사이트
                 </button>
               ) : null}
               {actor.isAuthenticated ? (
@@ -2639,12 +2651,6 @@ export function StudioShell({
       ) : (
         <>
       <header className="studio-topbar">
-        {/* 모바일 전용: 개발자 배포 버전(커밋) — 헤더 좌상단에 직접(액션바 fixed가 안 보여서). */}
-        {isDeveloper && !previewRole ? (
-          <span className="studio-build-tag-m" aria-hidden="true">
-            {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
-          </span>
-        ) : null}
         {/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + 그 오른쪽 아래 끝선에 "토리님 편집실" */}
         <div className="studio-left">
           <h1 className="studio-poster-title">

@@ -82,7 +82,7 @@ export function StackTrendChart({
                 {showNumbers ? (
                   <strong>{hover.total}</strong>
                 ) : !showLegend ? (
-                  <strong className="vt-tip-note">비율 높은 순 ↓</strong>
+                  <strong className="vt-tip-note">↓ 비율 높은 순</strong>
                 ) : null}
                 <div className="vt-tip-rows">
                   {tipCats(hover).map((c) => {
