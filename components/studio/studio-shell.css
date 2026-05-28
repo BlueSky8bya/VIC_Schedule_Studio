@@ -1121,6 +1121,12 @@
   font-weight: 600;
   color: rgb(255 255 255 / 72%);
 }
+/* 모바일은 컴팩트가 생명 — 부연 설명 줄은 빼고 핵심 한 줄만 남긴다. */
+@media (max-width: 640px) {
+  .private-unlocking-text em {
+    display: none;
+  }
+}
 .private-loading-spinner {
   width: 15px;
   height: 15px;

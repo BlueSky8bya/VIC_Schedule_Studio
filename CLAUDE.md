@@ -268,6 +268,20 @@ instant, alive, and trustworthy.
   intros, sparkles, slides) belongs on the poster/viewer surface. Poster export and
   reduced chrome must never carry admin/technical noise.
 
+### C. Mobile is compact-first (모바일은 컴팩트가 생명)
+
+- **Cut, don't shrink.** On mobile, trim copy and chrome to the essential — drop
+  explanatory sub-lines, helper captions, and secondary controls rather than just
+  scaling them down. A reassurance that reads well on desktop (e.g. a two-line
+  unlock message) is often noise on a phone; keep the one line that matters.
+- The same UI frequently needs *different content density* per breakpoint, not just
+  different sizing. Use the project breakpoint (`≤640px` = mobile, `MOBILE_QUERY` /
+  `BREAKPOINTS.mobile`) to hide non-essential elements, and prefer a distinct mobile
+  treatment over a cramped desktop one (e.g. loading shows a simple line on web but
+  a skeleton on mobile; the unlock overlay shows one line on mobile, two on web).
+- Desktop polish is never an excuse for mobile clutter. When adding any text or
+  control, ask "does this earn its space on a phone?" — if not, hide it at `≤640px`.
+
 When unsure whether an enhancement is worth it: prefer the highest-leverage,
 lowest-risk perceived-performance win, and skip motion/markers that add noise at
 this app's scale. State the judgment honestly rather than rubber-stamping every
