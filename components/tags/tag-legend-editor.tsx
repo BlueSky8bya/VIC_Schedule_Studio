@@ -357,9 +357,9 @@ export function TagLegendEditor({
   function removeTag(tagId: string) {
     // 더블탭 보호: 직전 삭제 직후의 두 번째 탭(레이아웃이 위로 밀려 엉뚱한 행을 누르는)을 막는다.
     if (deleteLockRef.current) return;
-    lockDeletes();
-    // 드래프트(저장 전) 태그는 로컬에서만 지운다 — 서버 호출 없음.
+    // 드래프트(저장 전) 태그는 로컬에서만 지운다 — 서버 호출 없음(확인 불필요).
     if (isNew(tagId)) {
+      lockDeletes();
       setNewTags((prev) => prev.filter((t) => t.id !== tagId));
       setDraft((cur) => {
         const next = { ...cur };
@@ -374,6 +374,12 @@ export function TagLegendEditor({
     }
     if (!removeTagAction) return;
     const tag = tags.find((t) => t.id === tagId);
+    // 오클릭 방지: 저장된 태그는 삭제 전 한 번 확인한다(삭제하면 과거 연결까지 사라짐).
+    const tagName = tag?.displayName ?? "이";
+    if (typeof window !== "undefined" && !window.confirm(`'${tagName}' 태그를 삭제하시겠습니까?`)) {
+      return;
+    }
+    lockDeletes();
     const color = tag ? palette.find((c) => c.key === tag.colorKey) : undefined;
     setError(null);
     onTagRemoved?.(tagId); // 낙관적 제거
