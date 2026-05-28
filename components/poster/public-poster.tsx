@@ -2368,7 +2368,7 @@ export function PublicPoster({
 
               {/* C9/C10: 포스터 테마 — 소유자만(액션이 있을 때만) 노출 */}
               {setPosterThemeAction ? (
-                <div className="theme-switch" role="group" aria-label="포스터 테마">
+                <div className="theme-switch" role="group" aria-label="달력 테마">
                   {POSTER_THEMES.map((theme) => (
                     <button
                       aria-pressed={posterTheme === theme.key}

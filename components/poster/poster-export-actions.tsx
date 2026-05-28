@@ -16,7 +16,7 @@ type PosterExportActionsProps = {
 
 const PHASE_LABEL: Record<ExportPhase, string> = {
   idle: "일정표 캡쳐",
-  preparing: "포스터 준비 중…",
+  preparing: "달력 이미지 준비 중…",
   rendering: "이미지 렌더링 중…",
   copying: "클립보드에 복사 중…",
   copied: "복사됨!",
