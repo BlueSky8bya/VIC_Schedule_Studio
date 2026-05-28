@@ -197,6 +197,16 @@ const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[]; cant?:
   }
 };
 
+// B2: 제목 아래 데스크 라벨 — 역할에 맞춰 "이 화면이 무슨 작업대인지"를 한 줄로. 권한을 빼서가
+// 아니라 의도된 역할 화면으로 보이게 한다.
+const DESK_LABEL: Record<MembershipRole, string> = {
+  owner: "토리님 편집실",
+  developer: "개발자 유지보수",
+  manager: "매니저 · 방송 운영",
+  worker: "작업자 · 제작",
+  viewer: "시청자"
+};
+
 const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
   public: "모두",
   embargo: "엠바고",
@@ -2229,7 +2239,7 @@ export function StudioShell({
             {schedule.calendar.title}
             <span aria-hidden="true">✨️</span>
           </h1>
-          <p className="eyebrow studio-eyebrow">토리님 편집실</p>
+          <p className="eyebrow studio-eyebrow">{DESK_LABEL[actor.role]}</p>
         </div>
 
         {/* 가운데: 현재 월(크게). 이동은 하단 플로팅 < > 버튼 + 키보드 ←/→ 로.
@@ -2306,7 +2316,8 @@ export function StudioShell({
           ) : null}
           {canDecorateCalendar ? (
             <Link
-              className="button"
+              // 매니저·작업자는 일정 편집을 못 하니 꾸미기가 1차 작업 → primary로 강조.
+              className={canEdit ? "button" : "button primary"}
               href={`/studio/decorate/${view.year}/${view.month}`}
               onClick={() => {
                 // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
