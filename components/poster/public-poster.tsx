@@ -816,6 +816,34 @@ export function PublicPoster({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decorate, selectedSticker, multiIds]);
 
+  // 시청자·꾸미기에서 ←/→ 로 월 이동. 단, 꾸미기에서 스티커를 선택 중이면 위 핸들러가
+  // 화살표를 미세이동에 쓰므로 그때는 비활성(스티커 미선택/시청자에서만 월 이동).
+  useEffect(() => {
+    if (showAgenda || (decorate && selectedSticker)) {
+      return;
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        moveMonth(-1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        moveMonth(1);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decorate, selectedSticker, showAgenda, view.year, view.month]);
+
   // C2: 실행취소/다시실행 단축키(선택 여부와 무관하게 동작).
   useEffect(() => {
     if (!decorate) {
@@ -2052,7 +2080,11 @@ export function PublicPoster({
                   <Link
                     className="button"
                     href="/studio"
-                    onClick={() => startNav("편집실로 가는 중입니다…")}
+                    onClick={() => {
+                      // 꾸미기에서 보던 달을 편집실 월(sy/sm)로 넘겨, 편집실이 그 달로 열리게 한다.
+                      writeViewCookie({ sy: view.year, sm: view.month });
+                      startNav("편집실로 가는 중입니다…");
+                    }}
                   >
                     <ChevronLeft aria-hidden="true" size={16} />
                     편집실로 가기
@@ -2073,7 +2105,7 @@ export function PublicPoster({
                       type="button"
                     >
                       <Eye aria-hidden="true" size={16} />
-                      시청자 화면 보기
+                      시청자 화면 미리보기
                     </button>
                   )}
                 </>

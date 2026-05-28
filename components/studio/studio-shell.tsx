@@ -50,7 +50,6 @@ import {
   getEventSpan,
   getEventTagColors,
   getLinkedChainIds,
-  getMonthLabel,
   getSpanRunRange,
   getTodayKst,
   mixedEventStyle,
@@ -2035,9 +2034,17 @@ export function StudioShell({
           <p className="eyebrow studio-eyebrow">토리님 편집실</p>
         </div>
 
-        {/* 가운데: 현재 월(크게). 이동은 하단 플로팅 < > 버튼 + 키보드 ←/→ 로. */}
-        <div className="studio-month-label" aria-label="현재 월">
-          <strong>{getMonthLabel(view.year, view.month)}</strong>
+        {/* 가운데: 현재 월(크게). 이동은 하단 플로팅 < > 버튼 + 키보드 ←/→ 로.
+            key로 월 바뀔 때 재마운트 → 방향대로 살짝 슬라이드(내가 달을 넘기는 느낌). */}
+        <div
+          className="studio-month-label"
+          aria-label="현재 월"
+          data-enter={monthDir}
+          key={`${view.year}-${view.month}`}
+        >
+          <strong>
+            {view.year}년 {view.month}월
+          </strong>
         </div>
 
         {/* 오른쪽: 역할·도구 */}
@@ -2058,7 +2065,7 @@ export function StudioShell({
           {/* 시청자가 보는 공개 화면 전체보기 — 개발자·매니저·작업자 등 모든 역할이 본다. */}
           <button className="button" onClick={() => setViewerMode(true)} type="button">
             <Eye aria-hidden="true" size={16} />
-            시청자 화면 보기
+            시청자 화면 미리보기
           </button>
           {actor.isAuthenticated ? (
             <form action="/api/auth/logout" method="post">

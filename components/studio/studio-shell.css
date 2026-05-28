@@ -77,13 +77,45 @@
   justify-self: center;
 }
 .studio-month-label strong {
-  font-size: clamp(34px, 3.4vw, 64px);
+  font-size: clamp(26px, 2.5vw, 44px);
   font-weight: 900;
   letter-spacing: -0.01em;
   color: var(--ink, #1c2433);
   line-height: 1;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+/* 월 바뀔 때 라벨도 방향대로 살짝 슬라이드(달력 그리드와 같은 박자). */
+.studio-month-label[data-enter="next"] {
+  animation: studio-monthlabel-next 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+.studio-month-label[data-enter="prev"] {
+  animation: studio-monthlabel-prev 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+@keyframes studio-monthlabel-next {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes studio-monthlabel-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-month-label[data-enter] {
+    animation: none;
+  }
 }
 /* 월 이동 하단 플로팅 바 — 꾸미기/시청자 화면의 .agenda-monthbar와 같은 톤. */
 .studio-monthbar {
