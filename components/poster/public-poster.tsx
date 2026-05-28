@@ -1532,12 +1532,13 @@ export function PublicPoster({
     setView(next);
     onViewChange?.(next.year, next.month); // 부모(편집실)에 바뀐 달 알림
     // 보던 달을 쿠키에 기록 → 새로고침 시 서버가 읽어 그 달로 바로 렌더(URL·라우터 안 건드림).
-    // 꾸미기(dy/dm)와 일반 시청자 공개화면(py/pm)은 키를 분리한다. 편집실 미리보기는
+    // 월은 화면 구분 없이 하나(sy/sm)로 통일한다 — 시청자에서 본 달이 계정 전환 후 편집실로도
+    // 이어진다("마지막 본 달"). 꾸미기는 편집 맥락이 달라 별도 키(dy/dm)를 유지. 편집실 미리보기는
     // accountSwitch=false라 여기서 안 쓰고, onViewChange로 편집실 쿠키(sy/sm)가 처리한다.
     if (decorateProp) {
       writeViewCookie({ dy: next.year, dm: next.month });
     } else if (accountSwitch) {
-      writeViewCookie({ py: next.year, pm: next.month });
+      writeViewCookie({ sy: next.year, sm: next.month });
     }
   }
 

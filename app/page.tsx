@@ -61,8 +61,8 @@ export default async function HomePage() {
     <PublicPoster
       accountSwitch
       accountEmail={actor.email}
-      initialYear={typeof mem.py === "number" ? mem.py : undefined}
-      initialMonth={typeof mem.pm === "number" ? mem.pm : undefined}
+      initialYear={typeof mem.sy === "number" ? mem.sy : undefined}
+      initialMonth={typeof mem.sm === "number" ? mem.sm : undefined}
       initialNarrow={narrow}
       schedule={schedule}
       toggleHeartAction={toggleEventHeartAction}
