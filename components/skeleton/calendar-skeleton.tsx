@@ -54,9 +54,10 @@ export function CalendarSkeleton({
         )}
       </div>
 
-      {/* 목적지 텍스트 — 웹에선 화면 가운데 단독 표시, 모바일에선 뼈대 아래 캡션 */}
+      {/* 목적지 텍스트 — 웹에선 "{label} 불러오는 중…" 단독 표시. 모바일에선 카드 헤딩에
+          이미 "빅토리 일정표"가 있어 label을 숨기고 "불러오는 중…"만 둔다. */}
       <p className="cal-skel-note" role="status">
-        {label} 불러오는 중…
+        <span className="cal-skel-note-label">{label} </span>불러오는 중…
       </p>
     </div>
   );

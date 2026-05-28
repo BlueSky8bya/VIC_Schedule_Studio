@@ -89,6 +89,10 @@
     font-weight: 700;
     order: 2;
   }
+  /* 모바일은 카드에 "빅토리 일정표"가 이미 있으니 목적지 라벨은 빼고 "불러오는 중…"만. */
+  .cal-skel-note-label {
+    display: none;
+  }
 
   .cal-skel-rail,
   .cal-skel-editor {
