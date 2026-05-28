@@ -648,6 +648,9 @@
   font-size: 12px;
   font-weight: 700;
   color: #8a82a6;
+  /* 라벨이 두 줄이 되더라도 단어 중간에서 끊기지 않게(예: "한가한 / 요일"). */
+  word-break: keep-all;
+  line-height: 1.25;
 }
 .insight-tile[data-tone="public"] {
   background: linear-gradient(180deg, #f0fbf3, #e7f7ec);

@@ -24,13 +24,9 @@
   max-height: calc(100vh - 150px);
   max-height: calc(100dvh - 150px);
   overflow-y: auto;
-  /* 칩 내용 폭에 맞춰 레일이 늘어나되 상한(124px)까지만 — 그보다 긴 태그명일 때만 가로 스크롤.
-     편집실·시청자 공통 알고리즘(내용 기준)이라 "내 관심" 같은 넓은 칩이 있어도 평소엔 스크롤이
-     안 생긴다. 날짜 카드는 남는 폭을 차지하며 좌우 패딩은 대칭으로 유지된다. */
-  flex: 0 0 auto;
-  width: fit-content;
-  min-width: 88px;
-  max-width: 124px;
+  /* 편집실·시청자 동일 고정 너비(92px). "내 관심"의 (N) 개수 표시를 없애 이 너비에 들어오므로
+     평소엔 가로 스크롤이 안 생기고, 그보다 긴 태그명일 때만 스크롤된다. */
+  flex: 0 0 92px;
   display: grid;
   align-content: start;
   gap: 5px;

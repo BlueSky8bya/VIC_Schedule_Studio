@@ -1956,7 +1956,7 @@ export function PublicPoster({
               <i className="agenda-legend-heart" aria-hidden="true">
                 ♥
               </i>
-              내 관심{bookmarks.length > 0 ? ` (${bookmarks.length})` : ""}
+              내 관심
             </button>
             {filterActive ? (
               <button className="agenda-legend-clear" onClick={clearFilters} type="button">

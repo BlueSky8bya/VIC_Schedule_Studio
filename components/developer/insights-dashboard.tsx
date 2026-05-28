@@ -537,12 +537,12 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
                           </em>
                         ) : null}
                       </strong>
-                      <span>이번 달 컨텐츠 수</span>
+                      <span>이번 달 컨텐츠</span>
                     </div>
                     <StatTile value={d.content.daysWithContent} label="컨텐츠 있는 날" />
                     <StatTile value={d.content.restDays} label="휴뱅 날" />
-                    <StatTile value={weekdayLabel(d.content.busiestWeekday)} label="가장 바쁜 요일" />
-                    <StatTile value={weekdayLabel(d.content.quietestWeekday)} label="가장 한가한 요일" />
+                    <StatTile value={weekdayLabel(d.content.busiestWeekday)} label="바쁜 요일" />
+                    <StatTile value={weekdayLabel(d.content.quietestWeekday)} label="한가한 요일" />
                   </div>
                   <h4 className="insight-subhead">이번 달 컨텐츠 순위</h4>
                   {d.content.tags.length === 0 ? (
