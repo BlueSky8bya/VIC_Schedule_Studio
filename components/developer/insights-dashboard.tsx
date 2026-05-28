@@ -98,7 +98,7 @@ function StackBar({
   max,
   label
 }: {
-  meta: { key: string; color: string }[];
+  meta: { key: string; label: string; color: string }[];
   counts: Record<string, number>;
   total: number;
   max: number;
@@ -107,7 +107,7 @@ function StackBar({
   return (
     <div className="vt-col">
       <div className="vt-barwrap">
-        <div className="vt-bar" data-v={`${total}명`} style={{ height: `${(total / max) * 100}%` }}>
+        <div className="vt-bar" style={{ height: `${(total / max) * 100}%` }}>
           <div className="vt-fill">
             {meta.map((s) => {
               const c = counts[s.key] ?? 0;
@@ -116,6 +116,23 @@ function StackBar({
               ) : null;
             })}
           </div>
+          {/* 호버 분해 툴팁 — 커서를 막대에 올리면 색깔별(역할/기기) 수치를 한 번에 보여준다.
+              얇은 세그먼트를 정확히 짚을 필요 없이(HCI: Fitts) 모든 색 값을 같이 읽게. */}
+          {total > 0 ? (
+            <div className="vt-tip" role="tooltip">
+              <strong>{total}명</strong>
+              {meta.map((s) => {
+                const c = counts[s.key] ?? 0;
+                return c > 0 ? (
+                  <span className="vt-tip-row" key={s.key}>
+                    <i style={{ background: s.color }} />
+                    {s.label}
+                    <b>{c}</b>
+                  </span>
+                ) : null;
+              })}
+            </div>
+          ) : null}
         </div>
       </div>
       <span className="vt-day">{label}</span>

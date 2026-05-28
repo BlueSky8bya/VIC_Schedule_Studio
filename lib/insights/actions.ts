@@ -477,6 +477,8 @@ export async function getVisitTrendsAction(
   const monthStart = `${y}-${pad(m)}-01`;
   const nextMonthStart = ymd(new Date(Date.UTC(y, m, 1)));
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+  // 그 달 1일의 요일(0=일). 주차를 단순 7일 묶음이 아니라 달력 주(일요일 시작)로 끊기 위함.
+  const firstWeekday = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
   const emptySlot = (): VisitSlot => ({
     roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
     devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
@@ -510,14 +512,16 @@ export async function getVisitTrendsAction(
   for (const row of rows) {
     const d = Number(row.day.slice(8, 10));
     if (d >= 1 && d <= daysInMonth) bump(days[d - 1], row.role, row.device);
-    const wi = Math.floor((d - 1) / 7); // 0~4 → 1주차~5주차
+    // 달력 주차(일요일 시작): 1일이 무슨 요일인지 더해 끊는다. 예) 5/1=금 → 5/24~30이 5주차라
+    // 5/28·5/29가 같은 5주차로 묶인다(이전엔 단순 (d-1)/7이라 28→4주·29→5주로 갈렸음).
+    const wi = Math.floor((d - 1 + firstWeekday) / 7);
     const wk = weekMap.get(wi) ?? emptySlot();
     bump(wk, row.role, row.device);
     weekMap.set(wi, wk);
     const t = new Date(row.occurred_at).getTime();
     if (!Number.isNaN(t)) hours[new Date(t + 9 * 3600 * 1000).getUTCHours()] += 1;
   }
-  const weekCount = Math.ceil(daysInMonth / 7);
+  const weekCount = Math.ceil((daysInMonth + firstWeekday) / 7);
   const weeks = Array.from({ length: weekCount }, (_, i) => ({
     label: `${i + 1}주`,
     ...(weekMap.get(i) ?? emptySlot())

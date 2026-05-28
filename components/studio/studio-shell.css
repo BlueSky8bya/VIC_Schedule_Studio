@@ -523,23 +523,26 @@
   flex-direction: column;
   gap: 12px;
 }
-/* 패널 탭 — 비슷한 지표끼리 묶은 영역을 한 줄 알약으로. */
+/* 패널 탭 — 8개를 동일 너비 4×2 격자로(좌우 대칭, ragged한 줄바꿈 없음, 동일 히트 타깃). */
 .insights-tabs {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
 .insights-tab {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 6px;
+  min-width: 0;
   border: 1px solid var(--line, #e7e3f2);
-  border-radius: 999px;
+  border-radius: 12px;
   background: #faf9fe;
-  padding: 6px 12px;
+  padding: 9px 8px;
   font-size: 12.5px;
   font-weight: 800;
   color: #6b5b95;
+  white-space: nowrap;
   cursor: pointer;
   transition: background var(--dur-1, 120ms) var(--ease), color var(--dur-1, 120ms) var(--ease),
     transform var(--dur-1, 120ms) var(--ease);
@@ -1295,11 +1298,140 @@
   opacity: 1;
   transform: translateX(-50%) scale(1);
 }
+/* 방문 스택 막대 호버 분해 툴팁 — 색(역할/기기)별 수치를 한 줄씩 + 총합. 막대 위에 떠오른다. */
+.vt-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(3px);
+  transform-origin: bottom center;
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 86px;
+  padding: 7px 9px;
+  background: #3a3550;
+  color: #fff;
+  border-radius: 9px;
+  white-space: nowrap;
+  z-index: 8;
+  box-shadow: 0 8px 20px -8px rgb(58 53 80 / 60%);
+  transition: opacity 0.12s var(--ease, ease), transform 0.12s var(--ease, ease);
+}
+.vt-col:hover .vt-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+.vt-tip > strong {
+  font-size: 12px;
+  font-weight: 900;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgb(255 255 255 / 18%);
+}
+.vt-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.vt-tip-row i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+.vt-tip-row b {
+  margin-left: auto;
+  padding-left: 10px;
+  font-weight: 900;
+}
 .insight-bars li:hover .insight-bar-fill {
   filter: brightness(1.06);
 }
 .insight-bars li:hover .insight-bar-track {
   box-shadow: 0 0 0 2px rgb(107 91 214 / 14%);
+}
+.insights-tab svg {
+  flex: none;
+}
+/* 데스크톱(>640px)에선 인사이트 글씨를 키운다. 모바일은 컴팩트가 생명이라 기본(작은) 크기를
+   그대로 두고, 여기서만 키워 모바일 회귀가 없게 한다. */
+@media (min-width: 641px) {
+  .insights-month {
+    font-size: 16px;
+  }
+  .insights-tab {
+    font-size: 14px;
+    padding: 11px 10px;
+    gap: 7px;
+  }
+  .insight-tile {
+    padding: 14px 16px;
+  }
+  .insight-tile strong {
+    font-size: 30px;
+  }
+  .insight-tile span {
+    font-size: 13.5px;
+  }
+  .insight-subhead {
+    font-size: 14px;
+  }
+  .insight-note {
+    font-size: 13px;
+  }
+  .insight-bar-label {
+    font-size: 14px;
+  }
+  .insight-bar-count {
+    font-size: 13.5px;
+  }
+  .insight-rows li span {
+    font-size: 14px;
+  }
+  .insight-rows li strong {
+    font-size: 14.5px;
+  }
+  .insight-banner,
+  .insight-empty,
+  .insight-list li {
+    font-size: 14.5px;
+  }
+  .insight-next > span {
+    font-size: 13px;
+  }
+  .insight-next > strong {
+    font-size: 18px;
+  }
+  .vt-legend li {
+    font-size: 13px;
+  }
+  .vt-day {
+    font-size: 11px;
+  }
+  .hl-label {
+    font-size: 13px;
+  }
+  .hl-main {
+    font-size: 20px;
+  }
+  .hl-sub {
+    font-size: 13.5px;
+  }
+}
+/* 모바일: 탭 8개가 4열에 들어가도록 아이콘은 숨기고 라벨만(컴팩트). */
+@media (max-width: 640px) {
+  .insights-tab {
+    gap: 0;
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+  .insights-tab svg {
+    display: none;
+  }
 }
 /* 활성 패널 진입 시 내용이 살짝 떠오르며 순차로 — 정적이지 않고 생기 있게(HCI: 피드백). */
 @keyframes ins-rise {
