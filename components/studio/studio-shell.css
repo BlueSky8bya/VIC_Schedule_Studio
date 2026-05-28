@@ -1327,13 +1327,33 @@
 .trend-bcol:last-child:hover .trend-bar::after {
   transform: translateX(0) scale(1);
 }
-/* 방문 스택 막대 호버 분해 툴팁 — 색(역할/기기)별 수치를 한 줄씩 + 총합. 막대 위에 떠오른다. */
+/* 호버 분해 툴팁은 차트(.vt-chart) 한 곳에 떠서 hovered 막대 위치를 따라가되, 차트 폭 안에서
+   clamp되어 어느 칸이든(맨 끝 포함) 절대 안 잘린다. */
+.vt-chart {
+  position: relative;
+}
+/* 단일값 칩(월별 하트 등 .vt-bar[data-v])도 첫/끝 칸은 안쪽으로 붙여 안 잘리게. */
+.vt-col:first-child .vt-bar[data-v]::after {
+  left: 0;
+  transform: translateX(0) scale(0.8);
+}
+.vt-col:first-child:hover .vt-bar[data-v]::after {
+  transform: translateX(0) scale(1);
+}
+.vt-col:last-child .vt-bar[data-v]::after {
+  left: auto;
+  right: 0;
+  transform: translateX(0) scale(0.8);
+}
+.vt-col:last-child:hover .vt-bar[data-v]::after {
+  transform: translateX(0) scale(1);
+}
+/* 방문 스택 막대 호버 분해 툴팁 — 색(역할/기기)별 수치를 한 줄씩 + 총합. */
 .vt-tip {
   position: absolute;
   bottom: calc(100% + 6px);
-  left: 50%;
+  left: clamp(48px, var(--tip-x, 50%), calc(100% - 48px));
   transform: translateX(-50%);
-  opacity: 0;
   pointer-events: none;
   display: flex;
   flex-direction: column;
@@ -1346,23 +1366,15 @@
   white-space: nowrap;
   z-index: 8;
   box-shadow: 0 8px 20px -8px rgb(58 53 80 / 60%);
-  transition: opacity 0.12s var(--ease, ease);
+  animation: vt-tip-in 0.12s var(--ease, ease);
 }
-.vt-col:hover .vt-tip {
-  opacity: 1;
-}
-/* 양 끝 칸은 가운데 정렬 대신 안쪽으로 붙여, 패널 밖으로 잘리지 않게 한다. */
-.vt-col:first-child .vt-tip,
-.vt-col:nth-child(2) .vt-tip {
-  left: 0;
-  right: auto;
-  transform: none;
-}
-.vt-col:last-child .vt-tip,
-.vt-col:nth-last-child(2) .vt-tip {
-  left: auto;
-  right: 0;
-  transform: none;
+@keyframes vt-tip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .vt-tip > strong {
   font-size: 12px;

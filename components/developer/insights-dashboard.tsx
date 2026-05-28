@@ -12,7 +12,13 @@ import {
   TrendingUp,
   Trophy
 } from "lucide-react";
-import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import { DeveloperPanel } from "@/components/developer/developer-panel";
 import {
   getInsightsAction,
@@ -93,22 +99,44 @@ function StatTile({ value, label, tone }: { value: number | string; label: strin
   );
 }
 
-// 스택 막대 한 줄(방문 그래프 공용 — 역할/기기 등 meta로 구분). 호버 시 수치(data-v)가 뜬다.
+// 막대 호버 시 차트 한 곳에 뜨는 분해 툴팁의 데이터(가로 위치 x%, 총합, 색·라벨·수치 줄들).
+type VtHover = { x: number; total: number; rows: { color: string; label: string; count: number }[] };
+
+// 스택 막대 한 줄(방문 그래프 공용 — 역할/기기 등 meta로 구분). 호버하면 차트 단일 툴팁에 분해 수치를
+// 올려준다(툴팁은 차트 폭 안에서 clamp되어 양 끝에서도 안 잘린다).
 function StackBar({
   meta,
   counts,
   total,
   max,
-  label
+  label,
+  index,
+  count,
+  onHover,
+  onLeave
 }: {
   meta: { key: string; label: string; color: string }[];
   counts: Record<string, number>;
   total: number;
   max: number;
   label: string;
+  index: number;
+  count: number;
+  onHover: (tip: VtHover) => void;
+  onLeave: () => void;
 }) {
+  const enter = () => {
+    if (total <= 0) {
+      onLeave();
+      return;
+    }
+    const rows = meta
+      .map((s) => ({ color: s.color, label: s.label, count: counts[s.key] ?? 0 }))
+      .filter((r) => r.count > 0);
+    onHover({ x: ((index + 0.5) / Math.max(1, count)) * 100, total, rows });
+  };
   return (
-    <div className="vt-col">
+    <div className="vt-col" onPointerEnter={enter} onPointerMove={enter} onPointerLeave={onLeave}>
       <div className="vt-barwrap">
         <div className="vt-bar" style={{ height: `${(total / max) * 100}%` }}>
           <div className="vt-fill">
@@ -119,23 +147,6 @@ function StackBar({
               ) : null;
             })}
           </div>
-          {/* 호버 분해 툴팁 — 커서를 막대에 올리면 색깔별(역할/기기) 수치를 한 번에 보여준다.
-              얇은 세그먼트를 정확히 짚을 필요 없이(HCI: Fitts) 모든 색 값을 같이 읽게. */}
-          {total > 0 ? (
-            <div className="vt-tip" role="tooltip">
-              <strong>{total}명</strong>
-              {meta.map((s) => {
-                const c = counts[s.key] ?? 0;
-                return c > 0 ? (
-                  <span className="vt-tip-row" key={s.key}>
-                    <i style={{ background: s.color }} />
-                    {s.label}
-                    <b>{c}</b>
-                  </span>
-                ) : null;
-              })}
-            </div>
-          ) : null}
         </div>
       </div>
       <span className="vt-day">{label}</span>
@@ -152,6 +163,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
   const [visitsLoading, setVisitsLoading] = useState(true);
   const [visitView, setVisitView] = useState<"day" | "week">("day");
   const [visitDim, setVisitDim] = useState<"role" | "device">("role");
+  const [vtHover, setVtHover] = useState<VtHover | null>(null);
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
 
@@ -184,6 +196,9 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
       alive = false;
     };
   }, [year, month]);
+
+  // 일별/주별·역할별/기기별을 바꾸면 막대가 바뀌므로 떠 있던 분해 툴팁은 지운다.
+  useEffect(() => setVtHover(null), [visitView, visitDim]);
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
 
@@ -315,28 +330,53 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
             </button>
           </div>
         </div>
-        <div className="vt-chart" role="img" aria-label="방문 그래프">
+        <div
+          className="vt-chart"
+          role="img"
+          aria-label="방문 그래프"
+          onPointerLeave={() => setVtHover(null)}
+        >
           {visitView === "day"
-            ? visits.days.map((d) => (
+            ? visits.days.map((d, i) => (
                 <StackBar
+                  count={visits.days.length}
                   counts={countsOf(d)}
+                  index={i}
                   key={d.day}
                   label={d.day % 5 === 0 || d.day === 1 ? String(d.day) : ""}
                   max={max}
                   meta={meta}
+                  onHover={setVtHover}
+                  onLeave={() => setVtHover(null)}
                   total={d.total}
                 />
               ))
-            : visits.weeks.map((w) => (
+            : visits.weeks.map((w, i) => (
                 <StackBar
+                  count={visits.weeks.length}
                   counts={countsOf(w)}
+                  index={i}
                   key={w.label}
                   label={w.label}
                   max={max}
                   meta={meta}
+                  onHover={setVtHover}
+                  onLeave={() => setVtHover(null)}
                   total={w.total}
                 />
               ))}
+          {vtHover ? (
+            <div className="vt-tip" style={{ "--tip-x": `${vtHover.x}%` } as CSSProperties}>
+              <strong>{vtHover.total}명</strong>
+              {vtHover.rows.map((r) => (
+                <span className="vt-tip-row" key={r.label}>
+                  <i style={{ background: r.color }} />
+                  {r.label}
+                  <b>{r.count}</b>
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
         <ul className="vt-legend">
           {meta.map((r) => (
@@ -622,10 +662,11 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
                   <h4 className="insight-subhead">월별 하트 (최근 6개월)</h4>
                   <div className="vt-chart" role="img" aria-label="월별 하트 그래프">
                     {d.engagement.monthly.map((mo) => (
-                      <div className="vt-col" key={mo.ym} title={`${mo.ym} · ♥ ${mo.count}`}>
+                      <div className="vt-col" key={mo.ym}>
                         <div className="vt-barwrap">
                           <div
                             className="vt-bar heart"
+                            data-v={`♥ ${mo.count}`}
                             style={{ height: `${(mo.count / monMax) * 100}%` }}
                           />
                         </div>
