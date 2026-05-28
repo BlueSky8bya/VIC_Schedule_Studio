@@ -447,6 +447,28 @@ export function StudioShell({
   // 매니저는 일정별 태그 할당도 편집할 수 있다(태그 자체 생성/삭제는 여전히 관리자/개발자 전용).
   const canEditTagsThing = canEditEventTags(actor.role);
   const canTogglePrivateLayer = actor.role !== "viewer";
+
+  // 이중 역할(매니저+작업자) 계정은 배지·팝오버·데스크 라벨에 두 역할을 함께 보여준다
+  // (effective role은 manager지만, 본인 화면에도 두 역할이 드러나야 한다).
+  const isDualRole = Boolean(actor.isManager && actor.isWorker);
+  const roleDisplay = isDualRole
+    ? {
+        label: "매니저 · 작업자",
+        summary: "방송 운영과 제작을 함께 도와요.",
+        can: [
+          "후원 기간/링크 수정",
+          "일정별 태그 편집",
+          "꾸미기·이미지·포스터",
+          "작업 일정 참고",
+          "비공개 일정 보기(잠금 해제 시)"
+        ]
+      }
+    : {
+        label: ROLE_LABEL[actor.role],
+        summary: ROLE_DESC[actor.role].summary,
+        can: ROLE_DESC[actor.role].can
+      };
+  const deskLabel = isDualRole ? "매니저 · 작업자" : DESK_LABEL[actor.role];
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
   const [roleHelpOpen, setRoleHelpOpen] = useState(false);
   const canReadPrivate = canReadPrivateLayer(actor.role, hasUnlockSession) && showPrivate;
@@ -484,11 +506,10 @@ export function StudioShell({
 
   // A3: 역할 배지 + "?" 도움말 팝오버. 데스크톱 배지는 이메일도 보여준다.
   function renderRoleBadge(showEmail: boolean) {
-    const desc = ROLE_DESC[actor.role];
     return (
       <div className="actor-badge-wrap">
         <span className={`actor-badge ${actor.role}`}>
-          <strong>{ROLE_LABEL[actor.role]}</strong>
+          <strong>{roleDisplay.label}</strong>
           {showEmail ? <span>{actor.email ? `(${actor.email})` : "(비로그인)"}</span> : null}
           <button
             aria-expanded={roleHelpOpen}
@@ -502,10 +523,10 @@ export function StudioShell({
         </span>
         {roleHelpOpen ? (
           <div className="role-help-pop" role="dialog" aria-label="역할 권한">
-            <strong className="role-help-title">{ROLE_LABEL[actor.role]}</strong>
-            <p className="role-help-summary">{desc.summary}</p>
+            <strong className="role-help-title">{roleDisplay.label}</strong>
+            <p className="role-help-summary">{roleDisplay.summary}</p>
             <ul className="role-help-can">
-              {desc.can.map((item) => (
+              {roleDisplay.can.map((item) => (
                 <li key={item}>{item}</li>
               ))}
             </ul>
@@ -2306,7 +2327,7 @@ export function StudioShell({
             {schedule.calendar.title}
             <span aria-hidden="true">✨️</span>
           </h1>
-          <p className="eyebrow studio-eyebrow">{DESK_LABEL[actor.role]}</p>
+          <p className="eyebrow studio-eyebrow">{deskLabel}</p>
         </div>
 
         {/* 가운데: 현재 월(크게). 이동은 하단 플로팅 < > 버튼 + 키보드 ←/→ 로.

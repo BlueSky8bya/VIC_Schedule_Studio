@@ -10,6 +10,10 @@ export type CurrentActor = {
   isAuthenticated: boolean;
   role: MembershipRole;
   trustedRole: "manager" | "worker" | null;
+  // 신뢰 멤버가 동시에 가질 수 있는 역할 플래그(표시용). role은 effective(매니저면 manager)지만,
+  // 한 계정이 매니저·작업자 둘 다일 수 있어 배지/팝오버에서 두 역할을 함께 보여주려고 둔다.
+  isManager?: boolean;
+  isWorker?: boolean;
 };
 
 export const anonymousActor: CurrentActor = {
@@ -60,14 +64,18 @@ async function _resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor>
     };
   }
 
-  const trustedRole = await findTrustedRole(calendarSlug, email);
+  const trusted = await findTrustedRoles(calendarSlug, email);
 
-  if (trustedRole) {
+  if (trusted) {
+    // effective 역할은 매니저가 작업자를 포함하므로 isManager면 manager.
+    const effective = trusted.isManager ? "manager" : "worker";
     return {
       email,
       isAuthenticated: true,
-      role: trustedRole,
-      trustedRole
+      role: effective,
+      trustedRole: effective,
+      isManager: trusted.isManager,
+      isWorker: trusted.isWorker
     };
   }
 
@@ -107,7 +115,10 @@ async function isPlatformDeveloper(email: string) {
   return !error && Boolean(data);
 }
 
-async function findTrustedRole(calendarSlug: string, email: string) {
+async function findTrustedRoles(
+  calendarSlug: string,
+  email: string
+): Promise<{ isManager: boolean; isWorker: boolean } | null> {
   const supabase = createSupabaseAdminClient();
 
   if (!supabase) {
@@ -116,7 +127,7 @@ async function findTrustedRole(calendarSlug: string, email: string) {
 
   const { data, error } = await supabase
     .from("trusted_members")
-    .select("trusted_role, calendars!inner(slug)")
+    .select("is_manager, is_worker, trusted_role, calendars!inner(slug)")
     .eq("email", email)
     .eq("is_active", true)
     .eq("calendars.slug", calendarSlug)
@@ -126,7 +137,15 @@ async function findTrustedRole(calendarSlug: string, email: string) {
     return null;
   }
 
-  return data.trusted_role === "manager" || data.trusted_role === "worker"
-    ? data.trusted_role
-    : null;
+  let isManager = Boolean(data.is_manager);
+  let isWorker = Boolean(data.is_worker);
+  // 방어: 플래그가 비어 있는 옛 행이면 effective trusted_role에서 추론.
+  if (!isManager && !isWorker) {
+    isManager = data.trusted_role === "manager";
+    isWorker = data.trusted_role === "worker";
+  }
+  if (!isManager && !isWorker) {
+    return null;
+  }
+  return { isManager, isWorker };
 }
