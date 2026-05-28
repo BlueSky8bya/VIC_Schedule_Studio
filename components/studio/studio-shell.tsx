@@ -1781,6 +1781,14 @@ export function StudioShell({
 
             <div className="m-rolebar">
               {renderRoleBadge()}
+              {/* 미리보기 드롭다운(개발자)/시청자 화면을 먼저, 비공개 일정 토글을 그 뒤에(위치 swap). */}
+              {isDeveloper ? (
+                renderPreviewControl()
+              ) : (
+                <button className="button" onClick={() => setViewerMode(true)} type="button">
+                  시청자 화면
+                </button>
+              )}
               {canTogglePrivateLayer ? (
                 <button
                   className={canReadPrivate ? "button primary" : "button"}
@@ -1790,13 +1798,6 @@ export function StudioShell({
                   {canReadPrivate ? "비공개 중" : "비공개 일정"}
                 </button>
               ) : null}
-              {isDeveloper ? (
-                renderPreviewControl()
-              ) : (
-                <button className="button" onClick={() => setViewerMode(true)} type="button">
-                  시청자 화면
-                </button>
-              )}
               {actor.isAuthenticated ? (
                 <form action="/api/auth/logout" method="post">
                   <button
@@ -2460,28 +2461,20 @@ export function StudioShell({
 
         {/* 오른쪽: 역할·도구 */}
         <div className="studio-role-tools">
+          {/* 미리보기 표시는 역할 배지("?") 왼쪽에 둔다. (비공개 토글은 아래 액션바로 옮김.) */}
+          {previewRole ? (
+            <span className="preview-flag">🛠 미리보기: {ROLE_LABEL[previewRole]}</span>
+          ) : null}
           {renderRoleBadge()}
-          {/* 보기 모드 묶음 — 비공개 토글 + (개발자) 역할 미리보기 드롭다운 / (그 외) 시청자 미리보기.
-              미리보기 표시는 드롭다운 트리거 자체가 "○○ 화면"으로 보여준다(별도 칩 없음). */}
-          <div className="studio-mode-group" role="group" aria-label="보기 모드">
-            <button
-              className={canReadPrivate ? "private-toggle active" : "private-toggle"}
-              disabled={!canTogglePrivateLayer}
-              onClick={togglePrivateLayer}
-              type="button"
-            >
-              {canReadPrivate ? <EyeOff size={16} /> : <Eye size={16} />}
-              {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
+          {/* 개발자는 역할 미리보기 드롭다운, 그 외 역할은 시청자 화면 미리보기. */}
+          {isDeveloper ? (
+            renderPreviewControl()
+          ) : (
+            <button className="button" onClick={() => setViewerMode(true)} type="button">
+              <Eye aria-hidden="true" size={16} />
+              시청자 화면 미리보기
             </button>
-            {isDeveloper ? (
-              renderPreviewControl()
-            ) : (
-              <button className="button" onClick={() => setViewerMode(true)} type="button">
-                <Eye aria-hidden="true" size={16} />
-                시청자 화면 미리보기
-              </button>
-            )}
-          </div>
+          )}
           {actor.isAuthenticated ? (
             <form action="/api/auth/logout" method="post">
               <button
@@ -2533,22 +2526,34 @@ export function StudioShell({
               ) : null}
             </div>
           ) : null}
-          {canDecorateCalendar ? (
-            <Link
-              // 매니저·작업자는 일정 편집을 못 하니 꾸미기가 1차 작업 → primary로 강조.
-              // studio-decorate-link로 액션바 우측에 분리 강조(margin-left:auto).
-              className={`button studio-decorate-link${canEdit ? "" : " primary"}`}
-              href={`/studio/decorate/${view.year}/${view.month}`}
-              onClick={() => {
-                // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
-                // dp=0으로 리셋: "꾸미기로 가기"는 항상 꾸미기 화면으로(직전 미리보기 상태 무시).
-                writeViewCookie({ dy: view.year, dm: view.month, dp: 0 });
-                startNav(isNarrow ? "꾸미기 여는 중…" : "꾸미기 화면을 여는 중입니다…");
-              }}
-            >
-              달력 꾸미기
-            </Link>
-          ) : null}
+          {/* 우측 묶음: 비공개 일정 보기(토글) + 달력 꾸미기 — 꾸미기 바로 왼쪽에 비공개 토글. */}
+          <div className="studio-actionbar-right">
+            {canTogglePrivateLayer ? (
+              <button
+                className={canReadPrivate ? "private-toggle active" : "private-toggle"}
+                onClick={togglePrivateLayer}
+                type="button"
+              >
+                {canReadPrivate ? <EyeOff size={16} /> : <Eye size={16} />}
+                {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
+              </button>
+            ) : null}
+            {canDecorateCalendar ? (
+              <Link
+                // 매니저·작업자는 일정 편집을 못 하니 꾸미기가 1차 작업 → primary로 강조.
+                className={`button${canEdit ? "" : " primary"}`}
+                href={`/studio/decorate/${view.year}/${view.month}`}
+                onClick={() => {
+                  // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
+                  // dp=0으로 리셋: "꾸미기로 가기"는 항상 꾸미기 화면으로(직전 미리보기 상태 무시).
+                  writeViewCookie({ dy: view.year, dm: view.month, dp: 0 });
+                  startNav(isNarrow ? "꾸미기 여는 중…" : "꾸미기 화면을 여는 중입니다…");
+                }}
+              >
+                달력 꾸미기
+              </Link>
+            ) : null}
+          </div>
         </div>
       </div>
 

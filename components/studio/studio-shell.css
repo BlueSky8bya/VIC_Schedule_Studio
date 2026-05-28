@@ -518,6 +518,20 @@
   font-weight: 900;
 }
 /* 헤더 미리보기 표시 칩(헤더에만 둔다 — 아래 화면이 미리보기 대상). */
+/* 미리보기 표시 칩 — 역할 배지("?") 왼쪽에 둔다(웹). 미리보기 중임을 또렷이. */
+.preview-flag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  background: #fff1e6;
+  border: 1px solid #f3c79a;
+  padding: 4px 11px;
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #9a3412;
+  white-space: nowrap;
+}
 /* 통합 역할 미리보기 드롭다운(헤더) — 커스텀. 트리거는 주변 .button(pill)과 같은 톤,
    미리보기 중이면 강조색. 메뉴는 역할 팝오버와 같은 카드 스타일로 통일. */
 .preview-dd {
@@ -602,18 +616,12 @@
   border-radius: 14px;
   background: rgba(120, 110, 160, 0.07);
 }
-/* 꾸미기는 관리 묶음과 분리해 액션바 오른쪽 끝으로(1차 창작 행동 강조). */
-.studio-decorate-link {
-  margin-left: auto;
-}
-/* 보기 모드 묶음(비공개 토글 + 시청자 미리보기) — 상단바에서 한 덩어리로. */
-.studio-mode-group {
+/* 우측 묶음: 비공개 일정 보기(토글) + 달력 꾸미기를 액션바 오른쪽 끝으로 모은다. */
+.studio-actionbar-right {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px;
-  border-radius: var(--r-pill, 999px);
-  background: rgba(120, 110, 160, 0.07);
+  gap: 8px;
+  margin-left: auto;
 }
 
 .studio-left-panel section,
