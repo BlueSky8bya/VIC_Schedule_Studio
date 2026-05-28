@@ -24,6 +24,12 @@ export function canEditSupport(role: MembershipRole) {
   return role === "owner" || role === "developer" || role === "manager";
 }
 
+// 일정별 태그 "할당" 편집(어떤 태그를 붙일지). 매니저는 방송 분류가 업무라 허용한다.
+// 태그 자체의 생성/삭제/색상 변경은 여전히 canEditSchedule = owner/developer 전용.
+export function canEditEventTags(role: MembershipRole) {
+  return role === "owner" || role === "developer" || role === "manager";
+}
+
 // 비공개 레이어를 볼 수 있는 사람(소유자, 개발자, 신뢰 멤버)이라도
 // 엠바고/작업/owner_private 행이 보이려면 유효한 잠금해제 세션이 필요하다.
 export function canReadPrivateLayer(role: MembershipRole, hasUnlockSession: boolean) {

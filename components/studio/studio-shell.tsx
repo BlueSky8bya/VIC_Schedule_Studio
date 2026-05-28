@@ -60,6 +60,7 @@ import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
   canDecorate,
+  canEditEventTags,
   canEditSchedule,
   canEditSupport,
   canReadOwnerPrivate,
@@ -69,6 +70,7 @@ import {
   deleteEventAction,
   reorderEventsAction,
   saveEventAction,
+  updateEventTagsAction,
   updateSupportSettingsAction
 } from "@/lib/schedules/event-actions";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
@@ -182,7 +184,12 @@ const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] }> = {
   },
   manager: {
     summary: "방송 운영을 도와요.",
-    can: ["후원 기간/링크 수정", "꾸미기·포스터 내보내기", "비공개 일정 보기(잠금 해제 시)"]
+    can: [
+      "후원 기간/링크 수정",
+      "일정별 태그 편집",
+      "꾸미기·포스터 내보내기",
+      "비공개 일정 보기(잠금 해제 시)"
+    ]
   },
   worker: {
     summary: "제작을 도와요.",
@@ -437,6 +444,8 @@ export function StudioShell({
   const canDecorateCalendar = canDecorate(actor.role);
   // 매니저(방송 운영)는 후원 기간/링크 수정 가능, 작업자(worker)는 읽기 전용.
   const canEditSupportThing = canEditSupport(actor.role);
+  // 매니저는 일정별 태그 할당도 편집할 수 있다(태그 자체 생성/삭제는 여전히 관리자/개발자 전용).
+  const canEditTagsThing = canEditEventTags(actor.role);
   const canTogglePrivateLayer = actor.role !== "viewer";
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
   const [roleHelpOpen, setRoleHelpOpen] = useState(false);
@@ -1067,6 +1076,34 @@ export function StudioShell({
     }
   }
 
+  // #3: 매니저용 — 일정의 태그 할당을 토글한다(최대 2개). 낙관적 반영 후 실패 시 롤백.
+  function toggleEventTag(event: StudioScheduleEvent, tagId: string) {
+    const has = event.tagIds.includes(tagId);
+    const nextTagIds = has
+      ? event.tagIds.filter((id) => id !== tagId)
+      : event.tagIds.length >= 2
+        ? event.tagIds
+        : [...event.tagIds, tagId];
+    if (nextTagIds === event.tagIds) {
+      return; // 이미 2개 — 변화 없음
+    }
+    const nextPrimary = nextTagIds; // 최대 2개라 전부 대표색
+    const snapshot = events;
+    setEvents((prev) =>
+      prev.map((e) =>
+        e.id === event.id ? { ...e, tagIds: nextTagIds, primaryTagIds: nextPrimary } : e
+      )
+    );
+    setActionError(null);
+    startTransition(async () => {
+      const res = await updateEventTagsAction(event.id, nextTagIds, nextPrimary);
+      if (!res.ok) {
+        setEvents(snapshot);
+        setActionError(res.error);
+      }
+    });
+  }
+
   // A1: 매니저·작업자용 읽기전용 일정 상세. owner 편집 폼을 회색으로 보여주는 대신,
   // 제목·날짜·공개범위·태그·후원 링크만 깔끔히 보여준다. owner_private는 애초에 비-owner에게
   // 로드되지 않는다. 매니저(canEditSupportThing)는 후원 이벤트에 한해 "후원 수정"을 쓸 수 있다.
@@ -1096,7 +1133,42 @@ export function StudioShell({
               <span className="detail-label">공개 범위</span>
               <p className="detail-value">{VISIBILITY_LABEL[selectedEvent.visibilityScope]}</p>
             </div>
-            {selectedEvent.tagIds.length > 0 ? (
+            {canEditTagsThing ? (
+              // 매니저: 태그 할당을 직접 토글(최대 2개). 작업자는 읽기 전용 칩만 본다.
+              <div className="detail-row">
+                <span className="detail-label">
+                  태그 <span className="tag-picker-hint">최대 2개 · 누르면 바로 적용</span>
+                </span>
+                <div className="tag-picker">
+                  <div>
+                    {legendTags.map((tag) => {
+                      const color = palette.find((c) => c.key === tag.colorKey);
+                      const selected = selectedEvent.tagIds.includes(tag.id);
+                      const full = !selected && selectedEvent.tagIds.length >= 2;
+                      return color ? (
+                        <button
+                          className={selected ? "selected" : ""}
+                          data-color={color.key}
+                          disabled={full || pending}
+                          key={tag.id}
+                          onClick={() => toggleEventTag(selectedEvent, tag.id)}
+                          style={{
+                            backgroundColor: color.bgColor,
+                            borderColor: color.borderColor,
+                            color: color.textColor
+                          }}
+                          title={full ? "태그는 최대 2개까지 고를 수 있어요" : tag.displayName}
+                          type="button"
+                        >
+                          {selected ? `${selectedEvent.tagIds.indexOf(tag.id) + 1}. ` : ""}
+                          {tag.displayName}
+                        </button>
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : selectedEvent.tagIds.length > 0 ? (
               <div className="detail-row">
                 <span className="detail-label">태그</span>
                 <div className="detail-tags">

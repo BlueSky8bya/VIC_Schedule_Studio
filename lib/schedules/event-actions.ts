@@ -10,7 +10,7 @@ import type {
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
-import { canEditSchedule, canEditSupport } from "@/lib/permissions/roles";
+import { canEditEventTags, canEditSchedule, canEditSupport } from "@/lib/permissions/roles";
 
 export type SaveEventInput = {
   id?: string;
@@ -345,6 +345,65 @@ export async function updateSupportSettingsAction(
   const { error } = await admin.from("events").update(patch).eq("id", eventId);
   if (error) {
     return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/studio");
+  revalidatePublicSchedule();
+
+  return { ok: true, id: eventId };
+}
+
+// 일정별 태그 "할당"만 바꾼다(매니저 허용). 일정 본문/태그 자체는 안 건드린다.
+// 관리 클라이언트(서비스 롤)로 RLS를 우회하되, 앱 권한(canEditEventTags)과 캘린더 소속을
+// 직접 검증해 매니저가 남의 캘린더/엉뚱한 이벤트를 못 건드리게 한다.
+export async function updateEventTagsAction(
+  eventId: string,
+  tagIds: string[],
+  primaryTagIds: string[]
+): Promise<ActionResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!canEditEventTags(actor.role)) {
+    return { ok: false, error: "일정 태그를 편집할 권한이 없습니다." };
+  }
+
+  const admin = createSupabaseAdminClient();
+  if (!admin) {
+    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
+  }
+
+  const { data: calendar } = await admin
+    .from("calendars")
+    .select("id")
+    .eq("slug", SLUG)
+    .maybeSingle();
+  if (!calendar) {
+    return { ok: false, error: "캘린더를 찾을 수 없습니다." };
+  }
+
+  const { data: ev } = await admin
+    .from("events")
+    .select("id, calendar_id")
+    .eq("id", eventId)
+    .maybeSingle();
+  if (!ev || ev.calendar_id !== calendar.id) {
+    return { ok: false, error: "일정을 찾을 수 없습니다." };
+  }
+
+  // 대표 색은 최대 2개 규칙을 따르도록 태그도 최대 2개로 자른다.
+  const limited = tagIds.slice(0, 2);
+  await admin.from("event_tags").delete().eq("event_id", eventId);
+  if (limited.length > 0) {
+    const rows = limited.map((tagId, index) => ({
+      event_id: eventId,
+      tag_id: tagId,
+      is_primary: primaryTagIds.includes(tagId),
+      sort_order: index
+    }));
+    const { error } = await admin.from("event_tags").insert(rows);
+    if (error) {
+      return { ok: false, error: error.message };
+    }
   }
 
   revalidatePath("/");

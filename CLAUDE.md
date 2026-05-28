@@ -29,7 +29,7 @@ Build a web app where:
 1. All time is KST / Asia/Seoul.
 2. Only the configured owner (or a platform developer/superadmin) can create, edit, or delete schedules. Trusted members never can. The owner may be configured as more than one Google account of the same streamer (`OWNER_EMAIL` is a comma-separated list; extra accounts are synced into `calendar_co_owners` and recognized by `is_calendar_owner`). These co-owner accounts are fully equivalent to the owner, including `owner_private` access.
 3. Everyone authenticates with Google at the root (`/`); after login, role decides the screen (owner/staff → studio, viewer → public calendar). Viewers can only see public data.
-4. Managers and workers are read-only for schedule data (events, tags, members, passcode). EXCEPTIONS: (a) both may decorate — add/move/resize/flip/delete emoji stickers (`sticker_instances`); sticker image assets (`sticker_assets`) remain owner/developer-only. (b) Managers (broadcast-operations role) — but NOT workers — may edit a support event's period/link (`canEditSupport` = owner/developer/manager). Workers (production role) see support as read-only.
+4. Managers and workers are read-only for schedule data (events, tags, members, passcode). EXCEPTIONS: (a) both may decorate — add/move/resize/flip/delete emoji stickers (`sticker_instances`); sticker image assets (`sticker_assets`) remain owner/developer-only. (b) Managers (broadcast-operations role) — but NOT workers — may edit a support event's period/link (`canEditSupport` = owner/developer/manager) and may edit per-event tag *assignments* (`canEditEventTags` = owner/developer/manager); creating/deleting tags or changing tag colors stays owner/developer-only. Workers (production role) see support and tags as read-only.
 5. Managers/workers may see the private-layer toggle only after Google authentication.
 6. General viewers must never see the private-layer toggle.
 7. Private-layer unlock requires a streamer-defined passcode.
@@ -74,8 +74,10 @@ Common to both:
 
 Manager-only (broadcast operations):
 
-- May edit a support event's period/link (`canEditSupport`). Workers cannot — for them
-  support is read-only.
+- May edit a support event's period/link (`canEditSupport`) and per-event tag
+  assignments (`canEditEventTags`). Workers cannot — for them support and tags are
+  read-only. (Tag creation/deletion/colors stay owner/developer-only for everyone but
+  owner/developer.)
 
 ### Owner
 
