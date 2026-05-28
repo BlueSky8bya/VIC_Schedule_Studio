@@ -1402,7 +1402,7 @@ export function StudioShell({
                 <form action="/api/auth/logout" method="post">
                   <button
                     className="button"
-                    onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}
+                    onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")}
                     type="submit"
                   >
                     계정변경
@@ -1986,7 +1986,7 @@ export function StudioShell({
                 // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
                 // dp=0으로 리셋: "꾸미기로 가기"는 항상 꾸미기 화면으로(직전 미리보기 상태 무시).
                 writeViewCookie({ dy: view.year, dm: view.month, dp: 0 });
-                startNav("꾸미기 화면을 여는 중입니다…");
+                startNav(isNarrow ? "꾸미기 여는 중…" : "꾸미기 화면을 여는 중입니다…");
               }}
             >
               <Sparkles aria-hidden="true" size={16} />
@@ -2018,7 +2018,7 @@ export function StudioShell({
         <div className="private-loading private-unlocking" role="status" aria-live="polite">
           <span className="private-loading-spinner" aria-hidden="true" />
           <span className="private-unlocking-text">
-            <strong>🔓 비공개 레이어를 여는 중입니다…</strong>
+            <strong>{isNarrow ? "🔓 비공개 레이어 여는 중…" : "🔓 비공개 레이어를 여는 중입니다…"}</strong>
             <em>비밀번호가 확인됐어요. 비공개 일정을 불러오고 있습니다.</em>
           </span>
         </div>
@@ -2081,7 +2081,7 @@ export function StudioShell({
             <form action="/api/auth/logout" method="post">
               <button
                 className="button"
-                onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}
+                onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")}
                 type="submit"
               >
                 계정변경
@@ -2127,7 +2127,7 @@ export function StudioShell({
                 // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
                 // dp=0으로 리셋: "꾸미기로 가기"는 항상 꾸미기 화면으로(직전 미리보기 상태 무시).
                 writeViewCookie({ dy: view.year, dm: view.month, dp: 0 });
-                startNav("꾸미기 화면을 여는 중입니다…");
+                startNav(isNarrow ? "꾸미기 여는 중…" : "꾸미기 화면을 여는 중입니다…");
               }}
             >
               달력 꾸미기

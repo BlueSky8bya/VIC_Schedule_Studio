@@ -2092,7 +2092,7 @@ export function PublicPoster({
             <h1 className="agenda-title">✨️ 빅토리 일정표 ✨️</h1>
             {accountSwitch ? (
               <form action="/api/auth/logout" className="agenda-account" method="post">
-                <button onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")} type="submit">
+                <button onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")} type="submit">
                   {/* 모바일은 폭이 좁아 넘칠 수 있어 "계정/변경" 2줄로 — 버튼이 좁아져 잘 들어간다. */}
                   <span style={{ whiteSpace: "pre-line", lineHeight: 1.12, textAlign: "center" }}>
                     {"계정\n변경"}
@@ -2127,7 +2127,7 @@ export function PublicPoster({
                     onClick={() => {
                       // 꾸미기에서 보던 달을 편집실 월(sy/sm)로 넘겨, 편집실이 그 달로 열리게 한다.
                       writeViewCookie({ sy: view.year, sm: view.month });
-                      startNav("편집실로 가는 중입니다…");
+                      startNav(isNarrow ? "편집실 여는 중…" : "편집실로 가는 중입니다…");
                     }}
                   >
                     <ChevronLeft aria-hidden="true" size={16} />
@@ -2163,7 +2163,7 @@ export function PublicPoster({
                   ) : null}
                   <button
                     className="button"
-                    onClick={() => startNav("계정 선택 화면으로 이동 중입니다…")}
+                    onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")}
                     type="submit"
                   >
                     계정변경
