@@ -325,14 +325,12 @@
   display: grid;
   gap: 8px;
 }
-/* 첫 진입 한 번만: 모바일은 대각선 슬라이드 대신 위→아래로만 차르륵 순차 등장.
-   그래서 컨테이너 가로 슬라이드(agendaInNext/Prev)는 끄고 하루 카드 세로 스태거만 둔다. */
-.agenda-flow.cal-reveal {
-  animation: none;
-}
+/* 첫 진입 한 번만: 모바일은 위→아래로 또렷이 한 칸씩 떠오른다. 첫 진입엔 data-enter(가로
+   슬라이드)를 아예 끄므로(컴포넌트에서 처리) 여기선 세로 스태거만 두면 된다. 한 칸씩 인지되도록
+   간격을 넉넉히(0.07s) 둔다. */
 .agenda-flow.cal-reveal .agenda-day {
-  animation: cal-cell-rise 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
-  animation-delay: calc(var(--ri, 0) * 26ms);
+  animation: cal-cell-rise 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  animation-delay: calc(var(--ri, 0) * 70ms);
 }
 @media (prefers-reduced-motion: reduce) {
   .agenda-flow.cal-reveal .agenda-day {

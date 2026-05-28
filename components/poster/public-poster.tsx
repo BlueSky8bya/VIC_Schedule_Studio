@@ -1604,6 +1604,9 @@ export function PublicPoster({
 
   // 월 전환 슬라이드 방향(아젠다): 다음 달=왼쪽으로, 이전 달=오른쪽으로 밀려 들어온다.
   const [monthDir, setMonthDir] = useState<"next" | "prev">("next");
+  // 첫 진입(세로 스태거)과 달 이동(가로 슬라이드)을 구분 — 실제로 달을 넘긴 뒤에만 슬라이드를 켠다.
+  // (안 그러면 popIntro가 꺼질 때 data-enter 슬라이드가 다시 트리거돼 몇 초 뒤 한 번 더 슬라이딩됨.)
+  const didNavigateRef = useRef(false);
   // 페이지 이동(편집실로 돌아가기·계정 변경)은 서버 왕복이라 즉시 안 바뀐다 → 눌렀다는 신호를 띄운다.
   const [navMsg, setNavMsg] = useState<string | null>(null);
   function startNav(message: string) {
@@ -1611,6 +1614,7 @@ export function PublicPoster({
     window.setTimeout(() => setNavMsg(null), 8000);
   }
   function moveMonth(offset: number) {
+    didNavigateRef.current = true;
     setMonthDir(offset >= 0 ? "next" : "prev");
     const next = getAdjacentMonth(view.year, view.month, offset);
     setView(next);
@@ -1914,8 +1918,8 @@ export function PublicPoster({
         ) : null}
 
         <div
-          className={`agenda-flow${popIntro ? " cal-reveal" : ""}`}
-          data-enter={monthDir}
+          className={`agenda-flow${popIntro && !didNavigateRef.current ? " cal-reveal" : ""}`}
+          data-enter={didNavigateRef.current ? monthDir : undefined}
           key={`${view.year}-${view.month}`}
         >
           {groups.length === 0 ? (

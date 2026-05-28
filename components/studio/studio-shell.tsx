@@ -244,6 +244,13 @@ export function StudioShell({
   const today = getTodayKst();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  // 낙관적 화면을 서버 prop이 덮어쓰지 않게 막는 가드. 저장·삭제·태그(pending)나 이동 저장
+  // (pendingPersistRef)이 진행 중이면 prop 동기화를 건너뛴다 → '이전 위치로 순간이동' 방지.
+  const pendingRef = useRef(false);
+  const pendingPersistRef = useRef(0); // 진행 중인 '이동 저장' 수(F5 경고 + prop 동기화 가드)
+  const movePersistChainRef = useRef<Promise<void>>(Promise.resolve()); // 이동 저장 직렬화
+  // 첫 진입(스태거)와 달 이동(슬라이드)을 구분 — 실제로 달을 한 번 넘긴 뒤에만 슬라이드를 켠다.
+  const didNavigateRef = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
   // 비밀번호 확인 후 팝업이 닫히고 비공개 일정이 서버에서 다시 불러와지는 동안 "불러오는 중" 표시.
   const [loadingPrivate, startLoadingPrivate] = useTransition();
@@ -314,7 +321,7 @@ export function StudioShell({
   useEffect(() => {
     const t = window.setTimeout(() => {
       firstLoadRef.current = false;
-    }, 1300);
+    }, 1800);
     return () => window.clearTimeout(t);
   }, []);
   // 모바일 하단 관리(태그·멤버) 펼침 상태.
@@ -323,8 +330,26 @@ export function StudioShell({
   // 기다리지 않고 화면에 즉시 반영되게 해서 "하는 맛"을 살린다. 서버 데이터가 바뀌면 다시 맞춘다.
   const [events, setEvents] = useState(schedule.events);
   useEffect(() => {
+    // 저장·삭제·이동이 진행 중이면 서버 prop이 낙관적 화면을 덮어써 카드가 '이전 위치로
+    // 순간이동'하던 문제를 막는다. 작업이 끝난 뒤(idle)의 prop 변화에서만 서버 데이터로 맞춘다.
+    if (pendingRef.current || pendingPersistRef.current > 0) return;
     setEvents(schedule.events);
   }, [schedule.events]);
+  // pending(저장/삭제/태그 진행)을 ref로 미러링 — 위 prop 동기화 가드가 deps 없이 읽게.
+  useEffect(() => {
+    pendingRef.current = pending;
+  }, [pending]);
+  // 이동 저장이 아직 안 끝났는데 새로고침/닫기 하면 마지막 위치를 잃을 수 있어 미리 경고한다.
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (pendingPersistRef.current > 0) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, []);
   // 태그·색 팔레트도 로컬 상태로 — 추가/삭제/저장을 새로고침 없이 즉시 반영(달력 색도 바로 갱신).
   const [tags, setTags] = useState(schedule.tags);
   const [palette, setPalette] = useState(schedule.palette);
@@ -819,6 +844,7 @@ export function StudioShell({
   }
 
   function moveMonth(offset: number) {
+    didNavigateRef.current = true; // 이제부턴 달 이동 = 슬라이드(첫 진입 스태거와 구분)
     setMonthDir(offset >= 0 ? "next" : "prev"); // 슬라이드 방향(시청자 화면과 동일)
     setView((current) => {
       const next = getAdjacentMonth(current.year, current.month, offset);
@@ -1134,8 +1160,46 @@ export function StudioShell({
     );
   }
 
+  // 이동(드롭) 저장을 직렬 큐로 처리 — 빠른 연속 이동도 큐 순서대로 저장돼 '마지막 위치'가 서버
+  // 최종값이 된다(레이스로 옛 위치가 저장되는 문제 방지). temp id는 저장 완료까지 기다려 보낸다.
+  function enqueueMovePersist(move: {
+    id: string;
+    sourceDate: string;
+    targetDate: string;
+    orderedIds: string[];
+  }) {
+    pendingPersistRef.current += 1;
+    movePersistChainRef.current = movePersistChainRef.current
+      .catch(() => {})
+      .then(() => runMovePersist(move))
+      .finally(() => {
+        pendingPersistRef.current = Math.max(0, pendingPersistRef.current - 1);
+      });
+  }
+
+  async function runMovePersist(move: {
+    id: string;
+    sourceDate: string;
+    targetDate: string;
+    orderedIds: string[];
+  }) {
+    const realMovedId = await resolveEventId(move.id);
+    if (!realMovedId) return; // 저장 실패/취소 — 둘 곳 없음
+    const realOrderedIds = await Promise.all(move.orderedIds.map((eid) => resolveEventId(eid)));
+    if (realOrderedIds.some((x) => x == null)) return; // 같은 날 미저장 카드 — 다음 이동 때 정리됨
+    const result = await reorderEventsAction({
+      dateKey: move.targetDate,
+      orderedIds: realOrderedIds as string[],
+      movedId: move.targetDate !== move.sourceDate ? realMovedId : undefined
+    });
+    if (!result.ok) {
+      setActionError(result.error);
+      router.refresh(); // 서버 진실로 재동기화(잘못된 중간 상태로 순간이동하지 않게)
+    }
+  }
+
   // 드롭: 일정을 target 날짜로(필요 시) 옮기고, 같은 날 안에서 over(위/아래) 위치에 끼워 순서 변경.
-  async function dropEventInto(
+  function dropEventInto(
     id: string,
     sourceDate: string,
     targetDate: string,
@@ -1166,13 +1230,13 @@ export function StudioShell({
       return;
     }
 
-    const snapshot = events;
     const delta = Math.round(
       (new Date(`${targetDate}T00:00:00Z`).getTime() -
         new Date(`${getEventDateKey(moved)}T00:00:00Z`).getTime()) /
         86400000
     );
     const orderPos = new Map(orderedIds.map((eid, i) => [eid, i] as const));
+    // 낙관적 반영(즉시). 서버 prop이 이걸 덮어쓰지 않게 위 prop 동기화는 pendingPersist 동안 멈춘다.
     setEvents((prev) =>
       prev.map((ev) => {
         let next = ev;
@@ -1190,24 +1254,8 @@ export function StudioShell({
     );
     setSelectedDate(targetDate);
     flashToast(targetDate === sourceDate ? "순서를 바꿨어요" : `${targetDate}로 옮겼어요`);
-    // 갓 만든(temp) 일정은 저장이 끝나 실제 id가 잡힐 때까지 기다린 뒤 서버에 반영한다. 안 그러면
-    // 서버에 temp id가 가서 "invalid uuid"가 나고, 그 실패로 롤백되며 옛 날짜에 되살아나(복제처럼
-    // 보임) 화면이 엉킨다. 같은 날의 다른 미저장 카드까지 모두 실제 id로 바꿔서 보낸다.
-    const realMovedId = await resolveEventId(id);
-    const realOrderedIds = await Promise.all(orderedIds.map((eid) => resolveEventId(eid)));
-    if (!realMovedId || realOrderedIds.some((x) => x == null)) {
-      // 아직 저장 안 끝났거나 실패한 항목이 있음 → 서버 반영은 건너뛴다(로컬은 이미 반영됨).
-      return;
-    }
-    const result = await reorderEventsAction({
-      dateKey: targetDate,
-      orderedIds: realOrderedIds as string[],
-      movedId: targetDate !== sourceDate ? realMovedId : undefined
-    });
-    if (!result.ok) {
-      setEvents(snapshot);
-      setActionError(result.error);
-    }
+    // 서버 저장은 직렬 큐로 — 빠른 연속 이동도 순서대로 저장돼 마지막 위치가 서버 최종값이 된다.
+    enqueueMovePersist({ id, sourceDate, targetDate, orderedIds });
   }
 
   // showPanel=false면 오른쪽 편집/상세 패널을 열지 않고 form만 채운다(업 도움 시트처럼 팝업만
@@ -1953,8 +2001,8 @@ export function StudioShell({
             </aside>
 
             <div
-              className={`agenda-flow${isFirstReveal ? " cal-reveal" : ""}`}
-              data-enter={monthDir}
+              className={`agenda-flow${isFirstReveal && !didNavigateRef.current ? " cal-reveal" : ""}`}
+              data-enter={didNavigateRef.current ? monthDir : undefined}
               key={`${view.year}-${view.month}`}
             >
               {monthCells.map((cell, agendaIndex) => {
