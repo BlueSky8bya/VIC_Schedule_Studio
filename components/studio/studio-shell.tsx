@@ -340,10 +340,12 @@ export function StudioShell({
   useEffect(() => {
     pendingRef.current = pending;
   }, [pending]);
-  // 이동 저장이 아직 안 끝났는데 새로고침/닫기 하면 마지막 위치를 잃을 수 있어 미리 경고한다.
+  // 중대한 변경(생성·삭제·편집·태그·이동)이 아직 서버에 안 들어갔는데 새로고침/닫기 하면
+  // "분명 지웠는데 다시 생겨있네?" 같은 불일치가 난다 → 그 짧은 진행 중에만 한 번 경고한다.
+  // (idle일 땐 절대 안 뜨므로 평소엔 방해 없음.)
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (pendingPersistRef.current > 0) {
+      if (pendingRef.current || pendingPersistRef.current > 0) {
         e.preventDefault();
         e.returnValue = "";
       }

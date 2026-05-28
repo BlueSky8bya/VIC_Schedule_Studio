@@ -383,10 +383,10 @@ export function PublicPoster({
   decorate: decorateProp = false,
   initialPreviewing = false,
   initialNarrow = false,
-  saveStickerAction,
-  deleteStickerAction,
-  saveStickerBatchAction,
-  deleteStickerBatchAction,
+  saveStickerAction: saveStickerActionRaw,
+  deleteStickerAction: deleteStickerActionRaw,
+  saveStickerBatchAction: saveStickerBatchActionRaw,
+  deleteStickerBatchAction: deleteStickerBatchActionRaw,
   uploadStickerAssetAction,
   deleteStickerAssetAction,
   setPosterThemeAction,
@@ -394,6 +394,71 @@ export function PublicPoster({
   accountSwitch = false,
   accountEmail = null
 }: PublicPosterProps) {
+  // 스티커 저장/삭제가 서버에 들어가는 동안만 세는 카운터. 다 끝나기 전 새로고침/닫기 하면
+  // "분명 지웠는데 다시 생겨있네?" 같은 불일치가 나므로, 그 짧은 동안에만 경고한다(아래 beforeunload).
+  // 액션을 한 번 감싸 두면 호출부를 안 바꿔도 모든 저장/삭제가 자동으로 카운트된다.
+  const pendingSaveRef = useRef(0);
+  const saveStickerAction = useMemo(
+    () =>
+      saveStickerActionRaw
+        ? (input: SaveStickerInput) => {
+            pendingSaveRef.current += 1;
+            return saveStickerActionRaw(input).finally(() => {
+              pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
+            });
+          }
+        : undefined,
+    [saveStickerActionRaw]
+  );
+  const deleteStickerAction = useMemo(
+    () =>
+      deleteStickerActionRaw
+        ? (id: string) => {
+            pendingSaveRef.current += 1;
+            return deleteStickerActionRaw(id).finally(() => {
+              pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
+            });
+          }
+        : undefined,
+    [deleteStickerActionRaw]
+  );
+  const saveStickerBatchAction = useMemo(
+    () =>
+      saveStickerBatchActionRaw
+        ? (inputs: SaveStickerInput[]) => {
+            pendingSaveRef.current += 1;
+            return saveStickerBatchActionRaw(inputs).finally(() => {
+              pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
+            });
+          }
+        : undefined,
+    [saveStickerBatchActionRaw]
+  );
+  const deleteStickerBatchAction = useMemo(
+    () =>
+      deleteStickerBatchActionRaw
+        ? (ids: string[]) => {
+            pendingSaveRef.current += 1;
+            return deleteStickerBatchActionRaw(ids).finally(() => {
+              pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
+            });
+          }
+        : undefined,
+    [deleteStickerBatchActionRaw]
+  );
+  // 스티커 저장/삭제가 아직 서버에 안 들어갔는데 새로고침/닫기 하면 작업을 잃을 수 있어 경고한다.
+  // 꾸미기 화면에서만, 그리고 실제로 진행 중일 때만 뜬다(평소엔 방해 없음).
+  useEffect(() => {
+    if (!decorateProp) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      if (pendingSaveRef.current > 0) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [decorateProp]);
   // 꾸미기 화면에서 "시청자 화면 보기"로 잠깐 미리보기 — 꾸미기/내보내기 도구를 숨기고
   // 시청자 시점으로 본다. previewing 동안에는 effective decorate/canExport를 꺼서, 아래의
   // 모든 꾸미기 로직(도구바·키보드·스티커 편집·내보내기)이 자동으로 비활성화된다.
