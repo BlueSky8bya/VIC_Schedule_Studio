@@ -1190,10 +1190,19 @@ export function StudioShell({
     );
     setSelectedDate(targetDate);
     flashToast(targetDate === sourceDate ? "순서를 바꿨어요" : `${targetDate}로 옮겼어요`);
+    // 갓 만든(temp) 일정은 저장이 끝나 실제 id가 잡힐 때까지 기다린 뒤 서버에 반영한다. 안 그러면
+    // 서버에 temp id가 가서 "invalid uuid"가 나고, 그 실패로 롤백되며 옛 날짜에 되살아나(복제처럼
+    // 보임) 화면이 엉킨다. 같은 날의 다른 미저장 카드까지 모두 실제 id로 바꿔서 보낸다.
+    const realMovedId = await resolveEventId(id);
+    const realOrderedIds = await Promise.all(orderedIds.map((eid) => resolveEventId(eid)));
+    if (!realMovedId || realOrderedIds.some((x) => x == null)) {
+      // 아직 저장 안 끝났거나 실패한 항목이 있음 → 서버 반영은 건너뛴다(로컬은 이미 반영됨).
+      return;
+    }
     const result = await reorderEventsAction({
       dateKey: targetDate,
-      orderedIds,
-      movedId: targetDate !== sourceDate ? id : undefined
+      orderedIds: realOrderedIds as string[],
+      movedId: targetDate !== sourceDate ? realMovedId : undefined
     });
     if (!result.ok) {
       setEvents(snapshot);
