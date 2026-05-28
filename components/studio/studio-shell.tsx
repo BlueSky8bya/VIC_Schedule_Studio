@@ -2489,7 +2489,7 @@ export function StudioShell({
         <div className="private-loading private-unlocking" role="status" aria-live="polite">
           <span className="private-loading-spinner" aria-hidden="true" />
           <span className="private-unlocking-text">
-            <strong>{isNarrow ? "🔓 비공개 레이어 여는 중…" : "🔓 비공개 레이어를 여는 중입니다…"}</strong>
+            <strong>{isNarrow ? "비공개 여는 중…" : "🔓 비공개 레이어를 여는 중입니다…"}</strong>
             <em>비밀번호가 확인됐어요. 비공개 일정을 불러오고 있습니다.</em>
           </span>
         </div>
