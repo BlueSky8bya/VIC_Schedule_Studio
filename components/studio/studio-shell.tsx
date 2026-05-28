@@ -509,18 +509,19 @@ export function StudioShell({
   function renderRoleBadge() {
     return (
       <div className="actor-badge-wrap">
-        <span className={`actor-badge ${actor.role}`}>
+        {/* 배지 전체가 토글 버튼 — "?"만이 아니라 역할 라벨 어디를 눌러도 설명이 뜬다(웹·모바일). */}
+        <button
+          aria-expanded={roleHelpOpen}
+          aria-label="역할 권한 보기"
+          className={`actor-badge ${actor.role}`}
+          onClick={() => setRoleHelpOpen((value) => !value)}
+          type="button"
+        >
           <strong>{roleDisplay.label}</strong>
-          <button
-            aria-expanded={roleHelpOpen}
-            aria-label="역할 권한 보기"
-            className="role-help-q"
-            onClick={() => setRoleHelpOpen((value) => !value)}
-            type="button"
-          >
+          <span className="role-help-q" aria-hidden="true">
             ?
-          </button>
-        </span>
+          </span>
+        </button>
         {roleHelpOpen ? (
           <div className="role-help-pop" role="dialog" aria-label="역할 권한">
             <strong className="role-help-title">{roleDisplay.label}</strong>
@@ -1678,12 +1679,11 @@ export function StudioShell({
                   onClick={togglePrivateLayer}
                   type="button"
                 >
-                  {canReadPrivate ? <EyeOff size={14} /> : <Eye size={14} />}
                   {canReadPrivate ? "비공개 중" : "비공개 일정"}
                 </button>
               ) : null}
               <button className="button" onClick={() => setViewerMode(true)} type="button">
-                <Eye size={14} /> 시청자 화면
+                시청자 화면
               </button>
               {actor.isAuthenticated ? (
                 <form action="/api/auth/logout" method="post">
@@ -2347,20 +2347,23 @@ export function StudioShell({
         {/* 오른쪽: 역할·도구 */}
         <div className="studio-role-tools">
           {renderRoleBadge()}
-          <button
-            className={canReadPrivate ? "private-toggle active" : "private-toggle"}
-            disabled={!canTogglePrivateLayer}
-            onClick={togglePrivateLayer}
-            type="button"
-          >
-            {canReadPrivate ? <EyeOff size={16} /> : <Eye size={16} />}
-            {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
-          </button>
-          {/* 시청자가 보는 공개 화면 전체보기 — 개발자·매니저·작업자 등 모든 역할이 본다. */}
-          <button className="button" onClick={() => setViewerMode(true)} type="button">
-            <Eye aria-hidden="true" size={16} />
-            시청자 화면 미리보기
-          </button>
+          {/* 보기 모드 묶음 — "지금 무엇을 보는가"(비공개 토글 + 시청자 미리보기)를 한 덩어리로. */}
+          <div className="studio-mode-group" role="group" aria-label="보기 모드">
+            <button
+              className={canReadPrivate ? "private-toggle active" : "private-toggle"}
+              disabled={!canTogglePrivateLayer}
+              onClick={togglePrivateLayer}
+              type="button"
+            >
+              {canReadPrivate ? <EyeOff size={16} /> : <Eye size={16} />}
+              {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
+            </button>
+            {/* 시청자가 보는 공개 화면 전체보기 — 개발자·매니저·작업자 등 모든 역할이 본다. */}
+            <button className="button" onClick={() => setViewerMode(true)} type="button">
+              <Eye aria-hidden="true" size={16} />
+              시청자 화면 미리보기
+            </button>
+          </div>
           {actor.isAuthenticated ? (
             <form action="/api/auth/logout" method="post">
               <button
@@ -2388,25 +2391,32 @@ export function StudioShell({
           </span>
         ) : null}
         <div className="studio-actionbar-tools">
-          {canEdit ? (
-            <button className="button" onClick={() => setModal("tags")} type="button">
-              태그 편집
-            </button>
-          ) : null}
-          {canEdit ? (
-            <button className="button" onClick={() => setModal("members")} type="button">
-              멤버 관리
-            </button>
-          ) : null}
-          {actor.role === "developer" ? (
-            <button className="button" onClick={() => setModal("developer")} type="button">
-              🛠 접속자 현황
-            </button>
+          {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자는
+              비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}
+          {canEdit || actor.role === "developer" ? (
+            <div className="studio-manage-group" role="group" aria-label="관리">
+              {canEdit ? (
+                <button className="button" onClick={() => setModal("tags")} type="button">
+                  태그 편집
+                </button>
+              ) : null}
+              {canEdit ? (
+                <button className="button" onClick={() => setModal("members")} type="button">
+                  멤버 관리
+                </button>
+              ) : null}
+              {actor.role === "developer" ? (
+                <button className="button" onClick={() => setModal("developer")} type="button">
+                  🛠 접속자 현황
+                </button>
+              ) : null}
+            </div>
           ) : null}
           {canDecorateCalendar ? (
             <Link
               // 매니저·작업자는 일정 편집을 못 하니 꾸미기가 1차 작업 → primary로 강조.
-              className={canEdit ? "button" : "button primary"}
+              // studio-decorate-link로 액션바 우측에 분리 강조(margin-left:auto).
+              className={`button studio-decorate-link${canEdit ? "" : " primary"}`}
               href={`/studio/decorate/${view.year}/${view.month}`}
               onClick={() => {
                 // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).

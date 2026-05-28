@@ -226,12 +226,20 @@
 }
 
 .actor-badge {
-  /* 역할과 이메일을 "소유자(email)"처럼 한 줄로 — 이메일이 길면 말줄임. */
+  /* 역할 라벨 + "?" 한 줄. 배지 전체가 클릭 가능한 토글 버튼이다. */
   display: flex;
   align-items: center;
   min-width: 0;
   max-width: 340px;
   background: #ffffff;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  transition: filter var(--dur-1, 120ms) var(--ease, ease);
+}
+.actor-badge:hover {
+  filter: brightness(0.97);
 }
 
 /* A3: 역할 도움말 팝오버 래퍼 + "?" 트리거 + 팝오버 */
@@ -511,18 +519,41 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-right: auto; /* 안내는 왼쪽, 버튼은 오른쪽으로 */
   color: #5b21b6;
   font-weight: 900;
 }
 .studio-actionbar-tools {
   display: flex;
+  flex: 1 1 auto; /* 남는 폭을 채워, 관리 묶음=왼쪽 / 꾸미기=오른쪽 끝으로 가르게 한다. */
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 .studio-actionbar .button {
   min-height: 36px;
+}
+/* 관리 묶음(태그·멤버·접속자) — owner/dev 운영 도구를 옅은 컨테이너로 한 덩어리로. */
+.studio-manage-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border-radius: 14px;
+  background: rgba(120, 110, 160, 0.07);
+}
+/* 꾸미기는 관리 묶음과 분리해 액션바 오른쪽 끝으로(1차 창작 행동 강조). */
+.studio-decorate-link {
+  margin-left: auto;
+}
+/* 보기 모드 묶음(비공개 토글 + 시청자 미리보기) — 상단바에서 한 덩어리로. */
+.studio-mode-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: var(--r-pill, 999px);
+  background: rgba(120, 110, 160, 0.07);
 }
 
 .studio-left-panel section,
