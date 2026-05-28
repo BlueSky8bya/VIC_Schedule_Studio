@@ -88,6 +88,22 @@ High-frequency facts so you rarely need to reopen `docs/sop.md`:
   shorten labels, drop helper/parenthetical text, hide non-essential buttons.
   Never just shrink the desktop layout. When adding text, ask "does this earn its
   width on a phone?" — if not, trim or hide it.
+- **Web vs mobile typography (recurring).** The desktop/web has room — its text
+  must be comfortably **large and legible**, never the tiny mobile-tuned sizes.
+  Mobile is the opposite: text must stay **compact and must NEVER overflow the
+  narrow width** — do not blow up mobile font sizes. Practically: tune base
+  (mobile) sizes small, and bump up generously inside `@media (min-width: 641px)`
+  for the web. If web text looks small, it's a defect.
+- **Fill empty space by content, not by stretching narrow boxes.** When a box
+  feels empty, the fix is bigger content (scale the value/icon up), a smarter
+  layout, or distributing content — **only widen a box that is genuinely empty on
+  one side** (e.g. a wide box with content clustered left and a blank right).
+  Never stretch an already-cramped box wider; that makes it worse. Sibling
+  cards/tiles share one height; no ragged heights or stray empty bottoms.
+- **Hover tooltips/value chips are centered on their target and never clipped.**
+  Center the chip over the hovered bar; clamp it within the chart so edge bars
+  don't get cut off; never wall-stick (left/right-pin) when there is room to
+  center. A clipped or wall-stuck tooltip is a defect.
 - Visible owner role label is "관리자" (the role key stays `owner`); the support
   feature term is "업 도움".
 - **Optimistic writes are queued, not raced.** Rapid repeat actions (drag-move,

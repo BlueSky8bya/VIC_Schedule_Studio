@@ -536,8 +536,8 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
               <strong className="hl-main" title={c.main}>
                 {c.main}
               </strong>
-              {c.sub ? <span className="hl-sub">{c.sub}</span> : null}
             </span>
+            {c.sub ? <span className="hl-sub">{c.sub}</span> : null}
           </div>
         ))}
       </div>
