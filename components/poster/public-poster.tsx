@@ -659,7 +659,7 @@ export function PublicPoster({
   const [bookmarks, setBookmarks] = useState<string[]>(() =>
     serverHearts ? (schedule.myHeartIds ?? []) : []
   );
-  const [bookmarksReady, setBookmarksReady] = useState(serverHearts);
+  const [bookmarksReady, setBookmarksReady] = useState(false);
   // A: 일정별 관심 집계 수(서버에서 받아 낙관적으로 갱신). "관심 높음" 배지 판정에 쓴다.
   const [heartCounts, setHeartCounts] = useState<Record<string, number>>(() => {
     const map: Record<string, number> = {};
@@ -795,11 +795,12 @@ export function PublicPoster({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.year, view.month]);
 
-  // 서버 연동이 없을 때만(샘플/오프라인) 기기별 localStorage를 쓴다 — 마운트 시 한 번 불러온다.
+  // 마운트 시 localStorage의 내 관심(하트) 집합을 한 번 불러온다 — 서버 모드에서도 쓴다.
+  // 이유: 시청자 미리보기를 닫았다 다시 열면 컴포넌트가 리마운트되며 bookmarks가 schedule.myHeartIds
+  // (페이지 로드 시점 값)로 초기화돼, 세션 중 뺀/누른 하트가 stale prop으로 되돌아오는 버그가 있다.
+  // 로컬에 마지막 의도를 저장해두고 마운트 때 우선 적용하면(서버 저장은 백그라운드로 계속) 리마운트에도
+  // 유지된다. 최초 로드(로컬 없음)에는 서버값(myHeartIds)을 그대로 쓴다 → 서버가 진실, 로컬은 세션 보존용.
   useEffect(() => {
-    if (serverHearts) {
-      return; // 서버 집계 모드에선 schedule.myHeartIds가 권위값.
-    }
     try {
       const raw = window.localStorage.getItem(BOOKMARK_STORAGE_KEY);
       if (raw) {
@@ -812,11 +813,11 @@ export function PublicPoster({
       // 손상된 값/사생활 모드 등은 조용히 무시 — 북마크는 부가 기능.
     }
     setBookmarksReady(true);
-  }, [serverHearts]);
+  }, []);
 
-  // 북마크가 바뀌면 저장(localStorage 모드만). 초기 로드 전에는 덮어쓰지 않도록 ready 이후에만.
+  // 북마크가 바뀌면 localStorage에 저장(서버·로컬 모드 공통). 초기 로드 전에는 덮어쓰지 않게 ready 이후에만.
   useEffect(() => {
-    if (serverHearts || !bookmarksReady) {
+    if (!bookmarksReady) {
       return;
     }
     try {
@@ -824,7 +825,7 @@ export function PublicPoster({
     } catch {
       // 저장 실패는 무시.
     }
-  }, [bookmarks, bookmarksReady, serverHearts]);
+  }, [bookmarks, bookmarksReady]);
 
   // 하트를 켤 때 누른 자리에서 ♥들이 스멀스멀 떠오르게 한다(움직임 최소화 설정이면 생략).
   function spawnHearts(x: number, y: number) {
