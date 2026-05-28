@@ -262,6 +262,15 @@
 .agenda-monthbar button:active {
   transform: scale(0.92);
 }
+/* 중앙에 가까운 안쪽 가장자리일수록 더 희미하게 — 일정 위로 살짝 비치게(좌·우 대칭). */
+.agenda-monthbar button:first-child {
+  -webkit-mask-image: linear-gradient(to right, #000 58%, rgb(0 0 0 / 38%) 100%);
+  mask-image: linear-gradient(to right, #000 58%, rgb(0 0 0 / 38%) 100%);
+}
+.agenda-monthbar button:last-child {
+  -webkit-mask-image: linear-gradient(to left, #000 58%, rgb(0 0 0 / 38%) 100%);
+  mask-image: linear-gradient(to left, #000 58%, rgb(0 0 0 / 38%) 100%);
+}
 
 /* 월 전환 시 슬라이드로 들어와 "넘어간다"는 느낌을 준다. */
 .agenda-flow[data-enter="next"] {

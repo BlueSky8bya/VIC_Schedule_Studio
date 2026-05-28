@@ -709,7 +709,10 @@ export function StudioShell({
   // 제외 — 잠금 해제 직후 onUnlocked의 router.refresh를 history.back이 취소하던 문제 방지.
   const modalIsStackable = modal !== null && modal !== "passcode";
   const overlayDepth = (mobileEditId !== null ? 1 : 0) + (modalIsStackable ? 1 : 0);
-  const overlayLocked = overlayDepth > 0;
+  // 스크롤 잠금엔 태그 수정·업 도움 시트도 포함 — 시트를 잡고 끌면 뒤 배경이 스크롤돼 아래가
+  // 뚫리던 문제를 막는다. (히스토리 스택(overlayDepth)은 기존대로 — 두 시트는 X/배경 탭으로 닫음.)
+  const overlayLocked =
+    overlayDepth > 0 || supportSheetId !== null || tagSheetId !== null;
   // 히스토리 스택 깊이 = 오버레이(편집 시트·공지) + 시청자 미리보기(viewerMode).
   // viewerMode도 한 칸 쌓아야, 휴대폰 뒤로가기를 누를 때 로그인 흐름으로 빠지지 않고
   // 편집실로 돌아온다. (스크롤 잠금은 overlayLocked만 사용 — 미리보기 자체 스크롤은 살린다.)

@@ -151,6 +151,15 @@
 .studio-monthbar button:active {
   transform: scale(0.92);
 }
+/* 중앙에 가까운 안쪽 가장자리일수록 더 희미하게 — 일정 위로 살짝 비치게(좌·우 대칭). */
+.studio-monthbar button:first-child {
+  -webkit-mask-image: linear-gradient(to right, #000 58%, rgb(0 0 0 / 38%) 100%);
+  mask-image: linear-gradient(to right, #000 58%, rgb(0 0 0 / 38%) 100%);
+}
+.studio-monthbar button:last-child {
+  -webkit-mask-image: linear-gradient(to left, #000 58%, rgb(0 0 0 / 38%) 100%);
+  mask-image: linear-gradient(to left, #000 58%, rgb(0 0 0 / 38%) 100%);
+}
 /* 오른쪽: 역할·도구 (같은 선상, 오른쪽 정렬) */
 .studio-role-tools {
   grid-column: 3;
@@ -1505,21 +1514,26 @@
   cursor: not-allowed;
 }
 
+/* 태그 칩이 폭에 따라 들쭉날쭉 흐르지 않게 — 균일한 그리드로 가지런히(웹·모바일 공통). */
 .tag-picker div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
 }
 
 .tag-picker button {
-  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
   border: 1px solid var(--line);
   border-radius: 999px;
   cursor: pointer;
-  padding: 0 12px;
+  padding: 0 10px;
+  font-size: 13px;
   font-weight: 800;
+  white-space: nowrap;
   opacity: 0.5;
-  font-weight: 800;
 }
 
 .tag-picker button.selected {
@@ -3056,26 +3070,38 @@ textarea:disabled {
 .m-event .agenda-title-text {
   color: #2b2f38;
 }
-/* 모바일 업 도움 카드: 기간 + (도우러가기 + 수정)을 한 줄에 둬 높이를 최대한 줄인다. */
+/* 모바일 업 도움 카드: 도우러가기(왼쪽)와 수정(오른쪽 끝)을 같은 높이 한 줄로 — 둘 다
+   들쭉날쭉 들여써지지 않게 좌우로 가지런히 정렬해 균형을 맞춘다. */
 .m-support-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 2px;
+  gap: 8px;
+  margin-top: 8px;
 }
 .m-support-actions .agenda-link {
+  flex: 0 0 auto;
   margin: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13px;
 }
 .m-support-edit {
+  flex: 0 0 auto;
+  margin-left: auto; /* 카드 오른쪽 끝으로 — 도우러가기와 좌우 대칭 */
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
   border: 1px solid var(--line);
-  border-radius: 7px;
+  border-radius: 9px;
   background: #fff;
-  padding: 3px 12px;
-  font-size: 12px;
+  padding: 0 16px;
+  font-size: 12.5px;
   font-weight: 800;
   color: var(--muted);
   cursor: pointer;
+}
+.m-support-edit:active {
+  background: #f4f2fb;
 }
 /* ── 업 도움 편집 필드(편집실 + 수정 시트 공용) ───────────────────────────── */
 .support-fields {
