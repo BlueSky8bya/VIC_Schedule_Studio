@@ -81,7 +81,7 @@ import { PublicPoster } from "@/components/poster/public-poster";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { TrustedMembersPanel } from "@/components/trusted-members/trusted-members-panel";
-import { DeveloperPanel } from "@/components/developer/developer-panel";
+import { InsightsDashboard } from "@/components/developer/insights-dashboard";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
@@ -1937,7 +1937,7 @@ export function StudioShell({
                 onClick={() => setModal("developer")}
                 type="button"
               >
-                접속자 현황
+                인사이트
               </button>
             </div>
           ) : null}
@@ -2711,7 +2711,7 @@ export function StudioShell({
               ) : null}
               {isDeveloper && !previewRole ? (
                 <button className="button" onClick={() => setModal("developer")} type="button">
-                  🛠 접속자 현황
+                  🛠 인사이트
                 </button>
               ) : null}
             </div>
@@ -3199,7 +3199,7 @@ export function StudioShell({
           role="presentation"
         >
           <div
-            className={`modal-card ${modal === "tags" || modal === "notice" ? "modal-card-wide" : ""}`}
+            className={`modal-card ${modal === "tags" || modal === "notice" || modal === "developer" ? "modal-card-wide" : ""}`}
             role="dialog"
           >
             <div className="modal-head">
@@ -3211,7 +3211,7 @@ export function StudioShell({
                     : modal === "notice"
                       ? "숲 공지 쓰기"
                       : modal === "developer"
-                        ? "접속자 현황"
+                        ? "🛠 인사이트"
                         : "매니저 · 작업자 관리"}
               </h2>
               <button
@@ -3254,7 +3254,7 @@ export function StudioShell({
               />
             ) : null}
             {modal === "members" ? <TrustedMembersPanel /> : null}
-            {modal === "developer" ? <DeveloperPanel /> : null}
+            {modal === "developer" ? <InsightsDashboard /> : null}
             {modal === "notice"
               ? (() => {
                   // 업 공지 자동 채움: 지금 편집 중인 폼이 업 도움이면 (저장 전이라도) 폼 값을, 아니면
