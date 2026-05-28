@@ -518,38 +518,66 @@
   font-weight: 900;
 }
 /* 헤더 미리보기 표시 칩(헤더에만 둔다 — 아래 화면이 미리보기 대상). */
-.preview-flag {
+/* 통합 역할 미리보기 드롭다운(헤더) — 커스텀. 트리거는 주변 .button(pill)과 같은 톤,
+   미리보기 중이면 강조색. 메뉴는 역할 팝오버와 같은 카드 스타일로 통일. */
+.preview-dd {
+  position: relative;
   display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: 999px;
-  background: #fff1e6;
-  border: 1px solid #f3c79a;
-  padding: 3px 10px;
-  font-size: 12.5px;
-  font-weight: 900;
-  color: #9a3412;
-  white-space: nowrap;
 }
-/* 통합 역할 미리보기 드롭다운(헤더). 버튼처럼 보이고, 미리보기 중이면 강조색. */
-.role-preview-select {
-  min-height: 34px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill, 999px);
-  background: #fff;
-  padding: 0 10px;
-  font-size: 13px;
-  font-weight: 800;
-  color: #5b21b6;
-  cursor: pointer;
+.preview-dd-trigger {
+  gap: 6px;
 }
-.role-preview-select.previewing {
+.preview-dd-trigger.previewing {
   border-color: #f3c79a;
   background: #fff1e6;
   color: #9a3412;
 }
+.preview-dd-caret {
+  font-size: 11px;
+  opacity: 0.7;
+}
+.preview-dd-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 92;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid #e6e2f0;
+  border-radius: 12px;
+  background: #fff;
+  padding: 6px;
+  box-shadow: 0 16px 42px -18px rgba(40, 30, 60, 0.5);
+  animation: editor-card-enter 0.18s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+.preview-dd-item {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  padding: 9px 11px;
+  text-align: left;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #574f6b;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.preview-dd-item:hover {
+  background: #f3f0fb;
+}
+.preview-dd-item.active {
+  background: #fff1e6;
+  color: #9a3412;
+}
+@media (prefers-reduced-motion: reduce) {
+  .preview-dd-menu {
+    animation: none;
+  }
+}
 /* 미리보기 중에는 화면 가장자리에 옅은 점검 표시. */
-.studio-shell:has(.preview-flag) .studio-calendar-panel {
+.studio-shell:has(.preview-dd-trigger.previewing) .studio-calendar-panel {
   outline: 2px dashed rgba(154, 52, 18, 0.28);
   outline-offset: -2px;
   border-radius: 12px;

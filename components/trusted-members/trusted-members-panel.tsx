@@ -141,6 +141,11 @@ export function TrustedMembersPanel() {
   // 삭제 — 행을 접히는 애니메이션으로 보내고(바로 사라지는 느낌), 서버 확정 후 목록에서 뺀다.
   // 실패하면 접힘을 풀어 행이 되살아난다.
   function remove(member: TrustedMember) {
+    // 아직 서버 동기화 전(임시 id)인 멤버는 그 id로 지울 수 없다(uuid 아님 → 오류). 동기화가
+    // 끝나 실제 id가 잡힌 뒤에만 삭제한다(버튼도 동기화 중엔 비활성).
+    if (member.id.startsWith("temp-")) {
+      return;
+    }
     setError(null);
     setRemovingIds((prev) => new Set(prev).add(member.id));
     startTransition(async () => {
@@ -269,7 +274,7 @@ export function TrustedMembersPanel() {
             <button
               aria-label="삭제"
               className="member-remove"
-              disabled={isRemoving}
+              disabled={isRemoving || isSyncing}
               onClick={() => remove(m)}
               title="삭제"
               type="button"

@@ -446,6 +446,7 @@ export function StudioShell({
   // 새로고침하면 자동 해제(SSR은 항상 실제 역할로 렌더)되어 라우팅/쿠키 엉킴이 없다.
   const isDeveloper = actor.role === "developer";
   const [previewRole, setPreviewRole] = useState<MembershipRole | null>(null);
+  const [previewMenuOpen, setPreviewMenuOpen] = useState(false);
   const effectiveRole: MembershipRole = previewRole ?? actor.role;
   // 미리보기 화면이 보는 역할이 관리자인가(관리자 본인 + "관리자 미리보기" 둘 다 포함).
   const isEffectivelyOwner = effectiveRole === "owner";
@@ -506,22 +507,50 @@ export function StudioShell({
     setViewerMode(false);
     setPreviewRole(role);
   }
-  // 개발자 전용 통합 미리보기 드롭다운. 맨 위 "개발자 화면"이 곧 복귀(나가기) — 별도 버튼 없음.
-  // 시청자 선택 시 기존 viewerMode 화면으로(하트 등 공개 화면 그대로). 헤더에만 둔다.
+  // 개발자 전용 통합 미리보기 드롭다운(커스텀 — 주변 pill 버튼과 통일). 트리거가 곧 현재 상태
+  // 표시(미리보기 중이면 "○○ 화면" + 강조색), 메뉴 맨 위 "개발자 화면"이 복귀. 헤더에만 둔다.
   function renderPreviewControl() {
+    const options: { value: MembershipRole | ""; label: string }[] = [
+      { value: "", label: "개발자 화면" },
+      { value: "owner", label: "관리자 화면" },
+      { value: "manager", label: "매니저 화면" },
+      { value: "worker", label: "작업자 화면" },
+      { value: "viewer", label: "시청자 화면" }
+    ];
     return (
-      <select
-        aria-label="역할 미리보기"
-        className={`role-preview-select${previewRole ? " previewing" : ""}`}
-        onChange={(event) => applyPreview(event.target.value as MembershipRole | "")}
-        value={previewRole ?? ""}
-      >
-        <option value="">개발자 화면</option>
-        <option value="owner">관리자 화면</option>
-        <option value="manager">매니저 화면</option>
-        <option value="worker">작업자 화면</option>
-        <option value="viewer">시청자 화면</option>
-      </select>
+      <div className="preview-dd">
+        <button
+          aria-expanded={previewMenuOpen}
+          aria-haspopup="menu"
+          className={`button preview-dd-trigger${previewRole ? " previewing" : ""}`}
+          onClick={() => setPreviewMenuOpen((value) => !value)}
+          type="button"
+        >
+          <Eye aria-hidden="true" size={15} />
+          {previewRole ? `${ROLE_LABEL[previewRole]} 화면` : "미리보기"}
+          <span aria-hidden="true" className="preview-dd-caret">
+            ▾
+          </span>
+        </button>
+        {previewMenuOpen ? (
+          <div className="preview-dd-menu" role="menu">
+            {options.map((opt) => (
+              <button
+                className={`preview-dd-item${(previewRole ?? "") === opt.value ? " active" : ""}`}
+                key={opt.value || "dev"}
+                onClick={() => {
+                  setPreviewMenuOpen(false);
+                  applyPreview(opt.value);
+                }}
+                role="menuitem"
+                type="button"
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </div>
     );
   }
 
@@ -555,6 +584,29 @@ export function StudioShell({
       document.removeEventListener("keydown", onKey);
     };
   }, [roleHelpOpen]);
+
+  // 미리보기 드롭다운: 바깥을 누르거나 Esc로 닫는다.
+  useEffect(() => {
+    if (!previewMenuOpen) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (!(event.target as HTMLElement | null)?.closest(".preview-dd")) {
+        setPreviewMenuOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setPreviewMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [previewMenuOpen]);
 
   // A3: 역할 배지 + "?" 도움말 팝오버. 이메일은 배지에 인라인으로 두지 않고(폭 절약·깔끔)
   // 팝오버 안 역할 라벨 아래에 보여준다.
@@ -1729,10 +1781,6 @@ export function StudioShell({
 
             <div className="m-rolebar">
               {renderRoleBadge()}
-              {/* 미리보기 표시는 헤더(여기)에 — 아래 화면이 미리보기 대상이라 거기엔 안 둔다. */}
-              {previewRole ? (
-                <span className="preview-flag">🛠 미리보기: {ROLE_LABEL[previewRole]}</span>
-              ) : null}
               {canTogglePrivateLayer ? (
                 <button
                   className={canReadPrivate ? "button primary" : "button"}
@@ -2007,12 +2055,12 @@ export function StudioShell({
             <h2>관리</h2>
             <button
               className="button"
-              onClick={() => setMobileMgmt(mobileMgmt === "tags" ? null : "tags")}
+              onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "tags" ? null : "tags"))}
               type="button"
             >
               태그 이름 · 색상 · 순서 {mobileMgmt === "tags" ? "▲" : "▼"}
             </button>
-            {mobileMgmt === "tags" ? (
+            {mobileMgmt === "tags" && !previewRole ? (
               <TagLegendEditor
                 canEdit
                 onTagAdded={applyTagAdd}
@@ -2026,12 +2074,12 @@ export function StudioShell({
             ) : null}
             <button
               className="button"
-              onClick={() => setMobileMgmt(mobileMgmt === "members" ? null : "members")}
+              onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "members" ? null : "members"))}
               type="button"
             >
               매니저 · 작업자 관리 {mobileMgmt === "members" ? "▲" : "▼"}
             </button>
-            {mobileMgmt === "members" ? <TrustedMembersPanel /> : null}
+            {mobileMgmt === "members" && !previewRole ? <TrustedMembersPanel /> : null}
           </section>
         ) : null}
 
@@ -2413,11 +2461,8 @@ export function StudioShell({
         {/* 오른쪽: 역할·도구 */}
         <div className="studio-role-tools">
           {renderRoleBadge()}
-          {/* 미리보기 표시는 헤더(여기)에 둔다 — 헤더 아래는 미리보기 대상 화면이라 거기엔 두지 않는다. */}
-          {previewRole ? (
-            <span className="preview-flag">🛠 미리보기: {ROLE_LABEL[previewRole]}</span>
-          ) : null}
-          {/* 보기 모드 묶음 — 비공개 토글 + (개발자) 역할 미리보기 드롭다운 / (그 외) 시청자 미리보기. */}
+          {/* 보기 모드 묶음 — 비공개 토글 + (개발자) 역할 미리보기 드롭다운 / (그 외) 시청자 미리보기.
+              미리보기 표시는 드롭다운 트리거 자체가 "○○ 화면"으로 보여준다(별도 칩 없음). */}
           <div className="studio-mode-group" role="group" aria-label="보기 모드">
             <button
               className={canReadPrivate ? "private-toggle active" : "private-toggle"}
@@ -2456,14 +2501,8 @@ export function StudioShell({
       </header>
 
       {/* 상단 액션바: 역할(또는 미리보기 역할)에 맞는 작업 버튼만. 미리보기 컨트롤은 헤더에 있다.
-          개발자 세션 안내는 미리보기 중엔 숨겨, 아래 화면이 그 역할 화면처럼 보이게 한다. */}
+          (개발자 역할 표시는 헤더의 역할 배지로 충분 — 별도 세션 안내 줄은 두지 않는다.) */}
       <div className="studio-actionbar">
-        {isDeveloper && !previewRole ? (
-          <span className="studio-actionbar-dev">
-            <LockKeyhole aria-hidden="true" size={16} />
-            🛠 개발자 세션입니다. 전체 캘린더를 관리 권한으로 보고 있습니다.
-          </span>
-        ) : null}
         <div className="studio-actionbar-tools">
           {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자(또는
               그 역할 미리보기 중)는 비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}

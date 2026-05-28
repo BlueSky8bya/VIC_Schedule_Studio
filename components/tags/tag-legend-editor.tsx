@@ -60,6 +60,18 @@ export function TagLegendEditor({
   const [busy, startBusy] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  // 삭제 직후 잠깐(380ms) 모든 삭제 버튼을 잠근다. 삭제하면 행이 즉시 사라져 아래 행이 위로
+  // 올라오는데, 빠른 더블탭의 두 번째 탭이 그 자리(특히 맨 끝 행)를 잘못 누르는 걸 막는다.
+  const deleteLockRef = useRef(false);
+  const [deleteLock, setDeleteLock] = useState(false);
+  function lockDeletes() {
+    deleteLockRef.current = true;
+    setDeleteLock(true);
+    window.setTimeout(() => {
+      deleteLockRef.current = false;
+      setDeleteLock(false);
+    }, 380);
+  }
 
   // #4: 새로 추가한 태그/색은 "저장" 전까지 팝업 안에서만 존재한다(달력·다른 패널엔 반영 안 함).
   const [newTags, setNewTags] = useState<BroadcastTag[]>([]);
@@ -338,6 +350,9 @@ export function TagLegendEditor({
   }
 
   function removeTag(tagId: string) {
+    // 더블탭 보호: 직전 삭제 직후의 두 번째 탭(레이아웃이 위로 밀려 엉뚱한 행을 누르는)을 막는다.
+    if (deleteLockRef.current) return;
+    lockDeletes();
     // 드래프트(저장 전) 태그는 로컬에서만 지운다 — 서버 호출 없음.
     if (isNew(tagId)) {
       setNewTags((prev) => prev.filter((t) => t.id !== tagId));
@@ -514,7 +529,7 @@ export function TagLegendEditor({
             <button
               aria-label={`${d.name} 삭제`}
               className="tag-editor-remove"
-              disabled={busy}
+              disabled={busy || deleteLock}
               onClick={() => removeTag(tag.id)}
               title="이 태그 삭제"
               type="button"
