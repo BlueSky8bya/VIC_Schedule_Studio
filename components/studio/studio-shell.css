@@ -71,6 +71,54 @@
   grid-column: 2;
   justify-self: center;
 }
+/* 헤더 가운데: 현재 월(크게). 이동은 하단 플로팅 < > + 키보드 ←/→. */
+.studio-month-label {
+  grid-column: 2;
+  justify-self: center;
+}
+.studio-month-label strong {
+  font-size: clamp(34px, 3.4vw, 64px);
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  color: var(--ink, #1c2433);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* 월 이동 하단 플로팅 바 — 꾸미기/시청자 화면의 .agenda-monthbar와 같은 톤. */
+.studio-monthbar {
+  position: fixed;
+  left: 14px;
+  right: 14px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none; /* 가운데는 통과 — 버튼만 클릭 */
+}
+.studio-monthbar button {
+  pointer-events: auto;
+  display: inline-grid;
+  place-items: center;
+  width: 50px;
+  height: 50px;
+  border: 1px solid #ece9f5;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 82%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #6b5b95;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgb(120 110 160 / 22%);
+  transition: transform var(--dur-1, 120ms) var(--ease, ease);
+}
+.studio-monthbar button:hover {
+  background: #fff;
+}
+.studio-monthbar button:active {
+  transform: scale(0.92);
+}
 /* 오른쪽: 역할·도구 (같은 선상, 오른쪽 정렬) */
 .studio-role-tools {
   grid-column: 3;
@@ -512,6 +560,8 @@
 
 .studio-calendar-panel {
   min-width: 0;
+  /* 월 이동 슬라이드(translateX) 동안 가로 스크롤바가 생기지 않게 가로만 클립(세로는 그대로). */
+  overflow-x: clip;
   /* 달력 칸이 사이드바보다 짧은 달(5주 등)에는 달력 그리드를 칸 높이까지 늘려, 사이드바
      밑선과 달력 밑선이 항상 맞게 한다(반대로 달력이 더 길면 사이드바 색상 안내가 늘어남). */
   display: flex;
@@ -568,21 +618,37 @@
   /* 칸 패널 높이를 채워 사이드바와 밑선을 맞춘다(행은 align-content:stretch 기본값으로 늘어남). */
   flex: 1 1 auto;
   min-height: 0;
-  /* 달을 바꿀 때(키 변경으로 재마운트) 부드럽게 떠오르는 등장 애니메이션. */
-  animation: studio-grid-enter 0.32s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
-@keyframes studio-grid-enter {
+/* 달 이동 방향에 따라 좌/우로 밀려 들어온다(키 변경으로 재마운트될 때 재생). 다음 달=오른쪽에서,
+   이전 달=왼쪽에서. translate 동안 가로 스크롤바가 안 생기게 부모(.studio-calendar-panel)가 클립. */
+.studio-month-grid[data-enter="next"] {
+  animation: studio-grid-next 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+.studio-month-grid[data-enter="prev"] {
+  animation: studio-grid-prev 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+@keyframes studio-grid-next {
   from {
     opacity: 0;
-    transform: translateY(7px) scale(0.995);
+    transform: translateX(34px);
   }
   to {
     opacity: 1;
-    transform: none;
+    transform: translateX(0);
+  }
+}
+@keyframes studio-grid-prev {
+  from {
+    opacity: 0;
+    transform: translateX(-34px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .studio-month-grid {
+  .studio-month-grid[data-enter] {
     animation: none;
   }
 }

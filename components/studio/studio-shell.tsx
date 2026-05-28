@@ -569,6 +569,35 @@ export function StudioShell({
     });
   }
 
+  // 키보드 ←/→ 로 월 이동(데스크톱 편집실). 입력칸·모달·시청자 미리보기 중엔 동작 안 함.
+  useEffect(() => {
+    if (isNarrow || viewerMode) {
+      return;
+    }
+    function onKey(event: KeyboardEvent) {
+      if (event.ctrlKey || event.metaKey || event.altKey) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+      if (overlayLocked) {
+        return; // 모달·시트 열림 중엔 월 이동 막기
+      }
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        moveMonth(-1);
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        moveMonth(1);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [isNarrow, viewerMode, overlayLocked]);
+
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
   function onAgendaTouchStart(e: ReactTouchEvent) {
@@ -2006,15 +2035,9 @@ export function StudioShell({
           <p className="eyebrow studio-eyebrow">토리님 편집실</p>
         </div>
 
-        {/* 가운데: 월 이동 */}
-        <div className="studio-month-nav" aria-label="월 이동">
-          <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
-            <ChevronLeft aria-hidden="true" size={18} />
-          </button>
+        {/* 가운데: 현재 월(크게). 이동은 하단 플로팅 < > 버튼 + 키보드 ←/→ 로. */}
+        <div className="studio-month-label" aria-label="현재 월">
           <strong>{getMonthLabel(view.year, view.month)}</strong>
-          <button onClick={() => moveMonth(1)} title="다음 달" type="button">
-            <ChevronRight aria-hidden="true" size={18} />
-          </button>
         </div>
 
         {/* 오른쪽: 역할·도구 */}
@@ -2145,6 +2168,7 @@ export function StudioShell({
           <div
             className="studio-month-grid"
             aria-label="월간 달력"
+            data-enter={monthDir}
             key={`${view.year}-${view.month}`}
             ref={monthGridRef}
           >
@@ -2486,6 +2510,25 @@ export function StudioShell({
           </form>
         </aside>
       </section>
+      {/* 월 이동: 하단 좌·우 플로팅 < > (꾸미기·시청자 화면과 통일). 키보드 ←/→ 로도 이동. */}
+      <nav className="studio-monthbar" aria-label="월 이동">
+        <button
+          aria-label="이전 달"
+          onClick={() => moveMonth(-1)}
+          title="이전 달 (←)"
+          type="button"
+        >
+          <ChevronLeft aria-hidden="true" size={22} />
+        </button>
+        <button
+          aria-label="다음 달"
+          onClick={() => moveMonth(1)}
+          title="다음 달 (→)"
+          type="button"
+        >
+          <ChevronRight aria-hidden="true" size={22} />
+        </button>
+      </nav>
         </>
       )}
 
