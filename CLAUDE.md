@@ -64,7 +64,14 @@ High-frequency facts so you rarely need to reopen `docs/sop.md`:
 
 - Private-layer banner text, exact: `⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.`
 - Max 2 tags per event; a date cell shows at most 2 representative colors.
-- `owner_private` ("나만") is owner-only — developers cannot read or create it.
+- **Visibility scopes = 3: 모두(public) / 엠바고 / 작업자(work).** The owner's picker
+  offers only these three. "엠바고" is the merged owner-only scope (DB value stays
+  `owner_private`; the old `embargo` scope was merged into it) — **owner-only, even
+  developers cannot read or create it**. "작업자"(work) is the worker layer.
+- **Who can read each scope** (private needs Google login + passcode unlock):
+  public → everyone; 작업자(work) → owner, developer, worker (a manager+worker dual
+  via `isWorker`); 엠바고(owner_private) → owner only. **Manager has NO private
+  access at all** — no unlock button, sees only public.
 - Manager may assign per-event tags + edit support period/link; worker cannot.
   Both may decorate (stickers). Tag create/delete/recolor is owner/developer-only.
 - A trusted member can be manager AND worker at once (`is_manager`/`is_worker`);
@@ -100,7 +107,7 @@ High-frequency facts so you rarely need to reopen `docs/sop.md`:
 Creative-production collaborator, such as outfit, art, visual asset, or sticker
 work.
 
-- Can view unlocked embargo/work schedules.
+- Can view unlocked **"작업자"(work)** schedules only (not 엠바고/owner-only).
 - Can handle visual materials, stickers, and poster decoration.
 - Cannot edit broadcast schedules, tags, members, passcodes, support period/link,
   or owner-only schedules.
@@ -109,7 +116,8 @@ work.
 
 Broadcast-operations helper, such as stream, chat, or community manager.
 
-- Can view unlocked embargo/work schedules.
+- **Has no private-layer access at all** — no unlock button; sees only public
+  schedules (the broadcast-ops helper doesn't need hidden plans).
 - Can edit a support event's period/link (`canEditSupport`).
 - Can assign/unassign an event's tags (`canEditEventTags`, max 2 per event).
 - Can decorate (stickers) and export posters.

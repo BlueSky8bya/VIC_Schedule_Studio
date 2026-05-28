@@ -15,23 +15,26 @@ import { getUnlockState } from "@/lib/private-layer/unlock";
 import { canReadOwnerPrivate, canReadPrivateLayer } from "@/lib/permissions/roles";
 
 // 서버에서 비공개 이벤트를 역할/잠금해제에 따라 응답에서 제거한다(클라이언트 필터와 동일 규칙).
-// RLS와 별개의 2차 방어 — owner_private은 소유자에게만, embargo/work는 잠금해제한 자격자에게만.
-// (CLAUDE.md 규칙 9·10: 비공개 데이터는 CSS로 숨기지 말고 응답에서 빼야 한다.)
+// RLS와 별개의 2차 방어 — "엠바고"(owner_private, 옛 embargo 통합)는 소유자 전용, "작업자"(work)는
+// 소유자·개발자·작업자만(매니저는 비공개 전부 제외). (CLAUDE.md 규칙 9·10)
 function filterEventsForViewer(
   events: StudioScheduleEvent[],
   role: MembershipRole,
+  isWorker: boolean,
   hasUnlockSession: boolean
 ): StudioScheduleEvent[] {
   return events.filter((event) => {
     if (event.visibilityScope === "public") {
       return true;
     }
-    if (!canReadPrivateLayer(role, hasUnlockSession)) {
+    if (!canReadPrivateLayer(role, isWorker, hasUnlockSession)) {
       return false;
     }
-    if (event.visibilityScope === "owner_private") {
+    // "엠바고"(owner_private) + 옛 embargo 행은 소유자만.
+    if (event.visibilityScope === "owner_private" || event.visibilityScope === "embargo") {
       return canReadOwnerPrivate(role);
     }
+    // "작업자"(work): 위 게이트(소유자/개발자/작업자)를 통과한 사람만 본다.
     return true;
   });
 }
@@ -142,6 +145,7 @@ export async function getStudioSchedule(
     events: filterEventsForViewer(
       (eventsRes.data ?? []).map(mapStudioEvent),
       actor.role,
+      actor.isWorker === true,
       unlock.hasUnlockSession
     ),
     stickers: [],

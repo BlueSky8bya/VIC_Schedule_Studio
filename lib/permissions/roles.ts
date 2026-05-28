@@ -30,19 +30,22 @@ export function canEditEventTags(role: MembershipRole) {
   return role === "owner" || role === "developer" || role === "manager";
 }
 
-// 비공개 레이어를 볼 수 있는 사람(소유자, 개발자, 신뢰 멤버)이라도
-// 엠바고/작업/owner_private 행이 보이려면 유효한 잠금해제 세션이 필요하다.
-export function canReadPrivateLayer(role: MembershipRole, hasUnlockSession: boolean) {
-  return (
-    (role === "developer" ||
-      role === "owner" ||
-      role === "manager" ||
-      role === "worker") &&
-    hasUnlockSession
-  );
+// 비공개 레이어(잠금 해제)를 쓸 수 있는 자격. 소유자·개발자·작업자만. 매니저는 비공개를 전혀
+// 보지 못한다(공개 일정만). 작업자 겸직(매니저+작업자, effective=manager)도 isWorker로 인정한다.
+export function canUsePrivateLayer(role: MembershipRole, isWorker: boolean) {
+  return role === "owner" || role === "developer" || role === "worker" || isWorker === true;
 }
 
-// owner_private("나만") 일정은 소유자 전용이다. 개발자(superadmin)도 볼 수 없다.
+// 위 자격이 있고 + 유효한 잠금해제 세션이 있어야 비공개(작업자/엠바고) 행이 실제로 보인다.
+export function canReadPrivateLayer(
+  role: MembershipRole,
+  isWorker: boolean,
+  hasUnlockSession: boolean
+) {
+  return canUsePrivateLayer(role, isWorker) && hasUnlockSession;
+}
+
+// "엠바고"(DB owner_private, 옛 '나만'·'엠바고' 통합) 일정은 소유자 전용. 개발자도 볼 수 없다.
 export function canReadOwnerPrivate(role: MembershipRole) {
   return role === "owner";
 }

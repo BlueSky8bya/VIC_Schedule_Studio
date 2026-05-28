@@ -2,16 +2,17 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { getCurrentSupabaseUser } from "@/lib/auth/server";
+import { canUsePrivateLayer } from "@/lib/permissions/roles";
 import { verifyPasscode } from "@/lib/private-layer/passcode";
 
 const SLUG = "vic";
 
 // 비공개 레이어 잠금해제: 비밀번호 확인 → 현재 사용자 세션 발급.
-// owner/developer/manager/worker만 가능(시청자 불가). 비밀번호는 해시로만 비교한다.
+// owner/developer/worker만 가능(매니저·시청자 불가 — 매니저는 비공개를 못 본다).
 export async function POST(request: Request) {
   const actor = await resolveCurrentActor(SLUG);
 
-  if (actor.role === "viewer" || !actor.isAuthenticated) {
+  if (!actor.isAuthenticated || !canUsePrivateLayer(actor.role, actor.isWorker === true)) {
     return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
   }
 

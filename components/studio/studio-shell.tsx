@@ -65,7 +65,8 @@ import {
   canEditSchedule,
   canEditSupport,
   canReadOwnerPrivate,
-  canReadPrivateLayer
+  canReadPrivateLayer,
+  canUsePrivateLayer
 } from "@/lib/permissions/roles";
 import {
   deleteEventAction,
@@ -164,12 +165,12 @@ const ROLE_LABEL: Record<MembershipRole, string> = {
 };
 
 // 비-owner(매니저·작업자) 읽기전용 상세에서 쓰는 평이한 공개 범위 라벨.
-// owner_private("나만")는 비-owner에게 애초에 노출되지 않지만, 매핑은 빠짐없이 둔다.
+// "엠바고"(DB owner_private, 옛 '나만'·'엠바고' 통합)는 소유자 전용. work는 "작업자".
 const VISIBILITY_LABEL: Record<EventVisibilityScope, string> = {
   public: "모두",
   embargo: "엠바고",
   work: "작업자",
-  owner_private: "나만"
+  owner_private: "엠바고"
 };
 
 // A3: 역할 배지의 "?"를 누르면 뜨는 한 줄 책임 + 할 수 있는 것/없는 것. 빈 버튼으로 권한을
@@ -177,24 +178,23 @@ const VISIBILITY_LABEL: Record<EventVisibilityScope, string> = {
 const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] }> = {
   owner: {
     summary: "일정 발행과 전체 관리를 맡아요.",
-    can: ["일정·태그·멤버·비밀번호 편집", "업 도움·꾸미기·포스터 내보내기", "비공개 레이어 보기(‘나만’ 포함)"]
+    can: ["일정·태그·멤버·비밀번호 편집", "업 도움·꾸미기·포스터 내보내기", "비공개 일정 보기(‘엠바고’ 포함)"]
   },
   developer: {
     summary: "시스템 유지보수자예요.",
-    can: ["일정·태그·멤버 편집(유지보수)", "꾸미기·포스터"]
+    can: ["일정·태그·멤버 편집(유지보수)", "꾸미기·포스터", "‘작업자’ 공개 일정 보기(잠금 해제 시)"]
   },
   manager: {
     summary: "방송 운영을 도와요.",
     can: [
       "업 도움 기간/링크 수정",
       "일정별 태그 편집",
-      "꾸미기·포스터 내보내기",
-      "비공개 일정 보기(잠금 해제 시)"
+      "꾸미기·포스터 내보내기"
     ]
   },
   worker: {
     summary: "제작을 도와요.",
-    can: ["꾸미기·이미지·포스터", "작업 일정 참고", "비공개 일정 보기(잠금 해제 시)"]
+    can: ["꾸미기·이미지·포스터", "‘작업자’ 공개 일정 보기(잠금 해제 시)"]
   },
   viewer: {
     summary: "공개 일정을 봐요.",
@@ -216,7 +216,7 @@ const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
   public: "모두",
   embargo: "엠바고",
   work: "작업자",
-  owner_private: "나만"
+  owner_private: "엠바고"
 };
 
 // 색상 필터에 섞어 쓰는 특수 필터 id — 태그가 아니라 "비공개(공개 아님) 일정"을 골라본다.
@@ -503,7 +503,10 @@ export function StudioShell({
   const canEditSupportThing = canEditSupport(effectiveRole);
   // 매니저는 일정별 태그 할당도 편집할 수 있다(태그 자체 생성/삭제는 여전히 관리자/개발자 전용).
   const canEditTagsThing = canEditEventTags(effectiveRole);
-  const canTogglePrivateLayer = effectiveRole !== "viewer";
+  // 비공개 레이어 사용 자격(소유자/개발자/작업자). 매니저는 비공개를 전혀 못 본다. 미리보기 중엔
+  // 미리보기 역할 기준, 평소엔 실제 작업자 겸직(actor.isWorker)도 인정한다.
+  const effIsWorker = previewRole ? effectiveRole === "worker" : actor.isWorker === true;
+  const canTogglePrivateLayer = canUsePrivateLayer(effectiveRole, effIsWorker);
 
   // 이중 역할(매니저+작업자)은 실제 계정이 둘 다일 때만(미리보기 중엔 단일 역할로 본다).
   const isDualRole = !previewRole && Boolean(actor.isManager && actor.isWorker);
@@ -515,8 +518,7 @@ export function StudioShell({
           "업 도움 기간/링크 수정",
           "일정별 태그 편집",
           "꾸미기·이미지·포스터",
-          "작업 일정 참고",
-          "비공개 일정 보기(잠금 해제 시)"
+          "‘작업자’ 공개 일정 보기(잠금 해제 시)"
         ]
       }
     : {
@@ -527,7 +529,8 @@ export function StudioShell({
   const deskLabel = isDualRole ? "매니저 · 작업자" : DESK_LABEL[effectiveRole];
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
   const [roleHelpOpen, setRoleHelpOpen] = useState(false);
-  const canReadPrivate = canReadPrivateLayer(effectiveRole, hasUnlockSession) && showPrivate;
+  const canReadPrivate =
+    canReadPrivateLayer(effectiveRole, effIsWorker, hasUnlockSession) && showPrivate;
 
   // 미리보기 중 변경 차단(보기 전용). 막았으면 true. (문구는 짧게 — 모바일 컴팩트.)
   function blockedByPreview(): boolean {
@@ -2467,9 +2470,8 @@ export function StudioShell({
                 value={form.visibilityScope}
               >
                 <option value="public">모두</option>
-                <option value="embargo">엠바고</option>
+                {isEffectivelyOwner ? <option value="owner_private">엠바고</option> : null}
                 <option value="work">작업자</option>
-                {isEffectivelyOwner ? <option value="owner_private">나만</option> : null}
               </select>
             </label>
 
@@ -3093,13 +3095,12 @@ export function StudioShell({
                   value={form.visibilityScope}
                 >
                   <option value="public">모두</option>
-                  <option value="embargo">엠바고</option>
+                  {isEffectivelyOwner ? <option value="owner_private">엠바고</option> : null}
                   <option value="work">작업자</option>
-                  {isEffectivelyOwner ? <option value="owner_private">나만</option> : null}
                 </select>
               ) : (
                 // 비공개 레이어 잠김: 공개 범위는 "모두"로 고정. 비밀번호로 풀어야 토글이 열린다.
-                <select disabled value="public" title="비공개 레이어를 풀면 엠바고·작업자·나만을 지정할 수 있습니다">
+                <select disabled value="public" title="비공개 레이어를 풀면 엠바고·작업자를 지정할 수 있습니다">
                   <option value="public">모두</option>
                 </select>
               )}
