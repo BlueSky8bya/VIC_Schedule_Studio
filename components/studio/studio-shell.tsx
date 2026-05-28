@@ -2687,8 +2687,11 @@ export function StudioShell({
               const supportHere = covering.filter((e) => e.isSupport);
               const dateEvents = covering.filter((e) => !e.isSupport);
               // 드롭 삽입선이 이 칸의 어느 카드 앞에 올지(없으면 undefined, null이면 맨 끝).
+              // 안내선은 '다른' 카드 사이 위/아래를 고를 때만 의미가 있다. 드래그 중인 카드(희미한
+              // 원위치)밖에 없는 칸이나 빈 칸엔 띄우지 않는다 — 희미한 카드가 이미 원래 자리를 보여줌.
               let dropLineBeforeId: string | null | undefined = undefined;
-              if (dragEventId && dropSlot && dropSlot.day === cell.isoDate) {
+              const hasOtherEvent = dateEvents.some((e) => e.id !== dragEventId);
+              if (dragEventId && dropSlot && dropSlot.day === cell.isoDate && hasOtherEvent) {
                 // 끈(이어진 일정)은 위에 고정 — 안내선은 끈 아래에서만 뜬다.
                 const connectedCount = dateEvents.filter((e) => isConnectedEvent(e)).length;
                 let li: number;
