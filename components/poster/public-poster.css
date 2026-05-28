@@ -759,6 +759,31 @@
   font-weight: 700;
 }
 
+/* 내보내기 3단계(준비→렌더링→복사) 진행 점 + 폰트 정착 안내 */
+.poster-export-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.poster-export-progress .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(60, 40, 20, 0.22);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+.poster-export-progress .dot.done {
+  background: var(--brand, #d59a93);
+  transform: scale(1.15);
+}
+.poster-export-progress .poster-export-hint {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  font-style: normal;
+  color: var(--muted, #8a8077);
+}
+
 /* #1: 월간 일정표 바로 위 캡쳐 버튼 줄 */
 .poster-capture-row {
   display: flex;
