@@ -224,14 +224,9 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
     const ax = Math.abs(dx);
     const ay = Math.abs(dy);
     const LEN = PANELS.length;
-    // 가로 스와이프 = ±1, 세로 스와이프 = ±4(행 이동). 격자(4×2)를 상하좌우로 넘긴다.
+    // 가로 스와이프만 패널 전환(±1). 세로는 패널 내용 스크롤과 겹쳐서 쓰지 않는다(웹은 방향키로 격자 이동).
     if (ax > 45 && ax > ay * 1.3) {
       setIndex((i) => Math.max(0, Math.min(LEN - 1, i + (dx < 0 ? 1 : -1))));
-    } else if (ay > 56 && ay > ax * 1.3) {
-      setIndex((i) => {
-        const n = i + (dy < 0 ? GRID_COLS : -GRID_COLS); // 위로 밀면 다음 행
-        return n >= 0 && n < LEN ? n : i;
-      });
     }
   };
 

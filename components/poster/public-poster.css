@@ -955,14 +955,15 @@
   font-weight: 900;
 }
 
-/* 콘텐츠 색상 안내(세로) */
+/* 콘텐츠 색상 안내(세로) — 태그 최대 20종 + 하트 + 필터해제까지 달력 높이 안에 들어오도록
+   간격을 최소로 압축한다(미래 태그 2종까지 미리 감안). */
 .public-legend-vertical {
   display: grid;
-  gap: 10px;
+  gap: 3px;
   border: 1px solid #ece2cd;
   border-radius: var(--r-lg);
   background: #fffdf6;
-  padding: 14px 16px;
+  padding: 10px 14px;
   box-shadow: var(--shadow-2);
 }
 .public-legend-vertical span,
@@ -979,7 +980,7 @@
   border: 0;
   border-radius: var(--r-sm);
   background: transparent;
-  padding: 4px 6px;
+  padding: 2px 6px;
   color: inherit;
   text-align: left;
   cursor: pointer;
@@ -1106,15 +1107,14 @@
   right: 0;
   height: 12px;
   bottom: var(--lh-fill, 0%);
-  margin-bottom: -6px;
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='12' viewBox='0 0 28 12'%3E%3Cpath d='M0 6 q 7 -5 14 0 t 14 0 V12 H0Z' fill='%23ff4d6d'/%3E%3C/svg%3E") repeat-x;
+  /* 물결의 채워진 아랫부분이 물 윗면을 덮도록(아래로 안 내림) → 물 표면에 평평한 직선이 안 보인다. */
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='12' viewBox='0 0 28 12'%3E%3Cpath d='M0 6 q 7 -5 14 0 t 14 0 V12 H0Z' fill='%23ff5d7e'/%3E%3C/svg%3E") repeat-x;
   background-size: 28px 12px;
   transition: bottom 0.7s cubic-bezier(0.22, 0.61, 0.36, 1);
   animation: lh-wave-move 2.1s linear infinite;
 }
 .lh-wave-2 {
   height: 14px;
-  margin-bottom: -7px;
   opacity: 0.5;
   animation: lh-wave-move 3.3s linear infinite reverse;
   animation-delay: -1s;

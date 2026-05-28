@@ -2988,26 +2988,8 @@ export function PublicPoster({
                   필터 해제
                 </button>
               ) : null}
-              {/* 관심(♥)을 많이 받은 일정의 인기 배지 단계만 간단히 안내. */}
-              {!decorate ? (
-                <div className="legend-heart-help">
-                  <p className="legend-tier-line">관심(♥) 인기도:</p>
-                  <ul className="legend-tiers">
-                    <li>
-                      <span className="flame">🔥</span> 관심
-                    </li>
-                    <li>
-                      <span className="flame">🔥🔥</span> 높은 관심
-                    </li>
-                    <li>
-                      <span className="flame">🔥🔥🔥</span> 폭발적 관심
-                    </li>
-                    <li>
-                      <span className="flame">👑</span> 이 달 최고 인기
-                    </li>
-                  </ul>
-                </div>
-              ) : null}
+              {/* 관심(♥) 인기도 안내는 웹 레일 높이 절약을 위해 뺐다(태그 최대 20종 수용).
+                  ♥ 의미는 어항 하트로, 불꽃/왕관 배지는 달력 위 일정에서 직접 보인다. */}
             </div>
           </aside>
         </section>
