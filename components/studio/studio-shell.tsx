@@ -1215,7 +1215,7 @@ export function StudioShell({
             ) : null}
             {selectedEvent.isSupport ? (
               <div className="detail-row">
-                <span className="detail-label">후원</span>
+                <span className="detail-label">업 도와주기</span>
                 <div className="detail-value">
                   {selectedEvent.supportUrl ? (
                     <a href={selectedEvent.supportUrl} rel="noreferrer" target="_blank">

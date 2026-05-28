@@ -2954,17 +2954,19 @@ textarea:disabled {
   background: #f6f4ee;
   color: #9aa0ab;
 }
-/* "링크 열어 확인" — 입력칸 아래 작은 보조 링크(점선 알약). */
+/* "링크 열어 확인" — 입력칸 바로 아래, 같은 폭·같은 라운드로 맞춰 좌우 대칭이 되게 한다. */
 .support-visit {
-  justify-self: start;
+  justify-self: stretch;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
   border: 1px dashed #e7c98a;
-  border-radius: 999px;
+  border-radius: 12px;
   background: #fffaf0;
-  padding: 5px 12px;
-  font-size: 12px;
+  padding: 0 12px;
+  font-size: 13px;
   font-weight: 800;
   color: #a9760a;
   text-decoration: none;
