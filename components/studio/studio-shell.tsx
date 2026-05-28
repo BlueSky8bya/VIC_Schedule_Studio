@@ -61,6 +61,7 @@ import { getDayMark } from "@/lib/calendar/holidays";
 import {
   canDecorate,
   canEditSchedule,
+  canEditSupport,
   canReadOwnerPrivate,
   canReadPrivateLayer
 } from "@/lib/permissions/roles";
@@ -390,6 +391,8 @@ export function StudioShell({
   const [editorVisible, setEditorVisible] = useState(false);
   const canEdit = canEditSchedule(actor.role);
   const canDecorateCalendar = canDecorate(actor.role);
+  // 매니저(방송 운영)는 후원 기간/링크 수정 가능, 작업자(worker)는 읽기 전용.
+  const canEditSupportThing = canEditSupport(actor.role);
   const canTogglePrivateLayer = actor.role !== "viewer";
   const canReadPrivate = canReadPrivateLayer(actor.role, hasUnlockSession) && showPrivate;
 
@@ -1567,7 +1570,7 @@ export function StudioShell({
                                     <ExternalLink aria-hidden="true" size={13} />
                                   </a>
                                 ) : null}
-                                {/* 소유자·개발자는 전체 편집, 매니저·작업자는 업 도움 설정만 수정. */}
+                                {/* 소유자·개발자는 전체 편집, 매니저는 후원 설정만 수정. 작업자는 읽기 전용. */}
                                 {canEdit ? (
                                   <button
                                     className="m-support-edit"
@@ -1576,7 +1579,7 @@ export function StudioShell({
                                   >
                                     수정
                                   </button>
-                                ) : canDecorateCalendar ? (
+                                ) : canEditSupportThing ? (
                                   <button
                                     className="m-support-edit"
                                     onClick={() => openSupportSheet(event)}
@@ -2253,8 +2256,8 @@ export function StudioShell({
                         key={s.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          // 매니저·작업자는 업 도움 설정 수정 시트를 띄운다(전체 편집 불가).
-                          if (!canEdit && canDecorateCalendar) {
+                          // 매니저는 후원 설정 수정 시트를 띄운다(전체 편집 불가). 작업자는 읽기 전용.
+                          if (!canEdit && canEditSupportThing) {
                             openSupportSheet(s);
                           } else {
                             selectEvent(s);

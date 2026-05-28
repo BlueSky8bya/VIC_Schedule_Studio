@@ -17,6 +17,13 @@ export function canDecorate(role: MembershipRole) {
   return role === "owner" || role === "developer" || role === "manager" || role === "worker";
 }
 
+// 후원(support) 이벤트의 기간/링크 편집. 매니저는 "방송 운영" 역할이라 후원 정보를 손볼 수
+// 있지만, 작업자(worker)는 "제작"(에셋/꾸미기) 역할이라 후원은 읽기 전용이다.
+// (일반 일정 자체의 생성/수정/삭제는 여전히 canEditSchedule = owner/developer 전용)
+export function canEditSupport(role: MembershipRole) {
+  return role === "owner" || role === "developer" || role === "manager";
+}
+
 // 비공개 레이어를 볼 수 있는 사람(소유자, 개발자, 신뢰 멤버)이라도
 // 엠바고/작업/owner_private 행이 보이려면 유효한 잠금해제 세션이 필요하다.
 export function canReadPrivateLayer(role: MembershipRole, hasUnlockSession: boolean) {

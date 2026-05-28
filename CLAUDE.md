@@ -29,7 +29,7 @@ Build a web app where:
 1. All time is KST / Asia/Seoul.
 2. Only the configured owner (or a platform developer/superadmin) can create, edit, or delete schedules. Trusted members never can. The owner may be configured as more than one Google account of the same streamer (`OWNER_EMAIL` is a comma-separated list; extra accounts are synced into `calendar_co_owners` and recognized by `is_calendar_owner`). These co-owner accounts are fully equivalent to the owner, including `owner_private` access.
 3. Everyone authenticates with Google at the root (`/`); after login, role decides the screen (owner/staff → studio, viewer → public calendar). Viewers can only see public data.
-4. Managers and workers are read-only for schedule data (events, tags, members, passcode). EXCEPTION: they may decorate — add/move/resize/flip/delete emoji stickers (`sticker_instances`). Sticker image assets (`sticker_assets`) remain owner/developer-only.
+4. Managers and workers are read-only for schedule data (events, tags, members, passcode). EXCEPTIONS: (a) both may decorate — add/move/resize/flip/delete emoji stickers (`sticker_instances`); sticker image assets (`sticker_assets`) remain owner/developer-only. (b) Managers (broadcast-operations role) — but NOT workers — may edit a support event's period/link (`canEditSupport` = owner/developer/manager). Workers (production role) see support as read-only.
 5. Managers/workers may see the private-layer toggle only after Google authentication.
 6. General viewers must never see the private-layer toggle.
 7. Private-layer unlock requires a streamer-defined passcode.
@@ -57,16 +57,25 @@ Build a web app where:
 
 ### Trusted Member
 
-Includes managers and workers.
+Includes managers and workers. They share most access but differ by responsibility:
+a **manager** is a broadcast-operations helper, a **worker** is a creative-production
+collaborator.
+
+Common to both:
 
 - Must authenticate with Google OAuth
 - Must be listed in trusted_members
 - Can see private-layer toggle
 - Must enter private-layer passcode
 - Can view embargo/work schedules after unlock
-- Cannot edit schedules
+- Cannot edit schedules (events, tags, members, passcode)
 - CAN decorate (add/move/resize/flip/delete emoji stickers); cannot upload sticker image assets
 - Cannot view `owner_private` ("나만") events — those are owner-only
+
+Manager-only (broadcast operations):
+
+- May edit a support event's period/link (`canEditSupport`). Workers cannot — for them
+  support is read-only.
 
 ### Owner
 
