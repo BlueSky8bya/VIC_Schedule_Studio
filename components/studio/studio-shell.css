@@ -463,27 +463,39 @@
   color: #574f6b;
   letter-spacing: -0.01em;
 }
-/* 날짜가 바뀔 때(key 재마운트) 카드의 날짜가 쓱 내려오며 분홍으로 한 번 깜빡 → 정적이지 않게. */
+/* 날짜가 바뀔 때(key 재마운트): 카드 전체가 살짝 쑥 내려오고(아래 form), 날짜는 분홍으로 한 번
+   깜빡인다. 카드가 내려오므로 날짜 자체엔 이동을 빼고 색 깜빡임만 둔다(이중 이동 방지). */
 .editor-date {
-  animation: editor-date-change 0.36s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  animation: editor-date-flash 0.36s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
-@keyframes editor-date-change {
+@keyframes editor-date-flash {
   0% {
-    opacity: 0;
-    transform: translateY(-9px);
     color: #f48fb1;
   }
   55% {
     color: #f48fb1;
   }
   100% {
-    opacity: 1;
-    transform: translateY(0);
     color: #574f6b;
   }
 }
+/* 편집 카드 내용 전체가 위에서 살짝 내려오며 나타난다(날짜 변경·카드 열림 시). */
+.event-editor-panel form {
+  animation: editor-card-enter 0.36s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+@keyframes editor-card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 @media (prefers-reduced-motion: reduce) {
-  .editor-date {
+  .editor-date,
+  .event-editor-panel form {
     animation: none;
   }
 }

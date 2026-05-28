@@ -2411,7 +2411,8 @@ export function StudioShell({
         </section>
 
         <aside className="event-editor-panel">
-          <form onSubmit={saveEvent}>
+          {/* key로 날짜가 바뀔 때마다 카드 내용이 재마운트 → 카드 전체가 살짝 쑥 내려오는 애니메이션. */}
+          <form onSubmit={saveEvent} key={selectedDate}>
             <div className="editor-heading">
               <div>
                 <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
