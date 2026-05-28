@@ -165,6 +165,13 @@ export function TrustedMembersPanel() {
       <div className="members-add">
         <input
           onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => {
+            // 이메일 치고 Enter로도 바로 추가(추가 버튼과 동일 조건).
+            if (e.key === "Enter" && email.trim()) {
+              e.preventDefault();
+              add();
+            }
+          }}
           placeholder="example@gmail.com"
           type="email"
           value={email}
