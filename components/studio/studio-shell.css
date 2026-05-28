@@ -1537,6 +1537,10 @@
   .highlight-card .hl-sub {
     font-size: 48px;
   }
+  /* 웹 ♥는 큰 수치(48px)보다 작게 — 이전보다 약 1.7배(≈37px). */
+  .hl-heart {
+    font-size: 0.78em;
+  }
   /* 웹은 라벨을 한 줄로(공백). 단 긴 '컨텐츠 최다요일'(wd)은 그대로 두 줄. */
   .hl-lbreak {
     display: inline;
