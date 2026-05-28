@@ -283,8 +283,9 @@ export function StudioShell({
   const pendingSavesRef = useRef<Map<string, Promise<string | null>>>(new Map());
   // 실수로 지운 일정을 Ctrl+Z로 되살리기 위한 스택(삭제된 일정 내용 보관).
   const deletedStackRef = useRef<StudioScheduleEvent[]>([]);
-  // temp id면 저장 약속을 기다려 실제 id로, 실패면 null. 실제 id는 그대로.
-  async function resolveEventId(id: string): Promise<string | null> {
+  // temp id면 저장 약속을 기다려 실제 id로, 실패면 null. 실제 id는 그대로. (null이 새어와도 방어.)
+  async function resolveEventId(id: string | null | undefined): Promise<string | null> {
+    if (!id) return null;
     if (!id.startsWith("temp-")) {
       return id;
     }
@@ -2530,9 +2531,11 @@ export function StudioShell({
               ) : (
                 <span />
               )}
-              <button className="button primary" disabled={pending} type="submit">
+              {/* 저장은 낙관적(카드가 즉시 뜨고 통통 착지) — 백그라운드 저장 중이라고 폼을 막지
+                  않는다. 빈 제목일 때만 비활성(빈 일정 생성 방지). */}
+              <button className="button primary" disabled={!form.publicTitle.trim()} type="submit">
                 <Save aria-hidden="true" size={15} />
-                {pending ? "저장 중…" : "저장"}
+                저장
               </button>
             </div>
           </form>
@@ -3042,9 +3045,13 @@ export function StudioShell({
                   {selectedDate}
                 </h2>
               </div>
-              <button className="button primary" disabled={!canEdit || pending} type="submit">
+              <button
+                className="button primary"
+                disabled={!canEdit || !form.publicTitle.trim()}
+                type="submit"
+              >
                 <Save aria-hidden="true" size={16} />
-                {pending ? "저장 중…" : "저장"}
+                저장
               </button>
             </div>
 

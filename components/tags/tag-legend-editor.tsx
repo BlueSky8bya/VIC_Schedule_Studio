@@ -19,7 +19,9 @@ type TagUpdate = { id: string; displayName: string; colorKey: ColorKey; sortOrde
 const MAX_TAGS = 20;
 // 저장 전 새 태그(드래프트)의 임시 id 접두사.
 const NEW_PREFIX = "new:";
-const isNew = (id: string) => id.startsWith(NEW_PREFIX);
+// id가 null/undefined로 새어들어와도 터지지 않게 방어(드물게 서버가 빈 id를 돌려줄 때 등).
+const isNew = (id: string | null | undefined): boolean =>
+  typeof id === "string" && id.startsWith(NEW_PREFIX);
 
 type TagLegendEditorProps = {
   tags: BroadcastTag[];
@@ -106,8 +108,11 @@ export function TagLegendEditor({
   const [orderIds, setOrderIds] = useState<string[]>(() => tags.map((t) => t.id));
   useEffect(() => {
     setOrderIds((cur) => {
-      const ids = [...tags.map((t) => t.id), ...newTags.map((t) => t.id)];
-      const kept = cur.filter((id) => ids.includes(id));
+      // 빈/누락 id는 거른다 — orderIds에 null이 섞이면 순서 계산(isNew)에서 터진다.
+      const ids = [...tags, ...newTags]
+        .map((t) => t.id)
+        .filter((id): id is string => Boolean(id));
+      const kept = cur.filter((id) => Boolean(id) && ids.includes(id));
       const added = ids.filter((id) => !kept.includes(id));
       return [...kept, ...added];
     });
@@ -395,7 +400,7 @@ export function TagLegendEditor({
   }
 
   const anyEmpty = Object.values(draft).some((d) => d.colorKey === "");
-  const existingOrder = orderIds.filter((id) => !isNew(id));
+  const existingOrder = orderIds.filter((id): id is string => Boolean(id) && !isNew(id));
   const orderChanged = existingOrder.some((id, i) => tags[i]?.id !== id);
   const contentChanged = tags.some(
     (t) => draft[t.id]?.name !== t.displayName || draft[t.id]?.colorKey !== t.colorKey

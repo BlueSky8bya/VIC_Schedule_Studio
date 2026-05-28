@@ -24,7 +24,8 @@
   max-height: calc(100vh - 150px);
   max-height: calc(100dvh - 150px);
   overflow-y: auto;
-  flex: 0 0 86px;
+  /* 작은 폰에서 칩이 살짝 비좁아 가로 스크롤이 생기던 문제 → 레일을 조금 넓힌다. */
+  flex: 0 0 92px;
   display: grid;
   align-content: start;
   gap: 5px;
@@ -45,21 +46,24 @@
   display: grid;
   grid-template-columns: 12px 1fr;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   /* [Phase 6] 선택 시 2px 테두리로 바뀌어도 안 밀리도록 기본 테두리도 2px 투명. */
   border: 2px solid transparent;
   border-radius: 9px;
   background: transparent;
-  /* [Phase 6] 모바일 터치 영역 — 패딩을 키워 손가락으로 누르기 편하게. */
-  padding: 7px 7px;
+  /* [Phase 6] 모바일 터치 영역 — 패딩을 키워 손가락으로 누르기 편하게.
+     (가로 패딩은 살짝 줄여 라벨에 폭을 더 준다 → 4글자 태그가 한 줄에 들어온다.) */
+  padding: 7px 5px;
   font-size: 11px;
   font-weight: 700;
   color: #4b4636;
   line-height: 1.15;
   text-align: left;
   cursor: pointer;
-  /* 4글자(타스뱅송)까지는 한 줄 유지, 더 길면 줄바꿈 허용 */
+  /* 4글자(타스뱅송)까진 한 줄, 더 길면 줄바꿈 — 어떤 폰/태그명이어도 가로로 넘쳐 스크롤이
+     생기지 않게 한다(keep-all로 단어는 지키되, 넘칠 땐 줄바꿈 허용). */
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 /* [Phase 6] 선택 상태를 더 또렷하게 — 진한 테두리 + 굵은 글씨 + 살짝 떠 보이는 그림자. */
 .agenda-legend-tag.on {
