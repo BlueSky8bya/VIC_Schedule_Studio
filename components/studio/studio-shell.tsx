@@ -2415,7 +2415,10 @@ export function StudioShell({
             <div className="editor-heading">
               <div>
                 <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
-                <h2>{selectedDate}</h2>
+                {/* key로 날짜가 바뀔 때마다 재마운트 → 날짜가 쓱 바뀌는 애니메이션으로 "옮겼다"를 인지. */}
+                <h2 className="editor-date" key={selectedDate}>
+                  {selectedDate}
+                </h2>
               </div>
               <button className="button primary" disabled={!canEdit || pending} type="submit">
                 <Save aria-hidden="true" size={16} />

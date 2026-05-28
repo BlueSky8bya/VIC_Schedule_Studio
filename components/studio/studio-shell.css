@@ -463,6 +463,30 @@
   color: #574f6b;
   letter-spacing: -0.01em;
 }
+/* 날짜가 바뀔 때(key 재마운트) 카드의 날짜가 쓱 내려오며 분홍으로 한 번 깜빡 → 정적이지 않게. */
+.editor-date {
+  animation: editor-date-change 0.36s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+@keyframes editor-date-change {
+  0% {
+    opacity: 0;
+    transform: translateY(-9px);
+    color: #f48fb1;
+  }
+  55% {
+    color: #f48fb1;
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    color: #574f6b;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor-date {
+    animation: none;
+  }
+}
 
 /* 헤더·사이드바 글씨가 전반적으로 작다는 피드백 → 편집실 한정으로 키운다(시청자/포스터 영향 없음). */
 .studio-eyebrow {
@@ -776,6 +800,26 @@
 /* 선택: 골드(오늘)와 구분되는 귀여운 핑크 테두리 */
 .studio-day.selected {
   box-shadow: inset 0 0 0 2px #f48fb1;
+  /* 새 날짜를 선택할 때(.selected가 막 붙을 때) 바깥으로 핑크 글로우가 한 번 퍼졌다 사라진다
+     → "이 날로 옮겼다"를 시각적으로 알려준다. 애니 종료 후엔 위 정적 box-shadow로 복귀. */
+  animation: cell-select-pop 0.42s ease;
+}
+@keyframes cell-select-pop {
+  0% {
+    box-shadow:
+      inset 0 0 0 2px #f48fb1,
+      0 0 0 5px rgb(244 143 177 / 45%);
+  }
+  100% {
+    box-shadow:
+      inset 0 0 0 2px #f48fb1,
+      0 0 0 0 rgb(244 143 177 / 0%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-day.selected {
+    animation: none;
+  }
 }
 /* 오늘이면서 선택된 경우: 두 색을 겹쳐(안쪽 골드 + 바깥 핑크) 둘 다 보이게. */
 .studio-day.today.selected {
