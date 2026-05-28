@@ -1825,7 +1825,8 @@
   gap: 8px;
   min-width: 0;
 }
-/* 개발자 전용 배포 버전 — 액션바 가운데에 아주 연하게(클릭 안 됨). */
+/* 배포 버전(커밋) — 액션바 가운데(클릭 안 됨). 기본(비개발자)은 흐린 회색 텍스트,
+   개발자(.dev)는 모바일 배지처럼 또렷한 보라 펄로 꾸민다. */
 .studio-build-tag {
   position: absolute;
   left: 50%;
@@ -1834,13 +1835,19 @@
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.03em;
-  color: #b6b0c6;
+  color: #c7c2d4;
   pointer-events: none;
   white-space: nowrap;
 }
-/* 모바일 전용 헤더 좌상단 버전 배지(.studio-build-tag-m). 헤더(sticky)가 컨테이닝 블록이라
-   absolute가 헤더 기준으로 박힌다. 웹에선 숨기고 액션바 가운데 배지를 쓴다. */
-/* 모바일 헤더(.agenda-header, grid 1fr auto 1fr) 왼쪽 1열 — 제목과 같은 줄에 또렷한 펄.
+.studio-build-tag.dev {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgb(124 108 240 / 16%);
+  color: #6b5bd6;
+  font-weight: 800;
+}
+/* 모바일 헤더(.agenda-header, grid 1fr auto 1fr) 왼쪽 1열 — 제목과 같은 줄의 작은 펄.
+   기본(비개발자)은 흐린 회색, 개발자(.dev)는 또렷한 보라.
    .studio-mobile에만 렌더되므로(웹은 그 레이아웃이 숨겨짐) 별도 미디어쿼리 없이 둔다. */
 .studio-mobile .agenda-header .studio-build-tag-m {
   grid-column: 1;
@@ -1849,11 +1856,15 @@
   align-self: center;
   padding: 2px 7px;
   border-radius: 999px;
-  background: rgb(124 108 240 / 16%);
-  color: #6b5bd6;
+  background: rgb(148 140 168 / 14%);
+  color: #9b95a8;
   font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.03em;
+}
+.studio-mobile .agenda-header .studio-build-tag-m.dev {
+  background: rgb(124 108 240 / 16%);
+  color: #6b5bd6;
 }
 .studio-actionbar .button {
   min-height: 36px;
@@ -4339,6 +4350,18 @@ textarea:disabled {
   font-size: 12px;
   white-space: nowrap;
   overflow: hidden;
+}
+/* 비개발자(관리자·매니저·작업자) — 월별 인사이트를 역할 바에서 빼낸 별도 줄. 오른쪽 끝 정렬. */
+.m-insightbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 8px 0 0;
+}
+.m-insightbar .button {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 .studio-mobile .developer-warning,
 .studio-mobile .private-warning {

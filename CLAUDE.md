@@ -83,7 +83,7 @@ High-frequency facts so you rarely need to reopen `docs/sop.md`:
   Both may decorate (stickers). Tag create/delete/recolor is owner/developer-only.
 - A trusted member can be manager AND worker at once (`is_manager`/`is_worker`);
   effective role is manager when `is_manager`.
-- **모바일은 컴팩트가 생명 (mobile is compact-first).** Mobile = `≤640px`
+- **mobile is compact-first** Mobile = `≤640px`
   (`BREAKPOINTS.mobile` / `MOBILE_QUERY`). On mobile, *cut* copy and controls —
   shorten labels, drop helper/parenthetical text, hide non-essential buttons.
   Never just shrink the desktop layout. When adding text, ask "does this earn its

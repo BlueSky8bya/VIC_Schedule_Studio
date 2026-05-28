@@ -1897,12 +1897,14 @@ export function StudioShell({
         <div className="m-scroll-region">
           <div className="m-topstick">
             <header className="agenda-header">
-              {/* 개발자 배포 버전(커밋) — 헤더 그리드 1열(제목 왼쪽·같은 줄). */}
-              {isDeveloper && !previewRole ? (
-                <span className="studio-build-tag-m" aria-hidden="true">
-                  {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
-                </span>
-              ) : null}
+              {/* 배포 버전(커밋) — 헤더 그리드 1열(제목 왼쪽·같은 줄). 개발자는 또렷한 보라 펄,
+                  그 외 역할은 같은 자리에 흐린 회색 펄로. */}
+              <span
+                className={`studio-build-tag-m${isDevInsights ? " dev" : ""}`}
+                aria-hidden="true"
+              >
+                {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
+              </span>
               <h1>
                 ✨️ {schedule.calendar.title} ✨️
                 <span>
@@ -1928,12 +1930,6 @@ export function StudioShell({
                   type="button"
                 >
                   {canReadPrivate ? "비공개 중" : "비공개 일정"}
-                </button>
-              ) : null}
-              {/* 비개발자(관리자·매니저·작업자)도 모바일에서 월별 인사이트 — 개발자는 아래 세션 블록에 있음. */}
-              {canMemberInsights ? (
-                <button className="button" onClick={() => setModal("developer")} type="button">
-                  📊 월별 인사이트
                 </button>
               ) : null}
               {actor.isAuthenticated ? (
@@ -1964,6 +1960,15 @@ export function StudioShell({
                 type="button"
               >
                 월별 인사이트
+              </button>
+            </div>
+          ) : null}
+          {/* 비개발자(관리자·매니저·작업자) — 월별 인사이트를 혼잡한 역할 바에서 빼서
+              개발자 세션 줄처럼 아래 별도 줄 오른쪽 끝에 둔다. */}
+          {canMemberInsights ? (
+            <div className="m-insightbar">
+              <button className="button" onClick={() => setModal("developer")} type="button">
+                📊 월별 인사이트
               </button>
             </div>
           ) : null}
@@ -2712,12 +2717,13 @@ export function StudioShell({
           (개발자 역할 표시는 헤더의 역할 배지로 충분 — 별도 세션 안내 줄은 두지 않는다.) */}
       <div className="studio-actionbar">
         <div className="studio-actionbar-tools">
-          {/* 배포 확인용 버전(커밋) — 개발자 화면에서만, 액션바 가운데에 연하게. */}
-          {isDeveloper && !previewRole ? (
-            <span className="studio-build-tag" aria-hidden="true">
-              {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
-            </span>
-          ) : null}
+          {/* 배포 확인용 버전(커밋) — 액션바 가운데. 개발자는 또렷한 보라 펄, 그 외엔 흐린 회색. */}
+          <span
+            className={`studio-build-tag${isDevInsights ? " dev" : ""}`}
+            aria-hidden="true"
+          >
+            {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
+          </span>
           {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자(또는
               그 역할 미리보기 중)는 비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}
           {canEdit || (isDeveloper && !previewRole) ? (
