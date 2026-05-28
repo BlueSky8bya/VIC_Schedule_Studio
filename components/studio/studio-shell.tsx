@@ -1951,7 +1951,8 @@ export function StudioShell({
               href={`/studio/decorate/${view.year}/${view.month}`}
               onClick={() => {
                 // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
-                writeViewCookie({ dy: view.year, dm: view.month });
+                // dp=0으로 리셋: "꾸미기로 가기"는 항상 꾸미기 화면으로(직전 미리보기 상태 무시).
+                writeViewCookie({ dy: view.year, dm: view.month, dp: 0 });
                 startNav("꾸미기 화면을 여는 중입니다…");
               }}
             >
@@ -2084,7 +2085,8 @@ export function StudioShell({
               href={`/studio/decorate/${view.year}/${view.month}`}
               onClick={() => {
                 // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
-                writeViewCookie({ dy: view.year, dm: view.month });
+                // dp=0으로 리셋: "꾸미기로 가기"는 항상 꾸미기 화면으로(직전 미리보기 상태 무시).
+                writeViewCookie({ dy: view.year, dm: view.month, dp: 0 });
                 startNav("꾸미기 화면을 여는 중입니다…");
               }}
             >
