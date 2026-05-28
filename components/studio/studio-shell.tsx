@@ -160,6 +160,15 @@ const ROLE_LABEL: Record<MembershipRole, string> = {
   viewer: "시청자"
 };
 
+// 비-owner(매니저·작업자) 읽기전용 상세에서 쓰는 평이한 공개 범위 라벨.
+// owner_private("나만")는 비-owner에게 애초에 노출되지 않지만, 매핑은 빠짐없이 둔다.
+const VISIBILITY_LABEL: Record<EventVisibilityScope, string> = {
+  public: "모두",
+  embargo: "엠바고",
+  work: "작업자",
+  owner_private: "나만"
+};
+
 const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
   public: "모두",
   embargo: "엠바고",
@@ -959,6 +968,91 @@ export function StudioShell({
       primaryTagIds: event.primaryTagIds
     });
     setEditorVisible(true);
+  }
+
+  // A1: 매니저·작업자용 읽기전용 일정 상세. owner 편집 폼을 회색으로 보여주는 대신,
+  // 제목·날짜·공개범위·태그·후원 링크만 깔끔히 보여준다. owner_private는 애초에 비-owner에게
+  // 로드되지 않는다. 매니저(canEditSupportThing)는 후원 이벤트에 한해 "후원 수정"을 쓸 수 있다.
+  function renderReadonlyDetail() {
+    const selectedEvent = selectedEventId
+      ? events.find((event) => event.id === selectedEventId)
+      : null;
+    return (
+      <div className="event-detail-readonly" key={selectedDate}>
+        <div className="editor-heading">
+          <div>
+            <p className="eyebrow">일정 보기</p>
+            <h2 className="editor-date" key={selectedDate}>
+              {selectedDate}
+            </h2>
+          </div>
+        </div>
+        {!selectedEvent ? (
+          <p className="detail-empty">이 날의 일정을 누르면 자세히 볼 수 있어요.</p>
+        ) : (
+          <>
+            <div className="detail-row">
+              <span className="detail-label">제목</span>
+              <p className="detail-value">{selectedEvent.publicTitle || "(제목 없음)"}</p>
+            </div>
+            <div className="detail-row">
+              <span className="detail-label">공개 범위</span>
+              <p className="detail-value">{VISIBILITY_LABEL[selectedEvent.visibilityScope]}</p>
+            </div>
+            {selectedEvent.tagIds.length > 0 ? (
+              <div className="detail-row">
+                <span className="detail-label">태그</span>
+                <div className="detail-tags">
+                  {selectedEvent.tagIds.map((id) => {
+                    const tag = legendTags.find((item) => item.id === id);
+                    const color = tag && palette.find((c) => c.key === tag.colorKey);
+                    return tag && color ? (
+                      <span
+                        className="detail-tag"
+                        key={id}
+                        style={{
+                          backgroundColor: color.bgColor,
+                          borderColor: color.borderColor,
+                          color: color.textColor
+                        }}
+                      >
+                        {tag.displayName}
+                      </span>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            ) : null}
+            {selectedEvent.isSupport ? (
+              <div className="detail-row">
+                <span className="detail-label">후원</span>
+                <div className="detail-value">
+                  {selectedEvent.supportUrl ? (
+                    <a href={selectedEvent.supportUrl} rel="noreferrer" target="_blank">
+                      {selectedEvent.supportUrl}
+                    </a>
+                  ) : (
+                    "링크 없음"
+                  )}
+                  {selectedEvent.endDateKey ? (
+                    <div className="detail-sub">~ {selectedEvent.endDateKey}</div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+            {selectedEvent.isSupport && canEditSupportThing ? (
+              <button
+                className="button"
+                onClick={() => openSupportSheet(selectedEvent)}
+                type="button"
+              >
+                후원 기간/링크 수정
+              </button>
+            ) : null}
+          </>
+        )}
+      </div>
+    );
   }
 
   function saveEvent(event: FormEvent<HTMLFormElement>) {
@@ -2419,7 +2513,11 @@ export function StudioShell({
         </section>
 
         <aside className="event-editor-panel">
-          {/* key로 날짜가 바뀔 때마다 카드 내용이 재마운트 → 카드 전체가 살짝 쑥 내려오는 애니메이션. */}
+          {/* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */}
+          {!canEdit ? (
+            renderReadonlyDetail()
+          ) : (
+          /* key로 날짜가 바뀔 때마다 카드 내용이 재마운트 → 카드 전체가 살짝 쑥 내려오는 애니메이션. */
           <form onSubmit={saveEvent} key={selectedDate}>
             <div className="editor-heading">
               <div>
@@ -2532,6 +2630,7 @@ export function StudioShell({
               </button>
             ) : null}
           </form>
+          )}
         </aside>
       </section>
       {/* 월 이동: 하단 좌·우 플로팅 < > (꾸미기·시청자 화면과 통일). 키보드 ←/→ 로도 이동. */}

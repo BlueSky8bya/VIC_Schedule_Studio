@@ -493,9 +493,63 @@
     transform: translateY(0);
   }
 }
+/* A1: 매니저·작업자 읽기전용 일정 상세 — 폼과 같은 등장 애니메이션, 깔끔한 라벨/값 레이아웃. */
+.event-detail-readonly {
+  animation: editor-card-enter 0.36s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.detail-label {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--muted, #8a8077);
+}
+.detail-value {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+  word-break: break-word;
+}
+.detail-value a {
+  color: #5b6bd6;
+  text-decoration: underline;
+}
+.detail-sub {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted, #8a8077);
+}
+.detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.detail-tag {
+  border: 1px solid;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 13px;
+  font-weight: 800;
+}
+.detail-empty {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted, #8a8077);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .editor-date,
-  .event-editor-panel form {
+  .event-editor-panel form,
+  .event-detail-readonly {
     animation: none;
   }
 }
