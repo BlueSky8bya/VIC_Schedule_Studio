@@ -1071,6 +1071,74 @@
     font-size: 13px;
   }
 }
+/* 관리자 접속 세션 — 하루=한 행, 가로 24h 축에 머문 구간을 기기색 막대로(수면/스크린타임 타임라인). */
+.own-sessions {
+  position: relative; /* 호버 툴팁(.own-tip) clamp 기준 */
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 30px; /* 막대 위 툴팁 자리 */
+}
+.own-row {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+.own-date {
+  font-size: 11px;
+  font-weight: 800;
+  color: #8a82a6;
+  text-align: right;
+  white-space: nowrap;
+}
+.own-track {
+  position: relative;
+  height: 16px;
+  border-radius: 6px;
+  background: #f2eefb;
+  overflow: hidden;
+}
+.own-seg {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  min-width: 3px;
+  border-radius: 4px;
+  transition: filter 0.12s var(--ease, ease);
+}
+.own-seg:hover {
+  filter: brightness(1.08);
+}
+.own-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-left: 48px; /* 40px(날짜) + 8px(gap) — 트랙 시작과 정렬 */
+  margin-top: 1px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #a9a2bd;
+}
+/* 세션 툴팁 — .vt-tip 스타일 재사용, 위치만 인라인 top 기준으로(막대 바로 위). */
+.own-tip {
+  bottom: auto;
+  transform: translate(-50%, calc(-100% - 6px));
+}
+.own-tip strong {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+@media (min-width: 641px) {
+  .own-track {
+    height: 20px;
+  }
+  .own-date {
+    font-size: 12.5px;
+  }
+  .own-axis {
+    font-size: 11.5px;
+  }
+}
 /* 월별 하트 막대(분홍) — 빈 막대 하나로 높이만 표시. */
 .vt-bar.heart {
   background: linear-gradient(180deg, #fb7aa5, #e11d54);

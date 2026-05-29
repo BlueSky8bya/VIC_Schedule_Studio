@@ -102,6 +102,12 @@ type VtHover = { x: number; total: number; rows: { color: string; label: string;
 type OccHover = { x: number; avg: number; peak: number; rows: { color: string; label: string; val: number }[] };
 // 평균 동시 접속(소수) 표시 — 0.1 단위.
 const fmtOcc = (n: number) => n.toFixed(1);
+// epoch ms → KST(=UTC+9)로 옮긴 Date(이후 getUTC*가 곧 KST 값). "HH:MM"·요일 표기에 쓴다.
+const kstOf = (ms: number) => new Date(ms + 9 * 3600 * 1000);
+const hhmm = (ms: number) => {
+  const d = kstOf(ms);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+};
 
 // 스택 막대 한 줄(방문 그래프 공용 — 역할/기기 등 meta로 구분). 호버하면 차트 단일 툴팁에 분해 수치를
 // 올려준다(툴팁은 차트 폭 안에서 clamp되어 양 끝에서도 안 잘린다).
@@ -174,6 +180,7 @@ export function InsightsDashboard({
   const [visitDim, setVisitDim] = useState<"role" | "device">("role");
   const [vtHover, setVtHover] = useState<VtHover | null>(null);
   const [vtHourHover, setVtHourHover] = useState<OccHover | null>(null); // 시간대 점유(체류) 분해 툴팁
+  const [ownerTip, setOwnerTip] = useState<{ x: number; top: number; text: string } | null>(null); // 관리자 세션 띠 툴팁
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
 
@@ -321,6 +328,41 @@ export function InsightsDashboard({
       visitDim === "role" ? s.roles : s.devices;
     // 시간대 막대 높이 스케일은 '평균 동시 접속'의 최댓값 기준(상대 스케일이라 절대치가 작아도 형태가 보임).
     const om = Math.max(0.0001, ...visits.occupancy.map((s) => s.avg));
+    // 관리자 접속 세션을 KST 날짜별로 묶고, 각 세션을 24h 트랙 좌표(시작%·길이%)로 — 수면/스크린타임
+    // 타임라인처럼 "언제·몇 분·어느 기기"를 한 줄로 보여준다(최근 날짜가 위).
+    const devMeta = (k: string) => DEVICE_META.find((m) => m.key === k) ?? DEVICE_META[0];
+    type OwnSeg = {
+      startFrac: number;
+      widthFrac: number;
+      device: string;
+      label: string; // 툴팁: "18:03–18:47 · 45분 · 안드로이드"
+    };
+    const ownerDayMap = new Map<string, { label: string; segs: OwnSeg[] }>();
+    for (const s of visits.ownerSessions) {
+      const d = kstOf(s.startMs);
+      const key = d.toISOString().slice(0, 10);
+      const startFrac = (d.getUTCHours() + d.getUTCMinutes() / 60) / 24;
+      const widthFrac = Math.min(1 - startFrac, Math.max(s.minutes / 60 / 24, 0));
+      const entry = ownerDayMap.get(key) ?? { label: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`, segs: [] };
+      entry.segs.push({
+        startFrac,
+        widthFrac,
+        device: s.device,
+        label: `${hhmm(s.startMs)}–${hhmm(s.endMs)} · ${s.minutes}분 · ${devMeta(s.device).label}`
+      });
+      ownerDayMap.set(key, entry);
+    }
+    const ownerDays = [...ownerDayMap.entries()]
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([key, v]) => ({ key, ...v }));
+    const ownerDevices = DEVICE_META.filter((m) => visits.ownerSessions.some((s) => s.device === m.key));
+    const onOwnSeg = (e: ReactPointerEvent<HTMLElement>, text: string) => {
+      const cont = e.currentTarget.closest(".own-sessions") as HTMLElement | null;
+      if (!cont) return;
+      const cr = cont.getBoundingClientRect();
+      const sr = e.currentTarget.getBoundingClientRect();
+      setOwnerTip({ x: ((sr.left + sr.width / 2 - cr.left) / cr.width) * 100, top: sr.top - cr.top, text });
+    };
     return (
       <>
         <div className="insight-grid">
@@ -484,6 +526,66 @@ export function InsightsDashboard({
             <span className="vt-hours-empty">아직 핑 없음 · 방문자가 다녀가면 막대가 차올라요</span>
           )}
         </div>
+
+        {/* 관리자(토리님) 전용 접속 세션 — 수면/스크린타임 타임라인처럼 하루=한 행, 가로 24h 축에
+            머문 구간을 기기색 막대로. 호버하면 시작–종료·머문 분·기기. 관리자는 계정이 적어 상세 가능. */}
+        <h4 className="insight-subhead">관리자 접속 세션 (이번 달)</h4>
+        <p className="vt-occ-note">하루별 24시간 띠 · 막대 = 머문 구간(기기색) · 호버 시 시작–종료·머문 시간</p>
+        {ownerDays.length > 0 ? (
+          <>
+            <div className="own-sessions" onPointerLeave={() => setOwnerTip(null)}>
+              {ownerDays.map((d) => (
+                <div className="own-row" key={d.key}>
+                  <span className="own-date">{d.label}</span>
+                  <div className="own-track">
+                    {d.segs.map((s, i) => (
+                      <span
+                        className="own-seg"
+                        key={i}
+                        onPointerEnter={(e) => onOwnSeg(e, s.label)}
+                        onPointerMove={(e) => onOwnSeg(e, s.label)}
+                        onPointerLeave={() => setOwnerTip(null)}
+                        style={{
+                          left: `${s.startFrac * 100}%`,
+                          width: `${s.widthFrac * 100}%`,
+                          background: devMeta(s.device).color
+                        }}
+                        title={s.label}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+              <div className="own-axis" aria-hidden="true">
+                <span>0</span>
+                <span>6</span>
+                <span>12</span>
+                <span>18</span>
+                <span>24</span>
+              </div>
+              {ownerTip ? (
+                <div
+                  className="vt-tip own-tip"
+                  style={{ "--tip-x": `${ownerTip.x}%`, top: ownerTip.top } as CSSProperties}
+                >
+                  <strong>{ownerTip.text}</strong>
+                </div>
+              ) : null}
+            </div>
+            <ul className="vt-legend">
+              {ownerDevices.map((m) => (
+                <li key={m.key}>
+                  <span style={{ background: m.color }} />
+                  {m.label}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="insight-empty">
+            아직 관리자 접속 세션이 없어요. 토리님이 접속하면 기기·시간대·머문 시간이 여기 그려져요.
+          </p>
+        )}
       </>
     );
   }

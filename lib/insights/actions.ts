@@ -652,6 +652,13 @@ export type OccSlot = {
   avg: number;
   peak: number;
 };
+// 관리자(owner) 접속 세션 한 건 — 기기, 시작/종료(epoch ms, KST는 클라에서 +9h), 머문 분(핑 수).
+export type OwnerSession = {
+  device: string;
+  startMs: number;
+  endMs: number;
+  minutes: number;
+};
 export type VisitTrends = {
   ready: boolean; // visit_log 접근 가능(테이블 적용) 여부
   hasData: boolean; // 이 달 방문 기록이 있는지
@@ -660,6 +667,7 @@ export type VisitTrends = {
   hours: VisitSlot[]; // 24칸(KST) — 첫 진입 시각 분포(역할/기기 분해)
   occupancy: OccSlot[]; // 24칸(KST) — 시간대별 평균/최고 동시 접속(체류)
   hasOccupancy: boolean; // presence_ping 핑이 쌓여 점유 그래프를 그릴 수 있는지
+  ownerSessions: OwnerSession[]; // 관리자(owner) 접속 세션(이 달, 최근 순) — 개발자 방문 패널 전용
   total: number; // 이 달 방문 총합
 };
 export type VisitTrendsResult = { ok: true; data: VisitTrends } | { ok: false; error: string };
@@ -715,6 +723,7 @@ export async function getVisitTrendsAction(
         hours: Array.from({ length: 24 }, emptySlot),
         occupancy: Array.from({ length: 24 }, emptyOcc),
         hasOccupancy: false,
+        ownerSessions: [],
         total: 0
       }
     };
@@ -754,10 +763,11 @@ export async function getVisitTrendsAction(
   // 함수가 없거나(마이그레이션 전) 오류면 빈 점유로 두고 hasOccupancy=false → UI가 "아직 없음"을 안내.
   const occupancy = Array.from({ length: 24 }, emptyOcc);
   let hasOccupancy = false;
-  const [hourlyRes, peakRes, daysRes] = await Promise.all([
+  const [hourlyRes, peakRes, daysRes, sessionsRes] = await Promise.all([
     supabase.rpc("presence_hourly", { p_start: monthStart, p_end: nextMonthStart }),
     supabase.rpc("presence_peak", { p_start: monthStart, p_end: nextMonthStart }),
-    supabase.rpc("presence_active_days", { p_start: monthStart, p_end: nextMonthStart })
+    supabase.rpc("presence_active_days", { p_start: monthStart, p_end: nextMonthStart }),
+    supabase.rpc("owner_sessions", { p_start: monthStart, p_end: nextMonthStart })
   ]);
   const observedDays = Math.max(1, Number(daysRes?.data ?? 0) || 1);
   if (!hourlyRes.error && Array.isArray(hourlyRes.data)) {
@@ -779,6 +789,19 @@ export async function getVisitTrendsAction(
     }
   }
 
+  // 관리자 접속 세션(최근 순) — owner_sessions RPC가 gaps-and-islands로 이미 묶어서 돌려준다.
+  const ownerSessions: OwnerSession[] =
+    !sessionsRes.error && Array.isArray(sessionsRes.data)
+      ? (sessionsRes.data as { device: string; started_at: string; ended_at: string; minutes: number }[])
+          .map((r) => ({
+            device: DEVICE_SET.has(r.device) ? r.device : "desktop",
+            startMs: new Date(r.started_at).getTime(),
+            endMs: new Date(r.ended_at).getTime(),
+            minutes: Number(r.minutes)
+          }))
+          .filter((s) => Number.isFinite(s.startMs) && Number.isFinite(s.endMs))
+      : [];
+
   return {
     ok: true,
     data: {
@@ -789,6 +812,7 @@ export async function getVisitTrendsAction(
       hours,
       occupancy,
       hasOccupancy,
+      ownerSessions,
       total: rows.length
     }
   };
