@@ -522,21 +522,28 @@ export function StudioShell({
 
   // 이중 역할(매니저+작업자)은 실제 계정이 둘 다일 때만(미리보기 중엔 단일 역할로 본다).
   const isDualRole = !previewRole && Boolean(actor.isManager && actor.isWorker);
+  // 모바일은 "달력 꾸미기"가 PC 전용이라 진입을 숨긴다 → 역할 설명에서도 꾸미기·달력 이미지 저장
+  // 관련 항목을 빼서, 폰에서 못 하는 걸 할 수 있다고 안내하지 않게 한다.
+  const dropDecorate = (items: string[]) =>
+    isNarrow ? items.filter((c) => !c.includes("꾸미기") && !c.includes("달력 이미지")) : items;
   const roleDisplay = isDualRole
     ? {
         label: "매니저 · 작업자",
-        summary: "방송 운영과 꾸미기를 함께 도와요.",
-        can: [
+        summary: isNarrow ? "방송 운영을 도와요." : "방송 운영과 꾸미기를 함께 도와요.",
+        can: dropDecorate([
           "업 도움 기간·링크 수정",
           "일정에 태그 지정",
           "스티커·이미지로 달력 꾸미기 · 달력 이미지 저장",
           "‘작업자’ 일정 보기(잠금 해제 시)"
-        ]
+        ])
       }
     : {
         label: ROLE_LABEL[effectiveRole],
-        summary: ROLE_DESC[effectiveRole].summary,
-        can: ROLE_DESC[effectiveRole].can
+        summary:
+          isNarrow && effectiveRole === "worker"
+            ? "제작을 도와요."
+            : ROLE_DESC[effectiveRole].summary,
+        can: dropDecorate(ROLE_DESC[effectiveRole].can)
       };
   const deskLabel = isDualRole ? "매니저 · 작업자" : DESK_LABEL[effectiveRole];
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
