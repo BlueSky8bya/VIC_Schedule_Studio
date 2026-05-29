@@ -1365,6 +1365,7 @@ export function StudioShell({
       })
     );
     setSelectedDate(targetDate);
+    markJustSaved(id); // A3: 착지한 카드가 통통 안착(+대상 셀은 .selected의 cell-select-pop)
     flashToast(targetDate === sourceDate ? "순서를 바꿨어요" : `${targetDate}로 옮겼어요`);
     // 서버 저장은 직렬 큐로 — 빠른 연속 이동도 순서대로 저장돼 마지막 위치가 서버 최종값이 된다.
     enqueueMovePersist({ id, sourceDate, targetDate, orderedIds });
@@ -2195,7 +2196,10 @@ export function StudioShell({
                       if (event.isSupport) {
                         const sEnd = event.endDateKey ?? cell.isoDate;
                         return (
-                          <div className={`agenda-event m-support${dimCls}`} key={event.id}>
+                          <div
+                            className={`agenda-event m-support${dimCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
+                            key={event.id}
+                          >
                             {/* 시청자 화면과 동일한 초록 세로 바(업 도움 고정색). */}
                             <span className="agenda-bar" style={{ background: "#84b74f" }} />
                             <div className="agenda-content">
@@ -2276,7 +2280,7 @@ export function StudioShell({
                       );
                       return canEdit ? (
                         <button
-                          className={`agenda-event m-event${dimCls}`}
+                          className={`agenda-event m-event${dimCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
                           key={event.id}
                           onClick={() => openMobileEdit(event)}
                           type="button"
@@ -2286,7 +2290,7 @@ export function StudioShell({
                       ) : canEditTagsThing ? (
                         // 매니저: 일정을 누르면 태그만 고치는 시트가 열린다(데스크톱 상세의 태그 편집과 동치).
                         <button
-                          className={`agenda-event m-event${dimCls}`}
+                          className={`agenda-event m-event${dimCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
                           key={event.id}
                           onClick={() => setTagSheetId(event.id)}
                           type="button"

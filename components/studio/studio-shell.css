@@ -4946,9 +4946,69 @@ textarea:disabled {
   padding: 0;
   text-align: left;
   cursor: pointer;
+  /* B2: 탭 손맛 — 누르는 순간 살짝 줄어든다(즉각 반응). 햅틱은 openMobileEdit에서. */
+  transition: transform 0.09s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+.m-event:active {
+  transform: scale(0.97);
 }
 .m-event .agenda-title-text {
   color: #2b2f38;
+}
+/* B3: 모바일 생성/삭제 모션 패리티 — 웹(.studio-event-pill)과 같은 타이밍·느낌으로 통일.
+   모바일 카드는 모두 .agenda-event를 공유한다(클래스는 스튜디오 상태에서만 붙어 포스터엔 무영향). */
+.agenda-event.just-saved {
+  position: relative;
+  z-index: 2;
+  animation: pill-settle 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+.agenda-event.just-saved::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 14px;
+  border: 2px solid #f6b73c;
+  box-shadow: 0 0 12px 2px rgb(246 183 60 / 50%);
+  pointer-events: none;
+  animation: pill-settle-ring 0.6s var(--ease, ease-out) both;
+}
+/* 삭제: 톡 줄어들며(웹 poof) 동시에 행 높이를 접어 레이아웃 점프를 줄인다(grid gap만 잠깐 남음). */
+.agenda-event.deleting {
+  animation: m-event-poof 0.23s ease-in forwards;
+  pointer-events: none;
+  overflow: hidden;
+}
+@keyframes m-event-poof {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+    max-height: 300px;
+  }
+  35% {
+    transform: scale(1.04) rotate(-1deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.5) rotate(5deg);
+    opacity: 0;
+    max-height: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .m-event {
+    transition: none;
+  }
+  .m-event:active {
+    transform: none;
+  }
+  .agenda-event.just-saved,
+  .agenda-event.just-saved::after,
+  .agenda-event.deleting {
+    animation: none;
+  }
+  .agenda-event.just-saved::after {
+    display: none;
+  }
 }
 /* 모바일 업 도움 카드: 도우러가기(왼쪽)와 수정(오른쪽 끝)을 같은 높이 한 줄로 — 둘 다
    들쭉날쭉 들여써지지 않게 좌우로 가지런히 정렬해 균형을 맞춘다. */
