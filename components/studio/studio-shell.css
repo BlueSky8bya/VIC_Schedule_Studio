@@ -345,6 +345,13 @@
   list-style: "✕ ";
   color: #b4544b;
 }
+/* 미리보기 중 안내 — 설명 팝오버 맨 아래 작게(트리거 강조 대신 여기로 일원화). */
+.role-help-preview {
+  margin: 6px 0 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: #9a3412;
+}
 @media (prefers-reduced-motion: reduce) {
   .role-help-pop {
     animation: none;
@@ -1739,32 +1746,16 @@
 }
 /* 헤더 미리보기 표시 칩(헤더에만 둔다 — 아래 화면이 미리보기 대상). */
 /* 미리보기 표시 칩 — 역할 배지("?") 왼쪽에 둔다(웹). 미리보기 중임을 또렷이. */
-.preview-flag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border-radius: 999px;
-  background: #fff1e6;
-  border: 1px solid #f3c79a;
-  padding: 4px 11px;
-  font-size: 12.5px;
-  font-weight: 900;
-  color: #9a3412;
-  white-space: nowrap;
-}
-/* 통합 역할 미리보기 드롭다운(헤더) — 커스텀. 트리거는 주변 .button(pill)과 같은 톤,
-   미리보기 중이면 강조색. 메뉴는 역할 팝오버와 같은 카드 스타일로 통일. */
+/* 통합 역할 미리보기 드롭다운(헤더) — 커스텀. 트리거는 주변 .button(pill)과 같은 톤이고,
+   미리보기 중이어도 평범하게 둔다(주황 강조 없음) — 미리보기 안내는 역할 "?" 팝오버 문구로.
+   (.previewing 클래스는 화면 가장자리 점선 점검 표시 선택자에만 쓰인다.)
+   메뉴는 역할 팝오버와 같은 카드 스타일로 통일. */
 .preview-dd {
   position: relative;
   display: inline-flex;
 }
 .preview-dd-trigger {
   gap: 6px;
-}
-.preview-dd-trigger.previewing {
-  border-color: #f3c79a;
-  background: #fff1e6;
-  color: #9a3412;
 }
 .preview-dd-caret {
   font-size: 11px;
