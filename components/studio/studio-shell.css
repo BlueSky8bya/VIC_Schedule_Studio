@@ -346,11 +346,12 @@
   color: #b4544b;
 }
 /* 미리보기 중 안내 — 설명 팝오버 맨 아래 작게(트리거 강조 대신 여기로 일원화). */
+/* 역할명 옆 작은 보조 문구 "(미리보기 중입니다..)" — 제목보다 작고 흐릿하게. */
 .role-help-preview {
-  margin: 6px 0 0;
   font-size: 11px;
-  font-weight: 800;
-  color: #9a3412;
+  font-weight: 700;
+  color: #6b5bd6;
+  opacity: 0.75;
 }
 @media (prefers-reduced-motion: reduce) {
   .role-help-pop {
@@ -1756,6 +1757,13 @@
 }
 .preview-dd-trigger {
   gap: 6px;
+}
+/* 미리보기 중 트리거 = '비밀 차원문'. 시청자 화면 버튼으로 위장하되(역할 화면 그대로 확인),
+   개발자가 다시 열 수 있게 보라색으로 살짝 강조 + 텍스트는 흐릿하게. */
+.preview-dd-trigger.previewing {
+  border-color: #cdc3f2;
+  background: rgb(124 108 240 / 12%);
+  color: rgb(107 91 214 / 55%);
 }
 .preview-dd-caret {
   font-size: 11px;
@@ -3234,14 +3242,19 @@ textarea:disabled {
   gap: 10px;
 }
 @media (max-width: 640px) {
+  /* 모바일: 절대배치 대신 흐름에 둬서 제목("빅토리 일정표")을 가리지 않고 함께 스크롤되게.
+     (절대배치는 좁은 폭에서 제목·버튼이 겹쳤다.) */
   .viewer-preview-overlay {
-    padding: 10px 12px;
+    position: static;
+    padding: 8px 12px 2px;
   }
   .viewer-preview-note {
     font-size: 11px;
   }
+  /* [< 편집실] 버튼 컴팩트하게 — 좌우 패딩·아이콘 간격을 줄여 너비를 줄인다. */
   .viewer-preview-actions .button {
-    padding: 0 12px;
+    gap: 2px;
+    padding: 0 9px;
     white-space: nowrap;
   }
 }

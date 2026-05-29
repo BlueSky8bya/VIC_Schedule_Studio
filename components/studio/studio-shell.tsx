@@ -601,27 +601,27 @@ export function StudioShell({
       { value: "dual", label: "매니저 · 작업자 화면" },
       { value: "viewer", label: "시청자 화면" }
     ];
-    // 미리보기 중 트리거는 역할 옵션과 같은 "○○ 화면" 형식. 모바일은 컴팩트하게 그대로,
-    // 웹은 미리보기임을 분명히 "○○ 화면 미리보기". (이중은 매니저·작업자.)
-    const previewLabel = previewDual ? "매니저 · 작업자" : previewRole ? ROLE_LABEL[previewRole] : null;
-    const triggerText = previewLabel
-      ? isNarrow
-        ? `${previewLabel} 화면`
-        : `${previewLabel} 화면 미리보기`
-      : "미리보기";
+    // 미리보기 중엔 트리거를 "그 역할 화면에 실제로 있는 버튼"(= 비개발자의 시청자 화면 버튼)으로
+    // 위장한다 — 역할별 디자인·너비를 그대로 확인하려고. 모바일 "시청자 화면" / 웹 "시청자 화면 미리보기",
+    // 세모(▾)도 숨긴다. 단 개발자가 다시 열 수 있게 특정 색 강조 + 흐릿한 텍스트(=원래 세계로 돌아가는
+    // '비밀 차원문'). 클릭하면 드롭다운이 다시 열린다. 미리보기 아닐 땐 평소대로 "미리보기 ▾".
+    const previewing = previewDual || previewRole !== null;
+    const triggerText = previewing ? (isNarrow ? "시청자 화면" : "시청자 화면 미리보기") : "미리보기";
     return (
       <div className="preview-dd">
         <button
           aria-expanded={previewMenuOpen}
           aria-haspopup="menu"
-          className={`button preview-dd-trigger${previewLabel ? " previewing" : ""}`}
+          className={`button preview-dd-trigger${previewing ? " previewing" : ""}`}
           onClick={() => setPreviewMenuOpen((value) => !value)}
           type="button"
         >
           {triggerText}
-          <span aria-hidden="true" className="preview-dd-caret">
-            ▾
-          </span>
+          {previewing ? null : (
+            <span aria-hidden="true" className="preview-dd-caret">
+              ▾
+            </span>
+          )}
         </button>
         {previewMenuOpen ? (
           <div className="preview-dd-menu" role="menu">
@@ -723,7 +723,14 @@ export function StudioShell({
         </button>
         {roleHelpOpen ? (
           <div className="role-help-pop" role="dialog" aria-label="역할 권한">
-            <strong className="role-help-title">{roleDisplay.label}</strong>
+            {/* 미리보기 중이면 역할명 옆에 작게 "(미리보기 중입니다..)" — 아이콘 없이.
+                (이중도 previewRole=manager라 포함.) */}
+            <strong className="role-help-title">
+              {roleDisplay.label}
+              {previewRole !== null ? (
+                <span className="role-help-preview"> (미리보기 중입니다..)</span>
+              ) : null}
+            </strong>
             <span className="role-help-email">{actor.email ?? "비로그인"}</span>
             <p className="role-help-summary">{roleDisplay.summary}</p>
             <ul className="role-help-can">
@@ -731,10 +738,6 @@ export function StudioShell({
                 <li key={item}>{item}</li>
               ))}
             </ul>
-            {/* 미리보기 중일 때만 — 트리거 강조 대신 여기에 작게 안내(이중도 previewRole=manager라 포함). */}
-            {previewRole !== null ? (
-              <p className="role-help-preview">🛠 미리보기 중입니다..</p>
-            ) : null}
           </div>
         ) : null}
       </div>
@@ -2625,8 +2628,8 @@ export function StudioShell({
             가운데는 비워(pointer-events) 포스터가 그대로 클릭을 받게 한다. */}
         <div className="viewer-preview-overlay">
           <span className="viewer-preview-note">
-            <Eye aria-hidden="true" size={13} />
-            시청자 화면 미리보기 중…
+            {isNarrow ? null : <Eye aria-hidden="true" size={13} />}
+            {isNarrow ? "미리보기 중.." : "시청자 화면 미리보기 중…"}
           </span>
           <div className="viewer-preview-actions">
             <button className="button" onClick={() => setViewerMode(false)} type="button">
