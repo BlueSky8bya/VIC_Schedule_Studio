@@ -614,7 +614,7 @@ export type VisitTrends = {
   hasData: boolean; // 이 달 방문 기록이 있는지
   days: ({ day: number } & VisitSlot)[]; // 이 달 1..말일
   weeks: ({ label: string } & VisitSlot)[]; // 1주차..
-  hours: number[]; // 24칸(KST)
+  hours: VisitSlot[]; // 24칸(KST) — 역할/기기로도 분해
   total: number; // 이 달 방문 총합
 };
 export type VisitTrendsResult = { ok: true; data: VisitTrends } | { ok: false; error: string };
@@ -656,14 +656,21 @@ export async function getVisitTrendsAction(
   if (error) {
     return {
       ok: true,
-      data: { ready: false, hasData: false, days: emptyDays(), weeks: [], hours: Array(24).fill(0), total: 0 }
+      data: {
+        ready: false,
+        hasData: false,
+        days: emptyDays(),
+        weeks: [],
+        hours: Array.from({ length: 24 }, emptySlot),
+        total: 0
+      }
     };
   }
   const rows = (data ?? []) as { day: string; role: string; device: string; occurred_at: string }[];
 
   const days = emptyDays();
   const weekMap = new Map<number, VisitSlot>();
-  const hours = Array(24).fill(0) as number[];
+  const hours = Array.from({ length: 24 }, emptySlot); // 시간대(KST)별 역할/기기 분해
   const bump = (slot: VisitSlot, role: string, device: string) => {
     if (role in slot.roles) slot.roles[role] += 1;
     if (device in slot.devices) slot.devices[device] += 1;
@@ -679,7 +686,9 @@ export async function getVisitTrendsAction(
     bump(wk, row.role, row.device);
     weekMap.set(wi, wk);
     const t = new Date(row.occurred_at).getTime();
-    if (!Number.isNaN(t)) hours[new Date(t + 9 * 3600 * 1000).getUTCHours()] += 1;
+    if (!Number.isNaN(t)) {
+      bump(hours[new Date(t + 9 * 3600 * 1000).getUTCHours()], row.role, row.device);
+    }
   }
   const weekCount = Math.ceil((daysInMonth + firstWeekday) / 7);
   const weeks = Array.from({ length: weekCount }, (_, i) => ({

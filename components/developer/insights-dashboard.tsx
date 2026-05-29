@@ -310,7 +310,7 @@ export function InsightsDashboard({
     const meta = visitDim === "role" ? ROLE_META : DEVICE_META;
     const countsOf = (s: { roles: Record<string, number>; devices: Record<string, number> }) =>
       visitDim === "role" ? s.roles : s.devices;
-    const hm = Math.max(1, ...visits.hours);
+    const hm = Math.max(1, ...visits.hours.map((s) => s.total));
     return (
       <>
         <div className="insight-grid">
@@ -407,13 +407,34 @@ export function InsightsDashboard({
           ))}
         </ul>
         <h4 className="insight-subhead">시간대 분포 (KST)</h4>
-        <div className="vt-hours" role="img" aria-label="시간대별 방문 분포">
-          {visits.hours.map((c, h) => (
-            <div className="vt-hcol" key={h}>
-              <div className="vt-hbar" data-v={`${c}명`} style={{ height: `${(c / hm) * 100}%` }} />
-              <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
-            </div>
-          ))}
+        {/* 시간대 막대도 위의 역할별/기기별 토글에 맞춰 색으로 분해(누적). 호버하면 그 시간 총합. */}
+        <div className="vt-hours" role="img" aria-label="시간대별 방문 분포(역할·기기 분해)">
+          {visits.hours.map((slot, h) => {
+            const counts = countsOf(slot);
+            return (
+              <div className="vt-hcol" key={h}>
+                <div
+                  className="vt-hbar"
+                  data-v={`${h}시 · ${slot.total}명`}
+                  style={{ height: `${(slot.total / hm) * 100}%` }}
+                >
+                  <div className="vt-fill">
+                    {meta.map((m) => {
+                      const c = counts[m.key] ?? 0;
+                      return c > 0 ? (
+                        <span
+                          className="vt-seg"
+                          key={m.key}
+                          style={{ flexGrow: c, background: m.color }}
+                        />
+                      ) : null;
+                    })}
+                  </div>
+                </div>
+                <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
+              </div>
+            );
+          })}
         </div>
       </>
     );
@@ -511,7 +532,10 @@ export function InsightsDashboard({
     const peakDay =
       visits?.hasData ? [...visits.days].sort((a, b) => b.total - a.total)[0] : null;
     const peakHour = visits?.hasData
-      ? visits.hours.reduce((best, c, h) => (c > best.c ? { h, c } : best), { h: -1, c: 0 })
+      ? visits.hours.reduce(
+          (best, slot, h) => (slot.total > best.c ? { h, c: slot.total } : best),
+          { h: -1, c: 0 }
+        )
       : null;
     const top = data.engagement.topEvents[0] ?? null;
     const bw = data.content.busiestWeekday;
