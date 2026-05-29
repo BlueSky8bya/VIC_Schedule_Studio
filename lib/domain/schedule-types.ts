@@ -187,7 +187,13 @@ export const POSTER_THEMES = [
   { key: "sakura", label: "봄" },
   { key: "summer", label: "여름" },
   { key: "autumn", label: "가을" },
-  { key: "winter", label: "겨울" }
+  { key: "winter", label: "겨울" },
+  // P3: 더 화려한 배경(그라데이션/패턴). 텍스트 대비 위해 전부 밝게 유지.
+  { key: "sunset", label: "노을" },
+  { key: "mint", label: "민트" },
+  { key: "dot", label: "도트" },
+  { key: "starry", label: "별밤" },
+  { key: "confetti", label: "꽃가루" }
 ] as const;
 export type PosterThemeKey = (typeof POSTER_THEMES)[number]["key"];
 export function isPosterThemeKey(value: string): value is PosterThemeKey {

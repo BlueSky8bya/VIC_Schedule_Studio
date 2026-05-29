@@ -3176,6 +3176,80 @@
   content: "⛄";
 }
 
+/* ── P3: 더 화려한 배경(그라데이션/패턴). 달력 카드는 불투명이라 텍스트 가독성 유지. ── */
+.poster-page[data-poster-theme="sunset"] {
+  background: linear-gradient(180deg, #fff5f0, #ffe9f2);
+}
+.poster-surface[data-poster-theme="sunset"] {
+  background: linear-gradient(160deg, #ffe0cc 0%, #ffc1de 48%, #d7c2ff 100%);
+}
+.poster-surface[data-poster-theme="sunset"]::before {
+  content: "🌇";
+}
+.poster-surface[data-poster-theme="sunset"]::after {
+  content: "🧡";
+}
+
+.poster-page[data-poster-theme="mint"] {
+  background: linear-gradient(180deg, #f1fdf8, #e8fbf2);
+}
+.poster-surface[data-poster-theme="mint"] {
+  background: linear-gradient(160deg, #e6fff5 0%, #c9f6e7 55%, #ecfff9 100%);
+}
+.poster-surface[data-poster-theme="mint"]::before {
+  content: "🌿";
+}
+.poster-surface[data-poster-theme="mint"]::after {
+  content: "🍃";
+}
+
+.poster-page[data-poster-theme="dot"] {
+  background: #fff7fb;
+}
+.poster-surface[data-poster-theme="dot"] {
+  background:
+    radial-gradient(circle, #ffd0e6 21%, transparent 22%) 0 0 / 22px 22px,
+    linear-gradient(160deg, #fffafd, #fdeef6);
+}
+.poster-surface[data-poster-theme="dot"]::before {
+  content: "🫧";
+}
+.poster-surface[data-poster-theme="dot"]::after {
+  content: "🩷";
+}
+
+.poster-page[data-poster-theme="starry"] {
+  background: linear-gradient(180deg, #f7f4ff, #efe9ff);
+}
+.poster-surface[data-poster-theme="starry"] {
+  background:
+    radial-gradient(1.5px 1.5px at 18% 26%, #b9a6ff 50%, transparent 51%) 0 0 / 64px 58px,
+    radial-gradient(1.5px 1.5px at 72% 62%, #c9bcff 50%, transparent 51%) 0 0 / 92px 80px,
+    linear-gradient(160deg, #fbf9ff 0%, #eee6ff 60%, #f6f2ff 100%);
+}
+.poster-surface[data-poster-theme="starry"]::before {
+  content: "✨";
+}
+.poster-surface[data-poster-theme="starry"]::after {
+  content: "🌙";
+}
+
+.poster-page[data-poster-theme="confetti"] {
+  background: #fffdf7;
+}
+.poster-surface[data-poster-theme="confetti"] {
+  background:
+    radial-gradient(circle, #ffb3c1 30%, transparent 31%) 0 0 / 40px 40px,
+    radial-gradient(circle, #b3d9ff 30%, transparent 31%) 20px 20px / 40px 40px,
+    linear-gradient(160deg, #fffefa, #fff7ef);
+}
+.poster-surface[data-poster-theme="confetti"]::before {
+  content: "🎉";
+}
+.poster-surface[data-poster-theme="confetti"]::after {
+  content: "🎊";
+}
+
 /* 업 도움 기간 테두리 밴드 */
 .campaign-band {
   position: absolute;
