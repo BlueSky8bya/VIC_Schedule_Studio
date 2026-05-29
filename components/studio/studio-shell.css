@@ -583,6 +583,10 @@
   color: #fff;
   box-shadow: 0 4px 12px -4px rgb(107 91 214 / 55%);
 }
+/* 관리자 인사이트의 "보안" 탭 — 4칸 너비로 다음 줄에 좌우로 길게(1×4). */
+.insights-tab-wide {
+  grid-column: 1 / -1;
+}
 /* 슬라이딩 뷰포트 — 패널들이 가로로 늘어서고 translateX로 넘어간다. 모든 패널이 항상
    렌더돼(실시간 패널 유지 + 높이 안정) 넘길 때 모달 높이가 출렁이지 않는다. */
 .insights-viewport {

@@ -3373,7 +3373,12 @@ export function StudioShell({
                   year={view.year}
                 />
               ) : (
-                <MemberInsights month={view.month} year={view.year} />
+                <MemberInsights
+                  canSecurity={isEffectivelyOwner}
+                  month={view.month}
+                  onChangePasscode={canEdit ? openChangePasscode : undefined}
+                  year={view.year}
+                />
               )
             ) : null}
             {modal === "notice"

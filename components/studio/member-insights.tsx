@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, ChevronLeft, ChevronRight, Heart, LineChart, Trophy } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Heart, LineChart, Lock, Trophy } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -8,7 +8,14 @@ import {
   useRef,
   useState
 } from "react";
-import { getMemberInsightsAction, type MemberInsightsData } from "@/lib/insights/actions";
+import {
+  getMemberInsightsAction,
+  getOwnerSecurityAction,
+  type MemberInsightsData,
+  type OwnerSecurityData
+} from "@/lib/insights/actions";
+import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
+import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { hapticTick } from "@/lib/ui/haptics";
 
@@ -32,11 +39,23 @@ function fmtMonthDay(dateKey: string): string {
   return `${mm}/${dd}(${wd})`;
 }
 
-export function MemberInsights({ year, month }: { year: number; month: number }) {
+export function MemberInsights({
+  year,
+  month,
+  canSecurity = false,
+  onChangePasscode
+}: {
+  year: number;
+  month: number;
+  // 보안 탭은 관리자(소유자)에게만 — 매니저·작업자에겐 탭도 데이터도 없다.
+  canSecurity?: boolean;
+  onChangePasscode?: () => void;
+}) {
   const [index, setIndex] = useState(0);
   const [data, setData] = useState<MemberInsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [securityData, setSecurityData] = useState<OwnerSecurityData | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -54,6 +73,35 @@ export function MemberInsights({ year, month }: { year: number; month: number })
     };
   }, [year, month]);
 
+  // 보안 데이터(관리자 전용)는 별도 액션으로 — 월과 무관(현재 세션·암호·자격자).
+  useEffect(() => {
+    if (!canSecurity) return;
+    let alive = true;
+    getOwnerSecurityAction().then((r) => {
+      if (alive && r.ok) setSecurityData(r.data);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [canSecurity]);
+
+  async function expireUser(userId: string) {
+    const res = await clearUnlockSessionForUserAction(userId);
+    if (res.ok) {
+      const fresh = await getOwnerSecurityAction();
+      if (fresh.ok) setSecurityData(fresh.data);
+    } else if (typeof window !== "undefined") {
+      window.alert(res.error);
+    }
+  }
+
+  // 보안 탭(관리자 전용)을 마지막에 더한 실제 패널 목록. 키보드/스와이프 경계도 이 길이를 쓴다.
+  const panels = canSecurity
+    ? [...PANELS, { key: "security" as const, label: "보안", icon: Lock }]
+    : PANELS;
+  const lastIndexRef = useRef(0); // 키보드 핸들러(고정 등록)가 호출 시점의 최신 경계를 읽도록.
+  lastIndexRef.current = panels.length - 1;
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
@@ -63,7 +111,7 @@ export function MemberInsights({ year, month }: { year: number; month: number })
         setIndex((i) => Math.max(0, i - 1));
       } else if (e.key === "ArrowRight") {
         e.preventDefault();
-        setIndex((i) => Math.min(PANELS.length - 1, i + 1));
+        setIndex((i) => Math.min(lastIndexRef.current, i + 1));
       }
     };
     window.addEventListener("keydown", onKey);
@@ -78,13 +126,33 @@ export function MemberInsights({ year, month }: { year: number; month: number })
     const dx = e.clientX - s.x;
     const dy = e.clientY - s.y;
     if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-      const next = Math.max(0, Math.min(PANELS.length - 1, index + (dx < 0 ? 1 : -1)));
+      const next = Math.max(0, Math.min(panels.length - 1, index + (dx < 0 ? 1 : -1)));
       if (next !== index) {
         hapticTick(); // 스와이프로 패널이 실제로 바뀔 때만 톡(경계에서 헛스와이프는 무음)
         setIndex(next);
       }
     }
   };
+
+  function renderSecurity() {
+    if (!securityData) {
+      return (
+        <div className="insight-skel" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+      );
+    }
+    return (
+      <SecurityPanel
+        data={securityData}
+        onChangePasscode={onChangePasscode}
+        onExpire={expireUser}
+        showDevelopers={false}
+      />
+    );
+  }
 
   function withData(render: (d: MemberInsightsData) => ReactNode) {
     if (loading) {
@@ -358,10 +426,12 @@ export function MemberInsights({ year, month }: { year: number; month: number })
     <div className="insights">
       <p className="insights-month">{month}월 인사이트</p>
       <div className="insights-tabs" role="tablist" aria-label="인사이트 영역">
-        {PANELS.map((p, i) => (
+        {panels.map((p, i) => (
           <button
             aria-selected={i === index}
-            className={`insights-tab ${i === index ? "active" : ""}`}
+            className={`insights-tab ${i === index ? "active" : ""}${
+              p.key === "security" ? " insights-tab-wide" : ""
+            }`}
             key={p.key}
             onClick={() => setIndex(i)}
             role="tab"
@@ -384,9 +454,9 @@ export function MemberInsights({ year, month }: { year: number; month: number })
           data-active={index}
           style={{ transform: `translateX(-${index * 100}%)` }}
         >
-          {renderers.map((render, i) => (
-            <section className="insights-panel" key={PANELS[i].key}>
-              {withData(render)}
+          {panels.map((p, i) => (
+            <section className="insights-panel" key={p.key}>
+              {p.key === "security" ? renderSecurity() : withData(renderers[i])}
             </section>
           ))}
         </div>
@@ -403,15 +473,15 @@ export function MemberInsights({ year, month }: { year: number; month: number })
           <ChevronLeft aria-hidden="true" size={20} />
         </button>
         <div className="insights-dots" aria-hidden="true">
-          {PANELS.map((p, i) => (
+          {panels.map((p, i) => (
             <span className={i === index ? "on" : ""} key={p.key} />
           ))}
         </div>
         <button
           aria-label="다음"
           className="insights-arrow"
-          disabled={index === PANELS.length - 1}
-          onClick={() => setIndex((i) => Math.min(PANELS.length - 1, i + 1))}
+          disabled={index === panels.length - 1}
+          onClick={() => setIndex((i) => Math.min(panels.length - 1, i + 1))}
           type="button"
         >
           <ChevronRight aria-hidden="true" size={20} />

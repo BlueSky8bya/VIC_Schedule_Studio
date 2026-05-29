@@ -3,6 +3,7 @@
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails, normalizeEmail } from "@/lib/auth/config";
+import { canEditSchedule } from "@/lib/permissions/roles";
 
 // 개발자 전용 "월별 인사이트" — 보고 있는 달(year/month) 기준 집계.
 // 모든 값은 합계/개수만 — 비공개·owner_private 일정의 내용은 절대 내보내지 않는다.
@@ -689,6 +690,108 @@ export async function getVisitTrendsAction(
   return {
     ok: true,
     data: { ready: true, hasData: rows.length > 0, days, weeks, hours, total: rows.length }
+  };
+}
+
+// 관리자(소유자) 전용 보안 데이터 — 개발자 인사이트 보안 패널과 같되 '개발자' 섹션은 뺀다.
+// owner/developer만(서버 검증) — 매니저·작업자에겐 절대 내려가지 않는다(민감: 이메일·세션).
+export type OwnerSecurityData = {
+  activeUnlockCount: number;
+  passcodeVersion: number | null;
+  passcodeUpdatedAt: string | null;
+  unlockDurationMinutes: number | null;
+  access: { owners: AccessPerson[]; developers: AccessPerson[]; workers: AccessPerson[] };
+};
+export type OwnerSecurityResult =
+  | { ok: true; data: OwnerSecurityData }
+  | { ok: false; error: string };
+
+export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!canEditSchedule(actor.role)) {
+    return { ok: false, error: "관리자만 볼 수 있어요." };
+  }
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase 서비스 키가 설정되지 않았습니다." };
+  }
+
+  const { data: cal } = await supabase.from("calendars").select("id").eq("slug", SLUG).maybeSingle();
+  if (!cal) {
+    return { ok: false, error: "캘린더를 찾을 수 없습니다." };
+  }
+  const calendarId = cal.id as string;
+
+  const [unlockRes, membersRes, passcodeRes] = await Promise.all([
+    supabase
+      .from("unlock_sessions")
+      .select("user_id, expires_at")
+      .eq("calendar_id", calendarId)
+      .gt("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: true }),
+    supabase
+      .from("trusted_members")
+      .select("email, is_worker, trusted_role")
+      .eq("calendar_id", calendarId)
+      .eq("is_active", true),
+    supabase
+      .from("private_layer_settings")
+      .select("passcode_version, passcode_updated_at, unlock_duration_minutes")
+      .eq("calendar_id", calendarId)
+      .maybeSingle()
+  ]);
+
+  const emailCache = new Map<string, string | null>();
+  const emailFor = async (id: string): Promise<string | null> => {
+    if (emailCache.has(id)) return emailCache.get(id) ?? null;
+    let email: string | null = null;
+    try {
+      const { data } = await supabase.auth.admin.getUserById(id);
+      email = normalizeEmail(data?.user?.email);
+    } catch {
+      email = null;
+    }
+    emailCache.set(id, email);
+    return email;
+  };
+
+  const unlockRows = (unlockRes.data ?? []) as { user_id: string; expires_at: string }[];
+  const unlockByEmail = new Map<string, { userId: string; expiresAt: string }>();
+  for (const u of unlockRows) {
+    const e = (await emailFor(u.user_id)) ?? "(알 수 없음)";
+    unlockByEmail.set(e, { userId: u.user_id, expiresAt: u.expires_at });
+  }
+  const toAccess = (email: string): AccessPerson => {
+    const s = unlockByEmail.get(email);
+    return { email, expiresAt: s?.expiresAt ?? null, userId: s?.userId ?? null };
+  };
+
+  const workerEmails = [
+    ...new Set(
+      ((membersRes.data ?? []) as { email: string; is_worker?: boolean; trusted_role?: string }[])
+        .filter((m) => Boolean(m.is_worker ?? m.trusted_role === "worker"))
+        .map((m) => m.email)
+    )
+  ];
+  const passcode = passcodeRes.data as {
+    passcode_version?: number;
+    passcode_updated_at?: string;
+    unlock_duration_minutes?: number;
+  } | null;
+
+  return {
+    ok: true,
+    data: {
+      activeUnlockCount: unlockRows.length,
+      passcodeVersion: passcode?.passcode_version ?? null,
+      passcodeUpdatedAt: passcode?.passcode_updated_at ?? null,
+      unlockDurationMinutes: passcode?.unlock_duration_minutes ?? null,
+      access: {
+        owners: getOwnerEmails().map(toAccess),
+        developers: [],
+        workers: workerEmails.map(toAccess)
+      }
+    }
   };
 }
 

@@ -20,9 +20,9 @@ import {
   useState
 } from "react";
 import { DeveloperPanel } from "@/components/developer/developer-panel";
+import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import {
-  type AccessPerson,
   getInsightsAction,
   getTrendAction,
   getVisitTrendsAction,
@@ -69,16 +69,6 @@ function kst(iso: string | null): Date | null {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
   return new Date(d.getTime() + 9 * 3600 * 1000);
-}
-function fmtDate(iso: string | null): string {
-  const k = kst(iso);
-  return k ? `${k.getUTCFullYear()}.${k.getUTCMonth() + 1}.${k.getUTCDate()}` : "—";
-}
-function fmtTime(iso: string | null): string {
-  const k = kst(iso);
-  return k
-    ? `${String(k.getUTCHours()).padStart(2, "0")}:${String(k.getUTCMinutes()).padStart(2, "0")}`
-    : "—";
 }
 function fmtDateTime(iso: string | null): string {
   const k = kst(iso);
@@ -180,8 +170,6 @@ export function InsightsDashboard({
   const [vtHover, setVtHover] = useState<VtHover | null>(null);
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
-  // 보안 패널: 지금 개별 만료 중인 사람의 user_id(그 카드 버튼만 비활성).
-  const [expiringUserId, setExpiringUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -218,15 +206,9 @@ export function InsightsDashboard({
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
 
-  // 특정 한 사람의 비공개 잠금만 즉시 만료(초기화). 성공하면 보안 데이터를 다시 불러온다.
-  async function expireUser(userId: string, email: string) {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm(`${email}의 비공개 잠금을 지금 만료시킬까요?`)
-    ) {
-      return;
-    }
-    setExpiringUserId(userId);
+  // 특정 한 사람의 비공개 잠금만 즉시 만료(초기화) → 성공하면 보안 데이터를 다시 불러온다.
+  // (확인 대화/버튼 비활성은 SecurityPanel이 담당.)
+  async function expireUser(userId: string) {
     const res = await clearUnlockSessionForUserAction(userId);
     if (res.ok) {
       const fresh = await getInsightsAction(year, month);
@@ -234,49 +216,6 @@ export function InsightsDashboard({
     } else if (typeof window !== "undefined") {
       window.alert(res.error);
     }
-    setExpiringUserId(null);
-  }
-
-  // 역할별 접근 자격자 섹션 — 사람마다 이메일·역할·만료시간(또는 "세션 없음")·개별 만료 버튼.
-  function renderAccessSection(title: string, roleLabel: string, roleClass: string, people: AccessPerson[]) {
-    return (
-      <>
-        <h4 className="insight-subhead">
-          {title} ({people.length})
-        </h4>
-        {people.length === 0 ? (
-          <p className="insight-empty">없어요.</p>
-        ) : (
-          <ul className="access-list">
-            {people.map((p) => (
-              <li className="access-card" key={`${roleClass}-${p.email}`}>
-                <div className="access-top">
-                  <span className="access-email">{p.email}</span>
-                  <em className={`rt ${roleClass}`}>{roleLabel}</em>
-                </div>
-                <div className="access-bottom">
-                  {p.expiresAt && p.userId ? (
-                    <>
-                      <strong className="access-expiry">~ {fmtTime(p.expiresAt)} 만료</strong>
-                      <button
-                        className="button danger access-expire"
-                        disabled={expiringUserId === p.userId}
-                        onClick={() => expireUser(p.userId as string, p.email)}
-                        type="button"
-                      >
-                        {expiringUserId === p.userId ? "만료 중…" : "만료시간 초기화"}
-                      </button>
-                    </>
-                  ) : (
-                    <span className="access-none">세션 없음</span>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </>
-    );
   }
 
   useEffect(() => {
@@ -820,48 +759,21 @@ export function InsightsDashboard({
           {/* 6) 방문(이 달) — 개발자 전용 */}
           <section className="insights-panel">{renderVisits()}</section>
 
-          {/* 7) 보안·접근 */}
+          {/* 7) 보안·접근 — 공용 SecurityPanel(개발자는 개발자 섹션까지 모두 표시). */}
           <section className="insights-panel">
             {withData((d) => (
-              <>
-                <div
-                  className={`insight-banner ${d.security.activeUnlocks.length > 0 ? "warn" : "ok"}`}
-                >
-                  {d.security.activeUnlocks.length > 0
-                    ? `지금 비공개를 연 계정 ${d.security.activeUnlocks.length}`
-                    : "지금 비공개를 연 계정 없음"}
-                </div>
-                {/* 누가 열었는지·개별 만료는 아래 역할별 섹션(관리자/개발자/작업자) 카드에서 다룬다. */}
-                <h4 className="insight-subhead">비공개 잠금 암호</h4>
-                <ul className="insight-rows">
-                  <li>
-                    <span>암호 버전</span>
-                    <strong>v{d.security.passcodeVersion ?? "—"}</strong>
-                  </li>
-                  <li>
-                    <span>마지막 변경</span>
-                    <strong>{fmtDate(d.security.passcodeUpdatedAt)}</strong>
-                  </li>
-                  <li>
-                    <span>잠금 유효 시간</span>
-                    <strong>{d.security.unlockDurationMinutes ?? "—"}분</strong>
-                  </li>
-                </ul>
-                {/* 비밀번호 변경 — 잠금이 살아있어 토글이 팝업을 안 띄울 때도 여기서 바로 변경. */}
-                {onChangePasscode ? (
-                  <button
-                    className="button insight-change-passcode"
-                    onClick={onChangePasscode}
-                    type="button"
-                  >
-                    비밀번호 변경
-                  </button>
-                ) : null}
-                {/* 비공개를 열 수 있는 사람(매니저 제외) — 역할별로, 사람마다 개별 만료. */}
-                {renderAccessSection("관리자", "관리자", "owner", d.security.access.owners)}
-                {renderAccessSection("개발자", "개발자", "developer", d.security.access.developers)}
-                {renderAccessSection("작업자", "작업자", "worker", d.security.access.workers)}
-              </>
+              <SecurityPanel
+                data={{
+                  activeUnlockCount: d.security.activeUnlocks.length,
+                  passcodeVersion: d.security.passcodeVersion,
+                  passcodeUpdatedAt: d.security.passcodeUpdatedAt,
+                  unlockDurationMinutes: d.security.unlockDurationMinutes,
+                  access: d.security.access
+                }}
+                onChangePasscode={onChangePasscode}
+                onExpire={expireUser}
+                showDevelopers
+              />
             ))}
           </section>
 
