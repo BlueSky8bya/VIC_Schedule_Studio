@@ -168,6 +168,7 @@ export function InsightsDashboard({
   const [visitView, setVisitView] = useState<"day" | "week">("day");
   const [visitDim, setVisitDim] = useState<"role" | "device">("role");
   const [vtHover, setVtHover] = useState<VtHover | null>(null);
+  const [vtHourHover, setVtHourHover] = useState<VtHover | null>(null); // 시간대 차트 전용 분해 툴팁
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
 
@@ -202,7 +203,10 @@ export function InsightsDashboard({
   }, [year, month]);
 
   // 일별/주별·역할별/기기별을 바꾸면 막대가 바뀌므로 떠 있던 분해 툴팁은 지운다.
-  useEffect(() => setVtHover(null), [visitView, visitDim]);
+  useEffect(() => {
+    setVtHover(null);
+    setVtHourHover(null);
+  }, [visitView, visitDim]);
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
 
@@ -407,17 +411,35 @@ export function InsightsDashboard({
           ))}
         </ul>
         <h4 className="insight-subhead">시간대 분포 (KST)</h4>
-        {/* 시간대 막대도 위의 역할별/기기별 토글에 맞춰 색으로 분해(누적). 호버하면 그 시간 총합. */}
-        <div className="vt-hours" role="img" aria-label="시간대별 방문 분포(역할·기기 분해)">
+        {/* 시간대 막대도 위의 역할별/기기별 토글에 맞춰 색으로 분해(누적). 호버하면 일별/주별과 같은
+            분해 툴팁(역할/기기별 수치 + 총합)이 차트 안에서 clamp되어 뜬다(막대·차트 밖 안 잘림). */}
+        <div
+          className="vt-hours"
+          role="img"
+          aria-label="시간대별 방문 분포(역할·기기 분해)"
+          onPointerLeave={() => setVtHourHover(null)}
+        >
           {visits.hours.map((slot, h) => {
             const counts = countsOf(slot);
+            const enter = () => {
+              if (slot.total <= 0) {
+                setVtHourHover(null);
+                return;
+              }
+              const rows = meta
+                .map((m) => ({ color: m.color, label: m.label, count: counts[m.key] ?? 0 }))
+                .filter((r) => r.count > 0);
+              setVtHourHover({ x: ((h + 0.5) / 24) * 100, total: slot.total, rows });
+            };
             return (
-              <div className="vt-hcol" key={h}>
-                <div
-                  className="vt-hbar"
-                  data-v={`${h}시 · ${slot.total}명`}
-                  style={{ height: `${(slot.total / hm) * 100}%` }}
-                >
+              <div
+                className="vt-hcol"
+                key={h}
+                onPointerEnter={enter}
+                onPointerMove={enter}
+                onPointerLeave={() => setVtHourHover(null)}
+              >
+                <div className="vt-hbar" style={{ height: `${(slot.total / hm) * 100}%` }}>
                   <div className="vt-fill">
                     {meta.map((m) => {
                       const c = counts[m.key] ?? 0;
@@ -435,6 +457,18 @@ export function InsightsDashboard({
               </div>
             );
           })}
+          {vtHourHover ? (
+            <div className="vt-tip" style={{ "--tip-x": `${vtHourHover.x}%` } as CSSProperties}>
+              <strong>{vtHourHover.total}명</strong>
+              {vtHourHover.rows.map((r) => (
+                <span className="vt-tip-row" key={r.label}>
+                  <i style={{ background: r.color }} />
+                  {r.label}
+                  <b>{r.count}</b>
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
       </>
     );

@@ -958,10 +958,12 @@
   border-radius: 3px;
 }
 .vt-hours {
+  position: relative; /* 분해 툴팁(.vt-tip) clamp 기준 */
   display: flex;
   align-items: flex-end;
   gap: 2px;
   height: 64px;
+  margin-top: 30px; /* 막대 위(제목 아래)에 분해 툴팁이 뜰 자리 */
 }
 .vt-hcol {
   flex: 1;
@@ -1461,7 +1463,6 @@
   box-shadow: 0 0 0 2px rgb(107 91 214 / 28%);
 }
 .vt-bar[data-v]::after,
-.vt-hbar::after,
 .trend-bar::after {
   content: attr(data-v);
   position: absolute;
@@ -1482,26 +1483,9 @@
   z-index: 6;
 }
 .vt-col:hover .vt-bar[data-v]::after,
-.vt-hcol:hover .vt-hbar::after,
 .trend-bcol:hover .trend-bar::after {
   opacity: 1;
   transform: translateX(-50%) scale(1);
-}
-/* 시간대 칩(24칸이라 얇음)만 첫/끝 칸을 안쪽으로 — 안 잘리게. 트렌드(6칸, 넓음)는 가운데 그대로. */
-.vt-hcol:first-child .vt-hbar::after {
-  left: 0;
-  transform: translateX(0) scale(0.8);
-}
-.vt-hcol:first-child:hover .vt-hbar::after {
-  transform: translateX(0) scale(1);
-}
-.vt-hcol:last-child .vt-hbar::after {
-  left: auto;
-  right: 0;
-  transform: translateX(0) scale(0.8);
-}
-.vt-hcol:last-child:hover .vt-hbar::after {
-  transform: translateX(0) scale(1);
 }
 /* 호버 분해 툴팁은 차트(.vt-chart) 한 곳에 떠서 hovered 막대 위치를 따라가되, 차트 폭 안에서
    clamp되어 어느 칸이든(맨 끝 포함) 절대 안 잘린다. */
