@@ -12,8 +12,8 @@ type PrivateLayerPanelProps = {
   onUnlocked?: () => void;
   // true면 잠금 해제 폼이 아니라 곧장 "비밀번호 변경" 폼으로 연다(잠금 중에도 변경하려고).
   startChanging?: boolean;
-  // 현재 비밀번호 버전(1=초기/0219, 2+=변경됨) — 변경 폼 placeholder 힌트 분기용.
-  passcodeVersion?: number | null;
+  // 현재 비밀번호가 아직 초기값(0219)인지 — 변경 폼 placeholder 힌트 분기용.
+  isDefaultPasscode?: boolean;
 };
 
 export function PrivateLayerPanel({
@@ -22,7 +22,7 @@ export function PrivateLayerPanel({
   onDone,
   onUnlocked,
   startChanging = false,
-  passcodeVersion
+  isDefaultPasscode = false
 }: PrivateLayerPanelProps) {
   const router = useRouter();
   const [passcode, setPasscode] = useState("");
@@ -114,7 +114,7 @@ export function PrivateLayerPanel({
         <>
           <input
             onChange={(e) => setCurrentPw(e.target.value)}
-            placeholder={(passcodeVersion ?? 1) <= 1 ? "현재 비밀번호(처음: 0219)" : "현재 비밀번호"}
+            placeholder={isDefaultPasscode ? "현재 비밀번호(처음: 0219)" : "현재 비밀번호"}
             type="password"
             value={currentPw}
           />

@@ -19,7 +19,7 @@ export default async function StudioMonthPage() {
     <StudioShell
       actor={actor}
       hasUnlockSession={unlock.hasUnlockSession}
-      passcodeVersion={unlock.passcodeVersion}
+      isDefaultPasscode={unlock.isDefaultPasscode}
       schedule={schedule}
       initialView={
         typeof mem.sy === "number" && typeof mem.sm === "number"

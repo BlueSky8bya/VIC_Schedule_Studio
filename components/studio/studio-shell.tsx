@@ -94,8 +94,8 @@ type StudioShellProps = {
   actor: CurrentActor;
   schedule: StudioSchedule;
   hasUnlockSession: boolean;
-  // 현재 비밀번호 버전(1=초기/0219, 2+=관리자가 바꿈) — 비번 변경 폼 placeholder 힌트 분기.
-  passcodeVersion?: number | null;
+  // 현재 비밀번호가 아직 초기값(0219)인지 — 비번 변경 폼 placeholder 힌트 분기.
+  isDefaultPasscode?: boolean;
   // 새로고침 복원용 초기값(서버가 쿠키에서 읽어 넘긴다). 없으면 기본(현재 달/편집실).
   initialView?: { year: number; month: number };
   initialViewerMode?: boolean;
@@ -245,7 +245,7 @@ export function StudioShell({
   actor,
   schedule,
   hasUnlockSession,
-  passcodeVersion,
+  isDefaultPasscode,
   initialView,
   initialViewerMode = false,
   initialNarrow = false
@@ -277,6 +277,8 @@ export function StudioShell({
   const [showPrivate, setShowPrivate] = useState(false);
   // 비밀번호 팝업을 "변경 모드"로 열지 — 잠금이 살아있어 토글이 팝업을 안 띄울 때 비밀번호를 바꾸려고.
   const [passcodeChangeMode, setPasscodeChangeMode] = useState(false);
+  // 비밀번호 팝업을 닫을 때 돌아갈 곳 — 인사이트(보안 패널)에서 열었으면 "developer", 그 외엔 null(닫기).
+  const [passcodeReturnTo, setPasscodeReturnTo] = useState<"developer" | null>(null);
   // 방금 잠금 해제했다면(=pendingUnlockReveal), refresh로 세션이 반영(hasUnlockSession=true)되는
   // 즉시 비공개 표시를 켠다. refresh 과정에서 showPrivate 상태가 유실되더라도 확실히 다시 켜진다.
   useEffect(() => {
@@ -659,13 +661,21 @@ export function StudioShell({
       setShowPrivate((value) => !value);
     } else {
       setPasscodeChangeMode(false);
+      setPasscodeReturnTo(null);
       setModal("passcode");
     }
   }
-  // 비밀번호 변경 팝업 열기 — 잠금이 살아있어 토글이 팝업을 안 띄울 때도 변경할 수 있게(변경 모드로 연다).
-  function openChangePasscode() {
+  // 비밀번호 변경 팝업 열기(변경 모드). returnTo="developer"면 닫을 때 인사이트(보안 패널)로 복귀.
+  function openChangePasscode(returnTo: "developer" | null = null) {
     setPasscodeChangeMode(true);
+    setPasscodeReturnTo(returnTo);
     setModal("passcode");
+  }
+  // 비밀번호 팝업 닫기 — 연 곳으로 돌아간다(인사이트에서 열었으면 인사이트, 아니면 편집실).
+  function closePasscodeModal() {
+    setPasscodeChangeMode(false);
+    setModal(passcodeReturnTo);
+    setPasscodeReturnTo(null);
   }
 
   // 역할 도움말 팝오버: 배지 바깥을 누르거나 Esc로 닫는다.
@@ -1985,7 +1995,7 @@ export function StudioShell({
               {canTogglePrivateLayer ? (
                 isEffectivelyOwner && canReadPrivate ? (
                   // 소유자가 비공개 표시 중: 이 자리는 비밀번호 변경. 끄기는 아래 경고 패널 버튼.
-                  <button className="button primary" onClick={openChangePasscode} type="button">
+                  <button className="button primary" onClick={() => openChangePasscode()} type="button">
                     비밀번호 변경
                   </button>
                 ) : (
@@ -2877,7 +2887,7 @@ export function StudioShell({
           <LockKeyhole aria-hidden="true" size={17} />
           ⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.
           {/* 웹: 끄기는 위 토글 자리로 옮겼고, 여기엔 덜 쓰는 "비밀번호 변경"을 둔다. */}
-          <button className="private-warning-btn" onClick={openChangePasscode} type="button">
+          <button className="private-warning-btn" onClick={() => openChangePasscode()} type="button">
             비밀번호 변경
           </button>
         </div>
@@ -3322,7 +3332,9 @@ export function StudioShell({
           }}
           onMouseUp={(e) => {
             if (backdropPressRef.current && e.target === e.currentTarget) {
-              setModal(null);
+              // 비번 팝업은 연 곳(인사이트 등)으로 복귀, 그 외 모달은 그냥 닫기.
+              if (modal === "passcode") closePasscodeModal();
+              else setModal(null);
             }
             backdropPressRef.current = false;
           }}
@@ -3351,7 +3363,7 @@ export function StudioShell({
               <button
                 aria-label="닫기"
                 className="modal-close"
-                onClick={() => setModal(null)}
+                onClick={() => (modal === "passcode" ? closePasscodeModal() : setModal(null))}
                 type="button"
               >
                 <X aria-hidden="true" size={18} />
@@ -3361,7 +3373,7 @@ export function StudioShell({
             {modal === "passcode" ? (
               <PrivateLayerPanel
                 canManage={canEdit}
-                onDone={() => setModal(null)}
+                onDone={closePasscodeModal}
                 onUnlocked={() => {
                   // 팝업을 닫고, 서버에서 비공개 일정을 다시 불러오는 동안 "불러오는 중" 표시.
                   // pendingUnlockReveal: refresh 후 세션이 반영되면 위 useEffect가 표시를 확실히 켠다.
@@ -3372,7 +3384,7 @@ export function StudioShell({
                     router.refresh();
                   });
                 }}
-                passcodeVersion={passcodeVersion}
+                isDefaultPasscode={isDefaultPasscode}
                 setPasscodeAction={setPasscodeAction}
                 startChanging={passcodeChangeMode}
               />
@@ -3394,7 +3406,7 @@ export function StudioShell({
               isDevInsights ? (
                 <InsightsDashboard
                   month={view.month}
-                  onChangePasscode={canEdit ? openChangePasscode : undefined}
+                  onChangePasscode={canEdit ? () => openChangePasscode("developer") : undefined}
                   year={view.year}
                 />
               ) : (
