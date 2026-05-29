@@ -420,73 +420,70 @@ export function InsightsDashboard({
         {/* 위 일별/주별은 '방문 수(첫 진입)'지만, 이 막대는 '그 시각에 떠 있던 인원(체류)'이다.
             막대 = 관측된 하루 평균 동시 접속, 호버하면 평균·최고 + 역할/기기별 분해를 차트 안에서 보여준다. */}
         <p className="vt-occ-note">막대 = 시간대별 평균 동시 접속(방문자 기준) · 호버 시 최고치도 표시</p>
-        {visits.hasOccupancy ? (
-          <div
-            className="vt-hours"
-            role="img"
-            aria-label="시간대별 동시 접속(체류) 분포(역할·기기 분해)"
-            onPointerLeave={() => setVtHourHover(null)}
-          >
-            {visits.occupancy.map((slot, h) => {
-              const counts = countsOf(slot);
-              const enter = () => {
-                if (slot.avg <= 0) {
-                  setVtHourHover(null);
-                  return;
-                }
-                const rows = meta
-                  .map((m) => ({ color: m.color, label: m.label, val: counts[m.key] ?? 0 }))
-                  .filter((r) => r.val > 0.001);
-                setVtHourHover({ x: ((h + 0.5) / 24) * 100, avg: slot.avg, peak: slot.peak, rows });
-              };
-              return (
-                <div
-                  className="vt-hcol"
-                  key={h}
-                  onPointerEnter={enter}
-                  onPointerMove={enter}
-                  onPointerLeave={() => setVtHourHover(null)}
-                >
-                  <div className="vt-hbar" style={{ height: `${(slot.avg / om) * 100}%` }}>
-                    <div className="vt-fill">
-                      {meta.map((m) => {
-                        const c = counts[m.key] ?? 0;
-                        return c > 0 ? (
-                          <span
-                            className="vt-seg"
-                            key={m.key}
-                            style={{ flexGrow: c, background: m.color }}
-                          />
-                        ) : null;
-                      })}
-                    </div>
+        {/* 핑이 0이어도 24칸 골격(시간축)은 항상 그린다 — "살아있는지" 바로 보이고, 방문자가
+            생기면 그 시각 막대가 차오른다. 비었을 땐 차트 안에 작은 캡션만. */}
+        <div
+          className={`vt-hours ${visits.hasOccupancy ? "" : "empty"}`}
+          role="img"
+          aria-label="시간대별 동시 접속(체류) 분포(역할·기기 분해)"
+          onPointerLeave={() => setVtHourHover(null)}
+        >
+          {visits.occupancy.map((slot, h) => {
+            const counts = countsOf(slot);
+            const enter = () => {
+              if (slot.avg <= 0) {
+                setVtHourHover(null);
+                return;
+              }
+              const rows = meta
+                .map((m) => ({ color: m.color, label: m.label, val: counts[m.key] ?? 0 }))
+                .filter((r) => r.val > 0.001);
+              setVtHourHover({ x: ((h + 0.5) / 24) * 100, avg: slot.avg, peak: slot.peak, rows });
+            };
+            return (
+              <div
+                className="vt-hcol"
+                key={h}
+                onPointerEnter={enter}
+                onPointerMove={enter}
+                onPointerLeave={() => setVtHourHover(null)}
+              >
+                <div className="vt-hbar" style={{ height: `${(slot.avg / om) * 100}%` }}>
+                  <div className="vt-fill">
+                    {meta.map((m) => {
+                      const c = counts[m.key] ?? 0;
+                      return c > 0 ? (
+                        <span
+                          className="vt-seg"
+                          key={m.key}
+                          style={{ flexGrow: c, background: m.color }}
+                        />
+                      ) : null;
+                    })}
                   </div>
-                  <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
                 </div>
-              );
-            })}
-            {vtHourHover ? (
-              <div className="vt-tip" style={{ "--tip-x": `${vtHourHover.x}%` } as CSSProperties}>
-                <strong>
-                  평균 {fmtOcc(vtHourHover.avg)} · 최고 {vtHourHover.peak}
-                </strong>
-                {vtHourHover.rows.map((r) => (
-                  <span className="vt-tip-row" key={r.label}>
-                    <i style={{ background: r.color }} />
-                    {r.label}
-                    <b>{fmtOcc(r.val)}</b>
-                  </span>
-                ))}
+                <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
               </div>
-            ) : null}
-          </div>
-        ) : (
-          <p className="insight-empty">
-            아직 이번 달 동시 접속 기록이 없어요. 방문자가 사이트를 열어둔 동안 자동으로 서버에 1분
-            단위로 쌓이고, 이 창을 열면 그동안 모인 평균·최고 동시 접속이 그려져요. 직접 켜둘 필요는
-            없어요 — 사람들이 다녀가면 채워져요.
-          </p>
-        )}
+            );
+          })}
+          {vtHourHover ? (
+            <div className="vt-tip" style={{ "--tip-x": `${vtHourHover.x}%` } as CSSProperties}>
+              <strong>
+                평균 {fmtOcc(vtHourHover.avg)} · 최고 {vtHourHover.peak}
+              </strong>
+              {vtHourHover.rows.map((r) => (
+                <span className="vt-tip-row" key={r.label}>
+                  <i style={{ background: r.color }} />
+                  {r.label}
+                  <b>{fmtOcc(r.val)}</b>
+                </span>
+              ))}
+            </div>
+          ) : null}
+          {visits.hasOccupancy ? null : (
+            <span className="vt-hours-empty">아직 핑 없음 · 방문자가 다녀가면 막대가 차올라요</span>
+          )}
+        </div>
       </>
     );
   }

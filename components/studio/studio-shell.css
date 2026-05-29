@@ -1047,6 +1047,30 @@
   background: linear-gradient(180deg, #8b7cf0, #6b5bd6);
   transition: height 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
+/* 점유 차트가 비었을 때 — 24칸 baseline + 시간축 골격은 그대로 보이되, 막대는 옅게 두고
+   가운데에 작은 안내 pill을 띄운다("죽은 게 아니라 빈 것"임을 알린다). */
+.vt-hours.empty .vt-hbar {
+  background: #e5e1f0;
+}
+.vt-hours-empty {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.82);
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted, #9aa0ab);
+}
+@media (min-width: 641px) {
+  .vt-hours-empty {
+    font-size: 13px;
+  }
+}
 /* 월별 하트 막대(분홍) — 빈 막대 하나로 높이만 표시. */
 .vt-bar.heart {
   background: linear-gradient(180deg, #fb7aa5, #e11d54);
