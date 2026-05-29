@@ -477,6 +477,9 @@ export function StickerLayer({
         // 크기·회전 핸들은 정확히 하나만 선택했을 때만(그룹 선택 중엔 이동만).
         const showHandles = editable && selectedIds.length === 1 && selectedIds[0] === sticker.id;
         const fxClass = `${sticker.outline ? "fx-outline" : ""} ${sticker.shadow ? "fx-shadow" : ""}`;
+        // 움직이는 스티커: 안쪽 요소에만 애니(외곽 .sticker-item의 rotate/flip transform과 충돌 방지).
+        // 선택 중엔 CSS로 일시정지(잡고 위치 조정 쉽게). reduced-motion은 전역 catch-all이 멈춘다.
+        const animClass = sticker.anim ? `sticker-anim sticker-anim-${sticker.anim}` : "";
         return (
           <div
             className={`sticker-item ${isSelected ? "selected" : ""} ${fxClass}`}
@@ -499,14 +502,14 @@ export function StickerLayer({
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 alt={sticker.label}
-                className="sticker-image"
+                className={`sticker-image ${animClass}`}
                 draggable={false}
                 src={sticker.imageUrl}
                 style={{ width: size }}
               />
             ) : sticker.kind === "text" ? (
               <span
-                className="sticker-text"
+                className={`sticker-text ${animClass}`}
                 style={{
                   fontSize: size * 0.5,
                   color: sticker.textColor ?? "#1f2937",
@@ -528,7 +531,7 @@ export function StickerLayer({
                 {sticker.label}
               </span>
             ) : (
-              <span className="sticker-emoji">{sticker.label}</span>
+              <span className={`sticker-emoji ${animClass}`}>{sticker.label}</span>
             )}
             {showHandles ? (
               <>

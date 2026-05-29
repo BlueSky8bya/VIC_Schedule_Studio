@@ -41,6 +41,7 @@ import { PosterExportActions } from "@/components/poster/poster-export-actions";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
 import {
   POSTER_THEMES,
+  STICKER_ANIMS,
   type PublicSchedule,
   type PublicScheduleEvent,
   type StickerAsset,
@@ -147,6 +148,7 @@ function stickerToSaveInput(
     italic: s.italic,
     outline: s.outline,
     shadow: s.shadow,
+    anim: s.anim,
     xRatio: s.xRatio,
     yRatio: s.yRatio,
     widthRatio: s.widthRatio,
@@ -1092,6 +1094,7 @@ export function PublicPoster({
       italic: sticker.italic,
       outline: sticker.outline,
       shadow: sticker.shadow,
+      anim: sticker.anim,
       xRatio: sticker.xRatio,
       yRatio: sticker.yRatio,
       widthRatio: sticker.widthRatio,
@@ -1553,6 +1556,7 @@ export function PublicPoster({
       italic: fresh.italic,
       outline: fresh.outline,
       shadow: fresh.shadow,
+      anim: fresh.anim,
       xRatio: fresh.xRatio,
       yRatio: fresh.yRatio,
       widthRatio: fresh.widthRatio,
@@ -2726,6 +2730,32 @@ export function PublicPoster({
                           <Trash2 aria-hidden="true" size={15} />
                         </button>
                       </div>
+                      <div className="stf-row stf-anim" role="group" aria-label="움직임">
+                        <span className="stf-anim-label">움직임</span>
+                        <button
+                          className={`stf-btn ${!selected.anim ? "active" : ""}`}
+                          onClick={() => {
+                            pushHistory();
+                            patchSelected({ anim: undefined });
+                          }}
+                          type="button"
+                        >
+                          정지
+                        </button>
+                        {STICKER_ANIMS.map((a) => (
+                          <button
+                            className={`stf-btn ${selected.anim === a.key ? "active" : ""}`}
+                            key={a.key}
+                            onClick={() => {
+                              pushHistory();
+                              patchSelected({ anim: a.key });
+                            }}
+                            type="button"
+                          >
+                            {a.label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   ) : selected ? (
                     <div className="stf-body">
@@ -2805,6 +2835,32 @@ export function PublicPoster({
                         >
                           <SendToBack aria-hidden="true" size={15} />
                         </button>
+                      </div>
+                      <div className="stf-row stf-anim" role="group" aria-label="움직임">
+                        <span className="stf-anim-label">움직임</span>
+                        <button
+                          className={`stf-btn ${!selected.anim ? "active" : ""}`}
+                          onClick={() => {
+                            pushHistory();
+                            patchSelected({ anim: undefined });
+                          }}
+                          type="button"
+                        >
+                          정지
+                        </button>
+                        {STICKER_ANIMS.map((a) => (
+                          <button
+                            className={`stf-btn ${selected.anim === a.key ? "active" : ""}`}
+                            key={a.key}
+                            onClick={() => {
+                              pushHistory();
+                              patchSelected({ anim: a.key });
+                            }}
+                            type="button"
+                          >
+                            {a.label}
+                          </button>
+                        ))}
                       </div>
                     </div>
                   ) : null}

@@ -4,6 +4,9 @@ import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canDecorate } from "@/lib/permissions/roles";
+import { STICKER_ANIMS, type StickerAnim } from "@/lib/domain/schedule-types";
+
+const ANIM_KEYS = new Set<string>(STICKER_ANIMS.map((a) => a.key));
 
 export type SaveStickerInput = {
   id?: string;
@@ -20,6 +23,7 @@ export type SaveStickerInput = {
   italic?: boolean; // 기울임
   outline?: boolean; // C7: 흰 외곽선
   shadow?: boolean; // C7: 진한 그림자
+  anim?: StickerAnim; // 움직이는 스티커 프리셋(없으면 정지)
   xRatio: number;
   yRatio: number;
   widthRatio: number;
@@ -56,6 +60,7 @@ function toStickerRow(input: SaveStickerInput, calendarId: string) {
     italic: text ? (input.italic ?? false) : false,
     outline: input.outline ?? false,
     shadow: input.shadow ?? false,
+    anim: input.anim && ANIM_KEYS.has(input.anim) ? input.anim : null,
     page_scope: "monthly",
     year: input.year,
     month: input.month,

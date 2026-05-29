@@ -2019,6 +2019,77 @@
   border-radius: 4px;
 }
 
+/* 움직이는 스티커(P1) — 안쪽 요소에만 적용해 외곽 .sticker-item의 rotate/flip과 충돌하지 않게.
+   합성 친화(transform/opacity)만. 라이브 포스터에서 실제로 움직인다(내보내기는 정지 프레임).
+   transform이 먹게 inline-block. reduced-motion은 globals.css 전역 catch-all이 멈춘다. */
+.sticker-anim {
+  display: inline-block;
+  transform-origin: center;
+  will-change: transform, opacity;
+}
+.sticker-anim-float {
+  animation: sticker-float 2.6s ease-in-out infinite;
+}
+.sticker-anim-twinkle {
+  animation: sticker-twinkle 1.7s ease-in-out infinite;
+}
+.sticker-anim-jiggle {
+  animation: sticker-jiggle 0.5s ease-in-out infinite;
+}
+.sticker-anim-spin {
+  animation: sticker-spin 3.6s linear infinite;
+}
+.sticker-anim-pulse {
+  animation: sticker-pulse 1.3s ease-in-out infinite;
+}
+/* 편집 중(선택된) 스티커는 멈춰서 잡고 위치 조정하기 쉽게. 시청자(비편집)는 항상 움직인다. */
+.sticker-item.selected .sticker-anim {
+  animation: none;
+}
+@keyframes sticker-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-9%);
+  }
+}
+@keyframes sticker-twinkle {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+}
+@keyframes sticker-jiggle {
+  0%,
+  100% {
+    transform: rotate(-4deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+@keyframes sticker-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes sticker-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.13);
+  }
+}
+
 .sticker-handle {
   position: absolute;
   display: grid;
@@ -2746,6 +2817,18 @@
   border-color: var(--accent);
   background: var(--accent);
   color: var(--on-accent);
+}
+/* 움직임(anim) 피커 행 — 라벨 + 짧은 버튼들이 줄바꿈되며 들어간다. 버튼은 .stf-btn 상속. */
+.stf-anim {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+.stf-anim-label {
+  font-size: 11px;
+  font-weight: 800;
+  color: #64748b;
+  margin-right: 2px;
 }
 .stf-btn.danger {
   border-color: #fca5a5;

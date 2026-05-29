@@ -117,6 +117,16 @@ export type StickerAsset = {
   fileType: string;
 };
 
+// 꾸미기 화려함 P1: 스티커 애니메이션 프리셋(라이브 포스터에서 실제로 움직임. 내보내기는 정지 프레임).
+export type StickerAnim = "float" | "twinkle" | "jiggle" | "spin" | "pulse";
+export const STICKER_ANIMS: { key: StickerAnim; label: string }[] = [
+  { key: "float", label: "둥실" },
+  { key: "twinkle", label: "반짝" },
+  { key: "jiggle", label: "흔들" },
+  { key: "spin", label: "빙글" },
+  { key: "pulse", label: "콩닥" }
+];
+
 export type StickerInstance = {
   id: string;
   kind: "emoji" | "image" | "text"; // emoji=기본 이모지, image=업로드 커스텀 이모지, text=텍스트 스티커
@@ -141,6 +151,7 @@ export type StickerInstance = {
   flipY: boolean; // 상하 대칭
   opacity: number;
   zIndex: number;
+  anim?: StickerAnim; // 움직이는 스티커(라이브 전용). 없으면 정지.
   visiblePublicly: boolean;
 };
 
