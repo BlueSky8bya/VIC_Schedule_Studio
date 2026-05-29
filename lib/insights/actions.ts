@@ -46,6 +46,7 @@ export type InsightsData = {
   };
   system: {
     ownerEmails: string[];
+    developerEmails: string[];
     dbOwnerEmail: string | null;
     bindingOk: boolean;
     commit: string | null;
@@ -405,6 +406,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
       },
       system: {
         ownerEmails,
+        developerEmails,
         dbOwnerEmail,
         bindingOk,
         commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,

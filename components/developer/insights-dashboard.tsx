@@ -30,10 +30,7 @@ import {
   type TrendData,
   type VisitTrends
 } from "@/lib/insights/actions";
-import {
-  clearUnlockSessionForUserAction,
-  clearUnlockSessionsAction
-} from "@/lib/private-layer/actions";
+import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
@@ -183,8 +180,6 @@ export function InsightsDashboard({
   const [vtHover, setVtHover] = useState<VtHover | null>(null);
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
-  // 보안 패널: 열린 비공개 잠금 세션을 모두 만료(초기화)하는 중인지.
-  const [clearingUnlocks, setClearingUnlocks] = useState(false);
   // 보안 패널: 지금 개별 만료 중인 사람의 user_id(그 카드 버튼만 비활성).
   const [expiringUserId, setExpiringUserId] = useState<string | null>(null);
 
@@ -222,25 +217,6 @@ export function InsightsDashboard({
   useEffect(() => setVtHover(null), [visitView, visitDim]);
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
-
-  // 열린 비공개 잠금 세션을 모두 즉시 만료(초기화). 성공하면 보안 데이터를 다시 불러와 목록을 비운다.
-  async function clearUnlocks() {
-    if (
-      typeof window !== "undefined" &&
-      !window.confirm("지금 열린 모든 비공개 잠금을 만료시킬까요?\n이후 모두 다시 비밀번호를 입력해야 합니다.")
-    ) {
-      return;
-    }
-    setClearingUnlocks(true);
-    const res = await clearUnlockSessionsAction();
-    if (res.ok) {
-      const fresh = await getInsightsAction(year, month);
-      if (fresh.ok) setData(fresh.data);
-    } else if (typeof window !== "undefined") {
-      window.alert(res.error);
-    }
-    setClearingUnlocks(false);
-  }
 
   // 특정 한 사람의 비공개 잠금만 즉시 만료(초기화). 성공하면 보안 데이터를 다시 불러온다.
   async function expireUser(userId: string, email: string) {
@@ -852,30 +828,10 @@ export function InsightsDashboard({
                   className={`insight-banner ${d.security.activeUnlocks.length > 0 ? "warn" : "ok"}`}
                 >
                   {d.security.activeUnlocks.length > 0
-                    ? `지금 비공개를 연 계정 ${d.security.activeUnlocks.length} — 방송 공유 주의`
+                    ? `지금 비공개를 연 계정 ${d.security.activeUnlocks.length}`
                     : "지금 비공개를 연 계정 없음"}
                 </div>
-                {d.security.activeUnlocks.length > 0 ? (
-                  <>
-                    <ul className="insight-rows">
-                      {d.security.activeUnlocks.map((u, i) => (
-                        <li key={i}>
-                          <span>{u.email}</span>
-                          <strong>~ {fmtTime(u.expiresAt)} 만료</strong>
-                        </li>
-                      ))}
-                    </ul>
-                    {/* 열린 비공개 잠금을 지금 모두 만료(초기화) — 방송 중 안전장치. */}
-                    <button
-                      className="button danger insight-clear-unlocks"
-                      disabled={clearingUnlocks}
-                      onClick={clearUnlocks}
-                      type="button"
-                    >
-                      {clearingUnlocks ? "초기화 중…" : "만료시간 초기화"}
-                    </button>
-                  </>
-                ) : null}
+                {/* 누가 열었는지·개별 만료는 아래 역할별 섹션(관리자/개발자/작업자) 카드에서 다룬다. */}
                 <h4 className="insight-subhead">비공개 잠금 암호</h4>
                 <ul className="insight-rows">
                   <li>
@@ -902,7 +858,7 @@ export function InsightsDashboard({
                   </button>
                 ) : null}
                 {/* 비공개를 열 수 있는 사람(매니저 제외) — 역할별로, 사람마다 개별 만료. */}
-                {renderAccessSection("소유자", "관리자", "owner", d.security.access.owners)}
+                {renderAccessSection("관리자", "관리자", "owner", d.security.access.owners)}
                 {renderAccessSection("개발자", "개발자", "developer", d.security.access.developers)}
                 {renderAccessSection("작업자", "작업자", "worker", d.security.access.workers)}
               </>
@@ -915,17 +871,27 @@ export function InsightsDashboard({
               <>
                 {d.system.bindingOk ? null : (
                   <div className="insight-banner warn">
-                    ⚠ 등록된 소유자와 실제 DB 소유자가 달라요 — 소유자 저장이 실패할 수 있어요.
+                    ⚠ 등록된 관리자와 실제 DB 관리자가 달라요 — 관리자 저장이 실패할 수 있어요.
                     <br />
-                    실제 DB 소유자: {d.system.dbOwnerEmail ?? "—"}
+                    실제 DB 관리자: {d.system.dbOwnerEmail ?? "—"}
                   </div>
                 )}
-                <h4 className="insight-subhead">소유자 계정 ({d.system.ownerEmails.length})</h4>
+                <h4 className="insight-subhead">관리자 계정 ({d.system.ownerEmails.length})</h4>
                 {d.system.ownerEmails.length === 0 ? (
-                  <p className="insight-empty">등록된 소유자 계정이 없어요.</p>
+                  <p className="insight-empty">등록된 관리자 계정이 없어요.</p>
                 ) : (
                   <ul className="insight-list">
                     {d.system.ownerEmails.map((e) => (
+                      <li key={e}>{e}</li>
+                    ))}
+                  </ul>
+                )}
+                <h4 className="insight-subhead">개발자 계정 ({d.system.developerEmails.length})</h4>
+                {d.system.developerEmails.length === 0 ? (
+                  <p className="insight-empty">등록된 개발자 계정이 없어요.</p>
+                ) : (
+                  <ul className="insight-list">
+                    {d.system.developerEmails.map((e) => (
                       <li key={e}>{e}</li>
                     ))}
                   </ul>
