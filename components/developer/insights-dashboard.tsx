@@ -35,14 +35,15 @@ import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
-const ROLE_META: { key: string; label: string; color: string }[] = [
+// META·헬퍼는 일별 방문 모달(DayVisitModal)에서도 그대로 재사용 → 색/표기 단일 출처(드리프트 방지).
+export const ROLE_META: { key: string; label: string; color: string }[] = [
   { key: "viewer", label: "시청자", color: "#9aa0ab" },
   { key: "worker", label: "작업자", color: "#f59e0b" },
   { key: "manager", label: "매니저", color: "#7c6cf0" },
   { key: "owner", label: "관리자", color: "#34d399" },
   { key: "developer", label: "개발자", color: "#60a5fa" }
 ];
-const DEVICE_META: { key: string; label: string; color: string }[] = [
+export const DEVICE_META: { key: string; label: string; color: string }[] = [
   { key: "desktop", label: "웹", color: "#6b8cef" },
   { key: "android", label: "안드로이드", color: "#3ddc84" },
   { key: "ios", label: "iOS", color: "#a1a1aa" },
@@ -100,11 +101,11 @@ function StatTile({ value, label, tone }: { value: number | string; label: strin
 type VtHover = { x: number; total: number; rows: { color: string; label: string; count: number }[] };
 // 시간대 동시 접속(체류) 호버 — 평균/최고 동시 접속 + 역할/기기별 평균(소수).
 type OccHover = { x: number; avg: number; peak: number; rows: { color: string; label: string; val: number }[] };
-// 평균 동시 접속(소수) 표시 — 0.1 단위.
-const fmtOcc = (n: number) => n.toFixed(1);
-// epoch ms → KST(=UTC+9)로 옮긴 Date(이후 getUTC*가 곧 KST 값). "HH:MM"·요일 표기에 쓴다.
-const kstOf = (ms: number) => new Date(ms + 9 * 3600 * 1000);
-const hhmm = (ms: number) => {
+// 평균 동시 접속(소수) 표시 — 0.1 단위. (일별 모달과 공유)
+export const fmtOcc = (n: number) => n.toFixed(1);
+// epoch ms → KST(=UTC+9)로 옮긴 Date(이후 getUTC*가 곧 KST 값). "HH:MM"·요일 표기에 쓴다. (일별 모달과 공유)
+export const kstOf = (ms: number) => new Date(ms + 9 * 3600 * 1000);
+export const hhmm = (ms: number) => {
   const d = kstOf(ms);
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 };

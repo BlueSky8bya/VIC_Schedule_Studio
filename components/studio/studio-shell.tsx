@@ -85,6 +85,7 @@ import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { TrustedMembersPanel } from "@/components/trusted-members/trusted-members-panel";
 import { InsightsDashboard } from "@/components/developer/insights-dashboard";
 import { MemberInsights } from "@/components/studio/member-insights";
+import { DayVisitModal } from "@/components/developer/day-visit-modal";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
@@ -288,7 +289,9 @@ export function StudioShell({
       setShowPrivate(true);
     }
   }, [hasUnlockSession]);
-  const [modal, setModal] = useState<null | "tags" | "members" | "notice" | "developer">(null);
+  const [modal, setModal] = useState<null | "tags" | "members" | "notice" | "developer" | "dayVisit">(
+    null
+  );
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
@@ -2637,9 +2640,17 @@ export function StudioShell({
               </div>
             </section>
 
-            {/* 선택한 날짜로 숲 공지 초안 만들기 (소유자/개발자). 편집 시트는 그대로 두고 그 위에
-                공지 창을 띄운다 → 공지에서 뒤로가기를 누르면 편집 시트로 돌아온다(스택). */}
-            {canEdit ? (
+            {/* 진짜 개발자 화면(미리보기 아님)에선 공지(토리님 전용)를 그날 방문 그래프로 대체 — 날짜를
+                옮겨가며 일별 통계를 비교한다. 공지 수정이 필요하면 '관리자 미리보기'를 쓰면 된다. */}
+            {isDevInsights ? (
+              <button
+                className="button notice-open"
+                onClick={() => setModal("dayVisit")}
+                type="button"
+              >
+                📈 {selectedDate} 방문 그래프
+              </button>
+            ) : canEdit ? (
               <button
                 className="button notice-open"
                 onClick={() => setModal("notice")}
@@ -3310,8 +3321,16 @@ export function StudioShell({
               </button>
             ) : null}
 
-            {/* #1: 선택한 날짜로 숲 공지 초안을 만든다(소유자/개발자 전용). */}
-            {canEdit ? (
+            {/* 진짜 개발자 화면(미리보기 아님)에선 공지(토리님 전용) 대신 그날 방문 그래프 버튼. */}
+            {isDevInsights ? (
+              <button
+                className="button notice-open"
+                onClick={() => setModal("dayVisit")}
+                type="button"
+              >
+                📈 {selectedDate} 방문 그래프
+              </button>
+            ) : canEdit ? (
               <button
                 className="button notice-open"
                 onClick={() => setModal("notice")}
@@ -3366,7 +3385,7 @@ export function StudioShell({
           role="presentation"
         >
           <div
-            className={`modal-card ${modal === "tags" || modal === "notice" || modal === "developer" ? "modal-card-wide" : ""}`}
+            className={`modal-card ${modal === "tags" || modal === "notice" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
             role="dialog"
           >
             <div className="modal-head">
@@ -3375,11 +3394,13 @@ export function StudioShell({
                   ? "태그 이름 · 색상 편집"
                   : modal === "notice"
                     ? "숲 공지 쓰기"
-                    : modal === "developer"
-                      ? isDevInsights
-                        ? "🛠 월별 인사이트"
-                        : "📊 월별 인사이트"
-                      : "매니저 · 작업자 관리"}
+                    : modal === "dayVisit"
+                      ? `📈 ${selectedDate} 방문 상세`
+                      : modal === "developer"
+                        ? isDevInsights
+                          ? "🛠 월별 인사이트"
+                          : "📊 월별 인사이트"
+                        : "매니저 · 작업자 관리"}
               </h2>
               <button
                 aria-label="닫기"
@@ -3404,6 +3425,7 @@ export function StudioShell({
               />
             ) : null}
             {modal === "members" ? <TrustedMembersPanel /> : null}
+            {modal === "dayVisit" ? <DayVisitModal dateKey={selectedDate} /> : null}
             {modal === "developer" ? (
               isDevInsights ? (
                 <InsightsDashboard

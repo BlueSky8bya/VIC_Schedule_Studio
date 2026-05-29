@@ -818,6 +818,98 @@ export async function getVisitTrendsAction(
   };
 }
 
+// 하루치 방문 상세 — 개발자가 달력에서 날짜를 클릭하면 그날 통계를 드릴다운으로 본다.
+// 월별(getVisitTrends)과 같은 지표를 '그 하루'로 좁힌 것: 방문 수(역할/기기), 24h 동시 접속, 관리자 세션.
+// 기존 RPC에 하루 범위(p_start=그날, p_end=다음날)를 넘겨 재사용 — 새 DB 작업 없음. 개발자 전용.
+export type DayVisitDetail = {
+  dateKey: string;
+  visits: VisitSlot; // 그날 방문 수 + 역할/기기 분해
+  occupancy: OccSlot[]; // 24칸(KST) — 그날 시간대별 평균/최고 동시 접속
+  hasOccupancy: boolean;
+  ownerSessions: OwnerSession[]; // 그날 관리자 접속 세션
+};
+export type DayVisitDetailResult = { ok: true; data: DayVisitDetail } | { ok: false; error: string };
+
+export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisitDetailResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (actor.role !== "developer") {
+    return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) {
+    return { ok: false, error: "잘못된 날짜입니다." };
+  }
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase 서비스 키가 설정되지 않았습니다." };
+  }
+  const [yy, mm, dd] = dateKey.split("-").map(Number);
+  const nextDay = ymd(new Date(Date.UTC(yy, mm - 1, dd + 1))); // 다음 날(day 컬럼은 KST 날짜)
+
+  const emptySlot = (): VisitSlot => ({
+    roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
+    devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
+    total: 0
+  });
+  const emptyOcc = (): OccSlot => ({
+    roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
+    devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
+    avg: 0,
+    peak: 0
+  });
+
+  const [visitRes, hourlyRes, peakRes, sessRes] = await Promise.all([
+    supabase.from("visit_log").select("role, device").eq("day", dateKey),
+    supabase.rpc("presence_hourly", { p_start: dateKey, p_end: nextDay }),
+    supabase.rpc("presence_peak", { p_start: dateKey, p_end: nextDay }),
+    supabase.rpc("owner_sessions", { p_start: dateKey, p_end: nextDay })
+  ]);
+
+  const visits = emptySlot();
+  if (!visitRes.error && Array.isArray(visitRes.data)) {
+    for (const r of visitRes.data as { role: string; device: string }[]) {
+      if (r.role in visits.roles) visits.roles[r.role] += 1;
+      if (r.device in visits.devices) visits.devices[r.device] += 1;
+      visits.total += 1;
+    }
+  }
+
+  // 하루치라 관측일수=1 → 핑/60 = 그날 그 시간대 평균 동시 접속.
+  const occupancy = Array.from({ length: 24 }, emptyOcc);
+  let hasOccupancy = false;
+  if (!hourlyRes.error && Array.isArray(hourlyRes.data)) {
+    for (const r of hourlyRes.data as { hour: number; role: string; device: string; pings: number }[]) {
+      const h = Number(r.hour);
+      if (h < 0 || h > 23) continue;
+      const avg = Number(r.pings) / 60;
+      const slot = occupancy[h];
+      if (r.role in slot.roles) slot.roles[r.role] += avg;
+      if (r.device in slot.devices) slot.devices[r.device] += avg;
+      slot.avg += avg;
+      if (Number(r.pings) > 0) hasOccupancy = true;
+    }
+  }
+  if (!peakRes.error && Array.isArray(peakRes.data)) {
+    for (const r of peakRes.data as { hour: number; peak: number }[]) {
+      const h = Number(r.hour);
+      if (h >= 0 && h <= 23) occupancy[h].peak = Number(r.peak);
+    }
+  }
+
+  const ownerSessions: OwnerSession[] =
+    !sessRes.error && Array.isArray(sessRes.data)
+      ? (sessRes.data as { device: string; started_at: string; ended_at: string; minutes: number }[])
+          .map((r) => ({
+            device: DEVICE_SET.has(r.device) ? r.device : "desktop",
+            startMs: new Date(r.started_at).getTime(),
+            endMs: new Date(r.ended_at).getTime(),
+            minutes: Number(r.minutes)
+          }))
+          .filter((s) => Number.isFinite(s.startMs) && Number.isFinite(s.endMs))
+      : [];
+
+  return { ok: true, data: { dateKey, visits, occupancy, hasOccupancy, ownerSessions } };
+}
+
 // 관리자(소유자) 전용 보안 데이터 — 개발자 인사이트 보안 패널과 같되 '개발자' 섹션은 뺀다.
 // owner/developer만(서버 검증) — 매니저·작업자에겐 절대 내려가지 않는다(민감: 이메일·세션).
 export type OwnerSecurityData = {

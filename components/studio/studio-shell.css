@@ -1139,6 +1139,111 @@
     font-size: 11.5px;
   }
 }
+/* 일별 방문 상세 모달(개발자가 달력 날짜 클릭 → 그날 통계). 차트는 vt-*·own-* 재사용. */
+.dv-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.dv-total {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.dv-total strong {
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  color: #3a3550;
+}
+.dv-total span {
+  font-size: 13px;
+  font-weight: 800;
+  color: #8a82a6;
+}
+.dv-breakdown {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+}
+.dv-breakdown li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #5b5470;
+}
+.dv-breakdown li span {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+.dv-breakdown li b {
+  font-weight: 900;
+  color: #3a3550;
+}
+/* 관리자 세션 — 하루판은 날짜 칼럼 없이 풀폭 트랙. */
+.own-row.solo {
+  grid-template-columns: 1fr;
+}
+.own-axis.solo {
+  margin-left: 0;
+}
+.dv-sessions {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.dv-sessions li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #5b5470;
+}
+.dv-sessions .dv-dev {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+.dv-sessions .dv-time {
+  font-variant-numeric: tabular-nums;
+}
+.dv-sessions b {
+  font-weight: 900;
+  color: #3a3550;
+}
+.dv-sessions em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8a82a6;
+}
+@media (min-width: 641px) {
+  .dv-total strong {
+    font-size: 38px;
+  }
+  .dv-total span {
+    font-size: 15px;
+  }
+  .dv-breakdown li,
+  .dv-sessions li {
+    font-size: 14px;
+  }
+}
 /* 월별 하트 막대(분홍) — 빈 막대 하나로 높이만 표시. */
 .vt-bar.heart {
   background: linear-gradient(180deg, #fb7aa5, #e11d54);
