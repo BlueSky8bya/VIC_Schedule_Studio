@@ -1044,7 +1044,9 @@
   width: 100%;
   min-height: 2px;
   border-radius: 3px 3px 0 0;
-  background: linear-gradient(180deg, #8b7cf0, #6b5bd6);
+  /* 중립 배경 — 막대는 역할/기기 색 세그먼트(.vt-fill)로 채워진다. 예전 보라 그라데이션은
+     매니저 색과 헷갈리고, 혹시 fill이 덜 채워질 때 오해를 줘서 .vt-bar와 같은 연회색으로. */
+  background: #f0ecf9;
   transition: height 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
 /* 점유 차트가 비었을 때 — 24칸 baseline + 시간축 골격은 그대로 보이되, 막대는 옅게 두고

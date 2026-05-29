@@ -150,8 +150,13 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                 <div className="vt-fill">
                   {meta.map((m) => {
                     const c = counts[m.key] ?? 0;
+                    // 비율(c/총합)로 정규화 — flex-grow 합<1이면 fill이 막대를 다 못 채워 배경이 비친다.
                     return c > 0 ? (
-                      <span className="vt-seg" key={m.key} style={{ flexGrow: c, background: m.color }} />
+                      <span
+                        className="vt-seg"
+                        key={m.key}
+                        style={{ flexGrow: slot.avg > 0 ? c / slot.avg : 1, background: m.color }}
+                      />
                     ) : null;
                   })}
                 </div>
