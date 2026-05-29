@@ -87,7 +87,7 @@ import { MemberInsights } from "@/components/studio/member-insights";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
-import { hapticDelete, hapticSuccess, hapticTick } from "@/lib/ui/haptics";
+import { hapticDelete, hapticTick } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 
 type StudioShellProps = {
@@ -1453,6 +1453,7 @@ export function StudioShell({
     if (!canEdit) {
       return;
     }
+    hapticTick(); // ① 눌림: 누른 즉시 "눌렀다" 톡(서버확인 톡은 응답 후 — 2단계 컨벤션)
 
     const existing = events.find((e) => e.id === form.id);
     const isNew = !form.id;
@@ -1528,7 +1529,7 @@ export function StudioShell({
         pendingSavesRef.current.delete(tempId);
         return;
       }
-      hapticSuccess(); // 저장 성공 손맛(Android만; iOS·미지원은 조용히 무시)
+      hapticTick(); // ② 서버확인: 응답 OK 후 한 번 더 톡 → "서버에 올라갔다"는 체감(2단계 컨벤션)
       // 새 일정이면 임시 id를 실제 id로 교체 + 이 임시 id를 가리키던 linkNext도 함께 교체.
       if (isNew && result.id) {
         const realId = result.id;

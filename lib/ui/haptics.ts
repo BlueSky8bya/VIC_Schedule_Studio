@@ -7,6 +7,11 @@
 //   1) 이 기기가 navigator.vibrate를 지원하나? (iOS 등은 미지원 → 무시)
 //   2) 사용자가 진동을 켜뒀나? (기본 ON, 끄면 off 저장 — 토글 UI는 추후 단계)
 //   3) (호출부에서) 짧은 패턴만, 꼭 필요할 때만.
+//
+// "2단계(눌림 → 서버 확인)" 컨벤션 — 앞으로 이런 동작은 모두 이 방식으로:
+//   사용자가 누른 *즉시* hapticTick()으로 "눌렀다"를, 서버 성공 응답 *후* 다시 hapticTick()
+//   으로 "서버에 반영됐다"를 울린다. 두 톡 사이의 간격이 곧 실제 서버 왕복이라 체감이 정직하다.
+//   (한 패턴 [12,40,12]로 한꺼번에 울리지 않는다 — 그건 단일 시점 성공용 hapticSuccess다.)
 
 const HAPTICS_PREF_KEY = "vic.haptics"; // localStorage: "off"면 끔, 그 외엔 켬(기본 ON)
 
@@ -40,8 +45,8 @@ function buzz(pattern: number | number[]): void {
 }
 
 // 상황별 "느낌"에 이름을 붙여 둔다 — 호출부는 의미 있는 이름만 부른다.
-export const hapticTick = () => buzz(12); // 가벼운 톡: 하트, 카드 탭, 드래그 집기
-export const hapticSuccess = () => buzz([12, 40, 12]); // 톡-쉼-톡: 저장·잠금 해제 성공
+export const hapticTick = () => buzz(12); // 가벼운 톡: 하트·카드 탭·드래그 집기, 그리고 2단계 컨벤션의 눌림/서버확인 각 박자
+export const hapticSuccess = () => buzz([12, 40, 12]); // 톡-쉼-톡: "한 시점"에 끝나는 성공(예: 잠금 해제)
 export const hapticDelete = () => buzz(24); // 또렷한 한 번: 삭제(되돌리기 어려운 동작)
 export const hapticWarn = () => buzz([20, 60, 20]); // 경고(추후 단계용)
 export const hapticError = () => buzz([30, 40, 30, 40, 30]); // 다다닥: 비밀번호 틀림 등(추후)
