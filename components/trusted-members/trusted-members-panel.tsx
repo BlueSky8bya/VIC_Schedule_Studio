@@ -162,11 +162,60 @@ export function TrustedMembersPanel() {
 
   return (
     <div className="members-panel">
-      <p className="members-hint">
-        구글 이메일로 매니저·작업자를 등록해요. 매니저는 방송 운영(업 도움 기간·링크 수정, 일정 태그
-        지정)을, 작업자는 달력 꾸미기와 ‘작업자’ 비공개 일정 보기를 도와요. 일정 편집·발행은 토리님만
-        가능합니다.
-      </p>
+      <div className="members-perms">
+        <table className="perm-table">
+          <thead>
+            <tr>
+              <th scope="col">권한</th>
+              <th scope="col">매니저</th>
+              <th scope="col">작업자</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">일정 편집</th>
+              <td className="no">✕</td>
+              <td className="no">✕</td>
+            </tr>
+            <tr>
+              <th scope="row">업 도움 기간·링크</th>
+              <td className="yes">✓</td>
+              <td className="no">✕</td>
+            </tr>
+            <tr>
+              <th scope="row">일정에 태그 달기</th>
+              <td className="yes">✓</td>
+              <td className="no">✕</td>
+            </tr>
+            <tr>
+              <th scope="row">비공개 일정 보기</th>
+              <td className="no">✕</td>
+              <td className="yes">✓</td>
+            </tr>
+            <tr>
+              <th scope="row">달력 꾸미기</th>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
+            </tr>
+            <tr>
+              <th scope="row">이모지 추가·삭제</th>
+              <td className="no">✕</td>
+              <td className="yes">✓</td>
+            </tr>
+            <tr>
+              <th scope="row">달력 이미지 저장</th>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
+            </tr>
+            <tr>
+              <th scope="row">태그·멤버·비번 관리</th>
+              <td className="no">✕</td>
+              <td className="no">✕</td>
+            </tr>
+          </tbody>
+        </table>
+        <p className="perm-foot">구글 이메일로 등록 · 일정 편집·발행은 토리님(소유자)만</p>
+      </div>
 
       <div className="members-add">
         <input
