@@ -419,7 +419,7 @@ export function InsightsDashboard({
         <h4 className="insight-subhead">시간대별 동시 접속 · 체류 (KST)</h4>
         {/* 위 일별/주별은 '방문 수(첫 진입)'지만, 이 막대는 '그 시각에 떠 있던 인원(체류)'이다.
             막대 = 관측된 하루 평균 동시 접속, 호버하면 평균·최고 + 역할/기기별 분해를 차트 안에서 보여준다. */}
-        <p className="vt-occ-note">막대 = 평균 동시 접속(켜져 있던 시간 기준) · 호버 시 최고치도 표시</p>
+        <p className="vt-occ-note">막대 = 시간대별 평균 동시 접속(방문자 기준) · 호버 시 최고치도 표시</p>
         {visits.hasOccupancy ? (
           <div
             className="vt-hours"
@@ -482,8 +482,9 @@ export function InsightsDashboard({
           </div>
         ) : (
           <p className="insight-empty">
-            동시 접속 기록이 쌓이는 중이에요. 화면을 켜두면 1분 단위로 모여, 시간대별 평균·최고
-            동시 접속이 여기에 그려져요.
+            아직 이번 달 동시 접속 기록이 없어요. 방문자가 사이트를 열어둔 동안 자동으로 서버에 1분
+            단위로 쌓이고, 이 창을 열면 그동안 모인 평균·최고 동시 접속이 그려져요. 직접 켜둘 필요는
+            없어요 — 사람들이 다녀가면 채워져요.
           </p>
         )}
       </>
