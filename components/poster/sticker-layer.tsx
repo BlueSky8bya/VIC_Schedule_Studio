@@ -480,6 +480,10 @@ export function StickerLayer({
         // 움직이는 스티커: 안쪽 요소에만 애니(외곽 .sticker-item의 rotate/flip transform과 충돌 방지).
         // 선택 중엔 CSS로 일시정지(잡고 위치 조정 쉽게). reduced-motion은 전역 catch-all이 멈춘다.
         const animClass = sticker.anim ? `sticker-anim sticker-anim-${sticker.anim}` : "";
+        // P1b 텍스트 효과: 그라데이션(인라인 background-clip)·네온(CSS text-shadow, currentColor).
+        const isGradientText = sticker.kind === "text" && sticker.textFx === "gradient";
+        const textFxClass =
+          sticker.textFx === "neon" ? "tfx-neon" : isGradientText ? "tfx-gradient" : "";
         return (
           <div
             className={`sticker-item ${isSelected ? "selected" : ""} ${fxClass}`}
@@ -509,23 +513,33 @@ export function StickerLayer({
               />
             ) : sticker.kind === "text" ? (
               <span
-                className={`sticker-text ${animClass}`}
+                className={`sticker-text ${animClass} ${textFxClass}`}
                 style={{
                   fontSize: size * 0.5,
-                  color: sticker.textColor ?? "#1f2937",
                   fontWeight: sticker.fontWeight ?? 700,
                   fontFamily: TEXT_FONT_STACK[sticker.fontFamily ?? "sans"],
                   textAlign: sticker.textAlign ?? "left",
                   fontStyle: sticker.italic ? "italic" : undefined,
-                  // 글자 배경(하이라이트): 색이 있으면 둥근 라벨처럼.
-                  background: sticker.textBg || undefined,
-                  padding: sticker.textBg ? "0.08em 0.32em" : undefined,
-                  borderRadius: sticker.textBg ? "0.22em" : undefined,
-                  // 시스템 한글 폰트는 700/900이 같게 보이므로, "두껍게(>=900)"는 외곽선으로 실제 두껍게.
-                  WebkitTextStroke:
-                    (sticker.fontWeight ?? 700) >= 900
-                      ? `${(size * 0.5 * 0.045).toFixed(2)}px ${sticker.textColor ?? "#1f2937"}`
-                      : undefined
+                  // 그라데이션 글자: 배경을 글자에 클립(인라인 color가 CSS를 이기므로 여기서 처리).
+                  // 일반/네온: 글자색 + (있으면) 하이라이트 배경 + 두껍게(>=900) 외곽선.
+                  ...(isGradientText
+                    ? {
+                        background: "linear-gradient(92deg,#ff7eb3,#a96bff 52%,#43c6ff)",
+                        WebkitBackgroundClip: "text",
+                        backgroundClip: "text",
+                        color: "transparent",
+                        WebkitTextFillColor: "transparent"
+                      }
+                    : {
+                        color: sticker.textColor ?? "#1f2937",
+                        background: sticker.textBg || undefined,
+                        padding: sticker.textBg ? "0.08em 0.32em" : undefined,
+                        borderRadius: sticker.textBg ? "0.22em" : undefined,
+                        WebkitTextStroke:
+                          (sticker.fontWeight ?? 700) >= 900
+                            ? `${(size * 0.5 * 0.045).toFixed(2)}px ${sticker.textColor ?? "#1f2937"}`
+                            : undefined
+                      })
                 }}
               >
                 {sticker.label}

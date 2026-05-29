@@ -42,6 +42,7 @@ import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer
 import {
   POSTER_THEMES,
   STICKER_ANIMS,
+  STICKER_TEXT_FX,
   type PublicSchedule,
   type PublicScheduleEvent,
   type StickerAsset,
@@ -145,6 +146,7 @@ function stickerToSaveInput(
     fontFamily: s.fontFamily,
     textAlign: s.textAlign,
     textBg: s.textBg,
+    textFx: s.textFx,
     italic: s.italic,
     outline: s.outline,
     shadow: s.shadow,
@@ -1091,6 +1093,7 @@ export function PublicPoster({
       fontFamily: sticker.fontFamily,
       textAlign: sticker.textAlign,
       textBg: sticker.textBg,
+      textFx: sticker.textFx,
       italic: sticker.italic,
       outline: sticker.outline,
       shadow: sticker.shadow,
@@ -1553,6 +1556,7 @@ export function PublicPoster({
       fontFamily: fresh.fontFamily,
       textAlign: fresh.textAlign,
       textBg: fresh.textBg,
+      textFx: fresh.textFx,
       italic: fresh.italic,
       outline: fresh.outline,
       shadow: fresh.shadow,
@@ -2680,6 +2684,32 @@ export function PublicPoster({
                             />
                           </label>
                         ) : null}
+                      </div>
+                      <div className="stf-row stf-anim" role="group" aria-label="텍스트 효과">
+                        <span className="stf-anim-label">효과</span>
+                        <button
+                          className={`stf-btn ${!selected.textFx ? "active" : ""}`}
+                          onClick={() => {
+                            pushHistory();
+                            patchSelected({ textFx: undefined });
+                          }}
+                          type="button"
+                        >
+                          기본
+                        </button>
+                        {STICKER_TEXT_FX.map((f) => (
+                          <button
+                            className={`stf-btn ${selected.textFx === f.key ? "active" : ""}`}
+                            key={f.key}
+                            onClick={() => {
+                              pushHistory();
+                              patchSelected({ textFx: f.key });
+                            }}
+                            type="button"
+                          >
+                            {f.label}
+                          </button>
+                        ))}
                       </div>
                       <div className="stf-row">
                         <label className="stf-opacity" title="글자 크기">

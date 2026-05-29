@@ -160,7 +160,7 @@ const loadPublicScheduleData = unstable_cache(
         supabase
           .from("sticker_instances")
           .select(
-            "id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, italic, outline, shadow, anim, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)"
+            "id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, text_fx, italic, outline, shadow, anim, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)"
           )
           .eq("calendar_id", calendar.id)
           .eq("is_visible", true),
@@ -379,6 +379,7 @@ function mapSticker(row: {
   font_family?: string | null;
   text_align?: string | null;
   text_bg?: string | null;
+  text_fx?: string | null;
   italic?: boolean | null;
   outline?: boolean | null;
   shadow?: boolean | null;
@@ -422,6 +423,7 @@ function mapSticker(row: {
       ? ((row.text_align as StickerInstance["textAlign"]) ?? "left")
       : undefined,
     textBg: isText ? (row.text_bg ?? undefined) : undefined,
+    textFx: isText ? ((row.text_fx as StickerInstance["textFx"]) ?? undefined) : undefined,
     italic: isText ? (row.italic ?? false) : undefined,
     outline: row.outline ?? false,
     shadow: row.shadow ?? false,

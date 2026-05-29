@@ -1993,6 +1993,13 @@
   white-space: pre;
   text-align: left;
 }
+/* P1b 네온 글로우 — 글자색(currentColor)으로 번지는 빛. 그라데이션은 인라인으로 처리(여긴 없음). */
+.sticker-text.tfx-neon {
+  text-shadow:
+    0 0 4px currentColor,
+    0 0 10px currentColor,
+    0 0 18px currentColor;
+}
 /* C7 효과: 흰 외곽선(다이컷 느낌) / 진한 그림자. filter는 덮어쓰기라 조합별로 따로 정의. */
 .sticker-item.fx-shadow {
   filter: drop-shadow(0 6px 9px rgb(0 0 0 / 45%));

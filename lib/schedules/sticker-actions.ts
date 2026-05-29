@@ -4,9 +4,15 @@ import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canDecorate } from "@/lib/permissions/roles";
-import { STICKER_ANIMS, type StickerAnim } from "@/lib/domain/schedule-types";
+import {
+  STICKER_ANIMS,
+  STICKER_TEXT_FX,
+  type StickerAnim,
+  type TextFx
+} from "@/lib/domain/schedule-types";
 
 const ANIM_KEYS = new Set<string>(STICKER_ANIMS.map((a) => a.key));
+const TEXT_FX_KEYS = new Set<string>(STICKER_TEXT_FX.map((f) => f.key));
 
 export type SaveStickerInput = {
   id?: string;
@@ -20,6 +26,7 @@ export type SaveStickerInput = {
   fontFamily?: string; // #7: 글꼴 종류 키
   textAlign?: "left" | "center" | "right"; // 텍스트 정렬
   textBg?: string; // 글자 배경(하이라이트) 색
+  textFx?: TextFx; // 텍스트 특수 효과(그라데이션/네온)
   italic?: boolean; // 기울임
   outline?: boolean; // C7: 흰 외곽선
   shadow?: boolean; // C7: 진한 그림자
@@ -57,6 +64,7 @@ function toStickerRow(input: SaveStickerInput, calendarId: string) {
     font_family: text ? (input.fontFamily ?? "sans") : null,
     text_align: text ? (input.textAlign ?? "left") : null,
     text_bg: text ? input.textBg || null : null,
+    text_fx: text && input.textFx && TEXT_FX_KEYS.has(input.textFx) ? input.textFx : null,
     italic: text ? (input.italic ?? false) : false,
     outline: input.outline ?? false,
     shadow: input.shadow ?? false,

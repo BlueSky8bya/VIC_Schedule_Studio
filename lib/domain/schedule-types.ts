@@ -127,6 +127,13 @@ export const STICKER_ANIMS: { key: StickerAnim; label: string }[] = [
   { key: "pulse", label: "콩닥" }
 ];
 
+// 텍스트 스티커 특수 효과(P1b): 그라데이션 글자 / 네온 글로우.
+export type TextFx = "gradient" | "neon";
+export const STICKER_TEXT_FX: { key: TextFx; label: string }[] = [
+  { key: "gradient", label: "그라데" },
+  { key: "neon", label: "네온" }
+];
+
 export type StickerInstance = {
   id: string;
   kind: "emoji" | "image" | "text"; // emoji=기본 이모지, image=업로드 커스텀 이모지, text=텍스트 스티커
@@ -138,6 +145,7 @@ export type StickerInstance = {
   fontFamily?: string; // kind=text일 때 글꼴 종류 키
   textAlign?: "left" | "center" | "right"; // kind=text일 때 정렬
   textBg?: string; // kind=text일 때 글자 배경(하이라이트) 색, 없으면 미적용
+  textFx?: TextFx; // kind=text일 때 특수 효과(그라데이션/네온). 없으면 기본.
   italic?: boolean; // kind=text일 때 기울임
   outline?: boolean; // C7: 흰 외곽선(다이컷 스티커 느낌)
   shadow?: boolean; // C7: 진한 그림자
