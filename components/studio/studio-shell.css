@@ -1340,11 +1340,35 @@
 }
 /* 하이라이트 카드 — 내용을 위·아래로 벌리고(빈 공간 최소화) 글씨를 키워 카드를 꽉 채운다. */
 .highlight-grid {
+  position: relative; /* 잘린 제목 툴팁(.hl-tip) clamp 기준 */
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   /* 네 카드 높이를 모두 같게. */
   grid-auto-rows: 1fr;
   gap: 10px;
+}
+/* 카드 제목이 길어 …로 잘릴 때만(특히 모바일) 호버/탭하면 그 카드 위 가운데에 전체 제목을 띄운다.
+   z-index로 다른 카드에 안 가리고, 그리드 폭 안으로 clamp해 양옆이 잘리지 않게(긴 건 줄바꿈). */
+.hl-tip {
+  position: absolute;
+  left: clamp(110px, var(--tip-x, 50%), calc(100% - 110px));
+  transform: translate(-50%, calc(-100% - 6px));
+  max-width: min(220px, calc(100% - 16px));
+  padding: 7px 11px;
+  background: #3a3550;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 800;
+  line-height: 1.32;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: keep-all;
+  pointer-events: none;
+  z-index: 12;
+  box-shadow: 0 10px 24px -10px rgb(58 53 80 / 65%);
+  animation: vt-tip-in 0.12s var(--ease, ease);
 }
 /* 가로 배치: [아이콘] [라벨/값] [큰 수치]. 넓은 박스를 좌우로 채우고 수치를 오른쪽 크게.
    모바일은 좁으니 작게(넘침 방지), 웹은 @media(min-width:641px)에서 크게. */

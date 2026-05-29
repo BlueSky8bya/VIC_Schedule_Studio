@@ -20,6 +20,7 @@ import {
   useState
 } from "react";
 import { DeveloperPanel } from "@/components/developer/developer-panel";
+import { HighlightCards } from "@/components/studio/highlight-cards";
 import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import {
@@ -618,39 +619,7 @@ export function InsightsDashboard({
         sub: bw !== null ? WEEKDAY[bw] : "—"
       }
     ];
-    return (
-      <div className="highlight-grid">
-        {cards.map((c) => (
-          <div className="highlight-card" data-tone={c.tone} key={c.key}>
-            <span className="hl-emoji" aria-hidden="true">
-              {c.emoji}
-            </span>
-            <span className="hl-body">
-              <span className="hl-label">
-                {c.label[0]}
-                <i className="hl-lbreak" aria-hidden="true" />
-                {c.label[1]}
-              </span>
-              {c.main ? (
-                <strong className="hl-main" title={c.main}>
-                  {c.main}
-                </strong>
-              ) : null}
-            </span>
-            {c.sub ? (
-              <span className="hl-sub">
-                {c.heart ? (
-                  <i className="hl-heart" aria-hidden="true">
-                    ♥
-                  </i>
-                ) : null}
-                {c.sub}
-              </span>
-            ) : null}
-          </div>
-        ))}
-      </div>
-    );
+    return <HighlightCards cards={cards} />;
   }
 
   return (

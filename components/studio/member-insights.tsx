@@ -15,6 +15,7 @@ import {
   type OwnerSecurityData
 } from "@/lib/insights/actions";
 import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
+import { HighlightCards } from "@/components/studio/highlight-cards";
 import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -394,30 +395,7 @@ export function MemberInsights({
         sub: bw !== null ? WEEKDAY[bw] : "—"
       }
     ];
-    return (
-      <div className="highlight-grid">
-        {cards.map((c) => (
-          <div className="highlight-card" data-tone={c.tone} key={c.key}>
-            <span className="hl-emoji" aria-hidden="true">
-              {c.emoji}
-            </span>
-            <span className="hl-body">
-              <span className="hl-label">
-                {c.label[0]}
-                <i className="hl-lbreak" aria-hidden="true" />
-                {c.label[1]}
-              </span>
-              {c.main ? (
-                <strong className="hl-main" title={c.main}>
-                  {c.main}
-                </strong>
-              ) : null}
-            </span>
-            {c.sub ? <span className="hl-sub">{c.sub}</span> : null}
-          </div>
-        ))}
-      </div>
-    );
+    return <HighlightCards cards={cards} />;
   }
 
   const renderers = [renderContent, renderEngagement, renderTrend, renderHighlights];
