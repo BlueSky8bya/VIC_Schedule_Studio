@@ -2621,34 +2621,35 @@ export function StudioShell({
             {navMsg}
           </div>
         ) : null}
-        <div className="viewer-fullscreen-bar">
-          {/* 라벨은 왼쪽, "편집실로 돌아가기"는 우측 상단으로(버튼 위치 통일). */}
-          <span className="viewer-fullscreen-label">
-            {isNarrow ? null : <Eye aria-hidden="true" size={15} />}
-            {isNarrow
-              ? "시청자가 보는 화면"
-              : "시청자가 보는 공개 화면입니다"}
+        {/* 흰 바 제거 — 포스터 몰입을 위해 안내(작게)와 이동 버튼만 포스터 배경 위에 띄운다.
+            가운데는 비워(pointer-events) 포스터가 그대로 클릭을 받게 한다. */}
+        <div className="viewer-preview-overlay">
+          <span className="viewer-preview-note">
+            <Eye aria-hidden="true" size={13} />
+            시청자 화면 미리보기 중…
           </span>
-          <button className="button" onClick={() => setViewerMode(false)} type="button">
-            <ChevronLeft aria-hidden="true" size={16} />
-            {isNarrow ? "편집실" : "편집실로 가기"}
-          </button>
-          {/* 꾸미기는 PC 전용 — 모바일(isNarrow)에선 진입 버튼을 숨긴다. */}
-          {canDecorateCalendar && !isNarrow ? (
-            <Link
-              className="button"
-              href={`/studio/decorate/${view.year}/${view.month}`}
-              onClick={() => {
-                // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
-                // dp=0으로 리셋: "꾸미기로 가기"는 항상 꾸미기 화면으로(직전 미리보기 상태 무시).
-                writeViewCookie({ dy: view.year, dm: view.month, dp: 0 });
-                startNav(isNarrow ? "꾸미기 여는 중…" : "꾸미기 화면을 여는 중입니다…");
-              }}
-            >
-              <Sparkles aria-hidden="true" size={16} />
-              꾸미러 가기
-            </Link>
-          ) : null}
+          <div className="viewer-preview-actions">
+            <button className="button" onClick={() => setViewerMode(false)} type="button">
+              <ChevronLeft aria-hidden="true" size={16} />
+              {isNarrow ? "편집실" : "편집실로 가기"}
+            </button>
+            {/* 꾸미기는 PC 전용 — 모바일(isNarrow)에선 진입 버튼을 숨긴다. */}
+            {canDecorateCalendar && !isNarrow ? (
+              <Link
+                className="button"
+                href={`/studio/decorate/${view.year}/${view.month}`}
+                onClick={() => {
+                  // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
+                  // dp=0으로 리셋: "꾸미기로 가기"는 항상 꾸미기 화면으로(직전 미리보기 상태 무시).
+                  writeViewCookie({ dy: view.year, dm: view.month, dp: 0 });
+                  startNav(isNarrow ? "꾸미기 여는 중…" : "꾸미기 화면을 여는 중입니다…");
+                }}
+              >
+                <Sparkles aria-hidden="true" size={16} />
+                꾸미러 가기
+              </Link>
+            ) : null}
+          </div>
         </div>
         <PublicPoster
           initialMonth={view.month}

@@ -3199,52 +3199,50 @@ textarea:disabled {
 .viewer-fullscreen {
   min-height: 100vh;
   background: #fffdf8;
+  position: relative; /* 미리보기 오버레이(흰 바 대체) 기준 */
 }
-.viewer-fullscreen-bar {
-  position: sticky;
+/* 흰 상단 바 대신 — 미리보기 안내(왼쪽, 작게)와 이동 버튼(오른쪽)을 포스터 배경 위에 띄운다.
+   가운데는 비워 포스터가 클릭을 받게(pointer-events). */
+.viewer-preview-overlay {
+  position: absolute;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 20;
   display: flex;
   align-items: center;
-  gap: 14px;
-  border-bottom: 1px solid var(--line);
-  background: rgb(255 255 255 / 92%);
-  padding: 10px 16px;
-  backdrop-filter: blur(4px);
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  pointer-events: none;
 }
-.viewer-fullscreen-label {
+.viewer-preview-overlay > * {
+  pointer-events: auto;
+}
+.viewer-preview-note {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  /* 라벨이 남는 공간을 채워 "편집실로 돌아가기" 버튼을 오른쪽 끝으로 민다. */
-  flex: 1 1 auto;
-  min-width: 0;
+  gap: 5px;
   color: #2b6a6a;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 800;
+  /* 흰 칩 없이 포스터(크림) 위에서 또렷하게 — 옅은 흰 글로우만. */
+  text-shadow: 0 1px 2px rgb(255 255 255 / 75%);
 }
-.viewer-fullscreen-bar > .button {
-  flex: 0 0 auto;
+.viewer-preview-actions {
+  display: inline-flex;
+  gap: 10px;
 }
-/* 모바일: 상단 바를 최대한 좁게 — 버튼·간격·글자 줄이고, 라벨이 줄바꿈 없이 한 줄에 들어가게. */
 @media (max-width: 640px) {
-  .viewer-fullscreen-bar {
-    gap: 8px;
-    padding: 8px 10px;
+  .viewer-preview-overlay {
+    padding: 10px 12px;
   }
-  .viewer-fullscreen-bar > .button {
-    flex: 0 0 auto;
-    padding: 0 10px;
-    white-space: nowrap;
+  .viewer-preview-note {
+    font-size: 11px;
   }
-  .viewer-fullscreen-label {
-    flex: 1 1 auto;
-    min-width: 0;
-    gap: 0;
-    font-size: 11.5px;
+  .viewer-preview-actions .button {
+    padding: 0 12px;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 }
 /* 태그 편집 행은 기본 flex 한 줄 레이아웃(.tag-editor-row)을 그대로 쓴다. */
