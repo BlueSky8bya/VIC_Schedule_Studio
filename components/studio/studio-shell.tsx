@@ -874,6 +874,33 @@ export function StudioShell({
   const ignorePopRef = useRef(0); // 우리가 정리용으로 부른 history.back의 popstate는 무시
   const backClosingRef = useRef(false); // 뒤로가기로 닫히는 중인지
 
+  // B2(접근성): 모달(modal)·비번 팝업(passcodeModal)을 Esc로 닫고, 닫을 때 열기 전 포커스로
+  // 복원한다(키보드 사용자가 위치를 잃지 않게). 닫기는 setState로 — 히스토리 스택은 기존 효과가
+  // 정리한다(X·배경 클릭과 동일 경로). 모바일 시트/미리보기는 뒤로가기 스택이 따로 처리.
+  useEffect(() => {
+    if (modal === null && passcodeModal === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.stopPropagation();
+      if (passcodeModal !== null) setPasscodeModal(null);
+      else setModal(null);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [modal, passcodeModal]);
+  const modalOpenerRef = useRef<HTMLElement | null>(null);
+  const prevModalRef = useRef<typeof modal>(null);
+  useEffect(() => {
+    const prev = prevModalRef.current;
+    prevModalRef.current = modal;
+    if (prev === null && modal !== null) {
+      modalOpenerRef.current = document.activeElement as HTMLElement | null;
+    } else if (prev !== null && modal === null) {
+      modalOpenerRef.current?.focus?.();
+      modalOpenerRef.current = null;
+    }
+  }, [modal]);
+
   // (1) 오버레이가 하나라도 열려 있으면 배경 스크롤·당겨서 새로고침을 잠근다.
   useEffect(() => {
     if (!overlayLocked) return;
@@ -2532,7 +2559,7 @@ export function StudioShell({
         }}
         role="presentation"
       >
-        <div className="modal-card" role="dialog">
+        <div className="modal-card" aria-modal="true" role="dialog">
           <div className="modal-head">
             <h2>태그 수정</h2>
             <button aria-label="닫기" className="modal-close" onClick={() => setTagSheetId(null)} type="button">
@@ -2584,7 +2611,7 @@ export function StudioShell({
         }}
         role="presentation"
       >
-        <div className="modal-card" role="dialog">
+        <div className="modal-card" aria-modal="true" role="dialog">
           <div className="modal-head">
             <h2>🌱 업 도움 수정</h2>
             <button aria-label="닫기" className="modal-close" onClick={closeSupportSheet} type="button">
@@ -2623,7 +2650,7 @@ export function StudioShell({
         }}
         role="presentation"
       >
-        <div className="m-edit-sheet" role="dialog">
+        <div className="m-edit-sheet" aria-modal="true" role="dialog">
           <div className="m-edit-head">
             <strong>{selectedEventId ? "일정 수정" : "새 일정"}</strong>
             <span>{selectedDate}</span>
@@ -2813,7 +2840,7 @@ export function StudioShell({
   return (
     <main className="studio-shell">
       {copyToast ? (
-        <div className="copy-toast" role="status">
+        <div className="copy-toast" role="status" aria-live="polite">
           {copyToast}
         </div>
       ) : null}
@@ -3450,6 +3477,7 @@ export function StudioShell({
         >
           <div
             className={`modal-card ${modal === "tags" || modal === "notice" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
+            aria-modal="true"
             role="dialog"
           >
             <div className="modal-head">
@@ -3551,7 +3579,7 @@ export function StudioShell({
           }}
           role="presentation"
         >
-          <div className="modal-card" role="dialog">
+          <div className="modal-card" aria-modal="true" role="dialog">
             <div className="modal-head">
               <h2>{passcodeModal === "change" ? "비밀번호 변경" : "비공개 일정"}</h2>
               <button
