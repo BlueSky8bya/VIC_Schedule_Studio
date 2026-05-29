@@ -178,17 +178,17 @@ export function TrustedMembersPanel() {
               <td className="no">✕</td>
             </tr>
             <tr>
-              <th scope="row">업 도움 기간·링크</th>
+              <th scope="row">업 도움 기간·링크 수정</th>
               <td className="yes">✓</td>
               <td className="no">✕</td>
             </tr>
             <tr>
-              <th scope="row">일정에 태그 달기</th>
+              <th scope="row">이미 생성된 일정의 태그 수정</th>
               <td className="yes">✓</td>
               <td className="no">✕</td>
             </tr>
             <tr>
-              <th scope="row">비공개 일정 보기</th>
+              <th scope="row">작업자 일정 보기(엠바고 X)</th>
               <td className="no">✕</td>
               <td className="yes">✓</td>
             </tr>
@@ -203,7 +203,7 @@ export function TrustedMembersPanel() {
               <td className="yes">✓</td>
             </tr>
             <tr>
-              <th scope="row">달력 이미지 저장</th>
+              <th scope="row">달력 이미지 캡쳐</th>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
             </tr>

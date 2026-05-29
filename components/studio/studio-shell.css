@@ -1705,6 +1705,17 @@
   .highlight-card[data-tone="wd"] .hl-lbreak::before {
     content: none;
   }
+  /* 잘린 제목 툴팁(웹) — 카드 제목(.hl-main 26px)과 같은 크기로: 잘린 그 글자를 그대로
+     펼쳐 보여주는 느낌. 박스 안 글자보다 작아 보이면 안 된다. 웹은 폭이 넓으니 더 넓게 clamp. */
+  .hl-tip {
+    font-size: 26px;
+    font-weight: 900;
+    padding: 10px 16px;
+    border-radius: 13px;
+    line-height: 1.28;
+    max-width: min(440px, calc(100% - 24px));
+    left: clamp(220px, var(--tip-x, 50%), calc(100% - 220px));
+  }
   /* 트렌드(웹) — 시리즈 라벨·x축·막대를 키워 또렷하게(모바일 기본은 작게 둔다). */
   .trend-head > span {
     font-size: 16px;
@@ -3872,6 +3883,8 @@ textarea:disabled {
   font-size: 12px;
   font-weight: 800;
   text-align: center;
+  /* '매니저'·'작업자'가 '매지/저'처럼 중간에서 끊기지 않게. */
+  white-space: nowrap;
 }
 .perm-table thead th:first-child {
   text-align: left;
@@ -3880,6 +3893,8 @@ textarea:disabled {
   text-align: left;
   font-weight: 700;
   color: #4a4466;
+  /* 긴 권한 설명은 공백에서만 줄바꿈(한국어 단어 중간 끊김 방지). */
+  word-break: keep-all;
 }
 .perm-table td {
   width: 60px;
@@ -3903,10 +3918,11 @@ textarea:disabled {
   }
   .perm-table th,
   .perm-table td {
-    padding: 6px 6px;
+    padding: 6px 5px;
   }
+  /* '매니저'·'작업자' 헤더가 한 줄로 들어갈 만큼 — 첫 칸(설명)은 나머지 폭을 갖는다. */
   .perm-table td {
-    width: 42px;
+    width: 48px;
   }
   .perm-foot {
     font-size: 11px;
