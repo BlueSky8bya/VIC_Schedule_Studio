@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { PasscodeResult } from "@/lib/private-layer/actions";
+import { hapticError, hapticSuccess } from "@/lib/ui/haptics";
 
 type PrivateLayerPanelProps = {
   canManage: boolean;
@@ -27,6 +28,8 @@ export function PrivateLayerPanel({
   const [newPw, setNewPw] = useState("");
   // 비밀번호 확인(검증) 진행 상태 — 버튼이 "확인 중…"으로 바뀐다.
   const [unlocking, setUnlocking] = useState(false);
+  // 비밀번호 틀림 시 입력칸을 잠깐 흔든다(연출). onAnimationEnd로 비워, 다음 실패에 다시 흔들린다.
+  const [shake, setShake] = useState(false);
 
   async function unlock() {
     setError(null);
@@ -38,11 +41,15 @@ export function PrivateLayerPanel({
     });
     const data = await res.json().catch(() => ({}));
     if (res.ok) {
-      // 검증 성공 → 부모가 팝업을 닫고 "일정을 불러오는 중…"을 띄운 뒤 새로고침한다.
+      // 검증 성공 → 따뜻한 성공 진동 + 부모가 팝업을 닫고 "일정을 불러오는 중…"을 띄운 뒤 새로고침(⚠배너 연출).
+      hapticSuccess();
       onUnlocked?.();
     } else {
       setUnlocking(false);
       setError(data.error ?? "잠금 해제에 실패했습니다.");
+      // 실패 연출: 에러 진동 + 입력칸 흔들기(붉은 테두리).
+      hapticError();
+      setShake(true);
     }
   }
 
@@ -75,6 +82,8 @@ export function PrivateLayerPanel({
           >
             <input
               autoFocus
+              className={shake ? "shake" : ""}
+              onAnimationEnd={() => setShake(false)}
               onChange={(e) => setPasscode(e.target.value)}
               placeholder="비밀번호"
               type="password"

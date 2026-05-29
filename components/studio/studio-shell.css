@@ -3176,6 +3176,23 @@ textarea:disabled {
   padding: 0 14px;
   font-size: 16px;
 }
+/* 비밀번호 틀림 — 입력칸을 좌우로 짧게 흔들고 붉은 테두리(실패 연출). */
+@keyframes passcode-shake {
+  0%, 100% { transform: translateX(0); }
+  18% { transform: translateX(-6px); }
+  38% { transform: translateX(6px); }
+  58% { transform: translateX(-4px); }
+  78% { transform: translateX(3px); }
+}
+.passcode-box input.shake {
+  animation: passcode-shake 0.4s var(--ease, ease);
+  border-color: #e2867d;
+}
+@media (prefers-reduced-motion: reduce) {
+  .passcode-box input.shake {
+    animation: none;
+  }
+}
 .passcode-actions {
   display: flex;
   gap: 8px;
