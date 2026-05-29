@@ -39,10 +39,11 @@ export function SecurityPanel({
   data: SecurityPanelData;
   showDevelopers: boolean;
   onChangePasscode?: () => void;
-  onExpire: (userId: string) => Promise<void>;
+  onExpire: (userId: string) => Promise<{ ok: boolean; error?: string }>;
 }) {
   // 지금 개별 만료 중인 사람의 user_id(그 카드 버튼만 비활성).
   const [expiringUserId, setExpiringUserId] = useState<string | null>(null);
+  const [expireError, setExpireError] = useState<string | null>(null);
 
   async function handleExpire(userId: string, email: string) {
     if (
@@ -52,8 +53,11 @@ export function SecurityPanel({
       return;
     }
     setExpiringUserId(userId);
-    await onExpire(userId);
+    setExpireError(null);
+    const res = await onExpire(userId);
     setExpiringUserId(null);
+    // 실패는 alert 대신 패널 안 인라인으로(앱 톤 유지). 성공이면 목록이 새로고침된다.
+    if (!res.ok) setExpireError(res.error ?? "만료 처리에 실패했어요. 잠시 후 다시 시도해 주세요.");
   }
 
   function renderSection(title: string, roleLabel: string, roleClass: string, people: AccessPerson[]) {
@@ -123,6 +127,11 @@ export function SecurityPanel({
         <button className="button insight-change-passcode" onClick={onChangePasscode} type="button">
           비밀번호 변경
         </button>
+      ) : null}
+      {expireError ? (
+        <div className="auth-warning" role="alert">
+          {expireError}
+        </div>
       ) : null}
       {renderSection("관리자", "관리자", "owner", data.access.owners)}
       {showDevelopers ? renderSection("개발자", "개발자", "developer", data.access.developers) : null}

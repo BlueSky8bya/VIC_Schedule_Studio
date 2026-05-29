@@ -57,6 +57,7 @@ export function MemberInsights({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [securityData, setSecurityData] = useState<OwnerSecurityData | null>(null);
+  const [securityError, setSecurityError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -78,22 +79,34 @@ export function MemberInsights({
   useEffect(() => {
     if (!canSecurity) return;
     let alive = true;
+    setSecurityError(null);
     getOwnerSecurityAction().then((r) => {
-      if (alive && r.ok) setSecurityData(r.data);
+      if (!alive) return;
+      if (r.ok) setSecurityData(r.data);
+      else setSecurityError(r.error); // 조용히 실패해 스켈레톤이 영원히 뜨던 문제 → 에러 노출+재시도
     });
     return () => {
       alive = false;
     };
   }, [canSecurity]);
 
+  // 보안 로드 실패 시 사용자가 직접 다시 시도.
+  function retrySecurity() {
+    setSecurityError(null);
+    getOwnerSecurityAction().then((r) => {
+      if (r.ok) setSecurityData(r.data);
+      else setSecurityError(r.error);
+    });
+  }
+
   async function expireUser(userId: string) {
     const res = await clearUnlockSessionForUserAction(userId);
     if (res.ok) {
       const fresh = await getOwnerSecurityAction();
       if (fresh.ok) setSecurityData(fresh.data);
-    } else if (typeof window !== "undefined") {
-      window.alert(res.error);
+      return { ok: true };
     }
+    return { ok: false, error: res.error };
   }
 
   // 보안 탭(관리자 전용)을 마지막에 더한 실제 패널 목록. 키보드/스와이프 경계도 이 길이를 쓴다.
@@ -136,6 +149,16 @@ export function MemberInsights({
   };
 
   function renderSecurity() {
+    if (securityError && !securityData) {
+      return (
+        <p className="insight-empty">
+          보안 정보를 불러오지 못했어요.
+          <button className="button" onClick={retrySecurity} style={{ marginLeft: 8 }} type="button">
+            다시 시도
+          </button>
+        </p>
+      );
+    }
     if (!securityData) {
       return (
         <div className="insight-skel" aria-hidden="true">

@@ -230,9 +230,9 @@ export function InsightsDashboard({
     if (res.ok) {
       const fresh = await getInsightsAction(year, month);
       if (fresh.ok) setData(fresh.data);
-    } else if (typeof window !== "undefined") {
-      window.alert(res.error);
+      return { ok: true };
     }
+    return { ok: false, error: res.error };
   }
 
   useEffect(() => {
