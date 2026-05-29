@@ -1956,28 +1956,7 @@ export function StudioShell({
             </div>
           </div>
 
-          {/* 개발자 세션 안내(+접속자 현황)는 미리보기 중엔 숨겨, 아래 화면이 그 역할처럼 보이게. */}
-          {isDeveloper && !previewRole ? (
-            <div className="developer-warning">
-              🛠 개발자 세션
-              <button
-                className="developer-warning-btn"
-                onClick={() => setModal("developer")}
-                type="button"
-              >
-                월별 인사이트
-              </button>
-            </div>
-          ) : null}
-          {/* 비개발자(관리자·매니저·작업자) — 월별 인사이트를 혼잡한 역할 바에서 빼서
-              개발자 세션 줄처럼 아래 별도 줄 오른쪽 끝에 둔다. */}
-          {canMemberInsights ? (
-            <div className="m-insightbar">
-              <button className="button" onClick={() => setModal("developer")} type="button">
-                📊 월별 인사이트
-              </button>
-            </div>
-          ) : null}
+          {/* 인사이트 진입(개발자·관리자·매니저·작업자)은 아래 색상 필터 레일 맨 위로 옮겼다. */}
           {/* 비공개 경고 배너는 화면을 공유하는 소유자에게만 — 작업자/매니저/개발자는 표시하지 않음. */}
           {canReadPrivate && isEffectivelyOwner ? (
             <div className="private-warning">
@@ -1990,7 +1969,17 @@ export function StudioShell({
             onTouchEnd={onAgendaTouchEnd}
             onTouchStart={onAgendaTouchStart}
           >
-            {/* 오른쪽 색상 필터 레일 — 스크롤을 따라온다(시청자 화면과 동일). */}
+            {/* 오른쪽 레일: (위) 인사이트 진입 버튼 + (아래) 색상 필터 — 같은 92px 폭으로 세로로 쌓는다(편집실). */}
+            <div className="agenda-rail">
+              {isDevInsights || canMemberInsights ? (
+                <button
+                  className="m-rail-insights"
+                  onClick={() => setModal("developer")}
+                  type="button"
+                >
+                  {isDevInsights ? "🛠 인사이트" : "📊 인사이트"}
+                </button>
+              ) : null}
             <aside className="agenda-legend agenda-legend-studio" aria-label="색상 필터">
               <strong>색상 필터</strong>
               {legendTags.map((tag) => {
@@ -2039,6 +2028,7 @@ export function StudioShell({
                 </button>
               ) : null}
             </aside>
+            </div>
 
             <div
               className={`agenda-flow${isFirstReveal && !didNavigateRef.current ? " cal-reveal" : ""}`}

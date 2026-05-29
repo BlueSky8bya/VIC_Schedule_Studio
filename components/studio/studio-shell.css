@@ -4351,22 +4351,46 @@ textarea:disabled {
   white-space: nowrap;
   overflow: hidden;
 }
-/* 비개발자(관리자·매니저·작업자) — 월별 인사이트를 역할 바에서 빼낸 별도 줄. 오른쪽 끝 정렬. */
-.m-insightbar {
-  display: flex;
-  justify-content: flex-end;
-  margin: 8px 0 0;
-}
-.m-insightbar .button {
-  min-height: 36px;
-  padding: 0 14px;
-  font-size: 12px;
-  white-space: nowrap;
-}
 .studio-mobile .developer-warning,
 .studio-mobile .private-warning {
   margin: 8px 0;
   font-size: 13px;
+}
+/* 오른쪽 레일: 인사이트 버튼(위) + 색상 필터(아래)를 같은 92px 폭으로 세로로 쌓는다.
+   레일을 어젠다 높이만큼 늘려(stretch) 안쪽 색상 필터의 sticky가 그대로 동작하게 한다. */
+.agenda-rail {
+  flex: 0 0 92px;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+/* 컬럼 레일 안에선 필터의 행 기준 flex(0 0 92px=높이 고정)를 풀고, 레일 폭(92px)을 채운다. */
+.agenda-rail > .agenda-legend-studio {
+  flex: 0 1 auto;
+  width: 100%;
+}
+/* 색상 필터 바로 위, 같은 92px 폭의 인사이트 진입 버튼 — 날짜 카드 첫 줄과 같은 높이에서 시작. */
+.m-rail-insights {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 40px;
+  padding: 8px 6px;
+  border: 1px solid #ddd6f7;
+  border-radius: 12px;
+  background: rgb(124 108 240 / 10%);
+  box-shadow: var(--shadow-2);
+  color: #5b4bd0;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.m-rail-insights:active {
+  background: rgb(124 108 240 / 18%);
 }
 /* 스튜디오 아젠다: 오른쪽 색상 필터 레일 + 목록 */
 .agenda.agenda-studio {
