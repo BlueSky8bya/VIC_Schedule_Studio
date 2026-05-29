@@ -1,6 +1,6 @@
 "use client";
 
-import { GripVertical, Trash2 } from "lucide-react";
+import { AlertTriangle, GripVertical, Palette, Save, Trash2 } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
   useEffect,
@@ -486,11 +486,23 @@ export function TagLegendEditor({
 
   return (
     <div className="tag-editor">
-      <p className="tag-editor-hint">
-        왼쪽 손잡이(⋮⋮)를 끌어 순서를 바꿀 수 있어요. 색을 바꾸려면 먼저 같은 색을 쓰는 태그의 색을
-        한 번 더 눌러 해제한 뒤 다시 고르세요. 한 색은 한 태그만 쓸 수 있습니다. 새 태그는 “전체 저장”을
-        눌러야 달력에 반영됩니다.
-      </p>
+      <div className="tag-tips">
+        <span className="tag-tip">
+          <GripVertical aria-hidden="true" size={13} />
+          손잡이를 끌어 순서 변경
+        </span>
+        <span className="tag-tip">
+          <Palette aria-hidden="true" size={13} />한 색은 한 태그만 — 바꾸려면 쓰던 태그에서 먼저 해제
+        </span>
+        <span className="tag-tip">
+          <Save aria-hidden="true" size={13} />새 태그는 ‘전체 저장’을 눌러야 반영돼요
+        </span>
+        <span className="tag-tip warn">
+          <AlertTriangle aria-hidden="true" size={13} />
+          태그를 지우면 그동안 쌓인 인사이트 통계가 흐트러져요. 삭제보다 새 태그 추가·이름 바꾸기를
+          권해요.
+        </span>
+      </div>
       {orderedTags.map((tag) => {
         const d = draft[tag.id];
         if (!d) return null;

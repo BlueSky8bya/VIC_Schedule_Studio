@@ -98,6 +98,10 @@ function StatTile({ value, label, tone }: { value: number | string; label: strin
 
 // 막대 호버 시 차트 한 곳에 뜨는 분해 툴팁의 데이터(가로 위치 x%, 총합, 색·라벨·수치 줄들).
 type VtHover = { x: number; total: number; rows: { color: string; label: string; count: number }[] };
+// 시간대 동시 접속(체류) 호버 — 평균/최고 동시 접속 + 역할/기기별 평균(소수).
+type OccHover = { x: number; avg: number; peak: number; rows: { color: string; label: string; val: number }[] };
+// 평균 동시 접속(소수) 표시 — 0.1 단위.
+const fmtOcc = (n: number) => n.toFixed(1);
 
 // 스택 막대 한 줄(방문 그래프 공용 — 역할/기기 등 meta로 구분). 호버하면 차트 단일 툴팁에 분해 수치를
 // 올려준다(툴팁은 차트 폭 안에서 clamp되어 양 끝에서도 안 잘린다).
@@ -169,7 +173,7 @@ export function InsightsDashboard({
   const [visitView, setVisitView] = useState<"day" | "week">("day");
   const [visitDim, setVisitDim] = useState<"role" | "device">("role");
   const [vtHover, setVtHover] = useState<VtHover | null>(null);
-  const [vtHourHover, setVtHourHover] = useState<VtHover | null>(null); // 시간대 차트 전용 분해 툴팁
+  const [vtHourHover, setVtHourHover] = useState<OccHover | null>(null); // 시간대 점유(체류) 분해 툴팁
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
 
@@ -315,7 +319,8 @@ export function InsightsDashboard({
     const meta = visitDim === "role" ? ROLE_META : DEVICE_META;
     const countsOf = (s: { roles: Record<string, number>; devices: Record<string, number> }) =>
       visitDim === "role" ? s.roles : s.devices;
-    const hm = Math.max(1, ...visits.hours.map((s) => s.total));
+    // 시간대 막대 높이 스케일은 '평균 동시 접속'의 최댓값 기준(상대 스케일이라 절대치가 작아도 형태가 보임).
+    const om = Math.max(0.0001, ...visits.occupancy.map((s) => s.avg));
     return (
       <>
         <div className="insight-grid">
@@ -411,66 +416,76 @@ export function InsightsDashboard({
             </li>
           ))}
         </ul>
-        <h4 className="insight-subhead">시간대 분포 (KST)</h4>
-        {/* 시간대 막대도 위의 역할별/기기별 토글에 맞춰 색으로 분해(누적). 호버하면 일별/주별과 같은
-            분해 툴팁(역할/기기별 수치 + 총합)이 차트 안에서 clamp되어 뜬다(막대·차트 밖 안 잘림). */}
-        <div
-          className="vt-hours"
-          role="img"
-          aria-label="시간대별 방문 분포(역할·기기 분해)"
-          onPointerLeave={() => setVtHourHover(null)}
-        >
-          {visits.hours.map((slot, h) => {
-            const counts = countsOf(slot);
-            const enter = () => {
-              if (slot.total <= 0) {
-                setVtHourHover(null);
-                return;
-              }
-              const rows = meta
-                .map((m) => ({ color: m.color, label: m.label, count: counts[m.key] ?? 0 }))
-                .filter((r) => r.count > 0);
-              setVtHourHover({ x: ((h + 0.5) / 24) * 100, total: slot.total, rows });
-            };
-            return (
-              <div
-                className="vt-hcol"
-                key={h}
-                onPointerEnter={enter}
-                onPointerMove={enter}
-                onPointerLeave={() => setVtHourHover(null)}
-              >
-                <div className="vt-hbar" style={{ height: `${(slot.total / hm) * 100}%` }}>
-                  <div className="vt-fill">
-                    {meta.map((m) => {
-                      const c = counts[m.key] ?? 0;
-                      return c > 0 ? (
-                        <span
-                          className="vt-seg"
-                          key={m.key}
-                          style={{ flexGrow: c, background: m.color }}
-                        />
-                      ) : null;
-                    })}
+        <h4 className="insight-subhead">시간대별 동시 접속 · 체류 (KST)</h4>
+        {/* 위 일별/주별은 '방문 수(첫 진입)'지만, 이 막대는 '그 시각에 떠 있던 인원(체류)'이다.
+            막대 = 관측된 하루 평균 동시 접속, 호버하면 평균·최고 + 역할/기기별 분해를 차트 안에서 보여준다. */}
+        <p className="vt-occ-note">막대 = 평균 동시 접속(켜져 있던 시간 기준) · 호버 시 최고치도 표시</p>
+        {visits.hasOccupancy ? (
+          <div
+            className="vt-hours"
+            role="img"
+            aria-label="시간대별 동시 접속(체류) 분포(역할·기기 분해)"
+            onPointerLeave={() => setVtHourHover(null)}
+          >
+            {visits.occupancy.map((slot, h) => {
+              const counts = countsOf(slot);
+              const enter = () => {
+                if (slot.avg <= 0) {
+                  setVtHourHover(null);
+                  return;
+                }
+                const rows = meta
+                  .map((m) => ({ color: m.color, label: m.label, val: counts[m.key] ?? 0 }))
+                  .filter((r) => r.val > 0.001);
+                setVtHourHover({ x: ((h + 0.5) / 24) * 100, avg: slot.avg, peak: slot.peak, rows });
+              };
+              return (
+                <div
+                  className="vt-hcol"
+                  key={h}
+                  onPointerEnter={enter}
+                  onPointerMove={enter}
+                  onPointerLeave={() => setVtHourHover(null)}
+                >
+                  <div className="vt-hbar" style={{ height: `${(slot.avg / om) * 100}%` }}>
+                    <div className="vt-fill">
+                      {meta.map((m) => {
+                        const c = counts[m.key] ?? 0;
+                        return c > 0 ? (
+                          <span
+                            className="vt-seg"
+                            key={m.key}
+                            style={{ flexGrow: c, background: m.color }}
+                          />
+                        ) : null;
+                      })}
+                    </div>
                   </div>
+                  <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
                 </div>
-                <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
+              );
+            })}
+            {vtHourHover ? (
+              <div className="vt-tip" style={{ "--tip-x": `${vtHourHover.x}%` } as CSSProperties}>
+                <strong>
+                  평균 {fmtOcc(vtHourHover.avg)} · 최고 {vtHourHover.peak}
+                </strong>
+                {vtHourHover.rows.map((r) => (
+                  <span className="vt-tip-row" key={r.label}>
+                    <i style={{ background: r.color }} />
+                    {r.label}
+                    <b>{fmtOcc(r.val)}</b>
+                  </span>
+                ))}
               </div>
-            );
-          })}
-          {vtHourHover ? (
-            <div className="vt-tip" style={{ "--tip-x": `${vtHourHover.x}%` } as CSSProperties}>
-              <strong>{vtHourHover.total}명</strong>
-              {vtHourHover.rows.map((r) => (
-                <span className="vt-tip-row" key={r.label}>
-                  <i style={{ background: r.color }} />
-                  {r.label}
-                  <b>{r.count}</b>
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className="insight-empty">
+            동시 접속 기록이 쌓이는 중이에요. 화면을 켜두면 1분 단위로 모여, 시간대별 평균·최고
+            동시 접속이 여기에 그려져요.
+          </p>
+        )}
       </>
     );
   }

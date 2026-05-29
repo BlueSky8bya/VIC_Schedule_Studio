@@ -120,6 +120,39 @@ export async function logVisitAction(
   return { ok: true };
 }
 
+// 동시 접속(체류) 핑 — 브라우저가 화면에 보이는 동안 60초마다 호출. (세션, 분) 단위로 1줄만 남긴다
+// (멱등 upsert). 역할은 서버에서 actor로 다시 확인해 위조를 막고, 기기/세션 식별자만 클라에서 받는다.
+// 개인정보(이메일·user_id)는 저장하지 않는다. 시간대 평균 동시 접속 = 그 시간 핑 수 / 60.
+export async function logPresencePingAction(
+  device: string,
+  sessionHash: string
+): Promise<{ ok: boolean }> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!actor.isAuthenticated) return { ok: false };
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return { ok: false };
+  const safeDevice = DEVICE_SET.has(device) ? device : "desktop";
+  const safeHash = (sessionHash || "").slice(0, 64);
+  if (!safeHash) return { ok: false };
+  // 분 단위로 잘라 같은 분의 중복 핑은 1줄로(멱등). day는 KST 날짜.
+  const minuteTs = new Date(Math.floor(Date.now() / 60000) * 60000).toISOString();
+  try {
+    await supabase.from("presence_ping").upsert(
+      {
+        session_hash: safeHash,
+        minute_ts: minuteTs,
+        day: ymd(kstNow()),
+        role: actor.role,
+        device: safeDevice
+      },
+      { onConflict: "session_hash,minute_ts", ignoreDuplicates: true }
+    );
+  } catch {
+    return { ok: false };
+  }
+  return { ok: true };
+}
+
 export async function getInsightsAction(year: number, month: number): Promise<InsightsResult> {
   const actor = await resolveCurrentActor(SLUG);
   if (actor.role !== "developer") {
@@ -609,12 +642,21 @@ type VisitSlot = {
   devices: Record<string, number>;
   total: number;
 };
+// 시간대 동시 접속(체류) — roles/devices/avg는 평균 동시 접속(소수 가능, =핑/60), peak는 최고 동시 접속.
+export type OccSlot = {
+  roles: Record<string, number>;
+  devices: Record<string, number>;
+  avg: number;
+  peak: number;
+};
 export type VisitTrends = {
   ready: boolean; // visit_log 접근 가능(테이블 적용) 여부
   hasData: boolean; // 이 달 방문 기록이 있는지
   days: ({ day: number } & VisitSlot)[]; // 이 달 1..말일
   weeks: ({ label: string } & VisitSlot)[]; // 1주차..
-  hours: VisitSlot[]; // 24칸(KST) — 역할/기기로도 분해
+  hours: VisitSlot[]; // 24칸(KST) — 첫 진입 시각 분포(역할/기기 분해)
+  occupancy: OccSlot[]; // 24칸(KST) — 시간대별 평균/최고 동시 접속(체류)
+  hasOccupancy: boolean; // presence_ping 핑이 쌓여 점유 그래프를 그릴 수 있는지
   total: number; // 이 달 방문 총합
 };
 export type VisitTrendsResult = { ok: true; data: VisitTrends } | { ok: false; error: string };
@@ -644,6 +686,12 @@ export async function getVisitTrendsAction(
     devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
     total: 0
   });
+  const emptyOcc = (): OccSlot => ({
+    roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
+    devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
+    avg: 0,
+    peak: 0
+  });
   const emptyDays = () =>
     Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, ...emptySlot() }));
 
@@ -662,6 +710,8 @@ export async function getVisitTrendsAction(
         days: emptyDays(),
         weeks: [],
         hours: Array.from({ length: 24 }, emptySlot),
+        occupancy: Array.from({ length: 24 }, emptyOcc),
+        hasOccupancy: false,
         total: 0
       }
     };
@@ -696,9 +746,48 @@ export async function getVisitTrendsAction(
     ...(weekMap.get(i) ?? emptySlot())
   }));
 
+  // 시간대 동시 접속(체류) — presence_ping을 시간대별로 집계. 평균 동시 접속 = 핑/(60 × 관측된 일수)
+  // ('전형적인 하루' 기준으로 정규화 — 한 달치 합이 그대로 부풀지 않게), 최고는 분당 세션 최댓값.
+  // 함수가 없거나(마이그레이션 전) 오류면 빈 점유로 두고 hasOccupancy=false → UI가 "아직 없음"을 안내.
+  const occupancy = Array.from({ length: 24 }, emptyOcc);
+  let hasOccupancy = false;
+  const [hourlyRes, peakRes, daysRes] = await Promise.all([
+    supabase.rpc("presence_hourly", { p_start: monthStart, p_end: nextMonthStart }),
+    supabase.rpc("presence_peak", { p_start: monthStart, p_end: nextMonthStart }),
+    supabase.rpc("presence_active_days", { p_start: monthStart, p_end: nextMonthStart })
+  ]);
+  const observedDays = Math.max(1, Number(daysRes?.data ?? 0) || 1);
+  if (!hourlyRes.error && Array.isArray(hourlyRes.data)) {
+    for (const r of hourlyRes.data as { hour: number; role: string; device: string; pings: number }[]) {
+      const h = Number(r.hour);
+      if (h < 0 || h > 23) continue;
+      const avg = Number(r.pings) / (60 * observedDays); // 관측된 하루 평균 동시 접속(소수 가능)
+      const slot = occupancy[h];
+      if (r.role in slot.roles) slot.roles[r.role] += avg;
+      if (r.device in slot.devices) slot.devices[r.device] += avg;
+      slot.avg += avg;
+      if (Number(r.pings) > 0) hasOccupancy = true;
+    }
+  }
+  if (!peakRes.error && Array.isArray(peakRes.data)) {
+    for (const r of peakRes.data as { hour: number; peak: number }[]) {
+      const h = Number(r.hour);
+      if (h >= 0 && h <= 23) occupancy[h].peak = Number(r.peak);
+    }
+  }
+
   return {
     ok: true,
-    data: { ready: true, hasData: rows.length > 0, days, weeks, hours, total: rows.length }
+    data: {
+      ready: true,
+      hasData: rows.length > 0,
+      days,
+      weeks,
+      hours,
+      occupancy,
+      hasOccupancy,
+      total: rows.length
+    }
   };
 }
 

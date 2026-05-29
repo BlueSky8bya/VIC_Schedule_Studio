@@ -754,6 +754,19 @@
   font-weight: 800;
   color: #8b7a59;
 }
+/* 시간대 동시 접속 차트 위 한 줄 설명 — 작고 차분하게(위의 '방문 수'와 다른 지표임을 알린다). */
+.vt-occ-note {
+  margin: -4px 2px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted, #9aa0ab);
+  line-height: 1.4;
+}
+@media (min-width: 641px) {
+  .vt-occ-note {
+    font-size: 13px;
+  }
+}
 /* 분포/순위 막대 */
 .insight-bars {
   list-style: none;
@@ -3495,6 +3508,46 @@ textarea:disabled {
   border-left-color: #dc2626;
   background: #fef2f2;
   color: #b42318;
+}
+/* 태그 편집 팁 — 긴 문단 대신 아이콘+짧은 한 줄로(스캔 쉽게·귀엽게). 기존 hint와 같은 색 언어. */
+.tag-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 10px;
+  padding: 11px 13px;
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--r-md) var(--r-md) 0;
+  background: var(--accent-soft);
+}
+.tag-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.tag-tip svg {
+  flex: none;
+  margin-top: 1.5px;
+  color: var(--accent);
+}
+/* 삭제 경고 — 점선으로 살짝 구분하고 붉게(통계가 흐트러진다는 주의). */
+.tag-tip.warn {
+  margin-top: 2px;
+  padding-top: 7px;
+  border-top: 1px dashed #f3c6c0;
+  color: #b42318;
+  font-weight: 600;
+}
+.tag-tip.warn svg {
+  color: #dc2626;
+}
+@media (min-width: 641px) {
+  .tag-tip {
+    font-size: 13.5px;
+  }
 }
 
 /* 멀티데이 일정 연결 막대 (스튜디오) */
