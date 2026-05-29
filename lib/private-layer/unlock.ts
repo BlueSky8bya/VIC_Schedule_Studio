@@ -4,6 +4,8 @@ import { getCurrentSupabaseUser } from "@/lib/auth/server";
 export type UnlockState = {
   passcodeSet: boolean;
   hasUnlockSession: boolean;
+  // 현재 비밀번호 버전(기본 1=초기/미변경, 2+=관리자가 한 번이라도 바꿈). 없으면 null.
+  passcodeVersion: number | null;
 };
 
 // 현재 사용자가 비공개 레이어 잠금을 해제한 세션이 있는지, 비밀번호가 설정돼 있는지.
@@ -11,12 +13,12 @@ export type UnlockState = {
 export async function getUnlockState(calendarSlug: string): Promise<UnlockState> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) {
-    return { passcodeSet: false, hasUnlockSession: false };
+    return { passcodeSet: false, hasUnlockSession: false, passcodeVersion: null };
   }
 
   const user = await getCurrentSupabaseUser();
   if (!user) {
-    return { passcodeSet: false, hasUnlockSession: false };
+    return { passcodeSet: false, hasUnlockSession: false, passcodeVersion: null };
   }
 
   const { data: calendar } = await supabase
@@ -26,7 +28,7 @@ export async function getUnlockState(calendarSlug: string): Promise<UnlockState>
     .maybeSingle();
 
   if (!calendar) {
-    return { passcodeSet: false, hasUnlockSession: false };
+    return { passcodeSet: false, hasUnlockSession: false, passcodeVersion: null };
   }
 
   const { data: settings } = await supabase
@@ -36,7 +38,7 @@ export async function getUnlockState(calendarSlug: string): Promise<UnlockState>
     .maybeSingle();
 
   if (!settings) {
-    return { passcodeSet: false, hasUnlockSession: false };
+    return { passcodeSet: false, hasUnlockSession: false, passcodeVersion: null };
   }
 
   const { data: session } = await supabase
@@ -48,5 +50,9 @@ export async function getUnlockState(calendarSlug: string): Promise<UnlockState>
     .gt("expires_at", new Date().toISOString())
     .maybeSingle();
 
-  return { passcodeSet: true, hasUnlockSession: Boolean(session) };
+  return {
+    passcodeSet: true,
+    hasUnlockSession: Boolean(session),
+    passcodeVersion: settings.passcode_version
+  };
 }

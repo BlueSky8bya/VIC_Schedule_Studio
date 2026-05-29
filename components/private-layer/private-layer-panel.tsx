@@ -12,6 +12,8 @@ type PrivateLayerPanelProps = {
   onUnlocked?: () => void;
   // true면 잠금 해제 폼이 아니라 곧장 "비밀번호 변경" 폼으로 연다(잠금 중에도 변경하려고).
   startChanging?: boolean;
+  // 현재 비밀번호 버전(1=초기/0219, 2+=변경됨) — 변경 폼 placeholder 힌트 분기용.
+  passcodeVersion?: number | null;
 };
 
 export function PrivateLayerPanel({
@@ -19,7 +21,8 @@ export function PrivateLayerPanel({
   setPasscodeAction,
   onDone,
   onUnlocked,
-  startChanging = false
+  startChanging = false,
+  passcodeVersion
 }: PrivateLayerPanelProps) {
   const router = useRouter();
   const [passcode, setPasscode] = useState("");
@@ -111,7 +114,7 @@ export function PrivateLayerPanel({
         <>
           <input
             onChange={(e) => setCurrentPw(e.target.value)}
-            placeholder="현재 비밀번호 (처음이면 비워두기)"
+            placeholder={(passcodeVersion ?? 1) <= 1 ? "현재 비밀번호(처음: 0219)" : "현재 비밀번호"}
             type="password"
             value={currentPw}
           />
@@ -127,8 +130,14 @@ export function PrivateLayerPanel({
               className="button"
               disabled={pending}
               onClick={() => {
-                setChanging(false);
                 setError(null);
+                // 변경 모드로 '바로' 열렸으면(비밀번호 변경 버튼) 취소 = 팝업 닫기(이전 화면으로).
+                // 잠금 폼에서 들어온 경우만 잠금 폼으로 되돌린다.
+                if (startChanging) {
+                  onDone?.();
+                } else {
+                  setChanging(false);
+                }
               }}
               type="button"
             >

@@ -410,7 +410,7 @@
   animation: lock-pop 0.55s var(--ease, ease-out) 0.2s both;
 }
 /* 경고 패널 오른쪽 끝 "비공개 끄기"(소유자) — 엄지로 누르기 쉬운 자리에 둔 비공개 표시 끄기. */
-.private-warning-off {
+.private-warning-btn {
   margin-left: auto;
   flex: 0 0 auto;
   border: 1px solid #e6a86a;
@@ -422,7 +422,7 @@
   color: #9a3412;
   cursor: pointer;
 }
-.private-warning-off:hover {
+.private-warning-btn:hover {
   background: #fff1e6;
 }
 @keyframes private-banner-in {

@@ -42,6 +42,7 @@ export default async function HomePage() {
       <StudioShell
         actor={actor}
         hasUnlockSession={unlock.hasUnlockSession}
+        passcodeVersion={unlock.passcodeVersion}
         schedule={schedule}
         initialView={
           typeof mem.sy === "number" && typeof mem.sm === "number"

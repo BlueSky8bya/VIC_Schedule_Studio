@@ -94,6 +94,8 @@ type StudioShellProps = {
   actor: CurrentActor;
   schedule: StudioSchedule;
   hasUnlockSession: boolean;
+  // 현재 비밀번호 버전(1=초기/0219, 2+=관리자가 바꿈) — 비번 변경 폼 placeholder 힌트 분기.
+  passcodeVersion?: number | null;
   // 새로고침 복원용 초기값(서버가 쿠키에서 읽어 넘긴다). 없으면 기본(현재 달/편집실).
   initialView?: { year: number; month: number };
   initialViewerMode?: boolean;
@@ -243,6 +245,7 @@ export function StudioShell({
   actor,
   schedule,
   hasUnlockSession,
+  passcodeVersion,
   initialView,
   initialViewerMode = false,
   initialNarrow = false
@@ -2018,8 +2021,9 @@ export function StudioShell({
           {canReadPrivate && isEffectivelyOwner ? (
             <div className="private-warning">
               <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중
+              {/* 모바일: 끄기는 엄지 닿기 쉬운 이 배너에(토글은 비밀번호 변경 유지). */}
               <button
-                className="private-warning-off"
+                className="private-warning-btn"
                 onClick={() => setShowPrivate(false)}
                 type="button"
               >
@@ -2829,10 +2833,14 @@ export function StudioShell({
           <div className="studio-actionbar-right">
             {canTogglePrivateLayer ? (
               isEffectivelyOwner && canReadPrivate ? (
-                // 소유자가 비공개 표시 중: 이 자리는 "비밀번호 변경"(잠금 중에도 변경 경로). 끄기는 아래 경고 패널.
-                <button className="private-toggle active" onClick={openChangePasscode} type="button">
-                  <LockKeyhole size={16} />
-                  비밀번호 변경
+                // 웹: 처음 켠 자리(토글)에 그대로 "비공개 끄기" — 마우스 이동 최소화. 비밀번호 변경은 경고 배너로.
+                <button
+                  className="private-toggle active"
+                  onClick={() => setShowPrivate(false)}
+                  type="button"
+                >
+                  <EyeOff size={16} />
+                  비공개 끄기
                 </button>
               ) : (
                 <button
@@ -2868,12 +2876,9 @@ export function StudioShell({
         <div className="private-warning">
           <LockKeyhole aria-hidden="true" size={17} />
           ⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.
-          <button
-            className="private-warning-off"
-            onClick={() => setShowPrivate(false)}
-            type="button"
-          >
-            비공개 끄기
+          {/* 웹: 끄기는 위 토글 자리로 옮겼고, 여기엔 덜 쓰는 "비밀번호 변경"을 둔다. */}
+          <button className="private-warning-btn" onClick={openChangePasscode} type="button">
+            비밀번호 변경
           </button>
         </div>
       ) : null}
@@ -3330,7 +3335,9 @@ export function StudioShell({
             <div className="modal-head">
               <h2>
                 {modal === "passcode"
-                  ? "비공개 일정"
+                  ? passcodeChangeMode
+                    ? "비밀번호 변경"
+                    : "비공개 일정"
                   : modal === "tags"
                     ? "태그 이름 · 색상 편집"
                     : modal === "notice"
@@ -3365,6 +3372,7 @@ export function StudioShell({
                     router.refresh();
                   });
                 }}
+                passcodeVersion={passcodeVersion}
                 setPasscodeAction={setPasscodeAction}
                 startChanging={passcodeChangeMode}
               />
