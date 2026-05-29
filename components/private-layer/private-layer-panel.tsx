@@ -10,20 +10,23 @@ type PrivateLayerPanelProps = {
   setPasscodeAction: (newPasscode: string, currentPasscode?: string) => Promise<PasscodeResult>;
   onDone?: () => void;
   onUnlocked?: () => void;
+  // true면 잠금 해제 폼이 아니라 곧장 "비밀번호 변경" 폼으로 연다(잠금 중에도 변경하려고).
+  startChanging?: boolean;
 };
 
 export function PrivateLayerPanel({
   canManage,
   setPasscodeAction,
   onDone,
-  onUnlocked
+  onUnlocked,
+  startChanging = false
 }: PrivateLayerPanelProps) {
   const router = useRouter();
   const [passcode, setPasscode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const [changing, setChanging] = useState(false);
+  const [changing, setChanging] = useState(startChanging && canManage);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   // 비밀번호 확인(검증) 진행 상태 — 버튼이 "확인 중…"으로 바뀐다.

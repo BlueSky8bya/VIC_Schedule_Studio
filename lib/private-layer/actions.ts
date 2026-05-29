@@ -55,6 +55,48 @@ export async function clearUnlockSessionsAction(): Promise<ClearUnlocksResult> {
   return { ok: true, cleared: count ?? 0 };
 }
 
+// owner/developer가 특정 한 사람의 비공개 잠금 세션만 즉시 만료한다(보안 패널 역할별 카드의 개별 만료).
+export async function clearUnlockSessionForUserAction(userId: string): Promise<ClearUnlocksResult> {
+  const actor = await resolveCurrentActor(SLUG);
+
+  if (!canEditSchedule(actor.role)) {
+    return { ok: false, error: "owner 또는 developer만 잠금 세션을 초기화할 수 있습니다." };
+  }
+  if (!userId) {
+    return { ok: false, error: "대상 사용자가 없습니다." };
+  }
+
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase service role 키가 필요합니다." };
+  }
+
+  const { data: calendar } = await supabase
+    .from("calendars")
+    .select("id")
+    .eq("slug", SLUG)
+    .maybeSingle();
+
+  if (!calendar) {
+    return { ok: false, error: "캘린더를 찾을 수 없습니다." };
+  }
+
+  const { error } = await supabase
+    .from("unlock_sessions")
+    .delete()
+    .eq("calendar_id", calendar.id)
+    .eq("user_id", userId);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/studio");
+  revalidatePath("/studio/private-layer");
+
+  return { ok: true, cleared: 1 };
+}
+
 // owner/developer가 비공개 레이어 비밀번호를 설정/변경한다.
 // 기존 비밀번호가 있으면 현재 비밀번호를 검증한다. 변경 시 passcode_version을 올려
 // 기존 잠금해제 세션을 모두 무효화한다.

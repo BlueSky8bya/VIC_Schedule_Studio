@@ -22,6 +22,7 @@ import {
 import { DeveloperPanel } from "@/components/developer/developer-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import {
+  type AccessPerson,
   getInsightsAction,
   getTrendAction,
   getVisitTrendsAction,
@@ -29,7 +30,10 @@ import {
   type TrendData,
   type VisitTrends
 } from "@/lib/insights/actions";
-import { clearUnlockSessionsAction } from "@/lib/private-layer/actions";
+import {
+  clearUnlockSessionForUserAction,
+  clearUnlockSessionsAction
+} from "@/lib/private-layer/actions";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
@@ -159,7 +163,15 @@ function StackBar({
   );
 }
 
-export function InsightsDashboard({ year, month }: { year: number; month: number }) {
+export function InsightsDashboard({
+  year,
+  month,
+  onChangePasscode
+}: {
+  year: number;
+  month: number;
+  onChangePasscode?: () => void;
+}) {
   const [index, setIndex] = useState(0);
   const [data, setData] = useState<InsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -173,6 +185,8 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
   const [trendLoading, setTrendLoading] = useState(true);
   // 보안 패널: 열린 비공개 잠금 세션을 모두 만료(초기화)하는 중인지.
   const [clearingUnlocks, setClearingUnlocks] = useState(false);
+  // 보안 패널: 지금 개별 만료 중인 사람의 user_id(그 카드 버튼만 비활성).
+  const [expiringUserId, setExpiringUserId] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -226,6 +240,67 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
       window.alert(res.error);
     }
     setClearingUnlocks(false);
+  }
+
+  // 특정 한 사람의 비공개 잠금만 즉시 만료(초기화). 성공하면 보안 데이터를 다시 불러온다.
+  async function expireUser(userId: string, email: string) {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`${email}의 비공개 잠금을 지금 만료시킬까요?`)
+    ) {
+      return;
+    }
+    setExpiringUserId(userId);
+    const res = await clearUnlockSessionForUserAction(userId);
+    if (res.ok) {
+      const fresh = await getInsightsAction(year, month);
+      if (fresh.ok) setData(fresh.data);
+    } else if (typeof window !== "undefined") {
+      window.alert(res.error);
+    }
+    setExpiringUserId(null);
+  }
+
+  // 역할별 접근 자격자 섹션 — 사람마다 이메일·역할·만료시간(또는 "세션 없음")·개별 만료 버튼.
+  function renderAccessSection(title: string, roleLabel: string, roleClass: string, people: AccessPerson[]) {
+    return (
+      <>
+        <h4 className="insight-subhead">
+          {title} ({people.length})
+        </h4>
+        {people.length === 0 ? (
+          <p className="insight-empty">없어요.</p>
+        ) : (
+          <ul className="access-list">
+            {people.map((p) => (
+              <li className="access-card" key={`${roleClass}-${p.email}`}>
+                <div className="access-top">
+                  <span className="access-email">{p.email}</span>
+                  <em className={`rt ${roleClass}`}>{roleLabel}</em>
+                </div>
+                <div className="access-bottom">
+                  {p.expiresAt && p.userId ? (
+                    <>
+                      <strong className="access-expiry">~ {fmtTime(p.expiresAt)} 만료</strong>
+                      <button
+                        className="button danger access-expire"
+                        disabled={expiringUserId === p.userId}
+                        onClick={() => expireUser(p.userId as string, p.email)}
+                        type="button"
+                      >
+                        {expiringUserId === p.userId ? "만료 중…" : "만료시간 초기화"}
+                      </button>
+                    </>
+                  ) : (
+                    <span className="access-none">세션 없음</span>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
+    );
   }
 
   useEffect(() => {
@@ -816,22 +891,20 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
                     <strong>{d.security.unlockDurationMinutes ?? "—"}분</strong>
                   </li>
                 </ul>
-                <h4 className="insight-subhead">신뢰 멤버 ({d.security.members.length})</h4>
-                {d.security.members.length === 0 ? (
-                  <p className="insight-empty">등록된 매니저·작업자가 없어요.</p>
-                ) : (
-                  <ul className="insight-rows">
-                    {d.security.members.map((mem) => (
-                      <li key={mem.email}>
-                        <span>{mem.email}</span>
-                        <strong className="insight-roletags">
-                          {mem.manager ? <em className="rt manager">매니저</em> : null}
-                          {mem.worker ? <em className="rt worker">작업자</em> : null}
-                        </strong>
-                      </li>
-                    ))}
-                  </ul>
-                )}
+                {/* 비밀번호 변경 — 잠금이 살아있어 토글이 팝업을 안 띄울 때도 여기서 바로 변경. */}
+                {onChangePasscode ? (
+                  <button
+                    className="button insight-change-passcode"
+                    onClick={onChangePasscode}
+                    type="button"
+                  >
+                    비밀번호 변경
+                  </button>
+                ) : null}
+                {/* 비공개를 열 수 있는 사람(매니저 제외) — 역할별로, 사람마다 개별 만료. */}
+                {renderAccessSection("소유자", "관리자", "owner", d.security.access.owners)}
+                {renderAccessSection("개발자", "개발자", "developer", d.security.access.developers)}
+                {renderAccessSection("작업자", "작업자", "worker", d.security.access.workers)}
               </>
             ))}
           </section>

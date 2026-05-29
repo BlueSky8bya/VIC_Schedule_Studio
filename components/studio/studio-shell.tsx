@@ -272,6 +272,8 @@ export function StudioShell({
   // 방송사고 방지: 새로고침/진입 시 항상 공개(일반) 모드가 기본. 잠금 세션이 있어도
   // 사용자가 직접 토글해야 비공개 일정이 보인다.
   const [showPrivate, setShowPrivate] = useState(false);
+  // 비밀번호 팝업을 "변경 모드"로 열지 — 잠금이 살아있어 토글이 팝업을 안 띄울 때 비밀번호를 바꾸려고.
+  const [passcodeChangeMode, setPasscodeChangeMode] = useState(false);
   // 방금 잠금 해제했다면(=pendingUnlockReveal), refresh로 세션이 반영(hasUnlockSession=true)되는
   // 즉시 비공개 표시를 켠다. refresh 과정에서 showPrivate 상태가 유실되더라도 확실히 다시 켜진다.
   useEffect(() => {
@@ -653,8 +655,14 @@ export function StudioShell({
     if (hasUnlockSession) {
       setShowPrivate((value) => !value);
     } else {
+      setPasscodeChangeMode(false);
       setModal("passcode");
     }
+  }
+  // 비밀번호 변경 팝업 열기 — 잠금이 살아있어 토글이 팝업을 안 띄울 때도 변경할 수 있게(변경 모드로 연다).
+  function openChangePasscode() {
+    setPasscodeChangeMode(true);
+    setModal("passcode");
   }
 
   // 역할 도움말 팝오버: 배지 바깥을 누르거나 Esc로 닫는다.
@@ -1972,13 +1980,20 @@ export function StudioShell({
                 </button>
               )}
               {canTogglePrivateLayer ? (
-                <button
-                  className={canReadPrivate ? "button primary" : "button"}
-                  onClick={togglePrivateLayer}
-                  type="button"
-                >
-                  {canReadPrivate ? "비공개 중" : "비공개 일정"}
-                </button>
+                isEffectivelyOwner && canReadPrivate ? (
+                  // 소유자가 비공개 표시 중: 이 자리는 비밀번호 변경. 끄기는 아래 경고 패널 버튼.
+                  <button className="button primary" onClick={openChangePasscode} type="button">
+                    비밀번호 변경
+                  </button>
+                ) : (
+                  <button
+                    className={canReadPrivate ? "button primary" : "button"}
+                    onClick={togglePrivateLayer}
+                    type="button"
+                  >
+                    {canReadPrivate ? "비공개 중" : "비공개 일정"}
+                  </button>
+                )
               ) : null}
               {actor.isAuthenticated ? (
                 <form action="/api/auth/logout" method="post">
@@ -2003,6 +2018,13 @@ export function StudioShell({
           {canReadPrivate && isEffectivelyOwner ? (
             <div className="private-warning">
               <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중
+              <button
+                className="private-warning-off"
+                onClick={() => setShowPrivate(false)}
+                type="button"
+              >
+                끄기
+              </button>
             </div>
           ) : null}
 
@@ -2806,14 +2828,22 @@ export function StudioShell({
           {/* 우측 묶음: 비공개 일정 보기(토글) + 달력 꾸미기 — 꾸미기 바로 왼쪽에 비공개 토글. */}
           <div className="studio-actionbar-right">
             {canTogglePrivateLayer ? (
-              <button
-                className={canReadPrivate ? "private-toggle active" : "private-toggle"}
-                onClick={togglePrivateLayer}
-                type="button"
-              >
-                {canReadPrivate ? <EyeOff size={16} /> : <Eye size={16} />}
-                {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
-              </button>
+              isEffectivelyOwner && canReadPrivate ? (
+                // 소유자가 비공개 표시 중: 이 자리는 "비밀번호 변경"(잠금 중에도 변경 경로). 끄기는 아래 경고 패널.
+                <button className="private-toggle active" onClick={openChangePasscode} type="button">
+                  <LockKeyhole size={16} />
+                  비밀번호 변경
+                </button>
+              ) : (
+                <button
+                  className={canReadPrivate ? "private-toggle active" : "private-toggle"}
+                  onClick={togglePrivateLayer}
+                  type="button"
+                >
+                  {canReadPrivate ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
+                </button>
+              )
             ) : null}
             {canDecorateCalendar ? (
               <Link
@@ -2838,6 +2868,13 @@ export function StudioShell({
         <div className="private-warning">
           <LockKeyhole aria-hidden="true" size={17} />
           ⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.
+          <button
+            className="private-warning-off"
+            onClick={() => setShowPrivate(false)}
+            type="button"
+          >
+            비공개 끄기
+          </button>
         </div>
       ) : null}
 
@@ -3329,6 +3366,7 @@ export function StudioShell({
                   });
                 }}
                 setPasscodeAction={setPasscodeAction}
+                startChanging={passcodeChangeMode}
               />
             ) : null}
             {modal === "tags" ? (
@@ -3346,7 +3384,11 @@ export function StudioShell({
             {modal === "members" ? <TrustedMembersPanel /> : null}
             {modal === "developer" ? (
               isDevInsights ? (
-                <InsightsDashboard month={view.month} year={view.year} />
+                <InsightsDashboard
+                  month={view.month}
+                  onChangePasscode={canEdit ? openChangePasscode : undefined}
+                  year={view.year}
+                />
               ) : (
                 <MemberInsights month={view.month} year={view.year} />
               )

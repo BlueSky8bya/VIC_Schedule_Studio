@@ -409,6 +409,22 @@
 .private-warning svg {
   animation: lock-pop 0.55s var(--ease, ease-out) 0.2s both;
 }
+/* 경고 패널 오른쪽 끝 "비공개 끄기"(소유자) — 엄지로 누르기 쉬운 자리에 둔 비공개 표시 끄기. */
+.private-warning-off {
+  margin-left: auto;
+  flex: 0 0 auto;
+  border: 1px solid #e6a86a;
+  border-radius: 999px;
+  background: #fff;
+  padding: 5px 13px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #9a3412;
+  cursor: pointer;
+}
+.private-warning-off:hover {
+  background: #fff1e6;
+}
 @keyframes private-banner-in {
   0% { transform: translateY(-100%); opacity: 0; }
   70% { transform: translateY(3px); opacity: 1; }
@@ -981,6 +997,90 @@
 .insight-roletags .rt.worker {
   background: #fff3e0;
   color: #b5651d;
+}
+/* 보안 패널: 비밀번호 변경 버튼(잠금 중에도 변경 경로). 잠금 암호 섹션 아래 폭 가득. */
+.insight-change-passcode {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 38px;
+  justify-content: center;
+}
+/* 보안 패널: 역할별 접근 자격자 카드(소유자/개발자/작업자) — 사람마다 개별 만료. */
+.access-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.access-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 9px 11px;
+  border: 1px solid #ece8f6;
+  border-radius: 12px;
+  background: #faf9fe;
+}
+.access-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.access-email {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #4a4466;
+}
+.access-card .rt {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.access-card .rt.owner {
+  background: #fdeede;
+  color: #a9760a;
+}
+.access-card .rt.developer {
+  background: #efeafd;
+  color: #6b5bd6;
+}
+.access-card .rt.worker {
+  background: #fff3e0;
+  color: #b5651d;
+}
+.access-bottom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 2px;
+}
+.access-expiry {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: #b5491d;
+}
+.access-none {
+  font-size: 12px;
+  font-weight: 600;
+  color: #9aa0ab;
+}
+.access-expire {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
 }
 /* 긴 값(소유자 이메일 여러 개)은 줄바꿈 허용 */
 .insight-rows.wrap li strong {

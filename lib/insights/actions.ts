@@ -36,6 +36,13 @@ export type InsightsData = {
     unlockDurationMinutes: number | null;
     activeUnlocks: { email: string; expiresAt: string }[];
     members: { email: string; manager: boolean; worker: boolean }[];
+    // 비공개를 열 수 있는 사람을 역할별로(매니저 제외 — 비공개 권한 없음). 활성 세션이면 expiresAt·userId가
+    // 채워지고(개별 만료용), 없으면 둘 다 null("세션 없음").
+    access: {
+      owners: AccessPerson[];
+      developers: AccessPerson[];
+      workers: AccessPerson[];
+    };
   };
   system: {
     ownerEmails: string[];
@@ -47,6 +54,9 @@ export type InsightsData = {
 };
 
 export type InsightsResult = { ok: true; data: InsightsData } | { ok: false; error: string };
+
+// 비공개 접근 자격자 한 명 — 활성 잠금 세션이 있으면 expiresAt(만료시간)·userId가 채워진다.
+export type AccessPerson = { email: string; expiresAt: string | null; userId: string | null };
 
 function kstNow(): Date {
   return new Date(Date.now() + 9 * 3600 * 1000);
@@ -328,12 +338,22 @@ export async function getInsightsAction(year: number, month: number): Promise<In
     };
   });
   const unlockRows = (unlockRes.data ?? []) as { user_id: string; expires_at: string }[];
-  const activeUnlocks = await Promise.all(
+  // 활성 세션을 한 번만 이메일 해석 → activeUnlocks(목록)와 access(역할별 매핑)에서 함께 쓴다.
+  const unlockResolved = await Promise.all(
     unlockRows.map(async (u) => ({
+      userId: u.user_id,
       email: (await emailFor(u.user_id)) ?? "(알 수 없음)",
       expiresAt: u.expires_at
     }))
   );
+  const activeUnlocks = unlockResolved.map((u) => ({ email: u.email, expiresAt: u.expiresAt }));
+  const unlockByEmail = new Map(
+    unlockResolved.map((u) => [u.email, { userId: u.userId, expiresAt: u.expiresAt }])
+  );
+  const toAccess = (email: string): AccessPerson => {
+    const s = unlockByEmail.get(email);
+    return { email, expiresAt: s?.expiresAt ?? null, userId: s?.userId ?? null };
+  };
   const passcode = passcodeRes.data as {
     passcode_version?: number;
     passcode_updated_at?: string;
@@ -343,6 +363,22 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   const ownerEmails = getOwnerEmails();
   const dbOwnerEmail = await emailFor(cal.owner_id as string | undefined);
   const bindingOk = Boolean(ownerEmails[0] && dbOwnerEmail && ownerEmails[0] === dbOwnerEmail);
+
+  // 비공개 접근 자격자(매니저 제외) — 소유자(env)·개발자(platform_admins)·작업자(신뢰 멤버).
+  const { data: adminRows } = await supabase.from("platform_admins").select("email");
+  const developerEmails = [
+    ...new Set(
+      ((adminRows ?? []) as { email?: string }[])
+        .map((a) => normalizeEmail(a.email))
+        .filter((e): e is string => Boolean(e))
+    )
+  ];
+  const workerEmails = members.filter((m) => m.worker).map((m) => m.email);
+  const access = {
+    owners: ownerEmails.map(toAccess),
+    developers: developerEmails.map(toAccess),
+    workers: workerEmails.map(toAccess)
+  };
 
   return {
     ok: true,
@@ -364,7 +400,8 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         passcodeUpdatedAt: passcode?.passcode_updated_at ?? null,
         unlockDurationMinutes: passcode?.unlock_duration_minutes ?? null,
         activeUnlocks,
-        members
+        members,
+        access
       },
       system: {
         ownerEmails,
