@@ -2893,6 +2893,39 @@
   }
   .studio-event-pill.just-saved::after { display: none; }
 }
+/* A1: 일정 카드 연결/끊김 seam 연출(맞닿는 변이 평평해지면 '연결', 둥글어지면 '끊김').
+   합성 전용(opacity/transform)으로 60fps 유지. radius 변경 자체는 즉시(클래스), 연출만 오버레이. */
+.studio-event-pill.seam-joining::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: rgb(255 255 255 / 60%);
+  pointer-events: none;
+  z-index: 3;
+  animation: seam-heal var(--dur-3, 240ms) var(--ease, ease) both;
+}
+@keyframes seam-heal {
+  0% { opacity: 0; transform: scaleX(0.55); }
+  45% { opacity: 0.85; }
+  100% { opacity: 0; transform: scaleX(1); }
+}
+.studio-event-pill.seam-breaking {
+  animation: seam-tear var(--dur-2, 180ms) var(--ease, ease);
+}
+@keyframes seam-tear {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(2px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-event-pill.seam-joining::before,
+  .studio-event-pill.seam-breaking {
+    animation: none;
+  }
+  .studio-event-pill.seam-joining::before {
+    display: none;
+  }
+}
 /* 손끝을 따라오는 유령 카드 — 살짝 키우고 기울이며 부드럽게 흔들린다(들고 옮기는 촉감). */
 .event-drag-ghost {
   position: fixed;

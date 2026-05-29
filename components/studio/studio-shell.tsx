@@ -21,6 +21,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -1031,6 +1032,63 @@ export function StudioShell({
   // "유령(ghost)"이 손끝을 따라오고(웹·터치 공용), 가장자리에선 자동 스크롤된다.
   // (멀티데이 막대는 칸마다 쪼개 그려 드래그가 까다로워 제외 — 단일일 카드만 끌 수 있다.)
   const [dragEventId, setDragEventId] = useState<string | null>(null);
+
+  // A2 FLIP(형제 카드 활주) + A1 seam(연결/끊김 연출) — 순수 뷰 레이어. 낙관 상태·직렬 큐·prop
+  // 동기화 가드엔 절대 손대지 않는다. transform/opacity만(합성). 드래그 중·just-saved·삭제 중인
+  // 카드는 건너뛰어 충돌을 막고, 달 전환 시엔 위치가 통째로 바뀌므로 FLIP/seam을 생략한다.
+  const flipRects = useRef<Map<string, DOMRect>>(new Map());
+  const seamPrev = useRef<Map<string, string>>(new Map());
+  const flipViewKey = useRef("");
+  useLayoutEffect(() => {
+    const viewKey = `${view.year}-${view.month}`;
+    const viewChanged = flipViewKey.current !== viewKey;
+    flipViewKey.current = viewKey;
+    const reduce = prefersReducedMotion();
+    const dragging = dragEventId !== null;
+    document.querySelectorAll<HTMLElement>(".studio-event-pill[data-eventid]").forEach((el) => {
+      const id = el.dataset.eventid;
+      if (!id) return;
+      const last = el.getBoundingClientRect();
+      const busy =
+        el.classList.contains("dragging-src") ||
+        el.classList.contains("just-saved") ||
+        el.classList.contains("deleting");
+      // A2: First(직전 위치)→Last(현재) 차이를 역보정 후 다음 프레임에 풀어 미끄러지듯 안착.
+      const first = flipRects.current.get(id);
+      if (first && !reduce && !viewChanged && !busy) {
+        const dx = first.left - last.left;
+        const dy = first.top - last.top;
+        if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+          el.style.transform = `translate(${dx}px, ${dy}px)`;
+          el.style.transition = "none";
+          requestAnimationFrame(() => {
+            el.style.transition = "transform var(--dur-3, 240ms) var(--ease, ease)";
+            el.style.transform = "";
+          });
+        }
+      }
+      flipRects.current.set(id, last);
+      // A1: 맞닿는 변(평평한 모서리)이 늘면 연결(seam-heal 빛), 줄면 끊김(seam-tear 튕김).
+      const seam = el.dataset.seam ?? "";
+      const prev = seamPrev.current.get(id);
+      if (prev !== undefined && prev !== seam && !reduce && !dragging && !viewChanged && !busy) {
+        const cls =
+          seam.length > prev.length
+            ? "seam-joining"
+            : seam.length < prev.length
+              ? "seam-breaking"
+              : null;
+        if (cls) {
+          el.classList.remove("seam-joining", "seam-breaking");
+          void el.offsetWidth; // reflow → 애니 재시작
+          el.classList.add(cls);
+          window.setTimeout(() => el.classList.remove(cls), 380);
+        }
+      }
+      seamPrev.current.set(id, seam);
+    });
+  }, [visibleEvents, view, dragEventId]);
+
   const [dropDate, setDropDate] = useState<string | null>(null);
   const dropDateRef = useRef<string | null>(null);
   // 같은 날 안에서 어느 카드 위/아래에 떨어뜨릴지(순서 변경). null이면 맨 끝에 둠.
@@ -3125,6 +3183,8 @@ export function StudioShell({
                           data-chain={chainKeys.get(event.id)}
                           data-color={mixed ? undefined : colors[0]?.key}
                           data-eventid={event.id}
+                          // A1: 평평한(이어진) 변 — 'L'/'R'. 이 값이 바뀌면 seam 연출(연결/끊김).
+                          data-seam={`${span.isMulti && !span.roundLeft ? "L" : ""}${span.isMulti && !span.roundRight ? "R" : ""}`}
                           data-mixed={mixed ? "" : undefined}
                           key={event.id}
                           onClick={(e) => {
