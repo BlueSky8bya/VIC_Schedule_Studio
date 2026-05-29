@@ -4363,15 +4363,20 @@ textarea:disabled {
 .agenda-rail {
   flex: 0 0 92px;
   position: sticky;
-  top: 96px;
+  /* 역할 바(계정변경) 바로 밑에 딱 붙지 않게 ~16px 띄워 함께 스크롤되게 한다. */
+  top: 112px;
   align-self: flex-start; /* 내용 높이 + 위 정렬(stretch 아님) — sticky가 의미 있게 동작 */
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  /* 고정 헤더(96) 아래~하단 월 이동 바 직전까지. 길면 안쪽 필터가 내부 스크롤. */
-  max-height: calc(100vh - 168px);
-  max-height: calc(100dvh - 168px);
+  /* 고정 헤더 아래~하단 월 이동 바 직전까지. 길면 안쪽 필터가 내부 스크롤. */
+  max-height: calc(100vh - 184px);
+  max-height: calc(100dvh - 184px);
+  /* 경계면(고정 헤더 아래)에 닿는 윗부분을 살짝 페이드 — 헤더 배경 페이드/콘텐츠 흐림과
+     이질감 없이 인사이트 버튼도 경계에서 부드럽게 녹아들게 한다. */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 11px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 11px);
 }
 /* 레일이 sticky를 맡으므로 필터 자체 sticky는 풀고(static), 남는 높이를 채워 내부 스크롤한다.
    행 기준 flex(0 0 92px=컬럼에선 높이 고정)도 풀고 레일 폭(92px)을 채운다. */
