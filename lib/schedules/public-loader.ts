@@ -160,7 +160,7 @@ const loadPublicScheduleData = unstable_cache(
         supabase
           .from("sticker_instances")
           .select(
-            "id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, text_fx, italic, outline, shadow, anim, shape_key, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)"
+            "id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, text_fx, italic, outline, shadow, anim, shape_key, locked, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)"
           )
           .eq("calendar_id", calendar.id)
           .eq("is_visible", true),
@@ -385,6 +385,7 @@ function mapSticker(row: {
   shadow?: boolean | null;
   anim?: string | null;
   shape_key?: string | null;
+  locked?: boolean | null;
   year: number;
   month: number;
   x_ratio: number | string;
@@ -444,6 +445,7 @@ function mapSticker(row: {
     outline: row.outline ?? false,
     shadow: row.shadow ?? false,
     anim: (row.anim as StickerInstance["anim"]) ?? undefined,
+    locked: row.locked ?? false,
     year: row.year,
     month: row.month,
     xRatio: Number(row.x_ratio),

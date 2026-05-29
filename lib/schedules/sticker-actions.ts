@@ -33,6 +33,7 @@ export type SaveStickerInput = {
   outline?: boolean; // C7: 흰 외곽선
   shadow?: boolean; // C7: 진한 그림자
   anim?: StickerAnim; // 움직이는 스티커 프리셋(없으면 정지)
+  locked?: boolean; // P4: 잠금
   xRatio: number;
   yRatio: number;
   widthRatio: number;
@@ -74,6 +75,7 @@ function toStickerRow(input: SaveStickerInput, calendarId: string) {
     outline: input.outline ?? false,
     shadow: input.shadow ?? false,
     anim: input.anim && ANIM_KEYS.has(input.anim) ? input.anim : null,
+    locked: input.locked ?? false,
     page_scope: "monthly",
     year: input.year,
     month: input.month,

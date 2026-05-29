@@ -178,6 +178,7 @@ export type StickerInstance = {
   opacity: number;
   zIndex: number;
   anim?: StickerAnim; // 움직이는 스티커(라이브 전용). 없으면 정지.
+  locked?: boolean; // P4: 잠금 — 선택은 되지만 이동/크기/회전 차단(실수 방지).
   visiblePublicly: boolean;
 };
 

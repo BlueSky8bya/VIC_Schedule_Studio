@@ -15,6 +15,7 @@ import {
   FlipHorizontal,
   FlipVertical,
   Keyboard,
+  Lock,
   Redo2,
   SendToBack,
   Sparkles,
@@ -155,6 +156,7 @@ function stickerToSaveInput(
     outline: s.outline,
     shadow: s.shadow,
     anim: s.anim,
+    locked: s.locked,
     xRatio: s.xRatio,
     yRatio: s.yRatio,
     widthRatio: s.widthRatio,
@@ -1103,6 +1105,7 @@ export function PublicPoster({
       outline: sticker.outline,
       shadow: sticker.shadow,
       anim: sticker.anim,
+      locked: sticker.locked,
       xRatio: sticker.xRatio,
       yRatio: sticker.yRatio,
       widthRatio: sticker.widthRatio,
@@ -1593,6 +1596,7 @@ export function PublicPoster({
       outline: fresh.outline,
       shadow: fresh.shadow,
       anim: fresh.anim,
+      locked: fresh.locked,
       xRatio: fresh.xRatio,
       yRatio: fresh.yRatio,
       widthRatio: fresh.widthRatio,
@@ -2798,6 +2802,18 @@ export function PublicPoster({
                         </label>
                         <span className="stf-spacer" />
                         <button
+                          aria-pressed={Boolean(selected.locked)}
+                          className="stf-btn"
+                          onClick={() => {
+                            pushHistory();
+                            patchSelected({ locked: !selected.locked });
+                          }}
+                          title={selected.locked ? "잠금 해제" : "잠금 (이동/크기 방지)"}
+                          type="button"
+                        >
+                          <Lock aria-hidden="true" size={15} />
+                        </button>
+                        <button
                           className="stf-btn"
                           onClick={duplicateSelected}
                           title="복제 (Ctrl+D)"
@@ -2870,6 +2886,18 @@ export function PublicPoster({
                           />
                         </label>
                         <span className="stf-spacer" />
+                        <button
+                          aria-pressed={Boolean(selected.locked)}
+                          className="stf-btn"
+                          onClick={() => {
+                            pushHistory();
+                            patchSelected({ locked: !selected.locked });
+                          }}
+                          title={selected.locked ? "잠금 해제" : "잠금 (이동/크기 방지)"}
+                          type="button"
+                        >
+                          <Lock aria-hidden="true" size={15} />
+                        </button>
                         <button
                           className="stf-btn"
                           onClick={duplicateSelected}

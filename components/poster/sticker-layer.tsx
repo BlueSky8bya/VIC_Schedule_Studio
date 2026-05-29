@@ -403,6 +403,11 @@ export function StickerLayer({
       }
     }
 
+    // P4 잠금: 선택은 허용(툴바에서 해제)하되 이동/크기/회전은 막는다 → 드래그 설정 없이 종료.
+    if (sticker.locked) {
+      return;
+    }
+
     onGestureStartRef.current?.(); // C2: 변형 시작 전 스냅샷
     const rect = layer.getBoundingClientRect();
     const startX = event.clientX - rect.left;
@@ -475,8 +480,9 @@ export function StickerLayer({
       {stickers.map((sticker) => {
         const size = sticker.widthRatio * layerWidth;
         const isSelected = editable && selectedIds.includes(sticker.id);
-        // 크기·회전 핸들은 정확히 하나만 선택했을 때만(그룹 선택 중엔 이동만).
-        const showHandles = editable && selectedIds.length === 1 && selectedIds[0] === sticker.id;
+        // 크기·회전 핸들은 정확히 하나만 선택했을 때만(그룹 선택 중엔 이동만). 잠금이면 핸들 숨김.
+        const showHandles =
+          editable && !sticker.locked && selectedIds.length === 1 && selectedIds[0] === sticker.id;
         const fxClass = `${sticker.outline ? "fx-outline" : ""} ${sticker.shadow ? "fx-shadow" : ""}`;
         // 움직이는 스티커: 안쪽 요소에만 애니(외곽 .sticker-item의 rotate/flip transform과 충돌 방지).
         // 선택 중엔 CSS로 일시정지(잡고 위치 조정 쉽게). reduced-motion은 전역 catch-all이 멈춘다.
