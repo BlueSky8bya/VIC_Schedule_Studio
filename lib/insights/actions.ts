@@ -137,7 +137,9 @@ export async function logPresencePingAction(
   // 분 단위로 잘라 같은 분의 중복 핑은 1줄로(멱등). day는 KST 날짜.
   const minuteTs = new Date(Math.floor(Date.now() / 60000) * 60000).toISOString();
   try {
-    await supabase.from("presence_ping").upsert(
+    // upsert는 DB 오류 시 throw가 아니라 { error }를 돌려준다 → 반드시 확인해야 ok가 정직하다
+    // (예전에 service_role 권한 누락으로 42501이 조용히 무시돼 핑이 0개였던 회귀를 막는다).
+    const { error } = await supabase.from("presence_ping").upsert(
       {
         session_hash: safeHash,
         minute_ts: minuteTs,
@@ -147,6 +149,7 @@ export async function logPresencePingAction(
       },
       { onConflict: "session_hash,minute_ts", ignoreDuplicates: true }
     );
+    if (error) return { ok: false };
   } catch {
     return { ok: false };
   }
