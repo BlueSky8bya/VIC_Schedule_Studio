@@ -10,6 +10,7 @@ import {
 } from "react";
 import { getMemberInsightsAction, type MemberInsightsData } from "@/lib/insights/actions";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
+import { hapticTick } from "@/lib/ui/haptics";
 
 // 관리자·매니저·작업자용 월별 인사이트 — 수치 없는 4패널(일정·참여·트렌드·하이라이트).
 // 데이터는 getMemberInsightsAction이 이미 수치를 빼고(보안/시스템/방문 원시값 없음, 막대는 0~1 비율)
@@ -77,7 +78,11 @@ export function MemberInsights({ year, month }: { year: number; month: number })
     const dx = e.clientX - s.x;
     const dy = e.clientY - s.y;
     if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-      setIndex((i) => Math.max(0, Math.min(PANELS.length - 1, i + (dx < 0 ? 1 : -1))));
+      const next = Math.max(0, Math.min(PANELS.length - 1, index + (dx < 0 ? 1 : -1)));
+      if (next !== index) {
+        hapticTick(); // 스와이프로 패널이 실제로 바뀔 때만 톡(경계에서 헛스와이프는 무음)
+        setIndex(next);
+      }
     }
   };
 

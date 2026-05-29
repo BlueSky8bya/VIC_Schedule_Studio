@@ -29,6 +29,7 @@ import {
   type TrendData,
   type VisitTrends
 } from "@/lib/insights/actions";
+import { hapticTick } from "@/lib/ui/haptics";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
 const ROLE_META: { key: string; label: string; color: string }[] = [
@@ -244,7 +245,11 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
     const LEN = PANELS.length;
     // 가로 스와이프만 패널 전환(±1). 세로는 패널 내용 스크롤과 겹쳐서 쓰지 않는다(웹은 방향키로 격자 이동).
     if (ax > 45 && ax > ay * 1.3) {
-      setIndex((i) => Math.max(0, Math.min(LEN - 1, i + (dx < 0 ? 1 : -1))));
+      const next = Math.max(0, Math.min(LEN - 1, index + (dx < 0 ? 1 : -1)));
+      if (next !== index) {
+        hapticTick(); // 스와이프로 패널이 실제로 바뀔 때만 톡(경계에서 헛스와이프는 무음)
+        setIndex(next);
+      }
     }
   };
 
