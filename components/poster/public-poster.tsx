@@ -42,12 +42,15 @@ import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer
 import {
   POSTER_THEMES,
   STICKER_ANIMS,
+  STICKER_SHAPES,
   STICKER_TEXT_FX,
+  shapeDefaultColor,
   type PublicSchedule,
   type PublicScheduleEvent,
   type StickerAsset,
   type StickerInstance
 } from "@/lib/domain/schedule-types";
+import { ShapeSvg } from "@/components/poster/sticker-shapes";
 import type { ThemeResult } from "@/lib/schedules/theme-actions";
 import type {
   SaveStickerInput,
@@ -140,6 +143,7 @@ function stickerToSaveInput(
     month,
     emoji: s.kind === "emoji" ? s.label : undefined,
     assetId: s.kind === "image" ? s.assetId : undefined,
+    shapeKey: s.kind === "shape" ? s.shapeKey : undefined,
     text: s.kind === "text" ? s.label : undefined,
     textColor: s.textColor,
     fontWeight: s.fontWeight,
@@ -1087,6 +1091,7 @@ export function PublicPoster({
       month: view.month,
       emoji: sticker.kind === "emoji" ? sticker.label : undefined,
       assetId: sticker.kind === "image" ? sticker.assetId : undefined,
+      shapeKey: sticker.kind === "shape" ? sticker.shapeKey : undefined,
       text: sticker.kind === "text" ? sticker.label : undefined,
       textColor: sticker.textColor,
       fontWeight: sticker.fontWeight,
@@ -1183,6 +1188,32 @@ export function PublicPoster({
       xRatio: 0.5,
       yRatio: 0.5,
       // 처음엔 작게 시작(예전 0.16은 너무 커서 창을 넘어 크기 핸들을 못 누르던 문제). 툴바 "크기"로 조절.
+      widthRatio: 0.1,
+      rotationDeg: 0,
+      flipX: false,
+      flipY: false,
+      opacity: 1,
+      zIndex: nextZIndex(),
+      visiblePublicly: true
+    });
+  }
+
+  // P2: 데코 도형을 달력에 올린다(프리셋 색으로 시작 → 툴바에서 재채색).
+  async function addShape(shapeKey: string) {
+    if (!saveStickerAction) {
+      return;
+    }
+    pushHistory();
+    await persistNewSticker({
+      id: `temp-${Math.random().toString(36).slice(2)}`,
+      kind: "shape",
+      label: shapeKey,
+      shapeKey,
+      textColor: shapeDefaultColor(shapeKey),
+      year: view.year,
+      month: view.month,
+      xRatio: 0.5,
+      yRatio: 0.5,
       widthRatio: 0.1,
       rotationDeg: 0,
       flipX: false,
@@ -1550,6 +1581,7 @@ export function PublicPoster({
       month: fresh.month,
       emoji: fresh.kind === "emoji" ? fresh.label : undefined,
       assetId: fresh.kind === "image" ? fresh.assetId : undefined,
+      shapeKey: fresh.kind === "shape" ? fresh.shapeKey : undefined,
       text: fresh.kind === "text" ? fresh.label : undefined,
       textColor: fresh.textColor,
       fontWeight: fresh.fontWeight,
@@ -2523,6 +2555,28 @@ export function PublicPoster({
               </label>
               ) : null}
             </div>
+
+            {/* P2: 데코 도형 — 누르면 프리셋 색으로 올라가고, 툴바에서 색·움직임·회전 등 조절. */}
+            <div className="palette-group">
+              <span className="palette-label">도형</span>
+              <div className="emoji-palette shape-palette">
+                {STICKER_SHAPES.map((s) => (
+                  <button
+                    className="emoji-chip shape-chip"
+                    key={s.key}
+                    onClick={() => addShape(s.key)}
+                    title={`${s.label} 추가`}
+                    type="button"
+                  >
+                    <ShapeSvg
+                      color={s.defaultColor}
+                      shapeKey={s.key}
+                      style={{ width: "74%", height: "74%" }}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
             </div>
 
             {anchorId && mounted ? (
@@ -2789,6 +2843,18 @@ export function PublicPoster({
                     </div>
                   ) : selected ? (
                     <div className="stf-body">
+                      {selected.kind === "shape" ? (
+                        <div className="stf-row">
+                          <label className="stf-color stf-shape-color" title="도형 색">
+                            <span>색</span>
+                            <input
+                              onChange={(event) => changeTextColor(event.target.value)}
+                              type="color"
+                              value={selected.textColor ?? "#ff6b9d"}
+                            />
+                          </label>
+                        </div>
+                      ) : null}
                       <div className="stf-row">
                         <label className="stf-opacity" title="투명도">
                           투명도

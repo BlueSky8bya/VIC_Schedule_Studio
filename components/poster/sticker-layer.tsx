@@ -2,7 +2,8 @@
 
 import { RotateCw, Maximize2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import type { StickerInstance } from "@/lib/domain/schedule-types";
+import { shapeDefaultColor, type StickerInstance } from "@/lib/domain/schedule-types";
+import { ShapeSvg } from "@/components/poster/sticker-shapes";
 
 type Mode = "move" | "resize" | "rotate";
 
@@ -544,6 +545,13 @@ export function StickerLayer({
               >
                 {sticker.label}
               </span>
+            ) : sticker.kind === "shape" ? (
+              <ShapeSvg
+                className={`sticker-shape ${animClass}`}
+                color={sticker.textColor ?? shapeDefaultColor(sticker.shapeKey)}
+                shapeKey={sticker.shapeKey ?? "heart"}
+                style={{ width: size, height: size }}
+              />
             ) : (
               <span className={`sticker-emoji ${animClass}`}>{sticker.label}</span>
             )}

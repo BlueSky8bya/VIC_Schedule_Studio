@@ -134,12 +134,30 @@ export const STICKER_TEXT_FX: { key: TextFx; label: string }[] = [
   { key: "neon", label: "네온" }
 ];
 
+// 데코 도형 프리셋(P2). 렌더(SVG)는 components/poster/sticker-shapes.tsx, 데이터는 여기(서버 검증 공용).
+export type ShapePreset = { key: string; label: string; defaultColor: string };
+export const STICKER_SHAPES: ShapePreset[] = [
+  { key: "heart", label: "하트", defaultColor: "#ff6b9d" },
+  { key: "star", label: "별", defaultColor: "#ffce3a" },
+  { key: "sparkle", label: "반짝", defaultColor: "#ffe169" },
+  { key: "bubble", label: "말풍선", defaultColor: "#a9def9" },
+  { key: "ribbon", label: "리본", defaultColor: "#ff9a8b" },
+  { key: "arrow", label: "화살표", defaultColor: "#8b7cf0" },
+  { key: "circle", label: "동그라미", defaultColor: "#ffd1e8" },
+  { key: "tape", label: "테이프", defaultColor: "#c9b6ff" }
+];
+export const SHAPE_KEYS = new Set<string>(STICKER_SHAPES.map((s) => s.key));
+export function shapeDefaultColor(shapeKey: string | undefined): string {
+  return STICKER_SHAPES.find((s) => s.key === shapeKey)?.defaultColor ?? "#ff6b9d";
+}
+
 export type StickerInstance = {
   id: string;
-  kind: "emoji" | "image" | "text"; // emoji=기본 이모지, image=업로드 커스텀 이모지, text=텍스트 스티커
-  label: string; // emoji면 이모지 문자, image면 에셋 이름, text면 표시 문구
+  kind: "emoji" | "image" | "text" | "shape"; // emoji=기본 이모지, image=커스텀 이모지, text=텍스트, shape=데코 도형
+  label: string; // emoji면 이모지 문자, image면 에셋 이름, text면 표시 문구, shape면 도형 키
   imageUrl?: string; // kind=image일 때 그릴 이미지 URL
   assetId?: string; // kind=image일 때 sticker_assets 참조
+  shapeKey?: string; // kind=shape일 때 도형 프리셋 키(색은 textColor를 fill로 재사용)
   textColor?: string; // kind=text일 때 글자색(hex)
   fontWeight?: number; // kind=text일 때 글꼴 굵기(400/700/900)
   fontFamily?: string; // kind=text일 때 글꼴 종류 키

@@ -5,6 +5,7 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canDecorate } from "@/lib/permissions/roles";
 import {
+  SHAPE_KEYS,
   STICKER_ANIMS,
   STICKER_TEXT_FX,
   type StickerAnim,
@@ -18,8 +19,9 @@ export type SaveStickerInput = {
   id?: string;
   year: number;
   month: number;
-  emoji?: string; // 기본 이모지(텍스트). assetId/text가 있으면 비운다.
+  emoji?: string; // 기본 이모지(텍스트). assetId/text/shapeKey가 있으면 비운다.
   assetId?: string; // 업로드한 커스텀 이모지(이미지) 참조
+  shapeKey?: string; // P2: 데코 도형 프리셋 키(색은 textColor를 fill로 재사용)
   text?: string; // C6: 텍스트 스티커 문구
   textColor?: string; // C6: 텍스트 스티커 글자색
   fontWeight?: number; // #7: 글꼴 굵기
@@ -54,12 +56,15 @@ function toStickerRow(input: SaveStickerInput, calendarId: string) {
   const emoji = (input.emoji ?? "").trim();
   const assetId = input.assetId ?? null;
   const text = (input.text ?? "").trim();
+  const shapeKey = input.shapeKey && SHAPE_KEYS.has(input.shapeKey) ? input.shapeKey : null;
   return {
     calendar_id: calendarId,
-    asset_id: text ? null : assetId,
-    emoji: assetId || text ? null : emoji,
+    asset_id: text || shapeKey ? null : assetId,
+    emoji: assetId || text || shapeKey ? null : emoji,
     text_content: text || null,
-    text_color: text ? (input.textColor ?? "#1f2937") : null,
+    // 도형도 text_color를 fill로 재사용한다(별도 컬럼 없이 재채색).
+    text_color: text || shapeKey ? (input.textColor ?? "#1f2937") : null,
+    shape_key: shapeKey,
     font_weight: text ? (input.fontWeight ?? 700) : null,
     font_family: text ? (input.fontFamily ?? "sans") : null,
     text_align: text ? (input.textAlign ?? "left") : null,
@@ -95,8 +100,8 @@ export async function saveStickerAction(input: SaveStickerInput): Promise<Sticke
   const emoji = (input.emoji ?? "").trim();
   const assetId = input.assetId ?? null;
   const text = (input.text ?? "").trim();
-  // 이모지 / 커스텀 이모지(asset) / 텍스트 스티커 중 하나는 있어야 한다.
-  if (!emoji && !assetId && !text) {
+  // 이모지 / 커스텀 이모지(asset) / 텍스트 / 도형 중 하나는 있어야 한다.
+  if (!emoji && !assetId && !text && !input.shapeKey) {
     return { ok: false, error: "이모지나 문구를 입력하세요." };
   }
 

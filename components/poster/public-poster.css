@@ -2837,6 +2837,23 @@
   color: #64748b;
   margin-right: 2px;
 }
+/* P2 데코 도형: 팔레트 칩(SVG 미리보기) · 캔버스 렌더 · 도형 색 피커 라벨. */
+.shape-chip {
+  display: inline-grid;
+  place-items: center;
+}
+.shape-chip svg,
+.sticker-shape {
+  display: block;
+}
+.stf-shape-color {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #334155;
+}
 .stf-btn.danger {
   border-color: #fca5a5;
   background: #fef2f2;

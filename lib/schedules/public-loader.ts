@@ -160,7 +160,7 @@ const loadPublicScheduleData = unstable_cache(
         supabase
           .from("sticker_instances")
           .select(
-            "id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, text_fx, italic, outline, shadow, anim, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)"
+            "id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, text_fx, italic, outline, shadow, anim, shape_key, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)"
           )
           .eq("calendar_id", calendar.id)
           .eq("is_visible", true),
@@ -384,6 +384,7 @@ function mapSticker(row: {
   outline?: boolean | null;
   shadow?: boolean | null;
   anim?: string | null;
+  shape_key?: string | null;
   year: number;
   month: number;
   x_ratio: number | string;
@@ -404,19 +405,34 @@ function mapSticker(row: {
   const asset = Array.isArray(row.sticker_assets)
     ? row.sticker_assets[0]
     : row.sticker_assets;
-  // 텍스트 > 이미지 > 이모지 순으로 종류를 판정한다.
+  // 텍스트 > 이미지 > 도형 > 이모지 순으로 종류를 판정한다.
   const text = (row.text_content ?? "").trim();
   const isText = text.length > 0;
   const isImage = !isText && Boolean(row.asset_id && asset?.file_url);
-  const kind: StickerInstance["kind"] = isText ? "text" : isImage ? "image" : "emoji";
+  const isShape = !isText && !isImage && Boolean(row.shape_key);
+  const kind: StickerInstance["kind"] = isText
+    ? "text"
+    : isImage
+      ? "image"
+      : isShape
+        ? "shape"
+        : "emoji";
 
   return {
     id: row.id,
     kind,
-    label: isText ? text : isImage ? (asset?.name ?? "") : (row.emoji ?? ""),
+    label: isText
+      ? text
+      : isImage
+        ? (asset?.name ?? "")
+        : isShape
+          ? (row.shape_key ?? "")
+          : (row.emoji ?? ""),
     imageUrl: isImage ? asset?.file_url : undefined,
     assetId: isImage ? (row.asset_id ?? undefined) : undefined,
-    textColor: isText ? (row.text_color ?? "#1f2937") : undefined,
+    shapeKey: isShape ? (row.shape_key ?? undefined) : undefined,
+    // 도형도 text_color를 fill로 재사용 → 텍스트/도형 모두 textColor를 채운다.
+    textColor: isText || isShape ? (row.text_color ?? "#1f2937") : undefined,
     fontWeight: isText ? (row.font_weight ?? 700) : undefined,
     fontFamily: isText ? (row.font_family ?? "sans") : undefined,
     textAlign: isText
