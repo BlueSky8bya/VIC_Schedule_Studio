@@ -17,6 +17,13 @@ export function canDecorate(role: MembershipRole) {
   return role === "owner" || role === "developer" || role === "manager" || role === "worker";
 }
 
+// 커스텀 이모지(스티커 에셋) 업로드/삭제 — 소유자·개발자·작업자만(매니저 제외). 매니저는 "방송 운영"
+// 역할이라 기존 이모지로 꾸미기'만' 한다(라이브러리 관리·파괴적 삭제는 못 함). 겸직(매니저+작업자,
+// effective=manager)은 isWorker로 작업자 권한을 인정해 허용한다.
+export function canManageStickerAssets(role: MembershipRole, isWorker: boolean) {
+  return role === "owner" || role === "developer" || role === "worker" || isWorker === true;
+}
+
 // 업 도움(support) 이벤트의 기간/링크 편집. 매니저는 "방송 운영" 역할이라 업 도움 정보를 손볼 수
 // 있지만, 작업자(worker)는 "제작"(에셋/꾸미기) 역할이라 업 도움은 읽기 전용이다.
 // (일반 일정 자체의 생성/수정/삭제는 여전히 canEditSchedule = owner/developer 전용)

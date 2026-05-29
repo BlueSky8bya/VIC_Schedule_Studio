@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
-import { canDecorate } from "@/lib/permissions/roles";
+import { canManageStickerAssets } from "@/lib/permissions/roles";
 
 import type { StickerAsset } from "@/lib/domain/schedule-types";
 
@@ -24,11 +24,11 @@ const ALLOWED = new Map<string, string>([
   ["image/jpeg", "jpg"]
 ]);
 
-// 커스텀 이모지(이미지) 업로드 — 소유자·개발자·매니저·작업자.
+// 커스텀 이모지(이미지) 업로드 — 소유자·개발자·작업자(겸직 포함). 매니저는 꾸미기만(에셋 관리 불가).
 export async function uploadStickerAssetAction(formData: FormData): Promise<StickerAssetResult> {
   const actor = await resolveCurrentActor(SLUG);
-  if (!canDecorate(actor.role)) {
-    return { ok: false, error: "꾸미기 권한이 없습니다 (소유자·개발자·신뢰 멤버만 가능)." };
+  if (!canManageStickerAssets(actor.role, actor.isWorker === true)) {
+    return { ok: false, error: "이모지 업로드 권한이 없습니다 (소유자·개발자·작업자만 가능)." };
   }
 
   const file = formData.get("file");
@@ -96,11 +96,12 @@ export async function uploadStickerAssetAction(formData: FormData): Promise<Stic
   };
 }
 
-// 커스텀 이모지 삭제 — 업로드 가능한 사람 모두. 행을 지우면 이를 쓰는 스티커도 함께 삭제(on delete cascade).
+// 커스텀 이모지 삭제 — 소유자·개발자·작업자(겸직 포함)만(매니저 제외, 파괴적). 행을 지우면 이를 쓰는
+// 스티커도 함께 삭제(on delete cascade)되므로 매니저에겐 막는다.
 export async function deleteStickerAssetAction(assetId: string): Promise<StickerAssetResult> {
   const actor = await resolveCurrentActor(SLUG);
-  if (!canDecorate(actor.role)) {
-    return { ok: false, error: "꾸미기 권한이 없습니다." };
+  if (!canManageStickerAssets(actor.role, actor.isWorker === true)) {
+    return { ok: false, error: "이모지 삭제 권한이 없습니다 (소유자·개발자·작업자만 가능)." };
   }
 
   const supabase = await createSupabaseServerClient();

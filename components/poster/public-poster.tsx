@@ -2454,7 +2454,8 @@ export function PublicPoster({
                           <img alt={asset.name} src={asset.fileUrl} />
                           {pending ? <span className="asset-spinner" aria-hidden="true" /> : null}
                         </button>
-                        {!pending ? (
+                        {/* 삭제(×)는 에셋 관리 권한이 있을 때만 — 매니저는 꾸미기만(삭제 불가). */}
+                        {!pending && deleteStickerAssetAction ? (
                           <button
                             aria-label={`${asset.name} 삭제`}
                             className="asset-del"
@@ -2471,7 +2472,8 @@ export function PublicPoster({
                 </div>
               ) : null}
 
-              {/* 업로드 칸: 드래그 앤 드롭 또는 클릭 (저장 칸과 분리) */}
+              {/* 업로드 칸 — 에셋 관리 권한이 있을 때만(매니저는 숨김 = 꾸미기만). 드래그앤드롭/클릭. */}
+              {uploadStickerAssetAction ? (
               <label
                 className={`upload-drop ${dragOver ? "dragover" : ""} ${uploading ? "busy" : ""}`}
                 onDragLeave={() => setDragOver(false)}
@@ -2511,6 +2513,7 @@ export function PublicPoster({
                   정사각형 · 투명 배경 PNG 권장 · PNG·WebP·GIF·JPG · 2MB 이하 · 여러 개 가능
                 </span>
               </label>
+              ) : null}
             </div>
             </div>
 

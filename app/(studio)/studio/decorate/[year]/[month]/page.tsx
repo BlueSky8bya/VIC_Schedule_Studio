@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
-import { canDecorate, canEditSchedule } from "@/lib/permissions/roles";
+import { canDecorate, canEditSchedule, canManageStickerAssets } from "@/lib/permissions/roles";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import {
   deleteStickerAction,
@@ -45,6 +45,8 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
   const initialYear = mem.dy ?? Number(year);
   const initialMonth = mem.dm ?? Number(month);
+  // 매니저는 기존 이모지로 꾸미기'만' — 커스텀 이모지 업로드·삭제 액션은 넘기지 않아 UI도 숨는다.
+  const canAssets = canManageStickerAssets(actor.role, actor.isWorker === true);
 
   return (
     <PublicPoster
@@ -52,7 +54,7 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
       decorate
       initialPreviewing={mem.dp === 1}
       deleteStickerAction={deleteStickerAction}
-      deleteStickerAssetAction={deleteStickerAssetAction}
+      deleteStickerAssetAction={canAssets ? deleteStickerAssetAction : undefined}
       deleteStickerBatchAction={deleteStickerBatchAction}
       initialMonth={initialMonth}
       initialYear={initialYear}
@@ -60,7 +62,7 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
       saveStickerBatchAction={saveStickerBatchAction}
       schedule={schedule}
       setPosterThemeAction={canEditSchedule(actor.role) ? setPosterThemeAction : undefined}
-      uploadStickerAssetAction={uploadStickerAssetAction}
+      uploadStickerAssetAction={canAssets ? uploadStickerAssetAction : undefined}
     />
   );
 }
