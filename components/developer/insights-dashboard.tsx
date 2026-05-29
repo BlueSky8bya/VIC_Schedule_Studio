@@ -29,6 +29,7 @@ import {
   type TrendData,
   type VisitTrends
 } from "@/lib/insights/actions";
+import { clearUnlockSessionsAction } from "@/lib/private-layer/actions";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
@@ -170,6 +171,8 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
   const [vtHover, setVtHover] = useState<VtHover | null>(null);
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
+  // 보안 패널: 열린 비공개 잠금 세션을 모두 만료(초기화)하는 중인지.
+  const [clearingUnlocks, setClearingUnlocks] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -205,6 +208,25 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
   useEffect(() => setVtHover(null), [visitView, visitDim]);
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
+
+  // 열린 비공개 잠금 세션을 모두 즉시 만료(초기화). 성공하면 보안 데이터를 다시 불러와 목록을 비운다.
+  async function clearUnlocks() {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm("지금 열린 모든 비공개 잠금을 만료시킬까요?\n이후 모두 다시 비밀번호를 입력해야 합니다.")
+    ) {
+      return;
+    }
+    setClearingUnlocks(true);
+    const res = await clearUnlockSessionsAction();
+    if (res.ok) {
+      const fresh = await getInsightsAction(year, month);
+      if (fresh.ok) setData(fresh.data);
+    } else if (typeof window !== "undefined") {
+      window.alert(res.error);
+    }
+    setClearingUnlocks(false);
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -759,14 +781,25 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
                     : "지금 비공개를 연 계정 없음"}
                 </div>
                 {d.security.activeUnlocks.length > 0 ? (
-                  <ul className="insight-rows">
-                    {d.security.activeUnlocks.map((u, i) => (
-                      <li key={i}>
-                        <span>{u.email}</span>
-                        <strong>~ {fmtTime(u.expiresAt)} 만료</strong>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul className="insight-rows">
+                      {d.security.activeUnlocks.map((u, i) => (
+                        <li key={i}>
+                          <span>{u.email}</span>
+                          <strong>~ {fmtTime(u.expiresAt)} 만료</strong>
+                        </li>
+                      ))}
+                    </ul>
+                    {/* 열린 비공개 잠금을 지금 모두 만료(초기화) — 방송 중 안전장치. */}
+                    <button
+                      className="button danger insight-clear-unlocks"
+                      disabled={clearingUnlocks}
+                      onClick={clearUnlocks}
+                      type="button"
+                    >
+                      {clearingUnlocks ? "초기화 중…" : "만료시간 초기화"}
+                    </button>
+                  </>
                 ) : null}
                 <h4 className="insight-subhead">비공개 잠금 암호</h4>
                 <ul className="insight-rows">

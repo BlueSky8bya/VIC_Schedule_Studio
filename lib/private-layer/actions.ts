@@ -7,8 +7,53 @@ import { canEditSchedule } from "@/lib/permissions/roles";
 import { hashPasscode, verifyPasscode } from "@/lib/private-layer/passcode";
 
 export type PasscodeResult = { ok: true } | { ok: false; error: string };
+export type ClearUnlocksResult = { ok: true; cleared: number } | { ok: false; error: string };
 
 const SLUG = "vic";
+
+// owner/developer가 지금 열린 모든 비공개 잠금 세션을 즉시 만료(초기화)한다.
+// 방송 중 실수로 열어둔 비공개 세션을 한 번에 닫는 안전장치 — 이후 모두 다시 비밀번호를 입력해야 한다.
+export async function clearUnlockSessionsAction(): Promise<ClearUnlocksResult> {
+  const actor = await resolveCurrentActor(SLUG);
+
+  if (!canEditSchedule(actor.role)) {
+    return { ok: false, error: "owner 또는 developer만 잠금 세션을 초기화할 수 있습니다." };
+  }
+
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase service role 키가 필요합니다." };
+  }
+
+  const { data: calendar } = await supabase
+    .from("calendars")
+    .select("id")
+    .eq("slug", SLUG)
+    .maybeSingle();
+
+  if (!calendar) {
+    return { ok: false, error: "캘린더를 찾을 수 없습니다." };
+  }
+
+  // 지금 활성(만료 전)인 세션 수를 먼저 세어 알려준다.
+  const { count } = await supabase
+    .from("unlock_sessions")
+    .select("user_id", { count: "exact", head: true })
+    .eq("calendar_id", calendar.id)
+    .gt("expires_at", new Date().toISOString());
+
+  // 만료된 잔여 행까지 모두 정리(초기화).
+  const { error } = await supabase.from("unlock_sessions").delete().eq("calendar_id", calendar.id);
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/studio");
+  revalidatePath("/studio/private-layer");
+
+  return { ok: true, cleared: count ?? 0 };
+}
 
 // owner/developer가 비공개 레이어 비밀번호를 설정/변경한다.
 // 기존 비밀번호가 있으면 현재 비밀번호를 검증한다. 변경 시 passcode_version을 올려

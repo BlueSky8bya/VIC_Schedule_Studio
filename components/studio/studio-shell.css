@@ -832,6 +832,13 @@
   border: 1px solid #f5c98a;
   color: #b5491d;
 }
+/* 보안 패널: 열린 비공개 잠금 일괄 만료 버튼 — 활성 세션 목록 바로 아래, 폭 가득. */
+.insight-clear-unlocks {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 38px;
+  justify-content: center;
+}
 .insight-empty {
   margin: 12px 0;
   font-size: 13px;
