@@ -275,10 +275,9 @@ export function StudioShell({
   // 방송사고 방지: 새로고침/진입 시 항상 공개(일반) 모드가 기본. 잠금 세션이 있어도
   // 사용자가 직접 토글해야 비공개 일정이 보인다.
   const [showPrivate, setShowPrivate] = useState(false);
-  // 비밀번호 팝업을 "변경 모드"로 열지 — 잠금이 살아있어 토글이 팝업을 안 띄울 때 비밀번호를 바꾸려고.
-  const [passcodeChangeMode, setPasscodeChangeMode] = useState(false);
-  // 비밀번호 팝업을 닫을 때 돌아갈 곳 — 인사이트(보안 패널)에서 열었으면 "developer", 그 외엔 null(닫기).
-  const [passcodeReturnTo, setPasscodeReturnTo] = useState<"developer" | null>(null);
+  // 비밀번호 팝업은 다른 모달(인사이트 등) '위에' 따로 띄우는 독립 오버레이다 → 인사이트를 닫지 않으니
+  // 취소 시 리로드 없이 그 보안 패널이 그대로 남는다. "unlock"=잠금 해제, "change"=비밀번호 변경.
+  const [passcodeModal, setPasscodeModal] = useState<"unlock" | "change" | null>(null);
   // 방금 잠금 해제했다면(=pendingUnlockReveal), refresh로 세션이 반영(hasUnlockSession=true)되는
   // 즉시 비공개 표시를 켠다. refresh 과정에서 showPrivate 상태가 유실되더라도 확실히 다시 켜진다.
   useEffect(() => {
@@ -287,9 +286,7 @@ export function StudioShell({
       setShowPrivate(true);
     }
   }, [hasUnlockSession]);
-  const [modal, setModal] = useState<
-    null | "passcode" | "tags" | "members" | "notice" | "developer"
-  >(null);
+  const [modal, setModal] = useState<null | "tags" | "members" | "notice" | "developer">(null);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
@@ -660,22 +657,13 @@ export function StudioShell({
     if (hasUnlockSession) {
       setShowPrivate((value) => !value);
     } else {
-      setPasscodeChangeMode(false);
-      setPasscodeReturnTo(null);
-      setModal("passcode");
+      setPasscodeModal("unlock");
     }
   }
-  // 비밀번호 변경 팝업 열기(변경 모드). returnTo="developer"면 닫을 때 인사이트(보안 패널)로 복귀.
-  function openChangePasscode(returnTo: "developer" | null = null) {
-    setPasscodeChangeMode(true);
-    setPasscodeReturnTo(returnTo);
-    setModal("passcode");
-  }
-  // 비밀번호 팝업 닫기 — 연 곳으로 돌아간다(인사이트에서 열었으면 인사이트, 아니면 편집실).
-  function closePasscodeModal() {
-    setPasscodeChangeMode(false);
-    setModal(passcodeReturnTo);
-    setPasscodeReturnTo(null);
+  // 비밀번호 변경 팝업 열기 — 다른 모달(인사이트) 위에 따로 띄운다(그 모달은 닫지 않음 →
+  // 취소하면 리로드 없이 그 화면 그대로 드러난다).
+  function openChangePasscode() {
+    setPasscodeModal("change");
   }
 
   // 역할 도움말 팝오버: 배지 바깥을 누르거나 Esc로 닫는다.
@@ -827,14 +815,14 @@ export function StudioShell({
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
 
   // 모바일 오버레이 스택: 편집 시트 → (그 위에) 공지 모달. 레이어마다 히스토리 항목을 하나씩 쌓아,
-  // 휴대폰 뒤로가기를 누르면 맨 위 레이어만 닫힌다(공지 → 편집 시트 → 스튜디오). passcode 모달은
-  // 제외 — 잠금 해제 직후 onUnlocked의 router.refresh를 history.back이 취소하던 문제 방지.
-  const modalIsStackable = modal !== null && modal !== "passcode";
+  // 휴대폰 뒤로가기를 누르면 맨 위 레이어만 닫힌다(공지 → 편집 시트 → 스튜디오). 비번 팝업은
+  // 별도 오버레이(passcodeModal)라 스택엔 안 넣되, 스크롤 잠금엔 포함한다.
+  const modalIsStackable = modal !== null;
   const overlayDepth = (mobileEditId !== null ? 1 : 0) + (modalIsStackable ? 1 : 0);
-  // 스크롤 잠금엔 태그 수정·업 도움 시트도 포함 — 시트를 잡고 끌면 뒤 배경이 스크롤돼 아래가
-  // 뚫리던 문제를 막는다. (히스토리 스택(overlayDepth)은 기존대로 — 두 시트는 X/배경 탭으로 닫음.)
+  // 스크롤 잠금엔 태그 수정·업 도움 시트·비번 팝업도 포함 — 시트를 잡고 끌면 뒤 배경이 스크롤돼
+  // 아래가 뚫리던 문제를 막는다. (히스토리 스택(overlayDepth)은 기존대로.)
   const overlayLocked =
-    overlayDepth > 0 || supportSheetId !== null || tagSheetId !== null;
+    overlayDepth > 0 || supportSheetId !== null || tagSheetId !== null || passcodeModal !== null;
   // 히스토리 스택 깊이 = 오버레이(편집 시트·공지) + 시청자 미리보기(viewerMode).
   // viewerMode도 한 칸 쌓아야, 휴대폰 뒤로가기를 누를 때 로그인 흐름으로 빠지지 않고
   // 편집실로 돌아온다. (스크롤 잠금은 overlayLocked만 사용 — 미리보기 자체 스크롤은 살린다.)
@@ -3332,9 +3320,7 @@ export function StudioShell({
           }}
           onMouseUp={(e) => {
             if (backdropPressRef.current && e.target === e.currentTarget) {
-              // 비번 팝업은 연 곳(인사이트 등)으로 복귀, 그 외 모달은 그냥 닫기.
-              if (modal === "passcode") closePasscodeModal();
-              else setModal(null);
+              setModal(null);
             }
             backdropPressRef.current = false;
           }}
@@ -3346,49 +3332,26 @@ export function StudioShell({
           >
             <div className="modal-head">
               <h2>
-                {modal === "passcode"
-                  ? passcodeChangeMode
-                    ? "비밀번호 변경"
-                    : "비공개 일정"
-                  : modal === "tags"
-                    ? "태그 이름 · 색상 편집"
-                    : modal === "notice"
-                      ? "숲 공지 쓰기"
-                      : modal === "developer"
-                        ? isDevInsights
-                          ? "🛠 월별 인사이트"
-                          : "📊 월별 인사이트"
-                        : "매니저 · 작업자 관리"}
+                {modal === "tags"
+                  ? "태그 이름 · 색상 편집"
+                  : modal === "notice"
+                    ? "숲 공지 쓰기"
+                    : modal === "developer"
+                      ? isDevInsights
+                        ? "🛠 월별 인사이트"
+                        : "📊 월별 인사이트"
+                      : "매니저 · 작업자 관리"}
               </h2>
               <button
                 aria-label="닫기"
                 className="modal-close"
-                onClick={() => (modal === "passcode" ? closePasscodeModal() : setModal(null))}
+                onClick={() => setModal(null)}
                 type="button"
               >
                 <X aria-hidden="true" size={18} />
               </button>
             </div>
 
-            {modal === "passcode" ? (
-              <PrivateLayerPanel
-                canManage={canEdit}
-                onDone={closePasscodeModal}
-                onUnlocked={() => {
-                  // 팝업을 닫고, 서버에서 비공개 일정을 다시 불러오는 동안 "불러오는 중" 표시.
-                  // pendingUnlockReveal: refresh 후 세션이 반영되면 위 useEffect가 표시를 확실히 켠다.
-                  pendingUnlockReveal = true;
-                  setModal(null);
-                  setShowPrivate(true);
-                  startLoadingPrivate(() => {
-                    router.refresh();
-                  });
-                }}
-                isDefaultPasscode={isDefaultPasscode}
-                setPasscodeAction={setPasscodeAction}
-                startChanging={passcodeChangeMode}
-              />
-            ) : null}
             {modal === "tags" ? (
               <TagLegendEditor
                 canEdit
@@ -3406,7 +3369,7 @@ export function StudioShell({
               isDevInsights ? (
                 <InsightsDashboard
                   month={view.month}
-                  onChangePasscode={canEdit ? () => openChangePasscode("developer") : undefined}
+                  onChangePasscode={canEdit ? openChangePasscode : undefined}
                   year={view.year}
                 />
               ) : (
@@ -3438,6 +3401,54 @@ export function StudioShell({
                   );
                 })()
               : null}
+          </div>
+        </div>
+      ) : null}
+
+      {/* 비밀번호 팝업 — 다른 모달(인사이트) 위에 따로 띄우는 독립 오버레이(z-index 더 높음).
+          연 모달을 닫지 않으니 취소/X/배경 클릭 시 리로드 없이 그 화면(보안 패널)이 그대로 드러난다. */}
+      {passcodeModal ? (
+        <div
+          className="modal-backdrop modal-backdrop-passcode"
+          onMouseDown={(e) => {
+            backdropPressRef.current = e.target === e.currentTarget;
+          }}
+          onMouseUp={(e) => {
+            if (backdropPressRef.current && e.target === e.currentTarget) {
+              setPasscodeModal(null);
+            }
+            backdropPressRef.current = false;
+          }}
+          role="presentation"
+        >
+          <div className="modal-card" role="dialog">
+            <div className="modal-head">
+              <h2>{passcodeModal === "change" ? "비밀번호 변경" : "비공개 일정"}</h2>
+              <button
+                aria-label="닫기"
+                className="modal-close"
+                onClick={() => setPasscodeModal(null)}
+                type="button"
+              >
+                <X aria-hidden="true" size={18} />
+              </button>
+            </div>
+            <PrivateLayerPanel
+              canManage={canEdit}
+              isDefaultPasscode={isDefaultPasscode}
+              onDone={() => setPasscodeModal(null)}
+              onUnlocked={() => {
+                // 잠금 해제 성공: 팝업 닫고 비공개 일정을 다시 불러오는 동안 "불러오는 중" 표시.
+                pendingUnlockReveal = true;
+                setPasscodeModal(null);
+                setShowPrivate(true);
+                startLoadingPrivate(() => {
+                  router.refresh();
+                });
+              }}
+              setPasscodeAction={setPasscodeAction}
+              startChanging={passcodeModal === "change"}
+            />
           </div>
         </div>
       ) : null}

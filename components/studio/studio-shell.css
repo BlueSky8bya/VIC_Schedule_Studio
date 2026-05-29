@@ -3117,6 +3117,10 @@ textarea:disabled {
   backdrop-filter: blur(3px);
   animation: fade-up var(--dur-2) var(--ease) both;
 }
+/* 비밀번호 팝업은 다른 모달(인사이트 등) 위에 겹쳐 뜬다 — z-index를 더 높여 항상 맨 위로. */
+.modal-backdrop-passcode {
+  z-index: 60;
+}
 .modal-card {
   width: 100%;
   max-width: 460px;
