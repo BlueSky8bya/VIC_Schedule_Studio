@@ -353,9 +353,63 @@
   color: #6b5bd6;
   opacity: 0.75;
 }
+/* 진동 켜기/끄기 — 권한 목록 아래 작은 설정 한 줄(진동 지원 기기에서만). iOS풍 스위치, 앱 톤. */
+.role-help-haptics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid #efeaf7;
+}
+.rhh-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink-soft, #4a4466);
+}
+.rhh-label svg {
+  color: var(--accent, #6b5bd6);
+}
+.rhh-switch {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #d9d4e6;
+  cursor: pointer;
+  transition: background 0.16s var(--ease, ease);
+}
+.rhh-switch.on {
+  background: var(--accent, #6b5bd6);
+}
+.rhh-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(40, 30, 60, 0.35);
+  transition: transform 0.16s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+.rhh-switch.on .rhh-knob {
+  transform: translateX(18px);
+}
 @media (prefers-reduced-motion: reduce) {
   .role-help-pop {
     animation: none;
+  }
+  .rhh-switch,
+  .rhh-knob {
+    transition: none;
   }
 }
 

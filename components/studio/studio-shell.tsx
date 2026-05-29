@@ -10,6 +10,7 @@ import {
   Save,
   Sparkles,
   Trash2,
+  Vibrate,
   X
 } from "lucide-react";
 import Link from "next/link";
@@ -87,7 +88,7 @@ import { MemberInsights } from "@/components/studio/member-insights";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
-import { hapticDelete, hapticTick } from "@/lib/ui/haptics";
+import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 
 type StudioShellProps = {
@@ -559,6 +560,21 @@ export function StudioShell({
   const deskLabel = isDualRole ? "매니저 · 작업자" : DESK_LABEL[effectiveRole];
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
   const [roleHelpOpen, setRoleHelpOpen] = useState(false);
+  // 진동(햅틱) 설정 토글 — navigator.vibrate 지원 기기(안드로이드)에서만 노출. SSR 불일치 방지로
+  // 마운트 후 지원 여부/현재값을 읽는다(기본 ON). 끄면 앱 전체 진동이 조용해진다(스위치보드 기준).
+  const [hapticsSupported, setHapticsSupported] = useState(false);
+  const [hapticsOn, setHapticsOn] = useState(true);
+  useEffect(() => {
+    const supported = typeof navigator !== "undefined" && "vibrate" in navigator;
+    setHapticsSupported(supported);
+    if (supported) setHapticsOn(hapticsEnabled());
+  }, []);
+  const toggleHaptics = () => {
+    const next = !hapticsOn;
+    setHapticsEnabled(next); // localStorage(vic.haptics)에 먼저 반영
+    setHapticsOn(next);
+    if (next) hapticTick(); // 켜는 순간 한 번 울려 "이렇게 울려요"를 바로 체감
+  };
   const canReadPrivate =
     canReadPrivateLayer(effectiveRole, effIsWorker, hasUnlockSession) && showPrivate;
 
@@ -747,6 +763,25 @@ export function StudioShell({
                 <li key={item}>{item}</li>
               ))}
             </ul>
+            {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. 켜면 하트·탭·저장·삭제 등에 가볍게 울린다. */}
+            {hapticsSupported ? (
+              <div className="role-help-haptics">
+                <span className="rhh-label">
+                  <Vibrate aria-hidden="true" size={14} />
+                  진동
+                </span>
+                <button
+                  aria-checked={hapticsOn}
+                  aria-label="진동 켜기/끄기"
+                  className={`rhh-switch ${hapticsOn ? "on" : ""}`}
+                  onClick={toggleHaptics}
+                  role="switch"
+                  type="button"
+                >
+                  <span className="rhh-knob" aria-hidden="true" />
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

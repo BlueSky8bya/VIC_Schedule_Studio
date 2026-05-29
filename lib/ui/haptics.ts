@@ -5,7 +5,7 @@
 //
 // 통과해야 울리는 "자물쇠 3개":
 //   1) 이 기기가 navigator.vibrate를 지원하나? (iOS 등은 미지원 → 무시)
-//   2) 사용자가 진동을 켜뒀나? (기본 ON, 끄면 off 저장 — 토글 UI는 추후 단계)
+//   2) 사용자가 진동을 켜뒀나? (기본 ON, 끄면 off 저장 — 역할 배지 "?" 팝오버의 진동 토글)
 //   3) (호출부에서) 짧은 패턴만, 꼭 필요할 때만.
 //
 // "2단계(눌림 → 서버 확인)" 컨벤션 — 앞으로 이런 동작은 모두 이 방식으로:
@@ -25,7 +25,7 @@ export function hapticsEnabled(): boolean {
   }
 }
 
-// 추후 "진동 켜기/끄기" 설정 토글에서 호출(현재는 코드상 준비만, UI 미노출).
+// "진동 켜기/끄기" 설정 토글(역할 배지 "?" 팝오버, 진동 지원 기기에서만 노출)에서 호출.
 export function setHapticsEnabled(on: boolean): void {
   try {
     window.localStorage.setItem(HAPTICS_PREF_KEY, on ? "on" : "off");
