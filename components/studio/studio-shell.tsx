@@ -88,6 +88,7 @@ import { MemberInsights } from "@/components/studio/member-insights";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
+import { detectDevice } from "@/lib/presence/presence-client";
 import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 
@@ -565,7 +566,10 @@ export function StudioShell({
   const [hapticsSupported, setHapticsSupported] = useState(false);
   const [hapticsOn, setHapticsOn] = useState(true);
   useEffect(() => {
-    const supported = typeof navigator !== "undefined" && "vibrate" in navigator;
+    // 진동은 Android(Chrome/삼성)에서만 실제로 울린다. iOS는 'vibrate' 자체가 없어 이미 제외되지만,
+    // 데스크톱 Chrome은 'vibrate'가 있으되 무동작 → 웹에선 토글이 무의미하므로 Android에서만 노출.
+    const supported =
+      typeof navigator !== "undefined" && "vibrate" in navigator && detectDevice() === "android";
     setHapticsSupported(supported);
     if (supported) setHapticsOn(hapticsEnabled());
   }, []);
