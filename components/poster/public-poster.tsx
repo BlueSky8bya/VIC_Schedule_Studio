@@ -74,6 +74,7 @@ import {
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
+import { hapticTick } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 
 type PublicPosterProps = {
@@ -852,6 +853,7 @@ export function PublicPoster({
   // 관심 토글 — 낙관적으로 즉시 반영하고, 서버 모드면 호출 후 집계 수를 권위값으로 보정한다.
   function toggleBookmark(id: string, ev?: ReactMouseEvent<HTMLButtonElement>) {
     const wasOn = bookmarks.includes(id);
+    hapticTick(); // 가벼운 톡(Android만; iOS·미지원은 조용히 무시)
     if (!wasOn && ev) {
       // 이벤트 풀링 영향을 피하려 좌표를 동기적으로 먼저 읽는다.
       const rect = ev.currentTarget.getBoundingClientRect();

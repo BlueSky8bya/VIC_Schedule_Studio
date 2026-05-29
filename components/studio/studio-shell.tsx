@@ -87,6 +87,7 @@ import { MemberInsights } from "@/components/studio/member-insights";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
+import { hapticDelete, hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 
 type StudioShellProps = {
@@ -1527,6 +1528,7 @@ export function StudioShell({
         pendingSavesRef.current.delete(tempId);
         return;
       }
+      hapticSuccess(); // 저장 성공 손맛(Android만; iOS·미지원은 조용히 무시)
       // 새 일정이면 임시 id를 실제 id로 교체 + 이 임시 id를 가리키던 linkNext도 함께 교체.
       if (isNew && result.id) {
         const realId = result.id;
@@ -1563,6 +1565,7 @@ export function StudioShell({
       return;
     }
     if (!events.some((e) => e.id === targetId)) return;
+    hapticDelete(); // 또렷한 한 번(Android만; iOS·미지원은 조용히 무시)
     // 톡! 줄어들며 사라지는 동안만 잠깐 카드를 남겼다가 실제로 제거한다(reduced-motion이면 즉시).
     if (!prefersReducedMotion() && !deletingIds.has(targetId)) {
       const snapshot = events;
@@ -1836,6 +1839,7 @@ export function StudioShell({
   const mobileAgendaEvents = visibleEvents;
 
   function openMobileEdit(event: StudioScheduleEvent) {
+    hapticTick(); // 카드 탭 손맛(Android만; iOS·미지원은 조용히 무시)
     selectEvent(event);
     setMobileEditId(event.id);
   }
