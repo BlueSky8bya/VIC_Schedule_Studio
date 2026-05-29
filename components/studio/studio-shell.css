@@ -4330,14 +4330,16 @@ textarea:disabled {
   font-size: 12px;
 }
 .m-rolebar .button,
-.m-rolebar form {
-  flex: 1 1 0; /* 남는 폭을 버튼들이 고르게 나눠 가짐(소유자 오른쪽 빈 공간 제거) */
+.m-rolebar form,
+.m-rolebar .preview-dd {
+  flex: 1 1 0; /* 남는 폭을 버튼들이 고르게 나눠 가짐(미리보기 래퍼도 합류 → 폭 통일) */
   min-width: 0;
 }
 .m-rolebar form {
   display: flex;
 }
-.m-rolebar form .button {
+.m-rolebar form .button,
+.m-rolebar .preview-dd .button {
   width: 100%;
 }
 .m-rolebar .button {
