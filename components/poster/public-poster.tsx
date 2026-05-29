@@ -28,6 +28,7 @@ import { createPortal } from "react-dom";
 import {
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
+  type ReactNode,
   type TouchEvent as ReactTouchEvent,
   useEffect,
   useId,
@@ -107,6 +108,10 @@ type PublicPosterProps = {
   accountSwitch?: boolean;
   // 현재 로그인한 구글 이메일 — "계정변경" 옆에 표시해 어떤 계정으로 들어와 있는지 보여준다.
   accountEmail?: string | null;
+  // 시청자 미리보기(편집실 진입)일 때 제목 헤더(.agenda-header) 안에 띄우는 안내·이동 버튼.
+  // 왼쪽 여백 칸에 안내, 오른쪽 칸에 이동 버튼 → 제목과 같은 자리에서 함께 sticky로 따라온다.
+  previewNote?: ReactNode;
+  previewNav?: ReactNode;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -452,7 +457,9 @@ export function PublicPoster({
   setPosterThemeAction,
   toggleHeartAction,
   accountSwitch = false,
-  accountEmail = null
+  accountEmail = null,
+  previewNote,
+  previewNav
 }: PublicPosterProps) {
   // 스티커 저장/삭제가 서버에 들어가는 동안만 세는 카운터. 다 끝나기 전 새로고침/닫기 하면
   // "분명 지웠는데 다시 생겨있네?" 같은 불일치가 나므로, 그 짧은 동안에만 경고한다(아래 beforeunload).
@@ -2256,11 +2263,15 @@ export function PublicPoster({
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
         {showAgenda ? (
           <header className="agenda-header">
+            {/* 시청자 미리보기 진입 시 — 제목 왼쪽 여백 칸에 안내(작게). */}
+            {previewNote ? <span className="agenda-preview-left">{previewNote}</span> : null}
             <h1 className="agenda-title">
               <span className="title-spark" aria-hidden="true">✨️</span>
               빅토리 일정표
               <span className="title-spark" aria-hidden="true">✨️</span>
             </h1>
+            {/* 시청자 미리보기 진입 시 — 제목 오른쪽 칸에 이동 버튼(편집실 등). */}
+            {previewNav ? <div className="agenda-preview-right">{previewNav}</div> : null}
             {accountSwitch ? (
               <form action="/api/auth/logout" className="agenda-account" method="post">
                 <button onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")} type="submit">

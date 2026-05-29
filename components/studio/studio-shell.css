@@ -3242,20 +3242,10 @@ textarea:disabled {
   gap: 10px;
 }
 @media (max-width: 640px) {
-  /* 모바일: 절대배치 대신 흐름에 둬서 제목("빅토리 일정표")을 가리지 않고 함께 스크롤되게.
-     (절대배치는 좁은 폭에서 제목·버튼이 겹쳤다.) */
-  .viewer-preview-overlay {
-    position: static;
-    padding: 8px 12px 2px;
-  }
+  /* 모바일은 오버레이를 쓰지 않고 포스터 제목 헤더 안에 주입한다(.agenda-preview-*).
+     거기 안내 텍스트(.viewer-preview-note 재사용)는 좁은 폭에 맞춰 더 작게. */
   .viewer-preview-note {
     font-size: 11px;
-  }
-  /* [< 편집실] 버튼 컴팩트하게 — 좌우 패딩·아이콘 간격을 줄여 너비를 줄인다. */
-  .viewer-preview-actions .button {
-    gap: 2px;
-    padding: 0 9px;
-    white-space: nowrap;
   }
 }
 /* 태그 편집 행은 기본 flex 한 줄 레이아웃(.tag-editor-row)을 그대로 쓴다. */

@@ -194,6 +194,31 @@
   color: #8a7a4a;
   cursor: pointer;
 }
+/* 시청자 미리보기 진입 시 — 제목 헤더의 왼쪽 여백 칸(안내)·오른쪽 칸(이동 버튼).
+   가운데 제목(col2)은 그대로 두고 양옆에 배치 → 제목과 같은 자리에서 함께 sticky로 따라온다. */
+.agenda-header .agenda-preview-left {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+  align-self: center;
+  min-width: 0;
+}
+.agenda-header .agenda-preview-right {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+  display: inline-flex;
+  gap: 6px;
+}
+/* 좁은 제목 헤더 안이라 버튼은 컴팩트하게(왼쪽 여백 줄여 겹침 방지). */
+.agenda-header .agenda-preview-right .button {
+  min-height: 30px;
+  gap: 2px;
+  padding: 0 9px;
+  font-size: 12px;
+  white-space: nowrap;
+}
 .agenda-header h1 {
   grid-column: 2;
   grid-row: 1;
