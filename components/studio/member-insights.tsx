@@ -375,7 +375,7 @@ export function MemberInsights({
         key: "hour",
         emoji: "⏰",
         tone: "hour",
-        label: ["최고", "시간대"],
+        label: ["최고 방문", "시간대"],
         main: d.highlight.peakHour !== null ? `${d.highlight.peakHour}시` : "—"
       },
       {

@@ -537,7 +537,7 @@ export function InsightsDashboard({
         key: "hour",
         emoji: "⏰",
         tone: "hour",
-        label: ["최고", "시간대"],
+        label: ["최고 방문", "시간대"],
         main: peakHour && peakHour.c > 0 ? `${peakHour.h}시` : "—",
         sub: peakHour && peakHour.c > 0 ? `${peakHour.c}명` : ""
       },

@@ -722,7 +722,7 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
   }
   const calendarId = cal.id as string;
 
-  const [unlockRes, membersRes, passcodeRes] = await Promise.all([
+  const [unlockRes, membersRes, passcodeRes, adminRes] = await Promise.all([
     supabase
       .from("unlock_sessions")
       .select("user_id, expires_at")
@@ -738,7 +738,9 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
       .from("private_layer_settings")
       .select("passcode_version, passcode_updated_at, unlock_duration_minutes")
       .eq("calendar_id", calendarId)
-      .maybeSingle()
+      .maybeSingle(),
+    // 개발자(platform_admins) 이메일 — 관리자 화면엔 표시하지 않고, "지금 연 계정" 수에서 제외할 때만 쓴다.
+    supabase.from("platform_admins").select("email")
   ]);
 
   const emailCache = new Map<string, string | null>();
@@ -755,11 +757,19 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
     return email;
   };
 
+  // 관리자 화면은 개발자가 없는 듯 다룬다 → 개발자 세션은 "지금 연 계정" 수에서 처음부터 뺀다.
+  const developerEmailSet = new Set(
+    ((adminRes.data ?? []) as { email?: string }[])
+      .map((a) => normalizeEmail(a.email))
+      .filter((e): e is string => Boolean(e))
+  );
   const unlockRows = (unlockRes.data ?? []) as { user_id: string; expires_at: string }[];
   const unlockByEmail = new Map<string, { userId: string; expiresAt: string }>();
+  let activeNonDevCount = 0;
   for (const u of unlockRows) {
     const e = (await emailFor(u.user_id)) ?? "(알 수 없음)";
     unlockByEmail.set(e, { userId: u.user_id, expiresAt: u.expires_at });
+    if (!developerEmailSet.has(e)) activeNonDevCount += 1;
   }
   const toAccess = (email: string): AccessPerson => {
     const s = unlockByEmail.get(email);
@@ -782,7 +792,7 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
   return {
     ok: true,
     data: {
-      activeUnlockCount: unlockRows.length,
+      activeUnlockCount: activeNonDevCount,
       passcodeVersion: passcode?.passcode_version ?? null,
       passcodeUpdatedAt: passcode?.passcode_updated_at ?? null,
       unlockDurationMinutes: passcode?.unlock_duration_minutes ?? null,
