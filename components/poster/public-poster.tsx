@@ -44,7 +44,6 @@ import {
   POSTER_THEMES,
   STICKER_ANIMS,
   STICKER_SHAPES,
-  STICKER_TEXT_FX,
   shapeDefaultColor,
   type PublicSchedule,
   type PublicScheduleEvent,
@@ -2742,32 +2741,20 @@ export function PublicPoster({
                             />
                           </label>
                         ) : null}
-                      </div>
-                      <div className="stf-row stf-anim" role="group" aria-label="텍스트 효과">
-                        <span className="stf-anim-label">효과</span>
                         <button
-                          className={`stf-btn ${!selected.textFx ? "active" : ""}`}
+                          aria-pressed={selected.textFx === "neon"}
+                          className="stf-btn"
                           onClick={() => {
                             pushHistory();
-                            patchSelected({ textFx: undefined });
+                            patchSelected({
+                              textFx: selected.textFx === "neon" ? undefined : "neon"
+                            });
                           }}
+                          title="네온 글로우"
                           type="button"
                         >
-                          기본
+                          네온
                         </button>
-                        {STICKER_TEXT_FX.map((f) => (
-                          <button
-                            className={`stf-btn ${selected.textFx === f.key ? "active" : ""}`}
-                            key={f.key}
-                            onClick={() => {
-                              pushHistory();
-                              patchSelected({ textFx: f.key });
-                            }}
-                            type="button"
-                          >
-                            {f.label}
-                          </button>
-                        ))}
                       </div>
                       <div className="stf-row">
                         <label className="stf-opacity" title="글자 크기">
@@ -2859,18 +2846,6 @@ export function PublicPoster({
                     </div>
                   ) : selected ? (
                     <div className="stf-body">
-                      {selected.kind === "shape" ? (
-                        <div className="stf-row">
-                          <label className="stf-color stf-shape-color" title="도형 색">
-                            <span>색</span>
-                            <input
-                              onChange={(event) => changeTextColor(event.target.value)}
-                              type="color"
-                              value={selected.textColor ?? "#ff6b9d"}
-                            />
-                          </label>
-                        </div>
-                      ) : null}
                       <div className="stf-row">
                         <label className="stf-opacity" title="투명도">
                           투명도
@@ -2916,6 +2891,15 @@ export function PublicPoster({
                         </button>
                       </div>
                       <div className="stf-row stf-icons">
+                        {selected.kind === "shape" ? (
+                          <label className="stf-color" title="도형 색">
+                            <input
+                              onChange={(event) => changeTextColor(event.target.value)}
+                              type="color"
+                              value={selected.textColor ?? "#ff6b9d"}
+                            />
+                          </label>
+                        ) : null}
                         <button
                           aria-pressed={selected.flipX}
                           className="stf-btn"

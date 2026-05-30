@@ -127,10 +127,10 @@ export const STICKER_ANIMS: { key: StickerAnim; label: string }[] = [
   { key: "pulse", label: "콩닥" }
 ];
 
-// 텍스트 스티커 특수 효과(P1b): 그라데이션 글자 / 네온 글로우.
+// 텍스트 스티커 특수 효과(P1b): 네온 글로우. (그라데 옵션은 사용자 요청으로 제거 —
+// 타입에는 "gradient"를 남겨 이미 저장된 데이터의 렌더는 계속 동작하지만 피커엔 안 보임.)
 export type TextFx = "gradient" | "neon";
 export const STICKER_TEXT_FX: { key: TextFx; label: string }[] = [
-  { key: "gradient", label: "그라데" },
   { key: "neon", label: "네온" }
 ];
 

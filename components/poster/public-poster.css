@@ -2049,10 +2049,8 @@
 .sticker-anim-pulse {
   animation: sticker-pulse 1.3s ease-in-out infinite;
 }
-/* 편집 중(선택된) 스티커는 멈춰서 잡고 위치 조정하기 쉽게. 시청자(비편집)는 항상 움직인다. */
-.sticker-item.selected .sticker-anim {
-  animation: none;
-}
+/* (변경) 선택 중에도 움직임을 멈추지 않는다 — 툴바에서 누른 효과를 바로 확인하기 위해.
+   드래그/리사이즈 핸들은 별도 pointer 영역이라 움직이는 와중에도 잡힌다. */
 @keyframes sticker-float {
   0%,
   100% {
@@ -2825,11 +2823,16 @@
   background: var(--accent);
   color: var(--on-accent);
 }
-/* 움직임(anim) 피커 행 — 라벨 + 짧은 버튼들이 줄바꿈되며 들어간다. 버튼은 .stf-btn 상속. */
+/* 움직임(anim) 피커 행 — 라벨 + 짧은 버튼들. 버튼은 패딩을 줄여 한 줄에 들어가게(콩닥이 자기
+   혼자 줄바꿈되는 거 방지). 모자라면 wrap. */
 .stf-anim {
   flex-wrap: wrap;
   align-items: center;
   gap: 4px;
+}
+.stf-anim .stf-btn {
+  padding: 0 6px;
+  min-width: auto;
 }
 .stf-anim-label {
   font-size: 11px;
@@ -2845,14 +2848,6 @@
 .shape-chip svg,
 .sticker-shape {
   display: block;
-}
-.stf-shape-color {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 12px;
-  font-weight: 800;
-  color: #334155;
 }
 .stf-btn.danger {
   border-color: #fca5a5;
