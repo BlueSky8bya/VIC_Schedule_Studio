@@ -835,19 +835,33 @@ export function StudioShell({
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [visibleEvents, view]);
-  // 새 일정 카드: 카드/날짜 칸 바깥을 클릭하면 닫는다(슬라이드 아웃). 여는 클릭이 바로 닫지 않게
-  // 다음 틱부터 문서 클릭을 듣는다.
+  // 새 일정 카드: 카드/날짜 칸 바깥을 누르면 닫는다(슬라이드 아웃). 닫기는 '제스처 시작점' 기준이라
+  // 제목을 마우스로 긁다가 카드 밖에서 손을 떼도(드래그-선택) 시작점이 카드 안이면 닫지 않는다.
+  // (이전엔 click의 target이 두 점의 공통 조상이라 카드 밖으로 잡혀 갑자기 닫히는 버그가 있었다.)
+  // 여는 클릭이 바로 닫지 않게 다음 틱부터 듣는다.
   useEffect(() => {
     if (!editorVisible) return;
-    const onDocClick = (e: MouseEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t?.closest(".event-editor-panel") || t?.closest(".studio-day")) return;
+    const isOutside = (el: HTMLElement | null) =>
+      !(el?.closest(".event-editor-panel") || el?.closest(".studio-day"));
+    let downOutside = false;
+    const onDown = (e: PointerEvent) => {
+      downOutside = isOutside(e.target as HTMLElement | null);
+    };
+    const onUp = (e: PointerEvent) => {
+      if (!downOutside) return; // 카드/칸 안에서 시작한 드래그(텍스트 긁기 등)는 보호.
+      if (!isOutside(e.target as HTMLElement | null)) return; // 끝점도 밖일 때만.
+      // 입력칸이 아직 편집 포커스면 닫지 않는다(선택 드래그 중 안전장치).
+      if ((document.activeElement as HTMLElement | null)?.closest(".event-editor-panel")) return;
       setEditorVisible(false);
     };
-    const id = window.setTimeout(() => document.addEventListener("click", onDocClick), 0);
+    const id = window.setTimeout(() => {
+      document.addEventListener("pointerdown", onDown, true);
+      document.addEventListener("pointerup", onUp, true);
+    }, 0);
     return () => {
       window.clearTimeout(id);
-      document.removeEventListener("click", onDocClick);
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("pointerup", onUp, true);
     };
   }, [editorVisible]);
   // 선택한 일정이 속한 연결 체인 전체를 하이라이트 대상으로 삼는다.
