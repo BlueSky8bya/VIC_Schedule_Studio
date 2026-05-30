@@ -323,10 +323,15 @@ export function InsightsDashboard({
       );
     }
     const series = visitView === "day" ? visits.days : visits.weeks;
-    const max = Math.max(1, ...series.map((s) => s.total));
     const meta = visitDim === "role" ? ROLE_META : DEVICE_META;
     const countsOf = (s: { roles: Record<string, number>; devices: Record<string, number> }) =>
       visitDim === "role" ? s.roles : s.devices;
+    // 역할별 = '방문'(계정 단위, total=방문수). 기기별 = '기기'(한 계정이 웹·iOS면 둘 다 1대라
+    // 합이 방문수보다 클 수 있다) → 막대 높이·툴팁 합계도 그 차원에 맞춘다.
+    const totalOf = (s: { total: number; devices: Record<string, number> }) =>
+      visitDim === "role" ? s.total : Object.values(s.devices).reduce((a, b) => a + b, 0);
+    const unit = visitDim === "role" ? "명" : "대";
+    const max = Math.max(1, ...series.map(totalOf));
     // 시간대 막대 높이 스케일은 '평균 동시 접속'의 최댓값 기준(상대 스케일이라 절대치가 작아도 형태가 보임).
     const om = Math.max(0.0001, ...visits.occupancy.map((s) => s.avg));
     // 관리자 접속 세션을 KST 날짜별로 묶고, 각 세션을 24h 트랙 좌표(시작%·길이%)로 — 수면/스크린타임
@@ -421,7 +426,7 @@ export function InsightsDashboard({
                   meta={meta}
                   onHover={setVtHover}
                   onLeave={() => setVtHover(null)}
-                  total={d.total}
+                  total={totalOf(d)}
                 />
               ))
             : visits.weeks.map((w, i) => (
@@ -435,12 +440,12 @@ export function InsightsDashboard({
                   meta={meta}
                   onHover={setVtHover}
                   onLeave={() => setVtHover(null)}
-                  total={w.total}
+                  total={totalOf(w)}
                 />
               ))}
           {vtHover ? (
             <div className="vt-tip" style={{ "--tip-x": `${vtHover.x}%` } as CSSProperties}>
-              <strong>{vtHover.total}명</strong>
+              <strong>{vtHover.total}{unit}</strong>
               {vtHover.rows.map((r) => (
                 <span className="vt-tip-row" key={r.label}>
                   <i style={{ background: r.color }} />
@@ -664,8 +669,8 @@ export function InsightsDashboard({
         })}
         <StackTrendChart data={trend.contentByTag} showLegend={false} title="🗓️ 태그별 컨텐츠" />
         <StackTrendChart data={trend.heartsByTag} showLegend={false} title="💗 하트 받은 태그" />
-        <StackTrendChart data={trend.visitsByRole} title="👀 방문 — 역할별" />
-        <StackTrendChart data={trend.visitsByDevice} title="👀 방문 — 기기별" />
+        <StackTrendChart data={trend.visitsByRole} title="👀 역할별 방문" />
+        <StackTrendChart data={trend.visitsByDevice} title="📱 기기별 접속" />
       </>
     );
   }

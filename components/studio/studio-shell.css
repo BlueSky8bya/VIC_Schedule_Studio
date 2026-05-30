@@ -2107,11 +2107,17 @@
 .studio-left-panel {
   margin-right: 18px; /* 색상 필터와 달력 사이 간격(gap:0 대체) */
 }
-/* 새 일정 카드: 닫힘(폭 0)일 때 넘침 숨김으로 안 보이다가, 컬럼이 늘면서 폼이 슬라이드 인. */
+/* 새 일정 카드: 닫힘(폭 0)일 때 넘침 숨김으로 안 보이다가, 컬럼이 늘면서 폼이 슬라이드 인.
+   닫힘 상태에선 padding-left를 0으로 둔다 — 트랙이 0px인데 padding 18px이 함께 있으면
+   border-box(전역)에서 박스가 과제약돼 폼이 달력 오른쪽 끝에 ~18px 색 띠로 새어 보였다
+   ('가끔' 보이던 원인 = 브라우저별 over-constrained 처리 차이). 간격은 열렸을 때만 준다. */
 .event-editor-panel {
   align-self: start;
   overflow: hidden;
-  padding-left: 18px; /* 달력과의 간격(폼 왼쪽) */
+  padding-left: 0;
+}
+.studio-workspace.editor-open .event-editor-panel {
+  padding-left: 18px; /* 달력과의 간격(폼 왼쪽) — 카드가 실제로 열렸을 때만 */
 }
 .event-editor-panel form {
   width: 372px; /* 폭 고정 → 컬럼 애니메이션 동안 reflow 없이 슬라이드 */
