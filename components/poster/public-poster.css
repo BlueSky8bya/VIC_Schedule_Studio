@@ -2877,16 +2877,25 @@
   background: none;
   cursor: pointer;
 }
+/* 슬라이더 행 — 라벨은 고정폭(크기/투명도 시작점 정렬), 슬라이더는 남는 공간 다 차지.
+   같은 행에 액션 버튼이 있으면 자연스레 그 앞까지 늘어남(spacer 불필요). */
 .stf-opacity {
-  display: inline-flex;
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-size: 11.5px;
   font-weight: 800;
   color: #475569;
 }
+.stf-label-w {
+  flex: 0 0 38px;
+}
 .stf-opacity input[type="range"] {
-  width: 92px;
+  flex: 1 1 auto;
+  min-width: 60px;
+  width: auto;
   height: 6px;
   accent-color: var(--accent);
   cursor: pointer;

@@ -2759,7 +2759,7 @@ export function PublicPoster({
                       </div>
                       <div className="stf-row">
                         <label className="stf-opacity" title="글자 크기">
-                          크기
+                          <span className="stf-label-w">크기</span>
                           <input
                             max={0.15}
                             min={0.04}
@@ -2776,7 +2776,7 @@ export function PublicPoster({
                       </div>
                       <div className="stf-row">
                         <label className="stf-opacity" title="투명도">
-                          투명도
+                          <span className="stf-label-w">투명도</span>
                           <input
                             max={1}
                             min={0.1}
@@ -2788,7 +2788,6 @@ export function PublicPoster({
                             value={selected.opacity}
                           />
                         </label>
-                        <span className="stf-spacer" />
                         <button
                           aria-pressed={Boolean(selected.locked)}
                           className="stf-btn"
@@ -2849,7 +2848,7 @@ export function PublicPoster({
                     <div className="stf-body">
                       <div className="stf-row">
                         <label className="stf-opacity" title="투명도">
-                          투명도
+                          <span className="stf-label-w">투명도</span>
                           <input
                             max={1}
                             min={0.1}
@@ -2861,7 +2860,6 @@ export function PublicPoster({
                             value={selected.opacity}
                           />
                         </label>
-                        <span className="stf-spacer" />
                         <button
                           aria-pressed={Boolean(selected.locked)}
                           className="stf-btn"
