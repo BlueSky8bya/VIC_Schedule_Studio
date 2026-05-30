@@ -73,6 +73,69 @@ export function ShapeSvg({
           <path d="M2 9.2h11V4.5L22 12l-9 7.5V14.8H2z" fill={color} />
         </svg>
       );
+    case "diamond":
+      return (
+        <svg {...common}>
+          <path d="M12 2l9 10-9 10-9-10z" fill={color} />
+        </svg>
+      );
+    case "flower":
+      return (
+        <svg {...common}>
+          <path
+            d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6zm0-7.2c1.5 0 2.6 1.45 2.27 2.96A3.8 3.8 0 0 1 19.5 7c.95 1.32.5 3.1-1 3.96C20.05 11.9 20.5 13.68 19.5 15a3.8 3.8 0 0 1-5.23 3.04C14.6 19.55 13.5 21 12 21s-2.6-1.45-2.27-2.96A3.8 3.8 0 0 1 4.5 15c-1-1.32-.55-3.1 1-3.96C3.95 10.1 3.5 8.32 4.5 7a3.8 3.8 0 0 1 5.23-3.04C9.4 2.45 10.5 1 12 1z"
+            fill={color}
+          />
+        </svg>
+      );
+    case "cloud":
+      return (
+        <svg {...common}>
+          <path
+            d="M6.5 19a4.5 4.5 0 0 1-.7-8.95 5.5 5.5 0 0 1 10.74-1.2A4.25 4.25 0 0 1 17 19z"
+            fill={color}
+          />
+        </svg>
+      );
+    case "moon":
+      return (
+        <svg {...common}>
+          <path d="M14.5 2a10 10 0 1 0 7.5 16.2A8 8 0 0 1 14.5 2z" fill={color} />
+        </svg>
+      );
+    case "lightning":
+      return (
+        <svg {...common}>
+          <path d="M13.5 2L4 13.5h6L9 22l10.5-12.5H13z" fill={color} />
+        </svg>
+      );
+    case "droplet":
+      return (
+        <svg {...common}>
+          <path
+            d="M12 2.3c4.2 5.2 6.8 8.4 6.8 11.4a6.8 6.8 0 1 1-13.6 0c0-3 2.6-6.2 6.8-11.4z"
+            fill={color}
+          />
+        </svg>
+      );
+    case "burst":
+      return (
+        <svg {...common}>
+          <path
+            d="M12 1l2.2 4.9L19 4l-1.9 5L22 11l-4.9 2.1L19 18l-5-1.1L12 22l-2-5.1L5 18l1.9-4.9L2 11l4.9-2L5 4l4.8 1.9z"
+            fill={color}
+          />
+        </svg>
+      );
+    case "pin":
+      return (
+        <svg {...common}>
+          <path
+            d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 4.5A2.5 2.5 0 1 1 12 11.5 2.5 2.5 0 0 1 12 6.5z"
+            fill={color}
+          />
+        </svg>
+      );
     case "heart":
     default:
       return (
