@@ -2741,6 +2741,7 @@ export function PublicPoster({
                             />
                           </label>
                         ) : null}
+                        <span className="stf-spacer" />
                         <button
                           aria-pressed={selected.textFx === "neon"}
                           className="stf-btn"
