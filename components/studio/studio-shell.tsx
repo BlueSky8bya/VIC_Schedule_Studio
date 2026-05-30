@@ -297,8 +297,8 @@ export function StudioShell({
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
   const pendingSavesRef = useRef<Map<string, Promise<string | null>>>(new Map());
-  // 실수로 지운 일정을 Ctrl+Z로 되살리기 위한 스택(삭제된 일정 내용 보관).
-  const deletedStackRef = useRef<StudioScheduleEvent[]>([]);
+  // 통합 실행취소 스택(삭제·생성·붙여넣기 등 '되돌릴 수 있는 액션'을 LIFO로 보관).
+  const deletedStackRef = useRef<UndoAction[]>([]);
   // temp id면 저장 약속을 기다려 실제 id로, 실패면 null. 실제 id는 그대로. (null이 새어와도 방어.)
   async function resolveEventId(id: string | null | undefined): Promise<string | null> {
     if (!id) return null;
@@ -1791,9 +1791,9 @@ export function StudioShell({
       setForm(createEmptyForm());
     }
     setActionError(null);
-    // Ctrl+Z 복구용으로 삭제 내용을 보관.
+    // Ctrl+Z 복구용으로 삭제 액션을 스택에 올린다(되돌리면 같은 내용으로 다시 만든다).
     if (removed) {
-      deletedStackRef.current.push(removed);
+      deletedStackRef.current.push({ type: "recreate", event: removed });
     }
     startTransition(async () => {
       // 아직 저장 안 된(temp) 일정이면 실제 id로 바꿔 삭제(잘못된 uuid 방지).
@@ -1810,16 +1810,44 @@ export function StudioShell({
     });
   }
 
-  // Ctrl+Z: 가장 최근에 지운 일정을 내용 그대로 되살린다(새 id로 다시 만든다).
+  // Ctrl+Z: 스택 맨 위 '액션'을 종류에 맞게 되돌린다(LIFO). 삭제=다시 만들기, 생성/붙여넣기=지우기.
+  // 그래서 복사→삭제→붙여넣기→Ctrl+Z = '방금 붙여넣은 카드'만 사라지고, 한 번 더 누르면 그 전
+  // 삭제가 복구된다(올바른 순서). 예전엔 항상 마지막 삭제분을 되살리는 버그가 있었다.
   function restoreLastDelete() {
     if (!canEdit) {
       return;
     }
-    const ev = deletedStackRef.current.pop();
-    if (!ev) {
-      flashToast("되돌릴 삭제가 없어요");
+    const action = deletedStackRef.current.pop();
+    if (!action) {
+      flashToast("되돌릴 작업이 없어요");
       return;
     }
+
+    if (action.type === "remove") {
+      // 생성/붙여넣기 되돌리기 — 그때 만든 카드를 지운다(holder.id는 실제 id로 갱신돼 있음).
+      const id = action.holder.id;
+      setEvents((prev) =>
+        prev
+          .filter((e) => e.id !== id)
+          .map((e) => (e.linkNext === id ? { ...e, linkNext: undefined } : e))
+      );
+      if (selectedEventId === id) {
+        setSelectedEventId(null);
+        setForm(createEmptyForm());
+      }
+      setActionError(null);
+      flashToast("붙여넣기 취소됨 (Ctrl+Z)");
+      startTransition(async () => {
+        const realId = await resolveEventId(id);
+        if (!realId) return; // 서버에 아직 없음 → 로컬 제거로 충분
+        const result = await deleteEventAction(realId);
+        if (!result.ok) setActionError(result.error);
+      });
+      return;
+    }
+
+    // recreate: 삭제 되돌리기 — 보관한 내용으로 새 id를 받아 다시 만든다.
+    const ev = action.event;
     const dateKey = getEventDateKey(ev);
     const tempId = `temp-${Math.random().toString(36).slice(2)}`;
     setEvents((prev) => [...prev, { ...ev, id: tempId, linkNext: undefined }]);
@@ -1966,6 +1994,9 @@ export function StudioShell({
     };
     const snapshot = events;
     setEvents((prev) => [...prev, optimistic]);
+    // 붙여넣기를 실행취소 스택에 'remove'로 올린다 → Ctrl+Z면 방금 붙여넣은 이 카드가 사라진다.
+    const undoHolder = { id: tempId };
+    deletedStackRef.current.push({ type: "remove", holder: undoHolder });
     flashToast(`${selectedDate}에 붙여넣음`);
     setActionError(null);
     startTransition(async () => {
@@ -1992,6 +2023,7 @@ export function StudioShell({
         return;
       }
       if (result.id) {
+        undoHolder.id = result.id; // 임시 id → 실제 id: 되돌릴 때 올바른 카드를 지우게.
         setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: result.id } : e)));
       }
     });
