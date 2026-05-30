@@ -471,57 +471,69 @@ export function PublicPoster({
   previewNote,
   previewNav
 }: PublicPosterProps) {
-  // 스티커 저장/삭제가 서버에 들어가는 동안만 세는 카운터. 다 끝나기 전 새로고침/닫기 하면
-  // "분명 지웠는데 다시 생겨있네?" 같은 불일치가 나므로, 그 짧은 동안에만 경고한다(아래 beforeunload).
-  // 액션을 한 번 감싸 두면 호출부를 안 바꿔도 모든 저장/삭제가 자동으로 카운트된다.
+  // 스티커 저장/삭제가 서버에 들어가는 동안만 세는 카운터(아래 beforeunload 경고용).
+  // 실제 전송은 keepalive fetch(/api/sticker-write)로 보낸다 → 스티커를 옮기/추가/삭제하고 바로
+  // 달을 넘기거나 창을 닫/새로고침해도 브라우저가 전송을 끝까지 보장해 작업이 유실되지 않는다.
+  // raw 액션 prop은 "이 기능이 켜져 있는지"의 게이트로만 쓰고(서버 호출은 라우트가 대신), 응답은
+  // 기존 액션과 같은 모양({ok,sticker}/{ok,stickers}/{ok,error})이라 호출부를 바꿀 필요가 없다.
   const pendingSaveRef = useRef(0);
+  const stickerWrite = useCallback(
+    async <T,>(op: string, payload: unknown, fallback: T): Promise<T> => {
+      pendingSaveRef.current += 1;
+      try {
+        const res = await fetch("/api/sticker-write", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({ op, payload })
+        });
+        const data = await res.json().catch(() => null);
+        return (data ?? fallback) as T;
+      } catch {
+        return fallback;
+      } finally {
+        pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
+      }
+    },
+    []
+  );
   const saveStickerAction = useMemo(
     () =>
       saveStickerActionRaw
-        ? (input: SaveStickerInput) => {
-            pendingSaveRef.current += 1;
-            return saveStickerActionRaw(input).finally(() => {
-              pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
-            });
-          }
+        ? (input: SaveStickerInput) =>
+            stickerWrite<StickerActionResult>("save", input, { ok: false, error: "저장에 실패했어요." })
         : undefined,
-    [saveStickerActionRaw]
+    [saveStickerActionRaw, stickerWrite]
   );
   const deleteStickerAction = useMemo(
     () =>
       deleteStickerActionRaw
-        ? (id: string) => {
-            pendingSaveRef.current += 1;
-            return deleteStickerActionRaw(id).finally(() => {
-              pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
-            });
-          }
+        ? (id: string) =>
+            stickerWrite<StickerActionResult>("delete", { id }, { ok: false, error: "삭제에 실패했어요." })
         : undefined,
-    [deleteStickerActionRaw]
+    [deleteStickerActionRaw, stickerWrite]
   );
   const saveStickerBatchAction = useMemo(
     () =>
       saveStickerBatchActionRaw
-        ? (inputs: SaveStickerInput[]) => {
-            pendingSaveRef.current += 1;
-            return saveStickerBatchActionRaw(inputs).finally(() => {
-              pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
-            });
-          }
+        ? (inputs: SaveStickerInput[]) =>
+            stickerWrite<StickerBatchResult>("saveBatch", { inputs }, {
+              ok: false,
+              error: "저장에 실패했어요."
+            })
         : undefined,
-    [saveStickerBatchActionRaw]
+    [saveStickerBatchActionRaw, stickerWrite]
   );
   const deleteStickerBatchAction = useMemo(
     () =>
       deleteStickerBatchActionRaw
-        ? (ids: string[]) => {
-            pendingSaveRef.current += 1;
-            return deleteStickerBatchActionRaw(ids).finally(() => {
-              pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
-            });
-          }
+        ? (ids: string[]) =>
+            stickerWrite<StickerBatchResult>("deleteBatch", { ids }, {
+              ok: false,
+              error: "삭제에 실패했어요."
+            })
         : undefined,
-    [deleteStickerBatchActionRaw]
+    [deleteStickerBatchActionRaw, stickerWrite]
   );
   // 스티커 저장/삭제가 아직 서버에 안 들어갔는데 새로고침/닫기 하면 작업을 잃을 수 있어 경고한다.
   // 꾸미기 화면에서만, 그리고 실제로 진행 중일 때만 뜬다(평소엔 방해 없음).

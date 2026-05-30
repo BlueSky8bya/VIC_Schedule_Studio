@@ -70,12 +70,6 @@ import {
   canReadPrivateLayer,
   canUsePrivateLayer
 } from "@/lib/permissions/roles";
-import {
-  deleteEventAction,
-  saveEventAction,
-  updateEventTagsAction,
-  updateSupportSettingsAction
-} from "@/lib/schedules/event-actions";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { linkChainAction, unlinkPairAction } from "@/lib/schedules/link-actions";
 import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
@@ -152,6 +146,27 @@ function daysBetweenIso(start: string, end: string): number {
 }
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+// 중대한 쓰기(일정 저장/삭제/이동/태그/업도움/잇기)를 keepalive로 보내는 단일 창구.
+// keepalive: true 면 페이지를 떠나거나(달 이동·창 전환·닫기·새로고침) 전송이 끝까지 보장된다
+// → "바꾸고 바로 나가면 저장 안 됨"을 구조적으로 없앤다. 결과는 기존 서버 액션과 같은 모양
+// ({ok,id} / {ok,error})이라 호출부(임시 id 교체·롤백)를 그대로 쓸 수 있다.
+type StudioWriteResult = { ok: true; id?: string } | { ok: false; error: string };
+async function studioWrite(op: string, payload: unknown): Promise<StudioWriteResult> {
+  try {
+    const res = await fetch("/api/studio-write", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      keepalive: true,
+      body: JSON.stringify({ op, payload })
+    });
+    const data = (await res.json().catch(() => null)) as StudioWriteResult | null;
+    if (data && typeof (data as { ok?: unknown }).ok === "boolean") return data;
+    return { ok: false, error: "저장에 실패했어요." };
+  } catch {
+    return { ok: false, error: "저장에 실패했어요." };
+  }
+}
 
 // #3: 업 도움 기간 빠른 선택(종료일 = 시작일 + days)
 const SUPPORT_DURATIONS = [
@@ -449,7 +464,7 @@ export function StudioShell({
             setEvents(snapshot);
             return;
           }
-          const result = await unlinkPairAction(realId);
+          const result = await studioWrite("unlinkPair", { earlierId: realId });
           if (!result.ok) {
             setActionError(result.error);
             setEvents(snapshot);
@@ -475,7 +490,7 @@ export function StudioShell({
               setEvents(snapshot);
               return;
             }
-            const result = await linkChainAction(resolved as string[]);
+            const result = await studioWrite("linkChain", { orderedIds: resolved as string[] });
             if (!result.ok) {
               setActionError(result.error);
               setEvents(snapshot);
@@ -1407,30 +1422,16 @@ export function StudioShell({
     if (!realMovedId) return; // 저장 실패/취소 — 둘 곳 없음
     const realOrderedIds = await Promise.all(move.orderedIds.map((eid) => resolveEventId(eid)));
     if (realOrderedIds.some((x) => x == null)) return; // 같은 날 미저장 카드 — 다음 이동 때 정리됨
-    // keepalive: true → 옮기고 바로 달을 넘기거나 창을 닫아도 브라우저가 이 전송을 끝까지 보장한다.
+    // keepalive 전송(studioWrite) → 옮기고 바로 달을 넘기거나 창을 닫아도 전송이 끝까지 보장된다.
     // (일반 fetch/서버액션은 페이지를 떠나면 중간에 끊겨 "옮긴 곳에 저장 안 됨"이 났다.)
-    try {
-      const res = await fetch("/api/reorder-events", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        keepalive: true,
-        body: JSON.stringify({
-          dateKey: move.targetDate,
-          orderedIds: realOrderedIds as string[],
-          movedId: move.targetDate !== move.sourceDate ? realMovedId : undefined
-        })
-      });
-      const result = (await res.json().catch(() => null)) as
-        | { ok: true }
-        | { ok: false; error: string }
-        | null;
-      if (!result || result.ok !== true) {
-        setActionError(result && result.ok === false ? result.error : "이동을 저장하지 못했어요.");
-        router.refresh(); // 서버 진실로 재동기화(잘못된 중간 상태로 순간이동하지 않게)
-      }
-    } catch {
-      setActionError("이동을 저장하지 못했어요.");
-      router.refresh();
+    const result = await studioWrite("reorder", {
+      dateKey: move.targetDate,
+      orderedIds: realOrderedIds as string[],
+      movedId: move.targetDate !== move.sourceDate ? realMovedId : undefined
+    });
+    if (!result.ok) {
+      setActionError(result.error);
+      router.refresh(); // 서버 진실로 재동기화(잘못된 중간 상태로 순간이동하지 않게)
     }
   }
 
@@ -1538,7 +1539,11 @@ export function StudioShell({
     );
     setActionError(null);
     startTransition(async () => {
-      const res = await updateEventTagsAction(event.id, nextTagIds, nextPrimary);
+      const res = await studioWrite("tags", {
+        eventId: event.id,
+        tagIds: nextTagIds,
+        primaryTagIds: nextPrimary
+      });
       if (!res.ok) {
         setEvents(snapshot);
         setActionError(res.error);
@@ -1752,7 +1757,7 @@ export function StudioShell({
     }
 
     startTransition(async () => {
-      const result = await saveEventAction(payload);
+      const result = await studioWrite("save", payload);
       if (!result.ok) {
         setActionError(result.error);
         setEvents(snapshot); // 실패 → 되돌림
@@ -1838,7 +1843,7 @@ export function StudioShell({
       if (!realId) {
         return; // 서버에 아직 없음 → 로컬 제거로 충분
       }
-      const result = await deleteEventAction(realId);
+      const result = await studioWrite("delete", { eventId: realId });
       if (!result.ok) {
         setActionError(result.error);
         setEvents(snapshot); // 실패 → 되돌림
@@ -1877,7 +1882,7 @@ export function StudioShell({
       startTransition(async () => {
         const realId = await resolveEventId(id);
         if (!realId) return; // 서버에 아직 없음 → 로컬 제거로 충분
-        const result = await deleteEventAction(realId);
+        const result = await studioWrite("delete", { eventId: realId });
         if (!result.ok) setActionError(result.error);
       });
       return;
@@ -1900,7 +1905,7 @@ export function StudioShell({
       })
     );
     startTransition(async () => {
-      const result = await saveEventAction({
+      const result = await studioWrite("save", {
         id: undefined,
         dateKey,
         endDateKey: ev.endDateKey ?? "",
@@ -2037,7 +2042,7 @@ export function StudioShell({
     flashToast(`${selectedDate}에 붙여넣음`);
     setActionError(null);
     startTransition(async () => {
-      const result = await saveEventAction({
+      const result = await studioWrite("save", {
         id: undefined,
         dateKey: selectedDate,
         endDateKey: endDateKey ?? "",
@@ -2060,8 +2065,9 @@ export function StudioShell({
         return;
       }
       if (result.id) {
-        undoHolder.id = result.id; // 임시 id → 실제 id: 되돌릴 때 올바른 카드를 지우게.
-        setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: result.id } : e)));
+        const realId = result.id; // 클로저 안에서 string으로 좁혀 쓰도록 const로 고정.
+        undoHolder.id = realId; // 임시 id → 실제 id: 되돌릴 때 올바른 카드를 지우게.
+        setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)));
       }
     });
   }
@@ -2143,7 +2149,8 @@ export function StudioShell({
       )
     ); // 낙관적 반영
     startTransition(async () => {
-      const result = await updateSupportSettingsAction(id, {
+      const result = await studioWrite("support", {
+        eventId: id,
         endDateKey: form.endDateKey,
         supportUrl: form.supportUrl
       });
