@@ -2703,7 +2703,8 @@
 .sticker-toolbar-float {
   z-index: 70;
   width: max-content;
-  max-width: min(296px, 92vw);
+  /* 움직임 6버튼+라벨, 텍스트 정렬+배경+bg색+네온이 한 줄에 들어가도록 폭 확보. */
+  max-width: min(360px, 94vw);
   border: 1px solid rgb(15 23 42 / 10%);
   border-radius: 13px;
   background: #ffffff;
