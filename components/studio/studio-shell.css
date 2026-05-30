@@ -3198,6 +3198,44 @@
   justify-content: space-between;
   gap: 10px;
 }
+/* 왼쪽 묶음(접기 버튼 + 날짜/라벨) — 저장 버튼은 space-between으로 오른쪽 끝에. */
+.editor-heading-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+/* 편집/상세 카드 왼쪽 위 '>' 접기 버튼 — 누르면 카드가 오른쪽으로 슬라이드 아웃. */
+.editor-collapse {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #ece9f5;
+  border-radius: 9px;
+  background: #fff;
+  color: #6b5bd6;
+  cursor: pointer;
+  transition:
+    background 0.16s var(--ease, ease),
+    transform 0.16s var(--ease, ease),
+    border-color 0.16s var(--ease, ease);
+}
+.editor-collapse:hover {
+  background: #f3f0ff;
+  border-color: #d9d1f5;
+  transform: translateX(2px);
+}
+.editor-collapse:active {
+  transform: translateX(3px) scale(0.94);
+}
+@media (prefers-reduced-motion: reduce) {
+  .editor-collapse:hover,
+  .editor-collapse:active {
+    transform: none;
+  }
+}
 
 .event-editor-panel label {
   display: grid;

@@ -1541,11 +1541,23 @@ export function StudioShell({
     return (
       <div className="event-detail-readonly" key={`${selectedDate}:${selectedEventId ?? "new"}`}>
         <div className="editor-heading">
-          <div>
-            <p className="eyebrow">일정 보기</p>
-            <h2 className="editor-date" key={selectedDate}>
-              {selectedDate}
-            </h2>
+          <div className="editor-heading-left">
+            {/* 왼쪽 위 접기 버튼 — 상세 카드를 오른쪽으로 슬라이드 아웃(닫기). */}
+            <button
+              aria-label="상세 카드 닫기"
+              className="editor-collapse"
+              onClick={() => setEditorVisible(false)}
+              title="닫기"
+              type="button"
+            >
+              <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
+            </button>
+            <div>
+              <p className="eyebrow">일정 보기</p>
+              <h2 className="editor-date" key={selectedDate}>
+                {selectedDate}
+              </h2>
+            </div>
           </div>
         </div>
         {!selectedEvent ? (
