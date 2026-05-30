@@ -72,7 +72,6 @@ import {
 } from "@/lib/permissions/roles";
 import {
   deleteEventAction,
-  reorderEventsAction,
   saveEventAction,
   updateEventTagsAction,
   updateSupportSettingsAction
@@ -1408,14 +1407,30 @@ export function StudioShell({
     if (!realMovedId) return; // 저장 실패/취소 — 둘 곳 없음
     const realOrderedIds = await Promise.all(move.orderedIds.map((eid) => resolveEventId(eid)));
     if (realOrderedIds.some((x) => x == null)) return; // 같은 날 미저장 카드 — 다음 이동 때 정리됨
-    const result = await reorderEventsAction({
-      dateKey: move.targetDate,
-      orderedIds: realOrderedIds as string[],
-      movedId: move.targetDate !== move.sourceDate ? realMovedId : undefined
-    });
-    if (!result.ok) {
-      setActionError(result.error);
-      router.refresh(); // 서버 진실로 재동기화(잘못된 중간 상태로 순간이동하지 않게)
+    // keepalive: true → 옮기고 바로 달을 넘기거나 창을 닫아도 브라우저가 이 전송을 끝까지 보장한다.
+    // (일반 fetch/서버액션은 페이지를 떠나면 중간에 끊겨 "옮긴 곳에 저장 안 됨"이 났다.)
+    try {
+      const res = await fetch("/api/reorder-events", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({
+          dateKey: move.targetDate,
+          orderedIds: realOrderedIds as string[],
+          movedId: move.targetDate !== move.sourceDate ? realMovedId : undefined
+        })
+      });
+      const result = (await res.json().catch(() => null)) as
+        | { ok: true }
+        | { ok: false; error: string }
+        | null;
+      if (!result || result.ok !== true) {
+        setActionError(result && result.ok === false ? result.error : "이동을 저장하지 못했어요.");
+        router.refresh(); // 서버 진실로 재동기화(잘못된 중간 상태로 순간이동하지 않게)
+      }
+    } catch {
+      setActionError("이동을 저장하지 못했어요.");
+      router.refresh();
     }
   }
 
