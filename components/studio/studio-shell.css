@@ -3192,17 +3192,20 @@
   font-size: 15px;
 }
 
+/* 헤더는 위·아래 2단: (위) 칸막이 바 = 접기(>) · 저장, (아래) 라벨 + 날짜.
+   2줄 텍스트 옆에 버튼이 세로로 붕 뜨던 문제를 없애고, 버튼끼리·텍스트끼리 깔끔히 정렬한다. */
 .editor-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.editor-heading-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
-/* 왼쪽 묶음(접기 버튼 + 날짜/라벨) — 저장 버튼은 space-between으로 오른쪽 끝에. */
-.editor-heading-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.editor-heading-title {
   min-width: 0;
 }
 /* 편집/상세 카드 왼쪽 위 '>' 접기 버튼 — 누르면 카드가 오른쪽으로 슬라이드 아웃. */
