@@ -31,6 +31,7 @@ import {
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   type TouchEvent as ReactTouchEvent,
+  useCallback,
   useEffect,
   useId,
   useLayoutEffect,
@@ -52,10 +53,7 @@ import {
 } from "@/lib/domain/schedule-types";
 import { ShapeSvg } from "@/components/poster/sticker-shapes";
 import type { ThemeResult } from "@/lib/schedules/theme-actions";
-import type {
-  SaveStickerInput,
-  StickerResult
-} from "@/lib/schedules/sticker-actions";
+import type { SaveStickerInput, StickerResult } from "@/lib/schedules/sticker-actions";
 import type { StickerAssetResult } from "@/lib/schedules/sticker-asset-actions";
 import type { HeartResult } from "@/lib/schedules/heart-actions";
 import { getDayMark } from "@/lib/calendar/holidays";
@@ -82,6 +80,12 @@ import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticTick } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
+
+// 스티커 일괄 저장/삭제 액션의 응답 모양(별도 export가 없어 여기 한 곳에 정의해 재사용).
+type StickerBatchResult =
+  | { ok: true; ids: string[] }
+  | { ok: true }
+  | { ok: false; error: string };
 
 type PublicPosterProps = {
   schedule: PublicSchedule;
@@ -501,7 +505,7 @@ export function PublicPoster({
     () =>
       saveStickerActionRaw
         ? (input: SaveStickerInput) =>
-            stickerWrite<StickerActionResult>("save", input, { ok: false, error: "저장에 실패했어요." })
+            stickerWrite<StickerResult>("save", input, { ok: false, error: "저장에 실패했어요." })
         : undefined,
     [saveStickerActionRaw, stickerWrite]
   );
@@ -509,7 +513,7 @@ export function PublicPoster({
     () =>
       deleteStickerActionRaw
         ? (id: string) =>
-            stickerWrite<StickerActionResult>("delete", { id }, { ok: false, error: "삭제에 실패했어요." })
+            stickerWrite<StickerResult>("delete", { id }, { ok: false, error: "삭제에 실패했어요." })
         : undefined,
     [deleteStickerActionRaw, stickerWrite]
   );
