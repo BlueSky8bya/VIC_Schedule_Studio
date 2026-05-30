@@ -3366,12 +3366,24 @@ export function StudioShell({
           /* key로 날짜가 바뀔 때마다 카드 내용이 재마운트 → 카드 전체가 살짝 쑥 내려오는 애니메이션. */
           <form onSubmit={saveEvent} key={`${selectedDate}:${selectedEventId ?? "new"}`}>
             <div className="editor-heading">
-              <div>
-                <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
-                {/* key로 날짜가 바뀔 때마다 재마운트 → 날짜가 쓱 바뀌는 애니메이션으로 "옮겼다"를 인지. */}
-                <h2 className="editor-date" key={selectedDate}>
-                  {selectedDate}
-                </h2>
+              <div className="editor-heading-left">
+                {/* 왼쪽 위 접기 버튼 — 카드를 오른쪽으로 슬라이드 아웃(닫기). */}
+                <button
+                  aria-label="편집 카드 닫기"
+                  className="editor-collapse"
+                  onClick={() => setEditorVisible(false)}
+                  title="닫기"
+                  type="button"
+                >
+                  <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
+                </button>
+                <div>
+                  <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
+                  {/* key로 날짜가 바뀔 때마다 재마운트 → 날짜가 쓱 바뀌는 애니메이션으로 "옮겼다"를 인지. */}
+                  <h2 className="editor-date" key={selectedDate}>
+                    {selectedDate}
+                  </h2>
+                </div>
               </div>
               <button
                 className="button primary"
