@@ -133,6 +133,16 @@ type CopiedEvent = {
   primaryTagIds: string[];
 };
 
+// 통합 실행취소(Ctrl+Z): 일반 편집기처럼 '액션 단위' LIFO 스택. 각 항목이 자기 역연산을 안다.
+// - recreate: 삭제를 되돌림 → 보관한 내용으로 다시 만든다.
+// - remove: 생성/붙여넣기를 되돌림 → 그때 만든 카드를 지운다. holder.id는 서버가 임시 id를 실제
+//   id로 바꿔줄 때 함께 갱신돼, 되돌릴 때 항상 '그 카드'를 정확히 가리킨다.
+//   (예전엔 Ctrl+Z가 무조건 '마지막 삭제분'만 되살려, 복사→삭제→붙여넣기→Ctrl+Z 하면 붙여넣은
+//   카드가 사라지는 게 아니라 옛 삭제분이 되살아나는 버그가 있었다.)
+type UndoAction =
+  | { type: "recreate"; event: StudioScheduleEvent }
+  | { type: "remove"; holder: { id: string } };
+
 // 두 YYYY-MM-DD 사이의 일수 차이(later - earlier).
 function daysBetweenIso(start: string, end: string): number {
   const [ys, ms, ds] = start.split("-").map(Number);
