@@ -3192,12 +3192,12 @@
   font-size: 15px;
 }
 
-/* 헤더는 위·아래 2단: (위) 칸막이 바 = 접기(>) · 저장, (아래) 라벨 + 날짜.
-   2줄 텍스트 옆에 버튼이 세로로 붕 뜨던 문제를 없애고, 버튼끼리·텍스트끼리 깔끔히 정렬한다. */
+/* 헤더 2단: (위) 접기(>) 옆 라벨 + 오른쪽 끝 저장, (아래) 날짜(라벨 밑에 정렬).
+   접기 버튼이 라벨과 한 줄에 붙고, 날짜는 그 아래줄에서 라벨과 좌측을 맞춘다. */
 .editor-heading {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 .editor-heading-bar {
   display: flex;
@@ -3205,8 +3205,15 @@
   justify-content: space-between;
   gap: 10px;
 }
-.editor-heading-title {
+.editor-heading-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   min-width: 0;
+}
+/* 날짜를 접기 버튼(30px) + 간격(8px)만큼 들여, 위 줄의 라벨 시작선과 정확히 맞춘다. */
+.editor-heading-date {
+  margin: 0 0 2px 38px;
 }
 /* 편집/상세 카드 왼쪽 위 '>' 접기 버튼 — 누르면 카드가 오른쪽으로 슬라이드 아웃. */
 .editor-collapse {

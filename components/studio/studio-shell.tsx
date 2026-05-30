@@ -1541,24 +1541,24 @@ export function StudioShell({
     return (
       <div className="event-detail-readonly" key={`${selectedDate}:${selectedEventId ?? "new"}`}>
         <div className="editor-heading">
-          {/* 칸막이 바: 왼쪽 접기(>). 읽기전용이라 오른쪽 저장 버튼은 없다. */}
+          {/* 윗줄: 접기(>) 옆에 라벨. 읽기전용이라 저장 버튼은 없다. 날짜는 아래줄(라벨 밑 정렬). */}
           <div className="editor-heading-bar">
-            <button
-              aria-label="상세 카드 닫기"
-              className="editor-collapse"
-              onClick={() => setEditorVisible(false)}
-              title="닫기"
-              type="button"
-            >
-              <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
-            </button>
+            <div className="editor-heading-left">
+              <button
+                aria-label="상세 카드 닫기"
+                className="editor-collapse"
+                onClick={() => setEditorVisible(false)}
+                title="닫기"
+                type="button"
+              >
+                <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
+              </button>
+              <p className="eyebrow">일정 보기</p>
+            </div>
           </div>
-          <div className="editor-heading-title">
-            <p className="eyebrow">일정 보기</p>
-            <h2 className="editor-date" key={selectedDate}>
-              {selectedDate}
-            </h2>
-          </div>
+          <h2 className="editor-date editor-heading-date" key={selectedDate}>
+            {selectedDate}
+          </h2>
         </div>
         {!selectedEvent ? (
           <p className="detail-empty">이 날의 일정을 누르면 자세히 볼 수 있어요.</p>
@@ -3378,17 +3378,20 @@ export function StudioShell({
           /* key로 날짜가 바뀔 때마다 카드 내용이 재마운트 → 카드 전체가 살짝 쑥 내려오는 애니메이션. */
           <form onSubmit={saveEvent} key={`${selectedDate}:${selectedEventId ?? "new"}`}>
             <div className="editor-heading">
-              {/* 칸막이 바: 왼쪽 접기(>) · 오른쪽 저장 — 한 줄에 정렬. */}
+              {/* 윗줄: 접기(>) 옆에 라벨, 오른쪽 끝에 저장. 날짜는 그 아래줄(라벨 밑에 정렬). */}
               <div className="editor-heading-bar">
-                <button
-                  aria-label="편집 카드 닫기"
-                  className="editor-collapse"
-                  onClick={() => setEditorVisible(false)}
-                  title="닫기"
-                  type="button"
-                >
-                  <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
-                </button>
+                <div className="editor-heading-left">
+                  <button
+                    aria-label="편집 카드 닫기"
+                    className="editor-collapse"
+                    onClick={() => setEditorVisible(false)}
+                    title="닫기"
+                    type="button"
+                  >
+                    <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
+                  </button>
+                  <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
+                </div>
                 <button
                   className="button primary"
                   disabled={!canEdit || !form.publicTitle.trim()}
@@ -3398,14 +3401,10 @@ export function StudioShell({
                   저장
                 </button>
               </div>
-              {/* 제목·날짜는 그 아래에 — 바와 분리해 정렬이 어긋나지 않게. */}
-              <div className="editor-heading-title">
-                <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
-                {/* key로 날짜가 바뀔 때마다 재마운트 → 날짜가 쓱 바뀌는 애니메이션으로 "옮겼다"를 인지. */}
-                <h2 className="editor-date" key={selectedDate}>
-                  {selectedDate}
-                </h2>
-              </div>
+              {/* key로 날짜가 바뀔 때마다 재마운트 → 날짜가 쓱 바뀌는 애니메이션으로 "옮겼다"를 인지. */}
+              <h2 className="editor-date editor-heading-date" key={selectedDate}>
+                {selectedDate}
+              </h2>
             </div>
 
             {actionError ? <div className="auth-warning">{actionError}</div> : null}
