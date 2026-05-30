@@ -152,7 +152,15 @@ export const STICKER_SHAPES: ShapePreset[] = [
   { key: "lightning", label: "번개", defaultColor: "#ffd23f" },
   { key: "droplet", label: "물방울", defaultColor: "#8fd3f5" },
   { key: "burst", label: "폭발", defaultColor: "#ff8a5c" },
-  { key: "pin", label: "핀", defaultColor: "#ff7a90" }
+  { key: "pin", label: "핀", defaultColor: "#ff7a90" },
+  { key: "triangle", label: "삼각형", defaultColor: "#ffb3c1" },
+  { key: "square", label: "사각형", defaultColor: "#a0c4ff" },
+  { key: "hexagon", label: "육각형", defaultColor: "#bdb2ff" },
+  { key: "pentagon", label: "오각형", defaultColor: "#9bf6ff" },
+  { key: "crown", label: "왕관", defaultColor: "#ffd23f" },
+  { key: "leaf", label: "잎", defaultColor: "#52b788" },
+  { key: "flag", label: "깃발", defaultColor: "#ff7a90" },
+  { key: "cross", label: "십자", defaultColor: "#90be6d" }
 ];
 export const SHAPE_KEYS = new Set<string>(STICKER_SHAPES.map((s) => s.key));
 export function shapeDefaultColor(shapeKey: string | undefined): string {

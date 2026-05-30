@@ -136,6 +136,58 @@ export function ShapeSvg({
           />
         </svg>
       );
+    case "triangle":
+      return (
+        <svg {...common}>
+          <path d="M12 3l9.5 16.5h-19z" fill={color} />
+        </svg>
+      );
+    case "square":
+      return (
+        <svg {...common}>
+          <rect x="3.5" y="3.5" width="17" height="17" rx="3.2" fill={color} />
+        </svg>
+      );
+    case "hexagon":
+      return (
+        <svg {...common}>
+          <path d="M12 2.5l8.5 4.75v9.5L12 21.5l-8.5-4.75v-9.5z" fill={color} />
+        </svg>
+      );
+    case "pentagon":
+      return (
+        <svg {...common}>
+          <path d="M12 2.5l9.5 6.9-3.63 11.1H6.13L2.5 9.4z" fill={color} />
+        </svg>
+      );
+    case "crown":
+      return (
+        <svg {...common}>
+          <path d="M2.5 7l4.2 3.4L12 4l5.3 6.4L21.5 7l-1.7 12H4.2z" fill={color} />
+        </svg>
+      );
+    case "leaf":
+      return (
+        <svg {...common}>
+          <path
+            d="M4 20c-1-9 5-15 16-16 1 11-5 17-16 16zm3.2-2.2C13 17 17 13 18 7.6 12.6 8.6 8.6 12.6 7.2 17.8z"
+            fill={color}
+          />
+        </svg>
+      );
+    case "flag":
+      return (
+        <svg {...common}>
+          <path d="M5 2.5v19" stroke={color} strokeWidth="2.4" strokeLinecap="round" />
+          <path d="M6.2 3.4h13l-3 4.3 3 4.3h-13z" fill={color} />
+        </svg>
+      );
+    case "cross":
+      return (
+        <svg {...common}>
+          <path d="M9.4 2.5h5.2v6.9h6.9v5.2h-6.9v6.9H9.4v-6.9H2.5V9.4h6.9z" fill={color} />
+        </svg>
+      );
     case "heart":
     default:
       return (
