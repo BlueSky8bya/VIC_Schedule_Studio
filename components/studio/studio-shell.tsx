@@ -71,7 +71,6 @@ import {
   canUsePrivateLayer
 } from "@/lib/permissions/roles";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
-import { linkChainAction, unlinkPairAction } from "@/lib/schedules/link-actions";
 import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";

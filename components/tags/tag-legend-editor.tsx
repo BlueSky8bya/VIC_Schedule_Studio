@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, GripVertical, Palette, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, GripVertical, Lock, Palette, Save, Trash2 } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
   useEffect,
@@ -121,6 +121,10 @@ export function TagLegendEditor({
     .map((id) => allTags.find((t) => t.id === id))
     .filter((t): t is BroadcastTag => Boolean(t));
 
+  // 휴뱅(dayoff)은 시스템 기본 태그 — 순서 변경·이름 변경·색 변경·삭제를 모두 막는다.
+  // (식별은 표시 이름이 아니라 tag_key로 — 이름을 바꿔도 안 깨지게.)
+  const isLocked = (id: string) => allTags.find((t) => t.id === id)?.tagKey === "dayoff";
+
   // 순서 변경 — 포인터(마우스+터치) 통합. 손잡이를 누르면 행을 그대로 복제한 "유령(ghost)"이
   // 손가락/커서를 따라 들려 움직이고(웹·모바일 동일), 화면 가장자리에선 자동 스크롤된다.
   const dragId = useRef<string | null>(null);
@@ -153,6 +157,8 @@ export function TagLegendEditor({
 
   function moveBefore(list: string[], from: string, before: string) {
     if (from === before) return list;
+    // 휴뱅은 자기 자신을 옮기지도, 다른 태그를 그 앞으로 보내지도 못한다(항상 최상단 고정).
+    if (isLocked(from) || isLocked(before)) return list;
     const next = list.filter((id) => id !== from);
     const idx = next.indexOf(before);
     next.splice(idx, 0, from);
@@ -241,6 +247,7 @@ export function TagLegendEditor({
   }
   function onHandlePointerDown(e: ReactPointerEvent, id: string) {
     if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (isLocked(id)) return; // 휴뱅은 드래그 불가
     const row = (e.currentTarget as HTMLElement).closest(".tag-editor-row") as HTMLElement | null;
     if (!row) return;
     e.preventDefault();
@@ -506,28 +513,40 @@ export function TagLegendEditor({
       {orderedTags.map((tag) => {
         const d = draft[tag.id];
         if (!d) return null;
+        const locked = isLocked(tag.id);
         return (
           <div
             className={`tag-editor-row ${draggingId === tag.id ? "dragging" : ""} ${
               isNew(tag.id) ? "is-new" : ""
-            }`}
+            } ${locked ? "locked" : ""}`}
             data-tagid={tag.id}
             key={tag.id}
           >
             <button
-              aria-label="순서 변경"
+              aria-label={locked ? "휴뱅은 순서를 바꿀 수 없어요" : "순서 변경"}
               className="tag-drag-handle"
-              onPointerDown={(e) => onHandlePointerDown(e, tag.id)}
-              title="끌어서 순서 변경"
+              disabled={locked}
+              onPointerDown={locked ? undefined : (e) => onHandlePointerDown(e, tag.id)}
+              title={locked ? "휴뱅은 순서를 바꿀 수 없는 기본 태그예요" : "끌어서 순서 변경"}
               type="button"
             >
-              <GripVertical aria-hidden="true" size={16} />
+              {locked ? (
+                <Lock aria-hidden="true" size={15} />
+              ) : (
+                <GripVertical aria-hidden="true" size={16} />
+              )}
             </button>
             <input
               aria-label="태그 이름"
-              onChange={(e) =>
-                setDraft((cur) => ({ ...cur, [tag.id]: { ...d, name: e.target.value } }))
+              className={locked ? "locked" : undefined}
+              onChange={
+                locked
+                  ? undefined
+                  : (e) =>
+                      setDraft((cur) => ({ ...cur, [tag.id]: { ...d, name: e.target.value } }))
               }
+              readOnly={locked}
+              title={locked ? "휴뱅은 이름을 바꿀 수 없어요" : undefined}
               value={d.name}
             />
             <div className="tag-editor-swatches">
@@ -539,25 +558,31 @@ export function TagLegendEditor({
                     aria-label={c.name}
                     className={selected ? "selected" : ""}
                     data-color={c.key}
-                    disabled={blocked && !selected}
+                    disabled={locked || (blocked && !selected)}
                     key={c.key}
                     onClick={() => pick(tag.id, c.key)}
                     style={{ backgroundColor: c.bgColor, borderColor: c.borderColor }}
-                    title={blocked && !selected ? `${c.name} (다른 태그가 사용 중)` : c.name}
+                    title={
+                      locked
+                        ? "휴뱅은 색을 바꿀 수 없어요"
+                        : blocked && !selected
+                          ? `${c.name} (다른 태그가 사용 중)`
+                          : c.name
+                    }
                     type="button"
                   />
                 );
               })}
             </div>
             <button
-              aria-label={`${d.name} 삭제`}
+              aria-label={locked ? "휴뱅은 삭제할 수 없어요" : `${d.name} 삭제`}
               className="tag-editor-remove"
-              disabled={busy || deleteLock}
+              disabled={locked || busy || deleteLock}
               onClick={() => removeTag(tag.id)}
-              title="이 태그 삭제"
+              title={locked ? "휴뱅은 삭제할 수 없는 기본 태그예요" : "이 태그 삭제"}
               type="button"
             >
-              <Trash2 aria-hidden="true" size={15} />
+              {locked ? <Lock aria-hidden="true" size={15} /> : <Trash2 aria-hidden="true" size={15} />}
             </button>
           </div>
         );

@@ -3559,6 +3559,20 @@ textarea:disabled {
 .tag-drag-handle:active {
   cursor: grabbing;
 }
+/* 휴뱅(시스템 기본 태그) 잠금 행 — 손잡이·삭제 비활성, 이름 읽기전용. */
+.tag-drag-handle:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+.tag-drag-handle:disabled:hover {
+  background: transparent;
+  color: var(--muted, #9aa0ab);
+}
+.tag-editor-row.locked input.locked {
+  cursor: not-allowed;
+  color: var(--muted, #6b7280);
+  background: var(--surface-2, #f3f4f6);
+}
 .tag-editor-row:last-child {
   border-bottom: 0;
   padding-bottom: 0;

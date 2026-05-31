@@ -48,6 +48,16 @@ export async function updateTagAction(
     return { ok: false, error: "Supabase가 설정되지 않았습니다." };
   }
 
+  // 휴뱅(dayoff)은 시스템 기본 태그 — 이름·색 변경 금지.
+  const { data: existing } = await supabase
+    .from("broadcast_tags")
+    .select("tag_key")
+    .eq("id", tagId)
+    .maybeSingle();
+  if (existing?.tag_key === "dayoff") {
+    return { ok: false, error: "휴뱅은 수정할 수 없는 기본 태그입니다." };
+  }
+
   const { error } = await supabase
     .from("broadcast_tags")
     .update({ display_name: name, color_key: colorKey, updated_at: new Date().toISOString() })
@@ -183,17 +193,34 @@ export async function saveTagsAction(input: {
 
   // 기존 태그 수정 — 독립적이라 병렬로(왕복 1회 수준).
   if (updates.length > 0) {
+    // 휴뱅(dayoff)은 이름·색 변경 금지 — 수정 목록에 섞여 와도 잠근다(순서만 반영).
+    const lockedIds = new Set<string>();
+    const { data: lockedRows } = await supabase
+      .from("broadcast_tags")
+      .select("id")
+      .eq("calendar_id", calendar.id)
+      .eq("tag_key", "dayoff")
+      .in(
+        "id",
+        updates.map((u) => u.id)
+      );
+    for (const r of lockedRows ?? []) lockedIds.add(r.id);
+
     const now = new Date().toISOString();
     const results = await Promise.all(
       updates.map((u) =>
         supabase
           .from("broadcast_tags")
-          .update({
-            display_name: u.displayName.trim(),
-            color_key: u.colorKey,
-            ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }),
-            updated_at: now
-          })
+          .update(
+            lockedIds.has(u.id)
+              ? { ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }), updated_at: now }
+              : {
+                  display_name: u.displayName.trim(),
+                  color_key: u.colorKey,
+                  ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }),
+                  updated_at: now
+                }
+          )
           .eq("id", u.id)
       )
     );
@@ -224,11 +251,15 @@ export async function removeTagAction(tagId: string): Promise<TagUpdateResult> {
 
   const { data: tag } = await supabase
     .from("broadcast_tags")
-    .select("id, calendar_id, color_key")
+    .select("id, calendar_id, color_key, tag_key")
     .eq("id", tagId)
     .maybeSingle();
   if (!tag) {
     return { ok: false, error: "태그를 찾을 수 없습니다." };
+  }
+  // 휴뱅(dayoff)은 시스템 기본 태그 — 삭제 금지(클라 잠금 우회 대비 서버 차단).
+  if (tag.tag_key === "dayoff") {
+    return { ok: false, error: "휴뱅은 삭제할 수 없는 기본 태그입니다." };
   }
 
   const { error } = await supabase.from("broadcast_tags").delete().eq("id", tagId);
@@ -283,6 +314,18 @@ export async function updateTagsAction(
     return { ok: false, error: "Supabase가 설정되지 않았습니다." };
   }
 
+  // 휴뱅(dayoff)은 이름·색 변경 금지 — 수정 목록에 섞여 와도 잠근다(순서만 반영).
+  const lockedIds = new Set<string>();
+  const { data: lockedRows } = await supabase
+    .from("broadcast_tags")
+    .select("id")
+    .eq("tag_key", "dayoff")
+    .in(
+      "id",
+      updates.map((u) => u.id)
+    );
+  for (const r of lockedRows ?? []) lockedIds.add(r.id);
+
   // 태그를 하나씩 순차 update하면 왕복 지연이 누적돼 느리다(10개면 5초+).
   // 서로 독립적이라 한꺼번에 병렬로 보낸다 → 사실상 1회 왕복 시간으로 끝난다.
   const now = new Date().toISOString();
@@ -290,12 +333,16 @@ export async function updateTagsAction(
     updates.map((u) =>
       supabase
         .from("broadcast_tags")
-        .update({
-          display_name: u.displayName.trim(),
-          color_key: u.colorKey,
-          ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }),
-          updated_at: now
-        })
+        .update(
+          lockedIds.has(u.id)
+            ? { ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }), updated_at: now }
+            : {
+                display_name: u.displayName.trim(),
+                color_key: u.colorKey,
+                ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }),
+                updated_at: now
+              }
+        )
         .eq("id", u.id)
     )
   );
