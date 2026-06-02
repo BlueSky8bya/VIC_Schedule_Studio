@@ -2858,8 +2858,18 @@ export function StudioShell({
             {/* 태그 그룹 — 작은 칩을 가지런히. 선택분은 앞으로 끌어와 순번·강조. */}
             <section className="me-group me-tag-group" aria-label="태그 선택">
               <div className="me-grouphead">
-                <span>태그</span>
-                <span className="me-count">{form.tagIds.length}/2</span>
+                <span className="me-grouptitle">
+                  태그 <em className="me-hint">최대 2개</em>
+                </span>
+                {/* '1/2'는 페이지처럼 보여 혼동 → 슬롯 점 2개로 "몇 개 골랐는지"를 보여준다. */}
+                <span
+                  className="me-slots"
+                  aria-label={`태그 ${form.tagIds.length}개 선택 (최대 2개)`}
+                >
+                  {[0, 1].map((i) => (
+                    <i className={i < form.tagIds.length ? "on" : ""} key={i} />
+                  ))}
+                </span>
               </div>
               <div className="me-tags">
                 {legendTags.map((tag) => {

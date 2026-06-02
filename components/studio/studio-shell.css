@@ -5414,27 +5414,30 @@ textarea:disabled {
   gap: 14px;
   padding: 6px 0 4px;
 }
-/* 제목 — 무테 큰 입력. 시트의 초점(쓰기 맛). iOS 자동 확대 방지로 16px↑. */
+/* 제목/내용 — 다른 칸과 똑같이 흰 박스로(배경에 묻혀 '편집 가능'이 안 와닿던 문제 해결).
+   iOS 자동 확대 방지로 16px. */
 .me-title {
   width: 100%;
-  border: 0;
-  background: transparent;
-  padding: 4px 2px 12px;
-  border-bottom: 1.5px solid #e8e1d6;
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1.4;
+  border: 1px solid #e8e1d6;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(120 100 70 / 7%);
+  padding: 13px 15px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
   resize: none;
   color: var(--ink, #1c2433);
   font-family: inherit;
 }
 .me-title::placeholder {
   color: #c0b8ab;
-  font-weight: 700;
+  font-weight: 600;
 }
 .me-title:focus {
   outline: none;
-  border-bottom-color: #b9a8f5;
+  border-color: #b9a8f5;
+  box-shadow: 0 0 0 3px rgb(124 92 245 / 16%);
 }
 /* 설정/태그를 묶는 흰 카드 — 그룹 리스트. */
 .me-group {
@@ -5512,29 +5515,45 @@ textarea:disabled {
   font-weight: 800;
   color: #6f6a78;
 }
-.me-count {
-  border-radius: 999px;
-  background: #f3eef9;
-  padding: 2px 9px;
-  color: #6b5bd6;
-  font-size: 12px;
-  font-weight: 800;
+.me-hint {
+  margin-left: 4px;
+  color: #a79fb6;
+  font-size: 11.5px;
+  font-weight: 700;
+  font-style: normal;
 }
-/* 태그 칩 — 작고 가지런히(답답함 해소). 선택분은 진하게 + 안쪽 링. */
+/* 선택 슬롯 — 점 2개(최대 2개). 채워진 점 = 고른 개수. 'N/2'(페이지 혼동) 대체. */
+.me-slots {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.me-slots i {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #e4ddf0;
+  transition: background var(--dur-2) var(--ease), transform var(--dur-1) var(--ease);
+}
+.me-slots i.on {
+  background: #7c5cf5;
+  transform: scale(1.12);
+}
+/* 태그 칩 — 좌우 정렬(그리드로 양쪽 끝 맞춤). 칸 폭에 맞춰 균일하게 채워 가지런하다. */
 .me-tags {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
   gap: 8px;
 }
 .me-tags button {
-  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  min-height: 34px;
-  padding: 0 13px;
+  justify-content: center;
+  min-height: 36px;
+  padding: 0 8px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   opacity: 0.92;
