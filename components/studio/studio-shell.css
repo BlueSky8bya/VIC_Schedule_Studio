@@ -5426,7 +5426,9 @@ textarea:disabled {
   font-size: 16px;
   font-weight: 700;
   line-height: 1.5;
-  resize: none;
+  /* 내용이 길어지면 오른쪽 아래 손잡이를 끌어 세로로 키울 수 있다. */
+  resize: vertical;
+  min-height: 56px;
   color: var(--ink, #1c2433);
   font-family: inherit;
 }
