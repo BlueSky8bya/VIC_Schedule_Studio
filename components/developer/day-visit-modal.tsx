@@ -27,6 +27,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [dim, setDim] = useState<"role" | "device">("role");
   const [scope, setScope] = useState<VisitScope>("viewer"); // 시청자/운영진/전체 — 분해·동접 즉시 전환
+  const [logRole, setLogRole] = useState<string | null>(null); // 세션 로그 역할 필터(null=전체)
   const [occTip, setOccTip] = useState<OccTip | null>(null);
   const [ownTip, setOwnTip] = useState<{ x: number; top: number; text: string } | null>(null);
 
@@ -331,36 +332,73 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
         {data.sessions.length > 0 ? (
           <details className="vrecent" open>
             <summary>세션 {data.sessions.length}건</summary>
+            {/* 역할 필터 — 전 역할(ROLE_META) 상시 노출 + 건수, 0건은 흐리게. 월별과 동일. */}
+            <div className="vlog-filter" role="group" aria-label="역할 필터">
+              <button
+                className={`vlog-chip${logRole === null ? " on" : ""}`}
+                onClick={() => {
+                  hapticTick();
+                  setLogRole(null);
+                }}
+                type="button"
+              >
+                전체 <b>{data.sessions.length}</b>
+              </button>
+              {ROLE_META.map((m) => {
+                const c = data.sessions.filter((r) => r.role === m.key).length;
+                return (
+                  <button
+                    className={`vlog-chip${logRole === m.key ? " on" : ""}${c === 0 ? " zero" : ""}`}
+                    data-role={m.key}
+                    key={m.key}
+                    onClick={() => {
+                      hapticTick();
+                      setLogRole((cur) => (cur === m.key ? null : m.key));
+                    }}
+                    style={{ "--rc": m.color } as CSSProperties}
+                    type="button"
+                  >
+                    {m.label} <b>{c}</b>
+                  </button>
+                );
+              })}
+            </div>
             <ul className="vlog">
-              {data.sessions.map((r, i) => (
-                <li className={`vlog-row${r.meaningful ? "" : " glance"}`} key={i}>
-                  <span
-                    aria-hidden="true"
-                    className="vlog-dot"
-                    style={{ background: deviceColor(r.device) }}
-                  />
-                  <div className="vlog-main">
-                    <div className="vlog-line1">
-                      <span
-                        className="vrecent-role"
-                        data-role={r.role}
-                        style={{ "--rc": roleColor(r.role) } as CSSProperties}
-                      >
-                        {r.label}
-                        {r.dual ? <em className="vlog-dual">겸</em> : null}
-                      </span>
-                      <time className="vlog-t">{hhmm(r.t)}</time>
+              {(() => {
+                const shown = data.sessions.filter((r) => !logRole || r.role === logRole);
+                if (shown.length === 0) {
+                  return <li className="vlog-empty">이 역할의 세션이 아직 없어요.</li>;
+                }
+                return shown.map((r, i) => (
+                  <li className={`vlog-row${r.meaningful ? "" : " glance"}`} key={i}>
+                    <span
+                      aria-hidden="true"
+                      className="vlog-dot"
+                      style={{ background: deviceColor(r.device) }}
+                    />
+                    <div className="vlog-main">
+                      <div className="vlog-line1">
+                        <span
+                          className="vrecent-role"
+                          data-role={r.role}
+                          style={{ "--rc": roleColor(r.role) } as CSSProperties}
+                        >
+                          {r.label}
+                          {r.dual ? <em className="vlog-dual">겸</em> : null}
+                        </span>
+                        <time className="vlog-t">{hhmm(r.t)}</time>
+                      </div>
+                      <div className="vlog-line2">
+                        <span className="vlog-dev">{deviceLabel(r.device)}</span>
+                        <span className="vlog-dur">
+                          {fmtDur(r.seconds)}
+                          {r.meaningful ? "" : " · 스쳐감"}
+                        </span>
+                      </div>
                     </div>
-                    <div className="vlog-line2">
-                      <span className="vlog-dev">{deviceLabel(r.device)}</span>
-                      <span className="vlog-dur">
-                        {fmtDur(r.seconds)}
-                        {r.meaningful ? "" : " · 스쳐감"}
-                      </span>
-                    </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                ));
+              })()}
             </ul>
           </details>
         ) : (
