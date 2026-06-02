@@ -303,6 +303,7 @@ export function InsightsDashboard({
   const [ownerTip, setOwnerTip] = useState<{ x: number; top: number; text: string } | null>(null); // 관리자 세션 띠 툴팁
   const [dsessTip, setDsessTip] = useState<{ x: number; day: number; n: number } | null>(null); // 일별 세션 막대 호버
   const [logRole, setLogRole] = useState<string | null>(null); // 세션 로그 역할 필터(null=전체)
+  const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
 
@@ -966,11 +967,44 @@ export function InsightsDashboard({
                   );
                 })()
               : null}
+            {/* 머문/스쳐감 필터 — 스쳐감(<3초)과 실제 머문 세션 구분. */}
+            {visits.recent.length > 0
+              ? (() => {
+                  const stayN = visits.recent.filter((r) => r.meaningful).length;
+                  const glanceN = visits.recent.length - stayN;
+                  const opts: { key: "all" | "stay" | "glance"; label: string; n: number }[] = [
+                    { key: "all", label: "전체", n: visits.recent.length },
+                    { key: "stay", label: "머문", n: stayN },
+                    { key: "glance", label: "스쳐감", n: glanceN }
+                  ];
+                  return (
+                    <div className="vlog-filter stay" role="group" aria-label="머문/스쳐감 필터">
+                      {opts.map((o) => (
+                        <button
+                          className={`vlog-chip${logStay === o.key ? " on" : ""}${o.n === 0 ? " zero" : ""}`}
+                          key={o.key}
+                          onClick={() => {
+                            hapticTick();
+                            setLogStay(o.key);
+                          }}
+                          type="button"
+                        >
+                          {o.label} <b>{o.n}</b>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()
+              : null}
             <ul className="vlog">
               {(() => {
-                const shown = visits.recent.filter((r) => !logRole || r.role === logRole);
+                const shown = visits.recent.filter(
+                  (r) =>
+                    (!logRole || r.role === logRole) &&
+                    (logStay === "all" || (logStay === "stay" ? r.meaningful : !r.meaningful))
+                );
                 if (shown.length === 0) {
-                  return <li className="vlog-empty">이 역할의 세션이 아직 없어요.</li>;
+                  return <li className="vlog-empty">조건에 맞는 세션이 없어요.</li>;
                 }
                 return shown.map((r, i) => (
                 <li className={`vlog-row${r.meaningful ? "" : " glance"}`} key={i}>

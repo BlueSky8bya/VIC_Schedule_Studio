@@ -1633,9 +1633,8 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  max-height: 260px;
-  overflow: auto;
-  overscroll-behavior: contain;
+  /* 내부 스크롤을 두지 않는다 — 모바일에서 리스트만 스크롤되고 전체 패널 스크롤이 막히던
+     문제(중첩 스크롤 트랩) 해소. 목록은 패널(.insights-panel) 하나로 함께 스크롤된다. */
 }
 .vlog-row {
   display: flex;
@@ -1730,7 +1729,6 @@
 @media (min-width: 641px) {
   .vrecent ul.vlog {
     gap: 0;
-    max-height: 320px;
     padding: 5px;
     border: 1px solid var(--line, #e7e3f2);
     border-radius: 13px;
