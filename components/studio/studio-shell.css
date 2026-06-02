@@ -5287,73 +5287,191 @@ textarea:disabled {
 }
 .m-edit-sheet {
   width: 100%;
-  max-height: 86vh;
-  max-height: 86dvh;
+  max-height: 92vh;
+  max-height: 92dvh;
   overflow-y: auto;
   /* 시트 내부 스크롤이 끝까지 가도 페이지로 전파(당겨서 새로고침)되지 않게. */
   overscroll-behavior: contain;
-  border-radius: 18px 18px 0 0;
-  background: #fff;
-  padding: 16px 16px calc(20px + env(safe-area-inset-bottom, 0px));
-  box-shadow: 0 -10px 30px rgb(17 24 39 / 24%);
-  animation: m-sheet-up 220ms var(--ease, ease) both;
+  border-radius: 22px 22px 0 0;
+  background: linear-gradient(180deg, #fffdfb, #fff);
+  /* 좌우 대칭 패딩. 하단은 고정 액션바가 처리하므로 0(safe-area는 액션바에서). */
+  padding: 0 18px;
+  box-shadow: 0 -12px 34px rgb(17 24 39 / 22%);
+  animation: m-sheet-up 260ms var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
 @keyframes m-sheet-up {
   from {
-    transform: translateY(16px);
-    opacity: 0.6;
+    transform: translateY(28px);
+    opacity: 0.5;
   }
   to {
     transform: translateY(0);
     opacity: 1;
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .m-edit-sheet {
+    animation: none;
+  }
+}
+/* 손잡이: 넉넉한 탭 영역(위로 끌거나 눌러 닫기) 안에 시각적 바를 가운데 둔다. */
+.m-sheet-grab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  /* 시트가 스크롤돼도 손잡이·헤더는 위에 붙어 맥락을 잃지 않게. */
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border: 0;
+  background: linear-gradient(180deg, #fffdfb 70%, transparent);
+  padding: 11px 0 7px;
+  cursor: pointer;
+}
+.m-sheet-grab span {
+  width: 44px;
+  height: 5px;
+  border-radius: 999px;
+  background: #d7d2ca;
+}
 .m-edit-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 12px;
+  position: sticky;
+  top: 30px;
+  z-index: 2;
+  background: linear-gradient(180deg, #fffdfb 78%, transparent);
+  padding-bottom: 12px;
 }
 .m-edit-head strong {
-  font-size: 16px;
+  font-size: 19px;
+  font-weight: 900;
 }
-.m-edit-head span {
-  color: var(--muted, #8a93a3);
-  font-weight: 700;
-  font-size: 13px;
-}
-.m-edit-head button {
-  margin-left: auto;
-  border: 0;
-  background: transparent;
-  color: var(--muted, #8a93a3);
-  cursor: pointer;
-}
-.m-edit-sheet label {
-  display: grid;
-  gap: 5px;
-  margin-bottom: 12px;
+.m-edit-date {
+  border-radius: 999px;
+  background: #f3eef9;
+  padding: 3px 11px;
+  color: #6b5bd6;
   font-weight: 800;
   font-size: 13px;
 }
+.m-edit-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: #f4f2ef;
+  color: var(--muted, #8a93a3);
+  cursor: pointer;
+}
+/* 입력 묶음 — 라벨(작게) 위, 큰 입력칸 아래. 항목 간 넉넉한 간격. */
+.m-field {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 16px;
+}
+.m-field-label {
+  font-weight: 800;
+  font-size: 13px;
+  color: #6f6a78;
+}
+/* iOS 자동 확대 방지(16px) + 큰 탭 타깃. */
+.m-input,
 .m-edit-sheet textarea,
 .m-edit-sheet select {
-  border: 1px solid var(--line, #d8dee9);
-  border-radius: 9px;
-  padding: 9px 10px;
-  font-size: 14px;
+  border: 1.5px solid var(--line, #e2ddd5);
+  border-radius: 13px;
+  background: #fff;
+  padding: 13px 14px;
+  font-size: 16px;
   font-weight: 600;
+  min-height: 52px;
 }
+.m-input:focus,
+.m-edit-sheet textarea:focus,
+.m-edit-sheet select:focus {
+  outline: none;
+  border-color: #b9a8f5;
+  box-shadow: 0 0 0 3px rgb(124 92 245 / 16%);
+}
+/* 공개 범위 세그먼트 — 동일 폭 큰 칩 3개. */
+.m-seg {
+  display: flex;
+  gap: 8px;
+}
+.m-seg button {
+  flex: 1;
+  min-height: 48px;
+  border: 1.5px solid var(--line, #e2ddd5);
+  border-radius: 13px;
+  background: #fff;
+  color: #6f6a78;
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.m-seg button:active {
+  transform: scale(0.96);
+}
+.m-seg button.on {
+  border-color: #7c5cf5;
+  background: #f1ecfe;
+  color: #5b45c4;
+}
+/* 시트 안 태그 칩·공지 버튼도 손가락에 맞게 키운다. */
+.m-edit-sheet .tag-picker button {
+  min-height: 42px;
+  font-size: 14px;
+  padding: 0 14px;
+}
+.m-edit-sheet .notice-open {
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 12px;
+  font-size: 15px;
+}
+/* 엄지존 고정 액션바 — 스크롤해도 바닥에 붙어 항상 닿는다. */
 .m-edit-actions {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
   gap: 10px;
-  margin-top: 6px;
+  position: sticky;
+  bottom: 0;
+  /* 시트 좌우 패딩(18px)을 상쇄해 바가 폭을 꽉 채우고, 위 경계선으로 콘텐츠와 분리. */
+  margin: 4px -18px 0;
+  border-top: 1px solid #f0ece5;
+  background: #fff;
+  padding: 12px 18px calc(14px + env(safe-area-inset-bottom, 0px));
 }
 .m-edit-actions .button {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 44px;
+  justify-content: center;
+  gap: 7px;
+}
+/* 저장: 지배적 한 손 타깃(넓고 큼). */
+.m-edit-actions .m-save {
+  flex: 1;
+  min-height: 54px;
+  border-radius: 15px;
+  font-size: 17px;
+  font-weight: 900;
+}
+/* 삭제: 보조(아이콘만, 오탭 방지로 좁게). */
+.m-edit-actions .m-del {
+  flex: 0 0 auto;
+  width: 54px;
+  min-height: 54px;
+  border-radius: 15px;
+  padding: 0;
 }

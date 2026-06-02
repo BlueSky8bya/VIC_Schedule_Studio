@@ -2777,11 +2777,20 @@ export function StudioShell({
         role="presentation"
       >
         <div className="m-edit-sheet" aria-modal="true" role="dialog">
+          {/* 바텀시트 손잡이 — 아래로 쓸어 닫는 시트임을 알리는 모바일 표준 어포던스. */}
+          <button
+            className="m-sheet-grab"
+            aria-label="닫기"
+            onClick={closeMobileEdit}
+            type="button"
+          >
+            <span aria-hidden="true" />
+          </button>
           <div className="m-edit-head">
             <strong>{selectedEventId ? "일정 수정" : "새 일정"}</strong>
-            <span>{selectedDate}</span>
-            <button aria-label="닫기" onClick={closeMobileEdit} type="button">
-              <X aria-hidden="true" size={18} />
+            <span className="m-edit-date">{selectedDate}</span>
+            <button aria-label="닫기" className="m-edit-x" onClick={closeMobileEdit} type="button">
+              <X aria-hidden="true" size={20} />
             </button>
           </div>
 
@@ -2793,9 +2802,10 @@ export function StudioShell({
               setMobileEditId(null);
             }}
           >
-            <label>
-              제목
+            <div className="m-field">
+              <span className="m-field-label">제목</span>
               <textarea
+                className="m-input"
                 onChange={(e) =>
                   setForm((cur) => ({ ...cur, publicTitle: e.target.value }))
                 }
@@ -2803,24 +2813,39 @@ export function StudioShell({
                 rows={2}
                 value={form.publicTitle}
               />
-            </label>
+            </div>
 
-            <label>
-              공개 범위
-              <select
-                onChange={(e) =>
-                  setForm((cur) => ({
-                    ...cur,
-                    visibilityScope: e.target.value as EventVisibilityScope
-                  }))
-                }
-                value={form.visibilityScope}
-              >
-                <option value="public">모두</option>
-                {isEffectivelyOwner ? <option value="owner_private">엠바고</option> : null}
-                <option value="work">작업자</option>
-              </select>
-            </label>
+            {/* 작은 드롭다운 대신 큰 칩 세그먼트 — 한 손으로 한 번에 고르고, 탭 타깃이 넓다. */}
+            <div className="m-field">
+              <span className="m-field-label">공개 범위</span>
+              <div className="m-seg" role="group" aria-label="공개 범위">
+                <button
+                  className={form.visibilityScope === "public" ? "on" : ""}
+                  onClick={() => setForm((cur) => ({ ...cur, visibilityScope: "public" }))}
+                  type="button"
+                >
+                  모두
+                </button>
+                {isEffectivelyOwner ? (
+                  <button
+                    className={form.visibilityScope === "owner_private" ? "on" : ""}
+                    onClick={() =>
+                      setForm((cur) => ({ ...cur, visibilityScope: "owner_private" }))
+                    }
+                    type="button"
+                  >
+                    엠바고
+                  </button>
+                ) : null}
+                <button
+                  className={form.visibilityScope === "work" ? "on" : ""}
+                  onClick={() => setForm((cur) => ({ ...cur, visibilityScope: "work" }))}
+                  type="button"
+                >
+                  작업자
+                </button>
+              </div>
+            </div>
 
             {renderSupportEditor()}
 
@@ -2886,25 +2911,29 @@ export function StudioShell({
               </button>
             ) : null}
 
+            {/* 엄지존 고정 바: 스크롤해도 항상 바닥에 붙는다. 저장이 지배적(넓은 한 손 타깃),
+                삭제는 보조. 저장은 낙관적(즉시 반영)이라 백그라운드 저장 중에도 막지 않는다 —
+                빈 제목일 때만 비활성(빈 일정 생성 방지). */}
             <div className="m-edit-actions">
               {selectedEventId ? (
                 <button
-                  className="button danger"
+                  aria-label="이 일정 삭제"
+                  className="button danger m-del"
                   onClick={() => {
                     deleteEvent(selectedEventId);
                     closeMobileEdit();
                   }}
                   type="button"
                 >
-                  <Trash2 aria-hidden="true" size={15} /> 삭제
+                  <Trash2 aria-hidden="true" size={18} />
                 </button>
-              ) : (
-                <span />
-              )}
-              {/* 저장은 낙관적(카드가 즉시 뜨고 통통 착지) — 백그라운드 저장 중이라고 폼을 막지
-                  않는다. 빈 제목일 때만 비활성(빈 일정 생성 방지). */}
-              <button className="button primary" disabled={!form.publicTitle.trim()} type="submit">
-                <Save aria-hidden="true" size={15} />
+              ) : null}
+              <button
+                className="button primary m-save"
+                disabled={!form.publicTitle.trim()}
+                type="submit"
+              >
+                <Save aria-hidden="true" size={18} />
                 저장
               </button>
             </div>
