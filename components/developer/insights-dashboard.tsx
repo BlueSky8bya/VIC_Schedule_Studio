@@ -110,6 +110,11 @@ export const hhmm = (ms: number) => {
   const d = kstOf(ms);
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 };
+// 월별 세션 로그용 — 한 달 범위라 시각만으론 부족하니 "M/D HH:MM"(KST). 일일 모달은 hhmm만.
+export const mdhm = (ms: number) => {
+  const d = kstOf(ms);
+  return `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${hhmm(ms)}`;
+};
 // 체류 시간 표기 — 60초 미만은 '초', 그 이상은 '분'(초 단위 세션 모델이라 짧은 방문도 정확히). (일별 모달과 공유)
 export const fmtDur = (seconds: number) => {
   const s = Math.max(0, Math.round(seconds));
@@ -912,7 +917,7 @@ export function InsightsDashboard({
                         {r.label}
                         {r.dual ? <em className="vlog-dual">겸</em> : null}
                       </span>
-                      <time className="vlog-t">{hhmm(r.t)}</time>
+                      <time className="vlog-t">{mdhm(r.t)}</time>
                     </div>
                     <div className="vlog-line2">
                       <span className="vlog-dev">{deviceLabel(r.device)}</span>
