@@ -186,6 +186,14 @@ function addDaysIso(iso: string, days: number): string {
   ].join("-");
 }
 
+// 업 도움 종료일 표시 — "M월 D일 · N일간"(시작~종료 포함 일수). 스텝퍼 표시 공용.
+function formatSupportEnd(start: string, end: string): string {
+  const [sy, sm, sd] = start.split("-").map(Number);
+  const [ey, em, ed] = end.split("-").map(Number);
+  const span = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(sy, sm - 1, sd)) / 86400000) + 1;
+  return `${em}월 ${ed}일 · ${span}일간`;
+}
+
 
 const ROLE_LABEL: Record<MembershipRole, string> = {
   owner: "관리자",
@@ -2619,17 +2627,42 @@ export function StudioShell({
               );
             })}
           </div>
+          {/* 종료일 — 못생긴 네이티브 달력 대신 −/+ 스텝퍼로 하루씩(웹·모바일 공용, 깔끔). */}
           <div className="duration-manual">
-            <span>종료일 직접 선택</span>
-            <input
-              disabled={!editable}
-              min={selectedDate}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, endDateKey: event.target.value }))
-              }
-              type="date"
-              value={form.endDateKey || selectedDate}
-            />
+            <span>종료일 직접 조절</span>
+            <div className="duration-stepper" role="group" aria-label="종료일 조절">
+              <button
+                aria-label="하루 줄이기"
+                className="dstep"
+                disabled={!editable || (form.endDateKey || selectedDate) <= selectedDate}
+                onClick={() => {
+                  const end = form.endDateKey || selectedDate;
+                  const prev = addDaysIso(end, -1);
+                  setForm((current) => ({
+                    ...current,
+                    endDateKey: prev < selectedDate ? selectedDate : prev
+                  }));
+                }}
+                type="button"
+              >
+                −
+              </button>
+              <span className="dstep-val">
+                {formatSupportEnd(selectedDate, form.endDateKey || selectedDate)}
+              </span>
+              <button
+                aria-label="하루 늘리기"
+                className="dstep"
+                disabled={!editable}
+                onClick={() => {
+                  const end = form.endDateKey || selectedDate;
+                  setForm((current) => ({ ...current, endDateKey: addDaysIso(end, 1) }));
+                }}
+                type="button"
+              >
+                +
+              </button>
+            </div>
           </div>
         </div>
         <label className="support-link-field">

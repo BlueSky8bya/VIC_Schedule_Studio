@@ -4224,6 +4224,48 @@ textarea:disabled {
 .duration-summary strong {
   color: #9f1239;
 }
+/* 종료일 스텝퍼 — 못생긴 네이티브 날짜 달력 대신 −/+ 로 하루씩 조절(웹·모바일 공용). */
+.duration-stepper {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+}
+.duration-stepper .dstep {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  border: 1px solid #f4c4cc;
+  border-radius: 12px;
+  background: #fff;
+  color: #9f1239;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.duration-stepper .dstep:hover:not(:disabled) {
+  background: #ffe4e8;
+}
+.duration-stepper .dstep:active:not(:disabled) {
+  transform: scale(0.9);
+}
+.duration-stepper .dstep:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.duration-stepper .dstep-val {
+  flex: 1;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 800;
+  color: #9f1239;
+}
 
 /* ── #2: 팝업(모달) 디자인 리프레시 ── */
 .modal-backdrop {
@@ -5322,6 +5364,11 @@ textarea:disabled {
   max-height: 92vh;
   max-height: 92dvh;
   overflow-y: auto;
+  /* 가로 넘침 클립 — sticky 헤더의 음수 마진(-16px) bg가 둥근 모서리 밖으로 새어 나가
+     상단 모서리에 검은 조각이 보이던 문제 제거(특히 다른 화면 다녀와 리마운트될 때). */
+  overflow-x: hidden;
+  /* 둥근 모서리 클리핑이 sticky 자식까지 깔끔히 적용되도록 합성 레이어를 분리. */
+  isolation: isolate;
   /* 시트 내부 스크롤이 끝까지 가도 페이지로 전파(당겨서 새로고침)되지 않게. */
   overscroll-behavior: contain;
   border-radius: 22px 22px 0 0;
@@ -5355,8 +5402,8 @@ textarea:disabled {
   z-index: 3;
   margin: 0 -16px;
   padding: 0 16px;
-  /* 시트 윗모서리(22px) 곡선과 맞춰 — 위로 스크롤돼도 모서리 밖으로 안 삐져나가게. */
-  border-radius: 22px 22px 0 0;
+  /* 라운드는 부모(.m-edit-sheet)의 overflow 클립이 책임진다 — 여기 자체 radius를 주면
+     부모 곡선과 어긋나 모서리에 조각이 남는다. */
   background: #f5f1ea;
 }
 .m-sheet-grab {
@@ -5621,35 +5668,26 @@ textarea:disabled {
   font-weight: 800;
   color: #b4543a;
 }
-/* 기간 칩 — 좌우 정렬 그리드(칸 폭 채움) + 큰 타깃. */
+/* 기간 칩 — 5개를 한 줄에 동일 폭으로(통일성, 줄바꿈 없음). */
 .me-group .duration-chips {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
 }
 .me-group .duration-chips button {
-  min-height: 42px;
+  min-height: 38px;
   padding: 0;
   border-color: #f6cdbb;
-  font-size: 14px;
+  font-size: 13px;
 }
-/* 종료일 직접 선택 — 라벨 위, 풀폭 날짜 필드 아래(쌓기). */
+/* 종료일 — 라벨 위, 스텝퍼 아래(쌓기). */
 .me-group .duration-manual {
   flex-direction: column;
   align-items: stretch;
-  gap: 7px;
+  gap: 8px;
   font-size: 12.5px;
   font-weight: 800;
   color: #b4543a;
-}
-.me-group .duration-manual input {
-  width: 100%;
-  min-height: 48px;
-  border-radius: 12px;
-  padding: 0 13px;
-  font-size: 16px; /* iOS 자동 확대 방지 */
-  font-weight: 700;
-  color: #2b2f38;
 }
 /* 링크 입력도 16px(확대 방지) + 손가락 크기. */
 .me-group .support-link-input {
