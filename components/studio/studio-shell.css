@@ -5320,9 +5320,10 @@ textarea:disabled {
   /* 시트 내부 스크롤이 끝까지 가도 페이지로 전파(당겨서 새로고침)되지 않게. */
   overscroll-behavior: contain;
   border-radius: 22px 22px 0 0;
-  background: linear-gradient(180deg, #fffdfb, #fff);
+  /* iOS 그룹 리스트 톤 — 옅은 배경 위에 흰 카드(.me-group)가 떠 보이게. */
+  background: #f5f1ea;
   /* 좌우 대칭 패딩. 하단은 고정 액션바가 처리하므로 0(safe-area는 액션바에서). */
-  padding: 0 18px;
+  padding: 0 16px;
   box-shadow: 0 -12px 34px rgb(17 24 39 / 22%);
   animation: m-sheet-up 260ms var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
@@ -5347,11 +5348,11 @@ textarea:disabled {
   position: sticky;
   top: 0;
   z-index: 3;
-  margin: 0 -18px;
-  padding: 0 18px;
+  margin: 0 -16px;
+  padding: 0 16px;
   /* 시트 윗모서리(22px) 곡선과 맞춰 — 위로 스크롤돼도 모서리 밖으로 안 삐져나가게. */
   border-radius: 22px 22px 0 0;
-  background: #fffdfb;
+  background: #f5f1ea;
 }
 .m-sheet-grab {
   display: flex;
@@ -5401,85 +5402,183 @@ textarea:disabled {
   color: var(--muted, #8a93a3);
   cursor: pointer;
 }
-/* 입력 묶음 — 라벨(작게) 위, 큰 입력칸 아래. 항목 간 넉넉한 간격. */
-.m-field {
-  display: grid;
-  gap: 7px;
-  margin-bottom: 16px;
+/* ── 모바일 전용 편집 레이아웃(웹 우측 패널과 완전히 다른, 그룹 리스트형) ── */
+.me-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 6px 0 4px;
 }
-.m-field-label {
+/* 제목 — 무테 큰 입력. 시트의 초점(쓰기 맛). iOS 자동 확대 방지로 16px↑. */
+.me-title {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 4px 2px 12px;
+  border-bottom: 1.5px solid #e8e1d6;
+  font-size: 20px;
   font-weight: 800;
-  font-size: 13px;
+  line-height: 1.4;
+  resize: none;
+  color: var(--ink, #1c2433);
+  font-family: inherit;
+}
+.me-title::placeholder {
+  color: #c0b8ab;
+  font-weight: 700;
+}
+.me-title:focus {
+  outline: none;
+  border-bottom-color: #b9a8f5;
+}
+/* 설정/태그를 묶는 흰 카드 — 그룹 리스트. */
+.me-group {
+  border-radius: 16px;
+  background: #fff;
+  padding: 2px 14px;
+  box-shadow: 0 1px 3px rgb(120 100 70 / 7%);
+}
+.me-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 52px;
+  padding: 9px 0;
+}
+.me-row-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 9px;
+}
+.me-row-label {
+  font-size: 13.5px;
+  font-weight: 800;
   color: #6f6a78;
 }
-/* iOS 자동 확대 방지(16px) + 큰 탭 타깃. */
-.m-input,
-.m-edit-sheet textarea,
-.m-edit-sheet select {
-  border: 1.5px solid var(--line, #e2ddd5);
+/* 항목 사이 얇은 구분선(카드 폭 꽉 차게). */
+.me-sep {
+  height: 1px;
+  margin: 0 -14px;
+  background: #f3eee6;
+}
+/* 공개 범위 — 트랙 위에서 미끄러지는 슬릭 세그먼트(작고 가벼움). */
+.me-seg {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
   border-radius: 12px;
+  background: #f1edf9;
+}
+.me-seg button {
+  flex: 1;
+  min-height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #716a82;
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  transition:
+    background var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.me-seg button:active {
+  transform: scale(0.95);
+}
+.me-seg button.on {
   background: #fff;
-  padding: 11px 13px;
-  font-size: 16px;
-  font-weight: 600;
-  min-height: 46px;
+  color: #5b45c4;
+  box-shadow: 0 1px 5px rgb(124 92 245 / 24%);
 }
-.m-input:focus,
-.m-edit-sheet textarea:focus,
-.m-edit-sheet select:focus {
-  outline: none;
-  border-color: #b9a8f5;
-  box-shadow: 0 0 0 3px rgb(124 92 245 / 16%);
+/* 태그 그룹 */
+.me-tag-group {
+  padding-bottom: 14px;
 }
-/* 공개 범위 세그먼트 — 동일 폭 큰 칩 3개. */
-.m-seg {
+.me-grouphead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0 10px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #6f6a78;
+}
+.me-count {
+  border-radius: 999px;
+  background: #f3eef9;
+  padding: 2px 9px;
+  color: #6b5bd6;
+  font-size: 12px;
+  font-weight: 800;
+}
+/* 태그 칩 — 작고 가지런히(답답함 해소). 선택분은 진하게 + 안쪽 링. */
+.me-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.me-tags button {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  opacity: 0.92;
+  transition:
+    transform var(--dur-1) var(--ease),
+    opacity var(--dur-1) var(--ease),
+    box-shadow var(--dur-1) var(--ease);
+}
+.me-tags button:active {
+  transform: scale(0.94);
+}
+.me-tags button.selected {
+  opacity: 1;
+  box-shadow: inset 0 0 0 2px #2b2540;
+  font-weight: 800;
+}
+.me-tags button:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+/* 보조 도구(공지·방문 그래프) — 점선 카드로 '부가 기능'임을 드러낸다. */
+.me-tools {
   display: flex;
   gap: 8px;
 }
-.m-seg button {
+.me-tool {
   flex: 1;
-  min-height: 44px;
-  border: 1.5px solid var(--line, #e2ddd5);
-  border-radius: 12px;
-  background: #fff;
-  color: #6f6a78;
+  min-height: 46px;
+  border: 1px dashed #e3d7bf;
+  border-radius: 13px;
+  background: #fffdf3;
+  color: #8a6d2f;
   font-weight: 800;
-  font-size: 14.5px;
+  font-size: 14px;
   cursor: pointer;
   transition:
     background var(--dur-1) var(--ease),
-    border-color var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
 }
-.m-seg button:active {
-  transform: scale(0.96);
+.me-tool:active {
+  transform: scale(0.97);
 }
-.m-seg button.on {
-  border-color: #7c5cf5;
-  background: #f1ecfe;
-  color: #5b45c4;
+/* 업 도움 설정 행을 그룹 카드 리듬에 맞춘다(공개 범위 행과 같은 높이감). */
+.me-group .support-toggle {
+  min-height: 52px;
+  padding: 9px 0;
 }
-/* 시트 안 태그 칩·공지 버튼도 손가락에 맞게 키운다. */
-/* 태그는 균일 그리드(웹) 대신 내용 크기 칩을 자연스럽게 흘려 답답함을 없앤다(모바일). */
-.m-edit-sheet .tag-picker {
-  gap: 10px;
-}
-.m-edit-sheet .tag-picker > div {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 9px;
-}
-.m-edit-sheet .tag-picker button {
-  flex: 0 0 auto;
-  min-height: 38px;
-  font-size: 14px;
-  padding: 0 15px;
-}
-.m-edit-sheet .notice-open {
-  width: 100%;
-  min-height: 46px;
-  margin-bottom: 12px;
-  font-size: 14.5px;
+.me-group .support-fields {
+  padding: 2px 0 12px;
 }
 /* 엄지존 고정 액션바 — 스크롤해도 바닥에 붙어 항상 닿는다. */
 .m-edit-actions {
@@ -5488,11 +5587,11 @@ textarea:disabled {
   gap: 10px;
   position: sticky;
   bottom: 0;
-  /* 시트 좌우 패딩(18px)을 상쇄해 바가 폭을 꽉 채우고, 위 경계선으로 콘텐츠와 분리. */
-  margin: 4px -18px 0;
-  border-top: 1px solid #f0ece5;
-  background: #fff;
-  padding: 12px 18px calc(14px + env(safe-area-inset-bottom, 0px));
+  /* 시트 좌우 패딩(16px)을 상쇄해 바가 폭을 꽉 채우고, 위 경계선으로 콘텐츠와 분리. */
+  margin: 6px -16px 0;
+  border-top: 1px solid #e8e1d6;
+  background: #f5f1ea;
+  padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
 }
 .m-edit-actions .button {
   display: inline-flex;

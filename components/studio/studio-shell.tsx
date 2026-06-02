@@ -2804,63 +2804,64 @@ export function StudioShell({
           {actionError ? <div className="auth-warning">{actionError}</div> : null}
 
           <form
+            className="me-form"
             onSubmit={(e) => {
               saveEvent(e);
               setMobileEditId(null);
             }}
           >
-            <div className="m-field">
-              <span className="m-field-label">제목</span>
-              <textarea
-                className="m-input"
-                onChange={(e) =>
-                  setForm((cur) => ({ ...cur, publicTitle: e.target.value }))
-                }
-                placeholder="예: 풀트뱅 / 첫 줄은 제목, 다음 줄부터 세부"
-                rows={2}
-                value={form.publicTitle}
-              />
-            </div>
+            {/* 제목 — 무테 큰 입력. 화면의 초점. 첫 줄 제목, 다음 줄부터 세부. */}
+            <textarea
+              className="me-title"
+              onChange={(e) => setForm((cur) => ({ ...cur, publicTitle: e.target.value }))}
+              placeholder="제목 입력 (다음 줄부터 세부 내용)"
+              rows={2}
+              value={form.publicTitle}
+            />
 
-            {/* 작은 드롭다운 대신 큰 칩 세그먼트 — 한 손으로 한 번에 고르고, 탭 타깃이 넓다. */}
-            <div className="m-field">
-              <span className="m-field-label">공개 범위</span>
-              <div className="m-seg" role="group" aria-label="공개 범위">
-                <button
-                  className={form.visibilityScope === "public" ? "on" : ""}
-                  onClick={() => setForm((cur) => ({ ...cur, visibilityScope: "public" }))}
-                  type="button"
-                >
-                  모두
-                </button>
-                {isEffectivelyOwner ? (
+            {/* 설정 그룹 카드 — 공개 범위 + 업 도움을 한 카드에 묶어 목록처럼. */}
+            <div className="me-group">
+              <div className="me-row me-row-stack">
+                <span className="me-row-label">공개 범위</span>
+                <div className="me-seg" role="group" aria-label="공개 범위">
                   <button
-                    className={form.visibilityScope === "owner_private" ? "on" : ""}
-                    onClick={() =>
-                      setForm((cur) => ({ ...cur, visibilityScope: "owner_private" }))
-                    }
+                    className={form.visibilityScope === "public" ? "on" : ""}
+                    onClick={() => setForm((cur) => ({ ...cur, visibilityScope: "public" }))}
                     type="button"
                   >
-                    엠바고
+                    모두
                   </button>
-                ) : null}
-                <button
-                  className={form.visibilityScope === "work" ? "on" : ""}
-                  onClick={() => setForm((cur) => ({ ...cur, visibilityScope: "work" }))}
-                  type="button"
-                >
-                  작업자
-                </button>
+                  {isEffectivelyOwner ? (
+                    <button
+                      className={form.visibilityScope === "owner_private" ? "on" : ""}
+                      onClick={() =>
+                        setForm((cur) => ({ ...cur, visibilityScope: "owner_private" }))
+                      }
+                      type="button"
+                    >
+                      엠바고
+                    </button>
+                  ) : null}
+                  <button
+                    className={form.visibilityScope === "work" ? "on" : ""}
+                    onClick={() => setForm((cur) => ({ ...cur, visibilityScope: "work" }))}
+                    type="button"
+                  >
+                    작업자
+                  </button>
+                </div>
               </div>
+              <div className="me-sep" />
+              {renderSupportEditor()}
             </div>
 
-            {renderSupportEditor()}
-
-            <section className="tag-picker" aria-label="태그 선택">
-              <h3>
-                태그 <span className="tag-picker-hint">최대 2개</span>
-              </h3>
-              <div>
+            {/* 태그 그룹 — 작은 칩을 가지런히. 선택분은 앞으로 끌어와 순번·강조. */}
+            <section className="me-group me-tag-group" aria-label="태그 선택">
+              <div className="me-grouphead">
+                <span>태그</span>
+                <span className="me-count">{form.tagIds.length}/2</span>
+              </div>
+              <div className="me-tags">
                 {legendTags.map((tag) => {
                   const color = palette.find((item) => item.key === tag.colorKey);
                   const selected = form.tagIds.includes(tag.id);
@@ -2887,35 +2888,22 @@ export function StudioShell({
               </div>
             </section>
 
-            {/* 진짜 개발자 화면(미리보기 아님)에선 공지(토리님 전용)를 그날 방문 그래프로 대체 — 날짜를
-                옮겨가며 일별 통계를 비교한다. 공지 수정이 필요하면 '관리자 미리보기'를 쓰면 된다. */}
+            {/* 공지·방문 그래프 — 보조 도구. 개발자는 둘 다, 그 외 편집자는 공지만. */}
             {isDevInsights ? (
-              <>
-                {/* 개발자 화면에도 관리자처럼 공지 쓰기를 둔다(방문 그래프 위). NoticeModal은
-                    공개 일정으로 공지 문구만 만드는 클라이언트 도구 — 비공개/owner 전용 쓰기 없음. */}
-                <button
-                  className="button notice-open"
-                  onClick={() => setModal("notice")}
-                  type="button"
-                >
+              <div className="me-tools">
+                <button className="me-tool" onClick={() => setModal("notice")} type="button">
+                  📢 공지 쓰기
+                </button>
+                <button className="me-tool" onClick={() => setModal("dayVisit")} type="button">
+                  📈 방문 그래프
+                </button>
+              </div>
+            ) : canEdit ? (
+              <div className="me-tools">
+                <button className="me-tool" onClick={() => setModal("notice")} type="button">
                   📢 {selectedDate} 공지 쓰기
                 </button>
-                <button
-                  className="button notice-open"
-                  onClick={() => setModal("dayVisit")}
-                  type="button"
-                >
-                  📈 {selectedDate} 방문 그래프
-                </button>
-              </>
-            ) : canEdit ? (
-              <button
-                className="button notice-open"
-                onClick={() => setModal("notice")}
-                type="button"
-              >
-                📢 {selectedDate} 공지 쓰기
-              </button>
+              </div>
             ) : null}
 
             {/* 엄지존 고정 바: 스크롤해도 항상 바닥에 붙는다. 저장이 지배적(넓은 한 손 타깃),
