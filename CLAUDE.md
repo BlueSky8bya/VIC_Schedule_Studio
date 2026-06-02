@@ -94,6 +94,13 @@ High-frequency facts so you rarely need to reopen `docs/sop.md`:
   narrow width** — do not blow up mobile font sizes. Practically: tune base
   (mobile) sizes small, and bump up generously inside `@media (min-width: 641px)`
   for the web. If web text looks small, it's a defect.
+- **Platform-tailored, never just-shrunk (recurring — the owner re-asks this
+  constantly).** Every surface must earn a *distinct* web and mobile treatment.
+  Web = use the horizontal room: multi-column dashboards, aligned table-like rows,
+  hover affordances (row highlight, accent bars, lift). Mobile = compact, single
+  column, thumb-friendly targets, tap/active feedback, bottom-sheet patterns. A
+  responsive layout that is the same DOM merely scaled is a defect — see the
+  **Platform-Tailored Experience skill** below before building/finishing any UI.
 - **Fill empty space by content, not by stretching narrow boxes.** When a box
   feels empty, the fix is bigger content (scale the value/icon up), a smarter
   layout, or distributing content — **only widen a box that is genuinely empty on
@@ -115,6 +122,41 @@ High-frequency facts so you rarely need to reopen `docs/sop.md`:
 - **Gate UI affordances narrowly.** Never disable/relabel a control from a broad
   shared flag (e.g. a global `pending`): a background save must not block
   unrelated actions like creating a new card. Gate on the specific condition.
+
+## Platform-Tailored Experience (standing skill)
+
+The owner repeatedly asks for this; treat it as a default acceptance criterion,
+not a one-off request. When you build or touch ANY interactive surface, deliver a
+**web-native** and a **mobile-native** version (distinct layout, not the same DOM
+scaled) plus **motion, tactile feedback, and immersion** on every affordance.
+Run this checklist before calling UI work done:
+
+1. **Two real layouts.** Decide the web shape and the mobile shape separately.
+   - Web (`@media (min-width: 641px)`): fill the horizontal room — 2-column
+     dashboards, aligned table-like rows, inset panels, zebra, hover row
+     highlight / left accent bar / card lift. Type comfortably large.
+   - Mobile (`≤640px`, `MOBILE_QUERY`): single column, compact, thumb-zone
+     targets, bottom-sheet / segmented patterns. Cut copy (drop parentheticals,
+     shorten labels, hide non-essential controls). Never overflow the width.
+   - If the only difference between platforms is font size, it is not done.
+2. **Motion & feedback by default.** Every button/toggle/card gets press feedback
+   (`:active` scale), smooth state transitions (background/color/box-shadow via
+   `var(--ease)`), and meaningful entrance/exit animation (e.g. options expanding,
+   rows collapsing on delete). New charts get hover value tooltips
+   (`.vt-tip`, centered + clamped, never clipped). Static = regression.
+3. **Haptics on intent.** Call `hapticTick()` on toggles/selectors and key
+   confirmations (press→server-confirm = two ticks; see haptics convention).
+4. **Distinctive, not generic.** Replace plain native controls (`<select>`,
+   bare lists) with the app's own affordances — color-coded cards, role-tinted
+   pills, icons — consistent with neighbors (one visual language, symmetric
+   padding, shared tokens). A cold "admin panel" look is a regression.
+5. **Respect constraints.** `prefers-reduced-motion: reduce` must disable the
+   animations. Keep server permission checks and the public/private boundary
+   intact. Verify against the Evaluator + regression-review steps below.
+
+Reference implementations to match: developer insights visit panels
+(`.vpanel`/`.dayvisit` 2-col grid, `.vlog` session-log feed, `.dsess` bars,
+`.scope-picker` cards) and the mobile edit bottom-sheet (`me-*`).
 
 ## Role Guide
 
@@ -210,6 +252,10 @@ Check before finishing:
   you've confirmed it didn't quietly break or unbalance an existing flow.
 - design unity holds: spacing/padding symmetric, styles consistent with
   neighbors, no one-off imbalance introduced
+- **platform-tailored experience**: web and mobile each got a distinct,
+  appropriate layout (not the same DOM scaled), and every interactive element has
+  motion + tactile feedback + (where relevant) haptics — see the
+  **Platform-Tailored Experience skill** above
 - tests or manual verification are noted
 
 ## Workflow
