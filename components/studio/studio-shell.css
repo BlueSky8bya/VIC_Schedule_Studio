@@ -4657,11 +4657,37 @@ textarea:disabled {
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  transition: background var(--dur-1) var(--ease), color var(--dur-1) var(--ease);
+  transition:
+    background var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
 }
+.role-segment button:active {
+  transform: scale(0.92);
+}
+/* 켤 때 통통 튀고(팝) 살짝 그림자 — "선택됐다"가 한눈에. 끌 때는 부드럽게 빠진다. */
 .role-segment button.active {
   background: var(--accent);
   color: var(--on-accent);
+  box-shadow: 0 2px 8px rgb(124 92 245 / 32%);
+  animation: role-pick-pop 0.28s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+@keyframes role-pick-pop {
+  0% {
+    transform: scale(0.9);
+  }
+  55% {
+    transform: scale(1.09);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .role-segment button.active {
+    animation: none;
+  }
 }
 .members-add-controls .button.primary {
   min-height: 40px;
