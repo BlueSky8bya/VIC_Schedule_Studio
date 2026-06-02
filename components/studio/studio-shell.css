@@ -1465,11 +1465,25 @@
   font-weight: 800;
   color: #6b5b95;
   cursor: pointer;
+  /* 활성 전환이 툭 끊기지 않게 — 배경·색·그림자가 부드럽게 이어지고 누르면 살짝 눌린다. */
+  transition:
+    background var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.insights-subtabs button:active {
+  transform: scale(0.94);
 }
 .insights-subtabs button.active {
   background: #fff;
   color: #4a3f72;
   box-shadow: 0 1px 4px rgb(107 91 214 / 22%);
+}
+@media (prefers-reduced-motion: reduce) {
+  .insights-subtabs button {
+    transition: none;
+  }
 }
 /* 다음 방송: 날짜 + 일정 제목 칩들(콤마 나열 대신 둥근 박스). */
 .insight-next-body {
@@ -4620,7 +4634,13 @@ textarea:disabled {
   font-size: 16px;
   font-weight: 800;
   cursor: pointer;
-  transition: background var(--dur-1, 120ms) var(--ease, ease);
+  transition:
+    background var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.notice-tabs button:active {
+  transform: scale(0.96);
 }
 .notice-tabs button.active {
   background: var(--accent);

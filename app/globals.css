@@ -269,9 +269,16 @@ select {
   transform: translateY(-1px);
 }
 
+/* 누르면 살짝 작아졌다(스프링) 떼면 부드럽게 복귀 — 모든 버튼에 일관된 '손맛'.
+   transform이 위에서 var(--dur-1) ease로 트랜지션돼 툭 끊기지 않고 자연스럽게 이어진다. */
 .button:active:not(:disabled) {
-  transform: translateY(0);
+  transform: scale(0.96);
   box-shadow: var(--shadow-1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .button:active:not(:disabled) {
+    transform: none;
+  }
 }
 
 .button:disabled {
