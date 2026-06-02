@@ -239,7 +239,6 @@ export function TrustedMembersPanel() {
             </tr>
           </tbody>
         </table>
-        <p className="perm-foot">구글 이메일로 등록 · 일정 편집·발행은 토리님(소유자)만</p>
       </div>
 
       <div className="members-add">
