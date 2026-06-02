@@ -143,8 +143,6 @@ export function TagLegendEditor({
     allTags
       .filter((t) => (t.parentId ?? null) === topId)
       .sort((a, b) => a.sortOrder - b.sortOrder);
-  // 평면 순서(대분류→그 세부) — 읽기전용 레전드/저장 순회용.
-  const orderedTags = orderedTops.flatMap((t) => [t, ...childrenOf(t.id)]);
 
   // 휴뱅(dayoff)은 시스템 기본 태그 — 순서 변경·이름 변경·색 변경·삭제를 모두 막는다.
   // (식별은 표시 이름이 아니라 tag_key로 — 이름을 바꿔도 안 깨지게.)
@@ -308,11 +306,12 @@ export function TagLegendEditor({
   }
 
   // 읽기 전용(좌측 패널): 색상 안내. onToggleFilter가 있으면 필터 버튼으로 동작한다.
+  // 2계층: 색상 안내/필터는 '대분류'만(한 색=한 칩). 대분류 필터가 하위 세부 일정까지 매칭한다.
   if (!canEdit) {
     const filtering = (filterIds?.length ?? 0) > 0;
     return (
       <div className="studio-tag-legend">
-        {orderedTags.map((tag) => {
+        {orderedTops.map((tag) => {
           const color = colorOf(tag.colorKey);
           if (!color) return null;
           if (!onToggleFilter) {

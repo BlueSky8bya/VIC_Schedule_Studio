@@ -52,6 +52,7 @@ import {
   getAdjacentMonth,
   getEventDateKey,
   getEventsForDate,
+  eventMatchesTagFilter,
   getEventSpan,
   getEventTagColors,
   getExtraCategoryColors,
@@ -499,10 +500,9 @@ export function StudioShell({
     if (tagFilters.length === 0) return false;
     const matchesPrivate =
       tagFilters.includes(PRIVATE_FILTER) && event.visibilityScope !== "public";
+    // 2계층: 대분류 필터는 그 하위 세부를 가진 이벤트까지 포함(전체집합 매칭).
     const matchesTag = tagFilters.some(
-      (id) =>
-        id !== PRIVATE_FILTER &&
-        (event.primaryTagIds.includes(id) || event.tagIds.includes(id))
+      (id) => id !== PRIVATE_FILTER && eventMatchesTagFilter(event, id, tags)
     );
     return !(matchesPrivate || matchesTag);
   }
@@ -2339,7 +2339,9 @@ export function StudioShell({
               ) : null}
             <aside className="agenda-legend agenda-legend-studio" aria-label="색상 필터">
               <strong>색상 필터</strong>
-              {legendTags.map((tag) => {
+              {legendTags
+                .filter((t) => (t.parentId ?? null) === null)
+                .map((tag) => {
                 const color = palette.find((p) => p.key === tag.colorKey);
                 if (!color) return null;
                 const on = tagFilters.includes(tag.id);

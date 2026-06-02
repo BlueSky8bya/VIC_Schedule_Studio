@@ -178,6 +178,29 @@ function rightEdgeTag(event: PublicScheduleEvent | StudioScheduleEvent): string 
   return reps[reps.length - 1];
 }
 
+// 2계층: 태그의 최상위 대분류 id(세부면 부모를 따라 올라감). 대분류면 자기 id.
+export function categoryId(tagId: string, tags: BroadcastTag[]): string | null {
+  let cur = tags.find((t) => t.id === tagId);
+  const guard = new Set<string>();
+  while (cur?.parentId && !guard.has(cur.id)) {
+    guard.add(cur.id);
+    const parent = tags.find((t) => t.id === cur!.parentId);
+    if (!parent) break;
+    cur = parent;
+  }
+  return cur ? cur.id : null;
+}
+
+// 필터 매칭: 이벤트가 태그 filterId(대분류 또는 세부)에 해당하는가. 대분류를 고르면 그 하위 세부를
+// 가진 이벤트까지 포함(전체집합 매칭). 세부를 고르면 그 세부를 가진 이벤트만.
+export function eventMatchesTagFilter(
+  event: PublicScheduleEvent | StudioScheduleEvent,
+  filterId: string,
+  tags: BroadcastTag[]
+): boolean {
+  return event.tagIds.some((tid) => tid === filterId || categoryId(tid, tags) === filterId);
+}
+
 // 2계층: 태그의 최상위 대분류 colorKey(세부면 부모를 따라 올라감). 대분류면 자기 색.
 export function categoryColorKey(tagId: string, tags: BroadcastTag[]): string | null {
   let cur = tags.find((t) => t.id === tagId);

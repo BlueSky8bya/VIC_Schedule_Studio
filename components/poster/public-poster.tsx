@@ -67,6 +67,7 @@ import {
   getAdjacentMonth,
   getEventDateKey,
   getEventsForDate,
+  eventMatchesTagFilter,
   getEventSpan,
   getEventTagColors,
   getExtraCategoryColors,
@@ -616,8 +617,12 @@ export function PublicPoster({
   }, []);
   // #1: 색상 안내에서 "기타"는 항상 맨 마지막으로(나머지는 기존 정렬 유지).
   // 색상 안내 순서 = 태그 sort_order(편집실에서 드래그로 정한 순서). 단일 진실 소스.
+  // 2계층: 색상 안내/필터는 '대분류'만(한 색 = 한 칩). 대분류를 고르면 그 하위 세부 일정까지 매칭된다.
   const legendTags = useMemo(
-    () => [...schedule.tags].sort((a, b) => a.sortOrder - b.sortOrder),
+    () =>
+      [...schedule.tags]
+        .filter((t) => (t.parentId ?? null) === null)
+        .sort((a, b) => a.sortOrder - b.sortOrder),
     [schedule.tags]
   );
 
@@ -1823,9 +1828,8 @@ export function PublicPoster({
   function isDimmedByFilter(event: PublicScheduleEvent) {
     const matchesTag =
       tagFilters.length === 0 ||
-      tagFilters.some(
-        (id) => event.primaryTagIds.includes(id) || event.tagIds.includes(id)
-      );
+      // 2계층: 대분류 필터는 그 하위 세부를 가진 일정까지 포함.
+      tagFilters.some((id) => eventMatchesTagFilter(event, id, schedule.tags));
     const matchesBookmark = !bookmarkedOnly || isBookmarked(event.id);
     return !(matchesTag && matchesBookmark);
   }
