@@ -1598,6 +1598,23 @@
   background: color-mix(in srgb, var(--rc, #6b5bd6) 15%, #fff);
   border-color: color-mix(in srgb, var(--rc, #6b5bd6) 40%, transparent);
 }
+/* 칩 끝 건수 — 살짝 작게/둥근 점 느낌. */
+.vlog-chip b {
+  font-weight: 900;
+  opacity: 0.75;
+}
+/* 세션 0인 역할 — 흐리게(있는지 한눈에). 단 선택되면 또렷이. */
+.vlog-chip.zero:not(.on) {
+  opacity: 0.42;
+}
+/* 필터 결과 없음 안내 */
+.vlog-empty {
+  padding: 14px 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #9a93ad;
+}
 @media (prefers-reduced-motion: reduce) {
   .vlog-chip {
     transition: none;

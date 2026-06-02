@@ -926,12 +926,12 @@ export function InsightsDashboard({
             : null}
           <details className="vrecent" open>
             <summary>세션 {visits.recent.length}건 <span className="vcrit">20초마다 갱신</span></summary>
-            {/* 역할 필터 칩 — 로그에 실제 등장한 역할만(ROLE_META 순). 클릭 시 그 역할 세션만. */}
+            {/* 역할 필터 칩 — 모든 역할(ROLE_META) 항상 노출. 세션 0인 역할은 흐리게(있는지 한눈에),
+                칩 끝에 건수. 클릭 시 그 역할만(다시 누르면 전체). */}
             {visits.recent.length > 0
               ? (() => {
-                  const rolesInLog = ROLE_META.filter((m) =>
-                    visits.recent.some((r) => r.role === m.key)
-                  );
+                  const countByRole = (key: string) =>
+                    visits.recent.filter((r) => r.role === key).length;
                   return (
                     <div className="vlog-filter" role="group" aria-label="역할 필터">
                       <button
@@ -942,31 +942,37 @@ export function InsightsDashboard({
                         }}
                         type="button"
                       >
-                        전체
+                        전체 <b>{visits.recent.length}</b>
                       </button>
-                      {rolesInLog.map((m) => (
-                        <button
-                          className={`vlog-chip${logRole === m.key ? " on" : ""}`}
-                          data-role={m.key}
-                          key={m.key}
-                          onClick={() => {
-                            hapticTick();
-                            setLogRole((cur) => (cur === m.key ? null : m.key));
-                          }}
-                          style={{ "--rc": m.color } as CSSProperties}
-                          type="button"
-                        >
-                          {m.label}
-                        </button>
-                      ))}
+                      {ROLE_META.map((m) => {
+                        const c = countByRole(m.key);
+                        return (
+                          <button
+                            className={`vlog-chip${logRole === m.key ? " on" : ""}${c === 0 ? " zero" : ""}`}
+                            data-role={m.key}
+                            key={m.key}
+                            onClick={() => {
+                              hapticTick();
+                              setLogRole((cur) => (cur === m.key ? null : m.key));
+                            }}
+                            style={{ "--rc": m.color } as CSSProperties}
+                            type="button"
+                          >
+                            {m.label} <b>{c}</b>
+                          </button>
+                        );
+                      })}
                     </div>
                   );
                 })()
               : null}
             <ul className="vlog">
-              {visits.recent
-                .filter((r) => !logRole || r.role === logRole)
-                .map((r, i) => (
+              {(() => {
+                const shown = visits.recent.filter((r) => !logRole || r.role === logRole);
+                if (shown.length === 0) {
+                  return <li className="vlog-empty">이 역할의 세션이 아직 없어요.</li>;
+                }
+                return shown.map((r, i) => (
                 <li className={`vlog-row${r.meaningful ? "" : " glance"}`} key={i}>
                   <span
                     aria-hidden="true"
@@ -994,7 +1000,8 @@ export function InsightsDashboard({
                     </div>
                   </div>
                 </li>
-              ))}
+                ));
+              })()}
             </ul>
           </details>
         </section>
