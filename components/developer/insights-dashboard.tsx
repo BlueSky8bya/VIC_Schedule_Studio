@@ -302,6 +302,7 @@ export function InsightsDashboard({
   const [vtHourHover, setVtHourHover] = useState<OccHover | null>(null); // 시간대 점유(체류) 분해 툴팁
   const [ownerTip, setOwnerTip] = useState<{ x: number; top: number; text: string } | null>(null); // 관리자 세션 띠 툴팁
   const [dsessTip, setDsessTip] = useState<{ x: number; day: number; n: number } | null>(null); // 일별 세션 막대 호버
+  const [logRole, setLogRole] = useState<string | null>(null); // 세션 로그 역할 필터(null=전체)
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
 
@@ -925,8 +926,47 @@ export function InsightsDashboard({
             : null}
           <details className="vrecent" open>
             <summary>세션 {visits.recent.length}건 <span className="vcrit">20초마다 갱신</span></summary>
+            {/* 역할 필터 칩 — 로그에 실제 등장한 역할만(ROLE_META 순). 클릭 시 그 역할 세션만. */}
+            {visits.recent.length > 0
+              ? (() => {
+                  const rolesInLog = ROLE_META.filter((m) =>
+                    visits.recent.some((r) => r.role === m.key)
+                  );
+                  return (
+                    <div className="vlog-filter" role="group" aria-label="역할 필터">
+                      <button
+                        className={`vlog-chip${logRole === null ? " on" : ""}`}
+                        onClick={() => {
+                          hapticTick();
+                          setLogRole(null);
+                        }}
+                        type="button"
+                      >
+                        전체
+                      </button>
+                      {rolesInLog.map((m) => (
+                        <button
+                          className={`vlog-chip${logRole === m.key ? " on" : ""}`}
+                          data-role={m.key}
+                          key={m.key}
+                          onClick={() => {
+                            hapticTick();
+                            setLogRole((cur) => (cur === m.key ? null : m.key));
+                          }}
+                          style={{ "--rc": m.color } as CSSProperties}
+                          type="button"
+                        >
+                          {m.label}
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })()
+              : null}
             <ul className="vlog">
-              {visits.recent.map((r, i) => (
+              {visits.recent
+                .filter((r) => !logRole || r.role === logRole)
+                .map((r, i) => (
                 <li className={`vlog-row${r.meaningful ? "" : " glance"}`} key={i}>
                   <span
                     aria-hidden="true"

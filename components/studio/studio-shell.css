@@ -1571,6 +1571,44 @@
    행마다 [기기색 점] + 본문(1줄: 역할 배지/이메일 + 시각 / 2줄: 기기 · 체류). 관리자 이메일처럼
    긴 라벨도 윗줄을 폭 가득 써서 안 잘리고, 모든 역할이 같은 2줄 골격이라 통일감.
    모바일: 컴팩트(탭 피드백). 웹: 인셋 패널 + zebra + 호버 좌측 액센트 바. */
+/* 세션 로그 역할 필터 칩 — 선택 시 역할색으로 채워짐. */
+.vlog-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 2px;
+}
+.vlog-chip {
+  padding: 3px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line, #e7e3f2);
+  background: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  color: #6b6480;
+  cursor: pointer;
+  transition: background 0.12s var(--ease, ease), border-color 0.12s var(--ease, ease),
+    color 0.12s var(--ease, ease), transform 0.1s var(--ease, ease);
+}
+.vlog-chip:active {
+  transform: scale(0.94);
+}
+.vlog-chip.on {
+  color: color-mix(in srgb, var(--rc, #6b5bd6) 72%, #2a2540);
+  background: color-mix(in srgb, var(--rc, #6b5bd6) 15%, #fff);
+  border-color: color-mix(in srgb, var(--rc, #6b5bd6) 40%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .vlog-chip {
+    transition: none;
+  }
+}
+@media (min-width: 641px) {
+  .vlog-chip {
+    font-size: 12.5px;
+    padding: 4px 13px;
+  }
+}
 .vrecent ul.vlog {
   list-style: none;
   margin: 8px 0 0;
