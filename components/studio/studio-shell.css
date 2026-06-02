@@ -5603,8 +5603,62 @@ textarea:disabled {
   min-height: 52px;
   padding: 9px 0;
 }
+/* ── 모바일 업 도움 필드(웹 패널과 차별화) — 따뜻한 피치 톤 + 큰 터치 타깃 ── */
 .me-group .support-fields {
+  display: grid;
+  gap: 14px;
   padding: 2px 0 12px;
+}
+.me-group .support-duration {
+  gap: 11px;
+  border: 0;
+  border-radius: 14px;
+  background: #fff5ef;
+  padding: 13px;
+}
+.me-group .duration-title {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #b4543a;
+}
+/* 기간 칩 — 좌우 정렬 그리드(칸 폭 채움) + 큰 타깃. */
+.me-group .duration-chips {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(58px, 1fr));
+  gap: 7px;
+}
+.me-group .duration-chips button {
+  min-height: 42px;
+  padding: 0;
+  border-color: #f6cdbb;
+  font-size: 14px;
+}
+/* 종료일 직접 선택 — 라벨 위, 풀폭 날짜 필드 아래(쌓기). */
+.me-group .duration-manual {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 7px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #b4543a;
+}
+.me-group .duration-manual input {
+  width: 100%;
+  min-height: 48px;
+  border-radius: 12px;
+  padding: 0 13px;
+  font-size: 16px; /* iOS 자동 확대 방지 */
+  font-weight: 700;
+  color: #2b2f38;
+}
+/* 링크 입력도 16px(확대 방지) + 손가락 크기. */
+.me-group .support-link-input {
+  min-height: 50px;
+  border-radius: 13px;
+  font-size: 16px;
+}
+.me-group .support-visit {
+  min-height: 44px;
 }
 /* 엄지존 고정 액션바 — 스크롤해도 바닥에 붙어 항상 닿는다. */
 .m-edit-actions {
