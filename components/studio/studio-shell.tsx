@@ -384,6 +384,19 @@ export function StudioShell({
   }, []);
   // 모바일에서 일정 카드를 눌렀을 때 펼치는 인라인 편집 시트(소유자/개발자).
   const [mobileEditId, setMobileEditId] = useState<string | null>(null);
+  // 모바일 일정 내용칸: 내용량에 맞춰 높이를 자동으로 맞춘다(처음 열 때 긴 내용도 한 번에 보이게).
+  // 사용자가 손잡이로 더 늘리는 것(resize:vertical)도 그대로 가능.
+  const mTitleRef = useRef<HTMLTextAreaElement>(null);
+  function fitTitleHeight() {
+    const el = mTitleRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 320)}px`;
+  }
+  // 시트가 열릴 때(또는 다른 일정으로 바뀔 때) 현재 내용 높이에 맞춘다 — 페인트 전(useLayoutEffect)이라 깜빡임 없음.
+  useLayoutEffect(() => {
+    if (mobileEditId !== null) fitTitleHeight();
+  }, [mobileEditId]);
   // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 전용 시트(웹·모바일 공용).
   const [supportSheetId, setSupportSheetId] = useState<string | null>(null);
   const [supportSaving, setSupportSaving] = useState(false);
@@ -2813,8 +2826,12 @@ export function StudioShell({
             {/* 제목 — 무테 큰 입력. 화면의 초점. 첫 줄 제목, 다음 줄부터 세부. */}
             <textarea
               className="me-title"
-              onChange={(e) => setForm((cur) => ({ ...cur, publicTitle: e.target.value }))}
+              onChange={(e) => {
+                setForm((cur) => ({ ...cur, publicTitle: e.target.value }));
+                fitTitleHeight(); // 타이핑하며 줄이 늘면 즉시 높이 따라 키움
+              }}
               placeholder="제목 입력 (다음 줄부터 세부 내용)"
+              ref={mTitleRef}
               rows={2}
               value={form.publicTitle}
             />
