@@ -189,7 +189,7 @@ export function TrustedMembersPanel() {
               <td className="no">✕</td>
             </tr>
             <tr>
-              <th scope="row">이미 생성된 일정의 태그 수정</th>
+              <th scope="row">생성된 일정 태그 수정</th>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
