@@ -4,6 +4,7 @@ import { type CSSProperties, type PointerEvent as ReactPointerEvent, useEffect, 
 import {
   DEVICE_META,
   ROLE_META,
+  type VisitScope,
   VisitSummaryBlock,
   fmtDur,
   fmtOcc,
@@ -21,6 +22,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [dim, setDim] = useState<"role" | "device">("role");
+  const [scope, setScope] = useState<VisitScope>("viewer"); // 시청자/운영진/전체 — 분해·동접 즉시 전환
   const [occTip, setOccTip] = useState<OccTip | null>(null);
   const [ownTip, setOwnTip] = useState<{ x: number; top: number; text: string } | null>(null);
 
@@ -56,8 +58,10 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   }
 
   const meta = dim === "role" ? ROLE_META : DEVICE_META;
-  const visitCounts = dim === "role" ? data.visits.roles : data.visits.devices;
-  const om = Math.max(0.0001, ...data.occupancy.map((s) => s.avg));
+  // 토글이 고른 묶음 — 역할/기기 분해·동접 그래프 전부 이걸 쓴다.
+  const dg = scope === "viewer" ? data.viewer : scope === "operator" ? data.operator : data.all;
+  const visitCounts = dim === "role" ? dg.visits.roles : dg.visits.devices;
+  const om = Math.max(0.0001, ...dg.occupancy.map((s) => s.avg));
   const devMeta = (k: string) => DEVICE_META.find((m) => m.key === k) ?? DEVICE_META[0];
 
   // 관리자 세션 → 24h 트랙 좌표 + 목록(시작 순).
@@ -95,11 +99,13 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
         all={data.summaryAll}
         newVisitors={data.newVisitors}
         returningVisitors={data.returningVisitors}
+        scope={scope}
+        onScope={setScope}
       />
       {/* 방문 수 + 역할/기기 분해 */}
       <div className="dv-top">
         <div className="dv-total">
-          <strong>{data.visits.total}</strong>
+          <strong>{dg.visits.total}</strong>
           {/* 기기별 탭에선 단위를 '기기'로 — 방문 1건 = 기기 1대라 수는 같아도 의미가 맞다. */}
           <span>{dim === "device" ? "기기" : "방문"}</span>
         </div>
@@ -112,7 +118,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
           </button>
         </div>
       </div>
-      {data.visits.total > 0 ? (
+      {dg.visits.total > 0 ? (
         <ul className="dv-breakdown">
           {meta.map((m) =>
             (visitCounts[m.key] ?? 0) > 0 ? (
@@ -132,12 +138,12 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
       <h4 className="insight-subhead">시간대별 동시 접속 · 체류 (KST)</h4>
       <p className="vt-occ-note">막대 = 그날 평균 동시 접속(방문자 기준) · 호버 시 최고치도 표시</p>
       <div
-        className={`vt-hours ${data.hasOccupancy ? "" : "empty"}`}
+        className={`vt-hours ${dg.hasOccupancy ? "" : "empty"}`}
         role="img"
         aria-label="그날 시간대별 동시 접속"
         onPointerLeave={() => setOccTip(null)}
       >
-        {data.occupancy.map((slot, h) => {
+        {dg.occupancy.map((slot, h) => {
           const counts = dim === "role" ? slot.roles : slot.devices;
           const enter = () => {
             if (slot.avg <= 0) {
@@ -190,7 +196,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
             ))}
           </div>
         ) : null}
-        {data.hasOccupancy ? null : (
+        {dg.hasOccupancy ? null : (
           <span className="vt-hours-empty">이 날 동시 접속 핑이 없어요</span>
         )}
       </div>

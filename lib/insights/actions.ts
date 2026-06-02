@@ -1208,11 +1208,17 @@ export async function getVisitTrendsAction(
 // 하루치 방문 상세 — 개발자가 달력에서 날짜를 클릭하면 그날 통계를 드릴다운으로 본다.
 // 월별(getVisitTrends)과 같은 지표를 '그 하루'로 좁힌 것: 방문 수(역할/기기), 24h 동시 접속, 관리자 세션.
 // 기존 RPC에 하루 범위(p_start=그날, p_end=다음날)를 넘겨 재사용 — 새 DB 작업 없음. 개발자 전용.
+// 일일 상세에서 토글(시청자/운영진/전체)로 즉시 바뀌는 묶음 — 역할/기기 분해 + 시간대 동접.
+export type DayScopeGraphs = {
+  visits: VisitSlot; // 방문 수 + 역할/기기 분해
+  occupancy: OccSlot[]; // 24칸(KST) 평균/최고 동시 접속
+  hasOccupancy: boolean;
+};
 export type DayVisitDetail = {
   dateKey: string;
-  visits: VisitSlot; // 그날 방문 수 + 역할/기기 분해
-  occupancy: OccSlot[]; // 24칸(KST) — 그날 시간대별 평균/최고 동시 접속
-  hasOccupancy: boolean;
+  viewer: DayScopeGraphs; // 시청자만
+  operator: DayScopeGraphs; // 운영진(viewer 아님)
+  all: DayScopeGraphs; // 전체
   ownerSessions: OwnerSession[]; // 그날 관리자 접속 세션
   // 그날 '관리자(owner)' 방문 기록 — 세션별. 언제(started_at)·기기·체류(초)·계정(설정된 owner
   // 이메일과 해시 매칭되면 이메일, 아니면 익명 태그). 일반 방문자는 절대 식별되지 않는다.
@@ -1245,10 +1251,18 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
 
   const rows = await loadSessions(supabase, dateKey, nextDay);
 
-  // 방문 수(역할/기기 분해) = 순방문자, 체류 그래프 = 세션 구간(초), 관리자 세션 = role=owner.
-  const visits = reachSlot(rows);
-  const occupancy = computeOccupancy(rows, 1);
-  const hasOccupancy = rows.length > 0 && occupancy.some((o) => o.avg > 0);
+  // 토글별 묶음(역할/기기 분해 + 시간대 동접). 동일 로직으로 시청자/운영진/전체 세 벌.
+  const buildDay = (subset: SessionRow[]): DayScopeGraphs => {
+    const occupancy = computeOccupancy(subset, 1);
+    return {
+      visits: reachSlot(subset),
+      occupancy,
+      hasOccupancy: subset.length > 0 && occupancy.some((o) => o.avg > 0)
+    };
+  };
+  const viewerG = buildDay(rows.filter((r) => r.role === "viewer"));
+  const operatorG = buildDay(rows.filter((r) => r.role !== "viewer"));
+  const allG = buildDay(rows);
   const ownerSessions = ownerSessionsFrom(rows);
 
   // 관리자(owner) 방문 기록 — 세션별(여러 번 들어오면 여러 줄). 설정된 owner 이메일과 해시가 맞으면
@@ -1297,9 +1311,9 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
     ok: true,
     data: {
       dateKey,
-      visits,
-      occupancy,
-      hasOccupancy,
+      viewer: viewerG,
+      operator: operatorG,
+      all: allG,
       ownerSessions,
       ownerVisits,
       ownerSeconds,
