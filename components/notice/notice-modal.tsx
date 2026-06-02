@@ -2,6 +2,7 @@
 
 import { Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
+import { hapticTick } from "@/lib/ui/haptics";
 
 // 숲(SOOP) 공지 작성 페이지. 새 탭으로 열어 붙여넣는다. 공지 종류마다 글 작성 위치가 다르다.
 const SOOP_WRITE_URL_BANGON = "https://www.sooplive.com/station/toryvac/post/write/117337785"; // 뱅온
@@ -125,6 +126,7 @@ export function NoticeModal({
   async function copy(kind: "title" | "body" | "payload" | "mark", text: string) {
     try {
       await navigator.clipboard.writeText(text);
+      hapticTick();
       setCopied(kind);
       window.setTimeout(() => setCopied(null), 1500);
     } catch {
@@ -168,6 +170,7 @@ export function NoticeModal({
       } else {
         await navigator.clipboard.writeText(body);
       }
+      hapticTick();
       setCopied("body");
       window.setTimeout(() => setCopied(null), 1500);
     } catch {
@@ -184,10 +187,24 @@ export function NoticeModal({
   return (
     <div className="notice-modal">
       <div className="notice-tabs" role="group" aria-label="공지 종류">
-        <button className={!isUp ? "active" : ""} onClick={() => setKind("bangon")} type="button">
+        <button
+          className={!isUp ? "active" : ""}
+          onClick={() => {
+            hapticTick();
+            setKind("bangon");
+          }}
+          type="button"
+        >
           뱅온 공지
         </button>
-        <button className={isUp ? "active" : ""} onClick={() => setKind("up")} type="button">
+        <button
+          className={isUp ? "active" : ""}
+          onClick={() => {
+            hapticTick();
+            setKind("up");
+          }}
+          type="button"
+        >
           업 도움 공지
         </button>
       </div>
@@ -244,14 +261,20 @@ export function NoticeModal({
                 <div className="ampm-segment" role="group" aria-label="오전/오후">
                   <button
                     className={ampm === "오전" ? "active" : ""}
-                    onClick={() => setAmpm("오전")}
+                    onClick={() => {
+                      hapticTick();
+                      setAmpm("오전");
+                    }}
                     type="button"
                   >
                     오전
                   </button>
                   <button
                     className={ampm === "오후" ? "active" : ""}
-                    onClick={() => setAmpm("오후")}
+                    onClick={() => {
+                      hapticTick();
+                      setAmpm("오후");
+                    }}
                     type="button"
                   >
                     오후

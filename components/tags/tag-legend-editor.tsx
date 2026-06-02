@@ -12,6 +12,7 @@ import {
 import type { BroadcastTag, ColorKey, ColorPaletteEntry } from "@/lib/domain/schedule-types";
 import type { SaveTagsResult, TagCreateInput } from "@/lib/schedules/tag-actions";
 import { generateTagColor } from "@/lib/tags/color-gen";
+import { hapticTick } from "@/lib/ui/haptics";
 
 type TagUpdate = { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number };
 
@@ -340,6 +341,7 @@ export function TagLegendEditor({
   // 색은 클라이언트에서 기존 색과 안 겹치게 생성하고, "전체 저장" 때 한꺼번에 DB에 반영한다.
   function addTag() {
     if (allTags.length >= MAX_TAGS) return;
+    hapticTick();
     setError(null);
     const gen = generateTagColor(
       effectivePalette.map((c) => ({ key: c.key, bgColor: c.bgColor }))
@@ -405,6 +407,7 @@ export function TagLegendEditor({
   }
 
   function pick(tagId: string, key: ColorKey) {
+    hapticTick();
     setDraft((cur) => {
       const d = cur[tagId];
       const nextKey = d.colorKey === key ? "" : key;
@@ -426,6 +429,7 @@ export function TagLegendEditor({
 
   function saveAll() {
     if (!saveTagsAction) return;
+    hapticTick();
     setError(null);
     const updates: TagUpdate[] = [];
     const creates: TagCreateInput[] = [];

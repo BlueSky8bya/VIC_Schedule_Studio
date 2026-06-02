@@ -4566,6 +4566,29 @@ textarea:disabled {
 .tag-editor-swatches button:hover {
   transform: scale(1.12);
 }
+.tag-editor-swatches button:active {
+  transform: scale(0.92);
+}
+/* 선택된 스와치는 톡 튀는 확인 모션(선택 즉시 피드백). */
+.tag-editor-swatches button.selected {
+  animation: swatch-pick 0.22s var(--ease, ease);
+}
+@keyframes swatch-pick {
+  0% {
+    transform: scaleY(0.92);
+  }
+  55% {
+    transform: scaleY(1.28);
+  }
+  100% {
+    transform: scaleY(1.12);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag-editor-swatches button.selected {
+    animation: none;
+  }
+}
 .modal-close:hover {
   color: #111827;
 }
@@ -5781,10 +5804,20 @@ textarea:disabled {
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
+  transition: background var(--dur-2, 180ms) var(--ease), color var(--dur-2, 180ms) var(--ease),
+    transform var(--dur-1, 120ms) var(--ease);
+}
+.ampm-segment button:active {
+  transform: scale(0.94);
 }
 .ampm-segment button.active {
   background: var(--accent);
   color: var(--on-accent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ampm-segment button {
+    transition: none;
+  }
 }
 .notice-preview {
   display: grid;

@@ -38,6 +38,7 @@ import {
   setTrustedMemberRolesAction,
   type TrustedMember
 } from "@/lib/trusted-members/actions";
+import { hapticTick } from "@/lib/ui/haptics";
 
 export function TrustedMembersPanel() {
   const [members, setMembers] = useState<TrustedMember[]>([]);
@@ -113,6 +114,7 @@ export function TrustedMembersPanel() {
 
   // 역할 토글 — 칩이 즉시 바뀌고(낙관적), 뒤에서 서버와 맞춘다. 둘 다 끄려 하면 막는다.
   function setRoles(member: TrustedMember, isManager: boolean, isWorker: boolean) {
+    hapticTick();
     setError(null);
     if (!isManager && !isWorker) {
       setError("멤버는 적어도 한 역할이 필요해요. 빼려면 삭제하세요.");
@@ -261,7 +263,10 @@ export function TrustedMembersPanel() {
             <button
               aria-pressed={addManager}
               className={addManager ? "active" : ""}
-              onClick={() => setAddManager((v) => !v)}
+              onClick={() => {
+                hapticTick();
+                setAddManager((v) => !v);
+              }}
               type="button"
             >
               매니저
@@ -269,7 +274,10 @@ export function TrustedMembersPanel() {
             <button
               aria-pressed={addWorker}
               className={addWorker ? "active" : ""}
-              onClick={() => setAddWorker((v) => !v)}
+              onClick={() => {
+                hapticTick();
+                setAddWorker((v) => !v);
+              }}
               type="button"
             >
               작업자
