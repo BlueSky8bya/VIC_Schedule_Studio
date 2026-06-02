@@ -32,15 +32,19 @@ function getSessionHash(): string {
 export function PresenceBeacon({ role }: { role: MembershipRole }) {
   useEffect(() => {
     startPresence(role);
-    // 하루 1회만 방문 기록(같은 브라우저의 중복 방문은 안 센다 = 일 단위 고유 방문).
-    try {
-      const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
-      if (window.localStorage.getItem(VISIT_KEY) !== today) {
+
+    // 하루 1회만 방문 기록. '화면이 실제로 보일 때'만 찍는다 — 프리렌더/프리패치·백그라운드 탭처럼
+    // 열리기만 하고 안 본 유령 로드를 방문으로 세지 않기 위함. (예전엔 mount 즉시 무조건 찍어서
+    // "방문은 1인데 체류 핑은 0" 같은 모순이 났다. 이제 방문·핑이 같은 'visible' 조건을 공유한다.)
+    const logVisitOnce = () => {
+      try {
+        const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+        if (window.localStorage.getItem(VISIT_KEY) === today) return;
         const sessionHash =
           typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
             : `${Date.now()}-${Math.random()}`;
-        // 플래그는 '성공했을 때만' 찍는다 → 한 번 실패하면 다음 방문에 다시 시도(누락 방지).
+        // 플래그는 '성공했을 때만' 찍는다 → 한 번 실패하면 다음에 다시 시도(누락 방지).
         logVisitAction(detectDevice(), sessionHash)
           .then((r) => {
             if (r?.ok) {
@@ -52,10 +56,10 @@ export function PresenceBeacon({ role }: { role: MembershipRole }) {
             }
           })
           .catch(() => {});
+      } catch {
+        // localStorage 차단 환경 등 — 방문 기록은 보조 기능이라 조용히 무시.
       }
-    } catch {
-      // localStorage 차단 환경 등 — 방문 기록은 보조 기능이라 조용히 무시.
-    }
+    };
 
     // 동시 접속(체류) 핑 — 화면이 보이는 동안 60초마다 1핑. 숨기면(다른 탭·최소화) 중단하고,
     // 다시 보이면 재개하며 즉시 1핑. (세션, 분) 단위로 서버가 1줄만 남기므로 중복은 자동 합쳐지고,
@@ -68,6 +72,7 @@ export function PresenceBeacon({ role }: { role: MembershipRole }) {
       logPresencePingAction(device, session).catch(() => {});
     };
     const start = () => {
+      logVisitOnce(); // 보이기 시작한 시점에 방문 기록(핑과 같은 조건 → 두 지표가 어긋나지 않음).
       if (timer !== null) return;
       ping(); // 보이기 시작하면 즉시 1핑(짧은 방문도 기록).
       timer = window.setInterval(ping, 60_000);
