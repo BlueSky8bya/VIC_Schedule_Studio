@@ -915,7 +915,7 @@ export type OwnerSession = {
 };
 // 토글(시청자/운영진 포함)로 즉시 바뀌는 그래프 묶음 — 같은 코드로 시청자만/전체 두 벌을 만든다.
 export type VisitGraphs = {
-  days: ({ day: number } & VisitSlot)[]; // 이 달 1..말일
+  days: ({ day: number; stay: number } & VisitSlot)[]; // 이 달 1..말일 (stay=의미 세션 총 체류초)
   weeks: ({ label: string } & VisitSlot)[]; // 1주차..
   hours: VisitSlot[]; // 24칸(KST) — 첫 진입 시각 분포
   occupancy: OccSlot[]; // 24칸(KST) — 시간대별 평균/최고 동시 접속(체류)
@@ -992,10 +992,13 @@ export async function getVisitTrendsAction(
       if (w) w.push(row);
       else byWeek.set(wi, [row]);
     }
-    const days = Array.from({ length: daysInMonth }, (_, i) => ({
-      day: i + 1,
-      ...reachSlot(byDay.get(i + 1) ?? [])
-    }));
+    // 하루 총 체류초 = 그날 의미 세션들의 체류 합(미니달력 색 농도용 — 방문 수가 아니라 체류 시간).
+    const dayStay = (rows: SessionRow[]) =>
+      Math.round(rows.reduce((s, r) => s + (isMeaningful(r) ? durMs(r) : 0), 0) / 1000);
+    const days = Array.from({ length: daysInMonth }, (_, i) => {
+      const rows = byDay.get(i + 1) ?? [];
+      return { day: i + 1, stay: dayStay(rows), ...reachSlot(rows) };
+    });
     const weekCount = Math.ceil((daysInMonth + firstWeekday) / 7);
     const weeks = Array.from({ length: weekCount }, (_, i) => ({
       label: `${i + 1}주`,

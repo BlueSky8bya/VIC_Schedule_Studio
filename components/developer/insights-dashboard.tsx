@@ -769,12 +769,12 @@ export function InsightsDashboard({
           )}
         </section>
 
-        {/* R8: 날짜별 미니 달력 히트맵(방문 많은 날 진하게). 표시 전용. — 좌측 카드 */}
+        {/* R8: 날짜별 미니 달력 히트맵(체류 긴 날 진하게 — 방문 수가 아니라 총 체류시간). 표시 전용. — 좌측 카드 */}
         <section className="vcard">
-          <h4 className="insight-subhead">날짜별 방문</h4>
+          <h4 className="insight-subhead">날짜별 체류</h4>
           {(() => {
             const firstWd = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
-            const dayMax = Math.max(1, ...g.days.map((d) => d.total));
+            const stayMax = Math.max(1, ...g.days.map((d) => d.stay));
             const wdays = ["일", "월", "화", "수", "목", "금", "토"];
             return (
               <div className="vmini">
@@ -790,8 +790,8 @@ export function InsightsDashboard({
                   <span
                     className="vmini-cell"
                     key={d.day}
-                    title={`${month}/${d.day} · ${d.total}방문`}
-                    style={{ background: d.total > 0 ? `rgba(52,211,153,${0.18 + (d.total / dayMax) * 0.75})` : "#f3f1ee" }}
+                    title={`${month}/${d.day} · 체류 ${fmtDur(d.stay)} · ${d.total}방문`}
+                    style={{ background: d.stay > 0 ? `rgba(52,211,153,${0.18 + (d.stay / stayMax) * 0.75})` : "#f3f1ee" }}
                   >
                     {d.day}
                   </span>
