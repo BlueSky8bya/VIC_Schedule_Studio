@@ -3661,6 +3661,145 @@
   resize: vertical;
 }
 
+/* ── 공개 범위 카드 선택기(웹 편집기 전용) ──
+   밋밋한 흰 드롭다운 대신, 범위별 색·아이콘 카드. 선택하면 그 색으로 채워지고 ✓ 표시.
+   모두=청록, 엠바고=로즈(관리자 전용 경고색), 작업자=앰버. */
+.scope-field {
+  display: grid;
+  gap: 8px;
+}
+.scope-field-label {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--ink, #1c2433);
+}
+.scope-picker {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.scope-picker.locked {
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+.scope-opt {
+  --ac: #6b5bd6;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 14px 10px;
+  border: 1.5px solid var(--line, #e7e3f2);
+  border-radius: 14px;
+  background: #fff;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.14s var(--ease), border-color 0.14s var(--ease),
+    background 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+.scope-opt[data-scope="public"] {
+  --ac: #0ea5a4;
+}
+.scope-opt[data-scope="owner_private"] {
+  --ac: #e11d48;
+}
+.scope-opt[data-scope="work"] {
+  --ac: #e08407;
+}
+.scope-opt-ic {
+  color: var(--ac);
+  transition: transform 0.18s var(--ease);
+}
+.scope-opt-label {
+  font-size: 14px;
+  font-weight: 900;
+  color: #3a3550;
+}
+.scope-opt-sub {
+  font-size: 11px;
+  font-weight: 700;
+  color: #9a93ad;
+}
+.scope-opt:hover:not(:disabled):not(.on) {
+  border-color: color-mix(in srgb, var(--ac) 50%, var(--line, #e7e3f2));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px -12px rgba(80, 60, 140, 0.4);
+}
+.scope-opt:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.scope-opt.on {
+  border-color: var(--ac);
+  background: color-mix(in srgb, var(--ac) 12%, #fff);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ac) 22%, transparent),
+    0 10px 22px -14px var(--ac);
+}
+.scope-opt.on .scope-opt-label {
+  color: color-mix(in srgb, var(--ac) 65%, #2a2540);
+}
+.scope-opt.on .scope-opt-ic {
+  transform: scale(1.12);
+}
+.scope-opt:disabled {
+  cursor: default;
+}
+.scope-opt:disabled:not(.on) {
+  opacity: 0.5;
+}
+/* 선택 카드 우상단 ✓ */
+.scope-opt.on::after {
+  content: "✓";
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: var(--ac);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+  animation: scope-check-in 0.18s var(--ease, ease) both;
+}
+@keyframes scope-check-in {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.scope-picker.locked .scope-opt {
+  cursor: default;
+}
+.scope-locked-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #9a93ad;
+}
+.scope-locked-note svg {
+  color: #b9b2c8;
+  flex: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scope-opt,
+  .scope-opt-ic {
+    transition: none;
+  }
+  .scope-opt.on::after {
+    animation: none;
+  }
+}
 .editor-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

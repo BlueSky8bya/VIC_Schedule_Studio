@@ -6,11 +6,13 @@ import {
   ExternalLink,
   Eye,
   EyeOff,
+  Globe,
   LockKeyhole,
   Save,
   Sparkles,
   Trash2,
   Vibrate,
+  Wrench,
   X
 } from "lucide-react";
 import Link from "next/link";
@@ -3667,30 +3669,66 @@ export function StudioShell({
               />
             </label>
 
-            <label>
-              공개 범위
+            {/* 공개 범위 — 웹 전용 카드 선택기(아이콘+범위+한줄설명). 밋밋한 흰 드롭다운 대신
+                범위별 색/아이콘으로 한눈에, 선택 카드는 그 색으로 채워지고 체크 표시. */}
+            <div className="scope-field">
+              <span className="scope-field-label">공개 범위</span>
               {canReadPrivate ? (
-                <select
-                  disabled={!canEdit}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      visibilityScope: event.target.value as EventVisibilityScope
-                    }))
-                  }
-                  value={form.visibilityScope}
-                >
-                  <option value="public">모두</option>
-                  {isEffectivelyOwner ? <option value="owner_private">엠바고</option> : null}
-                  <option value="work">작업자</option>
-                </select>
+                <div className="scope-picker" role="radiogroup" aria-label="공개 범위">
+                  {(
+                    [
+                      { v: "public", Icon: Globe, label: "모두", sub: "누구나 봐요", show: true },
+                      {
+                        v: "owner_private",
+                        Icon: LockKeyhole,
+                        label: "엠바고",
+                        sub: "관리자만",
+                        show: isEffectivelyOwner
+                      },
+                      { v: "work", Icon: Wrench, label: "작업자", sub: "작업자까지", show: true }
+                    ] as const
+                  )
+                    .filter((o) => o.show)
+                    .map(({ v, Icon, label, sub }) => {
+                      const on = form.visibilityScope === v;
+                      return (
+                        <button
+                          aria-checked={on}
+                          className={`scope-opt${on ? " on" : ""}`}
+                          data-scope={v}
+                          disabled={!canEdit}
+                          key={v}
+                          onClick={() => {
+                            hapticTick();
+                            setForm((current) => ({
+                              ...current,
+                              visibilityScope: v as EventVisibilityScope
+                            }));
+                          }}
+                          role="radio"
+                          type="button"
+                        >
+                          <Icon aria-hidden="true" className="scope-opt-ic" size={18} />
+                          <span className="scope-opt-label">{label}</span>
+                          <span className="scope-opt-sub">{sub}</span>
+                        </button>
+                      );
+                    })}
+                </div>
               ) : (
-                // 비공개 레이어 잠김: 공개 범위는 "모두"로 고정. 비밀번호로 풀어야 토글이 열린다.
-                <select disabled value="public" title="비공개 레이어를 풀면 엠바고·작업자를 지정할 수 있습니다">
-                  <option value="public">모두</option>
-                </select>
+                // 비공개 레이어 잠김: 공개 범위는 "모두"로 고정. 비밀번호로 풀어야 엠바고·작업자가 열린다.
+                <div className="scope-picker locked">
+                  <div aria-disabled="true" className="scope-opt on" data-scope="public">
+                    <Globe aria-hidden="true" className="scope-opt-ic" size={18} />
+                    <span className="scope-opt-label">모두</span>
+                    <span className="scope-opt-sub">누구나 봐요</span>
+                  </div>
+                  <p className="scope-locked-note">
+                    <LockKeyhole aria-hidden="true" size={12} /> 비공개 레이어를 풀면 엠바고·작업자 선택
+                  </p>
+                </div>
               )}
-            </label>
+            </div>
 
             {renderSupportEditor()}
 
