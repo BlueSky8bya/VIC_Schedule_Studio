@@ -301,6 +301,7 @@ export function InsightsDashboard({
   const [vtHover, setVtHover] = useState<VtHover | null>(null);
   const [vtHourHover, setVtHourHover] = useState<OccHover | null>(null); // 시간대 점유(체류) 분해 툴팁
   const [ownerTip, setOwnerTip] = useState<{ x: number; top: number; text: string } | null>(null); // 관리자 세션 띠 툴팁
+  const [dsessTip, setDsessTip] = useState<{ x: number; day: number; n: number } | null>(null); // 일별 세션 막대 호버
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
 
@@ -883,15 +884,40 @@ export function InsightsDashboard({
                     <p className="vhealth">
                       하루 평균 {avg}세션 · 가장 바쁜 날 {month}/{peak + 1} ({visits.dailySessions[peak]}세션)
                     </p>
-                    <div className="dsess" role="img" aria-label="일별 세션 수">
-                      {visits.dailySessions.map((n, i) => (
-                        <div className="dsess-col" key={i} title={`${month}/${i + 1} · ${n}세션`}>
-                          <div className="dsess-barwrap">
-                            <div className="dsess-bar" style={{ height: `${(n / dmax) * 100}%` }} />
+                    <div
+                      aria-label="일별 세션 수"
+                      className="dsess"
+                      onPointerLeave={() => setDsessTip(null)}
+                      role="img"
+                    >
+                      {visits.dailySessions.map((n, i) => {
+                        const enter = () =>
+                          setDsessTip({
+                            x: ((i + 0.5) / visits.dailySessions.length) * 100,
+                            day: i + 1,
+                            n
+                          });
+                        return (
+                          <div
+                            className="dsess-col"
+                            key={i}
+                            onPointerEnter={enter}
+                            onPointerMove={enter}
+                          >
+                            <div className="dsess-barwrap">
+                              <div className="dsess-bar" style={{ height: `${(n / dmax) * 100}%` }} />
+                            </div>
+                            <span className="dsess-x">{(i + 1) % 5 === 0 || i === 0 ? i + 1 : ""}</span>
                           </div>
-                          <span className="dsess-x">{(i + 1) % 5 === 0 || i === 0 ? i + 1 : ""}</span>
+                        );
+                      })}
+                      {dsessTip ? (
+                        <div className="vt-tip" style={{ "--tip-x": `${dsessTip.x}%` } as CSSProperties}>
+                          <strong>
+                            {month}/{dsessTip.day} · {dsessTip.n}세션
+                          </strong>
                         </div>
-                      ))}
+                      ) : null}
                     </div>
                   </>
                 );

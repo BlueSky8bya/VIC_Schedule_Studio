@@ -1135,11 +1135,12 @@
 }
 /* 일별 세션 수 미니 막대(세션 로그 카드의 월간 추이) — 하루 단위 기록을 모아 한눈에. */
 .dsess {
+  position: relative; /* 호버 수치 툴팁(.vt-tip) clamp 기준 */
   display: flex;
   align-items: flex-end;
   gap: 2px;
   height: 44px;
-  margin: 8px 0 4px;
+  margin: 20px 0 4px; /* 막대 위 호버 툴팁이 뜰 자리 */
 }
 .dsess-col {
   flex: 1;
