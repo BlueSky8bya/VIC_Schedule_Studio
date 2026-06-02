@@ -4266,6 +4266,84 @@ textarea:disabled {
   font-weight: 800;
   color: #9f1239;
 }
+/* 값 좌우 스와이프(모바일) — 스크롤 대신 드래그가 잡히게 + '밀 수 있다'는 커서/표시. */
+.duration-stepper .dstep-scrub {
+  touch-action: none;
+  cursor: ew-resize;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 10px;
+  background: #fff;
+  border: 1px dashed #f4c4cc;
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.dhint {
+  margin-left: 4px;
+  color: #b98ca0;
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+}
+/* ── 웹 전용: 기간 슬라이더(끌어서 한 번에) — 모바일 스텝퍼와 차별화 ── */
+.duration-slider {
+  display: grid;
+  gap: 9px;
+}
+.dslider-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--muted);
+}
+.dslider-head strong {
+  font-size: 14px;
+  font-weight: 900;
+  color: #9f1239;
+}
+.duration-slider input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: #ffdbe1;
+  cursor: pointer;
+}
+.duration-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fb7185;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 5px rgb(159 18 57 / 38%);
+  cursor: grab;
+  transition: transform var(--dur-1) var(--ease);
+}
+.duration-slider input[type="range"]::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  cursor: grabbing;
+}
+.duration-slider input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fb7185;
+  border: 3px solid #fff;
+  box-shadow: 0 1px 5px rgb(159 18 57 / 38%);
+  cursor: grab;
+}
+.duration-slider input[type="range"]:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 
 /* ── #2: 팝업(모달) 디자인 리프레시 ── */
 .modal-backdrop {

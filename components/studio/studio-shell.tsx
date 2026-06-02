@@ -186,12 +186,16 @@ function addDaysIso(iso: string, days: number): string {
   ].join("-");
 }
 
-// 업 도움 종료일 표시 — "M월 D일 · N일간"(시작~종료 포함 일수). 스텝퍼 표시 공용.
-function formatSupportEnd(start: string, end: string): string {
+// 시작~종료 포함 일수(같은 날=1).
+function spanDays(start: string, end: string): number {
   const [sy, sm, sd] = start.split("-").map(Number);
   const [ey, em, ed] = end.split("-").map(Number);
-  const span = Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(sy, sm - 1, sd)) / 86400000) + 1;
-  return `${em}월 ${ed}일 · ${span}일간`;
+  return Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(sy, sm - 1, sd)) / 86400000) + 1;
+}
+// 업 도움 종료일 표시 — "M월 D일 · N일간". 스텝퍼/슬라이더 공용.
+function formatSupportEnd(start: string, end: string): string {
+  const [, em, ed] = end.split("-").map(Number);
+  return `${em}월 ${ed}일 · ${spanDays(start, end)}일간`;
 }
 
 
@@ -405,6 +409,8 @@ export function StudioShell({
   useLayoutEffect(() => {
     if (mobileEditId !== null) fitTitleHeight();
   }, [mobileEditId]);
+  // 업 도움 종료일을 손가락으로 좌우로 밀어 빠르게 바꾸는 스크럽 상태(드래그 시작점 + 그때 종료일).
+  const dateScrubRef = useRef<{ x: number; end: string } | null>(null);
   // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 전용 시트(웹·모바일 공용).
   const [supportSheetId, setSupportSheetId] = useState<string | null>(null);
   const [supportSaving, setSupportSaving] = useState(false);
@@ -2627,43 +2633,90 @@ export function StudioShell({
               );
             })}
           </div>
-          {/* 종료일 — 못생긴 네이티브 달력 대신 −/+ 스텝퍼로 하루씩(웹·모바일 공용, 깔끔). */}
-          <div className="duration-manual">
-            <span>종료일 직접 조절</span>
-            <div className="duration-stepper" role="group" aria-label="종료일 조절">
-              <button
-                aria-label="하루 줄이기"
-                className="dstep"
-                disabled={!editable || (form.endDateKey || selectedDate) <= selectedDate}
-                onClick={() => {
-                  const end = form.endDateKey || selectedDate;
-                  const prev = addDaysIso(end, -1);
+          {/* 종료일 — 못생긴 네이티브 달력 제거. 모바일=스텝퍼+값 좌우 스와이프, 웹=드래그 슬라이더. */}
+          {isNarrow ? (
+            <div className="duration-manual">
+              <span>
+                종료일 조절 <em className="dhint">−/+ 또는 밀어서 빠르게</em>
+              </span>
+              <div className="duration-stepper" role="group" aria-label="종료일 조절">
+                <button
+                  aria-label="하루 줄이기"
+                  className="dstep"
+                  disabled={!editable || (form.endDateKey || selectedDate) <= selectedDate}
+                  onClick={() => {
+                    const end = form.endDateKey || selectedDate;
+                    const prev = addDaysIso(end, -1);
+                    setForm((current) => ({
+                      ...current,
+                      endDateKey: prev < selectedDate ? selectedDate : prev
+                    }));
+                  }}
+                  type="button"
+                >
+                  −
+                </button>
+                {/* 값을 좌우로 밀면(민감, 8px=1일) 종료일이 빠르게 바뀐다. 시작일 아래로는 안 내려감. */}
+                <span
+                  className="dstep-val dstep-scrub"
+                  onPointerDown={(e: ReactPointerEvent<HTMLSpanElement>) => {
+                    if (!editable) return;
+                    dateScrubRef.current = { x: e.clientX, end: form.endDateKey || selectedDate };
+                    e.currentTarget.setPointerCapture(e.pointerId);
+                  }}
+                  onPointerMove={(e: ReactPointerEvent<HTMLSpanElement>) => {
+                    const s = dateScrubRef.current;
+                    if (!s) return;
+                    const d = Math.round((e.clientX - s.x) / 8);
+                    let ne = addDaysIso(s.end, d);
+                    if (ne < selectedDate) ne = selectedDate;
+                    setForm((current) => ({ ...current, endDateKey: ne }));
+                  }}
+                  onPointerUp={() => {
+                    dateScrubRef.current = null;
+                  }}
+                  onPointerCancel={() => {
+                    dateScrubRef.current = null;
+                  }}
+                >
+                  {formatSupportEnd(selectedDate, form.endDateKey || selectedDate)}
+                </span>
+                <button
+                  aria-label="하루 늘리기"
+                  className="dstep"
+                  disabled={!editable}
+                  onClick={() => {
+                    const end = form.endDateKey || selectedDate;
+                    setForm((current) => ({ ...current, endDateKey: addDaysIso(end, 1) }));
+                  }}
+                  type="button"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="duration-slider">
+              <div className="dslider-head">
+                <span>기간 슬라이더 — 끌어서 한 번에</span>
+                <strong>{formatSupportEnd(selectedDate, form.endDateKey || selectedDate)}</strong>
+              </div>
+              <input
+                aria-label="업 도움 기간(일)"
+                disabled={!editable}
+                max={45}
+                min={1}
+                onChange={(e) =>
                   setForm((current) => ({
                     ...current,
-                    endDateKey: prev < selectedDate ? selectedDate : prev
-                  }));
-                }}
-                type="button"
-              >
-                −
-              </button>
-              <span className="dstep-val">
-                {formatSupportEnd(selectedDate, form.endDateKey || selectedDate)}
-              </span>
-              <button
-                aria-label="하루 늘리기"
-                className="dstep"
-                disabled={!editable}
-                onClick={() => {
-                  const end = form.endDateKey || selectedDate;
-                  setForm((current) => ({ ...current, endDateKey: addDaysIso(end, 1) }));
-                }}
-                type="button"
-              >
-                +
-              </button>
+                    endDateKey: addDaysIso(selectedDate, Number(e.target.value) - 1)
+                  }))
+                }
+                type="range"
+                value={spanDays(selectedDate, form.endDateKey || selectedDate)}
+              />
             </div>
-          </div>
+          )}
         </div>
         <label className="support-link-field">
           <span className="support-link-label">
