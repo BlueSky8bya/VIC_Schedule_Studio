@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { PlainEmail } from "@/components/ui/plain-email";
 import type { AccessPerson } from "@/lib/insights/actions";
+import { hapticTick } from "@/lib/ui/haptics";
 
 // 보안 패널(개발자·관리자 공용) — 지금 비공개를 연 계정 배너, 잠금 암호 정보, 비밀번호 변경,
 // 역할별 접근 자격자(사람마다 만료시간 + 개별 만료). showDevelopers로 개발자 섹션 노출 여부를 가른다.
@@ -52,6 +54,7 @@ export function SecurityPanel({
     ) {
       return;
     }
+    hapticTick();
     setExpiringUserId(userId);
     setExpireError(null);
     const res = await onExpire(userId);
@@ -73,7 +76,7 @@ export function SecurityPanel({
             {people.map((p) => (
               <li className="access-card" key={`${roleClass}-${p.email}`}>
                 <div className="access-top">
-                  <span className="access-email">{p.email}</span>
+                  <PlainEmail className="access-email" value={p.email} />
                   <em className={`rt ${roleClass}`}>{roleLabel}</em>
                 </div>
                 <div className="access-bottom">
@@ -109,22 +112,29 @@ export function SecurityPanel({
           : "지금 비공개를 연 계정 없음"}
       </div>
       <h4 className="insight-subhead">비공개 잠금 암호</h4>
-      <ul className="insight-rows">
+      <ul className="sec-kpis">
         <li>
+          <b>v{data.passcodeVersion ?? "—"}</b>
           <span>암호 버전</span>
-          <strong>v{data.passcodeVersion ?? "—"}</strong>
         </li>
         <li>
+          <b>{fmtDate(data.passcodeUpdatedAt)}</b>
           <span>마지막 변경</span>
-          <strong>{fmtDate(data.passcodeUpdatedAt)}</strong>
         </li>
         <li>
-          <span>잠금 유효 시간</span>
-          <strong>{data.unlockDurationMinutes ?? "—"}분</strong>
+          <b>{data.unlockDurationMinutes ?? "—"}분</b>
+          <span>잠금 유효</span>
         </li>
       </ul>
       {onChangePasscode ? (
-        <button className="button insight-change-passcode" onClick={onChangePasscode} type="button">
+        <button
+          className="button insight-change-passcode"
+          onClick={() => {
+            hapticTick();
+            onChangePasscode();
+          }}
+          type="button"
+        >
           비밀번호 변경
         </button>
       ) : null}

@@ -1615,6 +1615,109 @@
   font-weight: 700;
   color: #9a93ad;
 }
+/* ── 보안 패널: 잠금 암호 핵심값을 스탯 타일로(키-값 나열 대신). 웹은 크게, 모바일 3열 컴팩트. ── */
+.sec-kpis {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.sec-kpis li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #efeaf9;
+  transition: transform 0.15s var(--ease, ease), box-shadow 0.15s var(--ease, ease);
+}
+.sec-kpis li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px -10px rgb(80 60 140 / 35%);
+}
+.sec-kpis b {
+  font-size: 15px;
+  font-weight: 900;
+  color: #4a3f72;
+  line-height: 1.15;
+  text-align: center;
+}
+.sec-kpis span {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #8a82a6;
+}
+@media (min-width: 641px) {
+  .sec-kpis li {
+    padding: 14px 8px;
+  }
+  .sec-kpis b {
+    font-size: 20px;
+  }
+  .sec-kpis span {
+    font-size: 12.5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sec-kpis li {
+    transition: none;
+  }
+}
+/* ── 시스템 패널: 등록 이메일 목록을 역할색 점 + 행 카드로(맨 나열 대신). ── */
+.sys-emails {
+  list-style: none;
+  margin: 0 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sys-emails li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  border: 1px solid var(--line, #e7e3f2);
+  border-radius: 11px;
+  background: #faf9fe;
+  transition: background 0.12s var(--ease, ease);
+}
+.sys-emails li:hover {
+  background: #f4f0ff;
+}
+.sys-dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+}
+.sys-email {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 800;
+  color: #3a3550;
+}
+@media (min-width: 641px) {
+  .sys-email {
+    font-size: 14.5px;
+  }
+}
+/* 커밋 해시 — 코드 칩(고정폭). */
+.sys-commit {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f1edfb;
+  color: #5a4fa0;
+  padding: 1px 8px;
+  border-radius: 6px;
+  font-size: 12.5px;
+}
 @media (prefers-reduced-motion: reduce) {
   .vlog-chip {
     transition: none;

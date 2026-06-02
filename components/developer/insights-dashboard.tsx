@@ -23,6 +23,7 @@ import { DeveloperPanel } from "@/components/developer/developer-panel";
 import { HighlightCards } from "@/components/studio/highlight-cards";
 import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
+import { PlainEmail } from "@/components/ui/plain-email";
 import {
   getInsightsAction,
   getTrendAction,
@@ -1385,16 +1386,20 @@ export function InsightsDashboard({
                   <div className="insight-banner warn">
                     ⚠ 등록된 관리자와 실제 DB 관리자가 달라요 — 관리자 저장이 실패할 수 있어요.
                     <br />
-                    실제 DB 관리자: {d.system.dbOwnerEmail ?? "—"}
+                    실제 DB 관리자:{" "}
+                    {d.system.dbOwnerEmail ? <PlainEmail value={d.system.dbOwnerEmail} /> : "—"}
                   </div>
                 )}
                 <h4 className="insight-subhead">관리자 계정 ({d.system.ownerEmails.length})</h4>
                 {d.system.ownerEmails.length === 0 ? (
                   <p className="insight-empty">등록된 관리자 계정이 없어요.</p>
                 ) : (
-                  <ul className="insight-list">
+                  <ul className="sys-emails">
                     {d.system.ownerEmails.map((e) => (
-                      <li key={e}>{e}</li>
+                      <li key={e}>
+                        <span className="sys-dot" style={{ background: roleColor("owner") }} />
+                        <PlainEmail className="sys-email" value={e} />
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -1402,9 +1407,12 @@ export function InsightsDashboard({
                 {d.system.developerEmails.length === 0 ? (
                   <p className="insight-empty">등록된 개발자 계정이 없어요.</p>
                 ) : (
-                  <ul className="insight-list">
+                  <ul className="sys-emails">
                     {d.system.developerEmails.map((e) => (
-                      <li key={e}>{e}</li>
+                      <li key={e}>
+                        <span className="sys-dot" style={{ background: roleColor("developer") }} />
+                        <PlainEmail className="sys-email" value={e} />
+                      </li>
                     ))}
                   </ul>
                 )}
@@ -1412,7 +1420,7 @@ export function InsightsDashboard({
                 <ul className="insight-rows">
                   <li>
                     <span>버전(커밋)</span>
-                    <strong>{d.system.commit ?? "로컬"}</strong>
+                    <strong className="sys-commit">{d.system.commit ?? "로컬"}</strong>
                   </li>
                   <li>
                     <span>배포 시각(KST)</span>
