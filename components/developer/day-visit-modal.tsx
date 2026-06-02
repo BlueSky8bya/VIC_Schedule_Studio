@@ -4,6 +4,7 @@ import { type CSSProperties, type PointerEvent as ReactPointerEvent, useEffect, 
 import {
   DEVICE_META,
   ROLE_META,
+  fmtDur,
   fmtOcc,
   hhmm,
   kstOf
@@ -63,15 +64,15 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
     .map((s) => {
       const d = kstOf(s.startMs);
       const startFrac = (d.getUTCHours() + d.getUTCMinutes() / 60) / 24;
-      const widthFrac = Math.min(1 - startFrac, Math.max(s.minutes / 60 / 24, 0));
+      const widthFrac = Math.min(1 - startFrac, Math.max(s.seconds / 3600 / 24, 0));
       return {
         startFrac,
         widthFrac,
         device: s.device,
-        minutes: s.minutes,
+        seconds: s.seconds,
         startMs: s.startMs,
         timeLabel: `${hhmm(s.startMs)}–${hhmm(s.endMs)}`,
-        tip: `${hhmm(s.startMs)}–${hhmm(s.endMs)} · ${s.minutes}분 · ${devMeta(s.device).label}`
+        tip: `${hhmm(s.startMs)}–${hhmm(s.endMs)} · ${fmtDur(s.seconds)} · ${devMeta(s.device).label}`
       };
     })
     .sort((a, b) => a.startMs - b.startMs);
@@ -203,15 +204,17 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                 <span className="dv-dev" style={{ background: devMeta(v.device).color }} />
                 <span className="dv-time">{v.t ? hhmm(v.t) : "—"}</span>
                 <b className="dv-acct">{v.account}</b>
-                <em>{devMeta(v.device).label}</em>
+                <em>
+                  {fmtDur(v.seconds)} · {devMeta(v.device).label}
+                </em>
               </li>
             ))}
           </ul>
-          {/* 역계산: 체류 핑(=분, 60초당 1핑). 방문은 찍혔는데 핑 0이면 동접 그래프엔 안 잡힌다. */}
+          {/* 세션 모델이라 체류는 초 단위로 정확. 합이 매우 짧으면(0~수초) 화면을 사실상 안 본 것. */}
           <p className="vt-occ-note">
-            {data.ownerPings > 0
-              ? `관리자 체류 ≈ 약 ${data.ownerPings}분 (체류 핑 ${data.ownerPings}개)`
-              : "체류 핑 0개 — 1분 미만 머물렀거나 백그라운드 탭이라 동시 접속 그래프엔 안 잡혀요."}
+            {data.ownerSeconds > 0
+              ? `관리자 총 체류 ${fmtDur(data.ownerSeconds)}`
+              : "체류 0초 — 화면을 거의 안 봤어요(열리자마자 나감/숨김)."}
           </p>
         </>
       ) : (
@@ -263,7 +266,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
               <li key={i}>
                 <span className="dv-dev" style={{ background: devMeta(s.device).color }} />
                 <span className="dv-time">{s.timeLabel}</span>
-                <b>{s.minutes}분</b>
+                <b>{fmtDur(s.seconds)}</b>
                 <em>{devMeta(s.device).label}</em>
               </li>
             ))}

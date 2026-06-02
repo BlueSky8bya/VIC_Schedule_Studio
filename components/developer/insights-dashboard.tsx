@@ -109,6 +109,11 @@ export const hhmm = (ms: number) => {
   const d = kstOf(ms);
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 };
+// 체류 시간 표기 — 60초 미만은 '초', 그 이상은 '분'(초 단위 세션 모델이라 짧은 방문도 정확히). (일별 모달과 공유)
+export const fmtDur = (seconds: number) => {
+  const s = Math.max(0, Math.round(seconds));
+  return s < 60 ? `${s}초` : `${Math.round(s / 60)}분`;
+};
 
 // 스택 막대 한 줄(방문 그래프 공용 — 역할/기기 등 meta로 구분). 호버하면 차트 단일 툴팁에 분해 수치를
 // 올려준다(툴팁은 차트 폭 안에서 clamp되어 양 끝에서도 안 잘린다).
@@ -348,13 +353,13 @@ export function InsightsDashboard({
       const d = kstOf(s.startMs);
       const key = d.toISOString().slice(0, 10);
       const startFrac = (d.getUTCHours() + d.getUTCMinutes() / 60) / 24;
-      const widthFrac = Math.min(1 - startFrac, Math.max(s.minutes / 60 / 24, 0));
+      const widthFrac = Math.min(1 - startFrac, Math.max(s.seconds / 3600 / 24, 0));
       const entry = ownerDayMap.get(key) ?? { label: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`, segs: [] };
       entry.segs.push({
         startFrac,
         widthFrac,
         device: s.device,
-        label: `${hhmm(s.startMs)}–${hhmm(s.endMs)} · ${s.minutes}분 · ${devMeta(s.device).label}`
+        label: `${hhmm(s.startMs)}–${hhmm(s.endMs)} · ${fmtDur(s.seconds)} · ${devMeta(s.device).label}`
       });
       ownerDayMap.set(key, entry);
     }

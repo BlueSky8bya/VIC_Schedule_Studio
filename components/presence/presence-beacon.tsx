@@ -3,96 +3,76 @@
 import { useEffect } from "react";
 import type { MembershipRole } from "@/lib/domain/schedule-types";
 import { detectDevice, startPresence } from "@/lib/presence/presence-client";
-import { logPresencePingAction, logVisitAction } from "@/lib/insights/actions";
 
 // 모든 로그인 사용자 화면에 1개 깔리는 보이지 않는 컴포넌트.
 // 1) 실시간 프레즌스에 자기 역할만 등록(개발자 창의 실시간 패널 합산용).
-// 2) "방문 추이"용으로 브라우저당 하루 1회 익명 방문을 기록(역할·기기·날짜만, 개인정보 없음).
-// 3) "동시 접속(체류)"용으로 화면이 보이는 동안 60초마다 핑(역할·기기·분만, 개인정보 없음).
-const VISIT_KEY = "vic:visitDay2";
-const SESSION_KEY = "vic:presenceKey"; // presence-client과 같은 키 — 브라우저당 1세션.
-
-// 동시 접속 집계용 세션 식별자(브라우저당 고정, PII 아님). 실시간 프레즌스와 같은 키를 공유한다.
-function getSessionHash(): string {
-  try {
-    let k = window.localStorage.getItem(SESSION_KEY);
-    if (!k) {
-      k =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random()}`;
-      window.localStorage.setItem(SESSION_KEY, k);
-    }
-    return k;
-  } catch {
-    return `${Date.now()}-${Math.random()}`;
-  }
-}
+// 2) 방문/체류를 '세션 이벤트'로 기록 — 화면이 보이기 시작하면 세션 생성(start), 보이는 동안
+//    하트비트로 last_seen 갱신(touch), 숨기거나 떠나면 종료(end). 재진입하면 새 세션(여러 번 기록).
+//    체류는 started_at~ended_at의 초 단위로 정확. 모두 keepalive fetch라 떠나며 보낸 end도 끝까지 간다.
+//    화면이 '보일 때만' 기록하므로 프리렌더·백그라운드 로드(안 본 유령 방문)는 잡히지 않는다.
+const HEARTBEAT_MS = 25_000;
 
 export function PresenceBeacon({ role }: { role: MembershipRole }) {
   useEffect(() => {
     startPresence(role);
 
-    // 하루 1회만 방문 기록. '화면이 실제로 보일 때'만 찍는다 — 프리렌더/프리패치·백그라운드 탭처럼
-    // 열리기만 하고 안 본 유령 로드를 방문으로 세지 않기 위함. (예전엔 mount 즉시 무조건 찍어서
-    // "방문은 1인데 체류 핑은 0" 같은 모순이 났다. 이제 방문·핑이 같은 'visible' 조건을 공유한다.)
-    const logVisitOnce = () => {
+    const device = detectDevice();
+    let sessionId: string | null = null;
+    let starting = false;
+    let timer: number | null = null;
+
+    const post = (op: string, extra?: Record<string, unknown>) =>
+      fetch("/api/presence", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        keepalive: true,
+        body: JSON.stringify({ op, device, ...extra })
+      });
+
+    const begin = async () => {
+      if (sessionId || starting) return;
+      starting = true;
       try {
-        const today = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
-        if (window.localStorage.getItem(VISIT_KEY) === today) return;
-        const sessionHash =
-          typeof crypto !== "undefined" && "randomUUID" in crypto
-            ? crypto.randomUUID()
-            : `${Date.now()}-${Math.random()}`;
-        // 플래그는 '성공했을 때만' 찍는다 → 한 번 실패하면 다음에 다시 시도(누락 방지).
-        logVisitAction(detectDevice(), sessionHash)
-          .then((r) => {
-            if (r?.ok) {
-              try {
-                window.localStorage.setItem(VISIT_KEY, today);
-              } catch {
-                /* ignore */
-              }
-            }
-          })
-          .catch(() => {});
+        const res = await post("start");
+        const data = (await res.json().catch(() => null)) as { ok?: boolean; id?: string } | null;
+        if (data?.ok && data.id) sessionId = data.id;
       } catch {
-        // localStorage 차단 환경 등 — 방문 기록은 보조 기능이라 조용히 무시.
+        /* 보조 기능 — 조용히 무시 */
+      } finally {
+        starting = false;
       }
     };
-
-    // 동시 접속(체류) 핑 — 화면이 보이는 동안 60초마다 1핑. 숨기면(다른 탭·최소화) 중단하고,
-    // 다시 보이면 재개하며 즉시 1핑. (세션, 분) 단위로 서버가 1줄만 남기므로 중복은 자동 합쳐지고,
-    // 켜두고 잊은 백그라운드 탭은 세지 않는다. 평균 동시 접속 = 그 시간 핑 수 / 60.
-    const device = detectDevice();
-    const session = getSessionHash();
-    let timer: number | null = null;
-    const ping = () => {
-      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-      logPresencePingAction(device, session).catch(() => {});
+    const touch = () => {
+      if (sessionId) post("touch", { id: sessionId }).catch(() => {});
     };
-    const start = () => {
-      logVisitOnce(); // 보이기 시작한 시점에 방문 기록(핑과 같은 조건 → 두 지표가 어긋나지 않음).
-      if (timer !== null) return;
-      ping(); // 보이기 시작하면 즉시 1핑(짧은 방문도 기록).
-      timer = window.setInterval(ping, 60_000);
-    };
-    const stop = () => {
+    const finish = () => {
       if (timer !== null) {
         window.clearInterval(timer);
         timer = null;
       }
+      if (sessionId) {
+        post("end", { id: sessionId }).catch(() => {});
+        sessionId = null; // 다음에 다시 보이면 새 세션
+      }
     };
+    const start = () => {
+      if (timer !== null) return;
+      void begin(); // 진입 즉시 세션 생성(짧은 방문도 기록)
+      timer = window.setInterval(touch, HEARTBEAT_MS);
+    };
+
     const onVisibility = () => {
       if (document.visibilityState === "visible") start();
-      else stop();
+      else finish();
     };
     document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", finish);
     if (document.visibilityState === "visible") start();
 
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
-      stop();
+      window.removeEventListener("pagehide", finish);
+      finish();
     };
   }, [role]);
   return null;

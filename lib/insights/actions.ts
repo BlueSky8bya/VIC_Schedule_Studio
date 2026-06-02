@@ -85,23 +85,6 @@ function accountHashOf(email: string): string {
     process.env.VISIT_HASH_SALT || process.env.SUPABASE_SERVICE_ROLE_KEY || "vic-visit-salt";
   return createHash("sha256").update(`${salt}:${email}`).digest("hex").slice(0, 32);
 }
-// 집계에서 한 방문(계정)을 식별하는 키 — 신규 행은 account_hash, 옛 행은 session_hash(방문당 무작위)로
-// 폴백한다(옛 데이터는 기존처럼 행=1방문으로 셈).
-function visitIdentity(r: { account_hash?: string | null; session_hash?: string | null }): string {
-  return r.account_hash ?? r.session_hash ?? "";
-}
-type VisitRow = {
-  day: string;
-  role: string;
-  device: string;
-  occurred_at: string;
-  account_hash: string | null;
-  session_hash: string | null;
-};
-// 방문수(계정 단위) — (날짜, 계정) 고유 쌍의 개수. 같은 계정이 웹·iOS를 같은 날 써도 1방문.
-function countVisits(rows: VisitRow[]): number {
-  return new Set(rows.map((r) => `${r.day}|${visitIdentity(r)}`)).size;
-}
 
 const ROLE_ORDER = ["viewer", "worker", "manager", "owner", "developer"] as const;
 const DEVICE_SET = new Set(["desktop", "android", "ios", "mobile"]);
@@ -120,74 +103,220 @@ const DEVICE_TREND_META = [
   { key: "mobile", label: "기타", color: "#f59e0b" }
 ];
 
-// 방문 기록 — '계정 단위'로 하루 1방문. 역할/계정은 서버에서 실제 actor로 확인해 위조를 막고,
-// 기기/세션 식별자만 클라이언트에서 받는다. 원문 이메일·user_id는 저장하지 않고 익명 해시만 남긴다.
-// 같은 (날짜, 계정, 기기)는 유니크 인덱스로 한 줄만 유지(upsert+무시) → 탭 여러 개·재방문도 1줄.
-// 한 계정이 웹·모바일을 모두 쓰면 기기별로 한 줄씩(방문수는 계정당 1, 기기별은 분해).
-export async function logVisitAction(
-  device: string,
-  sessionHash: string
-): Promise<{ ok: boolean }> {
-  const actor = await resolveCurrentActor(SLUG);
-  if (!actor.isAuthenticated || !actor.email) return { ok: false };
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) return { ok: false };
-  const safeDevice = DEVICE_SET.has(device) ? device : "desktop";
-  const accountHash = accountHashOf(actor.email);
-  const safeHash = (sessionHash || "").slice(0, 64) || accountHash;
-  try {
-    // upsert는 DB 오류 시 throw가 아니라 { error }를 돌려줄 수 있어 반드시 확인한다.
-    const { error } = await supabase.from("visit_log").upsert(
-      {
-        day: ymd(kstNow()),
-        role: actor.role,
-        device: safeDevice,
-        session_hash: safeHash,
-        account_hash: accountHash
-      },
-      { onConflict: "day,account_hash,device", ignoreDuplicates: true }
-    );
-    if (error) return { ok: false };
-  } catch {
-    return { ok: false };
-  }
-  return { ok: true };
-}
-
-// 동시 접속(체류) 핑 — 브라우저가 화면에 보이는 동안 60초마다 호출. (세션, 분) 단위로 1줄만 남긴다
-// (멱등 upsert). 역할은 서버에서 actor로 다시 확인해 위조를 막고, 기기/세션 식별자만 클라에서 받는다.
-// 개인정보(이메일·user_id)는 저장하지 않는다. 시간대 평균 동시 접속 = 그 시간 핑 수 / 60.
-export async function logPresencePingAction(
-  device: string,
-  sessionHash: string
-): Promise<{ ok: boolean }> {
+// ── 방문/체류 통합 '세션 이벤트' 기록 ──
+// 화면이 보이기 시작할 때 한 줄 생성(start) → 하트비트로 last_seen 갱신(touch) → 나갈 때 ended_at
+// 확정(end). 재진입하면 또 한 줄(여러 번 기록). 역할/계정은 서버에서 실제 actor로 확인(위조 방지),
+// 원문 이메일·user_id는 저장하지 않고 익명 해시만. id는 서버 생성 uuid(추측 불가)라 touch/end는 id로만.
+export async function startVisitSession(device: string): Promise<{ ok: boolean; id?: string }> {
   const actor = await resolveCurrentActor(SLUG);
   if (!actor.isAuthenticated) return { ok: false };
   const supabase = createSupabaseAdminClient();
   if (!supabase) return { ok: false };
   const safeDevice = DEVICE_SET.has(device) ? device : "desktop";
-  const safeHash = (sessionHash || "").slice(0, 64);
-  if (!safeHash) return { ok: false };
-  // 분 단위로 잘라 같은 분의 중복 핑은 1줄로(멱등). day는 KST 날짜.
-  const minuteTs = new Date(Math.floor(Date.now() / 60000) * 60000).toISOString();
+  const nowIso = new Date().toISOString();
   try {
-    // upsert는 DB 오류 시 throw가 아니라 { error }를 돌려준다 → 반드시 확인해야 ok가 정직하다
-    // (예전에 service_role 권한 누락으로 42501이 조용히 무시돼 핑이 0개였던 회귀를 막는다).
-    const { error } = await supabase.from("presence_ping").upsert(
-      {
-        session_hash: safeHash,
-        minute_ts: minuteTs,
+    const { data, error } = await supabase
+      .from("visit_session")
+      .insert({
         day: ymd(kstNow()),
+        account_hash: actor.email ? accountHashOf(actor.email) : null,
         role: actor.role,
-        device: safeDevice
-      },
-      { onConflict: "session_hash,minute_ts", ignoreDuplicates: true }
-    );
-    if (error) return { ok: false };
+        device: safeDevice,
+        started_at: nowIso,
+        last_seen_at: nowIso
+      })
+      .select("id")
+      .single();
+    if (error || !data) return { ok: false };
+    return { ok: true, id: data.id as string };
   } catch {
     return { ok: false };
   }
-  return { ok: true };
+}
+
+export async function touchVisitSession(id: string): Promise<{ ok: boolean }> {
+  if (!id) return { ok: false };
+  const actor = await resolveCurrentActor(SLUG);
+  if (!actor.isAuthenticated) return { ok: false };
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return { ok: false };
+  try {
+    const { error } = await supabase
+      .from("visit_session")
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq("id", id);
+    return { ok: !error };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export async function endVisitSession(id: string): Promise<{ ok: boolean }> {
+  if (!id) return { ok: false };
+  const actor = await resolveCurrentActor(SLUG);
+  if (!actor.isAuthenticated) return { ok: false };
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return { ok: false };
+  try {
+    const nowIso = new Date().toISOString();
+    const { error } = await supabase
+      .from("visit_session")
+      .update({ ended_at: nowIso, last_seen_at: nowIso })
+      .eq("id", id);
+    return { ok: !error };
+  } catch {
+    return { ok: false };
+  }
+}
+
+// ── 세션 이벤트 집계 헬퍼(visit_session 기반, JS에서 계산) ──
+// 규모가 작아(스트리머 1명) 행을 받아 JS로 집계한다 — 별도 RPC 불필요. 체류는 초 단위로 정확.
+type SessionRow = {
+  day: string;
+  role: string;
+  device: string;
+  account_hash: string | null;
+  started_at: string;
+  last_seen_at: string;
+  ended_at: string | null;
+};
+const KST_MS = 9 * 3600 * 1000;
+function sStart(r: SessionRow): number {
+  return new Date(r.started_at).getTime();
+}
+// 유효 종료 = ended_at(없으면 last_seen_at). 최소 1초(0초 방문도 한 조각 잡히게).
+function sEnd(r: SessionRow): number {
+  const start = sStart(r);
+  const raw = new Date(r.ended_at ?? r.last_seen_at).getTime();
+  return Number.isFinite(raw) && raw > start ? raw : start + 1000;
+}
+function sAcct(r: SessionRow): string {
+  return r.account_hash ?? "anon";
+}
+function emptyVisitSlot(): VisitSlot {
+  return {
+    roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
+    devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
+    total: 0
+  };
+}
+function emptyOccSlot(): OccSlot {
+  return {
+    roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
+    devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
+    avg: 0,
+    peak: 0
+  };
+}
+async function loadSessions(
+  supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
+  startDay: string,
+  endDayExclusive: string
+): Promise<SessionRow[]> {
+  const { data, error } = await supabase
+    .from("visit_session")
+    .select("day, role, device, account_hash, started_at, last_seen_at, ended_at")
+    .gte("day", startDay)
+    .lt("day", endDayExclusive);
+  return error || !Array.isArray(data) ? [] : (data as SessionRow[]);
+}
+// reach 슬롯: 방문자=(날짜|계정) 고유, 역할별=(날짜|계정) 고유/역할, 기기별=(날짜|계정|기기) 고유.
+// 재진입(같은 날 같은 계정 여러 세션)은 reach에선 1로 합친다(순방문자 의미 유지).
+function reachSlot(rows: SessionRow[]): VisitSlot {
+  const slot = emptyVisitSlot();
+  const seenAll = new Set<string>();
+  const seenRole = new Map<string, Set<string>>();
+  const seenDev = new Set<string>();
+  for (const r of rows) {
+    const id = `${r.day}|${sAcct(r)}`;
+    if (!seenAll.has(id)) {
+      seenAll.add(id);
+      slot.total += 1;
+    }
+    if (r.role in slot.roles) {
+      let s = seenRole.get(r.role);
+      if (!s) {
+        s = new Set();
+        seenRole.set(r.role, s);
+      }
+      if (!s.has(id)) {
+        s.add(id);
+        slot.roles[r.role] += 1;
+      }
+    }
+    const dk = `${id}|${r.device}`;
+    if (r.device in slot.devices && !seenDev.has(dk)) {
+      seenDev.add(dk);
+      slot.devices[r.device] += 1;
+    }
+  }
+  return slot;
+}
+// 관측된 일수(세션이 하나라도 있는 KST 날 수) — 월 점유 정규화용.
+function observedDayCount(rows: SessionRow[]): number {
+  return new Set(rows.map((r) => r.day)).size;
+}
+// 시간대별(KST 0..23) 평균 동접(=구간 초/3600/관측일수)과 최고 동접(스윕). 세션을 시간 경계로 쪼갠다.
+function computeOccupancy(rows: SessionRow[], observedDays: number): OccSlot[] {
+  const sec = Array.from({ length: 24 }, () => ({
+    role: {} as Record<string, number>,
+    device: {} as Record<string, number>,
+    total: 0
+  }));
+  const evs = Array.from({ length: 24 }, () => [] as { t: number; d: number }[]);
+  for (const r of rows) {
+    let cur = sStart(r);
+    const end = sEnd(r);
+    while (cur < end) {
+      const kst = cur + KST_MS;
+      const hourEndUtc = (Math.floor(kst / 3600000) + 1) * 3600000 - KST_MS;
+      const segEnd = Math.min(end, hourEndUtc);
+      const h = Math.floor(kst / 3600000) % 24;
+      const s = (segEnd - cur) / 1000;
+      const b = sec[h];
+      b.total += s;
+      b.role[r.role] = (b.role[r.role] ?? 0) + s;
+      b.device[r.device] = (b.device[r.device] ?? 0) + s;
+      evs[h].push({ t: cur, d: 1 });
+      evs[h].push({ t: segEnd, d: -1 });
+      cur = segEnd;
+    }
+  }
+  const denom = 3600 * Math.max(1, observedDays);
+  return sec.map((b, h) => {
+    const occ = emptyOccSlot();
+    occ.avg = b.total / denom;
+    for (const role of ROLE_ORDER) occ.roles[role] = (b.role[role] ?? 0) / denom;
+    for (const dev of DEVICE_SET) occ.devices[dev] = (b.device[dev] ?? 0) / denom;
+    const ev = evs[h].sort((a, b2) => a.t - b2.t || a.d - b2.d);
+    let cnt = 0;
+    let mx = 0;
+    for (const x of ev) {
+      cnt += x.d;
+      if (cnt > mx) mx = cnt;
+    }
+    occ.peak = mx;
+    return occ;
+  });
+}
+// 관리자(owner) 세션 목록 — 최근 순. 체류는 초 단위(짧으면 UI가 '초'로 표시).
+function ownerSessionsFrom(rows: SessionRow[]): OwnerSession[] {
+  return rows
+    .filter((r) => r.role === "owner")
+    .map((r) => {
+      const startMs = sStart(r);
+      const endMs = sEnd(r);
+      const seconds = Math.max(0, Math.round((endMs - startMs) / 1000));
+      return {
+        device: DEVICE_SET.has(r.device) ? r.device : "desktop",
+        startMs,
+        endMs,
+        minutes: Math.round(seconds / 60),
+        seconds
+      };
+    })
+    .filter((s) => Number.isFinite(s.startMs) && Number.isFinite(s.endMs))
+    .sort((a, b) => b.startMs - a.startMs);
 }
 
 export async function getInsightsAction(year: number, month: number): Promise<InsightsResult> {
@@ -555,8 +684,8 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
 
   const [visitRes, eventsRes, tagsRes, paletteRes, heartsRes] = await Promise.all([
     supabase
-      .from("visit_log")
-      .select("day, role, device, account_hash, session_hash")
+      .from("visit_session")
+      .select("day, role, device, account_hash, started_at, last_seen_at, ended_at")
       .gte("day", fromStart)
       .lt("day", nextMonthStart),
     supabase
@@ -584,13 +713,13 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
   for (const row of tagRows2) {
     if (row.broadcast_tags?.display_name === REST_TAG) restIds.add(row.event_id);
   }
-  // 월별 방문 = (날짜, 계정) 고유 쌍 수(계정당 하루 1). 같은 계정의 웹·iOS는 1방문으로 합친다.
-  const visitRows = (visitRes.data ?? []) as VisitRow[];
+  // 월별 방문 = (날짜, 계정) 고유 쌍 수(계정당 하루 1 — 순방문자). 재진입 세션은 1로 합친다.
+  const visitRows = (visitRes.data ?? []) as SessionRow[];
   const vMap = new Map(monthKeys.map((k) => [k, 0]));
   const vSeen = new Set<string>();
   for (const row of visitRows) {
     const ym = row.day.slice(0, 7);
-    const k = `${row.day}|${visitIdentity(row)}`;
+    const k = `${row.day}|${sAcct(row)}`;
     if (vSeen.has(k)) continue;
     vSeen.add(k);
     if (vMap.has(ym)) vMap.set(ym, (vMap.get(ym) ?? 0) + 1);
@@ -657,17 +786,22 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     .sort((a, b) => b[1].total - a[1].total)
     .map(([key, v]) => ({ key, label: v.name, color: v.color }));
 
-  // 방문 역할별/기기별 6개월(개발자 전용). 역할별은 '방문'(계정 단위 — (날짜,계정) 1회),
-  // 기기별은 '기기'(계정×기기 — 행마다)로 센다.
+  // 방문 역할별/기기별 6개월(개발자 전용). 둘 다 순방문자 기준: 역할별=(날짜,계정) 1회,
+  // 기기별=(날짜,계정,기기) 1회(한 계정이 웹·iOS면 둘 다 1). 재진입 세션은 합친다.
   const roleRows: { ym: string; key: string; n: number }[] = [];
   const devRows: { ym: string; key: string; n: number }[] = [];
   const roleSeen = new Set<string>();
+  const devSeen = new Set<string>();
   for (const row of visitRows) {
     const ym = row.day.slice(0, 7);
-    devRows.push({ ym, key: row.device, n: 1 });
-    const k = `${row.day}|${visitIdentity(row)}`;
-    if (roleSeen.has(k)) continue;
-    roleSeen.add(k);
+    const id = `${row.day}|${sAcct(row)}`;
+    const dk = `${id}|${row.device}`;
+    if (!devSeen.has(dk)) {
+      devSeen.add(dk);
+      devRows.push({ ym, key: row.device, n: 1 });
+    }
+    if (roleSeen.has(id)) continue;
+    roleSeen.add(id);
     roleRows.push({ ym, key: row.role, n: 1 });
   }
 
@@ -703,6 +837,7 @@ export type OwnerSession = {
   startMs: number;
   endMs: number;
   minutes: number;
+  seconds: number; // 초 단위 체류(짧은 방문은 UI가 '초'로 표시)
 };
 export type VisitTrends = {
   ready: boolean; // visit_log 접근 가능(테이블 적용) 여부
@@ -752,8 +887,8 @@ export async function getVisitTrendsAction(
     Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, ...emptySlot() }));
 
   const { data, error } = await supabase
-    .from("visit_log")
-    .select("day, role, device, occurred_at, account_hash, session_hash")
+    .from("visit_session")
+    .select("day, role, device, account_hash, started_at, last_seen_at, ended_at")
     .gte("day", monthStart)
     .lt("day", nextMonthStart);
 
@@ -773,36 +908,14 @@ export async function getVisitTrendsAction(
       }
     };
   }
-  const rows = (data ?? []) as VisitRow[];
+  const rows = (data ?? []) as SessionRow[];
 
-  // 역할/방문은 '계정 단위'(같은 날·같은 계정 = 1방문), 기기는 '계정×기기'(웹·iOS 각각) 행 단위로 센다.
-  // 식별자에 day를 붙여 주·달로 합쳐도 날마다 1방문씩 정직하게 누적되게 한다.
-  const slotFromRows = (group: VisitRow[]): VisitSlot => {
-    const slot = emptySlot();
-    const seenAll = new Set<string>();
-    const seenByRole = new Map<string, Set<string>>();
-    for (const r of group) {
-      if (r.device in slot.devices) slot.devices[r.device] += 1; // 기기: 행마다
-      const id = `${r.day}|${visitIdentity(r)}`;
-      if (!seenAll.has(id)) {
-        seenAll.add(id);
-        slot.total += 1; // 방문: (날짜,계정)당 1회
-      }
-      let s = seenByRole.get(r.role);
-      if (!s) {
-        s = new Set();
-        seenByRole.set(r.role, s);
-      }
-      if (!s.has(id)) {
-        s.add(id);
-        if (r.role in slot.roles) slot.roles[r.role] += 1; // 역할별 방문: (날짜,계정)당 1회
-      }
-    }
-    return slot;
-  };
+  // 방문수/역할별은 순방문자((날짜,계정) 1회), 기기별은 (날짜,계정,기기) 1회. reachSlot이 처리.
+  // 재진입 세션은 reach에선 합쳐지고, 체류(occupancy)·관리자 세션 목록에서 각각 따로 잡힌다.
+  const slotFromRows = (group: SessionRow[]): VisitSlot => reachSlot(group);
 
-  const rowsByDay = new Map<number, VisitRow[]>();
-  const rowsByWeek = new Map<number, VisitRow[]>();
+  const rowsByDay = new Map<number, SessionRow[]>();
+  const rowsByWeek = new Map<number, SessionRow[]>();
   for (const row of rows) {
     const d = Number(row.day.slice(8, 10));
     if (d >= 1 && d <= daysInMonth) {
@@ -822,22 +935,29 @@ export async function getVisitTrendsAction(
     ...slotFromRows(rowsByDay.get(i + 1) ?? [])
   }));
 
-  // 시간대(KST): 기기는 각 행의 진입 시각에, 역할/방문은 그 (날짜,계정)의 '첫 진입 시각'에 1회.
+  // 시간대(KST): 역할/방문은 그 (날짜,계정)의 '첫 진입 시각'에 1회, 기기는 (날짜,계정,기기) 첫 진입에 1회.
   const hours = Array.from({ length: 24 }, emptySlot);
   const firstEntry = new Map<string, { hour: number; role: string; t: number }>();
+  const devFirst = new Map<string, { hour: number; device: string; t: number }>();
   for (const row of rows) {
-    const t = new Date(row.occurred_at).getTime();
-    if (Number.isNaN(t)) continue;
-    const hour = new Date(t + 9 * 3600 * 1000).getUTCHours();
-    if (row.device in hours[hour].devices) hours[hour].devices[row.device] += 1; // 기기: 행마다
-    const id = `${row.day}|${visitIdentity(row)}`;
+    const t = sStart(row);
+    if (!Number.isFinite(t)) continue;
+    const hour = Math.floor((t + KST_MS) / 3600000) % 24;
+    const id = `${row.day}|${sAcct(row)}`;
     const prev = firstEntry.get(id);
     if (!prev || t < prev.t) firstEntry.set(id, { hour, role: row.role, t });
+    const dk = `${id}|${row.device}`;
+    const dprev = devFirst.get(dk);
+    if (!dprev || t < dprev.t) devFirst.set(dk, { hour, device: row.device, t });
   }
   for (const v of firstEntry.values()) {
     const slot = hours[v.hour];
     if (v.role in slot.roles) slot.roles[v.role] += 1;
     slot.total += 1;
+  }
+  for (const v of devFirst.values()) {
+    const slot = hours[v.hour];
+    if (v.device in slot.devices) slot.devices[v.device] += 1;
   }
 
   const weekCount = Math.ceil((daysInMonth + firstWeekday) / 7);
@@ -846,49 +966,13 @@ export async function getVisitTrendsAction(
     ...slotFromRows(rowsByWeek.get(i) ?? [])
   }));
 
-  // 시간대 동시 접속(체류) — presence_ping을 시간대별로 집계. 평균 동시 접속 = 핑/(60 × 관측된 일수)
-  // ('전형적인 하루' 기준으로 정규화 — 한 달치 합이 그대로 부풀지 않게), 최고는 분당 세션 최댓값.
-  // 함수가 없거나(마이그레이션 전) 오류면 빈 점유로 두고 hasOccupancy=false → UI가 "아직 없음"을 안내.
-  const occupancy = Array.from({ length: 24 }, emptyOcc);
-  let hasOccupancy = false;
-  const [hourlyRes, peakRes, daysRes, sessionsRes] = await Promise.all([
-    supabase.rpc("presence_hourly", { p_start: monthStart, p_end: nextMonthStart }),
-    supabase.rpc("presence_peak", { p_start: monthStart, p_end: nextMonthStart }),
-    supabase.rpc("presence_active_days", { p_start: monthStart, p_end: nextMonthStart }),
-    supabase.rpc("owner_sessions", { p_start: monthStart, p_end: nextMonthStart })
-  ]);
-  const observedDays = Math.max(1, Number(daysRes?.data ?? 0) || 1);
-  if (!hourlyRes.error && Array.isArray(hourlyRes.data)) {
-    for (const r of hourlyRes.data as { hour: number; role: string; device: string; pings: number }[]) {
-      const h = Number(r.hour);
-      if (h < 0 || h > 23) continue;
-      const avg = Number(r.pings) / (60 * observedDays); // 관측된 하루 평균 동시 접속(소수 가능)
-      const slot = occupancy[h];
-      if (r.role in slot.roles) slot.roles[r.role] += avg;
-      if (r.device in slot.devices) slot.devices[r.device] += avg;
-      slot.avg += avg;
-      if (Number(r.pings) > 0) hasOccupancy = true;
-    }
-  }
-  if (!peakRes.error && Array.isArray(peakRes.data)) {
-    for (const r of peakRes.data as { hour: number; peak: number }[]) {
-      const h = Number(r.hour);
-      if (h >= 0 && h <= 23) occupancy[h].peak = Number(r.peak);
-    }
-  }
-
-  // 관리자 접속 세션(최근 순) — owner_sessions RPC가 gaps-and-islands로 이미 묶어서 돌려준다.
-  const ownerSessions: OwnerSession[] =
-    !sessionsRes.error && Array.isArray(sessionsRes.data)
-      ? (sessionsRes.data as { device: string; started_at: string; ended_at: string; minutes: number }[])
-          .map((r) => ({
-            device: DEVICE_SET.has(r.device) ? r.device : "desktop",
-            startMs: new Date(r.started_at).getTime(),
-            endMs: new Date(r.ended_at).getTime(),
-            minutes: Number(r.minutes)
-          }))
-          .filter((s) => Number.isFinite(s.startMs) && Number.isFinite(s.endMs))
-      : [];
+  // 시간대 동시 접속(체류) — 세션 구간을 시간대별로 쪼개 초 단위로 집계. 평균 동접 = 구간초/(3600×관측일수)
+  // ('전형적인 하루' 기준 정규화), 최고 동접 = 그 시간대 내 동시 세션 최댓값(스윕). 1초 방문도 잡힌다.
+  const observedDays = observedDayCount(rows);
+  const occupancy = computeOccupancy(rows, observedDays);
+  const hasOccupancy = rows.length > 0 && occupancy.some((o) => o.avg > 0);
+  // 관리자 접속 세션(최근 순) — 세션 행에서 직접(role=owner).
+  const ownerSessions = ownerSessionsFrom(rows);
 
   return {
     ok: true,
@@ -901,7 +985,7 @@ export async function getVisitTrendsAction(
       occupancy,
       hasOccupancy,
       ownerSessions,
-      total: countVisits(rows)
+      total: reachSlot(rows).total
     }
   };
 }
@@ -915,12 +999,11 @@ export type DayVisitDetail = {
   occupancy: OccSlot[]; // 24칸(KST) — 그날 시간대별 평균/최고 동시 접속
   hasOccupancy: boolean;
   ownerSessions: OwnerSession[]; // 그날 관리자 접속 세션
-  // 그날 '관리자(owner)' 방문 기록 — 언제(visit_log.occurred_at)·기기·계정(설정된 owner
+  // 그날 '관리자(owner)' 방문 기록 — 세션별. 언제(started_at)·기기·체류(초)·계정(설정된 owner
   // 이메일과 해시 매칭되면 이메일, 아니면 익명 태그). 일반 방문자는 절대 식별되지 않는다.
-  ownerVisits: { t: number; device: string; account: string }[];
-  // 그날 관리자(owner) 총 체류 핑 수(= 분, 60초 1핑). 0이면 방문 기록은 있어도 체류 측정이
-  // 안 된 것(1분 미만 또는 백그라운드 탭) → 역계산: 체류 ≈ ownerPings분.
-  ownerPings: number;
+  ownerVisits: { t: number; device: string; account: string; seconds: number }[];
+  // 그날 관리자(owner) 총 체류 초. 세션 합. 매우 짧으면(예: 0~1초) 화면을 사실상 안 본 것.
+  ownerSeconds: number;
 };
 export type DayVisitDetailResult = { ok: true; data: DayVisitDetail } | { ok: false; error: string };
 
@@ -939,128 +1022,37 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
   const [yy, mm, dd] = dateKey.split("-").map(Number);
   const nextDay = ymd(new Date(Date.UTC(yy, mm - 1, dd + 1))); // 다음 날(day 컬럼은 KST 날짜)
 
-  const emptySlot = (): VisitSlot => ({
-    roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
-    devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
-    total: 0
-  });
-  const emptyOcc = (): OccSlot => ({
-    roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
-    devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
-    avg: 0,
-    peak: 0
-  });
+  const rows = await loadSessions(supabase, dateKey, nextDay);
 
-  const [visitRes, hourlyRes, peakRes, sessRes] = await Promise.all([
-    supabase
-      .from("visit_log")
-      .select("role, device, account_hash, session_hash, occurred_at")
-      .eq("day", dateKey),
-    supabase.rpc("presence_hourly", { p_start: dateKey, p_end: nextDay }),
-    supabase.rpc("presence_peak", { p_start: dateKey, p_end: nextDay }),
-    supabase.rpc("owner_sessions", { p_start: dateKey, p_end: nextDay })
-  ]);
+  // 방문 수(역할/기기 분해) = 순방문자, 체류 그래프 = 세션 구간(초), 관리자 세션 = role=owner.
+  const visits = reachSlot(rows);
+  const occupancy = computeOccupancy(rows, 1);
+  const hasOccupancy = rows.length > 0 && occupancy.some((o) => o.avg > 0);
+  const ownerSessions = ownerSessionsFrom(rows);
 
-  // 하루치: 역할/방문은 계정 단위(같은 계정 1방문), 기기는 계정×기기(웹·iOS 각각) 행 단위.
-  const visits = emptySlot();
-  if (!visitRes.error && Array.isArray(visitRes.data)) {
-    const seenAll = new Set<string>();
-    const seenByRole = new Map<string, Set<string>>();
-    for (const r of visitRes.data as {
-      role: string;
-      device: string;
-      account_hash: string | null;
-      session_hash: string | null;
-    }[]) {
-      if (r.device in visits.devices) visits.devices[r.device] += 1;
-      const id = visitIdentity(r);
-      if (!seenAll.has(id)) {
-        seenAll.add(id);
-        visits.total += 1;
-      }
-      let s = seenByRole.get(r.role);
-      if (!s) {
-        s = new Set();
-        seenByRole.set(r.role, s);
-      }
-      if (!s.has(id)) {
-        s.add(id);
-        if (r.role in visits.roles) visits.roles[r.role] += 1;
-      }
-    }
-  }
-
-  // 하루치라 관측일수=1 → 핑/60 = 그날 그 시간대 평균 동시 접속.
-  const occupancy = Array.from({ length: 24 }, emptyOcc);
-  let hasOccupancy = false;
-  if (!hourlyRes.error && Array.isArray(hourlyRes.data)) {
-    for (const r of hourlyRes.data as { hour: number; role: string; device: string; pings: number }[]) {
-      const h = Number(r.hour);
-      if (h < 0 || h > 23) continue;
-      const avg = Number(r.pings) / 60;
-      const slot = occupancy[h];
-      if (r.role in slot.roles) slot.roles[r.role] += avg;
-      if (r.device in slot.devices) slot.devices[r.device] += avg;
-      slot.avg += avg;
-      if (Number(r.pings) > 0) hasOccupancy = true;
-    }
-  }
-  if (!peakRes.error && Array.isArray(peakRes.data)) {
-    for (const r of peakRes.data as { hour: number; peak: number }[]) {
-      const h = Number(r.hour);
-      if (h >= 0 && h <= 23) occupancy[h].peak = Number(r.peak);
-    }
-  }
-
-  const ownerSessions: OwnerSession[] =
-    !sessRes.error && Array.isArray(sessRes.data)
-      ? (sessRes.data as { device: string; started_at: string; ended_at: string; minutes: number }[])
-          .map((r) => ({
-            device: DEVICE_SET.has(r.device) ? r.device : "desktop",
-            startMs: new Date(r.started_at).getTime(),
-            endMs: new Date(r.ended_at).getTime(),
-            minutes: Number(r.minutes)
-          }))
-          .filter((s) => Number.isFinite(s.startMs) && Number.isFinite(s.endMs))
-      : [];
-
-  // 관리자(owner) 방문 기록 — 설정된 owner 이메일과 해시가 맞으면 이메일로, 아니면 익명 태그(#N).
-  // (일반 방문자 해시는 매칭 집합에 없어 절대 이메일로 풀리지 않는다.)
+  // 관리자(owner) 방문 기록 — 세션별(여러 번 들어오면 여러 줄). 설정된 owner 이메일과 해시가 맞으면
+  // 이메일로, 아니면 익명 #N(일반 방문자는 매칭 집합에 없어 절대 이메일로 안 풀림). 체류는 초 단위.
   const hashToOwnerEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
   const acctTag = new Map<string, number>();
-  const ownerVisits =
-    !visitRes.error && Array.isArray(visitRes.data)
-      ? (
-          visitRes.data as {
-            role: string;
-            device: string;
-            account_hash: string | null;
-            occurred_at: string | null;
-          }[]
-        )
-          .filter((r) => r.role === "owner")
-          .map((r) => {
-            const h = r.account_hash ?? "";
-            if (!acctTag.has(h)) acctTag.set(h, acctTag.size + 1);
-            return {
-              t: r.occurred_at ? new Date(r.occurred_at).getTime() : 0,
-              device: DEVICE_SET.has(r.device) ? r.device : "desktop",
-              account: hashToOwnerEmail.get(h) ?? `계정 #${acctTag.get(h)}`
-            };
-          })
-          .sort((a, b) => a.t - b.t)
-      : [];
-  // 관리자 총 체류 핑(= 분, 60초당 1핑) — 역계산용. 0이면 핑 없이 방문만 찍힌 것.
-  let ownerPings = 0;
-  if (!hourlyRes.error && Array.isArray(hourlyRes.data)) {
-    for (const r of hourlyRes.data as { role: string; pings: number }[]) {
-      if (r.role === "owner") ownerPings += Number(r.pings) || 0;
-    }
-  }
+  const ownerVisits = rows
+    .filter((r) => r.role === "owner")
+    .map((r) => {
+      const h = r.account_hash ?? "";
+      if (!acctTag.has(h)) acctTag.set(h, acctTag.size + 1);
+      const startMs = sStart(r);
+      return {
+        t: startMs,
+        device: DEVICE_SET.has(r.device) ? r.device : "desktop",
+        account: hashToOwnerEmail.get(h) ?? `계정 #${acctTag.get(h)}`,
+        seconds: Math.max(0, Math.round((sEnd(r) - startMs) / 1000))
+      };
+    })
+    .sort((a, b) => a.t - b.t);
+  const ownerSeconds = ownerVisits.reduce((sum, v) => sum + v.seconds, 0);
 
   return {
     ok: true,
-    data: { dateKey, visits, occupancy, hasOccupancy, ownerSessions, ownerVisits, ownerPings }
+    data: { dateKey, visits, occupancy, hasOccupancy, ownerSessions, ownerVisits, ownerSeconds }
   };
 }
 
@@ -1278,8 +1270,8 @@ export async function getMemberInsightsAction(
     supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
     supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
     supabase
-      .from("visit_log")
-      .select("day, occurred_at, account_hash, session_hash")
+      .from("visit_session")
+      .select("day, account_hash, started_at")
       .gte("day", monthStart)
       .lt("day", nextMonthStart)
   ]);
@@ -1484,23 +1476,22 @@ export async function getMemberInsightsAction(
   // 세고(최다일=계정 수), 시간대는 그 (날짜,계정)의 '첫 진입 시각'으로 센다.
   const visitRows = (visitRes.data ?? []) as {
     day: string;
-    occurred_at: string;
     account_hash: string | null;
-    session_hash: string | null;
+    started_at: string;
   }[];
   const dayTally = new Map<string, number>();
   const hourTally = Array(24).fill(0) as number[];
   const hlFirst = new Map<string, { hour: number; t: number }>();
   const hlDaySeen = new Set<string>();
   for (const row of visitRows) {
-    const id = `${row.day}|${visitIdentity(row)}`;
+    const id = `${row.day}|${row.account_hash ?? "anon"}`;
     if (!hlDaySeen.has(id)) {
       hlDaySeen.add(id);
       dayTally.set(row.day, (dayTally.get(row.day) ?? 0) + 1);
     }
-    const t = new Date(row.occurred_at).getTime();
+    const t = new Date(row.started_at).getTime();
     if (Number.isNaN(t)) continue;
-    const h = new Date(t + 9 * 3600 * 1000).getUTCHours();
+    const h = Math.floor((t + KST_MS) / 3600000) % 24;
     const prev = hlFirst.get(id);
     if (!prev || t < prev.t) hlFirst.set(id, { hour: h, t });
   }
