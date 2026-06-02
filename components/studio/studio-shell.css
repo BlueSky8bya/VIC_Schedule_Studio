@@ -4202,10 +4202,12 @@
 .tag-picker button:disabled {
   cursor: not-allowed;
 }
-/* ── 2계층 이벤트 태그 피커(.tag-picker2) — 대분류 행 + 세부 칩 + 검색 ── */
+/* ── 2계층 이벤트 태그 피커(.tag-picker2) ──
+   대분류 = 채운 칩(그룹 헤더), 세부 = 윤곽 칩(아래 들여쓰기). 검색 + 선택순번 + 카운트.
+   웹: 그룹 카드가 넉넉, 칩 큼. 모바일: 컴팩트·큰 터치타깃. 선택 시 톡 튀고 호버 떠오름. */
 .tag-picker2 {
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 .tp-head {
   display: flex;
@@ -4215,36 +4217,55 @@
 .tp-search {
   flex: 1;
   min-width: 0;
-  min-height: 34px;
-  border: 1px solid var(--line, #e7e3f2);
-  border-radius: 9px;
-  padding: 0 10px;
+  min-height: 38px;
+  border: 1.5px solid var(--line, #e7e3f2);
+  border-radius: 11px;
+  background: #faf9fe;
+  padding: 0 12px;
   font-size: 14px;
+  font-weight: 700;
+  transition: border-color 0.14s var(--ease, ease), box-shadow 0.14s var(--ease, ease),
+    background 0.14s var(--ease, ease);
+}
+.tp-search:focus {
+  outline: none;
+  background: #fff;
+  border-color: #8b7cf0;
+  box-shadow: 0 0 0 3px rgb(124 108 240 / 18%);
 }
 .tp-count {
   flex: none;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f1edfb;
   font-size: 12px;
-  font-weight: 800;
-  color: #8a82a6;
+  font-weight: 900;
+  color: #6b5b95;
 }
 .tp-groups {
   display: grid;
   gap: 8px;
-  max-height: 320px;
+  max-height: 300px;
   overflow: auto;
   overscroll-behavior: contain;
+  padding: 1px;
 }
+/* 대분류 묶음 = 부드러운 카드. 헤더(대분류 칩) 위, 세부 칩 아래. */
 .tp-group {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 9px 10px;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: 13px;
+  background: linear-gradient(180deg, #fffefb, #faf8fd);
 }
 .tp-subs {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding-left: 6px;
+  padding-left: 4px;
 }
 .tp-chip {
   display: inline-flex;
@@ -4252,27 +4273,47 @@
   gap: 5px;
   border: 1.5px solid;
   border-radius: 999px;
-  padding: 5px 12px;
+  padding: 6px 13px;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.1s var(--ease, ease), filter 0.12s var(--ease, ease),
-    box-shadow 0.12s var(--ease, ease);
-}
-/* 세부 칩 — 대분류와 구분되게 살짝 작고 점선 테두리. */
-.tp-chip.sub {
-  font-size: 12px;
-  padding: 4px 10px;
-  border-style: dashed;
+  transition: transform 0.12s var(--ease, ease), filter 0.14s var(--ease, ease),
+    box-shadow 0.14s var(--ease, ease);
 }
 .tp-chip:hover:not(:disabled) {
-  filter: brightness(1.05);
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 6px 14px -8px rgb(80 60 140 / 45%);
 }
 .tp-chip:active:not(:disabled) {
   transform: scale(0.93);
 }
+/* 세부 칩 — 윤곽형(흰 배경 + 대분류 색 테두리·글자)으로 헤더(채운 칩)와 구분. */
+.tp-chip.sub {
+  font-size: 12.5px;
+  padding: 5px 11px;
+  background: #fff !important;
+  color: #4a4466 !important;
+  border-style: dashed;
+}
+/* 선택된 칩 — 진한 링 + 톡 튀는 등장. (세부도 선택되면 채워 보이게 살짝 진하게.) */
 .tp-chip.selected {
-  box-shadow: 0 0 0 2px #2a2540 inset;
+  box-shadow: 0 0 0 2.5px #2a2540 inset, 0 4px 12px -6px rgb(42 37 80 / 50%);
+  animation: tp-pop 0.22s var(--ease, ease);
+}
+.tp-chip.sub.selected {
+  background: #f4f0ff !important;
+}
+@keyframes tp-pop {
+  0% {
+    transform: scale(0.9);
+  }
+  55% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 .tp-chip:disabled {
   opacity: 0.4;
@@ -4281,61 +4322,51 @@
 .tp-order {
   display: inline-grid;
   place-items: center;
-  min-width: 15px;
-  height: 15px;
+  min-width: 16px;
+  height: 16px;
   padding: 0 3px;
   border-radius: 999px;
-  background: rgb(0 0 0 / 30%);
+  background: #2a2540;
   color: #fff;
   font-size: 10px;
   font-weight: 900;
 }
+/* 웹: 더 큼·여유, 그룹 2열로 가로폭 활용. */
 @media (min-width: 641px) {
+  .tp-groups {
+    grid-template-columns: 1fr 1fr;
+    max-height: 360px;
+  }
   .tp-chip {
     font-size: 14px;
+    padding: 7px 14px;
+  }
+  .tp-chip.sub {
+    font-size: 13px;
   }
   .tp-search {
     font-size: 15px;
+    min-height: 40px;
+  }
+}
+/* 모바일: 한 줄·큰 터치타깃. */
+@media (max-width: 640px) {
+  .tp-chip {
+    padding: 7px 13px;
+    font-size: 13.5px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .tp-chip {
+  .tp-chip,
+  .tp-search {
     transition: none;
+  }
+  .tp-chip.selected {
+    animation: none;
   }
 }
 
-/* 태그 칩이 폭에 따라 들쭉날쭉 흐르지 않게 — 균일한 그리드로 가지런히(웹·모바일 공통). */
-.tag-picker div {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 8px;
-}
-
-.tag-picker button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 38px;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  cursor: pointer;
-  padding: 0 10px;
-  font-size: 13px;
-  font-weight: 800;
-  white-space: nowrap;
-  opacity: 0.5;
-}
-
-.tag-picker button.selected {
-  opacity: 1;
-  box-shadow: inset 0 0 0 2px #111827;
-}
-
-.tag-picker p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 12px;
-}
+/* (레거시 인라인 태그 피커 규칙 제거 — 지금은 TagPicker(.tag-picker2)만 쓴다.) */
 
 .editor-actions {
   display: grid;
@@ -4539,16 +4570,23 @@ textarea:disabled {
   border-bottom: 1px solid var(--line);
 }
 /* 2계층: 대분류 묶음(대분류 + 그 세부 + 세부추가). 묶음 사이 간격으로 그룹 구분. */
+/* 대분류 묶음 = 부드러운 카드(대분류 + 세부들 + 세부추가를 한 덩어리로 묶어 계층이 보이게). */
 .tag-cat-group {
   display: grid;
   gap: 8px;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fffefb, #faf8fd);
+}
+.tag-cat-group .tag-editor-row {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 /* 세부 행 — 들여쓰고 살짝 작게/연하게. 색 선택 대신 상속색 칩. */
 .tag-editor-row.is-sub {
-  margin-left: 18px;
-  padding-bottom: 6px;
-  border-bottom: 1px dashed var(--line-soft, #efeaf7);
+  margin-left: 14px;
 }
 .tag-sub-indent {
   flex: 0 0 auto;
@@ -4576,25 +4614,27 @@ textarea:disabled {
   border: 1.5px solid;
   opacity: 0.92;
 }
-/* 세부 추가 — 점선 버튼(대분류 묶음 아래, 들여쓰기). */
+/* 세부 추가 — 잘 보이는 점선 버튼(대분류 묶음 아래, 들여쓰기). */
 .tag-add-sub {
   justify-self: start;
-  margin-left: 18px;
+  margin-left: 14px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  border: 1px dashed var(--line, #c9c2dd);
-  border-radius: 9px;
-  background: transparent;
-  padding: 4px 12px;
-  font-size: 12px;
-  font-weight: 800;
-  color: #7a6fae;
+  gap: 5px;
+  border: 1.5px dashed #b3a4e8;
+  border-radius: 999px;
+  background: #f4f0ff;
+  padding: 5px 14px;
+  font-size: 12.5px;
+  font-weight: 900;
+  color: #6b5bd6;
   cursor: pointer;
-  transition: background 0.12s var(--ease, ease), transform 0.1s var(--ease, ease);
+  transition: background 0.12s var(--ease, ease), transform 0.1s var(--ease, ease),
+    border-color 0.12s var(--ease, ease);
 }
 .tag-add-sub:hover:not(:disabled) {
-  background: #f4f0ff;
+  background: #e9e2fb;
+  border-color: #8b7cf0;
 }
 .tag-add-sub:active:not(:disabled) {
   transform: scale(0.96);
