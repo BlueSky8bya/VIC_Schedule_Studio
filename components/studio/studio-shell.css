@@ -4306,6 +4306,14 @@ textarea:disabled {
   font-weight: 900;
   color: #9f1239;
 }
+.dslider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.dslider-row input[type="range"] {
+  flex: 1;
+}
 .duration-slider input[type="range"] {
   -webkit-appearance: none;
   appearance: none;

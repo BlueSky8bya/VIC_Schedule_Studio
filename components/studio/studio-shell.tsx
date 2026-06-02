@@ -2698,23 +2698,53 @@ export function StudioShell({
           ) : (
             <div className="duration-slider">
               <div className="dslider-head">
-                <span>기간 슬라이더 — 끌어서 한 번에</span>
+                <span>기간 — 끌거나 −/+ 로</span>
                 <strong>{formatSupportEnd(selectedDate, form.endDateKey || selectedDate)}</strong>
               </div>
-              <input
-                aria-label="업 도움 기간(일)"
-                disabled={!editable}
-                max={45}
-                min={1}
-                onChange={(e) =>
-                  setForm((current) => ({
-                    ...current,
-                    endDateKey: addDaysIso(selectedDate, Number(e.target.value) - 1)
-                  }))
-                }
-                type="range"
-                value={spanDays(selectedDate, form.endDateKey || selectedDate)}
-              />
+              <div className="dslider-row">
+                <button
+                  aria-label="하루 줄이기"
+                  className="dstep"
+                  disabled={!editable || (form.endDateKey || selectedDate) <= selectedDate}
+                  onClick={() => {
+                    const end = form.endDateKey || selectedDate;
+                    const prev = addDaysIso(end, -1);
+                    setForm((current) => ({
+                      ...current,
+                      endDateKey: prev < selectedDate ? selectedDate : prev
+                    }));
+                  }}
+                  type="button"
+                >
+                  −
+                </button>
+                <input
+                  aria-label="업 도움 기간(일)"
+                  disabled={!editable}
+                  max={45}
+                  min={1}
+                  onChange={(e) =>
+                    setForm((current) => ({
+                      ...current,
+                      endDateKey: addDaysIso(selectedDate, Number(e.target.value) - 1)
+                    }))
+                  }
+                  type="range"
+                  value={spanDays(selectedDate, form.endDateKey || selectedDate)}
+                />
+                <button
+                  aria-label="하루 늘리기"
+                  className="dstep"
+                  disabled={!editable || spanDays(selectedDate, form.endDateKey || selectedDate) >= 45}
+                  onClick={() => {
+                    const end = form.endDateKey || selectedDate;
+                    setForm((current) => ({ ...current, endDateKey: addDaysIso(end, 1) }));
+                  }}
+                  type="button"
+                >
+                  +
+                </button>
+              </div>
             </div>
           )}
         </div>
