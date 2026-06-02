@@ -91,8 +91,8 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
       {/* 방문 품질 요약(의미 방문 컷·시청자/운영진 토글·KPI·최고동접) — 그날 기준. */}
       <VisitSummaryBlock
         viewer={data.summaryViewer}
+        operator={data.summaryOperator}
         all={data.summaryAll}
-        operators={data.operators}
         newVisitors={data.newVisitors}
         returningVisitors={data.returningVisitors}
       />

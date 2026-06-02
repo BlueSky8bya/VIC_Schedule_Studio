@@ -254,9 +254,17 @@ function emptySummary(): VisitSummary {
     peakConcurrent: 0
   };
 }
-// 시청자 기준 / 운영진 포함(전체) 두 요약 — UI 토글이 둘 중 하나를 고른다(R2/R4/R5/R13).
-function summarizeSplit(rows: SessionRow[]): { viewer: VisitSummary; all: VisitSummary } {
-  return { viewer: summarize(rows.filter((r) => r.role === "viewer")), all: summarize(rows) };
+// 시청자 / 운영진(viewer 아님) / 전체 3분할 요약 — UI 3단 토글이 하나를 고른다(R2/R4/R5/R13).
+function summarizeSplit(rows: SessionRow[]): {
+  viewer: VisitSummary;
+  operator: VisitSummary;
+  all: VisitSummary;
+} {
+  return {
+    viewer: summarize(rows.filter((r) => r.role === "viewer")),
+    operator: summarize(rows.filter((r) => r.role !== "viewer")),
+    all: summarize(rows)
+  };
 }
 function emptyVisitSlot(): VisitSlot {
   return {
@@ -918,11 +926,13 @@ export type VisitGraphs = {
 export type VisitTrends = {
   ready: boolean; // visit_session 접근 가능 여부
   hasData: boolean; // 이 달 방문 기록이 있는지
-  viewer: VisitGraphs; // 시청자만 그래프 묶음
-  all: VisitGraphs; // 운영진 포함 전체 그래프 묶음
+  viewer: VisitGraphs; // 시청자 그래프 묶음
+  operator: VisitGraphs; // 운영진(viewer 아님) 그래프 묶음
+  all: VisitGraphs; // 전체 그래프 묶음
   ownerSessions: OwnerSession[]; // 관리자(owner) 접속 세션(이 달, 최근 순)
   summaryViewer: VisitSummary; // 시청자 기준 품질 요약(R4/R5/R13)
-  summaryAll: VisitSummary; // 운영진 포함 전체 기준 품질 요약
+  summaryOperator: VisitSummary; // 운영진 기준
+  summaryAll: VisitSummary; // 전체 기준
   operators: number; // 이 달 의미 방문 운영진(viewer 아님) 순방문자 수
   newVisitors: number; // R12: 이 달 처음 본 시청자(의미 방문)
   returningVisitors: number; // R12: 재방문 시청자
@@ -1041,9 +1051,11 @@ export async function getVisitTrendsAction(
         ready: false,
         hasData: false,
         viewer: emptyGraphs(),
+        operator: emptyGraphs(),
         all: emptyGraphs(),
         ownerSessions: [],
         summaryViewer: emptySummary(),
+        summaryOperator: emptySummary(),
         summaryAll: emptySummary(),
         operators: 0,
         newVisitors: 0,
@@ -1058,10 +1070,11 @@ export async function getVisitTrendsAction(
 
   const all = buildGraphs(rows);
   const viewer = buildGraphs(rows.filter((r) => r.role === "viewer"));
+  const operator = buildGraphs(rows.filter((r) => r.role !== "viewer"));
   // 관리자 접속 세션(최근 순) — 세션 행에서 직접(role=owner). 토글과 무관(운영진 데이터).
   const ownerSessions = ownerSessionsFrom(rows);
-  const { viewer: summaryViewer, all: summaryAll } = summarizeSplit(rows);
-  const operators = Math.max(0, summaryAll.visitors - summaryViewer.visitors);
+  const { viewer: summaryViewer, operator: summaryOperator, all: summaryAll } = summarizeSplit(rows);
+  const operators = summaryOperator.visitors;
 
   // R12: 새/재방문 — 이 달 이전에 본 적 있는 계정 집합과 대조(시청자, 의미 방문 기준).
   const { data: knownData } = await supabase
@@ -1176,9 +1189,11 @@ export async function getVisitTrendsAction(
       ready: true,
       hasData: rows.length > 0,
       viewer,
+      operator,
       all,
       ownerSessions,
       summaryViewer,
+      summaryOperator,
       summaryAll,
       operators,
       newVisitors,
@@ -1205,7 +1220,8 @@ export type DayVisitDetail = {
   // 그날 관리자(owner) 총 체류 초. 세션 합. 매우 짧으면(예: 0~1초) 화면을 사실상 안 본 것.
   ownerSeconds: number;
   summaryViewer: VisitSummary; // 그날 시청자 기준 품질 요약(R4/R5/R13)
-  summaryAll: VisitSummary; // 그날 운영진 포함 전체 기준 품질 요약
+  summaryOperator: VisitSummary; // 그날 운영진 기준
+  summaryAll: VisitSummary; // 그날 전체 기준
   operators: number; // 그날 의미 방문 운영진 순방문자 수
   newVisitors: number; // R12: 그날 처음 본 시청자
   returningVisitors: number; // R12: 그날 재방문 시청자
@@ -1254,8 +1270,8 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
     })
     .sort((a, b) => a.t - b.t);
   const ownerSeconds = ownerVisits.reduce((sum, v) => sum + v.seconds, 0);
-  const { viewer: summaryViewer, all: summaryAll } = summarizeSplit(rows);
-  const operators = Math.max(0, summaryAll.visitors - summaryViewer.visitors);
+  const { viewer: summaryViewer, operator: summaryOperator, all: summaryAll } = summarizeSplit(rows);
+  const operators = summaryOperator.visitors;
 
   // R12: 그날 시청자(의미 방문) 중 그 전에 본 적 없는 계정=새, 있으면 재방문.
   const { data: knownData } = await supabase
@@ -1288,6 +1304,7 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
       ownerVisits,
       ownerSeconds,
       summaryViewer,
+      summaryOperator,
       summaryAll,
       operators,
       newVisitors,

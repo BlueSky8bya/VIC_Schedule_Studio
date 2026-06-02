@@ -118,51 +118,52 @@ export const fmtDur = (seconds: number) => {
 
 // 방문 품질 요약 블록(개발자 전용 — 방문 패널/일일 상세 공용). 시청자 기준이 기본이고, '운영진 포함'
 // 토글로 개발자·관리자 테스트 트래픽까지 합산. 위 분리 배지로 숫자가 부풀었는지 바로 보인다.
+export type VisitScope = "viewer" | "operator" | "all";
 export function VisitSummaryBlock({
   viewer,
+  operator,
   all,
-  operators,
   newVisitors,
   returningVisitors,
   scope,
   onScope
 }: {
   viewer: VisitSummary;
+  operator: VisitSummary;
   all: VisitSummary;
-  operators: number;
   newVisitors?: number;
   returningVisitors?: number;
   // 제어형(부모가 scope를 주면 토글이 부모 상태를 바꿔 아래 그래프까지 즉시 전환). 없으면 내부 상태.
-  scope?: "viewer" | "all";
-  onScope?: (s: "viewer" | "all") => void;
+  scope?: VisitScope;
+  onScope?: (s: VisitScope) => void;
 }) {
-  const [localScope, setLocalScope] = useState<"viewer" | "all">("viewer");
+  const [localScope, setLocalScope] = useState<VisitScope>("viewer");
   const cur = scope ?? localScope;
   const setScope = onScope ?? setLocalScope;
-  const includeOps = cur === "all";
-  const s = includeOps ? all : viewer;
+  const s = cur === "viewer" ? viewer : cur === "operator" ? operator : all;
+  const tabs: { key: VisitScope; label: string }[] = [
+    { key: "viewer", label: "시청자" },
+    { key: "operator", label: "운영진" },
+    { key: "all", label: "전체" }
+  ];
   return (
     <div className="vsum">
       <div className="vsum-head">
         <span className="vsum-split">
-          시청자 <b>{viewer.visitors}</b>명 · 운영진 <b>{operators}</b>명 · 세션{" "}
+          시청자 <b>{viewer.visitors}</b>명 · 운영진 <b>{operator.visitors}</b>명 · 세션{" "}
           <b>{all.sessions}</b>회
         </span>
         <div className="insights-subtabs vsum-toggle">
-          <button
-            className={includeOps ? "" : "active"}
-            onClick={() => setScope("viewer")}
-            type="button"
-          >
-            시청자
-          </button>
-          <button
-            className={includeOps ? "active" : ""}
-            onClick={() => setScope("all")}
-            type="button"
-          >
-            운영진 포함
-          </button>
+          {tabs.map((t) => (
+            <button
+              className={cur === t.key ? "active" : ""}
+              key={t.key}
+              onClick={() => setScope(t.key)}
+              type="button"
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
       </div>
       <ul className="vsum-kpis">
@@ -281,7 +282,7 @@ export function InsightsDashboard({
   const [visitsLoading, setVisitsLoading] = useState(true);
   const [visitView, setVisitView] = useState<"day" | "week">("day");
   const [visitDim, setVisitDim] = useState<"role" | "device">("role");
-  const [visitScope, setVisitScope] = useState<"viewer" | "all">("viewer"); // 시청자/운영진 포함 — 그래프까지 즉시 전환
+  const [visitScope, setVisitScope] = useState<VisitScope>("viewer"); // 시청자/운영진/전체 — 그래프까지 즉시 전환
   const [vtHover, setVtHover] = useState<VtHover | null>(null);
   const [vtHourHover, setVtHourHover] = useState<OccHover | null>(null); // 시간대 점유(체류) 분해 툴팁
   const [ownerTip, setOwnerTip] = useState<{ x: number; top: number; text: string } | null>(null); // 관리자 세션 띠 툴팁
@@ -425,8 +426,10 @@ export function InsightsDashboard({
         </p>
       );
     }
-    // 토글(시청자/운영진 포함)이 고른 그래프 묶음 — 아래 막대·동접·히트맵·미니달력 전부 이걸 쓴다.
-    const g = visitScope === "viewer" ? visits.viewer : visits.all;
+    // 토글(시청자/운영진/전체)이 고른 그래프 묶음 — 아래 막대·동접·히트맵·미니달력 전부 이걸 쓴다.
+    const g =
+      visitScope === "viewer" ? visits.viewer : visitScope === "operator" ? visits.operator : visits.all;
+    const scopeLabel = visitScope === "viewer" ? "시청자" : visitScope === "operator" ? "운영진" : "전체";
     const series = visitView === "day" ? g.days : g.weeks;
     const meta = visitDim === "role" ? ROLE_META : DEVICE_META;
     const countsOf = (s: { roles: Record<string, number>; devices: Record<string, number> }) =>
@@ -479,8 +482,8 @@ export function InsightsDashboard({
         {/* 방문 품질 요약(R1 컷·R2 토글·R4 KPI·R5 분리·R12 새/재방문·R13 최고동접). */}
         <VisitSummaryBlock
           viewer={visits.summaryViewer}
+          operator={visits.summaryOperator}
           all={visits.summaryAll}
-          operators={visits.operators}
           newVisitors={visits.newVisitors}
           returningVisitors={visits.returningVisitors}
           scope={visitScope}
@@ -716,7 +719,7 @@ export function InsightsDashboard({
         )}
 
         {/* R7: 요일×시간 히트맵(시청자 의미 방문 세션 수). 언제 자주 보는지 한눈에. */}
-        <h4 className="insight-subhead">요일 × 시간 (시청자)</h4>
+        <h4 className="insight-subhead">요일 × 시간 ({scopeLabel})</h4>
         {(() => {
           const wdays = ["일", "월", "화", "수", "목", "금", "토"];
           const hmMax = Math.max(1, ...g.heatmap.flat());
