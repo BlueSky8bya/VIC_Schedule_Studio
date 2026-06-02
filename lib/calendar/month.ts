@@ -197,7 +197,8 @@ function eventCategoryColorKeys(
   event: PublicScheduleEvent | StudioScheduleEvent,
   tags: BroadcastTag[]
 ): string[] {
-  const ids = event.primaryTagIds.length > 0 ? event.primaryTagIds : event.tagIds;
+  // 카드 색·점 줄은 이벤트가 가진 '모든' 콘텐츠 태그의 대분류 기준(최대 6개라 primary 슬라이스 안 씀).
+  const ids = event.tagIds.length > 0 ? event.tagIds : event.primaryTagIds;
   const seen = new Set<string>();
   const out: string[] = [];
   for (const id of ids) {

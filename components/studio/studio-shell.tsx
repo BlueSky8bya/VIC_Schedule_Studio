@@ -84,6 +84,7 @@ import { InsightsDashboard } from "@/components/developer/insights-dashboard";
 import { MemberInsights } from "@/components/studio/member-insights";
 import { DayVisitModal } from "@/components/developer/day-visit-modal";
 import { NoticeModal } from "@/components/notice/notice-modal";
+import { TagPicker } from "@/components/tags/tag-picker";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
@@ -150,6 +151,8 @@ function daysBetweenIso(start: string, end: string): number {
 }
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+// 2계층 태그: 일정 카드 하나에 달 수 있는 콘텐츠 태그 최대 수(카드 색은 대분류로 합쳐 ≤2 표시).
+const MAX_EVENT_TAGS = 6;
 
 // 중대한 쓰기(일정 저장/삭제/이동/태그/업도움/잇기)를 keepalive로 보내는 단일 창구.
 // keepalive: true 면 페이지를 떠나거나(달 이동·창 전환·닫기·새로고침) 전송이 끝까지 보장된다
@@ -1612,13 +1615,13 @@ export function StudioShell({
     const has = event.tagIds.includes(tagId);
     const nextTagIds = has
       ? event.tagIds.filter((id) => id !== tagId)
-      : event.tagIds.length >= 2
+      : event.tagIds.length >= MAX_EVENT_TAGS
         ? event.tagIds
         : [...event.tagIds, tagId];
     if (nextTagIds === event.tagIds) {
-      return; // 이미 2개 — 변화 없음
+      return; // 이미 최대 — 변화 없음
     }
-    const nextPrimary = nextTagIds; // 최대 2개라 전부 대표색
+    const nextPrimary = nextTagIds; // 색은 대분류로 합쳐 카드에서 ≤2 표시(picker는 전체 저장)
     const snapshot = events;
     setEvents((prev) =>
       prev.map((e) =>
@@ -1684,35 +1687,17 @@ export function StudioShell({
               // 매니저: 태그 할당을 직접 토글(최대 2개). 작업자는 읽기 전용 칩만 본다.
               <div className="detail-row">
                 <span className="detail-label">
-                  태그 <span className="tag-picker-hint">최대 2개 · 누르면 바로 적용</span>
+                  태그 <span className="tag-picker-hint">최대 {MAX_EVENT_TAGS}개 · 누르면 바로 적용</span>
                 </span>
                 <div className="tag-picker">
-                  <div>
-                    {legendTags.map((tag) => {
-                      const color = palette.find((c) => c.key === tag.colorKey);
-                      const selected = selectedEvent.tagIds.includes(tag.id);
-                      const full = !selected && selectedEvent.tagIds.length >= 2;
-                      return color ? (
-                        <button
-                          className={selected ? "selected" : ""}
-                          data-color={color.key}
-                          disabled={full || pending}
-                          key={tag.id}
-                          onClick={() => toggleEventTag(selectedEvent, tag.id)}
-                          style={{
-                            backgroundColor: color.bgColor,
-                            borderColor: color.borderColor,
-                            color: color.textColor
-                          }}
-                          title={full ? "태그는 최대 2개까지 고를 수 있어요" : tag.displayName}
-                          type="button"
-                        >
-                          {selected ? `${selectedEvent.tagIds.indexOf(tag.id) + 1}. ` : ""}
-                          {tag.displayName}
-                        </button>
-                      ) : null;
-                    })}
-                  </div>
+                  <TagPicker
+                    disabled={pending}
+                    max={MAX_EVENT_TAGS}
+                    onToggle={(id) => toggleEventTag(selectedEvent, id)}
+                    palette={palette}
+                    selectedIds={selectedEvent.tagIds}
+                    tags={tags}
+                  />
                 </div>
               </div>
             ) : selectedEvent.tagIds.length > 0 ? (
@@ -2026,16 +2011,16 @@ export function StudioShell({
     });
   }
 
-  // D: 일정 하나에 태그 최대 2개. 같은 태그를 다시 누르면 해제, 2개 찬 뒤 새 태그는 무시.
-  // 고른 태그는 모두 대표(primary)로 — 2개면 일정칸에 두 색이 그라데이션으로 섞인다.
+  // 2계층: 일정 하나에 콘텐츠 태그 최대 MAX_EVENT_TAGS개. 같은 태그 재클릭=해제. 카드 색은
+  // 대분류로 합쳐 ≤2색 + 나머지 점 줄로 표시(month.ts).
   function selectTag(tagId: string) {
     setForm((current) => {
       if (current.tagIds.includes(tagId)) {
         const next = current.tagIds.filter((id) => id !== tagId);
         return { ...current, tagIds: next, primaryTagIds: next };
       }
-      if (current.tagIds.length >= 2) {
-        return current; // 최대 2개까지
+      if (current.tagIds.length >= MAX_EVENT_TAGS) {
+        return current; // 최대까지
       }
       const next = [...current.tagIds, tagId];
       return { ...current, tagIds: next, primaryTagIds: next };
@@ -2861,32 +2846,13 @@ export function StudioShell({
           <div className="passcode-box">
             <p className="detail-value">{event.publicTitle || "(제목 없음)"}</p>
             <div className="tag-picker">
-              <div>
-                {legendTags.map((tag) => {
-                  const color = palette.find((c) => c.key === tag.colorKey);
-                  const selected = event.tagIds.includes(tag.id);
-                  const full = !selected && event.tagIds.length >= 2;
-                  return color ? (
-                    <button
-                      className={selected ? "selected" : ""}
-                      data-color={color.key}
-                      disabled={full}
-                      key={tag.id}
-                      onClick={() => toggleEventTag(event, tag.id)}
-                      style={{
-                        backgroundColor: color.bgColor,
-                        borderColor: color.borderColor,
-                        color: color.textColor
-                      }}
-                      title={full ? "태그는 최대 2개까지 고를 수 있어요" : tag.displayName}
-                      type="button"
-                    >
-                      {selected ? `${event.tagIds.indexOf(tag.id) + 1}. ` : ""}
-                      {tag.displayName}
-                    </button>
-                  ) : null;
-                })}
-              </div>
+              <TagPicker
+                max={MAX_EVENT_TAGS}
+                onToggle={(id) => toggleEventTag(event, id)}
+                palette={palette}
+                selectedIds={event.tagIds}
+                tags={tags}
+              />
             </div>
           </div>
         </div>
@@ -3021,47 +2987,20 @@ export function StudioShell({
               {renderSupportEditor()}
             </div>
 
-            {/* 태그 그룹 — 작은 칩을 가지런히. 선택분은 앞으로 끌어와 순번·강조. */}
+            {/* 태그 그룹 — 대분류→세부 드릴다운 + 검색(2계층). 카드 색은 대분류로 ≤2 표시. */}
             <section className="me-group me-tag-group" aria-label="태그 선택">
               <div className="me-grouphead">
                 <span className="me-grouptitle">
-                  태그 <em className="me-hint">최대 2개</em>
-                </span>
-                {/* '1/2'는 페이지처럼 보여 혼동 → 슬롯 점 2개로 "몇 개 골랐는지"를 보여준다. */}
-                <span
-                  className="me-slots"
-                  aria-label={`태그 ${form.tagIds.length}개 선택 (최대 2개)`}
-                >
-                  {[0, 1].map((i) => (
-                    <i className={i < form.tagIds.length ? "on" : ""} key={i} />
-                  ))}
+                  태그 <em className="me-hint">최대 {MAX_EVENT_TAGS}개</em>
                 </span>
               </div>
-              <div className="me-tags">
-                {legendTags.map((tag) => {
-                  const color = palette.find((item) => item.key === tag.colorKey);
-                  const selected = form.tagIds.includes(tag.id);
-                  const full = !selected && form.tagIds.length >= 2;
-                  return color ? (
-                    <button
-                      className={selected ? "selected" : ""}
-                      data-color={color.key}
-                      disabled={full}
-                      key={tag.id}
-                      onClick={() => selectTag(tag.id)}
-                      style={{
-                        backgroundColor: color.bgColor,
-                        borderColor: color.borderColor,
-                        color: color.textColor
-                      }}
-                      type="button"
-                    >
-                      {selected ? `${form.tagIds.indexOf(tag.id) + 1}. ` : ""}
-                      {tag.displayName}
-                    </button>
-                  ) : null;
-                })}
-              </div>
+              <TagPicker
+                max={MAX_EVENT_TAGS}
+                onToggle={selectTag}
+                palette={palette}
+                selectedIds={form.tagIds}
+                tags={tags}
+              />
             </section>
 
             {/* 공지·방문 그래프 — 보조 도구. 개발자는 둘 다, 그 외 편집자는 공지만. */}
@@ -3773,34 +3712,16 @@ export function StudioShell({
 
             <section className="tag-picker" aria-label="태그 선택">
               <h3>
-                태그 <span className="tag-picker-hint">최대 2개</span>
+                태그 <span className="tag-picker-hint">최대 {MAX_EVENT_TAGS}개 · 대분류 색으로 표시</span>
               </h3>
-              <div>
-                {legendTags.map((tag) => {
-                  const color = palette.find((item) => item.key === tag.colorKey);
-                  const selected = form.tagIds.includes(tag.id);
-                  const full = !selected && form.tagIds.length >= 2;
-                  return color ? (
-                    <button
-                      className={selected ? "selected" : ""}
-                      data-color={color.key}
-                      disabled={!canEdit || full}
-                      key={tag.id}
-                      onClick={() => selectTag(tag.id)}
-                      style={{
-                        backgroundColor: color.bgColor,
-                        borderColor: color.borderColor,
-                        color: color.textColor
-                      }}
-                      title={full ? "태그는 최대 2개까지 고를 수 있어요" : tag.displayName}
-                      type="button"
-                    >
-                      {selected ? `${form.tagIds.indexOf(tag.id) + 1}. ` : ""}
-                      {tag.displayName}
-                    </button>
-                  ) : null;
-                })}
-              </div>
+              <TagPicker
+                disabled={!canEdit}
+                max={MAX_EVENT_TAGS}
+                onToggle={selectTag}
+                palette={palette}
+                selectedIds={form.tagIds}
+                tags={tags}
+              />
             </section>
 
             {selectedEventId &&

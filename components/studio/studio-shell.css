@@ -4202,6 +4202,107 @@
 .tag-picker button:disabled {
   cursor: not-allowed;
 }
+/* ── 2계층 이벤트 태그 피커(.tag-picker2) — 대분류 행 + 세부 칩 + 검색 ── */
+.tag-picker2 {
+  display: grid;
+  gap: 10px;
+}
+.tp-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tp-search {
+  flex: 1;
+  min-width: 0;
+  min-height: 34px;
+  border: 1px solid var(--line, #e7e3f2);
+  border-radius: 9px;
+  padding: 0 10px;
+  font-size: 14px;
+}
+.tp-count {
+  flex: none;
+  font-size: 12px;
+  font-weight: 800;
+  color: #8a82a6;
+}
+.tp-groups {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.tp-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.tp-subs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 6px;
+}
+.tp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1.5px solid;
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.1s var(--ease, ease), filter 0.12s var(--ease, ease),
+    box-shadow 0.12s var(--ease, ease);
+}
+/* 세부 칩 — 대분류와 구분되게 살짝 작고 점선 테두리. */
+.tp-chip.sub {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-style: dashed;
+}
+.tp-chip:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+.tp-chip:active:not(:disabled) {
+  transform: scale(0.93);
+}
+.tp-chip.selected {
+  box-shadow: 0 0 0 2px #2a2540 inset;
+}
+.tp-chip:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.tp-order {
+  display: inline-grid;
+  place-items: center;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 30%);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 900;
+}
+@media (min-width: 641px) {
+  .tp-chip {
+    font-size: 14px;
+  }
+  .tp-search {
+    font-size: 15px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tp-chip {
+    transition: none;
+  }
+}
 
 /* 태그 칩이 폭에 따라 들쭉날쭉 흐르지 않게 — 균일한 그리드로 가지런히(웹·모바일 공통). */
 .tag-picker div {
