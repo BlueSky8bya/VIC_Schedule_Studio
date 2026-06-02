@@ -93,6 +93,8 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
         viewer={data.summaryViewer}
         all={data.summaryAll}
         operators={data.operators}
+        newVisitors={data.newVisitors}
+        returningVisitors={data.returningVisitors}
       />
       {/* 방문 수 + 역할/기기 분해 */}
       <div className="dv-top">

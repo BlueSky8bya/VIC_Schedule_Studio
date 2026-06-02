@@ -204,6 +204,11 @@ const BOUNCE_MAX_MS = 10000;
 function isMeaningful(r: SessionRow): boolean {
   return durMs(r) >= MIN_MEANINGFUL_VISIT_MS;
 }
+// 체류 표기(서버 — 자동 문장용). 60초 미만 '초', 이상 '분'. (클라 fmtDur과 동일 규칙)
+function fmtDurSec(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  return s < 60 ? `${s}초` : `${Math.round(s / 60)}분`;
+}
 // 방문 품질 요약(개발자 전용). 주어진 세션들에서 의미 방문 기준으로 지표를 뽑는다.
 export type VisitSummary = {
   visitors: number; // 의미 방문 순방문자((날짜|계정) 고유)
@@ -913,6 +918,21 @@ export type VisitTrends = {
   summaryViewer: VisitSummary; // 시청자만 기준 품질 요약(R4/R5/R13)
   summaryAll: VisitSummary; // 운영진 포함 전체 기준 품질 요약
   operators: number; // 이 달 의미 방문 운영진(viewer 아님) 순방문자 수
+  newVisitors: number; // R12: 이 달 처음 본 시청자(의미 방문)
+  returningVisitors: number; // R12: 재방문 시청자(이전에도 본 적 있음)
+  insights: string[]; // R6: 한 문장 자동 인사이트 1~3개(시청자 기준)
+  heatmap: number[][]; // R7: [요일0~6][시0~23] 시청자 의미 세션 수
+  recent: RecentSession[]; // R10: 최근 세션 20개(개발자 디버깅)
+  health: { todaySessions: number; openRate: number; avgStaySec: number }; // R11: 데이터 건강
+};
+// R10 최근 세션 한 줄 — 원문 이메일 미저장/미표시. owner만 매칭 라벨, 그 외는 역할 라벨.
+export type RecentSession = {
+  t: number;
+  role: string;
+  device: string;
+  seconds: number;
+  meaningful: boolean;
+  label: string;
 };
 export type VisitTrendsResult = { ok: true; data: VisitTrends } | { ok: false; error: string };
 
@@ -971,7 +991,13 @@ export async function getVisitTrendsAction(
         total: 0,
         summaryViewer: emptySummary(),
         summaryAll: emptySummary(),
-        operators: 0
+        operators: 0,
+        newVisitors: 0,
+        returningVisitors: 0,
+        insights: [],
+        heatmap: Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0)),
+        recent: [],
+        health: { todaySessions: 0, openRate: 0, avgStaySec: 0 }
       }
     };
   }
@@ -1044,6 +1070,118 @@ export async function getVisitTrendsAction(
   const { viewer: summaryViewer, all: summaryAll } = summarizeSplit(rows);
   const operators = Math.max(0, summaryAll.visitors - summaryViewer.visitors);
 
+  // R12: 새/재방문 — 이 달 이전에 본 적 있는 계정 집합과 대조(시청자, 의미 방문 기준).
+  const { data: knownData } = await supabase
+    .from("visit_session")
+    .select("account_hash")
+    .lt("day", monthStart);
+  const knownAccounts = new Set(
+    ((knownData ?? []) as { account_hash: string | null }[])
+      .map((r) => r.account_hash)
+      .filter((h): h is string => Boolean(h))
+  );
+  const viewerMeaningful = rows.filter((r) => r.role === "viewer" && isMeaningful(r));
+  const viewerAccounts = new Set(viewerMeaningful.map((r) => sAcct(r)));
+  let newVisitors = 0;
+  let returningVisitors = 0;
+  for (const acc of viewerAccounts) {
+    if (knownAccounts.has(acc)) returningVisitors += 1;
+    else newVisitors += 1;
+  }
+
+  // R7: 요일×시간 히트맵(시청자 의미 세션 수, KST 진입 시각 기준).
+  const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+  for (const r of viewerMeaningful) {
+    const k = new Date(sStart(r) + KST_MS);
+    heatmap[k.getUTCDay()][k.getUTCHours()] += 1;
+  }
+
+  // R10: 최근 세션 20개(개발자 디버깅). owner만 이메일 매칭 라벨, 그 외는 역할 라벨(원문 PII 없음).
+  const hashToOwnerEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
+  const roleLabel: Record<string, string> = {
+    viewer: "시청자",
+    worker: "작업자",
+    manager: "매니저",
+    owner: "관리자",
+    developer: "개발자"
+  };
+  const recent: RecentSession[] = [...rows]
+    .sort((a, b) => sStart(b) - sStart(a))
+    .slice(0, 20)
+    .map((r) => {
+      const startMs = sStart(r);
+      const seconds = Math.max(0, Math.round((sEnd(r) - startMs) / 1000));
+      const label =
+        r.role === "owner" && r.account_hash && hashToOwnerEmail.has(r.account_hash)
+          ? hashToOwnerEmail.get(r.account_hash)!
+          : (roleLabel[r.role] ?? r.role);
+      return {
+        t: startMs,
+        role: r.role,
+        device: DEVICE_SET.has(r.device) ? r.device : "desktop",
+        seconds,
+        meaningful: isMeaningful(r),
+        label
+      };
+    });
+
+  // R11: 데이터 건강 — 오늘 세션 수 / end 미확정 비율 / 평균 체류초(전체).
+  const todayKey = ymd(kstNow());
+  const todaySessions = rows.filter((r) => r.day === todayKey).length;
+  const openRate = rows.length > 0 ? rows.filter((r) => !r.ended_at).length / rows.length : 0;
+  const avgStaySec =
+    rows.length > 0
+      ? Math.round(rows.reduce((s, r) => s + (sEnd(r) - sStart(r)) / 1000, 0) / rows.length)
+      : 0;
+  const health = { todaySessions, openRate, avgStaySec };
+
+  // R6: 한 문장 자동 인사이트(시청자 기준). 최고 시간대·평균 체류·바운스·새/재방문에서 1~3개.
+  const insights: string[] = [];
+  const peakHour = hours.reduce((mx, h, i) => (h.total > hours[mx].total ? i : mx), 0);
+  if (summaryViewer.visitors > 0) {
+    if (hours[peakHour].total > 0) {
+      insights.push(`시청자는 주로 ${peakHour}시에 방문했고, 평균 체류는 ${fmtDurSec(summaryViewer.avgSeconds)}예요.`);
+    }
+    if (summaryViewer.bounceRate >= 0.4) {
+      insights.push(
+        `바운스(10초 미만)가 ${Math.round(summaryViewer.bounceRate * 100)}%라, 방문 수보다 체류 품질을 같이 봐야 해요.`
+      );
+    }
+    if (newVisitors + returningVisitors > 0) {
+      insights.push(`이 달 새 시청자 ${newVisitors}명 · 재방문 ${returningVisitors}명이에요.`);
+    }
+  } else {
+    insights.push("이 달 시청자 방문이 아직 없어요(운영진 트래픽은 토글로 확인).");
+  }
+  // R9: 방문 ↔ 일정 연결(공개 일정 유무만 — private 필드는 절대 안 씀). 방문 최다일에 공개 일정이
+  // 있었는지 한 문장. 경계: is_public 카운트만 조회.
+  const topDay = days.reduce<{ day: number; total: number } | null>(
+    (mx, d) => (d.total > (mx?.total ?? 0) ? d : mx),
+    null
+  );
+  if (topDay && topDay.total > 0) {
+    const { data: cal } = await supabase
+      .from("calendars")
+      .select("id")
+      .eq("slug", SLUG)
+      .maybeSingle();
+    if (cal) {
+      const dk = `${monthStart.slice(0, 8)}${pad(topDay.day)}`;
+      const { data: ev } = await supabase
+        .from("events")
+        .select("id")
+        .eq("calendar_id", cal.id as string)
+        .eq("is_public", true)
+        .eq("date_key", dk)
+        .limit(1);
+      insights.push(
+        ev && ev.length > 0
+          ? `방문 최다일(${topDay.day}일)엔 공개 일정이 있었어요.`
+          : `방문 최다일(${topDay.day}일)엔 공개 일정이 없었는데도 방문이 몰렸어요.`
+      );
+    }
+  }
+
   return {
     ok: true,
     data: {
@@ -1058,7 +1196,13 @@ export async function getVisitTrendsAction(
       total: reachSlot(rows).total,
       summaryViewer,
       summaryAll,
-      operators
+      operators,
+      newVisitors,
+      returningVisitors,
+      insights,
+      heatmap,
+      recent,
+      health
     }
   };
 }
@@ -1080,6 +1224,8 @@ export type DayVisitDetail = {
   summaryViewer: VisitSummary; // 그날 시청자 기준 품질 요약(R4/R5/R13)
   summaryAll: VisitSummary; // 그날 운영진 포함 전체 기준 품질 요약
   operators: number; // 그날 의미 방문 운영진 순방문자 수
+  newVisitors: number; // R12: 그날 처음 본 시청자
+  returningVisitors: number; // R12: 그날 재방문 시청자
 };
 export type DayVisitDetailResult = { ok: true; data: DayVisitDetail } | { ok: false; error: string };
 
@@ -1128,6 +1274,26 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
   const { viewer: summaryViewer, all: summaryAll } = summarizeSplit(rows);
   const operators = Math.max(0, summaryAll.visitors - summaryViewer.visitors);
 
+  // R12: 그날 시청자(의미 방문) 중 그 전에 본 적 없는 계정=새, 있으면 재방문.
+  const { data: knownData } = await supabase
+    .from("visit_session")
+    .select("account_hash")
+    .lt("day", dateKey);
+  const knownAccounts = new Set(
+    ((knownData ?? []) as { account_hash: string | null }[])
+      .map((r) => r.account_hash)
+      .filter((h): h is string => Boolean(h))
+  );
+  const viewerAccounts = new Set(
+    rows.filter((r) => r.role === "viewer" && isMeaningful(r)).map((r) => sAcct(r))
+  );
+  let newVisitors = 0;
+  let returningVisitors = 0;
+  for (const acc of viewerAccounts) {
+    if (knownAccounts.has(acc)) returningVisitors += 1;
+    else newVisitors += 1;
+  }
+
   return {
     ok: true,
     data: {
@@ -1140,7 +1306,9 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
       ownerSeconds,
       summaryViewer,
       summaryAll,
-      operators
+      operators,
+      newVisitors,
+      returningVisitors
     }
   };
 }

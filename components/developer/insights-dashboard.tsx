@@ -121,11 +121,15 @@ export const fmtDur = (seconds: number) => {
 export function VisitSummaryBlock({
   viewer,
   all,
-  operators
+  operators,
+  newVisitors,
+  returningVisitors
 }: {
   viewer: VisitSummary;
   all: VisitSummary;
   operators: number;
+  newVisitors?: number;
+  returningVisitors?: number;
 }) {
   const [includeOps, setIncludeOps] = useState(false);
   const s = includeOps ? all : viewer;
@@ -182,6 +186,19 @@ export function VisitSummaryBlock({
           <b>{s.peakConcurrent}</b>
           <span>최고동접</span>
         </li>
+        {/* R12: 새/재방문(시청자 기준 — 토글과 무관하게 시청자 신호) */}
+        {typeof newVisitors === "number" ? (
+          <li>
+            <b>{newVisitors}</b>
+            <span>새 방문</span>
+          </li>
+        ) : null}
+        {typeof returningVisitors === "number" ? (
+          <li>
+            <b>{returningVisitors}</b>
+            <span>재방문</span>
+          </li>
+        ) : null}
       </ul>
     </div>
   );
@@ -448,12 +465,22 @@ export function InsightsDashboard({
     };
     return (
       <>
-        {/* 방문 품질 요약(R1 의미 방문 컷 적용·R2 시청자/운영진 토글·R4 KPI·R5 분리·R13 최고동접). */}
+        {/* 방문 품질 요약(R1 컷·R2 토글·R4 KPI·R5 분리·R12 새/재방문·R13 최고동접). */}
         <VisitSummaryBlock
           viewer={visits.summaryViewer}
           all={visits.summaryAll}
           operators={visits.operators}
+          newVisitors={visits.newVisitors}
+          returningVisitors={visits.returningVisitors}
         />
+        {/* R6: 한 문장 자동 인사이트 */}
+        {visits.insights.length > 0 ? (
+          <ul className="vins">
+            {visits.insights.map((line, i) => (
+              <li key={i}>💡 {line}</li>
+            ))}
+          </ul>
+        ) : null}
         <div className="insights-toolbar">
           <div className="insights-subtabs">
             <button
@@ -674,6 +701,89 @@ export function InsightsDashboard({
             아직 관리자 접속 세션이 없어요. 토리님이 접속하면 기기·시간대·머문 시간이 여기 그려져요.
           </p>
         )}
+
+        {/* R7: 요일×시간 히트맵(시청자 의미 방문 세션 수). 언제 자주 보는지 한눈에. */}
+        <h4 className="insight-subhead">요일 × 시간 (시청자)</h4>
+        {(() => {
+          const wdays = ["일", "월", "화", "수", "목", "금", "토"];
+          const hmMax = Math.max(1, ...visits.heatmap.flat());
+          return (
+            <div className="vheat" role="img" aria-label="요일×시간 히트맵">
+              {visits.heatmap.map((row, wd) => (
+                <div className="vheat-row" key={wd}>
+                  <span className="vheat-wd">{wdays[wd]}</span>
+                  {row.map((c, h) => (
+                    <i
+                      key={h}
+                      title={`${wdays[wd]} ${h}시 · ${c}세션`}
+                      style={{ background: c > 0 ? `rgba(124,92,245,${0.15 + (c / hmMax) * 0.8})` : "#f1eef9" }}
+                    />
+                  ))}
+                </div>
+              ))}
+              <div className="vheat-axis">
+                <span>0</span>
+                <span>6</span>
+                <span>12</span>
+                <span>18</span>
+                <span>23</span>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* R8: 날짜별 미니 달력 히트맵(방문 많은 날 진하게). 표시 전용. */}
+        <h4 className="insight-subhead">날짜별 방문</h4>
+        {(() => {
+          const firstWd = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+          const dayMax = Math.max(1, ...visits.days.map((d) => d.total));
+          const wdays = ["일", "월", "화", "수", "목", "금", "토"];
+          return (
+            <div className="vmini">
+              {wdays.map((w) => (
+                <span className="vmini-h" key={w}>
+                  {w}
+                </span>
+              ))}
+              {Array.from({ length: firstWd }, (_, i) => (
+                <span className="vmini-cell empty" key={`b${i}`} />
+              ))}
+              {visits.days.map((d) => (
+                <span
+                  className="vmini-cell"
+                  key={d.day}
+                  title={`${month}/${d.day} · ${d.total}방문`}
+                  style={{ background: d.total > 0 ? `rgba(52,211,153,${0.18 + (d.total / dayMax) * 0.75})` : "#f3f1ee" }}
+                >
+                  {d.day}
+                </span>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* R11: 데이터 건강 상태(비콘/end 유실 추정). */}
+        <p className="vhealth">
+          오늘 {visits.health.todaySessions}세션 · end 미확정 {Math.round(visits.health.openRate * 100)}% · 평균 체류 {fmtDur(visits.health.avgStaySec)}
+        </p>
+
+        {/* R10: 최근 세션 로그(개발자 디버깅) — 접이식. */}
+        <details className="vrecent">
+          <summary>최근 세션 {visits.recent.length}건</summary>
+          <ul>
+            {visits.recent.map((r, i) => (
+              <li key={i}>
+                <span className="vrecent-t">{hhmm(r.t)}</span>
+                <b>{r.label}</b>
+                <span className="vrecent-dev">{DEVICE_META.find((m) => m.key === r.device)?.label ?? r.device}</span>
+                <span className={`vrecent-dur${r.meaningful ? "" : " glance"}`}>
+                  {fmtDur(r.seconds)}
+                  {r.meaningful ? "" : " · 스쳐감"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </details>
       </>
     );
   }
