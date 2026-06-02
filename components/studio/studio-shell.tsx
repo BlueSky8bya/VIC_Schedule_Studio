@@ -411,6 +411,8 @@ export function StudioShell({
   }, [mobileEditId]);
   // 업 도움 종료일을 손가락으로 좌우로 밀어 빠르게 바꾸는 스크럽 상태(드래그 시작점 + 그때 종료일).
   const dateScrubRef = useRef<{ x: number; end: string } | null>(null);
+  // 스크럽(미는) 중인지 — 값 칩에 확대·발광 애니메이션을 줘서 "조정 중"을 한눈에 알린다.
+  const [dateScrubbing, setDateScrubbing] = useState(false);
   // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 전용 시트(웹·모바일 공용).
   const [supportSheetId, setSupportSheetId] = useState<string | null>(null);
   const [supportSaving, setSupportSaving] = useState(false);
@@ -2658,11 +2660,12 @@ export function StudioShell({
                 </button>
                 {/* 값을 좌우로 밀면(민감, 8px=1일) 종료일이 빠르게 바뀐다. 시작일 아래로는 안 내려감. */}
                 <span
-                  className="dstep-val dstep-scrub"
+                  className={`dstep-val dstep-scrub${dateScrubbing ? " scrubbing" : ""}`}
                   onPointerDown={(e: ReactPointerEvent<HTMLSpanElement>) => {
                     if (!editable) return;
                     dateScrubRef.current = { x: e.clientX, end: form.endDateKey || selectedDate };
                     e.currentTarget.setPointerCapture(e.pointerId);
+                    setDateScrubbing(true);
                   }}
                   onPointerMove={(e: ReactPointerEvent<HTMLSpanElement>) => {
                     const s = dateScrubRef.current;
@@ -2674,9 +2677,11 @@ export function StudioShell({
                   }}
                   onPointerUp={() => {
                     dateScrubRef.current = null;
+                    setDateScrubbing(false);
                   }}
                   onPointerCancel={() => {
                     dateScrubRef.current = null;
+                    setDateScrubbing(false);
                   }}
                 >
                   {formatSupportEnd(selectedDate, form.endDateKey || selectedDate)}
