@@ -14,6 +14,36 @@ import { canEditSchedule } from "@/lib/permissions/roles";
 const SLUG = "vic";
 const REST_TAG = "휴뱅";
 
+// 2계층 태그 통계 롤업: 태그 id → 최상위 대분류 {id, name, colorKey}. 세부는 부모 대분류로 합산되어
+// 통계가 잘게 쪼개지지 않는다(예: 게임>롤·명조·실크송 → '게임' 하나로). 휴뱅 등 대분류는 자기 자신.
+async function loadTagCategoryMap(
+  supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
+  calendarId: string
+): Promise<Map<string, { id: string; name: string; colorKey: string }>> {
+  const { data } = await supabase
+    .from("broadcast_tags")
+    .select("id, parent_id, display_name, color_key")
+    .eq("calendar_id", calendarId);
+  const rows = (data ?? []) as {
+    id: string;
+    parent_id: string | null;
+    display_name: string;
+    color_key: string;
+  }[];
+  const byId = new Map(rows.map((r) => [r.id, r] as const));
+  const cat = new Map<string, { id: string; name: string; colorKey: string }>();
+  for (const r of rows) {
+    let top = r;
+    const guard = new Set<string>();
+    while (top.parent_id && byId.has(top.parent_id) && !guard.has(top.id)) {
+      guard.add(top.id);
+      top = byId.get(top.parent_id)!;
+    }
+    cat.set(r.id, { id: top.id, name: top.display_name, colorKey: top.color_key });
+  }
+  return cat;
+}
+
 export type InsightsData = {
   month: { year: number; month: number };
   content: {
@@ -484,7 +514,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         .lt("date_key", nextMonthStart),
       supabase
         .from("event_tags")
-        .select("event_id, broadcast_tags(display_name, color_key), events!inner(calendar_id, date_key)")
+        .select("event_id, broadcast_tags(id, display_name, color_key), events!inner(calendar_id, date_key)")
         .eq("events.calendar_id", calendarId)
         .gte("events.date_key", monthStart)
         .lt("events.date_key", nextMonthStart),
@@ -517,9 +547,10 @@ export async function getInsightsAction(year: number, month: number): Promise<In
     ]);
 
   // 휴뱅(방송 안 함) 일정 id 집합 — 콘텐츠/방송 집계에서 제외.
+  const catMap = await loadTagCategoryMap(supabase, calendarId); // 세부→대분류 롤업
   const tagsRange = (tagsRangeRes.data ?? []) as {
     event_id: string;
-    broadcast_tags?: { display_name?: string; color_key?: string };
+    broadcast_tags?: { id?: string; display_name?: string; color_key?: string };
   }[];
   const restEventIds = new Set<string>();
   for (const row of tagsRange) {
@@ -565,17 +596,25 @@ export async function getInsightsAction(year: number, month: number): Promise<In
     });
   }
   const thisMonthContentIds = new Set(thisMonthEvents.map((e) => e.id));
+  // 2계층: 세부는 대분류로 합산(게임>롤·명조 → '게임'). 휴뱅은 제외.
   const tagMap = new Map<string, { name: string; count: number; bgColor: string; borderColor: string }>();
   for (const row of tagsRange) {
-    const name = row.broadcast_tags?.display_name;
-    if (!name || name === REST_TAG) continue;
+    const rawName = row.broadcast_tags?.display_name;
+    if (!rawName || rawName === REST_TAG) continue;
     if (!thisMonthContentIds.has(row.event_id)) continue;
-    const cur = tagMap.get(name);
+    const id = row.broadcast_tags?.id;
+    const cat = (id && catMap.get(id)) || {
+      id: id ?? rawName,
+      name: rawName,
+      colorKey: row.broadcast_tags?.color_key ?? ""
+    };
+    if (cat.name === REST_TAG) continue;
+    const cur = tagMap.get(cat.id);
     if (cur) cur.count += 1;
     else {
-      const col = colorMap.get(row.broadcast_tags?.color_key ?? "");
-      tagMap.set(name, {
-        name,
+      const col = colorMap.get(cat.colorKey);
+      tagMap.set(cat.id, {
+        name: cat.name,
         count: 1,
         bgColor: col?.bg ?? "#cdc6ec",
         borderColor: col?.border ?? "#b3a9dd"
@@ -833,6 +872,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId })
   ]);
 
+  const catMap = await loadTagCategoryMap(supabase, calendarId); // 세부→대분류 롤업
   const tagRows2 = (tagsRes.data ?? []) as {
     event_id: string;
     broadcast_tags?: { id?: string; display_name?: string; color_key?: string };
@@ -873,13 +913,14 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     const bt = row.broadcast_tags;
     const ym = eventMonth.get(row.event_id); // 공개 일정만(비공개는 매핑 없음 → 제외)
     if (!bt?.id || !ym) continue;
-    contentTagRows.push({ ym, key: bt.id, n: 1 });
-    const cur = tagInfo.get(bt.id);
+    const cat = catMap.get(bt.id) ?? { id: bt.id, name: bt.display_name ?? "?", colorKey: bt.color_key ?? "" };
+    contentTagRows.push({ ym, key: cat.id, n: 1 });
+    const cur = tagInfo.get(cat.id);
     if (cur) cur.total += 1;
     else
-      tagInfo.set(bt.id, {
-        name: bt.display_name ?? "?",
-        color: palette.get(bt.color_key ?? "") ?? "#cdc6ec",
+      tagInfo.set(cat.id, {
+        name: cat.name,
+        color: palette.get(cat.colorKey) ?? "#cdc6ec",
         total: 1
       });
   }
@@ -900,13 +941,14 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     if (!bt?.id || !ym) continue;
     const h = heartByEvent.get(row.event_id) ?? 0;
     if (h <= 0) continue;
-    heartTagRows.push({ ym, key: bt.id, n: h });
-    const cur = heartTagInfo.get(bt.id);
+    const cat = catMap.get(bt.id) ?? { id: bt.id, name: bt.display_name ?? "?", colorKey: bt.color_key ?? "" };
+    heartTagRows.push({ ym, key: cat.id, n: h });
+    const cur = heartTagInfo.get(cat.id);
     if (cur) cur.total += h;
     else
-      heartTagInfo.set(bt.id, {
-        name: bt.display_name ?? "?",
-        color: palette.get(bt.color_key ?? "") ?? "#f7a8c0",
+      heartTagInfo.set(cat.id, {
+        name: cat.name,
+        color: palette.get(cat.colorKey) ?? "#f7a8c0",
         total: h
       });
   }
@@ -1596,7 +1638,14 @@ export async function getMemberInsightsAction(
       .lt("day", nextMonthStart)
   ]);
 
-  // 휴뱅 일정 id + 태그(6개월) 집계.
+  // 휴뱅 일정 id + 태그(6개월) 집계. 세부는 대분류로 롤업.
+  const catMap = await loadTagCategoryMap(supabase, calendarId);
+  const catOf = (bt?: { id?: string; display_name?: string; color_key?: string }) =>
+    (bt?.id && catMap.get(bt.id)) || {
+      id: bt?.id ?? bt?.display_name ?? "?",
+      name: bt?.display_name ?? "?",
+      colorKey: bt?.color_key ?? ""
+    };
   const tagRows = (tagsRes.data ?? []) as {
     event_id: string;
     broadcast_tags?: { id?: string; display_name?: string; color_key?: string };
@@ -1651,13 +1700,14 @@ export async function getMemberInsightsAction(
     const bt = row.broadcast_tags;
     const ym = eventMonth.get(row.event_id);
     if (!bt?.id || !ym) continue;
-    ctRows.push({ ym, key: bt.id, n: 1 });
-    const cur = ctTagInfo.get(bt.id);
+    const cat = catOf(bt);
+    ctRows.push({ ym, key: cat.id, n: 1 });
+    const cur = ctTagInfo.get(cat.id);
     if (cur) cur.total += 1;
     else
-      ctTagInfo.set(bt.id, {
-        name: bt.display_name ?? "?",
-        color: colorMap.get(bt.color_key ?? "")?.bg ?? "#cdc6ec",
+      ctTagInfo.set(cat.id, {
+        name: cat.name,
+        color: colorMap.get(cat.colorKey)?.bg ?? "#cdc6ec",
         total: 1
       });
   }
@@ -1671,13 +1721,20 @@ export async function getMemberInsightsAction(
 
   const tagCount = new Map<string, { name: string; count: number; bgColor: string; borderColor: string }>();
   for (const row of tagRows) {
-    const name = row.broadcast_tags?.display_name;
-    if (!name || name === REST_TAG || !thisMonthIds.has(row.event_id)) continue;
-    const cur = tagCount.get(name);
+    const rawName = row.broadcast_tags?.display_name;
+    if (!rawName || rawName === REST_TAG || !thisMonthIds.has(row.event_id)) continue;
+    const cat = catOf(row.broadcast_tags);
+    if (cat.name === REST_TAG) continue;
+    const cur = tagCount.get(cat.id);
     if (cur) cur.count += 1;
     else {
-      const col = colorMap.get(row.broadcast_tags?.color_key ?? "");
-      tagCount.set(name, { name, count: 1, bgColor: col?.bg ?? "#cdc6ec", borderColor: col?.border ?? "#b3a9dd" });
+      const col = colorMap.get(cat.colorKey);
+      tagCount.set(cat.id, {
+        name: cat.name,
+        count: 1,
+        bgColor: col?.bg ?? "#cdc6ec",
+        borderColor: col?.border ?? "#b3a9dd"
+      });
     }
   }
   const tagArr = [...tagCount.values()].sort((a, b) => b.count - a.count).slice(0, 8);
@@ -1754,13 +1811,14 @@ export async function getMemberInsightsAction(
     if (!bt?.id || !ym) continue;
     const h = memHeartByEvent.get(row.event_id) ?? 0;
     if (h <= 0) continue;
-    hbtRows.push({ ym, key: bt.id, n: h });
-    const cur = hbtInfo.get(bt.id);
+    const cat = catOf(bt);
+    hbtRows.push({ ym, key: cat.id, n: h });
+    const cur = hbtInfo.get(cat.id);
     if (cur) cur.total += h;
     else
-      hbtInfo.set(bt.id, {
-        name: bt.display_name ?? "?",
-        color: colorMap.get(bt.color_key ?? "")?.bg ?? "#f7a8c0",
+      hbtInfo.set(cat.id, {
+        name: cat.name,
+        color: colorMap.get(cat.colorKey)?.bg ?? "#f7a8c0",
         total: h
       });
   }
