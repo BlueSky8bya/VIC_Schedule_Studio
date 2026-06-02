@@ -5248,6 +5248,23 @@ textarea:disabled {
 .perm-table thead th:first-child {
   text-align: left;
 }
+/* 역할 열별 색 헤더 — 관리자(초록)·개발자(파랑)·매니저(보라)·작업자(앰버)로 한눈에 구분. */
+.perm-table thead th:nth-child(2) {
+  background: #e8f9f0;
+  color: #1f8a55;
+}
+.perm-table thead th:nth-child(3) {
+  background: #e9f1fe;
+  color: #2f6fd0;
+}
+.perm-table thead th:nth-child(4) {
+  background: #efeafd;
+  color: #6b5bd6;
+}
+.perm-table thead th:nth-child(5) {
+  background: #fff3e0;
+  color: #b5651d;
+}
 .perm-table tbody th {
   text-align: left;
   font-weight: 700;
@@ -5260,11 +5277,40 @@ textarea:disabled {
   text-align: center;
   font-weight: 900;
 }
-.perm-table .yes {
-  color: #2f7d4f;
-}
+/* ✓/✕를 색 알약으로 — 초록 체크/연회색 대시. 셀 안에서 동그란 칩처럼 보이게(차가운 표 탈피). */
+.perm-table .yes,
 .perm-table .no {
-  color: #cbc6d6;
+  font-size: 0; /* 원문 ✓/✕ 글자는 숨기고 ::before 마크로 대체(가운데 칩) */
+}
+.perm-table .yes::before,
+.perm-table .no::before {
+  content: "";
+  display: inline-block;
+  vertical-align: middle;
+}
+.perm-table .yes::before {
+  width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  background: #2f9e62
+    /* 흰 체크 */ url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
+    center / 12px no-repeat;
+  box-shadow: 0 1px 3px -1px rgba(47, 158, 98, 0.6);
+}
+.perm-table .no::before {
+  width: 12px;
+  height: 3px;
+  border-radius: 999px;
+  background: #d3cee0;
+}
+.perm-table tbody tr {
+  transition: background 0.12s var(--ease, ease);
+}
+.perm-table tbody tr:nth-child(even) {
+  background: #fcfbfe;
+}
+.perm-table tbody tr:hover {
+  background: #f6f1ff;
 }
 .perm-foot {
   margin: 8px 2px 0;
