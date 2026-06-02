@@ -34,6 +34,8 @@ export type BroadcastTag = {
   sortOrder: number;
   isDefault: boolean;
   isActive: boolean;
+  // 2계층 태그: null = 대분류(색 보유), 값 = 세부(부모 id, 렌더 색은 최상위 대분류 색 상속).
+  parentId: string | null;
 };
 
 export type PublicScheduleEvent = {

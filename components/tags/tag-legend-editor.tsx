@@ -17,7 +17,8 @@ import { hapticTick } from "@/lib/ui/haptics";
 type TagUpdate = { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number };
 
 // 태그는 최대 20개까지. (서버 saveTagsAction에서도 동일하게 막는다.)
-const MAX_TAGS = 20;
+// 2계층 태그: 대분류는 소수(색)지만 세부는 무제한급으로 늘 수 있어 총 상한을 크게.
+const MAX_TAGS = 120;
 // 저장 전 새 태그(드래프트)의 임시 id 접두사.
 const NEW_PREFIX = "new:";
 // id가 null/undefined로 새어들어와도 터지지 않게 방어(드물게 서버가 빈 id를 돌려줄 때 등).
@@ -355,7 +356,8 @@ export function TagLegendEditor({
       colorKey: gen.key,
       sortOrder: 9999,
       isDefault: false,
-      isActive: true
+      isActive: true,
+      parentId: null
     };
     setNewColors((prev) => [...prev, color]);
     setNewTags((prev) => [...prev, tag]);

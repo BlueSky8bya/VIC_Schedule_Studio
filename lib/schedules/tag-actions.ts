@@ -113,15 +113,15 @@ export async function saveTagsAction(input: {
     return { ok: false, error: "캘린더를 찾을 수 없습니다." };
   }
 
-  // 새 태그가 있으면: 총 개수(최대 20) 확인 + 새 색 팔레트 등록.
+  // 새 태그가 있으면: 총 개수(최대 120 — 2계층 세부 포함) 확인 + 새 색 팔레트 등록.
   const created: { tempId: string; tag: BroadcastTag; color: ColorPaletteEntry }[] = [];
   if (creates.length > 0) {
     const { count: tagCount } = await supabase
       .from("broadcast_tags")
       .select("id", { count: "exact", head: true })
       .eq("calendar_id", calendar.id);
-    if ((tagCount ?? 0) + creates.length > 20) {
-      return { ok: false, error: "태그는 최대 20개까지만 만들 수 있습니다." };
+    if ((tagCount ?? 0) + creates.length > 120) {
+      return { ok: false, error: "태그는 최대 120개까지만 만들 수 있습니다." };
     }
 
     // 새로 만든(gen-) 색 중 아직 팔레트에 없는 것만 등록한다.
@@ -177,7 +177,8 @@ export async function saveTagsAction(input: {
           colorKey: c.colorKey,
           sortOrder: c.sortOrder,
           isDefault: false,
-          isActive: true
+          isActive: true,
+          parentId: null
         },
         color: {
           key: c.colorKey,

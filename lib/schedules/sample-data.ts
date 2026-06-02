@@ -23,7 +23,8 @@ export const defaultPalette: ColorPaletteEntry[] = [
   { key: "beige", name: "갈색", bgColor: "#a9794a", textColor: "#ffffff", borderColor: "#885d33", sortOrder: 13 }
 ];
 
-export const defaultTags: BroadcastTag[] = [
+// 시드 태그는 전부 대분류(parentId: null). 세부는 owner가 편집기에서 추가.
+export const defaultTags: BroadcastTag[] = ([
   { id: "tag-dayoff", tagKey: "dayoff", displayName: "휴뱅", colorKey: "gray", sortOrder: 1, isDefault: true, isActive: true },
   { id: "tag-worldcup", tagKey: "worldcup", displayName: "구플뱅", colorKey: "orange", sortOrder: 2, isDefault: true, isActive: true },
   { id: "tag-collab", tagKey: "collab", displayName: "합방", colorKey: "lavender", sortOrder: 3, isDefault: true, isActive: true },
@@ -37,7 +38,7 @@ export const defaultTags: BroadcastTag[] = [
   { id: "tag-ck", tagKey: "ck", displayName: "CK", colorKey: "red", sortOrder: 11, isDefault: true, isActive: true },
   { id: "tag-tournament", tagKey: "tournament", displayName: "대회", colorKey: "indigo", sortOrder: 12, isDefault: true, isActive: true },
   { id: "tag-cineti", tagKey: "cineti", displayName: "시네티", colorKey: "teal", sortOrder: 13, isDefault: true, isActive: true }
-];
+] as Omit<BroadcastTag, "parentId">[]).map((t) => ({ ...t, parentId: null }));
 
 export const sampleStudioSchedule: StudioSchedule = {
   calendar: {
