@@ -49,16 +49,37 @@ export function useEqualChainHeights(
         }
       }
     }
+    // 레이아웃이 안정된 뒤 한 번 더 맞춘다(컨테이너 폭·스크롤바·미리보기 전환 등으로 줄바꿈이
+    // 바뀔 수 있어). 더블 rAF로 브라우저가 레이아웃을 끝낸 다음 프레임에 잰다.
+    let raf1 = 0;
+    let raf2 = 0;
+    function schedule() {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      raf1 = requestAnimationFrame(() => {
+        raf2 = requestAnimationFrame(equalize);
+      });
+    }
+    // useLayoutEffect라 이 첫 호출은 '페인트 전'에 끝난다 → 첫 화면부터 어긋남 없이 보인다
+    // (몇 초 뒤 갑자기 맞춰지는 깜빡임이 구조적으로 안 생긴다).
     equalize();
+    schedule();
     // 첫 렌더가 웹폰트(Pretendard) 로딩 전이면 폴백 글꼴 높이로 재서 이어진 칸이 어긋난다.
     // 폰트가 준비되면 한 번 더 맞춘다(이미 로딩됐으면 즉시 resolve라 비용 없음).
     if (typeof document !== "undefined" && document.fonts) {
-      document.fonts.ready.then(() => equalize()).catch(() => {});
+      document.fonts.ready.then(() => schedule()).catch(() => {});
     }
-    window.addEventListener("resize", equalize);
+    // 컨테이너(달력 그리드) 크기가 바뀌면(사이드바·미리보기 전환·창 크기) 다시 맞춘다.
+    // window resize만으로는 못 잡는 레이아웃 변화(부모 폭 변화)까지 흡수해 viewer에서도 확실히 맞는다.
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => schedule()) : null;
+    ro?.observe(root);
+    window.addEventListener("resize", schedule);
     return () => {
       cancelled = true;
-      window.removeEventListener("resize", equalize);
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      ro?.disconnect();
+      window.removeEventListener("resize", schedule);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);

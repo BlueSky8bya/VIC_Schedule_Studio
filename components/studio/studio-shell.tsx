@@ -361,10 +361,14 @@ export function StudioShell({
   // 시청자 화면 미리보기로 넘어갈 때: 먼저 진행 중 편집을 모두 반영(flush)한 뒤 서버를 새로
   // 불러온다 → 미리보기가 'DB 진실 = 실제 시청자가 볼 것'과 항상 일치한다(추가 새로고침 불필요).
   function enterViewerMode() {
+    // 진행 중 편집이 있을 때만 서버를 새로 불러온다. 편집 없이 미리보기만 볼 땐 refresh를
+    // 생략 → 편집실로 돌아올 때 그리드가 다시 그려지며 높이가 잠깐 어긋났다 맞춰지는 깜빡임 방지.
+    const hadPending =
+      pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0;
     setViewerMode(true);
     void (async () => {
       await flushPendingWrites();
-      router.refresh();
+      if (hadPending) router.refresh();
     })();
   }
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
