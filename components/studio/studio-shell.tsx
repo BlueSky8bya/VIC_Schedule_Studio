@@ -1103,6 +1103,7 @@ export function StudioShell({
   }
 
   function moveMonth(offset: number) {
+    hapticTick(); // 달 넘김 손맛 — 버튼·키보드·스와이프 모든 경로 공통(Android만, 그 외 조용히 무시)
     didNavigateRef.current = true; // 이제부턴 달 이동 = 슬라이드(첫 진입 스태거와 구분)
     setMonthDir(offset >= 0 ? "next" : "prev"); // 슬라이드 방향(시청자 화면과 동일)
     setView((current) => {
@@ -1157,8 +1158,7 @@ export function StudioShell({
     const dx = t.clientX - start.x;
     const dy = t.clientY - start.y;
     if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      hapticTick(); // 스와이프로 달 넘길 때 톡(Android만; iOS·미지원은 조용히 무시)
-      moveMonth(dx < 0 ? 1 : -1);
+      moveMonth(dx < 0 ? 1 : -1); // haptic은 moveMonth에서 단일 처리
     }
   }
 
