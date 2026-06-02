@@ -123,15 +123,23 @@ export function VisitSummaryBlock({
   all,
   operators,
   newVisitors,
-  returningVisitors
+  returningVisitors,
+  scope,
+  onScope
 }: {
   viewer: VisitSummary;
   all: VisitSummary;
   operators: number;
   newVisitors?: number;
   returningVisitors?: number;
+  // 제어형(부모가 scope를 주면 토글이 부모 상태를 바꿔 아래 그래프까지 즉시 전환). 없으면 내부 상태.
+  scope?: "viewer" | "all";
+  onScope?: (s: "viewer" | "all") => void;
 }) {
-  const [includeOps, setIncludeOps] = useState(false);
+  const [localScope, setLocalScope] = useState<"viewer" | "all">("viewer");
+  const cur = scope ?? localScope;
+  const setScope = onScope ?? setLocalScope;
+  const includeOps = cur === "all";
   const s = includeOps ? all : viewer;
   return (
     <div className="vsum">
@@ -143,14 +151,14 @@ export function VisitSummaryBlock({
         <div className="insights-subtabs vsum-toggle">
           <button
             className={includeOps ? "" : "active"}
-            onClick={() => setIncludeOps(false)}
+            onClick={() => setScope("viewer")}
             type="button"
           >
             시청자
           </button>
           <button
             className={includeOps ? "active" : ""}
-            onClick={() => setIncludeOps(true)}
+            onClick={() => setScope("all")}
             type="button"
           >
             운영진 포함
@@ -273,6 +281,7 @@ export function InsightsDashboard({
   const [visitsLoading, setVisitsLoading] = useState(true);
   const [visitView, setVisitView] = useState<"day" | "week">("day");
   const [visitDim, setVisitDim] = useState<"role" | "device">("role");
+  const [visitScope, setVisitScope] = useState<"viewer" | "all">("viewer"); // 시청자/운영진 포함 — 그래프까지 즉시 전환
   const [vtHover, setVtHover] = useState<VtHover | null>(null);
   const [vtHourHover, setVtHourHover] = useState<OccHover | null>(null); // 시간대 점유(체류) 분해 툴팁
   const [ownerTip, setOwnerTip] = useState<{ x: number; top: number; text: string } | null>(null); // 관리자 세션 띠 툴팁
@@ -416,7 +425,9 @@ export function InsightsDashboard({
         </p>
       );
     }
-    const series = visitView === "day" ? visits.days : visits.weeks;
+    // 토글(시청자/운영진 포함)이 고른 그래프 묶음 — 아래 막대·동접·히트맵·미니달력 전부 이걸 쓴다.
+    const g = visitScope === "viewer" ? visits.viewer : visits.all;
+    const series = visitView === "day" ? g.days : g.weeks;
     const meta = visitDim === "role" ? ROLE_META : DEVICE_META;
     const countsOf = (s: { roles: Record<string, number>; devices: Record<string, number> }) =>
       visitDim === "role" ? s.roles : s.devices;
@@ -427,7 +438,7 @@ export function InsightsDashboard({
     const unit = visitDim === "role" ? "명" : "대";
     const max = Math.max(1, ...series.map(totalOf));
     // 시간대 막대 높이 스케일은 '평균 동시 접속'의 최댓값 기준(상대 스케일이라 절대치가 작아도 형태가 보임).
-    const om = Math.max(0.0001, ...visits.occupancy.map((s) => s.avg));
+    const om = Math.max(0.0001, ...g.occupancy.map((s) => s.avg));
     // 관리자 접속 세션을 KST 날짜별로 묶고, 각 세션을 24h 트랙 좌표(시작%·길이%)로 — 수면/스크린타임
     // 타임라인처럼 "언제·몇 분·어느 기기"를 한 줄로 보여준다(최근 날짜가 위).
     const devMeta = (k: string) => DEVICE_META.find((m) => m.key === k) ?? DEVICE_META[0];
@@ -472,6 +483,8 @@ export function InsightsDashboard({
           operators={visits.operators}
           newVisitors={visits.newVisitors}
           returningVisitors={visits.returningVisitors}
+          scope={visitScope}
+          onScope={setVisitScope}
         />
         {/* R6: 한 문장 자동 인사이트 */}
         {visits.insights.length > 0 ? (
@@ -522,9 +535,9 @@ export function InsightsDashboard({
           onPointerLeave={() => setVtHover(null)}
         >
           {visitView === "day"
-            ? visits.days.map((d, i) => (
+            ? g.days.map((d, i) => (
                 <StackBar
-                  count={visits.days.length}
+                  count={g.days.length}
                   counts={countsOf(d)}
                   index={i}
                   key={d.day}
@@ -536,9 +549,9 @@ export function InsightsDashboard({
                   total={totalOf(d)}
                 />
               ))
-            : visits.weeks.map((w, i) => (
+            : g.weeks.map((w, i) => (
                 <StackBar
-                  count={visits.weeks.length}
+                  count={g.weeks.length}
                   counts={countsOf(w)}
                   index={i}
                   key={w.label}
@@ -578,12 +591,12 @@ export function InsightsDashboard({
         {/* 핑이 0이어도 24칸 골격(시간축)은 항상 그린다 — "살아있는지" 바로 보이고, 방문자가
             생기면 그 시각 막대가 차오른다. 비었을 땐 차트 안에 작은 캡션만. */}
         <div
-          className={`vt-hours ${visits.hasOccupancy ? "" : "empty"}`}
+          className={`vt-hours ${g.hasOccupancy ? "" : "empty"}`}
           role="img"
           aria-label="시간대별 동시 접속(체류) 분포(역할·기기 분해)"
           onPointerLeave={() => setVtHourHover(null)}
         >
-          {visits.occupancy.map((slot, h) => {
+          {g.occupancy.map((slot, h) => {
             const counts = countsOf(slot);
             const enter = () => {
               if (slot.avg <= 0) {
@@ -637,7 +650,7 @@ export function InsightsDashboard({
               ))}
             </div>
           ) : null}
-          {visits.hasOccupancy ? null : (
+          {g.hasOccupancy ? null : (
             <span className="vt-hours-empty">아직 핑 없음 · 방문자가 다녀가면 막대가 차올라요</span>
           )}
         </div>
@@ -706,10 +719,10 @@ export function InsightsDashboard({
         <h4 className="insight-subhead">요일 × 시간 (시청자)</h4>
         {(() => {
           const wdays = ["일", "월", "화", "수", "목", "금", "토"];
-          const hmMax = Math.max(1, ...visits.heatmap.flat());
+          const hmMax = Math.max(1, ...g.heatmap.flat());
           return (
             <div className="vheat" role="img" aria-label="요일×시간 히트맵">
-              {visits.heatmap.map((row, wd) => (
+              {g.heatmap.map((row, wd) => (
                 <div className="vheat-row" key={wd}>
                   <span className="vheat-wd">{wdays[wd]}</span>
                   {row.map((c, h) => (
@@ -736,7 +749,7 @@ export function InsightsDashboard({
         <h4 className="insight-subhead">날짜별 방문</h4>
         {(() => {
           const firstWd = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
-          const dayMax = Math.max(1, ...visits.days.map((d) => d.total));
+          const dayMax = Math.max(1, ...g.days.map((d) => d.total));
           const wdays = ["일", "월", "화", "수", "목", "금", "토"];
           return (
             <div className="vmini">
@@ -748,7 +761,7 @@ export function InsightsDashboard({
               {Array.from({ length: firstWd }, (_, i) => (
                 <span className="vmini-cell empty" key={`b${i}`} />
               ))}
-              {visits.days.map((d) => (
+              {g.days.map((d) => (
                 <span
                   className="vmini-cell"
                   key={d.day}
@@ -883,9 +896,9 @@ export function InsightsDashboard({
       return <p className="insight-empty">불러오지 못했어요.</p>;
     }
     const peakDay =
-      visits?.hasData ? [...visits.days].sort((a, b) => b.total - a.total)[0] : null;
+      visits?.hasData ? [...visits.all.days].sort((a, b) => b.total - a.total)[0] : null;
     const peakHour = visits?.hasData
-      ? visits.hours.reduce(
+      ? visits.all.hours.reduce(
           (best, slot, h) => (slot.total > best.c ? { h, c: slot.total } : best),
           { h: -1, c: 0 }
         )

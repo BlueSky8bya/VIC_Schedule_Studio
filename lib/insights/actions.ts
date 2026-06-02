@@ -905,23 +905,28 @@ export type OwnerSession = {
   minutes: number;
   seconds: number; // 초 단위 체류(짧은 방문은 UI가 '초'로 표시)
 };
-export type VisitTrends = {
-  ready: boolean; // visit_log 접근 가능(테이블 적용) 여부
-  hasData: boolean; // 이 달 방문 기록이 있는지
+// 토글(시청자/운영진 포함)로 즉시 바뀌는 그래프 묶음 — 같은 코드로 시청자만/전체 두 벌을 만든다.
+export type VisitGraphs = {
   days: ({ day: number } & VisitSlot)[]; // 이 달 1..말일
   weeks: ({ label: string } & VisitSlot)[]; // 1주차..
-  hours: VisitSlot[]; // 24칸(KST) — 첫 진입 시각 분포(역할/기기 분해)
+  hours: VisitSlot[]; // 24칸(KST) — 첫 진입 시각 분포
   occupancy: OccSlot[]; // 24칸(KST) — 시간대별 평균/최고 동시 접속(체류)
-  hasOccupancy: boolean; // presence_ping 핑이 쌓여 점유 그래프를 그릴 수 있는지
-  ownerSessions: OwnerSession[]; // 관리자(owner) 접속 세션(이 달, 최근 순) — 개발자 방문 패널 전용
-  total: number; // 이 달 방문 총합
-  summaryViewer: VisitSummary; // 시청자만 기준 품질 요약(R4/R5/R13)
+  hasOccupancy: boolean;
+  heatmap: number[][]; // [요일0~6][시0~23] 의미 세션 수
+  total: number; // 방문 총합(순방문자)
+};
+export type VisitTrends = {
+  ready: boolean; // visit_session 접근 가능 여부
+  hasData: boolean; // 이 달 방문 기록이 있는지
+  viewer: VisitGraphs; // 시청자만 그래프 묶음
+  all: VisitGraphs; // 운영진 포함 전체 그래프 묶음
+  ownerSessions: OwnerSession[]; // 관리자(owner) 접속 세션(이 달, 최근 순)
+  summaryViewer: VisitSummary; // 시청자 기준 품질 요약(R4/R5/R13)
   summaryAll: VisitSummary; // 운영진 포함 전체 기준 품질 요약
   operators: number; // 이 달 의미 방문 운영진(viewer 아님) 순방문자 수
   newVisitors: number; // R12: 이 달 처음 본 시청자(의미 방문)
-  returningVisitors: number; // R12: 재방문 시청자(이전에도 본 적 있음)
-  insights: string[]; // R6: 한 문장 자동 인사이트 1~3개(시청자 기준)
-  heatmap: number[][]; // R7: [요일0~6][시0~23] 시청자 의미 세션 수
+  returningVisitors: number; // R12: 재방문 시청자
+  insights: string[]; // R6: 한 문장 자동 인사이트(시청자 기준)
   recent: RecentSession[]; // R10: 최근 세션 20개(개발자 디버깅)
   health: { todaySessions: number; openRate: number; avgStaySec: number }; // R11: 데이터 건강
 };
@@ -961,14 +966,67 @@ export async function getVisitTrendsAction(
     devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
     total: 0
   });
-  const emptyOcc = (): OccSlot => ({
-    roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
-    devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
-    avg: 0,
-    peak: 0
-  });
-  const emptyDays = () =>
-    Array.from({ length: daysInMonth }, (_, i) => ({ day: i + 1, ...emptySlot() }));
+  // 그래프 묶음 한 벌을 만든다 — 같은 코드로 시청자만/전체 두 벌(토글이 즉시 전환).
+  const buildGraphs = (subset: SessionRow[]): VisitGraphs => {
+    const byDay = new Map<number, SessionRow[]>();
+    const byWeek = new Map<number, SessionRow[]>();
+    for (const row of subset) {
+      const d = Number(row.day.slice(8, 10));
+      if (d >= 1 && d <= daysInMonth) {
+        const a = byDay.get(d);
+        if (a) a.push(row);
+        else byDay.set(d, [row]);
+      }
+      const wi = Math.floor((d - 1 + firstWeekday) / 7);
+      const w = byWeek.get(wi);
+      if (w) w.push(row);
+      else byWeek.set(wi, [row]);
+    }
+    const days = Array.from({ length: daysInMonth }, (_, i) => ({
+      day: i + 1,
+      ...reachSlot(byDay.get(i + 1) ?? [])
+    }));
+    const weekCount = Math.ceil((daysInMonth + firstWeekday) / 7);
+    const weeks = Array.from({ length: weekCount }, (_, i) => ({
+      label: `${i + 1}주`,
+      ...reachSlot(byWeek.get(i) ?? [])
+    }));
+    // 시간대(KST): 역할/방문=그 (날짜,계정) 첫 진입에 1회, 기기=(날짜,계정,기기) 첫 진입에 1회.
+    const hours = Array.from({ length: 24 }, emptySlot);
+    const fe = new Map<string, { hour: number; role: string; t: number }>();
+    const df = new Map<string, { hour: number; device: string; t: number }>();
+    for (const row of subset) {
+      if (!isMeaningful(row)) continue; // R1
+      const t = sStart(row);
+      if (!Number.isFinite(t)) continue;
+      const hour = Math.floor((t + KST_MS) / 3600000) % 24;
+      const id = `${row.day}|${sAcct(row)}`;
+      const p = fe.get(id);
+      if (!p || t < p.t) fe.set(id, { hour, role: row.role, t });
+      const dk = `${id}|${row.device}`;
+      const dp = df.get(dk);
+      if (!dp || t < dp.t) df.set(dk, { hour, device: row.device, t });
+    }
+    for (const v of fe.values()) {
+      const slot = hours[v.hour];
+      if (v.role in slot.roles) slot.roles[v.role] += 1;
+      slot.total += 1;
+    }
+    for (const v of df.values()) {
+      const slot = hours[v.hour];
+      if (v.device in slot.devices) slot.devices[v.device] += 1;
+    }
+    const occupancy = computeOccupancy(subset, observedDayCount(subset));
+    const hasOccupancy = subset.length > 0 && occupancy.some((o) => o.avg > 0);
+    const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
+    for (const r of subset) {
+      if (!isMeaningful(r)) continue;
+      const k = new Date(sStart(r) + KST_MS);
+      heatmap[k.getUTCDay()][k.getUTCHours()] += 1;
+    }
+    return { days, weeks, hours, occupancy, hasOccupancy, heatmap, total: reachSlot(subset).total };
+  };
+  const emptyGraphs = (): VisitGraphs => buildGraphs([]);
 
   const { data, error } = await supabase
     .from("visit_session")
@@ -982,20 +1040,15 @@ export async function getVisitTrendsAction(
       data: {
         ready: false,
         hasData: false,
-        days: emptyDays(),
-        weeks: [],
-        hours: Array.from({ length: 24 }, emptySlot),
-        occupancy: Array.from({ length: 24 }, emptyOcc),
-        hasOccupancy: false,
+        viewer: emptyGraphs(),
+        all: emptyGraphs(),
         ownerSessions: [],
-        total: 0,
         summaryViewer: emptySummary(),
         summaryAll: emptySummary(),
         operators: 0,
         newVisitors: 0,
         returningVisitors: 0,
         insights: [],
-        heatmap: Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0)),
         recent: [],
         health: { todaySessions: 0, openRate: 0, avgStaySec: 0 }
       }
@@ -1003,69 +1056,9 @@ export async function getVisitTrendsAction(
   }
   const rows = (data ?? []) as SessionRow[];
 
-  // 방문수/역할별은 순방문자((날짜,계정) 1회), 기기별은 (날짜,계정,기기) 1회. reachSlot이 처리.
-  // 재진입 세션은 reach에선 합쳐지고, 체류(occupancy)·관리자 세션 목록에서 각각 따로 잡힌다.
-  const slotFromRows = (group: SessionRow[]): VisitSlot => reachSlot(group);
-
-  const rowsByDay = new Map<number, SessionRow[]>();
-  const rowsByWeek = new Map<number, SessionRow[]>();
-  for (const row of rows) {
-    const d = Number(row.day.slice(8, 10));
-    if (d >= 1 && d <= daysInMonth) {
-      const arr = rowsByDay.get(d) ?? [];
-      arr.push(row);
-      rowsByDay.set(d, arr);
-    }
-    // 달력 주차(일요일 시작): 1일이 무슨 요일인지 더해 끊는다. 예) 5/1=금 → 5/24~30이 5주차라
-    // 5/28·5/29가 같은 5주차로 묶인다(이전엔 단순 (d-1)/7이라 28→4주·29→5주로 갈렸음).
-    const wi = Math.floor((d - 1 + firstWeekday) / 7);
-    const warr = rowsByWeek.get(wi) ?? [];
-    warr.push(row);
-    rowsByWeek.set(wi, warr);
-  }
-  const days = Array.from({ length: daysInMonth }, (_, i) => ({
-    day: i + 1,
-    ...slotFromRows(rowsByDay.get(i + 1) ?? [])
-  }));
-
-  // 시간대(KST): 역할/방문은 그 (날짜,계정)의 '첫 진입 시각'에 1회, 기기는 (날짜,계정,기기) 첫 진입에 1회.
-  const hours = Array.from({ length: 24 }, emptySlot);
-  const firstEntry = new Map<string, { hour: number; role: string; t: number }>();
-  const devFirst = new Map<string, { hour: number; device: string; t: number }>();
-  for (const row of rows) {
-    if (!isMeaningful(row)) continue; // R1: 스쳐감은 시간대 분포에서도 제외
-    const t = sStart(row);
-    if (!Number.isFinite(t)) continue;
-    const hour = Math.floor((t + KST_MS) / 3600000) % 24;
-    const id = `${row.day}|${sAcct(row)}`;
-    const prev = firstEntry.get(id);
-    if (!prev || t < prev.t) firstEntry.set(id, { hour, role: row.role, t });
-    const dk = `${id}|${row.device}`;
-    const dprev = devFirst.get(dk);
-    if (!dprev || t < dprev.t) devFirst.set(dk, { hour, device: row.device, t });
-  }
-  for (const v of firstEntry.values()) {
-    const slot = hours[v.hour];
-    if (v.role in slot.roles) slot.roles[v.role] += 1;
-    slot.total += 1;
-  }
-  for (const v of devFirst.values()) {
-    const slot = hours[v.hour];
-    if (v.device in slot.devices) slot.devices[v.device] += 1;
-  }
-
-  const weekCount = Math.ceil((daysInMonth + firstWeekday) / 7);
-  const weeks = Array.from({ length: weekCount }, (_, i) => ({
-    label: `${i + 1}주`,
-    ...slotFromRows(rowsByWeek.get(i) ?? [])
-  }));
-
-  // 시간대 동시 접속(체류) — 세션 구간을 시간대별로 쪼개 초 단위로 집계. 평균 동접 = 구간초/(3600×관측일수)
-  // ('전형적인 하루' 기준 정규화), 최고 동접 = 그 시간대 내 동시 세션 최댓값(스윕). 1초 방문도 잡힌다.
-  const observedDays = observedDayCount(rows);
-  const occupancy = computeOccupancy(rows, observedDays);
-  const hasOccupancy = rows.length > 0 && occupancy.some((o) => o.avg > 0);
-  // 관리자 접속 세션(최근 순) — 세션 행에서 직접(role=owner).
+  const all = buildGraphs(rows);
+  const viewer = buildGraphs(rows.filter((r) => r.role === "viewer"));
+  // 관리자 접속 세션(최근 순) — 세션 행에서 직접(role=owner). 토글과 무관(운영진 데이터).
   const ownerSessions = ownerSessionsFrom(rows);
   const { viewer: summaryViewer, all: summaryAll } = summarizeSplit(rows);
   const operators = Math.max(0, summaryAll.visitors - summaryViewer.visitors);
@@ -1089,12 +1082,7 @@ export async function getVisitTrendsAction(
     else newVisitors += 1;
   }
 
-  // R7: 요일×시간 히트맵(시청자 의미 세션 수, KST 진입 시각 기준).
-  const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
-  for (const r of viewerMeaningful) {
-    const k = new Date(sStart(r) + KST_MS);
-    heatmap[k.getUTCDay()][k.getUTCHours()] += 1;
-  }
+  // (요일×시간 히트맵은 buildGraphs가 viewer/all 각각 만든다 — 토글로 즉시 전환.)
 
   // R10: 최근 세션 20개(개발자 디버깅). owner만 이메일 매칭 라벨, 그 외는 역할 라벨(원문 PII 없음).
   const hashToOwnerEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
@@ -1137,9 +1125,9 @@ export async function getVisitTrendsAction(
 
   // R6: 한 문장 자동 인사이트(시청자 기준). 최고 시간대·평균 체류·바운스·새/재방문에서 1~3개.
   const insights: string[] = [];
-  const peakHour = hours.reduce((mx, h, i) => (h.total > hours[mx].total ? i : mx), 0);
+  const peakHour = viewer.hours.reduce((mx, h, i) => (h.total > viewer.hours[mx].total ? i : mx), 0);
   if (summaryViewer.visitors > 0) {
-    if (hours[peakHour].total > 0) {
+    if (viewer.hours[peakHour].total > 0) {
       insights.push(`시청자는 주로 ${peakHour}시에 방문했고, 평균 체류는 ${fmtDurSec(summaryViewer.avgSeconds)}예요.`);
     }
     if (summaryViewer.bounceRate >= 0.4) {
@@ -1155,7 +1143,7 @@ export async function getVisitTrendsAction(
   }
   // R9: 방문 ↔ 일정 연결(공개 일정 유무만 — private 필드는 절대 안 씀). 방문 최다일에 공개 일정이
   // 있었는지 한 문장. 경계: is_public 카운트만 조회.
-  const topDay = days.reduce<{ day: number; total: number } | null>(
+  const topDay = viewer.days.reduce<{ day: number; total: number } | null>(
     (mx, d) => (d.total > (mx?.total ?? 0) ? d : mx),
     null
   );
@@ -1187,20 +1175,15 @@ export async function getVisitTrendsAction(
     data: {
       ready: true,
       hasData: rows.length > 0,
-      days,
-      weeks,
-      hours,
-      occupancy,
-      hasOccupancy,
+      viewer,
+      all,
       ownerSessions,
-      total: reachSlot(rows).total,
       summaryViewer,
       summaryAll,
       operators,
       newVisitors,
       returningVisitors,
       insights,
-      heatmap,
       recent,
       health
     }
