@@ -77,6 +77,7 @@ import {
   type MonthCell
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
+import { markContentReady } from "@/lib/presence/content-ready";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticTick } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
@@ -608,6 +609,10 @@ export function PublicPoster({
   const paintGroups = useMemo(() => buildPaintGroups(schedule.events), [schedule.events]);
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [schedule.events, view]);
+  // 실제 달력 콘텐츠가 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아니라 진짜 화면을 봤을 때만 방문 1).
+  useEffect(() => {
+    markContentReady();
+  }, []);
   // #1: 색상 안내에서 "기타"는 항상 맨 마지막으로(나머지는 기존 정렬 유지).
   // 색상 안내 순서 = 태그 sort_order(편집실에서 드래그로 정한 순서). 단일 진실 소스.
   const legendTags = useMemo(

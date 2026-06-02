@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import type { MembershipRole } from "@/lib/domain/schedule-types";
 import { detectDevice, startPresence } from "@/lib/presence/presence-client";
+import { isContentReady, onContentReady } from "@/lib/presence/content-ready";
 
 // 모든 로그인 사용자 화면에 1개 깔리는 보이지 않는 컴포넌트.
 // 1) 실시간 프레즌스에 자기 역할만 등록(개발자 창의 실시간 패널 합산용).
@@ -57,19 +58,30 @@ export function PresenceBeacon({ role }: { role: MembershipRole }) {
     };
     const start = () => {
       if (timer !== null) return;
-      void begin(); // 진입 즉시 세션 생성(짧은 방문도 기록)
+      void begin(); // 세션 생성(짧은 방문도 기록)
       timer = window.setInterval(touch, HEARTBEAT_MS);
     };
 
+    // 실제 달력 콘텐츠가 떴고(contentReady) + 화면이 보일 때만 시작. 로딩 스켈레톤 중에 백그라운드로
+    // 빼면 contentReady가 안 와서 방문 0, 달력이 떠야 방문 1.
+    let contentReady = isContentReady();
+    const maybeStart = () => {
+      if (contentReady && document.visibilityState === "visible") start();
+    };
+    const offReady = onContentReady(() => {
+      contentReady = true;
+      maybeStart();
+    });
     const onVisibility = () => {
-      if (document.visibilityState === "visible") start();
+      if (document.visibilityState === "visible") maybeStart();
       else finish();
     };
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("pagehide", finish);
-    if (document.visibilityState === "visible") start();
+    maybeStart();
 
     return () => {
+      offReady();
       document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("pagehide", finish);
       finish();

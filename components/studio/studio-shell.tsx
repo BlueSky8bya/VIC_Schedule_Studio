@@ -60,6 +60,7 @@ import {
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
+import { markContentReady } from "@/lib/presence/content-ready";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
   canDecorate,
@@ -928,6 +929,10 @@ export function StudioShell({
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
   const monthGridRef = useRef<HTMLDivElement>(null);
   useEqualChainHeights(monthGridRef, [visibleEvents, view]);
+  // 실제 편집실 화면이 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아닌 진짜 화면을 봤을 때만 방문 1).
+  useEffect(() => {
+    markContentReady();
+  }, []);
   // 새 일정 카드: 카드/날짜 칸 바깥을 누르면 닫는다(슬라이드 아웃). 닫기는 '제스처 시작점' 기준이라
   // 제목을 마우스로 긁다가 카드 밖에서 손을 떼도(드래그-선택) 시작점이 카드 안이면 닫지 않는다.
   // (이전엔 click의 target이 두 점의 공통 조상이라 카드 밖으로 잡혀 갑자기 닫히는 버그가 있었다.)
