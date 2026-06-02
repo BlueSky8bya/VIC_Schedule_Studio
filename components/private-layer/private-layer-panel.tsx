@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import type { PasscodeResult } from "@/lib/private-layer/actions";
-import { hapticError, hapticSuccess } from "@/lib/ui/haptics";
+import { hapticError, hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 
 type PrivateLayerPanelProps = {
   canManage: boolean;
@@ -60,6 +60,7 @@ export function PrivateLayerPanel({
   }
 
   function changePasscode() {
+    hapticTick();
     setError(null);
     startTransition(async () => {
       const result = await setPasscodeAction(newPw, currentPw);
@@ -105,7 +106,14 @@ export function PrivateLayerPanel({
           </form>
           {error ? <div className="auth-warning">{error}</div> : null}
           {canManage ? (
-            <button className="button" onClick={() => setChanging(true)} type="button">
+            <button
+              className="button"
+              onClick={() => {
+                hapticTick();
+                setChanging(true);
+              }}
+              type="button"
+            >
               비밀번호 변경
             </button>
           ) : null}

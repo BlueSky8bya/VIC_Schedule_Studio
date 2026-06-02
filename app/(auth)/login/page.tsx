@@ -20,7 +20,10 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   return (
     <main className="auth-page">
-      <section className="auth-panel">
+      <section className="auth-panel auth-panel-login">
+        <div className="auth-brand" aria-hidden="true">
+          🗓️<span className="auth-brand-spark">✨</span>
+        </div>
         <p className="eyebrow">VIC Studio</p>
         <h1>Google 로그인</h1>
         <p>
