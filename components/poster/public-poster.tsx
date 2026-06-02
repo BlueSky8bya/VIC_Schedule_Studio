@@ -789,6 +789,12 @@ export function PublicPoster({
   // 이 세션에서 삭제한 스티커 id. 달을 다시 시드할 때 schedule prop(서버 스냅샷)이 캐시 탓에
   // 아직 그 스티커를 들고 있을 수 있어, 지운 게 월 이동 후 되살아나는 걸 막는다.
   const deletedStickerIdsRef = useRef<Set<string>>(new Set());
+  // 이 세션에서 편집한 달별 스티커 최신 상태(낙관적 로컬). schedule prop은 페이지 로드 시점
+  // 스냅샷이라, 달을 옮겼다 돌아오면 prop으로 리시드돼 "이번 세션에 추가/이동/편집한 게
+  // 사라져 보이는" 되돌림이 났다. 이 캐시로 떠난 달의 최신 상태를 보존해 다시 와도 그대로 보인다
+  // (DB엔 keepalive로 이미 저장됨 — 캐시는 화면 연속성용).
+  const monthStickerCacheRef = useRef<Map<string, StickerInstance[]>>(new Map());
+  const prevViewRef = useRef<{ year: number; month: number }>({ year: view.year, month: view.month });
   // 키보드 미세이동 등에서 최신 스티커 배열을 읽기 위한 ref + 저장 디바운스 타이머
   const stickersRef = useRef<StickerInstance[]>([]);
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -814,14 +820,17 @@ export function PublicPoster({
   // (스티커 저장 시 서버 revalidate로 schedule이 갱신되어도 로컬 상태가 우선 —
   //  그렇지 않으면 추가/이동/회전 직후 선택이 풀려 패널·핸들이 사라진다.)
   useEffect(() => {
-    setStickers(
-      schedule.stickers.filter(
-        (s) =>
-          s.year === view.year &&
-          s.month === view.month &&
-          !deletedStickerIdsRef.current.has(s.id)
-      )
-    );
+    // 떠나는 달의 최신 로컬 상태를 캐시에 저장(이 렌더 시점 stickers는 아직 이전 달 것).
+    const prev = prevViewRef.current;
+    monthStickerCacheRef.current.set(`${prev.year}-${prev.month}`, stickersRef.current);
+    prevViewRef.current = { year: view.year, month: view.month };
+    // 들어오는 달은 캐시(이번 세션 편집 보존)가 있으면 그걸로, 없으면 서버 prop으로 시드한다.
+    const key = `${view.year}-${view.month}`;
+    const cached = monthStickerCacheRef.current.get(key);
+    const seed =
+      cached ??
+      schedule.stickers.filter((s) => s.year === view.year && s.month === view.month);
+    setStickers(seed.filter((s) => !deletedStickerIdsRef.current.has(s.id)));
     setSelectedSticker(null);
     setMultiIds([]);
     // 색상 필터/관심만 보기는 달을 넘겨도 그대로 유지한다(사용자가 선택을 다시 안 해도 되게).
