@@ -4173,8 +4173,9 @@ textarea:disabled {
   font-weight: 900;
 }
 .duration-chips {
-  display: flex;
-  flex-wrap: wrap;
+  /* 5개 기간을 동일 폭으로 꽉 채워 카드 좌우 패딩에 가지런히 맞춘다(웹·모바일 공통). */
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 6px;
 }
 .duration-chips button {
@@ -4182,7 +4183,7 @@ textarea:disabled {
   border: 1px solid #f4c4cc;
   border-radius: var(--r-pill);
   background: #ffffff;
-  padding: 0 14px;
+  padding: 0 6px;
   font-size: 13px;
   font-weight: 800;
   color: #9f1239;

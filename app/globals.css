@@ -111,6 +111,23 @@
       opacity 0.16s var(--ease, ease);
   }
 }
+/* 진짜 버튼(<button>)은 transform도 트랜지션에 포함해 '누르면 살짝 들어갔다 복귀'를 전역으로
+   준다. 드래그는 <div role=button>·스티커라 여기 안 걸리고, 자체 :active를 둔 버튼(.button,
+   드래그 핸들 등)은 특이도가 높아 그대로 우선한다. → 모션 없던 버튼에만 기본 손맛이 채워진다. */
+@media (prefers-reduced-motion: no-preference) {
+  :where(button) {
+    transition:
+      background-color 0.16s var(--ease, ease),
+      border-color 0.16s var(--ease, ease),
+      color 0.16s var(--ease, ease),
+      box-shadow 0.18s var(--ease, ease),
+      opacity 0.16s var(--ease, ease),
+      transform 0.12s var(--ease, ease);
+  }
+  :where(button):active:not(:disabled) {
+    transform: scale(0.95);
+  }
+}
 /* 일관된 포커스 링(키보드 이동 시) — 특이도 0이라 컴포넌트가 자유로이 덮을 수 있다. */
 :where(input, select, textarea):focus-visible {
   outline: none;
