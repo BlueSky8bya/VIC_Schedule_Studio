@@ -54,6 +54,7 @@ import {
   getEventsForDate,
   getEventSpan,
   getEventTagColors,
+  getExtraCategoryColors,
   getLinkedChainIds,
   getSpanRunRange,
   getTodayKst,
@@ -2443,6 +2444,7 @@ export function StudioShell({
                     ) : null}
                     {shownEvents.map((event) => {
                       const colors = eventColors(event);
+                      const extraColors = getExtraCategoryColors(event, tags, palette);
                       const { main, subs } = splitEventTitle(event.publicTitle);
                       const barStyle =
                         colors.length >= 2
@@ -2536,6 +2538,14 @@ export function StudioShell({
                                   <li key={i}>{s}</li>
                                 ))}
                               </ul>
+                            ) : null}
+                            {/* PR2: 막대 색(≤2)에 못 담은 추가 대분류 점 줄. */}
+                            {!event.isSupport && extraColors.length > 0 ? (
+                              <span className="pill-dots" aria-hidden="true">
+                                {extraColors.map((c, i) => (
+                                  <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                                ))}
+                              </span>
                             ) : null}
                           </div>
                         </>
@@ -3494,6 +3504,8 @@ export function StudioShell({
                   >
                     {dateEvents.map((event, eventIndex) => {
                       const colors = eventColors(event);
+                      // PR2: 칸 색(≤2)에 못 담은 나머지 대분류 → 작은 점 줄("더 있음").
+                      const extraColors = getExtraCategoryColors(event, tags, palette);
                       // 선택 강조(테두리·X)는 오른쪽 편집/상세 패널이 열려 있을 때만 — 패널이
                       // 닫히면(다른 버튼으로 슬라이드-아웃) 카드 선택 표시도 함께 사라지게.
                       const isSel = editorVisible && selectedEventId === event.id;
@@ -3618,6 +3630,14 @@ export function StudioShell({
                                 <li key={i}>{sub}</li>
                               ))}
                             </ul>
+                          ) : null}
+                          {/* PR2: 칸 색에 못 담은 추가 대분류 색 점 줄(시작 칸에만). */}
+                          {span.showTitle && extraColors.length > 0 ? (
+                            <span className="pill-dots" aria-hidden="true">
+                              {extraColors.map((c, i) => (
+                                <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                              ))}
+                            </span>
                           ) : null}
                         </div>
                       );

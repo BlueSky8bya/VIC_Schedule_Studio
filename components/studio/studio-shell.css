@@ -3761,6 +3761,29 @@
   font-weight: 800;
   line-height: 1.3;
 }
+/* PR2: 칸 색(≤2 대분류)에 못 담은 나머지 대분류 색 점 줄 — 색 안 늘리고 "더 있음" 암시. */
+.pill-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 3px;
+}
+.pill-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 1px solid rgb(0 0 0 / 14%);
+  box-sizing: border-box;
+}
+.agenda-content .pill-dots {
+  margin-top: 4px;
+}
+@media (min-width: 641px) {
+  .pill-dots i {
+    width: 8px;
+    height: 8px;
+  }
+}
 
 /* 비공개 일정 표시(태그색 위에 점선 링) */
 .studio-event-pill.embargo,

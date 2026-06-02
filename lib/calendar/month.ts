@@ -178,18 +178,59 @@ function rightEdgeTag(event: PublicScheduleEvent | StudioScheduleEvent): string 
   return reps[reps.length - 1];
 }
 
-// D: 일정칸에 칠할 색을 최대 2개까지 모은다(대표 태그 우선). 2개면 호출부에서 그라데이션으로 표시.
+// 2계층: 태그의 최상위 대분류 colorKey(세부면 부모를 따라 올라감). 대분류면 자기 색.
+export function categoryColorKey(tagId: string, tags: BroadcastTag[]): string | null {
+  let cur = tags.find((t) => t.id === tagId);
+  const guard = new Set<string>();
+  while (cur?.parentId && !guard.has(cur.id)) {
+    guard.add(cur.id);
+    const parent = tags.find((t) => t.id === cur!.parentId);
+    if (!parent) break;
+    cur = parent;
+  }
+  return cur ? cur.colorKey : null;
+}
+
+// 이벤트가 가진 태그들의 서로 다른 대분류 colorKey 목록(태그 순서, 중복 제거). 세부 여러 개가
+// 같은 대분류면 하나로 합쳐진다(예: 게임>롤 + 게임>명조 → 게임 색 1개).
+function eventCategoryColorKeys(
+  event: PublicScheduleEvent | StudioScheduleEvent,
+  tags: BroadcastTag[]
+): string[] {
+  const ids = event.primaryTagIds.length > 0 ? event.primaryTagIds : event.tagIds;
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of ids) {
+    const ck = categoryColorKey(id, tags);
+    if (ck && !seen.has(ck)) {
+      seen.add(ck);
+      out.push(ck);
+    }
+  }
+  return out;
+}
+
+// D: 일정칸에 칠할 색 — 서로 다른 대분류 색 최대 2개(그라데이션). 세부 태그는 부모 색으로 합쳐진다.
 export function getEventTagColors(
   event: PublicScheduleEvent | StudioScheduleEvent,
   tags: BroadcastTag[],
   palette: ColorPaletteEntry[]
 ): ColorPaletteEntry[] {
-  const ids = (event.primaryTagIds.length > 0 ? event.primaryTagIds : event.tagIds).slice(0, 2);
-  return ids
-    .map((id) => {
-      const tag = tags.find((t) => t.id === id);
-      return tag ? palette.find((p) => p.key === tag.colorKey) : undefined;
-    })
+  return eventCategoryColorKeys(event, tags)
+    .slice(0, 2)
+    .map((ck) => palette.find((p) => p.key === ck))
+    .filter((color): color is ColorPaletteEntry => Boolean(color));
+}
+
+// PR2: 칸 색(≤2 대분류)에 못 담은 '나머지 대분류' 색들 — 작은 점 줄로 표시(색 안 늘리고 "더 있음").
+export function getExtraCategoryColors(
+  event: PublicScheduleEvent | StudioScheduleEvent,
+  tags: BroadcastTag[],
+  palette: ColorPaletteEntry[]
+): ColorPaletteEntry[] {
+  return eventCategoryColorKeys(event, tags)
+    .slice(2)
+    .map((ck) => palette.find((p) => p.key === ck))
     .filter((color): color is ColorPaletteEntry => Boolean(color));
 }
 

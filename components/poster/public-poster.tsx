@@ -69,6 +69,7 @@ import {
   getEventsForDate,
   getEventSpan,
   getEventTagColors,
+  getExtraCategoryColors,
   getSpanRunRange,
   getTodayKst,
   mixedEventStyle,
@@ -1942,6 +1943,7 @@ export function PublicPoster({
         >
           {events.map((event) => {
             const colors = eventColors(event);
+            const extraColors = getExtraCategoryColors(event, schedule.tags, schedule.palette);
             const { main, subs } = splitEventTitle(event.publicTitle);
             const span = getEventSpan(event, cell.isoDate, cell.weekday, schedule.events);
             const bookmarked = isBookmarked(event.id);
@@ -2033,6 +2035,14 @@ export function PublicPoster({
                       <li key={i}>{sub}</li>
                     ))}
                   </ul>
+                ) : null}
+                {/* PR2: 칸 색에 못 담은 추가 대분류 점 줄(시작 칸에만). */}
+                {span.showTitle && extraColors.length > 0 ? (
+                  <span className="pill-dots" aria-hidden="true">
+                    {extraColors.map((c, i) => (
+                      <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                    ))}
+                  </span>
                 ) : null}
               </div>
             );
@@ -2180,6 +2190,9 @@ export function PublicPoster({
                   ) : null}
                   {list.map(({ event, support }) => {
                     const colors = eventColors(event);
+                    const extraColors = support
+                      ? []
+                      : getExtraCategoryColors(event, schedule.tags, schedule.palette);
                     const { main, subs } = splitEventTitle(event.publicTitle);
                     const bookmarked = isBookmarked(event.id);
                     const tier =
@@ -2251,6 +2264,13 @@ export function PublicPoster({
                                 <li key={i}>{sub}</li>
                               ))}
                             </ul>
+                          ) : null}
+                          {extraColors.length > 0 ? (
+                            <span className="pill-dots" aria-hidden="true">
+                              {extraColors.map((c, i) => (
+                                <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                              ))}
+                            </span>
                           ) : null}
                           {support && event.supportUrl ? (
                             <a

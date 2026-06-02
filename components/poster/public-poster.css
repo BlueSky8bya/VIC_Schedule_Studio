@@ -1862,6 +1862,26 @@
   font-weight: 800;
   line-height: 1.3;
 }
+/* PR2: 칸 색(≤2 대분류) 외 나머지 대분류 색 점 줄(포스터·아젠다 공용). */
+.pill-dots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  margin-top: 3px;
+}
+.pill-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  border: 1px solid rgb(0 0 0 / 14%);
+  box-sizing: border-box;
+}
+@media (min-width: 641px) {
+  .pill-dots i {
+    width: 8px;
+    height: 8px;
+  }
+}
 
 .support-card {
   display: grid;
