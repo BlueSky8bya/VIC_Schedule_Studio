@@ -78,6 +78,7 @@ import {
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { markContentReady } from "@/lib/presence/content-ready";
+import { PlainEmail } from "@/components/ui/plain-email";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticTick } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
@@ -2359,9 +2360,7 @@ export function PublicPoster({
               {view.year}년 {view.month}월
             </span>
             {accountSwitch && accountEmail ? (
-              <span className="account-email agenda-email" title={accountEmail}>
-                {accountEmail}
-              </span>
+              <PlainEmail className="account-email agenda-email" title={accountEmail} value={accountEmail} />
             ) : null}
           </header>
         ) : null}
@@ -2412,9 +2411,7 @@ export function PublicPoster({
               {accountSwitch ? (
                 <form className="account-form" action="/api/auth/logout" method="post">
                   {accountEmail ? (
-                    <span className="account-email" title={accountEmail}>
-                      {accountEmail}
-                    </span>
+                    <PlainEmail className="account-email" title={accountEmail} value={accountEmail} />
                   ) : null}
                   <button
                     className="button"

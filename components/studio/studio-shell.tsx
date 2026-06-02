@@ -83,6 +83,7 @@ import { InsightsDashboard } from "@/components/developer/insights-dashboard";
 import { MemberInsights } from "@/components/studio/member-insights";
 import { DayVisitModal } from "@/components/developer/day-visit-modal";
 import { NoticeModal } from "@/components/notice/notice-modal";
+import { PlainEmail } from "@/components/ui/plain-email";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { detectDevice } from "@/lib/presence/presence-client";
@@ -860,7 +861,11 @@ export function StudioShell({
                 <span className="role-help-preview"> (미리보기 중입니다..)</span>
               ) : null}
             </strong>
-            <span className="role-help-email">{actor.email ?? "비로그인"}</span>
+            {actor.email ? (
+              <PlainEmail className="role-help-email" value={actor.email} />
+            ) : (
+              <span className="role-help-email">비로그인</span>
+            )}
             <p className="role-help-summary">{roleDisplay.summary}</p>
             <ul className="role-help-can">
               {roleDisplay.can.map((item) => (
