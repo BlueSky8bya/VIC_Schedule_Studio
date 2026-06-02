@@ -151,7 +151,7 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 // → "바꾸고 바로 나가면 저장 안 됨"을 구조적으로 없앤다. 결과는 기존 서버 액션과 같은 모양
 // ({ok,id} / {ok,error})이라 호출부(임시 id 교체·롤백)를 그대로 쓸 수 있다.
 type StudioWriteResult = { ok: true; id?: string } | { ok: false; error: string };
-async function studioWrite(op: string, payload: unknown): Promise<StudioWriteResult> {
+async function postStudioWrite(op: string, payload: unknown): Promise<StudioWriteResult> {
   try {
     const res = await fetch("/api/studio-write", {
       method: "POST",
@@ -285,6 +285,10 @@ export function StudioShell({
   const pendingRef = useRef(false);
   const pendingPersistRef = useRef(0); // 진행 중인 '이동 저장' 수(F5 경고 + prop 동기화 가드)
   const movePersistChainRef = useRef<Promise<void>>(Promise.resolve()); // 이동 저장 직렬화
+  // 진행 중인 모든 중대한 쓰기(save/delete/tags/reorder/support/link)의 약속 집합.
+  // flushPendingWrites가 이걸 await해 "편집이 DB·캐시에 확실히 반영된 뒤"에만 시청자
+  // 미리보기로 넘어가게 한다 → "넘어가서 새로고침 또 해야 보임" 문제를 구조적으로 없앤다.
+  const inflightWritesRef = useRef<Set<Promise<StudioWriteResult>>>(new Set());
   // 첫 진입(스태거)와 달 이동(슬라이드)을 구분 — 실제로 달을 한 번 넘긴 뒤에만 슬라이드를 켠다.
   const didNavigateRef = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -331,6 +335,38 @@ export function StudioShell({
     const p = pendingSavesRef.current.get(id);
     return p ? await p : null;
   }
+  // 모든 중대한 쓰기는 이 래퍼를 거친다 — 모듈 함수(postStudioWrite)로 실제 전송하되
+  // 진행 중 약속을 inflight 집합에 등록/해제해, flushPendingWrites가 끝까지 기다릴 수 있게 한다.
+  function studioWrite(op: string, payload: unknown): Promise<StudioWriteResult> {
+    const p = postStudioWrite(op, payload);
+    inflightWritesRef.current.add(p);
+    void p.finally(() => inflightWritesRef.current.delete(p));
+    return p;
+  }
+  // 진행 중인 모든 쓰기(이동 큐 + inflight 집합)가 서버에 반영될 때까지 기다린다.
+  // 각 쓰기 액션은 완료 시 revalidatePublicSchedule(태그 무효화)를 호출하므로, flush가 끝난
+  // 직후 router.refresh()를 하면 시청자 묶음(getPublicSchedule)이 새로 계산돼 최신이 보인다.
+  async function flushPendingWrites() {
+    // 이동 큐가 도는 동안 새 inflight가 생기므로 몇 번 반복해 완전히 비운다(상한으로 무한 방지).
+    for (let i = 0; i < 6; i++) {
+      try {
+        await movePersistChainRef.current;
+      } catch {
+        /* 개별 실패는 무시 — 목적은 '대기'다 */
+      }
+      if (inflightWritesRef.current.size === 0) break;
+      await Promise.allSettled([...inflightWritesRef.current]);
+    }
+  }
+  // 시청자 화면 미리보기로 넘어갈 때: 먼저 진행 중 편집을 모두 반영(flush)한 뒤 서버를 새로
+  // 불러온다 → 미리보기가 'DB 진실 = 실제 시청자가 볼 것'과 항상 일치한다(추가 새로고침 불필요).
+  function enterViewerMode() {
+    setViewerMode(true);
+    void (async () => {
+      await flushPendingWrites();
+      router.refresh();
+    })();
+  }
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
   const [viewerMode, setViewerMode] = useState(initialViewerMode);
   // 모바일(좁은 화면): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
@@ -372,7 +408,8 @@ export function StudioShell({
   useEffect(() => {
     // 저장·삭제·이동이 진행 중이면 서버 prop이 낙관적 화면을 덮어써 카드가 '이전 위치로
     // 순간이동'하던 문제를 막는다. 작업이 끝난 뒤(idle)의 prop 변화에서만 서버 데이터로 맞춘다.
-    if (pendingRef.current || pendingPersistRef.current > 0) return;
+    if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
+      return;
     setEvents(schedule.events);
   }, [schedule.events]);
   // pending(저장/삭제/태그 진행)을 ref로 미러링 — 위 prop 동기화 가드가 deps 없이 읽게.
@@ -384,7 +421,7 @@ export function StudioShell({
   // (idle일 땐 절대 안 뜨므로 평소엔 방해 없음.)
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {
-      if (pendingRef.current || pendingPersistRef.current > 0) {
+      if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0) {
         e.preventDefault();
         e.returnValue = "";
       }
@@ -635,7 +672,7 @@ export function StudioShell({
     }
     if (role === "viewer") {
       setPreviewRole(null);
-      setViewerMode(true);
+      enterViewerMode();
       return;
     }
     setViewerMode(false);
@@ -2193,7 +2230,7 @@ export function StudioShell({
               {isDeveloper ? (
                 renderPreviewControl()
               ) : (
-                <button className="button" onClick={() => setViewerMode(true)} type="button">
+                <button className="button" onClick={() => enterViewerMode()} type="button">
                   시청자 화면
                 </button>
               )}
@@ -2986,7 +3023,7 @@ export function StudioShell({
           {isDeveloper ? (
             renderPreviewControl()
           ) : (
-            <button className="button" onClick={() => setViewerMode(true)} type="button">
+            <button className="button" onClick={() => enterViewerMode()} type="button">
               <Eye aria-hidden="true" size={16} />
               시청자 화면 미리보기
             </button>
