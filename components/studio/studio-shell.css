@@ -1061,11 +1061,12 @@
   white-space: nowrap;
 }
 /* 실시간 표시 — 초록 점이 부드럽게 호흡(20초 폴링 갱신 중임을 알림). */
+/* 실시간 표시 — 빨강 계열(라이브/녹화 관습)로 호흡. 안드로이드 기기점(초록)과 색이 안 겹치게. */
 .vlive {
   position: relative;
   margin-left: 6px;
   padding-left: 14px;
-  color: #2f9e62;
+  color: #e11d48;
   font-size: 10.5px;
   font-weight: 900;
   vertical-align: middle;
@@ -1079,18 +1080,18 @@
   height: 7px;
   margin-top: -3.5px;
   border-radius: 999px;
-  background: #34d399;
+  background: #f43f5e;
   animation: vlive-pulse 1.8s var(--ease, ease) infinite;
 }
 @keyframes vlive-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5);
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.5);
   }
   70% {
-    box-shadow: 0 0 0 7px rgba(52, 211, 153, 0);
+    box-shadow: 0 0 0 7px rgba(244, 63, 94, 0);
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
   }
 }
 @media (min-width: 641px) {
