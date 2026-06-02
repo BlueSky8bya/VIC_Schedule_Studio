@@ -18,6 +18,8 @@ export type TagCreateInput = {
   textColor: string;
   borderColor: string;
   sortOrder: number;
+  // 2계층: null = 대분류(색 보유), 값 = 세부(부모 대분류 id, 색은 부모 상속). 임시 부모는 tempId일 수 있다.
+  parentId?: string | null;
 };
 // "전체 저장": 기존 태그 수정 + 새 태그 생성을 한 번에. 생성분은 진짜 id를 돌려줘 화면을 갱신한다.
 export type SaveTagsResult =
@@ -76,7 +78,7 @@ export async function updateTagAction(
 // #6/#4: "전체 저장" — 기존 태그 수정 + 새로 추가한 드래프트 태그 생성을 한 번에 처리한다.
 // (새 태그는 저장 누르기 전까지 팝업 안에서만 보이고, 이 액션을 누를 때만 DB·달력에 반영된다.)
 export async function saveTagsAction(input: {
-  updates: { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number }[];
+  updates: { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number; parentId?: string | null }[];
   creates: TagCreateInput[];
 }): Promise<SaveTagsResult> {
   const actor = await resolveCurrentActor(SLUG);
@@ -85,18 +87,20 @@ export async function saveTagsAction(input: {
   }
 
   const { updates, creates } = input;
+  const isTop = (x: { parentId?: string | null }) => (x.parentId ?? null) === null;
 
-  // 이름·색 검증 — 수정·생성 모두.
+  // 이름 검증 — 수정·생성 모두.
   if ([...updates, ...creates].some((u) => !u.displayName.trim())) {
     return { ok: false, error: "모든 태그 이름을 입력하세요." };
   }
-  if ([...updates, ...creates].some((u) => !u.colorKey)) {
-    return { ok: false, error: "모든 태그에 색상을 지정하세요." };
+  // 색·색중복 검증은 '대분류'만 — 세부는 부모 색을 상속하므로 색이 겹쳐도 정상.
+  const tops = [...updates, ...creates].filter(isTop);
+  if (tops.some((u) => !u.colorKey)) {
+    return { ok: false, error: "대분류 태그에 색상을 지정하세요." };
   }
-  // 색상 중복(한 색 = 한 태그) — 수정분 + 생성분을 합쳐서 본다.
-  const allColors = [...updates.map((u) => u.colorKey), ...creates.map((c) => c.colorKey)];
-  if (new Set(allColors).size !== allColors.length) {
-    return { ok: false, error: "같은 색상을 두 태그에 쓸 수 없습니다." };
+  const topColors = tops.map((u) => u.colorKey);
+  if (new Set(topColors).size !== topColors.length) {
+    return { ok: false, error: "같은 색상을 두 대분류에 쓸 수 없습니다." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -132,7 +136,7 @@ export async function saveTagsAction(input: {
     const existingKeys = new Set((palette ?? []).map((p) => p.key));
     let paletteSort = Math.max(0, ...(palette ?? []).map((p) => p.sort_order ?? 0));
     const paletteRows = creates
-      .filter((c) => c.colorKey.startsWith("gen-") && !existingKeys.has(c.colorKey))
+      .filter((c) => isTop(c) && c.colorKey.startsWith("gen-") && !existingKeys.has(c.colorKey))
       .map((c) => ({
         calendar_id: calendar.id,
         key: c.colorKey,
@@ -149,9 +153,14 @@ export async function saveTagsAction(input: {
       }
     }
 
-    // 새 태그 행 삽입(요청 순서를 보존하려고 하나씩 — 보통 1~2개라 부담 없음).
-    for (const c of creates) {
+    // 새 태그 행 삽입(요청 순서를 보존하려고 하나씩). 대분류 먼저 — 세부의 부모(tempId)가 진짜
+    // id로 잡힌 뒤 삽입되게. tempToReal로 같은 저장 안에서 만든 부모를 연결한다.
+    const orderedCreates = [...creates].sort((a, b) => Number(!isTop(a)) - Number(!isTop(b)));
+    const tempToReal = new Map<string, string>();
+    for (const c of orderedCreates) {
       const tagKey = `tag-${Math.random().toString(36).slice(2, 8)}`;
+      const rawParent = c.parentId ?? null;
+      const parentId = rawParent ? (tempToReal.get(rawParent) ?? rawParent) : null;
       const { data: inserted, error: tagErr } = await supabase
         .from("broadcast_tags")
         .insert({
@@ -161,13 +170,15 @@ export async function saveTagsAction(input: {
           color_key: c.colorKey,
           sort_order: c.sortOrder,
           is_default: false,
-          is_active: true
+          is_active: true,
+          parent_id: parentId
         })
         .select("id")
         .single();
       if (tagErr || !inserted) {
         return { ok: false, error: tagErr?.message ?? "태그 생성 실패" };
       }
+      tempToReal.set(c.tempId, inserted.id as string);
       created.push({
         tempId: c.tempId,
         tag: {
@@ -178,7 +189,7 @@ export async function saveTagsAction(input: {
           sortOrder: c.sortOrder,
           isDefault: false,
           isActive: true,
-          parentId: null
+          parentId
         },
         color: {
           key: c.colorKey,
@@ -219,6 +230,7 @@ export async function saveTagsAction(input: {
                   display_name: u.displayName.trim(),
                   color_key: u.colorKey,
                   ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }),
+                  ...(u.parentId === undefined ? {} : { parent_id: u.parentId }),
                   updated_at: now
                 }
           )

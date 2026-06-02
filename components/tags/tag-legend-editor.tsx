@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, GripVertical, Lock, Palette, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, GripVertical, Lock, Palette, Plus, Save, Trash2 } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
   useEffect,
@@ -14,7 +14,13 @@ import type { SaveTagsResult, TagCreateInput } from "@/lib/schedules/tag-actions
 import { generateTagColor } from "@/lib/tags/color-gen";
 import { hapticTick } from "@/lib/ui/haptics";
 
-type TagUpdate = { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number };
+type TagUpdate = {
+  id: string;
+  displayName: string;
+  colorKey: ColorKey;
+  sortOrder?: number;
+  parentId?: string | null;
+};
 
 // 태그는 최대 20개까지. (서버 saveTagsAction에서도 동일하게 막는다.)
 // 2계층 태그: 대분류는 소수(색)지만 세부는 무제한급으로 늘 수 있어 총 상한을 크게.
@@ -45,7 +51,7 @@ type TagLegendEditorProps = {
   onToggleFilter?: (tagId: string) => void;
 };
 
-type Draft = { name: string; colorKey: ColorKey | "" };
+type Draft = { name: string; colorKey: ColorKey | ""; parentId: string | null };
 
 export function TagLegendEditor({
   tags,
@@ -86,7 +92,9 @@ export function TagLegendEditor({
   const effectivePalette = useMemo(() => [...palette, ...newColors], [palette, newColors]);
 
   const [draft, setDraft] = useState<Record<string, Draft>>(() =>
-    Object.fromEntries(tags.map((t) => [t.id, { name: t.displayName, colorKey: t.colorKey }]))
+    Object.fromEntries(
+      tags.map((t) => [t.id, { name: t.displayName, colorKey: t.colorKey, parentId: t.parentId }])
+    )
   );
 
   // 부모 태그 목록이 바뀌면(저장 반영) 드래프트도 맞춘다. 기존 편집값·드래프트 항목은 유지.
@@ -94,7 +102,11 @@ export function TagLegendEditor({
     setDraft((cur) => {
       const next: Record<string, Draft> = {};
       for (const t of tags) {
-        next[t.id] = cur[t.id] ?? { name: t.displayName, colorKey: t.colorKey };
+        next[t.id] = cur[t.id] ?? {
+          name: t.displayName,
+          colorKey: t.colorKey,
+          parentId: t.parentId
+        };
       }
       // 아직 저장 안 한 드래프트(new:) 항목은 그대로 보존.
       for (const id of Object.keys(cur)) {
@@ -106,12 +118,16 @@ export function TagLegendEditor({
 
   const colorOf = (key: ColorKey) => effectivePalette.find((p) => p.key === key);
 
-  // 드래그로 바꾸는 표시 순서(태그 id 배열). 저장 시 sort_order로 반영된다.
-  const [orderIds, setOrderIds] = useState<string[]>(() => tags.map((t) => t.id));
+  // 2계층: 드래그 순서는 '대분류'에만 적용(세부는 부모 밑에 sortOrder 순으로 따라붙음).
+  const isTopTag = (t: BroadcastTag) => (t.parentId ?? null) === null;
+  // 드래그로 바꾸는 대분류 표시 순서(대분류 id 배열). 저장 시 sort_order로 반영된다.
+  const [orderIds, setOrderIds] = useState<string[]>(() =>
+    tags.filter(isTopTag).map((t) => t.id)
+  );
   useEffect(() => {
     setOrderIds((cur) => {
-      // 빈/누락 id는 거른다 — orderIds에 null이 섞이면 순서 계산(isNew)에서 터진다.
       const ids = [...tags, ...newTags]
+        .filter(isTopTag)
         .map((t) => t.id)
         .filter((id): id is string => Boolean(id));
       const kept = cur.filter((id) => Boolean(id) && ids.includes(id));
@@ -119,9 +135,16 @@ export function TagLegendEditor({
       return [...kept, ...added];
     });
   }, [tags, newTags]);
-  const orderedTags = orderIds
+  // 대분류(드래그 순서대로) + 각 대분류의 세부(sortOrder 순).
+  const orderedTops = orderIds
     .map((id) => allTags.find((t) => t.id === id))
     .filter((t): t is BroadcastTag => Boolean(t));
+  const childrenOf = (topId: string) =>
+    allTags
+      .filter((t) => (t.parentId ?? null) === topId)
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  // 평면 순서(대분류→그 세부) — 읽기전용 레전드/저장 순회용.
+  const orderedTags = orderedTops.flatMap((t) => [t, ...childrenOf(t.id)]);
 
   // 휴뱅(dayoff)은 시스템 기본 태그 — 순서 변경·이름 변경·색 변경·삭제를 모두 막는다.
   // (식별은 표시 이름이 아니라 tag_key로 — 이름을 바꿔도 안 깨지게.)
@@ -361,8 +384,34 @@ export function TagLegendEditor({
     };
     setNewColors((prev) => [...prev, color]);
     setNewTags((prev) => [...prev, tag]);
-    setDraft((cur) => ({ ...cur, [tempId]: { name: "새 태그", colorKey: gen.key } }));
+    setDraft((cur) => ({ ...cur, [tempId]: { name: "새 태그", colorKey: gen.key, parentId: null } }));
     setOrderIds((cur) => [...cur, tempId]);
+  }
+
+  // 세부(자식) 추가 — 부모 대분류 밑에 붙는다. 색은 부모를 상속(자기 색 안 씀)하므로 새 팔레트 색을
+  // 만들지 않고 부모의 현재 색 키를 저장값으로만 둔다(렌더 색은 항상 대분류 색으로 해석).
+  function addSub(parentId: string) {
+    if (allTags.length >= MAX_TAGS) return;
+    hapticTick();
+    setError(null);
+    const parentColorKey = (draft[parentId]?.colorKey || "gray") as ColorKey;
+    const tempId = `${NEW_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const tag: BroadcastTag = {
+      id: tempId,
+      tagKey: tempId,
+      displayName: "새 세부",
+      colorKey: parentColorKey,
+      sortOrder: 9999,
+      isDefault: false,
+      isActive: true,
+      parentId
+    };
+    setNewTags((prev) => [...prev, tag]);
+    setDraft((cur) => ({
+      ...cur,
+      [tempId]: { name: "새 세부", colorKey: parentColorKey, parentId }
+    }));
+    // 세부는 orderIds(대분류 순서)에 넣지 않는다.
   }
 
   function removeTag(tagId: string) {
@@ -403,9 +452,11 @@ export function TagLegendEditor({
     });
   }
 
-  // 다른 태그가 이미 쓰는 색인지
+  // 다른 '대분류'가 이미 쓰는 색인지(세부는 부모 색을 상속하므로 색 경쟁에서 제외).
   function usedByOther(tagId: string, key: ColorKey) {
-    return Object.entries(draft).some(([id, d]) => id !== tagId && d.colorKey === key);
+    return Object.entries(draft).some(
+      ([id, d]) => id !== tagId && d.parentId === null && d.colorKey === key
+    );
   }
 
   function pick(tagId: string, key: ColorKey) {
@@ -417,9 +468,13 @@ export function TagLegendEditor({
     });
   }
 
-  const anyEmpty = Object.values(draft).some((d) => d.colorKey === "");
+  // 색 비어있음 경고는 '대분류'만(세부는 부모 색 상속).
+  const anyEmpty = Object.entries(draft).some(
+    ([, d]) => d.parentId === null && d.colorKey === ""
+  );
+  const existingTops = tags.filter(isTopTag);
   const existingOrder = orderIds.filter((id): id is string => Boolean(id) && !isNew(id));
-  const orderChanged = existingOrder.some((id, i) => tags[i]?.id !== id);
+  const orderChanged = existingOrder.some((id, i) => existingTops[i]?.id !== id);
   const contentChanged = tags.some(
     (t) => draft[t.id]?.name !== t.displayName || draft[t.id]?.colorKey !== t.colorKey
   );
@@ -435,8 +490,8 @@ export function TagLegendEditor({
     setError(null);
     const updates: TagUpdate[] = [];
     const creates: TagCreateInput[] = [];
-    // 드래그 순서대로 sort_order를 0,1,2…로 부여. 기존은 updates, 새 태그는 creates로 나눈다.
-    orderedTags.forEach((t, index) => {
+    // 대분류는 드래그 순서대로 sort_order 0..n. 각 대분류의 세부는 부모 밑에서 0..m + parentId.
+    const pushTag = (t: BroadcastTag, sortOrder: number, parentId: string | null) => {
       const d = draft[t.id];
       if (!d) return;
       if (isNew(t.id)) {
@@ -448,16 +503,22 @@ export function TagLegendEditor({
           bgColor: c?.bgColor ?? "#eeeeee",
           textColor: c?.textColor ?? "#333333",
           borderColor: c?.borderColor ?? "#cccccc",
-          sortOrder: index
+          sortOrder,
+          parentId
         });
       } else {
         updates.push({
           id: t.id,
           displayName: d.name,
           colorKey: d.colorKey as ColorKey,
-          sortOrder: index
+          sortOrder,
+          parentId
         });
       }
+    };
+    orderedTops.forEach((top, ti) => {
+      pushTag(top, ti, null);
+      childrenOf(top.id).forEach((child, ci) => pushTag(child, ci, top.id));
     });
     const prev: TagUpdate[] = tags.map((t) => ({
       id: t.id,
@@ -482,7 +543,11 @@ export function TagLegendEditor({
             const next = { ...cur };
             for (const c of result.created) {
               delete next[c.tempId];
-              next[c.tag.id] = { name: c.tag.displayName, colorKey: c.tag.colorKey };
+              next[c.tag.id] = {
+                name: c.tag.displayName,
+                colorKey: c.tag.colorKey,
+                parentId: c.tag.parentId
+              };
             }
             return next;
           });
@@ -495,6 +560,100 @@ export function TagLegendEditor({
         onTagsUpdated?.(prev); // 실패 → 되돌림
       }
     });
+  }
+
+  // 한 태그 행(대분류=드래그+스와치, 세부=들여쓰기+상속색칩). 휴뱅은 잠금.
+  function renderTagRow(tag: BroadcastTag, isSub: boolean) {
+    const d = draft[tag.id];
+    if (!d) return null;
+    const locked = isLocked(tag.id);
+    const parentColor = isSub
+      ? colorOf((draft[d.parentId ?? ""]?.colorKey || "gray") as ColorKey)
+      : null;
+    return (
+      <div
+        className={`tag-editor-row ${draggingId === tag.id ? "dragging" : ""} ${
+          isNew(tag.id) ? "is-new" : ""
+        } ${locked ? "locked" : ""} ${isSub ? "is-sub" : ""}`}
+        data-tagid={tag.id}
+        key={tag.id}
+      >
+        {isSub ? (
+          <span className="tag-sub-indent" aria-hidden="true" />
+        ) : (
+          <button
+            aria-label={locked ? "휴뱅은 순서를 바꿀 수 없어요" : "순서 변경"}
+            className="tag-drag-handle"
+            disabled={locked}
+            onPointerDown={locked ? undefined : (e) => onHandlePointerDown(e, tag.id)}
+            title={locked ? "휴뱅은 순서를 바꿀 수 없는 기본 태그예요" : "끌어서 순서 변경"}
+            type="button"
+          >
+            {locked ? (
+              <Lock aria-hidden="true" size={15} />
+            ) : (
+              <GripVertical aria-hidden="true" size={16} />
+            )}
+          </button>
+        )}
+        <input
+          aria-label={isSub ? "세부 이름" : "대분류 이름"}
+          className={locked ? "locked" : undefined}
+          onChange={
+            locked
+              ? undefined
+              : (e) => setDraft((cur) => ({ ...cur, [tag.id]: { ...d, name: e.target.value } }))
+          }
+          readOnly={locked}
+          title={locked ? "휴뱅은 이름을 바꿀 수 없어요" : undefined}
+          value={d.name}
+        />
+        {isSub ? (
+          // 세부는 부모 대분류 색을 상속 — 색 선택 없이 상속 색만 표시.
+          <span
+            className="tag-sub-color"
+            style={{ background: parentColor?.bgColor, borderColor: parentColor?.borderColor }}
+            title="부모 대분류 색을 따라가요"
+          />
+        ) : (
+          <div className="tag-editor-swatches">
+            {effectivePalette.map((c) => {
+              const selected = d.colorKey === c.key;
+              const blocked = usedByOther(tag.id, c.key);
+              return (
+                <button
+                  aria-label={c.name}
+                  className={selected ? "selected" : ""}
+                  data-color={c.key}
+                  disabled={locked || (blocked && !selected)}
+                  key={c.key}
+                  onClick={() => pick(tag.id, c.key)}
+                  style={{ backgroundColor: c.bgColor, borderColor: c.borderColor }}
+                  title={
+                    locked
+                      ? "휴뱅은 색을 바꿀 수 없어요"
+                      : blocked && !selected
+                        ? `${c.name} (다른 태그가 사용 중)`
+                        : c.name
+                  }
+                  type="button"
+                />
+              );
+            })}
+          </div>
+        )}
+        <button
+          aria-label={locked ? "휴뱅은 삭제할 수 없어요" : `${d.name} 삭제`}
+          className="tag-editor-remove"
+          disabled={locked || busy || deleteLock}
+          onClick={() => removeTag(tag.id)}
+          title={locked ? "휴뱅은 삭제할 수 없는 기본 태그예요" : "이 태그 삭제"}
+          type="button"
+        >
+          {locked ? <Lock aria-hidden="true" size={15} /> : <Trash2 aria-hidden="true" size={15} />}
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -516,80 +675,23 @@ export function TagLegendEditor({
           권해요.
         </span>
       </div>
-      {orderedTags.map((tag) => {
-        const d = draft[tag.id];
-        if (!d) return null;
-        const locked = isLocked(tag.id);
+      {orderedTops.map((top) => {
+        const kids = childrenOf(top.id);
         return (
-          <div
-            className={`tag-editor-row ${draggingId === tag.id ? "dragging" : ""} ${
-              isNew(tag.id) ? "is-new" : ""
-            } ${locked ? "locked" : ""}`}
-            data-tagid={tag.id}
-            key={tag.id}
-          >
-            <button
-              aria-label={locked ? "휴뱅은 순서를 바꿀 수 없어요" : "순서 변경"}
-              className="tag-drag-handle"
-              disabled={locked}
-              onPointerDown={locked ? undefined : (e) => onHandlePointerDown(e, tag.id)}
-              title={locked ? "휴뱅은 순서를 바꿀 수 없는 기본 태그예요" : "끌어서 순서 변경"}
-              type="button"
-            >
-              {locked ? (
-                <Lock aria-hidden="true" size={15} />
-              ) : (
-                <GripVertical aria-hidden="true" size={16} />
-              )}
-            </button>
-            <input
-              aria-label="태그 이름"
-              className={locked ? "locked" : undefined}
-              onChange={
-                locked
-                  ? undefined
-                  : (e) =>
-                      setDraft((cur) => ({ ...cur, [tag.id]: { ...d, name: e.target.value } }))
-              }
-              readOnly={locked}
-              title={locked ? "휴뱅은 이름을 바꿀 수 없어요" : undefined}
-              value={d.name}
-            />
-            <div className="tag-editor-swatches">
-              {effectivePalette.map((c) => {
-                const selected = d.colorKey === c.key;
-                const blocked = usedByOther(tag.id, c.key);
-                return (
-                  <button
-                    aria-label={c.name}
-                    className={selected ? "selected" : ""}
-                    data-color={c.key}
-                    disabled={locked || (blocked && !selected)}
-                    key={c.key}
-                    onClick={() => pick(tag.id, c.key)}
-                    style={{ backgroundColor: c.bgColor, borderColor: c.borderColor }}
-                    title={
-                      locked
-                        ? "휴뱅은 색을 바꿀 수 없어요"
-                        : blocked && !selected
-                          ? `${c.name} (다른 태그가 사용 중)`
-                          : c.name
-                    }
-                    type="button"
-                  />
-                );
-              })}
-            </div>
-            <button
-              aria-label={locked ? "휴뱅은 삭제할 수 없어요" : `${d.name} 삭제`}
-              className="tag-editor-remove"
-              disabled={locked || busy || deleteLock}
-              onClick={() => removeTag(tag.id)}
-              title={locked ? "휴뱅은 삭제할 수 없는 기본 태그예요" : "이 태그 삭제"}
-              type="button"
-            >
-              {locked ? <Lock aria-hidden="true" size={15} /> : <Trash2 aria-hidden="true" size={15} />}
-            </button>
+          <div className="tag-cat-group" key={top.id}>
+            {renderTagRow(top, false)}
+            {kids.map((c) => renderTagRow(c, true))}
+            {/* 세부 추가 — 이 대분류 밑에 자식 태그(색 상속). 휴뱅엔 세부를 만들지 않는다. */}
+            {!isLocked(top.id) ? (
+              <button
+                className="tag-add-sub"
+                disabled={allTags.length >= MAX_TAGS}
+                onClick={() => addSub(top.id)}
+                type="button"
+              >
+                <Plus aria-hidden="true" size={13} /> 세부 추가
+              </button>
+            ) : null}
           </div>
         );
       })}

@@ -4437,6 +4437,76 @@ textarea:disabled {
   padding-bottom: 8px;
   border-bottom: 1px solid var(--line);
 }
+/* 2계층: 대분류 묶음(대분류 + 그 세부 + 세부추가). 묶음 사이 간격으로 그룹 구분. */
+.tag-cat-group {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+/* 세부 행 — 들여쓰고 살짝 작게/연하게. 색 선택 대신 상속색 칩. */
+.tag-editor-row.is-sub {
+  margin-left: 18px;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed var(--line-soft, #efeaf7);
+}
+.tag-sub-indent {
+  flex: 0 0 auto;
+  position: relative;
+  width: 16px;
+  height: 30px;
+}
+/* ┗ 자식 표시 선 */
+.tag-sub-indent::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: -2px;
+  bottom: 50%;
+  width: 8px;
+  border-left: 2px solid var(--line, #e7e3f2);
+  border-bottom: 2px solid var(--line, #e7e3f2);
+  border-bottom-left-radius: 6px;
+}
+.tag-sub-color {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid;
+  opacity: 0.92;
+}
+/* 세부 추가 — 점선 버튼(대분류 묶음 아래, 들여쓰기). */
+.tag-add-sub {
+  justify-self: start;
+  margin-left: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px dashed var(--line, #c9c2dd);
+  border-radius: 9px;
+  background: transparent;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #7a6fae;
+  cursor: pointer;
+  transition: background 0.12s var(--ease, ease), transform 0.1s var(--ease, ease);
+}
+.tag-add-sub:hover:not(:disabled) {
+  background: #f4f0ff;
+}
+.tag-add-sub:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.tag-add-sub:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag-add-sub {
+    transition: none;
+  }
+}
 /* 끌어서 순서 변경 손잡이 */
 .tag-drag-handle {
   flex: 0 0 auto;
