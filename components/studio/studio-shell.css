@@ -1565,29 +1565,28 @@
   font-weight: 800;
   color: #6b5b95;
 }
-/* ── 세션 로그 피드(.vlog) ──
-   모바일: 한 줄 컴팩트(기기색 점 + 역할 배지 + 체류 + 시각), 탭 피드백.
-   웹: 인셋 패널 + 얼터너이트 줄 + 호버 시 좌측 액센트 바가 차오르는 '로그 테이블' 느낌. */
+/* ── 세션 로그 피드(.vlog) — 2줄 행 ──
+   행마다 [기기색 점] + 본문(1줄: 역할 배지/이메일 + 시각 / 2줄: 기기 · 체류). 관리자 이메일처럼
+   긴 라벨도 윗줄을 폭 가득 써서 안 잘리고, 모든 역할이 같은 2줄 골격이라 통일감.
+   모바일: 컴팩트(탭 피드백). 웹: 인셋 패널 + zebra + 호버 좌측 액센트 바. */
 .vrecent ul.vlog {
   list-style: none;
   margin: 8px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
-  max-height: 232px;
+  gap: 2px;
+  max-height: 260px;
   overflow: auto;
   overscroll-behavior: contain;
 }
 .vlog-row {
   display: flex;
-  align-items: center;
-  gap: 7px;
+  align-items: flex-start;
+  gap: 8px;
   min-width: 0;
-  padding: 5px 7px;
-  border-radius: 9px;
-  font-size: 11.5px;
-  font-weight: 700;
+  padding: 7px 8px;
+  border-radius: 10px;
   color: #5b5470;
   transition: background 0.12s var(--ease, ease);
 }
@@ -1598,16 +1597,36 @@
   flex: none;
   width: 8px;
   height: 8px;
+  margin-top: 6px; /* 윗줄(배지) 중앙에 맞춤 */
   border-radius: 999px;
 }
-/* 역할 배지 — 역할별 색(ROLE_META) 알약. owner는 이메일이라 길면 …로. */
+.vlog-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.vlog-line1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.vlog-line2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+/* 역할 배지 — 역할별 색(ROLE_META) 알약. owner 이메일이 아주 길면 윗줄 안에서 …로. */
 .vrecent-role {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding: 1px 9px;
+  padding: 2px 9px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 900;
@@ -1628,7 +1647,6 @@
 }
 .vlog-dev {
   flex: none;
-  font-size: 10.5px;
   color: #8a82a6;
 }
 .vlog-dur {
@@ -1638,6 +1656,7 @@
   color: #3a3550;
 }
 .vlog-t {
+  margin-left: auto;
   flex: none;
   font-size: 10.5px;
   font-variant-numeric: tabular-nums;
@@ -1650,17 +1669,11 @@
   color: #b9b2c8;
   font-weight: 700;
 }
-/* 모바일: 기기는 점 색으로 충분 → 텍스트 라벨 숨겨 컴팩트. */
-@media (max-width: 640px) {
-  .vlog-dev {
-    display: none;
-  }
-}
 /* 웹: 로그 테이블 — 인셋 패널 + zebra + 호버 좌측 액센트. */
 @media (min-width: 641px) {
   .vrecent ul.vlog {
     gap: 0;
-    max-height: 300px;
+    max-height: 320px;
     padding: 5px;
     border: 1px solid var(--line, #e7e3f2);
     border-radius: 13px;
@@ -1668,8 +1681,7 @@
   }
   .vlog-row {
     position: relative;
-    padding: 9px 12px 9px 15px;
-    font-size: 13px;
+    padding: 9px 12px 9px 16px;
   }
   .vlog-row:nth-child(even) {
     background: #faf9fe;
@@ -1678,22 +1690,26 @@
     content: "";
     position: absolute;
     left: 5px;
-    top: 50%;
+    top: 8px;
+    bottom: 8px;
     width: 3px;
-    height: 0;
     border-radius: 3px;
     background: #6b5bd6;
-    transform: translateY(-50%);
-    transition: height 0.16s var(--ease, ease);
+    transform: scaleY(0);
+    transform-origin: center;
+    transition: transform 0.16s var(--ease, ease);
   }
   .vlog-row:hover {
     background: #f1edfb;
   }
   .vlog-row:hover::before {
-    height: 58%;
+    transform: scaleY(1);
   }
-  .vlog-dev,
+  .vlog-line2,
   .vlog-t {
+    font-size: 12px;
+  }
+  .vrecent-role {
     font-size: 12px;
   }
 }

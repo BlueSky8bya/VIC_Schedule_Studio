@@ -339,20 +339,26 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                     className="vlog-dot"
                     style={{ background: deviceColor(r.device) }}
                   />
-                  <span
-                    className="vrecent-role"
-                    data-role={r.role}
-                    style={{ "--rc": roleColor(r.role) } as CSSProperties}
-                  >
-                    {r.label}
-                    {r.dual ? <em className="vlog-dual">겸</em> : null}
-                  </span>
-                  <span className="vlog-dev">{deviceLabel(r.device)}</span>
-                  <span className="vlog-dur">
-                    {fmtDur(r.seconds)}
-                    {r.meaningful ? "" : " · 스쳐감"}
-                  </span>
-                  <time className="vlog-t">{hhmm(r.t)}</time>
+                  <div className="vlog-main">
+                    <div className="vlog-line1">
+                      <span
+                        className="vrecent-role"
+                        data-role={r.role}
+                        style={{ "--rc": roleColor(r.role) } as CSSProperties}
+                      >
+                        {r.label}
+                        {r.dual ? <em className="vlog-dual">겸</em> : null}
+                      </span>
+                      <time className="vlog-t">{hhmm(r.t)}</time>
+                    </div>
+                    <div className="vlog-line2">
+                      <span className="vlog-dev">{deviceLabel(r.device)}</span>
+                      <span className="vlog-dur">
+                        {fmtDur(r.seconds)}
+                        {r.meaningful ? "" : " · 스쳐감"}
+                      </span>
+                    </div>
+                  </div>
                 </li>
               ))}
             </ul>
