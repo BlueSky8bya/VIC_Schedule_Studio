@@ -2858,13 +2858,24 @@ export function StudioShell({
             {/* 진짜 개발자 화면(미리보기 아님)에선 공지(토리님 전용)를 그날 방문 그래프로 대체 — 날짜를
                 옮겨가며 일별 통계를 비교한다. 공지 수정이 필요하면 '관리자 미리보기'를 쓰면 된다. */}
             {isDevInsights ? (
-              <button
-                className="button notice-open"
-                onClick={() => setModal("dayVisit")}
-                type="button"
-              >
-                📈 {selectedDate} 방문 그래프
-              </button>
+              <>
+                {/* 개발자 화면에도 관리자처럼 공지 쓰기를 둔다(방문 그래프 위). NoticeModal은
+                    공개 일정으로 공지 문구만 만드는 클라이언트 도구 — 비공개/owner 전용 쓰기 없음. */}
+                <button
+                  className="button notice-open"
+                  onClick={() => setModal("notice")}
+                  type="button"
+                >
+                  📢 {selectedDate} 공지 쓰기
+                </button>
+                <button
+                  className="button notice-open"
+                  onClick={() => setModal("dayVisit")}
+                  type="button"
+                >
+                  📈 {selectedDate} 방문 그래프
+                </button>
+              </>
             ) : canEdit ? (
               <button
                 className="button notice-open"
@@ -3552,13 +3563,24 @@ export function StudioShell({
 
             {/* 진짜 개발자 화면(미리보기 아님)에선 공지(토리님 전용) 대신 그날 방문 그래프 버튼. */}
             {isDevInsights ? (
-              <button
-                className="button notice-open"
-                onClick={() => setModal("dayVisit")}
-                type="button"
-              >
-                📈 {selectedDate} 방문 그래프
-              </button>
+              <>
+                {/* 개발자 화면에도 관리자처럼 공지 쓰기를 둔다(방문 그래프 위). NoticeModal은
+                    공개 일정으로 공지 문구만 만드는 클라이언트 도구 — 비공개/owner 전용 쓰기 없음. */}
+                <button
+                  className="button notice-open"
+                  onClick={() => setModal("notice")}
+                  type="button"
+                >
+                  📢 {selectedDate} 공지 쓰기
+                </button>
+                <button
+                  className="button notice-open"
+                  onClick={() => setModal("dayVisit")}
+                  type="button"
+                >
+                  📈 {selectedDate} 방문 그래프
+                </button>
+              </>
             ) : canEdit ? (
               <button
                 className="button notice-open"
