@@ -478,8 +478,10 @@ export function InsightsDashboard({
       setOwnerTip({ x: ((sr.left + sr.width / 2 - cr.left) / cr.width) * 100, top: sr.top - cr.top, text });
     };
     return (
-      <>
-        {/* 방문 품질 요약(R1 컷·R2 토글·R4 KPI·R5 분리·R12 새/재방문·R13 최고동접). */}
+      // 웹: 2단 대시보드 그리드(.vpanel) — 요약/문구는 풀폭, 차트는 좌우 2열 카드로 가로폭을 채운다.
+      // 모바일: 같은 마크업이 한 줄 세로 스택으로 떨어진다(컴팩트, 카드 테두리 없음).
+      <div className="vpanel">
+        {/* 방문 품질 요약(R1 컷·R2 토글·R4 KPI·R5 분리·R12 새/재방문·R13 최고동접). — 풀폭 */}
         <VisitSummaryBlock
           viewer={visits.summaryViewer}
           operator={visits.summaryOperator}
@@ -489,7 +491,7 @@ export function InsightsDashboard({
           scope={visitScope}
           onScope={setVisitScope}
         />
-        {/* R6: 한 문장 자동 인사이트 */}
+        {/* R6: 한 문장 자동 인사이트 — 풀폭 */}
         {visits.insights.length > 0 ? (
           <ul className="vins">
             {visits.insights.map((line, i) => (
@@ -497,310 +499,332 @@ export function InsightsDashboard({
             ))}
           </ul>
         ) : null}
-        <div className="insights-toolbar">
-          <div className="insights-subtabs">
-            <button
-              className={visitView === "day" ? "active" : ""}
-              onClick={() => setVisitView("day")}
-              type="button"
-            >
-              일별
-            </button>
-            <button
-              className={visitView === "week" ? "active" : ""}
-              onClick={() => setVisitView("week")}
-              type="button"
-            >
-              주별
-            </button>
-          </div>
-          <div className="insights-subtabs">
-            <button
-              className={visitDim === "role" ? "active" : ""}
-              onClick={() => setVisitDim("role")}
-              type="button"
-            >
-              역할별
-            </button>
-            <button
-              className={visitDim === "device" ? "active" : ""}
-              onClick={() => setVisitDim("device")}
-              type="button"
-            >
-              기기별
-            </button>
-          </div>
-        </div>
-        <div
-          className="vt-chart"
-          role="img"
-          aria-label="방문 그래프"
-          onPointerLeave={() => setVtHover(null)}
-        >
-          {visitView === "day"
-            ? g.days.map((d, i) => (
-                <StackBar
-                  count={g.days.length}
-                  counts={countsOf(d)}
-                  index={i}
-                  key={d.day}
-                  label={d.day % 5 === 0 || d.day === 1 ? String(d.day) : ""}
-                  max={max}
-                  meta={meta}
-                  onHover={setVtHover}
-                  onLeave={() => setVtHover(null)}
-                  total={totalOf(d)}
-                />
-              ))
-            : g.weeks.map((w, i) => (
-                <StackBar
-                  count={g.weeks.length}
-                  counts={countsOf(w)}
-                  index={i}
-                  key={w.label}
-                  label={w.label}
-                  max={max}
-                  meta={meta}
-                  onHover={setVtHover}
-                  onLeave={() => setVtHover(null)}
-                  total={totalOf(w)}
-                />
-              ))}
-          {vtHover ? (
-            <div className="vt-tip" style={{ "--tip-x": `${vtHover.x}%` } as CSSProperties}>
-              <strong>{vtHover.total}{unit}</strong>
-              {vtHover.rows.map((r) => (
-                <span className="vt-tip-row" key={r.label}>
-                  <i style={{ background: r.color }} />
-                  {r.label}
-                  <b>{r.count}</b>
-                </span>
-              ))}
-            </div>
-          ) : null}
-        </div>
-        <ul className="vt-legend">
-          {meta.map((r) => (
-            <li key={r.key}>
-              <span style={{ background: r.color }} />
-              {r.label}
-            </li>
-          ))}
-        </ul>
-        <h4 className="insight-subhead">시간대별 동시 접속 · 체류 (KST)</h4>
-        {/* 위 일별/주별은 '방문 수(첫 진입)'지만, 이 막대는 '그 시각에 떠 있던 인원(체류)'이다.
-            막대 = 관측된 하루 평균 동시 접속, 호버하면 평균·최고 + 역할/기기별 분해를 차트 안에서 보여준다. */}
-        <p className="vt-occ-note">막대 = 시간대별 평균 동시 접속(방문자 기준) · 호버 시 최고치도 표시</p>
-        {/* 핑이 0이어도 24칸 골격(시간축)은 항상 그린다 — "살아있는지" 바로 보이고, 방문자가
-            생기면 그 시각 막대가 차오른다. 비었을 땐 차트 안에 작은 캡션만. */}
-        <div
-          className={`vt-hours ${g.hasOccupancy ? "" : "empty"}`}
-          role="img"
-          aria-label="시간대별 동시 접속(체류) 분포(역할·기기 분해)"
-          onPointerLeave={() => setVtHourHover(null)}
-        >
-          {g.occupancy.map((slot, h) => {
-            const counts = countsOf(slot);
-            const enter = () => {
-              if (slot.avg <= 0) {
-                setVtHourHover(null);
-                return;
-              }
-              const rows = meta
-                .map((m) => ({ color: m.color, label: m.label, val: counts[m.key] ?? 0 }))
-                .filter((r) => r.val > 0.001);
-              setVtHourHover({ x: ((h + 0.5) / 24) * 100, avg: slot.avg, peak: slot.peak, rows });
-            };
-            return (
-              <div
-                className="vt-hcol"
-                key={h}
-                onPointerEnter={enter}
-                onPointerMove={enter}
-                onPointerLeave={() => setVtHourHover(null)}
-              >
-                <div className="vt-hbar" style={{ height: `${(slot.avg / om) * 100}%` }}>
-                  <div className="vt-fill">
-                    {meta.map((m) => {
-                      const c = counts[m.key] ?? 0;
-                      // flex-grow 합이 1 미만(평균<1)이면 fill이 막대를 다 못 채워 배경이 비친다 →
-                      // 역할 '비율'(c/총합)로 정규화해 항상 막대 전체를 채운다(높이는 이미 avg가 인코딩).
-                      return c > 0 ? (
-                        <span
-                          className="vt-seg"
-                          key={m.key}
-                          style={{ flexGrow: slot.avg > 0 ? c / slot.avg : 1, background: m.color }}
-                        />
-                      ) : null;
-                    })}
-                  </div>
-                </div>
-                <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
-              </div>
-            );
-          })}
-          {vtHourHover ? (
-            <div className="vt-tip" style={{ "--tip-x": `${vtHourHover.x}%` } as CSSProperties}>
-              <strong>
-                평균 {fmtOcc(vtHourHover.avg)} · 최고 {vtHourHover.peak}
-              </strong>
-              {vtHourHover.rows.map((r) => (
-                <span className="vt-tip-row" key={r.label}>
-                  <i style={{ background: r.color }} />
-                  {r.label}
-                  <b>{fmtOcc(r.val)}</b>
-                </span>
-              ))}
-            </div>
-          ) : null}
-          {g.hasOccupancy ? null : (
-            <span className="vt-hours-empty">아직 핑 없음 · 방문자가 다녀가면 막대가 차올라요</span>
-          )}
-        </div>
 
-        {/* 관리자(토리님) 전용 접속 세션 — 수면/스크린타임 타임라인처럼 하루=한 행, 가로 24h 축에
-            머문 구간을 기기색 막대로. 호버하면 시작–종료·머문 분·기기. 관리자는 계정이 적어 상세 가능. */}
-        <h4 className="insight-subhead">관리자 접속 세션 (이번 달)</h4>
-        <p className="vt-occ-note">하루별 24시간 띠 · 막대 = 머문 구간(기기색) · 호버 시 시작–종료·머문 시간</p>
-        {ownerDays.length > 0 ? (
-          <>
-            <div className="own-sessions" onPointerLeave={() => setOwnerTip(null)}>
-              {ownerDays.map((d) => (
-                <div className="own-row" key={d.key}>
-                  <span className="own-date">{d.label}</span>
-                  <div className="own-track">
-                    {d.segs.map((s, i) => (
-                      <span
-                        className="own-seg"
-                        key={i}
-                        onPointerEnter={(e) => onOwnSeg(e, s.label)}
-                        onPointerMove={(e) => onOwnSeg(e, s.label)}
-                        onPointerLeave={() => setOwnerTip(null)}
-                        style={{
-                          left: `${s.startFrac * 100}%`,
-                          width: `${s.widthFrac * 100}%`,
-                          background: devMeta(s.device).color
-                        }}
-                        title={s.label}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
-              <div className="own-axis" aria-hidden="true">
-                <span>0</span>
-                <span>6</span>
-                <span>12</span>
-                <span>18</span>
-                <span>24</span>
-              </div>
-              {ownerTip ? (
-                <div
-                  className="vt-tip own-tip"
-                  style={{ "--tip-x": `${ownerTip.x}%`, top: ownerTip.top } as CSSProperties}
+        {/* 방문 추이(일별/주별 · 역할/기기) — 좌측 카드 */}
+        <section className="vcard">
+          <div className="vcard-head">
+            <h4 className="insight-subhead">방문 추이 ({scopeLabel})</h4>
+            <div className="vcard-tools">
+              <div className="insights-subtabs">
+                <button
+                  className={visitView === "day" ? "active" : ""}
+                  onClick={() => setVisitView("day")}
+                  type="button"
                 >
-                  <strong>{ownerTip.text}</strong>
-                </div>
-              ) : null}
-            </div>
-            <ul className="vt-legend">
-              {ownerDevices.map((m) => (
-                <li key={m.key}>
-                  <span style={{ background: m.color }} />
-                  {m.label}
-                </li>
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p className="insight-empty">
-            아직 관리자 접속 세션이 없어요. 토리님이 접속하면 기기·시간대·머문 시간이 여기 그려져요.
-          </p>
-        )}
-
-        {/* R7: 요일×시간 히트맵(시청자 의미 방문 세션 수). 언제 자주 보는지 한눈에. */}
-        <h4 className="insight-subhead">요일 × 시간 ({scopeLabel})</h4>
-        {(() => {
-          const wdays = ["일", "월", "화", "수", "목", "금", "토"];
-          const hmMax = Math.max(1, ...g.heatmap.flat());
-          return (
-            <div className="vheat" role="img" aria-label="요일×시간 히트맵">
-              {g.heatmap.map((row, wd) => (
-                <div className="vheat-row" key={wd}>
-                  <span className="vheat-wd">{wdays[wd]}</span>
-                  {row.map((c, h) => (
-                    <i
-                      key={h}
-                      title={`${wdays[wd]} ${h}시 · ${c}세션`}
-                      style={{ background: c > 0 ? `rgba(124,92,245,${0.15 + (c / hmMax) * 0.8})` : "#f1eef9" }}
-                    />
-                  ))}
-                </div>
-              ))}
-              <div className="vheat-axis">
-                <span>0</span>
-                <span>6</span>
-                <span>12</span>
-                <span>18</span>
-                <span>23</span>
+                  일별
+                </button>
+                <button
+                  className={visitView === "week" ? "active" : ""}
+                  onClick={() => setVisitView("week")}
+                  type="button"
+                >
+                  주별
+                </button>
+              </div>
+              <div className="insights-subtabs">
+                <button
+                  className={visitDim === "role" ? "active" : ""}
+                  onClick={() => setVisitDim("role")}
+                  type="button"
+                >
+                  역할별
+                </button>
+                <button
+                  className={visitDim === "device" ? "active" : ""}
+                  onClick={() => setVisitDim("device")}
+                  type="button"
+                >
+                  기기별
+                </button>
               </div>
             </div>
-          );
-        })()}
-
-        {/* R8: 날짜별 미니 달력 히트맵(방문 많은 날 진하게). 표시 전용. */}
-        <h4 className="insight-subhead">날짜별 방문</h4>
-        {(() => {
-          const firstWd = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
-          const dayMax = Math.max(1, ...g.days.map((d) => d.total));
-          const wdays = ["일", "월", "화", "수", "목", "금", "토"];
-          return (
-            <div className="vmini">
-              {wdays.map((w) => (
-                <span className="vmini-h" key={w}>
-                  {w}
-                </span>
-              ))}
-              {Array.from({ length: firstWd }, (_, i) => (
-                <span className="vmini-cell empty" key={`b${i}`} />
-              ))}
-              {g.days.map((d) => (
-                <span
-                  className="vmini-cell"
-                  key={d.day}
-                  title={`${month}/${d.day} · ${d.total}방문`}
-                  style={{ background: d.total > 0 ? `rgba(52,211,153,${0.18 + (d.total / dayMax) * 0.75})` : "#f3f1ee" }}
-                >
-                  {d.day}
-                </span>
-              ))}
-            </div>
-          );
-        })()}
-
-        {/* R11: 데이터 건강 상태(비콘/end 유실 추정). */}
-        <p className="vhealth">
-          오늘 {visits.health.todaySessions}세션 · end 미확정 {Math.round(visits.health.openRate * 100)}% · 평균 체류 {fmtDur(visits.health.avgStaySec)}
-        </p>
-
-        {/* R10: 최근 세션 로그(개발자 디버깅) — 접이식. */}
-        <details className="vrecent">
-          <summary>최근 세션 {visits.recent.length}건</summary>
-          <ul>
-            {visits.recent.map((r, i) => (
-              <li key={i}>
-                <span className="vrecent-t">{hhmm(r.t)}</span>
-                <b>{r.label}</b>
-                <span className="vrecent-dev">{DEVICE_META.find((m) => m.key === r.device)?.label ?? r.device}</span>
-                <span className={`vrecent-dur${r.meaningful ? "" : " glance"}`}>
-                  {fmtDur(r.seconds)}
-                  {r.meaningful ? "" : " · 스쳐감"}
-                </span>
+          </div>
+          <div
+            className="vt-chart"
+            role="img"
+            aria-label="방문 그래프"
+            onPointerLeave={() => setVtHover(null)}
+          >
+            {visitView === "day"
+              ? g.days.map((d, i) => (
+                  <StackBar
+                    count={g.days.length}
+                    counts={countsOf(d)}
+                    index={i}
+                    key={d.day}
+                    label={d.day % 5 === 0 || d.day === 1 ? String(d.day) : ""}
+                    max={max}
+                    meta={meta}
+                    onHover={setVtHover}
+                    onLeave={() => setVtHover(null)}
+                    total={totalOf(d)}
+                  />
+                ))
+              : g.weeks.map((w, i) => (
+                  <StackBar
+                    count={g.weeks.length}
+                    counts={countsOf(w)}
+                    index={i}
+                    key={w.label}
+                    label={w.label}
+                    max={max}
+                    meta={meta}
+                    onHover={setVtHover}
+                    onLeave={() => setVtHover(null)}
+                    total={totalOf(w)}
+                  />
+                ))}
+            {vtHover ? (
+              <div className="vt-tip" style={{ "--tip-x": `${vtHover.x}%` } as CSSProperties}>
+                <strong>{vtHover.total}{unit}</strong>
+                {vtHover.rows.map((r) => (
+                  <span className="vt-tip-row" key={r.label}>
+                    <i style={{ background: r.color }} />
+                    {r.label}
+                    <b>{r.count}</b>
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+          <ul className="vt-legend">
+            {meta.map((r) => (
+              <li key={r.key}>
+                <span style={{ background: r.color }} />
+                {r.label}
               </li>
             ))}
           </ul>
-        </details>
-      </>
+        </section>
+
+        {/* 시간대별 동시 접속(체류) — 우측 카드 */}
+        <section className="vcard">
+          <h4 className="insight-subhead">시간대별 동시 접속 · 체류 (KST)</h4>
+          {/* 위 일별/주별은 '방문 수(첫 진입)'지만, 이 막대는 '그 시각에 떠 있던 인원(체류)'이다. */}
+          <p className="vt-occ-note">막대 = 시간대별 평균 동시 접속(방문자 기준) · 호버 시 최고치도 표시</p>
+          <div
+            className={`vt-hours ${g.hasOccupancy ? "" : "empty"}`}
+            role="img"
+            aria-label="시간대별 동시 접속(체류) 분포(역할·기기 분해)"
+            onPointerLeave={() => setVtHourHover(null)}
+          >
+            {g.occupancy.map((slot, h) => {
+              const counts = countsOf(slot);
+              const enter = () => {
+                if (slot.avg <= 0) {
+                  setVtHourHover(null);
+                  return;
+                }
+                const rows = meta
+                  .map((m) => ({ color: m.color, label: m.label, val: counts[m.key] ?? 0 }))
+                  .filter((r) => r.val > 0.001);
+                setVtHourHover({ x: ((h + 0.5) / 24) * 100, avg: slot.avg, peak: slot.peak, rows });
+              };
+              return (
+                <div
+                  className="vt-hcol"
+                  key={h}
+                  onPointerEnter={enter}
+                  onPointerMove={enter}
+                  onPointerLeave={() => setVtHourHover(null)}
+                >
+                  <div className="vt-hbar" style={{ height: `${(slot.avg / om) * 100}%` }}>
+                    <div className="vt-fill">
+                      {meta.map((m) => {
+                        const c = counts[m.key] ?? 0;
+                        // flex-grow 합이 1 미만(평균<1)이면 fill이 막대를 다 못 채워 배경이 비친다 →
+                        // 역할 '비율'(c/총합)로 정규화해 항상 막대 전체를 채운다(높이는 이미 avg가 인코딩).
+                        return c > 0 ? (
+                          <span
+                            className="vt-seg"
+                            key={m.key}
+                            style={{ flexGrow: slot.avg > 0 ? c / slot.avg : 1, background: m.color }}
+                          />
+                        ) : null;
+                      })}
+                    </div>
+                  </div>
+                  <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
+                </div>
+              );
+            })}
+            {vtHourHover ? (
+              <div className="vt-tip" style={{ "--tip-x": `${vtHourHover.x}%` } as CSSProperties}>
+                <strong>
+                  평균 {fmtOcc(vtHourHover.avg)} · 최고 {vtHourHover.peak}
+                </strong>
+                {vtHourHover.rows.map((r) => (
+                  <span className="vt-tip-row" key={r.label}>
+                    <i style={{ background: r.color }} />
+                    {r.label}
+                    <b>{fmtOcc(r.val)}</b>
+                  </span>
+                ))}
+              </div>
+            ) : null}
+            {g.hasOccupancy ? null : (
+              <span className="vt-hours-empty">아직 핑 없음 · 방문자가 다녀가면 막대가 차올라요</span>
+            )}
+          </div>
+          <ul className="vt-legend">
+            {meta.map((r) => (
+              <li key={r.key}>
+                <span style={{ background: r.color }} />
+                {r.label}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        {/* R7: 요일×시간 히트맵 — 24열로 넓어 풀폭이 읽기 좋다. */}
+        <section className="vcard full">
+          <h4 className="insight-subhead">요일 × 시간 ({scopeLabel})</h4>
+          {(() => {
+            const wdays = ["일", "월", "화", "수", "목", "금", "토"];
+            const hmMax = Math.max(1, ...g.heatmap.flat());
+            return (
+              <div className="vheat" role="img" aria-label="요일×시간 히트맵">
+                {g.heatmap.map((row, wd) => (
+                  <div className="vheat-row" key={wd}>
+                    <span className="vheat-wd">{wdays[wd]}</span>
+                    {row.map((c, h) => (
+                      <i
+                        key={h}
+                        title={`${wdays[wd]} ${h}시 · ${c}세션`}
+                        style={{ background: c > 0 ? `rgba(124,92,245,${0.15 + (c / hmMax) * 0.8})` : "#f1eef9" }}
+                      />
+                    ))}
+                  </div>
+                ))}
+                <div className="vheat-axis">
+                  <span>0</span>
+                  <span>6</span>
+                  <span>12</span>
+                  <span>18</span>
+                  <span>23</span>
+                </div>
+              </div>
+            );
+          })()}
+        </section>
+
+        {/* 관리자(토리님) 전용 접속 세션 — 가로 24h 타임라인이라 풀폭. */}
+        <section className="vcard full">
+          <h4 className="insight-subhead">관리자 접속 세션 (이번 달)</h4>
+          <p className="vt-occ-note">하루별 24시간 띠 · 막대 = 머문 구간(기기색) · 호버 시 시작–종료·머문 시간</p>
+          {ownerDays.length > 0 ? (
+            <>
+              <div className="own-sessions" onPointerLeave={() => setOwnerTip(null)}>
+                {ownerDays.map((d) => (
+                  <div className="own-row" key={d.key}>
+                    <span className="own-date">{d.label}</span>
+                    <div className="own-track">
+                      {d.segs.map((s, i) => (
+                        <span
+                          className="own-seg"
+                          key={i}
+                          onPointerEnter={(e) => onOwnSeg(e, s.label)}
+                          onPointerMove={(e) => onOwnSeg(e, s.label)}
+                          onPointerLeave={() => setOwnerTip(null)}
+                          style={{
+                            left: `${s.startFrac * 100}%`,
+                            width: `${s.widthFrac * 100}%`,
+                            background: devMeta(s.device).color
+                          }}
+                          title={s.label}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                <div className="own-axis" aria-hidden="true">
+                  <span>0</span>
+                  <span>6</span>
+                  <span>12</span>
+                  <span>18</span>
+                  <span>24</span>
+                </div>
+                {ownerTip ? (
+                  <div
+                    className="vt-tip own-tip"
+                    style={{ "--tip-x": `${ownerTip.x}%`, top: ownerTip.top } as CSSProperties}
+                  >
+                    <strong>{ownerTip.text}</strong>
+                  </div>
+                ) : null}
+              </div>
+              <ul className="vt-legend">
+                {ownerDevices.map((m) => (
+                  <li key={m.key}>
+                    <span style={{ background: m.color }} />
+                    {m.label}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="insight-empty">
+              아직 관리자 접속 세션이 없어요. 토리님이 접속하면 기기·시간대·머문 시간이 여기 그려져요.
+            </p>
+          )}
+        </section>
+
+        {/* R8: 날짜별 미니 달력 히트맵(방문 많은 날 진하게). 표시 전용. — 좌측 카드 */}
+        <section className="vcard">
+          <h4 className="insight-subhead">날짜별 방문</h4>
+          {(() => {
+            const firstWd = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+            const dayMax = Math.max(1, ...g.days.map((d) => d.total));
+            const wdays = ["일", "월", "화", "수", "목", "금", "토"];
+            return (
+              <div className="vmini">
+                {wdays.map((w) => (
+                  <span className="vmini-h" key={w}>
+                    {w}
+                  </span>
+                ))}
+                {Array.from({ length: firstWd }, (_, i) => (
+                  <span className="vmini-cell empty" key={`b${i}`} />
+                ))}
+                {g.days.map((d) => (
+                  <span
+                    className="vmini-cell"
+                    key={d.day}
+                    title={`${month}/${d.day} · ${d.total}방문`}
+                    style={{ background: d.total > 0 ? `rgba(52,211,153,${0.18 + (d.total / dayMax) * 0.75})` : "#f3f1ee" }}
+                  >
+                    {d.day}
+                  </span>
+                ))}
+              </div>
+            );
+          })()}
+        </section>
+
+        {/* 개발자 디버깅 푸터(R11 건강 + R10 최근 세션) — 우측 카드 */}
+        <section className="vcard vcard-foot">
+          <h4 className="insight-subhead">데이터 건강 · 디버깅</h4>
+          <p className="vhealth">
+            오늘 {visits.health.todaySessions}세션 · end 미확정 {Math.round(visits.health.openRate * 100)}% · 평균 체류 {fmtDur(visits.health.avgStaySec)}
+          </p>
+          <details className="vrecent">
+            <summary>최근 세션 {visits.recent.length}건</summary>
+            <ul>
+              {visits.recent.map((r, i) => (
+                <li key={i}>
+                  <span className="vrecent-t">{hhmm(r.t)}</span>
+                  <b>{r.label}</b>
+                  <span className="vrecent-dev">{DEVICE_META.find((m) => m.key === r.device)?.label ?? r.device}</span>
+                  <span className={`vrecent-dur${r.meaningful ? "" : " glance"}`}>
+                    {fmtDur(r.seconds)}
+                    {r.meaningful ? "" : " · 스쳐감"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </section>
+      </div>
     );
   }
 

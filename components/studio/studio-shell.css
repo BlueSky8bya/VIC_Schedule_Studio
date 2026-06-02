@@ -957,6 +957,85 @@
     background-position: -40% 0;
   }
 }
+/* ── 방문 대시보드 레이아웃(개발자 전용 — 월별 방문 패널 .vpanel / 일일 상세 .dayvisit 공용) ──
+   웹(>640px): 2단 그리드. 요약·자동문구·풀폭 카드(.full)는 1/-1 스팬, 나머지 .vcard는 반폭 카드.
+   가로 720px 모달을 좌우로 채워 빈 공간을 없앤다(빈 공간=결함). 한 행의 두 카드는 높이를 맞춘다.
+   모바일: 같은 마크업이 한 줄 세로 스택으로(컴팩트 — 카드 테두리 없이 헤딩·gap만으로 호흡). */
+.vpanel,
+.dayvisit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+/* 카드 첫 제목은 위 마진 제거(섹션 간격은 grid gap이 담당) */
+.vcard > .insight-subhead:first-child,
+.vcard-head .insight-subhead {
+  margin-top: 0;
+}
+/* 차트 카드 헤더 — 제목 + 토글(일별/주별·역할/기기)을 한 줄에, 좁으면 토글이 다음 줄로 */
+.vcard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+}
+.vcard-tools {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.vcard-tools .insights-subtabs {
+  margin: 0;
+}
+.vcard-foot .vhealth {
+  margin-top: 0;
+}
+@media (min-width: 641px) {
+  .vpanel,
+  .dayvisit {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: stretch; /* 한 행 두 카드는 같은 높이(ragged 방지) */
+  }
+  /* 풀폭: 요약 블록·자동문구·넓은 차트(히트맵/관리자 세션). 반폭: 일반 .vcard. */
+  .vpanel > .vsum,
+  .vpanel > .vins,
+  .dayvisit > .vsum,
+  .vcard.full {
+    grid-column: 1 / -1;
+  }
+  /* 요약/자동문구는 이미 자체 박스라 grid gap과 겹치는 아래 마진 제거 */
+  .vpanel > .vsum,
+  .dayvisit > .vsum,
+  .vpanel > .vins {
+    margin-bottom: 0;
+  }
+  .vcard {
+    display: flex;
+    flex-direction: column;
+    padding: 16px 18px;
+    border: 1px solid var(--line, #e7e3f2);
+    border-radius: 16px;
+    background: linear-gradient(180deg, #fffefb, #faf8fd);
+    box-shadow: 0 6px 18px -14px rgb(80 60 140 / 35%);
+  }
+  .vcard > .insight-subhead:first-child,
+  .vcard-head .insight-subhead {
+    margin-bottom: 12px;
+  }
+  /* 막대 차트는 제목/툴바 아래 남는 높이를 흡수하며 바닥 정렬 → 카드가 늘어나도 빈 바닥 최소화 */
+  .vcard > .vt-chart,
+  .vcard > .vt-hours {
+    margin-top: auto;
+  }
+  /* 범례는 항상 카드 맨 아래에 붙는다 */
+  .vcard > .vt-legend {
+    margin-top: 12px;
+    margin-bottom: 0;
+  }
+}
 /* 방문 추이: 날짜×역할 스택 막대 + 시간대 분포 */
 .vt-chart {
   display: flex;
