@@ -133,19 +133,29 @@ export function StackTrendChart({
               ) : showNumbers ? (
                 <strong>{hover.total}</strong>
               ) : null}
-              <div className="vt-tip-rows">
-                {tipCats(hover).map((c, idx) => {
-                  const n = hover.counts[c.key] ?? 0;
-                  return n > 0 ? (
-                    <span className="vt-tip-row" key={c.key}>
-                      <i style={{ background: c.color }} />
-                      {/* 태그 차트는 큰 값 순 등수를 앞에 — "1. 서버", "2. 종겜"처럼 한눈에. */}
-                      {!showLegend ? `${idx + 1}. ${c.label}` : c.label}
-                      {showNumbers ? <b>{n}</b> : null}
-                    </span>
-                  ) : null;
-                })}
-              </div>
+              {(() => {
+                const rows = tipCats(hover).filter((c) => (hover.counts[c.key] ?? 0) > 0);
+                // 2열 박스는 '열 우선'으로 채운다 — 왼쪽 열 위→아래 먼저, 그 다음 오른쪽 열 위→아래.
+                // (grid-auto-flow: column + 행 수 고정.) 1열 박스는 그대로 세로 나열.
+                const colStyle = showLegend
+                  ? undefined
+                  : {
+                      gridAutoFlow: "column" as const,
+                      gridTemplateRows: `repeat(${Math.max(1, Math.ceil(rows.length / 2))}, auto)`
+                    };
+                return (
+                  <div className="vt-tip-rows" style={colStyle}>
+                    {rows.map((c, idx) => (
+                      <span className="vt-tip-row" key={c.key}>
+                        <i style={{ background: c.color }} />
+                        {/* 태그 차트는 큰 값 순 등수를 앞에 — "1. 서버", "2. 종겜"처럼 한눈에. */}
+                        {!showLegend ? `${idx + 1}. ${c.label}` : c.label}
+                        {showNumbers ? <b>{hover.counts[c.key] ?? 0}</b> : null}
+                      </span>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>,
             document.body
           )
