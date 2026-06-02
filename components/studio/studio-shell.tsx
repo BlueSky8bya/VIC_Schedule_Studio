@@ -941,8 +941,14 @@ export function StudioShell({
   // 여는 클릭이 바로 닫지 않게 다음 틱부터 듣는다.
   useEffect(() => {
     if (!editorVisible) return;
+    // 비공개 토글(.private-toggle)은 '바깥'으로 치지 않는다 → 새 일정 카드를 연 채 비공개 일정 보기를
+    // 눌러도 카드가 닫히지 않고, 공개 범위 옵션만 유동적으로 늘어난다(엠바고/작업자 등장).
     const isOutside = (el: HTMLElement | null) =>
-      !(el?.closest(".event-editor-panel") || el?.closest(".studio-day"));
+      !(
+        el?.closest(".event-editor-panel") ||
+        el?.closest(".studio-day") ||
+        el?.closest(".private-toggle")
+      );
     let downOutside = false;
     const onDown = (e: PointerEvent) => {
       downOutside = isOutside(e.target as HTMLElement | null);
@@ -3674,49 +3680,54 @@ export function StudioShell({
             <div className="scope-field">
               <span className="scope-field-label">공개 범위</span>
               {canReadPrivate ? (
-                <div className="scope-picker" role="radiogroup" aria-label="공개 범위">
-                  {(
-                    [
-                      { v: "public", Icon: Globe, label: "모두", sub: "누구나 봐요", show: true },
-                      {
-                        v: "owner_private",
-                        Icon: LockKeyhole,
-                        label: "엠바고",
-                        sub: "관리자만",
-                        show: isEffectivelyOwner
-                      },
-                      { v: "work", Icon: Wrench, label: "작업자", sub: "작업자까지", show: true }
-                    ] as const
-                  )
-                    .filter((o) => o.show)
-                    .map(({ v, Icon, label, sub }) => {
-                      const on = form.visibilityScope === v;
-                      return (
-                        <button
-                          aria-checked={on}
-                          className={`scope-opt${on ? " on" : ""}`}
-                          data-scope={v}
-                          disabled={!canEdit}
-                          key={v}
-                          onClick={() => {
-                            hapticTick();
-                            setForm((current) => ({
-                              ...current,
-                              visibilityScope: v as EventVisibilityScope
-                            }));
-                          }}
-                          role="radio"
-                          type="button"
-                        >
-                          <Icon aria-hidden="true" className="scope-opt-ic" size={18} />
-                          <span className="scope-opt-label">{label}</span>
-                          <span className="scope-opt-sub">{sub}</span>
-                        </button>
-                      );
-                    })}
-                </div>
+                (() => {
+                  // 역할별 옵션 — 개발자/작업자는 엠바고(owner_private) 없음. 카드 수만큼 칸을 만들어
+                  // (2개면 2칸) 오른쪽 빈 공간 없이 폭을 꽉 채운다.
+                  const opts = [
+                    { v: "public", Icon: Globe, label: "모두", sub: "누구나 봐요" },
+                    ...(isEffectivelyOwner
+                      ? [{ v: "owner_private", Icon: LockKeyhole, label: "엠바고", sub: "관리자만" }]
+                      : []),
+                    { v: "work", Icon: Wrench, label: "작업자", sub: "작업자까지" }
+                  ];
+                  return (
+                    <div
+                      aria-label="공개 범위"
+                      className="scope-picker"
+                      role="radiogroup"
+                      style={{ gridTemplateColumns: `repeat(${opts.length}, 1fr)` }}
+                    >
+                      {opts.map(({ v, Icon, label, sub }) => {
+                        const on = form.visibilityScope === v;
+                        return (
+                          <button
+                            aria-checked={on}
+                            className={`scope-opt${on ? " on" : ""}`}
+                            data-scope={v}
+                            disabled={!canEdit}
+                            key={v}
+                            onClick={() => {
+                              hapticTick();
+                              setForm((current) => ({
+                                ...current,
+                                visibilityScope: v as EventVisibilityScope
+                              }));
+                            }}
+                            role="radio"
+                            type="button"
+                          >
+                            <Icon aria-hidden="true" className="scope-opt-ic" size={18} />
+                            <span className="scope-opt-label">{label}</span>
+                            <span className="scope-opt-sub">{sub}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })()
               ) : (
-                // 비공개 레이어 잠김: 공개 범위는 "모두"로 고정. 비밀번호로 풀어야 엠바고·작업자가 열린다.
+                // 비공개 레이어 잠김: 공개 범위는 "모두"로 고정. 풀면 역할에 맞는 범위가 늘어난다
+                // (관리자=엠바고·작업자, 개발자·작업자=작업자).
                 <div className="scope-picker locked">
                   <div aria-disabled="true" className="scope-opt on" data-scope="public">
                     <Globe aria-hidden="true" className="scope-opt-ic" size={18} />
@@ -3724,7 +3735,10 @@ export function StudioShell({
                     <span className="scope-opt-sub">누구나 봐요</span>
                   </div>
                   <p className="scope-locked-note">
-                    <LockKeyhole aria-hidden="true" size={12} /> 비공개 레이어를 풀면 엠바고·작업자 선택
+                    <LockKeyhole aria-hidden="true" size={12} />{" "}
+                    {isEffectivelyOwner
+                      ? "비공개 레이어를 풀면 엠바고·작업자 선택"
+                      : "비공개 레이어를 풀면 작업자도 선택 가능"}
                   </p>
                 </div>
               )}

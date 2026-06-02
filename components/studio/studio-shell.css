@@ -3742,6 +3742,25 @@
   cursor: pointer;
   transition: transform 0.14s var(--ease), border-color 0.14s var(--ease),
     background 0.18s var(--ease), box-shadow 0.18s var(--ease);
+  /* 카드가 떠오르듯 등장(비공개 해제로 엠바고·작업자가 늘 때 유동적으로). backwards라 끝난 뒤엔
+     :hover/:active 변형을 막지 않는다. */
+  animation: scope-opt-in 0.26s var(--ease, ease) backwards;
+}
+.scope-opt:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.scope-opt:nth-child(3) {
+  animation-delay: 0.1s;
+}
+@keyframes scope-opt-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 .scope-opt[data-scope="public"] {
   --ac: #0ea5a4;
@@ -3840,6 +3859,7 @@
   .scope-opt-ic {
     transition: none;
   }
+  .scope-opt,
   .scope-opt.on::after {
     animation: none;
   }
