@@ -2297,6 +2297,11 @@
   .insights-tab svg {
     display: none;
   }
+  /* 방문 품질 KPI(방문자·세션·스쳐감·바운스·평균/총체류·최고동접·새/재방문 = 9개)는
+     모바일에서 3×3 고정 격자로 — 월별 방문 패널·일일 상세 모두 같은 모양(통일). */
+  .vsum-kpis {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 /* 활성 패널 진입 시 내용이 살짝 떠오르며 순차로 — 정적이지 않고 생기 있게(HCI: 피드백). */
 @keyframes ins-rise {
