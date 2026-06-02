@@ -1,11 +1,21 @@
 "use client";
 
-import { type CSSProperties, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, useState } from "react";
+import { createPortal } from "react-dom";
 import type { TrendStack } from "@/lib/insights/actions";
 
-// 카테고리별(태그/역할/기기) 6개월 누적 막대 트렌드. 방문 그래프와 같은 .vt-* 스타일·클램프 툴팁을
-// 재사용한다. showNumbers=false면 막대 비율만 보여주고 수치는 숨긴다(비개발자 민감 지표용).
-type Hover = { x: number; ym: string; total: number; counts: Record<string, number> };
+// 카테고리별(태그/역할/기기) 6개월 누적 막대 트렌드.
+// 호버 분해 박스는 body로 포털 + position:fixed로 띄운다 → 차트가 모달 스크롤 안에 쌓여 있어도
+// 위(고정 헤더/탭)에 가려지거나 다음 차트 뒤에 깔리지 않고, 화면에서 여유 있는 쪽(위/아래)으로
+// 자동으로 뒤집혀 항상 온전히 보인다.
+type Hover = {
+  ym: string;
+  total: number;
+  counts: Record<string, number>;
+  cx: number; // 막대의 화면 가로 중심(px)
+  y: number; // 띄울 기준 y(px) — above면 막대 위, 아니면 막대 아래
+  above: boolean;
+};
 
 export function StackTrendChart({
   data,
@@ -25,7 +35,7 @@ export function StackTrendChart({
   const [hover, setHover] = useState<Hover | null>(null);
   const max = Math.max(1, ...data.months.map((m) => m.total));
   const empty = data.cats.length === 0 || data.months.every((m) => m.total === 0);
-  // 범례를 숨긴 차트(태그 많음)는 호버 툴팁을 2열로 + 그 달 값이 큰 순으로 정렬해(왼쪽위→오른쪽아래)
+  // 범례를 숨긴 차트(태그 많음)는 호버 박스를 2열로 + 그 달 값이 큰 순으로 정렬해(왼쪽위→오른쪽아래)
   // 수치가 없어도 비율 높낮이를 한눈에. (방문 트렌드처럼 범례 있는 차트는 카테고리 순서 그대로.)
   const tipCats = (h: Hover) =>
     showLegend
@@ -42,14 +52,27 @@ export function StackTrendChart({
       ) : (
         <>
           <div className="vt-chart" role="img" aria-label={title} onPointerLeave={() => setHover(null)}>
-            {data.months.map((mo, i) => {
-              const enter = () =>
+            {data.months.map((mo) => {
+              const enter = (e: ReactPointerEvent<HTMLDivElement>) => {
+                if (mo.total <= 0) {
+                  setHover(null);
+                  return;
+                }
+                const r = e.currentTarget.getBoundingClientRect();
+                const vw = window.innerWidth;
+                const vh = window.innerHeight;
+                // 위/아래 중 여유가 더 큰 쪽에 띄운다(잘림 방지). 가로는 화면 안으로 clamp.
+                const above = r.top > vh - r.bottom;
+                const cx = Math.min(Math.max(r.left + r.width / 2, 124), vw - 124);
                 setHover({
-                  x: ((i + 0.5) / data.months.length) * 100,
                   ym: mo.ym,
                   total: mo.total,
-                  counts: mo.counts
+                  counts: mo.counts,
+                  cx,
+                  y: above ? r.top - 8 : r.bottom + 8,
+                  above
                 });
+              };
               return (
                 <div
                   className="vt-col"
@@ -78,33 +101,6 @@ export function StackTrendChart({
                 </div>
               );
             })}
-            {hover && hover.total > 0 ? (
-              <div
-                className={`vt-tip${showLegend ? "" : " vt-tip-grid"}`}
-                style={{ "--tip-x": `${hover.x}%` } as CSSProperties}
-              >
-                {/* 태그 차트(범례 없음)는 총개수 숫자 대신 '큰 값 순'임을 알리는 제목을 둔다
-                    (화살표 없이). 역할/기기 차트(범례 있음)는 관리자에게 총합 숫자를 보여준다. */}
-                {!showLegend ? (
-                  <strong className="vt-tip-note">{rankLabel}</strong>
-                ) : showNumbers ? (
-                  <strong>{hover.total}</strong>
-                ) : null}
-                <div className="vt-tip-rows">
-                  {tipCats(hover).map((c, idx) => {
-                    const n = hover.counts[c.key] ?? 0;
-                    return n > 0 ? (
-                      <span className="vt-tip-row" key={c.key}>
-                        <i style={{ background: c.color }} />
-                        {/* 태그 차트는 큰 값 순 등수를 앞에 — "1. 서버", "2. 종겜"처럼 한눈에. */}
-                        {!showLegend ? `${idx + 1}. ${c.label}` : c.label}
-                        {showNumbers ? <b>{n}</b> : null}
-                      </span>
-                    ) : null;
-                  })}
-                </div>
-              </div>
-            ) : null}
           </div>
           {showLegend ? (
             <ul className="vt-legend">
@@ -118,6 +114,42 @@ export function StackTrendChart({
           ) : null}
         </>
       )}
+      {hover && hover.total > 0 && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className={`vt-tip vt-tip-float${showLegend ? "" : " vt-tip-grid"}`}
+              style={{
+                position: "fixed",
+                left: hover.cx,
+                top: hover.y,
+                transform: `translateX(-50%)${hover.above ? " translateY(-100%)" : ""}`,
+                zIndex: 9999
+              }}
+            >
+              {/* 태그 차트(범례 없음)는 총개수 숫자 대신 '큰 값 순'임을 알리는 제목(화살표 없이).
+                  역할/기기 차트(범례 있음)는 관리자에게 총합 숫자를 보여준다. */}
+              {!showLegend ? (
+                <strong className="vt-tip-note">{rankLabel}</strong>
+              ) : showNumbers ? (
+                <strong>{hover.total}</strong>
+              ) : null}
+              <div className="vt-tip-rows">
+                {tipCats(hover).map((c, idx) => {
+                  const n = hover.counts[c.key] ?? 0;
+                  return n > 0 ? (
+                    <span className="vt-tip-row" key={c.key}>
+                      <i style={{ background: c.color }} />
+                      {/* 태그 차트는 큰 값 순 등수를 앞에 — "1. 서버", "2. 종겜"처럼 한눈에. */}
+                      {!showLegend ? `${idx + 1}. ${c.label}` : c.label}
+                      {showNumbers ? <b>{n}</b> : null}
+                    </span>
+                  ) : null;
+                })}
+              </div>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 }

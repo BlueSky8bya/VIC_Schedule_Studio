@@ -1801,10 +1801,7 @@
 /* 방문 스택 막대 호버 분해 툴팁 — 색(역할/기기)별 수치를 한 줄씩 + 총합. */
 .vt-tip {
   position: absolute;
-  /* 차트 '아래'에 띄운다 — 위로 띄우면 스크롤 따라오는 인사이트 네비(sticky) 띠에 가려
-     윗부분이 잘렸다. 아래는 그 띠 밖이라 웹·모바일 모두 안 잘린다. */
-  top: calc(100% + 8px);
-  bottom: auto;
+  bottom: calc(100% + 6px);
   left: clamp(48px, var(--tip-x, 50%), calc(100% - 48px));
   transform: translateX(-50%);
   pointer-events: none;
@@ -1820,6 +1817,14 @@
   z-index: 8;
   box-shadow: 0 8px 20px -8px rgb(58 53 80 / 60%);
   animation: vt-tip-in 0.12s var(--ease, ease);
+}
+/* 포털(body)로 띄우는 트렌드 호버박스 — 위치는 인라인(fixed, left/top/transform)이 잡는다.
+   base의 bottom/left를 무력화해 top 기준 배치가 어긋나지 않게. 그림자도 더 또렷이. */
+.vt-tip-float {
+  bottom: auto;
+  left: auto;
+  max-width: min(260px, 92vw);
+  box-shadow: 0 14px 34px -10px rgb(20 16 35 / 55%);
 }
 @keyframes vt-tip-in {
   from {
