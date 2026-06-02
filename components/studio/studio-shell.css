@@ -1576,6 +1576,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
   font-size: 11.5px;
   font-weight: 700;
   color: #5b5470;
@@ -1583,6 +1584,22 @@
 .vrecent-t {
   font-variant-numeric: tabular-nums;
   color: #8a82a6;
+  flex: none;
+}
+/* 역할 배지 — 역할별 색(ROLE_META) 알약. owner는 이메일이라 길면 …로. */
+.vrecent-role {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 900;
+  color: color-mix(in srgb, var(--rc, #6b6480) 72%, #2a2540);
+  background: color-mix(in srgb, var(--rc, #6b6480) 15%, #fff);
+  border: 1px solid color-mix(in srgb, var(--rc, #6b6480) 32%, transparent);
 }
 .vrecent-dev {
   margin-left: auto;

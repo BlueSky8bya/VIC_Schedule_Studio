@@ -115,6 +115,9 @@ export const fmtDur = (seconds: number) => {
   const s = Math.max(0, Math.round(seconds));
   return s < 60 ? `${s}초` : `${Math.round(s / 60)}분`;
 };
+// 세션 로그 역할 배지 색 — 역할별 단일 출처(ROLE_META)에서. (일별 모달과 공유)
+export const roleColor = (key: string) =>
+  ROLE_META.find((m) => m.key === key)?.color ?? "#9aa0ab";
 
 // 방문 품질 요약 블록(개발자 전용 — 방문 패널/일일 상세 공용). 시청자 기준이 기본이고, '운영진 포함'
 // 토글로 개발자·관리자 테스트 트래픽까지 합산. 위 분리 배지로 숫자가 부풀었는지 바로 보인다.
@@ -885,7 +888,13 @@ export function InsightsDashboard({
               {visits.recent.map((r, i) => (
                 <li key={i}>
                   <span className="vrecent-t">{hhmm(r.t)}</span>
-                  <b>{r.label}</b>
+                  <span
+                    className="vrecent-role"
+                    data-role={r.role}
+                    style={{ "--rc": roleColor(r.role) } as CSSProperties}
+                  >
+                    {r.label}
+                  </span>
                   <span className="vrecent-dev">{DEVICE_META.find((m) => m.key === r.device)?.label ?? r.device}</span>
                   <span className={`vrecent-dur${r.meaningful ? "" : " glance"}`}>
                     {fmtDur(r.seconds)}

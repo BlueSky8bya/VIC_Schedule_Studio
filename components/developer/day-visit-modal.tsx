@@ -9,7 +9,8 @@ import {
   fmtDur,
   fmtOcc,
   hhmm,
-  kstOf
+  kstOf,
+  roleColor
 } from "@/components/developer/insights-dashboard";
 import { getDayVisitDetailAction, type DayVisitDetail } from "@/lib/insights/actions";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -62,6 +63,11 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   // 토글이 고른 묶음 — 역할/기기 분해·동접 그래프 전부 이걸 쓴다.
   const dg = scope === "viewer" ? data.viewer : scope === "operator" ? data.operator : data.all;
   const visitCounts = dim === "role" ? dg.visits.roles : dg.visits.devices;
+  // 역할별=방문 수(계정 dedup, total). 기기별=기기 합(한 계정이 웹·안드면 2대) → 분해 합과 일치하게.
+  const visitTotal =
+    dim === "role"
+      ? dg.visits.total
+      : Object.values(dg.visits.devices).reduce((a, b) => a + b, 0);
   const om = Math.max(0.0001, ...dg.occupancy.map((s) => s.avg));
   const devMeta = (k: string) => DEVICE_META.find((m) => m.key === k) ?? DEVICE_META[0];
 
@@ -109,8 +115,8 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
       <section className="vcard">
         <div className="dv-top">
           <div className="dv-total">
-            <strong>{dg.visits.total}</strong>
-            {/* 기기별 탭에선 단위를 '기기'로 — 방문 1건 = 기기 1대라 수는 같아도 의미가 맞다. */}
+            <strong>{visitTotal}</strong>
+            {/* 기기별 탭은 기기 합(분해 막대 합과 일치), 역할별은 방문 수. */}
             <span>{dim === "device" ? "기기" : "방문"}</span>
           </div>
           <div className="insights-subtabs dv-dim">
@@ -136,7 +142,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
             </button>
           </div>
         </div>
-        {dg.visits.total > 0 ? (
+        {visitTotal > 0 ? (
           <ul className="dv-breakdown">
             {meta.map((m) =>
               (visitCounts[m.key] ?? 0) > 0 ? (
@@ -327,7 +333,13 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
               {data.sessions.map((r, i) => (
                 <li key={i}>
                   <span className="vrecent-t">{hhmm(r.t)}</span>
-                  <b>{r.label}</b>
+                  <span
+                    className="vrecent-role"
+                    data-role={r.role}
+                    style={{ "--rc": roleColor(r.role) } as CSSProperties}
+                  >
+                    {r.label}
+                  </span>
                   <span className="vrecent-dev">
                     {DEVICE_META.find((m) => m.key === r.device)?.label ?? r.device}
                   </span>
