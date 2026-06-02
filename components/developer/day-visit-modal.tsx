@@ -6,6 +6,8 @@ import {
   ROLE_META,
   type VisitScope,
   VisitSummaryBlock,
+  deviceColor,
+  deviceLabel,
   fmtDur,
   fmtOcc,
   hhmm,
@@ -329,24 +331,28 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
         {data.sessions.length > 0 ? (
           <details className="vrecent" open>
             <summary>세션 {data.sessions.length}건</summary>
-            <ul>
+            <ul className="vlog">
               {data.sessions.map((r, i) => (
-                <li key={i}>
-                  <span className="vrecent-t">{hhmm(r.t)}</span>
+                <li className={`vlog-row${r.meaningful ? "" : " glance"}`} key={i}>
+                  <span
+                    aria-hidden="true"
+                    className="vlog-dot"
+                    style={{ background: deviceColor(r.device) }}
+                  />
                   <span
                     className="vrecent-role"
                     data-role={r.role}
                     style={{ "--rc": roleColor(r.role) } as CSSProperties}
                   >
                     {r.label}
+                    {r.dual ? <em className="vlog-dual">겸</em> : null}
                   </span>
-                  <span className="vrecent-dev">
-                    {DEVICE_META.find((m) => m.key === r.device)?.label ?? r.device}
-                  </span>
-                  <span className={`vrecent-dur${r.meaningful ? "" : " glance"}`}>
+                  <span className="vlog-dev">{deviceLabel(r.device)}</span>
+                  <span className="vlog-dur">
                     {fmtDur(r.seconds)}
                     {r.meaningful ? "" : " · 스쳐감"}
                   </span>
+                  <time className="vlog-t">{hhmm(r.t)}</time>
                 </li>
               ))}
             </ul>

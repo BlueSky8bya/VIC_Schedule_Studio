@@ -118,6 +118,10 @@ export const fmtDur = (seconds: number) => {
 // 세션 로그 역할 배지 색 — 역할별 단일 출처(ROLE_META)에서. (일별 모달과 공유)
 export const roleColor = (key: string) =>
   ROLE_META.find((m) => m.key === key)?.color ?? "#9aa0ab";
+export const deviceColor = (key: string) =>
+  DEVICE_META.find((m) => m.key === key)?.color ?? "#9aa0ab";
+export const deviceLabel = (key: string) =>
+  DEVICE_META.find((m) => m.key === key)?.label ?? key;
 
 // 방문 품질 요약 블록(개발자 전용 — 방문 패널/일일 상세 공용). 시청자 기준이 기본이고, '운영진 포함'
 // 토글로 개발자·관리자 테스트 트래픽까지 합산. 위 분리 배지로 숫자가 부풀었는지 바로 보인다.
@@ -389,9 +393,15 @@ export function InsightsDashboard({
 
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const onSwipeStart = (e: ReactPointerEvent) => {
+    // 터치만 스와이프로 — 웹에서 마우스로 텍스트를 긁으면(드래그) 패널이 휙 넘어가던 문제 차단.
+    if (e.pointerType !== "touch") {
+      swipeStart.current = null;
+      return;
+    }
     swipeStart.current = { x: e.clientX, y: e.clientY };
   };
   const onSwipeEnd = (e: ReactPointerEvent) => {
+    if (e.pointerType !== "touch") return;
     const s = swipeStart.current;
     swipeStart.current = null;
     if (!s) return;
@@ -884,22 +894,28 @@ export function InsightsDashboard({
             : null}
           <details className="vrecent" open>
             <summary>세션 {visits.recent.length}건 <span className="vcrit">20초마다 갱신</span></summary>
-            <ul>
+            <ul className="vlog">
               {visits.recent.map((r, i) => (
-                <li key={i}>
-                  <span className="vrecent-t">{hhmm(r.t)}</span>
+                <li className={`vlog-row${r.meaningful ? "" : " glance"}`} key={i}>
+                  <span
+                    aria-hidden="true"
+                    className="vlog-dot"
+                    style={{ background: deviceColor(r.device) }}
+                  />
                   <span
                     className="vrecent-role"
                     data-role={r.role}
                     style={{ "--rc": roleColor(r.role) } as CSSProperties}
                   >
                     {r.label}
+                    {r.dual ? <em className="vlog-dual">겸</em> : null}
                   </span>
-                  <span className="vrecent-dev">{DEVICE_META.find((m) => m.key === r.device)?.label ?? r.device}</span>
-                  <span className={`vrecent-dur${r.meaningful ? "" : " glance"}`}>
+                  <span className="vlog-dev">{deviceLabel(r.device)}</span>
+                  <span className="vlog-dur">
                     {fmtDur(r.seconds)}
                     {r.meaningful ? "" : " · 스쳐감"}
                   </span>
+                  <time className="vlog-t">{hhmm(r.t)}</time>
                 </li>
               ))}
             </ul>

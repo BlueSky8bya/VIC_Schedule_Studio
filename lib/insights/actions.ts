@@ -275,9 +275,11 @@ const SESSION_ROLE_LABEL: Record<string, string> = {
   developer: "개발자"
 };
 // 세션 로그(개발자 디버깅) — 최근 순 전체(상한 없음). 월별/일일 상세 공용.
+// dualHashes: 매니저·작업자 겸업 멤버의 계정 해시 집합 → 그 매니저 세션엔 '겸' 표식(dual=true).
 function buildSessionLog(
   rows: SessionRow[],
-  hashToOwnerEmail: Map<string, string>
+  hashToOwnerEmail: Map<string, string>,
+  dualHashes: Set<string>
 ): RecentSession[] {
   return [...rows]
     .sort((a, b) => sStart(b) - sStart(a))
@@ -294,9 +296,29 @@ function buildSessionLog(
         device: DEVICE_SET.has(r.device) ? r.device : "desktop",
         seconds,
         meaningful: isMeaningful(r),
-        label
+        label,
+        // 겸업 표식 — 역할은 매니저(겸업은 매니저로 기록)지만 작업자도 겸한 멤버.
+        dual: r.role === "manager" && Boolean(r.account_hash) && dualHashes.has(r.account_hash!)
       };
     });
+}
+// 매니저·작업자 겸업 멤버의 계정 해시(겸업 표식용). 세션 account_hash와 같은 해시 스킴(이메일 sha256).
+async function loadDualMemberHashes(
+  supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
+  slug: string
+): Promise<Set<string>> {
+  const { data: cal } = await supabase.from("calendars").select("id").eq("slug", slug).maybeSingle();
+  if (!cal) return new Set();
+  const { data } = await supabase
+    .from("trusted_members")
+    .select("email, is_manager, is_worker")
+    .eq("calendar_id", cal.id as string)
+    .eq("is_active", true);
+  const set = new Set<string>();
+  for (const m of (data ?? []) as { email: string; is_manager?: boolean; is_worker?: boolean }[]) {
+    if (m.is_manager && m.is_worker && m.email) set.add(accountHashOf(m.email));
+  }
+  return set;
 }
 function emptyVisitSlot(): VisitSlot {
   return {
@@ -981,6 +1003,7 @@ export type RecentSession = {
   seconds: number;
   meaningful: boolean;
   label: string;
+  dual: boolean; // 매니저·작업자 겸업 멤버의 매니저 세션(개발자 디버깅 표식)
 };
 export type VisitTrendsResult = { ok: true; data: VisitTrends } | { ok: false; error: string };
 
@@ -1134,9 +1157,10 @@ export async function getVisitTrendsAction(
 
   // (요일×시간 히트맵은 buildGraphs가 viewer/all 각각 만든다 — 토글로 즉시 전환.)
 
-  // 세션 로그(개발자 디버깅) — 전체 세션, 최근 순. owner만 이메일 매칭 라벨.
+  // 세션 로그(개발자 디버깅) — 전체 세션, 최근 순. owner만 이메일 매칭 라벨, 겸업자엔 '겸' 표식.
   const hashToOwnerEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
-  const recent = buildSessionLog(rows, hashToOwnerEmail);
+  const dualHashes = await loadDualMemberHashes(supabase, SLUG);
+  const recent = buildSessionLog(rows, hashToOwnerEmail, dualHashes);
 
   // 일별 세션 수(의미 세션, 전 역할) — 하루 단위 기록을 모은 월간 추이. 1..말일.
   const dailySessions = Array.from({ length: daysInMonth }, () => 0);
@@ -1306,7 +1330,8 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
     })
     .sort((a, b) => a.t - b.t);
   const ownerSeconds = ownerVisits.reduce((sum, v) => sum + v.seconds, 0);
-  const sessions = buildSessionLog(rows, hashToOwnerEmail); // 그날 전체 세션 로그(최근 순)
+  const dualHashes = await loadDualMemberHashes(supabase, SLUG);
+  const sessions = buildSessionLog(rows, hashToOwnerEmail, dualHashes); // 그날 전체 세션 로그(최근 순)
   const { viewer: summaryViewer, operator: summaryOperator, all: summaryAll } = summarizeSplit(rows);
   const operators = summaryOperator.visitors;
 
