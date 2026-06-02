@@ -844,13 +844,43 @@ export function InsightsDashboard({
         {/* 개발자 디버깅 푸터(R11 건강 + R10 최근 세션) — 우측 카드 */}
         <section className="vcard vcard-foot">
           <h4 className="insight-subhead">
-            데이터 건강 · 디버깅 <span className="vlive">실시간</span>
+            세션 로그 <span className="vlive">실시간</span>
           </h4>
           <p className="vhealth">
-            오늘 {visits.health.todaySessions}세션 · end 미확정 {Math.round(visits.health.openRate * 100)}% · 평균 체류 {fmtDur(visits.health.avgStaySec)}
+            오늘 {visits.health.todaySessions}세션 · 미종료 {Math.round(visits.health.openRate * 100)}% · 평균 체류 {fmtDur(visits.health.avgStaySec)}
           </p>
+          {/* 하루 단위 기록을 모은 월간 추이 — 일별 세션 수 막대 + 평균/최다일 요약. */}
+          {visits.dailySessions.length > 0
+            ? (() => {
+                const dmax = Math.max(1, ...visits.dailySessions);
+                const total = visits.dailySessions.reduce((a, b) => a + b, 0);
+                const active = visits.dailySessions.filter((n) => n > 0).length;
+                const avg = active > 0 ? Math.round(total / active) : 0;
+                const peak = visits.dailySessions.reduce(
+                  (b, n, i) => (n > visits.dailySessions[b] ? i : b),
+                  0
+                );
+                return (
+                  <>
+                    <p className="vhealth">
+                      하루 평균 {avg}세션 · 가장 바쁜 날 {month}/{peak + 1} ({visits.dailySessions[peak]}세션)
+                    </p>
+                    <div className="dsess" role="img" aria-label="일별 세션 수">
+                      {visits.dailySessions.map((n, i) => (
+                        <div className="dsess-col" key={i} title={`${month}/${i + 1} · ${n}세션`}>
+                          <div className="dsess-barwrap">
+                            <div className="dsess-bar" style={{ height: `${(n / dmax) * 100}%` }} />
+                          </div>
+                          <span className="dsess-x">{(i + 1) % 5 === 0 || i === 0 ? i + 1 : ""}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()
+            : null}
           <details className="vrecent" open>
-            <summary>최근 세션 {visits.recent.length}건 <span className="vcrit">20초마다 갱신</span></summary>
+            <summary>세션 {visits.recent.length}건 <span className="vcrit">20초마다 갱신</span></summary>
             <ul>
               {visits.recent.map((r, i) => (
                 <li key={i}>

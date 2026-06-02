@@ -266,6 +266,38 @@ function summarizeSplit(rows: SessionRow[]): {
     all: summarize(rows)
   };
 }
+// 세션 로그 라벨 — owner만 이메일 매칭, 그 외는 역할 라벨(원문 PII 없음).
+const SESSION_ROLE_LABEL: Record<string, string> = {
+  viewer: "시청자",
+  worker: "작업자",
+  manager: "매니저",
+  owner: "관리자",
+  developer: "개발자"
+};
+// 세션 로그(개발자 디버깅) — 최근 순 전체(상한 없음). 월별/일일 상세 공용.
+function buildSessionLog(
+  rows: SessionRow[],
+  hashToOwnerEmail: Map<string, string>
+): RecentSession[] {
+  return [...rows]
+    .sort((a, b) => sStart(b) - sStart(a))
+    .map((r) => {
+      const startMs = sStart(r);
+      const seconds = Math.max(0, Math.round((sEnd(r) - startMs) / 1000));
+      const label =
+        r.role === "owner" && r.account_hash && hashToOwnerEmail.has(r.account_hash)
+          ? hashToOwnerEmail.get(r.account_hash)!
+          : (SESSION_ROLE_LABEL[r.role] ?? r.role);
+      return {
+        t: startMs,
+        role: r.role,
+        device: DEVICE_SET.has(r.device) ? r.device : "desktop",
+        seconds,
+        meaningful: isMeaningful(r),
+        label
+      };
+    });
+}
 function emptyVisitSlot(): VisitSlot {
   return {
     roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
@@ -937,8 +969,9 @@ export type VisitTrends = {
   newVisitors: number; // R12: 이 달 처음 본 시청자(의미 방문)
   returningVisitors: number; // R12: 재방문 시청자
   insights: string[]; // R6: 한 문장 자동 인사이트(시청자 기준)
-  recent: RecentSession[]; // R10: 최근 세션 20개(개발자 디버깅)
-  health: { todaySessions: number; openRate: number; avgStaySec: number }; // R11: 데이터 건강
+  recent: RecentSession[]; // 세션 로그(전체, 최근 순 — 개발자 디버깅)
+  dailySessions: number[]; // 일별 의미 세션 수(전 역할) 1..말일 — 월간 추이
+  health: { todaySessions: number; openRate: number; avgStaySec: number }; // 수집 상태
 };
 // R10 최근 세션 한 줄 — 원문 이메일 미저장/미표시. owner만 매칭 라벨, 그 외는 역할 라벨.
 export type RecentSession = {
@@ -1065,6 +1098,7 @@ export async function getVisitTrendsAction(
         returningVisitors: 0,
         insights: [],
         recent: [],
+        dailySessions: [],
         health: { todaySessions: 0, openRate: 0, avgStaySec: 0 }
       }
     };
@@ -1100,36 +1134,19 @@ export async function getVisitTrendsAction(
 
   // (요일×시간 히트맵은 buildGraphs가 viewer/all 각각 만든다 — 토글로 즉시 전환.)
 
-  // R10: 최근 세션 20개(개발자 디버깅). owner만 이메일 매칭 라벨, 그 외는 역할 라벨(원문 PII 없음).
+  // 세션 로그(개발자 디버깅) — 전체 세션, 최근 순. owner만 이메일 매칭 라벨.
   const hashToOwnerEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
-  const roleLabel: Record<string, string> = {
-    viewer: "시청자",
-    worker: "작업자",
-    manager: "매니저",
-    owner: "관리자",
-    developer: "개발자"
-  };
-  const recent: RecentSession[] = [...rows]
-    .sort((a, b) => sStart(b) - sStart(a))
-    .slice(0, 20)
-    .map((r) => {
-      const startMs = sStart(r);
-      const seconds = Math.max(0, Math.round((sEnd(r) - startMs) / 1000));
-      const label =
-        r.role === "owner" && r.account_hash && hashToOwnerEmail.has(r.account_hash)
-          ? hashToOwnerEmail.get(r.account_hash)!
-          : (roleLabel[r.role] ?? r.role);
-      return {
-        t: startMs,
-        role: r.role,
-        device: DEVICE_SET.has(r.device) ? r.device : "desktop",
-        seconds,
-        meaningful: isMeaningful(r),
-        label
-      };
-    });
+  const recent = buildSessionLog(rows, hashToOwnerEmail);
 
-  // R11: 데이터 건강 — 오늘 세션 수 / end 미확정 비율 / 평균 체류초(전체).
+  // 일별 세션 수(의미 세션, 전 역할) — 하루 단위 기록을 모은 월간 추이. 1..말일.
+  const dailySessions = Array.from({ length: daysInMonth }, () => 0);
+  for (const r of rows) {
+    if (!isMeaningful(r)) continue;
+    const d = Number(r.day.slice(8, 10));
+    if (d >= 1 && d <= daysInMonth) dailySessions[d - 1] += 1;
+  }
+
+  // 수집 상태 — 오늘 세션 수 / 미종료 비율 / 평균 체류초(전체). 비콘(end) 유실 점검용.
   const todayKey = ymd(kstNow());
   const todaySessions = rows.filter((r) => r.day === todayKey).length;
   const openRate = rows.length > 0 ? rows.filter((r) => !r.ended_at).length / rows.length : 0;
@@ -1203,6 +1220,7 @@ export async function getVisitTrendsAction(
       returningVisitors,
       insights,
       recent,
+      dailySessions,
       health
     }
   };
@@ -1234,6 +1252,7 @@ export type DayVisitDetail = {
   operators: number; // 그날 의미 방문 운영진 순방문자 수
   newVisitors: number; // R12: 그날 처음 본 시청자
   returningVisitors: number; // R12: 그날 재방문 시청자
+  sessions: RecentSession[]; // 그날 전체 세션 로그(최근 순 — 개발자 디버깅)
 };
 export type DayVisitDetailResult = { ok: true; data: DayVisitDetail } | { ok: false; error: string };
 
@@ -1287,6 +1306,7 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
     })
     .sort((a, b) => a.t - b.t);
   const ownerSeconds = ownerVisits.reduce((sum, v) => sum + v.seconds, 0);
+  const sessions = buildSessionLog(rows, hashToOwnerEmail); // 그날 전체 세션 로그(최근 순)
   const { viewer: summaryViewer, operator: summaryOperator, all: summaryAll } = summarizeSplit(rows);
   const operators = summaryOperator.visitors;
 
@@ -1325,7 +1345,8 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
       summaryAll,
       operators,
       newVisitors,
-      returningVisitors
+      returningVisitors,
+      sessions
     }
   };
 }

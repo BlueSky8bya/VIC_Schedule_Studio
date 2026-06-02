@@ -316,6 +316,33 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
           <p className="insight-empty">이 날 관리자 접속 세션이 없어요.</p>
         )}
       </section>
+
+      {/* 그날 전체 세션 로그(전 역할 · 개발자 디버깅) — 월별 '세션 로그'의 하루판. 풀폭. */}
+      <section className="vcard full">
+        <h4 className="insight-subhead">세션 로그</h4>
+        {data.sessions.length > 0 ? (
+          <details className="vrecent" open>
+            <summary>세션 {data.sessions.length}건</summary>
+            <ul>
+              {data.sessions.map((r, i) => (
+                <li key={i}>
+                  <span className="vrecent-t">{hhmm(r.t)}</span>
+                  <b>{r.label}</b>
+                  <span className="vrecent-dev">
+                    {DEVICE_META.find((m) => m.key === r.device)?.label ?? r.device}
+                  </span>
+                  <span className={`vrecent-dur${r.meaningful ? "" : " glance"}`}>
+                    {fmtDur(r.seconds)}
+                    {r.meaningful ? "" : " · 스쳐감"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        ) : (
+          <p className="insight-empty">이 날 세션 기록이 없어요.</p>
+        )}
+      </section>
     </div>
   );
 }
