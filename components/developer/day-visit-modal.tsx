@@ -90,7 +90,8 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
       <div className="dv-top">
         <div className="dv-total">
           <strong>{data.visits.total}</strong>
-          <span>방문</span>
+          {/* 기기별 탭에선 단위를 '기기'로 — 방문 1건 = 기기 1대라 수는 같아도 의미가 맞다. */}
+          <span>{dim === "device" ? "기기" : "방문"}</span>
         </div>
         <div className="insights-subtabs dv-dim">
           <button className={dim === "role" ? "active" : ""} onClick={() => setDim("role")} type="button">

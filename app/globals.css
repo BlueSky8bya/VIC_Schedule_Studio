@@ -80,6 +80,9 @@
 
 * {
   box-sizing: border-box;
+  /* 모바일에서 버튼/링크 탭 시 요소 모양대로 파란 사각형이 깜빡이는 것 제거(직접 만든
+     눌림 모션으로 피드백을 주므로 기본 하이라이트는 필요 없다). */
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {

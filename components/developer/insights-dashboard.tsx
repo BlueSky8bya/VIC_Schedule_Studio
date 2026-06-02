@@ -668,7 +668,12 @@ export function InsightsDashboard({
           );
         })}
         <StackTrendChart data={trend.contentByTag} showLegend={false} title="🗓️ 태그별 컨텐츠" />
-        <StackTrendChart data={trend.heartsByTag} showLegend={false} title="💗 하트 받은 태그" />
+        <StackTrendChart
+          data={trend.heartsByTag}
+          rankLabel="인기 높은 순"
+          showLegend={false}
+          title="💗 하트 받은 태그"
+        />
         <StackTrendChart data={trend.visitsByRole} title="👀 역할별 방문" />
         <StackTrendChart data={trend.visitsByDevice} title="📱 기기별 접속" />
       </>

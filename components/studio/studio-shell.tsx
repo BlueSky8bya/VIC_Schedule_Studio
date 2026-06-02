@@ -2781,21 +2781,24 @@ export function StudioShell({
         role="presentation"
       >
         <div className="m-edit-sheet" aria-modal="true" role="dialog">
-          {/* 바텀시트 손잡이 — 아래로 쓸어 닫는 시트임을 알리는 모바일 표준 어포던스. */}
-          <button
-            className="m-sheet-grab"
-            aria-label="닫기"
-            onClick={closeMobileEdit}
-            type="button"
-          >
-            <span aria-hidden="true" />
-          </button>
-          <div className="m-edit-head">
-            <strong>{selectedEventId ? "일정 수정" : "새 일정"}</strong>
-            <span className="m-edit-date">{selectedDate}</span>
-            <button aria-label="닫기" className="m-edit-x" onClick={closeMobileEdit} type="button">
-              <X aria-hidden="true" size={20} />
+          {/* 손잡이+헤더를 하나의 불투명 sticky 블록으로 — 스크롤 시 그 사이로 뒤 내용이
+              비쳐 '뚫리는' 구간이 안 생긴다(아래로 쓸어 닫는 모바일 표준 어포던스). */}
+          <div className="m-sheet-top">
+            <button
+              className="m-sheet-grab"
+              aria-label="닫기"
+              onClick={closeMobileEdit}
+              type="button"
+            >
+              <span aria-hidden="true" />
             </button>
+            <div className="m-edit-head">
+              <strong>{selectedEventId ? "일정 수정" : "새 일정"}</strong>
+              <span className="m-edit-date">{selectedDate}</span>
+              <button aria-label="닫기" className="m-edit-x" onClick={closeMobileEdit} type="button">
+                <X aria-hidden="true" size={20} />
+              </button>
+            </div>
           </div>
 
           {actionError ? <div className="auth-warning">{actionError}</div> : null}

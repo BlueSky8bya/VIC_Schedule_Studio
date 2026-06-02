@@ -192,7 +192,7 @@ export function NoticeModal({
         </button>
       </div>
       <p className="notice-hint">
-        <strong>{isUp ? "대상·링크·할 말만" : "시간이랑 내용만"}</strong> 적으면 공지 완성!
+        <strong>{isUp ? "제목·링크·내용만" : "시간이랑 내용만"}</strong> 적으면 공지 완성!
         {mobile ? (
           <>
             {" "}그 다음 아래 <strong>복사 → 붙여넣기</strong> 순서대로만 하면 숲에 올라갑니다.
@@ -217,7 +217,7 @@ export function NoticeModal({
               />
             </div>
             <div className="notice-field">
-              <span className="notice-label">업 도움 링크 (본문에 3번 들어감)</span>
+              <span className="notice-label">업 도움 링크</span>
               <input
                 inputMode="url"
                 onChange={(e) => setUpLink(e.target.value)}
@@ -227,7 +227,7 @@ export function NoticeModal({
               />
             </div>
             <div className="notice-field">
-              <span className="notice-label">하고 싶은 말 (자유)</span>
+              <span className="notice-label">하고 싶은 말</span>
               <textarea
                 onChange={(e) => setUpComment(e.target.value)}
                 placeholder="예: 신청할 자신감이 생겼는데 up 눌러주셔야겠죠 하하"

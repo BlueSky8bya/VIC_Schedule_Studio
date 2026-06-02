@@ -1787,7 +1787,10 @@
 /* 방문 스택 막대 호버 분해 툴팁 — 색(역할/기기)별 수치를 한 줄씩 + 총합. */
 .vt-tip {
   position: absolute;
-  bottom: calc(100% + 6px);
+  /* 차트 '아래'에 띄운다 — 위로 띄우면 스크롤 따라오는 인사이트 네비(sticky) 띠에 가려
+     윗부분이 잘렸다. 아래는 그 띠 밖이라 웹·모바일 모두 안 잘린다. */
+  top: calc(100% + 8px);
+  bottom: auto;
   left: clamp(48px, var(--tip-x, 50%), calc(100% - 48px));
   transform: translateX(-50%);
   pointer-events: none;
@@ -4327,9 +4330,13 @@ textarea:disabled {
   .perm-table td {
     padding: 6px 5px;
   }
-  /* '매니저'·'작업자' 헤더가 한 줄로 들어갈 만큼 — 첫 칸(설명)은 나머지 폭을 갖는다. */
+  /* 4개 역할 칸(관리자·개발자·매니저·작업자)이 좁은 폭에 다 들어가게 — 첫 칸(설명)은 나머지 폭. */
   .perm-table td {
-    width: 48px;
+    width: 40px;
+  }
+  .perm-table th,
+  .perm-table td {
+    padding: 6px 3px;
   }
   .perm-foot {
     font-size: 11px;
@@ -5314,23 +5321,30 @@ textarea:disabled {
     animation: none;
   }
 }
-/* 손잡이: 넉넉한 탭 영역(위로 끌거나 눌러 닫기) 안에 시각적 바를 가운데 둔다. */
+/* 손잡이+헤더 = 하나의 불투명 sticky 블록. 좌우 -18px로 시트 폭을 꽉 채워(둥근 윗모서리까지)
+   스크롤 시 뒤 내용이 비치는 '뚫림'을 없앤다. */
+.m-sheet-top {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  margin: 0 -18px;
+  padding: 0 18px;
+  /* 시트 윗모서리(22px) 곡선과 맞춰 — 위로 스크롤돼도 모서리 밖으로 안 삐져나가게. */
+  border-radius: 22px 22px 0 0;
+  background: #fffdfb;
+}
 .m-sheet-grab {
   display: flex;
   justify-content: center;
   align-items: center;
   width: 100%;
-  /* 시트가 스크롤돼도 손잡이·헤더는 위에 붙어 맥락을 잃지 않게. */
-  position: sticky;
-  top: 0;
-  z-index: 2;
   border: 0;
-  background: linear-gradient(180deg, #fffdfb 70%, transparent);
-  padding: 11px 0 7px;
+  background: transparent;
+  padding: 10px 0 6px;
   cursor: pointer;
 }
 .m-sheet-grab span {
-  width: 44px;
+  width: 40px;
   height: 5px;
   border-radius: 999px;
   background: #d7d2ca;
@@ -5339,11 +5353,8 @@ textarea:disabled {
   display: flex;
   align-items: center;
   gap: 10px;
-  position: sticky;
-  top: 30px;
-  z-index: 2;
-  background: linear-gradient(180deg, #fffdfb 78%, transparent);
   padding-bottom: 12px;
+  border-bottom: 1px solid #f3efe9;
 }
 .m-edit-head strong {
   font-size: 19px;
@@ -5386,12 +5397,12 @@ textarea:disabled {
 .m-edit-sheet textarea,
 .m-edit-sheet select {
   border: 1.5px solid var(--line, #e2ddd5);
-  border-radius: 13px;
+  border-radius: 12px;
   background: #fff;
-  padding: 13px 14px;
+  padding: 11px 13px;
   font-size: 16px;
   font-weight: 600;
-  min-height: 52px;
+  min-height: 46px;
 }
 .m-input:focus,
 .m-edit-sheet textarea:focus,
@@ -5407,13 +5418,13 @@ textarea:disabled {
 }
 .m-seg button {
   flex: 1;
-  min-height: 48px;
+  min-height: 44px;
   border: 1.5px solid var(--line, #e2ddd5);
-  border-radius: 13px;
+  border-radius: 12px;
   background: #fff;
   color: #6f6a78;
   font-weight: 800;
-  font-size: 15px;
+  font-size: 14.5px;
   cursor: pointer;
   transition:
     background var(--dur-1) var(--ease),
@@ -5429,16 +5440,26 @@ textarea:disabled {
   color: #5b45c4;
 }
 /* 시트 안 태그 칩·공지 버튼도 손가락에 맞게 키운다. */
+/* 태그는 균일 그리드(웹) 대신 내용 크기 칩을 자연스럽게 흘려 답답함을 없앤다(모바일). */
+.m-edit-sheet .tag-picker {
+  gap: 10px;
+}
+.m-edit-sheet .tag-picker > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
 .m-edit-sheet .tag-picker button {
-  min-height: 42px;
+  flex: 0 0 auto;
+  min-height: 38px;
   font-size: 14px;
-  padding: 0 14px;
+  padding: 0 15px;
 }
 .m-edit-sheet .notice-open {
   width: 100%;
-  min-height: 48px;
+  min-height: 46px;
   margin-bottom: 12px;
-  font-size: 15px;
+  font-size: 14.5px;
 }
 /* 엄지존 고정 액션바 — 스크롤해도 바닥에 붙어 항상 닿는다. */
 .m-edit-actions {
@@ -5462,16 +5483,16 @@ textarea:disabled {
 /* 저장: 지배적 한 손 타깃(넓고 큼). */
 .m-edit-actions .m-save {
   flex: 1;
-  min-height: 54px;
-  border-radius: 15px;
-  font-size: 17px;
+  min-height: 50px;
+  border-radius: 14px;
+  font-size: 16px;
   font-weight: 900;
 }
 /* 삭제: 보조(아이콘만, 오탭 방지로 좁게). */
 .m-edit-actions .m-del {
   flex: 0 0 auto;
-  width: 54px;
-  min-height: 54px;
-  border-radius: 15px;
+  width: 50px;
+  min-height: 50px;
+  border-radius: 14px;
   padding: 0;
 }

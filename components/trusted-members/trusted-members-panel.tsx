@@ -167,6 +167,8 @@ export function TrustedMembersPanel() {
           <thead>
             <tr>
               <th scope="col">권한</th>
+              <th scope="col">관리자</th>
+              <th scope="col">개발자</th>
               <th scope="col">매니저</th>
               <th scope="col">작업자</th>
             </tr>
@@ -174,31 +176,50 @@ export function TrustedMembersPanel() {
           <tbody>
             <tr>
               <th scope="row">일정 편집</th>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
               <td className="no">✕</td>
               <td className="no">✕</td>
             </tr>
             <tr>
               <th scope="row">업 도움 기간·링크 수정</th>
               <td className="yes">✓</td>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
               <td className="no">✕</td>
             </tr>
             <tr>
               <th scope="row">이미 생성된 일정의 태그 수정</th>
               <td className="yes">✓</td>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
               <td className="no">✕</td>
             </tr>
             <tr>
-              <th scope="row">작업자 일정 보기(엠바고 X)</th>
+              <th scope="row">작업자 일정 보기</th>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
               <td className="no">✕</td>
               <td className="yes">✓</td>
+            </tr>
+            <tr>
+              <th scope="row">엠바고 일정 보기</th>
+              <td className="yes">✓</td>
+              <td className="no">✕</td>
+              <td className="no">✕</td>
+              <td className="no">✕</td>
             </tr>
             <tr>
               <th scope="row">달력 꾸미기</th>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
             </tr>
             <tr>
               <th scope="row">이모지 추가·삭제</th>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
               <td className="no">✕</td>
               <td className="yes">✓</td>
             </tr>
@@ -206,9 +227,13 @@ export function TrustedMembersPanel() {
               <th scope="row">달력 이미지 캡쳐</th>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
             </tr>
             <tr>
               <th scope="row">태그·멤버·비번 관리</th>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
               <td className="no">✕</td>
               <td className="no">✕</td>
             </tr>

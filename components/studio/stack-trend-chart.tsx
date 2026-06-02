@@ -11,12 +11,16 @@ export function StackTrendChart({
   data,
   title,
   showNumbers = true,
-  showLegend = true
+  showLegend = true,
+  rankLabel = "비율 높은 순"
 }: {
   data: TrendStack;
   title: string;
   showNumbers?: boolean;
   showLegend?: boolean;
+  // 범례 없는(태그) 차트의 호버박스 제목 — 큰 값 순 정렬임을 알린다. 차트 의미에 맞게 바꾼다
+  // (컨텐츠="비율 높은 순", 하트="인기 높은 순"). 총개수 숫자 대신 이걸 제목으로 쓴다.
+  rankLabel?: string;
 }) {
   const [hover, setHover] = useState<Hover | null>(null);
   const max = Math.max(1, ...data.months.map((m) => m.total));
@@ -79,18 +83,21 @@ export function StackTrendChart({
                 className={`vt-tip${showLegend ? "" : " vt-tip-grid"}`}
                 style={{ "--tip-x": `${hover.x}%` } as CSSProperties}
               >
-                {showNumbers ? (
+                {/* 태그 차트(범례 없음)는 총개수 숫자 대신 '큰 값 순'임을 알리는 제목을 둔다
+                    (화살표 없이). 역할/기기 차트(범례 있음)는 관리자에게 총합 숫자를 보여준다. */}
+                {!showLegend ? (
+                  <strong className="vt-tip-note">{rankLabel}</strong>
+                ) : showNumbers ? (
                   <strong>{hover.total}</strong>
-                ) : !showLegend ? (
-                  <strong className="vt-tip-note">↓ 비율 높은 순</strong>
                 ) : null}
                 <div className="vt-tip-rows">
-                  {tipCats(hover).map((c) => {
+                  {tipCats(hover).map((c, idx) => {
                     const n = hover.counts[c.key] ?? 0;
                     return n > 0 ? (
                       <span className="vt-tip-row" key={c.key}>
                         <i style={{ background: c.color }} />
-                        {c.label}
+                        {/* 태그 차트는 큰 값 순 등수를 앞에 — "1. 서버", "2. 종겜"처럼 한눈에. */}
+                        {!showLegend ? `${idx + 1}. ${c.label}` : c.label}
                         {showNumbers ? <b>{n}</b> : null}
                       </span>
                     ) : null;
