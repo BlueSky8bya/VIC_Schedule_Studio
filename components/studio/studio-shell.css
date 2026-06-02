@@ -2677,6 +2677,10 @@
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
+/* 날짜 칸을 탭하면 살짝 보라 틴트로 '눌렀다'는 신호(카드는 자체 모션이 우선). */
+.studio-day:not(.outside):active {
+  background: #f7f4ff;
+}
 /* 첫 진입 한 번만: 날짜 칸이 왼쪽 위→오른쪽 아래로 차르륵 순차 등장(슬라이드 대신). */
 .studio-month-grid.cal-reveal .studio-day {
   animation: cal-cell-rise 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
