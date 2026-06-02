@@ -193,6 +193,66 @@ function sEnd(r: SessionRow): number {
 function sAcct(r: SessionRow): string {
   return r.account_hash ?? "anon";
 }
+// 세션 체류(ms). 의미 방문 컷·바운스·KPI 공용.
+function durMs(r: SessionRow): number {
+  return Math.max(0, sEnd(r) - sStart(r));
+}
+// R1: 이 시간 미만 체류는 '스쳐감'으로 보고 방문 수에서 제외(실수 진입·즉시 이탈). 동접/세션 목록엔 남긴다.
+const MIN_MEANINGFUL_VISIT_MS = 3000;
+// 바운스: 의미 방문이지만 이 시간 미만(와서 거의 바로 나감).
+const BOUNCE_MAX_MS = 10000;
+function isMeaningful(r: SessionRow): boolean {
+  return durMs(r) >= MIN_MEANINGFUL_VISIT_MS;
+}
+// 방문 품질 요약(개발자 전용). 주어진 세션들에서 의미 방문 기준으로 지표를 뽑는다.
+export type VisitSummary = {
+  visitors: number; // 의미 방문 순방문자((날짜|계정) 고유)
+  sessions: number; // 의미 세션 수(재진입 포함)
+  glances: number; // 스쳐감(<3초) 세션 수
+  bounceRate: number; // 의미 방문 중 <10초 비율(0~1)
+  avgSeconds: number; // 의미 세션 평균 체류(초)
+  totalSeconds: number; // 의미 세션 총 체류(초)
+  peakConcurrent: number; // 범위 내 최고 동시 세션 수
+};
+function summarize(rows: SessionRow[]): VisitSummary {
+  const meaningful = rows.filter(isMeaningful);
+  const visitors = new Set(meaningful.map((r) => `${r.day}|${sAcct(r)}`)).size;
+  const sessions = meaningful.length;
+  const glances = rows.length - sessions;
+  const bounce = meaningful.filter((r) => durMs(r) < BOUNCE_MAX_MS).length;
+  const totalSeconds = Math.round(meaningful.reduce((s, r) => s + durMs(r), 0) / 1000);
+  const avgSeconds = sessions > 0 ? Math.round(totalSeconds / sessions) : 0;
+  const bounceRate = sessions > 0 ? bounce / sessions : 0;
+  // 최고 동접 — 의미 세션 구간 스윕.
+  const ev: { t: number; d: number }[] = [];
+  for (const r of meaningful) {
+    ev.push({ t: sStart(r), d: 1 });
+    ev.push({ t: sEnd(r), d: -1 });
+  }
+  ev.sort((a, b) => a.t - b.t || a.d - b.d);
+  let cnt = 0;
+  let peak = 0;
+  for (const e of ev) {
+    cnt += e.d;
+    if (cnt > peak) peak = cnt;
+  }
+  return { visitors, sessions, glances, bounceRate, avgSeconds, totalSeconds, peakConcurrent: peak };
+}
+function emptySummary(): VisitSummary {
+  return {
+    visitors: 0,
+    sessions: 0,
+    glances: 0,
+    bounceRate: 0,
+    avgSeconds: 0,
+    totalSeconds: 0,
+    peakConcurrent: 0
+  };
+}
+// 시청자 기준 / 운영진 포함(전체) 두 요약 — UI 토글이 둘 중 하나를 고른다(R2/R4/R5/R13).
+function summarizeSplit(rows: SessionRow[]): { viewer: VisitSummary; all: VisitSummary } {
+  return { viewer: summarize(rows.filter((r) => r.role === "viewer")), all: summarize(rows) };
+}
 function emptyVisitSlot(): VisitSlot {
   return {
     roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
@@ -228,6 +288,7 @@ function reachSlot(rows: SessionRow[]): VisitSlot {
   const seenRole = new Map<string, Set<string>>();
   const seenDev = new Set<string>();
   for (const r of rows) {
+    if (!isMeaningful(r)) continue; // R1: 스쳐감(<3초)은 방문 수에서 제외
     const id = `${r.day}|${sAcct(r)}`;
     if (!seenAll.has(id)) {
       seenAll.add(id);
@@ -849,6 +910,9 @@ export type VisitTrends = {
   hasOccupancy: boolean; // presence_ping 핑이 쌓여 점유 그래프를 그릴 수 있는지
   ownerSessions: OwnerSession[]; // 관리자(owner) 접속 세션(이 달, 최근 순) — 개발자 방문 패널 전용
   total: number; // 이 달 방문 총합
+  summaryViewer: VisitSummary; // 시청자만 기준 품질 요약(R4/R5/R13)
+  summaryAll: VisitSummary; // 운영진 포함 전체 기준 품질 요약
+  operators: number; // 이 달 의미 방문 운영진(viewer 아님) 순방문자 수
 };
 export type VisitTrendsResult = { ok: true; data: VisitTrends } | { ok: false; error: string };
 
@@ -904,7 +968,10 @@ export async function getVisitTrendsAction(
         occupancy: Array.from({ length: 24 }, emptyOcc),
         hasOccupancy: false,
         ownerSessions: [],
-        total: 0
+        total: 0,
+        summaryViewer: emptySummary(),
+        summaryAll: emptySummary(),
+        operators: 0
       }
     };
   }
@@ -940,6 +1007,7 @@ export async function getVisitTrendsAction(
   const firstEntry = new Map<string, { hour: number; role: string; t: number }>();
   const devFirst = new Map<string, { hour: number; device: string; t: number }>();
   for (const row of rows) {
+    if (!isMeaningful(row)) continue; // R1: 스쳐감은 시간대 분포에서도 제외
     const t = sStart(row);
     if (!Number.isFinite(t)) continue;
     const hour = Math.floor((t + KST_MS) / 3600000) % 24;
@@ -973,6 +1041,8 @@ export async function getVisitTrendsAction(
   const hasOccupancy = rows.length > 0 && occupancy.some((o) => o.avg > 0);
   // 관리자 접속 세션(최근 순) — 세션 행에서 직접(role=owner).
   const ownerSessions = ownerSessionsFrom(rows);
+  const { viewer: summaryViewer, all: summaryAll } = summarizeSplit(rows);
+  const operators = Math.max(0, summaryAll.visitors - summaryViewer.visitors);
 
   return {
     ok: true,
@@ -985,7 +1055,10 @@ export async function getVisitTrendsAction(
       occupancy,
       hasOccupancy,
       ownerSessions,
-      total: reachSlot(rows).total
+      total: reachSlot(rows).total,
+      summaryViewer,
+      summaryAll,
+      operators
     }
   };
 }
@@ -1004,6 +1077,9 @@ export type DayVisitDetail = {
   ownerVisits: { t: number; device: string; account: string; seconds: number }[];
   // 그날 관리자(owner) 총 체류 초. 세션 합. 매우 짧으면(예: 0~1초) 화면을 사실상 안 본 것.
   ownerSeconds: number;
+  summaryViewer: VisitSummary; // 그날 시청자 기준 품질 요약(R4/R5/R13)
+  summaryAll: VisitSummary; // 그날 운영진 포함 전체 기준 품질 요약
+  operators: number; // 그날 의미 방문 운영진 순방문자 수
 };
 export type DayVisitDetailResult = { ok: true; data: DayVisitDetail } | { ok: false; error: string };
 
@@ -1049,10 +1125,23 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
     })
     .sort((a, b) => a.t - b.t);
   const ownerSeconds = ownerVisits.reduce((sum, v) => sum + v.seconds, 0);
+  const { viewer: summaryViewer, all: summaryAll } = summarizeSplit(rows);
+  const operators = Math.max(0, summaryAll.visitors - summaryViewer.visitors);
 
   return {
     ok: true,
-    data: { dateKey, visits, occupancy, hasOccupancy, ownerSessions, ownerVisits, ownerSeconds }
+    data: {
+      dateKey,
+      visits,
+      occupancy,
+      hasOccupancy,
+      ownerSessions,
+      ownerVisits,
+      ownerSeconds,
+      summaryViewer,
+      summaryAll,
+      operators
+    }
   };
 }
 

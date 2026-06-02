@@ -4,6 +4,7 @@ import { type CSSProperties, type PointerEvent as ReactPointerEvent, useEffect, 
 import {
   DEVICE_META,
   ROLE_META,
+  VisitSummaryBlock,
   fmtDur,
   fmtOcc,
   hhmm,
@@ -87,6 +88,12 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
 
   return (
     <div className="dayvisit">
+      {/* 방문 품질 요약(의미 방문 컷·시청자/운영진 토글·KPI·최고동접) — 그날 기준. */}
+      <VisitSummaryBlock
+        viewer={data.summaryViewer}
+        all={data.summaryAll}
+        operators={data.operators}
+      />
       {/* 방문 수 + 역할/기기 분해 */}
       <div className="dv-top">
         <div className="dv-total">

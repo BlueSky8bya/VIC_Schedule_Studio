@@ -1201,6 +1201,64 @@
 .own-axis.solo {
   margin-left: 0;
 }
+/* 방문 품질 요약 블록(개발자 전용) — 분리 배지 + 시청자/운영진 토글 + KPI 타일. */
+.vsum {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line, #e7e3f2);
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fbfaff, #f6f3fd);
+}
+.vsum-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.vsum-split {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #6b6385;
+}
+.vsum-split b {
+  color: #4a3f72;
+  font-weight: 900;
+}
+.vsum-toggle {
+  margin: 0;
+}
+.vsum-kpis {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
+  gap: 8px;
+}
+.vsum-kpis li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: 11px;
+  background: #ffffff;
+  border: 1px solid #efeaf9;
+}
+.vsum-kpis b {
+  font-size: 16px;
+  font-weight: 900;
+  color: #4a3f72;
+  line-height: 1.1;
+}
+.vsum-kpis span {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #8a82a6;
+}
 .dv-sessions {
   list-style: none;
   margin: 8px 0 0;

@@ -29,6 +29,7 @@ import {
   getVisitTrendsAction,
   type InsightsData,
   type TrendData,
+  type VisitSummary,
   type VisitTrends
 } from "@/lib/insights/actions";
 import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
@@ -114,6 +115,77 @@ export const fmtDur = (seconds: number) => {
   const s = Math.max(0, Math.round(seconds));
   return s < 60 ? `${s}초` : `${Math.round(s / 60)}분`;
 };
+
+// 방문 품질 요약 블록(개발자 전용 — 방문 패널/일일 상세 공용). 시청자 기준이 기본이고, '운영진 포함'
+// 토글로 개발자·관리자 테스트 트래픽까지 합산. 위 분리 배지로 숫자가 부풀었는지 바로 보인다.
+export function VisitSummaryBlock({
+  viewer,
+  all,
+  operators
+}: {
+  viewer: VisitSummary;
+  all: VisitSummary;
+  operators: number;
+}) {
+  const [includeOps, setIncludeOps] = useState(false);
+  const s = includeOps ? all : viewer;
+  return (
+    <div className="vsum">
+      <div className="vsum-head">
+        <span className="vsum-split">
+          시청자 <b>{viewer.visitors}</b>명 · 운영진 <b>{operators}</b>명 · 세션{" "}
+          <b>{all.sessions}</b>회
+        </span>
+        <div className="insights-subtabs vsum-toggle">
+          <button
+            className={includeOps ? "" : "active"}
+            onClick={() => setIncludeOps(false)}
+            type="button"
+          >
+            시청자
+          </button>
+          <button
+            className={includeOps ? "active" : ""}
+            onClick={() => setIncludeOps(true)}
+            type="button"
+          >
+            운영진 포함
+          </button>
+        </div>
+      </div>
+      <ul className="vsum-kpis">
+        <li>
+          <b>{s.visitors}</b>
+          <span>방문자</span>
+        </li>
+        <li>
+          <b>{s.sessions}</b>
+          <span>세션</span>
+        </li>
+        <li>
+          <b>{s.glances}</b>
+          <span>스쳐감</span>
+        </li>
+        <li>
+          <b>{Math.round(s.bounceRate * 100)}%</b>
+          <span>바운스</span>
+        </li>
+        <li>
+          <b>{fmtDur(s.avgSeconds)}</b>
+          <span>평균체류</span>
+        </li>
+        <li>
+          <b>{fmtDur(s.totalSeconds)}</b>
+          <span>총체류</span>
+        </li>
+        <li>
+          <b>{s.peakConcurrent}</b>
+          <span>최고동접</span>
+        </li>
+      </ul>
+    </div>
+  );
+}
 
 // 스택 막대 한 줄(방문 그래프 공용 — 역할/기기 등 meta로 구분). 호버하면 차트 단일 툴팁에 분해 수치를
 // 올려준다(툴팁은 차트 폭 안에서 clamp되어 양 끝에서도 안 잘린다).
@@ -376,9 +448,12 @@ export function InsightsDashboard({
     };
     return (
       <>
-        <div className="insight-grid">
-          <StatTile value={visits.total} label={`${month}월 방문`} tone="soon" />
-        </div>
+        {/* 방문 품질 요약(R1 의미 방문 컷 적용·R2 시청자/운영진 토글·R4 KPI·R5 분리·R13 최고동접). */}
+        <VisitSummaryBlock
+          viewer={visits.summaryViewer}
+          all={visits.summaryAll}
+          operators={visits.operators}
+        />
         <div className="insights-toolbar">
           <div className="insights-subtabs">
             <button
