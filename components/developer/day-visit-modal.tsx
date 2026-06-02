@@ -12,6 +12,7 @@ import {
   kstOf
 } from "@/components/developer/insights-dashboard";
 import { getDayVisitDetailAction, type DayVisitDetail } from "@/lib/insights/actions";
+import { hapticTick } from "@/lib/ui/haptics";
 
 // 개발자가 달력에서 날짜를 클릭하면 뜨는 "그날 방문 상세" — 월별 인사이트 방문 패널의 하루판(드릴다운).
 // 방문 수(역할/기기) + 24h 동시 접속(체류) + 관리자 접속 세션. 모달 골격은 부모(studio-shell)가 제공.
@@ -113,10 +114,24 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
             <span>{dim === "device" ? "기기" : "방문"}</span>
           </div>
           <div className="insights-subtabs dv-dim">
-            <button className={dim === "role" ? "active" : ""} onClick={() => setDim("role")} type="button">
+            <button
+              className={dim === "role" ? "active" : ""}
+              onClick={() => {
+                hapticTick();
+                setDim("role");
+              }}
+              type="button"
+            >
               역할별
             </button>
-            <button className={dim === "device" ? "active" : ""} onClick={() => setDim("device")} type="button">
+            <button
+              className={dim === "device" ? "active" : ""}
+              onClick={() => {
+                hapticTick();
+                setDim("device");
+              }}
+              type="button"
+            >
               기기별
             </button>
           </div>
@@ -140,8 +155,9 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
 
       {/* 24h 동시 접속(체류) */}
       <section className="vcard">
-        <h4 className="insight-subhead">시간대별 동시 접속 · 체류 (KST)</h4>
-        <p className="vt-occ-note">막대 = 그날 평균 동시 접속(방문자 기준) · 호버 시 최고치도 표시</p>
+        <h4 className="insight-subhead">
+          시간대별 동접 (KST) <span className="vcrit">평균 동시 접속자</span>
+        </h4>
         <div
           className={`vt-hours ${dg.hasOccupancy ? "" : "empty"}`}
           role="img"

@@ -1036,6 +1036,102 @@
     margin-bottom: 0;
   }
 }
+/* 차트 카드 토글 줄 — 일별/주별(좌) · 역할별/기기별(우) 양끝 정렬. 막대와 안 붙게 아래 여백 넉넉히. */
+.vt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin: 2px 0 16px;
+}
+.vt-toolbar .insights-subtabs {
+  margin: 0;
+}
+/* 소제목 옆 기준 태그 — 무엇을 색/높이로 쟀는지(세션 수·체류 시간·평균 동접…)를 옅은 알약으로. */
+.vcrit {
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #efeaf9;
+  color: #8a7fb0;
+  font-size: 10.5px;
+  font-weight: 800;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+/* 실시간 표시 — 초록 점이 부드럽게 호흡(20초 폴링 갱신 중임을 알림). */
+.vlive {
+  position: relative;
+  margin-left: 6px;
+  padding-left: 14px;
+  color: #2f9e62;
+  font-size: 10.5px;
+  font-weight: 900;
+  vertical-align: middle;
+}
+.vlive::before {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  margin-top: -3.5px;
+  border-radius: 999px;
+  background: #34d399;
+  animation: vlive-pulse 1.8s var(--ease, ease) infinite;
+}
+@keyframes vlive-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(52, 211, 153, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(52, 211, 153, 0);
+  }
+}
+@media (min-width: 641px) {
+  .vcrit,
+  .vlive {
+    font-size: 12px;
+  }
+}
+/* 방문 차트 미세 상호작용(손맛) — 막대 호버 시 밝게, 미니달력·히트맵 칸은 살짝 떠오르며 또렷이. */
+.vt-col,
+.vt-hcol {
+  cursor: default;
+}
+.vt-col:hover .vt-fill,
+.vt-hcol:hover .vt-fill {
+  filter: brightness(1.08);
+}
+.vmini-cell {
+  transition: transform 0.12s var(--ease, ease), outline-color 0.12s var(--ease, ease);
+}
+.vmini-cell:not(.empty):hover {
+  outline: 2px solid rgba(52, 211, 153, 0.6);
+  outline-offset: -1px;
+  transform: scale(1.07);
+}
+.vheat-row i {
+  transition: transform 0.1s var(--ease, ease);
+}
+.vheat-row i:hover {
+  transform: scale(1.2);
+  outline: 1.5px solid rgba(124, 92, 245, 0.65);
+}
+@media (prefers-reduced-motion: reduce) {
+  .vlive::before {
+    animation: none;
+  }
+  .vmini-cell,
+  .vheat-row i {
+    transition: none;
+  }
+}
 /* 방문 추이: 날짜×역할 스택 막대 + 시간대 분포 */
 .vt-chart {
   display: flex;

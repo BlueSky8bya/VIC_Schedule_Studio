@@ -1155,7 +1155,7 @@ export async function getVisitTrendsAction(
       insights.push(`이 달 새 시청자 ${newVisitors}명 · 재방문 ${returningVisitors}명이에요.`);
     }
   } else {
-    insights.push("이 달 시청자 방문이 아직 없어요(운영진 트래픽은 토글로 확인).");
+    insights.push("이 달 시청자 방문이 아직 없어요.");
   }
   // R9: 방문 ↔ 일정 연결(공개 일정 유무만 — private 필드는 절대 안 씀). 방문 최다일에 공개 일정이
   // 있었는지 한 문장. 경계: is_public 카운트만 조회.

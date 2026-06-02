@@ -158,7 +158,10 @@ export function VisitSummaryBlock({
             <button
               className={cur === t.key ? "active" : ""}
               key={t.key}
-              onClick={() => setScope(t.key)}
+              onClick={() => {
+                hapticTick();
+                setScope(t.key);
+              }}
               type="button"
             >
               {t.label}
@@ -324,6 +327,24 @@ export function InsightsDashboard({
     setVtHover(null);
     setVtHourHover(null);
   }, [visitView, visitDim]);
+
+  // 방문 패널을 보는 동안엔 20초마다 새로고침 — 지금 내가 보고 있는(진행 중) 세션까지 거의
+  // 실시간으로 반영(모달 최초 로드 이후 생긴 세션·갱신된 체류시간이 들어온다).
+  useEffect(() => {
+    if (PANELS[index]?.key !== "visits") return;
+    let alive = true;
+    const refresh = () => {
+      getVisitTrendsAction(year, month).then((r) => {
+        if (alive && r.ok) setVisits(r.data);
+      });
+    };
+    refresh(); // 진입 즉시 한 번
+    const id = window.setInterval(refresh, 20000);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+    };
+  }, [index, year, month]);
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
 
@@ -502,41 +523,54 @@ export function InsightsDashboard({
 
         {/* 방문 추이(일별/주별 · 역할/기기) — 좌측 카드 */}
         <section className="vcard">
-          <div className="vcard-head">
-            <h4 className="insight-subhead">방문 추이 ({scopeLabel})</h4>
-            <div className="vcard-tools">
-              <div className="insights-subtabs">
-                <button
-                  className={visitView === "day" ? "active" : ""}
-                  onClick={() => setVisitView("day")}
-                  type="button"
-                >
-                  일별
-                </button>
-                <button
-                  className={visitView === "week" ? "active" : ""}
-                  onClick={() => setVisitView("week")}
-                  type="button"
-                >
-                  주별
-                </button>
-              </div>
-              <div className="insights-subtabs">
-                <button
-                  className={visitDim === "role" ? "active" : ""}
-                  onClick={() => setVisitDim("role")}
-                  type="button"
-                >
-                  역할별
-                </button>
-                <button
-                  className={visitDim === "device" ? "active" : ""}
-                  onClick={() => setVisitDim("device")}
-                  type="button"
-                >
-                  기기별
-                </button>
-              </div>
+          <h4 className="insight-subhead">
+            방문 추이 ({scopeLabel}) <span className="vcrit">{visitDim === "role" ? "방문 수" : "기기 수"}</span>
+          </h4>
+          {/* 토글 두 묶음을 좌(일별/주별)·우(역할별/기기별)로 갈라 배치 */}
+          <div className="vt-toolbar">
+            <div className="insights-subtabs">
+              <button
+                className={visitView === "day" ? "active" : ""}
+                onClick={() => {
+                  hapticTick();
+                  setVisitView("day");
+                }}
+                type="button"
+              >
+                일별
+              </button>
+              <button
+                className={visitView === "week" ? "active" : ""}
+                onClick={() => {
+                  hapticTick();
+                  setVisitView("week");
+                }}
+                type="button"
+              >
+                주별
+              </button>
+            </div>
+            <div className="insights-subtabs">
+              <button
+                className={visitDim === "role" ? "active" : ""}
+                onClick={() => {
+                  hapticTick();
+                  setVisitDim("role");
+                }}
+                type="button"
+              >
+                역할별
+              </button>
+              <button
+                className={visitDim === "device" ? "active" : ""}
+                onClick={() => {
+                  hapticTick();
+                  setVisitDim("device");
+                }}
+                type="button"
+              >
+                기기별
+              </button>
             </div>
           </div>
           <div
@@ -599,9 +633,10 @@ export function InsightsDashboard({
 
         {/* 시간대별 동시 접속(체류) — 우측 카드 */}
         <section className="vcard">
-          <h4 className="insight-subhead">시간대별 동시 접속 · 체류 (KST)</h4>
           {/* 위 일별/주별은 '방문 수(첫 진입)'지만, 이 막대는 '그 시각에 떠 있던 인원(체류)'이다. */}
-          <p className="vt-occ-note">막대 = 시간대별 평균 동시 접속(방문자 기준) · 호버 시 최고치도 표시</p>
+          <h4 className="insight-subhead">
+            시간대별 동접 (KST) <span className="vcrit">평균 동시 접속자</span>
+          </h4>
           <div
             className={`vt-hours ${g.hasOccupancy ? "" : "empty"}`}
             role="img"
@@ -678,7 +713,9 @@ export function InsightsDashboard({
 
         {/* R7: 요일×시간 히트맵 — 24열로 넓어 풀폭이 읽기 좋다. */}
         <section className="vcard full">
-          <h4 className="insight-subhead">요일 × 시간 ({scopeLabel})</h4>
+          <h4 className="insight-subhead">
+            요일 × 시간 ({scopeLabel}) <span className="vcrit">세션 수</span>
+          </h4>
           {(() => {
             const wdays = ["일", "월", "화", "수", "목", "금", "토"];
             const hmMax = Math.max(1, ...g.heatmap.flat());
@@ -710,8 +747,9 @@ export function InsightsDashboard({
 
         {/* 관리자(토리님) 전용 접속 세션 — 가로 24h 타임라인이라 풀폭. */}
         <section className="vcard full">
-          <h4 className="insight-subhead">관리자 접속 세션 (이번 달)</h4>
-          <p className="vt-occ-note">하루별 24시간 띠 · 막대 = 머문 구간(기기색) · 호버 시 시작–종료·머문 시간</p>
+          <h4 className="insight-subhead">
+            관리자 접속 세션 (이번 달) <span className="vcrit">하루 = 한 줄</span>
+          </h4>
           {ownerDays.length > 0 ? (
             <>
               <div className="own-sessions" onPointerLeave={() => setOwnerTip(null)}>
@@ -771,7 +809,9 @@ export function InsightsDashboard({
 
         {/* R8: 날짜별 미니 달력 히트맵(체류 긴 날 진하게 — 방문 수가 아니라 총 체류시간). 표시 전용. — 좌측 카드 */}
         <section className="vcard">
-          <h4 className="insight-subhead">날짜별 체류</h4>
+          <h4 className="insight-subhead">
+            날짜별 <span className="vcrit">체류 시간</span>
+          </h4>
           {(() => {
             const firstWd = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
             const stayMax = Math.max(1, ...g.days.map((d) => d.stay));
@@ -803,12 +843,14 @@ export function InsightsDashboard({
 
         {/* 개발자 디버깅 푸터(R11 건강 + R10 최근 세션) — 우측 카드 */}
         <section className="vcard vcard-foot">
-          <h4 className="insight-subhead">데이터 건강 · 디버깅</h4>
+          <h4 className="insight-subhead">
+            데이터 건강 · 디버깅 <span className="vlive">실시간</span>
+          </h4>
           <p className="vhealth">
             오늘 {visits.health.todaySessions}세션 · end 미확정 {Math.round(visits.health.openRate * 100)}% · 평균 체류 {fmtDur(visits.health.avgStaySec)}
           </p>
-          <details className="vrecent">
-            <summary>최근 세션 {visits.recent.length}건</summary>
+          <details className="vrecent" open>
+            <summary>최근 세션 {visits.recent.length}건 <span className="vcrit">20초마다 갱신</span></summary>
             <ul>
               {visits.recent.map((r, i) => (
                 <li key={i}>
