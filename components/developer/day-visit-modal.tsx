@@ -193,6 +193,31 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
         ))}
       </ul>
 
+      {/* 관리자 방문 기록 — 언제·어떤 계정으로 들어왔는지(설정된 owner 이메일이면 이메일로 표시). */}
+      <h4 className="insight-subhead">관리자 방문 기록</h4>
+      {data.ownerVisits.length > 0 ? (
+        <>
+          <ul className="dv-sessions">
+            {data.ownerVisits.map((v, i) => (
+              <li key={i}>
+                <span className="dv-dev" style={{ background: devMeta(v.device).color }} />
+                <span className="dv-time">{v.t ? hhmm(v.t) : "—"}</span>
+                <b className="dv-acct">{v.account}</b>
+                <em>{devMeta(v.device).label}</em>
+              </li>
+            ))}
+          </ul>
+          {/* 역계산: 체류 핑(=분, 60초당 1핑). 방문은 찍혔는데 핑 0이면 동접 그래프엔 안 잡힌다. */}
+          <p className="vt-occ-note">
+            {data.ownerPings > 0
+              ? `관리자 체류 ≈ 약 ${data.ownerPings}분 (체류 핑 ${data.ownerPings}개)`
+              : "체류 핑 0개 — 1분 미만 머물렀거나 백그라운드 탭이라 동시 접속 그래프엔 안 잡혀요."}
+          </p>
+        </>
+      ) : (
+        <p className="insight-empty">이 날 관리자 방문 기록이 없어요.</p>
+      )}
+
       {/* 관리자 접속 세션 */}
       <h4 className="insight-subhead">관리자 접속 세션</h4>
       {segs.length > 0 ? (

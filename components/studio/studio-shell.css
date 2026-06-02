@@ -1230,6 +1230,14 @@
   font-weight: 900;
   color: #3a3550;
 }
+/* 관리자 방문 계정(이메일일 수 있어 길면 … 처리) — 시각과 기기 사이를 채운다. */
+.dv-sessions .dv-acct {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .dv-sessions em {
   margin-left: auto;
   font-style: normal;

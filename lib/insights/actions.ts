@@ -915,6 +915,12 @@ export type DayVisitDetail = {
   occupancy: OccSlot[]; // 24칸(KST) — 그날 시간대별 평균/최고 동시 접속
   hasOccupancy: boolean;
   ownerSessions: OwnerSession[]; // 그날 관리자 접속 세션
+  // 그날 '관리자(owner)' 방문 기록 — 언제(visit_log.occurred_at)·기기·계정(설정된 owner
+  // 이메일과 해시 매칭되면 이메일, 아니면 익명 태그). 일반 방문자는 절대 식별되지 않는다.
+  ownerVisits: { t: number; device: string; account: string }[];
+  // 그날 관리자(owner) 총 체류 핑 수(= 분, 60초 1핑). 0이면 방문 기록은 있어도 체류 측정이
+  // 안 된 것(1분 미만 또는 백그라운드 탭) → 역계산: 체류 ≈ ownerPings분.
+  ownerPings: number;
 };
 export type DayVisitDetailResult = { ok: true; data: DayVisitDetail } | { ok: false; error: string };
 
@@ -946,7 +952,10 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
   });
 
   const [visitRes, hourlyRes, peakRes, sessRes] = await Promise.all([
-    supabase.from("visit_log").select("role, device, account_hash, session_hash").eq("day", dateKey),
+    supabase
+      .from("visit_log")
+      .select("role, device, account_hash, session_hash, occurred_at")
+      .eq("day", dateKey),
     supabase.rpc("presence_hourly", { p_start: dateKey, p_end: nextDay }),
     supabase.rpc("presence_peak", { p_start: dateKey, p_end: nextDay }),
     supabase.rpc("owner_sessions", { p_start: dateKey, p_end: nextDay })
@@ -1015,7 +1024,44 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
           .filter((s) => Number.isFinite(s.startMs) && Number.isFinite(s.endMs))
       : [];
 
-  return { ok: true, data: { dateKey, visits, occupancy, hasOccupancy, ownerSessions } };
+  // 관리자(owner) 방문 기록 — 설정된 owner 이메일과 해시가 맞으면 이메일로, 아니면 익명 태그(#N).
+  // (일반 방문자 해시는 매칭 집합에 없어 절대 이메일로 풀리지 않는다.)
+  const hashToOwnerEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
+  const acctTag = new Map<string, number>();
+  const ownerVisits =
+    !visitRes.error && Array.isArray(visitRes.data)
+      ? (
+          visitRes.data as {
+            role: string;
+            device: string;
+            account_hash: string | null;
+            occurred_at: string | null;
+          }[]
+        )
+          .filter((r) => r.role === "owner")
+          .map((r) => {
+            const h = r.account_hash ?? "";
+            if (!acctTag.has(h)) acctTag.set(h, acctTag.size + 1);
+            return {
+              t: r.occurred_at ? new Date(r.occurred_at).getTime() : 0,
+              device: DEVICE_SET.has(r.device) ? r.device : "desktop",
+              account: hashToOwnerEmail.get(h) ?? `계정 #${acctTag.get(h)}`
+            };
+          })
+          .sort((a, b) => a.t - b.t)
+      : [];
+  // 관리자 총 체류 핑(= 분, 60초당 1핑) — 역계산용. 0이면 핑 없이 방문만 찍힌 것.
+  let ownerPings = 0;
+  if (!hourlyRes.error && Array.isArray(hourlyRes.data)) {
+    for (const r of hourlyRes.data as { role: string; pings: number }[]) {
+      if (r.role === "owner") ownerPings += Number(r.pings) || 0;
+    }
+  }
+
+  return {
+    ok: true,
+    data: { dateKey, visits, occupancy, hasOccupancy, ownerSessions, ownerVisits, ownerPings }
+  };
 }
 
 // 관리자(소유자) 전용 보안 데이터 — 개발자 인사이트 보안 패널과 같되 '개발자' 섹션은 뺀다.
