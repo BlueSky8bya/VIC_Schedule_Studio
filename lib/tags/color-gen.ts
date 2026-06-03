@@ -160,10 +160,12 @@ export function generateTagColor(
     .map((p) => ({ hue: hexToHue(p.bgColor), pat: patternOf(p.key ?? "") }))
     .filter((e): e is { hue: number; pat: Pat } => e.hue !== null);
   const { hue, pat } = pickColorSlot(slots, opts);
-  // 귀엽지만 또렷한 캔디색 — 선명하게(S 높게) + 너무 옅지 않게(L 적당) → 색마다 특색이 산다.
-  const bgColor = hslToHex(hue, 85, 82); // 선명한 캔디 배경
-  const borderColor = hslToHex(hue, 72, 64);
-  const textColor = hslToHex(hue, 62, 27); // 같은 hue의 진한 글씨(연한 배경 위 대비 확보)
+  // Tailwind-200/700 결을 HSL로 근사 — 조화롭고 또렷하게. 따뜻한 띠(노랑·주황 ≈35~70°)는
+  // 같은 밝기에서 '흙색'으로 탁해 보여, 그 구간만 더 밝게(airy) 올려 캔디 톤을 지킨다.
+  const warm = hue >= 32 && hue <= 72;
+  const bgColor = hslToHex(hue, 92, warm ? 86 : 83); // 화사한 Tailwind-200 풍 배경
+  const borderColor = hslToHex(hue, 80, 66);
+  const textColor = hslToHex(hue, 70, 30); // Tailwind-700 풍 진한 동색 글씨(연한 배경 위 강한 대비)
   const rand = Math.random().toString(36).slice(2, 8);
   const key = `gen-${pat}-${rand}`;
   return { key, name: "새 색", bgColor, textColor, borderColor };

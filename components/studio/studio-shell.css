@@ -4349,9 +4349,8 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 8px;
-  max-height: 300px;
-  overflow: auto;
-  overscroll-behavior: contain;
+  /* 자체 스크롤(overflow:auto + max-height)을 두지 않는다 — 내용이 안 넘칠 땐 휠을 삼키고
+     부모로도 안 넘겨(스크롤 트랩) 편집 패널이 안 움직이던 버그. 칩은 적어서 패널과 함께 흐른다. */
   padding: 11px;
   border: 1px solid var(--line, #ece9f5);
   border-radius: 14px;
@@ -4466,7 +4465,6 @@
     grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
     gap: 8px;
     padding: 13px;
-    max-height: 384px;
   }
   .tp-mods {
     grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
@@ -4492,7 +4490,6 @@
 @media (max-width: 640px) {
   .tp-content {
     padding: 9px;
-    max-height: 248px;
   }
   .tp-chip {
     padding: 8px 12px;
