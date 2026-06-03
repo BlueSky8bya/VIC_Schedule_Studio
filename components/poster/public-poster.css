@@ -1822,8 +1822,8 @@
 
 /* 일정별 색상 박스 (태그 색) */
 .public-event {
-  display: grid;
-  align-content: start; /* 칸을 채워 커져도(span) 제목은 항상 맨 위 — 옆 칸과 같은 줄에 정렬 */
+  display: flex;
+  flex-direction: column; /* 제목은 맨 위, 방식 점(.pill-dots)은 margin-top:auto로 맨 아래 */
   gap: 3px;
   border: 1px solid rgb(0 0 0 / 10%);
   border-radius: 8px;
@@ -1897,7 +1897,9 @@
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  margin-top: 4px;
+  /* 카드가 (이어진 칸 높이맞춤으로) 내용보다 커지면 점을 맨 아래로 밀어, 이어진 카드끼리 점이
+     같은 높이에 한 줄로 정렬되게 한다. 내용 높이 그대로면 free space가 없어 글자 바로 밑(gap)에 붙는다. */
+  margin-top: auto;
 }
 .pill-dots i {
   width: 9px;
