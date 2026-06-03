@@ -381,8 +381,11 @@ export function TagLegendEditor({
     if (allTags.length >= MAX_TAGS) return;
     hapticTick();
     setError(null);
+    // 새 태그는 콘텐츠 기본 → 무늬 있는 색 우선(카드에서 최대한 구분). 방식으로 토글하면 점만 보여
+    // 무늬는 무시되니 색은 그대로 둬도 무방.
     const gen = generateTagColor(
-      effectivePalette.map((c) => ({ key: c.key, bgColor: c.bgColor }))
+      effectivePalette.map((c) => ({ key: c.key, bgColor: c.bgColor })),
+      { preferPattern: true }
     );
     const color: ColorPaletteEntry = { ...gen, sortOrder: 0 };
     const tempId = `${NEW_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;

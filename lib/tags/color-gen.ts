@@ -58,10 +58,15 @@ function pickFrom<T>(arr: T[]): T {
 }
 
 // 새 색의 (hue, 무늬)를 고른다. 같은 계열엔 [민무늬 1] + [무늬 1]까지만 둔다.
-function pickColorSlot(existing: { hue: number; pat: Pat }[]): { hue: number; pat: Pat } {
+// opts.plain  = 방식(modifier)용 — 무늬 없는 단색만(점으로만 보여 무늬가 의미 없음).
+// opts.preferPattern = 콘텐츠용 — 가능하면 무늬 있는 슬롯을 골라 카드에서 최대한 구분되게.
+function pickColorSlot(
+  existing: { hue: number; pat: Pat }[],
+  opts?: { plain?: boolean; preferPattern?: boolean }
+): { hue: number; pat: Pat } {
   const decoPats = DECO_PATS;
 
-  const valid: { hue: number; plain: boolean }[] = [];
+  let valid: { hue: number; plain: boolean }[] = [];
   for (let h = 0; h < 360; h += 5) {
     for (const plain of [true, false]) {
       const clash = existing.some(
@@ -72,13 +77,21 @@ function pickColorSlot(existing: { hue: number; pat: Pat }[]): { hue: number; pa
       }
     }
   }
+  // 방식: 단색 슬롯만. 콘텐츠: 가능하면 무늬 슬롯 우선.
+  if (opts?.plain) {
+    const onlyPlain = valid.filter((v) => v.plain);
+    if (onlyPlain.length > 0) valid = onlyPlain;
+  } else if (opts?.preferPattern) {
+    const onlyPat = valid.filter((v) => !v.plain);
+    if (onlyPat.length > 0) valid = onlyPat;
+  }
 
   let hue: number;
   let plain: boolean;
   if (valid.length > 0) {
     const pick = pickFrom(valid);
     hue = pick.hue;
-    plain = pick.plain;
+    plain = opts?.plain ? true : pick.plain;
   } else {
     let best = { hue: Math.floor(Math.random() * 360), plain: true, sep: -1 };
     for (let h = 0; h < 360; h += 5) {
@@ -134,11 +147,14 @@ function hslToHex(h: number, s: number, l: number): string {
 }
 
 // 기존 팔레트(키 + 배경색)를 받아 겹치지 않는 새 색을 하나 만든다.
-export function generateTagColor(existing: { key: string; bgColor: string }[]): GeneratedColor {
+export function generateTagColor(
+  existing: { key: string; bgColor: string }[],
+  opts?: { plain?: boolean; preferPattern?: boolean }
+): GeneratedColor {
   const slots = existing
     .map((p) => ({ hue: hexToHue(p.bgColor), pat: patternOf(p.key ?? "") }))
     .filter((e): e is { hue: number; pat: Pat } => e.hue !== null);
-  const { hue, pat } = pickColorSlot(slots);
+  const { hue, pat } = pickColorSlot(slots, opts);
   const bgColor = hslToHex(hue, 62, 86); // 연한 배경
   const borderColor = hslToHex(hue, 52, 68);
   const textColor = hslToHex(hue, 55, 28); // 같은 hue의 어두운 글씨
