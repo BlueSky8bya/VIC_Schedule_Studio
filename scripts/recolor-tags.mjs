@@ -7,35 +7,37 @@
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
 
-// Open Color(yeun) 벤치마킹 — 맑은 파스텔, 똥색(갈색·황토·올리브) 전혀 없음.
-// bg=shade-2, text=shade-8(따뜻한 색은 더 진하게 보정), border=shade-4.
-// 순서 = '눈이 편한 → 자극적인'. 망막은 S-cone(파랑)이 가장 적고 포화 파랑은 색수차로 피로하다.
-// 그래서 가장 자주 쓰는 태그(달력을 뒤덮는)는 눈이 제일 편한 '초록'(시감도 피크)부터 받고,
-// 파랑은 고빈도에서 빼 중간 빈도로 보낸다. 따뜻한 색(주황·노랑·빨강)은 가장 드문 태그(강조)에만.
+// Open Color(yeun) 벤치마킹 — 맑은 파스텔, 똥색(갈색·황토·올리브) 없음. bg=shade-2/text=8/border=4.
+// 배열 순서 = '빈도 높은 태그(앞) → 낮은 태그(뒤)'에 그대로 배정된다. 그래서 다음을 동시에 만족:
+//  · 눈 편함: 최다 빈도 게임=초록(시감도 피크), 포화 파랑은 고빈도에서 제외.
+//  · 충돌 회피: 자주 보이는 앞쪽 4색(초록·바이올렛·핑크·시안)은 hue가 멀어 서로 안 헷갈린다.
+//  · 초록계열(라임·틸)은 뒤(드문 태그)로 밀어 게임 초록과 잘 안 겹치게. 타스뱅송은 주황으로(초록 탈피).
 const CONTENT = [
-  { n: "그린", bg: "#b2f2bb", text: "#2b8a3e", border: "#69db7c" },
-  { n: "틸", bg: "#96f2d7", text: "#087f5b", border: "#38d9a9" },
+  { n: "그린", bg: "#b2f2bb", text: "#2b8a3e", border: "#69db7c" }, // 게임(최다)
   { n: "바이올렛", bg: "#d0bfff", text: "#5f3dc4", border: "#9775fa" },
   { n: "핑크", bg: "#fcc2d7", text: "#a61e4d", border: "#f783ac" },
   { n: "시안", bg: "#99e9f2", text: "#0b7285", border: "#3bc9db" },
   { n: "그레이프", bg: "#eebefa", text: "#862e9c", border: "#da77f2" },
   { n: "블루", bg: "#a5d8ff", text: "#1864ab", border: "#4dabf7" },
-  { n: "라임", bg: "#d8f5a2", text: "#5c940d", border: "#a9e34b" },
   { n: "인디고", bg: "#bac8ff", text: "#364fc7", border: "#748ffc" },
-  { n: "오렌지", bg: "#ffd8a8", text: "#d9480f", border: "#ffa94d" },
+  { n: "오렌지", bg: "#ffd8a8", text: "#d9480f", border: "#ffa94d" }, // 타스뱅송(초록 탈피)
   { n: "옐로우", bg: "#ffec99", text: "#946800", border: "#ffd43b" },
   { n: "레드", bg: "#ffc9c9", text: "#c92a2a", border: "#ff8787" },
+  { n: "라임", bg: "#d8f5a2", text: "#5c940d", border: "#a9e34b" }, // 초록계열 → 드문 태그로
+  { n: "틸", bg: "#96f2d7", text: "#087f5b", border: "#38d9a9" },
   { n: "그레이프2", bg: "#f3d9fa", text: "#9c36b5", border: "#e599f7" }
 ];
-// 방식용 — 점(작은 원). 같은 '눈 편한→자극적' 순. shade-4 bg + shade-8 text + shade-6 border.
+// 방식용 점(작은 원) — 연한 콘텐츠 카드 '위'에 얹히므로 같은색이면 안 보인다. 그래서 콘텐츠(연한
+// shade-2)와 톤을 갈라 '진한 shade-6'으로 채운다 → 어떤 연한 카드 위에서도 또렷(흰 링까지 더함).
+// 서로 hue도 전부 분리(합방·대회 안 겹치게). 최다 방식 합방은 게임 초록카드에 자주 얹히니 초록 금지.
 const MOD = [
-  { n: "그린", bg: "#69db7c", text: "#2b8a3e", border: "#40c057" },
-  { n: "틸", bg: "#38d9a9", text: "#087f5b", border: "#12b886" },
-  { n: "시안", bg: "#3bc9db", text: "#0b7285", border: "#15aabf" },
-  { n: "그레이프", bg: "#da77f2", text: "#862e9c", border: "#be4bdb" },
-  { n: "오렌지", bg: "#ffa94d", text: "#d9480f", border: "#fd7e14" },
-  { n: "옐로우", bg: "#ffd43b", text: "#946800", border: "#fab005" },
-  { n: "레드", bg: "#ff8787", text: "#c92a2a", border: "#fa5252" }
+  { n: "그레이프", bg: "#cc5de8", text: "#862e9c", border: "#9c36b5" }, // 합방(최다·게임 위에 자주)
+  { n: "오렌지", bg: "#ff922b", text: "#d9480f", border: "#e8590c" },   // 대회
+  { n: "블루", bg: "#339af0", text: "#1864ab", border: "#1971c2" },     // 연습
+  { n: "레드", bg: "#fa5252", text: "#c92a2a", border: "#e03131" },     // 시참
+  { n: "틸", bg: "#20c997", text: "#087f5b", border: "#099268" },       // 짧뱅
+  { n: "바이올렛", bg: "#845ef7", text: "#5f3dc4", border: "#5f3dc4" }, // 모캡
+  { n: "핑크", bg: "#f06595", text: "#a61e4d", border: "#c2255c" }      // 구플뱅
 ];
 const PATS = ["diag", "dots", "grid", "cross", "dash"];
 
