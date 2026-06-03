@@ -1718,10 +1718,6 @@
   border-right: 1px solid #efe6d3;
   border-bottom: 1px solid #efe6d3;
   background: #fffefb;
-  /* 칸은 그리드 행 높이(같은 줄 = 동일)로 늘어난다. 안의 일정 묶음이 그 높이를 채우게 해
-     이어진(span) 일정이 옆 칸과 같은 높이가 되도록(이음새 어긋남 방지). */
-  display: flex;
-  flex-direction: column;
 }
 
 .public-day .day-strip,
@@ -1811,9 +1807,7 @@
 }
 
 .day-events {
-  flex: 1; /* 날짜줄(day-strip) 아래 남은 칸 높이를 채운다 */
-  display: flex;
-  flex-direction: column;
+  display: grid;
   gap: 5px;
   padding: 6px 5px 8px;
 }
@@ -3120,9 +3114,6 @@
   margin-left: -7px;
   margin-right: -7px;
   border-radius: 0;
-  /* 이어진(span) 일정은 칸(=그리드 행 높이)을 채워 옆 칸 세그먼트와 높이가 같아진다.
-     훅(useEqualChainHeights)과 무관하게 CSS만으로도 이음새가 안 어긋난다. */
-  flex: 1 1 auto;
 }
 /* #7: 열린(이어지는) 쪽은 음수 마진(-7px)으로 옆 칸과 겹쳐 붙는다.
    그만큼 글자 영역이 넓어져 줄바꿈이 칸마다 달라지므로, 열린 쪽 패딩을 +7px 보정해
