@@ -41,6 +41,8 @@ export type BroadcastTag = {
   // 2계층 태그: null = 대분류(색 보유), 값 = 세부(부모 id, 렌더 색은 최상위 대분류 색 상속).
   parentId: string | null;
   kind: TagKind;
+  // 단계 배포: true면 분류 v3에서 새로 생긴 태그(레거시 뷰에서 숨김). 기본 false.
+  v3Only?: boolean;
 };
 
 export type PublicScheduleEvent = {

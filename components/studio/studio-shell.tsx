@@ -75,6 +75,7 @@ import {
   canReadPrivateLayer,
   canUsePrivateLayer
 } from "@/lib/permissions/roles";
+import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
 import { PublicPoster } from "@/components/poster/public-poster";
@@ -480,15 +481,6 @@ export function StudioShell({
   useEffect(() => {
     setPalette(schedule.palette);
   }, [schedule.palette]);
-  // #3: "기타" 태그는 색상 안내·태그 선택 모두에서 항상 맨 끝.
-  const legendTags = useMemo(
-    () =>
-      [...tags].sort(
-        (a, b) => Number(a.displayName === "기타") - Number(b.displayName === "기타")
-      ),
-    [tags]
-  );
-
   // 색상 안내 필터 — 편집실에서도 특정 태그 색만 골라볼 수 있게(시청자 화면과 동일 동작).
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   function toggleTagFilter(id: string) {
@@ -502,7 +494,7 @@ export function StudioShell({
       tagFilters.includes(PRIVATE_FILTER) && event.visibilityScope !== "public";
     // 2계층: 대분류 필터는 그 하위 세부를 가진 이벤트까지 포함(전체집합 매칭).
     const matchesTag = tagFilters.some(
-      (id) => id !== PRIVATE_FILTER && eventMatchesTagFilter(event, id, tags)
+      (id) => id !== PRIVATE_FILTER && eventMatchesTagFilter(event, id, viewTags)
     );
     return !(matchesPrivate || matchesTag);
   }
@@ -640,6 +632,23 @@ export function StudioShell({
 
   // 이중 역할(매니저+작업자)은 실제 계정이 둘 다일 때만(미리보기 중엔 단일 역할로 본다).
   const isDualRole = previewDual || (!previewRole && Boolean(actor.isManager && actor.isWorker));
+
+  // 단계 배포: v3 역할(현재 개발자만)은 분류 v3(세부·modifier·신설 그룹)를 그대로 본다. 그 외(관리자·
+  // 매니저·작업자·시청자, 또는 개발자가 그 역할로 미리보기)는 레거시 뷰(세부 나누기 이전)로 본다.
+  // 렌더·피커·레전드·필터에는 viewTags를, 태그 '정의 편집'(TagLegendEditor)에는 원본 tags를 쓴다.
+  const taxonomyV3 = isTaxonomyV3(effectiveRole);
+  const viewTags = useMemo(
+    () => (taxonomyV3 ? tags : legacyTagView(tags)),
+    [tags, taxonomyV3]
+  );
+  // "기타" 태그는 색상 안내·태그 선택 모두에서 항상 맨 끝.
+  const legendTags = useMemo(
+    () =>
+      [...viewTags].sort(
+        (a, b) => Number(a.displayName === "기타") - Number(b.displayName === "기타")
+      ),
+    [viewTags]
+  );
   // 모바일은 "달력 꾸미기"가 PC 전용이라 진입을 숨긴다 → 역할 설명에서도 꾸미기·달력 이미지 저장
   // 관련 항목을 빼서, 폰에서 못 하는 걸 할 수 있다고 안내하지 않게 한다.
   const dropDecorate = (items: string[]) =>
@@ -1108,7 +1117,7 @@ export function StudioShell({
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: StudioScheduleEvent) {
-    return getEventTagColors(event, tags, palette);
+    return getEventTagColors(event, viewTags, palette);
   }
 
   function moveMonth(offset: number) {
@@ -1696,7 +1705,7 @@ export function StudioShell({
                     onToggle={(id) => toggleEventTag(selectedEvent, id)}
                     palette={palette}
                     selectedIds={selectedEvent.tagIds}
-                    tags={tags}
+                    tags={viewTags}
                   />
                 </div>
               </div>
@@ -2431,7 +2440,7 @@ export function StudioShell({
                     ) : null}
                     {shownEvents.map((event) => {
                       const colors = eventColors(event);
-                      const extraColors = getExtraCategoryColors(event, tags, palette);
+                      const extraColors = getExtraCategoryColors(event, viewTags, palette);
                       const { main, subs } = splitEventTitle(event.publicTitle);
                       const barStyle =
                         colors.length >= 2
@@ -2582,24 +2591,30 @@ export function StudioShell({
         {canEdit ? (
           <section className="m-manage">
             <h2>관리</h2>
-            <button
-              className="button"
-              onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "tags" ? null : "tags"))}
-              type="button"
-            >
-              태그 이름 · 색상 · 순서 {mobileMgmt === "tags" ? "▲" : "▼"}
-            </button>
-            {mobileMgmt === "tags" && !previewRole ? (
-              <TagLegendEditor
-                canEdit
-                onTagAdded={applyTagAdd}
-                onTagRemoved={applyTagRemove}
-                onTagsUpdated={applyTagUpdates}
-                palette={palette}
-                removeTagAction={removeTagAction}
-                saveTagsAction={saveTagsAction}
-                tags={tags}
-              />
+            {/* 단계 배포: 태그 '정의 편집'은 v3 역할(현재 개발자)만. 그 외엔 진입 자체를 숨겨
+                레거시 사용자가 v3 구조를 보거나 덮어쓰지 못하게 한다. */}
+            {taxonomyV3 ? (
+              <>
+                <button
+                  className="button"
+                  onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "tags" ? null : "tags"))}
+                  type="button"
+                >
+                  태그 이름 · 색상 · 순서 {mobileMgmt === "tags" ? "▲" : "▼"}
+                </button>
+                {mobileMgmt === "tags" && !previewRole ? (
+                  <TagLegendEditor
+                    canEdit
+                    onTagAdded={applyTagAdd}
+                    onTagRemoved={applyTagRemove}
+                    onTagsUpdated={applyTagUpdates}
+                    palette={palette}
+                    removeTagAction={removeTagAction}
+                    saveTagsAction={saveTagsAction}
+                    tags={tags}
+                  />
+                ) : null}
+              </>
             ) : null}
             <button
               className="button"
@@ -2853,7 +2868,7 @@ export function StudioShell({
                 onToggle={(id) => toggleEventTag(event, id)}
                 palette={palette}
                 selectedIds={event.tagIds}
-                tags={tags}
+                tags={viewTags}
               />
             </div>
           </div>
@@ -3001,7 +3016,7 @@ export function StudioShell({
                 onToggle={selectTag}
                 palette={palette}
                 selectedIds={form.tagIds}
-                tags={tags}
+                tags={viewTags}
               />
             </section>
 
@@ -3213,7 +3228,8 @@ export function StudioShell({
               그 역할 미리보기 중)는 비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}
           {canEdit || (isDeveloper && !previewRole) ? (
             <div className="studio-manage-group" role="group" aria-label="관리">
-              {canEdit ? (
+              {/* 단계 배포: 태그 '정의 편집' 진입은 v3 역할(현재 개발자)만. */}
+              {canEdit && taxonomyV3 ? (
                 <button
                   className="button"
                   onClick={() => (blockedByPreview() ? null : setModal("tags"))}
@@ -3307,7 +3323,7 @@ export function StudioShell({
               filterIds={tagFilters}
               onToggleFilter={toggleTagFilter}
               palette={palette}
-              tags={tags}
+              tags={viewTags}
             />
             {/* 비공개(공개 아님) 일정만 골라보기 — 잠금 해제로 비공개가 보일 때만(개발자·소유자·매니저·작업자). */}
             {canReadPrivate ? (
@@ -3446,7 +3462,7 @@ export function StudioShell({
                     {dateEvents.map((event, eventIndex) => {
                       const colors = eventColors(event);
                       // PR2: 칸 색(≤2)에 못 담은 나머지 대분류 → 작은 점 줄("더 있음").
-                      const extraColors = getExtraCategoryColors(event, tags, palette);
+                      const extraColors = getExtraCategoryColors(event, viewTags, palette);
                       // 선택 강조(테두리·X)는 오른쪽 편집/상세 패널이 열려 있을 때만 — 패널이
                       // 닫히면(다른 버튼으로 슬라이드-아웃) 카드 선택 표시도 함께 사라지게.
                       const isSel = editorVisible && selectedEventId === event.id;
@@ -3722,7 +3738,7 @@ export function StudioShell({
                 onToggle={selectTag}
                 palette={palette}
                 selectedIds={form.tagIds}
-                tags={tags}
+                tags={viewTags}
               />
             </section>
 
@@ -3841,7 +3857,7 @@ export function StudioShell({
               </button>
             </div>
 
-            {modal === "tags" ? (
+            {modal === "tags" && taxonomyV3 ? (
               <TagLegendEditor
                 canEdit
                 onTagAdded={applyTagAdd}

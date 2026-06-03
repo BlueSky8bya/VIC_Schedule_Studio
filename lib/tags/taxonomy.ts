@@ -1,0 +1,31 @@
+import type { BroadcastTag, MembershipRole } from "@/lib/domain/schedule-types";
+
+// 단계 배포: 이 역할들만 분류 v3(2계층 세부·modifier·신설 그룹)를 본다. 검증되면 역할을 추가해
+// 배포한다. 의도한 순서: developer → owner(관리자) → worker(작업자) → manager(매니저) → viewer(시청자).
+export const TAXONOMY_V3_ROLES: MembershipRole[] = ["developer"];
+
+export function isTaxonomyV3(role: MembershipRole): boolean {
+  return TAXONOMY_V3_ROLES.includes(role);
+}
+
+// 레거시 뷰(비-v3 역할) — 분류 v3 이전 상태로 되돌린 태그 목록(공용 데이터는 안 바꾸고 뷰만 변환).
+//  - v3_only 태그 숨김: 외부출연·별별랭킹·구플뱅·게임 세부 시드(와우 등)
+//  - v3 부모(외부출연) 밑 자식은 다시 최상위로(reparent 이전 상태): 토크쇼·타스뱅송
+//  - kind 무시(modifier→content): 합방·시참·대회·짧뱅·풀트뱅을 예전처럼 일반 대분류로
+// (조공 비활성·종겜→게임 리네임은 '세부 나누기'가 아니라 그대로 둔다.)
+export function legacyTagView(tags: BroadcastTag[]): BroadcastTag[] {
+  const v3Ids = new Set(tags.filter((t) => t.v3Only).map((t) => t.id));
+  return tags
+    .filter((t) => !t.v3Only)
+    .map((t) => ({
+      ...t,
+      parentId: t.parentId && v3Ids.has(t.parentId) ? null : t.parentId,
+      kind: "content" as const
+    }));
+}
+
+// 역할에 맞는 태그 뷰(렌더·피커·레전드·필터용). 정의 편집(TagLegendEditor)에는 쓰지 말 것 —
+// 거기엔 원본 tags를 넘겨야 레거시 평탄화가 v3 구조를 덮어쓰지 않는다.
+export function tagsForRole(tags: BroadcastTag[], role: MembershipRole): BroadcastTag[] {
+  return isTaxonomyV3(role) ? tags : legacyTagView(tags);
+}

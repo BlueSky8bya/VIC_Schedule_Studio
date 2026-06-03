@@ -3,7 +3,8 @@ import type {
   ColorPaletteEntry,
   PublicScheduleEvent,
   StudioScheduleEvent,
-  SupportCampaign
+  SupportCampaign,
+  TagKind
 } from "@/lib/domain/schedule-types";
 import { PRODUCT_TIMEZONE } from "@/lib/domain/schedule-types";
 import { getDayMark } from "@/lib/calendar/holidays";
@@ -214,47 +215,64 @@ export function categoryColorKey(tagId: string, tags: BroadcastTag[]): string | 
   return cur ? cur.colorKey : null;
 }
 
-// 이벤트가 가진 태그들의 서로 다른 대분류 colorKey 목록(태그 순서, 중복 제거). 세부 여러 개가
-// 같은 대분류면 하나로 합쳐진다(예: 게임>롤 + 게임>명조 → 게임 색 1개).
-function eventCategoryColorKeys(
+// 2계층: 태그의 최상위 대분류 kind(세부면 부모를 따라 올라감). 대분류면 자기 kind.
+function categoryKind(tagId: string, tags: BroadcastTag[]): TagKind {
+  let cur = tags.find((t) => t.id === tagId);
+  const guard = new Set<string>();
+  while (cur?.parentId && !guard.has(cur.id)) {
+    guard.add(cur.id);
+    const parent = tags.find((t) => t.id === cur!.parentId);
+    if (!parent) break;
+    cur = parent;
+  }
+  return cur?.kind ?? "content";
+}
+
+// 이벤트가 가진 태그들의 서로 다른 대분류 색 + 그 대분류가 수식어(modifier)인지. 같은 대분류는
+// 하나로 합쳐진다(예: 게임>롤 + 게임>명조 → 게임 색 1개). 첫 등장 순서 유지.
+function eventCategoryColors(
   event: PublicScheduleEvent | StudioScheduleEvent,
   tags: BroadcastTag[]
-): string[] {
-  // 카드 색·점 줄은 이벤트가 가진 '모든' 콘텐츠 태그의 대분류 기준(최대 6개라 primary 슬라이스 안 씀).
+): { ck: string; isModifier: boolean }[] {
+  // 카드 색·점 줄은 이벤트가 가진 '모든' 태그의 대분류 기준(최대 6개라 primary 슬라이스 안 씀).
   const ids = event.tagIds.length > 0 ? event.tagIds : event.primaryTagIds;
   const seen = new Set<string>();
-  const out: string[] = [];
+  const out: { ck: string; isModifier: boolean }[] = [];
   for (const id of ids) {
     const ck = categoryColorKey(id, tags);
     if (ck && !seen.has(ck)) {
       seen.add(ck);
-      out.push(ck);
+      out.push({ ck, isModifier: categoryKind(id, tags) === "modifier" });
     }
   }
   return out;
 }
 
-// D: 일정칸에 칠할 색 — 서로 다른 대분류 색 최대 2개(그라데이션). 세부 태그는 부모 색으로 합쳐진다.
+// D: 일정칸에 칠할 색 — 서로 다른 '콘텐츠' 대분류 색 최대 2개(그라데이션). 수식어(modifier)는 칸 색을
+// 안 먹고 점 줄로만 간다(getExtraCategoryColors). 세부 태그는 부모 색으로 합쳐진다.
 export function getEventTagColors(
   event: PublicScheduleEvent | StudioScheduleEvent,
   tags: BroadcastTag[],
   palette: ColorPaletteEntry[]
 ): ColorPaletteEntry[] {
-  return eventCategoryColorKeys(event, tags)
+  return eventCategoryColors(event, tags)
+    .filter((c) => !c.isModifier)
     .slice(0, 2)
-    .map((ck) => palette.find((p) => p.key === ck))
+    .map((c) => palette.find((p) => p.key === c.ck))
     .filter((color): color is ColorPaletteEntry => Boolean(color));
 }
 
-// PR2: 칸 색(≤2 대분류)에 못 담은 '나머지 대분류' 색들 — 작은 점 줄로 표시(색 안 늘리고 "더 있음").
+// 칸 색(≤2 콘텐츠 대분류)에 못 담은 색들 — 작은 점 줄로 표시. 넘친 콘텐츠 대분류 + 모든 수식어.
 export function getExtraCategoryColors(
   event: PublicScheduleEvent | StudioScheduleEvent,
   tags: BroadcastTag[],
   palette: ColorPaletteEntry[]
 ): ColorPaletteEntry[] {
-  return eventCategoryColorKeys(event, tags)
-    .slice(2)
-    .map((ck) => palette.find((p) => p.key === ck))
+  const cats = eventCategoryColors(event, tags);
+  const content = cats.filter((c) => !c.isModifier);
+  const modifiers = cats.filter((c) => c.isModifier);
+  return [...content.slice(2), ...modifiers]
+    .map((c) => palette.find((p) => p.key === c.ck))
     .filter((color): color is ColorPaletteEntry => Boolean(color));
 }
 

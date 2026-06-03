@@ -79,6 +79,7 @@ import {
   type MonthCell
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
+import { legacyTagView } from "@/lib/tags/taxonomy";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
@@ -615,15 +616,18 @@ export function PublicPoster({
   useEffect(() => {
     markContentReady();
   }, []);
+  // 시청자(공개 포스터)는 항상 레거시 뷰 — 분류 v3(세부·modifier·신설 그룹)는 단계 배포가 시청자까지
+  // 오기 전엔 안 보인다. lib/tags/taxonomy.ts의 TAXONOMY_V3_ROLES에 viewer를 넣으면 풀린다.
+  const viewTags = useMemo(() => legacyTagView(schedule.tags), [schedule.tags]);
   // #1: 색상 안내에서 "기타"는 항상 맨 마지막으로(나머지는 기존 정렬 유지).
   // 색상 안내 순서 = 태그 sort_order(편집실에서 드래그로 정한 순서). 단일 진실 소스.
   // 2계층: 색상 안내/필터는 '대분류'만(한 색 = 한 칩). 대분류를 고르면 그 하위 세부 일정까지 매칭된다.
   const legendTags = useMemo(
     () =>
-      [...schedule.tags]
+      [...viewTags]
         .filter((t) => (t.parentId ?? null) === null)
         .sort((a, b) => a.sortOrder - b.sortOrder),
-    [schedule.tags]
+    [viewTags]
   );
 
   // "내 이모지" 보관함 — 로컬 상태로 들고 있어 업로드·삭제를 새로고침(왕복) 없이 즉시 반영한다.
@@ -1821,7 +1825,7 @@ export function PublicPoster({
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: PublicScheduleEvent) {
-    return getEventTagColors(event, schedule.tags, schedule.palette);
+    return getEventTagColors(event, viewTags, schedule.palette);
   }
 
   // A2 고도화: 현재 필터(태그 다중 + 관심만)에 안 맞는 일정은 흐리게 처리할지 판정.
@@ -1829,7 +1833,7 @@ export function PublicPoster({
     const matchesTag =
       tagFilters.length === 0 ||
       // 2계층: 대분류 필터는 그 하위 세부를 가진 일정까지 포함.
-      tagFilters.some((id) => eventMatchesTagFilter(event, id, schedule.tags));
+      tagFilters.some((id) => eventMatchesTagFilter(event, id, viewTags));
     const matchesBookmark = !bookmarkedOnly || isBookmarked(event.id);
     return !(matchesTag && matchesBookmark);
   }
@@ -1947,7 +1951,7 @@ export function PublicPoster({
         >
           {events.map((event) => {
             const colors = eventColors(event);
-            const extraColors = getExtraCategoryColors(event, schedule.tags, schedule.palette);
+            const extraColors = getExtraCategoryColors(event, viewTags, schedule.palette);
             const { main, subs } = splitEventTitle(event.publicTitle);
             const span = getEventSpan(event, cell.isoDate, cell.weekday, schedule.events);
             const bookmarked = isBookmarked(event.id);
@@ -2196,7 +2200,7 @@ export function PublicPoster({
                     const colors = eventColors(event);
                     const extraColors = support
                       ? []
-                      : getExtraCategoryColors(event, schedule.tags, schedule.palette);
+                      : getExtraCategoryColors(event, viewTags, schedule.palette);
                     const { main, subs } = splitEventTitle(event.publicTitle);
                     const bookmarked = isBookmarked(event.id);
                     const tier =
