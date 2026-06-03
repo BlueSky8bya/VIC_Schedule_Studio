@@ -7,34 +7,34 @@
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
 
-// Catppuccin Latte 벤치마킹(스트리머·버튜버 감성 포근 파스텔). 공식 accent를 연한 bg 틴트 +
-// 진한 동색 글씨(라이트한 노랑·피치 accent는 글씨를 충분히 어둡게 보정해 대비 확보)로 변환.
-// '차분(cool) → 선명(warm)' 순 — 자주 쓰는 태그가 앞쪽 차분한 색을 받는다.
-// 앞 6(차분 묶음): 블루·틸·그린·라벤더·스카이·모브 — 서로 다른 hue라 고빈도끼리도 구분.
+// Open Color(yeun) 벤치마킹 — 맑은 파스텔, 똥색(갈색·황토·올리브) 전혀 없음.
+// bg=shade-2, text=shade-8(따뜻한 색은 더 진하게 보정), border=shade-4.
+// '차분(cool) → 선명(warm)' 순 — 노랑·주황은 가장 뒤(드문 태그)라 달력에 거의 안 깔린다.
+// 앞 6(차분 묶음): 블루·틸·그린·인디고·시안·그레이프 — hue가 갈려 고빈도끼리도 구분.
 const CONTENT = [
-  { n: "블루", bg: "#cdddfd", text: "#1b54cc", border: "#9bbcfa" },
-  { n: "틸", bg: "#c5e6e8", text: "#0f6f74", border: "#8fcdd0" },
-  { n: "그린", bg: "#d3eccc", text: "#2e7d1f", border: "#a9d79f" },
-  { n: "라벤더", bg: "#dadffb", text: "#4e5fd0", border: "#b5c0f8" },
-  { n: "스카이", bg: "#c2e9fa", text: "#0379a8", border: "#88d3f3" },
-  { n: "모브", bg: "#e1d2fb", text: "#6f23d4", border: "#c3a6f6" },
-  { n: "사파이어", bg: "#c6e8ee", text: "#16707f", border: "#92d2dd" },
-  { n: "옐로우", bg: "#f7e6c8", text: "#9a6310", border: "#eecf99" },
-  { n: "피치", bg: "#ffdcc6", text: "#c2430a", border: "#fdb78c" },
-  { n: "핑크", bg: "#fad6ef", text: "#b83f96", border: "#f3b0e0" },
-  { n: "마룬", bg: "#fbd2d6", text: "#c01f2d", border: "#f4a3ab" },
-  { n: "레드", bg: "#f7ccd4", text: "#b00d30", border: "#ee99a6" },
-  { n: "플라밍고", bg: "#f7d6d6", text: "#c14a4a", border: "#efb0b0" }
+  { n: "블루", bg: "#a5d8ff", text: "#1864ab", border: "#4dabf7" },
+  { n: "틸", bg: "#96f2d7", text: "#087f5b", border: "#38d9a9" },
+  { n: "그린", bg: "#b2f2bb", text: "#2b8a3e", border: "#69db7c" },
+  { n: "인디고", bg: "#bac8ff", text: "#364fc7", border: "#748ffc" },
+  { n: "시안", bg: "#99e9f2", text: "#0b7285", border: "#3bc9db" },
+  { n: "그레이프", bg: "#eebefa", text: "#862e9c", border: "#da77f2" },
+  { n: "바이올렛", bg: "#d0bfff", text: "#5f3dc4", border: "#9775fa" },
+  { n: "라임", bg: "#d8f5a2", text: "#5c940d", border: "#a9e34b" },
+  { n: "핑크", bg: "#fcc2d7", text: "#a61e4d", border: "#f783ac" },
+  { n: "오렌지", bg: "#ffd8a8", text: "#d9480f", border: "#ffa94d" },
+  { n: "옐로우", bg: "#ffec99", text: "#946800", border: "#ffd43b" },
+  { n: "레드", bg: "#ffc9c9", text: "#c92a2a", border: "#ff8787" },
+  { n: "그레이프2", bg: "#f3d9fa", text: "#9c36b5", border: "#e599f7" }
 ];
-// 방식용 — 점(작은 원). 같은 '차분→선명' 원칙. Catppuccin accent를 더 진한 톤(보더=accent)으로.
+// 방식용 — 점(작은 원). 같은 '차분→선명' 원칙. shade-4 bg + shade-8 text + shade-6 border(더 또렷).
 const MOD = [
-  { n: "블루", bg: "#9bbcfa", text: "#1b54cc", border: "#1e66f5" },
-  { n: "그린", bg: "#a9d79f", text: "#2e7d1f", border: "#40a02b" },
-  { n: "사파이어", bg: "#92d2dd", text: "#16707f", border: "#209fb5" },
-  { n: "옐로우", bg: "#eecf99", text: "#9a6310", border: "#df8e1d" },
-  { n: "피치", bg: "#fdb78c", text: "#c2430a", border: "#fe640b" },
-  { n: "모브", bg: "#c3a6f6", text: "#6f23d4", border: "#8839ef" },
-  { n: "레드", bg: "#ee99a6", text: "#b00d30", border: "#d20f39" }
+  { n: "블루", bg: "#4dabf7", text: "#1864ab", border: "#228be6" },
+  { n: "그린", bg: "#69db7c", text: "#2b8a3e", border: "#40c057" },
+  { n: "시안", bg: "#3bc9db", text: "#0b7285", border: "#15aabf" },
+  { n: "그레이프", bg: "#da77f2", text: "#862e9c", border: "#be4bdb" },
+  { n: "오렌지", bg: "#ffa94d", text: "#d9480f", border: "#fd7e14" },
+  { n: "옐로우", bg: "#ffd43b", text: "#946800", border: "#fab005" },
+  { n: "레드", bg: "#ff8787", text: "#c92a2a", border: "#fa5252" }
 ];
 const PATS = ["diag", "dots", "grid", "cross", "dash"];
 
@@ -89,10 +89,10 @@ for (let i = 0; i < content.length; i++) {
   console.log(`콘텐츠 ${content[i].display_name.padEnd(8)} ${String(content[i].uses).padStart(3)}회 → ${col.n} (${pat})`);
 }
 
-// 3) 휴뱅 — Catppuccin Latte 중립 회색(surface) 고정
+// 3) 휴뱅 — Open Color 중립 회색 고정
 await c.query(
   `insert into color_palette (calendar_id,key,name,bg_color,text_color,border_color,sort_order)
-   values ($1,'gray','회색','#dce0e8','#5c5f77','#bcc0cc',1) on conflict (calendar_id,key) do update
+   values ($1,'gray','회색','#e9ecef','#495057','#ced4da',1) on conflict (calendar_id,key) do update
      set bg_color=excluded.bg_color, text_color=excluded.text_color, border_color=excluded.border_color`,
   [cal]
 );
