@@ -346,8 +346,12 @@ export function TagLegendEditor({
       );
     };
     // 콘텐츠끼리 / 방식끼리 한 눈에 보이게 두 묶음으로 나눠 wrap 배치(가로 스크롤 없음).
-    const contentTops = orderedTops.filter((t) => t.kind !== "modifier");
-    const modifierTops = orderedTops.filter((t) => t.kind === "modifier");
+    // 읽기 전용(색상 안내/필터)은 드래그를 안 하므로 내부 orderIds가 아니라 'tags prop 순서'를
+    // 그대로 따른다. (orderIds 동기화는 기존 순서를 보존해서, 편집실에서 순서를 저장해도 색상바가
+    // 옛 순서로 굳고 새로고침해야 바뀌던 버그가 있었다. prop 순서를 직접 쓰면 즉시 반영된다.)
+    const topsInOrder = tags.filter((t) => (t.parentId ?? null) === null);
+    const contentTops = topsInOrder.filter((t) => t.kind !== "modifier");
+    const modifierTops = topsInOrder.filter((t) => t.kind === "modifier");
     return (
       <div className="studio-tag-legend">
         <div className="tlg-group">{contentTops.map(legendItem)}</div>
