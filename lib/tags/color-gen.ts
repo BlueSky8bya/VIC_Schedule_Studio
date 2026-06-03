@@ -13,7 +13,6 @@ export type GeneratedColor = {
 type Pat = "plain" | "diag" | "dots" | "grid" | "cross" | "dash";
 // 생성에 쓰는 무늬 종류(민무늬 제외).
 const DECO_PATS: Pat[] = ["diag", "dots", "grid", "cross", "dash"];
-const FAMILY = 38; // 같은 색상 계열로 보는 hue 거리(°)
 
 // hex(#rrggbb) → HSL hue(0~360). 파싱 실패 시 null.
 function hexToHue(hex: string): number | null {
@@ -60,73 +59,6 @@ function hueDist(a: number, b: number): number {
 
 function pickFrom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
-}
-
-// 새 색의 (hue, 무늬)를 고른다. 같은 계열엔 [민무늬 1] + [무늬 1]까지만 둔다.
-// opts.plain  = 방식(modifier)용 — 무늬 없는 단색만(점으로만 보여 무늬가 의미 없음).
-// opts.preferPattern = 콘텐츠용 — 가능하면 무늬 있는 슬롯을 골라 카드에서 최대한 구분되게.
-function pickColorSlot(
-  existing: { hue: number; pat: Pat }[],
-  opts?: { plain?: boolean; preferPattern?: boolean }
-): { hue: number; pat: Pat } {
-  const decoPats = DECO_PATS;
-
-  let valid: { hue: number; plain: boolean }[] = [];
-  for (let h = 0; h < 360; h += 5) {
-    for (const plain of [true, false]) {
-      const clash = existing.some(
-        (e) => hueDist(h, e.hue) < FAMILY && (e.pat === "plain") === plain
-      );
-      if (!clash) {
-        valid.push({ hue: h, plain });
-      }
-    }
-  }
-  // 방식: 단색 슬롯만. 콘텐츠: 가능하면 무늬 슬롯 우선.
-  if (opts?.plain) {
-    const onlyPlain = valid.filter((v) => v.plain);
-    if (onlyPlain.length > 0) valid = onlyPlain;
-  } else if (opts?.preferPattern) {
-    const onlyPat = valid.filter((v) => !v.plain);
-    if (onlyPat.length > 0) valid = onlyPat;
-  }
-
-  let hue: number;
-  let plain: boolean;
-  if (valid.length > 0) {
-    const pick = pickFrom(valid);
-    hue = pick.hue;
-    plain = opts?.plain ? true : pick.plain;
-  } else {
-    let best = { hue: Math.floor(Math.random() * 360), plain: true, sep: -1 };
-    for (let h = 0; h < 360; h += 5) {
-      for (const p of [true, false]) {
-        const same = existing.filter((e) => (e.pat === "plain") === p).map((e) => e.hue);
-        const sep = same.length ? Math.min(...same.map((u) => hueDist(h, u))) : 360;
-        if (sep > best.sep) {
-          best = { hue: h, plain: p, sep };
-        }
-      }
-    }
-    hue = best.hue;
-    plain = best.plain;
-  }
-
-  let pat: Pat = "plain";
-  if (!plain) {
-    const near = new Set(
-      existing
-        .filter((e) => e.pat !== "plain" && hueDist(hue, e.hue) < FAMILY * 2)
-        .map((e) => e.pat)
-    );
-    const count = (p: Pat) => existing.filter((e) => e.pat === p).length;
-    const notNear = decoPats.filter((p) => !near.has(p));
-    const candidates = notNear.length > 0 ? notNear : decoPats;
-    const min = Math.min(...candidates.map(count));
-    pat = pickFrom(candidates.filter((p) => count(p) === min));
-  }
-  const jitter = Math.floor(Math.random() * 7) - 3; // ±3° 미세 흔들기
-  return { hue: (hue + jitter + 360) % 360, pat };
 }
 
 function hslToHex(h: number, s: number, l: number): string {
@@ -185,58 +117,56 @@ function pickPattern(existing: { key: string }[]): Pat {
   return pickFrom(candidates);
 }
 
-// 기존 팔레트(키 + 배경색)를 받아 겹치지 않는 새 색을 하나 만든다.
-// 1순위: 큐레이트 Open Color 패밀리 중, 같은 종류(콘텐츠/방식)에서 '아직 안 쓴 + hue가 가장 멀리
-// 떨어진' 것을 고른다 → 새 태그도 기존과 같은 결 + 충돌 없이. 모든 패밀리가 차면 HSL로 폴백.
+// 기존 팔레트(키 + 배경색)를 받아 겹치지 않는 '랜덤' 새 색을 하나 만든다.
+// 항상 무작위 — 추가했다 지우고 다시 추가하면 매번 다른 구분색이 나오게(리세마라). 같은 종류
+// (콘텐츠 무늬카드 / 방식 단색점)끼리만 hue 충돌을 본다(둘은 명도가 갈려 같은 hue도 무방).
+//  1) 큐레이트 Open Color 패밀리 중 기존과 ≥28° 떨어진(안 겹치는) 것 → 그 중 무작위.
+//  2) 패밀리가 다 찼다 → 빈 hue(기존과 가장 먼 상위 40%) 중 무작위로 HSL 생성.
 export function generateTagColor(
   existing: { key: string; bgColor: string }[],
+  // opts: plain=방식, preferPattern=콘텐츠(기본). 항상 랜덤이므로 random 플래그는 무시(호환용).
   opts?: { plain?: boolean; preferPattern?: boolean; random?: boolean }
 ): GeneratedColor {
-  const wantPlain = Boolean(opts?.plain); // true=방식(단색 점), false=콘텐츠(무늬 카드)
-  // 같은 종류끼리만 hue 충돌을 본다(콘텐츠 카드 vs 방식 점은 명도가 달라 같은 hue도 무방).
+  const wantPlain = Boolean(opts?.plain);
   const sameKind = existing.filter((p) => isPatternColor(p.key) === !wantPlain);
   const usedHues = sameKind
     .map((p) => hexToHue(p.bgColor))
     .filter((h): h is number => h !== null);
-  // 각 패밀리의 '기존과의 최소 거리'(클수록 안 겹침)를 잰다.
-  const scored = FAMILIES.map((f) => ({
-    f,
-    sep: usedHues.length ? Math.min(...usedHues.map((u) => hueDist(f.hue, u))) : 360
-  }));
-  let best: Family | null = null;
-  let bestSep = -1;
-  if (opts?.random) {
-    // 랜덤: 기존과 '충분히 구분되는'(가장 먼 것의 70%↑, 단 ≥30°) 후보들 중에서 무작위로 뽑는다.
-    const maxSep = Math.max(...scored.map((s) => s.sep));
-    const pool = scored.filter((s) => s.sep >= Math.max(30, maxSep * 0.7));
-    const pick = pool.length ? pickFrom(pool) : scored.sort((a, b) => b.sep - a.sep)[0];
-    best = pick.f;
-    bestSep = pick.sep;
-  } else {
-    for (const s of scored) {
-      if (s.sep > bestSep) {
-        bestSep = s.sep;
-        best = s.f;
-      }
-    }
-  }
+  const minSepTo = (h: number) =>
+    usedHues.length ? Math.min(...usedHues.map((u) => hueDist(h, u))) : 360;
   const rand = Math.random().toString(36).slice(2, 8);
-  // 충분히 떨어진(≈24°↑) 큐레이트 색이 남아 있으면 그걸 쓴다.
-  if (best && bestSep >= 24) {
-    // 방식 글씨는 흰색(진한 점/칩 bg 위 가독). 콘텐츠는 패밀리의 진한 동색 글씨 그대로.
-    const v = wantPlain ? { ...best.mod, text: "#ffffff" } : best.content;
-    const pat: Pat = wantPlain ? "plain" : pickPattern(existing.filter((p) => isPatternColor(p.key)));
-    return { key: `gen-${pat}-${rand}`, name: "새 색", bgColor: v.bg, textColor: v.text, borderColor: v.border };
+  const patOf = () =>
+    wantPlain ? "plain" : pickPattern(existing.filter((p) => isPatternColor(p.key)));
+
+  // 1) 안 겹치는 큐레이트 패밀리 중 무작위.
+  const free = FAMILIES.filter((f) => minSepTo(f.hue) >= 28);
+  if (free.length > 0) {
+    const f = pickFrom(free);
+    const v = wantPlain ? { ...f.mod, text: "#ffffff" } : f.content;
+    return { key: `gen-${patOf()}-${rand}`, name: "새 색", bgColor: v.bg, textColor: v.text, borderColor: v.border };
   }
-  // 폴백: 큐레이트가 다 찼다 → 기존과 안 겹치는 hue를 HSL로 만들어 같은 톤(Open Color 풍)으로.
-  const slots = existing
-    .map((p) => ({ hue: hexToHue(p.bgColor), pat: patternOf(p.key ?? "") }))
-    .filter((e): e is { hue: number; pat: Pat } => e.hue !== null);
-  const { hue, pat } = pickColorSlot(slots, opts);
+  // 2) 패밀리가 다 찼다 → 빈 hue 중 무작위(가장 먼 상위 40%)로 HSL 생성.
+  const grid: { h: number; sep: number }[] = [];
+  for (let h = 0; h < 360; h += 4) grid.push({ h, sep: minSepTo(h) });
+  grid.sort((a, b) => b.sep - a.sep);
+  const hue = pickFrom(grid.slice(0, Math.max(1, Math.ceil(grid.length * 0.4)))).h;
+  if (wantPlain) {
+    // 방식: 진한 단색 + 흰 글씨.
+    return {
+      key: `gen-plain-${rand}`,
+      name: "새 색",
+      bgColor: hslToHex(hue, 68, 45),
+      textColor: "#ffffff",
+      borderColor: hslToHex(hue, 72, 34)
+    };
+  }
+  // 콘텐츠: 연한 카드 + 진한 동색 글씨 + 무늬.
   const warm = hue >= 32 && hue <= 72;
-  const bgColor = hslToHex(hue, 78, warm ? 88 : 86);
-  const borderColor = hslToHex(hue, 60, 72);
-  const textColor = hslToHex(hue, 62, 33);
-  const key = `gen-${pat}-${rand}`;
-  return { key, name: "새 색", bgColor, textColor, borderColor };
+  return {
+    key: `gen-${patOf()}-${rand}`,
+    name: "새 색",
+    bgColor: hslToHex(hue, 78, warm ? 88 : 86),
+    textColor: hslToHex(hue, 62, 30),
+    borderColor: hslToHex(hue, 60, 72)
+  };
 }

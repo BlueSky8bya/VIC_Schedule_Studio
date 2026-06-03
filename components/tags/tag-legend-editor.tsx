@@ -121,6 +121,16 @@ export function TagLegendEditor({
     });
   }, [tags]);
 
+  // 드래프트(저장 전) 색 정리 — 어떤 태그도 더는 안 쓰는 새 색은 버린다. 방식↔콘텐츠 토글을
+  // 오갈 때마다 새 색을 만들어 newColors가 누적되던(팔레트 풀이 하나씩 늘던) 문제를 막는다.
+  useEffect(() => {
+    setNewColors((cols) => {
+      const used = new Set(Object.values(draft).map((d) => d.colorKey));
+      const next = cols.filter((c) => used.has(c.key));
+      return next.length === cols.length ? cols : next;
+    });
+  }, [draft]);
+
   const colorOf = (key: ColorKey) => effectivePalette.find((p) => p.key === key);
 
   // 2계층: 드래그 순서는 '대분류'에만 적용(세부는 부모 밑에 sortOrder 순으로 따라붙음).
