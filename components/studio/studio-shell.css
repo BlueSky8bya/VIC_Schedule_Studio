@@ -4621,8 +4621,12 @@ textarea:disabled {
   }
   /* 고스트(드래그 복제본) — 옮기며 색을 비교해 배치해야 하니 '선택된 색 칩'만 인라인으로 보인다
      (전체 팔레트는 숨김). 손잡이·이름·방식·[그 태그 색]·삭제 한 줄 → 색은 보이고 키는 최소. */
+  /* 내용만큼만 — JS가 원래 행 전체폭(rect.width)을 inline으로 박으므로 !important로 덮어
+     fit-content로 줄인다. 오른쪽 빈 공간 제거. */
   .tag-drag-ghost {
     flex-wrap: nowrap;
+    width: auto !important;
+    max-width: 90vw;
     padding: 7px 10px;
     border-radius: 12px;
   }
@@ -4630,10 +4634,12 @@ textarea:disabled {
     width: 24px;
     height: 30px;
   }
+  /* 이름칸은 내용폭(기본 너비)만, 단 너무 길지 않게 캡 — 박스가 내용에 딱 맞게 줄어든다. */
   .tag-drag-ghost input {
-    flex: 1 1 0;
+    flex: 0 1 auto;
     width: auto;
-    min-width: 0;
+    min-width: 60px;
+    max-width: 44vw;
   }
   .tag-drag-ghost .tag-editor-swatches {
     order: 4;
