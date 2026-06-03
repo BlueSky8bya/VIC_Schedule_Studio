@@ -1,25 +1,38 @@
 "use client";
 
-import { useLayoutEffect, type RefObject } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 // 이어진 일정(같은 data-chain) 칸들의 높이를 그 묶음에서 가장 큰 칸에 맞춘다.
 // 글자 수가 달라 높이가 다른 카드가 이어질 때 이음새가 어긋나 보이는 걸 막는다.
 //
-// 설계(race-free): 우리가 쓰는 건 minHeight(=style)뿐이다. 그래서
-//  1) 변경 감지(MutationObserver)는 style을 '관찰하지 않는다' — childList/characterData/class만.
-//  2) 측정·쓰기(equalize) 동안엔 MO를 잠깐 끊었다가(disconnect) 끝나고 다시 붙인다.
-// 이 둘로 "우리 minHeight 쓰기가 자기 자신을 다시 트리거"하는 루프를 원천 차단한다.
-// (시간 기반 suppress 창은 정당한 신호까지 먹어 첫 로드 정렬을 깨뜨려 쓰지 않는다.)
-// 진짜 변화(폰트 로딩·카드 생성/삭제·제목 글자 변경·창 폭/스케일)만 다시 맞춘다.
-export function useEqualChainHeights(
-  ref: RefObject<HTMLElement | null>,
-  deps: unknown[]
-) {
-  useLayoutEffect(() => {
-    const root = ref.current;
+// ── 왜 callback ref인가(구조적 보장) ──
+// 예전엔 RefObject + useLayoutEffect(deps)였다. 그런데 편집실 그리드는 시청자 미리보기·잠금
+// 로딩·월 이동(key) 등으로 '통째로 언마운트→리마운트'된다. 그때 ref.current는 새 DOM이 되는데,
+// deps에 그 트리거가 안 들어가 있으면 effect가 다시 안 돌아 '갔다 오면 높이가 틀어진' 채 굳었다.
+// → 트리거를 일일이 deps에 넣는 방식은 새 화면 전환이 생길 때마다 또 깨질 수 있다(확률 0 불가).
+//
+// callback ref는 React가 '요소가 실제로 (언)마운트될 때마다' 반드시 호출한다. 즉 어떤 경로로
+// 그리드가 다시 뜨든(미리보기 복귀·잠금 해제·월 변경·그 무엇이든) 항상 새 요소로 재설정된다.
+// "어떤 상태를 deps에 빠뜨렸나"라는 문제 자체가 사라진다 → 리마운트로 인한 미정렬 확률 0.
+// 그리드가 안 바뀐 채 '내용만' 바뀌는 경우(제목 수정·카드 추가/삭제)는 내부 MutationObserver가,
+// 폭/스케일 변화는 ResizeObserver가 잡는다. deps는 데이터 변화 시 한 번 더 맞추는 보강일 뿐이다.
+export function useEqualChainHeights<T extends HTMLElement>(
+  deps: unknown[] = []
+): (el: T | null) => void {
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const scheduleRef = useRef<(() => void) | null>(null);
+
+  const setRef = useCallback((root: T | null) => {
+    // 이전 요소가 있었다면 관찰자·리스너를 모두 정리한다.
+    if (cleanupRef.current) {
+      cleanupRef.current();
+      cleanupRef.current = null;
+      scheduleRef.current = null;
+    }
     if (!root) {
       return;
     }
+
     let cancelled = false;
     let mo: MutationObserver | null = null;
 
@@ -29,7 +42,7 @@ export function useEqualChainHeights(
         childList: true, // 카드 생성/삭제
         characterData: true, // 제목·항목 글자 변경
         attributes: true,
-        attributeFilter: ["class", "data-chain"] // style(=우리 minHeight)은 제외
+        attributeFilter: ["class", "data-chain"] // style(=우리 minHeight)은 제외(self-trigger 방지)
       });
     }
 
@@ -37,7 +50,7 @@ export function useEqualChainHeights(
       if (cancelled) {
         return;
       }
-      mo?.disconnect(); // 측정·쓰기 동안엔 관찰 정지 → 우리 변경이 자신을 트리거 못함
+      mo?.disconnect(); // 측정·쓰기 동안 관찰 정지 → 우리 minHeight 변경이 자신을 트리거 못함
       const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
       for (const p of pills) {
         p.style.minHeight = ""; // 먼저 초기화해 자연 높이를 잰다
@@ -67,7 +80,7 @@ export function useEqualChainHeights(
           el.style.minHeight = `${max}px`;
         }
       }
-      observe(); // 변경분 반영 끝난 뒤 다시 관찰
+      observe(); // 반영 끝난 뒤 다시 관찰
     }
 
     let raf1 = 0;
@@ -79,28 +92,26 @@ export function useEqualChainHeights(
         raf2 = requestAnimationFrame(equalize);
       });
     }
+    scheduleRef.current = schedule;
 
-    // useLayoutEffect라 이 첫 호출은 '페인트 전'에 끝난다 → 첫 화면부터 어긋남 없이 보인다.
+    // 마운트 즉시 1차(페인트 전 가깝게) + 레이아웃 안정 후 한 번 더.
     equalize();
-    // 레이아웃이 안정된 다음 프레임에 한 번 더(컨테이너 폭·스크롤바·미리보기 전환 등 줄바꿈 변화).
     schedule();
-    // 웹폰트(Pretendard) 로딩 전 폴백 글꼴로 재면 높이가 어긋난다. 준비되면 한 번 더 맞춘다.
+    // 웹폰트 로딩 전 폴백 글꼴로 재면 높이가 어긋난다. 준비되면 다시 맞춘다.
     if (typeof document !== "undefined" && document.fonts) {
       document.fonts.ready.then(() => schedule()).catch(() => {});
     }
-    // 컨테이너(달력 그리드) 크기·포스터 스케일이 바뀌면 다시 맞춘다(폭 변화로 줄바꿈이 달라짐).
     const ro =
       typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => schedule()) : null;
     ro?.observe(root);
-    // 카드 생성/삭제·글자 변경·클래스 변화를 감지해 다시 맞춘다(style=우리 minHeight는 제외).
     mo = typeof MutationObserver !== "undefined" ? new MutationObserver(() => schedule()) : null;
     observe();
-    // 등장/퇴장 애니·전환이 끝나 레이아웃이 안정되면 다시 맞춘다(첫 진입 스태거 포함).
     const onSettle = () => schedule();
     root.addEventListener("animationend", onSettle);
     root.addEventListener("transitionend", onSettle);
     window.addEventListener("resize", schedule);
-    return () => {
+
+    cleanupRef.current = () => {
       cancelled = true;
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
@@ -111,5 +122,24 @@ export function useEqualChainHeights(
       window.removeEventListener("resize", schedule);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 데이터(이벤트/뷰 등)가 바뀌면 한 번 더 맞춘다 — MutationObserver 보강. 그리드가 안 바뀐 채
+  // 내용만 갱신되는 경우의 안전망(콜백 ref는 요소가 안 바뀌면 호출되지 않으므로).
+  useEffect(() => {
+    scheduleRef.current?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
+
+  // 컴포넌트 언마운트 시 정리.
+  useEffect(() => {
+    return () => {
+      if (cleanupRef.current) {
+        cleanupRef.current();
+        cleanupRef.current = null;
+      }
+    };
+  }, []);
+
+  return setRef;
 }

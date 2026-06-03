@@ -955,8 +955,9 @@ export function StudioShell({
   // 이어진 일정 묶음 키 + 묶음 칸 높이 맞추기(글자 수 달라도 이음새 안 어긋나게).
   const chainKeys = useMemo(() => buildChainKeys(visibleEvents), [visibleEvents]);
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
-  const monthGridRef = useRef<HTMLDivElement>(null);
-  useEqualChainHeights(monthGridRef, [visibleEvents, view]);
+  // 이어진 칸 높이 맞추기 — callback ref라 그리드가 어떤 경로로 (재)마운트되든(미리보기 복귀·
+  // 잠금 로딩·월 변경 등) 항상 새 요소에 자동 재설정된다. deps는 데이터 변화 시 보강용.
+  const monthGridRef = useEqualChainHeights<HTMLDivElement>([visibleEvents, view]);
   // 실제 편집실 화면이 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아닌 진짜 화면을 봤을 때만 방문 1).
   useEffect(() => {
     markContentReady();
@@ -1282,11 +1283,18 @@ export function StudioShell({
     offX: number;
     offY: number;
     started: boolean;
+    isTouch: boolean;
+    // armed=드래그 시작 가능. 마우스는 즉시, 터치는 롱프레스(제자리 유지) 뒤에만 켜진다.
+    // 그 전 터치 움직임은 '스크롤 의도'로 보고 드래그를 포기해 페이지가 그냥 스크롤되게 한다.
+    armed: boolean;
   } | null>(null);
   const dragScrollDir = useRef(0);
   const dragRaf = useRef<number | null>(null);
   const dragMoveRef = useRef<((e: PointerEvent) => void) | null>(null);
   const justDraggedRef = useRef(false);
+  // 터치 롱프레스 타이머 + 드래그 활성 동안 네이티브 스크롤을 막는 비수동 리스너.
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const preventTouchScrollRef = useRef<((e: TouchEvent) => void) | null>(null);
   // 유령 물리감(태그 편집과 동일): 관성 지연 + 움직임 방향 기울기 + 랜덤 흔들림.
   // CSS 애니메이션 대신 JS로 transform을 직접 칠해, 2색(그라데이션) 카드에도 확실히 적용된다.
   const edPosRef = useRef({ x: 0, y: 0 });
@@ -1354,6 +1362,14 @@ export function StudioShell({
   }
 
   function endEventDrag() {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (preventTouchScrollRef.current) {
+      document.removeEventListener("touchmove", preventTouchScrollRef.current);
+      preventTouchScrollRef.current = null;
+    }
     if (dragMoveRef.current) {
       window.removeEventListener("pointermove", dragMoveRef.current);
       dragMoveRef.current = null;
@@ -1385,7 +1401,20 @@ export function StudioShell({
     const info = dragInfoRef.current;
     if (!info) return;
     if (!info.started) {
-      if (Math.hypot(e.clientX - info.startX, e.clientY - info.startY) < 6) return;
+      const dist = Math.hypot(e.clientX - info.startX, e.clientY - info.startY);
+      // 터치: 롱프레스(armed) 전에 움직이면 스크롤 의도 → 드래그 포기(타이머 취소, 리스너 정리)
+      // 해서 페이지가 그냥 스크롤되게 둔다. 손가락이 멈춰 있다 집힌 뒤(armed)에만 드래그한다.
+      if (info.isTouch && !info.armed) {
+        if (dist > 10) {
+          if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+          holdTimerRef.current = null;
+          window.removeEventListener("pointermove", onEventDragMove);
+          dragMoveRef.current = null;
+          dragInfoRef.current = null;
+        }
+        return;
+      }
+      if (dist < 6) return;
       info.started = true;
       const rect = info.node.getBoundingClientRect();
       // 카드(그라데이션 inline 스타일)에 직접 transform을 걸면 2색 카드에서 흔들림이 안 보이는
@@ -1478,6 +1507,7 @@ export function StudioShell({
     const node = e.currentTarget as HTMLElement;
     const rect = node.getBoundingClientRect();
     justDraggedRef.current = false;
+    const isTouch = e.pointerType !== "mouse";
     dragInfoRef.current = {
       id: event.id,
       sourceDate: getEventDateKey(event),
@@ -1486,8 +1516,26 @@ export function StudioShell({
       startY: e.clientY,
       offX: e.clientX - rect.left,
       offY: e.clientY - rect.top,
-      started: false
+      started: false,
+      isTouch,
+      // 마우스는 즉시 드래그 가능. 터치는 롱프레스 전까지 비활성(그 사이 움직임=스크롤).
+      armed: !isTouch
     };
+    if (isTouch) {
+      // 제자리로 약 260ms 누르고 있으면 '집기' 성립 → 그때부터 드래그(+스크롤 차단).
+      // 손가락이 그 전에 움직이면(onEventDragMove) 타이머를 취소해 페이지가 그냥 스크롤된다.
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = setTimeout(() => {
+        const info = dragInfoRef.current;
+        if (!info || info.started) return;
+        info.armed = true;
+        hapticTick(); // 집었다는 촉각 신호
+        // 드래그 동안 네이티브 스크롤 차단(비수동 touchmove preventDefault).
+        const block = (ev: TouchEvent) => ev.preventDefault();
+        preventTouchScrollRef.current = block;
+        document.addEventListener("touchmove", block, { passive: false });
+      }, 260);
+    }
     dragMoveRef.current = onEventDragMove;
     window.addEventListener("pointermove", onEventDragMove);
     window.addEventListener("pointerup", endEventDrag, { once: true });

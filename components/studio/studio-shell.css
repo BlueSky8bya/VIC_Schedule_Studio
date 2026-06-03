@@ -3655,7 +3655,10 @@
 /* 끌 수 있는 카드: 손 모양 커서로 "옮길 수 있다"는 걸 알린다. */
 .studio-event-pill.draggable {
   cursor: grab;
-  touch-action: none; /* 터치에서 스크롤 대신 드래그가 잡히게 */
+  /* 터치: 세로 스크롤은 그대로 통과(pan-y) → 카드 위에서도 페이지가 스크롤된다.
+     드래그(순서 변경)는 제자리 롱프레스로만 시작하고, 그때부터 JS가 비수동 touchmove
+     preventDefault로 스크롤을 막는다(onPillPointerDown). 마우스는 즉시 드래그. */
+  touch-action: pan-y;
   /* 드래그 중 글자가 파랗게 선택(긁힘)되지 않게 — 카드는 텍스트 선택 대상이 아님. */
   user-select: none;
   -webkit-user-select: none;
