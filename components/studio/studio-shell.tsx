@@ -641,6 +641,8 @@ export function StudioShell({
     () => (taxonomyV3 ? tags : legacyTagView(tags)),
     [tags, taxonomyV3]
   );
+  // 레거시(세부 나누기 이전)는 카드당 태그 2개까지. v3는 6개(MAX_EVENT_TAGS).
+  const maxEventTags = taxonomyV3 ? MAX_EVENT_TAGS : 2;
   // "기타" 태그는 색상 안내·태그 선택 모두에서 항상 맨 끝.
   const legendTags = useMemo(
     () =>
@@ -1624,7 +1626,7 @@ export function StudioShell({
     const has = event.tagIds.includes(tagId);
     const nextTagIds = has
       ? event.tagIds.filter((id) => id !== tagId)
-      : event.tagIds.length >= MAX_EVENT_TAGS
+      : event.tagIds.length >= maxEventTags
         ? event.tagIds
         : [...event.tagIds, tagId];
     if (nextTagIds === event.tagIds) {
@@ -1696,12 +1698,12 @@ export function StudioShell({
               // 매니저: 태그 할당을 직접 토글(최대 2개). 작업자는 읽기 전용 칩만 본다.
               <div className="detail-row">
                 <span className="detail-label">
-                  태그 <span className="tag-picker-hint">최대 {MAX_EVENT_TAGS}개 · 누르면 바로 적용</span>
+                  태그 <span className="tag-picker-hint">최대 {maxEventTags}개 · 누르면 바로 적용</span>
                 </span>
                 <div className="tag-picker">
                   <TagPicker
                     disabled={pending}
-                    max={MAX_EVENT_TAGS}
+                    max={maxEventTags}
                     onToggle={(id) => toggleEventTag(selectedEvent, id)}
                     palette={palette}
                     selectedIds={selectedEvent.tagIds}
@@ -2028,7 +2030,7 @@ export function StudioShell({
         const next = current.tagIds.filter((id) => id !== tagId);
         return { ...current, tagIds: next, primaryTagIds: next };
       }
-      if (current.tagIds.length >= MAX_EVENT_TAGS) {
+      if (current.tagIds.length >= maxEventTags) {
         return current; // 최대까지
       }
       const next = [...current.tagIds, tagId];
@@ -2864,7 +2866,7 @@ export function StudioShell({
             <p className="detail-value">{event.publicTitle || "(제목 없음)"}</p>
             <div className="tag-picker">
               <TagPicker
-                max={MAX_EVENT_TAGS}
+                max={maxEventTags}
                 onToggle={(id) => toggleEventTag(event, id)}
                 palette={palette}
                 selectedIds={event.tagIds}
@@ -3008,11 +3010,11 @@ export function StudioShell({
             <section className="me-group me-tag-group" aria-label="태그 선택">
               <div className="me-grouphead">
                 <span className="me-grouptitle">
-                  태그 <em className="me-hint">최대 {MAX_EVENT_TAGS}개</em>
+                  태그 <em className="me-hint">최대 {maxEventTags}개</em>
                 </span>
               </div>
               <TagPicker
-                max={MAX_EVENT_TAGS}
+                max={maxEventTags}
                 onToggle={selectTag}
                 palette={palette}
                 selectedIds={form.tagIds}
@@ -3730,11 +3732,11 @@ export function StudioShell({
 
             <section className="tag-picker" aria-label="태그 선택">
               <h3>
-                태그 <span className="tag-picker-hint">최대 {MAX_EVENT_TAGS}개 · 대분류 색으로 표시</span>
+                태그 <span className="tag-picker-hint">최대 {maxEventTags}개 · 대분류 색으로 표시</span>
               </h3>
               <TagPicker
                 disabled={!canEdit}
-                max={MAX_EVENT_TAGS}
+                max={maxEventTags}
                 onToggle={selectTag}
                 palette={palette}
                 selectedIds={form.tagIds}
