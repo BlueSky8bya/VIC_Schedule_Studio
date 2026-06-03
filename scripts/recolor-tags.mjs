@@ -9,27 +9,28 @@ import { Client } from "pg";
 
 // Open Color(yeun) 벤치마킹 — 맑은 파스텔, 똥색(갈색·황토·올리브) 전혀 없음.
 // bg=shade-2, text=shade-8(따뜻한 색은 더 진하게 보정), border=shade-4.
-// '차분(cool) → 선명(warm)' 순 — 노랑·주황은 가장 뒤(드문 태그)라 달력에 거의 안 깔린다.
-// 앞 6(차분 묶음): 블루·틸·그린·인디고·시안·그레이프 — hue가 갈려 고빈도끼리도 구분.
+// 순서 = '눈이 편한 → 자극적인'. 망막은 S-cone(파랑)이 가장 적고 포화 파랑은 색수차로 피로하다.
+// 그래서 가장 자주 쓰는 태그(달력을 뒤덮는)는 눈이 제일 편한 '초록'(시감도 피크)부터 받고,
+// 파랑은 고빈도에서 빼 중간 빈도로 보낸다. 따뜻한 색(주황·노랑·빨강)은 가장 드문 태그(강조)에만.
 const CONTENT = [
-  { n: "블루", bg: "#a5d8ff", text: "#1864ab", border: "#4dabf7" },
-  { n: "틸", bg: "#96f2d7", text: "#087f5b", border: "#38d9a9" },
   { n: "그린", bg: "#b2f2bb", text: "#2b8a3e", border: "#69db7c" },
-  { n: "인디고", bg: "#bac8ff", text: "#364fc7", border: "#748ffc" },
+  { n: "틸", bg: "#96f2d7", text: "#087f5b", border: "#38d9a9" },
+  { n: "바이올렛", bg: "#d0bfff", text: "#5f3dc4", border: "#9775fa" },
+  { n: "핑크", bg: "#fcc2d7", text: "#a61e4d", border: "#f783ac" },
   { n: "시안", bg: "#99e9f2", text: "#0b7285", border: "#3bc9db" },
   { n: "그레이프", bg: "#eebefa", text: "#862e9c", border: "#da77f2" },
-  { n: "바이올렛", bg: "#d0bfff", text: "#5f3dc4", border: "#9775fa" },
+  { n: "블루", bg: "#a5d8ff", text: "#1864ab", border: "#4dabf7" },
   { n: "라임", bg: "#d8f5a2", text: "#5c940d", border: "#a9e34b" },
-  { n: "핑크", bg: "#fcc2d7", text: "#a61e4d", border: "#f783ac" },
+  { n: "인디고", bg: "#bac8ff", text: "#364fc7", border: "#748ffc" },
   { n: "오렌지", bg: "#ffd8a8", text: "#d9480f", border: "#ffa94d" },
   { n: "옐로우", bg: "#ffec99", text: "#946800", border: "#ffd43b" },
   { n: "레드", bg: "#ffc9c9", text: "#c92a2a", border: "#ff8787" },
   { n: "그레이프2", bg: "#f3d9fa", text: "#9c36b5", border: "#e599f7" }
 ];
-// 방식용 — 점(작은 원). 같은 '차분→선명' 원칙. shade-4 bg + shade-8 text + shade-6 border(더 또렷).
+// 방식용 — 점(작은 원). 같은 '눈 편한→자극적' 순. shade-4 bg + shade-8 text + shade-6 border.
 const MOD = [
-  { n: "블루", bg: "#4dabf7", text: "#1864ab", border: "#228be6" },
   { n: "그린", bg: "#69db7c", text: "#2b8a3e", border: "#40c057" },
+  { n: "틸", bg: "#38d9a9", text: "#087f5b", border: "#12b886" },
   { n: "시안", bg: "#3bc9db", text: "#0b7285", border: "#15aabf" },
   { n: "그레이프", bg: "#da77f2", text: "#862e9c", border: "#be4bdb" },
   { n: "오렌지", bg: "#ffa94d", text: "#d9480f", border: "#fd7e14" },
