@@ -3239,18 +3239,33 @@
   color: #64748b;
   cursor: pointer;
 }
-/* 색상 안내의 수식어 묶음 — 자식(라벨+칩)을 부모 흐름에 그대로 흘려보내고(contents),
-   라벨에 점선 윗줄을 둬 콘텐츠와 가른다. */
+/* 색상 안내의 방식 묶음 — 콘텐츠 밑에 점선으로 가른 별도 블록(가로 스크롤 없이 세로로 쌓임). */
 .tag-legend-modgroup {
-  display: contents;
+  display: grid;
+  gap: 3px;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px dashed var(--line, #e4e0ef);
 }
 .tag-legend-modlabel {
-  font-size: 12px !important;
+  font-size: 11.5px !important;
   font-weight: 900;
-  color: #8a83a0;
-  margin-top: 6px;
-  padding-top: 7px;
-  border-top: 1px dashed var(--line, #e4e0ef);
+  letter-spacing: 0.05em;
+  color: #9a93ad;
+  padding: 0 7px 2px;
+}
+/* 웹: 필터 행에 호버 하이라이트 + 누름 피드백(가로 공간 활용·정렬된 줄). */
+@media (min-width: 641px) {
+  .tag-legend-filter {
+    transition: background 0.14s var(--ease, ease), color 0.14s var(--ease, ease),
+      transform 0.08s var(--ease, ease);
+  }
+  .tag-legend-filter:hover:not(.on) {
+    background: #f5f3fb;
+  }
+  .tag-legend-filter:active {
+    transform: scale(0.97);
+  }
 }
 /* 필터에 안 맞는 일정은 흐리게(편집실 그리드·모바일 아젠다 공용) */
 .studio-event-pill.filter-dim,
@@ -3267,15 +3282,37 @@
 .m-filter::-webkit-scrollbar {
   display: none;
 }
+/* 모바일: 가로 스크롤 대신 칩이 줄바꿈(wrap)으로 정렬 — 보기 깔끔, 스크롤바 안 생김. */
 .m-filter .studio-tag-legend {
   display: flex;
-  flex-wrap: nowrap;
-  gap: 4px;
-  width: max-content;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: auto;
 }
 .m-filter .tag-legend-filter {
   flex: 0 0 auto;
   white-space: nowrap;
+  border: 1px solid var(--line, #ece8f4);
+  background: #fbfaff;
+  padding: 6px 11px;
+  font-size: 14px;
+  border-radius: 999px;
+}
+.m-filter .tag-legend-filter:active {
+  transform: scale(0.95);
+}
+/* 방식 묶음: 한 줄 라벨 + 칩 wrap(가로 스크롤 X). */
+.m-filter .tag-legend-modgroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
+  margin-top: 3px;
+  padding-top: 8px;
+}
+.m-filter .tag-legend-modlabel {
+  width: 100%;
+  padding: 0 2px;
 }
 
 .studio-calendar-panel {
@@ -4255,46 +4292,26 @@
   font-weight: 900;
   color: #6b5b95;
 }
-.tp-groups {
-  display: grid;
-  gap: 8px;
-  max-height: 300px;
-  overflow: auto;
-  overscroll-behavior: contain;
-  padding: 1px;
-}
-/* flat 콘텐츠 칩 묶음(세부 폐기 후). */
+/* flat 콘텐츠 칩 묶음 — 부드러운 패널 안에 칩 wrap. */
 .tp-content {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  max-height: 280px;
+  gap: 7px;
+  max-height: 300px;
   overflow: auto;
   overscroll-behavior: contain;
-  padding: 1px;
-}
-/* 대분류 묶음 = 부드러운 카드. 헤더(대분류 칩) 위, 세부 칩 아래. */
-.tp-group {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 7px;
-  padding: 9px 10px;
+  padding: 11px;
   border: 1px solid var(--line, #ece9f5);
-  border-radius: 13px;
+  border-radius: 14px;
   background: linear-gradient(180deg, #fffefb, #faf8fd);
 }
-.tp-subs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding-left: 4px;
-}
-/* 수식어 칸 — 콘텐츠와 점선으로 가르고, 칩은 점선 테두리로 "얹는 것"임을 보인다. */
+/* 방식 칸 — 콘텐츠와 다른 톤(앰버)의 패널 + 점선 칩으로 "얹는 것"임을 보인다. */
 .tp-mod-section {
-  margin-top: 11px;
-  padding-top: 11px;
-  border-top: 1px dashed var(--line, #e4e0ef);
+  margin-top: 10px;
+  padding: 10px 11px 11px;
+  border: 1px dashed #e2d6bf;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fffdf6, #fbf6ea);
 }
 .tp-section-label {
   display: flex;
@@ -4303,17 +4320,17 @@
   margin-bottom: 8px;
   font-size: 12px;
   font-weight: 900;
-  color: #6b6385;
+  color: #8a6d36;
 }
 .tp-section-label span {
   font-size: 10.5px;
   font-weight: 600;
-  color: #a59fb8;
+  color: #bba684;
 }
 .tp-mods {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 7px;
 }
 .tp-mods .tp-chip {
   border-style: dashed;
@@ -4324,36 +4341,20 @@
   gap: 5px;
   border: 1.5px solid;
   border-radius: 999px;
-  padding: 6px 13px;
-  font-size: 13px;
+  padding: 7px 14px;
+  font-size: 13.5px;
   font-weight: 800;
   cursor: pointer;
-  transition: transform 0.12s var(--ease, ease), filter 0.14s var(--ease, ease),
-    box-shadow 0.14s var(--ease, ease);
-}
-.tp-chip:hover:not(:disabled) {
-  transform: translateY(-1px);
-  filter: brightness(1.04);
-  box-shadow: 0 6px 14px -8px rgb(80 60 140 / 45%);
+  transition: transform 0.13s var(--ease, ease), filter 0.14s var(--ease, ease),
+    box-shadow 0.16s var(--ease, ease);
 }
 .tp-chip:active:not(:disabled) {
-  transform: scale(0.93);
+  transform: scale(0.92);
 }
-/* 세부 칩 — 윤곽형(흰 배경 + 대분류 색 테두리·글자)으로 헤더(채운 칩)와 구분. */
-.tp-chip.sub {
-  font-size: 12.5px;
-  padding: 5px 11px;
-  background: #fff !important;
-  color: #4a4466 !important;
-  border-style: dashed;
-}
-/* 선택된 칩 — 진한 링 + 톡 튀는 등장. (세부도 선택되면 채워 보이게 살짝 진하게.) */
+/* 선택된 칩 — 진한 링 + 톡 튀는 등장. */
 .tp-chip.selected {
   box-shadow: 0 0 0 2.5px #2a2540 inset, 0 4px 12px -6px rgb(42 37 80 / 50%);
   animation: tp-pop 0.22s var(--ease, ease);
-}
-.tp-chip.sub.selected {
-  background: #f4f0ff !important;
 }
 @keyframes tp-pop {
   0% {
@@ -4373,38 +4374,53 @@
 .tp-order {
   display: inline-grid;
   place-items: center;
-  min-width: 16px;
-  height: 16px;
+  min-width: 17px;
+  height: 17px;
   padding: 0 3px;
   border-radius: 999px;
   background: #2a2540;
   color: #fff;
   font-size: 10px;
   font-weight: 900;
+  animation: tp-pop 0.22s var(--ease, ease);
 }
-/* 웹: 더 큼·여유, 그룹 2열로 가로폭 활용. */
+/* 웹: 넉넉한 칩 + 호버 떠오름·글로우, 패널 여유(가로폭 활용). */
 @media (min-width: 641px) {
-  .tp-groups {
-    grid-template-columns: 1fr 1fr;
-    max-height: 360px;
+  .tp-search {
+    font-size: 15px;
+    min-height: 42px;
+  }
+  .tp-content {
+    gap: 8px;
+    padding: 13px;
+    max-height: 384px;
   }
   .tp-chip {
     font-size: 14px;
-    padding: 7px 14px;
+    padding: 8px 16px;
   }
-  .tp-chip.sub {
-    font-size: 13px;
+  .tp-chip:hover:not(:disabled) {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+    box-shadow: 0 8px 18px -9px rgb(80 60 140 / 50%);
   }
-  .tp-search {
-    font-size: 15px;
-    min-height: 40px;
+  .tp-chip.selected:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.02);
   }
 }
-/* 모바일: 한 줄·큰 터치타깃. */
+/* 모바일: 컴팩트·큰 터치타깃, 방식 부제는 숨겨 폭을 아낀다. */
 @media (max-width: 640px) {
+  .tp-content {
+    padding: 9px;
+    max-height: 244px;
+  }
   .tp-chip {
-    padding: 7px 13px;
+    padding: 8px 13px;
     font-size: 13.5px;
+    min-height: 34px;
+  }
+  .tp-section-label span {
+    display: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -4412,7 +4428,8 @@
   .tp-search {
     transition: none;
   }
-  .tp-chip.selected {
+  .tp-chip.selected,
+  .tp-order {
     animation: none;
   }
 }
