@@ -78,7 +78,6 @@ import {
   splitEventTitle,
   type MonthCell
 } from "@/lib/calendar/month";
-import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { PlainEmail } from "@/components/ui/plain-email";
@@ -611,7 +610,8 @@ export function PublicPoster({
   // 같은 태그 구성으로 이어진 묶음은 하나의 그라데이션으로(경계 가운데). 묶음별 날짜 범위.
   const paintGroups = useMemo(() => buildPaintGroups(schedule.events), [schedule.events]);
   const monthGridRef = useRef<HTMLDivElement>(null);
-  useEqualChainHeights(monthGridRef, [schedule.events, view]);
+  // 시청자 화면은 일정 카드를 '내용 높이'만큼만 둔다(이어진 칸이라고 짧은 쪽을 억지로 늘려
+  // 빈 채움을 만들지 않는다). 멀티데이 한 일정은 각 칸이 같은 내용을 투명 렌더해 자연히 맞는다.
   // 실제 달력 콘텐츠가 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아니라 진짜 화면을 봤을 때만 방문 1).
   useEffect(() => {
     markContentReady();
