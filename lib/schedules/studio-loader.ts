@@ -104,7 +104,7 @@ export async function getStudioSchedule(
   const [tagsRes, paletteRes, eventsRes, campaignsRes] = await Promise.all([
     supabase
       .from("broadcast_tags")
-      .select("id, tag_key, display_name, color_key, sort_order, is_default, is_active, parent_id")
+      .select("id, tag_key, display_name, color_key, sort_order, is_default, is_active, parent_id, kind")
       .eq("calendar_id", calendar.id)
       .order("sort_order"),
     supabase
@@ -248,6 +248,7 @@ function mapTag(row: {
   is_default: boolean;
   is_active: boolean;
   parent_id?: string | null;
+  kind?: string | null;
 }): BroadcastTag {
   return {
     id: row.id,
@@ -257,7 +258,8 @@ function mapTag(row: {
     sortOrder: row.sort_order,
     isDefault: row.is_default,
     isActive: row.is_active,
-    parentId: row.parent_id ?? null
+    parentId: row.parent_id ?? null,
+    kind: row.kind === "modifier" ? "modifier" : "content"
   };
 }
 

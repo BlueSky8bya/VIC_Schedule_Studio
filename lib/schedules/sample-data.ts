@@ -38,7 +38,7 @@ export const defaultTags: BroadcastTag[] = ([
   { id: "tag-ck", tagKey: "ck", displayName: "CK", colorKey: "red", sortOrder: 11, isDefault: true, isActive: true },
   { id: "tag-tournament", tagKey: "tournament", displayName: "대회", colorKey: "indigo", sortOrder: 12, isDefault: true, isActive: true },
   { id: "tag-cineti", tagKey: "cineti", displayName: "시네티", colorKey: "teal", sortOrder: 13, isDefault: true, isActive: true }
-] as Omit<BroadcastTag, "parentId">[]).map((t) => ({ ...t, parentId: null }));
+] as Omit<BroadcastTag, "parentId" | "kind">[]).map((t) => ({ ...t, parentId: null, kind: "content" as const }));
 
 export const sampleStudioSchedule: StudioSchedule = {
   calendar: {

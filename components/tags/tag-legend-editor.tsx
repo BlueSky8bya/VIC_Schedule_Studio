@@ -379,7 +379,8 @@ export function TagLegendEditor({
       sortOrder: 9999,
       isDefault: false,
       isActive: true,
-      parentId: null
+      parentId: null,
+      kind: "content"
     };
     setNewColors((prev) => [...prev, color]);
     setNewTags((prev) => [...prev, tag]);
@@ -403,7 +404,8 @@ export function TagLegendEditor({
       sortOrder: 9999,
       isDefault: false,
       isActive: true,
-      parentId
+      parentId,
+      kind: "content"
     };
     setNewTags((prev) => [...prev, tag]);
     setDraft((cur) => ({

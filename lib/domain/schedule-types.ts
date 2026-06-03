@@ -26,6 +26,10 @@ export type ColorPaletteEntry = {
   sortOrder: number;
 };
 
+// 태그 축: content = 콘텐츠(셀 색·컨텐츠 통계 차지), modifier = 수식어(합방/시참/대회/짧뱅/풀트/구플 —
+// 셀 색은 점으로만, 컨텐츠 순위서 제외, 피커 별칸). docs/tag-taxonomy-classification.md 참고.
+export type TagKind = "content" | "modifier";
+
 export type BroadcastTag = {
   id: string;
   tagKey: string;
@@ -36,6 +40,7 @@ export type BroadcastTag = {
   isActive: boolean;
   // 2계층 태그: null = 대분류(색 보유), 값 = 세부(부모 id, 렌더 색은 최상위 대분류 색 상속).
   parentId: string | null;
+  kind: TagKind;
 };
 
 export type PublicScheduleEvent = {

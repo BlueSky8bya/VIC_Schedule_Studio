@@ -189,7 +189,8 @@ export async function saveTagsAction(input: {
           sortOrder: c.sortOrder,
           isDefault: false,
           isActive: true,
-          parentId
+          parentId,
+          kind: "content"
         },
         color: {
           key: c.colorKey,
