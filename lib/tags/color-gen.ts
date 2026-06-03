@@ -159,19 +159,21 @@ type Family = {
   content: { bg: string; text: string; border: string };
   mod: { bg: string; text: string; border: string };
 };
+// content: 연한 카드(shade-2) + 아주 진한 글씨(대비≥4.5) + shade-4 보더.
+// mod: 점/칩이라 진한 shade-8 bg + 흰 글씨(대비 확보). 모두 audit-colors.mjs로 검증된 톤.
 const FAMILIES: Family[] = [
-  { hue: 131, content: { bg: "#b2f2bb", text: "#2b8a3e", border: "#69db7c" }, mod: { bg: "#51cf66", text: "#2b8a3e", border: "#2f9e44" } },
-  { hue: 162, content: { bg: "#96f2d7", text: "#087f5b", border: "#38d9a9" }, mod: { bg: "#20c997", text: "#087f5b", border: "#099268" } },
-  { hue: 187, content: { bg: "#99e9f2", text: "#0b7285", border: "#3bc9db" }, mod: { bg: "#22b8cf", text: "#0b7285", border: "#1098ad" } },
-  { hue: 208, content: { bg: "#a5d8ff", text: "#1864ab", border: "#4dabf7" }, mod: { bg: "#339af0", text: "#1864ab", border: "#1971c2" } },
-  { hue: 226, content: { bg: "#bac8ff", text: "#364fc7", border: "#748ffc" }, mod: { bg: "#5c7cfa", text: "#364fc7", border: "#3b5bdb" } },
-  { hue: 255, content: { bg: "#d0bfff", text: "#5f3dc4", border: "#9775fa" }, mod: { bg: "#845ef7", text: "#5f3dc4", border: "#5f3dc4" } },
-  { hue: 288, content: { bg: "#eebefa", text: "#862e9c", border: "#da77f2" }, mod: { bg: "#cc5de8", text: "#862e9c", border: "#9c36b5" } },
-  { hue: 339, content: { bg: "#fcc2d7", text: "#a61e4d", border: "#f783ac" }, mod: { bg: "#f06595", text: "#a61e4d", border: "#c2255c" } },
-  { hue: 0, content: { bg: "#ffc9c9", text: "#c92a2a", border: "#ff8787" }, mod: { bg: "#fa5252", text: "#c92a2a", border: "#e03131" } },
-  { hue: 32, content: { bg: "#ffd8a8", text: "#b03709", border: "#ffa94d" }, mod: { bg: "#ff922b", text: "#fff", border: "#e8590c" } },
-  { hue: 47, content: { bg: "#ffec99", text: "#6b4e00", border: "#ffd43b" }, mod: { bg: "#fcc419", text: "#fff", border: "#f08c00" } },
-  { hue: 85, content: { bg: "#d8f5a2", text: "#5c940d", border: "#a9e34b" }, mod: { bg: "#94d82d", text: "#5c940d", border: "#66a80f" } }
+  { hue: 131, content: { bg: "#b2f2bb", text: "#14532d", border: "#69db7c" }, mod: { bg: "#2b7a3b", text: "#fff", border: "#14532d" } },
+  { hue: 162, content: { bg: "#96f2d7", text: "#075e48", border: "#38d9a9" }, mod: { bg: "#087f5b", text: "#fff", border: "#075e48" } },
+  { hue: 187, content: { bg: "#99e9f2", text: "#094a56", border: "#3bc9db" }, mod: { bg: "#0c6170", text: "#fff", border: "#094a56" } },
+  { hue: 208, content: { bg: "#a5d8ff", text: "#0f4c81", border: "#4dabf7" }, mod: { bg: "#1864ab", text: "#fff", border: "#0f4c81" } },
+  { hue: 226, content: { bg: "#bac8ff", text: "#283a94", border: "#748ffc" }, mod: { bg: "#2c3d9b", text: "#fff", border: "#283a94" } },
+  { hue: 255, content: { bg: "#d0bfff", text: "#3a228f", border: "#9775fa" }, mod: { bg: "#6741d9", text: "#fff", border: "#4a2da3" } },
+  { hue: 288, content: { bg: "#eebefa", text: "#6b1485", border: "#da77f2" }, mod: { bg: "#9c36b5", text: "#fff", border: "#862e9c" } },
+  { hue: 339, content: { bg: "#fcc2d7", text: "#8a1a40", border: "#f783ac" }, mod: { bg: "#a61e4d", text: "#fff", border: "#8a1a40" } },
+  { hue: 0, content: { bg: "#ffc9c9", text: "#991b1b", border: "#ff8787" }, mod: { bg: "#c92a2a", text: "#fff", border: "#991b1b" } },
+  { hue: 32, content: { bg: "#ffd8a8", text: "#9a3412", border: "#ffa94d" }, mod: { bg: "#c2410c", text: "#fff", border: "#9a3412" } },
+  { hue: 47, content: { bg: "#ffec99", text: "#6b4e00", border: "#ffd43b" }, mod: { bg: "#6b4e00", text: "#fff", border: "#5a4100" } },
+  { hue: 85, content: { bg: "#d8f5a2", text: "#365314", border: "#a9e34b" }, mod: { bg: "#3f6212", text: "#fff", border: "#365314" } }
 ];
 
 // 콘텐츠 카드에 쓸 무늬 하나 — 같은 무늬가 몰리지 않게 기존 콘텐츠 색들에서 가장 적게 쓴 무늬를 고른다.

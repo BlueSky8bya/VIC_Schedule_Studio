@@ -1,47 +1,43 @@
-// 태그 색 리뉴얼 v2 — Tailwind 색 스케일 벤치마킹.
-//   콘텐츠(무늬): bg=Tailwind-200, text=Tailwind-700, border=Tailwind-300 → 조화롭고 글자 대비 강함.
-//   방식(단색 점): bg=Tailwind-300, text=Tailwind-700, border=Tailwind-500 → 작은 점이라 더 또렷한 톤.
-//   휴뱅: slate(중립 회색) 고정.
-// 흙색(올리브·탁한 황토) 회피, 스펙트럼 균등 배치. 무늬는 키 접두사(gen-{pat})로 globals.css가 얹는다.
-// 사용: node scripts/recolor-tags.mjs
+// 태그 색 리뉴얼 v3 — Open Color 기반, 감사 통과형(WCAG 대비 + 색맹).
+//  · 콘텐츠: 연한 shade-2 카드 + '아주 진한' 글씨(대비 ≥4.5) + 무늬. hue 가까운 묶음은 무늬를 달리해
+//    색맹(적/녹색맹)에서도 무늬로 구분되게 한다(WCAG 1.4.1 — 색만으로 구분 금지).
+//  · 방식: 점/칩. 진한 shade-8 bg + 흰 글씨(대비 확보) → 연한 카드 위에서도, 칩 글씨도 또렷.
+//  · 휴뱅: 중립 회색.
+//  · 배정: 사용 빈도 내림차순 → 배열 앞쪽(눈 편한 초록·충돌 적은 색)부터.
+//  · dry-run: `node scripts/recolor-tags.mjs --dry` → DB 변경 없이 계획만 출력.
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
 
-// Open Color(yeun) 벤치마킹 — 맑은 파스텔, 똥색(갈색·황토·올리브) 없음. bg=shade-2/text=8/border=4.
-// 배열 순서 = '빈도 높은 태그(앞) → 낮은 태그(뒤)'에 그대로 배정된다. 그래서 다음을 동시에 만족:
-//  · 눈 편함: 최다 빈도 게임=초록(시감도 피크), 포화 파랑은 고빈도에서 제외.
-//  · 충돌 회피: 자주 보이는 앞쪽 4색(초록·바이올렛·핑크·시안)은 hue가 멀어 서로 안 헷갈린다.
-//  · 초록계열(라임·틸)은 뒤(드문 태그)로 밀어 게임 초록과 잘 안 겹치게. 타스뱅송은 주황으로(초록 탈피).
+const DRY = process.argv.includes("--dry");
+
+// 콘텐츠 — bg(연한 카드) / text(아주 진한, 대비≥4.5) / border / pat(무늬). 빈도순으로 위에서부터 배정.
+// pat은 hue 가까운 묶음(보라계 VRChat·월드컵·시네티 / 초록계 게임·풀트뱅·소통뱅·별별랭킹)이
+// 서로 다르도록 손배치 → 색맹에서 무늬로 구분된다.
 const CONTENT = [
-  { n: "그린", bg: "#b2f2bb", text: "#2b8a3e", border: "#69db7c" }, // 게임(최다)
-  { n: "바이올렛", bg: "#d0bfff", text: "#5f3dc4", border: "#9775fa" },
-  { n: "핑크", bg: "#fcc2d7", text: "#a61e4d", border: "#f783ac" },
-  { n: "시안", bg: "#99e9f2", text: "#0b7285", border: "#3bc9db" },
-  { n: "그레이프", bg: "#eebefa", text: "#862e9c", border: "#da77f2" },
-  { n: "블루", bg: "#a5d8ff", text: "#1864ab", border: "#4dabf7" },
-  { n: "인디고", bg: "#bac8ff", text: "#364fc7", border: "#748ffc" },
-  { n: "오렌지", bg: "#ffd8a8", text: "#b03709", border: "#ffa94d" }, // 타스뱅송(초록 탈피) — 글씨 더 진하게
-  { n: "옐로우", bg: "#ffec99", text: "#6b4e00", border: "#ffd43b" }, // 글씨 더 진하게(연한 배경 대비)
-  { n: "틸", bg: "#96f2d7", text: "#087f5b", border: "#38d9a9" },   // 소통뱅 — 서버(핑크)와 멀리(177°)
-  { n: "라임", bg: "#d8f5a2", text: "#5c940d", border: "#a9e34b" }, // 초록계열 → 드문 태그로
-  { n: "레드", bg: "#ffc9c9", text: "#c92a2a", border: "#ff8787" }, // 토크쇼(최소 빈도) — 핑크와 근접해도 드물어 무해
-  { n: "그레이프2", bg: "#f3d9fa", text: "#9c36b5", border: "#e599f7" }
+  { n: "그린", bg: "#b2f2bb", text: "#14532d", border: "#69db7c", pat: "diag" },   // 게임
+  { n: "바이올렛", bg: "#d0bfff", text: "#3a228f", border: "#9775fa", pat: "diag" }, // VRChat
+  { n: "핑크", bg: "#fcc2d7", text: "#8a1a40", border: "#f783ac", pat: "dots" },   // 서버
+  { n: "시안", bg: "#99e9f2", text: "#094a56", border: "#3bc9db", pat: "grid" },   // 풀트뱅
+  { n: "그레이프", bg: "#eebefa", text: "#6b1485", border: "#da77f2", pat: "cross" }, // 월드컵(보라, VRChat과 무늬 다름)
+  { n: "블루", bg: "#a5d8ff", text: "#0f4c81", border: "#4dabf7", pat: "dash" },   // 기타
+  { n: "인디고", bg: "#bac8ff", text: "#283a94", border: "#748ffc", pat: "dots" }, // 시네티(보라, VRChat·월드컵과 무늬 다름)
+  { n: "오렌지", bg: "#ffd8a8", text: "#9a3412", border: "#ffa94d", pat: "cross" }, // 타스뱅송(게임 초록과 적색맹 혼동 → 무늬 다르게)
+  { n: "옐로우", bg: "#ffec99", text: "#6b4e00", border: "#ffd43b", pat: "grid" }, // CK
+  { n: "틸", bg: "#96f2d7", text: "#075e48", border: "#38d9a9", pat: "cross" },    // 소통뱅(초록, 게임과 무늬 다름)
+  { n: "라임", bg: "#d8f5a2", text: "#365314", border: "#a9e34b", pat: "dash" },   // 별별랭킹(초록, 게임·소통뱅과 무늬 다름)
+  { n: "레드", bg: "#ffc9c9", text: "#991b1b", border: "#ff8787", pat: "grid" },   // 토크쇼
+  { n: "그레이프2", bg: "#f3d9fa", text: "#7a1a8f", border: "#e599f7", pat: "dots" }
 ];
-// 방식용 점(작은 원) — 연한 콘텐츠 카드 '위'에 얹히므로 같은색이면 안 보인다. 그래서 콘텐츠(연한
-// shade-2)와 톤을 갈라 '진한 shade-6'으로 채운다 → 어떤 연한 카드 위에서도 또렷(흰 링까지 더함).
-// 서로 hue도 전부 분리(합방·대회 안 겹치게). 최다 방식 합방은 게임 초록카드에 자주 얹히니 초록 금지.
-// 글씨는 '흰색' — 이 색은 점(글씨 없음)이자 태그 피커의 '칩(글씨 있음)'으로도 쓰이는데, 진한 bg라
-// 같은 계열 진한 글씨는 안 읽힌다. 흰 글씨면 진한 bg 위에서 또렷하다.
+// 방식 — 점/칩. 진한 shade-8 bg + 흰 글씨(대비≥4.5). hue 전부 분리. 합방(게임 초록 위 자주)은 초록 금지.
 const MOD = [
-  { n: "그레이프", bg: "#cc5de8", text: "#ffffff", border: "#9c36b5" }, // 합방(최다·게임 위에 자주)
-  { n: "오렌지", bg: "#ff922b", text: "#ffffff", border: "#e8590c" },   // 대회
-  { n: "블루", bg: "#339af0", text: "#ffffff", border: "#1971c2" },     // 연습
-  { n: "레드", bg: "#fa5252", text: "#ffffff", border: "#e03131" },     // 시참
-  { n: "틸", bg: "#12b886", text: "#ffffff", border: "#099268" },       // 짧뱅(글씨 대비 위해 살짝 진하게)
-  { n: "바이올렛", bg: "#845ef7", text: "#ffffff", border: "#5f3dc4" }, // 모캡
-  { n: "핑크", bg: "#f06595", text: "#ffffff", border: "#c2255c" }      // 구플뱅
+  { n: "그레이프", bg: "#9c36b5", text: "#ffffff", border: "#862e9c" }, // 합방
+  { n: "오렌지", bg: "#c2410c", text: "#ffffff", border: "#9a3412" },   // 대회(대비 ≥4.5 위해 더 진하게)
+  { n: "블루", bg: "#1864ab", text: "#ffffff", border: "#0f4c81" },     // 연습
+  { n: "레드", bg: "#c92a2a", text: "#ffffff", border: "#991b1b" },     // 시참
+  { n: "틸", bg: "#087f5b", text: "#ffffff", border: "#075e48" },       // 짧뱅
+  { n: "바이올렛", bg: "#6741d9", text: "#ffffff", border: "#4a2da3" }, // 모캡
+  { n: "핑크", bg: "#a61e4d", text: "#ffffff", border: "#8a1a40" }      // 구플뱅
 ];
-const PATS = ["diag", "dots", "grid", "cross", "dash"];
 
 const t = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
 const e = {}; for (const l of t.split(/\r?\n/)) { const m = l.match(/^([A-Z0-9_]+)=(.*)$/); if (m) e[m[1]] = m[2]; }
@@ -50,24 +46,18 @@ const c = new Client({ host: "aws-1-ap-northeast-2.pooler.supabase.com", port: 5
 await c.connect();
 const cal = (await c.query("select id from calendars where slug='vic'")).rows[0].id;
 
-// 사용 빈도(event_tags 연결 수)를 함께 받아 '많이 쓰는 순'으로 정렬한다 → 차분한 색을 앞에서 배정.
 const tags = (await c.query(
   `select bt.id, bt.tag_key, bt.display_name, bt.kind, count(et.event_id)::int uses
-   from broadcast_tags bt
-   left join event_tags et on et.tag_id = bt.id
-   where bt.calendar_id=$1 and bt.is_active=true and bt.parent_id is null
-   group by bt.id`,
+   from broadcast_tags bt left join event_tags et on et.tag_id = bt.id
+   where bt.calendar_id=$1 and bt.is_active=true and bt.parent_id is null group by bt.id`,
   [cal]
 )).rows;
-
-// 자주 쓰는 태그일수록 앞(차분한 색). 동률은 이름 안정 정렬.
 const byUses = (a, b) => b.uses - a.uses || a.display_name.localeCompare(b.display_name);
 const mods = tags.filter((x) => x.kind === "modifier").sort(byUses);
-const content = tags
-  .filter((x) => x.kind !== "modifier" && x.tag_key !== "dayoff")
-  .sort(byUses);
+const content = tags.filter((x) => x.kind !== "modifier" && x.tag_key !== "dayoff").sort(byUses);
 
 async function setColor(key, name, col, sort, tagId) {
+  if (DRY) return;
   await c.query(
     `insert into color_palette (calendar_id,key,name,bg_color,text_color,border_color,sort_order)
      values ($1,$2,$3,$4,$5,$6,$7) on conflict (calendar_id,key) do update
@@ -77,39 +67,33 @@ async function setColor(key, name, col, sort, tagId) {
   await c.query("update broadcast_tags set color_key=$1 where id=$2", [key, tagId]);
 }
 
-// 1) 방식 → 단색 점(gen-plain)
+console.log(DRY ? "── DRY RUN (DB 변경 없음) ──" : "── 적용 ──");
 for (let i = 0; i < mods.length; i++) {
   const col = MOD[i % MOD.length];
-  const key = `gen-plain-m${i}`;
-  await setColor(key, mods[i].display_name, col, 70 + i, mods[i].id);
-  console.log(`방식  ${mods[i].display_name.padEnd(8)} ${String(mods[i].uses).padStart(3)}회 → ${col.n}`);
+  await setColor(`gen-plain-m${i}`, mods[i].display_name, col, 70 + i, mods[i].id);
+  console.log(`방식  ${mods[i].display_name.padEnd(8)} ${String(mods[i].uses).padStart(3)}회 → ${col.n} ${col.bg}`);
 }
-
-// 2) 콘텐츠 → 무늬색(gen-{pat})
 for (let i = 0; i < content.length; i++) {
   const col = CONTENT[i % CONTENT.length];
-  const pat = PATS[i % PATS.length];
-  const key = `gen-${pat}-c${i}`;
-  await setColor(key, content[i].display_name, col, 50 + i, content[i].id);
-  console.log(`콘텐츠 ${content[i].display_name.padEnd(8)} ${String(content[i].uses).padStart(3)}회 → ${col.n} (${pat})`);
+  await setColor(`gen-${col.pat}-c${i}`, content[i].display_name, col, 50 + i, content[i].id);
+  console.log(`콘텐츠 ${content[i].display_name.padEnd(8)} ${String(content[i].uses).padStart(3)}회 → ${col.n} ${col.bg} (${col.pat})`);
 }
-
-// 3) 휴뱅 — Open Color 중립 회색 고정
-await c.query(
-  `insert into color_palette (calendar_id,key,name,bg_color,text_color,border_color,sort_order)
-   values ($1,'gray','회색','#e9ecef','#495057','#ced4da',1) on conflict (calendar_id,key) do update
-     set bg_color=excluded.bg_color, text_color=excluded.text_color, border_color=excluded.border_color`,
-  [cal]
-);
-
-// 4) 안 쓰는 색 전부 정리 — 어떤 태그도 안 가진 팔레트 색(옛 레거시 named 색 포함)을 삭제해
-//    태그 편집창 스와치를 깔끔하게(쓰는 색 = 태그 1:1만 남게).
-const pruned = await c.query(
-  `delete from color_palette where calendar_id=$1
-     and key not in (select color_key from broadcast_tags where calendar_id=$1 and color_key is not null)
-     returning key`,
-  [cal]
-);
-console.log(`prune(${pruned.rows.length}): ${pruned.rows.map((r) => r.key).join(", ") || "none"}`);
+// 휴뱅 — 중립 회색
+if (!DRY) {
+  await c.query(
+    `insert into color_palette (calendar_id,key,name,bg_color,text_color,border_color,sort_order)
+     values ($1,'gray','회색','#e9ecef','#495057','#ced4da',1) on conflict (calendar_id,key) do update
+       set bg_color=excluded.bg_color, text_color=excluded.text_color, border_color=excluded.border_color`,
+    [cal]
+  );
+  // 안 쓰는 색 전부 정리
+  const pruned = await c.query(
+    `delete from color_palette where calendar_id=$1
+       and key not in (select color_key from broadcast_tags where calendar_id=$1 and color_key is not null)
+       returning key`,
+    [cal]
+  );
+  console.log(`prune(${pruned.rows.length}): ${pruned.rows.map((r) => r.key).join(", ") || "none"}`);
+}
 await c.end();
-console.log("완료 ✅");
+console.log(DRY ? "DRY 끝 (적용하려면 --dry 빼고 실행)" : "완료 ✅");
