@@ -1822,6 +1822,8 @@
   background: #f3f4f6;
   padding: 5px 8px;
   box-shadow: 0 1px 1px rgb(17 24 39 / 5%);
+  /* 글자를 무늬·진한 캔디 배경에서 분리하는 옅은 흰 헤일로 — 어떤 색 위에서도 또렷하게 읽힌다. */
+  text-shadow: 0 1px 1px rgb(255 255 255 / 55%), 0 0 1px rgb(255 255 255 / 70%);
   transition:
     transform var(--dur-1) var(--ease),
     box-shadow var(--dur-2) var(--ease);
@@ -1888,20 +1890,22 @@
 .pill-dots {
   display: flex;
   flex-wrap: wrap;
-  gap: 3px;
-  margin-top: 3px;
+  gap: 5px;
+  margin-top: 4px;
 }
 .pill-dots i {
-  width: 7px;
-  height: 7px;
+  width: 9px;
+  height: 9px;
   border-radius: 999px;
-  border: 1px solid rgb(0 0 0 / 14%);
+  border: 1px solid rgb(0 0 0 / 30%);
   box-sizing: border-box;
+  /* 캔디 무늬 칸 위에서도 점이 또렷하게 — 흰 링으로 배경과 분리 + 살짝 띄움. */
+  box-shadow: 0 0 0 1.5px rgb(255 255 255 / 92%), 0 1px 2px rgb(17 24 39 / 22%);
 }
 @media (min-width: 641px) {
   .pill-dots i {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 }
 

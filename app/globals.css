@@ -859,42 +859,43 @@ select {
 }
 /* VRChat(민트): 밝은 칸 → 어두운 대각선 "＼" */
 [data-color="mint"] {
-  background-image: repeating-linear-gradient(-45deg, rgb(0 0 0 / 16%) 0 2px, transparent 2px 7px) !important;
+  background-image: repeating-linear-gradient(-45deg, rgb(0 0 0 / 10%) 0 2px, transparent 2px 7px) !important;
 }
 /* 시참의날(하늘): 밝은 칸 → 어두운 점 */
 [data-color="sky"] {
-  background-image: radial-gradient(rgb(0 0 0 / 18%) 1.4px, transparent 1.6px) !important;
+  background-image: radial-gradient(rgb(0 0 0 / 11%) 1.4px, transparent 1.6px) !important;
   background-size: 7px 7px !important;
 }
 /* #6: 추가된 생성 색(gen-)은 연한 톤이라 비슷해 보일 수 있어 무늬로 추가 구분.
-   key 접두사로 무늬를 정한다(대각선/점/격자). 세로무늬는 가독성 때문에 쓰지 않는다. */
+   key 접두사로 무늬를 정한다(대각선/점/격자). 세로무늬는 가독성 때문에 쓰지 않는다.
+   무늬는 '색 구분'용 텍스처일 뿐 — 글자와 싸우지 않게 톤을 낮게(≈9~11%) 유지한다. */
 [data-color^="gen-diag-"] {
   background-image: repeating-linear-gradient(
     -45deg,
-    rgb(0 0 0 / 14%) 0 2px,
+    rgb(0 0 0 / 9%) 0 2px,
     transparent 2px 7px
   ) !important;
 }
 [data-color^="gen-dots-"] {
-  background-image: radial-gradient(rgb(0 0 0 / 16%) 1.4px, transparent 1.6px) !important;
+  background-image: radial-gradient(rgb(0 0 0 / 10%) 1.4px, transparent 1.6px) !important;
   background-size: 7px 7px !important;
 }
 [data-color^="gen-grid-"] {
   background-image:
-    repeating-linear-gradient(0deg, rgb(0 0 0 / 12%) 0 1px, transparent 1px 8px),
-    repeating-linear-gradient(90deg, rgb(0 0 0 / 12%) 0 1px, transparent 1px 8px) !important;
+    repeating-linear-gradient(0deg, rgb(0 0 0 / 8%) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(90deg, rgb(0 0 0 / 8%) 0 1px, transparent 1px 8px) !important;
 }
 /* 크로스해치(빗금 ×): 두 방향 대각선 — diag/grid와 구분되는 또 다른 무늬 */
 [data-color^="gen-cross-"] {
   background-image:
-    repeating-linear-gradient(45deg, rgb(0 0 0 / 12%) 0 2px, transparent 2px 8px),
-    repeating-linear-gradient(-45deg, rgb(0 0 0 / 12%) 0 2px, transparent 2px 8px) !important;
+    repeating-linear-gradient(45deg, rgb(0 0 0 / 8%) 0 2px, transparent 2px 8px),
+    repeating-linear-gradient(-45deg, rgb(0 0 0 / 8%) 0 2px, transparent 2px 8px) !important;
 }
 /* 가로줄: 세로 글자 가독성을 해치지 않는 수평 점선 띠 */
 [data-color^="gen-dash-"] {
   background-image: repeating-linear-gradient(
     0deg,
-    rgb(0 0 0 / 13%) 0 2px,
+    rgb(0 0 0 / 9%) 0 2px,
     transparent 2px 8px
   ) !important;
 }

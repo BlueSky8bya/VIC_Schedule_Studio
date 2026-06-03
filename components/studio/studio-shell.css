@@ -3638,6 +3638,8 @@
   padding: clamp(7px, 0.5vw, 11px) clamp(10px, 0.65vw, 15px);
   text-align: left;
   box-shadow: 0 1px 2px rgb(17 24 39 / 6%);
+  /* 글자를 무늬·진한 캔디 배경에서 분리하는 옅은 흰 헤일로 — 어떤 색 위에서도 또렷하게. */
+  text-shadow: 0 1px 1px rgb(255 255 255 / 55%), 0 0 1px rgb(255 255 255 / 70%);
   transition:
     transform var(--dur-1) var(--ease),
     box-shadow var(--dur-2) var(--ease);
