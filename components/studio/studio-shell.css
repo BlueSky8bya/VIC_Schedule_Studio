@@ -3353,6 +3353,57 @@
   font-weight: 600;
   color: #a59fb8;
 }
+/* 섹션 안 '+ 콘텐츠/방식 추가' 버튼 — 점선 박스로 추가 위치를 분명히. */
+.tag-add-in-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  border: 1.5px dashed #b3a4e8;
+  border-radius: 999px;
+  background: #f4f0ff;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 900;
+  color: #6b5bd6;
+  cursor: pointer;
+  transition: background 0.12s var(--ease, ease), transform 0.1s var(--ease, ease),
+    border-color 0.12s var(--ease, ease);
+}
+.tag-add-in-section:hover:not(:disabled) {
+  background: #e9e2fb;
+  border-color: #8b7cf0;
+}
+.tag-add-in-section:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.tag-add-in-section:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.tag-add-in-section.mod {
+  border-color: #c8a23f;
+  background: #fbf4e2;
+  color: #7a5a12;
+}
+.tag-add-in-section.mod:hover:not(:disabled) {
+  background: #f6ead0;
+  border-color: #b88a2e;
+}
+/* 방식 태그 행의 색 스와치는 '원'으로(방식은 카드에서 동그라미 점으로 표시되니 편집창에서도 원).
+   정사각 고정(타원 방지) — 방식 색은 7개라 한 줄에 충분히 들어간다. */
+.tag-editor-row.is-mod-row .tag-editor-swatches button {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  max-width: none;
+  border-radius: 999px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag-add-in-section {
+    transition: none;
+  }
+}
 .tag-editor-section-empty {
   margin: 2px 2px 8px;
   font-size: 12px;
@@ -4602,21 +4653,31 @@ textarea:disabled {
     width: 28px;
     height: 28px;
   }
-  /* 2줄: 색 스와치 — 다음 줄 전체 폭, 컴팩트하게 wrap(kind 필터로 개수도 줄어 여유). */
+  /* 2줄: 색 스와치 — 다음 줄 전체 폭. 한 줄 유지(nowrap): 칸 수가 많아도 폭에 맞춰 유동적으로
+     좁아져 한 줄에 다 들어간다(2줄로 안 넘침). */
   .tag-editor .tag-editor-row .tag-editor-swatches {
     order: 5;
     flex: 1 1 100%;
-    flex-wrap: wrap;
-    gap: 5px;
+    flex-wrap: nowrap;
+    gap: 4px;
     padding: 0;
   }
   .tag-editor .tag-editor-row .tag-editor-swatches button {
-    flex: 0 0 auto;
-    width: 23px;
-    height: 23px;
-    max-width: none;
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    height: 24px;
+    max-width: 28px;
     border-width: 1.5px;
     border-radius: 6px;
+  }
+  /* 방식 행은 정사각 원형(카드의 동그라미 점과 통일). 7개라 한 줄에 들어감. */
+  .tag-editor .tag-editor-row.is-mod-row .tag-editor-swatches button {
+    flex: 0 0 auto;
+    width: 24px;
+    height: 24px;
+    max-width: none;
+    border-radius: 999px;
   }
   /* 고스트(드래그 복제본) — 옮기며 색을 비교해 배치해야 하니 '선택된 색 칩'만 인라인으로 보인다
      (전체 팔레트는 숨김). 손잡이·이름·방식·[그 태그 색]·삭제 한 줄 → 색은 보이고 키는 최소. */

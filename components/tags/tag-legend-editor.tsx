@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, GripVertical, Lock, Palette, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, GripVertical, Lock, Palette, Plus, Save, Trash2 } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
   useEffect,
@@ -380,35 +380,34 @@ export function TagLegendEditor({
   }
 
   // #4: 태그 추가는 "팝업 안에서만" — 서버 호출도, 달력/다른 패널 반영도 없이 즉시 드래프트로 뜬다.
-  // 색은 클라이언트에서 기존 색과 안 겹치게 생성하고, "전체 저장" 때 한꺼번에 DB에 반영한다.
-  function addTag() {
+  // 색은 클라이언트에서 기존 색과 구분되게 '랜덤'으로 만들고("전체 저장" 때 DB 반영). kind에 따라
+  // 콘텐츠(무늬 카드 색) / 방식(단색 점) 풀에서 뽑는다.
+  function addTag(kind: TagKind) {
     if (allTags.length >= MAX_TAGS) return;
     hapticTick();
     setError(null);
-    // 새 태그는 콘텐츠 기본 → 무늬 있는 색 우선(카드에서 최대한 구분). 방식으로 토글하면 점만 보여
-    // 무늬는 무시되니 색은 그대로 둬도 무방.
     const gen = generateTagColor(
       effectivePalette.map((c) => ({ key: c.key, bgColor: c.bgColor })),
-      { preferPattern: true }
+      kind === "modifier" ? { plain: true, random: true } : { preferPattern: true, random: true }
     );
     const color: ColorPaletteEntry = { ...gen, sortOrder: 0 };
     const tempId = `${NEW_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const tag: BroadcastTag = {
       id: tempId,
       tagKey: tempId,
-      displayName: "새 태그",
+      displayName: kind === "modifier" ? "새 방식" : "새 태그",
       colorKey: gen.key,
       sortOrder: 9999,
       isDefault: false,
       isActive: true,
       parentId: null,
-      kind: "content"
+      kind
     };
     setNewColors((prev) => [...prev, color]);
     setNewTags((prev) => [...prev, tag]);
     setDraft((cur) => ({
       ...cur,
-      [tempId]: { name: "새 태그", colorKey: gen.key, parentId: null, kind: "content" }
+      [tempId]: { name: tag.displayName, colorKey: gen.key, parentId: null, kind }
     }));
     setOrderIds((cur) => [...cur, tempId]);
   }
@@ -617,7 +616,9 @@ export function TagLegendEditor({
       <div
         className={`tag-editor-row ${draggingId === tag.id ? "dragging" : ""} ${
           isNew(tag.id) ? "is-new" : ""
-        } ${locked ? "locked" : ""} ${isSub ? "is-sub" : ""}`}
+        } ${locked ? "locked" : ""} ${isSub ? "is-sub" : ""} ${
+          d.kind === "modifier" ? "is-mod-row" : ""
+        }`}
         data-tagid={tag.id}
         key={tag.id}
       >
@@ -721,11 +722,12 @@ export function TagLegendEditor({
     <div className="tag-editor">
       <div className="tag-tips">
         <span className="tag-tip">
-          <GripVertical aria-hidden="true" size={13} />
-          손잡이를 끌어 순서 변경
+          <Palette aria-hidden="true" size={13} />
+          <b>콘텐츠</b>는 달력 칸을 채우는 색·무늬(무슨 방송), <b>방식</b>은 그 위 작은 점(어떻게)
         </span>
         <span className="tag-tip">
-          <Palette aria-hidden="true" size={13} />한 색은 한 태그만 — 바꾸려면 쓰던 태그에서 먼저 해제
+          <GripVertical aria-hidden="true" size={13} />
+          손잡이를 끌어 순서 변경 · 한 색은 한 태그만
         </span>
         <span className="tag-tip">
           <Save aria-hidden="true" size={13} />새 태그는 ‘전체 저장’을 눌러야 반영돼요
@@ -754,6 +756,14 @@ export function TagLegendEditor({
                 <span className="tag-editor-section-sub">셀 색·통계를 차지</span>
               </div>
               {section(contentTops)}
+              <button
+                className="tag-add-in-section"
+                disabled={allTags.length >= MAX_TAGS}
+                onClick={() => addTag("content")}
+                type="button"
+              >
+                <Plus aria-hidden="true" size={15} /> 콘텐츠 추가
+              </button>
             </div>
             <div className="tag-editor-section is-mod">
               <div className="tag-editor-section-head">
@@ -763,10 +773,16 @@ export function TagLegendEditor({
               {modifierTops.length > 0 ? (
                 section(modifierTops)
               ) : (
-                <p className="tag-editor-section-empty">
-                  아직 없어요. 아래 ‘+ 태그 추가’ 후 칩의 ‘콘텐츠’를 눌러 ‘방식’으로 바꾸면 여기로 와요.
-                </p>
+                <p className="tag-editor-section-empty">아직 없어요. 아래에서 추가하세요.</p>
               )}
+              <button
+                className="tag-add-in-section mod"
+                disabled={allTags.length >= MAX_TAGS}
+                onClick={() => addTag("modifier")}
+                type="button"
+              >
+                <Plus aria-hidden="true" size={15} /> 방식 추가
+              </button>
             </div>
           </>
         );
@@ -775,21 +791,6 @@ export function TagLegendEditor({
       {error ? <div className="auth-warning">{error}</div> : null}
       {anyEmpty ? <p className="tag-editor-hint warn">색상이 비어 있는 태그가 있습니다.</p> : null}
       <div className="tag-editor-actions">
-        <span className="tag-editor-add">
-          <button
-            className="button"
-            disabled={allTags.length >= MAX_TAGS}
-            onClick={addTag}
-            type="button"
-          >
-            + 태그 추가
-          </button>
-          <span className="tag-editor-add-note">
-            최대 {MAX_TAGS}개
-            <br />
-            현재 {allTags.length}개
-          </span>
-        </span>
         <button
           className={`button primary ${saved && !dirty ? "saved" : ""}`}
           disabled={pending || busy || anyEmpty || (!dirty && !saved)}

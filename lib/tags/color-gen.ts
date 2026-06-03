@@ -190,7 +190,7 @@ function pickPattern(existing: { key: string }[]): Pat {
 // 떨어진' 것을 고른다 → 새 태그도 기존과 같은 결 + 충돌 없이. 모든 패밀리가 차면 HSL로 폴백.
 export function generateTagColor(
   existing: { key: string; bgColor: string }[],
-  opts?: { plain?: boolean; preferPattern?: boolean }
+  opts?: { plain?: boolean; preferPattern?: boolean; random?: boolean }
 ): GeneratedColor {
   const wantPlain = Boolean(opts?.plain); // true=방식(단색 점), false=콘텐츠(무늬 카드)
   // 같은 종류끼리만 hue 충돌을 본다(콘텐츠 카드 vs 방식 점은 명도가 달라 같은 hue도 무방).
@@ -198,14 +198,26 @@ export function generateTagColor(
   const usedHues = sameKind
     .map((p) => hexToHue(p.bgColor))
     .filter((h): h is number => h !== null);
-  // 안 쓴 패밀리 중 기존과 가장 멀리 떨어진 것(최소거리 최대화)을 고른다.
+  // 각 패밀리의 '기존과의 최소 거리'(클수록 안 겹침)를 잰다.
+  const scored = FAMILIES.map((f) => ({
+    f,
+    sep: usedHues.length ? Math.min(...usedHues.map((u) => hueDist(f.hue, u))) : 360
+  }));
   let best: Family | null = null;
   let bestSep = -1;
-  for (const f of FAMILIES) {
-    const sep = usedHues.length ? Math.min(...usedHues.map((u) => hueDist(f.hue, u))) : 360;
-    if (sep > bestSep) {
-      bestSep = sep;
-      best = f;
+  if (opts?.random) {
+    // 랜덤: 기존과 '충분히 구분되는'(가장 먼 것의 70%↑, 단 ≥30°) 후보들 중에서 무작위로 뽑는다.
+    const maxSep = Math.max(...scored.map((s) => s.sep));
+    const pool = scored.filter((s) => s.sep >= Math.max(30, maxSep * 0.7));
+    const pick = pool.length ? pickFrom(pool) : scored.sort((a, b) => b.sep - a.sep)[0];
+    best = pick.f;
+    bestSep = pick.sep;
+  } else {
+    for (const s of scored) {
+      if (s.sep > bestSep) {
+        bestSep = s.sep;
+        best = s.f;
+      }
     }
   }
   const rand = Math.random().toString(36).slice(2, 8);
