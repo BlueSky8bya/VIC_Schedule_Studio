@@ -4619,22 +4619,28 @@ textarea:disabled {
     border-width: 1.5px;
     border-radius: 6px;
   }
-  /* 고스트(드래그 복제본)도 일반 행과 똑같이 한 줄. 색이 늘면(최대 20개) 정사각형이
-     높이는 유지한 채 가로로 좁아져 직사각형이 되며 한 줄을 지킨다. */
-  .tag-drag-ghost .tag-editor-swatches {
-    order: 4;
-    flex: 1 1 100%;
-    display: flex;
+  /* 고스트(드래그 복제본) — 순서 옮기는 중엔 이름·종류만 식별되면 된다. 색 스와치는 숨겨
+     한 줄(손잡이·이름·방식·삭제)로 키를 최소화. 컴팩트 패딩으로 짧은 박스. */
+  .tag-drag-ghost {
     flex-wrap: nowrap;
-    gap: 3px;
+    padding: 7px 10px;
+    border-radius: 12px;
   }
-  .tag-drag-ghost .tag-editor-swatches button {
+  .tag-drag-ghost .tag-editor-swatches {
+    display: none;
+  }
+  .tag-drag-ghost .tag-drag-handle {
+    width: 24px;
+    height: 30px;
+  }
+  .tag-drag-ghost input {
     flex: 1 1 0;
+    width: auto;
     min-width: 0;
-    max-width: 18px;
-    height: 16px;
-    border-width: 1px;
-    border-radius: 3px;
+  }
+  .tag-drag-ghost .tag-editor-remove {
+    width: 28px;
+    height: 28px;
   }
   .modal-card {
     max-width: 96vw;
