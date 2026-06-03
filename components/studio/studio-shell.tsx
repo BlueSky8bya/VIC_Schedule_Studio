@@ -311,6 +311,11 @@ export function StudioShell({
   // flushPendingWrites가 이걸 await해 "편집이 DB·캐시에 확실히 반영된 뒤"에만 시청자
   // 미리보기로 넘어가게 한다 → "넘어가서 새로고침 또 해야 보임" 문제를 구조적으로 없앤다.
   const inflightWritesRef = useRef<Set<Promise<StudioWriteResult>>>(new Set());
+  // 이벤트별 태그 토글 직렬화 — 빠르게 여러 번 눌러도 '마지막 의도'가 서버 진실이 되게(레이스로
+  // 옛 요청이 새 요청을 덮어쓰지 않게). desired=최신 의도, chain=직렬 큐, sent=중복 전송 방지(레퍼런스).
+  const tagDesiredRef = useRef<Map<string, string[]>>(new Map());
+  const tagWriteChainRef = useRef<Map<string, Promise<void>>>(new Map());
+  const tagSentRef = useRef<Map<string, string[]>>(new Map());
   // 첫 진입(스태거)와 달 이동(슬라이드)을 구분 — 실제로 달을 한 번 넘긴 뒤에만 슬라이드를 켠다.
   const didNavigateRef = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -1633,39 +1638,55 @@ export function StudioShell({
     return ids.includes(restTagId) ? ids : [...ids, restTagId];
   }
 
-  function toggleEventTag(event: StudioScheduleEvent, tagId: string) {
-    if (blockedByPreview()) return;
-    const has = event.tagIds.includes(tagId);
-    const rawNext = has
-      ? event.tagIds.filter((id) => id !== tagId)
-      : event.tagIds.length >= maxEventTags
-        ? event.tagIds
-        : [...event.tagIds, tagId];
-    if (rawNext === event.tagIds) {
-      return; // 이미 최대 — 변화 없음
-    }
-    const nextTagIds = ensureContent(rawNext);
-    const nextPrimary = nextTagIds; // 색은 대분류로 합쳐 카드에서 ≤2 표시(picker는 전체 저장)
-    const snapshot = events;
-    setEvents((prev) =>
-      prev.map((e) =>
-        e.id === event.id ? { ...e, tagIds: nextTagIds, primaryTagIds: nextPrimary } : e
-      )
-    );
-    setActionError(null);
-    startTransition(async () => {
+  // 이벤트 하나의 태그 저장을 직렬 큐에 태운다. 큐의 각 단계는 '그 시점의 최신 의도'(desired)를
+  // 보내므로, 빠른 연속 토글은 마지막 상태로 collapse되고 옛 요청이 새 요청을 덮어쓰지 못한다.
+  function queueTagWrite(eventId: string) {
+    const prev = tagWriteChainRef.current.get(eventId) ?? Promise.resolve();
+    const run = prev.then(async () => {
+      const desired = tagDesiredRef.current.get(eventId);
+      if (!desired) return;
+      if (tagSentRef.current.get(eventId) === desired) return; // 이미 같은 상태를 보냄(토글 없었음)
+      tagSentRef.current.set(eventId, desired);
       const res = await studioWrite("tags", {
-        eventId: event.id,
-        tagIds: nextTagIds,
-        primaryTagIds: nextPrimary
+        eventId,
+        tagIds: desired,
+        primaryTagIds: desired
       });
       if (!res.ok) {
-        setEvents(snapshot);
         setActionError(res.error);
+        // 서버 실패 → 진실로 재동기화하고 의도 캐시 비운다(다음 토글은 서버 상태에서 출발).
+        tagDesiredRef.current.delete(eventId);
+        tagSentRef.current.delete(eventId);
+        router.refresh();
       } else {
         hapticTick(); // ② 서버확인 톡(2단계 컨벤션 — 누름 톡은 피커 칩에서 이미 울림)
       }
     });
+    tagWriteChainRef.current.set(eventId, run.catch(() => {}));
+  }
+
+  function toggleEventTag(event: StudioScheduleEvent, tagId: string) {
+    if (blockedByPreview()) return;
+    // 현재 의도(직렬 큐 기준)에서 출발 — 빠른 연속 토글에도 stale prop을 안 읽는다.
+    const cur = tagDesiredRef.current.get(event.id) ?? event.tagIds;
+    const has = cur.includes(tagId);
+    const rawNext = has
+      ? cur.filter((id) => id !== tagId)
+      : cur.length >= maxEventTags
+        ? cur
+        : [...cur, tagId];
+    if (rawNext === cur) {
+      return; // 이미 최대 — 변화 없음
+    }
+    const nextTagIds = ensureContent(rawNext);
+    tagDesiredRef.current.set(event.id, nextTagIds);
+    setActionError(null);
+    setEvents((prev) =>
+      prev.map((e) =>
+        e.id === event.id ? { ...e, tagIds: nextTagIds, primaryTagIds: nextTagIds } : e
+      )
+    );
+    queueTagWrite(event.id);
   }
 
   // A1: 매니저·작업자용 읽기전용 일정 상세. owner 편집 폼을 회색으로 보여주는 대신,
