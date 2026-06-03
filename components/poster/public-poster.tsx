@@ -57,6 +57,7 @@ import type { SaveStickerInput, StickerResult } from "@/lib/schedules/sticker-ac
 import type { StickerAssetResult } from "@/lib/schedules/sticker-asset-actions";
 import type { HeartResult } from "@/lib/schedules/heart-actions";
 import { getDayMark } from "@/lib/calendar/holidays";
+import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import {
   assignSupportLanes,
   buildCalendarMonth,
@@ -610,8 +611,10 @@ export function PublicPoster({
   // 같은 태그 구성으로 이어진 묶음은 하나의 그라데이션으로(경계 가운데). 묶음별 날짜 범위.
   const paintGroups = useMemo(() => buildPaintGroups(schedule.events), [schedule.events]);
   const monthGridRef = useRef<HTMLDivElement>(null);
-  // 시청자 화면은 일정 카드를 '내용 높이'만큼만 둔다(이어진 칸이라고 짧은 쪽을 억지로 늘려
-  // 빈 채움을 만들지 않는다). 멀티데이 한 일정은 각 칸이 같은 내용을 투명 렌더해 자연히 맞는다.
+  // 이어진 일정(link_next로 묶인 '별개' 일정들)은 같은 묶음 칸끼리 높이를 맞춰 이음새가 어긋나지
+  // 않게 한다. 묶음의 '가장 큰 내용' 높이에만 맞추므로(과확장 없음) 짧은 쪽만 그만큼 채워진다.
+  // 단일 멀티데이 일정은 각 칸이 같은 내용을 투명 렌더해 이미 같은 높이라 이 보정이 무영향이다.
+  useEqualChainHeights(monthGridRef, [schedule.events, view]);
   // 실제 달력 콘텐츠가 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아니라 진짜 화면을 봤을 때만 방문 1).
   useEffect(() => {
     markContentReady();
