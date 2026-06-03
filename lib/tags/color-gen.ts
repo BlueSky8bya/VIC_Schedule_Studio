@@ -47,6 +47,11 @@ function patternOf(key: string): Pat {
   return "plain";
 }
 
+// 무늬 있는 색인가? 콘텐츠=무늬 색, 방식=단색으로 풀을 가르는 기준.
+export function isPatternColor(key: string): boolean {
+  return patternOf(key) !== "plain";
+}
+
 // 두 hue의 원형 거리(0~180).
 function hueDist(a: number, b: number): number {
   const d = Math.abs(a - b) % 360;

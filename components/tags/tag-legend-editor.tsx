@@ -11,7 +11,7 @@ import {
 } from "react";
 import type { BroadcastTag, ColorKey, ColorPaletteEntry, TagKind } from "@/lib/domain/schedule-types";
 import type { SaveTagsResult, TagCreateInput } from "@/lib/schedules/tag-actions";
-import { generateTagColor } from "@/lib/tags/color-gen";
+import { generateTagColor, isPatternColor } from "@/lib/tags/color-gen";
 import { hapticTick } from "@/lib/ui/haptics";
 
 type TagUpdate = {
@@ -457,6 +457,40 @@ export function TagLegendEditor({
     );
   }
 
+  // 콘텐츠↔방식 토글 — kind를 바꾸면 색도 그 kind의 풀(콘텐츠=무늬, 방식=단색)로 자동 전환한다.
+  // 현재 색이 새 풀에 맞고 같은 kind에서 안 겹치면 유지, 아니면 빈 색을 찾고, 없으면 새로 생성.
+  function toggleKind(tagId: string) {
+    hapticTick();
+    const d = draft[tagId];
+    if (!d) return;
+    const newKind: TagKind = d.kind === "modifier" ? "content" : "modifier";
+    const wantPattern = newKind !== "modifier";
+    const usedSame = new Set(
+      Object.entries(draft)
+        .filter(([id, dd]) => id !== tagId && dd.parentId === null && dd.kind === newKind)
+        .map(([, dd]) => dd.colorKey)
+    );
+    let nextKey: ColorKey | "" = d.colorKey;
+    const keepOk =
+      nextKey !== "" && isPatternColor(nextKey) === wantPattern && !usedSame.has(nextKey);
+    if (!keepOk) {
+      const free = effectivePalette.find(
+        (c) => isPatternColor(c.key) === wantPattern && !usedSame.has(c.key)
+      );
+      if (free) {
+        nextKey = free.key as ColorKey;
+      } else {
+        const gen = generateTagColor(
+          effectivePalette.map((c) => ({ key: c.key, bgColor: c.bgColor })),
+          wantPattern ? { preferPattern: true } : { plain: true }
+        );
+        nextKey = gen.key as ColorKey;
+        setNewColors((prev) => [...prev, { ...gen, sortOrder: 0 }]);
+      }
+    }
+    setDraft((cur) => ({ ...cur, [tagId]: { ...cur[tagId], kind: newKind, colorKey: nextKey } }));
+  }
+
   function pick(tagId: string, key: ColorKey) {
     hapticTick();
     setDraft((cur) => {
@@ -625,13 +659,7 @@ export function TagLegendEditor({
             <button
               className={`tag-kind-toggle ${d.kind === "modifier" ? "mod" : ""}`}
               disabled={locked}
-              onClick={() => {
-                hapticTick();
-                setDraft((cur) => ({
-                  ...cur,
-                  [tag.id]: { ...d, kind: d.kind === "modifier" ? "content" : "modifier" }
-                }));
-              }}
+              onClick={() => toggleKind(tag.id)}
               title={
                 d.kind === "modifier"
                   ? "방식(합방·시참 등) — 누르면 콘텐츠로"
@@ -642,7 +670,10 @@ export function TagLegendEditor({
               {d.kind === "modifier" ? "방식" : "콘텐츠"}
             </button>
             <div className="tag-editor-swatches">
-            {effectivePalette.map((c) => {
+            {/* kind별 색 풀 분리 — 콘텐츠는 무늬 색만, 방식은 단색만 고를 수 있다. */}
+            {effectivePalette
+              .filter((c) => isPatternColor(c.key) === (d.kind !== "modifier"))
+              .map((c) => {
               const selected = d.colorKey === c.key;
               const blocked = usedByOther(tag.id, c.key);
               return (
