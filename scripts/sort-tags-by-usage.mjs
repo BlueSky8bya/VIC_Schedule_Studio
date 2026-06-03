@@ -15,7 +15,7 @@ await c.connect();
 const cal = (await c.query("select id from calendars where slug='vic'")).rows[0].id;
 
 const tags = (await c.query(
-  `select bt.id, bt.tag_key, bt.display_name, bt.kind, count(et.event_id)::int uses
+  `select bt.id, bt.tag_key, bt.display_name, bt.kind, bt.color_key, count(et.event_id)::int uses
    from broadcast_tags bt left join event_tags et on et.tag_id = bt.id
    where bt.calendar_id=$1 and bt.is_active=true and bt.parent_id is null group by bt.id`,
   [cal]
@@ -32,7 +32,14 @@ console.log(DRY ? "── DRY RUN ──" : "── 적용 ──");
 for (let i = 0; i < tags.length; i++) {
   const tg = tags[i];
   console.log(`${String(i).padStart(2)}  ${tg.display_name.padEnd(8)} ${String(tg.uses).padStart(3)}회  (${tg.kind === "modifier" ? "방식" : "콘텐츠"})`);
-  if (!DRY) await c.query("update broadcast_tags set sort_order=$1 where id=$2", [i, tg.id]);
+  if (!DRY) {
+    await c.query("update broadcast_tags set sort_order=$1 where id=$2", [i, tg.id]);
+    // 색 팔레트도 같은 순서로 — 편집창 스와치(=팔레트 sort_order 순)가 태그 순서와 같아져
+    // 선택칸이 왼쪽부터 한 칸씩 대각선으로 계단식 정렬된다(초록·보라·분홍… 순).
+    if (tg.color_key) {
+      await c.query("update color_palette set sort_order=$1 where calendar_id=$2 and key=$3", [i, cal, tg.color_key]);
+    }
+  }
 }
 await c.end();
 console.log(DRY ? "DRY 끝" : "완료 ✅ — 범례·피커가 사용 빈도순으로 정렬됨");
