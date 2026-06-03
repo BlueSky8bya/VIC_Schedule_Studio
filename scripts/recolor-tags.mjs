@@ -100,12 +100,14 @@ await c.query(
   [cal]
 );
 
-// 4) 안 쓰는 gen-* 정리
+// 4) 안 쓰는 색 전부 정리 — 어떤 태그도 안 가진 팔레트 색(옛 레거시 named 색 포함)을 삭제해
+//    태그 편집창 스와치를 깔끔하게(쓰는 색 = 태그 1:1만 남게).
 const pruned = await c.query(
-  `delete from color_palette where calendar_id=$1 and key like 'gen-%'
-     and key not in (select color_key from broadcast_tags where calendar_id=$1) returning key`,
+  `delete from color_palette where calendar_id=$1
+     and key not in (select color_key from broadcast_tags where calendar_id=$1 and color_key is not null)
+     returning key`,
   [cal]
 );
-console.log(`prune: ${pruned.rows.map((r) => r.key).join(", ") || "none"}`);
+console.log(`prune(${pruned.rows.length}): ${pruned.rows.map((r) => r.key).join(", ") || "none"}`);
 await c.end();
 console.log("완료 ✅");
