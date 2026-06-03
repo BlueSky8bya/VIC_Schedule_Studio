@@ -176,8 +176,51 @@ function stickerToSaveInput(
   };
 }
 
-// 관심 일정 북마크 저장 키 — 캘린더 슬러그가 하나(vic)라 단일 키로 충분하다.
-const BOOKMARK_STORAGE_KEY = "vic:bookmarks:v1";
+// (구) 전역·영구 북마크 키 — 서버 진실을 통째로 덮어써 DB와 desync(채워졌는데 DB엔 없음 →
+// 다시 눌러도 토글 OFF만 돼 카운트가 안 늘던 버그)를 냈다. 이제 쓰지 않고, 마운트 때 청소한다.
+const LEGACY_BOOKMARK_KEY = "vic:bookmarks:v1";
+// 하트의 진실은 항상 서버(myHeartIds). 아래 델타는 '이번 브라우저 세션에 사용자가 직접 토글한
+// 일정'만 담아(sessionStorage, 탭 닫으면 소멸) 시청자 미리보기 재마운트 동안 변경을 보존한다.
+// 매 로드 신선한 서버값에 이 델타(on/off)를 덮어 적용하므로, 손대지 않은 일정에 가짜 하트가
+// 생기지 않는다(자가 보정). 페이지 새로고침 후엔 서버값이 이미 최신이라 델타는 무해한 멱등 합집합.
+const HEART_DELTA_KEY = "vic:heartDelta:v1";
+type HeartDelta = { on: string[]; off: string[] };
+function loadHeartDelta(): HeartDelta {
+  try {
+    const raw = window.sessionStorage.getItem(HEART_DELTA_KEY);
+    if (raw) {
+      const p: unknown = JSON.parse(raw);
+      if (p && Array.isArray((p as HeartDelta).on) && Array.isArray((p as HeartDelta).off)) {
+        return {
+          on: (p as HeartDelta).on.filter((x) => typeof x === "string"),
+          off: (p as HeartDelta).off.filter((x) => typeof x === "string")
+        };
+      }
+    }
+  } catch {
+    // 손상·사생활 모드 등은 무시 — 델타는 보조 기능.
+  }
+  return { on: [], off: [] };
+}
+function saveHeartDelta(d: HeartDelta) {
+  try {
+    window.sessionStorage.setItem(HEART_DELTA_KEY, JSON.stringify(d));
+  } catch {
+    // 저장 실패 무시.
+  }
+}
+// 사용자가 한 일정을 토글했음을 델타에 기록한다(on=켬, off=끔). 반대편 목록에선 제거.
+function recordHeartDelta(id: string, on: boolean) {
+  const d = loadHeartDelta();
+  if (on) {
+    d.on = [...new Set([...d.on, id])];
+    d.off = d.off.filter((x) => x !== id);
+  } else {
+    d.off = [...new Set([...d.off, id])];
+    d.on = d.on.filter((x) => x !== id);
+  }
+  saveHeartDelta(d);
+}
 
 // #3: 관심 하트 단계(불꽃 게이지).
 // 작은 수에서 과장되지 않도록 "절대 하트 수"를 1차 기준으로 쓰고, 상위 단계는 "이 달 최다 대비
@@ -714,7 +757,6 @@ export function PublicPoster({
   const [bookmarks, setBookmarks] = useState<string[]>(() =>
     serverHearts ? (schedule.myHeartIds ?? []) : []
   );
-  const [bookmarksReady, setBookmarksReady] = useState(false);
   // A: 일정별 관심 집계 수(서버에서 받아 낙관적으로 갱신). "관심 높음" 배지 판정에 쓴다.
   const [heartCounts, setHeartCounts] = useState<Record<string, number>>(() => {
     const map: Record<string, number> = {};
@@ -859,37 +901,25 @@ export function PublicPoster({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.year, view.month]);
 
-  // 마운트 시 localStorage의 내 관심(하트) 집합을 한 번 불러온다 — 서버 모드에서도 쓴다.
-  // 이유: 시청자 미리보기를 닫았다 다시 열면 컴포넌트가 리마운트되며 bookmarks가 schedule.myHeartIds
-  // (페이지 로드 시점 값)로 초기화돼, 세션 중 뺀/누른 하트가 stale prop으로 되돌아오는 버그가 있다.
-  // 로컬에 마지막 의도를 저장해두고 마운트 때 우선 적용하면(서버 저장은 백그라운드로 계속) 리마운트에도
-  // 유지된다. 최초 로드(로컬 없음)에는 서버값(myHeartIds)을 그대로 쓴다 → 서버가 진실, 로컬은 세션 보존용.
+  // 하트 상태 = 서버 myHeartIds(진실) + 이번 세션 델타. 시청자 미리보기를 닫았다 열면 컴포넌트가
+  // 리마운트되며 bookmarks가 schedule.myHeartIds(페이지 로드 스냅샷)로 초기화되는데, 그러면 이 세션에
+  // 누른/뺀 하트가 사라져 보였다. 세션 델타(sessionStorage)를 신선한 서버값에 덮어 적용해 그 변경을
+  // 보존한다. 손대지 않은 일정엔 절대 가짜 하트가 안 생긴다 → 서버와 desync 없이 정확.
   useEffect(() => {
+    // 과거 전역·영구 북마크 캐시는 서버를 덮어써 desync를 냈다 — 발견 즉시 청소한다.
     try {
-      const raw = window.localStorage.getItem(BOOKMARK_STORAGE_KEY);
-      if (raw) {
-        const parsed: unknown = JSON.parse(raw);
-        if (Array.isArray(parsed)) {
-          setBookmarks(parsed.filter((id): id is string => typeof id === "string"));
-        }
-      }
+      window.localStorage.removeItem(LEGACY_BOOKMARK_KEY);
     } catch {
-      // 손상된 값/사생활 모드 등은 조용히 무시 — 북마크는 부가 기능.
+      // 무시.
     }
-    setBookmarksReady(true);
+    const serverIds = serverHearts ? (schedule.myHeartIds ?? []) : [];
+    const delta = loadHeartDelta();
+    const set = new Set(serverIds);
+    for (const id of delta.off) set.delete(id);
+    for (const id of delta.on) set.add(id);
+    setBookmarks([...set]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // 북마크가 바뀌면 localStorage에 저장(서버·로컬 모드 공통). 초기 로드 전에는 덮어쓰지 않게 ready 이후에만.
-  useEffect(() => {
-    if (!bookmarksReady) {
-      return;
-    }
-    try {
-      window.localStorage.setItem(BOOKMARK_STORAGE_KEY, JSON.stringify(bookmarks));
-    } catch {
-      // 저장 실패는 무시.
-    }
-  }, [bookmarks, bookmarksReady]);
 
   // 하트를 켤 때 누른 자리에서 ♥들이 스멀스멀 떠오르게 한다(움직임 최소화 설정이면 생략).
   function spawnHearts(x: number, y: number) {
@@ -927,19 +957,22 @@ export function PublicPoster({
       ...prev,
       [id]: Math.max(0, (prev[id] ?? 0) + (wasOn ? -1 : 1))
     }));
+    // 이번 세션 의도를 델타에 기록(미리보기 재마운트에도 유지). 서버 실패 시 되돌린다.
+    recordHeartDelta(id, !wasOn);
     if (!toggleHeartAction) {
-      return; // localStorage 모드: 개인 표시만, 집계 없음.
+      return; // 서버 액션 없음(샘플/오프라인): 개인 표시만, 집계 없음.
     }
     void toggleHeartAction(id).then((result) => {
       if (result.ok) {
         setHeartCounts((prev) => ({ ...prev, [id]: result.count }));
       } else {
-        // 실패 → 낙관적 변경을 되돌린다.
+        // 실패 → 낙관적 변경·델타를 함께 되돌린다(서버와 어긋난 채 남지 않게).
         setBookmarks((prev) => (wasOn ? [...prev, id] : prev.filter((x) => x !== id)));
         setHeartCounts((prev) => ({
           ...prev,
           [id]: Math.max(0, (prev[id] ?? 0) + (wasOn ? 1 : -1))
         }));
+        recordHeartDelta(id, wasOn);
       }
     });
   }
