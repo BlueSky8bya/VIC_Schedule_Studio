@@ -980,6 +980,7 @@ export function PublicPoster({
 
   // 태그 칩 토글(다중 선택).
   function toggleTagFilter(id: string) {
+    hapticTick(); // 셀렉터 손맛(Android만; iOS·미지원은 조용히 무시)
     setTagFilters((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );

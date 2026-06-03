@@ -484,6 +484,7 @@ export function StudioShell({
   // 색상 안내 필터 — 편집실에서도 특정 태그 색만 골라볼 수 있게(시청자 화면과 동일 동작).
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   function toggleTagFilter(id: string) {
+    hapticTick(); // 셀렉터 손맛(Android만; iOS·미지원은 조용히 무시)
     setTagFilters((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
@@ -1661,6 +1662,8 @@ export function StudioShell({
       if (!res.ok) {
         setEvents(snapshot);
         setActionError(res.error);
+      } else {
+        hapticTick(); // ② 서버확인 톡(2단계 컨벤션 — 누름 톡은 피커 칩에서 이미 울림)
       }
     });
   }
