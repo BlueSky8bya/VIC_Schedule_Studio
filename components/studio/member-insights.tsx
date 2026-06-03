@@ -374,7 +374,8 @@ export function MemberInsights({
             </div>
           );
         })}
-        <StackTrendChart data={d.trend.contentByTag} showLegend={false} title="🗓️ 태그별 컨텐츠" />
+        <StackTrendChart data={d.trend.contentByTag} showLegend={false} title="🗓️ 콘텐츠별" />
+        <StackTrendChart data={d.trend.modifierByTag} showLegend={false} title="🎛️ 방식별" />
         <StackTrendChart
           data={d.trend.heartsByTag}
           rankLabel="인기 높은 순"

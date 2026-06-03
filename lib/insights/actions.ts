@@ -802,7 +802,8 @@ export type TrendData = {
   months: string[]; // 6개월(YYYY-MM, 오래된→최신, 타깃 월로 끝남)
   visits: number[];
   content: number[]; // 휴뱅 제외 공개 일정
-  contentByTag: TrendStack; // 태그별 컨텐츠 6개월(휴뱅 포함)
+  contentByTag: TrendStack; // 콘텐츠 대분류별 6개월(휴뱅 포함)
+  modifierByTag: TrendStack; // 방식(합방·시참 등)별 6개월
   heartsByTag: TrendStack; // 하트 받은 태그 6개월(컨텐츠 방영월 기준)
   visitsByRole: TrendStack; // 방문 역할별 6개월(개발자 전용)
   visitsByDevice: TrendStack; // 방문 기기별 6개월(개발자 전용)
@@ -943,6 +944,34 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     .sort((a, b) => b[1].total - a[1].total)
     .map(([key, v]) => ({ key, label: v.name, color: v.color }));
 
+  // 방식(modifier)별 6개월 — 콘텐츠와 별개 축(합방·시참·연습 등 얼마나 자주 했나).
+  const modInfo = new Map<string, { name: string; color: string; total: number }>();
+  const modTagRows: { ym: string; key: string; n: number }[] = [];
+  for (const row of tagRows2) {
+    const bt = row.broadcast_tags;
+    const ym = eventMonth.get(row.event_id);
+    if (!bt?.id || !ym) continue;
+    const cat = catMap.get(bt.id) ?? {
+      id: bt.id,
+      name: bt.display_name ?? "?",
+      colorKey: bt.color_key ?? "",
+      kind: "content"
+    };
+    if (cat.kind !== "modifier") continue;
+    modTagRows.push({ ym, key: cat.id, n: 1 });
+    const cur = modInfo.get(cat.id);
+    if (cur) cur.total += 1;
+    else
+      modInfo.set(cat.id, {
+        name: cat.name,
+        color: palette.get(cat.colorKey) ?? "#cdc6ec",
+        total: 1
+      });
+  }
+  const modCats = [...modInfo.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([key, v]) => ({ key, label: v.name, color: v.color }));
+
   // 하트 받은 태그 6개월 — 각 일정의 하트(총합)를 그 일정의 방영월·태그에 합산.
   const heartByEvent = new Map<string, number>();
   for (const r of (heartsRes.data ?? []) as { event_id: string; count: number }[]) {
@@ -1003,6 +1032,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       visits: monthKeys.map((k) => vMap.get(k) ?? 0),
       content: monthKeys.map((k) => cMap.get(k) ?? 0),
       contentByTag: buildTrendStack(monthKeys, contentCats, contentTagRows),
+      modifierByTag: buildTrendStack(monthKeys, modCats, modTagRows),
       heartsByTag: buildTrendStack(monthKeys, heartCats, heartTagRows),
       visitsByRole: buildTrendStack(monthKeys, ROLE_TREND_META, roleRows),
       visitsByDevice: buildTrendStack(monthKeys, DEVICE_TREND_META, devRows)
@@ -1578,7 +1608,8 @@ export type MemberInsightsData = {
     months: string[];
     content: number[]; // 월별 컨텐츠 수(집계)
     hearts: number[]; // 월별 하트 합계(집계)
-    contentByTag: TrendStack; // 태그별 컨텐츠 6개월(수치 노출 OK)
+    contentByTag: TrendStack; // 콘텐츠 대분류별 6개월(수치 노출 OK)
+    modifierByTag: TrendStack; // 방식별 6개월
     heartsByTag: TrendStack; // 하트 받은 태그 6개월 — 비율만(정규화, 정확 수 숨김)
   };
   highlight: {
@@ -1740,6 +1771,33 @@ export async function getMemberInsightsAction(
       .sort((a, b) => b[1].total - a[1].total)
       .map(([key, v]) => ({ key, label: v.name, color: v.color })),
     ctRows
+  );
+
+  // 방식(modifier)별 6개월 — 콘텐츠와 별개 축.
+  const mtInfo = new Map<string, { name: string; color: string; total: number }>();
+  const mtRows: { ym: string; key: string; n: number }[] = [];
+  for (const row of tagRows) {
+    const bt = row.broadcast_tags;
+    const ym = eventMonth.get(row.event_id);
+    if (!bt?.id || !ym) continue;
+    const cat = catOf(bt);
+    if (cat.kind !== "modifier") continue;
+    mtRows.push({ ym, key: cat.id, n: 1 });
+    const cur = mtInfo.get(cat.id);
+    if (cur) cur.total += 1;
+    else
+      mtInfo.set(cat.id, {
+        name: cat.name,
+        color: colorMap.get(cat.colorKey)?.bg ?? "#cdc6ec",
+        total: 1
+      });
+  }
+  const modifierByTag = buildTrendStack(
+    monthKeys,
+    [...mtInfo.entries()]
+      .sort((a, b) => b[1].total - a[1].total)
+      .map(([key, v]) => ({ key, label: v.name, color: v.color })),
+    mtRows
   );
 
   const tagCount = new Map<string, { name: string; count: number; bgColor: string; borderColor: string }>();
@@ -1925,7 +1983,7 @@ export async function getMemberInsightsAction(
         tags
       },
       engagement: { monthHearts, totalHearts, monthly, topTitles },
-      trend: { months: monthKeys, content: contentCounts, hearts: monthlyCounts, contentByTag, heartsByTag },
+      trend: { months: monthKeys, content: contentCounts, hearts: monthlyCounts, contentByTag, modifierByTag, heartsByTag },
       highlight: { peakDay, peakHour, topTitle, busiestWeekday }
     }
   };
