@@ -2153,9 +2153,9 @@ export function PublicPoster({
                 return (
                   <button
                     aria-pressed={on}
-                    className={`agenda-legend-tag ${on ? "on" : ""} ${
-                      tagFilters.length > 0 && !on ? "dim" : ""
-                    }`}
+                    className={`agenda-legend-tag ${tag.kind === "modifier" ? "mod" : ""} ${
+                      on ? "on" : ""
+                    } ${tagFilters.length > 0 && !on ? "dim" : ""}`}
                     key={tag.id}
                     onClick={() => toggleTagFilter(tag.id)}
                     type="button"
@@ -3283,6 +3283,7 @@ export function PublicPoster({
                   const on = tagFilters.includes(tag.id);
                   const cls = [
                     "legend-item",
+                    tag.kind === "modifier" ? "mod" : "",
                     on ? "active" : "",
                     tagFilters.length > 0 && !on ? "dim" : ""
                   ]

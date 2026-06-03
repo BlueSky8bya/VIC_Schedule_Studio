@@ -3228,6 +3228,10 @@
   border-radius: 5px;
   flex: 0 0 auto;
 }
+/* 방식(modifier)은 카드에서 '원'으로 표시되니 색상 안내/필터에서도 원으로 맞춘다. */
+.studio-tag-legend .tlg-mod i {
+  border-radius: 999px;
+}
 /* "비공개" 필터 칩 표식 — 색이 아니라 비공개를 뜻하는 회색 빗금 무늬. */
 .legend-private-swatch {
   flex: 0 0 auto;

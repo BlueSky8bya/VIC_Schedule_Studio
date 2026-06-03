@@ -94,6 +94,10 @@
   border: 1px solid rgb(0 0 0 / 12%);
   border-radius: 4px;
 }
+/* 방식(modifier)은 카드에서 '원'으로 표시되니 모바일 색상 필터에서도 원으로. */
+.agenda-legend-tag.mod i {
+  border-radius: 999px;
+}
 .agenda-legend-tag.heart {
   /* 위 태그 목록과 확실히 띄워 눌렀을 때 윗부분이 잘려 보이지 않게 한다. */
   position: relative;
@@ -1105,6 +1109,10 @@
   height: 18px;
   border: 1px solid;
   border-radius: 5px;
+}
+/* 방식(modifier)은 카드에서 '원'으로 표시되니 색상 안내에서도 원으로 맞춘다. */
+.public-legend-vertical .legend-item.mod i {
+  border-radius: 999px;
 }
 
 /* 색상 안내에 통합된 "관심만" 토글 — 하트 마크를 색 스와치 자리에 둔다. */
