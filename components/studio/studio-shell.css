@@ -1345,9 +1345,10 @@
   font-weight: 700;
   color: #a9a2bd;
 }
-/* 세션 툴팁 — .vt-tip 스타일 재사용, 위치만 인라인 top 기준으로(막대 바로 위). 캐러셀 뷰포트
-   (overflow hidden)에 안 잘리게 좌·우 여백을 툴팁 반폭 이상으로 잡고 카드 폭 안에 가둔다. */
-.own-tip {
+/* 세션 툴팁 — 막대 바로 위에 띄운다. 선택자를 .vt-tip.own-tip(2-class)로 둬야 뒤에 오는
+   .vt-tip(translateX·bottom) 규칙을 명시도로 이긴다(안 그러면 바 위로 안 올라가 막대에 가림).
+   캐러셀 뷰포트(overflow hidden)에 안 잘리게 좌·우 여백을 툴팁 반폭 이상으로 카드 폭 안에 가둔다. */
+.vt-tip.own-tip {
   bottom: auto;
   transform: translate(-50%, calc(-100% - 6px));
   left: clamp(82px, var(--tip-x, 50%), calc(100% - 82px));
@@ -1355,7 +1356,7 @@
   white-space: normal;
   text-align: center;
 }
-.own-tip strong {
+.vt-tip.own-tip strong {
   border-bottom: 0;
   padding-bottom: 0;
 }
