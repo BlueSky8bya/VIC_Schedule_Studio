@@ -20,24 +20,26 @@ const CONTENT = [
   { n: "그레이프", bg: "#eebefa", text: "#862e9c", border: "#da77f2" },
   { n: "블루", bg: "#a5d8ff", text: "#1864ab", border: "#4dabf7" },
   { n: "인디고", bg: "#bac8ff", text: "#364fc7", border: "#748ffc" },
-  { n: "오렌지", bg: "#ffd8a8", text: "#d9480f", border: "#ffa94d" }, // 타스뱅송(초록 탈피)
-  { n: "옐로우", bg: "#ffec99", text: "#946800", border: "#ffd43b" },
-  { n: "레드", bg: "#ffc9c9", text: "#c92a2a", border: "#ff8787" },
+  { n: "오렌지", bg: "#ffd8a8", text: "#b03709", border: "#ffa94d" }, // 타스뱅송(초록 탈피) — 글씨 더 진하게
+  { n: "옐로우", bg: "#ffec99", text: "#6b4e00", border: "#ffd43b" }, // 글씨 더 진하게(연한 배경 대비)
+  { n: "틸", bg: "#96f2d7", text: "#087f5b", border: "#38d9a9" },   // 소통뱅 — 서버(핑크)와 멀리(177°)
   { n: "라임", bg: "#d8f5a2", text: "#5c940d", border: "#a9e34b" }, // 초록계열 → 드문 태그로
-  { n: "틸", bg: "#96f2d7", text: "#087f5b", border: "#38d9a9" },
+  { n: "레드", bg: "#ffc9c9", text: "#c92a2a", border: "#ff8787" }, // 토크쇼(최소 빈도) — 핑크와 근접해도 드물어 무해
   { n: "그레이프2", bg: "#f3d9fa", text: "#9c36b5", border: "#e599f7" }
 ];
 // 방식용 점(작은 원) — 연한 콘텐츠 카드 '위'에 얹히므로 같은색이면 안 보인다. 그래서 콘텐츠(연한
 // shade-2)와 톤을 갈라 '진한 shade-6'으로 채운다 → 어떤 연한 카드 위에서도 또렷(흰 링까지 더함).
 // 서로 hue도 전부 분리(합방·대회 안 겹치게). 최다 방식 합방은 게임 초록카드에 자주 얹히니 초록 금지.
+// 글씨는 '흰색' — 이 색은 점(글씨 없음)이자 태그 피커의 '칩(글씨 있음)'으로도 쓰이는데, 진한 bg라
+// 같은 계열 진한 글씨는 안 읽힌다. 흰 글씨면 진한 bg 위에서 또렷하다.
 const MOD = [
-  { n: "그레이프", bg: "#cc5de8", text: "#862e9c", border: "#9c36b5" }, // 합방(최다·게임 위에 자주)
-  { n: "오렌지", bg: "#ff922b", text: "#d9480f", border: "#e8590c" },   // 대회
-  { n: "블루", bg: "#339af0", text: "#1864ab", border: "#1971c2" },     // 연습
-  { n: "레드", bg: "#fa5252", text: "#c92a2a", border: "#e03131" },     // 시참
-  { n: "틸", bg: "#20c997", text: "#087f5b", border: "#099268" },       // 짧뱅
-  { n: "바이올렛", bg: "#845ef7", text: "#5f3dc4", border: "#5f3dc4" }, // 모캡
-  { n: "핑크", bg: "#f06595", text: "#a61e4d", border: "#c2255c" }      // 구플뱅
+  { n: "그레이프", bg: "#cc5de8", text: "#ffffff", border: "#9c36b5" }, // 합방(최다·게임 위에 자주)
+  { n: "오렌지", bg: "#ff922b", text: "#ffffff", border: "#e8590c" },   // 대회
+  { n: "블루", bg: "#339af0", text: "#ffffff", border: "#1971c2" },     // 연습
+  { n: "레드", bg: "#fa5252", text: "#ffffff", border: "#e03131" },     // 시참
+  { n: "틸", bg: "#12b886", text: "#ffffff", border: "#099268" },       // 짧뱅(글씨 대비 위해 살짝 진하게)
+  { n: "바이올렛", bg: "#845ef7", text: "#ffffff", border: "#5f3dc4" }, // 모캡
+  { n: "핑크", bg: "#f06595", text: "#ffffff", border: "#c2255c" }      // 구플뱅
 ];
 const PATS = ["diag", "dots", "grid", "cross", "dash"];
 

@@ -1830,8 +1830,6 @@
   background: #f3f4f6;
   padding: 5px 8px;
   box-shadow: 0 1px 1px rgb(17 24 39 / 5%);
-  /* 글자를 무늬·진한 캔디 배경에서 분리하는 옅은 흰 헤일로 — 어떤 색 위에서도 또렷하게 읽힌다. */
-  text-shadow: 0 1px 1px rgb(255 255 255 / 55%), 0 0 1px rgb(255 255 255 / 70%);
   transition:
     transform var(--dur-1) var(--ease),
     box-shadow var(--dur-2) var(--ease);

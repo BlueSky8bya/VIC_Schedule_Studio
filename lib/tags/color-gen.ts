@@ -151,22 +151,78 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${to(r)}${to(g)}${to(b)}`;
 }
 
+// 큐레이트 팔레트(Open Color) — 새 태그도 기존 태그와 같은 결의 색을 받게 한다(즉석 HSL이 아니라).
+// 콘텐츠는 연한 카드(shade-2 bg + shade-8 글씨 + shade-4 보더), 방식은 점이라 진한 shade-6 bg로.
+// 같은 패밀리라도 콘텐츠(연한 카드)와 방식(진한 점)은 명도가 갈려 함께 써도 헷갈리지 않는다.
+type Family = {
+  hue: number;
+  content: { bg: string; text: string; border: string };
+  mod: { bg: string; text: string; border: string };
+};
+const FAMILIES: Family[] = [
+  { hue: 131, content: { bg: "#b2f2bb", text: "#2b8a3e", border: "#69db7c" }, mod: { bg: "#51cf66", text: "#2b8a3e", border: "#2f9e44" } },
+  { hue: 162, content: { bg: "#96f2d7", text: "#087f5b", border: "#38d9a9" }, mod: { bg: "#20c997", text: "#087f5b", border: "#099268" } },
+  { hue: 187, content: { bg: "#99e9f2", text: "#0b7285", border: "#3bc9db" }, mod: { bg: "#22b8cf", text: "#0b7285", border: "#1098ad" } },
+  { hue: 208, content: { bg: "#a5d8ff", text: "#1864ab", border: "#4dabf7" }, mod: { bg: "#339af0", text: "#1864ab", border: "#1971c2" } },
+  { hue: 226, content: { bg: "#bac8ff", text: "#364fc7", border: "#748ffc" }, mod: { bg: "#5c7cfa", text: "#364fc7", border: "#3b5bdb" } },
+  { hue: 255, content: { bg: "#d0bfff", text: "#5f3dc4", border: "#9775fa" }, mod: { bg: "#845ef7", text: "#5f3dc4", border: "#5f3dc4" } },
+  { hue: 288, content: { bg: "#eebefa", text: "#862e9c", border: "#da77f2" }, mod: { bg: "#cc5de8", text: "#862e9c", border: "#9c36b5" } },
+  { hue: 339, content: { bg: "#fcc2d7", text: "#a61e4d", border: "#f783ac" }, mod: { bg: "#f06595", text: "#a61e4d", border: "#c2255c" } },
+  { hue: 0, content: { bg: "#ffc9c9", text: "#c92a2a", border: "#ff8787" }, mod: { bg: "#fa5252", text: "#c92a2a", border: "#e03131" } },
+  { hue: 32, content: { bg: "#ffd8a8", text: "#b03709", border: "#ffa94d" }, mod: { bg: "#ff922b", text: "#fff", border: "#e8590c" } },
+  { hue: 47, content: { bg: "#ffec99", text: "#6b4e00", border: "#ffd43b" }, mod: { bg: "#fcc419", text: "#fff", border: "#f08c00" } },
+  { hue: 85, content: { bg: "#d8f5a2", text: "#5c940d", border: "#a9e34b" }, mod: { bg: "#94d82d", text: "#5c940d", border: "#66a80f" } }
+];
+
+// 콘텐츠 카드에 쓸 무늬 하나 — 같은 무늬가 몰리지 않게 기존 콘텐츠 색들에서 가장 적게 쓴 무늬를 고른다.
+function pickPattern(existing: { key: string }[]): Pat {
+  const counts = (p: Pat) =>
+    existing.filter((e) => patternOf(e.key ?? "") === p).length;
+  const min = Math.min(...DECO_PATS.map(counts));
+  const candidates = DECO_PATS.filter((p) => counts(p) === min);
+  return pickFrom(candidates);
+}
+
 // 기존 팔레트(키 + 배경색)를 받아 겹치지 않는 새 색을 하나 만든다.
+// 1순위: 큐레이트 Open Color 패밀리 중, 같은 종류(콘텐츠/방식)에서 '아직 안 쓴 + hue가 가장 멀리
+// 떨어진' 것을 고른다 → 새 태그도 기존과 같은 결 + 충돌 없이. 모든 패밀리가 차면 HSL로 폴백.
 export function generateTagColor(
   existing: { key: string; bgColor: string }[],
   opts?: { plain?: boolean; preferPattern?: boolean }
 ): GeneratedColor {
+  const wantPlain = Boolean(opts?.plain); // true=방식(단색 점), false=콘텐츠(무늬 카드)
+  // 같은 종류끼리만 hue 충돌을 본다(콘텐츠 카드 vs 방식 점은 명도가 달라 같은 hue도 무방).
+  const sameKind = existing.filter((p) => isPatternColor(p.key) === !wantPlain);
+  const usedHues = sameKind
+    .map((p) => hexToHue(p.bgColor))
+    .filter((h): h is number => h !== null);
+  // 안 쓴 패밀리 중 기존과 가장 멀리 떨어진 것(최소거리 최대화)을 고른다.
+  let best: Family | null = null;
+  let bestSep = -1;
+  for (const f of FAMILIES) {
+    const sep = usedHues.length ? Math.min(...usedHues.map((u) => hueDist(f.hue, u))) : 360;
+    if (sep > bestSep) {
+      bestSep = sep;
+      best = f;
+    }
+  }
+  const rand = Math.random().toString(36).slice(2, 8);
+  // 충분히 떨어진(≈24°↑) 큐레이트 색이 남아 있으면 그걸 쓴다.
+  if (best && bestSep >= 24) {
+    // 방식 글씨는 흰색(진한 점/칩 bg 위 가독). 콘텐츠는 패밀리의 진한 동색 글씨 그대로.
+    const v = wantPlain ? { ...best.mod, text: "#ffffff" } : best.content;
+    const pat: Pat = wantPlain ? "plain" : pickPattern(existing.filter((p) => isPatternColor(p.key)));
+    return { key: `gen-${pat}-${rand}`, name: "새 색", bgColor: v.bg, textColor: v.text, borderColor: v.border };
+  }
+  // 폴백: 큐레이트가 다 찼다 → 기존과 안 겹치는 hue를 HSL로 만들어 같은 톤(Open Color 풍)으로.
   const slots = existing
     .map((p) => ({ hue: hexToHue(p.bgColor), pat: patternOf(p.key ?? "") }))
     .filter((e): e is { hue: number; pat: Pat } => e.hue !== null);
   const { hue, pat } = pickColorSlot(slots, opts);
-  // Catppuccin Latte 결을 HSL로 근사 — 부드럽고 포근한 파스텔. 따뜻한 띠(노랑·주황 ≈35~70°)는
-  // 같은 밝기에서 '흙색'으로 탁해 보여, 그 구간만 더 밝게(airy) 올려 톤을 지킨다.
   const warm = hue >= 32 && hue <= 72;
-  const bgColor = hslToHex(hue, 78, warm ? 88 : 86); // 포근한 라이트 파스텔 배경
+  const bgColor = hslToHex(hue, 78, warm ? 88 : 86);
   const borderColor = hslToHex(hue, 60, 72);
-  const textColor = hslToHex(hue, 62, 33); // 진한 동색 글씨(연한 배경 위 대비 확보)
-  const rand = Math.random().toString(36).slice(2, 8);
+  const textColor = hslToHex(hue, 62, 33);
   const key = `gen-${pat}-${rand}`;
   return { key, name: "새 색", bgColor, textColor, borderColor };
 }
