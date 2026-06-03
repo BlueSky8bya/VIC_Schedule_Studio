@@ -86,6 +86,12 @@ export function useEqualChainHeights(
     // window resize만으로는 못 잡는 레이아웃 변화(부모 폭 변화)까지 흡수해 viewer에서도 확실히 맞는다.
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => schedule()) : null;
     ro?.observe(root);
+    // 첫 진입의 등장 애니(스태거 cal-cell-rise 등)는 transform/opacity라 offsetHeight를 바꾸지 않지만,
+    // 애니 진행 중·연속 리렌더 타이밍이 겹치면 첫 측정이 안정되기 전에 끝나 minHeight가 안 붙는다.
+    // 각 칸 애니가 끝날 때마다(특히 마지막 칸 ~850ms) 다시 맞춰, 재마운트(애니 없는 정적 상태)와
+    // 같은 settled 레이아웃에서 확실히 정렬되게 한다.
+    const onAnimEnd = () => schedule();
+    root.addEventListener("animationend", onAnimEnd);
     // 칸 안 콘텐츠가 늦게 바뀌어도(하트/뱃지 비동기, style 재조정) 다시 맞춘다 — viewer에서 확실히.
     mo = typeof MutationObserver !== "undefined" ? new MutationObserver(() => schedule()) : null;
     observe();
@@ -96,6 +102,7 @@ export function useEqualChainHeights(
       cancelAnimationFrame(raf2);
       ro?.disconnect();
       mo?.disconnect();
+      root.removeEventListener("animationend", onAnimEnd);
       window.removeEventListener("resize", schedule);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
