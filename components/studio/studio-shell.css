@@ -4619,15 +4619,12 @@ textarea:disabled {
     border-width: 1.5px;
     border-radius: 6px;
   }
-  /* 고스트(드래그 복제본) — 순서 옮기는 중엔 이름·종류만 식별되면 된다. 색 스와치는 숨겨
-     한 줄(손잡이·이름·방식·삭제)로 키를 최소화. 컴팩트 패딩으로 짧은 박스. */
+  /* 고스트(드래그 복제본) — 옮기며 색을 비교해 배치해야 하니 '선택된 색 칩'만 인라인으로 보인다
+     (전체 팔레트는 숨김). 손잡이·이름·방식·[그 태그 색]·삭제 한 줄 → 색은 보이고 키는 최소. */
   .tag-drag-ghost {
     flex-wrap: nowrap;
     padding: 7px 10px;
     border-radius: 12px;
-  }
-  .tag-drag-ghost .tag-editor-swatches {
-    display: none;
   }
   .tag-drag-ghost .tag-drag-handle {
     width: 24px;
@@ -4638,7 +4635,30 @@ textarea:disabled {
     width: auto;
     min-width: 0;
   }
+  .tag-drag-ghost .tag-editor-swatches {
+    order: 4;
+    flex: 0 0 auto;
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 0;
+    padding: 0;
+  }
+  /* 그 태그가 실제 쓰는 색(.selected)만 칩으로. 나머지 후보색은 고스트에서 숨긴다. */
+  .tag-drag-ghost .tag-editor-swatches button {
+    display: none;
+  }
+  .tag-drag-ghost .tag-editor-swatches button.selected {
+    display: block;
+    width: 24px;
+    height: 24px;
+    max-width: none;
+    border-width: 1.5px;
+    border-radius: 7px;
+    transform: none;
+    box-shadow: none;
+  }
   .tag-drag-ghost .tag-editor-remove {
+    order: 5;
     width: 28px;
     height: 28px;
   }
