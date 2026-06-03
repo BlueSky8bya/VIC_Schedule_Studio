@@ -43,6 +43,17 @@
   letter-spacing: 0.04em;
   padding: 0 3px 1px;
 }
+/* 콘텐츠와 방식 가르는 소제목(모바일 세로 필터). */
+.agenda-legend-sub {
+  margin-top: 3px;
+  padding-top: 6px;
+  border-top: 1px dashed #e3d6bb;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #a2925e;
+  padding-left: 3px;
+}
 .agenda-legend-tag {
   display: grid;
   grid-template-columns: 12px 1fr;
@@ -978,6 +989,16 @@
   color: #6b5b34;
   font-size: 13px;
   font-weight: 900;
+}
+/* 콘텐츠와 방식을 가르는 소제목(세로 안내). */
+.legend-subhead {
+  margin-top: 5px;
+  padding-top: 6px;
+  border-top: 1px dashed #e6dcc2;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  color: #a99668;
 }
 
 /* 콘텐츠 색상 안내(세로) — 태그 최대 20종 + 하트 + 필터해제까지 달력 높이 안에 들어오도록

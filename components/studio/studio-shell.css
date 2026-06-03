@@ -3175,96 +3175,116 @@
   font-size: 20px;
 }
 
+/* 색상 필터 — 콘텐츠 묶음 + 방식 묶음. 어느 화면(웹·모바일·시청자)에서나 칩이 줄바꿈(wrap)되어
+   가로 스크롤이 구조적으로 안 생긴다. 콘텐츠끼리/방식끼리 한 눈에 갈린다. */
 .studio-tag-legend {
-  display: grid;
-  /* 유동 간격의 최소값(floor). 공간이 빠듯하면 여기까지 좁아지고, 남으면 space-between으로 벌어진다. */
-  gap: 3px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
 }
-
-.studio-tag-legend span {
+.tlg-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.tlg-mod {
+  margin-top: 1px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line, #e6e2f0);
+}
+.tlg-label {
+  width: 100%;
+  margin-bottom: 1px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  color: #9a93ad;
+}
+.tlg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  width: 100%;
+}
+/* 정적 안내(필터 토글 없을 때)의 span도 칩처럼 작게. */
+.studio-tag-legend span:not(.tlg-label) {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 800;
 }
-
 .studio-tag-legend i {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border: 1px solid;
-  border-radius: 4px;
+  border-radius: 5px;
+  flex: 0 0 auto;
 }
 /* "비공개" 필터 칩 표식 — 색이 아니라 비공개를 뜻하는 회색 빗금 무늬. */
 .legend-private-swatch {
   flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border: 1px solid #b9bfca;
-  border-radius: 4px;
+  border-radius: 5px;
   background: repeating-linear-gradient(45deg, #cdd2db 0 3px, #eef1f6 3px 6px);
 }
-/* 색상 안내를 필터로 쓸 때(클릭 토글) */
+/* 색상 안내를 필터로 쓸 때(클릭 토글) — 알약 칩. */
 .tag-legend-filter {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  background: transparent;
-  padding: 4px 7px;
-  font-size: 18px;
+  border: 1px solid var(--line, #ece8f4);
+  border-radius: 999px;
+  background: #fbfaff;
+  padding: 6px 11px;
+  font-size: 14px;
   font-weight: 800;
   color: #3a3550;
   text-align: left;
   cursor: pointer;
   word-break: keep-all;
+  white-space: nowrap;
+  transition: background 0.14s var(--ease, ease), border-color 0.14s var(--ease, ease),
+    transform 0.08s var(--ease, ease), box-shadow 0.14s var(--ease, ease);
+}
+.tag-legend-filter i {
+  width: 14px;
+  height: 14px;
+  border: 1px solid;
+  border-radius: 5px;
+  flex: 0 0 auto;
 }
 .tag-legend-filter.on {
   border-color: var(--accent, #f5b81b);
   background: var(--accent-soft, #fff3d2);
   color: var(--accent-strong, #a9760a);
+  box-shadow: 0 2px 8px -4px rgb(245 184 27 / 45%);
 }
 .tag-legend-filter.dim {
-  opacity: 0.4;
+  opacity: 0.38;
+}
+.tag-legend-filter:active {
+  transform: scale(0.95);
 }
 .tag-legend-clear {
-  margin-top: 2px;
+  width: 100%;
+  margin-top: 3px;
   border: 1px solid var(--line, #e3e7ef);
-  border-radius: 8px;
+  border-radius: 999px;
   background: var(--surface-2, #f5f7fb);
-  padding: 5px;
-  font-size: 14px;
+  padding: 7px;
+  font-size: 13px;
   font-weight: 800;
   color: #64748b;
   cursor: pointer;
 }
-/* 색상 안내의 방식 묶음 — 콘텐츠 밑에 점선으로 가른 별도 블록(가로 스크롤 없이 세로로 쌓임). */
-.tag-legend-modgroup {
-  display: grid;
-  gap: 3px;
-  margin-top: 9px;
-  padding-top: 9px;
-  border-top: 1px dashed var(--line, #e4e0ef);
-}
-.tag-legend-modlabel {
-  font-size: 11.5px !important;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  color: #9a93ad;
-  padding: 0 7px 2px;
-}
-/* 웹: 필터 행에 호버 하이라이트 + 누름 피드백(가로 공간 활용·정렬된 줄). */
+/* 웹: 호버 하이라이트(가로 공간이 남아도 칩은 그대로 wrap). */
 @media (min-width: 641px) {
-  .tag-legend-filter {
-    transition: background 0.14s var(--ease, ease), color 0.14s var(--ease, ease),
-      transform 0.08s var(--ease, ease);
-  }
   .tag-legend-filter:hover:not(.on) {
-    background: #f5f3fb;
-  }
-  .tag-legend-filter:active {
-    transform: scale(0.97);
+    background: #f3f0fb;
+    border-color: #e0d9f1;
   }
 }
 /* 필터에 안 맞는 일정은 흐리게(편집실 그리드·모바일 아젠다 공용) */
@@ -3273,46 +3293,49 @@
   opacity: 0.26;
   filter: grayscale(0.5);
 }
-/* 모바일 색상 필터 줄 — 가로 스크롤 칩 */
+/* 모바일 색상 필터 줄 — 가로 스크롤 없이 그대로 wrap(위 .tlg-group 규칙 적용). */
 .m-filter {
   margin: 0 0 10px;
-  overflow-x: auto;
-  scrollbar-width: none;
 }
-.m-filter::-webkit-scrollbar {
-  display: none;
+
+/* 태그 편집기 — 콘텐츠/방식을 묶음 카드로 갈라 한 눈에 보이게. */
+.tag-editor-section {
+  margin-top: 12px;
+  padding: 10px 10px 4px;
+  border: 1px solid var(--line, #eee9f6);
+  border-radius: 14px;
+  background: #fcfbff;
 }
-/* 모바일: 가로 스크롤 대신 칩이 줄바꿈(wrap)으로 정렬 — 보기 깔끔, 스크롤바 안 생김. */
-.m-filter .studio-tag-legend {
+.tag-editor-section.is-mod {
+  border-style: dashed;
+  border-color: #e3d7c0;
+  background: #fffdf6;
+}
+.tag-editor-section-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  width: auto;
-}
-.m-filter .tag-legend-filter {
-  flex: 0 0 auto;
-  white-space: nowrap;
-  border: 1px solid var(--line, #ece8f4);
-  background: #fbfaff;
-  padding: 6px 11px;
-  font-size: 14px;
-  border-radius: 999px;
-}
-.m-filter .tag-legend-filter:active {
-  transform: scale(0.95);
-}
-/* 방식 묶음: 한 줄 라벨 + 칩 wrap(가로 스크롤 X). */
-.m-filter .tag-legend-modgroup {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  width: 100%;
-  margin-top: 3px;
-  padding-top: 8px;
-}
-.m-filter .tag-legend-modlabel {
-  width: 100%;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
   padding: 0 2px;
+}
+.tag-editor-section-name {
+  font-size: 13px;
+  font-weight: 900;
+  color: #4a4366;
+}
+.tag-editor-section.is-mod .tag-editor-section-name {
+  color: #8a6d36;
+}
+.tag-editor-section-sub {
+  font-size: 11px;
+  font-weight: 600;
+  color: #a59fb8;
+}
+.tag-editor-section-empty {
+  margin: 2px 2px 8px;
+  font-size: 12px;
+  color: #9a93ad;
+  line-height: 1.5;
 }
 
 .studio-calendar-panel {

@@ -345,17 +345,17 @@ export function TagLegendEditor({
         </button>
       );
     };
-    // 콘텐츠 대분류 = 칸 색. 수식어(modifier)는 셀에선 점으로만 가니 안내에서도 따로 묶는다.
+    // 콘텐츠끼리 / 방식끼리 한 눈에 보이게 두 묶음으로 나눠 wrap 배치(가로 스크롤 없음).
     const contentTops = orderedTops.filter((t) => t.kind !== "modifier");
     const modifierTops = orderedTops.filter((t) => t.kind === "modifier");
     return (
       <div className="studio-tag-legend">
-        {contentTops.map(legendItem)}
+        <div className="tlg-group">{contentTops.map(legendItem)}</div>
         {modifierTops.length > 0 ? (
-          <span className="tag-legend-modgroup">
-            <span className="tag-legend-modlabel">방식</span>
-            {modifierTops.map(legendItem)}
-          </span>
+          <div className="tlg-group tlg-mod">
+            <span className="tlg-label">방식</span>
+            <div className="tlg-chips">{modifierTops.map(legendItem)}</div>
+          </div>
         ) : null}
         {filtering ? (
           <button
@@ -695,13 +695,41 @@ export function TagLegendEditor({
           권해요.
         </span>
       </div>
-      {orderedTops.map((top) => {
+      {/* 콘텐츠끼리 / 방식끼리 묶어 한 눈에. 드래그 순서는 묶음 안에서 유지된다. */}
+      {(() => {
+        const contentTops = orderedTops.filter((t) => (draft[t.id]?.kind ?? t.kind) !== "modifier");
+        const modifierTops = orderedTops.filter((t) => (draft[t.id]?.kind ?? t.kind) === "modifier");
+        const section = (rows: BroadcastTag[]) =>
+          rows.map((top) => (
+            <div className="tag-cat-group" key={top.id}>
+              {renderTagRow(top, false)}
+            </div>
+          ));
         return (
-          <div className="tag-cat-group" key={top.id}>
-            {renderTagRow(top, false)}
-          </div>
+          <>
+            <div className="tag-editor-section">
+              <div className="tag-editor-section-head">
+                <span className="tag-editor-section-name">콘텐츠</span>
+                <span className="tag-editor-section-sub">셀 색·통계를 차지</span>
+              </div>
+              {section(contentTops)}
+            </div>
+            <div className="tag-editor-section is-mod">
+              <div className="tag-editor-section-head">
+                <span className="tag-editor-section-name">방식</span>
+                <span className="tag-editor-section-sub">콘텐츠에 얹는 표식 (합방·시참 등)</span>
+              </div>
+              {modifierTops.length > 0 ? (
+                section(modifierTops)
+              ) : (
+                <p className="tag-editor-section-empty">
+                  아직 없어요. 아래 ‘+ 태그 추가’ 후 칩의 ‘콘텐츠’를 눌러 ‘방식’으로 바꾸면 여기로 와요.
+                </p>
+              )}
+            </div>
+          </>
         );
-      })}
+      })()}
 
       {error ? <div className="auth-warning">{error}</div> : null}
       {anyEmpty ? <p className="tag-editor-hint warn">색상이 비어 있는 태그가 있습니다.</p> : null}

@@ -2108,28 +2108,43 @@ export function PublicPoster({
         {interactive && legendTags.length > 0 ? (
           <aside className="agenda-legend" aria-label="색상 안내(태그 필터)">
             <strong>색상 필터</strong>
-            {legendTags.map((tag) => {
-              const color = schedule.palette.find((p) => p.key === tag.colorKey);
-              if (!color) return null;
-              const on = tagFilters.includes(tag.id);
+            {(() => {
+              const legendBtn = (tag: (typeof legendTags)[number]) => {
+                const color = schedule.palette.find((p) => p.key === tag.colorKey);
+                if (!color) return null;
+                const on = tagFilters.includes(tag.id);
+                return (
+                  <button
+                    aria-pressed={on}
+                    className={`agenda-legend-tag ${on ? "on" : ""} ${
+                      tagFilters.length > 0 && !on ? "dim" : ""
+                    }`}
+                    key={tag.id}
+                    onClick={() => toggleTagFilter(tag.id)}
+                    type="button"
+                  >
+                    <i
+                      data-color={color.key}
+                      style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+                    />
+                    {tag.displayName}
+                  </button>
+                );
+              };
+              const content = legendTags.filter((t) => t.kind !== "modifier");
+              const mods = legendTags.filter((t) => t.kind === "modifier");
               return (
-                <button
-                  aria-pressed={on}
-                  className={`agenda-legend-tag ${on ? "on" : ""} ${
-                    tagFilters.length > 0 && !on ? "dim" : ""
-                  }`}
-                  key={tag.id}
-                  onClick={() => toggleTagFilter(tag.id)}
-                  type="button"
-                >
-                  <i
-                    data-color={color.key}
-                    style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
-                  />
-                  {tag.displayName}
-                </button>
+                <>
+                  {content.map(legendBtn)}
+                  {mods.length > 0 ? (
+                    <>
+                      <span className="agenda-legend-sub">방식</span>
+                      {mods.map(legendBtn)}
+                    </>
+                  ) : null}
+                </>
               );
-            })}
+            })()}
             {/* 웹처럼 '내 관심 일정 ♥'도 같은 자리에서 함께 거른다. */}
             <button
               aria-pressed={bookmarkedOnly}
@@ -3206,48 +3221,63 @@ export function PublicPoster({
 
             <div className="public-legend-vertical" aria-label="콘텐츠 색상 안내">
               <strong className="legend-title">색상 안내</strong>
-              {legendTags.map((tag) => {
-                const color = schedule.palette.find((item) => item.key === tag.colorKey);
-                if (!color) {
-                  return null;
-                }
-                const swatch = (
-                  <i
-                    data-color={color.key}
-                    style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
-                  />
-                );
-                // 꾸미기 모드에선 스티커 레이어가 덮어 클릭이 막히므로 정적 표시.
-                if (decorate) {
+              {(() => {
+                const legendBtn = (tag: (typeof legendTags)[number]) => {
+                  const color = schedule.palette.find((item) => item.key === tag.colorKey);
+                  if (!color) {
+                    return null;
+                  }
+                  const swatch = (
+                    <i
+                      data-color={color.key}
+                      style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+                    />
+                  );
+                  // 꾸미기 모드에선 스티커 레이어가 덮어 클릭이 막히므로 정적 표시.
+                  if (decorate) {
+                    return (
+                      <span key={tag.id}>
+                        {swatch}
+                        {tag.displayName}
+                      </span>
+                    );
+                  }
+                  // A2 고도화: 다중 선택과 동기화. 선택된 게 있으면 안 고른 항목은 흐리게.
+                  const on = tagFilters.includes(tag.id);
+                  const cls = [
+                    "legend-item",
+                    on ? "active" : "",
+                    tagFilters.length > 0 && !on ? "dim" : ""
+                  ]
+                    .filter(Boolean)
+                    .join(" ");
                   return (
-                    <span key={tag.id}>
+                    <button
+                      aria-pressed={on}
+                      className={cls}
+                      key={tag.id}
+                      onClick={() => toggleTagFilter(tag.id)}
+                      type="button"
+                    >
                       {swatch}
                       {tag.displayName}
-                    </span>
+                    </button>
                   );
-                }
-                // A2 고도화: 다중 선택과 동기화. 선택된 게 있으면 안 고른 항목은 흐리게.
-                const on = tagFilters.includes(tag.id);
-                const cls = [
-                  "legend-item",
-                  on ? "active" : "",
-                  tagFilters.length > 0 && !on ? "dim" : ""
-                ]
-                  .filter(Boolean)
-                  .join(" ");
+                };
+                const content = legendTags.filter((t) => t.kind !== "modifier");
+                const mods = legendTags.filter((t) => t.kind === "modifier");
                 return (
-                  <button
-                    aria-pressed={on}
-                    className={cls}
-                    key={tag.id}
-                    onClick={() => toggleTagFilter(tag.id)}
-                    type="button"
-                  >
-                    {swatch}
-                    {tag.displayName}
-                  </button>
+                  <>
+                    {content.map(legendBtn)}
+                    {mods.length > 0 ? (
+                      <>
+                        <strong className="legend-subhead">방식</strong>
+                        {mods.map(legendBtn)}
+                      </>
+                    ) : null}
+                  </>
                 );
-              })}
+              })()}
               {/* 내가 ♥ 누른 일정만 모아 보기 — 색상 안내와 같은 자리에서 함께 거른다. */}
               {!decorate ? (
                 <button
