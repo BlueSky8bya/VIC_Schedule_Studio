@@ -4,7 +4,7 @@ import { useLayoutEffect, type RefObject } from "react";
 
 // 이어진 일정(같은 data-chain) 칸들의 높이를 그 묶음에서 가장 큰 칸에 맞춘다.
 // 글자 수가 달라 높이가 다른 카드들이 이어질 때 이음새가 어긋나 보이는 걸 막는다.
-// 줄바꿈은 너비에 따라 달라지므로 리사이즈 때도 다시 맞춘다.
+// 줄바꿈·내용은 폭/비동기 로드/카드 생성·삭제로 바뀌므로, 그때마다 다시 맞춘다.
 export function useEqualChainHeights(
   ref: RefObject<HTMLElement | null>,
   deps: unknown[]
@@ -15,55 +15,64 @@ export function useEqualChainHeights(
       return;
     }
     let cancelled = false;
-    // 콘텐츠가 늦게 바뀌어(하트/뱃지 비동기 로드, 색 style 재조정 등) 칸 높이가 변하면 다시 맞춘다.
-    // 우리가 쓰는 minHeight 변경이 자신을 다시 트리거하지 않게 equalize 동안엔 관찰을 끊는다.
-    let mo: MutationObserver | null = null;
-    function observe() {
-      mo?.observe(root!, {
-        subtree: true,
-        childList: true,
-        attributes: true,
-        attributeFilter: ["style", "class"]
-      });
+    // 우리가 minHeight를 쓰면 칸 크기가 바뀌어 ResizeObserver가 다시 울린다 → 무한 루프가 된다.
+    // 쓰기 직후 짧은 창(150ms) 동안 들어오는 관찰 신호는 '우리 변경 탓'으로 보고 무시한다.
+    let suppressUntil = 0;
+    const nowMs = () => (typeof performance !== "undefined" ? performance.now() : 0);
+
+    function pills(): HTMLElement[] {
+      return Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
     }
+
+    let ro: ResizeObserver | null = null;
+    // 새로 생긴 칩까지 ResizeObserver에 등록한다(같은 요소 재등록은 무해).
+    function observePills() {
+      if (!ro) {
+        return;
+      }
+      for (const p of pills()) {
+        ro.observe(p);
+      }
+    }
+
     function equalize() {
       if (cancelled) {
         return;
       }
-      mo?.disconnect();
-      const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
-      for (const pill of pills) {
-        pill.style.minHeight = ""; // 먼저 초기화해 자연 높이를 잰다
+      const list = pills();
+      for (const p of list) {
+        p.style.minHeight = ""; // 먼저 초기화해 자연 높이를 잰다
       }
       const groups = new Map<string, HTMLElement[]>();
-      for (const pill of pills) {
-        const key = pill.dataset.chain;
+      for (const p of list) {
+        const key = p.dataset.chain;
         if (!key) {
           continue;
         }
-        const list = groups.get(key);
-        if (list) {
-          list.push(pill);
+        const g = groups.get(key);
+        if (g) {
+          g.push(p);
         } else {
-          groups.set(key, [pill]);
+          groups.set(key, [p]);
         }
       }
-      for (const list of groups.values()) {
-        if (list.length < 2) {
+      for (const group of groups.values()) {
+        if (group.length < 2) {
           continue; // 혼자면 맞출 필요 없음
         }
         let max = 0;
-        for (const el of list) {
+        for (const el of group) {
           max = Math.max(max, el.offsetHeight);
         }
-        for (const el of list) {
+        for (const el of group) {
           el.style.minHeight = `${max}px`;
         }
       }
-      observe(); // 다시 관찰 시작(우리 변경분 반영 끝난 뒤)
+      // 방금 쓴 minHeight로 인한 되울림(RO)을 잠깐 무시한다. 새로 생긴 칩 등록도 갱신.
+      suppressUntil = nowMs() + 150;
+      observePills();
     }
-    // 레이아웃이 안정된 뒤 한 번 더 맞춘다(컨테이너 폭·스크롤바·미리보기 전환 등으로 줄바꿈이
-    // 바뀔 수 있어). 더블 rAF로 브라우저가 레이아웃을 끝낸 다음 프레임에 잰다.
+
     let raf1 = 0;
     let raf2 = 0;
     function schedule() {
@@ -73,28 +82,40 @@ export function useEqualChainHeights(
         raf2 = requestAnimationFrame(equalize);
       });
     }
-    // useLayoutEffect라 이 첫 호출은 '페인트 전'에 끝난다 → 첫 화면부터 어긋남 없이 보인다
-    // (몇 초 뒤 갑자기 맞춰지는 깜빡임이 구조적으로 안 생긴다).
+    // 우리 자신의 minHeight 쓰기로 인한 신호는 무시하고, 진짜 변화만 다시 맞춘다.
+    function onSignal() {
+      if (nowMs() < suppressUntil) {
+        return;
+      }
+      schedule();
+    }
+
+    // useLayoutEffect라 이 첫 호출은 '페인트 전'에 끝난다 → 첫 화면부터 어긋남 없이 보인다.
     equalize();
     schedule();
-    // 첫 렌더가 웹폰트(Pretendard) 로딩 전이면 폴백 글꼴 높이로 재서 이어진 칸이 어긋난다.
-    // 폰트가 준비되면 한 번 더 맞춘다(이미 로딩됐으면 즉시 resolve라 비용 없음).
+    // 웹폰트(Pretendard) 로딩 전 폴백 글꼴로 재면 높이가 어긋난다. 준비되면 한 번 더 맞춘다.
     if (typeof document !== "undefined" && document.fonts) {
       document.fonts.ready.then(() => schedule()).catch(() => {});
     }
-    // 컨테이너(달력 그리드) 크기가 바뀌면(사이드바·미리보기 전환·창 크기) 다시 맞춘다.
-    // window resize만으로는 못 잡는 레이아웃 변화(부모 폭 변화)까지 흡수해 viewer에서도 확실히 맞는다.
-    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => schedule()) : null;
+    // 각 칸(pill)의 크기 변화를 직접 관찰 — 카드 생성·삭제·비동기 콘텐츠(하트/뱃지)로 높이가
+    // 바뀌면 그 칸만 바뀌어도(루트 크기는 그대로) 잡아 다시 맞춘다. 루트도 함께 관찰(폭 변화).
+    ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(onSignal) : null;
     ro?.observe(root);
-    // 첫 진입의 등장 애니(스태거 cal-cell-rise 등)는 transform/opacity라 offsetHeight를 바꾸지 않지만,
-    // 애니 진행 중·연속 리렌더 타이밍이 겹치면 첫 측정이 안정되기 전에 끝나 minHeight가 안 붙는다.
-    // 각 칸 애니가 끝날 때마다(특히 마지막 칸 ~850ms) 다시 맞춰, 재마운트(애니 없는 정적 상태)와
-    // 같은 settled 레이아웃에서 확실히 정렬되게 한다.
-    const onAnimEnd = () => schedule();
-    root.addEventListener("animationend", onAnimEnd);
-    // 칸 안 콘텐츠가 늦게 바뀌어도(하트/뱃지 비동기, style 재조정) 다시 맞춘다 — viewer에서 확실히.
-    mo = typeof MutationObserver !== "undefined" ? new MutationObserver(() => schedule()) : null;
-    observe();
+    observePills();
+    // 칸이 추가/삭제되거나(childList) 클래스가 바뀌면 다시 맞춘다. style은 우리가 쓰는 minHeight라
+    // 관찰에서 제외(self-trigger 방지) — 크기 변화는 위 ResizeObserver가 책임진다.
+    const mo =
+      typeof MutationObserver !== "undefined" ? new MutationObserver(onSignal) : null;
+    mo?.observe(root, {
+      subtree: true,
+      childList: true,
+      attributes: true,
+      attributeFilter: ["class", "data-chain"]
+    });
+    // 등장/퇴장 애니·전환이 끝나 레이아웃이 안정되면 다시 맞춘다(첫 진입 스태거 포함).
+    const onSettle = () => schedule();
+    root.addEventListener("animationend", onSettle);
+    root.addEventListener("transitionend", onSettle);
     window.addEventListener("resize", schedule);
     return () => {
       cancelled = true;
@@ -102,7 +123,8 @@ export function useEqualChainHeights(
       cancelAnimationFrame(raf2);
       ro?.disconnect();
       mo?.disconnect();
-      root.removeEventListener("animationend", onAnimEnd);
+      root.removeEventListener("animationend", onSettle);
+      root.removeEventListener("transitionend", onSettle);
       window.removeEventListener("resize", schedule);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -4386,14 +4386,18 @@
   border-style: dashed;
 }
 .tp-chip {
+  position: relative; /* 선택 번호 뱃지를 모서리에 띄우기 위한 기준 */
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 5px;
   border: 1.5px solid;
   border-radius: 999px;
   padding: 7px 14px;
   font-size: 13.5px;
   font-weight: 800;
+  /* 이름은 한 줄로 — 선택 시 번호가 붙어도 줄바꿈돼 칩이 뚱뚱해지지 않게(높이 균일). */
+  white-space: nowrap;
   cursor: pointer;
   transition: transform 0.13s var(--ease, ease), filter 0.14s var(--ease, ease),
     box-shadow 0.16s var(--ease, ease);
@@ -4421,17 +4425,25 @@
   opacity: 0.4;
   cursor: default;
 }
+/* 선택 순서 번호 — 칩 좌상단 모서리에 작은 카운트 뱃지로 띄운다. 인라인이 아니라 절대배치라
+   이름 폭을 차지하지 않아 텍스트가 밀리거나 줄바꿈되지 않는다(칩 높이 균일 유지). */
 .tp-order {
+  position: absolute;
+  top: -5px;
+  left: -3px;
+  z-index: 1;
   display: inline-grid;
   place-items: center;
-  min-width: 17px;
-  height: 17px;
+  min-width: 18px;
+  height: 18px;
   padding: 0 3px;
   border-radius: 999px;
+  border: 1.5px solid #fff;
   background: #2a2540;
   color: #fff;
   font-size: 10px;
   font-weight: 900;
+  box-shadow: 0 1px 4px -1px rgb(42 37 80 / 55%);
   animation: tp-pop 0.22s var(--ease, ease);
 }
 /* 웹: 넉넉한 칩 + 호버 떠오름·글로우, 패널 여유(가로폭 활용). */
