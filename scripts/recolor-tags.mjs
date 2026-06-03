@@ -17,26 +17,28 @@ const CONTENT = [
   { n: "그린", bg: "#b2f2bb", text: "#14532d", border: "#69db7c", pat: "diag" },   // 게임
   { n: "바이올렛", bg: "#d0bfff", text: "#3a228f", border: "#9775fa", pat: "diag" }, // VRChat
   { n: "핑크", bg: "#fcc2d7", text: "#8a1a40", border: "#f783ac", pat: "dots" },   // 서버
-  { n: "시안", bg: "#99e9f2", text: "#094a56", border: "#3bc9db", pat: "grid" },   // 풀트뱅
+  { n: "옐로우", bg: "#ffec99", text: "#6b4e00", border: "#ffd43b", pat: "grid" }, // 풀트뱅(CK와 교환)
   { n: "그레이프", bg: "#eebefa", text: "#6b1485", border: "#da77f2", pat: "cross" }, // 월드컵(보라, VRChat과 무늬 다름)
   { n: "블루", bg: "#a5d8ff", text: "#0f4c81", border: "#4dabf7", pat: "dash" },   // 기타
   { n: "인디고", bg: "#bac8ff", text: "#283a94", border: "#748ffc", pat: "dots" }, // 시네티(보라, VRChat·월드컵과 무늬 다름)
   { n: "오렌지", bg: "#ffd8a8", text: "#9a3412", border: "#ffa94d", pat: "cross" }, // 타스뱅송(게임 초록과 적색맹 혼동 → 무늬 다르게)
-  { n: "옐로우", bg: "#ffec99", text: "#6b4e00", border: "#ffd43b", pat: "grid" }, // CK
+  { n: "시안", bg: "#99e9f2", text: "#094a56", border: "#3bc9db", pat: "grid" },   // CK(풀트뱅과 교환)
   { n: "틸", bg: "#96f2d7", text: "#075e48", border: "#38d9a9", pat: "cross" },    // 소통뱅(초록, 게임과 무늬 다름)
   { n: "라임", bg: "#d8f5a2", text: "#365314", border: "#a9e34b", pat: "dash" },   // 별별랭킹(초록, 게임·소통뱅과 무늬 다름)
-  { n: "레드", bg: "#ffc9c9", text: "#991b1b", border: "#ff8787", pat: "grid" },   // 토크쇼
+  { n: "살몬레드", bg: "#ffa8a8", text: "#8a1313", border: "#ff8787", pat: "grid" }, // 토크쇼(서버 핑크와 분리 — 더 진한 빨강)
   { n: "그레이프2", bg: "#f3d9fa", text: "#7a1a8f", border: "#e599f7", pat: "dots" }
 ];
 // 방식 — 점/칩. 진한 shade-8 bg + 흰 글씨(대비≥4.5). hue 전부 분리. 합방(게임 초록 위 자주)은 초록 금지.
+// 풀 스펙트럼 분산 — 붉은 계열 뭉침(시참·대회·구플뱅) 해소. 자주 쓰는 합방·대회·연습은
+// 보라·파랑·초록(쿨, 서로 멀리), 드문 시참·모캡·구플뱅만 빨강·마젠타·주황(따뜻).
 const MOD = [
-  { n: "그레이프", bg: "#9c36b5", text: "#ffffff", border: "#862e9c" }, // 합방
-  { n: "오렌지", bg: "#c2410c", text: "#ffffff", border: "#9a3412" },   // 대회(대비 ≥4.5 위해 더 진하게)
-  { n: "블루", bg: "#1864ab", text: "#ffffff", border: "#0f4c81" },     // 연습
-  { n: "레드", bg: "#c92a2a", text: "#ffffff", border: "#991b1b" },     // 시참
-  { n: "틸", bg: "#087f5b", text: "#ffffff", border: "#075e48" },       // 짧뱅
-  { n: "바이올렛", bg: "#6741d9", text: "#ffffff", border: "#4a2da3" }, // 모캡
-  { n: "핑크", bg: "#a61e4d", text: "#ffffff", border: "#8a1a40" }      // 구플뱅
+  { n: "그레이프", bg: "#9c36b5", text: "#ffffff", border: "#862e9c" }, // 합방(보라)
+  { n: "블루", bg: "#1864ab", text: "#ffffff", border: "#0f4c81" },     // 대회(파랑)
+  { n: "그린", bg: "#1b6e2e", text: "#ffffff", border: "#14532d" },     // 연습(초록)
+  { n: "레드", bg: "#c92a2a", text: "#ffffff", border: "#991b1b" },     // 시참(빨강)
+  { n: "시안", bg: "#0c6170", text: "#ffffff", border: "#094a56" },     // 짧뱅(시안)
+  { n: "마젠타", bg: "#a61e4d", text: "#ffffff", border: "#8a1a40" },   // 모캡(마젠타)
+  { n: "오렌지", bg: "#c2410c", text: "#ffffff", border: "#9a3412" }    // 구플뱅(주황)
 ];
 
 const t = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
