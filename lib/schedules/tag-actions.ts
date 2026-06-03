@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { revalidatePublicSchedule } from "@/lib/schedules/cache";
-import type { BroadcastTag, ColorKey, ColorPaletteEntry } from "@/lib/domain/schedule-types";
+import type { BroadcastTag, ColorKey, ColorPaletteEntry, TagKind } from "@/lib/domain/schedule-types";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canEditSchedule } from "@/lib/permissions/roles";
@@ -20,6 +20,8 @@ export type TagCreateInput = {
   sortOrder: number;
   // 2계층: null = 대분류(색 보유), 값 = 세부(부모 대분류 id, 색은 부모 상속). 임시 부모는 tempId일 수 있다.
   parentId?: string | null;
+  // content(콘텐츠) | modifier(수식어). 생략 시 content.
+  kind?: TagKind;
 };
 // "전체 저장": 기존 태그 수정 + 새 태그 생성을 한 번에. 생성분은 진짜 id를 돌려줘 화면을 갱신한다.
 export type SaveTagsResult =
@@ -78,7 +80,7 @@ export async function updateTagAction(
 // #6/#4: "전체 저장" — 기존 태그 수정 + 새로 추가한 드래프트 태그 생성을 한 번에 처리한다.
 // (새 태그는 저장 누르기 전까지 팝업 안에서만 보이고, 이 액션을 누를 때만 DB·달력에 반영된다.)
 export async function saveTagsAction(input: {
-  updates: { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number; parentId?: string | null }[];
+  updates: { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number; parentId?: string | null; kind?: TagKind }[];
   creates: TagCreateInput[];
 }): Promise<SaveTagsResult> {
   const actor = await resolveCurrentActor(SLUG);
@@ -171,7 +173,8 @@ export async function saveTagsAction(input: {
           sort_order: c.sortOrder,
           is_default: false,
           is_active: true,
-          parent_id: parentId
+          parent_id: parentId,
+          kind: c.kind ?? "content"
         })
         .select("id")
         .single();
@@ -190,7 +193,7 @@ export async function saveTagsAction(input: {
           isDefault: false,
           isActive: true,
           parentId,
-          kind: "content"
+          kind: c.kind ?? "content"
         },
         color: {
           key: c.colorKey,
@@ -232,6 +235,7 @@ export async function saveTagsAction(input: {
                   color_key: u.colorKey,
                   ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }),
                   ...(u.parentId === undefined ? {} : { parent_id: u.parentId }),
+                  ...(u.kind === undefined ? {} : { kind: u.kind }),
                   updated_at: now
                 }
           )

@@ -19,19 +19,20 @@ const REST_TAG = "휴뱅";
 async function loadTagCategoryMap(
   supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
   calendarId: string
-): Promise<Map<string, { id: string; name: string; colorKey: string }>> {
+): Promise<Map<string, { id: string; name: string; colorKey: string; kind: string }>> {
   const { data } = await supabase
     .from("broadcast_tags")
-    .select("id, parent_id, display_name, color_key")
+    .select("id, parent_id, display_name, color_key, kind")
     .eq("calendar_id", calendarId);
   const rows = (data ?? []) as {
     id: string;
     parent_id: string | null;
     display_name: string;
     color_key: string;
+    kind: string | null;
   }[];
   const byId = new Map(rows.map((r) => [r.id, r] as const));
-  const cat = new Map<string, { id: string; name: string; colorKey: string }>();
+  const cat = new Map<string, { id: string; name: string; colorKey: string; kind: string }>();
   for (const r of rows) {
     let top = r;
     const guard = new Set<string>();
@@ -39,7 +40,13 @@ async function loadTagCategoryMap(
       guard.add(top.id);
       top = byId.get(top.parent_id)!;
     }
-    cat.set(r.id, { id: top.id, name: top.display_name, colorKey: top.color_key });
+    // 최상위 대분류 기준 — kind는 대분류의 kind(content/modifier).
+    cat.set(r.id, {
+      id: top.id,
+      name: top.display_name,
+      colorKey: top.color_key,
+      kind: top.kind === "modifier" ? "modifier" : "content"
+    });
   }
   return cat;
 }
@@ -606,9 +613,11 @@ export async function getInsightsAction(year: number, month: number): Promise<In
     const cat = (id && catMap.get(id)) || {
       id: id ?? rawName,
       name: rawName,
-      colorKey: row.broadcast_tags?.color_key ?? ""
+      colorKey: row.broadcast_tags?.color_key ?? "",
+      kind: "content"
     };
     if (cat.name === REST_TAG) continue;
+    if (cat.kind === "modifier") continue; // 수식어(합방·시참 등)는 컨텐츠 순위서 제외
     const cur = tagMap.get(cat.id);
     if (cur) cur.count += 1;
     else {
@@ -913,7 +922,13 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     const bt = row.broadcast_tags;
     const ym = eventMonth.get(row.event_id); // 공개 일정만(비공개는 매핑 없음 → 제외)
     if (!bt?.id || !ym) continue;
-    const cat = catMap.get(bt.id) ?? { id: bt.id, name: bt.display_name ?? "?", colorKey: bt.color_key ?? "" };
+    const cat = catMap.get(bt.id) ?? {
+      id: bt.id,
+      name: bt.display_name ?? "?",
+      colorKey: bt.color_key ?? "",
+      kind: "content"
+    };
+    if (cat.kind === "modifier") continue; // 수식어는 컨텐츠 트렌드서 제외
     contentTagRows.push({ ym, key: cat.id, n: 1 });
     const cur = tagInfo.get(cat.id);
     if (cur) cur.total += 1;
@@ -941,7 +956,13 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     if (!bt?.id || !ym) continue;
     const h = heartByEvent.get(row.event_id) ?? 0;
     if (h <= 0) continue;
-    const cat = catMap.get(bt.id) ?? { id: bt.id, name: bt.display_name ?? "?", colorKey: bt.color_key ?? "" };
+    const cat = catMap.get(bt.id) ?? {
+      id: bt.id,
+      name: bt.display_name ?? "?",
+      colorKey: bt.color_key ?? "",
+      kind: "content"
+    };
+    if (cat.kind === "modifier") continue; // 수식어는 태그별 하트 트렌드서 제외
     heartTagRows.push({ ym, key: cat.id, n: h });
     const cur = heartTagInfo.get(cat.id);
     if (cur) cur.total += h;
@@ -1644,7 +1665,8 @@ export async function getMemberInsightsAction(
     (bt?.id && catMap.get(bt.id)) || {
       id: bt?.id ?? bt?.display_name ?? "?",
       name: bt?.display_name ?? "?",
-      colorKey: bt?.color_key ?? ""
+      colorKey: bt?.color_key ?? "",
+      kind: "content" as const
     };
   const tagRows = (tagsRes.data ?? []) as {
     event_id: string;
@@ -1701,6 +1723,7 @@ export async function getMemberInsightsAction(
     const ym = eventMonth.get(row.event_id);
     if (!bt?.id || !ym) continue;
     const cat = catOf(bt);
+    if (cat.kind === "modifier") continue; // 수식어는 컨텐츠 트렌드서 제외
     ctRows.push({ ym, key: cat.id, n: 1 });
     const cur = ctTagInfo.get(cat.id);
     if (cur) cur.total += 1;
@@ -1725,6 +1748,7 @@ export async function getMemberInsightsAction(
     if (!rawName || rawName === REST_TAG || !thisMonthIds.has(row.event_id)) continue;
     const cat = catOf(row.broadcast_tags);
     if (cat.name === REST_TAG) continue;
+    if (cat.kind === "modifier") continue; // 수식어(합방·시참 등)는 컨텐츠 순위서 제외
     const cur = tagCount.get(cat.id);
     if (cur) cur.count += 1;
     else {
@@ -1812,6 +1836,7 @@ export async function getMemberInsightsAction(
     const h = memHeartByEvent.get(row.event_id) ?? 0;
     if (h <= 0) continue;
     const cat = catOf(bt);
+    if (cat.kind === "modifier") continue; // 수식어는 태그별 하트 트렌드서 제외
     hbtRows.push({ ym, key: cat.id, n: h });
     const cur = hbtInfo.get(cat.id);
     if (cur) cur.total += h;

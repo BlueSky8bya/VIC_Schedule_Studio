@@ -3239,6 +3239,19 @@
   color: #64748b;
   cursor: pointer;
 }
+/* 색상 안내의 수식어 묶음 — 자식(라벨+칩)을 부모 흐름에 그대로 흘려보내고(contents),
+   라벨에 점선 윗줄을 둬 콘텐츠와 가른다. */
+.tag-legend-modgroup {
+  display: contents;
+}
+.tag-legend-modlabel {
+  font-size: 12px !important;
+  font-weight: 900;
+  color: #8a83a0;
+  margin-top: 6px;
+  padding-top: 7px;
+  border-top: 1px dashed var(--line, #e4e0ef);
+}
 /* 필터에 안 맞는 일정은 흐리게(편집실 그리드·모바일 아젠다 공용) */
 .studio-event-pill.filter-dim,
 .agenda-event.filter-dim {
@@ -4267,6 +4280,34 @@
   gap: 6px;
   padding-left: 4px;
 }
+/* 수식어 칸 — 콘텐츠와 점선으로 가르고, 칩은 점선 테두리로 "얹는 것"임을 보인다. */
+.tp-mod-section {
+  margin-top: 11px;
+  padding-top: 11px;
+  border-top: 1px dashed var(--line, #e4e0ef);
+}
+.tp-section-label {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 900;
+  color: #6b6385;
+}
+.tp-section-label span {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #a59fb8;
+}
+.tp-mods {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tp-mods .tp-chip {
+  border-style: dashed;
+}
 .tp-chip {
   display: inline-flex;
   align-items: center;
@@ -4743,6 +4784,33 @@ textarea:disabled {
 }
 /* 색 스와치: 칸 수에 따라 너비가 유동적으로 늘고 줄어든다(flex 1 1 0, 9~34px). 한 줄 유지.
    overflow를 쓰지 않아 선택 테두리가 잘리지 않는다. */
+/* 대분류 content/modifier 토글 — content=연한 채움, modifier=점선(="얹는 것"). */
+.tag-kind-toggle {
+  flex: 0 0 auto;
+  border: 1.5px solid var(--line, #ddd6ee);
+  border-radius: 999px;
+  background: #f4f1fb;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #5b5377;
+  cursor: pointer;
+  transition: background var(--ease, 0.18s), border-color var(--ease, 0.18s), transform 0.08s;
+  white-space: nowrap;
+}
+.tag-kind-toggle:active {
+  transform: scale(0.94);
+}
+.tag-kind-toggle.mod {
+  border-style: dashed;
+  border-color: #c8a23f;
+  background: #fbf4e2;
+  color: #7a5a12;
+}
+.tag-kind-toggle:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
 .tag-editor-swatches {
   flex: 1 1 auto;
   min-width: 0;

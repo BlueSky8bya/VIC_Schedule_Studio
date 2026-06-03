@@ -79,7 +79,7 @@ import {
   type MonthCell
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { legacyTagView } from "@/lib/tags/taxonomy";
+import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
@@ -616,9 +616,12 @@ export function PublicPoster({
   useEffect(() => {
     markContentReady();
   }, []);
-  // 시청자(공개 포스터)는 항상 레거시 뷰 — 분류 v3(세부·modifier·신설 그룹)는 단계 배포가 시청자까지
-  // 오기 전엔 안 보인다. lib/tags/taxonomy.ts의 TAXONOMY_V3_ROLES에 viewer를 넣으면 풀린다.
-  const viewTags = useMemo(() => legacyTagView(schedule.tags), [schedule.tags]);
+  // 시청자(공개 포스터) 태그 뷰 — 단계 배포 제어. TAXONOMY_V3_ROLES에 viewer가 있으면 v3(세부·
+  // modifier·신설 그룹), 없으면 레거시(세부 나누기 이전). 현재 viewer 포함 = v3.
+  const viewTags = useMemo(
+    () => (isTaxonomyV3("viewer") ? schedule.tags : legacyTagView(schedule.tags)),
+    [schedule.tags]
+  );
   // #1: 색상 안내에서 "기타"는 항상 맨 마지막으로(나머지는 기존 정렬 유지).
   // 색상 안내 순서 = 태그 sort_order(편집실에서 드래그로 정한 순서). 단일 진실 소스.
   // 2계층: 색상 안내/필터는 '대분류'만(한 색 = 한 칩). 대분류를 고르면 그 하위 세부 일정까지 매칭된다.

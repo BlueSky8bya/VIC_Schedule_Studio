@@ -9,7 +9,7 @@ import {
   useState,
   useTransition
 } from "react";
-import type { BroadcastTag, ColorKey, ColorPaletteEntry } from "@/lib/domain/schedule-types";
+import type { BroadcastTag, ColorKey, ColorPaletteEntry, TagKind } from "@/lib/domain/schedule-types";
 import type { SaveTagsResult, TagCreateInput } from "@/lib/schedules/tag-actions";
 import { generateTagColor } from "@/lib/tags/color-gen";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -20,6 +20,7 @@ type TagUpdate = {
   colorKey: ColorKey;
   sortOrder?: number;
   parentId?: string | null;
+  kind?: TagKind;
 };
 
 // 태그는 최대 20개까지. (서버 saveTagsAction에서도 동일하게 막는다.)
@@ -51,7 +52,7 @@ type TagLegendEditorProps = {
   onToggleFilter?: (tagId: string) => void;
 };
 
-type Draft = { name: string; colorKey: ColorKey | ""; parentId: string | null };
+type Draft = { name: string; colorKey: ColorKey | ""; parentId: string | null; kind: TagKind };
 
 export function TagLegendEditor({
   tags,
@@ -93,7 +94,10 @@ export function TagLegendEditor({
 
   const [draft, setDraft] = useState<Record<string, Draft>>(() =>
     Object.fromEntries(
-      tags.map((t) => [t.id, { name: t.displayName, colorKey: t.colorKey, parentId: t.parentId }])
+      tags.map((t) => [
+        t.id,
+        { name: t.displayName, colorKey: t.colorKey, parentId: t.parentId, kind: t.kind }
+      ])
     )
   );
 
@@ -105,7 +109,8 @@ export function TagLegendEditor({
         next[t.id] = cur[t.id] ?? {
           name: t.displayName,
           colorKey: t.colorKey,
-          parentId: t.parentId
+          parentId: t.parentId,
+          kind: t.kind
         };
       }
       // 아직 저장 안 한 드래프트(new:) 항목은 그대로 보존.
@@ -309,39 +314,49 @@ export function TagLegendEditor({
   // 2계층: 색상 안내/필터는 '대분류'만(한 색=한 칩). 대분류 필터가 하위 세부 일정까지 매칭한다.
   if (!canEdit) {
     const filtering = (filterIds?.length ?? 0) > 0;
+    const legendItem = (tag: BroadcastTag) => {
+      const color = colorOf(tag.colorKey);
+      if (!color) return null;
+      if (!onToggleFilter) {
+        return (
+          <span key={tag.id}>
+            <i
+              data-color={color.key}
+              style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+            />
+            {tag.displayName}
+          </span>
+        );
+      }
+      const on = filterIds?.includes(tag.id) ?? false;
+      return (
+        <button
+          aria-pressed={on}
+          className={`tag-legend-filter ${on ? "on" : ""} ${filtering && !on ? "dim" : ""}`}
+          key={tag.id}
+          onClick={() => onToggleFilter(tag.id)}
+          type="button"
+        >
+          <i
+            data-color={color.key}
+            style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+          />
+          {tag.displayName}
+        </button>
+      );
+    };
+    // 콘텐츠 대분류 = 칸 색. 수식어(modifier)는 셀에선 점으로만 가니 안내에서도 따로 묶는다.
+    const contentTops = orderedTops.filter((t) => t.kind !== "modifier");
+    const modifierTops = orderedTops.filter((t) => t.kind === "modifier");
     return (
       <div className="studio-tag-legend">
-        {orderedTops.map((tag) => {
-          const color = colorOf(tag.colorKey);
-          if (!color) return null;
-          if (!onToggleFilter) {
-            return (
-              <span key={tag.id}>
-                <i
-                  data-color={color.key}
-                  style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
-                />
-                {tag.displayName}
-              </span>
-            );
-          }
-          const on = filterIds?.includes(tag.id) ?? false;
-          return (
-            <button
-              aria-pressed={on}
-              className={`tag-legend-filter ${on ? "on" : ""} ${filtering && !on ? "dim" : ""}`}
-              key={tag.id}
-              onClick={() => onToggleFilter(tag.id)}
-              type="button"
-            >
-              <i
-                data-color={color.key}
-                style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
-              />
-              {tag.displayName}
-            </button>
-          );
-        })}
+        {contentTops.map(legendItem)}
+        {modifierTops.length > 0 ? (
+          <span className="tag-legend-modgroup">
+            <span className="tag-legend-modlabel">수식어</span>
+            {modifierTops.map(legendItem)}
+          </span>
+        ) : null}
         {filtering ? (
           <button
             className="tag-legend-clear"
@@ -384,7 +399,10 @@ export function TagLegendEditor({
     };
     setNewColors((prev) => [...prev, color]);
     setNewTags((prev) => [...prev, tag]);
-    setDraft((cur) => ({ ...cur, [tempId]: { name: "새 태그", colorKey: gen.key, parentId: null } }));
+    setDraft((cur) => ({
+      ...cur,
+      [tempId]: { name: "새 태그", colorKey: gen.key, parentId: null, kind: "content" }
+    }));
     setOrderIds((cur) => [...cur, tempId]);
   }
 
@@ -410,7 +428,7 @@ export function TagLegendEditor({
     setNewTags((prev) => [...prev, tag]);
     setDraft((cur) => ({
       ...cur,
-      [tempId]: { name: "새 세부", colorKey: parentColorKey, parentId }
+      [tempId]: { name: "새 세부", colorKey: parentColorKey, parentId, kind: "content" }
     }));
     // 세부는 orderIds(대분류 순서)에 넣지 않는다.
   }
@@ -477,7 +495,10 @@ export function TagLegendEditor({
   const existingOrder = orderIds.filter((id): id is string => Boolean(id) && !isNew(id));
   const orderChanged = existingOrder.some((id, i) => existingTops[i]?.id !== id);
   const contentChanged = tags.some(
-    (t) => draft[t.id]?.name !== t.displayName || draft[t.id]?.colorKey !== t.colorKey
+    (t) =>
+      draft[t.id]?.name !== t.displayName ||
+      draft[t.id]?.colorKey !== t.colorKey ||
+      draft[t.id]?.kind !== t.kind
   );
   const hasNew = newTags.length > 0;
   const dirty = orderChanged || contentChanged || hasNew;
@@ -505,7 +526,9 @@ export function TagLegendEditor({
           textColor: c?.textColor ?? "#333333",
           borderColor: c?.borderColor ?? "#cccccc",
           sortOrder,
-          parentId
+          parentId,
+          // 세부(자식)는 항상 content, 대분류는 토글 값.
+          kind: parentId ? "content" : d.kind
         });
       } else {
         updates.push({
@@ -513,7 +536,8 @@ export function TagLegendEditor({
           displayName: d.name,
           colorKey: d.colorKey as ColorKey,
           sortOrder,
-          parentId
+          parentId,
+          kind: parentId ? "content" : d.kind
         });
       }
     };
@@ -547,7 +571,8 @@ export function TagLegendEditor({
               next[c.tag.id] = {
                 name: c.tag.displayName,
                 colorKey: c.tag.colorKey,
-                parentId: c.tag.parentId
+                parentId: c.tag.parentId,
+                kind: c.tag.kind
               };
             }
             return next;
@@ -617,7 +642,27 @@ export function TagLegendEditor({
             title="부모 대분류 색을 따라가요"
           />
         ) : (
-          <div className="tag-editor-swatches">
+          <>
+            <button
+              className={`tag-kind-toggle ${d.kind === "modifier" ? "mod" : ""}`}
+              disabled={locked}
+              onClick={() => {
+                hapticTick();
+                setDraft((cur) => ({
+                  ...cur,
+                  [tag.id]: { ...d, kind: d.kind === "modifier" ? "content" : "modifier" }
+                }));
+              }}
+              title={
+                d.kind === "modifier"
+                  ? "수식어(합방·시참 등) — 누르면 콘텐츠로"
+                  : "콘텐츠 — 누르면 수식어로(셀 색 대신 점·통계 제외)"
+              }
+              type="button"
+            >
+              {d.kind === "modifier" ? "수식어" : "콘텐츠"}
+            </button>
+            <div className="tag-editor-swatches">
             {effectivePalette.map((c) => {
               const selected = d.colorKey === c.key;
               const blocked = usedByOther(tag.id, c.key);
@@ -641,7 +686,8 @@ export function TagLegendEditor({
                 />
               );
             })}
-          </div>
+            </div>
+          </>
         )}
         <button
           aria-label={locked ? "휴뱅은 삭제할 수 없어요" : `${d.name} 삭제`}
@@ -682,8 +728,8 @@ export function TagLegendEditor({
           <div className="tag-cat-group" key={top.id}>
             {renderTagRow(top, false)}
             {kids.map((c) => renderTagRow(c, true))}
-            {/* 세부 추가 — 이 대분류 밑에 자식 태그(색 상속). 휴뱅엔 세부를 만들지 않는다. */}
-            {!isLocked(top.id) ? (
+            {/* 세부 추가 — 이 대분류 밑에 자식 태그(색 상속). 휴뱅·수식어엔 세부를 만들지 않는다. */}
+            {!isLocked(top.id) && draft[top.id]?.kind !== "modifier" ? (
               <button
                 className="tag-add-sub"
                 disabled={allTags.length >= MAX_TAGS}

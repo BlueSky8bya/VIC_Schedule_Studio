@@ -31,18 +31,22 @@ export function TagPicker({
     return palette.find((p) => p.key === ck);
   };
 
-  // 대분류(기타는 맨 끝) + 각 대분류의 세부. 검색어가 있으면 이름 매칭만 남기되, 매칭된 세부가
-  // 있으면 그 부모 대분류도 보여준다.
-  const groups = useMemo(() => {
+  // 대분류(기타는 맨 끝) + 각 대분류의 세부. 콘텐츠(content)와 수식어(modifier)를 따로 묶는다 —
+  // 수식어(합방·시참 등)는 "어떻게/누구"라 콘텐츠와 칸을 나눠 고른다. 수식어는 세부가 없다.
+  const { contentGroups, modifierTags } = useMemo(() => {
     const tops = [...tags]
       .filter((t) => (t.parentId ?? null) === null)
       .sort((a, b) => Number(a.displayName === "기타") - Number(b.displayName === "기타"));
-    return tops.map((top) => {
-      const kids = tags
-        .filter((t) => (t.parentId ?? null) === top.id)
-        .sort((a, b) => a.sortOrder - b.sortOrder);
-      return { top, kids };
-    });
+    const contentGroups = tops
+      .filter((t) => t.kind !== "modifier")
+      .map((top) => ({
+        top,
+        kids: tags
+          .filter((t) => (t.parentId ?? null) === top.id)
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+      }));
+    const modifierTags = tops.filter((t) => t.kind === "modifier");
+    return { contentGroups, modifierTags };
   }, [tags]);
 
   const full = selectedIds.length >= max;
@@ -88,7 +92,7 @@ export function TagPicker({
         </span>
       </div>
       <div className="tp-groups">
-        {groups.map(({ top, kids }) => {
+        {contentGroups.map(({ top, kids }) => {
           // 검색: 대분류/세부 이름 매칭만. 매칭 없으면 그룹 숨김.
           const topHit = !q || top.displayName.toLowerCase().includes(q);
           const shownKids = q ? kids.filter((k) => k.displayName.toLowerCase().includes(q)) : kids;
@@ -103,6 +107,18 @@ export function TagPicker({
           );
         })}
       </div>
+      {(() => {
+        const shownMods = q
+          ? modifierTags.filter((t) => t.displayName.toLowerCase().includes(q))
+          : modifierTags;
+        if (shownMods.length === 0) return null;
+        return (
+          <div className="tp-mod-section">
+            <div className="tp-section-label">수식어 <span>어떻게 · 누구 · 얼마나</span></div>
+            <div className="tp-mods">{shownMods.map((t) => chip(t, false))}</div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
