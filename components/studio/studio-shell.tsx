@@ -1621,17 +1621,29 @@ export function StudioShell({
   }
 
   // #3: 매니저용 — 일정의 태그 할당을 토글한다(최대 2개). 낙관적 반영 후 실패 시 롤백.
+  // 무조건 콘텐츠 대분류 1개 — 방식만 남거나 비면 '기타'를 자동으로 붙인다(서버도 동일 보장).
+  const restTagId = tags.find((t) => t.displayName === "기타")?.id ?? null;
+  function ensureContent(ids: string[]): string[] {
+    if (!restTagId) return ids;
+    const hasContent = ids.some(
+      (id) => (tags.find((t) => t.id === id)?.kind ?? "content") !== "modifier"
+    );
+    if (hasContent) return ids;
+    return ids.includes(restTagId) ? ids : [...ids, restTagId];
+  }
+
   function toggleEventTag(event: StudioScheduleEvent, tagId: string) {
     if (blockedByPreview()) return;
     const has = event.tagIds.includes(tagId);
-    const nextTagIds = has
+    const rawNext = has
       ? event.tagIds.filter((id) => id !== tagId)
       : event.tagIds.length >= maxEventTags
         ? event.tagIds
         : [...event.tagIds, tagId];
-    if (nextTagIds === event.tagIds) {
+    if (rawNext === event.tagIds) {
       return; // 이미 최대 — 변화 없음
     }
+    const nextTagIds = ensureContent(rawNext);
     const nextPrimary = nextTagIds; // 색은 대분류로 합쳐 카드에서 ≤2 표시(picker는 전체 저장)
     const snapshot = events;
     setEvents((prev) =>
