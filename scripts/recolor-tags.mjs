@@ -23,22 +23,23 @@ const CONTENT = [
   { n: "인디고", bg: "#bac8ff", text: "#283a94", border: "#748ffc", pat: "dots" }, // 시네티(보라, VRChat·월드컵과 무늬 다름)
   { n: "오렌지", bg: "#ffd8a8", text: "#9a3412", border: "#ffa94d", pat: "cross" }, // 타스뱅송(게임 초록과 적색맹 혼동 → 무늬 다르게)
   { n: "시안", bg: "#99e9f2", text: "#094a56", border: "#3bc9db", pat: "grid" },   // CK(풀트뱅과 교환)
-  { n: "틸", bg: "#96f2d7", text: "#075e48", border: "#38d9a9", pat: "cross" },    // 소통뱅(초록, 게임과 무늬 다름)
+  { n: "민트", bg: "#63e6be", text: "#044a35", border: "#20c997", pat: "cross" },  // 소통뱅(CK 시안과 분리 — 더 진한 민트)
   { n: "라임", bg: "#d8f5a2", text: "#365314", border: "#a9e34b", pat: "dash" },   // 별별랭킹(초록, 게임·소통뱅과 무늬 다름)
   { n: "살몬레드", bg: "#ffa8a8", text: "#8a1313", border: "#ff8787", pat: "grid" }, // 토크쇼(서버 핑크와 분리 — 더 진한 빨강)
   { n: "그레이프2", bg: "#f3d9fa", text: "#7a1a8f", border: "#e599f7", pat: "dots" }
 ];
 // 방식 — 점/칩. 진한 shade-8 bg + 흰 글씨(대비≥4.5). hue 전부 분리. 합방(게임 초록 위 자주)은 초록 금지.
-// 풀 스펙트럼 분산 — 붉은 계열 뭉침(시참·대회·구플뱅) 해소. 자주 쓰는 합방·대회·연습은
-// 보라·파랑·초록(쿨, 서로 멀리), 드문 시참·모캡·구플뱅만 빨강·마젠타·주황(따뜻).
+// 방식 점/칩 — 어두운 shade-8은 명도가 다 비슷해 칙칙하게 뭉쳤다. '선명한(vivid)' 색으로 바꿔
+// hue를 풀 스펙트럼으로 벌리고(보라·파랑·초록·빨강·시안·마젠타·주황) 명도도 살린다 → 확실히 구분.
+// 굵은 칩 글씨라 흰 글씨 3:1↑면 읽힘. 채도 높아 연한 카드 위 점으로도 또렷.
 const MOD = [
-  { n: "그레이프", bg: "#9c36b5", text: "#ffffff", border: "#862e9c" }, // 합방(보라)
-  { n: "블루", bg: "#1864ab", text: "#ffffff", border: "#0f4c81" },     // 대회(파랑)
-  { n: "그린", bg: "#1b6e2e", text: "#ffffff", border: "#14532d" },     // 연습(초록)
-  { n: "레드", bg: "#c92a2a", text: "#ffffff", border: "#991b1b" },     // 시참(빨강)
-  { n: "시안", bg: "#0c6170", text: "#ffffff", border: "#094a56" },     // 짧뱅(시안)
-  { n: "마젠타", bg: "#a61e4d", text: "#ffffff", border: "#8a1a40" },   // 모캡(마젠타)
-  { n: "오렌지", bg: "#c2410c", text: "#ffffff", border: "#9a3412" }    // 구플뱅(주황)
+  { n: "바이올렛", bg: "#7048e8", text: "#ffffff", border: "#5f3dc4" }, // 합방(보라)
+  { n: "블루", bg: "#1c7ed6", text: "#ffffff", border: "#1864ab" },     // 대회(파랑)
+  { n: "그린", bg: "#2f9e44", text: "#ffffff", border: "#2b8a3e" },     // 연습(초록)
+  { n: "레드", bg: "#e03131", text: "#ffffff", border: "#c92a2a" },     // 시참(빨강)
+  { n: "시안", bg: "#1098ad", text: "#ffffff", border: "#0c8599" },     // 짧뱅(시안)
+  { n: "마젠타", bg: "#ae3ec9", text: "#ffffff", border: "#9c36b5" },   // 모캡(마젠타)
+  { n: "오렌지", bg: "#e8590c", text: "#ffffff", border: "#d9480f" }    // 구플뱅(주황)
 ];
 
 const t = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
