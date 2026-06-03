@@ -15,10 +15,22 @@ export function useEqualChainHeights(
       return;
     }
     let cancelled = false;
+    // 콘텐츠가 늦게 바뀌어(하트/뱃지 비동기 로드, 색 style 재조정 등) 칸 높이가 변하면 다시 맞춘다.
+    // 우리가 쓰는 minHeight 변경이 자신을 다시 트리거하지 않게 equalize 동안엔 관찰을 끊는다.
+    let mo: MutationObserver | null = null;
+    function observe() {
+      mo?.observe(root!, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ["style", "class"]
+      });
+    }
     function equalize() {
       if (cancelled) {
         return;
       }
+      mo?.disconnect();
       const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
       for (const pill of pills) {
         pill.style.minHeight = ""; // 먼저 초기화해 자연 높이를 잰다
@@ -48,6 +60,7 @@ export function useEqualChainHeights(
           el.style.minHeight = `${max}px`;
         }
       }
+      observe(); // 다시 관찰 시작(우리 변경분 반영 끝난 뒤)
     }
     // 레이아웃이 안정된 뒤 한 번 더 맞춘다(컨테이너 폭·스크롤바·미리보기 전환 등으로 줄바꿈이
     // 바뀔 수 있어). 더블 rAF로 브라우저가 레이아웃을 끝낸 다음 프레임에 잰다.
@@ -73,12 +86,16 @@ export function useEqualChainHeights(
     // window resize만으로는 못 잡는 레이아웃 변화(부모 폭 변화)까지 흡수해 viewer에서도 확실히 맞는다.
     const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => schedule()) : null;
     ro?.observe(root);
+    // 칸 안 콘텐츠가 늦게 바뀌어도(하트/뱃지 비동기, style 재조정) 다시 맞춘다 — viewer에서 확실히.
+    mo = typeof MutationObserver !== "undefined" ? new MutationObserver(() => schedule()) : null;
+    observe();
     window.addEventListener("resize", schedule);
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
       ro?.disconnect();
+      mo?.disconnect();
       window.removeEventListener("resize", schedule);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
