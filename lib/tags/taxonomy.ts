@@ -8,20 +8,19 @@ export function isTaxonomyV3(role: MembershipRole): boolean {
   return TAXONOMY_V3_ROLES.includes(role);
 }
 
-// 레거시 뷰(비-v3 역할) — 분류 v3 이전 상태로 되돌린 태그 목록(공용 데이터는 안 바꾸고 뷰만 변환).
+// 레거시 뷰(비-v3 역할) — '세부 나누기 이전'의 완전 평탄 상태로 되돌린 태그 목록(공용 데이터는 안
+// 바꾸고 뷰만 변환).
 //  - v3_only 태그 숨김: 외부출연·별별랭킹·구플뱅·게임 세부 시드(와우 등)
-//  - v3 부모(외부출연) 밑 자식은 다시 최상위로(reparent 이전 상태): 토크쇼·타스뱅송
+//  - 세부(자식) 전부 숨김 → 평탄. 단 v3 부모(외부출연) 밑 자식은 원래 최상위였던 태그(토크쇼·타스뱅송)
+//    이므로 최상위로 되살린다. 그 외 자식(예: 게임>실크송·명조)은 숨긴다.
 //  - kind 무시(modifier→content): 합방·시참·대회·짧뱅·풀트뱅을 예전처럼 일반 대분류로
 // (조공 비활성·종겜→게임 리네임은 '세부 나누기'가 아니라 그대로 둔다.)
 export function legacyTagView(tags: BroadcastTag[]): BroadcastTag[] {
   const v3Ids = new Set(tags.filter((t) => t.v3Only).map((t) => t.id));
   return tags
     .filter((t) => !t.v3Only)
-    .map((t) => ({
-      ...t,
-      parentId: t.parentId && v3Ids.has(t.parentId) ? null : t.parentId,
-      kind: "content" as const
-    }));
+    .filter((t) => !t.parentId || v3Ids.has(t.parentId))
+    .map((t) => ({ ...t, parentId: null, kind: "content" as const }));
 }
 
 // 역할에 맞는 태그 뷰(렌더·피커·레전드·필터용). 정의 편집(TagLegendEditor)에는 쓰지 말 것 —
