@@ -4263,6 +4263,16 @@
   overscroll-behavior: contain;
   padding: 1px;
 }
+/* flat 콘텐츠 칩 묶음(세부 폐기 후). */
+.tp-content {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 280px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 1px;
+}
 /* 대분류 묶음 = 부드러운 카드. 헤더(대분류 칩) 위, 세부 칩 아래. */
 .tp-group {
   display: flex;

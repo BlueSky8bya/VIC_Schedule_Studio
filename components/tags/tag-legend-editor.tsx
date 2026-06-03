@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, GripVertical, Lock, Palette, Plus, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, GripVertical, Lock, Palette, Save, Trash2 } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
   useEffect,
@@ -353,7 +353,7 @@ export function TagLegendEditor({
         {contentTops.map(legendItem)}
         {modifierTops.length > 0 ? (
           <span className="tag-legend-modgroup">
-            <span className="tag-legend-modlabel">수식어</span>
+            <span className="tag-legend-modlabel">방식</span>
             {modifierTops.map(legendItem)}
           </span>
         ) : null}
@@ -404,33 +404,6 @@ export function TagLegendEditor({
       [tempId]: { name: "새 태그", colorKey: gen.key, parentId: null, kind: "content" }
     }));
     setOrderIds((cur) => [...cur, tempId]);
-  }
-
-  // 세부(자식) 추가 — 부모 대분류 밑에 붙는다. 색은 부모를 상속(자기 색 안 씀)하므로 새 팔레트 색을
-  // 만들지 않고 부모의 현재 색 키를 저장값으로만 둔다(렌더 색은 항상 대분류 색으로 해석).
-  function addSub(parentId: string) {
-    if (allTags.length >= MAX_TAGS) return;
-    hapticTick();
-    setError(null);
-    const parentColorKey = (draft[parentId]?.colorKey || "gray") as ColorKey;
-    const tempId = `${NEW_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
-    const tag: BroadcastTag = {
-      id: tempId,
-      tagKey: tempId,
-      displayName: "새 세부",
-      colorKey: parentColorKey,
-      sortOrder: 9999,
-      isDefault: false,
-      isActive: true,
-      parentId,
-      kind: "content"
-    };
-    setNewTags((prev) => [...prev, tag]);
-    setDraft((cur) => ({
-      ...cur,
-      [tempId]: { name: "새 세부", colorKey: parentColorKey, parentId, kind: "content" }
-    }));
-    // 세부는 orderIds(대분류 순서)에 넣지 않는다.
   }
 
   function removeTag(tagId: string) {
@@ -655,12 +628,12 @@ export function TagLegendEditor({
               }}
               title={
                 d.kind === "modifier"
-                  ? "수식어(합방·시참 등) — 누르면 콘텐츠로"
-                  : "콘텐츠 — 누르면 수식어로(셀 색 대신 점·통계 제외)"
+                  ? "방식(합방·시참 등) — 누르면 콘텐츠로"
+                  : "콘텐츠 — 누르면 방식으로(셀 색 대신 점·통계 제외)"
               }
               type="button"
             >
-              {d.kind === "modifier" ? "수식어" : "콘텐츠"}
+              {d.kind === "modifier" ? "방식" : "콘텐츠"}
             </button>
             <div className="tag-editor-swatches">
             {effectivePalette.map((c) => {
@@ -723,22 +696,9 @@ export function TagLegendEditor({
         </span>
       </div>
       {orderedTops.map((top) => {
-        const kids = childrenOf(top.id);
         return (
           <div className="tag-cat-group" key={top.id}>
             {renderTagRow(top, false)}
-            {kids.map((c) => renderTagRow(c, true))}
-            {/* 세부 추가 — 이 대분류 밑에 자식 태그(색 상속). 휴뱅·수식어엔 세부를 만들지 않는다. */}
-            {!isLocked(top.id) && draft[top.id]?.kind !== "modifier" ? (
-              <button
-                className="tag-add-sub"
-                disabled={allTags.length >= MAX_TAGS}
-                onClick={() => addSub(top.id)}
-                type="button"
-              >
-                <Plus aria-hidden="true" size={13} /> 세부 추가
-              </button>
-            ) : null}
           </div>
         );
       })}
