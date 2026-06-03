@@ -1303,7 +1303,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-top: 30px; /* 막대 위 툴팁 자리 */
+  margin-top: 40px; /* 막대 위 툴팁 자리(2줄까지 안 잘리게 넉넉히) */
 }
 .own-row {
   display: grid;
@@ -1345,10 +1345,15 @@
   font-weight: 700;
   color: #a9a2bd;
 }
-/* 세션 툴팁 — .vt-tip 스타일 재사용, 위치만 인라인 top 기준으로(막대 바로 위). */
+/* 세션 툴팁 — .vt-tip 스타일 재사용, 위치만 인라인 top 기준으로(막대 바로 위). 캐러셀 뷰포트
+   (overflow hidden)에 안 잘리게 좌·우 여백을 툴팁 반폭 이상으로 잡고 카드 폭 안에 가둔다. */
 .own-tip {
   bottom: auto;
   transform: translate(-50%, calc(-100% - 6px));
+  left: clamp(82px, var(--tip-x, 50%), calc(100% - 82px));
+  max-width: 164px;
+  white-space: normal;
+  text-align: center;
 }
 .own-tip strong {
   border-bottom: 0;

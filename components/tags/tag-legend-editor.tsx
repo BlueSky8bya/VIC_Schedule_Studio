@@ -448,9 +448,12 @@ export function TagLegendEditor({
   }
 
   // 다른 '대분류'가 이미 쓰는 색인지(세부는 부모 색을 상속하므로 색 경쟁에서 제외).
+  // 색 중복은 같은 kind끼리만 막는다 — 콘텐츠는 콘텐츠끼리, 방식은 방식끼리 색이 달라야 한다.
+  // (콘텐츠는 카드 색, 방식은 점이라 서로 같은 색을 써도 헷갈리지 않는다.)
   function usedByOther(tagId: string, key: ColorKey) {
+    const myKind = draft[tagId]?.kind ?? "content";
     return Object.entries(draft).some(
-      ([id, d]) => id !== tagId && d.parentId === null && d.colorKey === key
+      ([id, d]) => id !== tagId && d.parentId === null && d.kind === myKind && d.colorKey === key
     );
   }
 

@@ -100,9 +100,19 @@ export async function saveTagsAction(input: {
   if (tops.some((u) => !u.colorKey)) {
     return { ok: false, error: "대분류 태그에 색상을 지정하세요." };
   }
-  const topColors = tops.map((u) => u.colorKey);
-  if (new Set(topColors).size !== topColors.length) {
-    return { ok: false, error: "같은 색상을 두 대분류에 쓸 수 없습니다." };
+  // 색 중복은 같은 kind끼리만 — 콘텐츠끼리/방식끼리 색이 달라야 한다(콘텐츠=카드 색, 방식=점이라
+  // 서로 다른 종류면 같은 색을 써도 헷갈리지 않는다).
+  const byKind = new Map<string, string[]>();
+  for (const u of tops) {
+    const k = u.kind === "modifier" ? "modifier" : "content";
+    const arr = byKind.get(k) ?? [];
+    arr.push(u.colorKey);
+    byKind.set(k, arr);
+  }
+  for (const arr of byKind.values()) {
+    if (new Set(arr).size !== arr.length) {
+      return { ok: false, error: "같은 종류(콘텐츠/방식) 안에서 같은 색을 두 태그에 쓸 수 없습니다." };
+    }
   }
 
   const supabase = await createSupabaseServerClient();
