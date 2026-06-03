@@ -4285,6 +4285,7 @@
 .tp-head {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
 }
 .tp-search {
@@ -4315,10 +4316,10 @@
   font-weight: 900;
   color: #6b5b95;
 }
-/* flat 콘텐츠 칩 묶음 — 부드러운 패널 안에 칩 wrap. */
+/* 콘텐츠 칩 묶음 — 균등 그리드(칩이 칸을 꽉 채워 좌·우 정렬, 마지막 줄도 안 비뚤어짐). */
 .tp-content {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   gap: 7px;
   max-height: 300px;
   overflow: auto;
@@ -4343,17 +4344,29 @@
   margin-bottom: 8px;
   font-size: 12px;
   font-weight: 900;
+  color: #6b6385;
+}
+.tp-mod-section .tp-section-label {
   color: #8a6d36;
 }
 .tp-section-label span {
   font-size: 10.5px;
   font-weight: 600;
+  color: #b3acc4;
+}
+.tp-mod-section .tp-section-label span {
   color: #bba684;
 }
 .tp-mods {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   gap: 7px;
+}
+/* 그리드 칸을 꽉 채워 좌·우 균형. 가운데 정렬. */
+.tp-content .tp-chip,
+.tp-mods .tp-chip {
+  width: 100%;
+  justify-content: center;
 }
 .tp-mods .tp-chip {
   border-style: dashed;

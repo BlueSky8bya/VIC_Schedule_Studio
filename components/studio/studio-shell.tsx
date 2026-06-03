@@ -2362,30 +2362,44 @@ export function StudioShell({
               ) : null}
             <aside className="agenda-legend agenda-legend-studio" aria-label="색상 필터">
               <strong>색상 필터</strong>
-              {legendTags
-                .filter((t) => (t.parentId ?? null) === null)
-                .map((tag) => {
-                const color = palette.find((p) => p.key === tag.colorKey);
-                if (!color) return null;
-                const on = tagFilters.includes(tag.id);
+              {(() => {
+                const tops = legendTags.filter((t) => (t.parentId ?? null) === null);
+                const legendBtn = (tag: (typeof tops)[number]) => {
+                  const color = palette.find((p) => p.key === tag.colorKey);
+                  if (!color) return null;
+                  const on = tagFilters.includes(tag.id);
+                  return (
+                    <button
+                      aria-pressed={on}
+                      className={`agenda-legend-tag ${on ? "on" : ""} ${
+                        filtering && !on ? "dim" : ""
+                      }`}
+                      key={tag.id}
+                      onClick={() => toggleTagFilter(tag.id)}
+                      type="button"
+                    >
+                      <i
+                        data-color={color.key}
+                        style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+                      />
+                      {tag.displayName}
+                    </button>
+                  );
+                };
+                const content = tops.filter((t) => t.kind !== "modifier");
+                const mods = tops.filter((t) => t.kind === "modifier");
                 return (
-                  <button
-                    aria-pressed={on}
-                    className={`agenda-legend-tag ${on ? "on" : ""} ${
-                      filtering && !on ? "dim" : ""
-                    }`}
-                    key={tag.id}
-                    onClick={() => toggleTagFilter(tag.id)}
-                    type="button"
-                  >
-                    <i
-                      data-color={color.key}
-                      style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
-                    />
-                    {tag.displayName}
-                  </button>
+                  <>
+                    {content.map(legendBtn)}
+                    {mods.length > 0 ? (
+                      <>
+                        <span className="agenda-legend-sub">방식</span>
+                        {mods.map(legendBtn)}
+                      </>
+                    ) : null}
+                  </>
                 );
-              })}
+              })()}
               {/* 비공개(공개 아님) 일정만 골라보기 — 잠금 해제로 비공개가 보일 때만. */}
               {canReadPrivate ? (
                 <button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { BroadcastTag, ColorPaletteEntry } from "@/lib/domain/schedule-types";
 import { categoryColorKey } from "@/lib/calendar/month";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -23,9 +23,6 @@ export function TagPicker({
   max: number;
   disabled?: boolean;
 }) {
-  const [query, setQuery] = useState("");
-  const q = query.trim().toLowerCase();
-
   const colorOf = (tag: BroadcastTag) => {
     const ck = categoryColorKey(tag.id, tags) ?? tag.colorKey;
     return palette.find((p) => p.key === ck);
@@ -74,34 +71,18 @@ export function TagPicker({
   return (
     <div className="tag-picker2">
       <div className="tp-head">
-        <input
-          className="tp-search"
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="태그 검색…"
-          type="text"
-          value={query}
-        />
+        <span className="tp-section-label">콘텐츠</span>
         <span className="tp-count">
           {selectedIds.length}/{max}
         </span>
       </div>
-      <div className="tp-content">
-        {contentTags
-          .filter((t) => !q || t.displayName.toLowerCase().includes(q))
-          .map((t) => chip(t, false))}
-      </div>
-      {(() => {
-        const shownMods = q
-          ? modifierTags.filter((t) => t.displayName.toLowerCase().includes(q))
-          : modifierTags;
-        if (shownMods.length === 0) return null;
-        return (
-          <div className="tp-mod-section">
-            <div className="tp-section-label">방식 <span>어떻게 · 누구 · 얼마나</span></div>
-            <div className="tp-mods">{shownMods.map((t) => chip(t, false))}</div>
-          </div>
-        );
-      })()}
+      <div className="tp-content">{contentTags.map((t) => chip(t, false))}</div>
+      {modifierTags.length > 0 ? (
+        <div className="tp-mod-section">
+          <div className="tp-section-label">방식 <span>어떻게 · 누구 · 얼마나</span></div>
+          <div className="tp-mods">{modifierTags.map((t) => chip(t, false))}</div>
+        </div>
+      ) : null}
     </div>
   );
 }
