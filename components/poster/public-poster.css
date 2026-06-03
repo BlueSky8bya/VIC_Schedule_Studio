@@ -1821,6 +1821,7 @@
 /* 일정별 색상 박스 (태그 색) */
 .public-event {
   display: grid;
+  align-content: start; /* 칸을 채워 커져도(span) 제목은 항상 맨 위 — 옆 칸과 같은 줄에 정렬 */
   gap: 3px;
   border: 1px solid rgb(0 0 0 / 10%);
   border-radius: 8px;
