@@ -20,7 +20,7 @@ function hslToHex(h, s, l) {
   return `#${t(r)}${t(g)}${t(b)}`;
 }
 // 또렷한 캔디색(선명·적당 밝기) — 색마다 특색이 살게. 무늬가 덧대져도 산뜻.
-const mk = (h) => ({ bg: hslToHex(h, 85, 82), text: hslToHex(h, 55, 32), border: hslToHex(h, 72, 64) });
+const mk = (h) => ({ bg: hslToHex(h, 85, 82), text: hslToHex(h, 62, 27), border: hslToHex(h, 72, 64) });
 
 const t = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
 const e = {}; for (const l of t.split(/\r?\n/)) { const m = l.match(/^([A-Z0-9_]+)=(.*)$/); if (m) e[m[1]] = m[2]; }

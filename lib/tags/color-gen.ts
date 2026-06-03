@@ -163,7 +163,7 @@ export function generateTagColor(
   // 귀엽지만 또렷한 캔디색 — 선명하게(S 높게) + 너무 옅지 않게(L 적당) → 색마다 특색이 산다.
   const bgColor = hslToHex(hue, 85, 82); // 선명한 캔디 배경
   const borderColor = hslToHex(hue, 72, 64);
-  const textColor = hslToHex(hue, 55, 32); // 같은 hue의 또렷한 글씨
+  const textColor = hslToHex(hue, 62, 27); // 같은 hue의 진한 글씨(연한 배경 위 대비 확보)
   const rand = Math.random().toString(36).slice(2, 8);
   const key = `gen-${pat}-${rand}`;
   return { key, name: "새 색", bgColor, textColor, borderColor };
