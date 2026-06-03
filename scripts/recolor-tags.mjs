@@ -7,33 +7,34 @@
 import { readFileSync } from "node:fs";
 import { Client } from "pg";
 
-// 콘텐츠용 — '차분(cool·눈이 덜 가는)' → '선명(warm·강조)' 순. 자주 쓰는 태그(달력에 잔뜩 깔리는)는
-// 앞쪽 차분한 색을, 드문 태그는 뒤쪽 선명한 색을 받아 전체가 시끄럽지 않고 조화롭게 보인다.
-// 앞 6개(차분 묶음)는 서로 충분히 다른 hue(파랑·청록·초록·남보라·청록2·보라)라 고빈도끼리도 구분된다.
+// Catppuccin Latte 벤치마킹(스트리머·버튜버 감성 포근 파스텔). 공식 accent를 연한 bg 틴트 +
+// 진한 동색 글씨(라이트한 노랑·피치 accent는 글씨를 충분히 어둡게 보정해 대비 확보)로 변환.
+// '차분(cool) → 선명(warm)' 순 — 자주 쓰는 태그가 앞쪽 차분한 색을 받는다.
+// 앞 6(차분 묶음): 블루·틸·그린·라벤더·스카이·모브 — 서로 다른 hue라 고빈도끼리도 구분.
 const CONTENT = [
-  { n: "스카이", bg: "#bae6fd", text: "#0369a1", border: "#7dd3fc" },
-  { n: "틸", bg: "#99f6e4", text: "#0f766e", border: "#5eead4" },
-  { n: "그린", bg: "#bbf7d0", text: "#15803d", border: "#86efac" },
-  { n: "인디고", bg: "#c7d2fe", text: "#4338ca", border: "#a5b4fc" },
-  { n: "시안", bg: "#a5f3fc", text: "#0e7490", border: "#67e8f9" },
-  { n: "바이올렛", bg: "#ddd6fe", text: "#6d28d9", border: "#c4b5fd" },
-  { n: "블루", bg: "#bfdbfe", text: "#1d4ed8", border: "#93c5fd" },
-  { n: "라임", bg: "#d9f99d", text: "#4d7c0f", border: "#bef264" },
-  { n: "앰버", bg: "#fde68a", text: "#b45309", border: "#fcd34d" },
-  { n: "핑크", bg: "#fbcfe8", text: "#be185d", border: "#f9a8d4" },
-  { n: "로즈", bg: "#fecdd3", text: "#be123c", border: "#fda4af" },
-  { n: "오렌지", bg: "#fed7aa", text: "#c2410c", border: "#fdba74" },
-  { n: "푸시아", bg: "#f5d0fe", text: "#a21caf", border: "#f0abfc" }
+  { n: "블루", bg: "#cdddfd", text: "#1b54cc", border: "#9bbcfa" },
+  { n: "틸", bg: "#c5e6e8", text: "#0f6f74", border: "#8fcdd0" },
+  { n: "그린", bg: "#d3eccc", text: "#2e7d1f", border: "#a9d79f" },
+  { n: "라벤더", bg: "#dadffb", text: "#4e5fd0", border: "#b5c0f8" },
+  { n: "스카이", bg: "#c2e9fa", text: "#0379a8", border: "#88d3f3" },
+  { n: "모브", bg: "#e1d2fb", text: "#6f23d4", border: "#c3a6f6" },
+  { n: "사파이어", bg: "#c6e8ee", text: "#16707f", border: "#92d2dd" },
+  { n: "옐로우", bg: "#f7e6c8", text: "#9a6310", border: "#eecf99" },
+  { n: "피치", bg: "#ffdcc6", text: "#c2430a", border: "#fdb78c" },
+  { n: "핑크", bg: "#fad6ef", text: "#b83f96", border: "#f3b0e0" },
+  { n: "마룬", bg: "#fbd2d6", text: "#c01f2d", border: "#f4a3ab" },
+  { n: "레드", bg: "#f7ccd4", text: "#b00d30", border: "#ee99a6" },
+  { n: "플라밍고", bg: "#f7d6d6", text: "#c14a4a", border: "#efb0b0" }
 ];
-// 방식용 — 점(작은 원). 같은 '차분→선명' 원칙. 콘텐츠와 톤이 같아 함께 조화롭다.
+// 방식용 — 점(작은 원). 같은 '차분→선명' 원칙. Catppuccin accent를 더 진한 톤(보더=accent)으로.
 const MOD = [
-  { n: "블루", bg: "#93c5fd", text: "#1d4ed8", border: "#3b82f6" },
-  { n: "에메랄드", bg: "#6ee7b7", text: "#047857", border: "#10b981" },
-  { n: "시안", bg: "#67e8f9", text: "#0e7490", border: "#06b6d4" },
-  { n: "앰버", bg: "#fcd34d", text: "#b45309", border: "#f59e0b" },
-  { n: "오렌지", bg: "#fdba74", text: "#c2410c", border: "#f97316" },
-  { n: "퍼플", bg: "#d8b4fe", text: "#7e22ce", border: "#a855f7" },
-  { n: "레드", bg: "#fca5a5", text: "#b91c1c", border: "#ef4444" }
+  { n: "블루", bg: "#9bbcfa", text: "#1b54cc", border: "#1e66f5" },
+  { n: "그린", bg: "#a9d79f", text: "#2e7d1f", border: "#40a02b" },
+  { n: "사파이어", bg: "#92d2dd", text: "#16707f", border: "#209fb5" },
+  { n: "옐로우", bg: "#eecf99", text: "#9a6310", border: "#df8e1d" },
+  { n: "피치", bg: "#fdb78c", text: "#c2430a", border: "#fe640b" },
+  { n: "모브", bg: "#c3a6f6", text: "#6f23d4", border: "#8839ef" },
+  { n: "레드", bg: "#ee99a6", text: "#b00d30", border: "#d20f39" }
 ];
 const PATS = ["diag", "dots", "grid", "cross", "dash"];
 
@@ -88,10 +89,10 @@ for (let i = 0; i < content.length; i++) {
   console.log(`콘텐츠 ${content[i].display_name.padEnd(8)} ${String(content[i].uses).padStart(3)}회 → ${col.n} (${pat})`);
 }
 
-// 3) 휴뱅 — 중립 회색(slate) 고정
+// 3) 휴뱅 — Catppuccin Latte 중립 회색(surface) 고정
 await c.query(
   `insert into color_palette (calendar_id,key,name,bg_color,text_color,border_color,sort_order)
-   values ($1,'gray','회색','#e2e8f0','#475569','#cbd5e1',1) on conflict (calendar_id,key) do update
+   values ($1,'gray','회색','#dce0e8','#5c5f77','#bcc0cc',1) on conflict (calendar_id,key) do update
      set bg_color=excluded.bg_color, text_color=excluded.text_color, border_color=excluded.border_color`,
   [cal]
 );
