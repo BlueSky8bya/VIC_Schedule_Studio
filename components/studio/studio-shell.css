@@ -3181,26 +3181,27 @@
   font-size: 20px;
 }
 
-/* 색상 필터 — 콘텐츠 묶음 + 방식 묶음. 어느 화면(웹·모바일·시청자)에서나 칩이 줄바꿈(wrap)되어
-   가로 스크롤이 구조적으로 안 생긴다. 콘텐츠끼리/방식끼리 한 눈에 갈린다. */
+/* 색상 필터(웹 좌측 패널 전용) — 가로폭/세로 여백을 살려 '표처럼 세로 리스트'로. 콘텐츠 묶음 +
+   방식 묶음. 행에 마우스 올리면 강조, 켜진 행은 왼쪽 악센트 바. (모바일은 별도 레일이라 무관) */
 .studio-tag-legend {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 8px;
 }
 .tlg-group {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  flex-direction: column;
+  gap: 2px;
 }
 .tlg-mod {
   margin-top: 1px;
-  padding-top: 10px;
+  padding-top: 9px;
   border-top: 1px dashed var(--line, #e6e2f0);
 }
 .tlg-label {
   width: 100%;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
+  padding-left: 2px;
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0.06em;
@@ -3208,8 +3209,8 @@
 }
 .tlg-chips {
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  flex-direction: column;
+  gap: 2px;
   width: 100%;
 }
 /* 정적 안내(필터 토글 없을 때)의 span도 칩처럼 작게. */
@@ -3236,40 +3237,51 @@
   border-radius: 5px;
   background: repeating-linear-gradient(45deg, #cdd2db 0 3px, #eef1f6 3px 6px);
 }
-/* 색상 안내를 필터로 쓸 때(클릭 토글) — 알약 칩. */
+/* 색상 안내를 필터로 쓸 때(클릭 토글) — 전체폭 행(표처럼). 켜진 행은 왼쪽 악센트 바. */
 .tag-legend-filter {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   align-items: center;
-  gap: 6px;
-  border: 1px solid var(--line, #ece8f4);
-  border-radius: 999px;
-  background: #fbfaff;
-  padding: 6px 11px;
-  font-size: 14px;
+  gap: 8px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  padding: 7px 9px 7px 11px;
+  font-size: 14.5px;
   font-weight: 800;
   color: #3a3550;
   text-align: left;
   cursor: pointer;
   word-break: keep-all;
-  white-space: nowrap;
   transition: background 0.14s var(--ease, ease), border-color 0.14s var(--ease, ease),
-    transform 0.08s var(--ease, ease), box-shadow 0.14s var(--ease, ease);
+    transform 0.08s var(--ease, ease);
 }
 .tag-legend-filter i {
-  width: 14px;
-  height: 14px;
+  width: 15px;
+  height: 15px;
   border: 1px solid;
   border-radius: 5px;
   flex: 0 0 auto;
 }
 .tag-legend-filter.on {
-  border-color: var(--accent, #f5b81b);
+  border-color: var(--line, #ece8f4);
   background: var(--accent-soft, #fff3d2);
   color: var(--accent-strong, #a9760a);
-  box-shadow: 0 2px 8px -4px rgb(245 184 27 / 45%);
+}
+/* 켜진 행 왼쪽 악센트 바 */
+.tag-legend-filter.on::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent, #f5b81b);
 }
 .tag-legend-filter.dim {
-  opacity: 0.38;
+  opacity: 0.4;
 }
 .tag-legend-filter:active {
   transform: scale(0.95);
@@ -4540,24 +4552,41 @@ textarea:disabled {
     flex: 1 1 auto;
     width: auto;
   }
+  /* 모바일: 각 태그 = 카드(탭·구분 쉽게). 1줄=손잡이·이름·방식토글·삭제, 2줄=색 스와치(큼). */
+  .tag-editor .tag-editor-row {
+    padding: 10px 11px;
+    border: 1px solid var(--line, #eee7f6);
+    border-radius: 13px;
+    background: #fff;
+    box-shadow: 0 1px 3px -2px rgb(80 60 140 / 28%);
+  }
+  .tag-editor .tag-cat-group + .tag-cat-group {
+    margin-top: 8px;
+  }
+  .tag-editor .tag-editor-row .tag-kind-toggle {
+    order: 3;
+    padding: 6px 12px;
+    font-size: 13px;
+  }
   .tag-editor .tag-editor-row .tag-editor-remove,
   .tag-drag-ghost .tag-editor-remove {
-    order: 3;
-  }
-  /* 2줄: 색 스와치를 다음 줄 전체 폭으로. 일반 행은 작은 정사각형 한 줄에 모두 담는다. */
-  .tag-editor .tag-editor-row .tag-editor-swatches {
     order: 4;
+  }
+  /* 2줄: 색 스와치 — 다음 줄 전체 폭으로, 손가락 타깃 크게 wrap(kind 필터로 개수도 줄어 여유). */
+  .tag-editor .tag-editor-row .tag-editor-swatches {
+    order: 5;
     flex: 1 1 100%;
-    flex-wrap: nowrap;
-    gap: 3px;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding-top: 2px;
   }
   .tag-editor .tag-editor-row .tag-editor-swatches button {
-    flex: 1 1 0;
-    min-width: 0;
-    max-width: 18px;
-    height: 16px;
-    border-width: 1px;
-    border-radius: 3px;
+    flex: 0 0 auto;
+    width: 26px;
+    height: 26px;
+    max-width: none;
+    border-width: 1.5px;
+    border-radius: 7px;
   }
   /* 고스트(드래그 복제본)도 일반 행과 똑같이 한 줄. 색이 늘면(최대 20개) 정사각형이
      높이는 유지한 채 가로로 좁아져 직사각형이 되며 한 줄을 지킨다. */
