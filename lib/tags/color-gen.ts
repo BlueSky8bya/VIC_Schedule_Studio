@@ -160,10 +160,10 @@ export function generateTagColor(
     .map((p) => ({ hue: hexToHue(p.bgColor), pat: patternOf(p.key ?? "") }))
     .filter((e): e is { hue: number; pat: Pat } => e.hue !== null);
   const { hue, pat } = pickColorSlot(slots, opts);
-  // 귀엽고 화사한 파스텔 — 밝게(L 높게) + 선명하게(S 높게). 글자는 너무 어둡지 않게.
-  const bgColor = hslToHex(hue, 78, 90); // 화사한 연파스텔 배경
-  const borderColor = hslToHex(hue, 62, 74);
-  const textColor = hslToHex(hue, 52, 38); // 같은 hue의 또렷하지만 부드러운 글씨
+  // 귀엽지만 또렷한 캔디색 — 선명하게(S 높게) + 너무 옅지 않게(L 적당) → 색마다 특색이 산다.
+  const bgColor = hslToHex(hue, 85, 82); // 선명한 캔디 배경
+  const borderColor = hslToHex(hue, 72, 64);
+  const textColor = hslToHex(hue, 55, 32); // 같은 hue의 또렷한 글씨
   const rand = Math.random().toString(36).slice(2, 8);
   const key = `gen-${pat}-${rand}`;
   return { key, name: "새 색", bgColor, textColor, borderColor };

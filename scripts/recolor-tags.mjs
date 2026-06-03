@@ -19,8 +19,8 @@ function hslToHex(h, s, l) {
   const t = (v) => Math.round((v + m) * 255).toString(16).padStart(2, "0");
   return `#${t(r)}${t(g)}${t(b)}`;
 }
-// 화사 파스텔(밝고 선명). 무늬 콘텐츠는 위에 옅은 무늬가 덧대져도 산뜻하게.
-const mk = (h) => ({ bg: hslToHex(h, 78, 90), text: hslToHex(h, 52, 38), border: hslToHex(h, 62, 74) });
+// 또렷한 캔디색(선명·적당 밝기) — 색마다 특색이 살게. 무늬가 덧대져도 산뜻.
+const mk = (h) => ({ bg: hslToHex(h, 85, 82), text: hslToHex(h, 55, 32), border: hslToHex(h, 72, 64) });
 
 const t = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
 const e = {}; for (const l of t.split(/\r?\n/)) { const m = l.match(/^([A-Z0-9_]+)=(.*)$/); if (m) e[m[1]] = m[2]; }
@@ -49,8 +49,9 @@ const tags = (await c.query(
 )).rows;
 
 // 귀여운 hue 모음(칙칙한 카키/올리브 회피). 콘텐츠/방식은 서로 다른 풀.
-const CONTENT_HUES = [350, 16, 38, 52, 96, 135, 168, 190, 205, 232, 262, 305, 322, 8];
-const MOD_HUES = [330, 28, 58, 150, 196, 248, 288, 12, 178];
+// 넓게 벌린 hue(서로 충분히 떨어져 한 눈에 구분). 콘텐츠/방식은 다른 풀.
+const CONTENT_HUES = [2, 30, 52, 82, 120, 150, 175, 198, 222, 258, 292, 325];
+const MOD_HUES = [16, 65, 135, 188, 235, 275, 345];
 const PATS = ["diag", "dots", "grid", "cross", "dash"];
 
 const mods = tags.filter((x) => x.kind === "modifier");
