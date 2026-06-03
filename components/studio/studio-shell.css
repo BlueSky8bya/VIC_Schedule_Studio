@@ -4323,10 +4323,11 @@
   color: #6b5b95;
 }
 /* 콘텐츠 칩 묶음 — 균등 그리드(칩이 칸을 꽉 채워 좌·우 정렬, 마지막 줄도 안 비뚤어짐). */
+/* 모바일 기본: 2열 큰 칩(엄지로 누르기 편하게). 웹은 아래 미디어쿼리서 흐르는 격자로 바뀐다. */
 .tp-content {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
   max-height: 300px;
   overflow: auto;
   overscroll-behavior: contain;
@@ -4335,13 +4336,13 @@
   border-radius: 14px;
   background: linear-gradient(180deg, #fffefb, #faf8fd);
 }
-/* 방식 칸 — 콘텐츠와 다른 톤(앰버)의 패널 + 점선 칩으로 "얹는 것"임을 보인다. */
+/* 방식 칸 — 콘텐츠와 다른 묶음임을 점선·중립 톤으로만 표시(방식 색이 제각각이라 칸은 안 튀게). */
 .tp-mod-section {
   margin-top: 10px;
   padding: 10px 11px 11px;
-  border: 1px dashed #e2d6bf;
+  border: 1px dashed var(--line, #e2dff0);
   border-radius: 14px;
-  background: linear-gradient(180deg, #fffdf6, #fbf6ea);
+  background: linear-gradient(180deg, #fcfbff, #f6f4fb);
 }
 .tp-section-label {
   display: flex;
@@ -4352,27 +4353,22 @@
   font-weight: 900;
   color: #6b6385;
 }
-.tp-mod-section .tp-section-label {
-  color: #8a6d36;
-}
 .tp-section-label span {
   font-size: 10.5px;
   font-weight: 600;
   color: #b3acc4;
 }
-.tp-mod-section .tp-section-label span {
-  color: #bba684;
-}
 .tp-mods {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 7px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
 }
-/* 그리드 칸을 꽉 채워 좌·우 균형. 가운데 정렬. */
+/* 그리드 칸을 꽉 채워 좌·우 균형. 가운데 정렬. 모바일은 손가락 타깃 크게. */
 .tp-content .tp-chip,
 .tp-mods .tp-chip {
   width: 100%;
   justify-content: center;
+  min-height: 42px;
 }
 .tp-mods .tp-chip {
   border-style: dashed;
@@ -4427,15 +4423,24 @@
   animation: tp-pop 0.22s var(--ease, ease);
 }
 /* 웹: 넉넉한 칩 + 호버 떠오름·글로우, 패널 여유(가로폭 활용). */
+/* 웹: 가로폭 활용 — 흐르는 격자(여러 열) + 호버 떠오름. 칩은 큰 터치타깃 불필요. */
 @media (min-width: 641px) {
   .tp-search {
     font-size: 15px;
     min-height: 42px;
   }
   .tp-content {
+    grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
     gap: 8px;
     padding: 13px;
     max-height: 384px;
+  }
+  .tp-mods {
+    grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
+  }
+  .tp-content .tp-chip,
+  .tp-mods .tp-chip {
+    min-height: 0;
   }
   .tp-chip {
     font-size: 14px;
@@ -4450,16 +4455,15 @@
     transform: translateY(-2px) scale(1.02);
   }
 }
-/* 모바일: 컴팩트·큰 터치타깃, 방식 부제는 숨겨 폭을 아낀다. */
+/* 모바일: 2열 큰 칩(엄지존) — 부제는 숨겨 폭을 아낀다. */
 @media (max-width: 640px) {
   .tp-content {
     padding: 9px;
-    max-height: 244px;
+    max-height: 248px;
   }
   .tp-chip {
-    padding: 8px 13px;
-    font-size: 13.5px;
-    min-height: 34px;
+    padding: 8px 12px;
+    font-size: 14px;
   }
   .tp-section-label span {
     display: none;
