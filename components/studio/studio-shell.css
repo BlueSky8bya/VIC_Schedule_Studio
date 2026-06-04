@@ -6887,6 +6887,34 @@ textarea:disabled {
   font-size: 13px;
 }
 
+/* 미리보기(시청자 화면) 중 '편집실로 가기' — 모바일 우하단 FAB(엄지존). 우상단 제목 옆은
+   엄지가 멀어 누르기 힘들던 문제 해소. 하단 월이동 바 위에 떠서 안 겹친다. */
+.viewer-back-fab {
+  position: fixed;
+  right: 12px;
+  bottom: calc(74px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 46px;
+  padding: 0 16px;
+  border: 1px solid rgb(227 214 187 / 80%);
+  border-radius: 999px;
+  background: rgb(255 250 240 / 92%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--accent-strong, #a9760a);
+  font-size: 14px;
+  font-weight: 800;
+  box-shadow: 0 8px 20px rgb(74 53 0 / 22%);
+  cursor: pointer;
+  transition: transform var(--dur-1, 120ms) var(--ease);
+}
+.viewer-back-fab:active {
+  transform: scale(0.94);
+}
+
 /* 하단 엄지존 액션레일 — 옛 '< >' 자리. 핵심 버튼을 바닥에 모아 한 손으로 누르기 쉽게.
    가운데는 통과(일정 보임), 버튼만 클릭. 버튼들은 남는 폭을 고르게 나눠 한 줄. */
 .m-actionrail {
@@ -6943,16 +6971,42 @@ textarea:disabled {
 .agenda-rail {
   flex: 0 0 92px;
   position: sticky;
-  /* 역할 바(계정변경) 바로 밑에 딱 붙지 않게 ~16px 띄워 함께 스크롤되게 한다. */
-  top: 112px;
-  align-self: flex-start; /* 내용 높이 + 위 정렬(stretch 아님) — sticky가 의미 있게 동작 */
+  top: 88px;
+  align-self: flex-start;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  /* 고정 헤더 아래~하단 월 이동 바 직전까지. 길면 안쪽 필터가 내부 스크롤. */
-  max-height: calc(100vh - 184px);
-  max-height: calc(100dvh - 184px);
+  /* 고정 '높이'(가변 아님) — 색상 필터가 '필터 해제' 버튼 등으로 늘었다 줄었다 해도 그 변화는
+     필터 안쪽 스크롤로 흡수되고, 맨 아래 인사이트 버튼은 항상 같은 자리에 고정(왔다갔다 X).
+     아래 80px은 하단 액션레일 자리를 비워 인사이트 버튼이 가리지 않게. */
+  height: calc(100vh - 168px);
+  height: calc(100dvh - 168px);
+}
+/* 레일 맨 위 역할 배지 — 색상 필터 폭(92px)에 맞춰 한 줄, 가운데 정렬. */
+.agenda-rail .actor-badge-wrap {
+  flex: 0 0 auto;
+  width: 100%;
+  position: relative;
+}
+.agenda-rail .actor-badge {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
+  justify-content: center;
+}
+.agenda-rail .actor-badge strong {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 도움말 팝오버는 좁은 레일을 넘어 왼쪽으로 펼친다(오른쪽 끝 정렬, 충분한 폭). */
+.agenda-rail .role-help-pop {
+  left: auto;
+  right: 0;
+  width: min(78vw, 300px);
+  z-index: 20;
 }
 /* 레일이 sticky를 맡으므로 필터 자체 sticky는 풀고(static), 남는 높이를 채워 내부 스크롤한다.
    행 기준 flex(0 0 92px=컬럼에선 높이 고정)도 풀고 레일 폭(92px)을 채운다. */

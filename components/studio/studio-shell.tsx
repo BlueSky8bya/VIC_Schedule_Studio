@@ -778,6 +778,8 @@ export function StudioShell({
   const roleDisplay = isDualRole
     ? {
         label: "매니저 · 작업자",
+        // 모바일 레일(92px)에선 배지가 색상 필터 폭을 넘지 않게 짧게. 팝오버 제목은 full(label).
+        badgeLabel: "매니저+",
         summary: isNarrow ? "방송 운영을 도와요." : "방송 운영과 꾸미기를 함께 도와요.",
         can: dropDecorate([
           "업 도움 기간·링크 수정",
@@ -788,6 +790,7 @@ export function StudioShell({
       }
     : {
         label: ROLE_LABEL[effectiveRole],
+        badgeLabel: ROLE_LABEL[effectiveRole],
         summary:
           isNarrow && effectiveRole === "worker"
             ? "제작을 도와요."
@@ -981,7 +984,7 @@ export function StudioShell({
           onClick={() => setRoleHelpOpen((value) => !value)}
           type="button"
         >
-          <strong>{roleDisplay.label}</strong>
+          <strong>{roleDisplay.badgeLabel}</strong>
           <span className="role-help-q" aria-hidden="true">
             ?
           </span>
@@ -2479,11 +2482,6 @@ export function StudioShell({
               {renderSaveStatus()}
             </header>
 
-            {/* 상단엔 '시각 정보'인 역할 배지만 둔다. 누르는 버튼(미리보기·비공개·계정변경)은
-                엄지 닿는 하단 액션레일(.m-actionrail)로 내렸다. */}
-            <div className="m-rolebar">
-              {renderRoleBadge()}
-            </div>
           </div>
 
           {/* 인사이트 진입(개발자·관리자·매니저·작업자)은 아래 색상 필터 레일 맨 위로 옮겼다. */}
@@ -2509,6 +2507,8 @@ export function StudioShell({
           >
             {/* 오른쪽 레일: (위) 인사이트 진입 버튼 + (아래) 색상 필터 — 같은 92px 폭으로 세로로 쌓는다(편집실). */}
             <div className="agenda-rail">
+              {/* 역할 배지(시각 정보)는 색상 필터 위에. */}
+              {renderRoleBadge()}
             <aside className="agenda-legend agenda-legend-studio" aria-label="색상 필터">
               <strong>색상 필터</strong>
               {(() => {
@@ -2821,12 +2821,21 @@ export function StudioShell({
         {/* 하단 엄지존 액션레일 — 옛 '< >' 자리. 월 이동은 좌우 스와이프로(달력을 쓸면 넘어감).
             누르기 쉬운 핵심 버튼(미리보기·비공개·계정변경)을 엄지 닿는 바닥에 모았다. */}
         <nav className="m-actionrail" aria-label="편집실 도구">
-          {isDeveloper ? (
-            renderPreviewControl()
+          {/* 왼쪽: 계정변경(로그인) — 미리보기와 위치 swap. */}
+          {actor.isAuthenticated ? (
+            <form action="/api/auth/logout" method="post">
+              <button
+                className="button"
+                onClick={() => startNav("계정 변경 중…")}
+                type="submit"
+              >
+                계정변경
+              </button>
+            </form>
           ) : (
-            <button className="button" onClick={() => enterViewerMode()} type="button">
-              시청자 화면
-            </button>
+            <Link className="button" href="/login">
+              로그인
+            </Link>
           )}
           {canTogglePrivateLayer ? (
             isEffectivelyOwner && canReadPrivate ? (
@@ -2843,20 +2852,13 @@ export function StudioShell({
               </button>
             )
           ) : null}
-          {actor.isAuthenticated ? (
-            <form action="/api/auth/logout" method="post">
-              <button
-                className="button"
-                onClick={() => startNav("계정 변경 중…")}
-                type="submit"
-              >
-                계정변경
-              </button>
-            </form>
+          {/* 오른쪽: 미리보기 / 시청자 화면 — 계정변경과 위치 swap. */}
+          {isDeveloper ? (
+            renderPreviewControl()
           ) : (
-            <Link className="button" href="/login">
-              로그인
-            </Link>
+            <button className="button" onClick={() => enterViewerMode()} type="button">
+              시청자 화면
+            </button>
           )}
         </nav>
 
@@ -3381,12 +3383,24 @@ export function StudioShell({
             <div className="viewer-preview-actions">{previewNav}</div>
           </div>
         ) : null}
+        {/* 모바일: '편집실로 가기'를 제목 우상단(엄지 멀다) 대신 우하단 FAB로 — 미리보기 중에만.
+            (꾸미기는 PC 전용이라 모바일 previewNav엔 편집실 버튼뿐 → FAB 하나로 대체.) */}
+        {isNarrow ? (
+          <button
+            className="viewer-back-fab"
+            onClick={() => setViewerMode(false)}
+            type="button"
+          >
+            <ChevronLeft aria-hidden="true" size={18} />
+            편집실
+          </button>
+        ) : null}
         <PublicPoster
           initialMonth={view.month}
           initialNarrow={isNarrow}
           initialYear={view.year}
           onViewChange={(year, month) => setView({ year, month })}
-          previewNav={previewNav}
+          previewNav={isNarrow ? undefined : previewNav}
           previewNote={<span className="viewer-preview-note">미리보기 중..</span>}
           schedule={previewSchedule}
           toggleHeartAction={toggleEventHeartAction}
