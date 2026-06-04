@@ -124,6 +124,9 @@ type PublicPosterProps = {
   accountSwitch?: boolean;
   // 현재 로그인한 구글 이메일 — "계정변경" 옆에 표시해 어떤 계정으로 들어와 있는지 보여준다.
   accountEmail?: string | null;
+  // 비로그인(익명) 시청자 — 공개 포스터만 본다. 하트(서버 1인1하트)는 숨기고, 계정 칸은
+  // "계정변경"(로그아웃) 대신 Google 로그인 버튼으로 바꾼다.
+  anonymous?: boolean;
   // 시청자 미리보기(편집실 진입)일 때 제목 헤더(.agenda-header) 안에 띄우는 안내·이동 버튼.
   // 왼쪽 여백 칸에 안내, 오른쪽 칸에 이동 버튼 → 제목과 같은 자리에서 함께 sticky로 따라온다.
   previewNote?: ReactNode;
@@ -531,6 +534,7 @@ export function PublicPoster({
   toggleHeartAction,
   accountSwitch = false,
   accountEmail = null,
+  anonymous = false,
   previewNote,
   previewNav
 }: PublicPosterProps) {
@@ -831,6 +835,9 @@ export function PublicPoster({
   const [floaters, setFloaters] = useState<HeartFloater[]>([]);
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
   const interactive = !decorate;
+  // 하트(관심)는 로그인 시청자만 — 익명 시청자에겐 ♥ 토글/모아보기를 숨긴다(서버 1인1하트 불가).
+  // 색상 필터 등 다른 상호작용은 익명에게도 그대로 둔다.
+  const canHeart = interactive && !anonymous;
 
   // "시청자 화면 보기" 미리보기는 히스토리에 한 칸 쌓아, 휴대폰/브라우저 뒤로가기를 누르면
   // 페이지를 떠나지 않고 꾸미기로 돌아온다(편집실 오버레이 스택과 같은 방식).
@@ -2086,8 +2093,8 @@ export function PublicPoster({
             const { main, subs } = splitEventTitle(event.publicTitle);
             const span = getEventSpan(event, cell.isoDate, cell.weekday, schedule.events);
             const bookmarked = isBookmarked(event.id);
-            // 하트는 시작 칸(제목 보이는 칸)에서만, 시청자 상호작용 모드에서만 노출.
-            const showHeart = interactive && span.showTitle;
+            // 하트는 시작 칸(제목 보이는 칸)에서만, 로그인 시청자 상호작용 모드에서만 노출.
+            const showHeart = canHeart && span.showTitle;
             // #3: 관심 단계 배지 — 집계 기반, 숫자는 노출하지 않고 불꽃 게이지로(시청자 화면 전용).
             const tier =
               interactive && span.showTitle
@@ -2278,16 +2285,18 @@ export function PublicPoster({
                 </>
               );
             })()}
-            {/* 웹처럼 '내 관심 일정 ♥'도 같은 자리에서 함께 거른다. */}
-            <button
-              aria-pressed={bookmarkedOnly}
-              className={`agenda-legend-tag heart ${bookmarkedOnly ? "on" : ""}`}
-              onClick={() => setBookmarkedOnly((v) => !v)}
-              type="button"
-            >
-              <LiquidHeart ratio={interestRatio} />
-              내 관심
-            </button>
+            {/* 웹처럼 '내 관심 일정 ♥'도 같은 자리에서 함께 거른다(로그인 시청자만). */}
+            {canHeart ? (
+              <button
+                aria-pressed={bookmarkedOnly}
+                className={`agenda-legend-tag heart ${bookmarkedOnly ? "on" : ""}`}
+                onClick={() => setBookmarkedOnly((v) => !v)}
+                type="button"
+              >
+                <LiquidHeart ratio={interestRatio} />
+                내 관심
+              </button>
+            ) : null}
             {filterActive ? (
               <button className="agenda-legend-clear" onClick={clearFilters} type="button">
                 필터 해제
@@ -2404,7 +2413,7 @@ export function PublicPoster({
                               ) : null}
                               {support ? `🌱 ${event.publicTitle}` : main}
                             </span>
-                            {interactive && !support ? (
+                            {canHeart && !support ? (
                               <button
                                 aria-label={bookmarked ? "관심 해제" : "관심 일정"}
                                 aria-pressed={bookmarked}
@@ -2531,7 +2540,17 @@ export function PublicPoster({
               <span className="title-spark" aria-hidden="true">✨️</span>
             </h1>
             {/* 미리보기 이동 버튼(편집실)은 제목 우측이 아니라 색상 필터 박스 아래로 옮겼다(엄지존). */}
-            {accountSwitch ? (
+            {accountSwitch && anonymous ? (
+              // 익명 시청자: 로그아웃 대신 Google 로그인 진입.
+              <form action="/api/auth/login" className="agenda-account" method="post">
+                <input name="next" type="hidden" value="/" />
+                <button onClick={() => startNav(isNarrow ? "로그인 중…" : "로그인 화면으로 이동 중입니다…")} type="submit">
+                  <span style={{ whiteSpace: "pre-line", lineHeight: 1.12, textAlign: "center" }}>
+                    로그인
+                  </span>
+                </button>
+              </form>
+            ) : accountSwitch ? (
               <form action="/api/auth/logout" className="agenda-account" method="post">
                 <button onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")} type="submit">
                   {/* 모바일은 폭이 좁아 넘칠 수 있어 "계정/변경" 2줄로 — 버튼이 좁아져 잘 들어간다. */}
@@ -2558,7 +2577,7 @@ export function PublicPoster({
                 그 가운데 자리에 '내 관심(♥)' 토글을 둔다 — 계정변경/미리보기 바와 같은 줄이라
                 세로 공간을 안 먹어 포스터가 줄지 않고, 포스터 표면(캡쳐 캔버스) 밖이라 스티커
                 좌표도 안전하다. 상호작용(시청자/미리보기) 모드에서만(꾸미기·캡쳐 제외). */}
-            {interactive ? (
+            {canHeart ? (
               <div className="poster-interest">
                 <button
                   aria-pressed={bookmarkedOnly}
@@ -2613,7 +2632,19 @@ export function PublicPoster({
                   )}
                 </>
               ) : null}
-              {accountSwitch ? (
+              {accountSwitch && anonymous ? (
+                // 익명 시청자: 로그아웃 대신 Google 로그인 진입.
+                <form className="account-form" action="/api/auth/login" method="post">
+                  <input name="next" type="hidden" value="/" />
+                  <button
+                    className="button"
+                    onClick={() => startNav(isNarrow ? "로그인 중…" : "로그인 화면으로 이동 중입니다…")}
+                    type="submit"
+                  >
+                    로그인
+                  </button>
+                </form>
+              ) : accountSwitch ? (
                 <form className="account-form" action="/api/auth/logout" method="post">
                   {accountEmail ? (
                     <PlainEmail className="account-email" title={accountEmail} value={accountEmail} />

@@ -14,22 +14,38 @@ import { getUnlockState } from "@/lib/private-layer/unlock";
 export default async function HomePage() {
   const actor = await resolveCurrentActor("vic");
 
-  if (!actor.isAuthenticated) {
-    const ua = (await headers()).get("user-agent") ?? "";
-    const inApp = detectInAppBrowser(ua);
-    return (
-      <AuthFirstPage
-        configured={isSupabaseConfigured()}
-        initialInApp={inApp.inApp}
-        initialAndroid={inApp.android}
-      />
-    );
-  }
-
   // 새로고침 복원: 쿠키에서 직전 화면 상태를 읽어 서버 렌더 초기값으로 넘긴다(깜빡임 없음).
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
   // 휴대폰이면 모바일 레이아웃을 서버에서 처음부터 그려 데스크톱 레이아웃 깜빡임을 없앤다.
   const narrow = isMobileUserAgent((await headers()).get("user-agent") ?? "");
+
+  // 비로그인(익명) 진입 — 공개 포스터만 보여준다. 비공개/엠바고/작업자 레이어는 그대로
+  // 로그인+패스코드가 필요(권한·RLS·언락 게이트는 손대지 않음). Supabase 미설정 환경에서는
+  // 공개 데이터(익명 읽기 클라)도 못 불러오므로 기존 로그인 안내 화면을 그대로 띄운다.
+  if (!actor.isAuthenticated) {
+    if (!isSupabaseConfigured()) {
+      const ua = (await headers()).get("user-agent") ?? "";
+      const inApp = detectInAppBrowser(ua);
+      return (
+        <AuthFirstPage
+          configured={false}
+          initialInApp={inApp.inApp}
+          initialAndroid={inApp.android}
+        />
+      );
+    }
+    const schedule = await getPublicSchedule("vic");
+    return (
+      <PublicPoster
+        accountSwitch
+        anonymous
+        initialYear={typeof mem.sy === "number" ? mem.sy : undefined}
+        initialMonth={typeof mem.sm === "number" ? mem.sm : undefined}
+        initialNarrow={narrow}
+        schedule={schedule}
+      />
+    );
+  }
 
   // 시청자가 아닌 모든 인증 사용자(owner/developer/manager/worker)는 스튜디오로.
   // 스튜디오 내부에서 역할별 편집/열람 권한을 다시 제어한다.
