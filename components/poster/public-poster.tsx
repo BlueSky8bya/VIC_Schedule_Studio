@@ -83,6 +83,7 @@ import {
 } from "@/lib/calendar/month";
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { markContentReady } from "@/lib/presence/content-ready";
+import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -1972,6 +1973,27 @@ export function PublicPoster({
     setNavMsg(message);
     window.setTimeout(() => setNavMsg(null), 8000);
   }
+  // 모바일 익명 로그인: /login 카드를 거치지 않고 클릭 시점에 환경을 분기한다.
+  //  · 일반 브라우저 → 기본 폼 제출(/api/auth/login) → 곧장 구글 계정 선택창.
+  //  · 안드로이드 웹뷰(숲·카톡) → 크롬 인텐트로 /login을 열면 거기서 자동 제출 → 구글 계정 선택창.
+  //  · iOS 등 웹뷰 → 자동 전환 불가 → /login의 외부 브라우저 안내 카드로 보낸다.
+  function handleMobileLogin(e: ReactMouseEvent<HTMLButtonElement>) {
+    const det = detectInAppBrowser(typeof navigator !== "undefined" ? navigator.userAgent : "");
+    if (!det.inApp) {
+      startNav("Google 계정으로 이동 중…");
+      return; // 폼 기본 제출(action=/api/auth/login)에 맡긴다.
+    }
+    e.preventDefault();
+    if (det.android) {
+      startNav("Chrome으로 여는 중…");
+      const target = `${window.location.origin}/login?next=${encodeURIComponent("/")}`;
+      const bare = target.replace(/^https?:\/\//, "");
+      window.location.replace(`intent://${bare}#Intent;scheme=https;package=com.android.chrome;end`);
+    } else {
+      startNav("로그인 안내 화면으로 이동 중…");
+      window.location.assign(`/login?next=${encodeURIComponent("/")}`);
+    }
+  }
   function moveMonth(offset: number) {
     didNavigateRef.current = true;
     setMonthDir(offset >= 0 ? "next" : "prev");
@@ -2541,27 +2563,24 @@ export function PublicPoster({
             </h1>
             {/* 미리보기 이동 버튼(편집실)은 제목 우측이 아니라 색상 필터 박스 아래로 옮겼다(엄지존). */}
             {accountSwitch ? (
-              // 이 헤더는 모바일 전용(agenda-header, showAgenda=isNarrow). 모바일만 숲·카톡
-              // 웹뷰가 있으므로, 익명 로그인은 /login으로 GET 보내 거기 InAppBrowserNotice가
-              // Android→Chrome 인텐트 / iOS→외부 브라우저 안내로 탈출시키게 한다(웹은 직접 POST).
+              // 이 헤더는 모바일 전용(agenda-header, showAgenda=isNarrow). 익명 로그인은
+              // /api/auth/login으로 바로 POST하되, 클릭 시점에 handleMobileLogin이 환경을
+              // 분기한다 — 일반 브라우저는 그대로 제출(곧장 구글 계정 선택창), 안드로이드 웹뷰는
+              // 크롬 인텐트, iOS 웹뷰는 /login 외부 브라우저 안내 카드로 보낸다.
               <form
-                action={anonymous ? "/login" : "/api/auth/logout"}
+                action={anonymous ? "/api/auth/login" : "/api/auth/logout"}
                 className="agenda-account"
-                method={anonymous ? "get" : "post"}
+                method="post"
               >
                 {anonymous ? <input name="next" type="hidden" value="/" /> : null}
                 <button
-                  onClick={() =>
-                    startNav(
-                      anonymous
-                        ? isNarrow
-                          ? "로그인 중…"
-                          : "로그인 화면으로 이동 중입니다…"
-                        : isNarrow
-                          ? "계정 변경 중…"
-                          : "계정 선택 화면으로 이동 중입니다…"
-                    )
-                  }
+                  onClick={(e) => {
+                    if (anonymous) {
+                      handleMobileLogin(e);
+                    } else {
+                      startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…");
+                    }
+                  }}
                   type="submit"
                 >
                   {/* 모바일은 폭이 좁아 넘칠 수 있어 "계정/변경" 2줄로 — 버튼이 좁아져 잘 들어간다. */}
@@ -3572,14 +3591,18 @@ export function PublicPoster({
         {isNarrow ? (
           <div className="mb-center">
             {interactive ? (
+              // 위치 보존을 위해 '오늘'과 함께 항상 자리에 두되, 비로그인(익명)이면
+              // 관심(서버 1인1하트)은 못 쓰므로 회색 비활성으로 둔다.
               <button
-                aria-pressed={bookmarkedOnly}
-                className={`mb-act ${bookmarkedOnly ? "on" : ""}`}
+                aria-pressed={canHeart ? bookmarkedOnly : undefined}
+                className={`mb-act ${canHeart && bookmarkedOnly ? "on" : ""}`}
+                disabled={!canHeart}
                 onClick={() => {
+                  if (!canHeart) return;
                   hapticTick();
                   setBookmarkedOnly((v) => !v);
                 }}
-                title="내가 ♥ 누른 일정만 보기"
+                title={canHeart ? "내가 ♥ 누른 일정만 보기" : "로그인하면 관심 일정을 모아볼 수 있어요"}
                 type="button"
               >
                 <Heart aria-hidden="true" size={18} />
