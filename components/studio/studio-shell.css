@@ -2886,6 +2886,9 @@
   grid-template-columns: 188px minmax(0, 1fr) 0px;
   gap: 0;
   padding: 18px;
+  /* 편집 패널(오른쪽)이 업 도움 등으로 길어져도 가운데 달력이 따라 늘어나지 않게 — 각 칸이 제
+     높이를 갖는다(기본 stretch면 가장 큰 칸 높이에 달력이 끌려 늘어났다). */
+  align-items: start;
   transition: grid-template-columns 0.28s ease;
 }
 /* 날짜를 선택하면 우측 카드(폼 372 + 좌측 간격 18)가 밀고 들어온다. */
@@ -3388,6 +3391,12 @@
 }
 /* 필터에 안 맞는 일정은 흐리게(편집실 그리드·모바일 아젠다 공용) */
 .studio-event-pill.filter-dim,
+/* 미정(모바일 아젠다) — 레이아웃 안 밀리게 점선 outline + 제목 앞 '미정' 칩(공용 .evt-tentative). */
+.agenda-event.tentative {
+  outline: 1.5px dashed rgb(0 0 0 / 26%);
+  outline-offset: -2px;
+  border-radius: 12px;
+}
 .agenda-event.filter-dim {
   opacity: 0.26;
   filter: grayscale(0.5);

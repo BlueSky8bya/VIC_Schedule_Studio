@@ -326,6 +326,8 @@ export function StudioShell({
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   const [lastSavedKst, setLastSavedKst] = useState<string | null>(null);
   const savingCountRef = useRef(0); // 동시 진행 쓰기 수 — 0이 될 때 최종 상태 확정
+  const savingSinceRef = useRef(0); // 저장 묶음 시작 시각(‘저장 중’ 최소 노출)
+  const savedTimerRef = useRef<number | null>(null);
   function nowKstHm(): string {
     return new Date().toLocaleTimeString("ko-KR", {
       timeZone: "Asia/Seoul",
@@ -333,6 +335,30 @@ export function StudioShell({
       minute: "2-digit",
       hour12: false
     });
+  }
+  // 저장 상태 칩 — 데스크톱 헤더·모바일 역할바 양쪽에서 같은 모양으로 쓴다.
+  function renderSaveStatus() {
+    return (
+      <span
+        className={`save-status ${saveState}`}
+        aria-live="polite"
+        title={
+          saveState === "failed"
+            ? "저장에 실패했어요. 잠시 후 다시 시도해 주세요"
+            : saveState === "saving"
+              ? "저장 중이에요"
+              : lastSavedKst
+                ? `마지막 저장 ${lastSavedKst} KST`
+                : "변경사항이 저장돼 있어요"
+        }
+      >
+        <span className="ss-dot" aria-hidden="true" />
+        <em>
+          {saveState === "saving" ? "저장 중…" : saveState === "failed" ? "저장 실패" : "저장됨"}
+        </em>
+        {saveState === "saved" && lastSavedKst ? <b className="ss-time">{lastSavedKst}</b> : null}
+      </span>
+    );
   }
   // 비밀번호 확인 후 팝업이 닫히고 비공개 일정이 서버에서 다시 불러와지는 동안 "불러오는 중" 표시.
   const [loadingPrivate, startLoadingPrivate] = useTransition();
@@ -380,10 +406,29 @@ export function StudioShell({
   // 모든 중대한 쓰기는 이 래퍼를 거친다 — 모듈 함수(postStudioWrite)로 실제 전송하되
   // 진행 중 약속을 inflight 집합에 등록/해제해, flushPendingWrites가 끝까지 기다릴 수 있게 한다.
   function studioWrite(op: string, payload: unknown): Promise<StudioWriteResult> {
+    if (savingCountRef.current === 0) {
+      savingSinceRef.current = Date.now(); // 이번 저장 묶음 시작 시각(최소 노출 시간 계산용)
+    }
+    if (savedTimerRef.current) {
+      window.clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = null;
+    }
     savingCountRef.current += 1;
     setSaveState("saving");
     const p = postStudioWrite(op, payload);
     inflightWritesRef.current.add(p);
+    // 낙관적 저장은 너무 빨라(특히 새 일정 생성) '저장 중'이 안 보일 수 있다 → 최소 ~450ms 노출.
+    const settleSaved = () => {
+      if (savingCountRef.current !== 0) return;
+      const elapsed = Date.now() - savingSinceRef.current;
+      if (elapsed >= 450) {
+        setSaveState("saved");
+      } else {
+        savedTimerRef.current = window.setTimeout(() => {
+          if (savingCountRef.current === 0) setSaveState("saved");
+        }, 450 - elapsed);
+      }
+    };
     void p.then(
       (r) => {
         savingCountRef.current = Math.max(0, savingCountRef.current - 1);
@@ -391,8 +436,7 @@ export function StudioShell({
           setSaveState("failed"); // 실패는 칩에 빨갛게 + 호출부가 inline 경고도 띄운다(#12)
         } else {
           setLastSavedKst(nowKstHm());
-          // 진행 중 쓰기가 모두 끝났을 때만 '저장됨' 확정(이전 실패도 성공 저장이 들어오면 해제).
-          if (savingCountRef.current === 0) setSaveState("saved");
+          if (savingCountRef.current === 0) settleSaved();
         }
       },
       () => {
@@ -2396,6 +2440,7 @@ export function StudioShell({
             </header>
 
             <div className="m-rolebar">
+              {renderSaveStatus()}
               {renderRoleBadge()}
               {/* 미리보기 드롭다운(개발자)/시청자 화면을 먼저, 비공개 일정 토글을 그 뒤에(위치 swap). */}
               {isDeveloper ? (
@@ -2590,6 +2635,7 @@ export function StudioShell({
                             ? { background: colors[0].bgColor }
                             : undefined;
                       const dimCls = isDimmedByFilter(event) ? " filter-dim" : "";
+                      const tentCls = event.isTentative ? " tentative" : ""; // 미정: 점선 테두리
                       // 업 도움: 시청자 화면처럼 기간 + "도우러 가기" 링크를 인라인으로 보여준다.
                       // (링크를 누르려면 <a>가 필요해 편집 버튼으로 감싸지 않고, 따로 "수정"을 둔다.)
                       if (event.isSupport) {
@@ -2659,6 +2705,9 @@ export function StudioShell({
                           <div className="agenda-content">
                             <p className="agenda-title">
                               <span className="agenda-title-text">
+                                {!event.isSupport && event.isTentative ? (
+                                  <span className="evt-tentative">미정</span>
+                                ) : null}
                                 {event.isSupport ? `🌱 ${event.publicTitle}` : main}
                               </span>
                               {event.visibilityScope !== "public" ? (
@@ -2687,7 +2736,7 @@ export function StudioShell({
                       );
                       return canEdit ? (
                         <button
-                          className={`agenda-event m-event${dimCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
+                          className={`agenda-event m-event${dimCls}${tentCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
                           key={event.id}
                           onClick={() => openMobileEdit(event)}
                           type="button"
@@ -2697,7 +2746,7 @@ export function StudioShell({
                       ) : canEditTagsThing ? (
                         // 매니저: 일정을 누르면 태그만 고치는 시트가 열린다(데스크톱 상세의 태그 편집과 동치).
                         <button
-                          className={`agenda-event m-event${dimCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
+                          className={`agenda-event m-event${dimCls}${tentCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
                           key={event.id}
                           onClick={() => setTagSheetId(event.id)}
                           type="button"
@@ -3344,27 +3393,8 @@ export function StudioShell({
 
         {/* 오른쪽: 역할·도구 */}
         <div className="studio-role-tools">
-          {/* #10 저장 상태 — 모든 편집은 낙관적으로 즉시 저장되므로, 지금 상태(저장됨/중/실패)와
-              마지막 저장 시각(KST)을 항상 보여줘 "분명 바꿨는데 됐나?" 불안을 없앤다. */}
-          <span
-            className={`save-status ${saveState}`}
-            aria-live="polite"
-            title={
-              saveState === "failed"
-                ? "저장에 실패했어요. 잠시 후 다시 시도해 주세요"
-                : saveState === "saving"
-                  ? "저장 중이에요"
-                  : lastSavedKst
-                    ? `마지막 저장 ${lastSavedKst} KST`
-                    : "변경사항이 저장돼 있어요"
-            }
-          >
-            <span className="ss-dot" aria-hidden="true" />
-            <em>
-              {saveState === "saving" ? "저장 중…" : saveState === "failed" ? "저장 실패" : "저장됨"}
-            </em>
-            {saveState === "saved" && lastSavedKst ? <b className="ss-time">{lastSavedKst}</b> : null}
-          </span>
+          {/* #10 저장 상태 — 지금 상태(저장됨/중/실패) + 마지막 저장 KST를 항상 보여줘 불안 제거. */}
+          {renderSaveStatus()}
           {/* 미리보기 안내는 역할 배지("?") 설명 팝오버 안 작은 문구로 일원화(별도 플래그 제거). */}
           {renderRoleBadge()}
           {/* 개발자는 역할 미리보기 드롭다운, 그 외 역할은 시청자 화면 미리보기. */}
