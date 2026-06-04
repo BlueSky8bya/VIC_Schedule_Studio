@@ -1371,6 +1371,8 @@ export function StudioShell({
   // "유령(ghost)"이 손끝을 따라오고(웹·터치 공용), 가장자리에선 자동 스크롤된다.
   // (멀티데이 막대는 칸마다 쪼개 그려 드래그가 까다로워 제외 — 단일일 카드만 끌 수 있다.)
   const [dragEventId, setDragEventId] = useState<string | null>(null);
+  // #8: 이동 저장이 진행 중인 카드 id들 — 그 카드에 작은 '동기화 중' 표시를 띄운다(서버 반영 전).
+  const [syncingIds, setSyncingIds] = useState<string[]>([]);
 
   // A2 FLIP(형제 카드 활주) + A1 seam(연결/끊김 연출) — 순수 뷰 레이어. 낙관 상태·직렬 큐·prop
   // 동기화 가드엔 절대 손대지 않는다. transform/opacity만(합성). 드래그 중·just-saved·삭제 중인
@@ -1725,11 +1727,13 @@ export function StudioShell({
     orderedIds: string[];
   }) {
     pendingPersistRef.current += 1;
+    setSyncingIds((p) => (p.includes(move.id) ? p : [...p, move.id])); // 이 카드에 '동기화 중' 표시
     movePersistChainRef.current = movePersistChainRef.current
       .catch(() => {})
       .then(() => runMovePersist(move))
       .finally(() => {
         pendingPersistRef.current = Math.max(0, pendingPersistRef.current - 1);
+        setSyncingIds((p) => p.filter((x) => x !== move.id)); // 반영 끝 → 표시 제거
       });
   }
 
@@ -2017,8 +2021,8 @@ export function StudioShell({
     );
   }
 
-  function saveEvent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  function saveEvent(event?: FormEvent<HTMLFormElement>) {
+    event?.preventDefault(); // 폼 제출 외에 단축키(Ctrl+S)로도 부를 수 있게 옵셔널.
     if (blockedByPreview()) return;
     if (!canEdit) {
       return;
@@ -2425,9 +2429,19 @@ export function StudioShell({
         deleteEvent(selectedEventId);
         return;
       }
+      // N: 지금 선택된 날짜에 새 일정 카드 열기(수식키 없이).
+      if (e.key.toLowerCase() === "n" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        selectDate(selectedDate);
+        return;
+      }
       if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
       const key = e.key.toLowerCase();
-      if (key === "z") {
+      if (key === "s") {
+        // Ctrl/⌘+S: 편집 중인 카드 저장(브라우저 '페이지 저장' 가로채기). 제목 있을 때만.
+        e.preventDefault();
+        if (editorVisible && form.publicTitle.trim()) saveEvent();
+      } else if (key === "z") {
         // 실수로 지운 일정 되살리기(편집 중 텍스트는 위 INPUT/TEXTAREA 가드로 보호됨).
         e.preventDefault();
         restoreLastDelete();
@@ -2442,7 +2456,7 @@ export function StudioShell({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events]);
+  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events, editorVisible, form]);
 
   // 모바일 아젠다도 데스크톱과 동일하게 — 비공개 일정은 "비공개 일정 보기"로 직접 켜기 전까진
   // 누구에게도(개발자·소유자 포함) 보이지 않는다. 방송사고 방지: 진입/새로고침 시 항상 공개 기본.
@@ -3877,6 +3891,10 @@ export function StudioShell({
                             </>
                           ) : null}
                           <div className="pill-main">
+                            {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
+                            {span.showTitle && syncingIds.includes(event.id) ? (
+                              <span className="pill-sync" aria-hidden="true" title="동기화 중…" />
+                            ) : null}
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (
                               <strong>
