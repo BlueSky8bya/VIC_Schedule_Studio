@@ -946,22 +946,23 @@
   animation-delay: 1.4s;
 }
 
-/* 내 관심(♥) 배너 — 포스터 표면 '밖' 위에 띄운 아이보리 알약(캡쳐 캔버스 비침범 → 스티커 좌표
-   안전, PNG 깨끗). 가운데 정렬, 포스터와 살짝 띄움. */
-.poster-interest {
+/* 내 관심(♥) 토글 — 헤더 띠 가운데 칸(계정변경/미리보기와 같은 줄). 포스터 표면 밖이라 캡쳐
+   캔버스 비침범(스티커 좌표 안전, PNG 깨끗). 세로 공간을 안 먹어 포스터가 줄지 않는다. */
+.public-calendar-header .poster-interest {
+  grid-column: 2;
+  justify-self: center;
   display: flex;
   justify-content: center;
-  margin: 2px 0 10px;
 }
 .interest-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  --lh-size: 40px;
+  gap: 10px;
+  --lh-size: 34px;
   border: 1.5px solid #f0e4c8;
   border-radius: var(--r-pill, 999px);
   background: #fffdf6;
-  padding: 6px 22px 6px 14px;
+  padding: 5px 18px 5px 12px;
   cursor: pointer;
   box-shadow: var(--shadow-1);
   transition:

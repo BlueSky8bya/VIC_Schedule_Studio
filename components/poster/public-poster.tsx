@@ -2465,7 +2465,27 @@ export function PublicPoster({
             <div className="header-left" />
 
             {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).
-                현재 월 표시는 포스터 제목(✨️ … N월)에 이미 있어 헤더 가운데는 비운다. */}
+                현재 월 표시는 포스터 제목(✨️ … N월)에 이미 있어 헤더 가운데는 비어 있다.
+                그 가운데 자리에 '내 관심(♥)' 토글을 둔다 — 계정변경/미리보기 바와 같은 줄이라
+                세로 공간을 안 먹어 포스터가 줄지 않고, 포스터 표면(캡쳐 캔버스) 밖이라 스티커
+                좌표도 안전하다. 상호작용(시청자/미리보기) 모드에서만(꾸미기·캡쳐 제외). */}
+            {interactive ? (
+              <div className="poster-interest">
+                <button
+                  aria-pressed={bookmarkedOnly}
+                  className={`interest-toggle ${bookmarkedOnly ? "active" : ""}`}
+                  onClick={() => setBookmarkedOnly((v) => !v)}
+                  title="내가 ♥ 누른 일정만 모아서 보기"
+                  type="button"
+                >
+                  <LiquidHeart ratio={interestRatio} />
+                  <span className="it-text">
+                    <strong>내 관심</strong>
+                    <em>♥ 누른 일정만 모아보기</em>
+                  </span>
+                </button>
+              </div>
+            ) : null}
 
             {/* 편집실로 돌아가기 + 시청자 화면 보기(미리보기 토글)는 우측 상단(계정변경 옆)에 둔다. */}
             <div className="viewer-actions">
@@ -3171,28 +3191,6 @@ export function PublicPoster({
                 }}
               />
             ) : null}
-          </div>
-        ) : null}
-
-        {/* 내 관심(♥) 배너 — 포스터 표면(=캡쳐 캔버스) 밖, 그 위에 띄운다. 표면 안에 두면 시청자
-            모드에서만 제목줄이 커져 달력이 내려가고, 그 결과 꾸미기에서 배치한 스티커 좌표가
-            시청자 화면과 어긋난다(표면 지오메트리는 두 모드가 100% 같아야 함). 밖에 두니 캡쳐 PNG도
-            깨끗하다. 상호작용(시청자) 모드에서만. */}
-        {!showAgenda && interactive ? (
-          <div className="poster-interest">
-            <button
-              aria-pressed={bookmarkedOnly}
-              className={`interest-toggle ${bookmarkedOnly ? "active" : ""}`}
-              onClick={() => setBookmarkedOnly((v) => !v)}
-              title="내가 ♥ 누른 일정만 모아서 보기"
-              type="button"
-            >
-              <LiquidHeart ratio={interestRatio} />
-              <span className="it-text">
-                <strong>내 관심</strong>
-                <em>♥ 누른 일정만 모아보기</em>
-              </span>
-            </button>
           </div>
         ) : null}
 
