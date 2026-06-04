@@ -3958,14 +3958,14 @@ export function StudioShell({
                             {span.showTitle && syncingIds.includes(event.id) ? (
                               <span className="pill-sync" aria-hidden="true" title="동기화 중…" />
                             ) : null}
+                            {/* 미정 칩(세로 미/정)은 strong 밖, flex 부모(.pill-main, align-items:center)
+                                직속으로 둬 2줄 높이 칩이 제목과 정확히 가운데 정렬되게 한다. */}
+                            {span.showTitle && event.isTentative ? (
+                              <span className="evt-tentative">미정</span>
+                            ) : null}
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (
-                              <strong>
-                                {event.isTentative ? (
-                                  <span className="evt-tentative">미정</span>
-                                ) : null}
-                                {main}
-                              </strong>
+                              <strong>{main}</strong>
                             ) : (
                               <strong className="span-cont">{main || " "}</strong>
                             )}
