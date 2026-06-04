@@ -239,9 +239,13 @@
 .agenda-account button.agenda-login {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   border: none;
-  padding: 5px 13px;
+  padding: 4px 9px;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
   color: #fff;
   background: linear-gradient(135deg, #f6bd3f, #e2920a);
   box-shadow: 0 2px 7px rgb(168 118 10 / 38%);
@@ -249,6 +253,9 @@
     transform 0.12s var(--ease, ease),
     box-shadow 0.12s var(--ease, ease),
     filter 0.12s var(--ease, ease);
+}
+.agenda-account button.agenda-login span {
+  white-space: nowrap;
 }
 .agenda-account button.agenda-login:hover {
   filter: brightness(1.05);

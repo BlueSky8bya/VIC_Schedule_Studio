@@ -2594,7 +2594,7 @@ export function PublicPoster({
                 >
                   {anonymous ? (
                     <>
-                      <LogIn aria-hidden="true" size={13} strokeWidth={2.5} />
+                      <LogIn aria-hidden="true" size={12} strokeWidth={2.5} />
                       <span>로그인</span>
                     </>
                   ) : (
