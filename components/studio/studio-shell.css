@@ -4723,6 +4723,11 @@ textarea:disabled {
     transform: none;
     box-shadow: none;
   }
+  /* 방식 행은 카드의 동그라미 점과 통일해 색 칩도 원으로. 고스트는 body 직속이라 `.tag-editor`
+     스코프의 is-mod-row 규칙이 안 닿으니(=둥근 사각으로 남음) 여기서 따로 원형을 준다. */
+  .tag-drag-ghost.is-mod-row .tag-editor-swatches button.selected {
+    border-radius: 999px;
+  }
   .tag-drag-ghost .tag-editor-remove {
     order: 5;
     width: 28px;
