@@ -1986,8 +1986,14 @@ export function PublicPoster({
     e.preventDefault();
     if (det.android) {
       startNav("Chrome으로 여는 중…");
-      const target = `${window.location.origin}/login?next=${encodeURIComponent("/")}`;
+      // 크롬이 /api/auth/login(GET)을 열면 카드 렌더 없이 서버가 곧장 구글로 302 → 계정 선택창.
+      const target = `${window.location.origin}/api/auth/login?next=${encodeURIComponent("/")}`;
       const bare = target.replace(/^https?:\/\//, "");
+      // 전환 성공이면 웹뷰가 가려져 document.hidden=true가 된다. 2.5초 뒤에도 그대로면
+      // (크롬 미설치 등 인텐트 실패) /login 안내 카드를 최후수단으로 보여준다.
+      window.setTimeout(() => {
+        if (!document.hidden) window.location.assign(`/login?next=${encodeURIComponent("/")}`);
+      }, 2500);
       window.location.replace(`intent://${bare}#Intent;scheme=https;package=com.android.chrome;end`);
     } else {
       startNav("로그인 안내 화면으로 이동 중…");
