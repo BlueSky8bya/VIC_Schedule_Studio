@@ -117,6 +117,53 @@
     animation: none;
   }
 }
+/* #9 키보드 단축키 안내바 — 달력 아래 가운데, 옅게. 웹 전용(데스크톱 렌더에서만 출력). */
+.kbd-hints {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px 14px;
+  /* 하단 플로팅 < > 바(좌우 코너)와 안 겹치게 좌우 여백을 넉넉히. */
+  margin: 14px 72px calc(20px + env(safe-area-inset-bottom, 0px));
+  padding: 9px 14px;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 70%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--muted, #7c7595);
+  font-size: 12px;
+  font-weight: 700;
+}
+.kbd-hints .kbd-hints-title {
+  font-weight: 900;
+  color: #6b5b95;
+  letter-spacing: 0.04em;
+}
+.kbd-hints span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+.kbd-hints kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid #d7d0ec;
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: #faf9fe;
+  color: #5b4bd0;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+
 /* 월 이동 하단 플로팅 바 — 꾸미기/시청자 화면의 .agenda-monthbar와 같은 톤. */
 .studio-monthbar {
   position: fixed;
