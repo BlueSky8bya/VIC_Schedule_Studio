@@ -19,6 +19,7 @@ import {
   Keyboard,
   Lock,
   LogIn,
+  LogOut,
   Redo2,
   SendToBack,
   Sparkles,
@@ -2582,7 +2583,7 @@ export function PublicPoster({
               >
                 {anonymous ? <input name="next" type="hidden" value="/" /> : null}
                 <button
-                  className={anonymous ? "agenda-login" : undefined}
+                  className={anonymous ? "agenda-login" : "agenda-logout"}
                   onClick={(e) => {
                     if (anonymous) {
                       handleMobileLogin(e);
@@ -2598,10 +2599,10 @@ export function PublicPoster({
                       <span>로그인</span>
                     </>
                   ) : (
-                    /* 모바일은 폭이 좁아 넘칠 수 있어 "계정/변경" 2줄로 — 버튼이 좁아져 잘 들어간다. */
-                    <span style={{ whiteSpace: "pre-line", lineHeight: 1.12, textAlign: "center" }}>
-                      {"계정\n변경"}
-                    </span>
+                    <>
+                      <LogOut aria-hidden="true" size={12} strokeWidth={2.5} />
+                      <span>계정변경</span>
+                    </>
                   )}
                 </button>
               </form>

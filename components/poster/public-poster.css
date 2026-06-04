@@ -225,54 +225,62 @@
   justify-self: end;
 }
 .agenda-account button {
-  border: 1px solid #e3d6bb;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 70%);
-  padding: 4px 10px;
-  font-size: 11.5px;
-  font-weight: 800;
-  color: #8a7a4a;
-  cursor: pointer;
-}
-/* 비로그인 시 로그인 CTA — 계정 전환 버튼 자리에 그대로 들어가되, 따뜻한 골드
-   그라데이션 알약으로 눈에 띄게(아이콘+텍스트). 누르면 살짝 눌리는 촉감. */
-.agenda-account button.agenda-login {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  border: none;
-  padding: 4px 9px;
-  font-size: 11px;
+  justify-content: center;
+  gap: 4px;
+  min-height: 30px;
+  border: 1px solid #e3d6bb;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 78%);
+  padding: 0 12px;
+  font-size: 11.5px;
+  font-weight: 800;
   line-height: 1;
   letter-spacing: -0.01em;
   white-space: nowrap;
-  color: #fff;
-  background: linear-gradient(135deg, #f6bd3f, #e2920a);
-  box-shadow: 0 2px 7px rgb(168 118 10 / 38%);
+  color: #8a7a4a;
+  cursor: pointer;
   transition:
     transform 0.12s var(--ease, ease),
+    background 0.15s var(--ease, ease),
     box-shadow 0.12s var(--ease, ease),
     filter 0.12s var(--ease, ease);
 }
-.agenda-account button.agenda-login span {
-  white-space: nowrap;
+.agenda-account button svg {
+  flex: none;
+  opacity: 0.9;
+}
+.agenda-account button:active {
+  transform: scale(0.94);
+}
+/* 로그아웃(로그인 시) — 뷰어 헤더의 따뜻한 크림/골드 톤과 어울리는 은은한 알약. */
+.agenda-account button.agenda-logout {
+  background: rgb(255 252 244 / 88%);
+  color: #9a7b39;
+}
+.agenda-account button.agenda-logout:hover {
+  background: #fff;
+  box-shadow: 0 1px 5px rgb(168 118 10 / 16%);
+}
+/* 비로그인 로그인 CTA — 같은 자리·같은 크기지만 따뜻한 골드 그라데이션으로 눈에 띄게. */
+.agenda-account button.agenda-login {
+  border: none;
+  color: #fff;
+  background: linear-gradient(135deg, #f6bd3f, #e2920a);
+  box-shadow: 0 2px 7px rgb(168 118 10 / 38%);
 }
 .agenda-account button.agenda-login:hover {
   filter: brightness(1.05);
 }
 .agenda-account button.agenda-login:active {
-  transform: scale(0.93);
   box-shadow: 0 1px 4px rgb(168 118 10 / 32%);
 }
-.agenda-account button.agenda-login svg {
-  flex: none;
-  opacity: 0.95;
-}
 @media (prefers-reduced-motion: reduce) {
-  .agenda-account button.agenda-login {
+  .agenda-account button {
     transition: none;
   }
-  .agenda-account button.agenda-login:active {
+  .agenda-account button:active {
     transform: none;
   }
 }

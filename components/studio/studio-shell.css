@@ -3126,21 +3126,24 @@
   color: #6b5bd6;
   font-weight: 800;
 }
-/* 모바일 헤더(.agenda-header, grid 1fr auto 1fr) 왼쪽 1열 — 제목과 같은 줄의 작은 펄.
-   기본(비개발자)은 흐린 회색, 개발자(.dev)는 또렷한 보라.
+/* 모바일 헤더(.agenda-header, grid 1fr auto 1fr) 왼쪽 1열 묶음 — 버전 펄(위) + 저장 칩(아래)을
+   세로로 쌓고, 묶음의 세로 중앙이 제목(헤더) 중앙선과 같게(align-self:center).
    .studio-mobile에만 렌더되므로(웹은 그 레이아웃이 숨겨짐) 별도 미디어쿼리 없이 둔다. */
-/* 저장 상태 칩 — 버전 태그(1열)와 같은 줄(1행) 오른쪽 끝(3열)에. */
-.studio-mobile .agenda-header .save-status {
-  grid-column: 3;
-  grid-row: 1;
-  justify-self: end;
-  align-self: center;
-}
-.studio-mobile .agenda-header .studio-build-tag-m {
+.studio-mobile .agenda-header .m-head-left {
   grid-column: 1;
   grid-row: 1;
   justify-self: start;
   align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+}
+.studio-mobile .agenda-header .m-head-left .save-status {
+  align-self: flex-start;
+}
+.studio-mobile .agenda-header .studio-build-tag-m {
   padding: 2px 7px;
   border-radius: 999px;
   background: rgb(148 140 168 / 14%);
@@ -3152,6 +3155,31 @@
 .studio-mobile .agenda-header .studio-build-tag-m.dev {
   background: rgb(124 108 240 / 16%);
   color: #6b5bd6;
+}
+/* 계정변경(로그아웃) — 저장됨 칩이 있던 우상단(3열) 자리. 편집실 톤(연한 라인·표면) 버튼 그대로
+   재사용해 주변 색과 어울리게, 한 줄로(아이콘 작게). */
+.studio-mobile .agenda-header .m-head-logout {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+}
+.studio-mobile .agenda-header a.m-head-logout.button,
+.studio-mobile .agenda-header .m-head-logout .button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 30px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+.studio-mobile .agenda-header .m-head-logout svg {
+  flex: none;
+  opacity: 0.85;
 }
 .studio-actionbar .button {
   min-height: 36px;

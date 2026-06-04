@@ -8,6 +8,7 @@ import {
   EyeOff,
   Globe,
   LockKeyhole,
+  LogOut,
   Save,
   Sparkles,
   Trash2,
@@ -2573,22 +2574,40 @@ export function StudioShell({
         <div className="m-scroll-region">
           <div className="m-topstick">
             <header className="agenda-header">
-              {/* 배포 버전(커밋) — 헤더 그리드 1열(제목 왼쪽·같은 줄). 개발자는 또렷한 보라 펄,
-                  그 외 역할은 같은 자리에 흐린 회색 펄로. */}
-              <span
-                className={`studio-build-tag-m${isDevInsights ? " dev" : ""}`}
-                aria-hidden="true"
-              >
-                {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
-              </span>
+              {/* 좌측 1열: 배포 버전(커밋) 위 + 저장 상태 칩 아래로 세로로 쌓고, 묶음의 세로
+                  중앙이 제목(헤더) 중앙선과 같게 한다. 우상단(3열)은 계정변경 버튼 자리로 비운다. */}
+              <div className="m-head-left">
+                <span
+                  className={`studio-build-tag-m${isDevInsights ? " dev" : ""}`}
+                  aria-hidden="true"
+                >
+                  {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
+                </span>
+                {renderSaveStatus()}
+              </div>
               <h1>
                 {schedule.calendar.title}
                 <span>
                   토리님 편집실 · {view.year}년 {view.month}월
                 </span>
               </h1>
-              {/* 저장 상태 칩 — 버전(커밋) 태그와 같은 줄 오른쪽(헤더 grid 3열). */}
-              {renderSaveStatus()}
+              {/* 계정변경(로그아웃) — 저장됨 칩이 있던 우상단(3열) 자리. 편집실 톤과 어울리게. */}
+              {actor.isAuthenticated ? (
+                <form className="m-head-logout" action="/api/auth/logout" method="post">
+                  <button
+                    className="button"
+                    onClick={() => startNav("계정 변경 중…")}
+                    type="submit"
+                  >
+                    <LogOut aria-hidden="true" size={12} strokeWidth={2.5} />
+                    계정변경
+                  </button>
+                </form>
+              ) : (
+                <Link className="m-head-logout button" href="/login">
+                  로그인
+                </Link>
+              )}
             </header>
 
           </div>
@@ -2928,24 +2947,9 @@ export function StudioShell({
         ) : null}
 
         {/* 하단 엄지존 액션레일 — 옛 '< >' 자리. 월 이동은 좌우 스와이프로(달력을 쓸면 넘어감).
-            누르기 쉬운 핵심 버튼(미리보기·비공개·계정변경)을 엄지 닿는 바닥에 모았다. */}
+            누르기 쉬운 핵심 버튼(미리보기·비공개)을 엄지 닿는 바닥에 모았다.
+            계정변경(로그아웃)은 헤더 우상단으로 옮겼다(저장됨 칩이 있던 자리). */}
         <nav className="m-actionrail" aria-label="편집실 도구">
-          {/* 왼쪽: 계정변경(로그인) — 미리보기와 위치 swap. */}
-          {actor.isAuthenticated ? (
-            <form action="/api/auth/logout" method="post">
-              <button
-                className="button"
-                onClick={() => startNav("계정 변경 중…")}
-                type="submit"
-              >
-                계정변경
-              </button>
-            </form>
-          ) : (
-            <Link className="button" href="/login">
-              로그인
-            </Link>
-          )}
           {canTogglePrivateLayer ? (
             isEffectivelyOwner && canReadPrivate ? (
               <button className="button primary" onClick={() => openChangePasscode()} type="button">
