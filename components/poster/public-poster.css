@@ -1175,6 +1175,11 @@ html {
   font-weight: 800;
   cursor: pointer;
 }
+/* 필터 없을 때도 자리(높이)는 유지하되 안 보이게 — 켤 때 레이아웃이 안 밀려 칩이 제자리에 있다. */
+.legend-clear.is-hidden {
+  visibility: hidden;
+  pointer-events: none;
+}
 /* A2: 필터에 안 맞는 일정은 흐리게 */
 .public-event.dimmed {
   opacity: 0.28;

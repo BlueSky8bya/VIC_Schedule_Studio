@@ -3349,11 +3349,19 @@ export function PublicPoster({
                   </>
                 );
               })()}
-              {filterActive ? (
-                <button className="legend-clear" onClick={clearFilters} type="button">
-                  필터 해제
-                </button>
-              ) : null}
+              {/* '필터 해제'는 필터가 있든 없든 항상 자리(높이)를 차지한다 — 필터를 켤 때 이 버튼이
+                  새로 생기면서 위 색칩들이 위로 밀려, 방금 누른 칩이 커서 밑에서 벗어나 다시 끄려면
+                  마우스를 옮겨야 했다. 항상 자리만 잡아두고 보이기만 토글하면 칩이 안 움직여, 같은
+                  자리에서 따닥 눌러 켜고 끌 수 있다. */}
+              <button
+                className={`legend-clear${filterActive ? "" : " is-hidden"}`}
+                onClick={clearFilters}
+                type="button"
+                aria-hidden={!filterActive}
+                tabIndex={filterActive ? 0 : -1}
+              >
+                필터 해제
+              </button>
               {/* ♥ 의미·인기 단계 안내 — 하트 토글은 제목 위 배너로 옮겼고, 그 자리에 모바일처럼
                   설명을 둔다. margin-top:auto로 안내 박스 바닥에 붙어 빈 공간 없이 채운다. */}
               {interactive ? (
