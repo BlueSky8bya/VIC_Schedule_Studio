@@ -2353,30 +2353,6 @@ html {
   }
 }
 
-/* #24 꾸미기 안전 영역 가이드 — 표면 안쪽 점선. 점선 밖에 둔 스티커/글자는 PNG에서 잘릴 수 있음.
-   꾸미기에서만 렌더(캡쳐·시청자엔 없음). 클릭 안 막음. */
-.deco-safe-guide {
-  position: absolute;
-  inset: 3.2%;
-  z-index: 1;
-  border: 2px dashed rgb(99 102 241 / 38%);
-  border-radius: 18px;
-  pointer-events: none;
-}
-.deco-safe-tip {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: rgb(99 102 241 / 12%);
-  color: #4f46e5;
-  font-size: 16px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
 .sticker-handle {
   position: absolute;
   display: grid;
