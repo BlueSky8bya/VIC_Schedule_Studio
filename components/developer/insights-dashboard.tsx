@@ -1194,7 +1194,19 @@ export function InsightsDashboard({
         sub: bw !== null ? WEEKDAY[bw] : "—"
       }
     ];
-    return <HighlightCards cards={cards} />;
+    // #16 결론형 헤드라인 — 표 위에 "무슨 일이 일어났나"를 한 줄 메시지로(숫자 나열 대신 결론).
+    const hp: string[] = [];
+    if (bw !== null) hp.push(`${WEEKDAY[bw]}요일 콘텐츠 집중`);
+    if (peakHour && peakHour.c > 0) hp.push(`${peakHour.h}시 방문 피크`);
+    else if (peakDay && peakDay.total > 0) hp.push(`${month}/${peakDay.day} 방문 최다`);
+    if (top) hp.push(`'${top.title}' 인기`);
+    const headline = hp.length > 0 ? hp.join(" · ") : `${month}월 요약`;
+    return (
+      <>
+        <p className="insight-headline">{headline}</p>
+        <HighlightCards cards={cards} />
+      </>
+    );
   }
 
   return (
