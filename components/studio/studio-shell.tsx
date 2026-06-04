@@ -319,6 +319,19 @@ export function StudioShell({
   // 첫 진입(스태거)와 달 이동(슬라이드)을 구분 — 실제로 달을 한 번 넘긴 뒤에만 슬라이드를 켠다.
   const didNavigateRef = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  // #10 저장 신뢰: 모든 쓰기가 studioWrite를 거치므로 거기서 상태를 잡아 헤더 칩에 보여준다.
+  // idle(아직 저장 없음)·saving(저장 중)·saved(저장됨+KST 시각)·failed(저장 실패).
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [lastSavedKst, setLastSavedKst] = useState<string | null>(null);
+  const savingCountRef = useRef(0); // 동시 진행 쓰기 수 — 0이 될 때 최종 상태 확정
+  function nowKstHm(): string {
+    return new Date().toLocaleTimeString("ko-KR", {
+      timeZone: "Asia/Seoul",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false
+    });
+  }
   // 비밀번호 확인 후 팝업이 닫히고 비공개 일정이 서버에서 다시 불러와지는 동안 "불러오는 중" 표시.
   const [loadingPrivate, startLoadingPrivate] = useTransition();
   // 페이지 이동(꾸미기·계정 변경 등)은 서버 왕복이라 즉시 안 바뀐다 → 눌렀다는 신호를 띄운다.
@@ -365,9 +378,26 @@ export function StudioShell({
   // 모든 중대한 쓰기는 이 래퍼를 거친다 — 모듈 함수(postStudioWrite)로 실제 전송하되
   // 진행 중 약속을 inflight 집합에 등록/해제해, flushPendingWrites가 끝까지 기다릴 수 있게 한다.
   function studioWrite(op: string, payload: unknown): Promise<StudioWriteResult> {
+    savingCountRef.current += 1;
+    setSaveState("saving");
     const p = postStudioWrite(op, payload);
     inflightWritesRef.current.add(p);
-    void p.finally(() => inflightWritesRef.current.delete(p));
+    void p.then(
+      (r) => {
+        savingCountRef.current = Math.max(0, savingCountRef.current - 1);
+        if (!r.ok) {
+          setSaveState("failed"); // 실패는 칩에 빨갛게 + 호출부가 inline 경고도 띄운다(#12)
+        } else {
+          setLastSavedKst(nowKstHm());
+          // 진행 중 쓰기가 모두 끝났을 때만 '저장됨' 확정(이전 실패도 성공 저장이 들어오면 해제).
+          if (savingCountRef.current === 0) setSaveState("saved");
+        }
+      },
+      () => {
+        savingCountRef.current = Math.max(0, savingCountRef.current - 1);
+        setSaveState("failed");
+      }
+    ).finally(() => inflightWritesRef.current.delete(p));
     return p;
   }
   // 진행 중인 모든 쓰기(이동 큐 + inflight 집합)가 서버에 반영될 때까지 기다린다.
@@ -3284,6 +3314,27 @@ export function StudioShell({
 
         {/* 오른쪽: 역할·도구 */}
         <div className="studio-role-tools">
+          {/* #10 저장 상태 — 모든 편집은 낙관적으로 즉시 저장되므로, 지금 상태(저장됨/중/실패)와
+              마지막 저장 시각(KST)을 항상 보여줘 "분명 바꿨는데 됐나?" 불안을 없앤다. */}
+          <span
+            className={`save-status ${saveState}`}
+            aria-live="polite"
+            title={
+              saveState === "failed"
+                ? "저장에 실패했어요. 잠시 후 다시 시도해 주세요"
+                : saveState === "saving"
+                  ? "저장 중이에요"
+                  : lastSavedKst
+                    ? `마지막 저장 ${lastSavedKst} KST`
+                    : "변경사항이 저장돼 있어요"
+            }
+          >
+            <span className="ss-dot" aria-hidden="true" />
+            <em>
+              {saveState === "saving" ? "저장 중…" : saveState === "failed" ? "저장 실패" : "저장됨"}
+            </em>
+            {saveState === "saved" && lastSavedKst ? <b className="ss-time">{lastSavedKst}</b> : null}
+          </span>
           {/* 미리보기 안내는 역할 배지("?") 설명 팝오버 안 작은 문구로 일원화(별도 플래그 제거). */}
           {renderRoleBadge()}
           {/* 개발자는 역할 미리보기 드롭다운, 그 외 역할은 시청자 화면 미리보기. */}

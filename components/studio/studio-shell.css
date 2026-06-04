@@ -167,6 +167,83 @@
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+
+/* #10 저장 상태 칩 — 점 색으로 상태(저장됨/중/실패), 저장됨엔 KST 시각을 곁들인다. */
+.save-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line, #e8e1d6);
+  border-radius: 999px;
+  background: var(--surface, #fffdf6);
+  padding: 5px 12px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--muted, #8a8170);
+  white-space: nowrap;
+  transition: color 0.2s var(--ease, ease), border-color 0.2s var(--ease, ease);
+}
+.save-status .ss-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex: none;
+  background: #94a3b8; /* idle 회색 */
+}
+.save-status .ss-time {
+  font-weight: 900;
+  color: inherit;
+}
+.save-status.saving {
+  color: #b45309;
+  border-color: #fcd9a8;
+}
+.save-status.saving .ss-dot {
+  background: #f59e0b;
+  animation: ss-pulse 1s ease-in-out infinite;
+}
+.save-status.saved {
+  color: #3f6212;
+  border-color: #d7e8b8;
+}
+.save-status.saved .ss-dot {
+  background: #65a30d;
+}
+.save-status.failed {
+  color: #b42318;
+  border-color: #f3c6c0;
+  background: #fff5f4;
+}
+.save-status.failed .ss-dot {
+  background: #dc2626;
+}
+@keyframes ss-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .save-status.saving .ss-dot {
+    animation: none;
+  }
+}
+/* 모바일: 폭 절약 — 시각 숨기고 점·글자만. */
+@media (max-width: 640px) {
+  .save-status {
+    padding: 4px 8px;
+    font-size: 11px;
+    gap: 4px;
+  }
+  .save-status .ss-time {
+    display: none;
+  }
+}
 /* 큰 제목(왼쪽). 별 이모지는 글자 높이에 맞춰 작게(0.5em). */
 .studio-poster-title {
   display: inline-flex;
