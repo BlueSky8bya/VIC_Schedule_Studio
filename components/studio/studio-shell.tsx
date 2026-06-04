@@ -38,7 +38,8 @@ import type {
   EventVisibilityScope,
   MembershipRole,
   StudioSchedule,
-  StudioScheduleEvent
+  StudioScheduleEvent,
+  PublicScheduleEvent
 } from "@/lib/domain/schedule-types";
 import type { CurrentActor } from "@/lib/auth/actor";
 import {
@@ -428,12 +429,12 @@ export function StudioShell({
     const settleSaved = () => {
       if (savingCountRef.current !== 0) return;
       const elapsed = Date.now() - savingSinceRef.current;
-      if (elapsed >= 450) {
+      if (elapsed >= 700) {
         setSaveState("saved");
       } else {
         savedTimerRef.current = window.setTimeout(() => {
           if (savingCountRef.current === 0) setSaveState("saved");
-        }, 450 - elapsed);
+        }, 700 - elapsed);
       }
     };
     void p.then(
@@ -2447,7 +2448,7 @@ export function StudioShell({
                 {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
               </span>
               <h1>
-                ✨️ {schedule.calendar.title} ✨️
+                {schedule.calendar.title}
                 <span>
                   토리님 편집실 · {view.year}년 {view.month}월
                 </span>
@@ -3297,6 +3298,20 @@ export function StudioShell({
 
   // 시청자 화면 전체보기: 스튜디오 UI를 숨기고 공개 화면만 그대로 보여준다.
   if (viewerMode) {
+    // 미리보기 일정은 서버 스냅샷(viewerModePreview)이 아니라 '편집실의 현재(낙관적) events'에서
+    // 직접 만든다 → 방금 만든/지운 일정이 새로고침 없이 즉시 반영된다(예전엔 router.refresh에 기대
+    // 옛 상태가 보였다). 공개 일정만(visibility public, draft 제외) 추리고 privateMeta는 제거해
+    // 비공개 정보가 절대 안 샌다. 스티커·하트·팔레트 등 나머지는 서버 스냅샷 그대로 쓴다.
+    const previewSchedule = {
+      ...schedule.viewerModePreview,
+      events: events
+        .filter((e) => e.visibilityScope === "public" && e.status !== "draft")
+        .map((e) => {
+          const { privateMeta: _omit, ...rest } = e;
+          void _omit;
+          return rest as unknown as PublicScheduleEvent;
+        })
+    };
     // 편집실/꾸미기 이동 버튼 — 웹은 포스터 위 오버레이로, 모바일은 포스터 제목 헤더 안으로 주입한다.
     const previewNav = (
       <>
@@ -3348,7 +3363,7 @@ export function StudioShell({
           onViewChange={(year, month) => setView({ year, month })}
           previewNav={previewNav}
           previewNote={<span className="viewer-preview-note">미리보기 중..</span>}
-          schedule={schedule.viewerModePreview}
+          schedule={previewSchedule}
           toggleHeartAction={toggleEventHeartAction}
         />
       </div>
