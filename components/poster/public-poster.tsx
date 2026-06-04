@@ -2542,10 +2542,12 @@ export function PublicPoster({
             {/* 미리보기 이동 버튼(편집실)은 제목 우측이 아니라 색상 필터 박스 아래로 옮겼다(엄지존). */}
             {accountSwitch ? (
               // 같은 계정-전환 버튼을 그대로 쓰고, 익명이면 액션·라벨만 로그인으로 바꾼다.
+              // 익명 로그인은 /login으로 보낸다(POST 직행이 아니라) — 숲·카톡 웹뷰일 때
+              // /login의 InAppBrowserNotice가 Chrome 인텐트/외부 브라우저 안내로 탈출시킨다.
               <form
-                action={anonymous ? "/api/auth/login" : "/api/auth/logout"}
+                action={anonymous ? "/login" : "/api/auth/logout"}
                 className="agenda-account"
-                method="post"
+                method={anonymous ? "get" : "post"}
               >
                 {anonymous ? <input name="next" type="hidden" value="/" /> : null}
                 <button
@@ -2643,10 +2645,12 @@ export function PublicPoster({
               ) : null}
               {accountSwitch ? (
                 // 같은 계정-전환 버튼을 그대로 쓰고, 익명이면 액션·라벨만 로그인으로 바꾼다.
+                // 익명 로그인은 /login으로 보낸다 — 웹뷰(숲·카톡)면 그 페이지의
+                // InAppBrowserNotice가 Chrome 인텐트/외부 브라우저 안내로 탈출시킨다.
                 <form
                   className="account-form"
-                  action={anonymous ? "/api/auth/login" : "/api/auth/logout"}
-                  method="post"
+                  action={anonymous ? "/login" : "/api/auth/logout"}
+                  method={anonymous ? "get" : "post"}
                 >
                   {anonymous ? <input name="next" type="hidden" value="/" /> : null}
                   {!anonymous && accountEmail ? (

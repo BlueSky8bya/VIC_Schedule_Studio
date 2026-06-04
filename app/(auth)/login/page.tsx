@@ -45,7 +45,11 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           </div>
         ) : null}
 
-        <InAppBrowserNotice initialAndroid={inApp.android} initialInApp={inApp.inApp}>
+        <InAppBrowserNotice
+          autoSubmit={configured}
+          initialAndroid={inApp.android}
+          initialInApp={inApp.inApp}
+        >
           <form action="/api/auth/login" method="post">
             <input name="next" type="hidden" value={next} />
             <button className="button primary" disabled={!configured} type="submit">
