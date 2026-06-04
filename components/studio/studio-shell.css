@@ -786,6 +786,22 @@
   width: 20px;
   background: #6b5bd6;
 }
+/* 모바일: 누르는 '패널 탭'은 엄지 닿는 아래로, 진행 정보(< > 화살표·점)는 위로.
+   (정보 표현은 위 / 누르는 버튼은 아래 원칙 — 데스크톱은 통상 배치 유지.) */
+@media (max-width: 640px) {
+  .insights-month {
+    order: 0;
+  }
+  .insights-nav {
+    order: 1;
+  }
+  .insights-viewport {
+    order: 2;
+  }
+  .insights-tabs {
+    order: 3;
+  }
+}
 
 /* 통계 타일 — 큰 숫자(위) + 라벨(아래), 따뜻한 톤. 세로 레이아웃(좁은 칸 그대로). */
 .insight-grid {
@@ -6869,6 +6885,58 @@ textarea:disabled {
 .studio-mobile .private-warning {
   margin: 8px 0;
   font-size: 13px;
+}
+
+/* 하단 엄지존 액션레일 — 옛 '< >' 자리. 핵심 버튼을 바닥에 모아 한 손으로 누르기 쉽게.
+   가운데는 통과(일정 보임), 버튼만 클릭. 버튼들은 남는 폭을 고르게 나눠 한 줄. */
+.m-actionrail {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  z-index: 30;
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+}
+.m-actionrail > *,
+.m-actionrail form,
+.m-actionrail .preview-dd {
+  flex: 1 1 0;
+  min-width: 0;
+  pointer-events: auto;
+}
+.m-actionrail form {
+  display: flex;
+}
+.m-actionrail .button,
+.m-actionrail form .button,
+.m-actionrail .preview-dd .button,
+.m-actionrail .preview-dd-trigger {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 18px rgb(74 53 0 / 18%);
+}
+/* 미리보기 드롭다운은 바닥 레일에선 '위로' 펼친다(화면 밖으로 안 나가게). */
+.m-actionrail .preview-dd {
+  position: relative;
+}
+.m-actionrail .preview-dd-menu {
+  top: auto;
+  bottom: calc(100% + 8px);
 }
 /* 오른쪽 레일: 인사이트 버튼(위) + 색상 필터(아래)를 같은 92px 폭으로 세로로 쌓는다.
    레일을 통째로 sticky로 — 스크롤을 내려도 버튼까지 색상 필터와 함께 따라온다. */

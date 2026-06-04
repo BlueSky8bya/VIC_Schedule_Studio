@@ -2479,47 +2479,10 @@ export function StudioShell({
               {renderSaveStatus()}
             </header>
 
+            {/* 상단엔 '시각 정보'인 역할 배지만 둔다. 누르는 버튼(미리보기·비공개·계정변경)은
+                엄지 닿는 하단 액션레일(.m-actionrail)로 내렸다. */}
             <div className="m-rolebar">
               {renderRoleBadge()}
-              {/* 미리보기 드롭다운(개발자)/시청자 화면을 먼저, 비공개 일정 토글을 그 뒤에(위치 swap). */}
-              {isDeveloper ? (
-                renderPreviewControl()
-              ) : (
-                <button className="button" onClick={() => enterViewerMode()} type="button">
-                  시청자 화면
-                </button>
-              )}
-              {canTogglePrivateLayer ? (
-                isEffectivelyOwner && canReadPrivate ? (
-                  // 소유자가 비공개 표시 중: 이 자리는 비밀번호 변경. 끄기는 아래 경고 패널 버튼.
-                  <button className="button primary" onClick={() => openChangePasscode()} type="button">
-                    비밀번호 변경
-                  </button>
-                ) : (
-                  <button
-                    className={canReadPrivate ? "button primary" : "button"}
-                    onClick={togglePrivateLayer}
-                    type="button"
-                  >
-                    {canReadPrivate ? "비공개 중" : "비공개 일정"}
-                  </button>
-                )
-              ) : null}
-              {actor.isAuthenticated ? (
-                <form action="/api/auth/logout" method="post">
-                  <button
-                    className="button"
-                    onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")}
-                    type="submit"
-                  >
-                    계정변경
-                  </button>
-                </form>
-              ) : (
-                <Link className="button" href="/login">
-                  로그인
-                </Link>
-              )}
             </div>
           </div>
 
@@ -2546,15 +2509,6 @@ export function StudioShell({
           >
             {/* 오른쪽 레일: (위) 인사이트 진입 버튼 + (아래) 색상 필터 — 같은 92px 폭으로 세로로 쌓는다(편집실). */}
             <div className="agenda-rail">
-              {isDevInsights || canMemberInsights ? (
-                <button
-                  className="m-rail-insights"
-                  onClick={() => setModal("developer")}
-                  type="button"
-                >
-                  {isDevInsights ? "🛠 인사이트" : "📊 인사이트"}
-                </button>
-              ) : null}
             <aside className="agenda-legend agenda-legend-studio" aria-label="색상 필터">
               <strong>색상 필터</strong>
               {(() => {
@@ -2619,6 +2573,16 @@ export function StudioShell({
                 </button>
               ) : null}
             </aside>
+              {/* 인사이트 진입은 색상 필터 '아래'(시각 정보 위, 누르는 버튼 아래 원칙). */}
+              {isDevInsights || canMemberInsights ? (
+                <button
+                  className="m-rail-insights"
+                  onClick={() => setModal("developer")}
+                  type="button"
+                >
+                  {isDevInsights ? "🛠 인사이트" : "📊 인사이트"}
+                </button>
+              ) : null}
             </div>
 
             <div
@@ -2854,13 +2818,46 @@ export function StudioShell({
           </section>
         ) : null}
 
-        <nav className="agenda-monthbar" aria-label="월 이동">
-          <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
-            <ChevronLeft aria-hidden="true" size={22} />
-          </button>
-          <button onClick={() => moveMonth(1)} title="다음 달" type="button">
-            <ChevronRight aria-hidden="true" size={22} />
-          </button>
+        {/* 하단 엄지존 액션레일 — 옛 '< >' 자리. 월 이동은 좌우 스와이프로(달력을 쓸면 넘어감).
+            누르기 쉬운 핵심 버튼(미리보기·비공개·계정변경)을 엄지 닿는 바닥에 모았다. */}
+        <nav className="m-actionrail" aria-label="편집실 도구">
+          {isDeveloper ? (
+            renderPreviewControl()
+          ) : (
+            <button className="button" onClick={() => enterViewerMode()} type="button">
+              시청자 화면
+            </button>
+          )}
+          {canTogglePrivateLayer ? (
+            isEffectivelyOwner && canReadPrivate ? (
+              <button className="button primary" onClick={() => openChangePasscode()} type="button">
+                비밀번호 변경
+              </button>
+            ) : (
+              <button
+                className={canReadPrivate ? "button primary" : "button"}
+                onClick={togglePrivateLayer}
+                type="button"
+              >
+                {canReadPrivate ? "비공개 중" : "비공개 일정"}
+              </button>
+            )
+          ) : null}
+          {actor.isAuthenticated ? (
+            <form action="/api/auth/logout" method="post">
+              <button
+                className="button"
+                onClick={() => startNav("계정 변경 중…")}
+                type="submit"
+              >
+                계정변경
+              </button>
+            </form>
+          ) : (
+            <Link className="button" href="/login">
+              로그인
+            </Link>
+          )}
         </nav>
 
         {canEdit && mobileEditId !== null ? renderMobileEditSheet() : null}
