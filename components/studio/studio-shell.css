@@ -3774,6 +3774,11 @@
     transform var(--dur-1) var(--ease),
     box-shadow var(--dur-2) var(--ease);
 }
+/* 미정(아직 확정 아님) — 점선 테두리(시청자 포스터와 동일 신호). '미정' 칩은 공용 .evt-tentative. */
+.studio-event-pill.tentative {
+  border-style: dashed;
+  border-color: rgb(0 0 0 / 32%);
+}
 .studio-event-pill:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow-2);

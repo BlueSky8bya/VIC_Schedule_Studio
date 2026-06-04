@@ -19,6 +19,7 @@ export type SaveEventInput = {
   startTime: string;
   endTime: string;
   isAllDay: boolean;
+  isTentative?: boolean;
   publicTitle: string;
   publicDescription: string;
   category: EventCategory;
@@ -210,6 +211,7 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     start_time: input.isAllDay ? null : input.startTime || null,
     end_time: input.isAllDay ? null : input.endTime || null,
     is_all_day: input.isAllDay,
+    is_tentative: input.isTentative ?? false,
     is_support: input.isSupport ?? false,
     support_url: input.isSupport ? input.supportUrl?.trim() || null : null,
     public_title: input.publicTitle.trim() || "새 일정",

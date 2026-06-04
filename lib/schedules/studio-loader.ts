@@ -115,7 +115,7 @@ export async function getStudioSchedule(
     supabase
       .from("events")
       .select(
-        "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, public_title, public_description, status, sort_order, category, visibility_scope, event_tags(tag_id, is_primary, sort_order), event_private_meta(private_title, private_memo, editor_note)"
+        "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, visibility_scope, event_tags(tag_id, is_primary, sort_order), event_private_meta(private_title, private_memo, editor_note)"
       )
       .eq("calendar_id", calendar.id)
       .order("date_key")
@@ -193,6 +193,7 @@ type StudioEventRow = {
   start_time: string | null;
   end_time: string | null;
   is_all_day: boolean;
+  is_tentative: boolean | null;
   public_title: string;
   public_description: string | null;
   status: StudioScheduleEvent["status"];
@@ -220,6 +221,7 @@ function mapStudioEvent(row: StudioEventRow): StudioScheduleEvent {
     isSupport: row.is_support,
     supportUrl: row.support_url ?? undefined,
     isAllDay: row.is_all_day,
+    isTentative: row.is_tentative ?? false,
     publicTitle: row.public_title,
     publicDescription: row.public_description ?? undefined,
     status: row.status,

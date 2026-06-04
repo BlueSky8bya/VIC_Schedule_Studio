@@ -50,6 +50,7 @@ export type PublicScheduleEvent = {
   startsAt: string;
   endsAt?: string;
   endDateKey?: string; // 멀티데이 일정의 종료일(YYYY-MM-DD). 없으면 단일 날짜.
+  isTentative?: boolean; // 아직 확정 아님(미정) — 공개해도 안전한 상태값. 카드에 점선+'미정' 표시.
   linkNext?: string; // 다음날 일정 id. 인접 쌍을 이으면 연속 막대로 그려진다.
   isSupport?: boolean; // 업 도움 기간이면 true
   supportUrl?: string; // 업 도움 링크(숲 게시글)

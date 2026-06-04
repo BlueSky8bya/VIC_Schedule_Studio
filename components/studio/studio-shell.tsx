@@ -112,6 +112,7 @@ type EventForm = {
   publicTitle: string;
   endDateKey: string;
   isSupport: boolean;
+  isTentative: boolean;
   supportUrl: string;
   category: EventCategory;
   status: EventStatus;
@@ -125,6 +126,7 @@ type CopiedEvent = {
   publicTitle: string;
   spanDays: number;
   isSupport: boolean;
+  isTentative: boolean;
   supportUrl: string;
   category: EventCategory;
   status: EventStatus;
@@ -1692,6 +1694,7 @@ export function StudioShell({
       publicTitle: event.publicTitle,
       endDateKey: event.endDateKey ?? "",
       isSupport: event.isSupport ?? false,
+      isTentative: event.isTentative ?? false,
       supportUrl: event.supportUrl ?? "",
       category: event.category,
       status: event.status,
@@ -1907,6 +1910,7 @@ export function StudioShell({
       isSupport: form.isSupport,
       supportUrl: form.supportUrl || undefined,
       isAllDay: true,
+      isTentative: form.isTentative,
       publicTitle: form.publicTitle,
       status: form.status,
       visibilityScope: scope,
@@ -1923,6 +1927,7 @@ export function StudioShell({
       startTime: "",
       endTime: "",
       isAllDay: true,
+      isTentative: form.isTentative,
       publicTitle: form.publicTitle,
       publicDescription: "",
       category: form.category,
@@ -2110,6 +2115,7 @@ export function StudioShell({
         startTime: "",
         endTime: "",
         isAllDay: true,
+        isTentative: ev.isTentative ?? false,
         publicTitle: ev.publicTitle,
         publicDescription: "",
         category: ev.category,
@@ -2198,6 +2204,7 @@ export function StudioShell({
       publicTitle: ev.publicTitle,
       spanDays: ev.endDateKey ? Math.max(0, daysBetweenIso(start, ev.endDateKey)) : 0,
       isSupport: ev.isSupport ?? false,
+      isTentative: ev.isTentative ?? false,
       supportUrl: ev.supportUrl ?? "",
       category: ev.category,
       status: ev.status,
@@ -2224,6 +2231,7 @@ export function StudioShell({
       isSupport: payload.isSupport,
       supportUrl: payload.supportUrl || undefined,
       isAllDay: true,
+      isTentative: payload.isTentative,
       publicTitle: payload.publicTitle,
       status: payload.status,
       visibilityScope: scope,
@@ -2247,6 +2255,7 @@ export function StudioShell({
         startTime: "",
         endTime: "",
         isAllDay: true,
+        isTentative: payload.isTentative,
         publicTitle: payload.publicTitle,
         publicDescription: "",
         category: payload.category,
@@ -2949,6 +2958,7 @@ export function StudioShell({
   function renderSupportEditor() {
     return (
       <>
+        {renderTentativeToggle()}
         <div className="support-toggle">
           <span>🌱 업 도움 설정</span>
           <button
@@ -2964,6 +2974,26 @@ export function StudioShell({
         </div>
         {form.isSupport ? renderSupportFields(canEdit) : null}
       </>
+    );
+  }
+
+  // #미정: 아직 확정 아님 토글. 켜면 카드에 점선+'미정'으로 표시되고 시청자도 본다(공개 안전 상태값).
+  function renderTentativeToggle() {
+    return (
+      <div className="support-toggle">
+        <span>🕗 미정 — 아직 확정 아님</span>
+        <button
+          aria-checked={form.isTentative}
+          aria-label="미정(아직 확정 아님) 표시"
+          className={`switch ${form.isTentative ? "on" : ""}`}
+          disabled={!canEdit}
+          onClick={() => setForm((current) => ({ ...current, isTentative: !current.isTentative }))}
+          role="switch"
+          type="button"
+        >
+          <span className="switch-knob" />
+        </button>
+      </div>
     );
   }
 
@@ -3633,6 +3663,7 @@ export function StudioShell({
                         inSelChain ? "selected" : "",
                         isSel ? "primary-selected" : "",
                         isDimmedByFilter(event) ? "filter-dim" : "",
+                        event.isTentative && span.showTitle ? "tentative" : "",
                         span.isMulti ? "span" : "",
                         span.isMulti && !span.roundLeft ? "no-left" : "",
                         span.isMulti && !span.roundRight ? "no-right" : "",
@@ -3712,7 +3743,12 @@ export function StudioShell({
                           <div className="pill-main">
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (
-                              <strong>{main}</strong>
+                              <strong>
+                                {event.isTentative ? (
+                                  <span className="evt-tentative">미정</span>
+                                ) : null}
+                                {main}
+                              </strong>
                             ) : (
                               <strong className="span-cont">{main || " "}</strong>
                             )}
@@ -4123,6 +4159,7 @@ function createEmptyForm(): EventForm {
     publicTitle: "",
     endDateKey: "",
     isSupport: false,
+    isTentative: false,
     supportUrl: "",
     category: "stream",
     status: "scheduled",

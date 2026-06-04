@@ -2019,6 +2019,7 @@ export function PublicPoster({
               span.isMulti && !span.roundLeft ? "no-left" : "",
               span.isMulti && !span.roundRight ? "no-right" : "",
               isDimmedByFilter(event) ? "dimmed" : "",
+              event.isTentative && span.showTitle ? "tentative" : "",
               bookmarked ? "bookmarked" : ""
             ]
               .filter(Boolean)
@@ -2060,7 +2061,10 @@ export function PublicPoster({
                 <div className="event-main">
                   {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다(이음새 어긋남 방지). */}
                   {span.showTitle ? (
-                    <p>{main}</p>
+                    <p>
+                      {event.isTentative ? <span className="evt-tentative">미정</span> : null}
+                      {main}
+                    </p>
                   ) : (
                     <p className="span-cont">{main || " "}</p>
                   )}
@@ -2310,6 +2314,9 @@ export function PublicPoster({
                         <div className="agenda-content">
                           <p className="agenda-title">
                             <span className="agenda-title-text">
+                              {!support && event.isTentative ? (
+                                <span className="evt-tentative">미정</span>
+                              ) : null}
                               {support ? `🌱 ${event.publicTitle}` : main}
                             </span>
                             {interactive && !support ? (

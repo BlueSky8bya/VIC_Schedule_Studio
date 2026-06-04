@@ -1930,6 +1930,26 @@ html {
   transform: translateY(-1px);
   box-shadow: var(--shadow-2);
 }
+/* 미정(아직 확정 아님) — 점선 테두리로 '확정 아님'을 한눈에. (캘린더 표준: tentative=점선) */
+.public-event.tentative {
+  border-style: dashed;
+  border-color: rgb(0 0 0 / 30%);
+}
+/* '미정' 칩 — 제목 앞 작은 점선 알약. 글자색(currentColor)을 따라 카드 색과 어울린다. */
+.evt-tentative {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  padding: 0 5px;
+  border: 1px dashed currentColor;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.45;
+  white-space: nowrap;
+  opacity: 0.82;
+  vertical-align: 1px;
+}
 /* D: 2색 칸은 그라데이션(칸 배경) 위에 반쪽 무늬를 깔고, 글자는 그 위로 올린다. */
 .public-event[data-mixed] {
   position: relative;
