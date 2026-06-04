@@ -6949,15 +6949,20 @@ textarea:disabled {
   position: sticky;
   top: 88px;
   align-self: flex-start;
-  z-index: 16; /* 역할 배지 팝오버가 일정 카드 위로 뜨게(positioned 레일이 카드보다 위 레이어) */
+  /* 일정 카드(z:auto~2) 위, 그러나 sticky 헤더(.m-topstick z:12) '아래'. 16이면 레일이 헤더를
+     뚫고 올라와 우상단 모서리에서 인사이트·필터가 제목과 겹쳐 보였다(헤더가 항상 위여야 함).
+     배지 팝오버는 레일(z:11) 컨텍스트 안에서 카드 위로 뜨고, 헤더 영역(상단)엔 안 닿아 문제없음. */
+  z-index: 11;
   display: flex;
   flex-direction: column;
   gap: 8px;
   min-width: 0;
-  /* 고정 '높이' — 반드시 'vh'(큰 뷰포트 고정값)로. 'dvh'는 모바일 주소창이 접/펴질 때마다
-     값이 바뀌어 색상 필터·인사이트 버튼이 스크롤 중 위아래로 들썩였다(눈 피로). vh는 스크롤해도
-     안 변해 인사이트 버튼이 항상 같은 자리에 고정된다. 필터가 길면 필터 안쪽만 스크롤. */
-  height: calc(100vh - 168px);
+  /* 고정 '높이' — 'svh'(작은 뷰포트=주소창 보이는 기준)로. dvh는 주소창 접/펴짐마다 값이 바뀌어
+     스크롤 중 들썩였고(눈 피로), vh(큰 뷰포트)는 주소창이 보이는 기본 상태에서 레일 바닥(인사이트
+     버튼)이 화면 밖으로 숨었다. svh는 ① 스크롤해도 안 변하고(고정=안 들썩) ② 주소창이 보여도
+     화면 안에 들어와(버튼 안 가림) 다양한 모바일 높이에 안전하다. 주소창이 숨으면 아래에 여백만
+     조금 생긴다. 필터가 길면 필터 안쪽만 스크롤. */
+  height: calc(100svh - 168px);
 }
 /* 레일 맨 위 역할 배지 — 색상 필터 폭(92px)에 맞춰 한 줄, 가운데 정렬. */
 .agenda-rail .actor-badge-wrap {
@@ -6977,12 +6982,13 @@ textarea:disabled {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-/* 도움말 팝오버는 좁은 레일을 넘어 왼쪽으로 펼친다(오른쪽 끝 정렬, 충분한 폭).
+/* 도움말 팝오버는 좁은 레일을 넘어 왼쪽으로 펼친다(오른쪽 끝 정렬). 너비는 내용맞춤
+   (max-content, base) + 좁은 상한 → 뒤 일정을 과하게 안 가리고 공간 낭비 X.
    z-index를 높여 일정 카드 위로(밑에 깔려 가리던 문제). */
 .agenda-rail .role-help-pop {
   left: auto;
   right: 0;
-  width: min(78vw, 300px);
+  max-width: min(62vw, 228px);
   z-index: 60;
 }
 /* 레일이 sticky를 맡으므로 필터 자체 sticky는 풀고(static), 남는 높이를 채워 내부 스크롤한다.
