@@ -836,51 +836,28 @@ export function PublicPoster({
       return; // 모바일 아젠다(목록)는 고정 캔버스를 쓰지 않는다.
     }
     const scaler = posterScalerRef.current;
-    if (!scaler) {
+    const stage = posterStageRef.current;
+    if (!scaler || !stage) {
       return;
     }
-    // 표면이 일정 양에 따라 자라므로 '자연 크기'(축소 전, transform 영향 없는 offset*)를 잰다.
-    // 시청자: .poster-fit(헤더 뺀 남는 뷰포트 박스) 폭·높이에 통째로 맞춰 — 폭/높이 둘 다 들어와
-    // 스크롤도 잘림도 없다. 꾸미기: 위 툴바가 더 있고 스크롤이 자연스러워 폭 기준만.
+    // 표면이 일정 양에 따라 세로로 자란다. '폭'에만 맞춰 축소하고(글자 크기 유지), 화면보다 길면
+    // 페이지를 세로 스크롤한다 — 일정이 많아도 작아지지 않고 그대로 보고 내려서 본다. 자연 크기는
+    // transform에 영향 없는 offset*로 재 배율 바꿔도 피드백이 없다(폭만 보므로 더더욱).
     const measure = () => {
       const natW = scaler.offsetWidth || POSTER_DESIGN_W;
       const natH = scaler.offsetHeight || POSTER_DESIGN_H;
-      let s: number;
-      if (!decorate) {
-        const fit = posterFitRef.current;
-        if (!fit) {
-          return;
-        }
-        const fw = fit.clientWidth;
-        const fh = fit.clientHeight;
-        if (fw <= 0 || fh <= 0) {
-          return;
-        }
-        s = Math.min(1, fw / natW, fh / natH);
-      } else {
-        const stage = posterStageRef.current;
-        const w = stage ? stage.clientWidth : 0;
-        if (w <= 0) {
-          return;
-        }
-        s = Math.min(1, w / natW);
+      const w = stage.clientWidth;
+      if (w <= 0) {
+        return;
       }
-      setPosterScale(Math.max(0.12, s));
+      setPosterScale(Math.max(0.12, Math.min(1, w / natW)));
       setPosterNaturalH(natH);
     };
     measure();
-    // scaler.offset*는 transform(배율)에 영향받지 않아, 배율을 바꿔도 RO가 다시 안 울린다(피드백 없음).
-    // 내용(달 변경)으로 자연 높이가 바뀌거나, 뷰포트(.poster-fit)가 변할 때만 재계산한다.
     const ro = new ResizeObserver(measure);
-    ro.observe(scaler);
-    if (!decorate && posterFitRef.current) {
-      ro.observe(posterFitRef.current);
-    }
-    window.addEventListener("resize", measure);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
+    ro.observe(scaler); // 달 변경 등으로 자연 높이가 바뀌면 stage 높이 갱신
+    ro.observe(stage); // 뷰포트 폭 변하면 배율 갱신
+    return () => ro.disconnect();
   }, [showAgenda, decorate]);
 
   // 이 세션에서 삭제한 스티커 id. 달을 다시 시드할 때 schedule prop(서버 스냅샷)이 캐시 탓에
@@ -2451,11 +2428,7 @@ export function PublicPoster({
           ))}
         </div>
       ) : null}
-      <section
-        className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""} ${
-          !showAgenda && !decorate ? "is-fit" : ""
-        }`}
-      >
+      <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
         {showAgenda ? (
           <header className="agenda-header">
             {/* 시청자 미리보기 진입 시 — 제목 왼쪽 여백 칸에 안내(작게). */}

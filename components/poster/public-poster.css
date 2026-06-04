@@ -623,24 +623,14 @@
   padding: 0 22px 18px;
 }
 
-/* 시청자/미리보기(웹): 포스터 6행이 통째로 한 화면에 — 셸을 뷰포트 높이 flex 컬럼으로 두고,
-   .poster-fit가 헤더를 뺀 남는 높이를 전부 차지한다. JS가 그 박스 크기에 포스터를 맞춰 축소한다.
-   (꾸미기·아젠다에는 is-fit가 안 붙어 기존 흐름 그대로.) */
-.public-calendar-shell.is-fit {
-  height: 100dvh;
-  display: flex;
-  flex-direction: column;
-}
+/* .poster-fit는 레이아웃에 끼지 않는 투명 래퍼 — stage가 셸 흐름에 그대로 놓여, 일정이 많아
+   포스터가 길어지면 페이지가 세로 스크롤된다(축소로 작아지지 않고 그대로 보고 내려서 본다). */
 .poster-fit {
   display: contents;
 }
-.public-calendar-shell.is-fit .poster-fit {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
+/* 스크롤바가 생겼다 사라졌다 하며 폭이 출렁여 배율이 떨리는 걸 막는다(자리 항상 예약). */
+html {
+  scrollbar-gutter: stable;
 }
 
 .public-calendar-header {
@@ -1918,6 +1908,7 @@
 
 /* 일정별 색상 박스 (태그 색) */
 .public-event {
+  position: relative; /* 하트를 카드 오른쪽 위에 절대배치하기 위한 기준 */
   display: flex;
   flex-direction: column; /* 제목은 맨 위, 방식 점(.pill-dots)은 margin-top:auto로 맨 아래 */
   gap: 3px;
@@ -1947,6 +1938,17 @@
   display: flex;
   align-items: center;
   gap: 4px;
+  /* 하트(오른쪽 위 절대배치)와 안 겹치게 제목 오른쪽을 비워둔다. 하트 유무와 무관하게 항상
+     같은 폭이라 시청자/꾸미기 줄바꿈이 동일 → 스티커 좌표가 두 모드에서 안 어긋난다. */
+  padding-right: 15px;
+}
+/* 하트를 카드 오른쪽 위 모서리에 고정 — 제목 줄 수(1줄/2줄)와 상관없이 항상 같은 위치라
+   이어진 일정(같은 색 막대)에서도 하트가 가지런히 한 줄로 정렬돼 통일감이 있다. */
+.public-event .event-heart {
+  position: absolute;
+  top: 3px;
+  right: 5px;
+  z-index: 2;
 }
 
 .public-event .event-main p {
