@@ -911,3 +911,24 @@ select {
   background-color: transparent;
   pointer-events: none;
 }
+
+/* ── #5 동작 줄이기(reduce motion) ─────────────────────────────────────────
+   사용자가 '동작 줄이기'를 켜면(<html data-reduce-motion>) 끊임없이 반복되는 '장식용' 모션만
+   끈다 — 눈 피로↓. 의미 있는 모션(스피너·저장 점·라이브·드래그 안내선·누름 피드백·등장/삭제)은
+   그대로 둬서 상태를 계속 알 수 있게 한다. OS의 prefers-reduced-motion은 별개로 각 컴포넌트가
+   이미 존중한다(이 토글은 그 위에 얹는 명시적 사용자 설정).
+   - 제목 양옆 ✨, 오늘 강조 호흡/맥동, 인기 불꽃 깜빡임, 로그인 화면 둥실, 스티커 상시 효과 */
+html[data-reduce-motion] .title-spark,
+html[data-reduce-motion] .studio-poster-title span,
+html[data-reduce-motion] .flame,
+html[data-reduce-motion] .public-day.today,
+html[data-reduce-motion] .agenda-day.today .agenda-when strong,
+html[data-reduce-motion] .auth-brand,
+html[data-reduce-motion] .auth-brand-spark,
+html[data-reduce-motion] .sticker-anim-float,
+html[data-reduce-motion] .sticker-anim-twinkle,
+html[data-reduce-motion] .sticker-anim-jiggle,
+html[data-reduce-motion] .sticker-anim-spin,
+html[data-reduce-motion] .sticker-anim-pulse {
+  animation: none !important;
+}

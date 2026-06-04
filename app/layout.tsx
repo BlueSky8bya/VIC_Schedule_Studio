@@ -67,6 +67,14 @@ export default async function RootLayout({
       className={`${gaegu.variable} ${blackHanSans.variable} ${nanumMyeongjo.variable} ${jua.variable} ${doHyeon.variable} ${nanumPen.variable} ${gamja.variable} ${gugi.variable} ${hiMelody.variable}`}
     >
       <body>
+        {/* '동작 줄이기' 설정을 페인트 전에 <html>에 반영 — 켜둔 사용자는 장식 애니메이션이
+            깜빡 떴다 사라지지 않는다(FOUC 방지). 끄면 평소대로. localStorage 접근 실패는 무시. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('vic.reduceMotion')==='on')document.documentElement.setAttribute('data-reduce-motion','1')}catch(e){}"
+          }}
+        />
         {children}
         {actor.isAuthenticated ? <PresenceBeacon role={actor.role} /> : null}
         {/* 배포 확인용 커밋 해시는 개발자 화면(편집실 액션바 중앙)에만 표시한다(studio-shell). */}

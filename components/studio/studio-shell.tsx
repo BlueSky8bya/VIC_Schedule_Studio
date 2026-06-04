@@ -93,6 +93,7 @@ import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { detectDevice } from "@/lib/presence/presence-client";
 import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
+import { reduceMotionEnabled, setReduceMotion } from "@/lib/ui/motion";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 
 type StudioShellProps = {
@@ -818,6 +819,17 @@ export function StudioShell({
     setHapticsOn(next);
     if (next) hapticTick(); // 켜는 순간 한 번 울려 "이렇게 울려요"를 바로 체감
   };
+  // #5/#6 동작 줄이기 — 장식용 반복 모션을 끈다(눈 피로↓). 기기 무관(모든 역할 노출).
+  const [reduceMotion, setReduceMotionState] = useState(false);
+  useEffect(() => {
+    setReduceMotionState(reduceMotionEnabled());
+  }, []);
+  const toggleReduceMotion = () => {
+    const next = !reduceMotion;
+    setReduceMotion(next); // localStorage(vic.reduceMotion) + <html data-reduce-motion> 즉시 반영
+    setReduceMotionState(next);
+    hapticTick();
+  };
   const canReadPrivate =
     canReadPrivateLayer(effectiveRole, effIsWorker, hasUnlockSession) && showPrivate;
 
@@ -1029,6 +1041,24 @@ export function StudioShell({
                 </button>
               </div>
             ) : null}
+            {/* 동작 줄이기 — 장식용 반복 모션(제목 ✨·오늘 호흡·불꽃 등)을 끈다. 눈 피로↓.
+                기기 무관 항상 노출(진동과 달리 모든 화면에 적용). */}
+            <div className="role-help-haptics">
+              <span className="rhh-label">
+                <Sparkles aria-hidden="true" size={14} />
+                동작 줄이기
+              </span>
+              <button
+                aria-checked={reduceMotion}
+                aria-label="동작 줄이기 켜기/끄기"
+                className={`rhh-switch ${reduceMotion ? "on" : ""}`}
+                onClick={toggleReduceMotion}
+                role="switch"
+                type="button"
+              >
+                <span className="rhh-knob" aria-hidden="true" />
+              </button>
+            </div>
           </div>
         ) : null}
       </div>
@@ -1134,10 +1164,14 @@ export function StudioShell({
   // 뒤로가기가 시트를 닫는 대신 페이지를 떠나(로그인/계정 화면으로) 버린다. 오너의 편집 시트
   // (mobileEditId)·개발자 모달과 동일하게 '뒤로가기=시트 닫기'로 통일.
   const sheetDepth = (tagSheetId !== null ? 1 : 0) + (supportSheetId !== null ? 1 : 0);
-  // 히스토리 스택 깊이 = 오버레이(편집 시트·공지) + 매니저/작업자 시트 + 시청자 미리보기.
+  // 비밀번호 팝업(passcodeModal)도 한 칸 쌓는다 — 안 쌓으면 모바일 뒤로가기가 팝업을 닫는 대신
+  // 사이트를 종료해 버린다(비공개 일정 잠금해제 입력창에서 발생). 다른 모달 위에도 뜰 수 있어
+  // 스택 '맨 위'로 친다.
+  const passcodeDepth = passcodeModal !== null ? 1 : 0;
+  // 히스토리 스택 깊이 = 오버레이(편집 시트·공지) + 매니저/작업자 시트 + 비번 팝업 + 미리보기.
   // viewerMode도 한 칸 쌓아야, 휴대폰 뒤로가기를 누를 때 로그인 흐름으로 빠지지 않고
   // 편집실로 돌아온다. (스크롤 잠금은 overlayLocked만 사용 — 미리보기 자체 스크롤은 살린다.)
-  const stackDepth = overlayDepth + sheetDepth + (viewerMode ? 1 : 0);
+  const stackDepth = overlayDepth + sheetDepth + passcodeDepth + (viewerMode ? 1 : 0);
   const depthRef = useRef(0);
   const ignorePopRef = useRef(0); // 우리가 정리용으로 부른 history.back의 popstate는 무시
   const backClosingRef = useRef(false); // 뒤로가기로 닫히는 중인지
@@ -1231,7 +1265,10 @@ export function StudioShell({
       }
       backClosingRef.current = true;
       // 맨 위 레이어 하나만 닫는다. 보통 동시에 하나만 열리지만, 겹쳐도 위→아래 순으로.
-      if (modalIsStackable) {
+      // 비번 팝업이 가장 위(다른 모달 위에도 뜸) → 가장 먼저 닫는다.
+      if (passcodeModal !== null) {
+        setPasscodeModal(null);
+      } else if (modalIsStackable) {
         setModal(null);
       } else if (tagSheetId !== null) {
         // 매니저: 태그 수정 시트 → 닫고 편집실 기본 화면으로(계정 화면으로 안 빠짐).
@@ -1250,7 +1287,7 @@ export function StudioShell({
     }
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [modalIsStackable, tagSheetId, supportSheetId, mobileEditId, viewerMode]);
+  }, [passcodeModal, modalIsStackable, tagSheetId, supportSheetId, mobileEditId, viewerMode]);
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: StudioScheduleEvent) {
@@ -3079,7 +3116,7 @@ export function StudioShell({
   function renderTentativeToggle() {
     return (
       <div className="support-toggle">
-        <span>🕗 미정 — 아직 확정 아님</span>
+        <span>🕗 아직 확정 아님</span>
         <button
           aria-checked={form.isTentative}
           aria-label="미정(아직 확정 아님) 표시"
