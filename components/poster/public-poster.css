@@ -623,6 +623,26 @@
   padding: 0 22px 18px;
 }
 
+/* 시청자/미리보기(웹): 포스터 6행이 통째로 한 화면에 — 셸을 뷰포트 높이 flex 컬럼으로 두고,
+   .poster-fit가 헤더를 뺀 남는 높이를 전부 차지한다. JS가 그 박스 크기에 포스터를 맞춰 축소한다.
+   (꾸미기·아젠다에는 is-fit가 안 붙어 기존 흐름 그대로.) */
+.public-calendar-shell.is-fit {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+.poster-fit {
+  display: contents;
+}
+.public-calendar-shell.is-fit .poster-fit {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
 .public-calendar-header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;

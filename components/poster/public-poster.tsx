@@ -826,46 +826,50 @@ export function PublicPoster({
   // (POSTER_DESIGN_W×H)로 설계하고, 화면 폭에 맞춰 통째로 축소(transform: scale)만 한다.
   // export는 변형 없는 .poster-surface를 원본 해상도로 캡쳐하므로 화질에 영향 없다.
   const posterStageRef = useRef<HTMLDivElement | null>(null);
+  const posterFitRef = useRef<HTMLDivElement | null>(null);
   const [posterScale, setPosterScale] = useState(1);
   useEffect(() => {
     if (showAgenda) {
       return; // 모바일 아젠다(목록)는 고정 캔버스를 쓰지 않는다.
     }
+    if (!decorate) {
+      // 시청자/미리보기: 6행 달력 전체가 한 화면에 들어와야 한다. .poster-fit는 CSS로 '헤더를 뺀
+      // 남는 뷰포트 높이'를 차지하는 flex 박스다(height:100dvh 컬럼의 flex:1). 그 박스의 실측
+      // 폭·높이에 통째로 맞춘다 → 폭·높이 둘 다 맞아 절대 안 잘린다. 박스 크기는 레이아웃이 정하지
+      // 자식 scale에 안 흔들려(min-height:0) 피드백 루프가 없다.
+      const fit = posterFitRef.current;
+      if (!fit) {
+        return;
+      }
+      const apply = () => {
+        const w = fit.clientWidth;
+        const h = fit.clientHeight;
+        if (w <= 0 || h <= 0) {
+          return;
+        }
+        setPosterScale(
+          Math.max(0.12, Math.min(1, w / POSTER_DESIGN_W, h / POSTER_DESIGN_H))
+        );
+      };
+      apply();
+      const ro = new ResizeObserver(apply);
+      ro.observe(fit);
+      return () => ro.disconnect();
+    }
+    // 꾸미기: 위 툴바가 더 있고 세로 스크롤이 자연스러워 폭 기준만 축소한다.
     const stage = posterStageRef.current;
     if (!stage) {
       return;
     }
     const apply = (width: number) => {
-      if (width <= 0) {
-        return;
+      if (width > 0) {
+        setPosterScale(Math.min(1, width / POSTER_DESIGN_W));
       }
-      const byW = width / POSTER_DESIGN_W;
-      // 시청자 화면은 6행 달력이 통째로 한 화면에 들어와야 한다(스크롤로 행이 잘리면 안 됨).
-      // 폭'과' 높이 둘 다에 맞춘다. 가용 높이 = 창 높이 − (stage 위에 있는 모든 것: 헤더 등) −
-      // 아래 여백. stage 위 높이는 rect.top + scrollY(=문서 상단~stage 거리)로 재 스크롤·배율과
-      // 무관하다 → 측정이 안 흔들려 잘림/피드백 없음. 꾸미기는 위 툴바가 더 있고 스크롤이
-      // 자연스러워 폭 기준만.
-      let scale = byW;
-      if (!decorate) {
-        const aboveStage = stage.getBoundingClientRect().top + window.scrollY;
-        const availH = window.innerHeight - aboveStage - 28; // 아래 여백/월이동바 클리어런스
-        if (availH > 0) {
-          scale = Math.min(scale, availH / POSTER_DESIGN_H);
-        }
-      }
-      setPosterScale(Math.max(0.12, Math.min(1, scale)));
     };
     apply(stage.clientWidth);
-    // contentRect.width는 자식 scale(높이 변경)에 영향받지 않아 폭 피드백 루프가 없다.
     const ro = new ResizeObserver((entries) => apply(entries[0]?.contentRect.width ?? 0));
     ro.observe(stage);
-    // 창 세로 리사이즈도 반영(ResizeObserver는 폭만 봄).
-    const onResize = () => apply(stage.clientWidth);
-    window.addEventListener("resize", onResize);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", onResize);
-    };
+    return () => ro.disconnect();
   }, [showAgenda, decorate]);
 
   // 이 세션에서 삭제한 스티커 id. 달을 다시 시드할 때 schedule prop(서버 스냅샷)이 캐시 탓에
@@ -2436,7 +2440,11 @@ export function PublicPoster({
           ))}
         </div>
       ) : null}
-      <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
+      <section
+        className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""} ${
+          !showAgenda && !decorate ? "is-fit" : ""
+        }`}
+      >
         {showAgenda ? (
           <header className="agenda-header">
             {/* 시청자 미리보기 진입 시 — 제목 왼쪽 여백 칸에 안내(작게). */}
@@ -3201,6 +3209,7 @@ export function PublicPoster({
         ) : null}
 
         {showAgenda ? null : (
+        <div className="poster-fit" ref={posterFitRef}>
         <div
           className="poster-stage"
           ref={posterStageRef}
@@ -3387,6 +3396,7 @@ export function PublicPoster({
             </div>
           </aside>
         </section>
+        </div>
         </div>
         </div>
         )}
