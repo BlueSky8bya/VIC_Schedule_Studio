@@ -3184,12 +3184,32 @@ export function PublicPoster({
           key={`surface-${view.year}-${view.month}`}
         >
           <div className="poster-heading">
+            {/* 내 관심(♥) 모아보기 — 제목 위 가운데 배너로. 시청자 상호작용 모드에서만(캡쳐/꾸미기 제외). */}
+            {interactive ? (
+              <div className="poster-interest">
+                <button
+                  aria-pressed={bookmarkedOnly}
+                  className={`interest-toggle ${bookmarkedOnly ? "active" : ""}`}
+                  onClick={() => setBookmarkedOnly((v) => !v)}
+                  title="내가 ♥ 누른 일정만 모아서 보기"
+                  type="button"
+                >
+                  <LiquidHeart ratio={interestRatio} />
+                  <span className="it-text">
+                    <strong>내 관심</strong>
+                    <em>♥ 누른 일정만 모아보기</em>
+                  </span>
+                </button>
+              </div>
+            ) : null}
+            <div className="poster-titlerow">
               <span aria-hidden="true">✨️</span>
-            <h1>{schedule.calendar.title}</h1>
+              <h1>{schedule.calendar.title}</h1>
               <span aria-hidden="true">✨️</span>
-            <em>
-              {view.year}년 {view.month}월
-            </em>
+              <em>
+                {view.year}년 {view.month}월
+              </em>
+            </div>
           </div>
 
           <StickerLayer
@@ -3309,32 +3329,41 @@ export function PublicPoster({
                     {mods.length > 0 ? (
                       <>
                         <strong className="legend-subhead">방식</strong>
-                        {mods.map(legendBtn)}
+                        {/* 방식은 2열로 — 세로 높이를 아껴 아래 ♥ 안내가 들어갈 자리를 만든다(웹). */}
+                        <div className="legend-mods">{mods.map(legendBtn)}</div>
                       </>
                     ) : null}
                   </>
                 );
               })()}
-              {/* 내가 ♥ 누른 일정만 모아 보기 — 색상 안내와 같은 자리에서 함께 거른다. */}
-              {!decorate ? (
-                <button
-                  aria-pressed={bookmarkedOnly}
-                  className={`legend-item heart ${bookmarkedOnly ? "active" : ""}`}
-                  onClick={() => setBookmarkedOnly((v) => !v)}
-                  title="내가 ♥ 누른 일정만 모아서 보기"
-                  type="button"
-                >
-                  <LiquidHeart ratio={interestRatio} />
-                  내 관심
-                </button>
-              ) : null}
               {filterActive ? (
                 <button className="legend-clear" onClick={clearFilters} type="button">
                   필터 해제
                 </button>
               ) : null}
-              {/* 관심(♥) 인기도 안내는 웹 레일 높이 절약을 위해 뺐다(태그 최대 20종 수용).
-                  ♥ 의미는 어항 하트로, 불꽃/왕관 배지는 달력 위 일정에서 직접 보인다. */}
+              {/* ♥ 의미·인기 단계 안내 — 하트 토글은 제목 위 배너로 옮겼고, 그 자리에 모바일처럼
+                  설명을 둔다. margin-top:auto로 안내 박스 바닥에 붙어 빈 공간 없이 채운다. */}
+              {interactive ? (
+                <div className="legend-heart-help">
+                  <p className="legend-tier-line">
+                    <span className="hm">♥</span> 많이 받으면
+                  </p>
+                  <ul className="legend-tiers">
+                    <li>
+                      <span className="flame">🔥</span> 관심
+                    </li>
+                    <li>
+                      <span className="flame">🔥🔥</span> 높은 관심
+                    </li>
+                    <li>
+                      <span className="flame">🔥🔥🔥</span> 폭발적
+                    </li>
+                    <li>
+                      <span className="flame">👑</span> 이 달 1위
+                    </li>
+                  </ul>
+                </div>
+              ) : null}
             </div>
           </aside>
         </section>
