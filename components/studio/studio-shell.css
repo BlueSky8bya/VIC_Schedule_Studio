@@ -3876,8 +3876,18 @@
   /* [Phase 5] vw(화면 전체) → cqi(달력 칸 폭). 새 일정 카드가 열려 달력이 좁아지면 글자도
      같이 작아져 답답함을 줄인다. clamp 경계(13~19)로 어떤 폭에서도 과하지 않게 보장. */
   font-size: clamp(13px, 1.1cqi, 19px);
-  font-weight: 900;
+  /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다 — 시청자 포스터와 동일.
+     태그 선택·저장하면 그 태그 색에 맞춰 즉시(렌더 시점) 반영된다. */
+  font-weight: var(--evt-weight, 900);
   line-height: 1.22;
+}
+/* 무늬 칸 글자를 바탕 무늬에서 떼어내는 헤일로. 이어지는 칸 투명 제목(.span-cont)엔 미적용. */
+.pill-main strong:not(.span-cont),
+.studio-event-pill .pill-subs:not(.span-cont) li {
+  text-shadow: var(--evt-shadow, none);
+}
+.studio-event-pill .pill-subs:not(.span-cont) li {
+  font-weight: var(--evt-weight, 800);
 }
 
 .pill-toggle {
