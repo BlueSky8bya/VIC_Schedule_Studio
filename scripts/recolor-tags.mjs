@@ -39,7 +39,9 @@ const MOD = [
   { n: "레드", bg: "#e03131", text: "#ffffff", border: "#c92a2a" },     // 시참(빨강)
   { n: "시안", bg: "#1098ad", text: "#ffffff", border: "#0c8599" },     // 짧뱅(시안)
   { n: "마젠타", bg: "#ae3ec9", text: "#ffffff", border: "#9c36b5" },   // 모캡(마젠타)
-  { n: "오렌지", bg: "#e8590c", text: "#ffffff", border: "#d9480f" }    // 구플뱅(주황)
+  // 구플뱅 — 예전 주황(#e8590c)이 시참 빨강(#e03131)과 hue ~19°라 작은 점/칩에서 거의 구분 안 됐다.
+  // 선명한 앰버(노랑쪽)로 옮겨 hue·명도 둘 다 벌린다. 밝아 흰 글씨는 대비가 모자라 → 진한 갈색 글씨.
+  { n: "앰버", bg: "#f59f00", text: "#3d2800", border: "#e08a00" }     // 구플뱅(앰버 — 시참 빨강과 분리)
 ];
 
 const t = readFileSync(new URL("../.env.local", import.meta.url), "utf8");
