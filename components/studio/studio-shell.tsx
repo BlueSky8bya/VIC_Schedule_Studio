@@ -2443,9 +2443,9 @@ export function StudioShell({
                   return (
                     <button
                       aria-pressed={on}
-                      className={`agenda-legend-tag ${on ? "on" : ""} ${
-                        filtering && !on ? "dim" : ""
-                      }`}
+                      className={`agenda-legend-tag ${
+                        tag.kind === "modifier" ? "mod" : ""
+                      } ${on ? "on" : ""} ${filtering && !on ? "dim" : ""}`}
                       key={tag.id}
                       onClick={() => toggleTagFilter(tag.id)}
                       type="button"

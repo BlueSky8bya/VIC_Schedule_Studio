@@ -5314,6 +5314,15 @@ textarea:disabled {
   margin-top: 1.5px;
   color: var(--accent);
 }
+/* 부연 설명(괄호·무늬 등)은 가로 여유 있는 웹에서만 — 모바일은 폭을 아껴 한 줄로. */
+.tip-web {
+  display: none;
+}
+@media (min-width: 641px) {
+  .tip-web {
+    display: inline;
+  }
+}
 /* 삭제 경고 — 점선으로 살짝 구분하고 붉게(통계가 흐트러진다는 주의). */
 .tag-tip.warn {
   margin-top: 2px;
@@ -7399,6 +7408,9 @@ textarea:disabled {
   gap: 10px;
   position: sticky;
   bottom: 0;
+  /* 스크롤되는 태그 칩의 선택순번 뱃지(.tp-order, z-index:1)가 이 바 위로 뚫려 보이지 않도록
+     바에 더 높은 z-index를 줘 항상 콘텐츠 위에 깔린다. */
+  z-index: 5;
   /* 시트 좌우 패딩(16px)을 상쇄해 바가 폭을 꽉 채우고, 위 경계선으로 콘텐츠와 분리. */
   margin: 6px -16px 0;
   border-top: 1px solid #e8e1d6;

@@ -733,7 +733,8 @@ export function TagLegendEditor({
       <div className="tag-tips">
         <span className="tag-tip">
           <Palette aria-hidden="true" size={13} />
-          <b>콘텐츠</b>는 달력 칸을 채우는 색·무늬(무슨 방송), <b>방식</b>은 그 위 작은 점(어떻게)
+          <b>콘텐츠</b>는 칸을 채우는 색<span className="tip-web">·무늬(무슨 방송)</span>,{" "}
+          <b>방식</b>은 그 위 작은 점<span className="tip-web">(어떻게)</span>
         </span>
         <span className="tag-tip">
           <GripVertical aria-hidden="true" size={13} />
@@ -744,8 +745,8 @@ export function TagLegendEditor({
         </span>
         <span className="tag-tip warn">
           <AlertTriangle aria-hidden="true" size={13} />
-          태그를 지우면 그동안 쌓인 인사이트 통계가 흐트러져요. 삭제보다 새 태그 추가·이름 바꾸기를
-          권해요.
+          태그를 지우면 쌓인 통계가 흐트러져요<span className="tip-web">. 삭제보다 추가·이름 바꾸기를
+          권해요</span>.
         </span>
       </div>
       {/* 콘텐츠끼리 / 방식끼리 묶어 한 눈에. 드래그 순서는 묶음 안에서 유지된다. */}
