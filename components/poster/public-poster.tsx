@@ -3345,6 +3345,14 @@ export function PublicPoster({
             </em>
           </div>
 
+          {/* #24 안전 영역 가이드 — 꾸미기 중에만. 점선 안쪽이 '잘릴 걱정 없는' 영역. 캡쳐엔 안 나온다
+              (decorate=false인 시청자/PNG 경로에선 렌더 자체가 안 됨). pointer-events:none. */}
+          {decorate ? (
+            <div className="deco-safe-guide" aria-hidden="true">
+              <span className="deco-safe-tip">안전 영역 — 점선 밖은 잘릴 수 있어요</span>
+            </div>
+          ) : null}
+
           <StickerLayer
             avoidSelector="[data-sticker-avoid]"
             editable={decorate}

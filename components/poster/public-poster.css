@@ -2353,12 +2353,36 @@ html {
   }
 }
 
+/* #24 꾸미기 안전 영역 가이드 — 표면 안쪽 점선. 점선 밖에 둔 스티커/글자는 PNG에서 잘릴 수 있음.
+   꾸미기에서만 렌더(캡쳐·시청자엔 없음). 클릭 안 막음. */
+.deco-safe-guide {
+  position: absolute;
+  inset: 3.2%;
+  z-index: 1;
+  border: 2px dashed rgb(99 102 241 / 38%);
+  border-radius: 18px;
+  pointer-events: none;
+}
+.deco-safe-tip {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgb(99 102 241 / 12%);
+  color: #4f46e5;
+  font-size: 16px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .sticker-handle {
   position: absolute;
   display: grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
   border: 1.5px solid #6366f1;
   border-radius: var(--r-pill);
   background: #ffffff;
@@ -2378,24 +2402,24 @@ html {
    세로 핸들(회전)은 위/아래, 가로 핸들(크기)은 좌/우. 가운데 정렬은 margin으로(hover scale과 충돌 방지). */
 .sticker-handle.rotate {
   left: 50%;
-  margin-left: -12px;
+  margin-left: -16px;
 }
 .sticker-handle.rotate.top {
-  top: -11px;
+  top: -15px;
 }
 .sticker-handle.rotate.bottom {
-  bottom: -11px;
+  bottom: -15px;
 }
 .sticker-handle.resize {
   top: 50%;
-  margin-top: -12px;
+  margin-top: -16px;
   cursor: nwse-resize;
 }
 .sticker-handle.resize.left {
-  left: -11px;
+  left: -15px;
 }
 .sticker-handle.resize.right {
-  right: -11px;
+  right: -15px;
 }
 
 /* ── 꾸미기 도구 모음 ── */
