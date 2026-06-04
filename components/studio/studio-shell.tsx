@@ -339,6 +339,23 @@ export function StudioShell({
       hour12: false
     });
   }
+  // Ctrl+S로 저장할 카드가 없을 때(이미 다 저장됨) — 저장중→저장됨을 잠깐 보여 '저장됐다'를 확인시킨다.
+  // 진행 중인 실제 저장이 있으면 그쪽 표시를 건드리지 않는다.
+  function flashSavedChip(): void {
+    if (savingCountRef.current > 0) return;
+    if (savedTimerRef.current) {
+      window.clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = null;
+    }
+    setSaveState("saving");
+    savedTimerRef.current = window.setTimeout(() => {
+      if (savingCountRef.current === 0) {
+        setSaveState("saved");
+        setLastSavedKst(nowKstHm());
+      }
+      savedTimerRef.current = null;
+    }, 600);
+  }
   // 저장 상태 칩 — 데스크톱 헤더·모바일 역할바 양쪽에서 같은 모양으로 쓴다.
   function renderSaveStatus() {
     return (
@@ -2438,9 +2455,11 @@ export function StudioShell({
       if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
       const key = e.key.toLowerCase();
       if (key === "s") {
-        // Ctrl/⌘+S: 편집 중인 카드 저장(브라우저 '페이지 저장' 가로채기). 제목 있을 때만.
+        // Ctrl/⌘+S: 편집 중 카드가 있으면 실제 재저장(안 바꿨어도 다시 저장), 없으면 '이미
+        // 저장됨'을 칩으로 잠깐 확인. 어느 쪽이든 저장중→저장됨 피드백이 뜬다. (페이지 저장 가로채기)
         e.preventDefault();
         if (editorVisible && form.publicTitle.trim()) saveEvent();
+        else flashSavedChip();
       } else if (key === "z") {
         // 실수로 지운 일정 되살리기(편집 중 텍스트는 위 INPUT/TEXTAREA 가드로 보호됨).
         e.preventDefault();
