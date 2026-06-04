@@ -3050,6 +3050,13 @@
 /* 모바일 헤더(.agenda-header, grid 1fr auto 1fr) 왼쪽 1열 — 제목과 같은 줄의 작은 펄.
    기본(비개발자)은 흐린 회색, 개발자(.dev)는 또렷한 보라.
    .studio-mobile에만 렌더되므로(웹은 그 레이아웃이 숨겨짐) 별도 미디어쿼리 없이 둔다. */
+/* 저장 상태 칩 — 버전 태그(1열)와 같은 줄(1행) 오른쪽 끝(3열)에. */
+.studio-mobile .agenda-header .save-status {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+  align-self: center;
+}
 .studio-mobile .agenda-header .studio-build-tag-m {
   grid-column: 1;
   grid-row: 1;
@@ -3391,11 +3398,11 @@
 }
 /* 필터에 안 맞는 일정은 흐리게(편집실 그리드·모바일 아젠다 공용) */
 .studio-event-pill.filter-dim,
-/* 미정(모바일 아젠다) — 레이아웃 안 밀리게 점선 outline + 제목 앞 '미정' 칩(공용 .evt-tentative). */
-.agenda-event.tentative {
-  outline: 1.5px dashed rgb(0 0 0 / 26%);
-  outline-offset: -2px;
-  border-radius: 12px;
+/* 미정(모바일 아젠다) — 카드 전체가 아니라 '세로 색상 바'에 점선을 둘러 미정임을 표시(모바일에선
+   바가 그 일정의 시각 신호라 거기에 두는 게 자연스럽다). 제목 앞 '미정' 칩(공용 .evt-tentative)도 함께. */
+.agenda-event.tentative .agenda-bar {
+  outline: 2px dashed rgb(0 0 0 / 40%);
+  outline-offset: 1px;
 }
 .agenda-event.filter-dim {
   opacity: 0.26;

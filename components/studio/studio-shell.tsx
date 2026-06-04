@@ -328,6 +328,7 @@ export function StudioShell({
   const savingCountRef = useRef(0); // 동시 진행 쓰기 수 — 0이 될 때 최종 상태 확정
   const savingSinceRef = useRef(0); // 저장 묶음 시작 시각(‘저장 중’ 최소 노출)
   const savedTimerRef = useRef<number | null>(null);
+  const editedSinceSyncRef = useRef(false); // 마지막 서버 새로고침 이후 편집이 있었나(미리보기 새로고침 판단)
   function nowKstHm(): string {
     return new Date().toLocaleTimeString("ko-KR", {
       timeZone: "Asia/Seoul",
@@ -414,7 +415,13 @@ export function StudioShell({
       savedTimerRef.current = null;
     }
     savingCountRef.current += 1;
-    setSaveState("saving");
+    editedSinceSyncRef.current = true; // 이후 미리보기 진입 시 서버를 새로 불러오게 표시
+    // 'saving'을 setTimeout(0)으로 트랜지션 밖에서 칠한다 — 새 일정 저장은 startTransition 안에서
+    // studioWrite가 불려 setState가 트랜지션(비긴급)으로 묶이는 바람에 빠른 저장에선 '저장 중'이
+    // 아예 안 칠해졌다(삭제는 트랜지션 밖이라 보였음). 매크로태스크로 빼면 항상 긴급으로 칠해진다.
+    window.setTimeout(() => {
+      if (savingCountRef.current > 0) setSaveState("saving");
+    }, 0);
     const p = postStudioWrite(op, payload);
     inflightWritesRef.current.add(p);
     // 낙관적 저장은 너무 빨라(특히 새 일정 생성) '저장 중'이 안 보일 수 있다 → 최소 ~450ms 노출.
@@ -464,14 +471,22 @@ export function StudioShell({
   // 시청자 화면 미리보기로 넘어갈 때: 먼저 진행 중 편집을 모두 반영(flush)한 뒤 서버를 새로
   // 불러온다 → 미리보기가 'DB 진실 = 실제 시청자가 볼 것'과 항상 일치한다(추가 새로고침 불필요).
   function enterViewerMode() {
-    // 진행 중 편집이 있을 때만 서버를 새로 불러온다. 편집 없이 미리보기만 볼 땐 refresh를
-    // 생략 → 편집실로 돌아올 때 그리드가 다시 그려지며 높이가 잠깐 어긋났다 맞춰지는 깜빡임 방지.
-    const hadPending =
-      pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0;
+    // 이번 세션에 편집이 한 번이라도 있었으면(진행 중이든, 방금 끝났든) 서버를 새로 불러와
+    // 미리보기가 최신과 일치하게 한다. 예전엔 '지금 진행 중'만 봐서, '저장됨'까지 기다린 뒤 미리보기를
+    // 누르면 refresh를 건너뛰어 옛 상태가 보였다(수동 새로고침 필요했던 버그). 편집이 전혀 없으면
+    // refresh를 생략해 돌아올 때 깜빡임을 피한다.
+    const needsRefresh =
+      editedSinceSyncRef.current ||
+      pendingRef.current ||
+      pendingPersistRef.current > 0 ||
+      inflightWritesRef.current.size > 0;
     setViewerMode(true);
     void (async () => {
       await flushPendingWrites();
-      if (hadPending) router.refresh();
+      if (needsRefresh) {
+        router.refresh();
+        editedSinceSyncRef.current = false;
+      }
     })();
   }
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
@@ -2437,10 +2452,11 @@ export function StudioShell({
                   토리님 편집실 · {view.year}년 {view.month}월
                 </span>
               </h1>
+              {/* 저장 상태 칩 — 버전(커밋) 태그와 같은 줄 오른쪽(헤더 grid 3열). */}
+              {renderSaveStatus()}
             </header>
 
             <div className="m-rolebar">
-              {renderSaveStatus()}
               {renderRoleBadge()}
               {/* 미리보기 드롭다운(개발자)/시청자 화면을 먼저, 비공개 일정 토글을 그 뒤에(위치 swap). */}
               {isDeveloper ? (
