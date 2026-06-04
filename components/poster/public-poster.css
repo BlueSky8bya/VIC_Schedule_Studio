@@ -919,22 +919,22 @@
 .poster-surface {
   position: relative;
   isolation: isolate; /* 테마 장식(::before/::after, z-index:-1)이 이 표면 안에서만 깔리도록 */
-  /* 고정 캔버스 크기(JS의 POSTER_DESIGN_W/H = 1840×1035와 반드시 일치시킬 것).
-     표면 자신에 명시 px를 주어, html2canvas가 부모(scaler) 밖에서 복제해도 크기가 정확하다. */
+  /* 폭은 1840 고정. 높이는 '내용에 맞춰' 자란다 — 일정이 많은 달은 칸이 커져 표면이 더 커지고,
+     일정을 절대 자르지 않는다(16:9가 살짝 무너져도 OK). 전체는 JS가 폭·높이에 맞춰 통째로 축소해
+     화면 안에 넣으므로 스크롤도 잘림도 없다. (배율만 transform이라 스티커 좌표는 안 바뀐다.) */
   width: 1840px;
-  height: 1035px;
+  height: auto;
   display: grid;
   /* 양옆 레일을 합쳐 ~20px 줄여, 가운데 달력(7칸 1fr)이 칸당 약 3px씩 넓어지게 한다. */
   grid-template-columns: 238px minmax(0, 1fr) 220px;
-  /* 제목줄(auto) + 본문(남는 높이 전부) — 고정 높이를 본문이 채워 끝선을 맞춘다. */
-  grid-template-rows: auto 1fr;
+  /* 제목줄(auto) + 본문(내용 높이) — 본문이 자라면 표면도 함께 자란다. */
+  grid-template-rows: auto auto;
   gap: 16px;
   align-items: stretch;
   border-radius: var(--r-xl);
   background: linear-gradient(180deg, #fffdf6, #fdf6e6);
   padding: 18px;
   box-shadow: var(--shadow-2);
-  overflow: hidden; /* 고정 캔버스 밖으로 내용이 새지 않게 */
 }
 
 /* 캡쳐 영역 안에 들어가는 제목 + 연/월 */
@@ -1661,10 +1661,6 @@
      끝선이 달(주 수)에 상관없이 항상 정확히 일치하도록 한다. */
   display: flex;
   flex-direction: column;
-  /* 핵심: grid 아이템 기본 min-height:auto면 칸 내용(빽빽한 달의 큰 그리드)만큼 칸이 늘어나
-     고정 표면(1035) 밖으로 넘쳐 아래 주가 잘렸다. 0으로 묶어 표면의 1fr 행 높이에 고정 →
-     아래 grid-auto-rows(minmax(0,1fr))가 그 '정해진' 높이를 주 수만큼 균등 분배(내용 넘치면 클립). */
-  min-height: 0;
 }
 .public-calendar-area .public-month-grid {
   flex: 1;
@@ -1679,10 +1675,10 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
 }
-/* 주(행)를 내용 크기(auto)가 아니라 남는 높이를 균등 분배(1fr)로 — 빽빽한 달도 넘치지 않고,
-   한산한 달도 아래에 빈 공간이 안 생겨 어느 달이든 패딩/끝선이 똑같아진다(달력 칸 높이 일정). */
+/* 주(행) 높이는 '내용에 맞춰' 자란다(min 150px로 한산한 달도 너무 납작하지 않게). 일정이 많은
+   주는 칸이 커지고 표면이 함께 커져 일정을 절대 안 자른다. 전체는 JS가 화면에 맞춰 축소한다. */
 .public-month-grid {
-  grid-auto-rows: minmax(0, 1fr);
+  grid-auto-rows: minmax(150px, auto);
 }
 
 .weekday-row {
@@ -1821,13 +1817,8 @@
 
 .public-day {
   position: relative;
-  /* 칸 높이는 grid-auto-rows(1fr 균등 분배)가 정한다. 여기서 큰 min-height를 주면 그 합이
-     표면을 넘어(빽빽한 달) 아래가 잘리므로 0으로 둔다. */
-  min-height: 0;
-  /* 일정이 칸보다 많으면 칸 '안에서' 깔끔히 잘리게(아래로만 클립). 가로는 visible로 둬 여러 날
-     연속 막대(.span, 음수 마진 -7px)가 옆 칸과 이어지는 게 안 끊긴다. */
-  overflow-x: visible;
-  overflow-y: clip;
+  /* 칸 높이는 행(grid-auto-rows: minmax(150px,auto))이 정하고, 칸은 그 행에 stretch로 꽉 찬다.
+     일정이 많으면 행이 자라 칸도 커지므로 일정이 잘리지 않는다(클립 없음). */
   border-right: 1px solid #efe6d3;
   border-bottom: 1px solid #efe6d3;
   background: #fffefb;
