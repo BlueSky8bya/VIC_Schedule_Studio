@@ -2540,22 +2540,31 @@ export function PublicPoster({
               <span className="title-spark" aria-hidden="true">✨️</span>
             </h1>
             {/* 미리보기 이동 버튼(편집실)은 제목 우측이 아니라 색상 필터 박스 아래로 옮겼다(엄지존). */}
-            {accountSwitch && anonymous ? (
-              // 익명 시청자: 로그아웃 대신 Google 로그인 진입.
-              <form action="/api/auth/login" className="agenda-account" method="post">
-                <input name="next" type="hidden" value="/" />
-                <button onClick={() => startNav(isNarrow ? "로그인 중…" : "로그인 화면으로 이동 중입니다…")} type="submit">
-                  <span style={{ whiteSpace: "pre-line", lineHeight: 1.12, textAlign: "center" }}>
-                    로그인
-                  </span>
-                </button>
-              </form>
-            ) : accountSwitch ? (
-              <form action="/api/auth/logout" className="agenda-account" method="post">
-                <button onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")} type="submit">
+            {accountSwitch ? (
+              // 같은 계정-전환 버튼을 그대로 쓰고, 익명이면 액션·라벨만 로그인으로 바꾼다.
+              <form
+                action={anonymous ? "/api/auth/login" : "/api/auth/logout"}
+                className="agenda-account"
+                method="post"
+              >
+                {anonymous ? <input name="next" type="hidden" value="/" /> : null}
+                <button
+                  onClick={() =>
+                    startNav(
+                      anonymous
+                        ? isNarrow
+                          ? "로그인 중…"
+                          : "로그인 화면으로 이동 중입니다…"
+                        : isNarrow
+                          ? "계정 변경 중…"
+                          : "계정 선택 화면으로 이동 중입니다…"
+                    )
+                  }
+                  type="submit"
+                >
                   {/* 모바일은 폭이 좁아 넘칠 수 있어 "계정/변경" 2줄로 — 버튼이 좁아져 잘 들어간다. */}
                   <span style={{ whiteSpace: "pre-line", lineHeight: 1.12, textAlign: "center" }}>
-                    {"계정\n변경"}
+                    {anonymous ? "로그인" : "계정\n변경"}
                   </span>
                 </button>
               </form>
@@ -2632,29 +2641,33 @@ export function PublicPoster({
                   )}
                 </>
               ) : null}
-              {accountSwitch && anonymous ? (
-                // 익명 시청자: 로그아웃 대신 Google 로그인 진입.
-                <form className="account-form" action="/api/auth/login" method="post">
-                  <input name="next" type="hidden" value="/" />
-                  <button
-                    className="button"
-                    onClick={() => startNav(isNarrow ? "로그인 중…" : "로그인 화면으로 이동 중입니다…")}
-                    type="submit"
-                  >
-                    로그인
-                  </button>
-                </form>
-              ) : accountSwitch ? (
-                <form className="account-form" action="/api/auth/logout" method="post">
-                  {accountEmail ? (
+              {accountSwitch ? (
+                // 같은 계정-전환 버튼을 그대로 쓰고, 익명이면 액션·라벨만 로그인으로 바꾼다.
+                <form
+                  className="account-form"
+                  action={anonymous ? "/api/auth/login" : "/api/auth/logout"}
+                  method="post"
+                >
+                  {anonymous ? <input name="next" type="hidden" value="/" /> : null}
+                  {!anonymous && accountEmail ? (
                     <PlainEmail className="account-email" title={accountEmail} value={accountEmail} />
                   ) : null}
                   <button
                     className="button"
-                    onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")}
+                    onClick={() =>
+                      startNav(
+                        anonymous
+                          ? isNarrow
+                            ? "로그인 중…"
+                            : "로그인 화면으로 이동 중입니다…"
+                          : isNarrow
+                            ? "계정 변경 중…"
+                            : "계정 선택 화면으로 이동 중입니다…"
+                      )
+                    }
                     type="submit"
                   >
-                    계정변경
+                    {anonymous ? "로그인" : "계정변경"}
                   </button>
                 </form>
               ) : null}
