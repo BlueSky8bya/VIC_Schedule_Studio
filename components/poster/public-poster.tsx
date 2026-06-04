@@ -2588,7 +2588,7 @@ export function PublicPoster({
                     if (anonymous) {
                       handleMobileLogin(e);
                     } else {
-                      startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…");
+                      startNav("로그아웃 중…");
                     }
                   }}
                   type="submit"
@@ -2601,7 +2601,7 @@ export function PublicPoster({
                   ) : (
                     <>
                       <LogOut aria-hidden="true" size={12} strokeWidth={2.5} />
-                      <span>계정변경</span>
+                      <span>로그아웃</span>
                     </>
                   )}
                 </button>
@@ -2699,14 +2699,12 @@ export function PublicPoster({
                           ? isNarrow
                             ? "로그인 중…"
                             : "로그인 화면으로 이동 중입니다…"
-                          : isNarrow
-                            ? "계정 변경 중…"
-                            : "계정 선택 화면으로 이동 중입니다…"
+                          : "로그아웃 중…"
                       )
                     }
                     type="submit"
                   >
-                    {anonymous ? "로그인" : "계정변경"}
+                    {anonymous ? "로그인" : "로그아웃"}
                   </button>
                 </form>
               ) : null}

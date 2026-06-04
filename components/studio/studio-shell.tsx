@@ -2591,16 +2591,17 @@ export function StudioShell({
                   토리님 편집실 · {view.year}년 {view.month}월
                 </span>
               </h1>
-              {/* 계정변경(로그아웃) — 저장됨 칩이 있던 우상단(3열) 자리. 편집실 톤과 어울리게. */}
+              {/* 로그아웃 — 저장됨 칩이 있던 우상단(3열) 자리. 편집실 톤과 어울리게.
+                  로그아웃하면 익명 상태로 공개 포스터를 계속 본다(계정 바꾸려면 다시 로그인). */}
               {actor.isAuthenticated ? (
                 <form className="m-head-logout" action="/api/auth/logout" method="post">
                   <button
                     className="button"
-                    onClick={() => startNav("계정 변경 중…")}
+                    onClick={() => startNav("로그아웃 중…")}
                     type="submit"
                   >
                     <LogOut aria-hidden="true" size={12} strokeWidth={2.5} />
-                    계정변경
+                    로그아웃
                   </button>
                 </form>
               ) : (
@@ -3579,10 +3580,10 @@ export function StudioShell({
             <form action="/api/auth/logout" method="post">
               <button
                 className="button"
-                onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")}
+                onClick={() => startNav("로그아웃 중…")}
                 type="submit"
               >
-                계정변경
+                로그아웃
               </button>
             </form>
           ) : (
