@@ -3530,10 +3530,8 @@ export function StudioShell({
           </strong>
         </div>
 
-        {/* 오른쪽: 역할·도구 */}
+        {/* 오른쪽: 역할·도구 (저장 상태 칩은 아래 액션바의 '비공개 일정 보기' 왼쪽으로 옮겼다.) */}
         <div className="studio-role-tools">
-          {/* #10 저장 상태 — 지금 상태(저장됨/중/실패) + 마지막 저장 KST를 항상 보여줘 불안 제거. */}
-          {renderSaveStatus()}
           {/* 미리보기 안내는 역할 배지("?") 설명 팝오버 안 작은 문구로 일원화(별도 플래그 제거). */}
           {renderRoleBadge()}
           {/* 개발자는 역할 미리보기 드롭다운, 그 외 역할은 시청자 화면 미리보기. */}
@@ -3610,8 +3608,11 @@ export function StudioShell({
               📊 월별 인사이트
             </button>
           ) : null}
-          {/* 우측 묶음: 비공개 일정 보기(토글) + 달력 꾸미기 — 꾸미기 바로 왼쪽에 비공개 토글. */}
+          {/* 우측 묶음: 저장 상태 칩 + 비공개 일정 보기(토글) + 달력 꾸미기.
+              칩은 '비공개 일정 보기' 왼쪽, 버튼 아래 끝선에 맞춰 둔다. 모든 역할(매니저·작업자
+              포함) 공통 — 칩은 studioWrite 한 곳이 구동하므로 그들의 태그·업도움 저장에도 반응. */}
           <div className="studio-actionbar-right">
+            {renderSaveStatus()}
             {canTogglePrivateLayer ? (
               isEffectivelyOwner && canReadPrivate ? (
                 // 웹: 처음 켠 자리(토글)에 그대로 "비공개 끄기" — 마우스 이동 최소화. 비밀번호 변경은 경고 배너로.
