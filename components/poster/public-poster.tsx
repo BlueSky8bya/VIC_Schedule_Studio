@@ -18,6 +18,7 @@ import {
   Heart,
   Keyboard,
   Lock,
+  LogIn,
   Redo2,
   SendToBack,
   Sparkles,
@@ -1978,6 +1979,7 @@ export function PublicPoster({
   //  · 안드로이드 웹뷰(숲·카톡) → 크롬 인텐트로 /login을 열면 거기서 자동 제출 → 구글 계정 선택창.
   //  · iOS 등 웹뷰 → 자동 전환 불가 → /login의 외부 브라우저 안내 카드로 보낸다.
   function handleMobileLogin(e: ReactMouseEvent<HTMLButtonElement>) {
+    hapticTick();
     const det = detectInAppBrowser(typeof navigator !== "undefined" ? navigator.userAgent : "");
     if (!det.inApp) {
       startNav("Google 계정으로 이동 중…");
@@ -2580,6 +2582,7 @@ export function PublicPoster({
               >
                 {anonymous ? <input name="next" type="hidden" value="/" /> : null}
                 <button
+                  className={anonymous ? "agenda-login" : undefined}
                   onClick={(e) => {
                     if (anonymous) {
                       handleMobileLogin(e);
@@ -2589,10 +2592,17 @@ export function PublicPoster({
                   }}
                   type="submit"
                 >
-                  {/* 모바일은 폭이 좁아 넘칠 수 있어 "계정/변경" 2줄로 — 버튼이 좁아져 잘 들어간다. */}
-                  <span style={{ whiteSpace: "pre-line", lineHeight: 1.12, textAlign: "center" }}>
-                    {anonymous ? "로그인" : "계정\n변경"}
-                  </span>
+                  {anonymous ? (
+                    <>
+                      <LogIn aria-hidden="true" size={13} strokeWidth={2.5} />
+                      <span>로그인</span>
+                    </>
+                  ) : (
+                    /* 모바일은 폭이 좁아 넘칠 수 있어 "계정/변경" 2줄로 — 버튼이 좁아져 잘 들어간다. */
+                    <span style={{ whiteSpace: "pre-line", lineHeight: 1.12, textAlign: "center" }}>
+                      {"계정\n변경"}
+                    </span>
+                  )}
                 </button>
               </form>
             ) : null}

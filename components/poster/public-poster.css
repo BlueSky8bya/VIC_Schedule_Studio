@@ -234,6 +234,41 @@
   color: #8a7a4a;
   cursor: pointer;
 }
+/* 비로그인 시 로그인 CTA — 계정 전환 버튼 자리에 그대로 들어가되, 따뜻한 골드
+   그라데이션 알약으로 눈에 띄게(아이콘+텍스트). 누르면 살짝 눌리는 촉감. */
+.agenda-account button.agenda-login {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  padding: 5px 13px;
+  color: #fff;
+  background: linear-gradient(135deg, #f6bd3f, #e2920a);
+  box-shadow: 0 2px 7px rgb(168 118 10 / 38%);
+  transition:
+    transform 0.12s var(--ease, ease),
+    box-shadow 0.12s var(--ease, ease),
+    filter 0.12s var(--ease, ease);
+}
+.agenda-account button.agenda-login:hover {
+  filter: brightness(1.05);
+}
+.agenda-account button.agenda-login:active {
+  transform: scale(0.93);
+  box-shadow: 0 1px 4px rgb(168 118 10 / 32%);
+}
+.agenda-account button.agenda-login svg {
+  flex: none;
+  opacity: 0.95;
+}
+@media (prefers-reduced-motion: reduce) {
+  .agenda-account button.agenda-login {
+    transition: none;
+  }
+  .agenda-account button.agenda-login:active {
+    transform: none;
+  }
+}
 /* 시청자 미리보기 진입 시 — 제목 헤더의 왼쪽 여백 칸(안내)·오른쪽 칸(이동 버튼).
    가운데 제목(col2)은 그대로 두고 양옆에 배치 → 제목과 같은 자리에서 함께 sticky로 따라온다. */
 .agenda-header .agenda-preview-left {
