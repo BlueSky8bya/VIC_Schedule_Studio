@@ -2186,7 +2186,12 @@ export function PublicPoster({
                   ) : (
                     <p className="span-cont">{main || " "}</p>
                   )}
-                  {showHeart ? (
+                </div>
+                {/* 하트는 카드 직속(.event-main 밖)에 둔다 — 2색/무늬(data-mixed) 칸은
+                    .event-main이 position:relative라, 그 안에 두면 하트 offset 기준이
+                    .event-main으로 바뀌어 평칸 카드보다 ~5px 내려가 줄이 들쭉날쭉해진다.
+                    카드 직속이면 기준이 항상 .public-event → 모든 카드에서 같은 높이. */}
+                {showHeart ? (
                     <button
                       aria-label={bookmarked ? "관심 일정에서 빼기" : "관심 일정으로 표시"}
                       aria-pressed={bookmarked}
@@ -2198,7 +2203,6 @@ export function PublicPoster({
                       {bookmarked ? "♥" : "♡"}
                     </button>
                   ) : null}
-                </div>
                 {tier ? (
                   <span
                     className={`event-popular tier-${tier.key}`}

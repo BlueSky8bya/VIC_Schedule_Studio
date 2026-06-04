@@ -3443,6 +3443,12 @@ export function StudioShell({
     // 직접 만든다 → 방금 만든/지운 일정이 새로고침 없이 즉시 반영된다(예전엔 router.refresh에 기대
     // 옛 상태가 보였다). 공개 일정만(visibility public, draft 제외) 추리고 privateMeta는 제거해
     // 비공개 정보가 절대 안 샌다. 스티커·하트·팔레트 등 나머지는 서버 스냅샷 그대로 쓴다.
+    // 하트 집계(관심도 🔥배지·정렬)는 공개 스냅샷(viewerModePreview)에만 있고 편집실 events엔
+    // 없다 → id로 다시 붙여준다. 안 그러면 미리보기에서 '관심' 배지가 통째로 사라져, 실제
+    // 로그아웃 공개 화면(배지 보임)과 달라 보인다.
+    const heartCountById = new Map(
+      (schedule.viewerModePreview.events ?? []).map((e) => [e.id, e.heartCount])
+    );
     const previewSchedule = {
       ...schedule.viewerModePreview,
       events: events
@@ -3450,7 +3456,10 @@ export function StudioShell({
         .map((e) => {
           const { privateMeta: _omit, ...rest } = e;
           void _omit;
-          return rest as unknown as PublicScheduleEvent;
+          return {
+            ...rest,
+            heartCount: heartCountById.get(e.id)
+          } as unknown as PublicScheduleEvent;
         })
     };
     // 편집실/꾸미기 이동 버튼 — 웹은 포스터 위 오버레이로, 모바일은 포스터 제목 헤더 안으로 주입한다.

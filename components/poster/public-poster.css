@@ -2083,6 +2083,13 @@ html {
   position: relative;
   z-index: 1;
 }
+/* 하트는 위 규칙(무늬 위로 올리는 position:relative)에서 제외 — 카드 직속 자식이라
+   위 선택자에 걸리지만, 하트만은 절대배치를 유지해야 평칸/무늬칸 모두 기준이
+   .public-event로 같아져 높이가 안 어긋난다. (선택자 우선순위·소스 순서로 덮어씀) */
+.public-event[data-mixed] > .event-heart {
+  position: absolute;
+  z-index: 2;
+}
 
 .public-event .event-main {
   display: flex;
