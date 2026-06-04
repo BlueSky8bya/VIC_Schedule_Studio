@@ -1644,12 +1644,21 @@
 }
 .public-calendar-area .public-month-grid {
   flex: 1;
+  /* flex 아이템 기본 min-height:auto면 칸 내용이 많은 달(2월처럼 빽빽)에서 그리드가 내용만큼
+     커져 고정 표면(1035) 밖으로 넘쳐 아래가 잘렸다. 0으로 묶어 flex 높이(=표면 1fr)를 넘지
+     않게 한다 → 아래 grid-auto-rows가 그 높이를 주 수만큼 '균등'하게 나눈다. */
+  min-height: 0;
 }
 
 .weekday-row,
 .public-month-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+/* 주(행)를 내용 크기(auto)가 아니라 남는 높이를 균등 분배(1fr)로 — 빽빽한 달도 넘치지 않고,
+   한산한 달도 아래에 빈 공간이 안 생겨 어느 달이든 패딩/끝선이 똑같아진다(달력 칸 높이 일정). */
+.public-month-grid {
+  grid-auto-rows: minmax(0, 1fr);
 }
 
 .weekday-row {
@@ -1788,7 +1797,9 @@
 
 .public-day {
   position: relative;
-  min-height: 130px;
+  /* 칸 높이는 grid-auto-rows(1fr 균등 분배)가 정한다. 여기서 큰 min-height를 주면 그 합이
+     표면을 넘어(빽빽한 달) 아래가 잘리므로 0으로 둔다. 넘치는 내용은 그리드 overflow:hidden로 클립. */
+  min-height: 0;
   border-right: 1px solid #efe6d3;
   border-bottom: 1px solid #efe6d3;
   background: #fffefb;
@@ -3179,6 +3190,8 @@
 
   .public-month-grid {
     grid-template-columns: 1fr;
+    /* 모바일(세로 1열)은 균등 1fr 분배가 아니라 내용 높이대로 — 칸마다 min-height만. */
+    grid-auto-rows: auto;
   }
 
   .public-day {
