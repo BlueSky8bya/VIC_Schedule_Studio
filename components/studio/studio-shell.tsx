@@ -516,6 +516,28 @@ export function StudioShell({
   useLayoutEffect(() => {
     if (mobileEditId !== null) fitTitleHeight();
   }, [mobileEditId]);
+  // #3 키보드 가림 방지: 모바일 키보드가 뜨면 dvh로는 시트 하단(저장 버튼)이 키보드 뒤로 숨는다.
+  // visualViewport로 '실제 보이는' 높이·위치를 잡아 시트 컨테이너를 키보드 바로 위에 맞춰 → 저장
+  // 버튼이 항상 보인다. 시트가 닫히면 해제(null).
+  const [vvFit, setVvFit] = useState<{ h: number; top: number } | null>(null);
+  useEffect(() => {
+    if (mobileEditId === null) {
+      setVvFit(null);
+
+      return;
+    }
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setVvFit({ h: vv.height, top: vv.offsetTop });
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, [mobileEditId]);
   // 업 도움 종료일을 손가락으로 좌우로 밀어 빠르게 바꾸는 스크럽 상태(드래그 시작점 + 그때 종료일).
   const dateScrubRef = useRef<{ x: number; end: string } | null>(null);
   // 스크럽(미는) 중인지 — 값 칩에 확대·발광 애니메이션을 줘서 "조정 중"을 한눈에 알린다.
@@ -3150,8 +3172,14 @@ export function StudioShell({
           if (e.target === e.currentTarget) closeMobileEdit();
         }}
         role="presentation"
+        style={vvFit ? { height: vvFit.h, top: vvFit.top, bottom: "auto" } : undefined}
       >
-        <div className="m-edit-sheet" aria-modal="true" role="dialog">
+        <div
+          className="m-edit-sheet"
+          aria-modal="true"
+          role="dialog"
+          style={vvFit ? { maxHeight: Math.round(vvFit.h * 0.96) } : undefined}
+        >
           {/* 손잡이+헤더를 하나의 불투명 sticky 블록으로 — 스크롤 시 그 사이로 뒤 내용이
               비쳐 '뚫리는' 구간이 안 생긴다(아래로 쓸어 닫는 모바일 표준 어포던스). */}
           <div className="m-sheet-top">

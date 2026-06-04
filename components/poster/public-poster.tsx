@@ -5,6 +5,7 @@ import {
   AlignLeft,
   AlignRight,
   BringToFront,
+  CalendarCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -14,6 +15,7 @@ import {
   Eye,
   FlipHorizontal,
   FlipVertical,
+  Heart,
   Keyboard,
   Lock,
   Redo2,
@@ -1917,6 +1919,21 @@ export function PublicPoster({
     }
   }
 
+  // 오늘이 속한 달로 한 번에 복귀(모바일 하단 레일 '오늘'). 이미 그 달이면 비활성.
+  const todayYM = useMemo(() => {
+    const [y, m] = today.split("-").map(Number);
+
+    return { year: y, month: m };
+  }, [today]);
+  const onTodayMonth = view.year === todayYM.year && view.month === todayYM.month;
+  function jumpToday() {
+    if (onTodayMonth) return;
+    hapticTick();
+    const offset =
+      (todayYM.year - view.year) * 12 + (todayYM.month - view.month);
+    moveMonth(offset);
+  }
+
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
   function onAgendaTouchStart(e: ReactTouchEvent) {
@@ -3404,10 +3421,42 @@ export function PublicPoster({
       {/* 월 이동 버튼을 하단 좌·우에 띄운다(가운데는 비워 '맨 위로' 버튼과 안 겹치게).
           시청자·아젠다·꾸미기 모두 — 달력을 보며 월을 넘기기 쉽게(HCI). 상단 월 pill은 폐지. */}
       <nav className="agenda-monthbar" aria-label="월 이동">
-        <button onClick={() => moveMonth(-1)} title="이전 달" type="button">
+        <button className="mb-step" onClick={() => moveMonth(-1)} title="이전 달" type="button">
           <ChevronLeft aria-hidden="true" size={22} />
         </button>
-        <button onClick={() => moveMonth(1)} title="다음 달" type="button">
+
+        {/* 모바일 엄지 영역: 자주 쓰는 관심·오늘을 하단 가운데로(웹은 헤더에 따로 있어 숨김). */}
+        {isNarrow ? (
+          <div className="mb-center">
+            {interactive ? (
+              <button
+                aria-pressed={bookmarkedOnly}
+                className={`mb-act ${bookmarkedOnly ? "on" : ""}`}
+                onClick={() => {
+                  hapticTick();
+                  setBookmarkedOnly((v) => !v);
+                }}
+                title="내가 ♥ 누른 일정만 보기"
+                type="button"
+              >
+                <Heart aria-hidden="true" size={18} />
+                <span>관심</span>
+              </button>
+            ) : null}
+            <button
+              className="mb-act"
+              disabled={onTodayMonth}
+              onClick={jumpToday}
+              title="오늘이 있는 달로"
+              type="button"
+            >
+              <CalendarCheck aria-hidden="true" size={18} />
+              <span>오늘</span>
+            </button>
+          </div>
+        ) : null}
+
+        <button className="mb-step" onClick={() => moveMonth(1)} title="다음 달" type="button">
           <ChevronRight aria-hidden="true" size={22} />
         </button>
       </nav>

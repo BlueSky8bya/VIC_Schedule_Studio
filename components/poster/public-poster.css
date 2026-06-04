@@ -287,7 +287,7 @@
   justify-content: space-between;
   pointer-events: none;
 }
-.agenda-monthbar button {
+.agenda-monthbar .mb-step {
   pointer-events: auto;
   display: inline-grid;
   place-items: center;
@@ -304,17 +304,63 @@
   box-shadow: 0 6px 16px rgb(74 53 0 / 16%);
   transition: transform var(--dur-1, 120ms) var(--ease);
 }
-.agenda-monthbar button:active {
+.agenda-monthbar .mb-step:active {
   transform: scale(0.92);
 }
 /* 중앙에 가까운 안쪽 가장자리일수록 더 희미하게 — 일정 위로 살짝 비치게(좌·우 대칭). */
-.agenda-monthbar button:first-child {
+.agenda-monthbar .mb-step:first-child {
   -webkit-mask-image: linear-gradient(to right, #000 58%, rgb(0 0 0 / 38%) 100%);
   mask-image: linear-gradient(to right, #000 58%, rgb(0 0 0 / 38%) 100%);
 }
-.agenda-monthbar button:last-child {
+.agenda-monthbar .mb-step:last-child {
   -webkit-mask-image: linear-gradient(to left, #000 58%, rgb(0 0 0 / 38%) 100%);
   mask-image: linear-gradient(to left, #000 58%, rgb(0 0 0 / 38%) 100%);
+}
+
+/* 모바일 엄지 영역 — 가운데 관심·오늘 클러스터. */
+.agenda-monthbar .mb-center {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px;
+  border: 1px solid rgb(227 214 187 / 70%);
+  border-radius: 999px;
+  background: rgb(255 250 240 / 82%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 6px 16px rgb(74 53 0 / 16%);
+}
+.agenda-monthbar .mb-act {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent-strong, #a9760a);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform var(--dur-1, 120ms) var(--ease),
+    background var(--dur-1, 120ms) var(--ease), color var(--dur-1, 120ms) var(--ease);
+}
+.agenda-monthbar .mb-act:active {
+  transform: scale(0.92);
+}
+.agenda-monthbar .mb-act.on {
+  background: rgb(225 29 72 / 12%);
+  color: #e11d48;
+}
+.agenda-monthbar .mb-act.on svg {
+  fill: currentColor;
+}
+.agenda-monthbar .mb-act:disabled {
+  opacity: 0.42;
+  cursor: default;
 }
 
 /* 월 전환 시 슬라이드로 들어와 "넘어간다"는 느낌을 준다. */
@@ -567,14 +613,14 @@
   /* ♥ 글리프를 카드 오른쪽 끝(왼쪽 색바 inset ~10px와 대칭)에 flex-end로 붙이고, 40×40 탭
      영역은 왼쪽으로만 확장한다. → 좌우 여백 균형 + 행이 양옆으로 꽉 차 뚱뚱해 보이지 않음.
      위/아래 음수 마진으로 줄 높이는 유지. */
-  margin: -10px 0 -10px auto;
+  margin: -12px 0 -12px auto;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: 0;
-  border-radius: 11px;
+  border-radius: 12px;
   background: transparent;
   color: #cbb9a0;
   font-size: 19px;
