@@ -8,6 +8,7 @@ import type {
 } from "@/lib/domain/schedule-types";
 import { PRODUCT_TIMEZONE } from "@/lib/domain/schedule-types";
 import { getDayMark } from "@/lib/calendar/holidays";
+import { isPatternColor } from "@/lib/tags/color-gen";
 import type { CSSProperties } from "react";
 
 export type MonthCell = {
@@ -276,17 +277,72 @@ export function getExtraCategoryColors(
     .filter((color): color is ColorPaletteEntry => Boolean(color));
 }
 
+// ── 일정 카드 글자 가독성 (근거 기반) ───────────────────────────────────────────
+// 카드 배경은 항상 '콘텐츠' 파스텔(+무늬)이고 글자는 그 위 진한 글씨다. 색·무늬마다 읽힘이 달라지므로
+// 글자색/굵기/헤일로를 색별로 다르게 준다. 근거:
+//  · WCAG 2.1 SC 1.4.3 — 본문(18.6px 미만) 대비 ≥4.5:1(AA). 상대휘도 L=0.2126R+0.7152G+0.0722B
+//    (sRGB 선형화), 대비=(L밝+0.05)/(L어둠+0.05). [W3C]
+//  · 흑/백 선택은 '실측 대비가 더 높은 쪽' — 채도 높은 색에선 지각과 수치가 어긋나니 수치로 고른다.
+//    [WebAIM Contrast]
+//  · 대비가 낮을수록 글자를 더 굵게 — 굵은 획=잉크 면적↑=지각 대비↑(저시력 가독성 연구). 단 과도한
+//    900은 작은 글자에서 속공간이 닫혀 오히려 불리 → 대비 높으면 700~800로 절제.
+//  · 무늬(텍스처) 위 글자는 읽힘이 떨어진다 → 한 단계 더 굵게 + 바탕색 헤일로(스크림)로 글자를 무늬에서
+//    떼어낸다. [텍스트-오버-이미지 가독성]
+function srgbToLinear(channel: number): number {
+  const c = channel / 255;
+  return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+function relativeLuminance(hex: string): number {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return 0;
+  const n = parseInt(m[1], 16);
+  return (
+    0.2126 * srgbToLinear((n >> 16) & 255) +
+    0.7152 * srgbToLinear((n >> 8) & 255) +
+    0.0722 * srgbToLinear(n & 255)
+  );
+}
+function contrastRatio(hexA: string, hexB: string): number {
+  const la = relativeLuminance(hexA);
+  const lb = relativeLuminance(hexB);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+// 배경색 위에 올릴 글자색/굵기/헤일로를 정해 인라인 스타일(+CSS 변수)로 돌려준다.
+export function eventInkStyle(bgColor: string, textColor: string, colorKey: string): CSSProperties {
+  let ink = textColor;
+  let cr = contrastRatio(bgColor, textColor);
+  if (cr < 4.5) {
+    // AA 미달이면 흑/백 중 대비 높은 쪽으로 교정(보통 진한 글씨라 거의 안 걸린다).
+    const crBlack = contrastRatio(bgColor, "#0a0a0a");
+    const crWhite = contrastRatio(bgColor, "#ffffff");
+    ink = crBlack >= crWhite ? "#0a0a0a" : "#ffffff";
+    cr = Math.max(crBlack, crWhite);
+  }
+  // 대비 구간별 기본 굵기(절제). 대비 높을수록 가볍게, 낮을수록 굵게.
+  let weight = cr >= 7 ? 700 : cr >= 4.5 ? 800 : 900;
+  let shadow = "none";
+  if (isPatternColor(colorKey)) {
+    weight = Math.min(900, weight + 100); // 무늬 노이즈 보정
+    shadow = `0 0 2px ${bgColor}, 0 0 1px ${bgColor}`; // 바탕색 헤일로로 글자를 무늬에서 분리
+  }
+  return {
+    color: ink,
+    ["--evt-weight" as string]: String(weight),
+    ["--evt-shadow" as string]: shadow
+  } as CSSProperties;
+}
+
 // D: 단색 일정칸 인라인 스타일. 2색(혼합)은 mixedEventStyle/mixedEventPatterns로 따로 그린다.
-export function eventColorStyle(colors: ColorPaletteEntry[]): {
-  backgroundColor?: string;
-  color?: string;
-  borderColor?: string;
-} {
+export function eventColorStyle(colors: ColorPaletteEntry[]): CSSProperties {
   const a = colors[0];
   if (!a) {
     return {};
   }
-  return { backgroundColor: a.bgColor, color: a.textColor, borderColor: a.borderColor };
+  return {
+    backgroundColor: a.bgColor,
+    borderColor: a.borderColor,
+    ...eventInkStyle(a.bgColor, a.textColor, a.key)
+  };
 }
 
 // 이어진 일정(같은 멀티데이 일정의 여러 칸 + link_next로 묶인 일정들)을 한 묶음으로 보고
@@ -435,7 +491,8 @@ export function mixedEventStyle(
     backgroundSize: size,
     backgroundPositionX: positionX,
     backgroundRepeat: "no-repeat",
-    color: a.textColor,
+    // 글자색/굵기/헤일로는 가독성 규칙으로(두 파스텔 중 첫 색 기준 — 둘 다 비슷한 밝기의 콘텐츠색).
+    ...eventInkStyle(a.bgColor, a.textColor, a.key),
     // 실제 테두리는 투명으로 두고, 위 border-box 그라데이션이 테두리처럼 보이게 한다.
     borderColor: "transparent"
   };

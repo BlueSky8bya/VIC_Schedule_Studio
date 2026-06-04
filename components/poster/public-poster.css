@@ -1961,8 +1961,18 @@ html {
   margin: 0;
   white-space: pre-line;
   font-size: 14px;
-  font-weight: 900;
+  /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다(근거: WCAG 1.4.3 등). */
+  font-weight: var(--evt-weight, 800);
   line-height: 1.25;
+}
+/* 무늬 칸에서만 바탕색 헤일로로 글자를 텍스처에서 떼어낸다. 이어지는 칸의 투명 제목(.span-cont)에는
+   걸지 않는다(투명 글자에 그림자만 떠 보이는 것 방지). */
+.public-event .event-main p:not(.span-cont),
+.public-event .event-subs:not(.span-cont) li {
+  text-shadow: var(--evt-shadow, none);
+}
+.public-event .event-subs:not(.span-cont) li {
+  font-weight: var(--evt-weight, 800);
 }
 
 .event-toggle {
