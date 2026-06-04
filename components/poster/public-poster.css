@@ -1822,8 +1822,12 @@
 .public-day {
   position: relative;
   /* 칸 높이는 grid-auto-rows(1fr 균등 분배)가 정한다. 여기서 큰 min-height를 주면 그 합이
-     표면을 넘어(빽빽한 달) 아래가 잘리므로 0으로 둔다. 넘치는 내용은 그리드 overflow:hidden로 클립. */
+     표면을 넘어(빽빽한 달) 아래가 잘리므로 0으로 둔다. */
   min-height: 0;
+  /* 일정이 칸보다 많으면 칸 '안에서' 깔끔히 잘리게(아래로만 클립). 가로는 visible로 둬 여러 날
+     연속 막대(.span, 음수 마진 -7px)가 옆 칸과 이어지는 게 안 끊긴다. */
+  overflow-x: visible;
+  overflow-y: clip;
   border-right: 1px solid #efe6d3;
   border-bottom: 1px solid #efe6d3;
   background: #fffefb;
