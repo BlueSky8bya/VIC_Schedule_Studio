@@ -2515,7 +2515,12 @@ html {
 /* C6 텍스트 스티커 추가 줄 */
 .text-add-row {
   display: flex;
+  align-items: center;
   gap: 8px;
+}
+/* 저장 칩(문구 입력칸 왼쪽) — 줄어들지 않게 고정, 세로 가운데. */
+.text-add-row .save-status {
+  flex: 0 0 auto;
 }
 .text-add-input {
   flex: 1;

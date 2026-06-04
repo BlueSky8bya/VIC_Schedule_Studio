@@ -2636,32 +2636,6 @@ export function PublicPoster({
         {decorate ? (
           <div className="decorate-toolbar" aria-label="꾸미기 도구">
             <div className="decorate-history" role="group" aria-label="실행취소/다시실행">
-              {/* 저장 상태 칩 — 편집실과 동일(저장중/저장됨/실패 + KST). 스티커는 조작 즉시 저장. */}
-              <span
-                className={`save-status ${saveState}`}
-                aria-live="polite"
-                title={
-                  saveState === "failed"
-                    ? "저장에 실패했어요. 잠시 후 다시 시도해 주세요"
-                    : saveState === "saving"
-                      ? "저장 중이에요"
-                      : lastSavedKst
-                        ? `마지막 저장 ${lastSavedKst} KST`
-                        : "변경사항이 저장돼 있어요"
-                }
-              >
-                <span className="ss-dot" aria-hidden="true" />
-                <em>
-                  {saveState === "saving"
-                    ? "저장 중…"
-                    : saveState === "failed"
-                      ? "저장 실패"
-                      : "저장됨"}
-                </em>
-                {saveState === "saved" && lastSavedKst ? (
-                  <b className="ss-time">{lastSavedKst}</b>
-                ) : null}
-              </span>
               <button
                 className="button icon-only"
                 disabled={undoStack.length === 0}
@@ -3254,6 +3228,9 @@ export function PublicPoster({
                   <kbd>Ctrl</kbd>+<kbd>Y</kbd> 다시실행
                 </li>
                 <li>
+                  <kbd>Ctrl</kbd>+<kbd>S</kbd> 저장
+                </li>
+                <li>
                   <kbd>←↑↓→</kbd> 미세 이동
                 </li>
                 <li>
@@ -3271,6 +3248,32 @@ export function PublicPoster({
           <div className="poster-capture-row">
             {decorate ? (
               <div className="text-add-row">
+                {/* 저장 상태 칩 — 달력 바로 위, 문구 입력칸 왼쪽 동일선상(편집실과 같은 모양). */}
+                <span
+                  className={`save-status ${saveState}`}
+                  aria-live="polite"
+                  title={
+                    saveState === "failed"
+                      ? "저장에 실패했어요. 잠시 후 다시 시도해 주세요"
+                      : saveState === "saving"
+                        ? "저장 중이에요"
+                        : lastSavedKst
+                          ? `마지막 저장 ${lastSavedKst} KST`
+                          : "변경사항이 저장돼 있어요"
+                  }
+                >
+                  <span className="ss-dot" aria-hidden="true" />
+                  <em>
+                    {saveState === "saving"
+                      ? "저장 중…"
+                      : saveState === "failed"
+                        ? "저장 실패"
+                        : "저장됨"}
+                  </em>
+                  {saveState === "saved" && lastSavedKst ? (
+                    <b className="ss-time">{lastSavedKst}</b>
+                  ) : null}
+                </span>
                 <input
                   className="text-add-input"
                   maxLength={60}
