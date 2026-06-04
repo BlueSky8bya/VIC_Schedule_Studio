@@ -93,7 +93,7 @@ import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { detectDevice } from "@/lib/presence/presence-client";
 import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
-import { reduceMotionEnabled, setReduceMotion } from "@/lib/ui/motion";
+import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 
 type StudioShellProps = {
@@ -847,6 +847,17 @@ export function StudioShell({
     setReduceMotionState(next);
     hapticTick();
   };
+  // #28 눈 편한 테마 — 채도·눈부심을 낮춘다(오래 보는 작업자용).
+  const [eyeComfort, setEyeComfortState] = useState(false);
+  useEffect(() => {
+    setEyeComfortState(eyeComfortEnabled());
+  }, []);
+  const toggleEyeComfort = () => {
+    const next = !eyeComfort;
+    setEyeComfort(next);
+    setEyeComfortState(next);
+    hapticTick();
+  };
   const canReadPrivate =
     canReadPrivateLayer(effectiveRole, effIsWorker, hasUnlockSession) && showPrivate;
 
@@ -1070,6 +1081,23 @@ export function StudioShell({
                 aria-label="동작 줄이기 켜기/끄기"
                 className={`rhh-switch ${reduceMotion ? "on" : ""}`}
                 onClick={toggleReduceMotion}
+                role="switch"
+                type="button"
+              >
+                <span className="rhh-knob" aria-hidden="true" />
+              </button>
+            </div>
+            {/* 눈 편한 테마 — 채도·눈부심을 낮춰 오래 봐도 덜 피로하게(글자 대비는 유지). */}
+            <div className="role-help-haptics">
+              <span className="rhh-label">
+                <Eye aria-hidden="true" size={14} />
+                눈 편한 테마
+              </span>
+              <button
+                aria-checked={eyeComfort}
+                aria-label="눈 편한 테마 켜기/끄기"
+                className={`rhh-switch ${eyeComfort ? "on" : ""}`}
+                onClick={toggleEyeComfort}
                 role="switch"
                 type="button"
               >

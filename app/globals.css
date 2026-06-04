@@ -932,3 +932,11 @@ html[data-reduce-motion] .sticker-anim-spin,
 html[data-reduce-motion] .sticker-anim-pulse {
   animation: none !important;
 }
+
+/* ── #28 눈 편한 테마(eye comfort) ─────────────────────────────────────────
+   오래 보는 작업자용 — 전체 채도·눈부심을 살짝 낮춘다(글자 대비는 유지). filter를 'html'에만
+   걸어 fixed/sticky의 컨테이닝 블록을 깨지 않는다(html=뷰포트라 위치 변동 없음). 캡쳐(포스터
+   PNG)는 Playwright가 별도 컨텍스트라 영향 없음. */
+html[data-eye-comfort] {
+  filter: saturate(0.82) brightness(0.985);
+}

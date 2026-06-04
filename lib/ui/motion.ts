@@ -33,3 +33,31 @@ export function setReduceMotion(on: boolean): void {
     /* no-op (SSR 등) */
   }
 }
+
+// #28 눈 편한 테마(eye comfort) — 방송 전후 오래 보는 작업자용. 켜면 <html data-eye-comfort>가
+// 붙어 CSS가 전체 채도·눈부심을 살짝 낮춘다(글자 대비는 유지). reduce-motion과 같은 결의 설정.
+const EYE_COMFORT_KEY = "vic.eyeComfort"; // localStorage: "on"이면 켬(기본 OFF)
+
+export function eyeComfortEnabled(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    return window.localStorage.getItem(EYE_COMFORT_KEY) === "on";
+  } catch {
+    return false;
+  }
+}
+
+export function setEyeComfort(on: boolean): void {
+  try {
+    window.localStorage.setItem(EYE_COMFORT_KEY, on ? "on" : "off");
+  } catch {
+    /* 무시 */
+  }
+  try {
+    const root = document.documentElement;
+    if (on) root.setAttribute("data-eye-comfort", "1");
+    else root.removeAttribute("data-eye-comfort");
+  } catch {
+    /* no-op */
+  }
+}
