@@ -826,6 +826,7 @@ export function PublicPoster({
   // (POSTER_DESIGN_W×H)로 설계하고, 화면 폭에 맞춰 통째로 축소(transform: scale)만 한다.
   // export는 변형 없는 .poster-surface를 원본 해상도로 캡쳐하므로 화질에 영향 없다.
   const posterStageRef = useRef<HTMLDivElement | null>(null);
+  const posterHeaderRef = useRef<HTMLElement | null>(null);
   const [posterScale, setPosterScale] = useState(1);
   useEffect(() => {
     if (showAgenda) {
@@ -836,18 +837,37 @@ export function PublicPoster({
       return;
     }
     const apply = (width: number) => {
-      if (width > 0) {
-        // 폭에 맞춰 축소(큰 화면에선 1배로 두고 가운데 정렬). 세로는 페이지 스크롤로 둔다 —
-        // 높이까지 JS로 맞추려다 top 측정이 흔들려 포스터가 통째로 잘리던 회귀가 있었다.
-        setPosterScale(Math.min(1, width / POSTER_DESIGN_W));
+      if (width <= 0) {
+        return;
       }
+      const byW = width / POSTER_DESIGN_W;
+      // 시청자 화면은 6행 달력이 통째로 한 화면에 들어와야 한다(스크롤로 행이 잘리면 안 됨).
+      // 그래서 폭'과' 높이 둘 다에 맞춘다. 가용 높이는 (창 높이 − 헤더 띠 − 아래 여백/월이동바
+      // 클리어런스). 헤더 높이는 offsetHeight(스크롤·배율 무관한 레이아웃 값)라 측정이 안 흔들려
+      // 예전 getBoundingClientRect().top 방식의 잘림/피드백이 없다. 꾸미기(decorate)는 위에
+      // 툴바가 더 있고 스크롤이 자연스러워 폭 기준만 쓴다.
+      let scale = byW;
+      if (!decorate) {
+        const headerH = posterHeaderRef.current?.offsetHeight ?? 0;
+        const availH = window.innerHeight - headerH - 34;
+        if (availH > 0) {
+          scale = Math.min(scale, availH / POSTER_DESIGN_H);
+        }
+      }
+      setPosterScale(Math.max(0.12, Math.min(1, scale)));
     };
     apply(stage.clientWidth);
-    // contentRect.width는 자식 scale(높이 변경)에 영향받지 않아 피드백 루프가 없다.
+    // contentRect.width는 자식 scale(높이 변경)에 영향받지 않아 폭 피드백 루프가 없다.
     const ro = new ResizeObserver((entries) => apply(entries[0]?.contentRect.width ?? 0));
     ro.observe(stage);
-    return () => ro.disconnect();
-  }, [showAgenda]);
+    // 창 세로 리사이즈도 반영(ResizeObserver는 폭만 봄).
+    const onResize = () => apply(stage.clientWidth);
+    window.addEventListener("resize", onResize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", onResize);
+    };
+  }, [showAgenda, decorate]);
 
   // 이 세션에서 삭제한 스티커 id. 달을 다시 시드할 때 schedule prop(서버 스냅샷)이 캐시 탓에
   // 아직 그 스티커를 들고 있을 수 있어, 지운 게 월 이동 후 되살아나는 걸 막는다.
@@ -2448,7 +2468,7 @@ export function PublicPoster({
           </header>
         ) : null}
         {showAgenda ? null : (
-          <header className="public-calendar-header">
+          <header className="public-calendar-header" ref={posterHeaderRef}>
             <div className="header-left" />
 
             {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).
