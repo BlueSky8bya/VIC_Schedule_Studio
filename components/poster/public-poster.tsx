@@ -140,6 +140,16 @@ const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
 // 관심 단계 순위(높을수록 인기). 한 칸의 "대표 인기 단계"를 고를 때 쓴다.
 const POP_RANK: Record<string, number> = { warm: 1, hot: 2, blaze: 3, top: 4 };
 
+// 저장 칩의 KST 시각(HH:MM) — 편집실(studio-shell)과 같은 모양.
+function nowKstHm(): string {
+  return new Date().toLocaleTimeString("ko-KR", {
+    timeZone: "Asia/Seoul",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+}
+
 // StickerInstance → 저장 입력(SaveStickerInput). 배치/단건 저장이 같은 매핑을 쓰게 모은다.
 // year/month는 호출 맥락에 따라 다름(수정=현재 보기 월, 재삽입=스티커 자체 월)이라 인자로 받는다.
 function stickerToSaveInput(
@@ -530,9 +540,25 @@ export function PublicPoster({
   // raw 액션 prop은 "이 기능이 켜져 있는지"의 게이트로만 쓰고(서버 호출은 라우트가 대신), 응답은
   // 기존 액션과 같은 모양({ok,sticker}/{ok,stickers}/{ok,error})이라 호출부를 바꿀 필요가 없다.
   const pendingSaveRef = useRef(0);
+  // #저장칩 — 꾸미기에서도 편집실처럼 저장 상태를 항상 보여준다(저장중/저장됨/실패 + KST).
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  const [lastSavedKst, setLastSavedKst] = useState<string | null>(null);
+  const savingSinceRef = useRef(0); // '저장 중' 최소 노출 계산용
+  const savedTimerRef = useRef<number | null>(null);
   const stickerWrite = useCallback(
     async <T,>(op: string, payload: unknown, fallback: T): Promise<T> => {
+      if (pendingSaveRef.current === 0) savingSinceRef.current = Date.now();
+      if (savedTimerRef.current) {
+        window.clearTimeout(savedTimerRef.current);
+        savedTimerRef.current = null;
+      }
       pendingSaveRef.current += 1;
+      // 매크로태스크로 빼 항상 긴급으로 칠해지게(편집실 studioWrite와 동일 이유).
+      window.setTimeout(() => {
+        if (pendingSaveRef.current > 0) setSaveState("saving");
+      }, 0);
+      let result = fallback;
+      let ok = false;
       try {
         const res = await fetch("/api/sticker-write", {
           method: "POST",
@@ -541,15 +567,48 @@ export function PublicPoster({
           body: JSON.stringify({ op, payload })
         });
         const data = await res.json().catch(() => null);
-        return (data ?? fallback) as T;
+        result = (data ?? fallback) as T;
+        ok = Boolean((result as { ok?: boolean })?.ok);
       } catch {
-        return fallback;
+        result = fallback;
+        ok = false;
       } finally {
         pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
+        if (!ok) {
+          setSaveState("failed"); // 실패는 칩에 빨갛게 계속 — 조용히 사라지지 않게(#12)
+        } else if (pendingSaveRef.current === 0) {
+          setLastSavedKst(nowKstHm());
+          const elapsed = Date.now() - savingSinceRef.current;
+          if (elapsed >= 700) {
+            setSaveState("saved");
+          } else {
+            savedTimerRef.current = window.setTimeout(() => {
+              if (pendingSaveRef.current === 0) setSaveState("saved");
+            }, 700 - elapsed);
+          }
+        }
       }
+      return result;
     },
     []
   );
+  // Ctrl+S — 꾸미기엔 따로 '저장 버튼'이 없다(스티커는 조작 즉시 keepalive 저장). 저장할 게 없으면
+  // '이미 저장됨'을 칩으로 잠깐 확인시킨다(진행 중 저장이 있으면 그 표시를 안 건드림).
+  const flashSavedChip = useCallback(() => {
+    if (pendingSaveRef.current > 0) return;
+    if (savedTimerRef.current) {
+      window.clearTimeout(savedTimerRef.current);
+      savedTimerRef.current = null;
+    }
+    setSaveState("saving");
+    savedTimerRef.current = window.setTimeout(() => {
+      if (pendingSaveRef.current === 0) {
+        setSaveState("saved");
+        setLastSavedKst(nowKstHm());
+      }
+      savedTimerRef.current = null;
+    }, 600);
+  }, []);
   const saveStickerAction = useMemo(
     () =>
       saveStickerActionRaw
@@ -1131,6 +1190,10 @@ export function PublicPoster({
       } else if (key === "y" || (key === "z" && event.shiftKey)) {
         event.preventDefault();
         redo();
+      } else if (key === "s") {
+        // Ctrl/⌘+S: 브라우저 페이지 저장 가로채기 → 저장 칩으로 '저장됨' 확인(스티커는 이미 즉시 저장).
+        event.preventDefault();
+        flashSavedChip();
       }
     }
     window.addEventListener("keydown", onKey);
@@ -2573,6 +2636,32 @@ export function PublicPoster({
         {decorate ? (
           <div className="decorate-toolbar" aria-label="꾸미기 도구">
             <div className="decorate-history" role="group" aria-label="실행취소/다시실행">
+              {/* 저장 상태 칩 — 편집실과 동일(저장중/저장됨/실패 + KST). 스티커는 조작 즉시 저장. */}
+              <span
+                className={`save-status ${saveState}`}
+                aria-live="polite"
+                title={
+                  saveState === "failed"
+                    ? "저장에 실패했어요. 잠시 후 다시 시도해 주세요"
+                    : saveState === "saving"
+                      ? "저장 중이에요"
+                      : lastSavedKst
+                        ? `마지막 저장 ${lastSavedKst} KST`
+                        : "변경사항이 저장돼 있어요"
+                }
+              >
+                <span className="ss-dot" aria-hidden="true" />
+                <em>
+                  {saveState === "saving"
+                    ? "저장 중…"
+                    : saveState === "failed"
+                      ? "저장 실패"
+                      : "저장됨"}
+                </em>
+                {saveState === "saved" && lastSavedKst ? (
+                  <b className="ss-time">{lastSavedKst}</b>
+                ) : null}
+              </span>
               <button
                 className="button icon-only"
                 disabled={undoStack.length === 0}
