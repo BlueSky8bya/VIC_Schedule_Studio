@@ -2010,16 +2010,19 @@ html {
 .evt-tentative {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   margin-right: 4px;
-  padding: 0 5px;
+  /* '미정'을 세로로(미/정) — 좁고 키 큰 칩. */
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  padding: 3px 2px;
   border: 1px dashed currentColor;
   border-radius: 999px;
   font-size: 10px;
   font-weight: 900;
-  line-height: 1.45;
-  white-space: nowrap;
+  line-height: 1;
+  letter-spacing: -1px;
   opacity: 0.82;
-  vertical-align: 1px;
 }
 /* D: 2색 칸은 그라데이션(칸 배경) 위에 반쪽 무늬를 깔고, 글자는 그 위로 올린다. */
 .public-event[data-mixed] {
