@@ -2023,6 +2023,7 @@ html {
   line-height: 1;
   letter-spacing: -1px;
   opacity: 0.82;
+  vertical-align: middle;
 }
 /* D: 2색 칸은 그라데이션(칸 배경) 위에 반쪽 무늬를 깔고, 글자는 그 위로 올린다. */
 .public-event[data-mixed] {
