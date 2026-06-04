@@ -826,7 +826,6 @@ export function PublicPoster({
   // (POSTER_DESIGN_W×H)로 설계하고, 화면 폭에 맞춰 통째로 축소(transform: scale)만 한다.
   // export는 변형 없는 .poster-surface를 원본 해상도로 캡쳐하므로 화질에 영향 없다.
   const posterStageRef = useRef<HTMLDivElement | null>(null);
-  const posterHeaderRef = useRef<HTMLElement | null>(null);
   const [posterScale, setPosterScale] = useState(1);
   useEffect(() => {
     if (showAgenda) {
@@ -842,14 +841,14 @@ export function PublicPoster({
       }
       const byW = width / POSTER_DESIGN_W;
       // 시청자 화면은 6행 달력이 통째로 한 화면에 들어와야 한다(스크롤로 행이 잘리면 안 됨).
-      // 그래서 폭'과' 높이 둘 다에 맞춘다. 가용 높이는 (창 높이 − 헤더 띠 − 아래 여백/월이동바
-      // 클리어런스). 헤더 높이는 offsetHeight(스크롤·배율 무관한 레이아웃 값)라 측정이 안 흔들려
-      // 예전 getBoundingClientRect().top 방식의 잘림/피드백이 없다. 꾸미기(decorate)는 위에
-      // 툴바가 더 있고 스크롤이 자연스러워 폭 기준만 쓴다.
+      // 폭'과' 높이 둘 다에 맞춘다. 가용 높이 = 창 높이 − (stage 위에 있는 모든 것: 헤더 등) −
+      // 아래 여백. stage 위 높이는 rect.top + scrollY(=문서 상단~stage 거리)로 재 스크롤·배율과
+      // 무관하다 → 측정이 안 흔들려 잘림/피드백 없음. 꾸미기는 위 툴바가 더 있고 스크롤이
+      // 자연스러워 폭 기준만.
       let scale = byW;
       if (!decorate) {
-        const headerH = posterHeaderRef.current?.offsetHeight ?? 0;
-        const availH = window.innerHeight - headerH - 34;
+        const aboveStage = stage.getBoundingClientRect().top + window.scrollY;
+        const availH = window.innerHeight - aboveStage - 28; // 아래 여백/월이동바 클리어런스
         if (availH > 0) {
           scale = Math.min(scale, availH / POSTER_DESIGN_H);
         }
@@ -2468,7 +2467,7 @@ export function PublicPoster({
           </header>
         ) : null}
         {showAgenda ? null : (
-          <header className="public-calendar-header" ref={posterHeaderRef}>
+          <header className="public-calendar-header">
             <div className="header-left" />
 
             {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).
