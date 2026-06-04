@@ -12,21 +12,26 @@
   gap: 10px;
   margin-top: 4px;
 }
-.agenda-legend {
+/* 오른쪽 레일: (위) 색상 필터 박스 + (아래) 미리보기 '편집실' 버튼을 92px 폭으로 세로 스택.
+   레일을 vh '고정 높이'로 — dvh와 달리 주소창 접/펴짐·스크롤에도 높이가 안 변해, 박스도
+   맨 아래 버튼도 들썩이지 않는다(눈 피로 제거). 필터가 길면 박스 '안쪽'만 스크롤. */
+.agenda-legend-rail {
+  flex: 0 0 92px;
   position: sticky;
-  /* 화면 위에 붙고, 아래로는 하단 월 이동 바 직전까지 길게.
-     높이는 svh(고정 = 툴바 보이는 기준)로 한 번만 계산 — dvh처럼 스크롤마다
-     재계산/리플로우하지 않게 한다(주소창 숨김 시 아래 약간 여백만 생김). */
   top: 74px;
   align-self: flex-start;
-  /* 고정 높이가 아니라 상한(max-height): 내용만큼만 차지하되(빈 공간 없음),
-     화면에 여유가 생기면 그만큼 더 길게 늘어난다(dvh = 동적). */
-  max-height: calc(100vh - 150px);
-  max-height: calc(100dvh - 150px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  height: calc(100vh - 150px);
+}
+.agenda-legend {
+  /* 레일이 sticky·높이를 맡으므로 박스는 남는 높이를 채우고(빈공간 X) 안쪽 스크롤만. */
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
-  /* 편집실·시청자 동일 고정 너비(92px). "내 관심"의 (N) 개수 표시를 없애 이 너비에 들어오므로
-     평소엔 가로 스크롤이 안 생기고, 그보다 긴 태그명일 때만 스크롤된다. */
-  flex: 0 0 92px;
+  width: 100%;
   display: grid;
   align-content: start;
   gap: 5px;
@@ -34,6 +39,24 @@
   border-radius: 12px;
   background: #fffdf6;
   padding: 9px 7px;
+  box-shadow: var(--shadow-2);
+}
+/* 박스 아래 '편집실' 버튼 — 항상 같은 자리(레일 바닥). 박스 폭(92px) 꽉 채운다. */
+.agenda-legend-nav {
+  flex: 0 0 auto;
+  display: flex;
+}
+.agenda-legend-nav .button {
+  width: 100%;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
   box-shadow: var(--shadow-2);
 }
 .agenda-legend strong {

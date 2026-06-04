@@ -2175,6 +2175,7 @@ export function PublicPoster({
         onTouchStart={onAgendaTouchStart}
       >
         {interactive && legendTags.length > 0 ? (
+          <div className="agenda-legend-rail">
           <aside className="agenda-legend" aria-label="색상 안내(태그 필터)">
             <strong>색상 필터</strong>
             {(() => {
@@ -2246,6 +2247,10 @@ export function PublicPoster({
               </span>
             </div>
           </aside>
+          {/* 미리보기 '편집실로 가기'는 색상 필터 박스 '아래'에 — 박스가 vh 고정이라 스크롤해도
+              안 들썩이고(인사이트 버튼과 동일), 우상단 대신 엄지 닿는 아래쪽이라 누르기 쉽다. */}
+          {previewNav ? <div className="agenda-legend-nav">{previewNav}</div> : null}
+          </div>
         ) : null}
 
         <div
@@ -2462,8 +2467,7 @@ export function PublicPoster({
               빅토리 일정표
               <span className="title-spark" aria-hidden="true">✨️</span>
             </h1>
-            {/* 시청자 미리보기 진입 시 — 제목 오른쪽 칸에 이동 버튼(편집실 등). */}
-            {previewNav ? <div className="agenda-preview-right">{previewNav}</div> : null}
+            {/* 미리보기 이동 버튼(편집실)은 제목 우측이 아니라 색상 필터 박스 아래로 옮겼다(엄지존). */}
             {accountSwitch ? (
               <form action="/api/auth/logout" className="agenda-account" method="post">
                 <button onClick={() => startNav(isNarrow ? "계정 변경 중…" : "계정 선택 화면으로 이동 중입니다…")} type="submit">

@@ -3383,24 +3383,12 @@ export function StudioShell({
             <div className="viewer-preview-actions">{previewNav}</div>
           </div>
         ) : null}
-        {/* 모바일: '편집실로 가기'를 제목 우상단(엄지 멀다) 대신 우하단 FAB로 — 미리보기 중에만.
-            (꾸미기는 PC 전용이라 모바일 previewNav엔 편집실 버튼뿐 → FAB 하나로 대체.) */}
-        {isNarrow ? (
-          <button
-            className="viewer-back-fab"
-            onClick={() => setViewerMode(false)}
-            type="button"
-          >
-            <ChevronLeft aria-hidden="true" size={18} />
-            편집실
-          </button>
-        ) : null}
         <PublicPoster
           initialMonth={view.month}
           initialNarrow={isNarrow}
           initialYear={view.year}
           onViewChange={(year, month) => setView({ year, month })}
-          previewNav={isNarrow ? undefined : previewNav}
+          previewNav={previewNav}
           previewNote={<span className="viewer-preview-note">미리보기 중..</span>}
           schedule={previewSchedule}
           toggleHeartAction={toggleEventHeartAction}
