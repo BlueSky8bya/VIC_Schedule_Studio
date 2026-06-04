@@ -1130,10 +1130,14 @@ export function StudioShell({
   // 아래가 뚫리던 문제를 막는다. (히스토리 스택(overlayDepth)은 기존대로.)
   const overlayLocked =
     overlayDepth > 0 || supportSheetId !== null || tagSheetId !== null || passcodeModal !== null;
-  // 히스토리 스택 깊이 = 오버레이(편집 시트·공지) + 시청자 미리보기(viewerMode).
+  // 매니저·작업자 전용 시트(태그 수정·업 도움)도 히스토리에 한 칸 쌓는다 — 안 쌓으면 모바일
+  // 뒤로가기가 시트를 닫는 대신 페이지를 떠나(로그인/계정 화면으로) 버린다. 오너의 편집 시트
+  // (mobileEditId)·개발자 모달과 동일하게 '뒤로가기=시트 닫기'로 통일.
+  const sheetDepth = (tagSheetId !== null ? 1 : 0) + (supportSheetId !== null ? 1 : 0);
+  // 히스토리 스택 깊이 = 오버레이(편집 시트·공지) + 매니저/작업자 시트 + 시청자 미리보기.
   // viewerMode도 한 칸 쌓아야, 휴대폰 뒤로가기를 누를 때 로그인 흐름으로 빠지지 않고
   // 편집실로 돌아온다. (스크롤 잠금은 overlayLocked만 사용 — 미리보기 자체 스크롤은 살린다.)
-  const stackDepth = overlayDepth + (viewerMode ? 1 : 0);
+  const stackDepth = overlayDepth + sheetDepth + (viewerMode ? 1 : 0);
   const depthRef = useRef(0);
   const ignorePopRef = useRef(0); // 우리가 정리용으로 부른 history.back의 popstate는 무시
   const backClosingRef = useRef(false); // 뒤로가기로 닫히는 중인지
@@ -1226,8 +1230,15 @@ export function StudioShell({
         return;
       }
       backClosingRef.current = true;
+      // 맨 위 레이어 하나만 닫는다. 보통 동시에 하나만 열리지만, 겹쳐도 위→아래 순으로.
       if (modalIsStackable) {
         setModal(null);
+      } else if (tagSheetId !== null) {
+        // 매니저: 태그 수정 시트 → 닫고 편집실 기본 화면으로(계정 화면으로 안 빠짐).
+        setTagSheetId(null);
+      } else if (supportSheetId !== null) {
+        // 매니저·작업자: 업 도움 시트 닫기.
+        setSupportSheetId(null);
       } else if (mobileEditId !== null) {
         setMobileEditId(null);
         setSelectedEventId(null);
@@ -1239,7 +1250,7 @@ export function StudioShell({
     }
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [modalIsStackable, mobileEditId, viewerMode]);
+  }, [modalIsStackable, tagSheetId, supportSheetId, mobileEditId, viewerMode]);
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: StudioScheduleEvent) {
