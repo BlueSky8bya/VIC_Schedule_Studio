@@ -835,17 +835,31 @@ export function PublicPoster({
     if (!stage) {
       return;
     }
+    // 폭'과' 높이 둘 다에 맞춰 축소한다. 예전엔 폭만 봐서, 넓지만 낮은 창에선 폭에 맞춘 포스터가
+    // 뷰포트보다 높아져 아래(색상 안내의 ♥ 단계)가 잘렸다("어쩔 땐 끊김"). 높이 제약을 더해 통째로
+    // 화면 안에 들어오게 한다. stage의 top은 위 내용이 정하므로 scale로 안 변해 피드백 루프 없다.
     const apply = (width: number) => {
-      if (width > 0) {
-        // 폭에 맞춰 축소(큰 화면에선 1배로 두고 가운데 정렬).
-        setPosterScale(Math.min(1, width / POSTER_DESIGN_W));
+      if (width <= 0) {
+        return;
       }
+      const top = stage.getBoundingClientRect().top;
+      const availH = window.innerHeight - top - 20; // 하단 월 이동 바와 안 겹치게 약간 여유
+      const byW = width / POSTER_DESIGN_W;
+      const byH = availH > 0 ? availH / POSTER_DESIGN_H : byW;
+      // 큰 화면에선 1배(가운데 정렬), 작은 화면에선 폭·높이 중 더 빡빡한 쪽에 맞춘다.
+      setPosterScale(Math.max(0.12, Math.min(1, byW, byH)));
     };
     apply(stage.clientWidth);
-    // contentRect.width는 자식 scale(높이 변경)에 영향받지 않아 피드백 루프가 없다.
+    // contentRect.width는 자식 scale(높이 변경)에 영향받지 않아 폭 피드백 루프가 없다.
     const ro = new ResizeObserver((entries) => apply(entries[0]?.contentRect.width ?? 0));
     ro.observe(stage);
-    return () => ro.disconnect();
+    // 창 높이 변화(세로 리사이즈)도 반영 — ResizeObserver는 폭만 보므로 별도로.
+    const onResize = () => apply(stage.clientWidth);
+    window.addEventListener("resize", onResize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", onResize);
+    };
   }, [showAgenda]);
 
   // 이 세션에서 삭제한 스티커 id. 달을 다시 시드할 때 schedule prop(서버 스냅샷)이 캐시 탓에
@@ -3160,6 +3174,28 @@ export function PublicPoster({
           </div>
         ) : null}
 
+        {/* 내 관심(♥) 배너 — 포스터 표면(=캡쳐 캔버스) 밖, 그 위에 띄운다. 표면 안에 두면 시청자
+            모드에서만 제목줄이 커져 달력이 내려가고, 그 결과 꾸미기에서 배치한 스티커 좌표가
+            시청자 화면과 어긋난다(표면 지오메트리는 두 모드가 100% 같아야 함). 밖에 두니 캡쳐 PNG도
+            깨끗하다. 상호작용(시청자) 모드에서만. */}
+        {!showAgenda && interactive ? (
+          <div className="poster-interest">
+            <button
+              aria-pressed={bookmarkedOnly}
+              className={`interest-toggle ${bookmarkedOnly ? "active" : ""}`}
+              onClick={() => setBookmarkedOnly((v) => !v)}
+              title="내가 ♥ 누른 일정만 모아서 보기"
+              type="button"
+            >
+              <LiquidHeart ratio={interestRatio} />
+              <span className="it-text">
+                <strong>내 관심</strong>
+                <em>♥ 누른 일정만 모아보기</em>
+              </span>
+            </button>
+          </div>
+        ) : null}
+
         {showAgenda ? null : (
         <div
           className="poster-stage"
@@ -3184,32 +3220,12 @@ export function PublicPoster({
           key={`surface-${view.year}-${view.month}`}
         >
           <div className="poster-heading">
-            {/* 내 관심(♥) 모아보기 — 제목 위 가운데 배너로. 시청자 상호작용 모드에서만(캡쳐/꾸미기 제외). */}
-            {interactive ? (
-              <div className="poster-interest">
-                <button
-                  aria-pressed={bookmarkedOnly}
-                  className={`interest-toggle ${bookmarkedOnly ? "active" : ""}`}
-                  onClick={() => setBookmarkedOnly((v) => !v)}
-                  title="내가 ♥ 누른 일정만 모아서 보기"
-                  type="button"
-                >
-                  <LiquidHeart ratio={interestRatio} />
-                  <span className="it-text">
-                    <strong>내 관심</strong>
-                    <em>♥ 누른 일정만 모아보기</em>
-                  </span>
-                </button>
-              </div>
-            ) : null}
-            <div className="poster-titlerow">
               <span aria-hidden="true">✨️</span>
-              <h1>{schedule.calendar.title}</h1>
+            <h1>{schedule.calendar.title}</h1>
               <span aria-hidden="true">✨️</span>
-              <em>
-                {view.year}년 {view.month}월
-              </em>
-            </div>
+            <em>
+              {view.year}년 {view.month}월
+            </em>
           </div>
 
           <StickerLayer

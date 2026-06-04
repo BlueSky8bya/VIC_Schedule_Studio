@@ -359,7 +359,7 @@
   /* 상시 모션(오늘 숨쉬기·제목 반짝)은 모션 최소화 설정에서 끈다. */
   .agenda-day.today .agenda-when strong,
   .public-day.today,
-  .poster-titlerow span,
+  .poster-heading span,
   .agenda-header .title-spark {
     animation: none;
   }
@@ -917,31 +917,24 @@
   overflow: hidden; /* 고정 캔버스 밖으로 내용이 새지 않게 */
 }
 
-/* 캡쳐 영역 안에 들어가는 제목 + 연/월. 제목 위에 '내 관심' 배너를 세로로 얹으니 column. */
+/* 캡쳐 영역 안에 들어가는 제목 + 연/월 */
 .poster-heading {
   grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding: 4px 0 14px;
-}
-/* 제목 한 줄(✨ 빅토리 일정표 ✨ 2026년 1월) — 기존 가로 baseline 정렬을 이 래퍼가 갖는다. */
-.poster-titlerow {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   justify-content: center;
   gap: 12px;
+  padding: 4px 0 14px;
 }
-.poster-titlerow h1 {
+.poster-heading h1 {
   margin: 0;
   font-size: 32px;
   font-weight: 900;
   letter-spacing: -0.01em;
   line-height: 1.08;
 }
-.poster-titlerow span {
+.poster-heading span {
   color: #d59a93;
   font-size: 22px;
   font-weight: 900;
@@ -949,14 +942,16 @@
   animation: spark-twinkle 2.8s ease-in-out infinite;
   transform-origin: center;
 }
-.poster-titlerow span:last-of-type {
+.poster-heading span:last-of-type {
   animation-delay: 1.4s;
 }
 
-/* 내 관심(♥) 배너 — 제목 위, 아이보리 알약. 가로(하트+라벨)로 컴팩트하게 가운데. */
+/* 내 관심(♥) 배너 — 포스터 표면 '밖' 위에 띄운 아이보리 알약(캡쳐 캔버스 비침범 → 스티커 좌표
+   안전, PNG 깨끗). 가운데 정렬, 포스터와 살짝 띄움. */
 .poster-interest {
   display: flex;
   justify-content: center;
+  margin: 2px 0 10px;
 }
 .interest-toggle {
   display: inline-flex;
@@ -1023,7 +1018,7 @@
   0%, 100% { opacity: 0.6; transform: scale(0.9) rotate(-7deg); }
   50% { opacity: 1; transform: scale(1.12) rotate(7deg); }
 }
-.poster-titlerow em {
+.poster-heading em {
   color: var(--muted);
   font-size: 18px;
   font-style: normal;
@@ -1070,6 +1065,9 @@
 .public-legend-vertical {
   display: flex;
   flex-direction: column;
+  /* 남는 세로를 항목 사이로 고르게 흩뿌려(space-evenly) 위로 안 몰리고 균형 있게 채운다.
+     항목이 많아 빈틈이 없으면 자연히 gap(3px)만 남아 클리핑 없이 정상 표시된다. */
+  justify-content: space-evenly;
   gap: 3px;
   border: 1px solid #ece2cd;
   border-radius: var(--r-lg);
@@ -1082,10 +1080,6 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3px;
-}
-/* ♥ 안내는 박스 바닥에 붙여(남는 높이 흡수) 빈 공간 없이 달력 끝선까지 채운다. */
-.public-legend-vertical .legend-heart-help {
-  margin-top: auto;
 }
 .public-legend-vertical span,
 .public-legend-vertical .legend-item {
