@@ -2256,12 +2256,16 @@ export function StudioShell({
   function findRestEvent(isoDate: string): StudioScheduleEvent | null {
     return getEventsForDate(events, isoDate).find((e) => !e.isSupport && isRestEvent(e)) ?? null;
   }
-  function openRestMenu(clientX: number, clientY: number, isoDate: string) {
+  // 커서 위치가 아니라 '그 날짜칸' 기준으로 메뉴를 띄운다(경계에서 눌러도 어느 날인지 분명).
+  // x는 칸 가로중앙(메뉴는 CSS translateX(-50%)로 중앙정렬), y는 칸 세로중앙에 메뉴를 얹는다.
+  function openRestMenu(rect: DOMRect, isoDate: string) {
     if (!canEdit || blockedByPreview()) return;
     hapticTick();
-    // 메뉴(~180×56)가 화면 밖으로 안 나가게 좌표를 가둔다.
-    const x = Math.max(8, Math.min(clientX, window.innerWidth - 188));
-    const y = Math.max(8, Math.min(clientY, window.innerHeight - 64));
+    const menuW = 180;
+    const menuH = 56;
+    const cx = rect.left + rect.width / 2;
+    const x = Math.max(8 + menuW / 2, Math.min(cx, window.innerWidth - 8 - menuW / 2));
+    const y = Math.max(8, Math.min(rect.top + rect.height / 2 - menuH / 2, window.innerHeight - 8 - menuH));
     setRestMenu({ isoDate, x, y, hasRest: Boolean(findRestEvent(isoDate)) });
   }
   function closeRestMenu() {
@@ -2341,13 +2345,13 @@ export function StudioShell({
   function onCellPointerDown(e: ReactPointerEvent<HTMLElement>, isoDate: string) {
     if (!canEdit || e.pointerType === "mouse") return; // 데스크톱은 우클릭(onContextMenu)으로
     if ((e.target as HTMLElement).closest(".studio-event-pill, button, a")) return;
-    const px = e.clientX;
-    const py = e.clientY;
-    cellHoldPosRef.current = { x: px, y: py };
+    cellHoldPosRef.current = { x: e.clientX, y: e.clientY }; // 이동 취소 판정용
+    // currentTarget은 핸들러 종료 후 null이 되므로 칸 rect를 지금 캡처해 둔다.
+    const rect = e.currentTarget.getBoundingClientRect();
     if (cellHoldRef.current) clearTimeout(cellHoldRef.current);
     cellHoldRef.current = setTimeout(() => {
       suppressCellClickRef.current = true; // 메뉴 연 직후 click(selectDate) 무시
-      openRestMenu(px, py, isoDate);
+      openRestMenu(rect, isoDate);
     }, 360);
   }
   function cancelCellHold() {
@@ -3946,7 +3950,9 @@ export function StudioShell({
                 day.isPast ? "past" : "future",
                 day.isToday ? "today" : "",
                 // 드래그 중 이 칸 위에 있으면 "여기에 놓기" 강조.
-                dragEventId && dropDate === cell.isoDate ? "drop-target" : ""
+                dragEventId && dropDate === cell.isoDate ? "drop-target" : "",
+                // 휴방 메뉴가 이 칸에 떠 있으면 어느 날인지 분명히 강조.
+                restMenu?.isoDate === cell.isoDate ? "rest-target" : ""
               ]
                 .filter(Boolean)
                 .join(" ");
@@ -3968,7 +3974,7 @@ export function StudioShell({
                   onContextMenu={(e) => {
                     if (!canEdit) return; // 비편집자는 기본 우클릭 메뉴 그대로
                     e.preventDefault();
-                    openRestMenu(e.clientX, e.clientY, cell.isoDate);
+                    openRestMenu(e.currentTarget.getBoundingClientRect(), cell.isoDate);
                   }}
                   onPointerDown={(e) => onCellPointerDown(e, cell.isoDate)}
                   onPointerMove={onCellPointerMove}

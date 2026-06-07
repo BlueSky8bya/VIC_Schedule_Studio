@@ -1167,18 +1167,27 @@
   background: #fff;
   border: 1px solid #ece7f7;
   box-shadow: 0 10px 30px rgb(60 40 120 / 22%);
-  transform-origin: top left;
+  /* 좌표 x는 칸 가로중앙 → 메뉴를 그 위에 중앙정렬(경계서 눌러도 칸 한가운데 뜸). */
+  transform: translateX(-50%);
+  transform-origin: top center;
   animation: rest-menu-in 0.14s var(--ease);
 }
 @keyframes rest-menu-in {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: translateX(-50%) scale(0.9);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: translateX(-50%) scale(1);
   }
+}
+/* 휴방 메뉴가 떠 있는 날짜칸 강조 — 어느 날인지 분명히. */
+.studio-day.rest-target {
+  outline: 2px solid #6b5bd6;
+  outline-offset: -2px;
+  border-radius: 12px;
+  background: #f3f0fb;
 }
 .rest-menu-item {
   display: flex;
