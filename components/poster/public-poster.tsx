@@ -2173,7 +2173,7 @@ export function PublicPoster({
                       aria-pressed={bookmarked}
                       className="event-heart"
                       onClick={(ev) => toggleBookmark(event.id, ev)}
-                      title={bookmarked ? "관심 해제" : "관심 일정"}
+                      title={bookmarked ? "관심 표시됨 · 다시 누르면 취소" : "관심 표시"}
                       type="button"
                     >
                       {bookmarked ? "♥" : "♡"}
@@ -2430,6 +2430,7 @@ export function PublicPoster({
                                 aria-pressed={bookmarked}
                                 className={`event-heart agenda-heart ${bookmarked ? "bookmarked" : ""}`}
                                 onClick={(ev) => toggleBookmark(event.id, ev)}
+                                title={bookmarked ? "관심 표시됨 · 다시 누르면 취소" : "관심 표시"}
                                 type="button"
                               >
                                 {bookmarked ? "♥" : "♡"}

@@ -1376,14 +1376,35 @@ html {
   line-height: 1;
   opacity: 0.45;
   cursor: pointer;
-  transition: opacity var(--dur-1) var(--ease);
+  transition:
+    opacity var(--dur-1) var(--ease),
+    background var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
 }
 .event-heart:hover {
   opacity: 0.85;
 }
-.public-event.bookmarked .event-heart {
+.event-heart:active {
+  transform: scale(0.82);
+}
+/* 관심 ON — 빨간 하트 + 옅은 핑크 알약 배경 + 살짝 키워 "켜짐"이 한눈에(모바일은 툴팁이 없어
+   시각 단서가 핵심). aria-pressed로 두 하트 버튼(달력칸·아젠다)을 한 규칙으로 묶는다. */
+.public-event.bookmarked .event-heart,
+.event-heart[aria-pressed="true"] {
   color: #e11d48;
   opacity: 1;
+  background: #ffe4ec;
+  transform: scale(1.06);
+}
+.event-heart[aria-pressed="true"]:active {
+  transform: scale(0.9);
+}
+@media (prefers-reduced-motion: reduce) {
+  .event-heart,
+  .event-heart:active,
+  .event-heart[aria-pressed="true"] {
+    transition: none;
+  }
 }
 
 /* #1/#5: 메모 편집 바 — 포스터 표면 밖(캡쳐 버튼 줄 근처). 스티커 레이어에 안 막혀 입력 가능.
