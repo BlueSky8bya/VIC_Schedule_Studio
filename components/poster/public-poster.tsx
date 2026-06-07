@@ -273,7 +273,6 @@ function recordHeartDelta(owner: string, id: string, on: boolean) {
 function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: () => void }) {
   const target = useMemo(() => Date.parse(revealAt), [revealAt]);
   const [now, setNow] = useState<number | null>(null);
-  const firedRef = useRef(false);
   const onRevealRef = useRef(onReveal);
   onRevealRef.current = onReveal;
   useEffect(() => {
@@ -282,12 +281,15 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
     return () => window.clearInterval(id);
   }, []);
   const remain = now === null ? null : target - now;
+  const revealed = remain !== null && remain <= 0;
+  // 공개 시각이 지나면 실제 내용을 받아온다. 공개 스케줄은 캐시(≤30초)라 한 번 새로고침으론 옛
+  // (가린) 데이터가 올 수 있어, 이 카드가 사라질 때(=실제 내용 도착)까지 주기적으로 새로고침한다.
   useEffect(() => {
-    if (remain !== null && remain <= 0 && !firedRef.current) {
-      firedRef.current = true;
-      onRevealRef.current();
-    }
-  }, [remain]);
+    if (!revealed) return;
+    onRevealRef.current();
+    const id = window.setInterval(() => onRevealRef.current(), 8000);
+    return () => window.clearInterval(id);
+  }, [revealed]);
   if (Number.isNaN(target)) return null;
   if (remain === null) return <span className="teaser-count">⏳</span>;
   const s = Math.max(0, Math.floor(remain / 1000));
