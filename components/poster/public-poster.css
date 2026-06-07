@@ -1393,7 +1393,6 @@ html {
 .event-heart[aria-pressed="true"] {
   color: #e11d48;
   opacity: 1;
-  background: #ffe4ec;
   transform: scale(1.06);
 }
 .event-heart[aria-pressed="true"]:active {
