@@ -322,6 +322,8 @@ export function InsightsDashboard({
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false); // 지금 보는 칸만 수동 새로고침 중
+  const [refreshed, setRefreshed] = useState(false); // 방금 갱신 완료 — '갱신됨' 칩 잠깐 표시
+  const refreshedTimer = useRef<number | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -386,7 +388,11 @@ export function InsightsDashboard({
     if (!activeSource || refreshing) return;
     hapticTick();
     setRefreshing(true);
-    try {
+    setRefreshed(false);
+    if (refreshedTimer.current) window.clearTimeout(refreshedTimer.current);
+    // 응답이 너무 빨라도 도는 게 눈에 보이게 최소 회전시간(550ms)을 보장한다.
+    const minSpin = new Promise<void>((res) => window.setTimeout(res, 550));
+    const work = (async () => {
       if (activeSource === "visits") {
         const r = await getVisitTrendsAction(year, month);
         if (r.ok) setVisits(r.data);
@@ -398,11 +404,22 @@ export function InsightsDashboard({
         if (r.ok) setData(r.data);
         else setError(r.error);
       }
-      hapticTick();
+    })();
+    try {
+      await Promise.all([work, minSpin]);
+      hapticTick(); // 응답 도착 — 두 번째 박자
+      setRefreshed(true); // '갱신됨' 칩 + 버튼 완료 펄스
+      refreshedTimer.current = window.setTimeout(() => setRefreshed(false), 1400);
     } finally {
       setRefreshing(false);
     }
   }
+  useEffect(
+    () => () => {
+      if (refreshedTimer.current) window.clearTimeout(refreshedTimer.current);
+    },
+    []
+  );
 
   // 특정 한 사람의 비공개 잠금만 즉시 만료(초기화) → 성공하면 보안 데이터를 다시 불러온다.
   // (확인 대화/버튼 비활성은 SecurityPanel이 담당.)
@@ -1254,17 +1271,23 @@ export function InsightsDashboard({
       <div className="insights-head">
         <p className="insights-month">{month}월 인사이트</p>
         {activeSource ? (
-          <button
-            aria-label={`${PANELS[index]?.label} 새로고침`}
-            className="insights-refresh"
-            data-spin={refreshing ? "" : undefined}
-            disabled={refreshing}
-            onClick={refreshPanel}
-            title={`${PANELS[index]?.label} 새로고침`}
-            type="button"
-          >
-            <RotateCw aria-hidden="true" size={15} />
-          </button>
+          <div className="insights-refresh-wrap">
+            <span aria-live="polite" className="insights-refreshed" data-on={refreshed ? "" : undefined}>
+              ✓ 갱신됨
+            </span>
+            <button
+              aria-label={`${PANELS[index]?.label} 새로고침`}
+              className="insights-refresh"
+              data-done={refreshed ? "" : undefined}
+              data-spin={refreshing ? "" : undefined}
+              disabled={refreshing}
+              onClick={refreshPanel}
+              title={`${PANELS[index]?.label} 새로고침`}
+              type="button"
+            >
+              <RotateCw aria-hidden="true" size={15} />
+            </button>
+          </div>
         ) : null}
       </div>
       <div className="insights-tabs" role="tablist" aria-label="인사이트 영역">

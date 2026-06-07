@@ -2293,6 +2293,36 @@
   justify-content: space-between;
   gap: 8px;
 }
+/* 버튼 + '갱신됨' 칩을 오른쪽 끝에 묶는다(칩은 버튼 왼쪽에서 등장). */
+.insights-refresh-wrap {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* 갱신 직후 잠깐 뜨는 확인 칩 — 평소엔 접혀(opacity 0, 살짝 오른쪽) 자리만 안 차지하고,
+   data-on일 때 톡 떠올랐다 사라진다. 새로고침이 "먹혔다"는 분명한 티. */
+.insights-refreshed {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: #e7f8ee;
+  color: #1f9d57;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(6px) scale(0.9);
+  pointer-events: none;
+  transition:
+    opacity var(--dur-2) var(--ease),
+    transform var(--dur-2) var(--ease);
+}
+.insights-refreshed[data-on] {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
 .insights-refresh {
   flex: none;
   display: inline-flex;
@@ -2310,6 +2340,21 @@
     border-color var(--dur-2) var(--ease),
     box-shadow var(--dur-2) var(--ease),
     transform var(--dur-1) var(--ease);
+}
+/* 완료 순간 버튼이 초록으로 한 번 펄스(아이콘도 초록) — 빠른 응답에도 분명한 신호. */
+.insights-refresh[data-done] {
+  border-color: #9be3bd;
+  background: #e7f8ee;
+  color: #1f9d57;
+  animation: insights-done-pulse 0.5s var(--ease);
+}
+@keyframes insights-done-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(31 157 87 / 45%);
+  }
+  100% {
+    box-shadow: 0 0 0 9px rgb(31 157 87 / 0%);
+  }
 }
 .insights-refresh:hover {
   background: #efe9fd;
@@ -2337,6 +2382,12 @@
   }
   .insights-refresh[data-spin] svg {
     animation: none;
+  }
+  .insights-refresh[data-done] {
+    animation: none;
+  }
+  .insights-refreshed {
+    transition: none;
   }
 }
 /* 방문 패널 일별/주별 토글 */
