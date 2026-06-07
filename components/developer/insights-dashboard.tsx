@@ -1308,10 +1308,17 @@ export function InsightsDashboard({
 
       <div
         className="insights-viewport"
+        data-refreshing={refreshing ? "" : undefined}
         onPointerCancel={() => (swipeStart.current = null)}
         onPointerDown={onSwipeStart}
         onPointerUp={onSwipeEnd}
       >
+        {refreshing ? (
+          <div className="insights-veil" aria-hidden="true">
+            <RotateCw className="insights-veil-icon" size={22} />
+            <span>불러오는 중…</span>
+          </div>
+        ) : null}
         <div
           className="insights-track"
           data-active={index}

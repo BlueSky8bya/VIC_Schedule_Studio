@@ -1,6 +1,13 @@
 "use client";
 
-import { type CSSProperties, type PointerEvent as ReactPointerEvent, useEffect, useState } from "react";
+import { RotateCw } from "lucide-react";
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState
+} from "react";
 import {
   DEVICE_META,
   ROLE_META,
@@ -24,6 +31,9 @@ type OccTip = { x: number; avg: number; peak: number; rows: { color: string; lab
 export function DayVisitModal({ dateKey }: { dateKey: string }) {
   const [data, setData] = useState<DayVisitDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // 수동 새로고침 — 내용은 유지하고 위에 베일
+  const [refreshed, setRefreshed] = useState(false); // 갱신 완료 펄스
+  const refreshedTimer = useRef<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [dim, setDim] = useState<"role" | "device">("role");
   const [scope, setScope] = useState<VisitScope>("viewer"); // 시청자/운영진/전체 — 분해·동접 즉시 전환
@@ -49,6 +59,36 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
       alive = false;
     };
   }, [dateKey]);
+
+  useEffect(
+    () => () => {
+      if (refreshedTimer.current) window.clearTimeout(refreshedTimer.current);
+    },
+    []
+  );
+
+  // 이 날 상세만 다시 불러 즉시 갱신 — 내용은 그대로 두고 위에 흐림+로딩 베일을 띄워 다시 로딩되는 티.
+  // 햅틱 두 박자(누름+응답). 응답이 빨라도 베일이 보이게 최소 550ms.
+  async function refresh() {
+    if (refreshing) return;
+    hapticTick();
+    setRefreshing(true);
+    setRefreshed(false);
+    if (refreshedTimer.current) window.clearTimeout(refreshedTimer.current);
+    const minSpin = new Promise<void>((res) => window.setTimeout(res, 550));
+    const work = getDayVisitDetailAction(dateKey).then((r) => {
+      if (r.ok) setData(r.data);
+      else setErr(r.error);
+    });
+    try {
+      await Promise.all([work, minSpin]);
+      hapticTick();
+      setRefreshed(true);
+      refreshedTimer.current = window.setTimeout(() => setRefreshed(false), 1400);
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -104,8 +144,29 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   return (
     // 웹: 2×2 카드 그리드(.dayvisit→grid) — 요약 풀폭, 아래 4카드 좌우 배치로 가로폭을 채운다.
     // 모바일: 같은 마크업이 한 줄 세로 스택(컴팩트, 테두리 없음).
-    <div className="dayvisit">
-      {/* 방문 품질 요약(의미 방문 컷·시청자/운영진 토글·KPI·최고동접) — 그날 기준. 풀폭 */}
+    <div className="dayvisit-wrap" data-refreshing={refreshing ? "" : undefined}>
+      <div className="dayvisit-head">
+        <button
+          aria-label="이 날 방문 상세 새로고침"
+          className="insights-refresh"
+          data-done={refreshed ? "" : undefined}
+          data-spin={refreshing ? "" : undefined}
+          disabled={refreshing}
+          onClick={refresh}
+          title="이 날 방문 상세 새로고침"
+          type="button"
+        >
+          <RotateCw aria-hidden="true" size={15} />
+        </button>
+      </div>
+      {refreshing ? (
+        <div className="insights-veil" aria-hidden="true">
+          <RotateCw className="insights-veil-icon" size={22} />
+          <span>불러오는 중…</span>
+        </div>
+      ) : null}
+      <div className="dayvisit">
+        {/* 방문 품질 요약(의미 방문 컷·시청자/운영진 토글·KPI·최고동접) — 그날 기준. 풀폭 */}
       <VisitSummaryBlock
         viewer={data.summaryViewer}
         operator={data.summaryOperator}
@@ -437,6 +498,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
           <p className="insight-empty">이 날 세션 기록이 없어요.</p>
         )}
       </section>
+      </div>
     </div>
   );
 }

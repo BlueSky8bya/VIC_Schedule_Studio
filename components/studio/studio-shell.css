@@ -768,9 +768,43 @@
 /* 슬라이딩 뷰포트 — 패널들이 가로로 늘어서고 translateX로 넘어간다. 모든 패널이 항상
    렌더돼(실시간 패널 유지 + 높이 안정) 넘길 때 모달 높이가 출렁이지 않는다. */
 .insights-viewport {
+  position: relative;
   overflow: hidden;
   /* 고정 높이 → 패널마다 안에서 세로 스크롤되고(아래까지 보임), 패널 전환 시 높이도 안 출렁인다. */
   height: clamp(300px, 56dvh, 440px);
+}
+/* 새로고침 중엔 보고 있는 칸을 흐리게(살짝 블러) → 그래프·수치가 실제로 다시 로딩되는 게 보인다. */
+.insights-viewport[data-refreshing] .insights-track {
+  opacity: 0.4;
+  filter: blur(1.5px);
+  transition: opacity var(--dur-2) var(--ease), filter var(--dur-2) var(--ease);
+}
+/* 흐려진 칸 위에 뜨는 로딩 베일 — 회전 아이콘 + '불러오는 중…'. 위치 고정(눈 이동 최소). */
+.insights-veil {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #6b5bd6;
+  font-size: 12px;
+  font-weight: 800;
+  pointer-events: none;
+  animation: insights-veil-in var(--dur-2) var(--ease);
+}
+.insights-veil-icon {
+  animation: insights-spin 0.7s linear infinite;
+}
+@keyframes insights-veil-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .insights-track {
   display: flex;
@@ -1122,6 +1156,30 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+/* 일일 방문 상세 — 새로고침 베일을 얹기 위한 relative 래퍼. */
+.dayvisit-wrap {
+  position: relative;
+}
+/* 우측 끝 새로고침 버튼 한 줄(.insights-refresh 스타일 재사용). 내용 위 살짝. */
+.dayvisit-head {
+  position: relative;
+  z-index: 4;
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+/* 새로고침 중 내용 흐림 → 그래프·수치가 실제로 다시 로딩되는 티(월별 패널과 동일 처리). */
+.dayvisit-wrap[data-refreshing] .dayvisit {
+  opacity: 0.4;
+  filter: blur(1.5px);
+  transition: opacity var(--dur-2) var(--ease), filter var(--dur-2) var(--ease);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dayvisit-wrap[data-refreshing] .dayvisit {
+    filter: none;
+    transition: none;
+  }
 }
 /* 카드 첫 제목은 위 마진 제거(섹션 간격은 grid gap이 담당) */
 .vcard > .insight-subhead:first-child,
@@ -2387,6 +2445,14 @@
     animation: none;
   }
   .insights-refreshed {
+    transition: none;
+  }
+  .insights-veil,
+  .insights-veil-icon {
+    animation: none;
+  }
+  .insights-viewport[data-refreshing] .insights-track {
+    filter: none;
     transition: none;
   }
 }
