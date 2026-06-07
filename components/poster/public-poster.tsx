@@ -59,7 +59,7 @@ import { ShapeSvg } from "@/components/poster/sticker-shapes";
 import type { ThemeResult } from "@/lib/schedules/theme-actions";
 import type { SaveStickerInput, StickerResult } from "@/lib/schedules/sticker-actions";
 import type { StickerAssetResult } from "@/lib/schedules/sticker-asset-actions";
-import type { HeartResult } from "@/lib/schedules/heart-actions";
+import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
 import { heartTier } from "@/lib/schedules/heart-tiers";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
@@ -123,7 +123,7 @@ type PublicPosterProps = {
   deleteStickerAssetAction?: (id: string) => Promise<StickerAssetResult>;
   setPosterThemeAction?: (theme: string) => Promise<ThemeResult>;
   // A: 일정 관심(하트) 토글. 주어지면 서버 집계 연동, 없으면 기기별 localStorage로만 동작.
-  toggleHeartAction?: (eventId: string) => Promise<HeartResult>;
+  toggleHeartAction?: (eventId: string, token?: string) => Promise<HeartResult>;
   // 시청자 화면에서 계정 변경(로그아웃) 버튼을 보일지. 실제 시청자 페이지에서만 true.
   accountSwitch?: boolean;
   // 현재 로그인한 구글 이메일 — "계정변경" 옆에 표시해 어떤 계정으로 들어와 있는지 보여준다.
@@ -198,6 +198,24 @@ function stickerToSaveInput(
 // (구) 전역·영구 북마크 키 — 서버 진실을 통째로 덮어써 DB와 desync(채워졌는데 DB엔 없음 →
 // 다시 눌러도 토글 OFF만 돼 카운트가 안 늘던 버그)를 냈다. 이제 쓰지 않고, 마운트 때 청소한다.
 const LEGACY_BOOKMARK_KEY = "vic:bookmarks:v1";
+// 비로그인 하트용 기기 식별자 — localStorage에 1번 만들어 두고 재사용(기기당 1하트 dedup 키).
+// 신뢰 못 하는 값(시크릿창마다 새로 생김)이지만 '관심 신호'엔 충분. 로그인 시엔 안 쓴다(계정 기준).
+const ANON_ID_KEY = "vic:anonId:v1";
+function getOrCreateDeviceToken(): string {
+  try {
+    let t = window.localStorage.getItem(ANON_ID_KEY);
+    if (!t || t.length < 8) {
+      t =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `dev-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+      window.localStorage.setItem(ANON_ID_KEY, t);
+    }
+    return t;
+  } catch {
+    return ""; // 사생활 모드 등 — 익명 하트만 비활성(로그인 하트엔 영향 없음).
+  }
+}
 // 하트의 진실은 항상 서버(myHeartIds). 아래 델타는 '이번 브라우저 세션에 사용자가 직접 토글한
 // 일정'만 담아(sessionStorage, 탭 닫으면 소멸) 시청자 미리보기 재마운트 동안 변경을 보존한다.
 // 매 로드 신선한 서버값에 이 델타(on/off)를 덮어 적용하므로, 손대지 않은 일정에 가짜 하트가
@@ -802,8 +820,10 @@ export function PublicPoster({
   // A: 관심(하트). toggleHeartAction이 있으면 서버 집계(1인 1하트)와 연동되고,
   //    없으면(샘플/오프라인) 기기별 localStorage로만 동작한다. 둘 다 "내가 누른 일정" 집합으로 관리.
   const serverHearts = Boolean(toggleHeartAction);
-  // 하트 세션 델타의 소유 계정 — 같은 브라우저서 계정을 바꾸면 델타가 안 섞이게 키로 쓴다.
-  const heartOwner = accountEmail ?? "anon";
+  // 비로그인 하트용 기기 토큰(로그인 시엔 빈 값, 계정 기준으로 동작). 마운트 후 채워진다.
+  const [deviceToken, setDeviceToken] = useState("");
+  // 하트 세션 델타의 소유 — 로그인은 이메일, 비로그인은 기기 토큰. 계정/기기 바뀌면 델타 안 섞임.
+  const heartOwner = accountEmail ?? (deviceToken || "anon");
   const [bookmarks, setBookmarks] = useState<string[]>(() =>
     serverHearts ? (schedule.myHeartIds ?? []) : []
   );
@@ -823,7 +843,10 @@ export function PublicPoster({
   const interactive = !decorate;
   // 하트(관심)는 로그인 시청자만 — 익명 시청자에겐 ♥ 토글/모아보기를 숨긴다(서버 1인1하트 불가).
   // 색상 필터 등 다른 상호작용은 익명에게도 그대로 둔다.
-  const canHeart = interactive && !anonymous;
+  // 하트 가능 = 상호작용 화면이고 하트 액션이 연결돼 있으면(로그인이든 비로그인이든). 비로그인도
+  // 기기 토큰으로 누를 수 있게 해 로그인 장벽을 없앤다(참여 ↑). 단 기기 토큰을 못 만들면(사생활 모드)
+  // 익명은 비활성.
+  const canHeart = interactive && serverHearts && (!anonymous || deviceToken.length >= 8);
 
   // "시청자 화면 보기" 미리보기는 히스토리에 한 칸 쌓아, 휴대폰/브라우저 뒤로가기를 누르면
   // 페이지를 떠나지 않고 꾸미기로 돌아온다(편집실 오버레이 스택과 같은 방식).
@@ -977,12 +1000,33 @@ export function PublicPoster({
     } catch {
       // 무시.
     }
-    const serverIds = serverHearts ? (schedule.myHeartIds ?? []) : [];
-    const delta = loadHeartDelta(heartOwner);
-    const set = new Set(serverIds);
-    for (const id of delta.off) set.delete(id);
-    for (const id of delta.on) set.add(id);
-    setBookmarks([...set]);
+    let alive = true;
+    // 비로그인(anonymous)이면 기기 토큰을 만들고, 서버에서 이 기기가 누른 하트 id를 받아 복원한다.
+    // 로그인(시청자/스튜디오 미리보기)이면 서버 렌더된 myHeartIds(계정 기준)를 그대로 쓴다.
+    const isAnon = anonymous;
+    const token = isAnon ? getOrCreateDeviceToken() : "";
+    if (token) setDeviceToken(token);
+    const owner = accountEmail ?? (token || "anon");
+
+    const apply = (serverIds: string[]) => {
+      if (!alive) return;
+      const delta = loadHeartDelta(owner);
+      const set = new Set(serverIds);
+      for (const id of delta.off) set.delete(id);
+      for (const id of delta.on) set.add(id);
+      setBookmarks([...set]);
+    };
+
+    if (serverHearts && isAnon && token) {
+      getAnonHeartIdsAction(token)
+        .then((ids) => apply(ids))
+        .catch(() => apply([]));
+    } else {
+      apply(serverHearts ? (schedule.myHeartIds ?? []) : []);
+    }
+    return () => {
+      alive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1027,7 +1071,7 @@ export function PublicPoster({
     if (!toggleHeartAction) {
       return; // 서버 액션 없음(샘플/오프라인): 개인 표시만, 집계 없음.
     }
-    void toggleHeartAction(id).then((result) => {
+    void toggleHeartAction(id, deviceToken).then((result) => {
       if (result.ok) {
         setHeartCounts((prev) => ({ ...prev, [id]: result.count }));
       } else {

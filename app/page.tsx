@@ -43,6 +43,7 @@ export default async function HomePage() {
         initialMonth={typeof mem.sm === "number" ? mem.sm : undefined}
         initialNarrow={narrow}
         schedule={schedule}
+        toggleHeartAction={toggleEventHeartAction}
       />
     );
   }
