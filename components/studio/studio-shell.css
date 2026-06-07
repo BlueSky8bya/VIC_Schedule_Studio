@@ -1292,13 +1292,6 @@
   font-weight: 800;
   color: #6b5b95;
 }
-.teaser-when-input {
-  padding: 8px 10px;
-  border: 1px solid var(--line, #e7e3f2);
-  border-radius: 10px;
-  font-size: 14px;
-  font-family: inherit;
-}
 .teaser-when-hint {
   font-size: 11.5px;
   font-style: normal;
@@ -1322,20 +1315,417 @@
   color: #4a3f72;
   background: #efe9fd;
 }
-.me-teaser-when {
-  width: 100%;
+.me-row-stack .dtp {
   margin-top: 6px;
-  padding: 8px 10px;
-  border: 1px solid #e7e3f2;
-  border-radius: 8px;
-  font-size: 14px;
-  font-family: inherit;
 }
 @media (prefers-reduced-motion: reduce) {
   .teaser-toggle,
   .teaser-toggle-sw,
   .teaser-toggle-sw::after {
     transition: none;
+  }
+}
+
+/* ── 커스텀 날짜·시간 선택기(DateTimePicker) — 웹 팝오버 / 모바일 바텀시트 + 시간 휠 ── */
+.dtp {
+  width: 100%;
+}
+.dtp-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #e7e3f2);
+  border-radius: 11px;
+  background: #fff;
+  color: #9a8fc0;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-1) var(--ease),
+    background var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.dtp-trigger:hover {
+  border-color: #c9bdf2;
+  background: #faf9fe;
+}
+.dtp-trigger:active {
+  transform: scale(0.99);
+}
+.dtp-trigger.has {
+  color: #4a3f72;
+  font-weight: 800;
+}
+.dtp-trigger > svg {
+  flex: none;
+  color: #7c6cf0;
+}
+.dtp-trigger-text {
+  flex: 1;
+  text-align: left;
+}
+
+/* 웹 팝오버 */
+.dtp-pop-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+}
+.dtp-pop {
+  position: fixed;
+  z-index: 81;
+  width: 320px;
+  max-width: calc(100vw - 24px);
+}
+.dtp-pop-x {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  background: #f3f0fb;
+  color: #6b5bd6;
+  cursor: pointer;
+}
+.dtp-pop-x:hover {
+  background: #e9e3fb;
+}
+
+/* 모바일 바텀시트 */
+.dtp-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: flex-end;
+  background: rgba(20, 12, 40, 0.42);
+  animation: dtp-fade 0.18s ease;
+}
+.dtp-sheet {
+  width: 100%;
+  animation: dtp-slideup 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes dtp-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes dtp-slideup {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.dtp-panel {
+  position: relative;
+  background: #fff;
+  border: 1px solid #ece7f7;
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 18px 50px rgb(60 40 120 / 28%);
+  animation: dtp-pop-in 0.16s var(--ease);
+}
+.dtp-sheet .dtp-panel {
+  border-radius: 22px 22px 0 0;
+  padding: 8px 16px calc(18px + env(safe-area-inset-bottom));
+  box-shadow: 0 -10px 40px rgb(60 40 120 / 25%);
+  animation: none;
+}
+@keyframes dtp-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.dtp-grip {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: #dcd5f0;
+  margin: 2px auto 10px;
+}
+
+.dtp-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.dtp-title {
+  font-size: 15px;
+  font-weight: 900;
+  color: #4a3f72;
+}
+.dtp-nav {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9px;
+  background: #f3f0fb;
+  color: #6b5bd6;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.dtp-nav:hover {
+  background: #e9e3fb;
+}
+.dtp-nav:active {
+  transform: scale(0.88);
+}
+.dtp-wdrow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+.dtp-wdrow span {
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #9a8fc0;
+  padding: 3px 0;
+}
+.dtp-wdrow .sun {
+  color: #e06b6b;
+}
+.dtp-wdrow .sat {
+  color: #5b8def;
+}
+.dtp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+.dtp-cell {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 700;
+  color: #4a3f72;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.dtp-cell.empty {
+  pointer-events: none;
+}
+.dtp-cell:hover {
+  background: #f3f0fb;
+}
+.dtp-cell:active {
+  transform: scale(0.86);
+}
+.dtp-cell.sun {
+  color: #e06b6b;
+}
+.dtp-cell.sat {
+  color: #5b8def;
+}
+.dtp-cell.today {
+  box-shadow: inset 0 0 0 1.5px #c9bdf2;
+}
+.dtp-cell.sel {
+  background: linear-gradient(180deg, #7c6cf0, #6b5bd6);
+  color: #fff;
+  box-shadow: 0 3px 10px rgb(107 91 214 / 40%);
+  animation: dtp-cell-pop 0.2s var(--ease);
+}
+@keyframes dtp-cell-pop {
+  0% {
+    transform: scale(0.7);
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* 시간 휠 */
+.dtp-time {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  margin: 12px 0 4px;
+}
+.dtp-wheel-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.dtp-wheel-cap {
+  font-size: 10px;
+  font-weight: 800;
+  color: #9a8fc0;
+}
+.dtp-wheel-wrap {
+  position: relative;
+  height: 180px; /* 5 × 36px */
+  width: 58px;
+}
+.dtp-wheel-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 72px; /* 2 × 36px */
+  height: 36px;
+  border-radius: 9px;
+  background: #f1edfb;
+  pointer-events: none;
+}
+.dtp-wheel {
+  position: relative;
+  height: 100%;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 28%, #000 72%, transparent);
+  mask-image: linear-gradient(180deg, transparent, #000 28%, #000 72%, transparent);
+}
+.dtp-wheel::-webkit-scrollbar {
+  display: none;
+}
+.dtp-wheel-pad {
+  height: 72px;
+}
+.dtp-wheel-item {
+  height: 36px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  scroll-snap-align: center;
+  border: 0;
+  background: transparent;
+  font-size: 16px;
+  font-weight: 700;
+  color: #b8aee0;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition:
+    color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.dtp-wheel-item.on {
+  color: #4a3f72;
+  font-weight: 900;
+  transform: scale(1.18);
+}
+.dtp-colon {
+  margin-top: 32px;
+  font-size: 18px;
+  font-weight: 900;
+  color: #6b5bd6;
+}
+.dtp-time-readout {
+  margin-top: 30px;
+  margin-left: 4px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #f3f0fb;
+  color: #6b5bd6;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.dtp-foot {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.dtp-foot-btn {
+  flex: 1;
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.dtp-foot-btn:active {
+  transform: scale(0.96);
+}
+.dtp-foot-btn.ghost {
+  background: #f3f0fb;
+  color: #6b5b95;
+}
+.dtp-foot-btn.ghost:hover {
+  background: #e9e3fb;
+}
+.dtp-foot-btn.primary {
+  flex: 1.4;
+  background: linear-gradient(180deg, #7c6cf0, #6b5bd6);
+  color: #fff;
+  box-shadow: 0 3px 10px rgb(107 91 214 / 35%);
+}
+/* 모바일 시트에선 달력·휠·버튼을 키워 손가락에 맞춘다. */
+@media (max-width: 640px) {
+  .dtp-cell {
+    font-size: 15px;
+    border-radius: 11px;
+  }
+  .dtp-title {
+    font-size: 17px;
+  }
+  .dtp-foot-btn {
+    padding: 13px;
+    font-size: 14px;
+  }
+  .dtp-time-readout {
+    font-size: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dtp-panel,
+  .dtp-sheet,
+  .dtp-sheet-backdrop,
+  .dtp-cell.sel {
+    animation: none;
+  }
+  .dtp-trigger,
+  .dtp-nav,
+  .dtp-cell,
+  .dtp-wheel-item,
+  .dtp-foot-btn {
+    transition: none;
+  }
+  .dtp-wheel {
+    scroll-behavior: auto;
   }
 }
 

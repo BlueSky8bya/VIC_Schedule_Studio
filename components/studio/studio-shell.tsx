@@ -87,6 +87,7 @@ import { TrustedMembersPanel } from "@/components/trusted-members/trusted-member
 import { InsightsDashboard } from "@/components/developer/insights-dashboard";
 import { MemberInsights } from "@/components/studio/member-insights";
 import { DayVisitModal } from "@/components/developer/day-visit-modal";
+import { DateTimePicker } from "@/components/studio/datetime-picker";
 import { NoticeModal } from "@/components/notice/notice-modal";
 import { TagPicker } from "@/components/tags/tag-picker";
 import { PlainEmail } from "@/components/ui/plain-email";
@@ -3546,12 +3547,9 @@ export function StudioShell({
                       🔮 떡밥으로 가리기
                     </button>
                     {form.teaser ? (
-                      <input
-                        className="me-teaser-when"
-                        onChange={(e) =>
-                          setForm((c) => ({ ...c, teaserRevealAt: e.target.value }))
-                        }
-                        type="datetime-local"
+                      <DateTimePicker
+                        disabled={!canEdit}
+                        onChange={(v) => setForm((c) => ({ ...c, teaserRevealAt: v }))}
                         value={form.teaserRevealAt}
                       />
                     ) : null}
@@ -4372,21 +4370,17 @@ export function StudioShell({
                   <span className="teaser-toggle-sw" aria-hidden="true" />
                 </button>
                 {form.teaser ? (
-                  <label className="teaser-when">
+                  <div className="teaser-when">
                     <span className="teaser-when-label">공개 시각 (KST)</span>
-                    <input
-                      className="teaser-when-input"
+                    <DateTimePicker
                       disabled={!canEdit}
-                      onChange={(e) =>
-                        setForm((c) => ({ ...c, teaserRevealAt: e.target.value }))
-                      }
-                      type="datetime-local"
+                      onChange={(v) => setForm((c) => ({ ...c, teaserRevealAt: v }))}
                       value={form.teaserRevealAt}
                     />
                     <em className="teaser-when-hint">
                       이 시각 전엔 시청자에게 제목·태그가 ??? 로 가려지고 공개까지 카운트다운만 보여요.
                     </em>
-                  </label>
+                  </div>
                 ) : null}
               </div>
             ) : null}
