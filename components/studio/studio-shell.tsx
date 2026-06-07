@@ -409,6 +409,10 @@ export function StudioShell({
   const [modal, setModal] = useState<null | "tags" | "members" | "notice" | "developer" | "dayVisit">(
     null
   );
+  // 빠른 휴방: 날짜 우클릭/롱프레스로 뜨는 미니 메뉴(화면 좌표 + 그 날 휴방 여부).
+  const [restMenu, setRestMenu] = useState<
+    { isoDate: string; x: number; y: number; hasRest: boolean } | null
+  >(null);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
@@ -1508,6 +1512,10 @@ export function StudioShell({
   // 터치 롱프레스 타이머 + 드래그 활성 동안 네이티브 스크롤을 막는 비수동 리스너.
   const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const preventTouchScrollRef = useRef<((e: TouchEvent) => void) | null>(null);
+  // 빈 날짜칸 롱프레스(휴방 메뉴) — pill 드래그(holdTimerRef)와 별개. 시작 좌표로 이동 취소 판정.
+  const cellHoldRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cellHoldPosRef = useRef<{ x: number; y: number } | null>(null);
+  const suppressCellClickRef = useRef(false); // 롱프레스로 메뉴 연 직후 click(=selectDate) 한 번 무시
   // 유령 물리감(태그 편집과 동일): 관성 지연 + 움직임 방향 기울기 + 랜덤 흔들림.
   // CSS 애니메이션 대신 JS로 transform을 직접 칠해, 2색(그라데이션) 카드에도 확실히 적용된다.
   const edPosRef = useRef({ x: 0, y: 0 });
@@ -2237,6 +2245,142 @@ export function StudioShell({
       }
     });
   }
+
+  // ── 빠른 휴방: 날짜 우클릭/롱프레스 → 미니 메뉴에서 '휴방' 한 번에 ──
+  // 휴방 하루 = 공개 'dayoff' 이벤트(제목 "휴뱅" + 휴뱅 태그). 인사이트 restDays도 휴뱅 태그로 센다.
+  const restDayTagId = tags.find((t) => t.displayName === "휴뱅")?.id ?? null;
+  function isRestEvent(e: StudioScheduleEvent): boolean {
+    if (e.category === "dayoff") return true;
+    return restDayTagId ? (e.tagIds?.includes(restDayTagId) ?? false) : false;
+  }
+  function findRestEvent(isoDate: string): StudioScheduleEvent | null {
+    return getEventsForDate(events, isoDate).find((e) => !e.isSupport && isRestEvent(e)) ?? null;
+  }
+  function openRestMenu(clientX: number, clientY: number, isoDate: string) {
+    if (!canEdit || blockedByPreview()) return;
+    hapticTick();
+    // 메뉴(~180×56)가 화면 밖으로 안 나가게 좌표를 가둔다.
+    const x = Math.max(8, Math.min(clientX, window.innerWidth - 188));
+    const y = Math.max(8, Math.min(clientY, window.innerHeight - 64));
+    setRestMenu({ isoDate, x, y, hasRest: Boolean(findRestEvent(isoDate)) });
+  }
+  function closeRestMenu() {
+    setRestMenu(null);
+  }
+  // 휴방 토글 — 이미 휴방이면 해제(삭제 파이프라인 재사용), 아니면 휴방 이벤트를 낙관적으로 생성.
+  // 생성은 붙여넣기(pasteCopiedEvent)와 같은 패턴: 낙관적 추가 + remove undo + 서버 반영.
+  function quickToggleRest(isoDate: string) {
+    closeRestMenu();
+    if (!canEdit || blockedByPreview()) return;
+    const existing = findRestEvent(isoDate);
+    if (existing) {
+      deleteEvent(existing.id); // 햅틱·poof·Ctrl+Z 복구까지 그대로
+      return;
+    }
+    hapticTick(); // ① 눌림
+    const tempId = `temp-${Math.random().toString(36).slice(2)}`;
+    const tagIds = restDayTagId ? [restDayTagId] : [];
+    const optimistic: StudioScheduleEvent = {
+      id: tempId,
+      startsAt: `${isoDate}T00:00:00+09:00`,
+      endDateKey: undefined,
+      isSupport: false,
+      supportUrl: undefined,
+      isAllDay: true,
+      isTentative: false,
+      publicTitle: "휴뱅",
+      status: "scheduled",
+      visibilityScope: "public",
+      category: "dayoff",
+      tagIds,
+      primaryTagIds: tagIds,
+      sortOrder: 0
+    };
+    const snapshot = events;
+    setEvents((prev) => [...prev, optimistic]);
+    markJustSaved(tempId); // 통통 착지 반짝
+    const undoHolder = { id: tempId };
+    deletedStackRef.current.push({ type: "remove", holder: undoHolder }); // Ctrl+Z = 방금 만든 휴방 제거
+    setActionError(null);
+    startTransition(async () => {
+      const result = await studioWrite("save", {
+        id: undefined,
+        dateKey: isoDate,
+        endDateKey: "",
+        startTime: "",
+        endTime: "",
+        isAllDay: true,
+        isTentative: false,
+        publicTitle: "휴뱅",
+        publicDescription: "",
+        category: "dayoff",
+        status: "scheduled",
+        visibilityScope: "public",
+        tagIds,
+        primaryTagIds: tagIds,
+        isSupport: false,
+        supportUrl: ""
+      });
+      if (!result.ok) {
+        setActionError(result.error);
+        setEvents(snapshot);
+        deletedStackRef.current.pop();
+        return;
+      }
+      hapticTick(); // ② 서버확인
+      if (result.id) {
+        const realId = result.id;
+        undoHolder.id = realId; // 임시 id → 실제 id(되돌릴 때 올바른 카드 제거)
+        setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)));
+        setJustSavedId((p) => (p === tempId ? realId : p));
+      }
+    });
+  }
+
+  // 날짜칸 롱프레스(터치) — 빈 영역을 약 360ms 누르면 휴방 메뉴. pill·버튼 위 누름은 제외(드래그/삭제용).
+  function onCellPointerDown(e: ReactPointerEvent<HTMLElement>, isoDate: string) {
+    if (!canEdit || e.pointerType === "mouse") return; // 데스크톱은 우클릭(onContextMenu)으로
+    if ((e.target as HTMLElement).closest(".studio-event-pill, button, a")) return;
+    const px = e.clientX;
+    const py = e.clientY;
+    cellHoldPosRef.current = { x: px, y: py };
+    if (cellHoldRef.current) clearTimeout(cellHoldRef.current);
+    cellHoldRef.current = setTimeout(() => {
+      suppressCellClickRef.current = true; // 메뉴 연 직후 click(selectDate) 무시
+      openRestMenu(px, py, isoDate);
+    }, 360);
+  }
+  function cancelCellHold() {
+    if (cellHoldRef.current) {
+      clearTimeout(cellHoldRef.current);
+      cellHoldRef.current = null;
+    }
+    cellHoldPosRef.current = null;
+  }
+  function onCellPointerMove(e: ReactPointerEvent<HTMLElement>) {
+    const p = cellHoldPosRef.current;
+    if (!p) return;
+    if (Math.abs(e.clientX - p.x) > 10 || Math.abs(e.clientY - p.y) > 10) cancelCellHold();
+  }
+
+  // 메뉴 열려 있는 동안 바깥 클릭·Esc·스크롤이면 닫는다.
+  useEffect(() => {
+    if (!restMenu) return;
+    const onDown = (e: PointerEvent) => {
+      if (!(e.target as HTMLElement).closest(".rest-menu")) closeRestMenu();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeRestMenu();
+    };
+    document.addEventListener("pointerdown", onDown, true);
+    document.addEventListener("keydown", onKey);
+    window.addEventListener("scroll", closeRestMenu, true);
+    return () => {
+      document.removeEventListener("pointerdown", onDown, true);
+      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("scroll", closeRestMenu, true);
+    };
+  }, [restMenu]);
 
   // Ctrl+Z: 스택 맨 위 '액션'을 종류에 맞게 되돌린다(LIFO). 삭제=다시 만들기, 생성/붙여넣기=지우기.
   // 그래서 복사→삭제→붙여넣기→Ctrl+Z = '방금 붙여넣은 카드'만 사라지고, 한 번 더 누르면 그 전
@@ -3813,7 +3957,23 @@ export function StudioShell({
                   className={dayClass}
                   data-isodate={cell.isoDate}
                   key={cell.isoDate}
-                  onClick={() => selectDate(cell.isoDate)}
+                  onClick={() => {
+                    if (suppressCellClickRef.current) {
+                      suppressCellClickRef.current = false; // 롱프레스로 메뉴 연 직후의 click 1회 무시
+                      return;
+                    }
+                    selectDate(cell.isoDate);
+                  }}
+                  onContextMenu={(e) => {
+                    if (!canEdit) return; // 비편집자는 기본 우클릭 메뉴 그대로
+                    e.preventDefault();
+                    openRestMenu(e.clientX, e.clientY, cell.isoDate);
+                  }}
+                  onPointerDown={(e) => onCellPointerDown(e, cell.isoDate)}
+                  onPointerMove={onCellPointerMove}
+                  onPointerUp={cancelCellHold}
+                  onPointerLeave={cancelCellHold}
+                  onPointerCancel={cancelCellHold}
                   role="button"
                   style={isFirstReveal ? ({ "--ri": cellIndex } as CSSProperties) : undefined}
                   tabIndex={0}
@@ -4231,6 +4391,22 @@ export function StudioShell({
       {supportSheetId !== null ? renderSupportSheet() : null}
       {/* 모바일 매니저 태그 수정 시트 — 매니저(태그 편집 가능 + 일정 미편집)일 때만. */}
       {tagSheetId !== null && canEditTagsThing && !canEdit ? renderMobileTagSheet() : null}
+      {/* 빠른 휴방 미니 메뉴 — 날짜 우클릭/롱프레스로 뜸. 한 번 눌러 휴방 표시/해제. */}
+      {restMenu ? (
+        <div className="rest-menu" role="menu" style={{ left: restMenu.x, top: restMenu.y }}>
+          <button
+            className="rest-menu-item"
+            onClick={() => quickToggleRest(restMenu.isoDate)}
+            role="menuitem"
+            type="button"
+          >
+            <span className="rest-menu-emoji" aria-hidden="true">
+              🌙
+            </span>
+            {restMenu.hasRest ? "휴방 해제" : "휴방으로 표시"}
+          </button>
+        </div>
+      ) : null}
       {modal ? (
         <div
           className="modal-backdrop"
