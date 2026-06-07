@@ -123,10 +123,11 @@ function accountHashOf(email: string): string {
   return createHash("sha256").update(`${salt}:${email}`).digest("hex").slice(0, 32);
 }
 
-const ROLE_ORDER = ["viewer", "worker", "manager", "owner", "developer"] as const;
+const ROLE_ORDER = ["anon", "viewer", "worker", "manager", "owner", "developer"] as const;
 const DEVICE_SET = new Set(["desktop", "android", "ios", "mobile"]);
 // 트렌드 누적 막대용 역할/기기 카테고리(라벨·색) — 클라이언트 ROLE_META/DEVICE_META와 동일.
 const ROLE_TREND_META = [
+  { key: "anon", label: "비로그인", color: "#c2c7d2" },
   { key: "viewer", label: "시청자", color: "#9aa0ab" },
   { key: "worker", label: "작업자", color: "#f59e0b" },
   { key: "manager", label: "매니저", color: "#7c6cf0" },
@@ -144,20 +145,26 @@ const DEVICE_TREND_META = [
 // 화면이 보이기 시작할 때 한 줄 생성(start) → 하트비트로 last_seen 갱신(touch) → 나갈 때 ended_at
 // 확정(end). 재진입하면 또 한 줄(여러 번 기록). 역할/계정은 서버에서 실제 actor로 확인(위조 방지),
 // 원문 이메일·user_id는 저장하지 않고 익명 해시만. id는 서버 생성 uuid(추측 불가)라 touch/end는 id로만.
-export async function startVisitSession(device: string): Promise<{ ok: boolean; id?: string }> {
+export async function startVisitSession(
+  device: string,
+  anonId?: string
+): Promise<{ ok: boolean; id?: string }> {
   const actor = await resolveCurrentActor(SLUG);
-  if (!actor.isAuthenticated) return { ok: false };
+  // 비로그인 방문자도 집계한다 — role="anon"(비로그인). 로그인은 실제 역할 + 이메일 해시(하루 1인),
+  // 비로그인은 기기 토큰(localStorage) 해시로 고유 방문자를 센다(없으면 null=세션 단위로만).
+  const isAuthed = actor.isAuthenticated;
   const supabase = createSupabaseAdminClient();
   if (!supabase) return { ok: false };
   const safeDevice = DEVICE_SET.has(device) ? device : "desktop";
+  const anonHash = !isAuthed && anonId && anonId.length >= 8 ? accountHashOf(`anon:${anonId}`) : null;
   const nowIso = new Date().toISOString();
   try {
     const { data, error } = await supabase
       .from("visit_session")
       .insert({
         day: ymd(kstNow()),
-        account_hash: actor.email ? accountHashOf(actor.email) : null,
-        role: actor.role,
+        account_hash: isAuthed && actor.email ? accountHashOf(actor.email) : anonHash,
+        role: isAuthed ? actor.role : "anon",
         device: safeDevice,
         started_at: nowIso,
         last_seen_at: nowIso
@@ -173,8 +180,7 @@ export async function startVisitSession(device: string): Promise<{ ok: boolean; 
 
 export async function touchVisitSession(id: string): Promise<{ ok: boolean }> {
   if (!id) return { ok: false };
-  const actor = await resolveCurrentActor(SLUG);
-  if (!actor.isAuthenticated) return { ok: false };
+  // id는 서버 생성 uuid(추측 불가)라 인증 없이 자기 세션만 갱신 가능 — 비로그인 방문도 체류 갱신.
   const supabase = createSupabaseAdminClient();
   if (!supabase) return { ok: false };
   try {
@@ -190,8 +196,7 @@ export async function touchVisitSession(id: string): Promise<{ ok: boolean }> {
 
 export async function endVisitSession(id: string): Promise<{ ok: boolean }> {
   if (!id) return { ok: false };
-  const actor = await resolveCurrentActor(SLUG);
-  if (!actor.isAuthenticated) return { ok: false };
+  // id 기반(추측 불가)이라 인증 없이 종료 가능 — 비로그인 방문도 체류 종료가 끝까지 보장된다.
   const supabase = createSupabaseAdminClient();
   if (!supabase) return { ok: false };
   try {
@@ -229,6 +234,11 @@ function sEnd(r: SessionRow): number {
 }
 function sAcct(r: SessionRow): string {
   return r.account_hash ?? "anon";
+}
+// 일반 관객(시청자 쪽) = 로그인 시청자 + 비로그인. 운영진(operator)은 작업자·매니저·관리자·개발자.
+// 비로그인은 관객이지 운영진이 아니므로, '시청자/운영진' 2분할에선 관객 쪽으로 센다.
+function isAudience(role: string): boolean {
+  return role === "viewer" || role === "anon";
 }
 // 세션 체류(ms). 의미 방문 컷·바운스·KPI 공용.
 function durMs(r: SessionRow): number {
@@ -298,13 +308,14 @@ function summarizeSplit(rows: SessionRow[]): {
   all: VisitSummary;
 } {
   return {
-    viewer: summarize(rows.filter((r) => r.role === "viewer")),
-    operator: summarize(rows.filter((r) => r.role !== "viewer")),
+    viewer: summarize(rows.filter((r) => isAudience(r.role))),
+    operator: summarize(rows.filter((r) => !isAudience(r.role))),
     all: summarize(rows)
   };
 }
 // 세션 로그 라벨 — owner만 이메일 매칭, 그 외는 역할 라벨(원문 PII 없음).
 const SESSION_ROLE_LABEL: Record<string, string> = {
+  anon: "비로그인",
   viewer: "시청자",
   worker: "작업자",
   manager: "매니저",
@@ -1222,8 +1233,8 @@ export async function getVisitTrendsAction(
   const rows = (data ?? []) as SessionRow[];
 
   const all = buildGraphs(rows);
-  const viewer = buildGraphs(rows.filter((r) => r.role === "viewer"));
-  const operator = buildGraphs(rows.filter((r) => r.role !== "viewer"));
+  const viewer = buildGraphs(rows.filter((r) => isAudience(r.role)));
+  const operator = buildGraphs(rows.filter((r) => !isAudience(r.role)));
   // 관리자 접속 세션(최근 순) — 세션 행에서 직접(role=owner). 토글과 무관(운영진 데이터).
   const ownerSessions = ownerSessionsFrom(rows);
   const { viewer: summaryViewer, operator: summaryOperator, all: summaryAll } = summarizeSplit(rows);
@@ -1239,7 +1250,7 @@ export async function getVisitTrendsAction(
       .map((r) => r.account_hash)
       .filter((h): h is string => Boolean(h))
   );
-  const viewerMeaningful = rows.filter((r) => r.role === "viewer" && isMeaningful(r));
+  const viewerMeaningful = rows.filter((r) => isAudience(r.role) && isMeaningful(r));
   const viewerAccounts = new Set(viewerMeaningful.map((r) => sAcct(r)));
   let newVisitors = 0;
   let returningVisitors = 0;
@@ -1399,8 +1410,8 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
       hasOccupancy: subset.length > 0 && occupancy.some((o) => o.avg > 0)
     };
   };
-  const viewerG = buildDay(rows.filter((r) => r.role === "viewer"));
-  const operatorG = buildDay(rows.filter((r) => r.role !== "viewer"));
+  const viewerG = buildDay(rows.filter((r) => isAudience(r.role)));
+  const operatorG = buildDay(rows.filter((r) => !isAudience(r.role)));
   const allG = buildDay(rows);
   const ownerSessions = ownerSessionsFrom(rows);
 
@@ -1439,7 +1450,7 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
       .filter((h): h is string => Boolean(h))
   );
   const viewerAccounts = new Set(
-    rows.filter((r) => r.role === "viewer" && isMeaningful(r)).map((r) => sAcct(r))
+    rows.filter((r) => isAudience(r.role) && isMeaningful(r)).map((r) => sAcct(r))
   );
   let newVisitors = 0;
   let returningVisitors = 0;

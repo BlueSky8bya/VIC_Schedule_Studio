@@ -18,11 +18,31 @@ const HEARTBEAT_MS = 25_000;
 // 현재 KST 날짜(YYYY-MM-DD). 서버 ymd(kstNow())와 동일 규칙(+9h).
 const kstDay = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
-export function PresenceBeacon({ role }: { role: MembershipRole }) {
+// 비로그인 방문자 기기 식별자(고유 방문자 dedup용) — 하트와 같은 localStorage 키를 재사용한다.
+const ANON_ID_KEY = "vic:anonId:v1";
+function deviceAnonId(): string {
+  try {
+    let t = window.localStorage.getItem(ANON_ID_KEY);
+    if (!t || t.length < 8) {
+      t =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `dev-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
+      window.localStorage.setItem(ANON_ID_KEY, t);
+    }
+    return t;
+  } catch {
+    return "";
+  }
+}
+
+export function PresenceBeacon({ role }: { role: MembershipRole | "anon" }) {
   useEffect(() => {
     startPresence(role);
 
     const device = detectDevice();
+    // 비로그인이면 고유 방문자 dedup용 기기 토큰을 함께 보낸다(서버가 해시해 account_hash로).
+    const anonId = role === "anon" ? deviceAnonId() : undefined;
     let sessionId: string | null = null;
     let sessionDay: string | null = null; // 이 세션이 기록된 KST 날짜(자정 롤오버 감지용)
     let starting = false;
@@ -41,7 +61,7 @@ export function PresenceBeacon({ role }: { role: MembershipRole }) {
       starting = true;
       const day = kstDay();
       try {
-        const res = await post("start");
+        const res = await post("start", anonId ? { anonId } : undefined);
         const data = (await res.json().catch(() => null)) as { ok?: boolean; id?: string } | null;
         if (data?.ok && data.id) {
           sessionId = data.id;

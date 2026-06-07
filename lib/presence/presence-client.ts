@@ -76,8 +76,9 @@ function recompute() {
   notify();
 }
 
-// 모든 로그인 사용자가 마운트 시 1회 호출 — 자기 역할을 프레즌스에 등록한다.
-export function startPresence(role: MembershipRole) {
+// 마운트 시 1회 호출 — 자기 역할을 프레즌스에 등록한다. 비로그인은 "anon"으로 track되며 실시간
+// 집계(recompute)에선 알려진 역할만 세므로 라이브 패널엔 영향 없다(방문 집계는 서버에서 별도).
+export function startPresence(role: MembershipRole | "anon") {
   if (started) return;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

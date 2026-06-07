@@ -48,6 +48,7 @@ import { hapticTick } from "@/lib/ui/haptics";
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
 // META·헬퍼는 일별 방문 모달(DayVisitModal)에서도 그대로 재사용 → 색/표기 단일 출처(드리프트 방지).
 export const ROLE_META: { key: string; label: string; color: string }[] = [
+  { key: "anon", label: "비로그인", color: "#c2c7d2" },
   { key: "viewer", label: "시청자", color: "#9aa0ab" },
   { key: "worker", label: "작업자", color: "#f59e0b" },
   { key: "manager", label: "매니저", color: "#7c6cf0" },

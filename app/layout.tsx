@@ -76,7 +76,9 @@ export default async function RootLayout({
           }}
         />
         {children}
-        {actor.isAuthenticated ? <PresenceBeacon role={actor.role} /> : null}
+        {/* 방문 비콘은 비로그인 방문자에게도 깐다 — 일일/월별 인사이트에 '비로그인' 도달까지 잡는다.
+            (로그인은 실제 역할, 비로그인은 role="anon". 서버가 actor로 실제 기록을 확정한다.) */}
+        <PresenceBeacon role={actor.isAuthenticated ? actor.role : "anon"} />
         {/* 배포 확인용 커밋 해시는 개발자 화면(편집실 액션바 중앙)에만 표시한다(studio-shell). */}
         {/* Vercel Web Analytics — 방문자/페이지뷰 집계(쿠키리스, 개인정보 친화). */}
         <Analytics />
