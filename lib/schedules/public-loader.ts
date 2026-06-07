@@ -80,6 +80,38 @@ export async function getPublicSchedule(calendarSlug: string): Promise<PublicSch
   return { ...data, myHeartIds };
 }
 
+// 떡밥 즉시 공개 — 캐시(30초)를 우회해 DB를 직접 읽는다. 주어진 일정들 중 '공개 시각이 지난'
+// 것만 실제 내용으로 돌려준다(서버가 reveal 시각을 강제 확인 → 공개 전엔 가린 stub만 나오므로
+// 실제 내용 유출 0). 카운트다운이 0이 되면 클라가 호출 → 캐시 기다림 없이 그 순간 풀린다.
+export async function loadRevealedEvents(
+  calendarSlug: string,
+  eventIds: string[]
+): Promise<PublicScheduleEvent[]> {
+  if (eventIds.length === 0) return [];
+  const supabase = createPublicReadClient();
+  if (!supabase) return [];
+  const { data: calendar } = await supabase
+    .from("calendars")
+    .select("id")
+    .eq("slug", calendarSlug)
+    .eq("is_public", true)
+    .maybeSingle();
+  if (!calendar) return [];
+  const { data: rows } = await supabase
+    .from("events")
+    .select(
+      "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order)"
+    )
+    .eq("calendar_id", calendar.id)
+    .eq("visibility_scope", "public")
+    .neq("status", "draft")
+    .in("id", eventIds);
+  if (!rows) return [];
+  const now = Date.now();
+  // mapEvent: now>=reveal이면 실제 DTO, 아직이면 가린 stub(teaser=true). 실제로 공개된 것만 반환.
+  return (rows as EventRow[]).map((row) => mapEvent(row, now)).filter((e) => !e.teaser);
+}
+
 // 익명 공개 묶음 로더 — 캐시된다. myHeartIds는 사용자별이라 여기 포함하지 않는다(빈 배열).
 const loadPublicScheduleData = unstable_cache(
   async (calendarSlug: string): Promise<PublicSchedule> => {

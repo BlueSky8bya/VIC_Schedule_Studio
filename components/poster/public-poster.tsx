@@ -29,7 +29,6 @@ import {
   Upload
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   type CSSProperties,
@@ -61,6 +60,7 @@ import type { ThemeResult } from "@/lib/schedules/theme-actions";
 import type { SaveStickerInput, StickerResult } from "@/lib/schedules/sticker-actions";
 import type { StickerAssetResult } from "@/lib/schedules/sticker-asset-actions";
 import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
+import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { heartTier } from "@/lib/schedules/heart-tiers";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
@@ -282,12 +282,12 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
   }, []);
   const remain = now === null ? null : target - now;
   const revealed = remain !== null && remain <= 0;
-  // 공개 시각이 지나면 실제 내용을 받아온다. 공개 스케줄은 캐시(≤30초)라 한 번 새로고침으론 옛
-  // (가린) 데이터가 올 수 있어, 이 카드가 사라질 때(=실제 내용 도착)까지 주기적으로 새로고침한다.
+  // 공개 시각이 지나면 즉시 실제 내용을 받아온다(캐시 우회 액션). 서버 시계가 reveal에 아직 안
+  // 닿았으면(미세한 시계차) 빈 결과 → 카드가 그대로라 짧게 재시도, 풀리면 카드가 사라져 멈춘다.
   useEffect(() => {
     if (!revealed) return;
     onRevealRef.current();
-    const id = window.setInterval(() => onRevealRef.current(), 8000);
+    const id = window.setInterval(() => onRevealRef.current(), 2000);
     return () => window.clearInterval(id);
   }, [revealed]);
   if (Number.isNaN(target)) return null;
@@ -856,7 +856,22 @@ export function PublicPoster({
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
   // A: 관심(하트). toggleHeartAction이 있으면 서버 집계(1인 1하트)와 연동되고,
   //    없으면(샘플/오프라인) 기기별 localStorage로만 동작한다. 둘 다 "내가 누른 일정" 집합으로 관리.
-  const router = useRouter(); // 떡밥 공개 시각이 지나면 서버 데이터를 새로 받아 제목을 드러낸다.
+  // 떡밥 즉시 공개 — 카운트다운이 0이 되면 캐시 우회 액션으로 실제 내용을 받아 이 맵에 덮는다.
+  // (이게 있으면 렌더에서 가린 stub 대신 실제 일정을 쓴다 → 캐시 30초 안 기다리고 그 순간 풀림.)
+  const [revealedEvents, setRevealedEvents] = useState<Record<string, PublicScheduleEvent>>({});
+  const revealTeaser = useCallback((id: string) => {
+    revealTeaserAction([id])
+      .then((list) => {
+        if (list.length > 0) {
+          setRevealedEvents((prev) => {
+            const next = { ...prev };
+            for (const ev of list) next[ev.id] = ev;
+            return next;
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
   const serverHearts = Boolean(toggleHeartAction);
   // 비로그인 하트용 기기 토큰(로그인 시엔 빈 값, 계정 기준으로 동작). 마운트 후 채워진다.
   const [deviceToken, setDeviceToken] = useState("");
@@ -2183,9 +2198,11 @@ export function PublicPoster({
           className="day-events"
           style={weekSupCount > 0 ? { paddingTop: 8 + weekSupCount * 20 } : undefined}
         >
-          {events.map((event) => {
+          {events.map((rawEvent) => {
+            // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다(가린 stub 대신 진짜).
+            const event = revealedEvents[rawEvent.id] ?? rawEvent;
             // 떡밥(가림): 공개 시각 전이라 서버가 제목·태그를 빼고 보냈다 → 전용 미스터리 카드 +
-            // 공개까지 카운트다운만. 0이 되면 router.refresh로 실제 내용을 받아온다.
+            // 공개까지 카운트다운만. 0이 되면 캐시 우회로 실제 내용을 받아 그 순간 풀린다.
             if (event.teaser && event.teaserRevealAt) {
               return (
                 <div className="public-event teaser" key={event.id}>
@@ -2193,7 +2210,7 @@ export function PublicPoster({
                     <span className="teaser-spark" aria-hidden="true">🔮</span>
                     <p className="teaser-q">???</p>
                     <TeaserCountdown
-                      onReveal={() => router.refresh()}
+                      onReveal={() => revealTeaser(rawEvent.id)}
                       revealAt={event.teaserRevealAt}
                     />
                   </div>
@@ -2476,7 +2493,9 @@ export function PublicPoster({
                   {list.length === 0 ? (
                     <span className="agenda-noevent">예정된 공개 일정 없음</span>
                   ) : null}
-                  {list.map(({ event, support }) => {
+                  {list.map(({ event: rawEvent, support }) => {
+                    // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다.
+                    const event = revealedEvents[rawEvent.id] ?? rawEvent;
                     // 떡밥(가림): 모바일 아젠다에서도 미스터리 카드 + 카운트다운만.
                     if (event.teaser && event.teaserRevealAt) {
                       return (
@@ -2484,7 +2503,7 @@ export function PublicPoster({
                           <span className="teaser-spark" aria-hidden="true">🔮</span>
                           <p className="agenda-title teaser-q">???</p>
                           <TeaserCountdown
-                            onReveal={() => router.refresh()}
+                            onReveal={() => revealTeaser(rawEvent.id)}
                             revealAt={event.teaserRevealAt}
                           />
                         </div>

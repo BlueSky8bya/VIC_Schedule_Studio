@@ -424,6 +424,10 @@ export function StudioShell({
   // 삭제하면 resolveEventId가 약속을 못 찾아 null→서버 삭제 누락(=재방문 시 부활)했다. 그래서
   // 실제 id를 따로 보관해, 저장된 temp는 언제든 실제 id로 해석되게 한다.
   const tempToRealRef = useRef<Map<string, string>>(new Map());
+  // 전역 직렬 쓰기 체인 — 저장중에 한 후속 동작(삭제·수정·이동·잇기 등)도 거부/레이스 없이
+  // '제출한 순서대로' 서버에 반영된다. 즉 1→…→n번 순서로 적용한 최종 결과가 서버 진실이 된다.
+  // (낙관적 화면 갱신은 즉시, 서버 전송만 직렬화. 앞 쓰기가 실패해도 체인은 끊기지 않고 다음을 잇는다.)
+  const writeChainRef = useRef<Promise<void>>(Promise.resolve());
   // 통합 실행취소 스택(삭제·생성·붙여넣기 등 '되돌릴 수 있는 액션'을 LIFO로 보관).
   const deletedStackRef = useRef<UndoAction[]>([]);
   // temp id면 저장 약속을 기다려 실제 id로, 실패면 null. 실제 id는 그대로. (null이 새어와도 방어.)
@@ -438,9 +442,13 @@ export function StudioShell({
     const p = pendingSavesRef.current.get(id);
     return p ? await p : null;
   }
-  // 모든 중대한 쓰기는 이 래퍼를 거친다 — 모듈 함수(postStudioWrite)로 실제 전송하되
-  // 진행 중 약속을 inflight 집합에 등록/해제해, flushPendingWrites가 끝까지 기다릴 수 있게 한다.
-  function studioWrite(op: string, payload: unknown): Promise<StudioWriteResult> {
+  // 모든 중대한 쓰기는 이 래퍼를 거친다. task를 '제출한 순서대로' 직렬 실행한다(전역 체인).
+  // 클릭한 순서 = 서버 적용 순서. id 해석(temp→real)도 task '안'에서 하므로, 앞 작업을 기다리느라
+  // 순서가 뒤집히지 않는다(예: 1 저장중에 2 삭제, 3 저장 → 항상 1·2·3 순). 진행 중 약속은 inflight에
+  // 등록/해제해 flushPendingWrites가 끝까지 기다릴 수 있게 한다. task가 null을 주면 보낼 게 없다는 뜻.
+  function enqueueWrite(
+    task: () => Promise<StudioWriteResult | null>
+  ): Promise<StudioWriteResult> {
     if (savingCountRef.current === 0) {
       savingSinceRef.current = Date.now(); // 이번 저장 묶음 시작 시각(최소 노출 시간 계산용)
     }
@@ -451,12 +459,20 @@ export function StudioShell({
     savingCountRef.current += 1;
     editedSinceSyncRef.current = true; // 이후 미리보기 진입 시 서버를 새로 불러오게 표시
     // 'saving'을 setTimeout(0)으로 트랜지션 밖에서 칠한다 — 새 일정 저장은 startTransition 안에서
-    // studioWrite가 불려 setState가 트랜지션(비긴급)으로 묶이는 바람에 빠른 저장에선 '저장 중'이
-    // 아예 안 칠해졌다(삭제는 트랜지션 밖이라 보였음). 매크로태스크로 빼면 항상 긴급으로 칠해진다.
+    // 불려 setState가 트랜지션(비긴급)으로 묶이는 바람에 빠른 저장에선 '저장 중'이 아예 안 칠해졌다.
     window.setTimeout(() => {
       if (savingCountRef.current > 0) setSaveState("saving");
     }, 0);
-    const p = postStudioWrite(op, payload);
+    // 직렬화: 앞 task가 끝난 뒤 이 task를 실행. 앞이 실패/거부돼도 이 task는 그대로 잇는다(거부
+    // 전파 안 함). task가 null이면 보낼 게 없으니 성공으로 본다(롤백 안 함).
+    const p: Promise<StudioWriteResult> = writeChainRef.current.then(async () => {
+      const r = await task();
+      return r ?? { ok: true, id: "" };
+    });
+    writeChainRef.current = p.then(
+      () => undefined,
+      () => undefined
+    );
     inflightWritesRef.current.add(p);
     // 낙관적 저장은 너무 빨라(특히 새 일정 생성) '저장 중'이 안 보일 수 있다 → 최소 ~450ms 노출.
     const settleSaved = () => {
@@ -486,6 +502,10 @@ export function StudioShell({
       }
     ).finally(() => inflightWritesRef.current.delete(p));
     return p;
+  }
+  // op/payload가 고정된(temp id 해석이 필요 없는) 일반 쓰기 — 그대로 큐에 올린다.
+  function studioWrite(op: string, payload: unknown): Promise<StudioWriteResult> {
+    return enqueueWrite(() => postStudioWrite(op, payload));
   }
   // 진행 중인 모든 쓰기(이동 큐 + inflight 집합)가 서버에 반영될 때까지 기다린다.
   // 각 쓰기 액션은 완료 시 revalidatePublicSchedule(태그 무효화)를 호출하므로, flush가 끝난
@@ -680,13 +700,14 @@ export function StudioShell({
         );
         setActionError(null);
         void (async () => {
-          const realId = await resolveEventId(earlier.id);
-          if (!realId) {
-            setActionError("저장 중이에요. 잠시 후 다시 시도해 주세요.");
-            setEvents(snapshot);
-            return;
-          }
-          const result = await studioWrite("unlinkPair", { earlierId: realId });
+          const result = await enqueueWrite(async () => {
+            const realId = await resolveEventId(earlier.id);
+            if (!realId) {
+              setEvents(snapshot); // 저장이 끝내 실패 → 되돌림
+              return null;
+            }
+            return postStudioWrite("unlinkPair", { earlierId: realId });
+          });
           if (!result.ok) {
             setActionError(result.error);
             setEvents(snapshot);
@@ -706,13 +727,14 @@ export function StudioShell({
           setActionError(null);
           // 서버에는 실제 id로 보낸다. 새 일정이 아직 저장 중이면 끝나길 기다렸다 잇는다.
           void (async () => {
-            const resolved = await Promise.all(chain.map(resolveEventId));
-            if (resolved.some((id) => !id)) {
-              setActionError("저장 중이에요. 잠시 후 다시 시도해 주세요.");
-              setEvents(snapshot);
-              return;
-            }
-            const result = await studioWrite("linkChain", { orderedIds: resolved as string[] });
+            const result = await enqueueWrite(async () => {
+              const resolved = await Promise.all(chain.map(resolveEventId));
+              if (resolved.some((id) => !id)) {
+                setEvents(snapshot); // 저장이 끝내 실패 → 되돌림
+                return null;
+              }
+              return postStudioWrite("linkChain", { orderedIds: resolved as string[] });
+            });
             if (!result.ok) {
               setActionError(result.error);
               setEvents(snapshot);
@@ -2255,21 +2277,21 @@ export function StudioShell({
       deletedStackRef.current.push({ type: "recreate", event: removed });
     }
     startTransition(async () => {
-      // 아직 저장 안 된(temp) 일정이면 실제 id로 바꿔 삭제(잘못된 uuid 방지).
-      const realId = await resolveEventId(targetId);
-      if (!realId) {
-        return; // 서버에 정말 없음(저장 실패/미저장) → 로컬 제거로 충분
-      }
-      // 저장이 삭제 애니메이션 중에 끝나 temp가 실제 id로 바뀐 경우, temp로 건 로컬 제거가 빗나갈
-      // 수 있으니 실제 id로도 한 번 더 제거(화면에 되살아 보이지 않게).
-      if (realId !== targetId) {
-        setEvents((prev) =>
-          prev
-            .filter((e) => e.id !== realId)
-            .map((e) => (e.linkNext === realId ? { ...e, linkNext: undefined } : e))
-        );
-      }
-      const result = await studioWrite("delete", { eventId: realId });
+      const result = await enqueueWrite(async () => {
+        // 큐 차례가 와서 실행 — 이 시점엔 앞(생성) 작업이 끝나 temp가 실제 id로 풀려 있다.
+        const realId = await resolveEventId(targetId);
+        if (!realId) return null; // 서버에 정말 없음(저장 실패/미저장) → 보낼 것 없음
+        // 저장이 삭제 애니메이션 중에 끝나 temp가 실제 id로 바뀐 경우, temp로 건 로컬 제거가 빗나갈
+        // 수 있으니 실제 id로도 한 번 더 제거(화면에 되살아 보이지 않게).
+        if (realId !== targetId) {
+          setEvents((prev) =>
+            prev
+              .filter((e) => e.id !== realId)
+              .map((e) => (e.linkNext === realId ? { ...e, linkNext: undefined } : e))
+          );
+        }
+        return postStudioWrite("delete", { eventId: realId });
+      });
       if (!result.ok) {
         setActionError(result.error);
         setEvents(snapshot); // 실패 → 되돌림
@@ -2447,9 +2469,11 @@ export function StudioShell({
       setActionError(null);
       flashToast("붙여넣기 취소됨 (Ctrl+Z)");
       startTransition(async () => {
-        const realId = await resolveEventId(id);
-        if (!realId) return; // 서버에 아직 없음 → 로컬 제거로 충분
-        const result = await studioWrite("delete", { eventId: realId });
+        const result = await enqueueWrite(async () => {
+          const realId = await resolveEventId(id);
+          if (!realId) return null; // 서버에 아직 없음 → 보낼 것 없음
+          return postStudioWrite("delete", { eventId: realId });
+        });
         if (!result.ok) setActionError(result.error);
       });
       return;
