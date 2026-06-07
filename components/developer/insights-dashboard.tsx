@@ -9,6 +9,7 @@ import {
   LineChart,
   Lock,
   Radio,
+  RotateCw,
   TrendingUp,
   Trophy
 } from "lucide-react";
@@ -67,6 +68,19 @@ const PANELS = [
 ] as const;
 // 탭/패널 격자 열 수 — CSS의 .insights-tabs(repeat(4,1fr))와 방향키·스와이프 행 이동에 함께 쓴다.
 const GRID_COLS = 4;
+
+// 패널별 새로고침이 다시 부를 데이터 소스(이 칸만 즉시 갱신). 실시간 패널(live)은 자체 실시간
+// 구독(DeveloperPanel)이라 수동 새로고침 대상이 아님 → null이면 버튼을 숨긴다.
+const PANEL_SOURCE: Record<string, "data" | "trend" | "visits" | null> = {
+  content: "data",
+  engagement: "data",
+  trend: "trend",
+  highlight: "data",
+  live: null,
+  visits: "visits",
+  security: "data",
+  system: "data"
+};
 
 function kst(iso: string | null): Date | null {
   if (!iso) return null;
@@ -307,6 +321,7 @@ export function InsightsDashboard({
   const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // 지금 보는 칸만 수동 새로고침 중
 
   useEffect(() => {
     let alive = true;
@@ -363,6 +378,31 @@ export function InsightsDashboard({
   }, [index, year, month]);
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
+
+  // 지금 보고 있는 칸만 그 칸의 데이터 소스를 다시 불러 즉시 갱신(전체 모달 재로드 아님).
+  // 햅틱은 두 박자: 누를 때 1번, 서버 응답 도착하면 1번 더(왕복 체감). 아이콘은 도는 동안 회전.
+  const activeSource = PANEL_SOURCE[PANELS[index]?.key] ?? null;
+  async function refreshPanel() {
+    if (!activeSource || refreshing) return;
+    hapticTick();
+    setRefreshing(true);
+    try {
+      if (activeSource === "visits") {
+        const r = await getVisitTrendsAction(year, month);
+        if (r.ok) setVisits(r.data);
+      } else if (activeSource === "trend") {
+        const r = await getTrendAction(year, month);
+        if (r.ok) setTrend(r.data);
+      } else {
+        const r = await getInsightsAction(year, month);
+        if (r.ok) setData(r.data);
+        else setError(r.error);
+      }
+      hapticTick();
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   // 특정 한 사람의 비공개 잠금만 즉시 만료(초기화) → 성공하면 보안 데이터를 다시 불러온다.
   // (확인 대화/버튼 비활성은 SecurityPanel이 담당.)
@@ -1211,7 +1251,22 @@ export function InsightsDashboard({
 
   return (
     <div className="insights">
-      <p className="insights-month">{month}월 인사이트</p>
+      <div className="insights-head">
+        <p className="insights-month">{month}월 인사이트</p>
+        {activeSource ? (
+          <button
+            aria-label={`${PANELS[index]?.label} 새로고침`}
+            className="insights-refresh"
+            data-spin={refreshing ? "" : undefined}
+            disabled={refreshing}
+            onClick={refreshPanel}
+            title={`${PANELS[index]?.label} 새로고침`}
+            type="button"
+          >
+            <RotateCw aria-hidden="true" size={15} />
+          </button>
+        ) : null}
+      </div>
       <div className="insights-tabs" role="tablist" aria-label="인사이트 영역">
         {PANELS.map((p, i) => (
           <button

@@ -2286,6 +2286,59 @@
   color: #6b5bd6;
   letter-spacing: 0.01em;
 }
+/* 월 라벨 + '이 칸만' 새로고침 버튼을 한 줄에 — 라벨 왼쪽, 버튼 오른쪽 끝. */
+.insights-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.insights-refresh {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid #e4ddf6;
+  border-radius: 999px;
+  background: #f6f3fe;
+  color: #6b5bd6;
+  cursor: pointer;
+  transition:
+    background var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.insights-refresh:hover {
+  background: #efe9fd;
+  border-color: #d3c7f3;
+}
+.insights-refresh:active {
+  transform: scale(0.88);
+}
+.insights-refresh:disabled {
+  cursor: default;
+  opacity: 0.75;
+}
+/* 새로고침 중엔 아이콘이 한 바퀴씩 계속 돈다(진행 신호). */
+.insights-refresh[data-spin] svg {
+  animation: insights-spin 0.7s linear infinite;
+}
+@keyframes insights-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .insights-refresh {
+    transition: none;
+  }
+  .insights-refresh[data-spin] svg {
+    animation: none;
+  }
+}
 /* 방문 패널 일별/주별 토글 */
 .insights-toolbar {
   display: flex;
@@ -2743,6 +2796,10 @@
 @media (min-width: 641px) {
   .insights-month {
     font-size: 16px;
+  }
+  .insights-refresh {
+    width: 32px;
+    height: 32px;
   }
   .insights-tab {
     font-size: 14px;
