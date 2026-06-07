@@ -11,7 +11,12 @@ import { isContentReady, onContentReady } from "@/lib/presence/content-ready";
 //    하트비트로 last_seen 갱신(touch), 숨기거나 떠나면 종료(end). 재진입하면 새 세션(여러 번 기록).
 //    체류는 started_at~ended_at의 초 단위로 정확. 모두 keepalive fetch라 떠나며 보낸 end도 끝까지 간다.
 //    화면이 '보일 때만' 기록하므로 프리렌더·백그라운드 로드(안 본 유령 방문)는 잡히지 않는다.
+//    KST 자정을 넘기면(켜둔 채 날짜 변경) 현재 세션을 끝내고 새 날짜로 새 세션 — 안 그러면 다음날
+//    방문기록에 안 잡힌다(day는 start 시점에만 박힌다).
 const HEARTBEAT_MS = 25_000;
+
+// 현재 KST 날짜(YYYY-MM-DD). 서버 ymd(kstNow())와 동일 규칙(+9h).
+const kstDay = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
 export function PresenceBeacon({ role }: { role: MembershipRole }) {
   useEffect(() => {
@@ -19,6 +24,7 @@ export function PresenceBeacon({ role }: { role: MembershipRole }) {
 
     const device = detectDevice();
     let sessionId: string | null = null;
+    let sessionDay: string | null = null; // 이 세션이 기록된 KST 날짜(자정 롤오버 감지용)
     let starting = false;
     let timer: number | null = null;
 
@@ -33,10 +39,14 @@ export function PresenceBeacon({ role }: { role: MembershipRole }) {
     const begin = async () => {
       if (sessionId || starting) return;
       starting = true;
+      const day = kstDay();
       try {
         const res = await post("start");
         const data = (await res.json().catch(() => null)) as { ok?: boolean; id?: string } | null;
-        if (data?.ok && data.id) sessionId = data.id;
+        if (data?.ok && data.id) {
+          sessionId = data.id;
+          sessionDay = day;
+        }
       } catch {
         /* 보조 기능 — 조용히 무시 */
       } finally {
@@ -54,12 +64,24 @@ export function PresenceBeacon({ role }: { role: MembershipRole }) {
       if (sessionId) {
         post("end", { id: sessionId }).catch(() => {});
         sessionId = null; // 다음에 다시 보이면 새 세션
+        sessionDay = null;
       }
+    };
+    // 하트비트 한 틱: KST 자정을 넘겼으면 현재 세션 종료 + 새 날짜 세션 시작, 아니면 last_seen 갱신.
+    const tick = () => {
+      if (sessionId && sessionDay && kstDay() !== sessionDay) {
+        post("end", { id: sessionId }).catch(() => {}); // 어제 세션은 어제 day로 닫는다
+        sessionId = null;
+        sessionDay = null;
+        void begin(); // 보이는 동안만 timer가 돌므로 항상 visible — 새 날짜로 새 세션
+        return;
+      }
+      touch();
     };
     const start = () => {
       if (timer !== null) return;
       void begin(); // 세션 생성(짧은 방문도 기록)
-      timer = window.setInterval(touch, HEARTBEAT_MS);
+      timer = window.setInterval(tick, HEARTBEAT_MS);
     };
 
     // 실제 달력 콘텐츠가 떴고(contentReady) + 화면이 보일 때만 시작. 로딩 스켈레톤 중에 백그라운드로
