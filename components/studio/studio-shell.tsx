@@ -3861,7 +3861,7 @@ export function StudioShell({
           <span><kbd>Del</kbd> 삭제</span>
           <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
           <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복사·붙여넣기</span>
-          <span><kbd>우클릭</kbd> 날짜 휴방</span>
+          <span><kbd>날짜 우클릭</kbd> 휴방</span>
           <span><kbd>←</kbd><kbd>→</kbd> 월 이동</span>
           <span><kbd>Esc</kbd> 닫기</span>
         </div>
