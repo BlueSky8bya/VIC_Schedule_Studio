@@ -148,18 +148,20 @@ export function DateTimePicker({
   }, []);
 
   // 열 때 현재 값 기준 월로 맞추고, 웹이면 트리거 위치를 잡는다.
+  // 트리거 위치에 맞춰 팝오버 좌표 갱신(화면 밖으로 안 나가게 클램프). 스크롤·리사이즈 때도 호출.
+  const reposition = () => {
+    if (!triggerRef.current) return;
+    const r = triggerRef.current.getBoundingClientRect();
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - 332));
+    const top = Math.min(r.bottom + 6, Math.max(8, window.innerHeight - 430));
+    setAnchor({ left, top, width: r.width });
+  };
   const openPicker = () => {
     if (disabled) return;
     const cur = parse(value) ?? nowKstParts();
     setViewY(cur.y);
     setViewM(cur.m);
-    if (triggerRef.current) {
-      const r = triggerRef.current.getBoundingClientRect();
-      // 화면 밖으로 안 나가게 가둔다(폭 ~320, 높이 ~420).
-      const left = Math.max(8, Math.min(r.left, window.innerWidth - 332));
-      const top = Math.min(r.bottom + 6, Math.max(8, window.innerHeight - 430));
-      setAnchor({ left, top, width: r.width });
-    }
+    reposition();
     hapticTick();
     setOpen(true);
   };
@@ -171,18 +173,23 @@ export function DateTimePicker({
       if (e.key === "Escape") close();
     };
     document.addEventListener("keydown", onKey);
-    // 웹 팝오버는 바깥 스크롤로 위치가 어긋나면 닫는다(모바일 시트는 고정이라 유지). 단, 시간 휠
-    // 내부 스크롤(피커 안)은 무시한다 — 안 그러면 휠이 마운트 때 위치 맞추며 낸 scroll에 즉시 닫힌다.
+    // 웹 팝오버: 바깥 스크롤/리사이즈 시 닫지 말고 트리거를 따라 위치만 갱신한다(닫혀 사라지지 않게).
+    // 단, 시간 휠 내부 스크롤(피커 안)은 무시 — 휠이 위치 맞추며 낸 scroll까지 처리하면 깜빡인다.
     const onScroll = (e: Event) => {
       if (mobile) return;
       const t = e.target as HTMLElement | null;
       if (t && typeof t.closest === "function" && t.closest(".dtp-pop, .dtp-panel")) return;
-      close();
+      reposition();
+    };
+    const onResize = () => {
+      if (!mobile) reposition();
     };
     window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
     };
   }, [open, mobile]);
 
