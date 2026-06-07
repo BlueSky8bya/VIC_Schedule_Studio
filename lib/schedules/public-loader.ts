@@ -142,7 +142,7 @@ const loadPublicScheduleData = unstable_cache(
         supabase
           .from("events")
           .select(
-            "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, event_tags(tag_id, is_primary, sort_order)"
+            "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order)"
           )
           .eq("calendar_id", calendar.id)
           .eq("visibility_scope", "public")
@@ -203,7 +203,7 @@ const loadPublicScheduleData = unstable_cache(
       tags: (tagsRes.data ?? []).map(mapTag),
       palette: (paletteRes.data ?? []).map(mapPalette),
       events: (eventsRes.data ?? []).map((row) => ({
-        ...mapEvent(row),
+        ...mapEvent(row, Date.now()),
         heartCount: heartCountByEvent.get(row.id) ?? 0
       })),
       supportCampaigns: (campaignsRes.data ?? []).map(mapCampaign),
@@ -280,11 +280,34 @@ type EventRow = {
   status: PublicScheduleEvent["status"];
   sort_order: number;
   category: PublicScheduleEvent["category"];
+  teaser: boolean | null;
+  teaser_reveal_at: string | null;
   event_tags: Array<{ tag_id: string; is_primary: boolean; sort_order: number }> | null;
 };
 
-function mapEvent(row: EventRow): PublicScheduleEvent {
+function mapEvent(row: EventRow, nowMs: number): PublicScheduleEvent {
   const tags = [...(row.event_tags ?? [])].sort((a, b) => a.sort_order - b.sort_order);
+
+  // 떡밥: 공개 시각 전이면 제목·태그·카테고리·기간을 통째로 가린 DTO만 내보낸다(유출 방지).
+  // 시청자는 전용 떡밥 룩 + 공개까지 카운트다운만 본다. 공개 시각이 지나면 아래 평범한 DTO로.
+  const revealMs = row.teaser && row.teaser_reveal_at ? Date.parse(row.teaser_reveal_at) : 0;
+  if (revealMs && nowMs < revealMs) {
+    return {
+      id: row.id,
+      startsAt: toKstIso(row.date_key, null),
+      isAllDay: true,
+      isTentative: false,
+      publicTitle: "", // 가림 — 클라가 전용 룩으로 렌더
+      status: row.status,
+      visibilityScope: "public",
+      category: "stream", // 실제 카테고리도 가린다(중립값)
+      tagIds: [],
+      primaryTagIds: [],
+      sortOrder: row.sort_order,
+      teaser: true,
+      teaserRevealAt: new Date(revealMs).toISOString()
+    };
+  }
 
   return {
     id: row.id,

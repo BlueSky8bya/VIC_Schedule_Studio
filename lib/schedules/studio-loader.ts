@@ -115,7 +115,7 @@ export async function getStudioSchedule(
     supabase
       .from("events")
       .select(
-        "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, visibility_scope, event_tags(tag_id, is_primary, sort_order), event_private_meta(private_title, private_memo, editor_note)"
+        "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, visibility_scope, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order), event_private_meta(private_title, private_memo, editor_note)"
       )
       .eq("calendar_id", calendar.id)
       .order("date_key")
@@ -200,6 +200,8 @@ type StudioEventRow = {
   sort_order: number;
   category: StudioScheduleEvent["category"];
   visibility_scope: StudioScheduleEvent["visibilityScope"];
+  teaser: boolean | null;
+  teaser_reveal_at: string | null;
   event_tags: Array<{ tag_id: string; is_primary: boolean; sort_order: number }> | null;
   event_private_meta:
     | { private_title: string | null; private_memo: string | null; editor_note: string | null }[]
@@ -230,6 +232,8 @@ function mapStudioEvent(row: StudioEventRow): StudioScheduleEvent {
     tagIds: tags.map((t) => t.tag_id),
     primaryTagIds: tags.filter((t) => t.is_primary).map((t) => t.tag_id),
     sortOrder: row.sort_order,
+    teaser: row.teaser ?? undefined,
+    teaserRevealAt: row.teaser_reveal_at ?? undefined,
     privateMeta: meta
       ? {
           eventId: row.id,

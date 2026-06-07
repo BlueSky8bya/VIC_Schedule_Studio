@@ -29,6 +29,7 @@ import {
   Upload
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import {
   type CSSProperties,
@@ -266,6 +267,40 @@ function recordHeartDelta(owner: string, id: string, on: boolean) {
 
 // #3: 관심 하트 단계(불꽃 게이지) — 임계값·판정은 lib/schedules/heart-tiers의 단일 출처를 쓴다
 // (개발자 인사이트의 '배지 기준' 설명과 드리프트 없이 일치시키려고 분리).
+
+// 떡밥 카드의 "공개까지" 카운트다운. 매초 갱신, 0이 되면 onReveal()로 서버 데이터를 새로 받아
+// 가려진 제목이 드러나게 한다. SSR/CSR 시간차 hydration 경고를 피하려 마운트 전엔 ⏳만 보인다.
+function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: () => void }) {
+  const target = useMemo(() => Date.parse(revealAt), [revealAt]);
+  const [now, setNow] = useState<number | null>(null);
+  const firedRef = useRef(false);
+  const onRevealRef = useRef(onReveal);
+  onRevealRef.current = onReveal;
+  useEffect(() => {
+    setNow(Date.now());
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  const remain = now === null ? null : target - now;
+  useEffect(() => {
+    if (remain !== null && remain <= 0 && !firedRef.current) {
+      firedRef.current = true;
+      onRevealRef.current();
+    }
+  }, [remain]);
+  if (Number.isNaN(target)) return null;
+  if (remain === null) return <span className="teaser-count">⏳</span>;
+  const s = Math.max(0, Math.floor(remain / 1000));
+  const d = Math.floor(s / 86400);
+  const hh = String(Math.floor((s % 86400) / 3600)).padStart(2, "0");
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return (
+    <span className="teaser-count">
+      {s <= 0 ? "✨ 공개!" : d > 0 ? `D-${d} ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`}
+    </span>
+  );
+}
 
 const REST_TAG_NAME = "휴뱅";
 
@@ -819,6 +854,7 @@ export function PublicPoster({
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
   // A: 관심(하트). toggleHeartAction이 있으면 서버 집계(1인 1하트)와 연동되고,
   //    없으면(샘플/오프라인) 기기별 localStorage로만 동작한다. 둘 다 "내가 누른 일정" 집합으로 관리.
+  const router = useRouter(); // 떡밥 공개 시각이 지나면 서버 데이터를 새로 받아 제목을 드러낸다.
   const serverHearts = Boolean(toggleHeartAction);
   // 비로그인 하트용 기기 토큰(로그인 시엔 빈 값, 계정 기준으로 동작). 마운트 후 채워진다.
   const [deviceToken, setDeviceToken] = useState("");
@@ -2146,6 +2182,22 @@ export function PublicPoster({
           style={weekSupCount > 0 ? { paddingTop: 8 + weekSupCount * 20 } : undefined}
         >
           {events.map((event) => {
+            // 떡밥(가림): 공개 시각 전이라 서버가 제목·태그를 빼고 보냈다 → 전용 미스터리 카드 +
+            // 공개까지 카운트다운만. 0이 되면 router.refresh로 실제 내용을 받아온다.
+            if (event.teaser && event.teaserRevealAt) {
+              return (
+                <div className="public-event teaser" key={event.id}>
+                  <div className="event-main teaser-main">
+                    <span className="teaser-spark" aria-hidden="true">🔮</span>
+                    <p className="teaser-q">???</p>
+                    <TeaserCountdown
+                      onReveal={() => router.refresh()}
+                      revealAt={event.teaserRevealAt}
+                    />
+                  </div>
+                </div>
+              );
+            }
             const colors = eventColors(event);
             const extraColors = getExtraCategoryColors(event, viewTags, schedule.palette);
             const { main, subs } = splitEventTitle(event.publicTitle);
@@ -2423,6 +2475,19 @@ export function PublicPoster({
                     <span className="agenda-noevent">예정된 공개 일정 없음</span>
                   ) : null}
                   {list.map(({ event, support }) => {
+                    // 떡밥(가림): 모바일 아젠다에서도 미스터리 카드 + 카운트다운만.
+                    if (event.teaser && event.teaserRevealAt) {
+                      return (
+                        <div className="agenda-item teaser" key={event.id}>
+                          <span className="teaser-spark" aria-hidden="true">🔮</span>
+                          <p className="agenda-title teaser-q">???</p>
+                          <TeaserCountdown
+                            onReveal={() => router.refresh()}
+                            revealAt={event.teaserRevealAt}
+                          />
+                        </div>
+                      );
+                    }
                     const colors = eventColors(event);
                     const extraColors = support
                       ? []

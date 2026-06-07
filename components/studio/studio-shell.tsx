@@ -122,6 +122,8 @@ type EventForm = {
   visibilityScope: EventVisibilityScope;
   tagIds: string[];
   primaryTagIds: string[];
+  teaser: boolean; // 떡밥(가림)
+  teaserRevealAt: string; // datetime-local 입력값(빈 문자열=미설정)
 };
 
 // #2: Ctrl+C로 복사해 둔 일정 내용(날짜·id 제외). 기간은 일수로 저장해 붙여넣는 날짜 기준으로 재계산.
@@ -1891,7 +1893,9 @@ export function StudioShell({
       status: event.status,
       visibilityScope: event.visibilityScope,
       tagIds: event.tagIds,
-      primaryTagIds: event.primaryTagIds
+      primaryTagIds: event.primaryTagIds,
+      teaser: event.teaser ?? false,
+      teaserRevealAt: isoToKstLocalInput(event.teaserRevealAt)
     });
     if (showPanel) {
       setEditorVisible(true);
@@ -2092,6 +2096,9 @@ export function StudioShell({
       canReadPrivate || isNarrow ? form.visibilityScope : "public";
     const endDateKey =
       form.isSupport && form.endDateKey ? form.endDateKey : undefined;
+    // 떡밥: 공개 일정 + 공개 시각이 있어야 성립. 공개 시각은 KST 입력 → ISO(UTC)로.
+    const teaserOn = form.teaser && Boolean(form.teaserRevealAt) && scope === "public";
+    const teaserRevealIso = teaserOn ? kstLocalInputToIso(form.teaserRevealAt) : null;
     // 낙관적 일정 객체(서버 응답 전 화면에 바로 그린다).
     const optimistic: StudioScheduleEvent = {
       id: tempId,
@@ -2108,7 +2115,9 @@ export function StudioShell({
       category: form.category,
       tagIds: form.tagIds,
       primaryTagIds: form.primaryTagIds.slice(0, 2),
-      sortOrder: existing?.sortOrder ?? 0
+      sortOrder: existing?.sortOrder ?? 0,
+      teaser: teaserOn || undefined,
+      teaserRevealAt: teaserRevealIso ?? undefined
     };
     // 서버로 보낼 입력은 폼 초기화 전에 미리 만들어 둔다.
     const payload = {
@@ -2127,7 +2136,9 @@ export function StudioShell({
       tagIds: form.tagIds,
       primaryTagIds: form.primaryTagIds.slice(0, 2),
       isSupport: form.isSupport,
-      supportUrl: form.supportUrl
+      supportUrl: form.supportUrl,
+      teaser: teaserOn,
+      teaserRevealAt: teaserRevealIso
     };
     const snapshot = events;
 
@@ -3517,6 +3528,36 @@ export function StudioShell({
               </div>
               <div className="me-sep" />
               {renderSupportEditor()}
+              {/* 떡밥(가림) — 공개 일정에만. 공개 시각 전까진 시청자에게 ??? + 카운트다운만. */}
+              {form.visibilityScope === "public" ? (
+                <>
+                  <div className="me-sep" />
+                  <div className="me-row me-row-stack">
+                    <button
+                      aria-checked={form.teaser}
+                      className={`me-teaser-toggle${form.teaser ? " on" : ""}`}
+                      onClick={() => {
+                        hapticTick();
+                        setForm((c) => ({ ...c, teaser: !c.teaser }));
+                      }}
+                      role="switch"
+                      type="button"
+                    >
+                      🔮 떡밥으로 가리기
+                    </button>
+                    {form.teaser ? (
+                      <input
+                        className="me-teaser-when"
+                        onChange={(e) =>
+                          setForm((c) => ({ ...c, teaserRevealAt: e.target.value }))
+                        }
+                        type="datetime-local"
+                        value={form.teaserRevealAt}
+                      />
+                    ) : null}
+                  </div>
+                </>
+              ) : null}
             </div>
 
             {/* 태그 그룹 — 대분류→세부 드릴다운 + 검색(2계층). 카드 색은 대분류로 ≤2 표시. */}
@@ -4311,6 +4352,45 @@ export function StudioShell({
               )}
             </div>
 
+            {/* 떡밥(가림) — 공개 일정에만. 켜고 공개 시각을 정하면 그 전까진 시청자에게 제목·태그가
+                ??? 로 가려지고 카운트다운만 보인다. 실제 내용은 서버가 공개 시각 전엔 안 내보냄. */}
+            {form.visibilityScope === "public" ? (
+              <div className="teaser-field">
+                <button
+                  aria-checked={form.teaser}
+                  className={`teaser-toggle${form.teaser ? " on" : ""}`}
+                  disabled={!canEdit}
+                  onClick={() => {
+                    hapticTick();
+                    setForm((c) => ({ ...c, teaser: !c.teaser }));
+                  }}
+                  role="switch"
+                  type="button"
+                >
+                  <span className="teaser-toggle-ic" aria-hidden="true">🔮</span>
+                  <span className="teaser-toggle-label">떡밥으로 가리기</span>
+                  <span className="teaser-toggle-sw" aria-hidden="true" />
+                </button>
+                {form.teaser ? (
+                  <label className="teaser-when">
+                    <span className="teaser-when-label">공개 시각 (KST)</span>
+                    <input
+                      className="teaser-when-input"
+                      disabled={!canEdit}
+                      onChange={(e) =>
+                        setForm((c) => ({ ...c, teaserRevealAt: e.target.value }))
+                      }
+                      type="datetime-local"
+                      value={form.teaserRevealAt}
+                    />
+                    <em className="teaser-when-hint">
+                      이 시각 전엔 시청자에게 제목·태그가 ??? 로 가려지고 공개까지 카운트다운만 보여요.
+                    </em>
+                  </label>
+                ) : null}
+              </div>
+            ) : null}
+
             {renderSupportEditor()}
 
             <section className="tag-picker" aria-label="태그 선택">
@@ -4580,6 +4660,25 @@ function createEmptyForm(): EventForm {
     status: "scheduled",
     visibilityScope: "public",
     tagIds: [],
-    primaryTagIds: []
+    primaryTagIds: [],
+    teaser: false,
+    teaserRevealAt: ""
   };
+}
+
+// 떡밥 공개 시각 변환: DB(ISO UTC) ↔ datetime-local(KST 벽시계).
+// datetime-local은 타임존이 없으니 입력값을 KST(+09:00)로 해석해 저장, 표시할 땐 +9h 한 벽시계로.
+function isoToKstLocalInput(iso: string | undefined): string {
+  if (!iso) return "";
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return "";
+  const k = new Date(t + 9 * 3600 * 1000);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${k.getUTCFullYear()}-${p(k.getUTCMonth() + 1)}-${p(k.getUTCDate())}T${p(k.getUTCHours())}:${p(k.getUTCMinutes())}`;
+}
+function kstLocalInputToIso(local: string): string | null {
+  if (!local) return null;
+  const t = Date.parse(`${local}:00+09:00`);
+  if (Number.isNaN(t)) return null;
+  return new Date(t).toISOString();
 }

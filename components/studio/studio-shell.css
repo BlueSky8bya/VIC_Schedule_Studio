@@ -1217,6 +1217,128 @@
   flex-direction: column;
   gap: 16px;
 }
+/* 🔮 떡밥(가림) 에디터 — 토글 + 공개 시각 입력(웹). */
+.teaser-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+}
+.teaser-toggle {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--line, #e7e3f2);
+  border-radius: 12px;
+  background: #faf9fe;
+  cursor: pointer;
+  font-weight: 800;
+  color: #6b5b95;
+  transition:
+    background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.teaser-toggle:active {
+  transform: scale(0.98);
+}
+.teaser-toggle.on {
+  background: #efe9fd;
+  border-color: #c9bdf2;
+  color: #4a3f72;
+}
+.teaser-toggle-ic {
+  font-size: 16px;
+}
+.teaser-toggle-label {
+  flex: 1;
+  text-align: left;
+}
+.teaser-toggle-sw {
+  position: relative;
+  flex: none;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: #d9d2ee;
+  transition: background var(--dur-1) var(--ease);
+}
+.teaser-toggle-sw::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--dur-1) var(--ease);
+}
+.teaser-toggle.on .teaser-toggle-sw {
+  background: #7c6cf0;
+}
+.teaser-toggle.on .teaser-toggle-sw::after {
+  transform: translateX(14px);
+}
+.teaser-when {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 2px;
+}
+.teaser-when-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b5b95;
+}
+.teaser-when-input {
+  padding: 8px 10px;
+  border: 1px solid var(--line, #e7e3f2);
+  border-radius: 10px;
+  font-size: 14px;
+  font-family: inherit;
+}
+.teaser-when-hint {
+  font-size: 11.5px;
+  font-style: normal;
+  color: #9a8fc0;
+  line-height: 1.4;
+}
+/* 모바일 에디터 떡밥 */
+.me-teaser-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 800;
+  color: #6b5b95;
+  cursor: pointer;
+}
+.me-teaser-toggle.on {
+  color: #4a3f72;
+  background: #efe9fd;
+}
+.me-teaser-when {
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid #e7e3f2;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+}
+@media (prefers-reduced-motion: reduce) {
+  .teaser-toggle,
+  .teaser-toggle-sw,
+  .teaser-toggle-sw::after {
+    transition: none;
+  }
+}
+
 /* 빠른 휴방 미니 메뉴 — 날짜 우클릭/롱프레스로 뜨는 작은 팝오버(화면 좌표 fixed). */
 .rest-menu {
   position: fixed;

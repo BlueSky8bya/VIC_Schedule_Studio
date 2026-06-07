@@ -66,6 +66,11 @@ export type PublicScheduleEvent = {
   variantGroupId?: string;
   variantLabel?: string;
   heartCount?: number; // A: 일정별 관심(하트) 집계 수. 숫자 자체는 노출하지 않고 "관심 높음" 판정에만 쓴다.
+  // 떡밥(가림): 공개 시각 전엔 제목·태그를 숨기고 전용 룩 + 카운트다운만 보인다. 공개 시각이 지나면
+  // 실제 내용이 보인다. 공개 DTO에는 가려진 동안에만 teaser=true가 실리고, 실제 제목/태그는 서버에서
+  // 빠진다(공개 전 유출 방지). 공개 후엔 평범한 일정으로 내려온다.
+  teaser?: boolean;
+  teaserRevealAt?: string; // 공개 시각(ISO·UTC). teaser=true일 때만.
 };
 
 export type PrivateEventMeta = {

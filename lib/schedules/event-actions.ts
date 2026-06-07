@@ -32,6 +32,8 @@ export type SaveEventInput = {
   privateTitle?: string;
   privateMemo?: string;
   editorNote?: string;
+  teaser?: boolean; // 떡밥(가림) 일정
+  teaserRevealAt?: string | null; // 공개 시각(ISO). teaser일 때만 의미.
 };
 
 export type ActionResult = { ok: true; id: string } | { ok: false; error: string };
@@ -219,6 +221,9 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     visibility_scope: input.visibilityScope,
     status: input.status,
     category: input.category,
+    // 떡밥: 공개 일정만 의미(비공개는 어차피 안 보임). 공개 시각 없으면 떡밥 해제로 본다.
+    teaser: Boolean(input.teaser) && Boolean(input.teaserRevealAt),
+    teaser_reveal_at: input.teaser && input.teaserRevealAt ? input.teaserRevealAt : null,
     updated_at: new Date().toISOString()
   };
 

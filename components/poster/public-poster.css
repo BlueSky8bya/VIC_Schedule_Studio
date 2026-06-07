@@ -1360,6 +1360,68 @@ html {
 }
 
 /* 관심 일정 하트 토글 (시청자 상호작용 모드 전용 — 캡쳐 표면엔 꾸미기 모드라 안 나옴) */
+/* 🔮 떡밥(가림) 카드 — 보라 미스터리 룩 + ??? + 공개까지 카운트다운. 제목·태그는 서버에서
+   안 내려오므로 여기엔 실제 내용이 없다(유출 0). */
+.public-event.teaser {
+  background: linear-gradient(135deg, #5b4aa6 0%, #7c6cf0 100%);
+  border: 1px dashed rgba(255, 255, 255, 0.55);
+  color: #fff;
+  overflow: hidden;
+}
+.teaser-main {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.teaser-spark {
+  flex: none;
+  font-size: 13px;
+  animation: teaser-twinkle 1.8s ease-in-out infinite;
+}
+.teaser-q {
+  margin: 0;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #fff;
+}
+.teaser-count {
+  margin-left: auto;
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff6ff;
+  font-size: 10px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+@keyframes teaser-twinkle {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.55; transform: scale(0.86); }
+}
+/* 모바일 아젠다의 떡밥 항목 */
+.agenda-item.teaser {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #5b4aa6 0%, #7c6cf0 100%);
+  border: 1px dashed rgba(255, 255, 255, 0.55);
+  color: #fff;
+}
+.agenda-item.teaser .teaser-q {
+  flex: 1;
+  letter-spacing: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .teaser-spark {
+    animation: none;
+  }
+}
+
 .event-heart {
   display: inline-flex;
   flex: 0 0 auto;
