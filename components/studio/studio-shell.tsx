@@ -420,6 +420,10 @@ export function StudioShell({
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
   const pendingSavesRef = useRef<Map<string, Promise<string | null>>>(new Map());
+  // 저장 끝난 temp → 실제 id 매핑(영구). 저장이 끝나면 pendingSaves 약속은 지워지므로, 저장 직후
+  // 삭제하면 resolveEventId가 약속을 못 찾아 null→서버 삭제 누락(=재방문 시 부활)했다. 그래서
+  // 실제 id를 따로 보관해, 저장된 temp는 언제든 실제 id로 해석되게 한다.
+  const tempToRealRef = useRef<Map<string, string>>(new Map());
   // 통합 실행취소 스택(삭제·생성·붙여넣기 등 '되돌릴 수 있는 액션'을 LIFO로 보관).
   const deletedStackRef = useRef<UndoAction[]>([]);
   // temp id면 저장 약속을 기다려 실제 id로, 실패면 null. 실제 id는 그대로. (null이 새어와도 방어.)
@@ -428,6 +432,9 @@ export function StudioShell({
     if (!id.startsWith("temp-")) {
       return id;
     }
+    // 이미 저장돼 실제 id를 아는 temp면 그대로 돌려준다(약속이 정리됐어도 안전).
+    const known = tempToRealRef.current.get(id);
+    if (known) return known;
     const p = pendingSavesRef.current.get(id);
     return p ? await p : null;
   }
@@ -2178,6 +2185,7 @@ export function StudioShell({
       // 새 일정이면 임시 id를 실제 id로 교체 + 이 임시 id를 가리키던 linkNext도 함께 교체.
       if (isNew && result.id) {
         const realId = result.id;
+        tempToRealRef.current.set(tempId, realId); // 저장 직후 삭제해도 서버 삭제가 실제 id로 가게
         setEvents((prev) =>
           prev.map((e) => {
             let next = e;
@@ -2250,7 +2258,16 @@ export function StudioShell({
       // 아직 저장 안 된(temp) 일정이면 실제 id로 바꿔 삭제(잘못된 uuid 방지).
       const realId = await resolveEventId(targetId);
       if (!realId) {
-        return; // 서버에 아직 없음 → 로컬 제거로 충분
+        return; // 서버에 정말 없음(저장 실패/미저장) → 로컬 제거로 충분
+      }
+      // 저장이 삭제 애니메이션 중에 끝나 temp가 실제 id로 바뀐 경우, temp로 건 로컬 제거가 빗나갈
+      // 수 있으니 실제 id로도 한 번 더 제거(화면에 되살아 보이지 않게).
+      if (realId !== targetId) {
+        setEvents((prev) =>
+          prev
+            .filter((e) => e.id !== realId)
+            .map((e) => (e.linkNext === realId ? { ...e, linkNext: undefined } : e))
+        );
       }
       const result = await studioWrite("delete", { eventId: realId });
       if (!result.ok) {
@@ -2350,6 +2367,7 @@ export function StudioShell({
       if (result.id) {
         const realId = result.id;
         undoHolder.id = realId; // 임시 id → 실제 id(되돌릴 때 올바른 카드 제거)
+        tempToRealRef.current.set(tempId, realId); // 저장 직후 삭제해도 서버 삭제가 실제 id로
         setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)));
         setJustSavedId((p) => (p === tempId ? realId : p));
       }
@@ -2481,6 +2499,7 @@ export function StudioShell({
       }
       if (result.id) {
         const realId = result.id;
+        tempToRealRef.current.set(tempId, realId); // 되살린 직후 삭제해도 서버 삭제가 실제 id로
         setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)));
         resolveSave(realId);
         pendingSavesRef.current.delete(tempId);
@@ -2620,6 +2639,7 @@ export function StudioShell({
       if (result.id) {
         const realId = result.id; // 클로저 안에서 string으로 좁혀 쓰도록 const로 고정.
         undoHolder.id = realId; // 임시 id → 실제 id: 되돌릴 때 올바른 카드를 지우게.
+        tempToRealRef.current.set(tempId, realId); // 붙여넣기 직후 삭제해도 서버 삭제가 실제 id로
         setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)));
       }
     });
