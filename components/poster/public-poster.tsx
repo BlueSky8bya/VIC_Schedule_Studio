@@ -203,23 +203,28 @@ const LEGACY_BOOKMARK_KEY = "vic:bookmarks:v1";
 // 매 로드 신선한 서버값에 이 델타(on/off)를 덮어 적용하므로, 손대지 않은 일정에 가짜 하트가
 // 생기지 않는다(자가 보정). 페이지 새로고침 후엔 서버값이 이미 최신이라 델타는 무해한 멱등 합집합.
 const HEART_DELTA_KEY = "vic:heartDelta:v1";
-type HeartDelta = { on: string[]; off: string[] };
-function loadHeartDelta(): HeartDelta {
+// 델타는 '누가' 만든 건지 owner(계정 이메일, 비로그인은 "anon")를 함께 박는다. 같은 브라우저(같은 탭,
+// sessionStorage 공유)에서 계정을 바꾸면 이전 계정의 낙관적 하트가 다음 계정 화면에 가짜로 비치던
+// 버그가 있었다 — owner가 다르면 델타를 통째로 버려(빈 델타) 계정 간 누수를 막는다.
+type HeartDelta = { owner: string; on: string[]; off: string[] };
+function loadHeartDelta(owner: string): HeartDelta {
   try {
     const raw = window.sessionStorage.getItem(HEART_DELTA_KEY);
     if (raw) {
-      const p: unknown = JSON.parse(raw);
-      if (p && Array.isArray((p as HeartDelta).on) && Array.isArray((p as HeartDelta).off)) {
+      const p = JSON.parse(raw) as Partial<HeartDelta>;
+      // 다른 계정(또는 owner 없는 옛 형식)의 델타는 내 것이 아니므로 무시한다.
+      if (p && p.owner === owner && Array.isArray(p.on) && Array.isArray(p.off)) {
         return {
-          on: (p as HeartDelta).on.filter((x) => typeof x === "string"),
-          off: (p as HeartDelta).off.filter((x) => typeof x === "string")
+          owner,
+          on: p.on.filter((x) => typeof x === "string"),
+          off: p.off.filter((x) => typeof x === "string")
         };
       }
     }
   } catch {
     // 손상·사생활 모드 등은 무시 — 델타는 보조 기능.
   }
-  return { on: [], off: [] };
+  return { owner, on: [], off: [] };
 }
 function saveHeartDelta(d: HeartDelta) {
   try {
@@ -229,8 +234,8 @@ function saveHeartDelta(d: HeartDelta) {
   }
 }
 // 사용자가 한 일정을 토글했음을 델타에 기록한다(on=켬, off=끔). 반대편 목록에선 제거.
-function recordHeartDelta(id: string, on: boolean) {
-  const d = loadHeartDelta();
+function recordHeartDelta(owner: string, id: string, on: boolean) {
+  const d = loadHeartDelta(owner);
   if (on) {
     d.on = [...new Set([...d.on, id])];
     d.off = d.off.filter((x) => x !== id);
@@ -797,6 +802,8 @@ export function PublicPoster({
   // A: 관심(하트). toggleHeartAction이 있으면 서버 집계(1인 1하트)와 연동되고,
   //    없으면(샘플/오프라인) 기기별 localStorage로만 동작한다. 둘 다 "내가 누른 일정" 집합으로 관리.
   const serverHearts = Boolean(toggleHeartAction);
+  // 하트 세션 델타의 소유 계정 — 같은 브라우저서 계정을 바꾸면 델타가 안 섞이게 키로 쓴다.
+  const heartOwner = accountEmail ?? "anon";
   const [bookmarks, setBookmarks] = useState<string[]>(() =>
     serverHearts ? (schedule.myHeartIds ?? []) : []
   );
@@ -971,7 +978,7 @@ export function PublicPoster({
       // 무시.
     }
     const serverIds = serverHearts ? (schedule.myHeartIds ?? []) : [];
-    const delta = loadHeartDelta();
+    const delta = loadHeartDelta(heartOwner);
     const set = new Set(serverIds);
     for (const id of delta.off) set.delete(id);
     for (const id of delta.on) set.add(id);
@@ -1016,7 +1023,7 @@ export function PublicPoster({
       [id]: Math.max(0, (prev[id] ?? 0) + (wasOn ? -1 : 1))
     }));
     // 이번 세션 의도를 델타에 기록(미리보기 재마운트에도 유지). 서버 실패 시 되돌린다.
-    recordHeartDelta(id, !wasOn);
+    recordHeartDelta(heartOwner, id, !wasOn);
     if (!toggleHeartAction) {
       return; // 서버 액션 없음(샘플/오프라인): 개인 표시만, 집계 없음.
     }
@@ -1030,7 +1037,7 @@ export function PublicPoster({
           ...prev,
           [id]: Math.max(0, (prev[id] ?? 0) + (wasOn ? 1 : -1))
         }));
-        recordHeartDelta(id, wasOn);
+        recordHeartDelta(heartOwner, id, wasOn);
       }
     });
   }
