@@ -998,6 +998,66 @@
   font-weight: 800;
   color: #8b7a59;
 }
+/* 관심 배지 받는 기준 — 불꽃/왕관 + 라벨 + 조건. 개발자 인사이트 '참여' 패널. */
+.badge-criteria {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.badge-criteria li {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px;
+  border-radius: 11px;
+  background: #fff7f4;
+  border: 1px solid #ffe2d6;
+}
+.badge-criteria .bc-flame {
+  flex: none;
+  min-width: 46px;
+  text-align: center;
+  font-size: 15px;
+  line-height: 1;
+}
+.badge-criteria .bc-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.badge-criteria .bc-body b {
+  font-size: 13px;
+  font-weight: 900;
+  color: #b5462a;
+}
+.badge-criteria .bc-body em {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #9a7a6c;
+  line-height: 1.35;
+}
+/* 웹: 불꽃 칸을 넓혀 정렬되게, 글씨도 키운다. */
+@media (min-width: 641px) {
+  .badge-criteria li {
+    padding: 11px 15px;
+  }
+  .badge-criteria .bc-flame {
+    min-width: 60px;
+    font-size: 17px;
+  }
+  .badge-criteria .bc-body b {
+    font-size: 15px;
+  }
+  .badge-criteria .bc-body em {
+    font-size: 13px;
+  }
+}
+
 /* 시간대 동시 접속 차트 위 한 줄 설명 — 작고 차분하게(위의 '방문 수'와 다른 지표임을 알린다). */
 .vt-occ-note {
   margin: -4px 2px 12px;

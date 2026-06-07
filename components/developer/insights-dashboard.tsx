@@ -35,6 +35,14 @@ import {
   type VisitTrends
 } from "@/lib/insights/actions";
 import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
+import {
+  HEART_BLAZE,
+  HEART_BLAZE_RATIO,
+  HEART_CROWN,
+  HEART_HOT,
+  HEART_HOT_RATIO,
+  HEART_MIN
+} from "@/lib/schedules/heart-tiers";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
@@ -1439,6 +1447,48 @@ export function InsightsDashboard({
                       ))}
                     </ul>
                   )}
+                  {/* 관심 배지 기준 — 시청자 포스터의 불꽃/왕관 배지를 어떻게 받는지(임계값은
+                      lib/schedules/heart-tiers 단일 출처라 포스터와 항상 일치). */}
+                  <h4 className="insight-subhead">관심 배지 받는 기준</h4>
+                  <ul className="badge-criteria">
+                    <li>
+                      <span className="bc-flame">🔥</span>
+                      <div className="bc-body">
+                        <b>관심</b>
+                        <em>하트 {HEART_MIN}개 이상</em>
+                      </div>
+                    </li>
+                    <li>
+                      <span className="bc-flame">🔥🔥</span>
+                      <div className="bc-body">
+                        <b>높은 관심</b>
+                        <em>
+                          하트 {HEART_HOT}개 이상 · 이 달 최다의 {Math.round(HEART_HOT_RATIO * 100)}%
+                          이상
+                        </em>
+                      </div>
+                    </li>
+                    <li>
+                      <span className="bc-flame">🔥🔥🔥</span>
+                      <div className="bc-body">
+                        <b>폭발적</b>
+                        <em>
+                          하트 {HEART_BLAZE}개 이상 · 이 달 최다의 {Math.round(HEART_BLAZE_RATIO * 100)}%
+                          이상
+                        </em>
+                      </div>
+                    </li>
+                    <li>
+                      <span className="bc-flame">👑</span>
+                      <div className="bc-body">
+                        <b>이 달 1위</b>
+                        <em>단독 1위 · 하트 {HEART_CROWN}개 이상</em>
+                      </div>
+                    </li>
+                  </ul>
+                  <p className="insight-note">
+                    하트 {HEART_MIN}개 미만은 배지 없음. 시청자에겐 숫자 없이 배지만 보입니다.
+                  </p>
                 </>
               );
             })}
