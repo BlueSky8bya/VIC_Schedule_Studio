@@ -278,11 +278,13 @@ export function DateTimePicker({
         })}
       </div>
       <div className="dtp-time">
-        <Wheel count={24} label="시" onChange={setHour} value={base.hh} />
-        <span className="dtp-colon">:</span>
-        <Wheel count={60} label="분" onChange={setMin} value={base.mm} />
-        <div className="dtp-time-readout" aria-hidden="true">
+        <div className="dtp-readout" aria-hidden="true">
           {base.hh < 12 ? "오전" : "오후"} {base.hh % 12 === 0 ? 12 : base.hh % 12}:{z2(base.mm)}
+        </div>
+        <div className="dtp-wheels">
+          <Wheel count={24} label="시" onChange={setHour} value={base.hh} />
+          <span className="dtp-colon" aria-hidden="true">:</span>
+          <Wheel count={60} label="분" onChange={setMin} value={base.mm} />
         </div>
       </div>
       <div className="dtp-foot">

@@ -1571,22 +1571,44 @@
   }
 }
 
-/* 시간 휠 */
+/* 시간 휠 — readout(가운데 위) + [시][:][분] 가운데 정렬. 콜론은 선택 밴드 높이에 맞춘다. */
 .dtp-time {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 6px;
-  margin: 12px 0 4px;
-}
-.dtp-wheel-col {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
+  gap: 10px;
+  margin: 14px 0 2px;
+}
+.dtp-readout {
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f3f0fb, #ece6fa);
+  color: #5b4aa6;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+}
+.dtp-wheels {
+  display: flex;
+  align-items: center; /* 콜론을 휠 wrap(밴드) 세로중앙에 맞춤 — cap은 absolute라 높이에서 빠짐 */
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px; /* 위 cap(시/분) 자리 */
+}
+.dtp-wheel-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .dtp-wheel-cap {
-  font-size: 10px;
+  position: absolute;
+  top: -18px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 11px;
   font-weight: 800;
   color: #9a8fc0;
 }
@@ -1645,21 +1667,10 @@
   transform: scale(1.18);
 }
 .dtp-colon {
-  margin-top: 32px;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 900;
-  color: #6b5bd6;
-}
-.dtp-time-readout {
-  margin-top: 30px;
-  margin-left: 4px;
-  padding: 5px 11px;
-  border-radius: 999px;
-  background: #f3f0fb;
-  color: #6b5bd6;
-  font-size: 13px;
-  font-weight: 800;
-  white-space: nowrap;
+  color: #b0a4dc;
+  line-height: 1;
 }
 .dtp-foot {
   display: flex;
