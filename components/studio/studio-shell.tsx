@@ -1174,7 +1174,10 @@ export function StudioShell({
       !(
         el?.closest(".event-editor-panel") ||
         el?.closest(".studio-day") ||
-        el?.closest(".private-toggle")
+        el?.closest(".private-toggle") ||
+        // 날짜·시간 선택기는 portal로 body에 떠 에디터 DOM 밖이지만, 닫기 대상이 아니다.
+        el?.closest(".dtp-pop-backdrop") ||
+        el?.closest(".dtp-sheet-backdrop")
       );
     let downOutside = false;
     const onDown = (e: PointerEvent) => {
