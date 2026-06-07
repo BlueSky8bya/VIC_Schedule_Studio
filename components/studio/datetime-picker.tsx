@@ -155,7 +155,10 @@ export function DateTimePicker({
     setViewM(cur.m);
     if (triggerRef.current) {
       const r = triggerRef.current.getBoundingClientRect();
-      setAnchor({ left: r.left, top: r.bottom + 6, width: r.width });
+      // 화면 밖으로 안 나가게 가둔다(폭 ~320, 높이 ~420).
+      const left = Math.max(8, Math.min(r.left, window.innerWidth - 332));
+      const top = Math.min(r.bottom + 6, Math.max(8, window.innerHeight - 430));
+      setAnchor({ left, top, width: r.width });
     }
     hapticTick();
     setOpen(true);
