@@ -934,9 +934,17 @@ html[data-reduce-motion] .sticker-anim-pulse {
 }
 
 /* ── #28 눈 편한 테마(eye comfort) ─────────────────────────────────────────
-   오래 보는 작업자용 — 전체 채도·눈부심을 살짝 낮춘다(글자 대비는 유지). filter를 'html'에만
-   걸어 fixed/sticky의 컨테이닝 블록을 깨지 않는다(html=뷰포트라 위치 변동 없음). 캡쳐(포스터
-   PNG)는 Playwright가 별도 컨텍스트라 영향 없음. */
+   오래 보는 작업자용 — 채도·눈부심을 낮추고 + 청색광(블루라이트)을 줄여 따뜻하게 만든다.
+   눈 피로의 핵심은 밝기보다 청색광이라, sepia로 살짝 데우고(흰 배경=크림 종이 톤) 밝기를 조금
+   더 내려 눈부심을 줄인다. 글자 대비는 유지(legibility). filter를 'html'에만 걸어 fixed/sticky의
+   컨테이닝 블록을 깨지 않는다(html=뷰포트라 위치 변동 없음). 캡쳐(포스터 PNG)는 Playwright가
+   별도 컨텍스트라 영향 없음. prefers-contrast: more면 따뜻함을 줄여 대비 우선. */
 html[data-eye-comfort] {
-  filter: saturate(0.82) brightness(0.985);
+  filter: saturate(0.8) brightness(0.96) sepia(0.1);
+}
+/* 고대비 선호 사용자에겐 sepia(청색광 감소)를 줄여 또렷함을 우선한다. */
+@media (prefers-contrast: more) {
+  html[data-eye-comfort] {
+    filter: saturate(0.88) brightness(0.97) sepia(0.04);
+  }
 }
