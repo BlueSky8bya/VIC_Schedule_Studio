@@ -1369,14 +1369,15 @@
 }
 
 /* 웹 팝오버 */
+/* 모바일 편집 시트(z-index 85)·모달보다 위에 떠야 한다 — 최상위로. */
 .dtp-pop-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 10000;
 }
 .dtp-pop {
   position: fixed;
-  z-index: 81;
+  z-index: 10001;
   width: 320px;
   max-width: calc(100vw - 24px);
 }
@@ -1403,7 +1404,7 @@
 .dtp-sheet-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 10000;
   display: flex;
   align-items: flex-end;
   background: rgba(20, 12, 40, 0.42);
