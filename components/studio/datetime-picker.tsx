@@ -171,9 +171,13 @@ export function DateTimePicker({
       if (e.key === "Escape") close();
     };
     document.addEventListener("keydown", onKey);
-    // 웹 팝오버는 스크롤 시 위치가 어긋나므로 닫는다(모바일 시트는 고정이라 유지).
-    const onScroll = () => {
-      if (!mobile) close();
+    // 웹 팝오버는 바깥 스크롤로 위치가 어긋나면 닫는다(모바일 시트는 고정이라 유지). 단, 시간 휠
+    // 내부 스크롤(피커 안)은 무시한다 — 안 그러면 휠이 마운트 때 위치 맞추며 낸 scroll에 즉시 닫힌다.
+    const onScroll = (e: Event) => {
+      if (mobile) return;
+      const t = e.target as HTMLElement | null;
+      if (t && typeof t.closest === "function" && t.closest(".dtp-pop, .dtp-panel")) return;
+      close();
     };
     window.addEventListener("scroll", onScroll, true);
     return () => {
