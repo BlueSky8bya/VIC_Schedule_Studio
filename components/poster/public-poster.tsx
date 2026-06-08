@@ -2114,12 +2114,6 @@ export function PublicPoster({
   // 첫 진입(세로 스태거)과 달 이동(가로 슬라이드)을 구분 — 실제로 달을 넘긴 뒤에만 슬라이드를 켠다.
   // (안 그러면 popIntro가 꺼질 때 data-enter 슬라이드가 다시 트리거돼 몇 초 뒤 한 번 더 슬라이딩됨.)
   const didNavigateRef = useRef(false);
-  // 페이지 이동(편집실로 돌아가기·계정 변경)은 서버 왕복이라 즉시 안 바뀐다 → 눌렀다는 신호를 띄운다.
-  const [navMsg, setNavMsg] = useState<string | null>(null);
-  function startNav(message: string) {
-    setNavMsg(message);
-    window.setTimeout(() => setNavMsg(null), 8000);
-  }
   // 모바일 익명 로그인: /login 카드를 거치지 않고 클릭 시점에 환경을 분기한다.
   //  · 일반 브라우저 → 기본 폼 제출(/api/auth/login) → 곧장 구글 계정 선택창.
   //  · 안드로이드 웹뷰(숲·카톡) → 크롬 인텐트로 /login을 열면 거기서 자동 제출 → 구글 계정 선택창.
@@ -2128,12 +2122,10 @@ export function PublicPoster({
     hapticTick();
     const det = detectInAppBrowser(typeof navigator !== "undefined" ? navigator.userAgent : "");
     if (!det.inApp) {
-      startNav("Google 계정으로 이동 중…");
       return; // 폼 기본 제출(action=/api/auth/login)에 맡긴다.
     }
     e.preventDefault();
     if (det.android) {
-      startNav("Chrome으로 여는 중…");
       // 크롬이 /api/auth/login(GET)을 열면 카드 렌더 없이 서버가 곧장 구글로 302 → 계정 선택창.
       const target = `${window.location.origin}/api/auth/login?next=${encodeURIComponent("/")}`;
       const bare = target.replace(/^https?:\/\//, "");
@@ -2144,7 +2136,6 @@ export function PublicPoster({
       }, 2500);
       window.location.replace(`intent://${bare}#Intent;scheme=https;package=com.android.chrome;end`);
     } else {
-      startNav("로그인 안내 화면으로 이동 중…");
       window.location.assign(`/login?next=${encodeURIComponent("/")}`);
     }
   }
@@ -2745,12 +2736,6 @@ export function PublicPoster({
       className={`poster-page${accountSwitch ? " poster-readonly" : ""}`}
       data-poster-theme={posterTheme}
     >
-      {navMsg ? (
-        <div className="private-loading" role="status" aria-live="polite">
-          <span className="private-loading-spinner" aria-hidden="true" />
-          {navMsg}
-        </div>
-      ) : null}
       {celebrate ? (
         <div className="celebrate-overlay" aria-hidden="true">
           {confetti.map((c, i) => (
@@ -2878,7 +2863,6 @@ export function PublicPoster({
                     onClick={() => {
                       // 꾸미기에서 보던 달을 편집실 월(sy/sm)로 넘겨, 편집실이 그 달로 열리게 한다.
                       writeViewCookie({ sy: view.year, sm: view.month });
-                      startNav(isNarrow ? "편집실 여는 중…" : "편집실로 가는 중입니다…");
                     }}
                   >
                     <ChevronLeft aria-hidden="true" size={16} />
