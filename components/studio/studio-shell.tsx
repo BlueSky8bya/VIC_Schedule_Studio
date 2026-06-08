@@ -2924,7 +2924,7 @@ export function StudioShell({
                     {content.map(legendBtn)}
                     {mods.length > 0 ? (
                       <>
-                        <span className="agenda-legend-sub">방식</span>
+                        <span className="agenda-legend-sub">형식</span>
                         {mods.map(legendBtn)}
                       </>
                     ) : null}
@@ -4509,7 +4509,7 @@ export function StudioShell({
 
             <section className="tag-picker" aria-label="태그 선택">
               <h3>
-                태그 <span className="tag-picker-hint">최대 {maxEventTags}개 · 대분류 색으로 표시</span>
+                태그 <span className="tag-picker-hint">최대 {maxEventTags}개</span>
               </h3>
               <TagPicker
                 disabled={!canEdit}

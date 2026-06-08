@@ -1180,7 +1180,7 @@ export function InsightsDashboard({
           );
         })}
         <StackTrendChart data={trend.contentByTag} showLegend={false} title="🗓️ 콘텐츠별" />
-        <StackTrendChart data={trend.modifierByTag} showLegend={false} title="🎛️ 방식별" />
+        <StackTrendChart data={trend.modifierByTag} showLegend={false} title="🎛️ 형식별" />
         <StackTrendChart
           data={trend.heartsByTag}
           rankLabel="인기 높은 순"

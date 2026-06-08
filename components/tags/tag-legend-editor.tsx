@@ -367,7 +367,7 @@ export function TagLegendEditor({
         <div className="tlg-group">{contentTops.map(legendItem)}</div>
         {modifierTops.length > 0 ? (
           <div className="tlg-group tlg-mod">
-            <span className="tlg-label">방식</span>
+            <span className="tlg-label">형식</span>
             <div className="tlg-chips">{modifierTops.map(legendItem)}</div>
           </div>
         ) : null}
@@ -405,7 +405,7 @@ export function TagLegendEditor({
     const tag: BroadcastTag = {
       id: tempId,
       tagKey: tempId,
-      displayName: kind === "modifier" ? "새 방식" : "새 태그",
+      displayName: kind === "modifier" ? "새 형식" : "새 태그",
       colorKey: gen.key,
       sortOrder: 9999,
       isDefault: false,
@@ -677,12 +677,12 @@ export function TagLegendEditor({
               onClick={() => toggleKind(tag.id)}
               title={
                 d.kind === "modifier"
-                  ? "방식(합방·시참 등) — 누르면 콘텐츠로"
-                  : "콘텐츠 — 누르면 방식으로(셀 색 대신 점·통계 제외)"
+                  ? "형식(합방·시참 등) — 누르면 콘텐츠로"
+                  : "콘텐츠 — 누르면 형식으로(셀 색 대신 점·통계 제외)"
               }
               type="button"
             >
-              {d.kind === "modifier" ? "방식" : "콘텐츠"}
+              {d.kind === "modifier" ? "형식" : "콘텐츠"}
             </button>
             <div className="tag-editor-swatches">
             {/* kind별 색 풀 분리 — 콘텐츠는 무늬 색만, 방식은 단색만 고를 수 있다. */}
@@ -734,7 +734,7 @@ export function TagLegendEditor({
         <span className="tag-tip">
           <Palette aria-hidden="true" size={13} />
           <b>콘텐츠</b>는 칸을 채우는 색<span className="tip-web">·무늬(무슨 방송)</span>,{" "}
-          <b>방식</b>은 그 위 작은 점<span className="tip-web">(어떻게)</span>
+          <b>형식</b>은 그 위 작은 점<span className="tip-web">(어떻게)</span>
         </span>
         <span className="tag-tip">
           <GripVertical aria-hidden="true" size={13} />
@@ -778,7 +778,7 @@ export function TagLegendEditor({
             </div>
             <div className="tag-editor-section is-mod">
               <div className="tag-editor-section-head">
-                <span className="tag-editor-section-name">방식</span>
+                <span className="tag-editor-section-name">형식</span>
                 <span className="tag-editor-section-sub">콘텐츠에 얹는 표식 (합방·시참 등)</span>
               </div>
               {modifierTops.length > 0 ? (
@@ -792,7 +792,7 @@ export function TagLegendEditor({
                 onClick={() => addTag("modifier")}
                 type="button"
               >
-                <Plus aria-hidden="true" size={15} /> 방식 추가
+                <Plus aria-hidden="true" size={15} /> 형식 추가
               </button>
             </div>
           </>

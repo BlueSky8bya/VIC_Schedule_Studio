@@ -111,7 +111,7 @@ export async function saveTagsAction(input: {
   }
   for (const arr of byKind.values()) {
     if (new Set(arr).size !== arr.length) {
-      return { ok: false, error: "같은 종류(콘텐츠/방식) 안에서 같은 색을 두 태그에 쓸 수 없습니다." };
+      return { ok: false, error: "같은 종류(콘텐츠/형식) 안에서 같은 색을 두 태그에 쓸 수 없습니다." };
     }
   }
 

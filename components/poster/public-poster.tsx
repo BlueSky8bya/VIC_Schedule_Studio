@@ -2464,7 +2464,7 @@ export function PublicPoster({
                   {content.map(legendBtn)}
                   {mods.length > 0 ? (
                     <>
-                      <span className="agenda-legend-sub">방식</span>
+                      <span className="agenda-legend-sub">형식</span>
                       {mods.map(legendBtn)}
                     </>
                   ) : null}
@@ -3729,7 +3729,7 @@ export function PublicPoster({
                     {content.map(legendBtn)}
                     {mods.length > 0 ? (
                       <>
-                        <strong className="legend-subhead">방식</strong>
+                        <strong className="legend-subhead">형식</strong>
                         {/* 방식은 2열로 — 세로 높이를 아껴 아래 ♥ 안내가 들어갈 자리를 만든다(웹). */}
                         <div className="legend-mods">{mods.map(legendBtn)}</div>
                       </>
