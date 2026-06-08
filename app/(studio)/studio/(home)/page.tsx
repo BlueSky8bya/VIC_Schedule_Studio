@@ -5,13 +5,16 @@ import { isMobileUserAgent } from "@/lib/auth/in-app-browser";
 import { getStudioSchedule } from "@/lib/schedules/studio-loader";
 import { getUnlockState } from "@/lib/private-layer/unlock";
 import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
+import { timed } from "@/lib/perf/perf";
 
 export default async function StudioPage() {
   const [actor, unlock] = await Promise.all([
-    resolveCurrentActor("vic"),
-    getUnlockState("vic")
+    timed("page:/studio actor", () => resolveCurrentActor("vic")),
+    timed("page:/studio unlock", () => getUnlockState("vic"))
   ]);
-  const schedule = await getStudioSchedule("vic", { actor, unlock });
+  const schedule = await timed("page:/studio studioSchedule", () =>
+    getStudioSchedule("vic", { actor, unlock })
+  );
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
   const narrow = isMobileUserAgent((await headers()).get("user-agent") ?? "");
 

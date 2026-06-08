@@ -12,6 +12,7 @@ import { PRODUCT_TIMEZONE, isPosterThemeKey } from "@/lib/domain/schedule-types"
 import type { PosterThemeKey } from "@/lib/domain/schedule-types";
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
+import { timed } from "@/lib/perf/perf";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { isSupabaseConfigured } from "@/lib/auth/config";
@@ -156,7 +157,8 @@ const loadPublicScheduleData = unstable_cache(
 
     // RLS 공개 정책이 1차 방어선이지만, 쿼리에서도 명시적으로 공개분만 조회한다.
     const [tagsRes, paletteRes, eventsRes, campaignsRes, stickersRes, assetsRes, heartsRes, eventHeartsRes] =
-      await Promise.all([
+      await timed("publicSchedule:db(8 parallel queries)", () =>
+        Promise.all([
         // 모든 공개 쿼리를 이 캘린더로 한정한다. RLS는 공개 행을 허용할 뿐 캘린더별로
         // 막지 않으므로, 캘린더가 2개 이상이 되면 application-level 스코프가 없으면 다른
         // 공개 캘린더의 태그·팔레트·일정·스티커가 섞인다(공개 데이터끼리의 교차 혼입).
@@ -208,7 +210,8 @@ const loadPublicScheduleData = unstable_cache(
           .maybeSingle(),
         // A: 일정별 관심 집계(공개 안전 — user_id 비노출). 함수가 공개 일정만 집계한다.
         supabase.rpc("get_event_heart_counts", { p_calendar_id: calendar.id })
-      ]);
+        ])
+      );
 
     // 일정 id → 관심 집계 수 맵. 인기 배지 판정에 쓴다.
     const heartCountByEvent = new Map<string, number>(

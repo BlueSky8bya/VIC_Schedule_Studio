@@ -8,9 +8,10 @@ import { isSupabaseConfigured } from "@/lib/auth/config";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
+import { timed } from "@/lib/perf/perf";
 
 export default async function HomePage() {
-  const actor = await resolveCurrentActor("vic");
+  const actor = await timed("page:/ actor", () => resolveCurrentActor("vic"));
 
   // 새로고침 복원: 쿠키에서 직전 화면 상태를 읽어 서버 렌더 초기값으로 넘긴다(깜빡임 없음).
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
@@ -32,7 +33,7 @@ export default async function HomePage() {
         />
       );
     }
-    const schedule = await getPublicSchedule("vic");
+    const schedule = await timed("page:/ publicSchedule(anon)", () => getPublicSchedule("vic"));
     return (
       <PublicPoster
         accountSwitch
@@ -54,7 +55,7 @@ export default async function HomePage() {
     redirect("/studio");
   }
 
-  const schedule = await getPublicSchedule("vic");
+  const schedule = await timed("page:/ publicSchedule(viewer)", () => getPublicSchedule("vic"));
 
   // 일반 시청자도 보던 달(py/pm)을 새로고침 때 복원한다.
   return (
