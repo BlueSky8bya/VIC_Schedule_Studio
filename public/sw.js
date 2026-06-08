@@ -34,15 +34,15 @@ self.addEventListener("activate", (event) => {
 async function refreshSnapshot() {
   const t = Date.now();
   if (t - lastSnapshotAt < SNAPSHOT_MIN_INTERVAL) return;
-  lastSnapshotAt = t;
   try {
     const res = await fetch("/", { credentials: "omit", redirect: "manual", cache: "no-store" });
     if (res && res.status === 200 && !res.redirected) {
       const cache = await caches.open(CACHE);
       await cache.put(SNAPSHOT_KEY, res.clone());
+      lastSnapshotAt = t; // 성공했을 때만 throttle 시작 — 실패(오프라인) 시 다음 네비에서 즉시 재시도.
     }
   } catch {
-    /* 오프라인 등 — 다음 기회에 갱신 */
+    /* 오프라인 등 — throttle 안 잠그고 다음 기회에 즉시 재시도 */
   }
 }
 
