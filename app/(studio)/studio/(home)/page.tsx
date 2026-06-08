@@ -1,7 +1,4 @@
 import { cookies, headers } from "next/headers";
-// 스튜디오 CSS는 여기(StudioShell 렌더 페이지)에서 page-level import → <head> 렌더 차단으로 올라가
-// 모바일 첫 진입 FOUC 방지. 공개 `/`(루트)는 이 import가 없어 스튜디오 CSS를 받지 않는다.
-import "@/components/studio/studio-shell.css";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { isMobileUserAgent } from "@/lib/auth/in-app-browser";
