@@ -1518,6 +1518,25 @@
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
+  animation: dtp-grid-in 0.2s var(--ease) both; /* 월 바뀔 때 살짝 슬라이드(좌우 스와이프 손맛) */
+}
+@keyframes dtp-grid-in {
+  from {
+    opacity: 0;
+    transform: translateX(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.dtp-cal {
+  touch-action: pan-y; /* 세로 스크롤은 두고, 가로 스와이프는 우리가 처리(월 이동) */
+}
+@media (prefers-reduced-motion: reduce) {
+  .dtp-grid {
+    animation: none;
+  }
 }
 .dtp-cell {
   aspect-ratio: 1;
@@ -1659,8 +1678,13 @@
   scroll-snap-type: y mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
+  cursor: grab; /* 마우스로 잡아 촤르륵 굴리기 */
+  user-select: none;
   -webkit-mask-image: linear-gradient(180deg, transparent, #000 28%, #000 72%, transparent);
   mask-image: linear-gradient(180deg, transparent, #000 28%, #000 72%, transparent);
+}
+.dtp-wheel:active {
+  cursor: grabbing;
 }
 .dtp-wheel::-webkit-scrollbar {
   display: none;
@@ -1730,7 +1754,7 @@
   color: #fff;
   box-shadow: 0 3px 10px rgb(107 91 214 / 35%);
 }
-/* 모바일 시트에선 달력·휠·버튼을 키워 손가락에 맞춘다. */
+/* 모바일 시트 — 달력·휠·버튼을 키우고, 시간 영역은 폭을 꽉 채운 카드로(빈 공간 낭비 제거). */
 @media (max-width: 640px) {
   .dtp-cell {
     font-size: 15px;
@@ -1743,8 +1767,33 @@
     padding: 13px;
     font-size: 14px;
   }
-  .dtp-time-readout {
-    font-size: 14px;
+  /* 시간 카드 — 시트 폭을 꽉 채우고 안에서 시·분 휠을 넓게 벌려 빈 공간을 없앤다. */
+  .dtp-time {
+    width: 100%;
+    margin: 14px 0 2px;
+    padding: 12px 6px 8px;
+    border-radius: 16px;
+    background: #faf8ff;
+    border: 1px solid #efeaf9;
+  }
+  .dtp-readout {
+    font-size: 17px;
+    padding: 6px 20px;
+  }
+  .dtp-wheels {
+    width: 100%;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 20px;
+  }
+  .dtp-wheel-wrap {
+    width: 84px; /* 넓혀 손가락에 맞게 + 좌우 빈 공간 축소 */
+  }
+  .dtp-wheel-item {
+    font-size: 19px;
+  }
+  .dtp-wheel-band {
+    background: #efe7fb;
   }
 }
 @media (prefers-reduced-motion: reduce) {

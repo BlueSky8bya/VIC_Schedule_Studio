@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -91,18 +91,56 @@ function Wheel({
     }, 90);
   };
 
+  // 마우스로 잡아 위아래로 긁으면 촤르륵 굴러간다(웹). 터치는 네이티브 스크롤 그대로.
+  const drag = useRef<{ y: number; top: number; moved: boolean } | null>(null);
+  const justDragged = useRef(false); // 긁은 직후의 우발 click 1회 무시
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.pointerType !== "mouse") return; // 터치/펜은 네이티브 스크롤
+    const el = ref.current;
+    if (!el) return;
+    drag.current = { y: e.clientY, top: el.scrollTop, moved: false };
+    el.setPointerCapture?.(e.pointerId);
+  };
+  const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    const el = ref.current;
+    if (!d || !el) return;
+    if (Math.abs(e.clientY - d.y) > 2) d.moved = true;
+    el.scrollTop = d.top - (e.clientY - d.y); // 끄는 방향대로 즉시 스크롤 → onScroll이 스냅/햅틱 처리
+  };
+  const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const d = drag.current;
+    if (!d) return;
+    if (d.moved) justDragged.current = true;
+    drag.current = null;
+    ref.current?.releasePointerCapture?.(e.pointerId);
+  };
+
   return (
     <div className="dtp-wheel-col">
       <span className="dtp-wheel-cap">{label}</span>
       <div className="dtp-wheel-wrap">
         <div className="dtp-wheel-band" aria-hidden="true" />
-        <div className="dtp-wheel" onScroll={onScroll} ref={ref}>
+        <div
+          className="dtp-wheel"
+          onPointerCancel={endDrag}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onScroll={onScroll}
+          ref={ref}
+        >
           <div className="dtp-wheel-pad" />
           {Array.from({ length: count }, (_, i) => (
             <button
               className={`dtp-wheel-item${i === active ? " on" : ""}`}
               key={i}
               onClick={() => {
+                // 긁다가 멈춘 직후의 우발 클릭은 1회 무시.
+                if (justDragged.current) {
+                  justDragged.current = false;
+                  return;
+                }
                 const el = ref.current;
                 if (el) el.scrollTo({ top: i * ITEM, behavior: "smooth" });
                 hapticTick();
@@ -123,14 +161,21 @@ function Wheel({
 export function DateTimePicker({
   value,
   onChange,
-  disabled
+  disabled,
+  open: openProp,
+  onOpenChange
 }: {
   value: string;
   onChange: (v: string) => void;
   disabled?: boolean;
+  // open/onOpenChange를 주면 열림 상태를 부모가 제어한다(모바일 뒤로가기 스택에 한 층으로 넣기 위함).
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const p = parse(value);
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (v: boolean) => (onOpenChange ? onOpenChange(v) : setOpenState(v));
   const [mobile, setMobile] = useState(false);
   const [anchor, setAnchor] = useState<{ left: number; top: number; width: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -196,9 +241,30 @@ export function DateTimePicker({
   // 현재 선택(없으면 오늘 21:00을 기본으로 채워 선택 시작점으로).
   const base: Parts = p ?? { ...nowKstParts(), hh: 21, mm: 0 };
 
+  const justSwiped = useRef(false);
   const setDay = (d: number) => {
+    if (justSwiped.current) {
+      justSwiped.current = false; // 좌우로 민 직후의 우발 날짜 클릭은 무시
+      return;
+    }
     onChange(fmtValue({ y: viewY, m: viewM, d, hh: base.hh, mm: base.mm }));
     hapticTick();
+  };
+  // 달력 좌우 스와이프(또는 마우스 드래그)로 월 이동 — 왼쪽으로 밀면 다음 달.
+  const calSwipe = useRef<{ x: number; y: number } | null>(null);
+  const onCalDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    calSwipe.current = { x: e.clientX, y: e.clientY };
+  };
+  const onCalUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const s = calSwipe.current;
+    calSwipe.current = null;
+    if (!s) return;
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+      justSwiped.current = true;
+      stepMonth(dx < 0 ? 1 : -1);
+    }
   };
   const setHour = (hh: number) => onChange(fmtValue({ ...base, hh }));
   const setMin = (mm: number) => onChange(fmtValue({ ...base, mm }));
@@ -253,7 +319,7 @@ export function DateTimePicker({
         </button>
       </div>
       <div className="dtp-body">
-        <div className="dtp-cal">
+        <div className="dtp-cal" onPointerDown={onCalDown} onPointerUp={onCalUp}>
           <div className="dtp-wdrow" aria-hidden="true">
             {WD.map((w, i) => (
               <span className={i === 0 ? "sun" : i === 6 ? "sat" : ""} key={w}>
@@ -261,7 +327,7 @@ export function DateTimePicker({
               </span>
             ))}
           </div>
-          <div className="dtp-grid">
+          <div className="dtp-grid" key={`${viewY}-${viewM}`}>
             {cells.map((d, i) => {
               if (d === null) return <span className="dtp-cell empty" key={`e${i}`} />;
               const sel = p && p.y === viewY && p.m === viewM && p.d === d;

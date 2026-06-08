@@ -416,6 +416,9 @@ export function StudioShell({
   const [restMenu, setRestMenu] = useState<
     { isoDate: string; x: number; y: number; hasRest: boolean } | null
   >(null);
+  // 떡밥 공개시각 선택기(날짜·시간 팝업) 열림 — 모바일 뒤로가기 스택에 한 층으로 넣어, 뒤로가기 때
+  // 이 팝업만 닫히고 새 일정 편집 카드로 돌아오게 한다(편집 카드까지 닫히지 않게).
+  const [teaserPickerOpen, setTeaserPickerOpen] = useState(false);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
@@ -1256,7 +1259,8 @@ export function StudioShell({
   // 히스토리 스택 깊이 = 오버레이(편집 시트·공지) + 매니저/작업자 시트 + 비번 팝업 + 미리보기.
   // viewerMode도 한 칸 쌓아야, 휴대폰 뒤로가기를 누를 때 로그인 흐름으로 빠지지 않고
   // 편집실로 돌아온다. (스크롤 잠금은 overlayLocked만 사용 — 미리보기 자체 스크롤은 살린다.)
-  const stackDepth = overlayDepth + sheetDepth + passcodeDepth + (viewerMode ? 1 : 0);
+  const stackDepth =
+    overlayDepth + sheetDepth + passcodeDepth + (viewerMode ? 1 : 0) + (teaserPickerOpen ? 1 : 0);
   const depthRef = useRef(0);
   const ignorePopRef = useRef(0); // 우리가 정리용으로 부른 history.back의 popstate는 무시
   const backClosingRef = useRef(false); // 뒤로가기로 닫히는 중인지
@@ -1350,8 +1354,10 @@ export function StudioShell({
       }
       backClosingRef.current = true;
       // 맨 위 레이어 하나만 닫는다. 보통 동시에 하나만 열리지만, 겹쳐도 위→아래 순으로.
-      // 비번 팝업이 가장 위(다른 모달 위에도 뜸) → 가장 먼저 닫는다.
-      if (passcodeModal !== null) {
+      // 떡밥 공개시각 팝업이 편집 카드 위에 떠 있으면 그것부터 닫는다(편집 카드는 유지).
+      if (teaserPickerOpen) {
+        setTeaserPickerOpen(false);
+      } else if (passcodeModal !== null) {
         setPasscodeModal(null);
       } else if (modalIsStackable) {
         setModal(null);
@@ -1372,7 +1378,15 @@ export function StudioShell({
     }
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [passcodeModal, modalIsStackable, tagSheetId, supportSheetId, mobileEditId, viewerMode]);
+  }, [
+    teaserPickerOpen,
+    passcodeModal,
+    modalIsStackable,
+    tagSheetId,
+    supportSheetId,
+    mobileEditId,
+    viewerMode
+  ]);
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: StudioScheduleEvent) {
@@ -3604,6 +3618,8 @@ export function StudioShell({
                       <DateTimePicker
                         disabled={!canEdit}
                         onChange={(v) => setForm((c) => ({ ...c, teaserRevealAt: v }))}
+                        onOpenChange={setTeaserPickerOpen}
+                        open={teaserPickerOpen}
                         value={form.teaserRevealAt}
                       />
                     ) : null}
@@ -4440,6 +4456,8 @@ export function StudioShell({
                     <DateTimePicker
                       disabled={!canEdit}
                       onChange={(v) => setForm((c) => ({ ...c, teaserRevealAt: v }))}
+                      onOpenChange={setTeaserPickerOpen}
+                      open={teaserPickerOpen}
                       value={form.teaserRevealAt}
                     />
                     <em className="teaser-when-hint">
