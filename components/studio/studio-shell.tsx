@@ -1819,13 +1819,16 @@ export function StudioShell({
       dropDateRef.current = iso;
       setDropDate(iso);
     }
-    // 같은/다른 날 안에서 어느 카드 위·아래에 놓을지 판단(순서 변경). 카드 위쪽 절반=그 앞,
-    // 아래쪽 절반=그 뒤. 카드가 아니면(빈 공간) null → 맨 끝.
+    // 같은/다른 날 안에서 어느 카드 위·아래에 놓을지 판단(순서 변경). 카드에 끌어다 놓는 가장
+    // 흔한 의도는 '그 아래(뒤)에 추가'다 → '앞(위)'은 카드 위쪽 40%에서만, 나머지 60%는 '뒤'로
+    // 친다. (정확히 절반으로 나누면 카드 윗부분을 살짝만 스쳐도 선이 카드 위 틈으로 올라가
+    // '카드 중간/위'에 뜬 것처럼 보였다 — 대부분의 hover에서 카드 아래에 뜨게 한다.)
+    // 카드가 아니면(빈 공간) null → 맨 끝.
     const pillEl = under?.closest("[data-eventid]") as HTMLElement | null;
     const overId = pillEl?.getAttribute("data-eventid") ?? null;
     if (overId && overId !== info.id) {
       const r = pillEl!.getBoundingClientRect();
-      dropOverRef.current = { id: overId, after: e.clientY > r.top + r.height / 2 };
+      dropOverRef.current = { id: overId, after: e.clientY > r.top + r.height * 0.4 };
     } else {
       dropOverRef.current = null;
     }
