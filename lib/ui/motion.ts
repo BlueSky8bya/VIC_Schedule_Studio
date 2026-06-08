@@ -36,14 +36,15 @@ export function setReduceMotion(on: boolean): void {
 
 // #28 눈 편한 테마(eye comfort) — 방송 전후 오래 보는 작업자용. 켜면 <html data-eye-comfort>가
 // 붙어 CSS가 전체 채도·눈부심을 살짝 낮춘다(글자 대비는 유지). reduce-motion과 같은 결의 설정.
-const EYE_COMFORT_KEY = "vic.eyeComfort"; // localStorage: "on"이면 켬(기본 OFF)
+const EYE_COMFORT_KEY = "vic.eyeComfort"; // localStorage: 미설정이면 기본 ON, "off"만 끔
 
 export function eyeComfortEnabled(): boolean {
-  if (typeof window === "undefined") return false;
+  if (typeof window === "undefined") return true;
   try {
-    return window.localStorage.getItem(EYE_COMFORT_KEY) === "on";
+    // 기본 ON — 사용자가 명시적으로 끄지(off) 않았으면 켠 상태.
+    return window.localStorage.getItem(EYE_COMFORT_KEY) !== "off";
   } catch {
-    return false;
+    return true;
   }
 }
 

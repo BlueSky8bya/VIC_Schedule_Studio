@@ -72,7 +72,7 @@ export default async function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var d=document.documentElement;if(localStorage.getItem('vic.reduceMotion')==='on')d.setAttribute('data-reduce-motion','1');if(localStorage.getItem('vic.eyeComfort')==='on')d.setAttribute('data-eye-comfort','1')}catch(e){}"
+              "try{var d=document.documentElement;if(localStorage.getItem('vic.reduceMotion')==='on')d.setAttribute('data-reduce-motion','1');if(localStorage.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort','1')}catch(e){}"
           }}
         />
         {children}
