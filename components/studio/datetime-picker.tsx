@@ -147,7 +147,7 @@ function Wheel({
                 className={`dtp-wheel-item${i === active ? " on" : ""}`}
                 key={i}
                 onClick={() => {
-                  // 긁다가 멈춘 직후의 우발 클릭은 1회 무시. 그 외엔 어느 칸(±2 포함)이든 눌러 선택.
+                  // 긁다가 멈춘 직후의 우발 클릭은 1회 무시. 그 외엔 어느 칸(±1·±2 포함)이든 눌러 선택.
                   if (justDragged.current) {
                     justDragged.current = false;
                     return;
@@ -157,13 +157,19 @@ function Wheel({
                   hapticTick();
                   onChange(i);
                 }}
-                style={{
-                  transform: `perspective(420px) rotateX(${dist * -22}deg) scale(${scale})`,
-                  opacity
-                }}
                 type="button"
               >
-                {z2(i)}
+                {/* 다이얼 원근 변형은 '안쪽 글자'에만 — 버튼(클릭 영역)은 36px 전체라 ±1·±2도 정확히
+                    눌러 선택된다. */}
+                <span
+                  className="dtp-wheel-digit"
+                  style={{
+                    transform: `perspective(420px) rotateX(${dist * -22}deg) scale(${scale})`,
+                    opacity
+                  }}
+                >
+                  {z2(i)}
+                </span>
               </button>
             );
           })}

@@ -3599,10 +3599,8 @@ export function StudioShell({
               </div>
               <div className="me-sep" />
               {renderSupportEditor()}
-              {/* 떡밥(가림) — 공개 일정에만. 공개 시각 전까진 시청자에게 ??? + 카운트다운만. */}
+              {/* 떡밥(가림) — 공개 일정에만. 구분선 없이 미정·업도움 칩 바로 아래(웹과 순서 통일). */}
               {form.visibilityScope === "public" ? (
-                <>
-                  <div className="me-sep" />
                   <div className="me-row me-row-stack">
                     <button
                       aria-pressed={form.teaser}
@@ -3627,7 +3625,6 @@ export function StudioShell({
                       />
                     ) : null}
                   </div>
-                </>
               ) : null}
             </div>
 
@@ -3842,7 +3839,7 @@ export function StudioShell({
           ) : (
             <button className="button" onClick={() => enterViewerMode()} type="button">
               <Eye aria-hidden="true" size={16} />
-              시청자 화면 미리보기
+              시청자 화면 보여주기
             </button>
           )}
           {actor.isAuthenticated ? (
@@ -4434,6 +4431,9 @@ export function StudioShell({
               )}
             </div>
 
+            {/* 옵션 칩 순서(웹·모바일 통일): 미정 → 업도움 → 떡밥 */}
+            {renderSupportEditor()}
+
             {/* 떡밥(가림) — 공개 일정에만. 켜고 공개 시각을 정하면 그 전까진 시청자에게 제목·태그가
                 ??? 로 가려지고 카운트다운만 보인다. 실제 내용은 서버가 공개 시각 전엔 안 내보냄. */}
             {form.visibilityScope === "public" ? (
@@ -4469,8 +4469,6 @@ export function StudioShell({
                 ) : null}
               </div>
             ) : null}
-
-            {renderSupportEditor()}
 
             <section className="tag-picker" aria-label="태그 선택">
               <h3>

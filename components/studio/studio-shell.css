@@ -1227,31 +1227,44 @@
 
 /* ── 옵션 칩(토글 대체) — 떡밥·미정·업도움 공통. 스위치 노브 대신 '눌러서 켜는 칩': 켜지면
    색이 차고 체크가 톡 들어오며, 누를 때 살짝 들어가 '이 버튼을 누르고 있다'는 느낌. ───────── */
+/* 공개 범위(.scope-opt)와 같은 시각 언어 — 액센트 변수(--ac) + 선택 시 채움·링·체크. 한 가족. */
 .opt-chip {
+  --ac: #6b5bd6;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   width: 100%;
-  margin-top: 8px;
-  padding: 11px 13px;
+  margin-top: 10px;
+  padding: 12px 13px;
   border: 1.5px solid var(--line, #e7e3f2);
-  border-radius: 13px;
+  border-radius: 14px;
   background: #fff;
   font-size: 14px;
   font-weight: 800;
   color: #6b5b95;
   cursor: pointer;
   transition:
-    background var(--dur-2) var(--ease),
-    border-color var(--dur-2) var(--ease),
-    color var(--dur-2) var(--ease),
-    box-shadow var(--dur-2) var(--ease),
-    transform var(--dur-1) var(--ease);
+    background 0.18s var(--ease),
+    border-color 0.14s var(--ease),
+    color 0.18s var(--ease),
+    box-shadow 0.18s var(--ease),
+    transform 0.14s var(--ease);
 }
-.opt-chip:hover {
-  border-color: #d3c7f3;
+.opt-chip.teaser {
+  --ac: #7c6cf0;
 }
-.opt-chip:active {
+.opt-chip.tentative {
+  --ac: #e08407;
+}
+.opt-chip.support {
+  --ac: #0e9f6e;
+}
+.opt-chip:hover:not(:disabled):not(.on) {
+  border-color: color-mix(in srgb, var(--ac) 50%, var(--line, #e7e3f2));
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px -12px rgb(80 60 140 / 40%);
+}
+.opt-chip:active:not(:disabled) {
   transform: scale(0.97);
 }
 .opt-chip:disabled {
@@ -1280,12 +1293,23 @@
   font-weight: 900;
   color: transparent;
   transition:
-    background var(--dur-2) var(--ease),
-    border-color var(--dur-2) var(--ease),
-    color var(--dur-2) var(--ease),
+    background 0.18s var(--ease),
+    border-color 0.18s var(--ease),
+    color 0.18s var(--ease),
     transform var(--dur-1) var(--ease);
 }
+/* 선택 — 공개범위 카드와 동일: 액센트 채움 + 링 + 체크 톡 */
+.opt-chip.on {
+  border-color: var(--ac);
+  background: color-mix(in srgb, var(--ac) 12%, #fff);
+  color: color-mix(in srgb, var(--ac) 68%, #2a2540);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--ac) 20%, transparent),
+    0 10px 22px -14px var(--ac);
+}
 .opt-chip.on .opt-chip-mark {
+  background: var(--ac);
+  border-color: var(--ac);
   color: #fff;
   animation: opt-mark-pop 0.28s var(--ease);
 }
@@ -1300,41 +1324,13 @@
     transform: scale(1);
   }
 }
-/* 색상별 ON — 떡밥(보라)/미정(앰버)/업도움(그린) */
-.opt-chip.teaser.on {
-  background: #f1edfb;
-  border-color: #7c6cf0;
-  color: #4a3f72;
-  box-shadow: 0 2px 12px rgb(124 108 240 / 22%);
-}
-.opt-chip.teaser.on .opt-chip-mark {
-  background: #7c6cf0;
-  border-color: #7c6cf0;
-}
-.opt-chip.tentative.on {
-  background: #fdf3e0;
-  border-color: #e6a23c;
-  color: #92600c;
-  box-shadow: 0 2px 12px rgb(230 162 60 / 22%);
-}
-.opt-chip.tentative.on .opt-chip-mark {
-  background: #e6a23c;
-  border-color: #e6a23c;
-}
-.opt-chip.support.on {
-  background: #eef7e6;
-  border-color: #84b74f;
-  color: #4e7a28;
-  box-shadow: 0 2px 12px rgb(132 183 79 / 22%);
-}
-.opt-chip.support.on .opt-chip-mark {
-  background: #84b74f;
-  border-color: #84b74f;
-}
 @media (prefers-reduced-motion: reduce) {
   .opt-chip,
   .opt-chip-mark {
     transition: none;
+  }
+  .opt-chip:hover:not(:disabled):not(.on) {
+    transform: none;
   }
   .opt-chip.on .opt-chip-mark {
     animation: none;
@@ -1397,22 +1393,49 @@
 .teaser-toggle.on .teaser-toggle-sw::after {
   transform: translateX(14px);
 }
+/* 떡밥 공개시각 영역 — 떡밥 칩(보라) 아래로 자연스레 이어지는 인셋 카드(왼쪽 보라 띠로 연결). */
 .teaser-when {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 0 2px;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid #e7ddfb;
+  border-left: 3px solid #7c6cf0;
+  border-radius: 13px;
+  background: #f7f4fe;
 }
 .teaser-when-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
   font-size: 12px;
-  font-weight: 800;
-  color: #6b5b95;
+  font-weight: 900;
+  color: #5b4aa6;
 }
+.teaser-when-label::before {
+  content: "🕓";
+  font-size: 13px;
+}
+/* 설명 — 그냥 회색 텍스트가 아니라, 영역과 동화된 보라 톤 인포 노트(아이콘 + 옅은 바탕). */
 .teaser-when-hint {
+  display: flex;
+  gap: 7px;
+  align-items: flex-start;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgb(124 108 240 / 8%);
   font-size: 11.5px;
   font-style: normal;
-  color: #9a8fc0;
-  line-height: 1.4;
+  font-weight: 600;
+  color: #7a6cb8;
+  line-height: 1.5;
+}
+.teaser-when-hint::before {
+  content: "💡";
+  flex: none;
+  font-size: 13px;
+  line-height: 1.3;
 }
 /* 모바일 에디터 떡밥 */
 .me-teaser-toggle {
@@ -1496,6 +1519,10 @@
   z-index: 10001;
   width: 470px; /* 달력+시간 가로 배치 → 스크롤 없이 한눈에 */
   max-width: calc(100vw - 24px);
+}
+/* 웹 팝오버에선 달력 '다음 달(>)' 버튼이 닫기(X)와 겹치지 않게 헤드 오른쪽에 X 자리만큼 비운다. */
+.dtp-pop .dtp-head {
+  padding-right: 30px;
 }
 .dtp-pop-x {
   position: absolute;
@@ -1791,7 +1818,7 @@
   position: relative;
   height: 100%;
   overflow-y: auto;
-  scroll-snap-type: y mandatory;
+  scroll-snap-type: y proximity; /* mandatory는 끌 때 툭툭 끊겨 — proximity로 부드럽게(정확 스냅은 settle이) */
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   cursor: grab; /* 마우스로 잡아 촤르륵 굴리기 */
@@ -1822,15 +1849,18 @@
   color: #b8aee0;
   cursor: pointer;
   font-variant-numeric: tabular-nums;
-  /* transform/opacity는 인라인(다이얼 원근)으로 — 부드럽게 따라오도록 transition만. */
+  transition: color var(--dur-1) var(--ease);
+}
+/* 다이얼 원근(크기·각도)은 글자 span에만 — 버튼은 36px 전체 클릭영역 유지(±1·±2도 정확히 선택). */
+.dtp-wheel-digit {
+  display: inline-block;
+  pointer-events: none;
   transition:
-    color var(--dur-1) var(--ease),
-    transform 80ms var(--ease),
-    opacity 80ms var(--ease);
+    transform 90ms var(--ease),
+    opacity 90ms var(--ease);
   will-change: transform;
 }
 .dtp-wheel-item.on {
-  /* 중심 칸 — 색만 진하게(크기·각도는 인라인 transform). */
   color: #3a2f63;
   font-weight: 900;
 }
@@ -4020,6 +4050,10 @@
    ('가끔' 보이던 원인 = 브라우저별 over-constrained 처리 차이). 간격은 열렸을 때만 준다. */
 .event-editor-panel {
   align-self: start;
+  /* 편집 카드가 길어도 달력이 가려지지 않게 — 패널은 화면 위에 붙고(sticky), 안의 폼이 자체
+     스크롤된다. 그래서 끝까지 내려도 가운데 달력은 그대로 보인다. */
+  position: sticky;
+  top: 10px;
   overflow: hidden;
   padding-left: 0;
 }
@@ -4028,6 +4062,11 @@
 }
 .event-editor-panel form {
   width: 372px; /* 폭 고정 → 컬럼 애니메이션 동안 reflow 없이 슬라이드 */
+  max-height: calc(100dvh - 26px); /* 화면을 넘으면 폼 안에서 스크롤(달력은 안 밀림) */
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding-right: 4px;
 }
 /* 색상 필터 사이드바: 폭을 최소화했으니 안쪽 여백·제목도 컴팩트하게. */
 .studio-left-panel section {
