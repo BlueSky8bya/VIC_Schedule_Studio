@@ -4939,6 +4939,23 @@
   border-right-color: transparent;
 }
 
+/* 그리드는 border-radius:18px + overflow:hidden 으로 4모서리를 둥글게 자른다. 모서리 칸이
+   사각이면 선택(.selected) 핑크 inset 링이 그 둥근 호를 따라 잘려 "모서리가 끊겨" 보인다.
+   네 모서리 칸에 같은 반경을 주면 inset box-shadow가 곡선을 따라 그려져 잘림이 사라진다.
+   (칸 수는 항상 7의 배수 → 아래 모서리는 :nth-last-child(7)/:last-child 로 결정.) */
+.studio-month-grid > .studio-day:first-child {
+  border-top-left-radius: 17px;
+}
+.studio-month-grid > .studio-day:nth-child(7) {
+  border-top-right-radius: 17px;
+}
+.studio-month-grid > .studio-day:nth-last-child(7) {
+  border-bottom-left-radius: 17px;
+}
+.studio-month-grid > .studio-day:last-child {
+  border-bottom-right-radius: 17px;
+}
+
 /* 오늘 이전: 아주 옅은 라벤더그레이 / 오늘 이후: 흰색 */
 .studio-day.past {
   background: #f7f6fc;
