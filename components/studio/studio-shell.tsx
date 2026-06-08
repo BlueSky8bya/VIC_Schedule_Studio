@@ -4327,7 +4327,7 @@ export function StudioShell({
           /* key로 날짜가 바뀔 때마다 카드 내용이 재마운트 → 카드 전체가 살짝 쑥 내려오는 애니메이션. */
           <form onSubmit={saveEvent} key={`${selectedDate}:${selectedEventId ?? "new"}`}>
             <div className="editor-heading">
-              {/* 윗줄: 접기(>) 옆에 라벨, 오른쪽 끝에 저장. 날짜는 그 아래줄(라벨 밑에 정렬). */}
+              {/* 한 줄: 접기(>) · 날짜 · 라벨 ─ 오른쪽 끝 저장. (높이 절약 — 날짜를 아래줄로 빼지 않음) */}
               <div className="editor-heading-bar">
                 <div className="editor-heading-left">
                   <button
@@ -4339,21 +4339,20 @@ export function StudioShell({
                   >
                     <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
                   </button>
+                  {/* key로 날짜가 바뀔 때마다 재마운트 → 쓱 바뀌는 애니메이션으로 '옮겼다'를 인지. */}
+                  <span className="editor-date-inline" key={selectedDate}>
+                    {selectedDate}
+                  </span>
                   <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
                 </div>
                 <button
-                  className="button primary"
+                  className="button primary editor-save"
                   disabled={!canEdit || !form.publicTitle.trim()}
                   type="submit"
                 >
-                  <Save aria-hidden="true" size={16} />
                   저장
                 </button>
               </div>
-              {/* key로 날짜가 바뀔 때마다 재마운트 → 날짜가 쓱 바뀌는 애니메이션으로 "옮겼다"를 인지. */}
-              <h2 className="editor-date editor-heading-date" key={selectedDate}>
-                {selectedDate}
-              </h2>
             </div>
 
             {actionError ? <div className="auth-warning">{actionError}</div> : null}

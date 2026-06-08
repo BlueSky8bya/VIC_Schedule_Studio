@@ -1234,8 +1234,8 @@
   align-items: center;
   gap: 11px;
   width: 100%;
-  margin-top: 10px;
-  padding: 12px 13px;
+  margin-top: 6px;
+  padding: 11px 13px;
   border: 1.5px solid var(--line, #e7e3f2);
   border-radius: 14px;
   background: #fff;
@@ -5397,8 +5397,28 @@
 .editor-heading-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
+}
+/* 한 줄 헤더 — 날짜는 라벨 옆에 인라인(컴팩트). 날짜 바뀌면 쓱 강조. */
+.editor-date-inline {
+  flex: none;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: #6b5bd6;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  animation: editor-date-flash 0.36s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+}
+.editor-heading-bar .eyebrow {
+  font-size: 13px !important;
+  white-space: nowrap;
+}
+/* 저장 버튼 — 아이콘 없이 텍스트만, 패딩 줄여 한 줄 폭 확보. */
+.editor-save {
+  flex: none;
+  padding: 7px 16px;
+  font-size: 13.5px;
 }
 /* 날짜를 접기 버튼(30px) + 간격(8px)만큼 들여, 위 줄의 라벨 시작선과 정확히 맞춘다. */
 .editor-heading-date {
