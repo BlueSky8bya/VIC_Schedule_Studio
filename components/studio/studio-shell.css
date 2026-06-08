@@ -447,6 +447,75 @@
   box-shadow: 0 14px 40px -18px rgba(40, 30, 60, 0.5);
   animation: editor-card-enter 0.2s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
+
+/* 편집 카드 임시 보관 복원 알림 — 저장 안 한 내용을 되살렸을 때 뜨는 은은한 틴트 칩.
+   경고가 아니라 안심 신호라 액센트 틴트(노랑/빨강 아님). 모바일은 컴팩트, 웹은 넉넉. */
+.draft-restored {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+  padding: 7px 9px;
+  border: 1px solid var(--accent, #6b5bd6);
+  border-color: color-mix(in srgb, var(--accent, #6b5bd6) 42%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent, #6b5bd6) 11%, #fff);
+  color: color-mix(in srgb, var(--accent, #6b5bd6) 72%, #2a2336);
+  font-size: 12px;
+  font-weight: 800;
+  animation: draft-restored-in 0.24s var(--ease, cubic-bezier(0.34, 1.4, 0.64, 1)) both;
+}
+.draft-restored-discard {
+  flex: none;
+  padding: 4px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent, #6b5bd6) 48%, transparent);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent, #6b5bd6);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.16s var(--ease, ease), transform 0.12s var(--ease, ease);
+}
+.draft-restored-discard:hover {
+  background: color-mix(in srgb, var(--accent, #6b5bd6) 14%, #fff);
+}
+.draft-restored-discard:active {
+  transform: scale(0.94);
+}
+@keyframes draft-restored-in {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (min-width: 641px) {
+  /* 웹은 가독성 우선 — 글자·여백 키운다. */
+  .draft-restored {
+    margin-bottom: 4px;
+    padding: 9px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+  .draft-restored-discard {
+    padding: 5px 13px;
+    font-size: 12.5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .draft-restored {
+    animation: none;
+  }
+  .draft-restored-discard:active {
+    transform: none;
+  }
+}
+
 .role-help-title {
   font-size: 14px;
   font-weight: 900;

@@ -1288,6 +1288,32 @@ export function StudioShell({
     [selectedEventId, visibleEvents]
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
+  // 편집 카드 임시 보관(드래프트). 모듈 상단 헬퍼(loadEditDrafts 등) 참고.
+  // baseline = '깨끗한' 기준 지문(원본 일정 또는 빈 새 카드). form이 이와 다르면 미저장 변경 → 보관.
+  const editDraftsRef = useRef<Map<string, EditDraft>>(new Map());
+  const editBaselineRef = useRef<string>(draftFingerprint(createEmptyForm()));
+  const draftHydratedRef = useRef(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+  useEffect(() => {
+    editDraftsRef.current = loadEditDrafts(); // 새로고침/탭 닫힘에도 살아남게 localStorage에서 복구
+    draftHydratedRef.current = true;
+  }, []);
+  // 현재 열린 카드의 보관 키 — 기존 일정은 evt:<id>, 날짜 새 카드는 new:<날짜>.
+  function draftKeyFor(): string | null {
+    if (selectedEventId) return `evt:${selectedEventId}`;
+    if (selectedDate) return `new:${selectedDate}`;
+    return null;
+  }
+  // TTL 안에 든 드래프트만 돌려주고, 지난 건 즉시 폐기.
+  function freshDraft(key: string): EditDraft | null {
+    const d = editDraftsRef.current.get(key);
+    if (!d) return null;
+    if (d.ts < Date.now() - DRAFT_TTL_MS) {
+      editDraftsRef.current.delete(key);
+      return null;
+    }
+    return d;
+  }
 
   // 모바일 오버레이 스택: 편집 시트 → (그 위에) 공지 모달. 레이어마다 히스토리 항목을 하나씩 쌓아,
   // 휴대폰 뒤로가기를 누르면 맨 위 레이어만 닫힌다(공지 → 편집 시트 → 스튜디오). 비번 팝업은
@@ -1512,7 +1538,11 @@ export function StudioShell({
     }
     setSelectedDate(isoDate);
     setSelectedEventId(null);
-    setForm(createEmptyForm());
+    // 빈 새 카드가 기준 — 같은 날짜에 쓰다 만 임시 내용이 있으면 되살린다.
+    editBaselineRef.current = draftFingerprint(createEmptyForm());
+    const draft = freshDraft(`new:${isoDate}`);
+    setForm(draft ? draft.form : createEmptyForm());
+    setDraftRestored(Boolean(draft));
     setEditorVisible(true);
     bumpEditor(); // 사용자가 새 날짜 칸을 고름 → 폼 새로 마운트(전환 애니메이션)
   }
@@ -1981,23 +2011,12 @@ export function StudioShell({
   function selectEvent(event: StudioScheduleEvent, showPanel = true) {
     setSelectedDate(event.startsAt.slice(0, 10));
     setSelectedEventId(event.id);
-    setForm({
-      id: event.id,
-      publicTitle: event.publicTitle,
-      endDateKey: event.endDateKey ?? "",
-      isSupport: event.isSupport ?? false,
-      isTentative: event.isTentative ?? false,
-      supportUrl: event.supportUrl ?? "",
-      category: event.category,
-      status: event.status,
-      visibilityScope: event.visibilityScope,
-      tagIds: event.tagIds,
-      primaryTagIds: event.primaryTagIds,
-      // 공개 시각이 지난 떡밥은 사실상 일반 일정 → 토글을 내린다(다시 켜려면 미래 시각을 새로 정함).
-      // 저장하면 DB의 떡밥 플래그도 자연스레 해제된다.
-      teaser: teaserStillHidden(event),
-      teaserRevealAt: teaserStillHidden(event) ? isoToKstLocalInput(event.teaserRevealAt) : ""
-    });
+    // 원본을 기준(baseline)으로 삼고, TTL 안에 미저장 임시 내용이 있으면 그걸 대신 띄운다.
+    const base = eventToForm(event);
+    editBaselineRef.current = draftFingerprint(base);
+    const draft = freshDraft(`evt:${event.id}`);
+    setForm(draft ? { ...draft.form, id: event.id } : base);
+    setDraftRestored(Boolean(draft));
     if (showPanel) {
       setEditorVisible(true);
       bumpEditor(); // 사용자가 다른 일정을 고름 → 폼 새로 마운트
@@ -2181,6 +2200,38 @@ export function StudioShell({
     );
   }
 
+  // 카드가 열려 있는 동안 폼 변경을 계속 추적해, 원본과 다르면(미저장 변경) 드래프트로 보관하고
+  // 같아지면 지운다. 닫기 경로(바깥 클릭·X·뒤로가기)마다 따로 갈고리를 걸 필요 없이, 닫히는 순간의
+  // 마지막 내용이 이미 보관돼 있다. 카드가 닫혀 있으면 추적하지 않는다 — closeMobileEdit의 폼
+  // 리셋(빈 폼)이 보관본을 덮어쓰지 못하게.
+  useEffect(() => {
+    if (!draftHydratedRef.current || !canEdit) return;
+    const open = mobileEditId !== null || editorVisible;
+    if (!open) return;
+    const key = draftKeyFor();
+    if (!key) return;
+    if (draftFingerprint(form) !== editBaselineRef.current) {
+      editDraftsRef.current.set(key, { form, ts: Date.now() });
+    } else {
+      editDraftsRef.current.delete(key);
+    }
+    persistEditDrafts(editDraftsRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, editorVisible, mobileEditId, selectedEventId, selectedDate, canEdit]);
+
+  // '새로 쓰기' — 복원된 임시 내용을 버리고 원본(기존 일정) 또는 빈 새 카드로 되돌린다.
+  function discardDraft() {
+    const key = draftKeyFor();
+    if (key) {
+      editDraftsRef.current.delete(key);
+      persistEditDrafts(editDraftsRef.current);
+    }
+    const ev = selectedEventId ? events.find((e) => e.id === selectedEventId) : null;
+    setForm(ev ? eventToForm(ev) : createEmptyForm());
+    setDraftRestored(false);
+    hapticTick();
+  }
+
   function saveEvent(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault(); // 폼 제출 외에 단축키(Ctrl+S)로도 부를 수 있게 옵셔널.
     if (blockedByPreview()) return;
@@ -2253,6 +2304,12 @@ export function StudioShell({
     setForm((f) => ({ ...f, id: tempId }));
     setActionError(null);
     markJustSaved(tempId); // 카드가 통통 착지하며 반짝
+    // 저장됨 = 더 이상 미저장 변경 없음 → 기준을 방금 저장한 내용으로 올리고 임시 보관을 비운다.
+    editBaselineRef.current = draftFingerprint(form);
+    setDraftRestored(false);
+    editDraftsRef.current.delete(`new:${selectedDate}`);
+    if (form.id) editDraftsRef.current.delete(`evt:${form.id}`);
+    persistEditDrafts(editDraftsRef.current);
 
     // 저장이 끝나면 실제 id(또는 실패 시 null)로 풀리는 약속 — "잇기"가 이걸 기다린다.
     let resolveSave: (id: string | null) => void = () => {};
@@ -2811,8 +2868,7 @@ export function StudioShell({
     setMobileEditId(event.id);
   }
   function openMobileAdd(isoDate: string) {
-    selectDate(isoDate);
-    setForm(createEmptyForm());
+    selectDate(isoDate); // 빈 폼 또는 같은 날짜의 임시 내용 복원까지 처리
     setMobileEditId("new");
   }
   function closeMobileEdit() {
@@ -3624,6 +3680,15 @@ export function StudioShell({
               setMobileEditId(null);
             }}
           >
+            {draftRestored ? (
+              <div className="draft-restored" role="status">
+                <span>저장 안 한 임시 내용을 불러왔어요.</span>
+                <button className="draft-restored-discard" onClick={discardDraft} type="button">
+                  새로 쓰기
+                </button>
+              </div>
+            ) : null}
+
             {/* 제목 — 무테 큰 입력. 화면의 초점. 첫 줄 제목, 다음 줄부터 세부. */}
             <textarea
               className="me-title"
@@ -4431,6 +4496,15 @@ export function StudioShell({
 
             {actionError ? <div className="auth-warning">{actionError}</div> : null}
 
+            {draftRestored ? (
+              <div className="draft-restored" role="status">
+                <span>저장 안 한 임시 내용을 불러왔어요.</span>
+                <button className="draft-restored-discard" onClick={discardDraft} type="button">
+                  새로 쓰기
+                </button>
+              </div>
+            ) : null}
+
             <label>
               제목
               <textarea
@@ -4821,6 +4895,76 @@ function createEmptyForm(): EventForm {
     primaryTagIds: [],
     teaser: false,
     teaserRevealAt: ""
+  };
+}
+
+// ── 편집 카드 임시 보관(드래프트) ──────────────────────────────────────────
+// 저장 버튼을 안 누른 채 카드가 닫혀도(실수로 바깥 클릭·슬라이드 아웃·새로고침) 쓰던 내용을
+// 잠깐 보관했다가, 같은 일정(또는 같은 날짜의 새 카드)을 다시 열면 되살린다. 공개 반영은
+// 여전히 '저장'을 눌러야 일어난다 → 반쯤 쓴 일정이 시청자 포스터로 새어 나가지 않는다.
+const DRAFT_TTL_MS = 10 * 60 * 1000; // 10분 — "잠시" 자리 비운 사이만 복원, 그 뒤엔 폐기
+const DRAFT_LS_KEY = "vic-edit-draft-v1";
+type EditDraft = { form: EventForm; ts: number };
+
+// 폼의 '내용 지문' — id·날짜를 뺀 편집 가능한 필드만 모아 비교한다(원본 대비 변경 여부 판단).
+function draftFingerprint(f: EventForm): string {
+  return [
+    f.publicTitle,
+    f.endDateKey,
+    f.isSupport,
+    f.isTentative,
+    f.supportUrl,
+    f.category,
+    f.status,
+    f.visibilityScope,
+    f.tagIds.join("|"),
+    f.primaryTagIds.join("|"),
+    f.teaser,
+    f.teaserRevealAt
+  ].join("");
+}
+function loadEditDrafts(): Map<string, EditDraft> {
+  const map = new Map<string, EditDraft>();
+  try {
+    const raw = window.localStorage.getItem(DRAFT_LS_KEY);
+    if (!raw) return map;
+    const obj = JSON.parse(raw) as Record<string, EditDraft>;
+    const cutoff = Date.now() - DRAFT_TTL_MS;
+    for (const [k, v] of Object.entries(obj)) {
+      if (v && typeof v.ts === "number" && v.ts >= cutoff && v.form) map.set(k, v);
+    }
+  } catch {
+    /* 깨진 값은 무시 — 보관은 부가기능이라 실패해도 편집엔 영향 없다 */
+  }
+  return map;
+}
+function persistEditDrafts(map: Map<string, EditDraft>) {
+  try {
+    const cutoff = Date.now() - DRAFT_TTL_MS;
+    const obj: Record<string, EditDraft> = {};
+    for (const [k, v] of map) if (v.ts >= cutoff) obj[k] = v;
+    window.localStorage.setItem(DRAFT_LS_KEY, JSON.stringify(obj));
+  } catch {
+    /* 용량 초과 등은 무시 */
+  }
+}
+// 기존 일정 → 폼 초깃값. selectEvent와 드래프트 폐기('새로 쓰기')가 공유한다.
+function eventToForm(event: StudioScheduleEvent): EventForm {
+  return {
+    id: event.id,
+    publicTitle: event.publicTitle,
+    endDateKey: event.endDateKey ?? "",
+    isSupport: event.isSupport ?? false,
+    isTentative: event.isTentative ?? false,
+    supportUrl: event.supportUrl ?? "",
+    category: event.category,
+    status: event.status,
+    visibilityScope: event.visibilityScope,
+    tagIds: event.tagIds,
+    primaryTagIds: event.primaryTagIds,
+    // 공개 시각이 지난 떡밥은 일반 일정 취급(토글 내림).
+    teaser: teaserStillHidden(event),
+    teaserRevealAt: teaserStillHidden(event) ? isoToKstLocalInput(event.teaserRevealAt) : ""
   };
 }
 
