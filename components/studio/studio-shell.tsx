@@ -949,7 +949,7 @@ export function StudioShell({
     // 세모(▾)도 숨긴다. 단 개발자가 다시 열 수 있게 특정 색 강조 + 흐릿한 텍스트(=원래 세계로 돌아가는
     // '비밀 차원문'). 클릭하면 드롭다운이 다시 열린다. 미리보기 아닐 땐 평소대로 "미리보기 ▾".
     const previewing = previewDual || previewRole !== null;
-    const triggerText = previewing ? (isNarrow ? "시청자 화면" : "시청자 화면 미리보기") : "미리보기";
+    const triggerText = previewing ? (isNarrow ? "시청자 화면" : "시청자 화면 보여주기") : "미리보기";
     return (
       <div className="preview-dd">
         <button
@@ -3599,23 +3599,27 @@ export function StudioShell({
               </div>
               <div className="me-sep" />
               {renderSupportEditor()}
-              {/* 떡밥(가림) — 공개 일정에만. 구분선 없이 미정·업도움 칩 바로 아래(웹과 순서 통일). */}
+              {/* 떡밥(가림) — 공개 일정에만. 웹과 같은 구조(teaser-field + 칩 + 공개시각 카드/힌트)로
+                  통일 → 미정·업도움과 간격도 동일. */}
               {form.visibilityScope === "public" ? (
-                  <div className="me-row me-row-stack">
-                    <button
-                      aria-pressed={form.teaser}
-                      className={`opt-chip teaser${form.teaser ? " on" : ""}`}
-                      onClick={() => {
-                        hapticTick();
-                        setForm((c) => ({ ...c, teaser: !c.teaser }));
-                      }}
-                      type="button"
-                    >
-                      <span className="opt-chip-ic" aria-hidden="true">🔮</span>
-                      <span className="opt-chip-label">떡밥으로 가리기</span>
-                      <span className="opt-chip-mark" aria-hidden="true">✓</span>
-                    </button>
-                    {form.teaser ? (
+                <div className="teaser-field">
+                  <button
+                    aria-pressed={form.teaser}
+                    className={`opt-chip teaser${form.teaser ? " on" : ""}`}
+                    disabled={!canEdit}
+                    onClick={() => {
+                      hapticTick();
+                      setForm((c) => ({ ...c, teaser: !c.teaser }));
+                    }}
+                    type="button"
+                  >
+                    <span className="opt-chip-ic" aria-hidden="true">🔮</span>
+                    <span className="opt-chip-label">떡밥으로 가리기</span>
+                    <span className="opt-chip-mark" aria-hidden="true">✓</span>
+                  </button>
+                  {form.teaser ? (
+                    <div className="teaser-when">
+                      <span className="teaser-when-label">공개 시각 (KST)</span>
                       <DateTimePicker
                         disabled={!canEdit}
                         onChange={(v) => setForm((c) => ({ ...c, teaserRevealAt: v }))}
@@ -3623,8 +3627,12 @@ export function StudioShell({
                         open={teaserPickerOpen}
                         value={form.teaserRevealAt}
                       />
-                    ) : null}
-                  </div>
+                      <em className="teaser-when-hint">
+                        이 시각 전엔 시청자에게 제목·태그가 ??? 로 가려지고 공개까지 카운트다운만 보여요.
+                      </em>
+                    </div>
+                  ) : null}
+                </div>
               ) : null}
             </div>
 

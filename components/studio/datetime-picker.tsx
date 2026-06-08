@@ -91,33 +91,38 @@ function Wheel({
     }, 90);
   };
 
-  // 잡고 있다는 느낌(grabbing) — 누르는 동안 밴드가 또렷해지고 휠이 살짝 당겨진 듯하다.
+  // 잡고 있다는 느낌(grabbing) — 누르는 동안 밴드가 또렷해진다.
   const [grabbing, setGrabbing] = useState(false);
   // 마우스로 잡아 위아래로 긁으면 촤르륵 굴러간다(웹). 터치는 네이티브 스크롤 그대로.
-  const drag = useRef<{ y: number; top: number; moved: boolean } | null>(null);
+  // 포인터 캡처는 '실제로 움직이기 시작한 뒤'에만 건다 — 안 그러면 순수 클릭이 컨테이너에 캡처돼
+  // 칸(±1·±2) 버튼의 onClick이 안 먹는다(=2분일 때 1·3분 클릭이 안 되던 원인).
+  const drag = useRef<{ y: number; top: number; moved: boolean; captured: boolean; id: number } | null>(null);
   const justDragged = useRef(false); // 긁은 직후의 우발 click 1회 무시
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     setGrabbing(true); // 터치·마우스 모두 '잡았다' 표시
     if (e.pointerType !== "mouse") return; // 터치/펜은 네이티브 스크롤
     const el = ref.current;
     if (!el) return;
-    drag.current = { y: e.clientY, top: el.scrollTop, moved: false };
-    el.setPointerCapture?.(e.pointerId);
+    drag.current = { y: e.clientY, top: el.scrollTop, moved: false, captured: false, id: e.pointerId };
   };
   const onPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const d = drag.current;
     const el = ref.current;
     if (!d || !el) return;
-    if (Math.abs(e.clientY - d.y) > 2) d.moved = true;
-    el.scrollTop = d.top - (e.clientY - d.y); // 끄는 방향대로 즉시 스크롤 → onScroll이 스냅/햅틱 처리
+    if (!d.moved && Math.abs(e.clientY - d.y) > 3) {
+      d.moved = true;
+      el.setPointerCapture?.(d.id); // 끌기 시작 → 그때부터 캡처(밖으로 나가도 따라옴)
+      d.captured = true;
+    }
+    if (d.moved) el.scrollTop = d.top - (e.clientY - d.y);
   };
   const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
     setGrabbing(false);
     const d = drag.current;
     if (!d) return;
     if (d.moved) justDragged.current = true;
+    if (d.captured) ref.current?.releasePointerCapture?.(e.pointerId);
     drag.current = null;
-    ref.current?.releasePointerCapture?.(e.pointerId);
   };
 
   return (
@@ -329,19 +334,20 @@ export function DateTimePicker({
       {mobile ? (
         <div className="dtp-grip" aria-hidden="true" />
       ) : null}
-      <div className="dtp-head">
-        <button className="dtp-nav" onClick={() => stepMonth(-1)} type="button" aria-label="이전 달">
-          <ChevronLeft size={18} />
-        </button>
-        <strong className="dtp-title">
-          {viewY}년 {viewM}월
-        </strong>
-        <button className="dtp-nav" onClick={() => stepMonth(1)} type="button" aria-label="다음 달">
-          <ChevronRight size={18} />
-        </button>
-      </div>
       <div className="dtp-body">
         <div className="dtp-cal" onPointerDown={onCalDown} onPointerUp={onCalUp}>
+          {/* 월 이동(< >)은 달력 위에만 — 오른쪽 시간/닫기(X)와 안 겹친다. */}
+          <div className="dtp-head">
+            <button className="dtp-nav" onClick={() => stepMonth(-1)} type="button" aria-label="이전 달">
+              <ChevronLeft size={18} />
+            </button>
+            <strong className="dtp-title">
+              {viewY}년 {viewM}월
+            </strong>
+            <button className="dtp-nav" onClick={() => stepMonth(1)} type="button" aria-label="다음 달">
+              <ChevronRight size={18} />
+            </button>
+          </div>
           <div className="dtp-wdrow" aria-hidden="true">
             {WD.map((w, i) => (
               <span className={i === 0 ? "sun" : i === 6 ? "sat" : ""} key={w}>
