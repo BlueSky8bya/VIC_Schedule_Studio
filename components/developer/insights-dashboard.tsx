@@ -34,6 +34,7 @@ import {
   type VisitSummary,
   type VisitTrends
 } from "@/lib/insights/actions";
+import { getPerfStatsAction, type PerfStatRow } from "@/lib/insights/perf-actions";
 import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
 import {
   HEART_BLAZE,
@@ -330,6 +331,9 @@ export function InsightsDashboard({
   const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
+  // 서버 성능(시스템 패널) — 라벨별 응답시간 통계. 시간창(시간 단위) 전환 가능.
+  const [perf, setPerf] = useState<PerfStatRow[] | null>(null);
+  const [perfHours, setPerfHours] = useState(24);
   const [refreshing, setRefreshing] = useState(false); // 지금 보는 칸만 수동 새로고침 중
   const [refreshed, setRefreshed] = useState(false); // 방금 갱신 완료 — '갱신됨' 칩 잠깐 표시
   const refreshedTimer = useRef<number | null>(null);
@@ -363,6 +367,17 @@ export function InsightsDashboard({
       alive = false;
     };
   }, [year, month]);
+
+  // 서버 성능 통계 — 마운트 + 시간창 변경 시 로드(개발자 전용·저빈도라 항상 가볍게).
+  useEffect(() => {
+    let alive = true;
+    getPerfStatsAction(perfHours).then((r) => {
+      if (alive) setPerf(r.ok ? r.rows : []);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [perfHours]);
 
   // 일별/주별·역할별/기기별을 바꾸면 막대가 바뀌므로 떠 있던 분해 툴팁은 지운다.
   useEffect(() => {
@@ -1576,6 +1591,58 @@ export function InsightsDashboard({
                     <strong>{fmtDateTime(d.system.deployedAt)}</strong>
                   </li>
                 </ul>
+
+                {/* 서버 성능 — 구간별 응답시간(라벨별 p95 느린 순). "여기가 평소/벤치보다 느리다"를 본다. */}
+                <div className="perf-head-row">
+                  <h4 className="insight-subhead" style={{ margin: 0 }}>
+                    서버 성능
+                  </h4>
+                  <div className="perf-windows" role="group" aria-label="시간 범위">
+                    {[24, 168].map((h) => (
+                      <button
+                        className={perfHours === h ? "active" : ""}
+                        key={h}
+                        onClick={() => setPerfHours(h)}
+                        type="button"
+                      >
+                        {h >= 168 ? "7일" : `${h}시간`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {perf === null ? (
+                  <p className="insight-empty">불러오는 중…</p>
+                ) : perf.length === 0 ? (
+                  <p className="insight-empty">아직 표본이 없어요 — 요청이 쌓이면 채워져요.</p>
+                ) : (
+                  <div className="perf-table">
+                    <div className="perf-row perf-thead">
+                      <span>구간</span>
+                      <span>n</span>
+                      <span>평균</span>
+                      <span>p95</span>
+                      <span>최대</span>
+                    </div>
+                    {perf.map((r) => (
+                      <div className="perf-row" key={r.label}>
+                        <span className="perf-label" title={r.label}>
+                          {r.label}
+                        </span>
+                        <span className="perf-num">{r.n}</span>
+                        <span className="perf-num">{r.avgMs}</span>
+                        <span
+                          className="perf-num perf-p95"
+                          data-slow={r.p95Ms >= 300 ? "" : undefined}
+                          data-warn={r.p95Ms >= 120 && r.p95Ms < 300 ? "" : undefined}
+                        >
+                          {r.p95Ms}
+                        </span>
+                        <span className="perf-num">{r.maxMs}</span>
+                      </div>
+                    ))}
+                    <p className="perf-foot">단위 ms · p95 = 느린 5% 기준선(빨강 ≥300, 주황 ≥120)</p>
+                  </div>
+                )}
               </>
             ))}
           </section>

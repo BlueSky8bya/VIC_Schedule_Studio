@@ -7,6 +7,8 @@
 //
 // PERF_LOG=off 환경변수로 로깅만 끌 수 있다(측정 코드는 그대로 — 오버헤드는 무시할 수준의 now() 2회).
 
+import { recordPerfSample } from "@/lib/perf/record";
+
 const LOG_ENABLED = process.env.PERF_LOG !== "off";
 
 function now(): number {
@@ -14,9 +16,8 @@ function now(): number {
   return typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
 }
 
-// 비동기 작업 한 구간을 재서 [perf] <label> <ms>로 로그. 결과/예외는 그대로 통과(투명 래퍼).
+// 비동기 작업 한 구간을 재서 [perf] 로그(LOG_ENABLED일 때) + 표본 기록(패널용, 항상). 투명 래퍼.
 export async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
-  if (!LOG_ENABLED) return fn();
   const t0 = now();
   let ok = true;
   try {
@@ -26,7 +27,8 @@ export async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> 
     throw e;
   } finally {
     const ms = now() - t0;
-    console.log(`[perf] ${label} ${ms.toFixed(1)}ms${ok ? "" : " (error)"}`);
+    if (LOG_ENABLED) console.log(`[perf] ${label} ${ms.toFixed(1)}ms${ok ? "" : " (error)"}`);
+    recordPerfSample(label, ms); // 개발자 인사이트 "서버 성능" 패널용 표본(응답 후 기록)
   }
 }
 
@@ -54,6 +56,7 @@ export class ServerTiming {
       const dur = now() - t0;
       this.marks.push({ name, dur, desc });
       if (LOG_ENABLED) console.log(`[perf] ${desc ?? name} ${dur.toFixed(1)}ms`);
+      recordPerfSample(desc ?? name, dur); // 패널 표본(라벨은 설명 우선)
     }
   }
 
