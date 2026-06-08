@@ -803,6 +803,11 @@ export function StudioShell({
   // 새 일정/일정 수정 카드는 달력에서 날짜(또는 일정)를 "선택했을 때"만 보여준다.
   // 편집실 진입 시엔 카드를 띄우지 않고, 칸을 클릭하면 그제서야 나온다.
   const [editorVisible, setEditorVisible] = useState(false);
+  // 편집 폼의 remount 키 — '사용자가 명시적으로 다른 날짜/일정을 고를 때'만 올린다(selectDate·
+  // selectEvent·moveMonth). 저장·삭제 같은 내부 상태 변화로는 안 올려서 폼이 다시 마운트되지(깜빡이지)
+  // 않게 한다. (이전엔 key가 selectedEventId라 저장 시 null로 바뀌며 폼이 깜빡였다.)
+  const [editorKey, setEditorKey] = useState(0);
+  const bumpEditor = () => setEditorKey((k) => k + 1);
 
   // 개발자 전용 "역할 미리보기"(보기 전용). 클라이언트 한정 — 쿠키/라우트는 절대 안 건드린다.
   // previewRole이 있으면 UI를 그 역할처럼 그린다(데이터·서버 권한은 그대로, 변경은 차단).
@@ -979,7 +984,14 @@ export function StudioShell({
     // 세모(▾)도 숨긴다. 단 개발자가 다시 열 수 있게 특정 색 강조 + 흐릿한 텍스트(=원래 세계로 돌아가는
     // '비밀 차원문'). 클릭하면 드롭다운이 다시 열린다. 미리보기 아닐 땐 평소대로 "미리보기 ▾".
     const previewing = previewDual || previewRole !== null;
-    const triggerText = previewing ? (isNarrow ? "시청자 화면" : "시청자 화면 보여주기") : "미리보기";
+    // '보여주기'는 관리자(owner) 미리보기일 때만 — 그 외 역할(매니저·작업자·시청자) 미리보기는 '미리보기'.
+    const triggerText = previewing
+      ? isNarrow
+        ? "시청자 화면"
+        : previewRole === "owner"
+          ? "시청자 화면 보여주기"
+          : "시청자 화면 미리보기"
+      : "미리보기";
     return (
       <div className="preview-dd">
         <button
@@ -1442,6 +1454,7 @@ export function StudioShell({
       setForm(createEmptyForm());
       return next;
     });
+    bumpEditor(); // 달이 바뀌어 새 날짜로 → 폼 새로 마운트
   }
 
   // 키보드 ←/→ 로 월 이동(데스크톱 편집실). 입력칸·모달·시청자 미리보기 중엔 동작 안 함.
@@ -1501,6 +1514,7 @@ export function StudioShell({
     setSelectedEventId(null);
     setForm(createEmptyForm());
     setEditorVisible(true);
+    bumpEditor(); // 사용자가 새 날짜 칸을 고름 → 폼 새로 마운트(전환 애니메이션)
   }
 
   // ── 일정 카드 드래그 이동 ────────────────────────────────────────────────
@@ -1986,6 +2000,7 @@ export function StudioShell({
     });
     if (showPanel) {
       setEditorVisible(true);
+      bumpEditor(); // 사용자가 다른 일정을 고름 → 폼 새로 마운트
     }
   }
 
@@ -2232,8 +2247,10 @@ export function StudioShell({
     setEvents((prev) =>
       isNew ? [...prev, optimistic] : prev.map((e) => (e.id === tempId ? optimistic : e))
     );
-    setSelectedEventId(null);
-    setForm(createEmptyForm());
+    // 저장 후에도 '그 일정을 계속 편집'하는 상태로 둔다(빈 카드로 리셋하지 않음) — 폼 key(editorKey)도
+    // 안 올려 재마운트/깜빡임이 없다. 새 일정이면 임시 id로 선택을 잡아두고, 완료 시 실제 id로 옮긴다.
+    setSelectedEventId(tempId);
+    setForm((f) => ({ ...f, id: tempId }));
     setActionError(null);
     markJustSaved(tempId); // 카드가 통통 착지하며 반짝
 
@@ -2272,6 +2289,10 @@ export function StudioShell({
         );
         // 착지 반짝이 임시 id에 걸려 있었다면 실제 id로 이어준다(키가 바뀌어도 끊기지 않게).
         setJustSavedId((p) => (p === tempId ? realId : p));
+        // 편집 카드가 방금 저장한 새 일정을 띄우고 있으면 선택을 실제 id로 옮긴다(editorKey는 그대로
+        // — 재마운트/깜빡임 없이 같은 카드가 '수정' 상태로 이어진다).
+        setSelectedEventId((cur) => (cur === tempId ? realId : cur));
+        setForm((f) => (f.id === tempId ? { ...f, id: realId } : f));
         resolveSave(realId);
         pendingSavesRef.current.delete(tempId);
       }
@@ -2295,11 +2316,12 @@ export function StudioShell({
       return;
     }
     if (!events.some((e) => e.id === targetId)) return;
-    // 편집 중인 바로 그 일정을 지우면 편집 컨텍스트가 사라진 것 → 카드를 닫는다(Godot 패턴).
-    // 다른 일정 삭제는 편집 카드를 건드리지 않는다.
+    // 편집 중인 바로 그 일정을 지우면 카드를 '닫지(슬라이드 아웃)' 않고 같은 자리에서 빈 새 카드로
+    // 비운다 — 여러 개를 연속으로 지울 때 카드가 들어갔다 나왔다 하지 않게(공간 안정성). editorKey는
+    // 안 올려 매끄럽게. 다른 일정 삭제는 편집 카드를 건드리지 않는다.
     if (selectedEventId === targetId) {
-      setEditorVisible(false);
       setSelectedEventId(null);
+      setForm(createEmptyForm());
     }
     hapticDelete(); // 또렷한 한 번(Android만; iOS·미지원은 조용히 무시)
     // 톡! 줄어들며 사라지는 동안만 잠깐 카드를 남겼다가 실제로 제거한다(reduced-motion이면 즉시).
@@ -3897,7 +3919,8 @@ export function StudioShell({
           ) : (
             <button className="button" onClick={() => enterViewerMode()} type="button">
               <Eye aria-hidden="true" size={16} />
-              시청자 화면 보여주기
+              {/* '보여주기'는 관리자(owner)만 — 매니저·작업자는 '미리보기'. */}
+              {isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}
             </button>
           )}
           {actor.isAuthenticated ? (
@@ -4374,8 +4397,9 @@ export function StudioShell({
           {!canEdit ? (
             renderReadonlyDetail()
           ) : (
-          /* key로 날짜가 바뀔 때마다 카드 내용이 재마운트 → 카드 전체가 살짝 쑥 내려오는 애니메이션. */
-          <form onSubmit={saveEvent} key={`${selectedDate}:${selectedEventId ?? "new"}`}>
+          /* key는 editorKey(명시적 선택 시에만 증가) — 저장·삭제 같은 내부 상태 변화로는 재마운트
+             되지 않아 깜빡이지 않는다. 날짜/일정을 새로 고를 때만 쑥 내려오는 전환. */
+          <form onSubmit={saveEvent} key={editorKey}>
             <div className="editor-heading">
               {/* 한 줄: 접기(>) · 날짜 · 라벨 ─ 오른쪽 끝 저장. (높이 절약 — 날짜를 아래줄로 빼지 않음) */}
               <div className="editor-heading-bar">

@@ -2153,9 +2153,15 @@ export function PublicPoster({
   }
   function jumpToday() {
     hapticTick();
+    // 관심·태그 필터가 켜져 있으면 오늘이 걸러져 '빈 화면'으로 보일 수 있다 → '오늘'은 필터를 풀고
+    // 오늘을 보여주는 동작으로 통일한다(사용자가 오늘을 보려는 의도이므로).
+    const wasFiltered = filterActive;
+    if (wasFiltered) clearFilters();
     // 이미 오늘 달이면 달은 그대로 두고 '오늘 위치'로만 스크롤(다른 날짜를 보고 있어도 오늘로 복귀).
     if (onTodayMonth) {
-      scrollToToday();
+      // 필터를 막 풀었으면 오늘 행이 새로 생기므로 다음 렌더 뒤에 스크롤한다.
+      if (wasFiltered) window.setTimeout(scrollToToday, 60);
+      else scrollToToday();
       return;
     }
     const offset = (todayYM.year - view.year) * 12 + (todayYM.month - view.month);
