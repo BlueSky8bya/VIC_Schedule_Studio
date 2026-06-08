@@ -8658,7 +8658,9 @@ textarea:disabled {
 .me-group {
   border-radius: 16px;
   background: #fff;
-  padding: 2px 14px;
+  /* 세로 패딩이 2px이라 마지막 칩(최초공개) 아래가 너무 좁았다 — 카드답게 넉넉히(위는 me-row 9px가
+     이미 받쳐주므로 아래를 넉넉히). */
+  padding: 4px 14px 14px;
   box-shadow: 0 1px 3px rgb(120 100 70 / 7%);
 }
 .me-row {

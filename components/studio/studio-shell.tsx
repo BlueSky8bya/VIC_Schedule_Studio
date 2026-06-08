@@ -3097,7 +3097,7 @@ export function StudioShell({
                               </span>
                               {teaserStillHidden(event) ? (
                                 <span className="m-teaser-badge" title={teaserBadgeTitle(event.teaserRevealAt)}>
-                                  🔮 떡밥
+                                  🔮 최초공개
                                 </span>
                               ) : null}
                               {event.visibilityScope !== "public" ? (
@@ -3644,7 +3644,7 @@ export function StudioShell({
                     type="button"
                   >
                     <span className="opt-chip-ic" aria-hidden="true">🔮</span>
-                    <span className="opt-chip-label">떡밥으로 가리기</span>
+                    <span className="opt-chip-label">일정 최초공개</span>
                     <span className="opt-chip-mark" aria-hidden="true">✓</span>
                   </button>
                   {form.teaser ? (
@@ -4802,11 +4802,11 @@ function teaserStillHidden(e: { teaser?: boolean; teaserRevealAt?: string }): bo
 }
 // 편집실 떡밥 배지 호버 문구 — 공개 예정/완료를 KST로 알려준다.
 function teaserBadgeTitle(iso: string | undefined): string {
-  if (!iso) return "떡밥(가림) 일정 — 공개 시각 미설정";
+  if (!iso) return "최초공개 일정 — 공개 시각 미설정";
   const t = Date.parse(iso);
-  if (Number.isNaN(t)) return "떡밥(가림) 일정";
+  if (Number.isNaN(t)) return "최초공개 일정";
   const k = new Date(t + 9 * 3600 * 1000);
   const p = (n: number) => String(n).padStart(2, "0");
   const when = `${k.getUTCMonth() + 1}/${k.getUTCDate()} ${p(k.getUTCHours())}:${p(k.getUTCMinutes())}`;
-  return Date.now() >= t ? `🔮 떡밥 — 이미 공개됨 (${when})` : `🔮 떡밥 — ${when}에 공개 예정`;
+  return Date.now() >= t ? `🔮 최초공개 — 이미 공개됨 (${when})` : `🔮 최초공개 — ${when}에 공개 예정`;
 }
