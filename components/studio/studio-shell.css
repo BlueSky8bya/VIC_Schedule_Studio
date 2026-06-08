@@ -4727,10 +4727,11 @@
     transform var(--dur-1) var(--ease),
     box-shadow var(--dur-2) var(--ease);
 }
-/* 미정(아직 확정 아님) — 점선 테두리(시청자 포스터와 동일 신호). '미정' 칩은 공용 .evt-tentative. */
+/* 미정(아직 확정 아님) — 굵은 점선 테두리(잘 보이게). '미정' 칩은 공용 .evt-tentative. */
 .studio-event-pill.tentative {
   border-style: dashed;
-  border-color: rgb(0 0 0 / 32%);
+  border-width: 2px;
+  border-color: rgb(0 0 0 / 48%);
 }
 .studio-event-pill:hover {
   transform: translateY(-1px);
@@ -4905,9 +4906,11 @@
 }
 /* 🔮 떡밥(가림) 일정 — 편집실에서만 보이는 표시. 시청자는 공개 시각 전까지 ???만 본다.
    보라 점선 테두리 + 🔮 배지로 "이 일정은 가려져 있다"를 토리·개발자가 한눈에 알게 한다. */
+/* 떡밥(미공개) — 굵은 보라 점선 '바깥' 테두리(outline). 미정(안쪽 dashed border)과 색·위치가
+   달라 둘 다일 때 동심으로 또렷이 겹쳐 보인다(겹쳐 안 보이는 일 없음). outline은 레이아웃 무영향. */
 .studio-event-pill.teaser {
-  outline: 1.6px dashed #7c6cf0;
-  outline-offset: -1.6px;
+  outline: 2.5px dashed #7c6cf0;
+  outline-offset: 2px;
 }
 .pill-teaser {
   flex: 0 0 auto;

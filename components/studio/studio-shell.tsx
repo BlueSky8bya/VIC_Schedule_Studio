@@ -3049,7 +3049,9 @@ export function StudioShell({
                                 ) : null}
                                 {event.isSupport ? `🌱 ${event.publicTitle}` : main}
                               </span>
-                              {event.teaser ? (
+                              {event.teaser &&
+                              event.teaserRevealAt &&
+                              Date.parse(event.teaserRevealAt) > Date.now() ? (
                                 <span className="m-teaser-badge" title={teaserBadgeTitle(event.teaserRevealAt)}>
                                   🔮 떡밥
                                 </span>
@@ -4142,10 +4144,17 @@ export function StudioShell({
                         visibleEvents
                       );
                       const draggable = canEdit && !span.isMulti;
+                      // 떡밥 표시는 '아직 안 풀린'(공개 시각이 미래) 것만. 시각이 지나면 평범한 일정과
+                      // 완전히 동일 — 점선·🔮 모두 끈다.
+                      const teaserHidden = Boolean(
+                        event.teaser &&
+                          event.teaserRevealAt &&
+                          Date.parse(event.teaserRevealAt) > Date.now()
+                      );
                       const pillClass = [
                         "studio-event-pill",
                         event.visibilityScope,
-                        event.teaser ? "teaser" : "", // 떡밥(가림) — 편집실에서 보라 점선으로 표시
+                        teaserHidden ? "teaser" : "", // 떡밥(가림, 미공개) — 보라 점선으로 표시
                         inSelChain ? "selected" : "",
                         isSel ? "primary-selected" : "",
                         isDimmedByFilter(event) ? "filter-dim" : "",
@@ -4238,7 +4247,7 @@ export function StudioShell({
                             ) : null}
                             {/* 떡밥(가림) 배지 — 편집실에선 토리·개발자가 어떤 일정이 가려졌는지 한눈에.
                                 시청자에겐 공개 시각 전까지 ???로만 보인다. 호버하면 공개 예정 시각. */}
-                            {span.showTitle && event.teaser ? (
+                            {span.showTitle && teaserHidden ? (
                               <span className="pill-teaser" title={teaserBadgeTitle(event.teaserRevealAt)}>
                                 🔮
                               </span>

@@ -1401,6 +1401,25 @@ html {
   0%, 100% { opacity: 1; transform: scale(1); }
   50% { opacity: 0.55; transform: scale(0.86); }
 }
+/* 공개 시각이 지난 떡밥이 캐시 지연으로 잠깐 남는 동안의 중립 자리표시 — 보라 ??? 안 깜빡이게
+   옅은 회색으로 자리만 잡고(레이아웃 안정) 곧 실제 일정으로 교체된다. */
+.public-event.teaser-revealing,
+.agenda-item.teaser-revealing {
+  background: rgb(0 0 0 / 4%);
+  border: 1px solid rgb(0 0 0 / 6%);
+  min-height: 22px;
+  animation: teaser-rev-pulse 1.1s ease-in-out infinite;
+}
+@keyframes teaser-rev-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.85; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-event.teaser-revealing,
+  .agenda-item.teaser-revealing {
+    animation: none;
+  }
+}
 /* 모바일 아젠다의 떡밥 항목 */
 .agenda-item.teaser {
   display: flex;

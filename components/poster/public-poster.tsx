@@ -304,6 +304,23 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
   );
 }
 
+// 공개 시각이 이미 지난 떡밥(캐시 지연으로 서버가 아직 가린 stub을 보낸 경우) — 보라 ??? 하이프
+// 카드를 깜빡 띄우지 않고, 자리만 잡는 중립 placeholder를 두고 즉시 실제 내용을 받아 갈아끼운다.
+function TeaserRevealing({ onReveal, className }: { onReveal: () => void; className: string }) {
+  const fired = useRef(false);
+  const ref = useRef(onReveal);
+  ref.current = onReveal;
+  useEffect(() => {
+    if (!fired.current) {
+      fired.current = true;
+      ref.current();
+    }
+    const id = window.setInterval(() => ref.current(), 2000);
+    return () => window.clearInterval(id);
+  }, []);
+  return <div className={className} aria-hidden="true" />;
+}
+
 const REST_TAG_NAME = "휴뱅";
 
 // "내 관심" 어항 하트 — 이 달 (휴뱅 제외) 일정 중 내가 하트 누른 비율(0~1)만큼 붉은 물이 차고
@@ -2201,20 +2218,29 @@ export function PublicPoster({
           {events.map((rawEvent) => {
             // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다(가린 stub 대신 진짜).
             const event = revealedEvents[rawEvent.id] ?? rawEvent;
-            // 떡밥(가림): 공개 시각 전이라 서버가 제목·태그를 빼고 보냈다 → 전용 미스터리 카드 +
-            // 공개까지 카운트다운만. 0이 되면 캐시 우회로 실제 내용을 받아 그 순간 풀린다.
+            // 떡밥(가림): 공개 시각 전이면 전용 미스터리 카드 + 카운트다운. 시각이 지났는데도 서버가
+            // 가린 stub을 보냈으면(캐시 지연) 보라 카드 깜빡 없이 중립 placeholder + 즉시 실제로 교체.
             if (event.teaser && event.teaserRevealAt) {
-              return (
-                <div className="public-event teaser" key={event.id}>
-                  <div className="event-main teaser-main">
-                    <span className="teaser-spark" aria-hidden="true">🔮</span>
-                    <p className="teaser-q">???</p>
-                    <TeaserCountdown
-                      onReveal={() => revealTeaser(rawEvent.id)}
-                      revealAt={event.teaserRevealAt}
-                    />
+              if (Date.parse(event.teaserRevealAt) > Date.now()) {
+                return (
+                  <div className="public-event teaser" key={event.id}>
+                    <div className="event-main teaser-main">
+                      <span className="teaser-spark" aria-hidden="true">🔮</span>
+                      <p className="teaser-q">???</p>
+                      <TeaserCountdown
+                        onReveal={() => revealTeaser(rawEvent.id)}
+                        revealAt={event.teaserRevealAt}
+                      />
+                    </div>
                   </div>
-                </div>
+                );
+              }
+              return (
+                <TeaserRevealing
+                  className="public-event teaser-revealing"
+                  key={event.id}
+                  onReveal={() => revealTeaser(rawEvent.id)}
+                />
               );
             }
             const colors = eventColors(event);
@@ -2496,17 +2522,27 @@ export function PublicPoster({
                   {list.map(({ event: rawEvent, support }) => {
                     // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다.
                     const event = revealedEvents[rawEvent.id] ?? rawEvent;
-                    // 떡밥(가림): 모바일 아젠다에서도 미스터리 카드 + 카운트다운만.
+                    // 떡밥(가림): 모바일 아젠다. 공개 전이면 미스터리 카드, 지났는데 stub이면(캐시
+                    // 지연) 중립 placeholder + 즉시 교체.
                     if (event.teaser && event.teaserRevealAt) {
+                      if (Date.parse(event.teaserRevealAt) > Date.now()) {
+                        return (
+                          <div className="agenda-item teaser" key={event.id}>
+                            <span className="teaser-spark" aria-hidden="true">🔮</span>
+                            <p className="agenda-title teaser-q">???</p>
+                            <TeaserCountdown
+                              onReveal={() => revealTeaser(rawEvent.id)}
+                              revealAt={event.teaserRevealAt}
+                            />
+                          </div>
+                        );
+                      }
                       return (
-                        <div className="agenda-item teaser" key={event.id}>
-                          <span className="teaser-spark" aria-hidden="true">🔮</span>
-                          <p className="agenda-title teaser-q">???</p>
-                          <TeaserCountdown
-                            onReveal={() => revealTeaser(rawEvent.id)}
-                            revealAt={event.teaserRevealAt}
-                          />
-                        </div>
+                        <TeaserRevealing
+                          className="agenda-item teaser-revealing"
+                          key={event.id}
+                          onReveal={() => revealTeaser(rawEvent.id)}
+                        />
                       );
                     }
                     const colors = eventColors(event);
