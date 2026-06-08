@@ -4,6 +4,8 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
 import { canDecorate, canEditSchedule, canManageStickerAssets } from "@/lib/permissions/roles";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
+import { createSupabaseServerClient } from "@/lib/auth/server";
+import { isPosterThemeKey } from "@/lib/domain/schedule-types";
 import {
   deleteStickerAction,
   deleteStickerBatchAction,
@@ -40,6 +42,23 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
     );
   }
 
+  // 테마는 getPublicSchedule(SWR 캐시)라 방금 바꾸면 첫 새로고침에 옛 값이 보인다. 꾸미기 화면은
+  // 소유자 전용·저트래픽이므로, poster_theme만 DB에서 신선하게 한 번 더 읽어 덮는다(공개 / 캐시는
+  // 그대로 두어 시청자 성능 유지). 읽기 실패 시 캐시값 그대로.
+  let scheduleFresh = schedule;
+  try {
+    const sb = await createSupabaseServerClient();
+    const { data } = sb
+      ? await sb.from("calendars").select("poster_theme").eq("slug", "vic").maybeSingle()
+      : { data: null };
+    const t = data?.poster_theme;
+    if (typeof t === "string" && isPosterThemeKey(t) && t !== schedule.calendar.posterTheme) {
+      scheduleFresh = { ...schedule, calendar: { ...schedule.calendar, posterTheme: t } };
+    }
+  } catch {
+    /* 신선 읽기 실패 → 캐시 테마 그대로 */
+  }
+
   // 새로고침 복원: 쿠키에 기록된 마지막 꾸미기 달이 있으면 그 달로 연다(없으면 URL의 연·월).
   // 진입 버튼이 쿠키를 진입 월로 세팅하므로, 새 진입은 의도한 달, 이후 월 이동·새로고침은 그 달.
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
@@ -60,7 +79,7 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
       initialYear={initialYear}
       saveStickerAction={saveStickerAction}
       saveStickerBatchAction={saveStickerBatchAction}
-      schedule={schedule}
+      schedule={scheduleFresh}
       setPosterThemeAction={canEditSchedule(actor.role) ? setPosterThemeAction : undefined}
       uploadStickerAssetAction={canAssets ? uploadStickerAssetAction : undefined}
     />
