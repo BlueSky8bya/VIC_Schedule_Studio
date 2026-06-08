@@ -44,8 +44,16 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
-import { ThemeSwitch } from "@/components/poster/theme-switch";
-import { DecoratePalette } from "@/components/poster/decorate-palette";
+// 꾸미기 전용 UI는 decorate일 때만 렌더된다 → 지연 로드로 시청자(공개 /) 번들서 제외(ssr:false:
+// 사용자 동작으로 여는 꾸미기 화면이라 SSR 불필요, 진입 시 잠깐 로드).
+const ThemeSwitch = dynamic(
+  () => import("@/components/poster/theme-switch").then((m) => m.ThemeSwitch),
+  { ssr: false }
+);
+const DecoratePalette = dynamic(
+  () => import("@/components/poster/decorate-palette").then((m) => m.DecoratePalette),
+  { ssr: false }
+);
 import {
   STICKER_ANIMS,
   shapeDefaultColor,
