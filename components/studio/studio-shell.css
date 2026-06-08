@@ -5592,17 +5592,21 @@
 .scope-picker.locked .scope-opt {
   cursor: default;
 }
+/* 공개 범위 안내 — 밋밋한 회색 텍스트 대신 영역과 동화된 인포 노트(옅은 바탕 + 아이콘). */
 .scope-locked-note {
   display: flex;
   align-items: center;
-  gap: 5px;
-  margin: 0;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f4f2fa;
   font-size: 12px;
   font-weight: 700;
-  color: #9a93ad;
+  color: #7d7596;
 }
 .scope-locked-note svg {
-  color: #b9b2c8;
+  color: #a99fce;
   flex: none;
 }
 @media (prefers-reduced-motion: reduce) {
