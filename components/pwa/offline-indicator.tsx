@@ -42,6 +42,18 @@ export function OfflineIndicator() {
     const goOffline = () => {
       wasOffline.current = true;
       setOnline(false);
+      // 스튜디오(편집실)는 오프라인에서 쓸 수 없다(비공개 데이터·저장·언락이 서버 필요). 오프라인으로
+      // 바뀌는 순간 공개 포스터 스냅샷으로 자동 전환 → 사용자가 수동 새로고침하는 2단계를 없앤다.
+      // location.replace("/")는 SW navHandler가 공개 스냅샷을 돌려주고 URL도 "/"로 맞춰준다.
+      // 쓰기는 keepalive로 떠나도 저장되므로 안전. 이미 오프라인으로 로드된 경우엔 이 이벤트가
+      // 발생하지 않아(이벤트는 전환 시점만) 무한 reload 루프가 생기지 않는다.
+      try {
+        if (window.location.pathname.startsWith("/studio")) {
+          window.location.replace("/");
+        }
+      } catch {
+        /* 무시 */
+      }
     };
     const goOnline = () => {
       setOnline(true);

@@ -1032,15 +1032,12 @@ html[data-eye-comfort] {
   }
 }
 
-/* 웹: 화면 넓으니 우하단 코너에 고정(중앙 차지 X, 포스터 가림 최소) */
+/* 웹: 모바일과 같은 좌측 상단(시선이 가장 먼저 닿는 곳, 사용자가 오프라인을 놓치지 않게).
+   폭 넉넉하니 텍스트는 축약하지 않고 '· 마지막 동기화 N분 전'까지 다 보여준다. */
 @media (min-width: 641px) {
   .netstat {
-    justify-content: flex-end;
-    right: 22px;
-    left: auto;
-    top: auto;
-    bottom: 22px;
-    padding-left: 0;
+    top: calc(env(safe-area-inset-top, 0px) + 18px);
+    padding-left: 24px;
   }
   .netstat-badge,
   .netstat-toast {
@@ -1048,7 +1045,7 @@ html[data-eye-comfort] {
     padding: 10px 17px;
   }
   .netstat-sub {
-    display: inline; /* 웹은 폭 넉넉 → '· 마지막 동기화 N분 전' 표시 */
+    display: inline; /* 웹은 폭 넉넉 → 전체 텍스트 */
   }
 }
 
