@@ -4348,123 +4348,114 @@
   min-height: 36px;
 }
 
-/* ── 액션바/헤더 버튼 색 포인트 (HCI 근거) ───────────────────────────────
+/* ── 액션바/헤더 버튼 색 포인트 (HCI 근거 · 은은한 틴트 칩) ──────────────────
    문제: 버튼이 전부 흰색 → 무채색 '관리패널/병원' 느낌, 어디를 눌러야 할지 안내 없음.
+   (이전의 '좌측 액센트 바'는 줄무늬가 따로 놀아 레이아웃과 안 융화 → 폐기.)
+   해법: 줄무늬 없이 '버튼 면 전체를 아주 옅은 제 색으로 칠하고 글자·아이콘도 같은
+   색조'로 둔다 → 칩 하나가 한 덩어리로 읽혀 가장 잘 융화된다.
    근거가 된 HCI 원리:
    • 기능별 색 코딩(color coding / 의미 매핑 — Nielsen #4 '일관성·표준'):
-     같은 계열 작업엔 같은 색조를 둬, 사용자가 위치를 색으로 기억(인지 부하↓).
+     같은 계열 작업엔 같은 색조 → 색으로 위치를 기억(인지 부하↓).
    • 현저성 위계(salience hierarchy — von Restorff 고립효과 + Treisman 특징탐색):
-     '전부 진하게'는 아무것도 안 튀게 만든다(=병원 느낌의 반대 과오). 그래서
-     1차 동작(꾸미기)만 따뜻한 채움으로 '튀게'→클릭 유도, 2차(운영도구)는 옅은
-     틴트, 유틸(로그아웃)은 거의 무채색으로 눌리지 않게 둔다.
-   • 따뜻한 색 전진(advancing)·차가운 색 후퇴(Hill 등): 주작업=따뜻(꾸미기·비공개=
-     주의 amber), 드물고 되돌리기 번거로운 동작(로그아웃)=차갑고 약하게 → 오클릭↓.
-   • 색 단독 금지(WCAG 1.4.1 — 중복 코딩): 색은 '왼쪽 액센트 바 + 아이콘 틴트'로만
-     주고 라벨/아이콘을 항상 함께 → 색각 이상에도 구분 유지. 면적을 작게 둬 조용함.
-   구현: 공통 .io-accent 가 왼쪽 3px 액센트 바(::before)를 깔고, 버튼별 --io 색과
-   옅은 배경 틴트로 계층을 만든다(꾸미기만 채움). */
+     '전부 진하게'는 아무것도 안 튀게 한다(=병원의 반대 과오). 그래서 채도로 계층을
+     만든다 — 1차(꾸미기)=따뜻하고 살짝 진한 채움으로 '튀게'→클릭 유도, 2차(운영
+     도구)=옅은 틴트, 유틸(로그아웃)=거의 무채색으로 오클릭 억제.
+   • 따뜻=전진(advancing)/차가움=후퇴(Hill 등): 주작업=따뜻(꾸미기·비공개 amber),
+     드물고 되돌리기 번거로운 로그아웃=차갑고 약하게.
+   • 색 단독 금지(WCAG 1.4.1 — 중복 코딩): 색과 함께 라벨/아이콘을 항상 두고, 글자색
+     은 배경 틴트 위 대비 4.5:1 이상의 진한 색조로 → 색각 이상에도 읽힘. */
 .io-accent {
-  position: relative;
-  overflow: hidden; /* 액센트 바를 버튼 둥근 모서리에 맞춰 자른다(박스섀도는 바깥이라 안 잘림) */
+  transition:
+    background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
 }
-.io-accent::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--io, transparent);
-  transition: width var(--dur-1) var(--ease);
-}
-.io-accent:hover:not(:disabled)::before {
-  width: 4px;
-}
-@media (prefers-reduced-motion: reduce) {
-  .io-accent::before {
-    transition: none;
-  }
+.io-accent svg {
+  color: inherit; /* 아이콘도 라벨과 같은 색조로 묶어 한 칩으로 보이게 */
 }
 
-/* 2차 — 운영 도구: 기능별 색조 + 아주 옅은 틴트(조용히 구분). */
+/* 2차 — 운영 도구: 기능별 색조의 옅은 틴트 칩(면 전체 + 같은 색 글자). */
 .io-tags {
-  --io: #8b7cf0; /* 보라 = 태그/분류(앱의 카테고리 색 체계와 같은 계열) */
-  background: #f7f5ff;
+  background: #f3effe; /* 보라 = 태그/분류(앱의 카테고리 색 체계와 같은 계열) */
+  border-color: #e2dafb;
+  color: #4f3fbf;
 }
 .io-tags:hover:not(:disabled) {
-  background: #efeaff;
-  border-color: #d9d0fb;
-}
-.io-tags svg {
-  color: #7c6cf0;
+  background: #eae2fd;
+  border-color: #d2c6f7;
+  color: #4534ad;
 }
 .io-members {
-  --io: #1fb8a0; /* 틸 = 사람/신뢰(멤버) */
-  background: #ecfbf6;
+  background: #e8f9f3; /* 틸 = 사람/신뢰(멤버) */
+  border-color: #c5ebe0;
+  color: #0b7a68;
 }
 .io-members:hover:not(:disabled) {
-  background: #dff7f0;
-  border-color: #b6e8dd;
-}
-.io-members svg {
-  color: #14a08a;
+  background: #dbf5ec;
+  border-color: #aee3d6;
+  color: #0a6c5c;
 }
 .io-insights {
-  --io: #4d9fe8; /* 블루 = 정보/데이터(인사이트) */
-  background: #eff6ff;
+  background: #ecf4ff; /* 블루 = 정보/데이터(인사이트) */
+  border-color: #cfe2f8;
+  color: #1f6cba;
 }
 .io-insights:hover:not(:disabled) {
-  background: #e2eefe;
-  border-color: #bfdaf6;
-}
-.io-insights svg {
-  color: #3a8fde;
+  background: #dfedfe;
+  border-color: #bcd6f4;
+  color: #1a60a8;
 }
 
-/* 비공개 — 주의(amber): 민감 동작이므로 caution 색 코딩. 켜짐(.active)은 기존 진한
-   amber 유지, 꺼짐도 옅은 amber 힌트로 '민감 토글'임을 일관되게 알린다. */
-.io-private {
-  --io: #d97706;
-}
+/* 비공개 — 주의(amber): 민감 동작이라 caution 색 코딩. 켜짐(.active)은 기존 진한
+   amber 유지, 꺼짐도 옅은 amber 칩으로 '민감 토글'임을 일관되게 알린다. */
 .private-toggle.io-private:not(.active) {
-  background: #fff8ef;
-  border-color: #f0dcc0;
+  background: #fff5e8;
+  border-color: #f1dcb8;
+  color: #a85d09;
 }
 .private-toggle.io-private:not(.active):hover {
-  background: #fff1df;
-  border-color: #ecccA0;
+  background: #ffeed8;
+  border-color: #ecceA0;
+  color: #97520a;
 }
 
-/* 1차 — 달력 꾸미기(관리자): 가장 잦은 창작 동작 → 따뜻한 채움으로 '튀게'(유도). */
+/* 1차 — 달력 꾸미기(관리자): 가장 잦은 창작 동작 → 따뜻하고 살짝 진한 채움으로 '튀게'. */
 .io-decorate {
-  --io: #ef8b2c;
-  border-color: #f3d8af;
-  background: linear-gradient(180deg, #fff6e9, #ffe9cf);
-  color: #7a4a12;
+  border-color: #f1d09a;
+  background: linear-gradient(180deg, #fff3e0, #ffe7c6);
+  color: #6f430f;
   font-weight: 800;
 }
 .io-decorate:hover:not(:disabled) {
-  background: linear-gradient(180deg, #ffeccf, #ffd9a8);
-  border-color: #f0c88a;
-  color: #6a3f0d;
+  background: linear-gradient(180deg, #ffe9cd, #ffd9a6);
+  border-color: #eec486;
+  color: #623a0c;
 }
 
 /* 유틸 — 미리보기: 차가운 슬레이트(후퇴, 낮은 현저성). */
 .io-preview {
-  --io: #94a0b8;
-  background: #f5f7fb;
+  background: #f1f4fa;
+  border-color: #d5dce8;
+  color: #4d5b76;
 }
 .io-preview:hover:not(:disabled) {
-  background: #eef1f7;
-  border-color: #c4ccda;
-}
-.io-preview svg {
-  color: #7a8aa6;
+  background: #e7ecf6;
+  border-color: #c5cee0;
+  color: #44516b;
 }
 
-/* 유틸 — 로그아웃: 가장 낮은 현저성(따뜻한 회베이지 바만, 채움 없음) → 오클릭 유도 안 함. */
+/* 유틸 — 로그아웃: 가장 낮은 현저성(거의 무채 따뜻 베이지) → 오클릭 유도 안 함. */
 .io-logout {
-  --io: #d8c4a6;
+  background: #faf7f1;
+  border-color: #ece3d4;
+  color: #6b6256;
+}
+.io-logout:hover:not(:disabled) {
+  background: #f4efe6;
+  border-color: #e3d8c5;
+  color: #5e564b;
 }
 /* 관리 묶음(태그·멤버·접속자) — owner/dev 운영 도구를 옅은 컨테이너로 한 덩어리로. */
 .studio-manage-group {
@@ -8730,32 +8721,16 @@ textarea:disabled {
   font-size: 16px;
 }
 
-/* ── 모바일 액션 색 포인트 — 웹과 '다른' 모바일-네이티브 패턴 ────────────────
-   웹(actionbar)은 얇은 3px 좌측 바 + 옅은 틴트 + 호버로 색을 드러낸다.
-   모바일은 호버가 없어 색을 idle에 실어야 하고 엄지UI라 더 또렷해야 한다. 그래서:
-   • 관리 행(.m-io): 좌측 '5px 색 블록 + 틴트 카드'로 색 코딩(웹의 얇은 바보다 굵게,
-     리스트형 모바일에 맞는 카드 느낌).
-   • 바닥 액션레일 알약(.m-io-pill): 알약 모양엔 좌측바가 안 어울려 '틴트 + 색
-     테두리/글자' 전체 채색으로.
-   의미색은 웹과 동일(태그=보라/멤버=틸/비공개=amber/미리보기=슬레이트) → 의미는
-   일치, 표현만 플랫폼별로 다르게(같은 DOM 축소가 아님). 누름 피드백은 .button:active
-   스프링을 그대로 쓴다. */
+/* ── 모바일 액션 색 포인트 — 웹과 같은 '틴트 칩' 언어, 다른 레이아웃 ────────────
+   색 표현은 웹과 통일(면 전체 옅은 틴트 + 같은 색 글자/아이콘, 줄무늬 없음) → 한 칩으로
+   읽혀 융화. 플랫폼 차이는 '레이아웃·피드백'에서: 모바일은 호버가 없어 색을 idle에
+   싣고 살짝 진한 채도로, 관리 행은 전폭 카드, 바닥 액션레일은 알약(999px), 누름은
+   .button:active 스프링. 의미색은 웹과 동일(태그=보라/멤버=틸/비공개=amber/미리보기=
+   슬레이트) → 의미 일치, 표현(레이아웃)만 플랫폼별. */
 .m-manage .button.m-io {
-  position: relative;
-  overflow: hidden;
   font-weight: 800;
 }
-.m-io::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 5px;
-  background: var(--io);
-}
 .m-io-tags {
-  --io: #8b7cf0;
   background: #f4f1ff;
   border-color: #e0d8fb;
   color: #4b3fae;
@@ -8764,7 +8739,6 @@ textarea:disabled {
   background: #ece5ff;
 }
 .m-io-members {
-  --io: #1fb8a0;
   background: #e9faf4;
   border-color: #c4ece1;
   color: #0e7e6c;
