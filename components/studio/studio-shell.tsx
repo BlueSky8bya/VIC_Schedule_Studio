@@ -4530,7 +4530,7 @@ export function StudioShell({
                   type="button"
                 >
                   <span className="opt-chip-ic" aria-hidden="true">🔮</span>
-                  <span className="opt-chip-label">떡밥으로 가리기</span>
+                  <span className="opt-chip-label">일정 최초공개</span>
                   <span className="opt-chip-mark" aria-hidden="true">✓</span>
                 </button>
                 {form.teaser ? (
