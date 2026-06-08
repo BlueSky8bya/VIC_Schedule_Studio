@@ -1706,14 +1706,27 @@
   color: #b8aee0;
   cursor: pointer;
   font-variant-numeric: tabular-nums;
+  /* transform/opacity는 인라인(다이얼 원근)으로 — 부드럽게 따라오도록 transition만. */
   transition:
     color var(--dur-1) var(--ease),
-    transform var(--dur-1) var(--ease);
+    transform 80ms var(--ease),
+    opacity 80ms var(--ease);
+  will-change: transform;
 }
 .dtp-wheel-item.on {
-  color: #4a3f72;
+  /* 중심 칸 — 색만 진하게(크기·각도는 인라인 transform). */
+  color: #3a2f63;
   font-weight: 900;
-  transform: scale(1.18);
+}
+/* 잡고 있는 동안 — 밴드가 또렷이 빛나 '이 시간을 쥐고 있다'는 느낌(band는 wheel 앞 형제라 :has로). */
+.dtp-wheel-wrap:has(.dtp-wheel.grabbing) .dtp-wheel-band {
+  background: #e6dcfb;
+  box-shadow:
+    inset 0 0 0 1.5px rgb(124 108 240 / 45%),
+    0 0 12px rgb(124 108 240 / 25%);
+}
+.dtp-wheel.grabbing {
+  cursor: grabbing;
 }
 .dtp-colon {
   font-size: 20px;

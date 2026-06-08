@@ -91,10 +91,13 @@ function Wheel({
     }, 90);
   };
 
+  // 잡고 있다는 느낌(grabbing) — 누르는 동안 밴드가 또렷해지고 휠이 살짝 당겨진 듯하다.
+  const [grabbing, setGrabbing] = useState(false);
   // 마우스로 잡아 위아래로 긁으면 촤르륵 굴러간다(웹). 터치는 네이티브 스크롤 그대로.
   const drag = useRef<{ y: number; top: number; moved: boolean } | null>(null);
   const justDragged = useRef(false); // 긁은 직후의 우발 click 1회 무시
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+    setGrabbing(true); // 터치·마우스 모두 '잡았다' 표시
     if (e.pointerType !== "mouse") return; // 터치/펜은 네이티브 스크롤
     const el = ref.current;
     if (!el) return;
@@ -109,6 +112,7 @@ function Wheel({
     el.scrollTop = d.top - (e.clientY - d.y); // 끄는 방향대로 즉시 스크롤 → onScroll이 스냅/햅틱 처리
   };
   const endDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
+    setGrabbing(false);
     const d = drag.current;
     if (!d) return;
     if (d.moved) justDragged.current = true;
@@ -122,7 +126,7 @@ function Wheel({
       <div className="dtp-wheel-wrap">
         <div className="dtp-wheel-band" aria-hidden="true" />
         <div
-          className="dtp-wheel"
+          className={`dtp-wheel${grabbing ? " grabbing" : ""}`}
           onPointerCancel={endDrag}
           onPointerDown={onPointerDown}
           onPointerMove={onPointerMove}
@@ -131,26 +135,38 @@ function Wheel({
           ref={ref}
         >
           <div className="dtp-wheel-pad" />
-          {Array.from({ length: count }, (_, i) => (
-            <button
-              className={`dtp-wheel-item${i === active ? " on" : ""}`}
-              key={i}
-              onClick={() => {
-                // 긁다가 멈춘 직후의 우발 클릭은 1회 무시.
-                if (justDragged.current) {
-                  justDragged.current = false;
-                  return;
-                }
-                const el = ref.current;
-                if (el) el.scrollTo({ top: i * ITEM, behavior: "smooth" });
-                hapticTick();
-                onChange(i);
-              }}
-              type="button"
-            >
-              {z2(i)}
-            </button>
-          ))}
+          {Array.from({ length: count }, (_, i) => {
+            // 다이얼(원통) 느낌 — 중심에서 멀수록 작아지고 뒤로 누운다(rotateX). 보고 있는 시간을
+            // '잡고 내리는' 감각. 스냅/레이아웃은 그대로(transform은 시각만).
+            const dist = i - active;
+            const ad = Math.abs(dist);
+            const scale = ad === 0 ? 1.16 : ad === 1 ? 0.92 : ad === 2 ? 0.74 : 0.6;
+            const opacity = ad === 0 ? 1 : ad === 1 ? 0.7 : ad === 2 ? 0.42 : 0.22;
+            return (
+              <button
+                className={`dtp-wheel-item${i === active ? " on" : ""}`}
+                key={i}
+                onClick={() => {
+                  // 긁다가 멈춘 직후의 우발 클릭은 1회 무시. 그 외엔 어느 칸(±2 포함)이든 눌러 선택.
+                  if (justDragged.current) {
+                    justDragged.current = false;
+                    return;
+                  }
+                  const el = ref.current;
+                  if (el) el.scrollTo({ top: i * ITEM, behavior: "smooth" });
+                  hapticTick();
+                  onChange(i);
+                }}
+                style={{
+                  transform: `perspective(420px) rotateX(${dist * -22}deg) scale(${scale})`,
+                  opacity
+                }}
+                type="button"
+              >
+                {z2(i)}
+              </button>
+            );
+          })}
           <div className="dtp-wheel-pad" />
         </div>
       </div>
