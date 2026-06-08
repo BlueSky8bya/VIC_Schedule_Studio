@@ -3388,19 +3388,20 @@ export function StudioShell({
     return (
       <>
         {renderTentativeToggle()}
-        <div className="support-toggle">
-          <span>🌱 업 도움 설정</span>
-          <button
-            aria-checked={form.isSupport}
-            className={`switch ${form.isSupport ? "on" : ""}`}
-            disabled={!canEdit}
-            onClick={() => setForm((current) => ({ ...current, isSupport: !current.isSupport }))}
-            role="switch"
-            type="button"
-          >
-            <span className="switch-knob" />
-          </button>
-        </div>
+        <button
+          aria-pressed={form.isSupport}
+          className={`opt-chip support${form.isSupport ? " on" : ""}`}
+          disabled={!canEdit}
+          onClick={() => {
+            hapticTick();
+            setForm((current) => ({ ...current, isSupport: !current.isSupport }));
+          }}
+          type="button"
+        >
+          <span className="opt-chip-ic" aria-hidden="true">🌱</span>
+          <span className="opt-chip-label">업 도움 설정</span>
+          <span className="opt-chip-mark" aria-hidden="true">✓</span>
+        </button>
         {form.isSupport ? renderSupportFields(canEdit) : null}
       </>
     );
@@ -3409,20 +3410,21 @@ export function StudioShell({
   // #미정: 아직 확정 아님 토글. 켜면 카드에 점선+'미정'으로 표시되고 시청자도 본다(공개 안전 상태값).
   function renderTentativeToggle() {
     return (
-      <div className="support-toggle">
-        <span>🕗 아직 확정 아님</span>
-        <button
-          aria-checked={form.isTentative}
-          aria-label="미정(아직 확정 아님) 표시"
-          className={`switch ${form.isTentative ? "on" : ""}`}
-          disabled={!canEdit}
-          onClick={() => setForm((current) => ({ ...current, isTentative: !current.isTentative }))}
-          role="switch"
-          type="button"
-        >
-          <span className="switch-knob" />
-        </button>
-      </div>
+      <button
+        aria-label="미정(아직 확정 아님) 표시"
+        aria-pressed={form.isTentative}
+        className={`opt-chip tentative${form.isTentative ? " on" : ""}`}
+        disabled={!canEdit}
+        onClick={() => {
+          hapticTick();
+          setForm((current) => ({ ...current, isTentative: !current.isTentative }));
+        }}
+        type="button"
+      >
+        <span className="opt-chip-ic" aria-hidden="true">🕗</span>
+        <span className="opt-chip-label">아직 확정 아님</span>
+        <span className="opt-chip-mark" aria-hidden="true">✓</span>
+      </button>
     );
   }
 
@@ -3603,16 +3605,17 @@ export function StudioShell({
                   <div className="me-sep" />
                   <div className="me-row me-row-stack">
                     <button
-                      aria-checked={form.teaser}
-                      className={`me-teaser-toggle${form.teaser ? " on" : ""}`}
+                      aria-pressed={form.teaser}
+                      className={`opt-chip teaser${form.teaser ? " on" : ""}`}
                       onClick={() => {
                         hapticTick();
                         setForm((c) => ({ ...c, teaser: !c.teaser }));
                       }}
-                      role="switch"
                       type="button"
                     >
-                      🔮 떡밥으로 가리기
+                      <span className="opt-chip-ic" aria-hidden="true">🔮</span>
+                      <span className="opt-chip-label">떡밥으로 가리기</span>
+                      <span className="opt-chip-mark" aria-hidden="true">✓</span>
                     </button>
                     {form.teaser ? (
                       <DateTimePicker
@@ -4436,19 +4439,18 @@ export function StudioShell({
             {form.visibilityScope === "public" ? (
               <div className="teaser-field">
                 <button
-                  aria-checked={form.teaser}
-                  className={`teaser-toggle${form.teaser ? " on" : ""}`}
+                  aria-pressed={form.teaser}
+                  className={`opt-chip teaser${form.teaser ? " on" : ""}`}
                   disabled={!canEdit}
                   onClick={() => {
                     hapticTick();
                     setForm((c) => ({ ...c, teaser: !c.teaser }));
                   }}
-                  role="switch"
                   type="button"
                 >
-                  <span className="teaser-toggle-ic" aria-hidden="true">🔮</span>
-                  <span className="teaser-toggle-label">떡밥으로 가리기</span>
-                  <span className="teaser-toggle-sw" aria-hidden="true" />
+                  <span className="opt-chip-ic" aria-hidden="true">🔮</span>
+                  <span className="opt-chip-label">떡밥으로 가리기</span>
+                  <span className="opt-chip-mark" aria-hidden="true">✓</span>
                 </button>
                 {form.teaser ? (
                   <div className="teaser-when">

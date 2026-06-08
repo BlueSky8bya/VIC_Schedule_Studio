@@ -1224,6 +1224,122 @@
   gap: 8px;
   margin-top: 4px;
 }
+
+/* ── 옵션 칩(토글 대체) — 떡밥·미정·업도움 공통. 스위치 노브 대신 '눌러서 켜는 칩': 켜지면
+   색이 차고 체크가 톡 들어오며, 누를 때 살짝 들어가 '이 버튼을 누르고 있다'는 느낌. ───────── */
+.opt-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 11px 13px;
+  border: 1.5px solid var(--line, #e7e3f2);
+  border-radius: 13px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 800;
+  color: #6b5b95;
+  cursor: pointer;
+  transition:
+    background var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.opt-chip:hover {
+  border-color: #d3c7f3;
+}
+.opt-chip:active {
+  transform: scale(0.97);
+}
+.opt-chip:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.opt-chip-ic {
+  flex: none;
+  font-size: 17px;
+  line-height: 1;
+}
+.opt-chip-label {
+  flex: 1;
+  text-align: left;
+}
+.opt-chip-mark {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #d9d2ee;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 900;
+  color: transparent;
+  transition:
+    background var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.opt-chip.on .opt-chip-mark {
+  color: #fff;
+  animation: opt-mark-pop 0.28s var(--ease);
+}
+@keyframes opt-mark-pop {
+  0% {
+    transform: scale(0.2);
+  }
+  60% {
+    transform: scale(1.28);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+/* 색상별 ON — 떡밥(보라)/미정(앰버)/업도움(그린) */
+.opt-chip.teaser.on {
+  background: #f1edfb;
+  border-color: #7c6cf0;
+  color: #4a3f72;
+  box-shadow: 0 2px 12px rgb(124 108 240 / 22%);
+}
+.opt-chip.teaser.on .opt-chip-mark {
+  background: #7c6cf0;
+  border-color: #7c6cf0;
+}
+.opt-chip.tentative.on {
+  background: #fdf3e0;
+  border-color: #e6a23c;
+  color: #92600c;
+  box-shadow: 0 2px 12px rgb(230 162 60 / 22%);
+}
+.opt-chip.tentative.on .opt-chip-mark {
+  background: #e6a23c;
+  border-color: #e6a23c;
+}
+.opt-chip.support.on {
+  background: #eef7e6;
+  border-color: #84b74f;
+  color: #4e7a28;
+  box-shadow: 0 2px 12px rgb(132 183 79 / 22%);
+}
+.opt-chip.support.on .opt-chip-mark {
+  background: #84b74f;
+  border-color: #84b74f;
+}
+@media (prefers-reduced-motion: reduce) {
+  .opt-chip,
+  .opt-chip-mark {
+    transition: none;
+  }
+  .opt-chip.on .opt-chip-mark {
+    animation: none;
+  }
+}
 .teaser-toggle {
   display: flex;
   align-items: center;
