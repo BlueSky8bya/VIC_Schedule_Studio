@@ -861,10 +861,23 @@ export function PublicPoster({
     }
     const prev = posterTheme;
     setPosterTheme(theme as typeof posterTheme); // 낙관적 반영
+    // 클릭 즉시 '내 의도'를 쿠키에 기록(타임스탬프 포함) — 서버 저장(DB 쓰기 ~0.3s)이 끝나기 전에
+    // 새로고침해도 꾸미기 page가 이 쿠키를 먼저 읽어 바로 반영한다. 15초 지나면 만료라 묵은 값이
+    // 영구히 우선되지 않는다(그 뒤엔 DB 신선 읽기가 진실).
+    try {
+      document.cookie = `vic_theme=${theme}|${Date.now()}; path=/; max-age=60; samesite=lax`;
+    } catch {
+      /* 쿠키 불가 환경 무시 */
+    }
     const result = await setPosterThemeAction(theme);
     if (!result.ok) {
       setPosterTheme(prev);
       setStickerError(result.error);
+      try {
+        document.cookie = `vic_theme=${prev}|${Date.now()}; path=/; max-age=60; samesite=lax`;
+      } catch {
+        /* 무시 */
+      }
     }
   }
 
