@@ -2382,6 +2382,14 @@ export function StudioShell({
     if (selectedEventId === targetId) {
       setSelectedEventId(null);
       setForm(createEmptyForm());
+      // 임시 보관 정리 — 지운 일정의 드래프트를 버리고, 복원 안내 박스를 닫고, 기준을 빈 폼으로
+      // 내린다. 안 하면 ① 안내 박스가 남고(DEL로 지워도 안 사라짐) ② 비워진 폼이 옛 기준 대비
+      // '변경'으로 잡혀 캡처가 빈 드래프트를 다시 저장해 잔류한다.
+      editBaselineRef.current = draftFingerprint(createEmptyForm());
+      editDraftsRef.current.delete(`evt:${targetId}`);
+      editDraftsRef.current.delete(`new:${selectedDate}`);
+      persistEditDrafts(editDraftsRef.current);
+      setDraftRestored(false);
     }
     hapticDelete(); // 또렷한 한 번(Android만; iOS·미지원은 조용히 무시)
     // 톡! 줄어들며 사라지는 동안만 잠깐 카드를 남겼다가 실제로 제거한다(reduced-motion이면 즉시).
