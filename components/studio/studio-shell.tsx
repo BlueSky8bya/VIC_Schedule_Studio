@@ -93,9 +93,10 @@ import { detectDevice } from "@/lib/presence/presence-client";
 import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
-// 스튜디오 CSS(220KB)는 이 컴포넌트와 함께 로드 — 루트 전역에서 빼서, StudioShell이 실제 렌더되는
-// 곳(스튜디오 라우트, 로그인 owner/dev의 /)에서만 실린다. 공개 시청자는 받지 않는다.
-import "./studio-shell.css";
+// 스튜디오 CSS는 StudioShell을 렌더하는 페이지(studio/(home), studio/calendar)에서 page-level로
+// import한다 — 그래야 <head>에 렌더 차단으로 올라가 모바일 첫 진입에도 깜빡임(FOUC)이 없다.
+// (컴포넌트에서 import하면 loading.tsx 이후 스트리밍으로 늦게 적용돼 잠깐 무스타일로 보였다.)
+// 루트 전역에는 두지 않으므로 공개 포스터 `/` 시청자는 여전히 이 CSS를 받지 않는다.
 
 // 모달 콘텐츠는 '열 때만' 로드해 편집실 첫 로딩을 가볍게(특히 인사이트 차트는 1600줄+). 전부 클라
 // 전용 모달(사용자 동작으로 열림)이라 ssr:false. 닫혀 있는 동안엔 번들·실행에 들어가지 않는다.

@@ -1,4 +1,6 @@
 import { cookies, headers } from "next/headers";
+// 스튜디오 CSS page-level import — <head> 렌더 차단(모바일 첫 진입 FOUC 방지). 공개 `/`는 미포함.
+import "@/components/studio/studio-shell.css";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { isMobileUserAgent } from "@/lib/auth/in-app-browser";
