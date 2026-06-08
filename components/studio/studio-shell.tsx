@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import {
   ChevronLeft,
   ChevronRight,
@@ -83,12 +84,7 @@ import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
-import { TrustedMembersPanel } from "@/components/trusted-members/trusted-members-panel";
-import { InsightsDashboard } from "@/components/developer/insights-dashboard";
-import { MemberInsights } from "@/components/studio/member-insights";
-import { DayVisitModal } from "@/components/developer/day-visit-modal";
 import { DateTimePicker } from "@/components/studio/datetime-picker";
-import { NoticeModal } from "@/components/notice/notice-modal";
 import { TagPicker } from "@/components/tags/tag-picker";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
@@ -100,6 +96,29 @@ import { writeViewCookie } from "@/lib/ui/view-cookie";
 // 스튜디오 CSS(220KB)는 이 컴포넌트와 함께 로드 — 루트 전역에서 빼서, StudioShell이 실제 렌더되는
 // 곳(스튜디오 라우트, 로그인 owner/dev의 /)에서만 실린다. 공개 시청자는 받지 않는다.
 import "./studio-shell.css";
+
+// 모달 콘텐츠는 '열 때만' 로드해 편집실 첫 로딩을 가볍게(특히 인사이트 차트는 1600줄+). 전부 클라
+// 전용 모달(사용자 동작으로 열림)이라 ssr:false. 닫혀 있는 동안엔 번들·실행에 들어가지 않는다.
+const InsightsDashboard = dynamic(
+  () => import("@/components/developer/insights-dashboard").then((m) => m.InsightsDashboard),
+  { ssr: false }
+);
+const MemberInsights = dynamic(
+  () => import("@/components/studio/member-insights").then((m) => m.MemberInsights),
+  { ssr: false }
+);
+const DayVisitModal = dynamic(
+  () => import("@/components/developer/day-visit-modal").then((m) => m.DayVisitModal),
+  { ssr: false }
+);
+const NoticeModal = dynamic(
+  () => import("@/components/notice/notice-modal").then((m) => m.NoticeModal),
+  { ssr: false }
+);
+const TrustedMembersPanel = dynamic(
+  () => import("@/components/trusted-members/trusted-members-panel").then((m) => m.TrustedMembersPanel),
+  { ssr: false }
+);
 
 type StudioShellProps = {
   actor: CurrentActor;
