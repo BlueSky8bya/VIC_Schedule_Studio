@@ -2146,12 +2146,22 @@ export function PublicPoster({
     return { year: y, month: m };
   }, [today]);
   const onTodayMonth = view.year === todayYM.year && view.month === todayYM.month;
+  // '오늘' 행으로 아젠다를 스크롤(가운데 정렬). 오늘에 표시할 행이 없으면(공개 일정 없는 날) 무시.
+  const todayRowRef = useRef<HTMLDivElement>(null);
+  function scrollToToday() {
+    todayRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
   function jumpToday() {
-    if (onTodayMonth) return;
     hapticTick();
-    const offset =
-      (todayYM.year - view.year) * 12 + (todayYM.month - view.month);
+    // 이미 오늘 달이면 달은 그대로 두고 '오늘 위치'로만 스크롤(다른 날짜를 보고 있어도 오늘로 복귀).
+    if (onTodayMonth) {
+      scrollToToday();
+      return;
+    }
+    const offset = (todayYM.year - view.year) * 12 + (todayYM.month - view.month);
     moveMonth(offset);
+    // 새 달(오늘 달)이 렌더된 뒤 오늘 행으로 스크롤. 슬라이드 전환을 고려해 한 박자 뒤.
+    window.setTimeout(scrollToToday, 360);
   }
 
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
@@ -2529,6 +2539,7 @@ export function PublicPoster({
               <div
                 className={`agenda-day ${day.isToday ? "today" : ""}`}
                 key={cell.isoDate}
+                ref={day.isToday ? todayRowRef : undefined}
                 style={popIntro ? ({ "--ri": agendaIndex } as CSSProperties) : undefined}
               >
                 <div className="agenda-when">
@@ -3813,9 +3824,8 @@ export function PublicPoster({
             ) : null}
             <button
               className="mb-act"
-              disabled={onTodayMonth}
               onClick={jumpToday}
-              title="오늘이 있는 달로"
+              title={onTodayMonth ? "오늘 위치로" : "오늘이 있는 달로"}
               type="button"
             >
               <CalendarCheck aria-hidden="true" size={18} />

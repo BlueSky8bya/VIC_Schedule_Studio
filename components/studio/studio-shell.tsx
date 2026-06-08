@@ -1232,11 +1232,19 @@ export function StudioShell({
     if (!editorVisible) return;
     // 비공개 토글(.private-toggle)은 '바깥'으로 치지 않는다 → 새 일정 카드를 연 채 비공개 일정 보기를
     // 눌러도 카드가 닫히지 않고, 공개 범위 옵션만 유동적으로 늘어난다(엠바고/작업자 등장).
+    // 편집 카드는 '반영구 인스펙터'다(NN/g: 예기치 못한 화면 이동은 해악 / Godot: 컨텍스트가
+    // 사라질 때만 자동 닫기). 편집과 무관한 컨트롤을 눌렀다고 카드가 사라지면 안 된다 → 아래는
+    // '바깥'으로 치지 않는다: 편집 패널·날짜칸·비공개 토글·날짜시간 선택기 백드롭에 더해,
+    // 휴뱅 미니메뉴(.rest-menu), 월 이동 < >(.studio-monthbar, 키보드 ←/→와 동작 일치),
+    // 색상 필터 사이드바(.studio-left-panel). 빈 배경 클릭만 닫기로 남긴다.
     const isOutside = (el: HTMLElement | null) =>
       !(
         el?.closest(".event-editor-panel") ||
         el?.closest(".studio-day") ||
         el?.closest(".private-toggle") ||
+        el?.closest(".rest-menu") ||
+        el?.closest(".studio-monthbar") ||
+        el?.closest(".studio-left-panel") ||
         // 날짜·시간 선택기는 portal로 body에 떠 에디터 DOM 밖이지만, 닫기 대상이 아니다.
         el?.closest(".dtp-pop-backdrop") ||
         el?.closest(".dtp-sheet-backdrop")
@@ -2287,6 +2295,12 @@ export function StudioShell({
       return;
     }
     if (!events.some((e) => e.id === targetId)) return;
+    // 편집 중인 바로 그 일정을 지우면 편집 컨텍스트가 사라진 것 → 카드를 닫는다(Godot 패턴).
+    // 다른 일정 삭제는 편집 카드를 건드리지 않는다.
+    if (selectedEventId === targetId) {
+      setEditorVisible(false);
+      setSelectedEventId(null);
+    }
     hapticDelete(); // 또렷한 한 번(Android만; iOS·미지원은 조용히 무시)
     // 톡! 줄어들며 사라지는 동안만 잠깐 카드를 남겼다가 실제로 제거한다(reduced-motion이면 즉시).
     if (!prefersReducedMotion() && !deletingIds.has(targetId)) {
@@ -2406,6 +2420,9 @@ export function StudioShell({
     const undoHolder = { id: tempId };
     deletedStackRef.current.push({ type: "remove", holder: undoHolder }); // Ctrl+Z = 방금 만든 휴방 제거
     setActionError(null);
+    // 만든 휴뱅을 곧바로 편집 카드에 띄운다 — 우클릭 한 번으로 만들고 거기서 바로 세부(태그·기간 등)를
+    // 만질 수 있게(HCI: 방금 만든 대상이 곧 편집 컨텍스트). 데스크톱 전용 흐름이라 패널을 연다.
+    if (!isNarrow) selectEvent(optimistic);
     startTransition(async () => {
       const result = await studioWrite("save", {
         id: undefined,
@@ -2438,6 +2455,9 @@ export function StudioShell({
         tempToRealRef.current.set(tempId, realId); // 저장 직후 삭제해도 서버 삭제가 실제 id로
         setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)));
         setJustSavedId((p) => (p === tempId ? realId : p));
+        // 편집 카드에 이 휴뱅이 떠 있으면 선택을 실제 id로 옮긴다(temp 그대로면 저장·삭제가 어긋남).
+        setSelectedEventId((cur) => (cur === tempId ? realId : cur));
+        setForm((f) => (f.id === tempId ? { ...f, id: realId } : f));
       }
     });
   }

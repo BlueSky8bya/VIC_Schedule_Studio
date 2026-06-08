@@ -79,7 +79,7 @@ export function TagPicker({
       <div className="tp-content">{contentTags.map((t) => chip(t, false))}</div>
       {modifierTags.length > 0 ? (
         <div className="tp-mod-section">
-          <div className="tp-section-label">형식 <span>어떻게 · 누구 · 얼마나</span></div>
+          <div className="tp-section-label">형식</div>
           <div className="tp-mods">{modifierTags.map((t) => chip(t, false))}</div>
         </div>
       ) : null}
