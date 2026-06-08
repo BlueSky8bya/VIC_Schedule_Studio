@@ -3049,6 +3049,11 @@ export function StudioShell({
                                 ) : null}
                                 {event.isSupport ? `🌱 ${event.publicTitle}` : main}
                               </span>
+                              {event.teaser ? (
+                                <span className="m-teaser-badge" title={teaserBadgeTitle(event.teaserRevealAt)}>
+                                  🔮 떡밥
+                                </span>
+                              ) : null}
                               {event.visibilityScope !== "public" ? (
                                 <span className={`m-scope-badge ${event.visibilityScope}`}>
                                   {SCOPE_LABEL[event.visibilityScope]}
@@ -4140,6 +4145,7 @@ export function StudioShell({
                       const pillClass = [
                         "studio-event-pill",
                         event.visibilityScope,
+                        event.teaser ? "teaser" : "", // 떡밥(가림) — 편집실에서 보라 점선으로 표시
                         inSelChain ? "selected" : "",
                         isSel ? "primary-selected" : "",
                         isDimmedByFilter(event) ? "filter-dim" : "",
@@ -4229,6 +4235,13 @@ export function StudioShell({
                                 직속으로 둬 2줄 높이 칩이 제목과 정확히 가운데 정렬되게 한다. */}
                             {span.showTitle && event.isTentative ? (
                               <span className="evt-tentative">미정</span>
+                            ) : null}
+                            {/* 떡밥(가림) 배지 — 편집실에선 토리·개발자가 어떤 일정이 가려졌는지 한눈에.
+                                시청자에겐 공개 시각 전까지 ???로만 보인다. 호버하면 공개 예정 시각. */}
+                            {span.showTitle && event.teaser ? (
+                              <span className="pill-teaser" title={teaserBadgeTitle(event.teaserRevealAt)}>
+                                🔮
+                              </span>
                             ) : null}
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (
@@ -4722,4 +4735,14 @@ function kstLocalInputToIso(local: string): string | null {
   const t = Date.parse(`${local}:00+09:00`);
   if (Number.isNaN(t)) return null;
   return new Date(t).toISOString();
+}
+// 편집실 떡밥 배지 호버 문구 — 공개 예정/완료를 KST로 알려준다.
+function teaserBadgeTitle(iso: string | undefined): string {
+  if (!iso) return "떡밥(가림) 일정 — 공개 시각 미설정";
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return "떡밥(가림) 일정";
+  const k = new Date(t + 9 * 3600 * 1000);
+  const p = (n: number) => String(n).padStart(2, "0");
+  const when = `${k.getUTCMonth() + 1}/${k.getUTCDate()} ${p(k.getUTCHours())}:${p(k.getUTCMinutes())}`;
+  return Date.now() >= t ? `🔮 떡밥 — 이미 공개됨 (${when})` : `🔮 떡밥 — ${when}에 공개 예정`;
 }
