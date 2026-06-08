@@ -43,7 +43,7 @@ import {
   useRef,
   useState
 } from "react";
-import { PosterExportActions } from "@/components/poster/poster-export-actions";
+import dynamic from "next/dynamic";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
 import {
   POSTER_THEMES,
@@ -95,6 +95,13 @@ import { writeViewCookie } from "@/lib/ui/view-cookie";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
 // 곳(공개 /, 꾸미기, 스튜디오 시청자 미리보기)에서만 실린다.
 import "./public-poster.css";
+
+// 내보내기 버튼은 꾸미기/소유자(canExport)일 때만 렌더된다 → 시청자(공개 /)는 안 받게 지연 로드.
+// 클라 전용(내보내기는 사용자 동작)이라 ssr:false. (html2canvas는 이 안에서 또 한 번 지연 import.)
+const PosterExportActions = dynamic(
+  () => import("@/components/poster/poster-export-actions").then((m) => m.PosterExportActions),
+  { ssr: false }
+);
 
 // 스티커 일괄 저장/삭제 액션의 응답 모양(별도 export가 없어 여기 한 곳에 정의해 재사용).
 type StickerBatchResult =
