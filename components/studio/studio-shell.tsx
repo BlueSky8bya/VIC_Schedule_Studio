@@ -1927,8 +1927,10 @@ export function StudioShell({
       visibilityScope: event.visibilityScope,
       tagIds: event.tagIds,
       primaryTagIds: event.primaryTagIds,
-      teaser: event.teaser ?? false,
-      teaserRevealAt: isoToKstLocalInput(event.teaserRevealAt)
+      // 공개 시각이 지난 떡밥은 사실상 일반 일정 → 토글을 내린다(다시 켜려면 미래 시각을 새로 정함).
+      // 저장하면 DB의 떡밥 플래그도 자연스레 해제된다.
+      teaser: teaserStillHidden(event),
+      teaserRevealAt: teaserStillHidden(event) ? isoToKstLocalInput(event.teaserRevealAt) : ""
     });
     if (showPanel) {
       setEditorVisible(true);
@@ -3049,9 +3051,7 @@ export function StudioShell({
                                 ) : null}
                                 {event.isSupport ? `🌱 ${event.publicTitle}` : main}
                               </span>
-                              {event.teaser &&
-                              event.teaserRevealAt &&
-                              Date.parse(event.teaserRevealAt) > Date.now() ? (
+                              {teaserStillHidden(event) ? (
                                 <span className="m-teaser-badge" title={teaserBadgeTitle(event.teaserRevealAt)}>
                                   🔮 떡밥
                                 </span>
@@ -4146,11 +4146,7 @@ export function StudioShell({
                       const draggable = canEdit && !span.isMulti;
                       // 떡밥 표시는 '아직 안 풀린'(공개 시각이 미래) 것만. 시각이 지나면 평범한 일정과
                       // 완전히 동일 — 점선·🔮 모두 끈다.
-                      const teaserHidden = Boolean(
-                        event.teaser &&
-                          event.teaserRevealAt &&
-                          Date.parse(event.teaserRevealAt) > Date.now()
-                      );
+                      const teaserHidden = teaserStillHidden(event);
                       const pillClass = [
                         "studio-event-pill",
                         event.visibilityScope,
@@ -4744,6 +4740,10 @@ function kstLocalInputToIso(local: string): string | null {
   const t = Date.parse(`${local}:00+09:00`);
   if (Number.isNaN(t)) return null;
   return new Date(t).toISOString();
+}
+// 아직 안 풀린(공개 시각이 미래인) 떡밥인가 — 지나면 일반 일정과 동일 취급.
+function teaserStillHidden(e: { teaser?: boolean; teaserRevealAt?: string }): boolean {
+  return Boolean(e.teaser && e.teaserRevealAt && Date.parse(e.teaserRevealAt) > Date.now());
 }
 // 편집실 떡밥 배지 호버 문구 — 공개 예정/완료를 KST로 알려준다.
 function teaserBadgeTitle(iso: string | undefined): string {
