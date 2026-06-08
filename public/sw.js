@@ -6,7 +6,7 @@
 //   다루는 것은 (1) /_next/static 정적자산(해시 불변), (2) 공개 포스터 루트 "/" 네비게이션의 200 응답뿐.
 //   그 외 모든 요청은 손대지 않고 브라우저 기본(네트워크)대로 둔다.
 
-const CACHE = "vic-offline-v1"; // 버전 올리면 옛 캐시 자동 정리(activate에서).
+const CACHE = "vic-offline-v2"; // 버전 올리면 옛 캐시 자동 정리(activate에서).
 
 self.addEventListener("install", () => {
   self.skipWaiting(); // 새 버전 즉시 활성화
@@ -18,6 +18,16 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
       await self.clients.claim();
+      // 활성화 직후 공개 루트 "/"를 미리 한 번 받아 캐시 → 첫 방문만으로 바로 오프라인 열람 가능.
+      // redirect:"manual" — 오너의 "/"는 /studio로 307 리다이렉트되는데, 그 경우 opaqueredirect(상태 0)라
+      // 저장되지 않는다(스튜디오가 "/"로 캐시되는 사고 방지). 시청자/비로그인의 "/"(200)만 저장된다.
+      try {
+        const cache = await caches.open(CACHE);
+        const res = await fetch("/", { redirect: "manual", credentials: "include" });
+        if (res && res.status === 200 && !res.redirected) cache.put("/", res.clone());
+      } catch {
+        /* 네트워크 없으면 다음 온라인 방문에서 캐시됨 */
+      }
     })()
   );
 });
@@ -86,8 +96,9 @@ async function networkFirstRoot(req) {
   const cache = await caches.open(CACHE);
   try {
     const res = await fetch(req);
-    // 200 + 일반 응답만 저장(리다이렉트/오류는 저장 안 함). 키는 항상 "/"로 통일.
-    if (res && res.status === 200 && res.type === "basic") {
+    // 200 + '리다이렉트 안 된' 응답만 저장. 오너의 "/"는 /studio로 리다이렉트되므로(res.redirected)
+    // 절대 "/"로 저장하지 않는다 — 스튜디오가 공개 캐시에 섞이는 사고 방지. 키는 항상 "/"로 통일.
+    if (res && res.status === 200 && !res.redirected) {
       cache.put("/", res.clone());
     }
     return res;
