@@ -949,3 +949,103 @@ html[data-eye-comfort] {
     filter: saturate(0.88) brightness(0.97) sepia(0.04);
   }
 }
+
+/* ── 네트워크 상태 표시(오프라인 배지 / 온라인 복귀 토스트) ──────────────────
+   오프라인이면 SW가 공개 일정 스냅샷을 보여주는데, 사용자가 '왜 안 바뀌지'로 오해하지 않게
+   인앱으로 상태를 알린다. body 직속 고정 — 포스터 export surface 바깥이라 캡쳐엔 안 잡힌다. */
+.netstat {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  z-index: 9000;
+  display: flex;
+  justify-content: center;
+  pointer-events: none; /* 배지가 일정 클릭 막지 않게 */
+}
+.netstat-badge,
+.netstat-toast {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  box-shadow: 0 6px 22px rgba(60, 40, 80, 0.22);
+  animation: netstat-rise 0.32s var(--ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+/* 오프라인 — 호박/주황 경고 톤(공개 일정만 보고 있다는 신호) */
+.netstat-badge {
+  background: linear-gradient(180deg, #fff3da, #ffe6b8);
+  color: #8a5a12;
+  border: 1.5px solid #f3c97a;
+}
+.netstat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e08a1e;
+  box-shadow: 0 0 0 0 rgba(224, 138, 30, 0.5);
+  animation: netstat-pulse 1.8s ease-out infinite;
+}
+.netstat-sub {
+  font-weight: 700;
+  opacity: 0.82;
+}
+/* 온라인 복귀 — 초록 확인 토스트(2.6s 뒤 사라짐) */
+.netstat-toast {
+  background: linear-gradient(180deg, #e3f8ea, #c9f0d6);
+  color: #1d7a44;
+  border: 1.5px solid #92dca9;
+}
+.netstat-check {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+@keyframes netstat-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes netstat-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(224, 138, 30, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgba(224, 138, 30, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(224, 138, 30, 0);
+  }
+}
+
+/* 웹: 화면 넓으니 우하단 코너에 고정(중앙 차지 X, 포스터 가림 최소) */
+@media (min-width: 641px) {
+  .netstat {
+    justify-content: flex-end;
+    right: 22px;
+    left: auto;
+    bottom: 22px;
+  }
+  .netstat-badge,
+  .netstat-toast {
+    font-size: 14px;
+    padding: 10px 17px;
+  }
+}
+
+/* 동작 줄이기: 등장·펄스 애니 끄기 */
+html[data-reduce-motion] .netstat-badge,
+html[data-reduce-motion] .netstat-toast,
+html[data-reduce-motion] .netstat-dot {
+  animation: none !important;
+}

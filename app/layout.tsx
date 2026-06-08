@@ -18,6 +18,7 @@ import "./home.css";
 // 공개 포스터만 보는 비로그인 시청자가 스튜디오 CSS(220KB)를 렌더 차단으로 받지 않게 한다.
 import { PresenceBeacon } from "@/components/presence/presence-beacon";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
+import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 
 // #7: 텍스트 스티커 글꼴 선택지(한글 지원). next/font로 로드해 CSS 변수로 노출한다.
@@ -85,6 +86,8 @@ export default async function RootLayout({
         <ServiceWorkerRegister
           identity={actor.isAuthenticated ? (actor.email ?? actor.role) : "anon"}
         />
+        {/* 오프라인/온라인 상태 인앱 표시(배지+복귀 토스트) — export surface 바깥(body 직속)이라 캡쳐 무영향. */}
+        <OfflineIndicator />
         {/* 배포 확인용 커밋 해시는 개발자 화면(편집실 액션바 중앙)에만 표시한다(studio-shell). */}
         {/* Vercel Web Analytics — 방문자/페이지뷰 집계(쿠키리스, 개인정보 친화). */}
         <Analytics />
