@@ -957,7 +957,8 @@ html[data-eye-comfort] {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  /* 모바일은 상단 — 하단엔 하트/필터/오늘 버튼 바가 있어 가리면 안 된다. */
+  top: calc(env(safe-area-inset-top, 0px) + 10px);
   z-index: 9000;
   display: flex;
   justify-content: center;
@@ -1006,14 +1007,15 @@ html[data-eye-comfort] {
   font-weight: 900;
 }
 
+/* 위치 중립(상단/하단 어디든 자연스럽게) — scale+fade만 */
 @keyframes netstat-rise {
   from {
     opacity: 0;
-    transform: translateY(10px) scale(0.96);
+    transform: scale(0.94);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1);
   }
 }
 @keyframes netstat-pulse {
@@ -1034,6 +1036,7 @@ html[data-eye-comfort] {
     justify-content: flex-end;
     right: 22px;
     left: auto;
+    top: auto;
     bottom: 22px;
   }
   .netstat-badge,
