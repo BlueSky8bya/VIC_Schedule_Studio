@@ -4122,9 +4122,9 @@
   align-items: start;
   transition: grid-template-columns 0.28s ease;
 }
-/* 날짜를 선택하면 우측 카드(폼 372 + 좌측 간격 18)가 밀고 들어온다. */
+/* 날짜를 선택하면 우측 카드(폼 446 + 좌측 간격 18)가 밀고 들어온다. */
 .studio-workspace.editor-open {
-  grid-template-columns: 188px minmax(0, 1fr) 390px;
+  grid-template-columns: 188px minmax(0, 1fr) 464px;
 }
 
 .studio-left-panel,
@@ -4155,7 +4155,7 @@
   padding-left: 18px; /* 달력과의 간격(폼 왼쪽) — 카드가 실제로 열렸을 때만 */
 }
 .event-editor-panel form {
-  width: 372px; /* 폭 고정 → 컬럼 애니메이션 동안 reflow 없이 슬라이드 */
+  width: 446px; /* 폭 고정 → 컬럼 애니메이션 동안 reflow 없이 슬라이드 */
   /* 헤더(상단바·액션바·단축키줄 ~150px)를 빼서 폼이 처음부터 화면 안에 다 들어오게 →
      페이지(옆 달력)를 안 밀고 폼만 스크롤해 맨 끝(공지/방문 그래프)까지 닿는다. */
   max-height: calc(100dvh - 150px);
