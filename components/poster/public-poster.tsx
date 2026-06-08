@@ -45,8 +45,8 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
+import { ThemeSwitch } from "@/components/poster/theme-switch";
 import {
-  POSTER_THEMES,
   STICKER_ANIMS,
   STICKER_SHAPES,
   shapeDefaultColor,
@@ -2949,19 +2949,7 @@ export function PublicPoster({
 
               {/* C9/C10: 포스터 테마 — 소유자만(액션이 있을 때만) 노출 */}
               {setPosterThemeAction ? (
-                <div className="theme-switch" role="group" aria-label="달력 테마">
-                  {POSTER_THEMES.map((theme) => (
-                    <button
-                      aria-pressed={posterTheme === theme.key}
-                      className={posterTheme === theme.key ? "active" : ""}
-                      key={theme.key}
-                      onClick={() => void changeTheme(theme.key)}
-                      type="button"
-                    >
-                      {theme.label}
-                    </button>
-                  ))}
-                </div>
+                <ThemeSwitch posterTheme={posterTheme} onChange={(t) => void changeTheme(t)} />
               ) : null}
             </div>
 
