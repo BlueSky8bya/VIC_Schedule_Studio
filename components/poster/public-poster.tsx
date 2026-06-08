@@ -876,18 +876,37 @@ export function PublicPoster({
   // 떡밥 즉시 공개 — 카운트다운이 0이 되면 캐시 우회 액션으로 실제 내용을 받아 이 맵에 덮는다.
   // (이게 있으면 렌더에서 가린 stub 대신 실제 일정을 쓴다 → 캐시 30초 안 기다리고 그 순간 풀림.)
   const [revealedEvents, setRevealedEvents] = useState<Record<string, PublicScheduleEvent>>({});
+  // 방금 공개된 떡밥 id — 잠깐 '짠!' 등장 애니메이션을 입힌다(보상감). 1.8초 뒤 해제.
+  const [justRevealed, setJustRevealed] = useState<Set<string>>(() => new Set());
   const revealTeaser = useCallback((id: string) => {
     revealTeaserAction([id])
       .then((list) => {
         if (list.length > 0) {
+          const ids = list.map((ev) => ev.id);
           setRevealedEvents((prev) => {
             const next = { ...prev };
             for (const ev of list) next[ev.id] = ev;
             return next;
           });
+          // 이미 공개돼 화면에 떠 있던(애니 끝난) 건 다시 안 튀게, 이번에 새로 들어온 것만 표시.
+          setJustRevealed((prev) => {
+            const fresh = ids.filter((x) => !prev.has(x) && !revealedEvents[x]);
+            if (fresh.length === 0) return prev;
+            const next = new Set(prev);
+            for (const x of fresh) next.add(x);
+            window.setTimeout(() => {
+              setJustRevealed((cur) => {
+                const n = new Set(cur);
+                for (const x of fresh) n.delete(x);
+                return n;
+              });
+            }, 1800);
+            return next;
+          });
         }
       })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const serverHearts = Boolean(toggleHeartAction);
   // 비로그인 하트용 기기 토큰(로그인 시엔 빈 값, 계정 기준으로 동작). 마운트 후 채워진다.
@@ -2218,9 +2237,9 @@ export function PublicPoster({
           {events.map((rawEvent) => {
             // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다(가린 stub 대신 진짜).
             const event = revealedEvents[rawEvent.id] ?? rawEvent;
-            // 떡밥(가림): 공개 시각 전이면 전용 미스터리 카드 + 카운트다운. 시각이 지났는데도 서버가
-            // 가린 stub을 보냈으면(캐시 지연) 보라 카드 깜빡 없이 중립 placeholder + 즉시 실제로 교체.
-            if (event.teaser && event.teaserRevealAt) {
+            // 떡밥(가림): 서버가 '실제로 가린'(제목 빈) stub일 때만 떡밥 처리한다. 미리보기처럼 실제
+            // 제목이 이미 있으면(편집실 데이터) 떡밥 처리 안 하고 바로 일반 렌더 → 지연·깜빡임 없음.
+            if (event.teaser && event.teaserRevealAt && !event.publicTitle) {
               if (Date.parse(event.teaserRevealAt) > Date.now()) {
                 return (
                   <div className="public-event teaser" key={event.id}>
@@ -2262,6 +2281,7 @@ export function PublicPoster({
               span.isMulti && !span.roundRight ? "no-right" : "",
               isDimmedByFilter(event) ? "dimmed" : "",
               event.isTentative && span.showTitle ? "tentative" : "",
+              justRevealed.has(rawEvent.id) ? "just-revealed" : "",
               bookmarked ? "bookmarked" : ""
             ]
               .filter(Boolean)
@@ -2522,9 +2542,8 @@ export function PublicPoster({
                   {list.map(({ event: rawEvent, support }) => {
                     // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다.
                     const event = revealedEvents[rawEvent.id] ?? rawEvent;
-                    // 떡밥(가림): 모바일 아젠다. 공개 전이면 미스터리 카드, 지났는데 stub이면(캐시
-                    // 지연) 중립 placeholder + 즉시 교체.
-                    if (event.teaser && event.teaserRevealAt) {
+                    // 떡밥(가림): 실제로 가린(제목 빈) stub일 때만. 미리보기(실제 제목 있음)는 즉시 일반.
+                    if (event.teaser && event.teaserRevealAt && !event.publicTitle) {
                       if (Date.parse(event.teaserRevealAt) > Date.now()) {
                         return (
                           <div className="agenda-item teaser" key={event.id}>
@@ -2567,7 +2586,10 @@ export function PublicPoster({
                     const twoColor = !support && colors.length >= 2;
                     const end = event.endDateKey;
                     return (
-                      <div className="agenda-event" key={(support ? "s-" : "") + event.id}>
+                      <div
+                        className={`agenda-event${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}`}
+                        key={(support ? "s-" : "") + event.id}
+                      >
                         {twoColor ? (
                           // 2색: 위/아래 반반 + 각 무늬, 가운데 경계는 마스크로 흐릿하게.
                           <span className="agenda-bar agenda-bar-2">

@@ -1420,6 +1420,89 @@ html {
     animation: none;
   }
 }
+/* ✨ 떡밥 공개 순간 — '짠!' 등장. 기대 끝의 보상감을 주려 화려하게(팝 바운스 + 골드/보라 글로우
+   폭발 + 반짝이 + 빛 스윕). prefers-reduced-motion이면 정적으로. */
+.public-event.just-revealed,
+.agenda-event.just-revealed {
+  position: relative;
+  z-index: 4;
+  animation: tj-pop 0.62s cubic-bezier(0.22, 1.25, 0.36, 1) both;
+}
+@keyframes tj-pop {
+  0% {
+    transform: scale(0.55) rotate(-5deg);
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgb(124 108 240 / 0%);
+  }
+  45% {
+    transform: scale(1.1) rotate(2deg);
+    opacity: 1;
+    box-shadow: 0 0 26px 8px rgb(255 206 58 / 65%), 0 0 0 6px rgb(124 108 240 / 35%);
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    box-shadow: 0 0 0 0 rgb(124 108 240 / 0%);
+  }
+}
+/* 빛 스윕 — 카드 위를 가로지르는 반짝 */
+.public-event.just-revealed::before,
+.agenda-event.just-revealed::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(115deg, transparent 30%, rgb(255 255 255 / 75%) 50%, transparent 70%);
+  background-size: 250% 100%;
+  pointer-events: none;
+  animation: tj-shine 0.7s ease-out 0.08s both;
+}
+@keyframes tj-shine {
+  from {
+    background-position: 180% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+/* 반짝이 별 — 카드 모서리에서 톡 튀어 사라진다 */
+.public-event.just-revealed::after,
+.agenda-event.just-revealed::after {
+  content: "✨";
+  position: absolute;
+  top: -12px;
+  right: -4px;
+  font-size: 22px;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgb(255 206 58 / 90%));
+  animation: tj-spark 0.95s ease-out both;
+}
+@keyframes tj-spark {
+  0% {
+    transform: scale(0) rotate(-40deg) translateY(6px);
+    opacity: 0;
+  }
+  45% {
+    transform: scale(1.5) rotate(12deg) translateY(-2px);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9) rotate(0) translateY(-10px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-event.just-revealed,
+  .agenda-event.just-revealed {
+    animation: none;
+  }
+  .public-event.just-revealed::before,
+  .agenda-event.just-revealed::before,
+  .public-event.just-revealed::after,
+  .agenda-event.just-revealed::after {
+    display: none;
+  }
+}
+
 /* 모바일 아젠다의 떡밥 항목 */
 .agenda-item.teaser {
   display: flex;

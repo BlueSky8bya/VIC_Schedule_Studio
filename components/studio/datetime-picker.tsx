@@ -152,8 +152,8 @@ export function DateTimePicker({
   const reposition = () => {
     if (!triggerRef.current) return;
     const r = triggerRef.current.getBoundingClientRect();
-    const left = Math.max(8, Math.min(r.left, window.innerWidth - 332));
-    const top = Math.min(r.bottom + 6, Math.max(8, window.innerHeight - 430));
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - 500));
+    const top = Math.min(r.bottom + 6, Math.max(8, window.innerHeight - 380));
     setAnchor({ left, top, width: r.width });
   };
   const openPicker = () => {
@@ -252,39 +252,43 @@ export function DateTimePicker({
           <ChevronRight size={18} />
         </button>
       </div>
-      <div className="dtp-wdrow" aria-hidden="true">
-        {WD.map((w, i) => (
-          <span className={i === 0 ? "sun" : i === 6 ? "sat" : ""} key={w}>
-            {w}
-          </span>
-        ))}
-      </div>
-      <div className="dtp-grid">
-        {cells.map((d, i) => {
-          if (d === null) return <span className="dtp-cell empty" key={`e${i}`} />;
-          const sel = p && p.y === viewY && p.m === viewM && p.d === d;
-          const isToday = today.y === viewY && today.m === viewM && today.d === d;
-          const wd = (firstWd + d - 1) % 7;
-          return (
-            <button
-              className={`dtp-cell${sel ? " sel" : ""}${isToday ? " today" : ""}${wd === 0 ? " sun" : wd === 6 ? " sat" : ""}`}
-              key={d}
-              onClick={() => setDay(d)}
-              type="button"
-            >
-              {d}
-            </button>
-          );
-        })}
-      </div>
-      <div className="dtp-time">
-        <div className="dtp-readout" aria-hidden="true">
-          {base.hh < 12 ? "오전" : "오후"} {base.hh % 12 === 0 ? 12 : base.hh % 12}:{z2(base.mm)}
+      <div className="dtp-body">
+        <div className="dtp-cal">
+          <div className="dtp-wdrow" aria-hidden="true">
+            {WD.map((w, i) => (
+              <span className={i === 0 ? "sun" : i === 6 ? "sat" : ""} key={w}>
+                {w}
+              </span>
+            ))}
+          </div>
+          <div className="dtp-grid">
+            {cells.map((d, i) => {
+              if (d === null) return <span className="dtp-cell empty" key={`e${i}`} />;
+              const sel = p && p.y === viewY && p.m === viewM && p.d === d;
+              const isToday = today.y === viewY && today.m === viewM && today.d === d;
+              const wd = (firstWd + d - 1) % 7;
+              return (
+                <button
+                  className={`dtp-cell${sel ? " sel" : ""}${isToday ? " today" : ""}${wd === 0 ? " sun" : wd === 6 ? " sat" : ""}`}
+                  key={d}
+                  onClick={() => setDay(d)}
+                  type="button"
+                >
+                  {d}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <div className="dtp-wheels">
-          <Wheel count={24} label="시" onChange={setHour} value={base.hh} />
-          <span className="dtp-colon" aria-hidden="true">:</span>
-          <Wheel count={60} label="분" onChange={setMin} value={base.mm} />
+        <div className="dtp-time">
+          <div className="dtp-readout" aria-hidden="true">
+            {base.hh < 12 ? "오전" : "오후"} {base.hh % 12 === 0 ? 12 : base.hh % 12}:{z2(base.mm)}
+          </div>
+          <div className="dtp-wheels">
+            <Wheel count={24} label="시" onChange={setHour} value={base.hh} />
+            <span className="dtp-colon" aria-hidden="true">:</span>
+            <Wheel count={60} label="분" onChange={setMin} value={base.mm} />
+          </div>
         </div>
       </div>
       <div className="dtp-foot">

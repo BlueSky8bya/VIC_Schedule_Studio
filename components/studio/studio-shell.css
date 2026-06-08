@@ -1378,7 +1378,7 @@
 .dtp-pop {
   position: fixed;
   z-index: 10001;
-  width: 320px;
+  width: 470px; /* 달력+시간 가로 배치 → 스크롤 없이 한눈에 */
   max-width: calc(100vw - 24px);
 }
 .dtp-pop-x {
@@ -1571,6 +1571,31 @@
   }
 }
 
+/* 달력 + 시간 배치 — 모바일(시트)은 세로, 웹(팝오버)은 가로(스크롤 없이 한눈에). */
+.dtp-body {
+  display: flex;
+  flex-direction: column;
+}
+.dtp-cal {
+  flex: none;
+}
+@media (min-width: 641px) {
+  .dtp-body {
+    flex-direction: row;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .dtp-cal {
+    width: 252px;
+  }
+  .dtp-time {
+    flex: 1;
+    margin: 0 !important;
+    border-left: 1px solid #efeaf9;
+    padding-left: 12px;
+    align-self: stretch;
+  }
+}
 /* 시간 휠 — readout(가운데 위) + [시][:][분] 가운데 정렬. 콜론은 선택 밴드 높이에 맞춘다. */
 .dtp-time {
   display: flex;
