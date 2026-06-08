@@ -2237,9 +2237,10 @@ export function PublicPoster({
           {events.map((rawEvent) => {
             // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다(가린 stub 대신 진짜).
             const event = revealedEvents[rawEvent.id] ?? rawEvent;
-            // 떡밥(가림): 서버가 '실제로 가린'(제목 빈) stub일 때만 떡밥 처리한다. 미리보기처럼 실제
-            // 제목이 이미 있으면(편집실 데이터) 떡밥 처리 안 하고 바로 일반 렌더 → 지연·깜빡임 없음.
-            if (event.teaser && event.teaserRevealAt && !event.publicTitle) {
+            // 떡밥(가림): 공개 시각이 미래면 항상 ??? 카드 + 카운트다운(미리보기·실제 시청자 모두 —
+            // 데이터가 있어도 ???만 보여 지연 없음). 시각이 지났는데 서버가 가린 stub(제목 빈)을
+            // 보냈으면(캐시 지연) 중립 placeholder + 즉시 교체. 시각 지났고 제목 있으면 일반 렌더.
+            if (event.teaser && event.teaserRevealAt) {
               if (Date.parse(event.teaserRevealAt) > Date.now()) {
                 return (
                   <div className="public-event teaser" key={event.id}>
@@ -2254,13 +2255,16 @@ export function PublicPoster({
                   </div>
                 );
               }
-              return (
-                <TeaserRevealing
-                  className="public-event teaser-revealing"
-                  key={event.id}
-                  onReveal={() => revealTeaser(rawEvent.id)}
-                />
-              );
+              if (!event.publicTitle) {
+                return (
+                  <TeaserRevealing
+                    className="public-event teaser-revealing"
+                    key={event.id}
+                    onReveal={() => revealTeaser(rawEvent.id)}
+                  />
+                );
+              }
+              // 시각 지났고 실제 제목 있음(미리보기/신선 캐시) → 일반 렌더로 흐른다.
             }
             const colors = eventColors(event);
             const extraColors = getExtraCategoryColors(event, viewTags, schedule.palette);
@@ -2542,8 +2546,9 @@ export function PublicPoster({
                   {list.map(({ event: rawEvent, support }) => {
                     // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다.
                     const event = revealedEvents[rawEvent.id] ?? rawEvent;
-                    // 떡밥(가림): 실제로 가린(제목 빈) stub일 때만. 미리보기(실제 제목 있음)는 즉시 일반.
-                    if (event.teaser && event.teaserRevealAt && !event.publicTitle) {
+                    // 떡밥(가림): 미래면 항상 ??? 카드(미리보기·실제 모두). 지났고 빈 stub이면
+                    // placeholder+교체, 지났고 제목 있으면 일반 렌더.
+                    if (event.teaser && event.teaserRevealAt) {
                       if (Date.parse(event.teaserRevealAt) > Date.now()) {
                         return (
                           <div className="agenda-item teaser" key={event.id}>
@@ -2556,13 +2561,16 @@ export function PublicPoster({
                           </div>
                         );
                       }
-                      return (
-                        <TeaserRevealing
-                          className="agenda-item teaser-revealing"
-                          key={event.id}
-                          onReveal={() => revealTeaser(rawEvent.id)}
-                        />
-                      );
+                      if (!event.publicTitle) {
+                        return (
+                          <TeaserRevealing
+                            className="agenda-item teaser-revealing"
+                            key={event.id}
+                            onReveal={() => revealTeaser(rawEvent.id)}
+                          />
+                        );
+                      }
+                      // 지났고 실제 제목 있음 → 일반 렌더로 흐른다.
                     }
                     const colors = eventColors(event);
                     const extraColors = support
