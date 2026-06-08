@@ -8,7 +8,7 @@
 //   · 오프라인이면 어떤 화면으로 들어와도(오너의 /studio 포함) 이 '공개 포스터 스냅샷'을 보여준다 →
 //     오너·개발자도 오프라인에서 공개 일정은 볼 수 있다(편집은 온라인에서만 — 비공개·언락·저장이 필요).
 
-const CACHE = "vic-offline-v5"; // 버전 올리면 옛 캐시 자동 정리(activate에서).
+const CACHE = "vic-offline-v6"; // 버전 올리면 옛 캐시 자동 정리(activate에서).
 const SNAPSHOT_KEY = "/__offline_snapshot"; // 비로그인 공개 포스터 스냅샷의 캐시 키(실제 "/"와 분리).
 const SNAPSHOT_MIN_INTERVAL = 60_000; // 스냅샷 갱신 최소 간격(ms) — 잦은 재요청 방지.
 
@@ -41,12 +41,40 @@ async function refreshSnapshot() {
   try {
     const res = await fetch("/", { credentials: "omit", redirect: "manual", cache: "no-store" });
     if (res && res.status === 200 && !res.redirected) {
+      const forAssets = res.clone();
       await cache.put(SNAPSHOT_KEY, res.clone());
       lastSnapshotAt = t; // 성공했을 때만 throttle 시작 — 실패(오프라인) 시 다음 네비에서 즉시 재시도.
       await notifyClients(t); // "마지막 동기화 시각"을 인앱 오프라인 배지에 전달.
+      await precacheAssets(forAssets, cache); // HTML이 참조하는 js/css도 함께 캐시(오프라인 청크 로드 실패 방지).
     }
   } catch {
     /* 오프라인 등 — throttle 안 잠그고 다음 기회에 즉시 재시도 */
+  }
+}
+
+// 스냅샷 HTML이 참조하는 정적자산(/_next/static의 js·css)을 미리 캐시한다. 오너는 스튜디오 청크만
+// 받았을 뿐 공개 포스터 청크는 안 받았을 수 있어, 오프라인에서 "Loading chunk failed"가 나던 문제 방지.
+// HTML 전문에서 경로를 정규식으로 뽑으므로 RSC 페이로드 안의 동적 청크 경로까지 잡힌다. 실패는 무시.
+async function precacheAssets(res, cache) {
+  try {
+    const html = await res.text();
+    const urls = new Set();
+    const re = /\/_next\/static\/[^"'()\s\\]+\.(?:js|css)/g;
+    let m;
+    while ((m = re.exec(html))) urls.add(m[0]);
+    await Promise.all(
+      [...urls].map(async (u) => {
+        try {
+          if (await cache.match(u)) return;
+          const r = await fetch(u, { credentials: "omit" });
+          if (r && r.ok) await cache.put(u, r.clone());
+        } catch {
+          /* 개별 자산 실패 무시 */
+        }
+      })
+    );
+  } catch {
+    /* 무시 */
   }
 }
 
