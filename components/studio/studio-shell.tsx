@@ -1660,11 +1660,21 @@ export function StudioShell({
   const edPhi0Ref = useRef(0); // 카드 로컬에서 (잡은 점→중심) 벡터의 각도(rad)
   const edWobRef = useRef(0);
   const edReducedRef = useRef(false);
+  // 던지기(fling) — 빙빙 돌리다 놓으면 그 순간 속도+회전을 받아 포물선으로 날아간다.
+  const edDegRef = useRef(0); // 현재 카드 회전각(deg)
+  const edAngVelRef = useRef(0); // 회전 각속도(deg/frame, 부호 유지)
+  const edWorldPrevRef = useRef(0); // 이전 프레임 월드각(각속도 계산용)
+  const edVelRef = useRef({ x: 0, y: 0 }); // 포인터 속도(px/ms)
+  const edPtrRef = useRef<{ x: number; y: number; t: number } | null>(null);
+  const flingRafRef = useRef<number | null>(null);
+  const flingGhostRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     return () => {
       if (dragRaf.current) cancelAnimationFrame(dragRaf.current);
+      if (flingRafRef.current) cancelAnimationFrame(flingRafRef.current);
       dragGhostRef.current?.remove();
+      flingGhostRef.current?.remove();
       if (dragMoveRef.current) window.removeEventListener("pointermove", dragMoveRef.current);
     };
   }, []);
@@ -1676,6 +1686,11 @@ export function StudioShell({
       ghost.style.left = `${edTargetRef.current.x}px`;
       ghost.style.top = `${edTargetRef.current.y}px`;
     } else if (ghost) {
+      // 포인터가 멈추면 move 이벤트가 끊겨 속도가 옛값에 박힌다 → 매 프레임 감쇠시켜,
+      // 멈췄다 천천히 놓는 평범한 드롭이 실수로 던져지지 않게 한다(빙빙 돌리는 중엔 move가
+      // 계속 들어와 속도가 유지된다).
+      edVelRef.current.x *= 0.9;
+      edVelRef.current.y *= 0.9;
       const pos = edPosRef.current;
       const t = edTargetRef.current;
       pos.x += (t.x - pos.x) * 0.18; // 위치도 관성 있게 더 부드럽게 뒤따른다
@@ -1702,10 +1717,17 @@ export function StudioShell({
       bob.y = pivotY + (dy / dist) * L;
       // 카드 회전 = (pivot→추) 월드각 − 로컬(잡은점→중심)각. 미세 흔들림 추가.
       const worldAngle = Math.atan2(bob.y - pivotY, bob.x - pivotX);
+      // 각속도(deg/frame) 추적 — 놓는 순간 던지기 회전에 쓴다. 2π 경계 보정 + EMA로 매끈하게.
+      let dA = worldAngle - edWorldPrevRef.current;
+      while (dA > Math.PI) dA -= Math.PI * 2;
+      while (dA < -Math.PI) dA += Math.PI * 2;
+      edWorldPrevRef.current = worldAngle;
+      edAngVelRef.current = edAngVelRef.current * 0.7 + ((dA * 180) / Math.PI) * 0.3;
       edWobRef.current += 0.12;
       const w = edWobRef.current;
       const wobble = Math.sin(w) * 1.1 + (Math.random() - 0.5) * 0.7; // deg
       const deg = ((worldAngle - edPhi0Ref.current) * 180) / Math.PI + wobble;
+      edDegRef.current = deg;
       ghost.style.left = `${pos.x}px`;
       ghost.style.top = `${pos.y}px`;
       ghost.style.transform = `rotate(${deg}deg) scale(1.06)`;
@@ -1729,24 +1751,89 @@ export function StudioShell({
     dragScrollDir.current = 0;
     if (dragRaf.current) cancelAnimationFrame(dragRaf.current);
     dragRaf.current = null;
-    dragGhostRef.current?.remove();
-    dragGhostRef.current = null;
     document.body.style.userSelect = "";
     const info = dragInfoRef.current;
     const target = dropDateRef.current;
     const over = dropOverRef.current;
-    setDragEventId(null);
+    const ghost = dragGhostRef.current;
+    // 던지기 판정 — 놓는 순간 충분히 빠르거나(px/ms) 빙빙 돌고 있으면(deg/frame) 날려보낸다.
+    const v = edVelRef.current;
+    const speed = Math.hypot(v.x, v.y);
+    const angSpeed = Math.abs(edAngVelRef.current);
+    const flung = Boolean(
+      info?.started && ghost && !edReducedRef.current && (speed > 1.1 || angSpeed > 16)
+    );
     setDropDate(null);
     setDropSlot(null);
     dropDateRef.current = null;
     dropOverRef.current = null;
-    if (info?.started) {
-      justDraggedRef.current = true; // 다음 click(선택) 1회 무시
-      if (target) {
-        void dropEventInto(info.id, info.sourceDate, target, over);
-      }
+    if (info?.started) justDraggedRef.current = true; // 다음 click(선택) 1회 무시
+    if (flung) {
+      // 유령을 던지기 루프로 넘긴다. 원본은 화면 밖으로 사라질 때까지 흐린 채 두었다가(finishFling)
+      // 다시 진해지며 원래 날짜 자리로 '돌아온' 것처럼 보이게 한다. 이동 저장은 하지 않는다.
+      dragGhostRef.current = null;
+      launchFling(ghost!, v, edAngVelRef.current);
+      dragInfoRef.current = null;
+      return;
+    }
+    ghost?.remove();
+    dragGhostRef.current = null;
+    setDragEventId(null);
+    if (info?.started && target) {
+      void dropEventInto(info.id, info.sourceDate, target, over);
     }
     dragInfoRef.current = null;
+  }
+
+  // 던지기: 받은 속도(px/ms)·각속도(deg/frame)로 유령을 포물선 + 회전시켜 화면 밖으로 날린다.
+  function launchFling(ghost: HTMLElement, v: { x: number; y: number }, angVel: number) {
+    let fx = v.x * 16; // px/frame(~16ms)
+    let fy = v.y * 16;
+    const sp = Math.hypot(fx, fy) || 1;
+    const m = Math.min(60, Math.max(11, sp)); // 너무 느리면 살짝 띄우고, 너무 빠르면 가둔다
+    fx = (fx / sp) * m;
+    fy = (fy / sp) * m;
+    let posX = edPosRef.current.x;
+    let posY = edPosRef.current.y;
+    let deg = edDegRef.current;
+    let dvel = angVel;
+    if (Math.abs(dvel) < 7) dvel = dvel >= 0 ? 7 : -7; // 프로펠러처럼 계속 돌게 최소 회전 보장
+    const G = 1.7; // 던지기 중력(px/frame^2)
+    flingGhostRef.current = ghost;
+    const step = () => {
+      fy += G;
+      fx *= 0.99; // 공기저항(가로)
+      posX += fx;
+      posY += fy;
+      deg += dvel;
+      dvel *= 0.992;
+      ghost.style.left = `${posX}px`;
+      ghost.style.top = `${posY}px`;
+      ghost.style.transform = `rotate(${deg}deg) scale(1.06)`;
+      const gw = ghost.offsetWidth;
+      const gh = ghost.offsetHeight;
+      if (
+        posX > window.innerWidth ||
+        posX + gw < 0 ||
+        posY > window.innerHeight ||
+        posY + gh < 0
+      ) {
+        finishFling();
+        return;
+      }
+      flingRafRef.current = requestAnimationFrame(step);
+    };
+    flingRafRef.current = requestAnimationFrame(step);
+  }
+
+  function finishFling() {
+    if (flingRafRef.current) {
+      cancelAnimationFrame(flingRafRef.current);
+      flingRafRef.current = null;
+    }
+    flingGhostRef.current?.remove();
+    flingGhostRef.current = null;
+    setDragEventId(null); // 원본 카드 다시 진해짐 = 원래 날짜로 돌아옴
   }
 
   function onEventDragMove(e: PointerEvent) {
@@ -1768,6 +1855,13 @@ export function StudioShell({
       }
       if (dist < 6) return;
       info.started = true;
+      // 새 드래그 시작 → 이전에 날아가던 유령이 있으면 즉시 정리.
+      if (flingRafRef.current) {
+        cancelAnimationFrame(flingRafRef.current);
+        flingRafRef.current = null;
+      }
+      flingGhostRef.current?.remove();
+      flingGhostRef.current = null;
       const rect = info.node.getBoundingClientRect();
       // 카드(그라데이션 inline 스타일)에 직접 transform을 걸면 2색 카드에서 흔들림이 안 보이는
       // 경우가 있어, 깨끗한 래퍼 div에 transform을 걸고 그 안에 카드 복제본을 넣는다.
@@ -1793,6 +1887,11 @@ export function StudioShell({
       edPosRef.current = { x: rect.left, y: rect.top };
       edTargetRef.current = { x: rect.left, y: rect.top };
       edWobRef.current = 0;
+      // 던지기 속도 추적 초기화.
+      edVelRef.current = { x: 0, y: 0 };
+      edPtrRef.current = null;
+      edAngVelRef.current = 0;
+      edDegRef.current = 0;
       edOffRef.current = { x: info.offX, y: info.offY };
       const lvx = rect.width / 2 - info.offX;
       const lvy = rect.height / 2 - info.offY;
@@ -1800,6 +1899,7 @@ export function StudioShell({
       // 옆으로만 움직여도 빙글) 과민해진다. 길게 두면 같은 움직임에도 회전이 완만해진다.
       edLenRef.current = Math.max(80, Math.hypot(lvx, lvy));
       edPhi0Ref.current = Math.atan2(lvy, lvx);
+      edWorldPrevRef.current = edPhi0Ref.current; // 시작 월드각 = φ0
       const pivotX = rect.left + info.offX;
       const pivotY = rect.top + info.offY;
       edBobRef.current = { x: pivotX + lvx, y: pivotY + lvy };
@@ -1812,6 +1912,21 @@ export function StudioShell({
     }
     // 직접 위치를 박지 않고 "목표"만 갱신 → dragAutoScroll 루프가 관성 있게 따라간다.
     edTargetRef.current = { x: e.clientX - info.offX, y: e.clientY - info.offY };
+    // 포인터 속도(px/ms) 추적 — 놓는 순간 던지기 세기. EMA로 한 샘플 튐을 누른다.
+    const now = performance.now();
+    const ps = edPtrRef.current;
+    if (ps) {
+      const dt = now - ps.t;
+      if (dt > 0) {
+        const nvx = (e.clientX - ps.x) / dt;
+        const nvy = (e.clientY - ps.y) / dt;
+        edVelRef.current = {
+          x: edVelRef.current.x * 0.4 + nvx * 0.6,
+          y: edVelRef.current.y * 0.4 + nvy * 0.6
+        };
+      }
+    }
+    edPtrRef.current = { x: e.clientX, y: e.clientY, t: now };
     const under = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
     const dayEl = under?.closest("[data-isodate]") as HTMLElement | null;
     const iso = dayEl?.getAttribute("data-isodate") ?? null;
