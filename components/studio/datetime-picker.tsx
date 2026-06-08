@@ -141,10 +141,8 @@ function Wheel({
         >
           <div className="dtp-wheel-pad" />
           {Array.from({ length: count }, (_, i) => {
-            // 다이얼(원통) 느낌 — 중심에서 멀수록 작아지고 뒤로 누운다(rotateX). 보고 있는 시간을
-            // '잡고 내리는' 감각. 스냅/레이아웃은 그대로(transform은 시각만).
-            const dist = i - active;
-            const ad = Math.abs(dist);
+            // 다이얼 느낌 — 중심에서 멀수록 작아지고 흐려진다(크기·투명도만). 클릭 영역은 36px 그대로.
+            const ad = Math.abs(i - active);
             const scale = ad === 0 ? 1.16 : ad === 1 ? 0.92 : ad === 2 ? 0.74 : 0.6;
             const opacity = ad === 0 ? 1 : ad === 1 ? 0.7 : ad === 2 ? 0.42 : 0.22;
             return (
@@ -164,15 +162,10 @@ function Wheel({
                 }}
                 type="button"
               >
-                {/* 다이얼 원근 변형은 '안쪽 글자'에만 — 버튼(클릭 영역)은 36px 전체라 ±1·±2도 정확히
-                    눌러 선택된다. */}
-                <span
-                  className="dtp-wheel-digit"
-                  style={{
-                    transform: `perspective(420px) rotateX(${dist * -22}deg) scale(${scale})`,
-                    opacity
-                  }}
-                >
+                {/* 다이얼 느낌은 크기(scale)+투명도로만 — rotateX는 글자를 위아래로 밀어 '보이는 위치
+                    ≠ 버튼 영역'을 만들어(7을 눌러도 6이 선택) 빼고, 중심 정렬을 유지해 ±1·±2도 정확히
+                    눌러 선택되게 한다. */}
+                <span className="dtp-wheel-digit" style={{ transform: `scale(${scale})`, opacity }}>
                   {z2(i)}
                 </span>
               </button>
