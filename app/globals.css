@@ -957,11 +957,12 @@ html[data-eye-comfort] {
   position: fixed;
   left: 0;
   right: 0;
-  /* 모바일은 상단 — 하단엔 하트/필터/오늘 버튼 바가 있어 가리면 안 된다. */
-  top: calc(env(safe-area-inset-top, 0px) + 10px);
+  /* 모바일은 상단 좌측 — 우상단 로그인 버튼과 같은 줄(대칭). 하단엔 하트/필터/오늘 바가 있어 못 둔다. */
+  top: calc(env(safe-area-inset-top, 0px) + 14px);
   z-index: 9000;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
+  padding-left: calc(env(safe-area-inset-left, 0px) + 16px);
   pointer-events: none; /* 배지가 일정 클릭 막지 않게 */
 }
 .netstat-badge,
@@ -995,6 +996,7 @@ html[data-eye-comfort] {
 .netstat-sub {
   font-weight: 700;
   opacity: 0.82;
+  display: none; /* 모바일 축약: '오프라인'만. 웹에선 아래 media에서 다시 보인다. */
 }
 /* 온라인 복귀 — 초록 확인 토스트(2.6s 뒤 사라짐) */
 .netstat-toast {
@@ -1038,11 +1040,15 @@ html[data-eye-comfort] {
     left: auto;
     top: auto;
     bottom: 22px;
+    padding-left: 0;
   }
   .netstat-badge,
   .netstat-toast {
     font-size: 14px;
     padding: 10px 17px;
+  }
+  .netstat-sub {
+    display: inline; /* 웹은 폭 넉넉 → '· 마지막 동기화 N분 전' 표시 */
   }
 }
 
