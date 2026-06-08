@@ -81,7 +81,7 @@ import {
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
-import { PublicPoster } from "@/components/poster/public-poster";
+import { CalendarSkeleton } from "@/components/skeleton/calendar-skeleton";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { DateTimePicker } from "@/components/studio/datetime-picker";
@@ -118,6 +118,13 @@ const NoticeModal = dynamic(
 const TrustedMembersPanel = dynamic(
   () => import("@/components/trusted-members/trusted-members-panel").then((m) => m.TrustedMembersPanel),
   { ssr: false }
+);
+// 시청자 화면 미리보기는 '미리보기 켤 때만' 필요한데, PublicPoster(3800줄+)와 poster.css(59KB)가
+// 편집실 첫 로딩에 늘 실려 있었다. 동적 import로 빼서 편집실 초기 JS·CSS를 크게 줄인다. 미리보기를
+// 처음 켤 때 잠깐 포스터 스켈레톤(콘텐츠가 놓일 자리)을 보여준다 — ssr:false(사용자 동작으로 열림).
+const PublicPoster = dynamic(
+  () => import("@/components/poster/public-poster").then((m) => m.PublicPoster),
+  { ssr: false, loading: () => <CalendarSkeleton variant="poster" /> }
 );
 
 type StudioShellProps = {
