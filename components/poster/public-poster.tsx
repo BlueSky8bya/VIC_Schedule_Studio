@@ -25,8 +25,7 @@ import {
   Sparkles,
   Trash2,
   Type,
-  Undo2,
-  Upload
+  Undo2
 } from "lucide-react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -46,16 +45,15 @@ import {
 import dynamic from "next/dynamic";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
 import { ThemeSwitch } from "@/components/poster/theme-switch";
+import { DecoratePalette } from "@/components/poster/decorate-palette";
 import {
   STICKER_ANIMS,
-  STICKER_SHAPES,
   shapeDefaultColor,
   type PublicSchedule,
   type PublicScheduleEvent,
   type StickerAsset,
   type StickerInstance
 } from "@/lib/domain/schedule-types";
-import { ShapeSvg } from "@/components/poster/sticker-shapes";
 import type { ThemeResult } from "@/lib/schedules/theme-actions";
 import type { SaveStickerInput, StickerResult } from "@/lib/schedules/sticker-actions";
 import type { StickerAssetResult } from "@/lib/schedules/sticker-asset-actions";
@@ -2966,146 +2964,25 @@ export function PublicPoster({
               ) : null}
             </div>
 
-            <div className="decorate-cols">
-                <div className="palette-group">
-              <span className="palette-label">기본 이모지</span>
-              <div className="emoji-tabs" role="tablist" aria-label="이모지 분류">
-                {EMOJI_CATEGORIES.map((cat) => (
-                  <button
-                    aria-pressed={emojiCat === cat.key}
-                    className={emojiCat === cat.key ? "active" : ""}
-                    key={cat.key}
-                    onClick={() => setEmojiCat(cat.key)}
-                    type="button"
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
-              <div className="emoji-palette">
-                {activeEmojis.map((emoji, i) => (
-                  <button
-                    className="emoji-chip"
-                    key={`${emoji}-${i}`}
-                    onClick={() => addEmoji(emoji)}
-                    title={`${emoji} 추가`}
-                    type="button"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="palette-group">
-              <span className="palette-label">내 이모지</span>
-
-              {/* 저장 칸: 업로드해 둔 이모지 보관함 */}
-              {assets.length > 0 ? (
-                <div className="emoji-palette asset-palette">
-                  {assets.map((asset) => {
-                    const pending = pendingAssetIds.has(asset.id);
-                    return (
-                      <div
-                        className={`asset-chip ${pending ? "uploading" : ""}`}
-                        key={asset.id}
-                      >
-                        <button
-                          className="emoji-chip"
-                          disabled={pending}
-                          onClick={() => addImageSticker(asset)}
-                          title={pending ? "올리는 중…" : `${asset.name} 추가`}
-                          type="button"
-                        >
-                          {/* 업로드 이미지 미리보기 — 동적 URL이라 next/image 부적합 */}
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img alt={asset.name} src={asset.fileUrl} />
-                          {pending ? <span className="asset-spinner" aria-hidden="true" /> : null}
-                        </button>
-                        {/* 삭제(×)는 에셋 관리 권한이 있을 때만 — 매니저는 꾸미기만(삭제 불가). */}
-                        {!pending && deleteStickerAssetAction ? (
-                          <button
-                            aria-label={`${asset.name} 삭제`}
-                            className="asset-del"
-                            onClick={() => removeAsset(asset.id)}
-                            title="이 이모지 삭제"
-                            type="button"
-                          >
-                            ×
-                          </button>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : null}
-
-              {/* 업로드 칸 — 에셋 관리 권한이 있을 때만(매니저는 숨김 = 꾸미기만). 드래그앤드롭/클릭. */}
-              {uploadStickerAssetAction ? (
-              <label
-                className={`upload-drop ${dragOver ? "dragover" : ""} ${uploading ? "busy" : ""}`}
-                onDragLeave={() => setDragOver(false)}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  if (!dragOver) setDragOver(true);
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  setDragOver(false);
-                  void handleUploadFiles(Array.from(e.dataTransfer.files));
-                }}
-              >
-                <input
-                  accept="image/png,image/webp,image/gif,image/jpeg"
-                  disabled={uploading}
-                  hidden
-                  multiple
-                  onChange={(e) => {
-                    void handleUploadFiles(Array.from(e.target.files ?? []));
-                    e.target.value = "";
-                  }}
-                  ref={fileInputRef}
-                  type="file"
-                />
-                <span className="upload-drop-icon" aria-hidden="true">
-                  <Upload size={20} />
-                </span>
-                <span className="upload-drop-title">
-                  {uploading
-                    ? "올리는 중…"
-                    : dragOver
-                      ? "여기에 놓으면 업로드돼요"
-                      : "이미지를 끌어다 놓거나 클릭해서 업로드"}
-                </span>
-                <span className="upload-drop-hint">
-                  정사각형 · 투명 배경 PNG 권장 · PNG·WebP·GIF·JPG · 2MB 이하 · 여러 개 가능
-                </span>
-              </label>
-              ) : null}
-            </div>
-
-            {/* P2: 데코 도형 — 누르면 프리셋 색으로 올라가고, 툴바에서 색·움직임·회전 등 조절. */}
-            <div className="palette-group">
-              <span className="palette-label">도형</span>
-              <div className="emoji-palette shape-palette">
-                {STICKER_SHAPES.map((s) => (
-                  <button
-                    className="emoji-chip shape-chip"
-                    key={s.key}
-                    onClick={() => addShape(s.key)}
-                    title={`${s.label} 추가`}
-                    type="button"
-                  >
-                    <ShapeSvg
-                      color={s.defaultColor}
-                      shapeKey={s.key}
-                      style={{ width: "74%", height: "74%" }}
-                    />
-                  </button>
-                ))}
-              </div>
-            </div>
-            </div>
+            <DecoratePalette
+              activeEmojis={activeEmojis}
+              assets={assets}
+              canDeleteAssets={Boolean(deleteStickerAssetAction)}
+              canUpload={Boolean(uploadStickerAssetAction)}
+              categories={EMOJI_CATEGORIES}
+              dragOver={dragOver}
+              emojiCat={emojiCat}
+              fileInputRef={fileInputRef}
+              onAddEmoji={(e) => void addEmoji(e)}
+              onAddImageSticker={(a) => void addImageSticker(a)}
+              onAddShape={(k) => void addShape(k)}
+              onDragOver={setDragOver}
+              onEmojiCat={setEmojiCat}
+              onRemoveAsset={(id) => void removeAsset(id)}
+              onUploadFiles={(files) => void handleUploadFiles(files)}
+              pendingAssetIds={pendingAssetIds}
+              uploading={uploading}
+            />
 
             {anchorId && mounted ? (
               createPortal(
