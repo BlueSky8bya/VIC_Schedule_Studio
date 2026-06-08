@@ -2815,11 +2815,7 @@ export function PublicPoster({
                 <button
                   className={anonymous ? "agenda-login" : "agenda-logout"}
                   onClick={(e) => {
-                    if (anonymous) {
-                      handleMobileLogin(e);
-                    } else {
-                      startNav("로그아웃 중…");
-                    }
+                    if (anonymous) handleMobileLogin(e);
                   }}
                   type="submit"
                 >
@@ -2921,19 +2917,7 @@ export function PublicPoster({
                   {!anonymous && accountEmail ? (
                     <PlainEmail className="account-email" title={accountEmail} value={accountEmail} />
                   ) : null}
-                  <button
-                    className="button"
-                    onClick={() =>
-                      startNav(
-                        anonymous
-                          ? isNarrow
-                            ? "로그인 중…"
-                            : "로그인 화면으로 이동 중입니다…"
-                          : "로그아웃 중…"
-                      )
-                    }
-                    type="submit"
-                  >
+                  <button className="button" type="submit">
                     {anonymous ? "로그인" : "로그아웃"}
                   </button>
                 </form>
