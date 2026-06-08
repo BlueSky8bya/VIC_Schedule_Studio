@@ -56,9 +56,3 @@ export function canReadPrivateLayer(
 export function canReadOwnerPrivate(role: MembershipRole) {
   return role === "owner";
 }
-
-export function assertOwner(role: MembershipRole) {
-  if (!canEditSchedule(role)) {
-    throw new Error("Only owner or developer can mutate schedule data.");
-  }
-}
