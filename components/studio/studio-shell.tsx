@@ -1769,10 +1769,11 @@ export function StudioShell({
     dropOverRef.current = null;
     if (info?.started) justDraggedRef.current = true; // 다음 click(선택) 1회 무시
     if (flung) {
-      // 유령을 던지기 루프로 넘긴다. 원본은 화면 밖으로 사라질 때까지 흐린 채 두었다가(finishFling)
-      // 다시 진해지며 원래 날짜 자리로 '돌아온' 것처럼 보이게 한다. 이동 저장은 하지 않는다.
+      // 유령을 던지기 루프로 넘긴다. 화면 밖으로 완전히 날아가면 그 일정을 삭제한다(낙관적 제거 +
+      // Ctrl+Z 복구 스택에 적재 — 던져서 버리고, 되돌리면 같은 자리로 다시 생긴다). 새 드래그/언마운트로
+      // 중간에 끊기면 삭제하지 않는다.
       dragGhostRef.current = null;
-      launchFling(ghost!, v, edAngVelRef.current);
+      launchFling(ghost!, v, edAngVelRef.current, info!.id, events);
       dragInfoRef.current = null;
       return;
     }
@@ -1786,7 +1787,14 @@ export function StudioShell({
   }
 
   // 던지기: 받은 속도(px/ms)·각속도(deg/frame)로 유령을 포물선 + 회전시켜 화면 밖으로 날린다.
-  function launchFling(ghost: HTMLElement, v: { x: number; y: number }, angVel: number) {
+  // 화면 밖으로 완전히 벗어나면 그 일정을 삭제한다(commitDelete = 낙관적 제거 + Ctrl+Z 스택).
+  function launchFling(
+    ghost: HTMLElement,
+    v: { x: number; y: number },
+    angVel: number,
+    eventId: string,
+    snapshot: StudioScheduleEvent[]
+  ) {
     let fx = v.x * 16; // px/frame(~16ms)
     let fy = v.y * 16;
     const sp = Math.hypot(fx, fy) || 1;
@@ -1818,22 +1826,22 @@ export function StudioShell({
         posY > window.innerHeight ||
         posY + gh < 0
       ) {
-        finishFling();
+        // 화면 밖 완전 이탈 → 유령 제거 + 일정 삭제(낙관적 + Ctrl+Z 복구 스택).
+        if (flingRafRef.current) {
+          cancelAnimationFrame(flingRafRef.current);
+          flingRafRef.current = null;
+        }
+        flingGhostRef.current?.remove();
+        flingGhostRef.current = null;
+        setDragEventId(null);
+        hapticDelete();
+        commitDelete(eventId, snapshot);
+        flashToast("일정을 던져 버렸어요 · Ctrl+Z로 되돌리기");
         return;
       }
       flingRafRef.current = requestAnimationFrame(step);
     };
     flingRafRef.current = requestAnimationFrame(step);
-  }
-
-  function finishFling() {
-    if (flingRafRef.current) {
-      cancelAnimationFrame(flingRafRef.current);
-      flingRafRef.current = null;
-    }
-    flingGhostRef.current?.remove();
-    flingGhostRef.current = null;
-    setDragEventId(null); // 원본 카드 다시 진해짐 = 원래 날짜로 돌아옴
   }
 
   function onEventDragMove(e: PointerEvent) {
