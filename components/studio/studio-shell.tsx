@@ -97,6 +97,9 @@ import { detectDevice } from "@/lib/presence/presence-client";
 import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
+// 스튜디오 CSS(220KB)는 이 컴포넌트와 함께 로드 — 루트 전역에서 빼서, StudioShell이 실제 렌더되는
+// 곳(스튜디오 라우트, 로그인 owner/dev의 /)에서만 실린다. 공개 시청자는 받지 않는다.
+import "./studio-shell.css";
 
 type StudioShellProps = {
   actor: CurrentActor;

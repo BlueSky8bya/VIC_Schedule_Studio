@@ -1,15 +1,13 @@
 import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
-import { StudioShell } from "@/components/studio/studio-shell";
 import { InAppBrowserNotice } from "@/components/auth/in-app-browser-notice";
 import { detectInAppBrowser, isMobileUserAgent } from "@/lib/auth/in-app-browser";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
-import { getStudioSchedule } from "@/lib/schedules/studio-loader";
-import { getUnlockState } from "@/lib/private-layer/unlock";
 
 export default async function HomePage() {
   const actor = await resolveCurrentActor("vic");
@@ -48,28 +46,12 @@ export default async function HomePage() {
     );
   }
 
-  // 시청자가 아닌 모든 인증 사용자(owner/developer/manager/worker)는 스튜디오로.
-  // 스튜디오 내부에서 역할별 편집/열람 권한을 다시 제어한다.
+  // 시청자가 아닌 모든 인증 사용자(owner/developer/manager/worker)는 스튜디오(/studio)로 보낸다.
+  // /studio가 동일한 StudioShell을 같은 쿠키 복원으로 렌더한다(렌더 결과 동일, URL만 명확히 분리).
+  // 이로써 공개 `/` 페이지는 StudioShell을 모듈 그래프에서 참조하지 않아, 비로그인/시청자가
+  // 스튜디오 JS·CSS(220KB) 청크를 받지 않는다(LCP·FCP 개선의 핵심).
   if (actor.role !== "viewer") {
-    // actor는 위에서 이미 구했으니, unlock만 구해 loader에 함께 주입(중복 조회 방지).
-    const unlock = await getUnlockState("vic");
-    const schedule = await getStudioSchedule("vic", { actor, unlock });
-
-    return (
-      <StudioShell
-        actor={actor}
-        hasUnlockSession={unlock.hasUnlockSession}
-        isDefaultPasscode={unlock.isDefaultPasscode}
-        schedule={schedule}
-        initialView={
-          typeof mem.sy === "number" && typeof mem.sm === "number"
-            ? { year: mem.sy, month: mem.sm }
-            : undefined
-        }
-        initialViewerMode={mem.v === 1}
-        initialNarrow={narrow}
-      />
-    );
+    redirect("/studio");
   }
 
   const schedule = await getPublicSchedule("vic");
