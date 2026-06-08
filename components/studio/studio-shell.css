@@ -5428,7 +5428,10 @@
 .studio-event-pill[data-mixed] {
   position: relative;
 }
-.studio-event-pill[data-mixed] > :not(.evt-pat) {
+/* 무늬 위에 글자/점줄을 올린다. 단, 드롭 안내선(.drop-insert-line)은 제외 — 안 그러면 이
+   규칙의 position:relative가 안내선의 position:absolute를 덮어(특이도 우위) 안내선이 틈
+   오버레이가 아니라 카드 본문 안 인라인 막대로 박혀 버린다(멀티태그 카드 안내 깨짐). */
+.studio-event-pill[data-mixed] > :not(.evt-pat):not(.drop-insert-line) {
   position: relative;
   z-index: 1;
 }
