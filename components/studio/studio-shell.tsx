@@ -3216,7 +3216,7 @@ export function StudioShell({
             {taxonomyV3 ? (
               <>
                 <button
-                  className="button"
+                  className="button m-io m-io-tags"
                   onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "tags" ? null : "tags"))}
                   type="button"
                 >
@@ -3237,7 +3237,7 @@ export function StudioShell({
               </>
             ) : null}
             <button
-              className="button"
+              className="button m-io m-io-members"
               onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "members" ? null : "members"))}
               type="button"
             >
@@ -3258,7 +3258,7 @@ export function StudioShell({
               </button>
             ) : (
               <button
-                className={canReadPrivate ? "button primary" : "button"}
+                className={canReadPrivate ? "button primary" : "button m-io-pill m-io-private"}
                 onClick={togglePrivateLayer}
                 type="button"
               >
@@ -3270,7 +3270,7 @@ export function StudioShell({
           {isDeveloper ? (
             renderPreviewControl()
           ) : (
-            <button className="button" onClick={() => enterViewerMode()} type="button">
+            <button className="button m-io-pill m-io-preview" onClick={() => enterViewerMode()} type="button">
               시청자 화면
             </button>
           )}
@@ -3917,7 +3917,7 @@ export function StudioShell({
           {isDeveloper ? (
             renderPreviewControl()
           ) : (
-            <button className="button" onClick={() => enterViewerMode()} type="button">
+            <button className="button io-accent io-preview" onClick={() => enterViewerMode()} type="button">
               <Eye aria-hidden="true" size={16} />
               {/* '보여주기'는 관리자(owner)만 — 매니저·작업자는 '미리보기'. */}
               {isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}
@@ -3926,7 +3926,7 @@ export function StudioShell({
           {actor.isAuthenticated ? (
             <form action="/api/auth/logout" method="post">
               <button
-                className="button"
+                className="button io-accent io-logout"
                 onClick={() => startNav("로그아웃 중…")}
                 type="submit"
               >
@@ -3959,7 +3959,7 @@ export function StudioShell({
               {/* 단계 배포: 태그 '정의 편집' 진입은 v3 역할(현재 개발자)만. */}
               {canEdit && taxonomyV3 ? (
                 <button
-                  className="button"
+                  className="button io-accent io-tags"
                   onClick={() => (blockedByPreview() ? null : setModal("tags"))}
                   type="button"
                 >
@@ -3968,7 +3968,7 @@ export function StudioShell({
               ) : null}
               {canEdit ? (
                 <button
-                  className="button"
+                  className="button io-accent io-members"
                   onClick={() => (blockedByPreview() ? null : setModal("members"))}
                   type="button"
                 >
@@ -3976,7 +3976,7 @@ export function StudioShell({
                 </button>
               ) : null}
               {isDeveloper && !previewRole ? (
-                <button className="button" onClick={() => setModal("developer")} type="button">
+                <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button">
                   🛠 월별 인사이트
                 </button>
               ) : null}
@@ -3984,7 +3984,7 @@ export function StudioShell({
           ) : null}
           {/* 관리자·매니저·작업자(또는 그 역할 미리보기) — 수치 없는 4패널 멤버 인사이트. */}
           {canMemberInsights ? (
-            <button className="button" onClick={() => setModal("developer")} type="button">
+            <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button">
               📊 월별 인사이트
             </button>
           ) : null}
@@ -3997,7 +3997,7 @@ export function StudioShell({
               isEffectivelyOwner && canReadPrivate ? (
                 // 웹: 처음 켠 자리(토글)에 그대로 "비공개 끄기" — 마우스 이동 최소화. 비밀번호 변경은 경고 배너로.
                 <button
-                  className="private-toggle active"
+                  className="private-toggle active io-accent io-private"
                   onClick={() => setShowPrivate(false)}
                   type="button"
                 >
@@ -4006,7 +4006,7 @@ export function StudioShell({
                 </button>
               ) : (
                 <button
-                  className={canReadPrivate ? "private-toggle active" : "private-toggle"}
+                  className={`${canReadPrivate ? "private-toggle active" : "private-toggle"} io-accent io-private`}
                   onClick={togglePrivateLayer}
                   type="button"
                 >
@@ -4018,7 +4018,7 @@ export function StudioShell({
             {canDecorateCalendar ? (
               <Link
                 // 매니저·작업자는 일정 편집을 못 하니 꾸미기가 1차 작업 → primary로 강조.
-                className={`button${canEdit ? "" : " primary"}`}
+                className={`button io-accent ${canEdit ? "io-decorate" : "primary"}`}
                 href={`/studio/decorate/${view.year}/${view.month}`}
                 onClick={() => {
                   // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
