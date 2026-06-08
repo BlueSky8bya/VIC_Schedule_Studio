@@ -3571,7 +3571,7 @@ export function PublicPoster({
                   // 꾸미기 모드에선 스티커 레이어가 덮어 클릭이 막히므로 정적 표시.
                   if (decorate) {
                     return (
-                      <span key={tag.id}>
+                      <span className={tag.kind === "modifier" ? "mod" : undefined} key={tag.id}>
                         {swatch}
                         {tag.displayName}
                       </span>

@@ -1312,8 +1312,10 @@ html {
   border: 1px solid;
   border-radius: 5px;
 }
-/* 방식(modifier)은 카드에서 '원'으로 표시되니 색상 안내에서도 원으로 맞춘다. */
-.public-legend-vertical .legend-item.mod i {
+/* 방식(modifier)은 카드에서 '원'으로 표시되니 색상 안내에서도 원으로 맞춘다.
+   꾸미기 모드는 정적 <span class="mod">로 렌더되므로 그 경우도 함께 원으로. */
+.public-legend-vertical .legend-item.mod i,
+.public-legend-vertical span.mod i {
   border-radius: 999px;
 }
 
