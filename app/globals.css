@@ -198,14 +198,15 @@ select {
   animation: fade-up var(--dur-3) var(--ease) both;
 }
 /* 첫 진입 스태거 등장에 쓰는 공통 키프레임(편집실 그리드·아젠다 공용). 칸마다 --ri 인덱스로
-   딜레이를 줘 "차르륵" 순차로 떠오른다. */
+   딜레이를 줘 "차르륵" 순차로 떠오른다.
+   ※ opacity는 일부러 안 건드린다(0에서 시작 X) — opacity 0인 요소는 LCP 후보에서 빠져,
+     스태거 딜레이만큼 LCP가 늦게 측정됐다(모바일 아젠다 LCP가 2초 늦던 주원인). 위치(translateY)
+     캐스케이드는 LCP 타이밍에 영향 없으니 그대로 둬서 '차르륵' 등장 느낌은 유지한다. */
 @keyframes cal-cell-rise {
   from {
-    opacity: 0;
     transform: translateY(12px) scale(0.985);
   }
   to {
-    opacity: 1;
     transform: translateY(0) scale(1);
   }
 }
