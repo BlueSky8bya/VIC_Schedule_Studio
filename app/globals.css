@@ -957,8 +957,9 @@ html[data-eye-comfort] {
   position: fixed;
   left: 0;
   right: 0;
-  /* 모바일은 상단 좌측 — 우상단 로그인 버튼과 같은 줄(대칭). 하단엔 하트/필터/오늘 바가 있어 못 둔다. */
-  top: calc(env(safe-area-inset-top, 0px) + 14px);
+  /* 모바일은 상단 좌측 — 우상단 로그인 버튼과 같은 줄(대칭). 배지가 작아 중심이 위로 붙으므로 top을
+     조금 내려 로그인 버튼과 수평 정렬. 하단엔 하트/필터/오늘 바가 있어 못 둔다. */
+  top: calc(env(safe-area-inset-top, 0px) + 18px);
   z-index: 9000;
   display: flex;
   justify-content: flex-start;
