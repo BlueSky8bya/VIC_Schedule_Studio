@@ -2151,23 +2151,31 @@ export function PublicPoster({
   function scrollToToday() {
     todayRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
-  function jumpToday() {
-    hapticTick();
-    // 관심·태그 필터가 켜져 있으면 오늘이 걸러져 '빈 화면'으로 보일 수 있다 → '오늘'은 필터를 풀고
-    // 오늘을 보여주는 동작으로 통일한다(사용자가 오늘을 보려는 의도이므로).
-    const wasFiltered = filterActive;
-    if (wasFiltered) clearFilters();
-    // 이미 오늘 달이면 달은 그대로 두고 '오늘 위치'로만 스크롤(다른 날짜를 보고 있어도 오늘로 복귀).
-    if (onTodayMonth) {
-      // 필터를 막 풀었으면 오늘 행이 새로 생기므로 다음 렌더 뒤에 스크롤한다.
-      if (wasFiltered) window.setTimeout(scrollToToday, 60);
-      else scrollToToday();
+  // 오늘이 '지금 화면(필터 적용 후)'에 보이는가 = 오늘 행 DOM이 존재하는가(todayRowRef). 보이면 필터를
+  // 굳이 풀지 않고 그 위치로만 스크롤하고, 걸러져 안 보이면 필터를 풀고 오늘을 보여준다.
+  function revealTodayHere() {
+    if (todayRowRef.current) {
+      scrollToToday(); // 오늘이 필터 결과에 포함 → 필터 유지, 위치만 이동
       return;
     }
+    if (filterActive) {
+      clearFilters(); // 오늘이 걸러져 안 보임 → 필터 해제 후 오늘로
+      window.setTimeout(scrollToToday, 60);
+    } else {
+      scrollToToday(); // 필터도 없는데 오늘 행이 없으면(공개 일정 없는 날) no-op
+    }
+  }
+  function jumpToday() {
+    hapticTick();
+    // 이미 오늘 달이면 달은 그대로 두고 오늘 위치로(필터 상황에 맞춰 유지/해제).
+    if (onTodayMonth) {
+      revealTodayHere();
+      return;
+    }
+    // 다른 달 → 오늘 달로 이동한 뒤(슬라이드 고려 한 박자 뒤) 같은 규칙으로 오늘을 드러낸다.
     const offset = (todayYM.year - view.year) * 12 + (todayYM.month - view.month);
     moveMonth(offset);
-    // 새 달(오늘 달)이 렌더된 뒤 오늘 행으로 스크롤. 슬라이드 전환을 고려해 한 박자 뒤.
-    window.setTimeout(scrollToToday, 360);
+    window.setTimeout(revealTodayHere, 360);
   }
 
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
