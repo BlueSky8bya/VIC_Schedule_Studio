@@ -4255,8 +4255,8 @@
 }
 /* 미리보기 중에는 화면 가장자리에 옅은 점검 표시. */
 .studio-shell:has(.preview-dd-trigger.previewing) .studio-calendar-panel {
-  outline: 2px dashed rgba(154, 52, 18, 0.28);
-  outline-offset: -2px;
+  outline: 1px dashed rgba(154, 52, 18, 0.14);
+  outline-offset: -1px;
   border-radius: 12px;
 }
 .studio-actionbar-tools {
