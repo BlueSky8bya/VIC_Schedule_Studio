@@ -8,7 +8,7 @@
 //   · 오프라인이면 어떤 화면으로 들어와도(오너의 /studio 포함) 이 '공개 포스터 스냅샷'을 보여준다 →
 //     오너·개발자도 오프라인에서 공개 일정은 볼 수 있다(편집은 온라인에서만 — 비공개·언락·저장이 필요).
 
-const CACHE = "vic-offline-v4"; // 버전 올리면 옛 캐시 자동 정리(activate에서).
+const CACHE = "vic-offline-v5"; // 버전 올리면 옛 캐시 자동 정리(activate에서).
 const SNAPSHOT_KEY = "/__offline_snapshot"; // 비로그인 공개 포스터 스냅샷의 캐시 키(실제 "/"와 분리).
 const SNAPSHOT_MIN_INTERVAL = 60_000; // 스냅샷 갱신 최소 간격(ms) — 잦은 재요청 방지.
 
@@ -33,11 +33,14 @@ self.addEventListener("activate", (event) => {
 // 공개 포스터(200)를 돌려준다 — 이메일/비공개/리다이렉트 없음. 200 + 리다이렉트 아님일 때만 저장.
 async function refreshSnapshot() {
   const t = Date.now();
-  if (t - lastSnapshotAt < SNAPSHOT_MIN_INTERVAL) return;
+  const cache = await caches.open(CACHE);
+  // 스냅샷이 '있을 때만' throttle한다. 아직 없으면(오너가 공개 "/"를 못 봐 비어있는 경우 등) 매 온라인
+  // 네비게이션마다 즉시 채우기를 시도해 빠르게 확보한다 — 오프라인 전환 직후 '오프라인이에요' 회피.
+  const has = await cache.match(SNAPSHOT_KEY);
+  if (has && t - lastSnapshotAt < SNAPSHOT_MIN_INTERVAL) return;
   try {
     const res = await fetch("/", { credentials: "omit", redirect: "manual", cache: "no-store" });
     if (res && res.status === 200 && !res.redirected) {
-      const cache = await caches.open(CACHE);
       await cache.put(SNAPSHOT_KEY, res.clone());
       lastSnapshotAt = t; // 성공했을 때만 throttle 시작 — 실패(오프라인) 시 다음 네비에서 즉시 재시도.
       await notifyClients(t); // "마지막 동기화 시각"을 인앱 오프라인 배지에 전달.
