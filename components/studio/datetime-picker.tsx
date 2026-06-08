@@ -283,10 +283,10 @@ export function DateTimePicker({
     hapticTick();
   };
   const setToday = () => {
-    const n = nowKstParts();
+    const n = nowKstParts(); // 정확한 현재 KST(분 반올림/내림 없이 그대로)
     setViewY(n.y);
     setViewM(n.m);
-    onChange(fmtValue({ ...n, mm: n.mm - (n.mm % 5) }));
+    onChange(fmtValue(n));
     hapticTick();
   };
   const clear = () => {
