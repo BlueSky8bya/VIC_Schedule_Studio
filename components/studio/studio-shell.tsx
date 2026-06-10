@@ -1235,8 +1235,9 @@ export function StudioShell({
   // 잠금 로딩·월 변경 등) 항상 새 요소에 자동 재설정된다. deps는 데이터 변화 시 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([visibleEvents, view]);
   // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조만) + 텍스트 긁힘 방지.
+  // 선택은 React state(rangeSelected)라 카드 드래그 등 다른 리렌더에도 안 지워진다.
   // 둘 다 callback ref라 한 요소에 합쳐 단다(안정 identity라 매 렌더 재부착 없음).
-  const rangeSelectRef = useCellRangeSelect<HTMLDivElement>();
+  const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>();
   const setMonthGridRef = useCallback(
     (el: HTMLDivElement | null) => {
       monthGridRef(el);
@@ -4055,7 +4056,7 @@ export function StudioShell({
           </div>
         ) : null}
         <PublicPoster
-          avatarSlot={isEffectivelyOwner}
+          avatarSlot={isEffectivelyOwner || isDeveloper}
           initialMonth={view.month}
           initialNarrow={isNarrow}
           initialYear={view.year}
@@ -4354,7 +4355,9 @@ export function StudioShell({
                 // 드래그 중 이 칸 위에 있으면 "여기에 놓기" 강조.
                 dragEventId && dropDate === cell.isoDate ? "drop-target" : "",
                 // 휴방 메뉴가 이 칸에 떠 있으면 어느 날인지 분명히 강조.
-                restMenu?.isoDate === cell.isoDate ? "rest-target" : ""
+                restMenu?.isoDate === cell.isoDate ? "rest-target" : "",
+                // 시트식 범위 선택(시각 강조). React state라 카드 드래그 리렌더에도 유지.
+                rangeSelected.has(cellIndex) ? "cell-range-selected" : ""
               ]
                 .filter(Boolean)
                 .join(" ");

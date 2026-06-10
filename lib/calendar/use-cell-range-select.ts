@@ -1,18 +1,19 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useRef, useState } from "react";
 
 // 구글 시트처럼 달력 날짜 칸을 마우스로 드래그해 사각형 범위로 "선택"만 한다(시각 강조).
 // - 마우스 전용: 터치는 기존 스크롤/롱프레스(휴방 메뉴)와 충돌하지 않게 건드리지 않는다.
-// - 시각 전용: 서버에 아무것도 안 쓴다. 칸 DOM에 .cell-range-selected 클래스만 토글한다
-//   (거대한 컴포넌트 리렌더 없이 가볍게, 일정 데이터/권한 경계와 무관).
+// - 시각 전용: 서버에 아무것도 안 쓴다. 선택된 칸 인덱스 Set을 React state로 들고 있어,
+//   소비자가 className에 .cell-range-selected를 넣는다. (명령형 DOM class 토글은 카드 드래그 등
+//   다른 state 변화로 칸이 리렌더되면 React가 className을 덮어써 선택이 지워지는 버그가 있었다.)
 // - 텍스트 긁힘 방지: 드래그 동안 body에 .cell-range-dragging을 달아 user-select를 끈다.
-// 칸 식별: 그리드 안의 [data-cell-index] 요소(0..41), 7열 기준 행/열로 사각형을 칠한다.
+// 칸 식별: 그리드 안의 [data-cell-index] 요소(0..41), 7열 기준 행/열로 사각형을 만든다.
 //
-// 반환은 callback ref다(useEqualChainHeights와 동일 패턴) — 그리드가 미리보기/월이동 등으로
-// 통째로 (언)마운트돼도 React가 항상 새 요소로 재설정해 리스너가 정확히 따라붙는다.
+// 반환:
+//   setRef     — 그리드에 다는 callback ref(useEqualChainHeights와 합쳐 단다)
+//   selected   — 선택된 칸 인덱스 Set (className 분기에 사용)
 
-const SELECTED_CLASS = "cell-range-selected";
 const DRAG_BODY_CLASS = "cell-range-dragging";
 const MOVE_THRESHOLD = 5; // 이만큼 움직여야 드래그(=선택) 시작 — 단순 클릭은 그대로 통과
 
@@ -21,12 +22,34 @@ type Options = {
   cols?: number;
 };
 
-export function useCellRangeSelect<T extends HTMLElement>(
-  { enabled = true, cols = 7 }: Options = {}
-): (el: T | null) => void {
+function sameSet(a: Set<number>, b: Set<number>): boolean {
+  if (a.size !== b.size) {
+    return false;
+  }
+  for (const v of a) {
+    if (!b.has(v)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+export function useCellRangeSelect<T extends HTMLElement>({
+  enabled = true,
+  cols = 7
+}: Options = {}): { setRef: (el: T | null) => void; selected: Set<number> } {
+  const [selected, setSelected] = useState<Set<number>>(() => new Set());
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
   const cleanupRef = useRef<(() => void) | null>(null);
 
-  return useCallback(
+  const apply = useCallback((next: Set<number>) => {
+    if (!sameSet(selectedRef.current, next)) {
+      setSelected(next);
+    }
+  }, []);
+
+  const setRef = useCallback(
     (grid: T | null) => {
       if (cleanupRef.current) {
         cleanupRef.current();
@@ -42,14 +65,6 @@ export function useCellRangeSelect<T extends HTMLElement>(
       let startY = 0;
       let suppressClick = false;
 
-      const cells = () => Array.from(grid.querySelectorAll<HTMLElement>("[data-cell-index]"));
-
-      const clearSelection = () => {
-        for (const c of cells()) {
-          c.classList.remove(SELECTED_CLASS);
-        }
-      };
-
       const indexAt = (x: number, y: number): number | null => {
         const el = document.elementFromPoint(x, y) as HTMLElement | null;
         const cell = el?.closest<HTMLElement>("[data-cell-index]");
@@ -60,7 +75,7 @@ export function useCellRangeSelect<T extends HTMLElement>(
         return Number.isFinite(i) ? i : null;
       };
 
-      const paint = (a: number, b: number) => {
+      const rect = (a: number, b: number): Set<number> => {
         const r1 = Math.floor(a / cols);
         const c1 = a % cols;
         const r2 = Math.floor(b / cols);
@@ -69,13 +84,13 @@ export function useCellRangeSelect<T extends HTMLElement>(
         const rHi = Math.max(r1, r2);
         const cLo = Math.min(c1, c2);
         const cHi = Math.max(c1, c2);
-        for (const cell of cells()) {
-          const i = Number(cell.dataset.cellIndex);
-          const r = Math.floor(i / cols);
-          const c = i % cols;
-          const on = r >= rLo && r <= rHi && c >= cLo && c <= cHi;
-          cell.classList.toggle(SELECTED_CLASS, on);
+        const out = new Set<number>();
+        for (let r = rLo; r <= rHi; r += 1) {
+          for (let c = cLo; c <= cHi; c += 1) {
+            out.add(r * cols + c);
+          }
         }
+        return out;
       };
 
       const onMove = (e: PointerEvent) => {
@@ -96,7 +111,7 @@ export function useCellRangeSelect<T extends HTMLElement>(
         e.preventDefault();
         const cur = indexAt(e.clientX, e.clientY);
         if (cur != null) {
-          paint(anchor, cur);
+          apply(rect(anchor, cur));
         }
       };
 
@@ -134,7 +149,7 @@ export function useCellRangeSelect<T extends HTMLElement>(
         dragging = false;
         startX = e.clientX;
         startY = e.clientY;
-        clearSelection(); // 시트처럼 새 드래그는 기존 선택을 지우고 시작
+        apply(new Set()); // 시트처럼 새 드래그는 기존 선택을 지우고 시작
         window.addEventListener("pointermove", onMove);
         window.addEventListener("pointerup", onUp);
       };
@@ -151,12 +166,12 @@ export function useCellRangeSelect<T extends HTMLElement>(
       // 그리드 밖을 누르면 선택 해제, Esc도 해제.
       const onDocDown = (e: PointerEvent) => {
         if (!grid.contains(e.target as Node)) {
-          clearSelection();
+          apply(new Set());
         }
       };
       const onKey = (e: KeyboardEvent) => {
         if (e.key === "Escape") {
-          clearSelection();
+          apply(new Set());
         }
       };
 
@@ -175,6 +190,8 @@ export function useCellRangeSelect<T extends HTMLElement>(
         document.body.classList.remove(DRAG_BODY_CLASS);
       };
     },
-    [enabled, cols]
+    [enabled, cols, apply]
   );
+
+  return { setRef, selected };
 }

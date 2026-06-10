@@ -802,8 +802,9 @@ export function PublicPoster({
   // callback ref라 그리드가 (재)마운트되는 어떤 경로에서도 자동 재설정된다. deps는 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([schedule.events, view]);
   // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조만) + 텍스트 긁힘 방지.
+  // 선택은 React state(rangeSelected)라 다른 리렌더에도 안 지워진다.
   // 둘 다 callback ref라 한 요소에 합쳐 단다(안정 identity라 매 렌더 재부착 없음).
-  const rangeSelectRef = useCellRangeSelect<HTMLDivElement>();
+  const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>();
   const setMonthGridRef = useCallback(
     (el: HTMLDivElement | null) => {
       monthGridRef(el);
@@ -2290,7 +2291,7 @@ export function PublicPoster({
       <article
         className={`public-day ${cell.inCurrentMonth ? "" : "outside"} ${
           day.isToday ? "today" : ""
-        }`}
+        }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}`}
         data-pop={popTier ?? undefined}
         data-cell-index={cellIndex}
         key={cell.isoDate}
