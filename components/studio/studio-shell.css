@@ -4188,11 +4188,13 @@
   /* 편집 패널(오른쪽)이 업 도움 등으로 길어져도 가운데 달력이 따라 늘어나지 않게 — 각 칸이 제
      높이를 갖는다(기본 stretch면 가장 큰 칸 높이에 달력이 끌려 늘어났다). */
   align-items: start;
-  /* 편집패널 등장은 폼의 transform(아래 editor-card-slide)으로 통통 슬라이드한다 — grid 폭은
-     즉시 스냅(transition 안 검). 폭을 0.28s 동안 늘리면 가운데 달력이 프레임마다 reflow되며
-     '툭툭' 끊겼다(폼은 446 고정이라 안 우그러짐 → 범인은 레이아웃 애니). 한 번만 reflow되게 스냅.
-     margin은 아바타 자리 슬라이드용(통통). */
-  transition: margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 편집패널·아바타 도크는 미닫이문처럼 천천히 부드럽게 열린다 — grid 폭(편집패널)과 margin
+     (아바타 자리)을 같은 긴 ease-out으로 동기화. 폼은 우측 정렬(justify-items:end)이라 칸이
+     넓어질수록 오른쪽 벽에서 미끄러져 들어오는 진짜 슬라이드가 된다(스냅·오버슈트 = '확 켜짐').
+     ease-out(0.25,1,0.5,1)은 중간 속도변화가 완만해 달력 reflow 프레임 부담도 고르게 퍼진다. */
+  transition:
+    grid-template-columns 0.52s cubic-bezier(0.25, 1, 0.5, 1),
+    margin 0.52s cubic-bezier(0.25, 1, 0.5, 1);
 }
 /* 날짜를 선택하면 우측 카드(폼 446 + 좌측 간격 18)가 밀고 들어온다. */
 .studio-workspace.editor-open {
@@ -4258,9 +4260,13 @@
 }
 .studio-shell.avatar-scene.avatar-left .avatar-rail {
   left: 8px;
+  /* 미닫이문: 도크(필터+아바타) 전체가 왼쪽 벽에서 천천히 부드럽게 슬라이드 인(편집패널과 동일
+     ease-out·길이). 자식별 오버슈트 대신 rail 통째로 한 번 → 일체감 + '확 켜짐' 제거. */
+  animation: rail-slide-l 0.52s cubic-bezier(0.25, 1, 0.5, 1) 0.02s both;
 }
 .studio-shell.avatar-scene.avatar-right .avatar-rail {
   right: 8px;
+  animation: rail-slide-r 0.52s cubic-bezier(0.25, 1, 0.5, 1) 0.02s both;
 }
 .avatar-rail-filter {
   flex: 1 1 auto;
@@ -4272,8 +4278,7 @@
   border-radius: 18px;
   box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
   padding: 12px 14px;
-  /* 통통하고 부드럽게 등장 — 약간 더 길게 + 큰 오버슈트. */
-  animation: avatar-pop 0.62s cubic-bezier(0.22, 1.4, 0.4, 1) 0.04s both;
+  /* 등장 애니 없음 — 부모 rail(미닫이 도크)이 통째로 슬라이드하므로 함께 들어온다. */
 }
 .avatar-rail-filter h2 {
   margin: 0 0 8px;
@@ -4321,54 +4326,24 @@
   min-height: 0;
   box-sizing: border-box;
   pointer-events: none;
-  opacity: 0;
-  transform: translateY(26px) scale(0.95);
-  animation: avatar-pop 0.62s cubic-bezier(0.22, 1.4, 0.4, 1) 0.04s forwards;
+  /* 개별 애니 없음 — rail(미닫이 도크)이 통째로 슬라이드하며 함께 들어온다. */
 }
-@keyframes avatar-rise {
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes avatar-pop {
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-/* 필터 카드·아바타가 '툭' 안 뜨고 자기 쪽(왼/오른쪽 가장자리)에서 통통 미끄러져 들어온다.
-   카드 먼저, 아바타 살짝 늦게 → 퉁퉁 이어지는 느낌. side별 방향 + 큰 오버슈트 스프링. */
-.studio-shell.avatar-scene.avatar-left .avatar-rail-filter,
-.studio-shell.avatar-scene.avatar-left .avatar-rail .avatar-slot {
-  transform: translateX(-34px) scale(0.96);
-  animation: avatar-slide-l 0.66s cubic-bezier(0.18, 1.5, 0.4, 1) both;
-}
-.studio-shell.avatar-scene.avatar-right .avatar-rail-filter,
-.studio-shell.avatar-scene.avatar-right .avatar-rail .avatar-slot {
-  transform: translateX(34px) scale(0.96);
-  animation: avatar-slide-r 0.66s cubic-bezier(0.18, 1.5, 0.4, 1) both;
-}
-.studio-shell.avatar-scene .avatar-rail-filter {
-  animation-delay: 0.02s;
-}
-.studio-shell.avatar-scene .avatar-rail .avatar-slot {
-  animation-delay: 0.12s; /* 카드보다 한 박자 늦게 → 퉁퉁 */
-}
-@keyframes avatar-slide-l {
+/* 도크 전체(필터+아바타)가 하나의 미닫이문처럼 화면 가장자리에서 슬라이드 인.
+   긴 이동거리(도크 폭 전체) + ease-out → 자식별 오버슈트('확 켜짐') 없이 천천히 부드럽게. */
+@keyframes rail-slide-l {
   from {
     opacity: 0;
-    transform: translateX(-34px) scale(0.96);
+    transform: translateX(calc(-100% - 8px));
   }
   to {
     opacity: 1;
     transform: none;
   }
 }
-@keyframes avatar-slide-r {
+@keyframes rail-slide-r {
   from {
     opacity: 0;
-    transform: translateX(34px) scale(0.96);
+    transform: translateX(calc(100% + 8px));
   }
   to {
     opacity: 1;
@@ -4463,6 +4438,7 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .studio-shell.avatar-scene .studio-workspace,
+  .studio-shell.avatar-scene .avatar-rail,
   .studio-shell.avatar-scene .avatar-slot,
   .studio-shell.avatar-scene .avatar-rail-filter,
   .studio-avatar-ctl .avatar-ctl-toggle,
@@ -4474,6 +4450,7 @@
   }
 }
 html[data-reduce-motion] .studio-shell.avatar-scene .studio-workspace,
+html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-slot,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   transition: none;
@@ -4505,6 +4482,9 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   top: 12px;
   overflow: hidden;
   padding-left: 0;
+  /* 폼을 오른쪽 벽에 고정 → 칸 폭이 0→464로 열릴 때 폼 오른쪽 끝은 제자리, 왼쪽이 드러나며
+     오른쪽 벽에서 미닫이로 미끄러져 들어온다(왼쪽 정렬이면 reflow 와이프처럼 보인다). */
+  justify-items: end;
 }
 .studio-workspace.editor-open .event-editor-panel {
   padding-left: 18px; /* 달력과의 간격(폼 왼쪽) — 카드가 실제로 열렸을 때만 */
@@ -4872,19 +4852,18 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 /* 편집 카드가 오른쪽(필터·달력 옆)에서 통통 미끄러져 들어온다(날짜 변경·카드 열림 시).
    transform 기반이라 레이아웃 reflow 없이 GPU에서 부드럽게, 스프링 오버슈트로 통통. */
 .event-editor-panel form {
-  animation: editor-card-slide 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  animation: editor-card-slide 0.52s cubic-bezier(0.25, 1, 0.5, 1) both;
 }
+/* 슬라이드 본체는 칸(grid) 열림이 담당 — 폼은 은은한 페이드 + 살짝 따라붙는 정도만(날짜를
+   바꿔 패널이 이미 열려있을 때도 부드럽게 전환). 오버슈트 없음 = '확' 안 뜨고 미닫이 느낌. */
 @keyframes editor-card-slide {
   from {
     opacity: 0;
-    transform: translateX(44px) scale(0.97);
-  }
-  60% {
-    opacity: 1;
+    transform: translateX(18px);
   }
   to {
     opacity: 1;
-    transform: translateX(0) scale(1);
+    transform: none;
   }
 }
 @keyframes editor-card-enter {
@@ -4906,7 +4885,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 /* A1/#6: 매니저·작업자 읽기전용 일정 상세 — 편집 폼과 같은 흰 카드 톤으로 주변과 동화시키고,
    라벨/값을 정돈된 정의(definition) 형태로. 폼(.event-editor-panel form)과 같은 카드 chrome. */
 .event-detail-readonly {
-  animation: editor-card-slide 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+  animation: editor-card-slide 0.52s cubic-bezier(0.25, 1, 0.5, 1) both;
   display: flex;
   flex-direction: column;
   gap: 0;
