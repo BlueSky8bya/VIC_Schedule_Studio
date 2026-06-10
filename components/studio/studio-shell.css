@@ -5136,16 +5136,17 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   }
 }
 /* 필터에 안 맞는 일정은 흐리게(편집실 그리드·모바일 아젠다 공용) */
+/* 필터 미해당 일정 — 흐리게(점선 아님). 데스크톱 칩·모바일 아젠다 카드 공통. */
 .studio-event-pill.filter-dim,
+.agenda-event.filter-dim {
+  opacity: 0.26;
+  filter: grayscale(0.5);
+}
 /* 미정(모바일 아젠다) — 카드 전체가 아니라 '세로 색상 바'에 점선을 둘러 미정임을 표시(모바일에선
    바가 그 일정의 시각 신호라 거기에 두는 게 자연스럽다). 제목 앞 '미정' 칩(공용 .evt-tentative)도 함께. */
 .agenda-event.tentative .agenda-bar {
   outline: 2px dashed rgb(0 0 0 / 40%);
   outline-offset: 1px;
-}
-.agenda-event.filter-dim {
-  opacity: 0.26;
-  filter: grayscale(0.5);
 }
 /* 모바일 색상 필터 줄 — 가로 스크롤 없이 그대로 wrap(위 .tlg-group 규칙 적용). */
 .m-filter {
