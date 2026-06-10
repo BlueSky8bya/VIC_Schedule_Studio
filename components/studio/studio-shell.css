@@ -5254,22 +5254,10 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
      밑선과 달력 밑선이 항상 맞게 한다(반대로 달력이 더 길면 사이드바 색상 안내가 늘어남). */
   display: flex;
   flex-direction: column;
-  /* [Phase 5] 컨테이너 쿼리 기준면. 새 일정 카드가 열리면 이 달력 칸이 ~390px 좁아지는데,
-     화면(vw)은 그대로라 미디어쿼리는 이를 모른다. 칸 자신을 컨테이너로 삼아, 안의 일정 글자가
-     "달력 칸 폭"(cqi)에 맞춰 줄고 늘게 한다. (드래그 고스트는 document.body에 붙어 영향 없음.) */
-  container: studioCal / inline-size;
-}
-
-/* 편집패널 여닫는 동안(JS .cal-anim, ~0.48s)엔 달력 컨테이너쿼리(cqi)를 잠가 글자 재계산을 막는다.
-   폭이 매 프레임 바뀌면 요일·일정 글자 font-size(cqi)가 전부 재계산+reflow되며 '툭툭' 끊겼다 —
-   container-type를 normal로 풀고 글자를 고정 px로 둬 트랜지션 내내 재계산 0 → 부드럽게. 끝나면
-   원래 cqi로 복귀해 최종 폭에 맞는 크기로 1회만 정착(텍스트 줄바꿈 reflow만 남아 부담이 작다). */
-.studio-workspace.cal-anim .studio-calendar-panel {
-  container-type: normal;
-}
-.studio-workspace.cal-anim .studio-weekdays span,
-.studio-workspace.cal-anim .pill-main strong {
-  font-size: 15px;
+  /* 달력 칸 글자 크기는 vw(화면 폭) 기준이다 — 컨테이너쿼리(cqi)를 쓰면 편집패널을 여닫을 때
+     달력 칸 폭이 매 프레임 바뀌며 모든 일정·요일 글자 font-size가 재계산+reflow돼 '툭툭' 끊기고,
+     슬라이드 도중 글자가 줄었다 커지며 카드 높이까지 점프했다. vw는 패널 여닫음과 무관(화면 폭은
+     그대로)이라 슬라이드 중 글자 크기가 변하지 않아 끊김·점프가 사라진다(화면 크기엔 여전히 적응). */
 }
 
 .studio-weekdays,
@@ -5289,8 +5277,8 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 
 .studio-weekdays span {
   padding: 9px 5px;
-  /* [Phase 5] 요일 헤더도 달력 칸 폭(cqi) 기준으로 — 일정 글자와 같은 박자로 줄고 늘게. */
-  font-size: clamp(13px, 0.95cqi, 18px);
+  /* 요일 헤더 — vw 기준(화면 폭). 일정 글자와 같은 박자. cqi가 아니라 패널 여닫음에 안 흔들린다. */
+  font-size: clamp(13px, 0.8vw, 18px);
   font-weight: 800;
   letter-spacing: 0.06em;
   text-align: center;
@@ -5794,9 +5782,9 @@ body.cell-range-dragging {
   flex: 1;
   overflow: hidden;
   white-space: pre-line;
-  /* [Phase 5] vw(화면 전체) → cqi(달력 칸 폭). 새 일정 카드가 열려 달력이 좁아지면 글자도
-     같이 작아져 답답함을 줄인다. clamp 경계(13~19)로 어떤 폭에서도 과하지 않게 보장. */
-  font-size: clamp(13px, 1.1cqi, 19px);
+  /* 일정 글자 — vw(화면 폭) 기준. cqi(달력 칸 폭)는 편집패널 여닫을 때 매 프레임 재계산되며 끊김 +
+     글자 크기/카드 높이 점프를 만들어 vw로 되돌렸다. clamp 경계(13~19)로 어떤 화면에서도 과하지 않게. */
+  font-size: clamp(13px, 0.9vw, 19px);
   /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다 — 시청자 포스터와 동일.
      태그 선택·저장하면 그 태그 색에 맞춰 즉시(렌더 시점) 반영된다. */
   font-weight: var(--evt-weight, 900);
