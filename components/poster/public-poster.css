@@ -715,6 +715,7 @@
 }
 
 .poster-page {
+  position: relative; /* 아바타 토글 등 페이지 레벨 고정 요소 기준 */
   min-height: 100vh;
   background:
     radial-gradient(120% 80% at 50% -12%, #fff1cf 0%, transparent 58%),
@@ -783,7 +784,7 @@ html {
 }
 .poster-page.avatar-scene .poster-stage {
   justify-content: flex-start;
-  margin-right: 16vw; /* 우측 여백 → 아바타가 화면 끝까지 ~1/4 차지 */
+  margin-right: 25vw; /* 우측 1/4를 비워 아바타 자리로(달력과 겹침 0) */
   transition: margin-right 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
 .poster-page.avatar-scene .poster-scaler {
@@ -815,8 +816,11 @@ html {
   right: 8px;
   bottom: 8px;
   left: auto;
+  top: auto;
   width: 25vw; /* 화면 1/4 고정 */
-  top: 36%; /* legend(≤32%) 아래 */
+  /* 높이는 화면 기준(vh) 고정 → 일정 양과 무관하게 모든 달에서 동일(들쭉날쭉 제거). */
+  height: 62vh;
+  max-height: calc(100% - 16px);
   display: flex;
   box-sizing: border-box;
   pointer-events: none;
@@ -882,14 +886,16 @@ html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
   }
 }
 
-/* 아바타 자리 설정 토글(관리자 전용) — 헤더 좌측 칸(.header-left)에 들어가 내관심·이동
-   버튼과 같은 줄에 놓인다(전용 행 없음 → 세로 공간 낭비 0). 웹 네이티브 알약 버튼. */
+/* 아바타 자리 설정 토글(관리자 전용) — surface 밖, 페이지 좌상단에 '고정'. surface가 scene으로
+   이동/축소해도 이 버튼은 절대 안 움직인다. 웹 네이티브 알약 버튼. */
 .avatar-ctl {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 30;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-start;
   gap: 8px;
-  flex-wrap: wrap;
 }
 .avatar-ctl-toggle {
   /* ON/OFF로 글자가 바뀌어도 버튼이 안 움직이게 폭 고정(가운데 정렬) — 마우스가 안 헤맨다. */
@@ -3895,17 +3901,16 @@ body.cell-range-dragging {
 
 /* 월드컵(2026 기간 자동) — 잔디 그린을 은은하게, 카드/텍스트는 불투명이라 가독성 유지. */
 .poster-page[data-poster-theme="worldcup"] {
-  /* 잔디 줄무늬를 페이지 전체에 깔아 surface 밖(아바타 자리·여백)까지 잔디로 이어지게 한다. */
+  /* 페이지 전체를 surface와 같은 '진한 잔디'로 — 아바타 자리·여백까지 같은 잔디로 이어진다. */
   background:
     repeating-linear-gradient(
       90deg,
-      rgb(38 130 74 / 9%) 0,
-      rgb(38 130 74 / 9%) 70px,
+      rgb(38 130 74 / 16%) 0,
+      rgb(38 130 74 / 16%) 70px,
       transparent 70px,
       transparent 140px
     ),
-    radial-gradient(120% 80% at 50% -10%, #bfe7c9 0%, transparent 65%),
-    linear-gradient(180deg, #c7e9cf, #aedcb9);
+    linear-gradient(160deg, #bfe6c7 0%, #97d2a6 55%, #b6e2bf 100%);
 }
 /* 잔디 그라운드 — 두 톤 초록 세로 줄무늬(축구장 잔디) + 진한 잔디 베이스. 카드는 불투명이라
    글자 가독성 유지된다. */

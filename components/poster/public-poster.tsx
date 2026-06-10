@@ -2795,6 +2795,20 @@ export function PublicPoster({
       }`}
       data-poster-theme={effectivePosterTheme}
     >
+      {/* 아바타 자리 토글 — surface 밖, 페이지 상단 좌측에 고정. surface가 scene으로 이동/축소해도
+          이 버튼은 절대 안 움직인다(마우스가 안 헤맨다). 데스크탑·관리자 전용. */}
+      {avatarCapable && !showAgenda ? (
+        <div className="avatar-ctl" role="group" aria-label="아바타 자리 설정(관리자 전용)">
+          <button
+            type="button"
+            className={`avatar-ctl-toggle${avatarOn ? " on" : ""}`}
+            aria-pressed={avatarOn}
+            onClick={toggleAvatarOn}
+          >
+            🎙️ 아바타 자리 {avatarOn ? "켜짐 · 끄려면 클릭" : "꺼짐 · 켜려면 클릭"}
+          </button>
+        </div>
+      ) : null}
       {celebrate ? (
         <div className="celebrate-overlay" aria-hidden="true">
           {confetti.map((c, i) => (
@@ -2887,20 +2901,7 @@ export function PublicPoster({
         ) : null}
         {showAgenda ? null : (
           <header className="public-calendar-header">
-            <div className="header-left">
-              {avatarCapable ? (
-                <div className="avatar-ctl" role="group" aria-label="아바타 자리 설정(관리자 전용)">
-                  <button
-                    type="button"
-                    className={`avatar-ctl-toggle${avatarOn ? " on" : ""}`}
-                    aria-pressed={avatarOn}
-                    onClick={toggleAvatarOn}
-                  >
-                    🎙️ 아바타 자리 {avatarOn ? "켜짐 · 끄려면 클릭" : "꺼짐 · 켜려면 클릭"}
-                  </button>
-                </div>
-              ) : null}
-            </div>
+            <div className="header-left" />
 
             {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).
                 현재 월 표시는 포스터 제목(✨️ … N월)에 이미 있어 헤더 가운데는 비어 있다.
