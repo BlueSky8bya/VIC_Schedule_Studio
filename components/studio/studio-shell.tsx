@@ -4048,10 +4048,7 @@ export function StudioShell({
             모바일은 좁아서 제목과 겹치므로 — 아래 PublicPoster의 제목 헤더 안으로 주입한다. */}
         {!isNarrow ? (
           <div className="viewer-preview-overlay">
-            <span className="viewer-preview-note">
-              <Eye aria-hidden="true" size={13} />
-              시청자 화면 미리보기 중…
-            </span>
+            <span aria-hidden="true" />
             <div className="viewer-preview-actions">{previewNav}</div>
           </div>
         ) : null}
