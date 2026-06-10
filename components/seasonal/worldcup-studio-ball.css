@@ -1,0 +1,26 @@
+/* 편집실 중력 축구공 레이어 — 클릭 통과(공만 잡힘). transform만 갱신(reflow 0). */
+.wcsb-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 60; /* 콘텐츠 위, 모달(85+)·시트 아래 */
+  pointer-events: none;
+  overflow: hidden;
+}
+.wcsb-ball {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  font-size: 34px;
+  line-height: 1;
+  pointer-events: auto;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  filter: drop-shadow(0 6px 6px rgb(40 30 60 / 30%));
+  will-change: transform;
+}
+.wcsb-ball:active {
+  cursor: grabbing;
+}

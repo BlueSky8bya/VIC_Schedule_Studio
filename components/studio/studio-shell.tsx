@@ -71,6 +71,8 @@ import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { getDayMark } from "@/lib/calendar/holidays";
+import { isWorldCupMonth } from "@/lib/calendar/worldcup";
+import { WorldCupStudioBall } from "@/components/seasonal/worldcup-studio-ball";
 import {
   canDecorate,
   canEditEventTags,
@@ -4162,6 +4164,9 @@ export function StudioShell({
         avatarReady ? "" : " avatar-no-anim"
       }`}
     >
+      {/* 편집실 중력 축구공(월드컵 기간만) — 화면에서 간단히 갖고 노는 장식. 미리보기(viewerMode)는
+          시청자 포스터 게임이 따로 있어 제외. 일정 작업 방해 0(레이어 클릭 통과, 공만 잡힘). */}
+      {isWorldCupMonth(view.year, view.month) && !viewerMode ? <WorldCupStudioBall /> : null}
       {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
           flex-column이라 둘이 절대 안 겹친다. scene일 때만 필터를 여기 담는다. */}
       {avatarEditor ? (

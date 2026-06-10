@@ -100,12 +100,88 @@
   background: radial-gradient(circle at 35% 30%, #6ee7d8, #14b8a6);
 }
 
-/* 자동경기 토글 — 화면 하단 가운데, 앱 톤의 글래스 pill(주변과 어울리게). 유일하게 클릭 가능. */
-.wc-toggle {
+/* 집중용 딤/흐림 — 뒤(메모·달력·색상안내)를 살짝 잔디톤으로 어둡게+흐리게. 게임은 이 위에 또렷. */
+.wc-dim {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: rgb(228 244 230 / 46%);
+  -webkit-backdrop-filter: blur(2.5px);
+  backdrop-filter: blur(2.5px);
+}
+
+/* 경기장 라인(장식) — 딤 위, 게임 아래. */
+.wc-pitch {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+}
+.wc-pitch .wc-mid {
+  position: absolute;
+  left: 50%;
+  top: 3%;
+  bottom: 3%;
+  width: 2px;
+  transform: translateX(-1px);
+  background: rgb(255 255 255 / 55%);
+}
+.wc-pitch .wc-circle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 150px;
+  height: 150px;
+  margin: -75px 0 0 -75px;
+  border: 2px solid rgb(255 255 255 / 45%);
+  border-radius: 50%;
+}
+.wc-pitch .wc-box {
+  position: absolute;
+  top: 50%;
+  width: 88px;
+  height: 240px;
+  transform: translateY(-50%);
+  border: 2px solid rgb(255 255 255 / 42%);
+}
+.wc-pitch .wc-box-left {
+  left: 4px;
+  border-left: 0;
+}
+.wc-pitch .wc-box-right {
+  right: 4px;
+  border-right: 0;
+}
+
+/* 세트피스 라벨(스로인 등) — 상단 가운데 작은 칩. */
+.wc-setpiece {
+  position: absolute;
+  left: 50%;
+  top: 13%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 88%);
+  color: #4a4360;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 4px 12px -6px rgb(40 30 60 / 45%);
+  animation: wc-save-pop 0.8s cubic-bezier(0.22, 1.4, 0.4, 1) both;
+}
+
+/* 토글 묶음 — 하단 가운데. 컨테이너만 위치, 버튼은 그 안에서 흐른다. */
+.wc-controls {
   position: absolute;
   left: 50%;
   bottom: 16px;
   transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  pointer-events: none;
+}
+
+/* 토글 — 앱 톤 글래스 pill. 유일하게 클릭 가능. */
+.wc-toggle {
   display: inline-flex;
   align-items: center;
   gap: 7px;
@@ -133,7 +209,7 @@
   box-shadow: 0 8px 22px -10px rgb(40 30 60 / 55%);
 }
 .wc-toggle:active {
-  transform: translateX(-50%) scale(0.96);
+  transform: scale(0.96);
 }
 .wc-toggle-ico {
   font-size: 11px;
