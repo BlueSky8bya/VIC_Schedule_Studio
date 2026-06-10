@@ -1102,6 +1102,85 @@ export function PublicPoster({
     return () => ro.disconnect();
   }, [showAgenda, decorate]);
 
+  // 아바타 자리를 '달력과 안 겹치는' 빈 자리에 동적으로 둔다. 6×7 그리드에서 우하단의
+  // "전부 다른 달 칸(.outside=빈 칸)"인 최대 사각형을 찾아 그 위에 올린다(월마다 모양이 달라
+  // 위치·크기가 유동적). 다른 달 칸엔 일정이 절대 없으므로 일정과 겹치지 않는다.
+  const [avatarRect, setAvatarRect] = useState<
+    { top: number; left: number; width: number; height: number } | null
+  >(null);
+  useEffect(() => {
+    if (showAgenda || !avatarSlot || !avatarOn) {
+      return;
+    }
+    const fit = posterFitRef.current;
+    if (!fit) {
+      return;
+    }
+    const COLS = 7;
+    const ROWS = 6;
+    const measure = () => {
+      const cells = Array.from(
+        fit.querySelectorAll<HTMLElement>(".public-day[data-cell-index]")
+      );
+      if (cells.length < COLS * ROWS) {
+        setAvatarRect(null);
+        return;
+      }
+      const isOut = (idx: number) => cells[idx]?.classList.contains("outside");
+      // 각 행에서 우측 끝(col6)부터 연속으로 outside인 시작 열(없으면 COLS).
+      const rightStart: number[] = [];
+      for (let r = 0; r < ROWS; r += 1) {
+        let start = COLS;
+        for (let c = COLS - 1; c >= 0; c -= 1) {
+          if (isOut(r * COLS + c)) start = c;
+          else break;
+        }
+        rightStart[r] = start;
+      }
+      // 바닥(마지막 행)에 붙은 우측 사각형 중 넓이 최대(동률이면 더 높은 것 = 아바타에 유리).
+      let best: { r0: number; c0: number; area: number } | null = null;
+      for (let r0 = ROWS - 1; r0 >= 0; r0 -= 1) {
+        let c0 = 0;
+        for (let r = r0; r < ROWS; r += 1) {
+          c0 = Math.max(c0, rightStart[r]);
+        }
+        if (c0 > COLS - 1) {
+          continue;
+        }
+        const area = (COLS - c0) * (ROWS - r0);
+        if (!best || area > best.area || (area === best.area && ROWS - r0 > ROWS - best.r0)) {
+          best = { r0, c0, area };
+        }
+      }
+      if (!best) {
+        setAvatarRect(null);
+        return;
+      }
+      const fitR = fit.getBoundingClientRect();
+      const tl = cells[best.r0 * COLS + best.c0].getBoundingClientRect();
+      const br = cells[(ROWS - 1) * COLS + (COLS - 1)].getBoundingClientRect();
+      const pad = 8;
+      setAvatarRect({
+        top: tl.top - fitR.top + pad,
+        left: tl.left - fitR.left + pad,
+        width: Math.max(0, br.right - tl.left - pad * 2),
+        height: Math.max(0, br.bottom - tl.top - pad * 2)
+      });
+    };
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(measure);
+    });
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.removeEventListener("resize", measure);
+    };
+    // posterScale이 바뀌면(리사이즈/달변경) 다시 잰다.
+  }, [showAgenda, avatarSlot, avatarOn, view.year, view.month, posterScale]);
+
   // 이 세션에서 삭제한 스티커 id. 달을 다시 시드할 때 schedule prop(서버 스냅샷)이 캐시 탓에
   // 아직 그 스티커를 들고 있을 수 있어, 지운 게 월 이동 후 되살아나는 걸 막는다.
   const deletedStickerIdsRef = useRef<Set<string>>(new Set());
@@ -3723,7 +3802,22 @@ export function PublicPoster({
         </div>
         </div>
         {avatarSlot ? (
-          <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
+          <aside
+            className="avatar-slot"
+            aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)"
+            style={
+              avatarRect
+                ? {
+                    top: avatarRect.top,
+                    left: avatarRect.left,
+                    width: avatarRect.width,
+                    height: avatarRect.height,
+                    right: "auto",
+                    bottom: "auto"
+                  }
+                : undefined
+            }
+          >
             <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
           </aside>
         ) : null}
