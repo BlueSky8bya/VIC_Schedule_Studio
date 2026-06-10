@@ -2896,26 +2896,35 @@ body.cell-range-dragging {
   grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
   gap: 16px;
   align-items: stretch; /* 두 칼럼 높이를 같게 → 업로드 칸 밑단을 텍스트 카드와 맞춤 */
-  /* 아바타 scene일 때 달력과 함께 좌우로 슬라이드(통통). base에 둬서 ON/OFF 둘 다 부드럽게. */
+}
+/* 꾸미기 chrome 전체(상단 도구바 + 하단 입력/캡쳐줄)를 아바타 scene에서 달력과 같은 폭으로 슬라이드.
+   base에 트랜지션 → ON/OFF 둘 다 부드럽게. */
+.decorate-toolbar,
+.poster-capture-row {
   transition: margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.poster-page.avatar-scene.avatar-right .decorate-cols {
+.poster-page.avatar-scene.avatar-right .decorate-toolbar,
+.poster-page.avatar-scene.avatar-right .poster-capture-row {
   margin-right: 25vw;
 }
-.poster-page.avatar-scene.avatar-left .decorate-cols {
+.poster-page.avatar-scene.avatar-left .decorate-toolbar,
+.poster-page.avatar-scene.avatar-left .poster-capture-row {
   margin-left: 25vw;
 }
 @media (max-width: 1099px) {
-  .poster-page.avatar-scene .decorate-cols {
+  .poster-page.avatar-scene .decorate-toolbar,
+  .poster-page.avatar-scene .poster-capture-row {
     margin: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .decorate-cols {
+  .decorate-toolbar,
+  .poster-capture-row {
     transition: none;
   }
 }
-html[data-reduce-motion] .decorate-cols {
+html[data-reduce-motion] .decorate-toolbar,
+html[data-reduce-motion] .poster-capture-row {
   transition: none;
 }
 .decorate-col-left,
