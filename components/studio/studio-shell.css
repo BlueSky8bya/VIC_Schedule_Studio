@@ -4207,101 +4207,109 @@
 .studio-shell.avatar-scene.avatar-left .studio-workspace {
   margin-left: 25vw;
 }
-/* 아바타 scene: 좌측 색상필터를 그리드에서 빼(좌측 칸 0), 아바타 '위' 빈 공간에 카드로 띄운다
-   (세로 긴 막대 대신 그 공간 비율의 박스 + 통통 등장). 달력은 그만큼 넓게 쓴다. */
+/* 아바타 scene: 좌측 색상필터 칸 비움(0) — 필터는 우측 rail로. 편집패널은 464→380으로 절약해
+   달력 폭에 보탠다. 달력·편집패널 칸은 명시 고정(좌칸 0으로 당겨져 달력이 사라지는 것 방지). */
 .studio-shell.avatar-scene .studio-workspace {
   grid-template-columns: 0 minmax(0, 1fr) 0;
 }
 .studio-shell.avatar-scene .studio-workspace.editor-open {
-  grid-template-columns: 0 minmax(0, 1fr) 464px;
+  grid-template-columns: 0 minmax(0, 1fr) 380px;
 }
-/* 좌측 패널을 fixed로 빼면 grid auto-placement에서 나머지가 한 칸씩 당겨져(달력이 col1=0으로
-   사라짐) — 달력·편집패널 칸을 명시 고정해 그대로 두 번째·세 번째 칸에 둔다. */
 .studio-shell.avatar-scene .studio-calendar-panel {
   grid-column: 2;
 }
 .studio-shell.avatar-scene .event-editor-panel {
   grid-column: 3;
 }
-/* 아바타로 달력이 좁아지면 칸이 세로로 '뚱뚱'해진다 — 칸 최소높이를 낮춰 비율을 맞춘다.
-   (칸 폭 자체를 더 강하게 보호하려면 편집 폼을 유동폭으로 바꾸는 별도 작업 필요.) */
+/* 편집패널 폼도 380에 맞춰 살짝 좁힌다(고정 446 → 유동). */
+.studio-shell.avatar-scene .event-editor-panel form {
+  width: 100%;
+}
+/* 좁아진 달력 칸이 세로로 뚱뚱해지지 않게 최소높이를 낮춘다. */
 .studio-shell.avatar-scene .studio-day {
   min-height: 100px;
 }
-.studio-shell.avatar-scene .studio-left-panel {
+
+/* avatar-rail — 화면 옆 '하나의' fixed flex-column 박스: [색상필터(위,스크롤) | 아바타(아래,고정비율)].
+   flex-column이라 둘이 절대 안 겹친다. 다 못 담으면 필터가 스크롤된다. */
+.avatar-rail {
+  display: none;
+}
+.studio-shell.avatar-scene .avatar-rail {
   position: fixed;
-  z-index: 7;
-  top: 148px; /* 상단바·도구바 아래로 내려 안 겹치게 */
-  bottom: calc(60vh + 16px); /* 아바타(아래 60vh) 위로 간격 두고 절대 안 겹치게 */
+  top: 148px;
+  bottom: 8px;
   width: calc(25vw - 16px);
-  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 6;
+}
+.studio-shell.avatar-scene.avatar-left .avatar-rail {
+  left: 8px;
+}
+.studio-shell.avatar-scene.avatar-right .avatar-rail {
+  right: 8px;
+}
+.avatar-rail-filter {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   box-sizing: border-box;
   background: #fff;
   border: 1px solid #ece9f5;
   border-radius: 18px;
   box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
   padding: 12px 14px;
-  overflow-y: auto;
   animation: avatar-rise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both;
 }
-.studio-shell.avatar-scene.avatar-left .studio-left-panel {
-  left: 8px;
-}
-.studio-shell.avatar-scene.avatar-right .studio-left-panel {
-  right: 8px;
-}
-/* 카드 안 색상필터: 2열 그리드로 공간 낭비 없이(넘치면 카드가 스크롤). */
-.studio-shell.avatar-scene .studio-left-panel h2 {
+.avatar-rail-filter h2 {
   margin: 0 0 6px;
 }
-.studio-shell.avatar-scene .studio-left-panel .tlg-group,
-.studio-shell.avatar-scene .studio-left-panel .tlg-chips {
+/* 색상필터·형식 모두 2열로 — 공간 낭비 없이. */
+.avatar-rail-filter .tlg-group,
+.avatar-rail-filter .tlg-chips {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 5px;
 }
-.studio-shell.avatar-scene .studio-left-panel .tag-legend-filter {
+.avatar-rail-filter .tag-legend-filter {
   width: 100%;
   min-width: 0;
 }
-/* 마운트 전(첫 페인트)엔 슬라이드/등장 애니 끔 → 새로고침 시 안 튐. */
-.studio-shell.avatar-no-anim .studio-workspace,
-.studio-shell.avatar-no-anim .studio-left-panel,
-.studio-shell.avatar-no-anim .avatar-slot {
-  transition: none !important;
-  animation: none !important;
+.avatar-rail-filter .tlg-mod {
+  margin-top: 6px;
 }
+.avatar-rail-filter .tlg-label {
+  margin: 0 0 4px;
+}
+/* 아바타 figure — rail 하단 고정 비율(~58%). */
 .avatar-slot {
-  display: none; /* scene 아니면 숨김 */
+  display: none; /* rail 밖(비 scene)에선 숨김 */
 }
-.studio-shell.avatar-scene .avatar-slot {
-  position: fixed;
-  bottom: 0;
-  top: auto;
-  width: 25vw;
-  height: 60vh;
-  padding: 10px;
+.avatar-rail .avatar-slot {
   display: flex;
+  flex: 0 0 58%;
+  min-height: 0;
   box-sizing: border-box;
   pointer-events: none;
-  z-index: 6;
   opacity: 0;
   transform: translateY(24px) scale(0.96);
   animation: avatar-rise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s forwards;
-}
-.studio-shell.avatar-scene.avatar-right .avatar-slot {
-  right: 0;
-  left: auto;
-}
-.studio-shell.avatar-scene.avatar-left .avatar-slot {
-  left: 0;
-  right: auto;
 }
 @keyframes avatar-rise {
   to {
     opacity: 1;
     transform: none;
   }
+}
+/* 마운트 전(첫 페인트)엔 애니 끔 → 새로고침 시 안 튐. */
+.studio-shell.avatar-no-anim .studio-workspace,
+.studio-shell.avatar-no-anim .avatar-rail,
+.studio-shell.avatar-no-anim .avatar-rail-filter,
+.studio-shell.avatar-no-anim .avatar-slot {
+  transition: none !important;
+  animation: none !important;
 }
 .avatar-dock-inner {
   flex: 1 1 auto;
@@ -4384,7 +4392,7 @@
 @media (prefers-reduced-motion: reduce) {
   .studio-shell.avatar-scene .studio-workspace,
   .studio-shell.avatar-scene .avatar-slot,
-  .studio-shell.avatar-scene .studio-left-panel,
+  .studio-shell.avatar-scene .avatar-rail-filter,
   .studio-avatar-ctl .avatar-ctl-toggle,
   .studio-avatar-ctl .avatar-ctl-side button {
     transition: none;
@@ -4395,35 +4403,11 @@
 }
 html[data-reduce-motion] .studio-shell.avatar-scene .studio-workspace,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-slot,
-html[data-reduce-motion] .studio-shell.avatar-scene .studio-left-panel {
+html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   transition: none;
   animation: none;
   opacity: 1;
   transform: none;
-}
-/* 좁은 화면(<1100px)에선 편집실 아바타 자리 끔(달력 가독성) — 색상필터도 그리드로 복귀. */
-@media (max-width: 1099px) {
-  .studio-shell.avatar-scene .studio-workspace {
-    margin: 0;
-    grid-template-columns: 188px minmax(0, 1fr) 0px;
-  }
-  .studio-shell.avatar-scene .studio-workspace.editor-open {
-    grid-template-columns: 188px minmax(0, 1fr) 464px;
-  }
-  .studio-shell.avatar-scene .studio-left-panel {
-    position: static;
-    width: auto;
-    inset: auto;
-    background: none;
-    border: 0;
-    box-shadow: none;
-    padding: 0;
-    overflow: visible;
-    animation: none;
-  }
-  .studio-shell.avatar-scene .avatar-slot {
-    display: none;
-  }
 }
 
 .studio-left-panel,

@@ -825,7 +825,18 @@ export function StudioShell({
   const isEffectivelyOwner = effectiveRole === "owner";
   // 편집실 아바타 자리 — 시청자와 같이 보며 작업할 때를 위해 편집실(작업화면)에도 우측/좌측 1/4
   // 아바타 자리를 둔다(관리자·개발자, 데스크탑). 시청자 미리보기 토글과 같은 localStorage 키 공유.
-  const avatarEditor = (isEffectivelyOwner || isDeveloper) && !isNarrow;
+  // 편집실 아바타 자리는 ≥1100px에서만(좁으면 달력 가독성 우선). 필터가 rail로 가므로 viewport
+  // 폭을 React가 알아야 깔끔히 끌 수 있다(CSS만으론 rail의 필터를 그리드로 못 되돌림).
+  const [avatarWideEnough, setAvatarWideEnough] = useState(true);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(min-width: 1100px)");
+    const sync = () => setAvatarWideEnough(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+  const avatarEditor = (isEffectivelyOwner || isDeveloper) && !isNarrow && avatarWideEnough;
   const [avatarOn, setAvatarOn] = useState(true);
   // 최초(메모리 없음) 디폴트는 '왼쪽', 이후엔 마지막 값(편집실·미리보기 공유) 복원.
   const [avatarSide, setAvatarSide] = useState<"left" | "right">("left");
@@ -4114,16 +4125,48 @@ export function StudioShell({
     );
   }
 
+  // 색상 필터 패널 — 평소엔 좌측 그리드 칸, 아바타 scene에선 아바타 위 rail에 넣어 재사용.
+  const studioFilterPanel = (
+    <section>
+      <h2>색상 필터</h2>
+      <TagLegendEditor
+        canEdit={false}
+        filterIds={tagFilters}
+        onToggleFilter={toggleTagFilter}
+        palette={palette}
+        tags={viewTags}
+      />
+      {canReadPrivate ? (
+        <button
+          aria-pressed={tagFilters.includes(PRIVATE_FILTER)}
+          className={`tag-legend-filter ${tagFilters.includes(PRIVATE_FILTER) ? "on" : ""} ${
+            tagFilters.length > 0 && !tagFilters.includes(PRIVATE_FILTER) ? "dim" : ""
+          }`}
+          onClick={() => toggleTagFilter(PRIVATE_FILTER)}
+          type="button"
+        >
+          <i className="legend-private-swatch" aria-hidden="true" />
+          비공개
+        </button>
+      ) : null}
+    </section>
+  );
+
   return (
     <main
       className={`studio-shell${avatarSceneOn ? ` avatar-scene avatar-${avatarSide}` : ""}${
         avatarReady ? "" : " avatar-no-anim"
       }`}
     >
+      {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
+          flex-column이라 둘이 절대 안 겹친다. scene일 때만 필터를 여기 담는다. */}
       {avatarEditor ? (
-        <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
-          <div className="avatar-dock-inner">
-            <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
+        <aside className="avatar-rail" aria-label="아바타 자리 영역(관리자 전용)">
+          {avatarSceneOn ? <div className="avatar-rail-filter">{studioFilterPanel}</div> : null}
+          <div className="avatar-slot">
+            <div className="avatar-dock-inner">
+              <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
+            </div>
           </div>
         </aside>
       ) : null}
@@ -4363,32 +4406,8 @@ export function StudioShell({
       ) : null}
 
       <section className={`studio-workspace ${editorVisible ? "editor-open" : ""}`}>
-        <aside className="studio-left-panel">
-          <section>
-            <h2>색상 필터</h2>
-            <TagLegendEditor
-              canEdit={false}
-              filterIds={tagFilters}
-              onToggleFilter={toggleTagFilter}
-              palette={palette}
-              tags={viewTags}
-            />
-            {/* 비공개(공개 아님) 일정만 골라보기 — 잠금 해제로 비공개가 보일 때만(개발자·소유자·매니저·작업자). */}
-            {canReadPrivate ? (
-              <button
-                aria-pressed={tagFilters.includes(PRIVATE_FILTER)}
-                className={`tag-legend-filter ${tagFilters.includes(PRIVATE_FILTER) ? "on" : ""} ${
-                  tagFilters.length > 0 && !tagFilters.includes(PRIVATE_FILTER) ? "dim" : ""
-                }`}
-                onClick={() => toggleTagFilter(PRIVATE_FILTER)}
-                type="button"
-              >
-                <i className="legend-private-swatch" aria-hidden="true" />
-                비공개
-              </button>
-            ) : null}
-          </section>
-        </aside>
+        {/* 아바타 scene에선 색상필터가 우측 rail로 가므로 좌측 칸은 비운다(칸 폭도 0). */}
+        <aside className="studio-left-panel">{avatarSceneOn ? null : studioFilterPanel}</aside>
 
         <section className="studio-calendar-panel">
           <div className="studio-weekdays" aria-hidden="true">
