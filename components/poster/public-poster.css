@@ -196,7 +196,10 @@
 
 /* 모바일 아젠다: 월 이동을 엄지로 닿기 쉬운 하단 고정 바로. */
 .public-calendar-shell.agenda-mode {
-  padding-top: 10px;
+  /* 상단 여백 0 — sticky 헤더를 화면 맨 위에 딱 붙인다. 여백이 있으면 그 틈으로 페이지 배경
+     (테마 색, 예: 월드컵 녹색)이 헤더 위로 삐져나온다(크림 테마일 땐 같은 색이라 안 보였음).
+     헤더 자체 padding(9px)이 브라우저 바와의 숨 쉴 틈을 준다. */
+  padding-top: 0;
   /* 하단 고정 바에 마지막 카드가 가리지 않도록 여유. (안전영역 포함) */
   padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
 }
