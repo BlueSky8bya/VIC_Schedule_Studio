@@ -860,6 +860,13 @@ export function StudioShell({
     }
   }
   const avatarSceneOn = avatarEditor && avatarOn;
+  // 새로고침 직후 슬라이드/등장 애니가 한 번 튀는 것 방지 — 마운트 전엔 애니 끄고, 마운트 후 켠다
+  // (이후 사용자 토글에서만 통통 애니).
+  const [avatarReady, setAvatarReady] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setAvatarReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   // 인사이트: 개발자(실제, 미리보기 아님)는 전체(8패널·수치), 그 외 관리자·매니저·작업자(또는 그
   // 역할 미리보기)는 수치 없는 4패널(멤버 인사이트)을 본다. 시청자는 인사이트 없음.
   const isDevInsights = isDeveloper && !previewRole;
@@ -4109,7 +4116,9 @@ export function StudioShell({
 
   return (
     <main
-      className={`studio-shell${avatarSceneOn ? ` avatar-scene avatar-${avatarSide}` : ""}`}
+      className={`studio-shell${avatarSceneOn ? ` avatar-scene avatar-${avatarSide}` : ""}${
+        avatarReady ? "" : " avatar-no-anim"
+      }`}
     >
       {avatarEditor ? (
         <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">

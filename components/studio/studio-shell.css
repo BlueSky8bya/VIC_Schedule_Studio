@@ -4226,8 +4226,8 @@
 .studio-shell.avatar-scene .studio-left-panel {
   position: fixed;
   z-index: 7;
-  top: 100px;
-  bottom: calc(70vh + 12px); /* 아바타(아래 70vh) 바로 위까지 = 그 공간을 꽉 채우는 카드 */
+  top: 150px; /* 상단바·도구바 아래로 충분히 내려 안 겹치게 */
+  bottom: calc(70vh + 18px); /* 아바타(아래 70vh) 위로 간격 두고 안 겹치게 */
   width: calc(25vw - 16px);
   margin: 0;
   box-sizing: border-box;
@@ -4244,6 +4244,27 @@
 }
 .studio-shell.avatar-scene.avatar-right .studio-left-panel {
   right: 8px;
+}
+/* 카드 안 색상필터: 1열 세로 말고 여러 열로 흩어 공간 낭비 없이(넘치면 카드가 스크롤). */
+.studio-shell.avatar-scene .studio-left-panel h2 {
+  margin: 0 0 6px;
+}
+.studio-shell.avatar-scene .studio-left-panel .tlg-group,
+.studio-shell.avatar-scene .studio-left-panel .tlg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.studio-shell.avatar-scene .studio-left-panel .tag-legend-filter {
+  width: auto;
+  flex: 0 1 auto;
+}
+/* 마운트 전(첫 페인트)엔 슬라이드/등장 애니 끔 → 새로고침 시 안 튐. */
+.studio-shell.avatar-no-anim .studio-workspace,
+.studio-shell.avatar-no-anim .studio-left-panel,
+.studio-shell.avatar-no-anim .avatar-slot {
+  transition: none !important;
+  animation: none !important;
 }
 .avatar-slot {
   display: none; /* scene 아니면 숨김 */
