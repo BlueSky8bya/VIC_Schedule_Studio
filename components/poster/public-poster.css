@@ -3868,6 +3868,15 @@ body.cell-range-dragging {
 .poster-surface[data-poster-theme="worldcup"]::after {
   content: "🏆";
 }
+/* 모바일 아젠다 헤더(크림 기본)도 월드컵 잔디색에 맞춰 — 페이지 배경과 따로 놀지 않게. */
+.poster-page[data-poster-theme="worldcup"] .agenda-header {
+  background: linear-gradient(180deg, #d4efd9 72%, #c6e8ce);
+  border-bottom-color: #a6d2b1;
+}
+.poster-page[data-poster-theme="worldcup"] .agenda-account button {
+  border-color: #a6d2b1;
+  color: #3f7a55;
+}
 
 /* ── P3: 더 화려한 배경(그라데이션/패턴). 달력 카드는 불투명이라 텍스트 가독성 유지. ── */
 .poster-page[data-poster-theme="sunset"] {
