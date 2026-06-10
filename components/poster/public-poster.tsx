@@ -2983,8 +2983,9 @@ export function PublicPoster({
                     className="button"
                     href="/studio"
                     onClick={() => {
-                      // 꾸미기에서 보던 달을 편집실 월(sy/sm)로 넘겨, 편집실이 그 달로 열리게 한다.
-                      writeViewCookie({ sy: view.year, sm: view.month });
+                      // 꾸미기에서 보던 달을 편집실 월(sy/sm)로 넘기고, 시청자 미리보기 플래그(v)는 꺼서
+                      // /studio가 미리보기가 아니라 '실제 편집실'로 열리게 한다(이전에 켠 v:1이 남아 있었음).
+                      writeViewCookie({ sy: view.year, sm: view.month, v: 0 });
                     }}
                   >
                     <ChevronLeft aria-hidden="true" size={16} />
