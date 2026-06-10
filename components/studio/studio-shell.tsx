@@ -4165,38 +4165,6 @@ export function StudioShell({
 
         {/* 오른쪽: 역할·도구 (저장 상태 칩은 아래 액션바의 '비공개 일정 보기' 왼쪽으로 옮겼다.) */}
         <div className="studio-role-tools">
-          {avatarEditor ? (
-            <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
-              <button
-                type="button"
-                className={`avatar-ctl-toggle${avatarOn ? " on" : ""}`}
-                aria-pressed={avatarOn}
-                onClick={toggleAvatarOn}
-              >
-                🎙️ 아바타 자리 {avatarOn ? "끄기" : "켜기"}
-              </button>
-              {avatarOn ? (
-                <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
-                  <button
-                    type="button"
-                    className={avatarSide === "left" ? "on" : ""}
-                    aria-pressed={avatarSide === "left"}
-                    onClick={() => pickAvatarSide("left")}
-                  >
-                    왼쪽
-                  </button>
-                  <button
-                    type="button"
-                    className={avatarSide === "right" ? "on" : ""}
-                    aria-pressed={avatarSide === "right"}
-                    onClick={() => pickAvatarSide("right")}
-                  >
-                    오른쪽
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
           {/* 미리보기 안내는 역할 배지("?") 설명 팝오버 안 작은 문구로 일원화(별도 플래그 제거). */}
           {renderRoleBadge()}
           {/* 개발자는 역할 미리보기 드롭다운, 그 외 역할은 시청자 화면 미리보기. */}
@@ -4273,6 +4241,39 @@ export function StudioShell({
             <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button">
               📊 월별 인사이트
             </button>
+          ) : null}
+          {/* 아바타 자리 토글 — 월별 인사이트 오른쪽. */}
+          {avatarEditor ? (
+            <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
+              <button
+                type="button"
+                className={`avatar-ctl-toggle${avatarOn ? " on" : ""}`}
+                aria-pressed={avatarOn}
+                onClick={toggleAvatarOn}
+              >
+                🎙️ 아바타 자리 {avatarOn ? "끄기" : "켜기"}
+              </button>
+              {avatarOn ? (
+                <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
+                  <button
+                    type="button"
+                    className={avatarSide === "left" ? "on" : ""}
+                    aria-pressed={avatarSide === "left"}
+                    onClick={() => pickAvatarSide("left")}
+                  >
+                    왼쪽
+                  </button>
+                  <button
+                    type="button"
+                    className={avatarSide === "right" ? "on" : ""}
+                    aria-pressed={avatarSide === "right"}
+                    onClick={() => pickAvatarSide("right")}
+                  >
+                    오른쪽
+                  </button>
+                </div>
+              ) : null}
+            </div>
           ) : null}
           {/* 우측 묶음: 저장 상태 칩 + 비공개 일정 보기(토글) + 달력 꾸미기.
               칩은 '비공개 일정 보기' 왼쪽, 버튼 아래 끝선에 맞춰 둔다. 모든 역할(매니저·작업자
