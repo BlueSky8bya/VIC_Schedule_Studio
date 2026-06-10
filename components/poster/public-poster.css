@@ -903,6 +903,10 @@ html[data-reduce-motion] .poster-scaler {
   align-items: center;
   gap: 8px;
 }
+/* 꺼짐 상태 토글 — 헤더(.header-left) 안에 자연스럽게 흐른다(고정 오버레이 아님). */
+.header-left .avatar-ctl-inheader {
+  margin: 0;
+}
 .poster-page.avatar-scene.avatar-left .avatar-ctl {
   top: auto;
   left: 8px;

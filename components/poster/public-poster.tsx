@@ -2824,38 +2824,36 @@ export function PublicPoster({
       }`}
       data-poster-theme={effectivePosterTheme}
     >
-      {/* 아바타 자리 토글 — surface 밖, 페이지 상단 좌측에 고정. surface가 scene으로 이동/축소해도
-          이 버튼은 절대 안 움직인다(마우스가 안 헤맨다). 데스크탑·관리자 전용. */}
-      {avatarCapable && !showAgenda ? (
+      {/* 아바타 자리 토글 — 켜져 있을 때만 여기(고정 오버레이)에서 아바타 자리 '바로 위'에 뜬다.
+          꺼져 있을 땐 헤더(.header-left) 안에 들어간다(아래 참고). 데스크탑·관리자 전용. */}
+      {avatarCapable && !showAgenda && avatarOn ? (
         <div className="avatar-ctl" role="group" aria-label="아바타 자리 설정(관리자 전용)">
           <button
             type="button"
-            className={`avatar-ctl-toggle${avatarOn ? " on" : ""}`}
-            aria-pressed={avatarOn}
+            className="avatar-ctl-toggle on"
+            aria-pressed={true}
             onClick={toggleAvatarOn}
           >
-🎙️ 아바타 자리 {avatarOn ? "끄기" : "켜기"}
+🎙️ 아바타 자리 끄기
           </button>
-          {avatarOn ? (
-            <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
-              <button
-                type="button"
-                className={avatarSide === "left" ? "on" : ""}
-                aria-pressed={avatarSide === "left"}
-                onClick={() => pickAvatarSide("left")}
-              >
-                왼쪽
-              </button>
-              <button
-                type="button"
-                className={avatarSide === "right" ? "on" : ""}
-                aria-pressed={avatarSide === "right"}
-                onClick={() => pickAvatarSide("right")}
-              >
-                오른쪽
-              </button>
-            </div>
-          ) : null}
+          <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
+            <button
+              type="button"
+              className={avatarSide === "left" ? "on" : ""}
+              aria-pressed={avatarSide === "left"}
+              onClick={() => pickAvatarSide("left")}
+            >
+              왼쪽
+            </button>
+            <button
+              type="button"
+              className={avatarSide === "right" ? "on" : ""}
+              aria-pressed={avatarSide === "right"}
+              onClick={() => pickAvatarSide("right")}
+            >
+              오른쪽
+            </button>
+          </div>
         </div>
       ) : null}
       {celebrate ? (
@@ -2950,7 +2948,19 @@ export function PublicPoster({
         ) : null}
         {showAgenda ? null : (
           <header className="public-calendar-header">
-            <div className="header-left" />
+            <div className="header-left">
+              {/* 아바타 자리 꺼져 있을 땐 토글을 헤더에 둔다(떠다니며 툴바를 가리지 않게). */}
+              {avatarCapable && !avatarOn ? (
+                <button
+                  type="button"
+                  className="avatar-ctl-toggle avatar-ctl-inheader"
+                  aria-pressed={false}
+                  onClick={toggleAvatarOn}
+                >
+                  🎙️ 아바타 자리 켜기
+                </button>
+              ) : null}
+            </div>
 
             {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).
                 현재 월 표시는 포스터 제목(✨️ … N월)에 이미 있어 헤더 가운데는 비어 있다.
