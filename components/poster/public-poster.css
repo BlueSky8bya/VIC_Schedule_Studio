@@ -769,7 +769,7 @@ html {
   min-width: 0;
 }
 .avatar-slot {
-  flex: 0 0 32%;
+  flex: 0 0 19%;
   min-width: 0;
   box-sizing: border-box;
   border: 2px dashed #c9b8e6;
@@ -3831,19 +3831,21 @@ body.cell-range-dragging {
 /* 월드컵(2026 기간 자동) — 잔디 그린을 은은하게, 카드/텍스트는 불투명이라 가독성 유지. */
 .poster-page[data-poster-theme="worldcup"] {
   background:
-    radial-gradient(120% 80% at 50% -10%, #eafaef 0%, transparent 65%),
-    linear-gradient(180deg, #f1fbf3, #e8f6ec);
+    radial-gradient(120% 80% at 50% -10%, #bfe7c9 0%, transparent 65%),
+    linear-gradient(180deg, #c7e9cf, #aedcb9);
 }
+/* 잔디 그라운드 — 두 톤 초록 세로 줄무늬(축구장 잔디) + 진한 잔디 베이스. 카드는 불투명이라
+   글자 가독성 유지된다. */
 .poster-surface[data-poster-theme="worldcup"] {
   background:
     repeating-linear-gradient(
       90deg,
-      rgb(34 139 87 / 4%) 0,
-      rgb(34 139 87 / 4%) 60px,
-      transparent 60px,
-      transparent 120px
+      rgb(38 130 74 / 16%) 0,
+      rgb(38 130 74 / 16%) 70px,
+      transparent 70px,
+      transparent 140px
     ),
-    linear-gradient(160deg, #f6fff8 0%, #e6f6ea 55%, #f4fdf6 100%);
+    linear-gradient(160deg, #bfe6c7 0%, #97d2a6 55%, #b6e2bf 100%);
 }
 .poster-surface[data-poster-theme="worldcup"]::before {
   content: "⚽";
