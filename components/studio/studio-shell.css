@@ -4207,6 +4207,36 @@
 .studio-shell.avatar-scene.avatar-left .studio-workspace {
   margin-left: 25vw;
 }
+/* 아바타 scene: 좌측 색상필터를 그리드에서 빼(좌측 칸 0), 아바타 '위' 빈 공간에 카드로 띄운다
+   (세로 긴 막대 대신 그 공간 비율의 박스 + 통통 등장). 달력은 그만큼 넓게 쓴다. */
+.studio-shell.avatar-scene .studio-workspace {
+  grid-template-columns: 0 minmax(0, 1fr) 0;
+}
+.studio-shell.avatar-scene .studio-workspace.editor-open {
+  grid-template-columns: 0 minmax(0, 1fr) 464px;
+}
+.studio-shell.avatar-scene .studio-left-panel {
+  position: fixed;
+  z-index: 7;
+  top: 100px;
+  bottom: calc(70vh + 12px); /* 아바타(아래 70vh) 바로 위까지 = 그 공간을 꽉 채우는 카드 */
+  width: calc(25vw - 16px);
+  margin: 0;
+  box-sizing: border-box;
+  background: #fff;
+  border: 1px solid #ece9f5;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
+  padding: 12px 14px;
+  overflow-y: auto;
+  animation: avatar-rise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both;
+}
+.studio-shell.avatar-scene.avatar-left .studio-left-panel {
+  left: 8px;
+}
+.studio-shell.avatar-scene.avatar-right .studio-left-panel {
+  right: 8px;
+}
 .avatar-slot {
   display: none; /* scene 아니면 숨김 */
 }
@@ -4215,7 +4245,7 @@
   bottom: 0;
   top: auto;
   width: 25vw;
-  height: 74vh;
+  height: 70vh;
   padding: 10px;
   display: flex;
   box-sizing: border-box;
@@ -4320,6 +4350,7 @@
 @media (prefers-reduced-motion: reduce) {
   .studio-shell.avatar-scene .studio-workspace,
   .studio-shell.avatar-scene .avatar-slot,
+  .studio-shell.avatar-scene .studio-left-panel,
   .studio-avatar-ctl .avatar-ctl-toggle,
   .studio-avatar-ctl .avatar-ctl-side button {
     transition: none;
@@ -4329,16 +4360,32 @@
   }
 }
 html[data-reduce-motion] .studio-shell.avatar-scene .studio-workspace,
-html[data-reduce-motion] .studio-shell.avatar-scene .avatar-slot {
+html[data-reduce-motion] .studio-shell.avatar-scene .avatar-slot,
+html[data-reduce-motion] .studio-shell.avatar-scene .studio-left-panel {
   transition: none;
   animation: none;
   opacity: 1;
   transform: none;
 }
-/* 좁은 화면(<1100px)에선 편집실 아바타 자리 끔(달력 가독성). */
+/* 좁은 화면(<1100px)에선 편집실 아바타 자리 끔(달력 가독성) — 색상필터도 그리드로 복귀. */
 @media (max-width: 1099px) {
   .studio-shell.avatar-scene .studio-workspace {
     margin: 0;
+    grid-template-columns: 188px minmax(0, 1fr) 0px;
+  }
+  .studio-shell.avatar-scene .studio-workspace.editor-open {
+    grid-template-columns: 188px minmax(0, 1fr) 464px;
+  }
+  .studio-shell.avatar-scene .studio-left-panel {
+    position: static;
+    width: auto;
+    inset: auto;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    overflow: visible;
+    animation: none;
   }
   .studio-shell.avatar-scene .avatar-slot {
     display: none;
