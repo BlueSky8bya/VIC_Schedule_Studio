@@ -4189,11 +4189,160 @@
   /* 편집 패널(오른쪽)이 업 도움 등으로 길어져도 가운데 달력이 따라 늘어나지 않게 — 각 칸이 제
      높이를 갖는다(기본 stretch면 가장 큰 칸 높이에 달력이 끌려 늘어났다). */
   align-items: start;
-  transition: grid-template-columns 0.28s ease;
+  /* margin은 아바타 자리 슬라이드용(통통). grid-template-columns는 편집패널 슬라이드용. */
+  transition:
+    grid-template-columns 0.28s ease,
+    margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 /* 날짜를 선택하면 우측 카드(폼 446 + 좌측 간격 18)가 밀고 들어온다. */
 .studio-workspace.editor-open {
   grid-template-columns: 188px minmax(0, 1fr) 464px;
+}
+
+/* ── 편집실 아바타 자리(시청자와 같이 보기용) — viewer 포스터와 동일한 fixed 1/4 도크 ── */
+/* 아바타 ON 시 편집실 콘텐츠(workspace)를 반대쪽으로 margin 슬라이드(패널 포함 통째로 → 겹침 0). */
+.studio-shell.avatar-scene.avatar-right .studio-workspace {
+  margin-right: 25vw;
+}
+.studio-shell.avatar-scene.avatar-left .studio-workspace {
+  margin-left: 25vw;
+}
+.avatar-slot {
+  display: none; /* scene 아니면 숨김 */
+}
+.studio-shell.avatar-scene .avatar-slot {
+  position: fixed;
+  bottom: 0;
+  top: auto;
+  width: 25vw;
+  height: 74vh;
+  padding: 10px;
+  display: flex;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 6;
+  opacity: 0;
+  transform: translateY(24px) scale(0.96);
+  animation: avatar-rise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s forwards;
+}
+.studio-shell.avatar-scene.avatar-right .avatar-slot {
+  right: 0;
+  left: auto;
+}
+.studio-shell.avatar-scene.avatar-left .avatar-slot {
+  left: 0;
+  right: auto;
+}
+@keyframes avatar-rise {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.avatar-dock-inner {
+  flex: 1 1 auto;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 1.5px dashed rgb(120 110 90 / 30%);
+  border-radius: 18px;
+  background: rgb(255 255 255 / 42%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 16px;
+}
+.avatar-slot-hint {
+  font-size: 15px;
+  font-weight: 700;
+  color: rgb(155 134 194 / 70%);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+/* 토글 — 편집실 상단바 우측(.studio-role-tools) 안에 인라인으로(고정 자리, 안 움직임). */
+.studio-avatar-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.studio-avatar-ctl .avatar-ctl-toggle {
+  min-width: 150px;
+  text-align: center;
+  border: 1px solid #e3d8f1;
+  background: #fff;
+  color: #6b5b8a;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.08s ease;
+}
+.studio-avatar-ctl .avatar-ctl-toggle.on {
+  background: #efe7fb;
+  color: #5b4a86;
+  box-shadow: inset 0 0 0 1px #cdb8ee;
+}
+.studio-avatar-ctl .avatar-ctl-toggle:active {
+  transform: scale(0.95);
+}
+.studio-avatar-ctl .avatar-ctl-side {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: #f4eefb;
+  border-radius: 999px;
+}
+.studio-avatar-ctl .avatar-ctl-side button {
+  border: 0;
+  background: transparent;
+  color: #6b5b8a;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.12s ease,
+    transform 0.08s ease;
+}
+.studio-avatar-ctl .avatar-ctl-side button.on {
+  background: #fff;
+  color: #5b4a86;
+  box-shadow: 0 1px 4px rgb(91 74 134 / 18%);
+}
+.studio-avatar-ctl .avatar-ctl-side button:active {
+  transform: scale(0.95);
+}
+@media (prefers-reduced-motion: reduce) {
+  .studio-shell.avatar-scene .studio-workspace,
+  .studio-shell.avatar-scene .avatar-slot,
+  .studio-avatar-ctl .avatar-ctl-toggle,
+  .studio-avatar-ctl .avatar-ctl-side button {
+    transition: none;
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-reduce-motion] .studio-shell.avatar-scene .studio-workspace,
+html[data-reduce-motion] .studio-shell.avatar-scene .avatar-slot {
+  transition: none;
+  animation: none;
+  opacity: 1;
+  transform: none;
+}
+/* 좁은 화면(<1100px)에선 편집실 아바타 자리 끔(달력 가독성). */
+@media (max-width: 1099px) {
+  .studio-shell.avatar-scene .studio-workspace {
+    margin: 0;
+  }
+  .studio-shell.avatar-scene .avatar-slot {
+    display: none;
+  }
 }
 
 .studio-left-panel,

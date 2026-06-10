@@ -823,6 +823,42 @@ export function StudioShell({
   const effectiveRole: MembershipRole = previewRole ?? actor.role;
   // 미리보기 화면이 보는 역할이 관리자인가(관리자 본인 + "관리자 미리보기" 둘 다 포함).
   const isEffectivelyOwner = effectiveRole === "owner";
+  // 편집실 아바타 자리 — 시청자와 같이 보며 작업할 때를 위해 편집실(작업화면)에도 우측/좌측 1/4
+  // 아바타 자리를 둔다(관리자·개발자, 데스크탑). 시청자 미리보기 토글과 같은 localStorage 키 공유.
+  const avatarEditor = (isEffectivelyOwner || isDeveloper) && !isNarrow;
+  const [avatarOn, setAvatarOn] = useState(true);
+  const [avatarSide, setAvatarSide] = useState<"left" | "right">("right");
+  useEffect(() => {
+    if (!avatarEditor || typeof window === "undefined") return;
+    try {
+      if (window.localStorage.getItem("vic_avatar_on") === "0") setAvatarOn(false);
+      if (window.localStorage.getItem("vic_avatar_side") === "left") setAvatarSide("left");
+    } catch {
+      /* 저장소 불가 무시 */
+    }
+  }, [avatarEditor]);
+  function toggleAvatarOn() {
+    hapticTick();
+    setAvatarOn((v) => {
+      const next = !v;
+      try {
+        window.localStorage.setItem("vic_avatar_on", next ? "1" : "0");
+      } catch {
+        /* 무시 */
+      }
+      return next;
+    });
+  }
+  function pickAvatarSide(side: "left" | "right") {
+    hapticTick();
+    setAvatarSide(side);
+    try {
+      window.localStorage.setItem("vic_avatar_side", side);
+    } catch {
+      /* 무시 */
+    }
+  }
+  const avatarSceneOn = avatarEditor && avatarOn;
   // 인사이트: 개발자(실제, 미리보기 아님)는 전체(8패널·수치), 그 외 관리자·매니저·작업자(또는 그
   // 역할 미리보기)는 수치 없는 4패널(멤버 인사이트)을 본다. 시청자는 인사이트 없음.
   const isDevInsights = isDeveloper && !previewRole;
@@ -4067,7 +4103,16 @@ export function StudioShell({
   }
 
   return (
-    <main className="studio-shell">
+    <main
+      className={`studio-shell${avatarSceneOn ? ` avatar-scene avatar-${avatarSide}` : ""}`}
+    >
+      {avatarEditor ? (
+        <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
+          <div className="avatar-dock-inner">
+            <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
+          </div>
+        </aside>
+      ) : null}
       {copyToast ? (
         <div className="copy-toast" role="status" aria-live="polite">
           {copyToast}
@@ -4120,6 +4165,38 @@ export function StudioShell({
 
         {/* 오른쪽: 역할·도구 (저장 상태 칩은 아래 액션바의 '비공개 일정 보기' 왼쪽으로 옮겼다.) */}
         <div className="studio-role-tools">
+          {avatarEditor ? (
+            <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
+              <button
+                type="button"
+                className={`avatar-ctl-toggle${avatarOn ? " on" : ""}`}
+                aria-pressed={avatarOn}
+                onClick={toggleAvatarOn}
+              >
+                🎙️ 아바타 자리 {avatarOn ? "끄기" : "켜기"}
+              </button>
+              {avatarOn ? (
+                <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
+                  <button
+                    type="button"
+                    className={avatarSide === "left" ? "on" : ""}
+                    aria-pressed={avatarSide === "left"}
+                    onClick={() => pickAvatarSide("left")}
+                  >
+                    왼쪽
+                  </button>
+                  <button
+                    type="button"
+                    className={avatarSide === "right" ? "on" : ""}
+                    aria-pressed={avatarSide === "right"}
+                    onClick={() => pickAvatarSide("right")}
+                  >
+                    오른쪽
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           {/* 미리보기 안내는 역할 배지("?") 설명 팝오버 안 작은 문구로 일원화(별도 플래그 제거). */}
           {renderRoleBadge()}
           {/* 개발자는 역할 미리보기 드롭다운, 그 외 역할은 시청자 화면 미리보기. */}
