@@ -908,19 +908,15 @@ export function PublicPoster({
   // 대회 한정 연출이라 owner가 고른 테마보다 우선해 모든 시청자에게 같은 분위기를 준다.
   const effectivePosterTheme = isWorldCupMonth(view.year, view.month) ? "worldcup" : posterTheme;
 
-  // 관리자 아바타 자리 — 켜기/끄기 + 좌/우는 관리자 로컬 취향이라 localStorage에 저장한다
-  // (서버/시청자와 무관, owner 기기에서만 복원). avatarSlot capability가 켜져 있을 때만 의미.
+  // 관리자 아바타 자리 — 우측 고정(웹 전용). 켜기/끄기만 관리자 로컬 취향이라 localStorage에
+  // 저장한다(서버/시청자와 무관, owner 기기에서만 복원). avatarSlot capability일 때만 의미.
   const [avatarOn, setAvatarOn] = useState(true);
-  const [avatarSide, setAvatarSide] = useState<"left" | "right">("left");
   useEffect(() => {
     if (!avatarSlot || typeof window === "undefined") {
       return;
     }
     try {
-      const on = window.localStorage.getItem("vic_avatar_on");
-      const side = window.localStorage.getItem("vic_avatar_side");
-      if (on === "0") setAvatarOn(false);
-      if (side === "right" || side === "left") setAvatarSide(side);
+      if (window.localStorage.getItem("vic_avatar_on") === "0") setAvatarOn(false);
     } catch {
       /* 저장소 불가 환경 무시 */
     }
@@ -937,16 +933,6 @@ export function PublicPoster({
       return next;
     });
   }
-  function pickAvatarSide(side: "left" | "right") {
-    hapticTick();
-    setAvatarSide(side);
-    try {
-      window.localStorage.setItem("vic_avatar_side", side);
-    } catch {
-      /* 무시 */
-    }
-  }
-  const showAvatarSlot = avatarSlot && avatarOn;
 
   // 스티커는 달(월)마다 따로 — 현재 보는 달의 스티커만 로컬 상태로 다룬다.
   const monthStickers = (year: number, month: number) =>
@@ -2901,26 +2887,6 @@ export function PublicPoster({
                   >
                     🎙️ 아바타 자리 {avatarOn ? "켜짐" : "꺼짐"}
                   </button>
-                  {avatarOn ? (
-                    <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
-                      <button
-                        type="button"
-                        className={avatarSide === "left" ? "on" : ""}
-                        aria-pressed={avatarSide === "left"}
-                        onClick={() => pickAvatarSide("left")}
-                      >
-                        왼쪽
-                      </button>
-                      <button
-                        type="button"
-                        className={avatarSide === "right" ? "on" : ""}
-                        aria-pressed={avatarSide === "right"}
-                        onClick={() => pickAvatarSide("right")}
-                      >
-                        오른쪽
-                      </button>
-                    </div>
-                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -3555,14 +3521,11 @@ export function PublicPoster({
 
         {showAgenda ? null : (
         <div
-          className={`poster-fit${showAvatarSlot ? ` has-avatar-slot avatar-${avatarSide}` : ""}`}
+          className={`poster-fit${avatarSlot ? " has-avatar-slot" : ""}${
+            avatarSlot && avatarOn ? " avatar-open" : ""
+          }`}
           ref={posterFitRef}
         >
-        {showAvatarSlot ? (
-          <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
-            <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
-          </aside>
-        ) : null}
         <div
           className="poster-stage"
           ref={posterStageRef}
@@ -3759,6 +3722,11 @@ export function PublicPoster({
         </section>
         </div>
         </div>
+        {avatarSlot ? (
+          <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
+            <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
+          </aside>
+        ) : null}
         </div>
         )}
       </section>

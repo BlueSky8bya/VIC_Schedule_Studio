@@ -754,20 +754,34 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* 관리자 아바타 자리 — 포스터(stage)는 풀폭 그대로 두고, 하단 코너(좌하단/우하단)에만
-   절대배치로 작은 자리를 비운다. 위쪽 공간을 낭비하지 않고(코너만), 폭도 안 줄인다.
-   export 표면(data-export-surface) 바깥이라 PNG엔 안 들어간다. 보통 비어 있는 달력 하단
-   코너(이전/다음 달 칸)와 겹치므로 일정도 잘 안 가린다. */
+/* 관리자 아바타 자리 — 웹 전용, 우측 고정. poster-fit을 가로 flex로 두고 stage(달력)는
+   좌측에서 남은 폭을 꽉 채우며(왼쪽에 딱 붙음), 우측에 아바타 자리(화면 폭 ~1/3)를 비운다.
+   켜질 때 avatar-slot의 flex-basis가 0→33vw로 트랜지션 → stage 폭이 줄고, JS 스케일러가
+   ResizeObserver로 매 프레임 배율을 다시 잡아 달력이 부드럽게 축소·좌측 정렬된다. 겹침 없음.
+   export 표면(data-export-surface) 바깥이라 PNG엔 안 들어간다.
+   모바일은 아젠다(목록)라 이 래퍼 자체가 렌더되지 않아 영향이 없다(웹 전용). */
 .poster-fit.has-avatar-slot {
-  display: block;
-  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+}
+.poster-fit.has-avatar-slot .poster-stage {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+/* 좌측 정렬·좌측 기준 축소는 '켜졌을 때만' — 꺼져 있으면 평소처럼 가운데 정렬(우측 낭비 없음). */
+.poster-fit.has-avatar-slot.avatar-open .poster-stage {
+  justify-content: flex-start;
+}
+.poster-fit.has-avatar-slot.avatar-open .poster-scaler {
+  transform-origin: top left;
 }
 .avatar-slot {
-  position: absolute;
-  bottom: 6px;
-  width: 19%;
-  height: 52%;
+  flex: 0 0 0; /* 꺼짐: 폭 0 */
+  align-self: stretch; /* 달력 높이만큼 */
   box-sizing: border-box;
+  overflow: hidden;
+  opacity: 0;
   border: 2px dashed #c9b8e6;
   border-radius: 18px;
   background:
@@ -779,27 +793,27 @@ html {
       transparent 24px
     );
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding-bottom: 14px;
-  z-index: 6; /* 표면 콘텐츠 위(스티커 레이어 z5보다 위) */
-  pointer-events: none; /* 아바타 자리는 표시용 — 아래 달력 조작을 막지 않는다 */
+  transition:
+    flex-basis 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)),
+    opacity 0.4s var(--ease, ease),
+    margin-left 0.5s var(--ease, ease);
 }
-.poster-fit.has-avatar-slot.avatar-left .avatar-slot {
-  left: 6px;
-}
-.poster-fit.has-avatar-slot.avatar-right .avatar-slot {
-  right: 6px;
+.poster-fit.has-avatar-slot.avatar-open .avatar-slot {
+  flex-basis: 25vw; /* 켜짐: 모니터 폭의 1/4 고정 */
+  opacity: 1;
+  margin-left: 16px;
 }
 .avatar-slot-hint {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
   color: #9b86c2;
   letter-spacing: 0.02em;
   user-select: none;
 }
 
-/* 아바타 자리 설정 툴바(관리자 전용) — 헤더 좌측 칸(.header-left)에 들어가 내관심·이동
+/* 아바타 자리 설정 토글(관리자 전용) — 헤더 좌측 칸(.header-left)에 들어가 내관심·이동
    버튼과 같은 줄에 놓인다(전용 행 없음 → 세로 공간 낭비 0). 웹 네이티브 알약 버튼. */
 .avatar-ctl {
   display: inline-flex;
@@ -808,8 +822,7 @@ html {
   gap: 8px;
   flex-wrap: wrap;
 }
-.avatar-ctl-toggle,
-.avatar-ctl-side button {
+.avatar-ctl-toggle {
   border: 1px solid #e3d8f1;
   background: #fff;
   color: #6b5b8a;
@@ -829,25 +842,7 @@ html {
   color: #5b4a86;
   box-shadow: inset 0 0 0 1px #cdb8ee;
 }
-.avatar-ctl-side {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  background: #f4eefb;
-  border-radius: var(--r-pill, 999px);
-}
-.avatar-ctl-side button {
-  border-color: transparent;
-  background: transparent;
-  padding: 6px 14px;
-}
-.avatar-ctl-side button.on {
-  background: #fff;
-  color: #5b4a86;
-  box-shadow: 0 1px 4px rgb(91 74 134 / 18%);
-}
-.avatar-ctl-toggle:active,
-.avatar-ctl-side button:active {
+.avatar-ctl-toggle:active {
   transform: scale(0.95);
 }
 
@@ -871,13 +866,14 @@ body.cell-range-dragging {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .avatar-ctl-toggle,
-  .avatar-ctl-side button {
+  .avatar-ctl-toggle {
     transition: none;
   }
-  .avatar-ctl-toggle:active,
-  .avatar-ctl-side button:active {
+  .avatar-ctl-toggle:active {
     transform: none;
+  }
+  .avatar-slot {
+    transition: opacity 0.2s ease; /* 폭 애니메이션은 끄고 즉시 전환 */
   }
 }
 
