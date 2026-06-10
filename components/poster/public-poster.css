@@ -784,8 +784,14 @@ html {
 }
 .poster-page.avatar-scene .poster-stage {
   justify-content: flex-start;
-  margin-right: 25vw; /* 우측 1/4를 아바타에 내주고 달력은 왼쪽 3/4(겹침 0) */
-  transition: margin-right 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+  /* 좌/우 전환 시 일정표(stage)만 부드럽게 좌우로 슬라이드. */
+  transition: margin 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+.poster-page.avatar-scene.avatar-right .poster-stage {
+  margin-right: 25vw; /* 아바타 우측 → 달력 왼쪽 3/4 */
+}
+.poster-page.avatar-scene.avatar-left .poster-stage {
+  margin-left: 25vw; /* 아바타 좌측 → 달력 오른쪽 3/4 */
 }
 .poster-page.avatar-scene .poster-scaler {
   transform-origin: top left;
@@ -793,31 +799,13 @@ html {
 /* legend(색상 안내): 폭 그대로(컬럼 220), 높이만 절반 더 압축 + 내부 스크롤. flex:1 stretch 해제,
    max-height로 짧게. 폭 불변이라 달력 셀이 안 움직여 스티커 안전. 제목은 sticky(불투명 배경)로
    고정해 스크롤해도 태그가 제목 위로 안 뚫린다. */
-.poster-page.avatar-scene .public-right .public-legend-vertical {
-  flex: 0 0 auto;
-  justify-content: flex-start; /* 내용을 박스 위에 딱 붙임(가운데 흩뿌림 해제) */
-  gap: 2px;
-  padding: 8px 12px;
-  /* legend는 컬럼 위쪽에 짧게 + 넘치면 스크롤(폭 220 고정 → 달력 셀·스티커 안전). */
-  max-height: 52%;
-  overflow-y: auto;
-  border-radius: var(--r-lg);
-}
-.poster-page.avatar-scene .legend-heart-help {
-  margin-top: 4px;
-  padding-top: 6px;
-}
-/* avatar 박스: 색상안내 왼쪽 모서리(left, JS)부터 화면 끝(right:8)까지, 짧아진 legend 아래(top, JS)
-   부터 바닥(bottom:8)까지. = 우측 ~1/4 영역. 위쪽(legend 자리)은 안 침범, 달력도 안 가린다. */
-/* 아바타 박스: 고정 geometry(월별 불변) — 우측 25vw, top 36%(짧아진 legend 아래), 바닥까지 ≈ 화면
-   2/3 높이. JS 측정을 안 써서 어느 달이든 폭·위치가 똑같다(달력 침범/들쭉날쭉 없음). */
+/* 색상 안내(legend)는 scene에서도 평소 그대로 — 스크롤 없이 전체 높이(폭 220 고정이라 스티커 안전).
+   아바타가 옆에 fixed라 legend를 줄일 필요가 없다. (별도 override 없음) */
+/* 아바타 박스: 화면(viewport)에 '고정'(방송 세팅처럼 스크롤해도 안 움직임). 우측/좌측 1/4 고정,
+   하단 정렬. 모든 달에서 폭·높이 동일. 달력(stage margin 25vw)과 겹침 0. */
 .poster-page.avatar-scene .avatar-slot {
-  /* 방송 세팅처럼 화면(viewport)에 '고정' — 스크롤해도 안 움직이고, 모든 달에서 폭·높이가 동일.
-     우측 1/4 고정, 하단 정렬. 달력(surface margin-right:25vw)과 겹치지 않는다. */
   position: fixed;
-  right: 0;
   bottom: 0;
-  left: auto;
   top: auto;
   width: 25vw;
   height: 74vh;
@@ -829,6 +817,14 @@ html {
   opacity: 0;
   transform: translateY(10px);
   animation: avatar-rise 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) 0.05s forwards;
+}
+.poster-page.avatar-scene.avatar-right .avatar-slot {
+  right: 0;
+  left: auto;
+}
+.poster-page.avatar-scene.avatar-left .avatar-slot {
+  left: 0;
+  right: auto;
 }
 @keyframes avatar-rise {
   to {
@@ -859,7 +855,7 @@ html {
 }
 /* prefers-reduced-motion·사용자 '동작 줄이기'(html[data-reduce-motion]) 존중 — 슬라이드·등장 모션 끔. */
 @media (prefers-reduced-motion: reduce) {
-  .poster-page.avatar-scene .poster-fit,
+  .poster-page.avatar-scene .poster-stage,
   .poster-page.avatar-scene .avatar-slot {
     transition: none;
     animation: none;
@@ -867,7 +863,7 @@ html {
     transform: none;
   }
 }
-html[data-reduce-motion] .poster-page.avatar-scene .poster-fit,
+html[data-reduce-motion] .poster-page.avatar-scene .poster-stage,
 html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
   transition: none;
   animation: none;
@@ -876,11 +872,8 @@ html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
 }
 /* 좁은 화면(<1100px)에선 scene을 끈다 — 달력이 너무 좁아지지 않게(WCAG 가독성). */
 @media (max-width: 1099px) {
-  .poster-page.avatar-scene .poster-fit {
-    display: contents;
-  }
   .poster-page.avatar-scene .poster-stage {
-    margin-right: 0;
+    margin: 0;
   }
   .poster-page.avatar-scene .avatar-slot {
     display: none;
@@ -924,6 +917,44 @@ html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
 }
 .avatar-ctl-toggle:active {
   transform: scale(0.95);
+}
+/* 좌/우 위치 세그먼트 */
+.avatar-ctl-side {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: #f4eefb;
+  border-radius: var(--r-pill, 999px);
+}
+.avatar-ctl-side button {
+  border: 0;
+  background: transparent;
+  color: #6b5b8a;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: var(--r-pill, 999px);
+  cursor: pointer;
+  transition:
+    background 0.15s var(--ease, ease),
+    box-shadow 0.12s var(--ease, ease),
+    transform 0.08s var(--ease, ease);
+}
+.avatar-ctl-side button.on {
+  background: #fff;
+  color: #5b4a86;
+  box-shadow: 0 1px 4px rgb(91 74 134 / 18%);
+}
+.avatar-ctl-side button:active {
+  transform: scale(0.95);
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-ctl-side button {
+    transition: none;
+  }
+  .avatar-ctl-side button:active {
+    transform: none;
+  }
 }
 
 /* 구글 시트식 날짜 칸 범위 선택 — 시각 강조만. 칸 텍스트가 긁혀 선택되는 것도 막는다. */

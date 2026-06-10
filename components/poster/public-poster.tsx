@@ -914,12 +914,14 @@ export function PublicPoster({
   // 따라서 avatar는 '미리보기(=스트리머 송출 화면)'에서만 켤 수 있다. localStorage는 owner 로컬.
   const avatarCapable = avatarSlot && !decorateProp;
   const [avatarOn, setAvatarOn] = useState(true);
+  const [avatarSide, setAvatarSide] = useState<"left" | "right">("right");
   useEffect(() => {
     if (!avatarCapable || typeof window === "undefined") {
       return;
     }
     try {
       if (window.localStorage.getItem("vic_avatar_on") === "0") setAvatarOn(false);
+      if (window.localStorage.getItem("vic_avatar_side") === "left") setAvatarSide("left");
     } catch {
       /* 저장소 불가 환경 무시 */
     }
@@ -935,6 +937,15 @@ export function PublicPoster({
       }
       return next;
     });
+  }
+  function pickAvatarSide(side: "left" | "right") {
+    hapticTick();
+    setAvatarSide(side);
+    try {
+      window.localStorage.setItem("vic_avatar_side", side);
+    } catch {
+      /* 무시 */
+    }
   }
 
   // 스티커는 달(월)마다 따로 — 현재 보는 달의 스티커만 로컬 상태로 다룬다.
@@ -2792,7 +2803,7 @@ export function PublicPoster({
   return (
     <main
       className={`poster-page${accountSwitch ? " poster-readonly" : ""}${
-        avatarCapable && avatarOn ? " avatar-scene" : ""
+        avatarCapable && avatarOn ? ` avatar-scene avatar-${avatarSide}` : ""
       }`}
       data-poster-theme={effectivePosterTheme}
     >
@@ -2808,6 +2819,26 @@ export function PublicPoster({
           >
             🎙️ 아바타 자리 {avatarOn ? "켜짐 · 끄려면 클릭" : "꺼짐 · 켜려면 클릭"}
           </button>
+          {avatarOn ? (
+            <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
+              <button
+                type="button"
+                className={avatarSide === "left" ? "on" : ""}
+                aria-pressed={avatarSide === "left"}
+                onClick={() => pickAvatarSide("left")}
+              >
+                왼쪽
+              </button>
+              <button
+                type="button"
+                className={avatarSide === "right" ? "on" : ""}
+                aria-pressed={avatarSide === "right"}
+                onClick={() => pickAvatarSide("right")}
+              >
+                오른쪽
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {celebrate ? (
