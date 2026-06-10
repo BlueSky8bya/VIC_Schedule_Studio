@@ -784,8 +784,8 @@ html {
 }
 .poster-page.avatar-scene .poster-stage {
   justify-content: flex-start;
-  /* 좌/우 전환 시 일정표(stage)만 부드럽게 좌우로 슬라이드. */
-  transition: margin 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+  /* 좌/우 전환 시 일정표(stage)만 좌우로 슬라이드 — 살짝 오버슈트(통통 튀는) 스프링 이징. */
+  transition: margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .poster-page.avatar-scene.avatar-right .poster-stage {
   margin-right: 25vw; /* 아바타 우측 → 달력 왼쪽 3/4 */
@@ -815,8 +815,9 @@ html {
   pointer-events: none;
   z-index: 6;
   opacity: 0;
-  transform: translateY(10px);
-  animation: avatar-rise 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) 0.05s forwards;
+  transform: translateY(24px) scale(0.96);
+  /* 통통 튀어 올라오는 등장(오버슈트 스프링). */
+  animation: avatar-rise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s forwards;
 }
 .poster-page.avatar-scene.avatar-right .avatar-slot {
   right: 0;
