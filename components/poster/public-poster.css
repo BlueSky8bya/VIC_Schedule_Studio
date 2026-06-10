@@ -802,7 +802,7 @@ html {
   bottom: 0;
   top: auto;
   width: 25vw;
-  height: 70vh;
+  height: 75vh;
   padding: 10px;
   display: flex;
   box-sizing: border-box;
@@ -911,7 +911,7 @@ html[data-reduce-motion] .poster-scaler {
   top: auto;
   left: 8px;
   right: auto;
-  bottom: calc(70vh + 10px); /* 아바타(아래 70vh) 바로 위 */
+  bottom: calc(75vh + 10px); /* 아바타(아래 70vh) 바로 위 */
   /* 이모지 칸이 줄어드는(margin 0.55s) 동안 버튼이 먼저 튀어나와 겹치던 문제 →
      줄어든 뒤에 통통 떠오르게 지연. */
   animation: avatar-ctl-in 0.4s cubic-bezier(0.22, 1.4, 0.4, 1) 0.32s both;
@@ -920,7 +920,7 @@ html[data-reduce-motion] .poster-scaler {
   top: auto;
   left: auto;
   right: 8px;
-  bottom: calc(70vh + 10px);
+  bottom: calc(75vh + 10px);
   animation: avatar-ctl-in 0.4s cubic-bezier(0.22, 1.4, 0.4, 1) 0.32s both;
 }
 @keyframes avatar-ctl-in {

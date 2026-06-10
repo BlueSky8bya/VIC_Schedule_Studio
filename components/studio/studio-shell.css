@@ -4315,7 +4315,7 @@
 }
 .avatar-rail .avatar-slot {
   display: flex;
-  flex: 0 0 58%;
+  flex: 0 0 63%;
   min-height: 0;
   box-sizing: border-box;
   pointer-events: none;
