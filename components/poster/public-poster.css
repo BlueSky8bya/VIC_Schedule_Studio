@@ -851,19 +851,28 @@ html {
 /* prefers-reduced-motion·사용자 '동작 줄이기'(html[data-reduce-motion]) 존중 — 슬라이드·등장 모션 끔. */
 @media (prefers-reduced-motion: reduce) {
   .poster-page.avatar-scene .poster-stage,
-  .poster-page.avatar-scene .avatar-slot {
+  .poster-page.avatar-scene .avatar-slot,
+  .poster-page.avatar-scene .avatar-ctl {
     transition: none;
     animation: none;
     opacity: 1;
     transform: none;
   }
+  /* scaler는 transform(scale)이 필수 — 트랜지션만 끄고 scale은 보존. */
+  .poster-scaler {
+    transition: none;
+  }
 }
 html[data-reduce-motion] .poster-page.avatar-scene .poster-stage,
-html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
+html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot,
+html[data-reduce-motion] .poster-page.avatar-scene .avatar-ctl {
   transition: none;
   animation: none;
   opacity: 1;
   transform: none;
+}
+html[data-reduce-motion] .poster-scaler {
+  transition: none;
 }
 /* 좁은 화면(<1100px)에선 scene을 끈다 — 달력이 너무 좁아지지 않게(WCAG 가독성). */
 @media (max-width: 1099px) {
@@ -872,6 +881,14 @@ html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
   }
   .poster-page.avatar-scene .avatar-slot {
     display: none;
+  }
+  /* 아바타 없으니 토글은 좌상단 헤더로 되돌린다(중간에 떠 있지 않게). */
+  .poster-page.avatar-scene .avatar-ctl {
+    top: 14px;
+    left: 16px;
+    right: auto;
+    bottom: auto;
+    animation: none;
   }
 }
 
@@ -891,12 +908,26 @@ html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
   left: 8px;
   right: auto;
   bottom: calc(70vh + 10px); /* 아바타(아래 70vh) 바로 위 */
+  /* 이모지 칸이 줄어드는(margin 0.55s) 동안 버튼이 먼저 튀어나와 겹치던 문제 →
+     줄어든 뒤에 통통 떠오르게 지연. */
+  animation: avatar-ctl-in 0.4s cubic-bezier(0.22, 1.4, 0.4, 1) 0.32s both;
 }
 .poster-page.avatar-scene.avatar-right .avatar-ctl {
   top: auto;
   left: auto;
   right: 8px;
   bottom: calc(70vh + 10px);
+  animation: avatar-ctl-in 0.4s cubic-bezier(0.22, 1.4, 0.4, 1) 0.32s both;
+}
+@keyframes avatar-ctl-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 .avatar-ctl-toggle {
   /* ON/OFF로 글자가 바뀌어도 버튼이 안 움직이게 폭 고정(가운데 정렬) — 마우스가 안 헤맨다. */
@@ -1266,6 +1297,9 @@ body.cell-range-dragging {
   flex: 0 0 auto;
   transform: scale(var(--poster-scale, 1));
   transform-origin: top center; /* 위·가운데 기준 축소 → stage 높이(축소높이)에 딱 맞음 */
+  /* 아바타 ON/OFF로 margin이 변하면 RO가 배율을 '단계적'으로 다시 줘 스케일이 끊겨 보인다 —
+     transform에 짧은 트랜지션을 둬 단계 사이를 메워 부드럽게 한다. */
+  transition: transform 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .poster-surface {

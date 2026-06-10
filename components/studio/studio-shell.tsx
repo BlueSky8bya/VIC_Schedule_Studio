@@ -2653,14 +2653,14 @@ export function StudioShell({
   }
   // 커서 위치가 아니라 '그 날짜칸' 기준으로 메뉴를 띄운다(경계에서 눌러도 어느 날인지 분명).
   // x는 칸 가로중앙(메뉴는 CSS translateX(-50%)로 중앙정렬), y는 칸 세로중앙에 메뉴를 얹는다.
-  // 메뉴는 '클릭한 지점(ax,ay)'에 띄운다 — 맨 오른쪽 칸(토)에서 칸중앙 기준이면 화면 밖→왼쪽으로
-  // 클램프돼 옆 칸 위에 뜨던 문제를 없앤다. 화면 경계만 살짝 보정.
+  // 메뉴 좌상단을 '클릭 지점(ax,ay)'에 둔다(커서 그대로). 칸중앙/중앙정렬을 쓰면 오른쪽 칸일수록
+  // 클램프로 커서보다 왼쪽으로 벌어졌다 — 좌상단 앵커 + 경계 보정만.
   function openRestMenu(ax: number, ay: number, isoDate: string) {
     if (!canEdit || blockedByPreview()) return;
     hapticTick();
     const menuW = 180;
     const menuH = 56;
-    const x = Math.max(8 + menuW / 2, Math.min(ax, window.innerWidth - 8 - menuW / 2));
+    const x = Math.max(8, Math.min(ax, window.innerWidth - 8 - menuW));
     const y = Math.max(8, Math.min(ay, window.innerHeight - 8 - menuH));
     setRestMenu({ isoDate, x, y, hasRest: Boolean(findRestEvent(isoDate)) });
   }

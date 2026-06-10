@@ -2147,19 +2147,18 @@
   background: #fff;
   border: 1px solid #ece7f7;
   box-shadow: 0 10px 30px rgb(60 40 120 / 22%);
-  /* 좌표 x는 칸 가로중앙 → 메뉴를 그 위에 중앙정렬(경계서 눌러도 칸 한가운데 뜸). */
-  transform: translateX(-50%);
-  transform-origin: top center;
+  /* 좌표 x,y = 커서 좌상단(중앙정렬 안 함 → 오른쪽 칸서 커서보다 왼쪽으로 벌어지지 않게). */
+  transform-origin: top left;
   animation: rest-menu-in 0.14s var(--ease);
 }
 @keyframes rest-menu-in {
   from {
     opacity: 0;
-    transform: translateX(-50%) scale(0.9);
+    transform: scale(0.9);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) scale(1);
+    transform: scale(1);
   }
 }
 /* 휴방 메뉴가 떠 있는 날짜칸 강조 — 어느 날인지 분명히. */
@@ -4213,7 +4212,17 @@
   grid-template-columns: 0 minmax(0, 1fr) 0;
 }
 .studio-shell.avatar-scene .studio-workspace.editor-open {
-  grid-template-columns: 0 minmax(0, 1fr) 380px;
+  grid-template-columns: 0 minmax(0, 1fr) 340px;
+}
+/* 단축키 안내바도 아바타 rail 쪽으로 안 들어가게 같이 비켜선다(workspace와 동일 슬라이드). */
+.studio-shell.avatar-scene .kbd-hints {
+  transition: margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.studio-shell.avatar-scene.avatar-left .kbd-hints {
+  margin-left: calc(25vw + 4px);
+}
+.studio-shell.avatar-scene.avatar-right .kbd-hints {
+  margin-right: calc(25vw + 4px);
 }
 .studio-shell.avatar-scene .studio-calendar-panel {
   grid-column: 2;
@@ -4261,14 +4270,14 @@
   border-radius: 18px;
   box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
   padding: 12px 14px;
-  animation: avatar-rise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s both;
+  /* 통통하고 부드럽게 등장 — 약간 더 길게 + 큰 오버슈트. */
+  animation: avatar-pop 0.62s cubic-bezier(0.22, 1.4, 0.4, 1) 0.04s both;
 }
 .avatar-rail-filter h2 {
-  margin: 0 0 6px;
+  margin: 0 0 8px;
 }
-/* 색상필터·형식 모두 2열로 — 공간 낭비 없이. */
-.avatar-rail-filter .tlg-group,
-.avatar-rail-filter .tlg-chips {
+/* 콘텐츠 색상필터 = 2열(공간 낭비 없이). */
+.avatar-rail-filter .tlg-group {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 5px;
@@ -4277,11 +4286,28 @@
   width: 100%;
   min-width: 0;
 }
+/* 형식 = 구분선 아래 작은 라벨 + 칸 자유롭게 흐르는 칩(2열 강제 안 함 → 낭비 0). */
 .avatar-rail-filter .tlg-mod {
-  margin-top: 6px;
+  display: block;
+  margin-top: 9px;
+  padding-top: 9px;
+  border-top: 1px dashed #eee7f7;
 }
-.avatar-rail-filter .tlg-label {
-  margin: 0 0 4px;
+.avatar-rail-filter .tlg-mod .tlg-label {
+  display: block;
+  margin: 0 0 5px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #9286bb;
+}
+.avatar-rail-filter .tlg-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.avatar-rail-filter .tlg-mod .tag-legend-filter {
+  width: auto; /* 칩은 내용폭만큼 — 줄에 여러 개 자연스럽게 */
 }
 /* 아바타 figure — rail 하단 고정 비율(~58%). */
 .avatar-slot {
@@ -4294,10 +4320,16 @@
   box-sizing: border-box;
   pointer-events: none;
   opacity: 0;
-  transform: translateY(24px) scale(0.96);
-  animation: avatar-rise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s forwards;
+  transform: translateY(26px) scale(0.95);
+  animation: avatar-pop 0.62s cubic-bezier(0.22, 1.4, 0.4, 1) 0.04s forwards;
 }
 @keyframes avatar-rise {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes avatar-pop {
   to {
     opacity: 1;
     transform: none;
