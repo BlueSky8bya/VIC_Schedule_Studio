@@ -3723,20 +3723,20 @@ export function PublicPoster({
                 </div>
               ) : null}
             </div>
-            {/* 스트리머 scene: avatar는 우측 rail '하단'에 일반 레이아웃 아이템으로(오버레이 아님).
-                legend(위)는 compact+scroll, avatar(아래)는 footprint 확보 → 달력/legend와 안 겹침.
-                꾸미기에선 avatarCapable=false라 안 뜸(스티커 지오메트리 보호). */}
-            {avatarCapable ? (
-              <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
-                <div className="avatar-dock-inner">
-                  <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
-                </div>
-              </aside>
-            ) : null}
           </aside>
         </section>
         </div>
         </div>
+        {/* 스트리머 scene: avatar는 surface '밖' 우측 1/4 자리. 달력(stage)이 왼쪽으로 슬라이드+축소
+            하며 자리를 내준다 → surface 내부(메모·달력·legend) 폭은 그대로라 스티커 좌표 안 틀어짐
+            (uniform scale만). 꾸미기는 avatarCapable=false라 안 뜸. */}
+        {avatarCapable ? (
+          <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
+            <div className="avatar-dock-inner">
+              <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
+            </div>
+          </aside>
+        ) : null}
         </div>
         )}
       </section>

@@ -4059,7 +4059,6 @@ export function StudioShell({
           initialYear={view.year}
           onViewChange={(year, month) => setView({ year, month })}
           previewNav={previewNav}
-          previewNote={<span className="viewer-preview-note">미리보기 중..</span>}
           schedule={previewSchedule}
           toggleHeartAction={toggleEventHeartAction}
         />

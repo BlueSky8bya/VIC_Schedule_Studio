@@ -766,37 +766,28 @@ html {
 .avatar-slot {
   display: none; /* 기본(scene 아님)엔 안 보임 */
 }
-.poster-surface {
-  transition: grid-template-columns 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+/* scene: 달력 전체(stage)를 왼쪽으로 슬라이드+축소하고, 우측 1/4(25vw)에 avatar 자리.
+   surface 내부(메모·달력·legend) 폭은 '그대로' — stage는 uniform scale만 하므로 스티커 좌표가
+   안 틀어진다. (이전처럼 surface 내부 컬럼을 넓히면 달력이 좁아져 스티커가 어긋났음.) */
+.poster-page.avatar-scene .poster-fit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 25vw;
+  align-items: stretch;
+  column-gap: 16px;
+  transition: grid-template-columns 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
-.poster-page.avatar-scene .poster-surface {
-  /* 우측 rail 확장(메모는 유지). 달력 1fr이 그만큼 좁아짐(고정 1840 안에서 reflow). */
-  grid-template-columns: 238px minmax(0, 1fr) 360px;
+.poster-page.avatar-scene .poster-stage {
+  justify-content: flex-start; /* 달력을 왼쪽에 붙인다 */
 }
-.poster-page.avatar-scene .public-right {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  gap: 10px;
+.poster-page.avatar-scene .poster-scaler {
+  transform-origin: top left; /* 왼쪽 기준 축소 */
 }
-/* legend: 남은 높이 + 내부 스크롤. 제목은 sticky로 스크롤해도 보임. */
-.poster-page.avatar-scene .public-legend-vertical {
-  flex: 1 1 auto;
-  min-height: 140px;
-  overflow-y: auto;
-}
-.poster-page.avatar-scene .public-legend-vertical .legend-title {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: linear-gradient(180deg, var(--surface-2, #fffdf6) 70%, transparent);
-}
-/* avatar: rail 하단 footprint. 화면 전체가 아니라 rail의 ~46%(세로 광고판 금지). */
+/* avatar: 우측 1/4 칸 '하단'에 자리. 위쪽은 페이지 배경(빈 박스 아님) → 광고판 느낌 없음. */
 .poster-page.avatar-scene .avatar-slot {
   display: flex;
-  flex: 0 0 46%;
-  min-height: 180px;
-  max-height: 540px;
+  align-self: end;
+  height: clamp(340px, 58vh, 900px);
+  max-height: 100%;
   box-sizing: border-box;
   opacity: 0;
   transform: translateY(10px);
@@ -834,9 +825,9 @@ html {
   letter-spacing: 0.02em;
   user-select: none;
 }
-/* prefers-reduced-motion·사용자 '동작 줄이기'(html[data-reduce-motion]) 존중 — reflow·등장 모션 끔. */
+/* prefers-reduced-motion·사용자 '동작 줄이기'(html[data-reduce-motion]) 존중 — 슬라이드·등장 모션 끔. */
 @media (prefers-reduced-motion: reduce) {
-  .poster-surface,
+  .poster-page.avatar-scene .poster-fit,
   .poster-page.avatar-scene .avatar-slot {
     transition: none;
     animation: none;
@@ -844,7 +835,7 @@ html {
     transform: none;
   }
 }
-html[data-reduce-motion] .poster-surface,
+html[data-reduce-motion] .poster-page.avatar-scene .poster-fit,
 html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
   transition: none;
   animation: none;
@@ -853,8 +844,8 @@ html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
 }
 /* 좁은 화면(<1100px)에선 scene을 끈다 — 달력이 너무 좁아지지 않게(WCAG 가독성). */
 @media (max-width: 1099px) {
-  .poster-page.avatar-scene .poster-surface {
-    grid-template-columns: 238px minmax(0, 1fr) 220px;
+  .poster-page.avatar-scene .poster-fit {
+    display: contents;
   }
   .poster-page.avatar-scene .avatar-slot {
     display: none;
