@@ -4188,10 +4188,11 @@
   /* 편집 패널(오른쪽)이 업 도움 등으로 길어져도 가운데 달력이 따라 늘어나지 않게 — 각 칸이 제
      높이를 갖는다(기본 stretch면 가장 큰 칸 높이에 달력이 끌려 늘어났다). */
   align-items: start;
-  /* margin은 아바타 자리 슬라이드용(통통). grid-template-columns는 편집패널 슬라이드용. */
-  transition:
-    grid-template-columns 0.28s ease,
-    margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 편집패널 등장은 폼의 transform(아래 editor-card-slide)으로 통통 슬라이드한다 — grid 폭은
+     즉시 스냅(transition 안 검). 폭을 0.28s 동안 늘리면 가운데 달력이 프레임마다 reflow되며
+     '툭툭' 끊겼다(폼은 446 고정이라 안 우그러짐 → 범인은 레이아웃 애니). 한 번만 reflow되게 스냅.
+     margin은 아바타 자리 슬라이드용(통통). */
+  transition: margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 /* 날짜를 선택하면 우측 카드(폼 446 + 좌측 간격 18)가 밀고 들어온다. */
 .studio-workspace.editor-open {
@@ -4868,9 +4869,23 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
     color: #574f6b;
   }
 }
-/* 편집 카드 내용 전체가 위에서 살짝 내려오며 나타난다(날짜 변경·카드 열림 시). */
+/* 편집 카드가 오른쪽(필터·달력 옆)에서 통통 미끄러져 들어온다(날짜 변경·카드 열림 시).
+   transform 기반이라 레이아웃 reflow 없이 GPU에서 부드럽게, 스프링 오버슈트로 통통. */
 .event-editor-panel form {
-  animation: editor-card-enter 0.36s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  animation: editor-card-slide 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
+}
+@keyframes editor-card-slide {
+  from {
+    opacity: 0;
+    transform: translateX(44px) scale(0.97);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
 }
 @keyframes editor-card-enter {
   from {
@@ -4882,10 +4897,16 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
     transform: translateY(0);
   }
 }
+@media (prefers-reduced-motion: reduce) {
+  .event-editor-panel form,
+  .event-detail-readonly {
+    animation: none;
+  }
+}
 /* A1/#6: 매니저·작업자 읽기전용 일정 상세 — 편집 폼과 같은 흰 카드 톤으로 주변과 동화시키고,
    라벨/값을 정돈된 정의(definition) 형태로. 폼(.event-editor-panel form)과 같은 카드 chrome. */
 .event-detail-readonly {
-  animation: editor-card-enter 0.36s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  animation: editor-card-slide 0.5s cubic-bezier(0.34, 1.4, 0.64, 1) both;
   display: flex;
   flex-direction: column;
   gap: 0;
