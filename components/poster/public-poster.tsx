@@ -2817,7 +2817,7 @@ export function PublicPoster({
             aria-pressed={avatarOn}
             onClick={toggleAvatarOn}
           >
-            🎙️ 아바타 자리 {avatarOn ? "ON" : "OFF"}
+🎙️ 아바타 자리 {avatarOn ? "끄기" : "켜기"}
           </button>
           {avatarOn ? (
             <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
