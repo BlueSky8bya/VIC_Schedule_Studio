@@ -2932,8 +2932,11 @@ export function PublicPoster({
         </div>
       ) : null}
       {/* 월드컵 시즌 미니 놀이(공·골대) — 상호작용 모드(시청자)에서 월드컵 기간에만. export 표면 밖이라
-          캡처(PNG)엔 안 들어가고, 레이어가 클릭 통과(pointer-events:none)라 일정 조작을 방해하지 않는다. */}
-      {interactive && isWorldCupMonth(view.year, view.month) ? <WorldCupBallGoal /> : null}
+          캡처(PNG)엔 안 들어가고, 레이어가 클릭 통과(pointer-events:none)라 일정 조작을 방해하지 않는다.
+          관리자가 아바타 자리를 켜면(avatar-scene) 아바타가 골대를 덮으므로 게임을 통째로 끈다. */}
+      {interactive && isWorldCupMonth(view.year, view.month) && !(avatarCapable && avatarOn) ? (
+        <WorldCupBallGoal />
+      ) : null}
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
         {showAgenda ? (
           <header className="agenda-header">
