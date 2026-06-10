@@ -4215,6 +4215,14 @@
 .studio-shell.avatar-scene .studio-workspace.editor-open {
   grid-template-columns: 0 minmax(0, 1fr) 464px;
 }
+/* 좌측 패널을 fixed로 빼면 grid auto-placement에서 나머지가 한 칸씩 당겨져(달력이 col1=0으로
+   사라짐) — 달력·편집패널 칸을 명시 고정해 그대로 두 번째·세 번째 칸에 둔다. */
+.studio-shell.avatar-scene .studio-calendar-panel {
+  grid-column: 2;
+}
+.studio-shell.avatar-scene .event-editor-panel {
+  grid-column: 3;
+}
 .studio-shell.avatar-scene .studio-left-panel {
   position: fixed;
   z-index: 7;
