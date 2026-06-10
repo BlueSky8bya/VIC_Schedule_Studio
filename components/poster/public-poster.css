@@ -784,7 +784,7 @@ html {
 }
 .poster-page.avatar-scene .poster-stage {
   justify-content: flex-start;
-  margin-right: 25vw; /* 우측 1/4를 비워 아바타 자리로(달력과 겹침 0) */
+  margin-right: 13vw; /* 우측을 비워, legend 왼쪽~화면끝이 ~1/4가 되게(아바타 자리) */
   transition: margin-right 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
 .poster-page.avatar-scene .poster-scaler {
@@ -798,9 +798,9 @@ html {
   justify-content: flex-start; /* 내용을 박스 위에 딱 붙임(가운데 흩뿌림 해제) */
   gap: 2px;
   padding: 8px 12px;
-  max-height: 32%; /* 더 짧게 → 아래 아바타가 화면 ~2/3 높이를 차지 */
+  /* 아바타(아래 64vh) 바로 위까지만 차지하고 넘치면 스크롤 — 그래서 legend가 아바타 위에 딱 붙는다. */
+  max-height: calc(100% - 64vh);
   overflow-y: auto;
-  /* 둥근 모서리 안에서 스크롤 내용이 모서리 밖으로 비치지 않게 클립 */
   border-radius: var(--r-lg);
 }
 .poster-page.avatar-scene .legend-heart-help {
@@ -815,12 +815,10 @@ html {
   position: absolute;
   right: 8px;
   bottom: 8px;
-  left: auto;
-  top: auto;
-  width: 25vw; /* 화면 1/4 고정 */
-  /* 높이는 화면 기준(vh) 고정 → 일정 양과 무관하게 모든 달에서 동일(들쭉날쭉 제거). */
-  height: 62vh;
-  max-height: calc(100% - 16px);
+  /* left는 JS가 legend 왼쪽으로 준다(없으면 폴백 75%). top은 legend 아래(=화면기준 64vh 위)로 고정
+     → 높이 64vh가 모든 달에서 동일(들쭉날쭉 없음), legend가 바로 위에 붙는다. */
+  left: 75%;
+  top: calc(100% - 64vh);
   display: flex;
   box-sizing: border-box;
   pointer-events: none;
@@ -835,15 +833,15 @@ html {
     transform: none;
   }
 }
-/* 박스 배경은 투명 — 그 자리에 페이지(달력) 배경(어느 테마든)이 그대로 비쳐 레이아웃 배경이
-   아바타 자리까지 이어진다. placeholder는 옅은 점선 테두리로만 표시. */
+/* 박스 배경 = 달력 바로 바깥의 '연한' 면과 같게(옅은 흰 베일을 얹어 어느 테마든 밝게) → 아바타가
+   진한 바깥이 아니라 연한 레이아웃 위에 놓인다. placeholder는 옅은 점선 테두리로만 표시. */
 .avatar-dock-inner {
   flex: 1 1 auto;
   min-width: 0;
   box-sizing: border-box;
   border: 1.5px dashed rgb(120 110 90 / 30%);
   border-radius: 18px;
-  background: transparent;
+  background: rgb(255 255 255 / 42%);
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -3901,16 +3899,10 @@ body.cell-range-dragging {
 
 /* 월드컵(2026 기간 자동) — 잔디 그린을 은은하게, 카드/텍스트는 불투명이라 가독성 유지. */
 .poster-page[data-poster-theme="worldcup"] {
-  /* 페이지 전체를 surface와 같은 '진한 잔디'로 — 아바타 자리·여백까지 같은 잔디로 이어진다. */
+  /* 바깥은 줄무늬 없는 연한 잔디(진한 줄무늬는 surface 보드에만). 아바타 자리는 이 연한 배경 위. */
   background:
-    repeating-linear-gradient(
-      90deg,
-      rgb(38 130 74 / 16%) 0,
-      rgb(38 130 74 / 16%) 70px,
-      transparent 70px,
-      transparent 140px
-    ),
-    linear-gradient(160deg, #bfe6c7 0%, #97d2a6 55%, #b6e2bf 100%);
+    radial-gradient(120% 80% at 50% -10%, #d6f0db 0%, transparent 65%),
+    linear-gradient(180deg, #d3eed9, #c2e6cc);
 }
 /* 잔디 그라운드 — 두 톤 초록 세로 줄무늬(축구장 잔디) + 진한 잔디 베이스. 카드는 불투명이라
    글자 가독성 유지된다. */
