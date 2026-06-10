@@ -933,6 +933,26 @@ html[data-reduce-motion] .poster-scaler {
     transform: none;
   }
 }
+/* 시청자 미리보기 아바타 컨트롤 — 좌상단(헤더 왼쪽 자리)에 항상 고정. 헤더 흐름에 두면 켜고 끌 때
+   shell 폭이 전체폭↔가운데로 바뀌며 헤더가 좌우로 흔들려 버튼이 따라 움직였다. fixed라 안 흔들린다. */
+.avatar-ctl-preview {
+  top: 14px;
+  left: 16px;
+  right: auto;
+  bottom: auto;
+  flex-wrap: wrap;
+  max-width: calc(100vw - 32px);
+}
+/* avatar-scene(켜짐)이어도 슬롯 위로 안 올라가고 좌상단 유지(미리보기는 항상 좌상단). 사이드 규칙
+   (.avatar-left/right .avatar-ctl)보다 specificity를 한 단계 높여 덮는다. */
+.poster-page.avatar-scene.avatar-left .avatar-ctl.avatar-ctl-preview,
+.poster-page.avatar-scene.avatar-right .avatar-ctl.avatar-ctl-preview {
+  top: 14px;
+  left: 16px;
+  right: auto;
+  bottom: auto;
+  animation: none;
+}
 .avatar-ctl-toggle {
   /* ON/OFF로 글자가 바뀌어도 버튼이 안 움직이게 폭 고정(가운데 정렬) — 마우스가 안 헤맨다. */
   min-width: 220px;

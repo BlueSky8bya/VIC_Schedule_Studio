@@ -2825,8 +2825,7 @@ export function PublicPoster({
       data-poster-theme={effectivePosterTheme}
     >
       {/* 아바타 자리 토글(켜짐) — 달력 꾸미기에서만 여기(고정 오버레이)에서 아바타 자리 '바로 위'에
-          뜬다. 시청자 화면 미리보기에선 헤더(.header-left) 왼쪽에 고정된다(아래 참고). 꺼짐 상태도
-          헤더에 들어간다. 데스크탑·관리자 전용. */}
+          뜬다. 데스크탑·관리자 전용. */}
       {avatarCapable && !showAgenda && avatarOn && decorate ? (
         <div className="avatar-ctl" role="group" aria-label="아바타 자리 설정(관리자 전용)">
           <button
@@ -2855,6 +2854,41 @@ export function PublicPoster({
               오른쪽
             </button>
           </div>
+        </div>
+      ) : null}
+      {/* 시청자 화면 미리보기(꾸미기 아님) — 아바타 컨트롤을 화면 좌상단에 '고정'(fixed)한다. 헤더에
+          두면 켜고 끌 때 shell 폭이 전체폭↔가운데로 바뀌며 좌우로 흔들려 버튼이 따라 움직였다. fixed면
+          안 움직인다. 켜짐엔 끄기+위치(왼/오른쪽), 꺼짐엔 켜기. 데스크탑·관리자 전용. */}
+      {avatarCapable && !showAgenda && !decorate ? (
+        <div className="avatar-ctl avatar-ctl-preview" role="group" aria-label="아바타 자리 설정(관리자 전용)">
+          <button
+            type="button"
+            className={`avatar-ctl-toggle ${avatarOn ? "on" : ""}`}
+            aria-pressed={avatarOn}
+            onClick={toggleAvatarOn}
+          >
+            🎙️ 아바타 자리 {avatarOn ? "끄기" : "켜기"}
+          </button>
+          {avatarOn ? (
+            <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
+              <button
+                type="button"
+                className={avatarSide === "left" ? "on" : ""}
+                aria-pressed={avatarSide === "left"}
+                onClick={() => pickAvatarSide("left")}
+              >
+                왼쪽
+              </button>
+              <button
+                type="button"
+                className={avatarSide === "right" ? "on" : ""}
+                aria-pressed={avatarSide === "right"}
+                onClick={() => pickAvatarSide("right")}
+              >
+                오른쪽
+              </button>
+            </div>
+          ) : null}
         </div>
       ) : null}
       {celebrate ? (
@@ -2950,9 +2984,10 @@ export function PublicPoster({
         {showAgenda ? null : (
           <header className="public-calendar-header">
             <div className="header-left">
-              {/* 토글을 헤더(.header-left) 왼쪽에 고정해 둔다: 꺼짐(켜기)은 항상, 켜짐(끄기)은 시청자
-                  화면 미리보기에서만(달력 꾸미기에선 아바타 자리 바로 위 고정 오버레이로 뜬다). */}
-              {avatarCapable && !avatarOn ? (
+              {/* 달력 꾸미기 꺼짐 상태 켜기 토글만 헤더에 둔다. 시청자 미리보기는 켜짐/꺼짐 모두 좌상단
+                  고정 오버레이(.avatar-ctl-preview)로 뺀다 — 헤더는 shell 폭이 토글마다 바뀌며 좌우로
+                  흔들려 버튼이 따라 움직였다(fixed면 안 흔들림). */}
+              {avatarCapable && !avatarOn && decorate ? (
                 <button
                   type="button"
                   className="avatar-ctl-toggle avatar-ctl-inheader"
@@ -2960,15 +2995,6 @@ export function PublicPoster({
                   onClick={toggleAvatarOn}
                 >
                   🎙️ 아바타 자리 켜기
-                </button>
-              ) : avatarCapable && avatarOn && !decorate ? (
-                <button
-                  type="button"
-                  className="avatar-ctl-toggle avatar-ctl-inheader on"
-                  aria-pressed={true}
-                  onClick={toggleAvatarOn}
-                >
-                  🎙️ 아바타 자리 끄기
                 </button>
               ) : null}
             </div>
