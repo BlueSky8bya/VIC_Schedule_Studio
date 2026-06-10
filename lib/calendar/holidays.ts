@@ -4,6 +4,8 @@
 // 선거일·임시공휴일도 포함한다. 2028년 이후는 추가 필요.
 // 24절기 표기는 아직 2026년만 채워져 있다(빨간날 아님). (정확도 검증 권장)
 
+import { getWorldCupMark } from "@/lib/calendar/worldcup";
+
 export type DayMark = {
   name: string;
   isHoliday: boolean; // true면 빨간날(공휴일/대체공휴일), false면 단순 표기(기념일/절기)
@@ -418,6 +420,11 @@ export function getDayMark(isoDate: string): DayMark | null {
   const sub = substituteFixedFromHoliday(isoDate);
   if (sub) {
     return { name: sub, isHoliday: true };
+  }
+  // 월드컵 표기(개막/단계/한국 경기)는 빨간날 다음, 기념일·절기보다 우선.
+  const wc = getWorldCupMark(isoDate);
+  if (wc) {
+    return { name: wc.name, isHoliday: false };
   }
   // 스트리머 기념일은 절기/일반 기념일보다 우선 표기
   if (STREAMER_ONCE[isoDate]) {

@@ -86,6 +86,7 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
 
   return (
     <PublicPoster
+      avatarSlot={actor.role === "owner"}
       canExport
       decorate
       initialPreviewing={mem.dp === 1}

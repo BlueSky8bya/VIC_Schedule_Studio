@@ -24,6 +24,7 @@ import {
   type FormEvent,
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
+  useCallback,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -67,6 +68,7 @@ import {
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
+import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
@@ -1232,6 +1234,16 @@ export function StudioShell({
   // 이어진 칸 높이 맞추기 — callback ref라 그리드가 어떤 경로로 (재)마운트되든(미리보기 복귀·
   // 잠금 로딩·월 변경 등) 항상 새 요소에 자동 재설정된다. deps는 데이터 변화 시 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([visibleEvents, view]);
+  // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조만) + 텍스트 긁힘 방지.
+  // 둘 다 callback ref라 한 요소에 합쳐 단다(안정 identity라 매 렌더 재부착 없음).
+  const rangeSelectRef = useCellRangeSelect<HTMLDivElement>();
+  const setMonthGridRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      monthGridRef(el);
+      rangeSelectRef(el);
+    },
+    [monthGridRef, rangeSelectRef]
+  );
   // 실제 편집실 화면이 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아닌 진짜 화면을 봤을 때만 방문 1).
   useEffect(() => {
     markContentReady();
@@ -4043,6 +4055,7 @@ export function StudioShell({
           </div>
         ) : null}
         <PublicPoster
+          avatarSlot={isEffectivelyOwner}
           initialMonth={view.month}
           initialNarrow={isNarrow}
           initialYear={view.year}
@@ -4304,7 +4317,7 @@ export function StudioShell({
             aria-label="월간 달력"
             data-enter={monthDir}
             key={`${view.year}-${view.month}`}
-            ref={monthGridRef}
+            ref={setMonthGridRef}
           >
             {cells.map((cell, cellIndex) => {
               const covering = getEventsForDate(visibleEvents, cell.isoDate);
@@ -4352,6 +4365,7 @@ export function StudioShell({
                 <article
                   className={dayClass}
                   data-isodate={cell.isoDate}
+                  data-cell-index={cellIndex}
                   key={cell.isoDate}
                   onClick={() => {
                     if (suppressCellClickRef.current) {

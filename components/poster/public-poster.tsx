@@ -69,7 +69,9 @@ import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-a
 import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { heartTier } from "@/lib/schedules/heart-tiers";
 import { getDayMark } from "@/lib/calendar/holidays";
+import { isWorldCupMonth } from "@/lib/calendar/worldcup";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
+import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import {
   assignSupportLanes,
   buildCalendarMonth,
@@ -152,6 +154,10 @@ type PublicPosterProps = {
   // 왼쪽 여백 칸에 안내, 오른쪽 칸에 이동 버튼 → 제목과 같은 자리에서 함께 sticky로 따라온다.
   previewNote?: ReactNode;
   previewNav?: ReactNode;
+  // 관리자(owner) 전용: 달력 왼쪽 ~1/3을 버츄얼 스트리머 아바타용 빈 공간으로 비워둔다.
+  // export 표면(data-export-surface) 바깥이라 PNG 캡처엔 안 들어가고, 화면 송출 시 그 자리에
+  // 아바타를 올리는 용도. 시청자/익명에겐 절대 안 보인다(owner일 때만 true로 넘긴다).
+  avatarSlot?: boolean;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -608,7 +614,8 @@ export function PublicPoster({
   accountEmail = null,
   anonymous = false,
   previewNote,
-  previewNav
+  previewNav,
+  avatarSlot = false
 }: PublicPosterProps) {
   // 스티커 저장/삭제가 서버에 들어가는 동안만 세는 카운터(아래 beforeunload 경고용).
   // 실제 전송은 keepalive fetch(/api/sticker-write)로 보낸다 → 스티커를 옮기/추가/삭제하고 바로
@@ -794,6 +801,16 @@ export function PublicPoster({
   // 않게 한다. 묶음의 '가장 큰 내용' 높이에만 맞추므로(과확장 없음) 짧은 쪽만 그만큼 채워진다.
   // callback ref라 그리드가 (재)마운트되는 어떤 경로에서도 자동 재설정된다. deps는 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([schedule.events, view]);
+  // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조만) + 텍스트 긁힘 방지.
+  // 둘 다 callback ref라 한 요소에 합쳐 단다(안정 identity라 매 렌더 재부착 없음).
+  const rangeSelectRef = useCellRangeSelect<HTMLDivElement>();
+  const setMonthGridRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      monthGridRef(el);
+      rangeSelectRef(el);
+    },
+    [monthGridRef, rangeSelectRef]
+  );
   // 실제 달력 콘텐츠가 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아니라 진짜 화면을 봤을 때만 방문 1).
   useEffect(() => {
     markContentReady();
@@ -886,6 +903,49 @@ export function PublicPoster({
       }
     }
   }
+  // 보는 달이 월드컵 기간(2026-06~07)과 겹치면 포스터 테마를 월드컵으로 자동 전환한다.
+  // 대회 한정 연출이라 owner가 고른 테마보다 우선해 모든 시청자에게 같은 분위기를 준다.
+  const effectivePosterTheme = isWorldCupMonth(view.year, view.month) ? "worldcup" : posterTheme;
+
+  // 관리자 아바타 자리 — 켜기/끄기 + 좌/우는 관리자 로컬 취향이라 localStorage에 저장한다
+  // (서버/시청자와 무관, owner 기기에서만 복원). avatarSlot capability가 켜져 있을 때만 의미.
+  const [avatarOn, setAvatarOn] = useState(true);
+  const [avatarSide, setAvatarSide] = useState<"left" | "right">("left");
+  useEffect(() => {
+    if (!avatarSlot || typeof window === "undefined") {
+      return;
+    }
+    try {
+      const on = window.localStorage.getItem("vic_avatar_on");
+      const side = window.localStorage.getItem("vic_avatar_side");
+      if (on === "0") setAvatarOn(false);
+      if (side === "right" || side === "left") setAvatarSide(side);
+    } catch {
+      /* 저장소 불가 환경 무시 */
+    }
+  }, [avatarSlot]);
+  function toggleAvatarOn() {
+    hapticTick();
+    setAvatarOn((v) => {
+      const next = !v;
+      try {
+        window.localStorage.setItem("vic_avatar_on", next ? "1" : "0");
+      } catch {
+        /* 무시 */
+      }
+      return next;
+    });
+  }
+  function pickAvatarSide(side: "left" | "right") {
+    hapticTick();
+    setAvatarSide(side);
+    try {
+      window.localStorage.setItem("vic_avatar_side", side);
+    } catch {
+      /* 무시 */
+    }
+  }
+  const showAvatarSlot = avatarSlot && avatarOn;
 
   // 스티커는 달(월)마다 따로 — 현재 보는 달의 스티커만 로컬 상태로 다룬다.
   const monthStickers = (year: number, month: number) =>
@@ -2207,7 +2267,7 @@ export function PublicPoster({
   }
 
   // 날짜 칸 렌더러.
-  function renderDayCell(cell: MonthCell, weekSupCount: number) {
+  function renderDayCell(cell: MonthCell, weekSupCount: number, cellIndex: number) {
     const covering = getEventsForDate(schedule.events, cell.isoDate);
     const supportHere = covering.filter((e) => e.isSupport);
     const events = covering.filter((e) => !e.isSupport);
@@ -2232,6 +2292,7 @@ export function PublicPoster({
           day.isToday ? "today" : ""
         }`}
         data-pop={popTier ?? undefined}
+        data-cell-index={cellIndex}
         key={cell.isoDate}
       >
         {supportHere.map((s) => {
@@ -2734,7 +2795,7 @@ export function PublicPoster({
   return (
     <main
       className={`poster-page${accountSwitch ? " poster-readonly" : ""}`}
-      data-poster-theme={posterTheme}
+      data-poster-theme={effectivePosterTheme}
     >
       {celebrate ? (
         <div className="celebrate-overlay" aria-hidden="true">
@@ -3458,8 +3519,52 @@ export function PublicPoster({
           </div>
         ) : null}
 
+        {showAgenda || !avatarSlot ? null : (
+          <div className="avatar-ctl" role="group" aria-label="아바타 자리 설정(관리자 전용)">
+            <button
+              type="button"
+              className={`avatar-ctl-toggle${avatarOn ? " on" : ""}`}
+              aria-pressed={avatarOn}
+              onClick={toggleAvatarOn}
+            >
+              🎙️ 아바타 자리 {avatarOn ? "켜짐" : "꺼짐"}
+            </button>
+            {avatarOn ? (
+              <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
+                <button
+                  type="button"
+                  className={avatarSide === "left" ? "on" : ""}
+                  aria-pressed={avatarSide === "left"}
+                  onClick={() => pickAvatarSide("left")}
+                >
+                  왼쪽
+                </button>
+                <button
+                  type="button"
+                  className={avatarSide === "right" ? "on" : ""}
+                  aria-pressed={avatarSide === "right"}
+                  onClick={() => pickAvatarSide("right")}
+                >
+                  오른쪽
+                </button>
+              </div>
+            ) : null}
+          </div>
+        )}
         {showAgenda ? null : (
-        <div className="poster-fit" ref={posterFitRef}>
+        <div
+          className={`poster-fit${showAvatarSlot ? ` has-avatar-slot avatar-${avatarSide}` : ""}`}
+          ref={posterFitRef}
+        >
+        {showAvatarSlot ? (
+          <aside
+            className="avatar-slot"
+            aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)"
+            style={{ height: posterNaturalH * posterScale }}
+          >
+            <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
+          </aside>
+        ) : null}
         <div
           className="poster-stage"
           ref={posterStageRef}
@@ -3479,7 +3584,7 @@ export function PublicPoster({
           className={`poster-surface${popIntro ? " pop-intro" : ""}`}
           data-enter={monthDir}
           data-export-surface
-          data-poster-theme={posterTheme}
+          data-poster-theme={effectivePosterTheme}
           key={`surface-${view.year}-${view.month}`}
         >
           <div className="poster-heading">
@@ -3522,9 +3627,9 @@ export function PublicPoster({
               ))}
             </div>
 
-            <div className="public-month-grid" aria-label="월간 공개 일정" ref={monthGridRef}>
+            <div className="public-month-grid" aria-label="월간 공개 일정" ref={setMonthGridRef}>
               {cells.map((cell, i) =>
-                renderDayCell(cell, weekSupportLaneCount[Math.floor(i / 7)] ?? 0)
+                renderDayCell(cell, weekSupportLaneCount[Math.floor(i / 7)] ?? 0, i)
               )}
             </div>
           </section>

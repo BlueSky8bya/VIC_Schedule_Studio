@@ -5062,6 +5062,24 @@
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
+/* 구글 시트식 날짜 칸 범위 선택(마우스) — 시각 강조만. 칸 텍스트 긁힘도 막는다. */
+.studio-month-grid {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+body.cell-range-dragging {
+  cursor: cell;
+}
+.studio-day.cell-range-selected::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: rgb(168 85 247 / 12%);
+  box-shadow: inset 0 0 0 2px rgb(168 85 247 / 60%);
+}
 /* 날짜 칸을 탭하면 살짝 보라 틴트로 '눌렀다'는 신호(카드는 자체 모션이 우선). */
 .studio-day:not(.outside):active {
   background: #f7f4ff;

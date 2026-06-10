@@ -754,6 +754,134 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* 관리자 아바타 자리 — poster-fit을 가로 flex로 바꿔 한쪽 ~1/3을 비우고, stage(달력)는 남은
+   폭으로 줄어든다(stage.clientWidth가 줄면 ResizeObserver가 배율을 다시 잡는다). 아바타 자리는
+   export 표면 바깥이라 PNG엔 안 들어간다. 좌/우는 flex order로만 바꿔 DOM은 그대로 둔다. */
+.poster-fit.has-avatar-slot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 18px;
+  padding: 0 22px;
+}
+.poster-fit.has-avatar-slot .poster-stage {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.avatar-slot {
+  flex: 0 0 32%;
+  min-width: 0;
+  box-sizing: border-box;
+  border: 2px dashed #c9b8e6;
+  border-radius: 18px;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgb(201 184 230 / 7%) 0,
+      rgb(201 184 230 / 7%) 12px,
+      transparent 12px,
+      transparent 24px
+    );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poster-fit.has-avatar-slot.avatar-right .avatar-slot {
+  order: 2;
+}
+.poster-fit.has-avatar-slot.avatar-right .poster-stage {
+  order: 1;
+}
+.avatar-slot-hint {
+  font-size: 18px;
+  font-weight: 800;
+  color: #9b86c2;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+/* 아바타 자리 설정 툴바(관리자 전용) — 표면 밖, 달력 위 가운데. 웹 네이티브 알약 버튼. */
+.avatar-ctl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 12px;
+}
+.avatar-ctl-toggle,
+.avatar-ctl-side button {
+  border: 1px solid #e3d8f1;
+  background: #fff;
+  color: #6b5b8a;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: var(--r-pill, 999px);
+  cursor: pointer;
+  transition:
+    background 0.18s var(--ease, ease),
+    color 0.18s var(--ease, ease),
+    box-shadow 0.18s var(--ease, ease),
+    transform 0.08s var(--ease, ease);
+}
+.avatar-ctl-toggle.on {
+  background: #efe7fb;
+  color: #5b4a86;
+  box-shadow: inset 0 0 0 1px #cdb8ee;
+}
+.avatar-ctl-side {
+  display: inline-flex;
+  gap: 2px;
+  padding: 2px;
+  background: #f4eefb;
+  border-radius: var(--r-pill, 999px);
+}
+.avatar-ctl-side button {
+  border-color: transparent;
+  background: transparent;
+  padding: 6px 14px;
+}
+.avatar-ctl-side button.on {
+  background: #fff;
+  color: #5b4a86;
+  box-shadow: 0 1px 4px rgb(91 74 134 / 18%);
+}
+.avatar-ctl-toggle:active,
+.avatar-ctl-side button:active {
+  transform: scale(0.95);
+}
+
+/* 구글 시트식 날짜 칸 범위 선택 — 시각 강조만. 칸 텍스트가 긁혀 선택되는 것도 막는다. */
+.public-month-grid {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+}
+body.cell-range-dragging {
+  cursor: cell;
+}
+.public-day.cell-range-selected::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background: rgb(99 102 241 / 12%);
+  box-shadow: inset 0 0 0 2px rgb(99 102 241 / 55%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-ctl-toggle,
+  .avatar-ctl-side button {
+    transition: none;
+  }
+  .avatar-ctl-toggle:active,
+  .avatar-ctl-side button:active {
+    transform: none;
+  }
+}
+
 .public-calendar-header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -3698,6 +3826,30 @@ html {
 }
 .poster-surface[data-poster-theme="winter"]::after {
   content: "⛄";
+}
+
+/* 월드컵(2026 기간 자동) — 잔디 그린을 은은하게, 카드/텍스트는 불투명이라 가독성 유지. */
+.poster-page[data-poster-theme="worldcup"] {
+  background:
+    radial-gradient(120% 80% at 50% -10%, #eafaef 0%, transparent 65%),
+    linear-gradient(180deg, #f1fbf3, #e8f6ec);
+}
+.poster-surface[data-poster-theme="worldcup"] {
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgb(34 139 87 / 4%) 0,
+      rgb(34 139 87 / 4%) 60px,
+      transparent 60px,
+      transparent 120px
+    ),
+    linear-gradient(160deg, #f6fff8 0%, #e6f6ea 55%, #f4fdf6 100%);
+}
+.poster-surface[data-poster-theme="worldcup"]::before {
+  content: "⚽";
+}
+.poster-surface[data-poster-theme="worldcup"]::after {
+  content: "🏆";
 }
 
 /* ── P3: 더 화려한 배경(그라데이션/패턴). 달력 카드는 불투명이라 텍스트 가독성 유지. ── */
