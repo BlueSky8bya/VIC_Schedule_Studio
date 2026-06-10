@@ -784,7 +784,7 @@ html {
 }
 .poster-page.avatar-scene .poster-stage {
   justify-content: flex-start;
-  margin-right: 13vw; /* 우측을 비워, legend 왼쪽~화면끝이 ~1/4가 되게(아바타 자리) */
+  margin-right: 25vw; /* 우측 1/4를 아바타에 내주고 달력은 왼쪽 3/4(겹침 0) */
   transition: margin-right 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
 .poster-page.avatar-scene .poster-scaler {
@@ -798,8 +798,8 @@ html {
   justify-content: flex-start; /* 내용을 박스 위에 딱 붙임(가운데 흩뿌림 해제) */
   gap: 2px;
   padding: 8px 12px;
-  /* 아바타(아래 64vh) 바로 위까지만 차지하고 넘치면 스크롤 — 그래서 legend가 아바타 위에 딱 붙는다. */
-  max-height: calc(100% - 64vh);
+  /* legend는 컬럼 위쪽에 짧게 + 넘치면 스크롤(폭 220 고정 → 달력 셀·스티커 안전). */
+  max-height: 52%;
   overflow-y: auto;
   border-radius: var(--r-lg);
 }
@@ -812,13 +812,16 @@ html {
 /* 아바타 박스: 고정 geometry(월별 불변) — 우측 25vw, top 36%(짧아진 legend 아래), 바닥까지 ≈ 화면
    2/3 높이. JS 측정을 안 써서 어느 달이든 폭·위치가 똑같다(달력 침범/들쭉날쭉 없음). */
 .poster-page.avatar-scene .avatar-slot {
-  position: absolute;
-  right: 8px;
-  bottom: 8px;
-  /* left는 JS가 legend 왼쪽으로 준다(없으면 폴백 75%). top은 legend 아래(=화면기준 64vh 위)로 고정
-     → 높이 64vh가 모든 달에서 동일(들쭉날쭉 없음), legend가 바로 위에 붙는다. */
-  left: 75%;
-  top: calc(100% - 64vh);
+  /* 방송 세팅처럼 화면(viewport)에 '고정' — 스크롤해도 안 움직이고, 모든 달에서 폭·높이가 동일.
+     우측 1/4 고정, 하단 정렬. 달력(surface margin-right:25vw)과 겹치지 않는다. */
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: auto;
+  top: auto;
+  width: 25vw;
+  height: 74vh;
+  padding: 10px;
   display: flex;
   box-sizing: border-box;
   pointer-events: none;

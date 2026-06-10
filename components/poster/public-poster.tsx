@@ -1109,41 +1109,6 @@ export function PublicPoster({
     return () => ro.disconnect();
   }, [showAgenda, decorate, avatarSlot]);
 
-  // 아바타 박스의 '왼쪽 x' = 색상안내(legend)의 왼쪽 모서리. 거기부터 화면 끝까지가 아바타 자리다.
-  // 높이는 CSS(top:calc(100%-64vh))로 legend 아래에 고정(월 무관). left만 legend 위치를 재서 맞춘다.
-  const [avatarLeft, setAvatarLeft] = useState<number | null>(null);
-  useEffect(() => {
-    if (showAgenda || !avatarCapable || !avatarOn) {
-      setAvatarLeft(null);
-      return;
-    }
-    const fit = posterFitRef.current;
-    if (!fit) {
-      return;
-    }
-    const measure = () => {
-      const legend = fit.querySelector<HTMLElement>(".public-legend-vertical");
-      if (!legend) {
-        return;
-      }
-      const left = legend.getBoundingClientRect().left - fit.getBoundingClientRect().left;
-      setAvatarLeft(left > 0 ? left : null);
-    };
-    let raf1 = 0;
-    let raf2 = 0;
-    raf1 = requestAnimationFrame(() => {
-      raf2 = requestAnimationFrame(measure);
-    });
-    const ro = new ResizeObserver(measure);
-    ro.observe(fit);
-    window.addEventListener("resize", measure);
-    return () => {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, [showAgenda, avatarCapable, avatarOn, view.year, view.month, posterScale, posterNaturalH]);
 
 
 
@@ -3769,11 +3734,7 @@ export function PublicPoster({
             짧아진 legend '아래'에 깔린다. left/top은 legend를 JS로 재서 맞춘다(absolute). surface
             내부 폭은 안 바꾸므로 스티커 안전. 꾸미기는 avatarCapable=false라 안 뜸. */}
         {avatarCapable ? (
-          <aside
-            className="avatar-slot"
-            aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)"
-            style={avatarLeft != null ? { left: avatarLeft } : undefined}
-          >
+          <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
             <div className="avatar-dock-inner">
               <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
             </div>
