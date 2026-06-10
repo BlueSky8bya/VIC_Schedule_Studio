@@ -2653,14 +2653,15 @@ export function StudioShell({
   }
   // 커서 위치가 아니라 '그 날짜칸' 기준으로 메뉴를 띄운다(경계에서 눌러도 어느 날인지 분명).
   // x는 칸 가로중앙(메뉴는 CSS translateX(-50%)로 중앙정렬), y는 칸 세로중앙에 메뉴를 얹는다.
-  function openRestMenu(rect: DOMRect, isoDate: string) {
+  // 메뉴는 '클릭한 지점(ax,ay)'에 띄운다 — 맨 오른쪽 칸(토)에서 칸중앙 기준이면 화면 밖→왼쪽으로
+  // 클램프돼 옆 칸 위에 뜨던 문제를 없앤다. 화면 경계만 살짝 보정.
+  function openRestMenu(ax: number, ay: number, isoDate: string) {
     if (!canEdit || blockedByPreview()) return;
     hapticTick();
     const menuW = 180;
     const menuH = 56;
-    const cx = rect.left + rect.width / 2;
-    const x = Math.max(8 + menuW / 2, Math.min(cx, window.innerWidth - 8 - menuW / 2));
-    const y = Math.max(8, Math.min(rect.top + rect.height / 2 - menuH / 2, window.innerHeight - 8 - menuH));
+    const x = Math.max(8 + menuW / 2, Math.min(ax, window.innerWidth - 8 - menuW / 2));
+    const y = Math.max(8, Math.min(ay, window.innerHeight - 8 - menuH));
     setRestMenu({ isoDate, x, y, hasRest: Boolean(findRestEvent(isoDate)) });
   }
   function closeRestMenu() {
@@ -2747,13 +2748,13 @@ export function StudioShell({
   function onCellPointerDown(e: ReactPointerEvent<HTMLElement>, isoDate: string) {
     if (!canEdit || e.pointerType === "mouse") return; // 데스크톱은 우클릭(onContextMenu)으로
     if ((e.target as HTMLElement).closest(".studio-event-pill, button, a")) return;
-    cellHoldPosRef.current = { x: e.clientX, y: e.clientY }; // 이동 취소 판정용
-    // currentTarget은 핸들러 종료 후 null이 되므로 칸 rect를 지금 캡처해 둔다.
-    const rect = e.currentTarget.getBoundingClientRect();
+    const px = e.clientX;
+    const py = e.clientY;
+    cellHoldPosRef.current = { x: px, y: py }; // 이동 취소 판정용
     if (cellHoldRef.current) clearTimeout(cellHoldRef.current);
     cellHoldRef.current = setTimeout(() => {
       suppressCellClickRef.current = true; // 메뉴 연 직후 click(selectDate) 무시
-      openRestMenu(rect, isoDate);
+      openRestMenu(px, py, isoDate); // 누른 지점에 메뉴
     }, 360);
   }
   function cancelCellHold() {
@@ -4487,7 +4488,7 @@ export function StudioShell({
                   onContextMenu={(e) => {
                     if (!canEdit) return; // 비편집자는 기본 우클릭 메뉴 그대로
                     e.preventDefault();
-                    openRestMenu(e.currentTarget.getBoundingClientRect(), cell.isoDate);
+                    openRestMenu(e.clientX, e.clientY, cell.isoDate);
                   }}
                   onPointerDown={(e) => onCellPointerDown(e, cell.isoDate)}
                   onPointerMove={onCellPointerMove}

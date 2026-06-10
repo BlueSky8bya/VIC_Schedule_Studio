@@ -875,16 +875,28 @@ html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
   }
 }
 
-/* 아바타 자리 설정 토글(관리자 전용) — surface 밖, 페이지 좌상단에 '고정'. surface가 scene으로
-   이동/축소해도 이 버튼은 절대 안 움직인다. 웹 네이티브 알약 버튼. */
+/* 아바타 자리 설정 토글(관리자 전용) — viewport에 '고정'(스크롤해도 안 움직임). 꺼져 있을 땐
+   좌상단, 켜져 있을 땐 아바타 자리 '바로 위'(같은 쪽)로 붙는다. */
 .avatar-ctl {
-  position: absolute;
+  position: fixed;
   top: 14px;
   left: 16px;
   z-index: 30;
   display: inline-flex;
   align-items: center;
   gap: 8px;
+}
+.poster-page.avatar-scene.avatar-left .avatar-ctl {
+  top: auto;
+  left: 8px;
+  right: auto;
+  bottom: calc(70vh + 10px); /* 아바타(아래 70vh) 바로 위 */
+}
+.poster-page.avatar-scene.avatar-right .avatar-ctl {
+  top: auto;
+  left: auto;
+  right: 8px;
+  bottom: calc(70vh + 10px);
 }
 .avatar-ctl-toggle {
   /* ON/OFF로 글자가 바뀌어도 버튼이 안 움직이게 폭 고정(가운데 정렬) — 마우스가 안 헤맨다. */
@@ -967,8 +979,8 @@ body.cell-range-dragging {
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  background: rgb(99 102 241 / 12%);
-  box-shadow: inset 0 0 0 2px rgb(99 102 241 / 55%);
+  /* 채움만 — 칸마다 테두리를 그리면 붙은 칸 사이가 이중선이 된다(시트처럼 통짜 음영). */
+  background: rgb(99 102 241 / 14%);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -59,7 +59,8 @@ export function useCellRangeSelect<T extends HTMLElement>({
         return;
       }
 
-      let anchor: number | null = null;
+      let anchor: number | null = null; // 현재 드래그/범위의 기준(드래그 끝나면 초기화)
+      let lastAnchor: number | null = null; // Shift 범위 확장용 기준(클릭 사이 유지)
       let dragging = false;
       let startX = 0;
       let startY = 0;
@@ -145,11 +146,28 @@ export function useCellRangeSelect<T extends HTMLElement>({
         if (!Number.isFinite(i)) {
           return;
         }
-        anchor = i;
         dragging = false;
         startX = e.clientX;
         startY = e.clientY;
-        apply(new Set([i])); // 시트처럼 누른 한 칸을 바로 선택(드래그하면 범위로 확장)
+        // 구글 시트식 다중선택:
+        //  - Shift: 기준(lastAnchor)부터 누른 칸까지 사각형으로 확장(드래그도 그 기준에서).
+        //  - Ctrl/⌘: 누른 칸을 개별로 토글(기존 선택 유지).
+        //  - 평소: 누른 칸 하나만(기준 갱신). 드래그하면 범위.
+        if (e.shiftKey && lastAnchor != null) {
+          anchor = lastAnchor;
+          apply(rect(lastAnchor, i));
+        } else if (e.ctrlKey || e.metaKey) {
+          const next = new Set(selectedRef.current);
+          if (next.has(i)) next.delete(i);
+          else next.add(i);
+          apply(next);
+          anchor = i;
+          lastAnchor = i;
+        } else {
+          anchor = i;
+          lastAnchor = i;
+          apply(new Set([i]));
+        }
         window.addEventListener("pointermove", onMove);
         window.addEventListener("pointerup", onUp);
       };
