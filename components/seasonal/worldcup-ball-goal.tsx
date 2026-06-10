@@ -4,17 +4,40 @@ import { useEffect, useRef, useState } from "react";
 import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import "./worldcup-ball-goal.css";
 
-// 월드컵 시즌 미니 놀이 — 좌/우 골대, 공 1개, 양 팀 4-3-3 선수 AI(작은 원)가 자동으로 경기한다.
-// 사용자는 마우스로 공을 뺏어 골대로 던질 수 있고(공이 선수에 맞으면 튕김), 골키퍼 AI가 막는다.
-// 이벤트 전체 on/off + 자동경기 on/off 토글 제공(둘 다 localStorage 저장). 월드컵 기간에만 부모가
-// 이 컴포넌트를 마운트하므로 토글도 그 기간에만 보인다.
+// 월드컵 시즌 미니게임 — 좌/우 골대, 공 1개, 양 팀 11명(필드 10 + 골키퍼)이 자동 경기.
+// 매 경기마다 두 팀이 '서로 다른' 포메이션·전술(하이프레스/티키타카/롱볼역습/텐백/밸런스)을 뽑고,
+// 선수 20명 각자 성격(스피드·압박·패스·슛·규율)이 달라 다르게 움직인다. 세트피스(스로인·골킥·코너킥·
+// 킥오프) + 스코어. 사용자는 마우스로 공을 뺏어 던질 수 있다(선수에 맞으면 튕김).
 //
-// 안전/성능: 레이어 pointer-events:none(일정 클릭 방해 0), 공·토글만 auto. 자동경기는 지속 모션이라
-// WCAG 2.2.2 토글 제공 + reduced-motion 기본 꺼짐 + 탭 숨김 시 rAF 중단. transform만(reflow 0).
+// 설계 근거(요약): 몰입=명확한 목표+즉각 피드백+적절한 난이도(GameFlow/Flow), 재미=자율성·유능감·
+// 관계성(SDT/PENS), 게임=Mechanics·Dynamics·Aesthetics(MDA). 안전/성능: 레이어는 게임 중 입력을
+// 가로채되(집중), 자동경기·숨기기 토글과 공만 조작 가능. transform만(reflow 0), 멈추면/숨기면 rAF 중단.
 
 type Vec = { x: number; y: number };
 type Side = "left" | "right";
-type Player = { team: 0 | 1; bx: number; by: number; fast: boolean; x: number; y: number };
+type Role = "DF" | "DM" | "MF" | "WG" | "FW";
+type Slot = { bx: number; by: number; role: Role };
+type Team = {
+  formation: string;
+  slots: Slot[];
+  lineHeight: number; // 베이스라인 전진(0 깊음 .. 0.22 높음)
+  press: number; // 압박 강도(0.4..1)
+  tempo: number; // 속도 배수(0.9..1.2)
+  possession: number; // 1=짧은 점유(티키타카) .. 0=직접(롱볼)
+  width: number; // 좌우 전개(0.85..1.15)
+  name: string;
+};
+type Player = {
+  team: 0 | 1;
+  slot: Slot;
+  pace: number;
+  press: number;
+  pass: number;
+  shoot: number;
+  discipline: number;
+  x: number;
+  y: number;
+};
 
 const FRICTION = 0.992;
 const WALL_RESTITUTION = 0.8;
@@ -25,42 +48,119 @@ const GOAL_H = 120;
 const GOAL_MARGIN_PX = 6;
 const WALL_T = 10;
 const DRAG_BUFFER = 100;
-const KD = 26; // 골키퍼 원 지름(작게 — 입구를 덜 덮어 골이 들어갈 틈)
-const KEEPER_SPEED = 205; // px/s — 반응지연·오차와 함께 '뚫리는' 키퍼를 만든다
+const KD = 26;
+const KEEPER_SPEED = 205;
 const GOAL_COOLDOWN_MS = 1400;
 const SAVE_COOLDOWN_MS = 350;
 const PLAYER_R = 9;
-const PLAYER_SPEED = 165; // 공 쫓는 선수
+const PLAYER_SPEED = 165;
 const BALL_BOUNCE = 0.82;
-const CONTROL_SPEED = 150; // 이보다 느린 공은 가까운 선수가 잡아서 찬다
-const KICK_CD = 520;
+const CONTROL_SPEED = 150;
+const KICK_CD = 480;
 const MARGIN_Y_FRAC = 0.07;
 
-// 4-3-3 포메이션(공격 방향 기준 bx: 0=자기 골, 1=상대 골 / by: 0=위, 1=아래). fast=전방 침투형.
-const FORMATION: { bx: number; by: number; fast: boolean }[] = [
-  { bx: 0.18, by: 0.1, fast: false }, // LB
-  { bx: 0.1, by: 0.36, fast: false }, // LCB
-  { bx: 0.1, by: 0.64, fast: false }, // RCB
-  { bx: 0.18, by: 0.9, fast: false }, // RB
-  { bx: 0.33, by: 0.5, fast: false }, // DM
-  { bx: 0.47, by: 0.3, fast: false }, // LCM
-  { bx: 0.47, by: 0.7, fast: false }, // RCM
-  { bx: 0.7, by: 0.12, fast: true }, // LW
-  { bx: 0.84, by: 0.5, fast: true }, // ST
-  { bx: 0.7, by: 0.88, fast: true } // RW
-];
-const TEAM_N = FORMATION.length; // 팀당 필드 선수(키퍼 별도 → 11 컨셉)
+const FORMATIONS: Record<string, Slot[]> = {
+  "4-3-3": [
+    { bx: 0.18, by: 0.12, role: "DF" },
+    { bx: 0.1, by: 0.37, role: "DF" },
+    { bx: 0.1, by: 0.63, role: "DF" },
+    { bx: 0.18, by: 0.88, role: "DF" },
+    { bx: 0.34, by: 0.5, role: "DM" },
+    { bx: 0.47, by: 0.3, role: "MF" },
+    { bx: 0.47, by: 0.7, role: "MF" },
+    { bx: 0.72, by: 0.14, role: "WG" },
+    { bx: 0.84, by: 0.5, role: "FW" },
+    { bx: 0.72, by: 0.86, role: "WG" }
+  ],
+  "4-4-2": [
+    { bx: 0.16, by: 0.12, role: "DF" },
+    { bx: 0.1, by: 0.38, role: "DF" },
+    { bx: 0.1, by: 0.62, role: "DF" },
+    { bx: 0.16, by: 0.88, role: "DF" },
+    { bx: 0.45, by: 0.12, role: "WG" },
+    { bx: 0.4, by: 0.38, role: "MF" },
+    { bx: 0.4, by: 0.62, role: "MF" },
+    { bx: 0.45, by: 0.88, role: "WG" },
+    { bx: 0.78, by: 0.4, role: "FW" },
+    { bx: 0.78, by: 0.6, role: "FW" }
+  ],
+  "3-5-2": [
+    { bx: 0.1, by: 0.3, role: "DF" },
+    { bx: 0.08, by: 0.5, role: "DF" },
+    { bx: 0.1, by: 0.7, role: "DF" },
+    { bx: 0.42, by: 0.1, role: "WG" },
+    { bx: 0.4, by: 0.35, role: "MF" },
+    { bx: 0.3, by: 0.5, role: "DM" },
+    { bx: 0.4, by: 0.65, role: "MF" },
+    { bx: 0.42, by: 0.9, role: "WG" },
+    { bx: 0.8, by: 0.42, role: "FW" },
+    { bx: 0.8, by: 0.58, role: "FW" }
+  ],
+  "4-2-3-1": [
+    { bx: 0.17, by: 0.12, role: "DF" },
+    { bx: 0.1, by: 0.38, role: "DF" },
+    { bx: 0.1, by: 0.62, role: "DF" },
+    { bx: 0.17, by: 0.88, role: "DF" },
+    { bx: 0.32, by: 0.4, role: "DM" },
+    { bx: 0.32, by: 0.6, role: "DM" },
+    { bx: 0.55, by: 0.16, role: "WG" },
+    { bx: 0.58, by: 0.5, role: "MF" },
+    { bx: 0.55, by: 0.84, role: "WG" },
+    { bx: 0.85, by: 0.5, role: "FW" }
+  ]
+};
+
+const rnd = (a: number, b: number) => a + Math.random() * (b - a);
+const pick = <T,>(arr: T[]) => arr[(Math.random() * arr.length) | 0];
+
+function styleName(t: Omit<Team, "name">): string {
+  if (t.press > 0.78 && t.lineHeight > 0.12) return "하이프레스";
+  if (t.possession > 0.68) return "티키타카";
+  if (t.possession < 0.34) return "롱볼 역습";
+  if (t.press < 0.5 && t.lineHeight < 0.06) return "텐백 수비";
+  return "밸런스";
+}
+function genTeam(): Team {
+  const formation = pick(Object.keys(FORMATIONS));
+  const base = {
+    formation,
+    slots: FORMATIONS[formation],
+    lineHeight: rnd(0.0, 0.2),
+    press: rnd(0.42, 1.0),
+    tempo: rnd(0.92, 1.2),
+    possession: rnd(0.2, 0.85),
+    width: rnd(0.85, 1.15)
+  };
+  return { ...base, name: styleName(base) };
+}
+// 역할별 성격 기준치(±지터). pace/press/pass/shoot/discipline 0..1.
+function genPlayer(team: 0 | 1, slot: Slot): Player {
+  const r = slot.role;
+  const baseByRole: Record<Role, [number, number, number, number, number]> = {
+    // [pace, press, pass, shoot, discipline]
+    DF: [0.55, 0.45, 0.55, 0.15, 0.85],
+    DM: [0.6, 0.65, 0.78, 0.3, 0.8],
+    MF: [0.68, 0.6, 0.82, 0.45, 0.6],
+    WG: [0.9, 0.6, 0.6, 0.62, 0.4],
+    FW: [0.85, 0.55, 0.55, 0.85, 0.4]
+  };
+  const [pa, pr, ps, sh, di] = baseByRole[r];
+  const j = (v: number) => Math.max(0.05, Math.min(1, v + rnd(-0.15, 0.15)));
+  return { team, slot, pace: j(pa), press: j(pr), pass: j(ps), shoot: j(sh), discipline: j(di), x: 0, y: 0 };
+}
 
 export function WorldCupBallGoal() {
   const layerRef = useRef<HTMLDivElement | null>(null);
   const ballRef = useRef<HTMLDivElement | null>(null);
   const keeperRef = useRef<Record<Side, HTMLDivElement | null>>({ left: null, right: null });
   const playerEls = useRef<(HTMLDivElement | null)[]>([]);
-  const [enabled, setEnabled] = useState(true); // 미니게임 전체 on/off
-  const [running, setRunning] = useState(true); // 자동 경기 on/off
+  const [enabled, setEnabled] = useState(true);
+  const [running, setRunning] = useState(true);
   const [goalFlash, setGoalFlash] = useState(false);
   const [saveFlash, setSaveFlash] = useState<Side | null>(null);
-  const [setPiece, setSetPiece] = useState<string | null>(null); // 스로인 등 세트피스 라벨
+  const [setPiece, setSetPiece] = useState<string | null>(null);
+  const [score, setScore] = useState<[number, number]>([0, 0]); // [team0, team1]
+  const [teamNames, setTeamNames] = useState<[string, string]>(["", ""]);
   const [confetti, setConfetti] = useState<
     { id: number; left: number; top: number; dx: number; dy: number; rot: number; color: string }[]
   >([]);
@@ -68,8 +168,10 @@ export function WorldCupBallGoal() {
   const pos = useRef<Vec>({ x: 0, y: 0 });
   const vel = useRef<Vec>({ x: 0, y: 0 });
   const players = useRef<Player[]>([]);
+  const teams = useRef<[Team, Team] | null>(null);
+  const keeperReact = useRef<Record<Side, number>>({ left: 0.07, right: 0.07 });
   const keeperY = useRef<Record<Side, number>>({ left: 0, right: 0 });
-  const perceivedY = useRef<Record<Side, number>>({ left: 0, right: 0 }); // 키퍼가 '인지'한 공 y(반응지연)
+  const perceivedY = useRef<Record<Side, number>>({ left: 0, right: 0 });
   const dragging = useRef(false);
   const enabledRef = useRef(true);
   const runningRef = useRef(true);
@@ -80,8 +182,8 @@ export function WorldCupBallGoal() {
   const goalAt = useRef(0);
   const saveAt = useRef(0);
   const kickAt = useRef(0);
-  const lastTouch = useRef<0 | 1 | null>(null); // 마지막으로 공을 건드린 팀(스로인 소유 판정)
-  const lastActiveAt = useRef(0); // 공이 '닿을 수 있는 곳에서 움직인' 마지막 시각(스톨 복구용)
+  const lastTouch = useRef<0 | 1 | null>(null);
+  const lastActiveAt = useRef(0);
   const reduced = useRef(false);
   const confettiId = useRef(0);
 
@@ -135,34 +237,52 @@ export function WorldCupBallGoal() {
     });
   };
 
-  // 역할 home(필드 좌표). 공격 방향에 따라 bx를 x로 매핑(team0 오른쪽 공격, team1 왼쪽 공격).
+  // 역할 home(필드 좌표) — 팀 전술(lineHeight·width) + 공/수 페이즈 push 반영.
   const roleHome = (p: Player, push: number) => {
     const { h } = bounds();
     const fx = fieldX();
-    const bx = clamp(p.bx + push, 0, 1);
+    const t = teams.current ? teams.current[p.team] : null;
+    const lh = t ? t.lineHeight : 0;
+    const wd = t ? t.width : 1;
+    const bx = clamp(p.slot.bx + lh + push, 0, 1);
     const span = fx.max - fx.min;
     const x = p.team === 0 ? fx.min + bx * span : fx.max - bx * span;
     const top = h * MARGIN_Y_FRAC;
-    const y = top + p.by * (h - 2 * top);
+    const by = clamp((p.slot.by - 0.5) * wd + 0.5, 0, 1);
+    const y = top + by * (h - 2 * top);
     return { x, y };
   };
 
-  const buildPlayers = () => {
+  const buildMatch = () => {
+    const ta = genTeam();
+    let tb = genTeam();
+    let guard = 0;
+    while (tb.formation === ta.formation && tb.name === ta.name && guard < 6) {
+      tb = genTeam();
+      guard += 1;
+    }
+    teams.current = [ta, tb];
+    keeperReact.current.left = rnd(0.05, 0.09);
+    keeperReact.current.right = rnd(0.05, 0.09);
     const list: Player[] = [];
-    ([0, 1] as const).forEach((t) => {
-      FORMATION.forEach((f) => list.push({ team: t, bx: f.bx, by: f.by, fast: f.fast, x: 0, y: 0 }));
+    ([0, 1] as const).forEach((team) => {
+      const t = team === 0 ? ta : tb;
+      t.slots.forEach((s) => list.push(genPlayer(team, s)));
     });
     players.current = list;
-    // 초기 위치 = 중립(push 0) home.
     list.forEach((p) => {
       const home = roleHome(p, 0);
       p.x = home.x;
       p.y = home.y;
     });
+    setTeamNames([ta.name, tb.name]);
+    setScore([0, 0]);
+    setSetPiece(`🔴 ${ta.name}   vs   ${tb.name} 🔵`);
+    window.setTimeout(() => setSetPiece((s) => (s && s.includes("vs") ? null : s)), 2600);
   };
 
   const burstConfetti = (cx: number, cy: number) => {
-    const n = reduced.current ? 8 : 32;
+    const n = reduced.current ? 8 : 34;
     const colors = ["#e23b3b", "#f4c430", "#3b6fe2", "#34d399", "#ff8fb1", "#ffffff"];
     const parts = Array.from({ length: n }, () => {
       confettiId.current += 1;
@@ -183,27 +303,109 @@ export function WorldCupBallGoal() {
     window.setTimeout(() => setConfetti((cur) => cur.filter((p) => !ids.has(p.id))), 1100);
   };
 
-  const resetBall = () => {
+  const centerBall = () => {
     const { w, h } = bounds();
     pos.current = { x: w * 0.5, y: h * 0.5 };
     vel.current = { x: 0, y: 0 };
     place();
   };
 
+  const setVelTo = (tx: number, ty: number, power: number) => {
+    const dx = tx - pos.current.x;
+    const dy = ty - pos.current.y;
+    const d = Math.hypot(dx, dy) || 1;
+    vel.current.x = (dx / d) * power;
+    vel.current.y = (dy / d) * power;
+  };
+
+  // 가까운 동료(받을 사람)에게 공을 보낸다(킥오프/세트피스 공용).
+  const passToNearestTeammate = (team: 0 | 1, fromX: number, fromY: number, power: number) => {
+    let ti = -1;
+    let td = Infinity;
+    players.current.forEach((m, j) => {
+      if (m.team !== team) return;
+      const dd = Math.hypot(m.x - fromX, m.y - fromY);
+      if (dd < td) {
+        td = dd;
+        ti = j;
+      }
+    });
+    if (ti >= 0) setVelTo(players.current[ti].x, players.current[ti].y, power);
+    lastTouch.current = team;
+  };
+
+  const flashPiece = (label: string) => {
+    setSetPiece(label);
+    window.setTimeout(() => setSetPiece((s) => (s === label ? null : s)), 850);
+  };
+
+  const kickoff = (concede: 0 | 1) => {
+    centerBall();
+    lastTouch.current = null;
+    lastActiveAt.current = performance.now();
+    passToNearestTeammate(concede, pos.current.x, pos.current.y, 200);
+    flashPiece("킥오프");
+  };
+
+  const throwIn = (where: "top" | "bottom") => {
+    const { h } = bounds();
+    const fx = fieldX();
+    const r = BALL / 2;
+    const team: 0 | 1 =
+      lastTouch.current === 0 ? 1 : lastTouch.current === 1 ? 0 : Math.random() < 0.5 ? 0 : 1;
+    pos.current.x = clamp(pos.current.x, fx.min, fx.max);
+    pos.current.y = where === "top" ? r + 2 : h - r - 2;
+    passToNearestTeammate(team, pos.current.x, pos.current.y, 240);
+    if (Math.hypot(vel.current.x, vel.current.y) < 5) vel.current.y = where === "top" ? 160 : -160;
+    flashPiece("스로인");
+  };
+
+  // 골라인 아웃(좌/우 사이드, 골문 밖) → 마지막 터치가 공격수면 골킥, 수비수면 코너킥.
+  const goalLineOut = (side: Side) => {
+    const { h } = bounds();
+    const g = goalRect(side);
+    const r = BALL / 2;
+    const defend: 0 | 1 = side === "left" ? 0 : 1; // 그 골을 지키는 팀
+    const attack: 0 | 1 = defend === 0 ? 1 : 0;
+    const byAttacker = lastTouch.current === attack;
+    if (!byAttacker) {
+      // 코너킥 — 공격팀이 코너에서 박스로.
+      const topCorner = pos.current.y < h * 0.5;
+      pos.current.x = side === "left" ? r + 2 : bounds().w - r - 2;
+      pos.current.y = topCorner ? r + 2 : h - r - 2;
+      const boxX = side === "left" ? g.x + g.w + 60 : g.x - 60;
+      setVelTo(boxX, h * 0.5, 360);
+      lastTouch.current = attack;
+      flashPiece("코너킥");
+    } else {
+      // 골킥 — 수비팀이 골 에어리어에서 길게.
+      pos.current.x = side === "left" ? g.x + g.w + 24 : g.x - 24;
+      pos.current.y = clamp(pos.current.y, h * 0.3, h * 0.7);
+      const upfield = side === "left" ? bounds().w * 0.6 : bounds().w * 0.4;
+      setVelTo(upfield, h * 0.5 + rnd(-h * 0.2, h * 0.2), 520);
+      lastTouch.current = defend;
+      flashPiece("골킥");
+    }
+    lastActiveAt.current = performance.now();
+  };
+
   const scoreGoal = (side: Side) => {
     const now = performance.now();
     if (now - goalAt.current < GOAL_COOLDOWN_MS) return;
     goalAt.current = now;
+    const scorer: 0 | 1 = side === "left" ? 1 : 0; // 그 골에 넣은 = 그 골을 공격한 팀
+    setScore((s) => (scorer === 0 ? [s[0] + 1, s[1]] : [s[0], s[1] + 1]));
     const g = goalRect(side);
     burstConfetti(g.x + g.w / 2, g.y + g.h / 2);
     setGoalFlash(true);
     window.setTimeout(() => setGoalFlash(false), 900);
     hapticSuccess();
-    window.setTimeout(resetBall, 700);
+    const concede: 0 | 1 = side === "left" ? 0 : 1;
+    window.setTimeout(() => kickoff(concede), 850);
   };
 
   const doSave = (side: Side) => {
-    lastTouch.current = side === "left" ? 0 : 1; // 그 골 수비 팀이 쳐낸 것
+    lastTouch.current = side === "left" ? 0 : 1;
     const kx = keeperCenterX(side);
     const ky = keeperY.current[side];
     const minD = BALL / 2 + KD / 2;
@@ -232,8 +434,6 @@ export function WorldCupBallGoal() {
     }
   };
 
-  // 골키퍼 AI: 완벽추적 금지. 공이 골대로 올 때만 반응(반응지연 + 흔들림 오차 + 속도 제한)이라
-  // 구석으로 빠르게 차거나 키퍼가 자리를 잘못 잡으면 들어간다.
   const updateKeepers = (dt: number) => {
     const { w } = bounds();
     const now = performance.now();
@@ -242,11 +442,9 @@ export function WorldCupBallGoal() {
       const lineX = side === "left" ? g.x + g.w : g.x;
       const toward = side === "left" ? vel.current.x < -20 : vel.current.x > 20;
       const dist = Math.abs(pos.current.x - lineX);
-      const active = toward && dist < w * 0.4; // 공이 이쪽 골대로 향하고 가까울 때만 적극 반응
-      // 인지 위치: 공 y로 '천천히' 수렴 → 급변(빠른 슛)은 못 따라간다.
-      const rate = active ? 0.07 : 0.025;
+      const active = toward && dist < w * 0.4;
+      const rate = active ? keeperReact.current[side] : 0.025;
       perceivedY.current[side] += (pos.current.y - perceivedY.current[side]) * rate;
-      // 완벽 차단 방지용 흔들림 오차(좌우 키퍼 위상 다르게).
       const wobble = Math.sin(now / 620 + (side === "left" ? 0 : 2.3)) * 24;
       const target = active
         ? clamp(perceivedY.current[side] + wobble, g.y + KD / 2, g.y + g.h - KD / 2)
@@ -256,48 +454,49 @@ export function WorldCupBallGoal() {
     });
   };
 
-  // 팀별 공 최근접 선수 + 점유 팀(공에 더 가까운 팀).
-  const nearestByTeam = (): { na: number; nb: number; possess: 0 | 1 } => {
-    let na = -1;
-    let nb = -1;
+  const nearest = () => {
+    let overall = -1;
+    let od = Infinity;
+    let possess: 0 | 1 = 0;
     let da = Infinity;
     let db = Infinity;
     players.current.forEach((p, i) => {
       const d = Math.hypot(p.x - pos.current.x, p.y - pos.current.y);
-      if (p.team === 0) {
-        if (d < da) {
-          da = d;
-          na = i;
-        }
-      } else if (d < db) {
-        db = d;
-        nb = i;
+      if (d < od) {
+        od = d;
+        overall = i;
       }
+      if (p.team === 0) da = Math.min(da, d);
+      else db = Math.min(db, d);
     });
-    return { na, nb, possess: da <= db ? 0 : 1 };
+    possess = da <= db ? 0 : 1;
+    return { overall, possess };
   };
 
-  const updatePlayers = (dt: number, near: { na: number; nb: number; possess: 0 | 1 }) => {
-    const { h } = bounds();
+  const updatePlayers = (dt: number, near: { overall: number; possess: 0 | 1 }) => {
+    const { w, h } = bounds();
     const fx = fieldX();
     players.current.forEach((p, i) => {
-      const active = i === near.na || i === near.nb;
+      const t = teams.current ? teams.current[p.team] : null;
+      const tempo = t ? t.tempo : 1;
+      const teamPress = t ? t.press : 0.6;
+      const dBall = Math.hypot(p.x - pos.current.x, p.y - pos.current.y);
+      const pressRadius = w * (0.1 + teamPress * 0.22) * (0.55 + p.press * 0.8);
+      const pressing = i === near.overall || dBall < pressRadius;
       let tx: number;
       let ty: number;
       let spd: number;
-      if (active) {
-        tx = pos.current.x;
-        ty = pos.current.y;
-        spd = PLAYER_SPEED;
+      if (pressing) {
+        tx = pos.current.x + vel.current.x * 0.08; // 리드(예측) 살짝
+        ty = pos.current.y + vel.current.y * 0.08;
+        spd = PLAYER_SPEED * tempo * (0.7 + p.pace * 0.6);
       } else {
-        // 공격 팀은 라인 전진(+), 수비 팀은 후퇴(-) → 필드 전체를 쓰고 역할이 살아난다.
         const attacking = p.team === near.possess;
-        const push = attacking ? 0.15 : -0.1;
+        const push = attacking ? 0.13 : -0.08;
         const home = roleHome(p, push);
-        // 블록이 공 쪽으로 살짝 흐른다(가로는 약하게, 세로는 조금 더).
-        tx = home.x + (pos.current.x - home.x) * 0.08;
-        ty = home.y + (pos.current.y - home.y) * 0.22;
-        spd = PLAYER_SPEED * (p.fast ? 0.72 : 0.56);
+        tx = home.x + (pos.current.x - home.x) * 0.06;
+        ty = home.y + (pos.current.y - home.y) * 0.18;
+        spd = PLAYER_SPEED * tempo * (0.45 + p.pace * 0.4);
       }
       const dx = tx - p.x;
       const dy = ty - p.y;
@@ -308,45 +507,46 @@ export function WorldCupBallGoal() {
     });
   };
 
-  const setVelTo = (tx: number, ty: number, power: number) => {
-    const dx = tx - pos.current.x;
-    const dy = ty - pos.current.y;
-    const d = Math.hypot(dx, dy) || 1;
-    vel.current.x = (dx / d) * power;
-    vel.current.y = (dy / d) * power;
-  };
-
-  // 공을 가진 선수의 판단: 골대 가까우면 슛, 아니면 전진·열린 동료에게 패스(티키타카), 없으면 드리블.
+  // 공 가진 선수 판단: 슛/패스(팀 점유성향+성격)/드리블. 성격(pass)이 낮으면 오차 큼.
   const playBall = (p: Player) => {
     lastTouch.current = p.team;
     kickAt.current = performance.now();
     const { w } = bounds();
+    const t = teams.current ? teams.current[p.team] : null;
+    const possession = t ? t.possession : 0.5;
     const enemy: Side = p.team === 0 ? "right" : "left";
     const g = goalRect(enemy);
     const goalCx = g.x + g.w / 2;
     const goalCy = g.y + g.h / 2;
     const distGoal = Math.hypot(goalCx - p.x, goalCy - p.y);
-    if (distGoal < w * 0.34) {
+    const err = (1 - p.pass) * 110;
+    // 슛: 가까우면 적극, 직접축구는 먼 거리에서도 종종.
+    const closeShot = distGoal < w * 0.32 && Math.random() < 0.45 + p.shoot * 0.5;
+    const longShot = distGoal < w * 0.46 && possession < 0.4 && Math.random() < p.shoot * 0.5;
+    if (closeShot || longShot) {
       const tx = enemy === "left" ? g.x + g.w : g.x;
-      const ty = g.y + g.h / 2 + (Math.random() * 2 - 1) * g.h * 0.5;
-      setVelTo(tx, ty, 480 + Math.random() * 140);
+      const ty = g.y + g.h / 2 + (Math.random() * 2 - 1) * g.h * 0.5 * (1.2 - p.shoot);
+      setVelTo(tx, ty, 480 + Math.random() * 150);
       return;
     }
+    // 패스: 전진+열린 동료. 점유성향 높으면 짧고 안전, 직접이면 길고 전진 위주.
     let best = -1;
     let bestScore = -Infinity;
     players.current.forEach((m, j) => {
       if (m.team !== p.team || m === p) return;
-      const adv = p.team === 0 ? m.x - p.x : p.x - m.x; // 상대 골 방향 전진량
-      if (adv < 20) return;
+      const adv = p.team === 0 ? m.x - p.x : p.x - m.x;
+      if (adv < 15) return;
       const dpass = Math.hypot(m.x - p.x, m.y - p.y);
-      if (dpass > w * 0.5) return;
+      if (dpass > w * 0.55) return;
       let nd = Infinity;
       players.current.forEach((e) => {
         if (e.team === p.team) return;
-        const dd = Math.hypot(e.x - m.x, e.y - m.y);
-        if (dd < nd) nd = dd;
+        nd = Math.min(nd, Math.hypot(e.x - m.x, e.y - m.y));
       });
-      const score = adv * 0.7 + nd * 0.6 - dpass * 0.2; // 전진+열린정도-거리
+      const score =
+        adv * (0.4 + (1 - possession) * 0.8) +
+        nd * (0.3 + possession * 0.7) -
+        dpass * (possession * 0.4 + 0.05);
       if (score > bestScore) {
         bestScore = score;
         best = j;
@@ -355,39 +555,10 @@ export function WorldCupBallGoal() {
     if (best >= 0) {
       const m = players.current[best];
       const dpass = Math.hypot(m.x - p.x, m.y - p.y);
-      setVelTo(m.x, m.y, clamp(dpass * 3, 320, 720));
+      setVelTo(m.x + rnd(-err, err), m.y + rnd(-err, err), clamp(dpass * 3, 320, 760));
       return;
     }
-    setVelTo(goalCx, goalCy, 300); // 드리블(짧게 전진)
-  };
-
-  // 사이드라인(위/아래) 아웃 → 스로인. 마지막에 안 건드린 팀이 가져가 가까운 동료에게 던진다.
-  const throwIn = (where: "top" | "bottom") => {
-    const { h } = bounds();
-    const fx = fieldX();
-    const r = BALL / 2;
-    const team: 0 | 1 =
-      lastTouch.current === 0 ? 1 : lastTouch.current === 1 ? 0 : Math.random() < 0.5 ? 0 : 1;
-    pos.current.x = clamp(pos.current.x, fx.min, fx.max);
-    pos.current.y = where === "top" ? r + 2 : h - r - 2;
-    let ti = -1;
-    let td = Infinity;
-    players.current.forEach((m, j) => {
-      if (m.team !== team) return;
-      const dd = Math.hypot(m.x - pos.current.x, m.y - pos.current.y);
-      if (dd < td) {
-        td = dd;
-        ti = j;
-      }
-    });
-    if (ti >= 0) setVelTo(players.current[ti].x, players.current[ti].y, 240);
-    else {
-      vel.current.x = 0;
-      vel.current.y = where === "top" ? 160 : -160;
-    }
-    lastTouch.current = team;
-    setSetPiece("스로인");
-    window.setTimeout(() => setSetPiece((s) => (s === "스로인" ? null : s)), 800);
+    setVelTo(goalCx, goalCy, 300); // 드리블
   };
 
   const resolveCircleAABB = (rect: { x0: number; y0: number; x1: number; y1: number }) => {
@@ -450,8 +621,7 @@ export function WorldCupBallGoal() {
     const dt = 1 / 60;
     const run = runningRef.current && !reduced.current;
     updateKeepers(dt);
-    const near = nearestByTeam();
-    // 사용자가 공을 들고 있어도(드래그) 선수 AI는 계속 움직인다(공 되찾으러 옴).
+    const near = nearest();
     if (run) updatePlayers(dt, near);
     placePlayers();
 
@@ -461,15 +631,22 @@ export function WorldCupBallGoal() {
       vel.current.x *= FRICTION;
       vel.current.y *= FRICTION;
       const r = BALL / 2;
-      // 좌우(골대 뒤 영역)는 튕김.
-      if (pos.current.x < r) {
-        pos.current.x = r;
-        vel.current.x = -vel.current.x * WALL_RESTITUTION;
-      } else if (pos.current.x > w - r) {
-        pos.current.x = w - r;
-        vel.current.x = -vel.current.x * WALL_RESTITUTION;
+      // 좌우 = 골라인. 경기 중 골문 밖으로 나가면 코너/골킥, 아니면 튕김.
+      if (pos.current.x < r || pos.current.x > w - r) {
+        const side: Side = pos.current.x < r ? "left" : "right";
+        const g = goalRect(side);
+        const inMouth = pos.current.y > g.y && pos.current.y < g.y + g.h;
+        if (run && !inMouth) {
+          goalLineOut(side);
+        } else if (pos.current.x < r) {
+          pos.current.x = r;
+          vel.current.x = -vel.current.x * WALL_RESTITUTION;
+        } else {
+          pos.current.x = w - r;
+          vel.current.x = -vel.current.x * WALL_RESTITUTION;
+        }
       }
-      // 위/아래 사이드라인: 경기 중이면 스로인, 수동(정지)일 땐 튕김.
+      // 위/아래 = 사이드라인. 경기 중이면 스로인.
       if (pos.current.y < r || pos.current.y > h - r) {
         if (run) {
           throwIn(pos.current.y < r ? "top" : "bottom");
@@ -488,14 +665,12 @@ export function WorldCupBallGoal() {
 
     const speed = Math.hypot(vel.current.x, vel.current.y);
     const now = performance.now();
-    // 사용자가 공을 들고 있는 동안엔 공에 물리 충돌을 걸지 않는다(포인터가 위치 주인).
     if (!dragging.current) {
       players.current.forEach((p, i) => {
         const minD = BALL / 2 + PLAYER_R;
         const d = Math.hypot(pos.current.x - p.x, pos.current.y - p.y);
         if (d >= minD) return;
-        const isActive = i === near.na || i === near.nb;
-        if (run && isActive && speed < CONTROL_SPEED && now - kickAt.current > KICK_CD) {
+        if (run && i === near.overall && speed < CONTROL_SPEED && now - kickAt.current > KICK_CD) {
           playBall(p);
         } else {
           bounceBallOffPlayer(p);
@@ -503,20 +678,18 @@ export function WorldCupBallGoal() {
       });
     }
 
-    // 스톨 복구: 경기 중인데 공이 멈췄거나 선수가 닿을 수 없는 구석에 갇히면 가운데로 되살린다
-    // (자동경기 토글을 끄기 전엔 절대 멈추지 않게 — 심판 '볼 드롭' 느낌).
+    // 스톨 복구 — 갇히거나 멈추면 볼 드롭(자동경기 끄기 전엔 안 멈춤).
     if (run && !dragging.current) {
       const fx = fieldX();
       const reachable = pos.current.x > fx.min - 24 && pos.current.x < fx.max + 24;
       if (speed > 40 && reachable) lastActiveAt.current = now;
       if (now - lastActiveAt.current > 2600) {
-        resetBall();
+        centerBall();
         vel.current.x = (Math.random() * 2 - 1) * 220;
         vel.current.y = (Math.random() * 2 - 1) * 160;
         lastTouch.current = null;
         lastActiveAt.current = now;
-        setSetPiece("볼 드롭");
-        window.setTimeout(() => setSetPiece((s) => (s === "볼 드롭" ? null : s)), 800);
+        flashPiece("볼 드롭");
       }
     }
 
@@ -554,7 +727,6 @@ export function WorldCupBallGoal() {
     if (raf.current == null) raf.current = window.requestAnimationFrame(step);
   };
 
-  // 마운트: 환경/저장값 읽기 + 리스너.
   useEffect(() => {
     reduced.current = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
     let en = true;
@@ -603,7 +775,6 @@ export function WorldCupBallGoal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // enabled 변화: 켜지면 위치 초기화 + (필요 시)루프, 꺼지면 루프 중단.
   useEffect(() => {
     if (!enabled) {
       if (raf.current != null) {
@@ -617,8 +788,9 @@ export function WorldCupBallGoal() {
     keeperY.current.right = h * 0.5;
     perceivedY.current.left = h * 0.5;
     perceivedY.current.right = h * 0.5;
-    buildPlayers();
-    resetBall();
+    buildMatch();
+    centerBall();
+    passToNearestTeammate(Math.random() < 0.5 ? 0 : 1, pos.current.x, pos.current.y, 200);
     placeKeepers();
     placePlayers();
     lastActiveAt.current = performance.now();
@@ -708,7 +880,9 @@ export function WorldCupBallGoal() {
       vy = (vy / sp) * max;
     }
     vel.current = { x: vx, y: vy };
+    lastTouch.current = null; // 사용자가 찬 공은 중립(세트피스 소유는 다음 터치로)
     kickAt.current = performance.now();
+    lastActiveAt.current = performance.now();
     ensureLoop();
   };
 
@@ -727,18 +901,28 @@ export function WorldCupBallGoal() {
   });
 
   return (
-    <div className="wc-play" ref={layerRef} aria-hidden="true">
+    <div className={`wc-play ${enabled ? "on" : ""}`} ref={layerRef} aria-hidden="true">
       {enabled ? (
         <>
-          {/* 집중용 흐림/딤 — 뒤의 메모·달력·색상안내를 살짝 흐리고 어둡게(게임은 이 위에 또렷). */}
           <div className="wc-dim" />
-          {/* 경기장 라인(장식) */}
           <div className="wc-pitch" aria-hidden="true">
             <span className="wc-mid" />
             <span className="wc-circle" />
+            <span className="wc-spot" />
             <span className="wc-box wc-box-left" />
             <span className="wc-box wc-box-right" />
+            <span className="wc-six wc-six-left" />
+            <span className="wc-six wc-six-right" />
           </div>
+
+          <div className="wc-score" role="status">
+            <span className="wc-score-team wc-score-a">{teamNames[0] || "RED"}</span>
+            <strong className="wc-score-num">
+              {score[0]} <span>:</span> {score[1]}
+            </strong>
+            <span className="wc-score-team wc-score-b">{teamNames[1] || "BLUE"}</span>
+          </div>
+
           {(["left", "right"] as Side[]).map((side) => (
             <div className={`wc-goal wc-goal-${side}`} key={side} style={goalStyle(side)}>
               <div className="wc-goal-net" />
@@ -755,9 +939,8 @@ export function WorldCupBallGoal() {
               }}
             />
           ))}
-          {/* 선수 div는 개수 고정(TEAM_N*2)이라 정적 렌더 — 위치는 ref+transform으로만 갱신. */}
-          {Array.from({ length: TEAM_N * 2 }).map((_, i) => {
-            const team = i < TEAM_N ? 0 : 1;
+          {Array.from({ length: 20 }).map((_, i) => {
+            const team = i < 10 ? 0 : 1;
             return (
               <div
                 key={`p-${i}`}

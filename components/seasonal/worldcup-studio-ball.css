@@ -12,13 +12,13 @@
   left: 0;
   display: grid;
   place-items: center;
-  font-size: 34px;
+  font-size: 92px;
   line-height: 1;
   pointer-events: auto;
   cursor: grab;
   touch-action: none;
   user-select: none;
-  filter: drop-shadow(0 6px 6px rgb(40 30 60 / 30%));
+  filter: drop-shadow(0 10px 10px rgb(40 30 60 / 32%));
   will-change: transform;
 }
 .wcsb-ball:active {

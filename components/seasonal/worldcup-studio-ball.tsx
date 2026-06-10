@@ -8,7 +8,7 @@ import "./worldcup-studio-ball.css";
 // 굴러 멈춘다. 골대·선수·점수 없음. 월드컵 기간에만(부모가 그때만 마운트). 일정 작업 방해 0
 // (레이어 pointer-events:none, 공만 auto). 위치는 transform만(reflow 0), 멈추면 rAF 중단.
 
-const BALL = 42;
+const BALL = 110; // 큼직하게(편집실에서 시원하게 갖고 놀기)
 const GRAVITY = 1700; // px/s^2
 const REST = 0.66; // 바닥/벽 튕김
 const AIR = 0.999; // 공기저항(아주 약하게)
@@ -27,6 +27,7 @@ export function WorldCupStudioBall() {
   const pointerVel = useRef({ x: 0, y: 0 });
   const raf = useRef<number | null>(null);
   const reduced = useRef(false);
+  const ghostPrev = useRef({ x: 0, y: 0, t: 0 }); // 드래그한 일정 카드의 직전 중심(속도 추정)
 
   const bounds = () => {
     const el = layerRef.current;
@@ -72,15 +73,84 @@ export function WorldCupStudioBall() {
       }
       spin.current += vel.current.x * dt * 1.2; // 수평 속도만큼 회전
     }
+
+    // 드래그 중인 일정 카드(.event-drag-ghost)와 충돌 — 카드를 휘두르면 공이 맞고 튕긴다.
+    const ghostHit = collideDragGhost();
+
     place();
 
     const onFloor = pos.current.y >= floor - 0.5;
     const slow = Math.abs(vel.current.x) < STOP && Math.abs(vel.current.y) < STOP;
-    if (dragging.current || !(onFloor && slow)) {
+    if (dragging.current || ghostHit || !(onFloor && slow)) {
       raf.current = window.requestAnimationFrame(step);
     } else {
       raf.current = null;
     }
+  };
+
+  // 드래그 중인 일정 카드 사각형과 공(원) 충돌. 카드 이동속도를 공에 실어준다(휘두르면 날아감).
+  const collideDragGhost = (): boolean => {
+    const ghost = document.querySelector(".event-drag-ghost") as HTMLElement | null;
+    const layer = layerRef.current;
+    if (!ghost || !layer) {
+      ghostPrev.current.t = 0;
+      return false;
+    }
+    const gr = ghost.getBoundingClientRect();
+    const lr = layer.getBoundingClientRect();
+    const x0 = gr.left - lr.left;
+    const y0 = gr.top - lr.top;
+    const x1 = gr.right - lr.left;
+    const y1 = gr.bottom - lr.top;
+    const gcx = (x0 + x1) / 2;
+    const gcy = (y0 + y1) / 2;
+    const now = performance.now();
+    let gvx = 0;
+    let gvy = 0;
+    if (ghostPrev.current.t) {
+      const dtg = Math.max(8, now - ghostPrev.current.t);
+      gvx = ((gcx - ghostPrev.current.x) / dtg) * 1000;
+      gvy = ((gcy - ghostPrev.current.y) / dtg) * 1000;
+    }
+    ghostPrev.current = { x: gcx, y: gcy, t: now };
+    if (dragging.current) return true; // 공 잡는 중이면 물리 안 검(루프만 유지)
+
+    const r = BALL / 2;
+    const cx = pos.current.x;
+    const cy = pos.current.y;
+    const nx = Math.max(x0, Math.min(cx, x1));
+    const ny = Math.max(y0, Math.min(cy, y1));
+    const dx = cx - nx;
+    const dy = cy - ny;
+    let d = Math.hypot(dx, dy);
+    if (d >= r) return true; // 카드 있음(루프 유지) — 닿진 않음
+    let ux: number;
+    let uy: number;
+    if (d > 0.0001) {
+      ux = dx / d;
+      uy = dy / d;
+    } else {
+      const l = cx - x0;
+      const rr = x1 - cx;
+      const tp = cy - y0;
+      const bt = y1 - cy;
+      const m = Math.min(l, rr, tp, bt);
+      ux = m === l ? -1 : m === rr ? 1 : 0;
+      uy = m === tp ? -1 : m === bt ? 1 : 0;
+      if (ux === 0 && uy === 0) uy = -1;
+      d = 0;
+    }
+    pos.current.x += ux * (r - d);
+    pos.current.y += uy * (r - d);
+    // 상대속도 기반 반사 + 카드 속도 전달.
+    const rvx = vel.current.x - gvx;
+    const rvy = vel.current.y - gvy;
+    const vn = rvx * ux + rvy * uy;
+    if (vn < 0) {
+      vel.current.x -= (1 + REST) * vn * ux;
+      vel.current.y -= (1 + REST) * vn * uy;
+    }
+    return true;
   };
   const ensureLoop = () => {
     if (raf.current == null) raf.current = window.requestAnimationFrame(step);
@@ -108,11 +178,17 @@ export function WorldCupStudioBall() {
         }
       }
     };
+    // 일정 카드를 끌고 휘두르는 동안엔(고스트 존재) 멈춰 있던 공도 깨워 충돌 판정이 돌게 한다.
+    const onDocMove = () => {
+      if (document.querySelector(".event-drag-ghost")) ensureLoop();
+    };
     window.addEventListener("resize", onResize);
     document.addEventListener("visibilitychange", onVisibility);
+    document.addEventListener("pointermove", onDocMove, { passive: true });
     return () => {
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
+      document.removeEventListener("pointermove", onDocMove);
       if (raf.current != null) window.cancelAnimationFrame(raf.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
