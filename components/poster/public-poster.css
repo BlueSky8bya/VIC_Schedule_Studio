@@ -794,19 +794,13 @@ html {
    고정해 스크롤해도 태그가 제목 위로 안 뚫린다. */
 .poster-page.avatar-scene .public-right .public-legend-vertical {
   flex: 0 0 auto;
-  justify-content: flex-start;
+  justify-content: flex-start; /* 내용을 박스 위에 딱 붙임(가운데 흩뿌림 해제) */
   gap: 2px;
   padding: 8px 12px;
-  max-height: 42%;
+  max-height: 32%; /* 더 짧게 → 아래 아바타가 화면 ~2/3 높이를 차지 */
   overflow-y: auto;
-}
-.poster-page.avatar-scene .public-legend-vertical .legend-title {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  margin: -8px -12px 2px; /* padding 영역까지 덮어 옆/위로 안 뚫리게 */
-  padding: 8px 12px 4px;
-  background: #fffdf6;
+  /* 둥근 모서리 안에서 스크롤 내용이 모서리 밖으로 비치지 않게 클립 */
+  border-radius: var(--r-lg);
 }
 .poster-page.avatar-scene .legend-heart-help {
   margin-top: 4px;
@@ -814,13 +808,15 @@ html {
 }
 /* avatar 박스: 색상안내 왼쪽 모서리(left, JS)부터 화면 끝(right:8)까지, 짧아진 legend 아래(top, JS)
    부터 바닥(bottom:8)까지. = 우측 ~1/4 영역. 위쪽(legend 자리)은 안 침범, 달력도 안 가린다. */
+/* 아바타 박스: 고정 geometry(월별 불변) — 우측 25vw, top 36%(짧아진 legend 아래), 바닥까지 ≈ 화면
+   2/3 높이. JS 측정을 안 써서 어느 달이든 폭·위치가 똑같다(달력 침범/들쭉날쭉 없음). */
 .poster-page.avatar-scene .avatar-slot {
   position: absolute;
   right: 8px;
   bottom: 8px;
-  /* left·top은 JS(avatarBox)가 legend 기준으로 인라인으로 준다(없으면 폴백). */
-  left: 75%;
-  top: 45%;
+  left: auto;
+  width: 25vw; /* 화면 1/4 고정 */
+  top: 36%; /* legend(≤32%) 아래 */
   display: flex;
   box-sizing: border-box;
   pointer-events: none;
@@ -835,13 +831,15 @@ html {
     transform: none;
   }
 }
+/* 박스 배경은 투명 — 그 자리에 페이지(달력) 배경(어느 테마든)이 그대로 비쳐 레이아웃 배경이
+   아바타 자리까지 이어진다. placeholder는 옅은 점선 테두리로만 표시. */
 .avatar-dock-inner {
   flex: 1 1 auto;
   min-width: 0;
   box-sizing: border-box;
-  border: 1.5px dashed rgb(155 134 194 / 45%);
+  border: 1.5px dashed rgb(120 110 90 / 30%);
   border-radius: 18px;
-  background: rgb(201 184 230 / 5%);
+  background: transparent;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -894,6 +892,10 @@ html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
   flex-wrap: wrap;
 }
 .avatar-ctl-toggle {
+  /* ON/OFF로 글자가 바뀌어도 버튼이 안 움직이게 폭 고정(가운데 정렬) — 마우스가 안 헤맨다. */
+  min-width: 220px;
+  text-align: center;
+  justify-content: center;
   border: 1px solid #e3d8f1;
   background: #fff;
   color: #6b5b8a;
@@ -3893,7 +3895,15 @@ body.cell-range-dragging {
 
 /* 월드컵(2026 기간 자동) — 잔디 그린을 은은하게, 카드/텍스트는 불투명이라 가독성 유지. */
 .poster-page[data-poster-theme="worldcup"] {
+  /* 잔디 줄무늬를 페이지 전체에 깔아 surface 밖(아바타 자리·여백)까지 잔디로 이어지게 한다. */
   background:
+    repeating-linear-gradient(
+      90deg,
+      rgb(38 130 74 / 9%) 0,
+      rgb(38 130 74 / 9%) 70px,
+      transparent 70px,
+      transparent 140px
+    ),
     radial-gradient(120% 80% at 50% -10%, #bfe7c9 0%, transparent 65%),
     linear-gradient(180deg, #c7e9cf, #aedcb9);
 }
