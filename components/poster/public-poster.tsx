@@ -1109,6 +1109,45 @@ export function PublicPoster({
     return () => ro.disconnect();
   }, [showAgenda, decorate, avatarSlot]);
 
+  // 아바타 박스 위치 — 색상 안내(legend)의 '왼쪽 모서리부터 화면 끝까지', legend 아래로 깐다.
+  // legend는 surface 안(폭 220 고정)이라 위치/크기를 측정해 absolute로 맞춘다. surface 폭은 안
+  // 건드리므로(높이만 압축) 달력 셀이 안 움직여 스티커 좌표가 안전하다. 달 변경·리사이즈 시 재계산.
+  const [avatarBox, setAvatarBox] = useState<{ left: number; top: number } | null>(null);
+  useEffect(() => {
+    if (showAgenda || !avatarCapable || !avatarOn) {
+      setAvatarBox(null);
+      return;
+    }
+    const fit = posterFitRef.current;
+    if (!fit) {
+      return;
+    }
+    const measure = () => {
+      const legend = fit.querySelector<HTMLElement>(".public-legend-vertical");
+      if (!legend) {
+        setAvatarBox(null);
+        return;
+      }
+      const fitR = fit.getBoundingClientRect();
+      const lr = legend.getBoundingClientRect();
+      setAvatarBox({
+        left: Math.max(0, lr.left - fitR.left),
+        top: Math.max(0, lr.bottom - fitR.top + 10)
+      });
+    };
+    let raf1 = 0;
+    let raf2 = 0;
+    raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(measure);
+    });
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.removeEventListener("resize", measure);
+    };
+  }, [showAgenda, avatarCapable, avatarOn, view.year, view.month, posterScale, posterNaturalH]);
+
 
   // 이 세션에서 삭제한 스티커 id. 달을 다시 시드할 때 schedule prop(서버 스냅샷)이 캐시 탓에
   // 아직 그 스티커를 들고 있을 수 있어, 지운 게 월 이동 후 되살아나는 걸 막는다.
@@ -3727,11 +3766,15 @@ export function PublicPoster({
         </section>
         </div>
         </div>
-        {/* 스트리머 scene: avatar는 surface '밖' 우측 1/4 자리. 달력(stage)이 왼쪽으로 슬라이드+축소
-            하며 자리를 내준다 → surface 내부(메모·달력·legend) 폭은 그대로라 스티커 좌표 안 틀어짐
-            (uniform scale만). 꾸미기는 avatarCapable=false라 안 뜸. */}
+        {/* 스트리머 scene: avatar 박스는 색상안내(legend) 왼쪽 모서리부터 화면 끝까지(우측 ~1/4),
+            짧아진 legend '아래'에 깔린다. left/top은 legend를 JS로 재서 맞춘다(absolute). surface
+            내부 폭은 안 바꾸므로 스티커 안전. 꾸미기는 avatarCapable=false라 안 뜸. */}
         {avatarCapable ? (
-          <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
+          <aside
+            className="avatar-slot"
+            aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)"
+            style={avatarBox ? { left: avatarBox.left, top: avatarBox.top } : undefined}
+          >
             <div className="avatar-dock-inner">
               <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
             </div>

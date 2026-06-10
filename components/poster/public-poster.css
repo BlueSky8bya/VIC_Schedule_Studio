@@ -775,40 +775,56 @@ html {
   width: 100%;
   max-width: none;
 }
+/* 달력(stage)을 왼쪽에 붙이고 오른쪽에 공간을 비운다 → 그 공간 + 짧아진 legend 아래가 아바타 자리.
+   stage는 uniform scale만 하므로(폭 margin으로 줄임) 스티커 좌표 안전. */
 .poster-page.avatar-scene .poster-fit {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 25vw;
-  align-items: stretch;
-  column-gap: 16px;
-  transition: grid-template-columns 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+  position: relative;
+  display: block;
 }
 .poster-page.avatar-scene .poster-stage {
-  justify-content: flex-start; /* 달력을 왼쪽에 붙인다 */
+  justify-content: flex-start;
+  margin-right: 16vw; /* 우측 여백 → 아바타가 화면 끝까지 ~1/4 차지 */
+  transition: margin-right 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
 .poster-page.avatar-scene .poster-scaler {
-  transform-origin: top left; /* 왼쪽 기준 축소 */
+  transform-origin: top left;
 }
-/* legend(색상 안내): 폭은 그대로(컬럼 220) — 높이만 압축한다. flex:1 stretch를 풀어 내용 높이로
-   만들고 위로 모은다(공간을 고르게 흩뿌리던 space-evenly 해제). 폭 불변이라 달력 셀이 안 움직여
-   스티커 좌표 안전(높이 변화는 달력 셀 위치와 무관). 압축으로 비는 컬럼 하단은 아바타 쪽과 정렬. */
+/* legend(색상 안내): 폭 그대로(컬럼 220), 높이만 절반 더 압축 + 내부 스크롤. flex:1 stretch 해제,
+   max-height로 짧게. 폭 불변이라 달력 셀이 안 움직여 스티커 안전. 제목은 sticky(불투명 배경)로
+   고정해 스크롤해도 태그가 제목 위로 안 뚫린다. */
 .poster-page.avatar-scene .public-right .public-legend-vertical {
   flex: 0 0 auto;
   justify-content: flex-start;
   gap: 2px;
   padding: 8px 12px;
+  max-height: 42%;
+  overflow-y: auto;
+}
+.poster-page.avatar-scene .public-legend-vertical .legend-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: -8px -12px 2px; /* padding 영역까지 덮어 옆/위로 안 뚫리게 */
+  padding: 8px 12px 4px;
+  background: #fffdf6;
 }
 .poster-page.avatar-scene .legend-heart-help {
   margin-top: 4px;
   padding-top: 6px;
 }
-/* avatar: 우측 1/4 칸 '하단'에 자리. 위쪽은 페이지 배경(빈 박스 아님) → 세로 광고판 아님.
-   placeholder는 은은하게(연한 점선) — 실제 아바타가 들어가기 전 빈 느낌을 최소화. */
+/* avatar 박스: 색상안내 왼쪽 모서리(left, JS)부터 화면 끝(right:8)까지, 짧아진 legend 아래(top, JS)
+   부터 바닥(bottom:8)까지. = 우측 ~1/4 영역. 위쪽(legend 자리)은 안 침범, 달력도 안 가린다. */
 .poster-page.avatar-scene .avatar-slot {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  /* left·top은 JS(avatarBox)가 legend 기준으로 인라인으로 준다(없으면 폴백). */
+  left: 75%;
+  top: 45%;
   display: flex;
-  align-self: end;
-  height: clamp(260px, 40vh, 560px);
-  max-height: 100%;
   box-sizing: border-box;
+  pointer-events: none;
+  z-index: 6;
   opacity: 0;
   transform: translateY(10px);
   animation: avatar-rise 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) 0.05s forwards;
@@ -859,6 +875,9 @@ html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
 @media (max-width: 1099px) {
   .poster-page.avatar-scene .poster-fit {
     display: contents;
+  }
+  .poster-page.avatar-scene .poster-stage {
+    margin-right: 0;
   }
   .poster-page.avatar-scene .avatar-slot {
     display: none;
