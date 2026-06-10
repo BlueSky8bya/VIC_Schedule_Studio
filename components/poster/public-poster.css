@@ -799,14 +799,14 @@ html {
   user-select: none;
 }
 
-/* 아바타 자리 설정 툴바(관리자 전용) — 표면 밖, 달력 위 가운데. 웹 네이티브 알약 버튼. */
+/* 아바타 자리 설정 툴바(관리자 전용) — 헤더 좌측 칸(.header-left)에 들어가 내관심·이동
+   버튼과 같은 줄에 놓인다(전용 행 없음 → 세로 공간 낭비 0). 웹 네이티브 알약 버튼. */
 .avatar-ctl {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
+  justify-content: flex-start;
+  gap: 8px;
   flex-wrap: wrap;
-  margin: 0 0 12px;
 }
 .avatar-ctl-toggle,
 .avatar-ctl-side button {
@@ -814,8 +814,8 @@ html {
   background: #fff;
   color: #6b5b8a;
   font-weight: 700;
-  font-size: 14px;
-  padding: 8px 14px;
+  font-size: 13px;
+  padding: 7px 12px;
   border-radius: var(--r-pill, 999px);
   cursor: pointer;
   transition:

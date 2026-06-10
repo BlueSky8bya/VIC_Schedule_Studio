@@ -2890,7 +2890,40 @@ export function PublicPoster({
         ) : null}
         {showAgenda ? null : (
           <header className="public-calendar-header">
-            <div className="header-left" />
+            <div className="header-left">
+              {avatarSlot ? (
+                <div className="avatar-ctl" role="group" aria-label="아바타 자리 설정(관리자 전용)">
+                  <button
+                    type="button"
+                    className={`avatar-ctl-toggle${avatarOn ? " on" : ""}`}
+                    aria-pressed={avatarOn}
+                    onClick={toggleAvatarOn}
+                  >
+                    🎙️ 아바타 자리 {avatarOn ? "켜짐" : "꺼짐"}
+                  </button>
+                  {avatarOn ? (
+                    <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
+                      <button
+                        type="button"
+                        className={avatarSide === "left" ? "on" : ""}
+                        aria-pressed={avatarSide === "left"}
+                        onClick={() => pickAvatarSide("left")}
+                      >
+                        왼쪽
+                      </button>
+                      <button
+                        type="button"
+                        className={avatarSide === "right" ? "on" : ""}
+                        aria-pressed={avatarSide === "right"}
+                        onClick={() => pickAvatarSide("right")}
+                      >
+                        오른쪽
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
 
             {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).
                 현재 월 표시는 포스터 제목(✨️ … N월)에 이미 있어 헤더 가운데는 비어 있다.
@@ -3520,38 +3553,6 @@ export function PublicPoster({
           </div>
         ) : null}
 
-        {showAgenda || !avatarSlot ? null : (
-          <div className="avatar-ctl" role="group" aria-label="아바타 자리 설정(관리자 전용)">
-            <button
-              type="button"
-              className={`avatar-ctl-toggle${avatarOn ? " on" : ""}`}
-              aria-pressed={avatarOn}
-              onClick={toggleAvatarOn}
-            >
-              🎙️ 아바타 자리 {avatarOn ? "켜짐" : "꺼짐"}
-            </button>
-            {avatarOn ? (
-              <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
-                <button
-                  type="button"
-                  className={avatarSide === "left" ? "on" : ""}
-                  aria-pressed={avatarSide === "left"}
-                  onClick={() => pickAvatarSide("left")}
-                >
-                  왼쪽
-                </button>
-                <button
-                  type="button"
-                  className={avatarSide === "right" ? "on" : ""}
-                  aria-pressed={avatarSide === "right"}
-                  onClick={() => pickAvatarSide("right")}
-                >
-                  오른쪽
-                </button>
-              </div>
-            ) : null}
-          </div>
-        )}
         {showAgenda ? null : (
         <div
           className={`poster-fit${showAvatarSlot ? ` has-avatar-slot avatar-${avatarSide}` : ""}`}
