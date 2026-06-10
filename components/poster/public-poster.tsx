@@ -3558,11 +3558,7 @@ export function PublicPoster({
           ref={posterFitRef}
         >
         {showAvatarSlot ? (
-          <aside
-            className="avatar-slot"
-            aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)"
-            style={{ height: posterNaturalH * posterScale }}
-          >
+          <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
             <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
           </aside>
         ) : null}
