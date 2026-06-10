@@ -782,19 +782,13 @@ html {
   position: relative;
   display: block;
 }
-.poster-page.avatar-scene .poster-stage {
-  justify-content: flex-start;
-  /* 좌/우 전환 시 일정표(stage)만 좌우로 슬라이드 — 살짝 오버슈트(통통 튀는) 스프링 이징. */
-  transition: margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
+/* 정렬(justify)·축소기준(transform-origin)은 base 그대로(center) — margin만 바꿔 슬라이드하므로
+   ON/OFF·좌우 전환에서 정렬이 '스냅'하지 않고 margin 트랜지션만 부드럽게 흐른다. */
 .poster-page.avatar-scene.avatar-right .poster-stage {
   margin-right: 25vw; /* 아바타 우측 → 달력 왼쪽 3/4 */
 }
 .poster-page.avatar-scene.avatar-left .poster-stage {
   margin-left: 25vw; /* 아바타 좌측 → 달력 오른쪽 3/4 */
-}
-.poster-page.avatar-scene .poster-scaler {
-  transform-origin: top left;
 }
 /* legend(색상 안내): 폭 그대로(컬럼 220), 높이만 절반 더 압축 + 내부 스크롤. flex:1 stretch 해제,
    max-height로 짧게. 폭 불변이라 달력 셀이 안 움직여 스티커 안전. 제목은 sticky(불투명 배경)로
@@ -1252,6 +1246,9 @@ body.cell-range-dragging {
   justify-content: center;
   align-items: flex-start; /* 미축소(1035px) 박스가 stage보다 커도 위를 맞춰 top-origin 축소와 정렬 */
   overflow: hidden;
+  /* 아바타 ON/OFF 시 margin이 변하며 일정표가 슬라이드 — 트랜지션을 base에 둬서 클래스가 빠지는
+     OFF 순간에도 부드럽게 되돌아온다(살짝 통통). */
+  transition: margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .poster-scaler {
   flex: 0 0 auto;
