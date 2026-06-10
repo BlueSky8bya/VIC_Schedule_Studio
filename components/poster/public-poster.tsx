@@ -917,11 +917,10 @@ export function PublicPoster({
   // 대회 한정 연출이라 owner가 고른 테마보다 우선해 모든 시청자에게 같은 분위기를 준다.
   const effectivePosterTheme = isWorldCupMonth(view.year, view.month) ? "worldcup" : posterTheme;
 
-  // 관리자 아바타 자리(스트리머 scene) — 우측 rail을 [compact legend + avatar]로 쪼갠다.
-  // 꾸미기(decorate)에선 강제 OFF: avatarOn으로 달력 폭이 줄면 그때 찍은 스티커가 시청자(avatar OFF)
-  // 화면과 어긋나므로, 스티커는 항상 시청자와 같은 지오메트리(avatar OFF)에서 찍게 한다.
-  // 따라서 avatar는 '미리보기(=스트리머 송출 화면)'에서만 켤 수 있다. localStorage는 owner 로컬.
-  const avatarCapable = avatarSlot && !decorateProp;
+  // 관리자 아바타 자리(스트리머 scene). 꾸미기(decorate)에서도 허용 — 현재 방식은 surface를 통째로
+  // uniform scale(축소)만 하므로 스티커 좌표(1840 design 기준)가 안 틀어진다(시청자=avatar OFF와도
+  // 동일 좌표). 캡처(PNG)는 export 표면 밖이라 아바타가 안 들어간다. localStorage는 owner 로컬.
+  const avatarCapable = avatarSlot;
   // 편집실(studio-shell)에서 controlled로 내려주면(onAvatarToggle 존재) 그 상태/세터를 그대로 쓴다 →
   // 편집실↔미리보기가 같은 상태를 공유(켠 채 넘어가도 켜져 있음). 그 외(미설정)엔 내부 상태+localStorage.
   const avatarControlled = typeof onAvatarToggle === "function";
