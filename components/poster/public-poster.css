@@ -757,36 +757,56 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* 관리자 아바타 자리 — 웹 전용. 벤치마크: Twitch Extensions(영상 일부만 차지·숨김 가능한 컴포넌트)
-   + focus+context(달력=focus, 아바타=presence). full-height 세로 광고판이 아니라 '하단 코너 shelf':
-   항상 bottom 고정, 높이는 clamp로 화면 전체가 아니라 코너만 차지(상단까지 안 올라감). 위쪽 공간은
-   달력이 그대로 쓴다(footprint만 회피). 보통 비는 하단 우측(다음 달 칸/legend 옆)에 얹혀 일정도
-   거의 안 가린다. pointer-events:none(아래 조작 안 막음), export 표면 밖(PNG 제외).
-   모바일은 아젠다(목록)라 미렌더(웹 전용). */
-.poster-fit.has-avatar-slot {
-  display: block;
-  position: relative;
-}
+/* 관리자 아바타 자리(스트리머 scene) — 웹 전용. 벤치마크: Twitch Extensions(컴포넌트) +
+   focus+context(달력=focus, 아바타=presence). avatar는 우측 rail '안'의 일반 레이아웃 아이템
+   (오버레이 아님) → 달력/legend 위를 안 덮는다. avatar OFF면 안 그림(기본 레이아웃 그대로).
+   surface는 고정 1840 캔버스라 폭은 그대로, 내부 그리드만 reflow: 우측 rail을 넓히고 달력은 그만큼
+   좁아진다(시청자=avatarSlot false 무영향, 꾸미기=avatarCapable false라 스티커 지오메트리 보호).
+   rail은 위=legend(compact+scroll), 아래=avatar(~46%) → 셀/legend와 겹침 없고 빈 공간 낭비 0. */
 .avatar-slot {
-  position: absolute;
-  bottom: clamp(16px, 2vh, 40px);
-  right: 24px;
-  width: clamp(320px, 22vw, 720px);
-  height: clamp(360px, 48vh, 760px);
-  max-height: 60%; /* 코너 shelf — 포스터 높이의 60%를 넘지 않음(세로 광고판 금지) */
-  box-sizing: border-box;
-  pointer-events: none;
-  z-index: 6; /* 표면 콘텐츠 위(스티커 레이어 z5보다 위) */
-  display: flex;
-  opacity: 0;
-  transform: translateY(12px) scale(0.98);
-  transition:
-    opacity 0.35s var(--ease, ease),
-    transform 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+  display: none; /* 기본(scene 아님)엔 안 보임 */
 }
-.poster-fit.has-avatar-slot.avatar-open .avatar-slot {
-  opacity: 1;
-  transform: none;
+.poster-surface {
+  transition: grid-template-columns 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+.poster-page.avatar-scene .poster-surface {
+  /* 우측 rail 확장(메모는 유지). 달력 1fr이 그만큼 좁아짐(고정 1840 안에서 reflow). */
+  grid-template-columns: 238px minmax(0, 1fr) 360px;
+}
+.poster-page.avatar-scene .public-right {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 10px;
+}
+/* legend: 남은 높이 + 내부 스크롤. 제목은 sticky로 스크롤해도 보임. */
+.poster-page.avatar-scene .public-legend-vertical {
+  flex: 1 1 auto;
+  min-height: 140px;
+  overflow-y: auto;
+}
+.poster-page.avatar-scene .public-legend-vertical .legend-title {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, var(--surface-2, #fffdf6) 70%, transparent);
+}
+/* avatar: rail 하단 footprint. 화면 전체가 아니라 rail의 ~46%(세로 광고판 금지). */
+.poster-page.avatar-scene .avatar-slot {
+  display: flex;
+  flex: 0 0 46%;
+  min-height: 180px;
+  max-height: 540px;
+  box-sizing: border-box;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: avatar-rise 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) 0.05s forwards;
+}
+@keyframes avatar-rise {
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 .avatar-dock-inner {
   flex: 1 1 auto;
@@ -814,17 +834,29 @@ html {
   letter-spacing: 0.02em;
   user-select: none;
 }
-/* prefers-reduced-motion·사용자 '동작 줄이기'(html[data-reduce-motion]) 존중 — 등장 모션만 끔. */
-html[data-reduce-motion] .avatar-slot {
-  transition: opacity 0.2s ease;
+/* prefers-reduced-motion·사용자 '동작 줄이기'(html[data-reduce-motion]) 존중 — reflow·등장 모션 끔. */
+@media (prefers-reduced-motion: reduce) {
+  .poster-surface,
+  .poster-page.avatar-scene .avatar-slot {
+    transition: none;
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-reduce-motion] .poster-surface,
+html[data-reduce-motion] .poster-page.avatar-scene .avatar-slot {
+  transition: none;
+  animation: none;
+  opacity: 1;
   transform: none;
 }
-html[data-reduce-motion] .poster-fit.has-avatar-slot.avatar-open .avatar-slot {
-  transform: none;
-}
-/* 좁은 화면(<1100px)에선 아바타 자리를 끈다 — 달력이 너무 좁아지지 않게(WCAG 가독성). */
+/* 좁은 화면(<1100px)에선 scene을 끈다 — 달력이 너무 좁아지지 않게(WCAG 가독성). */
 @media (max-width: 1099px) {
-  .avatar-slot {
+  .poster-page.avatar-scene .poster-surface {
+    grid-template-columns: 238px minmax(0, 1fr) 220px;
+  }
+  .poster-page.avatar-scene .avatar-slot {
     display: none;
   }
 }
@@ -886,13 +918,6 @@ body.cell-range-dragging {
     transition: none;
   }
   .avatar-ctl-toggle:active {
-    transform: none;
-  }
-  .avatar-slot {
-    transition: opacity 0.2s ease;
-    transform: none;
-  }
-  .poster-fit.has-avatar-slot.avatar-open .avatar-slot {
     transform: none;
   }
 }

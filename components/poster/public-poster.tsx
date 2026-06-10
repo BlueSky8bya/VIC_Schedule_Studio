@@ -908,11 +908,14 @@ export function PublicPoster({
   // 대회 한정 연출이라 owner가 고른 테마보다 우선해 모든 시청자에게 같은 분위기를 준다.
   const effectivePosterTheme = isWorldCupMonth(view.year, view.month) ? "worldcup" : posterTheme;
 
-  // 관리자 아바타 자리 — 우측 고정(웹 전용). 켜기/끄기만 관리자 로컬 취향이라 localStorage에
-  // 저장한다(서버/시청자와 무관, owner 기기에서만 복원). avatarSlot capability일 때만 의미.
+  // 관리자 아바타 자리(스트리머 scene) — 우측 rail을 [compact legend + avatar]로 쪼갠다.
+  // 꾸미기(decorate)에선 강제 OFF: avatarOn으로 달력 폭이 줄면 그때 찍은 스티커가 시청자(avatar OFF)
+  // 화면과 어긋나므로, 스티커는 항상 시청자와 같은 지오메트리(avatar OFF)에서 찍게 한다.
+  // 따라서 avatar는 '미리보기(=스트리머 송출 화면)'에서만 켤 수 있다. localStorage는 owner 로컬.
+  const avatarCapable = avatarSlot && !decorateProp;
   const [avatarOn, setAvatarOn] = useState(true);
   useEffect(() => {
-    if (!avatarSlot || typeof window === "undefined") {
+    if (!avatarCapable || typeof window === "undefined") {
       return;
     }
     try {
@@ -920,7 +923,7 @@ export function PublicPoster({
     } catch {
       /* 저장소 불가 환경 무시 */
     }
-  }, [avatarSlot]);
+  }, [avatarCapable]);
   function toggleAvatarOn() {
     hapticTick();
     setAvatarOn((v) => {
@@ -2786,7 +2789,9 @@ export function PublicPoster({
 
   return (
     <main
-      className={`poster-page${accountSwitch ? " poster-readonly" : ""}`}
+      className={`poster-page${accountSwitch ? " poster-readonly" : ""}${
+        avatarCapable && avatarOn ? " avatar-scene" : ""
+      }`}
       data-poster-theme={effectivePosterTheme}
     >
       {celebrate ? (
@@ -2882,7 +2887,7 @@ export function PublicPoster({
         {showAgenda ? null : (
           <header className="public-calendar-header">
             <div className="header-left">
-              {avatarSlot ? (
+              {avatarCapable ? (
                 <div className="avatar-ctl" role="group" aria-label="아바타 자리 설정(관리자 전용)">
                   <button
                     type="button"
@@ -3525,12 +3530,7 @@ export function PublicPoster({
         ) : null}
 
         {showAgenda ? null : (
-        <div
-          className={`poster-fit${avatarSlot ? " has-avatar-slot" : ""}${
-            avatarSlot && avatarOn ? " avatar-open" : ""
-          }`}
-          ref={posterFitRef}
-        >
+        <div className="poster-fit" ref={posterFitRef}>
         <div
           className="poster-stage"
           ref={posterStageRef}
@@ -3723,17 +3723,20 @@ export function PublicPoster({
                 </div>
               ) : null}
             </div>
+            {/* 스트리머 scene: avatar는 우측 rail '하단'에 일반 레이아웃 아이템으로(오버레이 아님).
+                legend(위)는 compact+scroll, avatar(아래)는 footprint 확보 → 달력/legend와 안 겹침.
+                꾸미기에선 avatarCapable=false라 안 뜸(스티커 지오메트리 보호). */}
+            {avatarCapable ? (
+              <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
+                <div className="avatar-dock-inner">
+                  <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
+                </div>
+              </aside>
+            ) : null}
           </aside>
         </section>
         </div>
         </div>
-        {avatarSlot ? (
-          <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
-            <div className="avatar-dock-inner">
-              <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
-            </div>
-          </aside>
-        ) : null}
         </div>
         )}
       </section>
