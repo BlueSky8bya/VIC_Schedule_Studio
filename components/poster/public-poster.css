@@ -769,6 +769,12 @@ html {
 /* scene: 달력 전체(stage)를 왼쪽으로 슬라이드+축소하고, 우측 1/4(25vw)에 avatar 자리.
    surface 내부(메모·달력·legend) 폭은 '그대로' — stage는 uniform scale만 하므로 스티커 좌표가
    안 틀어진다. (이전처럼 surface 내부 컬럼을 넓히면 달력이 좁아져 스티커가 어긋났음.) */
+/* scene에선 shell의 1840 상한을 풀어 화면 풀폭을 쓴다 — 안 그러면 1840 안에 갇혀 우측에
+   여백이 남고 아바타가 화면 끝 1/4에 안 붙는다. 달력(stage)은 cap 1.6까지 커져 좌측을 채운다. */
+.poster-page.avatar-scene .public-calendar-shell {
+  width: 100%;
+  max-width: none;
+}
 .poster-page.avatar-scene .poster-fit {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 25vw;
@@ -782,11 +788,25 @@ html {
 .poster-page.avatar-scene .poster-scaler {
   transform-origin: top left; /* 왼쪽 기준 축소 */
 }
-/* avatar: 우측 1/4 칸 '하단'에 자리. 위쪽은 페이지 배경(빈 박스 아님) → 광고판 느낌 없음. */
+/* legend(색상 안내): 폭은 그대로(컬럼 220) — 높이만 압축한다. flex:1 stretch를 풀어 내용 높이로
+   만들고 위로 모은다(공간을 고르게 흩뿌리던 space-evenly 해제). 폭 불변이라 달력 셀이 안 움직여
+   스티커 좌표 안전(높이 변화는 달력 셀 위치와 무관). 압축으로 비는 컬럼 하단은 아바타 쪽과 정렬. */
+.poster-page.avatar-scene .public-right .public-legend-vertical {
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  gap: 2px;
+  padding: 8px 12px;
+}
+.poster-page.avatar-scene .legend-heart-help {
+  margin-top: 4px;
+  padding-top: 6px;
+}
+/* avatar: 우측 1/4 칸 '하단'에 자리. 위쪽은 페이지 배경(빈 박스 아님) → 세로 광고판 아님.
+   placeholder는 은은하게(연한 점선) — 실제 아바타가 들어가기 전 빈 느낌을 최소화. */
 .poster-page.avatar-scene .avatar-slot {
   display: flex;
   align-self: end;
-  height: clamp(340px, 58vh, 900px);
+  height: clamp(260px, 40vh, 560px);
   max-height: 100%;
   box-sizing: border-box;
   opacity: 0;
@@ -803,25 +823,18 @@ html {
   flex: 1 1 auto;
   min-width: 0;
   box-sizing: border-box;
-  border: 2px dashed #c9b8e6;
+  border: 1.5px dashed rgb(155 134 194 / 45%);
   border-radius: 18px;
-  background:
-    repeating-linear-gradient(
-      135deg,
-      rgb(201 184 230 / 8%) 0,
-      rgb(201 184 230 / 8%) 12px,
-      transparent 12px,
-      transparent 24px
-    );
+  background: rgb(201 184 230 / 5%);
   display: flex;
   align-items: flex-end;
   justify-content: center;
   padding-bottom: 16px;
 }
 .avatar-slot-hint {
-  font-size: 17px;
-  font-weight: 800;
-  color: #9b86c2;
+  font-size: 15px;
+  font-weight: 700;
+  color: rgb(155 134 194 / 70%);
   letter-spacing: 0.02em;
   user-select: none;
 }
