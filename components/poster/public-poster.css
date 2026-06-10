@@ -754,59 +754,50 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* 관리자 아바타 자리 — 웹 전용, 우측 고정. poster-fit을 가로 flex로 두고 stage(달력)는
-   좌측에서 남은 폭을 꽉 채우며(왼쪽에 딱 붙음), 우측에 아바타 자리(화면 폭 ~1/3)를 비운다.
-   켜질 때 avatar-slot의 flex-basis가 0→33vw로 트랜지션 → stage 폭이 줄고, JS 스케일러가
-   ResizeObserver로 매 프레임 배율을 다시 잡아 달력이 부드럽게 축소·좌측 정렬된다. 겹침 없음.
-   export 표면(data-export-surface) 바깥이라 PNG엔 안 들어간다.
+/* 관리자 아바타 자리 — 웹 전용. 벤치마크: OBS '저스트채팅'/트위치 — 콘텐츠(달력)는 풀폭
+   그대로 두고, 아바타만 우하단 코너에 반신 오버레이로 띄운다. 달력을 안 줄여 제일 크게 보이고,
+   보통 비는 하단 우측(다음 달 칸) 위에 얹혀 일정도 거의 안 가린다. 빈 박스 낭비 0.
+   pointer-events:none이라 아래 달력 조작을 막지 않고, export 표면 밖이라 PNG엔 안 들어간다.
    모바일은 아젠다(목록)라 이 래퍼 자체가 렌더되지 않아 영향이 없다(웹 전용). */
 .poster-fit.has-avatar-slot {
-  display: flex;
-  align-items: flex-start;
-  gap: 0;
-}
-.poster-fit.has-avatar-slot .poster-stage {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-/* 좌측 정렬·좌측 기준 축소는 '켜졌을 때만' — 꺼져 있으면 평소처럼 가운데 정렬(우측 낭비 없음). */
-.poster-fit.has-avatar-slot.avatar-open .poster-stage {
-  justify-content: flex-start;
-}
-.poster-fit.has-avatar-slot.avatar-open .poster-scaler {
-  transform-origin: top left;
+  display: block;
+  position: relative;
 }
 .avatar-slot {
-  flex: 0 0 0; /* 꺼짐: 폭 0 */
-  align-self: stretch; /* 달력 높이만큼 */
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  width: 21%;
+  height: 62%;
   box-sizing: border-box;
-  overflow: hidden;
-  opacity: 0;
   border: 2px dashed #c9b8e6;
   border-radius: 18px;
   background:
     repeating-linear-gradient(
       135deg,
-      rgb(201 184 230 / 7%) 0,
-      rgb(201 184 230 / 7%) 12px,
+      rgb(201 184 230 / 8%) 0,
+      rgb(201 184 230 / 8%) 12px,
       transparent 12px,
       transparent 24px
     );
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
+  padding-bottom: 16px;
+  z-index: 6; /* 표면 콘텐츠 위(스티커 레이어 z5보다 위) */
+  pointer-events: none; /* 표시용 — 아래 달력 조작을 막지 않는다 */
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
   transition:
-    flex-basis 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)),
-    opacity 0.4s var(--ease, ease),
-    margin-left 0.5s var(--ease, ease);
+    opacity 0.35s var(--ease, ease),
+    transform 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
 .poster-fit.has-avatar-slot.avatar-open .avatar-slot {
-  flex-basis: 25vw; /* 켜짐: 모니터 폭의 1/4 고정 */
   opacity: 1;
-  margin-left: 16px;
+  transform: none;
 }
 .avatar-slot-hint {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 800;
   color: #9b86c2;
   letter-spacing: 0.02em;
@@ -873,7 +864,11 @@ body.cell-range-dragging {
     transform: none;
   }
   .avatar-slot {
-    transition: opacity 0.2s ease; /* 폭 애니메이션은 끄고 즉시 전환 */
+    transition: opacity 0.2s ease;
+    transform: none;
+  }
+  .poster-fit.has-avatar-slot.avatar-open .avatar-slot {
+    transform: none;
   }
 }
 
