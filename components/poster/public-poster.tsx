@@ -158,6 +158,11 @@ type PublicPosterProps = {
   // export 표면(data-export-surface) 바깥이라 PNG 캡처엔 안 들어가고, 화면 송출 시 그 자리에
   // 아바타를 올리는 용도. 시청자/익명에겐 절대 안 보인다(owner일 때만 true로 넘긴다).
   avatarSlot?: boolean;
+  // 편집실에서 아바타 상태를 controlled로 공유(편집실↔미리보기 동기화). 주어지면 내부 상태 대신 사용.
+  avatarOn?: boolean;
+  avatarSide?: "left" | "right";
+  onAvatarToggle?: () => void;
+  onAvatarSide?: (side: "left" | "right") => void;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -615,7 +620,11 @@ export function PublicPoster({
   anonymous = false,
   previewNote,
   previewNav,
-  avatarSlot = false
+  avatarSlot = false,
+  avatarOn: avatarOnProp,
+  avatarSide: avatarSideProp,
+  onAvatarToggle,
+  onAvatarSide
 }: PublicPosterProps) {
   // 스티커 저장/삭제가 서버에 들어가는 동안만 세는 카운터(아래 beforeunload 경고용).
   // 실제 전송은 keepalive fetch(/api/sticker-write)로 보낸다 → 스티커를 옮기/추가/삭제하고 바로
@@ -913,22 +922,25 @@ export function PublicPoster({
   // 화면과 어긋나므로, 스티커는 항상 시청자와 같은 지오메트리(avatar OFF)에서 찍게 한다.
   // 따라서 avatar는 '미리보기(=스트리머 송출 화면)'에서만 켤 수 있다. localStorage는 owner 로컬.
   const avatarCapable = avatarSlot && !decorateProp;
-  const [avatarOn, setAvatarOn] = useState(true);
-  const [avatarSide, setAvatarSide] = useState<"left" | "right">("right");
+  // 편집실(studio-shell)에서 controlled로 내려주면(onAvatarToggle 존재) 그 상태/세터를 그대로 쓴다 →
+  // 편집실↔미리보기가 같은 상태를 공유(켠 채 넘어가도 켜져 있음). 그 외(미설정)엔 내부 상태+localStorage.
+  const avatarControlled = typeof onAvatarToggle === "function";
+  const [avatarOnState, setAvatarOnState] = useState(true);
+  const [avatarSideState, setAvatarSideState] = useState<"left" | "right">("left"); // 최초 디폴트 왼쪽
   useEffect(() => {
-    if (!avatarCapable || typeof window === "undefined") {
+    if (avatarControlled || !avatarCapable || typeof window === "undefined") {
       return;
     }
     try {
-      if (window.localStorage.getItem("vic_avatar_on") === "0") setAvatarOn(false);
-      if (window.localStorage.getItem("vic_avatar_side") === "left") setAvatarSide("left");
+      if (window.localStorage.getItem("vic_avatar_on") === "0") setAvatarOnState(false);
+      if (window.localStorage.getItem("vic_avatar_side") === "right") setAvatarSideState("right");
     } catch {
       /* 저장소 불가 환경 무시 */
     }
-  }, [avatarCapable]);
-  function toggleAvatarOn() {
+  }, [avatarControlled, avatarCapable]);
+  function toggleAvatarOnInternal() {
     hapticTick();
-    setAvatarOn((v) => {
+    setAvatarOnState((v) => {
       const next = !v;
       try {
         window.localStorage.setItem("vic_avatar_on", next ? "1" : "0");
@@ -938,15 +950,19 @@ export function PublicPoster({
       return next;
     });
   }
-  function pickAvatarSide(side: "left" | "right") {
+  function pickAvatarSideInternal(side: "left" | "right") {
     hapticTick();
-    setAvatarSide(side);
+    setAvatarSideState(side);
     try {
       window.localStorage.setItem("vic_avatar_side", side);
     } catch {
       /* 무시 */
     }
   }
+  const avatarOn = avatarControlled ? avatarOnProp ?? true : avatarOnState;
+  const avatarSide = avatarControlled ? avatarSideProp ?? "left" : avatarSideState;
+  const toggleAvatarOn = avatarControlled ? onAvatarToggle! : toggleAvatarOnInternal;
+  const pickAvatarSide = avatarControlled ? onAvatarSide! : pickAvatarSideInternal;
 
   // 스티커는 달(월)마다 따로 — 현재 보는 달의 스티커만 로컬 상태로 다룬다.
   const monthStickers = (year: number, month: number) =>
@@ -2333,7 +2349,9 @@ export function PublicPoster({
           <strong className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}>
             {cell.dayOfMonth} 일
           </strong>
-          {day.markName ? <em className="day-mark">{day.markName}</em> : null}
+          {day.markName ? (
+            <em className={`day-mark${day.markKind ? ` ${day.markKind}` : ""}`}>{day.markName}</em>
+          ) : null}
         </div>
         <div
           className="day-events"

@@ -827,12 +827,13 @@ export function StudioShell({
   // 아바타 자리를 둔다(관리자·개발자, 데스크탑). 시청자 미리보기 토글과 같은 localStorage 키 공유.
   const avatarEditor = (isEffectivelyOwner || isDeveloper) && !isNarrow;
   const [avatarOn, setAvatarOn] = useState(true);
-  const [avatarSide, setAvatarSide] = useState<"left" | "right">("right");
+  // 최초(메모리 없음) 디폴트는 '왼쪽', 이후엔 마지막 값(편집실·미리보기 공유) 복원.
+  const [avatarSide, setAvatarSide] = useState<"left" | "right">("left");
   useEffect(() => {
     if (!avatarEditor || typeof window === "undefined") return;
     try {
       if (window.localStorage.getItem("vic_avatar_on") === "0") setAvatarOn(false);
-      if (window.localStorage.getItem("vic_avatar_side") === "left") setAvatarSide("left");
+      if (window.localStorage.getItem("vic_avatar_side") === "right") setAvatarSide("right");
     } catch {
       /* 저장소 불가 무시 */
     }
@@ -4090,6 +4091,10 @@ export function StudioShell({
         ) : null}
         <PublicPoster
           avatarSlot={isEffectivelyOwner || isDeveloper}
+          avatarOn={avatarOn}
+          avatarSide={avatarSide}
+          onAvatarToggle={toggleAvatarOn}
+          onAvatarSide={pickAvatarSide}
           initialMonth={view.month}
           initialNarrow={isNarrow}
           initialYear={view.year}
@@ -4506,7 +4511,11 @@ export function StudioShell({
                   })}
                   <div className="studio-day-head">
                     <strong className={numClass}>{cell.dayOfMonth}</strong>
-                    {day.markName ? <em className="day-mark">{day.markName}</em> : null}
+                    {day.markName ? (
+                      <em className={`day-mark${day.markKind ? ` ${day.markKind}` : ""}`}>
+                        {day.markName}
+                      </em>
+                    ) : null}
                   </div>
                   <div
                     className="studio-event-list"

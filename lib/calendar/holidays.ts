@@ -9,6 +9,7 @@ import { getWorldCupMark } from "@/lib/calendar/worldcup";
 export type DayMark = {
   name: string;
   isHoliday: boolean; // true면 빨간날(공휴일/대체공휴일), false면 단순 표기(기념일/절기)
+  kind?: "wc" | "wc-korea" | "wc-final"; // 월드컵 표기는 특별 스타일(화려하게)
 };
 
 // 매년 고정(양력) 공휴일 — 빨간날
@@ -421,10 +422,14 @@ export function getDayMark(isoDate: string): DayMark | null {
   if (sub) {
     return { name: sub, isHoliday: true };
   }
-  // 월드컵 표기(개막/단계/한국 경기)는 빨간날 다음, 기념일·절기보다 우선.
+  // 월드컵 표기(개막/단계/한국 경기)는 빨간날 다음, 기념일·절기보다 우선. 화려한 스타일용 kind 부여.
   const wc = getWorldCupMark(isoDate);
   if (wc) {
-    return { name: wc.name, isHoliday: false };
+    return {
+      name: wc.name,
+      isHoliday: false,
+      kind: wc.isKorea ? "wc-korea" : wc.isFinal ? "wc-final" : "wc"
+    };
   }
   // 스트리머 기념일은 절기/일반 기념일보다 우선 표기
   if (STREAMER_ONCE[isoDate]) {

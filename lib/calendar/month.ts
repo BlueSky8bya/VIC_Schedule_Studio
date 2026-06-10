@@ -7,7 +7,7 @@ import type {
   TagKind
 } from "@/lib/domain/schedule-types";
 import { PRODUCT_TIMEZONE } from "@/lib/domain/schedule-types";
-import { getDayMark } from "@/lib/calendar/holidays";
+import { getDayMark, type DayMark } from "@/lib/calendar/holidays";
 import { isPatternColor } from "@/lib/tags/color-gen";
 import type { CSSProperties } from "react";
 
@@ -35,6 +35,7 @@ export type DayState = {
   isSaturday: boolean;
   isRed: boolean; // 일요일/공휴일/대체공휴일
   markName: string | null; // 공휴일/기념일/절기 표기
+  markKind: DayMark["kind"]; // 월드컵 등 특별 표기 스타일 구분
 };
 
 export function classifyDay(
@@ -52,7 +53,8 @@ export function classifyDay(
     isSunday,
     isSaturday,
     isRed: isSunday || Boolean(mark?.isHoliday),
-    markName: mark?.name ?? null
+    markName: mark?.name ?? null,
+    markKind: mark?.kind
   };
 }
 

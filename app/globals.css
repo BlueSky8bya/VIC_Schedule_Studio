@@ -1,3 +1,50 @@
+/* ── 월드컵 일정 표기(day-mark) 화려하게 — 편집실·시청자 포스터 공통 ── */
+/* 단계(개막/32강/16강/8강/4강/3·4위전): 진한 초록 + 굵게. */
+.day-mark.wc {
+  font-style: normal;
+  font-weight: 900;
+  color: #15803d;
+  letter-spacing: -0.01em;
+}
+/* 한국 경기: 태극 적·청 그라데이션 알약 + 흰 글씨 + 은은한 맥동(국기 강조). */
+.day-mark.wc-korea {
+  display: inline-block;
+  font-style: normal;
+  font-weight: 900;
+  color: #fff;
+  background: linear-gradient(90deg, #cd2e3a 0%, #cd2e3a 45%, #0047a0 55%, #0047a0 100%);
+  padding: 1px 8px;
+  border-radius: 999px;
+  box-shadow: 0 1px 5px rgb(205 46 58 / 35%);
+  letter-spacing: -0.01em;
+  animation: wc-korea-pulse 1.8s ease-in-out infinite;
+}
+@keyframes wc-korea-pulse {
+  0%,
+  100% {
+    box-shadow: 0 1px 5px rgb(205 46 58 / 35%);
+  }
+  50% {
+    box-shadow: 0 1px 12px rgb(0 71 160 / 55%);
+  }
+}
+/* 결승: 금빛 + 반짝. */
+.day-mark.wc-final {
+  font-style: normal;
+  font-weight: 900;
+  color: #b8860b;
+  text-shadow: 0 0 7px rgb(255 215 0 / 60%);
+  letter-spacing: -0.01em;
+}
+@media (prefers-reduced-motion: reduce) {
+  .day-mark.wc-korea {
+    animation: none;
+  }
+}
+html[data-reduce-motion] .day-mark.wc-korea {
+  animation: none;
+}
+
 /* 배포 버전(커밋 해시) — 왼쪽 아래 아주 연하고 작게. 클릭/캡처 방해 안 함. */
 .build-tag {
   position: fixed;
