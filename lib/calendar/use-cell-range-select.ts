@@ -149,7 +149,7 @@ export function useCellRangeSelect<T extends HTMLElement>({
         dragging = false;
         startX = e.clientX;
         startY = e.clientY;
-        apply(new Set()); // 시트처럼 새 드래그는 기존 선택을 지우고 시작
+        apply(new Set([i])); // 시트처럼 누른 한 칸을 바로 선택(드래그하면 범위로 확장)
         window.addEventListener("pointermove", onMove);
         window.addEventListener("pointerup", onUp);
       };
