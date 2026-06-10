@@ -836,7 +836,10 @@ export function StudioShell({
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
-  const avatarEditor = (isEffectivelyOwner || isDeveloper) && !isNarrow && avatarWideEnough;
+  // 아바타 자리는 관리자(owner)·개발자만. 개발자가 매니저/작업자/시청자로 '미리보기' 중이면
+  // 그 역할엔 안 보여야 하므로 raw isDeveloper가 아니라 effectiveRole로 판정.
+  const avatarRoleOk = effectiveRole === "owner" || effectiveRole === "developer";
+  const avatarEditor = avatarRoleOk && !isNarrow && avatarWideEnough;
   const [avatarOn, setAvatarOn] = useState(true);
   // 최초(메모리 없음) 디폴트는 '왼쪽', 이후엔 마지막 값(편집실·미리보기 공유) 복원.
   const [avatarSide, setAvatarSide] = useState<"left" | "right">("left");
@@ -4109,7 +4112,7 @@ export function StudioShell({
           </div>
         ) : null}
         <PublicPoster
-          avatarSlot={isEffectivelyOwner || isDeveloper}
+          avatarSlot={avatarRoleOk}
           avatarOn={avatarOn}
           avatarSide={avatarSide}
           onAvatarToggle={toggleAvatarOn}
