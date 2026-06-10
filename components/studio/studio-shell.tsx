@@ -811,6 +811,21 @@ export function StudioShell({
   const [editorKey, setEditorKey] = useState(0);
   const bumpEditor = () => setEditorKey((k) => k + 1);
 
+  // 편집패널 여닫는 동안(폭 트랜지션)만 true → 달력 컨테이너쿼리(cqi) 글자 추적을 잠근다(CSS .cal-anim).
+  // 폭이 매 프레임 바뀌면 모든 일정 글자 font-size(cqi)가 재계산+reflow되며 '툭툭' 끊기던 주범 →
+  // 트랜지션 동안엔 고정 px로 잠그고(재계산 0), 끝나면 cqi 복귀해 최종 폭에 맞게 1회 정착.
+  const [calAnim, setCalAnim] = useState(false);
+  const calAnimFirstRef = useRef(true);
+  useEffect(() => {
+    if (calAnimFirstRef.current) {
+      calAnimFirstRef.current = false; // 첫 마운트엔 트랜지션이 없으니 잠그지 않는다(초기 글자 깜빡임 방지).
+      return;
+    }
+    setCalAnim(true);
+    const id = window.setTimeout(() => setCalAnim(false), 480);
+    return () => window.clearTimeout(id);
+  }, [editorVisible]);
+
   // 개발자 전용 "역할 미리보기"(보기 전용). 클라이언트 한정 — 쿠키/라우트는 절대 안 건드린다.
   // previewRole이 있으면 UI를 그 역할처럼 그린다(데이터·서버 권한은 그대로, 변경은 차단).
   // 새로고침하면 자동 해제(SSR은 항상 실제 역할로 렌더)되어 라우팅/쿠키 엉킴이 없다.
@@ -4409,7 +4424,9 @@ export function StudioShell({
         </div>
       ) : null}
 
-      <section className={`studio-workspace ${editorVisible ? "editor-open" : ""}`}>
+      <section
+        className={`studio-workspace ${editorVisible ? "editor-open" : ""} ${calAnim ? "cal-anim" : ""}`}
+      >
         {/* 아바타 scene에선 색상필터가 우측 rail로 가므로 좌측 칸은 비운다(칸 폭도 0). */}
         <aside className="studio-left-panel">{avatarSceneOn ? null : studioFilterPanel}</aside>
 

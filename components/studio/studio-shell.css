@@ -5258,6 +5258,18 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   container: studioCal / inline-size;
 }
 
+/* 편집패널 여닫는 동안(JS .cal-anim, ~0.48s)엔 달력 컨테이너쿼리(cqi)를 잠가 글자 재계산을 막는다.
+   폭이 매 프레임 바뀌면 요일·일정 글자 font-size(cqi)가 전부 재계산+reflow되며 '툭툭' 끊겼다 —
+   container-type를 normal로 풀고 글자를 고정 px로 둬 트랜지션 내내 재계산 0 → 부드럽게. 끝나면
+   원래 cqi로 복귀해 최종 폭에 맞는 크기로 1회만 정착(텍스트 줄바꿈 reflow만 남아 부담이 작다). */
+.studio-workspace.cal-anim .studio-calendar-panel {
+  container-type: normal;
+}
+.studio-workspace.cal-anim .studio-weekdays span,
+.studio-workspace.cal-anim .pill-main strong {
+  font-size: 15px;
+}
+
 .studio-weekdays,
 .studio-month-grid {
   display: grid;
