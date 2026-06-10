@@ -754,21 +754,34 @@ html {
   scrollbar-gutter: stable;
 }
 
-/* 관리자 아바타 자리 — 웹 전용. 벤치마크: OBS '저스트채팅'/트위치 — 콘텐츠(달력)는 풀폭
-   그대로 두고, 아바타만 우하단 코너에 반신 오버레이로 띄운다. 달력을 안 줄여 제일 크게 보이고,
-   보통 비는 하단 우측(다음 달 칸) 위에 얹혀 일정도 거의 안 가린다. 빈 박스 낭비 0.
-   pointer-events:none이라 아래 달력 조작을 막지 않고, export 표면 밖이라 PNG엔 안 들어간다.
-   모바일은 아젠다(목록)라 이 래퍼 자체가 렌더되지 않아 영향이 없다(웹 전용). */
+/* 관리자 아바타 도크 — 웹 전용. 벤치마크: Twitch Extensions(영상 일부를 차지하고 숨길 수 있는
+   컴포넌트). 오버레이로 달력을 가리지 않고, 우측에 도크를 '예약'한다 → 달력(stage)은 도크 폭만큼
+   부드럽게 옆으로 접힌다(grid-template-columns 트랜지션). 포스터는 고정 1840 캔버스를 JS가 scale
+   하므로, stage 폭이 줄면 ResizeObserver가 배율을 다시 잡아 달력이 도크 옆에 딱 맞게 들어간다.
+   도크는 export 표면 밖이라 PNG엔 안 들어간다. 모바일은 아젠다(목록)라 미렌더(웹 전용). */
 .poster-fit.has-avatar-slot {
-  display: block;
-  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 0px; /* 꺼짐: 도크 0 */
+  align-items: start;
+  transition: grid-template-columns 0.45s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+.poster-fit.has-avatar-slot.avatar-open {
+  grid-template-columns: minmax(0, 1fr) clamp(300px, 22vw, 420px); /* 켜짐: 도크 예약 */
+}
+.poster-fit.has-avatar-slot .poster-stage {
+  min-width: 0;
 }
 .avatar-slot {
-  position: absolute;
-  right: 10px;
-  bottom: 10px;
-  width: 21%;
-  height: 62%;
+  min-width: 0;
+  overflow: hidden; /* 도크 폭 0일 때 안쪽을 깔끔히 자른다 */
+  align-self: stretch; /* 달력 높이만큼 */
+  display: flex;
+  padding-left: 16px; /* 달력과의 간격(열림 때만 의미) */
+  box-sizing: border-box;
+}
+.avatar-dock-inner {
+  flex: 1 1 auto;
+  min-width: 0;
   box-sizing: border-box;
   border: 2px dashed #c9b8e6;
   border-radius: 18px;
@@ -781,18 +794,16 @@ html {
       transparent 24px
     );
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding-bottom: 16px;
-  z-index: 6; /* 표면 콘텐츠 위(스티커 레이어 z5보다 위) */
-  pointer-events: none; /* 표시용 — 아래 달력 조작을 막지 않는다 */
+  /* 안쪽은 짧고 의미 있게(NN/g: brief·subtle) — 폭 슬라이드와 함께 살짝 밀려들어온다. */
   opacity: 0;
-  transform: translateY(10px) scale(0.98);
+  transform: translateX(16px);
   transition:
     opacity 0.35s var(--ease, ease),
     transform 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
 }
-.poster-fit.has-avatar-slot.avatar-open .avatar-slot {
+.poster-fit.has-avatar-slot.avatar-open .avatar-dock-inner {
   opacity: 1;
   transform: none;
 }
@@ -802,6 +813,27 @@ html {
   color: #9b86c2;
   letter-spacing: 0.02em;
   user-select: none;
+}
+/* 사용자 '동작 줄이기'(html[data-reduce-motion])도 존중 — 폭 슬라이드·밀림 끄고 즉시 전환. */
+html[data-reduce-motion] .poster-fit.has-avatar-slot {
+  transition: none;
+}
+html[data-reduce-motion] .avatar-dock-inner {
+  transition: opacity 0.2s ease;
+  transform: none;
+}
+html[data-reduce-motion] .poster-fit.has-avatar-slot.avatar-open .avatar-dock-inner {
+  transform: none;
+}
+/* 좁은 화면(<1100px)에선 도크를 끈다 — 달력이 너무 좁아지지 않게(WCAG 가독성). */
+@media (max-width: 1099px) {
+  .poster-fit.has-avatar-slot,
+  .poster-fit.has-avatar-slot.avatar-open {
+    grid-template-columns: minmax(0, 1fr) 0px;
+  }
+  .avatar-slot {
+    display: none;
+  }
 }
 
 /* 아바타 자리 설정 토글(관리자 전용) — 헤더 좌측 칸(.header-left)에 들어가 내관심·이동
@@ -863,11 +895,14 @@ body.cell-range-dragging {
   .avatar-ctl-toggle:active {
     transform: none;
   }
-  .avatar-slot {
+  .poster-fit.has-avatar-slot {
+    transition: none;
+  }
+  .avatar-dock-inner {
     transition: opacity 0.2s ease;
     transform: none;
   }
-  .poster-fit.has-avatar-slot.avatar-open .avatar-slot {
+  .poster-fit.has-avatar-slot.avatar-open .avatar-dock-inner {
     transform: none;
   }
 }
