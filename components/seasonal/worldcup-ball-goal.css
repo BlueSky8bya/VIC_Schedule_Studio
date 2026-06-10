@@ -64,16 +64,111 @@
   cursor: grabbing;
 }
 
-/* 골키퍼 — 골대 입구 앞. y는 JS가 transform으로 갱신. 시각 전용(클릭 통과). */
+/* 선수 AI — 작은 원. 위치는 JS가 transform으로. 팀별 색. 시각 전용(클릭 통과). */
+.wc-player {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1.5px rgb(255 255 255 / 85%),
+    0 2px 4px rgb(40 30 60 / 28%);
+  will-change: transform;
+}
+.wc-team-0 {
+  background: radial-gradient(circle at 35% 30%, #ff6a6a, #d92d2d);
+}
+.wc-team-1 {
+  background: radial-gradient(circle at 35% 30%, #6f9bff, #2f5fe0);
+}
+
+/* 골키퍼 — 원. 양 팀과 구분되는 색(좌=앰버, 우=틸). y는 JS가 transform으로 갱신. */
 .wc-keeper {
   position: absolute;
-  display: grid;
-  place-items: center;
-  font-size: 26px;
-  line-height: 1;
+  border-radius: 50%;
   pointer-events: none;
-  filter: drop-shadow(0 3px 4px rgb(40 30 60 / 30%));
+  box-shadow:
+    0 0 0 2px rgb(255 255 255 / 90%),
+    0 3px 6px rgb(40 30 60 / 32%);
   will-change: transform;
+}
+.wc-keeper-left {
+  background: radial-gradient(circle at 35% 30%, #ffd27a, #f59e0b);
+}
+.wc-keeper-right {
+  background: radial-gradient(circle at 35% 30%, #6ee7d8, #14b8a6);
+}
+
+/* 자동경기 토글 — 화면 하단 가운데, 앱 톤의 글래스 pill(주변과 어울리게). 유일하게 클릭 가능. */
+.wc-toggle {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  pointer-events: auto;
+  border: 1px solid rgb(120 110 160 / 22%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 72%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  padding: 7px 14px 7px 12px;
+  color: #5b5470;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 6px 18px -10px rgb(40 30 60 / 45%);
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.1s ease;
+}
+.wc-toggle:hover {
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 8px 22px -10px rgb(40 30 60 / 55%);
+}
+.wc-toggle:active {
+  transform: translateX(-50%) scale(0.96);
+}
+.wc-toggle-ico {
+  font-size: 11px;
+  line-height: 1;
+  opacity: 0.8;
+}
+.wc-toggle-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #c5c0d0;
+  box-shadow: 0 0 0 0 rgb(52 211 153 / 0%);
+}
+.wc-toggle.on {
+  color: #2f7a55;
+  border-color: rgb(52 211 153 / 45%);
+  background: rgb(236 253 245 / 82%);
+}
+.wc-toggle.on .wc-toggle-dot {
+  background: #34d399;
+  animation: wc-dot-pulse 1.6s ease-in-out infinite;
+}
+@keyframes wc-dot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(52 211 153 / 55%);
+  }
+  60% {
+    box-shadow: 0 0 0 5px rgb(52 211 153 / 0%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wc-toggle.on .wc-toggle-dot {
+    animation: none;
+  }
 }
 
 /* "막았다!" — 막힌 골대 쪽에 잠깐 뜬다. */

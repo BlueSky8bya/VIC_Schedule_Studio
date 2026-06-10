@@ -27,8 +27,7 @@ const GOAL_H = 120;
 const GOAL_MARGIN_PX = 6;
 const WALL_T = 10;
 const DRAG_BUFFER = 100;
-const KW = 16;
-const KH = 50;
+const KD = 34; // 골키퍼 원 지름
 const KEEPER_SPEED = 360;
 const GOAL_COOLDOWN_MS = 1400;
 const SAVE_COOLDOWN_MS = 350;
@@ -92,11 +91,10 @@ export function WorldCupBallGoal() {
     const bottom = { x0: g.x, y0: g.y + g.h, x1: g.x + g.w, y1: g.y + g.h + WALL_T };
     return [back, top, bottom];
   };
-  const keeperRect = (side: Side) => {
+  // 골키퍼는 원. 중심 x는 골대 입구 라인 안쪽, y는 공을 추적.
+  const keeperCenterX = (side: Side) => {
     const g = goalRect(side);
-    const x0 = side === "left" ? g.x + g.w - KW : g.x;
-    const cy = keeperY.current[side];
-    return { x0, y0: cy - KH / 2, x1: x0 + KW, y1: cy + KH / 2 };
+    return side === "left" ? g.x + g.w - KD / 2 : g.x + KD / 2;
   };
   // 선수가 들어갈 수 없는 필드 좌우 한계(골대 라인 사이).
   const fieldX = () => {
@@ -112,7 +110,7 @@ export function WorldCupBallGoal() {
   const placeKeepers = () => {
     (["left", "right"] as Side[]).forEach((s) => {
       const el = keeperRef.current[s];
-      if (el) el.style.transform = `translate3d(0, ${keeperY.current[s] - KH / 2}px, 0)`;
+      if (el) el.style.transform = `translate3d(0, ${keeperY.current[s] - KD / 2}px, 0)`;
     });
   };
   const placePlayers = () => {
@@ -180,17 +178,35 @@ export function WorldCupBallGoal() {
   };
 
   const doSave = (side: Side) => {
-    const now = performance.now();
-    if (now - saveAt.current < SAVE_COOLDOWN_MS) return;
-    saveAt.current = now;
+    const kx = keeperCenterX(side);
+    const ky = keeperY.current[side];
+    const minD = BALL / 2 + KD / 2;
+    const dx = pos.current.x - kx;
+    const dy = pos.current.y - ky;
+    const d = Math.hypot(dx, dy) || 1;
+    const ux = dx / d;
+    const uy = dy / d;
+    // 공을 키퍼 밖으로 밀어내고 법선 반사(튕김).
+    pos.current.x = kx + ux * minD;
+    pos.current.y = ky + uy * minD;
+    const vn = vel.current.x * ux + vel.current.y * uy;
+    if (vn < 0) {
+      vel.current.x -= (1 + BALL_BOUNCE) * vn * ux;
+      vel.current.y -= (1 + BALL_BOUNCE) * vn * uy;
+    }
+    // 필드 쪽으로 확실히 나가게(골대로 다시 안 빨려들게).
     const outward = side === "left" ? 1 : -1;
-    const sp = Math.max(220, Math.abs(vel.current.x) * 0.92);
-    vel.current.x = outward * sp;
-    vel.current.y += (pos.current.y - keeperY.current[side]) * 5;
-    vel.current.y = clamp(vel.current.y, -700, 700);
-    setSaveFlash(side);
-    window.setTimeout(() => setSaveFlash((s) => (s === side ? null : s)), 700);
-    hapticTick();
+    if (Math.sign(vel.current.x) !== outward || Math.abs(vel.current.x) < 140) {
+      vel.current.x = outward * Math.max(220, Math.abs(vel.current.x));
+    }
+    // 플래시·햅틱은 쿨다운으로 한 번만(물리 막기는 매 프레임 보장).
+    const now = performance.now();
+    if (now - saveAt.current > SAVE_COOLDOWN_MS) {
+      saveAt.current = now;
+      setSaveFlash(side);
+      window.setTimeout(() => setSaveFlash((s) => (s === side ? null : s)), 700);
+      hapticTick();
+    }
   };
 
   const updateKeepers = (dt: number) => {
@@ -202,7 +218,7 @@ export function WorldCupBallGoal() {
       const near = Math.abs(pos.current.x - lineX) < w * 0.45;
       const target =
         onSide && near
-          ? clamp(pos.current.y, g.y + KH / 2, g.y + g.h - KH / 2)
+          ? clamp(pos.current.y, g.y + KD / 2, g.y + g.h - KD / 2)
           : g.y + g.h / 2;
       const stepMax = KEEPER_SPEED * dt;
       const dy = clamp(target - keeperY.current[side], -stepMax, stepMax);
@@ -309,12 +325,6 @@ export function WorldCupBallGoal() {
     }
   };
 
-  const hitRect = (cx: number, cy: number, r: number, x0: number, y0: number, x1: number, y1: number) => {
-    const nx = clamp(cx, x0, x1);
-    const ny = clamp(cy, y0, y1);
-    return Math.hypot(cx - nx, cy - ny) < r;
-  };
-
   // 공 vs 선수(원) — 튕김. 반환: 닿았나.
   const bounceBallOffPlayer = (p: Player) => {
     const minD = BALL / 2 + PLAYER_R;
@@ -392,8 +402,9 @@ export function WorldCupBallGoal() {
     const r = BALL / 2;
     let saved = false;
     for (const side of ["left", "right"] as Side[]) {
-      const k = keeperRect(side);
-      if (hitRect(cx, cy, r, k.x0, k.y0, k.x1, k.y1)) {
+      const kx = keeperCenterX(side);
+      const d = Math.hypot(cx - kx, cy - keeperY.current[side]);
+      if (d < r + KD / 2) {
         doSave(side);
         saved = true;
       }
@@ -542,10 +553,10 @@ export function WorldCupBallGoal() {
     height: `${GOAL_H}px`
   });
   const keeperStyle = (side: Side): React.CSSProperties => ({
-    [side]: `calc(${edge} + ${GOAL_W - KW}px)`,
+    [side]: `calc(${edge} + ${GOAL_W - KD}px)`,
     top: "0",
-    width: `${KW}px`,
-    height: `${KH}px`
+    width: `${KD}px`,
+    height: `${KD}px`
   });
 
   return (
@@ -564,20 +575,23 @@ export function WorldCupBallGoal() {
           ref={(el) => {
             keeperRef.current[side] = el;
           }}
-        >
-          🧤
-        </div>
-      ))}
-      {players.current.map((p, i) => (
-        <div
-          key={`p-${i}`}
-          className={`wc-player wc-team-${p.team}`}
-          style={{ width: `${PLAYER_R * 2}px`, height: `${PLAYER_R * 2}px` }}
-          ref={(el) => {
-            playerEls.current[i] = el;
-          }}
         />
       ))}
+      {/* 선수 div는 개수가 고정(TEAM_N*2)이라 정적으로 렌더 — 위치는 ref+transform으로만 갱신한다
+          (players ref 배열을 map하면 ref 변경이 리렌더를 안 일으켜 div가 안 생긴다). */}
+      {Array.from({ length: TEAM_N * 2 }).map((_, i) => {
+        const team = i < TEAM_N ? 0 : 1;
+        return (
+          <div
+            key={`p-${i}`}
+            className={`wc-player wc-team-${team}`}
+            style={{ width: `${PLAYER_R * 2}px`, height: `${PLAYER_R * 2}px` }}
+            ref={(el) => {
+              playerEls.current[i] = el;
+            }}
+          />
+        );
+      })}
       <div
         className="wc-ball"
         ref={ballRef}
@@ -588,8 +602,15 @@ export function WorldCupBallGoal() {
       >
         ⚽
       </div>
-      <button type="button" className="wc-toggle" onClick={toggleRunning}>
-        {running ? "⏸ 자동경기 끄기" : "▶ 자동경기 켜기"}
+      <button
+        type="button"
+        className={`wc-toggle ${running ? "on" : ""}`}
+        onClick={toggleRunning}
+        aria-pressed={running}
+      >
+        <span className="wc-toggle-ico" aria-hidden="true">{running ? "⏸" : "▶"}</span>
+        <span className="wc-toggle-dot" aria-hidden="true" />
+        자동 경기
       </button>
       {goalFlash ? <div className="wc-goal-text">GOAL!</div> : null}
       {saveFlash ? <div className={`wc-save-text wc-save-${saveFlash}`}>막았다!</div> : null}
