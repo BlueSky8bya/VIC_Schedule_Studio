@@ -373,12 +373,27 @@
   backdrop-filter: blur(8px);
   pointer-events: auto;
   box-shadow: 0 12px 30px -12px rgb(0 0 0 / 55%);
-  animation: wc-save-pop 0.4s cubic-bezier(0.22, 1.4, 0.4, 1) both;
 }
-.wc-tac-row {
+/* 각 진영 메뉴 — 부드럽게 흘러내린다(끝에 보이게; 예전 wc-save-pop은 100%서 opacity:0이라
+   0.4s 뒤 혼자 사라지는 버그였음). 둘째 진영은 살짝 늦게 = 쭈르륵 느낌. */
+.wc-tac-col {
   display: flex;
   align-items: center;
   gap: 8px;
+  animation: wc-drop-in 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.wc-tac-col:nth-child(2) {
+  animation-delay: 0.05s;
+}
+@keyframes wc-drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .wc-tac-label {
   flex: 0 0 auto;
@@ -665,5 +680,50 @@
   .wc-toggle {
     padding: 7px 12px;
     font-size: 12px;
+  }
+  /* 전술 드롭다운(모바일) — 양 옆에 진영별 세로 메뉴가 쭈르륵 흘러내린다(🔴 왼쪽 / 🔵 오른쪽). */
+  .wc-tactics {
+    left: 0;
+    right: 0;
+    top: 58px;
+    width: auto;
+    transform: none;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0;
+    padding: 0 8px;
+    background: transparent;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    pointer-events: none;
+  }
+  .wc-tac-col {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    width: 92px;
+    max-height: 72vh;
+    overflow-y: auto;
+    pointer-events: auto;
+    padding: 6px 5px;
+    border-radius: 12px;
+    background: rgb(20 30 24 / 82%);
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 10px 26px -12px rgb(0 0 0 / 55%);
+  }
+  .wc-tac-label {
+    align-self: center;
+  }
+  .wc-tac-chips {
+    flex-direction: column;
+    overflow: visible;
+    gap: 4px;
+  }
+  .wc-tac-chip {
+    width: 100%;
+    text-align: center;
   }
 }

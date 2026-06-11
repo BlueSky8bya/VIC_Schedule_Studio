@@ -699,6 +699,33 @@ export function WorldCupBallGoal() {
       const recover = sprint ? 0 : 0.022;
       p.stamina = clamp(p.stamina - drain * dt + recover * dt, 0, 1);
     });
+
+    // 분리(separation) — 군집 자체는 막지 않는다(전술·성향상 모일 수 있음). 다만 '한 점'에 다 겹치는
+    // 물리적으로 불가능한 상태만 막아, 아무리 붙어도 조랭이떡처럼 닿되 구분되게(최소간격=닿는 정도).
+    // 모바일은 선수 시각크기(13)가 작으니 그만큼만 띄운다. O(n²)=400, 60fps 무리 없음.
+    const minSep = (rotated.current ? 13 : PLAYER_R * 2) + 1;
+    players.current.forEach((p, i) => {
+      let sx = 0;
+      let sy = 0;
+      players.current.forEach((q, j) => {
+        if (i === j) return;
+        const dx = p.x - q.x;
+        const dy = p.y - q.y;
+        const d2 = dx * dx + dy * dy;
+        if (d2 > 0.01 && d2 < minSep * minSep) {
+          const d = Math.sqrt(d2);
+          const f = (minSep - d) / minSep;
+          sx += (dx / d) * f;
+          sy += (dy / d) * f;
+        }
+      });
+      if (sx !== 0 || sy !== 0) {
+        const sd = Math.hypot(sx, sy) || 1;
+        const sep = Math.min(PLAYER_SPEED * 0.6, sd * 30) * dt;
+        p.x = clamp(p.x + (sx / sd) * sep, fx.min, fx.max);
+        p.y = clamp(p.y + (sy / sd) * sep, PLAYER_R, h - PLAYER_R);
+      }
+    });
   };
 
   // 공 가진 선수 판단: 슛/패스(팀 점유성향+성격)/드리블. 성격(pass)이 낮으면 오차 큼.
@@ -1452,7 +1479,7 @@ export function WorldCupBallGoal() {
         {enabled && tacticsOpen ? (
           <div className="wc-tactics">
             {([0, 1] as const).map((team) => (
-              <div className={`wc-tac-row wc-tac-${team}`} key={team}>
+              <div className={`wc-tac-col wc-tac-${team}`} key={team}>
                 <span className="wc-tac-label">{team === 0 ? "🔴" : "🔵"}</span>
                 <div className="wc-tac-chips">
                   {STYLES.map((s) => (

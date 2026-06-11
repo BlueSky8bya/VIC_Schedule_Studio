@@ -73,7 +73,6 @@ import { markContentReady } from "@/lib/presence/content-ready";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
 import { WorldCupStudioBall } from "@/components/seasonal/worldcup-studio-ball";
-import { WorldCupBallGoal } from "@/components/seasonal/worldcup-ball-goal";
 import {
   canDecorate,
   canEditEventTags,
@@ -4165,14 +4164,9 @@ export function StudioShell({
         avatarReady ? "" : " avatar-no-anim"
       }`}
     >
-      {/* 편집실 중력 축구공(월드컵 기간만) — 편집 중 간단히 갖고 노는 장식. 일정 작업 방해 0. */}
+      {/* 편집실 중력 축구공(월드컵 기간만) — 편집 중 간단히 갖고 노는 장식. 일정 작업 방해 0.
+          (시청자 화면 미리보기에선 위 PublicPoster가 '전체' 미니게임을 직접 띄운다.) */}
       {isWorldCupMonth(view.year, view.month) && !viewerMode ? <WorldCupStudioBall /> : null}
-      {/* 시청자 화면 미리보기(viewerMode)에선 시청자가 보는 '전체' 월드컵 미니게임을 그대로 띄운다.
-          owner/dev/manager/worker는 공개 `/`로 안 가고 스튜디오로 redirect되므로, 미리보기가 이
-          전체 게임을 만나는 유일한 경로다. 아바타 자리가 켜져 골대를 덮으면(avatarScene) 제외. */}
-      {isWorldCupMonth(view.year, view.month) && viewerMode && !avatarSceneOn ? (
-        <WorldCupBallGoal />
-      ) : null}
       {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
           flex-column이라 둘이 절대 안 겹친다. scene일 때만 필터를 여기 담는다. */}
       {avatarEditor ? (
