@@ -47,11 +47,16 @@ export function WorldCupStudioBall({ pauseWhenMinigameOn = true }: { pauseWhenMi
     window.addEventListener("wc-minigame-enabled", onMini);
     return () => window.removeEventListener("wc-minigame-enabled", onMini);
   }, [pauseWhenMinigameOn]);
-  // 숨길 땐 물리 루프 중단(보이지도 않는데 돌 필요 없음).
+  // 숨길 땐 물리 루프 중단. 다시 보이면 루프 재시작 → 멈춰 있던 공에 중력이 다시 적용돼 떨어진다.
   useEffect(() => {
-    if (hidden && raf.current != null) {
-      cancelAnimationFrame(raf.current);
-      raf.current = null;
+    if (hidden) {
+      if (raf.current != null) {
+        cancelAnimationFrame(raf.current);
+        raf.current = null;
+      }
+    } else {
+      place();
+      ensureLoop();
     }
   }, [hidden]);
 

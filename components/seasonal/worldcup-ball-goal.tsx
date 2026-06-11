@@ -196,6 +196,7 @@ export function WorldCupBallGoal() {
   } | null>(null);
   const [tacticsOpen, setTacticsOpen] = useState(false); // 전술 변경 패널 열림
   const [statsOpen, setStatsOpen] = useState(false); // 경기 기록 패널 열림
+  const [namesOpen, setNamesOpen] = useState(false); // 스코어 전술명(...) 탭 → 풀네임 팝오버
   const [pickPlayer, setPickPlayer] = useState<number | null>(null); // 호버/탭한 선수(정보 카드)
   const pinnedPlayer = useRef(false); // 클릭으로 고정됐는가(호버 이탈해도 유지)
   const [styleNames, setStyleNames] = useState<[string, string]>(["", ""]); // 현재 팀별 전술명(칩 강조용)
@@ -2174,6 +2175,7 @@ export function WorldCupBallGoal() {
               setPickPlayer(null);
               setTacticsOpen(false);
               setStatsOpen(false);
+              setNamesOpen(false);
             }}
           />
           {/* 피치 본체 — 모바일에선 이 stage만 90° 세워 세로 피치로. 물리는 landscape 그대로. */}
@@ -2285,7 +2287,18 @@ export function WorldCupBallGoal() {
           <>
             <div className="wc-score" role="status">
               <span className="wc-score-team wc-score-a">
-                <span className="wc-score-name">{teamNames[0] || "RED"}</span>
+                <span
+                  className="wc-score-name"
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setNamesOpen((o) => !o);
+                    hapticTick();
+                  }}
+                >
+                  {teamNames[0] || "RED"}
+                </span>
                 {renderTeamCards(cardCounts.yellow[0], cardCounts.red[0])}
               </span>
               <strong className="wc-score-num">
@@ -2293,9 +2306,27 @@ export function WorldCupBallGoal() {
               </strong>
               <span className="wc-score-team wc-score-b">
                 {renderTeamCards(cardCounts.yellow[1], cardCounts.red[1])}
-                <span className="wc-score-name">{teamNames[1] || "BLUE"}</span>
+                <span
+                  className="wc-score-name"
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setNamesOpen((o) => !o);
+                    hapticTick();
+                  }}
+                >
+                  {teamNames[1] || "BLUE"}
+                </span>
               </span>
             </div>
+            {namesOpen ? (
+              <div className="wc-names-pop">
+                <span className="wc-names-a">🔴 {teamNames[0] || "RED"}</span>
+                <span className="wc-names-vs">vs</span>
+                <span className="wc-names-b">{teamNames[1] || "BLUE"} 🔵</span>
+              </div>
+            ) : null}
             {clockText ? <div className="wc-clock">{clockText}</div> : null}
             <button
               type="button"

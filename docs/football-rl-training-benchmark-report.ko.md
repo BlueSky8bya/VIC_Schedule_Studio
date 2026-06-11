@@ -257,6 +257,71 @@ Parameterized:
 - red card player action 없음.
 - offside position player에게 위험 패스는 금지하지 않고 penalty/decision risk로 둔다. 실제 축구처럼 위험 선택 가능해야 함.
 
+### 3.6 선수별 에이전트 구조
+
+각 선수는 별도 agent로 본다. 다만 처음부터 20개 outfield policy + 2개 GK policy를 전부 따로 학습하면 표본 효율이 박살난다. 시작은 **parameter sharing + role/tactic embedding**이 맞다.
+
+```txt
+Shared Outfield Actor
+  input: local observation
+       + role embedding(DF/DM/MF/WG/FW)
+       + formation slot embedding
+       + tactic embedding(STYLES)
+       + player persona embedding
+       + phase embedding
+  trunk: MLP or small Transformer/attention over visible players
+  heads:
+    - movement head: target zone / direction / sprint
+    - off-ball head: support / run / mark / press / cover
+    - on-ball head: pass / carry / shoot / clear
+    - parameter head: target point, power, height, body angle
+
+Goalkeeper Actor
+  shared lower trunk optional
+  GK-specific heads:
+    - claim / catch / parry / punch / smother / sweep
+    - release: roll / throw / punt / short pass / drop kick
+
+Central Critic(MAPPO)
+  input: full 22 players + ball + tactic ids + score/time + event history
+  output: team value / agent value / reward breakdown auxiliary estimates
+```
+
+운영 원칙:
+
+- **actor는 자기 관측만** 본다. 실행 시 cheat 방지.
+- **critic은 전체 상태**를 본다. 학습 시 credit assignment 보완.
+- 같은 role이라도 `PlayerPersona`가 달라 행동이 다르게 나온다.
+- role별 head는 나중에 추가한다. 처음은 shared actor가 표본 효율 좋음.
+- GK는 손 사용, claim, release가 완전히 달라 별도 action head 필요.
+- set-piece에서는 `SetPieceRole` embedding을 추가한다. 예: corner taker, near-post runner, blocker, rest-defender.
+
+권장 타입:
+
+```ts
+type AgentId = `team${0 | 1}:p${number}`;
+
+type AgentRuntimeState = {
+  id: AgentId;
+  team: TeamSide;
+  role: Role | "GK";
+  slotIndex: number;
+  persona: PlayerPersona;
+  currentDuty: TacticalDuty;
+  stamina: number;
+  lastAction: PlayerActionType;
+  memory: AgentMemory;
+};
+
+type AgentMemory = {
+  lastSeenBallAt: number;
+  lastTouchAt?: number;
+  markTarget?: AgentId;
+  anchorTarget: Vec2;
+  recentPressure: number;
+};
+```
+
 ## 4. 전술/포메이션을 RL에 넣는 방식
 
 ### 4.1 TacticStyle을 condition으로
@@ -337,6 +402,60 @@ type FormationProfile = {
   transitionShape: ShapeTemplate;
   roleDuties: RoleDuty[];
 };
+```
+
+### 4.4 Dynamic Anchoring
+
+맞다. 동네 축구 방지 핵심은 dynamic anchoring이다. 포메이션은 고정 좌표가 아니라 공 위치, phase, 전술, 좌우 전환에 따라 팀 전체가 그물망처럼 이동하는 target field다.
+
+각 선수 target:
+
+```txt
+target_i =
+  baseSlot_i
+  + ballShift(ballPos, phase, tactic)
+  + teamCompactnessShift(outOfPossession)
+  + widthShift(tactic.width)
+  + lineHeightShift(tactic.lineHeight)
+  + roleDutyOffset(i, phase)
+```
+
+position reward:
+
+```txt
+R_position_i = -gamma_role * || pos_i - target_i ||^2
+```
+
+role별 gamma:
+
+- CB/GK/DM: 높음. 무단 이탈 강하게 금지.
+- WG/FW: 중간. 침투/압박을 위해 자유도 허용.
+- set-piece taker/runner: 일시적으로 anchor 교체.
+
+팀 shape target:
+
+```txt
+X_team = mean(attackingDirectionAdjustedX(all outfield players))
+W_team = stddev(Y of outfield players)
+
+R_shape =
+  - alpha * abs(X_team - X_target(tactic.lineHeight, phase))
+  - beta  * abs(W_team - W_target(tactic.width, phase))
+```
+
+주의:
+
+- anchor를 너무 세게 주면 로봇처럼 줄 맞춤만 한다.
+- 공 근처 2~4명은 local task(anchor 완화), 나머지는 shape task(anchor 강화).
+- possession phase와 defensive phase는 target shape가 다르다.
+- transition 3~5초 동안은 anchor보다 공/상대/공간 반응을 우선한다.
+
+구현 파일 후보:
+
+```txt
+lib/football/tactics/anchors.ts
+lib/football/tactics/shape-targets.ts
+lib/football/rl/reward-shape.ts
 ```
 
 ## 5. Reward 설계
@@ -427,7 +546,132 @@ frameValue =
 
 단, 개인성은 팀 전술과 충돌하면 낮춘다. 예: 텐백 수비에서 풀백이 무리하게 중앙 침투 반복하면 penalty.
 
+### 5.5 전술 파라미터의 보상 함수화
+
+네가 쓴 방향 그대로 적용해야 한다. `lineHeight`, `width`, `press`, `possession`, `tempo`는 전술 이름 설명이 아니라 매 tick reward로 바뀌어야 한다.
+
+#### 5.5.1 lineHeight / width
+
+팀 형태:
+
+```txt
+X_team = mean(x_i adjusted by attack direction)
+W_team = stddev(y_i)
+X_target = phaseLineBase(phase) + k_line * tactic.lineHeight
+W_target = pitchWidth * widthScale(tactic.width, phase)
+
+R_shape =
+  - alpha * |X_team - X_target|
+  - beta  * |W_team - W_target|
+```
+
+권장:
+
+- defensive phase: lineHeight target 더 중요.
+- possession phase: width target 더 중요.
+- low block/텐백: X_target 낮게, W_target 좁게.
+- 포지셔널/윙플레이: W_target 넓게.
+
+#### 5.5.2 press
+
+수비 시 상대 ball carrier 주변 N미터 안 압박:
+
+```txt
+pressCount = count(defenders within N meters of opponentBallCarrier)
+approachSpeed = sum(max(0, dot(v_i, dir_to_ballCarrier)))
+coverScore = passingLaneBlockedScore
+
+R_press =
+  tactic.press *
+  (a * pressCountTargetMatch + b * approachSpeed + c * coverScore)
+  - overPressPenalty
+```
+
+전술별:
+
+- 게겐프레싱/하이프레스: N 안 2~4명 압박 보상 큼.
+- 미드블록/두 줄 수비: 무조건 달려드는 압박보다 lane cover 보상 큼.
+- 텐백/빗장: 박스 앞 compactness가 press보다 중요.
+
+#### 5.5.3 possession
+
+점유 전술은 패스 성공/유지 보상, 직접 전술은 전진/위협 보상.
+
+```txt
+R_possession =
+  tactic.possession * (smallPassSuccess + retentionValue - turnoverPenalty)
+  + (1 - tactic.possession) * (progressiveDistance + territoryGain + secondBallStructure)
+```
+
+세부:
+
+- 패스 성공 보상은 너무 크면 무의미한 백패스 루프를 만든다.
+- back/lateral pass는 EPV/xT가 증가하거나 압박 유인 성공일 때만 보너스.
+- turnover penalty는 위치 기반. 자기 박스 앞 turnover는 더 크게.
+
+#### 5.5.4 tempo
+
+time on ball을 전술별 target으로 둔다.
+
+```txt
+targetHoldSec = lerp(3.0, 1.0, normalizeTempo(tactic.tempo))
+R_tempo =
+  - lambda * |timeOnBall - targetHoldSec|
+  + quickDecisionBonus(if action improves value)
+```
+
+예:
+
+- 게겐프레싱 tempo 1.18: 1~2초 내 패스/슛/전진 운반 보너스.
+- 점유 축구 tempo 1.00: 무리한 원터치보다 안정 선택 허용.
+- 실리 축구 tempo .90: 위험한 빠른 패스보다 안전한 clear/reset 허용.
+
+#### 5.5.5 전체 tactic reward
+
+```txt
+R_tactic =
+  w_shape      * R_shape
+  + w_position * mean(R_position_i)
+  + w_press    * R_press
+  + w_poss     * R_possession
+  + w_tempo    * R_tempo
+  + w_phase    * R_phasePrinciple
+```
+
+전술별 내부 weight:
+
+- 티키타카: possession/shape/tempo.
+- 게겐프레싱: press/tempo/transition.
+- 윙플레이: width/phase/cross-cutdown.
+- 루트 원: possession 낮고 progression/secondBall 높음.
+- 텐백: lineHeight/compactness/defensiveValue.
+
 ## 6. 커리큘럼
+
+### 6.0 네 단계 기본 훈련 흐름
+
+요청한 구조가 맞다. GRF Football Academy식으로 더 잘게 쪼개되, 큰 줄기는 아래 순서다.
+
+1. **Shadow Play**
+   - 상대 없음.
+   - 11명이 dynamic anchor를 유지하며 이동/패스/전진.
+   - reward: `R_shape`, `R_position`, safe pass, lane occupation.
+   - 목표: 공만 보고 몰려다니는 현상 제거.
+
+2. **Dummy Defenders**
+   - 정지/느린 수비수.
+   - 압박 회피, 패스 각도, tempo, third-man.
+   - reward: pass probability, pressure escape, targetHoldSec match.
+
+3. **Small-Sided Tactical Games**
+   - 4v4, 5v5, 7v7.
+   - half-space, counterpress, low block, winger isolation 등 부분 전술만 집중.
+   - reward: 특정 phase/tactic anchor를 크게.
+
+4. **Full Scale 11v11**
+   - pretrained policies를 모아 population self-play.
+   - score reward 증가.
+   - tacticFidelity 유지.
 
 ### Phase A: 룰·물리 sanity
 
