@@ -183,12 +183,18 @@
 .wc-keeper {
   position: absolute;
   border-radius: 50%;
-  pointer-events: none;
+  pointer-events: auto; /* shift+호버(웹)/탭(모바일)으로 골키퍼 정보 카드 */
+  cursor: pointer;
   box-shadow:
     0 0 0 2px rgb(255 255 255 / 90%),
     0 3px 6px rgb(40 30 60 / 32%);
   will-change: transform;
   transition: filter 0.15s ease;
+}
+.wc-keeper-pick {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 10px 2px rgb(255 235 120 / 80%);
 }
 /* 골 안에 있을 때(그물 뒤) — 살짝 블러로 골대 프레임·그물과의 접촉 경계를 흐릿하게(눈속임). 필드로
    나오면(z 위) 또렷. */

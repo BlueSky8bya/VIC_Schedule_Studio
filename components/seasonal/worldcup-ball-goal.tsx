@@ -200,6 +200,7 @@ export function WorldCupBallGoal() {
   const [tacticDesc, setTacticDesc] = useState<TacticStyle | null>(null); // 전술 호버/탭 → 풀네임+설명 박스
   const [namesOpen, setNamesOpen] = useState<0 | 1 | null>(null); // 모바일: 탭한 진영 전술명 풀네임(...된 것만)
   const [pickPlayer, setPickPlayer] = useState<number | null>(null); // 호버/탭한 선수(정보 카드)
+  const [pickKeeper, setPickKeeper] = useState<Side | null>(null); // 탭/클릭한 골키퍼(정보 카드)
   const pinnedPlayer = useRef(false); // 클릭으로 고정됐는가(호버 이탈해도 유지)
   const [styleNames, setStyleNames] = useState<[string, string]>(["", ""]); // 현재 팀별 전술명(칩 강조용)
   // 세트피스(스로인/코너/골킥/킥오프/오프사이드)는 라인에 잠깐 멈췄다 재개 — 딜레이 후 kick 실행.
@@ -212,6 +213,11 @@ export function WorldCupBallGoal() {
   const possTeam = useRef<0 | 1 | null>(null); // 통제 중인 팀(lastTouch 기반 스무딩) — 압박 방향 판단.
   const counterPress = useRef<{ team: 0 | 1; until: number } | null>(null); // 5초 카운터프레스 윈도우.
   const keeperAggro = useRef<Record<Side, number>>({ left: 0.5, right: 0.5 }); // 스위퍼 성향 0..1.
+  // GK 능력치(정보 카드용) — 반응/핸들링/킥/스위핑/침착. 매 경기 buildMatch서 새로.
+  const keeperStats = useRef<Record<Side, { reflex: number; handling: number; kick: number; sweep: number; composure: number }>>({
+    left: { reflex: 0.7, handling: 0.7, kick: 0.6, sweep: 0.5, composure: 0.7 },
+    right: { reflex: 0.7, handling: 0.7, kick: 0.6, sweep: 0.5, composure: 0.7 }
+  });
   const keeperX = useRef<Record<Side, number>>({ left: 0, right: 0 }); // 라인에서 전진한 거리(px).
   // GK 손 — 잡으면(catch) 잠깐 보유 후 배급(스로/킥). 백패스는 발로(손 금지). 박스 안에서만 손.
   const keeperHold = useRef<{ side: Side | null; until: number }>({ side: null, until: 0 });
@@ -541,6 +547,15 @@ export function WorldCupBallGoal() {
     // 키퍼 성격 — 좌/우 팀마다 스위퍼(확 나옴) ↔ 라인키퍼(골문 근처) 다르게.
     keeperAggro.current.left = rnd(0.15, 0.95);
     keeperAggro.current.right = rnd(0.15, 0.95);
+    (["left", "right"] as Side[]).forEach((s) => {
+      keeperStats.current[s] = {
+        reflex: rnd(0.55, 0.95),
+        handling: rnd(0.5, 0.92),
+        kick: rnd(0.4, 0.9),
+        sweep: keeperAggro.current[s],
+        composure: rnd(0.5, 0.9)
+      };
+    });
     keeperX.current.left = 0;
     keeperX.current.right = 0;
     possTeam.current = null;
@@ -2198,6 +2213,7 @@ export function WorldCupBallGoal() {
               // 빈 곳 탭/클릭하면 열린 패널(선수카드·전술·기록) 모두 닫기.
               pinnedPlayer.current = false;
               setPickPlayer(null);
+              setPickKeeper(null);
               setTacticsOpen(false);
               setStatsOpen(false);
               setTacticDesc(null);
@@ -2230,8 +2246,16 @@ export function WorldCupBallGoal() {
             {(["left", "right"] as Side[]).map((side) => (
               <div
                 key={`k-${side}`}
-                className={`wc-keeper wc-keeper-${side}`}
+                className={`wc-keeper wc-keeper-${side} ${pickKeeper === side ? "wc-keeper-pick" : ""}`}
                 style={keeperStyle(side)}
+                onPointerEnter={isMobile ? undefined : (e) => e.shiftKey && setPickKeeper(side)}
+                onPointerLeave={isMobile ? undefined : () => setPickKeeper((c) => (c === side ? null : c))}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setPickPlayer(null);
+                  setPickKeeper((c) => (c === side ? null : side));
+                  hapticTick();
+                }}
                 ref={(el) => {
                   keeperRef.current[side] = el;
                 }}
@@ -2442,6 +2466,36 @@ export function WorldCupBallGoal() {
                         <div className="wc-pcard-bar">
                           <i style={{ width: `${Math.round(p.stamina * 100)}%` }} />
                         </div>
+                      </div>
+                      {rows.map(([label, v]) => (
+                        <div className="wc-pcard-stat" key={label}>
+                          <span>{label}</span>
+                          <div className="wc-pcard-bar">
+                            <i style={{ width: `${Math.round(v * 100)}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()
+              : null}
+            {pickKeeper
+              ? (() => {
+                  const team: 0 | 1 = pickKeeper === "left" ? 0 : 1;
+                  const ks = keeperStats.current[pickKeeper];
+                  const form = teams.current?.[team]?.formation ?? "";
+                  const rows: [string, number][] = [
+                    ["반응", ks.reflex],
+                    ["핸들링", ks.handling],
+                    ["킥", ks.kick],
+                    ["스위핑", ks.sweep],
+                    ["침착", ks.composure]
+                  ];
+                  return (
+                    <div className={`wc-pcard wc-pcard-${team}`}>
+                      <div className="wc-pcard-head">
+                        <b className="num">1</b>
+                        <span>골키퍼 · {form}</span>
                       </div>
                       {rows.map(([label, v]) => (
                         <div className="wc-pcard-stat" key={label}>
