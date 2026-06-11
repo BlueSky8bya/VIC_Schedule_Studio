@@ -5,7 +5,7 @@ import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만
 import type { PlayerPersona, Side, TeamPlan, Vec2 } from "@/lib/football/core/types";
 import { makeRng, randomSeed } from "@/lib/football/core/rng";
-import { makeMatchup } from "@/lib/football/tactics/profiles";
+import { makeMatchup, STYLES, type TacticStyle } from "@/lib/football/tactics/profiles";
 import { createEventLog, type MatchEventKind } from "@/lib/football/core/event-log";
 import "./worldcup-ball-goal.css";
 
@@ -120,6 +120,8 @@ export function WorldCupBallGoal() {
   const breakUntil = useRef(0); // real ms — 이 시각까지 하프타임/피리어드 사이 휴식(시계·플레이 정지)
   const [clockText, setClockText] = useState("");
   const [matchResult, setMatchResult] = useState<string | null>(null);
+  const [tacticsOpen, setTacticsOpen] = useState(false); // 전술 변경 패널 열림
+  const [styleNames, setStyleNames] = useState<[string, string]>(["", ""]); // 현재 팀별 전술명(칩 강조용)
   // 세트피스(스로인/코너/골킥/킥오프/오프사이드)는 라인에 잠깐 멈췄다 재개 — 딜레이 후 kick 실행.
   const pendingRestart = useRef<{ at: number; kick: () => void; walk?: () => void } | null>(null);
   const possTeam = useRef<0 | 1 | null>(null); // 통제 중인 팀(lastTouch 기반 스무딩) — 압박 방향 판단.
@@ -252,6 +254,7 @@ export function WorldCupBallGoal() {
       p.y = home.y;
     });
     setTeamNames([ta.name, tb.name]);
+    setStyleNames([ta.name, tb.name]);
     scoreRef.current = [0, 0];
     setScore([0, 0]);
     clock.current = { t: 0, period: 1, added: 0, ended: false };
@@ -1218,6 +1221,34 @@ export function WorldCupBallGoal() {
     if (next) ensureLoop();
   };
 
+  // 경기 중 팀 전술 변경 — 포메이션/위치는 두고 압박·점유·템포·라인·폭만 바꾼다(하이프레스↔텐백 등).
+  const applyTeamStyle = (team: 0 | 1, s: TacticStyle) => {
+    if (!teams.current) return;
+    const cur = teams.current[team];
+    teams.current[team] = {
+      ...cur,
+      name: s.name,
+      press: s.press,
+      possession: s.possession,
+      tempo: s.tempo,
+      lineHeight: s.lineHeight,
+      width: s.width
+    };
+    setTeamNames((n) => (team === 0 ? [s.name, n[1]] : [n[0], s.name]));
+    setStyleNames((n) => (team === 0 ? [s.name, n[1]] : [n[0], s.name]));
+    hapticTick();
+  };
+
+  // 사용자가 명시적으로 새 경기 시작(점수·시계 리셋). 자동 종료 재시작과 별개.
+  const newMatch = () => {
+    buildMatch();
+    centerBall();
+    passToNearestTeammate(Math.random() < 0.5 ? 0 : 1, pos.current.x, pos.current.y, 200);
+    lastActiveAt.current = performance.now();
+    hapticTick();
+    if (runningRef.current) ensureLoop();
+  };
+
   // 화면(클라이언트) 좌표 → stage 로컬(landscape 물리) 좌표.
   // 모바일은 stage가 90° 세워져 있어 역회전 매핑: local=(cy, rectW-cx).
   const localFromEvent = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -1400,6 +1431,27 @@ export function WorldCupBallGoal() {
             {matchResult ? <div className="wc-result">{matchResult}</div> : null}
           </>
         ) : null}
+        {enabled && tacticsOpen ? (
+          <div className="wc-tactics">
+            {([0, 1] as const).map((team) => (
+              <div className={`wc-tac-row wc-tac-${team}`} key={team}>
+                <span className="wc-tac-label">{team === 0 ? "🔴" : "🔵"}</span>
+                <div className="wc-tac-chips">
+                  {STYLES.map((s) => (
+                    <button
+                      key={s.name}
+                      type="button"
+                      className={`wc-tac-chip ${styleNames[team] === s.name ? "on" : ""}`}
+                      onClick={() => applyTeamStyle(team, s)}
+                    >
+                      {s.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
         <div className="wc-controls">
         {enabled ? (
           <button
@@ -1414,6 +1466,32 @@ export function WorldCupBallGoal() {
             <span className="wc-toggle-dot" aria-hidden="true" />
             <span className="wc-tg-full">자동 경기</span>
             <span className="wc-tg-short">자동</span>
+          </button>
+        ) : null}
+        {enabled ? (
+          <button
+            type="button"
+            className={`wc-toggle ${tacticsOpen ? "on" : ""}`}
+            onClick={() => {
+              setTacticsOpen((o) => !o);
+              hapticTick();
+            }}
+            aria-pressed={tacticsOpen}
+          >
+            <span className="wc-toggle-ico" aria-hidden="true">
+              ⚙
+            </span>
+            <span className="wc-tg-full">전술</span>
+            <span className="wc-tg-short">전술</span>
+          </button>
+        ) : null}
+        {enabled ? (
+          <button type="button" className="wc-toggle" onClick={newMatch}>
+            <span className="wc-toggle-ico" aria-hidden="true">
+              ↻
+            </span>
+            <span className="wc-tg-full">새 경기</span>
+            <span className="wc-tg-short">새경기</span>
           </button>
         ) : null}
         <button type="button" className="wc-toggle wc-toggle-event" onClick={toggleEnabled}>
