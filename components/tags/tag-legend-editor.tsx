@@ -10,6 +10,7 @@ import {
   useTransition
 } from "react";
 import type { BroadcastTag, ColorKey, ColorPaletteEntry, TagKind } from "@/lib/domain/schedule-types";
+import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 import type { SaveTagsResult, TagCreateInput } from "@/lib/schedules/tag-actions";
 import { generateTagColor, isPatternColor } from "@/lib/tags/color-gen";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -307,8 +308,7 @@ export function TagLegendEditor({
     // 태그 순서 변경은 잡은 위치 축·중력을 쓰지 않는다(중앙 축, 가벼운 흔들림만).
     ghost.style.transformOrigin = "center";
     dragGravityRef.current = 0;
-    dragReducedRef.current =
-      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    dragReducedRef.current = reduceMotionEnabled(); // OS reduce-motion 무시 — 앱 토글만
     scrollerRef.current = findScroller(row);
     dragId.current = id;
     setDraggingId(id);

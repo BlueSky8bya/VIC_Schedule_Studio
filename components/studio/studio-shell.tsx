@@ -1986,7 +1986,7 @@ export function StudioShell({
       edBobRef.current = { x: pivotX + lvx, y: pivotY + lvy };
       edBobPrevRef.current = { x: pivotX + lvx, y: pivotY + lvy };
       edReducedRef.current =
-        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+        reduceMotionEnabled() /* OS reduce-motion 무시 — 앱 토글만 */;
       // 드래그 동안 어디서도 글자가 선택(긁힘)되지 않게.
       document.body.style.userSelect = "none";
       dragRaf.current = requestAnimationFrame(dragAutoScroll);
@@ -2556,7 +2556,7 @@ export function StudioShell({
   }
 
   function prefersReducedMotion() {
-    return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    return reduceMotionEnabled() /* OS reduce-motion 무시 — 앱 토글만 */;
   }
   // 저장·생성 직후 그 카드를 잠깐 "방금 저장됨"으로 표시 → CSS가 통통 착지+반짝을 입힌다.
   function markJustSaved(id: string) {

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { hapticTick } from "@/lib/ui/haptics";
+import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만
 import "./worldcup-studio-ball.css";
 
 // 편집실용 — 중력 받는 축구공 1개. 화면 안에서 마우스로 잡아 던지면 떨어지고 바닥/벽에 튕기다
@@ -157,7 +158,7 @@ export function WorldCupStudioBall() {
   };
 
   useEffect(() => {
-    reduced.current = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    reduced.current = reduceMotionEnabled(); // OS reduce-motion 무시 — 앱 토글만
     const { w, h } = bounds();
     pos.current = { x: w * 0.5, y: reduced.current ? h - BALL / 2 : h * 0.3 };
     vel.current = { x: 0, y: 0 };

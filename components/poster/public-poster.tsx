@@ -45,6 +45,7 @@ import {
 import dynamic from "next/dynamic";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
 import { WorldCupBallGoal } from "@/components/seasonal/worldcup-ball-goal";
+import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 // 꾸미기 전용 UI는 decorate일 때만 렌더된다 → 지연 로드로 시청자(공개 /) 번들서 제외(ssr:false:
 // 사용자 동작으로 여는 꾸미기 화면이라 SSR 불필요, 진입 시 잠깐 로드).
 const ThemeSwitch = dynamic(
@@ -879,7 +880,7 @@ export function PublicPoster({
     if (!todayCelebration) {
       return;
     }
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    if (reduceMotionEnabled()) {
       return;
     }
     setCelebrate(true);
@@ -1234,7 +1235,7 @@ export function PublicPoster({
 
   // 하트를 켤 때 누른 자리에서 ♥들이 스멀스멀 떠오르게 한다(움직임 최소화 설정이면 생략).
   function spawnHearts(x: number, y: number) {
-    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+    if (reduceMotionEnabled()) {
       return;
     }
     const batch: HeartFloater[] = Array.from({ length: 6 }, (_, i) => ({

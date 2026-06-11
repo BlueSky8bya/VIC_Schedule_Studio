@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
+import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만
 import "./worldcup-ball-goal.css";
 
 // 월드컵 시즌 미니게임 — 좌/우 골대, 공 1개, 양 팀 11명(필드 10 + 골키퍼)이 자동 경기.
@@ -929,7 +930,7 @@ export function WorldCupBallGoal() {
   };
 
   useEffect(() => {
-    reduced.current = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+    reduced.current = reduceMotionEnabled(); // OS reduce-motion 무시 — 앱 토글만(시각 효과 양 조절용)
     rotated.current = window.matchMedia?.("(max-width: 640px)").matches ?? false;
     setIsMobile(rotated.current);
     let en = true;

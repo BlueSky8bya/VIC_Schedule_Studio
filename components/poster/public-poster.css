@@ -279,7 +279,7 @@
 .agenda-account button.agenda-login:active {
   box-shadow: 0 1px 4px rgb(168 118 10 / 32%);
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .agenda-account button {
     transition: none;
   }
@@ -468,7 +468,7 @@
     transform: translateX(0);
   }
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .agenda-flow[data-enter] {
     animation: agendaFade 200ms ease both;
   }
@@ -501,7 +501,7 @@
   animation: cal-cell-rise 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
   animation-delay: calc(var(--ri, 0) * 70ms);
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .agenda-flow.cal-reveal .agenda-day {
     animation: none;
   }
@@ -849,7 +849,7 @@ html {
   user-select: none;
 }
 /* prefers-reduced-motion·사용자 '동작 줄이기'(html[data-reduce-motion]) 존중 — 슬라이드·등장 모션 끔. */
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .poster-page.avatar-scene .poster-stage,
   .poster-page.avatar-scene .avatar-slot,
   .poster-page.avatar-scene .avatar-ctl {
@@ -1010,7 +1010,7 @@ html[data-reduce-motion] .poster-scaler {
 .avatar-ctl-side button:active {
   transform: scale(0.95);
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .avatar-ctl-side button {
     transition: none;
   }
@@ -1038,7 +1038,7 @@ body.cell-range-dragging {
   background: rgb(99 102 241 / 14%);
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .avatar-ctl-toggle {
     transition: none;
   }
@@ -1715,7 +1715,7 @@ body.cell-range-dragging {
   0%, 100% { opacity: 0.55; }
   50% { opacity: 0.85; }
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .public-event.teaser-revealing,
   .agenda-item.teaser-revealing {
     animation: none;
@@ -1791,7 +1791,7 @@ body.cell-range-dragging {
     opacity: 0;
   }
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .public-event.just-revealed,
   .agenda-event.just-revealed {
     animation: none;
@@ -1819,7 +1819,7 @@ body.cell-range-dragging {
   flex: 1;
   letter-spacing: 2px;
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .teaser-spark {
     animation: none;
   }
@@ -1863,7 +1863,7 @@ body.cell-range-dragging {
 .event-heart[aria-pressed="true"]:active {
   transform: scale(0.9);
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .event-heart,
   .event-heart:active,
   .event-heart[aria-pressed="true"] {
@@ -2171,7 +2171,7 @@ body.cell-range-dragging {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .event-popular,
   .event-popular .flame,
   .heart-floater {
@@ -2405,7 +2405,7 @@ body.cell-range-dragging {
   72% { transform: translateY(-3px) scale(1.02); }
   100% { box-shadow: none; transform: translateY(0) scale(1); }
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .poster-surface[data-enter] .poster-heading,
   .poster-surface[data-enter] .public-calendar-area,
   .poster-surface[data-enter] .sticker-layer,
@@ -2987,7 +2987,7 @@ body.cell-range-dragging {
     margin: 0;
   }
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .decorate-toolbar,
   .poster-capture-row {
     transition: none;
@@ -3752,7 +3752,7 @@ html[data-reduce-motion] .poster-capture-row {
     transform: none;
   }
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .sticker-toolbar-float {
     animation: none;
   }

@@ -124,7 +124,7 @@
    기본 트랜지션을 깔아준다. :where()로 특이도 0 → 각 컴포넌트가 정의한 모션이 항상 우선하고,
    아무 모션도 없던 '정적인' 컨트롤에만 이 기본값이 채워진다. transform은 제외한다(드래그·스티커
    처럼 매 프레임 transform을 바꾸는 곳이 느려지지 않게 — 눌림 스케일은 컴포넌트별로 따로 준다). */
-@media (prefers-reduced-motion: no-preference) {
+@media (min-width: 0px) {
   :where(
     a,
     button,
@@ -148,7 +148,7 @@
 /* 진짜 버튼(<button>)은 transform도 트랜지션에 포함해 '누르면 살짝 들어갔다 복귀'를 전역으로
    준다. 드래그는 <div role=button>·스티커라 여기 안 걸리고, 자체 :active를 둔 버튼(.button,
    드래그 핸들 등)은 특이도가 높아 그대로 우선한다. → 모션 없던 버튼에만 기본 손맛이 채워진다. */
-@media (prefers-reduced-motion: no-preference) {
+@media (min-width: 0px) {
   :where(button) {
     transition:
       background-color 0.16s var(--ease, ease),
@@ -295,7 +295,7 @@ select {
 }
 
 /* 모션 최소화 선호 시 애니메이션·전환 제거 */
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   *,
   *::before,
   *::after {
@@ -364,7 +364,7 @@ select {
   transform: scale(0.96);
   box-shadow: var(--shadow-1);
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .button:active:not(:disabled) {
     transform: none;
   }
@@ -514,7 +514,7 @@ select {
     padding: 24px 18px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .auth-panel,
   .auth-brand,
   .auth-brand-spark {
