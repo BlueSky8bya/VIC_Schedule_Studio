@@ -131,6 +131,14 @@
   pointer-events: none;
 }
 
+/* HUD 프레임 — 스코어/플래시/버튼을 담는 좌표계. 데스크탑·게임OFF는 화면 그대로(똑바로).
+   모바일+게임ON은 .wc-hud-rot로 stage와 동일하게 90° 돌려 landscape 프레임에 정렬. */
+.wc-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 /* 경기장 라인 — 딤 위, 게임 아래. 또렷하게(흰선 + 옅은 그림자로 대비). */
 .wc-pitch {
   position: absolute;
@@ -469,7 +477,8 @@
    landscape 박스를 만들고 회전 → 물리 좌표계는 그대로(좌우 골대), 보이기만 세로.
    HUD(스코어/버튼/플래시)는 stage 밖이라 안 돌고 똑바로 유지. 입력은 JS가 역매핑. */
 @media (max-width: 640px) {
-  .wc-stage {
+  .wc-stage,
+  .wc-hud-rot {
     inset: auto;
     left: 50%;
     top: 50%;

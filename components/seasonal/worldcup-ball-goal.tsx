@@ -1195,22 +1195,27 @@ export function WorldCupBallGoal() {
             />
           ))}
           </div>
-
-          {/* HUD — stage 밖이라 모바일에서도 안 돌아가고 똑바로(읽기 좋게). */}
-          <div className="wc-score" role="status">
-            <span className="wc-score-team wc-score-a">{teamNames[0] || "RED"}</span>
-            <strong className="wc-score-num">
-              {score[0]} <span>:</span> {score[1]}
-            </strong>
-            <span className="wc-score-team wc-score-b">{teamNames[1] || "BLUE"}</span>
-          </div>
-          {goalFlash ? <div className="wc-goal-text">GOAL!</div> : null}
-          {saveFlash ? <div className={`wc-save-text wc-save-${saveFlash}`}>막았다!</div> : null}
-          {setPiece ? <div className="wc-setpiece">{setPiece}</div> : null}
         </>
       ) : null}
 
-      <div className="wc-controls">
+      {/* HUD — 모바일+게임ON이면 피치 stage와 똑같이 90° 돌려 landscape 프레임에 정렬(폰 가로로
+          보면 똑바름). 게임 OFF면 회전 안 함(켜기 버튼 똑바로). 데스크탑은 항상 inset:0 똑바로. */}
+      <div className={`wc-hud ${isMobile && enabled ? "wc-hud-rot" : ""}`}>
+        {enabled ? (
+          <>
+            <div className="wc-score" role="status">
+              <span className="wc-score-team wc-score-a">{teamNames[0] || "RED"}</span>
+              <strong className="wc-score-num">
+                {score[0]} <span>:</span> {score[1]}
+              </strong>
+              <span className="wc-score-team wc-score-b">{teamNames[1] || "BLUE"}</span>
+            </div>
+            {goalFlash ? <div className="wc-goal-text">GOAL!</div> : null}
+            {saveFlash ? <div className={`wc-save-text wc-save-${saveFlash}`}>막았다!</div> : null}
+            {setPiece ? <div className="wc-setpiece">{setPiece}</div> : null}
+          </>
+        ) : null}
+        <div className="wc-controls">
         {enabled ? (
           <button
             type="button"
@@ -1233,6 +1238,7 @@ export function WorldCupBallGoal() {
           <span className="wc-tg-full">{enabled ? "미니게임 숨기기" : "미니게임 켜기"}</span>
           <span className="wc-tg-short">{enabled ? "숨기기" : "켜기"}</span>
         </button>
+        </div>
       </div>
     </div>
   );
