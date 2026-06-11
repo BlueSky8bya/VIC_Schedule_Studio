@@ -629,14 +629,17 @@
   line-height: 1;
   filter: drop-shadow(0 2px 4px rgb(0 0 0 / 55%));
 }
-.wc-cue-foul span {
-  font-size: 14px;
+/* 삑!·카드·세트피스 텍스트 — 박스 없이 텍스트만(보는 데 방해 안 되게, '막았다!' 스타일). */
+.wc-cue-foul span,
+.wc-cue-setpiece span {
+  font-size: 16px;
   font-weight: 900;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: rgb(255 244 196 / 96%);
-  color: #5a4a14;
+  color: #fff;
   white-space: nowrap;
+  filter: none;
+  text-shadow:
+    0 2px 5px rgb(0 0 0 / 60%),
+    0 0 2px rgb(0 0 0 / 70%);
 }
 @keyframes wc-cue-pop {
   0% {

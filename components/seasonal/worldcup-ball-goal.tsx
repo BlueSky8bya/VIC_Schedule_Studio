@@ -205,7 +205,7 @@ export function WorldCupBallGoal() {
   // 공이 갑자기 순간이동(오프사이드)하거나 파울 위치를 모르던 가시성 문제 해결.
   const [fieldCue, setFieldCue] = useState<{
     id: number;
-    kind: "offside" | "foul";
+    kind: "offside" | "foul" | "setpiece";
     x: number;
     y: number;
     lineX?: number;
@@ -749,6 +749,7 @@ export function WorldCupBallGoal() {
     lastTouch.current = null;
     lastActiveAt.current = performance.now();
     flashPiece("킥오프");
+    showCue({ kind: "setpiece", x: pos.current.x, y: pos.current.y, label: "킥오프" });
     logEvent("kickoff", concede);
     scheduleRestart(
       700,
@@ -766,6 +767,7 @@ export function WorldCupBallGoal() {
     pos.current.x = clamp(pos.current.x, fx.min, fx.max);
     pos.current.y = where === "top" ? insetY() : h - insetY(); // 터치라인 위
     flashPiece("스로인");
+    showCue({ kind: "setpiece", x: pos.current.x, y: pos.current.y, label: "스로인" });
     logEvent("throwIn", team, pos.current.x, pos.current.y);
     // 라인에서 한 박자 쉰 뒤, 가까운 선수가 와서 던진다(약 1초). 던질 땐 안쪽으로.
     scheduleRestart(
@@ -795,6 +797,7 @@ export function WorldCupBallGoal() {
       pos.current.y = topCorner ? insetY() : h - insetY();
       lastTouch.current = attack;
       flashPiece("코너킥");
+      showCue({ kind: "setpiece", x: pos.current.x, y: pos.current.y, label: "코너킥" });
       logEvent("cornerKick", attack, pos.current.x, pos.current.y);
       const boxX = side === "left" ? g.x + g.w + 60 : g.x - 60;
       // 공격팀 키커가 코너로 와서 박스로 띄워 올린다(크로스).
@@ -813,6 +816,7 @@ export function WorldCupBallGoal() {
       pos.current.y = clamp(pos.current.y, h * 0.3, h * 0.7);
       lastTouch.current = defend;
       flashPiece("골킥");
+      showCue({ kind: "setpiece", x: pos.current.x, y: pos.current.y, label: "골킥" });
       logEvent("goalKick", defend, pos.current.x, pos.current.y);
       const upfield = side === "left" ? bounds().w * 0.6 : bounds().w * 0.4;
       const ty = h * 0.5 + rnd(-h * 0.2, h * 0.2);
@@ -1935,6 +1939,7 @@ export function WorldCupBallGoal() {
         lastTouch.current = null;
         lastActiveAt.current = now;
         flashPiece("볼 드롭");
+        showCue({ kind: "setpiece", x: pos.current.x, y: pos.current.y, label: "볼 드롭" });
         logEvent("ballDrop");
       }
     }
