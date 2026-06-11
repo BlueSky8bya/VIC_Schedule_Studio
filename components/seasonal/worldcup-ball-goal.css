@@ -87,11 +87,27 @@
   top: 0;
   left: 0;
   border-radius: 50%;
-  pointer-events: none;
+  pointer-events: auto; /* 호버(웹)/탭(모바일)으로 선수 정보 카드 — 작아도 탭되게 아래 ::after 확장 */
+  cursor: pointer;
   box-shadow:
     0 0 0 1.5px rgb(255 255 255 / 85%),
     0 2px 4px rgb(40 30 60 / 28%);
   will-change: transform;
+}
+/* 탭 타깃 확장 — 점이 작아도(13px) 손가락으로 누르기 쉽게 투명 영역. */
+.wc-player::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+}
+/* 선택된 선수 강조 링. */
+.wc-player-pick {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px rgb(255 215 80 / 90%),
+    0 3px 8px rgb(40 30 60 / 40%);
+  z-index: 2;
 }
 .wc-team-0 {
   background: radial-gradient(circle at 35% 30%, #ff6a6a, #d92d2d);
@@ -418,6 +434,88 @@
 .wc-stat-head .b {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* 선수 정보 카드 — 호버(웹)/탭(모바일) 시. 등번호·역할·포메이션·카드 + 체력·능력치 미니바. */
+.wc-pcard {
+  position: absolute;
+  left: 50%;
+  bottom: 70px;
+  transform: translateX(-50%);
+  width: min(280px, 86vw);
+  pointer-events: none;
+  padding: 9px 11px;
+  border-radius: 12px;
+  background: rgb(20 30 24 / 90%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #eafff2;
+  font-size: 12px;
+  font-weight: 800;
+  box-shadow: 0 14px 32px -12px rgb(0 0 0 / 60%);
+  animation: wc-drop-in 0.18s ease both;
+}
+.wc-pcard-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgb(255 255 255 / 14%);
+}
+.wc-pcard-head .num {
+  flex: 0 0 auto;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-size: 14px;
+  color: #fff;
+}
+.wc-pcard-0 .wc-pcard-head .num {
+  background: radial-gradient(circle at 35% 30%, #ff6a6a, #d92d2d);
+}
+.wc-pcard-1 .wc-pcard-head .num {
+  background: radial-gradient(circle at 35% 30%, #6f9bff, #2f5fe0);
+}
+.wc-pcard-head > span {
+  flex: 1;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.wc-pcard-head .pc-card {
+  flex: 0 0 auto;
+}
+.wc-pcard-stat,
+.wc-pcard-stam-row {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.wc-pcard-stat > span,
+.wc-pcard-stam-row > span {
+  font-size: 11px;
+  opacity: 0.82;
+}
+.wc-pcard-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 14%);
+  overflow: hidden;
+}
+.wc-pcard-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #7ee0a8, #34d399);
+}
+.wc-pcard-stam-row .wc-pcard-bar i {
+  background: linear-gradient(90deg, #ffd27a, #f59e0b);
 }
 
 /* 전술 변경 드롭다운 — 상단(스코어 아래)에서 펼쳐진다. 팀별(🔴/🔵) 12개 전술 칩(가로 스크롤).

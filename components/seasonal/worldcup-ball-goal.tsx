@@ -138,6 +138,7 @@ export function WorldCupBallGoal() {
   const [matchResult, setMatchResult] = useState<string | null>(null);
   const [tacticsOpen, setTacticsOpen] = useState(false); // 전술 변경 패널 열림
   const [statsOpen, setStatsOpen] = useState(false); // 경기 기록 패널 열림
+  const [pickPlayer, setPickPlayer] = useState<number | null>(null); // 호버/탭한 선수(정보 카드)
   const [styleNames, setStyleNames] = useState<[string, string]>(["", ""]); // 현재 팀별 전술명(칩 강조용)
   // 세트피스(스로인/코너/골킥/킥오프/오프사이드)는 라인에 잠깐 멈췄다 재개 — 딜레이 후 kick 실행.
   const pendingRestart = useRef<{ at: number; kick: () => void; walk?: () => void } | null>(null);
@@ -1478,7 +1479,12 @@ export function WorldCupBallGoal() {
     <div className={`wc-play ${enabled ? "on" : ""}`} aria-hidden="true">
       {enabled ? (
         <>
-          <div className="wc-dim" />
+          <div
+            className="wc-dim"
+            onClick={() => {
+              setPickPlayer(null); // 빈 곳 탭/클릭하면 선수 카드 닫기
+            }}
+          />
           {/* 피치 본체 — 모바일에선 이 stage만 90° 세워 세로 피치로. 물리는 landscape 그대로. */}
           <div className="wc-stage" ref={layerRef}>
             <div className="wc-pitch" aria-hidden="true">
@@ -1513,11 +1519,22 @@ export function WorldCupBallGoal() {
               return (
                 <div
                   key={`p-${i}`}
-                  className={`wc-player wc-team-${team}`}
+                  className={`wc-player wc-team-${team} ${pickPlayer === i ? "wc-player-pick" : ""}`}
                   style={{
                     width: `${isMobile ? 13 : PLAYER_R * 2}px`,
                     height: `${isMobile ? 13 : PLAYER_R * 2}px`
                   }}
+                  onPointerEnter={isMobile ? undefined : () => setPickPlayer(i)}
+                  onPointerLeave={isMobile ? undefined : () => setPickPlayer((c) => (c === i ? null : c))}
+                  onClick={
+                    isMobile
+                      ? (e) => {
+                          e.stopPropagation();
+                          setPickPlayer((c) => (c === i ? null : i));
+                          hapticTick();
+                        }
+                      : undefined
+                  }
                   ref={(el) => {
                     playerEls.current[i] = el;
                   }}
@@ -1616,6 +1633,52 @@ export function WorldCupBallGoal() {
             {saveFlash ? <div className={`wc-save-text wc-save-${saveFlash}`}>막았다!</div> : null}
             {setPiece ? <div className="wc-setpiece">{setPiece}</div> : null}
             {matchResult ? <div className="wc-result">{matchResult}</div> : null}
+            {pickPlayer != null && players.current[pickPlayer]
+              ? (() => {
+                  const p = players.current[pickPlayer];
+                  const roleKo: Record<string, string> = {
+                    DF: "수비",
+                    DM: "수비형 MF",
+                    MF: "중앙 MF",
+                    WG: "윙",
+                    FW: "공격"
+                  };
+                  const form = teams.current?.[p.team]?.formation ?? "";
+                  const cards = p.red ? "🟥" : p.yellow >= 2 ? "🟨🟨" : p.yellow === 1 ? "🟨" : "";
+                  const rows: [string, number][] = [
+                    ["스피드", p.pace],
+                    ["압박", p.press],
+                    ["패스", p.pass],
+                    ["슛", p.shoot],
+                    ["규율", p.discipline]
+                  ];
+                  return (
+                    <div className={`wc-pcard wc-pcard-${p.team}`}>
+                      <div className="wc-pcard-head">
+                        <b className="num">{p.num}</b>
+                        <span>
+                          {roleKo[p.slot.role]} · {form}
+                        </span>
+                        {cards ? <span className="pc-card">{cards}</span> : null}
+                      </div>
+                      <div className="wc-pcard-stam-row">
+                        <span>체력</span>
+                        <div className="wc-pcard-bar">
+                          <i style={{ width: `${Math.round(p.stamina * 100)}%` }} />
+                        </div>
+                      </div>
+                      {rows.map(([label, v]) => (
+                        <div className="wc-pcard-stat" key={label}>
+                          <span>{label}</span>
+                          <div className="wc-pcard-bar">
+                            <i style={{ width: `${Math.round(v * 100)}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()
+              : null}
           </>
         ) : null}
         {enabled && tacticsOpen ? (
