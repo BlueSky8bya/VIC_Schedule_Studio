@@ -856,8 +856,11 @@ export function WorldCupBallGoal() {
       if (e.team === team || e.red) return; // 퇴장 선수는 필드 밖 — 라인 계산서 제외(유령 라인 방지)
       line = team === 0 ? Math.max(line, e.x) : Math.min(line, e.x);
     });
-    if (!isFinite(line)) line = team === 0 ? w * 0.5 : w * 0.5; // 상대 전원 퇴장 등 방어
-    return team === 0 ? Math.max(line, w * 0.5) : Math.min(line, w * 0.5);
+    if (!isFinite(line)) line = w * 0.5; // 상대 전원 퇴장 등 방어
+    // 클램프(중앙선으로 강제 당김) 제거 — 진짜 2번째 최후방 수비수 위치를 그대로. 클램프가 있으면
+    // 수비가 올라가 있을 때 라인이 중앙에 박혀 가짜 오프사이드 + 깃발/노란선 위치 어긋남이 났다.
+    // '자기 진영선 면제'는 isOffside의 inOppHalf가 따로 처리하므로 클램프 불필요.
+    return line;
   };
 
   // 필드 단서 띄우기 — 발생 위치에 라벨(+오프사이드 라인) 잠깐. 1.4초 뒤 자동 제거.
@@ -882,7 +885,8 @@ export function WorldCupBallGoal() {
     pos.current.y = clamp(y, ballDia() / 2, h - ballDia() / 2);
     lastTouch.current = defend;
     flashPiece("오프사이드");
-    showCue({ kind: "offside", x, y, lineX, label: "🚩" });
+    // 깃발은 노란 오프사이드 라인 '위'에(같은 x), 높이는 반칙 선수 y → 깃발과 선이 어긋나지 않게.
+    showCue({ kind: "offside", x: lineX ?? x, y, lineX, label: "🚩" });
     logEvent("offside", attacker, x, y);
     // 수비팀 간접 프리킥 — 가까운 수비수가 와서 한 박자 뒤 짧게 재개.
     scheduleRestart(
