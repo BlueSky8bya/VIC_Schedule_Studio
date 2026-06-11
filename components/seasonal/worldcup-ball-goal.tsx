@@ -145,7 +145,7 @@ export function WorldCupBallGoal() {
   const eventLog = useRef(createEventLog()); // 골/세트피스/오프사이드 등 이벤트 기록(Phase 0 토대)
   // 경기 시계 — 1 real초 = 1 게임분. 전반 0~45, 후반 45~90 + 추가시간(세트피스로 누적). 동점이면
   // 연장(90~105, 105~120). 종료 시 결과 띄우고 자동 새 경기. breakUntil 동안은 정지(하프타임).
-  const clock = useRef({ t: 0, period: 1, added: 0, ended: false });
+  const clock = useRef({ t: 0, period: 1, added: 0, ended: false, addedAnnounced: false });
   // 경기 기록 — 점유(프레임 수)·슛·파울·카드. poss는 프레임 누적 → 비율로 환산해 표시.
   const stats = useRef({
     poss: [0, 0],
@@ -170,6 +170,8 @@ export function WorldCupBallGoal() {
   const breakUntil = useRef(0); // real ms — 이 시각까지 하프타임/피리어드 사이 휴식(시계·플레이 정지)
   const [clockText, setClockText] = useState("");
   const [matchResult, setMatchResult] = useState<string | null>(null);
+  const [phaseBanner, setPhaseBanner] = useState<string | null>(null); // 하프타임·연장·추가시간 중앙 배너
+  const bannerTimer = useRef<number | null>(null);
   // 승부차기 — 연장(4피리어드)까지 동점이면. 5키커 선축 후 서든데스. phase 타임라인으로 진행.
   const shootout = useRef({
     active: false,
@@ -597,7 +599,7 @@ export function WorldCupBallGoal() {
     setStyleNames([ta.name, tb.name]);
     scoreRef.current = [0, 0];
     setScore([0, 0]);
-    clock.current = { t: 0, period: 1, added: 0, ended: false };
+    clock.current = { t: 0, period: 1, added: 0, ended: false, addedAnnounced: false };
     stats.current = { poss: [0, 0], shot: [0, 0], foul: [0, 0], yellow: [0, 0], red: [0, 0] };
     setStatText(null);
     setCardCounts({ yellow: [0, 0], red: [0, 0] });
@@ -607,8 +609,8 @@ export function WorldCupBallGoal() {
     breakUntil.current = 0;
     setMatchResult(null);
     setClockText("전반 00:00");
-    setSetPiece(`🔴 ${ta.name}   vs   ${tb.name} 🔵`);
-    window.setTimeout(() => setSetPiece((s) => (s && s.includes("vs") ? null : s)), 2600);
+    // 경기 시작 매치업 — 화면 중앙 배너로(🔴 전술 vs 전술 🔵).
+    showBanner(`🔴 ${ta.name}  vs  ${tb.name} 🔵`, 2600);
   };
 
   const burstConfetti = (cx: number, cy: number) => {
@@ -854,6 +856,13 @@ export function WorldCupBallGoal() {
     setFieldCue({ ...cue, id: performance.now() });
     if (cueTimer.current) window.clearTimeout(cueTimer.current);
     cueTimer.current = window.setTimeout(() => setFieldCue(null), 1400);
+  };
+
+  // 화면 중앙 배너 — 하프타임·연장 전/후반·추가시간 등 시간 이벤트. 기본 2.2초.
+  const showBanner = (text: string, ms = 2200) => {
+    setPhaseBanner(text);
+    if (bannerTimer.current) window.clearTimeout(bannerTimer.current);
+    bannerTimer.current = window.setTimeout(() => setPhaseBanner(null), ms);
   };
 
   const callOffside = (attacker: 0 | 1, x: number, y: number, lineX?: number) => {
@@ -1701,13 +1710,13 @@ export function WorldCupBallGoal() {
     if (c.period === 1) {
       c.period = 2;
       c.t = 45;
-      flashPiece("하프타임");
+      showBanner("하프타임");
       advanced = true;
     } else if (c.period === 2) {
       if (scoreRef.current[0] === scoreRef.current[1]) {
         c.period = 3;
         c.t = 90;
-        flashPiece("연장 전반");
+        showBanner("연장 전반");
         advanced = true;
       } else {
         endMatch();
@@ -1715,7 +1724,7 @@ export function WorldCupBallGoal() {
     } else if (c.period === 3) {
       c.period = 4;
       c.t = 105;
-      flashPiece("연장 후반");
+      showBanner("연장 후반");
       advanced = true;
     } else if (scoreRef.current[0] === scoreRef.current[1]) {
       startShootout(); // 연장까지 동점 → 승부차기
@@ -1724,6 +1733,7 @@ export function WorldCupBallGoal() {
     }
     if (advanced) {
       c.added = 0;
+      c.addedAnnounced = false;
       startBreak();
       centerBall();
       window.setTimeout(() => kickoff(Math.random() < 0.5 ? 0 : 1), HALF_BREAK_MS);
@@ -1735,7 +1745,13 @@ export function WorldCupBallGoal() {
     if (c.ended || shootout.current.active || performance.now() < breakUntil.current) return;
     c.t += 1 / 60;
     if (possTeam.current != null) stats.current.poss[possTeam.current] += 1; // 점유 프레임 누적
-    if (c.t >= PERIOD_END[c.period - 1] + c.added) endPeriod();
+    // 정규시간 끝 → 추가시간 진입 시 한 번 중앙 배너로 알림(+N분).
+    const base = PERIOD_END[c.period - 1];
+    if (!c.addedAnnounced && c.t >= base) {
+      c.addedAnnounced = true;
+      showBanner(`추가 시간 +${Math.max(1, Math.ceil(c.added))}분`, 1800);
+    }
+    if (c.t >= base + c.added) endPeriod();
     if (++clockTick.current % 12 === 0) {
       setClockText(fmtClock());
       const s = stats.current;
@@ -2514,6 +2530,7 @@ export function WorldCupBallGoal() {
               </div>
             ) : null}
             {setPiece ? <div className="wc-setpiece">{setPiece}</div> : null}
+            {phaseBanner ? <div className="wc-phase-banner">{phaseBanner}</div> : null}
             {matchResult ? <div className="wc-result">{matchResult}</div> : null}
             {pickPlayer != null && players.current[pickPlayer]
               ? (() => {

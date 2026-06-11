@@ -606,6 +606,40 @@
 
 /* 필드 단서 — 오프사이드 세로 라인(피치 폭 전체) + 발생 위치 라벨(🚩/카드/삑!). stage 좌표라
    웹은 세로 라인, 모바일은 stage 90° 회전으로 자동 가로. 이모지만 모바일서 안 눕게 counter-rotate. */
+/* 기록 버튼 아래 좌상단 칩 — 이제 모든 이벤트가 필드 단서/중앙 배너로 떠서 숨긴다(중복·방해 제거). */
+.wc-setpiece {
+  display: none;
+}
+/* 중앙 배너 — 하프타임·연장·추가시간·경기시작 매치업. 화면 정중앙 큰 텍스트. */
+.wc-phase-banner {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 12;
+  padding: 0 14px;
+  text-align: center;
+  color: #fff;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  text-shadow:
+    0 3px 10px rgb(0 0 0 / 60%),
+    0 0 3px rgb(0 0 0 / 70%);
+  animation: wc-banner-in 0.4s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+@keyframes wc-banner-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.7);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
 .wc-offside-line {
   position: absolute;
   top: 0;
@@ -1264,6 +1298,9 @@
   /* 단서 이모지/라벨 — stage가 90° 회전이라 안 눕게 -90° counter-rotate(라인은 그대로 두면 가로). */
   .wc-cue span {
     transform: rotate(-90deg);
+  }
+  .wc-phase-banner {
+    font-size: 18px;
   }
   /* 모바일 골대 — 작은 스케일에 맞춰 프레임 얇게(세련). */
   .wc-goal-frame {
