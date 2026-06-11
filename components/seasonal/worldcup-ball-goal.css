@@ -208,6 +208,22 @@
   display: block;
   animation: wc-cross-bob 0.8s ease-in-out infinite;
 }
+/* 옐로카드 — 선수 머리 위(십자가와 안 겹치게 살짝 우측). */
+.wc-player-card {
+  position: absolute;
+  left: 60%;
+  bottom: 100%;
+  transform: translate(-50%, 2px);
+  display: none;
+  font-size: 10px;
+  line-height: 1;
+  pointer-events: none;
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 45%));
+  z-index: 3;
+}
+.wc-player-carded > .wc-player-card {
+  display: block;
+}
 @keyframes wc-cross-bob {
   0%,
   100% {

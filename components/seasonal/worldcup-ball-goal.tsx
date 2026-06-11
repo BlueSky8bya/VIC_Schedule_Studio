@@ -233,6 +233,7 @@ export function WorldCupBallGoal() {
   } | null>(null);
   const possTeam = useRef<0 | 1 | null>(null); // 통제 중인 팀(lastTouch 기반 스무딩) — 압박 방향 판단.
   const counterPress = useRef<{ team: 0 | 1; until: number } | null>(null); // 5초 카운터프레스 윈도우.
+  const transition = useRef<{ team: 0 | 1; until: number } | null>(null); // 막 공 뺏은 팀의 역습 윈도우(약 3.5s).
   const keeperAggro = useRef<Record<Side, number>>({ left: 0.5, right: 0.5 }); // 스위퍼 성향 0..1.
   // GK 능력치(정보 카드용) — 반응/핸들링/킥/스위핑/침착. 매 경기 buildMatch서 새로.
   const keeperStats = useRef<Record<Side, { reflex: number; handling: number; kick: number; sweep: number; composure: number }>>({
@@ -531,6 +532,7 @@ export function WorldCupBallGoal() {
       // 부상 — 쓰러져 있으면(down) 또는 타박 큼 → 절뚝/다운 시각.
       el.classList.toggle("wc-player-down", performance.now() < p.downUntil);
       el.classList.toggle("wc-player-hurt", p.knock > 0.35 && performance.now() >= p.downUntil);
+      el.classList.toggle("wc-player-carded", p.yellow > 0); // 옐로카드 머리 위 표시
     });
   };
 
@@ -1294,7 +1296,14 @@ export function WorldCupBallGoal() {
         else if (r <= nP + 1) mode = "cover";
         else mode = "shape";
       }
-      const sprint = mode === "press" || mode === "carry";
+      // 역습 전환 — 막 뺏은 팀의 전방/중앙 선수는 잠깐 전진 런(스프린트)으로 빠르게 올라간다.
+      const counterRun =
+        attacking &&
+        transition.current != null &&
+        transition.current.team === p.team &&
+        now < transition.current.until &&
+        (p.slot.role === "FW" || p.slot.role === "WG" || p.slot.role === "MF");
+      const sprint = mode === "press" || mode === "carry" || counterRun;
 
       // 스태거드 재결정 — 압박/캐리는 자주, 나머지는 드물게 + 개별 반응지연. 캐시 목표 유지로
       // 22명이 같은 프레임에 일제히 방향 트는 것 방지(규율 높을수록 반응 빠름).
@@ -1315,7 +1324,7 @@ export function WorldCupBallGoal() {
         } else {
           // shape/support — 역할 home + 공쪽 제한 쏠림. 수비=컴팩트(많이), 공격=벌림(적게+전진).
           const fwd = p.slot.role === "FW" || p.slot.role === "WG";
-          const push = attacking ? (fwd ? 0.18 : 0.1) : -0.06;
+          const push = counterRun ? 0.36 : attacking ? (fwd ? 0.18 : 0.1) : -0.06;
           const home = roleHome(p, push);
           const infX = attacking ? 0.1 : 0.16;
           const infY = attacking ? 0.22 : 0.3;
@@ -1988,6 +1997,10 @@ export function WorldCupBallGoal() {
       if (lost != null && lost !== ctrl && lt && lt.press >= 0.7) {
         counterPress.current = { team: lost, until: tNow + 4000 };
       }
+      // 막 공 뺏은 팀 → 역습 윈도우(약 3.5s): 공격수 전진 런 + 빠른 처리. 오픈플레이 전환만(세트피스 X).
+      if (lost != null && lost !== ctrl && pendingRestart.current == null) {
+        transition.current = { team: ctrl, until: tNow + 3500 };
+      }
     }
 
     if (!frozen) updateKeepers(dt); // 프리즈 중엔 walk()가 키퍼(골킥)를 직접 제어
@@ -2521,6 +2534,10 @@ export function WorldCupBallGoal() {
                   {/* 부상 십자가 — 심한 부상(.wc-player-hurt/down)일 때만 보이고, 선수와 함께 이동(회복 시 사라짐). */}
                   <span className="wc-player-cross" aria-hidden="true">
                     ✚
+                  </span>
+                  {/* 옐로카드 — 경고 받은 선수 머리 위 🟨(부상 십자가처럼 따라다님). */}
+                  <span className="wc-player-card" aria-hidden="true">
+                    🟨
                   </span>
                 </div>
               );
