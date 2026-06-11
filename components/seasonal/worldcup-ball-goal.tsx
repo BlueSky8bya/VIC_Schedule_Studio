@@ -280,24 +280,25 @@ export function WorldCupBallGoal() {
     kY: number,
     active: boolean,
     now: number,
-    clip: boolean
+    clipSide: Side | null // 어느 골 박스로 clamp할지(null=clamp 안 함). 승부차기는 항상 "right".
   ) => {
     const el = keeperRef.current[s];
     if (!el) return;
     const kd = kdDia();
     const gl = glovesRef.current[s];
     const cur = glovePos.current[s];
-    // 장갑이 골대 박스 밖(뒷벽·상하 포스트)으로 픽셀 한 톨도 안 삐지게 월드위치 clamp. 입구(필드)쪽은
-    // 자유(키퍼가 공 향해 뻗어야 하므로). 정상경기만(승부차기 키퍼는 element 재사용이라 clip=false).
+    // 장갑이 골대 박스 밖(뒷벽·상하 포스트)으로 픽셀 한 톨도 안 삐지게 월드위치 clamp. 단 clamp 범위를
+    // '몸 위치(kX,kY)까지 포함'하도록 확장 → 몸이 박스 밖이면 장갑도 몸 따라감(분리 방지). 입구(필드)는 자유.
     const clampGlove = (gi: number) => {
-      if (!clip) return;
-      const g = goalRect(s);
-      const gr = kd * 0.42; // 글러브 반경 여유(미트가 커서 넉넉히)
+      if (!clipSide) return;
+      const g = goalRect(clipSide);
+      const gr = kd * 0.42;
+      const yLo = Math.min(g.y + gr, kY);
+      const yHi = Math.max(g.y + g.h - gr, kY);
       let wx = kX + cur[gi].x;
-      let wy = kY + cur[gi].y;
-      wy = clamp(wy, g.y + gr, g.y + g.h - gr); // 상·하 포스트 밖 금지
-      if (s === "right") wx = Math.min(wx, g.x + g.w - gr); // 뒷벽(오른쪽) 밖 금지
-      else wx = Math.max(wx, g.x + gr); // 왼골 뒷벽(왼쪽) 밖 금지
+      const wy = clamp(kY + cur[gi].y, yLo, yHi);
+      if (clipSide === "right") wx = Math.min(wx, Math.max(g.x + g.w - gr, kX)); // 뒷벽(오른쪽)
+      else wx = Math.max(wx, Math.min(g.x + gr, kX)); // 뒷벽(왼쪽)
       cur[gi].x = wx - kX;
       cur[gi].y = wy - kY;
     };
@@ -421,7 +422,8 @@ export function WorldCupBallGoal() {
       }
       const ucx = s === "left" ? insetX() - kd / 2 : w - insetX() + kd / 2; // 요소 무변환 중심 x
       el.style.transform = `translate3d(${cur.x - ucx}px, ${cur.y - kd / 2}px, 0)`;
-      placeGloves(s, cur.x, cur.y, defending, now, false); // 승부차기 키퍼는 element 재사용 → clip 안 함
+      // 승부차기: 막는 키퍼는 오른쪽 골 박스로 clip(몸·장갑 안 삐지게), 대기 키퍼는 null.
+      placeGloves(s, cur.x, cur.y, defending, now, defending ? "right" : null);
     });
   };
 
@@ -438,7 +440,7 @@ export function WorldCupBallGoal() {
       el.classList.remove("wc-keeper-def-red", "wc-keeper-def-blue");
       const ox = s === "left" ? keeperX.current[s] : -keeperX.current[s];
       el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
-      placeGloves(s, keeperCenterX(s), keeperY.current[s], true, now, true); // 정상경기: 골 박스로 clip
+      placeGloves(s, keeperCenterX(s), keeperY.current[s], true, now, s); // 정상경기: 자기 골 박스로 clip
     });
   };
   const placePlayers = () => {
@@ -1463,8 +1465,15 @@ export function WorldCupBallGoal() {
         const sp = PLAYER_SPEED * 0.35 * dt;
         k.x += clamp(spotX - ballGap * 0.3 - k.x, -sp, sp);
       }
+      // 다이브 — 단 키퍼 몸이 골 포스트(상·하) 밖으로 안 나가게 마우스 범위 안으로 clamp.
       const kp = keeperY.current.right;
-      keeperY.current.right = kp + clamp(s.guessY - kp, -26, 26);
+      const gR = goalRect("right");
+      const kdH = kdDia() / 2;
+      keeperY.current.right = clamp(
+        kp + clamp(s.guessY - kp, -26, 26),
+        gR.y + kdH,
+        gR.y + gR.h - kdH
+      );
       pos.current.x += vel.current.x * dt;
       pos.current.y += vel.current.y * dt;
       if (!s.scored && pos.current.x >= goalLineX - 2) {
