@@ -98,6 +98,8 @@ export function WorldCupBallGoal() {
   const goalAt = useRef(0);
   const saveAt = useRef(0);
   const kickAt = useRef(0);
+  const dribbleCount = useRef(0); // 연속 드리블 터치 수(상한으로 무한 드리블 방지)
+  const lastBallPlayer = useRef<Player | null>(null); // 직전 볼 처리 선수 — 바뀌면 드리블 카운트 리셋
   const lastTouch = useRef<0 | 1 | null>(null);
   const lastActiveAt = useRef(0);
   const reduced = useRef(false);
@@ -677,7 +679,7 @@ export function WorldCupBallGoal() {
   const playBall = (p: Player) => {
     lastTouch.current = p.team;
     kickAt.current = performance.now();
-    const { w } = bounds();
+    const { w, h } = bounds();
     const t = teams.current ? teams.current[p.team] : null;
     const possession = t ? t.possession : 0.5;
     const enemy: Side = p.team === 0 ? "right" : "left";
@@ -690,11 +692,57 @@ export function WorldCupBallGoal() {
     const closeShot = distGoal < w * 0.32 && Math.random() < 0.45 + p.shoot * 0.5;
     const longShot = distGoal < w * 0.46 && possession < 0.4 && Math.random() < p.shoot * 0.5;
     if (closeShot || longShot) {
+      dribbleCount.current = 0;
       const tx = enemy === "left" ? g.x + g.w : g.x;
       const ty = g.y + g.h / 2 + (Math.random() * 2 - 1) * g.h * 0.5 * (1.2 - p.shoot);
       setVelTo(tx, ty, 480 + Math.random() * 150);
       return;
     }
+
+    // ── 온볼 지능: 무작정 패스 X. 안 눌리고 앞 공간 있으면 끌고 가며(드리블) 간 보고, 압박이면
+    //    개인기로 제치거나 안전하게 패스. 점유 성향 높을수록 더 끌고 유지. 연속 드리블은 cap 제한.
+    if (lastBallPlayer.current !== p) {
+      dribbleCount.current = 0; // 다른 선수가 잡으면 리셋
+      lastBallPlayer.current = p;
+    }
+    const dir = enemy === "left" ? -1 : 1; // 공격 방향(+x 오른쪽 골 / -x 왼쪽 골)
+    let oppNear = Infinity;
+    let nearEx = 0;
+    let nearEy = 0;
+    let spaceAhead = w * 0.3;
+    players.current.forEach((e) => {
+      if (e.team === p.team) return;
+      const d = Math.hypot(e.x - p.x, e.y - p.y);
+      if (d < oppNear) {
+        oppNear = d;
+        nearEx = e.x;
+        nearEy = e.y;
+      }
+      const fwd = (e.x - p.x) * dir; // 골 방향으로 얼마나 앞
+      if (fwd > 0 && Math.abs(e.y - p.y) < h * 0.12) spaceAhead = Math.min(spaceAhead, fwd);
+    });
+    const pressed = oppNear < w * 0.05;
+    const adventurous = p.pace * 0.4 + (1 - p.discipline) * 0.4; // 개인 드리블·모험 성향
+    const canDribble = dribbleCount.current < 7;
+    // 공간 있고 안 눌리면 끌고 간다(점유팀일수록 더). 압박이어도 개인기로 제치는 시도(모험가).
+    const wantCarry =
+      canDribble && !pressed && (spaceAhead > w * 0.1 || possession > 0.6) && Math.random() < 0.5 + (possession - 0.5) * 0.6;
+    const wantBeatMan = canDribble && pressed && Math.random() < adventurous * 0.32;
+    if (wantCarry || wantBeatMan) {
+      dribbleCount.current += 1;
+      let ang = Math.atan2(goalCy - p.y, goalCx - p.x); // 기본 골 방향
+      if (wantBeatMan && oppNear < Infinity) {
+        const away = Math.atan2(p.y - nearEy, p.x - nearEx); // 수비 반대쪽으로 제침(페인트)
+        ang = ang * 0.45 + away * 0.55 + rnd(-0.3, 0.3);
+      } else if (Math.random() < 0.32) {
+        ang += rnd(-0.8, 0.8); // 간보기 — 횡으로 살짝 틀어 속이기(360도 간 보는 느낌)
+      }
+      const push = pressed ? 230 : 150 + Math.min(spaceAhead, w * 0.2);
+      setVelTo(p.x + Math.cos(ang) * 60, p.y + Math.sin(ang) * 60, push);
+      return;
+    }
+    dribbleCount.current = 0; // 패스/슛 결정하면 리셋
+
     // 오프사이드 판정 — 받는 순간 받을 선수가 상대 최후방 라인(키퍼 제외 사실상 2번째 최후방)
     // 너머 + 상대 진영이면 오프사이드. 레벨(같은 선)은 온사이드라 PLAYER_R*2 여유를 둔다.
     const offLine = offsideLineFor(p.team);
