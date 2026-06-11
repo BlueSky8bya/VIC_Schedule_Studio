@@ -406,10 +406,12 @@ export function WorldCupBallGoal() {
       const el = keeperRef.current[s];
       if (!el) return;
       el.style.display = "";
+      el.style.zIndex = ""; // 정상경기서 올린 z 잔류 방지(승부차기 키퍼는 골 안=그물 뒤)
       const team: 0 | 1 = s === "left" ? 0 : 1;
       el.classList.toggle("wc-keeper-def-red", team === 0);
       el.classList.toggle("wc-keeper-def-blue", team === 1);
       const defending = team !== so.turn;
+      el.classList.toggle("wc-keeper-ingoal", defending); // 막는 키퍼만 골 안(흐릿)
       const tx = defending ? inGoalX : besideX;
       const ty = defending ? keeperY.current.right : besideY;
       let cur = skPos.current[s];
@@ -440,6 +442,12 @@ export function WorldCupBallGoal() {
       el.classList.remove("wc-keeper-def-red", "wc-keeper-def-blue");
       const ox = s === "left" ? keeperX.current[s] : -keeperX.current[s];
       el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
+      // 스위핑으로 골 라인 앞(필드)으로 나오면 그물 앞(z 위)에, 골 안이면 그물 뒤(기본 z, 흐릿).
+      // 안 그러면 필드로 나와도 그물 뒤라 '골 안에 든' 듯 보였다(밖→안 통과 착시). 골 안일 땐 살짝
+      // 블러로 골대와의 접촉을 흐릿하게(눈속임).
+      const inField = keeperX.current[s] > kdDia() * 0.45;
+      el.style.zIndex = inField ? "7" : "";
+      el.classList.toggle("wc-keeper-ingoal", !inField);
       placeGloves(s, keeperCenterX(s), keeperY.current[s], true, now, s); // 정상경기: 자기 골 박스로 clip
     });
   };
@@ -940,7 +948,7 @@ export function WorldCupBallGoal() {
       perceivedY.current[side] += (pos.current.y - perceivedY.current[side]) * rate;
       const wobble = Math.sin(now / 620 + (side === "left" ? 0 : 2.3)) * 24;
       const target = active
-        ? clamp(perceivedY.current[side] + wobble, g.y + kdDia() / 2, g.y + g.h - kdDia() / 2)
+        ? clamp(perceivedY.current[side] + wobble, g.y + kdDia() / 2 + 2.5, g.y + g.h - kdDia() / 2 - 2.5)
         : g.y + g.h / 2;
       const spd = (active ? KEEPER_SPEED : KEEPER_SPEED * 0.5) * dt;
       keeperY.current[side] += clamp(target - keeperY.current[side], -spd, spd);
@@ -1468,7 +1476,7 @@ export function WorldCupBallGoal() {
       // 다이브 — 단 키퍼 몸이 골 포스트(상·하) 밖으로 안 나가게 마우스 범위 안으로 clamp.
       const kp = keeperY.current.right;
       const gR = goalRect("right");
-      const kdH = kdDia() / 2;
+      const kdH = kdDia() / 2 + 2.5; // +ring(2px 테두리 하이라이트)도 포스트 안
       keeperY.current.right = clamp(
         kp + clamp(s.guessY - kp, -26, 26),
         gR.y + kdH,
