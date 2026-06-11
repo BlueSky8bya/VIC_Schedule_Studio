@@ -2944,8 +2944,12 @@ export function PublicPoster({
         <WorldCupBallGoal />
       ) : null}
       {/* 편집실 중력 축구공 — 시청자(웹·모바일)도 늘 잡고 놀 수 있게. 레이어 클릭 통과(공만 잡힘),
-          export 밖. 풀 미니게임(위)과 별개의 캐주얼 토이. */}
-      {interactive && isWorldCupMonth(view.year, view.month) && !(avatarCapable && avatarOn) ? (
+          export 밖. 풀 미니게임(위)과 별개의 캐주얼 토이. 아바타 scene은 데스크탑(!showAgenda)서만
+          뜨므로 모바일(showAgenda)에선 avatarOn이어도 억제 X — owner/dev가 모바일 시청자 미리보기서도
+          중력공이 뜨게(미니게임과 동일 조건). */}
+      {interactive &&
+      isWorldCupMonth(view.year, view.month) &&
+      !(avatarCapable && avatarOn && !showAgenda) ? (
         <WorldCupStudioBall />
       ) : null}
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
