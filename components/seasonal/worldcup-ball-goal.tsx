@@ -77,6 +77,9 @@ export function WorldCupBallGoal() {
   const keeperRef = useRef<Record<Side, HTMLDivElement | null>>({ left: null, right: null });
   // 키퍼 장갑 2개씩 — JS가 공 방향으로 배치(stage 좌표라 모바일 회전과 무관). [side]→[글러브0,글러브1]
   const glovesRef = useRef<Record<Side, (HTMLElement | null)[]>>({ left: [], right: [] });
+  // 승부차기 키퍼 걷기 — 두 키퍼가 오른쪽 골 근처에 같이 있다가, 진영 바뀌면 걸어서 교체.
+  // null=아직 미초기화(첫 프레임에 목표로 스냅). 그 외엔 목표로 lerp(걷는 모습).
+  const skPos = useRef<Record<Side, { x: number; y: number } | null>>({ left: null, right: null });
   // 장갑 현재 오프셋(px) — 목표로 부드럽게 lerp. 손이 몸과 별개로 벌어지고/뻗는다.
   const glovePos = useRef<Record<Side, { x: number; y: number }[]>>({
     left: [
@@ -266,90 +269,131 @@ export function WorldCupBallGoal() {
     el.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y - z}px, 0) scale(${scale})`;
     el.classList.toggle("wc-ball-air", z > AIR_MIN);
   };
-  const placeKeepers = () => {
-    const so = shootout.current;
-    const now = performance.now();
-    (["left", "right"] as Side[]).forEach((s) => {
-      const el = keeperRef.current[s];
-      if (!el) return;
-      if (so.active) {
-        // 승부차기 — 오른쪽 골 하나만. 왼쪽 키퍼는 숨기고, 오른쪽은 막는 팀(차는 팀 반대) 색으로.
-        if (s === "left") {
-          el.style.display = "none";
-          return;
-        }
-        el.style.display = "";
-        const defTeam = so.turn === 0 ? 1 : 0;
-        el.classList.toggle("wc-keeper-def-red", defTeam === 0);
-        el.classList.toggle("wc-keeper-def-blue", defTeam === 1);
-      } else {
-        el.style.display = "";
-        el.classList.remove("wc-keeper-def-red", "wc-keeper-def-blue");
-      }
-      const ox = s === "left" ? keeperX.current[s] : -keeperX.current[s];
-      el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
-      // 장갑 — 몸과 별개로 독립적·동적. 평소엔 벌어져 떠 있고, 슛이 오면(가까움+빠름) 공 가는 쪽
-      // '한 손'이 길게 뻗어(긴 리치) 막는다. 각 손은 목표로 부드럽게 lerp(터렛처럼 안 붙음).
-      const catching = keeperHold.current.side === s;
-      el.classList.toggle("wc-keeper-catch", catching);
-      const kd = kdDia();
-      const kX = keeperCenterX(s);
-      const kY = keeperY.current[s];
-      const bdx = pos.current.x - kX;
-      const bdy = pos.current.y - kY;
-      const dist = Math.hypot(bdx, bdy) || 1;
-      // 잡는 중엔 공이 키퍼에 붙어 dir이 불안정(손이 공 비비며 떨림) → 바깥(필드)쪽 고정 컵 포즈.
-      const dir = catching ? (s === "left" ? 0 : Math.PI) : Math.atan2(bdy, bdx);
+  // 장갑 배치 — kX,kY=키퍼 중심. active면 공 따라 동적(평소 흔들/슛 한 손 리치/1v1 벌림/잡기 컵),
+  // 비active(대기 키퍼)면 손 모으고 가만. deg는 '뻗는 방향(dir)'으로 — atan2(작은 cur)는 손이
+  // 중심 근처일 때 미친듯 회전(부르르 떨림)해서 안 씀. + 최소 reach로 손이 겹쳐 떨리는 것도 방지.
+  const placeGloves = (s: Side, kX: number, kY: number, active: boolean, now: number) => {
+    const el = keeperRef.current[s];
+    if (!el) return;
+    const kd = kdDia();
+    const gl = glovesRef.current[s];
+    const cur = glovePos.current[s];
+    if (!active) {
+      el.classList.remove("wc-keeper-catch");
+      const dir = s === "left" ? 0 : Math.PI;
       const perp = dir + Math.PI / 2;
-      const speed = Math.hypot(vel.current.x, vel.current.y);
-      const defT: 0 | 1 = s === "left" ? 0 : 1;
-      const attackT: 0 | 1 = defT === 0 ? 1 : 0;
-      // 모드: 잡기 > 슛위협(한 손 길게) > 1v1 다가옴(두 손 크게 벌려 각도 좁힘) > 평소.
-      const shotThreat = dist < kd * 4 && speed > 150;
-      const closeDown =
-        !shotThreat && lastTouch.current === attackT && dist < kd * 7 && speed <= 160;
-      const threat = shotThreat || catching;
-      // 공이 향하는 옆방향(perp 성분) → 그쪽 손이 리드(길게 뻗음).
-      const vperp = vel.current.x * Math.cos(perp) + vel.current.y * Math.sin(perp);
-      const lead = vperp >= 0 ? 0 : 1;
-      const gl = glovesRef.current[s];
-      const cur = glovePos.current[s];
+      const deg = (dir * 180) / Math.PI;
       for (let gi = 0; gi < 2; gi++) {
         const g = gl[gi];
         if (!g) continue;
         const sgn = gi === 0 ? 1 : -1;
-        const isLead = gi === lead;
-        // reach/spread — 슛위협:리드 손 공까지 길게. 1v1:두 손 크게 벌려 큰 실루엣(각도 차단). 평소:중간.
-        const reach = catching
-          ? kd * 0.48
-          : shotThreat
-            ? isLead
-              ? Math.min(dist * 0.92, kd * 1.15)
-              : kd * 0.42
-            : closeDown
-              ? kd * 0.52
-              : kd * 0.4;
-        const spread =
-          (catching ? 0.12 : shotThreat ? (isLead ? 0.08 : 0.24) : closeDown ? 0.62 : 0.32) * kd;
-        // idle 미세 흔들 — 손마다 다른 위상·두 주파수 합 → 들숨날숨처럼 규칙적이지 않게(작게).
-        const ph = gi * 3.3 + (s === "left" ? 0 : 1.7);
-        const bobP =
-          threat || closeDown
-            ? 0
-            : (Math.sin(now / 560 + ph) * 0.6 + Math.sin(now / 247 + ph * 2.3) * 0.4) * kd * 0.04;
-        const bobR =
-          threat || closeDown
-            ? 0
-            : Math.sin(now / 690 + ph * 1.4) * kd * 0.035; // reach도 살짝 따로 흔들(고정 호흡 깨기)
-        const tx = Math.cos(dir) * (reach + bobR) + Math.cos(perp) * (spread * sgn + bobP);
-        const ty = Math.sin(dir) * (reach + bobR) + Math.sin(perp) * (spread * sgn + bobP);
-        // 부드럽게 따라감(손이 몸·서로와 별개로 늦게/벌어지며 움직임).
-        const k = catching ? 0.5 : threat ? 0.42 : closeDown ? 0.28 : 0.14;
-        cur[gi].x += (tx - cur[gi].x) * k;
-        cur[gi].y += (ty - cur[gi].y) * k;
-        const deg = (Math.atan2(cur[gi].y, cur[gi].x) * 180) / Math.PI; // 미트는 뻗는 방향을 향함
+        const tx = Math.cos(dir) * kd * 0.34 + Math.cos(perp) * kd * 0.26 * sgn;
+        const ty = Math.sin(dir) * kd * 0.34 + Math.sin(perp) * kd * 0.26 * sgn;
+        cur[gi].x += (tx - cur[gi].x) * 0.2;
+        cur[gi].y += (ty - cur[gi].y) * 0.2;
         g.style.transform = `translate(calc(-50% + ${cur[gi].x}px), calc(-50% + ${cur[gi].y}px)) rotate(${deg}deg)`;
       }
+      return;
+    }
+    const catching = keeperHold.current.side === s;
+    el.classList.toggle("wc-keeper-catch", catching);
+    const bdx = pos.current.x - kX;
+    const bdy = pos.current.y - kY;
+    const dist = Math.hypot(bdx, bdy) || 1;
+    // 잡는 중엔 공이 키퍼에 붙어 dir 불안정 → 바깥(필드)쪽 고정 컵 포즈.
+    const dir = catching ? (s === "left" ? 0 : Math.PI) : Math.atan2(bdy, bdx);
+    const perp = dir + Math.PI / 2;
+    const speed = Math.hypot(vel.current.x, vel.current.y);
+    const defT: 0 | 1 = s === "left" ? 0 : 1;
+    const attackT: 0 | 1 = defT === 0 ? 1 : 0;
+    const shotThreat = dist < kd * 4 && speed > 150;
+    const closeDown =
+      !shotThreat && lastTouch.current === attackT && dist < kd * 7 && speed <= 160;
+    const threat = shotThreat || catching;
+    const vperp = vel.current.x * Math.cos(perp) + vel.current.y * Math.sin(perp);
+    const lead = vperp >= 0 ? 0 : 1;
+    const deg = (dir * 180) / Math.PI; // 안정적 회전(공 방향)
+    for (let gi = 0; gi < 2; gi++) {
+      const g = gl[gi];
+      if (!g) continue;
+      const sgn = gi === 0 ? 1 : -1;
+      const isLead = gi === lead;
+      let reach = catching
+        ? kd * 0.46
+        : shotThreat
+          ? isLead
+            ? Math.min(dist * 0.92, kd * 1.15)
+            : kd * 0.42
+          : closeDown
+            ? kd * 0.52
+            : kd * 0.4;
+      reach = Math.max(reach, kd * 0.26); // 손이 중심에 겹쳐 떨리는 것 방지
+      const spread =
+        (catching ? 0.16 : shotThreat ? (isLead ? 0.08 : 0.24) : closeDown ? 0.62 : 0.32) * kd;
+      const ph = gi * 3.3 + (s === "left" ? 0 : 1.7);
+      const bobP =
+        threat || closeDown
+          ? 0
+          : (Math.sin(now / 560 + ph) * 0.6 + Math.sin(now / 247 + ph * 2.3) * 0.4) * kd * 0.04;
+      const bobR = threat || closeDown ? 0 : Math.sin(now / 690 + ph * 1.4) * kd * 0.035;
+      const tx = Math.cos(dir) * (reach + bobR) + Math.cos(perp) * (spread * sgn + bobP);
+      const ty = Math.sin(dir) * (reach + bobR) + Math.sin(perp) * (spread * sgn + bobP);
+      const k = catching ? 0.5 : threat ? 0.42 : closeDown ? 0.28 : 0.14;
+      cur[gi].x += (tx - cur[gi].x) * k;
+      cur[gi].y += (ty - cur[gi].y) * k;
+      g.style.transform = `translate(calc(-50% + ${cur[gi].x}px), calc(-50% + ${cur[gi].y}px)) rotate(${deg}deg)`;
+    }
+  };
+
+  // 승부차기 키퍼 — 두 키퍼가 오른쪽 골 근처에 같이 있고, 막는 팀(차는 팀 반대) 키퍼는 골 안,
+  // 쉬는 키퍼는 골 옆에서 대기. 진영이 바뀌면 목표가 뒤바뀌어 둘이 '걸어서' 교체된다(스냅 아님).
+  const placeShootoutKeepers = (now: number) => {
+    const { w, h } = bounds();
+    const so = shootout.current;
+    const kd = kdDia();
+    const goalLineX = w - insetX();
+    const spotY = h * 0.5;
+    const inGoalX = goalLineX + kd * 0.15;
+    const besideX = goalLineX - kd * 1.8;
+    const besideY = spotY + goalH() * 0.72;
+    (["left", "right"] as Side[]).forEach((s) => {
+      const el = keeperRef.current[s];
+      if (!el) return;
+      el.style.display = "";
+      const team: 0 | 1 = s === "left" ? 0 : 1;
+      el.classList.toggle("wc-keeper-def-red", team === 0);
+      el.classList.toggle("wc-keeper-def-blue", team === 1);
+      const defending = team !== so.turn;
+      const tx = defending ? inGoalX : besideX;
+      const ty = defending ? keeperY.current.right : besideY;
+      let cur = skPos.current[s];
+      if (!cur) {
+        cur = { x: tx, y: ty };
+        skPos.current[s] = cur;
+      } else {
+        cur.x += (tx - cur.x) * 0.12; // 걷는 속도
+        cur.y += (ty - cur.y) * 0.12;
+      }
+      const ucx = s === "left" ? insetX() - kd / 2 : w - insetX() + kd / 2; // 요소 무변환 중심 x
+      el.style.transform = `translate3d(${cur.x - ucx}px, ${cur.y - kd / 2}px, 0)`;
+      placeGloves(s, cur.x, cur.y, defending, now); // 막는 키퍼만 손 동적, 대기는 모음
+    });
+  };
+
+  const placeKeepers = () => {
+    const now = performance.now();
+    if (shootout.current.active) {
+      placeShootoutKeepers(now);
+      return;
+    }
+    (["left", "right"] as Side[]).forEach((s) => {
+      const el = keeperRef.current[s];
+      if (!el) return;
+      el.style.display = "";
+      el.classList.remove("wc-keeper-def-red", "wc-keeper-def-blue");
+      const ox = s === "left" ? keeperX.current[s] : -keeperX.current[s];
+      el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
+      placeGloves(s, keeperCenterX(s), keeperY.current[s], true, now);
     });
   };
   const placePlayers = () => {
@@ -1307,7 +1351,8 @@ export function WorldCupBallGoal() {
     keeperX.current.right = 0;
     keeperY.current.left = h * 0.5;
     keeperY.current.right = h * 0.5;
-    s.kicker = pickKickerIndex(s.turn, 0); // 첫 키커
+    skPos.current = { left: null, right: null }; // 키퍼 걷기 위치 초기화(첫 프레임 스냅)
+    s.kicker = pickKickerIndex(s.turn, 0); // 첫 키커(자기 줄에서 공까지 걸어나온다)
     setPkText({ a: 0, b: 0, turn: s.turn, round: 1, note: "" });
     setClockText(pkBadge(s));
   };
@@ -1338,11 +1383,15 @@ export function WorldCupBallGoal() {
       // 키커 도움닫기 — 미드필드에서 공 뒤로 슬슬 걸어와 선다.
       const k = s.kicker >= 0 ? players.current[s.kicker] : null;
       if (k) {
-        const sp = PLAYER_SPEED * 0.7 * dt;
+        const sp = PLAYER_SPEED * 0.85 * dt;
         k.x += clamp(spotX - ballGap - k.x, -sp, sp);
         k.y += clamp(spotY - k.y, -sp, sp);
       }
-      if (tNow - s.at >= PK_SETUP) {
+      // 키커가 공 뒤에 실제로 도착했을 때만 찬다(실패 안전장치: 너무 오래 걸리면 강제). 공 안 닿고
+      // 날아가던 문제 방지.
+      const kickerAtBall =
+        !k || Math.hypot(k.x - (spotX - ballGap), k.y - spotY) < ballGap * 1.4;
+      if (tNow - s.at >= PK_SETUP && (kickerAtBall || tNow - s.at >= PK_SETUP + 1400)) {
         const skill = k ? k.shoot : 0.6;
         s.scored = Math.random() < 0.5 + skill * 0.32; // 키커 슛 능력 → 성공률
         const top = Math.random() < 0.5;
@@ -1375,6 +1424,8 @@ export function WorldCupBallGoal() {
           burstConfetti(goalLineX, s.targetY);
           setGoalFlash(true);
           window.setTimeout(() => setGoalFlash(false), 800);
+          setNetFlash("right"); // 승부차기에도 그물 출렁임
+          window.setTimeout(() => setNetFlash((n) => (n === "right" ? null : n)), 700);
           hapticSuccess();
         } else {
           setSaveFlash("right");
@@ -1398,7 +1449,7 @@ export function WorldCupBallGoal() {
         }
         s.turn = s.turn === 0 ? 1 : 0; // 팀 교대(키퍼도 교체됨)
         s.round = Math.min(s.takenA, s.takenB) + 1;
-        s.kicker = pickKickerIndex(s.turn, s.turn === 0 ? s.takenA : s.takenB);
+        s.kicker = pickKickerIndex(s.turn, s.turn === 0 ? s.takenA : s.takenB); // 자기 줄에서 걸어나옴
         s.phase = "setup";
         s.at = tNow;
         s.scored = false;
@@ -1411,7 +1462,7 @@ export function WorldCupBallGoal() {
     const s = shootout.current;
     s.active = false;
     clock.current.ended = true;
-    setMatchResult(`${winner === 0 ? "🔴 승리" : "🔵 승리"}  (승부차기 ${s.a} : ${s.b})`);
+    setMatchResult(`${winner === 0 ? "🔴" : "🔵"} 승리 · PK ${s.a}:${s.b}`);
     setPkText(null);
     flashPiece("경기 종료");
     window.setTimeout(() => {

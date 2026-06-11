@@ -470,6 +470,8 @@
   font-size: clamp(22px, 4vw, 40px);
   font-weight: 900;
   letter-spacing: 0.02em;
+  white-space: nowrap; /* 승부차기 승리 문구가 2행으로 잘리지 않게 */
+  max-width: 94vw;
   box-shadow: 0 12px 34px -12px rgb(0 0 0 / 60%);
   /* 끝까지 보이게(예전 wc-save-pop은 100%서 opacity:0이라 0.6s 뒤 사라져 안 보였음). 팝인 후 유지. */
   animation: wc-result-in 0.5s cubic-bezier(0.22, 1.4, 0.4, 1) both;
