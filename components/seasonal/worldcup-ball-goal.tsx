@@ -35,7 +35,7 @@ type Player = PlayerPersona & {
   num: number; // 등번호(표시용).
 };
 
-const FRICTION = 0.985; // 잔디 마찰 — 높일수록 공이 빨리 죽어 라인아웃(스로인) 남발 감소
+const FRICTION = 0.98; // 잔디 마찰 — 높일수록 공이 빨리 죽어 라인아웃(스로인) 남발 감소
 const WALL_RESTITUTION = 0.8;
 const STOP_SPEED = 6;
 const BALL = 16;
