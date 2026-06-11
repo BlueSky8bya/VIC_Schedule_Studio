@@ -610,13 +610,13 @@
     transform: translate(-50%, -50%) rotate(90deg);
     transform-origin: center;
   }
-  /* 게임 OFF(켜기 버튼만)일 때 — 하단 가운데면 시청자 헤더의 관심/오늘 버튼과 겹친다.
-     헤더(.public-calendar-header min-height 74px) 세로 가운데, 좌측에 둔다(시청자 헤더
-     좌측 칸은 보통 비어 display:none → 안 겹침). (게임 ON이면 HUD가 회전 배치) */
+  /* 게임 OFF(켜기 버튼만)일 때 — 좌측, 모바일 헤더(agenda-header)의 로그아웃 버튼과 같은 세로선에.
+     agenda-header 패딩 9px + 버튼 높이 30px → 로그아웃 세로중심 ≈ 24px. 켜기 버튼도 거기 맞춘다
+     (로그아웃은 우상단, 켜기는 좌상단 = 동일선상). (게임 ON이면 HUD가 회전 배치) */
   .wc-play:not(.on) .wc-controls {
     left: 8px;
     right: auto;
-    top: 37px;
+    top: 24px;
     bottom: auto;
     transform: translateY(-50%);
   }

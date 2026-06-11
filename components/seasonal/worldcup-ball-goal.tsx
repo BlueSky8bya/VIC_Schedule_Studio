@@ -71,7 +71,10 @@ export function WorldCupBallGoal() {
   const ballRef = useRef<HTMLDivElement | null>(null);
   const keeperRef = useRef<Record<Side, HTMLDivElement | null>>({ left: null, right: null });
   const playerEls = useRef<(HTMLDivElement | null)[]>([]);
-  const [enabled, setEnabled] = useState(true);
+  // enabled는 false로 시작 — 마운트 effect가 localStorage(vic.worldcupGame)를 읽어 실제 값으로
+  // 세팅한다. true로 시작하면 OFF 저장 유저도 첫 렌더에 게임이 잠깐 떴다 effect가 끄며 깜빡인다.
+  // false 시작이면 SSR=client 첫 렌더 일치(hydration mismatch 0), OFF는 깜빡 없음, ON은 살짝 늦게 등장만.
+  const [enabled, setEnabled] = useState(false);
   const [running, setRunning] = useState(true);
   const [isMobile, setIsMobile] = useState(false); // ≤640px — 공·키퍼를 작게(렌더용; 물리는 rotated.current)
   const [goalFlash, setGoalFlash] = useState(false);
@@ -94,7 +97,7 @@ export function WorldCupBallGoal() {
   const keeperY = useRef<Record<Side, number>>({ left: 0, right: 0 });
   const perceivedY = useRef<Record<Side, number>>({ left: 0, right: 0 });
   const dragging = useRef(false);
-  const enabledRef = useRef(true);
+  const enabledRef = useRef(false); // enabled와 동일하게 false 시작(마운트 effect가 저장값으로 세팅)
   const runningRef = useRef(true);
   const grabOffset = useRef<Vec>({ x: 0, y: 0 });
   const lastPointer = useRef<{ x: number; y: number; t: number }>({ x: 0, y: 0, t: 0 });
