@@ -38,6 +38,8 @@ type Player = PlayerPersona & {
   num: number; // 등번호(표시용).
   knock: number; // 0..1 타박/부상 — 거친 태클로 누적. 속도·민첩 저하, 시간이 지나면 회복(천천히).
   downUntil: number; // 이 시각까지 부상으로 쓰러져 정지(심한 knock 직후 잠깐).
+  pvx: number; // 현재 속도(px/s) — 관성. 목표로 즉시 점프 X, 가속/감속으로 붙는다.
+  pvy: number;
 };
 
 const FRICTION = 0.98; // 잔디 마찰 — 높일수록 공이 빨리 죽어 라인아웃(스로인) 남발 감소
@@ -598,7 +600,9 @@ export function WorldCupBallGoal() {
       red: false,
       num: (i % 10) + 2, // 2~11(1은 골키퍼 몫으로 비움)
       knock: 0,
-      downUntil: 0
+      downUntil: 0,
+      pvx: 0,
+      pvy: 0
     }));
     players.current.forEach((p) => {
       const home = roleHome(p, 0);
@@ -1339,14 +1343,22 @@ export function WorldCupBallGoal() {
       const dx = p.tx - p.x;
       const dy = p.ty + wob - p.y;
       const d = Math.hypot(dx, dy) || 1;
-      const move = Math.min(spd, d * 4) * dt;
-      const vx = (dx / d) * move;
-      const vy = (dy / d) * move;
+      // 관성 — 목표 속도(도착 가까우면 감속)로 '가속'한다. 즉시 방향전환/급정지 X → 사람다운 움직임.
+      // 민첩(agility)할수록 가속·턴이 빠르고, 걷기보단 스프린트가 잘 붙는다.
+      const desired = Math.min(spd, d * 4);
+      const dvx = (dx / d) * desired;
+      const dvy = (dy / d) * desired;
+      const accel = PLAYER_SPEED * (4 + p.agility * 3) * (sprint ? 1 : 0.85);
+      const step = accel * dt;
+      p.pvx += clamp(dvx - p.pvx, -step, step);
+      p.pvy += clamp(dvy - p.pvy, -step, step);
+      const vx = p.pvx * dt;
+      const vy = p.pvy * dt;
       p.x = clamp(p.x + vx, fx.min, fx.max);
       p.y = clamp(p.y + vy, PLAYER_R, h - PLAYER_R);
 
       // 체력 — 스프린트/압박은 소모, 걸으면 회복. 실제 이동량 비례(90분 내내 못 누름).
-      const speedUsed = Math.hypot(vx, vy) / dt;
+      const speedUsed = Math.hypot(p.pvx, p.pvy);
       const drain = (sprint ? 0.05 : 0.012) * (0.5 + (speedUsed / PLAYER_SPEED) * 0.5);
       const recover = sprint ? 0 : 0.022;
       p.stamina = clamp(p.stamina - drain * dt + recover * dt, 0, 1);
