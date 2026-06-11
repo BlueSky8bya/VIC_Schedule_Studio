@@ -476,27 +476,49 @@ export function WorldCupBallGoal() {
   const updatePlayers = (dt: number, near: { overall: number; possess: 0 | 1 }) => {
     const { w, h } = bounds();
     const fx = fieldX();
+    // 팀별 공까지 거리 순위 — 1순위만 압박, (수비)2순위는 커버, 나머지는 자리 유지.
+    // 떼로 공만 쫓지 않게: 한 팀에서 공을 직접 쫓는 건 단 한 명.
+    const rank = new Array<number>(players.current.length).fill(99);
+    ([0, 1] as const).forEach((team) => {
+      const ids: number[] = [];
+      players.current.forEach((p, i) => {
+        if (p.team === team) ids.push(i);
+      });
+      const dOf = (i: number) =>
+        Math.hypot(players.current[i].x - pos.current.x, players.current[i].y - pos.current.y);
+      ids.sort((a, b) => dOf(a) - dOf(b));
+      ids.forEach((idx, r) => {
+        rank[idx] = r;
+      });
+    });
+
     players.current.forEach((p, i) => {
       const t = teams.current ? teams.current[p.team] : null;
       const tempo = t ? t.tempo : 1;
-      const teamPress = t ? t.press : 0.6;
       const dBall = Math.hypot(p.x - pos.current.x, p.y - pos.current.y);
-      const pressRadius = w * (0.1 + teamPress * 0.22) * (0.55 + p.press * 0.8);
-      const pressing = i === near.overall || dBall < pressRadius;
+      const attacking = p.team === near.possess;
+      const r = rank[i];
+      const loose = dBall < w * 0.045; // 발밑 루즈볼 — 가까우면 누구나 툭 건드림
+      const chaser = r === 0 || loose; // 팀 최근접 1명만 공을 직접 쫓음
+      const cover = r === 1 && !attacking; // 수비 2선 — 공-골 사이로 커버(직접 안 쫓음)
       let tx: number;
       let ty: number;
       let spd: number;
-      if (pressing) {
+      if (chaser) {
         tx = pos.current.x + vel.current.x * 0.08; // 리드(예측) 살짝
         ty = pos.current.y + vel.current.y * 0.08;
         spd = PLAYER_SPEED * tempo * (0.7 + p.pace * 0.6);
       } else {
-        const attacking = p.team === near.possess;
         const push = attacking ? 0.13 : -0.08;
         const home = roleHome(p, push);
-        tx = home.x + (pos.current.x - home.x) * 0.06;
-        ty = home.y + (pos.current.y - home.y) * 0.18;
-        spd = PLAYER_SPEED * tempo * (0.45 + p.pace * 0.4);
+        // 역할 home 유지 + 공 쪽으로 제한된 쏠림(라인 컴팩트). 커버맨은 더 적극적.
+        const infX = cover ? 0.22 : attacking ? 0.14 : 0.09;
+        const infY = cover ? 0.32 : attacking ? 0.26 : 0.2;
+        const maxX = w * (cover ? 0.2 : 0.13);
+        const maxY = h * 0.22;
+        tx = home.x + clamp((pos.current.x - home.x) * infX, -maxX, maxX);
+        ty = home.y + clamp((pos.current.y - home.y) * infY, -maxY, maxY);
+        spd = PLAYER_SPEED * tempo * (0.45 + p.pace * 0.4) * (cover ? 1.15 : 1);
       }
       const dx = tx - p.x;
       const dy = ty - p.y;
