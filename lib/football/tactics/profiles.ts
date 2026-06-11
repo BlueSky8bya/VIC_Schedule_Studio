@@ -3,7 +3,18 @@
 // 선호 포메이션을 갖고, makeTeam이 seed 기반 지터를 더해 매 경기 색이 다르게 한다.
 // 압박 인원은 press로 갈린다(렌더러 pressersOf: ≥.82=3, ≥.68=2, 그 외 1).
 
-import type { FormationId, Matchup, PlayerPersona, Role, Slot, TeamPlan, TeamSide } from "@/lib/football/core/types";
+import type {
+  FormationId,
+  Matchup,
+  PlayerPersona,
+  PlayerTrait,
+  PreferredFoot,
+  Role,
+  Slot,
+  TeamPlan,
+  TeamSide,
+  WorkRate
+} from "@/lib/football/core/types";
 import type { Rng } from "@/lib/football/core/rng";
 import { FORMATIONS } from "@/lib/football/tactics/formations";
 
@@ -68,10 +79,79 @@ const BASE_BY_ROLE: Record<Role, [number, number, number, number, number]> = {
   FW: [0.85, 0.55, 0.55, 0.85, 0.4]
 };
 
+const wrFrom = (p: number): WorkRate => (p < 0.33 ? "low" : p < 0.7 ? "medium" : "high");
+
+// 결정적 이질 선수 생성 — 같은 seed/순서면 동일. 신체·인지·행동·특성을 역할 가중으로 뽑는다.
 export function makePlayer(rng: Rng, team: TeamSide, slot: Slot): PlayerPersona {
-  const [pa, pr, ps, sh, di] = BASE_BY_ROLE[slot.role];
-  const j = (v: number) => Math.max(0.05, Math.min(1, v + rng.range(-0.15, 0.15)));
-  return { team, slot, pace: j(pa), press: j(pr), pass: j(ps), shoot: j(sh), discipline: j(di) };
+  const role = slot.role;
+  const [pa, pr, ps, sh, di] = BASE_BY_ROLE[role];
+  const j = (v: number) => clampN(v + rng.range(-0.15, 0.15), 0.05, 1);
+  // 신체·역학
+  const footRoll = rng.next();
+  const preferredFoot: PreferredFoot =
+    footRoll < 0.74 ? "right" : footRoll < 0.97 ? "left" : "both";
+  const weakFoot =
+    preferredFoot === "both" ? rng.range(0.7, 0.95) : clampN(rng.range(0.2, 0.78), 0, 1);
+  const hi = role === "DF" ? [182, 196] : role === "FW" ? [178, 192] : [172, 188];
+  const heightCm = Math.round(rng.range(hi[0], hi[1]));
+  const weightKg = Math.round(heightCm - 100 + rng.range(-4, 7));
+  const agility = j(role === "WG" || role === "FW" ? 0.76 : role === "DF" ? 0.55 : 0.64);
+  const balance = j(role === "DF" || role === "DM" ? 0.72 : 0.6);
+  // 인지·심리
+  const vision = j(role === "MF" || role === "DM" ? 0.8 : role === "FW" ? 0.55 : 0.5);
+  const composure = j(role === "MF" || role === "FW" ? 0.7 : 0.6);
+  const aggression = j(role === "DF" || role === "DM" ? 0.72 : 0.46);
+  // 행동 편향
+  const workRateAtk = wrFrom(
+    role === "FW" || role === "WG"
+      ? rng.range(0.5, 1)
+      : role === "DF"
+        ? rng.range(0, 0.62)
+        : rng.range(0.3, 0.92)
+  );
+  const workRateDef = wrFrom(
+    role === "DF" || role === "DM"
+      ? rng.range(0.5, 1)
+      : role === "FW"
+        ? rng.range(0, 0.62)
+        : rng.range(0.3, 0.92)
+  );
+  const cutInside = role === "WG" ? rng.next() : clampN(0.5 + rng.range(-0.2, 0.2), 0, 1);
+  const poaching = role === "FW" ? rng.next() : clampN(0.5 + rng.range(-0.2, 0.2), 0, 1);
+  const altruism = clampN((role === "MF" || role === "DM" ? 0.6 : 0.4) + rng.range(-0.3, 0.3), 0, 1);
+  // 특수 특성(역할 가중·희소)
+  const traits: PlayerTrait[] = [];
+  if (rng.chance(0.12)) traits.push("outsideFootShot");
+  if (role === "WG" && rng.chance(0.28)) traits.push("earlyCrosser");
+  if ((role === "WG" || role === "MF") && cutInside > 0.6 && rng.chance(0.3)) traits.push("mezzala");
+  if (role === "DF" && rng.chance(0.16)) traits.push("invertedFullback");
+  if (role === "FW") traits.push(poaching > 0.55 ? "poacher" : "targetMan");
+  if ((role === "MF" || role === "DM") && altruism > 0.65 && rng.chance(0.4))
+    traits.push("playmaker");
+  return {
+    team,
+    slot,
+    pace: j(pa),
+    press: j(pr),
+    pass: j(ps),
+    shoot: j(sh),
+    discipline: j(di),
+    preferredFoot,
+    weakFoot,
+    heightCm,
+    weightKg,
+    agility,
+    balance,
+    vision,
+    composure,
+    aggression,
+    workRateAtk,
+    workRateDef,
+    cutInside,
+    poaching,
+    altruism,
+    traits
+  };
 }
 
 // 한 경기 매치업 — 두 팀은 서로 다른 전술 스타일로(같으면 재추첨). 선수는 팀0 10명 → 팀1 10명 순.

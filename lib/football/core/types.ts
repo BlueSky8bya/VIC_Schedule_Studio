@@ -38,15 +38,50 @@ export type FormationId =
   | "4-4-1-1"
   | "4-6-0";
 
-/** 선수 성향(0..1) — 같은 seed면 결정적으로 생성된다. 런타임 상태(좌표·체력 등)는 렌더러가 더한다. */
+/** 주발/약발/워크레이트/특수특성 — 이질적(heterogeneous) 에이전트 모델링. */
+export type PreferredFoot = "left" | "right" | "both";
+export type WorkRate = "low" | "medium" | "high";
+/** 특수 기술/역할 특성(badges) — Action Space에 옵션을 열거나 보상 편향을 준다. */
+export type PlayerTrait =
+  | "outsideFootShot" // 아웃사이드 스워브(약발 회피·휨궤적)
+  | "earlyCrosser" // 얼리 크로서(수비 정돈 전 일찍 크로스)
+  | "sweeperKeeper" // 스위퍼 키퍼(박스 밖 적극 커버)
+  | "poacher" // 포처(최후방 라인 브레이킹 침투)
+  | "targetMan" // 타겟맨(등지고 버티며 연계)
+  | "playmaker" // 플레이메이커(이타적 키패스)
+  | "invertedFullback" // 인버티드 풀백(공격 시 중앙 이동)
+  | "mezzala"; // 메짤라(반 윙어, 하프스페이스 침투)
+
+/** 선수 성향 — 같은 seed면 결정적. 런타임 상태(좌표·체력 등)는 렌더러/시뮬이 더한다.
+ * (기본 5종 pace/press/pass/shoot/discipline은 렌더러 하위호환 유지. 나머지는 RL용 이질적 파라미터.) */
 export type PlayerPersona = {
   team: TeamSide;
   slot: Slot;
-  pace: number;
-  press: number;
-  pass: number;
-  shoot: number;
-  discipline: number;
+  // ── 기본(렌더러 호환) ──
+  pace: number; // 최고 속도 0..1
+  press: number; // 압박 적극성 0..1
+  pass: number; // 패스 정확/시야(간이) 0..1
+  shoot: number; // 슛 0..1
+  discipline: number; // 규율(높을수록 파울↓) 0..1
+  // ── 신체·역학(물리·궤적) ──
+  preferredFoot: PreferredFoot;
+  weakFoot: number; // 0..1 — 낮으면 약발 패스/슛 정확도·파워 페널티↑
+  heightCm: number; // 공중볼·헤더 Z 도달
+  weightKg: number; // 관성(방향전환)·쉴딩 경합
+  agility: number; // 0..1 — 회전반경·감속률(pace와 별개)
+  balance: number; // 0..1 — 태클 후 회복 딜레이↓
+  // ── 인지·심리 ──
+  vision: number; // 0..1 — 넓은 FOV·먼 거리 정확 인지(낮으면 짧은패스만)
+  composure: number; // 0..1 — 압박 시 결정지연·에러 억제
+  aggression: number; // 0..1 — 슬라이딩 태클 임계값↓(파울/카드 위험 감수)
+  // ── 행동 편향(플레이스타일) ──
+  workRateAtk: WorkRate; // 공격 가담(포지션 이탈 전진)
+  workRateDef: WorkRate; // 수비 가담(복귀)
+  cutInside: number; // 0(클래식 윙어, hug-line 크로스) .. 1(인사이드 포워드, 중앙 침투 슛)
+  poaching: number; // 0(타겟맨, 드롭딥 연계) .. 1(포처, 라인 브레이킹 침투)
+  altruism: number; // 0(이기적 슈터) .. 1(플레이메이커, xA 우선 패스)
+  // ── 특수 특성 ──
+  traits: PlayerTrait[];
 };
 
 /** 팀 전술 계획 — 명명 전술 + 포메이션 + 수치 성향. */
