@@ -51,12 +51,12 @@
   position: absolute;
   top: 0;
   left: 0;
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px; /* transform 좌표를 공 '중심' 기준으로 */
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px; /* transform 좌표를 공 '중심' 기준으로 */
   display: grid;
   place-items: center;
-  font-size: 34px;
+  font-size: 16px;
   line-height: 1;
   pointer-events: auto;
   cursor: grab;
@@ -70,10 +70,10 @@
 }
 /* 모바일 — 공 작게(물리 ballDia()=26과 시각 일치). 골 넣기 쉽게. margin은 박스 절반(중심 기준). */
 .wc-ball-sm {
-  width: 30px;
-  height: 30px;
-  margin: -15px 0 0 -15px;
-  font-size: 24px;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  font-size: 11px;
 }
 /* 떠 있는 공(롱볼·크로스·골킥) — 살짝 흐려지고 그림자가 커져 '공중'임을 알린다. 이때 JS가
    선수·키퍼·골대벽 통과시키고 높이/스케일은 transform으로 준다. */
@@ -177,67 +177,72 @@
 }
 /* 경기장 바깥 라인 — 좌우=골라인, 위아래=터치라인. 화면 끝에서 인셋(JS OUT_X/OUT_Y와 동일:
    64px / 36px). 골대는 이 좌우 라인 위에 입구를 두고 라인 밖으로 돌출. 공이 선을 넘으면 세트피스. */
+/* 라인은 stage(105:68) 대비 '비율'(%) — 고정 px면 작은 모바일 stage서 과대. px/m가 등방이라
+   가로 m=stage 폭%, 세로 m=stage 높이%로 환산. 골라인/터치라인 인셋 5%(OUTX_F/OUTY_F와 정합). */
 .wc-pitch .wc-bound {
-  inset: 36px 64px;
+  inset: 5% 5%;
   border: 2px solid rgb(255 255 255 / 72%);
   border-radius: 3px;
   box-shadow: 0 0 2px rgb(0 0 0 / 18%);
 }
 .wc-pitch .wc-mid {
   left: 50%;
-  top: 36px;
-  bottom: 36px;
-  width: 3px;
-  transform: translateX(-1.5px);
+  top: 5%;
+  bottom: 5%;
+  width: 2px;
+  transform: translateX(-1px);
   background: rgb(255 255 255 / 82%);
 }
+/* 센터서클 지름 18.3m ≈ stage 폭 17.4%. 원이라 aspect-ratio로 높이=너비 px. */
 .wc-pitch .wc-circle {
   left: 50%;
   top: 50%;
-  width: 168px;
-  height: 168px;
-  margin: -84px 0 0 -84px;
-  border: 3px solid rgb(255 255 255 / 78%);
+  width: 17.4%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgb(255 255 255 / 78%);
   border-radius: 50%;
   background: transparent;
 }
 .wc-pitch .wc-spot {
   left: 50%;
   top: 50%;
-  width: 8px;
-  height: 8px;
-  margin: -4px 0 0 -4px;
+  width: 0.7%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
   border-radius: 50%;
   background: rgb(255 255 255 / 85%);
 }
+/* 페널티 박스 16.5×40.32m → 폭 15.7%(stage 폭) × 높이 59.3%(stage 높이). */
 .wc-pitch .wc-box {
   top: 50%;
-  width: 116px;
-  height: 280px;
+  width: 15.7%;
+  height: 59.3%;
   transform: translateY(-50%);
-  border: 3px solid rgb(255 255 255 / 72%);
+  border: 2px solid rgb(255 255 255 / 72%);
 }
 .wc-pitch .wc-box-left {
-  left: 64px;
+  left: 5%;
   border-left: 0;
 }
 .wc-pitch .wc-box-right {
-  right: 64px;
+  right: 5%;
   border-right: 0;
 }
+/* 골 에어리어(6yd) 5.5×18.32m → 폭 5.24% × 높이 26.9%. */
 .wc-pitch .wc-six {
   top: 50%;
-  width: 56px;
-  height: 168px;
+  width: 5.24%;
+  height: 26.9%;
   transform: translateY(-50%);
-  border: 3px solid rgb(255 255 255 / 70%);
+  border: 2px solid rgb(255 255 255 / 70%);
 }
 .wc-pitch .wc-six-left {
-  left: 64px;
+  left: 5%;
   border-left: 0;
 }
 .wc-pitch .wc-six-right {
-  right: 64px;
+  right: 5%;
   border-right: 0;
 }
 

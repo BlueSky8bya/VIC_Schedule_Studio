@@ -38,9 +38,11 @@ type Player = PlayerPersona & {
 const FRICTION = 0.992;
 const WALL_RESTITUTION = 0.8;
 const STOP_SPEED = 6;
-const BALL = 40;
-const GOAL_W = 50; // 골대 깊이(그물). 골라인 밖으로 돌출 → OUT_X 띠 안에 들어가야 함
-const GOAL_H = 120;
+const BALL = 16;
+// 골·라인 치수는 stage(105:68 고정) 대비 '비율'로 둔다 — 고정 px면 작은 모바일 stage서 과대해진다.
+// stage가 종횡비를 지켜 px/m가 등방(가로%·세로% 둘 다 같은 m). 실제 골대 7.32m/68 ≈ 10.8% 폭.
+const GOALW_F = 0.024; // 골대 깊이(stage 폭 대비) — 골라인 밖 돌출, OUTX_F 띠 안에 들어감
+const GOALH_F = 0.118; // 골대 입구(stage 높이 대비) — 실제 10.8%보다 살짝 키워 득점 가능하게
 const WALL_T = 10;
 const DRAG_BUFFER = 100;
 const KD = 26;
@@ -62,8 +64,8 @@ const MATCH_END_RESTART_MS = 6500; // 경기 종료 후 새 경기까지(real ms
 // 실제 축구처럼 경기장 라인을 화면 끝에서 안쪽에 둔다 → 라인 밖은 '아웃오브플레이' 띠.
 // 골대는 입구(앞면)가 골라인 위에 오고 몸통(그물)은 라인 밖(바깥)으로 돌출한다 → 골라인이
 // 골대 입구에 걸림(뒤통수 아님). 공이 이 라인을 넘으면 스로인/코너/골킥. 고정 px로 JS·CSS 정합.
-const OUT_X = 64; // 골라인이 좌우 끝에서 들어간 px (GOAL_W보다 커서 골대가 띠 안에 들어감)
-const OUT_Y = 36; // 터치라인이 위아래 끝에서 들어간 px
+const OUTX_F = 0.05; // 골라인이 좌우 끝에서 들어간 비율(stage 폭) — GOALW_F보다 커서 골대가 띠 안
+const OUTY_F = 0.05; // 터치라인이 위아래 끝에서 들어간 비율(stage 높이)
 
 // 포메이션·전술·선수 생성은 엔진(lib/football)이 시드 기반으로 담당(결정적·테스트 가능).
 // 아래 rnd는 라이브 연출/AI 지터용(재현 불필요한 시각 흔들림). 생성에는 절대 쓰지 않는다.
@@ -161,19 +163,23 @@ export function WorldCupBallGoal() {
   const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
   // 모바일은 피치가 세로로 짧아(100vw) 공·키퍼가 상대적으로 커 골 넣기 어렵다 → 작게.
   // 키퍼는 선수와 같은 크기(PLAYER_R*2). 물리용이라 rotated.current(=isMobile) 기준.
-  const ballDia = () => (rotated.current ? 26 : BALL);
+  const ballDia = () => (rotated.current ? 11 : BALL);
   const kdDia = () => (rotated.current ? PLAYER_R * 2 : KD);
   // 경기장 라인(아웃 판정 기준) — 화면 끝에서 인셋. 좌우=골라인, 위아래=터치라인.
-  const insetX = () => OUT_X;
-  const insetY = () => OUT_Y;
+  const insetX = () => bounds().w * OUTX_F;
+  const insetY = () => bounds().h * OUTY_F;
+  const goalW = () => bounds().w * GOALW_F;
+  const goalH = () => bounds().h * GOALH_F;
 
   // 골대 박스 — 입구가 골라인(insetX) 위에 오고 몸통은 라인 밖(화면 끝 쪽)으로 돌출.
-  // 좌측: [OUT_X-GOAL_W, OUT_X], 입구=OUT_X. 우측: [w-OUT_X, w-OUT_X+GOAL_W], 입구=w-OUT_X.
+  // 좌측: [insetX-goalW, insetX], 입구=insetX. 우측: [w-insetX, w-insetX+goalW], 입구=w-insetX.
   const goalRect = (side: Side) => {
     const { w, h } = bounds();
-    const x = side === "left" ? OUT_X - GOAL_W : w - OUT_X;
-    const y = h * 0.5 - GOAL_H / 2;
-    return { x, y, w: GOAL_W, h: GOAL_H };
+    const gw = goalW();
+    const gh = goalH();
+    const x = side === "left" ? insetX() - gw : w - insetX();
+    const y = h * 0.5 - gh / 2;
+    return { x, y, w: gw, h: gh };
   };
   const goalWalls = (side: Side) => {
     const g = goalRect(side);
@@ -1528,16 +1534,17 @@ export function WorldCupBallGoal() {
     ensureLoop();
   };
 
-  const edge = `${OUT_X - GOAL_W}px`; // 골대 바깥 가장자리 — 입구가 골라인(OUT_X), 몸통은 라인 밖
+  // 골대 바깥 가장자리(px) — 입구가 골라인(insetX), 몸통은 라인 밖. 비율이라 bounds 기준 계산.
+  const goalEdgePx = () => insetX() - goalW();
   const goalStyle = (side: Side): React.CSSProperties => ({
-    [side]: edge,
-    top: `calc(50% - ${GOAL_H / 2}px)`,
-    width: `${GOAL_W}px`,
-    height: `${GOAL_H}px`
+    [side]: `${goalEdgePx()}px`,
+    top: `calc(50% - ${goalH() / 2}px)`,
+    width: `${goalW()}px`,
+    height: `${goalH()}px`
   });
   const kdRender = isMobile ? PLAYER_R * 2 : KD; // 키퍼 시각 크기(물리 kdDia()와 동일 소스)
   const keeperStyle = (side: Side): React.CSSProperties => ({
-    [side]: `calc(${edge} + ${GOAL_W - kdRender}px)`,
+    [side]: `${goalEdgePx() + goalW() - kdRender}px`,
     top: "0",
     width: `${kdRender}px`,
     height: `${kdRender}px`
