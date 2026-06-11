@@ -602,7 +602,7 @@ export function WorldCupBallGoal() {
     const lineX = side === "left" ? g.x + g.w : g.x;
     const distToBall = Math.abs(pos.current.x - lineX);
     const wantX = Math.max(0, distToBall - (kdDia() / 2 + ballDia() / 2)); // 공 바로 뒤
-    const sp = (KEEPER_SPEED * 1.5) / 60;
+    const sp = KEEPER_SPEED / 60; // 골킥 걸어나옴 — 몸은 보통 속도(빠르지 않게)
     keeperX.current[side] += clamp(wantX - keeperX.current[side], -sp, sp);
     keeperY.current[side] += clamp(pos.current.y - keeperY.current[side], -sp, sp);
   };
@@ -901,7 +901,8 @@ export function WorldCupBallGoal() {
       const threat = central && dist < w * (0.16 + aggro * 0.18) && (toward || dist < w * 0.1);
       const maxRush = w * (0.03 + aggro * 0.22);
       const wantRush = threat ? clamp(dist - kdDia(), 0, maxRush) * (0.45 + aggro * 0.6) : 0;
-      const rushSpd = KEEPER_SPEED * (threat ? 0.7 + aggro * 0.8 : 0.9) * dt;
+      // 몸 자체는 빠르지 않게(손 뻗기 다이브는 장갑이 따로 빠르게 처리). 러시도 선수 속도 안팎으로.
+      const rushSpd = KEEPER_SPEED * (threat ? 0.55 + aggro * 0.45 : 0.6) * dt;
       keeperX.current[side] += clamp(wantRush - keeperX.current[side], -rushSpd, rushSpd);
     });
   };
