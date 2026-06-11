@@ -212,6 +212,7 @@ export function WorldCupBallGoal() {
   const keeperX = useRef<Record<Side, number>>({ left: 0, right: 0 }); // 라인에서 전진한 거리(px).
   // GK 손 — 잡으면(catch) 잠깐 보유 후 배급(스로/킥). 백패스는 발로(손 금지). 박스 안에서만 손.
   const keeperHold = useRef<{ side: Side | null; until: number }>({ side: null, until: 0 });
+  const goalKickKeeper = useRef<Side | null>(null); // 골킥 중인 키퍼 — 박스 밖으로 공 가지러 나옴(하드 Y clamp 면제)
 
   const bounds = () => {
     const el = layerRef.current;
@@ -451,7 +452,8 @@ export function WorldCupBallGoal() {
         // 박스는 라인 바깥쪽. 좌골 박스는 x<line, 우골 박스는 x>line. 키퍼 중심이 박스 안일 때만 Y clamp
         // (라인 앞 필드로 나오면 포스트 없으니 자유 — 골킥 키퍼가 공의 Y로 갈 수 있게).
         const inBox = s === "left" ? cX < line + kdDia() * 0.3 : cX > line - kdDia() * 0.3;
-        if (inBox) {
+        // 골킥으로 공 가지러 나온 키퍼는 면제(안 그러면 마우스에 묶여 공의 Y로 못 감).
+        if (inBox && goalKickKeeper.current !== s) {
           const m = kdDia() / 2 + 2.5;
           keeperY.current[s] = clamp(keeperY.current[s], g.y + m, g.y + g.h - m);
         }
@@ -528,6 +530,7 @@ export function WorldCupBallGoal() {
     counterPress.current = null;
     pendingRestart.current = null;
     keeperHold.current = { side: null, until: 0 };
+    goalKickKeeper.current = null;
     // 엔진 성향(persona)에 런타임 상태를 입혀 화면용 Player로. stamina/wob도 같은 rng라 결정적.
     players.current = personas.map((pp, i) => ({
       ...pp,
@@ -770,12 +773,14 @@ export function WorldCupBallGoal() {
       logEvent("goalKick", defend, pos.current.x, pos.current.y);
       const upfield = side === "left" ? bounds().w * 0.6 : bounds().w * 0.4;
       const ty = h * 0.5 + rnd(-h * 0.2, h * 0.2);
+      goalKickKeeper.current = side; // 키퍼가 박스 밖으로 공 가지러 나오는 동안 하드 Y clamp 면제
       // 골킥은 길게 띄운다(롱볼).
       scheduleRestart(
         850,
         () => {
           setVelTo(upfield, ty, 520);
           loftBall(Math.abs(upfield - pos.current.x), 520);
+          goalKickKeeper.current = null; // 찼으면 해제(updateKeepers가 골문 복귀)
         },
         () => walkKeeperToBall(side),
         defend
