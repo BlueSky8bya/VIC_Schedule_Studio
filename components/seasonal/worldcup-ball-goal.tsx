@@ -1478,10 +1478,11 @@ export function WorldCupBallGoal() {
     const canDribble = dribbleCount.current < 3; // 연속 드리블 cap(7→3) — 끌기만 반복 방지
     // 끌기는 '앞 공간 + 개인 성향' 기준으로 가끔만. 점유 전술일수록 패스 선호(드리블↓ — 예전엔 거꾸로
     // 점유↑일수록 끌어서 모든 전술이 드리블 과다였음). 기본 확률도 낮춤(패스가 우선되게).
-    // 드리블은 '아주 드물게' — 패스가 기본. 앞에 공간이 아주 크고(빈 공간) 개인기 성향 높을 때만 가끔.
-    const carryProb = clamp(0.02 + adventurous * 0.07 - (possession - 0.5) * 0.15, 0.01, 0.1);
-    const wantCarry = canDribble && !pressed && spaceAhead > w * 0.22 && Math.random() < carryProb;
-    const wantBeatMan = canDribble && pressed && Math.random() < adventurous * 0.05;
+    // 드리블 — 앞 공간 + 개인기 성향 + 직접 전술일수록 더. (밀어서 끌던 아티팩트는 셸드로 해결됐으니
+    // 이제 진짜 carry를 적정 빈도로.) 점유 전술은 패스 우선이라 덜 끔.
+    const carryProb = clamp(0.14 + adventurous * 0.22 - (possession - 0.5) * 0.25, 0.06, 0.42);
+    const wantCarry = canDribble && !pressed && spaceAhead > w * 0.16 && Math.random() < carryProb;
+    const wantBeatMan = canDribble && pressed && Math.random() < adventurous * 0.16;
     if (wantCarry || wantBeatMan) {
       dribbleCount.current += 1;
       let ang = Math.atan2(goalCy - p.y, goalCx - p.x); // 기본 골 방향
