@@ -45,7 +45,6 @@ const GOALW_F = 0.024; // 골대 깊이(stage 폭 대비) — 골라인 밖 돌�
 const GOALH_F = 0.118; // 골대 입구(stage 높이 대비) — 실제 10.8%보다 살짝 키워 득점 가능하게
 const WALL_T = 10;
 const DRAG_BUFFER = 100;
-const KD = 26;
 const KEEPER_SPEED = 145; // 필드 선수(165)보다 약간 느리게 — 키퍼가 너무 빨라 보이던 것 완화(다이브는 *1.5)
 const GOAL_COOLDOWN_MS = 1400;
 const SAVE_COOLDOWN_MS = 350;
@@ -221,7 +220,8 @@ export function WorldCupBallGoal() {
   // 모바일은 피치가 세로로 짧아(100vw) 공·키퍼가 상대적으로 커 골 넣기 어렵다 → 작게.
   // 키퍼는 선수와 같은 크기(PLAYER_R*2). 물리용이라 rotated.current(=isMobile) 기준.
   const ballDia = () => (rotated.current ? 11 : BALL);
-  const kdDia = () => (rotated.current ? 13 : KD); // 모바일 키퍼 작게(작은 골대 대비 과대했음)
+  // 키퍼 크기 = 필드 선수의 1.2배(발 리치 없으니 살짝만 크게). 선수 시각: 웹 PLAYER_R*2=18, 모바일 13.
+  const kdDia = () => (rotated.current ? 13 * 1.2 : PLAYER_R * 2 * 1.2);
   // 경기장 라인(아웃 판정 기준) — 화면 끝에서 인셋. 좌우=골라인, 위아래=터치라인.
   const insetX = () => bounds().w * OUTX_F;
   const insetY = () => bounds().h * OUTY_F;
@@ -2036,7 +2036,7 @@ export function WorldCupBallGoal() {
     width: `${goalW()}px`,
     height: `${goalH()}px`
   });
-  const kdRender = isMobile ? 13 : KD; // 키퍼 시각 크기(물리 kdDia()와 동일 소스)
+  const kdRender = isMobile ? 13 * 1.2 : PLAYER_R * 2 * 1.2; // 시각 크기(kdDia와 동일 = 선수 1.2배)
   const keeperStyle = (side: Side): React.CSSProperties => ({
     [side]: `${goalEdgePx() + goalW() - kdRender}px`,
     top: "0",
