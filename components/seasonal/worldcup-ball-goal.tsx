@@ -7,6 +7,7 @@ import type { PlayerPersona, Side, TeamPlan, Vec2 } from "@/lib/football/core/ty
 import { makeRng, randomSeed } from "@/lib/football/core/rng";
 import { makeMatchup, STYLES, type TacticStyle } from "@/lib/football/tactics/profiles";
 import { createEventLog, type MatchEventKind } from "@/lib/football/core/event-log";
+import { xgFromShot } from "@/lib/football/analytics/xg-lite";
 import "./worldcup-ball-goal.css";
 
 // 월드컵 시즌 미니게임 — 좌/우 골대, 공 1개, 양 팀 11명(필드 10 + 골키퍼)이 자동 경기.
@@ -264,6 +265,20 @@ export function WorldCupBallGoal() {
     const lg = goalRect("left");
     const rg = goalRect("right");
     return { min: lg.x + lg.w + PLAYER_R, max: rg.x - PLAYER_R };
+  };
+
+  // px 화면 좌표 → 피치 미터 좌표(엔진/analytics 좌표계: 중앙원점, x[-52.5,52.5]·y[-34,34]).
+  // 라이브 정책 결정(슛 xG 등)을 헤드리스 lib와 같은 출처로 쓰기 위한 변환.
+  const pitchMeters = (px: number, py: number): Vec2 => {
+    const { h } = bounds();
+    const fx = fieldX();
+    const top = h * MARGIN_Y_FRAC;
+    const span = fx.max - fx.min || 1;
+    const ySpan = h - 2 * top || 1;
+    return {
+      x: ((px - fx.min) / span - 0.5) * 105,
+      y: ((py - top) / ySpan - 0.5) * 68
+    };
   };
 
   const place = () => {
@@ -782,7 +797,8 @@ export function WorldCupBallGoal() {
         () => {
           setVelTo(upfield, ty, 520);
           loftBall(Math.abs(upfield - pos.current.x), 520);
-          goalKickKeeper.current = null; // 찼으면 해제(updateKeepers가 골문 복귀)
+          // goalKickKeeper는 여기서 바로 비우지 않는다 — 비우면 placeKeepers 하드 Y clamp가 박스 밖
+          // Y를 마우스로 순간이동시킴. updateKeepers가 부드럽게 골문 복귀시킨 뒤 거기서 해제한다.
         },
         () => walkKeeperToBall(side),
         defend
@@ -1003,6 +1019,13 @@ export function WorldCupBallGoal() {
       // 몸 자체는 빠르지 않게(손 뻗기 다이브는 장갑이 따로 빠르게 처리). 러시도 선수 속도 안팎으로.
       const rushSpd = KEEPER_SPEED * (threat ? 0.55 + aggro * 0.45 : 0.6) * dt;
       keeperX.current[side] += clamp(wantRush - keeperX.current[side], -rushSpd, rushSpd);
+
+      // 골킥으로 박스 밖에 나갔던 키퍼 — 라인+마우스로 충분히 복귀했으면 하드 Y clamp 다시 켠다(해제).
+      if (goalKickKeeper.current === side) {
+        const inMouthY =
+          keeperY.current[side] > g.y + kdDia() / 2 && keeperY.current[side] < g.y + g.h - kdDia() / 2;
+        if (keeperX.current[side] < kdDia() * 0.5 && inMouthY) goalKickKeeper.current = null;
+      }
     });
   };
 
@@ -1219,12 +1242,13 @@ export function WorldCupBallGoal() {
     const g = goalRect(enemy);
     const goalCx = g.x + g.w / 2;
     const goalCy = g.y + g.h / 2;
-    const distGoal = Math.hypot(goalCx - p.x, goalCy - p.y);
     const err = (1 - p.pass) * 110;
-    // 슛: 가까우면 적극, 직접축구는 먼 거리에서도 종종.
-    const closeShot = distGoal < w * 0.32 && Math.random() < 0.45 + p.shoot * 0.5;
-    const longShot = distGoal < w * 0.46 && possession < 0.4 && Math.random() < p.shoot * 0.5;
-    if (closeShot || longShot) {
+    // 슛 결정 — 헤드리스 lib와 같은 정책 출처: xgFromShot(거리+슈팅각 인지)로 슛 확률 산정.
+    // 각도 좁은 측면 깊숙은 xG 낮아 덜 쏘고, 정면 가까이는 적극. 직접축구는 먼 거리도 가산.
+    // 사람다운 변동은 random 유지(렌더러 연출).
+    const xg = xgFromShot(pitchMeters(p.x, p.y), p.team);
+    const shootProb = xg * (1.0 + p.shoot * 0.8) + (possession < 0.4 ? xg * 0.4 : 0);
+    if (xg > 0.05 && Math.random() < shootProb) {
       dribbleCount.current = 0;
       stats.current.shot[p.team] += 1;
       logEvent("shot", p.team, p.x, p.y);
@@ -2219,7 +2243,7 @@ export function WorldCupBallGoal() {
                   }}
                 />
                 <i
-                  className="wc-glove"
+                  className="wc-glove wc-glove-b"
                   ref={(el) => {
                     glovesRef.current[side][1] = el;
                   }}

@@ -225,6 +225,12 @@
   background: inherit;
   box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 28%);
 }
+/* 둘째 손 — 엄지를 반대편(위)에 둬, 두 손 엄지가 서로 안쪽을 바라보게(평행 X). */
+.wc-glove-b::before {
+  bottom: auto;
+  top: -22%;
+  border-radius: 52% 50% 50% 46%;
+}
 /* 잡는 중 — 장갑 진하게(쥐는 느낌) + 글로우. */
 .wc-keeper-catch .wc-glove {
   background: linear-gradient(125deg, #6ff3ab 0%, #22c55e 70%, #15a34a 100%);
