@@ -827,9 +827,10 @@ export function WorldCupBallGoal() {
     const { w } = bounds();
     let line = team === 0 ? -Infinity : Infinity;
     players.current.forEach((e) => {
-      if (e.team === team) return;
+      if (e.team === team || e.red) return; // 퇴장 선수는 필드 밖 — 라인 계산서 제외(유령 라인 방지)
       line = team === 0 ? Math.max(line, e.x) : Math.min(line, e.x);
     });
+    if (!isFinite(line)) line = team === 0 ? w * 0.5 : w * 0.5; // 상대 전원 퇴장 등 방어
     return team === 0 ? Math.max(line, w * 0.5) : Math.min(line, w * 0.5);
   };
 
@@ -1321,7 +1322,9 @@ export function WorldCupBallGoal() {
     // 너머 + 상대 진영이면 오프사이드. 레벨(같은 선)은 온사이드라 PLAYER_R*2 여유를 둔다.
     const offLine = offsideLineFor(p.team);
     const isOffside = (m: Player) => {
-      const beyond = p.team === 0 ? m.x > offLine + PLAYER_R * 2 : m.x < offLine - PLAYER_R * 2;
+      // 레벨(거의 같은 선)은 온사이드 — 관용폭을 넉넉히(PLAYER_R*3.5) 줘 아슬한 판정이 공격수에 유리.
+      const tol = PLAYER_R * 3.5;
+      const beyond = p.team === 0 ? m.x > offLine + tol : m.x < offLine - tol;
       const inOppHalf = p.team === 0 ? m.x > w * 0.5 : m.x < w * 0.5;
       return beyond && inOppHalf;
     };
@@ -1511,12 +1514,19 @@ export function WorldCupBallGoal() {
     const spotX = goalLineX - w * 0.105; // 페널티 스폿
     const spotY = h * 0.5;
     const ballGap = kdDia() * 0.5 + 9; // 키커가 공 바로 뒤에 서는 간격
-    // 관전자(키커 제외)는 자기 줄로 복귀. 속도는 거리비례 — 줄에 가까우면 천천히(현장감), 멀면(방금
-    // 차고 골대 옆에 남은 직전 키커) 빨리 빠져 다음 키커를 안 방해한다.
+    // 관전자는 자기 '줄' 위치로 복귀. 줄 위치는 저장된 tx/ty에 의존하지 않고 인덱스로 매 프레임 직접
+    // 계산 → tx/ty가 어떤 이유로든 오염돼도(예: 직전 키커가 골대 옆에 남던 버그) 항상 제자리로 간다.
+    // 현재 '걸어나오는/차는' 키커(setup·run)만 제외 — result 단계의 직전 키커는 바로 복귀시킨다.
+    const activeKicker = s.phase === "setup" || s.phase === "run";
     players.current.forEach((p, i) => {
-      if (i === s.kicker) return;
-      const dx = p.tx - p.x;
-      const dy = p.ty - p.y;
+      if (i === s.kicker && activeKicker) return;
+      const team = i < 10 ? 0 : 1;
+      const k = i % 10;
+      const lineX = w * 0.5;
+      const lineY =
+        team === 0 ? h * 0.5 - h * 0.05 - (k / 9) * h * 0.4 : h * 0.5 + h * 0.05 + (k / 9) * h * 0.4;
+      const dx = lineX - p.x;
+      const dy = lineY - p.y;
       const d = Math.hypot(dx, dy);
       const sp = PLAYER_SPEED * clamp(0.2 + d * 0.006, 0.2, 1.4) * dt;
       p.x += clamp(dx, -sp, sp);
@@ -2261,13 +2271,13 @@ export function WorldCupBallGoal() {
                 }}
               >
                 <i
-                  className="wc-glove"
+                  className="wc-glove wc-glove-b"
                   ref={(el) => {
                     glovesRef.current[side][0] = el;
                   }}
                 />
                 <i
-                  className="wc-glove wc-glove-b"
+                  className="wc-glove"
                   ref={(el) => {
                     glovesRef.current[side][1] = el;
                   }}
