@@ -139,6 +139,13 @@
 .wc-keeper-right {
   background: radial-gradient(circle at 35% 30%, #6ee7d8, #14b8a6);
 }
+/* 승부차기 — 막는 팀 진영 색으로 키퍼 교체(한 골만 사용). */
+.wc-keeper.wc-keeper-def-red {
+  background: radial-gradient(circle at 35% 30%, #ff9a9a, #e2503c);
+}
+.wc-keeper.wc-keeper-def-blue {
+  background: radial-gradient(circle at 35% 30%, #9ab8ff, #3b6fe2);
+}
 
 /* 집중용 딤/흐림 — 뒤(메모·달력·색상안내·아바타 켜기 등 모든 컨트롤)를 잔디톤으로 흐리고, 클릭을
    막는다(pointer-events:auto). 게임 요소(공·토글)는 이 위에 또렷+클릭 가능. */
@@ -273,18 +280,37 @@
   box-shadow: 0 6px 18px -8px rgb(0 0 0 / 45%);
 }
 .wc-score-team {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 12px;
   opacity: 0.92;
-  max-width: 92px;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  max-width: 120px;
   white-space: nowrap;
 }
 .wc-score-a {
   color: #ff9a9a;
+  flex-direction: row;
 }
 .wc-score-b {
   color: #9ab8ff;
+}
+/* 스코어박스 옆 카드 — 받은 옐로/레드를 색 핍으로(개수만큼, 최대 4). */
+.wc-score-cards {
+  display: inline-flex;
+  gap: 2px;
+}
+.wc-card {
+  width: 5px;
+  height: 8px;
+  border-radius: 1.5px;
+  box-shadow: 0 0 0 0.5px rgb(0 0 0 / 25%);
+}
+.wc-card-y {
+  background: #f6c945;
+}
+.wc-card-r {
+  background: #e2503c;
 }
 .wc-score-num {
   font-size: 18px;
@@ -335,21 +361,38 @@
   animation: wc-save-pop 0.6s cubic-bezier(0.22, 1.4, 0.4, 1) both;
 }
 
-/* 세트피스 라벨(스로인 등) — 상단 가운데 작은 칩. */
+/* 세트피스 라벨(스로인·킥오프 등) — 경기장 안에 띄우면 시야를 가린다. 좌상단 '기록' 버튼 아래에
+   작은 칩으로 띄워 방해 없이 알린다. */
 .wc-setpiece {
   position: absolute;
-  left: 50%;
-  top: 13%;
-  transform: translateX(-50%);
+  left: 10px;
+  top: 44px;
   pointer-events: none;
   padding: 5px 12px;
   border-radius: 999px;
-  background: rgb(255 255 255 / 88%);
+  background: rgb(255 255 255 / 90%);
   color: #4a4360;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
+  white-space: nowrap;
   box-shadow: 0 4px 12px -6px rgb(40 30 60 / 45%);
-  animation: wc-save-pop 0.8s cubic-bezier(0.22, 1.4, 0.4, 1) both;
+  animation: wc-setpiece-in 0.8s cubic-bezier(0.22, 1.4, 0.4, 1) both;
+}
+@keyframes wc-setpiece-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.85);
+  }
+  25% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /* 전술 트리거 — 상단 스코어 옆(우상단). 누르면 아래 드롭다운(.wc-tactics) 토글. */

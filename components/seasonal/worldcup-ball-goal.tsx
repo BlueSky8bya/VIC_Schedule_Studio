@@ -134,7 +134,18 @@ export function WorldCupBallGoal() {
     yellow: [0, 0],
     red: [0, 0]
   });
-  const [statText, setStatText] = useState<{ poss: [number, number]; shot: [number, number]; foul: [number, number]; card: [number, number] } | null>(null);
+  const [statText, setStatText] = useState<{
+    poss: [number, number];
+    shot: [number, number];
+    foul: [number, number];
+    yellow: [number, number];
+    red: [number, number];
+  } | null>(null);
+  // 스코어박스 옆 카드 표시용(옐로/레드 개수) — 카드 받을 때만 갱신.
+  const [cardCounts, setCardCounts] = useState<{ yellow: [number, number]; red: [number, number] }>({
+    yellow: [0, 0],
+    red: [0, 0]
+  });
   const clockTick = useRef(0); // 표시 갱신 throttle용 프레임 카운터(매 프레임 setState 방지)
   const breakUntil = useRef(0); // real ms — 이 시각까지 하프타임/피리어드 사이 휴식(시계·플레이 정지)
   const [clockText, setClockText] = useState("");
@@ -152,7 +163,10 @@ export function WorldCupBallGoal() {
     at: 0,
     scored: false,
     targetY: 0,
-    guessY: 0
+    guessY: 0,
+    kicker: -1, // 이번 키커(선수 인덱스) — 실제 원이 도움닫기 후 찬다
+    kx0: 0, // 키커 도움닫기 시작 좌표
+    ky0: 0
   });
   const [pkText, setPkText] = useState<{
     a: number;
@@ -177,6 +191,8 @@ export function WorldCupBallGoal() {
   const counterPress = useRef<{ team: 0 | 1; until: number } | null>(null); // 5초 카운터프레스 윈도우.
   const keeperAggro = useRef<Record<Side, number>>({ left: 0.5, right: 0.5 }); // 스위퍼 성향 0..1.
   const keeperX = useRef<Record<Side, number>>({ left: 0, right: 0 }); // 라인에서 전진한 거리(px).
+  // GK 손 — 잡으면(catch) 잠깐 보유 후 배급(스로/킥). 백패스는 발로(손 금지). 박스 안에서만 손.
+  const keeperHold = useRef<{ side: Side | null; until: number }>({ side: null, until: 0 });
 
   const bounds = () => {
     const el = layerRef.current;
@@ -237,10 +253,26 @@ export function WorldCupBallGoal() {
     el.classList.toggle("wc-ball-air", z > AIR_MIN);
   };
   const placeKeepers = () => {
+    const so = shootout.current;
     (["left", "right"] as Side[]).forEach((s) => {
       const el = keeperRef.current[s];
+      if (!el) return;
+      if (so.active) {
+        // 승부차기 — 오른쪽 골 하나만. 왼쪽 키퍼는 숨기고, 오른쪽은 막는 팀(차는 팀 반대) 색으로.
+        if (s === "left") {
+          el.style.display = "none";
+          return;
+        }
+        el.style.display = "";
+        const defTeam = so.turn === 0 ? 1 : 0;
+        el.classList.toggle("wc-keeper-def-red", defTeam === 0);
+        el.classList.toggle("wc-keeper-def-blue", defTeam === 1);
+      } else {
+        el.style.display = "";
+        el.classList.remove("wc-keeper-def-red", "wc-keeper-def-blue");
+      }
       const ox = s === "left" ? keeperX.current[s] : -keeperX.current[s];
-      if (el) el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
+      el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
     });
   };
   const placePlayers = () => {
@@ -325,7 +357,9 @@ export function WorldCupBallGoal() {
     clock.current = { t: 0, period: 1, added: 0, ended: false };
     stats.current = { poss: [0, 0], shot: [0, 0], foul: [0, 0], yellow: [0, 0], red: [0, 0] };
     setStatText(null);
-    shootout.current.active = false;
+    setCardCounts({ yellow: [0, 0], red: [0, 0] });
+    clockTick.current = 0;
+    shootout.current = { ...shootout.current, active: false, phase: "", kicker: -1 };
     setPkText(null);
     breakUntil.current = 0;
     setMatchResult(null);
@@ -598,6 +632,11 @@ export function WorldCupBallGoal() {
         stats.current.red[fouler.team] += 1;
         card = " 🟨🟥";
       }
+    }
+    if (card) {
+      // 스코어박스 옆 카드 표시 갱신.
+      const st = stats.current;
+      setCardCounts({ yellow: [st.yellow[0], st.yellow[1]], red: [st.red[0], st.red[1]] });
     }
     lastTouch.current = fouled;
     flashPiece(`파울${card}`);
@@ -1093,10 +1132,14 @@ export function WorldCupBallGoal() {
   const startBreak = () => {
     breakUntil.current = performance.now() + HALF_BREAK_MS;
   };
-  // ── 승부차기 ──────────────────────────────────────────────────────────────
-  const pickKicker = (team: 0 | 1, n: number): Player | null => {
-    const ids = players.current.filter((p) => p.team === team && !p.red);
-    return ids.length ? ids[n % ids.length] : null;
+  // ── 승부차기 ── 실제처럼 한 골만 쓰고, 차는 팀 선수 1명(원)이 도움닫기 후 차고, 막는 팀 키퍼가
+  // 그 골을 지킨다. 매 키커마다 팀이 번갈며 키퍼도 교체(색 전환). 나머지는 하프라인서 관전.
+  const pickKickerIndex = (team: 0 | 1, n: number): number => {
+    const ids: number[] = [];
+    players.current.forEach((p, i) => {
+      if (p.team === team && !p.red) ids.push(i);
+    });
+    return ids.length ? ids[n % ids.length] : -1;
   };
   const shootoutDecided = (): 0 | 1 | null => {
     const s = shootout.current;
@@ -1132,9 +1175,9 @@ export function WorldCupBallGoal() {
     setScore([0, 0]);
     scoreRef.current = [0, 0];
     flashPiece("승부차기");
-    // 22명 하프라인 양쪽에 도열(관전).
+    // 22명 하프라인 양쪽에 도열(관전). tx/ty=각자 줄 위치(매 프레임 그쪽으로 복귀).
     players.current.forEach((p, i) => {
-      const col = p.team === 0 ? w * 0.5 - 34 : w * 0.5 + 34;
+      const col = p.team === 0 ? w * 0.42 : w * 0.58;
       const k = i % 10;
       p.red = false;
       p.x = col;
@@ -1146,49 +1189,66 @@ export function WorldCupBallGoal() {
     keeperX.current.right = 0;
     keeperY.current.left = h * 0.5;
     keeperY.current.right = h * 0.5;
+    s.kicker = pickKickerIndex(s.turn, 0); // 첫 키커
     setPkText({ a: 0, b: 0, turn: s.turn, round: 1, note: "" });
     setClockText(pkBadge(s));
   };
-  const PK_SETUP = 900;
+  const PK_SETUP = 1500; // 키커가 슬슬 걸어나와 공 뒤에 서는 도움닫기 시간
   const PK_RUN = 640;
-  const PK_RESULT = 1250;
+  const PK_RESULT = 1300;
+  // 승부차기는 항상 '오른쪽' 골 하나만 쓴다. 막는 팀(차는 팀의 반대) 키퍼가 그 골을 지킨다.
   const runShootout = (tNow: number, dt: number) => {
     const s = shootout.current;
     const { w, h } = bounds();
-    const attackRight = s.turn === 0; // 팀0은 오른쪽 골을 공격
-    const defSide: Side = attackRight ? "right" : "left";
-    const goalLineX = attackRight ? w - insetX() : insetX();
-    const spotX = attackRight ? goalLineX - w * 0.1 : goalLineX + w * 0.1;
+    const goalLineX = w - insetX();
+    const spotX = goalLineX - w * 0.105; // 페널티 스폿
+    const spotY = h * 0.5;
+    const ballGap = kdDia() * 0.5 + 9; // 키커가 공 바로 뒤에 서는 간격
+    // 관전자(키커 제외)는 자기 줄로 복귀.
+    players.current.forEach((p, i) => {
+      if (i === s.kicker) return;
+      const sp = PLAYER_SPEED * 0.45 * dt;
+      p.x += clamp(p.tx - p.x, -sp, sp);
+      p.y += clamp(p.ty - p.y, -sp, sp);
+    });
     if (s.phase === "setup") {
       pos.current.x = spotX;
-      pos.current.y = h * 0.5;
+      pos.current.y = spotY;
       vel.current = { x: 0, y: 0 };
-      keeperX.current[defSide] = 0;
-      keeperY.current[defSide] = h * 0.5;
+      keeperX.current.right = 0;
+      keeperY.current.right = spotY;
+      // 키커 도움닫기 — 미드필드에서 공 뒤로 슬슬 걸어와 선다.
+      const k = s.kicker >= 0 ? players.current[s.kicker] : null;
+      if (k) {
+        const sp = PLAYER_SPEED * 0.7 * dt;
+        k.x += clamp(spotX - ballGap - k.x, -sp, sp);
+        k.y += clamp(spotY - k.y, -sp, sp);
+      }
       if (tNow - s.at >= PK_SETUP) {
-        const kicker = pickKicker(s.turn, s.turn === 0 ? s.takenA : s.takenB);
-        const skill = kicker ? kicker.shoot : 0.6;
+        const skill = k ? k.shoot : 0.6;
         s.scored = Math.random() < 0.5 + skill * 0.32; // 키커 슛 능력 → 성공률
         const top = Math.random() < 0.5;
-        s.targetY = h * 0.5 + (top ? -1 : 1) * goalH() * 0.42;
-        s.guessY = s.scored ? h * 0.5 + (top ? 1 : -1) * goalH() * 0.55 : s.targetY; // 막으면 같은 쪽 다이브
-        setVelTo(goalLineX + (attackRight ? 6 : -6), s.targetY, 640);
+        s.targetY = spotY + (top ? -1 : 1) * goalH() * 0.42;
+        s.guessY = s.scored ? spotY + (top ? 1 : -1) * goalH() * 0.55 : s.targetY; // 막으면 같은 쪽 다이브
+        setVelTo(goalLineX + 6, s.targetY, 660);
         stats.current.shot[s.turn] += 1;
         s.phase = "run";
         s.at = tNow;
       }
     } else if (s.phase === "run") {
-      const kp = keeperY.current[defSide];
-      keeperY.current[defSide] = kp + clamp(s.guessY - kp, -26, 26);
+      // 키커 팔로스루(공 쪽으로 한두 발).
+      const k = s.kicker >= 0 ? players.current[s.kicker] : null;
+      if (k) {
+        const sp = PLAYER_SPEED * 0.35 * dt;
+        k.x += clamp(spotX - ballGap * 0.3 - k.x, -sp, sp);
+      }
+      const kp = keeperY.current.right;
+      keeperY.current.right = kp + clamp(s.guessY - kp, -26, 26);
       pos.current.x += vel.current.x * dt;
       pos.current.y += vel.current.y * dt;
-      if (!s.scored) {
-        // 막힘 — 공이 골라인 근처 닿으면 키퍼가 쳐낸다(멈춤).
-        const reached = attackRight ? pos.current.x >= goalLineX - 2 : pos.current.x <= goalLineX + 2;
-        if (reached) {
-          pos.current.x = goalLineX + (attackRight ? -3 : 3);
-          vel.current = { x: 0, y: 0 };
-        }
+      if (!s.scored && pos.current.x >= goalLineX - 2) {
+        pos.current.x = goalLineX - 3; // 막힘 — 골라인서 멈춤
+        vel.current = { x: 0, y: 0 };
       }
       if (tNow - s.at >= PK_RUN) {
         if (s.scored) {
@@ -1199,7 +1259,7 @@ export function WorldCupBallGoal() {
           window.setTimeout(() => setGoalFlash(false), 800);
           hapticSuccess();
         } else {
-          setSaveFlash(defSide);
+          setSaveFlash("right");
           window.setTimeout(() => setSaveFlash(null), 800);
           hapticTick();
         }
@@ -1218,8 +1278,9 @@ export function WorldCupBallGoal() {
           endShootout(dec);
           return;
         }
-        s.turn = s.turn === 0 ? 1 : 0;
+        s.turn = s.turn === 0 ? 1 : 0; // 팀 교대(키퍼도 교체됨)
         s.round = Math.min(s.takenA, s.takenB) + 1;
+        s.kicker = pickKickerIndex(s.turn, s.turn === 0 ? s.takenA : s.takenB);
         s.phase = "setup";
         s.at = tNow;
         s.scored = false;
@@ -1307,7 +1368,8 @@ export function WorldCupBallGoal() {
         poss: [Math.round((s.poss[0] / tp) * 100), Math.round((s.poss[1] / tp) * 100)],
         shot: [s.shot[0], s.shot[1]],
         foul: [s.foul[0], s.foul[1]],
-        card: [s.yellow[0] + s.red[0], s.yellow[1] + s.red[1]]
+        yellow: [s.yellow[0], s.yellow[1]],
+        red: [s.red[0], s.red[1]]
       });
     }
   };
@@ -1855,11 +1917,35 @@ export function WorldCupBallGoal() {
         {enabled ? (
           <>
             <div className="wc-score" role="status">
-              <span className="wc-score-team wc-score-a">{teamNames[0] || "RED"}</span>
+              <span className="wc-score-team wc-score-a">
+                {teamNames[0] || "RED"}
+                {cardCounts.yellow[0] + cardCounts.red[0] > 0 ? (
+                  <span className="wc-score-cards">
+                    {Array.from({ length: Math.min(cardCounts.yellow[0], 4) }).map((_, i) => (
+                      <i key={`y${i}`} className="wc-card wc-card-y" />
+                    ))}
+                    {Array.from({ length: Math.min(cardCounts.red[0], 4) }).map((_, i) => (
+                      <i key={`r${i}`} className="wc-card wc-card-r" />
+                    ))}
+                  </span>
+                ) : null}
+              </span>
               <strong className="wc-score-num">
                 {score[0]} <span>:</span> {score[1]}
               </strong>
-              <span className="wc-score-team wc-score-b">{teamNames[1] || "BLUE"}</span>
+              <span className="wc-score-team wc-score-b">
+                {cardCounts.yellow[1] + cardCounts.red[1] > 0 ? (
+                  <span className="wc-score-cards">
+                    {Array.from({ length: Math.min(cardCounts.yellow[1], 4) }).map((_, i) => (
+                      <i key={`y${i}`} className="wc-card wc-card-y" />
+                    ))}
+                    {Array.from({ length: Math.min(cardCounts.red[1], 4) }).map((_, i) => (
+                      <i key={`r${i}`} className="wc-card wc-card-r" />
+                    ))}
+                  </span>
+                ) : null}
+                {teamNames[1] || "BLUE"}
+              </span>
             </div>
             {clockText ? <div className="wc-clock">{clockText}</div> : null}
             <button
@@ -1896,7 +1982,8 @@ export function WorldCupBallGoal() {
                     ["점유", `${statText.poss[0]}%`, `${statText.poss[1]}%`],
                     ["슛", statText.shot[0], statText.shot[1]],
                     ["파울", statText.foul[0], statText.foul[1]],
-                    ["카드", statText.card[0], statText.card[1]]
+                    ["🟨 옐로", statText.yellow[0], statText.yellow[1]],
+                    ["🟥 레드", statText.red[0], statText.red[1]]
                   ] as const
                 ).map(([label, a, bb]) => (
                   <div className="wc-stat-row" key={label}>
