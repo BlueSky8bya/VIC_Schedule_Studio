@@ -1338,6 +1338,16 @@ export function WorldCupBallGoal() {
             const offL = offsideLineFor(p.team);
             tx = p.team === 0 ? Math.min(tx, offL - PLAYER_R) : Math.max(tx, offL + PLAYER_R);
           }
+          // 수비 라인 — 수비 중 DF는 공통 라인 X로 정렬해 한 줄로 함께 오르내린다(컴팩트 블록).
+          // 공이 자기 골에 가까우면 내려앉고, 멀거나 하이라인 전술이면 올라간다. ty(폭)는 각자 유지.
+          if (!attacking && p.slot.role === "DF") {
+            const half = fx.max - fx.min;
+            const lh = t ? t.lineHeight : 0.1;
+            const prog = p.team === 0 ? (bx - fx.min) / half : (fx.max - bx) / half;
+            const depth = clamp(prog * 0.5 + lh * 1.8, 0.1, 0.62);
+            const lineX = p.team === 0 ? fx.min + depth * half * 0.5 : fx.max - depth * half * 0.5;
+            tx = lineX + clamp((bx - lineX) * 0.04, -w * 0.03, w * 0.03);
+          }
         }
         const jit = mode === "shape" || mode === "support" ? 26 : 12;
         p.tx = tx + rnd(-jit, jit);
