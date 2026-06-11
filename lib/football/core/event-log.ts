@@ -9,6 +9,8 @@ export type MatchEventKind =
   | "cornerKick"
   | "goalKick"
   | "offside"
+  | "foul"
+  | "shot"
   | "ballDrop";
 
 export type MatchEvent = {

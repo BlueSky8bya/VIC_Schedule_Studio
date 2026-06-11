@@ -30,6 +30,9 @@ type Player = PlayerPersona & {
   ty: number;
   thinkAt: number; // 다음 재결정 시각(개별 반응지연으로 분산).
   wob: number; // idle 흔들림 위상(선수마다 달라 정지 통일감 깨기).
+  yellow: number; // 경고 누적(2장이면 퇴장).
+  red: boolean; // 퇴장 — 더는 공에 관여하지 않고(패시브) 시각적으로 흐려진다.
+  num: number; // 등번호(표시용).
 };
 
 const FRICTION = 0.992;
@@ -105,6 +108,7 @@ export function WorldCupBallGoal() {
   const raf = useRef<number | null>(null);
   const goalAt = useRef(0);
   const saveAt = useRef(0);
+  const foulAt = useRef(0); // 파울 쿨다운(연속 파울 스팸 방지)
   const kickAt = useRef(0);
   const dribbleCount = useRef(0); // 연속 드리블 터치 수(상한으로 무한 드리블 방지)
   const lastBallPlayer = useRef<Player | null>(null); // 직전 볼 처리 선수 — 바뀌면 드리블 카운트 리셋
@@ -119,11 +123,21 @@ export function WorldCupBallGoal() {
   // 경기 시계 — 1 real초 = 1 게임분. 전반 0~45, 후반 45~90 + 추가시간(세트피스로 누적). 동점이면
   // 연장(90~105, 105~120). 종료 시 결과 띄우고 자동 새 경기. breakUntil 동안은 정지(하프타임).
   const clock = useRef({ t: 0, period: 1, added: 0, ended: false });
+  // 경기 기록 — 점유(프레임 수)·슛·파울·카드. poss는 프레임 누적 → 비율로 환산해 표시.
+  const stats = useRef({
+    poss: [0, 0],
+    shot: [0, 0],
+    foul: [0, 0],
+    yellow: [0, 0],
+    red: [0, 0]
+  });
+  const [statText, setStatText] = useState<{ poss: [number, number]; shot: [number, number]; foul: [number, number]; card: [number, number] } | null>(null);
   const clockTick = useRef(0); // 표시 갱신 throttle용 프레임 카운터(매 프레임 setState 방지)
   const breakUntil = useRef(0); // real ms — 이 시각까지 하프타임/피리어드 사이 휴식(시계·플레이 정지)
   const [clockText, setClockText] = useState("");
   const [matchResult, setMatchResult] = useState<string | null>(null);
   const [tacticsOpen, setTacticsOpen] = useState(false); // 전술 변경 패널 열림
+  const [statsOpen, setStatsOpen] = useState(false); // 경기 기록 패널 열림
   const [styleNames, setStyleNames] = useState<[string, string]>(["", ""]); // 현재 팀별 전술명(칩 강조용)
   // 세트피스(스로인/코너/골킥/킥오프/오프사이드)는 라인에 잠깐 멈췄다 재개 — 딜레이 후 kick 실행.
   const pendingRestart = useRef<{ at: number; kick: () => void; walk?: () => void } | null>(null);
@@ -195,7 +209,13 @@ export function WorldCupBallGoal() {
     const pr = rotated.current ? 6.5 : PLAYER_R; // 모바일은 선수 시각 더 작게(중심 맞춰 오프셋)
     players.current.forEach((p, i) => {
       const el = playerEls.current[i];
-      if (el) el.style.transform = `translate3d(${p.x - pr}px, ${p.y - pr}px, 0)`;
+      if (!el) return;
+      if (p.red) {
+        el.style.display = "none"; // 퇴장 — 필드서 시각적으로도 제거
+        return;
+      }
+      el.style.display = "";
+      el.style.transform = `translate3d(${p.x - pr}px, ${p.y - pr}px, 0)`;
     });
   };
 
@@ -242,7 +262,7 @@ export function WorldCupBallGoal() {
     counterPress.current = null;
     pendingRestart.current = null;
     // 엔진 성향(persona)에 런타임 상태를 입혀 화면용 Player로. stamina/wob도 같은 rng라 결정적.
-    players.current = personas.map((pp) => ({
+    players.current = personas.map((pp, i) => ({
       ...pp,
       x: 0,
       y: 0,
@@ -250,7 +270,10 @@ export function WorldCupBallGoal() {
       tx: 0,
       ty: 0,
       thinkAt: 0,
-      wob: rng.range(0, Math.PI * 2)
+      wob: rng.range(0, Math.PI * 2),
+      yellow: 0,
+      red: false,
+      num: (i % 10) + 2 // 2~11(1은 골키퍼 몫으로 비움)
     }));
     players.current.forEach((p) => {
       const home = roleHome(p, 0);
@@ -262,6 +285,8 @@ export function WorldCupBallGoal() {
     scoreRef.current = [0, 0];
     setScore([0, 0]);
     clock.current = { t: 0, period: 1, added: 0, ended: false };
+    stats.current = { poss: [0, 0], shot: [0, 0], foul: [0, 0], yellow: [0, 0], red: [0, 0] };
+    setStatText(null);
     breakUntil.current = 0;
     setMatchResult(null);
     setClockText("전반 00:00");
@@ -495,6 +520,60 @@ export function WorldCupBallGoal() {
     lastActiveAt.current = performance.now();
   };
 
+  // 파울 — 수비수(fouler)가 공 가진 상대를 거칠게 막음. 반칙당한 팀에 프리킥. 시니컬(규율↓)하면
+  // 카드(옐로 누적 2 → 레드, 가끔 다이렉트 레드). 레드는 그 선수가 패시브가 된다.
+  const callFoul = (fouler: Player) => {
+    const fouled = lastTouch.current;
+    if (fouled == null || fouler.team === fouled) return;
+    const { w, h } = bounds();
+    const fx = fieldX();
+    const spotX = clamp(pos.current.x, fx.min, fx.max);
+    const spotY = clamp(pos.current.y, insetY(), h - insetY());
+    pos.current.x = spotX;
+    pos.current.y = spotY;
+    foulAt.current = performance.now();
+    stats.current.foul[fouler.team] += 1;
+    const cynical = 1 - fouler.discipline;
+    let card = "";
+    if (Math.random() < 0.03 + cynical * 0.05) {
+      fouler.red = true;
+      stats.current.red[fouler.team] += 1;
+      card = " 🟥";
+    } else if (Math.random() < 0.2 + cynical * 0.33) {
+      fouler.yellow += 1;
+      stats.current.yellow[fouler.team] += 1;
+      card = " 🟨";
+      if (fouler.yellow >= 2) {
+        fouler.red = true;
+        stats.current.red[fouler.team] += 1;
+        card = " 🟨🟥";
+      }
+    }
+    lastTouch.current = fouled;
+    flashPiece(`파울${card}`);
+    logEvent("foul", fouler.team, spotX, spotY, card.trim());
+    // 프리킥 — 반칙당한 팀이 한 박자 뒤 찬다. 상대 골 가까우면 직접 슛, 아니면 전진 패스.
+    const enemy: Side = fouled === 0 ? "right" : "left";
+    const g = goalRect(enemy);
+    const distGoal = Math.hypot(g.x + g.w / 2 - spotX, g.y + g.h / 2 - spotY);
+    scheduleRestart(
+      1100,
+      () => {
+        if (distGoal < w * 0.32 && Math.random() < 0.6) {
+          const tx = enemy === "left" ? g.x + g.w : g.x;
+          const ty = g.y + g.h / 2 + rnd(-g.h * 0.35, g.h * 0.35);
+          setVelTo(tx, ty, 520 + Math.random() * 120);
+          stats.current.shot[fouled] += 1;
+          lastTouch.current = fouled;
+        } else {
+          passToNearestTeammate(fouled, pos.current.x, pos.current.y, 300);
+        }
+      },
+      () => walkTeammateToBall(fouled)
+    );
+    lastActiveAt.current = performance.now();
+  };
+
   const scoreGoal = (side: Side) => {
     const now = performance.now();
     if (now - goalAt.current < GOAL_COOLDOWN_MS) return;
@@ -580,6 +659,7 @@ export function WorldCupBallGoal() {
     let da = Infinity;
     let db = Infinity;
     players.current.forEach((p, i) => {
+      if (p.red) return; // 퇴장 선수는 공 관여·점유 계산서 제외
       const d = Math.hypot(p.x - pos.current.x, p.y - pos.current.y);
       if (d < od) {
         od = d;
@@ -616,7 +696,7 @@ export function WorldCupBallGoal() {
     ([0, 1] as const).forEach((team) => {
       const ids: number[] = [];
       players.current.forEach((p, i) => {
-        if (p.team === team) ids.push(i);
+        if (p.team === team && !p.red) ids.push(i); // 퇴장 선수는 순위·역할서 제외
       });
       const dOf = (i: number) => Math.hypot(players.current[i].x - bx, players.current[i].y - by);
       ids.sort((a, b) => dOf(a) - dOf(b));
@@ -626,6 +706,7 @@ export function WorldCupBallGoal() {
     });
 
     players.current.forEach((p, i) => {
+      if (p.red) return; // 퇴장 — 더는 움직이지 않는다(필드서 빠짐, placePlayers가 시각도 숨김)
       const t = teams.current ? teams.current[p.team] : null;
       const tempo = t ? t.tempo : 1;
       const attacking = p.team === poss;
@@ -705,10 +786,11 @@ export function WorldCupBallGoal() {
     // 모바일은 선수 시각크기(13)가 작으니 그만큼만 띄운다. O(n²)=400, 60fps 무리 없음.
     const minSep = (rotated.current ? 13 : PLAYER_R * 2) + 1;
     players.current.forEach((p, i) => {
+      if (p.red) return;
       let sx = 0;
       let sy = 0;
       players.current.forEach((q, j) => {
-        if (i === j) return;
+        if (i === j || q.red) return;
         const dx = p.x - q.x;
         const dy = p.y - q.y;
         const d2 = dx * dx + dy * dy;
@@ -746,6 +828,8 @@ export function WorldCupBallGoal() {
     const longShot = distGoal < w * 0.46 && possession < 0.4 && Math.random() < p.shoot * 0.5;
     if (closeShot || longShot) {
       dribbleCount.current = 0;
+      stats.current.shot[p.team] += 1;
+      logEvent("shot", p.team, p.x, p.y);
       const tx = enemy === "left" ? g.x + g.w : g.x;
       const ty = g.y + g.h / 2 + (Math.random() * 2 - 1) * g.h * 0.5 * (1.2 - p.shoot);
       setVelTo(tx, ty, 480 + Math.random() * 150);
@@ -965,8 +1049,19 @@ export function WorldCupBallGoal() {
     const c = clock.current;
     if (c.ended || performance.now() < breakUntil.current) return;
     c.t += 1 / 60;
+    if (possTeam.current != null) stats.current.poss[possTeam.current] += 1; // 점유 프레임 누적
     if (c.t >= PERIOD_END[c.period - 1] + c.added) endPeriod();
-    if (++clockTick.current % 12 === 0) setClockText(fmtClock());
+    if (++clockTick.current % 12 === 0) {
+      setClockText(fmtClock());
+      const s = stats.current;
+      const tp = s.poss[0] + s.poss[1] || 1;
+      setStatText({
+        poss: [Math.round((s.poss[0] / tp) * 100), Math.round((s.poss[1] / tp) * 100)],
+        shot: [s.shot[0], s.shot[1]],
+        foul: [s.foul[0], s.foul[1]],
+        card: [s.yellow[0] + s.red[0], s.yellow[1] + s.red[1]]
+      });
+    }
   };
 
   const step = () => {
@@ -1070,9 +1165,22 @@ export function WorldCupBallGoal() {
     const now = performance.now();
     if (!dragging.current && !frozen && !airborne) {
       players.current.forEach((p, i) => {
+        if (p.red) return; // 퇴장 선수는 공에 관여 안 함
         const minD = ballDia() / 2 + PLAYER_R;
         const d = Math.hypot(pos.current.x - p.x, pos.current.y - p.y);
         if (d >= minD) return;
+        // 파울 — 공 가진 상대를 막는 수비수가 거칠게(규율 낮을수록↑). 쿨다운으로 스팸 방지.
+        if (
+          run &&
+          lastTouch.current != null &&
+          p.team !== lastTouch.current &&
+          now - foulAt.current > 1600 &&
+          now - kickAt.current > 200 &&
+          Math.random() < 0.018 + (1 - p.discipline) * 0.03
+        ) {
+          callFoul(p);
+          return;
+        }
         if (run && i === near.overall && speed < CONTROL_SPEED && now - kickAt.current > KICK_CD) {
           playBall(p);
         } else {
@@ -1470,6 +1578,40 @@ export function WorldCupBallGoal() {
             >
               ⚙ 전술
             </button>
+            <button
+              type="button"
+              className={`wc-tac-btn wc-stat-btn ${statsOpen ? "on" : ""}`}
+              onClick={() => {
+                setStatsOpen((o) => !o);
+                hapticTick();
+              }}
+              aria-pressed={statsOpen}
+            >
+              📊 기록
+            </button>
+            {statsOpen && statText ? (
+              <div className="wc-stats">
+                <div className="wc-stat-head">
+                  <b className="a">{teamNames[0] || "RED"}</b>
+                  <span>경기 기록</span>
+                  <b className="b">{teamNames[1] || "BLUE"}</b>
+                </div>
+                {(
+                  [
+                    ["점유", `${statText.poss[0]}%`, `${statText.poss[1]}%`],
+                    ["슛", statText.shot[0], statText.shot[1]],
+                    ["파울", statText.foul[0], statText.foul[1]],
+                    ["카드", statText.card[0], statText.card[1]]
+                  ] as const
+                ).map(([label, a, bb]) => (
+                  <div className="wc-stat-row" key={label}>
+                    <b className="a">{a}</b>
+                    <span>{label}</span>
+                    <b className="b">{bb}</b>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {goalFlash ? <div className="wc-goal-text">GOAL!</div> : null}
             {saveFlash ? <div className={`wc-save-text wc-save-${saveFlash}`}>막았다!</div> : null}
             {setPiece ? <div className="wc-setpiece">{setPiece}</div> : null}
