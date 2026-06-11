@@ -788,7 +788,9 @@ export function WorldCupBallGoal() {
     const { w, h } = bounds();
     const dt = 1 / 60;
     const tNow = performance.now();
-    const run = runningRef.current && !reduced.current;
+    // 동작 줄이기(reduce-motion)여도, 사용자가 자동경기를 '직접' 켜면 돈다(명시적 opt-in).
+    // 자동 '시작'만 reduce-motion에서 끈다(아래 마운트). 깜짝 모션 없음 + 켜면 작동.
+    const run = runningRef.current;
 
     // 세트피스 프리즈 — 예약된 재개 시각이 되면 kick 실행. 그 전까진 공은 라인에 멈춤(frozen).
     if (pendingRestart.current && tNow >= pendingRestart.current.at) {
@@ -909,7 +911,7 @@ export function WorldCupBallGoal() {
     }
 
     const moving = speed > STOP_SPEED || frozen;
-    if (enabledRef.current && (dragging.current || moving || (runningRef.current && !reduced.current))) {
+    if (enabledRef.current && (dragging.current || moving || runningRef.current)) {
       raf.current = window.requestAnimationFrame(step);
     } else {
       raf.current = null;
@@ -926,13 +928,16 @@ export function WorldCupBallGoal() {
     rotated.current = window.matchMedia?.("(max-width: 640px)").matches ?? false;
     let en = true;
     let au = true;
+    let savedAuto: string | null = null;
     try {
       if (window.localStorage.getItem("vic.worldcupGame") === "off") en = false;
-      if (window.localStorage.getItem("vic.worldcupAuto") === "off") au = false;
+      savedAuto = window.localStorage.getItem("vic.worldcupAuto");
+      if (savedAuto === "off") au = false;
     } catch {
       /* ignore */
     }
-    if (reduced.current) au = false;
+    // 동작 줄이기: 자동 '시작'은 끈다(깜짝 모션 방지) — 단 사용자가 예전에 직접 켰으면(="on") 존중.
+    if (reduced.current && savedAuto !== "on") au = false;
     enabledRef.current = en;
     runningRef.current = au;
     setEnabled(en);
@@ -957,7 +962,7 @@ export function WorldCupBallGoal() {
           window.cancelAnimationFrame(raf.current);
           raf.current = null;
         }
-      } else if (enabledRef.current && runningRef.current && !reduced.current) {
+      } else if (enabledRef.current && runningRef.current) {
         ensureLoop();
       }
     };
@@ -990,7 +995,7 @@ export function WorldCupBallGoal() {
     placeKeepers();
     placePlayers();
     lastActiveAt.current = performance.now();
-    if (runningRef.current && !reduced.current) ensureLoop();
+    if (runningRef.current) ensureLoop(); // runningRef는 reduce-motion이면 마운트서 이미 off
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
