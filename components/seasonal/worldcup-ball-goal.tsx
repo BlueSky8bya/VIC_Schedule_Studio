@@ -79,6 +79,7 @@ export function WorldCupBallGoal() {
   // 승부차기 키퍼 걷기 — 두 키퍼가 오른쪽 골 근처에 같이 있다가, 진영 바뀌면 걸어서 교체.
   // null=아직 미초기화(첫 프레임에 목표로 스냅). 그 외엔 목표로 lerp(걷는 모습).
   const skPos = useRef<Record<Side, { x: number; y: number } | null>>({ left: null, right: null });
+  const keeperFront = useRef<Record<Side, boolean>>({ left: false, right: false }); // z 전환 히스테리시스
   // 장갑 현재 오프셋(px) — 목표로 부드럽게 lerp. 손이 몸과 별개로 벌어지고/뻗는다.
   const glovePos = useRef<Record<Side, { x: number; y: number }[]>>({
     left: [
@@ -440,14 +441,22 @@ export function WorldCupBallGoal() {
       if (!el) return;
       el.style.display = "";
       el.classList.remove("wc-keeper-def-red", "wc-keeper-def-blue");
+      // 하드 충돌(RL 핵심) — 키퍼 몸은 무조건 골 마우스(상·하 포스트 사이) 안. 어떤 로직이 움직였든
+      // 렌더 직전 강제 clamp → 포스트(그물 옆면)를 절대 통과 못 한다. ring(2.5)까지 포함.
+      {
+        const g = goalRect(s);
+        const m = kdDia() / 2 + 2.5;
+        keeperY.current[s] = clamp(keeperY.current[s], g.y + m, g.y + g.h - m);
+      }
       const ox = s === "left" ? keeperX.current[s] : -keeperX.current[s];
       el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
-      // 스위핑으로 골 라인 앞(필드)으로 나오면 그물 앞(z 위)에, 골 안이면 그물 뒤(기본 z, 흐릿).
-      // 안 그러면 필드로 나와도 그물 뒤라 '골 안에 든' 듯 보였다(밖→안 통과 착시). 골 안일 땐 살짝
-      // 블러로 골대와의 접촉을 흐릿하게(눈속임).
-      const inField = keeperX.current[s] > kdDia() * 0.45;
-      el.style.zIndex = inField ? "7" : "";
-      el.classList.toggle("wc-keeper-ingoal", !inField);
+      // 스위핑으로 골 라인 앞(필드)이면 그물 앞(z7, 또렷), 골 안이면 그물 뒤(기본 z, 흐릿). 경계서
+      // 깜빡이지 않게 히스테리시스(나올 땐 0.6kd, 들어갈 땐 0.3kd).
+      const x = keeperX.current[s];
+      const front = x > kdDia() * 0.6 ? true : x < kdDia() * 0.3 ? false : keeperFront.current[s];
+      keeperFront.current[s] = front;
+      el.style.zIndex = front ? "7" : "";
+      el.classList.toggle("wc-keeper-ingoal", !front);
       placeGloves(s, keeperCenterX(s), keeperY.current[s], true, now, s); // 정상경기: 자기 골 박스로 clip
     });
   };
