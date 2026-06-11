@@ -49,7 +49,7 @@ const FRICTION = 0.992;
 const WALL_RESTITUTION = 0.8;
 const STOP_SPEED = 6;
 const BALL = 40;
-const GOAL_W = 70;
+const GOAL_W = 50; // 골대 깊이(그물). 골라인 밖으로 돌출 → OUT_X 띠 안에 들어가야 함
 const GOAL_H = 120;
 const WALL_T = 10;
 const DRAG_BUFFER = 100;
@@ -63,10 +63,11 @@ const BALL_BOUNCE = 0.82;
 const CONTROL_SPEED = 150;
 const KICK_CD = 480;
 const MARGIN_Y_FRAC = 0.07;
-// 실제 축구처럼 경기장 라인을 화면 끝에서 살짝 안쪽에 둔다 → 라인 밖은 '아웃오브플레이' 띠.
-// 골대는 이 골라인(좌우) 위에 살짝 앞으로 띄워 선다. 공이 이 라인을 넘으면 스로인/코너/골킥.
-const OUT_X_FRAC = 0.028; // 골라인이 좌우 끝에서 들어간 비율 (CSS .wc-bound와 일치)
-const OUT_Y_FRAC = 0.045; // 터치라인이 위아래 끝에서 들어간 비율
+// 실제 축구처럼 경기장 라인을 화면 끝에서 안쪽에 둔다 → 라인 밖은 '아웃오브플레이' 띠.
+// 골대는 입구(앞면)가 골라인 위에 오고 몸통(그물)은 라인 밖(바깥)으로 돌출한다 → 골라인이
+// 골대 입구에 걸림(뒤통수 아님). 공이 이 라인을 넘으면 스로인/코너/골킥. 고정 px로 JS·CSS 정합.
+const OUT_X = 64; // 골라인이 좌우 끝에서 들어간 px (GOAL_W보다 커서 골대가 띠 안에 들어감)
+const OUT_Y = 36; // 터치라인이 위아래 끝에서 들어간 px
 
 const FORMATIONS: Record<string, Slot[]> = {
   "4-3-3": [
@@ -313,13 +314,14 @@ export function WorldCupBallGoal() {
   const ballDia = () => (rotated.current ? 26 : BALL);
   const kdDia = () => (rotated.current ? PLAYER_R * 2 : KD);
   // 경기장 라인(아웃 판정 기준) — 화면 끝에서 인셋. 좌우=골라인, 위아래=터치라인.
-  const insetX = () => bounds().w * OUT_X_FRAC;
-  const insetY = () => bounds().h * OUT_Y_FRAC;
+  const insetX = () => OUT_X;
+  const insetY = () => OUT_Y;
 
+  // 골대 박스 — 입구가 골라인(insetX) 위에 오고 몸통은 라인 밖(화면 끝 쪽)으로 돌출.
+  // 좌측: [OUT_X-GOAL_W, OUT_X], 입구=OUT_X. 우측: [w-OUT_X, w-OUT_X+GOAL_W], 입구=w-OUT_X.
   const goalRect = (side: Side) => {
     const { w, h } = bounds();
-    const m = insetX(); // 골대는 골라인 위에(살짝 앞으로 띄워) 선다
-    const x = side === "left" ? m : w - m - GOAL_W;
+    const x = side === "left" ? OUT_X - GOAL_W : w - OUT_X;
     const y = h * 0.5 - GOAL_H / 2;
     return { x, y, w: GOAL_W, h: GOAL_H };
   };
@@ -1263,7 +1265,7 @@ export function WorldCupBallGoal() {
     ensureLoop();
   };
 
-  const edge = `${OUT_X_FRAC * 100}%`; // 골대를 골라인(인셋) 위에 — 물리 goalRect와 일치
+  const edge = `${OUT_X - GOAL_W}px`; // 골대 바깥 가장자리 — 입구가 골라인(OUT_X), 몸통은 라인 밖
   const goalStyle = (side: Side): React.CSSProperties => ({
     [side]: edge,
     top: `calc(50% - ${GOAL_H / 2}px)`,

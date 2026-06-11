@@ -149,20 +149,18 @@
   position: absolute;
   box-shadow: 0 0 2px rgb(0 0 0 / 18%);
 }
-/* 경기장 바깥 라인 — 좌우=골라인, 위아래=터치라인. 화면 끝에서 인셋(JS OUT_X_FRAC/OUT_Y_FRAC와
-   동일: 2.8% / 4.5%). 라인 밖은 아웃오브플레이 띠. 공이 이 선을 넘으면 스로인/코너/골킥. */
+/* 경기장 바깥 라인 — 좌우=골라인, 위아래=터치라인. 화면 끝에서 인셋(JS OUT_X/OUT_Y와 동일:
+   64px / 36px). 골대는 이 좌우 라인 위에 입구를 두고 라인 밖으로 돌출. 공이 선을 넘으면 세트피스. */
 .wc-pitch .wc-bound {
-  inset: 4.5% 2.8%;
+  inset: 36px 64px;
   border: 2px solid rgb(255 255 255 / 72%);
   border-radius: 3px;
-  box-shadow:
-    0 0 2px rgb(0 0 0 / 18%),
-    inset 0 0 0 0 transparent;
+  box-shadow: 0 0 2px rgb(0 0 0 / 18%);
 }
 .wc-pitch .wc-mid {
   left: 50%;
-  top: 4.5%;
-  bottom: 4.5%;
+  top: 36px;
+  bottom: 36px;
   width: 3px;
   transform: translateX(-1.5px);
   background: rgb(255 255 255 / 82%);
@@ -194,11 +192,11 @@
   border: 3px solid rgb(255 255 255 / 72%);
 }
 .wc-pitch .wc-box-left {
-  left: 2.8%;
+  left: 64px;
   border-left: 0;
 }
 .wc-pitch .wc-box-right {
-  right: 2.8%;
+  right: 64px;
   border-right: 0;
 }
 .wc-pitch .wc-six {
@@ -209,11 +207,11 @@
   border: 3px solid rgb(255 255 255 / 70%);
 }
 .wc-pitch .wc-six-left {
-  left: 2.8%;
+  left: 64px;
   border-left: 0;
 }
 .wc-pitch .wc-six-right {
-  right: 2.8%;
+  right: 64px;
   border-right: 0;
 }
 
@@ -498,11 +496,12 @@
     transform-origin: center;
   }
   /* 게임 OFF(켜기 버튼만)일 때 — 하단 가운데면 시청자 헤더의 관심/오늘 버튼과 겹친다.
-     좌측 가장자리 세로 가운데로 빼서 안 겹치고 누르기 쉽게. (게임 ON이면 HUD가 회전 배치) */
+     헤더(.public-calendar-header min-height 74px) 세로 가운데, 좌측에 둔다(시청자 헤더
+     좌측 칸은 보통 비어 display:none → 안 겹침). (게임 ON이면 HUD가 회전 배치) */
   .wc-play:not(.on) .wc-controls {
     left: 8px;
     right: auto;
-    top: 50%;
+    top: 37px;
     bottom: auto;
     transform: translateY(-50%);
   }
