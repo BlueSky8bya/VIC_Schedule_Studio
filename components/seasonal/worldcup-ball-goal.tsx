@@ -1465,12 +1465,16 @@ export function WorldCupBallGoal() {
     const spotX = goalLineX - w * 0.105; // 페널티 스폿
     const spotY = h * 0.5;
     const ballGap = kdDia() * 0.5 + 9; // 키커가 공 바로 뒤에 서는 간격
-    // 관전자(키커 제외)는 자기 줄로 복귀.
+    // 관전자(키커 제외)는 자기 줄로 복귀. 속도는 거리비례 — 줄에 가까우면 천천히(현장감), 멀면(방금
+    // 차고 골대 옆에 남은 직전 키커) 빨리 빠져 다음 키커를 안 방해한다.
     players.current.forEach((p, i) => {
       if (i === s.kicker) return;
-      const sp = PLAYER_SPEED * 0.22 * dt; // 천천히 복귀(현장감)
-      p.x += clamp(p.tx - p.x, -sp, sp);
-      p.y += clamp(p.ty - p.y, -sp, sp);
+      const dx = p.tx - p.x;
+      const dy = p.ty - p.y;
+      const d = Math.hypot(dx, dy);
+      const sp = PLAYER_SPEED * clamp(0.2 + d * 0.006, 0.2, 1.4) * dt;
+      p.x += clamp(dx, -sp, sp);
+      p.y += clamp(dy, -sp, sp);
     });
     if (s.phase === "setup") {
       pos.current.x = spotX;
