@@ -63,6 +63,8 @@ const BALL_BOUNCE = 0.82;
 const CONTROL_SPEED = 150;
 const KICK_CD = 480;
 const MARGIN_Y_FRAC = 0.07;
+const GRAVITY_Z = 1000; // 공 높이용 중력(px/s^2) — 띄운 공이 내려오는 속도
+const AIR_MIN = 7; // 이 높이 위면 '떠 있음'(선수/키퍼 통과 + 흐려짐)
 // 실제 축구처럼 경기장 라인을 화면 끝에서 안쪽에 둔다 → 라인 밖은 '아웃오브플레이' 띠.
 // 골대는 입구(앞면)가 골라인 위에 오고 몸통(그물)은 라인 밖(바깥)으로 돌출한다 → 골라인이
 // 골대 입구에 걸림(뒤통수 아님). 공이 이 라인을 넘으면 스로인/코너/골킥. 고정 px로 JS·CSS 정합.
@@ -206,7 +208,7 @@ const STYLES: TacticStyle[] = [
   { name: "미드블록",   forms: ["4-5-1", "4-2-3-1", "4-1-4-1"], press: 0.55, possession: 0.50, tempo: 1.00, lineHeight: 0.07, width: 0.95 },
   { name: "역습 축구",  forms: ["4-4-2", "4-5-1", "4-2-3-1"],   press: 0.50, possession: 0.34, tempo: 1.16, lineHeight: 0.05, width: 0.96 },
   { name: "롱볼 직접",  forms: ["4-4-2", "5-4-1"],              press: 0.56, possession: 0.20, tempo: 1.15, lineHeight: 0.08, width: 1.10 },
-  { name: "카테나치오", forms: ["5-3-2", "3-5-2"],              press: 0.44, possession: 0.40, tempo: 0.95, lineHeight: 0.02, width: 0.86 },
+  { name: "빗장 수비",  forms: ["5-3-2", "3-5-2"],              press: 0.44, possession: 0.40, tempo: 0.95, lineHeight: 0.02, width: 0.86 },
   { name: "텐백 수비",  forms: ["5-4-1", "4-5-1"],              press: 0.43, possession: 0.30, tempo: 0.93, lineHeight: 0.01, width: 0.85 },
   { name: "밸런스",     forms: ["4-4-2", "4-3-3", "4-2-3-1"],   press: 0.60, possession: 0.55, tempo: 1.00, lineHeight: 0.10, width: 1.00 }
 ];
@@ -277,6 +279,8 @@ export function WorldCupBallGoal() {
 
   const pos = useRef<Vec>({ x: 0, y: 0 });
   const vel = useRef<Vec>({ x: 0, y: 0 });
+  const ballZ = useRef(0); // 공 높이(px) — 떠 있으면(>AIR_MIN) 선수/키퍼/골대벽 통과(롱볼이 넘어감)
+  const ballVZ = useRef(0); // 수직 속도(px/s) — 중력 GRAVITY_Z로 포물선
   const players = useRef<Player[]>([]);
   const teams = useRef<[Team, Team] | null>(null);
   const keeperReact = useRef<Record<Side, number>>({ left: 0.07, right: 0.07 });
@@ -349,7 +353,12 @@ export function WorldCupBallGoal() {
 
   const place = () => {
     const el = ballRef.current;
-    if (el) el.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0)`;
+    if (!el) return;
+    const z = ballZ.current;
+    // 떠 있으면 위로 z만큼 올리고 살짝만 키운다(원근). 그림자·블러는 CSS .wc-ball-air가 입힌다.
+    const scale = Math.min(1.3, 1 + z / 450);
+    el.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y - z}px, 0) scale(${scale})`;
+    el.classList.toggle("wc-ball-air", z > AIR_MIN);
   };
   const placeKeepers = () => {
     (["left", "right"] as Side[]).forEach((s) => {
@@ -444,6 +453,8 @@ export function WorldCupBallGoal() {
     const { w, h } = bounds();
     pos.current = { x: w * 0.5, y: h * 0.5 };
     vel.current = { x: 0, y: 0 };
+    ballZ.current = 0;
+    ballVZ.current = 0;
     place();
   };
 
@@ -453,6 +464,14 @@ export function WorldCupBallGoal() {
     const d = Math.hypot(dx, dy) || 1;
     vel.current.x = (dx / d) * power;
     vel.current.y = (dy / d) * power;
+  };
+
+  // 공 띄우기(롱패스·골킥·코너 크로스) — 수평 도달시간에 맞춰 수직속도를 줘서 그 시간 뒤 착지.
+  // 떠 있는 동안 선수/키퍼/골대벽을 통과(롱볼이 넘어감). dist=수평거리, power=수평속도.
+  const loftBall = (dist: number, power: number) => {
+    const travel = clamp(dist / Math.max(120, power), 0.2, 1.05); // 도달까지 대략 시간(s)
+    ballVZ.current = (GRAVITY_Z * travel) / 2; // 그 시간 뒤 착지
+    if (ballZ.current < 1) ballZ.current = 1;
   };
 
   // 세트피스 재개 예약 — 공을 라인에 멈춰두고 delay(ms) 뒤 kick 실행. 프리즈 동안 walk()가 매
@@ -570,8 +589,15 @@ export function WorldCupBallGoal() {
       lastTouch.current = attack;
       flashPiece("코너킥");
       const boxX = side === "left" ? g.x + g.w + 60 : g.x - 60;
-      // 공격팀 키커가 코너로 와서 박스로 올린다.
-      scheduleRestart(1100, () => setVelTo(boxX, h * 0.5, 360), () => walkTeammateToBall(attack));
+      // 공격팀 키커가 코너로 와서 박스로 띄워 올린다(크로스).
+      scheduleRestart(
+        1100,
+        () => {
+          setVelTo(boxX, h * 0.5, 360);
+          loftBall(Math.hypot(boxX - pos.current.x, h * 0.5 - pos.current.y), 360);
+        },
+        () => walkTeammateToBall(attack)
+      );
     } else {
       // 골킥 — 키퍼가 골 에어리어로 나와 길게 찬다(약 1.1초 뒤). 킥 후 키퍼는 골문으로 복귀.
       pos.current.x = side === "left" ? g.x + g.w + 24 : g.x - 24;
@@ -580,7 +606,15 @@ export function WorldCupBallGoal() {
       flashPiece("골킥");
       const upfield = side === "left" ? bounds().w * 0.6 : bounds().w * 0.4;
       const ty = h * 0.5 + rnd(-h * 0.2, h * 0.2);
-      scheduleRestart(1100, () => setVelTo(upfield, ty, 520), () => walkKeeperToBall(side));
+      // 골킥은 길게 띄운다(롱볼).
+      scheduleRestart(
+        1100,
+        () => {
+          setVelTo(upfield, ty, 520);
+          loftBall(Math.abs(upfield - pos.current.x), 520);
+        },
+        () => walkKeeperToBall(side)
+      );
     }
     lastActiveAt.current = performance.now();
   };
@@ -879,7 +913,10 @@ export function WorldCupBallGoal() {
         return;
       }
       const dpass = Math.hypot(m.x - p.x, m.y - p.y);
-      setVelTo(m.x + rnd(-err, err), m.y + rnd(-err, err), clamp(dpass * 3, 320, 760));
+      const power = clamp(dpass * 3, 320, 760);
+      setVelTo(m.x + rnd(-err, err), m.y + rnd(-err, err), power);
+      // 롱패스는 띄워서 수비 너머로(점유 성향 낮은 직접축구일수록 더 짧은 거리에서도 띄운다).
+      if (dpass > w * (0.2 + possession * 0.22)) loftBall(dpass, power);
       return;
     }
     setVelTo(goalCx, goalCy, 300); // 드리블
@@ -979,6 +1016,17 @@ export function WorldCupBallGoal() {
     if (run) updatePlayers(dt, near);
     placePlayers();
 
+    // 공 높이(띄우기) 적분 — 떠 있으면(airborne) 선수·키퍼·골대벽을 통과(롱볼이 넘어감).
+    if (!dragging.current && !frozen && (ballVZ.current !== 0 || ballZ.current > 0)) {
+      ballZ.current += ballVZ.current * dt;
+      ballVZ.current -= GRAVITY_Z * dt;
+      if (ballZ.current <= 0) {
+        ballZ.current = 0;
+        ballVZ.current = 0;
+      }
+    }
+    const airborne = ballZ.current > AIR_MIN;
+
     if (!dragging.current && !frozen) {
       pos.current.x += vel.current.x * dt;
       pos.current.y += vel.current.y * dt;
@@ -1015,14 +1063,17 @@ export function WorldCupBallGoal() {
           vel.current.y = -vel.current.y * WALL_RESTITUTION;
         }
       }
-      for (const side of ["left", "right"] as Side[]) {
-        for (const wll of goalWalls(side)) resolveCircleAABB(wll);
+      // 떠 있으면 골대벽도 통과(공중볼이 골문 위로/안으로 넘어갈 수 있게).
+      if (!airborne) {
+        for (const side of ["left", "right"] as Side[]) {
+          for (const wll of goalWalls(side)) resolveCircleAABB(wll);
+        }
       }
     }
 
     const speed = Math.hypot(vel.current.x, vel.current.y);
     const now = performance.now();
-    if (!dragging.current && !frozen) {
+    if (!dragging.current && !frozen && !airborne) {
       players.current.forEach((p, i) => {
         const minD = ballDia() / 2 + PLAYER_R;
         const d = Math.hypot(pos.current.x - p.x, pos.current.y - p.y);
@@ -1058,11 +1109,14 @@ export function WorldCupBallGoal() {
     const r = ballDia() / 2;
     let saved = false;
     if (!frozen) {
-      for (const side of ["left", "right"] as Side[]) {
-        const kx = keeperCenterX(side);
-        if (Math.hypot(cx - kx, cy - keeperY.current[side]) < r + kdDia() / 2) {
-          doSave(side);
-          saved = true;
+      // 떠 있는 공은 키퍼가 못 잡는다(머리 위로 넘어감) → 칩샷/로빙은 골 가능. 득점 판정은 유지.
+      if (!airborne) {
+        for (const side of ["left", "right"] as Side[]) {
+          const kx = keeperCenterX(side);
+          if (Math.hypot(cx - kx, cy - keeperY.current[side]) < r + kdDia() / 2) {
+            doSave(side);
+            saved = true;
+          }
         }
       }
       if (!saved) {
@@ -1215,6 +1269,8 @@ export function WorldCupBallGoal() {
     lastPointer.current = { x: lx, y: ly, t: performance.now() };
     pointerVel.current = { x: 0, y: 0 };
     vel.current = { x: 0, y: 0 };
+    ballZ.current = 0; // 잡으면 공을 손/땅으로 내린다
+    ballVZ.current = 0;
     hapticTick();
     ensureLoop();
   };

@@ -75,6 +75,11 @@
   margin: -15px 0 0 -15px;
   font-size: 24px;
 }
+/* 떠 있는 공(롱볼·크로스·골킥) — 살짝 흐려지고 그림자가 커져 '공중'임을 알린다. 이때 JS가
+   선수·키퍼·골대벽 통과시키고 높이/스케일은 transform으로 준다. */
+.wc-ball-air {
+  filter: blur(1.3px) drop-shadow(0 16px 8px rgb(40 30 60 / 22%));
+}
 
 /* 선수 AI — 작은 원. 위치는 JS가 transform으로. 팀별 색. 시각 전용(클릭 통과). */
 .wc-player {
