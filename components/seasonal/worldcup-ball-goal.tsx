@@ -225,9 +225,9 @@ export function WorldCupBallGoal() {
   // 경기장 라인(아웃 판정 기준) — 화면 끝에서 인셋. 좌우=골라인, 위아래=터치라인.
   const insetX = () => bounds().w * OUTX_F;
   const insetY = () => bounds().h * OUTY_F;
-  // 모바일은 stage가 작아 골대가 너무 작고 키퍼가 상대적으로 커 보였다 → 골 입구는 키우고(0.15)
-  // 깊이(돌출)는 줄여(0.02) 상단 배지 가림도 완화. 키퍼는 따로 작게(kdDia).
-  const goalW = () => bounds().w * (rotated.current ? 0.02 : GOALW_F);
+  // 모바일은 입구는 키우고(0.15). 깊이(goalW)는 키퍼(kdDia=15.6px)가 그물 박스 안에 다 들어가 뒤로
+  // 안 삐져나오게 키퍼보다 깊게(0.032 → ~20px > 15.6). 웹은 이미 충분히 깊음(GOALW_F).
+  const goalW = () => bounds().w * (rotated.current ? 0.032 : GOALW_F);
   const goalH = () => bounds().h * (rotated.current ? 0.15 : GOALH_F);
 
   // 골대 박스 — 입구가 골라인(insetX) 위에 오고 몸통은 라인 밖(화면 끝 쪽)으로 돌출.

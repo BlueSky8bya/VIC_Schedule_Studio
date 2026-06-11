@@ -47,12 +47,19 @@
     0 4px 13px rgb(40 30 60 / 16%),
     inset 0 0 0 1px rgb(0 0 0 / 5%);
 }
-/* 입구(필드 쪽 한 면)만 열린 골대 — 그쪽 테두리를 없애 '뻥 뚫린 입구'로. 둥근 모서리는 바깥쪽만. */
+/* 입구(필드 쪽 한 면)만 열린 골대 — 그쪽 테두리를 없애 '뻥 뚫린 입구'로. 둥근 모서리는 바깥쪽만.
+   뒷벽 쪽(골라인 바깥)에 안쪽 그림자를 줘 '바가지(박스)' 같은 깊이감 — 그물이 평면 아닌 구조물처럼. */
 .wc-goal-left .wc-goal-net {
   border-radius: 4px 10px 10px 4px;
+  box-shadow:
+    inset 7px 0 9px -4px rgb(20 24 40 / 30%),
+    inset 0 0 8px rgb(255 255 255 / 20%);
 }
 .wc-goal-right .wc-goal-net {
   border-radius: 10px 4px 4px 10px;
+  box-shadow:
+    inset -7px 0 9px -4px rgb(20 24 40 / 30%),
+    inset 0 0 8px rgb(255 255 255 / 20%);
 }
 .wc-goal-left .wc-goal-frame {
   border-right: 0;
