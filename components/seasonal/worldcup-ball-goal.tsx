@@ -75,6 +75,8 @@ export function WorldCupBallGoal() {
   const layerRef = useRef<HTMLDivElement | null>(null);
   const ballRef = useRef<HTMLDivElement | null>(null);
   const keeperRef = useRef<Record<Side, HTMLDivElement | null>>({ left: null, right: null });
+  // 키퍼 장갑 2개씩 — JS가 공 방향으로 배치(stage 좌표라 모바일 회전과 무관). [side]→[글러브0,글러브1]
+  const glovesRef = useRef<Record<Side, (HTMLElement | null)[]>>({ left: [], right: [] });
   const playerEls = useRef<(HTMLDivElement | null)[]>([]);
   // enabled는 false로 시작 — 마운트 effect가 localStorage(vic.worldcupGame)를 읽어 실제 값으로
   // 세팅한다. true로 시작하면 OFF 저장 유저도 첫 렌더에 게임이 잠깐 떴다 effect가 끄며 깜빡인다.
@@ -274,6 +276,24 @@ export function WorldCupBallGoal() {
       }
       const ox = s === "left" ? keeperX.current[s] : -keeperX.current[s];
       el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
+      // 장갑 — 공 방향으로 뻗는다(몸과 별개). 잡는 중이면 강조 클래스. stage 좌표라 회전 무관.
+      const catching = keeperHold.current.side === s;
+      el.classList.toggle("wc-keeper-catch", catching);
+      const kX = keeperCenterX(s);
+      const kY = keeperY.current[s];
+      const dir = Math.atan2(pos.current.y - kY, pos.current.x - kX);
+      const reach = kdDia() * (catching ? 0.5 : 0.42);
+      const spread = kdDia() * 0.38;
+      const perp = dir + Math.PI / 2;
+      const gl = glovesRef.current[s];
+      for (let gi = 0; gi < 2; gi++) {
+        const g = gl[gi];
+        if (!g) continue;
+        const sgn = gi === 0 ? 1 : -1;
+        const gx = Math.cos(dir) * reach + Math.cos(perp) * spread * sgn;
+        const gy = Math.sin(dir) * reach + Math.sin(perp) * spread * sgn;
+        g.style.transform = `translate(calc(-50% + ${gx}px), calc(-50% + ${gy}px))`;
+      }
     });
   };
   const placePlayers = () => {
@@ -1917,7 +1937,20 @@ export function WorldCupBallGoal() {
                 ref={(el) => {
                   keeperRef.current[side] = el;
                 }}
-              />
+              >
+                <i
+                  className="wc-glove"
+                  ref={(el) => {
+                    glovesRef.current[side][0] = el;
+                  }}
+                />
+                <i
+                  className="wc-glove"
+                  ref={(el) => {
+                    glovesRef.current[side][1] = el;
+                  }}
+                />
+              </div>
             ))}
             {Array.from({ length: 20 }).map((_, i) => {
               const team = i < 10 ? 0 : 1;
