@@ -2219,9 +2219,9 @@ export function WorldCupBallGoal() {
                     height: `${isMobile ? 13 : PLAYER_R * 2}px`
                   }}
                   onPointerEnter={
-                    // 웹: 마우스로 스치기만 해도 카드가 뜨고 그대로 유지(이탈해도 안 사라짐). 화면(딤)
-                    // 클릭하면 닫힘. 작은 점도 잘 걸리게 ::after로 히트영역 확대(CSS).
-                    isMobile ? undefined : () => setPickPlayer(i)
+                    // 웹: 그냥 스치면 방해되므로 'Shift 누른 채' 스칠 때만 카드. 뜨면 유지(딤 클릭 시 닫힘).
+                    // Shift 없이 그냥 클릭해도 토글로 뜬다(아래 onClick).
+                    isMobile ? undefined : (e) => e.shiftKey && setPickPlayer(i)
                   }
                   onClick={(e) => {
                     e.stopPropagation();
