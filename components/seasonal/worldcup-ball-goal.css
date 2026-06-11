@@ -385,12 +385,19 @@
   align-items: center;
   gap: 4px;
   flex: 0 1 auto;
-  min-width: 0; /* 셀이 내용보다 작아질 수 있게(이름 클립) → 바 폭 폭주 방지 */
-  overflow: hidden;
+  min-width: 0; /* 셀이 내용보다 작아질 수 있게 → 바 폭 폭주 방지 */
   font-size: 12px;
   opacity: 0.92;
-  max-width: 132px;
   white-space: nowrap;
+}
+/* 전술 이름(팀명) — 길어도 ellipsis로 잘려 바를 안 넘긴다. 카드는 별도(아래)라 항상 자리 유지. */
+.wc-score-name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 110px;
 }
 .wc-score-a {
   color: #ff9a9a;
@@ -1054,6 +1061,10 @@
    피치 '길이'(골대→골대)로. 105:68 비율 유지(width=긴축이 화면에 contain) → 위·아래에 여백이 생기고
    거기 스코어(위)·컨트롤(아래)이 똑바로 놓여 경기장을 안 가린다. 입력은 JS가 역회전 매핑. */
 @media (max-width: 640px) {
+  /* 좁은 모바일 — 긴 전술 이름은 더 짧게 잘라 카드/점수와 한 바에 확실히 들어가게. */
+  .wc-score-name {
+    max-width: 58px;
+  }
   .wc-stage {
     inset: auto;
     left: 50%;

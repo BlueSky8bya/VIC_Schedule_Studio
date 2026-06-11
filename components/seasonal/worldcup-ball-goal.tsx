@@ -2280,7 +2280,7 @@ export function WorldCupBallGoal() {
           <>
             <div className="wc-score" role="status">
               <span className="wc-score-team wc-score-a">
-                {teamNames[0] || "RED"}
+                <span className="wc-score-name">{teamNames[0] || "RED"}</span>
                 {renderTeamCards(cardCounts.yellow[0], cardCounts.red[0])}
               </span>
               <strong className="wc-score-num">
@@ -2288,7 +2288,7 @@ export function WorldCupBallGoal() {
               </strong>
               <span className="wc-score-team wc-score-b">
                 {renderTeamCards(cardCounts.yellow[1], cardCounts.red[1])}
-                {teamNames[1] || "BLUE"}
+                <span className="wc-score-name">{teamNames[1] || "BLUE"}</span>
               </span>
             </div>
             {clockText ? <div className="wc-clock">{clockText}</div> : null}
