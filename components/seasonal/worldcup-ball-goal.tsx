@@ -1424,12 +1424,18 @@ export function WorldCupBallGoal() {
     const g = goalRect(enemy);
     const goalCx = g.x + g.w / 2;
     const goalCy = g.y + g.h / 2;
-    const err = (1 - p.pass) * 110;
+    // 약발 — 정확도 페널티(약발 낮을수록 패스/슛 오차↑). 개인성 발현.
+    const err = (1 - p.pass) * 110 * (1.35 - p.weakFoot * 0.5);
     // 슛 결정 — 헤드리스 lib와 같은 정책 출처: xgFromShot(거리+슈팅각 인지)로 슛 확률 산정.
     // 각도 좁은 측면 깊숙은 xG 낮아 덜 쏘고, 정면 가까이는 적극. 직접축구는 먼 거리도 가산.
     // 사람다운 변동은 random 유지(렌더러 연출).
     const xg = xgFromShot(pitchMeters(p.x, p.y), p.team);
-    const shootProb = xg * (1.0 + p.shoot * 0.8) + (possession < 0.4 ? xg * 0.4 : 0);
+    // 슛 성향 — 슛 능력 + 포처(FW poaching)는 박스서 더 노리고, 이타적(altruism)이면 덜 쏘고 패스 선호.
+    const poach = p.slot.role === "FW" ? p.poaching * 0.4 : 0;
+    const shootProb =
+      (xg * (1.0 + p.shoot * 0.8) + (possession < 0.4 ? xg * 0.4 : 0)) *
+      (1 + poach) *
+      (1 - p.altruism * 0.3);
     if (xg > 0.05 && Math.random() < shootProb) {
       dribbleCount.current = 0;
       stats.current.shot[p.team] += 1;
@@ -1472,6 +1478,14 @@ export function WorldCupBallGoal() {
     if (wantCarry || wantBeatMan) {
       dribbleCount.current += 1;
       let ang = Math.atan2(goalCy - p.y, goalCx - p.x); // 기본 골 방향
+      // 윙어 개인성 — cutInside 낮으면 클래식 윙어(측면 바이라인으로 돌파→크로스), 높으면 인사이드
+      // 포워드(중앙으로 접어 슛). 성향대로 드리블 방향이 갈린다.
+      if (p.slot.role === "WG" && !wantBeatMan) {
+        const flankY = p.y < h * 0.5 ? insetY() : h - insetY();
+        const lineAng = Math.atan2(flankY - p.y, goalCx - p.x); // 측면 깊숙
+        const inAng = Math.atan2(h * 0.5 - p.y, goalCx - p.x); // 중앙
+        ang = lineAng * (1 - p.cutInside) + inAng * p.cutInside;
+      }
       if (wantBeatMan && oppNear < Infinity) {
         const away = Math.atan2(p.y - nearEy, p.x - nearEx); // 수비 반대쪽으로 제침(페인트)
         ang = ang * 0.45 + away * 0.55 + rnd(-0.3, 0.3);
@@ -2112,10 +2126,12 @@ export function WorldCupBallGoal() {
       const fx = fieldX();
       const reachable = pos.current.x > fx.min - 24 && pos.current.x < fx.max + 24;
       if (speed > 40 && reachable) lastActiveAt.current = now;
-      if (now - lastActiveAt.current > 2600) {
-        centerBall();
-        vel.current.x = (Math.random() * 2 - 1) * 220;
-        vel.current.y = (Math.random() * 2 - 1) * 160;
+      if (now - lastActiveAt.current > 3200) {
+        // 닿을 수 있는 곳이면 '그 자리'에 드롭(순간이동 X) — 공이 멀리 중앙으로 갑툭하던 것 방지.
+        // 진짜 닿을 수 없는 곳(필드 밖 구석 등)에 갇혔을 때만 중앙으로 옮긴다.
+        if (!reachable) centerBall();
+        vel.current.x = (Math.random() * 2 - 1) * 200;
+        vel.current.y = (Math.random() * 2 - 1) * 150;
         lastTouch.current = null;
         lastActiveAt.current = now;
         flashPiece("볼 드롭");
