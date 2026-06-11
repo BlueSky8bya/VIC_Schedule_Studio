@@ -2208,16 +2208,15 @@ export function WorldCupBallGoal() {
       const recentlyTouched = now - kickAt.current < 2000;
       if ((speed > 40 || recentlyTouched) && reachable) lastActiveAt.current = now;
       if (now - lastActiveAt.current > 3200) {
-        // 닿을 수 있는 곳이면 '그 자리'에 드롭(순간이동 X) — 공이 멀리 중앙으로 갑툭하던 것 방지.
-        // 진짜 닿을 수 없는 곳(필드 밖 구석 등)에 갇혔을 때만 중앙으로 옮긴다.
+        // 공이 어딘가에 갇혀 한참 안 움직일 때의 '기술적 복구'일 뿐, 진짜 드롭볼(심판이 떨어뜨림)이
+        // 아니다 → 라벨·단서 없이 조용히 살짝 툭 친다(예전엔 '볼 드롭'을 띄워 남발처럼 보였음).
+        // 닿을 수 있는 곳이면 그 자리에서, 진짜 갇힌(필드 밖) 경우만 중앙으로.
         if (!reachable) centerBall();
         vel.current.x = (Math.random() * 2 - 1) * 200;
         vel.current.y = (Math.random() * 2 - 1) * 150;
         lastTouch.current = null;
         lastActiveAt.current = now;
-        flashPiece("볼 드롭");
-        showCue({ kind: "setpiece", x: pos.current.x, y: pos.current.y, label: "볼 드롭" });
-        logEvent("ballDrop");
+        logEvent("ballDrop"); // 내부 로그만(시각 표시 없음)
       }
     }
 
