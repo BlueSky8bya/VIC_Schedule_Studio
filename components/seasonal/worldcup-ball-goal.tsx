@@ -441,12 +441,18 @@ export function WorldCupBallGoal() {
       if (!el) return;
       el.style.display = "";
       el.classList.remove("wc-keeper-def-red", "wc-keeper-def-blue");
-      // 하드 충돌(RL 핵심) — 키퍼 몸은 무조건 골 마우스(상·하 포스트 사이) 안. 어떤 로직이 움직였든
-      // 렌더 직전 강제 clamp → 포스트(그물 옆면)를 절대 통과 못 한다. ring(2.5)까지 포함.
+      // 하드 충돌(RL 핵심) — 키퍼가 '골 박스 안'에 있을 때만 상·하 포스트 안으로 강제(포스트 통과 금지).
+      // 단 골킥 등으로 라인 앞(필드)으로 나올 땐 포스트가 없으니 Y 자유 — 안 그러면 골킥 키퍼가
+      // 공의 Y로 못 가서 공에 못 다가가던 버그.
       {
         const g = goalRect(s);
-        const m = kdDia() / 2 + 2.5;
-        keeperY.current[s] = clamp(keeperY.current[s], g.y + m, g.y + g.h - m);
+        const cX = keeperCenterX(s);
+        const line = s === "left" ? g.x + g.w : g.x;
+        const inBox = s === "left" ? cX > line - kdDia() * 0.3 : cX < line + kdDia() * 0.3;
+        if (inBox) {
+          const m = kdDia() / 2 + 2.5;
+          keeperY.current[s] = clamp(keeperY.current[s], g.y + m, g.y + g.h - m);
+        }
       }
       const ox = s === "left" ? keeperX.current[s] : -keeperX.current[s];
       el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
@@ -455,8 +461,11 @@ export function WorldCupBallGoal() {
       const x = keeperX.current[s];
       const front = x > kdDia() * 0.6 ? true : x < kdDia() * 0.3 ? false : keeperFront.current[s];
       keeperFront.current[s] = front;
-      el.style.zIndex = front ? "7" : "";
-      el.classList.toggle("wc-keeper-ingoal", !front);
+      // 잡는 중이면 키퍼를 공(z 0)보다 위(z 1)로 → 글러브가 공을 덮어 '잡은' 느낌(그물 z5보단 아래라
+      // 여전히 골 안 흐릿). 평소 골 안=기본 z, 필드로 나오면 z7.
+      const catching = keeperHold.current.side === s;
+      el.style.zIndex = catching ? "1" : front ? "7" : "";
+      el.classList.toggle("wc-keeper-ingoal", !front && !catching);
       placeGloves(s, keeperCenterX(s), keeperY.current[s], true, now, s); // 정상경기: 자기 골 박스로 clip
     });
   };
@@ -682,6 +691,13 @@ export function WorldCupBallGoal() {
 
   const kickoff = (concede: 0 | 1) => {
     centerBall();
+    // 키퍼 골라인 복귀 — 직전 피리어드에 스위핑으로 나가 있던 위치가 남아 킥오프 때 키퍼가 미드필드에
+    // 떠 있던 버그 방지(연장 시작 등). 골킥용 keeperX 전진도 0으로.
+    const { h } = bounds();
+    keeperX.current.left = 0;
+    keeperX.current.right = 0;
+    keeperY.current.left = h * 0.5;
+    keeperY.current.right = h * 0.5;
     lastTouch.current = null;
     lastActiveAt.current = performance.now();
     flashPiece("킥오프");
@@ -1666,7 +1682,9 @@ export function WorldCupBallGoal() {
     if (keeperHold.current.side) {
       const hside = keeperHold.current.side;
       const hT: 0 | 1 = hside === "left" ? 0 : 1;
-      pos.current.x = keeperCenterX(hside);
+      // 잡은 공은 키퍼 '앞'(컵 위치)에 둔다 → 글러브(키퍼 z1)가 공 위로 덮여 '잡은' 느낌.
+      const outward = hside === "left" ? 1 : -1;
+      pos.current.x = keeperCenterX(hside) + outward * kdDia() * 0.32;
       pos.current.y = keeperY.current[hside];
       vel.current = { x: 0, y: 0 };
       ballZ.current = 0;
