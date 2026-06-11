@@ -1292,7 +1292,9 @@ export function WorldCupBallGoal() {
         mode = r === 0 ? "carry" : "support";
       } else {
         const nP = pressersOf(p.team);
-        if (loose || (r < nP && p.stamina > 0.22)) mode = "press";
+        // 압박은 '가장 가까운 nP명'만. loose(발밑 공)도 가장 가까운 1명만 달려들게 — 안 그러면 공
+        // 근처 수비가 전부 press로 몰려 조랭이떡(특히 관성으로 한 번 뭉치면 안 풀림).
+        if ((loose && r === 0) || (r < nP && p.stamina > 0.22)) mode = "press";
         else if (r <= nP + 1) mode = "cover";
         else mode = "shape";
       }
@@ -1406,9 +1408,18 @@ export function WorldCupBallGoal() {
       });
       if (sx !== 0 || sy !== 0) {
         const sd = Math.hypot(sx, sy) || 1;
+        const ux = sx / sd;
+        const uy = sy / sd; // 클러스터 바깥 방향(겹친 이웃 반대)
         const sep = Math.min(PLAYER_SPEED * 0.6, sd * 30) * dt;
-        p.x = clamp(p.x + (sx / sd) * sep, fx.min, fx.max);
-        p.y = clamp(p.y + (sy / sd) * sep, PLAYER_R, h - PLAYER_R);
+        p.x = clamp(p.x + ux * sep, fx.min, fx.max);
+        p.y = clamp(p.y + uy * sep, PLAYER_R, h - PLAYER_R);
+        // 관성 댐핑 — pv가 클러스터 '안쪽'(다시 뭉치는 방향)으로 향하면 그 성분을 줄인다. 안 그러면
+        // 분리로 밀어내도 관성이 다시 끌어당겨 조랭이떡이 안 풀림.
+        const into = p.pvx * -ux + p.pvy * -uy;
+        if (into > 0) {
+          p.pvx += ux * into * 0.7;
+          p.pvy += uy * into * 0.7;
+        }
       }
     });
   };
@@ -1622,6 +1633,31 @@ export function WorldCupBallGoal() {
     ballVZ.current = 0;
     lastTouch.current = p.team;
     kickAt.current = now; // 방금 터치 — 잠깐(통제 쿨다운) 뒤 playBall/다음 터치
+  };
+
+  // 헤더 — 내려오는 공중볼(크로스·롱볼)을 다툰 선수가 받아친다. 공격 위치면 헤더 슛, 아니면 걷어냄.
+  const headerBall = (p: Player) => {
+    const now = performance.now();
+    const { w, h } = bounds();
+    lastTouch.current = p.team;
+    const oppSide: Side = p.team === 0 ? "right" : "left";
+    const inAttackThird = oppSide === "right" ? p.x > w * 0.62 : p.x < w * 0.38;
+    if (inAttackThird) {
+      const g = goalRect(oppSide);
+      const tx = oppSide === "left" ? g.x + g.w : g.x;
+      const ty = g.y + g.h * (Math.random() < 0.5 ? 0.25 : 0.75);
+      setVelTo(tx, ty, 340 + p.shoot * 220); // 헤더 슛 — 골 구석으로
+      stats.current.shot[p.team] += 1;
+      ballZ.current = 0;
+      ballVZ.current = 0;
+    } else {
+      const dir = p.team === 0 ? 1 : -1; // 상대 진영 쪽으로 크게 걷어냄(클리어/플릭)
+      const tx = clamp(p.x + dir * w * 0.3, insetX(), w - insetX());
+      const ty = clamp(p.y + rnd(-h * 0.15, h * 0.15), insetY(), h - insetY());
+      setVelTo(tx, ty, 320);
+      loftBall(Math.abs(tx - p.x), 320);
+    }
+    kickAt.current = now;
   };
 
   const bounceBallOffPlayer = (p: Player) => {
@@ -2119,6 +2155,24 @@ export function WorldCupBallGoal() {
           bounceBallOffPlayer(p);
         }
       });
+    }
+
+    // 헤더 — 내려오는 공중볼(크로스·롱볼)이 헤딩 높이까지 오면 근처 선수가 다툰다(키 큰 쪽 유리).
+    if (run && !frozen && airborne && ballVZ.current < 0 && ballZ.current < 34 && now >= restartGrace.current) {
+      const HEADER_R = ballDia() / 2 + PLAYER_R + 10;
+      let bestI = -1;
+      let bestScore = Infinity;
+      players.current.forEach((p, i) => {
+        if (p.red) return;
+        const d = Math.hypot(pos.current.x - p.x, pos.current.y - p.y);
+        if (d > HEADER_R) return;
+        const score = d - (p.heightCm - 178) * 0.3; // 키 클수록 유리
+        if (score < bestScore) {
+          bestScore = score;
+          bestI = i;
+        }
+      });
+      if (bestI >= 0 && now - kickAt.current > 200) headerBall(players.current[bestI]);
     }
 
     // 스톨 복구 — 갇히거나 멈추면 볼 드롭(자동경기 끄기 전엔 안 멈춤). 프리즈 중엔 스킵.
