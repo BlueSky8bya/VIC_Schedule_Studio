@@ -224,6 +224,7 @@ export function WorldCupBallGoal() {
     kick: () => void;
     walk?: () => boolean; // 키커를 공으로 데려오고, '도착했는가' 반환(도착 전엔 안 참)
     team?: 0 | 1; // 재개를 차는 팀 — 준비 중 상대가 공에서 물러나도록(스페이싱)
+    wall?: { team: 0 | 1; goalSide: Side }; // 수비벽 — 위험한 프리킥서 수비팀이 공·골 사이에 줄선다
   } | null>(null);
   const possTeam = useRef<0 | 1 | null>(null); // 통제 중인 팀(lastTouch 기반 스무딩) — 압박 방향 판단.
   const counterPress = useRef<{ team: 0 | 1; until: number } | null>(null); // 5초 카운터프레스 윈도우.
@@ -674,10 +675,11 @@ export function WorldCupBallGoal() {
     delay: number,
     kick: () => void,
     walk?: () => boolean,
-    team?: 0 | 1
+    team?: 0 | 1,
+    wall?: { team: 0 | 1; goalSide: Side }
   ) => {
     vel.current = { x: 0, y: 0 };
-    pendingRestart.current = { at: performance.now() + delay, kick, walk, team };
+    pendingRestart.current = { at: performance.now() + delay, kick, walk, team, wall };
     clock.current.added += 0.12; // 세트피스 지체 → 추가시간 누적(게임분)
     place();
   };
@@ -998,7 +1000,9 @@ export function WorldCupBallGoal() {
         }
       },
       () => walkTeammateToBall(fouled),
-      fouled
+      fouled,
+      // 슈팅 사정권(상대 골 가까운) 프리킥이면 수비팀이 벽을 세운다.
+      distGoal < w * 0.45 ? { team: fouler.team, goalSide: enemy } : undefined
     );
     lastActiveAt.current = performance.now();
   };
@@ -1204,6 +1208,20 @@ export function WorldCupBallGoal() {
         }
       });
     }
+    // 수비벽 — 위험한 프리킥서 수비팀의 공 근접 2~3명이 공·골 사이에 줄선다.
+    const wallIds: number[] = [];
+    if (pr && pr.wall) {
+      const wt = pr.wall.team;
+      players.current
+        .map((q, j) => ({ q, j }))
+        .filter((x) => x.q.team === wt && !x.q.red)
+        .sort(
+          (a, b) =>
+            Math.hypot(a.q.x - bx, a.q.y - by) - Math.hypot(b.q.x - bx, b.q.y - by)
+        )
+        .slice(0, 3)
+        .forEach((x) => wallIds.push(x.j));
+    }
 
     players.current.forEach((p, i) => {
       if (p.red) return; // 퇴장 — 더는 움직이지 않는다(필드서 빠짐, placePlayers가 시각도 숨김)
@@ -1215,7 +1233,17 @@ export function WorldCupBallGoal() {
         let stx: number;
         let sty: number;
         let sspd: number;
-        if (p.team !== pr.team && distBall < legalR) {
+        const wallPos = wallIds.indexOf(i);
+        if (pr.wall && wallPos >= 0) {
+          // 공→골 선상 법정거리(9.15m≈8.5%)에 서고, 인원수만큼 좌우로 벌려 벽을 만든다.
+          const gc = goalRect(pr.wall.goalSide);
+          const ang = Math.atan2(gc.y + gc.h / 2 - by, gc.x + gc.w / 2 - bx);
+          const perp = ang + Math.PI / 2;
+          const off = (wallPos - (wallIds.length - 1) / 2) * (PLAYER_R * 2 + 2);
+          stx = bx + Math.cos(ang) * legalR + Math.cos(perp) * off;
+          sty = by + Math.sin(ang) * legalR + Math.sin(perp) * off;
+          sspd = PLAYER_SPEED * 0.9;
+        } else if (p.team !== pr.team && distBall < legalR) {
           const aw = distBall > 0.1 ? Math.atan2(p.y - by, p.x - bx) : rnd(0, Math.PI * 2);
           stx = bx + Math.cos(aw) * legalR;
           sty = by + Math.sin(aw) * legalR;
