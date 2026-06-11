@@ -875,9 +875,10 @@
 }
 
 /* "막았다!" — 막힌 골대 쪽에 잠깐 뜬다. */
+/* "막았다!" — 막은 골대(키퍼) 근처에 뜬다. 웹은 좌/우 골 쪽, 모바일은 stage가 90° 회전해
+   왼쪽 골=화면 위 / 오른쪽 골=화면 아래로 매핑. */
 .wc-save-text {
   position: absolute;
-  top: calc(50% - 16px);
   font-size: clamp(18px, 2.6vw, 30px);
   font-weight: 900;
   color: #fff;
@@ -888,10 +889,31 @@
   animation: wc-save-pop 0.7s cubic-bezier(0.22, 1.4, 0.4, 1) both;
 }
 .wc-save-left {
-  left: calc(6px + 76px);
+  left: 13%;
+  right: auto;
+  top: 50%;
+  transform: translateY(-50%);
 }
 .wc-save-right {
-  right: calc(6px + 76px);
+  right: 13%;
+  left: auto;
+  top: 50%;
+  transform: translateY(-50%);
+}
+@media (max-width: 640px) {
+  .wc-save-left {
+    left: 50%;
+    right: auto;
+    top: 17%;
+    transform: translateX(-50%);
+  }
+  .wc-save-right {
+    left: 50%;
+    right: auto;
+    top: auto;
+    bottom: 17%;
+    transform: translateX(-50%);
+  }
 }
 @keyframes wc-save-pop {
   0% {

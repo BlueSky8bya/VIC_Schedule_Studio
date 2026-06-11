@@ -300,8 +300,9 @@ export function WorldCupBallGoal() {
     const bdx = pos.current.x - kX;
     const bdy = pos.current.y - kY;
     const dist = Math.hypot(bdx, bdy) || 1;
-    // 잡는 중엔 공이 키퍼에 붙어 dir 불안정 → 바깥(필드)쪽 고정 컵 포즈.
-    const dir = catching ? (s === "left" ? 0 : Math.PI) : Math.atan2(bdy, bdx);
+    // 공이 키퍼에 바짝 붙으면(잡기/근접) bdx,bdy≈0 → atan2가 미친듯 튀어 손이 부르르 떨렸다.
+    // 그럴 땐 바깥(필드)쪽 고정 방향으로(컵 포즈) → 떨림 제거.
+    const dir = catching || dist < kd ? (s === "left" ? 0 : Math.PI) : Math.atan2(bdy, bdx);
     const perp = dir + Math.PI / 2;
     const speed = Math.hypot(vel.current.x, vel.current.y);
     const defT: 0 | 1 = s === "left" ? 0 : 1;
@@ -354,8 +355,9 @@ export function WorldCupBallGoal() {
     const goalLineX = w - insetX();
     const spotY = h * 0.5;
     const inGoalX = goalLineX + kd * 0.15;
-    const besideX = goalLineX - kd * 1.8;
-    const besideY = spotY + goalH() * 0.72;
+    // 대기 키퍼 — 골대 '뒤'(네트 뒤, 필드 밖)에서 대기해 경기 방해 안 되게. 위쪽 포스트 옆.
+    const besideX = goalLineX + goalW() + kd * 0.7;
+    const besideY = spotY - goalH() * 0.5;
     (["left", "right"] as Side[]).forEach((s) => {
       const el = keeperRef.current[s];
       if (!el) return;
@@ -1382,16 +1384,15 @@ export function WorldCupBallGoal() {
       keeperY.current.right = spotY;
       // 키커 도움닫기 — 미드필드에서 공 뒤로 슬슬 걸어와 선다.
       const k = s.kicker >= 0 ? players.current[s.kicker] : null;
+      // 도움닫기 — lerp라 거리 상관없이 ~0.6s에 공 뒤 도착(웹의 먼 진영도 시간 안에 도착).
       if (k) {
-        const sp = PLAYER_SPEED * 0.85 * dt;
-        k.x += clamp(spotX - ballGap - k.x, -sp, sp);
-        k.y += clamp(spotY - k.y, -sp, sp);
+        k.x += (spotX - ballGap - k.x) * 0.085;
+        k.y += (spotY - k.y) * 0.085;
       }
-      // 키커가 공 뒤에 실제로 도착했을 때만 찬다(실패 안전장치: 너무 오래 걸리면 강제). 공 안 닿고
-      // 날아가던 문제 방지.
+      // '실제로 공 뒤 도착'했을 때만 찬다 — 안 닿고 날아가던 문제 차단(시간 강제 없음, 도착이 조건).
       const kickerAtBall =
-        !k || Math.hypot(k.x - (spotX - ballGap), k.y - spotY) < ballGap * 1.4;
-      if (tNow - s.at >= PK_SETUP && (kickerAtBall || tNow - s.at >= PK_SETUP + 1400)) {
+        !k || Math.hypot(k.x - (spotX - ballGap), k.y - spotY) < ballGap * 1.1;
+      if (tNow - s.at >= 500 && kickerAtBall) {
         const skill = k ? k.shoot : 0.6;
         s.scored = Math.random() < 0.5 + skill * 0.32; // 키커 슛 능력 → 성공률
         const top = Math.random() < 0.5;
@@ -1416,6 +1417,12 @@ export function WorldCupBallGoal() {
       if (!s.scored && pos.current.x >= goalLineX - 2) {
         pos.current.x = goalLineX - 3; // 막힘 — 골라인서 멈춤
         vel.current = { x: 0, y: 0 };
+      } else if (s.scored && pos.current.x >= goalLineX) {
+        // 골 — 네트에 푹 박힌다(뚫고 날아가지 않게). 그물 출렁임은 골 판정 때 setNetFlash.
+        pos.current.x = goalLineX + goalW() * 0.5;
+        pos.current.y = s.targetY;
+        vel.current = { x: 0, y: 0 };
+        ballZ.current = 0;
       }
       if (tNow - s.at >= PK_RUN) {
         if (s.scored) {
