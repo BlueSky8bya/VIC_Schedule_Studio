@@ -77,6 +77,17 @@ export function WorldCupBallGoal() {
   const keeperRef = useRef<Record<Side, HTMLDivElement | null>>({ left: null, right: null });
   // 키퍼 장갑 2개씩 — JS가 공 방향으로 배치(stage 좌표라 모바일 회전과 무관). [side]→[글러브0,글러브1]
   const glovesRef = useRef<Record<Side, (HTMLElement | null)[]>>({ left: [], right: [] });
+  // 장갑 현재 오프셋(px) — 목표로 부드럽게 lerp. 손이 몸과 별개로 벌어지고/뻗는다.
+  const glovePos = useRef<Record<Side, { x: number; y: number }[]>>({
+    left: [
+      { x: 0, y: 0 },
+      { x: 0, y: 0 }
+    ],
+    right: [
+      { x: 0, y: 0 },
+      { x: 0, y: 0 }
+    ]
+  });
   const playerEls = useRef<(HTMLDivElement | null)[]>([]);
   // enabled는 false로 시작 — 마운트 effect가 localStorage(vic.worldcupGame)를 읽어 실제 값으로
   // 세팅한다. true로 시작하면 OFF 저장 유저도 첫 렌더에 게임이 잠깐 떴다 effect가 끄며 깜빡인다.
@@ -257,6 +268,7 @@ export function WorldCupBallGoal() {
   };
   const placeKeepers = () => {
     const so = shootout.current;
+    const now = performance.now();
     (["left", "right"] as Side[]).forEach((s) => {
       const el = keeperRef.current[s];
       if (!el) return;
@@ -276,24 +288,60 @@ export function WorldCupBallGoal() {
       }
       const ox = s === "left" ? keeperX.current[s] : -keeperX.current[s];
       el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
-      // 장갑 — 공 방향으로 뻗는다(몸과 별개). 잡는 중이면 강조 클래스. stage 좌표라 회전 무관.
+      // 장갑 — 몸과 별개로 독립적·동적. 평소엔 벌어져 떠 있고, 슛이 오면(가까움+빠름) 공 가는 쪽
+      // '한 손'이 길게 뻗어(긴 리치) 막는다. 각 손은 목표로 부드럽게 lerp(터렛처럼 안 붙음).
       const catching = keeperHold.current.side === s;
       el.classList.toggle("wc-keeper-catch", catching);
+      const kd = kdDia();
       const kX = keeperCenterX(s);
       const kY = keeperY.current[s];
-      const dir = Math.atan2(pos.current.y - kY, pos.current.x - kX);
-      const reach = kdDia() * (catching ? 0.46 : 0.38);
-      const spread = kdDia() * 0.26;
+      const bdx = pos.current.x - kX;
+      const bdy = pos.current.y - kY;
+      const dist = Math.hypot(bdx, bdy) || 1;
+      const dir = Math.atan2(bdy, bdx);
       const perp = dir + Math.PI / 2;
-      const deg = (dir * 180) / Math.PI; // 미트 장축을 공 방향으로 정렬
+      const speed = Math.hypot(vel.current.x, vel.current.y);
+      const defT: 0 | 1 = s === "left" ? 0 : 1;
+      const attackT: 0 | 1 = defT === 0 ? 1 : 0;
+      // 모드: 잡기 > 슛위협(한 손 길게) > 1v1 다가옴(두 손 크게 벌려 각도 좁힘) > 평소.
+      const shotThreat = dist < kd * 4 && speed > 150;
+      const closeDown =
+        !shotThreat && lastTouch.current === attackT && dist < kd * 7 && speed <= 160;
+      const threat = shotThreat || catching;
+      // 공이 향하는 옆방향(perp 성분) → 그쪽 손이 리드(길게 뻗음).
+      const vperp = vel.current.x * Math.cos(perp) + vel.current.y * Math.sin(perp);
+      const lead = vperp >= 0 ? 0 : 1;
       const gl = glovesRef.current[s];
+      const cur = glovePos.current[s];
       for (let gi = 0; gi < 2; gi++) {
         const g = gl[gi];
         if (!g) continue;
         const sgn = gi === 0 ? 1 : -1;
-        const gx = Math.cos(dir) * reach + Math.cos(perp) * spread * sgn;
-        const gy = Math.sin(dir) * reach + Math.sin(perp) * spread * sgn;
-        g.style.transform = `translate(calc(-50% + ${gx}px), calc(-50% + ${gy}px)) rotate(${deg}deg)`;
+        const isLead = gi === lead;
+        // reach/spread — 슛위협:리드 손 공까지 길게. 1v1:두 손 크게 벌려 큰 실루엣(각도 차단). 평소:중간.
+        const reach = catching
+          ? kd * 0.48
+          : shotThreat
+            ? isLead
+              ? Math.min(dist * 0.92, kd * 1.15)
+              : kd * 0.42
+            : closeDown
+              ? kd * 0.52
+              : kd * 0.4;
+        const spread =
+          (catching ? 0.12 : shotThreat ? (isLead ? 0.08 : 0.24) : closeDown ? 0.62 : 0.32) * kd;
+        const bob =
+          threat || closeDown
+            ? 0
+            : Math.sin(now / 360 + gi * 2.1 + (s === "left" ? 0 : 1)) * kd * 0.06;
+        const tx = Math.cos(dir) * reach + Math.cos(perp) * (spread * sgn + bob);
+        const ty = Math.sin(dir) * reach + Math.sin(perp) * (spread * sgn + bob);
+        // 부드럽게 따라감(손이 몸·서로와 별개로 늦게/벌어지며 움직임).
+        const k = threat ? 0.42 : closeDown ? 0.28 : 0.16;
+        cur[gi].x += (tx - cur[gi].x) * k;
+        cur[gi].y += (ty - cur[gi].y) * k;
+        const deg = (Math.atan2(cur[gi].y, cur[gi].x) * 180) / Math.PI; // 미트는 뻗는 방향을 향함
+        g.style.transform = `translate(calc(-50% + ${cur[gi].x}px), calc(-50% + ${cur[gi].y}px)) rotate(${deg}deg)`;
       }
     });
   };
@@ -1635,7 +1683,14 @@ export function WorldCupBallGoal() {
       if (!airborne) {
         for (const side of ["left", "right"] as Side[]) {
           const kx = keeperCenterX(side);
-          if (Math.hypot(cx - kx, cy - keeperY.current[side]) < r + kdDia() / 2) {
+          const ky = keeperY.current[side];
+          const bodyHit = Math.hypot(cx - kx, cy - ky) < r + kdDia() / 2;
+          // 뻗은 장갑으로도 막는다 — 한 손이 멀리 나가 있으면 몸이 못 닿는 공도 쳐낸다(긴 리치).
+          const gloveR = kdDia() * 0.34;
+          const gloveHit = glovePos.current[side].some(
+            (gp) => Math.hypot(cx - (kx + gp.x), cy - (ky + gp.y)) < r + gloveR
+          );
+          if (bodyHit || gloveHit) {
             doSave(side);
             saved = true;
           }

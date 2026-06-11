@@ -327,9 +327,11 @@
   left: 50%;
   top: 14px;
   transform: translateX(-50%);
-  display: inline-flex;
+  display: flex;
+  flex-wrap: nowrap; /* 카드 많아도 점수/팀이 절대 다음 줄로 안 넘어가게 */
   align-items: center;
   gap: 10px;
+  max-width: 94vw; /* 넘치면 팀 셀이 줄어들고(아래 flex-shrink) 점수는 고정 */
   pointer-events: none;
   padding: 6px 14px;
   border-radius: 999px;
@@ -344,9 +346,12 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  flex: 0 1 auto;
+  min-width: 0; /* 셀이 내용보다 작아질 수 있게(이름 클립) → 바 폭 폭주 방지 */
+  overflow: hidden;
   font-size: 12px;
   opacity: 0.92;
-  max-width: 120px;
+  max-width: 132px;
   white-space: nowrap;
 }
 .wc-score-a {
@@ -356,10 +361,15 @@
 .wc-score-b {
   color: #9ab8ff;
 }
-/* 스코어박스 옆 카드 — 받은 옐로/레드를 색 핍으로(개수만큼, 최대 4). */
+/* 스코어박스 옆 카드 — 받은 옐로/레드 색 핍. 많아지면 셀 안에서 2줄로 wrap(바를 안 넘김). */
 .wc-score-cards {
   display: inline-flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
   gap: 2px;
+  max-width: 30px;
+  max-height: 18px;
+  align-content: center;
 }
 .wc-card {
   width: 5px;
@@ -374,6 +384,8 @@
   background: #e2503c;
 }
 .wc-score-num {
+  flex: 0 0 auto; /* 점수는 절대 줄어들거나 줄바꿈 안 됨 */
+  white-space: nowrap;
   font-size: 18px;
   letter-spacing: 0.04em;
 }
