@@ -999,7 +999,150 @@ type RewardAnchor = "short_pass" | "counterpress_5s" | "long_ball_second_ball";
 | credit assignment 실패 | 22명 joint action | MAPPO critic, role reward, VDN/QMIX comparison |
 | 브라우저 느림 | policy 과대 | distillation, scripted hybrid, decision tick 낮춤 |
 
-## 12. 바로 다음 문서/코드 작업
+## 12. 실제 학습 시작 전 병목 대비
+
+### 12.1 연산 부하 분리
+
+문제:
+
+- 물리/충돌은 60Hz가 필요하지만, EPV, xT, pitch control, pass probability 같은 고급 지표를 60Hz마다 22명 전체에 계산하면 병목이 된다.
+- 특히 pitch control/EPV류는 위치 grid 또는 후보 action surface를 만들기 때문에 rollout worker 수가 늘면 비용이 폭증한다.
+
+대응:
+
+```txt
+Physics Tick       60Hz  -> ball/player integration, collision, line crossing
+Rule Tick          60Hz  -> out/goal/foul/offside event checks where needed
+Decision Tick    5-10Hz  -> agent observation, action selection
+Analytics Tick   2-10Hz  -> xT/EPV/pitch control/pass surface cache
+Render Tick       rAF    -> browser only, learning과 분리
+```
+
+구현 원칙:
+
+- agent는 매 physics tick이 아니라 decision tick에서만 새 action을 고른다.
+- action은 다음 decision tick까지 sticky/continuous command로 유지한다.
+- xT는 grid lookup으로 시작한다.
+- pitch control은 ball 주변/후보 target만 계산한다.
+- EPV는 매 tick full model 대신 `EPV-lite` cache를 사용한다.
+- analytics result에는 `validUntilTick`을 둔다.
+
+권장 타입:
+
+```ts
+type TickRates = {
+  physicsHz: 60;
+  decisionHz: 10;
+  analyticsHz: 5;
+};
+
+type AnalyticsCache = {
+  tick: number;
+  validUntilTick: number;
+  xTGrid?: Float32Array;
+  pitchControl?: Float32Array;
+  passSurfaceByPlayer?: Map<PlayerId, Float32Array>;
+  epvLite?: number;
+};
+```
+
+### 12.2 TypeScript 엔진과 Python 학습 브리지
+
+문제:
+
+- 엔진은 TypeScript, 학습은 Python/PettingZoo/RLlib/SB3 계열일 가능성이 높다.
+- vectorized rollout worker가 많아지면 JSON state/action 직렬화 비용이 병목이 된다.
+
+대응 단계:
+
+1. 초기 개발: JSON bridge 허용. 디버깅, 스키마 안정화 목적.
+2. 중간 단계: MessagePack 또는 binary typed array payload로 전환.
+3. 대규모 학습: FlatBuffers, Cap'n Proto, gRPC streaming 중 하나를 선택.
+4. 최종 최적화: Node worker pool 또는 engine core를 WASM/Rust로 이전 가능성 검토.
+
+브리지 원칙:
+
+- 매 tick 전체 객체를 보내지 말고 packed numeric buffer를 보낸다.
+- observation/action schema는 version을 가진다.
+- player order는 고정한다. `team0 p0..p10`, `team1 p0..p10`.
+- string enum은 전송하지 않고 integer id로 매핑한다.
+- event log는 매 decision step마다 전체 전송하지 않고 delta/batch 전송한다.
+
+권장 packed layout:
+
+```txt
+ObservationBuffer Float32Array
+  header: tick, phaseId, scoreA, scoreB, ballOwnerId
+  ball: x,y,vx,vy,z,vz
+  players[22]:
+    x,y,vx,vy,stamina,roleId,teamId,hasBall,pressure,anchorDx,anchorDy
+  tactic:
+    press,possession,tempo,lineHeight,width
+
+ActionBuffer Float32Array / Int32Array
+  players[22]:
+    actionTypeId,targetX,targetY,power,height,sprintFlag,passKindId
+```
+
+브리지 후보:
+
+- **FlatBuffers**: schema 기반, zero-copy 지향, 게임 state에 적합.
+- **gRPC streaming**: 운영/분산 환경 친화, latency는 FlatBuffers direct보다 클 수 있음.
+- **MessagePack**: JSON보다 빠르고 도입 쉬움, schema 안정 전 중간 단계.
+- **Shared memory / mmap**: 가장 빠르지만 구현 복잡. 초기에는 과함.
+
+### 12.3 Scripted AI에서 RL로 넘어가는 Behavior Cloning
+
+문제:
+
+- scripted AI와 순수 RL 사이 간극이 크다.
+- random exploration으로 11명이 패스, spacing, offside timing, pressing trap을 스스로 발견하기 어렵다.
+
+대응:
+
+1. scripted AI끼리 대량 경기 생성.
+2. event log + state/action trajectory 저장.
+3. 전술별 dataset 분리. 예: `tiki_taka`, `gegenpressing`, `low_block`.
+4. Behavior Cloning으로 actor 초기화.
+5. BC policy를 scripted opponent와 검증.
+6. 이후 IPPO/MAPPO fine-tuning.
+
+BC dataset:
+
+```ts
+type BCSample = {
+  observation: PackedObservation;
+  action: PackedAction;
+  tacticId: TacticId;
+  formationId: FormationId;
+  role: Role | "GK";
+  phase: GamePhase;
+  rewardAnchors: RewardAnchor[];
+};
+```
+
+BC loss:
+
+```txt
+L_BC =
+  CE(actionType)
+  + MSE(targetPoint)
+  + CE(passKind)
+  + MSE(power,height)
+  + auxiliary losses:
+      phase prediction
+      tactic id prediction
+      anchor target prediction
+```
+
+주의:
+
+- BC만 하면 scripted AI 한계를 그대로 복사한다.
+- RL fine-tuning에서 exploration noise와 self-play가 필요하다.
+- 전술별 dataset balance를 맞춘다. 롱볼/텐백이 소수면 정책이 점유형으로 쏠린다.
+- bad scripted action은 filtering한다. 예: 룰 위반, dead loop, 무의미한 백패스.
+
+## 13. 바로 다음 문서/코드 작업
 
 추천 순서:
 
@@ -1010,7 +1153,7 @@ type RewardAnchor = "short_pass" | "counterpress_5s" | "long_ball_second_ball";
 5. `rl/scenarios.ts`에 Football Academy식 scenario 목록 추가.
 6. `rl/reward.ts`에 reward breakdown skeleton 작성.
 
-## 13. 참고 자료
+## 14. 참고 자료
 
 - Google Research Football paper  
   https://cdn.aaai.org/ojs/5878/5878-13-9103-1-10-20200513.pdf
