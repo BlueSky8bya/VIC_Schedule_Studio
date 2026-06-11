@@ -172,6 +172,51 @@
     0 3px 8px rgb(40 30 60 / 40%);
   z-index: 2;
 }
+/* 부상 — 타박 큰 선수는 살짝 어둡게(절뚝 느낌). 쓰러진 선수는 납작/반투명 + 빨간 링(치료 대기). */
+.wc-player-hurt {
+  filter: saturate(0.6) brightness(0.82);
+}
+.wc-player-down {
+  opacity: 0.7;
+  box-shadow:
+    0 0 0 2px rgb(255 120 120 / 95%),
+    0 2px 5px rgb(40 30 60 / 35%);
+}
+.wc-pcard-bar-hurt i {
+  background: linear-gradient(90deg, #ff9a6a, #ef4444) !important;
+}
+/* 부상 십자가 — 선수 원 위에 작게. 부상/다운일 때만 표시, 선수와 함께 이동(부모 transform 따라감). */
+.wc-player-cross {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translate(-50%, 1px);
+  display: none;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  color: #ef1b1b;
+  text-shadow:
+    0 0 2px #fff,
+    0 0 2px #fff,
+    0 0 2px #fff;
+  pointer-events: none;
+  z-index: 3;
+}
+.wc-player-hurt > .wc-player-cross,
+.wc-player-down > .wc-player-cross {
+  display: block;
+  animation: wc-cross-bob 0.8s ease-in-out infinite;
+}
+@keyframes wc-cross-bob {
+  0%,
+  100% {
+    transform: translate(-50%, 1px);
+  }
+  50% {
+    transform: translate(-50%, -2px);
+  }
+}
 .wc-team-0 {
   background: radial-gradient(circle at 35% 30%, #ff6a6a, #d92d2d);
 }

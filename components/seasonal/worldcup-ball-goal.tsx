@@ -34,6 +34,8 @@ type Player = PlayerPersona & {
   yellow: number; // 경고 누적(2장이면 퇴장).
   red: boolean; // 퇴장 — 더는 공에 관여하지 않고(패시브) 시각적으로 흐려진다.
   num: number; // 등번호(표시용).
+  knock: number; // 0..1 타박/부상 — 거친 태클로 누적. 속도·민첩 저하, 시간이 지나면 회복(천천히).
+  downUntil: number; // 이 시각까지 부상으로 쓰러져 정지(심한 knock 직후 잠깐).
 };
 
 const FRICTION = 0.98; // 잔디 마찰 — 높일수록 공이 빨리 죽어 라인아웃(스로인) 남발 감소
@@ -520,6 +522,9 @@ export function WorldCupBallGoal() {
       }
       el.style.display = "";
       el.style.transform = `translate3d(${p.x - pr}px, ${p.y - pr}px, 0)`;
+      // 부상 — 쓰러져 있으면(down) 또는 타박 큼 → 절뚝/다운 시각.
+      el.classList.toggle("wc-player-down", performance.now() < p.downUntil);
+      el.classList.toggle("wc-player-hurt", p.knock > 0.35 && performance.now() >= p.downUntil);
     });
   };
 
@@ -588,7 +593,9 @@ export function WorldCupBallGoal() {
       wob: rng.range(0, Math.PI * 2),
       yellow: 0,
       red: false,
-      num: (i % 10) + 2 // 2~11(1은 골키퍼 몫으로 비움)
+      num: (i % 10) + 2, // 2~11(1은 골키퍼 몫으로 비움)
+      knock: 0,
+      downUntil: 0
     }));
     players.current.forEach((p) => {
       const home = roleHome(p, 0);
@@ -919,6 +926,29 @@ export function WorldCupBallGoal() {
       const st = stats.current;
       setCardCounts({ yellow: [st.yellow[0], st.yellow[1]], red: [st.red[0], st.red[1]] });
     }
+    // 부상 — 반칙당한 선수(공 보유자/근접)가 타박. 카드성 거친 태클일수록 크게. 심하면 잠깐 쓰러진다.
+    {
+      let victim: Player | null =
+        lastBallPlayer.current && lastBallPlayer.current.team === fouled && !lastBallPlayer.current.red
+          ? lastBallPlayer.current
+          : null;
+      if (!victim) {
+        let vd = Infinity;
+        players.current.forEach((q) => {
+          if (q.team !== fouled || q.red) return;
+          const d = Math.hypot(q.x - spotX, q.y - spotY);
+          if (d < vd) {
+            vd = d;
+            victim = q;
+          }
+        });
+      }
+      if (victim) {
+        const sev = card.includes("🟥") ? 0.5 : card.includes("🟨") ? 0.34 : 0.16;
+        victim.knock = clamp(victim.knock + sev + rnd(0, 0.15), 0, 1);
+        if (victim.knock > 0.55) victim.downUntil = performance.now() + rnd(500, 1100);
+      }
+    }
     lastTouch.current = fouled;
     flashPiece(`파울${card}`);
     // 파울 = 상대 프리킥. 카드 받았으면 카드 + 프리킥 같이 표기(예: "🟨 프리킥").
@@ -1178,6 +1208,9 @@ export function WorldCupBallGoal() {
         p.y = clamp(p.y + (sdy / sd) * smove, PLAYER_R, h - PLAYER_R);
         return;
       }
+      // 부상 — knock은 천천히 회복. 심한 직후엔 잠깐 쓰러져 정지(치료 대기).
+      p.knock = Math.max(0, p.knock - 0.02 * dt);
+      if (now < p.downUntil) return;
       const t = teams.current ? teams.current[p.team] : null;
       const tempo = t ? t.tempo : 1;
       const attacking = p.team === poss;
@@ -1240,6 +1273,7 @@ export function WorldCupBallGoal() {
       // 이동 — 캐시 목표로. 속도는 모드·페이스·체력. 지치면 느려짐(0.6..1).
       let spd = PLAYER_SPEED * tempo * (sprint ? 0.72 + p.pace * 0.6 : 0.42 + p.pace * 0.4);
       spd *= 0.6 + 0.4 * p.stamina;
+      spd *= 1 - p.knock * 0.45; // 타박 — 절뚝(속도 저하)
       if (mode === "cover") spd *= 1.1;
       const wob = sprint ? 0 : Math.sin(now / 700 + p.wob) * 1.4; // idle 미세 흔들림(통일감 깨기)
       const dx = p.tx - p.x;
@@ -2377,7 +2411,12 @@ export function WorldCupBallGoal() {
                   ref={(el) => {
                     playerEls.current[i] = el;
                   }}
-                />
+                >
+                  {/* 부상 십자가 — 심한 부상(.wc-player-hurt/down)일 때만 보이고, 선수와 함께 이동(회복 시 사라짐). */}
+                  <span className="wc-player-cross" aria-hidden="true">
+                    ✚
+                  </span>
+                </div>
               );
             })}
             {fieldCue ? (
@@ -2544,6 +2583,8 @@ export function WorldCupBallGoal() {
                   };
                   const form = teams.current?.[p.team]?.formation ?? "";
                   const cards = p.red ? "🟥" : p.yellow >= 2 ? "🟨🟨" : p.yellow === 1 ? "🟨" : "";
+                  const condition = Math.max(0, 1 - p.knock); // 1=멀쩡 .. 0=심한 부상
+                  const hurt = p.knock > 0.1;
                   const rows: [string, number][] = [
                     ["스피드", p.pace],
                     ["압박", p.press],
@@ -2559,11 +2600,18 @@ export function WorldCupBallGoal() {
                           {roleKo[p.slot.role]} · {form}
                         </span>
                         {cards ? <span className="pc-card">{cards}</span> : null}
+                        {hurt ? <span className="pc-card">🤕</span> : null}
                       </div>
                       <div className="wc-pcard-stam-row">
                         <span>체력</span>
                         <div className="wc-pcard-bar">
                           <i style={{ width: `${Math.round(p.stamina * 100)}%` }} />
+                        </div>
+                      </div>
+                      <div className="wc-pcard-stam-row">
+                        <span>{hurt ? "부상" : "컨디션"}</span>
+                        <div className={`wc-pcard-bar ${hurt ? "wc-pcard-bar-hurt" : ""}`}>
+                          <i style={{ width: `${Math.round(condition * 100)}%` }} />
                         </div>
                       </div>
                       {rows.map(([label, v]) => (
