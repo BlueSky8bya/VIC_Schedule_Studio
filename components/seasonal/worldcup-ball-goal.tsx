@@ -1191,6 +1191,12 @@ export function WorldCupBallGoal() {
           const maxY = h * 0.22;
           tx = home.x + clamp((bx - home.x) * infX, -maxX, maxX);
           ty = home.y + clamp((by - home.y) * infY, -maxY, maxY);
+          // 공격수는 형태 유지 중엔 오프사이드 라인 안쪽(온사이드)에 머문다 — 라인 너머 camp하면
+          // 패서의 전방 옵션이 전부 오프사이드가 돼 깃발이 남발됐음. 침투(sprint/carry)는 자유.
+          if (attacking && fwd) {
+            const offL = offsideLineFor(p.team);
+            tx = p.team === 0 ? Math.min(tx, offL - PLAYER_R) : Math.max(tx, offL + PLAYER_R);
+          }
         }
         const jit = mode === "shape" || mode === "support" ? 26 : 12;
         p.tx = tx + rnd(-jit, jit);
@@ -1356,8 +1362,14 @@ export function WorldCupBallGoal() {
     if (best >= 0) {
       const m = players.current[best];
       if (isOffside(m)) {
-        // 전진 옵션이 전부 오프사이드뿐 → 위험을 무릅쓴 패스가 깃발에 걸린다.
-        callOffside(p.team, m.x, m.y);
+        // 전진 옵션이 전부 오프사이드뿐. 매번 깃발 들면 남발 → 가끔만(35%) 위험 패스가 걸리고,
+        // 보통은 무리한 전진 대신 끌고 가거나(드리블) 기다린다.
+        if (Math.random() < 0.35) {
+          callOffside(p.team, m.x, m.y);
+          return;
+        }
+        dribbleCount.current += 1;
+        setVelTo(goalCx, goalCy, 240);
         return;
       }
       const dpass = Math.hypot(m.x - p.x, m.y - p.y);
@@ -2258,8 +2270,16 @@ export function WorldCupBallGoal() {
                 key={`k-${side}`}
                 className={`wc-keeper wc-keeper-${side} ${pickKeeper === side ? "wc-keeper-pick" : ""}`}
                 style={keeperStyle(side)}
-                onPointerEnter={isMobile ? undefined : (e) => e.shiftKey && setPickKeeper(side)}
-                onPointerLeave={isMobile ? undefined : () => setPickKeeper((c) => (c === side ? null : c))}
+                onPointerEnter={
+                  isMobile
+                    ? undefined
+                    : (e) => {
+                        if (e.shiftKey) {
+                          setPickPlayer(null);
+                          setPickKeeper(side);
+                        }
+                      }
+                }
                 onClick={(e) => {
                   e.stopPropagation();
                   setPickPlayer(null);
@@ -2296,11 +2316,19 @@ export function WorldCupBallGoal() {
                   }}
                   onPointerEnter={
                     // 웹: 그냥 스치면 방해되므로 'Shift 누른 채' 스칠 때만 카드. 뜨면 유지(딤 클릭 시 닫힘).
-                    // Shift 없이 그냥 클릭해도 토글로 뜬다(아래 onClick).
-                    isMobile ? undefined : (e) => e.shiftKey && setPickPlayer(i)
+                    // Shift 없이 그냥 클릭해도 토글로 뜬다(아래 onClick). 키퍼 카드는 닫는다(상호배타).
+                    isMobile
+                      ? undefined
+                      : (e) => {
+                          if (e.shiftKey) {
+                            setPickKeeper(null);
+                            setPickPlayer(i);
+                          }
+                        }
                   }
                   onClick={(e) => {
                     e.stopPropagation();
+                    setPickKeeper(null);
                     setPickPlayer((c) => (c === i ? null : i)); // 모바일 탭/웹 클릭 토글
                     hapticTick();
                   }}
