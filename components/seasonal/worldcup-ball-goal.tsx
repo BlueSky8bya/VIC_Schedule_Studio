@@ -58,7 +58,7 @@ const PLAYER_SPEED = 165;
 const BALL_BOUNCE = 0.55; // 선수 몸 튕김 — 낮춰서 난반사로 라인 밖 튕겨나가는 빈도↓(스로인 남발 완화)
 const CONTROL_SPEED = 150;
 const TRAP_MAX = 660; // 이보다 빠르면 못 받고 튕긴다(아주 강한 슛/롱볼). 이하면 퍼스트터치 시도.
-const KICK_CD = 480;
+const KICK_CD = 340; // 통제 후 다음 결정까지(짧을수록 패스/슛 빨리 — 발밑에 오래 잡고 안 있게)
 const MARGIN_Y_FRAC = 0.07;
 const GRAVITY_Z = 1000; // 공 높이용 중력(px/s^2) — 띄운 공이 내려오는 속도
 const AIR_MIN = 7; // 이 높이 위면 '떠 있음'(선수/키퍼 통과 + 흐려짐)
@@ -2171,8 +2171,22 @@ export function WorldCupBallGoal() {
           callFoul(p);
           return;
         }
-        if (run && i === near.overall && speed < CONTROL_SPEED && now - kickAt.current > KICK_CD) {
-          playBall(p);
+        if (run && i === near.overall && speed < CONTROL_SPEED) {
+          if (now - kickAt.current > KICK_CD) {
+            playBall(p);
+          } else {
+            // 컨트롤 중(다음 결정까지) — 공을 발밑에 잡고 선다(셸드). 예전엔 carry 모드로 공을 향해
+            // 계속 이동하며 매 프레임 공을 들이받아(bounce) 앞으로 밀어, 결정과 무관하게 드리블처럼
+            // 보였음 → 공을 죽이고 발밑에 고정해 끌고가지 않게.
+            vel.current.x *= 0.6;
+            vel.current.y *= 0.6;
+            const hx = pos.current.x - p.x;
+            const hy = pos.current.y - p.y;
+            const hd = Math.hypot(hx, hy) || 1;
+            const hold = ballDia() / 2 + PLAYER_R * 0.6;
+            pos.current.x = p.x + (hx / hd) * hold;
+            pos.current.y = p.y + (hy / hd) * hold;
+          }
         } else if (run && i === near.overall && speed < TRAP_MAX && now - kickAt.current > 150) {
           trapBall(p); // 너무 빨라 즉시 통제 불가 → 퍼스트터치로 받는다(능력·압박 따라 성공/튐)
         } else {
