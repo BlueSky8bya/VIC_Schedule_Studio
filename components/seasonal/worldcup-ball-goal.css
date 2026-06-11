@@ -901,9 +901,9 @@
   position: absolute;
   left: 50%;
   top: 50%;
+  /* 가로 중앙 — 양옆 메뉴 칼럼(각 156px + 8px) 사이 빈 공간에 들어가게 폭을 좁힌다(안 겹침). */
   transform: translate(-50%, -50%);
-  width: 220px;
-  max-width: 52%;
+  width: min(240px, calc(100% - 352px));
   display: flex;
   flex-direction: column;
   gap: 4px;
