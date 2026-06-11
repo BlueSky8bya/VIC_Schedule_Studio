@@ -59,6 +59,7 @@ const PLAYER_R = 9;
 const PLAYER_SPEED = 165;
 const BALL_BOUNCE = 0.55; // 선수 몸 튕김 — 낮춰서 난반사로 라인 밖 튕겨나가는 빈도↓(스로인 남발 완화)
 const CONTROL_SPEED = 150;
+const TRAP_MAX = 660; // 이보다 빠르면 못 받고 튕긴다(아주 강한 슛/롱볼). 이하면 퍼스트터치 시도.
 const KICK_CD = 480;
 const MARGIN_Y_FRAC = 0.07;
 const GRAVITY_Z = 1000; // 공 높이용 중력(px/s^2) — 띄운 공이 내려오는 속도
@@ -1567,6 +1568,29 @@ export function WorldCupBallGoal() {
     }
   };
 
+  // 퍼스트터치/트래핑 — 빠른 패스가 도착하면 한 번에 안 멈추고 '터치'로 받는다. 능력(페이스·패스·침착)
+  // 높고 압박 적으면 발밑에 딱 죽이고, 낮거나 압박·강한 패스면 터치가 튀어(loose) 뺏길 수 있다.
+  const trapBall = (p: Player) => {
+    const now = performance.now();
+    const speed = Math.hypot(vel.current.x, vel.current.y);
+    let oppD = Infinity;
+    players.current.forEach((e) => {
+      if (e.team === p.team || e.red) return;
+      oppD = Math.min(oppD, Math.hypot(e.x - p.x, e.y - p.y));
+    });
+    const pressure = oppD < PLAYER_R * 4 ? (1 - oppD / (PLAYER_R * 4)) * 0.3 : 0;
+    const ft = clamp(0.5 + (p.pace * 0.15 + p.pass * 0.3 + p.composure * 0.3) - speed / 1600 - pressure, 0.08, 0.93);
+    const residual = speed * (1 - ft); // 좋은 터치=거의 0(발밑), 나쁜 터치=많이 남음
+    const baseAng = Math.atan2(vel.current.y, vel.current.x);
+    const ang = baseAng + (1 - ft) * rnd(-1.1, 1.1); // 나쁜 터치일수록 방향이 튄다
+    vel.current.x = Math.cos(ang) * residual;
+    vel.current.y = Math.sin(ang) * residual;
+    ballZ.current = 0;
+    ballVZ.current = 0;
+    lastTouch.current = p.team;
+    kickAt.current = now; // 방금 터치 — 잠깐(통제 쿨다운) 뒤 playBall/다음 터치
+  };
+
   const bounceBallOffPlayer = (p: Player) => {
     const minD = ballDia() / 2 + PLAYER_R;
     const dx = pos.current.x - p.x;
@@ -2052,6 +2076,8 @@ export function WorldCupBallGoal() {
         }
         if (run && i === near.overall && speed < CONTROL_SPEED && now - kickAt.current > KICK_CD) {
           playBall(p);
+        } else if (run && i === near.overall && speed < TRAP_MAX && now - kickAt.current > 150) {
+          trapBall(p); // 너무 빨라 즉시 통제 불가 → 퍼스트터치로 받는다(능력·압박 따라 성공/튐)
         } else {
           bounceBallOffPlayer(p);
         }
