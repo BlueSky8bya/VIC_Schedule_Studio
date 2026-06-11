@@ -186,12 +186,14 @@ export function WorldCupBallGoal() {
   // 모바일은 피치가 세로로 짧아(100vw) 공·키퍼가 상대적으로 커 골 넣기 어렵다 → 작게.
   // 키퍼는 선수와 같은 크기(PLAYER_R*2). 물리용이라 rotated.current(=isMobile) 기준.
   const ballDia = () => (rotated.current ? 11 : BALL);
-  const kdDia = () => (rotated.current ? PLAYER_R * 2 : KD);
+  const kdDia = () => (rotated.current ? 13 : KD); // 모바일 키퍼 작게(작은 골대 대비 과대했음)
   // 경기장 라인(아웃 판정 기준) — 화면 끝에서 인셋. 좌우=골라인, 위아래=터치라인.
   const insetX = () => bounds().w * OUTX_F;
   const insetY = () => bounds().h * OUTY_F;
-  const goalW = () => bounds().w * GOALW_F;
-  const goalH = () => bounds().h * GOALH_F;
+  // 모바일은 stage가 작아 골대가 너무 작고 키퍼가 상대적으로 커 보였다 → 골 입구는 키우고(0.15)
+  // 깊이(돌출)는 줄여(0.02) 상단 배지 가림도 완화. 키퍼는 따로 작게(kdDia).
+  const goalW = () => bounds().w * (rotated.current ? 0.02 : GOALW_F);
+  const goalH = () => bounds().h * (rotated.current ? 0.15 : GOALH_F);
 
   // 골대 박스 — 입구가 골라인(insetX) 위에 오고 몸통은 라인 밖(화면 끝 쪽)으로 돌출.
   // 좌측: [insetX-goalW, insetX], 입구=insetX. 우측: [w-insetX, w-insetX+goalW], 입구=w-insetX.
@@ -1730,7 +1732,7 @@ export function WorldCupBallGoal() {
     width: `${goalW()}px`,
     height: `${goalH()}px`
   });
-  const kdRender = isMobile ? PLAYER_R * 2 : KD; // 키퍼 시각 크기(물리 kdDia()와 동일 소스)
+  const kdRender = isMobile ? 13 : KD; // 키퍼 시각 크기(물리 kdDia()와 동일 소스)
   const keeperStyle = (side: Side): React.CSSProperties => ({
     [side]: `${goalEdgePx() + goalW() - kdRender}px`,
     top: "0",

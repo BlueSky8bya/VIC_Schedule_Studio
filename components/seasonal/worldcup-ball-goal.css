@@ -21,29 +21,36 @@
 .wc-goal-net {
   position: absolute;
   inset: 0;
-  border-radius: 6px 14px 14px 6px;
+  border-radius: 4px 10px 10px 4px;
+  /* 고운 그물(6px 격자) + 안쪽으로 살짝 어둡게(깊이감). */
   background:
-    repeating-linear-gradient(90deg, rgb(120 120 140 / 22%) 0 1px, transparent 1px 9px),
-    repeating-linear-gradient(0deg, rgb(120 120 140 / 22%) 0 1px, transparent 1px 9px);
-  background-color: rgb(255 255 255 / 16%);
-  box-shadow: inset 0 0 0 1px rgb(120 120 140 / 18%);
+    repeating-linear-gradient(90deg, rgb(150 150 175 / 16%) 0 1px, transparent 1px 6px),
+    repeating-linear-gradient(0deg, rgb(150 150 175 / 16%) 0 1px, transparent 1px 6px),
+    linear-gradient(90deg, rgb(120 120 150 / 14%), rgb(255 255 255 / 4%));
+  background-color: rgb(255 255 255 / 13%);
+  box-shadow: inset 0 0 7px rgb(110 110 145 / 16%);
 }
 .wc-goal-frame {
   position: absolute;
   inset: 0;
-  border: 4px solid #f4f4f8;
+  border: 3px solid #fbfbff;
+  border-radius: inherit;
   box-shadow:
-    0 6px 18px rgb(40 30 60 / 18%),
-    inset 0 0 0 1px rgb(0 0 0 / 6%);
+    0 4px 13px rgb(40 30 60 / 16%),
+    inset 0 0 0 1px rgb(0 0 0 / 5%);
 }
-/* 입구(필드 쪽 한 면)만 열린 골대 — 그쪽 테두리를 없애 '뻥 뚫린 입구'로 보이게. */
+/* 입구(필드 쪽 한 면)만 열린 골대 — 그쪽 테두리를 없애 '뻥 뚫린 입구'로. 둥근 모서리는 바깥쪽만. */
+.wc-goal-left .wc-goal-net {
+  border-radius: 4px 10px 10px 4px;
+}
+.wc-goal-right .wc-goal-net {
+  border-radius: 10px 4px 4px 10px;
+}
 .wc-goal-left .wc-goal-frame {
   border-right: 0;
-  border-radius: 4px 0 0 4px;
 }
 .wc-goal-right .wc-goal-frame {
   border-left: 0;
-  border-radius: 0 4px 4px 0;
 }
 
 /* 공 — 유일하게 잡히는 요소(pointer-events:auto). 위치는 JS가 transform으로. */
@@ -831,8 +838,20 @@
     left: 50%;
     top: 50%;
     width: min(100vh, calc(100vw * 105 / 68));
-    transform: translate(-50%, -50%) rotate(90deg);
+    /* 살짝 아래로(+14px) — 위로 돌출한 골대·키퍼가 상단 스코어/시계 배지에 안 가리게. */
+    transform: translate(-50%, calc(-50% + 14px)) rotate(90deg);
     transform-origin: center;
+  }
+  /* 모바일 골대 — 작은 스케일에 맞춰 프레임 얇게(세련). */
+  .wc-goal-frame {
+    border-width: 2px;
+  }
+  .wc-goal-net {
+    background:
+      repeating-linear-gradient(90deg, rgb(150 150 175 / 18%) 0 1px, transparent 1px 4px),
+      repeating-linear-gradient(0deg, rgb(150 150 175 / 18%) 0 1px, transparent 1px 4px),
+      linear-gradient(90deg, rgb(120 120 150 / 14%), rgb(255 255 255 / 4%));
+    background-color: rgb(255 255 255 / 13%);
   }
   /* 게임 OFF(켜기 버튼만)일 때 — 좌측, 모바일 헤더(agenda-header)의 로그아웃 버튼과 같은 세로선에.
      agenda-header 패딩 9px + 버튼 높이 30px → 로그아웃 세로중심 ≈ 24px. 켜기 버튼도 거기 맞춘다
