@@ -390,14 +390,14 @@
   opacity: 0.92;
   white-space: nowrap;
 }
-/* 전술 이름(팀명) — 길어도 ellipsis로 잘려 바를 안 넘긴다. 카드는 별도(아래)라 항상 자리 유지. */
+/* 전술 이름(팀명) — 웹은 공간 충분해 풀네임 그대로(자르지 않음). 모바일만 좁아 ...로 잘린다(아래). */
 .wc-score-name {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 110px;
+  max-width: none;
 }
 /* 모바일 — 스코어 배지는 너비가 부족해 전술명이 ...로 잘린다. 잘린 그 이름만 탭하면 풀네임 팝오버.
    (스코어 박스 자체엔 transform centering이 걸려 있어 박스에 :active scale을 주면 안 됨 → 이름에만.) */
