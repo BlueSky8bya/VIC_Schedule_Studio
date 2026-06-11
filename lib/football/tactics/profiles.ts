@@ -30,7 +30,16 @@ export const STYLES: TacticStyle[] = [
   { name: "롱볼 직접",  forms: ["4-4-2", "5-4-1"],              press: 0.56, possession: 0.20, tempo: 1.15, lineHeight: 0.08, width: 1.10 },
   { name: "빗장 수비",  forms: ["5-3-2", "3-5-2"],              press: 0.44, possession: 0.40, tempo: 0.95, lineHeight: 0.02, width: 0.86 },
   { name: "텐백 수비",  forms: ["5-4-1", "4-5-1"],              press: 0.43, possession: 0.30, tempo: 0.93, lineHeight: 0.01, width: 0.85 },
-  { name: "밸런스",     forms: ["4-4-2", "4-3-3", "4-2-3-1"],   press: 0.60, possession: 0.55, tempo: 1.00, lineHeight: 0.10, width: 1.00 }
+  { name: "밸런스",     forms: ["4-4-2", "4-3-3", "4-2-3-1"],   press: 0.60, possession: 0.55, tempo: 1.00, lineHeight: 0.10, width: 1.00 },
+  // 감독 철학 반영 디테일 변형 8종(유저 제공). 같은 점유라도 템포/폭/라인이 갈린다.
+  { name: "포지셔널 플레이",    forms: ["4-3-3", "3-2-4-1"],            press: 0.90, possession: 0.88, tempo: 1.05, lineHeight: 0.18, width: 1.10 }, // 과르디올라
+  { name: "수직적 티키타카",    forms: ["4-3-3", "4-3-1-2"],            press: 0.85, possession: 0.82, tempo: 1.12, lineHeight: 0.15, width: 0.90 }, // 사리볼
+  { name: "플루이드 역습",      forms: ["4-2-3-1", "3-4-3", "4-3-3"],   press: 0.65, possession: 0.45, tempo: 1.20, lineHeight: 0.08, width: 1.05 }, // 레알
+  { name: "두 줄 수비",        forms: ["4-4-2", "4-4-1-1"],            press: 0.68, possession: 0.35, tempo: 1.05, lineHeight: 0.06, width: 0.82 }, // 시메오네
+  { name: "루트 원",          forms: ["4-4-2", "3-5-2", "5-3-2"],     press: 0.50, possession: 0.20, tempo: 1.25, lineHeight: 0.05, width: 0.90 }, // 극단 다이렉트
+  { name: "비대칭 아이솔레이션", forms: ["4-2-3-1", "4-3-3"],            press: 0.70, possession: 0.60, tempo: 1.08, lineHeight: 0.12, width: 1.20 }, // overload to isolate
+  { name: "가짜 9번 시스템",    forms: ["4-3-3", "4-6-0"],              press: 0.82, possession: 0.75, tempo: 1.05, lineHeight: 0.14, width: 0.95 }, // 제로톱
+  { name: "실리 축구",        forms: ["5-3-2", "4-2-3-1", "4-1-4-1"], press: 0.75, possession: 0.25, tempo: 0.90, lineHeight: 0.03, width: 0.80 }  // 무리뉴
 ];
 
 const clampN = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
