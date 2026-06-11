@@ -369,9 +369,12 @@ export function WorldCupBallGoal() {
     const bdx = pos.current.x - kX;
     const bdy = pos.current.y - kY;
     const dist = Math.hypot(bdx, bdy) || 1;
+    // 손 사용은 자기 박스 안에서만(Law 12). 박스 밖으로 나간 키퍼는 컵(손으로 감싸기) 포즈 금지 →
+    // 발 처리로 보이게(시각적으로도 핸들링처럼 안 보이게). keeperX가 박스 깊이 넘으면 박스 밖.
+    const handsLegal = keeperX.current[s] < bounds().w * 0.15;
     // 공이 키퍼에 닿는 순간(잡기·근접·막 쳐낸 직후)엔 '추적'을 멈추고 고정 컵 포즈로. 추적하면 공의
     // 미세 진동을 손이 따라가 부르르 떨리고 공과 비벼졌음. 추적은 공이 멀리서 다가올 때(아래)만.
-    const nearBall = catching || dist < kd * 1.7 || now < saveGrace.current;
+    const nearBall = (catching || dist < kd * 1.7 || now < saveGrace.current) && handsLegal;
     if (nearBall) {
       const cdir = s === "left" ? 0 : Math.PI;
       const cperp = cdir + Math.PI / 2;

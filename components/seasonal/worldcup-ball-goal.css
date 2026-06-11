@@ -131,12 +131,23 @@
 .wc-ball:active {
   cursor: grabbing;
 }
+/* 잡기 쉽게 — 공이 작아도 마우스/손가락이 쉽게 걸리도록 투명 히트영역을 크게 확장. */
+.wc-ball::after {
+  content: "";
+  position: absolute;
+  inset: -18px;
+  border-radius: 50%;
+}
 /* 모바일 — 공 작게(물리 ballDia()=26과 시각 일치). 골 넣기 쉽게. margin은 박스 절반(중심 기준). */
 .wc-ball-sm {
   width: 14px;
   height: 14px;
   margin: -7px 0 0 -7px;
   font-size: 11px;
+}
+/* 모바일 — 공이 더 작으니 히트영역을 더 크게(손가락). */
+.wc-ball-sm::after {
+  inset: -24px;
 }
 /* 떠 있는 공(롱볼·크로스·골킥) — 살짝 흐려지고 그림자가 커져 '공중'임을 알린다. 이때 JS가
    선수·키퍼·골대벽 통과시키고 높이/스케일은 transform으로 준다. */
