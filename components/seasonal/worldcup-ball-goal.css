@@ -399,6 +399,47 @@
   white-space: nowrap;
   max-width: 110px;
 }
+/* 모바일 — 스코어 배지는 너비가 부족해 전술명이 ...로 잘린다. 탭하면 아래 풀네임 팝오버. */
+.wc-score-tap {
+  pointer-events: auto;
+  cursor: pointer;
+}
+.wc-score-tap:active {
+  transform: scale(0.97);
+}
+.wc-names-pop {
+  position: absolute;
+  left: 50%;
+  top: 46px;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 92vw;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: rgb(20 30 24 / 90%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #eafff2;
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 12px 28px -12px rgb(0 0 0 / 58%);
+  pointer-events: none;
+  z-index: 8;
+  animation: wc-drop-in 0.16s ease both;
+}
+.wc-names-pop .wc-names-a {
+  color: #ff9a9a;
+}
+.wc-names-pop .wc-names-b {
+  color: #9ab8ff;
+}
+.wc-names-pop .wc-names-vs {
+  opacity: 0.6;
+  font-weight: 700;
+}
 .wc-score-a {
   color: #ff9a9a;
   flex-direction: row;
@@ -817,6 +858,10 @@
 /* 칩 — 모던 라운드(리스트형). 호버 살짝 떠오르고, 선택은 진영색으로 꽉 채워 또렷. */
 .wc-tac-chip {
   width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   pointer-events: auto;
   border: 1px solid rgb(255 255 255 / 12%);
@@ -825,8 +870,11 @@
   color: #e6f1ec;
   font-size: 11.5px;
   font-weight: 800;
-  white-space: nowrap;
-  padding: 7px 9px;
+  /* 긴 전술명(비대칭 아이솔레이션 등)은 잘리지 말고 2줄로 줄바꿈 — 단어 단위(keep-all). */
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.22;
+  padding: 6px 8px;
   cursor: pointer;
   transition:
     background 0.14s ease,
