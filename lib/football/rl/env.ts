@@ -68,6 +68,7 @@ export class FootballEnv {
   private rng: Rng;
   private state: EnvState;
   private scenarioId: ScenarioId;
+  private baseList: Vec2[] = []; // 리셋 시 각 선수 기본 자리(dynamic anchoring base)
 
   constructor(opts: { decisionHz?: number } = {}) {
     this.hz = opts.decisionHz ?? 10;
@@ -124,7 +125,13 @@ export class FootballEnv {
       ball: { pos: { ...spec.ballStart }, vel: { x: 0, y: 0 }, height: 0, vz: 0 }
     };
     this.state.players = players;
+    this.baseList = players.map((p) => ({ ...p.pos }));
     return this.state;
+  }
+
+  /** 각 선수의 리셋 기본 자리 — scripted policy의 anchor base. */
+  get bases(): Vec2[] {
+    return this.baseList;
   }
 
   private outfieldRole(k: number, n: number): Role {
