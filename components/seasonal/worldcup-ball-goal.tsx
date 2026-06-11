@@ -2506,7 +2506,12 @@ export function WorldCupBallGoal() {
               </div>
             ) : null}
             {goalFlash ? <div className="wc-goal-text">GOAL!</div> : null}
-            {saveFlash ? <div className={`wc-save-text wc-save-${saveFlash}`}>막았다!</div> : null}
+            {saveFlash ? (
+              <div className={`wc-save-text wc-save-${saveFlash}`}>
+                {/* 골 뜬 동안 글러브에 닿았어도 결국 들어갔으니 '막았다..?'(아쉬움) */}
+                {goalFlash ? "막았다..?" : "막았다!"}
+              </div>
+            ) : null}
             {setPiece ? <div className="wc-setpiece">{setPiece}</div> : null}
             {matchResult ? <div className="wc-result">{matchResult}</div> : null}
             {pickPlayer != null && players.current[pickPlayer]
