@@ -192,9 +192,10 @@ export function WorldCupBallGoal() {
     });
   };
   const placePlayers = () => {
+    const pr = rotated.current ? 6.5 : PLAYER_R; // 모바일은 선수 시각 더 작게(중심 맞춰 오프셋)
     players.current.forEach((p, i) => {
       const el = playerEls.current[i];
-      if (el) el.style.transform = `translate3d(${p.x - PLAYER_R}px, ${p.y - PLAYER_R}px, 0)`;
+      if (el) el.style.transform = `translate3d(${p.x - pr}px, ${p.y - pr}px, 0)`;
     });
   };
 
@@ -1378,7 +1379,10 @@ export function WorldCupBallGoal() {
                 <div
                   key={`p-${i}`}
                   className={`wc-player wc-team-${team}`}
-                  style={{ width: `${PLAYER_R * 2}px`, height: `${PLAYER_R * 2}px` }}
+                  style={{
+                    width: `${isMobile ? 13 : PLAYER_R * 2}px`,
+                    height: `${isMobile ? 13 : PLAYER_R * 2}px`
+                  }}
                   ref={(el) => {
                     playerEls.current[i] = el;
                   }}
@@ -1415,9 +1419,9 @@ export function WorldCupBallGoal() {
         </>
       ) : null}
 
-      {/* HUD — 모바일+게임ON이면 피치 stage와 똑같이 90° 돌려 landscape 프레임에 정렬(폰 가로로
-          보면 똑바름). 게임 OFF면 회전 안 함(켜기 버튼 똑바로). 데스크탑은 항상 inset:0 똑바로. */}
-      <div className={`wc-hud ${isMobile && enabled ? "wc-hud-rot" : ""}`}>
+      {/* HUD — 항상 똑바로(회전 X). 피치가 105:68로 줄어 생긴 여백(모바일 위/아래)에 스코어·버튼이
+          놓여 경기장을 가리지 않는다. */}
+      <div className="wc-hud">
         {enabled ? (
           <>
             <div className="wc-score" role="status">
@@ -1428,6 +1432,17 @@ export function WorldCupBallGoal() {
               <span className="wc-score-team wc-score-b">{teamNames[1] || "BLUE"}</span>
             </div>
             {clockText ? <div className="wc-clock">{clockText}</div> : null}
+            <button
+              type="button"
+              className={`wc-tac-btn ${tacticsOpen ? "on" : ""}`}
+              onClick={() => {
+                setTacticsOpen((o) => !o);
+                hapticTick();
+              }}
+              aria-pressed={tacticsOpen}
+            >
+              ⚙ 전술
+            </button>
             {goalFlash ? <div className="wc-goal-text">GOAL!</div> : null}
             {saveFlash ? <div className={`wc-save-text wc-save-${saveFlash}`}>막았다!</div> : null}
             {setPiece ? <div className="wc-setpiece">{setPiece}</div> : null}
@@ -1467,25 +1482,7 @@ export function WorldCupBallGoal() {
               {running ? "⏸" : "▶"}
             </span>
             <span className="wc-toggle-dot" aria-hidden="true" />
-            <span className="wc-tg-full">자동 경기</span>
-            <span className="wc-tg-short">자동</span>
-          </button>
-        ) : null}
-        {enabled ? (
-          <button
-            type="button"
-            className={`wc-toggle ${tacticsOpen ? "on" : ""}`}
-            onClick={() => {
-              setTacticsOpen((o) => !o);
-              hapticTick();
-            }}
-            aria-pressed={tacticsOpen}
-          >
-            <span className="wc-toggle-ico" aria-hidden="true">
-              ⚙
-            </span>
-            <span className="wc-tg-full">전술</span>
-            <span className="wc-tg-short">전술</span>
+            {isMobile ? "자동" : "자동 경기"}
           </button>
         ) : null}
         {enabled ? (
@@ -1493,16 +1490,14 @@ export function WorldCupBallGoal() {
             <span className="wc-toggle-ico" aria-hidden="true">
               ↻
             </span>
-            <span className="wc-tg-full">새 경기</span>
-            <span className="wc-tg-short">새경기</span>
+            {isMobile ? "새경기" : "새 경기"}
           </button>
         ) : null}
         <button type="button" className="wc-toggle wc-toggle-event" onClick={toggleEnabled}>
           <span className="wc-toggle-ico" aria-hidden="true">
             ⚽
           </span>
-          <span className="wc-tg-full">{enabled ? "미니게임 숨기기" : "미니게임 켜기"}</span>
-          <span className="wc-tg-short">{enabled ? "숨기기" : "켜기"}</span>
+          {enabled ? (isMobile ? "숨기기" : "미니게임 숨기기") : isMobile ? "켜기" : "미니게임 켜기"}
         </button>
         </div>
       </div>
