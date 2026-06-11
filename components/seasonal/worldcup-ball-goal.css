@@ -56,31 +56,36 @@
    transform-origin으로 잡아 안쪽에서 바깥으로 출렁이는 느낌. */
 .wc-goal-left.wc-goal-scored .wc-goal-net {
   transform-origin: right center;
-  animation: wc-net-bulge 0.62s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  animation: wc-net-bulge 0.85s cubic-bezier(0.18, 1.3, 0.34, 1) both;
 }
 .wc-goal-right.wc-goal-scored .wc-goal-net {
   transform-origin: left center;
-  animation: wc-net-bulge 0.62s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  animation: wc-net-bulge 0.85s cubic-bezier(0.18, 1.3, 0.34, 1) both;
 }
+/* 공이 그물에 콱 박혀 출렁이는 느낌 — 크게 부풀었다 여러 번 잦아든다(촤르륵) + 초록빛 번쩍. */
 @keyframes wc-net-bulge {
   0% {
     transform: scaleX(1) scaleY(1);
-    filter: brightness(1);
+    filter: brightness(1) saturate(1);
   }
-  28% {
-    transform: scaleX(1.32) scaleY(1.08);
-    filter: brightness(1.7);
+  22% {
+    transform: scaleX(1.5) scaleY(1.12);
+    filter: brightness(1.9) saturate(1.6);
   }
-  55% {
-    transform: scaleX(0.94) scaleY(0.98);
-    filter: brightness(1.15);
+  44% {
+    transform: scaleX(0.9) scaleY(0.97);
+    filter: brightness(1.2);
   }
-  78% {
-    transform: scaleX(1.06) scaleY(1.01);
+  62% {
+    transform: scaleX(1.16) scaleY(1.04);
+    filter: brightness(1.4);
+  }
+  80% {
+    transform: scaleX(0.97) scaleY(0.99);
   }
   100% {
     transform: scaleX(1) scaleY(1);
-    filter: brightness(1);
+    filter: brightness(1) saturate(1);
   }
 }
 @media (prefers-reduced-motion: reduce) and (max-width: 0px) {

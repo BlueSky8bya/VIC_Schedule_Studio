@@ -127,6 +127,8 @@ export function WorldCupBallGoal() {
   const raf = useRef<number | null>(null);
   const goalAt = useRef(0);
   const saveAt = useRef(0);
+  const saveGrace = useRef(0); // 세이브 직후 잠깐 재세이브 차단 — 공이 키퍼/장갑 근처서 매프레임
+  // 재충돌해 진동·묶이고 손이 따라 떨리던 피드백 루프 차단(공이 깔끔히 튕겨 나간다).
   const foulAt = useRef(0); // 파울 쿨다운(연속 파울 스팸 방지)
   const restartGrace = useRef(0); // 세트피스 킥 직후 유예 — 라인아웃·접촉 무시(즉시 재아웃 루프 차단)
   const kickAt = useRef(0);
@@ -329,8 +331,9 @@ export function WorldCupBallGoal() {
             ? kd * 0.52
             : kd * 0.4;
       reach = Math.max(reach, kd * 0.26); // 손이 중심에 겹쳐 떨리는 것 방지
+      // catching 간격 넓게(0.34) — 좁으면 두 장갑이 겹쳐 낑기고 떨려 보였음.
       const spread =
-        (catching ? 0.16 : shotThreat ? (isLead ? 0.08 : 0.24) : closeDown ? 0.62 : 0.32) * kd;
+        (catching ? 0.34 : shotThreat ? (isLead ? 0.12 : 0.26) : closeDown ? 0.62 : 0.32) * kd;
       const ph = gi * 3.3 + (s === "left" ? 0 : 1.7);
       const bobP =
         threat || closeDown
@@ -373,8 +376,8 @@ export function WorldCupBallGoal() {
         cur = { x: tx, y: ty };
         skPos.current[s] = cur;
       } else {
-        cur.x += (tx - cur.x) * 0.12; // 걷는 속도
-        cur.y += (ty - cur.y) * 0.12;
+        cur.x += (tx - cur.x) * 0.05; // 천천히 걸어서 교체(현장감)
+        cur.y += (ty - cur.y) * 0.05;
       }
       const ucx = s === "left" ? insetX() - kd / 2 : w - insetX() + kd / 2; // 요소 무변환 중심 x
       el.style.transform = `translate3d(${cur.x - ucx}px, ${cur.y - kd / 2}px, 0)`;
@@ -797,19 +800,24 @@ export function WorldCupBallGoal() {
     setScore([scoreRef.current[0], scoreRef.current[1]]);
     logEvent("goal", scorer, pos.current.x, pos.current.y);
     const g = goalRect(side);
+    const r = ballDia() / 2;
     burstConfetti(g.x + g.w / 2, g.y + g.h / 2);
     setGoalFlash(true);
-    window.setTimeout(() => setGoalFlash(false), 900);
-    // 손맛 — 그물 출렁임 + 공이 그물에 푹 박힌다(통과해서 날아가지 않게 감속해 안착).
+    window.setTimeout(() => setGoalFlash(false), 1100);
+    // 손맛 — 공이 골라인을 넘어 그물 '안'으로 쏙 굴러 들어가 박힌다(촤르륵). 세이브(공이 튕겨 나감)와
+    // 확실히 구분되게: 공을 골대 안으로 옮기고 안쪽으로 살짝 굴려 뒤그물에 안착 + 그물 출렁임.
     setNetFlash(side);
-    window.setTimeout(() => setNetFlash((s) => (s === side ? null : s)), 700);
-    vel.current.x *= 0.16;
-    vel.current.y *= 0.16;
+    window.setTimeout(() => setNetFlash((s) => (s === side ? null : s)), 950);
+    const into = side === "left" ? -1 : 1; // 네트는 골라인 바깥쪽 → 그쪽으로 굴러 들어감
+    pos.current.x = clamp(g.x + g.w * 0.5, g.x + r, g.x + g.w - r);
+    pos.current.y = clamp(pos.current.y, g.y + r, g.y + g.h - r);
+    vel.current.x = into * 70; // 그물 안쪽으로 살짝(뒤그물에 걸려 멈춤)
+    vel.current.y *= 0.18;
     ballZ.current = 0;
     ballVZ.current = 0;
     hapticSuccess();
     const concede: 0 | 1 = side === "left" ? 0 : 1;
-    window.setTimeout(() => kickoff(concede), 950);
+    window.setTimeout(() => kickoff(concede), 1100);
   };
 
   // 골키퍼가 공에 닿음 — GK 손 액션. 백패스(아군이 발로 준 공)·박스 밖이면 손 못 쓰고 '발'로 처리.
@@ -866,6 +874,7 @@ export function WorldCupBallGoal() {
         vel.current.x = outward * Math.max(minOut, Math.abs(vel.current.x));
       }
       vel.current.y += rnd(-60, 60); // 쳐낸 방향 살짝 흩뜨림
+      saveGrace.current = now + 320; // 쳐낸 직후 잠깐 재세이브 차단 → 공이 깔끔히 튕겨 나감
     }
     if (now - saveAt.current > SAVE_COOLDOWN_MS) {
       saveAt.current = now;
@@ -1340,13 +1349,16 @@ export function WorldCupBallGoal() {
     setScore([0, 0]);
     scoreRef.current = [0, 0];
     flashPiece("승부차기");
-    // 22명 하프라인 양쪽에 도열(관전). tx/ty=각자 줄 위치(매 프레임 그쪽으로 복귀).
+    // 22명 하프라인(x=w/2)에 '한 줄'로 도열(관전). 골에서 보면 한 진영은 왼쪽(위 y), 다른 진영은
+    // 오른쪽(아래 y)으로 촤르륵. tx/ty=각자 줄 위치(매 프레임 그쪽으로 천천히 복귀).
     players.current.forEach((p, i) => {
-      const col = p.team === 0 ? w * 0.42 : w * 0.58;
-      const k = i % 10;
+      const k = i % 10; // 팀 내 0..9
       p.red = false;
-      p.x = col;
-      p.y = h * 0.5 - h * 0.3 + (k / 9) * h * 0.6;
+      p.x = w * 0.5;
+      p.y =
+        p.team === 0
+          ? h * 0.5 - h * 0.05 - (k / 9) * h * 0.4 // 위 절반(중앙→위)
+          : h * 0.5 + h * 0.05 + (k / 9) * h * 0.4; // 아래 절반(중앙→아래)
       p.tx = p.x;
       p.ty = p.y;
     });
@@ -1373,7 +1385,7 @@ export function WorldCupBallGoal() {
     // 관전자(키커 제외)는 자기 줄로 복귀.
     players.current.forEach((p, i) => {
       if (i === s.kicker) return;
-      const sp = PLAYER_SPEED * 0.45 * dt;
+      const sp = PLAYER_SPEED * 0.22 * dt; // 천천히 복귀(현장감)
       p.x += clamp(p.tx - p.x, -sp, sp);
       p.y += clamp(p.ty - p.y, -sp, sp);
     });
@@ -1385,10 +1397,10 @@ export function WorldCupBallGoal() {
       keeperY.current.right = spotY;
       // 키커 도움닫기 — 미드필드에서 공 뒤로 슬슬 걸어와 선다.
       const k = s.kicker >= 0 ? players.current[s.kicker] : null;
-      // 도움닫기 — lerp라 거리 상관없이 ~0.6s에 공 뒤 도착(웹의 먼 진영도 시간 안에 도착).
+      // 도움닫기 — lerp라 거리 상관없이 일정 시간에 공 뒤 도착(웹의 먼 진영도). 천천히 걸어나옴.
       if (k) {
-        k.x += (spotX - ballGap - k.x) * 0.085;
-        k.y += (spotY - k.y) * 0.085;
+        k.x += (spotX - ballGap - k.x) * 0.055;
+        k.y += (spotY - k.y) * 0.055;
       }
       // '실제로 공 뒤 도착'했을 때만 찬다 — 안 닿고 날아가던 문제 차단(시간 강제 없음, 도착이 조건).
       const kickerAtBall =
@@ -1746,7 +1758,8 @@ export function WorldCupBallGoal() {
     let saved = false;
     if (!frozen) {
       // 떠 있는 공은 키퍼가 못 잡는다(머리 위로 넘어감) → 칩샷/로빙은 골 가능. 득점 판정은 유지.
-      if (!airborne) {
+      // 세이브 직후 유예(saveGrace) 동안은 재세이브 스킵 → 공이 튕겨 나가게(진동·묶임 방지).
+      if (!airborne && now >= saveGrace.current) {
         for (const side of ["left", "right"] as Side[]) {
           const kx = keeperCenterX(side);
           const ky = keeperY.current[side];
