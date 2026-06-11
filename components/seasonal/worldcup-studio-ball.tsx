@@ -9,7 +9,7 @@ import "./worldcup-studio-ball.css";
 // 굴러 멈춘다. 골대·선수·점수 없음. 월드컵 기간에만(부모가 그때만 마운트). 일정 작업 방해 0
 // (레이어 pointer-events:none, 공만 auto). 위치는 transform만(reflow 0), 멈추면 rAF 중단.
 
-const BALL = 82; // 적당히(이전 110의 75% — 너무 크지 않게)
+const BALL = 64; // 시청자 모바일·웹 공용 — 너무 크지 않게(모바일 화면폭의 ~16%)
 const GRAVITY = 1700; // px/s^2
 const REST = 0.66; // 바닥/벽 튕김
 const AIR = 0.999; // 공기저항(아주 약하게)

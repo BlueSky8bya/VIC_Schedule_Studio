@@ -45,6 +45,7 @@ import {
 import dynamic from "next/dynamic";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
 import { WorldCupBallGoal } from "@/components/seasonal/worldcup-ball-goal";
+import { WorldCupStudioBall } from "@/components/seasonal/worldcup-studio-ball";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 // 꾸미기 전용 UI는 decorate일 때만 렌더된다 → 지연 로드로 시청자(공개 /) 번들서 제외(ssr:false:
 // 사용자 동작으로 여는 꾸미기 화면이라 SSR 불필요, 진입 시 잠깐 로드).
@@ -2941,6 +2942,11 @@ export function PublicPoster({
       isWorldCupMonth(view.year, view.month) &&
       !(avatarCapable && avatarOn && !showAgenda) ? (
         <WorldCupBallGoal />
+      ) : null}
+      {/* 편집실 중력 축구공 — 시청자(웹·모바일)도 늘 잡고 놀 수 있게. 레이어 클릭 통과(공만 잡힘),
+          export 밖. 풀 미니게임(위)과 별개의 캐주얼 토이. */}
+      {interactive && isWorldCupMonth(view.year, view.month) && !(avatarCapable && avatarOn) ? (
+        <WorldCupStudioBall />
       ) : null}
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
         {showAgenda ? (
