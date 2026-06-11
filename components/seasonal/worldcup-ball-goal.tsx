@@ -951,12 +951,38 @@ export function WorldCupBallGoal() {
     }
     lastTouch.current = fouled;
     flashPiece(`파울${card}`);
+    logEvent("foul", fouler.team, spotX, spotY, card.trim());
+    const enemy: Side = fouled === 0 ? "right" : "left"; // 반칙당한 팀이 공격하는 골(=반칙한 팀의 박스)
+    const g = goalRect(enemy);
+    const goalLine = enemy === "left" ? insetX() : w - insetX();
+
+    // 박스 안 수비 반칙 = 페널티킥(프리킥 아님). 스폿에 놓고 키커가 강하게 한 방, 키퍼 1대1.
+    const inBox = Math.abs(spotX - goalLine) < w * 0.16 && Math.abs(spotY - h * 0.5) < h * 0.3;
+    if (inBox) {
+      const penX = enemy === "left" ? insetX() + w * 0.105 : w - insetX() - w * 0.105;
+      pos.current.x = penX;
+      pos.current.y = h * 0.5;
+      showCue({ kind: "foul", x: penX, y: h * 0.5, label: `${card.trim()} 페널티킥`.trim() });
+      showBanner("페널티킥", 1600);
+      scheduleRestart(
+        950,
+        () => {
+          const tx = enemy === "left" ? g.x + g.w : g.x; // 골 입구
+          const ty = g.y + g.h * (Math.random() < 0.5 ? 0.22 : 0.78); // 좌우 구석
+          setVelTo(tx, ty, 720);
+          stats.current.shot[fouled] += 1;
+          lastTouch.current = fouled;
+        },
+        () => walkTeammateToBall(fouled),
+        fouled
+      );
+      lastActiveAt.current = performance.now();
+      return;
+    }
+
+    // 프리킥 — 반칙당한 팀이 한 박자 뒤 찬다. 상대 골 가까우면 직접 슛, 아니면 전진 패스.
     // 파울 = 상대 프리킥. 카드 받았으면 카드 + 프리킥 같이 표기(예: "🟨 프리킥").
     showCue({ kind: "foul", x: spotX, y: spotY, label: `${card.trim()} 프리킥`.trim() });
-    logEvent("foul", fouler.team, spotX, spotY, card.trim());
-    // 프리킥 — 반칙당한 팀이 한 박자 뒤 찬다. 상대 골 가까우면 직접 슛, 아니면 전진 패스.
-    const enemy: Side = fouled === 0 ? "right" : "left";
-    const g = goalRect(enemy);
     const distGoal = Math.hypot(g.x + g.w / 2 - spotX, g.y + g.h / 2 - spotY);
     scheduleRestart(
       800,
