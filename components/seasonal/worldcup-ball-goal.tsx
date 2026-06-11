@@ -35,7 +35,7 @@ type Player = PlayerPersona & {
   num: number; // 등번호(표시용).
 };
 
-const FRICTION = 0.992;
+const FRICTION = 0.985; // 잔디 마찰 — 높일수록 공이 빨리 죽어 라인아웃(스로인) 남발 감소
 const WALL_RESTITUTION = 0.8;
 const STOP_SPEED = 6;
 const BALL = 16;
@@ -51,7 +51,7 @@ const GOAL_COOLDOWN_MS = 1400;
 const SAVE_COOLDOWN_MS = 350;
 const PLAYER_R = 9;
 const PLAYER_SPEED = 165;
-const BALL_BOUNCE = 0.82;
+const BALL_BOUNCE = 0.55; // 선수 몸 튕김 — 낮춰서 난반사로 라인 밖 튕겨나가는 빈도↓(스로인 남발 완화)
 const CONTROL_SPEED = 150;
 const KICK_CD = 480;
 const MARGIN_Y_FRAC = 0.07;
