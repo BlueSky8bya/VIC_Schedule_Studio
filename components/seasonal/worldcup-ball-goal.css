@@ -175,21 +175,33 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 66%;
-  height: 40%;
-  /* 갸름한 미트 — 손끝(공 쪽=오른쪽)은 더 둥글고 손목(왼쪽)은 살짝 각진 골키퍼 글러브 실루엣. */
-  border-radius: 42% 60% 60% 42% / 50%;
-  background: linear-gradient(120deg, #d6f56a 0%, #aee04a 60%, #93c83a 100%);
+  width: 62%;
+  height: 54%;
+  /* 통통한 벙어리장갑 — 손끝(공 쪽=오른쪽) 둥글고, 아래 엄지가 달려 정감 있게. */
+  border-radius: 48% 60% 60% 48% / 56% 56% 46% 46%;
+  background: linear-gradient(125deg, #dcf777 0%, #aee04a 62%, #97cc3c 100%);
   box-shadow:
-    inset 0 0 0 0.5px rgb(255 255 255 / 35%),
+    inset 0 0 0 0.5px rgb(255 255 255 / 38%),
     0 1px 2px rgb(40 30 60 / 34%);
   transition:
     background 0.12s ease,
     box-shadow 0.12s ease;
 }
+/* 엄지 — 장갑 아래쪽에 작게 톡 튀어나옴. background:inherit라 잡을 때 색도 함께 바뀐다. */
+.wc-glove::before {
+  content: "";
+  position: absolute;
+  left: 2%;
+  bottom: -22%;
+  width: 42%;
+  height: 50%;
+  border-radius: 50% 46% 52% 50%;
+  background: inherit;
+  box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 28%);
+}
 /* 잡는 중 — 장갑 진하게(쥐는 느낌) + 글로우. */
 .wc-keeper-catch .wc-glove {
-  background: linear-gradient(120deg, #5ff0a0 0%, #22c55e 70%, #15a34a 100%);
+  background: linear-gradient(125deg, #6ff3ab 0%, #22c55e 70%, #15a34a 100%);
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 70%),
     0 0 7px rgb(34 197 94 / 60%);

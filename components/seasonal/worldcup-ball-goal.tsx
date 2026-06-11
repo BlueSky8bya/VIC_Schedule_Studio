@@ -298,7 +298,8 @@ export function WorldCupBallGoal() {
       const bdx = pos.current.x - kX;
       const bdy = pos.current.y - kY;
       const dist = Math.hypot(bdx, bdy) || 1;
-      const dir = Math.atan2(bdy, bdx);
+      // 잡는 중엔 공이 키퍼에 붙어 dir이 불안정(손이 공 비비며 떨림) → 바깥(필드)쪽 고정 컵 포즈.
+      const dir = catching ? (s === "left" ? 0 : Math.PI) : Math.atan2(bdy, bdx);
       const perp = dir + Math.PI / 2;
       const speed = Math.hypot(vel.current.x, vel.current.y);
       const defT: 0 | 1 = s === "left" ? 0 : 1;
@@ -330,14 +331,20 @@ export function WorldCupBallGoal() {
               : kd * 0.4;
         const spread =
           (catching ? 0.12 : shotThreat ? (isLead ? 0.08 : 0.24) : closeDown ? 0.62 : 0.32) * kd;
-        const bob =
+        // idle 미세 흔들 — 손마다 다른 위상·두 주파수 합 → 들숨날숨처럼 규칙적이지 않게(작게).
+        const ph = gi * 3.3 + (s === "left" ? 0 : 1.7);
+        const bobP =
           threat || closeDown
             ? 0
-            : Math.sin(now / 360 + gi * 2.1 + (s === "left" ? 0 : 1)) * kd * 0.06;
-        const tx = Math.cos(dir) * reach + Math.cos(perp) * (spread * sgn + bob);
-        const ty = Math.sin(dir) * reach + Math.sin(perp) * (spread * sgn + bob);
+            : (Math.sin(now / 560 + ph) * 0.6 + Math.sin(now / 247 + ph * 2.3) * 0.4) * kd * 0.04;
+        const bobR =
+          threat || closeDown
+            ? 0
+            : Math.sin(now / 690 + ph * 1.4) * kd * 0.035; // reach도 살짝 따로 흔들(고정 호흡 깨기)
+        const tx = Math.cos(dir) * (reach + bobR) + Math.cos(perp) * (spread * sgn + bobP);
+        const ty = Math.sin(dir) * (reach + bobR) + Math.sin(perp) * (spread * sgn + bobP);
         // 부드럽게 따라감(손이 몸·서로와 별개로 늦게/벌어지며 움직임).
-        const k = threat ? 0.42 : closeDown ? 0.28 : 0.16;
+        const k = catching ? 0.5 : threat ? 0.42 : closeDown ? 0.28 : 0.14;
         cur[gi].x += (tx - cur[gi].x) * k;
         cur[gi].y += (ty - cur[gi].y) * k;
         const deg = (Math.atan2(cur[gi].y, cur[gi].x) * 180) / Math.PI; // 미트는 뻗는 방향을 향함
