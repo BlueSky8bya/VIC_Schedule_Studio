@@ -282,9 +282,10 @@ export function WorldCupBallGoal() {
       const kX = keeperCenterX(s);
       const kY = keeperY.current[s];
       const dir = Math.atan2(pos.current.y - kY, pos.current.x - kX);
-      const reach = kdDia() * (catching ? 0.5 : 0.42);
-      const spread = kdDia() * 0.38;
+      const reach = kdDia() * (catching ? 0.46 : 0.38);
+      const spread = kdDia() * 0.26;
       const perp = dir + Math.PI / 2;
+      const deg = (dir * 180) / Math.PI; // 미트 장축을 공 방향으로 정렬
       const gl = glovesRef.current[s];
       for (let gi = 0; gi < 2; gi++) {
         const g = gl[gi];
@@ -292,7 +293,7 @@ export function WorldCupBallGoal() {
         const sgn = gi === 0 ? 1 : -1;
         const gx = Math.cos(dir) * reach + Math.cos(perp) * spread * sgn;
         const gy = Math.sin(dir) * reach + Math.sin(perp) * spread * sgn;
-        g.style.transform = `translate(calc(-50% + ${gx}px), calc(-50% + ${gy}px))`;
+        g.style.transform = `translate(calc(-50% + ${gx}px), calc(-50% + ${gy}px)) rotate(${deg}deg)`;
       }
     });
   };
