@@ -68,6 +68,13 @@
 .wc-ball:active {
   cursor: grabbing;
 }
+/* 모바일 — 공 작게(물리 ballDia()=26과 시각 일치). 골 넣기 쉽게. margin은 박스 절반(중심 기준). */
+.wc-ball-sm {
+  width: 30px;
+  height: 30px;
+  margin: -15px 0 0 -15px;
+  font-size: 24px;
+}
 
 /* 선수 AI — 작은 원. 위치는 JS가 transform으로. 팀별 색. 시각 전용(클릭 통과). */
 .wc-player {
@@ -266,6 +273,7 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  white-space: nowrap; /* 2행 줄바꿈 금지 — 모바일에선 아래에서 라벨을 짧게 스왑 */
   pointer-events: auto;
   border: 1px solid rgb(120 110 160 / 22%);
   border-radius: 999px;
@@ -442,6 +450,20 @@
   }
 }
 
+/* 토글 라벨 — 데스크탑은 풀텍스트, 모바일은 짧게(1행 유지). 기본은 풀, 모바일 미디어서 스왑. */
+.wc-tg-short {
+  display: none;
+}
+
+/* 게임 ON 동안 뒤 일정 스크롤 잠금 — 모바일 한정(집중 + 손가락 오조작 방지). 끄면 자동 해제. */
+@media (max-width: 640px) {
+  body.wc-game-lock {
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+}
+
 /* 모바일(≤640px) — 세로 화면에 가로 피치를 끼우면 답답하다. stage를 90° 세워서
    화면의 긴 세로축을 피치의 '길이'(골대→골대)로 쓴다. width:100vh/height:100vw로
    landscape 박스를 만들고 회전 → 물리 좌표계는 그대로(좌우 골대), 보이기만 세로.
@@ -455,5 +477,17 @@
     height: 100vw;
     transform: translate(-50%, -50%) rotate(90deg);
     transform-origin: center;
+  }
+  /* 버튼 라벨 짧게 — 1행 유지(자동 경기→자동, 미니게임 숨기기→숨기기). */
+  .wc-tg-full {
+    display: none;
+  }
+  .wc-tg-short {
+    display: inline;
+  }
+  /* 토글 컴팩트 — 좁은 폭에서 두 버튼이 한 줄에. */
+  .wc-toggle {
+    padding: 7px 12px;
+    font-size: 12px;
   }
 }
