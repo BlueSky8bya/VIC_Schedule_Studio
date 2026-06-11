@@ -447,8 +447,10 @@ export function WorldCupBallGoal() {
       {
         const g = goalRect(s);
         const cX = keeperCenterX(s);
-        const line = s === "left" ? g.x + g.w : g.x;
-        const inBox = s === "left" ? cX > line - kdDia() * 0.3 : cX < line + kdDia() * 0.3;
+        const line = s === "left" ? g.x + g.w : g.x; // 골라인(필드 쪽 면)
+        // 박스는 라인 바깥쪽. 좌골 박스는 x<line, 우골 박스는 x>line. 키퍼 중심이 박스 안일 때만 Y clamp
+        // (라인 앞 필드로 나오면 포스트 없으니 자유 — 골킥 키퍼가 공의 Y로 갈 수 있게).
+        const inBox = s === "left" ? cX < line + kdDia() * 0.3 : cX > line - kdDia() * 0.3;
         if (inBox) {
           const m = kdDia() / 2 + 2.5;
           keeperY.current[s] = clamp(keeperY.current[s], g.y + m, g.y + g.h - m);
@@ -674,7 +676,7 @@ export function WorldCupBallGoal() {
     const g = goalRect(side);
     const lineX = side === "left" ? g.x + g.w : g.x;
     const distToBall = Math.abs(pos.current.x - lineX);
-    const wantX = Math.max(0, distToBall - (kdDia() / 2 + ballDia() / 2)); // 공 바로 뒤
+    const wantX = Math.max(0, distToBall - ballDia() / 2); // 키퍼 앞면이 공 바로 뒤에 닿게
     const sp = KEEPER_SPEED / 60; // 골킥 걸어나옴 — 몸은 보통 속도(빠르지 않게)
     keeperX.current[side] += clamp(wantX - keeperX.current[side], -sp, sp);
     keeperY.current[side] += clamp(pos.current.y - keeperY.current[side], -sp, sp);
