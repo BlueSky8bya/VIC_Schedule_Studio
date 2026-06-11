@@ -116,9 +116,17 @@
   backdrop-filter: blur(3.5px) saturate(0.92);
 }
 
+/* 피치 stage — 골대/선수/공/라인이 사는 좌표 공간. JS 물리는 항상 landscape(좌우 골대).
+   데스크탑: 뷰포트를 그대로 채움(가로가 김). 모바일: 아래 미디어쿼리에서 90° 세워 세로 피치로. */
+.wc-stage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 /* 경기장 라인 — 딤 위, 게임 아래. 또렷하게(흰선 + 옅은 그림자로 대비). */
 .wc-pitch {
-  position: fixed;
+  position: absolute;
   inset: 0;
   pointer-events: none;
 }
@@ -431,5 +439,21 @@
   }
   100% {
     opacity: 0;
+  }
+}
+
+/* 모바일(≤640px) — 세로 화면에 가로 피치를 끼우면 답답하다. stage를 90° 세워서
+   화면의 긴 세로축을 피치의 '길이'(골대→골대)로 쓴다. width:100vh/height:100vw로
+   landscape 박스를 만들고 회전 → 물리 좌표계는 그대로(좌우 골대), 보이기만 세로.
+   HUD(스코어/버튼/플래시)는 stage 밖이라 안 돌고 똑바로 유지. 입력은 JS가 역매핑. */
+@media (max-width: 640px) {
+  .wc-stage {
+    inset: auto;
+    left: 50%;
+    top: 50%;
+    width: 100vh;
+    height: 100vw;
+    transform: translate(-50%, -50%) rotate(90deg);
+    transform-origin: center;
   }
 }
