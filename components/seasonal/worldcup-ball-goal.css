@@ -261,6 +261,47 @@
   opacity: 0.7;
 }
 
+/* 경기 시계 — 스코어 바로 아래 작은 칩. 전반/후반 + MM:SS + 추가시간. */
+.wc-clock {
+  position: absolute;
+  left: 50%;
+  top: 50px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: rgb(20 30 24 / 52%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: #eafff2;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 4px 12px -8px rgb(0 0 0 / 45%);
+}
+
+/* 경기 종료 결과 — 화면 가운데 큰 칩(다음 경기 자동 시작 전까지). */
+.wc-result {
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  padding: 14px 28px;
+  border-radius: 18px;
+  background: rgb(20 30 24 / 78%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: #fff;
+  font-size: clamp(22px, 4vw, 40px);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  box-shadow: 0 12px 34px -12px rgb(0 0 0 / 60%);
+  animation: wc-save-pop 0.6s cubic-bezier(0.22, 1.4, 0.4, 1) both;
+}
+
 /* 세트피스 라벨(스로인 등) — 상단 가운데 작은 칩. */
 .wc-setpiece {
   position: absolute;

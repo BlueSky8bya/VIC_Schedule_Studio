@@ -52,6 +52,10 @@ const KICK_CD = 480;
 const MARGIN_Y_FRAC = 0.07;
 const GRAVITY_Z = 1000; // 공 높이용 중력(px/s^2) — 띄운 공이 내려오는 속도
 const AIR_MIN = 7; // 이 높이 위면 '떠 있음'(선수/키퍼 통과 + 흐려짐)
+const PERIOD_END = [45, 90, 105, 120] as const; // 각 피리어드 끝나는 누적 게임분(추가시간 별도)
+const PERIOD_NAME = ["전반", "후반", "연장 전반", "연장 후반"] as const;
+const HALF_BREAK_MS = 2800; // 하프타임/피리어드 사이 휴식(real ms)
+const MATCH_END_RESTART_MS = 6500; // 경기 종료 후 새 경기까지(real ms)
 // 실제 축구처럼 경기장 라인을 화면 끝에서 안쪽에 둔다 → 라인 밖은 '아웃오브플레이' 띠.
 // 골대는 입구(앞면)가 골라인 위에 오고 몸통(그물)은 라인 밖(바깥)으로 돌출한다 → 골라인이
 // 골대 입구에 걸림(뒤통수 아님). 공이 이 라인을 넘으면 스로인/코너/골킥. 고정 px로 JS·CSS 정합.
@@ -74,6 +78,7 @@ export function WorldCupBallGoal() {
   const [saveFlash, setSaveFlash] = useState<Side | null>(null);
   const [setPiece, setSetPiece] = useState<string | null>(null);
   const [score, setScore] = useState<[number, number]>([0, 0]); // [team0, team1]
+  const scoreRef = useRef<[number, number]>([0, 0]); // step 클로저에서 현재 점수 읽기용(연장 판정)
   const [teamNames, setTeamNames] = useState<[string, string]>(["", ""]);
   const [confetti, setConfetti] = useState<
     { id: number; left: number; top: number; dx: number; dy: number; rot: number; color: string }[]
@@ -108,6 +113,13 @@ export function WorldCupBallGoal() {
   const matchSeed = useRef(0); // 이번 경기 시드(리플레이/디버그) — 엔진 생성의 재현 키
   const matchStart = useRef(0); // 경기 시작 시각(이벤트 t 기준)
   const eventLog = useRef(createEventLog()); // 골/세트피스/오프사이드 등 이벤트 기록(Phase 0 토대)
+  // 경기 시계 — 1 real초 = 1 게임분. 전반 0~45, 후반 45~90 + 추가시간(세트피스로 누적). 동점이면
+  // 연장(90~105, 105~120). 종료 시 결과 띄우고 자동 새 경기. breakUntil 동안은 정지(하프타임).
+  const clock = useRef({ t: 0, period: 1, added: 0, ended: false });
+  const clockTick = useRef(0); // 표시 갱신 throttle용 프레임 카운터(매 프레임 setState 방지)
+  const breakUntil = useRef(0); // real ms — 이 시각까지 하프타임/피리어드 사이 휴식(시계·플레이 정지)
+  const [clockText, setClockText] = useState("");
+  const [matchResult, setMatchResult] = useState<string | null>(null);
   // 세트피스(스로인/코너/골킥/킥오프/오프사이드)는 라인에 잠깐 멈췄다 재개 — 딜레이 후 kick 실행.
   const pendingRestart = useRef<{ at: number; kick: () => void; walk?: () => void } | null>(null);
   const possTeam = useRef<0 | 1 | null>(null); // 통제 중인 팀(lastTouch 기반 스무딩) — 압박 방향 판단.
@@ -240,7 +252,12 @@ export function WorldCupBallGoal() {
       p.y = home.y;
     });
     setTeamNames([ta.name, tb.name]);
+    scoreRef.current = [0, 0];
     setScore([0, 0]);
+    clock.current = { t: 0, period: 1, added: 0, ended: false };
+    breakUntil.current = 0;
+    setMatchResult(null);
+    setClockText("전반 00:00");
     setSetPiece(`🔴 ${ta.name}   vs   ${tb.name} 🔵`);
     window.setTimeout(() => setSetPiece((s) => (s && s.includes("vs") ? null : s)), 2600);
   };
@@ -298,6 +315,7 @@ export function WorldCupBallGoal() {
   const scheduleRestart = (delay: number, kick: () => void, walk?: () => void) => {
     vel.current = { x: 0, y: 0 };
     pendingRestart.current = { at: performance.now() + delay, kick, walk };
+    clock.current.added += 0.18; // 세트피스 지체 → 추가시간 누적(게임분)
     place();
   };
 
@@ -475,7 +493,8 @@ export function WorldCupBallGoal() {
     if (now - goalAt.current < GOAL_COOLDOWN_MS) return;
     goalAt.current = now;
     const scorer: 0 | 1 = side === "left" ? 1 : 0; // 그 골에 넣은 = 그 골을 공격한 팀
-    setScore((s) => (scorer === 0 ? [s[0] + 1, s[1]] : [s[0], s[1] + 1]));
+    scoreRef.current = scorer === 0 ? [scoreRef.current[0] + 1, scoreRef.current[1]] : [scoreRef.current[0], scoreRef.current[1] + 1];
+    setScore([scoreRef.current[0], scoreRef.current[1]]);
     logEvent("goal", scorer, pos.current.x, pos.current.y);
     const g = goalRect(side);
     burstConfetti(g.x + g.w / 2, g.y + g.h / 2);
@@ -848,6 +867,74 @@ export function WorldCupBallGoal() {
     }
   };
 
+  // 경기 시계 표시 문자열(피리어드 + MM:SS + 추가시간).
+  const fmtClock = () => {
+    const c = clock.current;
+    const m = Math.floor(c.t);
+    const s = Math.floor((c.t - m) * 60);
+    const base = PERIOD_END[c.period - 1];
+    const over = c.t > base ? ` +${Math.ceil(c.t - base)}'` : "";
+    const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
+    return `${PERIOD_NAME[c.period - 1]} ${pad(m)}:${pad(s)}${over}`;
+  };
+  const startBreak = () => {
+    breakUntil.current = performance.now() + HALF_BREAK_MS;
+  };
+  const endMatch = () => {
+    clock.current.ended = true;
+    const [a, b] = scoreRef.current;
+    const res = a === b ? `무승부  ${a} : ${b}` : a > b ? `🔴 승리  ${a} : ${b}` : `🔵 승리  ${a} : ${b}`;
+    setMatchResult(res);
+    flashPiece("경기 종료");
+    // 결과 보여준 뒤 자동 새 경기.
+    window.setTimeout(() => {
+      buildMatch();
+      centerBall();
+      passToNearestTeammate(Math.random() < 0.5 ? 0 : 1, pos.current.x, pos.current.y, 200);
+      lastActiveAt.current = performance.now();
+    }, MATCH_END_RESTART_MS);
+  };
+  const endPeriod = () => {
+    const c = clock.current;
+    let advanced = false;
+    if (c.period === 1) {
+      c.period = 2;
+      c.t = 45;
+      flashPiece("하프타임");
+      advanced = true;
+    } else if (c.period === 2) {
+      if (scoreRef.current[0] === scoreRef.current[1]) {
+        c.period = 3;
+        c.t = 90;
+        flashPiece("연장 전반");
+        advanced = true;
+      } else {
+        endMatch();
+      }
+    } else if (c.period === 3) {
+      c.period = 4;
+      c.t = 105;
+      flashPiece("연장 후반");
+      advanced = true;
+    } else {
+      endMatch();
+    }
+    if (advanced) {
+      c.added = 0;
+      startBreak();
+      centerBall();
+      window.setTimeout(() => kickoff(Math.random() < 0.5 ? 0 : 1), HALF_BREAK_MS);
+    }
+  };
+  // 매 프레임 호출(플레이 중). 1 real초 = 1 게임분. 휴식 중엔 정지. 표시는 throttle.
+  const tickClock = () => {
+    const c = clock.current;
+    if (c.ended || performance.now() < breakUntil.current) return;
+    c.t += 1 / 60;
+    if (c.t >= PERIOD_END[c.period - 1] + c.added) endPeriod();
+    if (++clockTick.current % 12 === 0) setClockText(fmtClock());
+  };
+
   const step = () => {
     const { w, h } = bounds();
     const dt = 1 / 60;
@@ -855,6 +942,7 @@ export function WorldCupBallGoal() {
     // 동작 줄이기(reduce-motion)여도, 사용자가 자동경기를 '직접' 켜면 돈다(명시적 opt-in).
     // 자동 '시작'만 reduce-motion에서 끈다(아래 마운트). 깜짝 모션 없음 + 켜면 작동.
     const run = runningRef.current;
+    if (run) tickClock(); // 경기 시계(1 real초=1 게임분). 휴식/종료 중엔 내부에서 정지.
 
     // 세트피스 프리즈 — 공은 라인에 멈추고, walk()가 키커(선수/키퍼)를 매 프레임 공으로 데려온다.
     // 예약 시각이 되면 kick 실행(그 키커 위치에서 공이 나가 '누가 차는' 모양).
@@ -867,7 +955,9 @@ export function WorldCupBallGoal() {
         lastActiveAt.current = tNow;
       }
     }
-    const frozen = pendingRestart.current != null;
+    // 프리즈 = 세트피스 대기 OR 하프타임/피리어드 휴식 OR 경기 종료 → 모든 플레이 정지(공·선수·득점).
+    const frozen =
+      pendingRestart.current != null || tNow < breakUntil.current || clock.current.ended;
 
     const near = nearest();
 
@@ -1069,20 +1159,26 @@ export function WorldCupBallGoal() {
 
   useEffect(() => {
     if (!enabled) {
+      // 숨기기 — 루프만 멈춘다. 경기 상태(선수·점수·시계·공)는 ref에 보존되어 다시 켜면 이어진다.
       if (raf.current != null) {
         window.cancelAnimationFrame(raf.current);
         raf.current = null;
       }
       return;
     }
-    const { h } = bounds();
-    keeperY.current.left = h * 0.5;
-    keeperY.current.right = h * 0.5;
-    perceivedY.current.left = h * 0.5;
-    perceivedY.current.right = h * 0.5;
-    buildMatch();
-    centerBall();
-    passToNearestTeammate(Math.random() < 0.5 ? 0 : 1, pos.current.x, pos.current.y, 200);
+    // 진행 중인 경기가 없을 때만(첫 진입) 새 경기. 숨겼다 켜면 기존 경기를 이어서 한다.
+    const fresh = players.current.length === 0;
+    if (fresh) {
+      const { h } = bounds();
+      keeperY.current.left = h * 0.5;
+      keeperY.current.right = h * 0.5;
+      perceivedY.current.left = h * 0.5;
+      perceivedY.current.right = h * 0.5;
+      buildMatch();
+      centerBall();
+      passToNearestTeammate(Math.random() < 0.5 ? 0 : 1, pos.current.x, pos.current.y, 200);
+    }
+    place();
     placeKeepers();
     placePlayers();
     lastActiveAt.current = performance.now();
@@ -1297,9 +1393,11 @@ export function WorldCupBallGoal() {
               </strong>
               <span className="wc-score-team wc-score-b">{teamNames[1] || "BLUE"}</span>
             </div>
+            {clockText ? <div className="wc-clock">{clockText}</div> : null}
             {goalFlash ? <div className="wc-goal-text">GOAL!</div> : null}
             {saveFlash ? <div className={`wc-save-text wc-save-${saveFlash}`}>막았다!</div> : null}
             {setPiece ? <div className="wc-setpiece">{setPiece}</div> : null}
+            {matchResult ? <div className="wc-result">{matchResult}</div> : null}
           </>
         ) : null}
         <div className="wc-controls">
