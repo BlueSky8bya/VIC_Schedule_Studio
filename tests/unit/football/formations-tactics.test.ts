@@ -49,4 +49,15 @@ describe("전술 스타일", () => {
     expect(STYLES.map((s) => s.name)).toContain("포지셔널 플레이");
     expect(STYLES.map((s) => s.name)).toContain("실리 축구");
   });
+  it("ASCII id가 모두 유일(RL task/log 키)", () => {
+    const ids = STYLES.map((s) => s.id);
+    expect(new Set(ids).size).toBe(STYLES.length);
+    ids.forEach((id) => expect(id).toMatch(/^[a-z0-9_]+$/));
+  });
+  it("모든 전술은 reward anchor를 1개 이상 가진다", () => {
+    STYLES.forEach((st) => {
+      expect(st.rewardAnchors.length, st.name).toBeGreaterThan(0);
+      expect(new Set(st.rewardAnchors).size, `${st.name} 중복 anchor`).toBe(st.rewardAnchors.length);
+    });
+  });
 });

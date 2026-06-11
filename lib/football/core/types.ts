@@ -38,6 +38,67 @@ export type FormationId =
   | "4-4-1-1"
   | "4-6-0";
 
+/** 전술 ASCII id — RL task id·reward 조건·로그 키. 한국어 표시명(STYLES.name)과 1:1. */
+export type TacticId =
+  | "tiki_taka"
+  | "possession"
+  | "gegenpressing"
+  | "high_press"
+  | "total_football"
+  | "wing_play"
+  | "mid_block"
+  | "counter_attack"
+  | "long_ball"
+  | "catenaccio"
+  | "park_the_bus"
+  | "balanced"
+  | "positional_play"
+  | "vertical_tiki_taka"
+  | "fluid_counter"
+  | "two_banks"
+  | "route_one"
+  | "asymmetric_isolation"
+  | "false_nine"
+  | "pragmatic";
+
+/** 전술별 reward anchor — "이 전술답게 보이는가"를 채점할 측정 가능 행동(보고서 4.2/5.2.1). */
+export type RewardAnchor =
+  | "short_pass"
+  | "triangle_support"
+  | "third_man"
+  | "regain_5s"
+  | "counterpress_5s"
+  | "possession_retention"
+  | "progressive_pass"
+  | "switch_play"
+  | "ppda_press"
+  | "forced_long_ball"
+  | "press_trap"
+  | "role_rotation"
+  | "lane_occupation"
+  | "wide_overload"
+  | "overlap"
+  | "underlap"
+  | "cutback"
+  | "cross_quality"
+  | "compactness"
+  | "zone14_denial"
+  | "verticality"
+  | "regain_to_shot"
+  | "long_ball_second_ball"
+  | "target_contact"
+  | "box_protection"
+  | "shot_suppression"
+  | "low_block"
+  | "rest_defence"
+  | "half_space_receive"
+  | "overload_to_isolate"
+  | "false_nine_drop"
+  | "runner_behind"
+  | "risk_control"
+  | "set_piece_value"
+  | "balanced_phase_mix";
+
 /** 주발/약발/워크레이트/특수특성 — 이질적(heterogeneous) 에이전트 모델링. */
 export type PreferredFoot = "left" | "right" | "both";
 export type WorkRate = "low" | "medium" | "high";
