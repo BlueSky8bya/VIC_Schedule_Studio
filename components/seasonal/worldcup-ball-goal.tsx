@@ -113,31 +113,115 @@ const FORMATIONS: Record<string, Slot[]> = {
     { bx: 0.58, by: 0.5, role: "MF" },
     { bx: 0.55, by: 0.84, role: "WG" },
     { bx: 0.85, by: 0.5, role: "FW" }
+  ],
+  "4-1-4-1": [
+    { bx: 0.17, by: 0.12, role: "DF" },
+    { bx: 0.1, by: 0.38, role: "DF" },
+    { bx: 0.1, by: 0.62, role: "DF" },
+    { bx: 0.17, by: 0.88, role: "DF" },
+    { bx: 0.32, by: 0.5, role: "DM" },
+    { bx: 0.52, by: 0.14, role: "WG" },
+    { bx: 0.5, by: 0.4, role: "MF" },
+    { bx: 0.5, by: 0.6, role: "MF" },
+    { bx: 0.52, by: 0.86, role: "WG" },
+    { bx: 0.82, by: 0.5, role: "FW" }
+  ],
+  "3-4-3": [
+    { bx: 0.12, by: 0.3, role: "DF" },
+    { bx: 0.1, by: 0.5, role: "DF" },
+    { bx: 0.12, by: 0.7, role: "DF" },
+    { bx: 0.44, by: 0.12, role: "WG" },
+    { bx: 0.42, by: 0.4, role: "MF" },
+    { bx: 0.42, by: 0.6, role: "MF" },
+    { bx: 0.44, by: 0.88, role: "WG" },
+    { bx: 0.78, by: 0.22, role: "WG" },
+    { bx: 0.84, by: 0.5, role: "FW" },
+    { bx: 0.78, by: 0.78, role: "WG" }
+  ],
+  "5-3-2": [
+    { bx: 0.16, by: 0.1, role: "DF" },
+    { bx: 0.1, by: 0.3, role: "DF" },
+    { bx: 0.08, by: 0.5, role: "DF" },
+    { bx: 0.1, by: 0.7, role: "DF" },
+    { bx: 0.16, by: 0.9, role: "DF" },
+    { bx: 0.4, by: 0.3, role: "MF" },
+    { bx: 0.34, by: 0.5, role: "DM" },
+    { bx: 0.4, by: 0.7, role: "MF" },
+    { bx: 0.76, by: 0.4, role: "FW" },
+    { bx: 0.76, by: 0.6, role: "FW" }
+  ],
+  "5-4-1": [
+    { bx: 0.16, by: 0.1, role: "DF" },
+    { bx: 0.1, by: 0.3, role: "DF" },
+    { bx: 0.08, by: 0.5, role: "DF" },
+    { bx: 0.1, by: 0.7, role: "DF" },
+    { bx: 0.16, by: 0.9, role: "DF" },
+    { bx: 0.42, by: 0.14, role: "WG" },
+    { bx: 0.38, by: 0.4, role: "MF" },
+    { bx: 0.38, by: 0.6, role: "MF" },
+    { bx: 0.42, by: 0.86, role: "WG" },
+    { bx: 0.74, by: 0.5, role: "FW" }
+  ],
+  "4-5-1": [
+    { bx: 0.16, by: 0.12, role: "DF" },
+    { bx: 0.1, by: 0.38, role: "DF" },
+    { bx: 0.1, by: 0.62, role: "DF" },
+    { bx: 0.16, by: 0.88, role: "DF" },
+    { bx: 0.44, by: 0.1, role: "WG" },
+    { bx: 0.4, by: 0.32, role: "MF" },
+    { bx: 0.32, by: 0.5, role: "DM" },
+    { bx: 0.4, by: 0.68, role: "MF" },
+    { bx: 0.44, by: 0.9, role: "WG" },
+    { bx: 0.8, by: 0.5, role: "FW" }
   ]
 };
 
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
 const pick = <T,>(arr: T[]) => arr[(Math.random() * arr.length) | 0];
 
-function styleName(t: Omit<Team, "name">): string {
-  if (t.press > 0.78 && t.lineHeight > 0.12) return "하이프레스";
-  if (t.possession > 0.68) return "티키타카";
-  if (t.possession < 0.34) return "롱볼 역습";
-  if (t.press < 0.5 && t.lineHeight < 0.06) return "텐백 수비";
-  return "밸런스";
-}
+// 실제 축구 전술(FM 프리셋·전술 연구 기반). 각 스타일은 압박/점유/템포/라인높이/폭의 '성향'을
+// 갖고, 선호 포메이션이 다르다. genTeam이 약간의 지터를 더해 매 경기 다른 색을 낸다. 압박 인원은
+// press로 갈린다(pressersOf: ≥.82=3, ≥.68=2, 그 외 1) → 스타일별 압박·라인·점유가 확연히 다름.
+type TacticStyle = {
+  name: string;
+  forms: string[];
+  press: number; // 0.4..1
+  possession: number; // 1=짧은 점유 .. 0=직접(롱볼)
+  tempo: number; // 0.9..1.22
+  lineHeight: number; // 0(깊음)..0.22(하이라인)
+  width: number; // 0.85(좁게)..1.15(넓게)
+};
+// prettier-ignore
+const STYLES: TacticStyle[] = [
+  { name: "티키타카",   forms: ["4-3-3", "4-1-4-1"],            press: 0.80, possession: 0.86, tempo: 0.97, lineHeight: 0.16, width: 0.88 },
+  { name: "점유 축구",  forms: ["4-3-3", "4-2-3-1"],            press: 0.62, possession: 0.78, tempo: 1.00, lineHeight: 0.12, width: 1.00 },
+  { name: "게겐프레싱", forms: ["4-3-3", "4-2-3-1", "3-4-3"],   press: 0.96, possession: 0.56, tempo: 1.18, lineHeight: 0.17, width: 1.02 },
+  { name: "하이프레스", forms: ["4-4-2", "4-3-3"],              press: 0.84, possession: 0.54, tempo: 1.10, lineHeight: 0.15, width: 1.00 },
+  { name: "토탈 풋볼",  forms: ["4-3-3", "3-4-3"],              press: 0.80, possession: 0.74, tempo: 1.14, lineHeight: 0.18, width: 1.05 },
+  { name: "윙 플레이",  forms: ["4-4-2", "4-2-3-1", "3-4-3"],   press: 0.60, possession: 0.50, tempo: 1.06, lineHeight: 0.10, width: 1.15 },
+  { name: "미드블록",   forms: ["4-5-1", "4-2-3-1", "4-1-4-1"], press: 0.55, possession: 0.50, tempo: 1.00, lineHeight: 0.07, width: 0.95 },
+  { name: "역습 축구",  forms: ["4-4-2", "4-5-1", "4-2-3-1"],   press: 0.50, possession: 0.34, tempo: 1.16, lineHeight: 0.05, width: 0.96 },
+  { name: "롱볼 직접",  forms: ["4-4-2", "5-4-1"],              press: 0.56, possession: 0.20, tempo: 1.15, lineHeight: 0.08, width: 1.10 },
+  { name: "카테나치오", forms: ["5-3-2", "3-5-2"],              press: 0.44, possession: 0.40, tempo: 0.95, lineHeight: 0.02, width: 0.86 },
+  { name: "텐백 수비",  forms: ["5-4-1", "4-5-1"],              press: 0.43, possession: 0.30, tempo: 0.93, lineHeight: 0.01, width: 0.85 },
+  { name: "밸런스",     forms: ["4-4-2", "4-3-3", "4-2-3-1"],   press: 0.60, possession: 0.55, tempo: 1.00, lineHeight: 0.10, width: 1.00 }
+];
+
+const clampN = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
+
 function genTeam(): Team {
-  const formation = pick(Object.keys(FORMATIONS));
-  const base = {
+  const s = pick(STYLES);
+  const formation = pick(s.forms);
+  return {
     formation,
     slots: FORMATIONS[formation],
-    lineHeight: rnd(0.0, 0.2),
-    press: rnd(0.42, 1.0),
-    tempo: rnd(0.92, 1.2),
-    possession: rnd(0.2, 0.85),
-    width: rnd(0.85, 1.15)
+    lineHeight: clampN(s.lineHeight + rnd(-0.03, 0.03), 0, 0.22),
+    press: clampN(s.press + rnd(-0.06, 0.06), 0.4, 1),
+    tempo: clampN(s.tempo + rnd(-0.05, 0.05), 0.9, 1.22),
+    possession: clampN(s.possession + rnd(-0.06, 0.06), 0.15, 0.9),
+    width: clampN(s.width + rnd(-0.05, 0.05), 0.82, 1.18),
+    name: s.name
   };
-  return { ...base, name: styleName(base) };
 }
 // 역할별 성격 기준치(±지터). pace/press/pass/shoot/discipline 0..1.
 function genPlayer(team: 0 | 1, slot: Slot): Player {
@@ -293,7 +377,8 @@ export function WorldCupBallGoal() {
     const ta = genTeam();
     let tb = genTeam();
     let guard = 0;
-    while (tb.formation === ta.formation && tb.name === ta.name && guard < 6) {
+    // 두 팀은 서로 다른 전술 스타일로(같은 스타일이면 재추첨) — 매 경기 색이 분명히 다르게.
+    while (tb.name === ta.name && guard < 8) {
       tb = genTeam();
       guard += 1;
     }

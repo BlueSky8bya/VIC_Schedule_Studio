@@ -487,6 +487,15 @@
     transform: translate(-50%, -50%) rotate(90deg);
     transform-origin: center;
   }
+  /* 게임 OFF(켜기 버튼만)일 때 — 하단 가운데면 시청자 헤더의 관심/오늘 버튼과 겹친다.
+     좌측 가장자리 세로 가운데로 빼서 안 겹치고 누르기 쉽게. (게임 ON이면 HUD가 회전 배치) */
+  .wc-play:not(.on) .wc-controls {
+    left: 8px;
+    right: auto;
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+  }
   /* 버튼 라벨 짧게 — 1행 유지(자동 경기→자동, 미니게임 숨기기→숨기기). */
   .wc-tg-full {
     display: none;
