@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만
 import type { PlayerPersona, Side, TeamPlan, Vec2 } from "@/lib/football/core/types";
@@ -201,6 +201,17 @@ export function WorldCupBallGoal() {
   const [namesOpen, setNamesOpen] = useState<0 | 1 | null>(null); // 모바일: 탭한 진영 전술명 풀네임(...된 것만)
   const [pickPlayer, setPickPlayer] = useState<number | null>(null); // 호버/탭한 선수(정보 카드)
   const [pickKeeper, setPickKeeper] = useState<Side | null>(null); // 탭/클릭한 골키퍼(정보 카드)
+  // 필드 위치 단서 — 오프사이드(세로 라인+깃발)·파울/카드(호루라기/카드)를 발생 위치에 잠깐 띄움.
+  // 공이 갑자기 순간이동(오프사이드)하거나 파울 위치를 모르던 가시성 문제 해결.
+  const [fieldCue, setFieldCue] = useState<{
+    id: number;
+    kind: "offside" | "foul";
+    x: number;
+    y: number;
+    lineX?: number;
+    label: string;
+  } | null>(null);
+  const cueTimer = useRef<number | null>(null);
   const pinnedPlayer = useRef(false); // 클릭으로 고정됐는가(호버 이탈해도 유지)
   const [styleNames, setStyleNames] = useState<[string, string]>(["", ""]); // 현재 팀별 전술명(칩 강조용)
   // 세트피스(스로인/코너/골킥/킥오프/오프사이드)는 라인에 잠깐 멈췄다 재개 — 딜레이 후 kick 실행.
@@ -834,7 +845,14 @@ export function WorldCupBallGoal() {
     return team === 0 ? Math.max(line, w * 0.5) : Math.min(line, w * 0.5);
   };
 
-  const callOffside = (attacker: 0 | 1, x: number, y: number) => {
+  // 필드 단서 띄우기 — 발생 위치에 라벨(+오프사이드 라인) 잠깐. 1.4초 뒤 자동 제거.
+  const showCue = (cue: Omit<NonNullable<typeof fieldCue>, "id">) => {
+    setFieldCue({ ...cue, id: performance.now() });
+    if (cueTimer.current) window.clearTimeout(cueTimer.current);
+    cueTimer.current = window.setTimeout(() => setFieldCue(null), 1400);
+  };
+
+  const callOffside = (attacker: 0 | 1, x: number, y: number, lineX?: number) => {
     const { h } = bounds();
     const defend: 0 | 1 = attacker === 0 ? 1 : 0;
     const fx = fieldX();
@@ -842,6 +860,7 @@ export function WorldCupBallGoal() {
     pos.current.y = clamp(y, ballDia() / 2, h - ballDia() / 2);
     lastTouch.current = defend;
     flashPiece("오프사이드");
+    showCue({ kind: "offside", x, y, lineX, label: "🚩" });
     logEvent("offside", attacker, x, y);
     // 수비팀 간접 프리킥 — 가까운 수비수가 와서 한 박자 뒤 짧게 재개.
     scheduleRestart(
@@ -889,6 +908,7 @@ export function WorldCupBallGoal() {
     }
     lastTouch.current = fouled;
     flashPiece(`파울${card}`);
+    showCue({ kind: "foul", x: spotX, y: spotY, label: card.trim() || "삑!" });
     logEvent("foul", fouler.team, spotX, spotY, card.trim());
     // 프리킥 — 반칙당한 팀이 한 박자 뒤 찬다. 상대 골 가까우면 직접 슛, 아니면 전진 패스.
     const enemy: Side = fouled === 0 ? "right" : "left";
@@ -1365,7 +1385,7 @@ export function WorldCupBallGoal() {
         // 전진 옵션이 전부 오프사이드뿐. 매번 깃발 들면 남발 → 가끔만(35%) 위험 패스가 걸리고,
         // 보통은 무리한 전진 대신 끌고 가거나(드리블) 기다린다.
         if (Math.random() < 0.35) {
-          callOffside(p.team, m.x, m.y);
+          callOffside(p.team, m.x, m.y, offLine);
           return;
         }
         dribbleCount.current += 1;
@@ -2338,6 +2358,19 @@ export function WorldCupBallGoal() {
                 />
               );
             })}
+            {fieldCue ? (
+              <Fragment key={fieldCue.id}>
+                {fieldCue.lineX != null ? (
+                  <div className="wc-offside-line" style={{ left: `${fieldCue.lineX}px` }} />
+                ) : null}
+                <div
+                  className={`wc-cue wc-cue-${fieldCue.kind}`}
+                  style={{ left: `${fieldCue.x}px`, top: `${fieldCue.y}px` }}
+                >
+                  <span>{fieldCue.label}</span>
+                </div>
+              </Fragment>
+            ) : null}
             <div
               className={`wc-ball ${isMobile ? "wc-ball-sm" : ""}`}
               ref={ballRef}
