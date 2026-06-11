@@ -912,7 +912,8 @@ export function WorldCupBallGoal() {
     }
     lastTouch.current = fouled;
     flashPiece(`파울${card}`);
-    showCue({ kind: "foul", x: spotX, y: spotY, label: card.trim() || "삑!" });
+    // 파울 = 상대 프리킥. 카드 받았으면 카드 + 프리킥 같이 표기(예: "🟨 프리킥").
+    showCue({ kind: "foul", x: spotX, y: spotY, label: `${card.trim()} 프리킥`.trim() });
     logEvent("foul", fouler.team, spotX, spotY, card.trim());
     // 프리킥 — 반칙당한 팀이 한 박자 뒤 찬다. 상대 골 가까우면 직접 슛, 아니면 전진 패스.
     const enemy: Side = fouled === 0 ? "right" : "left";
