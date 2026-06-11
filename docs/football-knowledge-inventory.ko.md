@@ -662,6 +662,67 @@ RL:
 - inverted fullback은 possession 때 중앙 이동.
 - mezzala는 half-space 침투.
 
+### 6.4 포메이션 13종 상세
+
+포메이션은 static 좌표가 아니라 "기본 rest shape + possession shape + defending shape"의 출발점이다. 현재 `FORMATIONS`는 골키퍼 제외 10명 슬롯이고, `bx`는 자기 골 0에서 상대 골 1, `by`는 위 0에서 아래 1이다.
+
+| 포메이션 | 현재 슬롯 성격 | RL에서 배워야 할 핵심 | 전술 적합 |
+| --- | --- | --- | --- |
+| 4-3-3 | 4백, 6번 1명, 8번 2명, 양 윙, 9번 | 5레인 점유, 윙-하프스페이스-풀백 삼각형, 높은 압박 | 티키타카, 점유, 게겐, 포지셔널 |
+| 4-4-2 | 4백, 좌우 미드, 중앙 2명, 투톱 | 두 줄 수비, 투톱 압박, 빠른 측면 전개 | 하이프레스, 롱볼, 루트 원, 두 줄 수비 |
+| 3-5-2 | 3백, 윙백 2명, 중앙 3명, 투톱 | 윙백 왕복, 중앙 수적 우위, 투톱 전환 | 빗장 수비, 루트 원, 플루이드 역습 |
+| 4-2-3-1 | 4백, 더블 피벗, 2선 3명, 원톱 | 안정적 빌드업, 10번 연결, 측면/중앙 선택 | 점유, 역습, 실리 축구, 아이솔레이션 |
+| 4-1-4-1 | 4백, 단일 6번, 4명 미드 라인, 원톱 | 미드블록, 중앙 차단, 전환 시 양쪽 8번 침투 | 미드블록, 티키타카, 실리 축구 |
+| 3-4-3 | 3백, 미드 4명, 전방 3명 | 전방 압박, 윙백/윙어 폭, 후방 3+2 rest defence | 게겐, 토탈 풋볼, 윙 플레이 |
+| 5-3-2 | 5백, 중앙 3명, 투톱 | 박스 보호, 깊은 수비, 투톱 역습 | 빗장 수비, 루트 원, 실리 축구 |
+| 5-4-1 | 5백, 미드 4명, 원톱 | 텐백, 낮은 라인, 측면 유도, 클리어 후 세컨드볼 | 텐백, 롱볼 직접 |
+| 4-5-1 | 4백, 미드 5명, 원톱 | 중원 밀도, 미드블록, 원톱 hold-up | 미드블록, 역습, 텐백 |
+| 3-2-4-1 | 3백, 더블 피벗, 전방 4명, 9번 | 포지셔널 플레이, 5레인 점유, 압박 유인 후 전진 | 포지셔널 플레이 |
+| 4-3-1-2 | 4백, 다이아몬드, 10번, 투톱 | 좁은 중앙 조합, vertical tiki-taka, 풀백 폭 제공 | 수직적 티키타카 |
+| 4-4-1-1 | 4백, 4미드, 처진 공격수, 9번 | 2줄 compact block, 처진 공격수 연결, counter lane | 두 줄 수비 |
+| 4-6-0 | 4백, 정통 9번 없음, 미드/윙 6명 | false nine, centre-back 유인, 2선 침투 | 가짜 9번 시스템 |
+
+포메이션별 테스트:
+
+- 4-3-3/3-2-4-1은 possession 때 5 vertical lanes 중 최소 4개 이상 점유.
+- 4-4-2/4-4-1-1은 out-of-possession 때 수평 compactness 유지.
+- 5-4-1/5-3-2는 low block 때 box occupation과 central denial이 높음.
+- 4-6-0은 최전방 선수가 자주 내려오고, 빈 뒷공간으로 2선이 침투.
+
+### 6.5 전술 스타일 20종 상세
+
+현재 `STYLES`는 `name`, `forms`, `press`, `possession`, `tempo`, `lineHeight`, `width`를 가진다. 이 값은 RL에서 단순 장식이 아니라 `tacticFidelity`의 조건이다.
+
+| 전술 | 값 요약 | 경기에서 보여야 할 행동 | tacticFidelity 핵심 지표 |
+| --- | --- | --- | --- |
+| 티키타카 | press .80, possession .86, tempo .97, line .16, width .88 | 짧은 패스, 삼각형, 중앙 밀도, 잃자마자 압박 | short pass ratio, third-man pass, 5s regain |
+| 점유 축구 | .62, .78, 1.00, .12, 1.00 | 후방 순환, 안정적 전진, 무리한 전환 적음 | possession chain length, safe progression, turnover risk 낮음 |
+| 게겐프레싱 | .96, .56, 1.18, .17, 1.02 | 상실 직후 3~4명 압박, 높은 탈취, 빠른 슛 | counterpress regain, high turnover, bypass penalty |
+| 하이프레스 | .84, .54, 1.10, .15, 1.00 | 상대 골킥/CB 빌드업 압박, 뒤로 몰기 | PPDA 낮음, forced long ball, press trap |
+| 토탈 풋볼 | .80, .74, 1.14, .18, 1.05 | 포지션 교환, 높은 라인, 넓은 전개 | role rotation, lane occupation, rest defence |
+| 윙 플레이 | .60, .50, 1.06, .10, 1.15 | 측면 폭, 오버랩/언더랩, 크로스/컷백 | wide overload, cross/cutback quality, far-post run |
+| 미드블록 | .55, .50, 1.00, .07, .95 | 중간 라인, 중앙 닫고 측면 유도 | compactness, zone14 denial, forced wide |
+| 역습 축구 | .50, .34, 1.16, .05, .96 | 낮게 있다가 탈취 후 빠른 전진 | regain-to-shot time, vertical pass, transition xG |
+| 롱볼 직접 | .56, .20, 1.15, .08, 1.10 | 타깃맨, 공중볼, 세컨드볼 | long-ball rate, aerial contest, second-ball win |
+| 빗장 수비 | .44, .40, .95, .02, .86 | 아주 낮은 라인, 박스 보호, 중앙 봉쇄 | low block depth, box protection, xG conceded 낮음 |
+| 텐백 수비 | .43, .30, .93, .01, .85 | 5-4-1/4-5-1 깊은 수비, 클리어 우선 | block density, clearance quality, shot suppression |
+| 밸런스 | .60, .55, 1.00, .10, 1.00 | 상대/상황에 맞춘 평균적 선택 | no extreme drift, balanced xT for/against |
+| 포지셔널 플레이 | .90, .88, 1.05, .18, 1.10 | 3-2 rest shape, 5레인, 압박 유인 후 전진 | lane occupation, overload-to-isolate, rest defence |
+| 수직적 티키타카 | .85, .82, 1.12, .15, .90 | 짧지만 빠른 중앙 전진, 다이아몬드 조합 | vertical short pass, line-breaking, third-man |
+| 플루이드 역습 | .65, .45, 1.20, .08, 1.05 | 레알식 유동 전환, 빠른 측면/중앙 선택 | transition speed, runner variety, shot within window |
+| 두 줄 수비 | .68, .35, 1.05, .06, .82 | 4-4-2/4-4-1-1 두 줄, 간격 짧게 | horizontal/vertical compactness, central denial |
+| 루트 원 | .50, .20, 1.25, .05, .90 | 극단 직접, 타깃맨/세컨드볼/박스 근처 | first/second contact, territory gain, direct xG |
+| 비대칭 아이솔레이션 | .70, .60, 1.08, .12, 1.20 | 한쪽 과부하 후 반대 1v1 | overload pull, switch speed, isolation success |
+| 가짜 9번 시스템 | .82, .75, 1.05, .14, .95 | 9번 하강, CB 유인, 2선 침투 | false-nine drop, runner behind, central overload |
+| 실리 축구 | .75, .25, .90, .03, .80 | 위험 회피, 낮은 라인, 효율적 역습 | risk control, low xG conceded, set-piece/transition value |
+
+전술 학습 원칙:
+
+- 같은 전술은 seed가 달라도 지표 분포가 비슷해야 한다.
+- 다른 전술은 30~60초 관전 로그만 봐도 pass map, line height, width, press intensity가 구분되어야 한다.
+- 승리했어도 전술 정체성이 무너지면 낮은 총점. 예: 티키타카가 무지성 롱볼로 이기면 `score`는 얻지만 `tacticFidelity` 손실.
+- 전술은 고정 script가 아니라 policy condition이다. observation에 tactic embedding을 넣고, reward가 그 전술의 행동 분포를 유지시킨다.
+
 ## 7. 데이터·이벤트 스키마
 
 이벤트 로그는 RL reward와 분석 모두의 원천.

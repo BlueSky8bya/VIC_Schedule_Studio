@@ -1994,6 +1994,11 @@ export function WorldCupBallGoal() {
     return () => document.body.classList.remove("wc-game-lock");
   }, [enabled]);
 
+  // 미니게임 on/off를 알린다 → 시청자 중력 축구공(WorldCupStudioBall)이 미니게임 켜지면 숨는다.
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent("wc-minigame-enabled", { detail: { enabled } }));
+  }, [enabled]);
+
   const toggleEnabled = () => {
     const next = !enabledRef.current;
     enabledRef.current = next;

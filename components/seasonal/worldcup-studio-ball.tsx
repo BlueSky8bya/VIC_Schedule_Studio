@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { hapticTick } from "@/lib/ui/haptics";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만
 import "./worldcup-studio-ball.css";
@@ -16,7 +16,9 @@ const AIR = 0.999; // 공기저항(아주 약하게)
 const ROLL_FRICTION = 0.985; // 바닥에서 구를 때 수평 감속
 const STOP = 10;
 
-export function WorldCupStudioBall() {
+// pauseWhenMinigameOn: 시청자 화면에선 미니게임이 켜지면 중력공을 숨긴다(둘 다 뜨면 어수선).
+// 편집실(미니게임 없음)에선 false로 줘 항상 보이게.
+export function WorldCupStudioBall({ pauseWhenMinigameOn = true }: { pauseWhenMinigameOn?: boolean }) {
   const layerRef = useRef<HTMLDivElement | null>(null);
   const ballRef = useRef<HTMLDivElement | null>(null);
   const pos = useRef({ x: 0, y: 0 });
@@ -29,6 +31,29 @@ export function WorldCupStudioBall() {
   const raf = useRef<number | null>(null);
   const reduced = useRef(false);
   const ghostPrev = useRef({ x: 0, y: 0, t: 0 }); // 드래그한 일정 카드의 직전 중심(속도 추정)
+  // 미니게임이 켜져 있으면 중력공은 숨긴다(둘 다 뜨면 어수선). 초기값=미니게임 enabled(localStorage
+  // "off"가 아니면 켜짐). WorldCupBallGoal이 토글마다 'wc-minigame-enabled' 이벤트로 알린다.
+  const [hidden, setHidden] = useState<boolean>(() => {
+    if (!pauseWhenMinigameOn || typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("vic.worldcupGame") !== "off";
+    } catch {
+      return true;
+    }
+  });
+  useEffect(() => {
+    if (!pauseWhenMinigameOn) return;
+    const onMini = (e: Event) => setHidden(!!(e as CustomEvent).detail?.enabled);
+    window.addEventListener("wc-minigame-enabled", onMini);
+    return () => window.removeEventListener("wc-minigame-enabled", onMini);
+  }, [pauseWhenMinigameOn]);
+  // 숨길 땐 물리 루프 중단(보이지도 않는데 돌 필요 없음).
+  useEffect(() => {
+    if (hidden && raf.current != null) {
+      cancelAnimationFrame(raf.current);
+      raf.current = null;
+    }
+  }, [hidden]);
 
   const bounds = () => {
     const el = layerRef.current;
@@ -242,7 +267,12 @@ export function WorldCupStudioBall() {
   };
 
   return (
-    <div className="wcsb-layer" ref={layerRef} aria-hidden="true">
+    <div
+      className="wcsb-layer"
+      ref={layerRef}
+      aria-hidden="true"
+      style={hidden ? { display: "none" } : undefined}
+    >
       <div
         className="wcsb-ball"
         ref={ballRef}
