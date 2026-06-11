@@ -399,30 +399,27 @@
   white-space: nowrap;
   max-width: 110px;
 }
-/* 모바일 — 스코어 배지는 너비가 부족해 전술명이 ...로 잘린다. 탭하면 아래 풀네임 팝오버. */
-.wc-score-tap {
+/* 모바일 — 스코어 배지는 너비가 부족해 전술명이 ...로 잘린다. 잘린 그 이름만 탭하면 풀네임 팝오버.
+   (스코어 박스 자체엔 transform centering이 걸려 있어 박스에 :active scale을 주면 안 됨 → 이름에만.) */
+.wc-score-name-tap {
   pointer-events: auto;
   cursor: pointer;
 }
-.wc-score-tap:active {
-  transform: scale(0.97);
+.wc-score-name-tap:active {
+  opacity: 0.7;
 }
 .wc-names-pop {
   position: absolute;
   left: 50%;
   top: 46px;
   transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   max-width: 92vw;
   padding: 6px 13px;
   border-radius: 999px;
-  background: rgb(20 30 24 / 90%);
+  background: rgb(20 30 24 / 92%);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  color: #eafff2;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
   white-space: nowrap;
   box-shadow: 0 12px 28px -12px rgb(0 0 0 / 58%);
@@ -430,15 +427,11 @@
   z-index: 8;
   animation: wc-drop-in 0.16s ease both;
 }
-.wc-names-pop .wc-names-a {
+.wc-names-pop-0 {
   color: #ff9a9a;
 }
-.wc-names-pop .wc-names-b {
+.wc-names-pop-1 {
   color: #9ab8ff;
-}
-.wc-names-pop .wc-names-vs {
-  opacity: 0.6;
-  font-weight: 700;
 }
 .wc-score-a {
   color: #ff9a9a;
