@@ -1478,10 +1478,10 @@ export function WorldCupBallGoal() {
     const canDribble = dribbleCount.current < 3; // 연속 드리블 cap(7→3) — 끌기만 반복 방지
     // 끌기는 '앞 공간 + 개인 성향' 기준으로 가끔만. 점유 전술일수록 패스 선호(드리블↓ — 예전엔 거꾸로
     // 점유↑일수록 끌어서 모든 전술이 드리블 과다였음). 기본 확률도 낮춤(패스가 우선되게).
-    // 드리블은 '드물게' — 패스가 기본. 앞에 공간 크고 개인기 성향 높을 때만 가끔.
-    const carryProb = clamp(0.06 + adventurous * 0.16 - (possession - 0.5) * 0.3, 0.02, 0.32);
-    const wantCarry = canDribble && !pressed && spaceAhead > w * 0.16 && Math.random() < carryProb;
-    const wantBeatMan = canDribble && pressed && Math.random() < adventurous * 0.14;
+    // 드리블은 '아주 드물게' — 패스가 기본. 앞에 공간이 아주 크고(빈 공간) 개인기 성향 높을 때만 가끔.
+    const carryProb = clamp(0.02 + adventurous * 0.07 - (possession - 0.5) * 0.15, 0.01, 0.1);
+    const wantCarry = canDribble && !pressed && spaceAhead > w * 0.22 && Math.random() < carryProb;
+    const wantBeatMan = canDribble && pressed && Math.random() < adventurous * 0.05;
     if (wantCarry || wantBeatMan) {
       dribbleCount.current += 1;
       let ang = Math.atan2(goalCy - p.y, goalCx - p.x); // 기본 골 방향
@@ -2203,7 +2203,10 @@ export function WorldCupBallGoal() {
     if (run && !dragging.current && !frozen) {
       const fx = fieldX();
       const reachable = pos.current.x > fx.min - 24 && pos.current.x < fx.max + 24;
-      if (speed > 40 && reachable) lastActiveAt.current = now;
+      // 활성 판정 — 공이 빠르거나(speed>40), '최근에 선수가 터치(드리블/패스/트래핑)'했으면 활성으로 본다.
+      // 드리블 중엔 공이 느리게 굴러 speed<40이라 예전엔 스톨로 오판해 볼드롭이 떴음 → kickAt도 본다.
+      const recentlyTouched = now - kickAt.current < 2000;
+      if ((speed > 40 || recentlyTouched) && reachable) lastActiveAt.current = now;
       if (now - lastActiveAt.current > 3200) {
         // 닿을 수 있는 곳이면 '그 자리'에 드롭(순간이동 X) — 공이 멀리 중앙으로 갑툭하던 것 방지.
         // 진짜 닿을 수 없는 곳(필드 밖 구석 등)에 갇혔을 때만 중앙으로 옮긴다.
