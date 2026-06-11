@@ -1257,11 +1257,14 @@
     width: 100%;
     text-align: center;
   }
-  /* 설명 박스 — 모바일 칼럼은 92px라 양옆 메뉴(92+8씩) 사이 빈 공간에 딱 들어가게 폭 계산.
-     gap = 100%(=.wc-tactics 콘텐츠폭) - 칼럼 2×92 - 좌우 여유. 가로 중앙. */
+  /* 설명 박스 — 폭 추측 말고 left/right로 못박는다: 빨강 칼럼(왼쪽, 92px+8padding) 오른쪽 ~ 파랑
+     칼럼(오른쪽) 왼쪽 사이에 고정. 어느 기기든 양 메뉴와 절대 안 겹친다. 세로만 중앙. */
   .wc-tac-desc {
-    width: calc(100% - 200px);
+    left: 104px;
+    right: 104px;
+    width: auto;
     max-width: none;
+    transform: translateY(-50%);
     padding: 9px 11px;
   }
   .wc-tac-desc-name {
