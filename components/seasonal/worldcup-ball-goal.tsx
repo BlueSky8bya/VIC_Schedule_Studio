@@ -8,6 +8,8 @@ import { makeRng, randomSeed } from "@/lib/football/core/rng";
 import { makeMatchup, STYLES, type TacticStyle } from "@/lib/football/tactics/profiles";
 import { createEventLog, type MatchEventKind } from "@/lib/football/core/event-log";
 import { xgFromShot } from "@/lib/football/analytics/xg-lite";
+import { xtValue } from "@/lib/football/analytics/xt-grid";
+import { passProbability } from "@/lib/football/analytics/pitch-control-lite";
 import "./worldcup-ball-goal.css";
 
 // 월드컵 시즌 미니게임 — 좌/우 골대, 공 1개, 양 팀 11명(필드 10 + 골키퍼)이 자동 경기.
@@ -1462,6 +1464,9 @@ export function WorldCupBallGoal() {
     };
     // 패스: 전진+열린 동료. 온사이드를 강하게 우선(오프사이드 후보엔 큰 페널티) → 실제 선수처럼
     // 보통은 온사이드로 연결하고, 전진 옵션이 전부 오프사이드일 때만 위험한 패스가 걸린다(드묾).
+    // lib analytics(헤드리스 RL과 같은 출처)로 패스 후보 평가에 패스 성공률·전진위협을 섞는다.
+    const fromM = pitchMeters(p.x, p.y);
+    const oppM = players.current.filter((e) => e.team !== p.team && !e.red).map((e) => pitchMeters(e.x, e.y));
     let best = -1;
     let bestScore = -Infinity;
     players.current.forEach((m, j) => {
@@ -1475,10 +1480,15 @@ export function WorldCupBallGoal() {
         if (e.team === p.team) return;
         nd = Math.min(nd, Math.hypot(e.x - m.x, e.y - m.y));
       });
+      const toM = pitchMeters(m.x, m.y);
+      const prob = passProbability(fromM, toM, oppM); // 0..1 패스길 안 막힘
+      const threat = xtValue(toM, p.team); // 0..1 받는 위치 위협
       let score =
         adv * (0.4 + (1 - possession) * 0.8) +
         nd * (0.3 + possession * 0.7) -
-        dpass * (possession * 0.4 + 0.05);
+        dpass * (possession * 0.4 + 0.05) +
+        prob * 180 + // 성공 가능성 높은 레인 선호
+        threat * 140; // 전진 위협 큰 곳 선호
       if (isOffside(m)) score -= 100000; // 온사이드 옵션이 있으면 그쪽을 무조건 먼저
       if (score > bestScore) {
         bestScore = score;
