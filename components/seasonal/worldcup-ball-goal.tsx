@@ -332,6 +332,7 @@ export function WorldCupBallGoal() {
     possTeam.current = null;
     counterPress.current = null;
     pendingRestart.current = null;
+    keeperHold.current = { side: null, until: 0 };
     // 엔진 성향(persona)에 런타임 상태를 입혀 화면용 Player로. stamina/wob도 같은 rng라 결정적.
     players.current = personas.map((pp, i) => ({
       ...pp,
@@ -689,8 +690,12 @@ export function WorldCupBallGoal() {
     window.setTimeout(() => kickoff(concede), 950);
   };
 
+  // 골키퍼가 공에 닿음 — GK 손 액션. 백패스(아군이 발로 준 공)·박스 밖이면 손 못 쓰고 '발'로 처리.
+  // 그 외(상대 슛)는 속도에 따라 catch(잡고 보유→배급) / parry(쳐냄) / punch(강하게 멀리).
   const doSave = (side: Side) => {
-    lastTouch.current = side === "left" ? 0 : 1;
+    const { w } = bounds();
+    const defT: 0 | 1 = side === "left" ? 0 : 1;
+    const incoming = lastTouch.current; // 손/발 판정 전에 '마지막 터치' 기록(백패스 판정)
     const kx = keeperCenterX(side);
     const ky = keeperY.current[side];
     const minD = ballDia() / 2 + kdDia() / 2;
@@ -701,20 +706,49 @@ export function WorldCupBallGoal() {
     const uy = dy / d;
     pos.current.x = kx + ux * minD;
     pos.current.y = ky + uy * minD;
-    const vn = vel.current.x * ux + vel.current.y * uy;
-    if (vn < 0) {
-      vel.current.x -= (1 + BALL_BOUNCE) * vn * ux;
-      vel.current.y -= (1 + BALL_BOUNCE) * vn * uy;
-    }
+    const speed = Math.hypot(vel.current.x, vel.current.y);
     const outward = side === "left" ? 1 : -1;
-    if (Math.sign(vel.current.x) !== outward || Math.abs(vel.current.x) < 140) {
-      vel.current.x = outward * Math.max(220, Math.abs(vel.current.x));
-    }
     const now = performance.now();
+    const backPass = incoming === defT; // 아군이 준 공 → 손으로 못 잡음(규정)
+    const inBox = keeperX.current[side] < w * 0.15; // 박스 밖으로 스위핑 나가면 손 금지
+
+    if (backPass || !inBox) {
+      // 발 처리 — 멀리 걷어낸다(클리어). 백패스를 손으로 잡으면 간접FK라 발로만.
+      lastTouch.current = defT;
+      vel.current.x = outward * (300 + Math.random() * 140);
+      vel.current.y = rnd(-140, 140);
+      if (now - saveAt.current > SAVE_COOLDOWN_MS) {
+        saveAt.current = now;
+        logEvent("save", defT, pos.current.x, pos.current.y, "clear");
+      }
+      return;
+    }
+
+    lastTouch.current = defT;
+    if (speed < 360 && Math.abs(uy) < 0.7) {
+      // CATCH — 정면·약한 공은 잡아서 보유(아래 keeperHold가 잠깐 들고 있다가 배급).
+      keeperHold.current = { side, until: now + 820 };
+      vel.current.x = 0;
+      vel.current.y = 0;
+      pos.current.x = kx + ux * minD * 0.6;
+    } else {
+      // PARRY/PUNCH — 빠를수록 강하게, 바깥으로 쳐낸다.
+      const vn = vel.current.x * ux + vel.current.y * uy;
+      if (vn < 0) {
+        vel.current.x -= (1 + BALL_BOUNCE) * vn * ux;
+        vel.current.y -= (1 + BALL_BOUNCE) * vn * uy;
+      }
+      const punch = speed >= 620;
+      const minOut = punch ? 360 : 220;
+      if (Math.sign(vel.current.x) !== outward || Math.abs(vel.current.x) < minOut * 0.6) {
+        vel.current.x = outward * Math.max(minOut, Math.abs(vel.current.x));
+      }
+      vel.current.y += rnd(-60, 60); // 쳐낸 방향 살짝 흩뜨림
+    }
     if (now - saveAt.current > SAVE_COOLDOWN_MS) {
       saveAt.current = now;
       setSaveFlash(side);
-      logEvent("save", side === "left" ? 0 : 1, pos.current.x, pos.current.y);
+      logEvent("save", defT, pos.current.x, pos.current.y, speed < 360 ? "catch" : "parry");
       window.setTimeout(() => setSaveFlash((s) => (s === side ? null : s)), 700);
       hapticTick();
     }
@@ -1403,6 +1437,31 @@ export function WorldCupBallGoal() {
         lastActiveAt.current = tNow;
       }
     }
+    // GK 잡기 보유 — 키퍼가 공을 손에 들고 있는 동안 공을 키퍼에 고정, 시간 되면 배급(스로/펀트).
+    if (keeperHold.current.side) {
+      const hside = keeperHold.current.side;
+      const hT: 0 | 1 = hside === "left" ? 0 : 1;
+      pos.current.x = keeperCenterX(hside);
+      pos.current.y = keeperY.current[hside];
+      vel.current = { x: 0, y: 0 };
+      ballZ.current = 0;
+      if (tNow >= keeperHold.current.until) {
+        keeperHold.current = { side: null, until: 0 };
+        const upX = hside === "left" ? 1 : -1;
+        if (Math.random() < 0.55) {
+          // 스로(가까운 동료에게 짧고 정확히).
+          passToNearestTeammate(hT, pos.current.x, pos.current.y, 300);
+        } else {
+          // 펀트(업필드 롱·띄움).
+          const { w: bw, h: bh } = bounds();
+          const tx = pos.current.x + upX * bw * 0.5;
+          setVelTo(tx, bh * 0.5 + rnd(-bh * 0.22, bh * 0.22), 540);
+          loftBall(bw * 0.5, 540);
+          lastTouch.current = hT;
+        }
+        restartGrace.current = tNow + 280;
+      }
+    }
     // 승부차기 — 정규 22인 시뮬을 멈추고 스크립트 시퀀스(키커·키퍼·공)만 돌린다.
     if (shootout.current.active) {
       runShootout(tNow, dt);
@@ -1416,7 +1475,10 @@ export function WorldCupBallGoal() {
 
     // 프리즈 = 세트피스 대기 OR 하프타임/피리어드 휴식 OR 경기 종료 → 모든 플레이 정지(공·선수·득점).
     const frozen =
-      pendingRestart.current != null || tNow < breakUntil.current || clock.current.ended;
+      pendingRestart.current != null ||
+      keeperHold.current.side != null ||
+      tNow < breakUntil.current ||
+      clock.current.ended;
 
     const near = nearest();
 
