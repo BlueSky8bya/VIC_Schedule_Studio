@@ -1478,9 +1478,10 @@ export function WorldCupBallGoal() {
     const canDribble = dribbleCount.current < 3; // 연속 드리블 cap(7→3) — 끌기만 반복 방지
     // 끌기는 '앞 공간 + 개인 성향' 기준으로 가끔만. 점유 전술일수록 패스 선호(드리블↓ — 예전엔 거꾸로
     // 점유↑일수록 끌어서 모든 전술이 드리블 과다였음). 기본 확률도 낮춤(패스가 우선되게).
-    const carryProb = clamp(0.2 + adventurous * 0.28 - (possession - 0.5) * 0.4, 0.05, 0.6);
-    const wantCarry = canDribble && !pressed && spaceAhead > w * 0.12 && Math.random() < carryProb;
-    const wantBeatMan = canDribble && pressed && Math.random() < adventurous * 0.24;
+    // 드리블은 '드물게' — 패스가 기본. 앞에 공간 크고 개인기 성향 높을 때만 가끔.
+    const carryProb = clamp(0.06 + adventurous * 0.16 - (possession - 0.5) * 0.3, 0.02, 0.32);
+    const wantCarry = canDribble && !pressed && spaceAhead > w * 0.16 && Math.random() < carryProb;
+    const wantBeatMan = canDribble && pressed && Math.random() < adventurous * 0.14;
     if (wantCarry || wantBeatMan) {
       dribbleCount.current += 1;
       let ang = Math.atan2(goalCy - p.y, goalCx - p.x); // 기본 골 방향
@@ -1524,7 +1525,9 @@ export function WorldCupBallGoal() {
     players.current.forEach((m, j) => {
       if (m.team !== p.team || m === p) return;
       const adv = p.team === 0 ? m.x - p.x : p.x - m.x;
-      if (adv < 15) return;
+      // 횡/약간 뒤 패스도 후보에 포함(전진만 고집 X) → 거의 항상 패스 옵션이 있어 드리블 fallback을 안 탄다.
+      // 점수에서 전진(adv)에 가중치를 주므로 좋은 전진 패스가 있으면 그쪽이 우선된다.
+      if (adv < -w * 0.22) return;
       const dpass = Math.hypot(m.x - p.x, m.y - p.y);
       if (dpass > w * 0.55) return;
       let nd = Infinity;
@@ -1567,7 +1570,26 @@ export function WorldCupBallGoal() {
       if (dpass > w * (0.2 + possession * 0.22)) loftBall(dpass, power);
       return;
     }
-    setVelTo(goalCx, goalCy, 300); // 드리블
+    // 마땅한 전진 패스가 없을 때 — 예전엔 골 쪽으로 드리블(드리블 과다 주범). 이제 가까운 '다른' 동료
+    // 에게 안전 연결(패스 위주). 정말 아무도 없을 때만 살짝 끈다.
+    let ti = -1;
+    let td = Infinity;
+    players.current.forEach((m, j) => {
+      if (m.team !== p.team || m === p || m.red) return;
+      const dd = Math.hypot(m.x - p.x, m.y - p.y);
+      if (dd < td) {
+        td = dd;
+        ti = j;
+      }
+    });
+    if (ti >= 0) {
+      const m = players.current[ti];
+      setVelTo(m.x + rnd(-err, err), m.y + rnd(-err, err), clamp(td * 3, 300, 600));
+      lastTouch.current = p.team;
+    } else {
+      dribbleCount.current += 1;
+      setVelTo(goalCx, goalCy, 240);
+    }
   };
 
   const resolveCircleAABB = (rect: { x0: number; y0: number; x1: number; y1: number }) => {
