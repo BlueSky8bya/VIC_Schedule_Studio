@@ -302,9 +302,26 @@ export function WorldCupBallGoal() {
     const bdx = pos.current.x - kX;
     const bdy = pos.current.y - kY;
     const dist = Math.hypot(bdx, bdy) || 1;
-    // 공이 키퍼에 바짝 붙으면(잡기/근접) bdx,bdy≈0 → atan2가 미친듯 튀어 손이 부르르 떨렸다.
-    // 그럴 땐 바깥(필드)쪽 고정 방향으로(컵 포즈) → 떨림 제거.
-    const dir = catching || dist < kd ? (s === "left" ? 0 : Math.PI) : Math.atan2(bdy, bdx);
+    // 공이 키퍼에 닿는 순간(잡기·근접·막 쳐낸 직후)엔 '추적'을 멈추고 고정 컵 포즈로. 추적하면 공의
+    // 미세 진동을 손이 따라가 부르르 떨리고 공과 비벼졌음. 추적은 공이 멀리서 다가올 때(아래)만.
+    const nearBall = catching || dist < kd * 1.7 || now < saveGrace.current;
+    if (nearBall) {
+      const cdir = s === "left" ? 0 : Math.PI;
+      const cperp = cdir + Math.PI / 2;
+      const cdeg = (cdir * 180) / Math.PI;
+      for (let gi = 0; gi < 2; gi++) {
+        const g = gl[gi];
+        if (!g) continue;
+        const sgn = gi === 0 ? 1 : -1;
+        const tx = Math.cos(cdir) * kd * 0.42 + Math.cos(cperp) * kd * 0.34 * sgn;
+        const ty = Math.sin(cdir) * kd * 0.42 + Math.sin(cperp) * kd * 0.34 * sgn;
+        cur[gi].x += (tx - cur[gi].x) * 0.4;
+        cur[gi].y += (ty - cur[gi].y) * 0.4;
+        g.style.transform = `translate(calc(-50% + ${cur[gi].x}px), calc(-50% + ${cur[gi].y}px)) rotate(${cdeg}deg)`;
+      }
+      return;
+    }
+    const dir = Math.atan2(bdy, bdx);
     const perp = dir + Math.PI / 2;
     const speed = Math.hypot(vel.current.x, vel.current.y);
     const defT: 0 | 1 = s === "left" ? 0 : 1;
@@ -869,12 +886,12 @@ export function WorldCupBallGoal() {
         vel.current.y -= (1 + BALL_BOUNCE) * vn * uy;
       }
       const punch = speed >= 620;
-      const minOut = punch ? 360 : 220;
+      const minOut = punch ? 420 : 320; // 확실히 멀리 쳐내 키퍼서 빨리 벗어나게(재접촉·비빔 방지)
       if (Math.sign(vel.current.x) !== outward || Math.abs(vel.current.x) < minOut * 0.6) {
         vel.current.x = outward * Math.max(minOut, Math.abs(vel.current.x));
       }
       vel.current.y += rnd(-60, 60); // 쳐낸 방향 살짝 흩뜨림
-      saveGrace.current = now + 320; // 쳐낸 직후 잠깐 재세이브 차단 → 공이 깔끔히 튕겨 나감
+      saveGrace.current = now + 450; // 쳐낸 직후 재세이브 차단 → 공이 깔끔히 튕겨 나감(루프 차단)
     }
     if (now - saveAt.current > SAVE_COOLDOWN_MS) {
       saveAt.current = now;
@@ -2121,23 +2138,13 @@ export function WorldCupBallGoal() {
                     height: `${isMobile ? 13 : PLAYER_R * 2}px`
                   }}
                   onPointerEnter={
-                    isMobile ? undefined : () => !pinnedPlayer.current && setPickPlayer(i)
-                  }
-                  onPointerLeave={
-                    isMobile
-                      ? undefined
-                      : () => !pinnedPlayer.current && setPickPlayer((c) => (c === i ? null : c))
+                    // 웹: 마우스로 스치기만 해도 카드가 뜨고 그대로 유지(이탈해도 안 사라짐). 화면(딤)
+                    // 클릭하면 닫힘. 작은 점도 잘 걸리게 ::after로 히트영역 확대(CSS).
+                    isMobile ? undefined : () => setPickPlayer(i)
                   }
                   onClick={(e) => {
-                    // 모바일 탭 = 웹 클릭: 카드 토글 + 고정(웹은 고정돼야 호버 이탈해도 유지).
                     e.stopPropagation();
-                    if (pickPlayer === i && pinnedPlayer.current) {
-                      pinnedPlayer.current = false;
-                      setPickPlayer(null);
-                    } else {
-                      pinnedPlayer.current = true;
-                      setPickPlayer(i);
-                    }
+                    setPickPlayer((c) => (c === i ? null : i)); // 모바일 탭/웹 클릭 토글
                     hapticTick();
                   }}
                   ref={(el) => {

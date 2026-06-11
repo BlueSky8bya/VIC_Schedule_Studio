@@ -142,11 +142,11 @@
     0 2px 4px rgb(40 30 60 / 28%);
   will-change: transform;
 }
-/* 탭 타깃 확장 — 점이 작아도(13px) 손가락으로 누르기 쉽게 투명 영역. */
+/* 히트영역 확장 — 점이 작아도(13~18px) 웹 마우스로 스치기/모바일 탭이 쉽게 걸리게 투명 영역 크게. */
 .wc-player::after {
   content: "";
   position: absolute;
-  inset: -8px;
+  inset: -14px;
   border-radius: 50%;
 }
 /* 선택된 선수 강조 링. */
@@ -1120,13 +1120,42 @@
     width: 100%;
     text-align: center;
   }
-  /* 선수 정보 카드 — 모바일은 좌우 여백 안에 꽉 차게(화면 밖으로 안 나가게). 하단 컨트롤 위. */
+  /* 선수 정보 카드(모바일) — 화면 최대한 안 가리게 작게. 컴팩트 폭+작은 폰트/바. 하단 컨트롤 위 중앙. */
   .wc-pcard {
-    left: 8px;
-    right: 8px;
-    width: auto;
-    max-width: none;
-    transform: none;
-    bottom: 56px;
+    left: 50%;
+    right: auto;
+    width: 164px;
+    max-width: 62vw;
+    transform: translateX(-50%);
+    bottom: 50px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    font-size: 10.5px;
+  }
+  .wc-pcard-head {
+    gap: 6px;
+    padding-bottom: 4px;
+    margin-bottom: 3px;
+  }
+  .wc-pcard-head .num {
+    width: 18px;
+    height: 18px;
+    font-size: 10.5px;
+  }
+  .wc-pcard-head > span {
+    font-size: 10px;
+  }
+  .wc-pcard-stat,
+  .wc-pcard-stam-row {
+    grid-template-columns: 28px 1fr;
+    gap: 6px;
+    margin-top: 2.5px;
+  }
+  .wc-pcard-stat > span,
+  .wc-pcard-stam-row > span {
+    font-size: 9.5px;
+  }
+  .wc-pcard-bar {
+    height: 4px;
   }
 }
