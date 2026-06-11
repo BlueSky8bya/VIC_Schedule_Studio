@@ -109,6 +109,7 @@ export function WorldCupBallGoal() {
   const goalAt = useRef(0);
   const saveAt = useRef(0);
   const foulAt = useRef(0); // 파울 쿨다운(연속 파울 스팸 방지)
+  const restartGrace = useRef(0); // 세트피스 킥 직후 유예 — 라인아웃·접촉 무시(즉시 재아웃 루프 차단)
   const kickAt = useRef(0);
   const dribbleCount = useRef(0); // 연속 드리블 터치 수(상한으로 무한 드리블 방지)
   const lastBallPlayer = useRef<Player | null>(null); // 직전 볼 처리 선수 — 바뀌면 드리블 카운트 리셋
@@ -1143,6 +1144,7 @@ export function WorldCupBallGoal() {
         const k = pendingRestart.current.kick;
         pendingRestart.current = null;
         k();
+        restartGrace.current = tNow + 450; // 킥 후 잠깐 라인아웃·접촉 무시 → 공이 깔끔히 인플레이
         lastActiveAt.current = tNow;
       }
     }
@@ -1193,6 +1195,9 @@ export function WorldCupBallGoal() {
         const inMouth = pos.current.y > g.y && pos.current.y < g.y + g.h;
         if (inMouth) {
           // 골문 안으로 — 라인아웃 아님(골대 뒤벽/득점 로직이 처리).
+        } else if (tNow < restartGrace.current) {
+          // 세트피스 킥 유예 — 라인아웃 안 잡고 살짝 안으로 밀어 인플레이 유지(재아웃 루프 차단).
+          pos.current.x = pos.current.x < mx ? mx + 2 : w - mx - 2;
         } else if (run) {
           goalLineOut(side);
         } else if (pos.current.x < mx) {
@@ -1205,7 +1210,9 @@ export function WorldCupBallGoal() {
       }
       // 위/아래 = 터치라인. 경기 중이면 스로인.
       if (pos.current.y < my || pos.current.y > h - my) {
-        if (run) {
+        if (tNow < restartGrace.current) {
+          pos.current.y = pos.current.y < my ? my + 2 : h - my - 2;
+        } else if (run) {
           throwIn(pos.current.y < my ? "top" : "bottom");
         } else if (pos.current.y < my) {
           pos.current.y = my;
@@ -1225,7 +1232,7 @@ export function WorldCupBallGoal() {
 
     const speed = Math.hypot(vel.current.x, vel.current.y);
     const now = performance.now();
-    if (!dragging.current && !frozen && !airborne) {
+    if (!dragging.current && !frozen && !airborne && now >= restartGrace.current) {
       players.current.forEach((p, i) => {
         if (p.red) return; // 퇴장 선수는 공에 관여 안 함
         const minD = ballDia() / 2 + PLAYER_R;

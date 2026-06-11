@@ -519,28 +519,31 @@
   background: linear-gradient(90deg, #ffd27a, #f59e0b);
 }
 
-/* 전술 변경 메뉴 — 웹은 스코어 양 옆으로 진영별 1행씩(🔴 왼쪽 / 🔵 오른쪽). 트리거 버튼(우상단)과
-   안 겹치게 우측 여백(90px). 모바일은 아래 미디어쿼리에서 양 옆 세로 컬럼으로. */
+/* 전술 변경 메뉴 — 웹·모바일 모두 경기장 양 옆(105:68이라 골대 뒤에 남는 여백)에 진영별 세로
+   메뉴가 쭈르륵 흘러내린다(🔴 왼쪽 / 🔵 오른쪽). 컨테이너는 클릭 통과, 각 컬럼만 인터랙션. */
 .wc-tactics {
   position: absolute;
   left: 8px;
-  right: 90px;
-  top: 14px;
+  right: 8px;
+  top: 58px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 8px;
   pointer-events: none;
 }
-/* 각 진영 메뉴 — 부드럽게 흘러내린다(끝에 보이게; 예전 wc-save-pop은 100%서 opacity:0이라
-   0.4s 뒤 혼자 사라지는 버그였음). 둘째 진영은 살짝 늦게 = 쭈르륵 느낌. */
+/* 각 진영 메뉴 — 세로 칩 목록. 부드럽게 흘러내린다(끝에 보이게; 예전 wc-save-pop은 100%서
+   opacity:0이라 0.4s 뒤 혼자 사라지는 버그였음). 둘째 진영은 살짝 늦게 = 쭈르륵 느낌. */
 .wc-tac-col {
   display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: 44%;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  width: 150px;
+  max-height: 74vh;
+  overflow-y: auto;
   pointer-events: auto;
-  padding: 6px 8px;
+  padding: 8px 7px;
   border-radius: 12px;
   background: rgb(20 30 24 / 84%);
   -webkit-backdrop-filter: blur(8px);
@@ -562,18 +565,19 @@
   }
 }
 .wc-tac-label {
-  flex: 0 0 auto;
+  align-self: center;
   font-size: 14px;
 }
 .wc-tac-chips {
   display: flex;
+  flex-direction: column;
   gap: 5px;
-  overflow-x: auto;
   padding-bottom: 2px;
   scrollbar-width: thin;
 }
 .wc-tac-chip {
-  flex: 0 0 auto;
+  width: 100%;
+  text-align: center;
   pointer-events: auto;
   border: 1px solid rgb(255 255 255 / 18%);
   border-radius: 999px;
@@ -582,7 +586,7 @@
   font-size: 11.5px;
   font-weight: 800;
   white-space: nowrap;
-  padding: 5px 10px;
+  padding: 6px 10px;
   cursor: pointer;
   transition:
     background 0.15s ease,
