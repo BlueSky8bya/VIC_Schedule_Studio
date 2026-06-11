@@ -139,9 +139,15 @@ export function WorldCupBallGoal() {
   const [tacticsOpen, setTacticsOpen] = useState(false); // 전술 변경 패널 열림
   const [statsOpen, setStatsOpen] = useState(false); // 경기 기록 패널 열림
   const [pickPlayer, setPickPlayer] = useState<number | null>(null); // 호버/탭한 선수(정보 카드)
+  const pinnedPlayer = useRef(false); // 클릭으로 고정됐는가(호버 이탈해도 유지)
   const [styleNames, setStyleNames] = useState<[string, string]>(["", ""]); // 현재 팀별 전술명(칩 강조용)
   // 세트피스(스로인/코너/골킥/킥오프/오프사이드)는 라인에 잠깐 멈췄다 재개 — 딜레이 후 kick 실행.
-  const pendingRestart = useRef<{ at: number; kick: () => void; walk?: () => void } | null>(null);
+  const pendingRestart = useRef<{
+    at: number;
+    kick: () => void;
+    walk?: () => void;
+    team?: 0 | 1; // 재개를 차는 팀 — 준비 중 상대가 공에서 물러나도록(스페이싱)
+  } | null>(null);
   const possTeam = useRef<0 | 1 | null>(null); // 통제 중인 팀(lastTouch 기반 스무딩) — 압박 방향 판단.
   const counterPress = useRef<{ team: 0 | 1; until: number } | null>(null); // 5초 카운터프레스 윈도우.
   const keeperAggro = useRef<Record<Side, number>>({ left: 0.5, right: 0.5 }); // 스위퍼 성향 0..1.
@@ -345,10 +351,15 @@ export function WorldCupBallGoal() {
   // 세트피스 재개 예약 — 공을 라인에 멈춰두고 delay(ms) 뒤 kick 실행. 프리즈 동안 walk()가 매
   // 프레임 키커(선수/키퍼)를 공으로 걸어오게 한다 → '실제로 누가 와서 차는' 모양. step()이
   // 프리즈 동안 공 물리·접촉을 건너뛴다.
-  const scheduleRestart = (delay: number, kick: () => void, walk?: () => void) => {
+  const scheduleRestart = (
+    delay: number,
+    kick: () => void,
+    walk?: () => void,
+    team?: 0 | 1
+  ) => {
     vel.current = { x: 0, y: 0 };
-    pendingRestart.current = { at: performance.now() + delay, kick, walk };
-    clock.current.added += 0.18; // 세트피스 지체 → 추가시간 누적(게임분)
+    pendingRestart.current = { at: performance.now() + delay, kick, walk, team };
+    clock.current.added += 0.12; // 세트피스 지체 → 추가시간 누적(게임분)
     place();
   };
 
@@ -417,9 +428,10 @@ export function WorldCupBallGoal() {
     flashPiece("킥오프");
     logEvent("kickoff", concede);
     scheduleRestart(
-      1000,
+      700,
       () => passToNearestTeammate(concede, pos.current.x, pos.current.y, 200),
-      () => walkTeammateToBall(concede)
+      () => walkTeammateToBall(concede),
+      concede
     );
   };
 
@@ -434,13 +446,14 @@ export function WorldCupBallGoal() {
     logEvent("throwIn", team, pos.current.x, pos.current.y);
     // 라인에서 한 박자 쉰 뒤, 가까운 선수가 와서 던진다(약 1초). 던질 땐 안쪽으로.
     scheduleRestart(
-      1000,
+      700,
       () => {
         passToNearestTeammate(team, pos.current.x, pos.current.y, 240);
         if (Math.hypot(vel.current.x, vel.current.y) < 5)
           vel.current.y = where === "top" ? 160 : -160;
       },
-      () => walkTeammateToBall(team)
+      () => walkTeammateToBall(team),
+      team
     );
     lastActiveAt.current = performance.now();
   };
@@ -463,12 +476,13 @@ export function WorldCupBallGoal() {
       const boxX = side === "left" ? g.x + g.w + 60 : g.x - 60;
       // 공격팀 키커가 코너로 와서 박스로 띄워 올린다(크로스).
       scheduleRestart(
-        1100,
+        800,
         () => {
           setVelTo(boxX, h * 0.5, 360);
           loftBall(Math.hypot(boxX - pos.current.x, h * 0.5 - pos.current.y), 360);
         },
-        () => walkTeammateToBall(attack)
+        () => walkTeammateToBall(attack),
+        attack
       );
     } else {
       // 골킥 — 키퍼가 골 에어리어로 나와 길게 찬다(약 1.1초 뒤). 킥 후 키퍼는 골문으로 복귀.
@@ -481,12 +495,13 @@ export function WorldCupBallGoal() {
       const ty = h * 0.5 + rnd(-h * 0.2, h * 0.2);
       // 골킥은 길게 띄운다(롱볼).
       scheduleRestart(
-        1100,
+        850,
         () => {
           setVelTo(upfield, ty, 520);
           loftBall(Math.abs(upfield - pos.current.x), 520);
         },
-        () => walkKeeperToBall(side)
+        () => walkKeeperToBall(side),
+        defend
       );
     }
     lastActiveAt.current = performance.now();
@@ -514,9 +529,10 @@ export function WorldCupBallGoal() {
     logEvent("offside", attacker, x, y);
     // 수비팀 간접 프리킥 — 가까운 수비수가 와서 한 박자 뒤 짧게 재개.
     scheduleRestart(
-      900,
+      700,
       () => passToNearestTeammate(defend, pos.current.x, pos.current.y, 260),
-      () => walkTeammateToBall(defend)
+      () => walkTeammateToBall(defend),
+      defend
     );
     lastActiveAt.current = performance.now();
   };
@@ -558,7 +574,7 @@ export function WorldCupBallGoal() {
     const g = goalRect(enemy);
     const distGoal = Math.hypot(g.x + g.w / 2 - spotX, g.y + g.h / 2 - spotY);
     scheduleRestart(
-      1100,
+      800,
       () => {
         if (distGoal < w * 0.32 && Math.random() < 0.6) {
           const tx = enemy === "left" ? g.x + g.w : g.x;
@@ -570,7 +586,8 @@ export function WorldCupBallGoal() {
           passToNearestTeammate(fouled, pos.current.x, pos.current.y, 300);
         }
       },
-      () => walkTeammateToBall(fouled)
+      () => walkTeammateToBall(fouled),
+      fouled
     );
     lastActiveAt.current = performance.now();
   };
@@ -706,8 +723,52 @@ export function WorldCupBallGoal() {
       });
     });
 
+    // 세트피스 준비 중인가 — 그렇다면 키커(차는 팀 최근접)는 walk()가 공으로 데려가고, 나머지는
+    // 스페이싱(상대는 공에서 법정거리 밖). 기본 축구 규정: 상대는 정해진 거리 물러나야 하며,
+    // 던지려는/차려는 선수 주변에 떼로 압박하지 않는다(#4). 빈 공간 확보 → 즉시 재아웃 방지(#1).
+    const pr = pendingRestart.current;
+    let restartTaker = -1;
+    if (pr && pr.team != null) {
+      let td = Infinity;
+      players.current.forEach((q, j) => {
+        if (q.team !== pr.team || q.red) return;
+        const dd = Math.hypot(q.x - bx, q.y - by);
+        if (dd < td) {
+          td = dd;
+          restartTaker = j;
+        }
+      });
+    }
+
     players.current.forEach((p, i) => {
       if (p.red) return; // 퇴장 — 더는 움직이지 않는다(필드서 빠짐, placePlayers가 시각도 숨김)
+      // 세트피스 준비 — 키커는 walk()가 처리(스킵). 나머지는 자리 잡고, 상대는 공에서 물러난다.
+      if (pr && pr.team != null) {
+        if (i === restartTaker) return;
+        const distBall = Math.hypot(p.x - bx, p.y - by);
+        const legalR = w * 0.085; // ≈9.15m 스케일(상대 법정 거리)
+        let stx: number;
+        let sty: number;
+        let sspd: number;
+        if (p.team !== pr.team && distBall < legalR) {
+          const aw = distBall > 0.1 ? Math.atan2(p.y - by, p.x - bx) : rnd(0, Math.PI * 2);
+          stx = bx + Math.cos(aw) * legalR;
+          sty = by + Math.sin(aw) * legalR;
+          sspd = PLAYER_SPEED * 0.95;
+        } else {
+          const home = roleHome(p, p.team === pr.team ? 0.06 : -0.04);
+          stx = home.x;
+          sty = home.y;
+          sspd = PLAYER_SPEED * 0.5;
+        }
+        const sdx = stx - p.x;
+        const sdy = sty - p.y;
+        const sd = Math.hypot(sdx, sdy) || 1;
+        const smove = Math.min(sspd, sd * 4) * dt;
+        p.x = clamp(p.x + (sdx / sd) * smove, fx.min, fx.max);
+        p.y = clamp(p.y + (sdy / sd) * smove, PLAYER_R, h - PLAYER_R);
+        return;
+      }
       const t = teams.current ? teams.current[p.team] : null;
       const tempo = t ? t.tempo : 1;
       const attacking = p.team === poss;
@@ -1482,7 +1543,11 @@ export function WorldCupBallGoal() {
           <div
             className="wc-dim"
             onClick={() => {
-              setPickPlayer(null); // 빈 곳 탭/클릭하면 선수 카드 닫기
+              // 빈 곳 탭/클릭하면 열린 패널(선수카드·전술·기록) 모두 닫기.
+              pinnedPlayer.current = false;
+              setPickPlayer(null);
+              setTacticsOpen(false);
+              setStatsOpen(false);
             }}
           />
           {/* 피치 본체 — 모바일에선 이 stage만 90° 세워 세로 피치로. 물리는 landscape 그대로. */}
@@ -1524,17 +1589,26 @@ export function WorldCupBallGoal() {
                     width: `${isMobile ? 13 : PLAYER_R * 2}px`,
                     height: `${isMobile ? 13 : PLAYER_R * 2}px`
                   }}
-                  onPointerEnter={isMobile ? undefined : () => setPickPlayer(i)}
-                  onPointerLeave={isMobile ? undefined : () => setPickPlayer((c) => (c === i ? null : c))}
-                  onClick={
-                    isMobile
-                      ? (e) => {
-                          e.stopPropagation();
-                          setPickPlayer((c) => (c === i ? null : i));
-                          hapticTick();
-                        }
-                      : undefined
+                  onPointerEnter={
+                    isMobile ? undefined : () => !pinnedPlayer.current && setPickPlayer(i)
                   }
+                  onPointerLeave={
+                    isMobile
+                      ? undefined
+                      : () => !pinnedPlayer.current && setPickPlayer((c) => (c === i ? null : c))
+                  }
+                  onClick={(e) => {
+                    // 모바일 탭 = 웹 클릭: 카드 토글 + 고정(웹은 고정돼야 호버 이탈해도 유지).
+                    e.stopPropagation();
+                    if (pickPlayer === i && pinnedPlayer.current) {
+                      pinnedPlayer.current = false;
+                      setPickPlayer(null);
+                    } else {
+                      pinnedPlayer.current = true;
+                      setPickPlayer(i);
+                    }
+                    hapticTick();
+                  }}
                   ref={(el) => {
                     playerEls.current[i] = el;
                   }}
@@ -1650,7 +1724,7 @@ export function WorldCupBallGoal() {
                     ["압박", p.press],
                     ["패스", p.pass],
                     ["슛", p.shoot],
-                    ["규율", p.discipline]
+                    ["침착", p.discipline]
                   ];
                   return (
                     <div className={`wc-pcard wc-pcard-${p.team}`}>
