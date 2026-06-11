@@ -395,6 +395,34 @@
 .wc-card-r {
   background: #e2503c;
 }
+/* 모바일 — 핍 대신 색칩+숫자(고정폭, 너비 절약). */
+.wc-cards-mini {
+  flex-wrap: nowrap;
+  max-width: none;
+  max-height: none;
+  gap: 3px;
+}
+.wc-cmini {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 2px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 900;
+  font-style: normal;
+  line-height: 1;
+}
+.wc-cmini-y {
+  background: #f6c945;
+  color: #5a4708;
+}
+.wc-cmini-r {
+  background: #e2503c;
+  color: #fff;
+}
 .wc-score-num {
   flex: 0 0 auto; /* 점수는 절대 줄어들거나 줄바꿈 안 됨 */
   white-space: nowrap;

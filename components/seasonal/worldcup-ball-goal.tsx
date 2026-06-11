@@ -1955,6 +1955,29 @@ export function WorldCupBallGoal() {
     height: `${kdRender}px`
   });
 
+  // 팀 카드 표시 — 웹은 개수만큼 핍(공간 여유), 모바일은 폭 절약 위해 색칩+숫자(🟨2 🟥1, 고정폭).
+  const renderTeamCards = (y: number, r: number) => {
+    if (y + r === 0) return null;
+    if (isMobile) {
+      return (
+        <span className="wc-score-cards wc-cards-mini">
+          {y > 0 ? <em className="wc-cmini wc-cmini-y">{y}</em> : null}
+          {r > 0 ? <em className="wc-cmini wc-cmini-r">{r}</em> : null}
+        </span>
+      );
+    }
+    return (
+      <span className="wc-score-cards">
+        {Array.from({ length: Math.min(y, 4) }).map((_, i) => (
+          <i key={`y${i}`} className="wc-card wc-card-y" />
+        ))}
+        {Array.from({ length: Math.min(r, 4) }).map((_, i) => (
+          <i key={`r${i}`} className="wc-card wc-card-r" />
+        ))}
+      </span>
+    );
+  };
+
   return (
     <div className={`wc-play ${enabled ? "on" : ""}`} aria-hidden="true">
       {enabled ? (
@@ -2089,31 +2112,13 @@ export function WorldCupBallGoal() {
             <div className="wc-score" role="status">
               <span className="wc-score-team wc-score-a">
                 {teamNames[0] || "RED"}
-                {cardCounts.yellow[0] + cardCounts.red[0] > 0 ? (
-                  <span className="wc-score-cards">
-                    {Array.from({ length: Math.min(cardCounts.yellow[0], 4) }).map((_, i) => (
-                      <i key={`y${i}`} className="wc-card wc-card-y" />
-                    ))}
-                    {Array.from({ length: Math.min(cardCounts.red[0], 4) }).map((_, i) => (
-                      <i key={`r${i}`} className="wc-card wc-card-r" />
-                    ))}
-                  </span>
-                ) : null}
+                {renderTeamCards(cardCounts.yellow[0], cardCounts.red[0])}
               </span>
               <strong className="wc-score-num">
                 {score[0]} <span>:</span> {score[1]}
               </strong>
               <span className="wc-score-team wc-score-b">
-                {cardCounts.yellow[1] + cardCounts.red[1] > 0 ? (
-                  <span className="wc-score-cards">
-                    {Array.from({ length: Math.min(cardCounts.yellow[1], 4) }).map((_, i) => (
-                      <i key={`y${i}`} className="wc-card wc-card-y" />
-                    ))}
-                    {Array.from({ length: Math.min(cardCounts.red[1], 4) }).map((_, i) => (
-                      <i key={`r${i}`} className="wc-card wc-card-r" />
-                    ))}
-                  </span>
-                ) : null}
+                {renderTeamCards(cardCounts.yellow[1], cardCounts.red[1])}
                 {teamNames[1] || "BLUE"}
               </span>
             </div>
