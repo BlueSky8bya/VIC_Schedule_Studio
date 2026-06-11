@@ -38,8 +38,6 @@ type Player = PlayerPersona & {
   num: number; // 등번호(표시용).
   knock: number; // 0..1 타박/부상 — 거친 태클로 누적. 속도·민첩 저하, 시간이 지나면 회복(천천히).
   downUntil: number; // 이 시각까지 부상으로 쓰러져 정지(심한 knock 직후 잠깐).
-  pvx: number; // 현재 속도(px/s) — 관성. 목표로 즉시 점프 X, 가속/감속으로 붙는다.
-  pvy: number;
 };
 
 const FRICTION = 0.98; // 잔디 마찰 — 높일수록 공이 빨리 죽어 라인아웃(스로인) 남발 감소
@@ -603,9 +601,7 @@ export function WorldCupBallGoal() {
       red: false,
       num: (i % 10) + 2, // 2~11(1은 골키퍼 몫으로 비움)
       knock: 0,
-      downUntil: 0,
-      pvx: 0,
-      pvy: 0
+      downUntil: 0
     }));
     players.current.forEach((p) => {
       const home = roleHome(p, 0);
@@ -1298,14 +1294,15 @@ export function WorldCupBallGoal() {
         else if (r <= nP + 1) mode = "cover";
         else mode = "shape";
       }
-      // 역습 전환 — 막 뺏은 팀의 전방/중앙 선수는 잠깐 전진 런(스프린트)으로 빠르게 올라간다.
+      // 역습 전환 — 막 뺏은 팀의 최전방(FW)만 잠깐 전진 런. (MF/WG까지 시키면 전원 스프린트로 개떼가
+      // 됐어서 FW 1~2명으로 축소.)
       const counterRun =
         attacking &&
         transition.current != null &&
         transition.current.team === p.team &&
         now < transition.current.until &&
-        (p.slot.role === "FW" || p.slot.role === "WG" || p.slot.role === "MF");
-      const sprint = mode === "press" || mode === "carry" || counterRun;
+        p.slot.role === "FW";
+      const sprint = mode === "press" || mode === "carry";
 
       // 스태거드 재결정 — 압박/캐리는 자주, 나머지는 드물게 + 개별 반응지연. 캐시 목표 유지로
       // 22명이 같은 프레임에 일제히 방향 트는 것 방지(규율 높을수록 반응 빠름).
@@ -1326,7 +1323,7 @@ export function WorldCupBallGoal() {
         } else {
           // shape/support — 역할 home + 공쪽 제한 쏠림. 수비=컴팩트(많이), 공격=벌림(적게+전진).
           const fwd = p.slot.role === "FW" || p.slot.role === "WG";
-          const push = counterRun ? 0.36 : attacking ? (fwd ? 0.18 : 0.1) : -0.06;
+          const push = counterRun ? 0.26 : attacking ? (fwd ? 0.18 : 0.1) : -0.06;
           const home = roleHome(p, push);
           const infX = attacking ? 0.1 : 0.16;
           const infY = attacking ? 0.22 : 0.3;
@@ -1349,6 +1346,9 @@ export function WorldCupBallGoal() {
             const depth = clamp(prog * 0.5 + lh * 1.8, 0.1, 0.62);
             const lineX = p.team === 0 ? fx.min + depth * half * 0.5 : fx.max - depth * half * 0.5;
             tx = lineX + clamp((bx - lineX) * 0.04, -w * 0.03, w * 0.03);
+            // 폭 유지가 핵심 — 공쪽으로 ty를 크게 당기면(infY 0.3) DF 전원이 공.y로 수렴해 한 점에
+            // 쌓인다(골대 앞 파일). 라인은 자기 자리(home.y)를 지키며 공쪽으로 '살짝만' 시프트.
+            ty = home.y + clamp((by - home.y) * 0.12, -h * 0.09, h * 0.09);
           }
           // 후방 빌드업 — 점유팀이 자기 진영 깊은 곳에서 공을 돌릴 땐 폭을 벌려 패스 레인을 연다(중앙
           // 밀집 완화 + 사이드 전개). 공격 지원 선수(DF 제외)에게만.
@@ -1372,22 +1372,15 @@ export function WorldCupBallGoal() {
       const dx = p.tx - p.x;
       const dy = p.ty + wob - p.y;
       const d = Math.hypot(dx, dy) || 1;
-      // 관성 — 목표 속도(도착 가까우면 감속)로 '가속'한다. 즉시 방향전환/급정지 X → 사람다운 움직임.
-      // 민첩(agility)할수록 가속·턴이 빠르고, 걷기보단 스프린트가 잘 붙는다.
-      const desired = Math.min(spd, d * 4);
-      const dvx = (dx / d) * desired;
-      const dvy = (dy / d) * desired;
-      const accel = PLAYER_SPEED * (4 + p.agility * 3) * (sprint ? 1 : 0.85);
-      const step = accel * dt;
-      p.pvx += clamp(dvx - p.pvx, -step, step);
-      p.pvy += clamp(dvy - p.pvy, -step, step);
-      const vx = p.pvx * dt;
-      const vy = p.pvy * dt;
+      // 이동 — 캐시 목표로 직접(관성 실험은 기차놀이/쏠림 유발해 되돌림). 도착 가까우면 감속(d*4).
+      const move = Math.min(spd, d * 4) * dt;
+      const vx = (dx / d) * move;
+      const vy = (dy / d) * move;
       p.x = clamp(p.x + vx, fx.min, fx.max);
       p.y = clamp(p.y + vy, PLAYER_R, h - PLAYER_R);
 
       // 체력 — 스프린트/압박은 소모, 걸으면 회복. 실제 이동량 비례(90분 내내 못 누름).
-      const speedUsed = Math.hypot(p.pvx, p.pvy);
+      const speedUsed = Math.hypot(vx, vy) / dt;
       const drain = (sprint ? 0.05 : 0.012) * (0.5 + (speedUsed / PLAYER_SPEED) * 0.5);
       const recover = sprint ? 0 : 0.022;
       p.stamina = clamp(p.stamina - drain * dt + recover * dt, 0, 1);
@@ -1415,18 +1408,9 @@ export function WorldCupBallGoal() {
       });
       if (sx !== 0 || sy !== 0) {
         const sd = Math.hypot(sx, sy) || 1;
-        const ux = sx / sd;
-        const uy = sy / sd; // 클러스터 바깥 방향(겹친 이웃 반대)
         const sep = Math.min(PLAYER_SPEED * 0.6, sd * 30) * dt;
-        p.x = clamp(p.x + ux * sep, fx.min, fx.max);
-        p.y = clamp(p.y + uy * sep, PLAYER_R, h - PLAYER_R);
-        // 관성 댐핑 — pv가 클러스터 '안쪽'(다시 뭉치는 방향)으로 향하면 그 성분을 줄인다. 안 그러면
-        // 분리로 밀어내도 관성이 다시 끌어당겨 조랭이떡이 안 풀림.
-        const into = p.pvx * -ux + p.pvy * -uy;
-        if (into > 0) {
-          p.pvx += ux * into * 0.7;
-          p.pvy += uy * into * 0.7;
-        }
+        p.x = clamp(p.x + (sx / sd) * sep, fx.min, fx.max);
+        p.y = clamp(p.y + (sy / sd) * sep, PLAYER_R, h - PLAYER_R);
       }
     });
   };
@@ -2064,9 +2048,16 @@ export function WorldCupBallGoal() {
       if (lost != null && lost !== ctrl && lt && lt.press >= 0.7) {
         counterPress.current = { team: lost, until: tNow + 4000 };
       }
-      // 막 공 뺏은 팀 → 역습 윈도우(약 3.5s): 공격수 전진 런 + 빠른 처리. 오픈플레이 전환만(세트피스 X).
-      if (lost != null && lost !== ctrl && pendingRestart.current == null) {
-        transition.current = { team: ctrl, until: tNow + 3500 };
+      // 막 공 뺏은 팀 → 역습 윈도우(약 2.5s). 단 경합서 점유가 깜빡깜빡 바뀔 때 매번 켜지면 전원
+      // 상시 스프린트로 개떼가 되므로, 직전 윈도우 끝나고 3.5s 지난 뒤에만(쿨다운) 재발동.
+      const tc = transition.current;
+      if (
+        lost != null &&
+        lost !== ctrl &&
+        pendingRestart.current == null &&
+        (tc == null || tNow > tc.until + 3500)
+      ) {
+        transition.current = { team: ctrl, until: tNow + 2500 };
       }
     }
 
