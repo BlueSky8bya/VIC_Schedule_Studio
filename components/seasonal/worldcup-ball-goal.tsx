@@ -202,7 +202,7 @@ export function WorldCupBallGoal() {
   const pendingRestart = useRef<{
     at: number;
     kick: () => void;
-    walk?: () => void;
+    walk?: () => boolean; // 키커를 공으로 데려오고, '도착했는가' 반환(도착 전엔 안 참)
     team?: 0 | 1; // 재개를 차는 팀 — 준비 중 상대가 공에서 물러나도록(스페이싱)
   } | null>(null);
   const possTeam = useRef<0 | 1 | null>(null); // 통제 중인 팀(lastTouch 기반 스무딩) — 압박 방향 판단.
@@ -598,7 +598,7 @@ export function WorldCupBallGoal() {
   const scheduleRestart = (
     delay: number,
     kick: () => void,
-    walk?: () => void,
+    walk?: () => boolean,
     team?: 0 | 1
   ) => {
     vel.current = { x: 0, y: 0 };
@@ -624,7 +624,8 @@ export function WorldCupBallGoal() {
   };
 
   // 세트피스 키커 — 가장 가까운 같은 팀 선수를 공 바로 뒤까지 빠르게 데려온다(프리즈 중 매 프레임).
-  const walkTeammateToBall = (team: 0 | 1) => {
+  // 반환: 키커가 공 바로 뒤에 '도착했는가'(true면 이제 차도 됨). 도착 전엔 공이 안 날아가게 한다.
+  const walkTeammateToBall = (team: 0 | 1): boolean => {
     let ti = -1;
     let td = Infinity;
     players.current.forEach((m, i) => {
@@ -635,7 +636,7 @@ export function WorldCupBallGoal() {
         ti = i;
       }
     });
-    if (ti < 0) return;
+    if (ti < 0) return true;
     const p = players.current[ti];
     const dx = pos.current.x - p.x;
     const dy = pos.current.y - p.y;
@@ -647,10 +648,11 @@ export function WorldCupBallGoal() {
     p.tx = p.x; // AI 캐시 동기화(끌고 가지 않게)
     p.ty = p.y;
     p.thinkAt = performance.now() + 200;
+    return d <= stand + 6;
   };
 
   // 골킥 키커 — 해당 골 키퍼가 공(골 에어리어)까지 나온다. 킥 후엔 updateKeepers가 복귀시킨다.
-  const walkKeeperToBall = (side: Side) => {
+  const walkKeeperToBall = (side: Side): boolean => {
     const g = goalRect(side);
     const lineX = side === "left" ? g.x + g.w : g.x;
     const distToBall = Math.abs(pos.current.x - lineX);
@@ -658,6 +660,10 @@ export function WorldCupBallGoal() {
     const sp = KEEPER_SPEED / 60; // 골킥 걸어나옴 — 몸은 보통 속도(빠르지 않게)
     keeperX.current[side] += clamp(wantX - keeperX.current[side], -sp, sp);
     keeperY.current[side] += clamp(pos.current.y - keeperY.current[side], -sp, sp);
+    return (
+      Math.abs(keeperX.current[side] - wantX) < kdDia() * 0.45 &&
+      Math.abs(keeperY.current[side] - pos.current.y) < kdDia() * 0.6
+    );
   };
 
   const flashPiece = (label: string) => {
@@ -1632,8 +1638,14 @@ export function WorldCupBallGoal() {
     // 세트피스 프리즈 — 공은 라인에 멈추고, walk()가 키커(선수/키퍼)를 매 프레임 공으로 데려온다.
     // 예약 시각이 되면 kick 실행(그 키커 위치에서 공이 나가 '누가 차는' 모양).
     if (pendingRestart.current) {
-      if (pendingRestart.current.walk) pendingRestart.current.walk();
-      if (tNow >= pendingRestart.current.at) {
+      // walk가 매 프레임 키커를 공으로 데려오고 '도착했는가'를 반환. 예약 시각이 지났고 키커가
+      // '실제로 공 뒤에 도착'했을 때만 찬다(선수 안 왔는데 공만 날아가던 몰입 저하 제거). 혹시 못
+      // 오면 failsafe(at+3.5s)로 강제 — 영구 프리즈 방지.
+      const arrived = pendingRestart.current.walk ? pendingRestart.current.walk() : true;
+      if (
+        tNow >= pendingRestart.current.at &&
+        (arrived || tNow >= pendingRestart.current.at + 3500)
+      ) {
         const k = pendingRestart.current.kick;
         pendingRestart.current = null;
         k();
