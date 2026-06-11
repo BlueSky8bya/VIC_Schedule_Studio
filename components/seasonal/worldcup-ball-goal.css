@@ -901,9 +901,10 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  /* 가로 중앙 — 양옆 메뉴 칼럼(각 156px + 8px) 사이 빈 공간에 들어가게 폭을 좁힌다(안 겹침). */
+  /* 가로 중앙. 양옆 메뉴 사이 빈 공간이 좁아 다 못 들어가므로 넓게(가로>세로) 두고 겹치는 부분은
+     pointer-events:none으로 탭이 칩까지 통과한다(겹쳐도 누르기 안 막힘). */
   transform: translate(-50%, -50%);
-  width: min(240px, calc(100% - 352px));
+  width: min(260px, 70%);
   display: flex;
   flex-direction: column;
   gap: 4px;

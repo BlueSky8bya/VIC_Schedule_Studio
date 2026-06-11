@@ -387,6 +387,86 @@ R_personaExploit:
 
 결론: **주발·신체·침착함·성격은 기반 타입이 이미 있고, 공 회전·컨디션·부상은 Step 1에서 타입을 추가한 뒤 Step 2~3 물리/보상에 연결해야 학습된다.** 이 구분을 Claude Code 구현 프롬프트에 반드시 넣어야 한다.
 
+### 3.8 골키퍼 전진·후퇴·스위핑 정책
+
+현재 문서에는 `Goalkeeper Actor`와 `claim / catch / parry / punch / smother / sweep / release` action head가 있다. 하지만 실제 학습을 위해서는 "골키퍼가 언제 나오는가", "언제 골문으로 돌아가는가", "어디에 서서 각도를 줄이는가"가 별도 상태와 보상으로 정의되어야 한다.
+
+Step 1에서 추가해야 하는 골키퍼 상태:
+
+```ts
+type GoalkeeperIntent =
+  | "holdLine"
+  | "setPosition"
+  | "advanceToClaim"
+  | "sweepBehindLine"
+  | "smother1v1"
+  | "retreatToGoal"
+  | "recoverCenter"
+  | "releaseBall";
+
+type GoalkeeperRuntimeState = {
+  intent: GoalkeeperIntent;
+  homePosition: Vec2; // goal center based default
+  setPosition: Vec2; // current optimal angle-cutting point
+  claimRadius: number;
+  sweepDepth: number;
+  retreatUrgency: number;
+  hasHandControl: boolean;
+  handControlSince?: number;
+  lastClaimAt?: number;
+};
+```
+
+골키퍼 decision trigger:
+
+- 기본 위치: 공 위치와 골 중앙을 잇는 선 위에서 슈팅 각도를 줄인다. 공이 멀면 골라인 근처, 공이 가까우면 조금 전진한다.
+- 전진 claim: 크로스/로빙패스 궤적이 claim zone에 들어오고, 골키퍼 도착 시간이 공격수보다 빠르거나 비슷하면 나온다.
+- 펀칭/캐치 선택: 압박 밀도, 공 높이, 몸싸움, `composure`, `balance`, `heightCm`, `traits`에 따라 catch/punch/parry를 고른다.
+- 스위핑: 수비 라인 뒤 공간으로 스루패스가 들어가고 골키퍼가 공격수보다 먼저 도착 가능하면 나온다. 박스 밖에서는 손을 쓰지 못하고 발 처리만 가능하다.
+- 1대1 smother: 공격수가 박스 안 중앙으로 진입했고 터치가 길거나 슈팅 각도가 커질 때 몸을 던져 각도를 줄인다.
+- 후퇴 retreat: 칩슛/로빙볼 위험, 공이 골키퍼 머리 위를 넘는 궤적, 수비수가 커버 가능, 골문이 비는 시간이 길어질 때 즉시 골문 쪽으로 복귀한다.
+- recover center: 세컨볼/클리어 후에는 골 중앙 기준 위치로 돌아와 다음 슈팅 각도를 대비한다.
+- release: 손으로 잡은 뒤 전술에 따라 roll/throw/short pass/punt/drop kick을 선택한다. 손 보유 시간 제한과 백패스 위반은 deterministic rule로 처리한다.
+
+전술/개성 반영:
+
+- `sweeperKeeper` trait: sweepDepth, advance prior, short build-up release 보상 증가.
+- 점유/포지셔널 플레이: 짧은 패스, CB/DM 연결, 압박 유도 후 전개 보상.
+- 롱볼/루트 원: punt/drop kick, targetMan 방향 세컨볼 구조 보상.
+- 텐백/빗장 수비: 무리한 전진 페널티 증가, claim 안정성 보상 증가.
+- 높은 defensive line: 스위핑 trigger 민감도 증가.
+
+관측 feature:
+
+```txt
+gkObservation =
+  ball position/velocity/height/spin
+  + predicted ball landing point
+  + timeToBall / timeToGoal / timeToBox
+  + nearest attacker timeToBall
+  + nearest defender cover time
+  + defensive line depth
+  + shot angle
+  + cross claim window
+  + penalty area boundary
+```
+
+보상:
+
+```txt
+R_gk =
+  R_angleCutting
+  + R_claimTiming
+  + R_sweepTiming
+  + R_retreatTiming
+  + R_distributionFit
+  - R_illegalHandling
+  - R_overAdvanceLob
+  - R_emptyGoalExposure
+```
+
+Step 1 구현 범위는 `GoalkeeperIntent`, `GoalkeeperRuntimeState`, 기본 helper만 만든다. 실제 궤적 예측, 다이빙, 캐치 성공률, 1대1 물리 충돌은 Step 2~3에서 붙인다.
+
 ## 4. 전술/포메이션을 RL에 넣는 방식
 
 ### 4.1 TacticStyle을 condition으로
@@ -522,6 +602,85 @@ lib/football/tactics/anchors.ts
 lib/football/tactics/shape-targets.ts
 lib/football/rl/reward-shape.ts
 ```
+
+### 4.5 빌드업·오버래핑 전술 primitive
+
+`football-knowledge-inventory.ko.md`에는 후방 빌드업, 중앙 전개, 측면 전개, overload-to-isolate가 이미 정리돼 있다. RL 구현에서는 이 개념들을 자연어 설명으로 두지 말고 action primitive, trigger, reward anchor로 내려야 한다.
+
+Step 1에서 타입화할 전술 primitive:
+
+```ts
+type TacticalPrimitive =
+  | "shortBuildUp"
+  | "gkSplitCenterBacks"
+  | "pivotDrop"
+  | "thirdManCombination"
+  | "wallPass"
+  | "switchPlay"
+  | "wideOverload"
+  | "overlap"
+  | "underlap"
+  | "invertedFullbackSupport"
+  | "halfSpaceReceive"
+  | "cutback"
+  | "earlyCross"
+  | "counterPress"
+  | "restDefence";
+
+type TacticalPrimitiveTrigger = {
+  primitive: TacticalPrimitive;
+  phase: MatchPhase;
+  minSupportCount?: number;
+  maxPressureDistance?: number;
+  preferredRoles?: Array<Role | "GK">;
+  requiredTrait?: PlayerTrait;
+};
+```
+
+빌드업 trigger:
+
+- 상대 pressers 0~2명: GK/CB/DM 짧은 빌드업, pivot support, fullback wide.
+- 상대 high press 3~5명: bounce pass, third-man, switch, GK clip pass.
+- 중앙 차단: fullback/winger 방향으로 side exit.
+- 측면 압박 유도 성공: 반대 전환 또는 3자 패스.
+- 후방 빌드업 위험 증가: targetMan/winger 방향 직접 패스 허용. 단 점유 전술이면 "선호"가 아니라 "탈압박 선택"으로 보상한다.
+
+오버래핑/언더래핑 trigger:
+
+- winger가 터치라인 근처에서 공을 받고 상대 fullback을 고정하면 fullback overlap run.
+- winger가 안으로 접고 half-space가 비면 fullback overlap 또는 underlap.
+- 8번/mezzala가 half-space에 있고 fullback이 wide면 underlap보다 cutback support 우선.
+- 상대 wide midfielder가 늦게 복귀하면 2v1 생성 보상.
+- rest defence가 깨지면 무리한 overlap penalty. 특히 텐백/실리 축구는 fullback 이탈 보상 낮음.
+
+보상 anchor:
+
+```txt
+R_buildUp =
+  R_firstLineBroken
+  + R_safeSupportTriangle
+  + R_pressBaitSuccess
+  + R_progressiveExit
+  - R_centralTurnover
+
+R_widePattern =
+  R_overlapTiming
+  + R_underlapTiming
+  + R_2v1Created
+  + R_cutbackQuality
+  + R_restDefenceMaintained
+  - R_emptyFlankTransitionRisk
+```
+
+전술별 차이:
+
+- 티키타카/점유: 짧은 빌드업, 삼각형, third-man, press bait 보상 증가.
+- 포지셔널 플레이: 5레인 점유, inverted fullback support, 3-2 rest shape 보상 증가.
+- 윙 플레이: overlap/underlap, wide overload, cutback/cross quality 보상 증가.
+- 비대칭 아이솔레이션: 한쪽 overload 후 빠른 switch와 반대 winger isolation 보상 증가.
+- 루트 원/롱볼 직접: build-up pass count보다 전진 거리, target contact, second-ball structure 보상 증가.
+
+Step 1 구현 범위는 `TacticalPrimitive`, trigger metadata, tactic별 primitive preference만 만든다. 실제 run path 생성, 패스 선택, 수비 반응은 Step 2 scripted baseline과 Step 3 reward shaping에서 붙인다.
 
 ## 5. Reward 설계
 
