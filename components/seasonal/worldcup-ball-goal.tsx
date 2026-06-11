@@ -3,6 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만
+import type { PlayerPersona, Side, TeamPlan, Vec2 } from "@/lib/football/core/types";
+import { makeRng, randomSeed } from "@/lib/football/core/rng";
+import { makeMatchup } from "@/lib/football/tactics/profiles";
+import { createEventLog, type MatchEventKind } from "@/lib/football/core/event-log";
 import "./worldcup-ball-goal.css";
 
 // 월드컵 시즌 미니게임 — 좌/우 골대, 공 1개, 양 팀 11명(필드 10 + 골키퍼)이 자동 경기.
@@ -14,28 +18,11 @@ import "./worldcup-ball-goal.css";
 // 관계성(SDT/PENS), 게임=Mechanics·Dynamics·Aesthetics(MDA). 안전/성능: 레이어는 게임 중 입력을
 // 가로채되(집중), 자동경기·숨기기 토글과 공만 조작 가능. transform만(reflow 0), 멈추면/숨기면 rAF 중단.
 
-type Vec = { x: number; y: number };
-type Side = "left" | "right";
-type Role = "DF" | "DM" | "MF" | "WG" | "FW";
-type Slot = { bx: number; by: number; role: Role };
-type Team = {
-  formation: string;
-  slots: Slot[];
-  lineHeight: number; // 베이스라인 전진(0 깊음 .. 0.22 높음)
-  press: number; // 압박 강도(0.4..1)
-  tempo: number; // 속도 배수(0.9..1.2)
-  possession: number; // 1=짧은 점유(티키타카) .. 0=직접(롱볼)
-  width: number; // 좌우 전개(0.85..1.15)
-  name: string;
-};
-type Player = {
-  team: 0 | 1;
-  slot: Slot;
-  pace: number;
-  press: number;
-  pass: number;
-  shoot: number;
-  discipline: number;
+// 핵심 타입은 엔진(lib/football)이 단일 출처. 컴포넌트는 그 위에 '런타임 상태'만 얹는다.
+type Vec = Vec2;
+type Team = TeamPlan;
+// 런타임 선수 = 엔진 성향(PlayerPersona) + 화면/AI 상태(좌표·체력·캐시목표·반응시각·흔들림).
+type Player = PlayerPersona & {
   x: number;
   y: number;
   stamina: number; // 0..1 체력 — 압박/스프린트로 닳고 쉬면 회복. 낮으면 못 뛰고 압박서 빠짐(현실).
@@ -71,194 +58,9 @@ const AIR_MIN = 7; // 이 높이 위면 '떠 있음'(선수/키퍼 통과 + 흐�
 const OUT_X = 64; // 골라인이 좌우 끝에서 들어간 px (GOAL_W보다 커서 골대가 띠 안에 들어감)
 const OUT_Y = 36; // 터치라인이 위아래 끝에서 들어간 px
 
-const FORMATIONS: Record<string, Slot[]> = {
-  "4-3-3": [
-    { bx: 0.18, by: 0.12, role: "DF" },
-    { bx: 0.1, by: 0.37, role: "DF" },
-    { bx: 0.1, by: 0.63, role: "DF" },
-    { bx: 0.18, by: 0.88, role: "DF" },
-    { bx: 0.34, by: 0.5, role: "DM" },
-    { bx: 0.47, by: 0.3, role: "MF" },
-    { bx: 0.47, by: 0.7, role: "MF" },
-    { bx: 0.72, by: 0.14, role: "WG" },
-    { bx: 0.84, by: 0.5, role: "FW" },
-    { bx: 0.72, by: 0.86, role: "WG" }
-  ],
-  "4-4-2": [
-    { bx: 0.16, by: 0.12, role: "DF" },
-    { bx: 0.1, by: 0.38, role: "DF" },
-    { bx: 0.1, by: 0.62, role: "DF" },
-    { bx: 0.16, by: 0.88, role: "DF" },
-    { bx: 0.45, by: 0.12, role: "WG" },
-    { bx: 0.4, by: 0.38, role: "MF" },
-    { bx: 0.4, by: 0.62, role: "MF" },
-    { bx: 0.45, by: 0.88, role: "WG" },
-    { bx: 0.78, by: 0.4, role: "FW" },
-    { bx: 0.78, by: 0.6, role: "FW" }
-  ],
-  "3-5-2": [
-    { bx: 0.1, by: 0.3, role: "DF" },
-    { bx: 0.08, by: 0.5, role: "DF" },
-    { bx: 0.1, by: 0.7, role: "DF" },
-    { bx: 0.42, by: 0.1, role: "WG" },
-    { bx: 0.4, by: 0.35, role: "MF" },
-    { bx: 0.3, by: 0.5, role: "DM" },
-    { bx: 0.4, by: 0.65, role: "MF" },
-    { bx: 0.42, by: 0.9, role: "WG" },
-    { bx: 0.8, by: 0.42, role: "FW" },
-    { bx: 0.8, by: 0.58, role: "FW" }
-  ],
-  "4-2-3-1": [
-    { bx: 0.17, by: 0.12, role: "DF" },
-    { bx: 0.1, by: 0.38, role: "DF" },
-    { bx: 0.1, by: 0.62, role: "DF" },
-    { bx: 0.17, by: 0.88, role: "DF" },
-    { bx: 0.32, by: 0.4, role: "DM" },
-    { bx: 0.32, by: 0.6, role: "DM" },
-    { bx: 0.55, by: 0.16, role: "WG" },
-    { bx: 0.58, by: 0.5, role: "MF" },
-    { bx: 0.55, by: 0.84, role: "WG" },
-    { bx: 0.85, by: 0.5, role: "FW" }
-  ],
-  "4-1-4-1": [
-    { bx: 0.17, by: 0.12, role: "DF" },
-    { bx: 0.1, by: 0.38, role: "DF" },
-    { bx: 0.1, by: 0.62, role: "DF" },
-    { bx: 0.17, by: 0.88, role: "DF" },
-    { bx: 0.32, by: 0.5, role: "DM" },
-    { bx: 0.52, by: 0.14, role: "WG" },
-    { bx: 0.5, by: 0.4, role: "MF" },
-    { bx: 0.5, by: 0.6, role: "MF" },
-    { bx: 0.52, by: 0.86, role: "WG" },
-    { bx: 0.82, by: 0.5, role: "FW" }
-  ],
-  "3-4-3": [
-    { bx: 0.12, by: 0.3, role: "DF" },
-    { bx: 0.1, by: 0.5, role: "DF" },
-    { bx: 0.12, by: 0.7, role: "DF" },
-    { bx: 0.44, by: 0.12, role: "WG" },
-    { bx: 0.42, by: 0.4, role: "MF" },
-    { bx: 0.42, by: 0.6, role: "MF" },
-    { bx: 0.44, by: 0.88, role: "WG" },
-    { bx: 0.78, by: 0.22, role: "WG" },
-    { bx: 0.84, by: 0.5, role: "FW" },
-    { bx: 0.78, by: 0.78, role: "WG" }
-  ],
-  "5-3-2": [
-    { bx: 0.16, by: 0.1, role: "DF" },
-    { bx: 0.1, by: 0.3, role: "DF" },
-    { bx: 0.08, by: 0.5, role: "DF" },
-    { bx: 0.1, by: 0.7, role: "DF" },
-    { bx: 0.16, by: 0.9, role: "DF" },
-    { bx: 0.4, by: 0.3, role: "MF" },
-    { bx: 0.34, by: 0.5, role: "DM" },
-    { bx: 0.4, by: 0.7, role: "MF" },
-    { bx: 0.76, by: 0.4, role: "FW" },
-    { bx: 0.76, by: 0.6, role: "FW" }
-  ],
-  "5-4-1": [
-    { bx: 0.16, by: 0.1, role: "DF" },
-    { bx: 0.1, by: 0.3, role: "DF" },
-    { bx: 0.08, by: 0.5, role: "DF" },
-    { bx: 0.1, by: 0.7, role: "DF" },
-    { bx: 0.16, by: 0.9, role: "DF" },
-    { bx: 0.42, by: 0.14, role: "WG" },
-    { bx: 0.38, by: 0.4, role: "MF" },
-    { bx: 0.38, by: 0.6, role: "MF" },
-    { bx: 0.42, by: 0.86, role: "WG" },
-    { bx: 0.74, by: 0.5, role: "FW" }
-  ],
-  "4-5-1": [
-    { bx: 0.16, by: 0.12, role: "DF" },
-    { bx: 0.1, by: 0.38, role: "DF" },
-    { bx: 0.1, by: 0.62, role: "DF" },
-    { bx: 0.16, by: 0.88, role: "DF" },
-    { bx: 0.44, by: 0.1, role: "WG" },
-    { bx: 0.4, by: 0.32, role: "MF" },
-    { bx: 0.32, by: 0.5, role: "DM" },
-    { bx: 0.4, by: 0.68, role: "MF" },
-    { bx: 0.44, by: 0.9, role: "WG" },
-    { bx: 0.8, by: 0.5, role: "FW" }
-  ]
-};
-
+// 포메이션·전술·선수 생성은 엔진(lib/football)이 시드 기반으로 담당(결정적·테스트 가능).
+// 아래 rnd는 라이브 연출/AI 지터용(재현 불필요한 시각 흔들림). 생성에는 절대 쓰지 않는다.
 const rnd = (a: number, b: number) => a + Math.random() * (b - a);
-const pick = <T,>(arr: T[]) => arr[(Math.random() * arr.length) | 0];
-
-// 실제 축구 전술(FM 프리셋·전술 연구 기반). 각 스타일은 압박/점유/템포/라인높이/폭의 '성향'을
-// 갖고, 선호 포메이션이 다르다. genTeam이 약간의 지터를 더해 매 경기 다른 색을 낸다. 압박 인원은
-// press로 갈린다(pressersOf: ≥.82=3, ≥.68=2, 그 외 1) → 스타일별 압박·라인·점유가 확연히 다름.
-type TacticStyle = {
-  name: string;
-  forms: string[];
-  press: number; // 0.4..1
-  possession: number; // 1=짧은 점유 .. 0=직접(롱볼)
-  tempo: number; // 0.9..1.22
-  lineHeight: number; // 0(깊음)..0.22(하이라인)
-  width: number; // 0.85(좁게)..1.15(넓게)
-};
-// prettier-ignore
-const STYLES: TacticStyle[] = [
-  { name: "티키타카",   forms: ["4-3-3", "4-1-4-1"],            press: 0.80, possession: 0.86, tempo: 0.97, lineHeight: 0.16, width: 0.88 },
-  { name: "점유 축구",  forms: ["4-3-3", "4-2-3-1"],            press: 0.62, possession: 0.78, tempo: 1.00, lineHeight: 0.12, width: 1.00 },
-  { name: "게겐프레싱", forms: ["4-3-3", "4-2-3-1", "3-4-3"],   press: 0.96, possession: 0.56, tempo: 1.18, lineHeight: 0.17, width: 1.02 },
-  { name: "하이프레스", forms: ["4-4-2", "4-3-3"],              press: 0.84, possession: 0.54, tempo: 1.10, lineHeight: 0.15, width: 1.00 },
-  { name: "토탈 풋볼",  forms: ["4-3-3", "3-4-3"],              press: 0.80, possession: 0.74, tempo: 1.14, lineHeight: 0.18, width: 1.05 },
-  { name: "윙 플레이",  forms: ["4-4-2", "4-2-3-1", "3-4-3"],   press: 0.60, possession: 0.50, tempo: 1.06, lineHeight: 0.10, width: 1.15 },
-  { name: "미드블록",   forms: ["4-5-1", "4-2-3-1", "4-1-4-1"], press: 0.55, possession: 0.50, tempo: 1.00, lineHeight: 0.07, width: 0.95 },
-  { name: "역습 축구",  forms: ["4-4-2", "4-5-1", "4-2-3-1"],   press: 0.50, possession: 0.34, tempo: 1.16, lineHeight: 0.05, width: 0.96 },
-  { name: "롱볼 직접",  forms: ["4-4-2", "5-4-1"],              press: 0.56, possession: 0.20, tempo: 1.15, lineHeight: 0.08, width: 1.10 },
-  { name: "빗장 수비",  forms: ["5-3-2", "3-5-2"],              press: 0.44, possession: 0.40, tempo: 0.95, lineHeight: 0.02, width: 0.86 },
-  { name: "텐백 수비",  forms: ["5-4-1", "4-5-1"],              press: 0.43, possession: 0.30, tempo: 0.93, lineHeight: 0.01, width: 0.85 },
-  { name: "밸런스",     forms: ["4-4-2", "4-3-3", "4-2-3-1"],   press: 0.60, possession: 0.55, tempo: 1.00, lineHeight: 0.10, width: 1.00 }
-];
-
-const clampN = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
-
-function genTeam(): Team {
-  const s = pick(STYLES);
-  const formation = pick(s.forms);
-  return {
-    formation,
-    slots: FORMATIONS[formation],
-    lineHeight: clampN(s.lineHeight + rnd(-0.03, 0.03), 0, 0.22),
-    press: clampN(s.press + rnd(-0.06, 0.06), 0.4, 1),
-    tempo: clampN(s.tempo + rnd(-0.05, 0.05), 0.9, 1.22),
-    possession: clampN(s.possession + rnd(-0.06, 0.06), 0.15, 0.9),
-    width: clampN(s.width + rnd(-0.05, 0.05), 0.82, 1.18),
-    name: s.name
-  };
-}
-// 역할별 성격 기준치(±지터). pace/press/pass/shoot/discipline 0..1.
-function genPlayer(team: 0 | 1, slot: Slot): Player {
-  const r = slot.role;
-  const baseByRole: Record<Role, [number, number, number, number, number]> = {
-    // [pace, press, pass, shoot, discipline]
-    DF: [0.55, 0.45, 0.55, 0.15, 0.85],
-    DM: [0.6, 0.65, 0.78, 0.3, 0.8],
-    MF: [0.68, 0.6, 0.82, 0.45, 0.6],
-    WG: [0.9, 0.6, 0.6, 0.62, 0.4],
-    FW: [0.85, 0.55, 0.55, 0.85, 0.4]
-  };
-  const [pa, pr, ps, sh, di] = baseByRole[r];
-  const j = (v: number) => Math.max(0.05, Math.min(1, v + rnd(-0.15, 0.15)));
-  return {
-    team,
-    slot,
-    pace: j(pa),
-    press: j(pr),
-    pass: j(ps),
-    shoot: j(sh),
-    discipline: j(di),
-    x: 0,
-    y: 0,
-    stamina: rnd(0.85, 1),
-    tx: 0,
-    ty: 0,
-    thinkAt: 0,
-    wob: rnd(0, Math.PI * 2)
-  };
-}
 
 export function WorldCupBallGoal() {
   const layerRef = useRef<HTMLDivElement | null>(null);
@@ -301,6 +103,9 @@ export function WorldCupBallGoal() {
   const reduced = useRef(false);
   const rotated = useRef(false); // 모바일(≤640px): stage를 90° 세워 세로 피치로 — 입력 역매핑 필요
   const confettiId = useRef(0);
+  const matchSeed = useRef(0); // 이번 경기 시드(리플레이/디버그) — 엔진 생성의 재현 키
+  const matchStart = useRef(0); // 경기 시작 시각(이벤트 t 기준)
+  const eventLog = useRef(createEventLog()); // 골/세트피스/오프사이드 등 이벤트 기록(Phase 0 토대)
   // 세트피스(스로인/코너/골킥/킥오프/오프사이드)는 라인에 잠깐 멈췄다 재개 — 딜레이 후 kick 실행.
   const pendingRestart = useRef<{ at: number; kick: () => void; walk?: () => void } | null>(null);
   const possTeam = useRef<0 | 1 | null>(null); // 통제 중인 팀(lastTouch 기반 스무딩) — 압박 방향 판단.
@@ -390,16 +195,22 @@ export function WorldCupBallGoal() {
     return { x, y };
   };
 
+  // 이벤트 기록(Phase 0) — 골/세트피스/오프사이드 등. 평가·해설·디버그·리플레이의 토대.
+  const logEvent = (kind: MatchEventKind, team?: 0 | 1, x?: number, y?: number, detail?: string) => {
+    eventLog.current.push({ t: performance.now() - matchStart.current, kind, team, x, y, detail });
+  };
+
   const buildMatch = () => {
-    const ta = genTeam();
-    let tb = genTeam();
-    let guard = 0;
-    // 두 팀은 서로 다른 전술 스타일로(같은 스타일이면 재추첨) — 매 경기 색이 분명히 다르게.
-    while (tb.name === ta.name && guard < 8) {
-      tb = genTeam();
-      guard += 1;
-    }
+    matchStart.current = performance.now();
+    // 엔진이 시드 기반으로 두 팀 전술·포메이션·선수 성향을 '결정적으로' 생성(리플레이/테스트 가능).
+    // 매 경기 새 시드 → 다른 경기, 같은 시드 → 똑같은 경기. 라이브 연출(키퍼 성격 등)은 rnd로.
+    const seed = randomSeed();
+    matchSeed.current = seed;
+    const rng = makeRng(seed);
+    const { teams: plans, personas } = makeMatchup(rng);
+    const [ta, tb] = plans;
     teams.current = [ta, tb];
+    eventLog.current.clear();
     keeperReact.current.left = rnd(0.05, 0.09);
     keeperReact.current.right = rnd(0.05, 0.09);
     // 키퍼 성격 — 좌/우 팀마다 스위퍼(확 나옴) ↔ 라인키퍼(골문 근처) 다르게.
@@ -410,13 +221,18 @@ export function WorldCupBallGoal() {
     possTeam.current = null;
     counterPress.current = null;
     pendingRestart.current = null;
-    const list: Player[] = [];
-    ([0, 1] as const).forEach((team) => {
-      const t = team === 0 ? ta : tb;
-      t.slots.forEach((s) => list.push(genPlayer(team, s)));
-    });
-    players.current = list;
-    list.forEach((p) => {
+    // 엔진 성향(persona)에 런타임 상태를 입혀 화면용 Player로. stamina/wob도 같은 rng라 결정적.
+    players.current = personas.map((pp) => ({
+      ...pp,
+      x: 0,
+      y: 0,
+      stamina: rng.range(0.85, 1),
+      tx: 0,
+      ty: 0,
+      thinkAt: 0,
+      wob: rng.range(0, Math.PI * 2)
+    }));
+    players.current.forEach((p) => {
       const home = roleHome(p, 0);
       p.x = home.x;
       p.y = home.y;
@@ -546,6 +362,7 @@ export function WorldCupBallGoal() {
     lastTouch.current = null;
     lastActiveAt.current = performance.now();
     flashPiece("킥오프");
+    logEvent("kickoff", concede);
     scheduleRestart(
       1000,
       () => passToNearestTeammate(concede, pos.current.x, pos.current.y, 200),
@@ -561,6 +378,7 @@ export function WorldCupBallGoal() {
     pos.current.x = clamp(pos.current.x, fx.min, fx.max);
     pos.current.y = where === "top" ? insetY() : h - insetY(); // 터치라인 위
     flashPiece("스로인");
+    logEvent("throwIn", team, pos.current.x, pos.current.y);
     // 라인에서 한 박자 쉰 뒤, 가까운 선수가 와서 던진다(약 1초). 던질 땐 안쪽으로.
     scheduleRestart(
       1000,
@@ -588,6 +406,7 @@ export function WorldCupBallGoal() {
       pos.current.y = topCorner ? insetY() : h - insetY();
       lastTouch.current = attack;
       flashPiece("코너킥");
+      logEvent("cornerKick", attack, pos.current.x, pos.current.y);
       const boxX = side === "left" ? g.x + g.w + 60 : g.x - 60;
       // 공격팀 키커가 코너로 와서 박스로 띄워 올린다(크로스).
       scheduleRestart(
@@ -604,6 +423,7 @@ export function WorldCupBallGoal() {
       pos.current.y = clamp(pos.current.y, h * 0.3, h * 0.7);
       lastTouch.current = defend;
       flashPiece("골킥");
+      logEvent("goalKick", defend, pos.current.x, pos.current.y);
       const upfield = side === "left" ? bounds().w * 0.6 : bounds().w * 0.4;
       const ty = h * 0.5 + rnd(-h * 0.2, h * 0.2);
       // 골킥은 길게 띄운다(롱볼).
@@ -638,6 +458,7 @@ export function WorldCupBallGoal() {
     pos.current.y = clamp(y, ballDia() / 2, h - ballDia() / 2);
     lastTouch.current = defend;
     flashPiece("오프사이드");
+    logEvent("offside", attacker, x, y);
     // 수비팀 간접 프리킥 — 가까운 수비수가 와서 한 박자 뒤 짧게 재개.
     scheduleRestart(
       900,
@@ -653,6 +474,7 @@ export function WorldCupBallGoal() {
     goalAt.current = now;
     const scorer: 0 | 1 = side === "left" ? 1 : 0; // 그 골에 넣은 = 그 골을 공격한 팀
     setScore((s) => (scorer === 0 ? [s[0] + 1, s[1]] : [s[0], s[1] + 1]));
+    logEvent("goal", scorer, pos.current.x, pos.current.y);
     const g = goalRect(side);
     burstConfetti(g.x + g.w / 2, g.y + g.h / 2);
     setGoalFlash(true);
@@ -687,6 +509,7 @@ export function WorldCupBallGoal() {
     if (now - saveAt.current > SAVE_COOLDOWN_MS) {
       saveAt.current = now;
       setSaveFlash(side);
+      logEvent("save", side === "left" ? 0 : 1, pos.current.x, pos.current.y);
       window.setTimeout(() => setSaveFlash((s) => (s === side ? null : s)), 700);
       hapticTick();
     }
@@ -1098,6 +921,7 @@ export function WorldCupBallGoal() {
         lastTouch.current = null;
         lastActiveAt.current = now;
         flashPiece("볼 드롭");
+        logEvent("ballDrop");
       }
     }
 
