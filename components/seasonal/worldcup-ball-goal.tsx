@@ -51,7 +51,6 @@ const STOP_SPEED = 6;
 const BALL = 40;
 const GOAL_W = 70;
 const GOAL_H = 120;
-const GOAL_MARGIN_PX = 6;
 const WALL_T = 10;
 const DRAG_BUFFER = 100;
 const KD = 26;
@@ -64,6 +63,10 @@ const BALL_BOUNCE = 0.82;
 const CONTROL_SPEED = 150;
 const KICK_CD = 480;
 const MARGIN_Y_FRAC = 0.07;
+// 실제 축구처럼 경기장 라인을 화면 끝에서 살짝 안쪽에 둔다 → 라인 밖은 '아웃오브플레이' 띠.
+// 골대는 이 골라인(좌우) 위에 살짝 앞으로 띄워 선다. 공이 이 라인을 넘으면 스로인/코너/골킥.
+const OUT_X_FRAC = 0.028; // 골라인이 좌우 끝에서 들어간 비율 (CSS .wc-bound와 일치)
+const OUT_Y_FRAC = 0.045; // 터치라인이 위아래 끝에서 들어간 비율
 
 const FORMATIONS: Record<string, Slot[]> = {
   "4-3-3": [
@@ -309,10 +312,13 @@ export function WorldCupBallGoal() {
   // 키퍼는 선수와 같은 크기(PLAYER_R*2). 물리용이라 rotated.current(=isMobile) 기준.
   const ballDia = () => (rotated.current ? 26 : BALL);
   const kdDia = () => (rotated.current ? PLAYER_R * 2 : KD);
+  // 경기장 라인(아웃 판정 기준) — 화면 끝에서 인셋. 좌우=골라인, 위아래=터치라인.
+  const insetX = () => bounds().w * OUT_X_FRAC;
+  const insetY = () => bounds().h * OUT_Y_FRAC;
 
   const goalRect = (side: Side) => {
     const { w, h } = bounds();
-    const m = GOAL_MARGIN_PX;
+    const m = insetX(); // 골대는 골라인 위에(살짝 앞으로 띄워) 선다
     const x = side === "left" ? m : w - m - GOAL_W;
     const y = h * 0.5 - GOAL_H / 2;
     return { x, y, w: GOAL_W, h: GOAL_H };
@@ -529,11 +535,10 @@ export function WorldCupBallGoal() {
   const throwIn = (where: "top" | "bottom") => {
     const { h } = bounds();
     const fx = fieldX();
-    const r = ballDia() / 2;
     const team: 0 | 1 =
       lastTouch.current === 0 ? 1 : lastTouch.current === 1 ? 0 : Math.random() < 0.5 ? 0 : 1;
     pos.current.x = clamp(pos.current.x, fx.min, fx.max);
-    pos.current.y = where === "top" ? r + 2 : h - r - 2;
+    pos.current.y = where === "top" ? insetY() : h - insetY(); // 터치라인 위
     flashPiece("스로인");
     // 라인에서 한 박자 쉰 뒤, 가까운 선수가 와서 던진다(약 1초). 던질 땐 안쪽으로.
     scheduleRestart(
@@ -550,17 +555,16 @@ export function WorldCupBallGoal() {
 
   // 골라인 아웃(좌/우 사이드, 골문 밖) → 마지막 터치가 공격수면 골킥, 수비수면 코너킥.
   const goalLineOut = (side: Side) => {
-    const { h } = bounds();
+    const { w, h } = bounds();
     const g = goalRect(side);
-    const r = ballDia() / 2;
     const defend: 0 | 1 = side === "left" ? 0 : 1; // 그 골을 지키는 팀
     const attack: 0 | 1 = defend === 0 ? 1 : 0;
     const byAttacker = lastTouch.current === attack;
     if (!byAttacker) {
-      // 코너킥 — 공격팀이 코너에서 박스로. 키커가 자리잡는 약 1.1초 뒤 올린다.
+      // 코너킥 — 공격팀이 코너(골라인×터치라인 교차)에서 박스로. 키커가 자리잡는 약 1.1초 뒤 올린다.
       const topCorner = pos.current.y < h * 0.5;
-      pos.current.x = side === "left" ? r + 2 : bounds().w - r - 2;
-      pos.current.y = topCorner ? r + 2 : h - r - 2;
+      pos.current.x = side === "left" ? insetX() : w - insetX();
+      pos.current.y = topCorner ? insetY() : h - insetY();
       lastTouch.current = attack;
       flashPiece("코너킥");
       const boxX = side === "left" ? g.x + g.w + 60 : g.x - 60;
@@ -978,31 +982,34 @@ export function WorldCupBallGoal() {
       pos.current.y += vel.current.y * dt;
       vel.current.x *= FRICTION;
       vel.current.y *= FRICTION;
-      const r = ballDia() / 2;
-      // 좌우 = 골라인. 경기 중 골문 밖으로 나가면 코너/골킥, 아니면 튕김.
-      if (pos.current.x < r || pos.current.x > w - r) {
-        const side: Side = pos.current.x < r ? "left" : "right";
+      const mx = insetX(); // 골라인(좌우)
+      const my = insetY(); // 터치라인(위아래)
+      // 좌우 = 골라인. 골문 안이면 득점/세이브/골대벽이 처리. 밖이면 경기 중 코너/골킥, 아니면 튕김.
+      if (pos.current.x < mx || pos.current.x > w - mx) {
+        const side: Side = pos.current.x < mx ? "left" : "right";
         const g = goalRect(side);
         const inMouth = pos.current.y > g.y && pos.current.y < g.y + g.h;
-        if (run && !inMouth) {
+        if (inMouth) {
+          // 골문 안으로 — 라인아웃 아님(골대 뒤벽/득점 로직이 처리).
+        } else if (run) {
           goalLineOut(side);
-        } else if (pos.current.x < r) {
-          pos.current.x = r;
+        } else if (pos.current.x < mx) {
+          pos.current.x = mx;
           vel.current.x = -vel.current.x * WALL_RESTITUTION;
         } else {
-          pos.current.x = w - r;
+          pos.current.x = w - mx;
           vel.current.x = -vel.current.x * WALL_RESTITUTION;
         }
       }
-      // 위/아래 = 사이드라인. 경기 중이면 스로인.
-      if (pos.current.y < r || pos.current.y > h - r) {
+      // 위/아래 = 터치라인. 경기 중이면 스로인.
+      if (pos.current.y < my || pos.current.y > h - my) {
         if (run) {
-          throwIn(pos.current.y < r ? "top" : "bottom");
-        } else if (pos.current.y < r) {
-          pos.current.y = r;
+          throwIn(pos.current.y < my ? "top" : "bottom");
+        } else if (pos.current.y < my) {
+          pos.current.y = my;
           vel.current.y = -vel.current.y * WALL_RESTITUTION;
         } else {
-          pos.current.y = h - r;
+          pos.current.y = h - my;
           vel.current.y = -vel.current.y * WALL_RESTITUTION;
         }
       }
@@ -1256,7 +1263,7 @@ export function WorldCupBallGoal() {
     ensureLoop();
   };
 
-  const edge = `${GOAL_MARGIN_PX}px`;
+  const edge = `${OUT_X_FRAC * 100}%`; // 골대를 골라인(인셋) 위에 — 물리 goalRect와 일치
   const goalStyle = (side: Side): React.CSSProperties => ({
     [side]: edge,
     top: `calc(50% - ${GOAL_H / 2}px)`,
@@ -1279,6 +1286,7 @@ export function WorldCupBallGoal() {
           {/* 피치 본체 — 모바일에선 이 stage만 90° 세워 세로 피치로. 물리는 landscape 그대로. */}
           <div className="wc-stage" ref={layerRef}>
             <div className="wc-pitch" aria-hidden="true">
+              <span className="wc-bound" />
               <span className="wc-mid" />
               <span className="wc-circle" />
               <span className="wc-spot" />
