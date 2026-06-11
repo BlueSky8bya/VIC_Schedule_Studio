@@ -3,6 +3,14 @@
 
 export type Vec2 = { x: number; y: number };
 
+/** 공 상태(미터). height=지면 위 높이(공중볼), vz=수직속도. */
+export type BallState = {
+  pos: Vec2;
+  vel: Vec2;
+  height: number;
+  vz: number;
+};
+
 /** 좌/우 골(골대·골라인 식별) */
 export type Side = "left" | "right";
 
@@ -55,3 +63,26 @@ export type Matchup = {
   teams: [TeamPlan, TeamPlan];
   personas: PlayerPersona[];
 };
+
+/** 경기 페이즈 — 룰 상태머신(Phase 1c)이 쓴다. */
+export type MatchPhase =
+  | "preKickoff"
+  | "openPlay"
+  | "stoppage"
+  | "restartSetup"
+  | "restartReady"
+  | "goalScored"
+  | "halfTime"
+  | "fullTime";
+
+/** 재개 종류(Law 8·13~17). */
+export type RestartKind =
+  | "kickoff"
+  | "throwIn"
+  | "goalKick"
+  | "cornerKick"
+  | "directFreeKick"
+  | "indirectFreeKick"
+  | "penaltyKick"
+  | "droppedBall"
+  | "offsideIndirectFreeKick";
