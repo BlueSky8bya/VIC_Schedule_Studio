@@ -1350,6 +1350,13 @@ export function WorldCupBallGoal() {
             const lineX = p.team === 0 ? fx.min + depth * half * 0.5 : fx.max - depth * half * 0.5;
             tx = lineX + clamp((bx - lineX) * 0.04, -w * 0.03, w * 0.03);
           }
+          // 후방 빌드업 — 점유팀이 자기 진영 깊은 곳에서 공을 돌릴 땐 폭을 벌려 패스 레인을 연다(중앙
+          // 밀집 완화 + 사이드 전개). 공격 지원 선수(DF 제외)에게만.
+          if (attacking && p.slot.role !== "DF") {
+            const third = (fx.max - fx.min) * 0.38;
+            const inOwnThird = p.team === 0 ? bx < fx.min + third : bx > fx.max - third;
+            if (inOwnThird) ty = clamp(h * 0.5 + (ty - h * 0.5) * 1.3, PLAYER_R, h - PLAYER_R);
+          }
         }
         const jit = mode === "shape" || mode === "support" ? 26 : 12;
         p.tx = tx + rnd(-jit, jit);
