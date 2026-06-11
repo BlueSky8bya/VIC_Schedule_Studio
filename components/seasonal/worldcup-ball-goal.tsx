@@ -139,6 +139,28 @@ export function WorldCupBallGoal() {
   const breakUntil = useRef(0); // real ms — 이 시각까지 하프타임/피리어드 사이 휴식(시계·플레이 정지)
   const [clockText, setClockText] = useState("");
   const [matchResult, setMatchResult] = useState<string | null>(null);
+  // 승부차기 — 연장(4피리어드)까지 동점이면. 5키커 선축 후 서든데스. phase 타임라인으로 진행.
+  const shootout = useRef({
+    active: false,
+    a: 0,
+    b: 0,
+    takenA: 0,
+    takenB: 0,
+    turn: 0 as 0 | 1,
+    round: 1,
+    phase: "" as "" | "setup" | "run" | "result",
+    at: 0,
+    scored: false,
+    targetY: 0,
+    guessY: 0
+  });
+  const [pkText, setPkText] = useState<{
+    a: number;
+    b: number;
+    turn: 0 | 1;
+    round: number;
+    note: string;
+  } | null>(null);
   const [tacticsOpen, setTacticsOpen] = useState(false); // 전술 변경 패널 열림
   const [statsOpen, setStatsOpen] = useState(false); // 경기 기록 패널 열림
   const [pickPlayer, setPickPlayer] = useState<number | null>(null); // 호버/탭한 선수(정보 카드)
@@ -301,6 +323,8 @@ export function WorldCupBallGoal() {
     clock.current = { t: 0, period: 1, added: 0, ended: false };
     stats.current = { poss: [0, 0], shot: [0, 0], foul: [0, 0], yellow: [0, 0], red: [0, 0] };
     setStatText(null);
+    shootout.current.active = false;
+    setPkText(null);
     breakUntil.current = 0;
     setMatchResult(null);
     setClockText("전반 00:00");
@@ -1067,6 +1091,157 @@ export function WorldCupBallGoal() {
   const startBreak = () => {
     breakUntil.current = performance.now() + HALF_BREAK_MS;
   };
+  // ── 승부차기 ──────────────────────────────────────────────────────────────
+  const pickKicker = (team: 0 | 1, n: number): Player | null => {
+    const ids = players.current.filter((p) => p.team === team && !p.red);
+    return ids.length ? ids[n % ids.length] : null;
+  };
+  const shootoutDecided = (): 0 | 1 | null => {
+    const s = shootout.current;
+    const ra = Math.max(0, 5 - s.takenA);
+    const rb = Math.max(0, 5 - s.takenB);
+    if (s.takenA <= 5 && s.takenB <= 5) {
+      if (s.a > s.b + rb) return 0; // 남은 킥으로 못 뒤집음
+      if (s.b > s.a + ra) return 1;
+    }
+    // 정규 5키커 종료 또는 서든데스 — 같은 횟수 찬 뒤 차이나면 결정.
+    if (s.takenA >= 5 && s.takenA === s.takenB && s.a !== s.b) return s.a > s.b ? 0 : 1;
+    return null;
+  };
+  const pkBadge = (s: typeof shootout.current) =>
+    `승부차기 ${s.round}R · ${s.turn === 0 ? "🔴" : "🔵"} 차례`;
+  const startShootout = () => {
+    const { w, h } = bounds();
+    const s = shootout.current;
+    s.active = true;
+    s.a = 0;
+    s.b = 0;
+    s.takenA = 0;
+    s.takenB = 0;
+    s.round = 1;
+    s.turn = Math.random() < 0.5 ? 0 : 1;
+    s.phase = "setup";
+    s.at = performance.now();
+    s.scored = false;
+    vel.current = { x: 0, y: 0 };
+    ballZ.current = 0;
+    ballVZ.current = 0;
+    setMatchResult(null);
+    setScore([0, 0]);
+    scoreRef.current = [0, 0];
+    flashPiece("승부차기");
+    // 22명 하프라인 양쪽에 도열(관전).
+    players.current.forEach((p, i) => {
+      const col = p.team === 0 ? w * 0.5 - 34 : w * 0.5 + 34;
+      const k = i % 10;
+      p.red = false;
+      p.x = col;
+      p.y = h * 0.5 - h * 0.3 + (k / 9) * h * 0.6;
+      p.tx = p.x;
+      p.ty = p.y;
+    });
+    keeperX.current.left = 0;
+    keeperX.current.right = 0;
+    keeperY.current.left = h * 0.5;
+    keeperY.current.right = h * 0.5;
+    setPkText({ a: 0, b: 0, turn: s.turn, round: 1, note: "" });
+    setClockText(pkBadge(s));
+  };
+  const PK_SETUP = 900;
+  const PK_RUN = 640;
+  const PK_RESULT = 1250;
+  const runShootout = (tNow: number, dt: number) => {
+    const s = shootout.current;
+    const { w, h } = bounds();
+    const attackRight = s.turn === 0; // 팀0은 오른쪽 골을 공격
+    const defSide: Side = attackRight ? "right" : "left";
+    const goalLineX = attackRight ? w - insetX() : insetX();
+    const spotX = attackRight ? goalLineX - w * 0.1 : goalLineX + w * 0.1;
+    if (s.phase === "setup") {
+      pos.current.x = spotX;
+      pos.current.y = h * 0.5;
+      vel.current = { x: 0, y: 0 };
+      keeperX.current[defSide] = 0;
+      keeperY.current[defSide] = h * 0.5;
+      if (tNow - s.at >= PK_SETUP) {
+        const kicker = pickKicker(s.turn, s.turn === 0 ? s.takenA : s.takenB);
+        const skill = kicker ? kicker.shoot : 0.6;
+        s.scored = Math.random() < 0.5 + skill * 0.32; // 키커 슛 능력 → 성공률
+        const top = Math.random() < 0.5;
+        s.targetY = h * 0.5 + (top ? -1 : 1) * goalH() * 0.42;
+        s.guessY = s.scored ? h * 0.5 + (top ? 1 : -1) * goalH() * 0.55 : s.targetY; // 막으면 같은 쪽 다이브
+        setVelTo(goalLineX + (attackRight ? 6 : -6), s.targetY, 640);
+        stats.current.shot[s.turn] += 1;
+        s.phase = "run";
+        s.at = tNow;
+      }
+    } else if (s.phase === "run") {
+      const kp = keeperY.current[defSide];
+      keeperY.current[defSide] = kp + clamp(s.guessY - kp, -26, 26);
+      pos.current.x += vel.current.x * dt;
+      pos.current.y += vel.current.y * dt;
+      if (!s.scored) {
+        // 막힘 — 공이 골라인 근처 닿으면 키퍼가 쳐낸다(멈춤).
+        const reached = attackRight ? pos.current.x >= goalLineX - 2 : pos.current.x <= goalLineX + 2;
+        if (reached) {
+          pos.current.x = goalLineX + (attackRight ? -3 : 3);
+          vel.current = { x: 0, y: 0 };
+        }
+      }
+      if (tNow - s.at >= PK_RUN) {
+        if (s.scored) {
+          if (s.turn === 0) s.a += 1;
+          else s.b += 1;
+          burstConfetti(goalLineX, s.targetY);
+          setGoalFlash(true);
+          window.setTimeout(() => setGoalFlash(false), 800);
+          hapticSuccess();
+        } else {
+          setSaveFlash(defSide);
+          window.setTimeout(() => setSaveFlash(null), 800);
+          hapticTick();
+        }
+        if (s.turn === 0) s.takenA += 1;
+        else s.takenB += 1;
+        setScore([s.a, s.b]); // 스코어 박스에 PK 누계 표시
+        scoreRef.current = [s.a, s.b];
+        setPkText({ a: s.a, b: s.b, turn: s.turn, round: s.round, note: s.scored ? "성공" : "실패" });
+        s.phase = "result";
+        s.at = tNow;
+      }
+    } else if (s.phase === "result") {
+      if (tNow - s.at >= PK_RESULT) {
+        const dec = shootoutDecided();
+        if (dec != null) {
+          endShootout(dec);
+          return;
+        }
+        s.turn = s.turn === 0 ? 1 : 0;
+        s.round = Math.min(s.takenA, s.takenB) + 1;
+        s.phase = "setup";
+        s.at = tNow;
+        s.scored = false;
+        setPkText({ a: s.a, b: s.b, turn: s.turn, round: s.round, note: "" });
+        setClockText(pkBadge(s));
+      }
+    }
+  };
+  const endShootout = (winner: 0 | 1) => {
+    const s = shootout.current;
+    s.active = false;
+    clock.current.ended = true;
+    setMatchResult(`${winner === 0 ? "🔴 승리" : "🔵 승리"}  (승부차기 ${s.a} : ${s.b})`);
+    setPkText(null);
+    flashPiece("경기 종료");
+    window.setTimeout(() => {
+      clock.current.ended = false;
+      buildMatch();
+      centerBall();
+      passToNearestTeammate(Math.random() < 0.5 ? 0 : 1, pos.current.x, pos.current.y, 200);
+      lastActiveAt.current = performance.now();
+    }, MATCH_END_RESTART_MS);
+  };
+
   const endMatch = () => {
     clock.current.ended = true;
     const [a, b] = scoreRef.current;
@@ -1103,6 +1278,8 @@ export function WorldCupBallGoal() {
       c.t = 105;
       flashPiece("연장 후반");
       advanced = true;
+    } else if (scoreRef.current[0] === scoreRef.current[1]) {
+      startShootout(); // 연장까지 동점 → 승부차기
     } else {
       endMatch();
     }
@@ -1116,7 +1293,7 @@ export function WorldCupBallGoal() {
   // 매 프레임 호출(플레이 중). 1 real초 = 1 게임분. 휴식 중엔 정지. 표시는 throttle.
   const tickClock = () => {
     const c = clock.current;
-    if (c.ended || performance.now() < breakUntil.current) return;
+    if (c.ended || shootout.current.active || performance.now() < breakUntil.current) return;
     c.t += 1 / 60;
     if (possTeam.current != null) stats.current.poss[possTeam.current] += 1; // 점유 프레임 누적
     if (c.t >= PERIOD_END[c.period - 1] + c.added) endPeriod();
@@ -1154,6 +1331,17 @@ export function WorldCupBallGoal() {
         lastActiveAt.current = tNow;
       }
     }
+    // 승부차기 — 정규 22인 시뮬을 멈추고 스크립트 시퀀스(키커·키퍼·공)만 돌린다.
+    if (shootout.current.active) {
+      runShootout(tNow, dt);
+      placePlayers();
+      placeKeepers();
+      place();
+      raf.current =
+        enabledRef.current && runningRef.current ? window.requestAnimationFrame(step) : null;
+      return;
+    }
+
     // 프리즈 = 세트피스 대기 OR 하프타임/피리어드 휴식 OR 경기 종료 → 모든 플레이 정지(공·선수·득점).
     const frozen =
       pendingRestart.current != null || tNow < breakUntil.current || clock.current.ended;
