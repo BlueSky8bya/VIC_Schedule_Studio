@@ -52,6 +52,42 @@
 .wc-goal-right .wc-goal-frame {
   border-left: 0;
 }
+/* 골 손맛 — 골 들어가면 그물이 입구 반대(바깥)로 촤르륵 부풀었다 감긴다 + 밝게 번쩍. 입구쪽을
+   transform-origin으로 잡아 안쪽에서 바깥으로 출렁이는 느낌. */
+.wc-goal-left.wc-goal-scored .wc-goal-net {
+  transform-origin: right center;
+  animation: wc-net-bulge 0.62s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+.wc-goal-right.wc-goal-scored .wc-goal-net {
+  transform-origin: left center;
+  animation: wc-net-bulge 0.62s cubic-bezier(0.22, 1.2, 0.36, 1) both;
+}
+@keyframes wc-net-bulge {
+  0% {
+    transform: scaleX(1) scaleY(1);
+    filter: brightness(1);
+  }
+  28% {
+    transform: scaleX(1.32) scaleY(1.08);
+    filter: brightness(1.7);
+  }
+  55% {
+    transform: scaleX(0.94) scaleY(0.98);
+    filter: brightness(1.15);
+  }
+  78% {
+    transform: scaleX(1.06) scaleY(1.01);
+  }
+  100% {
+    transform: scaleX(1) scaleY(1);
+    filter: brightness(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
+  .wc-goal-scored .wc-goal-net {
+    animation: none;
+  }
+}
 
 /* 공 — 유일하게 잡히는 요소(pointer-events:auto). 위치는 JS가 transform으로. */
 .wc-ball {

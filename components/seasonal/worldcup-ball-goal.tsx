@@ -83,6 +83,7 @@ export function WorldCupBallGoal() {
   const [running, setRunning] = useState(true);
   const [isMobile, setIsMobile] = useState(false); // ≤640px — 공·키퍼를 작게(렌더용; 물리는 rotated.current)
   const [goalFlash, setGoalFlash] = useState(false);
+  const [netFlash, setNetFlash] = useState<Side | null>(null); // 골 들어간 골대 그물 출렁임
   const [saveFlash, setSaveFlash] = useState<Side | null>(null);
   const [setPiece, setSetPiece] = useState<string | null>(null);
   const [score, setScore] = useState<[number, number]>([0, 0]); // [team0, team1]
@@ -676,9 +677,16 @@ export function WorldCupBallGoal() {
     burstConfetti(g.x + g.w / 2, g.y + g.h / 2);
     setGoalFlash(true);
     window.setTimeout(() => setGoalFlash(false), 900);
+    // 손맛 — 그물 출렁임 + 공이 그물에 푹 박힌다(통과해서 날아가지 않게 감속해 안착).
+    setNetFlash(side);
+    window.setTimeout(() => setNetFlash((s) => (s === side ? null : s)), 700);
+    vel.current.x *= 0.16;
+    vel.current.y *= 0.16;
+    ballZ.current = 0;
+    ballVZ.current = 0;
     hapticSuccess();
     const concede: 0 | 1 = side === "left" ? 0 : 1;
-    window.setTimeout(() => kickoff(concede), 850);
+    window.setTimeout(() => kickoff(concede), 950);
   };
 
   const doSave = (side: Side) => {
@@ -1830,7 +1838,11 @@ export function WorldCupBallGoal() {
             </div>
 
             {(["left", "right"] as Side[]).map((side) => (
-              <div className={`wc-goal wc-goal-${side}`} key={side} style={goalStyle(side)}>
+              <div
+                className={`wc-goal wc-goal-${side} ${netFlash === side ? "wc-goal-scored" : ""}`}
+                key={side}
+                style={goalStyle(side)}
+              >
                 <div className="wc-goal-net" />
                 <div className="wc-goal-frame" />
               </div>
