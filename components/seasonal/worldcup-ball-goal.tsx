@@ -1353,14 +1353,16 @@ export function WorldCupBallGoal() {
           tx = bx + (og.x + og.w / 2 - bx) * 0.32;
           ty = by + (og.y + og.h / 2 - by) * 0.32;
         } else {
-          // shape/support — 역할 home + 공쪽 제한 쏠림. 수비=컴팩트(많이), 공격=벌림(적게+전진).
+          // shape/support — 역할 home(포메이션 슬롯) 우선, 공쪽으론 '살짝만' 시프트. 횡(y) 끌림을
+          // 크게 주면 비수비수 전원이 공.y로 수렴해 졸졸 따라다녔음 → 폭(자기 자리)을 지키게 infY·maxY를
+          // 낮춤. 깊이(x) 시프트는 팀 블록이 함께 오르내리는 것이라 유지. (DF는 아래 라인 로직이 덮음.)
           const fwd = p.slot.role === "FW" || p.slot.role === "WG";
           const push = counterRun ? 0.26 : attacking ? (fwd ? 0.18 : 0.1) : -0.06;
           const home = roleHome(p, push);
-          const infX = attacking ? 0.1 : 0.16;
-          const infY = attacking ? 0.22 : 0.3;
-          const maxX = w * (attacking ? 0.12 : 0.16);
-          const maxY = h * 0.22;
+          const infX = attacking ? 0.1 : 0.12;
+          const infY = attacking ? 0.12 : 0.16;
+          const maxX = w * (attacking ? 0.12 : 0.14);
+          const maxY = h * 0.13;
           tx = home.x + clamp((bx - home.x) * infX, -maxX, maxX);
           ty = home.y + clamp((by - home.y) * infY, -maxY, maxY);
           // 공격수는 형태 유지 중엔 오프사이드 라인 안쪽(온사이드)에 머문다 — 라인 너머 camp하면
@@ -1600,7 +1602,9 @@ export function WorldCupBallGoal() {
     const clampTx = (x: number) => clamp(x, fx.min, fx.max);
     const clampTy = (y: number) => clamp(y, insetY(), h - insetY());
     // 패스길이 '보이면'(레인 개방도 충분) 깔끔히 연결. 타깃은 필드 안으로 clamp해 라인 밖(스로인) 헌납 방지.
-    const LANE_OPEN = 0.5;
+    // 임계 0.34 — passProbability는 거리 페널티(lenPenalty, 긴 패스 0.4~0.5)를 포함해 0.5로 잡으면
+    // '열려 있어도 긴 패스'가 죄다 막혀 과드리블이 났음. 레인이 실제로 막힌 경우만(낮은 prob) 끈다.
+    const LANE_OPEN = 0.34;
     if (best >= 0 && bestProb >= LANE_OPEN) {
       angleCarry.current = 0;
       const m = players.current[best];
