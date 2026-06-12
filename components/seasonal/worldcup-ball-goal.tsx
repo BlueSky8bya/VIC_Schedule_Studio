@@ -1291,7 +1291,6 @@ export function WorldCupBallGoal() {
     {
       const defTeam: 0 | 1 = poss === 0 ? 1 : 0;
       const nP = pressersOf(defTeam);
-      const maxMark = w * 0.26; // 자기 존서 이 거리 밖 상대는 안 맡음(쫓아가지 않게)
       const opps: number[] = [];
       players.current.forEach((q, j) => {
         if (q.team === defTeam || q.red) return; // 공격팀(=맡을 상대)만
@@ -1309,8 +1308,12 @@ export function WorldCupBallGoal() {
       const taken = new Set<number>();
       markers.forEach((mi) => {
         const hm = homeOf.get(mi)!;
+        // 마킹 존 반경 — 역할별. 수비수(DF/DM)는 넓은 존을 책임지고 적극적으로 상대를 픽업(마크),
+        // 미드는 보통, 공격수(FW/WG)는 거의 안 내려와 좁게(존 밖 상대는 안 쫓아 포지션 유지).
+        const mr = players.current[mi].slot.role;
+        const reach = mr === "DF" || mr === "DM" ? w * 0.34 : mr === "MF" ? w * 0.25 : w * 0.16;
         let bo = -1;
-        let bd = maxMark; // 존 반경 안의 상대만
+        let bd = reach; // 존 반경 안의 상대만
         opps.forEach((oj) => {
           if (taken.has(oj)) return;
           // 자기 포지션(존)에서 가까운 상대 — 현재 위치가 아니라 home 기준이라 구역을 안 벗어난다.
@@ -1825,19 +1828,42 @@ export function WorldCupBallGoal() {
     // 각도 좁은 측면 깊숙은 xG 낮아 덜 쏘고, 정면 가까이는 적극. 직접축구는 먼 거리도 가산.
     // 사람다운 변동은 random 유지(렌더러 연출).
     const xg = xgFromShot(pitchMeters(p.x, p.y), p.team);
+    // 역할(포지션)별 성향 — FW/WG는 슛·공격 적극, MF/DM은 볼 배분(패스) 우선, DF는 오픈플레이 슛 자제.
+    const role = p.slot.role;
+    const isFwd = role === "FW" || role === "WG";
+    const isMid = role === "MF" || role === "DM";
+    const isDef = role === "DF";
+    const dir = enemy === "left" ? -1 : 1; // 공격 방향(+x 오른쪽 골 / -x 왼쪽 골)
     // 슛 성향 — 슛 능력 + 포처(FW poaching)는 박스서 더 노리고, 이타적(altruism)이면 덜 쏘고 패스 선호.
-    const poach = p.slot.role === "FW" ? p.poaching * 0.4 : 0;
+    // 역할 가중: FW 적극(×1.35), MF 보통(×0.95), DF 자제(×0.55).
+    const poach = isFwd ? p.poaching * 0.4 : 0;
+    const roleShoot = isFwd ? 1.35 : isMid ? 0.95 : 0.55;
     const shootProb =
       (xg * (1.0 + p.shoot * 0.8) + (possession < 0.4 ? xg * 0.4 : 0)) *
       (1 + poach) *
-      (1 - p.altruism * 0.3);
-    if (xg > 0.05 && Math.random() < shootProb) {
+      (1 - p.altruism * 0.3) *
+      roleShoot;
+    // 클리어찬스/1대1 — 나와 골 사이(슈팅 콘)에 막는 '필드' 수비가 없고 사정권이면 역할 불문 거의 무조건
+    // 슛. 키퍼는 players에 없으므로 blockers==0 = 사실상 키퍼와 단독. (수비 다 제치고 1대1인데 백 롱패스
+    // 띄워 풀백에 주는 끔찍한 장면 방지 — 찬스면 무조건 마무리.)
+    const goalDist = Math.hypot(goalCx - p.x, goalCy - p.y);
+    let blockers = 0;
+    players.current.forEach((e) => {
+      if (e.team === p.team || e.red) return;
+      const ahead = (e.x - p.x) * dir > 0; // 나보다 골 쪽 앞
+      const beforeGoal = (goalCx - e.x) * dir >= 0; // 골과 나 사이(슈팅 길을 막는 위치)
+      if (ahead && beforeGoal && Math.abs(e.y - p.y) < h * 0.17) blockers += 1;
+    });
+    const clearChance = goalDist < w * 0.4 && blockers === 0;
+    if (clearChance || (xg > 0.05 && Math.random() < shootProb)) {
       dribbleCount.current = 0;
       angleCarry.current = 0;
       stats.current.shot[p.team] += 1;
       logEvent("shot", p.team, p.x, p.y);
       const tx = enemy === "left" ? g.x + g.w : g.x;
-      const ty = g.y + g.h / 2 + (Math.random() * 2 - 1) * g.h * 0.5 * (1.2 - p.shoot);
+      // 클리어찬스는 침착하게 구석(스프레드 작게), 그 외엔 슛 능력 따라 흩어진다.
+      const spread = clearChance ? g.h * 0.3 : g.h * 0.5 * (1.2 - p.shoot);
+      const ty = g.y + g.h / 2 + (Math.random() * 2 - 1) * spread;
       setVelTo(tx, ty, 480 + Math.random() * 150);
       return;
     }
@@ -1849,7 +1875,6 @@ export function WorldCupBallGoal() {
       angleCarry.current = 0;
       lastBallPlayer.current = p;
     }
-    const dir = enemy === "left" ? -1 : 1; // 공격 방향(+x 오른쪽 골 / -x 왼쪽 골)
     let oppNear = Infinity;
     let nearEx = 0;
     let nearEy = 0;
@@ -1872,7 +1897,13 @@ export function WorldCupBallGoal() {
     // 점유↑일수록 끌어서 모든 전술이 드리블 과다였음). 기본 확률도 낮춤(패스가 우선되게).
     // 드리블 — 앞 공간 + 개인기 성향 + 직접 전술일수록 더. (밀어서 끌던 아티팩트는 셸드로 해결됐으니
     // 이제 진짜 carry를 적정 빈도로.) 점유 전술은 패스 우선이라 덜 끔.
-    const carryProb = clamp(0.14 + adventurous * 0.22 - (possession - 0.5) * 0.42, 0.05, 0.46);
+    // 역할 가중 — FW/WG는 더 끌고(돌파), DF는 거의 안 끌고 안전 패스(수비수가 무리한 드리블 X).
+    const roleCarry = isFwd ? 1.3 : isDef ? 0.55 : 1;
+    const carryProb = clamp(
+      (0.14 + adventurous * 0.22 - (possession - 0.5) * 0.42) * roleCarry,
+      0.04,
+      0.5
+    );
     const wantCarry = canDribble && !pressed && spaceAhead > w * 0.16 && Math.random() < carryProb;
     const wantBeatMan = canDribble && pressed && Math.random() < adventurous * 0.16;
     if (wantCarry || wantBeatMan) {
@@ -2012,8 +2043,10 @@ export function WorldCupBallGoal() {
       const dpass = Math.hypot(m.x - p.x, m.y - p.y);
       const power = clamp(dpass * 3, 320, 760);
       setVelTo(clampTx(m.x + rnd(-err, err)), clampTy(m.y + rnd(-err, err)), power);
-      // 롱패스는 띄워서 수비 너머로(점유 성향 낮은 직접축구일수록 더 짧은 거리에서도 띄운다).
-      if (dpass > w * (0.2 + possession * 0.22)) loftBall(dpass, power);
+      // 롱패스는 띄워서 수비 너머로(점유 성향 낮은 직접축구일수록 더 짧은 거리에서도 띄운다). 단 '전진'
+      // 패스만 띄운다 — 뒤로 가는 백패스를 길게 띄우면(롱 백패스) 보기 끔찍하므로 지면으로 짧게.
+      const fwdPass = (m.x - p.x) * dir > 0;
+      if (fwdPass && dpass > w * (0.2 + possession * 0.22)) loftBall(dpass, power);
       return;
     }
     // 패스길이 안 열림 — 엉뚱한 곳에 질러 스로인 주지 말고, 공을 끌고 이동해 패스 각을 만든다(드리블).
