@@ -3274,11 +3274,42 @@ export function WorldCupBallGoal() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled]);
 
-  // 게임 ON이면 뒤 일정 스크롤 잠금(모바일에서 집중 + 손가락 오조작 방지). CSS가 모바일로 한정.
+  // 게임 ON이면 뒤 일정 스크롤 잠금 + 키 입력 가로채기(집중 + 오조작 방지).
+  //  - ←/→: 달 이동 핸들러(public-poster)가 먹으면 6·7월 밖으로 가 미니게임이 꺼졌다 → 캡처 단계에서
+  //    stopPropagation으로 그 핸들러보다 먼저 막는다.
+  //  - ↑/↓·Space·PageUp/Down·Home/End·휠: 스크롤 차단(공 보는 중 화면이 안 움직이게).
   useEffect(() => {
     if (!enabled) return;
     document.body.classList.add("wc-game-lock");
-    return () => document.body.classList.remove("wc-game-lock");
+    const SCROLL_KEYS = new Set([
+      "ArrowLeft",
+      "ArrowRight",
+      "ArrowUp",
+      "ArrowDown",
+      "PageUp",
+      "PageDown",
+      "Home",
+      "End",
+      " ",
+      "Spacebar"
+    ]);
+    const swallowKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      const tag = t?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable) return;
+      if (SCROLL_KEYS.has(e.key)) {
+        e.preventDefault();
+        e.stopPropagation(); // 캡처 단계 → 달 이동(public-poster window 리스너) 도달 전 차단
+      }
+    };
+    const noWheel = (e: WheelEvent) => e.preventDefault();
+    window.addEventListener("keydown", swallowKey, true);
+    window.addEventListener("wheel", noWheel, { passive: false });
+    return () => {
+      document.body.classList.remove("wc-game-lock");
+      window.removeEventListener("keydown", swallowKey, true);
+      window.removeEventListener("wheel", noWheel);
+    };
   }, [enabled]);
 
   // 미니게임 on/off를 알린다 → 시청자 중력 축구공(WorldCupStudioBall)이 미니게임 켜지면 숨는다.

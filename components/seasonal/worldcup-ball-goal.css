@@ -1456,13 +1456,12 @@
   display: none;
 }
 
-/* 게임 ON 동안 뒤 일정 스크롤 잠금 — 모바일 한정(집중 + 손가락 오조작 방지). 끄면 자동 해제. */
-@media (max-width: 640px) {
-  body.wc-game-lock {
-    overflow: hidden;
-    overscroll-behavior: none;
-    touch-action: none;
-  }
+/* 게임 ON 동안 뒤 일정 스크롤 잠금 — 웹·모바일 공통(집중 + 오조작 방지). 끄면 자동 해제.
+   (JS가 ←/→·↑/↓·Space·휠도 가로채 달 이동/스크롤을 막는다.) */
+body.wc-game-lock {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
 }
 
 /* 모바일(≤640px) — 세로 화면에 가로 피치를 끼우면 답답하다. stage를 90° 세워 화면의 긴 세로축을
