@@ -556,13 +556,17 @@ export function WorldCupBallGoal() {
     const { h } = bounds();
     const fx = fieldX();
     const t = teams.current ? teams.current[p.team] : null;
-    const lh = t ? t.lineHeight : 0;
+    const lh = t ? t.lineHeight : 0.1;
     const wd = t ? t.width : 1;
-    const bx = clamp(p.slot.bx + lh + push, 0, 1);
+    // 전술 대비 강화 — 라인 높이/폭의 팀 간 차이를 과장해 전술이 한눈에 구분되게(하이라인은 더 높이,
+    // 텐백은 더 깊이 / 넓은 팀은 더 넓게, 좁은 팀은 더 좁게). 중앙값(lh 0.1, wd 1)은 그대로.
+    const lhAmp = (lh - 0.1) * 2.2 + 0.1;
+    const wdAmp = 1 + (wd - 1) * 1.8;
+    const bx = clamp(p.slot.bx + lhAmp + push, 0, 1);
     const span = fx.max - fx.min;
     const x = p.team === 0 ? fx.min + bx * span : fx.max - bx * span;
     const top = h * MARGIN_Y_FRAC;
-    const by = clamp((p.slot.by - 0.5) * wd + 0.5, 0, 1);
+    const by = clamp((p.slot.by - 0.5) * wdAmp + 0.5, 0, 1);
     const y = top + by * (h - 2 * top);
     return { x, y };
   };
@@ -1443,12 +1447,20 @@ export function WorldCupBallGoal() {
         mode = r === 0 ? "carry" : "support";
       } else {
         const nP = pressersOf(p.team);
-        // 압박은 '가장 가까운 nP명'만. loose(발밑 공)도 가장 가까운 1명만 달려들게 — 안 그러면 공
-        // 근처 수비가 전부 press로 몰려 조랭이떡(특히 관성으로 한 번 뭉치면 안 풀림). 나머지는 마킹
-        // (자기 상대의 패스길을 끊으며 자리 유지) → 공으로 우르르 몰리는 것 방지.
-        if ((loose && r === 0) || (r < nP && p.stamina > 0.22 && p.acute < 0.92)) mode = "press";
+        // 압박 '높이' — 전술 press가 결정(전술색 핵심). 하이프레스/게겐은 상대 진영까지 공을 쫓고,
+        // 로우블록/텐백은 공이 자기 블록에 들어올 때까지 안 쫓고 내려앉는다. 공이 허용선(pressReach)보다
+        // 높으면 press 대신 마킹/블록 유지. 단 발밑 루즈볼(loose)은 전술 무관 가장 가까운 1명이 다툰다.
+        const teamPress = t ? t.press : 0.6;
+        const pressReach = 0.32 + teamPress * 0.62; // 자기 골 기준 허용 거리(0.32 로우블록 .. ~0.94 게겐)
+        const half = fx.max - fx.min;
+        const ballAdv = p.team === 0 ? (bx - fx.min) / half : (fx.max - bx) / half; // 0 자기골 .. 1 상대골
+        const canEngage = ballAdv <= pressReach;
+        // 압박은 '가장 가까운 nP명'만. 나머지는 마킹(자기 존 상대 패스길 차단)·커버·블록 유지 → 공으로
+        // 우르르 몰리지 않고, 전술별로 압박 높이가 달라 한눈에 구분된다.
+        if ((loose && r === 0) || (r < nP && p.stamina > 0.22 && p.acute < 0.92 && canEngage))
+          mode = "press";
         else if (markOf[i] >= 0) mode = "mark";
-        else if (r <= nP + 1) mode = "cover";
+        else if (r <= nP + 1 && ballAdv <= pressReach + 0.15) mode = "cover";
         else mode = "shape";
       }
       // 역습 전환 — 막 뺏은 팀의 최전방(FW)만 잠깐 전진 런. (MF/WG까지 시키면 전원 스프린트로 개떼가
@@ -1532,7 +1544,7 @@ export function WorldCupBallGoal() {
             const half = fx.max - fx.min;
             const lh = t ? t.lineHeight : 0.1;
             const prog = p.team === 0 ? (bx - fx.min) / half : (fx.max - bx) / half;
-            const depth = clamp(prog * 0.5 + lh * 1.8, 0.1, 0.62);
+            const depth = clamp(prog * 0.42 + lh * 2.8, 0.1, 0.7);
             const lineX = p.team === 0 ? fx.min + depth * half * 0.5 : fx.max - depth * half * 0.5;
             tx = lineX + clamp((bx - lineX) * 0.04, -w * 0.03, w * 0.03);
             // 폭 유지가 핵심 — 공쪽으로 ty를 크게 당기면(infY 0.3) DF 전원이 공.y로 수렴해 한 점에
@@ -1575,7 +1587,7 @@ export function WorldCupBallGoal() {
             const half = fx.max - fx.min;
             const lh = t ? t.lineHeight : 0.1;
             const prog = p.team === 0 ? (bx - fx.min) / half : (fx.max - bx) / half;
-            const depth = clamp(prog * 0.5 + lh * 1.8, 0.1, 0.62);
+            const depth = clamp(prog * 0.42 + lh * 2.8, 0.1, 0.7);
             const lineX = p.team === 0 ? fx.min + depth * half * 0.5 : fx.max - depth * half * 0.5;
             const band = half * 0.42;
             tx = p.team === 0 ? clamp(tx, lineX, lineX + band) : clamp(tx, lineX - band, lineX);
@@ -1732,7 +1744,7 @@ export function WorldCupBallGoal() {
     // 점유↑일수록 끌어서 모든 전술이 드리블 과다였음). 기본 확률도 낮춤(패스가 우선되게).
     // 드리블 — 앞 공간 + 개인기 성향 + 직접 전술일수록 더. (밀어서 끌던 아티팩트는 셸드로 해결됐으니
     // 이제 진짜 carry를 적정 빈도로.) 점유 전술은 패스 우선이라 덜 끔.
-    const carryProb = clamp(0.14 + adventurous * 0.22 - (possession - 0.5) * 0.25, 0.06, 0.42);
+    const carryProb = clamp(0.14 + adventurous * 0.22 - (possession - 0.5) * 0.42, 0.05, 0.46);
     const wantCarry = canDribble && !pressed && spaceAhead > w * 0.16 && Math.random() < carryProb;
     const wantBeatMan = canDribble && pressed && Math.random() < adventurous * 0.16;
     if (wantCarry || wantBeatMan) {
