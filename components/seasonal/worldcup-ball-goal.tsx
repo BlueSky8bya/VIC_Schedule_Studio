@@ -163,6 +163,9 @@ export function WorldCupBallGoal() {
   // 경기 시계 — 1 real초 = 1 게임분. 전반 0~45, 후반 45~90 + 추가시간(세트피스로 누적). 동점이면
   // 연장(90~105, 105~120). 종료 시 결과 띄우고 자동 새 경기. breakUntil 동안은 정지(하프타임).
   const clock = useRef({ t: 0, period: 1, added: 0, ended: false, addedAnnounced: false });
+  // 진영 교체 — 실제 축구처럼 매 피리어드(전반→후반, 연장 포함)마다 두 팀이 골대를 바꾼다. false면
+  // 기본(team0가 오른쪽 골 공격), true면 반대. 모든 방향 로직은 아래 atkDir/enemyGoalOf 등을 통한다.
+  const periodFlip = useRef(false);
   // 경기 기록 — 점유(프레임 수)·슛·파울·카드. poss는 프레임 누적 → 비율로 환산해 표시.
   const stats = useRef({
     poss: [0, 0],
@@ -307,6 +310,21 @@ export function WorldCupBallGoal() {
     return { min: lg.x + lg.w + PLAYER_R, max: rg.x - PLAYER_R };
   };
 
+  // ── 진영(공격 방향) — 진영 교체(periodFlip) 단일 출처. 기본(flip=false): team0가 오른쪽 골 공격.
+  //    매 피리어드 toggle되며 모든 방향 의존 로직이 이 헬퍼들만 통하게 해 사인 실수를 막는다.
+  const atkDir = (team: 0 | 1) => ((team === 0) !== periodFlip.current ? 1 : -1); // +1 오른쪽 골 공격
+  const enemyGoalOf = (team: 0 | 1): Side => (atkDir(team) > 0 ? "right" : "left"); // 공격(슛)하는 골
+  const ownGoalOf = (team: 0 | 1): Side => (atkDir(team) > 0 ? "left" : "right"); // 지키는 골
+  const teamDefending = (side: Side): 0 | 1 =>
+    side === "left" ? (periodFlip.current ? 1 : 0) : periodFlip.current ? 0 : 1; // 그 골 지키는 팀
+  const teamAttacking = (side: Side): 0 | 1 => (teamDefending(side) === 0 ? 1 : 0); // 그 골에 넣는 팀
+  // 공 전진도(0=자기 골 .. 1=상대 골) — 진영 교체 반영.
+  const advFrac = (team: 0 | 1, x: number) => {
+    const fx = fieldX();
+    const half = fx.max - fx.min || 1;
+    return atkDir(team) > 0 ? (x - fx.min) / half : (fx.max - x) / half;
+  };
+
   // px 화면 좌표 → 피치 미터 좌표(엔진/analytics 좌표계: 중앙원점, x[-52.5,52.5]·y[-34,34]).
   // 라이브 정책 결정(슛 xG 등)을 헤드리스 lib와 같은 출처로 쓰기 위한 변환.
   const pitchMeters = (px: number, py: number): Vec2 => {
@@ -416,7 +434,7 @@ export function WorldCupBallGoal() {
     }
     const perp = dir + Math.PI / 2;
     const speed = Math.hypot(vel.current.x, vel.current.y);
-    const defT: 0 | 1 = s === "left" ? 0 : 1;
+    const defT: 0 | 1 = teamDefending(s);
     const attackT: 0 | 1 = defT === 0 ? 1 : 0;
     const shotThreat = dist < kd * 4 && speed > 150;
     const closeDown =
@@ -582,7 +600,7 @@ export function WorldCupBallGoal() {
     const wdAmp = 1 + (wd - 1) * 1.8;
     const bx = clamp(p.slot.bx + lhAmp + push, 0, 1);
     const span = fx.max - fx.min;
-    const x = p.team === 0 ? fx.min + bx * span : fx.max - bx * span;
+    const x = atkDir(p.team) > 0 ? fx.min + bx * span : fx.max - bx * span;
     const top = h * MARGIN_Y_FRAC;
     const by = clamp((p.slot.by - 0.5) * wdAmp + 0.5, 0, 1);
     const y = top + by * (h - 2 * top);
@@ -655,6 +673,7 @@ export function WorldCupBallGoal() {
     scoreRef.current = [0, 0];
     setScore([0, 0]);
     clock.current = { t: 0, period: 1, added: 0, ended: false, addedAnnounced: false };
+    periodFlip.current = false; // 새 경기는 기본 진영(team0 오른쪽 골)부터
     stats.current = { poss: [0, 0], shot: [0, 0], foul: [0, 0], yellow: [0, 0], red: [0, 0] };
     setStatText(null);
     setCardCounts({ yellow: [0, 0], red: [0, 0] });
@@ -866,7 +885,7 @@ export function WorldCupBallGoal() {
   const goalLineOut = (side: Side) => {
     const { w, h } = bounds();
     const g = goalRect(side);
-    const defend: 0 | 1 = side === "left" ? 0 : 1; // 그 골을 지키는 팀
+    const defend: 0 | 1 = teamDefending(side); // 그 골을 지키는 팀(진영 교체 반영)
     const attack: 0 | 1 = defend === 0 ? 1 : 0;
     const byAttacker = lastTouch.current === attack;
     if (!byAttacker) {
@@ -921,10 +940,10 @@ export function WorldCupBallGoal() {
   // 오프사이드 라인 — 상대 최후방 수비(키퍼는 골라인이라 사실상 2번째 최후방)의 x. 하프라인 이하 없음.
   const offsideLineFor = (team: 0 | 1) => {
     const { w } = bounds();
-    let line = team === 0 ? -Infinity : Infinity;
+    let line = atkDir(team) > 0 ? -Infinity : Infinity;
     players.current.forEach((e) => {
       if (e.team === team || e.red) return; // 퇴장 선수는 필드 밖 — 라인 계산서 제외(유령 라인 방지)
-      line = team === 0 ? Math.max(line, e.x) : Math.min(line, e.x);
+      line = atkDir(team) > 0 ? Math.max(line, e.x) : Math.min(line, e.x);
     });
     if (!isFinite(line)) line = w * 0.5; // 상대 전원 퇴장 등 방어
     // 클램프(중앙선으로 강제 당김) 제거 — 진짜 2번째 최후방 수비수 위치를 그대로. 클램프가 있으면
@@ -1028,7 +1047,7 @@ export function WorldCupBallGoal() {
     lastTouch.current = fouled;
     flashPiece(`파울${card}`);
     logEvent("foul", fouler.team, spotX, spotY, card.trim());
-    const enemy: Side = fouled === 0 ? "right" : "left"; // 반칙당한 팀이 공격하는 골(=반칙한 팀의 박스)
+    const enemy: Side = enemyGoalOf(fouled); // 반칙당한 팀이 공격하는 골(=반칙한 팀의 박스, 진영 교체 반영)
     const g = goalRect(enemy);
     const goalLine = enemy === "left" ? insetX() : w - insetX();
 
@@ -1087,7 +1106,7 @@ export function WorldCupBallGoal() {
     const now = performance.now();
     if (now - goalAt.current < GOAL_COOLDOWN_MS) return;
     goalAt.current = now;
-    const scorer: 0 | 1 = side === "left" ? 1 : 0; // 그 골에 넣은 = 그 골을 공격한 팀
+    const scorer: 0 | 1 = teamAttacking(side); // 그 골에 넣은 = 그 골을 공격하는 팀(진영 교체 반영)
     scoreRef.current = scorer === 0 ? [scoreRef.current[0] + 1, scoreRef.current[1]] : [scoreRef.current[0], scoreRef.current[1] + 1];
     setScore([scoreRef.current[0], scoreRef.current[1]]);
     logEvent("goal", scorer, pos.current.x, pos.current.y);
@@ -1121,7 +1140,7 @@ export function WorldCupBallGoal() {
       cy = h * 0.5;
     }
     celebrate.current = { team: scorer, until: now + 2400, kind, x: cx, y: cy };
-    const concede: 0 | 1 = side === "left" ? 0 : 1;
+    const concede: 0 | 1 = teamDefending(side);
     window.setTimeout(() => {
       celebrate.current = null;
       kickoff(concede);
@@ -1132,7 +1151,7 @@ export function WorldCupBallGoal() {
   // 그 외(상대 슛)는 속도에 따라 catch(잡고 보유→배급) / parry(쳐냄) / punch(강하게 멀리).
   const doSave = (side: Side) => {
     const { w } = bounds();
-    const defT: 0 | 1 = side === "left" ? 0 : 1;
+    const defT: 0 | 1 = teamDefending(side);
     const incoming = lastTouch.current; // 손/발 판정 전에 '마지막 터치' 기록(백패스 판정)
     const kx = keeperCenterX(side);
     const ky = keeperY.current[side];
@@ -1443,7 +1462,7 @@ export function WorldCupBallGoal() {
         } else if (pr.kind === "cornerKick") {
           // 코너 공격팀 — 키커 외 전원 박스로 쇄도(니어/중앙/파포 분산), 수비형(DF 일부)은 에지/뒤.
           const span = fx.max - fx.min;
-          const gside: Side = pr.team === 0 ? "right" : "left"; // 공격하는 골
+          const gside: Side = enemyGoalOf(pr.team ?? 0); // 공격하는 골(진영 교체 반영)
           const g = goalRect(gside);
           if (p.slot.role === "DF") {
             const home = roleHome(p, 0.12); // 박스 에지 부근 전진(세컨드볼/레스트)
@@ -1550,7 +1569,7 @@ export function WorldCupBallGoal() {
       // 하프타임/피리어드 휴식 — 공(중앙) 쫓지 말고 자기 진영 포메이션 자리로 흩어져 선다. 안 그러면
       // 전원이 센터(공)로 수렴해 센터서클에 한 덩어리로 몰려 있었음(휴식인데 경합하듯).
       if (now < breakUntil.current && !clock.current.ended) {
-        const home = roleHome(p, p.team === 0 ? -0.02 : -0.02);
+        const home = roleHome(p, -0.02);
         const sdx = home.x - p.x;
         const sdy = home.y - p.y;
         const sd = Math.hypot(sdx, sdy) || 1;
@@ -1583,8 +1602,7 @@ export function WorldCupBallGoal() {
         // 높으면 press 대신 마킹/블록 유지. 단 발밑 루즈볼(loose)은 전술 무관 가장 가까운 1명이 다툰다.
         const teamPress = t ? t.press : 0.6;
         const pressReach = 0.32 + teamPress * 0.62; // 자기 골 기준 허용 거리(0.32 로우블록 .. ~0.94 게겐)
-        const half = fx.max - fx.min;
-        const ballAdv = p.team === 0 ? (bx - fx.min) / half : (fx.max - bx) / half; // 0 자기골 .. 1 상대골
+        const ballAdv = advFrac(p.team, bx); // 0 자기골 .. 1 상대골(진영 교체 반영)
         const canEngage = ballAdv <= pressReach;
         // 압박은 '가장 가까운 nP명'만. 나머지는 마킹(자기 존 상대 패스길 차단)·커버·블록 유지 → 공으로
         // 우르르 몰리지 않고, 전술별로 압박 높이가 달라 한눈에 구분된다.
@@ -1633,7 +1651,7 @@ export function WorldCupBallGoal() {
           }
         } else if (mode === "cover") {
           // 공과 자기 골 사이를 막는 커버 포인트(수비 2선).
-          const og = goalRect(p.team === 0 ? "left" : "right");
+          const og = goalRect(ownGoalOf(p.team));
           tx = bx + (og.x + og.w / 2 - bx) * 0.32;
           ty = by + (og.y + og.h / 2 - by) * 0.32;
         } else if (mode === "mark") {
@@ -1642,7 +1660,7 @@ export function WorldCupBallGoal() {
           const o = players.current[markOf[i]];
           const lx = o.x + (bx - o.x) * 0.3;
           const ly = o.y + (by - o.y) * 0.3;
-          const og = goalRect(p.team === 0 ? "left" : "right");
+          const og = goalRect(ownGoalOf(p.team));
           tx = lx + (og.x + og.w / 2 - lx) * 0.12;
           ty = ly + (og.y + og.h / 2 - ly) * 0.12;
         } else {
@@ -1652,8 +1670,7 @@ export function WorldCupBallGoal() {
           const fwd = p.slot.role === "FW" || p.slot.role === "WG";
           // 인포제션 페이즈(3.1) — 공 전진도(prog 0=자기 골 .. 1=상대 골)에 따라 공격팀이 단계적으로
           // 전진. 빌드업(prog<0.3)=낮고 넓게(추가 push 0), 전개=전진, 파이널서드(>0.62)=박스 점유.
-          const prog =
-            p.team === 0 ? (bx - fx.min) / (fx.max - fx.min) : (fx.max - bx) / (fx.max - fx.min);
+          const prog = advFrac(p.team, bx);
           const phasePush = attacking ? clamp((prog - 0.3) * 0.5, 0, 0.22) : 0;
           const push = counterRun ? 0.26 : attacking ? (fwd ? 0.18 : 0.1) + phasePush : -0.06;
           const home = roleHome(p, push);
@@ -1667,16 +1684,17 @@ export function WorldCupBallGoal() {
           // 패서의 전방 옵션이 전부 오프사이드가 돼 깃발이 남발됐음. 침투(sprint/carry)는 자유.
           if (attacking && fwd) {
             const offL = offsideLineFor(p.team);
-            tx = p.team === 0 ? Math.min(tx, offL - PLAYER_R) : Math.max(tx, offL + PLAYER_R);
+            tx = atkDir(p.team) > 0 ? Math.min(tx, offL - PLAYER_R) : Math.max(tx, offL + PLAYER_R);
           }
           // 수비 라인 — 수비 중 DF는 공통 라인 X로 정렬해 한 줄로 함께 오르내린다(컴팩트 블록).
           // 공이 자기 골에 가까우면 내려앉고, 멀거나 하이라인 전술이면 올라간다. ty(폭)는 각자 유지.
           if (!attacking && p.slot.role === "DF") {
             const half = fx.max - fx.min;
             const lh = t ? t.lineHeight : 0.1;
-            const prog = p.team === 0 ? (bx - fx.min) / half : (fx.max - bx) / half;
+            const prog = advFrac(p.team, bx);
             const depth = clamp(prog * 0.42 + lh * 2.8, 0.1, 0.7);
-            const lineX = p.team === 0 ? fx.min + depth * half * 0.5 : fx.max - depth * half * 0.5;
+            const lineX =
+              atkDir(p.team) > 0 ? fx.min + depth * half * 0.5 : fx.max - depth * half * 0.5;
             tx = lineX + clamp((bx - lineX) * 0.04, -w * 0.03, w * 0.03);
             // 폭 유지가 핵심 — 공쪽으로 ty를 크게 당기면(infY 0.3) DF 전원이 공.y로 수렴해 한 점에
             // 쌓인다(골대 앞 파일). 라인은 자기 자리(home.y)를 지키며 공쪽으로 '살짝만' 시프트.
@@ -1686,20 +1704,20 @@ export function WorldCupBallGoal() {
           // 밀집 완화 + 사이드 전개). 공격 지원 선수(DF 제외)에게만.
           if (attacking && p.slot.role !== "DF") {
             const third = (fx.max - fx.min) * 0.38;
-            const inOwnThird = p.team === 0 ? bx < fx.min + third : bx > fx.max - third;
+            const inOwnThird = atkDir(p.team) > 0 ? bx < fx.min + third : bx > fx.max - third;
             if (inOwnThird) ty = clamp(h * 0.5 + (ty - h * 0.5) * 1.3, PLAYER_R, h - PLAYER_R);
           }
           // 파이널서드 박스 점유(4.3) — 공이 상대 깊숙이 가면 FW/WG는 박스 안 포스트로 침투(슬롯 위/아래
           // 로 니어·파포 분담). 오프사이드 라인 안에서. 크로스/컷백 받을 타깃을 박스에 채운다.
           if (attacking && fwd && prog > 0.62) {
             const span = fx.max - fx.min;
-            const boxX = p.team === 0 ? fx.max - span * 0.1 : fx.min + span * 0.1;
-            const g = goalRect(p.team === 0 ? "right" : "left");
+            const boxX = atkDir(p.team) > 0 ? fx.max - span * 0.1 : fx.min + span * 0.1;
+            const g = goalRect(enemyGoalOf(p.team));
             const postY = p.slot.by < 0.5 ? g.y + g.h * 0.35 : g.y + g.h * 0.65;
             tx = tx * 0.4 + boxX * 0.6;
             ty = ty * 0.5 + postY * 0.5;
             const offL = offsideLineFor(p.team);
-            tx = p.team === 0 ? Math.min(tx, offL - PLAYER_R) : Math.max(tx, offL + PLAYER_R);
+            tx = atkDir(p.team) > 0 ? Math.min(tx, offL - PLAYER_R) : Math.max(tx, offL + PLAYER_R);
           }
           // 레스트 디펜스(4.9) — 공격 중에도 DF는 후방 라인을 유지(전원 전진 방지). 항상 공보다 뒤
           // (margin)에 서서 역습 대비. 공 전진하면 같이 오르되 깊이 8~50%로 가둬 공을 앞질러 가지 않게.
@@ -1707,7 +1725,7 @@ export function WorldCupBallGoal() {
             const half = fx.max - fx.min;
             const margin = w * 0.14;
             tx =
-              p.team === 0
+              atkDir(p.team) > 0
                 ? clamp(bx - margin, fx.min + half * 0.08, fx.min + half * 0.5)
                 : clamp(bx + margin, fx.max - half * 0.5, fx.max - half * 0.08);
             ty = home.y + clamp((by - home.y) * 0.1, -h * 0.08, h * 0.08);
@@ -1717,11 +1735,12 @@ export function WorldCupBallGoal() {
           if (!attacking && p.slot.role !== "DF") {
             const half = fx.max - fx.min;
             const lh = t ? t.lineHeight : 0.1;
-            const prog = p.team === 0 ? (bx - fx.min) / half : (fx.max - bx) / half;
+            const prog = advFrac(p.team, bx);
             const depth = clamp(prog * 0.42 + lh * 2.8, 0.1, 0.7);
-            const lineX = p.team === 0 ? fx.min + depth * half * 0.5 : fx.max - depth * half * 0.5;
+            const lineX =
+              atkDir(p.team) > 0 ? fx.min + depth * half * 0.5 : fx.max - depth * half * 0.5;
             const band = half * 0.42;
-            tx = p.team === 0 ? clamp(tx, lineX, lineX + band) : clamp(tx, lineX - band, lineX);
+            tx = atkDir(p.team) > 0 ? clamp(tx, lineX, lineX + band) : clamp(tx, lineX - band, lineX);
           }
         }
         const jit = mode === "shape" || mode === "support" ? 26 : 12;
@@ -1817,7 +1836,7 @@ export function WorldCupBallGoal() {
     const { w, h } = bounds();
     const t = teams.current ? teams.current[p.team] : null;
     const possession = t ? t.possession : 0.5;
-    const enemy: Side = p.team === 0 ? "right" : "left";
+    const enemy: Side = enemyGoalOf(p.team);
     const g = goalRect(enemy);
     const goalCx = g.x + g.w / 2;
     const goalCy = g.y + g.h / 2;
@@ -1964,7 +1983,7 @@ export function WorldCupBallGoal() {
         return;
       }
       // 스위치 옵션 없으면 뻥 — 전방 공간으로 길게 띄워 세컨드볼 경합을 노린다.
-      const tx = p.team === 0 ? w * 0.82 : w * 0.18;
+      const tx = atkDir(p.team) > 0 ? w * 0.82 : w * 0.18;
       const ty = clamp(p.y + rnd(-h * 0.22, h * 0.22), insetY(), h - insetY());
       const dlong = Math.hypot(tx - p.x, ty - p.y);
       setVelTo(tx + rnd(-err, err), ty, 640);
@@ -1978,8 +1997,8 @@ export function WorldCupBallGoal() {
     const isOffside = (m: Player) => {
       // 레벨(거의 같은 선)은 온사이드 — 관용폭을 넉넉히(PLAYER_R*3.5) 줘 아슬한 판정이 공격수에 유리.
       const tol = PLAYER_R * 3.5;
-      const beyond = p.team === 0 ? m.x > offLine + tol : m.x < offLine - tol;
-      const inOppHalf = p.team === 0 ? m.x > w * 0.5 : m.x < w * 0.5;
+      const beyond = atkDir(p.team) > 0 ? m.x > offLine + tol : m.x < offLine - tol;
+      const inOppHalf = atkDir(p.team) > 0 ? m.x > w * 0.5 : m.x < w * 0.5;
       return beyond && inOppHalf;
     };
     // 패스: 전진+열린 동료. 온사이드를 강하게 우선(오프사이드 후보엔 큰 페널티) → 실제 선수처럼
@@ -1992,7 +2011,7 @@ export function WorldCupBallGoal() {
     let bestProb = 0; // 선택된 패스의 레인 개방도(0..1) — 낮으면 '길 안 열림'으로 보고 끌어서 각을 만든다
     players.current.forEach((m, j) => {
       if (m.team !== p.team || m === p) return;
-      const adv = p.team === 0 ? m.x - p.x : p.x - m.x;
+      const adv = (m.x - p.x) * atkDir(p.team);
       // 횡/약간 뒤 패스도 후보에 포함(전진만 고집 X) → 거의 항상 패스 옵션이 있어 드리블 fallback을 안 탄다.
       // 점수에서 전진(adv)에 가중치를 주므로 좋은 전진 패스가 있으면 그쪽이 우선된다.
       if (adv < -w * 0.22) return;
@@ -2167,7 +2186,7 @@ export function WorldCupBallGoal() {
     const now = performance.now();
     const { w, h } = bounds();
     lastTouch.current = p.team;
-    const oppSide: Side = p.team === 0 ? "right" : "left";
+    const oppSide: Side = enemyGoalOf(p.team);
     const inAttackThird = oppSide === "right" ? p.x > w * 0.62 : p.x < w * 0.38;
     if (inAttackThird) {
       const g = goalRect(oppSide);
@@ -2178,7 +2197,7 @@ export function WorldCupBallGoal() {
       ballZ.current = 0;
       ballVZ.current = 0;
     } else {
-      const dir = p.team === 0 ? 1 : -1; // 상대 진영 쪽으로 크게 걷어냄(클리어/플릭)
+      const dir = atkDir(p.team); // 상대 진영 쪽으로 크게 걷어냄(클리어/플릭, 진영 교체 반영)
       const tx = clamp(p.x + dir * w * 0.3, insetX(), w - insetX());
       const ty = clamp(p.y + rnd(-h * 0.15, h * 0.15), insetY(), h - insetY());
       setVelTo(tx, ty, 320);
@@ -2469,6 +2488,7 @@ export function WorldCupBallGoal() {
     if (advanced) {
       c.added = 0;
       c.addedAnnounced = false;
+      periodFlip.current = !periodFlip.current; // 진영 교체 — 매 피리어드(전/후반·연장)마다 골대를 바꾼다
       startBreak();
       centerBall();
       window.setTimeout(() => kickoff(Math.random() < 0.5 ? 0 : 1), HALF_BREAK_MS);
@@ -2531,7 +2551,7 @@ export function WorldCupBallGoal() {
     // GK 잡기 보유 — 키퍼가 공을 손에 들고 있는 동안 공을 키퍼에 고정, 시간 되면 배급(스로/펀트).
     if (keeperHold.current.side) {
       const hside = keeperHold.current.side;
-      const hT: 0 | 1 = hside === "left" ? 0 : 1;
+      const hT: 0 | 1 = teamDefending(hside);
       // 잡은 공은 키퍼 '앞'(컵 위치)에 둔다 → 글러브(키퍼 z1)가 공 위로 덮여 '잡은' 느낌.
       const outward = hside === "left" ? 1 : -1;
       pos.current.x = keeperCenterX(hside) + outward * kdDia() * 0.32;
@@ -2695,7 +2715,7 @@ export function WorldCupBallGoal() {
           p.tackleAt = now;
           const winP = clamp(0.26 + p.press * 0.26 + p.aggression * 0.16 - (1 - p.stamina) * 0.2, 0.12, 0.7);
           if (Math.random() < winP) {
-            const fdir = p.team === 0 ? 1 : -1; // 자기 공격 방향으로 끊어 나감
+            const fdir = atkDir(p.team); // 자기 공격 방향으로 끊어 나감(진영 교체 반영)
             carrySteer.current = null; // 태클로 끊김 — 뺏긴 팀 드리블 스티어 무효
             lastTouch.current = p.team;
             kickAt.current = now;
