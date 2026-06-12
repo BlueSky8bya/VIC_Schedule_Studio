@@ -132,6 +132,12 @@
   filter: drop-shadow(0 6px 6px rgb(40 30 60 / 28%));
   will-change: transform;
 }
+.wc-ball-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* 드래그는 .wc-ball div가 받음 */
+}
 .wc-ball:active {
   cursor: grabbing;
 }

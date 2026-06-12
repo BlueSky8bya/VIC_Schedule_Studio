@@ -3537,7 +3537,34 @@ export function WorldCupBallGoal() {
               onPointerUp={onPointerUp}
               onPointerCancel={onPointerUp}
             >
-              ⚽
+              {/* 직접 그린 축구공(SVG) — 이모지보다 또렷하고 입체(음영+하이라이트). ballRoll 회전에 무늬가
+                  같이 돈다. 작은 크기(20px·모바일 11px)서도 선명. */}
+              <svg className="wc-ball-svg" viewBox="0 0 100 100" aria-hidden="true">
+                <defs>
+                  <radialGradient id="wcBallShade" cx="37%" cy="30%" r="80%">
+                    <stop offset="0%" stopColor="#ffffff" />
+                    <stop offset="60%" stopColor="#eef1f6" />
+                    <stop offset="100%" stopColor="#c2cad8" />
+                  </radialGradient>
+                </defs>
+                <circle cx="50" cy="50" r="47" fill="url(#wcBallShade)" stroke="#878fa1" strokeWidth="2" />
+                <g stroke="#222834" strokeWidth="2.3" strokeLinecap="round">
+                  <line x1="50" y1="34" x2="50" y2="9" />
+                  <line x1="65" y1="45" x2="87" y2="40" />
+                  <line x1="59" y1="63" x2="72" y2="84" />
+                  <line x1="41" y1="63" x2="28" y2="84" />
+                  <line x1="35" y1="45" x2="13" y2="40" />
+                </g>
+                <g fill="#222834">
+                  <polygon points="50,34 65,45 59,63 41,63 35,45" />
+                  <polygon points="50,4 60,10 56,21 44,21 40,10" />
+                  <polygon points="96,36 98,48 88,54 80,46 86,35" />
+                  <polygon points="73,93 63,86 67,75 79,78 81,90" />
+                  <polygon points="27,93 19,90 21,78 33,75 37,86" />
+                  <polygon points="4,36 14,35 20,46 12,54 2,48" />
+                </g>
+                <ellipse cx="38" cy="30" rx="15" ry="10" fill="#ffffff" opacity="0.45" />
+              </svg>
             </div>
             {confetti.map((p) => (
             <span
