@@ -317,11 +317,15 @@ export function WorldCupBallGoal() {
     const bottom = { x0: g.x, y0: g.y + g.h, x1: g.x + g.w, y1: g.y + g.h + WALL_T };
     return [back, top, bottom];
   };
+  // 키퍼 기본 위치를 골라인 '앞'(필드 쪽)으로 밀어내는 오프셋 — 예전엔 골문 안(그물)에 박혀 보였음.
+  // 이제 기본으로 골라인 바로 앞에 선다. 스위핑(keeperX)은 여기에 더해져 더 전진.
+  const KEEPER_AHEAD = () => kdDia() * 0.65;
   const keeperCenterX = (side: Side) => {
     const g = goalRect(side);
     const base = side === "left" ? g.x + g.w - kdDia() / 2 : g.x + kdDia() / 2;
-    // 스위퍼 전진(라인 밖으로): 왼쪽 골은 +x(필드 쪽), 오른쪽 골은 -x.
-    return base + (side === "left" ? keeperX.current.left : -keeperX.current.right);
+    // 스위퍼 전진(라인 밖으로) + 기본 전진(KEEPER_AHEAD): 왼쪽 골은 +x(필드), 오른쪽 골은 -x.
+    const fwd = (side === "left" ? keeperX.current.left : keeperX.current.right) + KEEPER_AHEAD();
+    return base + (side === "left" ? fwd : -fwd);
   };
   const fieldX = () => {
     const lg = goalRect("left");
@@ -570,12 +574,17 @@ export function WorldCupBallGoal() {
           keeperY.current[s] = clamp(keeperY.current[s], g.y + m, g.y + g.h - m);
         }
       }
-      const ox = s === "left" ? keeperX.current[s] : -keeperX.current[s];
+      // 기본 전진(KEEPER_AHEAD) + 스위핑(keeperX)을 렌더 오프셋에 함께 반영(논리 keeperCenterX와 일치).
+      const fwd = keeperX.current[s] + KEEPER_AHEAD();
+      const ox = s === "left" ? fwd : -fwd;
       el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
-      // 스위핑으로 골 라인 앞(필드)이면 그물 앞(z7, 또렷), 골 안이면 그물 뒤(기본 z, 흐릿). 경계서
-      // 깜빡이지 않게 히스테리시스(나올 땐 0.6kd, 들어갈 땐 0.3kd).
-      const x = keeperX.current[s];
-      const front = x > kdDia() * 0.6 ? true : x < kdDia() * 0.3 ? false : keeperFront.current[s];
+      // 골라인 앞(필드)이면 그물 앞(z7, 또렷), 골 안이면 그물 뒤(흐릿). 위치(keeperCenterX) vs 골라인으로
+      // 판정 — 이제 기본이 라인 앞이라 평소에도 또렷(그물 안에 박혀 보이지 않게). 경계 히스테리시스.
+      const gf = goalRect(s);
+      const lineX = s === "left" ? gf.x + gf.w : gf.x;
+      const aheadPx = s === "left" ? keeperCenterX(s) - lineX : lineX - keeperCenterX(s);
+      const front =
+        aheadPx > -kdDia() * 0.1 ? true : aheadPx < -kdDia() * 0.45 ? false : keeperFront.current[s];
       keeperFront.current[s] = front;
       // 잡는 중이면 키퍼를 공(z 0)보다 위(z 1)로 → 글러브가 공을 덮어 '잡은' 느낌(그물 z5보단 아래라
       // 여전히 골 안 흐릿). 평소 골 안=기본 z, 필드로 나오면 z7.
