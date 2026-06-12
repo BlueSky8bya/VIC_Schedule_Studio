@@ -2993,16 +2993,17 @@ export function WorldCupBallGoal() {
     reduced.current = reduceMotionEnabled(); // OS reduce-motion 무시 — 앱 토글만(시각 효과 양 조절용)
     rotated.current = window.matchMedia?.("(max-width: 640px)").matches ?? false;
     setIsMobile(rotated.current);
-    // 기본값: 웹은 켬(데스크톱은 화면 넓어 방해 안 됨), 모바일은 끔 — 작은 화면에서 로그아웃/새로고침
-    // 직후 미니게임(+중력공)이 갑툭튀로 떠 시청을 가리던 문제 방지. 사용자가 한 번 켜면("on" 저장)
-    // 모바일에서도 그 선택을 존중한다(localStorage가 기본값보다 우선).
+    // 기본값: 웹은 켬(데스크톱은 화면 넓어 방해 안 됨), 모바일은 끔. 작은 화면에서 미니게임(+중력공)이
+    // 갑툭튀로 떠 시청을 가리던 문제 방지. 모바일은 'on' 저장돼 있어도 '자동 시작'은 안 한다 — 매번
+    // 탭(켜기)으로만 연다. (모바일은 화면 껐다 켜면 브라우저가 탭을 리로드해 컴포넌트가 새로 마운트되며
+    // 'on'이면 새 경기가 떠 공이 툭 떨어지던 게 원인. 자동 시작을 웹으로 한정해 그 갑툭튀를 막는다.)
     let en = !rotated.current;
     let au = true;
     let savedAuto: string | null = null;
     try {
       const savedGame = window.localStorage.getItem("vic.worldcupGame");
       if (savedGame === "off") en = false;
-      else if (savedGame === "on") en = true;
+      else if (savedGame === "on" && !rotated.current) en = true; // 자동 시작은 웹에서만
       savedAuto = window.localStorage.getItem("vic.worldcupAuto");
       if (savedAuto === "off") au = false;
     } catch {
