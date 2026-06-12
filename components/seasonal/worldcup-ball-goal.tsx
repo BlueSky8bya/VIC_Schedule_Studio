@@ -378,7 +378,8 @@ export function WorldCupBallGoal() {
     // 미세 진동을 손이 따라가 부르르 떨리고 공과 비벼졌음. 추적은 공이 멀리서 다가올 때(아래)만.
     const nearBall = (catching || dist < kd * 1.7 || now < saveGrace.current) && handsLegal;
     if (nearBall) {
-      const cdir = s === "left" ? 0 : Math.PI;
+      // 승부차기는 막는 키퍼가 항상 오른쪽 골서 키커(−x)를 본다(s가 좌팀이어도). 정상경기는 자기 골 기준.
+      const cdir = shootout.current.active ? Math.PI : s === "left" ? 0 : Math.PI;
       const cperp = cdir + Math.PI / 2;
       const cdeg = (cdir * 180) / Math.PI;
       for (let gi = 0; gi < 2; gi++) {
@@ -394,7 +395,13 @@ export function WorldCupBallGoal() {
       }
       return;
     }
-    const dir = Math.atan2(bdy, bdx);
+    let dir = Math.atan2(bdy, bdx);
+    if (shootout.current.active) {
+      // 승부차기 — 막는 키퍼는 키커(필드, −x)를 본다. 세이브 후 공이 등 뒤(네트쪽, +x)로 빠져도
+      // 공을 따라 뒤돌지 않게 전방(−x) 반구로 방향을 가둔다(장갑은 위/아래로만 따라가 막는다).
+      const cl = clamp(Math.cos(dir), -1, -0.05);
+      dir = Math.atan2(Math.sin(dir), cl);
+    }
     const perp = dir + Math.PI / 2;
     const speed = Math.hypot(vel.current.x, vel.current.y);
     const defT: 0 | 1 = s === "left" ? 0 : 1;
@@ -1244,7 +1251,7 @@ export function WorldCupBallGoal() {
       if (pr && pr.team != null) {
         if (i === restartTaker) return;
         const distBall = Math.hypot(p.x - bx, p.y - by);
-        const legalR = w * 0.085; // ≈9.15m 스케일(상대 법정 거리)
+        const legalR = w * 0.087; // ≈9.15m = 그려진 센터서클 반지름(width 17.4%)과 일치
         let stx: number;
         let sty: number;
         let sspd: number;
@@ -1258,10 +1265,13 @@ export function WorldCupBallGoal() {
           stx = bx + Math.cos(ang) * legalR + Math.cos(perp) * off;
           sty = by + Math.sin(ang) * legalR + Math.sin(perp) * off;
           sspd = PLAYER_SPEED * 0.9;
-        } else if (p.team !== pr.team && distBall < legalR) {
+        } else if (p.team !== pr.team && distBall < legalR + PLAYER_R) {
           const aw = distBall > 0.1 ? Math.atan2(p.y - by, p.x - bx) : rnd(0, Math.PI * 2);
-          stx = bx + Math.cos(aw) * legalR;
-          sty = by + Math.sin(aw) * legalR;
+          // 몸(반경)까지 선 밖에 — 중심을 legalR+PLAYER_R에 둬야 센터서클 라인을 몸이 안 밟는다
+          // (예전엔 중심만 legalR이라 몸 반쪽이 원 안으로 들어가 킥오프 전 침범처럼 보였음).
+          const out = legalR + PLAYER_R;
+          stx = bx + Math.cos(aw) * out;
+          sty = by + Math.sin(aw) * out;
           sspd = PLAYER_SPEED * 0.95;
         } else {
           const home = roleHome(p, p.team === pr.team ? 0.06 : -0.04);
