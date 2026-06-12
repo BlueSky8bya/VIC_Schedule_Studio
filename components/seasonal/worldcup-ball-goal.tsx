@@ -2630,8 +2630,9 @@ export function WorldCupBallGoal() {
         const upX = hside === "left" ? 1 : -1;
         const ks = keeperStats.current[hside];
         if (Math.random() < 0.55) {
-          // 스로(가까운 동료에게 짧고 정확히) — 던지는 '손' 방향으로 감긴다.
-          passToNearestTeammate(hT, pos.current.x, pos.current.y, 300, ks.hand);
+          // 스로(가까운 동료에게 짧고 정확히) — 손던지기는 백스핀(상하축)이라 탑다운 화면에선 양 옆으로
+          // 안 휜다(스로인도 동일). 그래서 직선(spinSign 0). 옆 커브는 '발'(아래 펀트·골킥)에만.
+          passToNearestTeammate(hT, pos.current.x, pos.current.y, 300);
         } else {
           // 펀트(업필드 롱·띄움) — 차는 '발' 방향으로 감긴다.
           const { w: bw, h: bh } = bounds();
