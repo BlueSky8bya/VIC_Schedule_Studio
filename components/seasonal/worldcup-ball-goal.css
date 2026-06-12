@@ -363,11 +363,15 @@
 .wc-dim {
   position: fixed;
   inset: 0;
+  z-index: 0; /* 맨 아래로 못박는다 — 아래 HUD/스테이지가 명시적으로 그 위에 온다(iOS 버그 방어) */
   pointer-events: auto;
   background: linear-gradient(135deg, rgb(34 124 64 / 30%), rgb(22 101 52 / 36%));
   -webkit-backdrop-filter: blur(3.5px) saturate(0.92);
   backdrop-filter: blur(3.5px) saturate(0.92);
 }
+/* iOS Safari 버그 방어 — backdrop-filter가 걸린 .wc-dim이 DOM상 '뒤' 형제(.wc-stage·.wc-hud)
+   위로 잘못 합성돼 스코어·버튼이 딤에 덮여 안 보이던 문제(안드로이드는 정상). DOM 순서에 기대지
+   않고 z-index로 층을 못박는다: 딤(0) < 게임 스테이지(1) < HUD(스코어·시계·버튼)(2). */
 
 /* 피치 stage — 골대/선수/공/라인이 사는 좌표 공간. JS 물리는 항상 landscape(좌우 골대).
    실제 축구장 비율 105:68로 contain — 뷰포트에 맞춰 최대 크기로 넣되 찌그러뜨리지 않는다.
@@ -376,6 +380,7 @@
   position: absolute;
   top: 50%;
   left: 50%;
+  z-index: 1; /* 딤(0) 위 — 피치·선수·공·골대 */
   width: min(100vw, calc(100vh * 105 / 68));
   aspect-ratio: 105 / 68;
   transform: translate(-50%, -50%);
@@ -387,6 +392,7 @@
 .wc-hud {
   position: absolute;
   inset: 0;
+  z-index: 2; /* 딤(0)·스테이지(1) 위 — 스코어·시계·전술/기록 버튼·컨트롤이 항상 보인다 */
   pointer-events: none;
 }
 
