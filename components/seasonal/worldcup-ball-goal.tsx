@@ -231,6 +231,7 @@ export function WorldCupBallGoal() {
     walk?: () => boolean; // 키커를 공으로 데려오고, '도착했는가' 반환(도착 전엔 안 참)
     team?: 0 | 1; // 재개를 차는 팀 — 준비 중 상대가 공에서 물러나도록(스페이싱)
     wall?: { team: 0 | 1; goalSide: Side }; // 수비벽 — 위험한 프리킥서 수비팀이 공·골 사이에 줄선다
+    snap?: boolean; // 즉시 배치(킥오프) — 천천히 걷지 말고 첫 프레임에 합법 위치로 스냅
   } | null>(null);
   const possTeam = useRef<0 | 1 | null>(null); // 통제 중인 팀(lastTouch 기반 스무딩) — 압박 방향 판단.
   const counterPress = useRef<{ team: 0 | 1; until: number } | null>(null); // 5초 카운터프레스 윈도우.
@@ -695,10 +696,11 @@ export function WorldCupBallGoal() {
     kick: () => void,
     walk?: () => boolean,
     team?: 0 | 1,
-    wall?: { team: 0 | 1; goalSide: Side }
+    wall?: { team: 0 | 1; goalSide: Side },
+    snap?: boolean
   ) => {
     vel.current = { x: 0, y: 0 };
-    pendingRestart.current = { at: performance.now() + delay, kick, walk, team, wall };
+    pendingRestart.current = { at: performance.now() + delay, kick, walk, team, wall, snap };
     clock.current.added += 0.12; // 세트피스 지체 → 추가시간 누적(게임분)
     place();
   };
@@ -785,7 +787,9 @@ export function WorldCupBallGoal() {
       700,
       () => passToNearestTeammate(concede, pos.current.x, pos.current.y, 200),
       () => walkTeammateToBall(concede),
-      concede
+      concede,
+      undefined,
+      true // 킥오프 — 선수들을 즉시 포메이션 자리로 스냅(센터서클 밖). 몰렸다 빠지는 것 방지.
     );
   };
 
@@ -1215,6 +1219,47 @@ export function WorldCupBallGoal() {
       });
     });
 
+    // 마킹 배정 — 수비(비점유)팀의 '비압박' 선수가 상대 패스 옵션을 1:1로 맡아 패스길을 끊는다.
+    // 공만 우르르 몰리지 말고 각자 자기 상대를 잡게 → 포지션 유지 + 레인 차단(축구 기본 수비 형태).
+    const markOf = new Array<number>(players.current.length).fill(-1);
+    {
+      const defTeam: 0 | 1 = poss === 0 ? 1 : 0;
+      const nP = pressersOf(defTeam);
+      const opps: number[] = [];
+      players.current.forEach((q, j) => {
+        if (q.team === defTeam || q.red) return; // 공격팀(=맡을 상대)만
+        if (j === near.overall) return; // 볼 캐리어는 press 인원이 맡음
+        opps.push(j);
+      });
+      const markers: number[] = [];
+      players.current.forEach((p, i) => {
+        if (p.team !== defTeam || p.red) return;
+        if (rank[i] < nP) return; // 압박 인원(공으로 가는 nP명) 제외
+        markers.push(i);
+      });
+      markers.sort((a, b) => rank[a] - rank[b]); // 공에 가까운 수비부터 좋은 상대 선점
+      const taken = new Set<number>();
+      markers.forEach((mi) => {
+        let bo = -1;
+        let bd = Infinity;
+        opps.forEach((oj) => {
+          if (taken.has(oj)) return;
+          const d = Math.hypot(
+            players.current[mi].x - players.current[oj].x,
+            players.current[mi].y - players.current[oj].y
+          );
+          if (d < bd) {
+            bd = d;
+            bo = oj;
+          }
+        });
+        if (bo >= 0) {
+          markOf[mi] = bo;
+          taken.add(bo);
+        }
+      });
+    }
+
     // 세트피스 준비 중인가 — 그렇다면 키커(차는 팀 최근접)는 walk()가 공으로 데려가고, 나머지는
     // 스페이싱(상대는 공에서 법정거리 밖). 기본 축구 규정: 상대는 정해진 거리 물러나야 하며,
     // 던지려는/차려는 선수 주변에 떼로 압박하지 않는다(#4). 빈 공간 확보 → 즉시 재아웃 방지(#1).
@@ -1253,6 +1298,25 @@ export function WorldCupBallGoal() {
         if (i === restartTaker) return;
         const distBall = Math.hypot(p.x - bx, p.y - by);
         const legalR = w * 0.087; // ≈9.15m = 그려진 센터서클 반지름(width 17.4%)과 일치
+        // 킥오프 — 천천히 걷지 말고 포메이션 자리로 '즉시 스냅'(센터서클 밖 보장). 양 팀 모두(차는 팀
+        // 비키커 포함) 원 밖. 예전엔 공으로 몰렸다가 ~1초 뒤 원 밖으로 빠져 어수선했음.
+        if (pr.snap) {
+          const home = roleHome(p, p.team === pr.team ? 0.04 : -0.04);
+          let hx = home.x;
+          let hy = home.y;
+          const dc = Math.hypot(hx - bx, hy - by);
+          const out = legalR + PLAYER_R;
+          if (dc < out) {
+            const aa = dc > 0.1 ? Math.atan2(hy - by, hx - bx) : p.team === pr.team ? Math.PI : 0;
+            hx = bx + Math.cos(aa) * out;
+            hy = by + Math.sin(aa) * out;
+          }
+          p.x = clamp(hx, fx.min, fx.max);
+          p.y = clamp(hy, PLAYER_R, h - PLAYER_R);
+          p.tx = p.x;
+          p.ty = p.y;
+          return;
+        }
         let stx: number;
         let sty: number;
         let sspd: number;
@@ -1300,14 +1364,16 @@ export function WorldCupBallGoal() {
 
       // 역할: 공격=볼캐리어 1명 + 나머지 지원(벌려서 패스길). 수비=press/cover/balance.
       // 압박 인원은 PPDA로, 단 체력<0.22면 못 눌러 빠진다 → 지친 팀은 압박 헐거워져 공간 열림(현실).
-      let mode: "carry" | "press" | "cover" | "support" | "shape";
+      let mode: "carry" | "press" | "cover" | "support" | "shape" | "mark";
       if (attacking) {
         mode = r === 0 ? "carry" : "support";
       } else {
         const nP = pressersOf(p.team);
         // 압박은 '가장 가까운 nP명'만. loose(발밑 공)도 가장 가까운 1명만 달려들게 — 안 그러면 공
-        // 근처 수비가 전부 press로 몰려 조랭이떡(특히 관성으로 한 번 뭉치면 안 풀림).
+        // 근처 수비가 전부 press로 몰려 조랭이떡(특히 관성으로 한 번 뭉치면 안 풀림). 나머지는 마킹
+        // (자기 상대의 패스길을 끊으며 자리 유지) → 공으로 우르르 몰리는 것 방지.
         if ((loose && r === 0) || (r < nP && p.stamina > 0.22)) mode = "press";
+        else if (markOf[i] >= 0) mode = "mark";
         else if (r <= nP + 1) mode = "cover";
         else mode = "shape";
       }
@@ -1352,6 +1418,15 @@ export function WorldCupBallGoal() {
           const og = goalRect(p.team === 0 ? "left" : "right");
           tx = bx + (og.x + og.w / 2 - bx) * 0.32;
           ty = by + (og.y + og.h / 2 - by) * 0.32;
+        } else if (mode === "mark") {
+          // 마킹 — 맡은 상대와 공 사이(상대 쪽에 가깝게)에 서서 패스 레인을 끊고, 골사이드로 살짝
+          // 당겨 배후 침투를 막는다. 자기 상대를 따라가므로 선수들이 공으로 몰리지 않고 퍼진다.
+          const o = players.current[markOf[i]];
+          const lx = o.x + (bx - o.x) * 0.3;
+          const ly = o.y + (by - o.y) * 0.3;
+          const og = goalRect(p.team === 0 ? "left" : "right");
+          tx = lx + (og.x + og.w / 2 - lx) * 0.12;
+          ty = ly + (og.y + og.h / 2 - ly) * 0.12;
         } else {
           // shape/support — 역할 home(포메이션 슬롯) 우선, 공쪽으론 '살짝만' 시프트. 횡(y) 끌림을
           // 크게 주면 비수비수 전원이 공.y로 수렴해 졸졸 따라다녔음 → 폭(자기 자리)을 지키게 infY·maxY를
