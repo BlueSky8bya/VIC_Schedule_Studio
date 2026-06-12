@@ -101,7 +101,7 @@ import { markContentReady } from "@/lib/presence/content-ready";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
-import { hapticTick } from "@/lib/ui/haptics";
+import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
 // 곳(공개 /, 꾸미기, 스튜디오 시청자 미리보기)에서만 실린다.
@@ -418,6 +418,16 @@ type HeartFloater = {
   dur: number; // 지속 시간(ms)
   size: number; // 글자 크기(px)
   delay: number; // 시작 지연(ms) — 한 번에 여러 개가 살짝 시차를 두고 오른다
+};
+
+// 특별한 날 탭 → 그 자리에서 방사형으로 흩어지는 색종이 한 조각(빵빠레 폭죽).
+type BurstBit = {
+  dx: number; // 터지는 방향 x(px)
+  dy: number; // 터지는 방향 y(px, 위로 살짝 솟구침)
+  rot: number; // 회전(deg)
+  color: string; // 색종이 색(이모지면 무시)
+  emoji: string | null; // 가끔은 색종이 대신 🎉/⚽ 같은 이모지
+  dur: number; // 지속(ms)
 };
 
 // 추천 이모지 팔레트 — 카테고리 탭으로 나눠 관리(#5b). 종류를 대폭 확충.
@@ -1036,6 +1046,11 @@ export function PublicPoster({
   });
   // 하트를 누를 때 화면에 떠오르는 ♥ 입자들(틱톡식 좋아요 연출). 잠깐 떴다 사라진다.
   const [floaters, setFloaters] = useState<HeartFloater[]>([]);
+  // 특별한 날(공휴일·기념일·월드컵·한국 승) 탭 시 그 자리에서 터지는 점(point) 폭죽들.
+  const [bursts, setBursts] = useState<
+    { id: number; x: number; y: number; big: boolean; bits: BurstBit[] }[]
+  >([]);
+  const burstId = useRef(0);
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
   const interactive = !decorate;
   // 하트(관심)는 로그인 시청자만 — 익명 시청자에겐 ♥ 토글/모아보기를 숨긴다(서버 1인1하트 불가).
@@ -1254,6 +1269,36 @@ export function PublicPoster({
     window.setTimeout(() => {
       setFloaters((prev) => prev.filter((f) => !ids.has(f.id)));
     }, 2300);
+  }
+
+  // 특별한 날(공휴일·기념일·절기·월드컵)을 탭하면 그 자리에서 색종이가 '팡' 터진다(빵빠레).
+  // 한국 승리한 날은 큰 폭죽(🏆 솟구침 + 더 많은 입자 + 강한 햅틱), 그 외 특별일은 작은 폭죽.
+  // 위 todayCelebration(상단 비처럼 내리는 컨페티)과 달리 탭 '지점'에서 방사형으로 터진다.
+  // '동작 줄이기'면 입자 없이 햅틱만(다른 모션 연출과 동일 방침). 다중 탭은 쌓여서 각자 정리된다.
+  function popBurst(clientX: number, clientY: number, big: boolean) {
+    if (big) hapticSuccess();
+    else hapticTick();
+    if (reduceMotionEnabled()) return;
+    const n = big ? 30 : 16;
+    const palette = ["#f472b6", "#fbbf24", "#34d399", "#60a5fa", "#a78bfa", "#f87171", "#ffffff"];
+    const cheer = big ? ["🎉", "✨", "🎊", "⚽", "🏆"] : ["✨", "🎉"];
+    const bits: BurstBit[] = Array.from({ length: n }, (_, i) => {
+      const ang = (Math.PI * 2 * i) / n + Math.random() * 0.5; // 고르게 퍼지되 약간 흩뜨림
+      const reach = (big ? 78 : 48) + Math.random() * (big ? 96 : 56);
+      const useEmoji = Math.random() < (big ? 0.34 : 0.22);
+      return {
+        dx: Math.cos(ang) * reach,
+        dy: Math.sin(ang) * reach - (big ? 24 : 14), // 살짝 위로 솟구쳤다 흩어짐
+        rot: Math.round((Math.random() * 2 - 1) * 540),
+        color: palette[i % palette.length],
+        emoji: useEmoji ? cheer[(Math.random() * cheer.length) | 0] : null,
+        dur: (big ? 900 : 760) + Math.round(Math.random() * 520)
+      };
+    });
+    burstId.current += 1;
+    const id = burstId.current;
+    setBursts((prev) => [...prev, { id, x: clientX, y: clientY, big, bits }]);
+    window.setTimeout(() => setBursts((prev) => prev.filter((b) => b.id !== id)), 1700);
   }
 
   // 관심 토글 — 낙관적으로 즉시 반영하고, 서버 모드면 호출 후 집계 수를 권위값으로 보정한다.
@@ -2316,7 +2361,9 @@ export function PublicPoster({
       <article
         className={`public-day ${cell.inCurrentMonth ? "" : "outside"} ${
           day.isToday ? "today" : ""
-        }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}`}
+        }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}${
+          day.markKind === "wc-korea-win" ? " day-win" : ""
+        }`}
         data-pop={popTier ?? undefined}
         data-cell-index={cellIndex}
         key={cell.isoDate}
@@ -2352,7 +2399,21 @@ export function PublicPoster({
             {cell.dayOfMonth} 일
           </strong>
           {day.markName ? (
-            <em className={`day-mark${day.markKind ? ` ${day.markKind}` : ""}`}>{day.markName}</em>
+            interactive ? (
+              // 특별한 날 표기를 탭하면 그 자리에서 빵빠레가 터진다. 한국 승은 큰 폭죽.
+              <button
+                type="button"
+                className={`day-mark celebratable${day.markKind ? ` ${day.markKind}` : ""}`}
+                onClick={(e) => {
+                  const r = e.currentTarget.getBoundingClientRect();
+                  popBurst(r.left + r.width / 2, r.top + r.height / 2, day.markKind === "wc-korea-win");
+                }}
+              >
+                {day.markName}
+              </button>
+            ) : (
+              <em className={`day-mark${day.markKind ? ` ${day.markKind}` : ""}`}>{day.markName}</em>
+            )
           ) : null}
         </div>
         <div
@@ -2662,9 +2723,28 @@ export function PublicPoster({
                 </div>
                 <div className="agenda-day-list">
                   {mark ? (
-                    <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>
-                      {mark.name}
-                    </span>
+                    interactive ? (
+                      <button
+                        type="button"
+                        className={`agenda-mark celebratable ${mark.isHoliday ? "holiday" : ""}${
+                          mark.kind === "wc-korea-win" ? " wc-korea-win" : ""
+                        }`}
+                        onClick={(e) => {
+                          const r = e.currentTarget.getBoundingClientRect();
+                          popBurst(
+                            r.left + r.width / 2,
+                            r.top + r.height / 2,
+                            mark.kind === "wc-korea-win"
+                          );
+                        }}
+                      >
+                        {mark.name}
+                      </button>
+                    ) : (
+                      <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>
+                        {mark.name}
+                      </span>
+                    )
                   ) : null}
                   {list.length === 0 ? (
                     <span className="agenda-noevent">예정된 공개 일정 없음</span>
@@ -2909,6 +2989,33 @@ export function PublicPoster({
             />
           ))}
           <div className="celebrate-toast">🎉 {todayCelebration}</div>
+        </div>
+      ) : null}
+      {bursts.length > 0 ? (
+        // 빵빠레 폭죽 — fixed 레이어(export 표면 밖, 클릭 통과). 탭 지점에서 방사형으로 터진다.
+        <div className="burst-layer" aria-hidden="true">
+          {bursts.map((b) => (
+            <div className={`burst${b.big ? " big" : ""}`} key={b.id} style={{ left: b.x, top: b.y }}>
+              {b.big ? <span className="burst-core">🏆</span> : null}
+              {b.bits.map((bit, i) => (
+                <span
+                  className={`burst-bit${bit.emoji ? " emoji" : ""}`}
+                  key={i}
+                  style={
+                    {
+                      "--dx": `${bit.dx}px`,
+                      "--dy": `${bit.dy}px`,
+                      "--rot": `${bit.rot}deg`,
+                      animationDuration: `${bit.dur}ms`,
+                      background: bit.emoji ? undefined : bit.color
+                    } as CSSProperties
+                  }
+                >
+                  {bit.emoji}
+                </span>
+              ))}
+            </div>
+          ))}
         </div>
       ) : null}
       {floaters.length > 0 ? (

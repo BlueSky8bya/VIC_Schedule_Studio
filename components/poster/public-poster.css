@@ -2502,6 +2502,79 @@ body.cell-range-dragging {
   white-space: nowrap;
 }
 
+/* 특별한 날 표기를 탭하면 빵빠레가 터진다 — 버튼이지만 기존 em(.day-mark)과 똑같이 보이게 리셋.
+   호버 시 살짝 밝게, 누르면 쏙 들어가 '눌렀다' 손맛(데스크탑 hover + 모바일 active). */
+button.day-mark.celebratable {
+  flex: 1;
+  min-width: 0;
+  margin-left: 4px;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8a4b2f;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition:
+    transform var(--dur-1) var(--ease),
+    filter var(--dur-1) var(--ease);
+}
+button.day-mark.celebratable:hover { filter: brightness(1.18); }
+button.day-mark.celebratable:active { transform: scale(0.88); }
+
+/* 한국이 이긴 날 — 금빛 흐르는 표기 + 셀 금테로 '눌러봐(축포)' 신호. 백클립 미지원 브라우저는
+   fallback color(#b45309)로 보인다. '동작 줄이기'면 흐름 애니메이션만 끈다(아래). */
+button.day-mark.wc-korea-win,
+.day-mark.wc-korea-win,
+button.agenda-mark.wc-korea-win {
+  color: #b45309;
+  font-weight: 900;
+  background: linear-gradient(
+    100deg,
+    #b45309 0%,
+    #f59e0b 30%,
+    #fde68a 50%,
+    #f59e0b 70%,
+    #b45309 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: wc-win-shine 2.6s linear infinite;
+}
+@keyframes wc-win-shine {
+  0% { background-position: 220% 0; }
+  100% { background-position: 0 0; }
+}
+.public-day.day-win {
+  box-shadow: inset 0 0 0 2px rgb(245 158 11 / 55%);
+}
+html[data-reduce-motion] button.day-mark.wc-korea-win,
+html[data-reduce-motion] .day-mark.wc-korea-win,
+html[data-reduce-motion] button.agenda-mark.wc-korea-win {
+  animation: none;
+}
+
+/* 모바일 아젠다의 특별한 날 표기도 탭하면 빵빠레 — 기존 .agenda-mark 시각 그대로 두고 버튼만 리셋. */
+button.agenda-mark.celebratable {
+  font: inherit;
+  cursor: pointer;
+  transition: transform var(--dur-1) var(--ease);
+}
+/* 공휴일 표기는 알약(배경·테두리) 유지, 그 외만 완전 리셋. */
+button.agenda-mark.celebratable:not(.holiday) {
+  border: 0;
+  background: none;
+  padding: 0;
+}
+button.agenda-mark.celebratable:active { transform: scale(0.92); }
+
 .public-day.today {
   box-shadow: inset 0 0 0 3px #f4b740;
   animation: today-breathe 3.2s ease-in-out infinite;

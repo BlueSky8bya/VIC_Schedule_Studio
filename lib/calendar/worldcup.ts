@@ -7,6 +7,7 @@ export type WorldCupMark = {
   name: string; // 달력 칸에 표기될 문구(이모지 포함)
   isFinal?: boolean; // 결승 — 칸 강조용
   isKorea?: boolean; // 대한민국 경기 — 칸 강조용
+  result?: "win" | "draw" | "loss"; // 끝난 한국 경기 결과 — 승이면 달력 탭 시 축포 셀레브레이션
 };
 
 // 대회 기간(이 기간이 보이는 달엔 포스터 테마를 월드컵으로 자동 전환).
@@ -27,8 +28,8 @@ const STAGE_MARKS: Record<string, string> = {
 // 대한민국 A조 조별리그 3경기 — 한국시간(KST) 날짜·킥오프 기준.
 // 멕시코·남아프리카공화국·체코와 한 조. 추후 16강 이후 진출 시 owner가 추가하면 된다.
 // 국기 이모지(🇰🇷 등)는 Windows 크롬에서 'KR'처럼 깨져 안 쓴다 — 텍스트+스타일로 강조.
-export const KOREA_MATCHES: Record<string, { name: string }> = {
-  "2026-06-12": { name: "⚽ 한국 vs 체코 11:00" },
+export const KOREA_MATCHES: Record<string, { name: string; result?: "win" | "draw" | "loss" }> = {
+  "2026-06-12": { name: "⚽ 한국 2-1 체코 ✅", result: "win" }, // 종료 — 한국 승(탭 시 축포)
   "2026-06-19": { name: "⚽ 한국 vs 멕시코 10:00" },
   "2026-06-25": { name: "⚽ 한국 vs 남아공 10:00" }
 };
@@ -37,7 +38,7 @@ export const KOREA_MATCHES: Record<string, { name: string }> = {
 export function getWorldCupMark(isoDate: string): WorldCupMark | null {
   const kr = KOREA_MATCHES[isoDate];
   if (kr) {
-    return { name: kr.name, isKorea: true };
+    return { name: kr.name, isKorea: true, result: kr.result };
   }
   const stage = STAGE_MARKS[isoDate];
   if (stage) {
