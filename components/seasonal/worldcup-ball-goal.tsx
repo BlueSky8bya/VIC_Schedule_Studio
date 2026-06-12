@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만
-import type { PlayerPersona, Side, TeamPlan, Vec2 } from "@/lib/football/core/types";
+import type { PlayerPersona, RestartKind, Side, TeamPlan, Vec2 } from "@/lib/football/core/types";
 import { makeRng, randomSeed } from "@/lib/football/core/rng";
 import { makeMatchup, STYLES, type TacticStyle } from "@/lib/football/tactics/profiles";
 import { createEventLog, type MatchEventKind } from "@/lib/football/core/event-log";
@@ -234,6 +234,7 @@ export function WorldCupBallGoal() {
     team?: 0 | 1; // 재개를 차는 팀 — 준비 중 상대가 공에서 물러나도록(스페이싱)
     wall?: { team: 0 | 1; goalSide: Side }; // 수비벽 — 위험한 프리킥서 수비팀이 공·골 사이에 줄선다
     snap?: boolean; // 즉시 배치(킥오프) — 천천히 걷지 말고 첫 프레임에 합법 위치로 스냅
+    kind?: RestartKind; // 재개 종류 — 종류별 상대 법정 거리(스로인 2m·골킥 박스밖·코너 9.15m 등)
   } | null>(null);
   const possTeam = useRef<0 | 1 | null>(null); // 통제 중인 팀(lastTouch 기반 스무딩) — 압박 방향 판단.
   const counterPress = useRef<{ team: 0 | 1; until: number } | null>(null); // 5초 카운터프레스 윈도우.
@@ -795,6 +796,7 @@ export function WorldCupBallGoal() {
       undefined,
       true // 킥오프 — 선수들을 즉시 포메이션 자리로 스냅(센터서클 밖). 몰렸다 빠지는 것 방지.
     );
+    if (pendingRestart.current) pendingRestart.current.kind = "kickoff";
   };
 
   const throwIn = (where: "top" | "bottom") => {
@@ -818,6 +820,7 @@ export function WorldCupBallGoal() {
       () => walkTeammateToBall(team),
       team
     );
+    if (pendingRestart.current) pendingRestart.current.kind = "throwIn";
     lastActiveAt.current = performance.now();
   };
 
@@ -848,6 +851,7 @@ export function WorldCupBallGoal() {
         () => walkTeammateToBall(attack),
         attack
       );
+      if (pendingRestart.current) pendingRestart.current.kind = "cornerKick";
     } else {
       // 골킥 — 키퍼가 골 에어리어로 나와 길게 찬다(약 1.1초 뒤). 킥 후 키퍼는 골문으로 복귀.
       pos.current.x = side === "left" ? g.x + g.w + 24 : g.x - 24;
@@ -871,6 +875,7 @@ export function WorldCupBallGoal() {
         () => walkKeeperToBall(side),
         defend
       );
+      if (pendingRestart.current) pendingRestart.current.kind = "goalKick";
     }
     lastActiveAt.current = performance.now();
   };
@@ -1009,6 +1014,7 @@ export function WorldCupBallGoal() {
         () => walkTeammateToBall(fouled),
         fouled
       );
+      if (pendingRestart.current) pendingRestart.current.kind = "penaltyKick";
       lastActiveAt.current = performance.now();
       return;
     }
@@ -1035,6 +1041,7 @@ export function WorldCupBallGoal() {
       // 슈팅 사정권(상대 골 가까운) 프리킥이면 수비팀이 벽을 세운다.
       distGoal < w * 0.45 ? { team: fouler.team, goalSide: enemy } : undefined
     );
+    if (pendingRestart.current) pendingRestart.current.kind = "directFreeKick";
     lastActiveAt.current = performance.now();
   };
 
@@ -1321,9 +1328,9 @@ export function WorldCupBallGoal() {
           p.ty = p.y;
           return;
         }
-        let stx: number;
-        let sty: number;
-        let sspd: number;
+        let stx = p.x;
+        let sty = p.y;
+        let sspd = PLAYER_SPEED * 0.5;
         const wallPos = wallIds.indexOf(i);
         if (pr.wall && wallPos >= 0) {
           // 공→골 선상 법정거리(9.15m≈8.5%)에 서고, 인원수만큼 좌우로 벌려 벽을 만든다.
@@ -1334,14 +1341,61 @@ export function WorldCupBallGoal() {
           stx = bx + Math.cos(ang) * legalR + Math.cos(perp) * off;
           sty = by + Math.sin(ang) * legalR + Math.sin(perp) * off;
           sspd = PLAYER_SPEED * 0.9;
-        } else if (p.team !== pr.team && distBall < legalR + PLAYER_R) {
-          const aw = distBall > 0.1 ? Math.atan2(p.y - by, p.x - bx) : rnd(0, Math.PI * 2);
-          // 몸(반경)까지 선 밖에 — 중심을 legalR+PLAYER_R에 둬야 센터서클 라인을 몸이 안 밟는다
-          // (예전엔 중심만 legalR이라 몸 반쪽이 원 안으로 들어가 킥오프 전 침범처럼 보였음).
-          const out = legalR + PLAYER_R;
-          stx = bx + Math.cos(aw) * out;
-          sty = by + Math.sin(aw) * out;
-          sspd = PLAYER_SPEED * 0.95;
+        } else if (p.team !== pr.team) {
+          // 상대 법정 위치 — 재개 종류별(Law 13/15/16/17). 스로인=2m, 골킥=페널티박스 밖,
+          // 그 외(코너/프리킥/페널티/드롭볼)=9.15m. 몸(반경)까지 선 밖이게 +PLAYER_R.
+          const home = roleHome(p, -0.04);
+          let pushed = false;
+          if (pr.kind === "throwIn") {
+            const keep = w * 0.02 + PLAYER_R; // 2m
+            if (distBall < keep) {
+              const aw = distBall > 0.1 ? Math.atan2(p.y - by, p.x - bx) : rnd(0, Math.PI * 2);
+              stx = bx + Math.cos(aw) * keep;
+              sty = by + Math.sin(aw) * keep;
+              sspd = PLAYER_SPEED * 0.95;
+              pushed = true;
+            }
+          } else if (pr.kind === "goalKick") {
+            // 상대는 페널티 박스 밖에서 대기(공이 인플레이될 때까지). 박스 안이면 라인 밖으로.
+            const boxDepth = (fx.max - fx.min) * 0.157; // 16.5m
+            const boxHalfH = h * 0.3;
+            const leftBox = pr.team === 0; // 차는 팀의 자기 골 = 박스 위치
+            const inX = leftBox ? p.x < fx.min + boxDepth : p.x > fx.max - boxDepth;
+            const inY = Math.abs(p.y - h * 0.5) < boxHalfH;
+            if (inX && inY) {
+              stx = leftBox ? fx.min + boxDepth + PLAYER_R : fx.max - boxDepth - PLAYER_R;
+              sty = p.y;
+              sspd = PLAYER_SPEED * 0.9;
+              pushed = true;
+            }
+          } else if (distBall < legalR + PLAYER_R) {
+            const aw = distBall > 0.1 ? Math.atan2(p.y - by, p.x - bx) : rnd(0, Math.PI * 2);
+            const out = legalR + PLAYER_R;
+            stx = bx + Math.cos(aw) * out;
+            sty = by + Math.sin(aw) * out;
+            sspd = PLAYER_SPEED * 0.95;
+            pushed = true;
+          }
+          if (!pushed) {
+            stx = home.x;
+            sty = home.y;
+            sspd = PLAYER_SPEED * 0.5;
+          }
+        } else if (pr.kind === "cornerKick") {
+          // 코너 공격팀 — 키커 외 전원 박스로 쇄도(니어/중앙/파포 분산), 수비형(DF 일부)은 에지/뒤.
+          const span = fx.max - fx.min;
+          const gside: Side = pr.team === 0 ? "right" : "left"; // 공격하는 골
+          const g = goalRect(gside);
+          if (p.slot.role === "DF") {
+            const home = roleHome(p, 0.12); // 박스 에지 부근 전진(세컨드볼/레스트)
+            stx = home.x;
+            sty = home.y;
+          } else {
+            const boxX = gside === "left" ? g.x + g.w + span * 0.06 : g.x - span * 0.06;
+            stx = boxX + rnd(-span * 0.05, span * 0.04);
+            sty = clamp(h * 0.5 + (p.slot.by - 0.5) * g.h * 1.4, g.y - 24, g.y + g.h + 24) + rnd(-14, 14);
+          }
+          sspd = PLAYER_SPEED * 0.7;
         } else {
           const home = roleHome(p, p.team === pr.team ? 0.06 : -0.04);
           stx = home.x;
