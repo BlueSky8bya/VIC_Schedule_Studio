@@ -255,9 +255,16 @@ export function WorldCupBallGoal() {
   const transition = useRef<{ team: 0 | 1; until: number } | null>(null); // 막 공 뺏은 팀의 역습 윈도우(약 3.5s).
   const keeperAggro = useRef<Record<Side, number>>({ left: 0.5, right: 0.5 }); // 스위퍼 성향 0..1.
   // GK 능력치(정보 카드용) — 반응/핸들링/킥/스위핑/침착. 매 경기 buildMatch서 새로.
-  const keeperStats = useRef<Record<Side, { reflex: number; handling: number; kick: number; sweep: number; composure: number }>>({
-    left: { reflex: 0.7, handling: 0.7, kick: 0.6, sweep: 0.5, composure: 0.7 },
-    right: { reflex: 0.7, handling: 0.7, kick: 0.6, sweep: 0.5, composure: 0.7 }
+  // GK는 손던지기 손(hand)·차기 발(foot)을 각각 가진다(왼/오 독립, -1=왼 +1=오). 박스 안에선 손/발
+  // 둘 다, 박스 밖에선 발만(룰). 배급 시 그 손/발 방향으로 공이 감긴다(스핀).
+  const keeperStats = useRef<
+    Record<
+      Side,
+      { reflex: number; handling: number; kick: number; sweep: number; composure: number; hand: -1 | 1; foot: -1 | 1 }
+    >
+  >({
+    left: { reflex: 0.7, handling: 0.7, kick: 0.6, sweep: 0.5, composure: 0.7, hand: 1, foot: 1 },
+    right: { reflex: 0.7, handling: 0.7, kick: 0.6, sweep: 0.5, composure: 0.7, hand: 1, foot: 1 }
   });
   const keeperX = useRef<Record<Side, number>>({ left: 0, right: 0 }); // 라인에서 전진한 거리(px).
   // GK 손 — 잡으면(catch) 잠깐 보유 후 배급(스로/킥). 백패스는 발로(손 금지). 박스 안에서만 손.
@@ -643,7 +650,9 @@ export function WorldCupBallGoal() {
         handling: rnd(0.5, 0.92),
         kick: rnd(0.4, 0.9),
         sweep: keeperAggro.current[s],
-        composure: rnd(0.5, 0.9)
+        composure: rnd(0.5, 0.9),
+        hand: Math.random() < 0.5 ? -1 : 1, // 던지는 손(왼/오 독립)
+        foot: Math.random() < 0.5 ? -1 : 1 // 차는 발(왼/오 독립)
       };
     });
     keeperX.current.left = 0;
@@ -748,19 +757,19 @@ export function WorldCupBallGoal() {
   // (aim = 목표각 - θ/2), 휜 공의 현(chord)이 결국 목표를 향하게 한다. 그래서 공은 눈에 띄게 감기되
   // 원하는 곳(패스 받을 동료·골 구석)에 도달한다. 양발은 거의 직선.
   const CURVE_RATE = 0.95; // rad/s — 한 발잡이가 세게 감았을 때의 최대 회전(과회전은 θ 캡으로 제한)
-  const kickCurved = (p: Player, tx: number, ty: number, power: number) => {
+  // 커브 차기 코어 — sign(부호=휘는 방향: +1/-1, 0=직선)과 weak(약발/서툰 정도 0..1)로 회전량 결정.
+  // 선수 발(kickCurved)·골키퍼 손/발(키퍼 배급)이 공용으로 쓴다.
+  const kickCurvedSign = (tx: number, ty: number, power: number, sign: number, weak: number) => {
     const dx = tx - pos.current.x;
     const dy = ty - pos.current.y;
     const dist = Math.hypot(dx, dy) || 1;
-    const sign = footSign(p);
     if (sign === 0) {
-      setVelTo(tx, ty, power); // 양발 — 직선(setVelTo가 spin 0으로)
+      setVelTo(tx, ty, power); // 직선(setVelTo가 spin 0으로)
       return;
     }
-    // 회전 세기 — 주발 또렷할수록(weakFoot 낮음) 더 감고, 약간의 개인 변동.
-    const mag = (0.5 + (1 - p.weakFoot) * 0.6) * (0.85 + Math.random() * 0.3);
+    const mag = (0.5 + (1 - weak) * 0.6) * (0.85 + Math.random() * 0.3); // 또렷할수록(weak↓) 더 감음
     const flight = clamp(dist / Math.max(120, power), 0.15, 1.2); // 대략 비행시간(s)
-    let theta = CURVE_RATE * sign * mag * flight; // 비행 동안 총 회전각
+    let theta = CURVE_RATE * Math.sign(sign) * mag * flight; // 비행 동안 총 회전각
     theta = clamp(theta, -0.5, 0.5); // 과회전 방지(±~28°) — 조준 보정이 빗나가지 않게
     ballSpin.current = theta / flight; // 매 프레임 적용할 각속도(rad/s)
     carrySteer.current = null;
@@ -768,6 +777,8 @@ export function WorldCupBallGoal() {
     vel.current.x = Math.cos(aim) * power;
     vel.current.y = Math.sin(aim) * power;
   };
+  const kickCurved = (p: Player, tx: number, ty: number, power: number) =>
+    kickCurvedSign(tx, ty, power, footSign(p), p.weakFoot);
 
   // 캐리(드리블 끌기) 터치 — setVelTo처럼 즉시 꺾지 않고 목표 속도를 carrySteer에 걸어둔다. step의
   // 적분 루프가 매 프레임 vel을 그 목표로 부드럽게 수렴시켜 공이 호를 그리며 돈다(이어지는 턴).
@@ -808,8 +819,15 @@ export function WorldCupBallGoal() {
     place();
   };
 
-  // 가까운 동료(받을 사람)에게 공을 보낸다(킥오프/세트피스 공용).
-  const passToNearestTeammate = (team: 0 | 1, fromX: number, fromY: number, power: number) => {
+  // 가까운 동료(받을 사람)에게 공을 보낸다(킥오프/세트피스/키퍼 배급 공용). spinSign≠0이면 그 손/발
+  // 방향으로 감아 던지거나 찬다(키퍼 손던지기 등). 기본 0=직선.
+  const passToNearestTeammate = (
+    team: 0 | 1,
+    fromX: number,
+    fromY: number,
+    power: number,
+    spinSign = 0
+  ) => {
     let ti = -1;
     let td = Infinity;
     players.current.forEach((m, j) => {
@@ -820,7 +838,11 @@ export function WorldCupBallGoal() {
         ti = j;
       }
     });
-    if (ti >= 0) setVelTo(players.current[ti].x, players.current[ti].y, power);
+    if (ti >= 0) {
+      const m = players.current[ti];
+      if (spinSign !== 0) kickCurvedSign(m.x, m.y, power, spinSign, 0.45);
+      else setVelTo(m.x, m.y, power);
+    }
     lastTouch.current = team;
   };
 
@@ -965,7 +987,8 @@ export function WorldCupBallGoal() {
       scheduleRestart(
         850,
         () => {
-          setVelTo(upfield, ty, 520);
+          // 골킥은 키퍼가 '발'로 찬다(박스 밖이라 손 금지) → 차는 발 방향으로 감긴다.
+          kickCurvedSign(upfield, ty, 520, keeperStats.current[side].foot, 0.4);
           loftBall(Math.abs(upfield - pos.current.x), 520);
           // goalKickKeeper는 여기서 바로 비우지 않는다 — 비우면 placeKeepers 하드 Y clamp가 박스 밖
           // Y를 마우스로 순간이동시킴. updateKeepers가 부드럽게 골문 복귀시킨 뒤 거기서 해제한다.
@@ -2605,14 +2628,15 @@ export function WorldCupBallGoal() {
       if (tNow >= keeperHold.current.until) {
         keeperHold.current = { side: null, until: 0 };
         const upX = hside === "left" ? 1 : -1;
+        const ks = keeperStats.current[hside];
         if (Math.random() < 0.55) {
-          // 스로(가까운 동료에게 짧고 정확히).
-          passToNearestTeammate(hT, pos.current.x, pos.current.y, 300);
+          // 스로(가까운 동료에게 짧고 정확히) — 던지는 '손' 방향으로 감긴다.
+          passToNearestTeammate(hT, pos.current.x, pos.current.y, 300, ks.hand);
         } else {
-          // 펀트(업필드 롱·띄움).
+          // 펀트(업필드 롱·띄움) — 차는 '발' 방향으로 감긴다.
           const { w: bw, h: bh } = bounds();
           const tx = pos.current.x + upX * bw * 0.5;
-          setVelTo(tx, bh * 0.5 + rnd(-bh * 0.22, bh * 0.22), 540);
+          kickCurvedSign(tx, bh * 0.5 + rnd(-bh * 0.22, bh * 0.22), 540, ks.foot, 0.4);
           loftBall(bw * 0.5, 540);
           lastTouch.current = hT;
         }
@@ -3605,6 +3629,9 @@ export function WorldCupBallGoal() {
                       <div className="wc-pcard-head">
                         <b className="num">1</b>
                         <span>골키퍼 · {form}</span>
+                        <span className="pc-foot">
+                          {ks.hand < 0 ? "왼손" : "오른손"}·{ks.foot < 0 ? "왼발" : "오른발"}
+                        </span>
                       </div>
                       {rows.map(([label, v]) => (
                         <div className="wc-pcard-stat" key={label}>
