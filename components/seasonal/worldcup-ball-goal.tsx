@@ -427,9 +427,10 @@ export function WorldCupBallGoal() {
     // 손 사용은 자기 박스 안에서만(Law 12). 박스 밖으로 나간 키퍼는 컵(손으로 감싸기) 포즈 금지 →
     // 발 처리로 보이게(시각적으로도 핸들링처럼 안 보이게). keeperX가 박스 깊이 넘으면 박스 밖.
     const handsLegal = keeperX.current[s] < bounds().w * 0.15;
-    // 박스 밖(손 불법)인데 잡는 중도 아니고 승부차기도 아니면 — 장갑을 몸 옆 아래로 내려 '발/몸 처리'처럼
-    // 보이게 한다(Law 12: 박스 밖 핸들링 금지). 예전엔 박스 밖에서도 손을 공으로 뻗어 핸드볼처럼 보였음.
-    if (!handsLegal && !catching && !shootout.current.active) {
+    // 박스 밖(손 불법)이거나 골킥 중이면 — 장갑을 몸 옆 아래로 내려 '발/몸 처리'처럼 보이게 한다.
+    // 골킥은 발로 차는 거라(손 금지) 키퍼가 공으로 손을 뻗으면 안 된다(잡으러 가는 것처럼 보였음).
+    // (Law 12: 박스 밖 핸들링 금지.) 잡는 중(catching)·승부차기는 예외.
+    if ((!handsLegal || goalKickKeeper.current === s) && !catching && !shootout.current.active) {
       el.classList.remove("wc-keeper-catch");
       const perp0 = (s === "left" ? 0 : Math.PI) + Math.PI / 2;
       for (let gi = 0; gi < 2; gi++) {
@@ -2779,16 +2780,22 @@ export function WorldCupBallGoal() {
         keeperHold.current = { side: null, until: 0 };
         const upX = hside === "left" ? 1 : -1;
         const ks = keeperStats.current[hside];
-        if (Math.random() < 0.55) {
-          // 스로(가까운 동료에게 짧고 정확히) — 키퍼는 한 손 오버암(몸 회전)으로 던져 그 '손' 방향으로
-          // 옆 스핀이 걸린다(직선 아님). 스로인(양손 룰)만 옆 회전 없이 직선이다(throwIn은 spin 0 유지).
+        const { w: bw, h: bh } = bounds();
+        const r = Math.random();
+        if (r < 0.34) {
+          // 한 손 오버암 스로(왼/오) — 몸 회전으로 던져 그 '손' 방향으로 약간 옆 스핀이 걸린다(직선 아님).
+          // 가까운 동료에게 짧고 빠르게. 셋 중 제일 짧다.
           passToNearestTeammate(hT, pos.current.x, pos.current.y, 300, ks.hand);
+        } else if (r < 0.62) {
+          // 양손 스로 — 위/아래 스핀이라 옆으로 안 휜다(직선, spin 0). 한 손보다 힘이 실려 더 길게,
+          // 살짝 띄워 나간다. (펀트보단 짧다.)
+          passToNearestTeammate(hT, pos.current.x, pos.current.y, 430); // spinSign 0 = 직선
+          loftBall(bw * 0.34, 430);
         } else {
-          // 펀트(업필드 롱·띄움) — 차는 '발' 방향으로 감긴다.
-          const { w: bw, h: bh } = bounds();
+          // 펀트(발) — 업필드로 제일 길게 띄운다. 차는 '발' 방향으로 감긴다.
           const tx = pos.current.x + upX * bw * 0.5;
-          kickCurvedSign(tx, bh * 0.5 + rnd(-bh * 0.22, bh * 0.22), 540, ks.foot, 0.4);
-          loftBall(bw * 0.5, 540);
+          kickCurvedSign(tx, bh * 0.5 + rnd(-bh * 0.22, bh * 0.22), 560, ks.foot, 0.4);
+          loftBall(bw * 0.5, 560);
           lastTouch.current = hT;
         }
         restartGrace.current = tNow + 280;
