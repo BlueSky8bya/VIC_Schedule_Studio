@@ -1437,7 +1437,12 @@ export function WorldCupBallGoal() {
           // 크게 주면 비수비수 전원이 공.y로 수렴해 졸졸 따라다녔음 → 폭(자기 자리)을 지키게 infY·maxY를
           // 낮춤. 깊이(x) 시프트는 팀 블록이 함께 오르내리는 것이라 유지. (DF는 아래 라인 로직이 덮음.)
           const fwd = p.slot.role === "FW" || p.slot.role === "WG";
-          const push = counterRun ? 0.26 : attacking ? (fwd ? 0.18 : 0.1) : -0.06;
+          // 인포제션 페이즈(3.1) — 공 전진도(prog 0=자기 골 .. 1=상대 골)에 따라 공격팀이 단계적으로
+          // 전진. 빌드업(prog<0.3)=낮고 넓게(추가 push 0), 전개=전진, 파이널서드(>0.62)=박스 점유.
+          const prog =
+            p.team === 0 ? (bx - fx.min) / (fx.max - fx.min) : (fx.max - bx) / (fx.max - fx.min);
+          const phasePush = attacking ? clamp((prog - 0.3) * 0.5, 0, 0.22) : 0;
+          const push = counterRun ? 0.26 : attacking ? (fwd ? 0.18 : 0.1) + phasePush : -0.06;
           const home = roleHome(p, push);
           const infX = attacking ? 0.1 : 0.12;
           const infY = attacking ? 0.12 : 0.16;
@@ -1470,6 +1475,18 @@ export function WorldCupBallGoal() {
             const third = (fx.max - fx.min) * 0.38;
             const inOwnThird = p.team === 0 ? bx < fx.min + third : bx > fx.max - third;
             if (inOwnThird) ty = clamp(h * 0.5 + (ty - h * 0.5) * 1.3, PLAYER_R, h - PLAYER_R);
+          }
+          // 파이널서드 박스 점유(4.3) — 공이 상대 깊숙이 가면 FW/WG는 박스 안 포스트로 침투(슬롯 위/아래
+          // 로 니어·파포 분담). 오프사이드 라인 안에서. 크로스/컷백 받을 타깃을 박스에 채운다.
+          if (attacking && fwd && prog > 0.62) {
+            const span = fx.max - fx.min;
+            const boxX = p.team === 0 ? fx.max - span * 0.1 : fx.min + span * 0.1;
+            const g = goalRect(p.team === 0 ? "right" : "left");
+            const postY = p.slot.by < 0.5 ? g.y + g.h * 0.35 : g.y + g.h * 0.65;
+            tx = tx * 0.4 + boxX * 0.6;
+            ty = ty * 0.5 + postY * 0.5;
+            const offL = offsideLineFor(p.team);
+            tx = p.team === 0 ? Math.min(tx, offL - PLAYER_R) : Math.max(tx, offL + PLAYER_R);
           }
           // 레스트 디펜스(4.9) — 공격 중에도 DF는 후방 라인을 유지(전원 전진 방지). 항상 공보다 뒤
           // (margin)에 서서 역습 대비. 공 전진하면 같이 오르되 깊이 8~50%로 가둬 공을 앞질러 가지 않게.
