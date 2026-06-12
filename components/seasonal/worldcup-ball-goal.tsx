@@ -1471,6 +1471,28 @@ export function WorldCupBallGoal() {
             const inOwnThird = p.team === 0 ? bx < fx.min + third : bx > fx.max - third;
             if (inOwnThird) ty = clamp(h * 0.5 + (ty - h * 0.5) * 1.3, PLAYER_R, h - PLAYER_R);
           }
+          // 레스트 디펜스(4.9) — 공격 중에도 DF는 후방 라인을 유지(전원 전진 방지). 항상 공보다 뒤
+          // (margin)에 서서 역습 대비. 공 전진하면 같이 오르되 깊이 8~50%로 가둬 공을 앞질러 가지 않게.
+          if (attacking && p.slot.role === "DF") {
+            const half = fx.max - fx.min;
+            const margin = w * 0.14;
+            tx =
+              p.team === 0
+                ? clamp(bx - margin, fx.min + half * 0.08, fx.min + half * 0.5)
+                : clamp(bx + margin, fx.max - half * 0.5, fx.max - half * 0.08);
+            ty = home.y + clamp((by - home.y) * 0.1, -h * 0.08, h * 0.08);
+          }
+          // 수비 컴팩트(4.8) — 수비 블록이 세로로 늘어지지 않게. 미드/공격(비DF)은 DF 라인에서 최대
+          // ~42%(반쪽 기준) 앞까지만 — 블록과 라인 사이 간격 유지(중앙 차단·전환 대비).
+          if (!attacking && p.slot.role !== "DF") {
+            const half = fx.max - fx.min;
+            const lh = t ? t.lineHeight : 0.1;
+            const prog = p.team === 0 ? (bx - fx.min) / half : (fx.max - bx) / half;
+            const depth = clamp(prog * 0.5 + lh * 1.8, 0.1, 0.62);
+            const lineX = p.team === 0 ? fx.min + depth * half * 0.5 : fx.max - depth * half * 0.5;
+            const band = half * 0.42;
+            tx = p.team === 0 ? clamp(tx, lineX, lineX + band) : clamp(tx, lineX - band, lineX);
+          }
         }
         const jit = mode === "shape" || mode === "support" ? 26 : 12;
         p.tx = tx + rnd(-jit, jit);
