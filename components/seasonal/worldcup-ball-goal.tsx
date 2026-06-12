@@ -2276,7 +2276,23 @@ export function WorldCupBallGoal() {
           bestI = i;
         }
       });
-      if (bestI >= 0 && now - kickAt.current > 200) {
+      // 헤딩은 '경합/크로스' 상황에서만 — 박스 근처로 뜬 공(코너·크로스)이거나 양 팀이 같은 공중볼을
+      // 다툴 때. 필드 중앙의 평범한 로빙 패스는 헤딩 안 하고 그냥 떨어뜨려(낙하 후 trap) 발로 받는다.
+      let allowHeader = false;
+      if (bestI >= 0) {
+        const { w: hw, h: hh } = bounds();
+        const bx = pos.current.x;
+        const by = pos.current.y;
+        const nearBox = (bx < hw * 0.22 || bx > hw * 0.78) && Math.abs(by - hh * 0.5) < hh * 0.34;
+        const bt = players.current[bestI].team;
+        let contested = false;
+        players.current.forEach((q, j) => {
+          if (j === bestI || q.red || q.team === bt) return;
+          if (Math.hypot(q.x - bx, q.y - by) < HEADER_R * 2.4) contested = true;
+        });
+        allowHeader = nearBox || contested;
+      }
+      if (bestI >= 0 && allowHeader && now - kickAt.current > 200) {
         if (headerCount.current >= 2) {
           // 헤딩 연쇄 끊기 — 같은 공중볼을 서로 계속 받아넘기면(헤딩 남발) 한 번은 죽여 지면 컨트롤로
           // 내린다. 안 그러면 clear 헤더가 또 띄워 땅에 떨어질 때까지 무한 헤딩이 됐음.
