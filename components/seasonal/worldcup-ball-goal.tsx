@@ -1465,8 +1465,20 @@ export function WorldCupBallGoal() {
           const mv = Math.min(spd, d * 4) * dt;
           p.x = clamp(p.x + (dx / d) * mv, fx.min, fx.max);
           p.y = clamp(p.y + (dy / d) * mv, PLAYER_R, h - PLAYER_R);
+        } else {
+          // 진/무 팀 — 완전 정지 X. 활발하진 않게 느릿느릿 돌아다닌다(드물게 새 목표 + 느린 속도).
+          if (now >= p.thinkAt) {
+            p.tx = rnd(fx.min, fx.max);
+            p.ty = rnd(PLAYER_R, h - PLAYER_R);
+            p.thinkAt = now + rnd(1400, 2900);
+          }
+          const dx = p.tx - p.x;
+          const dy = p.ty - p.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const mv = Math.min(PLAYER_SPEED * 0.3, d * 4) * dt;
+          p.x = clamp(p.x + (dx / d) * mv, fx.min, fx.max);
+          p.y = clamp(p.y + (dy / d) * mv, PLAYER_R, h - PLAYER_R);
         }
-        // 진/무 팀은 제자리(침울) — 위치 유지, 미동 없음.
         return;
       }
       // 골 세레모니 — 득점 직후 잠깐. 득점 팀은 kind별로 신나게 뛰고(코너로/모여안기/무작위 질주),
