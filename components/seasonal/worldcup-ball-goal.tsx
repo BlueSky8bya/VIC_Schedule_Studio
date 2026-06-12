@@ -427,6 +427,23 @@ export function WorldCupBallGoal() {
     // 손 사용은 자기 박스 안에서만(Law 12). 박스 밖으로 나간 키퍼는 컵(손으로 감싸기) 포즈 금지 →
     // 발 처리로 보이게(시각적으로도 핸들링처럼 안 보이게). keeperX가 박스 깊이 넘으면 박스 밖.
     const handsLegal = keeperX.current[s] < bounds().w * 0.15;
+    // 박스 밖(손 불법)인데 잡는 중도 아니고 승부차기도 아니면 — 장갑을 몸 옆 아래로 내려 '발/몸 처리'처럼
+    // 보이게 한다(Law 12: 박스 밖 핸들링 금지). 예전엔 박스 밖에서도 손을 공으로 뻗어 핸드볼처럼 보였음.
+    if (!handsLegal && !catching && !shootout.current.active) {
+      el.classList.remove("wc-keeper-catch");
+      const perp0 = (s === "left" ? 0 : Math.PI) + Math.PI / 2;
+      for (let gi = 0; gi < 2; gi++) {
+        const g = gl[gi];
+        if (!g) continue;
+        const sgn = gi === 0 ? 1 : -1;
+        const tx = Math.cos(perp0) * kd * 0.28 * sgn; // 옆으로 살짝
+        const ty = Math.sin(perp0) * kd * 0.28 * sgn + kd * 0.2; // + 아래로(내린 손)
+        cur[gi].x += (tx - cur[gi].x) * 0.2;
+        cur[gi].y += (ty - cur[gi].y) * 0.2;
+        g.style.transform = `translate(calc(-50% + ${cur[gi].x}px), calc(-50% + ${cur[gi].y}px)) rotate(0deg)`;
+      }
+      return;
+    }
     // 공이 키퍼에 닿는 순간(잡기·근접·막 쳐낸 직후)엔 '추적'을 멈추고 고정 컵 포즈로. 추적하면 공의
     // 미세 진동을 손이 따라가 부르르 떨리고 공과 비벼졌음. 추적은 공이 멀리서 다가올 때(아래)만.
     const nearBall = (catching || dist < kd * 1.7 || now < saveGrace.current) && handsLegal;
@@ -1284,8 +1301,9 @@ export function WorldCupBallGoal() {
     }
 
     lastTouch.current = defT;
-    if (speed < 360 && Math.abs(uy) < 0.7) {
-      // CATCH — 정면·약한 공은 잡아서 보유(아래 keeperHold가 잠깐 들고 있다가 배급).
+    if (speed < 360 || (speed < 480 && Math.abs(uy) < 0.65)) {
+      // CATCH — 느린/루즈볼은 무조건, 중간 속도는 정면이면 잡아서 보유(아래 keeperHold가 배급).
+      // (예전엔 느린 공도 정면(uy<0.7)이 아니면 쳐냈음 → 박스 안 굴러온 공을 안 잡던 원인.)
       keeperHold.current = { side, until: now + 820 };
       vel.current.x = 0;
       vel.current.y = 0;
@@ -1332,16 +1350,39 @@ export function WorldCupBallGoal() {
       const spd = (active ? KEEPER_SPEED : KEEPER_SPEED * 0.5) * dt;
       keeperY.current[side] += clamp(target - keeperY.current[side], -spd, spd);
 
-      // 스위핑(X) — 성격(aggro)으로 갈린다. 공이 위협권에 오면 스위퍼는 라인 밖으로 확 나와
-      // 끊으려 하고(높은 aggro=멀리·빨리), 라인키퍼는 거의 골문에만 머문다. 위협 없으면 복귀.
+      // 스위핑(X) — 성격(aggro)으로 갈린다. 단 '박스 안'(boxDepth)까지만 나온다 → 박스 밖 핸들링(반칙)
+      // 방지(손은 박스 안에서만). 위협 없으면 복귀.
       const aggro = keeperAggro.current[side];
+      const defT = teamDefending(side);
+      const boxDepth = w * 0.14; // 손 합법 한계(0.15w) 안 — 스위프 상한
       const central = Math.abs(pos.current.y - (g.y + g.h / 2)) < g.h * 1.7;
+      const ballSpeed = Math.hypot(vel.current.x, vel.current.y);
+      // 박스 안 루즈볼 — 공이 박스 안이고 (느리거나 상대 공격수가 붙으면) 키퍼가 직접 나와 덮쳐 잡는다.
+      // 아군이 잡고 있으면(lastTouch=defT) 안 나간다. 예전엔 손만 뻗고 가만히 있어 상대가 먼저 찼음.
+      let oppD = Infinity;
+      players.current.forEach((e) => {
+        if (e.team === defT || e.red) return;
+        oppD = Math.min(oppD, Math.hypot(e.x - pos.current.x, e.y - pos.current.y));
+      });
+      const ballInBox =
+        dist < boxDepth + kdDia() && Math.abs(pos.current.y - (g.y + g.h / 2)) < g.h * 1.2;
+      const looseInBox =
+        ballInBox && lastTouch.current !== defT && ballSpeed < 360 && (ballSpeed < 140 || oppD < w * 0.13);
       const threat = central && dist < w * (0.16 + aggro * 0.18) && (toward || dist < w * 0.1);
-      const maxRush = w * (0.03 + aggro * 0.22);
-      const wantRush = threat ? clamp(dist - kdDia(), 0, maxRush) * (0.45 + aggro * 0.6) : 0;
-      // 몸 자체는 빠르지 않게(손 뻗기 다이브는 장갑이 따로 빠르게 처리). 러시도 선수 속도 안팎으로.
-      const rushSpd = KEEPER_SPEED * (threat ? 0.55 + aggro * 0.45 : 0.6) * dt;
+      let wantRush: number;
+      if (looseInBox) {
+        wantRush = clamp(dist - kdDia() * 0.45, 0, boxDepth); // 공까지(박스 안에서) 덮친다
+      } else {
+        const maxRush = Math.min(w * (0.03 + aggro * 0.22), boxDepth); // 박스 밖으로 안 나가게 cap
+        wantRush = threat ? clamp(dist - kdDia(), 0, maxRush) * (0.45 + aggro * 0.6) : 0;
+      }
+      const rushSpd = KEEPER_SPEED * (looseInBox ? 1.05 : threat ? 0.55 + aggro * 0.45 : 0.6) * dt;
       keeperX.current[side] += clamp(wantRush - keeperX.current[side], -rushSpd, rushSpd);
+      // 루즈볼 덮칠 땐 Y도 공으로 직접(빠르게) 가서 확실히 잡는다.
+      if (looseInBox) {
+        const cy = clamp(pos.current.y, g.y + kdDia() / 2, g.y + g.h - kdDia() / 2);
+        keeperY.current[side] += clamp(cy - keeperY.current[side], -KEEPER_SPEED * dt, KEEPER_SPEED * dt);
+      }
 
       // 골킥으로 박스 밖에 나갔던 키퍼 — 라인+마우스로 충분히 복귀했으면 하드 Y clamp 다시 켠다(해제).
       if (goalKickKeeper.current === side) {
