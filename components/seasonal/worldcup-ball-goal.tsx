@@ -776,12 +776,9 @@ export function WorldCupBallGoal() {
     const dx = tx - pos.current.x;
     const dy = ty - pos.current.y;
     const d = Math.hypot(dx, dy) || 1;
+    // 목표 속도만 걸어둔다 — 적분 루프의 각(角) 스티어가 현재 진행방향에서 천천히 돌려 잇는다.
+    // (예전엔 멈춘 공을 목표방향으로 즉시 vel=40 시드해서, 그게 곧 '방향 순간전환'의 원인이었음.)
     carrySteer.current = { vx: (dx / d) * power, vy: (dy / d) * power };
-    // 멈춰 있던 공은 살짝 굴려 스티어가 물리게(방향만 있고 진행 0이면 안 도는 것처럼 보임).
-    if (Math.hypot(vel.current.x, vel.current.y) < 20) {
-      vel.current.x = (dx / d) * 40;
-      vel.current.y = (dy / d) * 40;
-    }
   };
 
   // 공 띄우기(롱패스·골킥·코너 크로스) — 수평 도달시간에 맞춰 수직속도를 줘서 그 시간 뒤 착지.
@@ -804,6 +801,8 @@ export function WorldCupBallGoal() {
     snap?: boolean
   ) => {
     vel.current = { x: 0, y: 0 };
+    carrySteer.current = null; // 세트피스로 멈춤 — 드리블 점유 락/회전 해제(잔류 방지)
+    ballSpin.current = 0;
     pendingRestart.current = { at: performance.now() + delay, kick, walk, team, wall, snap };
     clock.current.added += 0.12; // 세트피스 지체 → 추가시간 누적(게임분)
     place();
@@ -2683,11 +2682,25 @@ export function WorldCupBallGoal() {
       // 즉시 꺾지 않고 호를 그리며 도는 효과. 목표에 충분히 가까워지면 해제하고 마찰로 자연 감속.
       // 떠 있는(airborne) 공은 통과/포물선 중이라 스티어 안 함.
       if (carrySteer.current && ballZ.current <= AIR_MIN) {
+        // 캐리 턴 — 속도 '벡터'를 그대로 lerp하면 반대방향으로 꺾을 때 중간에 크기가 0으로 collapse돼
+        // 공이 멈췄다 튀어나가(툭툭/순간이동) 보였다. 대신 '진행 방향(각)'만 최대 회전율로 천천히 돌리고
+        // 속도(크기)는 따로 이징 → 절대 멈추지 않고 호를 그리며 스윽 돈다(120도 급선회도 끊김 없이).
         const s = carrySteer.current;
-        const k = 0.12; // 수렴 계수 — 작을수록 더 느긋한(스윽 이어지는) 턴
-        vel.current.x += (s.vx - vel.current.x) * k;
-        vel.current.y += (s.vy - vel.current.y) * k;
-        if (Math.hypot(s.vx - vel.current.x, s.vy - vel.current.y) < 8) carrySteer.current = null;
+        const curSp = Math.hypot(vel.current.x, vel.current.y);
+        const tgtSp = Math.hypot(s.vx, s.vy) || 1;
+        const tgtAng = Math.atan2(s.vy, s.vx);
+        const curAng = curSp > 4 ? Math.atan2(vel.current.y, vel.current.x) : tgtAng; // 거의 정지면 목표서 출발
+        let dA = tgtAng - curAng;
+        while (dA > Math.PI) dA -= Math.PI * 2;
+        while (dA < -Math.PI) dA += Math.PI * 2;
+        const maxTurn = 0.11; // rad/frame(~6.3°/프레임 ≈ 380°/s) — 작을수록 더 느긋한 턴
+        const newAng = curAng + clamp(dA, -maxTurn, maxTurn);
+        const newSp = curSp + (tgtSp - curSp) * 0.2; // 크기는 0으로 안 죽고 목표 속도로 부드럽게
+        vel.current.x = Math.cos(newAng) * newSp;
+        vel.current.y = Math.sin(newAng) * newSp;
+        // 수렴해도 carrySteer를 자동 해제하지 않는다 — '드리블 점유 락'으로 유지해, 빠르게 굴러가는
+        // 공이 trapBall에 안 걸리고(자기 공 안 끊김) 다음 캐리에서 현재 진행방향부터 매끄럽게 이어진다.
+        // 해제는 패스/슛(setVelTo·kickCurved)·태클·트래핑(상대)·세트피스·드래그가 담당한다.
       }
       // 주 발 커브 — 비행 중 속도 벡터를 ballSpin(rad/s)만큼 회전시켜 공이 휜다(바나나). 충분히
       // 빠를 때만(느려지면 직진하다 멈춤). 떠 있는 공(롱볼)도 휘게 둔다(크로스 감김).
@@ -2803,38 +2816,42 @@ export function WorldCupBallGoal() {
           callFoul(p);
           return;
         }
-        if (run && i === near.overall && speed < CONTROL_SPEED) {
-          // 압박 받는 캐리어는 오래 끌지 않고 빨리 내보낸다(원터치 우선권). 가까운 상대가 견제 거리에
-          // 있으면 결정 쿨다운을 줄여 셸드로 버티다 태클당하기 전에 패스/슛한다(수비가 아직 공을 못
-          // 따냈으니 캐리어가 먼저 처리). 공간 있으면 평소 KICK_CD대로 잡고 간을 본다.
+        if (i === near.overall) {
+          // 캐리어/리시버 처리. 가까운 상대까지 거리로 결정 쿨다운 — 압박 받으면 빨리 내보낸다.
           let oppD = Infinity;
           players.current.forEach((e) => {
             if (e.team === p.team || e.red) return;
             oppD = Math.min(oppD, Math.hypot(e.x - p.x, e.y - p.y));
           });
           const cd = oppD < bounds().w * 0.06 ? 150 : KICK_CD;
-          if (now - kickAt.current > cd) {
-            playBall(p);
-          } else if (!carrySteer.current) {
-            // 컨트롤 중(다음 결정까지) — 공을 발밑에 잡고 선다(셸드). 예전엔 carry 모드로 공을 향해
-            // 계속 이동하며 매 프레임 공을 들이받아(bounce) 앞으로 밀어, 결정과 무관하게 드리블처럼
-            // 보였음 → 공을 죽이고 발밑에 고정해 끌고가지 않게.
-            // 단 '캐리(드리블) 진행 중'(carrySteer 있음)이면 셸드로 죽이지 않는다 — 셸드가 매 프레임
-            // 공을 발밑에 고정-해제 반복하며 스티어와 싸워 공이 휙 튀어나가던(순간이동 느낌) 원인이었음.
-            // 캐리 중엔 스티어가 방향·속도를 부드럽게 이어주도록 그대로 둔다(스윽 연속 이동).
-            vel.current.x *= 0.6;
-            vel.current.y *= 0.6;
-            const hx = pos.current.x - p.x;
-            const hy = pos.current.y - p.y;
-            const hd = Math.hypot(hx, hy) || 1;
-            const hold = ballDia() / 2 + PLAYER_R * 0.6;
-            pos.current.x = p.x + (hx / hd) * hold;
-            pos.current.y = p.y + (hy / hd) * hold;
+          if (carrySteer.current) {
+            // ★ 드리블 캐리 중 — 스티어가 공을 부드럽게(角 단위로) 몰고 간다. '자기 공'을 트랩/튕김/셸드로
+            // 절대 끊지 않는다. 예전엔 캐리 속도(>CONTROL_SPEED)의 공이 trapBall 가지에 걸려 매 결정마다
+            // 랜덤 각(±63°)으로 redirect돼 공이 '툭툭 순간이동(120도 급회전)'하던 게 진짜 원인이었다.
+            // 결정 시점이 되면 다음 드리블 방향/패스/슛만 재결정(playBall)한다.
+            if (run && now - kickAt.current > cd) playBall(p);
+          } else if (run && speed < CONTROL_SPEED) {
+            // 발밑 컨트롤(드리블 아님) — 결정 시점이면 처리, 아니면 발밑에 잡고 선다(셸드).
+            if (now - kickAt.current > cd) {
+              playBall(p);
+            } else {
+              vel.current.x *= 0.6;
+              vel.current.y *= 0.6;
+              const hx = pos.current.x - p.x;
+              const hy = pos.current.y - p.y;
+              const hd = Math.hypot(hx, hy) || 1;
+              const hold = ballDia() / 2 + PLAYER_R * 0.6;
+              pos.current.x = p.x + (hx / hd) * hold;
+              pos.current.y = p.y + (hy / hd) * hold;
+            }
+          } else if (run && speed < TRAP_MAX && now - kickAt.current > 150) {
+            // 빠른 공 받기 — 퍼스트터치(트래핑). 내 드리블이 아닐 때만(carrySteer 없을 때) 여기로 온다.
+            trapBall(p);
+          } else {
+            bounceBallOffPlayer(p);
           }
-        } else if (run && i === near.overall && speed < TRAP_MAX && now - kickAt.current > 150) {
-          trapBall(p); // 너무 빨라 즉시 통제 불가 → 퍼스트터치로 받는다(능력·압박 따라 성공/튐)
         } else {
-          bounceBallOffPlayer(p);
+          bounceBallOffPlayer(p); // 캐리어 외 선수에 닿으면 튕김(수비 차단·난반사)
         }
       });
     }
@@ -3523,6 +3540,8 @@ export function WorldCupBallGoal() {
                     FW: "공격"
                   };
                   const form = teams.current?.[p.team]?.formation ?? "";
+                  const footKo =
+                    p.preferredFoot === "right" ? "오른발" : p.preferredFoot === "left" ? "왼발" : "양발";
                   const cards = p.red ? "🟥" : p.yellow >= 2 ? "🟨🟨" : p.yellow === 1 ? "🟨" : "";
                   const condition = Math.max(0, 1 - p.knock); // 1=멀쩡 .. 0=심한 부상
                   const hurt = p.knock > 0.1;
@@ -3540,6 +3559,7 @@ export function WorldCupBallGoal() {
                         <span>
                           {roleKo[p.slot.role]} · {form}
                         </span>
+                        <span className="pc-foot">{footKo}</span>
                         {cards ? <span className="pc-card">{cards}</span> : null}
                         {hurt ? <span className="pc-card">🤕</span> : null}
                       </div>

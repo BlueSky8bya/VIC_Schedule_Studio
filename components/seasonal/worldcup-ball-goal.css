@@ -964,6 +964,16 @@
 .wc-pcard-head .pc-card {
   flex: 0 0 auto;
 }
+/* 주 발 칩 — 제목 오른쪽 작은 알약(오른발/왼발/양발). flex:1(제목) 규칙에 안 묻히게 0 0 auto. */
+.wc-pcard-head .pc-foot {
+  flex: 0 0 auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 16%);
+  font-size: 10.5px;
+  font-weight: 800;
+  white-space: nowrap;
+}
 .wc-pcard-stat,
 .wc-pcard-stam-row {
   display: grid;
