@@ -1410,6 +1410,20 @@ export function WorldCupBallGoal() {
         p.y = clamp(p.y + (sdy / sd) * smove, PLAYER_R, h - PLAYER_R);
         return;
       }
+      // 하프타임/피리어드 휴식 — 공(중앙) 쫓지 말고 자기 진영 포메이션 자리로 흩어져 선다. 안 그러면
+      // 전원이 센터(공)로 수렴해 센터서클에 한 덩어리로 몰려 있었음(휴식인데 경합하듯).
+      if (now < breakUntil.current && !clock.current.ended) {
+        const home = roleHome(p, p.team === 0 ? -0.02 : -0.02);
+        const sdx = home.x - p.x;
+        const sdy = home.y - p.y;
+        const sd = Math.hypot(sdx, sdy) || 1;
+        const smove = Math.min(PLAYER_SPEED * 0.4, sd * 4) * dt;
+        p.x = clamp(p.x + (sdx / sd) * smove, fx.min, fx.max);
+        p.y = clamp(p.y + (sdy / sd) * smove, PLAYER_R, h - PLAYER_R);
+        p.tx = p.x;
+        p.ty = p.y;
+        return;
+      }
       // 부상 — knock은 천천히 회복. 심한 직후엔 잠깐 쓰러져 정지(치료 대기).
       p.knock = Math.max(0, p.knock - 0.02 * dt);
       if (now < p.downUntil) return;
@@ -1606,12 +1620,16 @@ export function WorldCupBallGoal() {
       p.acute = clamp(p.acute + acuteGain * dt - acuteRec * dt, 0, 1);
     });
 
-    // 분리(separation) — 군집 자체는 막지 않는다(전술·성향상 모일 수 있음). 다만 '한 점'에 다 겹치는
-    // 물리적으로 불가능한 상태만 막아, 아무리 붙어도 조랭이떡처럼 닿되 구분되게(최소간격=닿는 정도).
-    // 모바일은 선수 시각크기(13)가 작으니 그만큼만 띄운다. O(n²)=400, 60fps 무리 없음.
+    // 분리(separation) — 2단. (1) 물리 겹침(minSep=닿는 정도)은 항상 막는다(조랭이떡 방지).
+    // (2) 개인 공간(psr, 더 넓게)은 '공에서 먼' 선수끼리만 부드럽게 벌린다 → 공과 무관한 곳에서 양 팀이
+    // 한 덩어리로 뭉쳐 안 풀리던 잔여 스크럼을 흩는다. 단, 공 경합 중(공 근처)인 선수는 제외해 진짜
+    // 듀얼·압박은 그대로 붙게 둔다. 모바일은 선수 시각크기(13) 기준. O(n²)=400, 60fps 무리 없음.
     const minSep = (rotated.current ? 13 : PLAYER_R * 2) + 1;
+    const psr = minSep * 1.75; // 개인 공간 — 닿는 것보다 넓게(군집 풀기)
+    const ballNear2 = (w * 0.06) * (w * 0.06); // 이 안이면 공 경합 → 안 벌림
     players.current.forEach((p, i) => {
       if (p.red) return;
+      const pContest = (p.x - bx) * (p.x - bx) + (p.y - by) * (p.y - by) < ballNear2;
       let sx = 0;
       let sy = 0;
       players.current.forEach((q, j) => {
@@ -1619,9 +1637,20 @@ export function WorldCupBallGoal() {
         const dx = p.x - q.x;
         const dy = p.y - q.y;
         const d2 = dx * dx + dy * dy;
-        if (d2 > 0.01 && d2 < minSep * minSep) {
+        if (d2 <= 0.01) return;
+        if (d2 < minSep * minSep) {
+          // 물리 겹침 — 항상 분리(닿되 안 겹치게).
           const d = Math.sqrt(d2);
           const f = (minSep - d) / minSep;
+          sx += (dx / d) * f;
+          sy += (dy / d) * f;
+        } else if (!pContest && d2 < psr * psr) {
+          // 개인 공간 — 공서 멀 때만, 부드럽게(0.5). 상대도 공 경합이면 안 민다(듀얼 보존).
+          const qContest =
+            (q.x - bx) * (q.x - bx) + (q.y - by) * (q.y - by) < ballNear2;
+          if (qContest) return;
+          const d = Math.sqrt(d2);
+          const f = ((psr - d) / psr) * 0.5;
           sx += (dx / d) * f;
           sy += (dy / d) * f;
         }
