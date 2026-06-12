@@ -21,5 +21,13 @@ export const BREAKPOINTS = {
   studioNarrow: 1180,
 } as const;
 
-/** 모바일 정식 UX 진입 기준. JS matchMedia에서 이 상수만 사용한다. */
-export const MOBILE_QUERY = `(max-width: ${BREAKPOINTS.mobile}px)`;
+/**
+ * 모바일 정식 UX 진입 기준. JS matchMedia에서 이 상수만 사용한다.
+ *
+ * 폭(세로 모드)뿐 아니라 "터치 기기가 가로로 누웠을 때"도 모바일로 잡는다 — 휴대폰을 가로로
+ * 돌리면 폭이 640을 넘어 데스크톱 레이아웃으로 둔갑하던 문제를 구조적으로 막는다. 가로 휴대폰은
+ * 짧은 변(높이)이 작고 포인터가 coarse라 `(max-height) and (pointer: coarse)`로 식별된다.
+ * 콤마(OR)라 휴대폰은 세로(첫 절)·가로(둘째 절) 어느 방향에서도 항상 매치 → 회전해도 절대
+ * 웹으로 안 넘어간다. 태블릿(짧은 변 > 640)·마우스 데스크톱은 그대로 웹 레이아웃 유지.
+ */
+export const MOBILE_QUERY = `(max-width: ${BREAKPOINTS.mobile}px), (max-height: ${BREAKPOINTS.mobile}px) and (pointer: coarse)`;
