@@ -526,7 +526,11 @@ export function WorldCupBallGoal() {
       const el = keeperRef.current[s];
       if (!el) return;
       el.style.display = "";
-      el.classList.remove("wc-keeper-def-red", "wc-keeper-def-blue");
+      // 골키퍼도 진영 교체 반영 — 그 골을 '지키는 팀' 색을 입힌다. 키퍼는 골문에 고정(이동 불가)이라
+      // 전·후반 진영이 바뀌면 같은 골문 키퍼의 색이 바뀐다 → 어느 팀 골문인지 한눈에, 스위치가 명확.
+      const kdef = teamDefending(s);
+      el.classList.toggle("wc-keeper-def-red", kdef === 0);
+      el.classList.toggle("wc-keeper-def-blue", kdef === 1);
       // 하드 충돌(RL 핵심) — 키퍼가 '골 박스 안'에 있을 때만 상·하 포스트 안으로 강제(포스트 통과 금지).
       // 단 골킥 등으로 라인 앞(필드)으로 나올 땐 포스트가 없으니 Y 자유 — 안 그러면 골킥 키퍼가
       // 공의 Y로 못 가서 공에 못 다가가던 버그.
