@@ -521,8 +521,8 @@ export function WorldCupBallGoal() {
       el.classList.toggle("wc-keeper-def-blue", team === 1);
       const defending = team !== so.turn;
       el.classList.toggle("wc-keeper-ingoal", defending); // 막는 키퍼만 골 안(흐릿)
-      // 막는 키퍼는 공(z auto=0)보다 위(z4) — 장갑이 공을 덮어 잡기/쳐냄이 자연스럽다(그물 z5보단 아래).
-      el.style.zIndex = defending ? "4" : "";
+      // 막는 키퍼는 땅 공(z1)보다 위(z3) — 장갑이 공을 덮어 잡기/쳐냄이 자연스럽다(그물 z5보단 아래).
+      el.style.zIndex = defending ? "3" : "";
       // 잡았으면(catch) 글러브 컵 포즈 — 공을 손으로 감싼 모양.
       el.classList.toggle("wc-keeper-catch", defending && so.outcome === "catch" && so.resolved);
       const tx = defending ? inGoalX : besideX;
@@ -577,11 +577,10 @@ export function WorldCupBallGoal() {
       const fwd = keeperX.current[s] + KEEPER_AHEAD();
       const ox = s === "left" ? fwd : -fwd;
       el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
-      // 키퍼는 항상 골망(.wc-goal-net, z5) '뒤'(z4)로 둔다. 골망에 backdrop-filter 블러가 걸려 있어,
-      // 골망에 겹친 키퍼 픽셀(골라인 뒤=뒤통수)만 흐려지고 앞으로 나온 부분은 또렷 → 반쯤 걸친 키퍼가
-      // 자연스럽다. (예전: 키퍼 전체를 통째로 블러(wc-keeper-ingoal)했음.) z4 > 공(0)이라 잡기/쳐냄 때
-      // 글러브가 공을 덮는 것도 유지.
-      el.style.zIndex = "4";
+      // 키퍼는 항상 골망(.wc-goal-net, z5) '뒤'(z3)로 둔다. 골망 backdrop 블러로 골라인 뒤로 걸친
+      // 부분(뒤통수)만 흐려진다. z3 > 땅 공(1)·선수(2)라 글러브가 땅 공을 덮고, 공중 공(z4)은 키퍼
+      // 위로 넘어간다(키퍼 위·바 아래 칩 골). 그물(5)보단 아래.
+      el.style.zIndex = "3";
       el.classList.remove("wc-keeper-ingoal");
       placeGloves(s, keeperCenterX(s), keeperY.current[s], true, now, s); // 정상경기: 자기 골 박스로 clip
     });
@@ -1983,6 +1982,20 @@ export function WorldCupBallGoal() {
       stats.current.shot[p.team] += 1;
       logEvent("shot", p.team, p.x, p.y);
       const tx = enemy === "left" ? g.x + g.w : g.x;
+      // 칩/로빙 슛 — 키퍼가 골문서 나와(스위핑) 있거나 1대1 가까이면, 가끔 키퍼 머리 위로 띄워 바 밑으로
+      // 떨군다. 떠오른 공(공중)이 키퍼 위(z3)·크로스바 아래(그물 z5)를 지나 골 에어리어에 떨어지며 골.
+      const gkAdvance = keeperX.current[enemy]; // 그 골 키퍼가 라인서 전진한 거리
+      const chip =
+        p.shoot > 0.35 &&
+        (gkAdvance > w * 0.045 || (clearChance && goalDist < w * 0.24)) &&
+        Math.random() < 0.32;
+      if (chip) {
+        const cty = g.y + g.h * (Math.random() < 0.5 ? 0.24 : 0.76); // 위/아래 구석(바 바로 밑)
+        const power = 300 + Math.random() * 110; // 칩은 약하게 — 살짝 띄워 키퍼만 넘긴다
+        setVelTo(tx, cty, power);
+        loftBall(Math.hypot(tx - p.x, cty - p.y), power); // 골 도달 시간에 맞춰 띄움 → 키퍼 위, 바 밑 낙하
+        return;
+      }
       // 클리어찬스는 침착하게 구석(스프레드 작게), 그 외엔 슛 능력 따라 흩어진다.
       const spread = clearChance ? g.h * 0.3 : g.h * 0.5 * (1.2 - p.shoot);
       const ty = g.y + g.h / 2 + (Math.random() * 2 - 1) * spread;
