@@ -213,6 +213,9 @@ export function WorldCupBallGoal() {
     phase: "" as "" | "setup" | "run" | "result",
     at: 0,
     scored: false,
+    // 승부차기 결과 종류 — goal(깨끗한 골)·deflect(손 맞고 골인)·catch(잡음)·parry(쳐냄)·miss(빗나감).
+    outcome: "goal" as "goal" | "deflect" | "catch" | "parry" | "miss",
+    resolved: false, // run 단계서 키퍼 접촉/도달 처리 1회만
     targetY: 0,
     guessY: 0,
     kicker: -1, // 이번 키커(선수 인덱스) — 실제 원이 도움닫기 후 찬다
@@ -510,12 +513,15 @@ export function WorldCupBallGoal() {
       const el = keeperRef.current[s];
       if (!el) return;
       el.style.display = "";
-      el.style.zIndex = ""; // 정상경기서 올린 z 잔류 방지(승부차기 키퍼는 골 안=그물 뒤)
       const team: 0 | 1 = s === "left" ? 0 : 1;
       el.classList.toggle("wc-keeper-def-red", team === 0);
       el.classList.toggle("wc-keeper-def-blue", team === 1);
       const defending = team !== so.turn;
       el.classList.toggle("wc-keeper-ingoal", defending); // 막는 키퍼만 골 안(흐릿)
+      // 막는 키퍼는 공(z auto=0)보다 위(z4) — 장갑이 공을 덮어 잡기/쳐냄이 자연스럽다(그물 z5보단 아래).
+      el.style.zIndex = defending ? "4" : "";
+      // 잡았으면(catch) 글러브 컵 포즈 — 공을 손으로 감싼 모양.
+      el.classList.toggle("wc-keeper-catch", defending && so.outcome === "catch" && so.resolved);
       const tx = defending ? inGoalX : besideX;
       const ty = defending ? keeperY.current.right : besideY;
       let cur = skPos.current[s];
@@ -2449,10 +2455,31 @@ export function WorldCupBallGoal() {
         !k || Math.hypot(k.x - (spotX - ballGap), k.y - spotY) < ballGap * 1.1;
       if (tNow - s.at >= 500 && kickerAtBall) {
         const skill = k ? k.shoot : 0.6;
-        s.scored = Math.random() < 0.5 + skill * 0.32; // 키커 슛 능력 → 성공률
-        const top = Math.random() < 0.5;
-        s.targetY = spotY + (top ? -1 : 1) * goalH() * 0.42;
-        s.guessY = s.scored ? spotY + (top ? 1 : -1) * goalH() * 0.55 : s.targetY; // 막으면 같은 쪽 다이브
+        const gk = keeperStats.current.right; // 막는 키퍼는 항상 오른쪽 골
+        const side = Math.random() < 0.5 ? -1 : 1; // 노리는 구석(위/아래)
+        // 결과 종류 결정 — (1)빗나감 →아니면 (2)키퍼가 맞는 쪽 읽나? →못 읽으면 깨끗한 골, 읽으면
+        // 손에 닿아 handling으로 잡기/쳐내기/손 맞고 골 갈림.
+        const missP = clamp(0.05 + (1 - skill) * 0.13, 0.03, 0.22);
+        if (Math.random() < missP) {
+          s.outcome = "miss";
+          s.targetY = spotY + side * goalH() * (0.62 + Math.random() * 0.25); // 포스트 밖/위
+          s.guessY = spotY + (Math.random() < 0.5 ? side : -side) * goalH() * 0.4; // 키퍼는 아무 쪽 다이브
+        } else {
+          s.targetY = spotY + side * goalH() * (0.3 + Math.random() * 0.14); // 골 안 구석
+          const readRight = Math.random() < clamp(0.4 + gk.reflex * 0.2, 0.28, 0.72);
+          if (!readRight) {
+            s.outcome = "goal"; // 반대로 다이브 → 깨끗한 골
+            s.guessY = spotY - side * goalH() * 0.5;
+          } else {
+            s.guessY = s.targetY; // 맞는 쪽 다이브 → 손에 닿음
+            const r = Math.random();
+            if (r < gk.handling * 0.42) s.outcome = "catch"; // 잡음
+            else if (r < gk.handling * 0.42 + 0.34) s.outcome = "parry"; // 쳐냄(골 안)
+            else s.outcome = "deflect"; // 손 맞고 골인
+          }
+        }
+        s.scored = s.outcome === "goal" || s.outcome === "deflect";
+        s.resolved = false;
         setVelTo(goalLineX + 6, s.targetY, 660);
         stats.current.shot[s.turn] += 1;
         s.phase = "run";
@@ -2476,18 +2503,42 @@ export function WorldCupBallGoal() {
       );
       pos.current.x += vel.current.x * dt;
       pos.current.y += vel.current.y * dt;
-      if (!s.scored && pos.current.x >= goalLineX - 2) {
-        pos.current.x = goalLineX - 3; // 막힘 — 골라인서 멈춤
-        vel.current = { x: 0, y: 0 };
-      } else if (s.scored && pos.current.x >= goalLineX) {
-        // 골 — 네트에 푹 박힌다(뚫고 날아가지 않게). 그물 출렁임은 골 판정 때 setNetFlash.
-        pos.current.x = goalLineX + goalW() * 0.5;
-        pos.current.y = s.targetY;
-        vel.current = { x: 0, y: 0 };
-        ballZ.current = 0;
+      // 골라인/키퍼 도달 처리 — 한 번만(resolved). outcome별로 다르게 끝낸다.
+      if (!s.resolved && pos.current.x >= goalLineX - 3) {
+        s.resolved = true;
+        const ky = keeperY.current.right;
+        if (s.outcome === "goal") {
+          pos.current.x = goalLineX + goalW() * 0.5; // 네트에 박힘
+          pos.current.y = s.targetY;
+          vel.current = { x: 0, y: 0 };
+          ballZ.current = 0;
+        } else if (s.outcome === "deflect") {
+          // 손 맞고 굴절 골 — 코스가 살짝 틀어지되 결국 안으로.
+          pos.current.x = goalLineX + goalW() * 0.5;
+          pos.current.y = clamp(
+            s.targetY + (s.targetY > spotY ? -1 : 1) * goalH() * rnd(0.06, 0.18),
+            gR.y + 4,
+            gR.y + gR.h - 4
+          );
+          vel.current = { x: 0, y: 0 };
+          ballZ.current = 0;
+        } else if (s.outcome === "catch") {
+          // 키퍼가 잡음 — 글러브 앞에 고정(아래 placeShootoutKeepers가 catch 포즈).
+          pos.current.x = goalLineX - kdDia() * 0.42;
+          pos.current.y = ky;
+          vel.current = { x: 0, y: 0 };
+        } else if (s.outcome === "parry") {
+          // 쳐냄 — 손 맞고 옆/뒤로 튕겨 나간다.
+          pos.current.x = goalLineX - kdDia() * 0.3;
+          pos.current.y = ky;
+          const dirY = s.targetY >= ky ? 1 : -1;
+          vel.current = { x: -rnd(160, 320), y: dirY * rnd(140, 320) };
+        }
+        // miss: 처리 없음 — 골 옆/위로 그대로 지나간다(멈추지 않음).
       }
       if (tNow - s.at >= PK_RUN) {
-        if (s.scored) {
+        const goalKind = s.outcome === "goal" || s.outcome === "deflect";
+        if (goalKind) {
           if (s.turn === 0) s.a += 1;
           else s.b += 1;
           burstConfetti(goalLineX, s.targetY);
@@ -2505,7 +2556,17 @@ export function WorldCupBallGoal() {
         else s.takenB += 1;
         setScore([s.a, s.b]); // 스코어 박스에 PK 누계 표시
         scoreRef.current = [s.a, s.b];
-        setPkText({ a: s.a, b: s.b, turn: s.turn, round: s.round, note: s.scored ? "성공" : "실패" });
+        const note =
+          s.outcome === "goal"
+            ? "성공"
+            : s.outcome === "deflect"
+              ? "굴절 골"
+              : s.outcome === "catch"
+                ? "선방(잡음)"
+                : s.outcome === "parry"
+                  ? "쳐냄"
+                  : "빗나감";
+        setPkText({ a: s.a, b: s.b, turn: s.turn, round: s.round, note });
         s.phase = "result";
         s.at = tNow;
       }
@@ -2522,6 +2583,8 @@ export function WorldCupBallGoal() {
         s.phase = "setup";
         s.at = tNow;
         s.scored = false;
+        s.resolved = false; // 다음 키커 — 직전 catch 포즈/접촉 상태 초기화
+        s.outcome = "goal";
         setPkText({ a: s.a, b: s.b, turn: s.turn, round: s.round, note: "" });
         setClockText(pkBadge(s));
       }
