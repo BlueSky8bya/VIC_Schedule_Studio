@@ -244,6 +244,34 @@
     transform: translate(-50%, -2px);
   }
 }
+/* 풀타임 — 이긴 팀: 통통 튀며 신남(밝게 + 금빛 글로우 + 바운스). 진 팀: 가라앉음(어둑·고개 숙임 느낌).
+   선수 원은 JS가 translate3d로 매 프레임 갱신하므로, transform 대신 margin으로 바운스(인라인 변환 안 깸). */
+.wc-player-celebrate {
+  animation: wc-celebrate 0.46s ease-in-out infinite;
+  box-shadow:
+    0 0 0 1.5px rgb(255 255 255 / 95%),
+    0 0 9px 1px rgb(255 226 110 / 75%),
+    0 2px 4px rgb(40 30 60 / 30%);
+  z-index: 4;
+}
+.wc-player-dejected {
+  filter: saturate(0.5) brightness(0.68);
+  opacity: 0.8;
+}
+@keyframes wc-celebrate {
+  0%,
+  100% {
+    margin-top: 0;
+  }
+  50% {
+    margin-top: -5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wc-player-celebrate {
+    animation: none;
+  }
+}
 .wc-team-0 {
   background: radial-gradient(circle at 35% 30%, #ff6a6a, #d92d2d);
 }

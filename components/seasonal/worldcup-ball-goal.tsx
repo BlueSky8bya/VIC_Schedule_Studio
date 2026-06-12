@@ -147,6 +147,10 @@ export function WorldCupBallGoal() {
   const lastTouch = useRef<0 | 1 | null>(null);
   const lastActiveAt = useRef(0);
   const headerCount = useRef(0); // 연속 헤딩 수 — 캡 넘으면 공을 죽여 지면 컨트롤로(헤딩 남발 방지)
+  // 골 세레모니 — 득점 직후 잠깐 득점 팀이 신나서 뛴다(kind별 연출). x/y=연출 초점(코너·득점지점 등).
+  const celebrate = useRef<{ team: 0 | 1; until: number; kind: number; x: number; y: number } | null>(
+    null
+  );
   const reduced = useRef(false);
   const rotated = useRef(false); // 모바일(≤640px): stage를 90° 세워 세로 피치로 — 입력 역매핑 필요
   const confettiId = useRef(0);
@@ -535,6 +539,12 @@ export function WorldCupBallGoal() {
   };
   const placePlayers = () => {
     const pr = rotated.current ? 6.5 : PLAYER_R; // 모바일은 선수 시각 더 작게(중심 맞춰 오프셋)
+    // 풀타임 — 이긴 팀은 신나서(셀레브레이션), 진 팀은 침울하게(고개 숙임) 시각. 무승부는 둘 다 중립.
+    const ended = clock.current.ended;
+    const sc = scoreRef.current;
+    const winner = !ended ? -2 : sc[0] === sc[1] ? -1 : sc[0] > sc[1] ? 0 : 1;
+    const cel = celebrate.current;
+    const celTeam = cel && performance.now() < cel.until ? cel.team : -2; // 골 세레모니 중 득점 팀
     players.current.forEach((p, i) => {
       const el = playerEls.current[i];
       if (!el) return;
@@ -548,6 +558,11 @@ export function WorldCupBallGoal() {
       el.classList.toggle("wc-player-down", performance.now() < p.downUntil);
       el.classList.toggle("wc-player-hurt", p.knock > 0.35 && performance.now() >= p.downUntil);
       el.classList.toggle("wc-player-carded", p.yellow > 0); // 옐로카드 머리 위 표시
+      el.classList.toggle(
+        "wc-player-celebrate",
+        (winner >= 0 && p.team === winner) || p.team === celTeam
+      );
+      el.classList.toggle("wc-player-dejected", winner >= 0 && p.team !== winner);
     });
   };
 
@@ -1074,8 +1089,24 @@ export function WorldCupBallGoal() {
     ballZ.current = 0;
     ballVZ.current = 0;
     hapticSuccess();
+    // 골 세레모니 — 득점 팀이 잠깐 신나게(랜덤 kind). 코너로 우르르 / 득점지점 모여 안기 / 무작위 질주.
+    const { w, h } = bounds();
+    const kind = Math.floor(Math.random() * 4); // 0,3=질주 1=코너 2=모여안기
+    let cx = g.x + g.w * 0.5;
+    let cy = h * 0.5;
+    if (kind === 1) {
+      cx = side === "left" ? insetX() : w - insetX();
+      cy = Math.random() < 0.5 ? insetY() : h - insetY();
+    } else if (kind === 2) {
+      cx = side === "left" ? g.x + g.w + w * 0.06 : g.x - w * 0.06;
+      cy = h * 0.5;
+    }
+    celebrate.current = { team: scorer, until: now + 2400, kind, x: cx, y: cy };
     const concede: 0 | 1 = side === "left" ? 0 : 1;
-    window.setTimeout(() => kickoff(concede), 1100);
+    window.setTimeout(() => {
+      celebrate.current = null;
+      kickoff(concede);
+    }, 2500);
   };
 
   // 골키퍼가 공에 닿음 — GK 손 액션. 백패스(아군이 발로 준 공)·박스 밖이면 손 못 쓰고 '발'로 처리.
@@ -1414,6 +1445,72 @@ export function WorldCupBallGoal() {
         const smove = Math.min(sspd, sd * 4) * dt;
         p.x = clamp(p.x + (sdx / sd) * smove, fx.min, fx.max);
         p.y = clamp(p.y + (sdy / sd) * smove, PLAYER_R, h - PLAYER_R);
+        return;
+      }
+      // 풀타임 — 공 쫓기 끝. 이긴 팀은 신나서 필드를 무작위로 활발히 뛰어다니고(셀레브레이션), 진/무
+      // 팀은 그 자리에 침울하게 멈춰 선다(고개 숙임은 CSS). 경기 끝났는데 공 따라다니던 것 교체.
+      if (clock.current.ended) {
+        const sc = scoreRef.current;
+        const winner = sc[0] === sc[1] ? -1 : sc[0] > sc[1] ? 0 : 1;
+        if (winner >= 0 && p.team === winner) {
+          if (now >= p.thinkAt) {
+            p.tx = rnd(fx.min, fx.max);
+            p.ty = rnd(PLAYER_R, h - PLAYER_R);
+            p.thinkAt = now + rnd(500, 1300);
+          }
+          const dx = p.tx - p.x;
+          const dy = p.ty - p.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const spd = PLAYER_SPEED * (0.7 + p.pace * 0.45); // 신나서 빠르게 뛰논다
+          const mv = Math.min(spd, d * 4) * dt;
+          p.x = clamp(p.x + (dx / d) * mv, fx.min, fx.max);
+          p.y = clamp(p.y + (dy / d) * mv, PLAYER_R, h - PLAYER_R);
+        }
+        // 진/무 팀은 제자리(침울) — 위치 유지, 미동 없음.
+        return;
+      }
+      // 골 세레모니 — 득점 직후 잠깐. 득점 팀은 kind별로 신나게 뛰고(코너로/모여안기/무작위 질주),
+      // 실점 팀은 천천히 자기 진영으로(허탈하게 복귀). 킥오프(2.5s 뒤)까지.
+      const cel = celebrate.current;
+      if (cel && now < cel.until) {
+        if (p.team === cel.team) {
+          let txC: number;
+          let tyC: number;
+          if (cel.kind === 1) {
+            // 코너로 우르르 — 약간 흩어져 코너에 모인다.
+            txC = cel.x + Math.cos(i * 1.7) * (PLAYER_R * 3);
+            tyC = cel.y + (p.y < cel.y ? -1 : 1) * (i % 4) * PLAYER_R * 2;
+          } else if (cel.kind === 2) {
+            // 득점지점에 모여 안기 — 초점 주변 원형 배치.
+            txC = cel.x + Math.cos(i * 1.9) * (PLAYER_R * 3.2);
+            tyC = cel.y + Math.sin(i * 1.9) * (PLAYER_R * 3.2);
+          } else {
+            // 무작위 질주(신남) — 가끔 새 목표를 잡고 빠르게 뛰논다.
+            if (now >= p.thinkAt) {
+              p.tx = rnd(fx.min, fx.max);
+              p.ty = rnd(PLAYER_R, h - PLAYER_R);
+              p.thinkAt = now + rnd(350, 850);
+            }
+            txC = p.tx;
+            tyC = p.ty;
+          }
+          const dx = txC - p.x;
+          const dy = tyC - p.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const spd = PLAYER_SPEED * (0.85 + p.pace * 0.5);
+          const mv = Math.min(spd, d * 4) * dt;
+          p.x = clamp(p.x + (dx / d) * mv, fx.min, fx.max);
+          p.y = clamp(p.y + (dy / d) * mv, PLAYER_R, h - PLAYER_R);
+        } else {
+          // 실점 팀 — 자기 진영 포메이션 자리로 천천히(허탈).
+          const home = roleHome(p, -0.04);
+          const dx = home.x - p.x;
+          const dy = home.y - p.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const mv = Math.min(PLAYER_SPEED * 0.35, d * 4) * dt;
+          p.x = clamp(p.x + (dx / d) * mv, fx.min, fx.max);
+          p.y = clamp(p.y + (dy / d) * mv, PLAYER_R, h - PLAYER_R);
+        }
         return;
       }
       // 하프타임/피리어드 휴식 — 공(중앙) 쫓지 말고 자기 진영 포메이션 자리로 흩어져 선다. 안 그러면
