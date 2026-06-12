@@ -91,7 +91,6 @@ export function WorldCupBallGoal() {
   // 승부차기 키퍼 걷기 — 두 키퍼가 오른쪽 골 근처에 같이 있다가, 진영 바뀌면 걸어서 교체.
   // null=아직 미초기화(첫 프레임에 목표로 스냅). 그 외엔 목표로 lerp(걷는 모습).
   const skPos = useRef<Record<Side, { x: number; y: number } | null>>({ left: null, right: null });
-  const keeperFront = useRef<Record<Side, boolean>>({ left: false, right: false }); // z 전환 히스테리시스
   // 장갑 현재 오프셋(px) — 목표로 부드럽게 lerp. 손이 몸과 별개로 벌어지고/뻗는다.
   const glovePos = useRef<Record<Side, { x: number; y: number }[]>>({
     left: [
@@ -578,19 +577,12 @@ export function WorldCupBallGoal() {
       const fwd = keeperX.current[s] + KEEPER_AHEAD();
       const ox = s === "left" ? fwd : -fwd;
       el.style.transform = `translate3d(${ox}px, ${keeperY.current[s] - kdDia() / 2}px, 0)`;
-      // 골라인 앞(필드)이면 그물 앞(z7, 또렷), 골 안이면 그물 뒤(흐릿). 위치(keeperCenterX) vs 골라인으로
-      // 판정 — 이제 기본이 라인 앞이라 평소에도 또렷(그물 안에 박혀 보이지 않게). 경계 히스테리시스.
-      const gf = goalRect(s);
-      const lineX = s === "left" ? gf.x + gf.w : gf.x;
-      const aheadPx = s === "left" ? keeperCenterX(s) - lineX : lineX - keeperCenterX(s);
-      const front =
-        aheadPx > -kdDia() * 0.1 ? true : aheadPx < -kdDia() * 0.45 ? false : keeperFront.current[s];
-      keeperFront.current[s] = front;
-      // 잡는 중이면 키퍼를 공(z 0)보다 위(z 1)로 → 글러브가 공을 덮어 '잡은' 느낌(그물 z5보단 아래라
-      // 여전히 골 안 흐릿). 평소 골 안=기본 z, 필드로 나오면 z7.
-      const catching = keeperHold.current.side === s;
-      el.style.zIndex = catching ? "1" : front ? "7" : "";
-      el.classList.toggle("wc-keeper-ingoal", !front && !catching);
+      // 키퍼는 항상 골망(.wc-goal-net, z5) '뒤'(z4)로 둔다. 골망에 backdrop-filter 블러가 걸려 있어,
+      // 골망에 겹친 키퍼 픽셀(골라인 뒤=뒤통수)만 흐려지고 앞으로 나온 부분은 또렷 → 반쯤 걸친 키퍼가
+      // 자연스럽다. (예전: 키퍼 전체를 통째로 블러(wc-keeper-ingoal)했음.) z4 > 공(0)이라 잡기/쳐냄 때
+      // 글러브가 공을 덮는 것도 유지.
+      el.style.zIndex = "4";
+      el.classList.remove("wc-keeper-ingoal");
       placeGloves(s, keeperCenterX(s), keeperY.current[s], true, now, s); // 정상경기: 자기 골 박스로 clip
     });
   };
