@@ -147,6 +147,7 @@ export function WorldCupBallGoal() {
   // 주 발 회전(커브/바나나킥) — 차는 순간 정한 각속도(rad/s, 부호=휘는 방향). 비행 중 매 프레임 속도
   // 벡터를 이만큼 돌려 공이 휜다. 느려지면/다음 터치면 0. 오른발=왼쪽으로, 왼발=오른쪽으로 인스윙.
   const ballSpin = useRef(0);
+  const ballRoll = useRef(0); // 공 시각 회전각(deg) — 커브(ballSpin) 방향·세기에 따라 실제로 돈다(스핀)
   const dribbleCount = useRef(0); // 연속 드리블 터치 수(상한으로 무한 드리블 방지)
   const angleCarry = useRef(0); // 패스길 없을 때 '각 만들기' 끌기 수(상한 닿으면 안전 패스로 전환)
   const lastBallPlayer = useRef<Player | null>(null); // 직전 볼 처리 선수 — 바뀌면 드리블 카운트 리셋
@@ -348,7 +349,8 @@ export function WorldCupBallGoal() {
     const z = ballZ.current;
     // 떠 있으면 위로 z만큼 올리고 살짝만 키운다(원근). 그림자·블러는 CSS .wc-ball-air가 입힌다.
     const scale = Math.min(1.3, 1 + z / 450);
-    el.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y - z}px, 0) scale(${scale})`;
+    // 커브(스핀) 방향·세기에 따라 공이 실제로 돈다 — ballRoll(deg)을 회전으로 입힌다.
+    el.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y - z}px, 0) scale(${scale}) rotate(${ballRoll.current}deg)`;
     el.classList.toggle("wc-ball-air", z > AIR_MIN);
   };
   // 장갑 배치 — kX,kY=키퍼 중심. active면 공 따라 동적(평소 흔들/슛 한 손 리치/1v1 벌림/잡기 컵),
@@ -2699,6 +2701,8 @@ export function WorldCupBallGoal() {
           const vy = vel.current.y;
           vel.current.x = vx * ca - vy * sa;
           vel.current.y = vx * sa + vy * ca;
+          // 시각 스핀 — 커브 방향·세기에 비례해 공을 돌린다(빠를수록 더 빨리). 600=가시성 계수.
+          ballRoll.current += ballSpin.current * 600 * dt * (0.4 + Math.min(1, sp / 500) * 0.6);
         } else {
           ballSpin.current = 0; // 느려지면 회전 종료
         }
