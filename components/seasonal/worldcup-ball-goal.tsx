@@ -38,6 +38,7 @@ type Player = PlayerPersona & {
   num: number; // 등번호(표시용).
   knock: number; // 0..1 타박/부상 — 거친 태클로 누적. 속도·민첩 저하, 시간이 지나면 회복(천천히).
   downUntil: number; // 이 시각까지 부상으로 쓰러져 정지(심한 knock 직후 잠깐).
+  tackleAt: number; // 마지막 태클 시도 시각(개별 쿨다운 — 견제 거리서 발 넣기 스팸 방지).
 };
 
 const FRICTION = 0.98; // 잔디 마찰 — 높일수록 공이 빨리 죽어 라인아웃(스로인) 남발 감소
@@ -142,6 +143,7 @@ export function WorldCupBallGoal() {
   const lastBallPlayer = useRef<Player | null>(null); // 직전 볼 처리 선수 — 바뀌면 드리블 카운트 리셋
   const lastTouch = useRef<0 | 1 | null>(null);
   const lastActiveAt = useRef(0);
+  const headerCount = useRef(0); // 연속 헤딩 수 — 캡 넘으면 공을 죽여 지면 컨트롤로(헤딩 남발 방지)
   const reduced = useRef(false);
   const rotated = useRef(false); // 모바일(≤640px): stage를 90° 세워 세로 피치로 — 입력 역매핑 필요
   const confettiId = useRef(0);
@@ -604,7 +606,8 @@ export function WorldCupBallGoal() {
       red: false,
       num: (i % 10) + 2, // 2~11(1은 골키퍼 몫으로 비움)
       knock: 0,
-      downUntil: 0
+      downUntil: 0,
+      tackleAt: 0
     }));
     players.current.forEach((p) => {
       const home = roleHome(p, 0);
@@ -1315,9 +1318,24 @@ export function WorldCupBallGoal() {
         let tx: number;
         let ty: number;
         if (sprint) {
-          const lead = mode === "press" ? 0.1 : 0.05;
-          tx = bx + vel.current.x * lead;
-          ty = by + vel.current.y * lead;
+          // 압박은 공으로 직접 박지 않고 '견제 거리(standoff)'서 멈춰 길을 막는다 — 몸이 캐리어에
+          // 파묻혀 공이 두 몸 사이에 끼던(wedge) 게 붙은-채-드리블/거짓 드롭볼의 원인이었음. 단,
+          // 루즈볼(주인 없음/내 차례)은 standoff 없이 직접 달려가 줍는다.
+          const ballOwned = lastTouch.current != null && lastTouch.current !== p.team;
+          if (mode === "press" && ballOwned) {
+            const aimX = bx + vel.current.x * 0.1;
+            const aimY = by + vel.current.y * 0.1;
+            const adx = aimX - p.x;
+            const ady = aimY - p.y;
+            const ad = Math.hypot(adx, ady) || 1;
+            const stand = ballDia() / 2 + PLAYER_R * 1.35; // 발 닿을 듯 말 듯(태클 사거리 안)
+            tx = aimX - (adx / ad) * stand;
+            ty = aimY - (ady / ad) * stand;
+          } else {
+            const lead = mode === "press" ? 0.1 : 0.05;
+            tx = bx + vel.current.x * lead;
+            ty = by + vel.current.y * lead;
+          }
         } else if (mode === "cover") {
           // 공과 자기 골 사이를 막는 커버 포인트(수비 2선).
           const og = goalRect(p.team === 0 ? "left" : "right");
@@ -1422,6 +1440,7 @@ export function WorldCupBallGoal() {
   const playBall = (p: Player) => {
     lastTouch.current = p.team;
     kickAt.current = performance.now();
+    headerCount.current = 0; // 지면 컨트롤·결정으로 내려오면 헤딩 연쇄 리셋
     const { w, h } = bounds();
     const t = teams.current ? teams.current[p.team] : null;
     const possession = t ? t.possession : 0.5;
@@ -1634,6 +1653,7 @@ export function WorldCupBallGoal() {
   // 높고 압박 적으면 발밑에 딱 죽이고, 낮거나 압박·강한 패스면 터치가 튀어(loose) 뺏길 수 있다.
   const trapBall = (p: Player) => {
     const now = performance.now();
+    headerCount.current = 0; // 지면서 받으면 헤딩 연쇄 리셋
     const speed = Math.hypot(vel.current.x, vel.current.y);
     let oppD = Infinity;
     players.current.forEach((e) => {
@@ -2159,6 +2179,32 @@ export function WorldCupBallGoal() {
         if (p.red) return; // 퇴장 선수는 공에 관여 안 함
         const minD = ballDia() / 2 + PLAYER_R;
         const d = Math.hypot(pos.current.x - p.x, pos.current.y - p.y);
+        // 태클 — 견제 거리(standoff)서 압박수가 공 가진 상대 발에 발을 넣어 끊는다(접촉 직전 사거리).
+        //   능력(press·aggression)+체력 확률. 성공: 공을 자기 진행쪽으로 떼어내 점유 가로챔. 실패:
+        //   개별 쿨다운으로 잠깐 못 넣음(아래 접촉/파울 로직으로 흘러가 거친 발은 파울이 될 수 있음).
+        const TACKLE_R = minD + PLAYER_R * 0.9;
+        if (
+          run &&
+          lastTouch.current != null &&
+          p.team !== lastTouch.current &&
+          d < TACKLE_R &&
+          speed < CONTROL_SPEED * 1.3 &&
+          now - p.tackleAt > 460 &&
+          now - kickAt.current > 130
+        ) {
+          p.tackleAt = now;
+          const winP = clamp(0.26 + p.press * 0.26 + p.aggression * 0.16 - (1 - p.stamina) * 0.2, 0.12, 0.7);
+          if (Math.random() < winP) {
+            const fdir = p.team === 0 ? 1 : -1; // 자기 공격 방향으로 끊어 나감
+            lastTouch.current = p.team;
+            kickAt.current = now;
+            pos.current.x = p.x + fdir * minD;
+            pos.current.y = p.y;
+            vel.current.x = fdir * 120 + rnd(-40, 40);
+            vel.current.y = rnd(-40, 40);
+            return; // 끊김 — 이 프레임 이 선수의 접촉 처리 종료
+          }
+        }
         if (d >= minD) return;
         // 파울 — 공 가진 상대를 막는 수비수가 거칠게(규율 낮을수록↑). 쿨다운으로 스팸 방지.
         if (
@@ -2173,7 +2219,16 @@ export function WorldCupBallGoal() {
           return;
         }
         if (run && i === near.overall && speed < CONTROL_SPEED) {
-          if (now - kickAt.current > KICK_CD) {
+          // 압박 받는 캐리어는 오래 끌지 않고 빨리 내보낸다(원터치 우선권). 가까운 상대가 견제 거리에
+          // 있으면 결정 쿨다운을 줄여 셸드로 버티다 태클당하기 전에 패스/슛한다(수비가 아직 공을 못
+          // 따냈으니 캐리어가 먼저 처리). 공간 있으면 평소 KICK_CD대로 잡고 간을 본다.
+          let oppD = Infinity;
+          players.current.forEach((e) => {
+            if (e.team === p.team || e.red) return;
+            oppD = Math.min(oppD, Math.hypot(e.x - p.x, e.y - p.y));
+          });
+          const cd = oppD < bounds().w * 0.06 ? 150 : KICK_CD;
+          if (now - kickAt.current > cd) {
             playBall(p);
           } else {
             // 컨트롤 중(다음 결정까지) — 공을 발밑에 잡고 선다(셸드). 예전엔 carry 모드로 공을 향해
@@ -2211,7 +2266,23 @@ export function WorldCupBallGoal() {
           bestI = i;
         }
       });
-      if (bestI >= 0 && now - kickAt.current > 200) headerBall(players.current[bestI]);
+      if (bestI >= 0 && now - kickAt.current > 200) {
+        if (headerCount.current >= 2) {
+          // 헤딩 연쇄 끊기 — 같은 공중볼을 서로 계속 받아넘기면(헤딩 남발) 한 번은 죽여 지면 컨트롤로
+          // 내린다. 안 그러면 clear 헤더가 또 띄워 땅에 떨어질 때까지 무한 헤딩이 됐음.
+          const p = players.current[bestI];
+          lastTouch.current = p.team;
+          ballZ.current = 0;
+          ballVZ.current = 0;
+          vel.current.x *= 0.25;
+          vel.current.y *= 0.25;
+          kickAt.current = now;
+          headerCount.current = 0;
+        } else {
+          headerCount.current += 1;
+          headerBall(players.current[bestI]);
+        }
+      }
     }
 
     // 스톨 복구 — 갇히거나 멈추면 볼 드롭(자동경기 끄기 전엔 안 멈춤). 프리즈 중엔 스킵.
@@ -2221,7 +2292,22 @@ export function WorldCupBallGoal() {
       // 활성 판정 — 공이 빠르거나(speed>40), '최근에 선수가 터치(드리블/패스/트래핑)'했으면 활성으로 본다.
       // 드리블 중엔 공이 느리게 굴러 speed<40이라 예전엔 스톨로 오판해 볼드롭이 떴음 → kickAt도 본다.
       const recentlyTouched = now - kickAt.current < 2000;
-      if ((speed > 40 || recentlyTouched) && reachable) lastActiveAt.current = now;
+      // 접전 — 양 팀 선수가 공 주변서 다투는 중이면 '갇힌' 게 아니라 활성. 안 그러면 경합이 스톨로
+      // 오판돼 거짓 드롭볼(심판이 떨어뜨린 것처럼 보이는 랜덤 킥)이 떴음. standoff+태클(위)로 경합은
+      // 곧 풀리므로 무한 wedge 위험 없음.
+      const cr = bounds().w * 0.06;
+      let nearAtk = 0;
+      let nearDef = 0;
+      if (lastTouch.current != null) {
+        players.current.forEach((q) => {
+          if (q.red) return;
+          if (Math.hypot(q.x - pos.current.x, q.y - pos.current.y) > cr) return;
+          if (q.team === lastTouch.current) nearAtk += 1;
+          else nearDef += 1;
+        });
+      }
+      const contested = nearAtk > 0 && nearDef > 0;
+      if ((speed > 40 || recentlyTouched || contested) && reachable) lastActiveAt.current = now;
       if (now - lastActiveAt.current > 3200) {
         // 공이 어딘가에 갇혀 한참 안 움직일 때의 '기술적 복구'일 뿐, 진짜 드롭볼(심판이 떨어뜨림)이
         // 아니다 → 라벨·단서 없이 조용히 살짝 툭 친다(예전엔 '볼 드롭'을 띄워 남발처럼 보였음).
