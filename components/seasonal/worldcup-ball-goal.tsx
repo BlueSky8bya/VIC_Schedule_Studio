@@ -139,6 +139,7 @@ export function WorldCupBallGoal() {
   const pointerVel = useRef<Vec>({ x: 0, y: 0 });
   const raf = useRef<number | null>(null);
   const goalAt = useRef(0);
+  const goalFreezeUntil = useRef(0); // 골 직후 이 시각까지 공 물리·득점·라인아웃 정지(셀레브 → 킥오프 준비)
   const saveAt = useRef(0);
   const saveGrace = useRef(0); // 세이브 직후 잠깐 재세이브 차단 — 공이 키퍼/장갑 근처서 매프레임
   // 재충돌해 진동·묶이고 손이 따라 떨리던 피드백 루프 차단(공이 깔끔히 튕겨 나간다).
@@ -1197,6 +1198,10 @@ export function WorldCupBallGoal() {
     const now = performance.now();
     if (now - goalAt.current < GOAL_COOLDOWN_MS) return;
     goalAt.current = now;
+    // 골 순간 즉시 정지 — 셀레브~킥오프 준비 동안 공 물리·득점·라인아웃 모두 멈춘다(공 쫓기·라인아웃
+    // 골킥/스로인·2중골 방지). 킥오프 setTimeout(2500ms)보다 살짝 길게(2600) 둬, 킥오프가 공을 중앙으로
+    // 옮기고 pendingRestart(자체 freeze)를 걸기 전에 freeze가 풀려 한 프레임 새는 일을 막는다.
+    goalFreezeUntil.current = now + 2600;
     const scorer: 0 | 1 = teamAttacking(side); // 그 골에 넣은 = 그 골을 공격하는 팀(진영 교체 반영)
     scoreRef.current = scorer === 0 ? [scoreRef.current[0] + 1, scoreRef.current[1]] : [scoreRef.current[0], scoreRef.current[1] + 1];
     setScore([scoreRef.current[0], scoreRef.current[1]]);
@@ -1230,7 +1235,7 @@ export function WorldCupBallGoal() {
       cx = side === "left" ? g.x + g.w + w * 0.06 : g.x - w * 0.06;
       cy = h * 0.5;
     }
-    celebrate.current = { team: scorer, until: now + 2400, kind, x: cx, y: cy };
+    celebrate.current = { team: scorer, until: now + 2500, kind, x: cx, y: cy };
     const concede: 0 | 1 = teamDefending(side);
     window.setTimeout(() => {
       celebrate.current = null;
@@ -2687,6 +2692,7 @@ export function WorldCupBallGoal() {
       pendingRestart.current != null ||
       keeperHold.current.side != null ||
       tNow < breakUntil.current ||
+      tNow < goalFreezeUntil.current || // 골 직후 셀레브 동안 — 공 정지(라인아웃·2중골·계속 쫓기 방지)
       clock.current.ended;
 
     const near = nearest();
