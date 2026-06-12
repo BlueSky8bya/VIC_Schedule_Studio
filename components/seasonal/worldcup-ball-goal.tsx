@@ -144,6 +144,9 @@ export function WorldCupBallGoal() {
   // 드리블 턴 스무딩 — 캐리(끌기) 터치는 공 진행방향을 '즉시' 꺾지 않고 목표 속도로 매 프레임
   // 수렴시킨다 → 공 잡고 방향 틀 때 휙 도는 대신 호를 그리며 이어지듯 돈다(패스/슛은 즉발 유지).
   const carrySteer = useRef<{ vx: number; vy: number } | null>(null);
+  // 주 발 회전(커브/바나나킥) — 차는 순간 정한 각속도(rad/s, 부호=휘는 방향). 비행 중 매 프레임 속도
+  // 벡터를 이만큼 돌려 공이 휜다. 느려지면/다음 터치면 0. 오른발=왼쪽으로, 왼발=오른쪽으로 인스윙.
+  const ballSpin = useRef(0);
   const dribbleCount = useRef(0); // 연속 드리블 터치 수(상한으로 무한 드리블 방지)
   const angleCarry = useRef(0); // 패스길 없을 때 '각 만들기' 끌기 수(상한 닿으면 안전 패스로 전환)
   const lastBallPlayer = useRef<Player | null>(null); // 직전 볼 처리 선수 — 바뀌면 드리블 카운트 리셋
@@ -716,6 +719,7 @@ export function WorldCupBallGoal() {
   const centerBall = () => {
     const { w, h } = bounds();
     carrySteer.current = null;
+    ballSpin.current = 0;
     pos.current = { x: w * 0.5, y: h * 0.5 };
     vel.current = { x: 0, y: 0 };
     ballZ.current = 0;
@@ -725,6 +729,7 @@ export function WorldCupBallGoal() {
 
   const setVelTo = (tx: number, ty: number, power: number) => {
     carrySteer.current = null; // 차는(패스/슛/클리어) 순간은 즉발 — 진행 중인 드리블 스무딩 무효화
+    ballSpin.current = 0; // 기본 직선(커브는 kickCurved가 별도로 건다)
     const dx = tx - pos.current.x;
     const dy = ty - pos.current.y;
     const d = Math.hypot(dx, dy) || 1;
@@ -732,9 +737,40 @@ export function WorldCupBallGoal() {
     vel.current.y = (dy / d) * power;
   };
 
+  // 주 발 부호 — 오른발 +1(공이 진행방향 기준 왼쪽으로 인스윙), 왼발 -1(오른쪽), 양발 0(거의 직선).
+  const footSign = (p: Player) =>
+    p.preferredFoot === "right" ? 1 : p.preferredFoot === "left" ? -1 : 0;
+
+  // 주 발 커브로 차기(패스·슛 공용) — 목표(tx,ty)로 power로 차되, 주 발에 따라 공을 휜다(바나나킥).
+  // 핵심: 선수는 자기 주 발 회전을 '계산'해서 찬다 → 초기 조준각을 커브의 절반만큼 미리 반대로 틀어
+  // (aim = 목표각 - θ/2), 휜 공의 현(chord)이 결국 목표를 향하게 한다. 그래서 공은 눈에 띄게 감기되
+  // 원하는 곳(패스 받을 동료·골 구석)에 도달한다. 양발은 거의 직선.
+  const CURVE_RATE = 0.95; // rad/s — 한 발잡이가 세게 감았을 때의 최대 회전(과회전은 θ 캡으로 제한)
+  const kickCurved = (p: Player, tx: number, ty: number, power: number) => {
+    const dx = tx - pos.current.x;
+    const dy = ty - pos.current.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const sign = footSign(p);
+    if (sign === 0) {
+      setVelTo(tx, ty, power); // 양발 — 직선(setVelTo가 spin 0으로)
+      return;
+    }
+    // 회전 세기 — 주발 또렷할수록(weakFoot 낮음) 더 감고, 약간의 개인 변동.
+    const mag = (0.5 + (1 - p.weakFoot) * 0.6) * (0.85 + Math.random() * 0.3);
+    const flight = clamp(dist / Math.max(120, power), 0.15, 1.2); // 대략 비행시간(s)
+    let theta = CURVE_RATE * sign * mag * flight; // 비행 동안 총 회전각
+    theta = clamp(theta, -0.5, 0.5); // 과회전 방지(±~28°) — 조준 보정이 빗나가지 않게
+    ballSpin.current = theta / flight; // 매 프레임 적용할 각속도(rad/s)
+    carrySteer.current = null;
+    const aim = Math.atan2(dy, dx) - theta / 2; // 휜 공의 현이 목표를 향하도록 초기각 보정
+    vel.current.x = Math.cos(aim) * power;
+    vel.current.y = Math.sin(aim) * power;
+  };
+
   // 캐리(드리블 끌기) 터치 — setVelTo처럼 즉시 꺾지 않고 목표 속도를 carrySteer에 걸어둔다. step의
   // 적분 루프가 매 프레임 vel을 그 목표로 부드럽게 수렴시켜 공이 호를 그리며 돈다(이어지는 턴).
   const carryVelTo = (tx: number, ty: number, power: number) => {
+    ballSpin.current = 0; // 드리블 끌기는 커브 없음
     const dx = tx - pos.current.x;
     const dy = ty - pos.current.y;
     const d = Math.hypot(dx, dy) || 1;
@@ -1531,33 +1567,33 @@ export function WorldCupBallGoal() {
       const cel = celebrate.current;
       if (cel && now < cel.until) {
         if (p.team === cel.team) {
-          let txC: number;
-          let tyC: number;
-          if (cel.kind === 1) {
-            // 코너로 우르르 — 약간 흩어져 코너에 모인다.
-            txC = cel.x + Math.cos(i * 1.7) * (PLAYER_R * 3);
-            tyC = cel.y + (p.y < cel.y ? -1 : 1) * (i % 4) * PLAYER_R * 2;
-          } else if (cel.kind === 2) {
-            // 득점지점에 모여 안기 — 초점 주변 원형 배치.
-            txC = cel.x + Math.cos(i * 1.9) * (PLAYER_R * 3.2);
-            tyC = cel.y + Math.sin(i * 1.9) * (PLAYER_R * 3.2);
-          } else {
-            // 무작위 질주(신남) — 가끔 새 목표를 잡고 빠르게 뛰논다.
-            if (now >= p.thinkAt) {
-              p.tx = rnd(fx.min, fx.max);
-              p.ty = rnd(PLAYER_R, h - PLAYER_R);
-              p.thinkAt = now + rnd(350, 850);
-            }
-            txC = p.tx;
-            tyC = p.ty;
+          // 인간적인 무질서 — 정해진 기하학 슬롯(cos(i*..))에 줄세우지 않는다. 각자 '다른 타이밍'에
+          // (스태거) 초점 주변으로 대충 모이되 큰 랜덤 오프셋을 두고, 제각각 속도 + 흔들림으로
+          // 어수선하게 뛰논다. kind는 '모이는 정도'만 다르게 — 2=촘촘 안기, 1=코너로 느슨히, 그 외=넓게
+          // 흩어져 질주. 같은 i라도 매번 위치가 달라 줄선 듯한 기계적 느낌이 사라진다.
+          if (now >= p.thinkAt) {
+            const spread =
+              cel.kind === 2 ? PLAYER_R * 3.5 : cel.kind === 1 ? PLAYER_R * 7 : PLAYER_R * 13;
+            const pull = cel.kind === 2 ? 0.85 : cel.kind === 1 ? 0.6 : 0.28; // 초점으로 당기는 정도
+            const fxT = cel.x + rnd(-spread, spread);
+            const fyT = cel.y + rnd(-spread, spread);
+            p.tx = clamp(p.x + (fxT - p.x) * pull + rnd(-PLAYER_R * 5, PLAYER_R * 5), fx.min, fx.max);
+            p.ty = clamp(
+              p.y + (fyT - p.y) * pull + rnd(-PLAYER_R * 5, PLAYER_R * 5),
+              PLAYER_R,
+              h - PLAYER_R
+            );
+            p.thinkAt = now + rnd(180, 820); // 제각각 타이밍 — 동시에 안 움직인다
           }
-          const dx = txC - p.x;
-          const dy = tyC - p.y;
+          const dx = p.tx - p.x;
+          const dy = p.ty - p.y;
           const d = Math.hypot(dx, dy) || 1;
-          const spd = PLAYER_SPEED * (0.85 + p.pace * 0.5);
-          const mv = Math.min(spd, d * 4) * dt;
-          p.x = clamp(p.x + (dx / d) * mv, fx.min, fx.max);
-          p.y = clamp(p.y + (dy / d) * mv, PLAYER_R, h - PLAYER_R);
+          // 속도 제각각 + 가끔 폭발적(버스트, 선수별 위상 p.wob). 직선 이동을 흔들림으로 깨 사람처럼 들썩.
+          const burst = 0.8 + p.pace * 0.55 + Math.sin(now / 95 + p.wob * 2) * 0.3;
+          const mv = Math.min(PLAYER_SPEED * Math.max(0.5, burst), d * 4) * dt;
+          const wob = PLAYER_R * 1.4 * dt;
+          p.x = clamp(p.x + (dx / d) * mv + Math.cos(now / 80 + p.wob * 3) * wob, fx.min, fx.max);
+          p.y = clamp(p.y + (dy / d) * mv + Math.sin(now / 65 + p.wob * 4) * wob, PLAYER_R, h - PLAYER_R);
         } else {
           // 실점 팀 — 자기 진영 포메이션 자리로 천천히(허탈).
           const home = roleHome(p, -0.04);
@@ -1887,7 +1923,7 @@ export function WorldCupBallGoal() {
       // 클리어찬스는 침착하게 구석(스프레드 작게), 그 외엔 슛 능력 따라 흩어진다.
       const spread = clearChance ? g.h * 0.3 : g.h * 0.5 * (1.2 - p.shoot);
       const ty = g.y + g.h / 2 + (Math.random() * 2 - 1) * spread;
-      setVelTo(tx, ty, 480 + Math.random() * 150);
+      kickCurved(p, tx, ty, 480 + Math.random() * 150); // 주 발로 감아 차 구석 노림(커브슛)
       return;
     }
 
@@ -2065,7 +2101,8 @@ export function WorldCupBallGoal() {
       const m = players.current[best];
       const dpass = Math.hypot(m.x - p.x, m.y - p.y);
       const power = clamp(dpass * 3, 320, 760);
-      setVelTo(clampTx(m.x + rnd(-err, err)), clampTy(m.y + rnd(-err, err)), power);
+      // 주 발로 감아 찬다 — 선수가 자기 발 회전을 계산해 조준 보정하므로 휘어도 동료에게 도착한다.
+      kickCurved(p, clampTx(m.x + rnd(-err, err)), clampTy(m.y + rnd(-err, err)), power);
       // 롱패스는 띄워서 수비 너머로(점유 성향 낮은 직접축구일수록 더 짧은 거리에서도 띄운다). 단 '전진'
       // 패스만 띄운다 — 뒤로 가는 백패스를 길게 띄우면(롱 백패스) 보기 끔찍하므로 지면으로 짧게.
       const fwdPass = (m.x - p.x) * dir > 0;
@@ -2165,6 +2202,7 @@ export function WorldCupBallGoal() {
   const trapBall = (p: Player) => {
     const now = performance.now();
     carrySteer.current = null; // 트래핑은 vel을 직접 정함 — 스티어 잔류 방지
+    ballSpin.current = 0; // 받은 공은 회전 멈춤(발밑 정리)
     headerCount.current = 0; // 지면서 받으면 헤딩 연쇄 리셋
     const speed = Math.hypot(vel.current.x, vel.current.y);
     let oppD = Infinity;
@@ -2217,6 +2255,7 @@ export function WorldCupBallGoal() {
     const d = Math.hypot(dx, dy);
     if (d >= minD) return;
     carrySteer.current = null; // 몸에 튕긴 공 — 스티어가 다시 끌어가지 않게 해제
+    ballSpin.current = 0; // 튕긴 공은 회전 리셋(난반사)
     lastTouch.current = p.team;
     const ux = d > 0.0001 ? dx / d : 1;
     const uy = d > 0.0001 ? dy / d : 0;
@@ -2643,10 +2682,26 @@ export function WorldCupBallGoal() {
       // 떠 있는(airborne) 공은 통과/포물선 중이라 스티어 안 함.
       if (carrySteer.current && ballZ.current <= AIR_MIN) {
         const s = carrySteer.current;
-        const k = 0.16; // 수렴 계수 — 작을수록 더 느긋한 턴
+        const k = 0.12; // 수렴 계수 — 작을수록 더 느긋한(스윽 이어지는) 턴
         vel.current.x += (s.vx - vel.current.x) * k;
         vel.current.y += (s.vy - vel.current.y) * k;
         if (Math.hypot(s.vx - vel.current.x, s.vy - vel.current.y) < 8) carrySteer.current = null;
+      }
+      // 주 발 커브 — 비행 중 속도 벡터를 ballSpin(rad/s)만큼 회전시켜 공이 휜다(바나나). 충분히
+      // 빠를 때만(느려지면 직진하다 멈춤). 떠 있는 공(롱볼)도 휘게 둔다(크로스 감김).
+      if (ballSpin.current !== 0) {
+        const sp = Math.hypot(vel.current.x, vel.current.y);
+        if (sp > STOP_SPEED * 3) {
+          const a = ballSpin.current * dt;
+          const ca = Math.cos(a);
+          const sa = Math.sin(a);
+          const vx = vel.current.x;
+          const vy = vel.current.y;
+          vel.current.x = vx * ca - vy * sa;
+          vel.current.y = vx * sa + vy * ca;
+        } else {
+          ballSpin.current = 0; // 느려지면 회전 종료
+        }
       }
       pos.current.x += vel.current.x * dt;
       pos.current.y += vel.current.y * dt;
@@ -2721,6 +2776,7 @@ export function WorldCupBallGoal() {
           if (Math.random() < winP) {
             const fdir = atkDir(p.team); // 자기 공격 방향으로 끊어 나감(진영 교체 반영)
             carrySteer.current = null; // 태클로 끊김 — 뺏긴 팀 드리블 스티어 무효
+            ballSpin.current = 0;
             lastTouch.current = p.team;
             kickAt.current = now;
             pos.current.x = p.x + fdir * minD;
@@ -2755,10 +2811,13 @@ export function WorldCupBallGoal() {
           const cd = oppD < bounds().w * 0.06 ? 150 : KICK_CD;
           if (now - kickAt.current > cd) {
             playBall(p);
-          } else {
+          } else if (!carrySteer.current) {
             // 컨트롤 중(다음 결정까지) — 공을 발밑에 잡고 선다(셸드). 예전엔 carry 모드로 공을 향해
             // 계속 이동하며 매 프레임 공을 들이받아(bounce) 앞으로 밀어, 결정과 무관하게 드리블처럼
             // 보였음 → 공을 죽이고 발밑에 고정해 끌고가지 않게.
+            // 단 '캐리(드리블) 진행 중'(carrySteer 있음)이면 셸드로 죽이지 않는다 — 셸드가 매 프레임
+            // 공을 발밑에 고정-해제 반복하며 스티어와 싸워 공이 휙 튀어나가던(순간이동 느낌) 원인이었음.
+            // 캐리 중엔 스티어가 방향·속도를 부드럽게 이어주도록 그대로 둔다(스윽 연속 이동).
             vel.current.x *= 0.6;
             vel.current.y *= 0.6;
             const hx = pos.current.x - p.x;
@@ -2913,11 +2972,16 @@ export function WorldCupBallGoal() {
     reduced.current = reduceMotionEnabled(); // OS reduce-motion 무시 — 앱 토글만(시각 효과 양 조절용)
     rotated.current = window.matchMedia?.("(max-width: 640px)").matches ?? false;
     setIsMobile(rotated.current);
-    let en = true;
+    // 기본값: 웹은 켬(데스크톱은 화면 넓어 방해 안 됨), 모바일은 끔 — 작은 화면에서 로그아웃/새로고침
+    // 직후 미니게임(+중력공)이 갑툭튀로 떠 시청을 가리던 문제 방지. 사용자가 한 번 켜면("on" 저장)
+    // 모바일에서도 그 선택을 존중한다(localStorage가 기본값보다 우선).
+    let en = !rotated.current;
     let au = true;
     let savedAuto: string | null = null;
     try {
-      if (window.localStorage.getItem("vic.worldcupGame") === "off") en = false;
+      const savedGame = window.localStorage.getItem("vic.worldcupGame");
+      if (savedGame === "off") en = false;
+      else if (savedGame === "on") en = true;
       savedAuto = window.localStorage.getItem("vic.worldcupAuto");
       if (savedAuto === "off") au = false;
     } catch {
@@ -3072,6 +3136,7 @@ export function WorldCupBallGoal() {
     e.preventDefault();
     (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
     carrySteer.current = null; // 사용자가 공 잡음 — AI 드리블 스티어 무효
+    ballSpin.current = 0;
     dragging.current = true;
     const { x: lx, y: ly } = localFromEvent(e);
     grabOffset.current = { x: lx - pos.current.x, y: ly - pos.current.y };
