@@ -1758,6 +1758,49 @@ export function WorldCupBallGoal() {
     }
     dribbleCount.current = 0; // 패스/슛 결정하면 리셋
 
+    // 분위기 전환(가끔) — 경기 안 풀릴 때 길게 질러 흐름을 바꾼다: 반대편 스위치(롱 다이애고널) 또는
+    // 뻥(전방 공간으로 롱 클리어, 세컨드볼 노림). 패스길 못 찾아 끌기가 누적될수록·직접 전술일수록 자주,
+    // 평소엔 드물게(흐름 환기용). 슛 사정권(전진 우선)에선 안 한다.
+    const directBias = 1 - possession; // 0(점유) .. 1(직접)
+    const stuck = angleCarry.current >= 2; // 패스길 못 찾아 이미 몇 번 끌었음
+    const changeUpProb = (stuck ? 0.4 : 0.03) * (0.55 + directBias * 0.9);
+    if (xg < 0.05 && Math.random() < changeUpProb) {
+      // 반대편 스위치 — 현재 y 반대 절반의 '먼+열린' 동료로 띄운다(롱 다이애고널).
+      let sw = -1;
+      let swOpen = -Infinity;
+      players.current.forEach((m, j) => {
+        if (m.team !== p.team || m === p || m.red) return;
+        if ((m.y - h * 0.5) * (p.y - h * 0.5) >= 0) return; // 반대 절반만
+        const dpass = Math.hypot(m.x - p.x, m.y - p.y);
+        if (dpass < w * 0.24 || dpass > w * 0.7) return; // 충분히 먼 스위치 거리
+        let nd = Infinity;
+        players.current.forEach((e) => {
+          if (e.team === p.team || e.red) return;
+          nd = Math.min(nd, Math.hypot(e.x - m.x, e.y - m.y));
+        });
+        if (nd > swOpen) {
+          swOpen = nd;
+          sw = j;
+        }
+      });
+      angleCarry.current = 0;
+      if (sw >= 0 && swOpen > w * 0.05) {
+        const m = players.current[sw];
+        const dpass = Math.hypot(m.x - p.x, m.y - p.y);
+        const power = clamp(dpass * 3.2, 520, 820);
+        setVelTo(m.x + rnd(-err, err), m.y + rnd(-err, err), power);
+        loftBall(dpass, power); // 띄워서 수비 위로
+        return;
+      }
+      // 스위치 옵션 없으면 뻥 — 전방 공간으로 길게 띄워 세컨드볼 경합을 노린다.
+      const tx = p.team === 0 ? w * 0.82 : w * 0.18;
+      const ty = clamp(p.y + rnd(-h * 0.22, h * 0.22), insetY(), h - insetY());
+      const dlong = Math.hypot(tx - p.x, ty - p.y);
+      setVelTo(tx + rnd(-err, err), ty, 640);
+      loftBall(dlong, 640);
+      return;
+    }
+
     // 오프사이드 판정 — 받는 순간 받을 선수가 상대 최후방 라인(키퍼 제외 사실상 2번째 최후방)
     // 너머 + 상대 진영이면 오프사이드. 레벨(같은 선)은 온사이드라 PLAYER_R*2 여유를 둔다.
     const offLine = offsideLineFor(p.team);
