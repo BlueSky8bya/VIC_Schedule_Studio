@@ -140,6 +140,7 @@ export function WorldCupBallGoal() {
   const restartGrace = useRef(0); // 세트피스 킥 직후 유예 — 라인아웃·접촉 무시(즉시 재아웃 루프 차단)
   const kickAt = useRef(0);
   const dribbleCount = useRef(0); // 연속 드리블 터치 수(상한으로 무한 드리블 방지)
+  const angleCarry = useRef(0); // 패스길 없을 때 '각 만들기' 끌기 수(상한 닿으면 안전 패스로 전환)
   const lastBallPlayer = useRef<Player | null>(null); // 직전 볼 처리 선수 — 바뀌면 드리블 카운트 리셋
   const lastTouch = useRef<0 | 1 | null>(null);
   const lastActiveAt = useRef(0);
@@ -1472,6 +1473,7 @@ export function WorldCupBallGoal() {
       (1 - p.altruism * 0.3);
     if (xg > 0.05 && Math.random() < shootProb) {
       dribbleCount.current = 0;
+      angleCarry.current = 0;
       stats.current.shot[p.team] += 1;
       logEvent("shot", p.team, p.x, p.y);
       const tx = enemy === "left" ? g.x + g.w : g.x;
@@ -1484,6 +1486,7 @@ export function WorldCupBallGoal() {
     //    개인기로 제치거나 안전하게 패스. 점유 성향 높을수록 더 끌고 유지. 연속 드리블은 cap 제한.
     if (lastBallPlayer.current !== p) {
       dribbleCount.current = 0; // 다른 선수가 잡으면 리셋
+      angleCarry.current = 0;
       lastBallPlayer.current = p;
     }
     const dir = enemy === "left" ? -1 : 1; // 공격 방향(+x 오른쪽 골 / -x 왼쪽 골)
@@ -1552,6 +1555,7 @@ export function WorldCupBallGoal() {
     const oppM = players.current.filter((e) => e.team !== p.team && !e.red).map((e) => pitchMeters(e.x, e.y));
     let best = -1;
     let bestScore = -Infinity;
+    let bestProb = 0; // 선택된 패스의 레인 개방도(0..1) — 낮으면 '길 안 열림'으로 보고 끌어서 각을 만든다
     players.current.forEach((m, j) => {
       if (m.team !== p.team || m === p) return;
       const adv = p.team === 0 ? m.x - p.x : p.x - m.x;
@@ -1578,48 +1582,84 @@ export function WorldCupBallGoal() {
       if (score > bestScore) {
         bestScore = score;
         best = j;
+        bestProb = prob;
       }
     });
-    if (best >= 0) {
+    // 전진 옵션이 전부 오프사이드뿐 — 깃발은 가끔만(35%), 보통은 무리한 전진 대신 끌거나 기다린다.
+    if (best >= 0 && isOffside(players.current[best])) {
       const m = players.current[best];
-      if (isOffside(m)) {
-        // 전진 옵션이 전부 오프사이드뿐. 매번 깃발 들면 남발 → 가끔만(35%) 위험 패스가 걸리고,
-        // 보통은 무리한 전진 대신 끌고 가거나(드리블) 기다린다.
-        if (Math.random() < 0.35) {
-          callOffside(p.team, m.x, m.y, offLine);
-          return;
-        }
-        dribbleCount.current += 1;
-        setVelTo(goalCx, goalCy, 240);
+      if (Math.random() < 0.35) {
+        callOffside(p.team, m.x, m.y, offLine);
         return;
       }
+      dribbleCount.current += 1;
+      setVelTo(goalCx, goalCy, 240);
+      return;
+    }
+    const fx = fieldX();
+    const clampTx = (x: number) => clamp(x, fx.min, fx.max);
+    const clampTy = (y: number) => clamp(y, insetY(), h - insetY());
+    // 패스길이 '보이면'(레인 개방도 충분) 깔끔히 연결. 타깃은 필드 안으로 clamp해 라인 밖(스로인) 헌납 방지.
+    const LANE_OPEN = 0.5;
+    if (best >= 0 && bestProb >= LANE_OPEN) {
+      angleCarry.current = 0;
+      const m = players.current[best];
       const dpass = Math.hypot(m.x - p.x, m.y - p.y);
       const power = clamp(dpass * 3, 320, 760);
-      setVelTo(m.x + rnd(-err, err), m.y + rnd(-err, err), power);
+      setVelTo(clampTx(m.x + rnd(-err, err)), clampTy(m.y + rnd(-err, err)), power);
       // 롱패스는 띄워서 수비 너머로(점유 성향 낮은 직접축구일수록 더 짧은 거리에서도 띄운다).
       if (dpass > w * (0.2 + possession * 0.22)) loftBall(dpass, power);
       return;
     }
-    // 마땅한 전진 패스가 없을 때 — 예전엔 골 쪽으로 드리블(드리블 과다 주범). 이제 가까운 '다른' 동료
-    // 에게 안전 연결(패스 위주). 정말 아무도 없을 때만 살짝 끈다.
-    let ti = -1;
-    let td = Infinity;
+    // 패스길이 안 열림 — 엉뚱한 곳에 질러 스로인 주지 말고, 공을 끌고 이동해 패스 각을 만든다(드리블).
+    // 가까운 수비 반대쪽 + 골 방향으로 빠지되 터치라인으로 몰리지 않게 중앙 y로 보정. 상한 닿으면 그때
+    // 가장 열린(상대서 먼) 동료에게 안전하게 짧게 연결한다.
+    if (angleCarry.current < 5) {
+      angleCarry.current += 1;
+      let vx = goalCx - p.x;
+      let vy = goalCy - p.y;
+      const vl = Math.hypot(vx, vy) || 1;
+      vx /= vl;
+      vy /= vl;
+      if (oppNear < Infinity) {
+        const ax = p.x - nearEx;
+        const ay = p.y - nearEy;
+        const al = Math.hypot(ax, ay) || 1;
+        vx = vx * 0.6 + (ax / al) * 0.4; // 수비 반대쪽으로 각 벌리기
+        vy = vy * 0.6 + (ay / al) * 0.4;
+      }
+      vy += ((h * 0.5 - p.y) / (h * 0.5)) * 0.35; // 터치라인 회피(중앙으로 당김)
+      const vn = Math.hypot(vx, vy) || 1;
+      setVelTo(p.x + (vx / vn) * 60, p.y + (vy / vn) * 60, pressed ? 210 : 175);
+      return;
+    }
+    // 끌기 상한 도달 — 가장 열린(상대 수비서 가장 먼) 동료에게 안전 연결(필드 안으로 clamp).
+    angleCarry.current = 0;
+    let safe = -1;
+    let safeOpen = -Infinity;
     players.current.forEach((m, j) => {
       if (m.team !== p.team || m === p || m.red) return;
-      const dd = Math.hypot(m.x - p.x, m.y - p.y);
-      if (dd < td) {
-        td = dd;
-        ti = j;
+      if (Math.hypot(m.x - p.x, m.y - p.y) > w * 0.5) return;
+      let nd = Infinity;
+      players.current.forEach((e) => {
+        if (e.team === p.team || e.red) return;
+        nd = Math.min(nd, Math.hypot(e.x - m.x, e.y - m.y));
+      });
+      if (nd > safeOpen) {
+        safeOpen = nd;
+        safe = j;
       }
     });
-    if (ti >= 0) {
-      const m = players.current[ti];
-      setVelTo(m.x + rnd(-err, err), m.y + rnd(-err, err), clamp(td * 3, 300, 600));
+    if (safe >= 0) {
+      const m = players.current[safe];
+      const dd = Math.hypot(m.x - p.x, m.y - p.y);
+      setVelTo(clampTx(m.x + rnd(-err, err)), clampTy(m.y + rnd(-err, err)), clamp(dd * 3, 300, 660));
       lastTouch.current = p.team;
-    } else {
-      dribbleCount.current += 1;
-      setVelTo(goalCx, goalCy, 240);
+      return;
     }
+    // 정말 아무 동료도 없을 때만 골 쪽으로 살짝 끈다.
+    dribbleCount.current += 1;
+    setVelTo(goalCx, goalCy, 240);
   };
 
   const resolveCircleAABB = (rect: { x0: number; y0: number; x1: number; y1: number }) => {
