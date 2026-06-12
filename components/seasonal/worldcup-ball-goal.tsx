@@ -41,6 +41,9 @@ type Player = PlayerPersona & {
   tackleAt: number; // 마지막 태클 시도 시각(개별 쿨다운 — 견제 거리서 발 넣기 스팸 방지).
   vmag: number; // 현재 이동 속력(px/s) — 가속/감속 램프(정지→전력·전력→정지 즉발 방지).
   acute: number; // 0..1 급성 피로 — 스프린트로 빠르게↑, 걸으면 빠르게↓. 톱스피드·정확도·압박의지 저하.
+  px: number; // 직전 렌더 좌표 — 진행방향 화살표 heading 계산용(프레임 델타).
+  py: number;
+  heading: number; // 부드럽게 보정된 진행 방향(rad) — 화살표 회전.
 };
 
 const FRICTION = 0.98; // 잔디 마찰 — 높일수록 공이 빨리 죽어 라인아웃(스로인) 남발 감소
@@ -101,6 +104,7 @@ export function WorldCupBallGoal() {
     ]
   });
   const playerEls = useRef<(HTMLDivElement | null)[]>([]);
+  const playerArrowEls = useRef<(HTMLElement | null)[]>([]); // 진행방향 화살표(필드 선수만)
   // enabled는 false로 시작 — 마운트 effect가 localStorage(vic.worldcupGame)를 읽어 실제 값으로
   // 세팅한다. true로 시작하면 OFF 저장 유저도 첫 렌더에 게임이 잠깐 떴다 effect가 끄며 깜빡인다.
   // false 시작이면 SSR=client 첫 렌더 일치(hydration mismatch 0), OFF는 깜빡 없음, ON은 살짝 늦게 등장만.
@@ -591,6 +595,24 @@ export function WorldCupBallGoal() {
       }
       el.style.display = "";
       el.style.transform = `translate3d(${p.x - pr}px, ${p.y - pr}px, 0)`;
+      // 진행방향 화살표 — 프레임 델타로 heading 산출(부드럽게 보정), 움직일 때만 보인다.
+      const arrow = playerArrowEls.current[i];
+      if (arrow) {
+        const dx = p.x - p.px;
+        const dy = p.y - p.py;
+        const sp = Math.hypot(dx, dy);
+        if (sp > 0.35) {
+          const tgt = Math.atan2(dy, dx);
+          let dA = tgt - p.heading;
+          while (dA > Math.PI) dA -= Math.PI * 2;
+          while (dA < -Math.PI) dA += Math.PI * 2;
+          p.heading += dA * 0.3; // 각 스무딩(방향 떨림 방지)
+        }
+        arrow.style.opacity = sp > 0.5 ? "1" : "0"; // 거의 정지면 숨김
+        arrow.style.transform = `translate(-50%, -50%) rotate(${(p.heading * 180) / Math.PI}deg)`;
+      }
+      p.px = p.x;
+      p.py = p.y;
       // 부상 — 쓰러져 있으면(down) 또는 타박 큼 → 절뚝/다운 시각.
       el.classList.toggle("wc-player-down", performance.now() < p.downUntil);
       el.classList.toggle("wc-player-hurt", p.knock > 0.35 && performance.now() >= p.downUntil);
@@ -679,12 +701,17 @@ export function WorldCupBallGoal() {
       downUntil: 0,
       tackleAt: 0,
       vmag: 0,
-      acute: 0
+      acute: 0,
+      px: 0,
+      py: 0,
+      heading: 0
     }));
     players.current.forEach((p) => {
       const home = roleHome(p, 0);
       p.x = home.x;
       p.y = home.y;
+      p.px = home.x;
+      p.py = home.y;
     });
     setTeamNames([ta.name, tb.name]);
     setStyleNames([ta.name, tb.name]);
@@ -3358,6 +3385,10 @@ export function WorldCupBallGoal() {
                     glovesRef.current[side][1] = el;
                   }}
                 />
+                {/* 골키퍼 등번호 1 — 진행 화살표는 장갑이 대신하므로 없음. */}
+                <span className="wc-player-num wc-keeper-num" aria-hidden="true">
+                  1
+                </span>
               </div>
             ))}
             {Array.from({ length: 20 }).map((_, i) => {
@@ -3392,6 +3423,18 @@ export function WorldCupBallGoal() {
                     playerEls.current[i] = el;
                   }}
                 >
+                  {/* 등번호 — 필드 선수 2~11(슬롯 i로 결정적). 골키퍼는 1(따로). */}
+                  <span className="wc-player-num" aria-hidden="true">
+                    {(i % 10) + 2}
+                  </span>
+                  {/* 진행방향 화살표 — placePlayers가 heading으로 회전·표시. 골키퍼는 장갑이 방향 표시라 없음. */}
+                  <span
+                    className="wc-player-arrow"
+                    aria-hidden="true"
+                    ref={(el) => {
+                      playerArrowEls.current[i] = el;
+                    }}
+                  />
                   {/* 부상 십자가 — 심한 부상(.wc-player-hurt/down)일 때만 보이고, 선수와 함께 이동(회복 시 사라짐). */}
                   <span className="wc-player-cross" aria-hidden="true">
                     ✚

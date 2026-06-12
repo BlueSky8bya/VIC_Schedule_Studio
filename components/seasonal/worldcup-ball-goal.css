@@ -244,6 +244,62 @@
     transform: translate(-50%, -2px);
   }
 }
+/* 등번호 — 선수 원 가운데. 흰 굵은 글자 + 그림자로 잔디 위 가독. 클릭/선택 통과. */
+.wc-player-num {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 1.5px rgb(0 0 0 / 45%);
+  pointer-events: none;
+  user-select: none;
+  z-index: 2;
+}
+/* 진행방향 화살표 — 0크기 span을 선수 중심에 두고(JS가 translate(-50%,-50%) rotate), ::before
+   삼각형을 원 바깥(오른쪽 +x)에 그려 회전시 방향을 가리킨다. 움직일 때만 보임(JS opacity). */
+.wc-player-arrow {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms var(--ease, ease);
+  z-index: 1;
+}
+.wc-player-arrow::before {
+  content: "";
+  position: absolute;
+  left: 12px; /* 원 반지름(9) + 여백 */
+  top: 50%;
+  transform: translateY(-50%);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 6px solid rgb(255 255 255 / 92%);
+  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 35%));
+}
+/* 모바일 — 선수 작음(13px). 번호 작게 + stage가 90° 누워 있어 번호만 -90° 보정(똑바로). 화살표는
+   방향 지시라 stage와 함께 회전(보정 X). 삼각형 위치/크기도 작은 원에 맞춤. */
+@media (max-width: 640px) {
+  .wc-player-num {
+    font-size: 7px;
+    transform: translate(-50%, -50%) rotate(-90deg);
+  }
+  .wc-keeper .wc-player-num {
+    font-size: 8px;
+  }
+  .wc-player-arrow::before {
+    left: 8.5px;
+    border-top-width: 3px;
+    border-bottom-width: 3px;
+    border-left-width: 5px;
+  }
+}
 /* 풀타임 — 이긴 팀: 통통 튀며 신남(밝게 + 금빛 글로우 + 바운스). 진 팀: 가라앉음(어둑·고개 숙임 느낌).
    선수 원은 JS가 translate3d로 매 프레임 갱신하므로, transform 대신 margin으로 바운스(인라인 변환 안 깸). */
 .wc-player-celebrate {
