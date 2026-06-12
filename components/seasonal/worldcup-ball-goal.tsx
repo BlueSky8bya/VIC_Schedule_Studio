@@ -39,6 +39,8 @@ type Player = PlayerPersona & {
   knock: number; // 0..1 타박/부상 — 거친 태클로 누적. 속도·민첩 저하, 시간이 지나면 회복(천천히).
   downUntil: number; // 이 시각까지 부상으로 쓰러져 정지(심한 knock 직후 잠깐).
   tackleAt: number; // 마지막 태클 시도 시각(개별 쿨다운 — 견제 거리서 발 넣기 스팸 방지).
+  vmag: number; // 현재 이동 속력(px/s) — 가속/감속 램프(정지→전력·전력→정지 즉발 방지).
+  acute: number; // 0..1 급성 피로 — 스프린트로 빠르게↑, 걸으면 빠르게↓. 톱스피드·정확도·압박의지 저하.
 };
 
 const FRICTION = 0.98; // 잔디 마찰 — 높일수록 공이 빨리 죽어 라인아웃(스로인) 남발 감소
@@ -616,7 +618,9 @@ export function WorldCupBallGoal() {
       num: (i % 10) + 2, // 2~11(1은 골키퍼 몫으로 비움)
       knock: 0,
       downUntil: 0,
-      tackleAt: 0
+      tackleAt: 0,
+      vmag: 0,
+      acute: 0
     }));
     players.current.forEach((p) => {
       const home = roleHome(p, 0);
@@ -1372,7 +1376,7 @@ export function WorldCupBallGoal() {
         // 압박은 '가장 가까운 nP명'만. loose(발밑 공)도 가장 가까운 1명만 달려들게 — 안 그러면 공
         // 근처 수비가 전부 press로 몰려 조랭이떡(특히 관성으로 한 번 뭉치면 안 풀림). 나머지는 마킹
         // (자기 상대의 패스길을 끊으며 자리 유지) → 공으로 우르르 몰리는 것 방지.
-        if ((loose && r === 0) || (r < nP && p.stamina > 0.22)) mode = "press";
+        if ((loose && r === 0) || (r < nP && p.stamina > 0.22 && p.acute < 0.92)) mode = "press";
         else if (markOf[i] >= 0) mode = "mark";
         else if (r <= nP + 1) mode = "cover";
         else mode = "shape";
@@ -1391,7 +1395,8 @@ export function WorldCupBallGoal() {
       // 22명이 같은 프레임에 일제히 방향 트는 것 방지(규율 높을수록 반응 빠름).
       if (now >= p.thinkAt) {
         const lagBase = sprint ? rnd(70, 150) : rnd(190, 430);
-        p.thinkAt = now + lagBase * (1.25 - p.discipline * 0.55);
+        // 지치면 반응이 굼떠진다 — 급성 피로가 재결정 지연을 늘린다(현실의 피로 인지저하).
+        p.thinkAt = now + lagBase * (1.25 - p.discipline * 0.55) * (1 + p.acute * 0.3);
         let tx: number;
         let ty: number;
         if (sprint) {
@@ -1474,15 +1479,23 @@ export function WorldCupBallGoal() {
 
       // 이동 — 캐시 목표로. 속도는 모드·페이스·체력. 지치면 느려짐(0.6..1).
       let spd = PLAYER_SPEED * tempo * (sprint ? 0.72 + p.pace * 0.6 : 0.42 + p.pace * 0.4);
-      spd *= 0.6 + 0.4 * p.stamina;
+      spd *= 0.6 + 0.4 * p.stamina; // 만성 피로(stamina)
+      spd *= 1 - p.acute * 0.18; // 급성 피로 — 최근 스프린트 누적이 순간 톱스피드 깎음
       spd *= 1 - p.knock * 0.45; // 타박 — 절뚝(속도 저하)
       if (mode === "cover") spd *= 1.1;
       const wob = sprint ? 0 : Math.sin(now / 700 + p.wob) * 1.4; // idle 미세 흔들림(통일감 깨기)
       const dx = p.tx - p.x;
       const dy = p.ty + wob - p.y;
       const d = Math.hypot(dx, dy) || 1;
-      // 이동 — 캐시 목표로 직접(관성 실험은 기차놀이/쏠림 유발해 되돌림). 도착 가까우면 감속(d*4).
-      const move = Math.min(spd, d * 4) * dt;
+      // 가속/감속 — 정지→전력, 전력→정지가 즉발이 아니라 램프(민첩 높을수록 빠른 변속). 방향은 즉시
+      // 목표로(벡터 관성은 기차놀이·쏠림 유발해 회피), 속력 크기만 점진. 도착 가까우면 감속(d*4).
+      const targetSpd = Math.min(spd, d * 4);
+      const agile = 0.7 + p.agility * 0.6;
+      const accRate = (sprint ? 520 : 420) * agile; // px/s^2
+      const decRate = 900 * agile;
+      const rate = targetSpd > p.vmag ? accRate : decRate;
+      p.vmag = clamp(targetSpd, p.vmag - decRate * dt, p.vmag + rate * dt);
+      const move = p.vmag * dt;
       const vx = (dx / d) * move;
       const vy = (dy / d) * move;
       p.x = clamp(p.x + vx, fx.min, fx.max);
@@ -1490,9 +1503,14 @@ export function WorldCupBallGoal() {
 
       // 체력 — 스프린트/압박은 소모, 걸으면 회복. 실제 이동량 비례(90분 내내 못 누름).
       const speedUsed = Math.hypot(vx, vy) / dt;
-      const drain = (sprint ? 0.05 : 0.012) * (0.5 + (speedUsed / PLAYER_SPEED) * 0.5);
+      const intensity = 0.5 + (speedUsed / PLAYER_SPEED) * 0.5;
+      const drain = (sprint ? 0.05 : 0.012) * intensity;
       const recover = sprint ? 0 : 0.022;
       p.stamina = clamp(p.stamina - drain * dt + recover * dt, 0, 1);
+      // 급성 피로 — 스프린트 중 빠르게 누적, 걸으면 빠르게 회복(최근 5~30초 부하 근사). 만성과 별개.
+      const acuteGain = sprint ? 0.05 * intensity : 0;
+      const acuteRec = sprint ? 0 : 0.09;
+      p.acute = clamp(p.acute + acuteGain * dt - acuteRec * dt, 0, 1);
     });
 
     // 분리(separation) — 군집 자체는 막지 않는다(전술·성향상 모일 수 있음). 다만 '한 점'에 다 겹치는
@@ -1536,8 +1554,9 @@ export function WorldCupBallGoal() {
     const g = goalRect(enemy);
     const goalCx = g.x + g.w / 2;
     const goalCy = g.y + g.h / 2;
-    // 약발 — 정확도 페널티(약발 낮을수록 패스/슛 오차↑). 개인성 발현.
-    const err = (1 - p.pass) * 110 * (1.35 - p.weakFoot * 0.5);
+    // 약발 — 정확도 페널티(약발 낮을수록 패스/슛 오차↑). 개인성 발현. 피로(만성+급성)도 오차↑.
+    const fatigue = (1 - p.stamina) * 0.5 + p.acute * 0.5;
+    const err = (1 - p.pass) * 110 * (1.35 - p.weakFoot * 0.5) * (1 + fatigue * 0.45);
     // 슛 결정 — 헤드리스 lib와 같은 정책 출처: xgFromShot(거리+슈팅각 인지)로 슛 확률 산정.
     // 각도 좁은 측면 깊숙은 xG 낮아 덜 쏘고, 정면 가까이는 적극. 직접축구는 먼 거리도 가산.
     // 사람다운 변동은 random 유지(렌더러 연출).
