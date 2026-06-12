@@ -1230,12 +1230,14 @@ export function WorldCupBallGoal() {
       });
     });
 
-    // 마킹 배정 — 수비(비점유)팀의 '비압박' 선수가 상대 패스 옵션을 1:1로 맡아 패스길을 끊는다.
-    // 공만 우르르 몰리지 말고 각자 자기 상대를 잡게 → 포지션 유지 + 레인 차단(축구 기본 수비 형태).
+    // 마킹 배정 — 수비(비점유)팀의 '비압박' 선수가 상대를 1:1로 맡아 패스길을 끊는다. 핵심: '현재 위치'가
+    // 아니라 '자기 포지션(존)' 기준으로 가까운 상대를 맡는다 → 구역 안에 들어온 상대만 잡고, 멀면 안 쫓아
+    // (포지션 유지). 공만 우르르 몰리지 않고 축구 기본 수비 형태(존/맨 혼합)가 나온다.
     const markOf = new Array<number>(players.current.length).fill(-1);
     {
       const defTeam: 0 | 1 = poss === 0 ? 1 : 0;
       const nP = pressersOf(defTeam);
+      const maxMark = w * 0.26; // 자기 존서 이 거리 밖 상대는 안 맡음(쫓아가지 않게)
       const opps: number[] = [];
       players.current.forEach((q, j) => {
         if (q.team === defTeam || q.red) return; // 공격팀(=맡을 상대)만
@@ -1243,22 +1245,22 @@ export function WorldCupBallGoal() {
         opps.push(j);
       });
       const markers: number[] = [];
+      const homeOf = new Map<number, { x: number; y: number }>();
       players.current.forEach((p, i) => {
         if (p.team !== defTeam || p.red) return;
         if (rank[i] < nP) return; // 압박 인원(공으로 가는 nP명) 제외
         markers.push(i);
+        homeOf.set(i, roleHome(p, -0.06)); // 수비 시 자기 포지션(존 중심)
       });
-      markers.sort((a, b) => rank[a] - rank[b]); // 공에 가까운 수비부터 좋은 상대 선점
       const taken = new Set<number>();
       markers.forEach((mi) => {
+        const hm = homeOf.get(mi)!;
         let bo = -1;
-        let bd = Infinity;
+        let bd = maxMark; // 존 반경 안의 상대만
         opps.forEach((oj) => {
           if (taken.has(oj)) return;
-          const d = Math.hypot(
-            players.current[mi].x - players.current[oj].x,
-            players.current[mi].y - players.current[oj].y
-          );
+          // 자기 포지션(존)에서 가까운 상대 — 현재 위치가 아니라 home 기준이라 구역을 안 벗어난다.
+          const d = Math.hypot(hm.x - players.current[oj].x, hm.y - players.current[oj].y);
           if (d < bd) {
             bd = d;
             bo = oj;
