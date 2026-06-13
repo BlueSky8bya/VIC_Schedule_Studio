@@ -173,13 +173,22 @@ export function WorldCupStudioBall({ pauseWhenMinigameOn = true }: { pauseWhenMi
     }
     pos.current.x += ux * (r - d);
     pos.current.y += uy * (r - d);
-    // 상대속도 기반 반사 + 카드 속도 전달.
-    const rvx = vel.current.x - gvx;
-    const rvy = vel.current.y - gvy;
+    // 상대속도 기반 반사 + 카드 속도 전달(CARRY로 증폭 — 살짝 휘둘러도 잘 실린다).
+    const CARRY = 1.6; // 카드 이동속도 전달 배수
+    const rvx = vel.current.x - gvx * CARRY;
+    const rvy = vel.current.y - gvy * CARRY;
     const vn = rvx * ux + rvy * uy;
     if (vn < 0) {
       vel.current.x -= (1 + REST) * vn * ux;
       vel.current.y -= (1 + REST) * vn * uy;
+    }
+    // 닿기만 해도 톡 쳐지게 — 법선 방향 최소 발사속도 보장(느린 접촉도 공이 반응).
+    const MIN_KICK = 300; // px/s
+    const outN = vel.current.x * ux + vel.current.y * uy; // 카드 바깥(공 쪽) 성분
+    if (outN < MIN_KICK) {
+      const add = MIN_KICK - outN;
+      vel.current.x += ux * add;
+      vel.current.y += uy * add;
     }
     return true;
   };
