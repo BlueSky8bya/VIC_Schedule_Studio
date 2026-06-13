@@ -169,7 +169,7 @@ export function WorldCupBallGoal() {
   const matchSeed = useRef(0); // 이번 경기 시드(리플레이/디버그) — 엔진 생성의 재현 키
   const matchStart = useRef(0); // 경기 시작 시각(이벤트 t 기준)
   const eventLog = useRef(createEventLog()); // 골/세트피스/오프사이드 등 이벤트 기록(Phase 0 토대)
-  // 경기 시계 — 1 real초 = 1 게임분. 전반 0~45, 후반 45~90 + 추가시간(세트피스로 누적). 동점이면
+  // 경기 시계 — 1 게임분 = 1.5 real초(90게임분=135초). 전반 0~45, 후반 45~90 + 추가시간(세트피스로 누적). 동점이면
   // 연장(90~105, 105~120). 종료 시 결과 띄우고 자동 새 경기. breakUntil 동안은 정지(하프타임).
   const clock = useRef({ t: 0, period: 1, added: 0, ended: false, addedAnnounced: false });
   // 진영 교체 — 실제 축구처럼 매 피리어드(전반→후반, 연장 포함)마다 두 팀이 골대를 바꾼다. false면
@@ -2714,11 +2714,11 @@ export function WorldCupBallGoal() {
       window.setTimeout(() => kickoff(Math.random() < 0.5 ? 0 : 1), HALF_BREAK_MS);
     }
   };
-  // 매 프레임 호출(플레이 중). 1 real초 = 1 게임분. 휴식 중엔 정지. 표시는 throttle.
+  // 매 프레임 호출(플레이 중). 1 게임분 = 1.5 real초. 휴식 중엔 정지. 표시는 throttle.
   const tickClock = () => {
     const c = clock.current;
     if (c.ended || shootout.current.active || performance.now() < breakUntil.current) return;
-    c.t += 1 / 60;
+    c.t += 1 / 90; // 1.5배 느리게 — 1 게임분=1.5 real초(90게임분=135초). 이전 1/60(=90초)
     if (possTeam.current != null) stats.current.poss[possTeam.current] += 1; // 점유 프레임 누적
     // 정규시간 끝 → 추가시간 진입 시 한 번 중앙 배너로 알림(+N분).
     const base = PERIOD_END[c.period - 1];
@@ -2748,7 +2748,7 @@ export function WorldCupBallGoal() {
     // 동작 줄이기(reduce-motion)여도, 사용자가 자동경기를 '직접' 켜면 돈다(명시적 opt-in).
     // 자동 '시작'만 reduce-motion에서 끈다(아래 마운트). 깜짝 모션 없음 + 켜면 작동.
     const run = runningRef.current;
-    if (run) tickClock(); // 경기 시계(1 real초=1 게임분). 휴식/종료 중엔 내부에서 정지.
+    if (run) tickClock(); // 경기 시계(1 게임분=1.5 real초). 휴식/종료 중엔 내부에서 정지.
 
     // 세트피스 프리즈 — 공은 라인에 멈추고, walk()가 키커(선수/키퍼)를 매 프레임 공으로 데려온다.
     // 예약 시각이 되면 kick 실행(그 키커 위치에서 공이 나가 '누가 차는' 모양).
