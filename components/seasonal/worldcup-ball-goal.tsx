@@ -113,6 +113,7 @@ export function WorldCupBallGoal() {
   const [goalFlash, setGoalFlash] = useState(false);
   const [netFlash, setNetFlash] = useState<Side | null>(null); // 골 들어간 골대 그물 출렁임
   const [saveFlash, setSaveFlash] = useState<Side | null>(null);
+  const [saveLabel, setSaveLabel] = useState<string | null>(null); // 승부차기 빗나감 등 세이브 문구 분기
   const [setPiece, setSetPiece] = useState<string | null>(null);
   const [score, setScore] = useState<[number, number]>([0, 0]); // [team0, team1]
   const scoreRef = useRef<[number, number]>([0, 0]); // step 클로저에서 현재 점수 읽기용(연장 판정)
@@ -2604,8 +2605,13 @@ export function WorldCupBallGoal() {
           window.setTimeout(() => setNetFlash((n) => (n === "right" ? null : n)), 700);
           hapticSuccess();
         } else {
+          // miss=빗나감(키퍼 무관), catch/parry=실제 선방
+          setSaveLabel(s.outcome === "miss" ? "빗나감!" : "막았다!");
           setSaveFlash("right");
-          window.setTimeout(() => setSaveFlash(null), 800);
+          window.setTimeout(() => {
+            setSaveFlash(null);
+            setSaveLabel(null);
+          }, 800);
           hapticTick();
         }
         if (s.turn === 0) s.takenA += 1;
@@ -3778,7 +3784,7 @@ export function WorldCupBallGoal() {
             {saveFlash ? (
               <div className={`wc-save-text wc-save-${saveFlash}`}>
                 {/* 골 뜬 동안 글러브에 닿았어도 결국 들어갔으니 '막았다..?'(아쉬움) */}
-                {goalFlash ? "막았다..?" : "막았다!"}
+                {saveLabel ?? (goalFlash ? "막았다..?" : "막았다!")}
               </div>
             ) : null}
             {setPiece ? <div className="wc-setpiece">{setPiece}</div> : null}
