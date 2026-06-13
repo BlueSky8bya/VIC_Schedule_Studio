@@ -12,7 +12,6 @@
   left: 0;
   display: grid;
   place-items: center;
-  font-size: 54px; /* 공 박스(64px)에 맞춰 ~84% */
   line-height: 1;
   pointer-events: auto;
   cursor: grab;
@@ -23,4 +22,11 @@
 }
 .wcsb-ball:active {
   cursor: grabbing;
+}
+/* 미니게임과 동일 — 솔리드 SVG가 박스 꽉 채움(투명/뚫림 없음). 드래그는 .wcsb-ball div가 받음. */
+.wcsb-ball-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
