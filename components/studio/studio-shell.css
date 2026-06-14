@@ -5532,6 +5532,10 @@ body.cell-range-dragging {
   /* 큰 모니터일수록 화면 폭에 비례해 커진다(작은 화면·모바일은 13px 그대로 = floor).
      편집실만 적용 — 포스터/꾸미기 캔버스는 손대지 않는다. */
   font-size: clamp(13px, 0.95vw, 20px);
+  /* line-height를 1로 고정해 헤더 높이가 글자 크기에 끌려 커지지 않게 한다(웹에서
+     숫자가 20px까지 커지면 상속 line-height 1.5 탓에 헤더가 ~34px로 부풀어
+     절대배치 support-bar(top:26)와 월드컵 칩이 겹쳤다). */
+  line-height: 1;
 }
 
 .studio-day-head strong.red {
