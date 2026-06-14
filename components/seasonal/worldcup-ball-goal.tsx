@@ -149,6 +149,10 @@ export function WorldCupBallGoal() {
   // 드리블 턴 스무딩 — 캐리(끌기) 터치는 공 진행방향을 '즉시' 꺾지 않고 목표 속도로 매 프레임
   // 수렴시킨다 → 공 잡고 방향 틀 때 휙 도는 대신 호를 그리며 이어지듯 돈다(패스/슛은 즉발 유지).
   const carrySteer = useRef<{ vx: number; vy: number } | null>(null);
+  // 캐리 스티어를 마지막으로 건 시각 — 드리블러가 공보다 느려 접촉이 끊기면 playBall이 더는
+  // carrySteer를 갱신 못 해, 속도 락이 살아남아 공이 마찰 없이 1직선으로 무한 글라이드했다.
+  // 갱신 없이 CARRY_LOCK_MS 지나면 락을 풀어 마찰이 정상 감속하게 한다.
+  const carrySteerAt = useRef(0);
   // 주 발 회전(커브/바나나킥) — 차는 순간 정한 각속도(rad/s, 부호=휘는 방향). 비행 중 매 프레임 속도
   // 벡터를 이만큼 돌려 공이 휜다. 느려지면/다음 터치면 0. 오른발=왼쪽으로, 왼발=오른쪽으로 인스윙.
   const ballSpin = useRef(0);
@@ -843,6 +847,7 @@ export function WorldCupBallGoal() {
     // 목표 속도만 걸어둔다 — 적분 루프의 각(角) 스티어가 현재 진행방향에서 천천히 돌려 잇는다.
     // (예전엔 멈춘 공을 목표방향으로 즉시 vel=40 시드해서, 그게 곧 '방향 순간전환'의 원인이었음.)
     carrySteer.current = { vx: (dx / d) * power, vy: (dy / d) * power };
+    carrySteerAt.current = performance.now();
   };
 
   // 공 띄우기(롱패스·골킥·코너 크로스) — 수평 도달시간에 맞춰 수직속도를 줘서 그 시간 뒤 착지.
@@ -1023,7 +1028,9 @@ export function WorldCupBallGoal() {
       flashPiece("코너킥");
       showCue({
         kind: "setpiece",
-        x: pos.current.x,
+        // 골라인(코너)에 그대로 두면 텍스트가 골 네트/프레임 박스 위에 얹혀 '박스 배경'처럼 보인다.
+        // 필드 안쪽으로 60px 밀어 잔디 위에 글자만 뜨게 한다.
+        x: side === "left" ? pos.current.x + 60 : pos.current.x - 60,
         y: pos.current.y + (topCorner ? 28 : -28),
         label: "코너킥"
       });
@@ -1048,7 +1055,9 @@ export function WorldCupBallGoal() {
       flashPiece("골킥");
       showCue({
         kind: "setpiece",
-        x: pos.current.x,
+        // 골 에어리어 가장자리라 텍스트가 골 네트/프레임 박스 위에 얹힌다. 필드 안쪽으로 70px
+        // 밀어 잔디 위에 글자만 뜨게 한다.
+        x: side === "left" ? pos.current.x + 70 : pos.current.x - 70,
         y: pos.current.y + (pos.current.y < h * 0.5 ? 28 : -28),
         label: "골킥"
       });
@@ -2890,6 +2899,13 @@ export function WorldCupBallGoal() {
       // 드리블 턴 스무딩 — 캐리 터치가 건 목표 속도(carrySteer)로 vel을 매 프레임 수렴시킨다.
       // 즉시 꺾지 않고 호를 그리며 도는 효과. 목표에 충분히 가까워지면 해제하고 마찰로 자연 감속.
       // 떠 있는(airborne) 공은 통과/포물선 중이라 스티어 안 함.
+      // 캐리 락 만료 — 드리블러가 공을 놓쳐(접촉 끊김) 갱신이 끊긴 지 오래면 락을 풀어
+      // 마찰이 정상 감속하게 한다(무한 직진 글라이드 방지). 380ms = 드리블 결정주기(KICK_CD 340)
+      // 보다 길어 진짜 드리블 중엔 안 풀리고, 공을 놓친 뒤에만 풀린다.
+      const CARRY_LOCK_MS = 380;
+      if (carrySteer.current && tNow - carrySteerAt.current > CARRY_LOCK_MS) {
+        carrySteer.current = null;
+      }
       if (carrySteer.current && ballZ.current <= AIR_MIN) {
         // 캐리 턴 — 속도 '벡터'를 그대로 lerp하면 반대방향으로 꺾을 때 중간에 크기가 0으로 collapse돼
         // 공이 멈췄다 튀어나가(툭툭/순간이동) 보였다. 대신 '진행 방향(각)'만 최대 회전율로 천천히 돌리고
