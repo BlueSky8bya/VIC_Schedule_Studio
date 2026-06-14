@@ -5521,7 +5521,9 @@ body.cell-range-dragging {
   display: flex;
   width: 100%;
   min-height: 22px;
-  align-items: baseline;
+  /* 가운데 정렬 — baseline이면 큰 날짜 숫자(clamp 20px)와 월드컵 칩의 baseline을 맞추느라
+     칩이 숫자 아래쪽으로 처져 어긋나 보였다. center로 두 요소를 수직 가운데로. */
+  align-items: center;
   justify-content: space-between;
   gap: 4px;
   padding: 4px 6px 0;
