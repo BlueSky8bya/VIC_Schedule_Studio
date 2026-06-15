@@ -20,7 +20,8 @@ export const defaultPalette: ColorPaletteEntry[] = [
   { key: "indigo", name: "남색", bgColor: "#5a44c2", textColor: "#ffffff", borderColor: "#4131a0", sortOrder: 10 },
   { key: "lavender", name: "보라", bgColor: "#d8bdf2", textColor: "#43176b", borderColor: "#b78fe0", sortOrder: 11 },
   { key: "pink", name: "분홍", bgColor: "#ee5aa3", textColor: "#ffffff", borderColor: "#d63b89", sortOrder: 12 },
-  { key: "beige", name: "갈색", bgColor: "#a9794a", textColor: "#ffffff", borderColor: "#885d33", sortOrder: 13 }
+  { key: "beige", name: "갈색", bgColor: "#a9794a", textColor: "#ffffff", borderColor: "#885d33", sortOrder: 13 },
+  { key: "silver", name: "은색", bgColor: "#6b7682", textColor: "#ffffff", borderColor: "#4b535c", sortOrder: 14 }
 ];
 
 // 시드 태그는 전부 대분류(parentId: null). 세부는 owner가 편집기에서 추가.
