@@ -1649,3 +1649,32 @@ body.wc-game-lock {
     height: 4px;
   }
 }
+
+/* ── 웹(≥641px) 전용 — 전술·기록 버튼을 모바일 컴팩트 칩보다 크고 또렷하게(가로 여백 활용),
+   마우스 hover lift 추가. 모바일은 위 기본 규칙(작은 칩) 그대로 둔다. 플랫폼별 분리 디자인. */
+@media (min-width: 641px) {
+  .wc-tac-btn {
+    top: 16px;
+    right: 18px;
+    padding: 10px 20px;
+    font-size: 15.5px;
+    border-radius: 14px;
+    box-shadow: 0 10px 24px -12px rgb(40 30 60 / 50%);
+  }
+  .wc-stat-btn {
+    right: auto;
+    left: 18px;
+  }
+  .wc-tac-btn:hover {
+    background: rgb(255 255 255 / 94%);
+    transform: translateY(-1.5px);
+    box-shadow: 0 16px 30px -12px rgb(40 30 60 / 55%);
+  }
+  /* 커진 버튼 아래로 패널을 내려 겹치지 않게. */
+  .wc-stats {
+    top: 68px;
+  }
+  .wc-tactics {
+    top: 72px;
+  }
+}

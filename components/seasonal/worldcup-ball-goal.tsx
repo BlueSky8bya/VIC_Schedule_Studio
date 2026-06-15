@@ -756,7 +756,9 @@ export function WorldCupBallGoal() {
       p.px = home.x;
       p.py = home.y;
     });
-    setTeamNames([ta.name, tb.name]);
+    // 팀 표시는 전술명이 아니라 진영(RED/BLUE)으로 고정 — 전술은 styleNames로 따로 추적(전술 패널
+    // 칩 강조·설명용)하고, 전술 버튼으로 바꿔도 진영 이름은 그대로 둔다.
+    setTeamNames(["RED", "BLUE"]);
     setStyleNames([ta.name, tb.name]);
     scoreRef.current = [0, 0];
     setScore([0, 0]);
@@ -3445,7 +3447,7 @@ export function WorldCupBallGoal() {
       lineHeight: s.lineHeight,
       width: s.width
     };
-    setTeamNames((n) => (team === 0 ? [s.name, n[1]] : [n[0], s.name]));
+    // 진영 이름(RED/BLUE)은 그대로 두고, 전술명만 styleNames로 갱신(칩 강조·설명용).
     setStyleNames((n) => (team === 0 ? [s.name, n[1]] : [n[0], s.name]));
     hapticTick();
   };
@@ -3811,9 +3813,7 @@ export function WorldCupBallGoal() {
             </div>
             {isMobile && namesOpen != null ? (
               <div className={`wc-names-pop wc-names-pop-${namesOpen}`} role="status">
-                {namesOpen === 0 ? "🔴 " : ""}
-                {teamNames[namesOpen] || (namesOpen === 0 ? "RED" : "BLUE")}
-                {namesOpen === 1 ? " 🔵" : ""}
+                {namesOpen === 0 ? "🔴 RED" : "🔵 BLUE"} · {styleNames[namesOpen] || "전술"}
               </div>
             ) : null}
             {clockText ? <div className="wc-clock">{clockText}</div> : null}
