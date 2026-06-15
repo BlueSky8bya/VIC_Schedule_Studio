@@ -334,6 +334,7 @@ export function InsightsDashboard({
   // 서버 성능(시스템 패널) — 라벨별 응답시간 통계. 시간창(시간 단위) 전환 가능.
   const [perf, setPerf] = useState<PerfStatRow[] | null>(null);
   const [perfHours, setPerfHours] = useState(24);
+  const [perfLoading, setPerfLoading] = useState(false); // 시간창 전환 후 다시 불러오는 중(클릭 피드백)
   const [refreshing, setRefreshing] = useState(false); // 지금 보는 칸만 수동 새로고침 중
   const [refreshed, setRefreshed] = useState(false); // 방금 갱신 완료 — '갱신됨' 칩 잠깐 표시
   const refreshedTimer = useRef<number | null>(null);
@@ -371,8 +372,11 @@ export function InsightsDashboard({
   // 서버 성능 통계 — 마운트 + 시간창 변경 시 로드(개발자 전용·저빈도라 항상 가볍게).
   useEffect(() => {
     let alive = true;
+    setPerfLoading(true);
     getPerfStatsAction(perfHours).then((r) => {
-      if (alive) setPerf(r.ok ? r.rows : []);
+      if (!alive) return;
+      setPerf(r.ok ? r.rows : []);
+      setPerfLoading(false);
     });
     return () => {
       alive = false;
@@ -1597,17 +1601,23 @@ export function InsightsDashboard({
                   <h4 className="insight-subhead" style={{ margin: 0 }}>
                     서버 성능
                   </h4>
-                  <div className="perf-windows" role="group" aria-label="시간 범위">
+                  <div className="perf-windows" role="group" aria-label="시간 범위" aria-busy={perfLoading}>
                     {[24, 168].map((h) => (
                       <button
+                        aria-pressed={perfHours === h}
                         className={perfHours === h ? "active" : ""}
                         key={h}
-                        onClick={() => setPerfHours(h)}
+                        onClick={() => {
+                          if (perfHours === h) return;
+                          hapticTick();
+                          setPerfHours(h);
+                        }}
                         type="button"
                       >
                         {h >= 168 ? "7일" : `${h}시간`}
                       </button>
                     ))}
+                    {perfLoading ? <span className="perf-spin" aria-label="불러오는 중" role="status" /> : null}
                   </div>
                 </div>
                 {perf === null ? (
@@ -1615,7 +1625,7 @@ export function InsightsDashboard({
                 ) : perf.length === 0 ? (
                   <p className="insight-empty">아직 표본이 없어요 — 요청이 쌓이면 채워져요.</p>
                 ) : (
-                  <div className="perf-table">
+                  <div className={`perf-table${perfLoading ? " is-loading" : ""}`}>
                     <div className="perf-row perf-thead">
                       <span>구간</span>
                       <span>n</span>

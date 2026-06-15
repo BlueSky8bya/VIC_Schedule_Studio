@@ -1285,16 +1285,50 @@
   font-weight: 800;
   color: #6b5b95;
   cursor: pointer;
+  transition:
+    background var(--ease, 0.18s ease),
+    border-color var(--ease, 0.18s ease),
+    color var(--ease, 0.18s ease),
+    transform 0.08s ease;
+}
+/* 누르는 즉시 톡 — 클릭이 인식됐다는 촉감 피드백(햅틱과 함께). */
+.perf-windows button:active {
+  transform: scale(0.92);
 }
 .perf-windows button.active {
   background: #6b5bd6;
   border-color: #6b5bd6;
   color: #fff;
 }
+/* 시간창 전환 후 다시 불러오는 중 표식 — 버튼 오른쪽 작은 스피너. */
+.perf-spin {
+  align-self: center;
+  width: 13px;
+  height: 13px;
+  margin-left: 5px;
+  border: 2px solid #d6cef2;
+  border-top-color: #6b5bd6;
+  border-radius: 50%;
+  animation: perf-spin 0.6s linear infinite;
+}
+@keyframes perf-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+html[data-reduce-motion] .perf-spin {
+  animation: none;
+}
 .perf-table {
   display: flex;
   flex-direction: column;
   gap: 3px;
+}
+/* 불러오는 중엔 표를 옅게 + 클릭 막아 '갱신 중'임을 분명히. */
+.perf-table.is-loading {
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity 0.15s var(--ease, ease);
 }
 .perf-row {
   display: grid;

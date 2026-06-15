@@ -21,43 +21,50 @@ export async function getUnlockState(calendarSlug: string): Promise<UnlockState>
     return { passcodeSet: false, hasUnlockSession: false, isDefaultPasscode: false };
   }
 
-  const user = await getCurrentSupabaseUser();
+  // user(Auth 서버 왕복)와 calendar(slug 조회)는 서로 의존이 없어 병렬로 받는다.
+  const [user, calendarRes] = await Promise.all([
+    getCurrentSupabaseUser(),
+    supabase.from("calendars").select("id").eq("slug", calendarSlug).maybeSingle()
+  ]);
   if (!user) {
     return { passcodeSet: false, hasUnlockSession: false, isDefaultPasscode: false };
   }
-
-  const { data: calendar } = await supabase
-    .from("calendars")
-    .select("id")
-    .eq("slug", calendarSlug)
-    .maybeSingle();
-
+  const calendar = calendarRes.data;
   if (!calendar) {
     return { passcodeSet: false, hasUnlockSession: false, isDefaultPasscode: false };
   }
 
-  const { data: settings } = await supabase
-    .from("private_layer_settings")
-    .select("passcode_version, passcode_hash")
-    .eq("calendar_id", calendar.id)
-    .maybeSingle();
+  // settings(비번)와 unlock 세션은 둘 다 calendar.id·user.id만 있으면 조회 가능 → 병렬.
+  // 세션 유효성(현재 passcode_version 일치 + 미만료)은 settings를 받은 뒤 JS에서 판정한다.
+  // (예전엔 settings.passcode_version을 SQL .eq로 걸어 session을 settings 뒤에 직렬로 기다렸다.)
+  // — SQL .eq(passcode_version)/.gt(expires_at)와 완전히 동치라 비공개 게이트 동작은 그대로다.
+  const nowIso = new Date().toISOString();
+  const [settingsRes, sessionsRes] = await Promise.all([
+    supabase
+      .from("private_layer_settings")
+      .select("passcode_version, passcode_hash")
+      .eq("calendar_id", calendar.id)
+      .maybeSingle(),
+    supabase
+      .from("unlock_sessions")
+      .select("passcode_version, expires_at")
+      .eq("calendar_id", calendar.id)
+      .eq("user_id", user.id)
+      .gt("expires_at", nowIso)
+  ]);
 
+  const settings = settingsRes.data;
   if (!settings) {
     return { passcodeSet: false, hasUnlockSession: false, isDefaultPasscode: false };
   }
 
-  const { data: session } = await supabase
-    .from("unlock_sessions")
-    .select("id")
-    .eq("calendar_id", calendar.id)
-    .eq("user_id", user.id)
-    .eq("passcode_version", settings.passcode_version)
-    .gt("expires_at", new Date().toISOString())
-    .maybeSingle();
+  const hasUnlockSession = (sessionsRes.data ?? []).some(
+    (s) => s.passcode_version === settings.passcode_version
+  );
 
   return {
     passcodeSet: true,
-    hasUnlockSession: Boolean(session),
+    hasUnlockSession,
     // 버전이 아니라 "현재 해시가 0219인지"로 판별 — 0219를 변경 폼으로 설정해 버전이 올라가도 정확.
     isDefaultPasscode: verifyPasscode(DEFAULT_PASSCODE, settings.passcode_hash)
   };
