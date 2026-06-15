@@ -284,10 +284,19 @@ export function WorldCupBallGoal() {
   const keeperHold = useRef<{ side: Side | null; until: number }>({ side: null, until: 0 });
   const goalKickKeeper = useRef<Side | null>(null); // 골킥 중인 키퍼 — 박스 밖으로 공 가지러 나옴(하드 Y clamp 면제)
 
-  const bounds = () => {
+  // bounds()는 한 프레임에 수십~수백 번(insetX/goalW/goalRect/충돌·선수 루프) 불린다.
+  // clientWidth/Height는 '레이아웃 읽기'라 그때마다 재면 고주사율에서 비용이 크다(강제 리플로우 위험).
+  // → 프레임당 한 번만 readBounds()로 재서 캐시하고, bounds()는 그 캐시를 돌려준다.
+  const boundsRef = useRef({ w: 0, h: 0 });
+  const readBounds = () => {
     const el = layerRef.current;
-    return { w: el?.clientWidth ?? window.innerWidth, h: el?.clientHeight ?? window.innerHeight };
+    boundsRef.current = {
+      w: el?.clientWidth ?? window.innerWidth,
+      h: el?.clientHeight ?? window.innerHeight
+    };
+    return boundsRef.current;
   };
+  const bounds = () => (boundsRef.current.w === 0 ? readBounds() : boundsRef.current);
   const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
   // 모바일은 피치가 세로로 짧아(100vw) 공·키퍼가 상대적으로 커 골 넣기 어렵다 → 작게.
   // 키퍼는 선수와 같은 크기(PLAYER_R*2). 물리용이라 rotated.current(=isMobile) 기준.
@@ -2780,8 +2789,16 @@ export function WorldCupBallGoal() {
   };
 
   const step = () => {
-    const { w, h } = bounds();
     const tNow = performance.now();
+    // 고주사율(120/144Hz) 상한 — rAF가 초당 144번 불려도 물리·렌더는 최대 ~72fps로만 돈다(직전 실행
+    // 후 13.3ms 미만이면 이 프레임은 건너뜀). 60Hz는 16.7ms>13.3이라 그대로 60fps. 방송 PC 같은
+    // 고주사율에서 무거운 시뮬(선수20 AI+충돌)이 2.4배로 불어 끊기던 것을 줄인다(60fps 이상은 유지).
+    if (lastStepT.current !== 0 && tNow - lastStepT.current < 1000 / 75) {
+      raf.current = enabledRef.current ? window.requestAnimationFrame(step) : null;
+      return;
+    }
+    // 이 프레임 동안 쓸 경기장 크기를 한 번만 잰다(이하 모든 bounds()는 이 캐시를 돌려줌).
+    const { w, h } = readBounds();
     // dt = 실제 경과시간(초). 고정 1/60은 모니터 주사율에 묶여 144Hz선 2.4배 빨라지고, 약한 PC가
     // 프레임을 못 따라가면 슬로모 + 툭툭 끊김이었다. 실경과 기반이면 어느 주사율·fps에서도 벽시계
     // 속도로 동일하게 움직인다. 큰 값은 1/30s로 clamp — 한 프레임이 크게 밀려도 공이 순간이동(터널링)
@@ -3267,7 +3284,7 @@ export function WorldCupBallGoal() {
     const onResize = () => {
       rotated.current = window.matchMedia?.("(max-width: 640px)").matches ?? false;
       setIsMobile(rotated.current);
-      const b = bounds();
+      const b = readBounds(); // 크기가 실제로 바뀌었으니 캐시를 새로 잰다(이후 bounds()가 신값 반환).
       pos.current.x = clamp(pos.current.x, ballDia() / 2, b.w - ballDia() / 2);
       pos.current.y = clamp(pos.current.y, ballDia() / 2, b.h - ballDia() / 2);
       players.current.forEach((p) => {
