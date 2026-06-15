@@ -1280,6 +1280,7 @@
   margin: 20px 0 8px;
 }
 .perf-windows {
+  position: relative;
   display: inline-flex;
   gap: 4px;
 }
@@ -1307,12 +1308,15 @@
   border-color: #6b5bd6;
   color: #fff;
 }
-/* 시간창 전환 후 다시 불러오는 중 표식 — 버튼 오른쪽 작은 스피너. */
+/* 시간창 전환 후 다시 불러오는 중 표식 — 버튼 그룹 '왼쪽' 여백(제목과의 사이)에 absolute로 띄운다.
+   흐름(flex) 밖이라 떴다 사라져도 24시간/7일 버튼을 밀지 않는다(예전엔 버튼 오른쪽 inline이라 밀림). */
 .perf-spin {
-  align-self: center;
+  position: absolute;
+  right: 100%;
+  top: calc(50% - 6.5px);
+  margin-right: 8px;
   width: 13px;
   height: 13px;
-  margin-left: 5px;
   border: 2px solid #d6cef2;
   border-top-color: #6b5bd6;
   border-radius: 50%;
