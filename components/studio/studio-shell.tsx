@@ -1649,12 +1649,19 @@ export function StudioShell({
   const flipRects = useRef<Map<string, DOMRect>>(new Map());
   const seamPrev = useRef<Map<string, string>>(new Map());
   const flipViewKey = useRef("");
+  // FLIP 활주는 '드래그 재정렬'처럼 위치가 의도적으로 바뀔 때만 쓴다. 일정 텍스트/태그를 고쳐 저장하면
+  // 그 칸 크기가 살짝 변해 같은 날 형제 카드들이 reflow되는데, 그때까지 활주하면 "저장했더니 일정들이
+  // 우르르 움직인다"는 거슬림이 된다 → 저장 경로에선 이 플래그로 다음 FLIP 1회를 억제한다(위치 기록만).
+  const suppressFlipRef = useRef(false);
   useLayoutEffect(() => {
     const viewKey = `${view.year}-${view.month}`;
     const viewChanged = flipViewKey.current !== viewKey;
     flipViewKey.current = viewKey;
     const reduce = prefersReducedMotion();
     const dragging = dragEventId !== null;
+    // 저장으로 인한 reflow면 이번 패스는 활주 없이 위치만 갱신(편집 저장이 형제 카드를 밀지 않게).
+    const suppress = suppressFlipRef.current;
+    suppressFlipRef.current = false;
     document.querySelectorAll<HTMLElement>(".studio-event-pill[data-eventid]").forEach((el) => {
       const id = el.dataset.eventid;
       if (!id) return;
@@ -1665,7 +1672,7 @@ export function StudioShell({
         el.classList.contains("deleting");
       // A2: First(직전 위치)→Last(현재) 차이를 역보정 후 다음 프레임에 풀어 미끄러지듯 안착.
       const first = flipRects.current.get(id);
-      if (first && !reduce && !viewChanged && !busy) {
+      if (first && !reduce && !viewChanged && !busy && !suppress) {
         const dx = first.left - last.left;
         const dy = first.top - last.top;
         if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
@@ -2509,6 +2516,8 @@ export function StudioShell({
     };
     const snapshot = events;
 
+    // 저장으로 인한 형제 카드 reflow는 FLIP 활주 없이(편집 저장이 일정들을 우르르 밀지 않게).
+    suppressFlipRef.current = true;
     setEvents((prev) =>
       isNew ? [...prev, optimistic] : prev.map((e) => (e.id === tempId ? optimistic : e))
     );

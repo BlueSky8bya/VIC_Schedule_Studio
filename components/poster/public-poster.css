@@ -1475,9 +1475,11 @@ body.cell-range-dragging {
 }
 .legend-title {
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: 8px;
   color: #6b5b34;
-  font-size: 13px;
+  /* 시청자 안내 제목은 크게(약 3배) — 범례에서 가장 먼저 눈에 들어오는 헤더. */
+  font-size: 38px;
+  line-height: 1.05;
   font-weight: 900;
 }
 /* 콘텐츠와 방식을 가르는 소제목(세로 안내). */

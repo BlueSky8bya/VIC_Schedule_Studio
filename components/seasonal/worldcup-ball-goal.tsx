@@ -138,6 +138,7 @@ export function WorldCupBallGoal() {
   const lastPointer = useRef<{ x: number; y: number; t: number }>({ x: 0, y: 0, t: 0 });
   const pointerVel = useRef<Vec>({ x: 0, y: 0 });
   const raf = useRef<number | null>(null);
+  const lastStepT = useRef(0); // 직전 step의 시각(performance.now) — 실제 경과로 dt 계산(프레임률 독립)
   const goalAt = useRef(0);
   const goalFreezeUntil = useRef(0); // 골 직후 이 시각까지 공 물리·득점·라인아웃 정지(셀레브 → 킥오프 준비)
   const saveAt = useRef(0);
@@ -2780,8 +2781,14 @@ export function WorldCupBallGoal() {
 
   const step = () => {
     const { w, h } = bounds();
-    const dt = 1 / 60;
     const tNow = performance.now();
+    // dt = 실제 경과시간(초). 고정 1/60은 모니터 주사율에 묶여 144Hz선 2.4배 빨라지고, 약한 PC가
+    // 프레임을 못 따라가면 슬로모 + 툭툭 끊김이었다. 실경과 기반이면 어느 주사율·fps에서도 벽시계
+    // 속도로 동일하게 움직인다. 큰 값은 1/30s로 clamp — 한 프레임이 크게 밀려도 공이 순간이동(터널링)
+    // 하지 않게(물리는 px/s 기준이라 가변 dt에 그대로 들어맞는다).
+    const prevT = lastStepT.current;
+    lastStepT.current = tNow;
+    const dt = prevT === 0 ? 1 / 60 : Math.min(1 / 30, Math.max(0, (tNow - prevT) / 1000));
     // 동작 줄이기(reduce-motion)여도, 사용자가 자동경기를 '직접' 켜면 돈다(명시적 opt-in).
     // 자동 '시작'만 reduce-motion에서 끈다(아래 마운트). 깜짝 모션 없음 + 켜면 작동.
     const run = runningRef.current;

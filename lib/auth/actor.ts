@@ -44,22 +44,24 @@ async function _resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor>
     };
   }
 
-  // 플랫폼 개발자를 가장 먼저 확인해, 본인이 소유하지 않은 캘린더에서도
-  // 캘린더를 가로지르는 유지보수 권한을 갖도록 한다.
-  if (await isPlatformDeveloper(email)) {
-    return {
-      email,
-      isAuthenticated: true,
-      role: "developer",
-      trustedRole: null
-    };
-  }
-
+  // 관리자(owner)를 가장 먼저 확인 — isOwnerEmail은 env 비교라 DB 왕복이 0이다. 가장 흔한
+  // /studio 사용자(관리자)가 platform_admins 조회 없이 즉시 풀리게 해 actor 지연을 줄인다.
+  // (관리자 계정과 개발자 계정은 서로 다른 사람이라 우선순위를 바꿔도 권한이 겹치지 않는다.)
   if (isOwnerEmail(email)) {
     return {
       email,
       isAuthenticated: true,
       role: "owner",
+      trustedRole: null
+    };
+  }
+
+  // 플랫폼 개발자 — 본인이 소유하지 않은 캘린더에서도 가로지르는 유지보수 권한을 갖는다.
+  if (await isPlatformDeveloper(email)) {
+    return {
+      email,
+      isAuthenticated: true,
+      role: "developer",
       trustedRole: null
     };
   }
