@@ -3349,15 +3349,29 @@ export function WorldCupBallGoal() {
     // 진행 중인 경기가 없을 때만(첫 진입) 새 경기. 숨겼다 켜면 기존 경기를 이어서 한다.
     const fresh = players.current.length === 0;
     if (fresh) {
-      const { h } = bounds();
-      keeperY.current.left = h * 0.5;
-      keeperY.current.right = h * 0.5;
-      perceivedY.current.left = h * 0.5;
-      perceivedY.current.right = h * 0.5;
-      buildMatch();
-      centerBall();
-      passToNearestTeammate(Math.random() < 0.5 ? 0 : 1, pos.current.x, pos.current.y, 200);
+      // 모바일은 enabled=false로 마운트돼 .wc-stage가 없다가, '켜기'를 누른 이 렌더에서 처음 DOM에
+      // 붙는다. 이 effect가 도는 시점엔 stage 레이아웃이 아직 안 끝나(또는 bounds 캐시에 마운트 때
+      // window 잔값이 남아) 공이 (0,0)·왼쪽 위에서 킥오프되던 버그 → 다음 프레임에 실제 크기를 재서
+      // (readBounds) 빌드·중앙배치한다. (새경기 버튼은 이미 stage가 떠 있어 정상이었다.)
+      const id = window.requestAnimationFrame(() => {
+        readBounds();
+        const { h } = bounds();
+        keeperY.current.left = h * 0.5;
+        keeperY.current.right = h * 0.5;
+        perceivedY.current.left = h * 0.5;
+        perceivedY.current.right = h * 0.5;
+        buildMatch();
+        centerBall();
+        passToNearestTeammate(Math.random() < 0.5 ? 0 : 1, pos.current.x, pos.current.y, 200);
+        place();
+        placeKeepers();
+        placePlayers();
+        lastActiveAt.current = performance.now();
+        if (runningRef.current) ensureLoop();
+      });
+      return () => window.cancelAnimationFrame(id);
     }
+    // 이어하기(숨겼다 다시 켜기) — 기존 위치 그대로 다시 그린다.
     place();
     placeKeepers();
     placePlayers();
