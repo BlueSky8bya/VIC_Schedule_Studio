@@ -139,6 +139,9 @@ export function WorldCupBallGoal() {
   const pointerVel = useRef<Vec>({ x: 0, y: 0 });
   const raf = useRef<number | null>(null);
   const lastStepT = useRef(0); // 직전 step의 시각(performance.now) — 실제 경과로 dt 계산(프레임률 독립)
+  const rootRef = useRef<HTMLDivElement | null>(null); // .wc-play 루트 — lite 모드 클래스 토글용
+  const frameMs = useRef(1000 / 60); // 프레임 간격 EMA(ms) — fps 추정
+  const liteRef = useRef(false); // 저성능 적응 모드(효과 끄고 30fps) — 끊김 감지 시 자동 on
   const goalAt = useRef(0);
   const goalFreezeUntil = useRef(0); // 골 직후 이 시각까지 공 물리·득점·라인아웃 정지(셀레브 → 킥오프 준비)
   const saveAt = useRef(0);
@@ -2793,9 +2796,26 @@ export function WorldCupBallGoal() {
     // 고주사율(120/144Hz) 상한 — rAF가 초당 144번 불려도 물리·렌더는 최대 ~72fps로만 돈다(직전 실행
     // 후 13.3ms 미만이면 이 프레임은 건너뜀). 60Hz는 16.7ms>13.3이라 그대로 60fps. 방송 PC 같은
     // 고주사율에서 무거운 시뮬(선수20 AI+충돌)이 2.4배로 불어 끊기던 것을 줄인다(60fps 이상은 유지).
+    // 프레임 상한 ~72fps(lite여도 동일). lite에서 상한을 더 낮추면 EMA가 그 상한값에 묶여 회복을
+    // 영영 감지 못 하므로, 상한은 고정하고 lite는 '효과만' 끈다(아래).
     if (lastStepT.current !== 0 && tNow - lastStepT.current < 1000 / 75) {
       raf.current = enabledRef.current ? window.requestAnimationFrame(step) : null;
       return;
+    }
+    // 적응형 성능: 실행 프레임 간격 EMA로 fps를 추정해, 끊기면(>~28ms≈36fps) lite 진입(비싼 효과 OFF),
+    // 충분히 회복하면(<~18ms≈56fps) 해제. OBS 인코딩 경합·약한 GPU 등 앱이 못 건드리는 '환경' 원인으로
+    // 끊겨도 스스로 가벼워져 망가져 보이지 않게. 효과만 끄고 상한은 고정이라 회복 측정이 막히지 않는다.
+    // (28/18 히스테리시스로 깜빡임 방지. 60Hz 정상=~16.7ms라 lite에 안 갇힘.)
+    if (lastStepT.current !== 0) {
+      frameMs.current = frameMs.current * 0.9 + (tNow - lastStepT.current) * 0.1;
+      const ft = frameMs.current;
+      if (!liteRef.current && ft > 28) {
+        liteRef.current = true;
+        rootRef.current?.classList.add("wc-lite");
+      } else if (liteRef.current && ft < 18) {
+        liteRef.current = false;
+        rootRef.current?.classList.remove("wc-lite");
+      }
     }
     // 이 프레임 동안 쓸 경기장 크기를 한 번만 잰다(이하 모든 bounds()는 이 캐시를 돌려줌).
     const { w, h } = readBounds();
@@ -3553,7 +3573,7 @@ export function WorldCupBallGoal() {
   };
 
   return (
-    <div className={`wc-play ${enabled ? "on" : ""}`} aria-hidden="true">
+    <div className={`wc-play ${enabled ? "on" : ""}`} aria-hidden="true" ref={rootRef}>
       {enabled ? (
         <>
           <div

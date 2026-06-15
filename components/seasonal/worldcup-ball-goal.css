@@ -12,6 +12,23 @@
   user-select: none;
   -webkit-user-select: none;
 }
+/* 저성능 적응 모드(.wc-lite) — fps가 떨어지면 JS가 이 클래스를 붙인다(회복 시 제거). 매 프레임
+   비싼 효과(전면 backdrop blur·움직이는 공의 drop-shadow/blur·다수 선수 그림자)를 꺼 페인트 비용을
+   확 줄인다. 게임 로직·위치·재미는 그대로 — 시각 장식만 임시로 단순해진다. */
+.wc-lite .wc-dim {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.wc-lite .wc-ball,
+.wc-lite .wc-ball-air {
+  filter: none;
+}
+.wc-lite .wc-player,
+.wc-lite .wc-keeper,
+.wc-lite .wc-glove,
+.wc-lite .wc-pitch span {
+  box-shadow: none;
+}
 /* 게임 ON이면 포스터 컨트롤(아바타 켜기·하트 등) 위로 올라가 딤이 그것까지 흐리고 클릭을 막는다.
    자동경기·숨기기 토글과 공만 딤 위에서 조작 가능 → "그 둘 빼곤 안 눌림" + 게임 집중. */
 .wc-play.on {
