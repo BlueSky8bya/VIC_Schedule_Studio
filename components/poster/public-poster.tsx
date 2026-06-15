@@ -815,6 +815,11 @@ export function PublicPoster({
     return perWeek;
   }, [cells, schedule.events, supportLanes]);
   const supportEvents = schedule.events.filter((e) => e.isSupport);
+  // 우측 "업 도움" 카드는 기간이 끝나면 자동으로 내린다 — 종료일(KST)이 오늘보다 이전이면
+  // 캠페인이 끝난 것이라 안내 카드에서 제외(달력 띠는 실제 날짜 칸에만 그려져 별도 처리 불필요).
+  const activeSupportEvents = supportEvents.filter(
+    (e) => (e.endDateKey ?? getEventDateKey(e)) >= today
+  );
   // 이어진 일정 묶음 키 — 같은 묶음 칸들의 높이를 맞추는 데 쓴다(아래 useEqualChainHeights).
   const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
   // 같은 태그 구성으로 이어진 묶음은 하나의 그라데이션으로(경계 가운데). 묶음별 날짜 범위.
@@ -3829,7 +3834,7 @@ export function PublicPoster({
           </section>
 
           <aside className="public-right" aria-label="업 도움과 색상 안내">
-            {supportEvents.map((s) => {
+            {activeSupportEvents.map((s) => {
               const start = getEventDateKey(s);
               const end = s.endDateKey ?? start;
               return (
