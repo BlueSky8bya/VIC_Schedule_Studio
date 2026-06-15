@@ -1256,6 +1256,11 @@ body.cell-range-dragging {
 }
 .poster-actions .button {
   gap: 7px;
+  /* 캡쳐 진행 라벨이 "일정표 캡쳐"→"달력 이미지 준비 중…"→"복사됨!"로 길이가 크게 변해 버튼 폭이
+     출렁이며 옆 진행점이 밀리던 문제 → 가장 긴 라벨 폭만큼 미리 잡고(em 기반=폰트 스케일 안전)
+     라벨은 중앙 정렬해 폭이 고정돼도 자연스럽게. */
+  min-width: 13em;
+  justify-content: center;
 }
 
 .poster-action-error {

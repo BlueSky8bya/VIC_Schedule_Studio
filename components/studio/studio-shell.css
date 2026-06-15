@@ -249,6 +249,13 @@
   flex: none;
   background: #94a3b8; /* idle 회색 */
 }
+/* 상태 텍스트("저장 중…"/"저장 실패"/"저장됨")는 글자 수가 달라 알약 폭이 늘었다 줄며 옆을 밀던
+   문제 → 가장 긴 상태 폭만큼 자리를 미리 잡아 상태가 바뀌어도 폭이 안 흔들리게(좌측 정렬 고정). */
+.save-status em {
+  min-width: 4.6em;
+  display: inline-block;
+  text-align: left;
+}
 .save-status .ss-time {
   font-weight: 900;
   color: inherit;
