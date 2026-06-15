@@ -8235,6 +8235,22 @@ textarea:disabled {
 .member-row {
   animation: member-row-in 0.32s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
+/* 웹 전용 — 행 위에 마우스를 올리면 살짝 떠오르며 옅은 배경(표 행처럼 hover 피드백). 모바일은
+   탭 기반이라 hover 없이 그대로. (악센트바는 행 내부 패딩을 모르는 채 넣으면 겹칠 수 있어 제외.) */
+@media (min-width: 641px) {
+  .member-row {
+    border-radius: 12px;
+    transition:
+      background 0.16s var(--ease, ease),
+      box-shadow 0.18s var(--ease, ease),
+      transform 0.16s var(--ease, ease);
+  }
+  .member-row:hover {
+    background: #faf9fe;
+    box-shadow: 0 8px 20px -12px rgb(70 50 110 / 32%);
+    transform: translateY(-2px);
+  }
+}
 @keyframes member-row-in {
   from {
     opacity: 0;

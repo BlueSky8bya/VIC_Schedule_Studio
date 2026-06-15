@@ -1649,19 +1649,20 @@ export function StudioShell({
   const flipRects = useRef<Map<string, DOMRect>>(new Map());
   const seamPrev = useRef<Map<string, string>>(new Map());
   const flipViewKey = useRef("");
-  // FLIP 활주는 '드래그 재정렬'처럼 위치가 의도적으로 바뀔 때만 쓴다. 일정 텍스트/태그를 고쳐 저장하면
-  // 그 칸 크기가 살짝 변해 같은 날 형제 카드들이 reflow되는데, 그때까지 활주하면 "저장했더니 일정들이
-  // 우르르 움직인다"는 거슬림이 된다 → 저장 경로에선 이 플래그로 다음 FLIP 1회를 억제한다(위치 기록만).
-  const suppressFlipRef = useRef(false);
+  // FLIP 활주(형제 카드 미끄러짐)는 '드래그 재정렬'처럼 위치가 의도적으로 바뀔 때만 보여준다. 저장·
+  // 삭제·복붙·잇기·태그 변경 등은 칸 크기/개수가 바뀌며 형제가 reflow되는데, 그때 활주하면 "건드렸더니
+  // 일정들이 우르르 움직인다"는 거슬림이 된다 → 기본은 활주 OFF, 드롭(재정렬)에서만 1회 arm한다(그 외엔
+  // 위치만 기록하고 즉시 안착). 이렇게 반전해 두면 새 mutation을 추가해도 자동으로 안 움직인다.
+  const flipArmedRef = useRef(false);
   useLayoutEffect(() => {
     const viewKey = `${view.year}-${view.month}`;
     const viewChanged = flipViewKey.current !== viewKey;
     flipViewKey.current = viewKey;
     const reduce = prefersReducedMotion();
     const dragging = dragEventId !== null;
-    // 저장으로 인한 reflow면 이번 패스는 활주 없이 위치만 갱신(편집 저장이 형제 카드를 밀지 않게).
-    const suppress = suppressFlipRef.current;
-    suppressFlipRef.current = false;
+    // 이번 변화가 '드래그 재정렬'(arm)일 때만 활주. 그 외(저장·삭제·복붙·잇기·태그)는 위치만 기록.
+    const armed = flipArmedRef.current;
+    flipArmedRef.current = false;
     document.querySelectorAll<HTMLElement>(".studio-event-pill[data-eventid]").forEach((el) => {
       const id = el.dataset.eventid;
       if (!id) return;
@@ -1672,7 +1673,7 @@ export function StudioShell({
         el.classList.contains("deleting");
       // A2: First(직전 위치)→Last(현재) 차이를 역보정 후 다음 프레임에 풀어 미끄러지듯 안착.
       const first = flipRects.current.get(id);
-      if (first && !reduce && !viewChanged && !busy && !suppress) {
+      if (first && !reduce && !viewChanged && !busy && armed) {
         const dx = first.left - last.left;
         const dy = first.top - last.top;
         if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
@@ -2204,6 +2205,7 @@ export function StudioShell({
         86400000
     );
     const orderPos = new Map(orderedIds.map((eid, i) => [eid, i] as const));
+    flipArmedRef.current = true; // 드래그 재정렬 — 이 변화에만 형제 카드 FLIP 활주를 허용.
     // 낙관적 반영(즉시). 서버 prop이 이걸 덮어쓰지 않게 위 prop 동기화는 pendingPersist 동안 멈춘다.
     setEvents((prev) =>
       prev.map((ev) => {
@@ -2516,8 +2518,7 @@ export function StudioShell({
     };
     const snapshot = events;
 
-    // 저장으로 인한 형제 카드 reflow는 FLIP 활주 없이(편집 저장이 일정들을 우르르 밀지 않게).
-    suppressFlipRef.current = true;
+    // (FLIP은 기본 OFF — 드롭 재정렬에서만 arm. 저장은 형제 카드를 밀지 않는다.)
     setEvents((prev) =>
       isNew ? [...prev, optimistic] : prev.map((e) => (e.id === tempId ? optimistic : e))
     );
