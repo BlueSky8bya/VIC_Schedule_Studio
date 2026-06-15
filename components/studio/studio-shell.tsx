@@ -845,7 +845,11 @@ export function StudioShell({
   const [avatarOn, setAvatarOn] = useState(true);
   // 최초(메모리 없음) 디폴트는 '왼쪽', 이후엔 마지막 값(편집실·미리보기 공유) 복원.
   const [avatarSide, setAvatarSide] = useState<"left" | "right">("left");
-  useEffect(() => {
+  // localStorage(켜짐 여부)를 읽기 전엔 scene을 렌더하지 않는다 — 기본값(켜짐)으로 한 번 그렸다가
+  // 저장값(꺼짐)으로 되돌리며 0.x초 깜빡이던 문제. useLayoutEffect라 '페인트 전'에 확정돼(SSR HTML은
+  // scene OFF 기준 → 하이드레이션 일치) 켜짐·꺼짐 어느 쪽도 한 프레임도 안 깜빡인다.
+  const [avatarStorageRead, setAvatarStorageRead] = useState(false);
+  useLayoutEffect(() => {
     if (!avatarEditor || typeof window === "undefined") return;
     try {
       if (window.localStorage.getItem("vic_avatar_on") === "0") setAvatarOn(false);
@@ -853,6 +857,7 @@ export function StudioShell({
     } catch {
       /* 저장소 불가 무시 */
     }
+    setAvatarStorageRead(true);
   }, [avatarEditor]);
   function toggleAvatarOn() {
     hapticTick();
@@ -875,7 +880,7 @@ export function StudioShell({
       /* 무시 */
     }
   }
-  const avatarSceneOn = avatarEditor && avatarOn;
+  const avatarSceneOn = avatarEditor && avatarOn && avatarStorageRead;
   // 새로고침 직후 슬라이드/등장 애니가 한 번 튀는 것 방지 — 마운트 전엔 애니 끄고, 마운트 후 켠다
   // (이후 사용자 토글에서만 통통 애니).
   const [avatarReady, setAvatarReady] = useState(false);

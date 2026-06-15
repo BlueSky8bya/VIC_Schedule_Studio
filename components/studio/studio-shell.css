@@ -4297,7 +4297,8 @@
   width: 100%;
   min-width: 0;
 }
-/* 형식 = 구분선 아래 작은 라벨 + 칸 자유롭게 흐르는 칩(2열 강제 안 함 → 낭비 0). */
+/* 형식 = 구분선 아래 라벨 + 콘텐츠와 똑같이 2열(공간 낭비 0). 라벨도 콘텐츠 칩과
+   비슷한 크기로 키워 '색상 필터'와 톤을 맞춘다(너무 작지 않게). */
 .avatar-rail-filter .tlg-mod {
   display: block;
   margin-top: 9px;
@@ -4306,19 +4307,20 @@
 }
 .avatar-rail-filter .tlg-mod .tlg-label {
   display: block;
-  margin: 0 0 5px;
-  font-size: 11px;
+  margin: 0 0 6px;
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.03em;
-  color: #9286bb;
+  color: #7c6fb0;
 }
 .avatar-rail-filter .tlg-chips {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 5px;
 }
 .avatar-rail-filter .tlg-mod .tag-legend-filter {
-  width: auto; /* 칩은 내용폭만큼 — 줄에 여러 개 자연스럽게 */
+  width: 100%; /* 콘텐츠 칩과 동일하게 그리드 칸을 꽉 채운다 */
+  min-width: 0;
 }
 /* 아바타 figure — rail 하단 고정 비율(~58%). */
 .avatar-slot {
