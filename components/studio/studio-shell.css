@@ -3641,6 +3641,30 @@ html[data-reduce-motion] .perf-spin {
   color: #4a3f72;
   box-shadow: 0 1px 4px rgb(107 91 214 / 22%);
 }
+/* 세그먼트 선택 손맛 — 고른 알약이 통 튀어 안착(스프링 pop). 버튼이 가변폭이라 '슬라이드 thumb'
+   대신 pop으로(슬라이드는 JS 폭측정 필요). 클래스가 붙을 때(=선택 순간)만 1회 재생, 데이터 갱신엔
+   안 깜빡. 누름 :active(scale 0.94)와 잠깐 겹쳐도 무해. reduce-motion이면 아래에서 끈다. */
+.insights-subtabs button.active,
+.perf-windows button.active,
+.role-segment button.active {
+  animation: seg-pop 0.3s var(--ease-spring, ease);
+}
+@keyframes seg-pop {
+  0% {
+    transform: scale(0.82);
+  }
+  60% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+html[data-reduce-motion] .insights-subtabs button.active,
+html[data-reduce-motion] .perf-windows button.active,
+html[data-reduce-motion] .role-segment button.active {
+  animation: none;
+}
 @media (prefers-reduced-motion: reduce) and (max-width: 0px) {
   .insights-subtabs button {
     transition: none;
