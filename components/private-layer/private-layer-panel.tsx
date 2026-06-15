@@ -99,6 +99,7 @@ export function PrivateLayerPanel({
             <button
               className="button primary"
               disabled={!passcode || unlocking}
+              style={{ minWidth: "4.6em" }}
               type="submit"
             >
               {unlocking ? "확인 중…" : "확인"}

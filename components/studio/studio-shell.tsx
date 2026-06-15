@@ -3221,8 +3221,8 @@ export function StudioShell({
             <div className="agenda-rail">
               {/* 역할 배지(시각 정보)는 색상 필터 위에. */}
               {renderRoleBadge()}
-            <aside className="agenda-legend agenda-legend-studio" aria-label="색상 필터">
-              <strong>색상 필터</strong>
+            <aside className="agenda-legend agenda-legend-studio" aria-label="태그 필터">
+              <strong>태그 필터</strong>
               {(() => {
                 const tops = legendTags.filter((t) => (t.parentId ?? null) === null);
                 const legendBtn = (tag: (typeof tops)[number]) => {
@@ -4153,7 +4153,7 @@ export function StudioShell({
   // 색상 필터 패널 — 평소엔 좌측 그리드 칸, 아바타 scene에선 아바타 위 rail에 넣어 재사용.
   const studioFilterPanel = (
     <section>
-      <h2>색상 필터</h2>
+      <h2>태그 필터</h2>
       <TagLegendEditor
         canEdit={false}
         filterIds={tagFilters}

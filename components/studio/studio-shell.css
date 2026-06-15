@@ -3347,6 +3347,8 @@ html[data-reduce-motion] .perf-spin {
   min-height: 30px;
   padding: 0 12px;
   font-size: 12px;
+  /* "만료시간 초기화"↔"만료 중…" 라벨 길이차로 버튼이 줄었다 늘며 흔들리던 것 → 긴 쪽 폭 고정. */
+  min-width: 8em;
 }
 /* 긴 값(소유자 이메일 여러 개)은 줄바꿈 허용 */
 .insight-rows.wrap li strong {
