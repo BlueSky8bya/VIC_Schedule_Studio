@@ -1271,7 +1271,17 @@ export function StudioShell({
     [actor.role, canReadPrivate, events]
   );
   const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
-  const supportLanes = useMemo(() => assignSupportLanes(visibleEvents), [visibleEvents]);
+  // 업 도움은 기간(종료일, KST)이 지나면 편집실에서도 자동으로 내린다 — 시청자 화면과 동일하게
+  // 끝난 업 도움은 달력 띠·줄 칸·모바일 어젠다 어디서도 그리지 않는다. 일반 일정은 그대로 두고
+  // 끝난 업 도움만 제외해, 업 도움 시각화가 한 소스에서 일관되게 사라지게 한다.
+  const liveEvents = useMemo(
+    () =>
+      visibleEvents.filter(
+        (e) => !e.isSupport || (e.endDateKey ?? getEventDateKey(e)) >= today
+      ),
+    [visibleEvents, today]
+  );
+  const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
   // 업 도움 띠가 차지하는 줄 수를 "주(週)별"로 센다. 띠가 없는 주는 0 → 그 주의 일정들이 위로
   // 붙는다(예전엔 달 전체 최대 줄 수를 모든 칸에 적용해, 띠 없는 주도 공중에 떠 높이만 낭비됨).
   const weekSupportLaneCount = useMemo(() => {
@@ -1279,7 +1289,7 @@ export function StudioShell({
     for (let w = 0; w * 7 < cells.length; w += 1) {
       let maxLane = -1;
       for (const c of cells.slice(w * 7, w * 7 + 7)) {
-        for (const s of getEventsForDate(visibleEvents, c.isoDate)) {
+        for (const s of getEventsForDate(liveEvents, c.isoDate)) {
           if (!s.isSupport) continue;
           maxLane = Math.max(maxLane, supportLanes.lanes.get(s.id) ?? 0);
         }
@@ -1287,7 +1297,7 @@ export function StudioShell({
       perWeek[w] = maxLane + 1;
     }
     return perWeek;
-  }, [cells, visibleEvents, supportLanes]);
+  }, [cells, liveEvents, supportLanes]);
   // 이어진 일정 묶음 키 + 묶음 칸 높이 맞추기(글자 수 달라도 이음새 안 어긋나게).
   const chainKeys = useMemo(() => buildChainKeys(visibleEvents), [visibleEvents]);
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
@@ -3068,7 +3078,7 @@ export function StudioShell({
 
   // 모바일 아젠다도 데스크톱과 동일하게 — 비공개 일정은 "비공개 일정 보기"로 직접 켜기 전까진
   // 누구에게도(개발자·소유자 포함) 보이지 않는다. 방송사고 방지: 진입/새로고침 시 항상 공개 기본.
-  const mobileAgendaEvents = visibleEvents;
+  const mobileAgendaEvents = liveEvents;
 
   function openMobileEdit(event: StudioScheduleEvent) {
     hapticTick(); // 카드 탭 손맛(Android만; iOS·미지원은 조용히 무시)
@@ -4439,7 +4449,7 @@ export function StudioShell({
             ref={setMonthGridRef}
           >
             {cells.map((cell, cellIndex) => {
-              const covering = getEventsForDate(visibleEvents, cell.isoDate);
+              const covering = getEventsForDate(liveEvents, cell.isoDate);
               const supportHere = covering.filter((e) => e.isSupport);
               const dateEvents = covering.filter((e) => !e.isSupport);
               // 드롭 삽입선이 이 칸의 어느 카드 앞에 올지(없으면 undefined, null이면 맨 끝).

@@ -798,14 +798,24 @@ export function PublicPoster({
   });
   const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
   const today = getTodayKst();
-  const supportLanes = useMemo(() => assignSupportLanes(schedule.events), [schedule.events]);
+  // 업 도움은 기간(종료일, KST)이 지나면 전부 자동으로 내린다 — 달력 띠·줄 칸·우측 안내 카드
+  // 어디서도 끝난 업 도움은 그리지 않는다. 종료일이 오늘 이전이면 이벤트 집합에서 제외해, 모든
+  // 업 도움 시각화(레인 배정·주별 줄 수·띠·카드)가 한 소스에서 일관되게 사라지게 한다.
+  const liveEvents = useMemo(
+    () =>
+      schedule.events.filter(
+        (e) => !e.isSupport || (e.endDateKey ?? getEventDateKey(e)) >= today
+      ),
+    [schedule.events, today]
+  );
+  const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
   // 업 도움 띠 줄 수를 "주별"로 — 띠 없는 주는 0이라 그 주 일정이 위로 붙는다(높이 낭비 방지).
   const weekSupportLaneCount = useMemo(() => {
     const perWeek: number[] = [];
     for (let w = 0; w * 7 < cells.length; w += 1) {
       let maxLane = -1;
       for (const c of cells.slice(w * 7, w * 7 + 7)) {
-        for (const s of getEventsForDate(schedule.events, c.isoDate)) {
+        for (const s of getEventsForDate(liveEvents, c.isoDate)) {
           if (!s.isSupport) continue;
           maxLane = Math.max(maxLane, supportLanes.lanes.get(s.id) ?? 0);
         }
@@ -813,13 +823,8 @@ export function PublicPoster({
       perWeek[w] = maxLane + 1;
     }
     return perWeek;
-  }, [cells, schedule.events, supportLanes]);
-  const supportEvents = schedule.events.filter((e) => e.isSupport);
-  // 우측 "업 도움" 카드는 기간이 끝나면 자동으로 내린다 — 종료일(KST)이 오늘보다 이전이면
-  // 캠페인이 끝난 것이라 안내 카드에서 제외(달력 띠는 실제 날짜 칸에만 그려져 별도 처리 불필요).
-  const activeSupportEvents = supportEvents.filter(
-    (e) => (e.endDateKey ?? getEventDateKey(e)) >= today
-  );
+  }, [cells, liveEvents, supportLanes]);
+  const activeSupportEvents = liveEvents.filter((e) => e.isSupport);
   // 이어진 일정 묶음 키 — 같은 묶음 칸들의 높이를 맞추는 데 쓴다(아래 useEqualChainHeights).
   const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
   // 같은 태그 구성으로 이어진 묶음은 하나의 그라데이션으로(경계 가운데). 묶음별 날짜 범위.
@@ -2344,7 +2349,7 @@ export function PublicPoster({
 
   // 날짜 칸 렌더러.
   function renderDayCell(cell: MonthCell, weekSupCount: number, cellIndex: number) {
-    const covering = getEventsForDate(schedule.events, cell.isoDate);
+    const covering = getEventsForDate(liveEvents, cell.isoDate);
     const supportHere = covering.filter((e) => e.isSupport);
     const events = covering.filter((e) => !e.isSupport);
     const day = classifyDay(cell.isoDate, cell.weekday, today);
@@ -2589,10 +2594,10 @@ export function PublicPoster({
     const groups: DayGroup[] = [];
     for (const cell of cells.filter((c) => c.inCurrentMonth)) {
       // 색상 안내에서 태그를 고르면, 그 태그에 맞는 일정만 남긴다(필터에 안 맞으면 제외).
-      const support = schedule.events.filter(
+      const support = liveEvents.filter(
         (e) => e.isSupport && getEventDateKey(e) === cell.isoDate && !isDimmedByFilter(e)
       );
-      const evs = schedule.events.filter(
+      const evs = liveEvents.filter(
         (e) => !e.isSupport && getEventDateKey(e) === cell.isoDate && !isDimmedByFilter(e)
       );
       const list = [
