@@ -29,6 +29,7 @@ export function WorldCupStudioBall({ pauseWhenMinigameOn = true }: { pauseWhenMi
   const lastPointer = useRef({ x: 0, y: 0, t: 0 });
   const pointerVel = useRef({ x: 0, y: 0 });
   const raf = useRef<number | null>(null);
+  const lastStepT = useRef(0); // 직전 step 시각 — 실제 경과로 dt 계산(프레임률 독립)
   const reduced = useRef(false);
   const ghostPrev = useRef({ x: 0, y: 0, t: 0 }); // 드래그한 일정 카드의 직전 중심(속도 추정)
   // 미니게임이 켜져 있으면 중력공은 숨긴다(둘 다 뜨면 어수선). 초기값=미니게임 enabled(localStorage
@@ -72,16 +73,28 @@ export function WorldCupStudioBall({ pauseWhenMinigameOn = true }: { pauseWhenMi
   };
 
   const step = () => {
+    const tNow = performance.now();
+    // 고주사율 상한 ~72fps(직전 후 13.3ms 미만이면 건너뜀) — 144Hz에서도 부하 일정.
+    if (lastStepT.current !== 0 && tNow - lastStepT.current < 1000 / 75) {
+      raf.current = window.requestAnimationFrame(step);
+      return;
+    }
     const { w, h } = bounds();
-    const dt = 1 / 60;
+    // dt = 실제 경과시간(초). 고정 1/60은 프레임 굶으면(예: OBS 인코딩 경합) 슬로모로 보이고
+    // 144Hz선 빨라졌다 → 실경과 기반이면 어느 fps에서도 벽시계 속도로 동일. 큰 값은 1/30s clamp.
+    const prevT = lastStepT.current;
+    lastStepT.current = tNow;
+    const dt = prevT === 0 ? 1 / 60 : Math.min(1 / 30, Math.max(0, (tNow - prevT) / 1000));
+    // 마찰은 프레임당 곱이라 fps에 따라 감속이 달라진다 → dt로 보정해 프레임률 무관하게.
+    const airFr = Math.pow(AIR, dt * 60);
     const r = BALL / 2;
     const floor = h - r;
     if (!dragging.current) {
       vel.current.y += GRAVITY * dt;
       pos.current.x += vel.current.x * dt;
       pos.current.y += vel.current.y * dt;
-      vel.current.x *= AIR;
-      vel.current.y *= AIR;
+      vel.current.x *= airFr;
+      vel.current.y *= airFr;
       // 좌우 벽
       if (pos.current.x < r) {
         pos.current.x = r;
@@ -100,7 +113,7 @@ export function WorldCupStudioBall({ pauseWhenMinigameOn = true }: { pauseWhenMi
         pos.current.y = floor;
         vel.current.y = -vel.current.y * REST;
         if (Math.abs(vel.current.y) < 60) vel.current.y = 0; // 작은 튕김은 멈춘다
-        vel.current.x *= ROLL_FRICTION; // 바닥 마찰로 구르다 감속
+        vel.current.x *= Math.pow(ROLL_FRICTION, dt * 60); // 바닥 마찰(dt 보정)로 구르다 감속
       }
       spin.current += vel.current.x * dt * 1.2; // 수평 속도만큼 회전
     }
