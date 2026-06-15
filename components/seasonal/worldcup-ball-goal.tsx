@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만
+import { PopNumber } from "@/components/ui/pop-number";
 import type { PlayerPersona, RestartKind, Side, TeamPlan, Vec2 } from "@/lib/football/core/types";
 import { makeRng, randomSeed } from "@/lib/football/core/rng";
 import { makeMatchup, STYLES, type TacticStyle } from "@/lib/football/tactics/profiles";
@@ -3805,7 +3806,7 @@ export function WorldCupBallGoal() {
                 {renderTeamCards(cardCounts.yellow[0], cardCounts.red[0])}
               </span>
               <strong className="wc-score-num">
-                {score[0]} <span>:</span> {score[1]}
+                <PopNumber value={score[0]} /> <span>:</span> <PopNumber value={score[1]} />
               </strong>
               <span className="wc-score-team wc-score-b">
                 {renderTeamCards(cardCounts.yellow[1], cardCounts.red[1])}

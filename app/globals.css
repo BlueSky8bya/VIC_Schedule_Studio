@@ -296,6 +296,28 @@ select {
   animation: pop-in var(--dur-3) var(--ease) both;
 }
 
+/* 값이 바뀔 때 '탁' 튀는 숫자(스코어 등) — PopNumber 컴포넌트가 변화 시 .pop을 잠깐 붙인다. */
+.pop-number {
+  display: inline-block;
+}
+.pop-number.pop {
+  animation: pop-number 0.42s var(--ease-spring, ease);
+}
+@keyframes pop-number {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.4);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+html[data-reduce-motion] .pop-number.pop {
+  animation: none;
+}
+
 /* 세로 전용 잠금 — 가로로 누운 '터치폰'에서만 전체를 덮어 세로 사용을 강제한다. 휴대폰을 가로로
    돌리면 폭이 넓어져 데스크톱처럼 보이던 문제를 아예 차단(가로 사용 자체를 막음). 태블릿(짧은 변
    > 640)·마우스 데스크톱은 해당 안 됨. fixed·최상위 z라 그 아래 모든 화면(시청자/스튜디오)을 덮는다. */
