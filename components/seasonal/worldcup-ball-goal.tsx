@@ -1062,16 +1062,20 @@ export function WorldCupBallGoal() {
         label: "골킥"
       });
       logEvent("goalKick", defend, pos.current.x, pos.current.y);
-      const upfield = side === "left" ? bounds().w * 0.6 : bounds().w * 0.4;
+      const upfield = side === "left" ? bounds().w * 0.62 : bounds().w * 0.38;
       const ty = h * 0.5 + rnd(-h * 0.2, h * 0.2);
       goalKickKeeper.current = side; // 키퍼가 박스 밖으로 공 가지러 나오는 동안 하드 Y clamp 면제
-      // 골킥은 길게 띄운다(롱볼).
+      // 골킥은 길게 띄운다(롱볼). 마찰(FRICTION 0.98)로 공의 총 도달거리 ≈ power×0.833이라
+      // 고정 power(520)면 ~433px서 죽어 하프라인도 못 넘었다. 발로 차는 거니 목표까지 닿게
+      // 거리 기반으로 power를 키운다(여유 1.3배, 하프라인 확실히 넘김).
       scheduleRestart(
         850,
         () => {
+          const reach = Math.abs(upfield - pos.current.x);
+          const gkPow = clamp(reach * 1.3, 760, 1500);
           // 골킥은 키퍼가 '발'로 찬다(박스 밖이라 손 금지) → 차는 발 방향으로 감긴다.
-          kickCurvedSign(upfield, ty, 520, keeperStats.current[side].foot, 0.4);
-          loftBall(Math.abs(upfield - pos.current.x), 520);
+          kickCurvedSign(upfield, ty, gkPow, keeperStats.current[side].foot, 0.4);
+          loftBall(reach, gkPow);
           // goalKickKeeper는 여기서 바로 비우지 않는다 — 비우면 placeKeepers 하드 Y clamp가 박스 밖
           // Y를 마우스로 순간이동시킴. updateKeepers가 부드럽게 골문 복귀시킨 뒤 거기서 해제한다.
         },
