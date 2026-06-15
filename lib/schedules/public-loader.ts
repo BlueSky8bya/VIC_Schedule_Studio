@@ -48,10 +48,16 @@ function coerceMemoLines(value: unknown): MemoLine[] | undefined {
   return lines.length > 0 ? lines : undefined;
 }
 
-// 익명 공개 데이터는 모든 시청자에게 동일하므로 Data Cache에 짧게 캐시한다.
+// 익명 공개 데이터는 모든 시청자에게 동일하므로 Data Cache에 캐시한다.
 // 수백 명이 동시에 봐도 DB는 이 주기마다 한 번만 조회된다(읽기 위주 트래픽 최적화).
-// 소유자가 스튜디오에서 한 편집은 최대 이 시간만큼 뒤 시청자 화면에 반영된다.
-const PUBLIC_SCHEDULE_REVALIDATE_SECONDS = 30;
+//
+// 소유자/스태프의 모든 쓰기(일정·태그·스티커·테마·링크·캠페인)는 revalidatePublicSchedule()로
+// 이 캐시 태그를 즉시 무효화하므로, 편집 반영은 이 주기와 무관하게 '즉시'다. 이 주기가 늦추는
+// 유일한 것은 '다른' 시청자가 보는 하트 집계(인기 단계 배지)뿐 — 하트를 누른 본인은 토글이
+// 반환한 최신 수로 즉시 갱신된다. 30초는 불필요하게 짧아 캐시 미스가 잦았고(미스마다 8쿼리를
+// 차가운 풀러로 ~4s) anon 페이지 p95를 끌어올렸다. 인기 배지가 몇 분 늦는 건 포스터에서
+// 사실상 보이지 않으므로, 주기를 늘려 미스(=느린 DB 왕복) 빈도를 크게 줄인다.
+const PUBLIC_SCHEDULE_REVALIDATE_SECONDS = 300;
 
 // 쿠키 없는 anon 클라이언트 — 캐시 가능한 익명 쿼리 전용(요청 컨텍스트에 묶이지 않음).
 // 공개 RLS 정책 + anon SELECT 권한으로 공개 행만 읽힌다(비공개 데이터는 RLS가 차단).
