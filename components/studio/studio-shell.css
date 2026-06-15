@@ -912,6 +912,55 @@
   touch-action: pan-y;
   padding: 2px 4px 10px 2px;
 }
+
+/* 패널 전환 stagger — 지금 보이는(data-active=N) 패널의 직계 자식들이 위→아래로 차례로 떠오른다.
+   트랙이 모든 패널을 translate로 들고 있어(리마운트 X) data-active가 바뀔 때만 애니가 새로 적용돼
+   재생된다(같은 패널 내 데이터 갱신은 data-active 불변이라 안 깜빡임). nth-child 지연은 항상 깔아둬도
+   animation이 없으면 무해. reduce-motion이면 아래에서 끈다. */
+.insights-track[data-active="0"] > .insights-panel:nth-child(1) > *,
+.insights-track[data-active="1"] > .insights-panel:nth-child(2) > *,
+.insights-track[data-active="2"] > .insights-panel:nth-child(3) > *,
+.insights-track[data-active="3"] > .insights-panel:nth-child(4) > *,
+.insights-track[data-active="4"] > .insights-panel:nth-child(5) > *,
+.insights-track[data-active="5"] > .insights-panel:nth-child(6) > *,
+.insights-track[data-active="6"] > .insights-panel:nth-child(7) > *,
+.insights-track[data-active="7"] > .insights-panel:nth-child(8) > * {
+  animation: ins-rise 0.34s var(--ease, ease) backwards;
+}
+.insights-panel > *:nth-child(1) {
+  animation-delay: 0.02s;
+}
+.insights-panel > *:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.insights-panel > *:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.insights-panel > *:nth-child(4) {
+  animation-delay: 0.14s;
+}
+.insights-panel > *:nth-child(5) {
+  animation-delay: 0.18s;
+}
+.insights-panel > *:nth-child(6) {
+  animation-delay: 0.22s;
+}
+.insights-panel > *:nth-child(n + 7) {
+  animation-delay: 0.26s;
+}
+@keyframes ins-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-reduce-motion] .insights-track > .insights-panel > * {
+  animation: none !important;
+}
 .insights-nav {
   display: flex;
   align-items: center;
