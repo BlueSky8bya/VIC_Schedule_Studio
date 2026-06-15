@@ -1477,8 +1477,8 @@ body.cell-range-dragging {
   display: block;
   margin-bottom: 8px;
   color: #6b5b34;
-  /* 시청자 안내 제목은 크게(약 3배) — 범례에서 가장 먼저 눈에 들어오는 헤더. */
-  font-size: 38px;
+  /* 시청자 안내 제목 — 범례 헤더(기존보다 키우되 과하지 않게). */
+  font-size: 19px;
   line-height: 1.05;
   font-weight: 900;
 }
