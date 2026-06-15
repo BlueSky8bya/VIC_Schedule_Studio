@@ -2655,12 +2655,7 @@ export function PublicPoster({
               return (
                 <>
                   {content.map(legendBtn)}
-                  {mods.length > 0 ? (
-                    <>
-                      <span className="agenda-legend-sub">형식</span>
-                      {mods.map(legendBtn)}
-                    </>
-                  ) : null}
+                  {mods.length > 0 ? <>{mods.map(legendBtn)}</> : null}
                 </>
               );
             })()}
@@ -3863,8 +3858,8 @@ export function PublicPoster({
               );
             })}
 
-            <div className="public-legend-vertical" aria-label="콘텐츠 색상 안내">
-              <strong className="legend-title">색상 안내</strong>
+            <div className="public-legend-vertical" aria-label="태그 안내">
+              <strong className="legend-title">태그 안내</strong>
               {(() => {
                 const legendBtn = (tag: (typeof legendTags)[number]) => {
                   const color = schedule.palette.find((item) => item.key === tag.colorKey);
@@ -3915,11 +3910,8 @@ export function PublicPoster({
                   <>
                     {content.map(legendBtn)}
                     {mods.length > 0 ? (
-                      <>
-                        <strong className="legend-subhead">형식</strong>
-                        {/* 방식은 2열로 — 세로 높이를 아껴 아래 ♥ 안내가 들어갈 자리를 만든다(웹). */}
-                        <div className="legend-mods">{mods.map(legendBtn)}</div>
-                      </>
+                      // 방식은 2열로 — 세로 높이를 아껴 아래 ♥ 안내가 들어갈 자리를 만든다(웹).
+                      <div className="legend-mods">{mods.map(legendBtn)}</div>
                     ) : null}
                   </>
                 );

@@ -367,7 +367,6 @@ export function TagLegendEditor({
         <div className="tlg-group">{contentTops.map(legendItem)}</div>
         {modifierTops.length > 0 ? (
           <div className="tlg-group tlg-mod">
-            <span className="tlg-label">형식</span>
             <div className="tlg-chips">{modifierTops.map(legendItem)}</div>
           </div>
         ) : null}

@@ -60,18 +60,21 @@ export async function getStudioSchedule(
     };
   }
 
-  const { data: calendar } = await supabase
-    .from("calendars")
-    .select("id, slug, display_name, title, public_memo")
-    .eq("slug", calendarSlug)
-    .maybeSingle();
-
   const { year, month } = currentKstYearMonth();
-  const [viewerModePreview, actor, unlock] = await Promise.all([
+  // calendar 행은 slug로만 조회 — preview/actor/unlock과 서로 의존이 없어 한 배치로 병렬 처리한다.
+  // (예전엔 calendar를 먼저 단독 await 해서 한 라운드트립을 더 기다렸다 → TTFB 손해. calendar.id가
+  //  필요한 건 그 아래 tags/palette/events 배치뿐이라 여기서 함께 병렬로 받아도 안전하다.)
+  const [calendarRes, viewerModePreview, actor, unlock] = await Promise.all([
+    supabase
+      .from("calendars")
+      .select("id, slug, display_name, title, public_memo")
+      .eq("slug", calendarSlug)
+      .maybeSingle(),
     getPublicSchedule(calendarSlug),
     context?.actor ?? resolveCurrentActor(calendarSlug),
     context?.unlock ?? getUnlockState(calendarSlug)
   ]);
+  const calendar = calendarRes.data;
 
   if (!calendar) {
     return {

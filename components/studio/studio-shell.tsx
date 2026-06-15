@@ -3243,12 +3243,7 @@ export function StudioShell({
                 return (
                   <>
                     {content.map(legendBtn)}
-                    {mods.length > 0 ? (
-                      <>
-                        <span className="agenda-legend-sub">형식</span>
-                        {mods.map(legendBtn)}
-                      </>
-                    ) : null}
+                    {mods.length > 0 ? <>{mods.map(legendBtn)}</> : null}
                   </>
                 );
               })()}

@@ -1511,6 +1511,10 @@ body.cell-range-dragging {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3px;
+  /* '형식' 소제목을 없앤 뒤에도 콘텐츠와 시각적으로 갈리게 구분선만 남긴다(전엔 소제목이 가졌음). */
+  margin-top: 5px;
+  padding-top: 6px;
+  border-top: 1px dashed #e6dcc2;
 }
 .public-legend-vertical span,
 .public-legend-vertical .legend-item {
