@@ -2584,8 +2584,8 @@ export function PublicPoster({
                 {span.showTitle && (tier || extraColors.length > 0) ? (
                   <div className="event-meta">
                     {tier ? (
-                      <span className={`event-popular tier-${tier.key}`} title="관심을 많이 받은 일정">
-                        <span className="flame" aria-hidden="true">{tier.flames}</span> {tier.label}
+                      <span className={`event-popular tier-${tier.key}`} title={tier.label} aria-label={`관심 단계: ${tier.label}`}>
+                        <span className="flame" aria-hidden="true">{tier.flames}</span>
                       </span>
                     ) : null}
                     {extraColors.length > 0 ? (
@@ -2905,8 +2905,8 @@ export function PublicPoster({
                           {tier || extraColors.length > 0 ? (
                             <div className="agenda-meta">
                               {tier ? (
-                                <span className={`event-popular tier-${tier.key}`}>
-                                  <span className="flame" aria-hidden="true">{tier.flames}</span> {tier.label}
+                                <span className={`event-popular tier-${tier.key}`} title={tier.label} aria-label={`관심 단계: ${tier.label}`}>
+                                  <span className="flame" aria-hidden="true">{tier.flames}</span>
                                 </span>
                               ) : null}
                               {extraColors.length > 0 ? (
@@ -3888,8 +3888,8 @@ export function PublicPoster({
               );
             })}
 
-            <div className="public-legend-vertical" aria-label="태그 안내">
-              <strong className="legend-title">태그 안내</strong>
+            <div className="public-legend-vertical" aria-label="태그 필터">
+              <strong className="legend-title">태그 필터</strong>
               {(() => {
                 const legendBtn = (tag: (typeof legendTags)[number]) => {
                   const color = schedule.palette.find((item) => item.key === tag.colorKey);
