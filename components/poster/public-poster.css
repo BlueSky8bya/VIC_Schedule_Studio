@@ -2717,6 +2717,11 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   margin-left: auto; /* 형식색 점은 오른쪽 끝으로 */
   padding-top: 0;
 }
+/* 모바일: 하트(19px, 우측 끝) 중앙은 우측 ~9.5px, 점(11px, 우측 끝) 중앙은 ~5.5px라 4px 어긋남
+   → 점을 4px 왼쪽으로 밀어 하트 중앙과 같은 세로선에 둔다. (웹은 14/14.5px라 이미 일치) */
+.agenda-meta .pill-dots {
+  margin-right: 4px;
+}
 
 .support-card {
   display: grid;
