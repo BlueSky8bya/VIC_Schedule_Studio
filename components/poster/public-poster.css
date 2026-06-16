@@ -4140,13 +4140,12 @@ html[data-reduce-motion] .poster-capture-row {
 .soop-live-beacon {
   position: fixed;
   top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 14px;
   z-index: 90;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
-  max-width: min(92vw, 520px);
+  max-width: min(80vw, 420px);
   padding: 9px 16px;
   border-radius: var(--r-pill);
   background: linear-gradient(135deg, #d90f45, #a90f36);
@@ -4193,8 +4192,8 @@ html[data-reduce-motion] .poster-capture-row {
   70%, 100% { box-shadow: 0 0 0 7px rgb(255 255 255 / 0%); }
 }
 @keyframes slb-in {
-  from { opacity: 0; transform: translate(-50%, -8px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 /* 동작 줄이기: 맥박·등장 모션 끔(상태는 그대로 보임). */
 .soop-live-beacon[data-reduce] { animation: none; }
@@ -4203,11 +4202,12 @@ html[data-reduce-motion] .poster-capture-row {
 @media (max-width: 640px) {
   .soop-live-beacon {
     top: 8px;
-    max-width: 94vw;
-    padding: 8px 14px;
+    right: 8px;
+    max-width: 72vw;
+    padding: 8px 13px;
     gap: 7px;
   }
-  .slb-title { max-width: 46vw; font-size: 12.5px; }
+  .slb-title { max-width: 40vw; font-size: 12.5px; }
   .slb-go { display: none; }
 }
 @media (min-width: 641px) {
