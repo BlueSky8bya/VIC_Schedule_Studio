@@ -4140,7 +4140,7 @@ html[data-reduce-motion] .poster-capture-row {
 .soop-live-beacon {
   position: fixed;
   top: 14px;
-  right: 14px;
+  left: 14px;
   z-index: 90;
   display: inline-flex;
   align-items: center;
@@ -4203,7 +4203,7 @@ html[data-reduce-motion] .poster-capture-row {
 @media (max-width: 640px) {
   .soop-live-beacon {
     top: 8px;
-    right: 8px;
+    left: 8px;
     width: auto;
     max-width: none;
     padding: 7px 12px;
