@@ -5898,15 +5898,20 @@ body.cell-range-dragging {
   cursor: help;
   filter: drop-shadow(0 0 1px rgb(124 108 240 / 60%));
 }
-/* #8 옮긴 직후 서버 반영 전 '동기화 중' 점(돌아감). 상태 표시라 '동작 줄이기'에도 유지. */
+/* #8 옮긴 직후 서버 반영 전 '동기화 중' 점(돌아감). 상태 표시라 '동작 줄이기'에도 유지.
+   절대 위치 오버레이로 띄워 제목을 밀지 않는다(나타났다 사라질 때 글자 좌우 점프 방지). */
 .pill-sync {
-  flex: 0 0 auto;
+  position: absolute;
+  top: 3px;
+  right: 3px;
   width: 11px;
   height: 11px;
   border-radius: 999px;
   border: 2px solid rgb(0 0 0 / 18%);
   border-top-color: rgb(0 0 0 / 52%);
   animation: pill-sync-spin 0.7s linear infinite;
+  z-index: 2;
+  pointer-events: none;
 }
 @keyframes pill-sync-spin {
   to {
