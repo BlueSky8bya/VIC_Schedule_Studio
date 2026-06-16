@@ -4199,16 +4199,19 @@ html[data-reduce-motion] .poster-capture-row {
 .soop-live-beacon[data-reduce] { animation: none; }
 .soop-live-beacon[data-reduce] .slb-dot { animation: none; }
 /* 모바일: 컴팩트 — 제목 폭 좁히고 '보러가기' 텍스트는 숨김(알약 자체가 링크). */
+/* 모바일: 웹과 다르게 — 제목·보러가기 다 빼고 '● LIVE'만(작은 알약). 폭 최소, 탭하면 링크. */
 @media (max-width: 640px) {
   .soop-live-beacon {
     top: 8px;
     right: 8px;
-    max-width: 72vw;
-    padding: 8px 13px;
-    gap: 7px;
+    width: auto;
+    max-width: none;
+    padding: 7px 12px;
+    gap: 6px;
   }
-  .slb-title { max-width: 40vw; font-size: 12.5px; }
+  .slb-title,
   .slb-go { display: none; }
+  .slb-label { font-size: 12.5px; }
 }
 @media (min-width: 641px) {
   .slb-title { max-width: 300px; }
