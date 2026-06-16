@@ -200,9 +200,12 @@
   word-break: keep-all;
 }
 .agenda-tier-help .flame {
-  flex: 0 0 auto;
+  /* 고정폭 박스 + 불꽃 왼쪽 정렬 → 1~3개 불꽃이 모두 같은 왼쪽 x에서 시작하고, 라벨도 모두
+     같은 x(46+gap)에서 시작 → 라벨 한 세로선 정렬. */
+  flex: 0 0 46px;
   display: inline-flex;
   align-items: center;
+  justify-content: flex-start;
   font-size: 12px;
   line-height: 1;
   letter-spacing: -1.5px;
