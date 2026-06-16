@@ -187,13 +187,11 @@
   letter-spacing: 0.04em;
 }
 .agenda-tier-help span {
-  display: grid;
-  /* 불꽃(고정폭, 라벨 정렬용) + 라벨(auto). justify-content:start로 둘을 왼쪽에 모아 붙이고
-     남는 공간은 '오른쪽'에 둔다 → 라벨이 우측 테두리에 닿지 않고, 가운데가 텅 비지도 않는다. */
-  grid-template-columns: 44px auto;
-  justify-content: start;
+  /* 좁은 레일이라 flex 좌측 정렬 — 불꽃(자연폭) + 짧은 라벨이 왼쪽에 바로 붙는다.
+     고정폭 칼럼은 레일이 좁을 때 라벨을 우측으로 밀어 테두리를 뚫었음(그래서 폐기). */
+  display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   min-width: 0;
   font-size: 11px;
   font-weight: 800;
@@ -202,9 +200,9 @@
   word-break: keep-all;
 }
 .agenda-tier-help .flame {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
-  justify-self: start; /* 불꽃을 칼럼 왼쪽에 붙여 좌측 여백 = 카드 패딩(8px), 라벨 우측 여백과 대칭 */
   font-size: 12px;
   line-height: 1;
   letter-spacing: -1.5px;
