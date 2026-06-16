@@ -5970,6 +5970,21 @@ body.cell-range-dragging {
   font-weight: 800;
   line-height: 1.3;
 }
+/* 불릿을 작고 정갈하게 — 본문 점이 무겁지 않게(레이아웃 박스 불변). */
+.pill-subs li::marker {
+  font-size: 0.7em;
+}
+/* 웹(편집실은 스티커 좌표 제약이 없어 자유롭게 키운다) — 가로 여백을 살려 제목을 더 크고 읽기 좋게,
+   모서리를 한 단계 더 둥글려 카드를 또렷·세련되게. CLAUDE.md: 웹 글자는 넉넉히 크게. */
+@media (min-width: 641px) {
+  .studio-event-pill {
+    border-radius: 14px;
+  }
+  .pill-main strong {
+    font-size: clamp(14px, 0.95vw, 20px);
+    letter-spacing: -0.01em;
+  }
+}
 /* PR2: 칸 색(≤2 대분류)에 못 담은 나머지 대분류 색 점 줄 — 색 안 늘리고 "더 있음" 암시. */
 /* .pill-dots / .pill-dots i 의 모양·정렬은 public-poster.css 한 곳에서만 정의한다
    (이 파일에 중복 규칙이 있어 흰 링·9px·margin-top:auto가 덮여 방식 점이 안 맞던 버그). */
