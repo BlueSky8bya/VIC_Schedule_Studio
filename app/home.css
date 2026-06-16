@@ -35,7 +35,7 @@
   display: grid;
   gap: 5px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--surface);
   padding: 18px;
 }

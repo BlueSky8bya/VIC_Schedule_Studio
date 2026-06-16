@@ -190,7 +190,7 @@
   width: 50px;
   height: 50px;
   border: 1px solid #ece9f5;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(255 255 255 / 82%);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
@@ -228,7 +228,7 @@
   align-items: center;
   gap: 6px;
   border: 1px solid var(--line, #e8e1d6);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--surface, #fffdf6);
   padding: 5px 12px;
   font-size: 12.5px;
@@ -240,7 +240,7 @@
 .save-status .ss-dot {
   width: 8px;
   height: 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   flex: none;
   background: #94a3b8; /* idle 회색 */
 }
@@ -410,7 +410,7 @@
   height: 18px;
   margin-left: 6px;
   border: 1px solid currentColor;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: transparent;
   color: var(--muted, #8a8077);
   font-size: 12px;
@@ -433,7 +433,7 @@
   flex-direction: column;
   gap: 6px;
   border: 1px solid #e6e2f0;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #ffffff;
   padding: 12px 14px;
   box-shadow: 0 14px 40px -18px rgba(40, 30, 60, 0.5);
@@ -462,7 +462,7 @@
   flex: none;
   padding: 4px 10px;
   border: 1px solid color-mix(in srgb, var(--accent, #6b5bd6) 48%, transparent);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #fff;
   color: var(--accent, #6b5bd6);
   font-size: 12px;
@@ -491,7 +491,7 @@
   .draft-restored {
     margin-bottom: 4px;
     padding: 9px 12px;
-    border-radius: 12px;
+    border-radius: var(--r-md);
     font-size: 13px;
   }
   .draft-restored-discard {
@@ -570,7 +570,7 @@
   height: 22px;
   padding: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #d9d4e6;
   cursor: pointer;
   transition: background 0.16s var(--ease, ease);
@@ -648,7 +648,7 @@
   margin-left: auto;
   flex: 0 0 auto;
   border: 1px solid #e6a86a;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #fff;
   padding: 5px 13px;
   font-size: 12.5px;
@@ -698,7 +698,7 @@
   font-weight: 800;
   font-size: 12px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   cursor: pointer;
 }
 .developer-warning-btn:hover {
@@ -731,7 +731,7 @@
   padding: 12px 16px;
   background: #f5f3ff;
   border: 1px solid #ddd6fe;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   color: #5b21b6;
 }
 .developer-panel-total strong {
@@ -788,7 +788,7 @@
   gap: 6px;
   min-width: 0;
   border: 1px solid var(--line, #e7e3f2);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #faf9fe;
   padding: 9px 8px;
   font-size: 12.5px;
@@ -935,7 +935,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
   width: 36px;
   height: 36px;
   border: 1px solid var(--line, #e7e3f2);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #fff;
   color: #6b5b95;
   cursor: pointer;
@@ -958,7 +958,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 .insights-dots span {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #d7d0ec;
   transition: width var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
 }
@@ -1075,7 +1075,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 .insight-headline {
   margin: 0 0 10px;
   padding: 8px 14px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: linear-gradient(180deg, #f4f1ff, #efeaff);
   color: #4b3fb0;
   font-size: 14px;
@@ -1195,14 +1195,14 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 }
 .insight-bar-track {
   height: 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #f0ecf9;
   overflow: hidden;
 }
 .insight-bar-fill {
   display: block;
   height: 100%;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid transparent; /* 인라인 borderColor(태그 색)로 윤곽선 */
   box-sizing: border-box;
   background: linear-gradient(90deg, #8b7cf0, #6b5bd6);
@@ -1253,7 +1253,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 }
 .insight-banner {
   padding: 11px 14px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   font-size: 13px;
   font-weight: 800;
   line-height: 1.4;
@@ -1297,7 +1297,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 }
 .perf-windows button {
   border: 1px solid var(--line, #e7e3f2);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #faf9fe;
   padding: 4px 11px;
   font-size: 11.5px;
@@ -1412,7 +1412,7 @@ html[data-reduce-motion] .perf-spin {
 }
 .insight-skel span {
   height: 46px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: linear-gradient(100deg, #f3f0fb 30%, #ece7f7 50%, #f3f0fb 70%);
   background-size: 220% 100%;
   animation: insight-shimmer 1.1s linear infinite;
@@ -1551,7 +1551,7 @@ html[data-reduce-motion] .perf-spin {
   gap: 9px;
   padding: 10px 12px;
   border: 1px solid var(--line, #e7e3f2);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #faf9fe;
   cursor: pointer;
   font-weight: 800;
@@ -1581,7 +1581,7 @@ html[data-reduce-motion] .perf-spin {
   flex: none;
   width: 34px;
   height: 20px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #d9d2ee;
   transition: background var(--dur-1) var(--ease);
 }
@@ -1652,7 +1652,7 @@ html[data-reduce-motion] .perf-spin {
   text-align: left;
   padding: 9px 12px;
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: transparent;
   font-size: 14px;
   font-weight: 800;
@@ -1753,7 +1753,7 @@ html[data-reduce-motion] .perf-spin {
 }
 .dtp-sheet {
   width: 100%;
-  animation: dtp-slideup 0.28s cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation: dtp-slideup 0.28s var(--ease);
 }
 @keyframes dtp-fade {
   from {
@@ -1776,7 +1776,7 @@ html[data-reduce-motion] .perf-spin {
   position: relative;
   background: #fff;
   border: 1px solid #ece7f7;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   padding: 12px;
   box-shadow: 0 18px 50px rgb(60 40 120 / 28%);
   animation: dtp-pop-in 0.16s var(--ease);
@@ -1800,7 +1800,7 @@ html[data-reduce-motion] .perf-spin {
 .dtp-grip {
   width: 40px;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #dcd5f0;
   margin: 2px auto 10px;
 }
@@ -1961,7 +1961,7 @@ html[data-reduce-motion] .perf-spin {
 }
 .dtp-readout {
   padding: 5px 14px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: linear-gradient(180deg, #f3f0fb, #ece6fa);
   color: #5b4aa6;
   font-size: 14px;
@@ -2126,7 +2126,7 @@ html[data-reduce-motion] .perf-spin {
     width: 100%;
     margin: 14px 0 2px;
     padding: 12px 6px 8px;
-    border-radius: 16px;
+    border-radius: var(--r-lg);
     background: #faf8ff;
     border: 1px solid #efeaf9;
   }
@@ -2157,7 +2157,7 @@ html[data-reduce-motion] .perf-spin {
   z-index: 60;
   min-width: 168px;
   padding: 5px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fff;
   border: 1px solid #ece7f7;
   box-shadow: 0 10px 30px rgb(60 40 120 / 22%);
@@ -2179,7 +2179,7 @@ html[data-reduce-motion] .perf-spin {
 .studio-day.rest-target {
   outline: 2px solid #6b5bd6;
   outline-offset: -2px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #f3f0fb;
 }
 .rest-menu-item {
@@ -2277,7 +2277,7 @@ html[data-reduce-motion] .perf-spin {
     flex-direction: column;
     padding: 16px 18px;
     border: 1px solid var(--line, #e7e3f2);
-    border-radius: 16px;
+    border-radius: var(--r-lg);
     background: linear-gradient(180deg, #fffefb, #faf8fd);
     box-shadow: 0 6px 18px -14px rgb(80 60 140 / 35%);
   }
@@ -2312,7 +2312,7 @@ html[data-reduce-motion] .perf-spin {
 .vcrit {
   margin-left: 6px;
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #efeaf9;
   color: #8a7fb0;
   font-size: 10.5px;
@@ -2339,7 +2339,7 @@ html[data-reduce-motion] .perf-spin {
   width: 7px;
   height: 7px;
   margin-top: -3.5px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #f43f5e;
   animation: vlive-pulse 1.8s var(--ease, ease) infinite;
 }
@@ -2532,7 +2532,7 @@ html[data-reduce-motion] .perf-spin {
   pointer-events: none;
   white-space: nowrap;
   padding: 3px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(255, 255, 255, 0.82);
   font-size: 11.5px;
   font-weight: 700;
@@ -2739,7 +2739,7 @@ html[data-reduce-motion] .perf-spin {
   padding: 10px 12px;
   display: grid;
   gap: 5px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #f4f0ff;
   font-size: 12.5px;
   font-weight: 700;
@@ -2832,7 +2832,7 @@ html[data-reduce-motion] .perf-spin {
 }
 .vlog-chip {
   padding: 3px 11px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1px solid var(--line, #e7e3f2);
   background: #fff;
   font-size: 11px;
@@ -2882,7 +2882,7 @@ html[data-reduce-motion] .perf-spin {
   align-items: center;
   gap: 3px;
   padding: 10px 6px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fff;
   border: 1px solid #efeaf9;
   transition: transform 0.15s var(--ease, ease), box-shadow 0.15s var(--ease, ease);
@@ -2940,7 +2940,7 @@ html[data-reduce-motion] .perf-spin {
   flex: none;
   width: 9px;
   height: 9px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .sys-email {
   min-width: 0;
@@ -2999,7 +2999,7 @@ html[data-reduce-motion] .perf-spin {
   width: 8px;
   height: 8px;
   margin-top: 6px; /* 윗줄(배지) 중앙에 맞춤 */
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .vlog-main {
   flex: 1;
@@ -3028,7 +3028,7 @@ html[data-reduce-motion] .perf-spin {
   text-overflow: ellipsis;
   white-space: nowrap;
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 11px;
   font-weight: 900;
   color: color-mix(in srgb, var(--rc, #6b6480) 72%, #2a2540);
@@ -3040,7 +3040,7 @@ html[data-reduce-motion] .perf-spin {
   font-style: normal;
   margin-left: 4px;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 9.5px;
   font-weight: 900;
   background: #fff3e0;
@@ -3183,7 +3183,7 @@ html[data-reduce-motion] .perf-spin {
   font-size: 11px;
   font-weight: 800;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .insight-roletags .rt.manager {
   background: #efeafd;
@@ -3215,7 +3215,7 @@ html[data-reduce-motion] .perf-spin {
   gap: 5px;
   padding: 9px 11px;
   border: 1px solid #ece8f6;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #faf9fe;
 }
 .access-top {
@@ -3239,7 +3239,7 @@ html[data-reduce-motion] .perf-spin {
   font-size: 11px;
   font-weight: 800;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .access-card .rt.owner {
   background: #fdeede;
@@ -3382,7 +3382,7 @@ html[data-reduce-motion] .perf-spin {
   display: inline-flex;
   align-items: center;
   padding: 3px 9px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #e7f8ee;
   color: #1f9d57;
   font-size: 11px;
@@ -3407,7 +3407,7 @@ html[data-reduce-motion] .perf-spin {
   width: 28px;
   height: 28px;
   border: 1px solid #e4ddf6;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #f6f3fe;
   color: #6b5bd6;
   cursor: pointer;
@@ -3465,7 +3465,7 @@ html[data-reduce-motion] .perf-spin {
   gap: 4px;
   margin: 2px 0 8px;
   padding: 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #f1edfb;
 }
 .insights-toolbar .insights-subtabs {
@@ -3473,7 +3473,7 @@ html[data-reduce-motion] .perf-spin {
 }
 .insights-subtabs button {
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: transparent;
   padding: 5px 14px;
   font-size: 12px;
@@ -3536,7 +3536,7 @@ html[data-reduce-motion] .role-segment button.active {
 }
 .insight-chip {
   padding: 4px 11px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #fff;
   border: 1px solid #d7e3fb;
   font-size: 12.5px;
@@ -3696,7 +3696,7 @@ html[data-reduce-motion] .role-segment button.active {
   min-width: 0;
   padding: 11px 12px;
   border: 1px solid #efeaf9;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: linear-gradient(155deg, #fbfaff, #f1eefb);
 }
 .highlight-card .hl-emoji {
@@ -4174,7 +4174,7 @@ html[data-reduce-motion] .role-segment button.active {
 }
 /* 단축키 안내바도 아바타 rail 쪽으로 안 들어가게 같이 비켜선다(workspace와 동일 슬라이드). */
 .studio-shell.avatar-scene .kbd-hints {
-  transition: margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: margin 0.55s var(--ease-spring);
 }
 .studio-shell.avatar-scene.avatar-left .kbd-hints {
   margin-left: calc(25vw + 4px);
@@ -4350,7 +4350,7 @@ html[data-reduce-motion] .role-segment button.active {
   font-weight: 700;
   font-size: 13px;
   padding: 7px 12px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   cursor: pointer;
   transition:
     background 0.18s ease,
@@ -4370,7 +4370,7 @@ html[data-reduce-motion] .role-segment button.active {
   gap: 2px;
   padding: 2px;
   background: #f4eefb;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .studio-avatar-ctl .avatar-ctl-side button {
   border: 0;
@@ -4379,7 +4379,7 @@ html[data-reduce-motion] .role-segment button.active {
   font-weight: 700;
   font-size: 13px;
   padding: 6px 12px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   cursor: pointer;
   transition:
     background 0.15s ease,
@@ -4503,7 +4503,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   flex-direction: column;
   gap: 2px;
   border: 1px solid #e6e2f0;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fff;
   padding: 6px;
   box-shadow: 0 16px 42px -18px rgba(40, 30, 60, 0.5);
@@ -4511,7 +4511,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 }
 .preview-dd-item {
   border: 0;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: transparent;
   padding: 9px 11px;
   text-align: left;
@@ -4532,7 +4532,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 .studio-shell:has(.preview-dd-trigger.previewing) .studio-calendar-panel {
   outline: 1px dashed rgba(154, 52, 18, 0.14);
   outline-offset: -1px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
 }
 .studio-actionbar-tools {
   position: relative; /* 가운데 버전 태그(.studio-build-tag) 기준 */
@@ -4559,7 +4559,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 }
 .studio-build-tag.dev {
   padding: 2px 9px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(124 108 240 / 16%);
   color: #6b5bd6;
   font-weight: 800;
@@ -4583,7 +4583,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 }
 .studio-mobile .agenda-header .studio-build-tag-m {
   padding: 2px 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(148 140 168 / 14%);
   color: #9b95a8;
   font-size: 10px;
@@ -4609,7 +4609,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   gap: 4px;
   min-height: 30px;
   padding: 0 11px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 11.5px;
   font-weight: 800;
   line-height: 1;
@@ -4760,7 +4760,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   grid-template-columns: minmax(0, 1fr);
   gap: 14px;
   border: 1px solid #ece9f5;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: #ffffff;
   padding: 18px;
   box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
@@ -4887,7 +4887,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 }
 .detail-tag {
   border: 1px solid;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 4px 11px;
   font-size: 13px;
   font-weight: 800;
@@ -4989,7 +4989,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 }
 /* 방식(modifier)은 카드에서 '원'으로 표시되니 색상 안내/필터에서도 원으로 맞춘다. */
 .studio-tag-legend .tlg-mod i {
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 /* "비공개" 필터 칩 표식 — 색이 아니라 비공개를 뜻하는 회색 빗금 무늬. */
 .legend-private-swatch {
@@ -5053,7 +5053,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   width: 100%;
   margin-top: 3px;
   border: 1px solid var(--line, #e3e7ef);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--surface-2, #f5f7fb);
   padding: 7px;
   font-size: 13px;
@@ -5126,7 +5126,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   gap: 5px;
   margin-top: 8px;
   border: 1.5px dashed #b3a4e8;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #f4f0ff;
   padding: 6px 16px;
   font-size: 13px;
@@ -5163,7 +5163,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   width: 26px;
   height: 26px;
   max-width: none;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .tag-editor-section-empty {
   margin: 2px 2px 8px;
@@ -5476,7 +5476,7 @@ body.cell-range-dragging {
   /* 4px 기반 일관 리듬(제목·본문·형식색 사이). 제각각이던 2/3/5px를 한 박자로 통일. */
   gap: 4px;
   border: 1px solid rgb(0 0 0 / 7%);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgb(255 255 255 / 72%);
   cursor: pointer;
   padding: clamp(7px, 0.5vw, 11px) clamp(10px, 0.65vw, 15px);
@@ -5586,7 +5586,7 @@ body.cell-range-dragging {
   user-select: none;
   -webkit-user-select: none;
   opacity: 0.97;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   box-shadow: 0 18px 36px rgb(90 70 140 / 32%);
   /* 흔들림·기울기는 JS(rAF)로 래퍼 transform을 직접 칠한다(2색 카드도 확실히 적용). */
   transform: scale(1.06);
@@ -5605,7 +5605,7 @@ body.cell-range-dragging {
   right: 0;
   top: -4px;
   height: 4px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #2bb67c;
   box-shadow:
     0 0 0 2px rgb(43 182 124 / 22%),
@@ -5667,7 +5667,7 @@ body.cell-range-dragging {
   right: 3px;
   width: 11px;
   height: 11px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 2px solid rgb(0 0 0 / 18%);
   border-top-color: rgb(0 0 0 / 52%);
   animation: pill-sync-spin 0.7s linear infinite;
@@ -6115,7 +6115,7 @@ body.cell-range-dragging {
   place-items: center;
   width: 16px;
   height: 16px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--ac);
   color: #fff;
   font-size: 10px;
@@ -6222,7 +6222,7 @@ body.cell-range-dragging {
 .tp-count {
   flex: none;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #f1edfb;
   font-size: 12px;
   font-weight: 900;
@@ -6285,7 +6285,7 @@ body.cell-range-dragging {
   justify-content: center;
   gap: 5px;
   border: 1.5px solid;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 7px 14px;
   font-size: 13.5px;
   font-weight: 800;
@@ -6330,7 +6330,7 @@ body.cell-range-dragging {
   min-width: 18px;
   height: 18px;
   padding: 0 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   border: 1.5px solid #fff;
   background: #2a2540;
   color: #fff;
@@ -6484,7 +6484,7 @@ textarea:disabled {
   .tag-editor .tag-editor-row {
     padding: 8px 10px;
     border: 1px solid var(--line, #eee7f6);
-    border-radius: 12px;
+    border-radius: var(--r-md);
     background: #fff;
     box-shadow: 0 1px 3px -2px rgb(80 60 140 / 28%);
   }
@@ -6523,7 +6523,7 @@ textarea:disabled {
     width: 24px;
     height: 24px;
     max-width: none;
-    border-radius: 999px;
+    border-radius: var(--r-pill);
   }
   /* 고스트(드래그 복제본) — 옮기며 색을 비교해 배치해야 하니 '선택된 색 칩'만 인라인으로 보인다
      (전체 팔레트는 숨김). 손잡이·이름·방식·[그 태그 색]·삭제 한 줄 → 색은 보이고 키는 최소. */
@@ -6534,7 +6534,7 @@ textarea:disabled {
     width: auto !important;
     max-width: 90vw;
     padding: 7px 10px;
-    border-radius: 12px;
+    border-radius: var(--r-md);
   }
   .tag-drag-ghost .tag-drag-handle {
     width: 24px;
@@ -6572,7 +6572,7 @@ textarea:disabled {
   /* 방식 행은 카드의 동그라미 점과 통일해 색 칩도 원으로. 고스트는 body 직속이라 `.tag-editor`
      스코프의 is-mod-row 규칙이 안 닿으니(=둥근 사각으로 남음) 여기서 따로 원형을 준다. */
   .tag-drag-ghost.is-mod-row .tag-editor-swatches button.selected {
-    border-radius: 999px;
+    border-radius: var(--r-pill);
   }
   .tag-drag-ghost .tag-editor-remove {
     order: 5;
@@ -6739,7 +6739,7 @@ textarea:disabled {
   align-items: center;
   gap: 5px;
   border: 1.5px dashed #b3a4e8;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #f4f0ff;
   padding: 5px 14px;
   font-size: 12.5px;
@@ -6859,7 +6859,7 @@ textarea:disabled {
 .tag-kind-toggle {
   flex: 0 0 auto;
   border: 1.5px solid var(--line, #ddd6ee);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #f4f1fb;
   padding: 4px 10px;
   font-size: 12px;
@@ -7283,7 +7283,7 @@ textarea:disabled {
 .campaign-form input {
   min-height: 40px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 0 10px;
 }
 .campaign-dates {
@@ -7330,7 +7330,7 @@ textarea:disabled {
   justify-content: space-between;
   gap: 10px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   padding: 8px 12px;
 }
 .campaign-list li div {
@@ -7382,7 +7382,7 @@ textarea:disabled {
   height: 24px;
   padding: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #d1d5db;
   cursor: pointer;
   transition: background 0.15s ease;
@@ -7489,7 +7489,7 @@ textarea:disabled {
   height: 42px;
   flex: 0 0 auto;
   border: 1px solid #f4c4cc;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fff;
   color: #9f1239;
   font-size: 22px;
@@ -7669,7 +7669,7 @@ textarea:disabled {
   appearance: none;
   width: 100%;
   height: 16px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid #f4c4cc;
   background:
     repeating-linear-gradient(90deg, rgb(251 113 133 / 26%) 0 1.5px, transparent 1.5px 11px),
@@ -7704,7 +7704,7 @@ textarea:disabled {
 }
 .duration-slider input[type="range"]::-moz-range-track {
   height: 16px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   border: 1px solid #f4c4cc;
   background:
     repeating-linear-gradient(90deg, rgb(251 113 133 / 26%) 0 1.5px, transparent 1.5px 11px),
@@ -7851,7 +7851,7 @@ textarea:disabled {
 .perm-table .yes::before {
   width: 17px;
   height: 17px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #2f9e62
     /* 흰 체크 */ url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
     center / 12px no-repeat;
@@ -7860,7 +7860,7 @@ textarea:disabled {
 .perm-table .no::before {
   width: 12px;
   height: 3px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #d3cee0;
 }
 .perm-table tbody tr {
@@ -7997,7 +7997,7 @@ textarea:disabled {
    탭 기반이라 hover 없이 그대로. (악센트바는 행 내부 패딩을 모르는 채 넣으면 겹칠 수 있어 제외.) */
 @media (min-width: 641px) {
   .member-row {
-    border-radius: 12px;
+    border-radius: var(--r-md);
     transition:
       background 0.16s var(--ease, ease),
       box-shadow 0.18s var(--ease, ease),
@@ -8046,7 +8046,7 @@ textarea:disabled {
   width: 7px;
   height: 7px;
   margin-left: 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--accent, #fb7185);
   vertical-align: middle;
   animation: member-sync-pulse 1s ease-in-out infinite;
@@ -8614,7 +8614,7 @@ textarea:disabled {
   justify-content: center;
   gap: 4px;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 13px;
   font-weight: 800;
   white-space: nowrap;
@@ -8705,7 +8705,7 @@ textarea:disabled {
   min-height: 40px;
   padding: 8px 6px;
   border: 1px solid #ddd6f7;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgb(124 108 240 / 10%);
   box-shadow: var(--shadow-2);
   color: #5b4bd0;
@@ -8842,7 +8842,7 @@ textarea:disabled {
   width: 100%;
   min-height: 46px;
   border: 1px solid #e7dcc4;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   padding: 0 14px;
   font-size: 14px;
   font-weight: 600;
@@ -8876,7 +8876,7 @@ textarea:disabled {
   gap: 6px;
   min-height: 40px;
   border: 1px dashed #e7c98a;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fffaf0;
   padding: 0 12px;
   font-size: 13px;
@@ -8897,7 +8897,7 @@ textarea:disabled {
   flex: 0 0 auto;
   margin-left: 6px;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 10.5px;
   font-weight: 800;
   background: #eef0f4;
@@ -8908,7 +8908,7 @@ textarea:disabled {
   flex: 0 0 auto;
   margin-left: 6px;
   padding: 1px 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 10.5px;
   font-weight: 800;
   background: #efe9fd;
@@ -8930,7 +8930,7 @@ textarea:disabled {
 .m-add-event {
   margin-top: 2px;
   border: 1px dashed var(--line, #d8dee9);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: transparent;
   padding: 7px;
   font-size: 12.5px;
@@ -8949,7 +8949,7 @@ textarea:disabled {
   margin-top: 16px;
   padding: 14px;
   border: 1px solid var(--line, #e3e7ef);
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fff;
 }
 .m-manage h2 {
@@ -9071,7 +9071,7 @@ textarea:disabled {
 .m-sheet-grab span {
   width: 40px;
   height: 5px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #d7d2ca;
 }
 .m-edit-head {
@@ -9086,7 +9086,7 @@ textarea:disabled {
   font-weight: 900;
 }
 .m-edit-date {
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #f3eef9;
   padding: 4px 13px;
   color: #6b5bd6;
@@ -9103,7 +9103,7 @@ textarea:disabled {
   width: 40px;
   height: 40px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #f4f2ef;
   color: var(--muted, #8a93a3);
   cursor: pointer;
@@ -9120,7 +9120,7 @@ textarea:disabled {
 .me-title {
   width: 100%;
   border: 1px solid #e8e1d6;
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: #fff;
   box-shadow: 0 1px 3px rgb(120 100 70 / 7%);
   padding: 13px 15px;
@@ -9144,7 +9144,7 @@ textarea:disabled {
 }
 /* 설정/태그를 묶는 흰 카드 — 그룹 리스트. */
 .me-group {
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: #fff;
   /* 세로 패딩이 2px이라 마지막 칩(최초공개) 아래가 너무 좁았다 — 카드답게 넉넉히(위는 me-row 9px가
      이미 받쳐주므로 아래를 넉넉히). */
@@ -9180,7 +9180,7 @@ textarea:disabled {
   display: flex;
   gap: 4px;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #f1edf9;
 }
 .me-seg button {
@@ -9236,7 +9236,7 @@ textarea:disabled {
 .me-slots i {
   width: 9px;
   height: 9px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #e4ddf0;
   transition: background var(--dur-2) var(--ease), transform var(--dur-1) var(--ease);
 }
@@ -9257,7 +9257,7 @@ textarea:disabled {
   min-height: 36px;
   padding: 0 8px;
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;

@@ -38,7 +38,7 @@
   align-content: start;
   gap: 5px;
   border: 1px solid #e3d6bb;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: #fffdf6;
   padding: 9px 7px;
   box-shadow: var(--shadow-2);
@@ -55,7 +55,7 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   font-size: 13px;
   font-weight: 800;
   white-space: nowrap;
@@ -121,7 +121,7 @@
 }
 /* 방식(modifier)은 카드에서 '원'으로 표시되니 모바일 색상 필터에서도 원으로. */
 .agenda-legend-tag.mod i {
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 .agenda-legend-tag.heart {
   /* 위 태그 목록과 확실히 띄워 눌렀을 때 윗부분이 잘려 보이지 않게 한다. */
@@ -129,7 +129,7 @@
   margin-top: 10px;
   padding-top: 6px;
   padding-bottom: 6px;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
 }
 .agenda-legend-tag.heart::before {
   content: "";
@@ -156,7 +156,7 @@
 .agenda-legend-clear {
   margin-top: 2px;
   border: 1px solid var(--line, #ece2cd);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: var(--surface-2, #fdf6e8);
   padding: 4px;
   font-size: 10.5px;
@@ -234,7 +234,7 @@
   gap: 4px;
   min-height: 30px;
   border: 1px solid #e3d6bb;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(255 255 255 / 78%);
   padding: 0 12px;
   font-size: 11.5px;
@@ -364,7 +364,7 @@
   width: 48px;
   height: 48px;
   border: 1px solid rgb(227 214 187 / 70%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   /* 채도를 낮추고 살짝 투명하게 — 뒤 일정 카드가 비쳐 안 가린다. */
   background: rgb(245 184 27 / 62%);
   -webkit-backdrop-filter: blur(3px);
@@ -395,7 +395,7 @@
   gap: 8px;
   padding: 5px;
   border: 1px solid rgb(227 214 187 / 70%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(255 250 240 / 82%);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
@@ -409,7 +409,7 @@
   min-height: 40px;
   padding: 0 14px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: transparent;
   color: var(--accent-strong, #a9760a);
   font-size: 13px;
@@ -484,7 +484,7 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: #fffdf6;
   border: 1px solid #ece2cd;
   /* 좌우 패딩을 동일하게(10px) — 카드 안 좌우 여백이 어긋나 보이지 않게. 하트는 아래에서
@@ -529,7 +529,7 @@
   place-items: center;
   width: 31px;
   height: 31px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--accent);
   color: var(--on-accent);
   /* 오늘 날짜 동그라미가 은은히 숨쉰다 — 한눈에 "오늘"이 보이게(상시 생기). */
@@ -555,7 +555,7 @@
 }
 .agenda-mark.holiday {
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #fdecec;
   border: 1px solid #f4c9c5;
   color: #d23b30;
@@ -665,7 +665,7 @@
   width: 44px;
   height: 44px;
   border: 0;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: transparent;
   color: #cbb9a0;
   font-size: 19px;
@@ -778,7 +778,7 @@ html {
   opacity: 0;
   transform: translateY(24px) scale(0.96);
   /* 통통 튀어 올라오는 등장(오버슈트 스프링). */
-  animation: avatar-rise 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.05s forwards;
+  animation: avatar-rise 0.5s var(--ease-spring) 0.05s forwards;
 }
 .poster-page.avatar-scene.avatar-right .avatar-slot {
   right: 0;
@@ -1215,7 +1215,7 @@ body.cell-range-dragging {
 .poster-export-progress .dot {
   width: 7px;
   height: 7px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(60, 40, 20, 0.22);
   transition: background 0.2s ease, transform 0.2s ease;
 }
@@ -1257,7 +1257,7 @@ body.cell-range-dragging {
   overflow: hidden;
   /* 아바타 ON/OFF 시 margin이 변하며 일정표가 슬라이드 — 트랜지션을 base에 둬서 클래스가 빠지는
      OFF 순간에도 부드럽게 되돌아온다(살짝 통통). */
-  transition: margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: margin 0.55s var(--ease-spring);
 }
 .poster-scaler {
   flex: 0 0 auto;
@@ -1265,7 +1265,7 @@ body.cell-range-dragging {
   transform-origin: top center; /* 위·가운데 기준 축소 → stage 높이(축소높이)에 딱 맞음 */
   /* 아바타 ON/OFF로 margin이 변하면 RO가 배율을 '단계적'으로 다시 줘 스케일이 끊겨 보인다 —
      transform에 짧은 트랜지션을 둬 단계 사이를 메워 부드럽게 한다. */
-  transition: transform 0.2s cubic-bezier(0.22, 0.61, 0.36, 1);
+  transition: transform 0.2s var(--ease);
 }
 
 .poster-surface {
@@ -1565,7 +1565,7 @@ body.cell-range-dragging {
    꾸미기 모드는 정적 <span class="mod">로 렌더되므로 그 경우도 함께 원으로. */
 .public-legend-vertical .legend-item.mod i,
 .public-legend-vertical span.mod i {
-  border-radius: 999px;
+  border-radius: var(--r-pill);
 }
 
 /* 색상 안내에 통합된 "관심만" 토글 — 하트 마크를 색 스와치 자리에 둔다. */
@@ -1640,7 +1640,7 @@ body.cell-range-dragging {
   margin-left: auto;
   flex: none;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgba(0, 0, 0, 0.28);
   color: #fff6ff;
   font-size: 10px;
@@ -1971,7 +1971,7 @@ body.cell-range-dragging {
   width: 28px;
   height: 28px;
   border: 1px solid #f3d6d0;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: #fff6f4;
   color: #c0584a;
   cursor: pointer;
@@ -2012,7 +2012,7 @@ body.cell-range-dragging {
   font-weight: 900;
   line-height: 1.4;
   transform-origin: left center;
-  animation: popular-in 720ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation: popular-in 720ms var(--ease) both;
 }
 /* #3: 단계별 색 — 위로 갈수록 진해진다(연한 관심 → 폭발 → 왕관). */
 .event-popular.tier-warm {
@@ -2073,7 +2073,7 @@ body.cell-range-dragging {
   filter: drop-shadow(0 1px 1px rgb(244 63 94 / 35%));
   will-change: transform, opacity;
   animation-name: heart-rise;
-  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation-timing-function: var(--ease);
   animation-fill-mode: both;
 }
 @keyframes heart-rise {
@@ -2198,7 +2198,7 @@ body.cell-range-dragging {
 .weekday-row {
   margin-bottom: 10px;
   border: 1px solid #efe9dd;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: #fbf7ee;
   overflow: hidden;
 }
@@ -2379,7 +2379,7 @@ body.cell-range-dragging {
 }
 
 .day-strip span {
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(255 255 255 / 78%);
   padding: 0 6px;
   font-size: 12px;
@@ -2496,7 +2496,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   flex-direction: column; /* 제목은 맨 위, 방식 점(.pill-dots)은 margin-top:auto로 맨 아래 */
   gap: 3px;
   border: 1px solid rgb(0 0 0 / 10%);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: #f3f4f6;
   padding: 5px 8px;
   box-shadow: 0 1px 1px rgb(17 24 39 / 5%);
@@ -2524,7 +2524,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   text-orientation: upright;
   padding: 3px 2px;
   border: 1px dashed currentColor;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   font-size: 10px;
   font-weight: 900;
   line-height: 1;
@@ -2959,7 +2959,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
    base에 트랜지션 → ON/OFF 둘 다 부드럽게. */
 .decorate-toolbar,
 .poster-capture-row {
-  transition: margin 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: margin 0.55s var(--ease-spring);
 }
 .poster-page.avatar-scene.avatar-right .decorate-toolbar,
 .poster-page.avatar-scene.avatar-right .poster-capture-row {
@@ -3103,7 +3103,7 @@ html[data-reduce-motion] .poster-capture-row {
   height: 30px;
   padding: 0;
   border: 1px solid rgb(15 23 42 / 12%);
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: none;
   cursor: pointer;
 }
@@ -3114,7 +3114,7 @@ html[data-reduce-motion] .poster-capture-row {
   justify-items: center;
   gap: 3px;
   border: 1.5px dashed rgb(99 102 241 / 45%);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: rgb(99 102 241 / 4%);
   padding: 16px 14px;
   cursor: pointer;
@@ -3144,7 +3144,7 @@ html[data-reduce-motion] .poster-capture-row {
   width: 34px;
   height: 34px;
   margin-bottom: 2px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: rgb(99 102 241 / 12%);
   color: #4f46e5;
 }
@@ -3186,7 +3186,7 @@ html[data-reduce-motion] .poster-capture-row {
   width: 16px;
   height: 16px;
   border: 0;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #ef4444;
   color: #fff;
   font-size: 12px;
@@ -3230,7 +3230,7 @@ html[data-reduce-motion] .poster-capture-row {
   max-height: 188px;
   overflow-y: auto;
   padding: 4px;
-  border-radius: 12px;
+  border-radius: var(--r-md);
   background: rgb(248 250 252 / 70%);
   box-shadow: inset 0 0 0 1px rgb(15 23 42 / 5%);
   scrollbar-width: thin;
@@ -3241,7 +3241,7 @@ html[data-reduce-motion] .poster-capture-row {
 }
 .emoji-palette::-webkit-scrollbar-thumb {
   border: 2px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background-clip: padding-box;
   background-color: rgb(148 163 184 / 60%);
 }
@@ -3311,7 +3311,7 @@ html[data-reduce-motion] .poster-capture-row {
   gap: 8px;
   align-self: flex-end;
   border: 1px solid rgb(15 23 42 / 8%);
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: #ffffff;
   padding: 6px 8px 6px 14px;
   box-shadow: 0 4px 14px rgb(17 24 39 / 8%);
@@ -3347,7 +3347,7 @@ html[data-reduce-motion] .poster-capture-row {
 .sticker-panel .button {
   gap: 5px;
   min-height: 32px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   padding: 0 12px;
   font-size: 12.5px;
 }
@@ -3530,7 +3530,7 @@ html[data-reduce-motion] .poster-capture-row {
   border-radius: 13px;
   background: #ffffff;
   box-shadow: 0 14px 36px rgb(17 24 39 / 24%);
-  animation: sticker-toolbar-pop 150ms cubic-bezier(0.22, 0.61, 0.36, 1);
+  animation: sticker-toolbar-pop 150ms var(--ease);
   overflow: hidden;
 }
 /* 헤더: 종류 라벨 + 접기 버튼 */
@@ -3603,7 +3603,7 @@ html[data-reduce-motion] .poster-capture-row {
   min-width: 92px;
   height: 30px;
   border: 1.5px solid #d4dae4;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: #ffffff;
   padding: 0 8px;
   font: inherit;
@@ -3622,7 +3622,7 @@ html[data-reduce-motion] .poster-capture-row {
   min-width: 30px;
   height: 30px;
   border: 1.5px solid #d4dae4;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   background: #ffffff;
   padding: 0 8px;
   color: #334155;
@@ -3686,7 +3686,7 @@ html[data-reduce-motion] .poster-capture-row {
   height: 30px;
   flex: 0 0 auto;
   border: 1.5px solid #d4dae4;
-  border-radius: 8px;
+  border-radius: var(--r-sm);
   overflow: hidden;
   cursor: pointer;
 }
@@ -3754,7 +3754,7 @@ html[data-reduce-motion] .poster-capture-row {
   align-items: center;
   gap: 7px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: var(--r-lg);
   background: rgb(248 250 252 / 85%);
   padding: 9px 12px;
 }
