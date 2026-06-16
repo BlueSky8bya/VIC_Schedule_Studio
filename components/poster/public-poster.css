@@ -167,45 +167,49 @@
 /* 색상 필터 아래 남는 공간: 인기 배지 단계 안내(간결판) */
 /* 인기 단계 안내 — 옅은 카드 안에 행마다 '불꽃 칩 + 라벨'. 불꽃 칩 폭을 고정해 라벨이 한 세로선에
    가지런히, 칩 자체는 둥근 크림 배경으로 또렷·아기자기하게. */
+/* 모바일 좁은 범례 레일(92px) — 불꽃 칩을 라벨 '위'로 쌓아(세로) 가로 넘침(좌우 스크롤) 방지.
+   웹(.legend-heart-help)은 가로 칩+라벨로 같은 톤을 쓴다. */
 .agenda-tier-help {
   margin-top: 10px;
-  padding: 10px;
+  padding: 8px;
   border: 1px solid #efe2c6;
-  border-radius: var(--r-lg);
+  border-radius: var(--r-md);
   background: linear-gradient(180deg, #fffdf6, #fdf6e6);
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 60%);
   display: grid;
-  gap: 5px;
+  gap: 6px;
+  min-width: 0;
 }
 .agenda-tier-help strong {
-  margin-bottom: 1px;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 900;
   color: #a2925e;
   letter-spacing: 0.04em;
 }
 .agenda-tier-help span {
-  display: grid;
-  grid-template-columns: 52px 1fr;
-  align-items: center;
-  gap: 9px;
-  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-width: 0;
+  font-size: 10.5px;
   font-weight: 800;
   color: #6b6450;
-  line-height: 1.3;
+  line-height: 1.25;
   word-break: keep-all;
 }
 .agenda-tier-help .flame {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 22px;
-  padding: 0 2px;
+  min-height: 20px;
+  padding: 0 6px;
   border-radius: var(--r-pill);
   background: #fff;
   box-shadow: 0 1px 2px rgb(180 120 20 / 14%), inset 0 0 0 1px #f0e3c4;
-  font-size: 13px;
-  letter-spacing: -1.5px;
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: -1px;
 }
 
 /* 모바일 아젠다: 월 이동을 엄지로 닿기 쉬운 하단 고정 바로. */
@@ -710,7 +714,6 @@ html[data-reduce-motion] .mb-live-dot {
 }
 .agenda-content .event-popular {
   justify-self: start;
-  margin-top: 2px;
 }
 
 .poster-page {
@@ -1527,44 +1530,55 @@ body.cell-range-dragging {
   opacity: 0.4;
 }
 /* E: 시청자용 ♥ 안내 — 하트의 의미와 인기 단계(불꽃→왕관)를 한눈에. */
+/* 인기 단계 안내 — 옅은 크림 카드 안에 '불꽃 칩 + 라벨' 행. 불꽃 칩 폭을 고정해 라벨이 한
+   세로선에 가지런히, 칩은 둥근 흰 배경으로 또렷하게. (heart-help·tiers 한 벌로 재디자인) */
 .legend-heart-help {
-  margin-top: var(--space-1); /* 4 — 구분선 리듬 통일 */
-  border-top: 1px dashed #ece2c6;
-  padding-top: var(--space-2); /* 8 */
+  margin-top: var(--space-2);
+  padding: 11px;
+  border: 1px solid #efe2c6;
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 60%);
   color: #7a6a3e;
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 1.55;
-}
-.legend-heart-help p {
-  margin: 0 0 6px;
 }
 .legend-heart-help .hm {
   color: #f43f5e;
 }
 .legend-tier-line {
-  color: #8a7a4a;
-  font-weight: 800;
+  margin: 0 0 9px;
+  font-size: 10.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #a2925e;
 }
 .legend-tiers {
   display: grid;
-  gap: 4px;
+  gap: 6px;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .legend-tiers li {
-  display: flex;
+  display: grid;
+  grid-template-columns: 58px 1fr;
   align-items: center;
-  gap: 7px;
-  font-size: 11.5px;
+  gap: 10px;
+  font-size: 12px;
   font-weight: 800;
-  color: #6b5b34;
+  color: #6b6450;
 }
 .legend-tiers .flame {
-  flex: 0 0 auto;
-  min-width: 34px;
-  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(180 120 20 / 16%), inset 0 0 0 1px #f0e3c4;
+  font-size: 13px;
+  line-height: 1;
+  letter-spacing: -1.5px;
 }
 
 .legend-clear {
@@ -2684,6 +2698,10 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  /* 전체폭을 확실히 차지해야 dots의 margin-left:auto가 점을 '오른쪽 끝(=하트 아래)'으로 민다.
+     (부모가 stretch가 아니면 meta가 내용폭만 잡혀 점이 왼쪽에 붙던 버그.) */
+  width: 100%;
+  align-self: stretch;
 }
 .event-meta {
   /* 이어진 칸 높이맞춤 — 바닥 정렬(예전 .pill-dots margin-top:auto 역할을 줄 전체로 승계). */
