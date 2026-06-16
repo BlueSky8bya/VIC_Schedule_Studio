@@ -773,9 +773,13 @@ export function PublicPoster({
   const [previewing, setPreviewing] = useState(initialPreviewing);
   const decorate = decorateProp && !previewing;
   const canExport = canExportProp && !previewing;
-  // 토리님 SOOP 라이브 상태 — 실제 공개 페이지(미리보기·꾸미기 아님)에서만 폴링.
-  // 데스크탑은 좌상단 플로팅 비콘, 모바일은 하단 '오늘' 버튼이 (오늘 달일 때) LIVE로 변신해 공유.
-  const soopLive = useSoopLive(!previewNav && !decorate);
+  // 토리님 SOOP 라이브 상태 — 꾸미기 아니면 폴링(편집실 '시청자 미리보기'에서도 켜서 개발자/오너가
+  // 시청자가 볼 LIVE를 그대로 확인). 데스크탑 플로팅 비콘은 편집실 chrome과 겹쳐 미리보기에선 숨기고
+  // (아래 마운트의 !previewNav), 모바일은 겹침 없는 하단 '오늘'→LIVE 버튼이라 미리보기에서도 보인다.
+  const soopLive = useSoopLive(!decorate);
+  // 모바일 '오늘' 버튼은 평소엔 오늘로 이동하는 본래 기능. 실제로 눌러서 오늘에 도착한 뒤에만(liveArmed)
+  // 방송 중이면 그 자리를 LIVE(보러가기)로 바꾼다 — 다른 달로 이동하면 다시 '오늘'로 풀린다(아래 effect).
+  const [liveArmed, setLiveArmed] = useState(false);
   // 꾸미기에서 미리보기 상태를 쿠키에 기록 → 새로고침 시 서버가 그 화면(미리보기/꾸미기)으로 바로 렌더.
   useEffect(() => {
     if (decorateProp) {
@@ -2331,7 +2335,13 @@ export function PublicPoster({
     // 상태 변화(필터 해제/월 이동)가 렌더된 뒤 오늘로 스크롤. 월 이동이면 슬라이드만큼 더 기다린다.
     const delay = !onTodayMonth ? 360 : needClear ? 60 : 0;
     window.setTimeout(scrollToToday, delay);
+    // 오늘로 이동했으니, 방송 중이면 이 버튼을 LIVE로 무장(다른 달로 가면 아래 effect가 해제).
+    setLiveArmed(true);
   }
+  // 오늘이 아닌 달로 가면 '오늘' 버튼 기능을 되살린다(LIVE 무장 해제).
+  useEffect(() => {
+    if (!onTodayMonth) setLiveArmed(false);
+  }, [onTodayMonth]);
 
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
@@ -4011,7 +4021,7 @@ export function PublicPoster({
             ) : null}
             {/* '오늘' 버튼: 다른 달이면 오늘로 이동. 이미 오늘 달이라 이동이 무의미한데 방송 중이면,
                 그 자리를 'LIVE'(보러가기)로 재활용한다 — 모바일 상단이 버튼으로 붐벼 따로 못 두므로. */}
-            {soopLive?.isLive && onTodayMonth ? (
+            {soopLive?.isLive && liveArmed ? (
               <button
                 className="mb-act live"
                 onClick={() => {

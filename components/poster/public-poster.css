@@ -2448,27 +2448,13 @@ button.day-mark.celebratable {
 button.day-mark.celebratable:hover { filter: brightness(1.18); }
 button.day-mark.celebratable:active { transform: scale(0.88); }
 
-/* 한국이 이긴 날 — 진한 금빛 글자 + 은은한 빛 맥동 + 셀 금테로 '눌러봐(축포)' 신호.
-   (예전 background-clip:text 그라데이션은 특이도/환경 충돌로 글자가 '투명'하게 비어 보이는 사고가
-   있어 폐기 — text-fill 안 쓰고 항상 보이는 solid 금색 + text-shadow 글로우로 안전하게.) */
+/* 한국이 이긴 날 — 금빛 글자만. 셀 금테 하이라이트·은은한 맥동 글로우는 제거(탭 시 축포로 충분).
+   (solid 금색만; 예전 background-clip:text 그라데이션은 글자가 '투명'하게 비던 사고로 폐기.) */
 button.day-mark.wc-korea-win,
 .day-mark.wc-korea-win,
 button.agenda-mark.wc-korea-win {
   color: #b45309;
   font-weight: 900;
-  animation: wc-win-glow 2.4s ease-in-out infinite;
-}
-@keyframes wc-win-glow {
-  0%, 100% { text-shadow: 0 0 5px rgb(245 158 11 / 30%); }
-  50% { text-shadow: 0 0 10px rgb(245 158 11 / 70%); }
-}
-.public-day.day-win {
-  box-shadow: inset 0 0 0 2px rgb(245 158 11 / 55%);
-}
-html[data-reduce-motion] button.day-mark.wc-korea-win,
-html[data-reduce-motion] .day-mark.wc-korea-win,
-html[data-reduce-motion] button.agenda-mark.wc-korea-win {
-  animation: none;
 }
 
 /* 모바일 아젠다의 특별한 날 표기도 탭하면 빵빠레 — 기존 .agenda-mark 시각 그대로 두고 버튼만 리셋. */
