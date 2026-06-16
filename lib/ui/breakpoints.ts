@@ -1,7 +1,7 @@
 /**
  * 반응형 breakpoint 정책 (단일 출처).
  *
- * 화면 비율 대응 보고서(docs/responsive-design-audit-report.md) 기준으로,
+ * 화면 비율 대응 보고서(docs/ux/responsive/responsive-design-audit-report.md) 기준으로,
  * JS(matchMedia)와 CSS breakpoint가 어긋나지 않도록 한곳에서 관리한다.
  *
  *   mobile        <= 640px  : 모바일 정식 UX (agenda/list + bottom sheet)

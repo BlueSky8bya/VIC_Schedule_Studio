@@ -1,7 +1,7 @@
 // 진동(햅틱) "두꺼비집" — 앱의 모든 진동은 여기 한 곳을 거친다.
 // 방침: 진동은 "있으면 좋은 보너스". Android(Chrome/삼성 등)에서만 실제로 울리고,
 // iOS Safari·미지원 기기·끈 사용자에게는 조용히 무시된다(에러 없음, 화면 동작 동일).
-// 자세한 배경/계획: docs/진동기능-구현계획.md, docs/motion-haptics-immersion-report.md
+// 자세한 배경/계획: docs/ux/motion/진동기능-구현계획.md, docs/ux/motion/motion-haptics-immersion-report.md
 //
 // 통과해야 울리는 "자물쇠 3개":
 //   1) 이 기기가 navigator.vibrate를 지원하나? (iOS 등은 미지원 → 무시)

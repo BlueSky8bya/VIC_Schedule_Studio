@@ -75,6 +75,6 @@ analytics·rl-env·formations-tactics·persona-attributes·actions-taxonomy·anc
 
 ## 관련 문서
 
-- 설계/벤치마크 계획: `docs/football-rl-training-benchmark-report.ko.md`.
+- 설계/벤치마크 계획: `docs/sim/football-rl-training-benchmark-report.ko.md`.
 - 화면용 렌더러(`components/seasonal/worldcup-ball-goal.tsx`)는 **이 엔진과 별개**의 시각 토이다(자체 물리 루프,
   analytics만 빌려 씀). RL은 이 `lib/football/` 헤드리스 엔진에서 한다.

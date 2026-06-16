@@ -27,7 +27,7 @@ export type ColorPaletteEntry = {
 };
 
 // 태그 축: content = 콘텐츠(셀 색·컨텐츠 통계 차지), modifier = 수식어(합방/시참/대회/짧뱅/풀트/구플 —
-// 셀 색은 점으로만, 컨텐츠 순위서 제외, 피커 별칸). docs/tag-taxonomy-classification.md 참고.
+// 셀 색은 점으로만, 컨텐츠 순위서 제외, 피커 별칸). docs/tags/tag-taxonomy-classification.md 참고.
 export type TagKind = "content" | "modifier";
 
 export type BroadcastTag = {
