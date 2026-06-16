@@ -200,12 +200,12 @@
   word-break: keep-all;
 }
 .agenda-tier-help .flame {
-  /* 고정폭 박스 + 불꽃 '오른쪽' 정렬 → 1~3개 불꽃이 모두 박스 오른쪽 끝에서 끝나, 라벨이 항상
-     같은 x에서 시작하고(세로 정렬) 불꽃↔라벨 틈도 일정·작게(고정폭이 넓어 생기던 큰 빈틈 제거). */
+  /* 고정폭 박스(라벨 세로 정렬 유지) + 불꽃·왕관은 박스 안에서 가운데 정렬 → 1~3개가 같은
+     중심선에 모여 균형 있게 보인다. */
   flex: 0 0 40px;
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   font-size: 12px;
   line-height: 1;
   letter-spacing: -1.5px;
