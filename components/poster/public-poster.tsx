@@ -2913,9 +2913,10 @@ export function PublicPoster({
       }`}
       data-poster-theme={effectivePosterTheme}
     >
-      {/* 토리님 SOOP 라이브 비콘 — 시청자 모드에서만(꾸미기/export 제외). fixed 오버레이라
-          export 표면 밖 → 공식 PNG엔 안 들어간다(실시간 정보). */}
-      {!decorate ? <SoopLiveBeacon /> : null}
+      {/* 토리님 SOOP 라이브 비콘 — '실제 공개 페이지'에서만. 꾸미기/export 제외(decorate),
+          편집실 '시청자 미리보기'(previewNav 존재)에서도 숨김 — 편집실 버튼과 겹치면 안 되므로.
+          fixed 오버레이라 export 표면 밖 → 공식 PNG엔 안 들어간다(실시간 정보). */}
+      {!decorate && !previewNav ? <SoopLiveBeacon /> : null}
       {/* 아바타 자리 토글(켜짐) — 달력 꾸미기에서만 여기(고정 오버레이)에서 아바타 자리 '바로 위'에
           뜬다. 데스크탑·관리자 전용. */}
       {avatarCapable && !showAgenda && avatarOn && decorate ? (
