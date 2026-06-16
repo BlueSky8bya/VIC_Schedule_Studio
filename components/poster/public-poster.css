@@ -181,18 +181,18 @@
   min-width: 0;
 }
 .agenda-tier-help strong {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 900;
-  color: #a2925e;
+  color: #8a7a4a;
   letter-spacing: 0.04em;
 }
 .agenda-tier-help span {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
   min-width: 0;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 800;
   color: #6b6450;
   line-height: 1.25;
@@ -203,13 +203,13 @@
   align-items: center;
   justify-content: center;
   min-height: 20px;
-  padding: 0 6px;
+  padding: 0 3px;
   border-radius: var(--r-pill);
   background: #fff;
   box-shadow: 0 1px 2px rgb(180 120 20 / 14%), inset 0 0 0 1px #f0e3c4;
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
-  letter-spacing: -1px;
+  letter-spacing: -1.5px;
 }
 
 /* 모바일 아젠다: 월 이동을 엄지로 닿기 쉬운 하단 고정 바로. */
@@ -1544,12 +1544,13 @@ body.cell-range-dragging {
 .legend-heart-help .hm {
   color: #f43f5e;
 }
+/* '인기도' 소제목 — 옆 섹션 소제목(.legend-subhead)과 같은 글꼴·굵기·크기로 통일. */
 .legend-tier-line {
   margin: 0 0 9px;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 900;
-  letter-spacing: 0.04em;
-  color: #a2925e;
+  letter-spacing: 0.05em;
+  color: #a99668;
 }
 .legend-tiers {
   display: grid;

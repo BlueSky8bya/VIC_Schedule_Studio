@@ -2702,18 +2702,20 @@ export function PublicPoster({
             ) : null}
             {/* 남는 공간에 인기 배지 단계 안내(웹과 동일, 모바일용으로 간결하게). */}
             <div className="agenda-tier-help">
-              <strong>♥ 많이 받으면</strong>
+              <strong>♥ 인기도</strong>
+              {/* 모바일 좁은 레일(92px) — 라벨을 짧게 줄여 '불꽃+라벨'을 한 줄(가로)에 담는다.
+                  (세로로 쌓으면 불꽃이 어느 라벨 것인지 헷갈림.) 웹 범례는 긴 라벨 유지. */}
               <span>
                 <b className="flame">🔥</b> 관심
               </span>
               <span>
-                <b className="flame">🔥🔥</b> 높은 관심
+                <b className="flame">🔥🔥</b> 높음
               </span>
               <span>
-                <b className="flame">🔥🔥🔥</b> 폭발적
+                <b className="flame">🔥🔥🔥</b> 폭발
               </span>
               <span>
-                <b className="flame">👑</b> 이 달 1위
+                <b className="flame">👑</b> 1위
               </span>
             </div>
           </aside>
@@ -3964,7 +3966,7 @@ export function PublicPoster({
               {interactive ? (
                 <div className="legend-heart-help">
                   <p className="legend-tier-line">
-                    <span className="hm">♥</span> 많이 받으면
+                    <span className="hm">♥</span> 인기도
                   </p>
                   <ul className="legend-tiers">
                     <li>
