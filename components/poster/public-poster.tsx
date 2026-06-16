@@ -2269,11 +2269,16 @@ export function PublicPoster({
     pushHistory();
     let z = nextZIndex();
     for (const it of items) {
+      // 다른 달에 붙이면 '복사한 그 자리' 그대로. 같은 달이면 원본과 겹쳐 구분이 안 되니 살짝 오프셋.
+      const sameMonth = it.year === view.year && it.month === view.month;
+      const off = sameMonth ? 0.03 : 0;
       void persistNewSticker({
         ...it,
         id: `temp-${Math.random().toString(36).slice(2)}`,
         year: view.year,
         month: view.month,
+        xRatio: Math.min(1, it.xRatio + off),
+        yRatio: Math.min(1, it.yRatio + off),
         zIndex: z++
       });
     }
