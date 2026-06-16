@@ -103,6 +103,7 @@ import { PlainEmail } from "@/components/ui/plain-email";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
+import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
 // 곳(공개 /, 꾸미기, 스튜디오 시청자 미리보기)에서만 실린다.
 import "./public-poster.css";
@@ -2912,6 +2913,9 @@ export function PublicPoster({
       }`}
       data-poster-theme={effectivePosterTheme}
     >
+      {/* 토리님 SOOP 라이브 비콘 — 시청자 모드에서만(꾸미기/export 제외). fixed 오버레이라
+          export 표면 밖 → 공식 PNG엔 안 들어간다(실시간 정보). */}
+      {!decorate ? <SoopLiveBeacon /> : null}
       {/* 아바타 자리 토글(켜짐) — 달력 꾸미기에서만 여기(고정 오버레이)에서 아바타 자리 '바로 위'에
           뜬다. 데스크탑·관리자 전용. */}
       {avatarCapable && !showAgenda && avatarOn && decorate ? (

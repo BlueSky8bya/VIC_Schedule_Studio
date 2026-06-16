@@ -4135,3 +4135,82 @@ html[data-reduce-motion] .poster-capture-row {
   min-height: 380px;
 }
 
+/* ── SOOP 라이브 비콘 ── 방송 중일 때만 뜨는 빨강 알약. fixed = export 표면 밖(PNG 제외).
+   끌어당김 최상위라 빨강+맥박. reduced-motion이면 맥박 끔. */
+.soop-live-beacon {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: min(92vw, 520px);
+  padding: 9px 16px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(135deg, #d90f45, #a90f36);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 6px 22px rgb(169 15 54 / 38%);
+  cursor: pointer;
+  animation: slb-in 220ms var(--ease) both;
+}
+.soop-live-beacon:hover {
+  box-shadow: 0 8px 26px rgb(169 15 54 / 48%);
+}
+.slb-dot {
+  flex: 0 0 auto;
+  width: 9px;
+  height: 9px;
+  border-radius: var(--r-pill);
+  background: #fff;
+  box-shadow: 0 0 0 0 rgb(255 255 255 / 70%);
+  animation: slb-pulse 1.8s ease-out infinite;
+}
+.slb-label {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+.slb-title {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  opacity: 0.95;
+}
+.slb-go {
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  font-weight: 800;
+  opacity: 0.9;
+}
+@keyframes slb-pulse {
+  0% { box-shadow: 0 0 0 0 rgb(255 255 255 / 60%); }
+  70%, 100% { box-shadow: 0 0 0 7px rgb(255 255 255 / 0%); }
+}
+@keyframes slb-in {
+  from { opacity: 0; transform: translate(-50%, -8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+/* 동작 줄이기: 맥박·등장 모션 끔(상태는 그대로 보임). */
+.soop-live-beacon[data-reduce] { animation: none; }
+.soop-live-beacon[data-reduce] .slb-dot { animation: none; }
+/* 모바일: 컴팩트 — 제목 폭 좁히고 '보러가기' 텍스트는 숨김(알약 자체가 링크). */
+@media (max-width: 640px) {
+  .soop-live-beacon {
+    top: 8px;
+    max-width: 94vw;
+    padding: 8px 14px;
+    gap: 7px;
+  }
+  .slb-title { max-width: 46vw; font-size: 12.5px; }
+  .slb-go { display: none; }
+}
+@media (min-width: 641px) {
+  .slb-title { max-width: 300px; }
+}
+
