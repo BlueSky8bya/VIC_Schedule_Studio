@@ -6,6 +6,36 @@ private (work/embargo) layers + monthly poster decoration/export.
 **Core promise:** viewers receive ONLY public schedule data. Private, embargo, work,
 owner-only, operational, and admin data must never leak into public UI or public API.
 
+## Philosophy (immersion-first — the top tie-breaker)
+
+When options are otherwise equal, choose the one that deepens immersion and keeps the UI
+uniform. A cold "admin-panel" feel is a regression.
+
+- **Perceived performance:** every click / save / route change / upload / unlock / export feels
+  responsive — clear loading, transition, optimistic feedback, and recovery states.
+- **User–system bond:** warm, trustworthy, role-aware — not a cold admin panel.
+- **Playful motion:** schedule planning and poster decoration feel cute, alive, and fun without
+  hurting clarity or accessibility.
+- **Role-specific flow:** owner / manager / worker / developer / viewer each feel they are in the
+  right place with the right tools.
+
+(Concrete forms — design unity, no wasted space, platform-tailored, HCI — are in **Design rules**.)
+
+## Stack & layout
+
+- **Stack:** Next.js 15 (App Router) + React 19 + TypeScript · Supabase (Postgres + RLS;
+  service-role only server-side) · Vercel (auto-deploy on push to `main`) · tests: Vitest
+  (unit) + Playwright (`tests/e2e`, `tests/visual`; also official poster PNG export).
+- **Commands:** dev `next dev` · checks `tsc --noEmit` / `npm run lint` / `next build` ·
+  tests `vitest run` / `npm run test:e2e`.
+- **Tree** (each folder has a routing `README.md`): `app/` routes · `components/` UI ·
+  `lib/` domain + data loaders/actions · `db/migrations/` SQL · `scripts/` ops · `docs/` topic tree.
+- **Routes:** `/` = public poster (anon allowed). `(studio)/studio/{calendar/[year]/[month],
+  decorate/[year]/[month],private-layer,tags,trusted-members}` = studio (viewer→`/` guard).
+  `api/public/[calendarSlug]/*` = the public boundary (public-loader only);
+  `api/{studio-write,sticker-write,unlock-private-layer,private-layer,presence,trusted-members,auth/*}`.
+- Studio month routes are bookmark/cold-entry only — no runtime route-based month nav.
+
 ## Non-negotiable
 
 1. Time is always KST (Asia/Seoul).
