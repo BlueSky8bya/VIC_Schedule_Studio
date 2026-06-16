@@ -201,7 +201,7 @@
 .agenda-tier-help .flame {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  justify-self: start; /* 불꽃을 칼럼 왼쪽에 붙여 좌측 여백 = 카드 패딩(8px), 라벨 우측 여백과 대칭 */
   font-size: 12px;
   line-height: 1;
   letter-spacing: -1.5px;
