@@ -1455,7 +1455,7 @@ html[data-reduce-motion] .perf-spin {
   align-items: center;
   gap: var(--space-3); /* 12 */
   width: 100%;
-  margin-top: var(--space-2); /* 8 */
+  margin-top: var(--space-1); /* 4 — 토글 행 사이 간격 좁힘(너무 떨어져 보이던 것 정리) */
   padding: var(--space-3); /* 12 */
   border: 1.5px solid var(--line, #e7e3f2);
   border-radius: var(--r-card); /* 카드 공통 radius 패밀리(스튜디오 14px) 유지 */
