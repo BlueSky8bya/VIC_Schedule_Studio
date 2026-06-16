@@ -185,10 +185,3 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .cal-skel-month,
-  .cal-skel-cell,
-  .cal-skel-note {
-    animation: none;
-  }
-}

@@ -129,11 +129,6 @@
     filter: brightness(1) saturate(1);
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .wc-goal-scored .wc-goal-net {
-    animation: none;
-  }
-}
 
 /* 공 — 유일하게 잡히는 요소(pointer-events:auto). 위치는 JS가 transform으로. */
 .wc-ball {
@@ -1337,11 +1332,6 @@
     box-shadow: 0 0 0 5px rgb(52 211 153 / 0%);
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .wc-toggle.on .wc-toggle-dot {
-    animation: none;
-  }
-}
 
 /* "막았다!" — 막힌 골대 쪽에 잠깐 뜬다. */
 /* "막았다!" — 막은 골대(키퍼) 근처에 뜬다. 웹은 좌/우 골 쪽, 모바일은 stage가 90° 회전해
@@ -1458,14 +1448,6 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .wc-goal-text {
-    animation: wc-goal-fade 0.6s ease both;
-  }
-  .wc-confetti {
-    animation-duration: 0.7s;
-  }
-}
 @keyframes wc-goal-fade {
   0% {
     opacity: 0;

@@ -425,15 +425,6 @@ html[data-reduce-motion] .portrait-lock-icon {
 }
 
 /* 모션 최소화 선호 시 애니메이션·전환 제거 */
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-}
 
 .app-shell {
   min-height: 100vh;
@@ -493,11 +484,6 @@ html[data-reduce-motion] .portrait-lock-icon {
 .button:active:not(:disabled) {
   transform: scale(0.96);
   box-shadow: var(--shadow-1);
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .button:active:not(:disabled) {
-    transform: none;
-  }
 }
 
 .button:disabled {
@@ -642,13 +628,6 @@ html[data-reduce-motion] .portrait-lock-icon {
 @media (max-width: 640px) {
   .auth-panel {
     padding: 24px 18px;
-  }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .auth-panel,
-  .auth-brand,
-  .auth-brand-spark {
-    animation: none;
   }
 }
 

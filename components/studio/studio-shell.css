@@ -112,11 +112,6 @@
     transform: translateX(0);
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .studio-month-label[data-enter] {
-    animation: none;
-  }
-}
 /* #9 키보드 단축키 안내바 — 달력 아래 가운데, 옅게. 웹 전용(데스크톱 렌더에서만 출력). */
 /* 단축키 안내바 — 각 항목을 '키+설명' 칩으로 묶어 한눈에 짝이 보이게(꾸미기와 동일 디자인). */
 .kbd-hints {
@@ -294,11 +289,6 @@
     transform: scale(0.7);
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .save-status.saving .ss-dot {
-    animation: none;
-  }
-}
 /* 모바일: 폭 절약 — 시각 숨기고 점·글자만. */
 @media (max-width: 640px) {
   .save-status {
@@ -339,11 +329,6 @@
 @keyframes studio-spark-twinkle {
   0%, 100% { opacity: 0.62; transform: scale(0.92) rotate(-7deg); }
   50% { opacity: 1; transform: scale(1.1) rotate(7deg); }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .studio-poster-title span {
-    animation: none;
-  }
 }
 
 .studio-month-nav,
@@ -514,14 +499,6 @@
     font-size: 12.5px;
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .draft-restored {
-    animation: none;
-  }
-  .draft-restored-discard:active {
-    transform: none;
-  }
-}
 
 .role-help-title {
   font-size: 14px;
@@ -615,15 +592,6 @@
 .rhh-switch.on .rhh-knob {
   transform: translateX(18px);
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .role-help-pop {
-    animation: none;
-  }
-  .rhh-switch,
-  .rhh-knob {
-    transition: none;
-  }
-}
 
 .actor-badge strong {
   flex: 0 0 auto;
@@ -710,12 +678,6 @@
   55% { transform: scale(1.3) rotate(10deg); opacity: 1; }
   78% { transform: scale(0.94) rotate(-4deg); }
   100% { transform: scale(1) rotate(0); opacity: 1; }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .private-warning,
-  .private-warning svg {
-    animation: none;
-  }
 }
 
 .developer-warning {
@@ -1583,18 +1545,6 @@ html[data-reduce-motion] .perf-spin {
     transform: scale(1);
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .opt-chip,
-  .opt-chip-mark {
-    transition: none;
-  }
-  .opt-chip:hover:not(:disabled):not(.on) {
-    transform: none;
-  }
-  .opt-chip.on .opt-chip-mark {
-    animation: none;
-  }
-}
 .teaser-toggle {
   display: flex;
   align-items: center;
@@ -1715,13 +1665,6 @@ html[data-reduce-motion] .perf-spin {
 }
 .me-row-stack .dtp {
   margin-top: 6px;
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .teaser-toggle,
-  .teaser-toggle-sw,
-  .teaser-toggle-sw::after {
-    transition: none;
-  }
 }
 
 /* ── 커스텀 날짜·시간 선택기(DateTimePicker) — 웹 팝오버 / 모바일 바텀시트 + 시간 휠 ── */
@@ -1930,11 +1873,6 @@ html[data-reduce-motion] .perf-spin {
 }
 .dtp-cal {
   touch-action: pan-y; /* 세로 스크롤은 두고, 가로 스와이프는 우리가 처리(월 이동) */
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .dtp-grid {
-    animation: none;
-  }
 }
 .dtp-cell {
   aspect-ratio: 1;
@@ -2212,24 +2150,6 @@ html[data-reduce-motion] .perf-spin {
     background: #efe7fb;
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .dtp-panel,
-  .dtp-sheet,
-  .dtp-sheet-backdrop,
-  .dtp-cell.sel {
-    animation: none;
-  }
-  .dtp-trigger,
-  .dtp-nav,
-  .dtp-cell,
-  .dtp-wheel-item,
-  .dtp-foot-btn {
-    transition: none;
-  }
-  .dtp-wheel {
-    scroll-behavior: auto;
-  }
-}
 
 /* 빠른 휴방 미니 메뉴 — 날짜 우클릭/롱프레스로 뜨는 작은 팝오버(화면 좌표 fixed). */
 .rest-menu {
@@ -2288,14 +2208,6 @@ html[data-reduce-motion] .perf-spin {
   font-size: 16px;
   line-height: 1;
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .rest-menu {
-    animation: none;
-  }
-  .rest-menu-item {
-    transition: none;
-  }
-}
 
 /* 일일 방문 상세 — 새로고침 베일을 얹기 위한 relative 래퍼. */
 .dayvisit-wrap {
@@ -2314,12 +2226,6 @@ html[data-reduce-motion] .perf-spin {
   opacity: 0.4;
   filter: blur(1.5px);
   transition: opacity var(--dur-2) var(--ease), filter var(--dur-2) var(--ease);
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .dayvisit-wrap[data-refreshing] .dayvisit {
-    filter: none;
-    transition: none;
-  }
 }
 /* 카드 첫 제목은 위 마진 제거(섹션 간격은 grid gap이 담당) */
 .vcard > .insight-subhead:first-child,
@@ -2478,15 +2384,6 @@ html[data-reduce-motion] .perf-spin {
   transform: scale(1.2);
   outline: 1.5px solid rgba(124, 92, 245, 0.65);
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .vlive::before {
-    animation: none;
-  }
-  .vmini-cell,
-  .vheat-row i {
-    transition: none;
-  }
-}
 /* 일별 세션 수 미니 막대(세션 로그 카드의 월간 추이) — 하루 단위 기록을 모아 한눈에. */
 .dsess {
   position: relative; /* 호버 수치 툴팁(.vt-tip) clamp 기준 */
@@ -2526,11 +2423,6 @@ html[data-reduce-motion] .perf-spin {
   font-weight: 700;
   color: #b3acc6;
   height: 10px;
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .dsess-bar {
-    transition: none;
-  }
 }
 /* 방문 추이: 날짜×역할 스택 막대 + 시간대 분포 */
 .vt-chart {
@@ -3022,11 +2914,6 @@ html[data-reduce-motion] .perf-spin {
     font-size: 12.5px;
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .sec-kpis li {
-    transition: none;
-  }
-}
 /* ── 시스템 패널: 등록 이메일 목록을 역할색 점 + 행 카드로(맨 나열 대신). ── */
 .sys-emails {
   list-style: none;
@@ -3077,11 +2964,6 @@ html[data-reduce-motion] .perf-spin {
   padding: 1px 8px;
   border-radius: 6px;
   font-size: 12.5px;
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .vlog-chip {
-    transition: none;
-  }
 }
 @media (min-width: 641px) {
   .vlog-chip {
@@ -3229,12 +3111,6 @@ html[data-reduce-motion] .perf-spin {
   }
   .vrecent-role {
     font-size: 12px;
-  }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .vlog-row,
-  .vlog-row::before {
-    transition: none;
   }
 }
 .dv-sessions {
@@ -3576,28 +3452,6 @@ html[data-reduce-motion] .perf-spin {
     transform: rotate(360deg);
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .insights-refresh {
-    transition: none;
-  }
-  .insights-refresh[data-spin] svg {
-    animation: none;
-  }
-  .insights-refresh[data-done] {
-    animation: none;
-  }
-  .insights-refreshed {
-    transition: none;
-  }
-  .insights-veil,
-  .insights-veil-icon {
-    animation: none;
-  }
-  .insights-viewport[data-refreshing] .insights-track {
-    filter: none;
-    transition: none;
-  }
-}
 /* 방문 패널 일별/주별 토글 */
 .insights-toolbar {
   display: flex;
@@ -3664,11 +3518,6 @@ html[data-reduce-motion] .insights-subtabs button.active,
 html[data-reduce-motion] .perf-windows button.active,
 html[data-reduce-motion] .role-segment button.active {
   animation: none;
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .insights-subtabs button {
-    transition: none;
-  }
 }
 /* 다음 방송: 날짜 + 일정 제목 칩들(콤마 나열 대신 둥근 박스). */
 .insight-next-body {
@@ -4271,11 +4120,6 @@ html[data-reduce-motion] .role-segment button.active {
   transform: translateY(-2px);
   box-shadow: 0 8px 18px -10px rgb(80 60 140 / 40%);
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .insights-track > .insights-panel > * {
-    animation: none;
-  }
-}
 .vt-hlabel {
   margin-top: 3px;
   text-align: center;
@@ -4283,19 +4127,6 @@ html[data-reduce-motion] .role-segment button.active {
   font-weight: 700;
   color: #b3acc6;
   height: 10px;
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .insights-track,
-  .insight-bar-fill,
-  .insights-dots span,
-  .vt-bar,
-  .vt-hbar,
-  .trend-bar {
-    transition: none;
-  }
-  .insight-skel span {
-    animation: none;
-  }
 }
 
 .studio-workspace {
@@ -4316,9 +4147,10 @@ html[data-reduce-motion] .role-segment button.active {
     grid-template-columns 0.52s cubic-bezier(0.25, 1, 0.5, 1),
     margin 0.52s cubic-bezier(0.25, 1, 0.5, 1);
 }
-/* 날짜를 선택하면 우측 카드(폼 446 + 좌측 간격 18)가 밀고 들어온다. */
+/* 날짜를 선택하면 우측 카드(폼 446 + 좌측 거터 16=--space-4)가 밀고 들어온다.
+   컬럼폭 462 = 폼 446 + 거터 16 (이 파생 관계 깨지면 슬라이드 중 reflow 생김). */
 .studio-workspace.editor-open {
-  grid-template-columns: 188px minmax(0, 1fr) 464px;
+  grid-template-columns: 188px minmax(0, 1fr) 462px;
 }
 
 /* ── 편집실 아바타 자리(시청자와 같이 보기용) — viewer 포스터와 동일한 fixed 1/4 도크 ── */
@@ -4356,11 +4188,11 @@ html[data-reduce-motion] .role-segment button.active {
 .studio-shell.avatar-scene .event-editor-panel {
   grid-column: 3;
 }
-/* 아바타 scene 폼도 고정폭(327 = 패널 345 - 좌패딩 18). width:100%면 칸이 0→345 늘어나는 동안
+/* 아바타 scene 폼도 고정폭(329 = 패널 345 - 좌거터 16). width:100%면 칸이 0→345 늘어나는 동안
    폼도 같이 좁아져 내용이 세로로 꾸겨졌다(슬라이드 인 중 우그러짐). 고정폭이면 폼은 그대로고
    overflow:hidden + 우측정렬(justify-items:end)로 오른쪽에서 깔끔히 미끄러져 들어온다. */
 .studio-shell.avatar-scene .event-editor-panel form {
-  width: 327px;
+  width: 329px; /* 345 - 거터 16 */
 }
 /* 좁아진 달력 칸이 세로로 뚱뚱해지지 않게 최소높이를 낮춘다. */
 .studio-shell.avatar-scene .studio-day {
@@ -4562,19 +4394,6 @@ html[data-reduce-motion] .role-segment button.active {
 .studio-avatar-ctl .avatar-ctl-side button:active {
   transform: scale(0.95);
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .studio-shell.avatar-scene .studio-workspace,
-  .studio-shell.avatar-scene .avatar-rail,
-  .studio-shell.avatar-scene .avatar-slot,
-  .studio-shell.avatar-scene .avatar-rail-filter,
-  .studio-avatar-ctl .avatar-ctl-toggle,
-  .studio-avatar-ctl .avatar-ctl-side button {
-    transition: none;
-    animation: none;
-    opacity: 1;
-    transform: none;
-  }
-}
 html[data-reduce-motion] .studio-shell.avatar-scene .studio-workspace,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-slot,
@@ -4613,7 +4432,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   justify-items: end;
 }
 .studio-workspace.editor-open .event-editor-panel {
-  padding-left: 18px; /* 달력과의 간격(폼 왼쪽) — 카드가 실제로 열렸을 때만 */
+  padding-left: var(--space-4); /* 16 — 달력과의 거터(폼 왼쪽). 위 컬럼폭 462와 물림(446+16). */
 }
 .event-editor-panel form {
   width: 446px; /* 폭 고정 → 컬럼 애니메이션 동안 reflow 없이 슬라이드 */
@@ -4708,11 +4527,6 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 .preview-dd-item.active {
   background: #fff1e6;
   color: #9a3412;
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .preview-dd-menu {
-    animation: none;
-  }
 }
 /* 미리보기 중에는 화면 가장자리에 옅은 점검 표시. */
 .studio-shell:has(.preview-dd-trigger.previewing) .studio-calendar-panel {
@@ -5002,30 +4816,24 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
     transform: translateY(0);
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .event-editor-panel form,
-  .event-detail-readonly {
-    animation: none;
-  }
-}
 /* A1/#6: 매니저·작업자 읽기전용 일정 상세 — 편집 폼과 같은 흰 카드 톤으로 주변과 동화시키고,
    라벨/값을 정돈된 정의(definition) 형태로. 폼(.event-editor-panel form)과 같은 카드 chrome. */
 .event-detail-readonly {
   animation: editor-card-slide 0.52s cubic-bezier(0.25, 1, 0.5, 1) both;
   /* 폼과 동일하게 고정폭 — 칸 폭에 stretch되면 슬라이드 인 중 내용이 세로로 꾸겨진다. 고정폭이면
-     overflow:hidden + 우측정렬로 오른쪽에서 깔끔히 미끄러져 들어온다(아바타 scene은 아래서 327). */
+     overflow:hidden + 우측정렬로 오른쪽에서 깔끔히 미끄러져 들어온다(아바타 scene은 아래서 329). */
   width: 446px;
   display: flex;
   flex-direction: column;
   gap: 0;
   border: 1px solid #ece9f5;
-  border-radius: 16px;
+  border-radius: var(--r-lg); /* 16 (토큰화) */
   background: #ffffff;
-  padding: 18px;
+  padding: var(--space-4); /* 16 — 18 정리 */
   box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
 }
 .studio-shell.avatar-scene .event-detail-readonly {
-  width: 327px;
+  width: 329px; /* 345 - 거터 16 */
 }
 .event-detail-readonly .editor-heading {
   margin-bottom: 6px;
@@ -5095,13 +4903,6 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   color: var(--muted, #8a8077);
 }
 
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .editor-date,
-  .event-editor-panel form,
-  .event-detail-readonly {
-    animation: none;
-  }
-}
 
 /* 헤더·사이드바 글씨가 전반적으로 작다는 피드백 → 편집실 한정으로 키운다(시청자/포스터 영향 없음). */
 .studio-eyebrow {
@@ -5364,11 +5165,6 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   max-width: none;
   border-radius: 999px;
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .tag-add-in-section {
-    transition: none;
-  }
-}
 .tag-editor-section-empty {
   margin: 2px 2px 8px;
   font-size: 12px;
@@ -5465,11 +5261,6 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
     transform: translateX(0);
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .studio-month-grid[data-enter] {
-    animation: none;
-  }
-}
 
 .studio-day {
   position: relative;
@@ -5506,11 +5297,6 @@ body.cell-range-dragging {
 .studio-month-grid.cal-reveal .studio-day {
   animation: cal-cell-rise 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
   animation-delay: calc(var(--ri, 0) * 11ms);
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .studio-month-grid.cal-reveal .studio-day {
-    animation: none;
-  }
 }
 /* #1: 날짜 칸 호버 시 칸 배경뿐 아니라 안의 일정 카드·업도움 띠도 함께 톤이 바뀌어
    "이 날 전체가 선택 대상"임을 분명히 보여준다. */
@@ -5625,11 +5411,6 @@ body.cell-range-dragging {
     box-shadow:
       inset 0 0 0 2px #f48fb1,
       0 0 0 0 rgb(244 143 177 / 0%);
-  }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .studio-day.selected {
-    animation: none;
   }
 }
 /* 오늘이면서 선택된 경우: 두 색을 겹쳐(안쪽 골드 + 바깥 핑크) 둘 다 보이게. */
@@ -5772,14 +5553,6 @@ body.cell-range-dragging {
   35% { transform: scale(1.06) rotate(-1.5deg); }
   100% { transform: scale(0.3) rotate(7deg); opacity: 0; }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .studio-event-pill.just-saved,
-  .studio-event-pill.just-saved::after,
-  .studio-event-pill.deleting {
-    animation: none;
-  }
-  .studio-event-pill.just-saved::after { display: none; }
-}
 /* A1: 일정 카드 연결/끊김 seam 연출(맞닿는 변이 평평해지면 '연결', 둥글어지면 '끊김').
    합성 전용(opacity/transform)으로 60fps 유지. radius 변경 자체는 즉시(클래스), 연출만 오버레이. */
 .studio-event-pill.seam-joining::before {
@@ -5803,15 +5576,6 @@ body.cell-range-dragging {
 @keyframes seam-tear {
   0%, 100% { transform: translateX(0); }
   50% { transform: translateX(2px); }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .studio-event-pill.seam-joining::before,
-  .studio-event-pill.seam-breaking {
-    animation: none;
-  }
-  .studio-event-pill.seam-joining::before {
-    display: none;
-  }
 }
 /* 손끝을 따라오는 유령 카드 — 살짝 키우고 기울이며 부드럽게 흔들린다(들고 옮기는 촉감). */
 .event-drag-ghost {
@@ -5861,11 +5625,6 @@ body.cell-range-dragging {
   }
   50% {
     opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .drop-insert-line {
-    animation: none;
   }
 }
 /* D: 2색 칸은 그라데이션 위에 반쪽 무늬를 깔고, 내용은 그 위로 올린다. */
@@ -6219,12 +5978,6 @@ body.cell-range-dragging {
 .editor-collapse:active {
   transform: translateX(3px) scale(0.94);
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .editor-collapse:hover,
-  .editor-collapse:active {
-    transform: none;
-  }
-}
 
 .event-editor-panel label {
   display: grid;
@@ -6398,16 +6151,6 @@ body.cell-range-dragging {
 .scope-locked-note svg {
   color: #a99fce;
   flex: none;
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .scope-opt,
-  .scope-opt-ic {
-    transition: none;
-  }
-  .scope-opt,
-  .scope-opt.on::after {
-    animation: none;
-  }
 }
 .editor-grid-2 {
   display: grid;
@@ -6639,16 +6382,6 @@ body.cell-range-dragging {
   }
   .tp-section-label span {
     display: none;
-  }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .tp-chip,
-  .tp-search {
-    transition: none;
-  }
-  .tp-chip.selected,
-  .tp-order {
-    animation: none;
   }
 }
 
@@ -7027,11 +6760,6 @@ textarea:disabled {
   opacity: 0.45;
   cursor: default;
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .tag-add-sub {
-    transition: none;
-  }
-}
 /* 끌어서 순서 변경 손잡이 */
 .tag-drag-handle {
   flex: 0 0 auto;
@@ -7211,11 +6939,6 @@ textarea:disabled {
   animation: passcode-shake 0.4s var(--ease, ease);
   border-color: #e2867d;
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .passcode-box input.shake {
-    animation: none;
-  }
-}
 .passcode-actions {
   display: flex;
   gap: 8px;
@@ -7328,11 +7051,6 @@ textarea:disabled {
   }
   100% {
     transform: scaleY(1.12);
-  }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .tag-editor-swatches button.selected {
-    animation: none;
   }
 }
 .modal-close:hover {
@@ -7879,15 +7597,6 @@ textarea:disabled {
     transform: rotate(45deg) translate(2px, 2px);
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .duration-stepper .dstep-scrub.scrubbing {
-    animation: none;
-  }
-  .duration-stepper .dstep-scrub.scrubbing::before,
-  .duration-stepper .dstep-scrub.scrubbing::after {
-    animation: none;
-  }
-}
 .dhint {
   margin-left: 4px;
   color: #b98ca0;
@@ -8258,11 +7967,6 @@ textarea:disabled {
     transform: scale(1);
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .role-segment button.active {
-    animation: none;
-  }
-}
 .members-add-controls .button.primary {
   min-height: 40px;
 }
@@ -8356,16 +8060,6 @@ textarea:disabled {
   50% {
     opacity: 1;
     transform: scale(1.1);
-  }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .member-row,
-  .member-row.removing,
-  .member-sync-dot {
-    animation: none;
-  }
-  .member-row.removing {
-    opacity: 0;
   }
 }
 .members-list li .member-avatar {
@@ -8584,11 +8278,6 @@ textarea:disabled {
 .ampm-segment button.active {
   background: var(--accent);
   color: var(--on-accent);
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .ampm-segment button {
-    transition: none;
-  }
 }
 .notice-preview {
   display: grid;
@@ -9095,22 +8784,6 @@ textarea:disabled {
     max-height: 0;
   }
 }
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .m-event {
-    transition: none;
-  }
-  .m-event:active {
-    transform: none;
-  }
-  .agenda-event.just-saved,
-  .agenda-event.just-saved::after,
-  .agenda-event.deleting {
-    animation: none;
-  }
-  .agenda-event.just-saved::after {
-    display: none;
-  }
-}
 /* 모바일 업 도움 카드: 도우러가기(왼쪽)와 수정(오른쪽 끝)을 같은 높이 한 줄로 — 둘 다
    들쭉날쭉 들여써지지 않게 좌우로 가지런히 정렬해 균형을 맞춘다. */
 .m-support-actions {
@@ -9371,11 +9044,6 @@ textarea:disabled {
   to {
     transform: translateY(0);
     opacity: 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) and (max-width: 0px) {
-  .m-edit-sheet {
-    animation: none;
   }
 }
 /* 손잡이+헤더 = 하나의 불투명 sticky 블록. 좌우 -18px로 시트 폭을 꽉 채워(둥근 윗모서리까지)
