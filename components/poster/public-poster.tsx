@@ -104,6 +104,7 @@ import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
+import { useSoopLive } from "@/components/poster/use-soop-live";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
 // 곳(공개 /, 꾸미기, 스튜디오 시청자 미리보기)에서만 실린다.
 import "./public-poster.css";
@@ -772,6 +773,9 @@ export function PublicPoster({
   const [previewing, setPreviewing] = useState(initialPreviewing);
   const decorate = decorateProp && !previewing;
   const canExport = canExportProp && !previewing;
+  // 토리님 SOOP 라이브 상태 — 실제 공개 페이지(미리보기·꾸미기 아님)에서만 폴링.
+  // 데스크탑은 좌상단 플로팅 비콘, 모바일은 하단 '오늘' 버튼이 (오늘 달일 때) LIVE로 변신해 공유.
+  const soopLive = useSoopLive(!previewNav && !decorate);
   // 꾸미기에서 미리보기 상태를 쿠키에 기록 → 새로고침 시 서버가 그 화면(미리보기/꾸미기)으로 바로 렌더.
   useEffect(() => {
     if (decorateProp) {
@@ -2916,7 +2920,7 @@ export function PublicPoster({
       {/* 토리님 SOOP 라이브 비콘 — '실제 공개 페이지'에서만. 꾸미기/export 제외(decorate),
           편집실 '시청자 미리보기'(previewNav 존재)에서도 숨김 — 편집실 버튼과 겹치면 안 되므로.
           fixed 오버레이라 export 표면 밖 → 공식 PNG엔 안 들어간다(실시간 정보). */}
-      {!decorate && !previewNav ? <SoopLiveBeacon /> : null}
+      {!decorate && !previewNav ? <SoopLiveBeacon live={soopLive} /> : null}
       {/* 아바타 자리 토글(켜짐) — 달력 꾸미기에서만 여기(고정 오버레이)에서 아바타 자리 '바로 위'에
           뜬다. 데스크탑·관리자 전용. */}
       {avatarCapable && !showAgenda && avatarOn && decorate ? (
@@ -4005,15 +4009,33 @@ export function PublicPoster({
                 <span>관심</span>
               </button>
             ) : null}
-            <button
-              className="mb-act"
-              onClick={jumpToday}
-              title={onTodayMonth ? "오늘 위치로" : "오늘이 있는 달로"}
-              type="button"
-            >
-              <CalendarCheck aria-hidden="true" size={18} />
-              <span>오늘</span>
-            </button>
+            {/* '오늘' 버튼: 다른 달이면 오늘로 이동. 이미 오늘 달이라 이동이 무의미한데 방송 중이면,
+                그 자리를 'LIVE'(보러가기)로 재활용한다 — 모바일 상단이 버튼으로 붐벼 따로 못 두므로. */}
+            {soopLive?.isLive && onTodayMonth ? (
+              <button
+                className="mb-act live"
+                onClick={() => {
+                  if (!soopLive.watchUrl) return;
+                  hapticTick();
+                  window.open(soopLive.watchUrl, "_blank", "noopener,noreferrer");
+                }}
+                title={`방송 중: ${soopLive.title ?? ""} — 보러가기`}
+                type="button"
+              >
+                <span className="mb-live-dot" aria-hidden="true" />
+                <span>LIVE</span>
+              </button>
+            ) : (
+              <button
+                className="mb-act"
+                onClick={jumpToday}
+                title={onTodayMonth ? "오늘 위치로" : "오늘이 있는 달로"}
+                type="button"
+              >
+                <CalendarCheck aria-hidden="true" size={18} />
+                <span>오늘</span>
+              </button>
+            )}
           </div>
         ) : null}
 
