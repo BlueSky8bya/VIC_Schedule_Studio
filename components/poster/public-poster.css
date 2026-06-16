@@ -202,12 +202,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 20px;
-  padding: 0 3px;
-  border-radius: var(--r-pill);
-  background: #fff;
-  box-shadow: 0 1px 2px rgb(180 120 20 / 14%), inset 0 0 0 1px #f0e3c4;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1;
   letter-spacing: -1.5px;
 }
@@ -1544,13 +1539,13 @@ body.cell-range-dragging {
 .legend-heart-help .hm {
   color: #f43f5e;
 }
-/* '인기도' 소제목 — 옆 섹션 소제목(.legend-subhead)과 같은 글꼴·굵기·크기로 통일. */
+/* '인기도' 소제목 — 더 굵고 크게(범례 안에서 또렷한 헤더). */
 .legend-tier-line {
   margin: 0 0 9px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 900;
-  letter-spacing: 0.05em;
-  color: #a99668;
+  letter-spacing: 0.01em;
+  color: #6b5b34;
 }
 .legend-tiers {
   display: grid;
