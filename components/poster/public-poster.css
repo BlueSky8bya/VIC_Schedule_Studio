@@ -2731,6 +2731,9 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+  /* 형식색은 본문과 '다른 의미 그룹' — 근접성 원리상 본문보다 살짝 더 띄워야 묶임이 또렷하다.
+     카드 짧을 때 글자에 바짝 붙던 것을 padding-top으로 최소 간격 보장(margin-top:auto와 무관). */
+  padding-top: 2px;
   /* 카드가 (이어진 칸 높이맞춤으로) 내용보다 커지면 점을 맨 아래로 밀어, 이어진 카드끼리 점이
      같은 높이에 한 줄로 정렬되게 한다. 내용 높이 그대로면 free space가 없어 글자 바로 밑(gap)에 붙는다. */
   margin-top: auto;
