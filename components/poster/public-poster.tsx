@@ -1006,6 +1006,9 @@ export function PublicPoster({
   // C3: 다중 선택 — 기본(primary) 선택 외에 추가로 선택된 스티커들.
   const [multiIds, setMultiIds] = useState<string[]>([]);
   const [stickerError, setStickerError] = useState<string | null>(null);
+  // 스티커 복사/붙여넣기 안내 토스트(월 간 복붙 — 잠깐 떴다 사라짐).
+  const [stickerClipMsg, setStickerClipMsg] = useState<string | null>(null);
+  const stickerClipTimerRef = useRef<number | null>(null);
   // A2 고도화: 여러 태그를 동시에 고르고, "관심만 보기"까지 더해 보고 싶은 일정만 추려 본다.
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
@@ -1422,6 +1425,11 @@ export function PublicPoster({
         duplicateSelected();
         return;
       }
+      if ((event.ctrlKey || event.metaKey) && (event.key === "c" || event.key === "C")) {
+        event.preventDefault();
+        copySelected();
+        return;
+      }
       if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault();
         void deleteSelected();
@@ -1446,6 +1454,29 @@ export function PublicPoster({
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [decorate, selectedSticker, multiIds]);
+
+  // 스티커 붙여넣기(Ctrl/⌘+V) — 선택이 없어도 동작(다른 빈 달에 붙이기용). view가 바뀌면 재구독해
+  // 항상 '지금 보고 있는 달'에 붙는다(다른 월 꾸미기로 이동 후 붙여넣기 지원).
+  useEffect(() => {
+    if (!decorate) {
+      return;
+    }
+    function onKey(event: KeyboardEvent) {
+      if (!(event.ctrlKey || event.metaKey) || (event.key !== "v" && event.key !== "V")) {
+        return;
+      }
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+      event.preventDefault();
+      pasteClipboard();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [decorate, view.year, view.month]);
 
   // 시청자·꾸미기에서 ←/→ 로 월 이동. 단, 꾸미기에서 스티커를 선택 중이면 위 핸들러가
   // 화살표를 미세이동에 쓰므로 그때는 비활성(스티커 미선택/시청자에서만 월 이동).
@@ -2186,6 +2217,67 @@ export function PublicPoster({
         zIndex: z++
       });
     }
+  }
+
+  // ── 스티커 월 간 복사/붙여넣기 ──
+  // 월 이동은 라우트 리로드라 메모리 클립보드가 사라진다 → localStorage에 담아 다른 월에서도 붙인다.
+  // 붙여넣을 때 좌표(xRatio/yRatio)를 그대로 둬, 복사한 그 자리에 그대로 붙는다(오프셋 없음).
+  const STICKER_CLIPBOARD_KEY = "vic:sticker-clipboard:v1";
+  function flashClipMsg(msg: string) {
+    setStickerClipMsg(msg);
+    if (stickerClipTimerRef.current) {
+      window.clearTimeout(stickerClipTimerRef.current);
+    }
+    stickerClipTimerRef.current = window.setTimeout(() => setStickerClipMsg(null), 1400);
+  }
+  function copySelected() {
+    const items = selectedIds
+      .map((id) => stickersRef.current.find((x) => x.id === id))
+      .filter((s): s is StickerInstance => Boolean(s))
+      .filter(isStickerAssetAlive)
+      // 전체를 그대로 저장 — 붙여넣을 때 id·year·month·zIndex만 새로 덮어쓴다(좌표는 보존).
+      .map((s) => ({ ...s }));
+    if (items.length === 0) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(STICKER_CLIPBOARD_KEY, JSON.stringify(items));
+      flashClipMsg(`스티커 ${items.length}개 복사됨 — 다른 달에서 Ctrl+V`);
+    } catch {
+      /* 사생활 모드 등 localStorage 불가 — 조용히 무시 */
+    }
+  }
+  function pasteClipboard() {
+    let raw: string | null = null;
+    try {
+      raw = window.localStorage.getItem(STICKER_CLIPBOARD_KEY);
+    } catch {
+      return;
+    }
+    if (!raw) {
+      return;
+    }
+    let items: StickerInstance[];
+    try {
+      items = JSON.parse(raw);
+    } catch {
+      return;
+    }
+    if (!Array.isArray(items) || items.length === 0) {
+      return;
+    }
+    pushHistory();
+    let z = nextZIndex();
+    for (const it of items) {
+      void persistNewSticker({
+        ...it,
+        id: `temp-${Math.random().toString(36).slice(2)}`,
+        year: view.year,
+        month: view.month,
+        zIndex: z++
+      });
+    }
+    flashClipMsg(`스티커 ${items.length}개 붙여넣음`);
   }
 
   // 레이어 순서: 맨 앞 / 맨 뒤로 보내기.
@@ -2944,6 +3036,12 @@ export function PublicPoster({
           편집실 '시청자 미리보기'(previewNav 존재)에서도 숨김 — 편집실 버튼과 겹치면 안 되므로.
           fixed 오버레이라 export 표면 밖 → 공식 PNG엔 안 들어간다(실시간 정보). */}
       {!decorate && !previewNav ? <SoopLiveBeacon live={soopLive} /> : null}
+      {/* 스티커 월 간 복사/붙여넣기 안내 토스트 */}
+      {decorate && stickerClipMsg ? (
+        <div className="sticker-clip-toast" role="status" aria-live="polite">
+          {stickerClipMsg}
+        </div>
+      ) : null}
       {/* 아바타 자리 토글(켜짐) — 달력 꾸미기에서만 여기(고정 오버레이)에서 아바타 자리 '바로 위'에
           뜬다. 데스크탑·관리자 전용. */}
       {avatarCapable && !showAgenda && avatarOn && decorate ? (

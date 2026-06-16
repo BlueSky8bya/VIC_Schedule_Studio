@@ -4204,6 +4204,28 @@ html[data-reduce-motion] .poster-capture-row {
   min-height: 380px;
 }
 
+/* 스티커 월 간 복사/붙여넣기 안내 토스트 — 잠깐 떴다 사라짐(상단 가운데, 꾸미기 전용). */
+.sticker-clip-toast {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 95;
+  border-radius: var(--r-pill);
+  background: #1f2937;
+  padding: 9px 18px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  box-shadow: 0 6px 20px rgb(17 24 39 / 28%);
+  pointer-events: none;
+  animation: sticker-clip-in 160ms ease-out;
+}
+@keyframes sticker-clip-in {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
 /* ── SOOP 라이브 비콘 ── 방송 중일 때만 뜨는 빨강 알약. fixed = export 표면 밖(PNG 제외).
    끌어당김 최상위라 빨강+맥박. reduced-motion이면 맥박 끔. */
 .soop-live-beacon {
