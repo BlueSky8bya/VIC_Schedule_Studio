@@ -271,8 +271,9 @@ Check before finishing:
 - `CLAUDE.md`: short always-on product rules and agent harness.
 - `AGENTS.md`: agent role guidance.
 - `docs/README.md`: **doc routing index — read first when entering `docs/`** (marks each doc
-  canonical vs plan vs report vs stale so you don't bulk-read). `scripts/README.md` and
-  `db/migrations/README.md` are similar folder indexes.
+  canonical vs plan vs report vs stale so you don't bulk-read). Folder routing READMEs also exist
+  for `app/`, `components/`, `lib/` (+ `lib/schedules/`), `scripts/`, `db/migrations/` — open the
+  folder's `README.md` first to find what you need instead of bulk-reading the tree.
 - `docs/sop.md`: full Korean product SOP and detailed operating rules.
 - `docs/architecture.md`: architecture and data boundaries.
 - `docs/security-boundary.md`: public/private and RLS expectations.
