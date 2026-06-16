@@ -1510,6 +1510,7 @@ body.cell-range-dragging {
   border: 1px solid #ece2cd;
   border-radius: var(--r-lg);
   background: #fffdf6;
+  /* 이 패널은 data-export-surface 안 — 간격 바꾸면 포스터 PNG·스티커 좌표가 어긋난다. 기하 불변 유지. */
   padding: 10px 14px;
   box-shadow: var(--shadow-2);
 }
@@ -1518,7 +1519,8 @@ body.cell-range-dragging {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 3px;
-  /* '형식' 소제목을 없앤 뒤에도 콘텐츠와 시각적으로 갈리게 구분선만 남긴다(전엔 소제목이 가졌음). */
+  /* '형식' 소제목을 없앤 뒤에도 콘텐츠와 시각적으로 갈리게 구분선만 남긴다(전엔 소제목이 가졌음).
+     표면 안이라 간격은 기하 불변(스티커 좌표) 유지. */
   margin-top: 5px;
   padding-top: 6px;
   border-top: 1px dashed #e6dcc2;

@@ -560,11 +560,11 @@ html[data-reduce-motion] .portrait-lock-icon {
 .auth-panel {
   display: grid;
   width: min(460px, 100%);
-  gap: 14px;
+  gap: var(--space-4); /* 16 — 14 정리 */
   border: 1px solid var(--line);
-  border-radius: 20px;
+  border-radius: var(--r-xl); /* 20 (토큰화) */
   background: #ffffff;
-  padding: 28px 24px;
+  padding: var(--space-6) var(--space-5); /* 32/24 — 28→32 스케일 */
   box-shadow: 0 24px 60px -30px rgb(80 60 140 / 38%);
   animation: auth-pop 0.42s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
@@ -603,7 +603,7 @@ html[data-reduce-motion] .portrait-lock-icon {
   place-items: center;
   width: 64px;
   height: 64px;
-  border-radius: 20px;
+  border-radius: var(--r-xl); /* 20 (토큰화) */
   font-size: 32px;
   background: linear-gradient(135deg, #eef5f4, #efeaff);
   box-shadow: 0 10px 22px -10px rgb(120 110 160 / 50%);
@@ -701,9 +701,9 @@ html[data-reduce-motion] .portrait-lock-icon {
   align-items: flex-start;
   gap: 10px;
   border: 1px solid #f3b9b1;
-  border-radius: 12px;
+  border-radius: var(--r-md); /* 12 (토큰화) */
   background: #fff5f3;
-  padding: 12px 14px;
+  padding: var(--space-3); /* 12 — 12/14 정리 */
 }
 .auth-error-card .auth-error-emoji {
   font-size: 18px;
@@ -807,12 +807,13 @@ html[data-reduce-motion] .portrait-lock-icon {
 .trusted-members-panel {
   display: grid;
   width: min(760px, 100%);
-  gap: 16px;
+  gap: var(--space-4); /* 16 */
   justify-self: center;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  /* 큰 패널은 큰 radius로(auth-panel·month-grid와 같은 결) — 8px은 큰 박스에 너무 각졌다. */
+  border-radius: var(--r-lg); /* 16 */
   background: var(--surface);
-  padding: 24px;
+  padding: var(--space-5); /* 24 */
   text-align: left;
 }
 
@@ -902,10 +903,10 @@ html[data-reduce-motion] .portrait-lock-icon {
 }
 .private-layer-block {
   display: grid;
-  gap: 8px;
-  padding: 16px;
+  gap: var(--space-2); /* 8 */
+  padding: var(--space-4); /* 16 */
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-md); /* 12 (토큰화) */
   background: var(--surface);
 }
 .private-layer-block h2 {
@@ -915,7 +916,7 @@ html[data-reduce-motion] .portrait-lock-icon {
   min-height: 40px;
   padding: 0 12px;
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: var(--r-sm); /* 8 (토큰화) */
 }
 .auth-notice {
   padding: 10px 12px;
