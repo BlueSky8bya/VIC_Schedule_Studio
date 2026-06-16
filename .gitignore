@@ -7,3 +7,5 @@ playwright-report/
 .env.local
 .env.*.local
 *.tsbuildinfo
+# 빌드/테스트 로그 — 루트에 굴러다니던 build.log·test.log 정리
+*.log
