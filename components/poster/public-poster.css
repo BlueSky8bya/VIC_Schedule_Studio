@@ -2658,6 +2658,26 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   }
 }
 
+/* 카드 메타 한 줄 — 관심(왼쪽) + 형식색 점(오른쪽)을 묶어 가로폭을 채운다(흩어짐·공간낭비 제거). */
+.event-meta,
+.agenda-content .agenda-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.event-meta {
+  /* 이어진 칸 높이맞춤 — 바닥 정렬(예전 .pill-dots margin-top:auto 역할을 줄 전체로 승계). */
+  margin-top: auto;
+}
+.agenda-content .agenda-meta {
+  margin-top: var(--space-1);
+}
+.event-meta .pill-dots,
+.agenda-meta .pill-dots {
+  margin-left: auto; /* 형식색 점은 오른쪽 끝으로 */
+  padding-top: 0;
+}
+
 .support-card {
   display: grid;
   align-content: start;

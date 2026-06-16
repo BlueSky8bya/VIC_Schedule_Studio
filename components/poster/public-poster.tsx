@@ -777,9 +777,10 @@ export function PublicPoster({
   // 시청자가 볼 LIVE를 그대로 확인). 데스크탑 플로팅 비콘은 편집실 chrome과 겹쳐 미리보기에선 숨기고
   // (아래 마운트의 !previewNav), 모바일은 겹침 없는 하단 '오늘'→LIVE 버튼이라 미리보기에서도 보인다.
   const soopLive = useSoopLive(!decorate);
-  // 모바일 '오늘' 버튼은 평소엔 오늘로 이동하는 본래 기능. 실제로 눌러서 오늘에 도착한 뒤에만(liveArmed)
-  // 방송 중이면 그 자리를 LIVE(보러가기)로 바꾼다 — 다른 달로 이동하면 다시 '오늘'로 풀린다(아래 effect).
-  const [liveArmed, setLiveArmed] = useState(false);
+  // 모바일 '오늘' 버튼은 평소엔 오늘로 이동하는 본래 기능. 오늘 행이 실제로 화면에 보이는 동안만
+  // (이미 도착) 방송 중이면 그 자리를 LIVE(보러가기)로 바꾼다. 스크롤로 벗어나거나 다른 달이면 다시
+  // '오늘'(이동)로 복귀 — 아래 IntersectionObserver가 가시성을 추적한다.
+  const [todayVisible, setTodayVisible] = useState(false);
   // 꾸미기에서 미리보기 상태를 쿠키에 기록 → 새로고침 시 서버가 그 화면(미리보기/꾸미기)으로 바로 렌더.
   useEffect(() => {
     if (decorateProp) {
@@ -2335,13 +2336,22 @@ export function PublicPoster({
     // 상태 변화(필터 해제/월 이동)가 렌더된 뒤 오늘로 스크롤. 월 이동이면 슬라이드만큼 더 기다린다.
     const delay = !onTodayMonth ? 360 : needClear ? 60 : 0;
     window.setTimeout(scrollToToday, delay);
-    // 오늘로 이동했으니, 방송 중이면 이 버튼을 LIVE로 무장(다른 달로 가면 아래 effect가 해제).
-    setLiveArmed(true);
   }
-  // 오늘이 아닌 달로 가면 '오늘' 버튼 기능을 되살린다(LIVE 무장 해제).
+  // 오늘 행이 화면에 보이는 동안만 todayVisible=true → 그때 방송 중이면 '오늘' 자리를 LIVE로 바꾼다.
+  // 스크롤로 오늘 행을 벗어나거나 다른 달이면(오늘 행이 렌더 안 됨) false → '오늘'(이동) 버튼 복귀.
   useEffect(() => {
-    if (!onTodayMonth) setLiveArmed(false);
-  }, [onTodayMonth]);
+    const el = todayRowRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setTodayVisible(false);
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => setTodayVisible(entries[0]?.isIntersecting ?? false),
+      { threshold: 0.4 }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [today, view.year, view.month, showAgenda]);
 
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
@@ -2562,17 +2572,6 @@ export function PublicPoster({
                       {bookmarked ? "♥" : "♡"}
                     </button>
                   ) : null}
-                {tier ? (
-                  <span
-                    className={`event-popular tier-${tier.key}`}
-                    title="관심을 많이 받은 일정"
-                  >
-                    <span className="flame" aria-hidden="true">
-                      {tier.flames}
-                    </span>{" "}
-                    {tier.label}
-                  </span>
-                ) : null}
                 {subs.length > 0 ? (
                   <ul className={`event-subs${span.showTitle ? "" : " span-cont"}`}>
                     {subs.map((sub, i) => (
@@ -2580,13 +2579,23 @@ export function PublicPoster({
                     ))}
                   </ul>
                 ) : null}
-                {/* PR2: 칸 색에 못 담은 추가 대분류 점 줄(시작 칸에만). */}
-                {span.showTitle && extraColors.length > 0 ? (
-                  <span className="pill-dots" aria-hidden="true">
-                    {extraColors.map((c, i) => (
-                      <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
-                    ))}
-                  </span>
+                {/* 메타 한 줄: 관심(왼쪽) + 형식색 점(오른쪽). 따로 흩어져 공간 낭비하던 둘을 묶어
+                    가로폭을 채운다. 시작 칸에만(이어지는 칸엔 안 그림). */}
+                {span.showTitle && (tier || extraColors.length > 0) ? (
+                  <div className="event-meta">
+                    {tier ? (
+                      <span className={`event-popular tier-${tier.key}`} title="관심을 많이 받은 일정">
+                        <span className="flame" aria-hidden="true">{tier.flames}</span> {tier.label}
+                      </span>
+                    ) : null}
+                    {extraColors.length > 0 ? (
+                      <span className="pill-dots" aria-hidden="true">
+                        {extraColors.map((c, i) => (
+                          <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                        ))}
+                      </span>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
             );
@@ -2881,13 +2890,6 @@ export function PublicPoster({
                               ))}
                             </ul>
                           ) : null}
-                          {extraColors.length > 0 ? (
-                            <span className="pill-dots" aria-hidden="true">
-                              {extraColors.map((c, i) => (
-                                <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
-                              ))}
-                            </span>
-                          ) : null}
                           {support && event.supportUrl ? (
                             <a
                               className="agenda-link"
@@ -2899,13 +2901,22 @@ export function PublicPoster({
                               <ExternalLink aria-hidden="true" size={13} />
                             </a>
                           ) : null}
-                          {tier ? (
-                            <span className={`event-popular tier-${tier.key}`}>
-                              <span className="flame" aria-hidden="true">
-                                {tier.flames}
-                              </span>{" "}
-                              {tier.label}
-                            </span>
+                          {/* 메타 한 줄: 관심(왼쪽) + 형식색 점(오른쪽) — 따로 흩어지던 둘을 묶어 폭을 채운다. */}
+                          {tier || extraColors.length > 0 ? (
+                            <div className="agenda-meta">
+                              {tier ? (
+                                <span className={`event-popular tier-${tier.key}`}>
+                                  <span className="flame" aria-hidden="true">{tier.flames}</span> {tier.label}
+                                </span>
+                              ) : null}
+                              {extraColors.length > 0 ? (
+                                <span className="pill-dots" aria-hidden="true">
+                                  {extraColors.map((c, i) => (
+                                    <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                                  ))}
+                                </span>
+                              ) : null}
+                            </div>
                           ) : null}
                         </div>
                       </div>
@@ -4021,7 +4032,7 @@ export function PublicPoster({
             ) : null}
             {/* '오늘' 버튼: 다른 달이면 오늘로 이동. 이미 오늘 달이라 이동이 무의미한데 방송 중이면,
                 그 자리를 'LIVE'(보러가기)로 재활용한다 — 모바일 상단이 버튼으로 붐벼 따로 못 두므로. */}
-            {soopLive?.isLive && liveArmed ? (
+            {soopLive?.isLive && todayVisible ? (
               <button
                 className="mb-act live"
                 onClick={() => {
