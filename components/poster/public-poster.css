@@ -165,39 +165,47 @@
   cursor: pointer;
 }
 /* 색상 필터 아래 남는 공간: 인기 배지 단계 안내(간결판) */
-/* 인기 단계 안내 — 옅은 카드 안에, 불꽃을 고정폭 칼럼으로 둬 라벨이 한 세로선에 가지런히
-   정렬되게(1~3개 불꽃 폭 차이로 라벨이 들쭉날쭉하던 것 정리). */
+/* 인기 단계 안내 — 옅은 카드 안에 행마다 '불꽃 칩 + 라벨'. 불꽃 칩 폭을 고정해 라벨이 한 세로선에
+   가지런히, 칩 자체는 둥근 크림 배경으로 또렷·아기자기하게. */
 .agenda-tier-help {
   margin-top: 10px;
-  padding: 8px 9px;
-  border: 1px solid var(--line-soft, #f4ecdb);
-  border-radius: var(--r-md);
-  background: rgb(255 255 255 / 55%);
+  padding: 10px;
+  border: 1px solid #efe2c6;
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 60%);
   display: grid;
-  gap: 3px;
+  gap: 5px;
 }
 .agenda-tier-help strong {
-  margin-bottom: 2px;
-  font-size: 10px;
+  margin-bottom: 1px;
+  font-size: 10.5px;
   font-weight: 900;
   color: #a2925e;
   letter-spacing: 0.04em;
 }
 .agenda-tier-help span {
   display: grid;
-  grid-template-columns: 46px 1fr;
+  grid-template-columns: 52px 1fr;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   color: #6b6450;
   line-height: 1.3;
   word-break: keep-all;
 }
 .agenda-tier-help .flame {
-  font-size: 14px;
-  letter-spacing: -1px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 22px;
+  padding: 0 2px;
+  border-radius: var(--r-pill);
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(180 120 20 / 14%), inset 0 0 0 1px #f0e3c4;
+  font-size: 13px;
+  letter-spacing: -1.5px;
 }
 
 /* 모바일 아젠다: 월 이동을 엄지로 닿기 쉬운 하단 고정 바로. */
@@ -2031,12 +2039,15 @@ body.cell-range-dragging {
    임계값을 넘는 순간 딱 켜지지 않고, 살짝 떠오르며 부드럽게 나타난다(스멀스멀). */
 .event-popular {
   justify-self: start;
+  display: inline-flex;
+  align-items: center;
   border-radius: var(--r-pill, 999px);
   padding: 1px 6px;
-  /* 라벨 없이 불꽃·왕관만 — 아이콘을 키워 또렷하게(11→14). */
+  /* 라벨 없이 불꽃·왕관만 — 아이콘을 키워 또렷하게(11→14). line-height:1 + inline-flex로 불꽃의
+     세로 중앙이 같은 줄의 형식색 점 중앙과 정확히 일치하게(가로선 정렬). */
   font-size: 14px;
   font-weight: 900;
-  line-height: 1.3;
+  line-height: 1;
   transform-origin: left center;
   animation: popular-in 720ms var(--ease) both;
 }
@@ -2677,9 +2688,8 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 .event-meta {
   /* 이어진 칸 높이맞춤 — 바닥 정렬(예전 .pill-dots margin-top:auto 역할을 줄 전체로 승계). */
   margin-top: auto;
-  /* 형식색 점의 오른쪽 끝을 위 하트(absolute right:5px)와 같은 세로선에 맞춘다(내용 우패딩 8px과의
-     3px 차 보정). event-main 우패딩은 스티커 좌표 불변이라 안 건드리고 여기서만 조정. */
-  margin-right: -3px;
+  /* 점은 내용 우패딩(8px)에 그대로 붙인다 → 맨 오른쪽 점의 '중앙'이 우측 ~14px = 위 하트(박스 18px,
+     right:5px)의 중앙과 같은 세로선에 온다. (우측 끝이 아니라 '중앙' 정렬이 목표.) */
 }
 .agenda-content .agenda-meta {
   margin-top: var(--space-1);
