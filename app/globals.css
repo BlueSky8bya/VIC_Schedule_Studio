@@ -78,17 +78,25 @@
   --paper: #f8efda;
   --surface: #fffdf6;
   --surface-2: #fdf6e8;
-  /* 빅토리 시그니처: 화사한 골드 옐로(주) + 그린(포인트). 노랑 위 글자는 짙은 갈색으로. */
-  --accent: #f5b81b;
-  --accent-strong: #a9760a;
-  --accent-soft: #fff3d2;
+  /* 빅토리×빅타민 시그니처 — 선명한 비타민 팔레트(노랑=승리/주목, 초록=빅타민/참여,
+     보라=무대/선택, 핑크=팬심/하트). 노랑·초록 위 글자는 흰색 금지(짙은 잉크 사용). */
+  --accent: #ffc83d; /* 비타민 옐로(주 CTA·오늘·강조). 위 글자=--on-accent */
+  --accent-strong: #a9760a; /* 라이트 배경 위 골드 텍스트(대비용, 그대로 진하게) */
+  --accent-soft: #fff7d6; /* 노랑 wash 배경 */
   --on-accent: #4a3500;
-  --green: #4e9d3f;
-  --green-soft: #e9f5e1;
+  --green: #38b76a; /* 비타민 그린(팬 참여·작업자). 위 글자=짙은 잉크 */
+  --green-soft: #e9fff2;
   --coral: #f26d5b;
   --amber: #f4b740;
-  --violet: #7c5cff;
-  --violet-soft: #efeaff;
+  --violet: #5b34f0; /* 무대/선택/포커스(흰 글자). 기존보다 채도↑ */
+  --violet-soft: #f3eeff;
+  --pink: #ff5f8f; /* 토리 핑크 — 하트·팬 반응 */
+  --pink-soft: #ffe8f1;
+  /* 브랜드 별칭(의미 명시용; 위 시맨틱 토큰과 동일 값) */
+  --victory-yellow: var(--accent);
+  --victory-green: var(--green);
+  --victory-violet: var(--violet);
+  --tori-pink: var(--pink);
 
   /* 글래스(떠 있는 표면) */
   --glass: rgb(255 255 255 / 72%);
