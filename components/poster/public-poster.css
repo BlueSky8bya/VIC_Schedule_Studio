@@ -1510,19 +1510,19 @@ body.cell-range-dragging {
   border: 1px solid #ece2cd;
   border-radius: var(--r-lg);
   background: #fffdf6;
-  /* 이 패널은 data-export-surface 안 — 간격 바꾸면 포스터 PNG·스티커 좌표가 어긋난다. 기하 불변 유지. */
-  padding: 10px 14px;
+  /* 사이드바 패널 공통 안쪽 여백 12px 대칭 — support-card와 같은 세로선 공유(정렬 조화).
+     표면 안이라 PNG·스티커 좌표가 살짝 바뀜(소유자가 스티커 재배치). */
+  padding: var(--space-3); /* 12 — 10/14 비대칭 정리 */
   box-shadow: var(--shadow-2);
 }
 /* 방식 태그 2열 — 세로를 절반으로 줄여 ♥ 안내 자리를 만든다. */
 .public-legend-vertical .legend-mods {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 3px;
-  /* '형식' 소제목을 없앤 뒤에도 콘텐츠와 시각적으로 갈리게 구분선만 남긴다(전엔 소제목이 가졌음).
-     표면 안이라 간격은 기하 불변(스티커 좌표) 유지. */
-  margin-top: 5px;
-  padding-top: 6px;
+  gap: var(--space-1); /* 4 */
+  /* '형식' 소제목을 없앤 뒤에도 콘텐츠와 시각적으로 갈리게 구분선만 남긴다. 구분선 리듬 4/8 통일. */
+  margin-top: var(--space-1); /* 4 */
+  padding-top: var(--space-2); /* 8 */
   border-top: 1px dashed #e6dcc2;
 }
 .public-legend-vertical span,
@@ -1558,9 +1558,9 @@ body.cell-range-dragging {
 }
 /* E: 시청자용 ♥ 안내 — 하트의 의미와 인기 단계(불꽃→왕관)를 한눈에. */
 .legend-heart-help {
-  margin-top: 6px;
+  margin-top: var(--space-1); /* 4 — 구분선 리듬 통일 */
   border-top: 1px dashed #ece2c6;
-  padding-top: 10px;
+  padding-top: var(--space-2); /* 8 */
   color: #7a6a3e;
   font-size: 11.5px;
   font-weight: 700;
@@ -2767,10 +2767,11 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 .support-card {
   display: grid;
   align-content: start;
-  gap: 10px;
+  gap: var(--space-3); /* 12 — 10 정리 */
   /* 제목이 짧아도 카드 폭은 아래 색상 안내와 같게(사이드바 전체 폭) — 세로 정렬만 start. */
   align-self: stretch;
-  padding: 14px;
+  /* 범례 패널과 같은 안쪽 여백 12px(정렬 조화). 표면 안 — 스티커 좌표 살짝 바뀜. */
+  padding: var(--space-3); /* 12 — 14 정리 */
 }
 
 .support-card span {
@@ -2795,10 +2796,10 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: var(--space-2); /* 8 */
   min-height: 40px;
   border: 1px solid #84b74f;
-  border-radius: 8px;
+  border-radius: var(--r-sm); /* 8 (토큰화) */
   background: #e6f7c7;
   color: #334b0b;
   font-weight: 900;

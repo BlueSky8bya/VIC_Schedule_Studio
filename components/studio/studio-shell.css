@@ -1035,7 +1035,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
   gap: var(--space-1); /* 4 */
   padding: var(--space-3); /* 12 — 12/14 → 12 정방 */
   border: 1px solid #efeaf9;
-  border-radius: 14px; /* 카드 공통 radius 패밀리(스튜디오 14px) 유지 */
+  border-radius: var(--r-card); /* 카드 공통 radius 패밀리(스튜디오 14px) 유지 */
   background: linear-gradient(180deg, #fbfaff, #f6f3fd);
 }
 .insight-tile strong {
@@ -1496,7 +1496,7 @@ html[data-reduce-motion] .perf-spin {
   margin-top: var(--space-2); /* 8 */
   padding: var(--space-3); /* 12 */
   border: 1.5px solid var(--line, #e7e3f2);
-  border-radius: 14px; /* 카드 공통 radius 패밀리(스튜디오 14px) 유지 */
+  border-radius: var(--r-card); /* 카드 공통 radius 패밀리(스튜디오 14px) 유지 */
   background: #fff;
   font-size: 14px;
   font-weight: 800;
@@ -2789,7 +2789,7 @@ html[data-reduce-motion] .perf-spin {
   margin-bottom: 14px;
   padding: 12px 14px;
   border: 1px solid var(--line, #e7e3f2);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: linear-gradient(180deg, #fbfaff, #f6f3fd);
 }
 .vsum-head {
@@ -3420,7 +3420,7 @@ html[data-reduce-motion] .perf-spin {
   margin-bottom: 10px;
   padding: 12px 16px;
   border: 1px solid #e4ecfb;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: linear-gradient(180deg, #f3f9ff, #e9f2ff);
 }
 .insight-next > span {
@@ -4924,7 +4924,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   align-items: center;
   gap: 6px;
   padding: 4px 6px;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: rgba(120, 110, 160, 0.07);
 }
 /* 우측 묶음: 비공개 일정 보기(토글) + 달력 꾸미기를 액션바 오른쪽 끝으로 모은다. */
@@ -5290,7 +5290,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   margin-top: 12px;
   padding: 10px 10px 4px;
   border: 1px solid var(--line, #eee9f6);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: #fcfbff;
 }
 .tag-editor-section.is-mod {
@@ -5399,7 +5399,7 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
 .studio-weekdays {
   margin-bottom: 8px;
   border: 1px solid #ece9f5;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: linear-gradient(180deg, #fdf1fb, #eef3ff);
   overflow: hidden;
   box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
@@ -5745,7 +5745,7 @@ body.cell-range-dragging {
   content: "";
   position: absolute;
   inset: -3px;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   border: 2px solid #f6b73c;
   box-shadow: 0 0 12px 2px rgb(246 183 60 / 50%);
   pointer-events: none;
@@ -5981,7 +5981,7 @@ body.cell-range-dragging {
    모서리를 한 단계 더 둥글려 카드를 또렷·세련되게. CLAUDE.md: 웹 글자는 넉넉히 크게. */
 @media (min-width: 641px) {
   .studio-event-pill {
-    border-radius: 14px;
+    border-radius: var(--r-card);
     gap: 5px; /* 웹은 가로 여백이 넉넉 — 내부 박자도 한 단계 키워 숨 트이게(4→5). */
   }
   .pill-main strong {
@@ -6277,7 +6277,7 @@ body.cell-range-dragging {
   gap: 3px;
   padding: 14px 10px;
   border: 1.5px solid var(--line, #e7e3f2);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: #fff;
   text-align: center;
   cursor: pointer;
@@ -6495,7 +6495,7 @@ body.cell-range-dragging {
      부모로도 안 넘겨(스크롤 트랩) 편집 패널이 안 움직이던 버그. 칩은 적어서 패널과 함께 흐른다. */
   padding: 11px;
   border: 1px solid var(--line, #ece9f5);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: linear-gradient(180deg, #fffefb, #faf8fd);
 }
 /* 방식 칸 — 콘텐츠와 다른 묶음임을 점선·중립 톤으로만 표시(방식 색이 제각각이라 칸은 안 튀게). */
@@ -6503,7 +6503,7 @@ body.cell-range-dragging {
   margin-top: 10px;
   padding: 10px 11px 11px;
   border: 1px dashed var(--line, #e2dff0);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: linear-gradient(180deg, #fcfbff, #f6f4fb);
 }
 .tp-section-label {
@@ -6961,7 +6961,7 @@ textarea:disabled {
   margin-bottom: 12px;
   padding: 10px 12px;
   border: 1px solid var(--line, #ece9f5);
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: linear-gradient(180deg, #fffefb, #faf8fd);
 }
 .tag-cat-group .tag-editor-row {
@@ -9067,7 +9067,7 @@ textarea:disabled {
   content: "";
   position: absolute;
   inset: -3px;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   border: 2px solid #f6b73c;
   box-shadow: 0 0 12px 2px rgb(246 183 60 / 50%);
   pointer-events: none;
@@ -9647,7 +9647,7 @@ textarea:disabled {
 .me-group .support-duration {
   gap: 11px;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   background: #fff5ef;
   padding: 13px;
 }
@@ -9712,7 +9712,7 @@ textarea:disabled {
 .m-edit-actions .m-save {
   flex: 1;
   min-height: 50px;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   font-size: 16px;
   font-weight: 900;
 }
@@ -9721,6 +9721,6 @@ textarea:disabled {
   flex: 0 0 auto;
   width: 50px;
   min-height: 50px;
-  border-radius: 14px;
+  border-radius: var(--r-card);
   padding: 0;
 }
