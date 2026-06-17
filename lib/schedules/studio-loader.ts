@@ -13,6 +13,7 @@ import { createSupabaseServerClient } from "@/lib/auth/server";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { getUnlockState } from "@/lib/private-layer/unlock";
 import { canReadOwnerPrivate, canReadPrivateLayer } from "@/lib/permissions/roles";
+import { decryptSecret, isCiphertext } from "@/lib/private-layer/secret-crypto";
 
 // 서버에서 비공개 이벤트를 역할/잠금해제에 따라 응답에서 제거한다(클라이언트 필터와 동일 규칙).
 // RLS와 별개의 2차 방어 — "엠바고"(owner_private, 옛 embargo 통합)는 소유자 전용, "작업자"(work)는
@@ -118,7 +119,7 @@ export async function getStudioSchedule(
     supabase
       .from("events")
       .select(
-        "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, visibility_scope, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order), event_private_meta(private_title, private_memo, editor_note)"
+        "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, secret_cipher, status, sort_order, category, visibility_scope, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order), event_private_meta(private_title, private_memo, editor_note)"
       )
       .eq("calendar_id", calendar.id)
       .order("date_key")
@@ -146,7 +147,7 @@ export async function getStudioSchedule(
     palette: (paletteRes.data ?? []).map(mapPalette),
     supportCampaigns: (campaignsRes.data ?? []).map(mapCampaign),
     events: filterEventsForViewer(
-      (eventsRes.data ?? []).map(mapStudioEvent),
+      (eventsRes.data ?? []).map((r) => mapStudioEvent(r, calendar.id)),
       actor.role,
       actor.isWorker === true,
       unlock.hasUnlockSession
@@ -199,6 +200,7 @@ type StudioEventRow = {
   is_tentative: boolean | null;
   public_title: string;
   public_description: string | null;
+  secret_cipher: string | null;
   status: StudioScheduleEvent["status"];
   sort_order: number;
   category: StudioScheduleEvent["category"];
@@ -212,9 +214,39 @@ type StudioEventRow = {
     | null;
 };
 
-function mapStudioEvent(row: StudioEventRow): StudioScheduleEvent {
+function mapStudioEvent(row: StudioEventRow, calendarId: string): StudioScheduleEvent {
   const tags = [...(row.event_tags ?? [])].sort((a, b) => a.sort_order - b.sort_order);
   const meta = one(row.event_private_meta);
+
+  // 비공개 이벤트는 본문이 secret_cipher에 암호화돼 있다 → 복호화해 실제 제목/설명/메타로 복원.
+  // 암호문이 아니면(공개 이벤트·레거시 미마이그레이션 행) 평문 컬럼 + 조인 메타 폴백.
+  let title = row.public_title;
+  let description = row.public_description ?? undefined;
+  let privateMeta = meta
+    ? {
+        eventId: row.id,
+        privateTitle: meta.private_title ?? undefined,
+        privateMemo: meta.private_memo ?? undefined,
+        editorNote: meta.editor_note ?? undefined
+      }
+    : undefined;
+
+  if (isCiphertext(row.secret_cipher)) {
+    try {
+      const secret = decryptSecret(row.secret_cipher, calendarId);
+      title = secret.publicTitle ?? title;
+      description = secret.publicDescription ?? undefined;
+      privateMeta = {
+        eventId: row.id,
+        privateTitle: secret.privateTitle,
+        privateMemo: secret.privateMemo,
+        editorNote: secret.editorNote
+      };
+    } catch {
+      // 복호화 실패(키 미설정/변조): 본문을 노출하느니 플레이스홀더를 그대로 둔다.
+      // (RLS가 이미 행 접근을 가렸으므로 권한 없는 노출은 아님 — 안전 폴백.)
+    }
+  }
 
   return {
     id: row.id,
@@ -227,8 +259,8 @@ function mapStudioEvent(row: StudioEventRow): StudioScheduleEvent {
     supportUrl: row.support_url ?? undefined,
     isAllDay: row.is_all_day,
     isTentative: row.is_tentative ?? false,
-    publicTitle: row.public_title,
-    publicDescription: row.public_description ?? undefined,
+    publicTitle: title,
+    publicDescription: description,
     status: row.status,
     visibilityScope: row.visibility_scope,
     category: row.category,
@@ -237,14 +269,7 @@ function mapStudioEvent(row: StudioEventRow): StudioScheduleEvent {
     sortOrder: row.sort_order,
     teaser: row.teaser ?? undefined,
     teaserRevealAt: row.teaser_reveal_at ?? undefined,
-    privateMeta: meta
-      ? {
-          eventId: row.id,
-          privateTitle: meta.private_title ?? undefined,
-          privateMemo: meta.private_memo ?? undefined,
-          editorNote: meta.editor_note ?? undefined
-        }
-      : undefined
+    privateMeta
   };
 }
 

@@ -11,6 +11,11 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { canEditEventTags, canEditSchedule, canEditSupport } from "@/lib/permissions/roles";
+import {
+  PRIVATE_PLACEHOLDER_TITLE,
+  encryptSecret,
+  type SecretPayload
+} from "@/lib/private-layer/secret-crypto";
 
 export type SaveEventInput = {
   id?: string;
@@ -206,6 +211,29 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
   const endDateKey =
     input.endDateKey && input.endDateKey > input.dateKey ? input.endDateKey : null;
 
+  const isPublic = input.visibilityScope === "public";
+
+  // 비공개 이벤트는 제목/설명/private_meta를 암호화해 secret_cipher에 넣고, 평문 컬럼엔
+  // 중립 플레이스홀더만 남긴다(raw DB 접근으로는 본문이 안 보이게). 공개는 평문 유지.
+  // 키 미설정이면 encryptSecret가 throw → 절대 평문으로 저장되지 않도록 깔끔한 에러로 변환.
+  const publicTitleTrim = input.publicTitle.trim() || "새 일정";
+  const publicDescTrim = input.publicDescription.trim() || null;
+  let secretCipher: string | null = null;
+  if (!isPublic) {
+    const payload: SecretPayload = {
+      publicTitle: publicTitleTrim,
+      publicDescription: publicDescTrim ?? undefined,
+      privateTitle: input.privateTitle?.trim() || undefined,
+      privateMemo: input.privateMemo?.trim() || undefined,
+      editorNote: input.editorNote?.trim() || undefined
+    };
+    try {
+      secretCipher = encryptSecret(payload, calendar.id);
+    } catch {
+      return { ok: false, error: "암호화 키 미설정으로 비공개 일정을 저장할 수 없습니다." };
+    }
+  }
+
   const row = {
     calendar_id: calendar.id,
     date_key: input.dateKey,
@@ -216,8 +244,10 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     is_tentative: input.isTentative ?? false,
     is_support: input.isSupport ?? false,
     support_url: input.isSupport ? input.supportUrl?.trim() || null : null,
-    public_title: input.publicTitle.trim() || "새 일정",
-    public_description: input.publicDescription.trim() || null,
+    // 비공개는 평문 자리에 플레이스홀더, 공개는 실제 평문.
+    public_title: isPublic ? publicTitleTrim : PRIVATE_PLACEHOLDER_TITLE,
+    public_description: isPublic ? publicDescTrim : null,
+    secret_cipher: secretCipher, // 공개면 null(비공개→공개 전환 시 블롭 제거)
     visibility_scope: input.visibilityScope,
     status: input.status,
     category: input.category,
@@ -272,11 +302,13 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     }
   }
 
-  // 비공개 메타: 내용이 있으면 upsert, 없으면 정리
+  // 비공개 이벤트의 private_meta는 secret_cipher(블롭)에 이미 들어갔다 → 평문 행은 남기지 않는다.
+  // 공개 이벤트만 기존대로 평문 메타를 upsert/정리한다(공개 일정엔 비밀 본문이 없음).
   const hasPrivate =
-    Boolean(input.privateTitle?.trim()) ||
-    Boolean(input.privateMemo?.trim()) ||
-    Boolean(input.editorNote?.trim());
+    isPublic &&
+    (Boolean(input.privateTitle?.trim()) ||
+      Boolean(input.privateMemo?.trim()) ||
+      Boolean(input.editorNote?.trim()));
 
   if (hasPrivate) {
     const { error: metaError } = await supabase.from("event_private_meta").upsert(
