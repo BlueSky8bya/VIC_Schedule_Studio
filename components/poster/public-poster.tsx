@@ -1298,24 +1298,32 @@ export function PublicPoster({
   // 한국 승리한 날은 큰 폭죽(🏆 솟구침 + 더 많은 입자 + 강한 햅틱), 그 외 특별일은 작은 폭죽.
   // 위 todayCelebration(상단 비처럼 내리는 컨페티)과 달리 탭 '지점'에서 방사형으로 터진다.
   // '동작 줄이기'면 입자 없이 햅틱만(다른 모션 연출과 동일 방침). 다중 탭은 쌓여서 각자 정리된다.
-  function popBurst(clientX: number, clientY: number, big: boolean) {
-    if (big) hapticSuccess();
+  // 표기 탭 반응. mood: "win" 큰 축포 / "cheer" 작은 폭죽(기본) / "console" 진 날엔
+  // 축하 대신 차분히 아래로 떨어지는 응원(💪🙏🥲) — 패배에 폭죽은 결이 안 맞아서.
+  function popBurst(clientX: number, clientY: number, mood: "win" | "cheer" | "console") {
+    if (mood === "win") hapticSuccess();
     else hapticTick();
     if (reduceMotionEnabled()) return;
-    const n = big ? 30 : 16;
-    const palette = ["#f472b6", "#fbbf24", "#34d399", "#60a5fa", "#a78bfa", "#f87171", "#ffffff"];
-    const cheer = big ? ["🎉", "✨", "🎊", "⚽", "🏆"] : ["✨", "🎉"];
+    const big = mood === "win";
+    const console_ = mood === "console";
+    const n = big ? 30 : console_ ? 12 : 16;
+    const palette = console_
+      ? ["#94a3b8", "#a5b4fc", "#cbd5e1", "#bae6fd", "#ddd6fe"] // 차분한 회청색
+      : ["#f472b6", "#fbbf24", "#34d399", "#60a5fa", "#a78bfa", "#f87171", "#ffffff"];
+    const cheer = big ? ["🎉", "✨", "🎊", "⚽", "🏆"] : console_ ? ["💪", "🙏", "🥲", "❤️"] : ["✨", "🎉"];
     const bits: BurstBit[] = Array.from({ length: n }, (_, i) => {
       const ang = (Math.PI * 2 * i) / n + Math.random() * 0.5; // 고르게 퍼지되 약간 흩뜨림
-      const reach = (big ? 78 : 48) + Math.random() * (big ? 96 : 56);
-      const useEmoji = Math.random() < (big ? 0.34 : 0.22);
+      const reach = (big ? 78 : console_ ? 30 : 48) + Math.random() * (big ? 96 : console_ ? 36 : 56);
+      const useEmoji = Math.random() < (big ? 0.34 : console_ ? 0.5 : 0.22);
       return {
-        dx: Math.cos(ang) * reach,
-        dy: Math.sin(ang) * reach - (big ? 24 : 14), // 살짝 위로 솟구쳤다 흩어짐
-        rot: Math.round((Math.random() * 2 - 1) * 540),
+        dx: Math.cos(ang) * reach * (console_ ? 0.6 : 1), // 진 날은 옆으로 덜 퍼지고
+        dy: console_
+          ? Math.abs(Math.sin(ang)) * reach + 18 // 아래로 차분히 떨어진다(솟구침 없음)
+          : Math.sin(ang) * reach - (big ? 24 : 14), // 살짝 위로 솟구쳤다 흩어짐
+        rot: Math.round((Math.random() * 2 - 1) * (console_ ? 180 : 540)),
         color: palette[i % palette.length],
         emoji: useEmoji ? cheer[(Math.random() * cheer.length) | 0] : null,
-        dur: (big ? 900 : 760) + Math.round(Math.random() * 520)
+        dur: (big ? 900 : console_ ? 1000 : 760) + Math.round(Math.random() * 520)
       };
     });
     burstId.current += 1;
@@ -2538,7 +2546,15 @@ export function PublicPoster({
                 className={`day-mark celebratable${day.markKind ? ` ${day.markKind}` : ""}`}
                 onClick={(e) => {
                   const r = e.currentTarget.getBoundingClientRect();
-                  popBurst(r.left + r.width / 2, r.top + r.height / 2, day.markKind === "wc-korea-win");
+                  popBurst(
+                    r.left + r.width / 2,
+                    r.top + r.height / 2,
+                    day.markKind === "wc-korea-win"
+                      ? "win"
+                      : day.markKind === "wc-korea-done"
+                        ? "console"
+                        : "cheer"
+                  );
                 }}
               >
                 {day.markName}
@@ -2863,6 +2879,10 @@ export function PublicPoster({
                             r.left + r.width / 2,
                             r.top + r.height / 2,
                             mark.kind === "wc-korea-win"
+                              ? "win"
+                              : mark.kind === "wc-korea-done"
+                                ? "console"
+                                : "cheer"
                           );
                         }}
                       >
