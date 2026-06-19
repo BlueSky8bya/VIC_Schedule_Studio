@@ -9,7 +9,7 @@ import { getWorldCupMark } from "@/lib/calendar/worldcup";
 export type DayMark = {
   name: string;
   isHoliday: boolean; // true면 빨간날(공휴일/대체공휴일), false면 단순 표기(기념일/절기)
-  kind?: "wc" | "wc-korea" | "wc-korea-win" | "wc-final"; // 월드컵 표기는 특별 스타일(화려하게)
+  kind?: "wc" | "wc-korea" | "wc-korea-win" | "wc-korea-done" | "wc-final"; // 월드컵 표기는 특별 스타일(화려하게)
 };
 
 // 매년 고정(양력) 공휴일 — 빨간날
@@ -431,11 +431,13 @@ export function getDayMark(isoDate: string): DayMark | null {
       kind:
         wc.result === "win"
           ? "wc-korea-win"
-          : wc.isKorea
-            ? "wc-korea"
-            : wc.isFinal
-              ? "wc-final"
-              : "wc"
+          : wc.result // 끝난 무/패 — 다가오는 경기 빨강 테두리 대신 차분한 마감 스타일
+            ? "wc-korea-done"
+            : wc.isKorea
+              ? "wc-korea"
+              : wc.isFinal
+                ? "wc-final"
+                : "wc"
     };
   }
   // 스트리머 기념일은 절기/일반 기념일보다 우선 표기
