@@ -30,7 +30,7 @@ const STAGE_MARKS: Record<string, string> = {
 // 국기 이모지(🇰🇷 등)는 Windows 크롬에서 'KR'처럼 깨져 안 쓴다 — 텍스트+스타일로 강조.
 export const KOREA_MATCHES: Record<string, { name: string; result?: "win" | "draw" | "loss" }> = {
   "2026-06-12": { name: "⚽ 한국 2-1 체코", result: "win" }, // 종료 — 한국 승(탭 시 축포)
-  "2026-06-19": { name: "⚽ 한국 vs 멕시코 10:00" },
+  "2026-06-19": { name: "⚽ 한국 0-1 멕시코", result: "loss" }, // 종료 — 한국 패
   "2026-06-25": { name: "⚽ 한국 vs 남아공 10:00" }
 };
 
