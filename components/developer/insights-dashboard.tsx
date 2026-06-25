@@ -174,36 +174,34 @@ function renderBroadcastHours(
           ))}
         </div>
       </div>
-      {hasAny ? (
-        <>
-          <div className="bcast-chips">
-            <span>
-              이 달 방송 <strong>{days}</strong>일
-            </span>
-            <span>
-              일평균 <strong>{fmtHoursLabel(avg)}</strong>
-            </span>
+      {/* 일별 막대는 빈 달이어도 항상 보여준다(어디에 쌓일지 미리 보이게 — 월별과 대칭). */}
+      <div className="bcast-chips">
+        <span>
+          이 달 방송 <strong>{days}</strong>일
+        </span>
+        <span>
+          일평균 <strong>{fmtHoursLabel(avg)}</strong>
+        </span>
+      </div>
+      <div className="bcast-daily" aria-label="이 달 일별 방송 시간">
+        {daily.map((v, i) => (
+          <div className="bcast-dcol" key={i} title={`${i + 1}일 · ${fmtHoursLabel(v)}`}>
+            <div className="bcast-dwrap">
+              <div
+                className="bcast-dbar"
+                data-on={v > 0 ? "" : undefined}
+                style={{ height: `${Math.max(v > 0 ? 6 : 0, (v / dayMax) * 100)}%` }}
+              />
+            </div>
+            {(i + 1) % 5 === 0 || i === 0 ? <span className="bcast-dx">{i + 1}</span> : <span className="bcast-dx" />}
           </div>
-          <div className="bcast-daily" aria-label="이 달 일별 방송 시간">
-            {daily.map((v, i) => (
-              <div className="bcast-dcol" key={i} title={`${i + 1}일 · ${fmtHoursLabel(v)}`}>
-                <div className="bcast-dwrap">
-                  <div
-                    className="bcast-dbar"
-                    data-on={v > 0 ? "" : undefined}
-                    style={{ height: `${Math.max(v > 0 ? 6 : 0, (v / dayMax) * 100)}%` }}
-                  />
-                </div>
-                {(i + 1) % 5 === 0 || i === 0 ? <span className="bcast-dx">{i + 1}</span> : <span className="bcast-dx" />}
-              </div>
-            ))}
-          </div>
-        </>
-      ) : (
+        ))}
+      </div>
+      {!hasAny ? (
         <p className="insight-note bcast-empty">
-          아직 방송 기록이 없어요 — 방송을 켜면 여기에 일별·월별 시간이 쌓여요.
+          아직 방송 기록이 없어요 — 방송을 켜면 여기 막대가 채워져요(1분마다 자동 기록).
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
