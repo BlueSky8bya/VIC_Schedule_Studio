@@ -383,17 +383,40 @@ function emptyOccSlot(): OccSlot {
     peak: 0
   };
 }
+// PostgREST는 한 번에 최대 1000행만 돌려준다(기본 cap). visit_session은 한 달에 수천 행이라(예: 6월
+// 3500+) 그냥 select하면 1000행에서 잘려 뒷날짜(특히 운영진/owner 세션)가 통째로 사라진다 →
+// .range로 끝까지 페이지네이션. make()는 매번 같은 필터의 '새' 쿼리를 만들어야 한다(빌더는 1회용).
+// 정렬을 id(uuid, 유일·안정)로 고정해 페이지 경계가 어긋나지 않게 한다.
+type Pageable = {
+  range: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: unknown }>;
+};
+async function fetchAllRows<T>(make: () => Pageable): Promise<T[]> {
+  const PAGE = 1000;
+  const out: T[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await make().range(from, from + PAGE - 1);
+    if (error || !Array.isArray(data) || data.length === 0) break;
+    out.push(...(data as T[]));
+    if (data.length < PAGE) break;
+  }
+  return out;
+}
+
+const SESSION_COLS = "day, role, device, account_hash, started_at, last_seen_at, ended_at";
+
 async function loadSessions(
   supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
   startDay: string,
   endDayExclusive: string
 ): Promise<SessionRow[]> {
-  const { data, error } = await supabase
-    .from("visit_session")
-    .select("day, role, device, account_hash, started_at, last_seen_at, ended_at")
-    .gte("day", startDay)
-    .lt("day", endDayExclusive);
-  return error || !Array.isArray(data) ? [] : (data as SessionRow[]);
+  return fetchAllRows<SessionRow>(() =>
+    supabase
+      .from("visit_session")
+      .select(SESSION_COLS)
+      .gte("day", startDay)
+      .lt("day", endDayExclusive)
+      .order("id", { ascending: true })
+  );
 }
 // reach 슬롯: 방문자=(날짜|계정) 고유, 역할별=(날짜|계정) 고유/역할, 기기별=(날짜|계정|기기) 고유.
 // 재진입(같은 날 같은 계정 여러 세션)은 reach에선 1로 합친다(순방문자 의미 유지).
@@ -813,6 +836,9 @@ export type TrendData = {
   months: string[]; // 6개월(YYYY-MM, 오래된→최신, 타깃 월로 끝남)
   visits: number[];
   content: number[]; // 휴뱅 제외 공개 일정
+  broadcastHours: number[]; // 6개월 월별 총 방송시간(시간, 소수 1자리) — start_day(시작일) 귀속
+  broadcastDaily: number[]; // 보는 달 1..말일 일별 방송시간(시간) — 시작일 귀속, 자정 넘겨도 시작일에 통째
+  broadcastDays: number; // 보는 달에 방송한 날 수(방송시간>0)
   contentByTag: TrendStack; // 콘텐츠 대분류별 6개월(휴뱅 포함)
   modifierByTag: TrendStack; // 방식(합방·시참 등)별 6개월
   heartsByTag: TrendStack; // 하트 받은 태그 6개월(컨텐츠 방영월 기준)
@@ -870,12 +896,15 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
   const fromStart = `${monthKeys[0]}-01`;
   const nextMonthStart = ymd(new Date(Date.UTC(year, month, 1)));
 
-  const [visitRes, eventsRes, tagsRes, paletteRes, heartsRes] = await Promise.all([
-    supabase
-      .from("visit_session")
-      .select("day, role, device, account_hash, started_at, last_seen_at, ended_at")
-      .gte("day", fromStart)
-      .lt("day", nextMonthStart),
+  const [visitRows, eventsRes, tagsRes, paletteRes, heartsRes, bcastRes] = await Promise.all([
+    fetchAllRows<SessionRow>(() =>
+      supabase
+        .from("visit_session")
+        .select(SESSION_COLS)
+        .gte("day", fromStart)
+        .lt("day", nextMonthStart)
+        .order("id", { ascending: true })
+    ),
     supabase
       .from("events")
       .select("id, date_key")
@@ -890,7 +919,12 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       .gte("events.date_key", fromStart)
       .lt("events.date_key", nextMonthStart),
     supabase.from("color_palette").select("key, bg_color").eq("calendar_id", calendarId),
-    supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId })
+    supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
+    supabase
+      .from("broadcast_session")
+      .select("start_day, started_at, last_live_at, ended_at")
+      .gte("start_day", fromStart)
+      .lt("start_day", nextMonthStart)
   ]);
 
   const catMap = await loadTagCategoryMap(supabase, calendarId); // 세부→대분류 롤업
@@ -903,7 +937,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     if (row.broadcast_tags?.display_name === REST_TAG) restIds.add(row.event_id);
   }
   // 월별 방문 = (날짜, 계정) 고유 쌍 수(계정당 하루 1 — 순방문자). 재진입 세션은 1로 합친다.
-  const visitRows = (visitRes.data ?? []) as SessionRow[];
+  // visitRows는 fetchAllRows로 끝까지 받은 전체(1000행 cap 우회).
   const vMap = new Map(monthKeys.map((k) => [k, 0]));
   const vSeen = new Set<string>();
   for (const row of visitRows) {
@@ -1036,12 +1070,48 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     roleRows.push({ ym, key: row.role, n: 1 });
   }
 
+  // 방송시간 — 시작일(start_day) 귀속. 유효시간 = coalesce(ended_at, last_live_at) - started_at.
+  // 진행 중(ended_at null) 세션은 last_live_at까지로 잠정 집계(오늘 방송중이면 부분 반영).
+  const bcastRows = (bcastRes.data ?? []) as {
+    start_day: string;
+    started_at: string;
+    last_live_at: string;
+    ended_at: string | null;
+  }[];
+  const bMonthSec = new Map(monthKeys.map((k) => [k, 0]));
+  const bDaySec = new Map<number, number>(); // 보는 달 일별(일=1..말일)
+  const bDays = new Set<string>();
+  for (const r of bcastRows) {
+    const start = new Date(r.started_at).getTime();
+    const end = new Date(r.ended_at ?? r.last_live_at).getTime();
+    const sec = Number.isFinite(start) && Number.isFinite(end) && end > start ? (end - start) / 1000 : 0;
+    if (sec <= 0) continue;
+    const ym = r.start_day.slice(0, 7);
+    if (bMonthSec.has(ym)) bMonthSec.set(ym, (bMonthSec.get(ym) ?? 0) + sec);
+    bDays.add(r.start_day);
+    if (ym === `${year}-${pad(month)}`) {
+      const d = Number(r.start_day.slice(8, 10));
+      bDaySec.set(d, (bDaySec.get(d) ?? 0) + sec);
+    }
+  }
+  const round1 = (h: number) => Math.round(h * 10) / 10;
+  const daysInViewMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const broadcastHours = monthKeys.map((k) => round1((bMonthSec.get(k) ?? 0) / 3600));
+  const broadcastDaily = Array.from({ length: daysInViewMonth }, (_, i) =>
+    round1((bDaySec.get(i + 1) ?? 0) / 3600)
+  );
+  const viewYm = `${year}-${pad(month)}`;
+  const broadcastDays = [...bDays].filter((d) => d.slice(0, 7) === viewYm).length;
+
   return {
     ok: true,
     data: {
       months: monthKeys,
       visits: monthKeys.map((k) => vMap.get(k) ?? 0),
       content: monthKeys.map((k) => cMap.get(k) ?? 0),
+      broadcastHours,
+      broadcastDaily,
+      broadcastDays,
       contentByTag: buildTrendStack(monthKeys, contentCats, contentTagRows),
       modifierByTag: buildTrendStack(monthKeys, modCats, modTagRows),
       heartsByTag: buildTrendStack(monthKeys, heartCats, heartTagRows),
@@ -1201,11 +1271,9 @@ export async function getVisitTrendsAction(
   };
   const emptyGraphs = (): VisitGraphs => buildGraphs([]);
 
-  const { data, error } = await supabase
-    .from("visit_session")
-    .select("day, role, device, account_hash, started_at, last_seen_at, ended_at")
-    .gte("day", monthStart)
-    .lt("day", nextMonthStart);
+  // 접근 가능 여부(ready)만 가볍게 확인 — 권한/RLS 문제면 여기서 잡힌다. 본 조회는 fetchAllRows로
+  // 끝까지 페이지네이션(1000행 cap 우회 — 한 달 수천 행이라 안 그러면 뒷날짜 세션이 잘려 사라진다).
+  const { error } = await supabase.from("visit_session").select("id").limit(1);
 
   if (error) {
     return {
@@ -1230,7 +1298,14 @@ export async function getVisitTrendsAction(
       }
     };
   }
-  const rows = (data ?? []) as SessionRow[];
+  const rows = await fetchAllRows<SessionRow>(() =>
+    supabase
+      .from("visit_session")
+      .select(SESSION_COLS)
+      .gte("day", monthStart)
+      .lt("day", nextMonthStart)
+      .order("id", { ascending: true })
+  );
 
   const all = buildGraphs(rows);
   const viewer = buildGraphs(rows.filter((r) => isAudience(r.role)));
@@ -1241,12 +1316,16 @@ export async function getVisitTrendsAction(
   const operators = summaryOperator.visitors;
 
   // R12: 새/재방문 — 이 달 이전에 본 적 있는 계정 집합과 대조(시청자, 의미 방문 기준).
-  const { data: knownData } = await supabase
-    .from("visit_session")
-    .select("account_hash")
-    .lt("day", monthStart);
+  // 전체 과거 기록이라 행이 많다 → fetchAllRows로 끝까지(1000행 cap에 잘리면 재방문이 새 방문으로 오판).
+  const knownData = await fetchAllRows<{ account_hash: string | null }>(() =>
+    supabase
+      .from("visit_session")
+      .select("account_hash")
+      .lt("day", monthStart)
+      .order("id", { ascending: true })
+  );
   const knownAccounts = new Set(
-    ((knownData ?? []) as { account_hash: string | null }[])
+    knownData
       .map((r) => r.account_hash)
       .filter((h): h is string => Boolean(h))
   );
@@ -1440,12 +1519,16 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
   const operators = summaryOperator.visitors;
 
   // R12: 그날 시청자(의미 방문) 중 그 전에 본 적 없는 계정=새, 있으면 재방문.
-  const { data: knownData } = await supabase
-    .from("visit_session")
-    .select("account_hash")
-    .lt("day", dateKey);
+  // 전체 과거 기록 → fetchAllRows로 끝까지(1000행 cap에 잘리면 재방문이 새 방문으로 오판).
+  const knownData = await fetchAllRows<{ account_hash: string | null }>(() =>
+    supabase
+      .from("visit_session")
+      .select("account_hash")
+      .lt("day", dateKey)
+      .order("id", { ascending: true })
+  );
   const knownAccounts = new Set(
-    ((knownData ?? []) as { account_hash: string | null }[])
+    knownData
       .map((r) => r.account_hash)
       .filter((h): h is string => Boolean(h))
   );
@@ -1670,7 +1753,7 @@ export async function getMemberInsightsAction(
   }
   const sixStart = `${monthKeys[0]}-01`;
 
-  const [eventsRes, tagsRes, nextRes, paletteRes, heartsRes, visitRes] = await Promise.all([
+  const [eventsRes, tagsRes, nextRes, paletteRes, heartsRes, visitRows] = await Promise.all([
     supabase
       .from("events")
       .select("id, date_key, is_public")
@@ -1694,11 +1777,14 @@ export async function getMemberInsightsAction(
       .limit(40),
     supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
     supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
-    supabase
-      .from("visit_session")
-      .select("day, account_hash, started_at")
-      .gte("day", monthStart)
-      .lt("day", nextMonthStart)
+    fetchAllRows<{ day: string; account_hash: string | null; started_at: string }>(() =>
+      supabase
+        .from("visit_session")
+        .select("day, account_hash, started_at")
+        .gte("day", monthStart)
+        .lt("day", nextMonthStart)
+        .order("id", { ascending: true })
+    )
   ]);
 
   // 휴뱅 일정 id + 태그(6개월) 집계. 세부는 대분류로 롤업.
@@ -1946,11 +2032,6 @@ export async function getMemberInsightsAction(
 
   // 하이라이트: 방문 최다일·최고 시간대(날짜·시만, 수치 없음). 방문은 계정 단위라 (날짜,계정)당 1회만
   // 세고(최다일=계정 수), 시간대는 그 (날짜,계정)의 '첫 진입 시각'으로 센다.
-  const visitRows = (visitRes.data ?? []) as {
-    day: string;
-    account_hash: string | null;
-    started_at: string;
-  }[];
   const dayTally = new Map<string, number>();
   const hourTally = Array(24).fill(0) as number[];
   const hlFirst = new Map<string, { hour: number; t: number }>();

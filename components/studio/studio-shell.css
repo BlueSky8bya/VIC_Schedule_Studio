@@ -3832,6 +3832,79 @@ html[data-reduce-motion] .role-segment button.active {
   opacity: 1;
   transform: translateX(-50%) scale(1);
 }
+/* 방송 시간 — 월별 막대(트렌드 row 재사용) + 요약 칩 + 이 달 일별 미니 막대. */
+.bcast-trend {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 4px;
+  margin-bottom: 4px;
+  border-bottom: 1px dashed #e7e2f2;
+}
+.bcast-chips {
+  display: flex;
+  gap: 14px;
+  font-size: 11px;
+  color: #8d86a3;
+}
+.bcast-chips strong {
+  color: #6b5bd6;
+  font-weight: 800;
+}
+.bcast-daily {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  height: 40px;
+}
+.bcast-dcol {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.bcast-dwrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+}
+.bcast-dbar {
+  width: 100%;
+  border-radius: 2px 2px 0 0;
+  background: #ece8f6;
+  transition: height 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)), filter 0.12s var(--ease, ease);
+}
+.bcast-dbar[data-on] {
+  background: linear-gradient(180deg, #8b7cf0, #6b5bd6);
+}
+.bcast-dcol:hover .bcast-dbar[data-on] {
+  filter: brightness(1.12) saturate(1.1);
+}
+.bcast-dx {
+  margin-top: 2px;
+  height: 11px;
+  text-align: center;
+  font-size: 8px;
+  font-weight: 700;
+  color: #c5bfd6;
+  line-height: 1;
+}
+.bcast-empty {
+  margin: 0;
+}
+@media (min-width: 641px) {
+  .bcast-daily {
+    height: 52px;
+    gap: 3px;
+  }
+  .bcast-chips {
+    font-size: 12.5px;
+  }
+  .bcast-dx {
+    font-size: 9px;
+  }
+}
 /* 호버 분해 툴팁은 차트(.vt-chart) 한 곳에 떠서 hovered 막대 위치를 따라가되, 차트 폭 안에서
    clamp되어 어느 칸이든(맨 끝 포함) 절대 안 잘린다. */
 .vt-chart {

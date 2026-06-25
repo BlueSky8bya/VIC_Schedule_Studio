@@ -113,6 +113,101 @@ function fmtMonthDay(dateKey: string): string {
   return `${mm}/${dd}(${wd})`;
 }
 
+// 방송시간(시간, 소수) → "32시간 30분" 표기. 0이면 "0분".
+function fmtHoursLabel(h: number): string {
+  const totalMin = Math.round(h * 60);
+  const hh = Math.floor(totalMin / 60);
+  const mm = totalMin % 60;
+  if (hh === 0) return `${mm}분`;
+  if (mm === 0) return `${hh}시간`;
+  return `${hh}시간 ${mm}분`;
+}
+
+// 트렌드 패널 상단 "📺 방송 시간" — 월별 6개월 막대 + 이 달 일별 막대 + 요약(총/방송일수/일평균).
+// 방송 1회=1세션, 자정 넘겨도 시작일에 통째 귀속(soop-live 폴링 + 백업 cron이 ON/OFF로 기록).
+function renderBroadcastHours(
+  trend: TrendData,
+  xLabels: { showYear: boolean; yy: number; mm: number }[]
+) {
+  const monthVals = trend.broadcastHours;
+  const cur = monthVals[monthVals.length - 1] ?? 0;
+  const prev = monthVals[monthVals.length - 2] ?? 0;
+  const delta = prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
+  const monthMax = Math.max(0.1, ...monthVals);
+  const daily = trend.broadcastDaily;
+  const dayMax = Math.max(0.1, ...daily);
+  const days = trend.broadcastDays;
+  const avg = days > 0 ? cur / days : 0;
+  const hasAny = monthVals.some((v) => v > 0);
+  return (
+    <div className="bcast-trend">
+      <div className="trend-row">
+        <div className="trend-head">
+          <span>📺 방송 시간</span>
+          <strong>{fmtHoursLabel(cur)}</strong>
+          {delta === null ? (
+            <em className="trend-new">신규</em>
+          ) : delta === 0 ? (
+            <em className="insight-trend flat">—</em>
+          ) : (
+            <em className={`insight-trend ${delta > 0 ? "up" : "down"}`}>
+              {delta > 0 ? "▲" : "▼"}
+              {Math.abs(delta)}%
+            </em>
+          )}
+        </div>
+        <div className="trend-spark">
+          {monthVals.map((v, i) => (
+            <div className="trend-bcol" key={i}>
+              <div className="trend-bwrap">
+                <div
+                  className={`trend-bar ${i === monthVals.length - 1 ? "cur" : ""}`}
+                  data-v={fmtHoursLabel(v)}
+                  style={{ height: `${(v / monthMax) * 100}%` }}
+                />
+              </div>
+              <span className="trend-x">
+                {xLabels[i]?.showYear ? <em>{xLabels[i].yy}년</em> : null}
+                {xLabels[i]?.mm}월
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+      {hasAny ? (
+        <>
+          <div className="bcast-chips">
+            <span>
+              이 달 방송 <strong>{days}</strong>일
+            </span>
+            <span>
+              일평균 <strong>{fmtHoursLabel(avg)}</strong>
+            </span>
+          </div>
+          <div className="bcast-daily" aria-label="이 달 일별 방송 시간">
+            {daily.map((v, i) => (
+              <div className="bcast-dcol" key={i} title={`${i + 1}일 · ${fmtHoursLabel(v)}`}>
+                <div className="bcast-dwrap">
+                  <div
+                    className="bcast-dbar"
+                    data-on={v > 0 ? "" : undefined}
+                    style={{ height: `${Math.max(v > 0 ? 6 : 0, (v / dayMax) * 100)}%` }}
+                  />
+                </div>
+                {(i + 1) % 5 === 0 || i === 0 ? <span className="bcast-dx">{i + 1}</span> : <span className="bcast-dx" />}
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="insight-note bcast-empty">
+          아직 방송 기록이 없어요 — 방송을 켜면 여기에 일별·월별 시간이 쌓여요.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function StatTile({ value, label, tone }: { value: number | string; label: string; tone?: string }) {
   const isText = typeof value !== "number";
   return (
@@ -1156,6 +1251,7 @@ export function InsightsDashboard({
     return (
       <>
         <p className="insight-note">최근 6개월 추이 · 배지는 지난달 대비 변화</p>
+        {renderBroadcastHours(trend, xLabels)}
         {series.map((s) => {
           const cur = s.values[s.values.length - 1] ?? 0;
           const prev = s.values[s.values.length - 2] ?? 0;
