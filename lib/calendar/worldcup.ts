@@ -31,7 +31,7 @@ const STAGE_MARKS: Record<string, string> = {
 export const KOREA_MATCHES: Record<string, { name: string; result?: "win" | "draw" | "loss" }> = {
   "2026-06-12": { name: "⚽ 한국 2-1 체코", result: "win" }, // 종료 — 한국 승(탭 시 축포)
   "2026-06-19": { name: "⚽ 한국 0-1 멕시코", result: "loss" }, // 종료 — 한국 패
-  "2026-06-25": { name: "⚽ 한국 vs 남아공 10:00" }
+  "2026-06-25": { name: "⚽ 한국 0-1 남아공", result: "loss" } // 종료 — 한국 패
 };
 
 // 그 날의 월드컵 표기(있으면). 한국 경기를 단계 표기보다 우선한다.
