@@ -37,14 +37,7 @@ import {
 } from "@/lib/insights/actions";
 import { getPerfStatsAction, type PerfStatRow } from "@/lib/insights/perf-actions";
 import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
-import {
-  HEART_BLAZE,
-  HEART_BLAZE_RATIO,
-  HEART_CROWN,
-  HEART_HOT,
-  HEART_HOT_RATIO,
-  HEART_MIN
-} from "@/lib/schedules/heart-tiers";
+import { HEART_BLAZE, HEART_CROWN, HEART_HOT, HEART_MIN } from "@/lib/schedules/heart-tiers";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
@@ -1489,27 +1482,21 @@ export function InsightsDashboard({
                       <span className="bc-flame">🔥🔥</span>
                       <div className="bc-body">
                         <b>높은 관심</b>
-                        <em>
-                          하트 {HEART_HOT}개 이상 · 이 달 최다의 {Math.round(HEART_HOT_RATIO * 100)}%
-                          이상
-                        </em>
+                        <em>하트 {HEART_HOT}개 이상</em>
                       </div>
                     </li>
                     <li>
                       <span className="bc-flame">🔥🔥🔥</span>
                       <div className="bc-body">
                         <b>폭발적</b>
-                        <em>
-                          하트 {HEART_BLAZE}개 이상 · 이 달 최다의 {Math.round(HEART_BLAZE_RATIO * 100)}%
-                          이상
-                        </em>
+                        <em>하트 {HEART_BLAZE}개 이상</em>
                       </div>
                     </li>
                     <li>
                       <span className="bc-flame">👑</span>
                       <div className="bc-body">
                         <b>이 달 1위</b>
-                        <em>단독 1위 · 하트 {HEART_CROWN}개 이상</em>
+                        <em>이 달 최다(공동 포함) · 하트 {HEART_CROWN}개 이상</em>
                       </div>
                     </li>
                   </ul>

@@ -1374,14 +1374,15 @@ export function PublicPoster({
     const counts = Object.values(heartCounts);
     return counts.length > 0 ? Math.max(...counts) : 0;
   }, [heartCounts]);
-  // 이 달 "유일한 1위" 일정 id — 최댓값을 가진 일정이 딱 하나일 때만(공동 1위면 왕관 없음).
-  const soleTopEventId = useMemo(() => {
-    const entries = Object.entries(heartCounts);
-    if (entries.length === 0 || maxHeart <= 0) {
-      return null;
+  // 이 달 최다 하트와 같은(공동 1위 포함) 일정 id들 — 이들에 👑을 붙인다. 공동 1위를 함께 왕관으로
+  // 두면 다른 일정에 하트를 눌러 동점이 돼도 기존 왕관이 사라지지 않는다(단조).
+  const topEventIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (maxHeart <= 0) return ids;
+    for (const [id, c] of Object.entries(heartCounts)) {
+      if (c === maxHeart) ids.add(id);
     }
-    const tops = entries.filter(([, c]) => c === maxHeart);
-    return tops.length === 1 ? tops[0][0] : null;
+    return ids;
   }, [heartCounts, maxHeart]);
 
   // "내 관심"은 보고 있는 달 기준으로 따로 센다. 휴뱅(방송 안 함) 일정은 하트 대상이 아니라 제외.
@@ -2489,7 +2490,7 @@ export function PublicPoster({
     if (interactive) {
       let bestRank = 0;
       for (const e of events) {
-        const t = heartTier(heartCounts[e.id] ?? 0, maxHeart, e.id === soleTopEventId);
+        const t = heartTier(heartCounts[e.id] ?? 0, topEventIds.has(e.id));
         if (t && POP_RANK[t.key] > bestRank) {
           bestRank = POP_RANK[t.key];
           popTier = t.key;
@@ -2610,7 +2611,7 @@ export function PublicPoster({
             // #3: 관심 단계 배지 — 집계 기반, 숫자는 노출하지 않고 불꽃 게이지로(시청자 화면 전용).
             const tier =
               interactive && span.showTitle
-                ? heartTier(heartCounts[event.id] ?? 0, maxHeart, event.id === soleTopEventId)
+                ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id))
                 : null;
             const eventClass = [
               "public-event",
@@ -2934,11 +2935,7 @@ export function PublicPoster({
                     const bookmarked = isBookmarked(event.id);
                     const tier =
                       interactive && !support
-                        ? heartTier(
-                            heartCounts[event.id] ?? 0,
-                            maxHeart,
-                            event.id === soleTopEventId
-                          )
+                        ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id))
                         : null;
                     const single = support
                       ? { background: "#84b74f" }
