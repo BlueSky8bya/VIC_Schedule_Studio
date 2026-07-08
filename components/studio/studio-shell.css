@@ -5661,6 +5661,61 @@ body.cell-range-dragging {
 html[data-reduce-motion] .studio-event-pill.connect-target {
   animation: none;
 }
+/* 이음새 칼로 긋기 손잡이 — 이어진 카드 오른쪽 변에 얹는 얇은 세로 히트존. 평소엔 거의 안 보이고
+   (이어진 티만), hover하면 붉은 절취선 + 가위 커서로 "여기를 그으면 끊긴다"를 알린다. 이어진
+   카드는 draggable=false라 카드 드래그와 겹치지 않는다. */
+.seam-cut {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -7px;
+  width: 16px;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  cursor: crosshair;
+  touch-action: none;
+}
+.seam-cut-blade {
+  width: 2px;
+  height: 62%;
+  border-radius: 2px;
+  background: rgb(220 38 38 / 0%);
+  transition: background 0.14s var(--ease, ease-out);
+}
+.seam-cut:hover .seam-cut-blade {
+  background: rgb(220 38 38 / 78%);
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 55%);
+}
+/* 방금 잘린 카드: 붉은 사선이 오른쪽 이음새를 '싹둑' 훑고 지나가는 연출. */
+.studio-event-pill.cut-flash::after {
+  content: "";
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  right: -2px;
+  width: 16px;
+  z-index: 5;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 40%, rgb(220 38 38 / 85%) 50%, transparent 60%);
+  animation: seam-cut-slice 0.42s ease-out;
+}
+@keyframes seam-cut-slice {
+  0% {
+    transform: translateY(-70%) rotate(6deg);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(70%) rotate(6deg);
+    opacity: 0;
+  }
+}
+html[data-reduce-motion] .studio-event-pill.cut-flash::after {
+  animation: none;
+}
 /* 저장·생성 직후: 카드가 통통 착지하며 한 번 반짝(노란 링) — "먹혔다"는 확신 + 귀여움. */
 .studio-event-pill.just-saved {
   animation: pill-settle 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;

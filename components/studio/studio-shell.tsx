@@ -712,52 +712,70 @@ export function StudioShell({
     return !(matchesPrivate || matchesTag);
   }
 
-  // 카드 클릭:
-  // - 선택된 일정과 인접+이미 이어진 카드를 누르면 → 그 이음새 하나만 끊는다(토글, 임시).
-  //   ※ 잇기(연결)는 클릭이 아니라 '드래그-놓기'로만 한다(제목 편집 왕복 중 실수로 붙던 문제 제거).
-  //     끊기도 곧 '칼로 긋기' 제스처로 옮길 예정 — 그때 이 클릭-끊기도 제거한다.
-  // - 그 외에는 그냥 그 일정을 선택(편집)한다.
+  // 카드 클릭 = 그 일정을 선택(편집)한다. 잇기는 드래그-놓기, 끊기는 이음새 '칼로 긋기'로만 —
+  // 클릭은 어느 쪽도 하지 않는다(제목 편집하려 카드를 오갈 때 실수로 붙거나 끊기던 문제 제거).
   function handlePillClick(eventId: string) {
     const target = events.find((e) => e.id === eventId);
     if (!target) return;
-
-    const anchor =
-      selectedEventId && selectedEventId !== eventId
-        ? events.find((e) => e.id === selectedEventId)
-        : undefined;
-
-    if (canEdit && anchor) {
-      const [earlier, later] =
-        getEventDateKey(anchor) <= getEventDateKey(target)
-          ? [anchor, target]
-          : [target, anchor];
-      const alreadyLinked = earlier.linkNext === later.id;
-      const snapshot = events; // 실패 시 되돌릴 직전 상태
-
-      if (alreadyLinked) {
-        // 낙관적으로 이음새를 끊고, 서버엔 백그라운드로 반영(새로고침 없이 즉시 반응).
-        setEvents((prev) =>
-          prev.map((e) => (e.id === earlier.id ? { ...e, linkNext: undefined } : e))
-        );
-        setActionError(null);
-        void (async () => {
-          const result = await enqueueWrite(async () => {
-            const realId = await resolveEventId(earlier.id);
-            if (!realId) {
-              setEvents(snapshot); // 저장이 끝내 실패 → 되돌림
-              return null;
-            }
-            return postStudioWrite("unlinkPair", { earlierId: realId });
-          });
-          if (!result.ok) {
-            setActionError(result.error);
-            setEvents(snapshot);
-          }
-        })();
-      }
-    }
-
     selectEvent(target);
+  }
+
+  // 이음새 '칼로 긋기': 손잡이를 눌러 threshold 이상 그으면 그 연결(earlier.linkNext)만 끊는다.
+  // 단순 클릭(움직임 없음)은 아무 일도 안 한다 → 제목 편집 중 실수 끊김 방지.
+  function performSeamCut(earlierId: string) {
+    if (!canEdit) return;
+    const earlier = events.find((e) => e.id === earlierId);
+    if (!earlier || !earlier.linkNext) return;
+    const snapshot = events;
+    setEvents((prev) => prev.map((e) => (e.id === earlierId ? { ...e, linkNext: undefined } : e)));
+    setActionError(null);
+    hapticTick();
+    flashToast("싹둑 — 연결을 끊었어요");
+    setCutFlashId(earlierId);
+    if (cutFlashTimer.current) window.clearTimeout(cutFlashTimer.current);
+    cutFlashTimer.current = window.setTimeout(() => setCutFlashId(null), 480);
+    void (async () => {
+      const result = await enqueueWrite(async () => {
+        const realId = await resolveEventId(earlierId);
+        if (!realId) {
+          setEvents(snapshot);
+          return null;
+        }
+        return postStudioWrite("unlinkPair", { earlierId: realId });
+      });
+      if (!result.ok) {
+        setActionError(result.error);
+        setEvents(snapshot);
+      }
+    })();
+  }
+
+  function onSeamCutPointerDown(e: ReactPointerEvent<HTMLElement>, earlierId: string) {
+    if (!canEdit) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.stopPropagation(); // 카드 선택/드래그로 번지지 않게
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let done = false;
+    const cleanup = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+    const move = (ev: PointerEvent) => {
+      if (done) return;
+      // 이음새를 가로지르는 '긋기'로 성립 — 짧은 스침(12px)이면 자른다. 클릭만으론 안 잘림.
+      if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 12) {
+        done = true;
+        performSeamCut(earlierId);
+        cleanup();
+      }
+    };
+    const up = () => cleanup();
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up, { once: true });
+    window.addEventListener("pointercancel", up, { once: true });
   }
   const [view, setView] = useState(
     initialView ?? {
@@ -1623,6 +1641,10 @@ export function StudioShell({
   const [connectHoverId, setConnectHoverId] = useState<string | null>(null);
   const connectCandidatesRef = useRef<Set<string>>(new Set());
   const connectHoverRef = useRef<string | null>(null);
+  // 끊기는 이음새를 '칼처럼 긋기'로만: 단순 클릭은 안 끊기고(제목 편집 왕복 보호), 이음새 손잡이를
+  // 눌러 짧게 그으면 그 연결만 끊긴다. cutFlashId = 방금 잘린 카드(슬라이스 연출용).
+  const [cutFlashId, setCutFlashId] = useState<string | null>(null);
+  const cutFlashTimer = useRef<number | null>(null);
   // #8: 이동 저장이 진행 중인 카드 id들 — 그 카드에 작은 '동기화 중' 표시를 띄운다(서버 반영 전).
   const [syncingIds, setSyncingIds] = useState<string[]>([]);
 
@@ -4696,6 +4718,10 @@ export function StudioShell({
                         visibleEvents
                       );
                       const draggable = canEdit && !span.isMulti;
+                      // 이 카드가 '다음 칸과 이어진 이음새(오른쪽 평평)'를 가졌는가 → 그 위에 칼로
+                      // 긋는 끊기 손잡이를 얹는다(linkNext로 이어진 경우만; 멀티데이 자체 스팬 제외).
+                      const hasCutSeam =
+                        canEdit && Boolean(event.linkNext) && span.isMulti && !span.roundRight;
                       // 드래그로 잇기 중: 이을 수 있는 상대는 강조(hover면 더 강하게), 나머지는 흐림.
                       const connecting = connectCandidates.size > 0;
                       const isConnTarget = connecting && connectCandidates.has(event.id);
@@ -4721,6 +4747,7 @@ export function StudioShell({
                         isConnTarget ? "connect-target" : "",
                         isConnHover ? "connect-hover" : "",
                         connDim ? "connect-dim" : "",
+                        cutFlashId === event.id ? "cut-flash" : "",
                         justSavedId === event.id ? "just-saved" : "",
                         deletingIds.has(event.id) ? "deleting" : ""
                       ]
@@ -4791,6 +4818,21 @@ export function StudioShell({
                                 style={mixedPatternMaskStyle(mixStyle, "b")}
                               />
                             </>
+                          ) : null}
+                          {/* 이음새 칼로 긋기 손잡이 — 오른쪽 이어진 변에 얹는 얇은 띠. 눌러 짧게
+                              그으면 그 연결만 끊긴다(단순 클릭은 무시). 이어진 카드는 draggable=false라
+                              카드 드래그와 충돌하지 않는다. */}
+                          {hasCutSeam ? (
+                            <span
+                              className="seam-cut"
+                              title="칼로 그어 연결 끊기"
+                              aria-label="이 연결 끊기"
+                              role="button"
+                              onPointerDown={(e) => onSeamCutPointerDown(e, event.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <span className="seam-cut-blade" aria-hidden="true" />
+                            </span>
                           ) : null}
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
