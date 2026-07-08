@@ -2,13 +2,15 @@
 
 import { useCallback, useRef, useState } from "react";
 
-// 구글 시트처럼 달력 날짜 칸을 마우스로 드래그해 사각형 범위로 "선택"만 한다(시각 강조).
+// 달력 날짜 칸을 마우스로 드래그해 '직선(날짜 연속) 범위'로 "선택"만 한다(시각 강조).
 // - 마우스 전용: 터치는 기존 스크롤/롱프레스(휴방 메뉴)와 충돌하지 않게 건드리지 않는다.
 // - 시각 전용: 서버에 아무것도 안 쓴다. 선택된 칸 인덱스 Set을 React state로 들고 있어,
 //   소비자가 className에 .cell-range-selected를 넣는다. (명령형 DOM class 토글은 카드 드래그 등
 //   다른 state 변화로 칸이 리렌더되면 React가 className을 덮어써 선택이 지워지는 버그가 있었다.)
 // - 텍스트 긁힘 방지: 드래그 동안 body에 .cell-range-dragging을 달아 user-select를 끈다.
-// 칸 식별: 그리드 안의 [data-cell-index] 요소(0..41), 7열 기준 행/열로 사각형을 만든다.
+// 칸 식별: 그리드 안의 [data-cell-index] 요소(0..41). 두 인덱스 사이를 읽기순(좌→우, 주 넘어감)
+// 으로 연속 채운다 — 8일~16일을 고르면 정사각형이 아니라 그 날짜들이 이어져 선택된다.
+// 토(월말)에서 다음 일(다음 주 시작)로 드래그해도 자연히 이어진다.
 //
 // 반환:
 //   setRef     — 그리드에 다는 callback ref(useEqualChainHeights와 합쳐 단다)
@@ -19,7 +21,6 @@ const MOVE_THRESHOLD = 5; // 이만큼 움직여야 드래그(=선택) 시작 �
 
 type Options = {
   enabled?: boolean;
-  cols?: number;
 };
 
 function sameSet(a: Set<number>, b: Set<number>): boolean {
@@ -35,8 +36,7 @@ function sameSet(a: Set<number>, b: Set<number>): boolean {
 }
 
 export function useCellRangeSelect<T extends HTMLElement>({
-  enabled = true,
-  cols = 7
+  enabled = true
 }: Options = {}): { setRef: (el: T | null) => void; selected: Set<number> } {
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
   const selectedRef = useRef(selected);
@@ -76,20 +76,13 @@ export function useCellRangeSelect<T extends HTMLElement>({
         return Number.isFinite(i) ? i : null;
       };
 
-      const rect = (a: number, b: number): Set<number> => {
-        const r1 = Math.floor(a / cols);
-        const c1 = a % cols;
-        const r2 = Math.floor(b / cols);
-        const c2 = b % cols;
-        const rLo = Math.min(r1, r2);
-        const rHi = Math.max(r1, r2);
-        const cLo = Math.min(c1, c2);
-        const cHi = Math.max(c1, c2);
+      // 두 칸 사이를 인덱스 순서(=날짜 순서)로 연속 채운다. 사각형이 아니라 직선 범위.
+      const range = (a: number, b: number): Set<number> => {
+        const lo = Math.min(a, b);
+        const hi = Math.max(a, b);
         const out = new Set<number>();
-        for (let r = rLo; r <= rHi; r += 1) {
-          for (let c = cLo; c <= cHi; c += 1) {
-            out.add(r * cols + c);
-          }
+        for (let i = lo; i <= hi; i += 1) {
+          out.add(i);
         }
         return out;
       };
@@ -112,7 +105,7 @@ export function useCellRangeSelect<T extends HTMLElement>({
         e.preventDefault();
         const cur = indexAt(e.clientX, e.clientY);
         if (cur != null) {
-          apply(rect(anchor, cur));
+          apply(range(anchor, cur));
         }
       };
 
@@ -150,12 +143,12 @@ export function useCellRangeSelect<T extends HTMLElement>({
         startX = e.clientX;
         startY = e.clientY;
         // 구글 시트식 다중선택:
-        //  - Shift: 기준(lastAnchor)부터 누른 칸까지 사각형으로 확장(드래그도 그 기준에서).
+        //  - Shift: 기준(lastAnchor)부터 누른 칸까지 직선(날짜 연속)으로 확장(드래그도 그 기준에서).
         //  - Ctrl/⌘: 누른 칸을 개별로 토글(기존 선택 유지).
         //  - 평소: 누른 칸 하나만(기준 갱신). 드래그하면 범위.
         if (e.shiftKey && lastAnchor != null) {
           anchor = lastAnchor;
-          apply(rect(lastAnchor, i));
+          apply(range(lastAnchor, i));
         } else if (e.ctrlKey || e.metaKey) {
           const next = new Set(selectedRef.current);
           if (next.has(i)) next.delete(i);
@@ -208,7 +201,7 @@ export function useCellRangeSelect<T extends HTMLElement>({
         document.body.classList.remove(DRAG_BODY_CLASS);
       };
     },
-    [enabled, cols, apply]
+    [enabled, apply]
   );
 
   return { setRef, selected };

@@ -3053,6 +3053,14 @@ export function StudioShell({
     function onKey(e: KeyboardEvent) {
       const t = e.target as HTMLElement | null;
       const tag = t?.tagName;
+      // Ctrl/⌘+S: 어디에 포커스가 있든(제목 입력칸 포함) 브라우저 '페이지 저장'을 가로채고 이 카드
+      // 저장. 아래 INPUT/TEXTAREA 가드보다 먼저 처리해야 제목 편집 중에도 'HTML로 저장' 창이 안 뜬다.
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        if (editorVisible && form.publicTitle.trim()) saveEvent();
+        else flashSavedChip();
+        return;
+      }
       if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable || modal) return;
       // Delete 키: 선택한 일정 삭제(버튼 없이도).
       if (e.key === "Delete" && selectedEventId) {
@@ -3068,13 +3076,7 @@ export function StudioShell({
       }
       if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
       const key = e.key.toLowerCase();
-      if (key === "s") {
-        // Ctrl/⌘+S: 편집 중 카드가 있으면 실제 재저장(안 바꿨어도 다시 저장), 없으면 '이미
-        // 저장됨'을 칩으로 잠깐 확인. 어느 쪽이든 저장중→저장됨 피드백이 뜬다. (페이지 저장 가로채기)
-        e.preventDefault();
-        if (editorVisible && form.publicTitle.trim()) saveEvent();
-        else flashSavedChip();
-      } else if (key === "z") {
+      if (key === "z") {
         // 실수로 지운 일정 되살리기(편집 중 텍스트는 위 INPUT/TEXTAREA 가드로 보호됨).
         e.preventDefault();
         restoreLastDelete();
@@ -3408,11 +3410,29 @@ export function StudioShell({
                       }
                       const inner = (
                         <>
-                          <span
-                            className="agenda-bar"
-                            data-color={colors.length < 2 ? colors[0]?.key : undefined}
-                            style={barStyle}
-                          />
+                          {colors.length >= 2 ? (
+                            // 2색: 시청자 포스터와 동일하게 위/아래 반쪽에 각자 색+무늬(data-color로
+                            // globals.css 무늬 규칙 적용), 가운데 경계는 마스크 페이드로 흐릿하게 섞는다.
+                            // (기존 단일 gradient 바는 data-color가 없어 모바일에서 무늬가 안 보였다.)
+                            <span className="agenda-bar agenda-bar-2" aria-hidden="true">
+                              <i
+                                className="agenda-bar-half top"
+                                data-color={colors[0].key}
+                                style={{ background: colors[0].bgColor }}
+                              />
+                              <i
+                                className="agenda-bar-half bottom"
+                                data-color={colors[1].key}
+                                style={{ background: colors[1].bgColor }}
+                              />
+                            </span>
+                          ) : (
+                            <span
+                              className="agenda-bar"
+                              data-color={colors[0]?.key}
+                              style={barStyle}
+                            />
+                          )}
                           <div className="agenda-content">
                             <p className="agenda-title">
                               <span className="agenda-title-text">

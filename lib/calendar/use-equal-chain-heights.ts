@@ -83,14 +83,38 @@ export function useEqualChainHeights<T extends HTMLElement>(
       observe(); // 반영 끝난 뒤 다시 관찰
     }
 
-    let raf1 = 0;
-    let raf2 = 0;
+    // ── 왜 '매 프레임 펌프'인가(편집 패널 열 때 높이 튐 수정) ──
+    // 예전엔 더블-rAF 디바운스였다. 그런데 편집 패널이 열/닫힐 때 그리드 폭이 0.52s 동안 계속
+    // 바뀌고 ResizeObserver가 '매 프레임' 발화한다 → 디바운스가 대기 rAF를 매번 취소해 equalize가
+    // transitionend에 딱 한 번만 돌았다. 그 사이 긴 글자 카드는 낡은 minHeight를 넘겨 '혼자 먼저'
+    // 커지고, 나머지는 끝나서야 따라 점프 → '15일만 튀고 6~14가 뒤늦게 따라오는' 글리치.
+    // → 트리거가 오면 '다음 프레임부터 매 프레임' equalize를 돌리고, 마지막 트리거 후 잠깐(꼬리)
+    //   더 돌린다. 그러면 이어진 칸들이 폭 변화 내내 같이 높이를 맞춰 한 번에 부드럽게 움직인다.
+    let pumpRaf = 0;
+    let pumpUntil = 0;
+    let pumping = false;
+    function pump() {
+      pumping = true;
+      const step = () => {
+        if (cancelled) {
+          pumping = false;
+          return;
+        }
+        equalize();
+        if (typeof performance !== "undefined" && performance.now() < pumpUntil) {
+          pumpRaf = requestAnimationFrame(step);
+        } else {
+          pumping = false;
+        }
+      };
+      pumpRaf = requestAnimationFrame(step);
+    }
     function schedule() {
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
-      raf1 = requestAnimationFrame(() => {
-        raf2 = requestAnimationFrame(equalize);
-      });
+      // 마지막 트리거 뒤로도 ~250ms(패널 transition 0.52s를 매 프레임 덮고 꼬리 여유) 더 펌프.
+      pumpUntil = (typeof performance !== "undefined" ? performance.now() : 0) + 250;
+      if (!pumping) {
+        pump();
+      }
     }
     scheduleRef.current = schedule;
 
@@ -113,15 +137,13 @@ export function useEqualChainHeights<T extends HTMLElement>(
 
     cleanupRef.current = () => {
       cancelled = true;
-      cancelAnimationFrame(raf1);
-      cancelAnimationFrame(raf2);
+      cancelAnimationFrame(pumpRaf);
       ro?.disconnect();
       mo?.disconnect();
       root.removeEventListener("animationend", onSettle);
       root.removeEventListener("transitionend", onSettle);
       window.removeEventListener("resize", schedule);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 데이터(이벤트/뷰 등)가 바뀌면 한 번 더 맞춘다 — MutationObserver 보강. 그리드가 안 바뀐 채
