@@ -5102,21 +5102,24 @@ export function StudioShell({
                             ) : (
                               <strong className="span-cont">{main || " "}</strong>
                             )}
-                            {span.showTitle && isSel && canEdit ? (
-                              <button
-                                aria-label="일정 삭제"
-                                className="pill-delete"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteEvent(event.id);
-                                }}
-                                title="이 일정 삭제"
-                                type="button"
-                              >
-                                <X aria-hidden="true" size={17} strokeWidth={3} />
-                              </button>
-                            ) : null}
                           </div>
+                          {/* 삭제 X는 pill-main 밖(카드 직속)에 둔다 — 2색 카드는 pill-main이
+                              position:relative가 돼(무늬 z-index) top:50%가 제목 줄 기준이 되어
+                              여러 줄 카드에서 X가 위로 쏠렸다. 카드 직속이면 항상 카드 전체 세로 중앙. */}
+                          {span.showTitle && isSel && canEdit ? (
+                            <button
+                              aria-label="일정 삭제"
+                              className="pill-delete"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteEvent(event.id);
+                              }}
+                              title="이 일정 삭제"
+                              type="button"
+                            >
+                              <X aria-hidden="true" size={17} strokeWidth={3} />
+                            </button>
+                          ) : null}
                           {/* 일정 카드는 항상 펼침 고정. 이어지는 칸은 투명으로 높이만 맞춘다. */}
                           {subs.length > 0 ? (
                             <ul className={`pill-subs${span.showTitle ? "" : " span-cont"}`}>
