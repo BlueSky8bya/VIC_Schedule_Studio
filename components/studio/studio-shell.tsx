@@ -641,6 +641,9 @@ export function StudioShell({
   // 톡 줄어들며 사라진다(deleting). 둘 다 "내가 누른 게 먹혔다"는 확신을 준다.
   const [justSavedId, setJustSavedId] = useState<string | null>(null);
   const justSavedTimer = useRef<number | null>(null);
+  // 저장 시 카드뿐 아니라 편집 패널도 살짝 반짝여 '저장됨'을 더 확실히 알린다.
+  const [panelSaved, setPanelSaved] = useState(false);
+  const panelSavedTimer = useRef<number | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(() => new Set());
   // 첫 진입(스켈레톤 직후) 한 번만 날짜칸·일정이 차르륵 순차로 등장하게 한다. 달 이동은 기존
   // 슬라이드 그대로 — 그래서 첫 등장에선 컨테이너 슬라이드를 끄고 칸 스태거로 대체한다.
@@ -2528,6 +2531,7 @@ export function StudioShell({
     setForm((f) => ({ ...f, id: tempId }));
     setActionError(null);
     markJustSaved(tempId); // 카드가 통통 착지하며 반짝
+    flashEditorPanel(); // 편집 패널도 살짝 반짝 → 저장 완료를 더 확실히 인지
     // 저장됨 = 더 이상 미저장 변경 없음 → 기준을 방금 저장한 내용으로 올리고 임시 보관을 비운다.
     editBaselineRef.current = draftFingerprint(form);
     setDraftRestored(false);
@@ -2589,6 +2593,18 @@ export function StudioShell({
     setJustSavedId(id);
     if (justSavedTimer.current) window.clearTimeout(justSavedTimer.current);
     justSavedTimer.current = window.setTimeout(() => setJustSavedId(null), 650);
+  }
+
+  // 편집 패널 반짝(저장 완료 신호). 패널이 열려 있을 때만 의미가 있다.
+  function flashEditorPanel() {
+    if (prefersReducedMotion() || !editorVisible) return;
+    setPanelSaved(false);
+    // 연속 저장에도 매번 다시 재생되도록 다음 프레임에 켠다(같은 값 재설정은 애니 리트리거 안 됨).
+    requestAnimationFrame(() => {
+      setPanelSaved(true);
+      if (panelSavedTimer.current) window.clearTimeout(panelSavedTimer.current);
+      panelSavedTimer.current = window.setTimeout(() => setPanelSaved(false), 620);
+    });
   }
 
   function deleteEvent(targetId: string) {
@@ -4451,6 +4467,8 @@ export function StudioShell({
           <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
           <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복사·붙여넣기</span>
           <span><kbd>날짜 우클릭</kbd> 휴뱅</span>
+          <span><kbd>드래그</kbd> 날짜 범위 선택</span>
+          <span><kbd>Ctrl</kbd>+날짜 따로 선택</span>
           <span><kbd>←</kbd><kbd>→</kbd> 월 이동</span>
           <span><kbd>Esc</kbd> 닫기</span>
         </div>
@@ -4770,7 +4788,7 @@ export function StudioShell({
           </div>
         </section>
 
-        <aside className="event-editor-panel">
+        <aside className={`event-editor-panel${panelSaved ? " panel-saved" : ""}`}>
           {/* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */}
           {!canEdit ? (
             renderReadonlyDetail()

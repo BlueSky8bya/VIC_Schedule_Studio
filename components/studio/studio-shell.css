@@ -4492,6 +4492,37 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   gap: 14px;
   min-width: 0;
 }
+/* 저장 완료 반짝 — 카드 반짝(.just-saved)과 짝을 이뤄 편집 창 쪽에서도 '저장됨'을 확인시킨다.
+   패널 자체엔 배경이 없어 ::after 오버레이로 옅은 보라 발광을 한 번 훑고 사라진다. */
+.event-editor-panel.panel-saved {
+  position: relative;
+}
+.event-editor-panel.panel-saved::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: var(--r-lg, 14px);
+  pointer-events: none;
+  z-index: 3;
+  animation: editor-panel-saved 0.6s var(--ease, ease-out);
+}
+@keyframes editor-panel-saved {
+  0% {
+    box-shadow: 0 0 0 0 rgb(139 92 246 / 0%);
+    background: rgb(139 92 246 / 10%);
+  }
+  35% {
+    box-shadow: 0 0 0 3px rgb(139 92 246 / 34%);
+    background: rgb(139 92 246 / 7%);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(139 92 246 / 0%);
+    background: rgb(139 92 246 / 0%);
+  }
+}
+html[data-reduce-motion] .event-editor-panel.panel-saved::after {
+  animation: none;
+}
 .studio-left-panel {
   margin-right: 18px; /* 색상 필터와 달력 사이 간격(gap:0 대체) */
 }
