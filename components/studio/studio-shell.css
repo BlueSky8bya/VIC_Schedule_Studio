@@ -5584,6 +5584,10 @@ body.cell-range-dragging {
   position: relative; /* pill-delete(absolute) 기준 */
   display: flex;
   flex-direction: column;
+  /* 이어진 칸 높이맞춤(useEqualChainHeights)으로 min-height가 커진 카드는 내용이 위로 쏠려
+     비어 보이고, 삭제 X(top:50%)도 내용 중앙과 어긋난다. 내용을 세로 가운데로 모아 균형을
+     맞추고 X도 내용 중앙에 오게 한다(내용≈높이인 일반 카드엔 영향 없음). */
+  justify-content: center;
   /* 4px 기반 일관 리듬(제목·본문·형식색 사이). 제각각이던 2/3/5px를 한 박자로 통일. */
   gap: 4px;
   border: 1px solid rgb(0 0 0 / 7%);
