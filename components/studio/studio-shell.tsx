@@ -713,8 +713,9 @@ export function StudioShell({
   }
 
   // 카드 클릭:
-  // - 선택된 일정과 인접+이미 이어진 카드를 누르면 → 그 이음새 하나만 끊는다(토글).
-  // - 선택된 일정과 사이가 "매일 연속 + 같은 색"이면 → 그 구간 전체를 한 번에 잇는다.
+  // - 선택된 일정과 인접+이미 이어진 카드를 누르면 → 그 이음새 하나만 끊는다(토글, 임시).
+  //   ※ 잇기(연결)는 클릭이 아니라 '드래그-놓기'로만 한다(제목 편집 왕복 중 실수로 붙던 문제 제거).
+  //     끊기도 곧 '칼로 긋기' 제스처로 옮길 예정 — 그때 이 클릭-끊기도 제거한다.
   // - 그 외에는 그냥 그 일정을 선택(편집)한다.
   function handlePillClick(eventId: string) {
     const target = events.find((e) => e.id === eventId);
@@ -753,34 +754,6 @@ export function StudioShell({
             setEvents(snapshot);
           }
         })();
-      } else {
-        const chain = buildLinkChain(anchor, target, events);
-        if (chain) {
-          // 낙관적으로 체인 연결(각 일정 linkNext = 다음 id).
-          const linkMap = new Map<string, string>();
-          for (let i = 0; i < chain.length - 1; i += 1) {
-            linkMap.set(chain[i], chain[i + 1]);
-          }
-          setEvents((prev) =>
-            prev.map((e) => (linkMap.has(e.id) ? { ...e, linkNext: linkMap.get(e.id) } : e))
-          );
-          setActionError(null);
-          // 서버에는 실제 id로 보낸다. 새 일정이 아직 저장 중이면 끝나길 기다렸다 잇는다.
-          void (async () => {
-            const result = await enqueueWrite(async () => {
-              const resolved = await Promise.all(chain.map(resolveEventId));
-              if (resolved.some((id) => !id)) {
-                setEvents(snapshot); // 저장이 끝내 실패 → 되돌림
-                return null;
-              }
-              return postStudioWrite("linkChain", { orderedIds: resolved as string[] });
-            });
-            if (!result.ok) {
-              setActionError(result.error);
-              setEvents(snapshot);
-            }
-          })();
-        }
       }
     }
 
@@ -1643,6 +1616,13 @@ export function StudioShell({
   // "유령(ghost)"이 손끝을 따라오고(웹·터치 공용), 가장자리에선 자동 스크롤된다.
   // (멀티데이 막대는 칸마다 쪼개 그려 드래그가 까다로워 제외 — 단일일 카드만 끌 수 있다.)
   const [dragEventId, setDragEventId] = useState<string | null>(null);
+  // 잇기(연결)를 '드래그'로만 하도록: 카드를 집으면 지금 이 카드와 이을 수 있는(연속+같은태그)
+  // 상대 카드들을 강조하고 나머지는 흐릿하게, 그 위로 끌고 가 놓으면 그 구간을 잇는다.
+  // (예전 클릭 2번 연결은 제목 편집 왕복 중 실수로 붙던 문제로 제거했다.)
+  const [connectCandidates, setConnectCandidates] = useState<Set<string>>(() => new Set());
+  const [connectHoverId, setConnectHoverId] = useState<string | null>(null);
+  const connectCandidatesRef = useRef<Set<string>>(new Set());
+  const connectHoverRef = useRef<string | null>(null);
   // #8: 이동 저장이 진행 중인 카드 id들 — 그 카드에 작은 '동기화 중' 표시를 띄운다(서버 반영 전).
   const [syncingIds, setSyncingIds] = useState<string[]>([]);
 
@@ -1854,7 +1834,9 @@ export function StudioShell({
     const info = dragInfoRef.current;
     const target = dropDateRef.current;
     const over = dropOverRef.current;
+    const connectTo = connectHoverRef.current; // 이을 상대 위에서 놓았는가
     const ghost = dragGhostRef.current;
+    clearConnectCandidates(); // 강조/흐림 끄기(결과와 무관하게 항상)
     // 던지기 판정 — 놓는 순간 충분히 빠르거나(px/ms) 빙빙 돌고 있으면(deg/frame) 날려보낸다.
     const v = edVelRef.current;
     const speed = Math.hypot(v.x, v.y);
@@ -1879,7 +1861,10 @@ export function StudioShell({
     ghost?.remove();
     dragGhostRef.current = null;
     setDragEventId(null);
-    if (info?.started && target) {
+    if (info?.started && connectTo) {
+      // 이을 수 있는 상대 위에서 놓음 → 이동이 아니라 그 구간을 잇는다.
+      connectChain(info.id, connectTo);
+    } else if (info?.started && target) {
       void dropEventInto(info.id, info.sourceDate, target, over);
     }
     dragInfoRef.current = null;
@@ -1962,6 +1947,8 @@ export function StudioShell({
       }
       if (dist < 6) return;
       info.started = true;
+      // 집는 순간, 이 카드와 이을 수 있는(연속+같은태그) 상대들을 계산해 강조/흐림을 켠다.
+      armConnectCandidates(info.id);
       // 새 드래그 시작 → 이전에 날아가던 유령이 있으면 즉시 정리.
       if (flingRafRef.current) {
         cancelAnimationFrame(flingRafRef.current);
@@ -2048,16 +2035,24 @@ export function StudioShell({
     // 카드가 아니면(빈 공간) null → 맨 끝.
     const pillEl = under?.closest("[data-eventid]") as HTMLElement | null;
     const overId = pillEl?.getAttribute("data-eventid") ?? null;
-    if (overId && overId !== info.id) {
+    // 이을 수 있는 상대 카드 위에 있으면 '연결 의도' — 그 카드를 강하게 강조하고, 이동 삽입선은
+    // 숨긴다(놓으면 이동이 아니라 잇기). 그 외에는 기존 이동 로직 그대로.
+    const overIsCandidate = overId != null && connectCandidatesRef.current.has(overId);
+    if (connectHoverRef.current !== (overIsCandidate ? overId : null)) {
+      connectHoverRef.current = overIsCandidate ? overId : null;
+      setConnectHoverId(connectHoverRef.current);
+    }
+    if (overId && overId !== info.id && !overIsCandidate) {
       const r = pillEl!.getBoundingClientRect();
       dropOverRef.current = { id: overId, after: e.clientY > r.top + r.height * 0.4 };
     } else {
       dropOverRef.current = null;
     }
-    // 삽입선 위치 갱신(바뀔 때만 state 변경 → 불필요한 재렌더 방지).
-    const nextSlot = iso
-      ? { day: iso, overId: dropOverRef.current?.id ?? null, after: dropOverRef.current?.after ?? false }
-      : null;
+    // 삽입선 위치 갱신(바뀔 때만 state 변경 → 불필요한 재렌더 방지). 연결 의도 중엔 삽입선 숨김.
+    const nextSlot =
+      iso && !overIsCandidate
+        ? { day: iso, overId: dropOverRef.current?.id ?? null, after: dropOverRef.current?.after ?? false }
+        : null;
     setDropSlot((prev) => {
       if (prev === nextSlot) return prev;
       if (
@@ -2126,6 +2121,70 @@ export function StudioShell({
       Boolean(e.linkNext) ||
       events.some((o) => o.linkNext === e.id)
     );
+  }
+
+  // 드래그로 집은 카드와 '이을 수 있는' 상대들을 계산해 강조/흐림을 켠다. 이을 수 있음 =
+  // buildLinkChain이 성립(둘 사이 매일 연속 + 맞닿는 변의 대표 태그 일치). 없으면 순수 이동 드래그.
+  function armConnectCandidates(draggedId: string) {
+    const dragged = events.find((e) => e.id === draggedId);
+    if (!dragged || dragged.isSupport) return;
+    const set = new Set<string>();
+    for (const other of events) {
+      if (other.id === draggedId || other.isSupport) continue;
+      if (buildLinkChain(dragged, other, events)) set.add(other.id);
+    }
+    connectCandidatesRef.current = set;
+    setConnectCandidates(set);
+  }
+  function clearConnectCandidates() {
+    if (connectCandidatesRef.current.size) {
+      connectCandidatesRef.current = new Set();
+      setConnectCandidates(new Set());
+    }
+    if (connectHoverRef.current) {
+      connectHoverRef.current = null;
+      setConnectHoverId(null);
+    }
+  }
+
+  // 두 카드 사이 구간을 잇는다(각 일정 linkNext = 다음 id). 낙관 반영 후 서버엔 실제 id로.
+  // 드래그-놓기(연결)와 (임시로 남긴) 클릭-잇기 양쪽에서 쓴다.
+  function connectChain(anchorId: string, targetId: string) {
+    if (!canEdit) return;
+    const anchor = events.find((e) => e.id === anchorId);
+    const target = events.find((e) => e.id === targetId);
+    if (!anchor || !target) return;
+    const chain = buildLinkChain(anchor, target, events);
+    if (!chain || chain.length < 2) return;
+    // 이미 그대로 이어져 있으면(변화 없음) 서버 쓰기·토스트 없이 조용히 넘어간다.
+    const linkMap = new Map<string, string>();
+    let changed = false;
+    for (let i = 0; i < chain.length - 1; i += 1) {
+      linkMap.set(chain[i], chain[i + 1]);
+      if (events.find((e) => e.id === chain[i])?.linkNext !== chain[i + 1]) changed = true;
+    }
+    if (!changed) return;
+    const snapshot = events;
+    setEvents((prev) =>
+      prev.map((e) => (linkMap.has(e.id) ? { ...e, linkNext: linkMap.get(e.id) } : e))
+    );
+    setActionError(null);
+    hapticTick();
+    flashToast("이어붙였어요");
+    void (async () => {
+      const result = await enqueueWrite(async () => {
+        const resolved = await Promise.all(chain.map(resolveEventId));
+        if (resolved.some((id) => !id)) {
+          setEvents(snapshot);
+          return null;
+        }
+        return postStudioWrite("linkChain", { orderedIds: resolved as string[] });
+      });
+      if (!result.ok) {
+        setActionError(result.error);
+        setEvents(snapshot);
+      }
+    })();
   }
 
   // 이동(드롭) 저장을 직렬 큐로 처리 — 빠른 연속 이동도 큐 순서대로 저장돼 '마지막 위치'가 서버
@@ -4637,6 +4696,12 @@ export function StudioShell({
                         visibleEvents
                       );
                       const draggable = canEdit && !span.isMulti;
+                      // 드래그로 잇기 중: 이을 수 있는 상대는 강조(hover면 더 강하게), 나머지는 흐림.
+                      const connecting = connectCandidates.size > 0;
+                      const isConnTarget = connecting && connectCandidates.has(event.id);
+                      const isConnHover = connectHoverId === event.id;
+                      const connDim =
+                        connecting && !isConnTarget && dragEventId !== event.id;
                       // 떡밥 표시는 '아직 안 풀린'(공개 시각이 미래) 것만. 시각이 지나면 평범한 일정과
                       // 완전히 동일 — 점선·🔮 모두 끈다.
                       const teaserHidden = teaserStillHidden(event);
@@ -4653,6 +4718,9 @@ export function StudioShell({
                         span.isMulti && !span.roundRight ? "no-right" : "",
                         draggable ? "draggable" : "",
                         dragEventId === event.id ? "dragging-src" : "",
+                        isConnTarget ? "connect-target" : "",
+                        isConnHover ? "connect-hover" : "",
+                        connDim ? "connect-dim" : "",
                         justSavedId === event.id ? "just-saved" : "",
                         deletingIds.has(event.id) ? "deleting" : ""
                       ]

@@ -5628,6 +5628,39 @@ body.cell-range-dragging {
   filter: grayscale(0.4);
   pointer-events: none;
 }
+/* 드래그로 잇기: 집은 카드와 이을 수 있는 상대만 또렷·강조하고 나머지는 흐릿하게 눌러, "지금
+   여기로 끌고 오면 이어진다"를 눈으로 구분시킨다(의도 분리). 합성 전용(opacity/transform/shadow). */
+.studio-event-pill.connect-dim {
+  opacity: 0.3;
+  filter: grayscale(0.5);
+  transition:
+    opacity 0.16s var(--ease, ease-out),
+    filter 0.16s var(--ease, ease-out);
+}
+.studio-event-pill.connect-target {
+  z-index: 2;
+  box-shadow: 0 0 0 2px rgb(139 92 246 / 45%);
+  animation: connect-target-pulse 1.1s ease-in-out infinite;
+  transition: box-shadow 0.16s var(--ease, ease-out);
+}
+.studio-event-pill.connect-target.connect-hover {
+  z-index: 3;
+  box-shadow: 0 0 0 3px rgb(139 92 246 / 90%);
+  transform: translateY(-1px) scale(1.03);
+  animation: none;
+}
+@keyframes connect-target-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px rgb(139 92 246 / 34%);
+  }
+  50% {
+    box-shadow: 0 0 0 3px rgb(139 92 246 / 62%);
+  }
+}
+html[data-reduce-motion] .studio-event-pill.connect-target {
+  animation: none;
+}
 /* 저장·생성 직후: 카드가 통통 착지하며 한 번 반짝(노란 링) — "먹혔다"는 확신 + 귀여움. */
 .studio-event-pill.just-saved {
   animation: pill-settle 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
