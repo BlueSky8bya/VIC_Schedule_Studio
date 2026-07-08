@@ -750,33 +750,6 @@ export function StudioShell({
     })();
   }
 
-  function onSeamCutPointerDown(e: ReactPointerEvent<HTMLElement>, earlierId: string) {
-    if (!canEdit) return;
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    e.stopPropagation(); // 카드 선택/드래그로 번지지 않게
-    e.preventDefault();
-    const startX = e.clientX;
-    const startY = e.clientY;
-    let done = false;
-    const cleanup = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      window.removeEventListener("pointercancel", up);
-    };
-    const move = (ev: PointerEvent) => {
-      if (done) return;
-      // 이음새를 가로지르는 '긋기'로 성립 — 짧은 스침(12px)이면 자른다. 클릭만으론 안 잘림.
-      if (Math.hypot(ev.clientX - startX, ev.clientY - startY) > 12) {
-        done = true;
-        performSeamCut(earlierId);
-        cleanup();
-      }
-    };
-    const up = () => cleanup();
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up, { once: true });
-    window.addEventListener("pointercancel", up, { once: true });
-  }
   const [view, setView] = useState(
     initialView ?? {
       year: schedule.calendar.defaultYear,
@@ -1639,12 +1612,31 @@ export function StudioShell({
   // (예전 클릭 2번 연결은 제목 편집 왕복 중 실수로 붙던 문제로 제거했다.)
   const [connectCandidates, setConnectCandidates] = useState<Set<string>>(() => new Set());
   const [connectHoverId, setConnectHoverId] = useState<string | null>(null);
+  const [connectSourceId, setConnectSourceId] = useState<string | null>(null);
   const connectCandidatesRef = useRef<Set<string>>(new Set());
   const connectHoverRef = useRef<string | null>(null);
-  // 끊기는 이음새를 '칼처럼 긋기'로만: 단순 클릭은 안 끊기고(제목 편집 왕복 보호), 이음새 손잡이를
-  // 눌러 짧게 그으면 그 연결만 끊긴다. cutFlashId = 방금 잘린 카드(슬라이스 연출용).
+  // 끊기 = 방금 잘린 카드(슬라이스 연출용). 우클릭 빈 공간에서 그은 빨간 선이 이음새를 스치면 끊는다.
   const [cutFlashId, setCutFlashId] = useState<string | null>(null);
   const cutFlashTimer = useRef<number | null>(null);
+  // 우클릭 제스처(잇기/끊기): 카드 위에서 시작=잇기(보라 선 → 후보에 놓으면 연결), 빈 곳에서
+  // 시작=끊기(빨간 선이 이음새 스치면 끊김). 오버레이 SVG는 명령형으로 붙였다 뗀다(리렌더 회피).
+  type RightGesture = {
+    mode: "connect" | "cut";
+    sourceId: string | null;
+    startX: number;
+    startY: number;
+    moved: boolean;
+    svg: SVGSVGElement | null;
+    path: SVGElement | null;
+    srcX: number;
+    srcY: number;
+    points: string[];
+    seams: { id: string; x: number; top: number; bottom: number }[];
+    cutSet: Set<string>;
+  };
+  const rightGestureRef = useRef<RightGesture | null>(null);
+  // 우클릭 '드래그였다' 표시 — 뒤따르는 contextmenu(휴뱅 메뉴)를 한 번 막는다. 단순 우클릭은 통과.
+  const rightMovedRef = useRef(false);
   // #8: 이동 저장이 진행 중인 카드 id들 — 그 카드에 작은 '동기화 중' 표시를 띄운다(서버 반영 전).
   const [syncingIds, setSyncingIds] = useState<string[]>([]);
 
@@ -1856,9 +1848,7 @@ export function StudioShell({
     const info = dragInfoRef.current;
     const target = dropDateRef.current;
     const over = dropOverRef.current;
-    const connectTo = connectHoverRef.current; // 이을 상대 위에서 놓았는가
     const ghost = dragGhostRef.current;
-    clearConnectCandidates(); // 강조/흐림 끄기(결과와 무관하게 항상)
     // 던지기 판정 — 놓는 순간 충분히 빠르거나(px/ms) 빙빙 돌고 있으면(deg/frame) 날려보낸다.
     const v = edVelRef.current;
     const speed = Math.hypot(v.x, v.y);
@@ -1883,10 +1873,7 @@ export function StudioShell({
     ghost?.remove();
     dragGhostRef.current = null;
     setDragEventId(null);
-    if (info?.started && connectTo) {
-      // 이을 수 있는 상대 위에서 놓음 → 이동이 아니라 그 구간을 잇는다.
-      connectChain(info.id, connectTo);
-    } else if (info?.started && target) {
+    if (info?.started && target) {
       void dropEventInto(info.id, info.sourceDate, target, over);
     }
     dragInfoRef.current = null;
@@ -1969,8 +1956,6 @@ export function StudioShell({
       }
       if (dist < 6) return;
       info.started = true;
-      // 집는 순간, 이 카드와 이을 수 있는(연속+같은태그) 상대들을 계산해 강조/흐림을 켠다.
-      armConnectCandidates(info.id);
       // 새 드래그 시작 → 이전에 날아가던 유령이 있으면 즉시 정리.
       if (flingRafRef.current) {
         cancelAnimationFrame(flingRafRef.current);
@@ -2057,24 +2042,16 @@ export function StudioShell({
     // 카드가 아니면(빈 공간) null → 맨 끝.
     const pillEl = under?.closest("[data-eventid]") as HTMLElement | null;
     const overId = pillEl?.getAttribute("data-eventid") ?? null;
-    // 이을 수 있는 상대 카드 위에 있으면 '연결 의도' — 그 카드를 강하게 강조하고, 이동 삽입선은
-    // 숨긴다(놓으면 이동이 아니라 잇기). 그 외에는 기존 이동 로직 그대로.
-    const overIsCandidate = overId != null && connectCandidatesRef.current.has(overId);
-    if (connectHoverRef.current !== (overIsCandidate ? overId : null)) {
-      connectHoverRef.current = overIsCandidate ? overId : null;
-      setConnectHoverId(connectHoverRef.current);
-    }
-    if (overId && overId !== info.id && !overIsCandidate) {
+    if (overId && overId !== info.id) {
       const r = pillEl!.getBoundingClientRect();
       dropOverRef.current = { id: overId, after: e.clientY > r.top + r.height * 0.4 };
     } else {
       dropOverRef.current = null;
     }
-    // 삽입선 위치 갱신(바뀔 때만 state 변경 → 불필요한 재렌더 방지). 연결 의도 중엔 삽입선 숨김.
-    const nextSlot =
-      iso && !overIsCandidate
-        ? { day: iso, overId: dropOverRef.current?.id ?? null, after: dropOverRef.current?.after ?? false }
-        : null;
+    // 삽입선 위치 갱신(바뀔 때만 state 변경 → 불필요한 재렌더 방지).
+    const nextSlot = iso
+      ? { day: iso, overId: dropOverRef.current?.id ?? null, after: dropOverRef.current?.after ?? false }
+      : null;
     setDropSlot((prev) => {
       if (prev === nextSlot) return prev;
       if (
@@ -2167,6 +2144,7 @@ export function StudioShell({
       connectHoverRef.current = null;
       setConnectHoverId(null);
     }
+    setConnectSourceId(null);
   }
 
   // 두 카드 사이 구간을 잇는다(각 일정 linkNext = 다음 id). 낙관 반영 후 서버엔 실제 id로.
@@ -2208,6 +2186,170 @@ export function StudioShell({
       }
     })();
   }
+
+  // ── 우클릭 잇기/끊기 제스처 ─────────────────────────────────────────────────
+  // 현재 화면에 '이어진 것으로 그려진' 이음새(오른쪽 평평, data-seam에 R)들의 위치를 스냅샷.
+  // 빨간 선이 이 세로 밴드를 스치면 그 연결(earlier.linkNext)을 끊는다.
+  function collectSeams(): { id: string; x: number; top: number; bottom: number }[] {
+    const out: { id: string; x: number; top: number; bottom: number }[] = [];
+    for (const ev of events) {
+      if (!ev.linkNext) continue;
+      const el = document.querySelector<HTMLElement>(`[data-eventid="${CSS.escape(ev.id)}"]`);
+      if (!el) continue;
+      if (!(el.getAttribute("data-seam") ?? "").includes("R")) continue; // 실제 이어진 이음새만
+      const r = el.getBoundingClientRect();
+      out.push({ id: ev.id, x: r.right, top: r.top, bottom: r.bottom });
+    }
+    return out;
+  }
+  function makeGestureSvg(): SVGSVGElement {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "right-gesture-overlay");
+    Object.assign(svg.style, {
+      position: "fixed",
+      left: "0",
+      top: "0",
+      width: "100vw",
+      height: "100vh",
+      pointerEvents: "none",
+      zIndex: "9998"
+    });
+    return svg;
+  }
+  function onRightMove(e: PointerEvent) {
+    const g = rightGestureRef.current;
+    if (!g) return;
+    const ns = "http://www.w3.org/2000/svg";
+    if (!g.moved) {
+      if (Math.hypot(e.clientX - g.startX, e.clientY - g.startY) < 6) return;
+      g.moved = true;
+      rightMovedRef.current = true; // 뒤따르는 contextmenu 1회 차단(휴뱅 메뉴 안 뜨게)
+      const svg = makeGestureSvg();
+      if (g.mode === "connect" && g.sourceId) {
+        armConnectCandidates(g.sourceId); // 이을 수 있는 상대 강조/흐림
+        setConnectSourceId(g.sourceId); // 소스 카드는 흐리게 하지 않는다
+        const sEl = document.querySelector<HTMLElement>(
+          `[data-eventid="${CSS.escape(g.sourceId)}"]`
+        );
+        const sr = sEl?.getBoundingClientRect();
+        g.srcX = sr ? sr.left + sr.width / 2 : g.startX;
+        g.srcY = sr ? sr.top + sr.height / 2 : g.startY;
+        const line = document.createElementNS(ns, "line");
+        line.setAttribute("stroke", "rgba(139,92,246,0.92)");
+        line.setAttribute("stroke-width", "3");
+        line.setAttribute("stroke-linecap", "round");
+        line.setAttribute("stroke-dasharray", "1 8");
+        line.setAttribute("x1", String(g.srcX));
+        line.setAttribute("y1", String(g.srcY));
+        svg.appendChild(line);
+        g.path = line;
+      } else {
+        g.seams = collectSeams();
+        g.points = [`${g.startX},${g.startY}`];
+        const poly = document.createElementNS(ns, "polyline");
+        poly.setAttribute("fill", "none");
+        poly.setAttribute("stroke", "rgba(220,38,38,0.92)");
+        poly.setAttribute("stroke-width", "3");
+        poly.setAttribute("stroke-linecap", "round");
+        poly.setAttribute("stroke-linejoin", "round");
+        svg.appendChild(poly);
+        g.path = poly;
+      }
+      document.body.appendChild(svg);
+      g.svg = svg;
+    }
+    if (g.mode === "connect") {
+      (g.path as SVGLineElement).setAttribute("x2", String(e.clientX));
+      (g.path as SVGLineElement).setAttribute("y2", String(e.clientY));
+      const under = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+      const pid = under?.closest("[data-eventid]")?.getAttribute("data-eventid") ?? null;
+      const hover = pid && connectCandidatesRef.current.has(pid) ? pid : null;
+      if (connectHoverRef.current !== hover) {
+        connectHoverRef.current = hover;
+        setConnectHoverId(hover);
+      }
+    } else {
+      g.points.push(`${e.clientX},${e.clientY}`);
+      if (g.points.length > 64) g.points.shift(); // 꼬리 길이 제한
+      (g.path as SVGPolylineElement).setAttribute("points", g.points.join(" "));
+      // 커서가 이음새 세로 밴드(x±8, 세로범위)에 들어오면 스친 것으로 보고 끊는다(중복 방지).
+      for (const s of g.seams) {
+        if (g.cutSet.has(s.id)) continue;
+        if (e.clientX >= s.x - 8 && e.clientX <= s.x + 8 && e.clientY >= s.top && e.clientY <= s.bottom) {
+          g.cutSet.add(s.id);
+          performSeamCut(s.id);
+        }
+      }
+    }
+  }
+  function onRightUp() {
+    window.removeEventListener("pointermove", onRightMove);
+    window.removeEventListener("pointerup", onRightUp);
+    window.removeEventListener("pointercancel", onRightUp);
+    const g = rightGestureRef.current;
+    rightGestureRef.current = null;
+    if (!g) return;
+    if (g.moved && g.mode === "connect") {
+      const hover = connectHoverRef.current;
+      if (hover && g.sourceId) connectChain(g.sourceId, hover);
+    }
+    clearConnectCandidates();
+    g.svg?.remove();
+    // 정상적으론 뒤따르는 contextmenu에서 플래그가 꺼진다. 그게 안 오는 경우(pointercancel 등)를
+    // 대비한 안전장치 — 다음 우클릭이 잘못 막히지 않게 잠시 뒤 해제.
+    if (g.moved) {
+      window.setTimeout(() => {
+        rightMovedRef.current = false;
+      }, 500);
+    }
+  }
+  // 우클릭 눌림 — 카드 위=잇기, 빈 칸=끊기 후보. 실제 시작은 6px 이상 움직였을 때(onRightMove).
+  function beginRightGesture(e: PointerEvent) {
+    if (!canEdit || e.button !== 2 || e.pointerType !== "mouse") return;
+    const el = e.target as HTMLElement;
+    if (!el.closest(".studio-month-grid")) return; // 달력 그리드 안에서만
+    const pill = el.closest<HTMLElement>("[data-eventid]");
+    const cell = el.closest<HTMLElement>("[data-cell-index]");
+    if (!pill && !cell) return;
+    rightGestureRef.current = {
+      mode: pill ? "connect" : "cut",
+      sourceId: pill?.getAttribute("data-eventid") ?? null,
+      startX: e.clientX,
+      startY: e.clientY,
+      moved: false,
+      svg: null,
+      path: null,
+      srcX: e.clientX,
+      srcY: e.clientY,
+      points: [],
+      seams: [],
+      cutSet: new Set<string>()
+    };
+    window.addEventListener("pointermove", onRightMove);
+    window.addEventListener("pointerup", onRightUp, { once: true });
+    window.addEventListener("pointercancel", onRightUp, { once: true });
+  }
+
+  // 우클릭 제스처 배선: 우클릭 눌림을 캡처로 잡고(잇기/끊기 시작), 뒤따르는 contextmenu는 '드래그
+  // 였을 때만' 막는다(단순 우클릭은 통과 → 셀의 휴뱅 메뉴 그대로). 소유자(canEdit)에서만.
+  useEffect(() => {
+    if (!canEdit) return;
+    const onDown = (e: PointerEvent) => beginRightGesture(e);
+    const onCtx = (e: MouseEvent) => {
+      if (rightMovedRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        rightMovedRef.current = false;
+      }
+    };
+    window.addEventListener("pointerdown", onDown, true);
+    window.addEventListener("contextmenu", onCtx, true);
+    return () => {
+      window.removeEventListener("pointerdown", onDown, true);
+      window.removeEventListener("contextmenu", onCtx, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canEdit, events]);
 
   // 이동(드롭) 저장을 직렬 큐로 처리 — 빠른 연속 이동도 큐 순서대로 저장돼 '마지막 위치'가 서버
   // 최종값이 된다(레이스로 옛 위치가 저장되는 문제 방지). temp id는 저장 완료까지 기다려 보낸다.
@@ -4548,6 +4690,8 @@ export function StudioShell({
           <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
           <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복사·붙여넣기</span>
           <span><kbd>날짜 우클릭</kbd> 휴뱅</span>
+          <span><kbd>카드 우클릭 드래그</kbd> 잇기(놓을 곳 강조)</span>
+          <span><kbd>빈 곳 우클릭 긋기</kbd> 이음새 끊기</span>
           <span><kbd>드래그</kbd> 날짜 범위 선택</span>
           <span><kbd>Ctrl</kbd>+날짜 따로 선택</span>
           <span><kbd>←</kbd><kbd>→</kbd> 월 이동</span>
@@ -4718,16 +4862,15 @@ export function StudioShell({
                         visibleEvents
                       );
                       const draggable = canEdit && !span.isMulti;
-                      // 이 카드가 '다음 칸과 이어진 이음새(오른쪽 평평)'를 가졌는가 → 그 위에 칼로
-                      // 긋는 끊기 손잡이를 얹는다(linkNext로 이어진 경우만; 멀티데이 자체 스팬 제외).
-                      const hasCutSeam =
-                        canEdit && Boolean(event.linkNext) && span.isMulti && !span.roundRight;
-                      // 드래그로 잇기 중: 이을 수 있는 상대는 강조(hover면 더 강하게), 나머지는 흐림.
+                      // 우클릭-드래그로 잇기 중: 이을 수 있는 상대는 강조(hover면 더 강하게), 나머지는 흐림.
                       const connecting = connectCandidates.size > 0;
                       const isConnTarget = connecting && connectCandidates.has(event.id);
                       const isConnHover = connectHoverId === event.id;
                       const connDim =
-                        connecting && !isConnTarget && dragEventId !== event.id;
+                        connecting &&
+                        !isConnTarget &&
+                        event.id !== connectSourceId &&
+                        dragEventId !== event.id;
                       // 떡밥 표시는 '아직 안 풀린'(공개 시각이 미래) 것만. 시각이 지나면 평범한 일정과
                       // 완전히 동일 — 점선·🔮 모두 끈다.
                       const teaserHidden = teaserStillHidden(event);
@@ -4818,21 +4961,6 @@ export function StudioShell({
                                 style={mixedPatternMaskStyle(mixStyle, "b")}
                               />
                             </>
-                          ) : null}
-                          {/* 이음새 칼로 긋기 손잡이 — 오른쪽 이어진 변에 얹는 얇은 띠. 눌러 짧게
-                              그으면 그 연결만 끊긴다(단순 클릭은 무시). 이어진 카드는 draggable=false라
-                              카드 드래그와 충돌하지 않는다. */}
-                          {hasCutSeam ? (
-                            <span
-                              className="seam-cut"
-                              title="칼로 그어 연결 끊기"
-                              aria-label="이 연결 끊기"
-                              role="button"
-                              onPointerDown={(e) => onSeamCutPointerDown(e, event.id)}
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <span className="seam-cut-blade" aria-hidden="true" />
-                            </span>
                           ) : null}
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
