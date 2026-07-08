@@ -1067,6 +1067,9 @@ export function PublicPoster({
     }
     return map;
   });
+  // 하트 서버 반영을 '일정별 직렬 큐'로 — 빠르게 껐다 켜도 서버가 클릭 순서대로 처리하고(토글
+  // RPC라 순서가 곧 결과), 가장 마지막 응답만 집계에 반영해 옛 응답이 방금 켠 배지를 덮지 않게 한다.
+  const heartOpRef = useRef<Map<string, { chain: Promise<void>; seq: number }>>(new Map());
   // 하트를 누를 때 화면에 떠오르는 ♥ 입자들(틱톡식 좋아요 연출). 잠깐 떴다 사라진다.
   const [floaters, setFloaters] = useState<HeartFloater[]>([]);
   // 특별한 날(공휴일·기념일·월드컵·한국 승) 탭 시 그 자리에서 터지는 점(point) 폭죽들.
@@ -1351,19 +1354,28 @@ export function PublicPoster({
     if (!toggleHeartAction) {
       return; // 서버 액션 없음(샘플/오프라인): 개인 표시만, 집계 없음.
     }
-    void toggleHeartAction(id, deviceToken).then((result) => {
-      if (result.ok) {
-        setHeartCounts((prev) => ({ ...prev, [id]: result.count }));
-      } else {
-        // 실패 → 낙관적 변경·델타를 함께 되돌린다(서버와 어긋난 채 남지 않게).
-        setBookmarks((prev) => (wasOn ? [...prev, id] : prev.filter((x) => x !== id)));
-        setHeartCounts((prev) => ({
-          ...prev,
-          [id]: Math.max(0, (prev[id] ?? 0) + (wasOn ? 1 : -1))
-        }));
-        recordHeartDelta(heartOwner, id, wasOn);
-      }
-    });
+    // 직렬 큐: 이 일정의 이전 토글이 끝난 뒤에 보낸다(순서 = 결과). 응답은 '가장 마지막' 토글만
+    // 집계에 반영 → 빠른 껐다 켬에도 옛(취소) 응답이 방금 켠 하트/배지를 덮지 않는다(새로고침 불필요).
+    const prevOp = heartOpRef.current.get(id);
+    const seq = (prevOp?.seq ?? 0) + 1;
+    const chain = (prevOp?.chain ?? Promise.resolve())
+      .catch(() => {})
+      .then(async () => {
+        const result = await toggleHeartAction(id, deviceToken);
+        const isLatest = heartOpRef.current.get(id)?.seq === seq;
+        if (result.ok) {
+          if (isLatest) setHeartCounts((prev) => ({ ...prev, [id]: result.count }));
+        } else if (isLatest) {
+          // 마지막 반영이 실패 → 낙관적 변경·델타를 되돌린다(서버와 어긋난 채 남지 않게).
+          setBookmarks((prev) => (wasOn ? [...prev, id] : prev.filter((x) => x !== id)));
+          setHeartCounts((prev) => ({
+            ...prev,
+            [id]: Math.max(0, (prev[id] ?? 0) + (wasOn ? 1 : -1))
+          }));
+          recordHeartDelta(heartOwner, id, wasOn);
+        }
+      });
+    heartOpRef.current.set(id, { chain, seq });
   }
   const isBookmarked = (id: string) => bookmarks.includes(id);
 
