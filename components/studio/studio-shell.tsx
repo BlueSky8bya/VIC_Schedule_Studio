@@ -596,6 +596,8 @@ export function StudioShell({
   // 모바일 일정 내용칸: 내용량에 맞춰 높이를 자동으로 맞춘다(처음 열 때 긴 내용도 한 번에 보이게).
   // 사용자가 손잡이로 더 늘리는 것(resize:vertical)도 그대로 가능.
   const mTitleRef = useRef<HTMLTextAreaElement>(null);
+  // 데스크톱 편집 패널의 제목칸 — 일정 선택 후 글자 키를 누르면 바로 여기로 포커스를 옮긴다.
+  const editorTitleRef = useRef<HTMLTextAreaElement>(null);
   function fitTitleHeight() {
     const el = mTitleRef.current;
     if (!el) return;
@@ -1555,17 +1557,30 @@ export function StudioShell({
       if (overlayLocked) {
         return; // 모달·시트 열림 중엔 월 이동 막기
       }
-      if (event.key === "ArrowLeft") {
+      if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
-        moveMonth(-1);
-      } else if (event.key === "ArrowRight") {
-        event.preventDefault();
-        moveMonth(1);
+        // 이어진 일정을 선택 중이면 월 이동 대신 체인 안에서 이전/다음 일정을 고른다(날짜 순).
+        const chain = selectedEventId ? getLinkedChainIds(selectedEventId, visibleEvents) : null;
+        if (selectedEventId && chain && chain.size > 1) {
+          const ordered = Array.from(chain)
+            .map((id) => visibleEvents.find((ev) => ev.id === id))
+            .filter((ev): ev is StudioScheduleEvent => Boolean(ev))
+            .sort((a, b) => getEventDateKey(a).localeCompare(getEventDateKey(b)));
+          const idx = ordered.findIndex((ev) => ev.id === selectedEventId);
+          const nextIdx = event.key === "ArrowLeft" ? idx - 1 : idx + 1;
+          if (nextIdx >= 0 && nextIdx < ordered.length) {
+            hapticTick();
+            selectEvent(ordered[nextIdx]);
+          }
+          return;
+        }
+        moveMonth(event.key === "ArrowLeft" ? -1 : 1);
       }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [isNarrow, viewerMode, overlayLocked]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isNarrow, viewerMode, overlayLocked, selectedEventId, visibleEvents]);
 
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
@@ -1630,6 +1645,8 @@ export function StudioShell({
     path: SVGElement | null;
     srcX: number;
     srcY: number;
+    prevX: number;
+    prevY: number;
     points: string[];
     seams: { id: string; x: number; top: number; bottom: number }[];
     cutSet: Set<string>;
@@ -2281,15 +2298,46 @@ export function StudioShell({
       g.points.push(`${e.clientX},${e.clientY}`);
       if (g.points.length > 64) g.points.shift(); // 꼬리 길이 제한
       (g.path as SVGPolylineElement).setAttribute("points", g.points.join(" "));
-      // 커서가 이음새 세로 밴드(x±8, 세로범위)에 들어오면 스친 것으로 보고 끊는다(중복 방지).
+      // 직전 점→현재 점 '선분'이 이음새의 세로선을 지나면(=카드 절반/절반 경계를 가로지르면) 끊는다.
+      // 점 위치가 정확히 밴드에 들어와야 하던 예전 방식보다 훨씬 잘 잡힌다(스치듯 그어도 성립).
       for (const s of g.seams) {
         if (g.cutSet.has(s.id)) continue;
-        if (e.clientX >= s.x - 8 && e.clientX <= s.x + 8 && e.clientY >= s.top && e.clientY <= s.bottom) {
+        if (segmentCrossesSeam(g.prevX, g.prevY, e.clientX, e.clientY, s)) {
           g.cutSet.add(s.id);
           performSeamCut(s.id);
         }
       }
+      g.prevX = e.clientX;
+      g.prevY = e.clientY;
     }
+  }
+  // 선분 (x1,y1)-(x2,y2)가 이음새 세로선(x=s.x, y∈[top,bottom])을 가로지르는가.
+  // 세로선을 x로 건너뛰면서 그 지점의 y가 이음새 세로범위 안이면 교차. 세로로 훑는(거의 수직)
+  // 스트로크는 x가 밴드(±6px) 안에 머물며 y가 겹치면 교차로 본다.
+  function segmentCrossesSeam(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    s: { x: number; top: number; bottom: number }
+  ): boolean {
+    const top = s.top - 4;
+    const bottom = s.bottom + 4;
+    const d1 = x1 - s.x;
+    const d2 = x2 - s.x;
+    if ((d1 <= 0 && d2 >= 0) || (d1 >= 0 && d2 <= 0)) {
+      if (d1 === 0 && d2 === 0) {
+        return Math.max(y1, y2) >= top && Math.min(y1, y2) <= bottom; // 세로선 위를 훑음
+      }
+      const t = d1 / (d1 - d2); // 0..1: 세로선을 지나는 지점
+      const yc = y1 + t * (y2 - y1);
+      return yc >= top && yc <= bottom;
+    }
+    // 거의 수직으로 세로선 바로 옆을 훑는 경우(밴드 ±6) — 끊기 놓침 방지.
+    if (Math.abs(d1) <= 6 && Math.abs(d2) <= 6) {
+      return Math.max(y1, y2) >= top && Math.min(y1, y2) <= bottom;
+    }
+    return false;
   }
   function onRightUp() {
     window.removeEventListener("pointermove", onRightMove);
@@ -2325,6 +2373,8 @@ export function StudioShell({
       path: null,
       srcX: e.clientX,
       srcY: e.clientY,
+      prevX: e.clientX,
+      prevY: e.clientY,
       points: [],
       seams: [],
       cutSet: new Set<string>()
@@ -3309,6 +3359,28 @@ export function StudioShell({
         return;
       }
       if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable || modal) return;
+      // 편집 패널이 열려 있으면, 글자 키를 누르는 즉시 제목칸으로 포커스를 옮겨 바로 입력되게 한다
+      // (마우스로 제목칸을 안 눌러도 됨). Del·화살표·Enter·Esc 등 기능키(길이>1)는 통과하고,
+      // 아래 단축키(N 등)보다 먼저 처리해 글자 키가 단축키로 새지 않게 한다. IME(한글)도 포함.
+      if (
+        editorVisible &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !e.altKey &&
+        (e.isComposing || e.key === "Process" || e.key.length === 1)
+      ) {
+        const input = editorTitleRef.current;
+        if (input && document.activeElement !== input) {
+          input.focus();
+          const len = input.value.length;
+          try {
+            input.setSelectionRange(len, len); // 커서를 끝으로 → 이어서 입력
+          } catch {
+            /* setSelectionRange 미지원 무시 */
+          }
+        }
+        return; // preventDefault 안 함 — 이 키 입력이 방금 포커스된 제목칸에 그대로 들어가게.
+      }
       // Delete 키: 선택한 일정 삭제(버튼 없이도).
       if (e.key === "Delete" && selectedEventId) {
         e.preventDefault();
@@ -4692,16 +4764,21 @@ export function StudioShell({
       {canEdit ? (
         <div className="kbd-hints" aria-label="키보드 단축키 안내">
           <span className="kbd-hints-title">단축키</span>
+          {/* 일정 만들기·편집 */}
           <span><kbd>N</kbd> 새 일정</span>
+          <span><kbd>글자 입력</kbd> 제목 바로 수정</span>
           <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
           <span><kbd>Del</kbd> 삭제</span>
           <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
           <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복사·붙여넣기</span>
-          <span><kbd>선택한 카드 우클릭 드래그</kbd> 잇기</span>
+          {/* 잇기·끊기 */}
+          <span><kbd>일정 선택 후 우클릭 드래그</kbd> 잇기</span>
           <span><kbd>우클릭 긋기</kbd> 이음새 끊기</span>
+          {/* 날짜 선택·이동 */}
           <span><kbd>드래그</kbd> 날짜 범위 선택</span>
           <span><kbd>Ctrl</kbd>+날짜 따로 선택</span>
-          <span><kbd>←</kbd><kbd>→</kbd> 월 이동</span>
+          <span><kbd>←</kbd><kbd>→</kbd> 월·이어진 일정 이동</span>
+          {/* 닫기 */}
           <span><kbd>Esc</kbd> 닫기</span>
         </div>
       ) : null}
@@ -5084,6 +5161,7 @@ export function StudioShell({
                   setForm((current) => ({ ...current, publicTitle: event.target.value }))
                 }
                 placeholder="예: 풀트뱅"
+                ref={editorTitleRef}
                 value={form.publicTitle}
               />
             </label>
