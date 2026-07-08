@@ -868,6 +868,48 @@ function buildTrendStack(
 }
 export type TrendResult = { ok: true; data: TrendData } | { ok: false; error: string };
 
+type BcastRow = {
+  start_day: string;
+  started_at: string;
+  last_live_at: string;
+  ended_at: string | null;
+};
+// 방송시간 집계(트렌드·멤버 인사이트 공용) — 시작일(start_day) 귀속. 유효시간 = coalesce(ended_at,
+// last_live_at) - started_at. 진행 중(ended_at null)은 last_live_at까지 잠정 집계.
+function computeBroadcast(
+  bcastRows: BcastRow[],
+  monthKeys: string[],
+  year: number,
+  month: number
+): { broadcastHours: number[]; broadcastDaily: number[]; broadcastDays: number } {
+  const bMonthSec = new Map(monthKeys.map((k) => [k, 0]));
+  const bDaySec = new Map<number, number>(); // 보는 달 일별(일=1..말일)
+  const bDays = new Set<string>();
+  for (const r of bcastRows) {
+    const start = new Date(r.started_at).getTime();
+    const end = new Date(r.ended_at ?? r.last_live_at).getTime();
+    const sec =
+      Number.isFinite(start) && Number.isFinite(end) && end > start ? (end - start) / 1000 : 0;
+    if (sec <= 0) continue;
+    const ym = r.start_day.slice(0, 7);
+    if (bMonthSec.has(ym)) bMonthSec.set(ym, (bMonthSec.get(ym) ?? 0) + sec);
+    bDays.add(r.start_day);
+    if (ym === `${year}-${pad(month)}`) {
+      const d = Number(r.start_day.slice(8, 10));
+      bDaySec.set(d, (bDaySec.get(d) ?? 0) + sec);
+    }
+  }
+  const round1 = (h: number) => Math.round(h * 10) / 10;
+  const daysInViewMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const broadcastHours = monthKeys.map((k) => round1((bMonthSec.get(k) ?? 0) / 3600));
+  const broadcastDaily = Array.from({ length: daysInViewMonth }, (_, i) =>
+    round1((bDaySec.get(i + 1) ?? 0) / 3600)
+  );
+  const viewYm = `${year}-${pad(month)}`;
+  const broadcastDays = [...bDays].filter((d) => d.slice(0, 7) === viewYm).length;
+  return { broadcastHours, broadcastDaily, broadcastDays };
+}
+
 // 트렌드 패널용 — 방문·컨텐츠의 최근 6개월 월별 추이. (하트 6개월은 getInsightsAction이 이미 줌.)
 export async function getTrendAction(year: number, month: number): Promise<TrendResult> {
   const actor = await resolveCurrentActor(SLUG);
@@ -1070,38 +1112,12 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     roleRows.push({ ym, key: row.role, n: 1 });
   }
 
-  // 방송시간 — 시작일(start_day) 귀속. 유효시간 = coalesce(ended_at, last_live_at) - started_at.
-  // 진행 중(ended_at null) 세션은 last_live_at까지로 잠정 집계(오늘 방송중이면 부분 반영).
-  const bcastRows = (bcastRes.data ?? []) as {
-    start_day: string;
-    started_at: string;
-    last_live_at: string;
-    ended_at: string | null;
-  }[];
-  const bMonthSec = new Map(monthKeys.map((k) => [k, 0]));
-  const bDaySec = new Map<number, number>(); // 보는 달 일별(일=1..말일)
-  const bDays = new Set<string>();
-  for (const r of bcastRows) {
-    const start = new Date(r.started_at).getTime();
-    const end = new Date(r.ended_at ?? r.last_live_at).getTime();
-    const sec = Number.isFinite(start) && Number.isFinite(end) && end > start ? (end - start) / 1000 : 0;
-    if (sec <= 0) continue;
-    const ym = r.start_day.slice(0, 7);
-    if (bMonthSec.has(ym)) bMonthSec.set(ym, (bMonthSec.get(ym) ?? 0) + sec);
-    bDays.add(r.start_day);
-    if (ym === `${year}-${pad(month)}`) {
-      const d = Number(r.start_day.slice(8, 10));
-      bDaySec.set(d, (bDaySec.get(d) ?? 0) + sec);
-    }
-  }
-  const round1 = (h: number) => Math.round(h * 10) / 10;
-  const daysInViewMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  const broadcastHours = monthKeys.map((k) => round1((bMonthSec.get(k) ?? 0) / 3600));
-  const broadcastDaily = Array.from({ length: daysInViewMonth }, (_, i) =>
-    round1((bDaySec.get(i + 1) ?? 0) / 3600)
+  const { broadcastHours, broadcastDaily, broadcastDays } = computeBroadcast(
+    (bcastRes.data ?? []) as BcastRow[],
+    monthKeys,
+    year,
+    month
   );
-  const viewYm = `${year}-${pad(month)}`;
-  const broadcastDays = [...bDays].filter((d) => d.slice(0, 7) === viewYm).length;
 
   return {
     ok: true,
@@ -1702,6 +1718,9 @@ export type MemberInsightsData = {
     months: string[];
     content: number[]; // 월별 컨텐츠 수(집계)
     hearts: number[]; // 월별 하트 합계(집계)
+    broadcastHours: number[]; // 6개월 월별 총 방송시간(시간) — 관리자·매니저·작업자도 공유
+    broadcastDaily: number[]; // 보는 달 일별 방송시간(시간)
+    broadcastDays: number; // 보는 달 방송한 날 수
     contentByTag: TrendStack; // 콘텐츠 대분류별 6개월(수치 노출 OK)
     modifierByTag: TrendStack; // 방식별 6개월
     heartsByTag: TrendStack; // 하트 받은 태그 6개월 — 비율만(정규화, 정확 수 숨김)
@@ -1753,7 +1772,7 @@ export async function getMemberInsightsAction(
   }
   const sixStart = `${monthKeys[0]}-01`;
 
-  const [eventsRes, tagsRes, nextRes, paletteRes, heartsRes, visitRows] = await Promise.all([
+  const [eventsRes, tagsRes, nextRes, paletteRes, heartsRes, visitRows, bcastRes] = await Promise.all([
     supabase
       .from("events")
       .select("id, date_key, is_public")
@@ -1784,8 +1803,15 @@ export async function getMemberInsightsAction(
         .gte("day", monthStart)
         .lt("day", nextMonthStart)
         .order("id", { ascending: true })
-    )
+    ),
+    // 방송시간 6개월 — 관리자·매니저·작업자도 트렌드에서 볼 수 있게(공개 API엔 여전히 미노출).
+    supabase
+      .from("broadcast_session")
+      .select("start_day, started_at, last_live_at, ended_at")
+      .gte("start_day", sixStart)
+      .lt("start_day", nextMonthStart)
   ]);
+  const broadcast = computeBroadcast((bcastRes.data ?? []) as BcastRow[], monthKeys, y, m);
 
   // 휴뱅 일정 id + 태그(6개월) 집계. 세부는 대분류로 롤업.
   const catMap = await loadTagCategoryMap(supabase, calendarId);
@@ -2075,7 +2101,17 @@ export async function getMemberInsightsAction(
         tags
       },
       engagement: { monthHearts, totalHearts, monthly, topTitles },
-      trend: { months: monthKeys, content: contentCounts, hearts: monthlyCounts, contentByTag, modifierByTag, heartsByTag },
+      trend: {
+        months: monthKeys,
+        content: contentCounts,
+        hearts: monthlyCounts,
+        broadcastHours: broadcast.broadcastHours,
+        broadcastDaily: broadcast.broadcastDaily,
+        broadcastDays: broadcast.broadcastDays,
+        contentByTag,
+        modifierByTag,
+        heartsByTag
+      },
       highlight: { peakDay, peakHour, topTitle, busiestWeekday }
     }
   };

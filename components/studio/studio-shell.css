@@ -3857,11 +3857,36 @@ html[data-reduce-motion] .role-segment button.active {
   gap: 2px;
   height: 40px;
 }
+.bcast-daily {
+  position: relative; /* 일별 값 툴팁(.bcast-tip)의 기준 */
+}
+/* 일별 방송시간 값 툴팁 — 호버(데스크톱)·탭(모바일) 시 활성 막대 위에 한 개만 뜬다. left는
+   JS에서 활성 칸 중심으로 계산하되 clamp로 차트 폭 안에 가둬 양 끝(1일·말일)도 안 잘린다. */
+.bcast-tip {
+  position: absolute;
+  bottom: calc(100% + 3px);
+  transform: translateX(-50%);
+  z-index: 5;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: #3a3550;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 4px 10px rgb(17 24 39 / 24%);
+}
+.bcast-dbar[data-active] {
+  filter: brightness(1.15) saturate(1.15);
+  box-shadow: 0 0 0 2px rgb(107 91 214 / 32%);
+}
 .bcast-dcol {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
+  cursor: default;
 }
 .bcast-dwrap {
   flex: 1;

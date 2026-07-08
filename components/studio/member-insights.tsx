@@ -16,6 +16,7 @@ import {
 } from "@/lib/insights/actions";
 import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
 import { HighlightCards } from "@/components/studio/highlight-cards";
+import { BroadcastHours } from "@/components/studio/broadcast-hours";
 import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -333,6 +334,12 @@ export function MemberInsights({
     return (
       <>
         <p className="insight-note">최근 6개월 추이 · 배지는 지난달 대비 변화</p>
+        <BroadcastHours
+          months={d.trend.months}
+          broadcastHours={d.trend.broadcastHours}
+          broadcastDaily={d.trend.broadcastDaily}
+          broadcastDays={d.trend.broadcastDays}
+        />
         {series.map((s) => {
           const cur = s.values[s.values.length - 1] ?? 0;
           const prev = s.values[s.values.length - 2] ?? 0;
