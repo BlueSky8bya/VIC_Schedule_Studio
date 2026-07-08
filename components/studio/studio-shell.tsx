@@ -1635,8 +1635,6 @@ export function StudioShell({
     cutSet: Set<string>;
   };
   const rightGestureRef = useRef<RightGesture | null>(null);
-  // 우클릭 '드래그였다' 표시 — 뒤따르는 contextmenu(휴뱅 메뉴)를 한 번 막는다. 단순 우클릭은 통과.
-  const rightMovedRef = useRef(false);
   // #8: 이동 저장이 진행 중인 카드 id들 — 그 카드에 작은 '동기화 중' 표시를 띄운다(서버 반영 전).
   const [syncingIds, setSyncingIds] = useState<string[]>([]);
 
@@ -2223,7 +2221,6 @@ export function StudioShell({
     if (!g.moved) {
       if (Math.hypot(e.clientX - g.startX, e.clientY - g.startY) < 6) return;
       g.moved = true;
-      rightMovedRef.current = true; // 뒤따르는 contextmenu 1회 차단(휴뱅 메뉴 안 뜨게)
       const svg = makeGestureSvg();
       if (g.mode === "connect" && g.sourceId) {
         armConnectCandidates(g.sourceId); // 이을 수 있는 상대 강조/흐림
@@ -2295,13 +2292,6 @@ export function StudioShell({
     }
     clearConnectCandidates();
     g.svg?.remove();
-    // 정상적으론 뒤따르는 contextmenu에서 플래그가 꺼진다. 그게 안 오는 경우(pointercancel 등)를
-    // 대비한 안전장치 — 다음 우클릭이 잘못 막히지 않게 잠시 뒤 해제.
-    if (g.moved) {
-      window.setTimeout(() => {
-        rightMovedRef.current = false;
-      }, 500);
-    }
   }
   // 우클릭 눌림 — 카드 위=잇기, 빈 칸=끊기 후보. 실제 시작은 6px 이상 움직였을 때(onRightMove).
   function beginRightGesture(e: PointerEvent) {
@@ -2335,12 +2325,10 @@ export function StudioShell({
   useEffect(() => {
     if (!canEdit) return;
     const onDown = (e: PointerEvent) => beginRightGesture(e);
+    // 달력 그리드 안에선 우클릭이 잇기/끊기 제스처 전용 → 브라우저 우클릭 메뉴를 항상 억제.
     const onCtx = (e: MouseEvent) => {
-      if (rightMovedRef.current) {
-        e.preventDefault();
-        e.stopPropagation();
-        rightMovedRef.current = false;
-      }
+      const t = e.target as HTMLElement | null;
+      if (t?.closest(".studio-month-grid")) e.preventDefault();
     };
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("contextmenu", onCtx, true);
@@ -4689,7 +4677,6 @@ export function StudioShell({
           <span><kbd>Del</kbd> 삭제</span>
           <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
           <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복사·붙여넣기</span>
-          <span><kbd>날짜 우클릭</kbd> 휴뱅</span>
           <span><kbd>카드 우클릭 드래그</kbd> 잇기(놓을 곳 강조)</span>
           <span><kbd>빈 곳 우클릭 긋기</kbd> 이음새 끊기</span>
           <span><kbd>드래그</kbd> 날짜 범위 선택</span>
@@ -4777,11 +4764,6 @@ export function StudioShell({
                       return;
                     }
                     selectDate(cell.isoDate);
-                  }}
-                  onContextMenu={(e) => {
-                    if (!canEdit) return; // 비편집자는 기본 우클릭 메뉴 그대로
-                    e.preventDefault();
-                    openRestMenu(e.clientX, e.clientY, cell.isoDate);
                   }}
                   onPointerDown={(e) => onCellPointerDown(e, cell.isoDate)}
                   onPointerMove={onCellPointerMove}
