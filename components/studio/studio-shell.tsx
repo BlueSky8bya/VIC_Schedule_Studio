@@ -1560,10 +1560,11 @@ export function StudioShell({
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
         // 이어진 일정을 선택 중이면 월 이동 대신 체인 안에서 이전/다음 일정을 고른다(날짜 순).
-        const chain = selectedEventId ? getLinkedChainIds(selectedEventId, visibleEvents) : null;
+        // 태그 필터로 줄지 않게 전체 events 기준으로 체인을 잡는다.
+        const chain = selectedEventId ? getLinkedChainIds(selectedEventId, events) : null;
         if (selectedEventId && chain && chain.size > 1) {
           const ordered = Array.from(chain)
-            .map((id) => visibleEvents.find((ev) => ev.id === id))
+            .map((id) => events.find((ev) => ev.id === id))
             .filter((ev): ev is StudioScheduleEvent => Boolean(ev))
             .sort((a, b) => getEventDateKey(a).localeCompare(getEventDateKey(b)));
           const idx = ordered.findIndex((ev) => ev.id === selectedEventId);
@@ -1580,7 +1581,7 @@ export function StudioShell({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isNarrow, viewerMode, overlayLocked, selectedEventId, visibleEvents]);
+  }, [isNarrow, viewerMode, overlayLocked, selectedEventId, events]);
 
   // 좌/우 스와이프로 월 이동(모바일 아젠다). 가로로 충분히, 세로 스크롤보다 크게 밀었을 때만.
   const swipeRef = useRef<{ x: number; y: number } | null>(null);
@@ -1647,8 +1648,7 @@ export function StudioShell({
     srcY: number;
     prevX: number;
     prevY: number;
-    points: string[];
-    seams: { id: string; x: number; top: number; bottom: number }[];
+    seams: { id: string; x1: number; x2: number; top: number; bottom: number }[];
     cutSet: Set<string>;
   };
   const rightGestureRef = useRef<RightGesture | null>(null);
@@ -2205,28 +2205,66 @@ export function StudioShell({
   }
 
   // ── 우클릭 잇기/끊기 제스처 ─────────────────────────────────────────────────
-  // 이어진 각 쌍(earlier→next)마다 '끊기 밴드'를 만든다. 빨간 선이 이 세로 밴드를 스치면 그
-  // 연결(earlier.linkNext)을 끊는다. earlier의 '오른쪽 변'과 next의 '왼쪽 변' 둘 다 밴드로 둔다
-  // → 같은 줄이면 두 밴드가 경계에서 겹치고, 주 경계(토→일)로 갈라진 경우엔 토요일 오른쪽이나
-  //   일요일 왼쪽 어느 쪽을 그어도 끊긴다.
-  function collectSeams(): { id: string; x: number; top: number; bottom: number }[] {
-    const out: { id: string; x: number; top: number; bottom: number }[] = [];
+  // 이어진 각 쌍(earlier→next)마다 '끊기 존'을 만든다. earlier '오른쪽 절반' + next '왼쪽 절반' —
+  // 빨간 선이 이 존을 지나면(=두 카드의 절반/절반 경계를 훑으면) 그 연결(earlier.linkNext)을 끊는다.
+  // 절반이라 존이 넓어 잘 잡히고, 중간 카드도 왼쪽 절반=앞 연결/오른쪽 절반=뒤 연결로 구분된다.
+  // 주 경계(토→일)로 갈라진 경우엔 토요일 오른쪽 절반이나 일요일 왼쪽 절반 어느 쪽을 그어도 끊긴다.
+  function collectSeams(): { id: string; x1: number; x2: number; top: number; bottom: number }[] {
+    const out: { id: string; x1: number; x2: number; top: number; bottom: number }[] = [];
     for (const ev of events) {
       if (!ev.linkNext) continue;
       const el = document.querySelector<HTMLElement>(`[data-eventid="${CSS.escape(ev.id)}"]`);
       if (el) {
         const r = el.getBoundingClientRect();
-        out.push({ id: ev.id, x: r.right, top: r.top, bottom: r.bottom }); // earlier 오른쪽 변
+        // earlier 오른쪽 절반(중앙~오른쪽 변, 살짝 넘겨).
+        out.push({ id: ev.id, x1: r.left + r.width / 2, x2: r.right + 3, top: r.top - 3, bottom: r.bottom + 3 });
       }
       const nextEl = document.querySelector<HTMLElement>(
         `[data-eventid="${CSS.escape(ev.linkNext)}"]`
       );
       if (nextEl) {
         const nr = nextEl.getBoundingClientRect();
-        out.push({ id: ev.id, x: nr.left, top: nr.top, bottom: nr.bottom }); // next 왼쪽 변
+        // next 왼쪽 절반(왼쪽 변~중앙).
+        out.push({ id: ev.id, x1: nr.left - 3, x2: nr.left + nr.width / 2, top: nr.top - 3, bottom: nr.bottom + 3 });
       }
     }
     return out;
+  }
+  // 선분 (x1,y1)-(x2,y2)가 끊기 존(사각형)을 지나는가 — 끝점이 안에 있거나(느린 스침) 존의 세로
+  // 변을 가로지르면(빠른 스트로크) 성립. 넓은 절반-존 + 이 판정으로 훨씬 잘 끊긴다.
+  function segmentHitsZone(
+    ax: number,
+    ay: number,
+    bx: number,
+    by: number,
+    z: { x1: number; x2: number; top: number; bottom: number }
+  ): boolean {
+    const inside = (x: number, y: number) =>
+      x >= z.x1 && x <= z.x2 && y >= z.top && y <= z.bottom;
+    if (inside(ax, ay) || inside(bx, by)) return true;
+    return (
+      segCrossesVerticalLine(ax, ay, bx, by, z.x1, z.top, z.bottom) ||
+      segCrossesVerticalLine(ax, ay, bx, by, z.x2, z.top, z.bottom)
+    );
+  }
+  function segCrossesVerticalLine(
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    X: number,
+    top: number,
+    bottom: number
+  ): boolean {
+    const d1 = x1 - X;
+    const d2 = x2 - X;
+    if ((d1 <= 0 && d2 >= 0) || (d1 >= 0 && d2 <= 0)) {
+      if (d1 === 0 && d2 === 0) return Math.max(y1, y2) >= top && Math.min(y1, y2) <= bottom;
+      const t = d1 / (d1 - d2);
+      const yc = y1 + t * (y2 - y1);
+      return yc >= top && yc <= bottom;
+    }
+    return false;
   }
   function makeGestureSvg(): SVGSVGElement {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -2271,15 +2309,15 @@ export function StudioShell({
         g.path = line;
       } else {
         g.seams = collectSeams();
-        g.points = [`${g.startX},${g.startY}`];
-        const poly = document.createElementNS(ns, "polyline");
-        poly.setAttribute("fill", "none");
-        poly.setAttribute("stroke", "rgba(220,38,38,0.92)");
-        poly.setAttribute("stroke-width", "3");
-        poly.setAttribute("stroke-linecap", "round");
-        poly.setAttribute("stroke-linejoin", "round");
-        svg.appendChild(poly);
-        g.path = poly;
+        // 실제 그은 경로가 아니라 '시작점→커서'의 깔끔한 직선으로 보여준다(삐뚤빼뚤 X).
+        const line = document.createElementNS(ns, "line");
+        line.setAttribute("stroke", "rgba(220,38,38,0.92)");
+        line.setAttribute("stroke-width", "3");
+        line.setAttribute("stroke-linecap", "round");
+        line.setAttribute("x1", String(g.startX));
+        line.setAttribute("y1", String(g.startY));
+        svg.appendChild(line);
+        g.path = line;
       }
       document.body.appendChild(svg);
       g.svg = svg;
@@ -2295,14 +2333,12 @@ export function StudioShell({
         setConnectHoverId(hover);
       }
     } else {
-      g.points.push(`${e.clientX},${e.clientY}`);
-      if (g.points.length > 64) g.points.shift(); // 꼬리 길이 제한
-      (g.path as SVGPolylineElement).setAttribute("points", g.points.join(" "));
-      // 직전 점→현재 점 '선분'이 이음새의 세로선을 지나면(=카드 절반/절반 경계를 가로지르면) 끊는다.
-      // 점 위치가 정확히 밴드에 들어와야 하던 예전 방식보다 훨씬 잘 잡힌다(스치듯 그어도 성립).
+      (g.path as SVGLineElement).setAttribute("x2", String(e.clientX));
+      (g.path as SVGLineElement).setAttribute("y2", String(e.clientY));
+      // 직전 점→현재 점 선분이 '끊기 존(절반)'을 지나면 그 연결을 끊는다(넓은 존 + 관대한 판정).
       for (const s of g.seams) {
         if (g.cutSet.has(s.id)) continue;
-        if (segmentCrossesSeam(g.prevX, g.prevY, e.clientX, e.clientY, s)) {
+        if (segmentHitsZone(g.prevX, g.prevY, e.clientX, e.clientY, s)) {
           g.cutSet.add(s.id);
           performSeamCut(s.id);
         }
@@ -2310,34 +2346,6 @@ export function StudioShell({
       g.prevX = e.clientX;
       g.prevY = e.clientY;
     }
-  }
-  // 선분 (x1,y1)-(x2,y2)가 이음새 세로선(x=s.x, y∈[top,bottom])을 가로지르는가.
-  // 세로선을 x로 건너뛰면서 그 지점의 y가 이음새 세로범위 안이면 교차. 세로로 훑는(거의 수직)
-  // 스트로크는 x가 밴드(±6px) 안에 머물며 y가 겹치면 교차로 본다.
-  function segmentCrossesSeam(
-    x1: number,
-    y1: number,
-    x2: number,
-    y2: number,
-    s: { x: number; top: number; bottom: number }
-  ): boolean {
-    const top = s.top - 4;
-    const bottom = s.bottom + 4;
-    const d1 = x1 - s.x;
-    const d2 = x2 - s.x;
-    if ((d1 <= 0 && d2 >= 0) || (d1 >= 0 && d2 <= 0)) {
-      if (d1 === 0 && d2 === 0) {
-        return Math.max(y1, y2) >= top && Math.min(y1, y2) <= bottom; // 세로선 위를 훑음
-      }
-      const t = d1 / (d1 - d2); // 0..1: 세로선을 지나는 지점
-      const yc = y1 + t * (y2 - y1);
-      return yc >= top && yc <= bottom;
-    }
-    // 거의 수직으로 세로선 바로 옆을 훑는 경우(밴드 ±6) — 끊기 놓침 방지.
-    if (Math.abs(d1) <= 6 && Math.abs(d2) <= 6) {
-      return Math.max(y1, y2) >= top && Math.min(y1, y2) <= bottom;
-    }
-    return false;
   }
   function onRightUp() {
     window.removeEventListener("pointermove", onRightMove);
@@ -2375,7 +2383,6 @@ export function StudioShell({
       srcY: e.clientY,
       prevX: e.clientX,
       prevY: e.clientY,
-      points: [],
       seams: [],
       cutSet: new Set<string>()
     };
@@ -3344,6 +3351,24 @@ export function StudioShell({
     });
   }
 
+  // 편집 패널 제목칸을 찾아 포커스한다(ref 우선, 없으면 DOM 조회 — ref가 아직 안 잡힌 경우 대비).
+  function focusEditorTitle(): HTMLTextAreaElement | null {
+    const input =
+      editorTitleRef.current ??
+      document.querySelector<HTMLTextAreaElement>(".event-editor-panel textarea");
+    if (!input || input.disabled) return null;
+    if (document.activeElement !== input) {
+      input.focus();
+      const len = input.value.length;
+      try {
+        input.setSelectionRange(len, len);
+      } catch {
+        /* 무시 */
+      }
+    }
+    return input;
+  }
+
   // 일정 단축키(소유자만). 입력칸·팝업·텍스트선택 중에는 가로채지 않는다.
   useEffect(() => {
     if (!canEdit) return;
@@ -3359,9 +3384,15 @@ export function StudioShell({
         return;
       }
       if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable || modal) return;
+      // 백틱(`) — 제목칸으로 바로 포커스만(글자는 안 넣음). 글자 자동포커스가 안 먹는 환경용 확실한 키.
+      if (editorVisible && e.key === "`") {
+        e.preventDefault();
+        focusEditorTitle();
+        return;
+      }
       // 편집 패널이 열려 있으면, 글자 키를 누르는 즉시 제목칸으로 포커스를 옮겨 바로 입력되게 한다
       // (마우스로 제목칸을 안 눌러도 됨). Del·화살표·Enter·Esc 등 기능키(길이>1)는 통과하고,
-      // 아래 단축키(N 등)보다 먼저 처리해 글자 키가 단축키로 새지 않게 한다. IME(한글)도 포함.
+      // 아래 단축키(N 등)보다 먼저 처리해 글자 키가 단축키로 새지 않게 한다.
       if (
         editorVisible &&
         !e.ctrlKey &&
@@ -3369,17 +3400,24 @@ export function StudioShell({
         !e.altKey &&
         (e.isComposing || e.key === "Process" || e.key.length === 1)
       ) {
-        const input = editorTitleRef.current;
-        if (input && document.activeElement !== input) {
-          input.focus();
-          const len = input.value.length;
-          try {
-            input.setSelectionRange(len, len); // 커서를 끝으로 → 이어서 입력
-          } catch {
-            /* setSelectionRange 미지원 무시 */
-          }
+        const input = focusEditorTitle();
+        // 확정 글자(비-IME)는 방금 포커스한 칸에 이 keydown이 안 들어갈 수 있어 직접 끼워 넣는다.
+        // IME(한글 조합)는 포커스만 하고 조합은 input이 그대로 받게 둔다(직접 넣으면 겹치거나 깨짐).
+        if (input && !e.isComposing && e.key !== "Process" && e.key.length === 1) {
+          e.preventDefault();
+          const start = input.selectionStart ?? input.value.length;
+          const end = input.selectionEnd ?? input.value.length;
+          const next = input.value.slice(0, start) + e.key + input.value.slice(end);
+          setForm((f) => ({ ...f, publicTitle: next }));
+          requestAnimationFrame(() => {
+            try {
+              input.setSelectionRange(start + 1, start + 1);
+            } catch {
+              /* 무시 */
+            }
+          });
         }
-        return; // preventDefault 안 함 — 이 키 입력이 방금 포커스된 제목칸에 그대로 들어가게.
+        return;
       }
       // Delete 키: 선택한 일정 삭제(버튼 없이도).
       if (e.key === "Delete" && selectedEventId) {
@@ -4766,7 +4804,7 @@ export function StudioShell({
           <span className="kbd-hints-title">단축키</span>
           {/* 일정 만들기·편집 */}
           <span><kbd>N</kbd> 새 일정</span>
-          <span><kbd>글자 입력</kbd> 제목 바로 수정</span>
+          <span><kbd>글자</kbd>/<kbd>`</kbd> 제목 바로 수정</span>
           <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
           <span><kbd>Del</kbd> 삭제</span>
           <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
