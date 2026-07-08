@@ -1635,6 +1635,8 @@ export function StudioShell({
     cutSet: Set<string>;
   };
   const rightGestureRef = useRef<RightGesture | null>(null);
+  // 우클릭 '드래그였다' 표시 — 달력 밖에서 시작한 끊기 드래그 뒤 브라우저 우클릭 메뉴를 1회 막는다.
+  const rightDragMovedRef = useRef(false);
   // #8: 이동 저장이 진행 중인 카드 id들 — 그 카드에 작은 '동기화 중' 표시를 띄운다(서버 반영 전).
   const [syncingIds, setSyncingIds] = useState<string[]>([]);
 
@@ -2186,17 +2188,26 @@ export function StudioShell({
   }
 
   // ── 우클릭 잇기/끊기 제스처 ─────────────────────────────────────────────────
-  // 현재 화면에 '이어진 것으로 그려진' 이음새(오른쪽 평평, data-seam에 R)들의 위치를 스냅샷.
-  // 빨간 선이 이 세로 밴드를 스치면 그 연결(earlier.linkNext)을 끊는다.
+  // 이어진 각 쌍(earlier→next)마다 '끊기 밴드'를 만든다. 빨간 선이 이 세로 밴드를 스치면 그
+  // 연결(earlier.linkNext)을 끊는다. earlier의 '오른쪽 변'과 next의 '왼쪽 변' 둘 다 밴드로 둔다
+  // → 같은 줄이면 두 밴드가 경계에서 겹치고, 주 경계(토→일)로 갈라진 경우엔 토요일 오른쪽이나
+  //   일요일 왼쪽 어느 쪽을 그어도 끊긴다.
   function collectSeams(): { id: string; x: number; top: number; bottom: number }[] {
     const out: { id: string; x: number; top: number; bottom: number }[] = [];
     for (const ev of events) {
       if (!ev.linkNext) continue;
       const el = document.querySelector<HTMLElement>(`[data-eventid="${CSS.escape(ev.id)}"]`);
-      if (!el) continue;
-      if (!(el.getAttribute("data-seam") ?? "").includes("R")) continue; // 실제 이어진 이음새만
-      const r = el.getBoundingClientRect();
-      out.push({ id: ev.id, x: r.right, top: r.top, bottom: r.bottom });
+      if (el) {
+        const r = el.getBoundingClientRect();
+        out.push({ id: ev.id, x: r.right, top: r.top, bottom: r.bottom }); // earlier 오른쪽 변
+      }
+      const nextEl = document.querySelector<HTMLElement>(
+        `[data-eventid="${CSS.escape(ev.linkNext)}"]`
+      );
+      if (nextEl) {
+        const nr = nextEl.getBoundingClientRect();
+        out.push({ id: ev.id, x: nr.left, top: nr.top, bottom: nr.bottom }); // next 왼쪽 변
+      }
     }
     return out;
   }
@@ -2221,6 +2232,7 @@ export function StudioShell({
     if (!g.moved) {
       if (Math.hypot(e.clientX - g.startX, e.clientY - g.startY) < 6) return;
       g.moved = true;
+      rightDragMovedRef.current = true; // 뒤따르는 브라우저 contextmenu 1회 차단
       const svg = makeGestureSvg();
       if (g.mode === "connect" && g.sourceId) {
         armConnectCandidates(g.sourceId); // 이을 수 있는 상대 강조/흐림
@@ -2293,17 +2305,19 @@ export function StudioShell({
     clearConnectCandidates();
     g.svg?.remove();
   }
-  // 우클릭 눌림 — 카드 위=잇기, 빈 칸=끊기 후보. 실제 시작은 6px 이상 움직였을 때(onRightMove).
+  // 우클릭 눌림 — '이미 선택된 카드' 위에서 시작할 때만 잇기(보라 선), 그 외(다른 카드·빈 곳·
+  // 달력 밖 어디든)는 끊기(빨간 선). 끊기를 카드 위에서 시작해도 잇기로 오인되지 않게, 또 끊는
+  // 선을 달력 밖에서 시작해 주 경계 이음새까지 그어 올 수 있게 한다. 실제 시작은 6px 이상 움직였을 때.
   function beginRightGesture(e: PointerEvent) {
     if (!canEdit || e.button !== 2 || e.pointerType !== "mouse") return;
     const el = e.target as HTMLElement;
-    if (!el.closest(".studio-month-grid")) return; // 달력 그리드 안에서만
     const pill = el.closest<HTMLElement>("[data-eventid]");
-    const cell = el.closest<HTMLElement>("[data-cell-index]");
-    if (!pill && !cell) return;
+    const pillId = pill?.getAttribute("data-eventid") ?? null;
+    // 잇기 = 선택된 카드에서 출발할 때만. 나머지는 전부 끊기(어디서 시작하든).
+    const isConnect = Boolean(pillId) && pillId === selectedEventId;
     rightGestureRef.current = {
-      mode: pill ? "connect" : "cut",
-      sourceId: pill?.getAttribute("data-eventid") ?? null,
+      mode: isConnect ? "connect" : "cut",
+      sourceId: isConnect ? pillId : null,
       startX: e.clientX,
       startY: e.clientY,
       moved: false,
@@ -2325,10 +2339,16 @@ export function StudioShell({
   useEffect(() => {
     if (!canEdit) return;
     const onDown = (e: PointerEvent) => beginRightGesture(e);
-    // 달력 그리드 안에선 우클릭이 잇기/끊기 제스처 전용 → 브라우저 우클릭 메뉴를 항상 억제.
+    // 그리드 안 우클릭은 잇기/끊기 전용 → 항상 억제. 밖에서도 '드래그(끊기)였다면' 뒤따르는
+    // 메뉴 1회 억제(단순 우클릭은 통과 → 밖에선 브라우저 메뉴 정상).
     const onCtx = (e: MouseEvent) => {
       const t = e.target as HTMLElement | null;
-      if (t?.closest(".studio-month-grid")) e.preventDefault();
+      if (t?.closest(".studio-month-grid")) {
+        e.preventDefault();
+      } else if (rightDragMovedRef.current) {
+        e.preventDefault();
+      }
+      rightDragMovedRef.current = false;
     };
     window.addEventListener("pointerdown", onDown, true);
     window.addEventListener("contextmenu", onCtx, true);
@@ -2337,7 +2357,7 @@ export function StudioShell({
       window.removeEventListener("contextmenu", onCtx, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEdit, events]);
+  }, [canEdit, events, selectedEventId]);
 
   // 이동(드롭) 저장을 직렬 큐로 처리 — 빠른 연속 이동도 큐 순서대로 저장돼 '마지막 위치'가 서버
   // 최종값이 된다(레이스로 옛 위치가 저장되는 문제 방지). temp id는 저장 완료까지 기다려 보낸다.
@@ -4677,8 +4697,8 @@ export function StudioShell({
           <span><kbd>Del</kbd> 삭제</span>
           <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
           <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복사·붙여넣기</span>
-          <span><kbd>카드 우클릭 드래그</kbd> 잇기(놓을 곳 강조)</span>
-          <span><kbd>빈 곳 우클릭 긋기</kbd> 이음새 끊기</span>
+          <span><kbd>선택한 카드 우클릭 드래그</kbd> 잇기</span>
+          <span><kbd>우클릭 긋기</kbd> 이음새 끊기</span>
           <span><kbd>드래그</kbd> 날짜 범위 선택</span>
           <span><kbd>Ctrl</kbd>+날짜 따로 선택</span>
           <span><kbd>←</kbd><kbd>→</kbd> 월 이동</span>
