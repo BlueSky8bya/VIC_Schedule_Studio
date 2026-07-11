@@ -2527,7 +2527,16 @@ button.agenda-mark.celebratable:not(.holiday) {
 }
 button.agenda-mark.celebratable:active { transform: scale(0.92); }
 
-.public-day.today {
+/* 오늘 칸 금테. 칸 자신의 inset box-shadow는 자식(일정 카드)에 항상 가려져 테두리가 카드 밑으로
+   끊겨 보인다 → 카드 위에 얹는 오버레이(::after)로 그린다. z-index 4 = 카드(1)·업도움 띠(4, 같은
+   층이지만 ::after가 자식들 뒤에 칠해져 위) 위, 스티커 레이어(5) 아래. 클릭은 통과. */
+.public-day.today::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  pointer-events: none;
   box-shadow: inset 0 0 0 3px #f4b740;
   animation: today-breathe 3.2s ease-in-out infinite;
 }

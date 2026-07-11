@@ -5505,14 +5505,30 @@ body.cell-range-dragging {
   color: #bcbed0;
 }
 
+/* 오늘·선택 테두리 하이라이트.
+   칸 자신의 inset box-shadow로 그리면 자식(일정 카드)이 항상 그 위에 그려져 테두리가 카드에
+   가려 끊긴다 → 카드 위에 얹는 오버레이(::after)로 그린다. z-index 5 = 카드(≤3)·업도움 띠(4)
+   위, 클릭은 통과(pointer-events:none). */
+.studio-day.today::after,
+.studio-day.selected::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
 /* 오늘: 밝은 골드 테두리 하이라이트 + 살짝 강조 배경 */
 .studio-day.today {
-  box-shadow: inset 0 0 0 2px #ffc63d;
   background: #fff9e6;
+}
+.studio-day.today::after {
+  box-shadow: inset 0 0 0 2px #ffc63d;
 }
 
 /* 선택: 골드(오늘)와 구분되는 귀여운 핑크 테두리 */
-.studio-day.selected {
+.studio-day.selected::after {
   box-shadow: inset 0 0 0 2px #f48fb1;
   /* 새 날짜를 선택할 때(.selected가 막 붙을 때) 바깥으로 핑크 글로우가 한 번 퍼졌다 사라진다
      → "이 날로 옮겼다"를 시각적으로 알려준다. 애니 종료 후엔 위 정적 box-shadow로 복귀. */
@@ -5531,7 +5547,7 @@ body.cell-range-dragging {
   }
 }
 /* 오늘이면서 선택된 경우: 두 색을 겹쳐(안쪽 골드 + 바깥 핑크) 둘 다 보이게. */
-.studio-day.today.selected {
+.studio-day.today.selected::after {
   box-shadow:
     inset 0 0 0 2px #ffc63d,
     inset 0 0 0 4px #f48fb1;
