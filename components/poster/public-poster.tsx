@@ -4150,19 +4150,14 @@ export function PublicPoster({
               큰 월 숫자(썸네일에서도 보이는 앵커) + 제목 + 브랜드 색 룰. 반짝임(✨)은 캡쳐에선
               멈추므로 정체성을 모션에 기대지 않는다 — 숫자·굵기·색이 정지 상태의 정체성이다. */}
           <div className="poster-heading">
-            <span className="ph-month" aria-hidden="true">
-              {String(view.month).padStart(2, "0")}
-            </span>
-            <div className="ph-titles">
-              <h1>
-                <span aria-hidden="true">✨️</span>
-                {schedule.calendar.title}
-                <span aria-hidden="true">✨️</span>
-              </h1>
-              <em>
-                {view.year}년 {view.month}월 · KST
-              </em>
-            </div>
+            <h1>
+              <span aria-hidden="true">✨️</span>
+              {schedule.calendar.title}
+              <span aria-hidden="true">✨️</span>
+            </h1>
+            <em>
+              {view.year}년 {String(view.month).padStart(2, "0")}월
+            </em>
           </div>
 
           <StickerLayer

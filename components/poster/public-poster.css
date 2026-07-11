@@ -1405,48 +1405,43 @@ body.cell-range-dragging {
 /* 마스트헤드. 예전엔 1840px 캔버스 위에 32px 제목 한 줄뿐이라(폭의 1.7%) 제목을 잘라내면 아무
    달력 템플릿과 구분이 안 됐다 — 공유되는 PNG는 썸네일 크기에서 "누구의 것인지" 읽혀야 한다.
    큰 월 숫자 + 굵은 제목 + 브랜드 색 룰로 정지 상태의 정체성을 만든다. */
+/* 가운데 정렬 2단: 제목(가장 큼) → 연·월(그다음). 예전엔 왼쪽에 거대한 골드 월 숫자(72px)를
+   뒀는데 두 가지가 나빴다: ① 좌우 무게가 안 맞아 헤더가 기울어 보였고 ② 골드(#ffc83d)가 크림
+   배경에서 대비 1.52:1이라 '크지만 안 읽히는' 글자였다 — 크기로 강조하려다 눈만 피로해진다.
+   강조는 크기 + 대비로 같이 만든다. 진한 골드(#7c4d05, 7.06:1)로 연·월을 또렷하게. */
 .poster-heading {
   grid-column: 1 / -1;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 18px;
+  gap: 4px;
   padding: 2px 0 12px;
   border-bottom: 4px solid var(--accent, #f4b740);
   margin-bottom: 12px;
 }
-/* 큰 월 숫자 — 썸네일에서 가장 먼저 잡히는 앵커. 속을 비운 큰 숫자라 무겁지 않다. */
-.ph-month {
-  font-size: 72px;
-  font-weight: 900;
-  line-height: 0.86;
-  letter-spacing: -0.04em;
-  color: var(--accent, #f4b740);
-  font-feature-settings: "tnum";
-  font-variant-numeric: tabular-nums;
-}
-.ph-titles {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-}
 .poster-heading h1 {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin: 0;
-  font-size: 52px;
+  font-size: 54px;
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1.04;
+  color: var(--ink, #23303f);
 }
+/* 연·월 — 두 번째로 큰 글자. 얇은 회색 캡션(17px)이던 걸 키워, 무슨 달 일정표인지가
+   제목 다음으로 바로 읽히게 한다. (KST 표기는 뺐다 — 한국 시청자 대상이라 정보값이 0에 가깝고
+   마스트헤드의 신호 대 잡음만 낮췄다.) */
 .poster-heading em {
-  color: var(--muted);
-  font-size: 17px;
-  font-weight: 800;
+  color: #7c4d05;
+  font-size: 30px;
+  font-weight: 900;
   font-style: normal;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
 }
 .poster-heading h1 span {
   color: #d59a93;
