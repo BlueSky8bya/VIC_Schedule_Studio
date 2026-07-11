@@ -3406,6 +3406,20 @@ export function StudioShell({
         else flashSavedChip();
         return;
       }
+      // Alt+N: 새 일정 카드 열기/닫기 — 제목칸에 포커스가 있어도(글자 입력 중에도) 동작한다.
+      // 맨 N은 편집 패널이 열려 있는 동안 '제목 글자'로 먹히므로(아래 글자키 규칙) 다시 눌러 닫을 수
+      // 없었다. 그래서 열기 = N(빠른 진입, 패널 닫힌 상태), 닫기/토글 = Alt+N 또는 Esc.
+      if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "n" && !modal) {
+        e.preventDefault();
+        selectDate(selectedDate);
+        return;
+      }
+      // Esc: 편집 패널 닫기 — 제목 입력 중에도(INPUT 가드보다 먼저) 먹힌다.
+      if (e.key === "Escape" && editorVisible && !modal) {
+        e.preventDefault();
+        setEditorVisible(false);
+        return;
+      }
       if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable || modal) return;
       // 백틱(`) — 제목칸으로 바로 포커스만(글자는 안 넣음). 글자 자동포커스가 안 먹는 환경용 확실한 키.
       if (editorVisible && e.key === "`") {
@@ -4826,7 +4840,7 @@ export function StudioShell({
         <div className="kbd-hints" aria-label="키보드 단축키 안내">
           <span className="kbd-hints-title">단축키</span>
           {/* 일정 만들기·편집 */}
-          <span><kbd>N</kbd> 새 일정</span>
+          <span><kbd>N</kbd> 새 일정 (닫기 <kbd>Alt</kbd>+<kbd>N</kbd>/<kbd>Esc</kbd>)</span>
           <span><kbd>글자</kbd>/<kbd>`</kbd> 제목 바로 수정</span>
           <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
           <span><kbd>Del</kbd> 삭제</span>
