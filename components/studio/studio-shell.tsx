@@ -1,5 +1,8 @@
 "use client";
 
+// 인사이트 차트·타일 스타일(편집실·시청자 공용) — studio-shell.css에서 분리된 파일.
+import "@/components/studio/insights-charts.css";
+
 import dynamic from "next/dynamic";
 import {
   ChevronDown,

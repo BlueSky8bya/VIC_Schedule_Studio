@@ -1,5 +1,7 @@
 "use client";
 
+import "@/components/studio/insights-charts.css";
+
 import { CalendarDays, ChevronLeft, ChevronRight, Heart, LineChart, Lock, Trophy } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,

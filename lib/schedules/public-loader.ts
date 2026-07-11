@@ -637,3 +637,44 @@ export async function getPublicBroadcastStats(months = 6): Promise<PublicBroadca
   const fromDay = from.toISOString().slice(0, 10);
   return loadPublicBroadcastStats(fromDay);
 }
+
+// 일별 방송시간(그 달) — 관리자 인사이트와 같은 일별 막대를 시청자에게도 그리기 위해.
+// 역시 집계 RPC(0050)만 호출한다: (KST 시작일, 시간)뿐, 세션 원본은 안 나간다.
+const loadPublicBroadcastDaily = unstable_cache(
+  async (fromDay: string, toDay: string): Promise<{ day: string; hours: number }[]> => {
+    const supabase = createPublicReadClient();
+    if (!supabase) {
+      return [];
+    }
+    const { data, error } = await supabase.rpc("get_public_broadcast_daily", {
+      p_from_day: fromDay,
+      p_to_day: toDay
+    });
+    if (error || !data) {
+      return [];
+    }
+    return (data as { day: string; hours: number }[]).map((row) => ({
+      day: String(row.day),
+      hours: Number(row.hours ?? 0)
+    }));
+  },
+  ["public-broadcast-daily"],
+  { revalidate: PUBLIC_SCHEDULE_REVALIDATE_SECONDS, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
+);
+
+// 이번 달 1일~말일의 일별 방송시간(길이 = 그 달 일수, 방송 없는 날은 0).
+export async function getPublicBroadcastDaily(year: number, month: number): Promise<number[]> {
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  if (!isSupabaseConfigured()) {
+    return new Array(daysInMonth).fill(0);
+  }
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const rows = await loadPublicBroadcastDaily(
+    `${year}-${pad(month)}-01`,
+    `${year}-${pad(month)}-${pad(daysInMonth)}`
+  );
+  const byDay = new Map(rows.map((r) => [r.day.slice(0, 10), r.hours]));
+  return Array.from({ length: daysInMonth }, (_, i) =>
+    byDay.get(`${year}-${pad(month)}-${pad(i + 1)}`) ?? 0
+  );
+}

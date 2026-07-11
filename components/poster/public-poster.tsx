@@ -74,7 +74,6 @@ import {
 import type { AssetTabKey } from "@/components/poster/decorate-palette";
 import type { ThemeResult } from "@/lib/schedules/theme-actions";
 import type { SaveStickerInput, StickerResult } from "@/lib/schedules/sticker-actions";
-import type { PublicBroadcastMonth } from "@/lib/schedules/public-loader";
 import type {
   StickerAssetOpResult,
   StickerAssetResult
@@ -145,8 +144,6 @@ type PublicPosterProps = {
   initialPreviewing?: boolean;
   // 서버 UA 판정 휴대폰 여부 — 모바일 아젠다를 처음부터 그려 깜빡임을 없앤다(클라가 보정).
   initialNarrow?: boolean;
-  // 시청자 인사이트용 공개 방송 집계(월별 시간/일수/세션수) — 공개 RPC 결과만, 세션 원본 아님.
-  broadcastStats?: PublicBroadcastMonth[];
   saveStickerAction?: (input: SaveStickerInput) => Promise<StickerResult>;
   deleteStickerAction?: (id: string) => Promise<StickerResult>;
   // 다중 동작(다중 삭제·undo/redo)을 한 번에 저장/삭제 — 권한확인·캐시무효화를 1회로 묶는다.
@@ -643,7 +640,6 @@ export function PublicPoster({
   decorate: decorateProp = false,
   initialPreviewing = false,
   initialNarrow = false,
-  broadcastStats = [],
   saveStickerAction: saveStickerActionRaw,
   deleteStickerAction: deleteStickerActionRaw,
   saveStickerBatchAction: saveStickerBatchActionRaw,
@@ -3289,7 +3285,6 @@ export function PublicPoster({
           방문자/동시접속 같은 운영 지표는 안 들어간다. fixed 오버레이라 캡쳐 PNG 밖. */}
       {insightsOpen ? (
         <PublicInsights
-          broadcast={broadcastStats}
           events={liveEvents}
           heartCounts={heartCounts}
           month={view.month}

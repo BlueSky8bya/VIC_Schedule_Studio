@@ -1,5 +1,8 @@
 "use client";
 
+// 차트 스타일은 편집실·시청자 양쪽에서 공유한다(어느 화면에서 열든 같은 차트).
+import "@/components/studio/insights-charts.css";
+
 import { useRef, useState } from "react";
 
 // 방송시간(시간, 소수) → "32시간 30분" 표기. 0이면 "0분".

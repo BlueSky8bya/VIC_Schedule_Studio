@@ -7,7 +7,7 @@ import { detectInAppBrowser, isMobileUserAgent } from "@/lib/auth/in-app-browser
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
-import { getPublicBroadcastStats, getPublicSchedule } from "@/lib/schedules/public-loader";
+import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { timed } from "@/lib/perf/perf";
 
 export default async function HomePage() {
@@ -33,17 +33,13 @@ export default async function HomePage() {
         />
       );
     }
-    const [schedule, broadcastStats] = await Promise.all([
-      timed("page:/ publicSchedule(anon)", () => getPublicSchedule("vic")),
-      timed("page:/ broadcastStats(anon)", () => getPublicBroadcastStats(6))
-    ]);
+    const schedule = await timed("page:/ publicSchedule(anon)", () => getPublicSchedule("vic"));
     return (
       <PublicPoster
         accountSwitch
         anonymous
         initialYear={typeof mem.sy === "number" ? mem.sy : undefined}
         initialMonth={typeof mem.sm === "number" ? mem.sm : undefined}
-        broadcastStats={broadcastStats}
         initialNarrow={narrow}
         schedule={schedule}
         toggleHeartAction={toggleEventHeartAction}
@@ -59,10 +55,7 @@ export default async function HomePage() {
     redirect("/studio");
   }
 
-  const [schedule, viewerBroadcastStats] = await Promise.all([
-    timed("page:/ publicSchedule(viewer)", () => getPublicSchedule("vic")),
-    timed("page:/ broadcastStats(viewer)", () => getPublicBroadcastStats(6))
-  ]);
+  const schedule = await timed("page:/ publicSchedule(viewer)", () => getPublicSchedule("vic"));
 
   // 일반 시청자도 보던 달(py/pm)을 새로고침 때 복원한다.
   return (
@@ -71,7 +64,6 @@ export default async function HomePage() {
       accountEmail={actor.email}
       initialYear={typeof mem.sy === "number" ? mem.sy : undefined}
       initialMonth={typeof mem.sm === "number" ? mem.sm : undefined}
-      broadcastStats={viewerBroadcastStats}
       initialNarrow={narrow}
       schedule={schedule}
       toggleHeartAction={toggleEventHeartAction}
