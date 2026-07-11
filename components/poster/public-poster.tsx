@@ -1038,6 +1038,15 @@ export function PublicPoster({
   // 하트 등급 승급 토스트(시청자) — 내 하트가 등급을 올렸을 때만 잠깐 뜬다.
   const [heartToast, setHeartToast] = useState<string | null>(null);
   const heartToastTimerRef = useRef<number | null>(null);
+  // 미니게임이 켜졌는지 — 켜지면 캐주얼 중력 축구공을 아예 언마운트한다(둘 다 뜨면 어수선하고,
+  // 공이 미니게임 버튼 위에 굴러와 앉는다). 공 컴포넌트 내부의 숨김 상태에 기대지 않고 여기서
+  // 렌더 자체를 끊는다 — 미니게임을 켰는데 공이 그대로 남던 문제가 실제로 있었다.
+  const [minigameOn, setMinigameOn] = useState(false);
+  useEffect(() => {
+    const onMini = (e: Event) => setMinigameOn(Boolean((e as CustomEvent).detail?.enabled));
+    window.addEventListener("wc-minigame-enabled", onMini);
+    return () => window.removeEventListener("wc-minigame-enabled", onMini);
+  }, []);
   // C3: 다중 선택 — 기본(primary) 선택 외에 추가로 선택된 스티커들.
   const [multiIds, setMultiIds] = useState<string[]>([]);
   const [stickerError, setStickerError] = useState<string | null>(null);
@@ -3414,6 +3423,7 @@ export function PublicPoster({
           중력공이 뜨게(미니게임과 동일 조건). */}
       {interactive &&
       isWorldCupMonth(view.year, view.month) &&
+      !minigameOn &&
       !(avatarCapable && avatarOn && !showAgenda) ? (
         <WorldCupStudioBall />
       ) : null}

@@ -459,13 +459,14 @@
   position: fixed;
   inset: 0;
   z-index: 0; /* 맨 아래로 못박는다 — 아래 HUD/스테이지가 명시적으로 그 위에 온다(iOS 버그 방어) */
-  pointer-events: none;
-  background: linear-gradient(135deg, rgb(34 124 64 / 10%), rgb(22 101 52 / 13%));
-  transition: background var(--dur-2, 0.22s) var(--ease);
-}
-.wc-dim.catch {
+  /* 딤은 '게임이 켜졌을 때만' 그려진다 = 사용자가 직접 켠 상태다. 그러니 켠 동안은 경기가
+     또렷해야 한다(잔디 톤 + 흐림). 톤을 약하게 낮췄더니 밝은 포스터 위에서 피치·선수가 씻겨
+     나가 게임이 안 보였다. 기본값을 opt-in으로 바꿨으므로(자동 시작 없음) 켠 동안 뒤가 흐려지고
+     클릭이 막히는 건 의도된 '집중 모드'다 — 끄는 건 '미니게임 숨기기' 한 번. */
   pointer-events: auto;
-  background: linear-gradient(135deg, rgb(34 124 64 / 26%), rgb(22 101 52 / 32%));
+  background: linear-gradient(135deg, rgb(34 124 64 / 30%), rgb(22 101 52 / 36%));
+  -webkit-backdrop-filter: blur(3.5px) saturate(0.92);
+  backdrop-filter: blur(3.5px) saturate(0.92);
 }
 /* iOS Safari 버그 방어 — backdrop-filter가 걸린 .wc-dim이 DOM상 '뒤' 형제(.wc-stage·.wc-hud)
    위로 잘못 합성돼 스코어·버튼이 딤에 덮여 안 보이던 문제(안드로이드는 정상). DOM 순서에 기대지

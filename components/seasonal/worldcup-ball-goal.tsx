@@ -3593,15 +3593,8 @@ export function WorldCupBallGoal() {
     <div className={`wc-play ${enabled ? "on" : ""}`} aria-hidden="true" ref={rootRef}>
       {enabled ? (
         <>
-          {/* 딤은 기본적으로 클릭을 통과시킨다(pointer-events:none) — 미니게임이 켜져 있어도 뒤의
-              일정표(하트·태그 필터·도우러 가기·월 이동)는 그대로 눌려야 한다. 게임 패널(선수카드·
-              전술·기록)이 열렸을 때만 '바깥 클릭으로 닫기'를 위해 잠깐 클릭을 받는다. */}
           <div
-            className={`wc-dim${
-              pickPlayer || pickKeeper || tacticsOpen || statsOpen || tacticDesc || namesOpen
-                ? " catch"
-                : ""
-            }`}
+            className="wc-dim"
             onClick={() => {
               // 빈 곳 탭/클릭하면 열린 패널(선수카드·전술·기록) 모두 닫기.
               pinnedPlayer.current = false;
