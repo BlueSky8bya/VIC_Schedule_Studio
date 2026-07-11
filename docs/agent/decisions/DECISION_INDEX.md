@@ -15,3 +15,5 @@
 | [0005](ADR-0005-month-routes-cold-entry-only.md) | Accepted | 라우팅 | 스튜디오 월 라우트는 북마크·콜드 진입 전용. 런타임 월 이동은 클라이언트 상태로 | 월별 SSR 데이터가 너무 커져 라우트 분할이 필요해지면 |
 | [0006](ADR-0006-optimistic-writes-keepalive-queue.md) | Accepted | 쓰기 경로 | 에디터/꾸미기 낙관적 쓰기는 **직렬 큐** + `keepalive` fetch(`/api/studio-write`, `/api/sticker-write`) | 실시간 협업(다중 편집자 동시 쓰기)을 도입할 때 |
 | [0007](ADR-0007-anon-hearts-device-token.md) | Accepted | 참여 | 하트는 비로그인 허용(기기 토큰). 로그인 장벽이 참여 병목이었음 | 어뷰징이 실제로 관측되면 |
+| [0008](ADR-0008-public-insights-aggregate-rpc.md) | Accepted | 공개 경계 | 시청자 인사이트는 **집계 전용 SECURITY DEFINER RPC**로만. 방문/체류(운영 지표)는 공개 금지, 하트 개수는 비노출(비율만) | 방문자 지표를 공개하기로 하거나 캘린더가 2개 이상이 되면 |
+| [0009](ADR-0009-seasonal-toys-are-opt-in.md) | Accepted | 시즌 연출 | 미니게임·시즌 테마는 **기본 꺼짐 + 클릭 통과 + 오너 테마 우선**. 장난감은 포스터의 뚜껑이 아니다 | 특정 기간 자동 노출을 원하면(좁은 조건으로만) |

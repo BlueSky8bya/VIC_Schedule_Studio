@@ -131,13 +131,20 @@ owner/developer/worker; owner_private → owner only. Manager has zero private a
 
 ## Repository memory (read first, write back)
 
-- **Start of a task:** read `docs/CURRENT_STATE.md` — current objective, active work, known issues,
-  locked areas, next exact steps. It is the project's present tense, not a diary.
-- **Before changing a locked area:** read the linked ADR in `docs/decisions/`. Never silently
-  override an Accepted ADR — surface the conflict, then supersede it (don't delete it).
-- **End of a meaningful task** (feature / structure / migration): update `docs/CURRENT_STATE.md`.
-  History belongs in git log and ADRs, not in that file.
-- Harness manifest (commands, risk profiles, protocol provenance): `agent-harness.yaml`.
+세션 시작 시 SessionStart 훅이 현재 상태 + 결정 인덱스를 자동 주입한다(.claude/settings.json).
+그래도 아래는 항상 유효하다:
+
+- **작업 시작:** `docs/agent/CURRENT_STATE.md` — 현재 목표·진행중·알려진 이슈·잠긴 영역·다음 단계.
+- **왜 이렇게 했나:** `docs/agent/decisions/DECISION_INDEX.md` → 해당 ADR. Accepted ADR은 조용히
+  뒤집지 않는다(충돌하면 말하고 supersede — 삭제 금지).
+- **어디를 고치나:** `docs/agent/PROJECT_MAP.md` (경로 → 역할 → 로컬 지침 → Risk).
+- **끝났나?:** `docs/agent/DEFINITION_OF_DONE.md` (실행하지 않은 검증은 성공이라고 말하지 않는다).
+- **위험 경로:** `docs/agent/domain-rules/` (SECURITY · AUTH · DESTRUCTIVE_DATA).
+- **의미 있는 작업이 끝나면** `docs/agent/CURRENT_STATE.md`를 갱신한다(Stop 훅이 드리프트를 잡는다).
+  되돌리기 비싼 결정이면 ADR + DECISION_INDEX 한 줄. 마이그레이션/공개 경계 변경이면 CHANGELOG_AGENT.
+- L2(구조적)·L3(치명적) 작업은 구현 전에 `docs/agent/plans/ACTIVE_PLAN.md`를 채운다.
+- 하네스 자체 점검: `npm run harness:verify`
+- 매니페스트(명령·리스크·provenance): `agent-harness.yaml`
 
 ## Source of truth
 

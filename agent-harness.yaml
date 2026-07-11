@@ -1,7 +1,7 @@
 schema_version: "1.0"
 protocol_source: "project-initializing_260710.md"
 protocol_date: "2026-07-10"
-adoption: "minimal" # 최소 도입안 — 전체 docs/agent/ 트리는 만들지 않는다. 이유는 CURRENT_STATE 하단 참고.
+adoption: "full" # 전면 도입 — docs/agent/ 트리 + 자동화 훅(SessionStart 브리핑, Stop 드리프트 검사)
 initialized_at: "2026-07-12"
 last_harness_review: "2026-07-12"
 
@@ -23,12 +23,17 @@ risk_profiles:
   - DESTRUCTIVE_DATA # db/migrations 수동 적용, 키 분실 시 복호 불가
 
 entrypoints:
-  constitution: "CLAUDE.md" # 철학·불변식·설계 규칙(항상-온)
+  constitution: "docs/agent/CONSTITUTION.md"
+  current_state: "docs/agent/CURRENT_STATE.md"
+  project_map: "docs/agent/PROJECT_MAP.md"
+  risk_profile: "docs/agent/RISK_PROFILE.md"
+  definition_of_done: "docs/agent/DEFINITION_OF_DONE.md"
+  changelog: "docs/agent/CHANGELOG_AGENT.md"
+  decision_index: "docs/agent/decisions/DECISION_INDEX.md"
+  active_plan: "docs/agent/plans/ACTIVE_PLAN.md"
+  rules_entry: "CLAUDE.md"
   roles: "AGENTS.md"
   sop: "docs/sop.md"
-  current_state: "docs/CURRENT_STATE.md"
-  project_map: "docs/README.md" # 문서 트리 라우팅 + 폴더별 README
-  decision_index: "docs/decisions/DECISION_INDEX.md"
   security_boundary: "docs/security-boundary.md"
   architecture: "docs/architecture.md"
 
@@ -41,6 +46,7 @@ commands:
   test: "npm run test" # vitest
   test_e2e: "npm run test:e2e"
   test_visual: "npm run test:visual"
+  harness_verify: "npm run harness:verify"
   migrate: "node scripts/apply-db.mjs db/migrations/<file>.sql" # 수동·멱등, .env.local 사용
 
 version_policy: "semver"

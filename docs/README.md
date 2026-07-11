@@ -11,8 +11,7 @@
 
 | 파일 | 내용 |
 |---|---|
-| `CURRENT_STATE.md` | **지금 상태**(목표·진행중·이슈·잠긴 영역·다음 단계) — 작업 시작 시 먼저 |
-| `decisions/` | ADR — 되돌리기 비싼 결정과 그 이유. `DECISION_INDEX.md`부터 |
+| [`agent/`](agent/) | **에이전트 하네스** — CURRENT_STATE(지금 상태) · decisions(ADR) · PROJECT_MAP · RISK_PROFILE · DEFINITION_OF_DONE · plans · handoffs · domain-rules. **작업 시작 시 여기부터** |
 | `sop.md` | 전체 한국어 제품 SOP·운영 규칙 (**최우선**) |
 | `architecture.md` | 아키텍처·데이터 경계 |
 | `security-boundary.md` | 공개/비공개·RLS 기대치 |

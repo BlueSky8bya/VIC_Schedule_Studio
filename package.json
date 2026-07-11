@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test tests/e2e",
-    "test:visual": "playwright test tests/visual"
+    "test:visual": "playwright test tests/visual",
+    "harness:verify": "node scripts/agent-harness/verify-harness.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
