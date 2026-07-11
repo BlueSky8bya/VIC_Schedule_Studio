@@ -182,6 +182,11 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 // 메모 컬럼(238px)이 표면 폭(1840)에서 차지하는 비율 — 이 안에 스티커가 하나라도 있으면
 // 시청자에게도 메모지를 보여준다(붙인 게 있는데 종이가 사라지면 스티커가 허공에 뜬다).
 const MEMO_COLUMN_RATIO = 238 / 1840;
+// 토스트 한 줄에 들어가게 제목을 줄인다(긴 제목이 화면을 가로지르지 않게).
+function trimTitle(title: string, max = 14) {
+  const line = title.split("\n")[0]?.trim() ?? "";
+  return line.length > max ? `${line.slice(0, max)}…` : line;
+}
 const POSTER_DESIGN_W = 1840;
 const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
 
@@ -1028,6 +1033,11 @@ export function PublicPoster({
     decorate ||
     Boolean(schedule.calendar.publicMemo) ||
     stickers.some((s) => s.xRatio < MEMO_COLUMN_RATIO);
+  // 모바일 아젠다에서 사용자가 펼친 '빈 날 구간'(접기는 숨김이 아니라 접힘 — 탭하면 그대로 보인다).
+  const [expandedGaps, setExpandedGaps] = useState<Set<string>>(() => new Set());
+  // 하트 등급 승급 토스트(시청자) — 내 하트가 등급을 올렸을 때만 잠깐 뜬다.
+  const [heartToast, setHeartToast] = useState<string | null>(null);
+  const heartToastTimerRef = useRef<number | null>(null);
   // C3: 다중 선택 — 기본(primary) 선택 외에 추가로 선택된 스티커들.
   const [multiIds, setMultiIds] = useState<string[]>([]);
   const [stickerError, setStickerError] = useState<string | null>(null);
@@ -1370,6 +1380,25 @@ export function PublicPoster({
       // 이벤트 풀링 영향을 피하려 좌표를 동기적으로 먼저 읽는다.
       const rect = ev.currentTarget.getBoundingClientRect();
       spawnHearts(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    }
+    // '내 하트가 이 일정의 등급을 올린 순간'만 알려준다 — 집계가 조용히 바뀌면 내가 뭘 했는지
+    // 아무도 모른다. 남의 하트가 revalidation으로 들어올 땐 절대 안 뜬다(이 토글 경로에서만 계산).
+    if (!wasOn) {
+      const before = heartTier(heartCounts[id] ?? 0, topEventIds.has(id));
+      const after = heartTier((heartCounts[id] ?? 0) + 1, topEventIds.has(id));
+      if (after && after.key !== before?.key) {
+        const title = liveEvents.find((e) => e.id === id)?.publicTitle ?? "이 일정";
+        setHeartToast(
+          after.key === "top"
+            ? `👑 당신의 하트로 "${trimTitle(title)}"이(가) 이 달 1위!`
+            : `${after.flames} 당신의 하트로 "${trimTitle(title)}"이(가) ${after.label}이 됐어요!`
+        );
+        hapticSuccess();
+        if (heartToastTimerRef.current) {
+          window.clearTimeout(heartToastTimerRef.current);
+        }
+        heartToastTimerRef.current = window.setTimeout(() => setHeartToast(null), 2600);
+      }
     }
     setBookmarks((prev) => (wasOn ? prev.filter((x) => x !== id) : [...prev, id]));
     setHeartCounts((prev) => ({
@@ -2865,6 +2894,34 @@ export function PublicPoster({
       }
     }
 
+    // 빈 날이 연달아 3일 이상이면 한 줄로 접는다. 예전엔 말일까지 모든 빈 날이 풀사이즈 카드라
+    // 월말 스크롤의 3분의 1이 "예정된 공개 일정 없음" 벽이었고, 감정적으로는 "방송 안 하나?"로
+    // 읽혔다. 접힌 줄을 탭하면 그대로 펼쳐진다(숨기는 게 아니라 접는 것).
+    type AgendaRow =
+      | { kind: "day"; group: DayGroup }
+      | { kind: "gap"; key: string; days: DayGroup[] };
+    const rows: AgendaRow[] = [];
+    let emptyRun: DayGroup[] = [];
+    const flushRun = () => {
+      if (emptyRun.length >= 3) {
+        rows.push({ kind: "gap", key: `gap-${emptyRun[0].cell.isoDate}`, days: emptyRun });
+      } else {
+        emptyRun.forEach((group) => rows.push({ kind: "day", group }));
+      }
+      emptyRun = [];
+    };
+    for (const group of groups) {
+      // 오늘·특별한 날(공휴일/절기/월드컵)은 비어 있어도 접지 않는다 — 찾는 날이니까.
+      const collapsible = group.list.length === 0 && !group.mark && !group.day.isToday;
+      if (collapsible) {
+        emptyRun.push(group);
+      } else {
+        flushRun();
+        rows.push({ kind: "day", group });
+      }
+    }
+    flushRun();
+
     return (
       <section
         className="agenda"
@@ -2963,7 +3020,32 @@ export function PublicPoster({
                   : "이 달엔 공개된 일정이 없어요. 🍃"}
             </p>
           ) : (
-            groups.map(({ cell, day, mark, list }, agendaIndex) => (
+            rows.map((row, agendaIndex) => {
+              // 접힌 빈 구간 — 한 줄. 탭하면 그 자리에서 펼쳐진다(내용을 숨기지 않는다).
+              if (row.kind === "gap" && !expandedGaps.has(row.key)) {
+                const from = row.days[0].cell.dayOfMonth;
+                const to = row.days[row.days.length - 1].cell.dayOfMonth;
+                return (
+                  <button
+                    className="agenda-gap"
+                    key={row.key}
+                    onClick={() => {
+                      hapticTick();
+                      setExpandedGaps((prev) => new Set(prev).add(row.key));
+                    }}
+                    style={popIntro ? ({ "--ri": agendaIndex } as CSSProperties) : undefined}
+                    type="button"
+                  >
+                    <span className="ag-range">
+                      {from}~{to}일
+                    </span>
+                    <span className="ag-note">아직 일정이 없어요 🍃</span>
+                    <span className="ag-more">펼치기</span>
+                  </button>
+                );
+              }
+              const days = row.kind === "gap" ? row.days : [row.group];
+              return days.map(({ cell, day, mark, list }) => (
               <div
                 className={`agenda-day ${day.isToday ? "today" : ""}`}
                 key={cell.isoDate}
@@ -3006,7 +3088,9 @@ export function PublicPoster({
                     )
                   ) : null}
                   {list.length === 0 ? (
-                    <span className="agenda-noevent">예정된 공개 일정 없음</span>
+                    // DB의 null을 그대로 읽어주던 문구("예정된 공개 일정 없음") 대신 사람 말로.
+                    // 쉬는 날은 누락된 레코드가 아니라 쉬는 날이다.
+                    <span className="agenda-noevent">아직 일정이 없어요 🍃</span>
                   ) : null}
                   {list.map(({ event: rawEvent, support }) => {
                     // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다.
@@ -3150,7 +3234,8 @@ export function PublicPoster({
                   })}
                 </div>
               </div>
-            ))
+              ));
+            })
           )}
         </div>
       </section>
@@ -3172,6 +3257,12 @@ export function PublicPoster({
       {decorate && stickerClipMsg ? (
         <div className="sticker-clip-toast" role="status" aria-live="polite">
           {stickerClipMsg}
+        </div>
+      ) : null}
+      {/* 하트 승급 순간 — 화면 밖(fixed)이라 캡쳐 PNG엔 안 들어간다. */}
+      {heartToast ? (
+        <div className="heart-toast" role="status" aria-live="polite">
+          {heartToast}
         </div>
       ) : null}
       {/* 아바타 자리 토글(켜짐) — 달력 꾸미기에서만 여기(고정 오버레이)에서 아바타 자리 '바로 위'에
