@@ -2075,18 +2075,28 @@ export function StudioShell({
       dropDateRef.current = iso;
       setDropDate(iso);
     }
-    // 같은/다른 날 안에서 어느 카드 위·아래에 놓을지 판단(순서 변경). 카드에 끌어다 놓는 가장
-    // 흔한 의도는 '그 아래(뒤)에 추가'다 → '앞(위)'은 카드 위쪽 40%에서만, 나머지 60%는 '뒤'로
-    // 친다. (정확히 절반으로 나누면 카드 윗부분을 살짝만 스쳐도 선이 카드 위 틈으로 올라가
-    // '카드 중간/위'에 뜬 것처럼 보였다 — 대부분의 hover에서 카드 아래에 뜨게 한다.)
-    // 카드가 아니면(빈 공간) null → 맨 끝.
-    const pillEl = under?.closest("[data-eventid]") as HTMLElement | null;
-    const overId = pillEl?.getAttribute("data-eventid") ?? null;
-    if (overId && overId !== info.id) {
-      const r = pillEl!.getBoundingClientRect();
-      dropOverRef.current = { id: overId, after: e.clientY > r.top + r.height * 0.4 };
-    } else {
-      dropOverRef.current = null;
+    // 같은/다른 날 안에서 어느 카드 앞/뒤에 놓을지 판단(순서 변경).
+    //
+    // 예전엔 '포인터가 카드 위에 있을 때'만 앞/뒤를 계산하고, 카드 밖(카드 사이 틈, 원래 자리,
+    // 칸의 빈 공간)이면 무조건 '맨 끝'으로 쳤다. 그래서 1번 카드를 들고 2번 카드 '위쪽' 빈 공간으로
+    // 가져가면 — 눈으로는 분명 위인데 — 안내선이 맨 아래에 떴다(의도와 정반대). 카드 위쪽 40%에
+    // 정확히 얹어야만 위로 뜨는 것도 같은 원인.
+    //
+    // 이제 그 칸의 다른 카드들을 위에서부터 훑어, 포인터보다 '중심이 아래'인 첫 카드 앞에 넣는다.
+    // 카드 위든 틈이든 빈 공간이든 규칙이 하나(중심선 기준) — 위에 있으면 위, 아래면 아래.
+    // 포인터가 모든 카드보다 아래면 맨 끝.
+    dropOverRef.current = null;
+    if (dayEl) {
+      const pills = Array.from(dayEl.querySelectorAll<HTMLElement>("[data-eventid]")).filter(
+        (el) => el.getAttribute("data-eventid") !== info.id
+      );
+      for (const el of pills) {
+        const r = el.getBoundingClientRect();
+        if (e.clientY < r.top + r.height / 2) {
+          dropOverRef.current = { id: el.getAttribute("data-eventid") ?? "", after: false };
+          break;
+        }
+      }
     }
     // 삽입선 위치 갱신(바뀔 때만 state 변경 → 불필요한 재렌더 방지).
     const nextSlot = iso
