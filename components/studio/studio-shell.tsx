@@ -3406,9 +3406,8 @@ export function StudioShell({
         else flashSavedChip();
         return;
       }
-      // Alt+N: 새 일정 카드 열기/닫기 — 제목칸에 포커스가 있어도(글자 입력 중에도) 동작한다.
-      // 맨 N은 편집 패널이 열려 있는 동안 '제목 글자'로 먹히므로(아래 글자키 규칙) 다시 눌러 닫을 수
-      // 없었다. 그래서 열기 = N(빠른 진입, 패널 닫힌 상태), 닫기/토글 = Alt+N 또는 Esc.
+      // Alt+N: 새 일정 카드 열기/닫기(하나의 키로 통일). 제목칸에 포커스가 있어도 동작하도록
+      // INPUT 가드보다 먼저 처리한다 — 맨 N은 패널이 열린 동안 '제목 글자'로 먹혀 닫기가 불가능했다.
       if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "n" && !modal) {
         e.preventDefault();
         selectDate(selectedDate);
@@ -3462,12 +3461,8 @@ export function StudioShell({
         deleteEvent(selectedEventId);
         return;
       }
-      // N: 지금 선택된 날짜에 새 일정 카드 열기(수식키 없이).
-      if (e.key.toLowerCase() === "n" && !e.ctrlKey && !e.metaKey && !e.altKey) {
-        e.preventDefault();
-        selectDate(selectedDate);
-        return;
-      }
+      // (맨 N은 없앴다 — 편집 패널이 열린 동안엔 어차피 '제목 글자'로 먹혀 열기만 되고 닫기가 안 돼
+      //  비대칭이었다. 열기·닫기 모두 Alt+N 하나로 통일 — 위쪽에서 INPUT 가드보다 먼저 처리한다.)
       if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
       const key = e.key.toLowerCase();
       if (key === "z") {
@@ -4840,8 +4835,7 @@ export function StudioShell({
         // 한 줄 칩 흐름 유지. 설명은 라벨 수준으로 짧게 — 키가 주인공이고 문장은 잡음이다.
         <div className="kbd-hints" aria-label="키보드 단축키 안내">
           <span className="kbd-hints-title">단축키</span>
-          <span><kbd>N</kbd> 새 일정</span>
-          <span><kbd>Alt</kbd>+<kbd>N</kbd> 닫기</span>
+          <span><kbd>Alt</kbd>+<kbd>N</kbd> 새 일정</span>
           <span><kbd>글자</kbd> 제목</span>
           <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
           <span><kbd>Del</kbd> 삭제</span>
