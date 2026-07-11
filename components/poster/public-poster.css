@@ -2417,12 +2417,19 @@ body.cell-range-dragging {
 
 .day-strip {
   display: flex;
-  align-items: baseline;
+  /* center + 아래 strong line-height:1 + 고정 min-height = 날짜 줄 높이가 내용에 끌려가지 않는다.
+     baseline 정렬이던 시절엔 월드컵 칩(inline-flex + padding)이 줄 상자를 키워 그 칸만 몇 px
+     높아졌고, 이어진 일정 막대가 옆 칸과 어긋나 보였다(편집실 .studio-day-head와 같은 처방). */
+  align-items: center;
   justify-content: flex-start;
   gap: 4px;
-  min-height: 22px;
+  min-height: 27px;
   padding: 3px 6px 0;
   font-weight: 900;
+}
+/* 상속 line-height(1.5)로 줄 상자가 커지지 않게 못박는다 — 칩 유무와 무관하게 높이 동일. */
+.day-strip strong {
+  line-height: 1;
 }
 
 .public-day.outside .day-strip {
