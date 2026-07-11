@@ -1,0 +1,55 @@
+schema_version: "1.0"
+protocol_source: "project-initializing_260710.md"
+protocol_date: "2026-07-10"
+adoption: "minimal" # 최소 도입안 — 전체 docs/agent/ 트리는 만들지 않는다. 이유는 CURRENT_STATE 하단 참고.
+initialized_at: "2026-07-12"
+last_harness_review: "2026-07-12"
+
+project:
+  name: "VIC Schedule Studio"
+  version: "0.1.0"
+  type:
+    - web
+    - frontend
+    - fullstack # Next.js App Router server actions + Supabase
+  status: "active"
+
+# 실제 위험 경계가 있는 프로필만 켠다(공개/비공개 분리가 이 제품의 핵심 약속).
+risk_profiles:
+  - GENERAL
+  - SECURITY # 공개 API·공개 로더가 비공개 데이터를 절대 흘리면 안 됨
+  - PRIVACY # 엠바고(owner_private)·작업자 일정, 본문 AES-256-GCM 암호화
+  - AUTH # Google 로그인 + 패스코드 언락 세션, 역할(owner/manager/worker/developer)
+  - DESTRUCTIVE_DATA # db/migrations 수동 적용, 키 분실 시 복호 불가
+
+entrypoints:
+  constitution: "CLAUDE.md" # 철학·불변식·설계 규칙(항상-온)
+  roles: "AGENTS.md"
+  sop: "docs/sop.md"
+  current_state: "docs/CURRENT_STATE.md"
+  project_map: "docs/README.md" # 문서 트리 라우팅 + 폴더별 README
+  decision_index: "docs/decisions/DECISION_INDEX.md"
+  security_boundary: "docs/security-boundary.md"
+  architecture: "docs/architecture.md"
+
+commands:
+  install: "npm install"
+  dev: "npm run dev"
+  typecheck: "npm run typecheck"
+  lint: "npm run lint" # eslint --max-warnings=0
+  build: "npm run build" # 커밋 전 exit code 확인(경고=실패 → Vercel 배포 막힘)
+  test: "npm run test" # vitest
+  test_e2e: "npm run test:e2e"
+  test_visual: "npm run test:visual"
+  migrate: "node scripts/apply-db.mjs db/migrations/<file>.sql" # 수동·멱등, .env.local 사용
+
+version_policy: "semver"
+
+agent_policy:
+  default_task_risk: "L1"
+  ask_before_production_dependency: true
+  ask_before_destructive_command: true
+  ask_before_public_api_break: true
+  auto_commit: false # 사용자가 요청하거나 명백히 기대될 때만
+  auto_push: false # push = main = Vercel 프로덕션 자동배포
+  update_current_state_after: "의미 있는 작업(기능/구조/마이그레이션) 종료 시"

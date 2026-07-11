@@ -129,6 +129,16 @@ owner/developer/worker; owner_private → owner only. Manager has zero private a
 - DB schema = SQL in `db/migrations/*`, applied manually:
   `node scripts/apply-db.mjs db/migrations/<file>.sql` (idempotent, reads `.env.local`).
 
+## Repository memory (read first, write back)
+
+- **Start of a task:** read `docs/CURRENT_STATE.md` — current objective, active work, known issues,
+  locked areas, next exact steps. It is the project's present tense, not a diary.
+- **Before changing a locked area:** read the linked ADR in `docs/decisions/`. Never silently
+  override an Accepted ADR — surface the conflict, then supersede it (don't delete it).
+- **End of a meaningful task** (feature / structure / migration): update `docs/CURRENT_STATE.md`.
+  History belongs in git log and ADRs, not in that file.
+- Harness manifest (commands, risk profiles, protocol provenance): `agent-harness.yaml`.
+
 ## Source of truth
 
 Entering any folder, read its `README.md` first instead of bulk-reading the tree:
