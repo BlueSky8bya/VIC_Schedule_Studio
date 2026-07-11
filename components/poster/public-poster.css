@@ -4644,14 +4644,6 @@ html[data-reduce-motion] .pi-backdrop {
   font-weight: 900;
   color: var(--ink, #23303f);
 }
-.pi-head em {
-  display: block;
-  margin-top: 2px;
-  color: var(--muted);
-  font-size: 12.5px;
-  font-style: normal;
-  font-weight: 700;
-}
 .pi-close {
   display: grid;
   place-items: center;

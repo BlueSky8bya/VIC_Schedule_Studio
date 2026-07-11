@@ -277,12 +277,9 @@ export function PublicInsights({
     >
       <section aria-label={`${month}월 기록`} className="pi-sheet" role="dialog" aria-modal="true">
         <header className="pi-head">
-          <div>
-            <strong>
-              {year}년 {String(month).padStart(2, "0")}월 기록
-            </strong>
-            <em>빅토리의 이 달을 숫자로</em>
-          </div>
+          <strong>
+            {year}년 {String(month).padStart(2, "0")}월 기록
+          </strong>
           <button aria-label="닫기" className="pi-close" onClick={onClose} type="button">
             <X size={18} />
           </button>
