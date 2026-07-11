@@ -114,45 +114,105 @@
 }
 /* #9 키보드 단축키 안내바 — 달력 아래 가운데, 옅게. 웹 전용(데스크톱 렌더에서만 출력). */
 /* 단축키 안내바 — 각 항목을 '키+설명' 칩으로 묶어 한눈에 짝이 보이게(꾸미기와 동일 디자인). */
+/* 단축키 안내 — 평소엔 칩 하나로 접혀 있고(달력 위를 비운다), 누르면 그룹별 표로 펼친다.
+   예전엔 13개 칩이 한 줄에 흘러 넘쳐 달력보다 시끄러웠다. 단축키는 한 번 익히면 안 보는 정보다. */
 .kbd-hints {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-2); /* 8 */
-  /* 달력 위, 액션바 아래. */
+  gap: 8px;
   margin: 0 0 12px;
-  padding: var(--space-2) var(--space-3); /* 8/12 */
+}
+.kbd-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
   border: 1px solid var(--line, #ece9f5);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-pill);
   background: rgb(255 255 255 / 72%);
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-}
-.kbd-hints .kbd-hints-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 8px;
-  border-radius: var(--r-sm);
-  background: #efe9fb;
-  color: #5b4bd0;
+  padding: 5px 12px;
+  color: #5f5780;
   font-size: 12.5px;
-  font-weight: 900;
-  letter-spacing: 0.02em;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
 }
-.kbd-hints span:not(.kbd-hints-title) {
-  display: inline-flex;
+.kbd-toggle:hover {
+  background: #fff;
+}
+.kbd-toggle:active {
+  transform: scale(0.96);
+}
+.kbd-toggle-ic {
+  color: #5b4bd0;
+  font-size: 13px;
+}
+.kbd-chev {
+  color: var(--muted);
+  transition: transform var(--dur-2) var(--ease);
+}
+.kbd-hints.open .kbd-chev {
+  transform: rotate(180deg);
+}
+/* 펼친 표 — 3그룹을 나란히(웹). 각 그룹은 '키 | 설명' 두 칸 정렬이라 눈이 세로로 훑힌다. */
+.kbd-sheet {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+  width: 100%;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-lg);
+  background: rgb(255 255 255 / 78%);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  padding: var(--space-3) var(--space-4);
+  animation: fold-open var(--dur-3) var(--ease-enter) both;
+}
+html[data-reduce-motion] .kbd-sheet {
+  animation: none;
+}
+.kbd-group h4 {
+  margin: 0 0 6px;
+  color: #5b4bd0;
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+}
+.kbd-group dl {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+}
+.kbd-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
+}
+.kbd-row dt {
+  display: flex;
+  align-items: center;
+  gap: 3px;
   white-space: nowrap;
-  padding: 4px 8px 4px 6px;
-  border: 1px solid #ece8f7;
-  border-radius: var(--r-sm);
-  background: #f7f5fc;
+}
+.kbd-row dd {
+  margin: 0;
   color: #5f5780;
   font-size: 12.5px;
   font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 1180px) {
+  .kbd-sheet {
+    grid-template-columns: 1fr;
+  }
 }
 .kbd-hints kbd {
   display: inline-grid;

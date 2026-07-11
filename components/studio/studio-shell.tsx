@@ -460,6 +460,22 @@ export function StudioShell({
   // 공개 범위 + 옵션(미정·업도움·떡밥) 묶음은 기본으로 접혀 있다 — 대부분의 일정이 '모두 공개 +
   // 옵션 없음'이라 매번 펼칠 이유가 없다. 접힌 상태에서도 헤더 요약으로 현재 값이 보인다.
   const [scopeFoldOpen, setScopeFoldOpen] = useState(false);
+  // 단축키 안내는 기본 접힘(달력 위를 비운다). 편 적이 있으면 그 선택을 기억한다.
+  const [kbdOpen, setKbdOpen] = useState(false);
+  useEffect(() => {
+    try {
+      setKbdOpen(window.localStorage.getItem("vic.kbdHints") === "open");
+    } catch {
+      /* 무시 */
+    }
+  }, []);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem("vic.kbdHints", kbdOpen ? "open" : "closed");
+    } catch {
+      /* 무시 */
+    }
+  }, [kbdOpen]);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
@@ -4837,24 +4853,67 @@ export function StudioShell({
       {/* #9 키보드 단축키 안내바 — 웹(데스크톱)·소유자(canEdit)에서만. 달력 '위'에 옅게(아래에 두면
           하단 플로팅 바·접힘으로 잘 안 보여 위로 올림). */}
       {canEdit ? (
-        <div className="kbd-hints" aria-label="키보드 단축키 안내">
-          <span className="kbd-hints-title">단축키</span>
-          {/* 일정 만들기·편집 */}
-          <span><kbd>N</kbd> 새 일정 (닫기 <kbd>Alt</kbd>+<kbd>N</kbd>/<kbd>Esc</kbd>)</span>
-          <span><kbd>글자</kbd>/<kbd>`</kbd> 제목 바로 수정</span>
-          <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
-          <span><kbd>Del</kbd> 삭제</span>
-          <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
-          <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복사·붙여넣기</span>
-          {/* 잇기·끊기 */}
-          <span><kbd>일정 선택 후 우클릭 드래그</kbd> 잇기</span>
-          <span><kbd>우클릭 긋기</kbd> 이음새 끊기</span>
-          {/* 날짜 선택·이동 */}
-          <span><kbd>드래그</kbd> 날짜 범위 선택</span>
-          <span><kbd>Ctrl</kbd>+날짜 따로 선택</span>
-          <span><kbd>←</kbd><kbd>→</kbd> 월·이어진 일정 이동</span>
-          {/* 닫기 */}
-          <span><kbd>Esc</kbd> 닫기</span>
+        /* 예전엔 13개 칩이 한 줄에 쭉 흘러 달력 위를 시끄럽게 채웠다. 단축키는 한 번 익히면 안 보는
+           정보다 → 평소엔 칩 하나로 접어 두고, 누르면 그룹별 표로 펼친다(선택은 기억한다). */
+        <div className={`kbd-hints${kbdOpen ? " open" : ""}`}>
+          <button
+            aria-expanded={kbdOpen}
+            className="kbd-toggle"
+            onClick={() => {
+              hapticTick();
+              setKbdOpen((v) => !v);
+            }}
+            type="button"
+          >
+            <span className="kbd-toggle-ic" aria-hidden="true">⌨</span>
+            단축키
+            <ChevronDown aria-hidden="true" className="kbd-chev" size={14} />
+          </button>
+          {kbdOpen ? (
+            <div className="kbd-sheet" aria-label="키보드 단축키 안내">
+              {[
+                {
+                  title: "만들기 · 편집",
+                  rows: [
+                    { k: <><kbd>N</kbd></>, d: "새 일정" },
+                    { k: <><kbd>Alt</kbd>+<kbd>N</kbd> · <kbd>Esc</kbd></>, d: "편집 카드 닫기" },
+                    { k: <><kbd>글자</kbd> · <kbd>`</kbd></>, d: "제목 바로 수정" },
+                    { k: <><kbd>Ctrl</kbd>+<kbd>S</kbd></>, d: "저장" },
+                    { k: <><kbd>Del</kbd></>, d: "삭제" },
+                    { k: <><kbd>Ctrl</kbd>+<kbd>Z</kbd></>, d: "되살리기" },
+                    { k: <><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>V</kbd></>, d: "복사 · 붙여넣기" }
+                  ]
+                },
+                {
+                  title: "잇기 · 끊기",
+                  rows: [
+                    { k: <><kbd>선택 후 우클릭 드래그</kbd></>, d: "일정 잇기" },
+                    { k: <><kbd>우클릭 긋기</kbd></>, d: "이음새 끊기" }
+                  ]
+                },
+                {
+                  title: "선택 · 이동",
+                  rows: [
+                    { k: <><kbd>드래그</kbd></>, d: "날짜 범위 선택" },
+                    { k: <><kbd>Ctrl</kbd>+<kbd>클릭</kbd></>, d: "날짜 따로 선택" },
+                    { k: <><kbd>←</kbd> <kbd>→</kbd></>, d: "월 · 이어진 일정 이동" }
+                  ]
+                }
+              ].map((group) => (
+                <section className="kbd-group" key={group.title}>
+                  <h4>{group.title}</h4>
+                  <dl>
+                    {group.rows.map((row, i) => (
+                      <div className="kbd-row" key={i}>
+                        <dt>{row.k}</dt>
+                        <dd>{row.d}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </section>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
