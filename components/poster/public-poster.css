@@ -4829,12 +4829,6 @@ html[data-reduce-motion] .pi-backdrop {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pi-note {
-  margin: 9px 0 0;
-  color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 700;
-}
 .pi-trend {
   display: grid;
   grid-auto-flow: column;

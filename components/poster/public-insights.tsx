@@ -342,7 +342,7 @@ export function PublicInsights({
           {/* 인기 일정 — 하트 개수 비공개, 1위 대비 비율 막대만. */}
           {d.popular.length > 0 ? (
             <div className="pi-card">
-              <span className="pi-label">팬들이 많이 누른 일정</span>
+              <span className="pi-label">빅타민들이 많이 누른 일정</span>
               <ol className="pi-top">
                 {d.popular.map((p, i) => (
                   <li key={p.id}>
@@ -354,7 +354,6 @@ export function PublicInsights({
                   </li>
                 ))}
               </ol>
-              <p className="pi-note">♥ 수는 비밀 — 1위 대비 비율만 보여줘요.</p>
             </div>
           ) : null}
 
