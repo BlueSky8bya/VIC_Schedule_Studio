@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import {
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   ExternalLink,
@@ -453,6 +454,9 @@ export function StudioShell({
   // 떡밥 공개시각 선택기(날짜·시간 팝업) 열림 — 모바일 뒤로가기 스택에 한 층으로 넣어, 뒤로가기 때
   // 이 팝업만 닫히고 새 일정 편집 카드로 돌아오게 한다(편집 카드까지 닫히지 않게).
   const [teaserPickerOpen, setTeaserPickerOpen] = useState(false);
+  // 공개 범위 + 옵션(미정·업도움·떡밥) 묶음은 기본으로 접혀 있다 — 대부분의 일정이 '모두 공개 +
+  // 옵션 없음'이라 매번 펼칠 이유가 없다. 접힌 상태에서도 헤더 요약으로 현재 값이 보인다.
+  const [scopeFoldOpen, setScopeFoldOpen] = useState(false);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
@@ -972,6 +976,7 @@ export function StudioShell({
   const canReadPrivate =
     canReadPrivateLayer(effectiveRole, effIsWorker, hasUnlockSession) && showPrivate;
 
+
   // 미리보기 중 변경 차단(보기 전용). 막았으면 true. (문구는 짧게 — 모바일 컴팩트.)
   function blockedByPreview(): boolean {
     if (previewRole) {
@@ -1345,6 +1350,21 @@ export function StudioShell({
     [selectedEventId, visibleEvents]
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
+
+  // 접힌 '공개 범위 · 옵션' 헤더에 현재 값을 한 줄로 요약한다 — 접혀 있어도 이 일정이 엠바고인지,
+  // 미정인지, 떡밥인지 펼치지 않고 바로 보이게(접기가 정보를 숨기면 안 된다).
+  const scopeFoldSummary = [
+    form.visibilityScope === "owner_private"
+      ? "🔒 엠바고"
+      : form.visibilityScope === "work"
+        ? "🔧 작업자"
+        : "🌐 모두",
+    form.isTentative ? "미정" : null,
+    form.isSupport ? "🌱 업 도움" : null,
+    form.teaser ? "🔮 최초공개" : null
+  ]
+    .filter(Boolean)
+    .join(" · ");
   // 편집 카드 임시 보관(드래프트). 모듈 상단 헬퍼(loadEditDrafts 등) 참고.
   // baseline = '깨끗한' 기준 지문(원본 일정 또는 빈 새 카드). form이 이와 다르면 미저장 변경 → 보관.
   const editDraftsRef = useRef<Map<string, EditDraft>>(new Map());
@@ -5207,8 +5227,25 @@ export function StudioShell({
               />
             </label>
 
-            {/* 공개 범위 — 웹 전용 카드 선택기(아이콘+범위+한줄설명). 밋밋한 흰 드롭다운 대신
-                범위별 색/아이콘으로 한눈에, 선택 카드는 그 색으로 채워지고 체크 표시. */}
+            {/* 공개 범위 + 옵션(미정·업도움·떡밥)은 접어 둔다 — 대부분의 일정은 '모두 공개 + 옵션
+                없음'이라 매번 펼쳐 볼 필요가 없다. 제목·태그(자주 쓰는 것)를 먼저 보이게 하고,
+                이 묶음은 헤더에 현재 상태를 요약해 보여준 뒤 필요할 때만 펼친다. 기본 접힘. */}
+            <div className={`fold-field${scopeFoldOpen ? " open" : ""}`}>
+              <button
+                aria-expanded={scopeFoldOpen}
+                className="fold-head"
+                onClick={() => {
+                  hapticTick();
+                  setScopeFoldOpen((v) => !v);
+                }}
+                type="button"
+              >
+                <span className="fold-title">공개 범위 · 옵션</span>
+                <span className="fold-summary">{scopeFoldSummary}</span>
+                <ChevronDown aria-hidden="true" className="fold-chev" size={16} />
+              </button>
+              {scopeFoldOpen ? (
+                <div className="fold-body">
             <div className="scope-field">
               <span className="scope-field-label">공개 범위</span>
               {canReadPrivate ? (
@@ -5314,6 +5351,9 @@ export function StudioShell({
                 ) : null}
               </div>
             ) : null}
+                </div>
+              ) : null}
+            </div>
 
             <section className="tag-picker" aria-label="태그 선택">
               <h3>

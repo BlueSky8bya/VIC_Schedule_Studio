@@ -57,6 +57,11 @@ const DecoratePalette = dynamic(
   () => import("@/components/poster/decorate-palette").then((m) => m.DecoratePalette),
   { ssr: false }
 );
+// '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
+const PublicInsights = dynamic(
+  () => import("@/components/poster/public-insights").then((m) => m.PublicInsights),
+  { ssr: false }
+);
 import {
   STICKER_ANIMS,
   shapeDefaultColor,
@@ -69,6 +74,7 @@ import {
 import type { AssetTabKey } from "@/components/poster/decorate-palette";
 import type { ThemeResult } from "@/lib/schedules/theme-actions";
 import type { SaveStickerInput, StickerResult } from "@/lib/schedules/sticker-actions";
+import type { PublicBroadcastMonth } from "@/lib/schedules/public-loader";
 import type {
   StickerAssetOpResult,
   StickerAssetResult
@@ -139,6 +145,8 @@ type PublicPosterProps = {
   initialPreviewing?: boolean;
   // 서버 UA 판정 휴대폰 여부 — 모바일 아젠다를 처음부터 그려 깜빡임을 없앤다(클라가 보정).
   initialNarrow?: boolean;
+  // 시청자 인사이트용 공개 방송 집계(월별 시간/일수/세션수) — 공개 RPC 결과만, 세션 원본 아님.
+  broadcastStats?: PublicBroadcastMonth[];
   saveStickerAction?: (input: SaveStickerInput) => Promise<StickerResult>;
   deleteStickerAction?: (id: string) => Promise<StickerResult>;
   // 다중 동작(다중 삭제·undo/redo)을 한 번에 저장/삭제 — 권한확인·캐시무효화를 1회로 묶는다.
@@ -635,6 +643,7 @@ export function PublicPoster({
   decorate: decorateProp = false,
   initialPreviewing = false,
   initialNarrow = false,
+  broadcastStats = [],
   saveStickerAction: saveStickerActionRaw,
   deleteStickerAction: deleteStickerActionRaw,
   saveStickerBatchAction: saveStickerBatchActionRaw,
@@ -1038,6 +1047,8 @@ export function PublicPoster({
   // 하트 등급 승급 토스트(시청자) — 내 하트가 등급을 올렸을 때만 잠깐 뜬다.
   const [heartToast, setHeartToast] = useState<string | null>(null);
   const heartToastTimerRef = useRef<number | null>(null);
+  // 시청자 '이 달 기록' 시트 열림.
+  const [insightsOpen, setInsightsOpen] = useState(false);
   // 미니게임이 켜졌는지 — 켜지면 캐주얼 중력 축구공을 아예 언마운트한다(둘 다 뜨면 어수선하고,
   // 공이 미니게임 버튼 위에 굴러와 앉는다). 공 컴포넌트 내부의 숨김 상태에 기대지 않고 여기서
   // 렌더 자체를 끊는다 — 미니게임을 켰는데 공이 그대로 남던 문제가 실제로 있었다.
@@ -3274,6 +3285,20 @@ export function PublicPoster({
           {heartToast}
         </div>
       ) : null}
+      {/* 시청자 '이 달 기록' — 공개 데이터만(공개 일정·태그·하트 집계·방송시간 집계 RPC).
+          방문자/동시접속 같은 운영 지표는 안 들어간다. fixed 오버레이라 캡쳐 PNG 밖. */}
+      {insightsOpen ? (
+        <PublicInsights
+          broadcast={broadcastStats}
+          events={liveEvents}
+          heartCounts={heartCounts}
+          month={view.month}
+          onClose={() => setInsightsOpen(false)}
+          palette={schedule.palette}
+          tags={schedule.tags}
+          year={view.year}
+        />
+      ) : null}
       {/* 아바타 자리 토글(켜짐) — 달력 꾸미기에서만 여기(고정 오버레이)에서 아바타 자리 '바로 위'에
           뜬다. 데스크탑·관리자 전용. */}
       {avatarCapable && !showAgenda && avatarOn && decorate ? (
@@ -3501,20 +3526,35 @@ export function PublicPoster({
                 그 가운데 자리에 '내 관심(♥)' 토글을 둔다 — 계정변경/미리보기 바와 같은 줄이라
                 세로 공간을 안 먹어 포스터가 줄지 않고, 포스터 표면(캡쳐 캔버스) 밖이라 스티커
                 좌표도 안전하다. 상호작용(시청자/미리보기) 모드에서만(꾸미기·캡쳐 제외). */}
-            {canHeart ? (
+            {interactive ? (
               <div className="poster-interest">
+                {canHeart ? (
+                  <button
+                    aria-pressed={bookmarkedOnly}
+                    className={`interest-toggle ${bookmarkedOnly ? "active" : ""}`}
+                    onClick={() => setBookmarkedOnly((v) => !v)}
+                    title="내가 ♥ 누른 일정만 모아서 보기"
+                    type="button"
+                  >
+                    <LiquidHeart ratio={interestRatio} />
+                    <span className="it-text">
+                      <strong>내 관심</strong>
+                      <em>♥ 누른 일정만 모아보기</em>
+                    </span>
+                  </button>
+                ) : null}
+                {/* '이 달 기록' — 비로그인 시청자도 볼 수 있다. 좌상단(미니게임·아바타)·우상단(로그인)·
+                    좌우 화살표(월 이동)·하단(미니게임 컨트롤)과 안 겹치는 상단 중앙 크롬 자리. */}
                 <button
-                  aria-pressed={bookmarkedOnly}
-                  className={`interest-toggle ${bookmarkedOnly ? "active" : ""}`}
-                  onClick={() => setBookmarkedOnly((v) => !v)}
-                  title="내가 ♥ 누른 일정만 모아서 보기"
+                  className="insights-open"
+                  onClick={() => {
+                    hapticTick();
+                    setInsightsOpen(true);
+                  }}
+                  title="이 달 방송·일정 기록 보기"
                   type="button"
                 >
-                  <LiquidHeart ratio={interestRatio} />
-                  <span className="it-text">
-                    <strong>내 관심</strong>
-                    <em>♥ 누른 일정만 모아보기</em>
-                  </span>
+                  📊 이 달 기록
                 </button>
               </div>
             ) : null}

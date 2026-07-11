@@ -9591,3 +9591,77 @@ textarea:disabled {
   border-radius: var(--r-card);
   padding: 0;
 }
+
+/* ── 접이식 필드 묶음(편집기: 공개 범위 · 옵션) ─────────────────────────
+   대부분의 일정은 '모두 공개 + 옵션 없음'이라 이 묶음을 매번 펼쳐 둘 이유가 없다. 기본 접힘.
+   단, 접기가 정보를 숨기면 안 되므로 헤더에 현재 값(범위·미정·업도움·떡밥)을 요약해 항상 보여준다. */
+.fold-field {
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-md);
+  background: rgb(255 255 255 / 70%);
+  overflow: hidden;
+}
+.fold-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px; /* 터치 타깃 */
+  border: 0;
+  background: none;
+  padding: 9px 12px;
+  color: var(--ink, #2c2740);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+}
+.fold-head:hover {
+  background: rgb(0 0 0 / 3%);
+}
+.fold-head:active {
+  transform: scale(0.995);
+}
+.fold-title {
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 900;
+}
+.fold-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+.fold-chev {
+  flex: 0 0 auto;
+  color: var(--muted);
+  transition: transform var(--dur-2) var(--ease);
+}
+.fold-field.open .fold-chev {
+  transform: rotate(180deg);
+}
+.fold-body {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--line, #ece9f5);
+  padding: 12px;
+  animation: fold-open var(--dur-3) var(--ease-enter) both;
+}
+@keyframes fold-open {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-reduce-motion] .fold-body {
+  animation: none;
+}

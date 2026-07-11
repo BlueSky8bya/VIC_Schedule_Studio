@@ -591,3 +591,49 @@ function samplePublicSchedule(calendarSlug: string): PublicSchedule {
     heartCount: 0
   };
 }
+
+// ── 공개 방송 기록(시청자 인사이트) ────────────────────────────────────────
+// broadcast_session 테이블은 RLS deny-all이라 시청자가 직접 못 읽는다(운영 데이터). 대신 집계만
+// 내주는 SECURITY DEFINER RPC(get_public_broadcast_stats, 0049)를 anon 클라이언트로 호출한다.
+// 나가는 값은 '월별 시간/방송일수/세션수'뿐 — 개별 세션(시작·종료 시각, 방송 제목)은 절대 안 나간다.
+export type PublicBroadcastMonth = {
+  ym: string; // "2026-07" (KST 시작일 귀속)
+  hours: number; // 그 달 총 방송시간(시간, 소수 1자리)
+  days: number; // 방송한 날 수
+  sessions: number; // 방송 횟수
+};
+
+const loadPublicBroadcastStats = unstable_cache(
+  async (fromDay: string): Promise<PublicBroadcastMonth[]> => {
+    const supabase = createPublicReadClient();
+    if (!supabase) {
+      return [];
+    }
+    const { data, error } = await supabase.rpc("get_public_broadcast_stats", {
+      p_from_day: fromDay
+    });
+    if (error || !data) {
+      return [];
+    }
+    // 명시적 DTO 구성(스프레드 금지 — 공개 경계를 넘는 값은 하나하나 고른다).
+    return (data as { ym: string; hours: number; days: number; sessions: number }[]).map((row) => ({
+      ym: String(row.ym),
+      hours: Number(row.hours ?? 0),
+      days: Number(row.days ?? 0),
+      sessions: Number(row.sessions ?? 0)
+    }));
+  },
+  ["public-broadcast-stats"],
+  { revalidate: PUBLIC_SCHEDULE_REVALIDATE_SECONDS, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
+);
+
+// 최근 N개월(이번 달 포함) 방송 기록. 시청자·비로그인 모두 볼 수 있다.
+export async function getPublicBroadcastStats(months = 6): Promise<PublicBroadcastMonth[]> {
+  if (!isSupabaseConfigured()) {
+    return [];
+  }
+  const { year, month } = currentKstYearMonth();
+  const from = new Date(Date.UTC(year, month - 1 - (months - 1), 1));
+  const fromDay = from.toISOString().slice(0, 10);
+  return loadPublicBroadcastStats(fromDay);
+}
