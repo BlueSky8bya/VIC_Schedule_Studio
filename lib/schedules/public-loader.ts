@@ -4,11 +4,16 @@ import type {
   MemoLine,
   PublicSchedule,
   PublicScheduleEvent,
+  StickerAsset,
   StickerInstance,
   StudioScheduleEvent,
   SupportCampaign
 } from "@/lib/domain/schedule-types";
-import { PRODUCT_TIMEZONE, isPosterThemeKey } from "@/lib/domain/schedule-types";
+import {
+  PRODUCT_TIMEZONE,
+  isPosterThemeKey,
+  isStickerAssetKind
+} from "@/lib/domain/schedule-types";
 import type { PosterThemeKey } from "@/lib/domain/schedule-types";
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
@@ -206,8 +211,10 @@ const loadPublicScheduleData = unstable_cache(
           .eq("is_visible", true),
         supabase
           .from("sticker_assets")
-          .select("id, name, file_url, file_type")
+          .select("id, name, file_url, file_type, kind, sort_order")
           .eq("calendar_id", calendar.id)
+          // 사용자가 팔레트에서 드래그로 정한 순서가 먼저. 동률이면 최신순(업로드 직후 앞으로).
+          .order("sort_order", { ascending: true })
           .order("created_at", { ascending: false }),
         supabase
           .from("calendar_hearts")
@@ -278,12 +285,16 @@ function mapStickerAsset(row: {
   name: string;
   file_url: string;
   file_type: string;
-}) {
+  kind?: string | null;
+  sort_order?: number | null;
+}): StickerAsset {
   return {
     id: row.id,
     name: row.name,
     fileUrl: row.file_url,
-    fileType: row.file_type
+    fileType: row.file_type,
+    kind: isStickerAssetKind(row.kind) ? row.kind : "static",
+    sortOrder: Number(row.sort_order ?? 0)
   };
 }
 

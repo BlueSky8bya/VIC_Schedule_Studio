@@ -63,11 +63,16 @@ import {
   type PublicSchedule,
   type PublicScheduleEvent,
   type StickerAsset,
+  type StickerAssetKind,
   type StickerInstance
 } from "@/lib/domain/schedule-types";
+import type { AssetTabKey } from "@/components/poster/decorate-palette";
 import type { ThemeResult } from "@/lib/schedules/theme-actions";
 import type { SaveStickerInput, StickerResult } from "@/lib/schedules/sticker-actions";
-import type { StickerAssetResult } from "@/lib/schedules/sticker-asset-actions";
+import type {
+  StickerAssetOpResult,
+  StickerAssetResult
+} from "@/lib/schedules/sticker-asset-actions";
 import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
 import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { heartTier } from "@/lib/schedules/heart-tiers";
@@ -883,6 +888,10 @@ export function PublicPoster({
   }, [schedule.stickerAssets]);
   // 업로드 진행 중인(아직 서버 저장 전) 임시 에셋 id — 스피너 표시 + 클릭(스티커 추가) 차단용.
   const [pendingAssetIds, setPendingAssetIds] = useState<Set<string>>(() => new Set());
+  // 보관함 분류 탭(전체/아바타/이모티콘/움직이는 이모티콘).
+  const [assetTab, setAssetTab] = useState<AssetTabKey>("all");
+  // 보관함 쓰기(정렬·분류) 직렬 큐 — 마지막 드래그가 저장의 진실.
+  const assetQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   // 살아있는 커스텀 이모지(에셋) id 집합. 삭제된 에셋을 가리키는 이미지 스티커를 다시
   // 저장하면 FK 위반(sticker_instances_asset_id_fkey)이 난다 — undo/복제 등 어떤 경로로든
@@ -1818,9 +1827,12 @@ export function PublicPoster({
           id: tempId,
           name: file.name.replace(/\.[^.]+$/, "") || "커스텀 이모지",
           fileUrl: previewUrl,
-          fileType: file.type
+          fileType: file.type,
+          // 서버와 같은 규칙으로 미리 판정 — GIF만 확실히 '움직이는 이모티콘'.
+          kind: file.type === "image/gif" ? "anim" : "static",
+          sortOrder: (assets[0]?.sortOrder ?? 0) - 1
         };
-        // 서버는 created_at DESC(최신순)로 내려주므로 새 에셋은 결국 맨 왼쪽에 온다.
+        // 새 에셋은 sort_order가 가장 작아(맨 앞) 결국 맨 왼쪽에 온다.
         // 로딩 자리표시도 처음부터 맨 왼쪽(prepend)에 둬, 완료 시 좌우로 튀지 않게 한다.
         setAssets((prev) => [tempAsset, ...prev]);
         setPendingAssetIds((prev) => new Set(prev).add(tempId));
@@ -1863,6 +1875,70 @@ export function PublicPoster({
     }
     if (lastError) {
       setStickerError(lastError);
+    }
+  }
+
+  // 보관함(정렬·분류) 쓰기는 직렬 큐로 — 빠르게 여러 번 끌어도 마지막 순서가 서버의 진실이 된다
+  // (요청이 서로 앞지르면 낙관적 화면과 DB가 어긋난다).
+  async function queueAssetWrite<T>(run: () => Promise<T>): Promise<T> {
+    const next = assetQueueRef.current.then(run, run);
+    assetQueueRef.current = next.then(
+      () => undefined,
+      () => undefined
+    );
+    return next;
+  }
+
+  // 드래그로 바꾼 보관함 순서 저장 — 낙관적으로 먼저 바꾸고, 실패하면 되돌린다.
+  async function reorderAssets(orderedIds: string[]) {
+    const prev = assets;
+    const byId = new Map(prev.map((a) => [a.id, a]));
+    const next = orderedIds
+      .map((id, index) => {
+        const asset = byId.get(id);
+        return asset ? { ...asset, sortOrder: index } : null;
+      })
+      .filter((a): a is StickerAsset => a !== null);
+    if (next.length !== prev.length) {
+      return; // 업로드 중 목록이 바뀐 경우 — 다음 드래그에서 다시 저장된다.
+    }
+    setAssets(next);
+    // 아직 저장 안 된 임시 에셋은 서버에 보낼 수 없다(업로드가 끝나면 맨 앞으로 들어온다).
+    const ids = next.map((a) => a.id).filter((id) => !id.startsWith("temp-"));
+    const result = await queueAssetWrite(() =>
+      stickerWrite<StickerAssetOpResult>(
+        "assetOrder",
+        { ids },
+        { ok: false, error: "순서 저장에 실패했어요." }
+      )
+    );
+    if (!result.ok) {
+      setAssets(prev);
+      setStickerError(result.error);
+    } else {
+      hapticTick(); // 서버 확정 — 집을 때 톡, 저장되면 한 번 더.
+    }
+  }
+
+  // 분류(아바타/이모티콘/움직이는 이모티콘) 이동 — 탭 위로 끌어다 놓았을 때.
+  async function setAssetKind(assetId: string, kind: StickerAssetKind) {
+    if (assetId.startsWith("temp-")) {
+      return;
+    }
+    const prev = assets;
+    setAssets((cur) => cur.map((a) => (a.id === assetId ? { ...a, kind } : a)));
+    const result = await queueAssetWrite(() =>
+      stickerWrite<StickerAssetOpResult>(
+        "assetKind",
+        { id: assetId, kind },
+        { ok: false, error: "분류 변경에 실패했어요." }
+      )
+    );
+    if (!result.ok) {
+      setAssets(prev);
+      setStickerError(result.error);
+    } else {
+      hapticTick();
     }
   }
 
@@ -3411,7 +3487,9 @@ export function PublicPoster({
             <DecoratePalette
               activeEmojis={activeEmojis}
               assets={assets}
+              assetTab={assetTab}
               canDeleteAssets={Boolean(deleteStickerAssetAction)}
+              canManageAssets={Boolean(uploadStickerAssetAction)}
               canUpload={Boolean(uploadStickerAssetAction)}
               categories={EMOJI_CATEGORIES}
               dragOver={dragOver}
@@ -3420,9 +3498,12 @@ export function PublicPoster({
               onAddEmoji={(e) => void addEmoji(e)}
               onAddImageSticker={(a) => void addImageSticker(a)}
               onAddShape={(k) => void addShape(k)}
+              onAssetTab={setAssetTab}
               onDragOver={setDragOver}
               onEmojiCat={setEmojiCat}
               onRemoveAsset={(id) => void removeAsset(id)}
+              onReorderAssets={(ids) => void reorderAssets(ids)}
+              onSetAssetKind={(id, kind) => void setAssetKind(id, kind)}
               onUploadFiles={(files) => void handleUploadFiles(files)}
               pendingAssetIds={pendingAssetIds}
               uploading={uploading}

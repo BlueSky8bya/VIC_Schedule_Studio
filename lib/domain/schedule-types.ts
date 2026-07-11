@@ -124,12 +124,26 @@ export type SupportCampaign = {
   isActive: boolean;
 };
 
+// 업로드한 커스텀 이모지의 분류. 팔레트 탭이자 정렬 단위 — 업로드 시 자동 판정(GIF=동적)하고,
+// 이후엔 꾸미기 팔레트에서 탭 위로 끌어다 놓아 바꾼다(애니메이션 WebP는 MIME으로 구분 불가).
+export type StickerAssetKind = "avatar" | "static" | "anim";
+export const STICKER_ASSET_KINDS: { key: StickerAssetKind; label: string }[] = [
+  { key: "avatar", label: "아바타" },
+  { key: "static", label: "이모티콘" },
+  { key: "anim", label: "움직이는 이모티콘" }
+];
+export function isStickerAssetKind(value: unknown): value is StickerAssetKind {
+  return value === "avatar" || value === "static" || value === "anim";
+}
+
 // 업로드한 커스텀 이모지(이미지 에셋). 캘린더 단위로 공유된다.
 export type StickerAsset = {
   id: string;
   name: string;
   fileUrl: string;
   fileType: string;
+  kind: StickerAssetKind;
+  sortOrder: number;
 };
 
 // 꾸미기 화려함 P1: 스티커 애니메이션 프리셋(라이브 포스터에서 실제로 움직임. 내보내기는 정지 프레임).

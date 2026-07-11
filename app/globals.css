@@ -999,6 +999,32 @@ html[data-reduce-motion] .portrait-lock-icon {
   justify-self: start;
 }
 
+/* ── 업 도움 끈(레인) ─────────────────────────────────────────────────
+   날짜 범위를 가로지르는 하이라이트 띠. 시작/끝만 둥글게, 중간은 이어짐. 겹치면 레인이 아래로 쌓인다.
+   편집실·시청자 포스터·꾸미기가 같은 끈을 그리므로 정의는 여기 한 곳뿐(단일 출처).
+   z-index 4 — 일정 카드(이어진 막대 포함, 최대 3)보다 항상 위. 어느 날짜가 강조된 기간인지는
+   카드에 가려지면 안 된다. 다른 달 베일(::after, 4)·스티커 레이어(5)는 그대로 위에 남는다. */
+.support-bar {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  height: 17px;
+  /* 빨강 계열 구분: CK는 민무늬, 업도움 배너는 대각선 무늬.
+     배경색 위에 background-image 무늬를 깔아 글자 아래에 둔다(캡쳐에서도 보임). */
+  background-color: #fda4af;
+  background-image: repeating-linear-gradient(-45deg, rgb(0 0 0 / 16%) 0 2px, transparent 2px 7px);
+  color: #9f1239;
+  cursor: pointer;
+  overflow: hidden;
+}
+.support-bar span {
+  padding: 0 6px;
+  font-size: 10.5px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 /* ── 태그 색 무늬(패턴) ───────────────────────────────────────────────
    같은 계열(비슷한 색)끼리는 "민무늬 1 + 무늬 1"로 갈라 무조건 구분한다.
    각 계열의 대표는 민무늬로 두고, 두 번째 색만 무늬를 입힌다.

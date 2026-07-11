@@ -5444,27 +5444,8 @@ body.cell-range-dragging {
   filter: brightness(0.92) saturate(1.06);
 }
 
-/* 업 도움 끈(레인). 시작/끝만 둥글게, 중간은 이어짐. 겹치면 레인이 아래로 쌓임. */
-.support-bar {
-  position: absolute;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  height: 17px;
-  /* 빨강 계열 구분: CK는 민무늬, 업도움 배너는 대각선 무늬.
-     배경색 위에 background-image 무늬를 깔아 글자 아래에 둔다(캡쳐에서도 보임). */
-  background-color: #fda4af;
-  background-image: repeating-linear-gradient(-45deg, rgb(0 0 0 / 16%) 0 2px, transparent 2px 7px);
-  color: #9f1239;
-  cursor: pointer;
-  overflow: hidden;
-}
-.support-bar span {
-  padding: 0 6px;
-  font-size: 10.5px;
-  font-weight: 900;
-  white-space: nowrap;
-}
+/* 업 도움 끈(.support-bar)의 본체 스타일은 app/globals.css에 있다 — 편집실·시청자 포스터·꾸미기가
+   같은 끈을 그리므로 한 곳에서만 정의한다(위 hover 톤 규칙만 편집실 전용). */
 
 .studio-day-head {
   position: relative;
