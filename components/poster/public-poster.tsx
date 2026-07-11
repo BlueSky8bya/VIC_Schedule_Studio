@@ -179,6 +179,9 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 // 포스터 고정 캔버스 설계 크기(16:9). 화면에선 이 크기를 통째로 축소해 보여주고,
 // export는 이 원본 크기로 캡쳐한다. 작은 화면에서도 내부 비율·스티커 위치가 절대 안 바뀐다.
+// 메모 컬럼(238px)이 표면 폭(1840)에서 차지하는 비율 — 이 안에 스티커가 하나라도 있으면
+// 시청자에게도 메모지를 보여준다(붙인 게 있는데 종이가 사라지면 스티커가 허공에 뜬다).
+const MEMO_COLUMN_RATIO = 238 / 1840;
 const POSTER_DESIGN_W = 1840;
 const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
 
@@ -1019,6 +1022,12 @@ export function PublicPoster({
     monthStickers(view.year, view.month)
   );
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
+  // 메모지(왼쪽 238px 컬럼 = 표면 폭의 ≈13%)는 붙일 게 있을 때만 시청자에게 보여준다.
+  // 꾸미기에선 항상 — 토리님이 그 위에 텍스트 스티커를 붙이는 종이라 종이가 사라지면 안 된다.
+  const memoVisible =
+    decorate ||
+    Boolean(schedule.calendar.publicMemo) ||
+    stickers.some((s) => s.xRatio < MEMO_COLUMN_RATIO);
   // C3: 다중 선택 — 기본(primary) 선택 외에 추가로 선택된 스티커들.
   const [multiIds, setMultiIds] = useState<string[]>([]);
   const [stickerError, setStickerError] = useState<string | null>(null);
@@ -2736,6 +2745,10 @@ export function PublicPoster({
                 data-chain={chainKeys.get(event.id)}
                 data-color={mixed ? undefined : colors[0]?.key}
                 data-mixed={mixed ? "" : undefined}
+                // 관심 단계를 카드 자체에 실어, 인기가 '불꽃 이모지 개수'가 아니라 '시각적 무게'
+                // (제목 굵기 + 링)로도 읽히게 한다 — 달력은 훑는(spotted) 화면이라 한눈에 큰 방송이
+                // 잡혀야 한다. 이모지는 정밀도, 무게는 스캔용.
+                data-tier={tier?.key}
                 key={event.id}
                 style={mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined)}
               >
@@ -4034,19 +4047,31 @@ export function PublicPoster({
           }
         >
         <section
-          className={`poster-surface${popIntro ? " pop-intro" : ""}`}
+          className={`poster-surface${popIntro ? " pop-intro" : ""}${
+            memoVisible ? "" : " no-memo"
+          }`}
           data-enter={monthDir}
           data-export-surface
           data-poster-theme={effectivePosterTheme}
           key={`surface-${view.year}-${view.month}`}
         >
+          {/* 마스트헤드 — PNG로 잘려 나가도 "빅토리의 이 달"로 읽혀야 하는 부분.
+              큰 월 숫자(썸네일에서도 보이는 앵커) + 제목 + 브랜드 색 룰. 반짝임(✨)은 캡쳐에선
+              멈추므로 정체성을 모션에 기대지 않는다 — 숫자·굵기·색이 정지 상태의 정체성이다. */}
           <div className="poster-heading">
-              <span aria-hidden="true">✨️</span>
-            <h1>{schedule.calendar.title}</h1>
-              <span aria-hidden="true">✨️</span>
-            <em>
-              {view.year}년 {view.month}월
-            </em>
+            <span className="ph-month" aria-hidden="true">
+              {String(view.month).padStart(2, "0")}
+            </span>
+            <div className="ph-titles">
+              <h1>
+                <span aria-hidden="true">✨️</span>
+                {schedule.calendar.title}
+                <span aria-hidden="true">✨️</span>
+              </h1>
+              <em>
+                {view.year}년 {view.month}월 · KST
+              </em>
+            </div>
           </div>
 
           <StickerLayer
@@ -4060,13 +4085,19 @@ export function PublicPoster({
             stickers={stickers}
           />
 
-          {/* 메모지 — 빈 노트로 띄워두고, 토리님이 이 위에 텍스트 스티커로 하고 싶은 말을 적는다. */}
-          <aside className="public-side" aria-label="메모">
-            <div className="public-memo">
-              <strong>메모</strong>
-              <div className="memo-body" />
-            </div>
-          </aside>
+          {/* 메모지 — 빈 노트로 띄워두고, 토리님이 이 위에 텍스트 스티커로 하고 싶은 말을 적는다.
+              꾸미기에선 항상 보인다(붙일 종이가 있어야 하니까). 시청자 화면에선 그 위에 아무것도
+              없으면 접는다 — 아무 내용 없는 '메모'라고 이름표만 붙은 빈 상자는 관리 도구의 문법이다.
+              (표면 폭 1840은 그대로 두고 내부 컬럼만 접히므로 스티커 비율 좌표는 안전 — 접힐 땐
+              애초에 그 영역에 스티커가 없다.) */}
+          {memoVisible ? (
+            <aside className="public-side" aria-label="메모">
+              <div className="public-memo">
+                <strong>메모</strong>
+                <div className="memo-body" />
+              </div>
+            </aside>
+          ) : null}
 
           <section className="public-calendar-area">
             <div className="weekday-row" aria-hidden="true">

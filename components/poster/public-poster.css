@@ -83,22 +83,24 @@
   white-space: nowrap;
   box-shadow: var(--shadow-2);
 }
+/* 대비: 예전 #8a7a4a는 이 배경(#fffdf6)에서 4.16:1로 WCAG AA(4.5:1) 미달이었다 → --muted(4.68:1).
+   크기도 11 → 12px(작은 글자일수록 대비가 더 필요하고, 포스터는 통째로 축소돼 더 작아진다). */
 .agenda-legend strong {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 900;
-  color: #8a7a4a;
+  color: var(--muted);
   letter-spacing: 0.04em;
   padding: 0 3px 1px;
 }
-/* 콘텐츠와 방식 가르는 소제목(모바일 세로 필터). */
+/* 콘텐츠와 방식 가르는 소제목(모바일 세로 필터). 예전 #a2925e = 3.03:1(AA 미달). */
 .agenda-legend-sub {
   margin-top: 3px;
   padding-top: 6px;
   border-top: 1px dashed #e3d6bb;
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 900;
   letter-spacing: 0.04em;
-  color: #a2925e;
+  color: var(--muted);
   padding-left: 3px;
 }
 .agenda-legend-tag {
@@ -1344,33 +1346,68 @@ body.cell-range-dragging {
   padding: 18px;
   box-shadow: var(--shadow-2);
 }
+/* 메모지를 접은 시청자 화면 — 남는 238px는 달력이 가져간다(라벨만 붙은 빈 상자를 안 남긴다).
+   표면 폭(1840)은 그대로라 스티커 비율 좌표는 안전하고, 애초에 그 영역에 스티커가 있으면 접지 않는다. */
+.poster-surface.no-memo {
+  grid-template-columns: minmax(0, 1fr) 220px;
+}
 
 /* 캡쳐 영역 안에 들어가는 제목 + 연/월 */
+/* 마스트헤드. 예전엔 1840px 캔버스 위에 32px 제목 한 줄뿐이라(폭의 1.7%) 제목을 잘라내면 아무
+   달력 템플릿과 구분이 안 됐다 — 공유되는 PNG는 썸네일 크기에서 "누구의 것인지" 읽혀야 한다.
+   큰 월 숫자 + 굵은 제목 + 브랜드 색 룰로 정지 상태의 정체성을 만든다. */
 .poster-heading {
   grid-column: 1 / -1;
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 4px 0 14px;
+  gap: 18px;
+  padding: 2px 0 12px;
+  border-bottom: 4px solid var(--accent, #f4b740);
+  margin-bottom: 12px;
+}
+/* 큰 월 숫자 — 썸네일에서 가장 먼저 잡히는 앵커. 속을 비운 큰 숫자라 무겁지 않다. */
+.ph-month {
+  font-size: 72px;
+  font-weight: 900;
+  line-height: 0.86;
+  letter-spacing: -0.04em;
+  color: var(--accent, #f4b740);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+.ph-titles {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
 }
 .poster-heading h1 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   margin: 0;
-  font-size: 32px;
+  font-size: 52px;
   font-weight: 900;
-  letter-spacing: -0.01em;
-  line-height: 1.08;
+  letter-spacing: -0.02em;
+  line-height: 1.04;
 }
-.poster-heading span {
+.poster-heading em {
+  color: var(--muted);
+  font-size: 17px;
+  font-weight: 800;
+  font-style: normal;
+  letter-spacing: 0.02em;
+}
+.poster-heading h1 span {
   color: #d59a93;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 900;
-  /* 제목 양옆 ✨가 천천히 반짝/둥실 — 작은 시그니처(좌우 엇갈리게). */
+  /* 제목 양옆 ✨가 천천히 반짝/둥실 — 작은 시그니처(좌우 엇갈리게). 캡쳐에선 정지 프레임. */
   animation: spark-twinkle 2.8s ease-in-out infinite;
   transform-origin: center;
 }
-.poster-heading span:last-of-type {
+.poster-heading h1 span:last-of-type {
   animation-delay: 1.4s;
 }
 
@@ -2450,8 +2487,29 @@ body.cell-range-dragging {
   font-weight: 900;
 }
 /* 상속 line-height(1.5)로 줄 상자가 커지지 않게 못박는다 — 칩 유무와 무관하게 높이 동일. */
+/* 날짜 숫자 = 달력의 뼈대. 훑는 화면(spotted scanning)에서 가장 먼저 잡혀야 하는데 예전엔 셀 안에서
+   가장 흐린 요소였다(작은 회색). 칸에서 가장 진하고 큰 글자로 올린다. */
 .day-strip strong {
+  font-size: 17px;
   line-height: 1;
+  color: var(--ink, #23303f);
+}
+
+/* 관심 단계 = 시각적 무게. 이모지 개수만으로는 훑을 때 안 잡힌다.
+   단계가 올라갈수록 제목이 굵어지고 카드에 따뜻한 링이 생긴다(색은 태그색을 유지 — 정보 손실 없음). */
+.public-event[data-tier] .event-main p {
+  font-weight: 900;
+}
+.public-event[data-tier="hot"] {
+  box-shadow: inset 0 0 0 1.5px rgb(249 115 22 / 38%);
+}
+.public-event[data-tier="blaze"] {
+  box-shadow: inset 0 0 0 2px rgb(239 68 68 / 46%);
+}
+.public-event[data-tier="top"] {
+  box-shadow:
+    inset 0 0 0 2px rgb(234 179 8 / 72%),
+    0 2px 10px rgb(234 179 8 / 26%);
 }
 
 .public-day.outside .day-strip {
@@ -2548,6 +2606,16 @@ button.agenda-mark.celebratable:not(.holiday) {
   padding: 0;
 }
 button.agenda-mark.celebratable:active { transform: scale(0.92); }
+
+/* 오늘 칸: 금테만으로는 축소된 포스터에서 거의 안 보였다. 날짜 줄 자체를 금색으로 채워 '오늘'이
+   멀리서도 한 번에 잡히게 한다(달력에서 가장 자주 찾는 한 칸). */
+.public-day.today .day-strip {
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, rgb(244 183 64 / 34%), rgb(244 183 64 / 14%));
+}
+.public-day.today .day-strip strong {
+  color: #7c4d05;
+}
 
 /* 오늘 칸 금테. 칸 자신의 inset box-shadow는 자식(일정 카드)에 항상 가려져 테두리가 카드 밑으로
    끊겨 보인다 → 카드 위에 얹는 오버레이(::after)로 그린다. z-index 4 = 카드(1)·업도움 띠(4, 같은

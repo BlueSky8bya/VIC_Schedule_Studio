@@ -1266,15 +1266,23 @@
   word-break: keep-all;
 }
 
-/* 토글 묶음 — 하단 가운데. 컨테이너만 위치, 버튼은 그 안에서 흐른다. */
+/* 토글 묶음 — 좌상단 크롬 자리. 예전엔 하단 가운데였는데, 시청자 중력 축구공이 그 위를 굴러다녀
+   '미니게임 켜기' 칩을 자주 가렸다(공을 치워야 누를 수 있었다). 켜고 끄는 스위치는 콘텐츠 위를
+   돌아다니는 장난감과 같은 자리에 두면 안 된다 — 화면 모서리의 크롬 층으로 뺀다. */
 .wc-controls {
   position: absolute;
-  left: 50%;
-  bottom: 16px;
-  transform: translateX(-50%);
+  left: 20px;
+  top: 14px;
   display: flex;
   gap: 8px;
   pointer-events: none;
+}
+/* 게임이 켜진 동안엔 상단에 스코어보드(HUD)가 있으므로 토글은 하단 가운데(기존 자리)로 내린다. */
+.wc-play.on .wc-controls {
+  left: 50%;
+  top: auto;
+  bottom: 16px;
+  transform: translateX(-50%);
 }
 
 /* 토글 — 앱 톤 글래스 pill. 유일하게 클릭 가능. */
