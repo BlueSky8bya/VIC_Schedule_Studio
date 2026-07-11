@@ -3281,11 +3281,11 @@ export function WorldCupBallGoal() {
     reduced.current = reduceMotionEnabled(); // OS reduce-motion 무시 — 앱 토글만(시각 효과 양 조절용)
     rotated.current = window.matchMedia?.("(max-width: 640px)").matches ?? false;
     setIsMobile(rotated.current);
-    // 기본값: 웹은 켬(데스크톱은 화면 넓어 방해 안 됨), 모바일은 끔. 작은 화면에서 미니게임(+중력공)이
-    // 갑툭튀로 떠 시청을 가리던 문제 방지. 모바일은 'on' 저장돼 있어도 '자동 시작'은 안 한다 — 매번
-    // 탭(켜기)으로만 연다. (모바일은 화면 껐다 켜면 브라우저가 탭을 리로드해 컴포넌트가 새로 마운트되며
-    // 'on'이면 새 경기가 떠 공이 툭 떨어지던 게 원인. 자동 시작을 웹으로 한정해 그 갑툭튀를 막는다.)
-    let en = !rotated.current;
+    // 기본값: 모든 플랫폼에서 끔(opt-in). 예전엔 웹에서 자동으로 켰는데, 그러면 처음 온 시청자가
+    // "일정표"가 아니라 "축구 경기"를 먼저 보게 되고(잔디+선수+스코어보드), 일정표는 그 뒤로 흐려진다.
+    // 미니게임은 일정표 위의 곁들임이지 뚜껑이 아니다 → 제목 옆 '미니게임 켜기' 칩을 눌러야 열린다.
+    // 예전에 직접 켠 사람('on' 저장)은 웹에서 그대로 자동 복원(모바일은 갑툭튀 방지로 매번 탭).
+    let en = false;
     let au = true;
     let savedAuto: string | null = null;
     try {
@@ -3593,8 +3593,15 @@ export function WorldCupBallGoal() {
     <div className={`wc-play ${enabled ? "on" : ""}`} aria-hidden="true" ref={rootRef}>
       {enabled ? (
         <>
+          {/* 딤은 기본적으로 클릭을 통과시킨다(pointer-events:none) — 미니게임이 켜져 있어도 뒤의
+              일정표(하트·태그 필터·도우러 가기·월 이동)는 그대로 눌려야 한다. 게임 패널(선수카드·
+              전술·기록)이 열렸을 때만 '바깥 클릭으로 닫기'를 위해 잠깐 클릭을 받는다. */}
           <div
-            className="wc-dim"
+            className={`wc-dim${
+              pickPlayer || pickKeeper || tacticsOpen || statsOpen || tacticDesc || namesOpen
+                ? " catch"
+                : ""
+            }`}
             onClick={() => {
               // 빈 곳 탭/클릭하면 열린 패널(선수카드·전술·기록) 모두 닫기.
               pinnedPlayer.current = false;

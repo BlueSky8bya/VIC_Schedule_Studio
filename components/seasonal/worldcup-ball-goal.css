@@ -449,16 +449,23 @@
   background: radial-gradient(circle at 35% 30%, #9ab8ff, #3b6fe2);
 }
 
-/* 집중용 딤/흐림 — 뒤(메모·달력·색상안내·아바타 켜기 등 모든 컨트롤)를 잔디톤으로 흐리고, 클릭을
-   막는다(pointer-events:auto). 게임 요소(공·토글)는 이 위에 또렷+클릭 가능. */
+/* 잔디톤 딤 — 미니게임을 시청자 눈에 한 겹 얹는 배경. 예전엔 여기서 흐림(blur 3.5px) + 클릭 차단을
+   같이 걸었는데, 그러면 미니게임이 켜진 동안 일정표를 읽을 수도 누를 수도 없었다(하트·필터·월 이동
+   전부 죽음). 미니게임은 일정표 위의 곁들임이지 뚜껑이 아니다:
+     - 클릭은 통과(pointer-events:none) → 뒤의 일정표는 계속 살아 있다.
+     - 흐림 없음 + 톤만 살짝(≈12%) → 일정 글자가 그대로 읽힌다.
+   게임 패널(선수카드·전술·기록)이 열린 동안만 `.catch`가 붙어 '바깥 클릭으로 닫기'를 받는다. */
 .wc-dim {
   position: fixed;
   inset: 0;
   z-index: 0; /* 맨 아래로 못박는다 — 아래 HUD/스테이지가 명시적으로 그 위에 온다(iOS 버그 방어) */
+  pointer-events: none;
+  background: linear-gradient(135deg, rgb(34 124 64 / 10%), rgb(22 101 52 / 13%));
+  transition: background var(--dur-2, 0.22s) var(--ease);
+}
+.wc-dim.catch {
   pointer-events: auto;
-  background: linear-gradient(135deg, rgb(34 124 64 / 30%), rgb(22 101 52 / 36%));
-  -webkit-backdrop-filter: blur(3.5px) saturate(0.92);
-  backdrop-filter: blur(3.5px) saturate(0.92);
+  background: linear-gradient(135deg, rgb(34 124 64 / 26%), rgb(22 101 52 / 32%));
 }
 /* iOS Safari 버그 방어 — backdrop-filter가 걸린 .wc-dim이 DOM상 '뒤' 형제(.wc-stage·.wc-hud)
    위로 잘못 합성돼 스코어·버튼이 딤에 덮여 안 보이던 문제(안드로이드는 정상). DOM 순서에 기대지

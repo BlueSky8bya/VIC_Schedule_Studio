@@ -2,7 +2,7 @@
    mobile <= 640px (agenda/list) · compact <= 860px · studio narrow <= 1180px · 그 이상 데스크톱.
    포스터(.poster-surface)는 Phase 2에서 4:5 고정 비율 캔버스로 전환 예정 — 화면 흐름과 분리한다. */
 
-/* ── 모바일 아젠다(목록) 뷰 ── */
+/* ── 아젠다(목록) 뷰 — 모바일 + 태블릿/좁은 창(≤1040px) ── */
 /* 왼쪽: 스크롤 따라오는 색상 안내(sticky) · 오른쪽: 날짜별 일정 목록 */
 .agenda {
   display: flex;
@@ -11,6 +11,28 @@
   align-items: flex-start;
   gap: 10px;
   margin-top: 4px;
+}
+/* 태블릿·좁은 창(641~1040px): 같은 목록이지만 폰이 아니다 — 폭을 다 쓰면 한 줄이 지나치게 길어져
+   읽기 힘들다(적정 행 길이). 가운데로 모으고 글자를 웹 크기로 키운다. 축소된 포스터(0.5배, 본문
+   6px)를 보여주던 예전보다 훨씬 읽힌다. */
+@media (min-width: 641px) and (max-width: 1040px) {
+  .agenda {
+    max-width: 760px;
+    margin-inline: auto;
+    gap: 16px;
+  }
+  .agenda-legend-rail {
+    flex-basis: 116px;
+  }
+  .agenda-event p {
+    font-size: 15px;
+  }
+  .agenda-when {
+    flex-basis: 52px;
+  }
+  .agenda-when strong {
+    font-size: 26px;
+  }
 }
 /* 오른쪽 레일: (위) 색상 필터 박스 + (아래) 미리보기 '편집실' 버튼을 92px 폭으로 세로 스택.
    레일 '고정 높이'를 svh(작은 뷰포트=주소창 보이는 기준)로 — dvh는 주소창 접/펴짐마다 값이
@@ -4005,27 +4027,11 @@ html[data-reduce-motion] .poster-capture-row {
     justify-content: center;
   }
 
-  .poster-surface {
-    grid-template-columns: 1fr;
-  }
-
-  .public-memo {
-    order: 3;
-    min-height: auto;
-  }
-
-  .public-memo p {
-    margin: 16px;
-  }
-
-  .support-card {
-    order: 2;
-  }
-
-  .public-legend {
-    grid-column: 1;
-    order: 4;
-  }
+  /* 포스터 표면(.poster-surface) 내부 배치는 뷰포트 미디어쿼리로 절대 바꾸지 않는다.
+     표면은 폭 1840 고정 설계 캔버스이고, 스티커는 그 캔버스 기준 '비율 좌표'로 저장된다
+     (ADR-0004). 예전엔 여기서 1컬럼으로 재배치했는데, 그러면 같은 스티커가 시청자의 화면 폭에
+     따라 다른 콘텐츠 위에 얹혔다(꾸미기 화면과도 어긋남). 좁은 화면은 표면을 비틀지 말고
+     아젠다(목록) 레이아웃으로 보낸다 — 아래 useMediaQuery(POSTER_AGENDA_QUERY). */
 }
 
 @media (max-width: 720px) {

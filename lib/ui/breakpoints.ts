@@ -31,3 +31,17 @@ export const BREAKPOINTS = {
  * 웹으로 안 넘어간다. 태블릿(짧은 변 > 640)·마우스 데스크톱은 그대로 웹 레이아웃 유지.
  */
 export const MOBILE_QUERY = `(max-width: ${BREAKPOINTS.mobile}px), (max-height: ${BREAKPOINTS.mobile}px) and (pointer: coarse)`;
+
+/**
+ * 시청자 포스터가 '아젠다(목록)'로 바뀌는 기준 — 모바일 + 태블릿/좁은 창(≤1040px).
+ *
+ * 포스터 표면은 폭 1840 고정 캔버스라, 좁은 화면에선 통째로 축소(scale)돼 들어간다. 900px 화면이면
+ * 배율이 0.49 — 13px 일정 제목이 6px로 찍혀 사실상 못 읽는다. 표면 내부 배치를 화면 폭에 맞춰
+ * 바꾸는 건 금지다(스티커 좌표가 어긋난다 — ADR-0004). 그래서 '읽을 수 없을 만큼 작아지는 폭'부터는
+ * 표면 대신 모바일과 같은 목록 레이아웃으로 보낸다.
+ *
+ * 1040px = 표면 배율 ≈ 0.57(본문 13px → 7.4px)로, 이보다 좁으면 목록이 무조건 낫다.
+ * 꾸미기(decorate)는 예외 — 편집은 항상 표면 위에서 한다(시청자와 같은 기하를 봐야 하므로).
+ */
+export const POSTER_AGENDA_MAX = 1040;
+export const POSTER_AGENDA_QUERY = `(max-width: ${POSTER_AGENDA_MAX}px), (max-height: ${BREAKPOINTS.mobile}px) and (pointer: coarse)`;

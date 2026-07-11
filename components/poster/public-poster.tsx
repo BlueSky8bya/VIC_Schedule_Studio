@@ -105,7 +105,7 @@ import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
-import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
+import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
@@ -955,9 +955,16 @@ export function PublicPoster({
       }
     }
   }
-  // 보는 달이 월드컵 기간(2026-06~07)과 겹치면 포스터 테마를 월드컵으로 자동 전환한다.
-  // 대회 한정 연출이라 owner가 고른 테마보다 우선해 모든 시청자에게 같은 분위기를 준다.
-  const effectivePosterTheme = isWorldCupMonth(view.year, view.month) ? "worldcup" : posterTheme;
+  // 보는 달이 월드컵 기간(2026-06~07)과 겹치면 포스터 테마를 월드컵으로 자동 전환한다 —
+  // 단 토리님이 그 달 테마를 직접 고르지 않았을 때만("none"). 예전엔 owner 선택보다 우선했는데,
+  // 그러면 대회 두 달 내내 직접 꾸민 포스터가 잔디밭으로 덮이고 내보낸 PNG까지 축구 포스터가 된다.
+  // 포스터의 저자는 토리님이다 — 시즌 테마는 '기본값 제안'이지 '강제'가 아니다.
+  const effectivePosterTheme =
+    posterTheme !== "none"
+      ? posterTheme
+      : isWorldCupMonth(view.year, view.month)
+        ? "worldcup"
+        : posterTheme;
 
   // 관리자 아바타 자리(스트리머 scene). 꾸미기(decorate)에서도 허용 — 현재 방식은 surface를 통째로
   // uniform scale(축소)만 하므로 스티커 좌표(1840 design 기준)가 안 틀어진다(시청자=avatar OFF와도
@@ -1133,11 +1140,13 @@ export function PublicPoster({
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, []);
-  // 모바일(좁은 화면) 시청자는 세로 아젠다(목록) 전용 — 월간 그리드/캡쳐는 PC로 유도.
-  // (꾸미기 모드엔 적용 안 함: 꾸미기는 PC 전용.)
+  // 좁은 화면(모바일 + 태블릿/좁은 창 ≤1040px) 시청자는 세로 아젠다(목록) 전용 — 월간 그리드/캡쳐는
+  // PC로 유도. 표면은 1840 고정 캔버스라 좁을수록 통째로 축소돼(900px면 0.49배 → 본문 6px) 읽을 수
+  // 없다. 표면 내부를 화면 폭에 맞춰 재배치하는 건 금지(스티커 좌표가 어긋남 — ADR-0004)라, 대신
+  // 읽히는 목록으로 보낸다. (꾸미기 모드엔 적용 안 함: 편집은 시청자와 같은 표면 기하 위에서.)
   const [isNarrow, setIsNarrow] = useState(initialNarrow);
   useEffect(() => {
-    const mq = window.matchMedia(MOBILE_QUERY);
+    const mq = window.matchMedia(POSTER_AGENDA_QUERY);
     const update = () => setIsNarrow(mq.matches);
     update();
     mq.addEventListener("change", update);
