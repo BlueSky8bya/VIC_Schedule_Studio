@@ -66,10 +66,21 @@ export class ServerTiming {
   }
 
   // "name;dur=12.3;desc=...,..." — Response 헤더 Server-Timing 값.
+  //
+  // HTTP 헤더 값은 ByteString(0~255)만 담을 수 있다. desc에 한글이 섞이면
+  // "Cannot convert argument to a ByteString ... value of 44277" 로 **응답 자체가 500**이 된다.
+  // 실제로 /api/public/[calendarSlug]/events가 이것 때문에 매 요청 500이었다(공개 API 계약이
+  // 깨져 있었다). 라벨은 우리말이 기본이므로, 헤더에 넣을 때만 담을 수 없는 문자를 걷어내고
+  // 남는 게 없으면 desc를 아예 뺀다(구간 이름·시간은 그대로 보인다). 콘솔 [perf] 로그는 우리말 유지.
   header(): string {
     return this.marks
       .map((m) => {
-        const d = m.desc ? `;desc=${JSON.stringify(m.desc)}` : "";
+        const safe = (m.desc ?? "")
+          .split("")
+          .filter((ch) => ch.charCodeAt(0) <= 255)
+          .join("")
+          .trim();
+        const d = safe ? `;desc=${JSON.stringify(safe)}` : "";
         return `${m.name};dur=${m.dur.toFixed(1)}${d}`;
       })
       .join(", ");
