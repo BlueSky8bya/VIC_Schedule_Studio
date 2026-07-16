@@ -2707,7 +2707,9 @@ export function PublicPoster({
           const right = isEnd;
           return (
             <div
-              className="support-bar"
+              // 필터를 켜면 일정 카드만 흐려지고 업 도움 끈은 쨍하게 남아, 안 고른 기간이 오히려
+              // 제일 눈에 띄었다 → 끈도 같이 물러난다(같은 isDimmedByFilter 판정을 쓴다).
+              className={`support-bar${isDimmedByFilter(s) ? " dimmed" : ""}`}
               key={s.id}
               style={{
                 top: 26 + lane * 20,
