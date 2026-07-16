@@ -111,7 +111,7 @@ import { markContentReady } from "@/lib/presence/content-ready";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
-import { hapticSuccess, hapticTick } from "@/lib/ui/haptics";
+import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
@@ -1435,19 +1435,45 @@ export function PublicPoster({
     const chain = (prevOp?.chain ?? Promise.resolve())
       .catch(() => {})
       .then(async () => {
-        const result = await toggleHeartAction(id, deviceToken);
-        const isLatest = heartOpRef.current.get(id)?.seq === seq;
-        if (result.ok) {
-          if (isLatest) setHeartCounts((prev) => ({ ...prev, [id]: result.count }));
-        } else if (isLatest) {
-          // 마지막 반영이 실패 → 낙관적 변경·델타를 되돌린다(서버와 어긋난 채 남지 않게).
-          setBookmarks((prev) => (wasOn ? [...prev, id] : prev.filter((x) => x !== id)));
-          setHeartCounts((prev) => ({
-            ...prev,
-            [id]: Math.max(0, (prev[id] ?? 0) + (wasOn ? 1 : -1))
-          }));
-          recordHeartDelta(heartOwner, id, wasOn);
+        // 서버 액션은 두 가지로 실패한다: ① {ok:false} 응답 ② throw(네트워크 끊김·배포 중 등).
+        // 예전엔 ①만 봐서, 정작 흔한 ②에선 낙관적 하트가 켜진 채 굳고 아무 말도 없었다
+        // (되돌리기 자체가 안 돌았다). 둘을 한 자리에서 같게 처리한다.
+        let ok = false;
+        let count: number | null = null;
+        try {
+          const result = await toggleHeartAction(id, deviceToken);
+          ok = result.ok;
+          if (result.ok) count = result.count;
+        } catch {
+          ok = false;
         }
+        const isLatest = heartOpRef.current.get(id)?.seq === seq;
+        if (!isLatest) {
+          return; // 더 최신 토글이 이미 진행 중 — 옛 응답으로 화면을 건드리지 않는다.
+        }
+        if (ok) {
+          if (count !== null) setHeartCounts((prev) => ({ ...prev, [id]: count }));
+          // 2단계 컨벤션의 두 번째 박자 — "서버에 반영됐다"(lib/ui/haptics.ts). 누름(위 hapticTick)과
+          // 이 톡 사이의 간격이 곧 실제 왕복이라 체감이 정직하다. 앱에서 제일 많이 눌리는 컨트롤인데
+          // 여기만 컨벤션에서 빠져 있었다.
+          hapticTick();
+          return;
+        }
+        // 실패 → 낙관적 변경·델타를 되돌린다(서버와 어긋난 채 남지 않게).
+        setBookmarks((prev) => (wasOn ? [...prev, id] : prev.filter((x) => x !== id)));
+        setHeartCounts((prev) => ({
+          ...prev,
+          [id]: Math.max(0, (prev[id] ?? 0) + (wasOn ? 1 : -1))
+        }));
+        recordHeartDelta(heartOwner, id, wasOn);
+        // 되돌리기만 하고 아무 말도 안 하면 "♥가 켜졌다가 혼자 꺼짐"으로 보인다 → 왜 그런지 알린다.
+        // 이미 있는 하트 토스트 자리를 그대로 쓴다(새 UI 없음).
+        hapticWarn();
+        setHeartToast("하트를 저장하지 못했어요 — 잠시 뒤 다시 눌러주세요.");
+        if (heartToastTimerRef.current) {
+          window.clearTimeout(heartToastTimerRef.current);
+        }
+        heartToastTimerRef.current = window.setTimeout(() => setHeartToast(null), 2600);
       });
     heartOpRef.current.set(id, { chain, seq });
   }
@@ -2990,15 +3016,27 @@ export function PublicPoster({
               <button
                 aria-pressed={bookmarkedOnly}
                 className={`agenda-legend-tag heart ${bookmarkedOnly ? "on" : ""}`}
-                onClick={() => setBookmarkedOnly((v) => !v)}
+                onClick={() => {
+                  hapticTick(); // 같은 토글인데 누르는 자리(범례/웹/하단레일)마다 감촉이 달랐다
+                  setBookmarkedOnly((v) => !v);
+                }}
                 type="button"
               >
                 <LiquidHeart ratio={interestRatio} />
                 내 관심
               </button>
             ) : null}
+            {/* 톡은 clearFilters 함수가 아니라 버튼에서 — jumpToday도 clearFilters를 부르는데
+                거긴 이미 톡을 울려서, 함수 안에 넣으면 두 번 울린다. */}
             {filterActive ? (
-              <button className="agenda-legend-clear" onClick={clearFilters} type="button">
+              <button
+                className="agenda-legend-clear"
+                onClick={() => {
+                  hapticTick();
+                  clearFilters();
+                }}
+                type="button"
+              >
                 필터 해제
               </button>
             ) : null}
@@ -3532,7 +3570,10 @@ export function PublicPoster({
                   <button
                     aria-pressed={bookmarkedOnly}
                     className={`interest-toggle ${bookmarkedOnly ? "active" : ""}`}
-                    onClick={() => setBookmarkedOnly((v) => !v)}
+                    onClick={() => {
+                      hapticTick();
+                      setBookmarkedOnly((v) => !v);
+                    }}
                     title="내가 ♥ 누른 일정만 모아서 보기"
                     type="button"
                   >
@@ -4334,7 +4375,10 @@ export function PublicPoster({
                   자리에서 따닥 눌러 켜고 끌 수 있다. */}
               <button
                 className={`legend-clear${filterActive ? "" : " is-hidden"}`}
-                onClick={clearFilters}
+                onClick={() => {
+                  hapticTick();
+                  clearFilters();
+                }}
                 type="button"
                 aria-hidden={!filterActive}
                 tabIndex={filterActive ? 0 : -1}
@@ -4387,7 +4431,17 @@ export function PublicPoster({
       {/* 월 이동 버튼을 하단 좌·우에 띄운다(가운데는 비워 '맨 위로' 버튼과 안 겹치게).
           시청자·아젠다·꾸미기 모두 — 달력을 보며 월을 넘기기 쉽게(HCI). 상단 월 pill은 폐지. */}
       <nav className="agenda-monthbar" aria-label="월 이동">
-        <button className="mb-step" onClick={() => moveMonth(-1)} title="이전 달" type="button">
+        {/* 스와이프(2629)는 톡이 울리는데 화살표는 맨손이었다 — 같은 동작은 같은 감촉.
+            톡은 moveMonth 안이 아니라 여기서 울린다(안에 넣으면 jumpToday·스와이프가 두 번 울린다). */}
+        <button
+          className="mb-step"
+          onClick={() => {
+            hapticTick();
+            moveMonth(-1);
+          }}
+          title="이전 달"
+          type="button"
+        >
           <ChevronLeft aria-hidden="true" size={22} />
         </button>
 
@@ -4443,7 +4497,15 @@ export function PublicPoster({
           </div>
         ) : null}
 
-        <button className="mb-step" onClick={() => moveMonth(1)} title="다음 달" type="button">
+        <button
+          className="mb-step"
+          onClick={() => {
+            hapticTick();
+            moveMonth(1);
+          }}
+          title="다음 달"
+          type="button"
+        >
           <ChevronRight aria-hidden="true" size={22} />
         </button>
       </nav>

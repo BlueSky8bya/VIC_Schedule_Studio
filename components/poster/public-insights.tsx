@@ -282,7 +282,16 @@ export function PublicInsights({
           <strong>
             {year}년 {String(month).padStart(2, "0")}월 기록
           </strong>
-          <button aria-label="닫기" className="pi-close" onClick={onClose} type="button">
+          {/* 백드롭(아래)은 톡이 울리는데 X만 조용했다 — 조준해서 누른 쪽이 더 죽어 있으면 안 된다. */}
+          <button
+            aria-label="닫기"
+            className="pi-close"
+            onClick={() => {
+              hapticTick();
+              onClose();
+            }}
+            type="button"
+          >
             <X size={18} />
           </button>
         </header>
