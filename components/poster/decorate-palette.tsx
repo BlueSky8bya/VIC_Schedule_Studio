@@ -69,12 +69,18 @@ export function DecoratePalette({
 }) {
   // 보관함 드래그: 칩끼리 끌면 순서 바꾸기, 분류 탭 위에 놓으면 그 분류로 옮기기.
   // 클릭(=스티커 추가)과 구분하려고 5px 임계값을 넘겨야 드래그로 친다.
+  //
+  // 주의 — 포인터 캡처를 걸면 뒤따르는 click이 '캡처한 요소'(칩 래퍼 div)로 리타겟된다.
+  // 그래서 안쪽 <button>의 onClick은 아예 오지 않는다(브라우저 실측 확인). 캡처는 관리 권한이
+  // 있을 때만 걸리므로, 관리자가 업로드한 이모지를 눌러도 달력에 안 올라가던 원인이 이것이다.
+  // → 캡처를 건 경우엔 '드래그가 아니었던 pointerup'에서 직접 추가한다(click에 의존하지 않는다).
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
   const [dropTab, setDropTab] = useState<StickerAssetKind | null>(null);
   const startRef = useRef<{ x: number; y: number; id: string } | null>(null);
   const draggingRef = useRef(false);
   const clickBlockedRef = useRef(false);
+  const addedByPointerRef = useRef(false);
 
   const shown = assetTab === "all" ? assets : assets.filter((a) => a.kind === assetTab);
   const countOf = (key: AssetTabKey) =>
@@ -89,7 +95,14 @@ export function DecoratePalette({
   }
 
   function onChipPointerDown(e: ReactPointerEvent<HTMLDivElement>, asset: StickerAsset) {
-    // 업로드 중(임시 id)이거나 권한이 없으면 드래그하지 않는다.
+    // 지난 조작에서 남았을 수 있는 표식을 새 조작 시작 때 지운다(한 번 눌러도 안 먹는 일 방지).
+    clickBlockedRef.current = false;
+    addedByPointerRef.current = false;
+    // 삭제(×)는 캡처를 걸지 않는다 — 걸면 click이 래퍼로 리타겟돼 삭제 버튼이 안 눌린다.
+    if ((e.target as HTMLElement).closest(".asset-del")) {
+      return;
+    }
+    // 업로드 중(임시 id)이거나 권한이 없으면 드래그하지 않는다(이땐 캡처가 없어 click이 정상 동작).
     if (!canManageAssets || pendingAssetIds.has(asset.id) || e.button !== 0) {
       return;
     }
@@ -130,8 +143,18 @@ export function DecoratePalette({
 
   function onChipPointerUp() {
     const start = startRef.current;
-    if (!start || !draggingRef.current) {
+    if (!start) {
       resetDrag();
+      return;
+    }
+    // 캡처를 걸었지만 끌지는 않았다 = 그냥 누른 것 → 여기서 추가한다(click은 오지 않는다).
+    if (!draggingRef.current) {
+      const asset = assets.find((a) => a.id === start.id);
+      resetDrag();
+      if (asset) {
+        addedByPointerRef.current = true;
+        onAddImageSticker(asset);
+      }
       return;
     }
     if (dropTab) {
@@ -222,7 +245,7 @@ export function DecoratePalette({
                   }${dropId === asset.id ? " drop-here" : ""}`}
                   data-asset-id={asset.id}
                   key={asset.id}
-                  onPointerCancel={onChipPointerUp}
+                  onPointerCancel={resetDrag}
                   onPointerDown={(e) => onChipPointerDown(e, asset)}
                   onPointerMove={onChipPointerMove}
                   onPointerUp={onChipPointerUp}
@@ -231,6 +254,12 @@ export function DecoratePalette({
                     className="emoji-chip"
                     disabled={pending}
                     onClick={() => {
+                      // 포인터로 이미 추가했으면(캡처 경로) 두 번 넣지 않는다 — 캡처 중 click을
+                      // 버튼까지 전달하는 브라우저가 있어도 안전하게. 키보드(Enter)는 여기로 온다.
+                      if (addedByPointerRef.current) {
+                        addedByPointerRef.current = false;
+                        return;
+                      }
                       // 방금 드래그였다면 클릭(=스티커 추가)으로 치지 않는다.
                       if (clickBlockedRef.current) {
                         clickBlockedRef.current = false;

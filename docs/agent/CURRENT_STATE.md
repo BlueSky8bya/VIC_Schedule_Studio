@@ -34,6 +34,11 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   분리돼 있던 것과 동일 조치). (2) 긴 제목 = 가로 스크롤 대신 …+호버/탭 툴팁(`.hl-sub`도 검사),
   문장형 sub는 아랫줄 전체 폭. (3) 일별 방송시간 툴팁을 툴팁 실측 폭으로 clamp(고정 32px이라
   1일·말일에서 패널 `overflow-x:hidden`에 잘렸다). 포스터 상단 '내 관심'/'이 달 기록' 간격 추가.
+- **2026-07-17(2)**: 꾸미기 — 업로드한 커스텀 이모지를 눌러도 달력에 안 올라가던 버그.
+  칩 래퍼 div에 `setPointerCapture`를 걸면 뒤따르는 click이 **캡처 요소로 리타겟**돼 안쪽
+  `<button>`의 onClick이 아예 오지 않는다(브라우저 실측). 캡처는 관리 권한자에게만 걸려
+  관리자에게서만 재현됐고, 같은 이유로 칩의 × 삭제도 죽어 있었다. → 캡처 경로에선 pointerup에서
+  직접 추가하고, ×는 캡처를 걸지 않는다. **교훈: 포인터 캡처 + 안쪽 버튼 onClick 조합 금지.**
 - **부분 완료**: 축구/월드컵 시뮬 — taxonomy·기초 적립 완료(68 테스트). 물리·인지 제약 정밀화 남음.
   월드컵 자동 테마는 `KOREA_MATCHES` 수동 입력 대기.
 - **미착수**: 시청자 출석 도장(체크인) — 계획서만 있음(`docs/insights/viewer-checkin-attendance-plan.md`).
@@ -88,6 +93,7 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 | `npm run test` (vitest) | PASS — 136 tests |
 | 공개 '이 달 기록' 실물(Playwright, prod build, 비로그인) | PASS — 하이라이트 카드 스타일 적용, `pi-body` 가로 넘침 0(560=560), 긴 제목 …+툴팁(그리드 폭 안), 일별 툴팁 안 잘림 |
 | 편집실 인사이트 '트렌드' 탭 실물 | **NOT VERIFIED** (로그인 필요 — ISSUE-001; 같은 컴포넌트를 공개 시트에서 검증) |
+| 꾸미기 팔레트(DecoratePalette) 실물 | PASS — 로그인 벽 우회용 임시 라우트에 실제 컴포넌트를 올려 Playwright로: 수정 전 "칩 클릭→아무 일 없음"·"× 안 됨" 재현, 수정 후 클릭/터치탭 추가·× 삭제·드래그 순서·탭 분류이동 전부 OK, 중복 추가 없음. 임시 라우트는 삭제함 |
 
 ## Last Verified (2026-07-12)
 
