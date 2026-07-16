@@ -66,6 +66,21 @@
   box-shadow: var(--shadow-2);
 }
 /* 박스 아래 '편집실' 버튼 — 항상 같은 자리(레일 바닥). 박스 폭(92px) 꽉 채운다. */
+/* 좁은 레일(92px)에 들어가는 '이 달 기록' — 웹 헤더의 알약과 같은 컴포넌트지만 폭이 없으니
+   글자를 줄이고 두 줄까지 허용한다(nowrap이면 레일을 뚫는다). 44px 터치 타깃은 유지. */
+.agenda-legend-insights {
+  flex: 0 0 auto;
+  width: 100%;
+  justify-content: center;
+  gap: 4px;
+  border-radius: var(--r-md);
+  padding: 8px 6px;
+  font-size: 12px;
+  white-space: normal;
+  word-break: keep-all;
+  line-height: 1.2;
+  text-align: center;
+}
 .agenda-legend-nav {
   flex: 0 0 auto;
   display: flex;
@@ -4725,6 +4740,16 @@ html[data-reduce-motion] .pi-sheet,
 html[data-reduce-motion] .pi-backdrop {
   animation: none;
 }
+@keyframes pi-rise-sheet {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 .pi-head {
   display: flex;
   align-items: center;
@@ -4966,5 +4991,30 @@ html[data-reduce-motion] .pi-backdrop {
   }
   .pi-head strong {
     font-size: 21px;
+  }
+}
+
+/* 모바일: 가운데 뜬 카드가 아니라 바텀시트로 — 폰에선 X 버튼이 화면 꼭대기 근처(엄지에서 가장 먼
+   곳)에 떠 있었고 좌우 여백만 먹었다. 편집실이 쓰는 것과 같은 어휘(아래에서 올라오는 시트)로 맞춘다.
+   통계 타일은 5개라 3열이면 3+2 고아 행이 생긴다 → 2열.
+   ※ 이 블록은 .pi-* 기본 규칙들 '뒤'에 있어야 한다 — 미디어쿼리는 우선순위를 올려주지 않으므로
+   앞에 두면 뒤따르는 같은 특이도 규칙(.pi-stats 등)에 그대로 덮인다(실제로 한 번 덮였다). */
+@media (max-width: 640px) {
+  .pi-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .pi-sheet {
+    width: 100%;
+    max-height: 88svh;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    animation-name: pi-rise-sheet;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pi-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .pi-body {
+    padding: 14px 14px 20px;
   }
 }

@@ -3090,6 +3090,23 @@ export function PublicPoster({
               </span>
             </div>
           </aside>
+          {/* '이 달 기록' — 웹에선 헤더(.public-calendar-header)에 있는데, 그 헤더는 ≤1040px에서
+              통째로 안 그려진다. 그래서 폰·태블릿 시청자는 만들어 둔 기록 시트를 열 방법이 아예
+              없었다(진입점 0개). 새 크롬을 만들지 않고 같은 버튼을 이 레일에 둔다 — 아래 주석대로
+              엄지가 닿는 자리이고, 박스가 vh 고정이라 스크롤해도 안 들썩인다. */}
+          {interactive ? (
+            <button
+              className="insights-open agenda-legend-insights"
+              onClick={() => {
+                hapticTick();
+                setInsightsOpen(true);
+              }}
+              title="이 달 방송·일정 기록 보기"
+              type="button"
+            >
+              📊 이 달 기록
+            </button>
+          ) : null}
           {/* 미리보기 '편집실로 가기'는 색상 필터 박스 '아래'에 — 박스가 vh 고정이라 스크롤해도
               안 들썩이고(인사이트 버튼과 동일), 우상단 대신 엄지 닿는 아래쪽이라 누르기 쉽다. */}
           {previewNav ? <div className="agenda-legend-nav">{previewNav}</div> : null}
