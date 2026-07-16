@@ -60,6 +60,15 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   회전은 알약 버튼을 없애고 링 바깥 22px 띠(Photoshop식 핫존, 호버 시 점선+⟳ 힌트)로.
   핸들은 `--poster-scale` 역보정으로 **어느 배율에서도 화면 28px**(히트영역 44px).
   → 참고: 이 값들은 `.sticker-item`의 `--h-size/--h-hit/--ring-min/--rot-band/--ring-out`.
+- **2026-07-17(5) — 개선안 배치 1~3 적용**(`1d50628`, `ba59cb3`, `3c30810`, `20f3682`):
+  하트 2단계 햅틱 + 실패 토스트(액션이 **throw**하면 롤백조차 안 되던 구멍을 실물 테스트로 발견) ·
+  월이동/관심토글/필터해제/시트X 촉감 통일 · 브로드 게이팅 3곳 제거(TagPicker·태그삭제·취소) +
+  tags/palette prop에 in-flight 가드 · 미들웨어 matcher에서 비콘·공개 API 제외 · 월드컵 장난감
+  dynamic 전환(`/` 177→152 kB, 꾸미기 181→151 kB).
+  → **곁가지로 프로덕션 500 발견·수정**: `/api/public/vic/events`가 Server-Timing 헤더의 한글
+  desc 때문에 매 요청 500이었다(헤더는 ByteString만). 공개 API 계약인데 e2e가 NOT RUN이라
+  흘러갔다. `ServerTiming.header()`에서 방어 + 유닛 테스트 4개 추가(vitest 140).
+  **교훈: e2e(`npm run test:e2e`)를 계속 안 돌리면 공개 계약이 조용히 깨진다.**
 - **부분 완료**: 축구/월드컵 시뮬 — taxonomy·기초 적립 완료(68 테스트). 물리·인지 제약 정밀화 남음.
   월드컵 자동 테마는 `KOREA_MATCHES` 수동 입력 대기.
 - **미착수**: 시청자 출석 도장(체크인) — 계획서만 있음(`docs/insights/viewer-checkin-attendance-plan.md`).
@@ -99,9 +108,9 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 ## Next Exact Steps
 
 0. **개선안 백로그(2026-07-17 전면 감사)** — `docs/plans/refinement-backlog-2026-07.md`.
-   새 기능 없이 기존 기능만 다듬는 항목 40여 개(죽은 코드 ~1,600줄 · 서버/성능 11건 ·
-   시청자 손맛 13건 · 편집실 7건), 전부 코드로 교차 검증함. 배치 1~3(햅틱 컨벤션 · 브로드 게이팅 ·
-   미들웨어 matcher/sim 지연로드)이 W큼/E작음. 사용자 승인 대기.
+   **배치 1~3 완료**(아래 참고). 남은 것: 배치 4(C1 `getEventsForDate` O(N²) — 최대 성능 이득,
+   렌더 경로라 회귀 검토 필요) → 5(CSS 손맛·탭타깃) → 6(D1 모바일 '이 달 기록' 도달 → D11 재단)
+   → 7(D2·D3) → 8(A6·A7·E1) → 9(서버 왕복) → 10(죽은 코드). C8(±13개월 윈도)은 동작 변경이라 보류.
 
 1. 시청자 출석 도장: `docs/insights/viewer-checkin-attendance-plan.md`의 A안(오늘만, 서버 KST 강제).
    `event_hearts` 패턴 복제(비로그인 기기 토큰 포함), 마이그레이션 + `*_grants.sql` 잊지 말 것.
@@ -109,7 +118,19 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
    월별 고정 PNG URL, LIVE/카운트다운 pill, 꾸미기 스탬프 모드, 휴방 상태를 1급 셀 상태로.
 3. 축구 시뮬: GK 손→패스/개인기 규칙·물리·인지 제약 정밀화(`docs/sim/`).
 
-## Last Verified (2026-07-17)
+## Last Verified (2026-07-17, 배치 1~3 이후)
+
+| command | result |
+|---|---|
+| `npm run typecheck` / `npm run build` | PASS (exit 0) |
+| `npm run test` (vitest) | PASS — **140** tests (server-timing 4 신규) |
+| `npm run test:e2e` | **여전히 NOT RUN** — 이것 때문에 공개 API 500을 오래 못 봤다. 다음에 꼭 돌릴 것 |
+| 공개 API 실물 | `/api/public/vic/events` 200(240건) · `/api/soop-live` 200 · `/api/presence` start 200 |
+| 하트 실물(Playwright, vibrate 후킹) | 정상 [12,12] 두 톡(37~43ms 간격) · 실패 [12,20-60-20] + 토스트 후 2.6초 자동 해제 |
+| 번들(로컬 prod 빌드) | `/` 152 kB · 꾸미기 151 kB · 편집실 221 kB. 초기 스크립트 16개에 월드컵·축구 코드 없음 |
+| 7월(월드컵 달) 연출 실물 | 미니게임 버튼·중력 공·결승 표기 497ms에 정상 등장 |
+
+## Last Verified (2026-07-17, 이전)
 
 | command | result |
 |---|---|
