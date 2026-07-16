@@ -98,6 +98,11 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Next Exact Steps
 
+0. **개선안 백로그(2026-07-17 전면 감사)** — `docs/plans/refinement-backlog-2026-07.md`.
+   새 기능 없이 기존 기능만 다듬는 항목 40여 개(죽은 코드 ~1,600줄 · 서버/성능 11건 ·
+   시청자 손맛 13건 · 편집실 7건), 전부 코드로 교차 검증함. 배치 1~3(햅틱 컨벤션 · 브로드 게이팅 ·
+   미들웨어 matcher/sim 지연로드)이 W큼/E작음. 사용자 승인 대기.
+
 1. 시청자 출석 도장: `docs/insights/viewer-checkin-attendance-plan.md`의 A안(오늘만, 서버 KST 강제).
    `event_hearts` 패턴 복제(비로그인 기기 토큰 포함), 마이그레이션 + `*_grants.sql` 잊지 말 것.
 2. 멀티에이전트 리뷰가 제안한 Phase 3 잔여(사용자 승인 시): 시청자 저장/공유 버튼 + OG 메타 +
