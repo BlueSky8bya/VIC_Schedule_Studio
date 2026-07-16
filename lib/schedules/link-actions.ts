@@ -69,26 +69,5 @@ export async function unlinkPairAction(earlierId: string): Promise<LinkResult> {
   return { ok: true };
 }
 
-// 한 일정을 양쪽 이음새에서 완전히 분리.
-export async function unlinkEventAction(id: string): Promise<LinkResult> {
-  const g = await guard();
-  if (!g.ok) return g;
-
-  const now = new Date().toISOString();
-  const r1 = await g.supabase
-    .from("events")
-    .update({ link_next: null, updated_at: now })
-    .eq("id", id);
-  if (r1.error) return { ok: false, error: r1.error.message };
-
-  const r2 = await g.supabase
-    .from("events")
-    .update({ link_next: null, updated_at: now })
-    .eq("link_next", id);
-  if (r2.error) return { ok: false, error: r2.error.message };
-
-  revalidatePath("/");
-  revalidatePath("/studio");
-  revalidatePublicSchedule();
-  return { ok: true };
-}
+// (unlinkEventAction 삭제 — 한 일정을 양쪽 이음새에서 떼던 액션인데 부르는 곳이 없다. 편집실은
+//  이음새 하나씩 끊는 위 액션만 쓴다. 다시 필요해지면 git 이력에 있다.)

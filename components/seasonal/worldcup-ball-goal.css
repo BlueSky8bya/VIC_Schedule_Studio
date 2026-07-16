@@ -435,12 +435,7 @@
     0 0 0 1px rgb(255 255 255 / 70%),
     0 0 7px rgb(34 197 94 / 60%);
 }
-.wc-keeper-left {
-  background: radial-gradient(circle at 35% 30%, #ffd27a, #f59e0b);
-}
-.wc-keeper-right {
-  background: radial-gradient(circle at 35% 30%, #6ee7d8, #14b8a6);
-}
+/* (.wc-keeper-left / .wc-keeper-right 제거 — 참조 0) */
 /* 승부차기 — 막는 팀 진영 색으로 키퍼 교체(한 골만 사용). */
 .wc-keeper.wc-keeper-def-red {
   background: radial-gradient(circle at 35% 30%, #ff9a9a, #e2503c);
@@ -1504,10 +1499,7 @@
   }
 }
 
-/* 토글 라벨 — 데스크탑은 풀텍스트, 모바일은 짧게(1행 유지). 기본은 풀, 모바일 미디어서 스왑. */
-.wc-tg-short {
-  display: none;
-}
+/* (.wc-tg-short / .wc-tg-full 토글 라벨 스왑 제거 — 참조 0) */
 
 /* 게임 ON 동안 뒤 일정 스크롤 잠금 — 웹·모바일 공통(집중 + 오조작 방지). 끄면 자동 해제.
    (JS가 ←/→·↑/↓·Space·휠도 가로채 달 이동/스크롤을 막는다.) */
@@ -1561,13 +1553,6 @@ body.wc-game-lock {
     top: 24px;
     bottom: auto;
     transform: translateY(-50%);
-  }
-  /* 버튼 라벨 짧게 — 1행 유지(자동 경기→자동, 미니게임 숨기기→숨기기). */
-  .wc-tg-full {
-    display: none;
-  }
-  .wc-tg-short {
-    display: inline;
   }
   /* 토글 컴팩트 — 좁은 폭에서 두 버튼이 한 줄에. 글자 크기는 옆 버튼들(편집실·이 달 기록)과
      같은 13px로 둔다(라벨은 '켜기'처럼 짧게 스왑되므로 폭은 문제없다). */

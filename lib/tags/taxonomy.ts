@@ -29,8 +29,5 @@ export function legacyTagView(tags: BroadcastTag[]): BroadcastTag[] {
     .map((t) => ({ ...t, parentId: null, kind: "content" as const }));
 }
 
-// 역할에 맞는 태그 뷰(렌더·피커·레전드·필터용). 정의 편집(TagLegendEditor)에는 쓰지 말 것 —
-// 거기엔 원본 tags를 넘겨야 레거시 평탄화가 v3 구조를 덮어쓰지 않는다.
-export function tagsForRole(tags: BroadcastTag[], role: MembershipRole): BroadcastTag[] {
-  return isTaxonomyV3(role) ? tags : legacyTagView(tags);
-}
+// (tagsForRole 삭제 — isTaxonomyV3 + legacyTagView를 묶던 편의 함수인데 호출자가 0이다.
+//  호출부들이 두 함수를 직접 조합해 쓴다. 지금은 전 역할이 v3라 분기 자체가 사실상 항등이다.)

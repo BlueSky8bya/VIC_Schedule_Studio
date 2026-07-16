@@ -32,16 +32,7 @@ export async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> 
   }
 }
 
-// 동기 구간용(있다면). 거의 비동기라 보조.
-export function timedSync<T>(label: string, fn: () => T): T {
-  if (!LOG_ENABLED) return fn();
-  const t0 = now();
-  try {
-    return fn();
-  } finally {
-    console.log(`[perf] ${label} ${(now() - t0).toFixed(1)}ms`);
-  }
-}
+// (timedSync 삭제 — 동기 구간용 보조였는데 재는 곳이 전부 비동기라 호출자가 0이었다.)
 
 // API 라우트(Response 반환)에서 여러 구간을 모아 Server-Timing 헤더 문자열로. 브라우저 devtools 표시용.
 export class ServerTiming {

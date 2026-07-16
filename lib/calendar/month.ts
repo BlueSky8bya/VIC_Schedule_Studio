@@ -3,7 +3,6 @@ import type {
   ColorPaletteEntry,
   PublicScheduleEvent,
   StudioScheduleEvent,
-  SupportCampaign,
   TagKind
 } from "@/lib/domain/schedule-types";
 import { PRODUCT_TIMEZONE } from "@/lib/domain/schedule-types";
@@ -101,10 +100,6 @@ export function splitEventTitle(title: string): { main: string; subs: string[] }
   };
 }
 
-export function getMonthLabel(year: number, month: number) {
-  return `${String(year).slice(2)}.${String(month).padStart(2, "0")}`;
-}
-
 export function getAdjacentMonth(year: number, month: number, offset: number) {
   const date = new Date(Date.UTC(year, month - 1 + offset, 1));
 
@@ -185,18 +180,6 @@ function addDays(isoDate: string, days: number): string {
 
 function covers(event: PublicScheduleEvent | StudioScheduleEvent, isoDate: string) {
   return getEventDateKey(event) <= isoDate && isoDate <= eventEndKey(event);
-}
-
-// 두 일정이 연속된 날짜인지(한쪽 끝 다음날이 다른 쪽 시작).
-export function areAdjacentEvents(
-  a: PublicScheduleEvent | StudioScheduleEvent,
-  b: PublicScheduleEvent | StudioScheduleEvent
-): boolean {
-  const aStart = getEventDateKey(a);
-  const aEnd = eventEndKey(a);
-  const bStart = getEventDateKey(b);
-  const bEnd = eventEndKey(b);
-  return bStart === addDays(aEnd, 1) || aStart === addDays(bEnd, 1);
 }
 
 // 일정의 대표 태그(최대 2개) — 칸을 칠하는 색 순서. [0]=왼쪽 변, 마지막=오른쪽 변.
@@ -489,14 +472,6 @@ export function getSpanRunRange(
     length: Math.max(1, diffDays(rowStart, rowEnd) + 1)
   };
 }
-export function getSpanRun(
-  event: PublicScheduleEvent | StudioScheduleEvent,
-  isoDate: string,
-  weekday: number
-): { index: number; length: number } {
-  return getSpanRunRange(getEventDateKey(event), eventEndKey(event), isoDate, weekday);
-}
-
 // D: 혼합(2색) 칸 배경 — 두 색을 좌→우 그라데이션으로 섞되, 이어진 칸 전체 기준으로 그려
 // 경계가 칸 묶음의 가운데(2칸=이음새, 3칸=가운데칸 중앙)에 오게 한다. 경계는 수직이라
 // 칸 높이가 달라도 무늬 경계와 기울기가 어긋나지 않는다.
@@ -687,55 +662,6 @@ export function getEventSpan<T extends PublicScheduleEvent | StudioScheduleEvent
     roundRight: !connectRight,
     showTitle: isoDate === start || weekday === 0
   };
-}
-
-export function getCampaignsForDate(campaigns: SupportCampaign[], isoDate: string) {
-  return campaigns.filter(
-    (campaign) =>
-      campaign.isActive &&
-      campaign.isPublic &&
-      campaign.startsOn <= isoDate &&
-      campaign.endsOn >= isoDate
-  );
-}
-
-export function getRepresentativeTagColors(
-  events: Array<PublicScheduleEvent | StudioScheduleEvent>,
-  tags: BroadcastTag[],
-  palette: ColorPaletteEntry[]
-) {
-  const orderedTagIds = events.flatMap((event) =>
-    event.primaryTagIds.length > 0 ? event.primaryTagIds : event.tagIds
-  );
-  const uniqueTagIds = [...new Set(orderedTagIds)];
-  const summaries = uniqueTagIds
-    .map((tagId) => {
-      const tag = tags.find((candidate) => candidate.id === tagId);
-      const color = tag
-        ? palette.find((candidate) => candidate.key === tag.colorKey)
-        : undefined;
-
-      return tag && color ? { tag, color } : null;
-    })
-    .filter((summary): summary is TagColorSummary => summary !== null);
-
-  return {
-    visible: summaries.slice(0, 2),
-    hiddenCount: Math.max(0, summaries.length - 2)
-  };
-}
-
-export function formatKstTime(value?: string) {
-  if (!value) {
-    return "";
-  }
-
-  return new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "Asia/Seoul"
-  }).format(new Date(value));
 }
 
 function toMonthCell(date: Date, inCurrentMonth: boolean): MonthCell {

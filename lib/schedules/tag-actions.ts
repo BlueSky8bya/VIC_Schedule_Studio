@@ -30,52 +30,8 @@ export type SaveTagsResult =
 
 const SLUG = "vic";
 
-// owner/developer가 태그 이름·색상을 수정한다. (RLS "owners can manage tags"로 이중 보호)
-export async function updateTagAction(
-  tagId: string,
-  displayName: string,
-  colorKey: ColorKey
-): Promise<TagUpdateResult> {
-  const actor = await resolveCurrentActor(SLUG);
-
-  if (!canEditSchedule(actor.role)) {
-    return { ok: false, error: "owner 또는 developer만 태그를 수정할 수 있습니다." };
-  }
-
-  const name = displayName.trim();
-  if (!name) {
-    return { ok: false, error: "태그 이름을 입력하세요." };
-  }
-
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
-  }
-
-  // 휴뱅(dayoff)은 시스템 기본 태그 — 이름·색 변경 금지.
-  const { data: existing } = await supabase
-    .from("broadcast_tags")
-    .select("tag_key")
-    .eq("id", tagId)
-    .maybeSingle();
-  if (existing?.tag_key === "dayoff") {
-    return { ok: false, error: "휴뱅은 수정할 수 없는 기본 태그입니다." };
-  }
-
-  const { error } = await supabase
-    .from("broadcast_tags")
-    .update({ display_name: name, color_key: colorKey, updated_at: new Date().toISOString() })
-    .eq("id", tagId);
-
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-
-  revalidatePath("/");
-  revalidatePath("/studio");
-  revalidatePublicSchedule();
-  return { ok: true };
-}
+// (updateTagAction 삭제 — 태그 하나만 고치던 옛 액션. 지금은 아래 saveTagsAction이 수정·생성을
+//  한 번에 처리하고 호출부도 그것만 쓴다. 호출자 0으로 확인.)
 
 // #6/#4: "전체 저장" — 기존 태그 수정 + 새로 추가한 드래프트 태그 생성을 한 번에 처리한다.
 // (새 태그는 저장 누르기 전까지 팝업 안에서만 보이고, 이 액션을 누를 때만 DB·달력에 반영된다.)
@@ -317,70 +273,5 @@ export async function removeTagAction(tagId: string): Promise<TagUpdateResult> {
   return { ok: true };
 }
 
-// 여러 태그를 한 번에 저장. 색상 중복을 서버에서도 막는다.
-export async function updateTagsAction(
-  updates: { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number }[]
-): Promise<TagUpdateResult> {
-  const actor = await resolveCurrentActor(SLUG);
-  if (!canEditSchedule(actor.role)) {
-    return { ok: false, error: "owner 또는 developer만 태그를 수정할 수 있습니다." };
-  }
-
-  if (updates.some((u) => !u.displayName.trim())) {
-    return { ok: false, error: "모든 태그 이름을 입력하세요." };
-  }
-  if (updates.some((u) => !u.colorKey)) {
-    return { ok: false, error: "모든 태그에 색상을 지정하세요." };
-  }
-  const colors = updates.map((u) => u.colorKey);
-  if (new Set(colors).size !== colors.length) {
-    return { ok: false, error: "같은 색상을 두 태그에 쓸 수 없습니다." };
-  }
-
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
-  }
-
-  // 휴뱅(dayoff)은 이름·색 변경 금지 — 수정 목록에 섞여 와도 잠근다(순서만 반영).
-  const lockedIds = new Set<string>();
-  const { data: lockedRows } = await supabase
-    .from("broadcast_tags")
-    .select("id")
-    .eq("tag_key", "dayoff")
-    .in(
-      "id",
-      updates.map((u) => u.id)
-    );
-  for (const r of lockedRows ?? []) lockedIds.add(r.id);
-
-  // 태그를 하나씩 순차 update하면 왕복 지연이 누적돼 느리다(10개면 5초+).
-  // 서로 독립적이라 한꺼번에 병렬로 보낸다 → 사실상 1회 왕복 시간으로 끝난다.
-  const now = new Date().toISOString();
-  const results = await Promise.all(
-    updates.map((u) =>
-      supabase
-        .from("broadcast_tags")
-        .update(
-          lockedIds.has(u.id)
-            ? { ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }), updated_at: now }
-            : {
-                display_name: u.displayName.trim(),
-                color_key: u.colorKey,
-                ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }),
-                updated_at: now
-              }
-        )
-        .eq("id", u.id)
-    )
-  );
-  const failed = results.find((r) => r.error);
-  if (failed?.error) {
-    return { ok: false, error: failed.error.message };
-  }
-
-  revalidatePath("/");
-  revalidatePath("/studio");
-  revalidatePublicSchedule();
-  return { ok: true };
-}
+// (updateTagsAction 삭제 — 여러 태그를 한 번에 고치던 옛 액션. saveTagsAction이 수정·생성을 함께
+//  처리하면서 대체됐고 호출자가 0이다. 문서(docs/tags/*)에만 이름이 남아 있었다.)

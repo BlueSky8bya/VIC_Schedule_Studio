@@ -13,7 +13,6 @@ import {
   Nanum_Pen_Script
 } from "next/font/google";
 import "./globals.css";
-import "./home.css";
 // 포스터/스튜디오 CSS는 각 컴포넌트가 직접 import한다(아래). 루트에서 전역으로 싣지 않음으로써
 // 공개 포스터만 보는 비로그인 시청자가 스튜디오 CSS(220KB)를 렌더 차단으로 받지 않게 한다.
 import { PresenceBeacon } from "@/components/presence/presence-beacon";

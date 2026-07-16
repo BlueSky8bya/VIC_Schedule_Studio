@@ -680,30 +680,7 @@
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
 
-.developer-warning {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid #c4b5fd;
-  background: #f5f3ff;
-  padding: 10px 18px;
-  color: #5b21b6;
-  font-weight: 900;
-}
-.developer-warning-btn {
-  margin-left: auto;
-  border: 1px solid #c4b5fd;
-  background: #ede9fe;
-  color: #5b21b6;
-  font-weight: 800;
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: var(--r-pill);
-  cursor: pointer;
-}
-.developer-warning-btn:hover {
-  background: #ddd6fe;
-}
+/* (.developer-warning / .developer-warning-btn 제거 — 참조 0) */
 
 /* 개발자 창: 접속자 현황(역할별 인원) */
 .developer-panel {
@@ -856,13 +833,6 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 
 
 
-
-
-/* #16 결론형 헤드라인 — 숫자 표 위에 한 줄 메시지(결론). */
-
-@media (min-width: 641px) {
-  
-}
 
 
 /* 관심 배지 받는 기준 — 불꽃/왕관 + 라벨 + 조건. 개발자 인사이트 '참여' 패널. */
@@ -1215,63 +1185,7 @@ html[data-reduce-motion] .perf-spin {
     transform: scale(1);
   }
 }
-.teaser-toggle {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 10px 12px;
-  border: 1px solid var(--line, #e7e3f2);
-  border-radius: var(--r-md);
-  background: #faf9fe;
-  cursor: pointer;
-  font-weight: 800;
-  color: #6b5b95;
-  transition:
-    background var(--dur-1) var(--ease),
-    border-color var(--dur-1) var(--ease),
-    transform var(--dur-1) var(--ease);
-}
-.teaser-toggle:active {
-  transform: scale(0.98);
-}
-.teaser-toggle.on {
-  background: #efe9fd;
-  border-color: #c9bdf2;
-  color: #4a3f72;
-}
-.teaser-toggle-ic {
-  font-size: 16px;
-}
-.teaser-toggle-label {
-  flex: 1;
-  text-align: left;
-}
-.teaser-toggle-sw {
-  position: relative;
-  flex: none;
-  width: 34px;
-  height: 20px;
-  border-radius: var(--r-pill);
-  background: #d9d2ee;
-  transition: background var(--dur-1) var(--ease);
-}
-.teaser-toggle-sw::after {
-  content: "";
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: #fff;
-  transition: transform var(--dur-1) var(--ease);
-}
-.teaser-toggle.on .teaser-toggle-sw {
-  background: #7c6cf0;
-}
-.teaser-toggle.on .teaser-toggle-sw::after {
-  transform: translateX(14px);
-}
+/* (.teaser-toggle* 스위치 제거 — 참조 0) */
 /* 떡밥 공개시각 영역 — 떡밥 칩(보라) 아래로 자연스레 이어지는 인셋 카드(왼쪽 보라 띠로 연결). */
 .teaser-when {
   display: flex;
@@ -3057,11 +2971,6 @@ html[data-reduce-motion] .role-segment button.active {
 
 
 
-@media (min-width: 641px) {
-  
-  
-  
-}
 /* 호버 분해 툴팁은 차트(.vt-chart) 한 곳에 떠서 hovered 막대 위치를 따라가되, 차트 폭 안에서
    clamp되어 어느 칸이든(맨 끝 포함) 절대 안 잘린다. */
 .vt-chart {
@@ -4140,10 +4049,6 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 
 
 
-/* 웹: 호버 하이라이트(가로 공간이 남아도 칩은 그대로 wrap). */
-@media (min-width: 641px) {
-  
-}
 /* 필터에 안 맞는 일정은 흐리게(편집실 그리드·모바일 아젠다 공용) */
 /* 필터 미해당 일정 — 흐리게(점선 아님). 데스크톱 칩·모바일 아젠다 카드 공통. */
 .studio-event-pill.filter-dim,
@@ -4840,23 +4745,6 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
   font-weight: var(--evt-weight, 800);
 }
 
-.pill-toggle {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 22px;
-  height: 22px;
-  border: 0;
-  border-radius: 5px;
-  background: rgb(0 0 0 / 8%);
-  color: inherit;
-  cursor: pointer;
-}
-.pill-toggle:hover {
-  background: rgb(0 0 0 / 16%);
-}
-
 .pill-subs {
   display: grid;
   gap: 3px;
@@ -5339,25 +5227,7 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
   justify-content: space-between;
   gap: 8px;
 }
-.tp-search {
-  flex: 1;
-  min-width: 0;
-  min-height: 38px;
-  border: 1.5px solid var(--line, #e7e3f2);
-  border-radius: 11px;
-  background: #faf9fe;
-  padding: 0 12px;
-  font-size: 14px;
-  font-weight: 700;
-  transition: border-color 0.14s var(--ease, ease), box-shadow 0.14s var(--ease, ease),
-    background 0.14s var(--ease, ease);
-}
-.tp-search:focus {
-  outline: none;
-  background: #fff;
-  border-color: #8b7cf0;
-  box-shadow: 0 0 0 3px rgb(124 108 240 / 18%);
-}
+/* (.tp-search 태그 검색 입력 제거 — 참조 0) */
 .tp-count {
   flex: none;
   padding: 4px 10px;
@@ -5481,10 +5351,6 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
 /* 웹: 넉넉한 칩 + 호버 떠오름·글로우, 패널 여유(가로폭 활용). */
 /* 웹: 가로폭 활용 — 흐르는 격자(여러 열) + 호버 떠오름. 칩은 큰 터치타깃 불필요. */
 @media (min-width: 641px) {
-  .tp-search {
-    font-size: 15px;
-    min-height: 42px;
-  }
   .tp-content {
     grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
     gap: 8px;
@@ -5870,35 +5736,7 @@ textarea:disabled {
   border: 1.5px solid;
   opacity: 0.92;
 }
-/* 세부 추가 — 잘 보이는 점선 버튼(대분류 묶음 아래, 들여쓰기). */
-.tag-add-sub {
-  justify-self: start;
-  margin-left: 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1.5px dashed #b3a4e8;
-  border-radius: var(--r-pill);
-  background: #f4f0ff;
-  padding: 5px 14px;
-  font-size: 12.5px;
-  font-weight: 900;
-  color: #6b5bd6;
-  cursor: pointer;
-  transition: background 0.12s var(--ease, ease), transform 0.1s var(--ease, ease),
-    border-color 0.12s var(--ease, ease);
-}
-.tag-add-sub:hover:not(:disabled) {
-  background: #e9e2fb;
-  border-color: #8b7cf0;
-}
-.tag-add-sub:active:not(:disabled) {
-  transform: scale(0.96);
-}
-.tag-add-sub:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
+/* (.tag-add-sub 세부 추가 버튼 제거 — 참조 0) */
 /* 끌어서 순서 변경 손잡이 */
 .tag-drag-handle {
   flex: 0 0 auto;
@@ -6208,44 +6046,7 @@ textarea:disabled {
   font-size: 16px;
 }
 
-/* 메모 줄 편집기 */
-.memo-lines {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 6px;
-}
-.memo-line {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-}
-.memo-line textarea {
-  flex: 1;
-  min-width: 0;
-  min-height: 38px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  padding: 6px 9px;
-  line-height: 1.4;
-  resize: vertical;
-  font-family: inherit;
-}
-.memo-line .line-remove {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 38px;
-  border: 1px solid var(--line);
-  border-radius: 7px;
-  background: #fff;
-  cursor: pointer;
-}
-.memo-line .line-remove:hover {
-  background: #fee2e2;
-  border-color: #f3a3a3;
-}
+/* (.memo-lines / .memo-line* / .line-remove 메모 줄 편집기 제거 — 참조 0) */
 
 /* #7: 설명/안내 문구 통일 — 부드러운 강조 박스(왼쪽 액센트). */
 .tag-editor-hint,
@@ -6397,9 +6198,6 @@ textarea:disabled {
 .studio-left-panel section > .button {
   width: 100%;
 }
-.memo-line input {
-  min-width: 0;
-}
 /* 메모: +메모 추가 / 저장 한 줄 */
 .memo-actions {
   display: flex;
@@ -6410,100 +6208,7 @@ textarea:disabled {
   width: auto;
 }
 
-/* 업 도움 관리 패널 */
-.campaigns-panel {
-  display: grid;
-  gap: 14px;
-}
-.campaign-form {
-  display: grid;
-  gap: 8px;
-}
-.campaign-form input {
-  min-height: 40px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 0 10px;
-}
-.campaign-dates {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.campaign-dates input {
-  flex: 1;
-  min-width: 0;
-}
-.campaign-colors {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-}
-.campaign-colors button {
-  width: 22px;
-  height: 22px;
-  border: 2px solid;
-  border-radius: 5px;
-  cursor: pointer;
-}
-.campaign-colors button.selected {
-  box-shadow: 0 0 0 2px #111827;
-}
-.campaign-public {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 700;
-}
-.campaign-list {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.campaign-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 8px 12px;
-}
-.campaign-list li div {
-  display: grid;
-}
-.campaign-list li strong {
-  font-size: 14px;
-}
-.campaign-list li span {
-  color: var(--muted);
-  font-size: 12px;
-}
-.campaign-empty {
-  padding: 12px;
-  color: var(--muted);
-  font-size: 13px;
-  text-align: center;
-}
-
-/* 업 도움 시작일 라벨 */
-.campaign-label {
-  position: relative;
-  z-index: 1;
-  overflow: hidden;
-  margin: 0 5px 2px;
-  padding: 1px 6px;
-  border-radius: 5px;
-  background: rgb(225 29 72 / 12%);
-  color: #be123c;
-  font-size: 10.5px;
-  font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
+/* (.campaigns-panel / .campaign-* 업 도움 관리 패널·라벨 제거 — 참조 0) */
 
 /* 업 도움 토글 스위치 */
 .support-toggle {
@@ -7714,7 +7419,6 @@ textarea:disabled {
   white-space: nowrap;
   overflow: hidden;
 }
-.studio-mobile .developer-warning,
 .studio-mobile .private-warning {
   margin: 8px 0;
   font-size: 13px;
@@ -8383,41 +8087,7 @@ textarea:disabled {
   background: #7c5cf5;
   transform: scale(1.12);
 }
-/* 태그 칩 — 좌우 정렬(그리드로 양쪽 끝 맞춤). 칸 폭에 맞춰 균일하게 채워 가지런하다. */
-.me-tags {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
-  gap: 8px;
-}
-.me-tags button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  padding: 0 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill);
-  font-size: 13px;
-  font-weight: 700;
-  cursor: pointer;
-  opacity: 0.92;
-  transition:
-    transform var(--dur-1) var(--ease),
-    opacity var(--dur-1) var(--ease),
-    box-shadow var(--dur-1) var(--ease);
-}
-.me-tags button:active {
-  transform: scale(0.94);
-}
-.me-tags button.selected {
-  opacity: 1;
-  box-shadow: inset 0 0 0 2px #2b2540;
-  font-weight: 800;
-}
-.me-tags button:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-}
+/* (.me-tags* 태그 칩 제거 — 참조 0) */
 /* 보조 도구(공지·방문 그래프) — 점선 카드로 '부가 기능'임을 드러낸다. */
 .me-tools {
   display: flex;

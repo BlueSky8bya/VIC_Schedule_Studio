@@ -260,9 +260,7 @@ select {
     transform: scale(1);
   }
 }
-.fade-up {
-  animation: fade-up var(--dur-3) var(--ease) both;
-}
+/* (.fade-up 유틸 클래스 제거 — 참조 0. @keyframes fade-up은 studio-shell.css에서 계속 쓴다) */
 /* 첫 진입 스태거 등장에 쓰는 공통 키프레임(편집실 그리드·아젠다 공용). 칸마다 --ri 인덱스로
    딜레이를 줘 "차르륵" 순차로 떠오른다.
    ※ opacity는 일부러 안 건드린다(0에서 시작 X) — opacity 0인 요소는 LCP 후보에서 빠져,
@@ -454,19 +452,7 @@ html[data-reduce-motion] .portrait-lock-icon {
 
 /* 모션 최소화 선호 시 애니메이션·전환 제거 */
 
-.app-shell {
-  min-height: 100vh;
-}
-
-.page-band {
-  width: 100%;
-  padding: 32px;
-}
-
-.constrain {
-  width: min(1180px, 100%);
-  margin: 0 auto;
-}
+/* (.app-shell / .page-band / .constrain 레이아웃 유틸 제거 — 참조 0) */
 
 .eyebrow {
   color: var(--accent-strong);
@@ -659,10 +645,6 @@ html[data-reduce-motion] .portrait-lock-icon {
   }
 }
 
-.auth-gateway-panel {
-  width: min(560px, 100%);
-}
-
 .auth-panel h1,
 .auth-panel p {
   margin: 0;
@@ -690,8 +672,7 @@ html[data-reduce-motion] .portrait-lock-icon {
   padding: 0 12px;
 }
 
-.auth-warning,
-.auth-success {
+.auth-warning {
   border-radius: var(--r-sm);
   padding: 10px 12px;
   font-size: 14px;
@@ -734,22 +715,11 @@ html[data-reduce-motion] .portrait-lock-icon {
   margin: 0;
   font-weight: 600;
 }
-.inapp-steps {
-  margin: 0;
-  padding-left: 18px;
-  font-weight: 600;
-}
 .inapp-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 2px;
-}
-.inapp-hint {
-  margin: 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  opacity: 0.85;
 }
 
 /* 크롬 자동전환 중 짧게 보이는 표시(빈 화면 방지). 전환되면 곧 사라진다. */
@@ -777,35 +747,7 @@ html[data-reduce-motion] .portrait-lock-icon {
   }
 }
 
-.auth-success {
-  border: 1px solid #a8d5b1;
-  background: #f0f9f1;
-  color: #216e35;
-}
-
-.role-route-list {
-  display: grid;
-  gap: 8px;
-}
-
-.role-route-list div {
-  display: grid;
-  gap: 3px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: #fbfcfe;
-  padding: 12px;
-}
-
-.role-route-list strong {
-  font-size: 14px;
-}
-
-.role-route-list span {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
-}
+/* (.auth-success / .role-route-list* 제거 — 참조 0) */
 
 .trusted-members-page {
   align-content: start;
@@ -902,39 +844,7 @@ html[data-reduce-motion] .portrait-lock-icon {
   display: grid;
   gap: 16px;
 }
-.private-layer-controls {
-  display: grid;
-  gap: 18px;
-}
-.private-layer-status {
-  font-size: 14px;
-  color: var(--muted);
-}
-.private-layer-block {
-  display: grid;
-  gap: var(--space-2); /* 8 */
-  padding: var(--space-4); /* 16 */
-  border: 1px solid var(--line);
-  border-radius: var(--r-md); /* 12 (토큰화) */
-  background: var(--surface);
-}
-.private-layer-block h2 {
-  font-size: 15px;
-}
-.private-layer-block input {
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm); /* 8 (토큰화) */
-}
-.auth-notice {
-  padding: 10px 12px;
-  border-radius: var(--r-sm);
-  background: #effaf6;
-  border: 1px solid #8fd6bd;
-  color: #124436;
-  font-size: 14px;
-}
+/* (.private-layer-controls / -status / -block* / .auth-notice 제거 — 참조 0) */
 
 /* 최소화된 로그인 게이트 */
 .auth-minimal {
@@ -990,24 +900,7 @@ html[data-reduce-motion] .portrait-lock-icon {
   white-space: nowrap;
 }
 
-/* 메모 편집기 (스튜디오 좌측) */
-.memo-editor {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 8px;
-}
-.memo-editor textarea {
-  min-height: 96px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 10px;
-  font-size: 13px;
-  line-height: 1.5;
-  resize: vertical;
-}
-.memo-editor .button {
-  justify-self: start;
-}
+/* (.memo-editor* 메모 편집기 제거 — 참조 0) */
 
 /* ── 업 도움 끈(레인) ─────────────────────────────────────────────────
    날짜 범위를 가로지르는 하이라이트 띠. 시작/끝만 둥글게, 중간은 이어짐. 겹치면 레인이 아래로 쌓인다.

@@ -75,51 +75,8 @@ function addDaysKey(key: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-// 일정 카드를 다른 날짜로 끌어 옮기기 — 시작일을 새 날짜로, 멀티데이면 종료일도 같은 폭으로.
-// (전체 폼 저장과 별개의 가벼운 액션 — 드래그 한 번에 빠르게 반영.)
-export async function moveEventAction(eventId: string, newDateKey: string): Promise<ActionResult> {
-  const actor = await resolveCurrentActor(SLUG);
-  if (!canEditSchedule(actor.role)) {
-    return { ok: false, error: "owner 또는 developer만 일정을 옮길 수 있습니다." };
-  }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(newDateKey)) {
-    return { ok: false, error: "날짜 형식이 올바르지 않습니다." };
-  }
-
-  const supabase = await createSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
-  }
-
-  const { data: ev } = await supabase
-    .from("events")
-    .select("id, date_key, end_date_key")
-    .eq("id", eventId)
-    .maybeSingle();
-  if (!ev) {
-    return { ok: false, error: "일정을 찾을 수 없습니다." };
-  }
-  if (ev.date_key === newDateKey) {
-    return { ok: true, id: eventId };
-  }
-
-  const delta = diffDaysKey(ev.date_key as string, newDateKey);
-  const newEnd =
-    typeof ev.end_date_key === "string" ? addDaysKey(ev.end_date_key, delta) : null;
-
-  const { error } = await supabase
-    .from("events")
-    .update({ date_key: newDateKey, end_date_key: newEnd, updated_at: new Date().toISOString() })
-    .eq("id", eventId);
-  if (error) {
-    return { ok: false, error: error.message };
-  }
-
-  revalidatePath("/");
-  revalidatePath("/studio");
-  revalidatePublicSchedule();
-  return { ok: true, id: eventId };
-}
+// (moveEventAction 삭제 — 날짜만 옮기던 옛 액션. 지금은 아래 reorderEventsAction이 movedId로
+//  '날짜 이동 + 같은 날 순서'를 한 번에 처리하고 편집실도 그것만 부른다. 호출자 0으로 확인.)
 
 // 같은 날 안에서 일정 카드 순서 바꾸기(드래그). 다른 날에서 끌어온 경우 그 일정의 날짜도 함께
 // 옮긴다. orderedIds 순서대로 sort_order를 0,1,2…로 부여한다(같은 날 표시 순서를 결정).

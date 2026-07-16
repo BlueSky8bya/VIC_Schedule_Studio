@@ -546,13 +546,6 @@
   color: #b5491d;
 }
 
-.insight-clear-unlocks {
-  width: 100%;
-  margin-top: 8px;
-  min-height: 38px;
-  justify-content: center;
-}
-
 .insight-empty {
   margin: 12px 0;
   font-size: 13px;
@@ -681,29 +674,7 @@
   }
 }
 
-.insight-roletags {
-  display: inline-flex;
-  gap: 4px;
-}
-
-.insight-roletags .rt {
-  font-style: normal;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 2px 8px;
-  border-radius: var(--r-pill);
-}
-
-.insight-roletags .rt.manager {
-  background: #efeafd;
-  color: #6b5bd6;
-}
-
-.insight-roletags .rt.worker {
-  background: #fff3e0;
-  color: #b5651d;
-}
-
+/* (.insight-roletags* 역할 배지 제거 — 참조 0) */
 .insight-change-passcode {
   width: 100%;
   margin-top: 8px;
@@ -769,31 +740,7 @@
   color: #9aa0ab; /* 동률(변화 없음)은 중립 회색 — 방향색 안 씀 */
 }
 
-.insight-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.insight-list li {
-  padding: 9px 13px;
-  background: #faf9fe;
-  border: 1px solid #efeaf9;
-  border-radius: 10px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #3a3550;
-  word-break: break-all;
-}
-
-.insight-list li.muted {
-  color: #9aa0ab;
-  font-weight: 600;
-}
-
+/* (.insight-list* 목록 제거 — 참조 0) */
 .insights-month {
   margin: 0;
   font-size: 13px;
@@ -898,14 +845,7 @@
   }
 }
 
-.insights-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  margin: 4px 0 10px;
-}
-
+/* (.insights-toolbar 제거 — 참조 0) */
 .insights-subtabs {
   display: inline-flex;
   gap: 4px;
@@ -913,10 +853,6 @@
   padding: 3px;
   border-radius: var(--r-pill);
   background: #f1edfb;
-}
-
-.insights-toolbar .insights-subtabs {
-  margin: 0;
 }
 
 .insights-subtabs button {
@@ -1020,11 +956,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.insight-roletags {
-  flex: 0 0 auto;
-  max-width: none;
 }
 
 .trend-row {
@@ -1512,8 +1443,7 @@
     font-size: 14.5px;
   }
 .insight-banner,
-  .insight-empty,
-  .insight-list li {
+  .insight-empty {
     font-size: 14.5px;
   }
 .insight-next > span {
