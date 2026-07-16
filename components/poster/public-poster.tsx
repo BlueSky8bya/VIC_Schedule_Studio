@@ -44,9 +44,18 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
-import { WorldCupBallGoal } from "@/components/seasonal/worldcup-ball-goal";
-import { WorldCupStudioBall } from "@/components/seasonal/worldcup-studio-ball";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
+// 월드컵 장난감(공 미니게임 + 중력 공)은 월드컵 달에만 렌더되는데 정적 import라 6,400여 줄
+// (컴포넌트 + lib/football/*)이 시청자 첫 로드 번들에 1년 내내 들어 있었다. 아래 꾸미기 UI와
+// 같은 방식으로 지연 로드한다(ssr:false — 장난감이라 SSR 불필요).
+const WorldCupBallGoal = dynamic(
+  () => import("@/components/seasonal/worldcup-ball-goal").then((m) => m.WorldCupBallGoal),
+  { ssr: false }
+);
+const WorldCupStudioBall = dynamic(
+  () => import("@/components/seasonal/worldcup-studio-ball").then((m) => m.WorldCupStudioBall),
+  { ssr: false }
+);
 // 꾸미기 전용 UI는 decorate일 때만 렌더된다 → 지연 로드로 시청자(공개 /) 번들서 제외(ssr:false:
 // 사용자 동작으로 여는 꾸미기 화면이라 SSR 불필요, 진입 시 잠깐 로드).
 const ThemeSwitch = dynamic(

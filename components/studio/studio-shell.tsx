@@ -76,7 +76,11 @@ import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
-import { WorldCupStudioBall } from "@/components/seasonal/worldcup-studio-ball";
+// 월드컵 달에만 뜨는 중력 공 — 정적 import면 lib/football까지 편집실 첫 로드 번들에 얹힌다.
+const WorldCupStudioBall = dynamic(
+  () => import("@/components/seasonal/worldcup-studio-ball").then((m) => m.WorldCupStudioBall),
+  { ssr: false }
+);
 import {
   canDecorate,
   canEditEventTags,
