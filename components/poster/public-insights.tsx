@@ -81,24 +81,35 @@ export function PublicInsights({
   const [broadcast, setBroadcast] = useState<PublicBroadcastMonth[]>([]);
   const [broadcastDaily, setBroadcastDaily] = useState<number[]>([]);
   const [loading, setLoading] = useState(true);
+  // 못 불러온 것과 '방송이 없던 달'은 완전히 다른 이야기다. 예전엔 실패를 조용히 삼켜(catch 빈 블록)
+  // 빈 배열로 두는 바람에, 네트워크가 끊겨도 시트가 "0일 방송"이라고 당당하게 거짓말을 했다.
+  const [failed, setFailed] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   useEffect(() => {
     let alive = true;
     setLoading(true);
+    setFailed(false);
     fetch(`/api/public/vic/broadcast?year=${year}&month=${month}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((json) => {
-        if (!alive || !json) return;
+        if (!alive) return;
+        if (!json) {
+          setFailed(true);
+          return;
+        }
         setBroadcast(Array.isArray(json.months) ? json.months : []);
         setBroadcastDaily(Array.isArray(json.daily) ? json.daily : []);
       })
-      .catch(() => {})
+      .catch(() => {
+        if (alive) setFailed(true);
+      })
       .finally(() => {
         if (alive) setLoading(false);
       });
     return () => {
       alive = false;
     };
-  }, [year, month]);
+  }, [year, month, reloadKey]);
 
   const d = useMemo(() => {
     const months = monthsBack(year, month, 6);
@@ -252,7 +263,8 @@ export function PublicInsights({
       emoji: "📺",
       tone: "day",
       label: ["이 달", "방송일"],
-      main: `${d.broadcastDays}일`
+      // 방송 기록을 못 불러왔으면 '0일'이 아니라 '—'다 — 0일은 "쉬었다"는 뜻이라 거짓이 된다.
+      main: loading || failed ? "—" : `${d.broadcastDays}일`
     },
     {
       key: "next",
@@ -335,8 +347,17 @@ export function PublicInsights({
           {/* 방송 시간 — 관리자와 같은 BroadcastHours(6개월 막대 + 이 달 일별 막대 + 일평균). */}
           <div className="pi-card pi-broadcast">
             <span className="pi-label">방송 시간</span>
+            {/* 로딩 자리표시는 '실제 차트가 착지할 자리'에 같은 높이로 둔다 — 예전엔 한 줄짜리
+                문구였다가 차트(수백 px)로 바뀌면서 아래 카드들이 통째로 밀려 내려갔다. */}
             {loading ? (
-              <p className="pi-empty">방송 기록 불러오는 중…</p>
+              <div className="pi-skeleton" aria-hidden="true" />
+            ) : failed ? (
+              <p className="pi-empty pi-failed">
+                방송 기록을 못 불러왔어요.
+                <button className="pi-retry" onClick={() => setReloadKey((k) => k + 1)} type="button">
+                  다시 시도
+                </button>
+              </p>
             ) : (
               <BroadcastHours
                 broadcastDaily={broadcastDaily}

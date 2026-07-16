@@ -4900,6 +4900,53 @@ html[data-reduce-motion] .pi-backdrop {
   font-size: 13px;
   font-weight: 700;
 }
+/* 방송 시간 차트 로딩 자리 — '실제 차트가 착지할 자리'를 미리 잡아둔다(높이는 로드된 차트와
+   같게 맞췄다). 예전엔 한 줄 문구였다가 차트로 바뀌며 아래 카드가 통째로 밀려 내려갔다. */
+.pi-skeleton {
+  /* 로드된 BroadcastHours(.bcast-trend)를 실제로 재서 맞춘 값 — 추측하면 점프가 남는다.
+     (측정: 웹 1600 기준 210px. 이 값이 어긋나면 아래 카드들이 그만큼 밀린다.) */
+  height: 210px;
+  border-radius: var(--r-md);
+  background: linear-gradient(100deg, #f6efe0 30%, #fffdf6 50%, #f6efe0 70%) 0 0 / 300% 100%;
+  animation: pi-shimmer 1.25s linear infinite;
+}
+@keyframes pi-shimmer {
+  to {
+    background-position: -150% 0;
+  }
+}
+html[data-reduce-motion] .pi-skeleton {
+  animation: none;
+}
+/* 못 불러온 경우 — 조용히 0으로 두지 않고 말하고, 그 자리에서 다시 시도하게 한다. */
+.pi-failed {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 210px; /* 로딩·실패·정상이 모두 같은 높이 → 어느 경로로 가도 아래가 안 밀린다 */
+  justify-content: center;
+  flex-direction: column;
+}
+.pi-retry {
+  border: 1px solid var(--line, #ece2cd);
+  border-radius: var(--r-pill);
+  background: var(--surface, #fffdf6);
+  padding: 7px 14px;
+  min-height: 36px;
+  color: var(--ink, #23303f);
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    transform var(--dur-1) var(--ease),
+    background var(--dur-1) var(--ease);
+}
+.pi-retry:hover {
+  background: var(--surface-2, #fdf6e8);
+}
+.pi-retry:active {
+  transform: scale(0.94);
+}
 .pi-next {
   display: flex;
   align-items: center;
