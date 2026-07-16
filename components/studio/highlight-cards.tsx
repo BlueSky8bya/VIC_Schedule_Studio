@@ -22,9 +22,16 @@ export type HighlightCard = {
   main: string;
   sub?: string;
   heart?: boolean;
+  /** sub가 짧은 수치가 아니라 제목 같은 '문장'일 때 — 큰 수치 크기를 쓰지 않고 작게 + …로 자른다. */
+  subText?: boolean;
 };
 
 type Tip = { key: string; x: number; top: number; text: string };
+
+// 요소가 실제로 …로 잘렸는지(=넘쳤는지).
+function isClipped(el: HTMLElement | null) {
+  return Boolean(el && el.scrollWidth > el.clientWidth + 1);
+}
 
 // 인기 컨텐츠처럼 제목이 길면 카드 안에서 …로 잘린다(특히 모바일). 잘렸을 때만 호버(웹)·탭(모바일)
 // 으로 전체 제목을 그리드 위에 띄운다 — z-index로 다른 카드에 안 가리고, 그리드 폭 안으로 clamp해
@@ -41,12 +48,16 @@ export function HighlightCards({ cards }: { cards: HighlightCard[] }) {
     }
   }, []);
 
-  // 제목이 실제로 잘렸을 때만 그 카드 위 가운데에 전체 제목을 띄운다(짧은 제목엔 안 뜸).
-  const showFor = useCallback((card: HTMLElement, key: string, text: string) => {
+  // 제목(.hl-main)이든 오른쪽 값(.hl-sub)이든 실제로 잘렸을 때만 그 카드 위 가운데에 전체 글을
+  // 띄운다(짧으면 안 뜸). 둘 다 잘렸으면 둘 다 한 줄씩 보여준다.
+  const showFor = useCallback((card: HTMLElement, key: string, main: string, sub?: string) => {
     const grid = gridRef.current;
-    const main = card.querySelector<HTMLElement>(".hl-main");
-    if (!grid || !main) return;
-    if (main.scrollWidth <= main.clientWidth + 1) {
+    if (!grid) return;
+    const parts: string[] = [];
+    if (isClipped(card.querySelector<HTMLElement>(".hl-main"))) parts.push(main);
+    if (sub && isClipped(card.querySelector<HTMLElement>(".hl-sub"))) parts.push(sub);
+    const text = parts.join(" · ");
+    if (!text) {
       setTip(null);
       return;
     }
@@ -64,12 +75,13 @@ export function HighlightCards({ cards }: { cards: HighlightCard[] }) {
         <div
           className="highlight-card"
           data-tone={c.tone}
+          data-sub={c.subText ? "text" : undefined}
           key={c.key}
           onPointerEnter={(e: PointerEvent<HTMLDivElement>) => {
             // 웹(마우스) — 호버 동안만 표시.
             if (e.pointerType === "mouse") {
               clearTimer();
-              showFor(e.currentTarget, c.key, c.main);
+              showFor(e.currentTarget, c.key, c.main, c.sub);
             }
           }}
           onPointerLeave={(e: PointerEvent<HTMLDivElement>) => {
@@ -83,7 +95,7 @@ export function HighlightCards({ cards }: { cards: HighlightCard[] }) {
               setTip(null);
               return;
             }
-            showFor(e.currentTarget, c.key, c.main);
+            showFor(e.currentTarget, c.key, c.main, c.sub);
             hideTimer.current = window.setTimeout(() => setTip(null), 2600);
           }}
         >

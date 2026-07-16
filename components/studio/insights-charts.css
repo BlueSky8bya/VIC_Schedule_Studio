@@ -1113,6 +1113,160 @@
   color: #c5bfd6;
 }
 
+/* ── 하이라이트 카드 ─────────────────────────────────────────────────────
+   편집실·시청자('이 달 기록')가 같은 컴포넌트(HighlightCards)를 쓰므로 스타일도 여기 둔다.
+   (studio-shell.css는 (studio) 레이아웃에서만 로드된다 → 거기 두면 공개 포스터에서 통째로 빠진다.) */
+/* 내용을 위·아래로 벌리고(빈 공간 최소화) 글씨를 키워 카드를 꽉 채운다. */
+.highlight-grid {
+  position: relative; /* 잘린 제목 툴팁(.hl-tip) clamp 기준 */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /* 네 카드 높이를 모두 같게. */
+  grid-auto-rows: 1fr;
+  gap: 10px;
+}
+/* 가로 배치: [아이콘] [라벨/값] [큰 수치]. 넓은 박스를 좌우로 채우고 수치를 오른쪽 크게.
+   모바일은 좁으니 작게(넘침 방지), 웹은 @media(min-width:641px)에서 크게. */
+.highlight-card {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+  min-height: 64px;
+  /* 그리드 아이템이 내용 폭 이하로 줄 수 있게 → 긴 제목은 박스를 늘리지 않고 …로 잘린다. */
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #efeaf9;
+  border-radius: var(--r-lg);
+  background: linear-gradient(155deg, #fbfaff, #f1eefb);
+}
+.highlight-card .hl-emoji {
+  flex: none;
+  font-size: 22px;
+  line-height: 1;
+}
+.highlight-card .hl-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+}
+/* 라벨은 [윗줄]<lbreak>[아랫줄] 구조 — 기본(모바일)은 항상 두 줄로 폭을 아낀다. */
+.highlight-card .hl-label {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #8a82a6;
+  white-space: normal;
+  word-break: keep-all;
+}
+.highlight-card .hl-main {
+  font-size: 16px;
+  font-weight: 900;
+  color: #3a3550;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 오른쪽 값 — 짧은 수치("7일")는 안 줄고, 긴 문장(다음 방송 제목)은 카드를 밀어내지 않고 …로
+   잘린다(잘리면 호버/탭 툴팁이 전체를 보여준다). flex:none이면 카드 밖으로 넘쳐 가로 스크롤이 생겼다. */
+.highlight-card .hl-sub {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 62%;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+  color: #6b5bd6;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 값이 수치가 아니라 제목일 땐 큰 수치 크기를 쓰지 않는다(잘린 거대 글자는 읽히지도 예쁘지도 않다).
+   그리고 왼쪽 값("17일")은 짧으니 절대 안 줄이고, 남는 폭을 긴 제목이 쓰게 한다 — 안 그러면
+   긴 제목이 "17일"까지 "1…"로 밀어버린다. */
+.highlight-card[data-sub="text"] .hl-sub {
+  font-size: 13px;
+  font-weight: 800;
+}
+/* 제목은 오른쪽 좁은 칸에 두면 "소…"처럼 몇 글자만 남는다 → 아랫줄 전체 폭을 준다(카드 높이는
+   grid-auto-rows:1fr이 네 장 모두 같게 맞춘다). */
+.highlight-card[data-sub="text"] {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+.highlight-card[data-sub="text"] .hl-sub {
+  flex: 1 0 100%;
+  max-width: 100%;
+  line-height: 1.25;
+}
+/* '컨텐츠 최다요일' 라벨은 굵게(웹·모바일 공통). */
+.highlight-card[data-tone="wd"] .hl-label {
+  font-weight: 900;
+  color: #2f7d4f;
+}
+.highlight-card[data-tone="day"] {
+  background: linear-gradient(155deg, #f1f7ff, #e2ecff);
+  border-color: #d3e2fb;
+}
+.highlight-card[data-tone="day"] .hl-sub {
+  color: #2f6bd8;
+}
+.highlight-card[data-tone="hour"] {
+  background: linear-gradient(155deg, #fff7ed, #ffe9cf);
+  border-color: #f7d9b0;
+}
+.highlight-card[data-tone="hour"] .hl-sub {
+  color: #c2410c;
+}
+.highlight-card[data-tone="top"] {
+  background: linear-gradient(155deg, #fff1f5, #ffdfe9);
+  border-color: #fbcdda;
+}
+.highlight-card[data-tone="top"] .hl-sub {
+  color: #d11d54;
+}
+.highlight-card[data-tone="wd"] {
+  background: linear-gradient(155deg, #f0fbf3, #e0f4e7);
+  border-color: #cdeed6;
+}
+.highlight-card[data-tone="wd"] .hl-main {
+  color: #2f7d4f;
+}
+/* 하이라이트(웹) — 가로로 넓으니 아이콘·값 크게, 오른쪽 수치는 아주 크게(시선 집중). */
+@media (min-width: 641px) {
+  .highlight-card {
+    gap: 16px;
+    padding: 16px 20px;
+    min-height: 104px;
+  }
+  .highlight-card .hl-emoji {
+    font-size: 42px;
+  }
+  .highlight-card .hl-label {
+    font-size: 14.5px;
+  }
+  .highlight-card .hl-main {
+    font-size: 26px;
+  }
+  .highlight-card .hl-sub {
+    font-size: 48px;
+  }
+  .highlight-card[data-sub="text"] .hl-sub {
+    font-size: 18px;
+  }
+  .highlight-card[data-tone="wd"] .hl-lbreak {
+    display: block;
+    height: 0;
+  }
+  .highlight-card[data-tone="wd"] .hl-lbreak::before {
+    content: none;
+  }
+}
+
+/* 카드 제목(.hl-main)·값(.hl-sub)이 …로 잘렸을 때만 호버/탭하면 그 카드 위 가운데에 전체를 띄운다.
+   z-index로 다른 카드에 안 가리고, 그리드 폭 안으로 clamp해 양옆이 잘리지 않게(긴 건 줄바꿈). */
 .hl-tip {
   position: absolute;
   left: clamp(110px, var(--tip-x, 50%), calc(100% - 110px));

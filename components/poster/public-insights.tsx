@@ -260,7 +260,9 @@ export function PublicInsights({
       tone: "hour",
       label: ["다음", "방송"],
       main: d.next ? `${Number(d.next.dateKey.slice(8, 10))}일` : "—",
-      sub: d.next ? d.next.title : undefined
+      // 일정 제목은 길 수 있다 → 수치 크기 대신 문장 크기로, 넘치면 …(호버/탭하면 전체).
+      sub: d.next ? d.next.title : undefined,
+      subText: true
     }
   ];
 

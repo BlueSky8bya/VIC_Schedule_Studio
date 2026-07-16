@@ -3,7 +3,7 @@
 // 차트 스타일은 편집실·시청자 양쪽에서 공유한다(어느 화면에서 열든 같은 차트).
 import "@/components/studio/insights-charts.css";
 
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 // 방송시간(시간, 소수) → "32시간 30분" 표기. 0이면 "0분".
 export function fmtHoursLabel(h: number): string {
@@ -49,6 +49,25 @@ export function BroadcastHours({
 
   const [active, setActive] = useState<number | null>(null);
   const clearTimer = useRef<number | null>(null);
+  // 값 툴팁 위치 — 활성 막대 중심에 두되, 툴팁 '실제 폭'의 절반만큼 양 끝에서 물러난다.
+  // (예전엔 고정 32px로만 clamp해서, 1일·말일 툴팁이 폭 절반(≈60px)을 넘겨 패널
+  //  overflow-x:hidden에 잘려 나갔다. 폭은 글자 수에 따라 변하니 재서 계산한다.)
+  const dailyRef = useRef<HTMLDivElement | null>(null);
+  const tipRef = useRef<HTMLDivElement | null>(null);
+  const [tipLeft, setTipLeft] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (active === null) {
+      setTipLeft(null);
+      return;
+    }
+    const wrap = dailyRef.current;
+    const tip = tipRef.current;
+    if (!wrap || !tip) return;
+    const w = wrap.clientWidth;
+    const half = tip.offsetWidth / 2;
+    const center = ((active + 0.5) / Math.max(1, daily.length)) * w;
+    setTipLeft(Math.min(Math.max(center, half), Math.max(half, w - half)));
+  }, [active, daily.length]);
   const showDay = (i: number, touch: boolean) => {
     if (clearTimer.current) window.clearTimeout(clearTimer.current);
     setActive(i);
@@ -102,6 +121,7 @@ export function BroadcastHours({
       {/* 일별 막대는 빈 달이어도 항상 보여준다(어디에 쌓일지 미리 보이게 — 월별과 대칭). */}
       <div
         className="bcast-daily"
+        ref={dailyRef}
         aria-label="이 달 일별 방송 시간"
         onPointerLeave={(e) => {
           if (e.pointerType === "mouse") setActive(null);
@@ -110,8 +130,10 @@ export function BroadcastHours({
         {active != null ? (
           <div
             className="bcast-tip"
+            ref={tipRef}
             style={{
-              left: `clamp(32px, ${((active + 0.5) / Math.max(1, daily.length)) * 100}%, calc(100% - 32px))`
+              left:
+                tipLeft ?? `${((active + 0.5) / Math.max(1, daily.length)) * 100}%`
             }}
           >
             {active + 1}일 · {fmtHoursLabel(daily[active] ?? 0)}

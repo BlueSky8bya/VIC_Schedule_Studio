@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-07-12
+Last Updated: 2026-07-17
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -28,6 +28,12 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
     [ADR-0008](decisions/ADR-0008-public-insights-aggregate-rpc.md) (마이그레이션 0049·0050 적용 완료)
   - 편집기: 공개 범위·옵션 접기(기본 접힘), 단축키 안내 축약, **새 일정 = Alt+N 하나로 통일**,
     카드 순서 드래그 삽입선 판정(카드 중심선 기준)
+- **2026-07-17에 끝난 것**: '이 달 기록'·인사이트 잘림 3종 —
+  (1) 하이라이트 카드 스타일이 `studio-shell.css`(= (studio) 레이아웃 전용)에만 있어 **비로그인
+  시청자에겐 통째로 안 붙던 버그**를 발견해 `insights-charts.css`로 이동(차트가 이미 같은 이유로
+  분리돼 있던 것과 동일 조치). (2) 긴 제목 = 가로 스크롤 대신 …+호버/탭 툴팁(`.hl-sub`도 검사),
+  문장형 sub는 아랫줄 전체 폭. (3) 일별 방송시간 툴팁을 툴팁 실측 폭으로 clamp(고정 32px이라
+  1일·말일에서 패널 `overflow-x:hidden`에 잘렸다). 포스터 상단 '내 관심'/'이 달 기록' 간격 추가.
 - **부분 완료**: 축구/월드컵 시뮬 — taxonomy·기초 적립 완료(68 테스트). 물리·인지 제약 정밀화 남음.
   월드컵 자동 테마는 `KOREA_MATCHES` 수동 입력 대기.
 - **미착수**: 시청자 출석 도장(체크인) — 계획서만 있음(`docs/insights/viewer-checkin-attendance-plan.md`).
@@ -42,6 +48,9 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   로컬 Playwright로 실물 확인을 못 한다. 최근 편집실 변경(공개범위 접기, 단축키, Alt+N, 드래그
   삽입선)은 타입·빌드·코드 리뷰까지만 검증됐다. Status: Open.
   → 다음에 편집실을 만질 땐 사용자에게 실물 확인을 요청하거나, 테스트용 로그인 경로를 마련할 것.
+- **ISSUE-002 — 모바일에는 '이 달 기록' 진입점이 없다.** 버튼(`.insights-open`)이
+  `.public-calendar-header`에만 있는데 모바일(≤640px)은 아젠다 레이아웃이라 이 헤더를 안 그린다
+  → 모바일 시청자는 공개 인사이트를 열 수 없다. Status: Open(미요청, 별도 판단 필요).
 
 ## Locked / Stable Areas — 명시적 이유 없이 건드리지 말 것
 
@@ -68,6 +77,17 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 2. 멀티에이전트 리뷰가 제안한 Phase 3 잔여(사용자 승인 시): 시청자 저장/공유 버튼 + OG 메타 +
    월별 고정 PNG URL, LIVE/카운트다운 pill, 꾸미기 스탬프 모드, 휴방 상태를 1급 셀 상태로.
 3. 축구 시뮬: GK 손→패스/개인기 규칙·물리·인지 제약 정밀화(`docs/sim/`).
+
+## Last Verified (2026-07-17)
+
+| command | result |
+|---|---|
+| `npm run typecheck` | PASS |
+| `npm run lint` | 0 errors (기존 경고 4 — `--max-warnings=0`이라 exit 1) |
+| `npm run build` | PASS (exit 0) |
+| `npm run test` (vitest) | PASS — 136 tests |
+| 공개 '이 달 기록' 실물(Playwright, prod build, 비로그인) | PASS — 하이라이트 카드 스타일 적용, `pi-body` 가로 넘침 0(560=560), 긴 제목 …+툴팁(그리드 폭 안), 일별 툴팁 안 잘림 |
+| 편집실 인사이트 '트렌드' 탭 실물 | **NOT VERIFIED** (로그인 필요 — ISSUE-001; 같은 컴포넌트를 공개 시트에서 검증) |
 
 ## Last Verified (2026-07-12)
 

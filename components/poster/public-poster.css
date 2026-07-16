@@ -1462,7 +1462,15 @@ body.cell-range-dragging {
   grid-column: 2;
   justify-self: center;
   display: flex;
+  align-items: center; /* 높이가 다른 두 알약(관심 토글 = 2줄, 이 달 기록 = 1줄)을 중앙선에 맞춘다 */
   justify-content: center;
+  /* 서로 다른 두 동작이 붙어 있으면 한 덩어리로 보이고 오조작도 난다 — 확실히 떼어 놓는다. */
+  gap: 10px;
+}
+@media (min-width: 641px) {
+  .public-calendar-header .poster-interest {
+    gap: 16px;
+  }
 }
 .interest-toggle {
   display: inline-flex;
@@ -4663,9 +4671,14 @@ html[data-reduce-motion] .pi-backdrop {
   display: grid;
   gap: 12px;
   overflow-y: auto;
+  /* 가로는 막는다 — 긴 제목은 …로 잘려야지(툴팁이 전체를 보여준다) 시트를 가로로 늘려
+     짜투리 스크롤바를 만들면 안 된다. 툴팁은 폭 안으로 clamp돼 안 잘린다. */
+  overflow-x: hidden;
   padding: 16px 18px 22px;
 }
 .pi-card {
+  /* 그리드 아이템 기본 min-width:auto 해제 — 안의 긴 글이 카드를 밖으로 밀지 못하게. */
+  min-width: 0;
   border: 1px solid #efe6d3;
   border-radius: var(--r-card);
   background: #fffdf6;
