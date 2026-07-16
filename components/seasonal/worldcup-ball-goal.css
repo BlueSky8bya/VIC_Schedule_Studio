@@ -1299,24 +1299,26 @@
 }
 
 /* 토글 — 앱 톤 글래스 pill. 유일하게 클릭 가능. */
-/* 표준 버튼(.button, app/globals.css)과 같은 옷 — 이 칩은 포스터 위에 떠 있지만 시청자 눈엔
-   '편집실'·'이 달 기록'과 나란한 버튼이다. 예전엔 혼자만 글래스 알약(반투명+블러+pill)이라
-   같은 화면의 버튼 셋이 제각각으로 보였다. 토큰(--line/--surface/--r-md/--shadow-*)을 쓰고
-   높이도 44px로 맞춘다. '켜짐'의 초록 강조만 이 컴포넌트 고유로 남긴다(상태 표시). */
+/* 색·테두리·그림자는 표준 버튼(.button)과 같은 가족으로 두되, **높이는 얇게**.
+   이건 화면 구석에 떠 있는 곁들임 칩이지 주 동작 버튼이 아니다 — 44px로 키웠더니 포스터 위에서
+   혼자 뚱뚱해 제목과 싸웠다. 32px + pill로 '작은 곁칩'임을 형태로 알린다(옆 버튼들과 색은 같은 집).
+   터치 타깃은 아래 ::after 패드로 44px를 확보한다(보이는 건 작게, 누르는 건 크게 — 하트와 같은 처방).
+   '켜짐'의 초록 강조만 이 컴포넌트 고유로 남긴다(상태 표시). */
 .wc-toggle {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 5px;
   white-space: nowrap; /* 2행 줄바꿈 금지 — 모바일에선 아래에서 라벨을 짧게 스왑 */
   pointer-events: auto;
-  min-height: 44px;
+  min-height: 32px;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   background: var(--surface);
-  padding: 0 14px;
+  padding: 0 11px;
   color: var(--ink);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.01em;
   cursor: pointer;
@@ -1336,6 +1338,12 @@
 .wc-toggle:active {
   transform: scale(0.96);
   box-shadow: var(--shadow-1);
+}
+/* 보이는 칩은 32px, 손가락이 닿는 범위는 44px(레이아웃 0 변화 — 포스터 위에 떠 있어 더 안전). */
+.wc-toggle::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
 }
 .wc-toggle-ico {
   font-size: 11px;

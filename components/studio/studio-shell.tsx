@@ -104,6 +104,7 @@ import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { detectDevice } from "@/lib/presence/presence-client";
 import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
+import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 // 스튜디오 CSS는 StudioShell을 렌더하는 페이지(studio/(home), studio/calendar)에서 page-level로
 // import한다 — 그래야 <head>에 렌더 차단으로 올라가 모바일 첫 진입에도 깜빡임(FOUC)이 없다.
@@ -1526,6 +1527,13 @@ export function StudioShell({
   // (3) 뒤로가기(popstate) → 맨 위 레이어 하나만 닫는다.
   useEffect(() => {
     function onPop() {
+      // 시청자 미리보기 안의 포스터도 자기 오버레이('이 달 기록' 시트)를 히스토리 한 칸으로
+      // 관리한다. 그 칸이 살아 있는 동안의 뒤로가기는 그쪽 몫이다 — 우리가 먼저 처리해 버리면
+      // 시트 하나 닫자고 미리보기까지 닫혀 편집실로 튕긴다(실제 신고된 증상. 리스너 호출 순서는
+      // 바깥이 먼저라 '안쪽이 표식을 남긴다'는 방식으로는 못 막는다 — 실측으로 확인).
+      if (hasInnerOverlay()) {
+        return;
+      }
       if (ignorePopRef.current > 0) {
         ignorePopRef.current -= 1;
         return;

@@ -402,6 +402,73 @@ async function fetchAllRows<T>(make: () => Pageable): Promise<T[]> {
   return out;
 }
 
+// user_id → 이메일. 예전엔 사람 수만큼 auth.admin.getUserById()를 불러(한 곳은 for+await 직렬)
+// GoTrue를 N번 왕복했다. 계정 목록을 **한 번** 받아 채워두고, 그래도 없는 id만 개별로 묻는다.
+// (호출 단위 캐시 — 액션 하나가 끝나면 사라진다. 인사이트는 개발자·오너만 여는 화면이라 충분.)
+function makeEmailResolver(
+  supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>
+): (id: string | null | undefined) => Promise<string | null> {
+  const cache = new Map<string, string | null>();
+  let primed: Promise<void> | null = null;
+  const prime = () => {
+    if (!primed) {
+      primed = (async () => {
+        try {
+          // 이 앱의 계정은 오너·개발자·신뢰 멤버뿐이라 한 페이지면 충분하다(넘치면 아래 개별 조회).
+          const { data } = await supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+          for (const u of data?.users ?? []) {
+            if (u.id) cache.set(u.id, normalizeEmail(u.email));
+          }
+        } catch {
+          /* 목록 조회 실패 → 개별 조회로 물러난다 */
+        }
+      })();
+    }
+    return primed;
+  };
+  return async (id) => {
+    if (!id) return null;
+    if (cache.has(id)) return cache.get(id) ?? null;
+    await prime();
+    if (cache.has(id)) return cache.get(id) ?? null;
+    let email: string | null = null;
+    try {
+      const { data } = await supabase.auth.admin.getUserById(id);
+      email = normalizeEmail(data?.user?.email);
+    } catch {
+      email = null;
+    }
+    cache.set(id, email);
+    return email;
+  };
+}
+
+// '이 달 이전에 본 적 있는 계정' 집합. 필요한 건 구분된 해시 목록뿐인데, 예전엔 그걸 알아내려고
+// visit_session의 **전체 이력**을 1000행씩 끊어 받아왔다(한 달 3500행 기준 1년이면 40회+ 순차 왕복
+// → 받은 수만 행을 결국 Set 하나로 접었다). DB에서 DISTINCT로 접어 한 번에 받는다(0051 RPC).
+// RPC가 아직 없는 환경(마이그레이션 미적용)에서도 화면이 죽지 않게 옛 경로로 조용히 물러난다.
+async function loadKnownAccounts(
+  supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
+  beforeDay: string
+): Promise<Set<string>> {
+  const { data, error } = await supabase.rpc("get_known_account_hashes", { p_before: beforeDay });
+  if (!error && Array.isArray(data)) {
+    return new Set(
+      (data as { account_hash: string | null }[])
+        .map((r) => r.account_hash)
+        .filter((h): h is string => Boolean(h))
+    );
+  }
+  const rows = await fetchAllRows<{ account_hash: string | null }>(() =>
+    supabase
+      .from("visit_session")
+      .select("account_hash")
+      .lt("day", beforeDay)
+      .order("id", { ascending: true })
+  );
+  return new Set(rows.map((r) => r.account_hash).filter((h): h is string => Boolean(h)));
+}
+
 const SESSION_COLS = "day, role, device, account_hash, started_at, last_seen_at, ended_at";
 
 async function loadSessions(
@@ -724,21 +791,8 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   const monthly = monthKeys.map((k) => ({ ym: k, count: monthlyMap.get(k) ?? 0 }));
   const topEvents = topThisMonth.sort((a, b) => b.count - a.count).slice(0, 5);
 
-  // 이메일 해석.
-  const emailCache = new Map<string, string | null>();
-  async function emailFor(id: string | null | undefined): Promise<string | null> {
-    if (!id) return null;
-    if (emailCache.has(id)) return emailCache.get(id) ?? null;
-    let email: string | null = null;
-    try {
-      const { data } = await supabase!.auth.admin.getUserById(id);
-      email = normalizeEmail(data?.user?.email);
-    } catch {
-      email = null;
-    }
-    emailCache.set(id, email);
-    return email;
-  }
+  // 이메일 해석 — 계정 목록을 한 번 받아 채우고 필요한 것만 개별 조회(위 makeEmailResolver).
+  const emailFor = makeEmailResolver(supabase!);
 
   const members = (membersRes.data ?? []).map((mem) => {
     const role = (mem as { trusted_role?: string }).trusted_role;
@@ -1314,14 +1368,18 @@ export async function getVisitTrendsAction(
       }
     };
   }
-  const rows = await fetchAllRows<SessionRow>(() =>
-    supabase
-      .from("visit_session")
-      .select(SESSION_COLS)
-      .gte("day", monthStart)
-      .lt("day", nextMonthStart)
-      .order("id", { ascending: true })
-  );
+  // 이 달 세션과 '이전에 본 계정 집합'은 서로 독립이다 → 같이 출발시킨다(예전엔 줄 세워 왕복 2배).
+  const [rows, knownAccounts] = await Promise.all([
+    fetchAllRows<SessionRow>(() =>
+      supabase
+        .from("visit_session")
+        .select(SESSION_COLS)
+        .gte("day", monthStart)
+        .lt("day", nextMonthStart)
+        .order("id", { ascending: true })
+    ),
+    loadKnownAccounts(supabase, monthStart)
+  ]);
 
   const all = buildGraphs(rows);
   const viewer = buildGraphs(rows.filter((r) => isAudience(r.role)));
@@ -1331,20 +1389,7 @@ export async function getVisitTrendsAction(
   const { viewer: summaryViewer, operator: summaryOperator, all: summaryAll } = summarizeSplit(rows);
   const operators = summaryOperator.visitors;
 
-  // R12: 새/재방문 — 이 달 이전에 본 적 있는 계정 집합과 대조(시청자, 의미 방문 기준).
-  // 전체 과거 기록이라 행이 많다 → fetchAllRows로 끝까지(1000행 cap에 잘리면 재방문이 새 방문으로 오판).
-  const knownData = await fetchAllRows<{ account_hash: string | null }>(() =>
-    supabase
-      .from("visit_session")
-      .select("account_hash")
-      .lt("day", monthStart)
-      .order("id", { ascending: true })
-  );
-  const knownAccounts = new Set(
-    knownData
-      .map((r) => r.account_hash)
-      .filter((h): h is string => Boolean(h))
-  );
+  // R12: 새/재방문 — 이 달 이전에 본 적 있는 계정 집합(위 Promise.all에서 함께 받아둔 것)과 대조.
   const viewerMeaningful = rows.filter((r) => isAudience(r.role) && isMeaningful(r));
   const viewerAccounts = new Set(viewerMeaningful.map((r) => sAcct(r)));
   let newVisitors = 0;
@@ -1535,19 +1580,7 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
   const operators = summaryOperator.visitors;
 
   // R12: 그날 시청자(의미 방문) 중 그 전에 본 적 없는 계정=새, 있으면 재방문.
-  // 전체 과거 기록 → fetchAllRows로 끝까지(1000행 cap에 잘리면 재방문이 새 방문으로 오판).
-  const knownData = await fetchAllRows<{ account_hash: string | null }>(() =>
-    supabase
-      .from("visit_session")
-      .select("account_hash")
-      .lt("day", dateKey)
-      .order("id", { ascending: true })
-  );
-  const knownAccounts = new Set(
-    knownData
-      .map((r) => r.account_hash)
-      .filter((h): h is string => Boolean(h))
-  );
+  const knownAccounts = await loadKnownAccounts(supabase, dateKey);
   const viewerAccounts = new Set(
     rows.filter((r) => isAudience(r.role) && isMeaningful(r)).map((r) => sAcct(r))
   );
@@ -1629,19 +1662,7 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
     supabase.from("platform_admins").select("email")
   ]);
 
-  const emailCache = new Map<string, string | null>();
-  const emailFor = async (id: string): Promise<string | null> => {
-    if (emailCache.has(id)) return emailCache.get(id) ?? null;
-    let email: string | null = null;
-    try {
-      const { data } = await supabase.auth.admin.getUserById(id);
-      email = normalizeEmail(data?.user?.email);
-    } catch {
-      email = null;
-    }
-    emailCache.set(id, email);
-    return email;
-  };
+  const emailFor = makeEmailResolver(supabase);
 
   // 관리자 화면은 개발자가 없는 듯 다룬다 → 개발자 세션은 "지금 연 계정" 수에서 처음부터 뺀다.
   const developerEmailSet = new Set(
@@ -1650,12 +1671,20 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
       .filter((e): e is string => Boolean(e))
   );
   const unlockRows = (unlockRes.data ?? []) as { user_id: string; expires_at: string }[];
+  // 예전엔 for + await로 한 사람씩 줄 세워 물었다(N × 왕복). 이제 목록 한 번이면 다 채워지므로
+  // 병렬로 해석해도 왕복이 늘지 않는다.
+  const unlockResolved = await Promise.all(
+    unlockRows.map(async (u) => ({
+      userId: u.user_id,
+      email: (await emailFor(u.user_id)) ?? "(알 수 없음)",
+      expiresAt: u.expires_at
+    }))
+  );
   const unlockByEmail = new Map<string, { userId: string; expiresAt: string }>();
   let activeNonDevCount = 0;
-  for (const u of unlockRows) {
-    const e = (await emailFor(u.user_id)) ?? "(알 수 없음)";
-    unlockByEmail.set(e, { userId: u.user_id, expiresAt: u.expires_at });
-    if (!developerEmailSet.has(e)) activeNonDevCount += 1;
+  for (const u of unlockResolved) {
+    unlockByEmail.set(u.email, { userId: u.userId, expiresAt: u.expiresAt });
+    if (!developerEmailSet.has(u.email)) activeNonDevCount += 1;
   }
   const toAccess = (email: string): AccessPerson => {
     const s = unlockByEmail.get(email);

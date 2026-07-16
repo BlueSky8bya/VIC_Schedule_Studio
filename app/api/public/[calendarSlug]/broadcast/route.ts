@@ -25,8 +25,17 @@ export async function GET(
     getPublicBroadcastDaily(year, month)
   ]);
 
-  return NextResponse.json({
-    months: months.map((m) => ({ ym: m.ym, hours: m.hours, days: m.days, sessions: m.sessions })),
-    daily
-  });
+  return NextResponse.json(
+    {
+      months: months.map((m) => ({ ym: m.ym, hours: m.hours, days: m.days, sessions: m.sessions })),
+      daily
+    },
+    {
+      // 이 응답엔 개인 정보가 없다(집계만) → 시청자마다 람다를 왕복할 이유가 없다. 밑단 로더가
+      // 이미 300초 unstable_cache라 값도 그 주기로만 바뀐다 → 같은 주기로 CDN에서 합친다.
+      // stale-while-revalidate: 만료 직후 첫 사람도 기다리지 않고 옛 값을 받고, 갱신은 뒤에서.
+      // (/api/soop-live가 이미 쓰는 방식.)
+      headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600" }
+    }
+  );
 }

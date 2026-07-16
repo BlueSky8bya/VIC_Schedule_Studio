@@ -121,6 +121,7 @@ import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
+import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
@@ -1153,6 +1154,9 @@ export function PublicPoster({
   const previewDepthRef = useRef(0);
   const ignorePreviewPop = useRef(false);
   const previewBackClosing = useRef(false);
+  // popstate 리스너는 한 번만 등록하므로(deps []) 최신 값을 ref로 읽는다.
+  const previewingRef = useRef(previewing);
+  previewingRef.current = previewing;
   useEffect(() => {
     const depth = previewing ? 1 : 0;
     const prev = previewDepthRef.current;
@@ -1180,22 +1184,43 @@ export function PublicPoster({
     const prev = insightsDepthRef.current;
     if (depth > prev) {
       window.history.pushState({ vicInsights: true }, "");
+      // 이 포스터가 편집실의 '시청자 미리보기' 안에 있을 수도 있다. 편집실도 자기 오버레이용으로
+      // popstate를 듣기 때문에, 우리 칸이 남아 있는 동안엔 손대지 말라고 알린다.
+      pushInnerOverlay();
     } else if (depth < prev) {
       if (insightsBackClosing.current) {
         insightsBackClosing.current = false; // 뒤로가기로 닫힘 → 브라우저가 이미 정리함
+        popInnerOverlay(); // 우리 칸이 사라졌다 → 다음 뒤로가기는 바깥(편집실) 차례
       } else {
-        ignoreInsightsPop.current = true; // X/백드롭으로 닫힘 → 쌓은 항목 정리(그 popstate는 무시)
+        // X/백드롭으로 닫힘 → 쌓은 항목을 우리가 정리한다(그 popstate는 아래에서 무시).
+        // 주의: 카운터는 **그 메아리 pop을 삼킨 뒤에** 내린다. 여기서 먼저 내리면 편집실이
+        // "안쪽 오버레이 없음"으로 보고 이 메아리를 진짜 뒤로가기로 처리해 미리보기까지 닫는다.
+        ignoreInsightsPop.current = true;
         window.history.back();
       }
     }
     insightsDepthRef.current = depth;
   }, [insightsOpen]);
+  // 시트가 열린 채 이 포스터가 통째로 사라지는 경우(예: 편집실이 미리보기를 닫음) 카운터가 1로
+  // 남으면 편집실의 뒤로가기가 영영 막힌다 → 언마운트 때 반드시 내린다.
+  useEffect(
+    () => () => {
+      if (insightsDepthRef.current > 0) {
+        popInnerOverlay();
+        insightsDepthRef.current = 0;
+      }
+    },
+    []
+  );
   // popstate 처리는 **한 곳**에서 — 미리보기와 시트가 각자 리스너를 달면 뒤로가기 한 번에 둘 다
   // 닫힌다. 위에 뜬 것부터(시트 → 미리보기) 하나씩 닫는다.
+  // (편집실 안에서 열렸을 때의 조정은 위 pushInnerOverlay/popInnerOverlay가 맡는다.)
   useEffect(() => {
     function onPop() {
       if (ignoreInsightsPop.current) {
+        // 우리가 시트를 닫으며 부른 history.back()의 메아리 — 이제야 카운터를 내린다(위 주석 참고).
         ignoreInsightsPop.current = false;
+        popInnerOverlay();
         return;
       }
       if (ignorePreviewPop.current) {
@@ -1208,13 +1233,10 @@ export function PublicPoster({
         return;
       }
       // 미리보기 중일 때만 처리 — 아니면 일반 뒤로가기를 방해하지 않는다.
-      setPreviewing((cur) => {
-        if (cur) {
-          previewBackClosing.current = true;
-          return false;
-        }
-        return cur;
-      });
+      if (previewingRef.current) {
+        previewBackClosing.current = true;
+        setPreviewing(false);
+      }
     }
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);

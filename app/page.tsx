@@ -11,6 +11,14 @@ import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { timed } from "@/lib/perf/perf";
 
 export default async function HomePage() {
+  // actor 조회(로그인 사용자면 GoTrue 왕복)와 공개 일정 로드는 서로 독립이다 — 예전엔 줄을 세워
+  // actor를 기다린 뒤에야 일정을 부르기 시작해 익명 시청자의 TTFB에 왕복 하나가 그대로 얹혔다.
+  // 같이 출발시킨다. 공개 일정은 어느 분기에서도(익명·시청자) 쓰이고, 캐시 히트면 비용도 거의 0이다.
+  // (권한 없는 사람이 잠깐 함께 불러도 공개 데이터라 경계 문제 없음 — 원래 캐시에서 온다.)
+  const schedulePromise = timed("page:/ publicSchedule", () => getPublicSchedule("vic"));
+  // 아래 분기(미설정 안내·/studio 리다이렉트)에선 이 약속을 안 기다린다 → 그때 실패하면
+  // unhandled rejection이 되므로 핸들러만 미리 붙여 둔다(await 하는 쪽은 그대로 에러를 받는다).
+  schedulePromise.catch(() => {});
   const actor = await timed("page:/ actor", () => resolveCurrentActor("vic"));
 
   // 새로고침 복원: 쿠키에서 직전 화면 상태를 읽어 서버 렌더 초기값으로 넘긴다(깜빡임 없음).
@@ -33,7 +41,7 @@ export default async function HomePage() {
         />
       );
     }
-    const schedule = await timed("page:/ publicSchedule(anon)", () => getPublicSchedule("vic"));
+    const schedule = await schedulePromise;
     return (
       <PublicPoster
         accountSwitch
@@ -55,7 +63,7 @@ export default async function HomePage() {
     redirect("/studio");
   }
 
-  const schedule = await timed("page:/ publicSchedule(viewer)", () => getPublicSchedule("vic"));
+  const schedule = await schedulePromise;
 
   // 일반 시청자도 보던 달(py/pm)을 새로고침 때 복원한다.
   return (
