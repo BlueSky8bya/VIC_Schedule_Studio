@@ -1,7 +1,7 @@
 "use client";
 
-import { RotateCw, Maximize2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Maximize2 } from "lucide-react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { shapeDefaultColor, type StickerInstance } from "@/lib/domain/schedule-types";
 import { ShapeSvg } from "@/components/poster/sticker-shapes";
 
@@ -501,12 +501,15 @@ export function StickerLayer({
               left: `${sticker.xRatio * 100}%`,
               top: `${sticker.yRatio * 100}%`,
               fontSize: size,
+              // 선택 링·핸들이 "이 스티커가 얼마나 작은지"를 CSS에서 알아야 한다(작으면 링을
+              // 최소 크기로 부풀려 핸들을 스티커 밖으로 밀어낸다 — Sketch식).
+              "--sticker-size": `${size}px`,
               opacity: sticker.opacity,
               zIndex: sticker.zIndex,
               transform:
                 `translate(-50%, -50%) rotate(${sticker.rotationDeg}deg) ` +
                 `scale(${sticker.flipX ? -1 : 1}, ${sticker.flipY ? -1 : 1})`
-            }}
+            } as CSSProperties}
           >
             {sticker.kind === "image" && sticker.imageUrl ? (
               // 스티커는 임의 크기·변형 + html2canvas 캡쳐 대상이라 next/image 부적합
@@ -563,14 +566,15 @@ export function StickerLayer({
             )}
             {showHandles ? (
               <>
-                <button
-                  aria-label="회전"
-                  className={`sticker-handle rotate ${sticker.yRatio < 0.5 ? "bottom" : "top"}`}
+                {/* 회전 — 버튼 대신 선택 링 '바깥' 띠를 잡아 돌린다(Photoshop/Figma식 핫존).
+                    작은 스티커일수록 알약 버튼 두 개가 스티커를 삼켰다: 하나를 크롬에서 없앤다.
+                    안 보이면 못 찾으니 호버하면 그 자리에 ⟳ 힌트가 옅게 뜬다(CSS). */}
+                <span
+                  aria-hidden="true"
+                  className="sticker-rotzone"
                   onPointerDown={(event) => startDrag(event, sticker, "rotate")}
-                  type="button"
-                >
-                  <RotateCw aria-hidden="true" size={12} />
-                </button>
+                  title="바깥 테두리를 잡고 끌면 회전"
+                />
                 <button
                   aria-label="크기 조절"
                   className={`sticker-handle resize ${sticker.xRatio < 0.5 ? "right" : "left"}`}

@@ -3065,11 +3065,8 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   -webkit-user-drag: none;
 }
 
-.sticker-item.selected {
-  outline: 1.5px solid rgb(99 102 241 / 85%);
-  outline-offset: 5px;
-  border-radius: 4px;
-}
+/* (선택 표시는 .sticker-item.selected::after 링이 그린다 — 예전 outline은 스티커 상자에
+   딱 붙어 있어 작은 스티커에선 핸들과 겹쳤다. 링은 작을 때 최소 크기로 부풀어 오른다.) */
 
 /* 움직이는 스티커(P1) — 안쪽 요소에만 적용해 외곽 .sticker-item의 rotate/flip과 충돌하지 않게.
    합성 친화(transform/opacity)만. 라이브 포스터에서 실제로 움직인다(내보내기는 정지 프레임).
@@ -3140,49 +3137,121 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   }
 }
 
+/* ── 선택 링 · 핸들 · 회전 핫존 ───────────────────────────────────────────
+   작은 스티커를 조작하는 문제는 디자인 툴들의 오래된 갈림길이다. 두 가지를 지킨다:
+
+   1) 핸들 크기는 '화면 기준 고정' — 스티커 크기에 비례시키는 툴은 없다(작아지면 못 누른다).
+      우리 표면은 .poster-scaler가 scale(var(--poster-scale))로 통째로 줄이므로, 그 안의 px은
+      배율에 딸려 흔들린다 → 1/배율로 나눠 어느 배율에서도 같은 크기로 보이게 한다.
+   2) Sketch식 '최소 선택 박스' — 스티커가 핸들보다 작아지면 링을 최소 크기까지 부풀려
+      핸들을 스티커 '밖'으로 밀어낸다. 이모지를 핸들이 덮지 않고, 핸들은 항상 누를 수 있다.
+      덤으로 작은 스티커도 링 전체(72px)가 이동 손잡이가 된다.
+   회전은 알약 버튼을 없애고 링 바깥 띠(핫존)로 옮겼다 — 작은 스티커에 버튼 2개는 과했다. */
+.sticker-item {
+  /* 화면에서 이만큼으로 보이게 할 값들(표면 좌표계로 환산). */
+  --h-size: calc(28px / var(--poster-scale, 1)); /* 핸들 시각 크기 */
+  --h-hit: calc(44px / var(--poster-scale, 1)); /* 핸들 터치 타깃(투명) */
+  --ring-min: calc(72px / var(--poster-scale, 1)); /* 최소 선택 박스 */
+  --rot-band: calc(22px / var(--poster-scale, 1)); /* 회전 핫존 띠 폭 */
+  /* 스티커 상자에서 링까지의 거리 — 큰 스티커는 예전처럼 5px, 작으면 최소 박스까지 벌어진다. */
+  --ring-out: max(
+    calc(5px / var(--poster-scale, 1)),
+    calc((var(--ring-min) - var(--sticker-size, 0px)) / 2)
+  );
+}
+
+/* 선택 링(= 부풀려지는 선택 박스). 링 안쪽 전체가 이동 손잡이(이벤트는 .sticker-item으로 버블). */
+.sticker-item.selected::after {
+  content: "";
+  position: absolute;
+  inset: calc(-1 * var(--ring-out));
+  border: calc(1.5px / var(--poster-scale, 1)) solid rgb(99 102 241 / 85%);
+  border-radius: calc(6px / var(--poster-scale, 1));
+  pointer-events: auto;
+}
+
+/* 회전 핫존 — 링 바깥 띠. 크롬 없이 잡아 돌린다. ::after(링)보다 뒤에 칠해지므로 안쪽은 링이 먹는다. */
+.sticker-rotzone {
+  position: absolute;
+  inset: calc(-1 * (var(--ring-out) + var(--rot-band)));
+  border-radius: calc(10px / var(--poster-scale, 1));
+  cursor: grab;
+  touch-action: none;
+}
+.sticker-rotzone:active {
+  cursor: grabbing;
+}
+/* 안 보이는 조작 영역은 아무도 못 찾는다 → 호버하면 띠 경계가 옅은 점선으로 드러나고 ⟳가 뜬다.
+   힌트는 '아래'에 둔다 — 선택하면 떠 있는 편집 툴바가 보통 스티커 위를 덮기 때문. */
+.sticker-rotzone:hover {
+  outline: calc(1.5px / var(--poster-scale, 1)) dashed rgb(99 102 241 / 40%);
+  outline-offset: calc(-2px / var(--poster-scale, 1));
+  border-radius: calc(10px / var(--poster-scale, 1));
+}
+.sticker-rotzone::after {
+  content: "⟳";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 12%);
+  color: #6366f1;
+  font-size: calc(15px / var(--poster-scale, 1));
+  font-weight: 900;
+  line-height: 1;
+  text-shadow:
+    0 0 calc(3px / var(--poster-scale, 1)) #fff,
+    0 0 calc(6px / var(--poster-scale, 1)) #fff;
+  opacity: 0;
+  transition: opacity var(--dur-1) var(--ease);
+}
+.sticker-rotzone:hover::after {
+  opacity: 0.95;
+}
+
 .sticker-handle {
   position: absolute;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
-  border: 1.5px solid #6366f1;
+  width: var(--h-size);
+  height: var(--h-size);
+  border: calc(1.5px / var(--poster-scale, 1)) solid #6366f1;
   border-radius: var(--r-pill);
   background: #ffffff;
   color: #4f46e5;
   cursor: pointer;
   box-shadow: var(--shadow-2);
   touch-action: none;
+  z-index: 2; /* 링·핫존 위 */
   transition:
     transform var(--dur-1) var(--ease),
     background var(--dur-1) var(--ease);
+}
+/* 보이는 건 작게, 누르는 건 크게 — 손가락(44px)은 투명 여백으로 확보한다. */
+.sticker-handle::before {
+  content: "";
+  position: absolute;
+  inset: calc((var(--h-size) - var(--h-hit)) / 2);
+}
+.sticker-handle svg {
+  width: calc(13px / var(--poster-scale, 1));
+  height: calc(13px / var(--poster-scale, 1));
 }
 .sticker-handle:hover {
   background: var(--violet-soft);
   transform: scale(1.1);
 }
-/* 핸들 위치는 일정표(스티커 레이어) 사분면에 따라 안쪽(중앙)으로 배치 — 캔버스 밖으로 안 나가게.
-   세로 핸들(회전)은 위/아래, 가로 핸들(크기)은 좌/우. 가운데 정렬은 margin으로(hover scale과 충돌 방지). */
-.sticker-handle.rotate {
-  left: 50%;
-  margin-left: -16px;
-}
-.sticker-handle.rotate.top {
-  top: -15px;
-}
-.sticker-handle.rotate.bottom {
-  bottom: -15px;
-}
+/* 크기 핸들은 링 좌/우 가운데 — 링 '바깥'에 반쯤 걸치게. 어느 쪽에 둘지는 스티커가 놓인
+   사분면에 따라(캔버스 밖으로 나가지 않게). 세로 가운데 정렬은 margin으로(hover scale 충돌 방지). */
 .sticker-handle.resize {
   top: 50%;
-  margin-top: -16px;
+  margin-top: calc(-0.5 * var(--h-size));
   cursor: nwse-resize;
 }
 .sticker-handle.resize.left {
-  left: -15px;
+  left: calc(-1 * (var(--ring-out) + var(--h-size) / 2));
 }
 .sticker-handle.resize.right {
-  right: -15px;
+  right: calc(-1 * (var(--ring-out) + var(--h-size) / 2));
 }
 
 /* ── 꾸미기 도구 모음 ── */
