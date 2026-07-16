@@ -1299,36 +1299,43 @@
 }
 
 /* 토글 — 앱 톤 글래스 pill. 유일하게 클릭 가능. */
+/* 표준 버튼(.button, app/globals.css)과 같은 옷 — 이 칩은 포스터 위에 떠 있지만 시청자 눈엔
+   '편집실'·'이 달 기록'과 나란한 버튼이다. 예전엔 혼자만 글래스 알약(반투명+블러+pill)이라
+   같은 화면의 버튼 셋이 제각각으로 보였다. 토큰(--line/--surface/--r-md/--shadow-*)을 쓰고
+   높이도 44px로 맞춘다. '켜짐'의 초록 강조만 이 컴포넌트 고유로 남긴다(상태 표시). */
 .wc-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
+  justify-content: center;
+  gap: 6px;
   white-space: nowrap; /* 2행 줄바꿈 금지 — 모바일에선 아래에서 라벨을 짧게 스왑 */
   pointer-events: auto;
-  border: 1px solid rgb(120 110 160 / 22%);
-  border-radius: var(--r-pill);
-  background: rgb(255 255 255 / 72%);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  padding: 7px 14px 7px 12px;
-  color: #5b5470;
-  font-size: 12.5px;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  padding: 0 14px;
+  color: var(--ink);
+  font-size: 13px;
   font-weight: 800;
   letter-spacing: 0.01em;
   cursor: pointer;
-  box-shadow: 0 6px 18px -10px rgb(40 30 60 / 45%);
+  box-shadow: var(--shadow-1);
   transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.1s ease;
+    background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
 }
 .wc-toggle:hover {
-  background: rgb(255 255 255 / 92%);
-  box-shadow: 0 8px 22px -10px rgb(40 30 60 / 55%);
+  background: var(--surface-2);
+  border-color: #cdd3df;
+  box-shadow: var(--shadow-2);
+  transform: translateY(-1px);
 }
 .wc-toggle:active {
   transform: scale(0.96);
+  box-shadow: var(--shadow-1);
 }
 .wc-toggle-ico {
   font-size: 11px;
@@ -1554,10 +1561,10 @@ body.wc-game-lock {
   .wc-tg-short {
     display: inline;
   }
-  /* 토글 컴팩트 — 좁은 폭에서 두 버튼이 한 줄에. */
+  /* 토글 컴팩트 — 좁은 폭에서 두 버튼이 한 줄에. 글자 크기는 옆 버튼들(편집실·이 달 기록)과
+     같은 13px로 둔다(라벨은 '켜기'처럼 짧게 스왑되므로 폭은 문제없다). */
   .wc-toggle {
-    padding: 7px 12px;
-    font-size: 12px;
+    padding: 0 12px;
   }
   /* 전술 드롭다운(모바일) — 양 옆에 진영별 세로 메뉴가 쭈르륵 흘러내린다(🔴 왼쪽 / 🔵 오른쪽). */
   .wc-tactics {

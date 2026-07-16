@@ -242,6 +242,10 @@ export function PublicInsights({
   }, [year, month, events, tags, palette, heartCounts, broadcast, broadcastDaily]);
 
   // 하이라이트 — 공개 데이터만(방문 기반 카드는 뺀다).
+  //
+  // 네 장은 **한 가지 골격**만 쓴다: [아이콘] [라벨 / 값]. 값은 항상 main(라벨 바로 아래 같은 자리,
+  // 같은 크기)이다. 예전엔 '최다요일'만 값을 sub(오른쪽 큰 글씨)에 넣어서, 같은 격자 안에서 어떤
+  // 카드는 값이 왼쪽 아래에 어떤 카드는 오른쪽에 붙어 울퉁불퉁해 보였다(특히 모바일).
   const highlights: HighlightCard[] = [
     {
       key: "top",
@@ -255,8 +259,7 @@ export function PublicInsights({
       emoji: "🔥",
       tone: "wd",
       label: ["컨텐츠", "최다요일"],
-      main: "",
-      sub: d.busiestWeekday !== null ? WEEKDAY[d.busiestWeekday] : "—"
+      main: d.busiestWeekday !== null ? `${WEEKDAY[d.busiestWeekday]}요일` : "—"
     },
     {
       key: "days",
@@ -271,10 +274,9 @@ export function PublicInsights({
       emoji: "🗓️",
       tone: "hour",
       label: ["다음", "방송"],
-      main: d.next ? `${Number(d.next.dateKey.slice(8, 10))}일` : "—",
-      // 일정 제목은 길 수 있다 → 수치 크기 대신 문장 크기로, 넘치면 …(호버/탭하면 전체).
-      sub: d.next ? d.next.title : undefined,
-      subText: true
+      // 날짜와 제목을 한 줄로 — 시트 위쪽 '다음 방송' 줄과 같은 표기(17일 · 소통하면서)라 읽는 법이
+      // 두 번 바뀌지 않는다. 길면 …로 잘리고 호버/탭하면 전체가 뜬다.
+      main: d.next ? `${Number(d.next.dateKey.slice(8, 10))}일 · ${d.next.title}` : "—"
     }
   ];
 

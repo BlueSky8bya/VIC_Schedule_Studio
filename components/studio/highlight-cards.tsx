@@ -20,10 +20,9 @@ export type HighlightCard = {
   tone: string;
   label: [string, string];
   main: string;
+  /** 오른쪽 큰 수치(관리자 인사이트의 '몇 시', '몇 일' 같은 짧은 값 전용). 문장은 main에 넣는다. */
   sub?: string;
   heart?: boolean;
-  /** sub가 짧은 수치가 아니라 제목 같은 '문장'일 때 — 큰 수치 크기를 쓰지 않고 작게 + …로 자른다. */
-  subText?: boolean;
 };
 
 type Tip = { key: string; x: number; top: number; text: string };
@@ -75,7 +74,6 @@ export function HighlightCards({ cards }: { cards: HighlightCard[] }) {
         <div
           className="highlight-card"
           data-tone={c.tone}
-          data-sub={c.subText ? "text" : undefined}
           key={c.key}
           onPointerEnter={(e: PointerEvent<HTMLDivElement>) => {
             // 웹(마우스) — 호버 동안만 표시.
@@ -109,11 +107,8 @@ export function HighlightCards({ cards }: { cards: HighlightCard[] }) {
               {c.label[1]}
             </span>
             {c.main ? <strong className="hl-main">{c.main}</strong> : null}
-            {/* 문장형 값(제목)은 오른쪽 좁은 칸이 아니라 값 아래 줄에 — 단 카드 밖(형제)으로 내면
-                카드가 2줄이 돼 아이콘이 다른 카드보다 위로 뜬다(통일감 깨짐) → 본문 안에 둔다. */}
-            {c.subText && c.sub ? <span className="hl-sub">{c.sub}</span> : null}
           </span>
-          {c.sub && !c.subText ? (
+          {c.sub ? (
             <span className="hl-sub">
               {c.heart ? (
                 <i className="hl-heart" aria-hidden="true">

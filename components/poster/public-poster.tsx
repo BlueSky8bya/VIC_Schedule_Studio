@@ -1618,6 +1618,15 @@ export function PublicPoster({
         void deleteSelected();
         return;
       }
+      // Esc = 선택 해제. 없으면 스티커를 고른 채로는 키보드로 빠져나갈 방법이 없다 —
+      // 아래 월 이동도 화살표를 스티커 미세이동에 양보하므로, 빈 캔버스를 마우스로 찾아
+      // 눌러야만 했다. Esc는 누구나 먼저 눌러보는 키다.
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setSelectedSticker(null);
+        setMultiIds([]);
+        return;
+      }
       const step = event.shiftKey ? 0.02 : 0.004;
       if (event.key === "ArrowUp") {
         event.preventDefault();
@@ -3129,7 +3138,10 @@ export function PublicPoster({
               엄지가 닿는 자리이고, 박스가 vh 고정이라 스크롤해도 안 들썩인다. */}
           {interactive ? (
             <button
-              className="insights-open agenda-legend-insights"
+              // 레일 버튼은 바로 아래 '편집실'과 나란히 서므로 같은 표준 버튼(.button)으로 그린다 —
+              // 예전엔 헤더용 글래스 알약(.insights-open)을 그대로 써서 옆 버튼과 모양·높이·라운드가
+              // 다 달랐다(같은 자리, 같은 크기, 다른 옷 = 불편함).
+              className="button agenda-legend-insights"
               onClick={() => {
                 hapticTick();
                 setInsightsOpen(true);
@@ -4200,6 +4212,17 @@ export function PublicPoster({
                 </li>
                 <li>
                   <kbd>Ctrl</kbd>+<kbd>D</kbd> 복제
+                </li>
+                {/* 복사/붙여넣기는 구현돼 있고 토스트도 "다른 달에서 Ctrl+V"라고 안내하는데,
+                    정작 이 안내판에만 빠져 있었다(달 넘겨 붙이기가 이 기능의 진짜 쓸모). */}
+                <li>
+                  <kbd>Ctrl</kbd>+<kbd>C</kbd> 복사
+                </li>
+                <li>
+                  <kbd>Ctrl</kbd>+<kbd>V</kbd> 붙여넣기(다른 달도)
+                </li>
+                <li>
+                  <kbd>Esc</kbd> 선택 해제
                 </li>
                 <li>
                   <kbd>Ctrl</kbd>+<kbd>Z</kbd> 실행취소

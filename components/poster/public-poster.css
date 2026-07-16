@@ -66,20 +66,19 @@
   box-shadow: var(--shadow-2);
 }
 /* 박스 아래 '편집실' 버튼 — 항상 같은 자리(레일 바닥). 박스 폭(92px) 꽉 채운다. */
-/* 좁은 레일(92px)에 들어가는 '이 달 기록' — 웹 헤더의 알약과 같은 컴포넌트지만 폭이 없으니
-   글자를 줄이고 두 줄까지 허용한다(nowrap이면 레일을 뚫는다). 44px 터치 타깃은 유지. */
+/* 좁은 레일(92px)의 '이 달 기록' — 바로 아래 '편집실'(.agenda-legend-nav .button)과 **같은 옷**을
+   입는다. 둘은 같은 자리에 나란히 서는 형제라 모양이 다르면 그것만으로 불편해진다.
+   레일이 좁으니 좌우 패딩만 줄이고(기본 16px은 92px 안에서 글자를 뭉갠다), 나머지(테두리·배경·
+   라운드·그림자·누름 반응)는 .button 그대로 물려받는다. */
 .agenda-legend-insights {
   flex: 0 0 auto;
   width: 100%;
-  justify-content: center;
+  min-height: 44px;
   gap: 4px;
-  border-radius: var(--r-md);
   padding: 8px 6px;
-  font-size: 12px;
-  white-space: normal;
-  word-break: keep-all;
-  line-height: 1.2;
-  text-align: center;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
 }
 .agenda-legend-nav {
   flex: 0 0 auto;

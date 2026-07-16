@@ -1183,23 +1183,8 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* 값이 수치가 아니라 제목일 땐 큰 수치 크기를 쓰지 않는다(잘린 거대 글자는 읽히지도 예쁘지도 않다).
-   그리고 왼쪽 값("17일")은 짧으니 절대 안 줄이고, 남는 폭을 긴 제목이 쓰게 한다 — 안 그러면
-   긴 제목이 "17일"까지 "1…"로 밀어버린다. */
-.highlight-card[data-sub="text"] .hl-sub {
-  font-size: 13px;
-  font-weight: 800;
-}
-/* 제목은 오른쪽 좁은 칸에 두면 "소…"처럼 몇 글자만 남는다 → 본문(.hl-body) 안, 값 아래 줄에
-   전체 폭으로 둔다. 카드는 [아이콘][본문] 한 줄 구조를 유지 → 아이콘 세로 위치가 다른 카드와
-   똑같다(카드 밖 셋째 줄로 내면 아이콘만 위로 떠서 통일감이 깨졌다). */
-.highlight-card[data-sub="text"] .hl-body {
-  gap: 3px;
-}
-.highlight-card[data-sub="text"] .hl-sub {
-  max-width: 100%;
-  line-height: 1.25;
-}
+/* (문장형 값을 위한 data-sub="text" 변형은 제거했다 — 이제 문장은 처음부터 main에 넣는다.
+   네 장이 [아이콘][라벨/값] 한 골격만 쓰면 변형이 필요 없다.) */
 /* '컨텐츠 최다요일' 라벨은 굵게(웹·모바일 공통). */
 .highlight-card[data-tone="wd"] .hl-label {
   font-weight: 900;
@@ -1251,9 +1236,6 @@
   }
   .highlight-card .hl-sub {
     font-size: 48px;
-  }
-  .highlight-card[data-sub="text"] .hl-sub {
-    font-size: 18px;
   }
   .highlight-card[data-tone="wd"] .hl-lbreak {
     display: block;
