@@ -1168,10 +1168,43 @@ export function PublicPoster({
     }
     previewDepthRef.current = depth;
   }, [previewing]);
+  // '이 달 기록' 시트도 같은 방식으로 히스토리 한 칸을 쌓는다 — 폰에서 뒤로가기를 누르면 시트만
+  // 닫혀야 하는데, 안 쌓아두면 페이지를 통째로 떠나(이전 화면으로) 버린다.
+  const insightsDepthRef = useRef(0);
+  const ignoreInsightsPop = useRef(false);
+  const insightsBackClosing = useRef(false);
+  const insightsOpenRef = useRef(insightsOpen);
+  insightsOpenRef.current = insightsOpen;
+  useEffect(() => {
+    const depth = insightsOpen ? 1 : 0;
+    const prev = insightsDepthRef.current;
+    if (depth > prev) {
+      window.history.pushState({ vicInsights: true }, "");
+    } else if (depth < prev) {
+      if (insightsBackClosing.current) {
+        insightsBackClosing.current = false; // 뒤로가기로 닫힘 → 브라우저가 이미 정리함
+      } else {
+        ignoreInsightsPop.current = true; // X/백드롭으로 닫힘 → 쌓은 항목 정리(그 popstate는 무시)
+        window.history.back();
+      }
+    }
+    insightsDepthRef.current = depth;
+  }, [insightsOpen]);
+  // popstate 처리는 **한 곳**에서 — 미리보기와 시트가 각자 리스너를 달면 뒤로가기 한 번에 둘 다
+  // 닫힌다. 위에 뜬 것부터(시트 → 미리보기) 하나씩 닫는다.
   useEffect(() => {
     function onPop() {
+      if (ignoreInsightsPop.current) {
+        ignoreInsightsPop.current = false;
+        return;
+      }
       if (ignorePreviewPop.current) {
         ignorePreviewPop.current = false;
+        return;
+      }
+      if (insightsOpenRef.current) {
+        insightsBackClosing.current = true;
+        setInsightsOpen(false);
         return;
       }
       // 미리보기 중일 때만 처리 — 아니면 일반 뒤로가기를 방해하지 않는다.
