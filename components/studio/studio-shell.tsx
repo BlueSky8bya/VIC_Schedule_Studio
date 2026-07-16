@@ -189,9 +189,20 @@ type CopiedEvent = {
 //   id로 바꿔줄 때 함께 갱신돼, 되돌릴 때 항상 '그 카드'를 정확히 가리킨다.
 //   (예전엔 Ctrl+Z가 무조건 '마지막 삭제분'만 되살려, 복사→삭제→붙여넣기→Ctrl+Z 하면 붙여넣은
 //   카드가 사라지는 게 아니라 옛 삭제분이 되살아나는 버그가 있었다.)
+// - move: 드래그로 옮긴 것을 되돌림 → 원래 날짜·원래 순서로 다시 옮긴다. 이게 없던 시절엔
+//   잘못 떨어뜨린 방송이 조용히 다른 날로 가 있고, Ctrl+Z는 엉뚱하게 '그 전 작업'을 되돌렸다
+//   (삭제 토스트가 "Ctrl+Z로 되돌리기"라고 학습시켜 놔서 더 나빴다).
 type UndoAction =
   | { type: "recreate"; event: StudioScheduleEvent }
-  | { type: "remove"; holder: { id: string } };
+  | { type: "remove"; holder: { id: string } }
+  | {
+      type: "move";
+      holder: { id: string };
+      fromDate: string;
+      toDate: string;
+      /** 옮기기 전, 원래 날짜의 카드 순서(그 카드 포함) — 순서까지 그대로 되돌린다. */
+      fromOrderedIds: string[];
+    };
 
 // 두 YYYY-MM-DD 사이의 일수 차이(later - earlier).
 function daysBetweenIso(start: string, end: string): number {
@@ -2539,6 +2550,16 @@ export function StudioShell({
         new Date(`${getEventDateKey(moved)}T00:00:00Z`).getTime()) /
         86400000
     );
+    // Ctrl+Z용 — '옮기기 전'의 원래 날짜와 그 날 순서를 남긴다(실제로 바뀔 때만: 위 no-op 반환 뒤).
+    // temp id를 옮겼다면 그 사이 실제 id로 바뀔 수 있는데, 되돌릴 때 tempToRealRef로 해소한다.
+    deletedStackRef.current.push({
+      type: "move",
+      holder: { id },
+      fromDate: sourceDate,
+      toDate: targetDate,
+      fromOrderedIds: getEventsForDate(events, sourceDate).map((e) => e.id)
+    });
+
     const orderPos = new Map(orderedIds.map((eid, i) => [eid, i] as const));
     flipArmedRef.current = true; // 드래그 재정렬 — 이 변화에만 형제 카드 FLIP 활주를 허용.
     // 낙관적 반영(즉시). 서버 prop이 이걸 덮어쓰지 않게 위 prop 동기화는 pendingPersist 동안 멈춘다.
@@ -3180,6 +3201,51 @@ export function StudioShell({
     const action = deletedStackRef.current.pop();
     if (!action) {
       flashToast("되돌릴 작업이 없어요");
+      return;
+    }
+
+    if (action.type === "move") {
+      // 드래그 이동 되돌리기 — 원래 날짜·원래 순서로 되돌린다(같은 날 안 순서만 바꾼 경우도 포함).
+      // 방금 만든 카드(temp id)를 옮겼다면 그 사이 실제 id로 바뀌었을 수 있다 → 매핑으로 해소.
+      const id = tempToRealRef.current.get(action.holder.id) ?? action.holder.id;
+      const remap = (eid: string) => tempToRealRef.current.get(eid) ?? eid;
+      const fromOrderedIds = action.fromOrderedIds.map(remap);
+      const moved = events.find((e) => e.id === id);
+      if (!moved) {
+        flashToast("되돌릴 카드를 찾을 수 없어요");
+        return;
+      }
+      const delta = daysBetweenIso(getEventDateKey(moved), action.fromDate);
+      const orderPos = new Map(fromOrderedIds.map((eid, i) => [eid, i] as const));
+      flipArmedRef.current = true; // 되돌아가는 카드도 형제와 함께 활주
+      setEvents((prev) =>
+        prev.map((ev) => {
+          let next = ev;
+          if (ev.id === id && action.fromDate !== action.toDate) {
+            next = {
+              ...next,
+              startsAt: next.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, action.fromDate),
+              endDateKey: next.endDateKey ? addDaysIso(next.endDateKey, delta) : next.endDateKey
+            };
+          }
+          const pos = orderPos.get(ev.id);
+          if (pos !== undefined) next = { ...next, sortOrder: pos };
+          return next;
+        })
+      );
+      setSelectedDate(action.fromDate);
+      markJustSaved(id); // 되돌아온 카드도 통통 안착
+      setActionError(null);
+      flashToast(
+        action.fromDate === action.toDate ? "순서 되돌림 (Ctrl+Z)" : "이동 취소됨 (Ctrl+Z)"
+      );
+      // 서버에도 같은 큐(직렬)로 역이동 — 원래 이동과 순서가 뒤바뀌지 않는다.
+      enqueueMovePersist({
+        id,
+        sourceDate: action.toDate,
+        targetDate: action.fromDate,
+        orderedIds: fromOrderedIds
+      });
       return;
     }
 
