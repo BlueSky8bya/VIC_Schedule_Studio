@@ -1032,10 +1032,12 @@ export function PublicPoster({
     monthStickers(view.year, view.month)
   );
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
-  // 메모지(왼쪽 238px 컬럼 = 표면 폭의 ≈13%)는 붙일 게 있을 때만 시청자에게 보여준다.
-  // 꾸미기에선 항상 — 토리님이 그 위에 텍스트 스티커를 붙이는 종이라 종이가 사라지면 안 된다.
-  const memoVisible =
-    decorate ||
+  // 메모지(왼쪽 238px 컬럼 = 표면 폭의 ≈13%)는 **어느 모드에서도 자리를 비우지 않는다**.
+  // 예전엔 시청자 화면에서 내용이 없으면 컬럼째 접었는데(꾸미기에선 항상 표시), 그러면 달력
+  // 컬럼이 1314→1552px로 넓어져 **표면 안 레이아웃이 모드마다 달라진다** → 비율 좌표(xRatio)로
+  // 저장되는 스티커가 시청자 화면에서 전부 가로로 밀린다(ADR-0004의 "꾸미기 == 시청자" 불변식).
+  // 내용이 없을 때는 '자리'는 그대로 두고 종이의 라벨만 감춘다(아래 is-empty).
+  const memoHasContent =
     Boolean(schedule.calendar.publicMemo) ||
     stickers.some((s) => s.xRatio < MEMO_COLUMN_RATIO);
   // 모바일 아젠다에서 사용자가 펼친 '빈 날 구간'(접기는 숨김이 아니라 접힘 — 탭하면 그대로 보인다).
@@ -2759,11 +2761,14 @@ export function PublicPoster({
             const bookmarked = isBookmarked(event.id);
             // 하트는 시작 칸(제목 보이는 칸)에서만, 로그인 시청자 상호작용 모드에서만 노출.
             const showHeart = canHeart && span.showTitle;
-            // #3: 관심 단계 배지 — 집계 기반, 숫자는 노출하지 않고 불꽃 게이지로(시청자 화면 전용).
-            const tier =
-              interactive && span.showTitle
-                ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id))
-                : null;
+            // #3: 관심 단계 배지 — 집계 기반, 숫자는 노출하지 않고 불꽃 게이지로.
+            // **모드로 가르지 않는다**: 이 배지는 카드 안 흐름에 있어 있고/없고가 칸 높이를 바꾼다.
+            // 시청자에게만 그렸더니 1·2행이 각각 +7/+19px 커지며 표면이 26px 길어졌고, 비율 좌표인
+            // 스티커가 꾸미기에서 놓은 자리보다 칸 대비 위로 떠 보였다(ADR-0004 "꾸미기 == 시청자").
+            // 집계(heartCount)는 서버에서 오는 같은 값이라 두 화면이 같은 배지를 그린다.
+            const tier = span.showTitle
+              ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id))
+              : null;
             const eventClass = [
               "public-event",
               span.isMulti ? "span" : "",
@@ -4183,9 +4188,7 @@ export function PublicPoster({
           }
         >
         <section
-          className={`poster-surface${popIntro ? " pop-intro" : ""}${
-            memoVisible ? "" : " no-memo"
-          }`}
+          className={`poster-surface${popIntro ? " pop-intro" : ""}`}
           data-enter={monthDir}
           data-export-surface
           data-poster-theme={effectivePosterTheme}
@@ -4217,18 +4220,16 @@ export function PublicPoster({
           />
 
           {/* 메모지 — 빈 노트로 띄워두고, 토리님이 이 위에 텍스트 스티커로 하고 싶은 말을 적는다.
-              꾸미기에선 항상 보인다(붙일 종이가 있어야 하니까). 시청자 화면에선 그 위에 아무것도
-              없으면 접는다 — 아무 내용 없는 '메모'라고 이름표만 붙은 빈 상자는 관리 도구의 문법이다.
-              (표면 폭 1840은 그대로 두고 내부 컬럼만 접히므로 스티커 비율 좌표는 안전 — 접힐 땐
-              애초에 그 영역에 스티커가 없다.) */}
-          {memoVisible ? (
-            <aside className="public-side" aria-label="메모">
-              <div className="public-memo">
-                <strong>메모</strong>
-                <div className="memo-body" />
-              </div>
-            </aside>
-          ) : null}
+              **모드와 무관하게 항상 렌더한다**: 컬럼을 접으면 달력 폭이 바뀌어 스티커(비율 좌표)가
+              시청자 화면에서 전부 밀린다. 내용이 없을 때는 이름표만 감춰(자리는 유지) '메모'라고
+              적힌 빈 상자 — 관리 도구의 문법 — 로 보이지 않게 한다. 꾸미기에선 붙일 종이를 알아야
+              하므로 이름표를 그대로 둔다(둘 다 자리는 같아 지오메트리는 동일). */}
+          <aside className="public-side" aria-label="메모">
+            <div className={`public-memo${memoHasContent || decorate ? "" : " is-empty"}`}>
+              <strong>메모</strong>
+              <div className="memo-body" />
+            </div>
+          </aside>
 
           <section className="public-calendar-area">
             <div className="weekday-row" aria-hidden="true">
@@ -4288,16 +4289,10 @@ export function PublicPoster({
                       style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
                     />
                   );
-                  // 꾸미기 모드에선 스티커 레이어가 덮어 클릭이 막히므로 정적 표시.
-                  if (decorate) {
-                    return (
-                      <span className={tag.kind === "modifier" ? "mod" : undefined} key={tag.id}>
-                        {swatch}
-                        {tag.displayName}
-                      </span>
-                    );
-                  }
                   // A2 고도화: 다중 선택과 동기화. 선택된 게 있으면 안 고른 항목은 흐리게.
+                  // 꾸미기에선 스티커 레이어가 덮어 어차피 못 누르므로 disabled로만 두고 **마크업은
+                  // 시청자와 똑같이** 유지한다 — 예전엔 여기서 <span>으로 갈아끼워 범례 줄 높이가
+                  // 3.8px 어긋났고, 표면 안 레이아웃이 모드마다 달라지면 스티커가 밀린다(ADR-0004).
                   const on = tagFilters.includes(tag.id);
                   const cls = [
                     "legend-item",
@@ -4311,6 +4306,7 @@ export function PublicPoster({
                     <button
                       aria-pressed={on}
                       className={cls}
+                      disabled={decorate}
                       key={tag.id}
                       onClick={() => toggleTagFilter(tag.id)}
                       type="button"
@@ -4346,28 +4342,29 @@ export function PublicPoster({
                 필터 해제
               </button>
               {/* ♥ 의미·인기 단계 안내 — 하트 토글은 제목 위 배너로 옮겼고, 그 자리에 모바일처럼
-                  설명을 둔다. margin-top:auto로 안내 박스 바닥에 붙어 빈 공간 없이 채운다. */}
-              {interactive ? (
-                <div className="legend-heart-help">
-                  <p className="legend-tier-line">
-                    <span className="hm">♥</span> 인기도
-                  </p>
-                  <ul className="legend-tiers">
-                    <li>
-                      <span className="flame">🔥</span> 관심
-                    </li>
-                    <li>
-                      <span className="flame">🔥🔥</span> 높은 관심
-                    </li>
-                    <li>
-                      <span className="flame">🔥🔥🔥</span> 폭발적
-                    </li>
-                    <li>
-                      <span className="flame">👑</span> 이 달 1위
-                    </li>
-                  </ul>
-                </div>
-              ) : null}
+                  설명을 둔다. margin-top:auto로 안내 박스 바닥에 붙어 빈 공간 없이 채운다.
+                  **모드로 가르지 않는다**: 시청자에게만 그리면 이 박스(26px)만큼 표면이 길어져,
+                  비율 좌표인 스티커가 꾸미기에서 놓은 자리보다 위로 떠 보였다(ADR-0004 불변식).
+                  설명하는 대상(🔥 관심 같은 등급 배지)은 내보낸 PNG에도 찍히므로 범례로도 맞다. */}
+              <div className="legend-heart-help">
+                <p className="legend-tier-line">
+                  <span className="hm">♥</span> 인기도
+                </p>
+                <ul className="legend-tiers">
+                  <li>
+                    <span className="flame">🔥</span> 관심
+                  </li>
+                  <li>
+                    <span className="flame">🔥🔥</span> 높은 관심
+                  </li>
+                  <li>
+                    <span className="flame">🔥🔥🔥</span> 폭발적
+                  </li>
+                  <li>
+                    <span className="flame">👑</span> 이 달 1위
+                  </li>
+                </ul>
+              </div>
             </div>
           </aside>
         </section>
