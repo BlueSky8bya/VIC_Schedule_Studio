@@ -78,6 +78,14 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   → **함정 2개 기록**: ① 미디어쿼리는 우선순위를 안 올린다(모바일 블록은 기본 규칙 뒤에 둘 것)
   ② **PowerShell 5.1 `Set-Content`로 한글 문서를 쓰면 깨진다**(시스템 코드페이지) — 문서 수정은
   Edit 도구로만.
+- **2026-07-17(7) — 개선안 배치 7~10 + 신고 대응**(`69b619f`, `492de15`, `a07caf1`, `dc69957`,
+  `29f5d6f`, `503d628`): 인사이트 로딩 점프 46→4px·정직한 실패 · 폰 뒤로가기로 시트만 닫히게 ·
+  버튼 셋(켜기/이 달 기록/편집실) 옷 통일 + 미니게임 칩 32px · 하이라이트 네 장 골격 통일 ·
+  Esc 해제/단축키 안내 · **드래그 이동 Ctrl+Z** · 서버 왕복(admin 싱글턴·캐시헤더·page 병렬·
+  GoTrue N+1·0051 RPC+폴백) · **죽은 코드 1,483줄 제거**.
+  → 겹친 오버레이 뒤로가기: 편집실과 그 안의 포스터가 **각각** popstate를 들어 한 번에 둘 다
+  닫혔다. "안쪽이 표식 남기고 바깥이 건너뛴다"는 **실패**(바깥이 먼저 불려 안쪽을 언마운트시킨다).
+  → `lib/ui/overlay-pop.ts` 카운터 방식(순서 무관)으로 해결. 새 오버레이를 겹칠 땐 이걸 쓸 것.
 - **부분 완료**: 축구/월드컵 시뮬 — taxonomy·기초 적립 완료(68 테스트). 물리·인지 제약 정밀화 남음.
   월드컵 자동 테마는 `KOREA_MATCHES` 수동 입력 대기.
 - **미착수**: 시청자 출석 도장(체크인) — 계획서만 있음(`docs/insights/viewer-checkin-attendance-plan.md`).
@@ -116,12 +124,11 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Next Exact Steps
 
-0. **개선안 백로그(2026-07-17 전면 감사)** — `docs/plans/refinement-backlog-2026-07.md`.
-   **배치 1~6 완료**(1 햅틱·2 게이팅·3 미들웨어/번들·4 성능·5 탭타깃/손맛·6 모바일 도달).
-   남은 것: **7**(D2 인사이트 로딩 레이아웃 점프 · D3 방송기록 실패가 "0일"로 둔갑) →
-   **8**(A6 Esc 해제 · A7 단축키 안내에 Ctrl+C/V · E1 드래그 이동 undo) →
-   **9**(C3 visit_session 전체 이력 스캔 · C5 perf 샘플링 · C6 GoTrue N+1 · C7 직렬 await · C11 캐시 헤더) →
-   **10**(죽은 코드 ~1,600줄). C8(±13개월 윈도)·D12(시트 퇴장 모션)·D13(jumpToday 타이머)은 보류.
+0. **마이그레이션 0051 적용** — `node scripts/apply-db.mjs db/migrations/0051_visit_known_accounts.sql`
+   (새/재방문 판정용 DISTINCT RPC + `(day, account_hash)` 인덱스. 미적용이어도 코드가 옛 경로로
+   폴백하므로 급하진 않지만, 적용해야 인사이트 열 때의 순차 왕복 40회+가 사라진다.)
+1. **개선안 백로그 배치 1~10 전부 완료**(`docs/plans/refinement-backlog-2026-07.md`).
+   보류 항목과 "이 감사에서 배운 것"은 그 문서 머리에 정리돼 있다.
 
 1. 시청자 출석 도장: `docs/insights/viewer-checkin-attendance-plan.md`의 A안(오늘만, 서버 KST 강제).
    `event_hearts` 패턴 복제(비로그인 기기 토큰 포함), 마이그레이션 + `*_grants.sql` 잊지 말 것.
