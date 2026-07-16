@@ -1233,14 +1233,34 @@ export function PublicPoster({
       if (w <= 0) {
         return;
       }
-      setPosterScale(Math.max(0.12, Math.min(maxScale, w / natW)));
-      setPosterNaturalH(natH);
+      const next = Math.max(0.12, Math.min(maxScale, w / natW));
+      // 값이 그대로면 set을 부르지 않는다 — ResizeObserver는 창을 끄는 동안 프레임마다 불리는데,
+      // 그때마다 포스터 트리 전체(달력 42칸)를 다시 그릴 이유가 없다.
+      setPosterScale((prev) => (Math.abs(prev - next) < 0.0005 ? prev : next));
+      setPosterNaturalH((prev) => (Math.abs(prev - natH) < 0.5 ? prev : natH));
     };
     measure();
-    const ro = new ResizeObserver(measure);
+    // 창 크기 조절 중엔 콜백이 프레임보다 자주 올 수 있다. 프레임당 한 번으로 모아서 잰다
+    // (읽기=layout flush + 두 번의 setState가 한 프레임에 여러 번 겹치던 것을 없앤다).
+    let raf = 0;
+    const onResize = () => {
+      if (raf) {
+        return;
+      }
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        measure();
+      });
+    };
+    const ro = new ResizeObserver(onResize);
     ro.observe(scaler); // 달 변경 등으로 자연 높이가 바뀌면 stage 높이 갱신
     ro.observe(stage); // 뷰포트 폭 변하면 배율 갱신
-    return () => ro.disconnect();
+    return () => {
+      if (raf) {
+        window.cancelAnimationFrame(raf);
+      }
+      ro.disconnect();
+    };
   }, [showAgenda, decorate, avatarSlot]);
 
 

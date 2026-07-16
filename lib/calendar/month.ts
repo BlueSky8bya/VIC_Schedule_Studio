@@ -118,23 +118,52 @@ function eventEndKey(event: PublicScheduleEvent | StudioScheduleEvent) {
   return event.endDateKey ?? getEventDateKey(event);
 }
 
+// "누군가 나를 linkNext로 가리키는가"를 매번 배열 전체를 훑어 확인하면 O(N)이다. 그 판정을
+// 배열당 한 번만 해서 Set으로 들고 있는다. 키는 events 배열 자체(WeakMap) — 이 배열은 호출부에서
+// useMemo로 안정적으로 유지되므로, 한 렌더의 42칸이 같은 Set을 나눠 쓴다. 배열이 새로 만들어지면
+// (= 일정이 바뀌면) 키가 달라져 자동으로 새로 계산된다. 낡은 배열은 GC가 알아서 치운다.
+const linkTargetCache = new WeakMap<object, Set<string>>();
+
+function linkTargetsOf<T extends PublicScheduleEvent | StudioScheduleEvent>(
+  events: T[]
+): Set<string> {
+  const cached = linkTargetCache.get(events);
+  if (cached) {
+    return cached;
+  }
+  const targets = new Set<string>();
+  for (const e of events) {
+    if (e.linkNext) {
+      targets.add(e.linkNext);
+    }
+  }
+  linkTargetCache.set(events, targets);
+  return targets;
+}
+
 export function getEventsForDate<T extends PublicScheduleEvent | StudioScheduleEvent>(
   events: T[],
   isoDate: string
 ) {
   // 연결/멀티데이 일정을 위(top lane)로 정렬해 칸을 가로질러도 같은 줄에 오게 한다.
-  const connected = (e: T) =>
-    eventEndKey(e) > getEventDateKey(e) ||
-    Boolean(e.linkNext) ||
-    events.some((o) => o.linkNext === e.id)
-      ? 1
-      : 0;
+  //
+  // 성능 주의: 이 함수는 달력 칸마다(42칸) 매 렌더 호출되는 핫 패스다. 예전엔 이 판정(connected)이
+  // 배열 전체를 훑는 events.some()을 품은 채 **정렬 비교자 안에서** 불렸다 — 비교 한 번마다 O(N).
+  // 넘어오는 배열은 이번 달이 아니라 전체 공개 일정이라, 일정이 쌓일수록 렌더가 통째로 느려졌다
+  // (하트 토글·호버·리사이즈마다 지불). 이제 ① 연결 대상은 배열당 한 번 Set으로(위) ② 등급은
+  // 정렬 전에 항목마다 한 번만 계산해 들고 간다(슈워츠 변환). 순서 규칙은 그대로 —
+  // tests/unit/events-for-date.test.ts가 못박는다.
+  const linkTargets = linkTargetsOf(events);
+  const rankOf = (e: T) =>
+    eventEndKey(e) > getEventDateKey(e) || Boolean(e.linkNext) || linkTargets.has(e.id) ? 1 : 0;
 
   return events
     .filter((event) => getEventDateKey(event) <= isoDate && isoDate <= eventEndKey(event))
+    .map((event) => ({ event, rank: rankOf(event) }))
     // 연결/멀티데이를 위로, 그 다음은 sortOrder(같은 날 안에서 드래그로 바꾼 순서). 동률이면
     // 원래 로드 순서 유지(안정 정렬). sortOrder가 모두 0이면 기존과 동일하게 동작.
-    .sort((a, b) => connected(b) - connected(a) || a.sortOrder - b.sortOrder);
+    .sort((a, b) => b.rank - a.rank || a.event.sortOrder - b.event.sortOrder)
+    .map((x) => x.event);
 }
 
 export type EventSpan = {
