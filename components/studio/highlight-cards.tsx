@@ -109,8 +109,11 @@ export function HighlightCards({ cards }: { cards: HighlightCard[] }) {
               {c.label[1]}
             </span>
             {c.main ? <strong className="hl-main">{c.main}</strong> : null}
+            {/* 문장형 값(제목)은 오른쪽 좁은 칸이 아니라 값 아래 줄에 — 단 카드 밖(형제)으로 내면
+                카드가 2줄이 돼 아이콘이 다른 카드보다 위로 뜬다(통일감 깨짐) → 본문 안에 둔다. */}
+            {c.subText && c.sub ? <span className="hl-sub">{c.sub}</span> : null}
           </span>
-          {c.sub ? (
+          {c.sub && !c.subText ? (
             <span className="hl-sub">
               {c.heart ? (
                 <i className="hl-heart" aria-hidden="true">
