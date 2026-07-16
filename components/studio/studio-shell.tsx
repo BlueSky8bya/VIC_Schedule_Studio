@@ -696,10 +696,17 @@ export function StudioShell({
   // 태그·색 팔레트도 로컬 상태로 — 추가/삭제/저장을 새로고침 없이 즉시 반영(달력 색도 바로 갱신).
   const [tags, setTags] = useState(schedule.tags);
   const [palette, setPalette] = useState(schedule.palette);
+  // events와 같은 가드가 필요하다(위 672-678 참고): 태그 이름변경·재채색·삭제도 낙관적으로 먼저
+  // 반영하는데, 그 사이 router.refresh()가 착지하면 서버 prop이 방금 바꾼 값을 옛 값으로 되돌려
+  // 깜빡였다. 진행 중(in-flight)엔 서버 prop을 무시하고, idle일 때만 맞춘다.
   useEffect(() => {
+    if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
+      return;
     setTags(schedule.tags);
   }, [schedule.tags]);
   useEffect(() => {
+    if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
+      return;
     setPalette(schedule.palette);
   }, [schedule.palette]);
   // 색상 안내 필터 — 편집실에서도 특정 태그 색만 골라볼 수 있게(시청자 화면과 동일 동작).
@@ -2681,8 +2688,11 @@ export function StudioShell({
                   태그 <span className="tag-picker-hint">최대 {maxEventTags}개 · 누르면 바로 적용</span>
                 </span>
                 <div className="tag-picker">
+                  {/* 게이트는 좁게 — 예전엔 disabled={pending}이었는데 그 pending은 저장·삭제·이동이
+                      함께 쓰는 transition이라, 무관한 배경 저장 하나에 태그 고르기가 통째로 죽었다
+                      ("누르면 바로 적용"이라 적어놓고). 태그 쓰기는 아래 toggleEventTag가 일정별
+                      직렬 체인 + 의도 ref + 중복 제거로 연타를 이미 감당한다. */}
                   <TagPicker
-                    disabled={pending}
                     max={maxEventTags}
                     onToggle={(id) => toggleEventTag(selectedEvent, id)}
                     palette={palette}

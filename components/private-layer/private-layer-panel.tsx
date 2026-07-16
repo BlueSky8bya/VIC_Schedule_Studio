@@ -137,7 +137,8 @@ export function PrivateLayerPanel({
           <div className="passcode-actions">
             <button
               className="button"
-              disabled={pending}
+              // 취소는 순수 클라이언트 동작(닫기/되돌아가기)이라 서버 저장 중이라고 막을 이유가 없다.
+              // (옆 '저장'의 disabled={... || pending}은 정당 — 그건 실제로 서버를 부른다.)
               onClick={() => {
                 setError(null);
                 // 변경 모드로 '바로' 열렸으면(비밀번호 변경 버튼) 취소 = 팝업 닫기(이전 화면으로).

@@ -716,7 +716,10 @@ export function TagLegendEditor({
         <button
           aria-label={locked ? "휴뱅은 삭제할 수 없어요" : `${d.name} 삭제`}
           className="tag-editor-remove"
-          disabled={locked || busy || deleteLock}
+          // 게이트는 좁게 — busy는 에디터 전체가 공유하는 transition이라, 어느 한 줄을 저장 중이면
+          // 모든 행의 삭제가 죽었다(게다가 tooltip은 "이 태그 삭제"라고 계속 말했다).
+          // 이중 삭제 방지는 deleteLock이 이미 한다.
+          disabled={locked || deleteLock}
           onClick={() => removeTag(tag.id)}
           title={locked ? "휴뱅은 삭제할 수 없는 기본 태그예요" : "이 태그 삭제"}
           type="button"
