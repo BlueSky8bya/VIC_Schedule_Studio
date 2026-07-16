@@ -69,6 +69,15 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   desc 때문에 매 요청 500이었다(헤더는 ByteString만). 공개 API 계약인데 e2e가 NOT RUN이라
   흘러갔다. `ServerTiming.header()`에서 방어 + 유닛 테스트 4개 추가(vitest 140).
   **교훈: e2e(`npm run test:e2e`)를 계속 안 돌리면 공개 계약이 조용히 깨진다.**
+- **2026-07-17(6) — 개선안 배치 4~6**(`d276c91`, `c17955a`, `a52b1dd`, `3a5eac4`):
+  필터 흐림에 업 도움 끈 포함 + 스르륵 전환 · 리사이즈 rAF 스로틀(폭 안 바뀌면 갱신 0회) ·
+  `getEventsForDate` 정리(**단 감사의 "O(N²) 최우선"은 실측 결과 오판 — filter가 sort보다 먼저라
+  병목 아님. 250건에서 0.22→0.20ms**) · 폰/태블릿 '이 달 기록' 진입점(ISSUE-002 해소) + 바텀시트 ·
+  하트 탭타깃 44px(의사요소 — 표면 지오메트리 불변 확인).
+  → 새 안전망: `tests/unit/events-for-date.test.ts` 10개(달력 정렬 규칙 고정). vitest 150.
+  → **함정 2개 기록**: ① 미디어쿼리는 우선순위를 안 올린다(모바일 블록은 기본 규칙 뒤에 둘 것)
+  ② **PowerShell 5.1 `Set-Content`로 한글 문서를 쓰면 깨진다**(시스템 코드페이지) — 문서 수정은
+  Edit 도구로만.
 - **부분 완료**: 축구/월드컵 시뮬 — taxonomy·기초 적립 완료(68 테스트). 물리·인지 제약 정밀화 남음.
   월드컵 자동 테마는 `KOREA_MATCHES` 수동 입력 대기.
 - **미착수**: 시청자 출석 도장(체크인) — 계획서만 있음(`docs/insights/viewer-checkin-attendance-plan.md`).
@@ -108,9 +117,11 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 ## Next Exact Steps
 
 0. **개선안 백로그(2026-07-17 전면 감사)** — `docs/plans/refinement-backlog-2026-07.md`.
-   **배치 1~3 완료**(아래 참고). 남은 것: 배치 4(C1 `getEventsForDate` O(N²) — 최대 성능 이득,
-   렌더 경로라 회귀 검토 필요) → 5(CSS 손맛·탭타깃) → 6(D1 모바일 '이 달 기록' 도달 → D11 재단)
-   → 7(D2·D3) → 8(A6·A7·E1) → 9(서버 왕복) → 10(죽은 코드). C8(±13개월 윈도)은 동작 변경이라 보류.
+   **배치 1~6 완료**(1 햅틱·2 게이팅·3 미들웨어/번들·4 성능·5 탭타깃/손맛·6 모바일 도달).
+   남은 것: **7**(D2 인사이트 로딩 레이아웃 점프 · D3 방송기록 실패가 "0일"로 둔갑) →
+   **8**(A6 Esc 해제 · A7 단축키 안내에 Ctrl+C/V · E1 드래그 이동 undo) →
+   **9**(C3 visit_session 전체 이력 스캔 · C5 perf 샘플링 · C6 GoTrue N+1 · C7 직렬 await · C11 캐시 헤더) →
+   **10**(죽은 코드 ~1,600줄). C8(±13개월 윈도)·D12(시트 퇴장 모션)·D13(jumpToday 타이머)은 보류.
 
 1. 시청자 출석 도장: `docs/insights/viewer-checkin-attendance-plan.md`의 A안(오늘만, 서버 KST 강제).
    `event_hearts` 패턴 복제(비로그인 기기 토큰 포함), 마이그레이션 + `*_grants.sql` 잊지 말 것.
