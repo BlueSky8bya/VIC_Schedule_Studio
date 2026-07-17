@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-07-17
+Last Updated: 2026-07-18
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -85,7 +85,20 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   GoTrue N+1·0051 RPC+폴백) · **죽은 코드 1,483줄 제거**.
   → 겹친 오버레이 뒤로가기: 편집실과 그 안의 포스터가 **각각** popstate를 들어 한 번에 둘 다
   닫혔다. "안쪽이 표식 남기고 바깥이 건너뛴다"는 **실패**(바깥이 먼저 불려 안쪽을 언마운트시킨다).
-  → `lib/ui/overlay-pop.ts` 카운터 방식(순서 무관)으로 해결. 새 오버레이를 겹칠 땐 이걸 쓸 것.
+  → `lib/ui/overlay-pop.ts` 카운터 방식으로 해결. 새 오버레이를 겹칠 땐 이걸 쓸 것.
+    (**2026-07-18 정정**: 이 카운터도 '순서 무관'이 아니었다 — 아래 (8) 참고.)
+- **2026-07-18 — 신고 2건**(`f5c058d`, `3272736`):
+  ① '이 달 기록' X/바깥클릭이 미리보기까지 닫아 편집실로 튕김. 원인: overlay-pop 카운터를
+     안쪽 메아리 핸들러가 **동기적으로** 내렸는데, 미리보기 안 포스터는 새로 마운트된 자식이라
+     그 popstate 리스너가 바깥(StudioShell)보다 **먼저** 불릴 수 있다 → 바깥이 볼 땐 이미
+     innerDepth=0 → '내 pop'이라 오인해 viewerMode를 닫았다. (7)의 '순서 무관' 가정이 틀림.
+     → 메아리의 `popInnerOverlay()`를 `queueMicrotask`로 미뤄 그 디스패치가 끝난 뒤 내린다 →
+     리스너 순서와 무관하게 바깥은 이번 pop을 안쪽 것으로 본다. **교훈: 겹친 popstate에서
+     공유 카운터는 그 디스패치 안에서 내리지 말 것(microtask로 미룰 것).**
+  ② 자동 '기타' 태그가 `display_name==="기타"` 리터럴에 묶여, 운영자가 그 태그를 지우자
+     아무 태그도 안 붙었다. **불변식("이벤트당 콘텐츠 ≥1")을 버렸다**: 태그 0개 = 색 없는
+     흰 카드 허용(서버·클라 강제 부착 제거), '기타'는 인사이트에서만 합성 버킷(태그 0개 공개
+     일정, 휴뱅 제외)으로 카운트. **교훈: UI/DB 불변식을 특정 태그 '이름'에 묶지 말 것.**
 - **부분 완료**: 축구/월드컵 시뮬 — taxonomy·기초 적립 완료(68 테스트). 물리·인지 제약 정밀화 남음.
   월드컵 자동 테마는 `KOREA_MATCHES` 수동 입력 대기.
 - **미착수**: 시청자 출석 도장(체크인) — 계획서만 있음(`docs/insights/viewer-checkin-attendance-plan.md`).
