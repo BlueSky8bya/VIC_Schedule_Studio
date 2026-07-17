@@ -13,6 +13,11 @@ import { canEditSchedule } from "@/lib/permissions/roles";
 
 const SLUG = "vic";
 const REST_TAG = "휴뱅";
+// '기타'는 더는 실제 태그가 아니다 — 태그를 하나도 안 단 공개 일정(휴뱅 제외)을 인사이트에서만
+// 묶는 합성 버킷. 실제 태그 id와 겹치지 않게 예약 키를 쓰고, 색은 흰 카드에 맞춘 중립 회색.
+const ETC_KEY = "__etc__";
+const ETC_LABEL = "기타";
+const ETC_COLOR = "#d4d4d8";
 
 // 2계층 태그 통계 롤업: 태그 id → 최상위 대분류 {id, name, colorKey}. 세부는 부모 대분류로 합산되어
 // 통계가 잘게 쪼개지지 않는다(예: 게임>롤·명조·실크송 → '게임' 하나로). 휴뱅 등 대분류는 자기 자신.
@@ -1060,6 +1065,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
   }
   const tagInfo = new Map<string, { name: string; color: string; total: number }>();
   const contentTagRows: { ym: string; key: string; n: number }[] = [];
+  const contentEventIds = new Set<string>(); // 콘텐츠 대분류를 1개 이상 단 공개 일정
   for (const row of tagRows2) {
     const bt = row.broadcast_tags;
     const ym = eventMonth.get(row.event_id); // 공개 일정만(비공개는 매핑 없음 → 제외)
@@ -1071,6 +1077,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       kind: "content"
     };
     if (cat.kind === "modifier") continue; // 수식어는 컨텐츠 트렌드서 제외
+    contentEventIds.add(row.event_id);
     contentTagRows.push({ ym, key: cat.id, n: 1 });
     const cur = tagInfo.get(cat.id);
     if (cur) cur.total += 1;
@@ -1084,6 +1091,14 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
   const contentCats = [...tagInfo.entries()]
     .sort((a, b) => b[1].total - a[1].total)
     .map(([key, v]) => ({ key, label: v.name, color: v.color }));
+  // 콘텐츠 태그 0개인 공개 일정(휴뱅 제외) = 합성 '기타'. 항상 맨 끝에 붙인다.
+  let etcTotal = 0;
+  for (const [id, ym] of eventMonth) {
+    if (restIds.has(id) || contentEventIds.has(id)) continue;
+    contentTagRows.push({ ym, key: ETC_KEY, n: 1 });
+    etcTotal += 1;
+  }
+  if (etcTotal > 0) contentCats.push({ key: ETC_KEY, label: ETC_LABEL, color: ETC_COLOR });
 
   // 방식(modifier)별 6개월 — 콘텐츠와 별개 축(합방·시참·연습 등 얼마나 자주 했나).
   const modInfo = new Map<string, { name: string; color: string; total: number }>();
@@ -1901,12 +1916,14 @@ export async function getMemberInsightsAction(
   );
   const ctTagInfo = new Map<string, { name: string; color: string; total: number }>();
   const ctRows: { ym: string; key: string; n: number }[] = [];
+  const ctContentEventIds = new Set<string>(); // 콘텐츠 태그 1개 이상 단 공개 일정
   for (const row of tagRows) {
     const bt = row.broadcast_tags;
     const ym = eventMonth.get(row.event_id);
     if (!bt?.id || !ym) continue;
     const cat = catOf(bt);
     if (cat.kind === "modifier") continue; // 수식어는 컨텐츠 트렌드서 제외
+    ctContentEventIds.add(row.event_id);
     ctRows.push({ ym, key: cat.id, n: 1 });
     const cur = ctTagInfo.get(cat.id);
     if (cur) cur.total += 1;
@@ -1917,13 +1934,18 @@ export async function getMemberInsightsAction(
         total: 1
       });
   }
-  const contentByTag = buildTrendStack(
-    monthKeys,
-    [...ctTagInfo.entries()]
-      .sort((a, b) => b[1].total - a[1].total)
-      .map(([key, v]) => ({ key, label: v.name, color: v.color })),
-    ctRows
-  );
+  const ctCats = [...ctTagInfo.entries()]
+    .sort((a, b) => b[1].total - a[1].total)
+    .map(([key, v]) => ({ key, label: v.name, color: v.color }));
+  // 콘텐츠 태그 0개인 공개 일정(휴뱅 제외) = 합성 '기타'. 항상 맨 끝.
+  let ctEtc = 0;
+  for (const [id, ym] of eventMonth) {
+    if (restIds.has(id) || ctContentEventIds.has(id)) continue;
+    ctRows.push({ ym, key: ETC_KEY, n: 1 });
+    ctEtc += 1;
+  }
+  if (ctEtc > 0) ctCats.push({ key: ETC_KEY, label: ETC_LABEL, color: ETC_COLOR });
+  const contentByTag = buildTrendStack(monthKeys, ctCats, ctRows);
 
   // 방식(modifier)별 6개월 — 콘텐츠와 별개 축.
   const mtInfo = new Map<string, { name: string; color: string; total: number }>();
@@ -1953,12 +1975,14 @@ export async function getMemberInsightsAction(
   );
 
   const tagCount = new Map<string, { name: string; count: number; bgColor: string; borderColor: string }>();
+  const tmContentIds = new Set<string>(); // 이 달 콘텐츠 태그를 단 일정
   for (const row of tagRows) {
     const rawName = row.broadcast_tags?.display_name;
     if (!rawName || rawName === REST_TAG || !thisMonthIds.has(row.event_id)) continue;
     const cat = catOf(row.broadcast_tags);
     if (cat.name === REST_TAG) continue;
     if (cat.kind === "modifier") continue; // 수식어(합방·시참 등)는 컨텐츠 순위서 제외
+    tmContentIds.add(row.event_id);
     const cur = tagCount.get(cat.id);
     if (cur) cur.count += 1;
     else {
@@ -1970,6 +1994,11 @@ export async function getMemberInsightsAction(
         borderColor: col?.border ?? "#b3a9dd"
       });
     }
+  }
+  // 이 달 콘텐츠 태그 0개 일정 = '기타'(휴뱅은 thisMonthIds에서 이미 빠짐).
+  const tmEtc = [...thisMonthIds].filter((id) => !tmContentIds.has(id)).length;
+  if (tmEtc > 0) {
+    tagCount.set(ETC_KEY, { name: ETC_LABEL, count: tmEtc, bgColor: ETC_COLOR, borderColor: "#a1a1aa" });
   }
   const tagArr = [...tagCount.values()].sort((a, b) => b.count - a.count).slice(0, 8);
   const tagMax = Math.max(1, ...tagArr.map((t) => t.count));

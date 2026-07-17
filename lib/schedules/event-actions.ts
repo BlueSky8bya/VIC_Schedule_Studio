@@ -48,20 +48,11 @@ const SLUG = "vic";
 // 이벤트당 콘텐츠 태그 상한(피커와 동일). 방식(modifier)은 별도로 더 붙을 수 있다.
 const MAX_EVENT_TAGS = 6;
 
-// 모든 이벤트는 콘텐츠 대분류를 최소 1개 가진다 — 방식(합방·시참 등)만 있거나 태그가 없으면
-// 자동으로 '기타'를 붙인다. 캘린더 태그 rows(kind 포함)를 받아, 붙일 '기타' id를 돌려준다
-// (콘텐츠가 이미 있으면 null). client 어떤 저장 경로로 와도 서버 funnel에서 불변식 보장.
-type TagKindRow = { id: string; display_name: string; kind: string | null; is_active: boolean };
-function restTagIfNoContent(rows: TagKindRow[], tagIds: string[]): string | null {
-  const byId = new Map(rows.map((r) => [r.id, r] as const));
-  // kind가 modifier가 아니면 콘텐츠로 본다(미지정/null도 콘텐츠 취급 — 안전).
-  const hasContent = tagIds.some((id) => (byId.get(id)?.kind ?? "content") !== "modifier");
-  if (hasContent) return null;
-  const rest = rows.find(
-    (r) => r.display_name === "기타" && r.is_active && (r.kind ?? "content") !== "modifier"
-  );
-  return rest?.id ?? null;
-}
+// 태그를 강제하지 않는다: 콘텐츠 대분류가 하나도 없어도(또는 방식만 있어도) 그대로 저장한다.
+// 태그 없는 일정 = 색 없는 흰 카드. 예전엔 '기타' 태그를 자동 부착해 "이벤트당 콘텐츠 ≥1" 불변식을
+// 지켰는데, 그 로직이 display_name==="기타" 리터럴에 묶여 있어 운영자가 그 태그를 지우면 조용히
+// 죽었다. 이제 불변식 자체를 버린다 — '기타'는 태그가 아니라 인사이트의 합성 버킷(태그 0개인 공개
+// 일정 카운트)으로만 존재한다.
 
 // 날짜키(YYYY-MM-DD) 사이의 일수 차 / 일수 더하기 — 드래그 이동 시 종료일을 같은 폭으로 옮긴다.
 function diffDaysKey(from: string, to: string): number {
@@ -237,15 +228,10 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     return { ok: false, error: "이벤트 ID를 확정할 수 없습니다." };
   }
 
-  // 태그 재설정: 기존 삭제 후 재삽입. 콘텐츠 대분류 0개면 '기타' 자동 부착(무조건 1개 보장).
+  // 태그 재설정: 기존 삭제 후 재삽입. 태그 0개면 그대로 둔다(색 없는 흰 카드 — 강제 부착 없음).
   await supabase.from("event_tags").delete().eq("event_id", eventId);
 
-  const { data: kindRows } = await supabase
-    .from("broadcast_tags")
-    .select("id, display_name, kind, is_active")
-    .eq("calendar_id", calendar.id);
-  const restId = restTagIfNoContent((kindRows ?? []) as TagKindRow[], input.tagIds);
-  const finalTagIds = restId ? [...input.tagIds, restId] : input.tagIds;
+  const finalTagIds = input.tagIds;
   if (finalTagIds.length > 0) {
     const tagRows = finalTagIds.map((tagId, index) => ({
       event_id: eventId,
@@ -410,13 +396,8 @@ export async function updateEventTagsAction(
     return { ok: false, error: "일정을 찾을 수 없습니다." };
   }
 
-  // 콘텐츠 태그는 피커와 동일하게 최대 6개. 콘텐츠 대분류 0개면 '기타' 자동 부착(무조건 1개 보장).
-  const { data: kindRows } = await admin
-    .from("broadcast_tags")
-    .select("id, display_name, kind, is_active")
-    .eq("calendar_id", calendar.id);
-  const restId = restTagIfNoContent((kindRows ?? []) as TagKindRow[], tagIds);
-  const limited = restId ? [...tagIds.slice(0, MAX_EVENT_TAGS - 1), restId] : tagIds.slice(0, MAX_EVENT_TAGS);
+  // 콘텐츠 태그는 피커와 동일하게 최대 6개. 태그 0개면 그대로 둔다(색 없는 흰 카드 — 강제 부착 없음).
+  const limited = tagIds.slice(0, MAX_EVENT_TAGS);
   await admin.from("event_tags").delete().eq("event_id", eventId);
   if (limited.length > 0) {
     const rows = limited.map((tagId, index) => ({

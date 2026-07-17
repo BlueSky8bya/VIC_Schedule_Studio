@@ -2611,16 +2611,7 @@ export function StudioShell({
   }
 
   // #3: 매니저용 — 일정의 태그 할당을 토글한다(최대 2개). 낙관적 반영 후 실패 시 롤백.
-  // 무조건 콘텐츠 대분류 1개 — 방식만 남거나 비면 '기타'를 자동으로 붙인다(서버도 동일 보장).
-  const restTagId = tags.find((t) => t.displayName === "기타")?.id ?? null;
-  function ensureContent(ids: string[]): string[] {
-    if (!restTagId) return ids;
-    const hasContent = ids.some(
-      (id) => (tags.find((t) => t.id === id)?.kind ?? "content") !== "modifier"
-    );
-    if (hasContent) return ids;
-    return ids.includes(restTagId) ? ids : [...ids, restTagId];
-  }
+  // 태그를 강제하지 않는다: 모두 끄면 태그 0개(색 없는 흰 카드). '기타'는 인사이트 합성 버킷일 뿐.
 
   // 이벤트 하나의 태그 저장을 직렬 큐에 태운다. 큐의 각 단계는 '그 시점의 최신 의도'(desired)를
   // 보내므로, 빠른 연속 토글은 마지막 상태로 collapse되고 옛 요청이 새 요청을 덮어쓰지 못한다.
@@ -2662,7 +2653,7 @@ export function StudioShell({
     if (rawNext === cur) {
       return; // 이미 최대 — 변화 없음
     }
-    const nextTagIds = ensureContent(rawNext);
+    const nextTagIds = rawNext;
     tagDesiredRef.current.set(event.id, nextTagIds);
     setActionError(null);
     setEvents((prev) =>
