@@ -5050,7 +5050,10 @@ export function StudioShell({
                     const right = isEnd;
                     return (
                       <div
-                        className="support-bar"
+                        // 필터를 켜면 일정 카드만 흐려지고 업 도움 끈은 쨍하게 남아, 안 고른 기간이
+                        // 오히려 제일 눈에 띄었다(시청자 화면에서 같은 이유로 이미 고쳤다).
+                        // 판정은 카드와 같은 isDimmedByFilter — 끈에 태그가 없으면 필터 켤 때 물러난다.
+                        className={`support-bar${isDimmedByFilter(s) ? " filter-dim" : ""}`}
                         key={s.id}
                         onClick={(e) => {
                           e.stopPropagation();

@@ -4050,11 +4050,21 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 
 
 /* 필터에 안 맞는 일정은 흐리게(편집실 그리드·모바일 아젠다 공용) */
-/* 필터 미해당 일정 — 흐리게(점선 아님). 데스크톱 칩·모바일 아젠다 카드 공통. */
+/* 필터 미해당 일정 — 흐리게(점선 아님). 데스크톱 칩·모바일 아젠다 카드 공통.
+   업 도움 끈(.support-bar)도 같이 물러난다 — 카드만 흐려지고 끈이 쨍하면 안 고른 기간이 오히려
+   제일 눈에 띈다(시청자 화면에서 먼저 겪고 고친 것과 같은 처방). 끈 본체 스타일은 app/globals.css
+   공용이라, 흐림·전환은 편집실 달력 안(.studio-day)으로 한정한다. */
 .studio-event-pill.filter-dim,
-.agenda-event.filter-dim {
+.agenda-event.filter-dim,
+.studio-day .support-bar.filter-dim {
   opacity: 0.26;
   filter: grayscale(0.5);
+}
+/* 칩을 누른 순간 뚝 끊기지 않고 스르륵 물러나게(시청자 화면과 같은 감촉). */
+.studio-day .support-bar {
+  transition:
+    opacity var(--dur-2) var(--ease),
+    filter var(--dur-2) var(--ease);
 }
 /* 미정(모바일 아젠다) — 카드 전체가 아니라 '세로 색상 바'에 점선을 둘러 미정임을 표시(모바일에선
    바가 그 일정의 시각 신호라 거기에 두는 게 자연스럽다). 제목 앞 '미정' 칩(공용 .evt-tentative)도 함께. */
