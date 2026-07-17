@@ -1219,8 +1219,14 @@ export function PublicPoster({
     function onPop() {
       if (ignoreInsightsPop.current) {
         // 우리가 시트를 닫으며 부른 history.back()의 메아리 — 이제야 카운터를 내린다(위 주석 참고).
+        // 단, 카운터 내림은 이 popstate '한 번의 동기 디스패치'가 끝난 뒤로 미룬다(microtask).
+        // 편집실(바깥) 리스너와 이 리스너 중 누가 먼저 불릴지는 마운트 타이밍에 따라 뒤집힌다
+        // (미리보기 안에서 이 포스터는 새로 마운트된 자식이라 바깥보다 먼저 불리는 경우가 있다).
+        // 여기서 동기적으로 내리면, 이 디스패치에서 바깥이 뒤늦게 hasInnerOverlay()를 봤을 때
+        // 이미 0이라 '이 pop은 내 것'이라 오인해 미리보기까지 닫아 편집실로 튕긴다(실측 증상).
+        // 디스패치가 끝난 뒤 내리면 순서와 무관하게 바깥은 이번 pop을 안쪽 것으로 본다.
         ignoreInsightsPop.current = false;
-        popInnerOverlay();
+        queueMicrotask(popInnerOverlay);
         return;
       }
       if (ignorePreviewPop.current) {
