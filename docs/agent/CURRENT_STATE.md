@@ -94,6 +94,41 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 없음(직전 작업 종료 상태).
 
+## 배포가 안 될 때 (2026-07-17 실제로 겪음 — 다음 에이전트가 같은 길로 헤매지 말 것)
+
+**증상**: `git push`는 성공하는데 Vercel Deployments에 **새 항목이 아예 안 생긴다**(실패도 아니고 무반응).
+프로덕션은 옛 빌드를 계속 서빙한다.
+
+**원인은 대개 우리 코드/설정이 아니다.** 2026-07-17엔 **GitHub 장애**였다 — Vercel 대시보드가
+"GitHub Outage — affecting automatic deployments and account connection" 배너를 직접 띄웠다.
+곁가지 증상: 대시보드의 GitHub 관련 칸이 회색 스켈레톤으로 멈춤(=계정 연결 API 실패), 배포가
+붙어도 8분+ 지연.
+
+**진단 순서**(위에서부터, 각 단계가 서로 다른 원인을 배제한다)
+1. `git ls-remote origin refs/heads/main` — 원격에 커밋이 실제로 갔는지. (갔으면 우리 잘못 아님)
+2. **배포된 사이트를 직접 읽어** 어느 커밋까지 반영됐는지 확인(추측 금지). 예:
+   `https://vic-schedule-studio.vercel.app/` HTML에서 `/_next/static/css/*` 를 받아 특정 클래스
+   존재 여부로 판독. (2026-07-17엔 삭제한 `.home-grid`가 남아 있는지로 판정했다.)
+3. Vercel → Deployments: **새 항목이 없다** = 이벤트 미수신(장애·연결). `Error` = 빌드 실패(로그 보기).
+   `Canceled` = Ignored Build Step. `Queued/Building` = 그냥 밀린 것(기다린다).
+4. Vercel 대시보드 상단 **배너**(장애 공지) · `status.vercel.com` · `githubstatus.com`.
+5. GitHub 쪽: 저장소 Settings → **Webhooks는 비어 있는 게 정상**이다(Vercel은 GitHub App을 쓴다.
+   여기서 헤맸다). 볼 곳은 Settings → **GitHub Apps** → Vercel → Repository access.
+
+**장애/연결 문제일 때 우회 배포(=GitHub를 안 거치고 로컬 코드를 Vercel이 빌드)**
+```bash
+npx vercel link --yes --project vic-schedule-studio --scope bluesky-s-project3   # 최초 1회(.vercel 생성)
+npx vercel --prod --yes                                                          # 즉시 프로덕션 배포
+npx vercel ls vic-schedule-studio --scope bluesky-s-project3                     # 배포 목록 확인
+```
+- CLI는 이미 `bluesky8bya`로 로그인돼 있다. `.vercel/`은 `.gitignore`에 있다.
+- **주의**: `vercel link`가 `.env.local`을 프로젝트 환경변수로 **덮어쓴다**(그리고 .gitignore에 추가).
+  로컬에만 있던 값이 있었다면 확인할 것.
+- Git 연결이 실제로 풀렸다면 `npx vercel git connect` (대화형 확인 필요 — 에이전트는 못 누른다.
+  사용자에게 터미널에서 직접 실행 요청할 것. 성공 시 `> Connected` 출력).
+
+**교훈**: "push했으니 배포됐겠지"로 보고하지 말 것. **배포된 사이트를 읽어서** 확인하고 말하라.
+
 ## Known Issues
 
 - **ISSUE-001 — 편집실 실물 검증이 막혀 있음.** 편집실(`/studio/*`)은 Google 로그인이 필요해
@@ -135,6 +170,15 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 2. 멀티에이전트 리뷰가 제안한 Phase 3 잔여(사용자 승인 시): 시청자 저장/공유 버튼 + OG 메타 +
    월별 고정 PNG URL, LIVE/카운트다운 pill, 꾸미기 스탬프 모드, 휴방 상태를 1급 셀 상태로.
 3. 축구 시뮬: GK 손→패스/개인기 규칙·물리·인지 제약 정밀화(`docs/sim/`).
+
+## Last Verified (2026-07-17, 배치 1~10 이후 · 프로덕션 실측)
+
+| 확인 | 결과 |
+|---|---|
+| 프로덕션이 최신인가(사이트 직접 판독) | **예** — 삭제한 `.home-grid`가 배포 CSS에서 사라짐 = `503d628`까지 반영 |
+| `/api/public/vic/events` | **200** (한글 Server-Timing 헤더로 매 요청 500이던 것 수정됨) |
+| 배포 경로 | GitHub 장애로 자동배포가 멈춰 **`npx vercel --prod`로 직접 배포**함(위 "배포가 안 될 때" 참고) |
+| GitHub 자동배포 | 장애 회복 중(8분+ 지연 관측). 복구되면 push→배포가 저절로 정상화된다 |
 
 ## Last Verified (2026-07-17, 배치 1~3 이후)
 
