@@ -12,6 +12,10 @@ import type { MembershipRole } from "@/lib/domain/schedule-types";
 export type DeviceKind = "desktop" | "android" | "ios" | "mobile";
 
 export type PresenceCounts = {
+  // 비로그인 방문자 — 예전엔 track은 되는데(startPresence(role="anon")) 여기 키가 없어서
+  // 아래 recompute의 `role in next` 검사에서 통째로 버려졌다. 그래서 실시간 패널에 안 보였을 뿐
+  // 아니라 total에도 안 잡혀, 기기별 합계(비로그인 포함)와 역할별 합계가 서로 안 맞았다.
+  anon: number;
   viewer: number;
   worker: number;
   manager: number;
@@ -23,6 +27,7 @@ export type PresenceCounts = {
 };
 
 const EMPTY: PresenceCounts = {
+  anon: 0,
   viewer: 0,
   worker: 0,
   manager: 0,
@@ -62,7 +67,8 @@ function recompute() {
   for (const key of Object.keys(state)) {
     const entry = state[key][0];
     if (!entry) continue;
-    const role = entry.role as MembershipRole | undefined;
+    // "anon"(비로그인)도 센다 — 아래 `role in next` 검사가 통과하도록 PresenceCounts에 키가 있다.
+    const role = entry.role as MembershipRole | "anon" | undefined;
     if (role && role in next) {
       next[role] += 1;
       next.total += 1;
@@ -76,8 +82,8 @@ function recompute() {
   notify();
 }
 
-// 마운트 시 1회 호출 — 자기 역할을 프레즌스에 등록한다. 비로그인은 "anon"으로 track되며 실시간
-// 집계(recompute)에선 알려진 역할만 세므로 라이브 패널엔 영향 없다(방문 집계는 서버에서 별도).
+// 마운트 시 1회 호출 — 자기 역할을 프레즌스에 등록한다. 비로그인은 "anon"으로 track되고, 실시간
+// 집계(recompute)도 이제 함께 센다(개발자 패널 '역할별'에 '비로그인' 줄로 보인다).
 export function startPresence(role: MembershipRole | "anon") {
   if (started) return;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
