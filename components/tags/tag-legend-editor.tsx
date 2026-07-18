@@ -14,6 +14,7 @@ import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무�
 import type { SaveTagsResult, TagCreateInput } from "@/lib/schedules/tag-actions";
 import { generateTagColor, isPatternColor } from "@/lib/tags/color-gen";
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
+import { applyTone, inkContrast, TONE_PRESETS } from "@/lib/tags/color-tone";
 import { hapticTick } from "@/lib/ui/haptics";
 
 type TagUpdate = {
@@ -685,33 +686,59 @@ export function TagLegendEditor({
               {d.kind === "modifier" ? "형식" : "콘텐츠"}
             </button>
             {/* 색은 한 칸 — 현재 색을 보여주면서 누르면 원하는 색을 직접 고른다(무늬 제거 후 단색).
-                커스텀(bgHex) 없으면 시드 팔레트 색을 보여주고, 고르면 그 색이 렌더에 쓰인다.
-                '기본'은 시드 색으로 되돌리기(bgHex 비움). */}
-            <div className="tag-editor-custom">
-              <input
-                aria-label="태그 색 고르기"
-                disabled={locked}
-                onChange={(e) =>
-                  setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: e.target.value } }))
-                }
-                title="누르면 원하는 색을 직접 고를 수 있어요"
-                type="color"
-                value={d.bgHex ?? (d.colorKey ? colorOf(d.colorKey)?.bgColor ?? "#cccccc" : "#cccccc")}
-              />
-              {d.bgHex ? (
-                <button
-                  className="tag-custom-clear"
-                  disabled={locked}
-                  onClick={() =>
-                    setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: null } }))
-                  }
-                  title="기본(팔레트) 색으로 되돌리기"
-                  type="button"
-                >
-                  기본
-                </button>
-              ) : null}
-            </div>
+                톤 프리셋(파스텔~깊게)은 색조는 유지하고 톤만 바꾼다. 대비 배지는 그 색 위 글자가
+                읽히는지(WCAG AA) 즉시 알려준다. '기본'은 시드 색으로 되돌리기. */}
+            {(() => {
+              const curColor = d.bgHex ?? (d.colorKey ? colorOf(d.colorKey)?.bgColor ?? "#cccccc" : "#cccccc");
+              const setHex = (hex: string) =>
+                setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: hex } }));
+              const con = inkContrast(curColor);
+              return (
+                <div className="tag-editor-custom">
+                  <input
+                    aria-label="태그 색 고르기"
+                    disabled={locked}
+                    onChange={(e) => setHex(e.target.value)}
+                    title="누르면 원하는 색을 직접 고를 수 있어요"
+                    type="color"
+                    value={curColor}
+                  />
+                  <div className="tag-tone-row" aria-label="톤">
+                    {TONE_PRESETS.map((t) => (
+                      <button
+                        className="tag-tone"
+                        disabled={locked}
+                        key={t.key}
+                        onClick={() => setHex(applyTone(curColor, t.key))}
+                        title={`${t.label} — 색조 유지, 톤만`}
+                        type="button"
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                  <span
+                    className={`tag-contrast ${con.passesAA ? "ok" : "warn"}`}
+                    title={`글자 대비 ${con.ratio}:1 (${con.passesAA ? "AA 통과" : "AA 미달 — 읽기 어려움"})`}
+                  >
+                    {con.passesAA ? "AA✓" : "AA✗"}
+                  </span>
+                  {d.bgHex ? (
+                    <button
+                      className="tag-custom-clear"
+                      disabled={locked}
+                      onClick={() =>
+                        setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: null } }))
+                      }
+                      title="기본(팔레트) 색으로 되돌리기"
+                      type="button"
+                    >
+                      기본
+                    </button>
+                  ) : null}
+                </div>
+              );
+            })()}
           </>
         )}
         <button

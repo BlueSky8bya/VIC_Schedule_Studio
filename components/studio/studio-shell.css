@@ -5873,6 +5873,43 @@ textarea:disabled {
   color: var(--ink-soft, #4a4360);
   cursor: pointer;
 }
+/* 톤 프리셋(색조 유지, 톤만) — 작은 알약 버튼 줄. */
+.tag-tone-row {
+  display: inline-flex;
+  gap: 3px;
+}
+.tag-tone {
+  border: 1.5px solid var(--line, #ddd6ee);
+  border-radius: var(--r-pill);
+  background: #fbfaff;
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-soft, #4a4360);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tag-tone:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* 대비(가독성) 배지 — 통과=초록, 미달=주황 경고. */
+.tag-contrast {
+  flex: 0 0 auto;
+  border-radius: var(--r-pill);
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.tag-contrast.ok {
+  background: #e5f7ec;
+  color: #1d7a44;
+}
+.tag-contrast.warn {
+  background: #fdeede;
+  color: #9a5a12;
+}
 
 .tag-kind-toggle {
   flex: 0 0 auto;
