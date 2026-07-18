@@ -5466,20 +5466,17 @@ textarea:disabled {
   }
 }
 
-/* 모바일: 태그 편집 행을 2줄로 — 1줄: 손잡이 + 이름(늘어남) + 삭제(오른쪽 끝),
-   2줄: 작은 정사각형 색 스와치(한 줄에 모두).
-   드래그 고스트(.tag-drag-ghost)는 body 직속이라 `.tag-editor` 스코프 밖이므로
-   같은 규칙을 함께 지정한다. 그렇지 않으면 base(한 줄 nowrap) 규칙으로 떨어져 너비를 뚫는다.
-   (선택자 specificity를 한 단계 높여, 파일 뒤쪽 base 규칙에 덮이지 않게.) */
+/* 모바일: 태그 편집 행 = 한 줄 컴팩트 카드. 손잡이(왼쪽) → 이름(늘어남) → 색 스와치 → 삭제(끝).
+   드래그 고스트(.tag-drag-ghost)는 body 직속이라 `.tag-editor` 스코프 밖이므로 같은 규칙을 함께
+   지정한다(안 그러면 base 규칙으로 떨어져 너비를 뚫는다). */
 @media (max-width: 640px) {
-  /* 모바일: 태그 = 한 장의 컴팩트 카드. 1줄=손잡이·이름(늘어남)·방식토글·삭제(끝),
-     2줄=색 스와치. 섹션/그룹의 중첩 카드(테두리·배경·패딩)를 걷어내 카드 하나만 남긴다. */
+  /* 모바일: 태그 = 한 장의 컴팩트 카드(한 줄). 섹션/그룹의 중첩 카드(테두리·배경·패딩)를 걷어내
+     카드 하나만 남긴다. 요소가 4개뿐이라 nowrap로 한 줄에 정렬(이름칸이 먼저 줄어든다). */
   .tag-editor .tag-editor-row,
   .tag-drag-ghost {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
-    column-gap: 7px;
-    row-gap: 7px;
+    column-gap: 8px;
   }
   /* 섹션은 얇은 헤더만 — 큰 카드 테두리·배경 제거(행 카드와 이중이 되지 않게). */
   .tag-editor .tag-editor-section {
@@ -5507,23 +5504,28 @@ textarea:disabled {
   .tag-editor .tag-cat-group:last-child {
     margin-bottom: 0;
   }
-  /* 1줄 정렬: 손잡이(1) → 이름(2, 늘어남) → 방식토글(3) → 삭제(4, 오른쪽 끝). 스와치(5)는 다음 줄. */
+  /* 한 줄 정렬: 손잡이(1, 왼쪽) → 이름(2, 늘어남) → 색 스와치(3) → 삭제(4, 오른쪽 끝). */
   .tag-editor .tag-editor-row .tag-drag-handle,
   .tag-drag-ghost .tag-drag-handle {
     order: 1;
-    width: 24px;
-    height: 32px;
+    flex: 0 0 auto;
+    width: 26px;
+    height: 34px;
   }
-  /* basis 0 + 축소 허용 → 이름이 욕심내 늘어나지 않고 토글·삭제가 같은 줄에 들어온다. */
+  /* 세부(자식)는 손잡이 대신 들여쓰기 표식이 1번 자리. */
+  .tag-editor .tag-editor-row .tag-sub-indent {
+    order: 1;
+  }
+  /* basis 0 + 축소 허용 → 이름이 먼저 줄어 스와치·삭제가 같은 줄에 남는다. */
   .tag-editor .tag-editor-row input,
   .tag-drag-ghost input {
     order: 2;
     flex: 1 1 0;
     width: auto;
     min-width: 0;
-    min-height: 30px;
+    min-height: 34px;
   }
-  /* 행 = 카드. 컴팩트(패딩·반경 축소). */
+  /* 행 = 카드. 컴팩트(패딩·반경). 조화(리듬): 좌우 대칭 패딩. */
   .tag-editor .tag-editor-row {
     padding: 8px 10px;
     border: 1px solid var(--line, #eee7f6);
@@ -5531,42 +5533,22 @@ textarea:disabled {
     background: #fff;
     box-shadow: 0 1px 3px -2px rgb(80 60 140 / 28%);
   }
-  .tag-editor .tag-editor-row .tag-kind-toggle {
+  /* 색 스와치(단일) — 이름과 삭제 사이(3번 자리). 세부 상속색 칩도 같은 자리. */
+  .tag-editor .tag-editor-row .tag-editor-color,
+  .tag-editor .tag-editor-row .tag-sub-color,
+  .tag-drag-ghost .tag-editor-color {
     order: 3;
-    padding: 5px 11px;
-    font-size: 12.5px;
+    flex: 0 0 auto;
+  }
+  .tag-editor .tag-editor-row .tag-color-swatch {
+    width: 46px;
+    height: 30px;
   }
   .tag-editor .tag-editor-row .tag-editor-remove,
   .tag-drag-ghost .tag-editor-remove {
     order: 4;
-    width: 28px;
-    height: 28px;
-  }
-  /* 2줄: 색 스와치 — 다음 줄 전체 폭. 한 줄 유지(nowrap): 칸 수가 많아도 폭에 맞춰 유동적으로
-     좁아져 한 줄에 다 들어간다(2줄로 안 넘침). */
-  .tag-editor .tag-editor-row .tag-editor-swatches {
-    order: 5;
-    flex: 1 1 100%;
-    flex-wrap: nowrap;
-    gap: 4px;
-    padding: 0;
-  }
-  .tag-editor .tag-editor-row .tag-editor-swatches button {
-    flex: 1 1 0;
-    min-width: 0;
-    width: auto;
-    height: 24px;
-    max-width: 28px;
-    border-width: 1.5px;
-    border-radius: 6px;
-  }
-  /* 방식 행은 정사각 원형(카드의 동그라미 점과 통일). 7개라 한 줄에 들어감. */
-  .tag-editor .tag-editor-row.is-mod-row .tag-editor-swatches button {
-    flex: 0 0 auto;
-    width: 24px;
-    height: 24px;
-    max-width: none;
-    border-radius: var(--r-pill);
+    width: 30px;
+    height: 30px;
   }
   /* 고스트(드래그 복제본) — 옮기며 색을 비교해 배치해야 하니 '선택된 색 칩'만 인라인으로 보인다
      (전체 팔레트는 숨김). 손잡이·이름·방식·[그 태그 색]·삭제 한 줄 → 색은 보이고 키는 최소. */
@@ -5590,36 +5572,13 @@ textarea:disabled {
     min-width: 60px;
     max-width: 44vw;
   }
-  .tag-drag-ghost .tag-editor-swatches {
-    order: 4;
+  /* 고스트의 색 스와치(단일) — 이름 뒤(3번 자리)에 그 태그 색 그대로. */
+  .tag-drag-ghost .tag-editor-color {
+    order: 3;
     flex: 0 0 auto;
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 0;
-    padding: 0;
   }
-  /* 그 태그가 실제 쓰는 색(.selected)만 칩으로. 나머지 후보색은 고스트에서 숨긴다. */
-  .tag-drag-ghost .tag-editor-swatches button {
-    display: none;
-  }
-  .tag-drag-ghost .tag-editor-swatches button.selected {
-    display: block;
-    width: 24px;
-    height: 24px;
-    max-width: none;
-    border-width: 1.5px;
-    border-radius: 7px;
-    transform: none;
-    box-shadow: none;
-  }
-  /* 방식 행은 카드의 동그라미 점과 통일해 색 칩도 원으로. 고스트는 body 직속이라 `.tag-editor`
-     스코프의 is-mod-row 규칙이 안 닿으니(=둥근 사각으로 남음) 여기서 따로 원형을 준다. */
-  .tag-drag-ghost.is-mod-row .tag-editor-swatches button.selected {
-    border-radius: var(--r-pill);
-  }
-  .tag-drag-ghost .tag-editor-remove {
-    order: 5;
-    width: 28px;
+  .tag-drag-ghost .tag-color-swatch {
+    width: 40px;
     height: 28px;
   }
   .modal-card {
