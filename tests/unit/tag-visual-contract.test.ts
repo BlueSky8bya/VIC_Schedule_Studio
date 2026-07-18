@@ -116,14 +116,15 @@ describe("tag color contract — fills & extras (dots)", () => {
 });
 
 describe("ink contract — eventInkStyle", () => {
-  it("태그 글자색이 AA 통과하면 그대로 쓴다", () => {
-    const ink = eventInkStyle("#ffec99", "#6b4e00"); // 노랑 위 진한 갈색(대비 충분)
-    expect(ink.color).toBe("#6b4e00");
+  it("조화: 밝은 배경엔 색별 틴트 대신 '통일된 먹색'을 쓴다", () => {
+    // 팔레트 textColor(#6b4e00)를 넘겨도 무시하고 통일 먹색을 쓴다(카드마다 짙기가 달라지지 않게).
+    const ink = eventInkStyle("#ffec99", "#6b4e00");
+    expect(ink.color).toBe("#22242c");
   });
 
-  it("AA 미달이면 흑/백 중 대비 높은 쪽으로 교정한다", () => {
-    const ink = eventInkStyle("#d11a2a", "#d11a2a"); // 배경=글자 동색(대비 1)
-    expect(["#0a0a0a", "#ffffff"]).toContain(ink.color);
+  it("어두운 배경엔 흰색으로 뒤집는다(먹/흰 중 대비 높은 쪽)", () => {
+    const ink = eventInkStyle("#1b2a5e", "#ffffff"); // 진한 남색
+    expect(ink.color).toBe("#ffffff");
   });
 
   it("무늬 제거 후: 모든 카드에 바탕색 얇은 헤일로만(색별 특수화 없음)", () => {

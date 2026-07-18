@@ -320,29 +320,56 @@ function contrastRatio(hexA: string, hexB: string): number {
   const lb = relativeLuminance(hexB);
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
-// 배경색 위에 올릴 글자색/굵기/헤일로를 정해 인라인 스타일(+CSS 변수)로 돌려준다.
-// (무늬 제거 후: 카드는 단색이라 색별 무늬 보정이 없다 — 대비 기반 잉크·굵기 + 얇은 헤일로만.)
-export function eventInkStyle(bgColor: string, textColor: string): CSSProperties {
-  let ink = textColor;
-  let cr = contrastRatio(bgColor, textColor);
-  if (cr < 4.5) {
-    // AA 미달이면 흑/백 중 대비 높은 쪽으로 교정(보통 진한 글씨라 거의 안 걸린다).
-    const crBlack = contrastRatio(bgColor, "#0a0a0a");
-    const crWhite = contrastRatio(bgColor, "#ffffff");
-    ink = crBlack >= crWhite ? "#0a0a0a" : "#ffffff";
-    cr = Math.max(crBlack, crWhite);
-  }
-  // 대비 구간별 기본 굵기(절제). 대비 높을수록 가볍게, 낮을수록 굵게. (굵기는 그대로 — glyph 폭이
-  // 바뀌면 줄바꿈·카드 높이·스티커 좌표가 밀린다(ADR-0004). 가독성은 헤일로로만 올린다.)
+// 카드 글자색은 '통일된 먹/흰'만 쓴다(조화). 색별 틴트 글자(팔레트 textColor)는 한눈에 보면
+// 카드마다 짙기가 달라 조화가 깨졌다 → 강조는 배경(색)이 하고, 글자는 배경 밝기에 따라 '짙은 먹'
+// 또는 '흰색'으로 일정하게. 밝은 파스텔이 대부분이라 결과적으로 거의 모든 카드가 같은 먹색.
+const DARK_INK = "#22242c"; // 순수 검정보다 살짝 부드러운 먹(따뜻한 포스터 톤과 조화).
+// 배경 여러 개(2색 카드는 좌·우 두 색)에 대해 먹/흰 중 '최소 대비가 더 높은' 쪽을 고른다.
+// → 2색 그라데이션 카드도 양쪽 절반 모두에서 읽히는 한 색으로 글자를 통일한다.
+function pickInk(bgs: string[]): { ink: string; cr: number } {
+  const minCr = (ink: string) => Math.min(...bgs.map((b) => contrastRatio(b, ink)));
+  const cd = minCr(DARK_INK);
+  const cl = minCr("#ffffff");
+  return cd >= cl ? { ink: DARK_INK, cr: cd } : { ink: "#ffffff", cr: cl };
+}
+// 두 hex의 평균색(2색 카드 헤일로용 — 양쪽 절반 어디서도 안 튀는 중간색).
+function mixHex(hexA: string, hexB: string): string {
+  const parse = (h: string) => {
+    const m = /^#?([0-9a-f]{6})$/i.exec(h.trim());
+    if (!m) return null;
+    const n = parseInt(m[1], 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255] as [number, number, number];
+  };
+  const a = parse(hexA);
+  const b = parse(hexB);
+  if (!a || !b) return hexA;
+  const to = (v: number) => Math.round(v).toString(16).padStart(2, "0");
+  return `#${to((a[0] + b[0]) / 2)}${to((a[1] + b[1]) / 2)}${to((a[2] + b[2]) / 2)}`;
+}
+function inkStyleFor(bgs: string[], haloBg: string): CSSProperties {
+  const { ink, cr } = pickInk(bgs);
+  // 대비 구간별 굵기(절제). 밝은 파스텔은 대개 cr≥7 → 700로 통일돼 굵기도 조화롭다. (glyph 폭이
+  // 바뀌면 줄바꿈·카드 높이·스티커 좌표가 밀린다(ADR-0004) — 굵기 변화는 여기서만, 가독성은 헤일로.)
   const weight = cr >= 7 ? 700 : cr >= 4.5 ? 800 : 900;
-  // 모든 카드에 바탕색 얇은 헤일로 — 글자 가장자리에 '바탕색 여백'을 둘러 파스텔 위에서 또렷하게
-  // 뜬다(글자를 배경에서 살짝 떼어낸다). text-shadow라 reflow 없음 = 레이아웃 불변.
-  const shadow = `0 0 1px ${bgColor}`;
+  // 헤일로 = 바탕색 얇은 여백을 글자 가장자리에 둘러 파스텔 위에서 또렷하게(배경에서 떼어냄).
+  // 단 2색이 '밝음+어둠 극단'이면 한 잉크로 양쪽을 못 살린다(cr<3) → 벤치마킹(자막 기법)대로
+  // 반대색 얇은 외곽선을 둘러 어느 절반에서도 읽히게 한다. 둘 다 text-shadow라 reflow 없음(레이아웃 불변).
+  const shadow =
+    cr < 3
+      ? (() => {
+          const o = ink === "#ffffff" ? "#0a0a0a" : "#ffffff";
+          return `0 0 1px ${o}, 1px 0 1px ${o}, -1px 0 1px ${o}, 0 1px 1px ${o}, 0 -1px 1px ${o}`;
+        })()
+      : `0 0 1px ${haloBg}`;
   return {
     color: ink,
     ["--evt-weight" as string]: String(weight),
     ["--evt-shadow" as string]: shadow
   } as CSSProperties;
+}
+// 배경색 위 글자 스타일. textColor는 더 이상 잉크로 쓰지 않는다(조화 위해 통일) — 호출부 호환용.
+export function eventInkStyle(bgColor: string, _textColor?: string): CSSProperties {
+  return inkStyleFor([bgColor], bgColor);
 }
 
 // D: 단색 일정칸 인라인 스타일. 2색(혼합)은 mixedEventStyle/mixedEventPatterns로 따로 그린다.
@@ -496,8 +523,11 @@ export function mixedEventStyle(
     backgroundSize: size,
     backgroundPositionX: positionX,
     backgroundRepeat: "no-repeat",
-    // 글자색/굵기/헤일로는 가독성 규칙으로(두 파스텔 중 첫 색 기준 — 둘 다 비슷한 밝기의 콘텐츠색).
-    ...eventInkStyle(a.bgColor, a.textColor),
+    // 글자색/굵기/헤일로 = text-over-image 가독성 연구 적용: 2색이라 '양쪽 절반 모두'에서 읽히는
+    // 단일 잉크(pickInk가 두 색 최소대비 최대화)로 통일하고, 헤일로는 두 색의 평균색으로 둔다
+    // (한쪽 색만 쓰면 반대 절반에서 헤일로가 튄다). 벤치마킹(구글캘린더/판타스티컬)은 글자 뒤를
+    // 안 쪼개지만, 본 앱은 2콘텐츠=반반이 의도라 split은 유지하되 글자만 확실히 띄운다.
+    ...inkStyleFor([a.bgColor, b.bgColor], mixHex(a.bgColor, b.bgColor)),
     // 실제 테두리는 투명으로 두고, 위 border-box 그라데이션이 테두리처럼 보이게 한다.
     borderColor: "transparent"
   };
