@@ -35,6 +35,9 @@ export type BroadcastTag = {
   tagKey: string;
   displayName: string;
   colorKey: ColorKey;
+  // 커스텀 색: 대분류가 직접 고른 hex(#RRGGBB). null/미지정이면 colorKey→color_palette 폴백.
+  // 세부(자식)는 항상 null(부모 색 상속). 렌더 색 해석은 resolver(lib/tags/tag-visual)가 담당.
+  bgHex?: string | null;
   sortOrder: number;
   isDefault: boolean;
   isActive: boolean;

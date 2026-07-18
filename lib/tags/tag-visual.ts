@@ -31,6 +31,67 @@ export type TagVisual = {
 
 type RootInfo = { rootTagId: string; colorKey: string; kind: TagKind };
 
+// #RRGGBB → [r,g,b]. 실패 시 null.
+function hexToRgb(hex: string): [number, number, number] | null {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(hex.trim());
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function toHex([r, g, b]: [number, number, number]): string {
+  const h = (v: number) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+// 커스텀 배경에서 테두리색 파생 — 살짝 어둡게(각 채널 ×0.72).
+function deriveBorder(rgb: [number, number, number]): string {
+  return toHex([rgb[0] * 0.72, rgb[1] * 0.72, rgb[2] * 0.72]);
+}
+// 커스텀 배경 위 기본 글자색 — 상대휘도로 흑/백 중 대비 높은 쪽(eventInkStyle이 최종 AA 보정).
+function relLuma([r, g, b]: [number, number, number]): number {
+  const lin = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+}
+function deriveInk(rgb: [number, number, number]): string {
+  return relLuma(rgb) > 0.4 ? "#0a0a0a" : "#ffffff";
+}
+
+// 실효 팔레트: 대분류가 bg_hex를 직접 고르면 그 colorKey의 팔레트 엔트리를 커스텀 색으로 덮어쓴다
+// (colorKey는 top-level 태그당 유일 — usedByOther가 보장). 이러면 색 lookup(getEventTagColors·
+// visualOf)이 전부 이 실효 팔레트를 통해 bg_hex를 자동 반영한다. bg_hex 없으면 원 팔레트 그대로 →
+// 렌더 불변. 텍스트/보더는 bg에서 파생(글자색은 eventInkStyle이 최종 AA 보정).
+function buildEffectivePalette(
+  tags: BroadcastTag[],
+  palette: ColorPaletteEntry[]
+): ColorPaletteEntry[] {
+  const overrides = new Map<string, ColorPaletteEntry>();
+  for (const t of tags) {
+    if ((t.parentId ?? null) !== null) continue; // 자식은 색을 못 가짐(상속)
+    const hex = t.bgHex;
+    if (!hex) continue;
+    const rgb = hexToRgb(hex);
+    if (!rgb) continue;
+    const base = palette.find((p) => p.key === t.colorKey);
+    overrides.set(t.colorKey, {
+      key: t.colorKey,
+      name: base?.name ?? t.displayName,
+      bgColor: hex,
+      textColor: deriveInk(rgb),
+      borderColor: deriveBorder(rgb),
+      sortOrder: base?.sortOrder ?? t.sortOrder
+    });
+  }
+  if (overrides.size === 0) return palette;
+  const merged = palette.map((p) => overrides.get(p.key) ?? p);
+  // 팔레트에 없던 colorKey(커스텀 색이 새 key를 쓸 때)도 추가.
+  for (const [key, entry] of overrides) {
+    if (!merged.some((p) => p.key === key)) merged.push(entry);
+  }
+  return merged;
+}
+
 // 태그 → 최상위 대분류(부모 체인 끝). categoryColorKey/categoryKind(month.ts)와 동일 규칙이되,
 // 팩토리에서 1회만 계산해 캐시한다.
 function computeRoot(tag: BroadcastTag, byId: Map<string, BroadcastTag>): RootInfo {
@@ -59,7 +120,9 @@ export function createTagVisualResolver(
 ): TagVisualResolver {
   const byId = new Map(tags.map((t) => [t.id, t] as const));
   const rootCache = new Map<string, RootInfo>();
-  const palByKey = new Map(palette.map((p) => [p.key, p] as const));
+  // bg_hex를 반영한 실효 팔레트로 모든 색을 푼다(없으면 원 팔레트 그대로 → 렌더 불변).
+  const effPalette = buildEffectivePalette(tags, palette);
+  const palByKey = new Map(effPalette.map((p) => [p.key, p] as const));
 
   const rootOf = (tagId: string): RootInfo | null => {
     const cached = rootCache.get(tagId);
@@ -101,8 +164,9 @@ export function createTagVisualResolver(
 
   return {
     visualOf,
-    // 이벤트 단위 분배는 기존 함수에 위임(정의상 동일 결과 → 0A 픽셀 불변 보장).
-    eventFills: (event) => getEventTagColors(event, tags, palette),
-    eventExtras: (event) => getExtraCategoryColors(event, tags, palette)
+    // 이벤트 단위 분배는 기존 함수에 위임(dedup·순서 동일). 단 실효 팔레트를 넘겨 bg_hex를 반영한다
+    // (bg_hex 없으면 원 팔레트라 결과 동일 = 렌더 불변).
+    eventFills: (event) => getEventTagColors(event, tags, effPalette),
+    eventExtras: (event) => getExtraCategoryColors(event, tags, effPalette)
   };
 }

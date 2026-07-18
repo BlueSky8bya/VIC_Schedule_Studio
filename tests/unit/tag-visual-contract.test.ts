@@ -191,6 +191,25 @@ describe("resolver parity — createTagVisualResolver", () => {
     expect(r.visualOf("no-such-tag")).toMatchObject({ missing: true, colorKey: null });
   });
 
+  it("bg_hex 없으면 palette 폴백(렌더 불변)", () => {
+    expect(r.visualOf("game").bg).toBe("#d11a2a"); // palette red
+    expect(r.eventFills(ev(["game"]))[0].bgColor).toBe("#d11a2a");
+  });
+
+  it("bg_hex 있으면 카드·칩·세부(상속)가 그 hex를 쓴다", () => {
+    const custom = tags.map((t) =>
+      t.id === "game" ? { ...t, bgHex: "#123456" } : t
+    );
+    const rc = createTagVisualResolver(custom, palette);
+    expect(rc.visualOf("game").bg).toBe("#123456");
+    expect(rc.eventFills(ev(["game"]))[0].bgColor).toBe("#123456");
+    // 세부(game-lol)는 부모 색 상속 → 같은 커스텀 hex.
+    expect(rc.visualOf("game-lol").bg).toBe("#123456");
+    // 보더는 어둡게 파생, 글자색은 luminance로 흑/백.
+    expect(rc.visualOf("game").border).not.toBe("#123456");
+    expect(["#0a0a0a", "#ffffff"]).toContain(rc.visualOf("game").legacyTextColor);
+  });
+
   it("eventFills/eventExtras = getEventTagColors/getExtraCategoryColors(기존)와 동일", () => {
     const cases = [
       ["game"],
