@@ -60,8 +60,6 @@ export function ColorPickerPopover({
   const [hexText, setHexText] = useState(value);
   // 실행취소 스택 — 조작 '직전' hex를 쌓는다(드래그는 시작 때 1번만). 잘못 눌러 색이 바뀌어도 되돌린다.
   const [history, setHistory] = useState<string[]>([]);
-  // 트레이에서 고른 '기본 색' — 그 칸에 링을 그려 "여기서 골라 위에서 다듬는다"를 시각으로 알린다.
-  const [baseHex, setBaseHex] = useState<string | null>(null);
   const svRef = useRef<HTMLDivElement | null>(null);
   const hueRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -93,7 +91,6 @@ export function ColorPickerPopover({
       hapticTick();
       const target = prev[prev.length - 1];
       setHsv(hexToHsv(target)); // 위 effect가 onChange로 부모까지 되돌린다.
-      setBaseHex(null);
       return prev.slice(0, -1);
     });
   }
@@ -134,6 +131,10 @@ export function ColorPickerPopover({
 
   const con = inkContrast(hex);
   const curHexLower = hex.toLowerCase();
+  // 현재 색이 기본 18색 중 어디에 '가장 가까운지'를 항상 계산한다(색조 기준, 20°씩). 그 칸을
+  // 하이라이팅해 "지금 이 근처를 다듬는 중"을 시각으로 알린다 — 미세조정·hex입력 중에도 따라온다.
+  // 무채색(채도 낮음)이면 대응하는 기본색이 없으므로 하이라이팅하지 않는다.
+  const nearestIdx = hsv.s >= 12 ? Math.round(hsv.h / 20) % 18 : -1;
 
   // 트리거 기준 위치(화면 좌표, fixed). 오른쪽 정렬 + 화면 밖으로 나가면 위로 뒤집는다.
   const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
@@ -248,12 +249,13 @@ export function ColorPickerPopover({
       </div>
 
       {/* ── 기본 색상 존(아래) — 트레이(움푹한 판) + 위 미세조정 존을 가리키는 홈(notch).
-          텍스트 없이 "여기서 하나 고르면 위에서 다듬는다"를 시각으로: 판 안에 18색, 고른 칸엔 링. ── */}
+          텍스트 없이 "여기서 골라 위에서 다듬는다"를 시각으로: 판 안에 18색, '지금 색과 가장
+          가까운 기본색'에 항상 링(미세조정 중에도 따라옴), 정확히 그 색이면 체크까지. ── */}
       <div className="cpop-tray" role="group" aria-label="기본 색상 18 — 골라서 위에서 미세조정">
         <div className="cpop-presets">
-          {presets.map((c) => {
-            const active = c.toLowerCase() === (baseHex ?? "").toLowerCase();
-            const exact = c.toLowerCase() === curHexLower; // 미세조정 전, 정확히 그 색이면 체크
+          {presets.map((c, i) => {
+            const active = i === nearestIdx; // 현재 색과 가장 가까운 기본색 = 하이라이팅
+            const exact = c.toLowerCase() === curHexLower; // 정확히 그 색이면 체크(미세조정 전)
             return (
               <button
                 aria-label={c}
@@ -263,7 +265,6 @@ export function ColorPickerPopover({
                 onClick={() => {
                   hapticTick();
                   snapshot();
-                  setBaseHex(c);
                   setHsv(hexToHsv(c));
                 }}
                 style={{ background: c }}
