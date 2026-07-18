@@ -35,7 +35,7 @@ function hexToHue(hex: string): number | null {
 }
 
 // 색 key로 무늬 종류를 추정한다(생성색 gen-* 접두사 + 기본색 중 무늬 있는 것).
-function patternOf(key: string): Pat {
+export function patternOf(key: string): Pat {
   if (key.startsWith("gen-diag-")) return "diag";
   if (key.startsWith("gen-dots-")) return "dots";
   if (key.startsWith("gen-grid-")) return "grid";

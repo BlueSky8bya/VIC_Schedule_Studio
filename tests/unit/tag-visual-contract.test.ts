@@ -12,6 +12,7 @@ import {
   getExtraCategoryColors,
   mixedEventStyle
 } from "@/lib/calendar/month";
+import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 
 // ── 태그 색/잉크 계약 특성화(characterization) 테스트 ──────────────────────────
 // 색 계산을 단일 resolver로 옮기기(0A) 전에 '현재 동작'을 못박는다. 옮긴 뒤에도 이 테스트가
@@ -153,5 +154,57 @@ describe("style contract — single & mixed", () => {
     expect(mixedEventStyle(colors, { index: 0, length: 1 }).backgroundPositionX).toBe("center");
     // 크기 = length*100% 100%.
     expect(mixedEventStyle(colors, { index: 0, length: 3 }).backgroundSize).toBe("300% 100%");
+  });
+});
+
+// resolver가 기존 month.ts 함수와 '동일 결과'를 내는지(0A 픽셀 불변의 근거).
+describe("resolver parity — createTagVisualResolver", () => {
+  const r = createTagVisualResolver(tags, palette);
+
+  it("visualOf.colorKey = categoryColorKey(기존)와 일치, 상속 포함", () => {
+    for (const t of tags) {
+      expect(r.visualOf(t.id).colorKey).toBe(categoryColorKey(t.id, tags));
+    }
+    // 세부는 부모 대분류를 root로.
+    expect(r.visualOf("game-lol").rootTagId).toBe("game");
+    expect(r.visualOf("game").rootTagId).toBe("game");
+  });
+
+  it("visualOf가 bg/border/legacyTextColor/kind/patternKey를 채운다", () => {
+    const v = r.visualOf("game"); // red, content
+    expect(v).toMatchObject({
+      kind: "content",
+      colorKey: "red",
+      bg: "#d11a2a",
+      border: "#a8121f",
+      legacyTextColor: "#ffffff",
+      missing: false
+    });
+    expect(r.visualOf("vr").kind).toBe("modifier");
+    // 무늬 파생(colorKey 기준): red=plain(민무늬), mint=diag(무늬).
+    expect(r.visualOf("game").patternKey).toBe("plain");
+    expect(r.visualOf("vr").patternKey).toBe("diag");
+  });
+
+  it("고아/미지 태그는 missing:true, 색 null", () => {
+    expect(r.visualOf("ghost")).toMatchObject({ missing: true, colorKey: "nosuch", bg: null });
+    expect(r.visualOf("no-such-tag")).toMatchObject({ missing: true, colorKey: null });
+  });
+
+  it("eventFills/eventExtras = getEventTagColors/getExtraCategoryColors(기존)와 동일", () => {
+    const cases = [
+      ["game"],
+      ["game", "collab"],
+      ["collab", "game"],
+      ["game", "vr"],
+      ["game", "collab", "chat"],
+      ["vrRed", "game"],
+      ["ghost"]
+    ];
+    for (const ids of cases) {
+      const e = ev(ids);
+      expect(keys(r.eventFills(e))).toEqual(keys(getEventTagColors(e, tags, palette)));
+      expect(keys(r.eventExtras(e))).toEqual(keys(getExtraCategoryColors(e, tags, palette)));
+    }
   });
 });
