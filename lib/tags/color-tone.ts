@@ -56,6 +56,47 @@ export function hslToHex(h: number, s: number, l: number): string {
   return `#${to(r)}${to(g)}${to(b)}`;
 }
 
+// ── HSV(색 영역 피커용) — 채도(S)×명도(V) 사각형 + 색조(H) 슬라이더 ──
+export function hexToHsv(hex: string): { h: number; s: number; v: number } {
+  const rgb = hexToRgb(hex);
+  if (!rgb) return { h: 0, s: 0, v: 80 };
+  const [r, g, b] = rgb.map((v) => v / 255);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const d = max - min;
+  let h = 0;
+  if (d !== 0) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h = ((h * 60) % 360 + 360) % 360;
+  }
+  const s = max === 0 ? 0 : d / max;
+  return { h, s: Math.round(s * 100), v: Math.round(max * 100) };
+}
+
+export function hsvToHex(h: number, s: number, v: number): string {
+  const sN = s / 100;
+  const vN = v / 100;
+  const c = vN * sN;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = vN - c;
+  let r = 0;
+  let g = 0;
+  let b = 0;
+  if (h < 60) [r, g, b] = [c, x, 0];
+  else if (h < 120) [r, g, b] = [x, c, 0];
+  else if (h < 180) [r, g, b] = [0, c, x];
+  else if (h < 240) [r, g, b] = [0, x, c];
+  else if (h < 300) [r, g, b] = [x, 0, c];
+  else [r, g, b] = [c, 0, x];
+  const to = (val: number) =>
+    Math.round((val + m) * 255)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
+
 // 현재 색의 색조를 유지하며 톤(파스텔~깊게)만 바꾼 hex.
 export function applyTone(hex: string, tone: ToneKey): string {
   const p = TONE_PRESETS.find((t) => t.key === tone) ?? TONE_PRESETS[1];

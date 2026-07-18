@@ -5843,72 +5843,160 @@ textarea:disabled {
 /* 색 스와치: 칸 수에 따라 너비가 유동적으로 늘고 줄어든다(flex 1 1 0, 9~34px). 한 줄 유지.
    overflow를 쓰지 않아 선택 테두리가 잘리지 않는다. */
 /* 대분류 content/modifier 토글 — content=연한 채움, modifier=점선(="얹는 것"). */
-/* 커스텀 색 입력(팔레트 밖 직접 고르기) — 스와치 옆에 작게. */
-.tag-editor-custom {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+/* 색은 스와치 한 칸 — 누르면 팝오버. 행이 안 늘어나 좌우 스크롤이 없다. */
+.tag-editor-color {
+  position: relative;
   flex: 0 0 auto;
+  display: inline-flex;
 }
-.tag-editor-custom input[type="color"] {
+.tag-color-swatch {
   width: 46px;
   height: 30px;
-  padding: 0;
   border: 1.5px solid var(--line, #ddd6ee);
   border-radius: var(--r-sm);
-  background: none;
   cursor: pointer;
+  padding: 0;
+  box-shadow: inset 0 0 0 1.5px #fff;
 }
-.tag-editor-custom input[type="color"]:disabled {
-  cursor: default;
+.tag-color-swatch:disabled {
   opacity: 0.5;
+  cursor: default;
 }
-.tag-custom-clear {
-  border: 1.5px solid var(--line, #ddd6ee);
+.tag-color-swatch.open {
+  border-color: var(--violet, #5b34f0);
+  box-shadow:
+    inset 0 0 0 1.5px #fff,
+    0 0 0 2.5px rgb(91 52 240 / 22%);
+}
+
+/* ── 색 피커 팝오버 (포털: body 직속, position:fixed — 부모 overflow에 안 잘림) ── */
+.tag-cpop {
+  position: fixed;
+  z-index: 9500;
+  width: 244px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--surface, #fffdf6);
+  border: 1.5px solid var(--line, #ece0c9);
+  border-radius: var(--r-lg, 16px);
+  box-shadow: var(--shadow-3, 0 16px 40px rgb(17 24 39 / 14%));
+}
+.cpop-sv {
+  position: relative;
+  width: 100%;
+  height: 132px;
+  border-radius: var(--r-md, 12px);
+  cursor: crosshair;
+  touch-action: none;
+}
+.cpop-sv-thumb,
+.cpop-hue-thumb {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 35%);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.cpop-hue {
+  position: relative;
+  width: 100%;
+  height: 14px;
   border-radius: var(--r-pill);
-  background: #f4f1fb;
-  padding: 3px 9px;
-  font-size: 11.5px;
-  font-weight: 800;
-  color: var(--ink-soft, #4a4360);
   cursor: pointer;
+  touch-action: none;
+  background: linear-gradient(
+    to right,
+    #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000
+  );
 }
-/* 톤 프리셋(색조 유지, 톤만) — 작은 알약 버튼 줄. */
-.tag-tone-row {
-  display: inline-flex;
-  gap: 3px;
+.cpop-hue-thumb {
+  top: 50%;
+}
+.cpop-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.cpop-preview {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-sm);
+  border: 1.5px solid rgb(0 0 0 / 8%);
+  font-size: 13px;
+  font-weight: 800;
+}
+.cpop-hex {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 1.5px solid var(--line, #ddd6ee);
+  border-radius: var(--r-sm);
+  padding: 6px 8px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  text-transform: lowercase;
+}
+.cpop-warn {
+  margin: -4px 0 0;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #9a5a12;
+}
+.cpop-tones {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
 }
 .tag-tone {
   border: 1.5px solid var(--line, #ddd6ee);
   border-radius: var(--r-pill);
   background: #fbfaff;
-  padding: 3px 7px;
-  font-size: 11px;
+  padding: 5px 0;
+  font-size: 11.5px;
   font-weight: 700;
   color: var(--ink-soft, #4a4360);
   cursor: pointer;
   white-space: nowrap;
 }
-.tag-tone:disabled {
-  opacity: 0.5;
-  cursor: default;
+.cpop-presets {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 5px;
 }
-/* 대비(가독성) 배지 — 통과=초록, 미달=주황 경고. */
-.tag-contrast {
-  flex: 0 0 auto;
+.cpop-swatch {
+  height: 22px;
+  border-radius: var(--r-sm);
+  border: 1.5px solid rgb(0 0 0 / 8%);
+  cursor: pointer;
+  padding: 0;
+}
+.cpop-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+.cpop-done {
+  padding: 6px 16px;
+  font-size: 13px;
+}
+.tag-custom-clear {
+  border: 1.5px solid var(--line, #ddd6ee);
   border-radius: var(--r-pill);
-  padding: 2px 7px;
-  font-size: 11px;
+  background: #f4f1fb;
+  padding: 5px 11px;
+  font-size: 12px;
   font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-.tag-contrast.ok {
-  background: #e5f7ec;
-  color: #1d7a44;
-}
-.tag-contrast.warn {
-  background: #fdeede;
-  color: #9a5a12;
+  color: var(--ink-soft, #4a4360);
+  cursor: pointer;
 }
 
 .tag-kind-toggle {
