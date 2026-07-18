@@ -101,11 +101,19 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
      일정, 휴뱅 제외)으로 카운트. **교훈: UI/DB 불변식을 특정 태그 '이름'에 묶지 말 것.**
 - **부분 완료**: 축구/월드컵 시뮬 — taxonomy·기초 적립 완료(68 테스트). 물리·인지 제약 정밀화 남음.
   월드컵 자동 테마는 `KOREA_MATCHES` 수동 입력 대기.
+- **2026-07-18 — 태그 색 커스텀화 프로젝트 시작**(계획 `docs/tags/custom-tag-color-plan.md` v4.1,
+  코덱스 4라운드 적대검수 반영·디스코프). 방향: 무늬 유지(색맹 단서)+가독성만 고침+커스텀 bg_hex+
+  단일 resolver. **Phase 0-pre 첫 슬라이스 완료**(`b36b01c`): 공개 sample/type 분리 —
+  `sample-public-data.ts` 신설, 공개 트리(public-loader·proposals route)가 privateMeta·requests
+  품은 sampleStudioSchedule을 import하던 공개경계 잠복 위반 제거 + `public-boundary.test.ts`(정적
+  import 가드 + 폴백 누출검사). 공개 API 출력 불변. **다음**: 나머지 0-pre(비주얼 스위트 복구,
+  비프로덕션 fixture route) → 0A(단일 resolver, pixel 동일). ⚠ Phase 1 전 필수: pattern_key CSS
+  재작업(`data-pattern` + {shape,ink,alpha}), 무늬 CVD 자동배정.
 - **미착수**: 시청자 출석 도장(체크인) — 계획서만 있음(`docs/insights/viewer-checkin-attendance-plan.md`).
 
 ## Active Work
 
-없음(직전 작업 종료 상태).
+태그 색 커스텀화 — Phase 0-pre 진행 중. 첫 슬라이스(공개 경계 분리) 완료, 다음은 비주얼 스위트 복구.
 
 ## 배포가 안 될 때 (2026-07-17 실제로 겪음 — 다음 에이전트가 같은 길로 헤매지 말 것)
 
