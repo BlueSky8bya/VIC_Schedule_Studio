@@ -3087,8 +3087,8 @@ export function PublicPoster({
             <strong>색상 필터</strong>
             {(() => {
               const legendBtn = (tag: (typeof legendTags)[number]) => {
-                const color = schedule.palette.find((p) => p.key === tag.colorKey);
-                if (!color) return null;
+                const v = tagVisual.visualOf(tag.id);
+                if (v.missing || !v.bg) return null;
                 const on = tagFilters.includes(tag.id);
                 return (
                   <button
@@ -3101,8 +3101,8 @@ export function PublicPoster({
                     type="button"
                   >
                     <i
-                      data-color={color.key}
-                      style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+                      data-color={v.colorKey ?? undefined}
+                      style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
                     />
                     {tag.displayName}
                   </button>
@@ -4455,14 +4455,14 @@ export function PublicPoster({
               <strong className="legend-title">태그 필터</strong>
               {(() => {
                 const legendBtn = (tag: (typeof legendTags)[number]) => {
-                  const color = schedule.palette.find((item) => item.key === tag.colorKey);
-                  if (!color) {
+                  const v = tagVisual.visualOf(tag.id);
+                  if (v.missing || !v.bg) {
                     return null;
                   }
                   const swatch = (
                     <i
-                      data-color={color.key}
-                      style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+                      data-color={v.colorKey ?? undefined}
+                      style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
                     />
                   );
                   // A2 고도화: 다중 선택과 동기화. 선택된 게 있으면 안 고른 항목은 흐리게.
