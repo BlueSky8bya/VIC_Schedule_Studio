@@ -5851,8 +5851,8 @@ textarea:disabled {
   flex: 0 0 auto;
 }
 .tag-editor-custom input[type="color"] {
-  width: 30px;
-  height: 26px;
+  width: 46px;
+  height: 30px;
   padding: 0;
   border: 1.5px solid var(--line, #ddd6ee);
   border-radius: var(--r-sm);

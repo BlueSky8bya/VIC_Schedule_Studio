@@ -474,15 +474,6 @@ export function TagLegendEditor({
     });
   }
 
-  // 다른 '대분류'가 이미 쓰는 색인지(세부는 부모 색을 상속하므로 색 경쟁에서 제외).
-  // 색 중복은 같은 kind끼리만 막는다 — 콘텐츠는 콘텐츠끼리, 방식은 방식끼리 색이 달라야 한다.
-  // (콘텐츠는 카드 색, 방식은 점이라 서로 같은 색을 써도 헷갈리지 않는다.)
-  function usedByOther(tagId: string, key: ColorKey) {
-    const myKind = draft[tagId]?.kind ?? "content";
-    return Object.entries(draft).some(
-      ([id, d]) => id !== tagId && d.parentId === null && d.kind === myKind && d.colorKey === key
-    );
-  }
 
   // 콘텐츠↔방식 토글 — kind를 바꾸면 색도 그 kind의 풀(콘텐츠=무늬, 방식=단색)로 자동 전환한다.
   // 현재 색이 새 풀에 맞고 같은 kind에서 안 겹치면 유지, 아니면 빈 색을 찾고, 없으면 새로 생성.
@@ -516,15 +507,6 @@ export function TagLegendEditor({
       }
     }
     setDraft((cur) => ({ ...cur, [tagId]: { ...cur[tagId], kind: newKind, colorKey: nextKey } }));
-  }
-
-  function pick(tagId: string, key: ColorKey) {
-    hapticTick();
-    setDraft((cur) => {
-      const d = cur[tagId];
-      const nextKey = d.colorKey === key ? "" : key;
-      return { ...cur, [tagId]: { ...d, colorKey: nextKey } };
-    });
   }
 
   // 색 비어있음 경고는 '대분류'만(세부는 부모 색 상속).
@@ -702,44 +684,17 @@ export function TagLegendEditor({
             >
               {d.kind === "modifier" ? "형식" : "콘텐츠"}
             </button>
-            <div className="tag-editor-swatches">
-            {/* kind별 색 풀 분리 — 콘텐츠는 무늬 색만, 방식은 단색만 고를 수 있다. */}
-            {effectivePalette
-              .filter((c) => isPatternColor(c.key) === (d.kind !== "modifier"))
-              .map((c) => {
-              const selected = d.colorKey === c.key;
-              const blocked = usedByOther(tag.id, c.key);
-              return (
-                <button
-                  aria-label={c.name}
-                  className={selected ? "selected" : ""}
-                  data-color={c.key}
-                  disabled={locked || (blocked && !selected)}
-                  key={c.key}
-                  onClick={() => pick(tag.id, c.key)}
-                  style={{ backgroundColor: c.bgColor, borderColor: c.borderColor }}
-                  title={
-                    locked
-                      ? "휴뱅은 색을 바꿀 수 없어요"
-                      : blocked && !selected
-                        ? `${c.name} (다른 태그가 사용 중)`
-                        : c.name
-                  }
-                  type="button"
-                />
-              );
-            })}
-            </div>
-            {/* 커스텀 색: 팔레트 밖의 원하는 색을 직접. 값이 있으면 렌더가 이 색을 쓴다(팔레트 폴백 대신).
-                무늬는 없어졌으므로 콘텐츠·방식 모두 단색 커스텀 가능. */}
+            {/* 색은 한 칸 — 현재 색을 보여주면서 누르면 원하는 색을 직접 고른다(무늬 제거 후 단색).
+                커스텀(bgHex) 없으면 시드 팔레트 색을 보여주고, 고르면 그 색이 렌더에 쓰인다.
+                '기본'은 시드 색으로 되돌리기(bgHex 비움). */}
             <div className="tag-editor-custom">
               <input
-                aria-label="커스텀 색 직접 고르기"
+                aria-label="태그 색 고르기"
                 disabled={locked}
                 onChange={(e) =>
                   setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: e.target.value } }))
                 }
-                title="원하는 색 직접 고르기"
+                title="누르면 원하는 색을 직접 고를 수 있어요"
                 type="color"
                 value={d.bgHex ?? (d.colorKey ? colorOf(d.colorKey)?.bgColor ?? "#cccccc" : "#cccccc")}
               />
@@ -750,10 +705,10 @@ export function TagLegendEditor({
                   onClick={() =>
                     setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: null } }))
                   }
-                  title="팔레트 색으로 되돌리기"
+                  title="기본(팔레트) 색으로 되돌리기"
                   type="button"
                 >
-                  팔레트
+                  기본
                 </button>
               ) : null}
             </div>
