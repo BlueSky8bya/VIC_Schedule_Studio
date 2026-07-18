@@ -160,6 +160,22 @@ const publicEvents: PublicScheduleEvent[] = [
     tagIds: ["tag-full-track", "tag-collab"],
     primaryTagIds: ["tag-full-track", "tag-collab"],
     sortOrder: 1
+  },
+  {
+    // 무늬(패턴) 콘텐츠 색을 fill로 쓰는 카드 — '대회'(남색 indigo)는 무늬가 있어 글자 가독성 작업
+    // (0B)의 대상이다. 비주얼 스위트가 '무늬 위 글자'를 실제로 커버하도록 샘플에 하나 둔다.
+    id: "evt-tourn",
+    startsAt: "2026-06-25T20:00:00+09:00",
+    endsAt: "2026-06-25T23:00:00+09:00",
+    isAllDay: false,
+    isTentative: false,
+    publicTitle: "대회 리허설\n브래킷 점검",
+    status: "scheduled",
+    visibilityScope: "public",
+    category: "stream",
+    tagIds: ["tag-tournament"],
+    primaryTagIds: ["tag-tournament"],
+    sortOrder: 1
   }
 ];
 

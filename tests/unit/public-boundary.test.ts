@@ -60,7 +60,15 @@ const forbiddenPrivateKeys = [
 describe("public sample fallback — no private leak", () => {
   it("exposes only public-scope events (evt-007 embargo / evt-008 work excluded)", () => {
     const ids = samplePublicScheduleData.events.map((e) => e.id).sort();
-    expect(ids).toEqual(["evt-001", "evt-002", "evt-003", "evt-004", "evt-005", "evt-006"]);
+    expect(ids).toEqual([
+      "evt-001",
+      "evt-002",
+      "evt-003",
+      "evt-004",
+      "evt-005",
+      "evt-006",
+      "evt-tourn"
+    ]);
     for (const e of samplePublicScheduleData.events) {
       expect(e.visibilityScope).toBe("public");
     }
@@ -79,7 +87,7 @@ describe("public sample fallback — no private leak", () => {
     for (const key of forbiddenPrivateKeys) {
       expect(payload, `payload leaked ${key}`).not.toContain(key);
     }
-    expect(schedule.events).toHaveLength(6);
+    expect(schedule.events).toHaveLength(7);
   });
 
   it("unknown slug empties events but keeps public calendar shape", async () => {

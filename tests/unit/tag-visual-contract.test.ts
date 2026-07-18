@@ -126,11 +126,16 @@ describe("ink contract — eventInkStyle", () => {
     expect(["#0a0a0a", "#ffffff"]).toContain(ink.color);
   });
 
-  it("무늬 색(indigo)은 굵기를 한 단계 올리고 헤일로(scrim)를 붙인다", () => {
+  it("0B: 모든 카드에 얇은 헤일로, 무늬 카드는 더 두껍게(+굵기)", () => {
     const plain = eventInkStyle("#2f63d6", "#ffffff", "blue"); // 무늬 아님
     const patterned = eventInkStyle("#5a44c2", "#ffffff", "indigo"); // 무늬 색
-    expect(plain["--evt-shadow" as keyof typeof plain]).toBe("none");
-    expect(patterned["--evt-shadow" as keyof typeof patterned]).not.toBe("none");
+    const plainShadow = String(plain["--evt-shadow" as keyof typeof plain]);
+    const patShadow = String(patterned["--evt-shadow" as keyof typeof patterned]);
+    // 민무늬도 헤일로가 있다(과거 'none'에서 바뀜 — 파스텔 위 가독성).
+    expect(plainShadow).not.toBe("none");
+    expect(plainShadow).toContain("#2f63d6");
+    // 무늬 카드는 그림자 레이어가 더 많다(불투명도↑).
+    expect(patShadow.split(",").length).toBeGreaterThan(plainShadow.split(",").length);
   });
 
   it("굵기는 700/800/900 중 하나(대비 구간)", () => {

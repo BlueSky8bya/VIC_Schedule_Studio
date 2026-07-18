@@ -332,12 +332,16 @@ export function eventInkStyle(bgColor: string, textColor: string, colorKey: stri
     ink = crBlack >= crWhite ? "#0a0a0a" : "#ffffff";
     cr = Math.max(crBlack, crWhite);
   }
-  // 대비 구간별 기본 굵기(절제). 대비 높을수록 가볍게, 낮을수록 굵게.
+  // 대비 구간별 기본 굵기(절제). 대비 높을수록 가볍게, 낮을수록 굵게. (굵기는 그대로 — glyph 폭이
+  // 바뀌면 줄바꿈·카드 높이·스티커 좌표가 밀린다(ADR-0004). 가독성은 헤일로/스크림으로만 올린다.)
   let weight = cr >= 7 ? 700 : cr >= 4.5 ? 800 : 900;
-  let shadow = "none";
+  // 0B: 모든 카드에 바탕색 얇은 헤일로 — 글자 가장자리에 '바탕색 여백'을 둘러 파스텔·무늬 위에서도
+  // 또렷하게 뜬다(글자를 배경에서 살짝 떼어낸다). text-shadow라 reflow 없음 = 레이아웃 불변.
+  let shadow = `0 0 1px ${bgColor}`;
   if (isPatternColor(colorKey)) {
-    weight = Math.min(900, weight + 100); // 무늬 노이즈 보정
-    shadow = `0 0 2px ${bgColor}, 0 0 1px ${bgColor}`; // 바탕색 헤일로로 글자를 무늬에서 분리
+    weight = Math.min(900, weight + 100); // 무늬 노이즈 보정(굵기)
+    // 무늬는 텍스처와 싸우므로 헤일로를 더 두껍게(같은 그림자를 겹쳐 불투명도↑) → 무늬에서 확실히 분리.
+    shadow = `0 0 2px ${bgColor}, 0 0 2px ${bgColor}, 0 0 1px ${bgColor}`;
   }
   return {
     color: ink,
