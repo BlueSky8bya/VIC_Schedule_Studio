@@ -126,6 +126,14 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Active Work
 
+**태그 색 커스텀화 — 기능 전체 구현 완료**(Phase 0~3, `85d6faf`까지). 커스텀 색이 전 표면 일관
+반영(카드·2색·점·칩·범례·상세·인사이트) + 편집기 색 칸(단색 입력 + 톤 프리셋 파스텔/부드럽게/선명/
+깊게 + 대비 배지 AA + 기본 되돌리기) + 서버 검증(#RRGGBB·대분류만·재부모 NULL). 무늬 전면 제거.
+DB `bg_hex` 컬럼(0052) 적용됨. **남음 = 자잘한 디자인 폴리시**: 편집기 색 행이 요소 많아 밀도 높음
+(색 입력+토글+톤4+배지+기본) → 레이아웃 정리 필요. (HSLuv 색환 휠은 네이티브 피커+HSL 톤으로 갈음.)
+아래는 세부 이력.
+
+--- (세부 이력) ---
 태그 색 커스텀화 — 0A(resolver 이관)·0B(가독성) 완료, **무늬 전면 제거 완료**(`cd53f06`,
 baseline 교정 `5d2039e`). 토리님 결정으로 무늬 알파↓론 체감 없어 아예 제거 — 카드/칩 단색.
 globals.css `[data-color=*]` 무늬 + `.evt-pat` 삭제, eventInkStyle isPatternColor 분기 제거(2-arg),
