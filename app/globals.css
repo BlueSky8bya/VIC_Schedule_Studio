@@ -928,81 +928,11 @@ html[data-reduce-motion] .portrait-lock-icon {
   white-space: nowrap;
 }
 
-/* ── 태그 색 무늬(패턴) ───────────────────────────────────────────────
-   같은 계열(비슷한 색)끼리는 "민무늬 1 + 무늬 1"로 갈라 무조건 구분한다.
-   각 계열의 대표는 민무늬로 두고, 두 번째 색만 무늬를 입힌다.
-     초록 계열: 소통뱅(민무늬) / VRChat(무늬)
-     청록 계열: 시네티(민무늬) / 시참의날(무늬)
-     파랑 계열: 서버(민무늬) / 대회(무늬)
-     빨강 계열: CK(민무늬) / 업도움 배너(.support-bar, 무늬 — 아래 별도 정의)
-   data-color="<팔레트 key>"가 붙은 모든 요소(범례 스와치·이벤트 칩·태그 버튼)에 공통 적용.
-   배경은 인라인 style(background)로 칠해지므로, 무늬는 ::after 오버레이로 얹는다.
-   세로 줄무늬는 글자를 세로로 끊어 가독성을 해치므로 쓰지 않는다. */
-/* 무늬는 ::after 오버레이가 아니라 요소 자신의 background-image로 얹는다.
-   배경색은 인라인 backgroundColor로, 무늬는 그 위(background-image)에 깔린다.
-   글자(자식)는 배경보다 항상 위라 가려지지 않고, html2canvas 캡쳐에서도 그대로 그려진다.
-   (단축 background:가 아니라 backgroundColor:를 써야 이 background-image가 살아남는다.) */
-/* !important 이유: 칩/필 컴포넌트 CSS가 `background:` 단축속성으로 색을 칠하는데
-   그게 나중에 로드되면서 이 background-image(무늬)를 none으로 덮어버린다.
-   무늬는 항상 살아남아야 하므로 background-image/size를 강제 우선한다. */
-/* 대회(남색): 어두운 칸 → 흰 대각선 "＼". 0B: 34%→18%로 낮춰 흰 글자와 덜 싸우게(색맹 구분은 유지). */
-[data-color="indigo"] {
-  background-image: repeating-linear-gradient(-45deg, rgb(255 255 255 / 18%) 0 2px, transparent 2px 7px) !important;
-}
-/* VRChat(민트): 밝은 칸 → 어두운 대각선 "＼". 0B: 10%→6%(글자와 덜 싸우게). */
-[data-color="mint"] {
-  background-image: repeating-linear-gradient(-45deg, rgb(0 0 0 / 6%) 0 2px, transparent 2px 7px) !important;
-}
-/* 시참의날(하늘): 밝은 칸 → 어두운 점. 0B: 11%→7%(점은 성겨서 조금 더 남긴다). */
-[data-color="sky"] {
-  background-image: radial-gradient(rgb(0 0 0 / 7%) 1.4px, transparent 1.6px) !important;
-  background-size: 7px 7px !important;
-}
-/* #6: 추가된 생성 색(gen-)은 연한 톤이라 비슷해 보일 수 있어 무늬로 추가 구분. key 접두사로 무늬를
-   정한다(대각선/점/격자). 세로무늬는 가독성 때문에 쓰지 않는다. 0B: 톤을 6~7%로 낮춰 글자와 덜
-   싸우게 — 색맹 구분은 '무늬 세기'가 아니라 hue 그룹별로 다른 '무늬 모양'이 담당하므로 유지된다. */
-[data-color^="gen-diag-"] {
-  background-image: repeating-linear-gradient(
-    -45deg,
-    rgb(0 0 0 / 6%) 0 2px,
-    transparent 2px 7px
-  ) !important;
-}
-[data-color^="gen-dots-"] {
-  background-image: radial-gradient(rgb(0 0 0 / 7%) 1.4px, transparent 1.6px) !important;
-  background-size: 7px 7px !important;
-}
-[data-color^="gen-grid-"] {
-  background-image:
-    repeating-linear-gradient(0deg, rgb(0 0 0 / 6%) 0 1px, transparent 1px 8px),
-    repeating-linear-gradient(90deg, rgb(0 0 0 / 6%) 0 1px, transparent 1px 8px) !important;
-}
-/* 크로스해치(빗금 ×): 두 방향 대각선 — diag/grid와 구분되는 또 다른 무늬 */
-[data-color^="gen-cross-"] {
-  background-image:
-    repeating-linear-gradient(45deg, rgb(0 0 0 / 6%) 0 2px, transparent 2px 8px),
-    repeating-linear-gradient(-45deg, rgb(0 0 0 / 6%) 0 2px, transparent 2px 8px) !important;
-}
-/* 가로줄: 세로 글자 가독성을 해치지 않는 수평 점선 띠 */
-[data-color^="gen-dash-"] {
-  background-image: repeating-linear-gradient(
-    0deg,
-    rgb(0 0 0 / 6%) 0 2px,
-    transparent 2px 8px
-  ) !important;
-}
-
-/* D: 2색 일정칸의 무늬 오버레이. data-color가 붙어 위 무늬 규칙이 그대로 적용되고,
-   배경색은 투명이라 칸 자체의 색 그라데이션이 비쳐 보인다(= 색은 섞이고, 무늬는 각 쪽에 남음).
-   반쪽 분할은 호출부에서 clip-path 인라인으로(이어진 칸 가운데가 경계). */
-.evt-pat {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit; /* 칸 모서리에 맞춰 둥글게 → overflow:hidden 없이도 무늬가 안 삐져나옴 */
-  background-color: transparent;
-  pointer-events: none;
-}
+/* ── 태그 색 무늬(패턴) — 제거됨(2026-07-18) ──────────────────────────────
+   예전엔 비슷한 색을 무늬(대각선/점/격자)로 갈라 색맹 구분 단서로 썼다. 커스텀 색(Phase 1)에서
+   토리님이 hue를 자유롭게 골라 '진짜 다른 색'으로 구분하기로 하고, 텍스처가 글자 가독성을 해쳐
+   무늬를 전면 제거했다. 카드·칩은 단색이다. (편집기의 색 풀 분리 로직·색 생성기의 gen-* key는
+   Phase 1의 HSLuv 피커로 대체될 때 함께 정리한다.) */
 
 /* ── #5 동작 줄이기(reduce motion) ─────────────────────────────────────────
    사용자가 '동작 줄이기'를 켜면(<html data-reduce-motion>) 끊임없이 반복되는 '장식용' 모션만

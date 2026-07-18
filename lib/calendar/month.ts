@@ -7,7 +7,6 @@ import type {
 } from "@/lib/domain/schedule-types";
 import { PRODUCT_TIMEZONE } from "@/lib/domain/schedule-types";
 import { getDayMark, type DayMark } from "@/lib/calendar/holidays";
-import { isPatternColor } from "@/lib/tags/color-gen";
 import type { CSSProperties } from "react";
 
 export type MonthCell = {
@@ -322,7 +321,8 @@ function contrastRatio(hexA: string, hexB: string): number {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 }
 // 배경색 위에 올릴 글자색/굵기/헤일로를 정해 인라인 스타일(+CSS 변수)로 돌려준다.
-export function eventInkStyle(bgColor: string, textColor: string, colorKey: string): CSSProperties {
+// (무늬 제거 후: 카드는 단색이라 색별 무늬 보정이 없다 — 대비 기반 잉크·굵기 + 얇은 헤일로만.)
+export function eventInkStyle(bgColor: string, textColor: string): CSSProperties {
   let ink = textColor;
   let cr = contrastRatio(bgColor, textColor);
   if (cr < 4.5) {
@@ -333,16 +333,11 @@ export function eventInkStyle(bgColor: string, textColor: string, colorKey: stri
     cr = Math.max(crBlack, crWhite);
   }
   // 대비 구간별 기본 굵기(절제). 대비 높을수록 가볍게, 낮을수록 굵게. (굵기는 그대로 — glyph 폭이
-  // 바뀌면 줄바꿈·카드 높이·스티커 좌표가 밀린다(ADR-0004). 가독성은 헤일로/스크림으로만 올린다.)
-  let weight = cr >= 7 ? 700 : cr >= 4.5 ? 800 : 900;
-  // 0B: 모든 카드에 바탕색 얇은 헤일로 — 글자 가장자리에 '바탕색 여백'을 둘러 파스텔·무늬 위에서도
-  // 또렷하게 뜬다(글자를 배경에서 살짝 떼어낸다). text-shadow라 reflow 없음 = 레이아웃 불변.
-  let shadow = `0 0 1px ${bgColor}`;
-  if (isPatternColor(colorKey)) {
-    weight = Math.min(900, weight + 100); // 무늬 노이즈 보정(굵기)
-    // 무늬는 텍스처와 싸우므로 헤일로를 더 두껍게(같은 그림자를 겹쳐 불투명도↑) → 무늬에서 확실히 분리.
-    shadow = `0 0 2px ${bgColor}, 0 0 2px ${bgColor}, 0 0 1px ${bgColor}`;
-  }
+  // 바뀌면 줄바꿈·카드 높이·스티커 좌표가 밀린다(ADR-0004). 가독성은 헤일로로만 올린다.)
+  const weight = cr >= 7 ? 700 : cr >= 4.5 ? 800 : 900;
+  // 모든 카드에 바탕색 얇은 헤일로 — 글자 가장자리에 '바탕색 여백'을 둘러 파스텔 위에서 또렷하게
+  // 뜬다(글자를 배경에서 살짝 떼어낸다). text-shadow라 reflow 없음 = 레이아웃 불변.
+  const shadow = `0 0 1px ${bgColor}`;
   return {
     color: ink,
     ["--evt-weight" as string]: String(weight),
@@ -359,7 +354,7 @@ export function eventColorStyle(colors: ColorPaletteEntry[]): CSSProperties {
   return {
     backgroundColor: a.bgColor,
     borderColor: a.borderColor,
-    ...eventInkStyle(a.bgColor, a.textColor, a.key)
+    ...eventInkStyle(a.bgColor, a.textColor)
   };
 }
 
@@ -502,34 +497,9 @@ export function mixedEventStyle(
     backgroundPositionX: positionX,
     backgroundRepeat: "no-repeat",
     // 글자색/굵기/헤일로는 가독성 규칙으로(두 파스텔 중 첫 색 기준 — 둘 다 비슷한 밝기의 콘텐츠색).
-    ...eventInkStyle(a.bgColor, a.textColor, a.key),
+    ...eventInkStyle(a.bgColor, a.textColor),
     // 실제 테두리는 투명으로 두고, 위 border-box 그라데이션이 테두리처럼 보이게 한다.
     borderColor: "transparent"
-  };
-}
-
-// D: 혼합 칸 무늬 오버레이 스타일. 색 그라데이션과 똑같은 윈도잉(크기·위치)으로 마스크를 깔아,
-// 무늬가 색과 같은 위치(가운데 38~62%)에서 부드럽게 사라지게 한다 → 무늬 경계도 색처럼 흐릿.
-// A는 왼쪽에서 불투명→가운데서 사라짐, B는 가운데서 나타나→오른쪽 불투명.
-export function mixedPatternMaskStyle(
-  win: Pick<CSSProperties, "backgroundSize" | "backgroundPositionX">,
-  side: "a" | "b"
-): CSSProperties {
-  const grad =
-    side === "a"
-      ? "linear-gradient(to right, #000 38%, transparent 62%)"
-      : "linear-gradient(to right, transparent 38%, #000 62%)";
-  const size = String(win.backgroundSize ?? "100% 100%");
-  const pos = `${String(win.backgroundPositionX ?? "center")} center`;
-  return {
-    WebkitMaskImage: grad,
-    maskImage: grad,
-    WebkitMaskSize: size,
-    maskSize: size,
-    WebkitMaskPosition: pos,
-    maskPosition: pos,
-    WebkitMaskRepeat: "no-repeat",
-    maskRepeat: "no-repeat"
   };
 }
 

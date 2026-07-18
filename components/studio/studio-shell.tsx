@@ -66,7 +66,6 @@ import {
   getSpanRunRange,
   getTodayKst,
   mixedEventStyle,
-  mixedPatternMaskStyle,
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
@@ -5184,23 +5183,6 @@ export function StudioShell({
                           ) : null}
                           {dropLineBeforeId === null && eventIndex === dateEvents.length - 1 ? (
                             <span className="drop-insert-line end" aria-hidden="true" />
-                          ) : null}
-                          {mixStyle ? (
-                            <>
-                              {/* 무늬도 색과 같은 위치에서 부드럽게 사라지게(마스크) — 경계 흐릿 */}
-                              <span
-                                aria-hidden="true"
-                                className="evt-pat"
-                                data-color={colors[0].key}
-                                style={mixedPatternMaskStyle(mixStyle, "a")}
-                              />
-                              <span
-                                aria-hidden="true"
-                                className="evt-pat"
-                                data-color={colors[1].key}
-                                style={mixedPatternMaskStyle(mixStyle, "b")}
-                              />
-                            </>
                           ) : null}
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}

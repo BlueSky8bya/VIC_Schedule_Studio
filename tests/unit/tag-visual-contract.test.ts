@@ -117,29 +117,24 @@ describe("tag color contract — fills & extras (dots)", () => {
 
 describe("ink contract — eventInkStyle", () => {
   it("태그 글자색이 AA 통과하면 그대로 쓴다", () => {
-    const ink = eventInkStyle("#ffec99", "#6b4e00", "yellow"); // 노랑 위 진한 갈색(대비 충분)
+    const ink = eventInkStyle("#ffec99", "#6b4e00"); // 노랑 위 진한 갈색(대비 충분)
     expect(ink.color).toBe("#6b4e00");
   });
 
   it("AA 미달이면 흑/백 중 대비 높은 쪽으로 교정한다", () => {
-    const ink = eventInkStyle("#d11a2a", "#d11a2a", "red"); // 배경=글자 동색(대비 1)
+    const ink = eventInkStyle("#d11a2a", "#d11a2a"); // 배경=글자 동색(대비 1)
     expect(["#0a0a0a", "#ffffff"]).toContain(ink.color);
   });
 
-  it("0B: 모든 카드에 얇은 헤일로, 무늬 카드는 더 두껍게(+굵기)", () => {
-    const plain = eventInkStyle("#2f63d6", "#ffffff", "blue"); // 무늬 아님
-    const patterned = eventInkStyle("#5a44c2", "#ffffff", "indigo"); // 무늬 색
-    const plainShadow = String(plain["--evt-shadow" as keyof typeof plain]);
-    const patShadow = String(patterned["--evt-shadow" as keyof typeof patterned]);
-    // 민무늬도 헤일로가 있다(과거 'none'에서 바뀜 — 파스텔 위 가독성).
-    expect(plainShadow).not.toBe("none");
-    expect(plainShadow).toContain("#2f63d6");
-    // 무늬 카드는 그림자 레이어가 더 많다(불투명도↑).
-    expect(patShadow.split(",").length).toBeGreaterThan(plainShadow.split(",").length);
+  it("무늬 제거 후: 모든 카드에 바탕색 얇은 헤일로만(색별 특수화 없음)", () => {
+    const a = eventInkStyle("#2f63d6", "#ffffff");
+    const b = eventInkStyle("#5a44c2", "#ffffff"); // 예전 무늬색(indigo) — 이제 특수 취급 없음
+    expect(String(a["--evt-shadow" as keyof typeof a])).toBe("0 0 1px #2f63d6");
+    expect(String(b["--evt-shadow" as keyof typeof b])).toBe("0 0 1px #5a44c2");
   });
 
   it("굵기는 700/800/900 중 하나(대비 구간)", () => {
-    const w = eventInkStyle("#ffec99", "#6b4e00", "yellow")["--evt-weight" as never];
+    const w = eventInkStyle("#ffec99", "#6b4e00")["--evt-weight" as never];
     expect(["700", "800", "900"]).toContain(w);
   });
 });
