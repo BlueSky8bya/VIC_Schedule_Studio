@@ -132,9 +132,12 @@ globals.css `[data-color=*]` 무늬 + `.evt-pat` 삭제, eventInkStyle isPattern
 2색 `.evt-pat` 오버레이 제거. geometry Δ0. **Phase 1 대폭 단순화**: 무늬 없으니 pattern_key CSS
 재작업·CVD 자동배정 blocker **소멸**(bg_hex 컬럼만). **함정 기록**: CSS 변경 후 비주얼 baseline이
 안 바뀌면 **`.next/cache` 제거**하고 재빌드(next build가 옛 CSS를 캐시함 — 무늬 제거 때 실제로 당함).
-**다음 = Phase 1**: `broadcast_tags.bg_hex` 컬럼(nullable, CHECK hex 정규식·자식 NULL) 마이그레이션 →
-resolver `visualOf`가 bg_hex 우선·없으면 color_key 폴백 → 모든 이관된 표면이 한 번에 커스텀 색 받음.
-그 뒤 서버 hex 검증 recolor(studio-write op, ADR-0006) → HSLuv 색환 피커(Phase 3).
+**Phase 1 첫 슬라이스 완료**(`198c3d1`): `broadcast_tags.bg_hex` 컬럼(0052, **prod 적용됨**) +
+resolver `buildEffectivePalette`(대분류 bg_hex가 colorKey 엔트리 덮어씀 → 카드·칩·범례 전부 bg_hex
+반영, 없으면 palette 폴백=렌더 불변) + 로더 select/매핑 + BroadcastTag.bgHex. 커스텀 색이 end-to-end
+흐름(태그에 bg_hex 넣으면 즉시 표시). **배포 순서 지킴**: 마이그레이션 먼저 적용 후 push(로더가
+bg_hex를 select하므로). **다음**: Phase 2 서버 recolor(studio-write op로 bg_hex 저장, ADR-0006,
+hex 검증, owner/dev 롤테스트, reparent 시 bg_hex NULL) → Phase 3 HSLuv 색환 피커.
 아래는 이전 0A/0B 상세.
 - (이전) **0B 1차(가독성)**(`164fb71`, 지금은 무늬 제거로 대체됨).
 0B: 무늬 알파↓(indigo 34→18·mint 10→6·sky 11→7·gen 6~7%) + eventInkStyle 전 카드 헤일로
