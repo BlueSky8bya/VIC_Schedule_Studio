@@ -133,8 +133,8 @@ export function ColorPickerPopover({
   const curHexLower = hex.toLowerCase();
   // 현재 색이 기본 18색 중 어디에 '가장 가까운지'를 항상 계산한다(색조 기준, 20°씩). 그 칸을
   // 하이라이팅해 "지금 이 근처를 다듬는 중"을 시각으로 알린다 — 미세조정·hex입력 중에도 따라온다.
-  // 무채색(채도 낮음)이면 대응하는 기본색이 없으므로 하이라이팅하지 않는다.
-  const nearestIdx = hsv.s >= 12 ? Math.round(hsv.h / 20) % 18 : -1;
+  // 아주 연하거나 진해도(채도 낮아도) 색조는 있으므로 항상 가장 가까운 칸을 잡는다.
+  const nearestIdx = Math.round(hsv.h / 20) % 18;
 
   // 트리거 기준 위치(화면 좌표, fixed). 오른쪽 정렬 + 화면 밖으로 나가면 위로 뒤집는다.
   const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
@@ -230,22 +230,28 @@ export function ColorPickerPopover({
       </div>
       {!con.passesAA ? <p className="cpop-warn">글자가 흐릴 수 있어요</p> : null}
 
-      {/* 톤 프리셋 — 색조 유지, 톤만. */}
+      {/* 톤 프리셋 — 색조는 그대로 두고 톤(파스텔~깊게)만. '필터'처럼: 각 버튼을 '현재 색조에 그
+          톤을 씌운 실제 결과색'으로 칠해(인스타 필터 썸네일) 누르기 전에 결과를 보여준다. */}
       <div className="cpop-tones">
-        {TONE_PRESETS.map((t) => (
-          <button
-            className="tag-tone"
-            key={t.key}
-            onClick={() => {
-              hapticTick();
-              snapshot();
-              setHsv(hexToHsv(applyTone(hex, t.key)));
-            }}
-            type="button"
-          >
-            {t.label}
-          </button>
-        ))}
+        {TONE_PRESETS.map((t) => {
+          const preview = applyTone(hex, t.key); // 이 버튼을 누르면 될 색
+          const ink = inkContrast(preview).ink;
+          return (
+            <button
+              className="tag-tone"
+              key={t.key}
+              onClick={() => {
+                hapticTick();
+                snapshot();
+                setHsv(hexToHsv(preview));
+              }}
+              style={{ background: preview, color: ink, borderColor: "transparent" }}
+              type="button"
+            >
+              {t.label}
+            </button>
+          );
+        })}
       </div>
 
       {/* ── 기본 색상 존(아래) — 트레이(움푹한 판) + 위 미세조정 존을 가리키는 홈(notch).

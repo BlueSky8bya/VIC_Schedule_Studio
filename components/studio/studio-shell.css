@@ -5981,14 +5981,22 @@ textarea:disabled {
   background: #fbfaff;
   padding: 7px 0;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--ink-soft, #4a4360);
   cursor: pointer;
   white-space: nowrap;
+  /* 버튼 배경이 '결과색'으로 인라인 지정되므로(필터 썸네일), hover는 배경 대신 그림자·확대로. */
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 45%);
+  transition: transform 0.1s var(--ease, ease), box-shadow 0.12s var(--ease, ease);
 }
 .tag-tone:hover {
-  border-color: var(--violet, #7048e8);
-  background: #f3eeff;
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 45%),
+    0 3px 8px -3px rgb(40 30 80 / 40%);
+}
+.tag-tone:active {
+  transform: scale(0.95);
 }
 /* 기본 색상 트레이 — '움푹한 판'처럼 안쪽으로 파여, 위 미세조정 존과 시각적으로 구분된다.
    위 모서리 가운데의 홈(notch)이 위(미세조정 존)를 가리켜 "여기서 골라 위에서 다듬는다"를
