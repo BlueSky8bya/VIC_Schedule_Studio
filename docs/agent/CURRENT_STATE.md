@@ -126,8 +126,13 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Active Work
 
-태그 색 커스텀화 — Phase 0A 진행 중. resolver 신설 + 시청자 포스터 카드 이관(픽셀 동일 증명) 완료.
-다음: 나머지 표면 이관(studio-shell·insights·칩·범례).
+태그 색 커스텀화 — Phase 0A **category-색 경로 이관 완료**. resolver(`createTagVisualResolver`)로
+통일: 시청자 카드·스튜디오 카드·시청자 필터범례 2곳·스튜디오 범례(TagLegendEditor)·태그 피커 칩.
+뷰어 표면은 비주얼 카메라로 픽셀 동일 증명. **의도적 미이관**: ①읽기전용 상세 칩(studio-shell
+2736·3712) = `tag.colorKey` 직접(세부 태그면 자기 색) → 카테고리 vs raw는 Phase 1 제품 결정
+②insights(4맵) = 이미 DB에서 카테고리 롤업이 맞음, bg_hex는 Phase 1에서. **다음**: 0B(가독성
+scrim, 눈에 보이는 첫 변화) 또는 Phase 1(bg_hex 컬럼). ⚠ Phase 1 전 필수: pattern_key CSS
+재작업(`data-pattern`+{shape,ink,alpha}), 무늬 CVD 자동배정.
 
 ## 배포가 안 될 때 (2026-07-17 실제로 겪음 — 다음 에이전트가 같은 길로 헤매지 말 것)
 
