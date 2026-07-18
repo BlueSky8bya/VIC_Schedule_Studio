@@ -2582,15 +2582,16 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  justify-content: space-between;
   column-gap: 8px;
   row-gap: 2px;
 }
 .event-subs .pill-sub-last .pill-sub-text {
   min-width: 0;
 }
+/* 점은 항상 오른쪽 끝(margin-left:auto) — wrap돼도 그 줄 오른쪽. space-between은 wrap 시 왼쪽으로 갔다. */
 .event-subs .pill-sub-last .pill-dots {
   margin-top: 0;
+  margin-left: auto;
   padding-top: 0;
   align-self: center;
 }
