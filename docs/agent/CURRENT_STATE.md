@@ -126,13 +126,15 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Active Work
 
-태그 색 커스텀화 — Phase 0A **category-색 경로 이관 완료**. resolver(`createTagVisualResolver`)로
-통일: 시청자 카드·스튜디오 카드·시청자 필터범례 2곳·스튜디오 범례(TagLegendEditor)·태그 피커 칩.
-뷰어 표면은 비주얼 카메라로 픽셀 동일 증명. **의도적 미이관**: ①읽기전용 상세 칩(studio-shell
-2736·3712) = `tag.colorKey` 직접(세부 태그면 자기 색) → 카테고리 vs raw는 Phase 1 제품 결정
-②insights(4맵) = 이미 DB에서 카테고리 롤업이 맞음, bg_hex는 Phase 1에서. **다음**: 0B(가독성
-scrim, 눈에 보이는 첫 변화) 또는 Phase 1(bg_hex 컬럼). ⚠ Phase 1 전 필수: pattern_key CSS
-재작업(`data-pattern`+{shape,ink,alpha}), 무늬 CVD 자동배정.
+태그 색 커스텀화 — 0A(category-색 resolver 이관) 완료, **0B 1차(가독성) 완료**(`164fb71`).
+0B: 무늬 알파↓(indigo 34→18·mint 10→6·sky 11→7·gen 6~7%) + eventInkStyle 전 카드 헤일로
+(text-shadow=paint-only라 굵기·레이아웃 불변, 스티커 안전). 무늬는 유지(색맹=hue별 '모양'이 담당).
+**geometry.spec 하드 게이트 신설**(offset 기반=결정적: 표면 자연 폭/높이·칸 높이·스티커 비율좌표) +
+비주얼 fixture에 무늬 카드(대회=indigo) 추가(샘플에 무늬-fill 카드가 없어 커버 못 하던 구멍). 지오 Δ0
+실측. **비주얼 하네스 교훈 추가**: getBoundingClientRect는 transform:scale subpixel로 run간 흔들림 →
+지오는 offsetWidth/Height + 인라인 스타일로 측정할 것. **다음**: 0B 더(scrim 강화/AA 미달 태그) 또는
+Phase 1(bg_hex). ⚠ 미이관(의도): 상세 칩 raw colorKey, insights 4맵(bg_hex는 Phase 1). ⚠ Phase 1
+전 필수: pattern_key CSS 재작업(`data-pattern`+{shape,ink,alpha}), 무늬 CVD 자동배정.
 
 ## 배포가 안 될 때 (2026-07-17 실제로 겪음 — 다음 에이전트가 같은 길로 헤매지 말 것)
 
