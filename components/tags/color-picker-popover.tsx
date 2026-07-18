@@ -32,7 +32,7 @@ function clamp01(n: number) {
 }
 
 const POP_W = 268;
-const POP_H = 420;
+const POP_H = 452; // kind 전환 줄이 위에 붙어 살짝 커졌다(화면 밖이면 위로 뒤집는 계산용).
 
 export function ColorPickerPopover({
   value,
@@ -41,6 +41,7 @@ export function ColorPickerPopover({
   onChange,
   onClear,
   onClose,
+  onToggleKind,
   canClear
 }: {
   value: string; // 현재 색(hex)
@@ -49,6 +50,7 @@ export function ColorPickerPopover({
   onChange: (hex: string) => void;
   onClear: () => void; // 기본(팔레트) 색으로
   onClose: () => void;
+  onToggleKind?: () => void; // 콘텐츠↔형식 전환(행에서 라벨 뺀 대신 여기로 옮김)
   canClear: boolean;
 }) {
   const presets = useMemo(() => spectrum(kind), [kind]);
@@ -125,6 +127,16 @@ export function ColorPickerPopover({
       role="dialog"
       style={{ left, top }}
     >
+      {/* 이 태그의 종류(콘텐츠=칸 색·통계 / 형식=얹는 점). 행에서 라벨을 뺀 대신 여기서 전환. */}
+      {onToggleKind ? (
+        <div className="cpop-kind">
+          <span className="cpop-kind-cur">{kind === "modifier" ? "형식" : "콘텐츠"}</span>
+          <button className="cpop-kind-swap" onClick={onToggleKind} type="button">
+            {kind === "modifier" ? "콘텐츠로 바꾸기" : "형식으로 바꾸기"}
+          </button>
+        </div>
+      ) : null}
+
       {/* 채도(가로) × 명도(세로) 영역 — 좌표를 찍어 고른다. */}
       <div
         aria-label="채도·명도"

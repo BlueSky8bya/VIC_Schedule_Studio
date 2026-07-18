@@ -675,21 +675,9 @@ export function TagLegendEditor({
           />
         ) : (
           <>
-            <button
-              className={`tag-kind-toggle ${d.kind === "modifier" ? "mod" : ""}`}
-              disabled={locked}
-              onClick={() => toggleKind(tag.id)}
-              title={
-                d.kind === "modifier"
-                  ? "형식(합방·시참 등) — 누르면 콘텐츠로"
-                  : "콘텐츠 — 누르면 형식으로(셀 색 대신 점·통계 제외)"
-              }
-              type="button"
-            >
-              {d.kind === "modifier" ? "형식" : "콘텐츠"}
-            </button>
-            {/* 색은 스와치 하나 — 누르면 팝오버 피커(영역+색조 슬라이더+프리셋+톤). 행이 안 늘어나
-                좌우 스크롤이 안 생긴다. bgHex 없으면 시드 팔레트 색을 보여준다. */}
+            {/* 콘텐츠/형식 라벨은 뺐다 — 섹션 제목이 이미 구분하므로 중복. 그 폭을 색 스와치에
+                줘 좁은 2열 칸에서도 안 넘친다. kind 전환(콘텐츠↔형식)은 색 팝오버 안으로 옮겼다.
+                색은 스와치 하나 — 누르면 팝오버 피커(영역+색조 슬라이더+프리셋+톤). */}
             {(() => {
               const curColor = d.bgHex ?? (d.colorKey ? colorOf(d.colorKey)?.bgColor ?? "#cccccc" : "#cccccc");
               return (
@@ -712,6 +700,10 @@ export function TagLegendEditor({
                       anchor={pickerAnchor}
                       canClear={d.bgHex != null}
                       kind={d.kind}
+                      onToggleKind={() => {
+                        toggleKind(tag.id);
+                        setOpenPickerId(null); // kind 바뀌면 다른 섹션으로 이동 → 팝오버 닫는다
+                      }}
                       onChange={(hex) =>
                         setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: hex } }))
                       }

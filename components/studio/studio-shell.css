@@ -6039,6 +6039,37 @@ textarea:disabled {
   cursor: pointer;
 }
 
+/* 색 팝오버 안 kind 전환(콘텐츠↔형식) — 행에서 라벨을 뺀 대신 여기서. */
+.cpop-kind {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.cpop-kind-cur {
+  font-size: 12px;
+  font-weight: 900;
+  color: #5b5377;
+}
+.cpop-kind-swap {
+  border: 1.5px solid var(--line, #ddd6ee);
+  border-radius: var(--r-pill);
+  background: #f4f1fb;
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 800;
+  color: #6b5bd6;
+  cursor: pointer;
+  transition: background var(--ease, 0.18s), transform 0.08s;
+}
+.cpop-kind-swap:hover {
+  background: #e9e2fb;
+}
+.cpop-kind-swap:active {
+  transform: scale(0.95);
+}
+
 .tag-kind-toggle {
   flex: 0 0 auto;
   border: 1.5px solid var(--line, #ddd6ee);
