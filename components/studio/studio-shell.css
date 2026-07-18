@@ -4248,9 +4248,12 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   border-radius: 18px;
   background: #ffffff;
   box-shadow: 0 8px 26px rgb(120 110 160 / 12%);
-  /* 칸 패널 높이를 채워 사이드바와 밑선을 맞춘다(행은 align-content:stretch 기본값으로 늘어남). */
-  flex: 1 1 auto;
-  min-height: 0;
+  /* 칸 패널 높이를 채워 사이드바와 밑선을 맞춘다(행은 align-content:stretch 기본값으로 늘어남).
+     flex-shrink:0 = 내용(칸들)보다 작게 줄지 않는다 → 편집 패널이 열려 달력이 좁아지면서 카드가
+     높아질 때, 예전엔 grid가 할당 높이로 줄고 overflow:hidden이 아래를 '잘랐다'(밑 공간 있는데
+     잘린 듯). 이제 내용만큼 커지고(짧으면 flex-grow로 늘어나 사이드바 밑선은 그대로 맞음), 넘치면
+     페이지가 스크롤된다 — 카드가 안 잘린다. */
+  flex: 1 0 auto;
 }
 /* 달 이동 방향에 따라 좌/우로 밀려 들어온다(키 변경으로 재마운트될 때 재생). 다음 달=오른쪽에서,
    이전 달=왼쪽에서. translate 동안 가로 스크롤바가 안 생기게 부모(.studio-calendar-panel)가 클립. */

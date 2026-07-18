@@ -2960,31 +2960,49 @@ export function PublicPoster({
                       {bookmarked ? "♥" : "♡"}
                     </button>
                   ) : null}
-                {subs.length > 0 ? (
-                  <ul className={`event-subs${span.showTitle ? "" : " span-cont"}`}>
-                    {subs.map((sub, i) => (
-                      <li key={i}>{sub}</li>
-                    ))}
-                  </ul>
-                ) : null}
-                {/* 메타 한 줄: 관심(왼쪽) + 형식색 점(오른쪽). 따로 흩어져 공간 낭비하던 둘을 묶어
-                    가로폭을 채운다. 시작 칸에만(이어지는 칸엔 안 그림). */}
-                {span.showTitle && (tier || extraColors.length > 0) ? (
-                  <div className="event-meta">
-                    {tier ? (
-                      <span className={`event-popular tier-${tier.key}`} title={tier.label} aria-label={`관심 단계: ${tier.label}`}>
-                        <span className="flame" aria-hidden="true">{tier.flames}</span>
-                      </span>
-                    ) : null}
-                    {extraColors.length > 0 ? (
-                      <span className="pill-dots" aria-hidden="true">
-                        {extraColors.map((c, i) => (
-                          <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
-                        ))}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
+                {/* 형식색 점은 편집실과 똑같이 '마지막 서브 줄 오른쪽'에 함께 둔다 — 서브와 한 줄에
+                    들어가면 같은 줄(별도 점 줄 없이 높이 절약), 안 들어가면 flex-wrap으로 점만 아래로.
+                    서브가 없으면 아래 메타 줄에 (불꽃과 함께) 둔다. */}
+                {(() => {
+                  const showDots = span.showTitle && extraColors.length > 0;
+                  const dots = showDots ? (
+                    <span className="pill-dots" aria-hidden="true">
+                      {extraColors.map((c, i) => (
+                        <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                      ))}
+                    </span>
+                  ) : null;
+                  const dotsInSub = dots && subs.length > 0;
+                  return (
+                    <>
+                      {subs.length > 0 ? (
+                        <ul className={`event-subs${span.showTitle ? "" : " span-cont"}`}>
+                          {subs.map((sub, i) =>
+                            i === subs.length - 1 && dotsInSub ? (
+                              <li key={i} className="pill-sub-last">
+                                <span className="pill-sub-text">{sub}</span>
+                                {dots}
+                              </li>
+                            ) : (
+                              <li key={i}>{sub}</li>
+                            )
+                          )}
+                        </ul>
+                      ) : null}
+                      {/* 메타 줄: 인기 불꽃(왼쪽) + (서브가 없을 때만) 형식색 점(오른쪽). 시작 칸에만. */}
+                      {span.showTitle && (tier || (dots && subs.length === 0)) ? (
+                        <div className="event-meta">
+                          {tier ? (
+                            <span className={`event-popular tier-${tier.key}`} title={tier.label} aria-label={`관심 단계: ${tier.label}`}>
+                              <span className="flame" aria-hidden="true">{tier.flames}</span>
+                            </span>
+                          ) : null}
+                          {dots && subs.length === 0 ? dots : null}
+                        </div>
+                      ) : null}
+                    </>
+                  );
+                })()}
               </div>
             );
           })}
