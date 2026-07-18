@@ -4,11 +4,14 @@
 
 export type ToneKey = "pastel" | "soft" | "vivid" | "deep";
 
+// 톤 프리셋 = '필터'. 색조는 그대로 두고 톤(밝기·채도)만 4단계로. 벤치마킹(Material/Radix 톤 스케일):
+// 어떤 베이스(어두운 색이라도)에서 눌러도 네 결과가 '확실히 구분'되게 명도를 넓게 벌리고(90/74/54/34),
+// 채도는 곡선으로 — 파스텔·부드럽게는 낮춰 '연하게', 선명은 높여 '쨍하게', 깊게는 중간.
 export const TONE_PRESETS: { key: ToneKey; label: string; s: number; l: number }[] = [
-  { key: "pastel", label: "파스텔", s: 70, l: 88 },
-  { key: "soft", label: "부드럽게", s: 66, l: 78 },
-  { key: "vivid", label: "선명", s: 76, l: 62 },
-  { key: "deep", label: "깊게", s: 58, l: 42 }
+  { key: "pastel", label: "파스텔", s: 62, l: 90 },
+  { key: "soft", label: "부드럽게", s: 58, l: 74 },
+  { key: "vivid", label: "선명", s: 84, l: 54 },
+  { key: "deep", label: "깊게", s: 64, l: 34 }
 ];
 
 function hexToRgb(hex: string): [number, number, number] | null {
@@ -101,6 +104,24 @@ export function hsvToHex(h: number, s: number, v: number): string {
 export function applyTone(hex: string, tone: ToneKey): string {
   const p = TONE_PRESETS.find((t) => t.key === tone) ?? TONE_PRESETS[1];
   return hslToHex(hexToHue(hex), p.s, p.l);
+}
+
+// ── 기본 색상 18(색 팝오버 트레이 + 새 태그 기본색) ── 색조를 [0,350)으로 18등분(≈19.4°).
+// 색환은 0°=360°(빨강)이 겹치므로 겹치는 뒷구간을 빼 처음·끝(빨강↔자주)이 또렷하다. 피커와 새
+// 태그 추가가 '같은 18색'을 쓰도록 여기 한 곳에서 만든다(색 팝오버와 TagLegendEditor 공유).
+export const SPECTRUM_HUES = Array.from({ length: 18 }, (_, i) => (i * 350) / 18);
+
+// kind별 톤을 render에 맞춘다: 콘텐츠=칸 배경이라 '연하게'(밝은 파스텔), 형식=점이라 '진하게'.
+export function spectrumColors(isModifier: boolean): string[] {
+  const s = isModifier ? 60 : 72;
+  const l = isModifier ? 50 : 82;
+  return SPECTRUM_HUES.map((h) => hslToHex(h, s, l));
+}
+
+// 색조 원형 거리(0~180). 예: 350°와 10°는 20° 차이로 본다.
+export function hueDist(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360;
+  return Math.min(d, 360 - d);
 }
 
 // ── 대비(가독성) — WCAG 2.1 상대휘도. 자동 잉크(흑/백) 기준 AA(4.5:1) 통과 여부. ──

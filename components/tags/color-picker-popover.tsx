@@ -6,9 +6,11 @@ import { createPortal } from "react-dom";
 import {
   applyTone,
   hexToHsv,
-  hslToHex,
   hsvToHex,
+  hueDist,
   inkContrast,
+  spectrumColors,
+  SPECTRUM_HUES,
   TONE_PRESETS
 } from "@/lib/tags/color-tone";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -23,23 +25,7 @@ import type { TagKind } from "@/lib/domain/schedule-types";
 // 이 의미는 텍스트가 아니라 디자인으로 표현한다: 트레이(움푹한 판) + 위를 가리키는 홈 + 고른 칸에 링.
 // kind별 톤을 render에 맞춘다: 콘텐츠=칸 배경이라 '연하게'(밝은 파스텔), 형식=점이라 '진하게'.
 //
-// 색조 분포: 한 바퀴 전체(0~360)를 20°씩 돌면 0°(빨강)과 340°(자홍빨강)이 색환에서 이웃이라
-// 처음·끝이 비슷해 보였다. 색환은 0°=360°(빨강)이 겹치므로, 겹치는 뒷구간을 빼고 [0,350)만
-// 18등분한다(≈19.4°씩, 0°~331°). 양 끝(빨강 ↔ 자주)이 확실히 달라 18색이 더 또렷하다.
-const SPECTRUM_HUES = Array.from({ length: 18 }, (_, i) => (i * 350) / 18);
-
-function spectrum(kind: TagKind): string[] {
-  const light = kind !== "modifier";
-  const s = light ? 72 : 60;
-  const l = light ? 82 : 50;
-  return SPECTRUM_HUES.map((h) => hslToHex(h, s, l));
-}
-
-// 색조 원형 거리(0~180). 예: 350°와 10°는 20° 차이로 본다.
-function hueDist(a: number, b: number): number {
-  const d = Math.abs(a - b) % 360;
-  return Math.min(d, 360 - d);
-}
+// 기본 18색·색조 분포·원형거리는 lib/tags/color-tone에서 공유한다(피커와 새 태그 추가가 같은 18색).
 
 function clamp01(n: number) {
   return Math.max(0, Math.min(1, n));
@@ -69,7 +55,7 @@ export function ColorPickerPopover({
   onToggleKind?: () => void; // 콘텐츠↔형식 전환(행에서 라벨 뺀 대신 여기로 옮김)
   canClear: boolean;
 }) {
-  const presets = useMemo(() => spectrum(kind), [kind]);
+  const presets = useMemo(() => spectrumColors(kind === "modifier"), [kind]);
   const [hsv, setHsv] = useState(() => hexToHsv(value));
   const [hexText, setHexText] = useState(value);
   // 실행취소 스택 — 조작 '직전' hex를 쌓는다(드래그는 시작 때 1번만). 잘못 눌러 색이 바뀌어도 되돌린다.

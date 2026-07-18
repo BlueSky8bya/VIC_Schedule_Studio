@@ -13,6 +13,13 @@ import type { BroadcastTag, ColorKey, ColorPaletteEntry, TagKind } from "@/lib/d
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 import type { SaveTagsResult, TagCreateInput } from "@/lib/schedules/tag-actions";
 import { generateTagColor, isPatternColor } from "@/lib/tags/color-gen";
+import {
+  hexToHue,
+  hueDist,
+  inkContrast,
+  spectrumColors,
+  SPECTRUM_HUES
+} from "@/lib/tags/color-tone";
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { ColorPickerPopover } from "@/components/tags/color-picker-popover";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -420,7 +427,29 @@ export function TagLegendEditor({
       effectivePalette.map((c) => ({ key: c.key, bgColor: c.bgColor })),
       kind === "modifier" ? { plain: true, random: true } : { preferPattern: true, random: true }
     );
-    const color: ColorPaletteEntry = { ...gen, sortOrder: 0 };
+    // 새 태그 기본색 = 색 팝오버와 '같은 18색' 중 기존 태그와 색조 안 겹치는 것 하나(랜덤).
+    // colorKey(gen.*) 배관은 그대로 두되, 그 팔레트 색만 스펙트럼 색으로 덮어써 '18색 중 하나'가
+    // 되게 한다(bgHex=null이라 '커스텀' 아님 — '기본 색으로'와도 일관). 색조가 다 차면 그냥 랜덤.
+    const spectrum = spectrumColors(kind === "modifier");
+    const usedHues = allTags
+      .filter((t) => (t.parentId ?? null) === null && (draft[t.id]?.kind ?? t.kind) === kind)
+      .map((t) => {
+        const d = draft[t.id];
+        const hex = d?.bgHex ?? colorOf((d?.colorKey ?? t.colorKey) as ColorKey)?.bgColor;
+        return hex ? hexToHue(hex) : null;
+      })
+      .filter((h): h is number => h != null);
+    const idxs = SPECTRUM_HUES.map((_, i) => i);
+    const freeIdxs = idxs.filter((i) => usedHues.every((u) => hueDist(SPECTRUM_HUES[i], u) >= 19));
+    const pool = freeIdxs.length ? freeIdxs : idxs;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    const bgHex = spectrum[pick];
+    const color: ColorPaletteEntry = {
+      ...gen,
+      bgColor: bgHex,
+      textColor: inkContrast(bgHex).ink,
+      sortOrder: 0
+    };
     const tempId = `${NEW_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const tag: BroadcastTag = {
       id: tempId,
