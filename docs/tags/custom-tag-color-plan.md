@@ -1,116 +1,115 @@
-# 태그 색 커스텀화 계획 v3 — 3계층 resolver + 커스텀 색 + 무늬→글리프 + WCAG 자동 글자
+# 태그 색 커스텀화 계획 v4 (디스코프) — 무늬 유지 + 가독성 수정 + 커스텀 hex + 단일 resolver
 
-작성: 2026-07-18 · 상태: **계획(미구현)** · **v3가 v2를 supersede**(코덱스 2차 리뷰 Go-with-fixes 반영).
-관련: `lib/calendar/month.ts`, `lib/tags/color-gen.ts`, `lib/schedules/{public,studio}-loader.ts`,
-`lib/insights/actions.ts`, `components/tags/tag-legend-editor.tsx`, `app/globals.css`,
-ADR-0004(지오), ADR-0006(keepalive), `.claude/rules/public-private-boundary.md`
+작성: 2026-07-18 · 상태: **계획(미구현)** · **v4가 v3을 supersede**(코덱스 3차 후 디스코프 결정).
+관련: `lib/calendar/month.ts`, `lib/schedules/{public,studio}-loader.ts`, `lib/insights/actions.ts`,
+`components/tags/tag-legend-editor.tsx`, `app/globals.css`, `app/api/studio-write/route.ts`,
+ADR-0004(지오)·ADR-0006(keepalive)·공개경계 규칙·`scripts/audit-colors.mjs`
 
-## 정정 이력 (2라운드 적대 리뷰 — 다음 에이전트가 같은 착각 안 하게)
-- v1 FALSE 5건: hex 배관 "이미 있음"(신규 gen 태그 INSERT뿐)·자동잉크 "모든 경로"(#RRGGBB만·2색
-  첫색만·칩/범례/insights 미적용)·무늬 "파스텔용"(실은 **색맹 단서 WCAG 1.4.1**)·백필=렌더불변(X)·
-  롤백 안전(팔레트행+CSS 필요).
-- v2 잔여 5건(코덱스 2차): ①단일 resolver 시그니처로 draft·2색·표면별 scrim 표현 불가 ②CVD 편집자
-  도구는 **시청자에게 안 남음**(1.4.1 미보상) ③고아 '기타'(palette 행 없음)로 백필 오판 ④"pixel 동일"과
-  "AA 미달 수정"이 모순 ⑤tone 저장 여부 미확정. + 동적 font-weight가 지오 결합을 만든다(신규).
+## 왜 디스코프했나 (3라운드 적대 리뷰의 결론)
+v1→v3 검수에서 STILL-OPEN/REGRESSED 대부분이 **"무늬 제거" 한 결정에서 파생**됐다:
+무늬 제거→색맹 단서 상실→글리프 필요→**카드 네 귀퉁이 이미 점유(놓을 자리 없음, REGRESSED)**→
+모바일 바·modifier 점도 색만 남음→글리프 2차 지오 변경→스티커 이동. 별개로 **동적 굵기 제거**(지오
+결합 없애려던 것)가 **그 자체로 기존 스티커를 옮기는** 지오 변경(아이러니).
+→ **토리님 실제 불만 #2 = "글자가 안 보인다"(무늬 자체가 아님).** 무늬는 이미 작동하는 색맹 단서
+(WCAG 1.4.1, `recolor-tags.mjs` 손배치, `audit-colors.mjs` 실측 CVD 혼동쌍 존재)라 **유지**하고
+**가독성만** 고친다 → 글리프·2차 지오·1.4.1·mode 롤백 문제가 전부 소멸.
 
-## 확정 결정 (2026-07-18, 코덱스 2차 후)
-- **글자색 = 자동, 단일 잉크 로직을 모든 표면에.** (칩·범례·insights 포함)
-- **동적 font-weight 제거.** APCA advisory인 이상 굵기를 색으로 바꾸지 않는다 → 굵기는 **표면 CSS
-  고정값**, 대비는 **잉크색 + scrim(텍스트 뒤 헤일로)** 로만 확보. **이러면 recolor가 glyph 폭·
-  줄바꿈·카드높이·스티커 좌표에 영향을 주지 않는다**(ADR-0004 결합 자체 제거).
-- **무늬(체크 텍스처) 전면 제거 + 대체 = 작은 글리프/이니셜.** 태그마다 1개 아이콘 또는 1~2자
-  이니셜을 **카드 구석 + 범례**에 지속 표시(비색상 단서 = WCAG 1.4.1 충족, 글자와 안 싸움).
-  글리프는 export/decorate/viewer 동일.
-- **대비 = WCAG 2.1 AA 하드.** 동적 굵기 없이 잉크+scrim이면 임의 bg에서 AA는 **항상 달성 가능**
-  (최악도 흑/백+scrim) → "AA 실패 저장"은 없다(동의 예외 없음). APCA는 참고 지표만.
-- **톤 컬럼 저장 안 함.** hex가 유일 진실. 프리셋(파스텔/부드럽게/선명/깊게)은 **피커 입력 UI 전용**;
-  피커 재열 때 hex→HSLuv→가장 가까운 프리셋을 표시만. polarity(흰/검 글자)는 luminance에서 산출.
-- **백필 = 팔레트 hex 복사** + **LEFT JOIN preflight**(고아 0건 assertion, 고아 시 abort).
-- **의존성**: HSLuv 공식 JS(MIT) OK. APCA 공식 lib 안 씀(라이선스·beta). 공유 파생 모듈이 client
-  poster 번들에 들어가는 크기 확인.
+## 철회한 내 반박 2건 (지적 정직성 기록)
+- **keepalive**: 나는 "태그 정의 저장은 명시적 모달이라 ADR-0006 밖"이라 했으나 **틀림**. ADR-0006은
+  "**모든 편집 쓰기**는 `/api/studio-write` + keepalive, 새 쓰기는 dispatch op"라 명시. 현재
+  `saveTagsAction` 직접 호출은 **현존 위반**. → recolor/저장을 studio-write dispatch op로.
+- **CVD ΔE 수치**: 코덱스가 `audit-colors.mjs` 재실행해 실측(적색맹 0.8~8.4, 녹색맹 3.9~12, 청색맹
+  8.7~10.3). 내 "미검증"은 정직함이지 반박 아님 → 수용. 무늬 유지의 근거로 오히려 채택.
 
-## 아키텍처 — resolver 3계층 (단일 시그니처 폐기)
-`lib/tags/tag-visual.ts`:
+## 확정 결정 (2026-07-18, 코덱스 3차 후)
+- **무늬 유지**(색맹 단서). 커스텀 색도 CVD 위해 `pattern_key`를 갖는다(hue 근접 시 자동/선택).
+- **가독성 = 텍스트 span scrim + 무늬 불투명도↓.** 제목/소제목을 감싸는 inline `<span>`에 **opaque/
+  adaptive 배경(scrim)**을 주고(패딩 없어 flow 불변, 반드시 geometry 측정), 무늬 알파 9%→5~6%로.
+  **text-shadow는 scrim으로 불인정**(대비 보장 못 함).
+- **동적 굵기 그대로 유지**(안 건드림) → 스티커 지오 안전. 단 인기 기반(data-tier) 굵기와 색 기반
+  굵기는 개념 분리(색 기반은 오늘 로직 그대로 보존).
+- **커스텀 색 = `bg_hex`**(태그당). 없으면 `color_key`→palette 폴백(무중단). tone/glyph/mode 컬럼 없음.
+- **대비 = WCAG 2.1 AA 하드.** 잉크는 **순수 #000/#fff**(모든 불투명 단색 배경에서 ≥4.58) 또는
+  실제 합성색 재계산; 2색 양쪽 실패 시 **opaque text-box scrim**. (v3의 "#0a0a0a+미정의 scrim이면
+  항상 AA"는 거짓 — #777에서 흰 4.478/#0a 4.421 둘 다 실패. 코덱스 반례 수용.) APCA는 참고만.
+- **쓰기 = studio-write dispatch op**(keepalive, ADR-0006 준수) + 서버 hex 검증.
+- 롤백 = `bg_hex` 비우면 팔레트 폴백. **무늬 CSS·팔레트 그대로 유지하므로 mode 플래그 불필요**(v3의
+  `tag_visual_mode` 삭제 — 디스코프의 최대 이득).
+
+## 아키텍처 — 단일 resolver (레거시 정확 재현 계약)
+`lib/tags/tag-visual.ts` (순수·서버/클라 공용, Map 1회 구축):
 ```
-createTagVisualResolver(tags, palette, mode)   // 1회 Map 구축(반복 find() 회피)
-  → visualOf(tagId): { bg, border, glyph }     // 색 원천 + 상속(자식→최상위 부모) + 글리프
-  → visualOfDraft(draft): { bg, border, glyph } // 미저장 피커 색(tags에 없음) 지원
-resolveInk(bg, textContext)                     // 표면별 글자크기/scrim 판단, WCAG AA 잉크
-resolveMixedVisual(visualA, visualB, run, textContext) // 2색 카드: 양쪽 대비 각각 검증
+createTagVisualResolver(tags, palette)
+  → visualOf(tagId): { rootTagId, kind, colorKey, bg, border, legacyTextColor, patternKey, missing }
+  → visualOfDraft(tagId, draftGraph): 위와 동일 (미저장 draftTags/draftPalette overlay 입력)
+resolveEventVisuals(tagIds, primaryTagIds, resolver): { fills(≤2), extras, order }  // month.ts:246~291 분배 이관
+resolveInk(bg, textContext): { color, scrim }   // textContext = discriminated union(surface·minRatio·scrim policy)
+resolveMixedVisual(visA, visB, run, textContext) // 2색: 양쪽 대비 각각 검증
 ```
-- **상속·modifier·2색·draft·표면별 컨텍스트**가 각 계층에 명확히 분리(코덱스 지적 해소).
-- `mode`(legacy|custom)로 롤백 분기(아래 Phase 3).
-- 자식 태그는 색을 못 가짐 — DB CHECK로 강제 + 서버가 무시.
+- **0A가 오늘과 pixel 동일**하려면 반환형에 `colorKey/legacyTextColor/patternKey/kind/missing`이
+  있어야 함(현재 `eventInkStyle`이 textColor+colorKey로 잉크·굵기·무늬 halo 결정 — 코덱스 지적 수용).
+- 이벤트 집계 dedup은 **첫 태그 우선(first-wins)·태그 순서 유지·같은 색 content/modifier 공존** 계약을
+  golden test로 고정(Map이 last-wins라 순서 뒤집히면 카드색↔점 스왑됨).
+- 고아 팔레트(색 없는 태그, 예: 활성 '기타' gen-plain)는 `missing:true`로 명시(현재 undefined 탈락).
+- `textContext`는 최소 event-title / event-subtitle / chip-label 4.5:1 적용. 범례·insights·모바일
+  타이틀은 태그 배경 위 텍스트가 아니라 잉크 대상 아님. export는 동일 DOM 캡처라 별도 context 없음.
 
 ## Phase 순서
 
-### Phase 0-pre — 선행 정지작업
-1. **공개 경계 분리**: `public-loader`가 `StudioScheduleEvent`·`sampleStudioSchedule`를 실제로 import
-   (변환은 sanctioned지만 색 DTO 확장이 이 공유물을 건드림). → `sample-public-data.ts`로 공개 전용
-   sample/type 분리 + **import-boundary 테스트**(public-loader가 studio-loader/service-role/studio
-   sample 미import) + **공개 tag DTO schema 테스트**(bgHex 형식·private 필드 부재 구조 검증).
-2. **비주얼 스위트 복구**: `test:visual`이 없는 `tests/visual`을 가리킴. **production build** 기반
-   Playwright suite 신설 — 고정 fixture(월/데이터/KST), 폰트 ready, 애니메이션 off, viewport·DPR
-   고정, 네트워크 격리, snapshot 갱신 승인 규칙. **decorate는 로컬 인증 막힘** → 전용 테스트 계정+
-   storageState 또는 PublicPoster(decorate)를 fixture로 렌더하는 비프로덕션 harness(**프로덕션 auth
-   bypass 금지**).
+### Phase 0-pre — 선행
+1. **공개 경계 분리**(실재 결합): `public-loader`가 `StudioScheduleEvent`·`sampleStudioSchedule` import
+   (public-loader.ts:9,21). 변환은 sanctioned지만 색 DTO 확장이 공유물을 건드림 → `sample-public-data.ts`
+   분리 + import-boundary 테스트 + 공개 tag DTO schema 테스트(bgHex 형식·private 필드 부재).
+2. **비주얼 스위트 복구**: `test:visual`이 없는 `tests/visual`을 가리키고 config는 dev 서버. →
+   **production build** Playwright suite + 고정 fixture(월/데이터/KST)·폰트 ready·애니 off·viewport/DPR
+   고정·네트워크 격리. **decorate 인증**: 로컬은 Google identity 필요라 막힘 → **비프로덕션 fixture
+   route**(`VISUAL_TEST_FIXTURE=1`일 때만 고정 public fixture로 PublicPoster(decorate) 렌더, 프로덕션
+   404). 실제 권한은 별도 auth E2E. (프로덕션 auth bypass 금지.)
 
-### Phase 0A — lookup 통일 (pixel 동일, 값어치 독립)
-- 흩어진 색 lookup을 전부 `tag-visual.ts` resolver로 이관: 포스터/스튜디오 단색·2색 카드, modifier 점,
-  상세 chip, 피커, 범례, 모바일 바, 필터, insights(4곳), export.
-- **출력 = 오늘과 완전 동일**(동적 굵기·무늬 포함 그대로) → **pixel + geometry diff 0** 로 증명.
-  순수 리팩터라 시각 변화 없음. JSX 직접 palette lookup 금지(lint/grep 가드).
+### Phase 0A — lookup 통일 (pixel 동일)
+흩어진 색 lookup 전부 resolver로: 포스터/스튜디오 단색·2색 카드, modifier 점, 상세 chip, 피커, 범례,
+모바일 바, 필터, insights(4곳), export. **출력 오늘과 완전 동일**(무늬·굵기 포함) → pixel+geo Δ0 증명.
+JSX 직접 palette lookup 금지(lint/grep 가드). 계약 golden test(first-wins·순서·cross-kind 동일색·고아).
 
-### Phase 0B — 의도된 시각 변경 (승인된 diff)
-- (i) **AA 미달 수정**: 현재 모캡 3.43·리캡 3.45·카페 4.20 등 잉크 교정 → 그 태그 글자색만 바뀜.
-- (ii) **동적 굵기 제거**: 표면 CSS 고정 굵기로 정규화 + scrim 도입. **일회성 지오 변경** →
-  변경 전/후 [data-export-surface]·42칸·카드·**동일 비율 스티커 자연좌표**를 각각 비교(전부 Δ0 요구,
-  스티커는 이 배포에서 한 번 재-baseline). 이후 커스텀 색은 굵기 불변이라 지오 영구 안정.
-- 두 변경 모두 **승인된 expected pixel diff**(0A의 불변과 명확히 구분).
+### Phase 0B — 가독성 수정 (작은 승인된 diff)
+- 제목/소제목 **inline span 래퍼 + opaque/adaptive scrim** 도입(패딩 없이) + 무늬 알파 9%→5~6% +
+  현재 AA 미달(모캡 3.43·리캡 3.45·카페 4.20 등) 잉크 교정.
+- **geometry Δ0 = 배포 hard gate**([data-export-surface]·42칸·카드·동일비율 스티커 자연좌표 전부 Δ0).
+  **Δ0 아니면 이 구현 폐기**(스티커 재-baseline은 기존 사용자 배치를 못 지킴 — 안전책 아님, 코덱스 수용).
+  scrim은 flow 불변이 목표라 Δ0 달성 가능성 높음(측정으로 확정).
 
 ### Phase 1 — 데이터 모델
 ```
 ALTER TABLE broadcast_tags
   ADD COLUMN bg_hex text CHECK (bg_hex IS NULL OR bg_hex ~ '^#[0-9a-fA-F]{6}$'),
-  ADD COLUMN glyph  text CHECK (glyph IS NULL OR char_length(glyph) <= 4),
-  ADD CONSTRAINT tag_child_no_color
-    CHECK (parent_id IS NULL OR bg_hex IS NULL);   -- 자식은 색 못 가짐(상속)
--- tone 컬럼 없음(hex가 진실). 적용 전 동일 preflight SELECT로 위반 행 0 확인(현재 21행 전부 NULL→통과).
+  ADD COLUMN pattern_key text,   -- CVD용(plain/diag/dots/grid/cross/dash 등)
+  ADD CONSTRAINT tag_child_no_color CHECK (parent_id IS NULL OR bg_hex IS NULL);
+-- 적용 전 preflight SELECT로 위반 0 확인(현재 21행 전부 NULL·자식 0개 → 통과).
 ```
-- `bg_hex` 있으면 resolver가 그걸, 없으면 `color_key`→palette(폴백). 모든 로더/매퍼/타입/sample
-  (`public-loader`·`studio-loader`·`insights/actions`(4맵)·분리된 공개 sample)을 같은 단위로 갱신.
+`bg_hex` 있으면 resolver가 그걸+`pattern_key`, 없으면 `color_key`→palette. 모든 로더/매퍼/타입/
+공개 sample/insights(4맵) 같은 단위 갱신.
 
 ### Phase 2 — 서버 쓰기
-- **recolor를 기존 `saveTagsAction` 경로에 통합**(별도 action이면 dayoff 잠금·calendar scope 재구현
-  필요 → 통합이 나음). bg_hex는 **서버에서 6자리 hex 검증·정규화**, glyph 길이 검증. text/border/
-  굵기 저장 안 함(resolver 파생). 권한 owner/developer(기존 검사 재사용) + **롤 테스트**(manager/
-  trusted/viewer 실패). **reparent(top→child) 시 bg_hex를 같은 SQL로 NULL**(CHECK 실패 방지).
-  - 주: 태그 정의 저장은 명시적 "전체 저장" 모달이라 ADR-0006(per-toggle 낙관적 keepalive) 범위 밖 —
-    기존처럼 server action 직접 호출 유지(코덱스의 keepalive 강제는 과적용, 채택 안 함).
+`/api/studio-write`에 `saveTags`/`recolorTag`/`removeTag` **dispatch op 추가**(ADR-0006), 응답에
+`created[]` 지원. bg_hex **서버 hex 검증·정규화**, 이름/payload 길이 상한. 권한 owner/developer(기존
+검사) + **롤 테스트**(manager/trusted/viewer 실패). **reparent(top→child) 시 bg_hex 같은 SQL로 NULL.**
 
-### Phase 3 — 피커 + 무늬 제거 + 글리프 (동시)
-- `components/tags/color-wheel.tsx`: **HSLuv 색환**(hue 링 + S/L 좌표, Clip Studio식) + 톤 프리셋 4단
-  (hue 전수 검증표로 밴드 확정, 예시값 아님) + **실시간 카드 미리보기 + 대비 배지**(WCAG, APCA 참고) +
-  **글리프/이니셜 선택** + **CVD: hue<20° 경고 + 색약 3종 시뮬**(편집 보조).
-- 무늬 CSS 제거 + **글리프를 카드/범례에 지속 렌더**(비색상 단서 = 시청자 1.4.1 충족).
-- 롤백: `calendars.tag_visual_mode = legacy|custom`. 공개/studio DTO에 mode 전달, resolver가 mode로
-  bg_hex↔palette 선택, DOM `[data-tag-visual-mode]`, **legacy mode에서만 무늬 CSS 활성**, custom write는
-  custom mode에서만, mode 변경 시 `revalidatePublicSchedule()`. (env 플래그는 재배포 필요 → 부적합.)
+### Phase 3 — 피커
+`components/tags/color-wheel.tsx`: HSLuv 색환(hue 링 + S/L) + 톤 프리셋 4단(hue 전수 검증표) +
+실시간 카드 미리보기 + 대비 배지(WCAG; APCA 참고) + **무늬 선택/자동(CVD)** + **CVD hue<20° 경고 +
+색약 3종 시뮬**. 저장 = bg_hex + pattern_key(studio-write op). 톤은 UI 전용(hex→HSLuv→가까운 프리셋 표시).
 
-### Phase 4 — 백필 (선택)
-`color_key`→`bg_hex` 복사. **LEFT JOIN preflight**(고아 '기타' 등 palette 없는 행 탐지→abort 또는
-명시 처리). 무늬 gen 10개(소통·풀트·서버·게임·합방·타스뱅송·CK/핀볼·대회·월드컵·시네티)는 단색화로
-시각 변함 → 전후 CVD·PNG baseline 승인. `audit-colors.mjs` INNER→LEFT JOIN 수정, sample·운영 스크립트 갱신.
+### Phase 4 — 백필 (선택·지연 가능)
+팔레트 폴백이 남아 **필수 아님**. 하려면 `color_key`→`bg_hex` 복사 + **LEFT JOIN preflight**(고아 탐지
+→abort). `audit-colors.mjs` INNER→LEFT 수정.
 
-## 테스트 게이트 (착수 조건)
-잘못된/3·8자리 hex, 경계 luminance, mixed 밝음/어두움 양쪽 대비, 자식 상속, reparent 색 NULL,
-CVD 혼동쌍, 모든 표면 동일 resolver, **0A pixel+geo Δ0 / 0B 승인 diff + 스티커 절대좌표 Δ0**,
-browser/official PNG, role matrix, legacy↔custom 롤백, 고아 백필 preflight, import-boundary, 공개 DTO schema.
-
-## 착수 전 blocker (코덱스 2차 목록 = 전부 v3에 반영)
-① 0A/0B 분리 ② resolver 3계층+draft ③ 동적 굵기 제거 ④ production visual fixture+decorate 인증
-⑤ 무늬 대체 = 지속 글리프(경고·시뮬만으론 배포 금지) ⑥ tone 미저장 ⑦ 롤백 mode의 DB·DTO·DOM·CSS 분기.
+## 테스트 게이트
+잘못된/3·8자리 hex, 경계 luminance, mixed 양쪽 대비, 자식 상속·reparent NULL, first-wins·순서·
+cross-kind 동일색·고아, 모든 표면 동일 resolver, **0A pixel+geo Δ0 / 0B geo Δ0 hard gate**, browser/
+official PNG, role matrix, import-boundary, 공개 DTO schema.
 
 ## 판정
-코덱스 2차 **Go-with-fixes 수용**. 7개 blocker를 v3 설계에 흡수. **Phase 0-pre부터 착수 가능**
-(공개 경계 분리 + 비주얼 스위트 = 시각 변화 0, 안전망부터).
+디스코프로 코덱스 3차 STILL-OPEN 중 **글리프(REGRESSED)·굵기제거 지오·mode 롤백·AA 절반**이 소멸.
+남은 정당한 작업(resolver 계약·keepalive op·scrim·비주얼 하네스·공개경계 분리)만 v4에 반영.
+**Phase 0-pre부터 착수 가능.** 무늬 텍스처 자체가 여전히 거슬리면 → 가독성 배포 후 반응 보고
+"무늬 제거+글리프+지오"를 **별도 예산 프로젝트**로(지금 끼워넣지 않음).
