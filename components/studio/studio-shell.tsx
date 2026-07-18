@@ -5232,22 +5232,39 @@ export function StudioShell({
                               <X aria-hidden="true" size={17} strokeWidth={3} />
                             </button>
                           ) : null}
-                          {/* 일정 카드는 항상 펼침 고정. 이어지는 칸은 투명으로 높이만 맞춘다. */}
-                          {subs.length > 0 ? (
-                            <ul className={`pill-subs${span.showTitle ? "" : " span-cont"}`}>
-                              {subs.map((sub, i) => (
-                                <li key={i}>{sub}</li>
-                              ))}
-                            </ul>
-                          ) : null}
-                          {/* PR2: 칸 색에 못 담은 추가 대분류 색 점 줄(시작 칸에만). */}
-                          {span.showTitle && extraColors.length > 0 ? (
-                            <span className="pill-dots" aria-hidden="true">
-                              {extraColors.map((c, i) => (
-                                <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
-                              ))}
-                            </span>
-                          ) : null}
+                          {/* 일정 카드는 항상 펼침 고정. 이어지는 칸은 투명으로 높이만 맞춘다.
+                              형식색 점은 '마지막 서브 줄의 오른쪽'에 함께 둔다 — 서브 텍스트와 점이
+                              한 줄에 들어가면 같은 줄에 붙어(별도 줄을 안 써 높이 최소화), 안 들어가면
+                              flex-wrap으로 점만 아래로 내려간다(겹침 없음). 서브가 없으면 점만 한 줄에. */}
+                          {(() => {
+                            const dots =
+                              span.showTitle && extraColors.length > 0 ? (
+                                <span className="pill-dots" aria-hidden="true">
+                                  {extraColors.map((c, i) => (
+                                    <i
+                                      key={i}
+                                      style={{ background: c.bgColor, borderColor: c.borderColor }}
+                                    />
+                                  ))}
+                                </span>
+                              ) : null;
+                            if (subs.length === 0) return dots;
+                            const last = subs.length - 1;
+                            return (
+                              <ul className={`pill-subs${span.showTitle ? "" : " span-cont"}`}>
+                                {subs.map((sub, i) =>
+                                  i === last && dots ? (
+                                    <li key={i} className="pill-sub-last">
+                                      <span className="pill-sub-text">{sub}</span>
+                                      {dots}
+                                    </li>
+                                  ) : (
+                                    <li key={i}>{sub}</li>
+                                  )
+                                )}
+                              </ul>
+                            );
+                          })()}
                         </div>
                       );
                     })}
