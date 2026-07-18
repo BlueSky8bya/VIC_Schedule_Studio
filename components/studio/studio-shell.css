@@ -4080,7 +4080,8 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 /* 태그 편집기 — 콘텐츠/방식을 묶음 카드로 갈라 한 눈에 보이게. */
 .tag-editor-section {
   margin-top: 12px;
-  padding: 10px 10px 4px;
+  /* 조화(통일·균형·리듬): 좌우 패딩을 그룹 카드(12px)와 맞춰 대칭·통일. 아래도 12로 균형. */
+  padding: 12px;
   border: 1px solid var(--line, #eee9f6);
   border-radius: var(--r-card);
   background: #fcfbff;
@@ -4168,8 +4169,8 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 @media (min-width: 641px) {
   .tag-editor-section {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 8px 10px;
+    grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+    gap: 10px;
     align-items: start;
   }
   .tag-editor-section-head,
@@ -4181,9 +4182,12 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   .tag-add-in-section {
     justify-self: start;
   }
-  /* 그룹 간격은 grid gap이 준다(개별 margin 제거 — 열 사이 정렬이 어긋나지 않게). */
+  /* 그룹 간격은 grid gap이 준다(개별 margin 제거 — 열 사이 정렬이 어긋나지 않게).
+     min-width:0 = 그리드 칸이 내용 최소폭 아래로도 줄 수 있게(안 그러면 행이 칸을 뚫어
+     삭제 버튼이 카드 밖으로 삐져나온다). overflow:hidden = 링/그림자가 카드를 넘지 않게. */
   .tag-editor .tag-cat-group {
     margin-bottom: 0;
+    min-width: 0;
   }
 }
 
@@ -5722,6 +5726,7 @@ textarea:disabled {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0; /* 자식(이름칸)이 줄 수 있게 — 좁은 칸에서 행이 카드를 뚫지 않게. */
   padding-bottom: 8px;
   border-bottom: 1px solid var(--line);
 }
@@ -5834,10 +5839,11 @@ textarea:disabled {
   opacity: 0.97;
 }
 .tag-editor-row input {
-  /* 이름칸을 늘려 오른쪽 빈 공간을 없앤다(컨트롤은 오른쪽 끝으로 밀린다). */
+  /* 이름칸을 늘려 오른쪽 빈 공간을 없앤다(컨트롤은 오른쪽 끝으로 밀린다).
+     min-width는 작게 — 좁은 2열 칸에서 이름칸이 먼저 줄어야 스와치·삭제가 카드 안에 남는다. */
   flex: 1 1 auto;
   width: auto;
-  min-width: 90px;
+  min-width: 48px;
   min-height: 32px;
   border: 1px solid var(--line);
   border-radius: 7px;
@@ -5945,11 +5951,36 @@ textarea:disabled {
 .cpop-hue-thumb {
   top: 50%;
 }
-/* 미리보기 + hex — 한 줄, 미리보기 크게(글자 읽힘을 바로 확인). */
+/* 미리보기 + hex + 실행취소 — 한 줄, 미리보기 크게(글자 읽힘을 바로 확인). */
 .cpop-row {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
+}
+/* 실행취소 — 잘못 눌러 색이 바뀌어도 직전으로. 미리보기·삭제 버튼과 같은 사각 아이콘 톤(통일). */
+.cpop-undo {
+  flex: 0 0 auto;
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--line, #ddd6ee);
+  border-radius: var(--r-sm);
+  background: #fbfaff;
+  color: var(--ink-soft, #5b5377);
+  cursor: pointer;
+  transition: background var(--ease, 0.18s), transform 0.08s, color var(--ease, 0.18s);
+}
+.cpop-undo:hover:not(:disabled) {
+  background: #f3eeff;
+  color: var(--violet, #6b5bd6);
+}
+.cpop-undo:active:not(:disabled) {
+  transform: scale(0.92);
+}
+.cpop-undo:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 .cpop-preview {
   flex: 0 0 auto;
@@ -6000,22 +6031,69 @@ textarea:disabled {
   border-color: var(--violet, #7048e8);
   background: #f3eeff;
 }
+/* 기본 색상 트레이 — '움푹한 판'처럼 안쪽으로 파여, 위 미세조정 존과 시각적으로 구분된다.
+   위 모서리 가운데의 홈(notch)이 위(미세조정 존)를 가리켜 "여기서 골라 위에서 다듬는다"를
+   텍스트 없이 알린다. */
+.cpop-tray {
+  position: relative;
+  margin-top: 3px;
+  padding: 9px;
+  border-radius: var(--r-md, 12px);
+  background: rgb(90 70 140 / 6%);
+  box-shadow: inset 0 1px 3px rgb(60 40 110 / 12%);
+}
+/* 위를 가리키는 홈(삼각형) — 트레이가 위 컨트롤로 '흘러 올라감'을 표현. */
+.cpop-tray::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 7px solid rgb(90 70 140 / 12%);
+}
 /* 색 스펙트럼 — 6칸×3줄(18색), 색조를 훑는 빠른 선택. */
 .cpop-presets {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 5px;
+  gap: 6px;
 }
 .cpop-swatch {
-  height: 24px;
+  position: relative;
+  height: 26px;
   border-radius: var(--r-sm);
   border: 1.5px solid rgb(0 0 0 / 10%);
   cursor: pointer;
   padding: 0;
-  transition: transform 120ms var(--ease, ease);
+  transition: transform 120ms var(--ease, ease), box-shadow 120ms var(--ease, ease);
 }
 .cpop-swatch:hover {
-  transform: scale(1.08);
+  transform: scale(1.12);
+}
+/* 고른 기본 색 — 링으로 "이 칸에서 출발했다"를 표시(위에서 다듬으면 실제 색은 달라져도 출발점 유지). */
+.cpop-swatch.active {
+  box-shadow:
+    0 0 0 2px #fff,
+    0 0 0 4px var(--violet, #6b5bd6);
+  transform: scale(1.12);
+}
+/* 미세조정 전, 트레이 색 '그대로'면 체크로 확정 표시. */
+.cpop-swatch-check {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.cpop-swatch-check::after {
+  content: "";
+  width: 6px;
+  height: 10px;
+  margin-top: -2px;
+  border: solid #fff;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+  filter: drop-shadow(0 0 1px rgb(0 0 0 / 55%));
 }
 .cpop-actions {
   display: flex;

@@ -1,5 +1,6 @@
 "use client";
 
+import { Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
@@ -17,8 +18,9 @@ import type { TagKind } from "@/lib/domain/schedule-types";
 // 기준: 네이티브 OS 피커 대신 앱 디자인에 맞는 인라인 피커. 좌표로 채도·명도, 슬라이더로 색조,
 // 자주 쓰는 프리셋·톤으로 빠르게, hex 직접 입력, 대비(AA) 즉시 확인.
 
-// '색 스펙트럼' 빠른 선택 — 고정 팔레트가 아니라 색조를 20°씩 훑는 18색(6×3). 딱 이만큼으로
-// 제한된다는 뜻이 아니라(색은 위 영역/슬라이더로 무제한), 원하는 색조로 빠르게 점프하는 용도.
+// '기본 색상 18' — 고정 팔레트가 아니라 색조를 20°씩 훑는 18색(6×3). 딱 이만큼으로 제한된다는
+// 뜻이 아니라(색은 위 영역/슬라이더로 무제한), '여기서 하나 고르고 위에서 미세조정'하는 출발점.
+// 이 의미는 텍스트가 아니라 디자인으로 표현한다: 트레이(움푹한 판) + 위를 가리키는 홈 + 고른 칸에 링.
 // kind별 톤을 render에 맞춘다: 콘텐츠=칸 배경이라 '연하게'(밝은 파스텔), 형식=점이라 '진하게'.
 function spectrum(kind: TagKind): string[] {
   const light = kind !== "modifier";
@@ -32,7 +34,7 @@ function clamp01(n: number) {
 }
 
 const POP_W = 268;
-const POP_H = 452; // kind 전환 줄이 위에 붙어 살짝 커졌다(화면 밖이면 위로 뒤집는 계산용).
+const POP_H = 486; // kind 전환 줄 + 실행취소로 살짝 커졌다(화면 밖이면 위로 뒤집는 계산용).
 
 export function ColorPickerPopover({
   value,
@@ -56,6 +58,10 @@ export function ColorPickerPopover({
   const presets = useMemo(() => spectrum(kind), [kind]);
   const [hsv, setHsv] = useState(() => hexToHsv(value));
   const [hexText, setHexText] = useState(value);
+  // 실행취소 스택 — 조작 '직전' hex를 쌓는다(드래그는 시작 때 1번만). 잘못 눌러 색이 바뀌어도 되돌린다.
+  const [history, setHistory] = useState<string[]>([]);
+  // 트레이에서 고른 '기본 색' — 그 칸에 링을 그려 "여기서 골라 위에서 다듬는다"를 시각으로 알린다.
+  const [baseHex, setBaseHex] = useState<string | null>(null);
   const svRef = useRef<HTMLDivElement | null>(null);
   const hueRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -75,6 +81,22 @@ export function ColorPickerPopover({
     // onChange는 매 렌더 안정적이지 않을 수 있어 hex만 의존.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hex]);
+
+  // 조작 직전 현재 hex를 스택에 쌓는다(최근 30개). 되돌릴 지점을 만든다.
+  function snapshot() {
+    setHistory((prev) => [...prev, hex].slice(-30));
+  }
+  // 실행취소 — 직전 색으로. 스택이 비면 아무 것도 안 한다.
+  function undo() {
+    setHistory((prev) => {
+      if (prev.length === 0) return prev;
+      hapticTick();
+      const target = prev[prev.length - 1];
+      setHsv(hexToHsv(target)); // 위 effect가 onChange로 부모까지 되돌린다.
+      setBaseHex(null);
+      return prev.slice(0, -1);
+    });
+  }
 
   // 바깥 클릭 / Esc 로 닫기(light-dismiss).
   useEffect(() => {
@@ -111,6 +133,7 @@ export function ColorPickerPopover({
   }
 
   const con = inkContrast(hex);
+  const curHexLower = hex.toLowerCase();
 
   // 트리거 기준 위치(화면 좌표, fixed). 오른쪽 정렬 + 화면 밖으로 나가면 위로 뒤집는다.
   const vw = typeof window !== "undefined" ? window.innerWidth : 1200;
@@ -137,12 +160,14 @@ export function ColorPickerPopover({
         </div>
       ) : null}
 
+      {/* ── 미세조정 존(위) — 채도·명도 영역 + 색조 슬라이더 + 미리보기/hex/실행취소 + 톤 ── */}
       {/* 채도(가로) × 명도(세로) 영역 — 좌표를 찍어 고른다. */}
       <div
         aria-label="채도·명도"
         className="cpop-sv"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
+          snapshot(); // 드래그 시작 = 되돌릴 지점 1개
           pickSv(e);
         }}
         onPointerMove={(e) => {
@@ -162,6 +187,7 @@ export function ColorPickerPopover({
         className="cpop-hue"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
+          snapshot();
           pickHue(e);
         }}
         onPointerMove={(e) => {
@@ -172,8 +198,8 @@ export function ColorPickerPopover({
         <span className="cpop-hue-thumb" style={{ left: `${(hsv.h / 360) * 100}%` }} />
       </div>
 
-      {/* 미리보기(글자 읽힘을 눈으로 바로 확인) + hex 입력. 대비 배지는 안 둔다 — 자동 글자색이라
-          거의 항상 읽히므로 '통과' 표시는 잡음일 뿐. 드물게 흐릴 때만 아래에 한 줄 경고. */}
+      {/* 미리보기(글자 읽힘을 눈으로 바로 확인) + hex 입력 + 실행취소. 대비 배지는 안 둔다 —
+          자동 글자색이라 거의 항상 읽히므로 '통과' 표시는 잡음. 드물게 흐릴 때만 아래 한 줄 경고. */}
       <div className="cpop-row">
         <span className="cpop-preview" style={{ background: hex, color: con.ink }}>
           가나
@@ -186,9 +212,20 @@ export function ColorPickerPopover({
             setHexText(t);
             if (/^#[0-9a-fA-F]{6}$/.test(t)) setHsv(hexToHsv(t));
           }}
+          onFocus={snapshot}
           spellCheck={false}
           value={hexText}
         />
+        <button
+          aria-label="실행취소(직전 색으로)"
+          className="cpop-undo"
+          disabled={history.length === 0}
+          onClick={undo}
+          title="직전 색으로 되돌리기"
+          type="button"
+        >
+          <Undo2 aria-hidden="true" size={16} />
+        </button>
       </div>
       {!con.passesAA ? <p className="cpop-warn">글자가 흐릴 수 있어요</p> : null}
 
@@ -200,6 +237,7 @@ export function ColorPickerPopover({
             key={t.key}
             onClick={() => {
               hapticTick();
+              snapshot();
               setHsv(hexToHsv(applyTone(hex, t.key)));
             }}
             type="button"
@@ -209,21 +247,33 @@ export function ColorPickerPopover({
         ))}
       </div>
 
-      {/* 색 스펙트럼 빠른 선택(6×3, kind별 톤) */}
-      <div className="cpop-presets">
-        {presets.map((c) => (
-          <button
-            aria-label={c}
-            className="cpop-swatch"
-            key={c}
-            onClick={() => {
-              hapticTick();
-              setHsv(hexToHsv(c));
-            }}
-            style={{ background: c }}
-            type="button"
-          />
-        ))}
+      {/* ── 기본 색상 존(아래) — 트레이(움푹한 판) + 위 미세조정 존을 가리키는 홈(notch).
+          텍스트 없이 "여기서 하나 고르면 위에서 다듬는다"를 시각으로: 판 안에 18색, 고른 칸엔 링. ── */}
+      <div className="cpop-tray" role="group" aria-label="기본 색상 18 — 골라서 위에서 미세조정">
+        <div className="cpop-presets">
+          {presets.map((c) => {
+            const active = c.toLowerCase() === (baseHex ?? "").toLowerCase();
+            const exact = c.toLowerCase() === curHexLower; // 미세조정 전, 정확히 그 색이면 체크
+            return (
+              <button
+                aria-label={c}
+                aria-pressed={active}
+                className={`cpop-swatch${active ? " active" : ""}`}
+                key={c}
+                onClick={() => {
+                  hapticTick();
+                  snapshot();
+                  setBaseHex(c);
+                  setHsv(hexToHsv(c));
+                }}
+                style={{ background: c }}
+                type="button"
+              >
+                {active && exact ? <span className="cpop-swatch-check" aria-hidden="true" /> : null}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="cpop-actions">
