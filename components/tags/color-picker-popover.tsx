@@ -18,15 +18,27 @@ import type { TagKind } from "@/lib/domain/schedule-types";
 // 기준: 네이티브 OS 피커 대신 앱 디자인에 맞는 인라인 피커. 좌표로 채도·명도, 슬라이더로 색조,
 // 자주 쓰는 프리셋·톤으로 빠르게, hex 직접 입력, 대비(AA) 즉시 확인.
 
-// '기본 색상 18' — 고정 팔레트가 아니라 색조를 20°씩 훑는 18색(6×3). 딱 이만큼으로 제한된다는
+// '기본 색상 18' — 고정 팔레트가 아니라 색조를 훑는 18색(6×3). 딱 이만큼으로 제한된다는
 // 뜻이 아니라(색은 위 영역/슬라이더로 무제한), '여기서 하나 고르고 위에서 미세조정'하는 출발점.
 // 이 의미는 텍스트가 아니라 디자인으로 표현한다: 트레이(움푹한 판) + 위를 가리키는 홈 + 고른 칸에 링.
 // kind별 톤을 render에 맞춘다: 콘텐츠=칸 배경이라 '연하게'(밝은 파스텔), 형식=점이라 '진하게'.
+//
+// 색조 분포: 한 바퀴 전체(0~360)를 20°씩 돌면 0°(빨강)과 340°(자홍빨강)이 색환에서 이웃이라
+// 처음·끝이 비슷해 보였다. 색환은 0°=360°(빨강)이 겹치므로, 겹치는 뒷구간을 빼고 [0,350)만
+// 18등분한다(≈19.4°씩, 0°~331°). 양 끝(빨강 ↔ 자주)이 확실히 달라 18색이 더 또렷하다.
+const SPECTRUM_HUES = Array.from({ length: 18 }, (_, i) => (i * 350) / 18);
+
 function spectrum(kind: TagKind): string[] {
   const light = kind !== "modifier";
   const s = light ? 72 : 60;
   const l = light ? 82 : 50;
-  return Array.from({ length: 18 }, (_, i) => hslToHex((i * 20) % 360, s, l));
+  return SPECTRUM_HUES.map((h) => hslToHex(h, s, l));
+}
+
+// 색조 원형 거리(0~180). 예: 350°와 10°는 20° 차이로 본다.
+function hueDist(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360;
+  return Math.min(d, 360 - d);
 }
 
 function clamp01(n: number) {
@@ -43,6 +55,7 @@ export function ColorPickerPopover({
   onChange,
   onClear,
   onClose,
+  onCancel,
   onToggleKind,
   canClear
 }: {
@@ -51,7 +64,8 @@ export function ColorPickerPopover({
   kind: TagKind; // 콘텐츠(연한 스펙트럼) / 형식(진한 스펙트럼)
   onChange: (hex: string) => void;
   onClear: () => void; // 기본(팔레트) 색으로
-  onClose: () => void;
+  onClose: () => void; // '완료' — 지금 색으로 확정(커밋)하고 닫는다.
+  onCancel: () => void; // 바깥 클릭 / Esc — 확정 안 하고 열었을 때 색으로 되돌리며 닫는다.
   onToggleKind?: () => void; // 콘텐츠↔형식 전환(행에서 라벨 뺀 대신 여기로 옮김)
   canClear: boolean;
 }) {
@@ -95,17 +109,18 @@ export function ColorPickerPopover({
     });
   }
 
-  // 바깥 클릭 / Esc 로 닫기(light-dismiss).
+  // 바깥 클릭 / Esc = '취소'(light-dismiss). '완료'를 안 눌렀으니 확정하지 않고, 열었을 때
+  // 색으로 되돌린다(onCancel). 미리보기로 바뀐 draft를 그대로 남겨 저장돼 버리지 않게 한다.
   useEffect(() => {
     function onDown(e: MouseEvent) {
       const t = e.target as HTMLElement;
       // 팝오버 안이면 유지. 스와치(트리거)는 자기 onClick이 토글하므로 여기서 닫지 않는다
       // (여기서 닫으면 이어지는 click이 다시 열어버린다).
       if (rootRef.current?.contains(t) || t.closest?.(".tag-color-swatch")) return;
-      onClose();
+      onCancel();
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") onCancel();
     }
     document.addEventListener("mousedown", onDown);
     document.addEventListener("keydown", onKey);
@@ -113,7 +128,7 @@ export function ColorPickerPopover({
       document.removeEventListener("mousedown", onDown);
       document.removeEventListener("keydown", onKey);
     };
-  }, [onClose]);
+  }, [onCancel]);
 
   function pickSv(e: React.PointerEvent) {
     const rect = svRef.current?.getBoundingClientRect();
@@ -131,10 +146,18 @@ export function ColorPickerPopover({
 
   const con = inkContrast(hex);
   const curHexLower = hex.toLowerCase();
-  // 현재 색이 기본 18색 중 어디에 '가장 가까운지'를 항상 계산한다(색조 기준, 20°씩). 그 칸을
+  // 현재 색이 기본 18색 중 어디에 '가장 가까운지'를 항상 계산한다(색조 원형거리 최소). 그 칸을
   // 하이라이팅해 "지금 이 근처를 다듬는 중"을 시각으로 알린다 — 미세조정·hex입력 중에도 따라온다.
   // 아주 연하거나 진해도(채도 낮아도) 색조는 있으므로 항상 가장 가까운 칸을 잡는다.
-  const nearestIdx = Math.round(hsv.h / 20) % 18;
+  let nearestIdx = 0;
+  let nearestBest = Infinity;
+  for (let i = 0; i < SPECTRUM_HUES.length; i++) {
+    const d = hueDist(hsv.h, SPECTRUM_HUES[i]);
+    if (d < nearestBest) {
+      nearestBest = d;
+      nearestIdx = i;
+    }
+  }
 
   // 트리거 기준 위치(화면 좌표, fixed). 오른쪽 정렬 + 화면 밖으로 나가면 위로 뒤집는다.
   const vw = typeof window !== "undefined" ? window.innerWidth : 1200;

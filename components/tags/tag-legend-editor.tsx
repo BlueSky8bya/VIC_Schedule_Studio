@@ -97,6 +97,8 @@ export function TagLegendEditor({
   // 색 피커 팝오버가 열린 태그 id(한 번에 하나) + 트리거 스와치 화면 좌표(포털 위치용).
   const [openPickerId, setOpenPickerId] = useState<string | null>(null);
   const [pickerAnchor, setPickerAnchor] = useState<DOMRect | null>(null);
+  // 팝오버를 '열었을 때'의 bgHex — 바깥 클릭/Esc(취소)로 닫으면 여기로 되돌린다('완료' 전엔 확정 안 함).
+  const pickerInitialRef = useRef<string | null>(null);
   // #4: 새로 추가한 태그/색은 "저장" 전까지 팝업 안에서만 존재한다(달력·다른 패널엔 반영 안 함).
   const [newTags, setNewTags] = useState<BroadcastTag[]>([]);
   const [newColors, setNewColors] = useState<ColorPaletteEntry[]>([]);
@@ -689,7 +691,12 @@ export function TagLegendEditor({
                     onClick={(e) => {
                       hapticTick();
                       setPickerAnchor(e.currentTarget.getBoundingClientRect());
-                      setOpenPickerId((cur) => (cur === tag.id ? null : tag.id));
+                      setOpenPickerId((cur) => {
+                        const opening = cur !== tag.id;
+                        // 열 때의 bgHex를 기억 — 취소(바깥 클릭/Esc) 시 여기로 되돌린다.
+                        if (opening) pickerInitialRef.current = d.bgHex ?? null;
+                        return opening ? tag.id : null;
+                      });
                     }}
                     style={{ background: curColor }}
                     title="색 바꾸기"
@@ -712,6 +719,12 @@ export function TagLegendEditor({
                         setOpenPickerId(null);
                       }}
                       onClose={() => setOpenPickerId(null)}
+                      onCancel={() => {
+                        // '완료' 안 누르고 닫음 → 열었을 때 색으로 되돌린다(미리보기 변경 폐기).
+                        const init = pickerInitialRef.current;
+                        setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: init } }));
+                        setOpenPickerId(null);
+                      }}
                       value={curColor}
                     />
                   ) : null}
