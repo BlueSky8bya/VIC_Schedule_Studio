@@ -2732,15 +2732,15 @@ export function StudioShell({
                 <div className="detail-tags">
                   {selectedEvent.tagIds.map((id) => {
                     const tag = legendTags.find((item) => item.id === id);
-                    const color = tag && palette.find((c) => c.key === tag.colorKey);
-                    return tag && color ? (
+                    const v = tag ? tagVisual.visualOf(tag.id) : null;
+                    return tag && v && !v.missing && v.bg ? (
                       <span
                         className="detail-tag"
                         key={id}
                         style={{
-                          backgroundColor: color.bgColor,
-                          borderColor: color.borderColor,
-                          color: color.textColor
+                          backgroundColor: v.bg,
+                          borderColor: v.border ?? undefined,
+                          color: v.legacyTextColor ?? undefined
                         }}
                       >
                         {tag.displayName}
@@ -3715,8 +3715,8 @@ export function StudioShell({
               {(() => {
                 const tops = legendTags.filter((t) => (t.parentId ?? null) === null);
                 const legendBtn = (tag: (typeof tops)[number]) => {
-                  const color = palette.find((p) => p.key === tag.colorKey);
-                  if (!color) return null;
+                  const v = tagVisual.visualOf(tag.id);
+                  if (v.missing || !v.bg) return null;
                   const on = tagFilters.includes(tag.id);
                   return (
                     <button
@@ -3729,8 +3729,8 @@ export function StudioShell({
                       type="button"
                     >
                       <i
-                        data-color={color.key}
-                        style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+                        data-color={v.colorKey ?? undefined}
+                        style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
                       />
                       {tag.displayName}
                     </button>

@@ -24,20 +24,21 @@ const ETC_COLOR = "#d4d4d8";
 async function loadTagCategoryMap(
   supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
   calendarId: string
-): Promise<Map<string, { id: string; name: string; colorKey: string; kind: string }>> {
+): Promise<Map<string, { id: string; name: string; colorKey: string; bgHex: string | null; kind: string }>> {
   const { data } = await supabase
     .from("broadcast_tags")
-    .select("id, parent_id, display_name, color_key, kind")
+    .select("id, parent_id, display_name, color_key, bg_hex, kind")
     .eq("calendar_id", calendarId);
   const rows = (data ?? []) as {
     id: string;
     parent_id: string | null;
     display_name: string;
     color_key: string;
+    bg_hex: string | null;
     kind: string | null;
   }[];
   const byId = new Map(rows.map((r) => [r.id, r] as const));
-  const cat = new Map<string, { id: string; name: string; colorKey: string; kind: string }>();
+  const cat = new Map<string, { id: string; name: string; colorKey: string; bgHex: string | null; kind: string }>();
   for (const r of rows) {
     let top = r;
     const guard = new Set<string>();
@@ -45,11 +46,12 @@ async function loadTagCategoryMap(
       guard.add(top.id);
       top = byId.get(top.parent_id)!;
     }
-    // 최상위 대분류 기준 — kind는 대분류의 kind(content/modifier).
+    // 최상위 대분류 기준 — kind는 대분류의 kind(content/modifier). bg_hex(커스텀 색)도 대분류 것.
     cat.set(r.id, {
       id: top.id,
       name: top.display_name,
       colorKey: top.color_key,
+      bgHex: top.bg_hex ?? null,
       kind: top.kind === "modifier" ? "modifier" : "content"
     });
   }
@@ -720,6 +722,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
       id: id ?? rawName,
       name: rawName,
       colorKey: row.broadcast_tags?.color_key ?? "",
+      bgHex: null,
       kind: "content"
     };
     if (cat.name === REST_TAG) continue;
@@ -731,7 +734,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
       tagMap.set(cat.id, {
         name: cat.name,
         count: 1,
-        bgColor: col?.bg ?? "#cdc6ec",
+        bgColor: cat.bgHex ?? col?.bg ?? "#cdc6ec",
         borderColor: col?.border ?? "#b3a9dd"
       });
     }
@@ -1074,6 +1077,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       id: bt.id,
       name: bt.display_name ?? "?",
       colorKey: bt.color_key ?? "",
+      bgHex: null,
       kind: "content"
     };
     if (cat.kind === "modifier") continue; // 수식어는 컨텐츠 트렌드서 제외
@@ -1084,7 +1088,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     else
       tagInfo.set(cat.id, {
         name: cat.name,
-        color: palette.get(cat.colorKey) ?? "#cdc6ec",
+        color: cat.bgHex ?? palette.get(cat.colorKey) ?? "#cdc6ec",
         total: 1
       });
   }
@@ -1111,6 +1115,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       id: bt.id,
       name: bt.display_name ?? "?",
       colorKey: bt.color_key ?? "",
+      bgHex: null,
       kind: "content"
     };
     if (cat.kind !== "modifier") continue;
@@ -1120,7 +1125,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     else
       modInfo.set(cat.id, {
         name: cat.name,
-        color: palette.get(cat.colorKey) ?? "#cdc6ec",
+        color: cat.bgHex ?? palette.get(cat.colorKey) ?? "#cdc6ec",
         total: 1
       });
   }
@@ -1145,6 +1150,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       id: bt.id,
       name: bt.display_name ?? "?",
       colorKey: bt.color_key ?? "",
+      bgHex: null,
       kind: "content"
     };
     if (cat.kind === "modifier") continue; // 수식어는 태그별 하트 트렌드서 제외
@@ -1154,7 +1160,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     else
       heartTagInfo.set(cat.id, {
         name: cat.name,
-        color: palette.get(cat.colorKey) ?? "#f7a8c0",
+        color: cat.bgHex ?? palette.get(cat.colorKey) ?? "#f7a8c0",
         total: h
       });
   }
@@ -1864,6 +1870,7 @@ export async function getMemberInsightsAction(
       id: bt?.id ?? bt?.display_name ?? "?",
       name: bt?.display_name ?? "?",
       colorKey: bt?.color_key ?? "",
+      bgHex: null as string | null,
       kind: "content" as const
     };
   const tagRows = (tagsRes.data ?? []) as {
@@ -1930,7 +1937,7 @@ export async function getMemberInsightsAction(
     else
       ctTagInfo.set(cat.id, {
         name: cat.name,
-        color: colorMap.get(cat.colorKey)?.bg ?? "#cdc6ec",
+        color: cat.bgHex ?? colorMap.get(cat.colorKey)?.bg ?? "#cdc6ec",
         total: 1
       });
   }
@@ -1962,7 +1969,7 @@ export async function getMemberInsightsAction(
     else
       mtInfo.set(cat.id, {
         name: cat.name,
-        color: colorMap.get(cat.colorKey)?.bg ?? "#cdc6ec",
+        color: cat.bgHex ?? colorMap.get(cat.colorKey)?.bg ?? "#cdc6ec",
         total: 1
       });
   }
@@ -1990,7 +1997,7 @@ export async function getMemberInsightsAction(
       tagCount.set(cat.id, {
         name: cat.name,
         count: 1,
-        bgColor: col?.bg ?? "#cdc6ec",
+        bgColor: cat.bgHex ?? col?.bg ?? "#cdc6ec",
         borderColor: col?.border ?? "#b3a9dd"
       });
     }
@@ -2082,7 +2089,7 @@ export async function getMemberInsightsAction(
     else
       hbtInfo.set(cat.id, {
         name: cat.name,
-        color: colorMap.get(cat.colorKey)?.bg ?? "#f7a8c0",
+        color: cat.bgHex ?? colorMap.get(cat.colorKey)?.bg ?? "#f7a8c0",
         total: h
       });
   }
