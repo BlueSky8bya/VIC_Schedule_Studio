@@ -13,6 +13,7 @@ import type { BroadcastTag, ColorKey, ColorPaletteEntry, TagKind } from "@/lib/d
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 import type { SaveTagsResult, TagCreateInput } from "@/lib/schedules/tag-actions";
 import { generateTagColor, isPatternColor } from "@/lib/tags/color-gen";
+import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { hapticTick } from "@/lib/ui/haptics";
 
 type TagUpdate = {
@@ -92,6 +93,12 @@ export function TagLegendEditor({
   // 편집 대상 = 기존 태그 + 드래프트 태그. 스와치 팔레트도 드래프트 색을 포함한다.
   const allTags = useMemo(() => [...tags, ...newTags], [tags, newTags]);
   const effectivePalette = useMemo(() => [...palette, ...newColors], [palette, newColors]);
+  // 0A: 읽기 전용 색상 안내(범례)의 색을 단일 resolver로 푼다. 편집 중 드래프트 색까지 반영하려고
+  // allTags/effectivePalette 기준으로 만든다(대분류는 자기 색이라 결과는 기존 colorOf와 동일).
+  const legendVisual = useMemo(
+    () => createTagVisualResolver(allTags, effectivePalette),
+    [allTags, effectivePalette]
+  );
 
   const [draft, setDraft] = useState<Record<string, Draft>>(() =>
     Object.fromEntries(
@@ -325,14 +332,14 @@ export function TagLegendEditor({
   if (!canEdit) {
     const filtering = (filterIds?.length ?? 0) > 0;
     const legendItem = (tag: BroadcastTag) => {
-      const color = colorOf(tag.colorKey);
-      if (!color) return null;
+      const v = legendVisual.visualOf(tag.id);
+      if (v.missing || !v.bg) return null;
       if (!onToggleFilter) {
         return (
           <span key={tag.id}>
             <i
-              data-color={color.key}
-              style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+              data-color={v.colorKey ?? undefined}
+              style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
             />
             {tag.displayName}
           </span>
@@ -348,8 +355,8 @@ export function TagLegendEditor({
           type="button"
         >
           <i
-            data-color={color.key}
-            style={{ backgroundColor: color.bgColor, borderColor: color.borderColor }}
+            data-color={v.colorKey ?? undefined}
+            style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
           />
           {tag.displayName}
         </button>
