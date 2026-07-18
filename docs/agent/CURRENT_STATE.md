@@ -111,14 +111,23 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   `app/visual-fixture/poster`(VISUAL_TEST_FIXTURE=1 전용 route, 플래그 없으면 not-found·포스터
   미노출) + `playwright.visual.config.ts`(production build, viewport/DPR 고정, 애니 정지) +
   baseline(viewer-surface, `[data-export-surface]`만, OS별=현재 win32). **함정**: 언더스코어 폴더
-  (`app/__x`)는 Next private라 라우팅 제외 → route 폴더명에 언더스코어 금지. **다음**: 0A(단일
-  resolver, pixel 동일). ⚠ Phase 1 전 필수: pattern_key CSS 재작업(`data-pattern` +
-  {shape,ink,alpha}), 무늬 CVD 자동배정.
+  (`app/__x`)는 Next private라 라우팅 제외 → route 폴더명에 언더스코어 금지.
+  **Phase 0A 진행 중**: 특성화 테스트(`tag-visual-contract.test.ts`, 17개)로 현재 색/잉크 동작을
+  못박고(`edbee1d`), 단일 resolver `lib/tags/tag-visual.ts`(`createTagVisualResolver`) 신설
+  (`2263540`) — visualOf(rootTagId·kind·colorKey·bg·border·legacyTextColor·patternKey·missing),
+  이벤트 분배는 month.ts에 위임(정의상 동일). **시청자 포스터 카드 색을 resolver로 이관**(`217cbce`),
+  비주얼 하네스로 구코드 vs 이관 = **픽셀 동일 증명**. **비주얼 하네스 flaky였다**(교훈): render
+  타이밍 변화가 전역 diff 유발 — 원인 ①월드컵 공 JS rAF(CSS animations:disabled로 안 멈춤)
+  ②`--poster-scale`가 폰트 로드 타이밍에 좌우. → 스펙에 reduce-motion 토글(localStorage
+  `vic.reduceMotion=on`)로 rAF 정지 + 폰트 후 resize 재측정 + 표면 높이 안정 대기로 굳힘.
+  **다음**: 나머지 표면 이관(studio-shell 카드·insights 4맵·칩·범례). ⚠ Phase 1 전 필수:
+  pattern_key CSS 재작업(`data-pattern` + {shape,ink,alpha}), 무늬 CVD 자동배정.
 - **미착수**: 시청자 출석 도장(체크인) — 계획서만 있음(`docs/insights/viewer-checkin-attendance-plan.md`).
 
 ## Active Work
 
-태그 색 커스텀화 — Phase 0-pre **완료**(공개 경계 분리 + 비주얼 스위트). 다음은 0A(단일 resolver, pixel 동일).
+태그 색 커스텀화 — Phase 0A 진행 중. resolver 신설 + 시청자 포스터 카드 이관(픽셀 동일 증명) 완료.
+다음: 나머지 표면 이관(studio-shell·insights·칩·범례).
 
 ## 배포가 안 될 때 (2026-07-17 실제로 겪음 — 다음 에이전트가 같은 길로 헤매지 말 것)
 
