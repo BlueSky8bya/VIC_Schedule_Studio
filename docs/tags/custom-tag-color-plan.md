@@ -84,8 +84,9 @@ solid 4.583 → 같은 방향 잉크 5% 오버레이 후 ≈4.16~4.21, 6% 후 �
 
 ### Phase 0-pre — 선행
 1. **공개 경계 분리**(실재 결합, 코덱스 4차 = 첫 슬라이스 No-go→범위 확장): `sampleStudioSchedule`를
-   import하는 공개 코드가 **여러 개** — `public-loader.ts`(9,21) + `app/api/public/[slug]/proposals/
-   route.ts`(3) + `app/api/public/[slug]/broadcast/route.ts`(직접 확인). → `sample-public-data.ts`에
+   import하는 공개 코드는 **2곳** — `public-loader.ts`(9,21) + `app/api/public/[slug]/proposals/
+   route.ts`(3). (broadcast route는 주석에 "studio-loader" 문자열만 있어 grep 오탐이었음 — 실제
+   import 아님.) → `sample-public-data.ts`에
    공개 전용 fixture(calendar/tags/palette/events/campaigns/stickers/proposals) 배치, `sample-data.ts`가
    그걸 import해 studio 전용 private/draft로 확장(**역방향 import 금지**), 세 route 모두 studio sample
    import 제거. **import-boundary 테스트는 `app/(public)` + `app/api/public` 전체 트리 스캔**(한 파일

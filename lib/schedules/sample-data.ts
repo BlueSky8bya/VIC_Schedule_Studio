@@ -1,57 +1,18 @@
-import type {
-  BroadcastTag,
-  ColorPaletteEntry,
-  StudioSchedule
-} from "@/lib/domain/schedule-types";
-import { PRODUCT_TIMEZONE } from "@/lib/domain/schedule-types";
+import type { StudioSchedule } from "@/lib/domain/schedule-types";
+// 공개 안전 데이터(팔레트·태그·캘린더·제안)는 공개 전용 파일에서 가져와 얹는다. 이 파일은 그 위에
+// privateMeta·엠바고/작업 일정·requests 같은 스튜디오 전용/비공개 데이터만 추가한다.
+import {
+  defaultPalette,
+  defaultTags,
+  publicCalendarMeta,
+  sampleProposals
+} from "@/lib/schedules/sample-public-data";
 
-// 명도·채도까지 흔들어 구분한 13색 (DB seed 0010_distinct_palette_v3.sql와 동일).
-// 한류(초록~파랑) 칸은 어두움/밝음 교차 배치 + 앱 CSS 무늬로 추가 구분한다.
-export const defaultPalette: ColorPaletteEntry[] = [
-  { key: "gray", name: "회색", bgColor: "#cdd2da", textColor: "#2b2f38", borderColor: "#9aa0ab", sortOrder: 1 },
-  { key: "red", name: "빨강", bgColor: "#d11a2a", textColor: "#ffffff", borderColor: "#a8121f", sortOrder: 2 },
-  { key: "orange", name: "주황", bgColor: "#f5a623", textColor: "#5a3300", borderColor: "#d6760c", sortOrder: 3 },
-  { key: "yellow", name: "노랑", bgColor: "#ffe14d", textColor: "#5f4a00", borderColor: "#e3bf17", sortOrder: 4 },
-  { key: "lime", name: "초록", bgColor: "#4e9e2f", textColor: "#ffffff", borderColor: "#3a7a1f", sortOrder: 5 },
-  { key: "mint", name: "민트", bgColor: "#9fe8c4", textColor: "#0c4a32", borderColor: "#5cc497", sortOrder: 6 },
-  { key: "teal", name: "청록", bgColor: "#0e8a80", textColor: "#ffffff", borderColor: "#0a625c", sortOrder: 7 },
-  { key: "sky", name: "하늘", bgColor: "#a9dbf5", textColor: "#08405a", borderColor: "#5cb6e0", sortOrder: 8 },
-  { key: "blue", name: "파랑", bgColor: "#2f63d6", textColor: "#ffffff", borderColor: "#1f49a8", sortOrder: 9 },
-  { key: "indigo", name: "남색", bgColor: "#5a44c2", textColor: "#ffffff", borderColor: "#4131a0", sortOrder: 10 },
-  { key: "lavender", name: "보라", bgColor: "#d8bdf2", textColor: "#43176b", borderColor: "#b78fe0", sortOrder: 11 },
-  { key: "pink", name: "분홍", bgColor: "#ee5aa3", textColor: "#ffffff", borderColor: "#d63b89", sortOrder: 12 },
-  { key: "beige", name: "갈색", bgColor: "#a9794a", textColor: "#ffffff", borderColor: "#885d33", sortOrder: 13 },
-  { key: "silver", name: "은색", bgColor: "#6b7682", textColor: "#ffffff", borderColor: "#4b535c", sortOrder: 14 }
-];
-
-// 시드 태그는 전부 대분류(parentId: null). 세부는 owner가 편집기에서 추가.
-export const defaultTags: BroadcastTag[] = ([
-  { id: "tag-dayoff", tagKey: "dayoff", displayName: "휴뱅", colorKey: "gray", sortOrder: 1, isDefault: true, isActive: true },
-  { id: "tag-worldcup", tagKey: "worldcup", displayName: "구플뱅", colorKey: "orange", sortOrder: 2, isDefault: true, isActive: true },
-  { id: "tag-collab", tagKey: "collab", displayName: "합방", colorKey: "lavender", sortOrder: 3, isDefault: true, isActive: true },
-  { id: "tag-big-server", tagKey: "big_server", displayName: "서버", colorKey: "blue", sortOrder: 4, isDefault: true, isActive: true },
-  { id: "tag-full-track", tagKey: "full_track", displayName: "풀트뱅", colorKey: "pink", sortOrder: 5, isDefault: true, isActive: true },
-  { id: "tag-calm", tagKey: "calm", displayName: "VRChat", colorKey: "mint", sortOrder: 6, isDefault: true, isActive: true },
-  { id: "tag-variety-game", tagKey: "variety_game", displayName: "종겜", colorKey: "yellow", sortOrder: 7, isDefault: true, isActive: true },
-  { id: "tag-song", tagKey: "song", displayName: "시참의날", colorKey: "sky", sortOrder: 8, isDefault: true, isActive: true },
-  { id: "tag-hype", tagKey: "hype", displayName: "소통뱅", colorKey: "lime", sortOrder: 9, isDefault: true, isActive: true },
-  { id: "tag-easy", tagKey: "easy", displayName: "기타", colorKey: "beige", sortOrder: 10, isDefault: true, isActive: true },
-  { id: "tag-ck", tagKey: "ck", displayName: "CK", colorKey: "red", sortOrder: 11, isDefault: true, isActive: true },
-  { id: "tag-tournament", tagKey: "tournament", displayName: "대회", colorKey: "indigo", sortOrder: 12, isDefault: true, isActive: true },
-  { id: "tag-cineti", tagKey: "cineti", displayName: "시네티", colorKey: "teal", sortOrder: 13, isDefault: true, isActive: true }
-] as Omit<BroadcastTag, "parentId" | "kind">[]).map((t) => ({ ...t, parentId: null, kind: "content" as const }));
+// 하위 호환: 예전에 이 모듈에서 팔레트/태그를 import하던 곳을 위해 재노출(단일 정의는 공개 파일).
+export { defaultPalette, defaultTags } from "@/lib/schedules/sample-public-data";
 
 export const sampleStudioSchedule: StudioSchedule = {
-  calendar: {
-    slug: "vic",
-    displayName: "빅토리 일정표",
-    title: "빅토리 일정표",
-    timezone: PRODUCT_TIMEZONE,
-    defaultYear: 2026,
-    defaultMonth: 6,
-    publicMemo: "",
-    posterTheme: "none"
-  },
+  calendar: publicCalendarMeta,
   palette: defaultPalette,
   tags: defaultTags,
   events: [
@@ -246,16 +207,7 @@ export const sampleStudioSchedule: StudioSchedule = {
   ],
   stickerAssets: [],
   heartCount: 0,
-  proposals: [
-    {
-      id: "prop-001",
-      type: "content",
-      content: "6월 중순 공포게임 후보 투표",
-      voteCount: 42,
-      state: "reviewing",
-      suggestedDate: "2026-06-15"
-    }
-  ],
+  proposals: sampleProposals,
   requests: [
     {
       id: "req-001",
@@ -267,16 +219,7 @@ export const sampleStudioSchedule: StudioSchedule = {
     }
   ],
   viewerModePreview: {
-    calendar: {
-      slug: "vic",
-      displayName: "빅토리 일정표",
-      title: "빅토리 일정표",
-      timezone: PRODUCT_TIMEZONE,
-      defaultYear: 2026,
-      defaultMonth: 6,
-      publicMemo: "",
-      posterTheme: "none"
-    },
+    calendar: publicCalendarMeta,
     events: [],
     tags: defaultTags,
     palette: defaultPalette,

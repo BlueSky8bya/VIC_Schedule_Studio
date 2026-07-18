@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
+import { publicCalendarMeta, sampleProposals } from "@/lib/schedules/sample-public-data";
 
 const proposalSchema = z.object({
   type: z.enum(["slot", "content", "collab"]).default("content"),
@@ -17,12 +17,12 @@ type ProposalRouteProps = {
 export async function GET(_request: Request, { params }: ProposalRouteProps) {
   const { calendarSlug } = await params;
 
-  if (calendarSlug !== sampleStudioSchedule.calendar.slug) {
+  if (calendarSlug !== publicCalendarMeta.slug) {
     return NextResponse.json({ proposals: [] });
   }
 
   return NextResponse.json({
-    proposals: sampleStudioSchedule.proposals
+    proposals: sampleProposals
       .filter((proposal) => proposal.state === "accepted")
       .map(({ id, type, content, voteCount, state, suggestedDate }) => ({
         id,
@@ -40,7 +40,7 @@ export async function POST(request: Request, { params }: ProposalRouteProps) {
   const body = await request.json().catch(() => null);
   const parsed = proposalSchema.safeParse(body);
 
-  if (calendarSlug !== sampleStudioSchedule.calendar.slug) {
+  if (calendarSlug !== publicCalendarMeta.slug) {
     return NextResponse.json({ error: "Calendar not found" }, { status: 404 });
   }
 

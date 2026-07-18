@@ -6,7 +6,6 @@ import type {
   PublicScheduleEvent,
   StickerAsset,
   StickerInstance,
-  StudioScheduleEvent,
   SupportCampaign
 } from "@/lib/domain/schedule-types";
 import {
@@ -18,7 +17,7 @@ import type { PosterThemeKey } from "@/lib/domain/schedule-types";
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
 import { timed } from "@/lib/perf/perf";
-import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
+import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { PUBLIC_SCHEDULE_CACHE_TAG } from "@/lib/schedules/cache";
@@ -543,52 +542,16 @@ function mapSticker(row: {
   };
 }
 
-// ── 폴백: Supabase 미설정 환경에서 샘플 데이터로 공개 스케줄 구성 ──
-function toPublicEvent(event: StudioScheduleEvent): PublicScheduleEvent | null {
-  if (event.status === "draft" || event.visibilityScope !== "public") {
-    return null;
-  }
-
-  return {
-    id: event.id,
-    startsAt: event.startsAt,
-    endsAt: event.endsAt,
-    isAllDay: event.isAllDay,
-    isTentative: event.isTentative ?? false, // 공개해도 안전한 상태값(시청자도 '미정' 봄)
-    isSupport: event.isSupport,
-    supportUrl: event.supportUrl,
-    publicTitle: event.publicTitle,
-    publicDescription: event.publicDescription,
-    status: event.status,
-    visibilityScope: "public",
-    category: event.category,
-    tagIds: event.tagIds,
-    primaryTagIds: event.primaryTagIds,
-    sortOrder: event.sortOrder,
-    variantGroupId: event.variantGroupId,
-    variantLabel: event.variantLabel
-  };
-}
-
+// ── 폴백: Supabase 미설정 환경에서 공개 샘플 데이터로 공개 스케줄 구성 ──
+// 데이터는 공개 전용 파일(`sample-public-data`)에서 이미 공개 안전 형태(공개 일정·공개 업도움·공개
+// 스티커만)로 온다 → 여기선 스튜디오 데이터를 만지지 않는다(공개 경계). 슬러그가 다르면 일정만 비운다.
 function samplePublicSchedule(calendarSlug: string): PublicSchedule {
-  const publicEvents =
-    calendarSlug === sampleStudioSchedule.calendar.slug
-      ? sampleStudioSchedule.events
-          .map(toPublicEvent)
-          .filter((event): event is PublicScheduleEvent => event !== null)
-      : [];
-
   return {
-    calendar: sampleStudioSchedule.calendar,
-    events: publicEvents,
-    tags: sampleStudioSchedule.tags,
-    palette: sampleStudioSchedule.palette,
-    supportCampaigns: sampleStudioSchedule.supportCampaigns.filter(
-      (campaign) => campaign.isPublic && campaign.isActive
-    ),
-    stickers: sampleStudioSchedule.stickers.filter((sticker) => sticker.visiblePublicly),
-    stickerAssets: sampleStudioSchedule.stickerAssets,
-    heartCount: 0
+    ...samplePublicScheduleData,
+    events:
+      calendarSlug === samplePublicScheduleData.calendar.slug
+        ? samplePublicScheduleData.events
+        : []
   };
 }
 
