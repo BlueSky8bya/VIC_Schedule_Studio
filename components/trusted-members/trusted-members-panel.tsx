@@ -175,6 +175,9 @@ export function TrustedMembersPanel() {
               <th scope="col">작업자</th>
             </tr>
           </thead>
+          {/* 행 순서 = '데칼코마니'(상하 대칭). 중앙(엠바고)을 축으로 위/아래 4행이 각 열의 ✓/✕
+              패턴까지 완전히 거울처럼 맞는다(같은 권한 패턴끼리 짝을 지어 배치). 매니저·작업자 열이
+              위아래로 대칭 무늬를 이룬다. 의미가 아니라 '보기 좋은 대칭'을 위한 정렬. */}
           <tbody>
             <tr>
               <th scope="row">일정 편집</th>
@@ -191,17 +194,17 @@ export function TrustedMembersPanel() {
               <td className="no">✕</td>
             </tr>
             <tr>
-              <th scope="row">생성된 일정 태그 수정</th>
-              <td className="yes">✓</td>
-              <td className="yes">✓</td>
-              <td className="yes">✓</td>
-              <td className="no">✕</td>
-            </tr>
-            <tr>
               <th scope="row">작업자 일정 보기</th>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
               <td className="no">✕</td>
+              <td className="yes">✓</td>
+            </tr>
+            <tr>
+              <th scope="row">달력 꾸미기</th>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
+              <td className="yes">✓</td>
               <td className="yes">✓</td>
             </tr>
             <tr>
@@ -212,7 +215,7 @@ export function TrustedMembersPanel() {
               <td className="no">✕</td>
             </tr>
             <tr>
-              <th scope="row">달력 꾸미기</th>
+              <th scope="row">달력 이미지 캡쳐</th>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
@@ -226,11 +229,11 @@ export function TrustedMembersPanel() {
               <td className="yes">✓</td>
             </tr>
             <tr>
-              <th scope="row">달력 이미지 캡쳐</th>
+              <th scope="row">생성된 일정 태그 수정</th>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
-              <td className="yes">✓</td>
+              <td className="no">✕</td>
             </tr>
             <tr>
               <th scope="row">태그·멤버·비번 관리</th>

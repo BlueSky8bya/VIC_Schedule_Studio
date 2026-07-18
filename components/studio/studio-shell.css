@@ -4786,17 +4786,25 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
 /* 서브항목 = 불릿 대신 '왼쪽 세로 레일'(뷰어 .event-subs와 통일). 레일색은 currentColor(=통일
    잉크)를 옅게 섞어 카드마다 배경에 적응. 좌측 총 여백을 기존과 동일(border 2 + padding 12 = 14px)로
    둬 줄바꿈 폭·카드 높이 불변(스티커 좌표 안전). */
+/* 서브 = 왼쪽 세로 레일. 뷰어(.event-subs)와 '완전히 같은 값'으로 통일한다(레일 두께·농도·
+   레일↔글자 간격·글자크기·줄간격 동일). 편집실은 스티커 좌표 제약이 없어 총 여백을 뷰어와 같은
+   18px(border 2 + padding 16)로 맞춰도 안전. */
 .pill-subs {
   display: grid;
-  gap: 3px;
+  gap: 2px;
   margin: 0;
-  padding: 0 0 0 12px;
+  padding: 0 0 0 16px;
   border-left: 2px solid color-mix(in srgb, currentColor 30%, transparent);
   list-style: none;
   font-weight: 800;
 }
 .pill-subs li {
-  font-size: 12px;
+  /* 제목이 clamp(13~19px, 0.9vw)로 화면폭 따라 커지는데 서브가 12.5px 고정이면 넓은 화면에서
+     제목만 크고 서브가 작아 불균형·카드가 비어 보였다. 벤치마킹(모듈러 타입 스케일: 서브=제목의
+     ~0.8배)대로 서브도 vw에 비례해 함께 커진다 → 제목:서브 비율이 유지돼 카드가 균형 있게 찬다.
+     (제목과 같이 커지므로 '서브만 키워 뚱뚱해지는' 악순환이 아니라 비례 확대. 편집실은 스티커
+     좌표 제약이 없어 안전.) 최소 12px로 가독성 확보. */
+  font-size: clamp(12px, 0.72vw, 15px);
   font-weight: 800;
   line-height: 1.3;
 }
@@ -4823,6 +4831,11 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
    (이 파일에 중복 규칙이 있어 흰 링·9px·margin-top:auto가 덮여 방식 점이 안 맞던 버그). */
 .agenda-content .pill-dots {
   margin-top: 4px;
+}
+/* 편집실 그리드 카드의 형식색 점은 뷰어(.event-meta 안에서 오른쪽 정렬)와 달리 카드에 직접
+   붙어 왼쪽에 있었다 → 뷰어와 같이 오른쪽 정렬로 통일(점 줄이 카드 폭을 채워 오른쪽 끝으로). */
+.studio-event-pill .pill-dots {
+  justify-content: flex-end;
 }
 
 /* 비공개 일정 표시(태그색 위에 점선 링) */
