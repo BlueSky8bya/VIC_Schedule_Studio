@@ -106,8 +106,6 @@ import {
   getEventsForDate,
   eventMatchesTagFilter,
   getEventSpan,
-  getEventTagColors,
-  getExtraCategoryColors,
   getSpanRunRange,
   getTodayKst,
   mixedEventStyle,
@@ -116,6 +114,7 @@ import {
   type MonthCell
 } from "@/lib/calendar/month";
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
+import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
@@ -891,6 +890,12 @@ export function PublicPoster({
   const viewTags = useMemo(
     () => (isTaxonomyV3("viewer") ? schedule.tags : legacyTagView(schedule.tags)),
     [schedule.tags]
+  );
+  // 0A: 태그 색 계산의 단일 진입점. 칸 색/점 줄은 resolver를 통해 푼다(내부는 기존 로직과 동일 →
+  // 픽셀 불변, 비주얼 스냅샷으로 확인). 커스텀 색(bg_hex)은 나중에 이 resolver 안에서만 얹는다.
+  const tagVisual = useMemo(
+    () => createTagVisualResolver(viewTags, schedule.palette),
+    [viewTags, schedule.palette]
   );
   // #1: 색상 안내에서 "기타"는 항상 맨 마지막으로(나머지는 기존 정렬 유지).
   // 색상 안내 순서 = 태그 sort_order(편집실에서 드래그로 정한 순서). 단일 진실 소스.
@@ -2631,7 +2636,7 @@ export function PublicPoster({
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: PublicScheduleEvent) {
-    return getEventTagColors(event, viewTags, schedule.palette);
+    return tagVisual.eventFills(event);
   }
 
   // A2 고도화: 현재 필터(태그 다중 + 관심만)에 안 맞는 일정은 흐리게 처리할지 판정.
@@ -2882,7 +2887,7 @@ export function PublicPoster({
               // 시각 지났고 실제 제목 있음(미리보기/신선 캐시) → 일반 렌더로 흐른다.
             }
             const colors = eventColors(event);
-            const extraColors = getExtraCategoryColors(event, viewTags, schedule.palette);
+            const extraColors = tagVisual.eventExtras(event);
             const { main, subs } = splitEventTitle(event.publicTitle);
             const span = getEventSpan(event, cell.isoDate, cell.weekday, schedule.events);
             const bookmarked = isBookmarked(event.id);
@@ -3302,9 +3307,7 @@ export function PublicPoster({
                       // 지났고 실제 제목 있음 → 일반 렌더로 흐른다.
                     }
                     const colors = eventColors(event);
-                    const extraColors = support
-                      ? []
-                      : getExtraCategoryColors(event, viewTags, schedule.palette);
+                    const extraColors = support ? [] : tagVisual.eventExtras(event);
                     const { main, subs } = splitEventTitle(event.publicTitle);
                     const bookmarked = isBookmarked(event.id);
                     const tier =
