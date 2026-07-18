@@ -782,7 +782,7 @@ html[data-reduce-motion] .mb-live-dot {
 .agenda-subs {
   margin: 1px 0 0;
   padding-left: 13px;
-  border-left: 2px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-left: 2px solid color-mix(in srgb, currentColor 28%, transparent);
   list-style: none;
   font-size: 12.5px;
   font-weight: 600;
@@ -2567,7 +2567,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   gap: 2px;
   margin: 0;
   padding: 0 0 0 16px;
-  border-left: 2px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-left: 2px solid color-mix(in srgb, currentColor 30%, transparent);
   list-style: none;
   font-weight: 800;
 }
