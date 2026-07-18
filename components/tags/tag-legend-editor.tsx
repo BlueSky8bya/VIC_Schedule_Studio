@@ -711,6 +711,7 @@ export function TagLegendEditor({
                     <ColorPickerPopover
                       anchor={pickerAnchor}
                       canClear={d.bgHex != null}
+                      kind={d.kind}
                       onChange={(hex) =>
                         setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: hex } }))
                       }

@@ -5810,12 +5810,14 @@ textarea:disabled {
   opacity: 0.97;
 }
 .tag-editor-row input {
-  flex: 0 0 96px;
-  width: 96px;
+  /* 이름칸을 늘려 오른쪽 빈 공간을 없앤다(컨트롤은 오른쪽 끝으로 밀린다). */
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 90px;
   min-height: 32px;
   border: 1px solid var(--line);
   border-radius: 7px;
-  padding: 0 8px;
+  padding: 0 10px;
   font-size: 13px;
   font-weight: 800;
 }
@@ -5850,8 +5852,8 @@ textarea:disabled {
   display: inline-flex;
 }
 .tag-color-swatch {
-  width: 46px;
-  height: 30px;
+  width: 58px;
+  height: 32px;
   border: 1.5px solid var(--line, #ddd6ee);
   border-radius: var(--r-sm);
   cursor: pointer;
@@ -5873,11 +5875,11 @@ textarea:disabled {
 .tag-cpop {
   position: fixed;
   z-index: 9500;
-  width: 244px;
+  width: 268px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 12px;
+  gap: 12px;
+  padding: 14px;
   background: var(--surface, #fffdf6);
   border: 1.5px solid var(--line, #ece0c9);
   border-radius: var(--r-lg, 16px);
@@ -5886,29 +5888,31 @@ textarea:disabled {
 .cpop-sv {
   position: relative;
   width: 100%;
-  height: 132px;
+  height: 152px;
   border-radius: var(--r-md, 12px);
   cursor: crosshair;
   touch-action: none;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
 }
 .cpop-sv-thumb,
 .cpop-hue-thumb {
   position: absolute;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  border: 2px solid #fff;
-  box-shadow: 0 0 0 1px rgb(0 0 0 / 35%);
+  border: 2.5px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 40%);
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
 .cpop-hue {
   position: relative;
   width: 100%;
-  height: 14px;
+  height: 16px;
   border-radius: var(--r-pill);
   cursor: pointer;
   touch-action: none;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 8%);
   background: linear-gradient(
     to right,
     #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000
@@ -5917,20 +5921,21 @@ textarea:disabled {
 .cpop-hue-thumb {
   top: 50%;
 }
+/* 미리보기 + hex — 한 줄, 미리보기 크게(글자 읽힘을 바로 확인). */
 .cpop-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 9px;
 }
 .cpop-preview {
   flex: 0 0 auto;
-  width: 40px;
-  height: 30px;
+  width: 50px;
+  height: 36px;
   display: grid;
   place-items: center;
   border-radius: var(--r-sm);
-  border: 1.5px solid rgb(0 0 0 / 8%);
-  font-size: 13px;
+  border: 1.5px solid rgb(0 0 0 / 10%);
+  font-size: 15px;
   font-weight: 800;
 }
 .cpop-hex {
@@ -5938,44 +5943,55 @@ textarea:disabled {
   min-width: 0;
   border: 1.5px solid var(--line, #ddd6ee);
   border-radius: var(--r-sm);
-  padding: 6px 8px;
-  font-size: 13px;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   text-transform: lowercase;
 }
 .cpop-warn {
-  margin: -4px 0 0;
-  font-size: 11.5px;
+  margin: -6px 0 0;
+  font-size: 12px;
   font-weight: 700;
   color: #9a5a12;
 }
+/* 톤 프리셋 — 4칸 균등(넘침 없음). */
 .cpop-tones {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 4px;
+  gap: 5px;
 }
 .tag-tone {
   border: 1.5px solid var(--line, #ddd6ee);
   border-radius: var(--r-pill);
   background: #fbfaff;
-  padding: 5px 0;
-  font-size: 11.5px;
+  padding: 7px 0;
+  font-size: 12px;
   font-weight: 700;
   color: var(--ink-soft, #4a4360);
   cursor: pointer;
   white-space: nowrap;
 }
+.tag-tone:hover {
+  border-color: var(--violet, #7048e8);
+  background: #f3eeff;
+}
+/* 색 스펙트럼 — 6칸×3줄(18색), 색조를 훑는 빠른 선택. */
 .cpop-presets {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 5px;
 }
 .cpop-swatch {
-  height: 22px;
+  height: 24px;
   border-radius: var(--r-sm);
-  border: 1.5px solid rgb(0 0 0 / 8%);
+  border: 1.5px solid rgb(0 0 0 / 10%);
   cursor: pointer;
   padding: 0;
+  transition: transform 120ms var(--ease, ease);
+}
+.cpop-swatch:hover {
+  transform: scale(1.08);
 }
 .cpop-actions {
   display: flex;
@@ -5985,8 +6001,8 @@ textarea:disabled {
   margin-top: 2px;
 }
 .cpop-done {
-  padding: 6px 16px;
-  font-size: 13px;
+  padding: 7px 18px;
+  font-size: 13.5px;
 }
 .tag-custom-clear {
   border: 1.5px solid var(--line, #ddd6ee);

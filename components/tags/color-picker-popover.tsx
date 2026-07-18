@@ -5,32 +5,39 @@ import { createPortal } from "react-dom";
 import {
   applyTone,
   hexToHsv,
+  hslToHex,
   hsvToHex,
   inkContrast,
   TONE_PRESETS
 } from "@/lib/tags/color-tone";
 import { hapticTick } from "@/lib/ui/haptics";
+import type { TagKind } from "@/lib/domain/schedule-types";
 
 // 커스텀 색 피커 — 색 스와치를 누르면 뜨는 팝오버. 연구/벤치마킹(팝오버 패턴 + 색 영역+색조 슬라이더)
 // 기준: 네이티브 OS 피커 대신 앱 디자인에 맞는 인라인 피커. 좌표로 채도·명도, 슬라이더로 색조,
 // 자주 쓰는 프리셋·톤으로 빠르게, hex 직접 입력, 대비(AA) 즉시 확인.
 
-// 앱 결에 맞춘 프리셋(따뜻한 파스텔 12색). 빠르게 고르는 용도 — 세밀 조정은 영역/슬라이더로.
-const PRESETS = [
-  "#ffd9a8", "#ffec99", "#d8f5a2", "#b2f2bb", "#96f2d7", "#99e9f2",
-  "#a5d8ff", "#bac8ff", "#d0bfff", "#eebefa", "#fcc2d7", "#ffc9c9"
-];
+// '색 스펙트럼' 빠른 선택 — 고정 팔레트가 아니라 색조를 20°씩 훑는 18색(6×3). 딱 이만큼으로
+// 제한된다는 뜻이 아니라(색은 위 영역/슬라이더로 무제한), 원하는 색조로 빠르게 점프하는 용도.
+// kind별 톤을 render에 맞춘다: 콘텐츠=칸 배경이라 '연하게'(밝은 파스텔), 형식=점이라 '진하게'.
+function spectrum(kind: TagKind): string[] {
+  const light = kind !== "modifier";
+  const s = light ? 72 : 60;
+  const l = light ? 82 : 50;
+  return Array.from({ length: 18 }, (_, i) => hslToHex((i * 20) % 360, s, l));
+}
 
 function clamp01(n: number) {
   return Math.max(0, Math.min(1, n));
 }
 
-const POP_W = 244;
-const POP_H = 356;
+const POP_W = 268;
+const POP_H = 420;
 
 export function ColorPickerPopover({
   value,
   anchor,
+  kind,
   onChange,
   onClear,
   onClose,
@@ -38,11 +45,13 @@ export function ColorPickerPopover({
 }: {
   value: string; // 현재 색(hex)
   anchor: DOMRect; // 트리거(스와치) 화면 좌표 — 여기에 붙여 띄운다(포털이라 부모 overflow에 안 잘림).
+  kind: TagKind; // 콘텐츠(연한 스펙트럼) / 형식(진한 스펙트럼)
   onChange: (hex: string) => void;
   onClear: () => void; // 기본(팔레트) 색으로
   onClose: () => void;
   canClear: boolean;
 }) {
+  const presets = useMemo(() => spectrum(kind), [kind]);
   const [hsv, setHsv] = useState(() => hexToHsv(value));
   const [hexText, setHexText] = useState(value);
   const svRef = useRef<HTMLDivElement | null>(null);
@@ -188,9 +197,9 @@ export function ColorPickerPopover({
         ))}
       </div>
 
-      {/* 자주 쓰는 색 프리셋 */}
+      {/* 색 스펙트럼 빠른 선택(6×3, kind별 톤) */}
       <div className="cpop-presets">
-        {PRESETS.map((c) => (
+        {presets.map((c) => (
           <button
             aria-label={c}
             className="cpop-swatch"
