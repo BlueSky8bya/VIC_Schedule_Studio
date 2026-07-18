@@ -3358,13 +3358,20 @@ export function StudioShell({
     }
   }
   function applyTagUpdates(
-    updates: { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number }[]
+    updates: { id: string; displayName: string; colorKey: ColorKey; bgHex?: string | null; sortOrder?: number }[]
   ) {
     setTags((prev) => {
       const mapped = prev.map((t) => {
         const u = updates.find((x) => x.id === t.id);
         return u
-          ? { ...t, displayName: u.displayName, colorKey: u.colorKey, sortOrder: u.sortOrder ?? t.sortOrder }
+          ? {
+              ...t,
+              displayName: u.displayName,
+              colorKey: u.colorKey,
+              // bgHex가 payload에 오면 반영(커스텀 색 즉시 카드/범례에). undefined면 유지.
+              bgHex: u.bgHex === undefined ? t.bgHex : u.bgHex,
+              sortOrder: u.sortOrder ?? t.sortOrder
+            }
           : t;
       });
       // 드래그로 바뀐 순서(sort_order)를 즉시 반영 — 달력·색상 안내가 새로고침 없이 갱신.

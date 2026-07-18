@@ -20,6 +20,7 @@ type TagUpdate = {
   id: string;
   displayName: string;
   colorKey: ColorKey;
+  bgHex?: string | null;
   sortOrder?: number;
   parentId?: string | null;
   kind?: TagKind;
@@ -54,7 +55,13 @@ type TagLegendEditorProps = {
   onToggleFilter?: (tagId: string) => void;
 };
 
-type Draft = { name: string; colorKey: ColorKey | ""; parentId: string | null; kind: TagKind };
+type Draft = {
+  name: string;
+  colorKey: ColorKey | "";
+  bgHex: string | null; // 커스텀 색(대분류만). null이면 팔레트 색(colorKey) 사용.
+  parentId: string | null;
+  kind: TagKind;
+};
 
 export function TagLegendEditor({
   tags,
@@ -104,7 +111,7 @@ export function TagLegendEditor({
     Object.fromEntries(
       tags.map((t) => [
         t.id,
-        { name: t.displayName, colorKey: t.colorKey, parentId: t.parentId, kind: t.kind }
+        { name: t.displayName, colorKey: t.colorKey, bgHex: t.bgHex ?? null, parentId: t.parentId, kind: t.kind }
       ])
     )
   );
@@ -117,6 +124,7 @@ export function TagLegendEditor({
         next[t.id] = cur[t.id] ?? {
           name: t.displayName,
           colorKey: t.colorKey,
+          bgHex: t.bgHex ?? null,
           parentId: t.parentId,
           kind: t.kind
         };
@@ -423,7 +431,7 @@ export function TagLegendEditor({
     setNewTags((prev) => [...prev, tag]);
     setDraft((cur) => ({
       ...cur,
-      [tempId]: { name: tag.displayName, colorKey: gen.key, parentId: null, kind }
+      [tempId]: { name: tag.displayName, colorKey: gen.key, bgHex: null, parentId: null, kind }
     }));
     setOrderIds((cur) => [...cur, tempId]);
   }
@@ -530,6 +538,7 @@ export function TagLegendEditor({
     (t) =>
       draft[t.id]?.name !== t.displayName ||
       draft[t.id]?.colorKey !== t.colorKey ||
+      (draft[t.id]?.bgHex ?? null) !== (t.bgHex ?? null) ||
       draft[t.id]?.kind !== t.kind
   );
   const hasNew = newTags.length > 0;
@@ -557,6 +566,7 @@ export function TagLegendEditor({
           bgColor: c?.bgColor ?? "#eeeeee",
           textColor: c?.textColor ?? "#333333",
           borderColor: c?.borderColor ?? "#cccccc",
+          bgHex: parentId ? null : d.bgHex,
           sortOrder,
           parentId,
           // 세부(자식)는 항상 content, 대분류는 토글 값.
@@ -567,6 +577,7 @@ export function TagLegendEditor({
           id: t.id,
           displayName: d.name,
           colorKey: d.colorKey as ColorKey,
+          bgHex: parentId ? null : d.bgHex,
           sortOrder,
           parentId,
           kind: parentId ? "content" : d.kind
@@ -603,6 +614,7 @@ export function TagLegendEditor({
               next[c.tag.id] = {
                 name: c.tag.displayName,
                 colorKey: c.tag.colorKey,
+                bgHex: c.tag.bgHex ?? null,
                 parentId: c.tag.parentId,
                 kind: c.tag.kind
               };
@@ -717,6 +729,33 @@ export function TagLegendEditor({
                 />
               );
             })}
+            </div>
+            {/* 커스텀 색: 팔레트 밖의 원하는 색을 직접. 값이 있으면 렌더가 이 색을 쓴다(팔레트 폴백 대신).
+                무늬는 없어졌으므로 콘텐츠·방식 모두 단색 커스텀 가능. */}
+            <div className="tag-editor-custom">
+              <input
+                aria-label="커스텀 색 직접 고르기"
+                disabled={locked}
+                onChange={(e) =>
+                  setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: e.target.value } }))
+                }
+                title="원하는 색 직접 고르기"
+                type="color"
+                value={d.bgHex ?? (d.colorKey ? colorOf(d.colorKey)?.bgColor ?? "#cccccc" : "#cccccc")}
+              />
+              {d.bgHex ? (
+                <button
+                  className="tag-custom-clear"
+                  disabled={locked}
+                  onClick={() =>
+                    setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: null } }))
+                  }
+                  title="팔레트 색으로 되돌리기"
+                  type="button"
+                >
+                  팔레트
+                </button>
+              ) : null}
             </div>
           </>
         )}

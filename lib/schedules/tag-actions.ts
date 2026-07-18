@@ -17,12 +17,21 @@ export type TagCreateInput = {
   bgColor: string;
   textColor: string;
   borderColor: string;
+  // 커스텀 색 hex(#RRGGBB). 대분류만 의미 있고, 있으면 렌더가 이 색을 쓴다(color_key 폴백 대신).
+  bgHex?: string | null;
   sortOrder: number;
   // 2계층: null = 대분류(색 보유), 값 = 세부(부모 대분류 id, 색은 부모 상속). 임시 부모는 tempId일 수 있다.
   parentId?: string | null;
   // content(콘텐츠) | modifier(수식어). 생략 시 content.
   kind?: TagKind;
 };
+
+// 커스텀 색 hex 검증 — #RRGGBB만. null/빈값은 '색 없음'(팔레트 폴백).
+const HEX_RE = /^#[0-9a-fA-F]{6}$/;
+function validBgHex(v: string | null | undefined): string | null {
+  if (!v) return null;
+  return HEX_RE.test(v) ? v : null;
+}
 // "전체 저장": 기존 태그 수정 + 새 태그 생성을 한 번에. 생성분은 진짜 id를 돌려줘 화면을 갱신한다.
 export type SaveTagsResult =
   | { ok: true; created: { tempId: string; tag: BroadcastTag; color: ColorPaletteEntry }[] }
@@ -36,7 +45,7 @@ const SLUG = "vic";
 // #6/#4: "전체 저장" — 기존 태그 수정 + 새로 추가한 드래프트 태그 생성을 한 번에 처리한다.
 // (새 태그는 저장 누르기 전까지 팝업 안에서만 보이고, 이 액션을 누를 때만 DB·달력에 반영된다.)
 export async function saveTagsAction(input: {
-  updates: { id: string; displayName: string; colorKey: ColorKey; sortOrder?: number; parentId?: string | null; kind?: TagKind }[];
+  updates: { id: string; displayName: string; colorKey: ColorKey; bgHex?: string | null; sortOrder?: number; parentId?: string | null; kind?: TagKind }[];
   creates: TagCreateInput[];
 }): Promise<SaveTagsResult> {
   const actor = await resolveCurrentActor(SLUG);
@@ -50,6 +59,13 @@ export async function saveTagsAction(input: {
   // 이름 검증 — 수정·생성 모두.
   if ([...updates, ...creates].some((u) => !u.displayName.trim())) {
     return { ok: false, error: "모든 태그 이름을 입력하세요." };
+  }
+  // 커스텀 색 형식 검증(대분류만). 값이 왔는데 #RRGGBB가 아니면 거부(조용히 폴백시키지 않는다).
+  const badHex = [...updates, ...creates].some(
+    (u) => isTop(u) && u.bgHex != null && u.bgHex !== "" && !HEX_RE.test(u.bgHex)
+  );
+  if (badHex) {
+    return { ok: false, error: "색상 형식이 올바르지 않습니다(#RRGGBB)." };
   }
   // 색·색중복 검증은 '대분류'만 — 세부는 부모 색을 상속하므로 색이 겹쳐도 정상.
   const tops = [...updates, ...creates].filter(isTop);
@@ -136,6 +152,8 @@ export async function saveTagsAction(input: {
           tag_key: tagKey,
           display_name: c.displayName.trim(),
           color_key: c.colorKey,
+          // 커스텀 색은 대분류만(세부는 부모 상속 → NULL). DB CHECK도 동일 보장.
+          bg_hex: parentId ? null : validBgHex(c.bgHex),
           sort_order: c.sortOrder,
           is_default: false,
           is_active: true,
@@ -155,6 +173,7 @@ export async function saveTagsAction(input: {
           tagKey,
           displayName: c.displayName.trim(),
           colorKey: c.colorKey,
+          bgHex: parentId ? null : validBgHex(c.bgHex),
           sortOrder: c.sortOrder,
           isDefault: false,
           isActive: true,
@@ -202,6 +221,13 @@ export async function saveTagsAction(input: {
                   ...(u.sortOrder === undefined ? {} : { sort_order: u.sortOrder }),
                   ...(u.parentId === undefined ? {} : { parent_id: u.parentId }),
                   ...(u.kind === undefined ? {} : { kind: u.kind }),
+                  // 커스텀 색: 세부로 바뀌면(parent_id 지정) bg_hex를 NULL로 비운다(상속·CHECK 준수).
+                  // 대분류면 보낸 값(검증)으로. 색을 안 보냈고 재부모도 아니면 건드리지 않는다.
+                  ...(u.parentId != null
+                    ? { bg_hex: null }
+                    : u.bgHex === undefined
+                      ? {}
+                      : { bg_hex: validBgHex(u.bgHex) }),
                   updated_at: now
                 }
           )

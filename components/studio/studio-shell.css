@@ -5843,6 +5843,37 @@ textarea:disabled {
 /* 색 스와치: 칸 수에 따라 너비가 유동적으로 늘고 줄어든다(flex 1 1 0, 9~34px). 한 줄 유지.
    overflow를 쓰지 않아 선택 테두리가 잘리지 않는다. */
 /* 대분류 content/modifier 토글 — content=연한 채움, modifier=점선(="얹는 것"). */
+/* 커스텀 색 입력(팔레트 밖 직접 고르기) — 스와치 옆에 작게. */
+.tag-editor-custom {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.tag-editor-custom input[type="color"] {
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 1.5px solid var(--line, #ddd6ee);
+  border-radius: var(--r-sm);
+  background: none;
+  cursor: pointer;
+}
+.tag-editor-custom input[type="color"]:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.tag-custom-clear {
+  border: 1.5px solid var(--line, #ddd6ee);
+  border-radius: var(--r-pill);
+  background: #f4f1fb;
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 800;
+  color: var(--ink-soft, #4a4360);
+  cursor: pointer;
+}
+
 .tag-kind-toggle {
   flex: 0 0 auto;
   border: 1.5px solid var(--line, #ddd6ee);
