@@ -106,14 +106,19 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   단일 resolver. **Phase 0-pre 첫 슬라이스 완료**(`b36b01c`): 공개 sample/type 분리 —
   `sample-public-data.ts` 신설, 공개 트리(public-loader·proposals route)가 privateMeta·requests
   품은 sampleStudioSchedule을 import하던 공개경계 잠복 위반 제거 + `public-boundary.test.ts`(정적
-  import 가드 + 폴백 누출검사). 공개 API 출력 불변. **다음**: 나머지 0-pre(비주얼 스위트 복구,
-  비프로덕션 fixture route) → 0A(단일 resolver, pixel 동일). ⚠ Phase 1 전 필수: pattern_key CSS
-  재작업(`data-pattern` + {shape,ink,alpha}), 무늬 CVD 자동배정.
+  import 가드 + 폴백 누출검사). 공개 API 출력 불변.
+  **Phase 0-pre 비주얼 스위트도 완료**(`76f5186`): dangling이던 `test:visual`을 실제 스위트로 —
+  `app/visual-fixture/poster`(VISUAL_TEST_FIXTURE=1 전용 route, 플래그 없으면 not-found·포스터
+  미노출) + `playwright.visual.config.ts`(production build, viewport/DPR 고정, 애니 정지) +
+  baseline(viewer-surface, `[data-export-surface]`만, OS별=현재 win32). **함정**: 언더스코어 폴더
+  (`app/__x`)는 Next private라 라우팅 제외 → route 폴더명에 언더스코어 금지. **다음**: 0A(단일
+  resolver, pixel 동일). ⚠ Phase 1 전 필수: pattern_key CSS 재작업(`data-pattern` +
+  {shape,ink,alpha}), 무늬 CVD 자동배정.
 - **미착수**: 시청자 출석 도장(체크인) — 계획서만 있음(`docs/insights/viewer-checkin-attendance-plan.md`).
 
 ## Active Work
 
-태그 색 커스텀화 — Phase 0-pre 진행 중. 첫 슬라이스(공개 경계 분리) 완료, 다음은 비주얼 스위트 복구.
+태그 색 커스텀화 — Phase 0-pre **완료**(공개 경계 분리 + 비주얼 스위트). 다음은 0A(단일 resolver, pixel 동일).
 
 ## 배포가 안 될 때 (2026-07-17 실제로 겪음 — 다음 에이전트가 같은 길로 헤매지 말 것)
 
