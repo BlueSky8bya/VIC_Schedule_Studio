@@ -2,7 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: ["e2e/**/*.spec.ts", "visual/**/*.spec.ts"],
+  // 비주얼은 별도 설정(playwright.visual.config.ts, production build)으로만 돌린다.
+  testMatch: ["e2e/**/*.spec.ts"],
   fullyParallel: true,
   workers: 1,
   reporter: "html",
