@@ -4162,6 +4162,30 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   color: #9a93ad;
   line-height: 1.5;
 }
+/* 웹(≥641px): 태그 모달이 720px로 넓어 한 줄 한 태그면 이름칸이 크게 비어 성겨 보인다.
+   가로 여백을 써서 그룹 카드를 2열(폭 되면 auto-fill)로 촘촘히 깐다 — 짧은 이름도 칸을 꽉
+   채우고, 밀도가 올라간다(=CLAUDE.md 웹 다열 규칙). 헤더·추가버튼·빈안내는 전 폭. */
+@media (min-width: 641px) {
+  .tag-editor-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 8px 10px;
+    align-items: start;
+  }
+  .tag-editor-section-head,
+  .tag-editor-section-empty,
+  .tag-add-in-section {
+    grid-column: 1 / -1;
+  }
+  /* 추가 버튼은 그리드 아이템 기본 stretch로 전 폭 늘지 않게 — 알약 크기 유지, 왼쪽 정렬. */
+  .tag-add-in-section {
+    justify-self: start;
+  }
+  /* 그룹 간격은 grid gap이 준다(개별 margin 제거 — 열 사이 정렬이 어긋나지 않게). */
+  .tag-editor .tag-cat-group {
+    margin-bottom: 0;
+  }
+}
 
 .studio-calendar-panel {
   min-width: 0;
