@@ -135,9 +135,13 @@ globals.css `[data-color=*]` 무늬 + `.evt-pat` 삭제, eventInkStyle isPattern
 **Phase 1 첫 슬라이스 완료**(`198c3d1`): `broadcast_tags.bg_hex` 컬럼(0052, **prod 적용됨**) +
 resolver `buildEffectivePalette`(대분류 bg_hex가 colorKey 엔트리 덮어씀 → 카드·칩·범례 전부 bg_hex
 반영, 없으면 palette 폴백=렌더 불변) + 로더 select/매핑 + BroadcastTag.bgHex. 커스텀 색이 end-to-end
-흐름(태그에 bg_hex 넣으면 즉시 표시). **배포 순서 지킴**: 마이그레이션 먼저 적용 후 push(로더가
-bg_hex를 select하므로). **다음**: Phase 2 서버 recolor(studio-write op로 bg_hex 저장, ADR-0006,
-hex 검증, owner/dev 롤테스트, reparent 시 bg_hex NULL) → Phase 3 HSLuv 색환 피커.
+흐름(태그에 bg_hex 넣으면 즉시 표시). **배포 순서 지킴**: 마이그레이션 먼저 적용 후 push.
+**Phase 2 완료**(`922674d`): saveTagsAction이 bgHex 검증(#RRGGBB)·저장(대분류만, 세부/재부모 NULL
+강제) + 편집기 대분류 행에 `<input type=color>` + '팔레트로' 되돌리기 + Draft.bgHex 배선 + 낙관 반영.
+**커스텀 색 end-to-end 사용 가능** — 관리자가 색 골라 저장하면 카드·칩·범례 반영. **토리님 원래 목표
+(원하는 색 지정) 달성.** **남음(폴리시)**: Phase 3 = HSLuv 색환 피커(현재는 네이티브 color input) +
+톤 프리셋. 지금도 기능은 완전 동작 — 피커는 UX 고급화일 뿐. (ADR-0006 keepalive 라우팅은 태그 저장
+전반의 기존 tech-debt로 별건.)
 아래는 이전 0A/0B 상세.
 - (이전) **0B 1차(가독성)**(`164fb71`, 지금은 무늬 제거로 대체됨).
 0B: 무늬 알파↓(indigo 34→18·mint 10→6·sky 11→7·gen 6~7%) + eventInkStyle 전 카드 헤일로
