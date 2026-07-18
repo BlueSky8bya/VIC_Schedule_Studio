@@ -62,8 +62,6 @@ import {
   getEventsForDate,
   eventMatchesTagFilter,
   getEventSpan,
-  getEventTagColors,
-  getExtraCategoryColors,
   getLinkedChainIds,
   getSpanRunRange,
   getTodayKst,
@@ -91,6 +89,7 @@ import {
   canUsePrivateLayer
 } from "@/lib/permissions/roles";
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
+import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
 import { CalendarSkeleton } from "@/components/skeleton/calendar-skeleton";
@@ -920,6 +919,9 @@ export function StudioShell({
     () => (taxonomyV3 ? tags : legacyTagView(tags)),
     [tags, taxonomyV3]
   );
+  // 0A: 태그 색 계산 단일 진입점(포스터와 동일). 칸색/점줄은 resolver로 — 내부는 기존 로직과
+  // 동일(픽셀 불변). 커스텀 색(bg_hex)은 나중에 이 안에서만 얹는다.
+  const tagVisual = useMemo(() => createTagVisualResolver(viewTags, palette), [viewTags, palette]);
   // 레거시(세부 나누기 이전)는 카드당 태그 2개까지. v3는 6개(MAX_EVENT_TAGS).
   const maxEventTags = taxonomyV3 ? MAX_EVENT_TAGS : 2;
   // "기타" 태그는 색상 안내·태그 선택 모두에서 항상 맨 끝.
@@ -1576,7 +1578,7 @@ export function StudioShell({
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: StudioScheduleEvent) {
-    return getEventTagColors(event, viewTags, palette);
+    return tagVisual.eventFills(event);
   }
 
   function moveMonth(offset: number) {
@@ -3815,7 +3817,7 @@ export function StudioShell({
                     ) : null}
                     {shownEvents.map((event) => {
                       const colors = eventColors(event);
-                      const extraColors = getExtraCategoryColors(event, viewTags, palette);
+                      const extraColors = tagVisual.eventExtras(event);
                       const { main, subs } = splitEventTitle(event.publicTitle);
                       const barStyle =
                         colors.length >= 2
@@ -5086,7 +5088,7 @@ export function StudioShell({
                     {dateEvents.map((event, eventIndex) => {
                       const colors = eventColors(event);
                       // PR2: 칸 색(≤2)에 못 담은 나머지 대분류 → 작은 점 줄("더 있음").
-                      const extraColors = getExtraCategoryColors(event, viewTags, palette);
+                      const extraColors = tagVisual.eventExtras(event);
                       // 선택 강조(테두리·X)는 오른쪽 편집/상세 패널이 열려 있을 때만 — 패널이
                       // 닫히면(다른 버튼으로 슬라이드-아웃) 카드 선택 표시도 함께 사라지게.
                       const isSel = editorVisible && selectedEventId === event.id;
