@@ -126,7 +126,17 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Active Work
 
-태그 색 커스텀화 — 0A(category-색 resolver 이관) 완료, **0B 1차(가독성) 완료**(`164fb71`).
+태그 색 커스텀화 — 0A(resolver 이관)·0B(가독성) 완료, **무늬 전면 제거 완료**(`cd53f06`,
+baseline 교정 `5d2039e`). 토리님 결정으로 무늬 알파↓론 체감 없어 아예 제거 — 카드/칩 단색.
+globals.css `[data-color=*]` 무늬 + `.evt-pat` 삭제, eventInkStyle isPatternColor 분기 제거(2-arg),
+2색 `.evt-pat` 오버레이 제거. geometry Δ0. **Phase 1 대폭 단순화**: 무늬 없으니 pattern_key CSS
+재작업·CVD 자동배정 blocker **소멸**(bg_hex 컬럼만). **함정 기록**: CSS 변경 후 비주얼 baseline이
+안 바뀌면 **`.next/cache` 제거**하고 재빌드(next build가 옛 CSS를 캐시함 — 무늬 제거 때 실제로 당함).
+**다음 = Phase 1**: `broadcast_tags.bg_hex` 컬럼(nullable, CHECK hex 정규식·자식 NULL) 마이그레이션 →
+resolver `visualOf`가 bg_hex 우선·없으면 color_key 폴백 → 모든 이관된 표면이 한 번에 커스텀 색 받음.
+그 뒤 서버 hex 검증 recolor(studio-write op, ADR-0006) → HSLuv 색환 피커(Phase 3).
+아래는 이전 0A/0B 상세.
+- (이전) **0B 1차(가독성)**(`164fb71`, 지금은 무늬 제거로 대체됨).
 0B: 무늬 알파↓(indigo 34→18·mint 10→6·sky 11→7·gen 6~7%) + eventInkStyle 전 카드 헤일로
 (text-shadow=paint-only라 굵기·레이아웃 불변, 스티커 안전). 무늬는 유지(색맹=hue별 '모양'이 담당).
 **geometry.spec 하드 게이트 신설**(offset 기반=결정적: 표면 자연 폭/높이·칸 높이·스티커 비율좌표) +
