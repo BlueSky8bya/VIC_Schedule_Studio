@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import type { BroadcastTag, ColorPaletteEntry } from "@/lib/domain/schedule-types";
-import { categoryColorKey } from "@/lib/calendar/month";
+import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 2계층 이벤트 태그 피커(편집실/모바일 공용). 대분류별로 묶고, 세부는 그 아래 칩으로. 검색으로
@@ -23,10 +23,8 @@ export function TagPicker({
   max: number;
   disabled?: boolean;
 }) {
-  const colorOf = (tag: BroadcastTag) => {
-    const ck = categoryColorKey(tag.id, tags) ?? tag.colorKey;
-    return palette.find((p) => p.key === ck);
-  };
+  // 0A: 색은 단일 resolver로. 대분류(세부면 부모) 색을 따라간다(기존 categoryColorKey와 동일).
+  const tagVisual = useMemo(() => createTagVisualResolver(tags, palette), [tags, palette]);
 
   // flat 태그를 콘텐츠(content)와 방식(modifier)으로 나눈다. 방식(합방·시참 등)은 "어떻게/누구"라
   // 콘텐츠와 칸을 나눠 고른다. (세부 계층은 폐기 — 게임 이름 등 인스턴스는 제목으로.)
@@ -44,21 +42,21 @@ export function TagPicker({
   const orderOf = (id: string) => selectedIds.indexOf(id);
 
   const chip = (tag: BroadcastTag, isSub: boolean) => {
-    const color = colorOf(tag);
-    if (!color) return null;
+    const v = tagVisual.visualOf(tag.id);
+    if (v.missing || !v.bg) return null;
     const selected = selectedIds.includes(tag.id);
     const blocked = !selected && full;
     return (
       <button
         className={`tp-chip${isSub ? " sub" : ""}${selected ? " selected" : ""}`}
-        data-color={color.key}
+        data-color={v.colorKey ?? undefined}
         disabled={disabled || blocked}
         key={tag.id}
         onClick={() => {
           hapticTick();
           onToggle(tag.id);
         }}
-        style={{ backgroundColor: color.bgColor, borderColor: color.borderColor, color: color.textColor }}
+        style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined, color: v.legacyTextColor ?? undefined }}
         title={blocked ? `태그는 최대 ${max}개까지 고를 수 있어요` : tag.displayName}
         type="button"
       >
