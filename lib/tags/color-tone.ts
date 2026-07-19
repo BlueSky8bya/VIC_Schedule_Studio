@@ -195,6 +195,17 @@ function oklchToHex(L: number, C: number, hDeg: number): string {
       .padStart(2, "0");
   return `#${to(lin[0])}${to(lin[1])}${to(lin[2])}`;
 }
+// 주어진 색조·밝기(L)에서 sRGB 가무트가 허용하는 최대 채도(C)를 이진탐색으로 구한다.
+function maxChromaAtL(hDeg: number, L: number): number {
+  let lo = 0;
+  let hi = 0.45;
+  for (let i = 0; i < 22; i++) {
+    const mid = (lo + hi) / 2;
+    if (oklchInGamut(L, mid, hDeg)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
+}
 // 그 색조가 낼 수 있는 최대 채도점(가무트 cusp) — '선명'이 색조별로 가장 쨍한 점이 되게. L을 훑어
 // 각 L의 최대 in-gamut C를 이진탐색으로 구하고, 그중 C가 최대인 (L,C)를 반환.
 function oklchCusp(hDeg: number): { L: number; C: number } {
@@ -216,8 +227,17 @@ function oklchCusp(hDeg: number): { L: number; C: number } {
 // 깊게는 L·C 타깃에 seed L·C를 일부 블렌드 후 밴드+가무트 클램프. 선명은 그 색조의 cusp(최대 채도).
 function toneFromOklch(seedL: number, seedC: number, oklchHue: number, tone: ToneKey): string {
   if (tone === "vivid") {
+    // 선명 = '그 밝기에서 최대 채도'. 밝기(L)는 seed 쪽으로 당겨 미세조정을 반영하되(밝은 seed→밝은
+    // 선명), cusp 근처 밴드로 제한해 너무 연해(파스텔처럼)지거나 너무 어두워지지 않게 한다. 채도는
+    // 항상 그 L의 가무트 최대라 늘 가장 쨍하다(vivid 정체성 유지). 예전엔 cusp만 써서 seed와 무관해
+    // 미세조정해도 선명이 거의 안 변했다.
     const cusp = oklchCusp(oklchHue);
-    return oklchToHex(cusp.L, cusp.C, oklchHue);
+    const L = clampNum(
+      lerp(cusp.L, seedL, 0.55),
+      Math.max(0.4, cusp.L - 0.22),
+      Math.min(0.92, cusp.L + 0.16)
+    );
+    return oklchToHex(L, maxChromaAtL(oklchHue, L), oklchHue);
   }
   const spec = TONE_SPEC[tone];
   const L = clampNum(lerp(spec.L, seedL, TONE_SEED_L_WEIGHT), spec.Lband[0], spec.Lband[1]);

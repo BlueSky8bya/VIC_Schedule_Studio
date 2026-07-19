@@ -46,6 +46,16 @@ describe("color-tone", () => {
     }
   });
 
+  it("선명(vivid)도 seed 밝기(V)를 반영해 달라진다", () => {
+    // 같은 파랑 색조라도 어두운 seed vs 밝은 seed면 선명 결과가 달라야 한다(예전엔 cusp만 써서 고정).
+    const dark = applyToneHsv(220, 100, 30, "vivid");
+    const light = applyToneHsv(220, 100, 95, "vivid");
+    expect(dark).not.toBe(light);
+    // 그래도 둘 다 파랑 계열(색조 유지).
+    expect(hexToHue(dark)).toBeGreaterThan(180);
+    expect(hexToHue(light)).toBeLessThan(300);
+  });
+
   it("파스텔은 깊게보다 밝다(대비 잉크가 뒤바뀐다)", () => {
     const pastel = applyTone("#2f63d6", "pastel");
     const deep = applyTone("#2f63d6", "deep");
