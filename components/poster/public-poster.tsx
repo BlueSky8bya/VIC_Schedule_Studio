@@ -22,6 +22,7 @@ import {
   LogOut,
   Redo2,
   SendToBack,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
   Type,
@@ -1079,6 +1080,9 @@ export function PublicPoster({
   // A2 고도화: 여러 태그를 동시에 고르고, "관심만 보기"까지 더해 보고 싶은 일정만 추려 본다.
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
+  // 모바일/태블릿: 색상 필터를 상시 오른쪽 레일 대신 하단 '필터' 버튼 → 바텀시트로 연다.
+  // (레일이 아젠다를 옆으로 밀어 좌우가 비대칭이었다 → 아젠다를 전체폭 단일컬럼으로.)
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   // A: 관심(하트). toggleHeartAction이 있으면 서버 집계(1인 1하트)와 연동되고,
   //    없으면(샘플/오프라인) 기기별 localStorage로만 동작한다. 둘 다 "내가 누른 일정" 집합으로 관리.
   // 떡밥 즉시 공개 — 카운트다운이 0이 되면 캐시 우회 액션으로 실제 내용을 받아 이 맵에 덮는다.
@@ -3087,7 +3091,28 @@ export function PublicPoster({
         onTouchStart={onAgendaTouchStart}
       >
         {interactive && legendTags.length > 0 ? (
-          <div className="agenda-legend-rail">
+          <>
+          {/* 어두운 배경 — 탭하면 시트 닫힘. position:fixed라 아젠다 폭을 안 먹는다. */}
+          <div
+            className={`m-filter-backdrop${filterSheetOpen ? " open" : ""}`}
+            onClick={() => setFilterSheetOpen(false)}
+            aria-hidden="true"
+          />
+          {/* 색상 필터 바텀시트 — 옛 오른쪽 레일 내용을 그대로 담되 하단에서 올라온다. */}
+          <div
+            className={`m-filter-sheet${filterSheetOpen ? " open" : ""}`}
+            role="dialog"
+            aria-modal="true"
+            aria-label="색상 필터"
+          >
+          <button
+            className="m-sheet-grab"
+            onClick={() => setFilterSheetOpen(false)}
+            type="button"
+            aria-label="필터 닫기"
+          >
+            <span />
+          </button>
           <aside className="agenda-legend" aria-label="색상 안내(태그 필터)">
             <strong>색상 필터</strong>
             {(() => {
@@ -3194,6 +3219,7 @@ export function PublicPoster({
               안 들썩이고(인사이트 버튼과 동일), 우상단 대신 엄지 닿는 아래쪽이라 누르기 쉽다. */}
           {previewNav ? <div className="agenda-legend-nav">{previewNav}</div> : null}
           </div>
+          </>
         ) : null}
 
         <div
@@ -4588,6 +4614,21 @@ export function PublicPoster({
         {/* 모바일 엄지 영역: 자주 쓰는 관심·오늘을 하단 가운데로(웹은 헤더에 따로 있어 숨김). */}
         {isNarrow ? (
           <div className="mb-center">
+            {/* 색상 필터 — 상시 레일 대신 바텀시트를 여는 엄지존 버튼. 필터 켜져 있으면 점 표시. */}
+            {interactive && legendTags.length > 0 ? (
+              <button
+                className={`mb-act ${filterActive ? "on" : ""}`}
+                onClick={() => {
+                  hapticTick();
+                  setFilterSheetOpen(true);
+                }}
+                title="색상 필터"
+                type="button"
+              >
+                <SlidersHorizontal aria-hidden="true" size={18} />
+                <span>필터</span>
+              </button>
+            ) : null}
             {interactive ? (
               // 위치 보존을 위해 '오늘'과 함께 항상 자리에 두되, 비로그인(익명)이면
               // 관심(서버 1인1하트)은 못 쓰므로 회색 비활성으로 둔다.

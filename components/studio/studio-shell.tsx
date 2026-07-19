@@ -15,6 +15,7 @@ import {
   LockKeyhole,
   LogOut,
   Save,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
   Vibrate,
@@ -725,6 +726,9 @@ export function StudioShell({
   }, [schedule.palette]);
   // 색상 안내 필터 — 편집실에서도 특정 태그 색만 골라볼 수 있게(시청자 화면과 동일 동작).
   const [tagFilters, setTagFilters] = useState<string[]>([]);
+  // 모바일 편집실: 색상 필터를 상시 오른쪽 레일 대신 하단 '필터' 버튼 → 바텀시트로 연다
+  // (레일이 아젠다를 옆으로 밀어 좌우가 비대칭이었다 → 아젠다를 전체폭 단일컬럼으로). 시청자와 동일.
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   function toggleTagFilter(id: string) {
     hapticTick(); // 셀렉터 손맛(Android만; iOS·미지원은 조용히 무시)
     setTagFilters((prev) =>
@@ -3706,8 +3710,27 @@ export function StudioShell({
             onTouchEnd={onAgendaTouchEnd}
             onTouchStart={onAgendaTouchStart}
           >
-            {/* 오른쪽 레일: (위) 인사이트 진입 버튼 + (아래) 색상 필터 — 같은 92px 폭으로 세로로 쌓는다(편집실). */}
-            <div className="agenda-rail">
+            {/* 색상 필터 바텀시트 — 옛 오른쪽 상시 레일을 대체(시청자 화면과 동일 패턴).
+                position:fixed라 아젠다 폭을 안 먹어 아젠다가 전체폭 단일컬럼이 된다. */}
+            <div
+              className={`m-filter-backdrop${filterSheetOpen ? " open" : ""}`}
+              onClick={() => setFilterSheetOpen(false)}
+              aria-hidden="true"
+            />
+            <div
+              className={`m-filter-sheet${filterSheetOpen ? " open" : ""}`}
+              role="dialog"
+              aria-modal="true"
+              aria-label="태그 필터"
+            >
+              <button
+                className="m-sheet-grab"
+                onClick={() => setFilterSheetOpen(false)}
+                type="button"
+                aria-label="필터 닫기"
+              >
+                <span />
+              </button>
               {/* 역할 배지(시각 정보)는 색상 필터 위에. */}
               {renderRoleBadge()}
             <aside className="agenda-legend agenda-legend-studio" aria-label="태그 필터">
@@ -4044,6 +4067,20 @@ export function StudioShell({
             누르기 쉬운 핵심 버튼(미리보기·비공개)을 엄지 닿는 바닥에 모았다.
             계정변경(로그아웃)은 헤더 우상단으로 옮겼다(저장됨 칩이 있던 자리). */}
         <nav className="m-actionrail" aria-label="편집실 도구">
+          {/* 색상 필터 — 상시 레일 대신 바텀시트를 여는 엄지존 버튼. 필터 켜져 있으면 강조. */}
+          {legendTags.length > 0 ? (
+            <button
+              className={`button m-io-pill${tagFilters.length > 0 ? " m-filter-on" : ""}`}
+              onClick={() => {
+                hapticTick();
+                setFilterSheetOpen(true);
+              }}
+              type="button"
+            >
+              <SlidersHorizontal aria-hidden="true" size={15} />
+              필터
+            </button>
+          ) : null}
           {canTogglePrivateLayer ? (
             isEffectivelyOwner && canReadPrivate ? (
               <button className="button primary" onClick={() => openChangePasscode()} type="button">

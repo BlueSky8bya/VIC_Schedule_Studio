@@ -8167,6 +8167,105 @@ textarea:disabled {
 .m-io-private:active {
   background: #ffedd6;
 }
+/* 필터 켜져 있을 때 '필터' 버튼 강조(태그가 선택돼 목록이 걸러지는 중임을 알림). */
+.m-actionrail .button.m-io-pill.m-filter-on {
+  background: color-mix(in srgb, var(--accent, #6b5bd6) 14%, #fff);
+  border-color: color-mix(in srgb, var(--accent, #6b5bd6) 48%, transparent);
+  color: color-mix(in srgb, var(--accent, #6b5bd6) 74%, #2a2336);
+}
+
+/* ── 색상 필터 바텀시트(편집실 모바일) — 옛 오른쪽 상시 레일을 대체(시청자 화면과 동일 패턴).
+   레일이 아젠다를 옆으로 밀어 좌우가 비대칭이었다 → 아젠다를 전체폭 단일컬럼으로 두고,
+   필터는 하단 '필터' 버튼으로 필요할 때만 올려 연다(엄지존 바텀시트). ── */
+.m-filter-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(17 24 39 / 0%);
+  visibility: hidden;
+  transition:
+    background 0.2s var(--ease),
+    visibility 0s linear 0.2s;
+}
+.m-filter-backdrop.open {
+  visibility: visible;
+  background: rgb(17 24 39 / 38%);
+  transition: background 0.2s var(--ease);
+}
+.m-filter-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 74vh;
+  max-height: 74dvh;
+  padding: 0 14px calc(14px + env(safe-area-inset-bottom, 0px));
+  background: #f7f8fc;
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  box-shadow: 0 -10px 34px rgb(17 24 39 / 22%);
+  transform: translateY(101%);
+  transition: transform 0.28s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+  overflow: hidden;
+}
+.m-filter-sheet.open {
+  transform: translateY(0);
+}
+/* 시트 안 태그 필터 — 레일 제약(sticky·고정 높이·자체 테두리) 풀고, 전체폭 가로 wrap + 시트 스크롤. */
+.m-filter-sheet .agenda-legend-studio {
+  position: static;
+  top: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  width: 100%;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 8px;
+  border: 0;
+  border-top: 1px solid #e6e8f0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 8px 2px;
+}
+.m-filter-sheet .agenda-legend-studio > strong {
+  flex-basis: 100%;
+  font-size: 13px;
+  padding-bottom: 2px;
+}
+.m-filter-sheet .agenda-legend-tag {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 9px 14px;
+  font-size: 14px;
+  border-radius: var(--r-pill);
+}
+.m-filter-sheet .agenda-legend-tag::after {
+  inset: 0;
+}
+.m-filter-sheet .agenda-legend-clear {
+  flex-basis: 100%;
+}
+/* 역할 배지 + 인사이트는 시트 안에서 전체폭 한 줄로(레일 92px 제약 해제). */
+.m-filter-sheet .actor-badge-wrap {
+  width: 100%;
+}
+.m-filter-sheet .m-rail-insights {
+  width: 100%;
+}
+/* 편집실 모바일 아젠다: 레일이 시트로 빠졌으니 목록이 전체폭을 차지한다. */
+.agenda.agenda-studio > .agenda-flow {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
 
 /* 인라인 편집 바텀시트 */
 .m-edit-backdrop {
