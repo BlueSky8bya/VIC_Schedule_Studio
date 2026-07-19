@@ -2849,6 +2849,10 @@ export function PublicPoster({
             )
           ) : null}
         </div>
+        {/* 월드컵 경기 대진·스코어 — 헤더에 욱여넣지 않고 칸 본문 전체폭 칩으로(통일·균형·리듬). */}
+        {day.markSub ? (
+          <div className={`day-wc-match${day.markKind ? ` ${day.markKind}` : ""}`}>{day.markSub}</div>
+        ) : null}
         <div
           className="day-events"
           style={weekSupCount > 0 ? { paddingTop: 8 + weekSupCount * 20 } : undefined}
@@ -3269,11 +3273,11 @@ export function PublicPoster({
                           );
                         }}
                       >
-                        {mark.name}
+                        {mark.sub ? `${mark.name} ${mark.sub}` : mark.name}
                       </button>
                     ) : (
                       <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>
-                        {mark.name}
+                        {mark.sub ? `${mark.name} ${mark.sub}` : mark.name}
                       </span>
                     )
                   ) : null}

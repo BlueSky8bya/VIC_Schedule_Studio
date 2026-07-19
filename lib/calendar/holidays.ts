@@ -8,6 +8,7 @@ import { getWorldCupMark } from "@/lib/calendar/worldcup";
 
 export type DayMark = {
   name: string;
+  sub?: string; // 부가 표기(월드컵 경기 대진·스코어). 있으면 칸 본문에 별도 칩으로 내린다.
   isHoliday: boolean; // true면 빨간날(공휴일/대체공휴일), false면 단순 표기(기념일/절기)
   kind?: "wc" | "wc-korea" | "wc-korea-win" | "wc-korea-done" | "wc-final"; // 월드컵 표기는 특별 스타일(화려하게)
 };
@@ -427,6 +428,7 @@ export function getDayMark(isoDate: string): DayMark | null {
   if (wc) {
     return {
       name: wc.name,
+      sub: wc.sub,
       isHoliday: false,
       kind:
         wc.result === "win"

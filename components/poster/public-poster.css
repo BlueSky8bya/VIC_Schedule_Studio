@@ -2358,15 +2358,8 @@ body.cell-range-dragging {
   font-style: normal;
   font-weight: 700;
   color: #8a4b2f;
-  line-height: 1.2;
-  /* 길면 한 줄에서 …로 국가명을 자르는 대신 최대 2줄로 감싸 전부 보여준다(줄임말 없이).
-     2줄 넘으면 그때만 … (line-clamp). 월드컵 4강~결승 '팀 스코어 팀' 표기가 칸에 들어오게. */
-  white-space: normal;
-  word-break: keep-all;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 특별한 날 표기를 탭하면 빵빠레가 터진다 — 버튼이지만 기존 em(.day-mark)과 똑같이 보이게 리셋.
@@ -2383,15 +2376,9 @@ button.day-mark.celebratable {
   font-weight: 700;
   color: #8a4b2f;
   text-align: left;
-  line-height: 1.2;
-  /* 길면 …로 자르지 않고 최대 2줄 wrap(국가명 안 잘리게). 2줄 초과만 …. */
-  white-space: normal;
-  word-break: keep-all;
+  white-space: nowrap;
   overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
   cursor: pointer;
   transition:
     transform var(--dur-1) var(--ease),
@@ -2399,6 +2386,30 @@ button.day-mark.celebratable {
 }
 button.day-mark.celebratable:hover { filter: brightness(1.18); }
 button.day-mark.celebratable:active { transform: scale(0.88); }
+
+/* 월드컵 경기 대진·스코어 칩 — 날짜칸 본문 최상단의 전체폭 칩. 헤더엔 짧은 라운드 pill만 두고
+   경기 결과는 여기로 내려, 헤더가 다른 날과 같은 1줄로 통일되고(리듬) 국가 풀네임이 넉넉한
+   본문 폭에 한 줄로 들어온다(균형). 결승은 금빛, 그 외 경기는 월드컵 보라 톤. */
+.day-wc-match {
+  margin: 3px 4px 0;
+  padding: 2px 8px;
+  border-radius: var(--r-pill, 999px);
+  background: rgb(124 108 240 / 10%);
+  border: 1px solid rgb(124 108 240 / 22%);
+  color: #4b4287;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.6;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.day-wc-match.wc-final {
+  background: rgb(244 183 64 / 20%);
+  border-color: rgb(214 158 10 / 42%);
+  color: #915d05;
+}
 
 /* 한국이 이긴 날 — 금빛 글자만. 셀 금테 하이라이트·은은한 맥동 글로우는 제거(탭 시 축포로 충분).
    (solid 금색만; 예전 background-clip:text 그라데이션은 글자가 '투명'하게 비던 사고로 폐기.) */

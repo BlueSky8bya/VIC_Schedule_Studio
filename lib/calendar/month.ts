@@ -32,7 +32,8 @@ export type DayState = {
   isSunday: boolean;
   isSaturday: boolean;
   isRed: boolean; // 일요일/공휴일/대체공휴일
-  markName: string | null; // 공휴일/기념일/절기 표기
+  markName: string | null; // 공휴일/기념일/절기 표기(헤더 짧은 pill)
+  markSub: string | null; // 월드컵 경기 대진·스코어(있으면 칸 본문 칩으로)
   markKind: DayMark["kind"]; // 월드컵 등 특별 표기 스타일 구분
 };
 
@@ -52,6 +53,7 @@ export function classifyDay(
     isSaturday,
     isRed: isSunday || Boolean(mark?.isHoliday),
     markName: mark?.name ?? null,
+    markSub: mark?.sub ?? null,
     markKind: mark?.kind
   };
 }
