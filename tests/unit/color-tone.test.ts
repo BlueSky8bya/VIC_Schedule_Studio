@@ -13,6 +13,17 @@ describe("color-tone", () => {
     }
   });
 
+  it("같은 색조라도 seed(미세조정색)의 채도가 다르면 톤 결과도 달라진다", () => {
+    // 쨍한 빨강 vs 차분한(먼지) 빨강 — 색조는 같지만 채도가 다르다.
+    const vividRed = "#e01010";
+    const dustyRed = "#b06a6a";
+    for (const tone of ["pastel", "soft", "vivid", "deep"] as const) {
+      expect(applyTone(vividRed, tone)).not.toBe(applyTone(dustyRed, tone));
+    }
+    // 그래도 색조는 둘 다 유지된다(빨강 근처).
+    expect(hexToHue(applyTone(dustyRed, "pastel"))).toBeLessThan(20);
+  });
+
   it("파스텔은 깊게보다 밝다(대비 잉크가 뒤바뀐다)", () => {
     const pastel = applyTone("#2f63d6", "pastel");
     const deep = applyTone("#2f63d6", "deep");

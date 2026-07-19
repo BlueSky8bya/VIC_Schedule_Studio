@@ -15,12 +15,35 @@ export type ToneKey = "pastel" | "soft" | "vivid" | "deep";
 //  · 선명 = pure hue: 채도 최대(S↑↑) → 쨍하게.
 //  · 깊게 = shade(색+검정): 어둡되(V↓) 채도 유지(S↑) → 탁하지 않고 깊고 풍부하게.  (예: #801414)
 // 명도(밝기) 순서: 파스텔 > 부드럽게 > 선명 > 깊게 로 넓게 벌려 네 결과가 확실히 구분된다.
-export const TONE_PRESETS: { key: ToneKey; label: string; s: number; v: number }[] = [
-  { key: "pastel", label: "파스텔", s: 32, v: 100 },
-  { key: "soft", label: "부드럽게", s: 48, v: 92 },
-  { key: "vivid", label: "선명", s: 96, v: 92 },
-  { key: "deep", label: "깊게", s: 84, v: 50 }
+//
+// 각 톤은 '타깃(s,v)'을 중심으로 하되, 사용자가 위에서 미세조정한 색(seed)의 채도·명도를 일부
+// 블렌드해 반영한다 → 같은 색조라도 seed가 쨍하면 톤도 좀 더 쨍하게, 차분하면 좀 더 차분하게.
+// (안 그러면 색조만 보고 늘 같은 파스텔이 나와 '18색에만 톤이 있는' 느낌이었다.) 단 톤 정체성이
+// 무너지지 않게 s/v를 톤별 밴드로 클램프한다(파스텔은 아무리 쨍한 seed라도 여전히 파스텔).
+export const TONE_PRESETS: {
+  key: ToneKey;
+  label: string;
+  s: number;
+  v: number;
+  sBand: [number, number];
+  vBand: [number, number];
+}[] = [
+  { key: "pastel", label: "파스텔", s: 32, v: 100, sBand: [24, 46], vBand: [92, 100] },
+  { key: "soft", label: "부드럽게", s: 48, v: 92, sBand: [36, 60], vBand: [82, 96] },
+  { key: "vivid", label: "선명", s: 96, v: 92, sBand: [80, 100], vBand: [82, 100] },
+  { key: "deep", label: "깊게", s: 84, v: 50, sBand: [64, 92], vBand: [40, 62] }
 ];
+
+// seed 반영 강도 — 채도는 눈에 띄게(0.4), 명도는 톤이 주도하되 살짝(0.18).
+const TONE_SEED_S_WEIGHT = 0.4;
+const TONE_SEED_V_WEIGHT = 0.18;
+
+function clampNum(n: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, n));
+}
+function lerp(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
 
 function hexToRgb(hex: string): [number, number, number] | null {
   const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim());
@@ -108,10 +131,14 @@ export function hsvToHex(h: number, s: number, v: number): string {
   return `#${to(r)}${to(g)}${to(b)}`;
 }
 
-// 현재 색의 색조(hue)를 유지하며 톤(파스텔~깊게)만 바꾼 hex. HSV로 적용한다(위 프리셋 주석 참고).
+// 미세조정한 색(seed)의 색조는 그대로 두고, 채도·명도를 톤 타깃 쪽으로 옮기되 seed 값도 일부
+// 블렌드해 반영한다(톤별 밴드로 클램프해 정체성 유지). HSV로 적용한다(위 프리셋 주석 참고).
 export function applyTone(hex: string, tone: ToneKey): string {
   const p = TONE_PRESETS.find((t) => t.key === tone) ?? TONE_PRESETS[1];
-  return hsvToHex(hexToHue(hex), p.s, p.v);
+  const seed = hexToHsv(hex);
+  const s = clampNum(Math.round(lerp(p.s, seed.s, TONE_SEED_S_WEIGHT)), p.sBand[0], p.sBand[1]);
+  const v = clampNum(Math.round(lerp(p.v, seed.v, TONE_SEED_V_WEIGHT)), p.vBand[0], p.vBand[1]);
+  return hsvToHex(seed.h, s, v);
 }
 
 // ── 기본 색상 18(색 팝오버 트레이 + 새 태그 기본색) ── 색조를 [0,350)으로 18등분(≈19.4°).
