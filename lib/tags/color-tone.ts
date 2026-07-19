@@ -4,14 +4,22 @@
 
 export type ToneKey = "pastel" | "soft" | "vivid" | "deep";
 
-// 톤 프리셋 = '필터'. 색조는 그대로 두고 톤(밝기·채도)만 4단계로. 벤치마킹(Material/Radix 톤 스케일):
-// 어떤 베이스(어두운 색이라도)에서 눌러도 네 결과가 '확실히 구분'되게 명도를 넓게 벌리고(90/74/54/34),
-// 채도는 곡선으로 — 파스텔·부드럽게는 낮춰 '연하게', 선명은 높여 '쨍하게', 깊게는 중간.
-export const TONE_PRESETS: { key: ToneKey; label: string; s: number; l: number }[] = [
-  { key: "pastel", label: "파스텔", s: 62, l: 90 },
-  { key: "soft", label: "부드럽게", s: 58, l: 74 },
-  { key: "vivid", label: "선명", s: 84, l: 54 },
-  { key: "deep", label: "깊게", s: 64, l: 34 }
+// 톤 프리셋 = '필터'. 색조(hue)는 유지하고 톤만 바꾼다. HSV(명도 V·채도 S)로 정의한다 —
+// 예전 HSL은 파스텔을 L=90으로 잡았는데, HSL은 L이 높아질수록 표현 가능한 chroma가 급격히 줄어
+// 파스텔이 '색이 죽은 회색빛 wash'(예: 빨강→#f5d6d6)로 나왔다. 그래서 파스텔로 눌러도 파스텔로
+// 안 보였다. HSV는 V를 높게(밝게) 두면서 S로 '색의 또렷함'을 독립적으로 유지해 진짜 파스텔이 된다.
+//
+// 색이론 근거(tint/tone/shade + pure hue):
+//  · 파스텔 = pale tint(색+흰색 多): 아주 밝고(V↑) 채도 낮게(S↓) → 연하지만 색은 또렷.  (예: #ffadad)
+//  · 부드럽게 = muted tone(색+회색): 밝되 중채도 → 파스텔보다 색이 좀 더 실린 잔잔한 톤.
+//  · 선명 = pure hue: 채도 최대(S↑↑) → 쨍하게.
+//  · 깊게 = shade(색+검정): 어둡되(V↓) 채도 유지(S↑) → 탁하지 않고 깊고 풍부하게.  (예: #801414)
+// 명도(밝기) 순서: 파스텔 > 부드럽게 > 선명 > 깊게 로 넓게 벌려 네 결과가 확실히 구분된다.
+export const TONE_PRESETS: { key: ToneKey; label: string; s: number; v: number }[] = [
+  { key: "pastel", label: "파스텔", s: 32, v: 100 },
+  { key: "soft", label: "부드럽게", s: 48, v: 92 },
+  { key: "vivid", label: "선명", s: 96, v: 92 },
+  { key: "deep", label: "깊게", s: 84, v: 50 }
 ];
 
 function hexToRgb(hex: string): [number, number, number] | null {
@@ -100,10 +108,10 @@ export function hsvToHex(h: number, s: number, v: number): string {
   return `#${to(r)}${to(g)}${to(b)}`;
 }
 
-// 현재 색의 색조를 유지하며 톤(파스텔~깊게)만 바꾼 hex.
+// 현재 색의 색조(hue)를 유지하며 톤(파스텔~깊게)만 바꾼 hex. HSV로 적용한다(위 프리셋 주석 참고).
 export function applyTone(hex: string, tone: ToneKey): string {
   const p = TONE_PRESETS.find((t) => t.key === tone) ?? TONE_PRESETS[1];
-  return hslToHex(hexToHue(hex), p.s, p.l);
+  return hsvToHex(hexToHue(hex), p.s, p.v);
 }
 
 // ── 기본 색상 18(색 팝오버 트레이 + 새 태그 기본색) ── 색조를 [0,350)으로 18등분(≈19.4°).
