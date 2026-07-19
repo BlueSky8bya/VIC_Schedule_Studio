@@ -2351,14 +2351,22 @@ body.cell-range-dragging {
 
 .day-strip .day-mark {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   margin-left: 4px;
   font-size: 10px;
   font-style: normal;
   font-weight: 700;
   color: #8a4b2f;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+  /* 길면 한 줄에서 …로 국가명을 자르는 대신 최대 2줄로 감싸 전부 보여준다(줄임말 없이).
+     2줄 넘으면 그때만 … (line-clamp). 월드컵 4강~결승 '팀 스코어 팀' 표기가 칸에 들어오게. */
+  white-space: normal;
+  word-break: keep-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
 }
 
 /* 특별한 날 표기를 탭하면 빵빠레가 터진다 — 버튼이지만 기존 em(.day-mark)과 똑같이 보이게 리셋.
@@ -2375,9 +2383,15 @@ button.day-mark.celebratable {
   font-weight: 700;
   color: #8a4b2f;
   text-align: left;
-  white-space: nowrap;
+  line-height: 1.2;
+  /* 길면 …로 자르지 않고 최대 2줄 wrap(국가명 안 잘리게). 2줄 초과만 …. */
+  white-space: normal;
+  word-break: keep-all;
   overflow: hidden;
-  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
   cursor: pointer;
   transition:
     transform var(--dur-1) var(--ease),
