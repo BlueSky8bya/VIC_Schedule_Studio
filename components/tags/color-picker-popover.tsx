@@ -4,7 +4,7 @@ import { Undo2 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  applyTone,
+  applyToneHsv,
   hexToHsv,
   hsvToHex,
   hueDist,
@@ -243,7 +243,9 @@ export function ColorPickerPopover({
           톤을 씌운 실제 결과색'으로 칠해(인스타 필터 썸네일) 누르기 전에 결과를 보여준다. */}
       <div className="cpop-tones">
         {TONE_PRESETS.map((t) => {
-          const preview = applyTone(hex, t.key); // 이 버튼을 누르면 될 색
+          // 색조는 '슬라이더 h'(hsv.h) 기준 — SV 가장자리(무채색: 흰/검)에서도 hex가 아니라
+          // 슬라이더 색조를 지킨다(흰색에서 파스텔 눌러도 엉뚱한 빨강 대신 그 색조의 파스텔).
+          const preview = applyToneHsv(hsv.h, hsv.s, hsv.v, t.key); // 이 버튼을 누르면 될 색
           const ink = inkContrast(preview).ink;
           return (
             <button

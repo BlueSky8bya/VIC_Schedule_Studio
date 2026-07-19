@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { applyTone, hexToHue, inkContrast, TONE_PRESETS } from "@/lib/tags/color-tone";
+import {
+  applyTone,
+  applyToneHsv,
+  hexToHue,
+  inkContrast,
+  TONE_PRESETS
+} from "@/lib/tags/color-tone";
 
 describe("color-tone", () => {
   it("applyTone은 색조(hue)를 유지하고 톤만 바꾼다", () => {
@@ -22,6 +28,22 @@ describe("color-tone", () => {
     }
     // 그래도 색조는 둘 다 유지된다(빨강 근처).
     expect(hexToHue(applyTone(dustyRed, "pastel"))).toBeLessThan(20);
+  });
+
+  it("applyToneHsv: SV 가장자리(무채색)여도 슬라이더 색조를 지킨다", () => {
+    // 파랑 슬라이더(h=220)에서 흰색(s0 v100)·검정(s0 v0)·회색(s0 v50)에 톤을 적용해도
+    // 빨강/노랑이 아니라 파랑 계열이 나와야 한다(hex에 색조 정보가 없어도 h로 색조 유지).
+    for (const [s, v] of [
+      [0, 100],
+      [0, 0],
+      [0, 50]
+    ] as const) {
+      for (const tone of ["pastel", "soft", "vivid", "deep"] as const) {
+        const hue = hexToHue(applyToneHsv(220, s, v, tone));
+        expect(hue).toBeGreaterThan(180); // 청록~파랑~보라 범위(빨강/노랑 아님)
+        expect(hue).toBeLessThan(300);
+      }
+    }
   });
 
   it("파스텔은 깊게보다 밝다(대비 잉크가 뒤바뀐다)", () => {

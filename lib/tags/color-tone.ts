@@ -212,18 +212,32 @@ function oklchCusp(hDeg: number): { L: number; C: number } {
   return best;
 }
 
-// 미세조정한 색(seed)의 색조(H)는 그대로 두고, 톤을 OKLCH(지각 균일)에서 적용한다. 파스텔/부드럽게/
-// 깊게는 L·C 타깃에 seed L·C를 일부 블렌드 후 밴드 클램프+가무트 클램프. 선명은 색조의 cusp(최대 채도).
-export function applyTone(hex: string, tone: ToneKey): string {
-  const seed = hexToOklch(hex);
+// 톤 코어 — seed의 지각밝기(L)·채도(C)와 '적용할 OKLCH 색조'로 톤 hex를 만든다. 파스텔/부드럽게/
+// 깊게는 L·C 타깃에 seed L·C를 일부 블렌드 후 밴드+가무트 클램프. 선명은 그 색조의 cusp(최대 채도).
+function toneFromOklch(seedL: number, seedC: number, oklchHue: number, tone: ToneKey): string {
   if (tone === "vivid") {
-    const cusp = oklchCusp(seed.h);
-    return oklchToHex(cusp.L, cusp.C, seed.h);
+    const cusp = oklchCusp(oklchHue);
+    return oklchToHex(cusp.L, cusp.C, oklchHue);
   }
   const spec = TONE_SPEC[tone];
-  const L = clampNum(lerp(spec.L, seed.L, TONE_SEED_L_WEIGHT), spec.Lband[0], spec.Lband[1]);
-  const C = clampNum(lerp(spec.C, seed.C, TONE_SEED_C_WEIGHT), spec.Cband[0], spec.Cband[1]);
-  return oklchToHex(L, C, seed.h);
+  const L = clampNum(lerp(spec.L, seedL, TONE_SEED_L_WEIGHT), spec.Lband[0], spec.Lband[1]);
+  const C = clampNum(lerp(spec.C, seedC, TONE_SEED_C_WEIGHT), spec.Cband[0], spec.Cband[1]);
+  return oklchToHex(L, C, oklchHue);
+}
+
+// hex 기준 톤 적용(색조는 hex에서 뽑는다).
+export function applyTone(hex: string, tone: ToneKey): string {
+  const seed = hexToOklch(hex);
+  return toneFromOklch(seed.L, seed.C, seed.h, tone);
+}
+
+// HSV(피커의 h·s·v) 기준 톤 적용 — 색조는 '슬라이더 h'에서 가져온다. SV 영역의 가장자리(무채색:
+// 흰/검/회색)에선 hex에 색조 정보가 사라져(atan2(0,0)=0°=빨강) 슬라이더가 파랑이라도 엉뚱한
+// 빨강/노랑 톤이 나왔다. 순수색(h,100,100)의 OKLCH 색조를 써서 무채색에서도 슬라이더 색조를 지킨다.
+export function applyToneHsv(h: number, s: number, v: number, tone: ToneKey): string {
+  const seed = hexToOklch(hsvToHex(h, s, v)); // L·C(밝기·채도)는 현재 색에서
+  const oklchHue = hexToOklch(hsvToHex(h, 100, 100)).h; // 색조는 슬라이더 h(무채색에서도 유지)
+  return toneFromOklch(seed.L, seed.C, oklchHue, tone);
 }
 
 // ── 기본 색상 18(색 팝오버 트레이 + 새 태그 기본색) ── 색조를 [0,350)으로 18등분(≈19.4°).
