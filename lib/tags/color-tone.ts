@@ -1,42 +1,39 @@
 // 태그 커스텀 색 보조 — 톤 프리셋(같은 색조를 파스텔~깊게로) + 대비(가독성) 정보.
 // 무늬가 없어진 뒤 카드는 단색이라, 색을 고를 때 '색조는 유지하고 톤만' 바꾸는 프리셋이 편하다.
-// (HSLuv가 지각적으로 더 균일하지만 의존성 없이 HSL로 충분히 실용적 — 톤 프리셋 용도.)
-
+//
+// ── 톤을 '지각 균일' 색공간(OKLCH)에서 정의한다 (Björn Ottosson, 2020 · CSS Color 4 채택) ──
+// 왜: HSV/HSL은 지각적으로 불균일하다. 같은 V/L·S라도 색조마다 눈에 보이는 밝기·채도가 크게
+// 다르다(노랑 V100은 거의 흰데 파랑 V100은 진하다 — Helmholtz–Kohlrausch, CIELAB L*로 확인됨).
+// 그래서 HSV로 톤을 잡으면 '무한한 색상'에서 파스텔이 색조마다 들쭉날쭉했다(노랑 파스텔은 너무
+// 밝고 파랑 파스텔은 안 연하고). OKLCH는 L(지각 밝기)·C(채도)·H(색조)를 분리해, L·C를 고정하면
+// 모든 색조에서 '지각적으로 같은' 파스텔/부드럽게/선명/깊게가 나온다. 이게 연구적으로 타당한 근거.
+//
+// 색이론 근거(tint/tone/shade + pure hue)를 OKLCH 좌표로:
+//  · 파스텔 = pale tint: 지각 밝기 아주 높고(L↑) 채도 낮게(C↓).           (고정 L·C → 균일한 연함)
+//  · 부드럽게 = muted tone: 밝되 채도 중간.
+//  · 선명 = pure hue: 그 색조가 낼 수 있는 '최대 채도'(sRGB 가무트 cusp) → 색조별로 가장 쨍한 점.
+//  · 깊게 = shade: 지각 밝기 낮고(L↓) 채도는 가무트 한도까지(탁하지 않게 깊게).
+// L 고정으로 파스텔>부드럽게>깊게가 모든 색조에서 같은 지각 밝기 단계를 갖는다(선명은 cusp이라 색조별).
 export type ToneKey = "pastel" | "soft" | "vivid" | "deep";
 
-// 톤 프리셋 = '필터'. 색조(hue)는 유지하고 톤만 바꾼다. HSV(명도 V·채도 S)로 정의한다 —
-// 예전 HSL은 파스텔을 L=90으로 잡았는데, HSL은 L이 높아질수록 표현 가능한 chroma가 급격히 줄어
-// 파스텔이 '색이 죽은 회색빛 wash'(예: 빨강→#f5d6d6)로 나왔다. 그래서 파스텔로 눌러도 파스텔로
-// 안 보였다. HSV는 V를 높게(밝게) 두면서 S로 '색의 또렷함'을 독립적으로 유지해 진짜 파스텔이 된다.
-//
-// 색이론 근거(tint/tone/shade + pure hue):
-//  · 파스텔 = pale tint(색+흰색 多): 아주 밝고(V↑) 채도 낮게(S↓) → 연하지만 색은 또렷.  (예: #ffadad)
-//  · 부드럽게 = muted tone(색+회색): 밝되 중채도 → 파스텔보다 색이 좀 더 실린 잔잔한 톤.
-//  · 선명 = pure hue: 채도 최대(S↑↑) → 쨍하게.
-//  · 깊게 = shade(색+검정): 어둡되(V↓) 채도 유지(S↑) → 탁하지 않고 깊고 풍부하게.  (예: #801414)
-// 명도(밝기) 순서: 파스텔 > 부드럽게 > 선명 > 깊게 로 넓게 벌려 네 결과가 확실히 구분된다.
-//
-// 각 톤은 '타깃(s,v)'을 중심으로 하되, 사용자가 위에서 미세조정한 색(seed)의 채도·명도를 일부
-// 블렌드해 반영한다 → 같은 색조라도 seed가 쨍하면 톤도 좀 더 쨍하게, 차분하면 좀 더 차분하게.
-// (안 그러면 색조만 보고 늘 같은 파스텔이 나와 '18색에만 톤이 있는' 느낌이었다.) 단 톤 정체성이
-// 무너지지 않게 s/v를 톤별 밴드로 클램프한다(파스텔은 아무리 쨍한 seed라도 여전히 파스텔).
-export const TONE_PRESETS: {
-  key: ToneKey;
-  label: string;
-  s: number;
-  v: number;
-  sBand: [number, number];
-  vBand: [number, number];
-}[] = [
-  { key: "pastel", label: "파스텔", s: 32, v: 100, sBand: [24, 46], vBand: [92, 100] },
-  { key: "soft", label: "부드럽게", s: 48, v: 92, sBand: [36, 60], vBand: [82, 96] },
-  { key: "vivid", label: "선명", s: 96, v: 92, sBand: [80, 100], vBand: [82, 100] },
-  { key: "deep", label: "깊게", s: 84, v: 50, sBand: [64, 92], vBand: [40, 62] }
+export const TONE_PRESETS: { key: ToneKey; label: string }[] = [
+  { key: "pastel", label: "파스텔" },
+  { key: "soft", label: "부드럽게" },
+  { key: "vivid", label: "선명" },
+  { key: "deep", label: "깊게" }
 ];
 
-// seed 반영 강도 — 채도는 눈에 띄게(0.4), 명도는 톤이 주도하되 살짝(0.18).
-const TONE_SEED_S_WEIGHT = 0.4;
-const TONE_SEED_V_WEIGHT = 0.18;
+// 톤별 OKLCH 타깃 — L,C는 OKLab 스케일(L 0~1, C ~0~0.37). seed(미세조정색)의 L·C를 일부 블렌드해
+// 반영하되, 톤 정체성이 무너지지 않게 밴드로 클램프한다. vivid는 cusp(최대 채도)라 별도 처리.
+type ToneSpec = { L: number; C: number; Lband: [number, number]; Cband: [number, number] };
+const TONE_SPEC: Record<Exclude<ToneKey, "vivid">, ToneSpec> = {
+  pastel: { L: 0.9, C: 0.055, Lband: [0.86, 0.94], Cband: [0.035, 0.08] },
+  soft: { L: 0.8, C: 0.09, Lband: [0.73, 0.86], Cband: [0.055, 0.12] },
+  deep: { L: 0.47, C: 0.15, Lband: [0.4, 0.56], Cband: [0.1, 0.4] }
+};
+// seed 반영 강도 — 채도는 눈에 띄게, 밝기는 톤이 주도하되 살짝(지각 균일성을 크게 흔들지 않게).
+const TONE_SEED_L_WEIGHT = 0.2;
+const TONE_SEED_C_WEIGHT = 0.38;
 
 function clampNum(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
@@ -131,14 +128,102 @@ export function hsvToHex(h: number, s: number, v: number): string {
   return `#${to(r)}${to(g)}${to(b)}`;
 }
 
-// 미세조정한 색(seed)의 색조는 그대로 두고, 채도·명도를 톤 타깃 쪽으로 옮기되 seed 값도 일부
-// 블렌드해 반영한다(톤별 밴드로 클램프해 정체성 유지). HSV로 적용한다(위 프리셋 주석 참고).
+// ── OKLab / OKLCH (Ottosson 2020) — 지각 균일 색공간. 톤을 여기서 정의해 색조와 무관하게 균일하게. ──
+function srgbChToLinear(c: number): number {
+  return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+function linearToSrgbCh(c: number): number {
+  return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
+}
+// 감마 sRGB(0~1) → OKLab {L,a,b}
+function linRgbToOklab(r: number, g: number, b: number): { L: number; a: number; b: number } {
+  const l = 0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b;
+  const m = 0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b;
+  const s = 0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b;
+  const l_ = Math.cbrt(l);
+  const m_ = Math.cbrt(m);
+  const s_ = Math.cbrt(s);
+  return {
+    L: 0.2104542553 * l_ + 0.793617785 * m_ - 0.0040720468 * s_,
+    a: 1.9779984951 * l_ - 2.428592205 * m_ + 0.4505937099 * s_,
+    b: 0.0259040371 * l_ + 0.7827717662 * m_ - 0.808675766 * s_
+  };
+}
+// OKLab → 선형 sRGB(0~1, 가무트 밖이면 0~1 범위를 벗어난 값이 나온다)
+function oklabToLinRgb(L: number, a: number, bb: number): [number, number, number] {
+  const l_ = L + 0.3963377774 * a + 0.2158037573 * bb;
+  const m_ = L - 0.1055613458 * a - 0.0638541728 * bb;
+  const s_ = L - 0.0894841775 * a - 1.291485548 * bb;
+  const l = l_ * l_ * l_;
+  const m = m_ * m_ * m_;
+  const s = s_ * s_ * s_;
+  return [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s
+  ];
+}
+function hexToOklch(hex: string): { L: number; C: number; h: number } {
+  const rgb = hexToRgb(hex) ?? [0, 0, 0];
+  const [r, g, b] = rgb.map((v) => srgbChToLinear(v / 255));
+  const { L, a, b: bb } = linRgbToOklab(r, g, b);
+  return { L, C: Math.hypot(a, bb), h: (Math.atan2(bb, a) * 180) / Math.PI };
+}
+// 주어진 L,C,h(도)가 sRGB 가무트 안인가.
+function oklchInGamut(L: number, C: number, hDeg: number): boolean {
+  const hr = (hDeg * Math.PI) / 180;
+  const lin = oklabToLinRgb(L, C * Math.cos(hr), C * Math.sin(hr));
+  return lin.every((c) => c >= -0.0001 && c <= 1.0001);
+}
+// L,C,h → hex. 가무트 밖이면 색조·밝기는 유지하고 채도(C)만 이진탐색으로 줄여 안으로 넣는다.
+function oklchToHex(L: number, C: number, hDeg: number): string {
+  let lo = 0;
+  let hi = C;
+  if (!oklchInGamut(L, C, hDeg)) {
+    for (let i = 0; i < 24; i++) {
+      const mid = (lo + hi) / 2;
+      if (oklchInGamut(L, mid, hDeg)) lo = mid;
+      else hi = mid;
+    }
+    C = lo;
+  }
+  const hr = (hDeg * Math.PI) / 180;
+  const lin = oklabToLinRgb(L, C * Math.cos(hr), C * Math.sin(hr));
+  const to = (v: number) =>
+    Math.round(clampNum(linearToSrgbCh(clampNum(v, 0, 1)), 0, 1) * 255)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${to(lin[0])}${to(lin[1])}${to(lin[2])}`;
+}
+// 그 색조가 낼 수 있는 최대 채도점(가무트 cusp) — '선명'이 색조별로 가장 쨍한 점이 되게. L을 훑어
+// 각 L의 최대 in-gamut C를 이진탐색으로 구하고, 그중 C가 최대인 (L,C)를 반환.
+function oklchCusp(hDeg: number): { L: number; C: number } {
+  let best = { L: 0.7, C: 0 };
+  for (let L = 0.35; L <= 0.95; L += 0.025) {
+    let lo = 0;
+    let hi = 0.45;
+    for (let i = 0; i < 20; i++) {
+      const mid = (lo + hi) / 2;
+      if (oklchInGamut(L, mid, hDeg)) lo = mid;
+      else hi = mid;
+    }
+    if (lo > best.C) best = { L, C: lo };
+  }
+  return best;
+}
+
+// 미세조정한 색(seed)의 색조(H)는 그대로 두고, 톤을 OKLCH(지각 균일)에서 적용한다. 파스텔/부드럽게/
+// 깊게는 L·C 타깃에 seed L·C를 일부 블렌드 후 밴드 클램프+가무트 클램프. 선명은 색조의 cusp(최대 채도).
 export function applyTone(hex: string, tone: ToneKey): string {
-  const p = TONE_PRESETS.find((t) => t.key === tone) ?? TONE_PRESETS[1];
-  const seed = hexToHsv(hex);
-  const s = clampNum(Math.round(lerp(p.s, seed.s, TONE_SEED_S_WEIGHT)), p.sBand[0], p.sBand[1]);
-  const v = clampNum(Math.round(lerp(p.v, seed.v, TONE_SEED_V_WEIGHT)), p.vBand[0], p.vBand[1]);
-  return hsvToHex(seed.h, s, v);
+  const seed = hexToOklch(hex);
+  if (tone === "vivid") {
+    const cusp = oklchCusp(seed.h);
+    return oklchToHex(cusp.L, cusp.C, seed.h);
+  }
+  const spec = TONE_SPEC[tone];
+  const L = clampNum(lerp(spec.L, seed.L, TONE_SEED_L_WEIGHT), spec.Lband[0], spec.Lband[1]);
+  const C = clampNum(lerp(spec.C, seed.C, TONE_SEED_C_WEIGHT), spec.Cband[0], spec.Cband[1]);
+  return oklchToHex(L, C, seed.h);
 }
 
 // ── 기본 색상 18(색 팝오버 트레이 + 새 태그 기본색) ── 색조를 [0,350)으로 18등분(≈19.4°).
