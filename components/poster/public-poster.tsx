@@ -3027,9 +3027,14 @@ export function PublicPoster({
       const support = liveEvents.filter(
         (e) => e.isSupport && getEventDateKey(e) === cell.isoDate && !isDimmedByFilter(e)
       );
-      const evs = liveEvents.filter(
-        (e) => !e.isSupport && getEventDateKey(e) === cell.isoDate && !isDimmedByFilter(e)
-      );
+      const evs = liveEvents
+        .filter(
+          (e) => !e.isSupport && getEventDateKey(e) === cell.isoDate && !isDimmedByFilter(e)
+        )
+        // 편집실 드래그로 바꾼 같은 날 표시 순서(sort_order)를 아젠다도 따른다. 없으면(모두 0)
+        // 로드 순서 유지. 이걸 빼면 달력(getEventsForDate)만 순서를 반영하고 모바일 아젠다는
+        // created_at 순으로 남아 PC에서 바꾼 순서가 모바일에 안 보였다.
+        .sort((a, b) => a.sortOrder - b.sortOrder);
       const list = [
         ...support.map((event) => ({ event, support: true })),
         ...evs.map((event) => ({ event, support: false }))
