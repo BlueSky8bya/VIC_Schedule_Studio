@@ -3789,9 +3789,12 @@ export function StudioShell({
               {monthCells.map((cell, agendaIndex) => {
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const mark = getDayMark(cell.isoDate);
-              const dayEvents = mobileAgendaEvents.filter(
-                (e) => getEventDateKey(e) === cell.isoDate
-              );
+              const dayEvents = mobileAgendaEvents
+                .filter((e) => getEventDateKey(e) === cell.isoDate)
+                // 편집실 드래그로 정한 같은 날 표시 순서(sort_order)를 편집실 모바일 아젠다도 따른다.
+                // 이걸 빼면 달력(getEventsForDate)만 순서를 반영하고 모바일은 created_at 순으로 남아
+                // 편집자가 바꾼 순서가 폰에서 안 보였다(public-poster 아젠다와 동일 조치).
+                .sort((a, b) => a.sortOrder - b.sortOrder);
               // 모바일 색상 필터: 필터가 켜지면 흐림이 아니라 "걸러진 일정만" 보여준다.
               // 매칭 일정이 하나도 없는 날 카드는 아예 렌더하지 않는다(예: 짧뱅 필터 → 5일·15일만).
               const shownEvents = filtering
