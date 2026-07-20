@@ -3214,8 +3214,10 @@ html[data-reduce-motion] .role-segment button.active {
 /* 날짜를 선택하면 우측 카드(폼 446 + 좌측 거터 16=--space-4)가 밀고 들어온다.
    컬럼폭 462 = 폼 446 + 거터 16 (이 파생 관계 깨지면 슬라이드 중 reflow 생김). */
 .studio-workspace.editor-open {
-  /* 편집패널 440→380: 태그 칩(minmax 94px)이 3열을 유지하는 하한(~360) 위 안전값. 달력 폭 +60. */
-  grid-template-columns: 188px minmax(0, 1fr) 380px;
+  /* 편집패널 462→400: 폼(고정폭, 아래 .event-editor-panel form)과 반드시 함께 줄여야 한다 —
+     폼만 남으면 overflow:hidden+우측정렬이라 왼쪽이 잘린다. 400 = 폼 384 + 좌거터 16.
+     태그 칩(minmax 94px)이 3열 유지하는 하한(~370) 위 안전값. */
+  grid-template-columns: 188px minmax(0, 1fr) 400px;
 }
 
 /* ── 편집실 아바타 자리(시청자와 같이 보기용) — fixed 도크. 시청자 포스터는 1/4(25vw)지만 편집실은
@@ -3567,10 +3569,10 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   justify-items: end;
 }
 .studio-workspace.editor-open .event-editor-panel {
-  padding-left: var(--space-4); /* 16 — 달력과의 거터(폼 왼쪽). 위 컬럼폭 462와 물림(446+16). */
+  padding-left: var(--space-4); /* 16 — 달력과의 거터(폼 왼쪽). 위 컬럼폭 400과 물림(384+16). */
 }
 .event-editor-panel form {
-  width: 446px; /* 폭 고정 → 컬럼 애니메이션 동안 reflow 없이 슬라이드 */
+  width: 384px; /* 폭 고정 → 컬럼 애니메이션 동안 reflow 없이 슬라이드. 트랙 400 - 좌거터 16. */
   /* 헤더(상단바·액션바·단축키줄 ~150px)를 빼서 폼이 처음부터 화면 안에 다 들어오게 →
      페이지(옆 달력)를 안 밀고 폼만 스크롤해 맨 끝(공지/방문 그래프)까지 닿는다. */
   max-height: calc(100dvh - 150px);
