@@ -4959,7 +4959,6 @@ export function StudioShell({
       {canEdit && kbdHintsOpen ? (
         // 한 줄 칩 흐름 유지. 설명은 라벨 수준으로 짧게 — 키가 주인공이고 문장은 잡음이다.
         <div className="kbd-hints" aria-label="키보드 단축키 안내">
-          <span className="kbd-hints-title">단축키</span>
           <span><kbd>Alt</kbd>+<kbd>N</kbd> 새 일정</span>
           <span><kbd>글자</kbd> 제목</span>
           <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
