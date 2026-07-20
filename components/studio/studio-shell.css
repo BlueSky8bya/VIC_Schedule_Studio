@@ -129,51 +129,67 @@
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
-/* 단축키 안내 접기/펼치기 — 기본은 접혀 '단축키 설명' 탭(역사다리꼴: 위 넓고 아래 좁음)만 보이고,
-   누르면 아래로 안내바가 펼쳐진다. 안내바가 늘 자리를 먹던 것을 줄여 달력을 조금이라도 넓게 본다. */
-.kbd-hints-wrap {
-  display: flex;
+/* 배포 버전 + 단축키 토글 박스 — 액션바 왼쪽. 버전(위) 아래에 '단축키' 확장 버튼을 담는다.
+   버전 태그는 원래 액션바 가운데 absolute였는데, 박스 안에선 흐름 배치(static)로 되돌린다. */
+.studio-buildbox {
+  flex: 0 0 auto;
+  display: inline-flex;
   flex-direction: column;
   align-items: center;
-  margin: 0 0 8px;
+  gap: 4px;
+  padding: 4px 6px;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  box-shadow: var(--shadow-1, 0 1px 2px rgb(80 60 20 / 6%));
 }
-.kbd-hints-wrap.open {
-  margin-bottom: 12px;
+.studio-buildbox .studio-build-tag {
+  position: static;
+  transform: none;
+  left: auto;
+  top: auto;
+  padding: 0 2px;
 }
-.kbd-hints-toggle {
+.studio-buildbox.dev .studio-build-tag {
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  background: rgb(124 108 240 / 16%);
+  color: #6b5bd6;
+  font-weight: 800;
+}
+/* '단축키' 확장 버튼 — 앱 버튼 가족의 작은 알약(사다리꼴 폐기). 눈에 띄게 accent 틴트. */
+.kbd-hints-btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
-  padding: 3px 20px 5px;
-  border: 0;
+  width: 100%;
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent, #6b5bd6) 32%, transparent);
+  border-radius: var(--r-pill);
   background: color-mix(in srgb, var(--accent, #6b5bd6) 12%, #fff);
   color: var(--accent, #6b5bd6);
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
+  white-space: nowrap;
   cursor: pointer;
-  /* 역사다리꼴 — 위가 넓고 아래가 좁은 탭 모양. */
-  clip-path: polygon(5% 0, 95% 0, 82% 100%, 18% 100%);
   transition:
     background var(--dur-1, 0.12s) var(--ease),
     transform var(--dur-1, 0.12s) var(--ease);
 }
-.kbd-hints-toggle:hover {
-  background: color-mix(in srgb, var(--accent, #6b5bd6) 20%, #fff);
+.kbd-hints-btn:hover {
+  background: color-mix(in srgb, var(--accent, #6b5bd6) 22%, #fff);
 }
-.kbd-hints-toggle:active {
-  transform: translateY(1px);
+.kbd-hints-btn:active {
+  transform: scale(0.96);
 }
-.kbd-hints-toggle svg {
+.kbd-hints-btn > svg:last-child {
   transition: transform var(--dur-2, 0.2s) var(--ease);
 }
-.kbd-hints-wrap.open .kbd-hints-toggle svg {
+.kbd-hints-btn.open > svg:last-child {
   transform: rotate(180deg);
-}
-/* 펼친 안내바는 토글 바로 아래에 하나로 붙는다. */
-.kbd-hints-wrap .kbd-hints {
-  width: 100%;
-  margin: 0;
 }
 .kbd-hints .kbd-hints-title {
   display: inline-flex;

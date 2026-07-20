@@ -12,6 +12,7 @@ import {
   Eye,
   EyeOff,
   Globe,
+  Keyboard,
   LockKeyhole,
   LogOut,
   Save,
@@ -4802,13 +4803,28 @@ export function StudioShell({
           (개발자 역할 표시는 헤더의 역할 배지로 충분 — 별도 세션 안내 줄은 두지 않는다.) */}
       <div className="studio-actionbar">
         <div className="studio-actionbar-tools">
-          {/* 배포 확인용 버전(커밋) — 액션바 가운데. 개발자는 또렷한 보라 펄, 그 외엔 흐린 회색. */}
-          <span
-            className={`studio-build-tag${isDevInsights ? " dev" : ""}`}
-            aria-hidden="true"
-          >
-            {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
-          </span>
+          {/* 배포 버전(커밋) + 단축키 안내 토글을 한 박스로. 버전 위, 확장 버튼 아래. 안내바는
+              기본 접힘이라 이 박스 아래로 바로 달력이 온다(높이 최적화). 개발자는 보라, 그 외 회색. */}
+          <div className={`studio-buildbox${isDevInsights ? " dev" : ""}`}>
+            <span className="studio-build-tag" aria-hidden="true">
+              {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
+            </span>
+            {canEdit ? (
+              <button
+                type="button"
+                className={`kbd-hints-btn${kbdHintsOpen ? " open" : ""}`}
+                aria-expanded={kbdHintsOpen}
+                onClick={() => {
+                  hapticTick();
+                  setKbdHintsOpen((v) => !v);
+                }}
+              >
+                <Keyboard aria-hidden="true" size={13} />
+                단축키
+                <ChevronDown aria-hidden="true" size={13} />
+              </button>
+            ) : null}
+          </div>
           {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자(또는
               그 역할 미리보기 중)는 비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}
           {canEdit || (isDeveloper && !previewRole) ? (
@@ -4935,24 +4951,9 @@ export function StudioShell({
         </div>
       ) : null}
 
-      {/* #9 키보드 단축키 안내바 — 웹(데스크톱)·소유자(canEdit)에서만. 달력 '위'에 옅게(아래에 두면
-          하단 플로팅 바·접힘으로 잘 안 보여 위로 올림). */}
-      {canEdit ? (
-        // 기본은 접어 달력을 넓게 — '단축키 설명' 탭(역사다리꼴)을 누르면 안내바가 펼쳐진다.
-        <div className={`kbd-hints-wrap${kbdHintsOpen ? " open" : ""}`}>
-          <button
-            type="button"
-            className="kbd-hints-toggle"
-            aria-expanded={kbdHintsOpen}
-            onClick={() => {
-              hapticTick();
-              setKbdHintsOpen((v) => !v);
-            }}
-          >
-            ⌨ 단축키 설명
-            <ChevronDown aria-hidden="true" size={13} />
-          </button>
-        {kbdHintsOpen ? (
+      {/* #9 키보드 단축키 안내바 — canEdit(소유자). 토글은 위 액션바의 버전 박스 안에 있고, 기본은
+          접혀 있어 이 바가 안 나온다 → 액션바 바로 아래로 달력이 온다(높이 최적화). 펼치면 여기 뜬다. */}
+      {canEdit && kbdHintsOpen ? (
         // 한 줄 칩 흐름 유지. 설명은 라벨 수준으로 짧게 — 키가 주인공이고 문장은 잡음이다.
         <div className="kbd-hints" aria-label="키보드 단축키 안내">
           <span className="kbd-hints-title">단축키</span>
@@ -4968,8 +4969,6 @@ export function StudioShell({
           <span><kbd>Ctrl</kbd>+클릭 다중 선택</span>
           <span><kbd>←</kbd><kbd>→</kbd> 이동</span>
           <span><kbd>Esc</kbd> 닫기</span>
-        </div>
-        ) : null}
         </div>
       ) : null}
 
