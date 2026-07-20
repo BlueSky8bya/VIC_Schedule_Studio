@@ -797,7 +797,8 @@ html[data-reduce-motion] .mb-live-dot {
 /* 아젠다(리스트 뷰) 서브도 그리드 카드와 통일 — 불릿 대신 왼쪽 세로 레일(디자인 통일). */
 .agenda-subs {
   margin: 1px 0 0;
-  padding-left: 13px;
+  /* 세로 레일과 서브 사이 간격 — 13px는 폭 낭비라 절반(7px)으로. */
+  padding-left: 7px;
   border-left: 2px solid color-mix(in srgb, currentColor 28%, transparent);
   list-style: none;
   font-size: 12.5px;
@@ -2636,7 +2637,8 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   display: grid;
   gap: 2px;
   margin: 0;
-  padding: 0 0 0 16px;
+  /* 세로 레일(border-left)과 서브 텍스트 사이 간격 — 16px는 폭 낭비가 커서 절반(8px)으로. */
+  padding: 0 0 0 8px;
   border-left: 2px solid color-mix(in srgb, currentColor 30%, transparent);
   list-style: none;
   font-weight: 800;
