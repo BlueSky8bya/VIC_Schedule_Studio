@@ -62,6 +62,10 @@ function coerceMemoLines(value: unknown): MemoLine[] | undefined {
 // 차가운 풀러로 ~4s) anon 페이지 p95를 끌어올렸다. 인기 배지가 몇 분 늦는 건 포스터에서
 // 사실상 보이지 않으므로, 주기를 늘려 미스(=느린 DB 왕복) 빈도를 크게 줄인다.
 const PUBLIC_SCHEDULE_REVALIDATE_SECONDS = 300;
+// 방송시간은 '라이브성' 데이터다 — 방송 중엔 계속 자라고 끝나면 최종값이 확정된다. 스케줄(300초)처럼
+// 오래 캐시하면 방송 중/직후 시청자 '이 달 기록'이 관리자 화면(무캐시)보다 몇 시간씩 적게 보였다
+// (예: 라이브 5시간인데 캐시된 1시간). 그래서 방송 집계만 짧게 캐시해 거의 실시간에 맞춘다.
+const PUBLIC_BROADCAST_REVALIDATE_SECONDS = 60;
 
 // 쿠키 없는 anon 클라이언트 — 캐시 가능한 익명 쿼리 전용(요청 컨텍스트에 묶이지 않음).
 // 공개 RLS 정책 + anon SELECT 권한으로 공개 행만 읽힌다(비공개 데이터는 RLS가 차단).
@@ -589,7 +593,7 @@ const loadPublicBroadcastStats = unstable_cache(
     }));
   },
   ["public-broadcast-stats"],
-  { revalidate: PUBLIC_SCHEDULE_REVALIDATE_SECONDS, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
+  { revalidate: PUBLIC_BROADCAST_REVALIDATE_SECONDS, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
 );
 
 // 최근 N개월(이번 달 포함) 방송 기록. 시청자·비로그인 모두 볼 수 있다.
@@ -624,7 +628,7 @@ const loadPublicBroadcastDaily = unstable_cache(
     }));
   },
   ["public-broadcast-daily"],
-  { revalidate: PUBLIC_SCHEDULE_REVALIDATE_SECONDS, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
+  { revalidate: PUBLIC_BROADCAST_REVALIDATE_SECONDS, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
 );
 
 // 이번 달 1일~말일의 일별 방송시간(길이 = 그 달 일수, 방송 없는 날은 0).
