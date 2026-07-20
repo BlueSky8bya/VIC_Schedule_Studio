@@ -101,12 +101,25 @@ const HOLIDAYS_YEARLY: Record<string, string> = {
 
 // 매년 고정 기념일 — 표기만(빨간날 아님)
 const MARKS_FIXED: Record<string, string> = {
+  "02-14": "발렌타인데이",
+  "03-14": "화이트데이",
   "04-01": "만우절",
   "04-05": "식목일",
   "05-08": "어버이날",
   "05-15": "스승의 날",
   "10-31": "할로윈",
-  "11-11": "빼빼로데이"
+  "11-11": "빼빼로데이",
+  "12-24": "크리스마스이브"
+};
+
+// 삼복(초복·중복·말복) — 표기만(빨간날 아님). 하지/입추 기준 경일(庚日)이라 매년 날짜가 달라
+// 연도별 전체 날짜로 넣는다(24절기 MARKS_YEARLY와 같은 방식). 삼계탕 먹는 복날, 시청자와 공유.
+// 2026: 월복(중복7/25~말복8/14 20일)이라 삼복더위가 길다. (초복 7/15는 그해 월드컵 4강과 겹쳐
+// 우선순위상 4강이 표시된다 — 삼복은 다른 해엔 그대로 뜬다.)
+const SAMBOK_YEARLY: Record<string, string> = {
+  "2026-07-15": "🍗 초복",
+  "2026-07-25": "🍗 중복",
+  "2026-08-14": "🍗 말복"
 };
 
 // 스트리머 데뷔일(이 날부터 D+ 기록)
@@ -456,6 +469,9 @@ export function getDayMark(isoDate: string): DayMark | null {
   const debut = debutMark(isoDate);
   if (debut) {
     return { name: debut, isHoliday: false };
+  }
+  if (SAMBOK_YEARLY[isoDate]) {
+    return { name: SAMBOK_YEARLY[isoDate], isHoliday: false };
   }
   if (MARKS_YEARLY[isoDate]) {
     return { name: MARKS_YEARLY[isoDate], isHoliday: false };
