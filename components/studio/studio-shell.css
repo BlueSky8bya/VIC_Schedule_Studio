@@ -3217,13 +3217,14 @@ html[data-reduce-motion] .role-segment button.active {
   grid-template-columns: 188px minmax(0, 1fr) 462px;
 }
 
-/* ── 편집실 아바타 자리(시청자와 같이 보기용) — viewer 포스터와 동일한 fixed 1/4 도크 ── */
+/* ── 편집실 아바타 자리(시청자와 같이 보기용) — fixed 도크. 시청자 포스터는 1/4(25vw)지만 편집실은
+   편집 중 달력 폭을 더 챙기려고 살짝 좁은 20vw로 둔다(태그는 2열이라 좁아도 충분). ── */
 /* 아바타 ON 시 편집실 콘텐츠(workspace)를 반대쪽으로 margin 슬라이드(패널 포함 통째로 → 겹침 0). */
 .studio-shell.avatar-scene.avatar-right .studio-workspace {
-  margin-right: 25vw;
+  margin-right: 20vw;
 }
 .studio-shell.avatar-scene.avatar-left .studio-workspace {
-  margin-left: 25vw;
+  margin-left: 20vw;
 }
 /* 아바타 scene: 좌측 색상필터 칸 비움(0) — 필터는 우측 rail로. 편집패널은 464→380으로 절약해
    달력 폭에 보탠다. 달력·편집패널 칸은 명시 고정(좌칸 0으로 당겨져 달력이 사라지는 것 방지). */
@@ -3241,10 +3242,10 @@ html[data-reduce-motion] .role-segment button.active {
   transition: margin 0.55s var(--ease-spring);
 }
 .studio-shell.avatar-scene.avatar-left .kbd-hints {
-  margin-left: calc(25vw + 4px);
+  margin-left: calc(20vw + 4px);
 }
 .studio-shell.avatar-scene.avatar-right .kbd-hints {
-  margin-right: calc(25vw + 4px);
+  margin-right: calc(20vw + 4px);
 }
 .studio-shell.avatar-scene .studio-calendar-panel {
   grid-column: 2;
@@ -3272,7 +3273,7 @@ html[data-reduce-motion] .role-segment button.active {
   position: fixed;
   top: 148px;
   bottom: 8px;
-  width: calc(25vw - 16px);
+  width: calc(20vw - 16px);
   display: flex;
   flex-direction: column;
   gap: 10px;
