@@ -4803,10 +4803,13 @@ export function StudioShell({
           (개발자 역할 표시는 헤더의 역할 배지로 충분 — 별도 세션 안내 줄은 두지 않는다.) */}
       <div className="studio-actionbar">
         <div className="studio-actionbar-tools">
-          {/* 배포 버전(커밋) + 단축키 안내 토글을 한 박스로. 버전 위, 확장 버튼 아래. 안내바는
-              기본 접힘이라 이 박스 아래로 바로 달력이 온다(높이 최적화). 개발자는 보라, 그 외 회색. */}
-          <div className={`studio-buildbox${isDevInsights ? " dev" : ""}`}>
-            <span className="studio-build-tag" aria-hidden="true">
+          {/* 배포 버전(커밋, 원본 그대로) 아래에 단축키 확장 버튼만 얹어 액션바 '가운데'에 세로로.
+              안내바는 기본 접힘이라 이 아래로 바로 달력이 온다(높이 최적화). */}
+          <div className="studio-buildbox">
+            <span
+              className={`studio-build-tag${isDevInsights ? " dev" : ""}`}
+              aria-hidden="true"
+            >
               {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
             </span>
             {canEdit ? (

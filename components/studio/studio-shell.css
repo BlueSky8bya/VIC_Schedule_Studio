@@ -129,47 +129,40 @@
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
-/* 배포 버전 + 단축키 토글 박스 — 액션바 왼쪽. 버전(위) 아래에 '단축키' 확장 버튼을 담는다.
-   버전 태그는 원래 액션바 가운데 absolute였는데, 박스 안에선 흐름 배치(static)로 되돌린다. */
+/* 배포 버전(원본 그대로) 아래에 단축키 확장 버튼만 얹어 액션바 '가운데'에 세로로. 박스 테두리·배경
+   없이(버전 배지는 원래 모습 유지) 가운데 absolute로 띄운다 — 원래 버전 태그가 있던 그 자리. */
 .studio-buildbox {
-  flex: 0 0 auto;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  padding: 4px 6px;
-  border: 1px solid var(--line, #ece9f5);
-  border-radius: 12px;
-  background: var(--surface, #fff);
-  box-shadow: var(--shadow-1, 0 1px 2px rgb(80 60 20 / 6%));
+  pointer-events: none; /* 버전은 장식 — 버튼만 클릭 가능(아래에서 auto로). */
 }
+/* 버전 태그는 부모(.studio-buildbox)가 이미 가운데라 흐름 배치로만 되돌린다(색·펄 등 모습은 원본 유지). */
 .studio-buildbox .studio-build-tag {
   position: static;
   transform: none;
   left: auto;
   top: auto;
-  padding: 0 2px;
 }
-.studio-buildbox.dev .studio-build-tag {
-  padding: 2px 9px;
-  border-radius: var(--r-pill);
-  background: rgb(124 108 240 / 16%);
-  color: #6b5bd6;
-  font-weight: 800;
-}
-/* '단축키' 확장 버튼 — 앱 버튼 가족의 작은 알약(사다리꼴 폐기). 눈에 띄게 accent 틴트. */
+/* '단축키' 확장 버튼 — 앱 스튜디오 보라(dev/버전 색)로 또렷하게. (앰버 accent는 잘 안 보였다.) */
 .kbd-hints-btn {
+  pointer-events: auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  width: 100%;
-  min-height: 24px;
-  padding: 2px 10px;
-  border: 1px solid color-mix(in srgb, var(--accent, #6b5bd6) 32%, transparent);
+  min-height: 23px;
+  padding: 2px 12px;
+  border: 1px solid rgb(124 108 240 / 42%);
   border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--accent, #6b5bd6) 12%, #fff);
-  color: var(--accent, #6b5bd6);
+  background: rgb(124 108 240 / 15%);
+  color: #5b4bd0;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -180,7 +173,7 @@
     transform var(--dur-1, 0.12s) var(--ease);
 }
 .kbd-hints-btn:hover {
-  background: color-mix(in srgb, var(--accent, #6b5bd6) 22%, #fff);
+  background: rgb(124 108 240 / 26%);
 }
 .kbd-hints-btn:active {
   transform: scale(0.96);
@@ -3637,13 +3630,15 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   border-radius: var(--r-md);
 }
 .studio-actionbar-tools {
-  position: relative; /* 가운데 버전 태그(.studio-build-tag) 기준 */
+  position: relative; /* 가운데 버전 태그+단축키 토글(.studio-buildbox) 기준 */
   display: flex;
   flex: 1 1 auto; /* 남는 폭을 채워, 관리 묶음=왼쪽 / 꾸미기=오른쪽 끝으로 가르게 한다. */
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
+  /* 가운데 세로 스택(버전 + 단축키 버튼 ≈42px)이 넘치지 않게 최소 높이 확보. */
+  min-height: 44px;
 }
 /* 배포 버전(커밋) — 액션바 가운데(클릭 안 됨). 기본(비개발자)은 흐린 회색 텍스트,
    개발자(.dev)는 모바일 배지처럼 또렷한 보라 펄로 꾸민다. */
