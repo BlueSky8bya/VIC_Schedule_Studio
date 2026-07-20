@@ -3559,39 +3559,25 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 .event-editor-panel {
   align-self: start;
   /* 편집 카드가 길어도 달력이 가려지지 않게 — 패널은 화면 위에 붙고(sticky), 안의 폼이 자체
-     스크롤된다. 그래서 끝까지 내려도 가운데 달력은 그대로 보인다. */
+     스크롤된다. sticky top은 '고정된 상단바(.studio-topbar top:0, ~57px)' 아래로 둬야 그 밑으로
+     안 숨는다(64). 스크롤을 따라 붙었을 때 폼이 바닥 근처까지 닿는다(아래 form max-height). */
   position: sticky;
-  top: 12px;
+  top: 64px;
   overflow: hidden;
   padding-left: 0;
   /* 폼을 오른쪽 벽에 고정 → 칸 폭이 0→464로 열릴 때 폼 오른쪽 끝은 제자리, 왼쪽이 드러나며
      오른쪽 벽에서 미닫이로 미끄러져 들어온다(왼쪽 정렬이면 reflow 와이프처럼 보인다). */
   justify-items: end;
 }
-/* 아바타 OFF에서도 편집창이 스크롤을 따라오게 — sticky가 이 레이아웃(grid+scroll)에서 안 붙어
-   'position:fixed'로 화면 오른쪽에 고정한다. grid col3(400px) 트랙은 그대로 자리를 예약해 달력
-   폭이 유지되고, fixed 편집창(폼폭 384)이 그 예약 칸 위에 겹친다. 편집창 열렸을 때만 fixed.
-   (아바타 scene은 아래 .avatar-scene 규칙이 더 구체적이라 폭·좌우 오프셋을 override한다.) */
 .studio-workspace.editor-open .event-editor-panel {
-  position: fixed;
-  top: 148px;
-  right: 18px;
-  bottom: 8px;
-  width: 384px;
-  padding-left: 0;
-  overflow-y: auto;
-  z-index: 5;
-  animation: ed-fixed-in 0.4s cubic-bezier(0.25, 1, 0.5, 1) both;
-}
-/* fixed 패널이 스크롤을 맡으므로 폼 자체 max-height는 푼다(이중 스크롤 방지). */
-.studio-workspace.editor-open .event-editor-panel form {
-  max-height: none;
+  padding-left: var(--space-4); /* 16 — 달력과의 거터(폼 왼쪽). 위 컬럼폭 400과 물림(384+16). */
 }
 .event-editor-panel form {
   width: 384px; /* 폭 고정 → 컬럼 애니메이션 동안 reflow 없이 슬라이드. 트랙 400 - 좌거터 16. */
-  /* 헤더(상단바·액션바·단축키줄 ~150px)를 빼서 폼이 처음부터 화면 안에 다 들어오게 →
-     페이지(옆 달력)를 안 밀고 폼만 스크롤해 맨 끝(공지/방문 그래프)까지 닿는다. */
-  max-height: calc(100dvh - 150px);
+  /* 폼이 자체 스크롤(overflow-y:auto). max-height를 크게 잡아 스크롤을 따라 붙었을 때(sticky top:64)
+     화면 바닥 근처까지 닿게 한다(64 + (100dvh-74) ≈ 100dvh-10). 저장 바는 폼 하단 sticky라 항상 도달.
+     페이지 최상단(안 스크롤)에선 폼이 화면 밑으로 조금 넘칠 수 있으나 살짝 내리면 붙어서 다 보인다. */
+  max-height: calc(100dvh - 74px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
