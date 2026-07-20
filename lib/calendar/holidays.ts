@@ -6,11 +6,13 @@
 
 import { getWorldCupMark } from "@/lib/calendar/worldcup";
 
+export type MarkKind = "wc" | "wc-korea" | "wc-korea-win" | "wc-korea-done" | "wc-final";
 export type DayMark = {
-  name: string;
-  sub?: string; // 부가 표기(월드컵 경기 대진·스코어). 있으면 칸 본문에 별도 칩으로 내린다.
+  name: string; // 헤더(날짜숫자 옆) 표기 — 공휴일/절기/복날/기념일/월드컵 단계(개막·32강). 경기만 있는 날은 "".
   isHoliday: boolean; // true면 빨간날(공휴일/대체공휴일), false면 단순 표기(기념일/절기)
-  kind?: "wc" | "wc-korea" | "wc-korea-win" | "wc-korea-done" | "wc-final"; // 월드컵 표기는 특별 스타일(화려하게)
+  kind?: MarkKind; // 헤더 마크 스타일(월드컵 단계표기)
+  // 월드컵 '경기'(대진·스코어)는 헤더가 아니라 칸 본문 칩으로 낸다. 헤더 슬롯은 절기·복날 등에 양보.
+  match?: { text: string; kind: MarkKind; celebrate: "win" | "done" | "cheer" };
 };
 
 // 매년 고정(양력) 공휴일 — 빨간날
@@ -120,6 +122,13 @@ const SAMBOK_YEARLY: Record<string, string> = {
   "2026-07-15": "🍗 초복",
   "2026-07-25": "🍗 중복",
   "2026-08-14": "🍗 말복"
+};
+
+// 정월대보름(음력 1/15) — 표기만. 오곡밥·부럼. 음력이라 연도별(설날+14일).
+const DAEBOREUM_YEARLY: Record<string, string> = {
+  "2026-03-03": "🌕 정월대보름",
+  "2027-02-20": "🌕 정월대보름",
+  "2028-02-09": "🌕 정월대보름"
 };
 
 // 스트리머 데뷔일(이 날부터 D+ 기록)
@@ -419,66 +428,70 @@ function substituteFixedFromHoliday(isoDate: string): string | null {
   return null;
 }
 
-export function getDayMark(isoDate: string): DayMark | null {
+function wcKind(wc: NonNullable<ReturnType<typeof getWorldCupMark>>): MarkKind {
+  return wc.result === "win"
+    ? "wc-korea-win"
+    : wc.result // 끝난 무/패 — 다가오는 경기 빨강 테두리 대신 차분한 마감 스타일
+      ? "wc-korea-done"
+      : wc.isKorea
+        ? "wc-korea"
+        : wc.isFinal
+          ? "wc-final"
+          : "wc";
+}
+
+// 헤더(날짜숫자 옆)에 뜰 마크 — 우선순위 순. 월드컵 '경기'(스코어 있는 날)는 여기서 제외하고
+// 칸 본문 칩으로 따로 낸다(아래 getDayMark). 단, 월드컵 '단계표기'(개막/32강/…)는 헤더에 남긴다.
+function getHeaderMark(isoDate: string, wc: ReturnType<typeof getWorldCupMark>): DayMark | null {
   const md = isoDate.slice(5);
 
-  if (HOLIDAYS_YEARLY[isoDate]) {
-    return { name: HOLIDAYS_YEARLY[isoDate], isHoliday: true };
-  }
-  if (HOLIDAYS_FIXED[md]) {
-    return { name: HOLIDAYS_FIXED[md], isHoliday: true };
-  }
+  if (HOLIDAYS_YEARLY[isoDate]) return { name: HOLIDAYS_YEARLY[isoDate], isHoliday: true };
+  if (HOLIDAYS_FIXED[md]) return { name: HOLIDAYS_FIXED[md], isHoliday: true };
   const fixedFrom = HOLIDAYS_FIXED_FROM[md];
   if (fixedFrom && Number(isoDate.slice(0, 4)) >= fixedFrom.fromYear) {
     return { name: fixedFrom.name, isHoliday: true };
   }
   const sub = substituteFixedFromHoliday(isoDate);
-  if (sub) {
-    return { name: sub, isHoliday: true };
-  }
-  // 월드컵 표기(개막/단계/한국 경기)는 빨간날 다음, 기념일·절기보다 우선. 화려한 스타일용 kind 부여.
-  const wc = getWorldCupMark(isoDate);
-  if (wc) {
-    return {
-      name: wc.name,
-      sub: wc.sub,
-      isHoliday: false,
-      kind:
-        wc.result === "win"
-          ? "wc-korea-win"
-          : wc.result // 끝난 무/패 — 다가오는 경기 빨강 테두리 대신 차분한 마감 스타일
-            ? "wc-korea-done"
-            : wc.isKorea
-              ? "wc-korea"
-              : wc.isFinal
-                ? "wc-final"
-                : "wc"
-    };
-  }
-  // 스트리머 기념일은 절기/일반 기념일보다 우선 표기
-  if (STREAMER_ONCE[isoDate]) {
-    return { name: STREAMER_ONCE[isoDate], isHoliday: false };
-  }
+  if (sub) return { name: sub, isHoliday: true };
+  // 월드컵 '단계표기'(경기 아님: 개막/32강/16강/8강)만 헤더에. 경기는 본문 칩으로(getDayMark).
+  if (wc && !wc.isMatch) return { name: wc.name, isHoliday: false, kind: wcKind(wc) };
+  if (STREAMER_ONCE[isoDate]) return { name: STREAMER_ONCE[isoDate], isHoliday: false };
   const annual = STREAMER_ANNUAL[md];
   if (annual) {
     const name = annual(isoDate);
-    if (name) {
-      return { name, isHoliday: false };
-    }
+    if (name) return { name, isHoliday: false };
   }
   const debut = debutMark(isoDate);
-  if (debut) {
-    return { name: debut, isHoliday: false };
-  }
-  if (SAMBOK_YEARLY[isoDate]) {
-    return { name: SAMBOK_YEARLY[isoDate], isHoliday: false };
-  }
-  if (MARKS_YEARLY[isoDate]) {
-    return { name: MARKS_YEARLY[isoDate], isHoliday: false };
-  }
-  if (MARKS_FIXED[md]) {
-    return { name: MARKS_FIXED[md], isHoliday: false };
-  }
+  if (debut) return { name: debut, isHoliday: false };
+  if (DAEBOREUM_YEARLY[isoDate]) return { name: DAEBOREUM_YEARLY[isoDate], isHoliday: false };
+  if (SAMBOK_YEARLY[isoDate]) return { name: SAMBOK_YEARLY[isoDate], isHoliday: false };
+  if (MARKS_YEARLY[isoDate]) return { name: MARKS_YEARLY[isoDate], isHoliday: false };
+  if (MARKS_FIXED[md]) return { name: MARKS_FIXED[md], isHoliday: false };
   return null;
+}
+
+export function getDayMark(isoDate: string): DayMark | null {
+  const wc = getWorldCupMark(isoDate);
+  // 월드컵 '경기'(스코어/한국전)는 칸 본문 칩으로 — 헤더 슬롯은 절기·복날(초복)·기념일에 양보한다.
+  const match =
+    wc && wc.isMatch
+      ? {
+          text: wc.sub ? `${wc.name} ${wc.sub}` : wc.name,
+          kind: wcKind(wc),
+          celebrate: (wc.result === "win" ? "win" : wc.result ? "done" : "cheer") as
+            | "win"
+            | "done"
+            | "cheer"
+        }
+      : undefined;
+
+  const header = getHeaderMark(isoDate, wc);
+  if (!header && !match) return null;
+  return {
+    name: header?.name ?? "",
+    isHoliday: header?.isHoliday ?? false,
+    kind: header?.kind,
+    match
+  };
 }
 

@@ -2391,6 +2391,8 @@ button.day-mark.celebratable:active { transform: scale(0.88); }
    경기 결과는 여기로 내려, 헤더가 다른 날과 같은 1줄로 통일되고(리듬) 국가 풀네임이 넉넉한
    본문 폭에 한 줄로 들어온다(균형). 결승은 금빛, 그 외 경기는 월드컵 보라 톤. */
 .day-wc-match {
+  display: block;
+  width: calc(100% - 8px);
   margin: 3px 4px 0;
   padding: 2px 8px;
   border-radius: var(--r-pill, 999px);
@@ -2404,11 +2406,38 @@ button.day-mark.celebratable:active { transform: scale(0.88); }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  cursor: pointer;
+  transition:
+    transform var(--dur-1) var(--ease),
+    filter var(--dur-1) var(--ease);
 }
+button.day-wc-match {
+  -webkit-appearance: none;
+  appearance: none;
+  font-family: inherit;
+}
+.day-wc-match:hover {
+  filter: brightness(1.05);
+}
+.day-wc-match:active {
+  transform: scale(0.96);
+}
+/* 결승 — 금빛(우승 축하). */
 .day-wc-match.wc-final {
   background: rgb(244 183 64 / 20%);
   border-color: rgb(214 158 10 / 42%);
   color: #915d05;
+}
+/* 한국 경기 — 승은 금빛, 무/패는 차분한 회색 마감. */
+.day-wc-match.wc-korea-win {
+  background: rgb(244 183 64 / 22%);
+  border-color: rgb(214 158 10 / 46%);
+  color: #915d05;
+}
+.day-wc-match.wc-korea-done {
+  background: rgb(148 140 168 / 12%);
+  border-color: rgb(120 113 140 / 30%);
+  color: #5b5570;
 }
 
 /* 한국이 이긴 날 — 금빛 글자만. 셀 금테 하이라이트·은은한 맥동 글로우는 제거(탭 시 축포로 충분).

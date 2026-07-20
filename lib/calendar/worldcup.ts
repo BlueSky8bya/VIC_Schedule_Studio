@@ -6,8 +6,10 @@
 // 정확한 대진이 확정되면 owner가 이 배열만 채우면 달력(시청자+편집실)에 자동 표시된다.
 
 export type WorldCupMark = {
-  name: string; // 날짜칸 헤더에 뜨는 짧은 표기(라운드명·이모지). 예: "🏆 결승"
-  sub?: string; // 경기 대진·스코어(있으면 칸 본문에 별도 칩으로). 예: "스페인 1-0 아르헨티나"
+  name: string; // 라운드명·이모지. 예: "🏆 결승" / "⚽ 4강" / "⚽ 32강"
+  sub?: string; // 경기 대진·스코어. 예: "스페인 1-0 아르헨티나"
+  isMatch?: boolean; // '경기'(대진·스코어가 있는 날: 4강/3·4위전/결승/한국전)면 true → 칸 본문 칩으로
+  //  낸다(헤더는 절기·복날 등에 양보). '단계표기'(개막/32강/16강/8강)는 false → 헤더 pill 유지.
   isFinal?: boolean; // 결승 — 칸 강조용
   isKorea?: boolean; // 대한민국 경기 — 칸 강조용
   result?: "win" | "draw" | "loss"; // 끝난 한국 경기 결과 — 승이면 달력 탭 시 축포 셀레브레이션
@@ -49,11 +51,16 @@ export const KOREA_MATCHES: Record<string, { name: string; result?: "win" | "dra
 export function getWorldCupMark(isoDate: string): WorldCupMark | null {
   const kr = KOREA_MATCHES[isoDate];
   if (kr) {
-    return { name: kr.name, isKorea: true, result: kr.result };
+    return { name: kr.name, isKorea: true, result: kr.result, isMatch: true };
   }
   const stage = STAGE_MARKS[isoDate];
   if (stage) {
-    return { name: stage.name, sub: stage.sub, isFinal: isoDate === WORLD_CUP_END };
+    return {
+      name: stage.name,
+      sub: stage.sub,
+      isFinal: isoDate === WORLD_CUP_END,
+      isMatch: Boolean(stage.sub) // 스코어 있으면 경기(4강~결승), 없으면 단계표기(개막/32강/…)
+    };
   }
   return null;
 }

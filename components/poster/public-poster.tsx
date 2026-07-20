@@ -2785,7 +2785,7 @@ export function PublicPoster({
         className={`public-day ${cell.inCurrentMonth ? "" : "outside"} ${
           day.isToday ? "today" : ""
         }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}${
-          day.markKind === "wc-korea-win" ? " day-win" : ""
+          day.wcMatch?.kind === "wc-korea-win" ? " day-win" : ""
         }`}
         data-pop={popTier ?? undefined}
         data-cell-index={cellIndex}
@@ -2849,9 +2849,31 @@ export function PublicPoster({
             )
           ) : null}
         </div>
-        {/* 월드컵 경기 대진·스코어 — 헤더에 욱여넣지 않고 칸 본문 전체폭 칩으로(통일·균형·리듬). */}
-        {day.markSub ? (
-          <div className={`day-wc-match${day.markKind ? ` ${day.markKind}` : ""}`}>{day.markSub}</div>
+        {/* 월드컵 경기 대진·스코어 — 헤더에 욱여넣지 않고 칸 본문 전체폭 칩으로(통일·균형·리듬).
+            헤더 슬롯은 초복·절기 등에 양보. 탭하면 이 칩에서 빵빠레(한국 승=큰 폭죽). */}
+        {day.wcMatch ? (
+          interactive ? (
+            <button
+              type="button"
+              className={`day-wc-match ${day.wcMatch.kind}`}
+              onClick={(e) => {
+                const r = e.currentTarget.getBoundingClientRect();
+                popBurst(
+                  r.left + r.width / 2,
+                  r.top + r.height / 2,
+                  day.wcMatch!.celebrate === "win"
+                    ? "win"
+                    : day.wcMatch!.celebrate === "done"
+                      ? "console"
+                      : "cheer"
+                );
+              }}
+            >
+              {day.wcMatch.text}
+            </button>
+          ) : (
+            <div className={`day-wc-match ${day.wcMatch.kind}`}>{day.wcMatch.text}</div>
+          )
         ) : null}
         <div
           className="day-events"
@@ -3253,34 +3275,39 @@ export function PublicPoster({
                   <span className="agenda-wd">{WEEKDAYS[cell.weekday]}</span>
                 </div>
                 <div className="agenda-day-list">
-                  {mark ? (
-                    interactive ? (
+                  {mark ? (() => {
+                    // 모바일 아젠다는 폭이 넉넉해 헤더 마크(초복/절기)와 월드컵 경기를 한 pill에 함께.
+                    const markKind = mark.match?.kind ?? mark.kind;
+                    const markText = mark.match
+                      ? mark.name
+                        ? `${mark.name} · ${mark.match.text}`
+                        : mark.match.text
+                      : mark.name;
+                    if (!markText) return null;
+                    return interactive ? (
                       <button
                         type="button"
                         className={`agenda-mark celebratable ${mark.isHoliday ? "holiday" : ""}${
-                          mark.kind === "wc-korea-win" ? " wc-korea-win" : ""
+                          markKind === "wc-korea-win" ? " wc-korea-win" : ""
                         }`}
                         onClick={(e) => {
                           const r = e.currentTarget.getBoundingClientRect();
+                          const celeb = mark.match?.celebrate;
                           popBurst(
                             r.left + r.width / 2,
                             r.top + r.height / 2,
-                            mark.kind === "wc-korea-win"
-                              ? "win"
-                              : mark.kind === "wc-korea-done"
-                                ? "console"
-                                : "cheer"
+                            celeb === "win" ? "win" : celeb === "done" ? "console" : "cheer"
                           );
                         }}
                       >
-                        {mark.sub ? `${mark.name} ${mark.sub}` : mark.name}
+                        {markText}
                       </button>
                     ) : (
                       <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>
-                        {mark.sub ? `${mark.name} ${mark.sub}` : mark.name}
+                        {markText}
                       </span>
-                    )
-                  ) : null}
+                    );
+                  })() : null}
                   {list.length === 0 ? (
                     // DB의 null을 그대로 읽어주던 문구("예정된 공개 일정 없음") 대신 사람 말로.
                     // 쉬는 날은 누락된 레코드가 아니라 쉬는 날이다.

@@ -3816,9 +3816,13 @@ export function StudioShell({
                     <span className="agenda-wd">{WEEKDAYS[cell.weekday]}</span>
                   </div>
                   <div className="agenda-day-list">
-                    {mark ? (
+                    {mark && (mark.name || mark.match) ? (
                       <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>
-                        {mark.name}
+                        {mark.match
+                          ? mark.name
+                            ? `${mark.name} · ${mark.match.text}`
+                            : mark.match.text
+                          : mark.name}
                       </span>
                     ) : null}
                     {dayEvents.length === 0 ? (
@@ -5088,6 +5092,10 @@ export function StudioShell({
                       </em>
                     ) : null}
                   </div>
+                  {/* 월드컵 경기 대진·스코어 — 헤더(초복 등)와 별개로 칸 본문 칩(편집실도 시청자와 동일). */}
+                  {day.wcMatch ? (
+                    <div className={`day-wc-match ${day.wcMatch.kind}`}>{day.wcMatch.text}</div>
+                  ) : null}
                   <div
                     className="studio-event-list"
                     style={
