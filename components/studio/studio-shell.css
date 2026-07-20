@@ -4923,7 +4923,8 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
   display: grid;
   gap: 2px;
   margin: 0;
-  padding: 0 0 0 16px;
+  /* 세로 레일↔서브 텍스트 간격 16→8(절반). 뷰어 .event-subs(8)와 통일. */
+  padding: 0 0 0 8px;
   border-left: 2px solid color-mix(in srgb, currentColor 30%, transparent);
   list-style: none;
   font-weight: 800;
