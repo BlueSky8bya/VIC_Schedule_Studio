@@ -58,38 +58,38 @@ function deriveInk(rgb: [number, number, number]): string {
   return relLuma(rgb) > 0.4 ? "#0a0a0a" : "#ffffff";
 }
 
-// 실효 팔레트: 대분류가 bg_hex를 직접 고르면 그 colorKey의 팔레트 엔트리를 커스텀 색으로 덮어쓴다
-// (colorKey는 top-level 태그당 유일 — usedByOther가 보장). 이러면 색 lookup(getEventTagColors·
-// visualOf)이 전부 이 실효 팔레트를 통해 bg_hex를 자동 반영한다. bg_hex 없으면 원 팔레트 그대로 →
-// 렌더 불변. 텍스트/보더는 bg에서 파생(글자색은 eventInkStyle이 최종 AA 보정).
-function buildEffectivePalette(
+// 커스텀 색(bg_hex) '태그별 격리'. bg_hex가 있는 대분류엔 '합성 유일 colorKey'(bghex:<id>)를 부여하고
+// 그 색을 담은 팔레트 엔트리를 따로 추가한다 → 그 태그(+자식)만 커스텀 색을 쓰고, 같은 '원래 colorKey'를
+// 공유하는 다른 대분류는 원 팔레트를 그대로 쓴다.
+//
+// ★ 왜 이렇게: 예전엔 bg_hex를 '원래 colorKey의 팔레트 엔트리'에 덮어썼다. colorKey가 대분류당 유일하다는
+//   가정이었지만 실제로는 여러 대분류가 같은 색조 key를 공유할 수 있어(예: 휴뱅·구플뱅이 둘 다 'gray'),
+//   한 태그 커스텀 색이 같은 key의 다른 태그까지 바꾸는 라우팅 버그가 났다. 합성 유일 key로 격리한다.
+function isolateCustomColors(
   tags: BroadcastTag[],
   palette: ColorPaletteEntry[]
-): ColorPaletteEntry[] {
-  const overrides = new Map<string, ColorPaletteEntry>();
-  for (const t of tags) {
-    if ((t.parentId ?? null) !== null) continue; // 자식은 색을 못 가짐(상속)
+): { tags: BroadcastTag[]; palette: ColorPaletteEntry[] } {
+  const extra: ColorPaletteEntry[] = [];
+  const remapped = tags.map((t) => {
+    if ((t.parentId ?? null) !== null) return t; // 자식은 색을 못 가짐(상속)
     const hex = t.bgHex;
-    if (!hex) continue;
+    if (!hex) return t;
     const rgb = hexToRgb(hex);
-    if (!rgb) continue;
+    if (!rgb) return t;
+    const synthKey = `bghex:${t.id}`;
     const base = palette.find((p) => p.key === t.colorKey);
-    overrides.set(t.colorKey, {
-      key: t.colorKey,
+    extra.push({
+      key: synthKey,
       name: base?.name ?? t.displayName,
       bgColor: hex,
       textColor: deriveInk(rgb),
       borderColor: deriveBorder(rgb),
       sortOrder: base?.sortOrder ?? t.sortOrder
     });
-  }
-  if (overrides.size === 0) return palette;
-  const merged = palette.map((p) => overrides.get(p.key) ?? p);
-  // 팔레트에 없던 colorKey(커스텀 색이 새 key를 쓸 때)도 추가.
-  for (const [key, entry] of overrides) {
-    if (!merged.some((p) => p.key === key)) merged.push(entry);
-  }
-  return merged;
+    return { ...t, colorKey: synthKey };
+  });
+  if (extra.length === 0) return { tags, palette };
+  return { tags: remapped, palette: [...palette, ...extra] };
 }
 
 // 태그 → 최상위 대분류(부모 체인 끝). categoryColorKey/categoryKind(month.ts)와 동일 규칙이되,
@@ -118,10 +118,13 @@ export function createTagVisualResolver(
   tags: BroadcastTag[],
   palette: ColorPaletteEntry[]
 ): TagVisualResolver {
-  const byId = new Map(tags.map((t) => [t.id, t] as const));
+  // bg_hex가 있는 대분류는 합성 유일 colorKey로 격리해(같은 색조 key 공유 태그로 색이 새지 않게)
+  // 그 태그와 팔레트를 함께 remap한다. 아래 모든 색 lookup은 이 격리된 tags/palette를 쓴다.
+  const iso = isolateCustomColors(tags, palette);
+  const isoTags = iso.tags;
+  const effPalette = iso.palette;
+  const byId = new Map(isoTags.map((t) => [t.id, t] as const));
   const rootCache = new Map<string, RootInfo>();
-  // bg_hex를 반영한 실효 팔레트로 모든 색을 푼다(없으면 원 팔레트 그대로 → 렌더 불변).
-  const effPalette = buildEffectivePalette(tags, palette);
   const palByKey = new Map(effPalette.map((p) => [p.key, p] as const));
 
   const rootOf = (tagId: string): RootInfo | null => {
@@ -164,9 +167,9 @@ export function createTagVisualResolver(
 
   return {
     visualOf,
-    // 이벤트 단위 분배는 기존 함수에 위임(dedup·순서 동일). 단 실효 팔레트를 넘겨 bg_hex를 반영한다
-    // (bg_hex 없으면 원 팔레트라 결과 동일 = 렌더 불변).
-    eventFills: (event) => getEventTagColors(event, tags, effPalette),
-    eventExtras: (event) => getExtraCategoryColors(event, tags, effPalette)
+    // 이벤트 단위 분배는 기존 함수에 위임(dedup·순서 동일). 격리된 tags/palette를 넘겨 커스텀 색을
+    // 태그별로 반영한다(bg_hex 없으면 원 tags/palette와 동일 = 렌더 불변).
+    eventFills: (event) => getEventTagColors(event, isoTags, effPalette),
+    eventExtras: (event) => getExtraCategoryColors(event, isoTags, effPalette)
   };
 }

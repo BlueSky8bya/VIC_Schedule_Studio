@@ -228,3 +228,30 @@ describe("resolver parity — createTagVisualResolver", () => {
     }
   });
 });
+
+// ── 커스텀 색(bg_hex) '태그별 격리' — 같은 colorKey를 공유해도 한 태그 커스텀 색이 다른 태그로 새지 않는다 ──
+describe("custom bg_hex isolation (라우팅 버그 방지)", () => {
+  // 휴뱅·구플뱅이 둘 다 color_key 'gray'를 공유하고, 구플뱅만 bg_hex를 커스텀한 실제 사례.
+  const pal: ColorPaletteEntry[] = [
+    { key: "gray", name: "그레이", bgColor: "#e9ecef", textColor: "#333", borderColor: "#ced4da", sortOrder: 1 }
+  ];
+  const two: BroadcastTag[] = [
+    tag({ id: "dayoff", colorKey: "gray", kind: "content" }), // 휴뱅 — bg_hex 없음
+    tag({ id: "guple", colorKey: "gray", kind: "modifier", bgHex: "#ebebeb" }) // 구플뱅 — 커스텀
+  ];
+
+  it("한 태그의 bg_hex가 같은 colorKey를 공유하는 다른 태그로 새지 않는다", () => {
+    const r = createTagVisualResolver(two, pal);
+    expect(r.visualOf("guple").bg).toBe("#ebebeb"); // 커스텀 색
+    expect(r.visualOf("dayoff").bg).toBe("#e9ecef"); // 원 팔레트 gray 유지(안 샘)
+    expect(r.visualOf("dayoff").bg).not.toBe("#ebebeb");
+  });
+
+  it("이벤트 칸 색도 태그별로 격리된다", () => {
+    const r = createTagVisualResolver(two, pal);
+    // 휴뱅(content)만 붙은 이벤트 → 원 gray
+    expect(r.eventFills(ev(["dayoff"]))[0]?.bgColor).toBe("#e9ecef");
+    // 구플뱅(modifier)만 붙은 이벤트 → 점 줄(extras)에 커스텀 색
+    expect(r.eventExtras(ev(["guple"]))[0]?.bgColor).toBe("#ebebeb");
+  });
+});
