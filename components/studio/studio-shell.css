@@ -3252,12 +3252,28 @@ html[data-reduce-motion] .role-segment button.active {
 }
 .studio-shell.avatar-scene .event-editor-panel {
   grid-column: 3;
+  /* 아바타 도크(fixed)처럼 편집창도 스크롤을 따라오게 — 달력을 아래로 내려도 편집창이 화면에
+     남는다. 칸(col3)이 달력보다 짧아도 sticky가 화면 상단에 붙고, 내용이 길면 안쪽만 스크롤. */
+  position: sticky;
+  top: 12px;
+  align-self: start;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
 }
 /* 아바타 scene 폼도 고정폭(312 = 패널 328 - 좌거터 16). width:100%면 칸이 0→345 늘어나는 동안
    폼도 같이 좁아져 내용이 세로로 꾸겨졌다(슬라이드 인 중 우그러짐). 고정폭이면 폼은 그대로고
    overflow:hidden + 우측정렬(justify-items:end)로 오른쪽에서 깔끔히 미끄러져 들어온다. */
 .studio-shell.avatar-scene .event-editor-panel form {
   width: 312px; /* 328 - 거터 16 */
+}
+/* 아바타 scene(좁은 편집창)에선 주저리 설명·힌트를 숨겨 공간을 아낀다 — 공개범위/업도움/떡밥의
+   부가 설명은 좁은 폭에서 자리만 먹는다. 라벨·값·컨트롤은 남기고 '문장형 설명'만 접는다. */
+.studio-shell.avatar-scene .event-editor-panel .teaser-when-hint,
+.studio-shell.avatar-scene .event-editor-panel .dhint,
+.studio-shell.avatar-scene .event-editor-panel .dslider-head > span:first-child,
+.studio-shell.avatar-scene .event-editor-panel .scope-locked-note,
+.studio-shell.avatar-scene .event-editor-panel .scope-opt-sub {
+  display: none;
 }
 /* 좁아진 달력 칸이 세로로 뚱뚱해지지 않게 최소높이를 낮춘다. */
 .studio-shell.avatar-scene .studio-day {
