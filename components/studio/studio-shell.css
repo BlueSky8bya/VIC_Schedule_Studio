@@ -3568,8 +3568,24 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
      오른쪽 벽에서 미닫이로 미끄러져 들어온다(왼쪽 정렬이면 reflow 와이프처럼 보인다). */
   justify-items: end;
 }
+/* 아바타 OFF에서도 편집창이 스크롤을 따라오게 — sticky가 이 레이아웃(grid+scroll)에서 안 붙어
+   'position:fixed'로 화면 오른쪽에 고정한다. grid col3(400px) 트랙은 그대로 자리를 예약해 달력
+   폭이 유지되고, fixed 편집창(폼폭 384)이 그 예약 칸 위에 겹친다. 편집창 열렸을 때만 fixed.
+   (아바타 scene은 아래 .avatar-scene 규칙이 더 구체적이라 폭·좌우 오프셋을 override한다.) */
 .studio-workspace.editor-open .event-editor-panel {
-  padding-left: var(--space-4); /* 16 — 달력과의 거터(폼 왼쪽). 위 컬럼폭 400과 물림(384+16). */
+  position: fixed;
+  top: 148px;
+  right: 18px;
+  bottom: 8px;
+  width: 384px;
+  padding-left: 0;
+  overflow-y: auto;
+  z-index: 5;
+  animation: ed-fixed-in 0.4s cubic-bezier(0.25, 1, 0.5, 1) both;
+}
+/* fixed 패널이 스크롤을 맡으므로 폼 자체 max-height는 푼다(이중 스크롤 방지). */
+.studio-workspace.editor-open .event-editor-panel form {
+  max-height: none;
 }
 .event-editor-panel form {
   width: 384px; /* 폭 고정 → 컬럼 애니메이션 동안 reflow 없이 슬라이드. 트랙 400 - 좌거터 16. */
