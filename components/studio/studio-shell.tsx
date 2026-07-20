@@ -4540,13 +4540,13 @@ export function StudioShell({
                   📢 공지 쓰기
                 </button>
                 <button className="me-tool" onClick={() => setModal("dayVisit")} type="button">
-                  📈 방문 그래프
+                  📈 방문
                 </button>
               </div>
             ) : canEdit ? (
               <div className="me-tools">
                 <button className="me-tool" onClick={() => setModal("notice")} type="button">
-                  📢 {selectedDate} 공지 쓰기
+                  📢 공지 쓰기
                 </button>
               </div>
             ) : null}
@@ -5532,14 +5532,14 @@ export function StudioShell({
                   onClick={() => setModal("notice")}
                   type="button"
                 >
-                  📢 {selectedDate} 공지 쓰기
+                  📢 공지 쓰기
                 </button>
                 <button
                   className="button notice-open"
                   onClick={() => setModal("dayVisit")}
                   type="button"
                 >
-                  📈 {selectedDate} 방문 그래프
+                  📈 방문
                 </button>
               </>
             ) : canEdit ? (
@@ -5548,7 +5548,7 @@ export function StudioShell({
                 onClick={() => setModal("notice")}
                 type="button"
               >
-                📢 {selectedDate} 공지 쓰기
+                📢 공지 쓰기
               </button>
             ) : null}
           </form>
