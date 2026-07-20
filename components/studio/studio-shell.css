@@ -129,6 +129,52 @@
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
+/* 단축키 안내 접기/펼치기 — 기본은 접혀 '단축키 설명' 탭(역사다리꼴: 위 넓고 아래 좁음)만 보이고,
+   누르면 아래로 안내바가 펼쳐진다. 안내바가 늘 자리를 먹던 것을 줄여 달력을 조금이라도 넓게 본다. */
+.kbd-hints-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 0 8px;
+}
+.kbd-hints-wrap.open {
+  margin-bottom: 12px;
+}
+.kbd-hints-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 20px 5px;
+  border: 0;
+  background: color-mix(in srgb, var(--accent, #6b5bd6) 12%, #fff);
+  color: var(--accent, #6b5bd6);
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  /* 역사다리꼴 — 위가 넓고 아래가 좁은 탭 모양. */
+  clip-path: polygon(5% 0, 95% 0, 82% 100%, 18% 100%);
+  transition:
+    background var(--dur-1, 0.12s) var(--ease),
+    transform var(--dur-1, 0.12s) var(--ease);
+}
+.kbd-hints-toggle:hover {
+  background: color-mix(in srgb, var(--accent, #6b5bd6) 20%, #fff);
+}
+.kbd-hints-toggle:active {
+  transform: translateY(1px);
+}
+.kbd-hints-toggle svg {
+  transition: transform var(--dur-2, 0.2s) var(--ease);
+}
+.kbd-hints-wrap.open .kbd-hints-toggle svg {
+  transform: rotate(180deg);
+}
+/* 펼친 안내바는 토글 바로 아래에 하나로 붙는다. */
+.kbd-hints-wrap .kbd-hints {
+  width: 100%;
+  margin: 0;
+}
 .kbd-hints .kbd-hints-title {
   display: inline-flex;
   align-items: center;

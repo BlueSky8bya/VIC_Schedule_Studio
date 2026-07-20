@@ -474,6 +474,8 @@ export function StudioShell({
   // 공개 범위 + 옵션(미정·업도움·떡밥) 묶음은 기본으로 접혀 있다 — 대부분의 일정이 '모두 공개 +
   // 옵션 없음'이라 매번 펼칠 이유가 없다. 접힌 상태에서도 헤더 요약으로 현재 값이 보인다.
   const [scopeFoldOpen, setScopeFoldOpen] = useState(false);
+  // 단축키 안내바는 기본으로 접어 달력을 더 넓게 본다 — '단축키 설명' 탭을 누르면 펼쳐진다.
+  const [kbdHintsOpen, setKbdHintsOpen] = useState(false);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
   // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
   // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
@@ -4936,6 +4938,21 @@ export function StudioShell({
       {/* #9 키보드 단축키 안내바 — 웹(데스크톱)·소유자(canEdit)에서만. 달력 '위'에 옅게(아래에 두면
           하단 플로팅 바·접힘으로 잘 안 보여 위로 올림). */}
       {canEdit ? (
+        // 기본은 접어 달력을 넓게 — '단축키 설명' 탭(역사다리꼴)을 누르면 안내바가 펼쳐진다.
+        <div className={`kbd-hints-wrap${kbdHintsOpen ? " open" : ""}`}>
+          <button
+            type="button"
+            className="kbd-hints-toggle"
+            aria-expanded={kbdHintsOpen}
+            onClick={() => {
+              hapticTick();
+              setKbdHintsOpen((v) => !v);
+            }}
+          >
+            ⌨ 단축키 설명
+            <ChevronDown aria-hidden="true" size={13} />
+          </button>
+        {kbdHintsOpen ? (
         // 한 줄 칩 흐름 유지. 설명은 라벨 수준으로 짧게 — 키가 주인공이고 문장은 잡음이다.
         <div className="kbd-hints" aria-label="키보드 단축키 안내">
           <span className="kbd-hints-title">단축키</span>
@@ -4951,6 +4968,8 @@ export function StudioShell({
           <span><kbd>Ctrl</kbd>+클릭 다중 선택</span>
           <span><kbd>←</kbd><kbd>→</kbd> 이동</span>
           <span><kbd>Esc</kbd> 닫기</span>
+        </div>
+        ) : null}
         </div>
       ) : null}
 
