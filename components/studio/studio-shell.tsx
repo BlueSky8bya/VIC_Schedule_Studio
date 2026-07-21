@@ -3823,7 +3823,7 @@ export function StudioShell({
                       <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>
                         {mark.match
                           ? mark.name
-                            ? `${mark.name} · ${mark.match.text}`
+                            ? `${mark.match.text} · ${mark.name}`
                             : mark.match.text
                           : mark.name}
                       </span>

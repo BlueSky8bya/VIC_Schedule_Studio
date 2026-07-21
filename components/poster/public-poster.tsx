@@ -3280,7 +3280,7 @@ export function PublicPoster({
                     const markKind = mark.match?.kind ?? mark.kind;
                     const markText = mark.match
                       ? mark.name
-                        ? `${mark.name} · ${mark.match.text}`
+                        ? `${mark.match.text} · ${mark.name}`
                         : mark.match.text
                       : mark.name;
                     if (!markText) return null;

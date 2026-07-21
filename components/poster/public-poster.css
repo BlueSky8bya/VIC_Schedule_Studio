@@ -295,6 +295,11 @@
      (테마 색, 예: 월드컵 녹색)이 헤더 위로 삐져나온다(크림 테마일 땐 같은 색이라 안 보였음).
      헤더 자체 padding(9px)이 브라우저 바와의 숨 쉴 틈을 준다. */
   padding-top: 0;
+  /* 좌우 패딩을 22→14로 좁혀 아젠다 카드 폭을 편집실 모바일(.studio-mobile 14)과 동일하게.
+     같은 글자 수의 특별한 날 표기(예: 7/15 스코어·초복)가 시청자에서만 줄바꿈되던 것 해소.
+     데스크톱 포스터 서페이스(.public-calendar-shell 기본 22)는 건드리지 않는다. */
+  padding-left: 14px;
+  padding-right: 14px;
   /* 하단 고정 바에 마지막 카드가 가리지 않도록 여유. (안전영역 포함) */
   padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
 }
@@ -303,8 +308,10 @@
   position: sticky;
   top: 0;
   z-index: 8;
-  margin: 0 -22px 8px;
-  padding: 9px 22px 10px;
+  /* 좌우 14 — .agenda-mode 셸 패딩(14)과 맞춰 헤더가 화면 폭 끝까지 꽉 차게(full-bleed).
+     아젠다 셸 폭을 편집실 모바일(14)과 같게 맞추면서 이 값도 22→14로 내렸다. */
+  margin: 0 -14px 8px;
+  padding: 9px 14px 10px;
   background: linear-gradient(180deg, #fbf2df 72%, #f7eddb);
   border-bottom: 1px solid #e3d6bb;
   /* 2행 그리드: [여백 | 제목·월(가운데) | 계정변경·이메일(오른쪽)].

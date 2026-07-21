@@ -1260,6 +1260,164 @@
   transform: translateX(-50%) scale(1);
 }
 
+/* ── StackTrendChart(방문/컨텐츠/하트 6개월 트렌드) 구조 스타일 — 비로그인 시청자 '이 달 기록'은
+   이 공유 파일만 로드한다. 예전엔 이 vt-* 구조 규칙이 studio-shell.css(편집실 전용)에만 있어
+   시청자에겐 6개월 그래프가 레이아웃 없이 깨졌다. 여기로 옮겨(공유) 양쪽 다 그려지게 한다. ── */
+.vt-chart {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  height: 132px;
+}
+.vt-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.vt-col:hover .vt-fill {
+  filter: brightness(1.08);
+}
+.vt-barwrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+}
+.vt-bar {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 5px 5px 2px 2px;
+  background: #f0ecf9;
+  transition: height 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
+}
+.vt-fill {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column-reverse;
+  border-radius: inherit;
+  overflow: hidden;
+}
+.vt-seg {
+  width: 100%;
+  min-height: 3px;
+}
+.vt-day {
+  margin-top: 4px;
+  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #9a93ad;
+}
+.vt-legend {
+  list-style: none;
+  margin: 9px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+.vt-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #6b6480;
+}
+.vt-legend li span {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.vt-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: clamp(48px, var(--tip-x, 50%), calc(100% - 48px));
+  transform: translateX(-50%);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 86px;
+  padding: 7px 9px;
+  background: #3a3550;
+  color: #fff;
+  border-radius: 9px;
+  white-space: nowrap;
+  z-index: 8;
+  box-shadow: 0 8px 20px -8px rgb(58 53 80 / 60%);
+  animation: vt-tip-in 0.12s var(--ease, ease);
+}
+.vt-tip-float {
+  bottom: auto;
+  left: auto;
+  max-width: min(260px, 92vw);
+  box-shadow: 0 14px 34px -10px rgb(20 16 35 / 55%);
+}
+@keyframes vt-tip-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.vt-tip > strong {
+  font-size: 12px;
+  font-weight: 900;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgb(255 255 255 / 18%);
+}
+.vt-tip-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.vt-tip-grid {
+  min-width: 150px;
+  max-width: min(240px, 90vw);
+  left: clamp(122px, var(--tip-x, 50%), calc(100% - 122px));
+}
+.vt-tip-grid .vt-tip-rows {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 12px;
+}
+.vt-tip-note {
+  font-size: 10px;
+  font-weight: 800;
+  color: #cfc9e0;
+}
+.vt-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.vt-tip-row i {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex: none;
+}
+.vt-tip-row b {
+  margin-left: auto;
+  padding-left: 10px;
+  font-weight: 900;
+}
+@media (min-width: 641px) {
+  .vt-legend li {
+    font-size: 13px;
+  }
+  .vt-day {
+    font-size: 11px;
+  }
+}
+
 .bcast-trend {
   display: flex;
   flex-direction: column;
