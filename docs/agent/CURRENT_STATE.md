@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-07-18
+Last Updated: 2026-07-21
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -28,6 +28,14 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
     [ADR-0008](decisions/ADR-0008-public-insights-aggregate-rpc.md) (마이그레이션 0049·0050 적용 완료)
   - 편집기: 공개 범위·옵션 접기(기본 접힘), 단축키 안내 축약, **새 일정 = Alt+N 하나로 통일**,
     카드 순서 드래그 삽입선 판정(카드 중심선 기준)
+- **2026-07-21에 끝난 것**(`6c52a2a`): 시청자/편집실 다듬기 3종 —
+  (1) 비로그인 '이 달 기록'의 최근 6개월 트렌드(StackTrendChart, vt-*)가 스타일 없이 깨지던 것.
+  vt-* 구조 규칙이 `studio-shell.css`(=편집실 전용)에만 있어서 — 2026-07-17 하이라이트 카드와 **동일
+  버그 클래스**. 구조 규칙을 공유 `insights-charts.css`로 옮겨 해결(anon playwright로 3차트 렌더 확인).
+  (2) 모바일 시청자 아젠다 폭(좌우 22)이 편집실(`.studio-mobile` 14)보다 좁아 같은 글자 수 특별한 날
+  표기가 시청자에서만 줄바꿈 → `.agenda-mode` 좌우 14로 통일(데스크톱 서페이스 기본 22 불변). 색상
+  필터 레일은 시청자 104 vs 편집실 92인데 시청자 레일은 '이 달 기록'·미니게임·'내 관심' 라벨이 92↓에서
+  잘려 유지 → 잔여 ~12px 폭차는 의도. (3) 특별한 날 조합 표기 순서 '이름·경기'→'경기·이름'.
 - **2026-07-17에 끝난 것**: '이 달 기록'·인사이트 잘림 3종 —
   (1) 하이라이트 카드 스타일이 `studio-shell.css`(= (studio) 레이아웃 전용)에만 있어 **비로그인
   시청자에겐 통째로 안 붙던 버그**를 발견해 `insights-charts.css`로 이동(차트가 이미 같은 이유로
