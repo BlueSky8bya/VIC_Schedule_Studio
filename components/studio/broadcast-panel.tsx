@@ -1422,14 +1422,32 @@ export function BroadcastPanel({
         onClose();
         return;
       }
-      // Delete/Backspace = 선택된 날짜 카드 일괄 제거(통합 히스토리 1건 — Ctrl+Z로 복원).
-      if (colSelRef.current.size > 0 && (e.key === "Delete" || e.key === "Backspace")) {
+      // Delete/Backspace = 선택된 것 일괄 삭제(카드·획 각각 히스토리 1건 — Ctrl+Z로 복원).
+      if (
+        (colSelRef.current.size > 0 || strokeSelRef.current.length > 0) &&
+        (e.key === "Delete" || e.key === "Backspace")
+      ) {
         e.preventDefault();
-        const before = [...sentRef.current];
-        const after = before.filter((k) => !colSelRef.current.has(k));
-        pushHist({ t: "sent", before, after, colsBefore: new Map(colsRef.current) });
-        onRestoreSent(after);
-        setColSel(new Set());
+        // 선택된 획 삭제 — 장면에서 제거(scene 스냅샷으로 undo 가능).
+        if (strokeSelRef.current.length > 0) {
+          const dead = new Set(strokeSelRef.current);
+          const beforeScene = [...store.strokes()];
+          const afterScene = beforeScene.filter((s) => !dead.has(s));
+          if (afterScene.length !== beforeScene.length) {
+            store.setStrokes(afterScene);
+            pushHist({ t: "scene", before: beforeScene, after: afterScene });
+            for (const l of layersRef.current) replayLayerFnRef.current(l.id);
+            setStrokeVersion((v) => v + 1);
+          }
+          setStrokeSel([]);
+        }
+        if (colSelRef.current.size > 0) {
+          const before = [...sentRef.current];
+          const after = before.filter((k) => !colSelRef.current.has(k));
+          pushHist({ t: "sent", before, after, colsBefore: new Map(colsRef.current) });
+          onRestoreSent(after);
+          setColSel(new Set());
+        }
         hapticTick();
         return;
       }
@@ -1493,7 +1511,7 @@ export function BroadcastPanel({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, rangeSelect, doUndo, doRedo, pushHist, onRestoreSent]);
+  }, [onClose, rangeSelect, doUndo, doRedo, pushHist, onRestoreSent, store]);
 
   // 최초 포커스 + body scroll lock(열림 동안 뒤 화면 스크롤 금지).
   useEffect(() => {
