@@ -5063,13 +5063,34 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
   font-size: calc(10.5px * var(--cal-zoom, 1));
 }
 
-/* A안 M2: 확대 중 상세 팝오버 — 방송 화면에서 읽히도록 큼직하게. */
+/* 확대 중 하단 중앙 플로팅 배율 표시 — 스크롤로 액션바가 밀려나도 현재 %가 보인다. */
+.cal-zoom-float {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1200;
+  animation: peek-in var(--dur-2, 0.18s) var(--ease-enter, var(--ease)) both;
+}
+html[data-reduce-motion] .cal-zoom-float {
+  animation: none;
+}
+.cal-zoom-float .cal-zoom-ctl {
+  border-color: rgb(124 108 240 / 55%);
+  background: #fffdfa;
+  box-shadow: 0 8px 24px rgb(80 70 130 / 22%);
+}
+
+/* A안 M2: 확대 중 상세 팝오버 — 방송 화면에서 읽히도록 큼직하게. 폭은 내용에 맞게(max만 제한),
+   너무 홀쭉해져 제목이 갈리지 않게 min만 잡는다. */
 .cal-zoom-peek {
   position: fixed;
   z-index: 9500; /* 드래그 유령(9999)보다는 아래 */
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 180px;
+  width: max-content;
   max-height: min(46vh, 420px);
   padding: 14px 16px;
   overflow-y: auto;
@@ -5110,7 +5131,6 @@ html[data-reduce-motion] .cal-zoom-peek {
   gap: 4px;
   flex-shrink: 0;
 }
-.cal-zoom-peek .peek-pin,
 .cal-zoom-peek .peek-close {
   display: inline-flex;
   align-items: center;
@@ -5125,17 +5145,11 @@ html[data-reduce-motion] .cal-zoom-peek {
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
-.cal-zoom-peek .peek-pin:hover,
 .cal-zoom-peek .peek-close:hover {
   background: rgb(124 108 240 / 20%);
 }
-.cal-zoom-peek .peek-pin:active,
 .cal-zoom-peek .peek-close:active {
   transform: scale(0.92);
-}
-.cal-zoom-peek .peek-pin.on {
-  border-color: rgb(124 108 240 / 70%);
-  background: rgb(124 108 240 / 24%);
 }
 .cal-zoom-peek .peek-subs {
   display: grid;

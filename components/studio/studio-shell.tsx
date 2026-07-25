@@ -1790,6 +1790,40 @@ export function StudioShell({
   }, [isNarrow, viewerMode, applyCalZoom]);
   // 확대 중에는 월드컵 칩·장식을 표시만 숨긴다(저장된 선택은 그대로 — 100%로 돌아오면 복귀).
   const worldCupFxVisible = showWorldCupFeatures && calZoom === 1;
+  // 확대 컨트롤 — buildbox(액션바)와, 확대 중 스크롤해도 보이는 하단 플로팅 두 곳에서 재사용.
+  function renderCalZoomCtl() {
+    return (
+      <div className="cal-zoom-ctl" role="group" aria-label="달력 확대(방송용)">
+        <button
+          type="button"
+          className="cal-zoom-btn"
+          aria-label="달력 축소"
+          disabled={calZoom === 1}
+          onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, -1))}
+        >
+          −
+        </button>
+        <button
+          type="button"
+          className="cal-zoom-pct"
+          aria-label="달력 확대 초기화(100%)"
+          title="100%로 초기화"
+          onClick={() => applyCalZoom(1)}
+        >
+          {Math.round(calZoom * 100)}%
+        </button>
+        <button
+          type="button"
+          className="cal-zoom-btn"
+          aria-label="달력 확대"
+          disabled={calZoom === 1.5}
+          onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, 1))}
+        >
+          ＋
+        </button>
+      </div>
+    );
+  }
 
   // ── A안 M2: 확대(125%+) 시 부제목은 +N로 접고, 상세는 팝오버로 ──
   // hover/focus로 열리고, +N·📌으로 고정(핀)하면 포인터가 떠나도 유지된다. ✕·Esc로 닫으며
@@ -5052,37 +5086,7 @@ export function StudioShell({
             ) : null}
             {/* A안 방송용 달력 확대 — 달력 위 Ctrl+휠과 동일 동작의 버튼(키보드·마우스 겸용).
                 가운데 %를 누르면 100%로 초기화. 모바일 아젠다엔 확대 개념이 없어 숨긴다. */}
-            {!isNarrow ? (
-              <div className="cal-zoom-ctl" role="group" aria-label="달력 확대(방송용)">
-                <button
-                  type="button"
-                  className="cal-zoom-btn"
-                  aria-label="달력 축소"
-                  disabled={calZoom === 1}
-                  onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, -1))}
-                >
-                  −
-                </button>
-                <button
-                  type="button"
-                  className="cal-zoom-pct"
-                  aria-label="달력 확대 초기화(100%)"
-                  title="100%로 초기화"
-                  onClick={() => applyCalZoom(1)}
-                >
-                  {Math.round(calZoom * 100)}%
-                </button>
-                <button
-                  type="button"
-                  className="cal-zoom-btn"
-                  aria-label="달력 확대"
-                  disabled={calZoom === 1.5}
-                  onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, 1))}
-                >
-                  ＋
-                </button>
-              </div>
-            ) : null}
+            {!isNarrow ? renderCalZoomCtl() : null}
             </div>
           </div>
           {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자(또는
@@ -5645,7 +5649,9 @@ export function StudioShell({
               const ev = liveEvents.find((e) => e.id === zoomPeek.id);
               if (!ev) return null;
               const { main, subs } = splitEventTitle(ev.publicTitle);
-              const W = Math.min(380, window.innerWidth - 16);
+              // 폭은 내용에 맞춰 줄어들고(짧은 일정 = 좁은 박스), 최대만 제한 — 고정 380px는
+              // 좌우 낭비가 컸다(방송 화면에서 빈 여백이 그대로 보임).
+              const MAX_W = Math.min(320, window.innerWidth - 16);
               return (
                 <div
                   aria-label={`일정 상세: ${main}`}
@@ -5655,26 +5661,14 @@ export function StudioShell({
                   // 핀·닫기 버튼이 항상 있으므로 hover 상태도 tooltip이 아니라 non-modal
                   // dialog로 통일한다(tooltip은 interactive 자식을 가질 수 없다 — G1-r).
                   role="dialog"
-                  style={{ width: W, visibility: "hidden" }}
+                  style={{ maxWidth: MAX_W, visibility: "hidden" }}
                   onMouseEnter={cancelPeekClose}
                   onMouseLeave={() => leaveZoomPeek(zoomPeek.id)}
                 >
                   <div className="peek-head">
                     <strong className="peek-title">{main}</strong>
+                    {/* 핀 토글은 뺐다(사용자 피드백) — 고정이 필요하면 +N 클릭(=고정 오픈)으로 충분. */}
                     <div className="peek-actions">
-                      <button
-                        aria-label={zoomPeek.pinned ? "고정 해제" : "팝오버 고정"}
-                        aria-pressed={zoomPeek.pinned}
-                        className={`peek-pin${zoomPeek.pinned ? " on" : ""}`}
-                        title={zoomPeek.pinned ? "고정 해제" : "고정(마우스가 떠나도 유지)"}
-                        type="button"
-                        onClick={() => {
-                          hapticTick();
-                          setZoomPeek({ ...zoomPeek, pinned: !zoomPeek.pinned });
-                        }}
-                      >
-                        📌
-                      </button>
                       <button
                         aria-label="상세 닫기"
                         className="peek-close"
@@ -5696,6 +5690,10 @@ export function StudioShell({
               );
             })()
           : null}
+
+        {/* 확대 중엔 배율 표시가 화면에 늘 남는다(스크롤로 액션바가 밀려나도 지금 몇 %인지
+            보이게) — 하단 중앙 플로팅. 100%에선 사라져 평소 화면을 어지럽히지 않는다. */}
+        {zoomCollapse ? <div className="cal-zoom-float">{renderCalZoomCtl()}</div> : null}
 
         <aside className={`event-editor-panel${panelSaved ? " panel-saved" : ""}`}>
           {/* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */}
