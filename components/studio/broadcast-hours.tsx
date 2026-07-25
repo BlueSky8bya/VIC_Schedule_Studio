@@ -167,7 +167,7 @@ export function BroadcastHours({
       </div>
       {!hasAny ? (
         <p className="insight-note bcast-empty">
-          아직 방송 기록이 없어요 — 방송을 켜면 여기 막대가 채워져요(1분마다 자동 기록).
+          아직 방송 기록이 없어요 — 방송을 켜면 여기 막대가 채워져요(라이브 상태 자동 감지).
         </p>
       ) : null}
     </div>
