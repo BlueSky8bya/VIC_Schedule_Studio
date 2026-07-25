@@ -45,7 +45,11 @@ export type WheelStepper = {
  */
 export function createWheelStepper(
   {
-    threshold = 90,
+    // 40px = '휠 한 칸'이면 어떤 입력에서도 넘는 값 — Chrome 픽셀모드 한 칸 ≈100,
+    // Firefox line모드 한 칸 = 3줄×16 = 48, 일부 마우스 드라이버 ≈53. 예전 90은
+    // 뒤 두 경우에서 두 칸을 굴려야 1단계가 움직였다. 트랙패드 연속 제스처의 다단계
+    // 폭주는 threshold가 아니라 cooldown(220ms)이 막는다.
+    threshold = 40,
     cooldownMs = 220,
     idleGapMs = 300
   }: { threshold?: number; cooldownMs?: number; idleGapMs?: number } = {}

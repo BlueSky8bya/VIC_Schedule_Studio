@@ -42,6 +42,13 @@ describe("normalizeWheelDelta", () => {
 });
 
 describe("createWheelStepper", () => {
+  it("기본 임계값: '휠 한 칸'이 어떤 입력이든 1단계 — Chrome(≈100px)·Firefox(3줄=48px)·일부 마우스(≈53px)", () => {
+    for (const oneNotch of [-100, -48, -53]) {
+      const s = createWheelStepper(); // 기본 옵션
+      expect(s.feed(oneNotch, 0)).toBe(1);
+    }
+  });
+
   it("임계값 미만 누적은 단계 이동 없음", () => {
     const s = createWheelStepper({ threshold: 90, cooldownMs: 220 });
     expect(s.feed(-40, 0)).toBe(0);
