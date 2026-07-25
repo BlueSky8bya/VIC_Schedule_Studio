@@ -33,9 +33,9 @@ export async function GET(
     {
       // 이 응답엔 개인 정보가 없다(집계만) → CDN에서 합쳐 람다 왕복을 줄인다. 단 방송시간은
       // 라이브성(방송 중 계속 자람)이라 짧게(60초) 캐시해 관리자 화면과 거의 실시간으로 맞춘다.
-      // 예전 300초는 방송 중/직후 시청자 기록이 몇 시간씩 적게 보이는 원인이었다. 밑단 unstable_cache도
-      // 60초로 맞췄다. stale-while-revalidate: 만료 직후 첫 사람도 안 기다리고 옛 값 받고 뒤에서 갱신.
-      headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=120" }
+      // 캐시는 이 s-maxage 한 겹뿐(밑단 unstable_cache 제거, SWR 없음) — 여러 겹/SWR로 값이
+      // 계단식으로 바뀌면 시청자가 오류인지 갱신 중인지 구분할 수 없다. 만료되면 모두 동시에 새 값.
+      headers: { "Cache-Control": "public, s-maxage=60" }
     }
   );
 }

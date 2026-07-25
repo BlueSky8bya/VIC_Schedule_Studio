@@ -62,10 +62,9 @@ function coerceMemoLines(value: unknown): MemoLine[] | undefined {
 // 차가운 풀러로 ~4s) anon 페이지 p95를 끌어올렸다. 인기 배지가 몇 분 늦는 건 포스터에서
 // 사실상 보이지 않으므로, 주기를 늘려 미스(=느린 DB 왕복) 빈도를 크게 줄인다.
 const PUBLIC_SCHEDULE_REVALIDATE_SECONDS = 300;
-// 방송시간은 '라이브성' 데이터다 — 방송 중엔 계속 자라고 끝나면 최종값이 확정된다. 스케줄(300초)처럼
-// 오래 캐시하면 방송 중/직후 시청자 '이 달 기록'이 관리자 화면(무캐시)보다 몇 시간씩 적게 보였다
-// (예: 라이브 5시간인데 캐시된 1시간). 그래서 방송 집계만 짧게 캐시해 거의 실시간에 맞춘다.
-const PUBLIC_BROADCAST_REVALIDATE_SECONDS = 60;
+// 방송시간은 '라이브성' 데이터다 — 방송 중엔 계속 자라고 끝나면 최종값이 확정된다. 서버측 캐시는
+// 두지 않는다(집계 RPC 직접 호출): CDN 라우트 캐시 60초와 이중으로 쌓이면 값이 계단식으로 바뀌어
+// 시청자가 오류인지 갱신 중인지 구분할 수 없었다. 캐시는 라우트의 s-maxage 한 겹뿐.
 
 // 쿠키 없는 anon 클라이언트 — 캐시 가능한 익명 쿼리 전용(요청 컨텍스트에 묶이지 않음).
 // 공개 RLS 정책 + anon SELECT 권한으로 공개 행만 읽힌다(비공개 데이터는 RLS가 차단).
@@ -572,8 +571,10 @@ export type PublicBroadcastMonth = {
   sessions: number; // 방송 횟수
 };
 
-const loadPublicBroadcastStats = unstable_cache(
-  async (fromDay: string): Promise<PublicBroadcastMonth[]> => {
+// 서버측 unstable_cache를 걷어내고 RPC를 직접 부른다 — CDN 캐시(라우트 60초)와 이중으로 쌓이면
+// 값이 최대 2분에 걸쳐 계단식으로 바뀌어, 보는 사람이 오류인지 갱신 중인지 구분할 수 없었다.
+// 집계 RPC는 가볍고 CDN이 초당 1회 미만으로만 흘려보내므로 서버 캐시 없이도 부하 문제 없음.
+const loadPublicBroadcastStats = async (fromDay: string): Promise<PublicBroadcastMonth[]> => {
     const supabase = createPublicReadClient();
     if (!supabase) {
       return [];
@@ -591,10 +592,7 @@ const loadPublicBroadcastStats = unstable_cache(
       days: Number(row.days ?? 0),
       sessions: Number(row.sessions ?? 0)
     }));
-  },
-  ["public-broadcast-stats"],
-  { revalidate: PUBLIC_BROADCAST_REVALIDATE_SECONDS, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
-);
+};
 
 // 최근 N개월(이번 달 포함) 방송 기록. 시청자·비로그인 모두 볼 수 있다.
 export async function getPublicBroadcastStats(months = 6): Promise<PublicBroadcastMonth[]> {
@@ -609,8 +607,10 @@ export async function getPublicBroadcastStats(months = 6): Promise<PublicBroadca
 
 // 일별 방송시간(그 달) — 관리자 인사이트와 같은 일별 막대를 시청자에게도 그리기 위해.
 // 역시 집계 RPC(0050)만 호출한다: (KST 시작일, 시간)뿐, 세션 원본은 안 나간다.
-const loadPublicBroadcastDaily = unstable_cache(
-  async (fromDay: string, toDay: string): Promise<{ day: string; hours: number }[]> => {
+const loadPublicBroadcastDaily = async (
+  fromDay: string,
+  toDay: string
+): Promise<{ day: string; hours: number }[]> => {
     const supabase = createPublicReadClient();
     if (!supabase) {
       return [];
@@ -626,10 +626,7 @@ const loadPublicBroadcastDaily = unstable_cache(
       day: String(row.day),
       hours: Number(row.hours ?? 0)
     }));
-  },
-  ["public-broadcast-daily"],
-  { revalidate: PUBLIC_BROADCAST_REVALIDATE_SECONDS, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
-);
+};
 
 // 이번 달 1일~말일의 일별 방송시간(길이 = 그 달 일수, 방송 없는 날은 0).
 export async function getPublicBroadcastDaily(year: number, month: number): Promise<number[]> {
