@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-07-21
+Last Updated: 2026-07-25
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -28,6 +28,16 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
     [ADR-0008](decisions/ADR-0008-public-insights-aggregate-rpc.md) (마이그레이션 0049·0050 적용 완료)
   - 편집기: 공개 범위·옵션 접기(기본 접힘), 단축키 안내 축약, **새 일정 = Alt+N 하나로 통일**,
     카드 순서 드래그 삽입선 판정(카드 중심선 기준)
+- **2026-07-25에 끝난 것**(`9911cb7`, `a03670e`):
+  - **방송시간 오귀속 수정 + 재발 방지**(`9911cb7`, 마이그레이션 0051): 연속 방송이 새벽·무관중
+    폴링 공백(`SESSION_GAP_MS` 4h)을 만나 두 세션으로 쪼개지고 뒷부분이 다음날로 오귀속되던 버그
+    (실제 22일 9h34m→3h41m). SOOP **BNO(방송번호)**를 세션 연속성 정답값으로 도입 —
+    `broadcast_session.bno` + `recordLiveTick(bno)`, bno 같으면 공백 무시하고 이어 붙임. 과거
+    22·23일 데이터도 보정(1회, 하드코딩 id). → [[broadcast-time-tracking]] 갱신.
+  - **월별 방송시간 툴팁 잘림**(`9911cb7`): 최신 막대가 100시간대(3자리)면 `.trend-bar::after`가
+    가운데 정렬이라 패널 밖으로 잘리던 것 → 첫·마지막 막대만 가장자리 정렬.
+  - **모바일 아젠다 형식색 점**(`a03670e`): PC처럼 마지막 서브 줄 오른쪽에 인라인(높이 절약) +
+    오른쪽 정렬. 편집실은 왼쪽 정렬 별도 줄이었음. `.agenda-subs .pill-sub-last` 추가.
 - **2026-07-21에 끝난 것**(`6c52a2a`): 시청자/편집실 다듬기 3종 —
   (1) 비로그인 '이 달 기록'의 최근 6개월 트렌드(StackTrendChart, vt-*)가 스타일 없이 깨지던 것.
   vt-* 구조 규칙이 `studio-shell.css`(=편집실 전용)에만 있어서 — 2026-07-17 하이라이트 카드와 **동일
