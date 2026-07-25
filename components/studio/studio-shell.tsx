@@ -5033,6 +5033,8 @@ export function StudioShell({
             >
               {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
             </span>
+            {/* 단축키·확대 컨트롤은 한 '가로' 줄 — 세로로 쌓으면 액션바 높이를 넘겨 잘린다. */}
+            <div className="studio-buildbox-row">
             {canEdit ? (
               <button
                 type="button"
@@ -5081,6 +5083,7 @@ export function StudioShell({
                 </button>
               </div>
             ) : null}
+            </div>
           </div>
           {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자(또는
               그 역할 미리보기 중)는 비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}

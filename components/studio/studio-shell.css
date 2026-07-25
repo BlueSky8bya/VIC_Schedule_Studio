@@ -175,6 +175,12 @@
 .kbd-hints-btn:hover {
   background: rgb(124 108 240 / 26%);
 }
+/* 단축키 + 확대 컨트롤 한 줄(세로 스택은 buildbox가 액션바 높이를 넘겨 아래가 잘렸다). */
+.studio-buildbox-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 /* A안 방송용 달력 확대 컨트롤 — 단축키 버튼과 같은 보라 톤·필 어휘로 buildbox에 한 식구처럼. */
 .cal-zoom-ctl {
   pointer-events: auto; /* 부모 .studio-buildbox가 none(버전 태그 장식용) — 버튼은 복구 */
