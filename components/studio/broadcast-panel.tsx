@@ -47,10 +47,17 @@ type Props = {
   monthLabel: string; // 예: "2026년 7월"
   cells: MonthCell[]; // 42칸 골격(날짜·요일·이번달 여부) — 일정 데이터는 days에서만
   days: BroadcastPanelDay[]; // 이번 달 전체 공개 DTO(dateKey → 카드)
-  sentDateKeys: string[]; // 판서판에 올라간 날짜들(호출자 state — 날짜순 정렬 완료)
-  onSend: (dateKeys: string[]) => void; // "판서판으로 보내기"(정렬·dedup은 호출자/DTO 규칙)
+  sentDateKeys: string[]; // 판서판에 올라간 날짜들(호출자 state)
+  onSend: (dateKeys: string[]) => void; // "판서판으로 보내기"(추가·dedup은 호출자)
+  onRemoveDay: (dateKey: string) => void; // 판서판에서 날짜 컬럼 빼기
   onClose: () => void;
 };
+
+// 판서판 위 날짜 컬럼의 자유 배치 상태(그림판답게 끌어서 이동·크기 조절 — 선택 도구에서만).
+type ColBox = { x: number; y: number; w: number };
+const COL_DEFAULT_W = 220;
+const COL_MIN_W = 140;
+const COL_MAX_W = 520;
 
 function EventCard({ event }: { event: BroadcastPanelEvent }) {
   if (event.teaser) {
@@ -94,7 +101,15 @@ function EventCard({ event }: { event: BroadcastPanelEvent }) {
   );
 }
 
-export function BroadcastPanel({ monthLabel, cells, days, sentDateKeys, onSend, onClose }: Props) {
+export function BroadcastPanel({
+  monthLabel,
+  cells,
+  days,
+  sentDateKeys,
+  onSend,
+  onRemoveDay,
+  onClose
+}: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const sendBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -130,9 +145,66 @@ export function BroadcastPanel({ monthLabel, cells, days, sentDateKeys, onSend, 
   // 전체 지우기 2단계 확인(undo 불가 + 잠긴 레이어 포함이라 오조작 방어, G3b).
   const [clearArmed, setClearArmed] = useState(false);
   const clearArmTimer = useRef<number | null>(null);
-  // 화면 맞춤(D6): 보낸 날짜 컬럼들을 보드 가시폭에 유동 폭으로 다 들어오게. 레이아웃이 바뀌면
-  // 기존 판서와 카드 위치가 어긋날 수 있어(리사이즈와 동일한 성질) 토글은 신중히 — 안내 title.
-  const [fitMode, setFitMode] = useState(false);
+  // 날짜 선택 달력 접기 — 그림판 공간 확보(보내기 후 자동 접힘, 헤더 토글로 다시 펼침).
+  const [pickerOpen, setPickerOpen] = useState(true);
+  // 날짜 컬럼 자유 배치(위치·폭). 폭 비율만큼 글자도 커진다(컬럼 fontSize %) — '크게 보여주기'.
+  const [cols, setCols] = useState<Map<string, ColBox>>(() => new Map());
+  const dragColRef = useRef<{
+    key: string;
+    mode: "move" | "resize";
+    startX: number;
+    startY: number;
+    orig: ColBox;
+  } | null>(null);
+  // sentDateKeys 변화에 배치 동기화 — 새 날짜는 기본 자리(왼쪽 위부터 한 줄), 빠진 날짜는 제거,
+  // 이미 옮겨 둔 컬럼 위치는 유지.
+  useEffect(() => {
+    setCols((prev) => {
+      const next = new Map<string, ColBox>();
+      let i = 0;
+      for (const key of sentDateKeys) {
+        next.set(key, prev.get(key) ?? { x: 16 + i * (COL_DEFAULT_W + 14), y: 16, w: COL_DEFAULT_W });
+        i += 1;
+      }
+      return next;
+    });
+  }, [sentDateKeys]);
+  function onColPointerDown(
+    e: React.PointerEvent<HTMLElement>,
+    key: string,
+    mode: "move" | "resize"
+  ) {
+    if (tool !== "select") return; // 그리기 도구 중엔 입력면이 위에 있어 어차피 안 옴 — 이중 가드
+    const orig = cols.get(key);
+    if (!orig) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragColRef.current = { key, mode, startX: e.clientX, startY: e.clientY, orig };
+  }
+  function onColPointerMove(e: React.PointerEvent<HTMLElement>) {
+    const d = dragColRef.current;
+    if (!d) return;
+    const dx = e.clientX - d.startX;
+    const dy = e.clientY - d.startY;
+    setCols((map) => {
+      const next = new Map(map);
+      next.set(
+        d.key,
+        d.mode === "move"
+          ? { x: Math.max(0, d.orig.x + dx), y: Math.max(0, d.orig.y + dy), w: d.orig.w }
+          : {
+              x: d.orig.x,
+              y: d.orig.y,
+              w: Math.min(COL_MAX_W, Math.max(COL_MIN_W, d.orig.w + dx))
+            }
+      );
+      return next;
+    });
+  }
+  function onColPointerUp() {
+    dragColRef.current = null;
+  }
 
   const canvasOf = useCallback((layer: StrokeLayer) => {
     return layer === "hl" ? hlCanvasRef.current : penCanvasRef.current;
@@ -387,6 +459,7 @@ export function BroadcastPanel({ monthLabel, cells, days, sentDateKeys, onSend, 
     hapticTick();
     onSend(keys);
     rangeSelect.clearSelection();
+    setPickerOpen(false); // 보냈으면 달력은 접어 그림판 공간 확보(헤더로 다시 펼침)
   }
 
   // Esc 우선순위(G0-rr·G3a): 이 핸들러 '하나'가 결정한다 — 선택 있으면 해제만, 없으면 닫기.
@@ -455,15 +528,15 @@ export function BroadcastPanel({ monthLabel, cells, days, sentDateKeys, onSend, 
   }));
 
   return (
-    <div className="broadcast-panel" role="dialog" aria-modal="true" aria-label="방송 판서" ref={rootRef}>
+    <div className="broadcast-panel" role="dialog" aria-modal="true" aria-label="일정 그림판" ref={rootRef}>
       <header className="bp-header">
-        <h2>🖊️ 방송 판서</h2>
+        <h2>🖊️ 일정 그림판</h2>
         <p className="bp-hint">
-          아래 달력에서 날짜를 고르고(드래그·Ctrl 클릭) <strong>판서판으로 보내기</strong> —
-          창을 닫으면 모두 사라져요
+          달력에서 날짜를 골라 <strong>그림판으로 보내기</strong> · 선택 도구로 카드를 끌어
+          이동/크기 조절 — 창을 닫으면 모두 사라져요
         </p>
         <button
-          aria-label="방송 판서 닫기"
+          aria-label="일정 그림판 닫기"
           className="bp-close"
           onClick={onClose}
           ref={closeBtnRef}
@@ -567,32 +640,6 @@ export function BroadcastPanel({ monthLabel, cells, days, sentDateKeys, onSend, 
             </span>
           ))}
         </div>
-        <div className="bp-tool-group" role="group" aria-label="보기">
-          {/* 판서가 이미 있으면 전환 금지(G3b-rr) — 레이아웃이 바뀌면 stroke 좌표는 안 따라와
-              카드와 분리된다. 좌표 변환은 컬럼별 비균등 재배치라 불가능 → fail-closed로 잠근다.
-              redo 이력도 잠금 사유(G3b-rrr): 전부 undo→전환→redo 하면 옛 좌표 stroke가
-              바뀐 카드 위에 복원된다 — canRedo가 남아 있는 한 좌표 계약은 살아있는 셈. */}
-          <button
-            aria-pressed={fitMode}
-            className={`bp-tool${fitMode ? " on" : ""}`}
-            disabled={store.strokes().length > 0 || store.canRedo()}
-            title={
-              store.strokes().length > 0 || store.canRedo()
-                ? "판서(되돌리기 기록 포함)가 있는 동안엔 화면 맞춤을 바꿀 수 없어요 — 전체 지우기 후 가능"
-                : "화면 맞춤 — 보낸 날짜를 한 화면에"
-            }
-            type="button"
-            onClick={() => {
-              hapticTick();
-              finishLiveStroke(); // 혹시 진행 중인 획이 있으면 완성(그 순간 버튼은 다시 잠긴다)
-              const s = storeRef.current;
-              if (s && (s.strokes().length > 0 || s.canRedo())) return;
-              setFitMode((v) => !v);
-            }}
-          >
-            <span className="bp-fit-label">화면 맞춤</span>
-          </button>
-        </div>
         <div className="bp-tool-group" role="group" aria-label="되돌리기">
           <button
             aria-label="실행 취소 (Ctrl+Z)"
@@ -632,7 +679,18 @@ export function BroadcastPanel({ monthLabel, cells, days, sentDateKeys, onSend, 
 
       <section className="bp-picker" aria-label={`${monthLabel} 날짜 선택`}>
         <div className="bp-picker-head">
-          <strong>{monthLabel}</strong>
+          {/* 달력 접기 — 그림판 공간이 주인공. 보내면 자동으로 접히고 여기로 다시 펼친다. */}
+          <button
+            aria-expanded={pickerOpen}
+            className="bp-picker-toggle"
+            type="button"
+            onClick={() => {
+              hapticTick();
+              setPickerOpen((v) => !v);
+            }}
+          >
+            📅 {monthLabel} {pickerOpen ? "접기" : "날짜 고르기"}
+          </button>
           <button
             className="bp-send"
             disabled={selectedDateKeys().length === 0}
@@ -640,81 +698,133 @@ export function BroadcastPanel({ monthLabel, cells, days, sentDateKeys, onSend, 
             ref={sendBtnRef}
             type="button"
           >
-            판서판으로 보내기{selectedDateKeys().length > 0 ? ` (${selectedDateKeys().length})` : ""}
+            그림판으로 보내기{selectedDateKeys().length > 0 ? ` (${selectedDateKeys().length})` : ""}
           </button>
         </div>
-        <div className="bp-weekdays" aria-hidden="true">
-          {WEEKDAYS.map((w, i) => (
-            <span className={i === 0 ? "sun" : i === 6 ? "sat" : ""} key={w}>
-              {w}
-            </span>
-          ))}
-        </div>
-        <div className="bp-mini-grid" ref={rangeSelect.setRef}>
-          {cells.map((cell, i) => {
-            const has = (eventsByDate.get(cell.isoDate)?.length ?? 0) > 0;
-            const inMonth = cell.inCurrentMonth;
-            const picked = inMonth && rangeSelect.selected.has(i);
-            const cls = [
-              "bp-mini-cell",
-              inMonth ? "" : "outside",
-              picked ? "picked" : "",
-              cell.weekday === 0 ? "sun" : cell.weekday === 6 ? "sat" : ""
-            ]
-              .filter(Boolean)
-              .join(" ");
-            // 회색(전월/익월) 날짜: data-cell-index를 아예 안 달아 선택 시작·드래그 anchor·
-            // picked 대상에서 제외(Q3 — 전송 단계가 아니라 '선택 자체'에서 막는다, G3a).
-            // 키보드: Enter/Space = Ctrl+클릭과 같은 개별 토글(toggleIndex) — 마우스 없이도 사용 가능.
-            return (
-              <div
-                aria-checked={picked}
-                aria-label={`${Number(cell.isoDate.slice(5, 7))}월 ${cell.dayOfMonth}일${has ? " (일정 있음)" : ""}`}
-                className={cls}
-                data-cell-index={inMonth ? i : undefined}
-                key={cell.isoDate}
-                role={inMonth ? "checkbox" : undefined}
-                aria-hidden={inMonth ? undefined : true}
-                tabIndex={inMonth ? 0 : undefined}
-                onKeyDown={
-                  inMonth
-                    ? (e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          hapticTick();
-                          rangeSelect.toggleIndex(i);
-                        }
-                      }
-                    : undefined
-                }
-              >
-                <span className="bp-mini-num">{cell.dayOfMonth}</span>
-                {has ? <i className="bp-mini-dot" aria-hidden="true" /> : null}
-              </div>
-            );
-          })}
-        </div>
+        {pickerOpen ? (
+          <>
+            <div className="bp-weekdays" aria-hidden="true">
+              {WEEKDAYS.map((w, i) => (
+                <span className={i === 0 ? "sun" : i === 6 ? "sat" : ""} key={w}>
+                  {w}
+                </span>
+              ))}
+            </div>
+            <div className="bp-mini-grid" ref={rangeSelect.setRef}>
+              {cells.map((cell, i) => {
+                const evs = eventsByDate.get(cell.isoDate) ?? [];
+                const inMonth = cell.inCurrentMonth;
+                const picked = inMonth && rangeSelect.selected.has(i);
+                const cls = [
+                  "bp-mini-cell",
+                  inMonth ? "" : "outside",
+                  picked ? "picked" : "",
+                  cell.weekday === 0 ? "sun" : cell.weekday === 6 ? "sat" : ""
+                ]
+                  .filter(Boolean)
+                  .join(" ");
+                // 회색(전월/익월) 날짜: data-cell-index를 아예 안 달아 선택 시작·드래그 anchor·
+                // picked 대상에서 제외(Q3). 키보드: Enter/Space = Ctrl+클릭과 같은 개별 토글.
+                return (
+                  <div
+                    aria-checked={picked}
+                    aria-label={`${Number(cell.isoDate.slice(5, 7))}월 ${cell.dayOfMonth}일${evs.length > 0 ? ` (일정 ${evs.length}개)` : ""}`}
+                    className={cls}
+                    data-cell-index={inMonth ? i : undefined}
+                    key={cell.isoDate}
+                    role={inMonth ? "checkbox" : undefined}
+                    aria-hidden={inMonth ? undefined : true}
+                    tabIndex={inMonth ? 0 : undefined}
+                    onKeyDown={
+                      inMonth
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              hapticTick();
+                              rangeSelect.toggleIndex(i);
+                            }
+                          }
+                        : undefined
+                    }
+                  >
+                    <span className="bp-mini-num">{cell.dayOfMonth}</span>
+                    {/* 어떤 일정인지 보고 고르게 — 제목 미리보기(이전 화면 안 봐도 됨). */}
+                    {inMonth
+                      ? evs.slice(0, 2).map((ev) => (
+                          <em className="bp-mini-title" key={ev.id}>
+                            {ev.teaser ? "🔮 ???" : splitEventTitle(ev.publicTitle).main}
+                          </em>
+                        ))
+                      : null}
+                    {inMonth && evs.length > 2 ? (
+                      <i className="bp-mini-more">+{evs.length - 2}</i>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        ) : null}
       </section>
 
-      <section className="bp-board" aria-label="판서판">
-        {/* 스크롤 좌표면(G3b): 배경 카드·캔버스·입력면이 전부 이 inner 안 — 보드를 가로
-            스크롤하면 카드와 판서가 같이 움직여 좌표가 절대 안 어긋난다. */}
-        <div className={`bp-board-inner${fitMode ? " fit" : ""}`} ref={boardInnerRef}>
+      <section className="bp-board" aria-label="그림판">
+        {/* 스크롤 좌표면(G3b): 배경 카드·캔버스·입력면이 전부 이 inner 안 — 보드를 스크롤하면
+            카드와 판서가 같이 움직여 좌표가 절대 안 어긋난다. 컬럼 자유 배치 범위만큼 inner가
+            커진다(minWidth/minHeight). */}
+        <div
+          className="bp-board-inner"
+          ref={boardInnerRef}
+          style={{
+            minWidth: Math.max(...[0, ...[...cols.values()].map((c) => c.x + c.w + 24)]),
+            minHeight: Math.max(280, ...[...cols.values()].map((c) => c.y + 320))
+          }}
+        >
           {/* 배경 레이어 = 날짜 카드 DOM(캔버스 아님 — 메모리 0). 표시 토글은 숨김만. */}
           <div className={`bp-board-bg${layerVis.bg ? "" : " hidden"}`}>
             {sentDays.length === 0 ? (
               <p className="bp-empty">
-                보낸 날짜가 여기에 나란히 붙어요 — 떨어진 토·일도 골라서 비교해보세요
+                보낸 날짜가 여기에 붙어요 — 선택 도구로 끌어 옮기고, 오른쪽 아래 손잡이로 키워요
               </p>
             ) : (
-              <div className="bp-board-strip">
-                {sentDays.map((day) => (
-                  <article className="bp-day-col" key={day.dateKey}>
-                    <header className="bp-day-head">
+              sentDays.map((day) => {
+                const box = cols.get(day.dateKey) ?? { x: 16, y: 16, w: COL_DEFAULT_W };
+                return (
+                  <article
+                    className="bp-day-col"
+                    key={day.dateKey}
+                    style={{
+                      left: box.x,
+                      top: box.y,
+                      width: box.w,
+                      // 폭에 비례해 글자도 커진다(내부는 em) — '크게 보여주기'가 실제로 크다.
+                      fontSize: `${Math.round((box.w / COL_DEFAULT_W) * 100)}%`
+                    }}
+                  >
+                    <header
+                      className="bp-day-head"
+                      title={tool === "select" ? "끌어서 이동" : "이동은 선택 도구에서"}
+                      onLostPointerCapture={onColPointerUp}
+                      onPointerDown={(e) => onColPointerDown(e, day.dateKey, "move")}
+                      onPointerMove={onColPointerMove}
+                      onPointerUp={onColPointerUp}
+                    >
                       <strong>{Number(day.dateKey.slice(8, 10))}</strong>
                       {/* date-key는 이미 KST 달력 날짜 — 요일은 그 날짜 자체의 요일(UTC 자정으로
                           해석해 getUTCDay). +09:00으로 파싱하면 UTC 기준 전날로 밀려 요일이 틀린다. */}
                       <span>{WEEKDAYS[new Date(`${day.dateKey}T00:00:00Z`).getUTCDay()]}</span>
+                      <button
+                        aria-label={`${Number(day.dateKey.slice(8, 10))}일 그림판에서 빼기`}
+                        className="bp-col-x"
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          hapticTick();
+                          onRemoveDay(day.dateKey);
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
+                        <X aria-hidden="true" size={13} strokeWidth={3} />
+                      </button>
                     </header>
                     {day.events.length === 0 ? (
                       <p className="bp-day-empty">일정 없음</p>
@@ -723,9 +833,18 @@ export function BroadcastPanel({ monthLabel, cells, days, sentDateKeys, onSend, 
                         <EventCard event={ev} key={`${day.dateKey}-${ev.id}`} />
                       ))
                     )}
+                    {/* 크기 손잡이(폭·글자 함께) — 선택 도구에서만. */}
+                    <span
+                      aria-hidden="true"
+                      className="bp-col-resize"
+                      onLostPointerCapture={onColPointerUp}
+                      onPointerDown={(e) => onColPointerDown(e, day.dateKey, "resize")}
+                      onPointerMove={onColPointerMove}
+                      onPointerUp={onColPointerUp}
+                    />
                   </article>
-                ))}
-              </div>
+                );
+              })
             )}
           </div>
           {/* 캔버스 3장 — DOM 순서 = hl committed → hl 라이브 → pen. 라이브(형광펜 진행분)를

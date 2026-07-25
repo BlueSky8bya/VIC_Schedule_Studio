@@ -83,10 +83,25 @@ html[data-reduce-motion] .broadcast-panel > * {
   justify-content: space-between;
   margin-bottom: 8px;
 }
-.bp-picker-head strong {
-  font-size: 15px;
-  font-weight: 900;
+.bp-picker-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid rgb(124 108 240 / 30%);
+  border-radius: var(--r-pill);
+  background: #ffffff;
   color: #4b4468;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+}
+.bp-picker-toggle:hover {
+  background: rgb(124 108 240 / 8%);
+}
+.bp-picker-toggle:active {
+  transform: scale(0.97);
 }
 .bp-send {
   padding: 6px 16px;
@@ -133,12 +148,14 @@ html[data-reduce-motion] .broadcast-panel > * {
 .bp-mini-cell {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-height: 34px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 52px;
+  padding: 4px 6px;
   border-radius: var(--r-md);
   cursor: pointer;
+  overflow: hidden;
   transition: background var(--dur-1) var(--ease);
 }
 .bp-mini-cell:hover {
@@ -168,11 +185,23 @@ html[data-reduce-motion] .broadcast-panel > * {
 .bp-mini-cell.sat .bp-mini-num {
   color: #2563eb;
 }
-.bp-mini-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: rgb(124 108 240 / 65%);
+/* 미니 달력의 일정 제목 미리보기 — 어떤 날인지 보고 고른다(이전 화면 왕복 제거). */
+.bp-mini-title {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.25;
+  color: #6f6890;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bp-mini-more {
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  color: #a6a0be;
 }
 
 /* ── 판서 도구줄(M4b) ── */
@@ -242,16 +271,6 @@ html[data-reduce-motion] .broadcast-panel > * {
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
-}
-.bp-fit-label {
-  padding: 0 4px;
-  font-size: 12px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-.bp-tool:has(.bp-fit-label) {
-  width: auto;
-  padding: 0 8px;
 }
 .bp-color {
   width: 22px;
@@ -346,16 +365,6 @@ html[data-reduce-motion] .broadcast-panel > * {
   height: max-content; /* 카드가 보드보다 길면 inner가 자라 세로 스크롤(캔버스도 같이) */
   padding: 16px;
 }
-/* 화면 맞춤 모드 — 보낸 날짜 컬럼들이 보드 가시폭에 '반드시' 다 들어온다(min-width:0 —
-   140px 하한을 두면 날짜가 많을 때 inner 밖으로 넘쳐 캔버스가 못 덮는 카드가 생긴다, G3b-rr).
-   좁아지면 카드 글자는 줄바꿈으로 감수 — fit 모드는 opt-in이고 컬럼이 적을 때 쓰는 보기다. */
-.bp-board-inner.fit {
-  width: 100%;
-}
-.bp-board-inner.fit .bp-day-col {
-  flex: 1 1 0;
-  min-width: 0;
-}
 .bp-board-bg {
   height: 100%;
 }
@@ -386,14 +395,10 @@ html[data-reduce-motion] .broadcast-panel > * {
   font-weight: 700;
   color: #a6a0be;
 }
-.bp-board-strip {
-  display: flex;
-  gap: 14px;
-  align-items: flex-start;
-  /* 가로 스크롤은 .bp-board가 담당(캔버스와 한 몸으로) — 여기서 자체 스크롤하면 좌표 분리. */
-}
+/* 날짜 컬럼 = 그림판 위 자유 배치 카드(선택 도구에서 끌어 이동·손잡이로 크기).
+   내부 글자는 em — 컬럼 fontSize(폭 비례 %)에 따라 통째로 커진다. */
 .bp-day-col {
-  flex: 0 0 220px;
+  position: absolute;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -401,21 +406,60 @@ html[data-reduce-motion] .broadcast-panel > * {
   border: 1px solid #ece9f5;
   border-radius: var(--r-card);
   background: #ffffff;
+  box-shadow: 0 4px 16px rgb(120 110 160 / 14%);
 }
 .bp-day-head {
   display: flex;
   align-items: baseline;
   gap: 6px;
+  cursor: grab;
+  touch-action: none; /* 이동 드래그 중 스크롤 방지 */
+  user-select: none;
+}
+.bp-day-head:active {
+  cursor: grabbing;
 }
 .bp-day-head strong {
-  font-size: 22px;
+  font-size: 1.57em;
   font-weight: 900;
   color: #3b3654;
 }
 .bp-day-head span {
-  font-size: 13px;
+  font-size: 0.93em;
   font-weight: 800;
   color: #8a84a6;
+}
+.bp-col-x {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-left: auto;
+  border: 1px solid rgb(190 18 60 / 25%);
+  border-radius: var(--r-md);
+  background: #ffffff;
+  color: #be123c;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+}
+.bp-col-x:hover {
+  background: rgb(190 18 60 / 8%);
+}
+.bp-col-x:active {
+  transform: scale(0.9);
+}
+.bp-col-resize {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  border-right: 3px solid rgb(124 108 240 / 45%);
+  border-bottom: 3px solid rgb(124 108 240 / 45%);
+  border-bottom-right-radius: 6px;
+  cursor: nwse-resize;
+  touch-action: none;
 }
 .bp-day-empty {
   margin: 0;
@@ -440,7 +484,7 @@ html[data-reduce-motion] .broadcast-panel > * {
 }
 .bp-card-head strong {
   flex: 1;
-  font-size: 15px;
+  font-size: 1.07em;
   font-weight: 900;
   line-height: 1.3;
   white-space: pre-line;
@@ -451,12 +495,12 @@ html[data-reduce-motion] .broadcast-panel > * {
   padding: 1px 6px;
   border: 1px dashed currentColor;
   border-radius: var(--r-pill);
-  font-size: 10px;
+  font-size: 0.71em;
   font-weight: 900;
 }
 .bp-day-badge {
   flex: 0 0 auto;
-  font-size: 11px;
+  font-size: 0.79em;
   font-style: normal;
   font-weight: 800;
   color: rgb(0 0 0 / 55%);
@@ -468,7 +512,7 @@ html[data-reduce-motion] .broadcast-panel > * {
   padding: 0 0 0 8px;
   border-left: 2px solid rgb(0 0 0 / 24%);
   list-style: none;
-  font-size: 12.5px;
+  font-size: 0.9em;
   font-weight: 700;
   line-height: 1.35;
   color: rgb(0 0 0 / 68%);
@@ -485,7 +529,7 @@ html[data-reduce-motion] .broadcast-panel > * {
   border: 1px solid rgb(0 0 0 / 14%);
 }
 .bp-teaser strong {
-  font-size: 15px;
+  font-size: 1.07em;
   letter-spacing: 0.08em;
   color: #7c6cf0;
 }

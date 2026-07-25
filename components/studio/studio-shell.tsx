@@ -1469,9 +1469,11 @@ export function StudioShell({
     broadcastTriggerRef.current?.focus();
   }
   function handleBroadcastSend(dateKeys: string[]) {
-    // 보내기 = 교체(누적 아님) — "지금 고른 날짜들을 나란히"가 방송 설명 문법. 정렬·dedup은
-    // 이미 DTO 규칙(toBroadcastPanelDays)과 동일하게 사전순.
-    setBroadcastSent([...new Set(dateKeys)].sort());
+    // 보내기 = 추가(dedup) — 그림판에서 컬럼별 ✕로 뺄 수 있으니 누적이 자연스럽다.
+    setBroadcastSent((prev) => [...new Set([...prev, ...dateKeys])].sort());
+  }
+  function removeBroadcastDay(dateKey: string) {
+    setBroadcastSent((prev) => prev.filter((k) => k !== dateKey));
   }
 
   // 모바일 오버레이 스택: 편집 시트 → (그 위에) 공지 모달. 레이어마다 히스토리 항목을 하나씩 쌓아,
@@ -4925,7 +4927,7 @@ export function StudioShell({
           <ChevronLeft aria-hidden="true" size={16} />
           {isNarrow ? "편집실" : "편집실로 가기"}
         </button>
-        {/* 방송 판서(B안) — owner/developer 전용, PC 전용. 공개 스냅샷만 쓰는 안전한
+        {/* 일정 그림판(B안) — owner/developer 전용, PC 전용. 공개 스냅샷만 쓰는 안전한
             미리보기 컨텍스트에서만 연다. 실제 공개 페이지·export surface엔 이 버튼이 없다. */}
         {(canEdit || isDeveloper) && !isNarrow ? (
           <button
@@ -4933,7 +4935,7 @@ export function StudioShell({
             onClick={(e) => openBroadcastPanel(e.currentTarget)}
             type="button"
           >
-            🖊️ 방송 판서
+            🖊️ 일정 그림판
           </button>
         ) : null}
         {/* 꾸미기는 PC 전용 — 모바일(isNarrow)에선 진입 버튼을 숨긴다. */}
@@ -4991,6 +4993,7 @@ export function StudioShell({
             days={broadcastDays}
             monthLabel={`${view.year}년 ${view.month}월`}
             onClose={closeBroadcastPanel}
+            onRemoveDay={removeBroadcastDay}
             onSend={handleBroadcastSend}
             sentDateKeys={broadcastSent}
           />
