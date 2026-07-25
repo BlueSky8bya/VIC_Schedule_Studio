@@ -175,6 +175,52 @@
 .kbd-hints-btn:hover {
   background: rgb(124 108 240 / 26%);
 }
+/* A안 방송용 달력 확대 컨트롤 — 단축키 버튼과 같은 보라 톤·필 어휘로 buildbox에 한 식구처럼. */
+.cal-zoom-ctl {
+  pointer-events: auto; /* 부모 .studio-buildbox가 none(버전 태그 장식용) — 버튼은 복구 */
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid rgb(124 108 240 / 42%);
+  border-radius: var(--r-pill);
+  background: rgb(124 108 240 / 15%);
+}
+.cal-zoom-btn,
+.cal-zoom-pct {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 23px;
+  padding: 2px 9px;
+  border: 0;
+  background: transparent;
+  color: #5b4bd0;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+}
+.cal-zoom-pct {
+  min-width: 42px;
+  border-right: 1px solid rgb(124 108 240 / 22%);
+  border-left: 1px solid rgb(124 108 240 / 22%);
+  font-variant-numeric: tabular-nums;
+}
+.cal-zoom-btn:hover,
+.cal-zoom-pct:hover {
+  background: rgb(124 108 240 / 26%);
+}
+.cal-zoom-btn:active,
+.cal-zoom-pct:active {
+  transform: scale(0.96);
+}
+.cal-zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.cal-zoom-btn:disabled:hover {
+  background: transparent;
+}
 .kbd-hints-btn:active {
   transform: scale(0.96);
 }
@@ -4435,7 +4481,9 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 
 .studio-day {
   position: relative;
-  min-height: 132px;
+  /* --cal-zoom(A안 방송용 확대, 기본 1): 칸·글자·간격이 함께 비례 — transform 없이 레이아웃만
+     커져 드래그 좌표·삽입선 판정이 그대로 유효하다. 세로는 원래 내용 따라 자라는 구조라 안전. */
+  min-height: calc(132px * var(--cal-zoom, 1));
   border-right: 1px solid #f1eff8;
   border-bottom: 1px solid #f1eff8;
   background: #ffffff;
@@ -4604,7 +4652,7 @@ body.cell-range-dragging {
 .studio-day-head strong {
   /* 큰 모니터일수록 화면 폭에 비례해 커진다(작은 화면·모바일은 13px 그대로 = floor).
      편집실만 적용 — 포스터/꾸미기 캔버스는 손대지 않는다. */
-  font-size: clamp(13px, 0.95vw, 20px);
+  font-size: calc(clamp(13px, 0.95vw, 20px) * var(--cal-zoom, 1));
   /* line-height를 1로 고정해 헤더 높이가 글자 크기에 끌려 커지지 않게 한다(웹에서
      숫자가 20px까지 커지면 상속 line-height 1.5 탓에 헤더가 ~34px로 부풀어
      절대배치 support-bar(top:26)와 월드컵 칩이 겹쳤다). */
@@ -4622,7 +4670,7 @@ body.cell-range-dragging {
 /* 공휴일/대체공휴일/절기/기념일 작은 표기 */
 .studio-day-head .day-mark {
   overflow: hidden;
-  font-size: 10px;
+  font-size: calc(10px * var(--cal-zoom, 1));
   font-style: normal;
   font-weight: 700;
   color: #a6a9bd;
@@ -4632,9 +4680,10 @@ body.cell-range-dragging {
 
 .studio-event-list {
   display: grid;
-  gap: 5px;
-  /* 좌우 6px = 날짜 숫자(.studio-day-head 좌우 6px)와 카드 좌변을 같은 세로선에 맞춘다(정렬 조화). */
-  padding: 7px 6px;
+  gap: calc(5px * var(--cal-zoom, 1));
+  /* 좌우 6px = 날짜 숫자(.studio-day-head 좌우 6px)와 카드 좌변을 같은 세로선에 맞춘다(정렬 조화).
+     확대 시 세로만 비례(좌우를 키우면 그 세로선 정렬이 깨진다). */
+  padding: calc(7px * var(--cal-zoom, 1)) 6px;
 }
 
 .studio-event-pill {
@@ -4646,12 +4695,13 @@ body.cell-range-dragging {
      맞추고 X도 내용 중앙에 오게 한다(내용≈높이인 일반 카드엔 영향 없음). */
   justify-content: center;
   /* 4px 기반 일관 리듬(제목·본문·형식색 사이). 제각각이던 2/3/5px를 한 박자로 통일. */
-  gap: 4px;
+  gap: calc(4px * var(--cal-zoom, 1));
   border: 1px solid rgb(0 0 0 / 7%);
   border-radius: var(--r-md);
   background: rgb(255 255 255 / 72%);
   cursor: pointer;
-  padding: clamp(7px, 0.5vw, 11px) clamp(10px, 0.65vw, 15px);
+  padding: calc(clamp(7px, 0.5vw, 11px) * var(--cal-zoom, 1))
+    calc(clamp(10px, 0.65vw, 15px) * var(--cal-zoom, 1));
   text-align: left;
   box-shadow: 0 1px 2px rgb(17 24 39 / 6%);
   transition:
@@ -4888,7 +4938,7 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
 }
 .pill-teaser {
   flex: 0 0 auto;
-  font-size: 12px;
+  font-size: calc(12px * var(--cal-zoom, 1));
   line-height: 1;
   cursor: help;
   filter: drop-shadow(0 0 1px rgb(124 108 240 / 60%));
@@ -4920,7 +4970,7 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
   white-space: pre-line;
   /* 일정 글자 — vw(화면 폭) 기준. cqi(달력 칸 폭)는 편집패널 여닫을 때 매 프레임 재계산되며 끊김 +
      글자 크기/카드 높이 점프를 만들어 vw로 되돌렸다. clamp 경계(13~19)로 어떤 화면에서도 과하지 않게. */
-  font-size: clamp(13px, 0.9vw, 19px);
+  font-size: calc(clamp(13px, 0.9vw, 19px) * var(--cal-zoom, 1));
   /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다 — 시청자 포스터와 동일.
      태그 선택·저장하면 그 태그 색에 맞춰 즉시(렌더 시점) 반영된다. */
   font-weight: var(--evt-weight, 900);
@@ -4957,10 +5007,143 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
      ~0.8배)대로 서브도 vw에 비례해 함께 커진다 → 제목:서브 비율이 유지돼 카드가 균형 있게 찬다.
      (제목과 같이 커지므로 '서브만 키워 뚱뚱해지는' 악순환이 아니라 비례 확대. 편집실은 스티커
      좌표 제약이 없어 안전.) 최소 12px로 가독성 확보. */
-  font-size: clamp(12px, 0.72vw, 15px);
+  font-size: calc(clamp(12px, 0.72vw, 15px) * var(--cal-zoom, 1));
   font-weight: 800;
   line-height: 1.3;
 }
+/* A안 M2: 확대(125%+) 시 접힌 서브 자리 — [+N 칩][형식색 점] 한 줄. */
+.pill-collapsed-row {
+  display: flex;
+  align-items: center;
+  column-gap: 8px;
+}
+.pill-collapsed-row.span-cont {
+  visibility: hidden; /* 이어지는 칸은 높이만 맞추고 안 보이게(기존 span-cont 관례) */
+}
+.pill-more {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border: 1.5px solid color-mix(in srgb, currentColor 34%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, currentColor 10%, transparent);
+  color: inherit;
+  font-size: calc(11px * var(--cal-zoom, 1));
+  font-weight: 800;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+}
+.pill-more:hover {
+  background: color-mix(in srgb, currentColor 18%, transparent);
+}
+.pill-more:active {
+  transform: scale(0.94);
+}
+.pill-collapsed-row .pill-dots {
+  margin-left: auto;
+}
+/* 확대 시 의미 텍스트 배지('미정' 칩)도 제목과 함께 커진다 — 본체 스타일은 public-poster.css
+   공용이라 건드리지 않고 편집실 카드 안에서만 배율(포스터엔 --cal-zoom이 없어 영향 0). */
+.studio-event-pill .evt-tentative {
+  font-size: calc(10px * var(--cal-zoom, 1));
+}
+/* 업도움 띠도 편집실 스코프에서만 배율 — 본체는 app/globals.css 공용(height 17/글자 10.5 고정).
+   레인 간격·top은 inline에서 calZoom을 곱하므로(스튜디오 셸) 높이·글자만 여기서 따라간다. */
+.studio-day .support-bar {
+  height: calc(17px * var(--cal-zoom, 1));
+}
+.studio-day .support-bar span {
+  font-size: calc(10.5px * var(--cal-zoom, 1));
+}
+
+/* A안 M2: 확대 중 상세 팝오버 — 방송 화면에서 읽히도록 큼직하게. */
+.cal-zoom-peek {
+  position: fixed;
+  z-index: 9500; /* 드래그 유령(9999)보다는 아래 */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: min(46vh, 420px);
+  padding: 14px 16px;
+  overflow-y: auto;
+  border: 1px solid rgb(124 108 240 / 30%);
+  border-radius: var(--r-card);
+  background: #fffdfa;
+  box-shadow: 0 14px 42px rgb(80 70 130 / 26%);
+  animation: peek-in var(--dur-2, 0.18s) var(--ease-enter, var(--ease)) both;
+}
+@keyframes peek-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+html[data-reduce-motion] .cal-zoom-peek {
+  animation: none;
+}
+.cal-zoom-peek .peek-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.cal-zoom-peek .peek-title {
+  flex: 1;
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.3;
+  white-space: pre-line;
+  color: #3b3654;
+}
+.cal-zoom-peek .peek-actions {
+  display: inline-flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.cal-zoom-peek .peek-pin,
+.cal-zoom-peek .peek-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid rgb(124 108 240 / 26%);
+  border-radius: var(--r-md);
+  background: rgb(124 108 240 / 8%);
+  color: #5b4bd0;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+}
+.cal-zoom-peek .peek-pin:hover,
+.cal-zoom-peek .peek-close:hover {
+  background: rgb(124 108 240 / 20%);
+}
+.cal-zoom-peek .peek-pin:active,
+.cal-zoom-peek .peek-close:active {
+  transform: scale(0.92);
+}
+.cal-zoom-peek .peek-pin.on {
+  border-color: rgb(124 108 240 / 70%);
+  background: rgb(124 108 240 / 24%);
+}
+.cal-zoom-peek .peek-subs {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0 0 0 10px;
+  border-left: 3px solid rgb(124 108 240 / 30%);
+  list-style: none;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #55506e;
+}
+
 /* 마지막 서브 줄 = [서브 텍스트][형식색 점]을 한 줄에. 둘이 폭에 같이 들어가면 한 줄(점은
    오른쪽 끝), 안 들어가면 wrap으로 점만 다음 줄 → 별도 점 줄을 안 써 카드 높이를 최소화한다. */
 .pill-sub-last {
@@ -4987,17 +5170,17 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
 @media (min-width: 641px) {
   .studio-event-pill {
     border-radius: var(--r-card);
-    gap: 5px; /* 웹은 가로 여백이 넉넉 — 내부 박자도 한 단계 키워 숨 트이게(4→5). */
+    gap: calc(5px * var(--cal-zoom, 1)); /* 웹은 가로 여백이 넉넉 — 내부 박자도 한 단계(4→5). */
   }
   .pill-main strong {
-    font-size: clamp(14px, 0.95vw, 20px);
+    font-size: calc(clamp(14px, 0.95vw, 20px) * var(--cal-zoom, 1));
     letter-spacing: -0.01em;
   }
   /* 웹 카드 사이 간격을 키워 일정끼리 또렷이 구분(밀도↔숨 균형). 좌우는 날짜 숫자(6px)와
      같은 세로선 유지 — 정렬 조화를 깨지 않게 위/아래만 키운다. */
   .studio-event-list {
-    gap: 7px;
-    padding: 9px 6px;
+    gap: calc(7px * var(--cal-zoom, 1));
+    padding: calc(9px * var(--cal-zoom, 1)) 6px;
   }
 }
 /* PR2: 칸 색(≤2 대분류)에 못 담은 나머지 대분류 색 점 줄 — 색 안 늘리고 "더 있음" 암시. */

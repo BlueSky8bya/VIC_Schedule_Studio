@@ -100,6 +100,12 @@ import { TagPicker } from "@/components/tags/tag-picker";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
+import {
+  type CalZoom,
+  createWheelStepper,
+  normalizeWheelDelta,
+  stepCalZoom
+} from "@/lib/ui/calendar-zoom";
 import { detectDevice } from "@/lib/presence/presence-client";
 import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
@@ -608,8 +614,8 @@ export function StudioShell({
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
   const [viewerMode, setViewerMode] = useState(initialViewerMode);
   const [showWorldCupFeatures, setShowWorldCupFeatures] = useWorldCupVisibility();
-  // TODO(A안): 달력 내부 Ctrl+휠 확대가 추가되면 저장된 사용자 선택은 덮지 말고,
-  // `showWorldCupFeatures && calendarScale === 1`을 실제 표시값으로 써 확대 중에만 자동 숨긴다.
+  // A안 확대 중에는 저장된 사용자 선택을 덮지 않고 표시만 자동으로 숨긴다
+  // (달력 확대의 목적은 '일정 글자'라 월드컵 칩·공은 확대 시 소음 — 아래 worldCupFxVisible 참조).
   function toggleWorldCupFeatures() {
     hapticTick();
     setShowWorldCupFeatures(!showWorldCupFeatures);
@@ -1733,6 +1739,173 @@ export function StudioShell({
   // 일정들이 우르르 움직인다"는 거슬림이 된다 → 기본은 활주 OFF, 드롭(재정렬)에서만 1회 arm한다(그 외엔
   // 위치만 기록하고 즉시 안착). 이렇게 반전해 두면 새 mutation을 추가해도 자동으로 안 움직인다.
   const flipArmedRef = useRef(false);
+
+  // ── A안(방송 가독성): 달력 위 Ctrl+휠 단계 확대(100/125/150%) — PLAN-20260725-001 M1 ──
+  // 브라우저 전체 줌은 CSS viewport 폭을 줄여 640px 경계 아래로 떨어지면 PC에서도 모바일
+  // 레이아웃으로 바뀐다. 대신 달력 패널 위에서만 Ctrl+휠을 가로채 CSS 변수(--cal-zoom)로
+  // 글자·밀도만 키운다. transform: scale 금지 — 드래그 삽입선·FLIP이 좌표 기반이라 어긋난다.
+  const [calZoom, setCalZoom] = useState<CalZoom>(1);
+  const calZoomRef = useRef<CalZoom>(1);
+  const calPanelRef = useRef<HTMLElement | null>(null);
+  // 드래그 중 배율 변경 금지(레이아웃 재배치가 드롭 좌표 판정을 순간적으로 흔든다).
+  const dragActiveRef = useRef(false);
+  dragActiveRef.current = dragEventId !== null;
+  const applyCalZoom = useCallback((next: CalZoom) => {
+    if (dragActiveRef.current) return;
+    if (calZoomRef.current === next) return;
+    calZoomRef.current = next;
+    // 배율이 바뀌면 저장해 둔 카드 rect가 전부 무효 — FLIP이 옛 rect로 활주하면 카드가 튄다.
+    flipRects.current.clear();
+    hapticTick();
+    setCalZoom(next);
+  }, []);
+  useEffect(() => {
+    // isNarrow 판정은 MOBILE_QUERY '전체'(폭 640 + 저높이·coarse pointer 포함) — 모바일
+    // 레이아웃으로 넘어가면 배율을 초기화한다(아젠다 뷰엔 확대 개념이 없다).
+    if (isNarrow && calZoomRef.current !== 1) {
+      calZoomRef.current = 1;
+      flipRects.current.clear();
+      setCalZoom(1);
+    }
+  }, [isNarrow]);
+  useEffect(() => {
+    if (isNarrow || viewerMode) return;
+    const el = calPanelRef.current;
+    if (!el) return;
+    const stepper = createWheelStepper();
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey || e.shiftKey || e.altKey) return;
+      // 달력 위 Ctrl+휠은 배율 변경 가능 여부와 무관하게 항상 브라우저 줌을 막는다 —
+      // 일부 이벤트만 새면 달력·페이지가 따로 확대돼 화면이 뒤죽박죽 된다. 달력 밖은 기본 동작.
+      e.preventDefault();
+      // 이동 드래그(왼쪽)뿐 아니라 우클릭 잇기·끊기 제스처 중에도 배율 변경 금지 —
+      // 진행 중 레이아웃 재배치는 선긋기 좌표·대상 판정을 흔든다.
+      if (dragActiveRef.current || rightGestureRef.current?.moved) return;
+      const dir = stepper.feed(normalizeWheelDelta(e.deltaY, e.deltaMode), e.timeStamp);
+      if (dir === 0) return;
+      applyCalZoom(stepCalZoom(calZoomRef.current, dir));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [isNarrow, viewerMode, applyCalZoom]);
+  // 확대 중에는 월드컵 칩·장식을 표시만 숨긴다(저장된 선택은 그대로 — 100%로 돌아오면 복귀).
+  const worldCupFxVisible = showWorldCupFeatures && calZoom === 1;
+
+  // ── A안 M2: 확대(125%+) 시 부제목은 +N로 접고, 상세는 팝오버로 ──
+  // hover/focus로 열리고, +N·📌으로 고정(핀)하면 포인터가 떠나도 유지된다. ✕·Esc로 닫으며
+  // 닫을 때 포커스는 카드로 복귀. 100%에선 지금과 완전히 동일(접기·팝오버 없음).
+  const zoomCollapse = calZoom > 1;
+  const [zoomPeek, setZoomPeek] = useState<{ id: string; pinned: boolean } | null>(null);
+  const zoomPeekRef = useRef(zoomPeek);
+  zoomPeekRef.current = zoomPeek;
+  // 앵커는 '실제 요소'를 기억한다 — 멀티데이는 같은 data-eventid 카드가 여러 개라 셀렉터로
+  // 찾으면 첫 칸으로 잘못 복귀한다. 위치 측정도 이 요소 기준(rect 스냅샷보다 정확).
+  const peekAnchorRef = useRef<HTMLElement | null>(null);
+  const peekElRef = useRef<HTMLDivElement | null>(null);
+  // 카드→팝오버로 포인터가 건너가는 짧은 틈(8px)에 닫히지 않게 close는 잠깐 지연한다.
+  const peekCloseTimer = useRef<number | null>(null);
+  const cancelPeekClose = useCallback(() => {
+    if (peekCloseTimer.current !== null) {
+      window.clearTimeout(peekCloseTimer.current);
+      peekCloseTimer.current = null;
+    }
+  }, []);
+  const openZoomPeek = useCallback(
+    (id: string, el: HTMLElement, pinned: boolean) => {
+      // 드래그(이동·우클릭 잇기 모두) 중엔 팝오버 금지(좌표 소음·대상 판정 방해)
+      if (dragActiveRef.current || rightGestureRef.current?.moved) return;
+      const prev = zoomPeekRef.current;
+      if (!pinned && prev?.pinned) return; // 핀 고정 중엔 hover가 덮어쓰지 못함
+      cancelPeekClose();
+      peekAnchorRef.current = el;
+      setZoomPeek({ id, pinned });
+    },
+    [cancelPeekClose]
+  );
+  const closeZoomPeek = useCallback((opts?: { returnFocus?: boolean }) => {
+    const prev = zoomPeekRef.current;
+    if (!prev) return;
+    cancelPeekClose();
+    setZoomPeek(null);
+    if (opts?.returnFocus) {
+      const anchor = peekAnchorRef.current;
+      if (anchor?.isConnected) anchor.focus();
+      else
+        document
+          .querySelector<HTMLElement>(`.studio-event-pill[data-eventid="${prev.id}"]`)
+          ?.focus();
+    }
+  }, [cancelPeekClose]);
+  const leaveZoomPeek = useCallback((id: string) => {
+    const prev = zoomPeekRef.current;
+    if (!prev || prev.pinned || prev.id !== id) return;
+    // blur·mouseleave가 연속으로 와도 타이머는 항상 하나만(이전 것 먼저 취소).
+    cancelPeekClose();
+    peekCloseTimer.current = window.setTimeout(() => {
+      // 실행 시점에 상태 재확인 — 유예 중에 핀을 눌렀거나 다른 카드로 옮겨갔으면 건드리지 않는다.
+      const cur = zoomPeekRef.current;
+      if (cur && !cur.pinned && cur.id === id) setZoomPeek(null);
+      peekCloseTimer.current = null;
+    }, 140);
+  }, [cancelPeekClose]);
+  // 위치는 렌더 후 실측으로 잡는다(추정 높이 300px 가정은 420px+padding까지 크는 실제 팝오버에서
+  // 화면 아래를 뚫었다). 앵커 아래 우선, 안 들어가면 위, 그래도 넘치면 화면 안으로 클램프.
+  useLayoutEffect(() => {
+    if (!zoomPeek) return;
+    const el = peekElRef.current;
+    const anchor = peekAnchorRef.current;
+    if (!el || !anchor?.isConnected) return;
+    const a = anchor.getBoundingClientRect();
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    const left = Math.max(8, Math.min(a.left, window.innerWidth - w - 8));
+    let top = a.bottom + 8;
+    if (top + h > window.innerHeight - 8) top = a.top - h - 8;
+    top = Math.max(8, Math.min(top, window.innerHeight - h - 8));
+    el.style.left = `${left}px`;
+    el.style.top = `${top}px`;
+    el.style.visibility = "visible";
+  }, [zoomPeek]);
+  useEffect(() => {
+    if (!zoomPeek) return;
+    // Esc는 캡처 단계에서 팝오버'만' 닫고 전파를 끊는다 — 편집 패널 닫힘·선택 해제와 겹치지 않게
+    // (한 번에 하나: 첫 Esc = 팝오버, 다음 Esc = 원래 동작). 달력 스크롤·창 크기 변경 시엔 앵커가
+    // 어긋나므로 닫는다 — 단, 팝오버 '내부' 스크롤(긴 세부 읽기)은 닫힘 사유가 아니다.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        closeZoomPeek({ returnFocus: zoomPeekRef.current?.pinned ?? false });
+      }
+    };
+    // 자동 종료(스크롤·resize)여도 포커스가 팝오버 '안'에 있었다면 앵커로 돌려준다 —
+    // 핀 dialog의 버튼에 포커스 둔 채 닫히면 포커스가 body로 떨어져 키보드 흐름이 끊긴다.
+    const autoClose = () =>
+      closeZoomPeek({
+        returnFocus:
+          (zoomPeekRef.current?.pinned ?? false) &&
+          peekElRef.current?.contains(document.activeElement) === true
+      });
+    const onScroll = (e: Event) => {
+      if (e.target instanceof Node && peekElRef.current?.contains(e.target)) return;
+      autoClose();
+    };
+    const onResize = () => autoClose();
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [zoomPeek, closeZoomPeek]);
+  // 배율 변경(125↔150 포함)·달 이동·편집창 상태 변화·미리보기 진입 시 팝오버 정리 —
+  // 전부 앵커 위치가 무효해지거나 화면 목적이 바뀌는 순간이라 stale overlay를 남기지 않는다.
+  useEffect(() => {
+    cancelPeekClose(); // 이전 팝오버의 지연 close 타이머가 새 팝오버를 닫는 것 방지
+    setZoomPeek(null);
+  }, [calZoom, view.year, view.month, editorVisible, selectedEventId, viewerMode, cancelPeekClose]);
+
   useLayoutEffect(() => {
     const viewKey = `${view.year}-${view.month}`;
     const viewChanged = flipViewKey.current !== viewKey;
@@ -2038,6 +2211,9 @@ export function StudioShell({
       }
       if (dist < 6) return;
       info.started = true;
+      // 열려 있는 확대 팝오버(hover·핀 모두)는 드래그 시작 즉시 닫는다 — 떠 있으면
+      // elementFromPoint를 가로채 드롭 칸·삽입선 판정을 막는다.
+      closeZoomPeek();
       // 새 드래그 시작 → 이전에 날아가던 유령이 있으면 즉시 정리.
       if (flingRafRef.current) {
         cancelAnimationFrame(flingRafRef.current);
@@ -2060,6 +2236,9 @@ export function StudioShell({
       // 중력: 잡은 지점을 회전축(pivot)으로. 그 지점이 카드 중심에서 가로로 벗어난 만큼 강하게
       // 매달린 듯 기운다(가장자리를 잡으면 반대쪽이 거의 수직으로 처짐). 최대 약 ±90°.
       ghost.style.transformOrigin = `${info.offX}px ${info.offY}px`;
+      // 유령은 body에 붙어 달력 패널의 --cal-zoom을 상속받지 못한다(portal) — 현재 배율을
+      // 직접 복사해 확대 상태에서도 유령 크기가 원본 카드와 일치하게 한다.
+      ghost.style.setProperty("--cal-zoom", String(calZoomRef.current));
       ghost.appendChild(inner);
       document.body.appendChild(ghost);
       dragGhostRef.current = ghost;
@@ -2363,6 +2542,8 @@ export function StudioShell({
       if (Math.hypot(e.clientX - g.startX, e.clientY - g.startY) < 6) return;
       g.moved = true;
       rightDragMovedRef.current = true; // 뒤따르는 브라우저 contextmenu 1회 차단
+      // 확대 팝오버가 떠 있으면 잇기·끊기 선긋기의 elementFromPoint 판정을 가로챈다 — 즉시 닫기.
+      closeZoomPeek();
       const svg = makeGestureSvg();
       if (g.mode === "connect" && g.sourceId) {
         armConnectCandidates(g.sourceId); // 이을 수 있는 상대 강조/흐림
@@ -4742,7 +4923,7 @@ export function StudioShell({
     >
       {/* 편집실 중력 축구공(월드컵 기간만) — 편집 중 간단히 갖고 노는 장식. 일정 작업 방해 0.
           (시청자 화면 미리보기에선 위 PublicPoster가 '전체' 미니게임을 직접 띄운다.) */}
-      {showWorldCupFeatures && isWorldCupMonth(view.year, view.month) && !viewerMode ? (
+      {worldCupFxVisible && isWorldCupMonth(view.year, view.month) && !viewerMode ? (
         <WorldCupStudioBall pauseWhenMinigameOn={false} />
       ) : null}
       {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
@@ -4866,6 +5047,39 @@ export function StudioShell({
                 단축키
                 <ChevronDown aria-hidden="true" size={13} />
               </button>
+            ) : null}
+            {/* A안 방송용 달력 확대 — 달력 위 Ctrl+휠과 동일 동작의 버튼(키보드·마우스 겸용).
+                가운데 %를 누르면 100%로 초기화. 모바일 아젠다엔 확대 개념이 없어 숨긴다. */}
+            {!isNarrow ? (
+              <div className="cal-zoom-ctl" role="group" aria-label="달력 확대(방송용)">
+                <button
+                  type="button"
+                  className="cal-zoom-btn"
+                  aria-label="달력 축소"
+                  disabled={calZoom === 1}
+                  onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, -1))}
+                >
+                  −
+                </button>
+                <button
+                  type="button"
+                  className="cal-zoom-pct"
+                  aria-label="달력 확대 초기화(100%)"
+                  title="100%로 초기화"
+                  onClick={() => applyCalZoom(1)}
+                >
+                  {Math.round(calZoom * 100)}%
+                </button>
+                <button
+                  type="button"
+                  className="cal-zoom-btn"
+                  aria-label="달력 확대"
+                  disabled={calZoom === 1.5}
+                  onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, 1))}
+                >
+                  ＋
+                </button>
+              </div>
             ) : null}
           </div>
           {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자(또는
@@ -5028,7 +5242,11 @@ export function StudioShell({
         {/* 아바타 scene에선 색상필터가 우측 rail로 가므로 좌측 칸은 비운다(칸 폭도 0). */}
         <aside className="studio-left-panel">{avatarSceneOn ? null : studioFilterPanel}</aside>
 
-        <section className="studio-calendar-panel">
+        <section
+          className="studio-calendar-panel"
+          ref={calPanelRef}
+          style={{ "--cal-zoom": calZoom } as CSSProperties}
+        >
           <div className="studio-weekdays" aria-hidden="true">
             {WEEKDAYS.map((weekday, index) => (
               <span
@@ -5069,7 +5287,7 @@ export function StudioShell({
                 dropLineBeforeId = li >= dateEvents.length ? null : dateEvents[li].id;
               }
               const day = classifyDay(cell.isoDate, cell.weekday, today);
-              const visibleDayMark = showWorldCupFeatures
+              const visibleDayMark = worldCupFxVisible
                 ? getDayMark(cell.isoDate)
                 : withoutWorldCupMark(getDayMark(cell.isoDate));
               // 이 칸이 속한 주의 업 도움 줄 수만큼만 위 여백을 둔다(띠 없는 주는 0).
@@ -5144,7 +5362,9 @@ export function StudioShell({
                           }
                         }}
                         style={{
-                          top: 26 + lane * 20,
+                          // 날짜 헤더가 --cal-zoom으로 커지므로 띠 시작 높이·레인 간격도 같이
+                          // 배율 — 안 그러면 125%+에서 날짜 숫자와 띠가 겹친다.
+                          top: Math.round((26 + lane * 20) * calZoom),
                           left: left ? 3 : 0,
                           right: right ? 3 : 0,
                           borderTopLeftRadius: left ? 9 : 0,
@@ -5178,7 +5398,9 @@ export function StudioShell({
                   <div
                     className="studio-event-list"
                     style={
-                      weekSupCount > 0 ? { paddingTop: 8 + weekSupCount * 20 } : undefined
+                      weekSupCount > 0
+                        ? { paddingTop: Math.round((8 + weekSupCount * 20) * calZoom) }
+                        : undefined
                     }
                   >
                     {dateEvents.map((event, eventIndex) => {
@@ -5268,11 +5490,31 @@ export function StudioShell({
                           }
                           tabIndex={0}
                           onKeyDown={(e) => {
-                            if (e.key === "Enter") {
+                            // target 가드: 카드 '자신'에 포커스가 있을 때만 — +N·삭제 같은
+                            // 내부 버튼의 Enter가 카드까지 올라와 편집창을 동시에 여는 것 방지.
+                            if (e.key === "Enter" && e.target === e.currentTarget) {
                               e.stopPropagation();
                               handlePillClick(event.id);
                             }
                           }}
+                          // A안 M2: 확대 중 hover/focus로 상세 팝오버(접힌 서브 전체 보기).
+                          aria-describedby={
+                            zoomPeek?.id === event.id ? "cal-zoom-peek" : undefined
+                          }
+                          onMouseEnter={
+                            zoomCollapse && span.showTitle
+                              ? (e) => openZoomPeek(event.id, e.currentTarget, false)
+                              : undefined
+                          }
+                          onMouseLeave={
+                            zoomCollapse ? () => leaveZoomPeek(event.id) : undefined
+                          }
+                          onFocus={
+                            zoomCollapse && span.showTitle
+                              ? (e) => openZoomPeek(event.id, e.currentTarget, false)
+                              : undefined
+                          }
+                          onBlur={zoomCollapse ? () => leaveZoomPeek(event.id) : undefined}
                         >
                           {/* 드롭 안내선 — 카드 위/아래 틈에 겹치는 절대 오버레이(레이아웃 영향 없음). */}
                           {dropLineBeforeId === event.id ? (
@@ -5339,6 +5581,33 @@ export function StudioShell({
                                 </span>
                               ) : null;
                             if (subs.length === 0) return dots;
+                            if (zoomCollapse) {
+                              // 확대 = 주제목 중심. 서브는 +N 칩으로 접어 카드 높이를 아끼고,
+                              // 전체 내용은 팝오버(+N 클릭 = 핀 고정)로 — 단순 … 절단과 달리
+                              // 정보량을 잃지 않는다. 이어지는 칸(span-cont)은 투명으로 높이만 맞춤.
+                              return (
+                                <div
+                                  className={`pill-collapsed-row${span.showTitle ? "" : " span-cont"}`}
+                                >
+                                  <button
+                                    type="button"
+                                    className="pill-more"
+                                    aria-label={`숨은 세부 ${subs.length}줄 고정해서 보기`}
+                                    tabIndex={span.showTitle ? 0 : -1}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const pill = (e.currentTarget as HTMLElement).closest(
+                                        ".studio-event-pill"
+                                      );
+                                      if (pill) openZoomPeek(event.id, pill as HTMLElement, true);
+                                    }}
+                                  >
+                                    +{subs.length}
+                                  </button>
+                                  {dots}
+                                </div>
+                              );
+                            }
                             const last = subs.length - 1;
                             return (
                               <ul className={`pill-subs${span.showTitle ? "" : " span-cont"}`}>
@@ -5364,6 +5633,66 @@ export function StudioShell({
             })}
           </div>
         </section>
+
+        {/* A안 M2: 확대 중 카드 상세 팝오버. 위치는 useLayoutEffect에서 실측 배치(그 전까지
+            visibility:hidden — 렌더 시점엔 팝오버 실제 높이를 모른다). 핀·닫기 버튼이 항상
+            있으므로 hover 상태 포함 non-modal dialog 하나로 통일. 상호작용 후에만 렌더 — SSR 무관. */}
+        {zoomPeek
+          ? (() => {
+              const ev = liveEvents.find((e) => e.id === zoomPeek.id);
+              if (!ev) return null;
+              const { main, subs } = splitEventTitle(ev.publicTitle);
+              const W = Math.min(380, window.innerWidth - 16);
+              return (
+                <div
+                  aria-label={`일정 상세: ${main}`}
+                  className="cal-zoom-peek"
+                  id="cal-zoom-peek"
+                  ref={peekElRef}
+                  // 핀·닫기 버튼이 항상 있으므로 hover 상태도 tooltip이 아니라 non-modal
+                  // dialog로 통일한다(tooltip은 interactive 자식을 가질 수 없다 — G1-r).
+                  role="dialog"
+                  style={{ width: W, visibility: "hidden" }}
+                  onMouseEnter={cancelPeekClose}
+                  onMouseLeave={() => leaveZoomPeek(zoomPeek.id)}
+                >
+                  <div className="peek-head">
+                    <strong className="peek-title">{main}</strong>
+                    <div className="peek-actions">
+                      <button
+                        aria-label={zoomPeek.pinned ? "고정 해제" : "팝오버 고정"}
+                        aria-pressed={zoomPeek.pinned}
+                        className={`peek-pin${zoomPeek.pinned ? " on" : ""}`}
+                        title={zoomPeek.pinned ? "고정 해제" : "고정(마우스가 떠나도 유지)"}
+                        type="button"
+                        onClick={() => {
+                          hapticTick();
+                          setZoomPeek({ ...zoomPeek, pinned: !zoomPeek.pinned });
+                        }}
+                      >
+                        📌
+                      </button>
+                      <button
+                        aria-label="상세 닫기"
+                        className="peek-close"
+                        type="button"
+                        onClick={() => closeZoomPeek({ returnFocus: true })}
+                      >
+                        <X aria-hidden="true" size={15} strokeWidth={3} />
+                      </button>
+                    </div>
+                  </div>
+                  {subs.length > 0 ? (
+                    <ul className="peek-subs">
+                      {subs.map((sub, i) => (
+                        <li key={i}>{sub}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </div>
+              );
+            })()
+          : null}
 
         <aside className={`event-editor-panel${panelSaved ? " panel-saved" : ""}`}>
           {/* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */}
