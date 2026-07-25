@@ -153,6 +153,17 @@ html {
   gap: 4px;
   pointer-events: none; /* 버전은 장식 — 버튼만 클릭 가능(아래에서 auto로). */
 }
+/* 좁은 폭(브라우저 확대 포함): absolute 가운데 고정은 흐름 밖이라 왼쪽 버튼 무리
+   (아바타 자리·왼쪽/오른쪽)와 그대로 겹친다 → 흐름 배치로 전환해 남는 공간 가운데로.
+   flex-wrap 덕에 그래도 좁으면 아랫줄로 내려가 절대 안 겹친다. */
+@media (max-width: 1520px) {
+  .studio-buildbox {
+    position: static;
+    transform: none;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
 /* 버전 태그는 부모(.studio-buildbox)가 이미 가운데라 흐름 배치로만 되돌린다(색·펄 등 모습은 원본 유지). */
 .studio-buildbox .studio-build-tag {
   position: static;
