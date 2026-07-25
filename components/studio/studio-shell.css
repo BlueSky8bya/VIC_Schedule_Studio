@@ -4005,7 +4005,7 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 /* 우측 묶음: 비공개 일정 보기(토글) + 달력 꾸미기를 액션바 오른쪽 끝으로 모은다. */
 .studio-actionbar-right {
   display: inline-flex;
-  align-items: flex-end; /* 저장 칩을 버튼 아래 끝선에 맞춘다 */
+  align-items: center; /* 저장 칩이 헤더로 이사 — 이제 버튼들끼리 세로 중앙 정렬 */
   gap: 8px;
   margin-left: auto;
 }

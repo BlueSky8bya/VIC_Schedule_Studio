@@ -5148,25 +5148,6 @@ export function StudioShell({
           (개발자 역할 표시는 헤더의 역할 배지로 충분 — 별도 세션 안내 줄은 두지 않는다.) */}
       <div className="studio-actionbar">
         <div className="studio-actionbar-tools">
-          {/* 단축키 버튼 — order:99로 왼쪽 버튼 무리(아바타·왼쪽/오른쪽 토글) '오른쪽'에 인라인.
-              배포 버전·저장됨 칩은 헤더(개발자 배지 왼쪽) 캡슐로, 확대 %는 하단 플로팅으로 이동. */}
-          {canEdit ? (
-            <div className="studio-buildbox">
-              <button
-                type="button"
-                className={`kbd-hints-btn${kbdHintsOpen ? " open" : ""}`}
-                aria-expanded={kbdHintsOpen}
-                onClick={() => {
-                  hapticTick();
-                  setKbdHintsOpen((v) => !v);
-                }}
-              >
-                <Keyboard aria-hidden="true" size={13} />
-                단축키
-                <ChevronDown aria-hidden="true" size={13} />
-              </button>
-            </div>
-          ) : null}
           {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자(또는
               그 역할 미리보기 중)는 비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}
           {canEdit || (isDeveloper && !previewRole) ? (
@@ -5246,9 +5227,24 @@ export function StudioShell({
               ⚽ 월드컵 표시 {showWorldCupFeatures ? "끄기" : "켜기"}
             </button>
           ) : null}
-          {/* 우측 묶음: 비공개 일정 보기(토글) + 달력 꾸미기.
+          {/* 우측 묶음: 단축키 + 비공개 일정 보기(토글) + 달력 꾸미기.
               (저장 상태 칩은 헤더의 버전 캡슐 아래로 이사 — 사용자 지정 배치.) */}
           <div className="studio-actionbar-right">
+            {canEdit ? (
+              <button
+                type="button"
+                className={`kbd-hints-btn${kbdHintsOpen ? " open" : ""}`}
+                aria-expanded={kbdHintsOpen}
+                onClick={() => {
+                  hapticTick();
+                  setKbdHintsOpen((v) => !v);
+                }}
+              >
+                <Keyboard aria-hidden="true" size={13} />
+                단축키
+                <ChevronDown aria-hidden="true" size={13} />
+              </button>
+            ) : null}
             {canTogglePrivateLayer ? (
               isEffectivelyOwner && canReadPrivate ? (
                 // 웹: 처음 켠 자리(토글)에 그대로 "비공개 끄기" — 마우스 이동 최소화. 비밀번호 변경은 경고 배너로.
