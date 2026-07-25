@@ -1845,6 +1845,19 @@ export function StudioShell({
   }, [isNarrow, viewerMode, applyCalZoom]);
   // 확대 중에는 월드컵 칩·장식을 표시만 숨긴다(저장된 선택은 그대로 — 100%로 돌아오면 복귀).
   const worldCupFxVisible = showWorldCupFeatures && calZoom === 1;
+  // 달력 패널 '실측 폭'이 좁으면(브라우저 확대·편집창+아바타 동시 열림·태블릿) 제목 1줄
+  // ellipsis 모드 — viewport가 아니라 패널 폭 기준(G0-r: 실사용 폭은 패널 상태에 좌우된다).
+  const [calCompact, setCalCompact] = useState(false);
+  useEffect(() => {
+    if (isNarrow || viewerMode) return;
+    const el = calPanelRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      setCalCompact(el.clientWidth < 1080);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [isNarrow, viewerMode]);
   // 확대 컨트롤 — buildbox(액션바)와, 확대 중 스크롤해도 보이는 하단 플로팅 두 곳에서 재사용.
   function renderCalZoomCtl() {
     return (
@@ -1884,6 +1897,8 @@ export function StudioShell({
   // hover/focus로 열리고, +N·📌으로 고정(핀)하면 포인터가 떠나도 유지된다. ✕·Esc로 닫으며
   // 닫을 때 포커스는 카드로 복귀. 100%에선 지금과 완전히 동일(접기·팝오버 없음).
   const zoomCollapse = calZoom > 1;
+  // 제목 1줄 모드 = 인앱 확대 중이거나 패널이 실측으로 좁을 때. 팝오버도 이 조건에서 동작.
+  const titleCompact = zoomCollapse || calCompact;
   const [zoomPeek, setZoomPeek] = useState<{ id: string; pinned: boolean } | null>(null);
   const zoomPeekRef = useRef(zoomPeek);
   zoomPeekRef.current = zoomPeek;
@@ -5323,6 +5338,7 @@ export function StudioShell({
 
         <section
           className="studio-calendar-panel"
+          data-compact={titleCompact ? "" : undefined}
           data-zoomed={calZoom > 1 ? "" : undefined}
           ref={calPanelRef}
           style={{ "--cal-zoom": calZoom } as CSSProperties}
@@ -5584,33 +5600,38 @@ export function StudioShell({
                             zoomPeek?.id === event.id ? "cal-zoom-peek" : undefined
                           }
                           onMouseEnter={
-                            zoomCollapse && span.showTitle
+                            titleCompact && span.showTitle
                               ? (e) => {
                                   const el = e.currentTarget;
                                   const strong = el.querySelector(".pill-main strong");
                                   const cut =
                                     strong instanceof HTMLElement &&
                                     strong.scrollWidth > strong.clientWidth + 1;
-                                  if (subs.length > 0 || cut) openZoomPeek(event.id, el, false);
+                                  // 확대 모드에선 서브가 +N로 접혀 있으니 서브 존재만으로도 열고,
+                                  // 좁은 폭 모드(브라우저 확대)에선 서브가 다 보이므로 '제목이
+                                  // 실제로 잘렸을 때만' 연다.
+                                  if (cut || (zoomCollapse && subs.length > 0))
+                                    openZoomPeek(event.id, el, false);
                                 }
                               : undefined
                           }
                           onMouseLeave={
-                            zoomCollapse ? () => leaveZoomPeek(event.id) : undefined
+                            titleCompact ? () => leaveZoomPeek(event.id) : undefined
                           }
                           onFocus={
-                            zoomCollapse && span.showTitle
+                            titleCompact && span.showTitle
                               ? (e) => {
                                   const el = e.currentTarget;
                                   const strong = el.querySelector(".pill-main strong");
                                   const cut =
                                     strong instanceof HTMLElement &&
                                     strong.scrollWidth > strong.clientWidth + 1;
-                                  if (subs.length > 0 || cut) openZoomPeek(event.id, el, false);
+                                  if (cut || (zoomCollapse && subs.length > 0))
+                                    openZoomPeek(event.id, el, false);
                                 }
                               : undefined
                           }
-                          onBlur={zoomCollapse ? () => leaveZoomPeek(event.id) : undefined}
+                          onBlur={titleCompact ? () => leaveZoomPeek(event.id) : undefined}
                         >
                           {/* 드롭 안내선 — 카드 위/아래 틈에 겹치는 절대 오버레이(레이아웃 영향 없음). */}
                           {dropLineBeforeId === event.id ? (

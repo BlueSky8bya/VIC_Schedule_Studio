@@ -5042,23 +5042,24 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
   font-weight: 800;
   line-height: 1.3;
 }
-/* 확대(125%+) 모드: 제목도 1줄 ellipsis — 긴 제목이 줄바꿈으로 카드를 키우는 대신
-   "메이플 검은마…"처럼 잘리고, 잘린 카드는 호버 팝오버로 전체를 보여준다(실측 판정).
+/* 제목 1줄 모드([data-compact] = 인앱 확대 125%+ '또는' 패널 실측 폭 < 1080 — 브라우저 확대·
+   편집창+아바타 동시 열림·태블릿): 긴 제목이 줄바꿈으로 카드를 키우는 대신 "메이플 검은마…"처럼
+   잘리고, 잘린 카드는 호버 팝오버로 전체를 보여준다(실측 판정).
    중요: nowrap 텍스트는 flex/grid 조상들의 min-width:auto를 타고 '카드 자체'를 칸 밖으로
    밀어낸다 — 체인 전체에 min-width:0을 깔아야 ellipsis가 실제로 발동한다. */
 /* min-width:0은 모든 카드(span 포함 — 안 그러면 span 제목이 ellipsis 없이 생으로 잘린다).
    max-width:100%만 span 제외 — span은 음수 마진(-7px)으로 칸 경계를 덮어 이음매를 만드는데
    max-width가 그 돌출을 잘라 세그먼트 사이가 끊겨 보였다. */
-.studio-calendar-panel[data-zoomed] .studio-event-pill {
+.studio-calendar-panel[data-compact] .studio-event-pill {
   min-width: 0;
 }
-.studio-calendar-panel[data-zoomed] .studio-event-pill:not(.span) {
+.studio-calendar-panel[data-compact] .studio-event-pill:not(.span) {
   max-width: 100%;
 }
-.studio-calendar-panel[data-zoomed] .pill-main {
+.studio-calendar-panel[data-compact] .pill-main {
   min-width: 0;
 }
-.studio-calendar-panel[data-zoomed] .pill-main strong {
+.studio-calendar-panel[data-compact] .pill-main strong {
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
