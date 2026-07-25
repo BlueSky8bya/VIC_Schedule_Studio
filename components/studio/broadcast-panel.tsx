@@ -1104,7 +1104,10 @@ export function BroadcastPanel({
       ro.disconnect();
       if (fitRaf !== null) cancelAnimationFrame(fitRaf);
     };
-  }, [replayAll, finishLiveStroke, layers]);
+    // activeLayerId: 라이브 캔버스가 '활성 레이어 바로 위' 조건부 마운트라, 레이어를
+    // 바꾸면 새 canvas(기본 300×150)로 재마운트된다 — 여기서 다시 사이징해야
+    // 다른 레이어에서 그릴 때 잉크가 즉시(올바른 스케일로) 보인다.
+  }, [replayAll, finishLiveStroke, layers, activeLayerId]);
 
   // 닫힘 = unmount = 소멸(계약 3): stroke 메모리·타이머·rAF를 명시적으로 해제한다.
   useEffect(() => {
