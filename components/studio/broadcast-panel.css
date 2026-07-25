@@ -641,6 +641,29 @@ body:has(.broadcast-panel) .tag-cpop {
   background: rgb(124 108 240 / 10%);
   pointer-events: none;
 }
+/* 선택 획 박스(그림판 선택 문법) — 점선 테두리, 끌면 이동, 모서리 손잡이로 확대/축소. */
+.bp-stroke-sel {
+  position: absolute;
+  z-index: 4;
+  border: 1.5px dashed rgb(124 108 240 / 75%);
+  border-radius: 4px;
+  background: rgb(124 108 240 / 4%);
+  cursor: move;
+  touch-action: none;
+}
+.bp-stroke-sel-handle {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid #ffffff;
+  border-radius: 4px;
+  background: rgb(124 108 240 / 95%);
+  box-shadow: 0 1px 4px rgb(60 50 110 / 35%);
+  cursor: nwse-resize;
+  touch-action: none;
+}
 /* 스냅 정렬 가이드 — 드래그 중 가장자리/중앙선이 맞을 때만 잠깐 */
 .bp-guide-v,
 .bp-guide-h {

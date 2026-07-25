@@ -59,6 +59,7 @@ import {
   type BroadcastTool,
   type Stroke,
   type StrokeLayer,
+  type StrokePoint,
   type StrokeStore
 } from "@/lib/broadcast/stroke-engine";
 
@@ -98,12 +99,21 @@ type Props = {
   onClose: () => void;
 };
 
-// 통합 히스토리(Ctrl+Z/Y 하나로 전부): 획 · 카드 위치/크기 · 날짜 추가/삭제 · 레이어 생성/삭제.
+// 선택된 획의 기하 스냅샷(이동/확대 undo용) — 좌표·굵기만.
+type StrokeGeom = { points: StrokePoint[]; width: number };
+
+// 통합 히스토리(Ctrl+Z/Y 하나로 전부): 획 · 카드 위치/크기 · 날짜 추가/삭제 · 레이어 생성/삭제 ·
+// 선택 획 이동/확대(xform — 카드와 한 제스처면 cols도 같이 담아 Ctrl+Z 1번에 복원).
 type HistAction =
   | { t: "stroke" } // 실제 획은 stroke store가 보관 — 여기선 순서만
   | { t: "cols"; before: Map<string, ColBox>; after: Map<string, ColBox> }
   | { t: "sent"; before: string[]; after: string[]; colsBefore: Map<string, ColBox> }
-  | { t: "layers"; before: PanelLayer[]; after: PanelLayer[] };
+  | { t: "layers"; before: PanelLayer[]; after: PanelLayer[] }
+  | {
+      t: "xform";
+      cols: { before: Map<string, ColBox>; after: Map<string, ColBox> } | null;
+      strokes: { targets: Stroke[]; before: StrokeGeom[]; after: StrokeGeom[] } | null;
+    };
 
 // 판서판 위 날짜 컬럼의 자유 배치 상태(그림판답게 끌어서 이동·크기 조절 — 선택 도구에서만).
 type ColBox = { x: number; y: number; w: number };
@@ -242,6 +252,10 @@ export function BroadcastPanel({
   const [marquee, setMarquee] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(
     null
   );
+  // 러버밴드로 잡힌 '획'(필기) — store 획 객체 참조. 카드처럼 이동·확대 대상(그림판 선택 문법).
+  const [strokeSel, setStrokeSel] = useState<Stroke[]>([]);
+  const strokeSelRef = useRef(strokeSel);
+  strokeSelRef.current = strokeSel;
   const [guides, setGuides] = useState<{ v: number[]; h: number[] }>({ v: [], h: [] });
   const dragColRef = useRef<{
     key: string;
@@ -259,6 +273,8 @@ export function BroadcastPanel({
     // 직전 프레임에 어느 방향으로 클램프에 걸렸는지 — 그 방향 자동 스크롤을 멈춘다.
     // (카드는 상한에 핀 고정인데 스크롤만 계속 흐르면 포인터가 잡은 지점에서 이탈한다.)
     clamp: { xPos: boolean; xNeg: boolean; yPos: boolean; yNeg: boolean };
+    // 선택된 획의 제스처 시작 기하 — 카드와 '한 제스처'로 같이 이동한다(null = 획 없음).
+    strokeOrigs: Map<Stroke, StrokeGeom> | null;
   } | null>(null);
   // ── 가장자리 자동 스크롤: 드래그/러버밴드가 보드 끝에 닿으면 스크롤이 따라간다 ──
   const boardScrollRef = useRef<HTMLElement | null>(null);
@@ -350,8 +366,27 @@ export function BroadcastPanel({
       // 자동 스크롤 무한 확장 루프는 이 상한에서 멈춘다 — 더 넓히려면 손을 뗐다 다시 끌면 된다.
       maxX: (boardInnerRef.current?.offsetWidth ?? 4000) + 480,
       maxY: (boardInnerRef.current?.offsetHeight ?? 3000) + 480,
-      clamp: { xPos: false, xNeg: false, yPos: false, yNeg: false }
+      clamp: { xPos: false, xNeg: false, yPos: false, yNeg: false },
+      // 선택된 획도 카드와 함께 움직인다 — 이동 제스처에서만(스냅샷 = undo 기준).
+      strokeOrigs:
+        mode === "move" && strokeSelRef.current.length > 0
+          ? snapshotStrokes(strokeSelRef.current)
+          : null
     };
+  }
+  // 선택 획 기하 스냅샷(deep copy) — 이동/확대의 원점이자 undo before.
+  function snapshotStrokes(list: Stroke[]): Map<Stroke, StrokeGeom> {
+    return new Map(
+      list.map((s) => [s, { points: s.points.map((pt) => ({ ...pt })), width: s.width }])
+    );
+  }
+  // 획 이동/확대 적용 후 해당 레이어만 재생 — 제스처 중 매 프레임 호출된다.
+  const replayLayerFnRef = useRef<(layer: StrokeLayer) => void>(() => {});
+  function repaintStrokeLayers(origs: Map<Stroke, StrokeGeom>) {
+    const ids = new Set<string>();
+    for (const s of origs.keys()) ids.add(s.layer);
+    for (const id of ids) replayLayerFnRef.current(id);
+    setStrokeVersion((v) => v + 1); // 선택 박스가 획을 따라오게
   }
   // 자동 스크롤 공용: 가장자리 근접 → 속도 계산 → rAF 루프에서 스크롤 + 드래그 로직 재적용.
   function updateAutoScroll(clientX: number, clientY: number, kind: "col" | "marquee") {
@@ -516,6 +551,13 @@ export function BroadcastPanel({
       }
       return next;
     });
+    // 선택된 획도 같은 (dx,dy)로 — 카드와 필기가 한 덩어리로 움직인다.
+    if (d.strokeOrigs) {
+      for (const [s, g] of d.strokeOrigs) {
+        s.points = g.points.map((pt) => ({ x: pt.x + dx, y: pt.y + dy, p: pt.p }));
+      }
+      repaintStrokeLayers(d.strokeOrigs);
+    }
   }
   function onColPointerMove(e: React.PointerEvent<HTMLElement>) {
     if (!dragColRef.current) return;
@@ -528,8 +570,26 @@ export function BroadcastPanel({
     stopAutoScroll();
     setGuides({ v: [], h: [] });
     // 제스처 단위로 히스토리 1건(이동/크기 조절 — 실제로 움직였을 때만).
+    // 획이 같이 움직였으면 xform 하나로 묶는다 — Ctrl+Z 1번에 카드+획이 함께 돌아온다.
     if (d?.moved) {
-      pushHist({ t: "cols", before: d.beforeAll, after: new Map(colsRef.current) });
+      const colsChange = { before: d.beforeAll, after: new Map(colsRef.current) };
+      if (d.strokeOrigs && d.strokeOrigs.size > 0) {
+        const targets = [...d.strokeOrigs.keys()];
+        pushHist({
+          t: "xform",
+          cols: colsChange,
+          strokes: {
+            targets,
+            before: targets.map((s) => d.strokeOrigs!.get(s)!),
+            after: targets.map((s) => ({
+              points: s.points.map((pt) => ({ ...pt })),
+              width: s.width
+            }))
+          }
+        });
+      } else {
+        pushHist({ t: "cols", before: colsChange.before, after: colsChange.after });
+      }
     }
   }
 
@@ -569,6 +629,19 @@ export function BroadcastPanel({
       if (b.x < hi.x && b.x + b.w > lo.x && b.y < hi.y && b.y + h > lo.y) next.add(k);
     }
     setColSel(next);
+    // 획(필기)도 라이브 선택 — 보이는·안 잠긴 레이어의 획만, 점 하나라도 밴드 안이면.
+    const layerOk = new Map(layersRef.current.map((l) => [l.id, l.vis && !l.lock]));
+    const hit: Stroke[] = [];
+    for (const s of store.strokes()) {
+      if (s.tool === "eraser" || !layerOk.get(s.layer)) continue;
+      for (const pt of s.points) {
+        if (pt.x >= lo.x && pt.x <= hi.x && pt.y >= lo.y && pt.y <= hi.y) {
+          hit.push(s);
+          break;
+        }
+      }
+    }
+    setStrokeSel(hit);
   }
   function onBoardPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (tool !== "select" || e.button !== 0) return;
@@ -601,8 +674,121 @@ export function BroadcastPanel({
     marqueeRef.current = null;
     setMarquee(null);
     stopAutoScroll();
-    // 사실상 클릭(움직임 3px 미만) = 빈 바닥 클릭 → 선택 해제.
-    if (p && Math.hypot(p.x - m.x1, p.y - m.y1) < 3) setColSel(new Set());
+    // 사실상 클릭(움직임 3px 미만) = 빈 바닥 클릭 → 선택 해제(카드+획).
+    if (p && Math.hypot(p.x - m.x1, p.y - m.y1) < 3) {
+      setColSel(new Set());
+      setStrokeSel([]);
+    }
+  }
+
+  // ── 선택 획 박스(그림판 선택 문법): 점선 bbox — 끌면 이동, 모서리 손잡이로 확대/축소 ──
+  const strokeSelBox = useMemo(() => {
+    if (tool !== "select" || strokeSel.length === 0) return null;
+    const live = new Set(store.strokes());
+    const sel = strokeSel.filter((s) => live.has(s)); // 레이어 삭제 등으로 사라진 획 제외
+    if (sel.length === 0) return null;
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const s of sel) {
+      const half = s.width / 2 + 2;
+      for (const pt of s.points) {
+        minX = Math.min(minX, pt.x - half);
+        minY = Math.min(minY, pt.y - half);
+        maxX = Math.max(maxX, pt.x + half);
+        maxY = Math.max(maxY, pt.y + half);
+      }
+    }
+    return { x: minX, y: minY, w: maxX - minX, h: maxY - minY, sel };
+    // strokeVersion: 이동/확대/undo가 획 기하를 바꿀 때 박스를 따라오게 하는 신호.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tool, strokeSel, store, strokeVersion]);
+  // 박스 빈 면을 잡으면 = 선택된 카드 grab과 동일한 그룹 이동 제스처(획 + 선택 카드).
+  function onStrokeBoxPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (tool !== "select" || e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    const origs = new Map<string, ColBox>();
+    for (const k of colSelRef.current) {
+      const b = colsRef.current.get(k);
+      if (b) origs.set(k, b);
+    }
+    dragColRef.current = {
+      key: "",
+      mode: "move",
+      startX: e.clientX,
+      startY: e.clientY,
+      orig: { x: 0, y: 0, w: COL_DEFAULT_W },
+      origs,
+      beforeAll: new Map(colsRef.current),
+      moved: false,
+      startSL: boardScrollRef.current?.scrollLeft ?? 0,
+      startST: boardScrollRef.current?.scrollTop ?? 0,
+      maxX: (boardInnerRef.current?.offsetWidth ?? 4000) + 480,
+      maxY: (boardInnerRef.current?.offsetHeight ?? 3000) + 480,
+      clamp: { xPos: false, xNeg: false, yPos: false, yNeg: false },
+      strokeOrigs: snapshotStrokes(strokeSelRef.current)
+    };
+  }
+  // 모서리 손잡이: bbox 왼쪽 위를 앵커로 균일 확대/축소 — 굵기도 비례(그림판 감각).
+  const strokeScaleRef = useRef<{
+    pointerId: number;
+    anchor: { x: number; y: number };
+    startW: number;
+    startH: number;
+    origs: Map<Stroke, StrokeGeom>;
+  } | null>(null);
+  function onStrokeScaleDown(e: React.PointerEvent<HTMLElement>) {
+    if (tool !== "select" || e.button !== 0 || !strokeSelBox) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    strokeScaleRef.current = {
+      pointerId: e.pointerId,
+      anchor: { x: strokeSelBox.x, y: strokeSelBox.y },
+      startW: Math.max(8, strokeSelBox.w),
+      startH: Math.max(8, strokeSelBox.h),
+      origs: snapshotStrokes(strokeSelBox.sel)
+    };
+  }
+  function onStrokeScaleMove(e: React.PointerEvent<HTMLElement>) {
+    const sc = strokeScaleRef.current;
+    if (!sc || e.pointerId !== sc.pointerId) return;
+    const p = innerPointC(e.clientX, e.clientY);
+    if (!p) return;
+    const s = Math.max(
+      0.2,
+      Math.min(8, Math.max((p.x - sc.anchor.x) / sc.startW, (p.y - sc.anchor.y) / sc.startH))
+    );
+    for (const [st, g] of sc.origs) {
+      st.points = g.points.map((pt) => ({
+        x: sc.anchor.x + (pt.x - sc.anchor.x) * s,
+        y: sc.anchor.y + (pt.y - sc.anchor.y) * s,
+        p: pt.p
+      }));
+      st.width = Math.max(0.5, Math.min(240, g.width * s));
+    }
+    repaintStrokeLayers(sc.origs);
+  }
+  function onStrokeScaleUp(e: React.PointerEvent<HTMLElement>) {
+    const sc = strokeScaleRef.current;
+    if (!sc || e.pointerId !== sc.pointerId) return;
+    strokeScaleRef.current = null;
+    const targets = [...sc.origs.keys()];
+    pushHist({
+      t: "xform",
+      cols: null,
+      strokes: {
+        targets,
+        before: targets.map((st) => sc.origs.get(st)!),
+        after: targets.map((st) => ({
+          points: st.points.map((pt) => ({ ...pt })),
+          width: st.width
+        }))
+      }
+    });
   }
 
   // ── 정렬(2개 이상 선택 시) — 위 맞춤 · 세로 중앙 · 왼쪽 맞춤 · 가로 균등 간격 ──
@@ -725,6 +911,8 @@ export function BroadcastPanel({
     for (const id of layerCanvases.current.keys()) replayLayer(id);
     clearCanvas(liveCanvasRef.current);
   }, [replayLayer, clearCanvas]);
+  // 위쪽 제스처 코드(획 이동/확대)가 최신 replayLayer를 부르게 ref로 노출(선언 순서 제약 회피).
+  replayLayerFnRef.current = replayLayer;
 
   // 진행 중인 stroke를 지금 즉시 '완성'으로 커밋한다. 포인터 업뿐 아니라 undo/redo/전체
   // 지우기/리사이즈 직전에도 호출 — replayAll이 live 획을 날린 채 drawnIdxRef만 앞서 있는
@@ -738,13 +926,15 @@ export function BroadcastPanel({
     }
     drawingRef.current = null;
     activePtrRef.current = null;
-    if (live.tool === "hl" || isShapeTool(live.tool)) {
-      // 형광펜·도형: 라이브 → 자기 레이어 committed로 한 번에 옮긴다.
+    if (live.tool !== "eraser") {
+      // 펜·형광펜·도형: 라이브 → 자기 레이어 committed로 한 번에 옮긴다.
+      // (펜도 라이브 전체 리드로 — 증분 커밋은 '임시 직선 꼬리'가 committed에 남아
+      //  그리는 동안 울퉁불퉁했다가 재생 때만 매끈해지는 불일치를 만들었다.)
       clearCanvas(liveCanvasRef.current);
       const ctx = scaledCtx(canvasOf(live.layer));
       if (ctx) drawStroke(ctx, live);
     } else {
-      // 남은 꼬리 구간 마저 커밋(-2: 중점 베지어 조각이 이웃 2점을 참조 — 곡선 이음 보존).
+      // 지우개: 남은 꼬리 구간 마저 커밋(-2: 중점 베지어 조각이 이웃 2점 참조 — 이음 보존).
       const from = Math.max(0, drawnIdxRef.current - 2);
       if (live.points.length > drawnIdxRef.current || drawnIdxRef.current === 0) {
         const segment: Stroke = { ...live, points: live.points.slice(from) };
@@ -827,16 +1017,17 @@ export function BroadcastPanel({
     rafRef.current = null;
     const live = drawingRef.current;
     if (!live) return;
-    if (live.tool === "hl" || isShapeTool(live.tool)) {
-      // 형광펜(이음매 진해짐 방지)·도형(끝점이 계속 바뀜): 라이브 캔버스에 통째로 다시.
+    if (live.tool !== "eraser") {
+      // 펜(곡선·가변 굵기가 매 점 과거까지 바뀜)·형광펜(이음매 진해짐 방지)·도형(끝점이
+      // 계속 바뀜): 라이브 캔버스에 통째로 다시 — 그리는 동안과 재생 결과가 항상 같다.
       clearCanvas(liveCanvasRef.current);
       const ctx = scaledCtx(liveCanvasRef.current);
       if (ctx) drawStroke(ctx, live);
       return;
     }
-    // 펜·지우개: 새 구간만 자기 레이어 committed 캔버스에 증분 렌더.
-    // -2 겹침: 중점 베지어 조각이 이웃 2점을 참조 — 겹친 조각은 같은 기하의 재도장이라
-    // 불투명 펜/지우개에선 보이지 않고, 곡선 이음이 전체 재생과 일치한다.
+    // 지우개: 새 구간만 자기 레이어 committed 캔버스에 증분 렌더(라이브 캔버스로는
+    // destination-out이 committed 픽셀을 못 지운다).
+    // -2 겹침: 중점 베지어 조각이 이웃 2점을 참조 — 겹친 조각은 같은 기하의 재도장.
     if (drawnIdxRef.current !== 0 && drawnIdxRef.current >= live.points.length) return; // 새 점 없음
     const from = Math.max(0, drawnIdxRef.current - 2);
     const segment: Stroke = { ...live, points: live.points.slice(from) };
@@ -934,6 +1125,16 @@ export function BroadcastPanel({
       // 복원된 위치를 유지한다(빠졌다 돌아온 날짜의 자리 보존).
       setCols(new Map(a.colsBefore));
       onRestoreSent(a.before);
+    } else if (a.t === "xform") {
+      if (a.cols) setCols(new Map(a.cols.before));
+      if (a.strokes) {
+        a.strokes.targets.forEach((s, i) => {
+          const g = a.strokes!.before[i];
+          s.points = g.points.map((pt) => ({ ...pt }));
+          s.width = g.width;
+        });
+        replayAll();
+      }
     } else {
       setLayers(a.before);
       if (!a.before.some((l) => l.id === activeLayerId)) {
@@ -956,6 +1157,16 @@ export function BroadcastPanel({
       setCols(new Map(a.after));
     } else if (a.t === "sent") {
       onRestoreSent(a.after);
+    } else if (a.t === "xform") {
+      if (a.cols) setCols(new Map(a.cols.after));
+      if (a.strokes) {
+        a.strokes.targets.forEach((s, i) => {
+          const g = a.strokes!.after[i];
+          s.points = g.points.map((pt) => ({ ...pt }));
+          s.width = g.width;
+        });
+        replayAll();
+      }
     } else {
       setLayers(a.after);
       if (!a.after.some((l) => l.id === activeLayerId)) {
@@ -1064,9 +1275,10 @@ export function BroadcastPanel({
       // 색 팝오버가 열려 있는 동안엔 팝오버가 키보드(Esc/입력)를 갖는다 — 패널 단축키 정지.
       if (colorPopRef.current) return;
       if (e.key === "Escape") {
-        // 우선순위: 카드 다중선택 해제 → 날짜 선택 해제 → 창 닫기(한 번에 하나).
-        if (colSelRef.current.size > 0) {
+        // 우선순위: 카드/획 다중선택 해제 → 날짜 선택 해제 → 창 닫기(한 번에 하나).
+        if (colSelRef.current.size > 0 || strokeSelRef.current.length > 0) {
           setColSel(new Set());
+          setStrokeSel([]);
           return;
         }
         if (rangeSelect.getSelected().size > 0) {
@@ -1255,8 +1467,9 @@ export function BroadcastPanel({
                 onClick={() => {
                   hapticTick();
                   setPenColor(c);
-                  // 색을 골랐다 = 그릴 준비 — 선택 도구였다면 펜으로 바꿔준다(그림판 감각).
-                  if (tool === "select") setTool("pen");
+                  // 색을 골랐다 = 그릴 준비 — 색을 안 쓰는 도구(선택·지우개)였다면 펜으로.
+                  // (형광펜·도형은 색을 쓰므로 유지 — 색만 바꿔서 계속 그린다.)
+                  if (tool === "select" || tool === "eraser") setTool("pen");
                 }}
               />
             ))}
@@ -1282,7 +1495,7 @@ export function BroadcastPanel({
                   anchor: e.currentTarget.getBoundingClientRect(),
                   openedWith: penColor
                 });
-                if (tool === "select") setTool("pen");
+                if (tool === "select" || tool === "eraser") setTool("pen");
               }}
             />
           </div>
@@ -1297,7 +1510,10 @@ export function BroadcastPanel({
                 setPenColor(colorPop.openedWith);
                 setColorPop(null);
               }}
-              onChange={(hex) => setPenColor(hex)}
+              onChange={(hex) => {
+                setPenColor(hex);
+                if (tool === "select" || tool === "eraser") setTool("pen");
+              }}
               onClear={() => {}}
               onClose={() => setColorPop(null)}
             />
@@ -1663,6 +1879,33 @@ export function BroadcastPanel({
                 height: Math.abs(marquee.y2 - marquee.y1)
               }}
             />
+          ) : null}
+          {/* 선택 획 박스(그림판 선택 문법) — 끌면 이동, 오른쪽 아래 손잡이로 확대/축소. */}
+          {strokeSelBox ? (
+            <div
+              aria-label={`선택된 필기 ${strokeSelBox.sel.length}개 — 끌어서 이동`}
+              className="bp-stroke-sel"
+              role="group"
+              style={{
+                left: strokeSelBox.x,
+                top: strokeSelBox.y,
+                width: strokeSelBox.w,
+                height: strokeSelBox.h
+              }}
+              onLostPointerCapture={onColPointerUp}
+              onPointerDown={onStrokeBoxPointerDown}
+              onPointerMove={onColPointerMove}
+              onPointerUp={onColPointerUp}
+            >
+              <span
+                aria-hidden="true"
+                className="bp-stroke-sel-handle"
+                onLostPointerCapture={onStrokeScaleUp}
+                onPointerDown={onStrokeScaleDown}
+                onPointerMove={onStrokeScaleMove}
+                onPointerUp={onStrokeScaleUp}
+              />
+            </div>
           ) : null}
           {/* 스냅 정렬 가이드(드래그 중 가장자리/중앙선이 맞으면 표시) */}
           {guides.v.map((x) => (
