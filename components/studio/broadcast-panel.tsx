@@ -1006,7 +1006,8 @@ export function BroadcastPanel({
     const out: string[] = [];
     for (const i of rangeSelect.getSelected()) {
       const cell = cells[i];
-      if (cell?.inCurrentMonth) out.push(cell.isoDate); // 전월/익월 회색 날짜 제외(Q3)
+      // 전월/익월 회색 날짜도 선택 허용 — 주역은 아니어도 월 경계에 걸친 방송 설명에 필요.
+      if (cell) out.push(cell.isoDate);
     }
     return out;
   }, [cells, rangeSelect]);
@@ -1457,7 +1458,7 @@ export function BroadcastPanel({
               {cells.map((cell, i) => {
                 const evs = eventsByDate.get(cell.isoDate) ?? [];
                 const inMonth = cell.inCurrentMonth;
-                const picked = inMonth && rangeSelect.selected.has(i);
+                const picked = rangeSelect.selected.has(i);
                 const cls = [
                   "bp-mini-cell",
                   inMonth ? "" : "outside",
@@ -1466,42 +1467,33 @@ export function BroadcastPanel({
                 ]
                   .filter(Boolean)
                   .join(" ");
-                // 회색(전월/익월) 날짜: data-cell-index를 아예 안 달아 선택 시작·드래그 anchor·
-                // picked 대상에서 제외(Q3). 키보드: Enter/Space = Ctrl+클릭과 같은 개별 토글.
+                // 회색(전월/익월) 날짜도 선택 가능 — 월 경계에 걸친 설명에 필요(주역 아님은
+                // 스타일로만 구분). 키보드: Enter/Space = Ctrl+클릭과 같은 개별 토글.
                 return (
                   <div
                     aria-checked={picked}
                     aria-label={`${Number(cell.isoDate.slice(5, 7))}월 ${cell.dayOfMonth}일${evs.length > 0 ? ` (일정 ${evs.length}개)` : ""}`}
                     className={cls}
-                    data-cell-index={inMonth ? i : undefined}
+                    data-cell-index={i}
                     key={cell.isoDate}
-                    role={inMonth ? "checkbox" : undefined}
-                    aria-hidden={inMonth ? undefined : true}
-                    tabIndex={inMonth ? 0 : undefined}
-                    onKeyDown={
-                      inMonth
-                        ? (e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              hapticTick();
-                              rangeSelect.toggleIndex(i);
-                            }
-                          }
-                        : undefined
-                    }
+                    role="checkbox"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        hapticTick();
+                        rangeSelect.toggleIndex(i);
+                      }
+                    }}
                   >
                     <span className="bp-mini-num">{cell.dayOfMonth}</span>
-                    {/* 어떤 일정인지 보고 고르게 — 제목 미리보기(이전 화면 안 봐도 됨). */}
-                    {inMonth
-                      ? evs.slice(0, 2).map((ev) => (
-                          <em className="bp-mini-title" key={ev.id}>
-                            {ev.teaser ? "🔮 ???" : splitEventTitle(ev.publicTitle).main}
-                          </em>
-                        ))
-                      : null}
-                    {inMonth && evs.length > 2 ? (
-                      <i className="bp-mini-more">+{evs.length - 2}</i>
-                    ) : null}
+                    {/* 어떤 일정인지 보고 고르게 — 제목 미리보기(회색 날짜도 동일, 톤만 죽임). */}
+                    {evs.slice(0, 2).map((ev) => (
+                      <em className="bp-mini-title" key={ev.id}>
+                        {ev.teaser ? "🔮 ???" : splitEventTitle(ev.publicTitle).main}
+                      </em>
+                    ))}
+                    {evs.length > 2 ? <i className="bp-mini-more">+{evs.length - 2}</i> : null}
                   </div>
                 );
               })}

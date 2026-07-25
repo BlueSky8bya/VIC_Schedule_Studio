@@ -189,10 +189,13 @@ html[data-reduce-motion] .broadcast-panel > * {
 .bp-mini-cell:hover {
   background: rgb(124 108 240 / 8%);
 }
+/* 전월/익월 회색 날짜 — 선택은 되게, '주역 아님'은 톤으로만(선택하면 또렷해짐). */
 .bp-mini-cell.outside {
-  opacity: 0.32;
-  cursor: default;
-  pointer-events: none; /* 선택 불가(회색 날짜) — hover 반응도 없음 */
+  opacity: 0.42;
+}
+.bp-mini-cell.outside:hover,
+.bp-mini-cell.outside.picked {
+  opacity: 0.9;
 }
 .bp-mini-cell:focus-visible {
   outline: 2px solid rgb(124 108 240 / 70%);

@@ -1459,9 +1459,9 @@ export function StudioShell({
   const broadcastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const broadcastDays = useMemo(() => {
     if (!broadcastOpen) return [];
-    // 보고 있는 달 + 이미 보낸 날짜(다른 달일 수 있음) 합집합 — 월을 넘나들어도 보낸 카드
-    // 데이터가 사라지지 않는다.
-    const monthKeys = broadcastCells.filter((c) => c.inCurrentMonth).map((c) => c.isoDate);
+    // 보고 있는 달 42칸 전체(전월/익월 회색 날짜도 선택 가능) + 이미 보낸 날짜(다른 달일 수
+    // 있음) 합집합 — 월을 넘나들어도 보낸 카드 데이터가 사라지지 않는다.
+    const monthKeys = broadcastCells.map((c) => c.isoDate);
     return toBroadcastPanelDays(schedule.viewerModePreview, [...monthKeys, ...broadcastSent]);
   }, [broadcastOpen, broadcastCells, broadcastSent, schedule.viewerModePreview]);
   function navBroadcastMonth(delta: number) {
