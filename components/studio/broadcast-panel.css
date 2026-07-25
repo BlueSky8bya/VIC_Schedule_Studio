@@ -232,10 +232,26 @@ html[data-reduce-motion] .broadcast-panel > * {
 .bp-tool-group:last-of-type {
   border-right: 0;
 }
+/* 조화 3요소 계약 — ① 통일: 모든 그룹이 같은 버튼 크기·간격·라벨을 쓴다.
+   ② 균형: 색 트레이(2줄)에 맞춰 모든 그룹 행 높이를 44px로 통일 — 들쭉날쭉한
+   형제 높이는 결함. ③ 근접: 관련 버튼은 2×N 격자로 뭉치고 구분선·라벨로 묶는다. */
 .bp-group-row {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  min-height: 44px;
+}
+/* 4개짜리 그룹(도구·도형·정렬)은 2×2 격자 — 색 트레이와 같은 두 줄 리듬. */
+.bp-group-row.bp-grid2 {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 4px 5px;
+}
+/* 굵기 6단은 2×3 격자. */
+.bp-group-row.bp-grid3 {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 4px 5px;
 }
 .bp-group-label {
   font-size: 10.5px;
@@ -289,13 +305,40 @@ html[data-reduce-motion] .broadcast-panel > * {
   font-weight: 800;
   white-space: nowrap;
 }
+/* 색 트레이 — 그림판식 2줄 격자(17색 + 직접 고르기). */
+.bp-colors {
+  display: grid;
+  grid-template-columns: repeat(9, auto);
+  gap: 4px;
+  align-items: center;
+  justify-items: center;
+}
 .bp-color {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border: 2px solid rgb(0 0 0 / 12%);
   border-radius: 50%;
   cursor: pointer;
   transition: transform var(--dur-1) var(--ease);
+}
+/* 직접 고르기(네이티브 색상판) — 무지개 원뿔 그라데이션 스와치로 표시. */
+.bp-color-custom {
+  padding: 0;
+  background: conic-gradient(#e11d48, #f59e0b, #22c55e, #06b6d4, #6366f1, #d946ef, #e11d48);
+  appearance: none;
+  -webkit-appearance: none;
+}
+.bp-color-custom::-webkit-color-swatch-wrapper {
+  padding: 0;
+  opacity: 0;
+}
+.bp-color-custom::-webkit-color-swatch {
+  border: 0;
+  opacity: 0;
+}
+.bp-color-custom::-moz-color-swatch {
+  border: 0;
+  opacity: 0;
 }
 .bp-color:hover {
   transform: scale(1.12);

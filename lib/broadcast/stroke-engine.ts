@@ -10,7 +10,20 @@
 //   대상이 아니게 된다(G0-rr: 화면에서 삭제 금지).
 // - stroke point 단순화: 마지막 점에서 MIN_POINT_DIST(px) 미만 이동은 버린다(장시간 판서 메모리).
 
-export type BroadcastTool = "select" | "pen" | "hl" | "eraser";
+export type BroadcastTool =
+  | "select"
+  | "pen"
+  | "hl"
+  | "eraser"
+  | "line"
+  | "arrow"
+  | "rect"
+  | "ellipse";
+
+/** 도형 도구 — 시작점·끝점 2점만 의미 있고, 드래그 중엔 끝점만 갱신된다(라이브 프리뷰). */
+export function isShapeTool(tool: BroadcastTool): tool is "line" | "arrow" | "rect" | "ellipse" {
+  return tool === "line" || tool === "arrow" || tool === "rect" || tool === "ellipse";
+}
 /** 그리기 레이어 id — 사용자가 ➕로 자유 추가/삭제한다(배경은 DOM이라 여기 없음). */
 export type StrokeLayer = string;
 
@@ -159,13 +172,53 @@ export function drawStroke(ctx: MinimalCtx, stroke: Stroke): void {
     ctx.strokeStyle = stroke.color;
   }
   ctx.beginPath();
-  const [first, ...rest] = stroke.points;
-  ctx.moveTo(first.x, first.y);
-  if (rest.length === 0) {
-    // 점 하나(탭) — 아주 짧은 선으로 찍어준다.
-    ctx.lineTo(first.x + 0.1, first.y + 0.1);
+  if (isShapeTool(stroke.tool)) {
+    // 도형: 시작점→끝점 2점으로 기하를 그린다. moveTo/lineTo만 사용(테스트 mock 호환) —
+    // 원은 64분할 폴리라인(round join이라 매끈하게 보인다).
+    const a = stroke.points[0];
+    const b = stroke.points[stroke.points.length - 1] ?? a;
+    if (stroke.tool === "line" || stroke.tool === "arrow") {
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      if (stroke.tool === "arrow") {
+        const ang = Math.atan2(b.y - a.y, b.x - a.x);
+        const head = Math.max(10, stroke.width * 3);
+        for (const off of [(Math.PI * 5) / 6, -(Math.PI * 5) / 6]) {
+          ctx.moveTo(b.x, b.y);
+          ctx.lineTo(b.x + Math.cos(ang + off) * head, b.y + Math.sin(ang + off) * head);
+        }
+      }
+    } else if (stroke.tool === "rect") {
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.lineTo(a.x, b.y);
+      ctx.lineTo(a.x, a.y);
+      // 시작 모서리 이음 마감 — 한 변 더 지나가 round join이 걸리게 한다.
+      ctx.lineTo(b.x, a.y);
+    } else {
+      const cx = (a.x + b.x) / 2;
+      const cy = (a.y + b.y) / 2;
+      const rx = Math.abs(b.x - a.x) / 2;
+      const ry = Math.abs(b.y - a.y) / 2;
+      const SEG = 64;
+      for (let i = 0; i <= SEG; i += 1) {
+        const t = (i / SEG) * Math.PI * 2;
+        const x = cx + Math.cos(t) * rx;
+        const y = cy + Math.sin(t) * ry;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+    }
   } else {
-    for (const p of rest) ctx.lineTo(p.x, p.y);
+    const [first, ...rest] = stroke.points;
+    ctx.moveTo(first.x, first.y);
+    if (rest.length === 0) {
+      // 점 하나(탭) — 아주 짧은 선으로 찍어준다.
+      ctx.lineTo(first.x + 0.1, first.y + 0.1);
+    } else {
+      for (const p of rest) ctx.lineTo(p.x, p.y);
+    }
   }
   ctx.stroke();
   ctx.globalAlpha = 1;

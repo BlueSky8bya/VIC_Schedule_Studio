@@ -23,6 +23,7 @@ import {
   AlignHorizontalDistributeCenter,
   AlignStartHorizontal,
   AlignStartVertical,
+  Circle,
   Eraser,
   Eye,
   EyeOff,
@@ -30,8 +31,11 @@ import {
   Lock,
   LockOpen,
   MousePointer2,
+  MoveUpRight,
   Pen,
   Redo2,
+  Slash,
+  Square,
   Trash2,
   Undo2,
   X
@@ -47,6 +51,7 @@ import {
   backingScale,
   createStrokeStore,
   drawStroke,
+  isShapeTool,
   strokeAppliesTo,
   type BroadcastTool,
   type Stroke,
@@ -55,10 +60,28 @@ import {
 } from "@/lib/broadcast/stroke-engine";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
-// 판서 팔레트 6색(목업) — 빨/주/노/초/파/검.
-const PEN_COLORS = ["#e11d48", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#1f2937"];
-// 굵기 3단(펜 기준 px) — 형광펜·지우개는 배수로 키운다.
-const PEN_WIDTHS = [3, 5, 8];
+// 판서 팔레트 17색(그림판식 2줄 트레이) + 마지막 칸 '직접 고르기'(네이티브 색상판).
+const PEN_COLORS = [
+  "#1f2937",
+  "#6b7280",
+  "#92400e",
+  "#e11d48",
+  "#f97316",
+  "#f59e0b",
+  "#eab308",
+  "#84cc16",
+  "#22c55e",
+  "#14b8a6",
+  "#06b6d4",
+  "#3b82f6",
+  "#6366f1",
+  "#8b5cf6",
+  "#a855f7",
+  "#d946ef",
+  "#ec4899"
+];
+// 굵기 6단(펜 기준 px) — 형광펜·지우개는 배수로 키운다.
+const PEN_WIDTHS = [2, 3, 5, 8, 12, 18];
 
 type Props = {
   monthLabel: string; // 예: "2026년 7월"
@@ -705,8 +728,8 @@ export function BroadcastPanel({
     }
     drawingRef.current = null;
     activePtrRef.current = null;
-    if (live.tool === "hl") {
-      // 라이브 → 자기 레이어 committed로 한 번에 옮긴다.
+    if (live.tool === "hl" || isShapeTool(live.tool)) {
+      // 형광펜·도형: 라이브 → 자기 레이어 committed로 한 번에 옮긴다.
       clearCanvas(liveCanvasRef.current);
       const ctx = scaledCtx(canvasOf(live.layer));
       if (ctx) drawStroke(ctx, live);
@@ -794,8 +817,8 @@ export function BroadcastPanel({
     rafRef.current = null;
     const live = drawingRef.current;
     if (!live) return;
-    if (live.tool === "hl") {
-      // 형광펜: 라이브 캔버스에 현재 stroke만 통째로(이음매 진해짐 방지).
+    if (live.tool === "hl" || isShapeTool(live.tool)) {
+      // 형광펜(이음매 진해짐 방지)·도형(끝점이 계속 바뀜): 라이브 캔버스에 통째로 다시.
       clearCanvas(liveCanvasRef.current);
       const ctx = scaledCtx(liveCanvasRef.current);
       if (ctx) drawStroke(ctx, live);
@@ -835,6 +858,29 @@ export function BroadcastPanel({
     if (!live || e.pointerId !== activePtrRef.current) return;
     const p = boardPoint(e);
     if (!p) return;
+    if (isShapeTool(live.tool)) {
+      // 도형: 시작점 고정, 끝점만 갱신. Shift = 정비율(45° 선 / 정사각형 / 정원).
+      const a = live.points[0];
+      let end = p;
+      if (e.shiftKey) {
+        if (live.tool === "line" || live.tool === "arrow") {
+          const dx = p.x - a.x;
+          const dy = p.y - a.y;
+          const ang = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
+          const len = Math.hypot(dx, dy);
+          end = { x: a.x + Math.cos(ang) * len, y: a.y + Math.sin(ang) * len };
+        } else {
+          const s = Math.max(Math.abs(p.x - a.x), Math.abs(p.y - a.y));
+          end = {
+            x: a.x + Math.sign(p.x - a.x || 1) * s,
+            y: a.y + Math.sign(p.y - a.y || 1) * s
+          };
+        }
+      }
+      live.points = [a, end];
+      scheduleFlush();
+      return;
+    }
     if (appendPoint(live.points, p)) scheduleFlush();
   }
   function endDraw(e?: React.PointerEvent<HTMLDivElement>) {
@@ -1107,7 +1153,7 @@ export function BroadcastPanel({
           role은 group — toolbar 역할은 방향키 roving tabindex가 필수라(G3b) 일반 Tab 이동으로 둔다. */}
       <div className="bp-toolbar" role="group" aria-label="판서 도구">
         <div className="bp-tool-group" role="group" aria-label="도구">
-          <div className="bp-group-row">
+          <div className="bp-group-row bp-grid2">
             {(
               [
                 ["select", "선택", MousePointer2],
@@ -1134,8 +1180,36 @@ export function BroadcastPanel({
           </div>
           <em className="bp-group-label">도구</em>
         </div>
+        <div className="bp-tool-group" role="group" aria-label="도형">
+          <div className="bp-group-row bp-grid2">
+            {(
+              [
+                ["line", "직선", Slash],
+                ["arrow", "화살표", MoveUpRight],
+                ["rect", "사각형", Square],
+                ["ellipse", "원", Circle]
+              ] as const
+            ).map(([key, label, Icon]) => (
+              <button
+                aria-label={label}
+                aria-pressed={tool === key}
+                className={`bp-tool${tool === key ? " on" : ""}`}
+                key={key}
+                title={`${label} — Shift로 정비율`}
+                type="button"
+                onClick={() => {
+                  hapticTick();
+                  setTool(key);
+                }}
+              >
+                <Icon aria-hidden="true" size={16} />
+              </button>
+            ))}
+          </div>
+          <em className="bp-group-label">도형</em>
+        </div>
         <div className="bp-tool-group" role="group" aria-label="색">
-          <div className="bp-group-row">
+          <div className="bp-colors">
             {PEN_COLORS.map((c) => (
               <button
                 aria-label={`펜 색 ${c}`}
@@ -1147,14 +1221,30 @@ export function BroadcastPanel({
                 onClick={() => {
                   hapticTick();
                   setPenColor(c);
+                  // 색을 골랐다 = 그릴 준비 — 선택 도구였다면 펜으로 바꿔준다(그림판 감각).
+                  if (tool === "select") setTool("pen");
                 }}
               />
             ))}
+            {/* 직접 고르기 — 네이티브 색상판. 팔레트에 없는 색이 선택돼 있으면 이 칸이 켜진다. */}
+            <input
+              aria-label="색 직접 고르기"
+              className={`bp-color bp-color-custom${PEN_COLORS.includes(penColor) ? "" : " on"}`}
+              style={PEN_COLORS.includes(penColor) ? undefined : { background: penColor }}
+              title="색 직접 고르기"
+              type="color"
+              value={PEN_COLORS.includes(penColor) ? "#7c6cf0" : penColor}
+              onChange={(e) => {
+                setPenColor(e.target.value);
+                if (tool === "select") setTool("pen");
+              }}
+              onClick={() => hapticTick()}
+            />
           </div>
           <em className="bp-group-label">색</em>
         </div>
         <div className="bp-tool-group" role="group" aria-label="굵기">
-          <div className="bp-group-row">
+          <div className="bp-group-row bp-grid3">
             {PEN_WIDTHS.map((w) => (
               <button
                 aria-label={`굵기 ${w}px`}
@@ -1167,7 +1257,7 @@ export function BroadcastPanel({
                   setPenWidth(w);
                 }}
               >
-                <i style={{ width: w + 2, height: w + 2 }} />
+                <i style={{ width: Math.min(w + 2, 18), height: Math.min(w + 2, 18) }} />
               </button>
             ))}
           </div>
@@ -1216,7 +1306,7 @@ export function BroadcastPanel({
         </div>
         {tool === "select" && colSel.size >= 2 ? (
           <div className="bp-tool-group" role="group" aria-label="정렬">
-            <div className="bp-group-row">
+            <div className="bp-group-row bp-grid2">
               <button
                 aria-label="위 맞춤"
                 className="bp-tool"
