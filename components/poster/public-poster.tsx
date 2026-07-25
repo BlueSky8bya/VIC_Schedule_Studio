@@ -3412,41 +3412,59 @@ export function PublicPoster({
                           ) : end && end !== cell.isoDate ? (
                             <p className="agenda-sub">~ {formatShortDate(end)}까지</p>
                           ) : null}
-                          {!support && subs.length > 0 ? (
-                            <ul className="agenda-subs">
-                              {subs.map((sub, i) => (
-                                <li key={i}>{sub}</li>
-                              ))}
-                            </ul>
-                          ) : null}
-                          {support && event.supportUrl ? (
-                            <a
-                              className="agenda-link"
-                              href={event.supportUrl}
-                              rel="noopener noreferrer"
-                              target="_blank"
-                            >
-                              도우러 가기
-                              <ExternalLink aria-hidden="true" size={13} />
-                            </a>
-                          ) : null}
-                          {/* 메타 한 줄: 관심(왼쪽) + 형식색 점(오른쪽) — 따로 흩어지던 둘을 묶어 폭을 채운다. */}
-                          {tier || extraColors.length > 0 ? (
-                            <div className="agenda-meta">
-                              {tier ? (
-                                <span className={`event-popular tier-${tier.key}`} title={tier.label} aria-label={`관심 단계: ${tier.label}`}>
-                                  <span className="flame" aria-hidden="true">{tier.flames}</span>
-                                </span>
-                              ) : null}
-                              {extraColors.length > 0 ? (
-                                <span className="pill-dots" aria-hidden="true">
-                                  {extraColors.map((c, i) => (
-                                    <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
-                                  ))}
-                                </span>
-                              ) : null}
-                            </div>
-                          ) : null}
+                          {/* 형식색 점은 PC와 동일하게 '마지막 서브 줄 오른쪽'에 함께 둔다 — 서브 빈
+                              공간에 다 들어가면 같은 줄(별도 점 줄 없이 높이 절약), 안 들어가면 flex-wrap으로
+                              점만 아래로. 서브가 없으면 아래 메타 줄에 (불꽃과 함께) 오른쪽 정렬로 둔다. */}
+                          {(() => {
+                            const dots = !support && extraColors.length > 0 ? (
+                              <span className="pill-dots" aria-hidden="true">
+                                {extraColors.map((c, i) => (
+                                  <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                                ))}
+                              </span>
+                            ) : null;
+                            const dotsInSub = dots && subs.length > 0;
+                            return (
+                              <>
+                                {!support && subs.length > 0 ? (
+                                  <ul className="agenda-subs">
+                                    {subs.map((sub, i) =>
+                                      i === subs.length - 1 && dotsInSub ? (
+                                        <li key={i} className="pill-sub-last">
+                                          <span className="pill-sub-text">{sub}</span>
+                                          {dots}
+                                        </li>
+                                      ) : (
+                                        <li key={i}>{sub}</li>
+                                      )
+                                    )}
+                                  </ul>
+                                ) : null}
+                                {support && event.supportUrl ? (
+                                  <a
+                                    className="agenda-link"
+                                    href={event.supportUrl}
+                                    rel="noopener noreferrer"
+                                    target="_blank"
+                                  >
+                                    도우러 가기
+                                    <ExternalLink aria-hidden="true" size={13} />
+                                  </a>
+                                ) : null}
+                                {/* 메타 한 줄: 관심(왼쪽) + (서브 없을 때만) 형식색 점(오른쪽). */}
+                                {tier || (dots && subs.length === 0) ? (
+                                  <div className="agenda-meta">
+                                    {tier ? (
+                                      <span className={`event-popular tier-${tier.key}`} title={tier.label} aria-label={`관심 단계: ${tier.label}`}>
+                                        <span className="flame" aria-hidden="true">{tier.flames}</span>
+                                      </span>
+                                    ) : null}
+                                    {dots && subs.length === 0 ? dots : null}
+                                  </div>
+                                ) : null}
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     );

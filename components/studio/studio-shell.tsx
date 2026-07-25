@@ -3948,21 +3948,41 @@ export function StudioShell({
                                 </span>
                               ) : null}
                             </p>
-                            {!event.isSupport && subs.length > 0 ? (
-                              <ul className="agenda-subs">
-                                {subs.map((s, i) => (
-                                  <li key={i}>{s}</li>
-                                ))}
-                              </ul>
-                            ) : null}
-                            {/* PR2: 막대 색(≤2)에 못 담은 추가 대분류 점 줄. */}
-                            {!event.isSupport && extraColors.length > 0 ? (
-                              <span className="pill-dots" aria-hidden="true">
-                                {extraColors.map((c, i) => (
-                                  <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
-                                ))}
-                              </span>
-                            ) : null}
+                            {/* PR2: 막대 색(≤2)에 못 담은 추가 대분류 형식색 점 줄. PC·시청자와 동일하게
+                                '마지막 서브 줄 오른쪽'에 함께 둔다 — 서브 빈 공간에 다 들어가면 같은 줄(별도
+                                점 줄 없이 높이 절약), 안 들어가면 flex-wrap으로 점만 아래로. 서브가 없으면
+                                따로 오른쪽 정렬 점 줄로. */}
+                            {(() => {
+                              const dots = !event.isSupport && extraColors.length > 0 ? (
+                                <span className="pill-dots" aria-hidden="true">
+                                  {extraColors.map((c, i) => (
+                                    <i key={i} style={{ background: c.bgColor, borderColor: c.borderColor }} />
+                                  ))}
+                                </span>
+                              ) : null;
+                              const dotsInSub = dots && subs.length > 0;
+                              return (
+                                <>
+                                  {!event.isSupport && subs.length > 0 ? (
+                                    <ul className="agenda-subs">
+                                      {subs.map((s, i) =>
+                                        i === subs.length - 1 && dotsInSub ? (
+                                          <li key={i} className="pill-sub-last">
+                                            <span className="pill-sub-text">{s}</span>
+                                            {dots}
+                                          </li>
+                                        ) : (
+                                          <li key={i}>{s}</li>
+                                        )
+                                      )}
+                                    </ul>
+                                  ) : null}
+                                  {dots && subs.length === 0 ? (
+                                    <div className="agenda-meta">{dots}</div>
+                                  ) : null}
+                                </>
+                              );
+                            })()}
                           </div>
                         </>
                       );
