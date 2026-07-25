@@ -141,18 +141,30 @@ html {
 }
 /* 배포 버전(원본 그대로) 아래에 단축키 확장 버튼만 얹어 액션바 '가운데'에 세로로. 박스 테두리·배경
    없이(버전 배지는 원래 모습 유지) 가운데 absolute로 띄운다 — 원래 버전 태그가 있던 그 자리. */
-/* 항상 '흐름' 배치, 왼쪽 묶음 바로 뒤 인라인 — 시도 이력:
-   ① absolute 정중앙: 폭 줄면 왼쪽 버튼과 겹침 ② 흐름+왼쪽: DOM 첫 자식이라 구석행
-   ③ 흐름+margin-left:auto(오른쪽 끝): 아바타 scene의 고정 rail(태그필터)에 깔림.
-   → 결론: 버튼들과 같은 줄, 같은 간격의 '식구'로 둔다. 좁으면 flex-wrap으로 아랫줄. */
+/* 단축키 버튼 홀더 — 왼쪽 버튼 무리(아바타·왼쪽/오른쪽 토글) '오른쪽'에 인라인(order:99).
+   흐름 배치라 어떤 확대 배율에서도 겹침 없음(좁으면 flex-wrap 아랫줄).
+   버전 태그·저장됨은 헤더 캡슐(.studio-meta-capsule)로, 확대 %는 하단 플로팅으로 이사. */
 .studio-buildbox {
-  order: 99; /* DOM상 첫 자식이지만 시각적으론 왼쪽 버튼 묶음 뒤 */
+  order: 99;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 4px;
+}
+
+/* 헤더 메타 캡슐 — 배포 버전(위, 조용한 메타) + 저장됨 칩(아래, 주 상태)을 세로로.
+   개발자 배지 왼쪽에 붙어 모바일 헤더 캡슐(.m-head-left)과 같은 문법. */
+.studio-meta-capsule {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  margin-left: 4px;
-  pointer-events: none; /* 버전은 장식 — 버튼만 클릭 가능(아래에서 auto로). */
+  gap: 3px;
+  margin-right: 2px;
+}
+.studio-meta-capsule .studio-build-tag {
+  position: static;
+  transform: none;
+  left: auto;
+  top: auto;
 }
 /* 버전 태그는 부모(.studio-buildbox)가 이미 가운데라 흐름 배치로만 되돌린다(색·펄 등 모습은 원본 유지). */
 .studio-buildbox .studio-build-tag {
