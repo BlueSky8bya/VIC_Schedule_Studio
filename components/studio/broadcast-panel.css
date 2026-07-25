@@ -75,7 +75,7 @@ html[data-reduce-motion] .broadcast-panel > * {
 
 /* ── 날짜 선택 미니 달력 — 작업대 위에 뜬 팔레트 창 느낌 ── */
 .bp-picker {
-  margin: 12px 16px 0;
+  margin: 12px 16px;
   border: 1px solid #d9d4cd;
   border-radius: var(--r-card);
   background: #ffffff;
@@ -387,11 +387,15 @@ body:has(.broadcast-panel) .tag-cpop {
 /* 본문 = [캔버스 작업대 | 오른쪽 레이어 패널] — 실제 그림판 배치.
    min-height 72vh 보장: 날짜 달력을 펼쳐도 본문(그림판·레이어 패널)이 눌려 찌그러지는 대신
    창 전체(.broadcast-panel, overflow-y:auto)가 스크롤된다 — 레이어 패널 높이 상시 확보. */
+/* 조화: 피커·레이어 패널·보드가 같은 '카드 위 작업대' 어휘를 쓴다 — 딱 붙은 풀블리드
+   사이드바 대신 여백(12px 리듬)으로 띄운 카드. 좌우 16px는 피커와 정렬. */
 .bp-main {
   display: flex;
   flex: 1;
   min-height: 72vh;
   align-items: stretch;
+  gap: 12px;
+  padding: 0 16px 16px;
 }
 .bp-layers-panel {
   display: flex;
@@ -399,9 +403,11 @@ body:has(.broadcast-panel) .tag-cpop {
   gap: 10px;
   width: 172px;
   flex: 0 0 172px;
-  padding: 14px 12px;
-  border-left: 1px solid #d9d4cd;
+  padding: 12px;
+  border: 1px solid #d9d4cd;
+  border-radius: var(--r-card);
   background: #faf8f5;
+  box-shadow: 0 6px 20px rgb(80 70 60 / 10%);
   overflow-y: auto;
 }
 .bp-layer-item {
@@ -520,7 +526,8 @@ body:has(.broadcast-panel) .tag-cpop {
 .bp-board {
   flex: 1;
   min-height: 260px;
-  padding: 16px 20px 20px;
+  /* 여백은 .bp-main(16px)이 담당 — 종이 시트가 피커·레이어 카드와 모서리 정렬된다. */
+  padding: 0;
   /* 가로·세로 모두 inner(카드+캔버스 한 몸)째 스크롤 — 세로를 hidden으로 두면 보드보다
      긴 일정 카드의 아래가 잘려 접근 불가(G3b-r BLOCKER). */
   overflow: auto;
