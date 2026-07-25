@@ -182,6 +182,9 @@ describe("레이어 적용·렌더", () => {
       lineTo() {
         calls.push("line");
       },
+      quadraticCurveTo() {
+        calls.push("quad");
+      },
       stroke() {
         this.opsDuringStroke.push({ op: this.globalCompositeOperation, alpha: this.globalAlpha });
         calls.push("stroke");
@@ -198,5 +201,80 @@ describe("레이어 적용·렌더", () => {
     // 점 하나(탭)도 선으로 찍힌다
     drawStroke(ctx, mkStroke(5));
     expect(calls.filter((c) => c === "stroke")).toHaveLength(3);
+  });
+
+  it("펜 3점+: 중점 이차베지어 + 조각별 가변 굵기(필압 p 반영)", () => {
+    const widths: number[] = [];
+    const quads: number[] = [];
+    const ctx = {
+      lineCap: "",
+      lineJoin: "",
+      lineWidth: 0,
+      strokeStyle: "",
+      globalCompositeOperation: "source-over",
+      globalAlpha: 1,
+      beginPath() {},
+      moveTo() {},
+      lineTo() {},
+      quadraticCurveTo() {
+        quads.push(1);
+      },
+      stroke() {
+        widths.push(this.lineWidth);
+      }
+    };
+    drawStroke(ctx, {
+      tool: "pen",
+      layer: "layer-1",
+      color: "#111",
+      width: 10,
+      points: [
+        { x: 0, y: 0, p: 0.2 },
+        { x: 10, y: 4, p: 0.6 },
+        { x: 20, y: 0, p: 1 }
+      ]
+    });
+    // 머리(line)+몸통(quad)+꼬리(line) = 3조각, 몸통만 곡선.
+    expect(widths).toHaveLength(3);
+    expect(quads).toHaveLength(1);
+    // 필압이 굵기로 이어진다: p 0.2 < 0.6 < 1 → 조각 굵기도 단조 증가.
+    expect(widths[0]).toBeLessThan(widths[1]);
+    expect(widths[1]).toBeLessThan(widths[2]);
+  });
+
+  it("형광펜 3점+: 곡선 보간을 쓰되 stroke는 1번(반투명 겹침 진해짐 방지)", () => {
+    let strokes = 0;
+    let quads = 0;
+    const ctx = {
+      lineCap: "",
+      lineJoin: "",
+      lineWidth: 0,
+      strokeStyle: "",
+      globalCompositeOperation: "source-over",
+      globalAlpha: 1,
+      beginPath() {},
+      moveTo() {},
+      lineTo() {},
+      quadraticCurveTo() {
+        quads += 1;
+      },
+      stroke() {
+        strokes += 1;
+      }
+    };
+    drawStroke(ctx, {
+      tool: "hl",
+      layer: "layer-1",
+      color: "#ff0",
+      width: 14,
+      points: [
+        { x: 0, y: 0 },
+        { x: 10, y: 4 },
+        { x: 20, y: 0 },
+        { x: 30, y: 4 }
+      ]
+    });
+    expect(strokes).toBe(1);
+    expect(quads).toBe(2); // 내부 점 2개가 컨트롤로
   });
 });

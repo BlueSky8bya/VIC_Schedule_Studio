@@ -744,8 +744,8 @@ export function BroadcastPanel({
       const ctx = scaledCtx(canvasOf(live.layer));
       if (ctx) drawStroke(ctx, live);
     } else {
-      // 남은 꼬리 구간 마저 커밋.
-      const from = Math.max(0, drawnIdxRef.current - 1);
+      // 남은 꼬리 구간 마저 커밋(-2: 중점 베지어 조각이 이웃 2점을 참조 — 곡선 이음 보존).
+      const from = Math.max(0, drawnIdxRef.current - 2);
       if (live.points.length > drawnIdxRef.current || drawnIdxRef.current === 0) {
         const segment: Stroke = { ...live, points: live.points.slice(from) };
         const ctx = scaledCtx(canvasOf(live.layer));
@@ -835,8 +835,10 @@ export function BroadcastPanel({
       return;
     }
     // 펜·지우개: 새 구간만 자기 레이어 committed 캔버스에 증분 렌더.
+    // -2 겹침: 중점 베지어 조각이 이웃 2점을 참조 — 겹친 조각은 같은 기하의 재도장이라
+    // 불투명 펜/지우개에선 보이지 않고, 곡선 이음이 전체 재생과 일치한다.
     if (drawnIdxRef.current !== 0 && drawnIdxRef.current >= live.points.length) return; // 새 점 없음
-    const from = Math.max(0, drawnIdxRef.current - 1);
+    const from = Math.max(0, drawnIdxRef.current - 2);
     const segment: Stroke = { ...live, points: live.points.slice(from) };
     const ctx = scaledCtx(canvasOf(live.layer));
     if (ctx) drawStroke(ctx, segment);
@@ -846,6 +848,22 @@ export function BroadcastPanel({
     if (rafRef.current === null) rafRef.current = requestAnimationFrame(flushDraw);
   }, [flushDraw]);
 
+  // 아이패드 펜촉 벤치마킹 — 점마다 굵기 배율(0..1)을 기록한다:
+  // 펜 디바이스(스타일러스)는 실제 필압, 마우스/터치는 속도 역산(빨리 그으면 가늘고
+  // 천천히 누르면 굵게 — 만년필 감각). 저역 필터로 배율이 튀지 않게 한다.
+  const strokeDynRef = useRef({ t: 0, x: 0, y: 0, f: 0.75 });
+  function widthFactor(e: React.PointerEvent, x: number, y: number): number {
+    if (e.pointerType === "pen" && e.pressure > 0) {
+      return Math.min(1, Math.max(0.12, e.pressure));
+    }
+    const d = strokeDynRef.current;
+    const dt = Math.max(1, e.timeStamp - d.t);
+    const v = Math.hypot(x - d.x, y - d.y) / dt; // px/ms
+    const target = Math.min(1, Math.max(0.3, 1 - v / 1.7));
+    const f = d.f * 0.65 + target * 0.35;
+    strokeDynRef.current = { t: e.timeStamp, x, y, f };
+    return f;
+  }
   function onDrawDown(e: React.PointerEvent<HTMLDivElement>) {
     if (tool === "select" || !activeLayer || toolBlocked || e.button !== 0) return;
     if (drawingRef.current !== null) return; // 이미 다른 포인터가 그리는 중(다중 터치 가드)
@@ -853,12 +871,14 @@ export function BroadcastPanel({
     if (!p) return;
     activePtrRef.current = e.pointerId;
     e.currentTarget.setPointerCapture(e.pointerId);
+    strokeDynRef.current = { t: e.timeStamp, x: p.x, y: p.y, f: 0.8 };
+    const f0 = e.pointerType === "pen" && e.pressure > 0 ? Math.max(0.12, e.pressure) : 0.8;
     drawingRef.current = {
       tool: tool as Stroke["tool"],
       layer: activeLayer.id, // 활성 레이어에만(지우개 포함 — 그림판 문법)
       color: penColor,
       width: tool === "hl" ? penWidth * 3.5 : tool === "eraser" ? penWidth * 5 : penWidth,
-      points: [p]
+      points: [{ x: p.x, y: p.y, p: f0 }]
     };
     drawnIdxRef.current = 0; // 첫 점(탭 점)부터 증분 렌더 대상
     scheduleFlush();
@@ -891,7 +911,8 @@ export function BroadcastPanel({
       scheduleFlush();
       return;
     }
-    if (appendPoint(live.points, p)) scheduleFlush();
+    const f = widthFactor(e, p.x, p.y);
+    if (appendPoint(live.points, { x: p.x, y: p.y, p: f })) scheduleFlush();
   }
   function endDraw(e?: React.PointerEvent<HTMLDivElement>) {
     if (!drawingRef.current) return;

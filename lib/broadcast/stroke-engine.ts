@@ -27,7 +27,13 @@ export function isShapeTool(tool: BroadcastTool): tool is "line" | "arrow" | "re
 /** 그리기 레이어 id — 사용자가 ➕로 자유 추가/삭제한다(배경은 DOM이라 여기 없음). */
 export type StrokeLayer = string;
 
-export type StrokePoint = { x: number; y: number };
+export type StrokePoint = {
+  x: number;
+  y: number;
+  /** 굵기 배율 원료 0..1 — 펜 디바이스는 실제 필압, 마우스는 속도 역산(빠르면 가늘게).
+   *  없으면 0.7(중립). 펜 도구 렌더에서만 쓰인다(형광펜·지우개·도형은 균일 굵기). */
+  p?: number;
+};
 
 export type Stroke = {
   tool: Exclude<BroadcastTool, "select">;
@@ -145,6 +151,7 @@ type MinimalCtx = {
   beginPath(): void;
   moveTo(x: number, y: number): void;
   lineTo(x: number, y: number): void;
+  quadraticCurveTo(cpx: number, cpy: number, x: number, y: number): void;
   stroke(): void;
   lineCap: string;
   lineJoin: string;
@@ -170,6 +177,13 @@ export function drawStroke(ctx: MinimalCtx, stroke: Stroke): void {
     // 형광펜: 반투명 + 넓은 획 — 카드 글자를 가리지 않고 강조.
     ctx.globalAlpha = stroke.tool === "hl" ? 0.45 : 1;
     ctx.strokeStyle = stroke.color;
+  }
+  if (stroke.tool === "pen") {
+    // 아이패드 필기 앱 벤치마킹: 중점 이차베지어 곡선 + 조각별 가변 굵기(필압/속도).
+    drawPenPath(ctx, stroke);
+    ctx.globalAlpha = 1;
+    ctx.globalCompositeOperation = "source-over";
+    return;
   }
   ctx.beginPath();
   if (isShapeTool(stroke.tool)) {
@@ -211,16 +225,77 @@ export function drawStroke(ctx: MinimalCtx, stroke: Stroke): void {
       }
     }
   } else {
-    const [first, ...rest] = stroke.points;
-    ctx.moveTo(first.x, first.y);
-    if (rest.length === 0) {
-      // 점 하나(탭) — 아주 짧은 선으로 찍어준다.
-      ctx.lineTo(first.x + 0.1, first.y + 0.1);
-    } else {
-      for (const p of rest) ctx.lineTo(p.x, p.y);
-    }
+    // 형광펜·지우개 — 굵기는 균일, 경로는 중점 이차베지어로 부드럽게.
+    drawSmoothPath(ctx, stroke.points);
   }
   ctx.stroke();
   ctx.globalAlpha = 1;
   ctx.globalCompositeOperation = "source-over";
+}
+
+function midOf(a: StrokePoint, b: StrokePoint): { x: number; y: number } {
+  return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+}
+
+/** 중점 이차베지어 경로(아이패드 필기 앱들의 표준 보간) — 각진 폴리라인을 곡선으로.
+ *  각 점을 컨트롤로 쓰고 이웃 중점끼리 잇는다. 호출자가 beginPath/stroke를 감싼다. */
+function drawSmoothPath(ctx: MinimalCtx, pts: StrokePoint[]): void {
+  ctx.moveTo(pts[0].x, pts[0].y);
+  if (pts.length === 1) {
+    ctx.lineTo(pts[0].x + 0.1, pts[0].y + 0.1); // 점 하나(탭)
+    return;
+  }
+  if (pts.length === 2) {
+    ctx.lineTo(pts[1].x, pts[1].y);
+    return;
+  }
+  const m0 = midOf(pts[0], pts[1]);
+  ctx.lineTo(m0.x, m0.y);
+  for (let i = 1; i < pts.length - 1; i += 1) {
+    const m = midOf(pts[i], pts[i + 1]);
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, m.x, m.y);
+  }
+  const last = pts[pts.length - 1];
+  ctx.lineTo(last.x, last.y);
+}
+
+/** 펜 전용: 조각(중점→중점)마다 lineWidth를 필압/속도 배율로 바꿔 그린다 — 펜촉 감.
+ *  조각이 이웃 3점으로만 정의돼(국소성) 증분 렌더 슬라이스와 전체 재생이 같은 기하를 만든다.
+ *  round cap 겹침은 불투명 단색이라 보이지 않는다. */
+function drawPenPath(ctx: MinimalCtx, stroke: Stroke): void {
+  const pts = stroke.points;
+  const wOf = (p: StrokePoint) => stroke.width * (0.45 + (p.p ?? 0.7) * 0.85);
+  if (pts.length === 1) {
+    ctx.lineWidth = wOf(pts[0]);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.lineTo(pts[0].x + 0.1, pts[0].y + 0.1);
+    ctx.stroke();
+    return;
+  }
+  // 머리 조각: 시작점 → 첫 중점.
+  const m0 = midOf(pts[0], pts[1]);
+  ctx.lineWidth = wOf(pts[0]);
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  ctx.lineTo(m0.x, m0.y);
+  ctx.stroke();
+  // 몸통 조각들: mid(j-1,j) → mid(j,j+1), 컨트롤 = p[j], 굵기 = p[j] 배율.
+  for (let j = 1; j < pts.length - 1; j += 1) {
+    const a = midOf(pts[j - 1], pts[j]);
+    const b = midOf(pts[j], pts[j + 1]);
+    ctx.lineWidth = wOf(pts[j]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(pts[j].x, pts[j].y, b.x, b.y);
+    ctx.stroke();
+  }
+  // 꼬리 조각: 마지막 중점 → 끝점.
+  const last = pts[pts.length - 1];
+  const mL = midOf(pts[pts.length - 2], last);
+  ctx.lineWidth = wOf(last);
+  ctx.beginPath();
+  ctx.moveTo(mL.x, mL.y);
+  ctx.lineTo(last.x, last.y);
+  ctx.stroke();
 }
