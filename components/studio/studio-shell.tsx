@@ -1852,8 +1852,14 @@ export function StudioShell({
   useEffect(() => {
     if (isNarrow) return;
     const update = () => {
+      // 하한 = sticky 상단바 하단(스크롤해도 화면 위에 남는다) — 8px 고정 하한이면 도크가
+      // 상단바 '밑으로' 파고들어 편집창 머리가 잘렸다. 액션바가 보이면 그 아래가 우선.
       const bar = document.querySelector(".studio-actionbar");
-      const bottomVisual = bar ? bar.getBoundingClientRect().bottom : 0;
+      const topbar = document.querySelector(".studio-topbar");
+      const bottomVisual = Math.max(
+        bar?.getBoundingClientRect().bottom ?? 0,
+        topbar?.getBoundingClientRect().bottom ?? 0
+      );
       const zoomF = window.matchMedia("(min-width: 2400px)").matches
         ? 0.8
         : window.matchMedia("(min-width: 1700px)").matches
