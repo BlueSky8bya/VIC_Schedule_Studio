@@ -36,6 +36,11 @@ export type BroadcastPanelEvent = {
   category: PublicScheduleEvent["category"];
   sortOrder: number;
   tags: BroadcastPanelTag[];
+  /** 카드 배경 색 — 포스터와 '같은 규칙'(eventFills: 콘텐츠 대분류 ≤2, 2색=그라데이션).
+   *  primary 태그 색 하나로 칠하면 형식/수식어 태그가 대표일 때 실제 달력과 색이 어긋난다. */
+  fills: string[];
+  /** 칸 색에 못 담은 나머지 색 점(eventExtras) — 포스터의 점 줄과 동일. */
+  extraDots: string[];
   teaser?: boolean;
   teaserRevealAt?: string;
   /** 멀티데이일 때만: 이 날짜가 몇 일차인지(1-base)와 총 일수. 단일일은 undefined. */
@@ -83,7 +88,9 @@ function toPanelEvent(
   event: PublicScheduleEvent,
   dateKey: string,
   tagLabelById: Map<string, string>,
-  colorOf: (tagId: string) => string | null
+  colorOf: (tagId: string) => string | null,
+  fillsOf: (event: PublicScheduleEvent) => string[],
+  extrasOf: (event: PublicScheduleEvent) => string[]
 ): BroadcastPanelEvent {
   // 이중 방어: 날짜 배정 전에 maskTeaser를 거쳤어도, 여기 단독 호출 경로가 생겨도 안전하게.
   if (event.teaser) {
@@ -100,6 +107,8 @@ function toPanelEvent(
       category: stub.category,
       sortOrder: stub.sortOrder,
       tags: [],
+      fills: [],
+      extraDots: [],
       teaser: true,
       teaserRevealAt: stub.teaserRevealAt,
       dayIndex: undefined,
@@ -128,6 +137,8 @@ function toPanelEvent(
     category: event.category,
     sortOrder: event.sortOrder,
     tags,
+    fills: fillsOf(event),
+    extraDots: extrasOf(event),
     teaser: event.teaser,
     teaserRevealAt: event.teaserRevealAt,
     dayIndex: total > 1 ? diffDateKeys(startKey, dateKey) + 1 : undefined,
@@ -146,6 +157,9 @@ export function toBroadcastPanelDays(
   const resolver = createTagVisualResolver(snapshot.tags, snapshot.palette);
   const tagLabelById = new Map(snapshot.tags.map((t) => [t.id, t.displayName] as const));
   const colorOf = (tagId: string) => resolver.visualOf(tagId).bg;
+  // 카드 배경/점 줄은 포스터와 같은 규칙으로 — 색 문자열만 추출(팔레트 객체는 안 넘긴다).
+  const fillsOf = (e: PublicScheduleEvent) => resolver.eventFills(e).map((c) => c.bgColor);
+  const extrasOf = (e: PublicScheduleEvent) => resolver.eventExtras(e).map((c) => c.bgColor);
   // 방어선(defense-in-depth): 타입상 이미 public·non-draft지만, 잘못된 소스가 물려도
   // 비공개·draft가 절대 통과하지 못하게 런타임에서 한 번 더 거른다(string 확장 비교 —
   // 타입은 이미 좁혀져 있어 그대로 비교하면 TS가 '항상 참'이라며 거부한다).
@@ -157,6 +171,6 @@ export function toBroadcastPanelDays(
     dateKey,
     events: getEventsForDate(safeEvents, dateKey)
       .filter((e) => !e.isSupport) // 업 도움 띠는 기간 배너 — 날짜 카드 비교엔 소음이라 제외
-      .map((e) => toPanelEvent(e, dateKey, tagLabelById, colorOf))
+      .map((e) => toPanelEvent(e, dateKey, tagLabelById, colorOf, fillsOf, extrasOf))
   }));
 }

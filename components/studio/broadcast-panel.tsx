@@ -69,9 +69,13 @@ function EventCard({ event }: { event: BroadcastPanelEvent }) {
     );
   }
   const { main, subs } = splitEventTitle(event.publicTitle);
-  const fill = event.tags.find((t) => t.isPrimary)?.colorHex ?? event.tags[0]?.colorHex ?? null;
+  // 배경 = 포스터와 같은 fills(콘텐츠 대분류 ≤2) — 2색이면 실제 달력처럼 그라데이션.
+  const bg =
+    event.fills.length >= 2
+      ? `linear-gradient(135deg, ${event.fills[0]} 0 50%, ${event.fills[1]} 50% 100%)`
+      : event.fills[0];
   return (
-    <div className="bp-card" style={fill ? { background: fill } : undefined}>
+    <div className="bp-card" style={bg ? { background: bg } : undefined}>
       <div className="bp-card-head">
         {event.isTentative ? <span className="bp-tentative">미정</span> : null}
         <strong>{main}</strong>
@@ -88,13 +92,11 @@ function EventCard({ event }: { event: BroadcastPanelEvent }) {
           ))}
         </ul>
       ) : null}
-      {event.tags.length > 1 ? (
+      {event.extraDots.length > 0 ? (
         <span className="bp-dots" aria-hidden="true">
-          {event.tags
-            .filter((t) => !t.isPrimary && t.colorHex)
-            .map((t) => (
-              <i key={t.id} style={{ background: t.colorHex ?? undefined }} />
-            ))}
+          {event.extraDots.map((c, i) => (
+            <i key={i} style={{ background: c }} />
+          ))}
         </span>
       ) : null}
     </div>

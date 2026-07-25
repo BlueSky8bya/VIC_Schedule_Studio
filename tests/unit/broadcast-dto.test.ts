@@ -214,6 +214,8 @@ const EVENT_KEYS = [
   "category",
   "sortOrder",
   "tags",
+  "fills",
+  "extraDots",
   "teaser",
   "teaserRevealAt",
   "dayIndex",
@@ -350,6 +352,21 @@ describe("broadcast-dto — 배치·날짜 계약", () => {
     expect(ev?.tags.find((t) => t.id === "tag-talk")?.isPrimary).toBe(false);
     // 커스텀 색(bgHex)은 resolver 격리를 거쳐 반영된다 — 값 자체보다 '색이 나온다'가 계약.
     expect(ev?.tags.every((t) => typeof t.colorHex === "string" && t.colorHex.length > 0)).toBe(true);
+  });
+
+  it("카드 배경 fills는 포스터와 같은 eventFills 규칙(콘텐츠 대분류 ≤2)으로 실린다", () => {
+    const ev = days[0].events.find((e) => e.id === "evt-pub-multi");
+    // 게임(coral)+소통(커스텀 lemon) 두 콘텐츠 대분류 → fills 2색(포스터 그라데이션과 동일 소스)
+    expect(ev?.fills.length).toBeGreaterThanOrEqual(1);
+    expect(ev?.fills.length).toBeLessThanOrEqual(2);
+    expect(ev?.fills.every((c) => typeof c === "string" && c.length > 0)).toBe(true);
+    expect(Array.isArray(ev?.extraDots)).toBe(true);
+    // teaser stub은 색 정보도 비어 있다
+    const stub = days
+      .find((d) => d.dateKey === "2026-07-04")
+      ?.events.find((e) => e.id === "evt-teaser-stub");
+    expect(stub?.fills).toEqual([]);
+    expect(stub?.extraDots).toEqual([]);
   });
 });
 
