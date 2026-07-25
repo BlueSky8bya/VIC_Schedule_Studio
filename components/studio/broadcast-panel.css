@@ -509,9 +509,7 @@ body:has(.broadcast-panel) .tag-cpop {
   border-color: rgb(124 108 240 / 70%);
   box-shadow: 0 0 0 2px rgb(124 108 240 / 25%);
 }
-.bp-layer-item.bp-layer-fixed {
-  cursor: default;
-}
+/* '일정' 고정 레이어도 클릭해 활성화한다(카드 조작 모드) — 커서 유지. */
 .bp-lock-hint {
   font-size: 12px;
   font-weight: 700;

@@ -124,8 +124,10 @@ const COL_DEFAULT_W = 220;
 const COL_MIN_W = 140;
 const COL_MAX_W = 520;
 
-// 그리기 레이어(동적) — 배경(날짜 카드 DOM)은 고정 기본, 나머지는 ➕로 자유 추가/삭제.
+// 그리기 레이어(동적) — '일정'(날짜 카드 DOM)은 고정 기본, 나머지는 ➕로 자유 추가/삭제.
 type PanelLayer = { id: string; name: string; vis: boolean; lock: boolean };
+// '일정' 고정 레이어의 활성 id — 카드 선택/이동은 이 레이어가 활성일 때만.
+const BG_LAYER_ID = "__schedule__";
 
 function EventCard({ event }: { event: BroadcastPanelEvent }) {
   if (event.teaser) {
@@ -222,6 +224,16 @@ export function BroadcastPanel({
   const [activeLayerId, setActiveLayerId] = useState("layer-1");
   const layerSeq = useRef(1);
   const [bgVis, setBgVis] = useState(true);
+  // '일정' 레이어(맨 아래 고정 — 날짜 카드 DOM)도 활성 대상: 카드 선택/이동/크기는
+  // 이 레이어가 활성일 때만 된다(그리기 레이어 활성 중 카드가 딸려 움직이는 혼선 제거).
+  const bgActive = activeLayerId === BG_LAYER_ID;
+  const bgActiveRef = useRef(bgActive);
+  bgActiveRef.current = bgActive;
+  // 활성 레이어가 바뀌면 반대편 선택은 해제 — 조작 불가능한 선택 링이 남는 혼선 방지.
+  useEffect(() => {
+    if (activeLayerId === BG_LAYER_ID) setStrokeSel([]);
+    else setColSel(new Set());
+  }, [activeLayerId]);
   // undo/redo 버튼 활성 + 오른쪽 레이어 썸네일 갱신용(스토어는 ref라 리렌더를 직접 못 일으킨다).
   const [strokeVersion, setStrokeVersion] = useState(0);
   // 레이어 패널 썸네일(실제 그림판 문법) — 캔버스에서 축소 복사. 배경(날짜 카드 DOM)은
@@ -327,6 +339,7 @@ export function BroadcastPanel({
     mode: "move" | "resize"
   ) {
     if (tool !== "select") return; // 그리기 도구 중엔 입력면이 위에 있어 어차피 안 옴 — 이중 가드
+    if (!bgActive) return; // 카드 이동/크기는 '일정' 레이어가 활성일 때만(레이어 규율)
     const orig = cols.get(key);
     if (!orig) return;
     e.preventDefault();
@@ -627,15 +640,17 @@ export function BroadcastPanel({
     m.x2 = p.x;
     m.y2 = p.y;
     setMarquee({ x1: m.x1, y1: m.y1, x2: p.x, y2: p.y });
-    // 라이브 선택: 밴드와 겹치는 카드 전부.
+    // 라이브 선택: 밴드와 겹치는 카드 전부 — 단 '일정' 레이어가 활성일 때만(레이어 규율).
     const lo = { x: Math.min(m.x1, p.x), y: Math.min(m.y1, p.y) };
     const hi = { x: Math.max(m.x1, p.x), y: Math.max(m.y1, p.y) };
-    const next = new Set<string>();
-    for (const [k, b] of colsRef.current) {
-      const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
-      if (b.x < hi.x && b.x + b.w > lo.x && b.y < hi.y && b.y + h > lo.y) next.add(k);
+    if (bgActiveRef.current) {
+      const next = new Set<string>();
+      for (const [k, b] of colsRef.current) {
+        const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
+        if (b.x < hi.x && b.x + b.w > lo.x && b.y < hi.y && b.y + h > lo.y) next.add(k);
+      }
+      setColSel(next);
     }
-    setColSel(next);
     // 획은 라이브로 선택하지 않는다 — 놓는 순간 '밴드에 걸친 구간만' 잘라 선택(부분 선택).
   }
   function onBoardPointerDown(e: React.PointerEvent<HTMLDivElement>) {
@@ -1470,10 +1485,10 @@ export function BroadcastPanel({
         pushHist({ t: "cols", before, after: next });
         return;
       }
-      // Ctrl+A = 카드 전체 선택.
+      // Ctrl+A = 카드 전체 선택 — '일정' 레이어가 활성일 때만(레이어 규율).
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
         e.preventDefault();
-        setColSel(new Set(sentRef.current));
+        if (bgActiveRef.current) setColSel(new Set(sentRef.current));
         return;
       }
       // 판서 자체 undo/redo — 편집실 Ctrl+Z(삭제복구)는 broadcastOpen 가드로 이미 차단됨.
@@ -1777,9 +1792,11 @@ export function BroadcastPanel({
         ) : null}
         {toolBlocked ? (
           <span className="bp-lock-hint">
-            {layers.length === 0
-              ? "레이어가 없어요 — 오른쪽 ➕로 추가해주세요"
-              : "활성 레이어가 잠겨 있거나 숨겨져 있어요"}
+            {bgActive
+              ? "'일정' 레이어에선 카드 선택·이동만 — 그리려면 위 레이어를 골라주세요"
+              : layers.length === 0
+                ? "레이어가 없어요 — 오른쪽 ➕로 추가해주세요"
+                : "활성 레이어가 잠겨 있거나 숨겨져 있어요"}
           </span>
         ) : null}
       </div>
@@ -1938,7 +1955,13 @@ export function BroadcastPanel({
                   >
                     <header
                       className="bp-day-head"
-                      title={tool === "select" ? "끌어서 이동" : "이동은 선택 도구에서"}
+                      title={
+                        tool !== "select"
+                          ? "이동은 선택 도구에서"
+                          : bgActive
+                            ? "끌어서 이동"
+                            : "카드 이동은 '일정' 레이어를 활성화하고"
+                      }
                       onLostPointerCapture={onColPointerUp}
                       onPointerDown={(e) => onColPointerDown(e, day.dateKey, "move")}
                       onPointerMove={onColPointerMove}
@@ -2148,21 +2171,34 @@ export function BroadcastPanel({
             </div>
           </div>
         ))}
-        {/* 배경 = 고정 기본 레이어(날짜 카드 DOM) — 표시 토글만, 삭제/잠금 없음. */}
-        <div className={`bp-layer-item bp-layer-fixed${bgVis ? "" : " off"}`}>
+        {/* 일정 = 고정 기본 레이어(날짜 카드 DOM) — 삭제/잠금 없음. 활성이면 카드
+            선택/이동/크기 조절이 가능(그리기 레이어 활성 중엔 카드가 안 잡힌다). */}
+        <div
+          className={`bp-layer-item bp-layer-fixed${bgVis ? "" : " off"}${bgActive ? " active" : ""}`}
+          role="button"
+          tabIndex={0}
+          onClick={() => setActiveLayerId(BG_LAYER_ID)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setActiveLayerId(BG_LAYER_ID);
+            }
+          }}
+        >
           <div className="bp-layer-thumb" aria-hidden="true">
             <span className="bp-layer-thumb-bg">📅</span>
           </div>
           <div className="bp-layer-meta">
-            <em>배경</em>
+            <em>일정</em>
             <div className="bp-layer-actions">
               <button
-                aria-label="배경 표시"
+                aria-label="일정 카드 표시"
                 aria-pressed={bgVis}
                 className="bp-layer-btn"
                 title={bgVis ? "숨기기" : "보이기"}
                 type="button"
-                onClick={() => {
+                onClick={(e) => {
+                  e.stopPropagation(); // 표시 토글이 활성 전환까지 시키지 않게
                   hapticTick();
                   setBgVis((v) => !v);
                 }}
