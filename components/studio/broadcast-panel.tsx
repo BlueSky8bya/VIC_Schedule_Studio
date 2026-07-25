@@ -219,7 +219,18 @@ export function BroadcastPanel({
     origs: Map<string, ColBox>; // move용(선택 그룹 전체의 시작 위치)
     beforeAll: Map<string, ColBox>; // 히스토리용 — 제스처 시작 시점 전체 스냅샷
     moved: boolean;
+    startSL: number; // 드래그 시작 시 보드 scrollLeft/Top — 자동 스크롤 보정용
+    startST: number;
   } | null>(null);
+  // ── 가장자리 자동 스크롤: 드래그/러버밴드가 보드 끝에 닿으면 스크롤이 따라간다 ──
+  const boardScrollRef = useRef<HTMLElement | null>(null);
+  const autoRef = useRef<{
+    raf: number | null;
+    vx: number;
+    vy: number;
+    kind: "col" | "marquee" | null;
+    last: { x: number; y: number };
+  }>({ raf: null, vx: 0, vy: 0, kind: null, last: { x: 0, y: 0 } });
   const SNAP = 6; // px — 이 거리 안이면 가장자리/중앙선에 달라붙는다
 
   // ── 통합 히스토리 — 획/카드 배치/날짜 목록/레이어 전부 한 스택(Ctrl+Z/Y 하나로) ──
@@ -294,14 +305,70 @@ export function BroadcastPanel({
       orig,
       origs,
       beforeAll: new Map(cols),
-      moved: false
+      moved: false,
+      startSL: boardScrollRef.current?.scrollLeft ?? 0,
+      startST: boardScrollRef.current?.scrollTop ?? 0
     };
   }
-  function onColPointerMove(e: React.PointerEvent<HTMLElement>) {
+  // 자동 스크롤 공용: 가장자리 근접 → 속도 계산 → rAF 루프에서 스크롤 + 드래그 로직 재적용.
+  function updateAutoScroll(clientX: number, clientY: number, kind: "col" | "marquee") {
+    const a = autoRef.current;
+    a.last = { x: clientX, y: clientY };
+    a.kind = kind;
+    const board = boardScrollRef.current;
+    if (!board) return;
+    const r = board.getBoundingClientRect();
+    const EDGE = 36;
+    const MAX = 18;
+    a.vx =
+      clientX > r.right - EDGE
+        ? Math.min(MAX, (clientX - (r.right - EDGE)) / 2 + 2)
+        : clientX < r.left + EDGE
+          ? -Math.min(MAX, (r.left + EDGE - clientX) / 2 + 2)
+          : 0;
+    a.vy =
+      clientY > r.bottom - EDGE
+        ? Math.min(MAX, (clientY - (r.bottom - EDGE)) / 2 + 2)
+        : clientY < r.top + EDGE
+          ? -Math.min(MAX, (r.top + EDGE - clientY) / 2 + 2)
+          : 0;
+    if ((a.vx !== 0 || a.vy !== 0) && a.raf === null) {
+      const step = () => {
+        const aa = autoRef.current;
+        const b = boardScrollRef.current;
+        if (!b || (aa.vx === 0 && aa.vy === 0) || aa.kind === null) {
+          aa.raf = null;
+          return;
+        }
+        b.scrollLeft += aa.vx;
+        b.scrollTop += aa.vy;
+        // 포인터가 안 움직여도 스크롤만큼 드래그가 이어지게 마지막 좌표로 재적용.
+        if (aa.kind === "col") colDragTo(aa.last.x, aa.last.y);
+        else marqueeTo(aa.last.x, aa.last.y);
+        aa.raf = requestAnimationFrame(step);
+      };
+      a.raf = requestAnimationFrame(step);
+    }
+  }
+  function stopAutoScroll() {
+    const a = autoRef.current;
+    a.vx = 0;
+    a.vy = 0;
+    a.kind = null;
+    if (a.raf !== null) {
+      cancelAnimationFrame(a.raf);
+      a.raf = null;
+    }
+  }
+  function colDragTo(clientX: number, clientY: number) {
     const d = dragColRef.current;
     if (!d) return;
-    let dx = e.clientX - d.startX;
-    let dy = e.clientY - d.startY;
+    const board = boardScrollRef.current;
+    // 스크롤 이동분도 드래그 거리에 포함 — 자동 스크롤 중 카드가 포인터를 계속 따라온다.
+    const sdx = (board?.scrollLeft ?? 0) - d.startSL;
+    const sdy = (board?.scrollTop ?? 0) - d.startST;
+    let dx = clientX - d.startX + sdx;
+    let dy = clientY - d.startY + sdy;
     if (Math.abs(dx) + Math.abs(dy) > 1) d.moved = true;
     if (d.mode === "resize") {
       setCols((map) => {
@@ -370,9 +437,15 @@ export function BroadcastPanel({
       return next;
     });
   }
+  function onColPointerMove(e: React.PointerEvent<HTMLElement>) {
+    if (!dragColRef.current) return;
+    colDragTo(e.clientX, e.clientY);
+    updateAutoScroll(e.clientX, e.clientY, "col");
+  }
   function onColPointerUp() {
     const d = dragColRef.current;
     dragColRef.current = null;
+    stopAutoScroll();
     setGuides({ v: [], h: [] });
     // 제스처 단위로 히스토리 1건(이동/크기 조절 — 실제로 움직였을 때만).
     if (d?.moved) {
@@ -382,17 +455,34 @@ export function BroadcastPanel({
 
   // ── 러버밴드(빈 바닥 드래그로 다중 선택) — 선택 도구에서만 ──
   const marqueeRef = useRef<{ x1: number; y1: number; pointerId: number } | null>(null);
-  function innerPoint(e: React.PointerEvent): { x: number; y: number } | null {
+  function innerPointC(clientX: number, clientY: number): { x: number; y: number } | null {
     const inner = boardInnerRef.current;
     if (!inner) return null;
     const r = inner.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
+    // inner rect는 보드 스크롤을 반영하므로 자동 스크롤 중에도 inner 좌표가 정확하다.
+    return { x: clientX - r.left, y: clientY - r.top };
+  }
+  function marqueeTo(clientX: number, clientY: number) {
+    const m = marqueeRef.current;
+    if (!m) return;
+    const p = innerPointC(clientX, clientY);
+    if (!p) return;
+    setMarquee({ x1: m.x1, y1: m.y1, x2: p.x, y2: p.y });
+    // 라이브 선택: 밴드와 겹치는 카드 전부.
+    const lo = { x: Math.min(m.x1, p.x), y: Math.min(m.y1, p.y) };
+    const hi = { x: Math.max(m.x1, p.x), y: Math.max(m.y1, p.y) };
+    const next = new Set<string>();
+    for (const [k, b] of colsRef.current) {
+      const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
+      if (b.x < hi.x && b.x + b.w > lo.x && b.y < hi.y && b.y + h > lo.y) next.add(k);
+    }
+    setColSel(next);
   }
   function onBoardPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (tool !== "select" || e.button !== 0) return;
     // 카드/버튼 위에서 시작하면 러버밴드 아님(카드 자체 핸들러가 처리).
     if ((e.target as HTMLElement).closest(".bp-day-col, button")) return;
-    const p = innerPoint(e);
+    const p = innerPointC(e.clientX, e.clientY);
     if (!p) return;
     e.preventDefault(); // 러버밴드 중 브라우저 텍스트 선택(파란 긁힘) 방지
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -402,25 +492,16 @@ export function BroadcastPanel({
   function onBoardPointerMove(e: React.PointerEvent<HTMLDivElement>) {
     const m = marqueeRef.current;
     if (!m || e.pointerId !== m.pointerId) return;
-    const p = innerPoint(e);
-    if (!p) return;
-    setMarquee({ x1: m.x1, y1: m.y1, x2: p.x, y2: p.y });
-    // 라이브 선택: 밴드와 겹치는 카드 전부.
-    const lo = { x: Math.min(m.x1, p.x), y: Math.min(m.y1, p.y) };
-    const hi = { x: Math.max(m.x1, p.x), y: Math.max(m.y1, p.y) };
-    const next = new Set<string>();
-    for (const [k, b] of cols) {
-      const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
-      if (b.x < hi.x && b.x + b.w > lo.x && b.y < hi.y && b.y + h > lo.y) next.add(k);
-    }
-    setColSel(next);
+    marqueeTo(e.clientX, e.clientY);
+    updateAutoScroll(e.clientX, e.clientY, "marquee");
   }
   function onBoardPointerUp(e: React.PointerEvent<HTMLDivElement>) {
     const m = marqueeRef.current;
     if (!m || e.pointerId !== m.pointerId) return;
-    const p = innerPoint(e);
+    const p = innerPointC(e.clientX, e.clientY);
     marqueeRef.current = null;
     setMarquee(null);
+    stopAutoScroll();
     // 사실상 클릭(움직임 3px 미만) = 빈 바닥 클릭 → 선택 해제.
     if (p && Math.hypot(p.x - m.x1, p.y - m.y1) < 3) setColSel(new Set());
   }
@@ -584,6 +665,8 @@ export function BroadcastPanel({
       store.dispose();
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (clearArmTimer.current !== null) window.clearTimeout(clearArmTimer.current);
+      const auto = autoRef.current;
+      if (auto.raf !== null) cancelAnimationFrame(auto.raf);
     };
   }, [store]);
 
@@ -1150,7 +1233,7 @@ export function BroadcastPanel({
       </section>
 
       <div className="bp-main">
-      <section className="bp-board" aria-label="그림판">
+      <section className="bp-board" aria-label="그림판" ref={boardScrollRef}>
         {/* 스크롤 좌표면(G3b): 배경 카드·캔버스·입력면이 전부 이 inner 안 — 보드를 스크롤하면
             카드와 판서가 같이 움직여 좌표가 절대 안 어긋난다. 컬럼 자유 배치 범위만큼 inner가
             커진다(minWidth/minHeight). */}
