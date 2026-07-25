@@ -5581,12 +5581,13 @@ export function StudioShell({
                               handlePillClick(event.id);
                             }
                           }}
-                          // A안 M2: 확대 중 hover/focus로 상세 팝오버(접힌 서브 전체 보기).
+                          // A안 M2: 확대 중 hover/focus로 상세 팝오버 — 단, '접힌 내용'이
+                          // 있을 때만(subs 없는 카드는 제목이 이미 다 보여 팝오버가 중복 소음).
                           aria-describedby={
                             zoomPeek?.id === event.id ? "cal-zoom-peek" : undefined
                           }
                           onMouseEnter={
-                            zoomCollapse && span.showTitle
+                            zoomCollapse && span.showTitle && subs.length > 0
                               ? (e) => openZoomPeek(event.id, e.currentTarget, false)
                               : undefined
                           }
@@ -5594,7 +5595,7 @@ export function StudioShell({
                             zoomCollapse ? () => leaveZoomPeek(event.id) : undefined
                           }
                           onFocus={
-                            zoomCollapse && span.showTitle
+                            zoomCollapse && span.showTitle && subs.length > 0
                               ? (e) => openZoomPeek(event.id, e.currentTarget, false)
                               : undefined
                           }
@@ -5726,6 +5727,7 @@ export function StudioShell({
               const ev = liveEvents.find((e) => e.id === zoomPeek.id);
               if (!ev) return null;
               const { main, subs } = splitEventTitle(ev.publicTitle);
+              if (subs.length === 0) return null; // 접힌 내용 없음 = 보여줄 것 없음(이중 방어)
               // 폭은 내용에 맞춰 줄어들고(짧은 일정 = 좁은 박스), 최대만 제한 — 고정 380px는
               // 좌우 낭비가 컸다(방송 화면에서 빈 여백이 그대로 보임).
               const MAX_W = Math.min(320, window.innerWidth - 16);
