@@ -85,8 +85,31 @@ html[data-reduce-motion] .broadcast-panel > * {
 .bp-picker-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 6px;
   margin-bottom: 8px;
+}
+.bp-picker-head .bp-send {
+  margin-left: auto;
+}
+/* 월 이동 — 토글과 같은 필 어휘의 정사각 버튼(다른 달 일정도 뽑아오기). */
+.bp-month-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgb(124 108 240 / 30%);
+  border-radius: var(--r-pill);
+  background: #ffffff;
+  color: #4b4468;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease);
+}
+.bp-month-nav:hover {
+  background: rgb(124 108 240 / 8%);
+}
+.bp-month-nav:active {
+  transform: scale(0.94);
 }
 .bp-picker-toggle {
   display: inline-flex;

@@ -1450,16 +1450,29 @@ export function StudioShell({
   const broadcastOpenRef = useRef(false);
   broadcastOpenRef.current = broadcastOpen;
   const [broadcastSent, setBroadcastSent] = useState<string[]>([]);
+  // 판서 날짜 고르기 달력의 월 — 편집실 view와 독립(다른 달 일정도 뽑아온다).
+  // 공개 스냅샷(viewerModePreview)은 월 필터 없이 전체 공개 일정을 담고 있어 클라 이동만으로 충분.
+  const [broadcastMonth, setBroadcastMonth] = useState<{ year: number; month: number } | null>(null);
+  const bcYear = broadcastMonth?.year ?? view.year;
+  const bcMonth = broadcastMonth?.month ?? view.month;
+  const broadcastCells = useMemo(() => buildCalendarMonth(bcYear, bcMonth), [bcYear, bcMonth]);
   const broadcastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const broadcastDays = useMemo(() => {
     if (!broadcastOpen) return [];
-    const monthKeys = cells.filter((c) => c.inCurrentMonth).map((c) => c.isoDate);
-    return toBroadcastPanelDays(schedule.viewerModePreview, monthKeys);
-  }, [broadcastOpen, cells, schedule.viewerModePreview]);
+    // 보고 있는 달 + 이미 보낸 날짜(다른 달일 수 있음) 합집합 — 월을 넘나들어도 보낸 카드
+    // 데이터가 사라지지 않는다.
+    const monthKeys = broadcastCells.filter((c) => c.inCurrentMonth).map((c) => c.isoDate);
+    return toBroadcastPanelDays(schedule.viewerModePreview, [...monthKeys, ...broadcastSent]);
+  }, [broadcastOpen, broadcastCells, broadcastSent, schedule.viewerModePreview]);
+  function navBroadcastMonth(delta: number) {
+    const total = bcYear * 12 + (bcMonth - 1) + delta;
+    setBroadcastMonth({ year: Math.floor(total / 12), month: (((total % 12) + 12) % 12) + 1 });
+  }
   function openBroadcastPanel(trigger: HTMLButtonElement | null) {
     hapticTick();
     broadcastTriggerRef.current = trigger;
     setBroadcastSent([]); // 새로 열면 항상 빈 판 — 이전 기록 복구 없음(계약 3)
+    setBroadcastMonth(null); // 날짜 고르기 달력은 항상 지금 보는 달부터
     setBroadcastOpen(true);
   }
   function closeBroadcastPanel() {
@@ -5046,10 +5059,11 @@ export function StudioShell({
         />
         {broadcastOpen ? (
           <BroadcastPanel
-            cells={cells}
+            cells={broadcastCells}
             days={broadcastDays}
-            monthLabel={`${view.year}년 ${view.month}월`}
+            monthLabel={`${bcYear}년 ${bcMonth}월`}
             onClose={closeBroadcastPanel}
+            onMonthNav={navBroadcastMonth}
             onRemoveDay={removeBroadcastDay}
             onRestoreSent={(keys) => setBroadcastSent([...keys])}
             onSend={handleBroadcastSend}

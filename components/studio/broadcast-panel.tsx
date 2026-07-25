@@ -23,6 +23,8 @@ import {
   AlignHorizontalDistributeCenter,
   AlignStartHorizontal,
   AlignStartVertical,
+  ChevronLeft,
+  ChevronRight,
   Circle,
   Eraser,
   Eye,
@@ -92,6 +94,7 @@ type Props = {
   onSend: (dateKeys: string[]) => void; // "판서판으로 보내기"(추가·dedup은 호출자)
   onRemoveDay: (dateKey: string) => void; // 판서판에서 날짜 컬럼 빼기
   onRestoreSent: (dateKeys: string[]) => void; // 통합 undo/redo가 날짜 목록을 되돌릴 때
+  onMonthNav: (delta: number) => void; // 날짜 고르기 달력 월 이동(±1) — 데이터는 호출자가 갱신
   onClose: () => void;
 };
 
@@ -163,6 +166,7 @@ export function BroadcastPanel({
   onSend,
   onRemoveDay,
   onRestoreSent,
+  onMonthNav,
   onClose
 }: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -192,7 +196,7 @@ export function BroadcastPanel({
   const lastFitRef = useRef({ w: 0, h: 0, scale: 0 });
   const [tool, setTool] = useState<BroadcastTool>("select");
   const [penColor, setPenColor] = useState(PEN_COLORS[0]);
-  const [penWidth, setPenWidth] = useState(PEN_WIDTHS[1]);
+  const [penWidth, setPenWidth] = useState(PEN_WIDTHS[2]);
   // '색 직접 고르기' 팝오버 — 네이티브 OS 색상판 대신 태그 편집과 같은 인라인 피커를 재사용
   // (주변과 같은 디자인 언어: 같은 트레이·SV 영역·톤 필터). openedWith = 취소 시 복귀 색.
   const [colorPop, setColorPop] = useState<{ anchor: DOMRect; openedWith: string } | null>(null);
@@ -1392,6 +1396,32 @@ export function BroadcastPanel({
 
       <section className="bp-picker" aria-label={`${monthLabel} 날짜 선택`}>
         <div className="bp-picker-head">
+          {/* 월 이동 — 다른 달 일정도 뽑아온다. 인덱스 기반 선택은 월이 바뀌면 다른 날짜를
+              가리키므로 이동 시 비운다(보낸 카드는 유지 — 날짜 키로 들고 있음). */}
+          <button
+            aria-label="이전 달"
+            className="bp-month-nav"
+            type="button"
+            onClick={() => {
+              hapticTick();
+              rangeSelect.clearSelection();
+              onMonthNav(-1);
+            }}
+          >
+            <ChevronLeft aria-hidden="true" size={16} strokeWidth={2.5} />
+          </button>
+          <button
+            aria-label="다음 달"
+            className="bp-month-nav"
+            type="button"
+            onClick={() => {
+              hapticTick();
+              rangeSelect.clearSelection();
+              onMonthNav(1);
+            }}
+          >
+            <ChevronRight aria-hidden="true" size={16} strokeWidth={2.5} />
+          </button>
           {/* 달력 접기 — 그림판 공간이 주인공. 보내면 자동으로 접히고 여기로 다시 펼친다. */}
           <button
             aria-expanded={pickerOpen}
@@ -1533,12 +1563,15 @@ export function BroadcastPanel({
                       onPointerMove={onColPointerMove}
                       onPointerUp={onColPointerUp}
                     >
-                      <strong>{Number(day.dateKey.slice(8, 10))}</strong>
+                      {/* 월.일 표기 — 여러 달을 섞어 올릴 수 있어 "8.1"처럼 달을 항상 밝힌다. */}
+                      <strong>
+                        {Number(day.dateKey.slice(5, 7))}.{Number(day.dateKey.slice(8, 10))}
+                      </strong>
                       {/* date-key는 이미 KST 달력 날짜 — 요일은 그 날짜 자체의 요일(UTC 자정으로
                           해석해 getUTCDay). +09:00으로 파싱하면 UTC 기준 전날로 밀려 요일이 틀린다. */}
                       <span>{WEEKDAYS[new Date(`${day.dateKey}T00:00:00Z`).getUTCDay()]}</span>
                       <button
-                        aria-label={`${Number(day.dateKey.slice(8, 10))}일 그림판에서 빼기`}
+                        aria-label={`${Number(day.dateKey.slice(5, 7))}월 ${Number(day.dateKey.slice(8, 10))}일 그림판에서 빼기`}
                         className="bp-col-x"
                         type="button"
                         onClick={(e) => {
