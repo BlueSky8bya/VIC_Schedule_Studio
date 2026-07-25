@@ -5029,6 +5029,16 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
   font-weight: 800;
   line-height: 1.3;
 }
+/* 확대(125%+) 모드: 제목도 1줄 ellipsis — 긴 제목이 줄바꿈으로 카드를 키우는 대신
+   "메이플 검은마…"처럼 잘리고, 잘린 카드는 호버 팝오버로 전체를 보여준다(실측 판정). */
+.studio-calendar-panel[data-zoomed] .pill-main strong {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* A안 M2: 확대(125%+) 시 접힌 서브 자리 — [+N 칩][형식색 점] 한 줄. */
 .pill-collapsed-row {
   display: flex;
