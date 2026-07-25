@@ -921,6 +921,17 @@ export function BroadcastPanel({
         onClose();
         return;
       }
+      // Delete/Backspace = 선택된 날짜 카드 일괄 제거(통합 히스토리 1건 — Ctrl+Z로 복원).
+      if (colSelRef.current.size > 0 && (e.key === "Delete" || e.key === "Backspace")) {
+        e.preventDefault();
+        const before = [...sentRef.current];
+        const after = before.filter((k) => !colSelRef.current.has(k));
+        pushHist({ t: "sent", before, after, colsBefore: new Map(colsRef.current) });
+        onRestoreSent(after);
+        setColSel(new Set());
+        hapticTick();
+        return;
+      }
       // 화살표 = 선택 카드 미세 이동(1px, Shift=10px) — 피그마 문법.
       if (
         colSelRef.current.size > 0 &&
@@ -938,6 +949,12 @@ export function BroadcastPanel({
         }
         setCols(next);
         pushHist({ t: "cols", before, after: next });
+        return;
+      }
+      // Ctrl+A = 카드 전체 선택.
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
+        e.preventDefault();
+        setColSel(new Set(sentRef.current));
         return;
       }
       // 판서 자체 undo/redo — 편집실 Ctrl+Z(삭제복구)는 broadcastOpen 가드로 이미 차단됨.
@@ -975,7 +992,7 @@ export function BroadcastPanel({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, rangeSelect, doUndo, doRedo, pushHist]);
+  }, [onClose, rangeSelect, doUndo, doRedo, pushHist, onRestoreSent]);
 
   // 최초 포커스 + body scroll lock(열림 동안 뒤 화면 스크롤 금지).
   useEffect(() => {
