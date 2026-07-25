@@ -28,6 +28,23 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
     [ADR-0008](decisions/ADR-0008-public-insights-aggregate-rpc.md) (마이그레이션 0049·0050 적용 완료)
   - 편집기: 공개 범위·옵션 접기(기본 접힘), 단축키 안내 축약, **새 일정 = Alt+N 하나로 통일**,
     카드 순서 드래그 삽입선 판정(카드 중심선 기준)
+- **2026-07-25에 끝난 것(2) — 방송 가독성 2종(토리님 승인, PLAN-20260725-001)**
+  (`15181d4`·`57f2c75`·`effd28c`·`3c8cd46`·`9717a57`·`6d2b359`):
+  - **A안 달력 확대**: 달력 패널 위 Ctrl+휠만 가로채 `--cal-zoom` CSS 변수로 100/125/150%
+    단계 확대(브라우저 줌의 모바일 전환 부작용 회피). 125%+는 서브 접기 `+N` + 상세 팝오버
+    (핀·Esc·실측 배치·포커스 복귀). 트랙패드 정규화·드래그/FLIP/유령 회귀 가드,
+    buildbox `−/%/＋` + 확대 중 하단 플로팅 배율 표시. `lib/ui/calendar-zoom.ts`(13 tests).
+  - **B안 방송 판서**: 미리보기(owner/developer·PC)에서 여는 전체화면 불투명 모달.
+    서버 공개 스냅샷→명시 DTO만(→ [ADR-0010](decisions/ADR-0010-broadcast-panel-public-dto-only.md),
+    teaser fail-closed 마스킹, 유출 canary 테스트). 미니 달력 다중선택→날짜순 나란히,
+    stroke 벡터 엔진(`lib/broadcast/stroke-engine.ts`, 증분 렌더·undo 200·DPR/픽셀 cap),
+    배경 DOM+캔버스 3장 동좌표 스크롤, 화면 맞춤(판서 있으면 잠금), 히스토리 스택 편입
+    (뒤로가기=판서만 닫힘), 닫으면 완전 소멸(저장소·클립보드 미사용 정적 단언).
+  - 훅 확장: `useCellRangeSelect`에 exemptRefs·getSelected·clearSelection·toggleIndex·
+    escapeClears(opt-in, 기존 소비처 불변).
+  - 검증: tsc/lint/build 0 · vitest 229/229 · Codex 더블체크 게이트 총 16회(G0×3 · G1×3 ·
+    G2×2 · G3a×2 · G3b×6) 전부 통과. **남은 검증**: 실기기 스모크
+    [docs/ux/broadcast-tools-qa-checklist.md](../ux/broadcast-tools-qa-checklist.md) 전항 미실행.
 - **2026-07-25에 끝난 것**(`9911cb7`, `a03670e`):
   - **방송시간 오귀속 수정 + 재발 방지**(`9911cb7`, 마이그레이션 0051): 연속 방송이 새벽·무관중
     폴링 공백(`SESSION_GAP_MS` 4h)을 만나 두 세션으로 쪼개지고 뒷부분이 다음날로 오귀속되던 버그
@@ -227,6 +244,11 @@ npx vercel ls vic-schedule-studio --scope bluesky-s-project3                    
 - **ISSUE-002 — 모바일에는 '이 달 기록' 진입점이 없다.** 버튼(`.insights-open`)이
   `.public-calendar-header`에만 있는데 모바일(≤640px)은 아젠다 레이아웃이라 이 헤더를 안 그린다
   → 모바일 시청자는 공개 인사이트를 열 수 없다. Status: Open(미요청, 별도 판단 필요).
+- **ISSUE-003 — 미리보기 낙관 경로가 teaser를 안 가린다.** `studio-shell.tsx`의 viewerMode
+  미리보기는 낙관적 `events`에서 공개 일정을 추리는데(spread + privateMeta 제거), 공개 시각 전
+  teaser의 실제 `publicTitle`이 서버 redaction 없이 그대로 미리보기에 노출될 수 있다(방송 화면
+  공유 시 유출면). 판서(B안)는 ADR-0010으로 이 경로를 우회했지만 미리보기 자체는 남아 있다.
+  Status: Open (2026-07-25 판서 작업 중 발견 — 수정 시 spread 제거 + 공유 redaction 적용 방향).
 
 ## Locked / Stable Areas — 명시적 이유 없이 건드리지 말 것
 

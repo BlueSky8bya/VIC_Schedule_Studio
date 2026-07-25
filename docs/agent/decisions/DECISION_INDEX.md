@@ -17,3 +17,4 @@
 | [0007](ADR-0007-anon-hearts-device-token.md) | Accepted | 참여 | 하트는 비로그인 허용(기기 토큰). 로그인 장벽이 참여 병목이었음 | 어뷰징이 실제로 관측되면 |
 | [0008](ADR-0008-public-insights-aggregate-rpc.md) | Accepted | 공개 경계 | 시청자 인사이트는 **집계 전용 SECURITY DEFINER RPC**로만. 방문/체류(운영 지표)는 공개 금지, 하트 개수는 비노출(비율만) | 방문자 지표를 공개하기로 하거나 캘린더가 2개 이상이 되면 |
 | [0009](ADR-0009-seasonal-toys-are-opt-in.md) | Accepted | 시즌 연출 | 미니게임·시즌 테마는 **기본 꺼짐 + 클릭 통과 + 오너 테마 우선**. 장난감은 포스터의 뚜껑이 아니다 | 특정 기간 자동 노출을 원하면(좁은 조건으로만) |
+| [0010](ADR-0010-broadcast-panel-public-dto-only.md) | Accepted | 보안 경계 | 방송 판서는 **서버 공개 스냅샷→명시 DTO만**(spread 금지) + teaser fail-closed 마스킹 + 클라이언트 무저장 | 판서에 낙관적 실시간 반영이 필요해지면(공유 redaction 추출 방향) |
