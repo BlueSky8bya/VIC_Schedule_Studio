@@ -1259,6 +1259,26 @@
   opacity: 1;
   transform: translateX(-50%) scale(1);
 }
+/* 양 끝(첫·마지막) 월 막대: 값 툴팁을 가장자리 정렬로 바꿔 패널(overflow-x:hidden) 밖으로 안 나가게.
+   특히 맨 오른쪽=최신 막대는 방송시간이 100시간대(3자리 "104시간 36분")면 툴팁이 넓어져 오른쪽이
+   잘렸다. left:50%+translateX(-50%)는 가운데 정렬이라 끝 막대에서 절반이 패널을 넘긴다. */
+.trend-spark .trend-bcol:first-child .trend-bar::after {
+  left: 0;
+  transform: translateX(0) scale(0.8);
+  transform-origin: bottom left;
+}
+.trend-spark .trend-bcol:first-child:hover .trend-bar::after {
+  transform: translateX(0) scale(1);
+}
+.trend-spark .trend-bcol:last-child .trend-bar::after {
+  left: auto;
+  right: 0;
+  transform: translateX(0) scale(0.8);
+  transform-origin: bottom right;
+}
+.trend-spark .trend-bcol:last-child:hover .trend-bar::after {
+  transform: translateX(0) scale(1);
+}
 
 /* ── StackTrendChart(방문/컨텐츠/하트 6개월 트렌드) 구조 스타일 — 비로그인 시청자 '이 달 기록'은
    이 공유 파일만 로드한다. 예전엔 이 vt-* 구조 규칙이 studio-shell.css(편집실 전용)에만 있어

@@ -17,6 +17,6 @@ export async function GET(req: Request) {
     }
   }
   const state = await fetchSoopLive();
-  await recordLiveTick({ isLive: state.isLive, title: state.title });
+  await recordLiveTick({ isLive: state.isLive, title: state.title, bno: state.bno });
   return NextResponse.json({ ok: true, isLive: state.isLive });
 }

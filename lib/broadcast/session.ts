@@ -6,21 +6,29 @@ import { createSupabaseAdminClient } from "@/lib/auth/admin";
 
 const KST_MS = 9 * 3600 * 1000;
 
-// 라이브가 끊긴 듯 보여도 이 시간 안에 다시 잡히면 같은 방송으로 잇는다 — 시청자 폴링은 방문자가
-// 없으면 비는데, 그 빈 구간 때문에 연속 방송이 쪼개져 총 시간이 깎이는 걸 막는다(과소집계 방지).
-// 이보다 더 벌어진 뒤의 라이브는 새 방송으로 본다(예: 어제 방송이 안 닫힌 채 오늘 다시 켬).
+// bno를 모를 때(레거시 행/조회 실패)만 쓰는 폴백 간격. 라이브가 이 시간 안에 다시 잡히면 같은
+// 방송으로 잇고, 더 벌어졌으면 새 방송으로 본다. ★ bno를 알면 이 값은 무시하고 bno로만 판정한다
+// (폴링 공백에 연속 방송이 쪼개져 다음날로 오귀속되던 버그의 원인이 이 간격 판정이었다 — 0051).
 const SESSION_GAP_MS = 4 * 3600 * 1000;
 
 function kstDay(ms: number): string {
   return new Date(ms + KST_MS).toISOString().slice(0, 10);
 }
 
-type OpenRow = { id: string; started_at: string; last_live_at: string };
+type OpenRow = { id: string; started_at: string; last_live_at: string; bno: string | null };
 
 // 매 폴링 1회. live면 열린 세션을 잇거나(없으면) 새로 열고, offline이면 열린 세션을 last_live_at에서 닫는다.
 // 종료시각을 '감지 시점'이 아니라 '마지막 라이브 확인 시각(last_live_at)'으로 잡아, 폴링이 늦거나
 // 비어도 방송시간이 부풀지 않게 한다(보수적 추정).
-export async function recordLiveTick(state: { isLive: boolean; title?: string | null }): Promise<void> {
+//
+// 연속성 판정(0051): SOOP BNO(방송번호)를 정답값으로 쓴다. bno가 같으면 폴링이 아무리 비어도 같은
+// 방송으로 이어 붙이고(그 공백도 라이브로 인정 — 같은 bno면 그 사이 계속 방송 중이었다는 뜻), bno가
+// 다르면 새 방송으로 쪼갠다. 양쪽 bno를 모를 때만 예전 간격 휴리스틱으로 폴백한다.
+export async function recordLiveTick(state: {
+  isLive: boolean;
+  title?: string | null;
+  bno?: string | null;
+}): Promise<void> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return;
   try {
@@ -28,24 +36,31 @@ export async function recordLiveTick(state: { isLive: boolean; title?: string | 
     const nowIso = new Date(nowMs).toISOString();
     const { data: openRows } = await supabase
       .from("broadcast_session")
-      .select("id, started_at, last_live_at")
+      .select("id, started_at, last_live_at, bno")
       .is("ended_at", null)
       .order("last_live_at", { ascending: false })
       .limit(1);
     const open = (openRows?.[0] ?? null) as OpenRow | null;
 
     if (state.isLive) {
+      const bno = state.bno ?? null;
       if (open) {
-        const gap = nowMs - new Date(open.last_live_at).getTime();
-        if (gap <= SESSION_GAP_MS) {
-          // 같은 방송 — 마지막 라이브 시각만 끌어올린다.
-          await supabase
-            .from("broadcast_session")
-            .update({ last_live_at: nowIso })
-            .eq("id", open.id);
+        // bno를 양쪽 다 알면 그걸로만 판정(정답값). 하나라도 모르면 간격 폴백.
+        const continueSame =
+          bno !== null && open.bno !== null
+            ? open.bno === bno
+            : nowMs - new Date(open.last_live_at).getTime() <= SESSION_GAP_MS;
+        if (continueSame) {
+          // 같은 방송 — 마지막 라이브 시각만 끌어올린다(같은 bno면 공백도 라이브로 인정돼 집계됨).
+          // bno가 아직 비어 있던 열린 세션이면 이 참에 채워 넣어, 이후 판정을 정답값으로 승격한다.
+          const patch: { last_live_at: string; bno?: string } =
+            open.bno === null && bno !== null
+              ? { last_live_at: nowIso, bno }
+              : { last_live_at: nowIso };
+          await supabase.from("broadcast_session").update(patch).eq("id", open.id);
           return;
         }
-        // 너무 오래 비었음 → 이전 방송을 마지막 라이브에서 닫고 새 방송을 연다.
+        // 다른 방송(bno 다름) 또는 bno 불명 + 오래 빔 → 이전 방송을 마지막 라이브에서 닫고 새로 연다.
         await supabase
           .from("broadcast_session")
           .update({ ended_at: open.last_live_at })
@@ -55,6 +70,7 @@ export async function recordLiveTick(state: { isLive: boolean; title?: string | 
         start_day: kstDay(nowMs),
         started_at: nowIso,
         last_live_at: nowIso,
+        bno,
         title: state.title ?? null
       });
       return;
