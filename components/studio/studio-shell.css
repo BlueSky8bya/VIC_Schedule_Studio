@@ -5,6 +5,16 @@
    (그 이상)               데스크톱 스튜디오
    1700 / 2400px zoom 블록은 보고서상 제거 예정인 임시 대응 — 아래 @media 참고. */
 
+/* 브라우저 확대(소수 배율)에서 달력이 좌우로 '진동'하던 버그의 근본 수정.
+   원인 = 스크롤바 유무 피드백 루프: 콘텐츠 높이가 화면 높이 경계에 걸리면
+   세로 스크롤바 등장 → 가로폭 감소 → vw 기반 글자/칸 재계산 → 높이 변화 →
+   스크롤바 소멸 → 폭 복귀 → … 무한 반복. 스크롤바 자리를 항상 예약해 폭을
+   상수로 만들면 루프가 끊긴다. (이 CSS는 (studio) 레이아웃에서만 로드 —
+   공개 포스터 성능/레이아웃엔 영향 없음.) */
+html {
+  scrollbar-gutter: stable;
+}
+
 .studio-shell {
   min-height: 100vh;
   /* 밝고 귀여운 톤: 거의 흰 바탕 + 위쪽에 은은한 핑크·라벤더·하늘빛 글로우(파스텔 태그가 잘 살게). */
@@ -4499,6 +4509,8 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 /* 구글 시트식 날짜 칸 범위 선택(마우스) — 시각 강조만. 칸 텍스트 긁힘도 막는다. */
 .studio-month-grid {
   user-select: none;
+  /* 그리드 자체 스크롤바도 같은 진동 루프를 만들 수 있어 자리 예약(위 html 주석 참조). */
+  scrollbar-gutter: stable;
   -webkit-user-select: none;
   -ms-user-select: none;
 }
