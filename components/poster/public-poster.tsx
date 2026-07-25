@@ -90,7 +90,7 @@ import type {
 import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
 import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { heartTier } from "@/lib/schedules/heart-tiers";
-import { getDayMark } from "@/lib/calendar/holidays";
+import { getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
@@ -121,6 +121,7 @@ import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
 import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
+import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
@@ -186,6 +187,8 @@ type PublicPosterProps = {
   avatarSide?: "left" | "right";
   onAvatarToggle?: () => void;
   onAvatarSide?: (side: "left" | "right") => void;
+  // 편집실 미리보기에서는 관리자 토글 상태를 직접 받는다. 일반 공개 화면은 기기별 저장값 사용.
+  showWorldCupFeatures?: boolean;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -665,8 +668,10 @@ export function PublicPoster({
   avatarOn: avatarOnProp,
   avatarSide: avatarSideProp,
   onAvatarToggle,
-  onAvatarSide
+  onAvatarSide,
+  showWorldCupFeatures: showWorldCupFeaturesProp
 }: PublicPosterProps) {
+  const [showWorldCupFeatures] = useWorldCupVisibility(showWorldCupFeaturesProp);
   // 스티커 저장/삭제가 서버에 들어가는 동안만 세는 카운터(아래 beforeunload 경고용).
   // 실제 전송은 keepalive fetch(/api/sticker-write)로 보낸다 → 스티커를 옮기/추가/삭제하고 바로
   // 달을 넘기거나 창을 닫/새로고침해도 브라우저가 전송을 끝까지 보장해 작업이 유실되지 않는다.
@@ -989,7 +994,7 @@ export function PublicPoster({
   const effectivePosterTheme =
     posterTheme !== "none"
       ? posterTheme
-      : isWorldCupMonth(view.year, view.month)
+      : showWorldCupFeatures && isWorldCupMonth(view.year, view.month)
         ? "worldcup"
         : posterTheme;
 
@@ -2766,6 +2771,11 @@ export function PublicPoster({
     const supportHere = covering.filter((e) => e.isSupport);
     const events = covering.filter((e) => !e.isSupport);
     const day = classifyDay(cell.isoDate, cell.weekday, today);
+    const visibleDayMark = showWorldCupFeatures
+      ? getDayMark(cell.isoDate)
+      : withoutWorldCupMark(getDayMark(cell.isoDate));
+    const showHeaderMark = Boolean(visibleDayMark?.name);
+    const visibleMatch = visibleDayMark?.match ?? null;
 
     // 이 칸의 대표 관심 단계 — 진입 시 단계별로 칸을 부각하는 애니메이션(data-pop)에 쓴다.
     let popTier: string | null = null;
@@ -2785,7 +2795,7 @@ export function PublicPoster({
         className={`public-day ${cell.inCurrentMonth ? "" : "outside"} ${
           day.isToday ? "today" : ""
         }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}${
-          day.wcMatch?.kind === "wc-korea-win" ? " day-win" : ""
+          visibleMatch?.kind === "wc-korea-win" ? " day-win" : ""
         }`}
         data-pop={popTier ?? undefined}
         data-cell-index={cellIndex}
@@ -2823,56 +2833,64 @@ export function PublicPoster({
           <strong className={day.isRed ? "red" : day.isSaturday ? "saturday" : ""}>
             {cell.dayOfMonth} 일
           </strong>
-          {day.markName ? (
+          {showHeaderMark ? (
             interactive ? (
               // 특별한 날 표기를 탭하면 그 자리에서 빵빠레가 터진다. 한국 승은 큰 폭죽.
               <button
                 type="button"
-                className={`day-mark celebratable${day.markKind ? ` ${day.markKind}` : ""}`}
+                className={`day-mark celebratable${
+                  visibleDayMark?.kind ? ` ${visibleDayMark.kind}` : ""
+                }`}
                 onClick={(e) => {
                   const r = e.currentTarget.getBoundingClientRect();
                   popBurst(
                     r.left + r.width / 2,
                     r.top + r.height / 2,
-                    day.markKind === "wc-korea-win"
+                    visibleDayMark?.kind === "wc-korea-win"
                       ? "win"
-                      : day.markKind === "wc-korea-done"
+                      : visibleDayMark?.kind === "wc-korea-done"
                         ? "console"
                         : "cheer"
                   );
                 }}
               >
-                {day.markName}
+                {visibleDayMark?.name}
               </button>
             ) : (
-              <em className={`day-mark${day.markKind ? ` ${day.markKind}` : ""}`}>{day.markName}</em>
+              <em
+                className={`day-mark${
+                  visibleDayMark?.kind ? ` ${visibleDayMark.kind}` : ""
+                }`}
+              >
+                {visibleDayMark?.name}
+              </em>
             )
           ) : null}
         </div>
         {/* 월드컵 경기 대진·스코어 — 헤더에 욱여넣지 않고 칸 본문 전체폭 칩으로(통일·균형·리듬).
             헤더 슬롯은 초복·절기 등에 양보. 탭하면 이 칩에서 빵빠레(한국 승=큰 폭죽). */}
-        {day.wcMatch ? (
+        {visibleMatch ? (
           interactive ? (
             <button
               type="button"
-              className={`day-wc-match ${day.wcMatch.kind}`}
+              className={`day-wc-match ${visibleMatch.kind}`}
               onClick={(e) => {
                 const r = e.currentTarget.getBoundingClientRect();
                 popBurst(
                   r.left + r.width / 2,
                   r.top + r.height / 2,
-                  day.wcMatch!.celebrate === "win"
+                  visibleMatch.celebrate === "win"
                     ? "win"
-                    : day.wcMatch!.celebrate === "done"
+                    : visibleMatch.celebrate === "done"
                       ? "console"
                       : "cheer"
                 );
               }}
             >
-              {day.wcMatch.text}
+              {visibleMatch.text}
             </button>
           ) : (
-            <div className={`day-wc-match ${day.wcMatch.kind}`}>{day.wcMatch.text}</div>
+            <div className={`day-wc-match ${visibleMatch.kind}`}>{visibleMatch.text}</div>
           )
         ) : null}
         <div
@@ -3065,7 +3083,8 @@ export function PublicPoster({
         ...support.map((event) => ({ event, support: true })),
         ...evs.map((event) => ({ event, support: false }))
       ];
-      const mark = getDayMark(cell.isoDate);
+      const rawMark = getDayMark(cell.isoDate);
+      const mark = showWorldCupFeatures ? rawMark : withoutWorldCupMark(rawMark);
       // 필터가 없으면 1일~말일 모든 날을 보여준다(빈 날은 "예정된 공개 일정 없음").
       // 필터 중이면 조건에 맞는 일정이 있는 날만 남긴다.
       if (list.length > 0 || !filtering) {
@@ -3654,6 +3673,7 @@ export function PublicPoster({
           scene은 데스크탑(!showAgenda)서만 실제로 뜨므로, 모바일(showAgenda)에선 avatarOn이어도
           억제하지 않는다 — 안 그러면 dev가 모바일 시청자 미리보기서 게임을 못 켜는 버그가 났다. */}
       {interactive &&
+      showWorldCupFeatures &&
       isWorldCupMonth(view.year, view.month) &&
       !(avatarCapable && avatarOn && !showAgenda) ? (
         <WorldCupBallGoal />
@@ -3663,6 +3683,7 @@ export function PublicPoster({
           뜨므로 모바일(showAgenda)에선 avatarOn이어도 억제 X — owner/dev가 모바일 시청자 미리보기서도
           중력공이 뜨게(미니게임과 동일 조건). */}
       {interactive &&
+      showWorldCupFeatures &&
       isWorldCupMonth(view.year, view.month) &&
       !minigameOn &&
       !(avatarCapable && avatarOn && !showAgenda) ? (

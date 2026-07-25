@@ -3846,6 +3846,28 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   border-color: #bcd6f4;
   color: #1a60a8;
 }
+/* 월드컵 시즌 표시 토글 — 켜짐은 잔디색, 꺼짐은 조용한 회색. 데이터는 지우지 않고 화면만 정리. */
+.io-worldcup {
+  background: #f4f4f2;
+  border-color: #d9d9d3;
+  color: #66665f;
+  font-weight: 800;
+}
+.io-worldcup:hover:not(:disabled) {
+  background: #ecece8;
+  border-color: #cdcdc5;
+  color: #55554f;
+}
+.io-worldcup.on {
+  background: #edf8ef;
+  border-color: #c9e7ce;
+  color: #27713a;
+}
+.io-worldcup.on:hover:not(:disabled) {
+  background: #e1f3e5;
+  border-color: #b6dbbd;
+  color: #206331;
+}
 
 /* 비공개 — 주의(amber): 민감 동작이라 caution 색 코딩. 켜짐(.active)은 기존 진한
    amber 유지, 꺼짐도 옅은 amber 칩으로 '민감 토글'임을 일관되게 알린다. */
@@ -8291,6 +8313,19 @@ textarea:disabled {
 }
 .m-io-private:active {
   background: #ffedd6;
+}
+.m-io-worldcup {
+  background: #f4f4f2;
+  border-color: #d9d9d3;
+  color: #62625c;
+}
+.m-io-worldcup.on {
+  background: #eaf7ed;
+  border-color: #c3e4c9;
+  color: #246b36;
+}
+.m-io-worldcup:active {
+  background: #dcefe0;
 }
 
 /* 인라인 편집 바텀시트 */

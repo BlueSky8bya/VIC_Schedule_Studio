@@ -72,7 +72,7 @@ import {
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { markContentReady } from "@/lib/presence/content-ready";
-import { getDayMark } from "@/lib/calendar/holidays";
+import { getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
 // 월드컵 달에만 뜨는 중력 공 — 정적 import면 lib/football까지 편집실 첫 로드 번들에 얹힌다.
 const WorldCupStudioBall = dynamic(
@@ -105,6 +105,7 @@ import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/l
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
+import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 // 스튜디오 CSS는 StudioShell을 렌더하는 페이지(studio/(home), studio/calendar)에서 page-level로
 // import한다 — 그래야 <head>에 렌더 차단으로 올라가 모바일 첫 진입에도 깜빡임(FOUC)이 없다.
 // (컴포넌트에서 import하면 loading.tsx 이후 스트리밍으로 늦게 적용돼 잠깐 무스타일로 보였다.)
@@ -606,6 +607,13 @@ export function StudioShell({
   }
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
   const [viewerMode, setViewerMode] = useState(initialViewerMode);
+  const [showWorldCupFeatures, setShowWorldCupFeatures] = useWorldCupVisibility();
+  // TODO(A안): 달력 내부 Ctrl+휠 확대가 추가되면 저장된 사용자 선택은 덮지 말고,
+  // `showWorldCupFeatures && calendarScale === 1`을 실제 표시값으로 써 확대 중에만 자동 숨긴다.
+  function toggleWorldCupFeatures() {
+    hapticTick();
+    setShowWorldCupFeatures(!showWorldCupFeatures);
+  }
   // 모바일(좁은 화면): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
   const [isNarrow, setIsNarrow] = useState(initialNarrow);
   useEffect(() => {
@@ -3791,7 +3799,8 @@ export function StudioShell({
             >
               {monthCells.map((cell, agendaIndex) => {
               const day = classifyDay(cell.isoDate, cell.weekday, today);
-              const mark = getDayMark(cell.isoDate);
+              const rawMark = getDayMark(cell.isoDate);
+              const mark = showWorldCupFeatures ? rawMark : withoutWorldCupMark(rawMark);
               const dayEvents = mobileAgendaEvents
                 .filter((e) => getEventDateKey(e) === cell.isoDate)
                 // 편집실 드래그로 정한 같은 날 표시 순서(sort_order)를 편집실 모바일 아젠다도 따른다.
@@ -4071,6 +4080,16 @@ export function StudioShell({
             누르기 쉬운 핵심 버튼(미리보기·비공개)을 엄지 닿는 바닥에 모았다.
             계정변경(로그아웃)은 헤더 우상단으로 옮겼다(저장됨 칩이 있던 자리). */}
         <nav className="m-actionrail" aria-label="편집실 도구">
+          {canEdit && isWorldCupMonth(view.year, view.month) ? (
+            <button
+              aria-pressed={showWorldCupFeatures}
+              className={`button m-io-pill m-io-worldcup${showWorldCupFeatures ? " on" : ""}`}
+              onClick={toggleWorldCupFeatures}
+              type="button"
+            >
+              ⚽ 월드컵 {showWorldCupFeatures ? "끄기" : "켜기"}
+            </button>
+          ) : null}
           {canTogglePrivateLayer ? (
             isEffectivelyOwner && canReadPrivate ? (
               <button className="button primary" onClick={() => openChangePasscode()} type="button">
@@ -4681,6 +4700,7 @@ export function StudioShell({
           onViewChange={(year, month) => setView({ year, month })}
           previewNav={previewNav}
           schedule={previewSchedule}
+          showWorldCupFeatures={showWorldCupFeatures}
           toggleHeartAction={toggleEventHeartAction}
         />
       </div>
@@ -4722,7 +4742,7 @@ export function StudioShell({
     >
       {/* 편집실 중력 축구공(월드컵 기간만) — 편집 중 간단히 갖고 노는 장식. 일정 작업 방해 0.
           (시청자 화면 미리보기에선 위 PublicPoster가 '전체' 미니게임을 직접 띄운다.) */}
-      {isWorldCupMonth(view.year, view.month) && !viewerMode ? (
+      {showWorldCupFeatures && isWorldCupMonth(view.year, view.month) && !viewerMode ? (
         <WorldCupStudioBall pauseWhenMinigameOn={false} />
       ) : null}
       {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
@@ -4917,6 +4937,16 @@ export function StudioShell({
               ) : null}
             </div>
           ) : null}
+          {canEdit && isWorldCupMonth(view.year, view.month) ? (
+            <button
+              aria-pressed={showWorldCupFeatures}
+              className={`button io-accent io-worldcup${showWorldCupFeatures ? " on" : ""}`}
+              onClick={toggleWorldCupFeatures}
+              type="button"
+            >
+              ⚽ 월드컵 표시 {showWorldCupFeatures ? "끄기" : "켜기"}
+            </button>
+          ) : null}
           {/* 우측 묶음: 저장 상태 칩 + 비공개 일정 보기(토글) + 달력 꾸미기.
               칩은 '비공개 일정 보기' 왼쪽, 버튼 아래 끝선에 맞춰 둔다. 모든 역할(매니저·작업자
               포함) 공통 — 칩은 studioWrite 한 곳이 구동하므로 그들의 태그·업도움 저장에도 반응. */}
@@ -5039,6 +5069,9 @@ export function StudioShell({
                 dropLineBeforeId = li >= dateEvents.length ? null : dateEvents[li].id;
               }
               const day = classifyDay(cell.isoDate, cell.weekday, today);
+              const visibleDayMark = showWorldCupFeatures
+                ? getDayMark(cell.isoDate)
+                : withoutWorldCupMark(getDayMark(cell.isoDate));
               // 이 칸이 속한 주의 업 도움 줄 수만큼만 위 여백을 둔다(띠 없는 주는 0).
               const weekSupCount = weekSupportLaneCount[Math.floor(cellIndex / 7)] ?? 0;
 
@@ -5126,15 +5159,21 @@ export function StudioShell({
                   })}
                   <div className="studio-day-head">
                     <strong className={numClass}>{cell.dayOfMonth}</strong>
-                    {day.markName ? (
-                      <em className={`day-mark${day.markKind ? ` ${day.markKind}` : ""}`}>
-                        {day.markName}
+                    {visibleDayMark?.name ? (
+                      <em
+                        className={`day-mark${
+                          visibleDayMark.kind ? ` ${visibleDayMark.kind}` : ""
+                        }`}
+                      >
+                        {visibleDayMark.name}
                       </em>
                     ) : null}
                   </div>
                   {/* 월드컵 경기 대진·스코어 — 헤더(초복 등)와 별개로 칸 본문 칩(편집실도 시청자와 동일). */}
-                  {day.wcMatch ? (
-                    <div className={`day-wc-match ${day.wcMatch.kind}`}>{day.wcMatch.text}</div>
+                  {visibleDayMark?.match ? (
+                    <div className={`day-wc-match ${visibleDayMark.match.kind}`}>
+                      {visibleDayMark.match.text}
+                    </div>
                   ) : null}
                   <div
                     className="studio-event-list"

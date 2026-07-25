@@ -15,6 +15,15 @@ export type DayMark = {
   match?: { text: string; kind: MarkKind; celebrate: "win" | "done" | "cheer" };
 };
 
+// 월드컵 표시를 끈 화면용. 같은 날의 공휴일·절기·기념일은 유지하고 월드컵 단계/경기만 제거한다.
+export function withoutWorldCupMark(mark: DayMark | null): DayMark | null {
+  if (!mark) return null;
+  if (mark.kind) return null; // kind는 현재 월드컵 단계 표기에만 사용한다.
+  if (!mark.match) return mark;
+  if (!mark.name) return null;
+  return { ...mark, match: undefined };
+}
+
 // 매년 고정(양력) 공휴일 — 빨간날
 const HOLIDAYS_FIXED: Record<string, string> = {
   "01-01": "신정",
@@ -494,4 +503,3 @@ export function getDayMark(isoDate: string): DayMark | null {
     match
   };
 }
-
