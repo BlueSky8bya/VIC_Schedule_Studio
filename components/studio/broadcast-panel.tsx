@@ -41,6 +41,7 @@ import {
   X
 } from "lucide-react";
 
+import { ColorPickerPopover } from "@/components/tags/color-picker-popover";
 import type { BroadcastPanelDay, BroadcastPanelEvent } from "@/lib/schedules/broadcast-dto";
 import type { MonthCell } from "@/lib/calendar/month";
 import { splitEventTitle } from "@/lib/calendar/month";
@@ -192,6 +193,11 @@ export function BroadcastPanel({
   const [tool, setTool] = useState<BroadcastTool>("select");
   const [penColor, setPenColor] = useState(PEN_COLORS[0]);
   const [penWidth, setPenWidth] = useState(PEN_WIDTHS[1]);
+  // '색 직접 고르기' 팝오버 — 네이티브 OS 색상판 대신 태그 편집과 같은 인라인 피커를 재사용
+  // (주변과 같은 디자인 언어: 같은 트레이·SV 영역·톤 필터). openedWith = 취소 시 복귀 색.
+  const [colorPop, setColorPop] = useState<{ anchor: DOMRect; openedWith: string } | null>(null);
+  const colorPopRef = useRef(colorPop);
+  colorPopRef.current = colorPop;
   // 레이어 목록(위 = 맨 위 레이어). 배경(날짜 카드 DOM)은 목록 밖 고정 기본 — 표시 토글만.
   const [layers, setLayers] = useState<PanelLayer[]>(() => [
     { id: "layer-1", name: "레이어 1", vis: true, lock: false }
@@ -1029,6 +1035,8 @@ export function BroadcastPanel({
   // 전역 단축키 차단은 호출자(studio-shell)가 broadcastOpen 가드로 수행 — 여기선 Esc/Tab만.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // 색 팝오버가 열려 있는 동안엔 팝오버가 키보드(Esc/입력)를 갖는다 — 패널 단축키 정지.
+      if (colorPopRef.current) return;
       if (e.key === "Escape") {
         // 우선순위: 카드 다중선택 해제 → 날짜 선택 해제 → 창 닫기(한 번에 하나).
         if (colSelRef.current.size > 0) {
@@ -1226,22 +1234,48 @@ export function BroadcastPanel({
                 }}
               />
             ))}
-            {/* 직접 고르기 — 네이티브 색상판. 팔레트에 없는 색이 선택돼 있으면 이 칸이 켜진다. */}
-            <input
+            {/* 직접 고르기 — 태그 편집과 같은 인라인 색 피커 팝오버(디자인 통일).
+                팔레트에 없는 색이 선택돼 있으면 이 칸이 그 색으로 켜진다. */}
+            <button
+              aria-expanded={colorPop !== null}
               aria-label="색 직접 고르기"
-              className={`bp-color bp-color-custom${PEN_COLORS.includes(penColor) ? "" : " on"}`}
+              className={`bp-color bp-color-custom${PEN_COLORS.includes(penColor) && !colorPop ? "" : " on"}`}
               style={PEN_COLORS.includes(penColor) ? undefined : { background: penColor }}
               title="색 직접 고르기"
-              type="color"
-              value={PEN_COLORS.includes(penColor) ? "#7c6cf0" : penColor}
-              onChange={(e) => {
-                setPenColor(e.target.value);
+              type="button"
+              // 팝오버의 light-dismiss(문서 mousedown)가 이 버튼을 '바깥'으로 오인해
+              // 닫았다 → click이 다시 여는 왕복을 막는다.
+              onMouseDown={(e) => e.stopPropagation()}
+              onClick={(e) => {
+                hapticTick();
+                if (colorPop) {
+                  setColorPop(null);
+                  return;
+                }
+                setColorPop({
+                  anchor: e.currentTarget.getBoundingClientRect(),
+                  openedWith: penColor
+                });
                 if (tool === "select") setTool("pen");
               }}
-              onClick={() => hapticTick()}
             />
           </div>
           <em className="bp-group-label">색</em>
+          {colorPop ? (
+            <ColorPickerPopover
+              anchor={colorPop.anchor}
+              canClear={false}
+              kind="modifier"
+              value={penColor}
+              onCancel={() => {
+                setPenColor(colorPop.openedWith);
+                setColorPop(null);
+              }}
+              onChange={(hex) => setPenColor(hex)}
+              onClear={() => {}}
+              onClose={() => setColorPop(null)}
+            />
+          ) : null}
         </div>
         <div className="bp-tool-group" role="group" aria-label="굵기">
           <div className="bp-group-row bp-grid3">

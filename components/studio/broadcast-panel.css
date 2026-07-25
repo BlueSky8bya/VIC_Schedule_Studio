@@ -321,24 +321,16 @@ html[data-reduce-motion] .broadcast-panel > * {
   cursor: pointer;
   transition: transform var(--dur-1) var(--ease);
 }
-/* 직접 고르기(네이티브 색상판) — 무지개 원뿔 그라데이션 스와치로 표시. */
+/* 직접 고르기 — 무지개 원뿔 그라데이션 스와치. 누르면 태그 편집과 같은 인라인 피커. */
 .bp-color-custom {
   padding: 0;
   background: conic-gradient(#e11d48, #f59e0b, #22c55e, #06b6d4, #6366f1, #d946ef, #e11d48);
-  appearance: none;
-  -webkit-appearance: none;
 }
-.bp-color-custom::-webkit-color-swatch-wrapper {
-  padding: 0;
-  opacity: 0;
-}
-.bp-color-custom::-webkit-color-swatch {
-  border: 0;
-  opacity: 0;
-}
-.bp-color-custom::-moz-color-swatch {
-  border: 0;
-  opacity: 0;
+/* 색 피커 팝오버는 body 포털(z 9500)이라 이 모달(z 10000) 아래 깔린다 — 판서창이
+   떠 있는 동안엔 팝오버를 그 위로 올린다(판서창 안에서만 의미 있는 보정). */
+.broadcast-panel ~ .tag-cpop,
+body:has(.broadcast-panel) .tag-cpop {
+  z-index: 10500;
 }
 .bp-color:hover {
   transform: scale(1.12);
