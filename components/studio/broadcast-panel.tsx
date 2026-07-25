@@ -548,133 +548,152 @@ export function BroadcastPanel({
         </button>
       </header>
 
-      {/* 판서 도구줄(M4b) — 선택/펜/형광펜/지우개 · 6색 · 굵기 3단 · 레이어 · undo/redo · 전체 지우기.
+      {/* 판서 도구줄(M4b) — 실제 그림판(리본) 문법: 묶음마다 아래에 작은 라벨, 세로 구분선.
           role은 group — toolbar 역할은 방향키 roving tabindex가 필수라(G3b) 일반 Tab 이동으로 둔다. */}
       <div className="bp-toolbar" role="group" aria-label="판서 도구">
         <div className="bp-tool-group" role="group" aria-label="도구">
-          {(
-            [
-              ["select", "선택", MousePointer2],
-              ["pen", "펜", Pen],
-              ["hl", "형광펜", Highlighter],
-              ["eraser", "지우개", Eraser]
-            ] as const
-          ).map(([key, label, Icon]) => (
-            <button
-              aria-label={label}
-              aria-pressed={tool === key}
-              className={`bp-tool${tool === key ? " on" : ""}`}
-              key={key}
-              title={label}
-              type="button"
-              onClick={() => {
-                hapticTick();
-                setTool(key);
-              }}
-            >
-              <Icon aria-hidden="true" size={16} />
-            </button>
-          ))}
+          <div className="bp-group-row">
+            {(
+              [
+                ["select", "선택", MousePointer2],
+                ["pen", "펜", Pen],
+                ["hl", "형광펜", Highlighter],
+                ["eraser", "지우개", Eraser]
+              ] as const
+            ).map(([key, label, Icon]) => (
+              <button
+                aria-label={label}
+                aria-pressed={tool === key}
+                className={`bp-tool${tool === key ? " on" : ""}`}
+                key={key}
+                title={label}
+                type="button"
+                onClick={() => {
+                  hapticTick();
+                  setTool(key);
+                }}
+              >
+                <Icon aria-hidden="true" size={16} />
+              </button>
+            ))}
+          </div>
+          <em className="bp-group-label">도구</em>
         </div>
         <div className="bp-tool-group" role="group" aria-label="색">
-          {PEN_COLORS.map((c) => (
-            <button
-              aria-label={`펜 색 ${c}`}
-              aria-pressed={penColor === c}
-              className={`bp-color${penColor === c ? " on" : ""}`}
-              key={c}
-              style={{ background: c }}
-              type="button"
-              onClick={() => {
-                hapticTick();
-                setPenColor(c);
-              }}
-            />
-          ))}
+          <div className="bp-group-row">
+            {PEN_COLORS.map((c) => (
+              <button
+                aria-label={`펜 색 ${c}`}
+                aria-pressed={penColor === c}
+                className={`bp-color${penColor === c ? " on" : ""}`}
+                key={c}
+                style={{ background: c }}
+                type="button"
+                onClick={() => {
+                  hapticTick();
+                  setPenColor(c);
+                }}
+              />
+            ))}
+          </div>
+          <em className="bp-group-label">색</em>
         </div>
         <div className="bp-tool-group" role="group" aria-label="굵기">
-          {PEN_WIDTHS.map((w) => (
-            <button
-              aria-label={`굵기 ${w}px`}
-              aria-pressed={penWidth === w}
-              className={`bp-width${penWidth === w ? " on" : ""}`}
-              key={w}
-              type="button"
-              onClick={() => {
-                hapticTick();
-                setPenWidth(w);
-              }}
-            >
-              <i style={{ width: w + 2, height: w + 2 }} />
-            </button>
-          ))}
+          <div className="bp-group-row">
+            {PEN_WIDTHS.map((w) => (
+              <button
+                aria-label={`굵기 ${w}px`}
+                aria-pressed={penWidth === w}
+                className={`bp-width${penWidth === w ? " on" : ""}`}
+                key={w}
+                type="button"
+                onClick={() => {
+                  hapticTick();
+                  setPenWidth(w);
+                }}
+              >
+                <i style={{ width: w + 2, height: w + 2 }} />
+              </button>
+            ))}
+          </div>
+          <em className="bp-group-label">굵기</em>
         </div>
         <div className="bp-tool-group" role="group" aria-label="레이어">
-          {(
-            [
-              ["bg", "배경(날짜 카드)"],
-              ["hl", "형광펜 레이어"],
-              ["pen", "펜 레이어"]
-            ] as const
-          ).map(([key, label]) => (
-            <span className="bp-layer" key={key}>
-              <em>{key === "bg" ? "배경" : key === "hl" ? "형광" : "펜"}</em>
-              <button
-                aria-label={`${label} 표시`}
-                aria-pressed={layerVis[key]}
-                className="bp-layer-btn"
-                type="button"
-                onClick={() => setLayerVis((v) => ({ ...v, [key]: !v[key] }))}
-              >
-                {layerVis[key] ? <Eye size={13} /> : <EyeOff size={13} />}
-              </button>
-              {key !== "bg" ? (
+          <div className="bp-group-row">
+            {(
+              [
+                ["bg", "배경(날짜 카드)"],
+                ["hl", "형광펜 레이어"],
+                ["pen", "펜 레이어"]
+              ] as const
+            ).map(([key, label]) => (
+              <span className="bp-layer" key={key}>
+                <em>{key === "bg" ? "배경" : key === "hl" ? "형광" : "펜"}</em>
                 <button
-                  aria-label={`${label} 잠금`}
-                  aria-pressed={layerLock[key]}
+                  aria-label={`${label} 표시`}
+                  aria-pressed={layerVis[key]}
                   className="bp-layer-btn"
                   type="button"
-                  onClick={() => setLayerLock((v) => ({ ...v, [key]: !v[key] }))}
+                  onClick={() => setLayerVis((v) => ({ ...v, [key]: !v[key] }))}
                 >
-                  {layerLock[key] ? <Lock size={13} /> : <LockOpen size={13} />}
+                  {layerVis[key] ? <Eye size={13} /> : <EyeOff size={13} />}
                 </button>
-              ) : null}
-            </span>
-          ))}
+                {key !== "bg" ? (
+                  <button
+                    aria-label={`${label} 잠금`}
+                    aria-pressed={layerLock[key]}
+                    className="bp-layer-btn"
+                    type="button"
+                    onClick={() => setLayerLock((v) => ({ ...v, [key]: !v[key] }))}
+                  >
+                    {layerLock[key] ? <Lock size={13} /> : <LockOpen size={13} />}
+                  </button>
+                ) : null}
+              </span>
+            ))}
+          </div>
+          <em className="bp-group-label">레이어</em>
         </div>
-        <div className="bp-tool-group" role="group" aria-label="되돌리기">
-          <button
-            aria-label="실행 취소 (Ctrl+Z)"
-            className="bp-tool"
-            disabled={!store.canUndo()}
-            title="실행 취소 (Ctrl+Z)"
-            type="button"
-            onClick={doUndo}
-          >
-            <Undo2 aria-hidden="true" size={16} />
-          </button>
-          <button
-            aria-label="다시 실행 (Ctrl+Shift+Z)"
-            className="bp-tool"
-            disabled={!store.canRedo()}
-            title="다시 실행 (Ctrl+Shift+Z)"
-            type="button"
-            onClick={doRedo}
-          >
-            <Redo2 aria-hidden="true" size={16} />
-          </button>
-          <button
-            aria-label={clearArmed ? "한 번 더 누르면 전체 지우기" : "전체 지우기"}
-            className={`bp-tool danger${clearArmed ? " armed" : ""}`}
-            // redo 기록만 남은 상태(전량 undo)에서도 활성 — 그래야 화면 맞춤 잠금을 풀
-            // 유일한 경로(전체 지우기 = redoStack까지 소거)가 막히지 않는다(G3b 5차).
-            disabled={store.strokes().length === 0 && !store.canRedo() && !clearArmed}
-            title="전체 지우기 — 잠긴 레이어 포함, 되돌릴 수 없음 (두 번 눌러 실행)"
-            type="button"
-            onClick={doClearAll}
-          >
-            {clearArmed ? <span className="bp-clear-confirm">확실해요?</span> : <Trash2 aria-hidden="true" size={16} />}
-          </button>
+        <div className="bp-tool-group" role="group" aria-label="기록">
+          <div className="bp-group-row">
+            <button
+              aria-label="실행 취소 (Ctrl+Z)"
+              className="bp-tool"
+              disabled={!store.canUndo()}
+              title="실행 취소 (Ctrl+Z)"
+              type="button"
+              onClick={doUndo}
+            >
+              <Undo2 aria-hidden="true" size={16} />
+            </button>
+            <button
+              aria-label="다시 실행 (Ctrl+Shift+Z)"
+              className="bp-tool"
+              disabled={!store.canRedo()}
+              title="다시 실행 (Ctrl+Shift+Z)"
+              type="button"
+              onClick={doRedo}
+            >
+              <Redo2 aria-hidden="true" size={16} />
+            </button>
+            <button
+              aria-label={clearArmed ? "한 번 더 누르면 전체 지우기" : "전체 지우기"}
+              className={`bp-tool danger${clearArmed ? " armed" : ""}`}
+              // redo 기록만 남은 상태(전량 undo)에서도 활성 — 그래야 잠금을 풀 유일한 경로
+              // (전체 지우기 = redoStack까지 소거)가 막히지 않는다(G3b 5차).
+              disabled={store.strokes().length === 0 && !store.canRedo() && !clearArmed}
+              title="전체 지우기 — 잠긴 레이어 포함, 되돌릴 수 없음 (두 번 눌러 실행)"
+              type="button"
+              onClick={doClearAll}
+            >
+              {clearArmed ? (
+                <span className="bp-clear-confirm">확실해요?</span>
+              ) : (
+                <Trash2 aria-hidden="true" size={16} />
+              )}
+            </button>
+          </div>
+          <em className="bp-group-label">기록</em>
         </div>
         {toolBlocked ? <span className="bp-lock-hint">잠긴 레이어예요 — 자물쇠를 풀어주세요</span> : null}
       </div>

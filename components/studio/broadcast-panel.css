@@ -1,15 +1,17 @@
 /* 방송 판서 창(B안 M4a) — 같은 창 전체화면 '불투명' 모달.
    배경을 완전 불투명으로 깔아 뒤 편집실(비공개 가능성)이 방송 화면에 비치지 않는다. */
 
+/* 실제 그림판 문법: 위 = 흰 리본(도구 묶음 + 아래 작은 라벨), 아래 = 회색 작업대 위에
+   떠 있는 흰 캔버스 시트. 따뜻한 회색으로 앱 톤만 살짝 유지. */
 .broadcast-panel {
   position: fixed;
   inset: 0;
   z-index: 10000; /* 편집실 어떤 오버레이보다 위(드래그 유령 9999 포함 — 열려있는 동안 조작 없음) */
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 16px 20px;
-  background: linear-gradient(180deg, #fdf6ee, #f6f1fb); /* 불투명 — 뒤 비침 금지 */
+  gap: 0;
+  padding: 0;
+  background: #e8e4df; /* 작업대 회색 — 불투명(뒤 비침 금지) */
   overflow-y: auto;
   /* 루트에는 애니메이션 금지(G3a) — opacity 등장이면 그 200ms 동안 뒤 비공개 화면이 비쳐
      '항상 불투명' 계약 위반. 배경은 즉시 불투명, 등장 연출은 내부 콘텐츠만. */
@@ -35,10 +37,12 @@ html[data-reduce-motion] .broadcast-panel > * {
   display: flex;
   align-items: center;
   gap: 14px;
+  padding: 10px 18px 8px;
+  background: #faf8f5; /* 그림판 제목줄 */
 }
 .bp-header h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 900;
   color: #4b4468;
 }
@@ -69,13 +73,14 @@ html[data-reduce-motion] .broadcast-panel > * {
   transform: scale(0.94);
 }
 
-/* ── 날짜 선택 미니 달력 ── */
+/* ── 날짜 선택 미니 달력 — 작업대 위에 뜬 팔레트 창 느낌 ── */
 .bp-picker {
-  border: 1px solid #ece9f5;
+  margin: 12px 16px 0;
+  border: 1px solid #d9d4cd;
   border-radius: var(--r-card);
   background: #ffffff;
-  padding: 12px 14px;
-  box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
+  padding: 10px 14px;
+  box-shadow: 0 6px 20px rgb(80 70 60 / 12%);
 }
 .bp-picker-head {
   display: flex;
@@ -204,27 +209,39 @@ html[data-reduce-motion] .broadcast-panel > * {
   color: #a6a0be;
 }
 
-/* ── 판서 도구줄(M4b) ── */
+/* ── 판서 도구줄(M4b) — 그림판 리본: 묶음(가운데 정렬) + 아래 라벨 + 세로 구분선 ── */
 .bp-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  border: 1px solid #ece9f5;
-  border-radius: var(--r-card);
-  background: #ffffff;
-  box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
+  align-items: stretch;
+  gap: 0;
+  padding: 6px 14px 4px;
+  border-bottom: 1px solid #d9d4cd;
+  background: #faf8f5;
+  box-shadow: 0 2px 8px rgb(80 70 60 / 8%);
 }
 .bp-tool-group {
-  display: inline-flex;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding-right: 12px;
-  border-right: 1px solid #efecf7;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 2px 14px;
+  border-right: 1px solid #e3ded6;
 }
 .bp-tool-group:last-of-type {
   border-right: 0;
+}
+.bp-group-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.bp-group-label {
+  font-size: 10.5px;
+  font-style: normal;
+  font-weight: 700;
+  color: #8b8577;
 }
 .bp-tool {
   display: inline-flex;
@@ -344,19 +361,17 @@ html[data-reduce-motion] .broadcast-panel > * {
   color: #be123c;
 }
 
-/* ── 판서판(선택 날짜 나란히 + 캔버스 오버레이) ── */
+/* ── 판서판 — 회색 작업대 위 '흰 캔버스 시트'(그림판 문법) ── */
 .bp-board {
   flex: 1;
   min-height: 260px;
-  border: 1px solid #ece9f5;
-  border-radius: var(--r-card);
-  background: #fffdfa;
-  box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
+  padding: 16px 20px 20px;
   /* 가로·세로 모두 inner(카드+캔버스 한 몸)째 스크롤 — 세로를 hidden으로 두면 보드보다
      긴 일정 카드의 아래가 잘려 접근 불가(G3b-r BLOCKER). */
   overflow: auto;
 }
-/* 스크롤 좌표면 — 배경 카드·캔버스·입력면이 전부 이 안에 있어 함께 움직인다(G3b). */
+/* 스크롤 좌표면 = 흰 캔버스 시트. 배경 카드·캔버스·입력면이 전부 이 안에 있어 함께
+   움직인다(G3b). 시트 그림자·테두리로 작업대에서 종이가 떠 있는 느낌. */
 .bp-board-inner {
   position: relative;
   min-width: 100%;
@@ -364,6 +379,9 @@ html[data-reduce-motion] .broadcast-panel > * {
   min-height: 100%;
   height: max-content; /* 카드가 보드보다 길면 inner가 자라 세로 스크롤(캔버스도 같이) */
   padding: 16px;
+  border: 1px solid #cfc9c0;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgb(60 52 40 / 18%);
 }
 .bp-board-bg {
   height: 100%;
