@@ -53,6 +53,7 @@ import {
   appendPoint,
   backingScale,
   createStrokeStore,
+  drawPenIncremental,
   drawStroke,
   isShapeTool,
   strokeAppliesTo,
@@ -684,9 +685,14 @@ export function BroadcastPanel({
   }
 
   // ── 부분 선택(그림판 영역 선택 의미론): 밴드에 걸친 획을 경계에서 '분할'하고 안쪽
-  // 조각만 선택한다. 완전히 안이면 통째, 도형은 부분 개념이 없어 걸치면 통째. ──
+  // 조각만 선택한다. 완전히 안이면 통째, 도형은 부분 개념이 없어 걸치면 통째.
+  // 대상은 '활성 레이어'의 획만 — 그림판 문법(선택/이동/확대가 다른 레이어를 건드리면
+  // 레이어 분리 의미가 없어진다). 활성 레이어가 잠김/숨김이면 아무것도 안 잡힌다. ──
   function splitSelectStrokes(lo: { x: number; y: number }, hi: { x: number; y: number }) {
-    const layerOk = new Map(layersRef.current.map((l) => [l.id, l.vis && !l.lock]));
+    const act = layersRef.current.find((l) => l.id === activeLayerId);
+    const layerOk = new Map(
+      layersRef.current.map((l) => [l.id, l.id === act?.id && l.vis && !l.lock])
+    );
     const inside = (pt: StrokePoint) =>
       pt.x >= lo.x && pt.x <= hi.x && pt.y >= lo.y && pt.y <= hi.y;
     // 안(a)→밖(b) 세그먼트가 사각형 경계를 지나는 지점(선형 보간) — 잘린 단면이 매끈하게.
@@ -703,6 +709,33 @@ export function BroadcastPanel({
         p: a.p !== undefined || b.p !== undefined ? ((a.p ?? 0.7) + (b.p ?? 0.7)) / 2 : undefined
       };
     };
+    // 유령 선택 방지: 지우개로 지워져 화면에 없는 획이 잡히면 빈 곳에 선택 박스가 뜬다.
+    // 활성 레이어 캔버스의 밴드 영역 픽셀을 한 번 읽어, '실제로 보이는' 점이 있는 획만
+    // 선택 대상으로 삼는다(알파 검증).
+    const actCanvas = act ? layerCanvases.current.get(act.id) : null;
+    const scale = scaleRef.current;
+    let bandPixels: ImageData | null = null;
+    let bandW = 0;
+    let bandH = 0;
+    if (actCanvas) {
+      const sx = Math.max(0, Math.floor(lo.x * scale));
+      const sy = Math.max(0, Math.floor(lo.y * scale));
+      bandW = Math.min(actCanvas.width - sx, Math.ceil((hi.x - lo.x) * scale) + 2);
+      bandH = Math.min(actCanvas.height - sy, Math.ceil((hi.y - lo.y) * scale) + 2);
+      if (bandW > 0 && bandH > 0) {
+        try {
+          bandPixels = actCanvas.getContext("2d")?.getImageData(sx, sy, bandW, bandH) ?? null;
+        } catch {
+          bandPixels = null; // 픽셀 접근 실패 시 검증 생략(선택은 동작)
+        }
+      }
+    }
+    const visibleAt = (pt: StrokePoint): boolean => {
+      if (!bandPixels) return true;
+      const px = Math.min(bandW - 1, Math.max(0, Math.round((pt.x - lo.x) * scale)));
+      const py = Math.min(bandH - 1, Math.max(0, Math.round((pt.y - lo.y) * scale)));
+      return bandPixels.data[(py * bandW + px) * 4 + 3] > 24;
+    };
     const before = [...store.strokes()];
     const nextScene: Stroke[] = [];
     const picked: Stroke[] = [];
@@ -713,8 +746,8 @@ export function BroadcastPanel({
         continue;
       }
       const flags = s.points.map(inside);
-      if (!flags.some(Boolean)) {
-        nextScene.push(s);
+      if (!flags.some(Boolean) || !s.points.some((pt, i) => flags[i] && visibleAt(pt))) {
+        nextScene.push(s); // 밴드 밖이거나, 밴드 안 구간이 전부 지워져 안 보이는 획
         continue;
       }
       if (flags.every(Boolean) || isShapeTool(s.tool)) {
@@ -1101,9 +1134,15 @@ export function BroadcastPanel({
     rafRef.current = null;
     const live = drawingRef.current;
     if (!live) return;
-    if (live.tool !== "eraser") {
-      // 펜(곡선·가변 굵기가 매 점 과거까지 바뀜)·형광펜(이음매 진해짐 방지)·도형(끝점이
-      // 계속 바뀜): 라이브 캔버스에 통째로 다시 — 그리는 동안과 재생 결과가 항상 같다.
+    if (live.tool === "pen") {
+      // 펜: 라이브 캔버스에 '확정 조각만' 증분 — 통째 리드로는 긴 낙서에서 프레임을
+      // 밀려 잉크가 늦게 보였다. 임시 꼬리를 안 그리므로 울퉁불퉁 잔재도 없다.
+      const ctx = scaledCtx(liveCanvasRef.current);
+      if (ctx) drawnIdxRef.current = drawPenIncremental(ctx, live, drawnIdxRef.current);
+      return;
+    }
+    if (live.tool === "hl" || isShapeTool(live.tool)) {
+      // 형광펜(이음매 진해짐 방지)·도형(끝점이 계속 바뀜): 라이브 캔버스에 통째로 다시.
       clearCanvas(liveCanvasRef.current);
       const ctx = scaledCtx(liveCanvasRef.current);
       if (ctx) drawStroke(ctx, live);

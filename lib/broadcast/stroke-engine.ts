@@ -267,6 +267,52 @@ function drawSmoothPath(ctx: MinimalCtx, pts: StrokePoint[]): void {
   ctx.lineTo(last.x, last.y);
 }
 
+/** 펜 증분 렌더(라이브 캔버스용): '확정된' 조각만 그린다 — 임시 직선 꼬리를 안 그려
+ *  울퉁불퉁 잔재가 없고, 프레임당 새 조각 몇 개만 그려 긴 낙서에서도 지연이 없다.
+ *  done = 지금까지 소화한 진행도(0 = 처음). 반환 = 새 진행도. 스타일은 매번 설정.
+ *  잉크가 포인터보다 딱 한 구간 늦게 따라온다(실제 필기 앱들의 잉크 랙과 동일). */
+export function drawPenIncremental(ctx: MinimalCtx, stroke: Stroke, done: number): number {
+  const pts = stroke.points;
+  if (pts.length === 0) return done;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = stroke.color;
+  const wOf = (p: StrokePoint) => stroke.width * (0.45 + (p.p ?? 0.7) * 0.85);
+  let d = done;
+  if (d === 0) {
+    // 시작 도장(탭 점) — 누른 순간 잉크가 바로 보인다.
+    ctx.lineWidth = wOf(pts[0]);
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.lineTo(pts[0].x + 0.1, pts[0].y + 0.1);
+    ctx.stroke();
+    d = 1;
+  }
+  for (let j = d; j <= pts.length - 2; j += 1) {
+    if (j === 1) {
+      // 머리 조각: 시작점 → 첫 중점(첫 내부 조각과 함께 한 번만).
+      const m0 = midOf(pts[0], pts[1]);
+      ctx.lineWidth = wOf(pts[0]);
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      ctx.lineTo(m0.x, m0.y);
+      ctx.stroke();
+    }
+    const a = midOf(pts[j - 1], pts[j]);
+    const b = midOf(pts[j], pts[j + 1]);
+    ctx.lineWidth = wOf(pts[j]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.quadraticCurveTo(pts[j].x, pts[j].y, b.x, b.y);
+    ctx.stroke();
+    d = j + 1;
+  }
+  ctx.globalAlpha = 1;
+  return d;
+}
+
 /** 펜 전용: 조각(중점→중점)마다 lineWidth를 필압/속도 배율로 바꿔 그린다 — 펜촉 감.
  *  조각이 이웃 3점으로만 정의돼(국소성) 증분 렌더 슬라이스와 전체 재생이 같은 기하를 만든다.
  *  round cap 겹침은 불투명 단색이라 보이지 않는다. */
