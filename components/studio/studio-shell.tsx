@@ -106,6 +106,7 @@ import {
   normalizeWheelDelta,
   stepCalZoom
 } from "@/lib/ui/calendar-zoom";
+import { toBroadcastPanelDays } from "@/lib/schedules/broadcast-dto";
 import { detectDevice } from "@/lib/presence/presence-client";
 import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
@@ -125,6 +126,11 @@ const InsightsDashboard = dynamic(
 );
 const MemberInsights = dynamic(
   () => import("@/components/studio/member-insights").then((m) => m.MemberInsights),
+  { ssr: false }
+);
+// 방송 판서(B안) — owner/developer가 미리보기에서 여는 방송 설명 도구. 열 때만 로드.
+const BroadcastPanel = dynamic(
+  () => import("@/components/studio/broadcast-panel").then((m) => m.BroadcastPanel),
   { ssr: false }
 );
 const DayVisitModal = dynamic(
@@ -1436,6 +1442,38 @@ export function StudioShell({
     return d;
   }
 
+  // ── B안(방송 판서, M4a): 미리보기 관리자 오버레이에서 여는 전체화면 판서 모달 ──
+  // 데이터는 서버 공개 스냅샷(viewerModePreview)만 — 낙관적 events 재가공 금지(G2 계약,
+  // tests/unit/broadcast-callsite.test.ts가 이 호출 인자를 정적으로 고정한다).
+  // 히스토리 스택(아래)에 한 칸 쌓여 뒤로가기가 '판서만' 닫는다 — 미리보기는 유지(G3a).
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const broadcastOpenRef = useRef(false);
+  broadcastOpenRef.current = broadcastOpen;
+  const [broadcastSent, setBroadcastSent] = useState<string[]>([]);
+  const broadcastTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const broadcastDays = useMemo(() => {
+    if (!broadcastOpen) return [];
+    const monthKeys = cells.filter((c) => c.inCurrentMonth).map((c) => c.isoDate);
+    return toBroadcastPanelDays(schedule.viewerModePreview, monthKeys);
+  }, [broadcastOpen, cells, schedule.viewerModePreview]);
+  function openBroadcastPanel(trigger: HTMLButtonElement | null) {
+    hapticTick();
+    broadcastTriggerRef.current = trigger;
+    setBroadcastSent([]); // 새로 열면 항상 빈 판 — 이전 기록 복구 없음(계약 3)
+    setBroadcastOpen(true);
+  }
+  function closeBroadcastPanel() {
+    setBroadcastOpen(false);
+    setBroadcastSent([]);
+    // 닫힌 뒤 포커스는 진입 버튼으로(a11y — 모달 관례).
+    broadcastTriggerRef.current?.focus();
+  }
+  function handleBroadcastSend(dateKeys: string[]) {
+    // 보내기 = 교체(누적 아님) — "지금 고른 날짜들을 나란히"가 방송 설명 문법. 정렬·dedup은
+    // 이미 DTO 규칙(toBroadcastPanelDays)과 동일하게 사전순.
+    setBroadcastSent([...new Set(dateKeys)].sort());
+  }
+
   // 모바일 오버레이 스택: 편집 시트 → (그 위에) 공지 모달. 레이어마다 히스토리 항목을 하나씩 쌓아,
   // 휴대폰 뒤로가기를 누르면 맨 위 레이어만 닫힌다(공지 → 편집 시트 → 스튜디오). 비번 팝업은
   // 별도 오버레이(passcodeModal)라 스택엔 안 넣되, 스크롤 잠금엔 포함한다.
@@ -1456,8 +1494,15 @@ export function StudioShell({
   // 히스토리 스택 깊이 = 오버레이(편집 시트·공지) + 매니저/작업자 시트 + 비번 팝업 + 미리보기.
   // viewerMode도 한 칸 쌓아야, 휴대폰 뒤로가기를 누를 때 로그인 흐름으로 빠지지 않고
   // 편집실로 돌아온다. (스크롤 잠금은 overlayLocked만 사용 — 미리보기 자체 스크롤은 살린다.)
+  // 방송 판서도 한 칸 — 미리보기(viewerMode) '위'에 뜨므로, 뒤로가기는 판서만 닫고 미리보기는
+  // 유지한다. 안 쌓으면 뒤로가기가 미리보기를 닫는데 판서 상태(sent·단축키 가드)가 남는 버그.
   const stackDepth =
-    overlayDepth + sheetDepth + passcodeDepth + (viewerMode ? 1 : 0) + (teaserPickerOpen ? 1 : 0);
+    overlayDepth +
+    sheetDepth +
+    passcodeDepth +
+    (viewerMode ? 1 : 0) +
+    (teaserPickerOpen ? 1 : 0) +
+    (broadcastOpen ? 1 : 0);
   const depthRef = useRef(0);
   const ignorePopRef = useRef(0); // 우리가 정리용으로 부른 history.back의 popstate는 무시
   const backClosingRef = useRef(false); // 뒤로가기로 닫히는 중인지
@@ -1558,8 +1603,10 @@ export function StudioShell({
       }
       backClosingRef.current = true;
       // 맨 위 레이어 하나만 닫는다. 보통 동시에 하나만 열리지만, 겹쳐도 위→아래 순으로.
-      // 떡밥 공개시각 팝업이 편집 카드 위에 떠 있으면 그것부터 닫는다(편집 카드는 유지).
-      if (teaserPickerOpen) {
+      // 방송 판서가 맨 위(미리보기 위에 뜸) — 뒤로가기는 판서만 닫고 상태도 소멸(G3a).
+      if (broadcastOpen) {
+        closeBroadcastPanel();
+      } else if (teaserPickerOpen) {
         setTeaserPickerOpen(false);
       } else if (passcodeModal !== null) {
         setPasscodeModal(null);
@@ -1583,6 +1630,7 @@ export function StudioShell({
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [
+    broadcastOpen,
     teaserPickerOpen,
     passcodeModal,
     modalIsStackable,
@@ -1591,6 +1639,11 @@ export function StudioShell({
     mobileEditId,
     viewerMode
   ]);
+
+  // 안전망: 어떤 경로로든 미리보기가 닫히면 판서도 반드시 소멸(단축키 가드 잔류 방지).
+  useEffect(() => {
+    if (!viewerMode && broadcastOpenRef.current) closeBroadcastPanel();
+  }, [viewerMode]);
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: StudioScheduleEvent) {
@@ -3719,6 +3772,9 @@ export function StudioShell({
   useEffect(() => {
     if (!canEdit) return;
     function onKey(e: KeyboardEvent) {
+      // 방송 판서가 열려 있는 동안 편집실 전역 단축키 전면 차단(Ctrl+S/Z/C/V·Alt+N·Esc 전부) —
+      // 판서의 Esc/Tab은 판서 자신이 처리한다. 닫히면 이 가드가 자동 해제되어 원상복구.
+      if (broadcastOpenRef.current) return;
       const t = e.target as HTMLElement | null;
       const tag = t?.tagName;
       // Ctrl/⌘+S: 어디에 포커스가 있든(제목 입력칸 포함) 브라우저 '페이지 저장'을 가로채고 이 카드
@@ -4869,6 +4925,17 @@ export function StudioShell({
           <ChevronLeft aria-hidden="true" size={16} />
           {isNarrow ? "편집실" : "편집실로 가기"}
         </button>
+        {/* 방송 판서(B안) — owner/developer 전용, PC 전용. 공개 스냅샷만 쓰는 안전한
+            미리보기 컨텍스트에서만 연다. 실제 공개 페이지·export surface엔 이 버튼이 없다. */}
+        {(canEdit || isDeveloper) && !isNarrow ? (
+          <button
+            className="button"
+            onClick={(e) => openBroadcastPanel(e.currentTarget)}
+            type="button"
+          >
+            🖊️ 방송 판서
+          </button>
+        ) : null}
         {/* 꾸미기는 PC 전용 — 모바일(isNarrow)에선 진입 버튼을 숨긴다. */}
         {canDecorateCalendar && !isNarrow ? (
           <Link
@@ -4918,6 +4985,16 @@ export function StudioShell({
           showWorldCupFeatures={showWorldCupFeatures}
           toggleHeartAction={toggleEventHeartAction}
         />
+        {broadcastOpen ? (
+          <BroadcastPanel
+            cells={cells}
+            days={broadcastDays}
+            monthLabel={`${view.year}년 ${view.month}월`}
+            onClose={closeBroadcastPanel}
+            onSend={handleBroadcastSend}
+            sentDateKeys={broadcastSent}
+          />
+        ) : null}
       </div>
     );
   }

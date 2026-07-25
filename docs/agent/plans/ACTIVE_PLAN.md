@@ -170,7 +170,9 @@ linkNext(Q2), variantGroupId/variantLabel(불필요), status/visibilityScope(전
   teaser 잠재 이슈 기록), 판서 QA 체크리스트, 경계 결정 ADR 1건, 본 계획 completed/ 이관.
 - e2e/수동 스모크 필수 항목(G1-r 합의 — 단위 DOM 테스트 생략의 대가): ①우클릭 잇기·끊기 드래그 중
   팝오버·확대 차단 ②+N Enter가 편집창을 열지 않음 ③팝오버 내부 스크롤 유지 ④핀 팝오버 자동
-  종료 시 앵커 포커스 복귀 ⑤wheel 리스너 달력 한정·viewer/모바일 detach.
+  종료 시 앵커 포커스 복귀 ⑤wheel 리스너 달력 한정·viewer/모바일 detach
+  ⑥판서 열림 중 뒤로가기 = 판서만 닫힘(내부 오버레이 hasInnerOverlay와의 우선순위 포함, G3a-r)
+  ⑦판서 키보드 토글 후 Shift+클릭 확장 기준 = 마지막 토글 칸.
 - Validation: 전체 Validation Commands + e2e.
 
 ## Codex 더블체크 게이트 (미통과 시 수정→재검토 반복, 통과 전 다음 단계 금지)
@@ -278,3 +280,30 @@ npm run test:e2e
   ④레거시 "embargo" scope 적대 픽스처 추가
   ⑤M4a Validation에 호출 인자 정적 검증 명시(viewerModePreview만 허용).
   검증: tsc 0 · lint 0 · vitest 11/11. 다음 = G2-r.
+- **G2-r: "통과 — M4a 착수 가능"**. NIT 주석 정합화 후 **M3 커밋 `3c8cd46` push**.
+- **M4a 구현 완료**:
+  - 훅 확장(D2-b): `exemptRefs` 옵션(보내기 버튼 등 예외 영역) + `getSelected()`/
+    `clearSelection()`(anchor·드래그·suppressClick까지 리셋). 기존 소비처 시그니처 불변.
+  - `components/studio/broadcast-panel.tsx/.css`: 전체화면 불투명 모달(role=dialog·aria-modal·
+    Tab trap·최초 포커스·body scroll lock), 미니 달력 자체 선택 인스턴스(현재 월만·회색 제외),
+    "판서판으로 보내기"(교체 방식·날짜순), Esc 우선순위(선택 있으면 해제만→없으면 닫기),
+    teaser는 가림 룩(🔮 ???), n일차/총 m일 배지, 요일은 date-key 자체 요일(UTC 자정 해석).
+  - studio-shell: 진입 버튼(미리보기 오버레이, owner/developer·PC만), dynamic import,
+    `toBroadcastPanelDays(schedule.viewerModePreview, monthKeys)` 호출(열 때만 memo),
+    닫으면 sent 초기화+트리거 포커스 복귀, 전역 단축키 가드(broadcastOpenRef — 열림 동안
+    Ctrl+S/Z/C/V·Alt+N·Esc 전면 차단, 닫히면 자동 복구), CSS는 (studio) layout에서 import.
+  - `tests/unit/broadcast-callsite.test.ts` 3 tests: 호출 인자 = viewerModePreview 고정,
+    낙관 경로 전달 금지, 판서 컴포넌트 import 경계(StudioSchedule 타입 포함 금지).
+  - 훅 확장 DOM 단위 테스트는 jsdom 미설치로 생략(G1-r 합의 연장) — M5 스모크에 포함.
+  검증: tsc 0 · lint 0 · build 0 · vitest 216/216. 다음 = G3a.
+- **G3a 1차: "수정 후 재검토"** (BLOCKER 3·WARN 3). 반영:
+  ①모달 루트 애니메이션 제거 — 배경 즉시 불투명, 등장 연출은 내부 콘텐츠(`> *`)만
+  ②판서를 히스토리 스택에 한 칸 추가(stackDepth + popstate 최우선 분기 = 판서만 닫고 미리보기
+  유지) + 안전망(viewerMode 종료 시 판서·가드 강제 소멸)
+  ③훅 `escapeClears:false` 옵션 — 판서 Esc는 단일 핸들러가 결정(선택 있으면 clearSelection,
+  없으면 닫기) → 리스너 순서 경쟁 제거
+  ④훅 Esc·바깥 클릭 해제도 full reset(clearAll) — lastAnchor 잔존 제거
+  ⑤회색 날짜: data-cell-index 미부여 + pointer-events:none — 선택 자체에서 배제
+  ⑥키보드 날짜 선택: 셀 role=checkbox·tabIndex·Enter/Space→`toggleIndex()`(신규 훅 API,
+  Ctrl+클릭과 동일 토글) + focus-visible 링.
+  검증: tsc 0 · lint 0 · build 0 · vitest 216/216. 다음 = G3a-r.

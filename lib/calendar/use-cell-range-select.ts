@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState, type RefObject } from "react";
 
 // 달력 날짜 칸을 마우스로 드래그해 '직선(날짜 연속) 범위'로 "선택"만 한다(시각 강조).
 // - 마우스 전용: 터치는 기존 스크롤/롱프레스(휴방 메뉴)와 충돌하지 않게 건드리지 않는다.
@@ -13,14 +13,25 @@ import { useCallback, useRef, useState } from "react";
 // 토(월말)에서 다음 일(다음 주 시작)로 드래그해도 자연히 이어진다.
 //
 // 반환:
-//   setRef     — 그리드에 다는 callback ref(useEqualChainHeights와 합쳐 단다)
-//   selected   — 선택된 칸 인덱스 Set (className 분기에 사용)
+//   setRef         — 그리드에 다는 callback ref(useEqualChainHeights와 합쳐 단다)
+//   selected       — 선택된 칸 인덱스 Set (className 분기에 사용)
+//   getSelected    — 명령형 조회(이벤트 핸들러에서 최신값 필요할 때)
+//   clearSelection — 명령형 전체 초기화. Set뿐 아니라 lastAnchor·진행 중 드래그·click
+//                    suppression까지 리셋한다 — 월 이동 뒤 Shift 선택이 이전 달 anchor를
+//                    재사용하는 것 방지(PLAN-20260725-001 D2-b).
 
 const DRAG_BODY_CLASS = "cell-range-dragging";
 const MOVE_THRESHOLD = 5; // 이만큼 움직여야 드래그(=선택) 시작 — 단순 클릭은 그대로 통과
 
 type Options = {
   enabled?: boolean;
+  // 이 요소들 '안'에서 시작한 pointerdown은 그리드 밖이어도 선택을 지우지 않는다 —
+  // "판서판으로 보내기" 버튼·도구줄처럼 선택을 '소비'하는 UI가 클릭 전에 선택을
+  // 잃지 않게 한다(onDocDown이 click보다 먼저 오는 문제, D2-b).
+  exemptRefs?: RefObject<HTMLElement | null>[];
+  // false면 훅이 Esc를 처리하지 않는다 — 소비자가 Esc 의미를 직접 결정할 때(판서 모달:
+  // 선택 있으면 해제, 없으면 닫기 — 핸들러 두 개가 경쟁하면 리스너 순서에 의존하게 된다, G3a).
+  escapeClears?: boolean;
 };
 
 function sameSet(a: Set<number>, b: Set<number>): boolean {
@@ -36,18 +47,50 @@ function sameSet(a: Set<number>, b: Set<number>): boolean {
 }
 
 export function useCellRangeSelect<T extends HTMLElement>({
-  enabled = true
-}: Options = {}): { setRef: (el: T | null) => void; selected: Set<number> } {
+  enabled = true,
+  exemptRefs,
+  escapeClears = true
+}: Options = {}): {
+  setRef: (el: T | null) => void;
+  selected: Set<number>;
+  getSelected: () => Set<number>;
+  clearSelection: () => void;
+  toggleIndex: (index: number) => void;
+} {
   const [selected, setSelected] = useState<Set<number>>(() => new Set());
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
   const cleanupRef = useRef<(() => void) | null>(null);
+  // setRef 클로저 내부(anchor·드래그·suppressClick)를 밖에서 리셋할 통로.
+  const resetInternalsRef = useRef<(() => void) | null>(null);
+  const exemptRefsRef = useRef(exemptRefs);
+  exemptRefsRef.current = exemptRefs;
 
   const apply = useCallback((next: Set<number>) => {
     if (!sameSet(selectedRef.current, next)) {
       setSelected(next);
     }
   }, []);
+
+  const getSelected = useCallback(() => selectedRef.current, []);
+  const clearSelection = useCallback(() => {
+    resetInternalsRef.current?.();
+    apply(new Set());
+  }, [apply]);
+  // 키보드 선택 경로(Enter/Space) — Ctrl+클릭과 같은 '개별 토글'. 포인터 훅과 같은 Set을 쓰고,
+  // Shift 확장 기준(lastAnchor)도 Ctrl+클릭과 동일하게 갱신한다(G3a-r WARN: 안 하면 키보드
+  // 토글 뒤 Shift+클릭이 과거 마우스 앵커에 붙는다).
+  const syncAnchorRef = useRef<((index: number) => void) | null>(null);
+  const toggleIndex = useCallback(
+    (index: number) => {
+      const next = new Set(selectedRef.current);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      apply(next);
+      syncAnchorRef.current?.(index);
+    },
+    [apply]
+  );
 
   const setRef = useCallback(
     (grid: T | null) => {
@@ -174,15 +217,39 @@ export function useCellRangeSelect<T extends HTMLElement>({
         }
       };
 
-      // 그리드 밖을 누르면 선택 해제, Esc도 해제.
+      // 명령형 초기화 — 선택 Set 외의 클로저 상태(anchor·드래그·suppressClick)까지 리셋해야
+      // 해제 후 Shift 선택이 과거 anchor를 재사용하지 않는다(G3a: Esc·바깥 클릭 경로도 동일).
+      const resetInternals = () => {
+        anchor = null;
+        lastAnchor = null;
+        dragging = false;
+        suppressClick = false;
+        window.removeEventListener("pointermove", onMove);
+        window.removeEventListener("pointerup", onUp);
+        document.body.classList.remove(DRAG_BODY_CLASS);
+      };
+      const clearAll = () => {
+        resetInternals();
+        apply(new Set());
+      };
+      resetInternalsRef.current = resetInternals;
+      syncAnchorRef.current = (index: number) => {
+        anchor = null; // 드래그 진행값은 건드리지 않고 Shift 기준만 갱신
+        lastAnchor = index;
+      };
+
+      // 그리드 밖을 누르면 선택 해제, Esc도 해제(escapeClears=false면 소비자 몫). exempt 영역
+      // (보내기 버튼·도구줄)은 선택을 '쓰는' 곳이라 예외 — 클릭 전에 선택을 지우지 않는다.
       const onDocDown = (e: PointerEvent) => {
-        if (!grid.contains(e.target as Node)) {
-          apply(new Set());
-        }
+        const t = e.target as Node;
+        if (grid.contains(t)) return;
+        const exempt = exemptRefsRef.current?.some((r) => r.current?.contains(t) ?? false);
+        if (exempt) return;
+        clearAll();
       };
       const onKey = (e: KeyboardEvent) => {
-        if (e.key === "Escape") {
-          apply(new Set());
+        if (e.key === "Escape" && escapeClears) {
+          clearAll();
         }
       };
 
@@ -199,10 +266,11 @@ export function useCellRangeSelect<T extends HTMLElement>({
         window.removeEventListener("pointermove", onMove);
         window.removeEventListener("pointerup", onUp);
         document.body.classList.remove(DRAG_BODY_CLASS);
+        resetInternalsRef.current = null;
       };
     },
-    [enabled, apply]
+    [enabled, apply, escapeClears]
   );
 
-  return { setRef, selected };
+  return { setRef, selected, getSelected, clearSelection, toggleIndex };
 }
