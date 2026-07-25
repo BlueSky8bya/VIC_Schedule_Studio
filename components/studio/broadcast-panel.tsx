@@ -661,11 +661,11 @@ export function BroadcastPanel({
 
   // 닫힘 = unmount = 소멸(계약 3): stroke 메모리·타이머·rAF를 명시적으로 해제한다.
   useEffect(() => {
+    const auto = autoRef.current; // cleanup에서 ref 재읽기 경고 회피(ref 객체 자체는 불변)
     return () => {
       store.dispose();
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (clearArmTimer.current !== null) window.clearTimeout(clearArmTimer.current);
-      const auto = autoRef.current;
       if (auto.raf !== null) cancelAnimationFrame(auto.raf);
     };
   }, [store]);
