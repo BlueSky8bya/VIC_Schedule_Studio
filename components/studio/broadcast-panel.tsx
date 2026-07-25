@@ -67,8 +67,16 @@ type Props = {
   sentDateKeys: string[]; // 판서판에 올라간 날짜들(호출자 state)
   onSend: (dateKeys: string[]) => void; // "판서판으로 보내기"(추가·dedup은 호출자)
   onRemoveDay: (dateKey: string) => void; // 판서판에서 날짜 컬럼 빼기
+  onRestoreSent: (dateKeys: string[]) => void; // 통합 undo/redo가 날짜 목록을 되돌릴 때
   onClose: () => void;
 };
+
+// 통합 히스토리(Ctrl+Z/Y 하나로 전부): 획 · 카드 위치/크기 · 날짜 추가/삭제 · 레이어 생성/삭제.
+type HistAction =
+  | { t: "stroke" } // 실제 획은 stroke store가 보관 — 여기선 순서만
+  | { t: "cols"; before: Map<string, ColBox>; after: Map<string, ColBox> }
+  | { t: "sent"; before: string[]; after: string[]; colsBefore: Map<string, ColBox> }
+  | { t: "layers"; before: PanelLayer[]; after: PanelLayer[] };
 
 // 판서판 위 날짜 컬럼의 자유 배치 상태(그림판답게 끌어서 이동·크기 조절 — 선택 도구에서만).
 type ColBox = { x: number; y: number; w: number };
@@ -130,6 +138,7 @@ export function BroadcastPanel({
   sentDateKeys,
   onSend,
   onRemoveDay,
+  onRestoreSent,
   onClose
 }: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -208,8 +217,24 @@ export function BroadcastPanel({
     startY: number;
     orig: ColBox; // resize용(단일)
     origs: Map<string, ColBox>; // move용(선택 그룹 전체의 시작 위치)
+    beforeAll: Map<string, ColBox>; // 히스토리용 — 제스처 시작 시점 전체 스냅샷
+    moved: boolean;
   } | null>(null);
   const SNAP = 6; // px — 이 거리 안이면 가장자리/중앙선에 달라붙는다
+
+  // ── 통합 히스토리 — 획/카드 배치/날짜 목록/레이어 전부 한 스택(Ctrl+Z/Y 하나로) ──
+  const histRef = useRef<{ undo: HistAction[]; redo: HistAction[] }>({ undo: [], redo: [] });
+  const colsRef = useRef(cols);
+  colsRef.current = cols;
+  const sentRef = useRef(sentDateKeys);
+  sentRef.current = sentDateKeys;
+  const layersRef = useRef(layers);
+  layersRef.current = layers;
+  const pushHist = useCallback((a: HistAction) => {
+    histRef.current.undo.push(a);
+    histRef.current.redo = [];
+    setStrokeVersion((v) => v + 1); // undo/redo 버튼 활성 갱신
+  }, []);
   // sentDateKeys 변화에 배치 동기화 — 새 날짜는 기본 자리(왼쪽 위부터 한 줄), 빠진 날짜는 제거,
   // 이미 옮겨 둔 컬럼 위치는 유지.
   useEffect(() => {
@@ -261,13 +286,23 @@ export function BroadcastPanel({
       const b = cols.get(k);
       if (b) origs.set(k, b);
     }
-    dragColRef.current = { key, mode, startX: e.clientX, startY: e.clientY, orig, origs };
+    dragColRef.current = {
+      key,
+      mode,
+      startX: e.clientX,
+      startY: e.clientY,
+      orig,
+      origs,
+      beforeAll: new Map(cols),
+      moved: false
+    };
   }
   function onColPointerMove(e: React.PointerEvent<HTMLElement>) {
     const d = dragColRef.current;
     if (!d) return;
     let dx = e.clientX - d.startX;
     let dy = e.clientY - d.startY;
+    if (Math.abs(dx) + Math.abs(dy) > 1) d.moved = true;
     if (d.mode === "resize") {
       setCols((map) => {
         const next = new Map(map);
@@ -336,8 +371,13 @@ export function BroadcastPanel({
     });
   }
   function onColPointerUp() {
+    const d = dragColRef.current;
     dragColRef.current = null;
     setGuides({ v: [], h: [] });
+    // 제스처 단위로 히스토리 1건(이동/크기 조절 — 실제로 움직였을 때만).
+    if (d?.moved) {
+      pushHist({ t: "cols", before: d.beforeAll, after: new Map(colsRef.current) });
+    }
   }
 
   // ── 러버밴드(빈 바닥 드래그로 다중 선택) — 선택 도구에서만 ──
@@ -354,6 +394,7 @@ export function BroadcastPanel({
     if ((e.target as HTMLElement).closest(".bp-day-col, button")) return;
     const p = innerPoint(e);
     if (!p) return;
+    e.preventDefault(); // 러버밴드 중 브라우저 텍스트 선택(파란 긁힘) 방지
     e.currentTarget.setPointerCapture(e.pointerId);
     marqueeRef.current = { x1: p.x, y1: p.y, pointerId: e.pointerId };
     setMarquee({ x1: p.x, y1: p.y, x2: p.x, y2: p.y });
@@ -389,44 +430,47 @@ export function BroadcastPanel({
     const keys = [...colSelRef.current];
     if (keys.length < 2) return;
     hapticTick();
-    setCols((map) => {
-      const next = new Map(map);
-      const rects = keys
-        .map((k) => {
-          const b = next.get(k);
-          if (!b) return null;
-          const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
-          return { k, ...b, h };
-        })
-        .filter((r): r is NonNullable<typeof r> => r !== null);
-      if (rects.length < 2) return map;
-      if (kind === "top") {
-        const top = Math.min(...rects.map((r) => r.y));
-        for (const r of rects) next.set(r.k, { x: r.x, y: top, w: r.w });
-      } else if (kind === "middle") {
-        const minY = Math.min(...rects.map((r) => r.y));
-        const maxY = Math.max(...rects.map((r) => r.y + r.h));
-        const cy = (minY + maxY) / 2;
-        for (const r of rects) next.set(r.k, { x: r.x, y: Math.max(0, Math.round(cy - r.h / 2)), w: r.w });
-      } else if (kind === "left") {
-        const left = Math.min(...rects.map((r) => r.x));
-        for (const r of rects) next.set(r.k, { x: left, y: r.y, w: r.w });
-      } else {
-        // 가로 균등 간격: x 순 정렬, 양 끝 고정, 사이 간격 동일.
-        const sorted = [...rects].sort((a, b) => a.x - b.x);
-        const first = sorted[0];
-        const last = sorted[sorted.length - 1];
-        const totalW = sorted.reduce((s, r) => s + r.w, 0);
-        const span = last.x + last.w - first.x;
-        const gap = sorted.length > 1 ? (span - totalW) / (sorted.length - 1) : 0;
-        let cursor = first.x;
-        for (const r of sorted) {
-          next.set(r.k, { x: Math.max(0, Math.round(cursor)), y: r.y, w: r.w });
-          cursor += r.w + gap;
-        }
+    const before = new Map(colsRef.current);
+    const next = new Map(colsRef.current);
+    const rects = keys
+      .map((k) => {
+        const b = next.get(k);
+        if (!b) return null;
+        const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
+        return { k, ...b, h };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null);
+    if (rects.length < 2) return;
+    if (kind === "top") {
+      const top = Math.min(...rects.map((r) => r.y));
+      for (const r of rects) next.set(r.k, { x: r.x, y: top, w: r.w });
+    } else if (kind === "middle") {
+      const minY = Math.min(...rects.map((r) => r.y));
+      const maxY = Math.max(...rects.map((r) => r.y + r.h));
+      const cy = (minY + maxY) / 2;
+      for (const r of rects)
+        next.set(r.k, { x: r.x, y: Math.max(0, Math.round(cy - r.h / 2)), w: r.w });
+    } else if (kind === "left") {
+      const left = Math.min(...rects.map((r) => r.x));
+      for (const r of rects) next.set(r.k, { x: left, y: r.y, w: r.w });
+    } else {
+      // 가로 균등 간격: x 순(동률이면 y 순)으로 왼쪽 끝에서 차례로. 카드들이 겹쳐 있으면
+      // '양 끝 고정' 공식은 음수 간격(더 겹침)을 만들었다 → 최소 간격 14px를 보장하고,
+      // 공간이 남을 때만 그 간격을 넓힌다.
+      const sorted = [...rects].sort((a, b) => a.x - b.x || a.y - b.y);
+      const first = sorted[0];
+      const last = sorted[sorted.length - 1];
+      const totalW = sorted.reduce((s, r) => s + r.w, 0);
+      const span = last.x + last.w - first.x;
+      const gap = Math.max(14, (span - totalW) / (sorted.length - 1));
+      let cursor = first.x;
+      for (const r of sorted) {
+        next.set(r.k, { x: Math.max(0, Math.round(cursor)), y: r.y, w: r.w });
+        cursor += r.w + gap;
       }
-      return next;
-    });
+    }
+    setCols(next);
+    pushHist({ t: "cols", before, after: next });
   }
 
   const canvasOf = useCallback((layer: StrokeLayer) => {
@@ -488,8 +532,8 @@ export function BroadcastPanel({
       }
     }
     store.push(live);
-    setStrokeVersion((v) => v + 1);
-  }, [canvasOf, clearCanvas, scaledCtx, store]);
+    pushHist({ t: "stroke" }); // 통합 히스토리에도 순서 기록(Ctrl+Z 하나로 전부)
+  }, [canvasOf, clearCanvas, scaledCtx, store, pushHist]);
 
   // 리사이즈 → 크기가 실제로 변했을 때만 backing 재할당 + 명령 재생(연속 리사이즈 churn 방지).
   useEffect(() => {
@@ -610,18 +654,50 @@ export function BroadcastPanel({
   }
   const doUndo = useCallback(() => {
     finishLiveStroke(); // 그리던 획 먼저 완성 — replay가 live를 날리는 불일치 방지(G3b-r)
-    if (!store.undo()) return;
+    const a = histRef.current.undo.pop();
+    if (!a) return;
+    histRef.current.redo.push(a);
+    if (a.t === "stroke") {
+      store.undo();
+      replayAll();
+    } else if (a.t === "cols") {
+      setCols(new Map(a.before));
+    } else if (a.t === "sent") {
+      // cols 먼저 복원 — sentDateKeys prop 변화로 도는 동기화 effect가 '이전 cols'를 읽어
+      // 복원된 위치를 유지한다(빠졌다 돌아온 날짜의 자리 보존).
+      setCols(new Map(a.colsBefore));
+      onRestoreSent(a.before);
+    } else {
+      setLayers(a.before);
+      if (!a.before.some((l) => l.id === activeLayerId)) {
+        setActiveLayerId(a.before[0]?.id ?? "");
+      }
+      // 복원된 레이어 캔버스는 다음 렌더에 마운트 → fit effect(deps: layers)가 사이징+재생.
+    }
     hapticTick();
     setStrokeVersion((v) => v + 1);
-    replayAll();
-  }, [store, replayAll, finishLiveStroke]);
+  }, [store, replayAll, finishLiveStroke, onRestoreSent, activeLayerId]);
   const doRedo = useCallback(() => {
     finishLiveStroke();
-    if (!store.redo()) return;
+    const a = histRef.current.redo.pop();
+    if (!a) return;
+    histRef.current.undo.push(a);
+    if (a.t === "stroke") {
+      store.redo();
+      replayAll();
+    } else if (a.t === "cols") {
+      setCols(new Map(a.after));
+    } else if (a.t === "sent") {
+      onRestoreSent(a.after);
+    } else {
+      setLayers(a.after);
+      if (!a.after.some((l) => l.id === activeLayerId)) {
+        setActiveLayerId(a.after[0]?.id ?? "");
+      }
+    }
     hapticTick();
     setStrokeVersion((v) => v + 1);
-    replayAll();
-  }, [store, replayAll, finishLiveStroke]);
+  }, [store, replayAll, finishLiveStroke, onRestoreSent, activeLayerId]);
   // 전체 지우기 = 2단계: 첫 클릭은 무장(3초 내 재클릭만 실행) — undo 불가·잠긴 레이어까지
   // 지우는 파괴적 동작이라 원클릭 금지(G3b).
   const doClearAll = useCallback(() => {
@@ -636,6 +712,8 @@ export function BroadcastPanel({
     if (clearArmTimer.current !== null) window.clearTimeout(clearArmTimer.current);
     setClearArmed(false);
     store.clearAll();
+    // 전체 지우기는 획을 전부 소거 — 획을 참조하는 히스토리도 함께 무효라 통째로 비운다.
+    histRef.current = { undo: [], redo: [] };
     hapticTick();
     setStrokeVersion((v) => v + 1);
     replayAll();
@@ -646,20 +724,22 @@ export function BroadcastPanel({
     hapticTick();
     layerSeq.current += 1;
     const id = `layer-${layerSeq.current}`;
-    setLayers((ls) => [{ id, name: `레이어 ${layerSeq.current}`, vis: true, lock: false }, ...ls]);
+    const before = layersRef.current;
+    const after = [{ id, name: `레이어 ${layerSeq.current}`, vis: true, lock: false }, ...before];
+    setLayers(after);
     setActiveLayerId(id); // 새 레이어가 맨 위 + 바로 활성
+    pushHist({ t: "layers", before, after });
   }
   function deleteLayer(id: string) {
-    // 즉시 삭제(사용자 결정 — 확인 단계 없음). 획까지 함께 지워지고 되돌릴 수 없다.
-    finishLiveStroke(); // 그 레이어에 그리던 중이면 완성부터(직후 함께 삭제됨)
-    store.removeLayer(id);
-    setLayers((ls) => {
-      const next = ls.filter((l) => l.id !== id);
-      if (activeLayerId === id) setActiveLayerId(next[0]?.id ?? "");
-      return next;
-    });
+    // 즉시 삭제 — 단, 획은 store에 남겨둔다(캔버스가 언마운트돼 안 보일 뿐). 그래야
+    // Ctrl+Z로 레이어를 복원하면 그 위의 획도 그대로 되살아난다(통합 히스토리).
+    finishLiveStroke(); // 그 레이어에 그리던 중이면 완성부터
+    const before = layersRef.current;
+    const after = before.filter((l) => l.id !== id);
+    setLayers(after);
+    if (activeLayerId === id) setActiveLayerId(after[0]?.id ?? "");
+    pushHist({ t: "layers", before, after });
     hapticTick();
-    setStrokeVersion((v) => v + 1);
   }
 
   const eventsByDate = useMemo(
@@ -689,9 +769,23 @@ export function BroadcastPanel({
     const keys = selectedDateKeys();
     if (keys.length === 0) return;
     hapticTick();
+    const before = [...sentRef.current];
+    const after = [...new Set([...before, ...keys])].sort();
+    pushHist({ t: "sent", before, after, colsBefore: new Map(colsRef.current) });
     onSend(keys);
     rangeSelect.clearSelection();
     setPickerOpen(false); // 보냈으면 달력은 접어 그림판 공간 확보(헤더로 다시 펼침)
+  }
+  function removeDay(dateKey: string) {
+    const before = [...sentRef.current];
+    pushHist({
+      t: "sent",
+      before,
+      after: before.filter((k) => k !== dateKey),
+      colsBefore: new Map(colsRef.current)
+    });
+    hapticTick();
+    onRemoveDay(dateKey);
   }
 
   // Esc 우선순위(G0-rr·G3a): 이 핸들러 '하나'가 결정한다 — 선택 있으면 해제만, 없으면 닫기.
@@ -721,14 +815,14 @@ export function BroadcastPanel({
         const step = e.shiftKey ? 10 : 1;
         const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
         const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
-        setCols((map) => {
-          const next = new Map(map);
-          for (const k of colSelRef.current) {
-            const b = next.get(k);
-            if (b) next.set(k, { x: Math.max(0, b.x + dx), y: Math.max(0, b.y + dy), w: b.w });
-          }
-          return next;
-        });
+        const before = new Map(colsRef.current);
+        const next = new Map(colsRef.current);
+        for (const k of colSelRef.current) {
+          const b = next.get(k);
+          if (b) next.set(k, { x: Math.max(0, b.x + dx), y: Math.max(0, b.y + dy), w: b.w });
+        }
+        setCols(next);
+        pushHist({ t: "cols", before, after: next });
         return;
       }
       // 판서 자체 undo/redo — 편집실 Ctrl+Z(삭제복구)는 broadcastOpen 가드로 이미 차단됨.
@@ -766,7 +860,7 @@ export function BroadcastPanel({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, rangeSelect, doUndo, doRedo]);
+  }, [onClose, rangeSelect, doUndo, doRedo, pushHist]);
 
   // 최초 포커스 + body scroll lock(열림 동안 뒤 화면 스크롤 금지).
   useEffect(() => {
@@ -877,8 +971,8 @@ export function BroadcastPanel({
             <button
               aria-label="실행 취소 (Ctrl+Z)"
               className="bp-tool"
-              disabled={!store.canUndo()}
-              title="실행 취소 (Ctrl+Z)"
+              disabled={histRef.current.undo.length === 0}
+              title="실행 취소 — 획·카드 배치·날짜·레이어 전부 (Ctrl+Z)"
               type="button"
               onClick={doUndo}
             >
@@ -887,7 +981,7 @@ export function BroadcastPanel({
             <button
               aria-label="다시 실행 (Ctrl+Shift+Z)"
               className="bp-tool"
-              disabled={!store.canRedo()}
+              disabled={histRef.current.redo.length === 0}
               title="다시 실행 (Ctrl+Shift+Z)"
               type="button"
               onClick={doRedo}
@@ -1118,8 +1212,7 @@ export function BroadcastPanel({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          hapticTick();
-                          onRemoveDay(day.dateKey);
+                          removeDay(day.dateKey);
                         }}
                         onPointerDown={(e) => e.stopPropagation()}
                       >

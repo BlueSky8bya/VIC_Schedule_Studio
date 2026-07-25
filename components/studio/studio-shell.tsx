@@ -5051,6 +5051,7 @@ export function StudioShell({
             monthLabel={`${view.year}년 ${view.month}월`}
             onClose={closeBroadcastPanel}
             onRemoveDay={removeBroadcastDay}
+            onRestoreSent={(keys) => setBroadcastSent([...keys])}
             onSend={handleBroadcastSend}
             sentDateKeys={broadcastSent}
           />
