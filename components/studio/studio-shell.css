@@ -4523,8 +4523,12 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 /* 구글 시트식 날짜 칸 범위 선택(마우스) — 시각 강조만. 칸 텍스트 긁힘도 막는다. */
 .studio-month-grid {
   user-select: none;
-  /* 그리드 자체 스크롤바도 같은 진동 루프를 만들 수 있어 자리 예약(위 html 주석 참조). */
+  /* 그리드 자체 스크롤바도 같은 진동 루프를 만들 수 있어 자리 예약(위 html 주석 참조).
+     예약 자체는 유지하되 thin으로 폭을 절반 이하로 줄이고, 색을 배경에 녹여
+     '빈 띠'로 안 보이게 한다 — 예약을 없애면 확대 진동이 되돌아온다. */
   scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: #d9d2e9 transparent;
   -webkit-user-select: none;
   -ms-user-select: none;
 }
