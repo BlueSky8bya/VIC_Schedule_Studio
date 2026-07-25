@@ -1,0 +1,45 @@
+# 방송 ON/OFF 백업 폴러 — GitHub Actions가 5분마다 우리 서버의 broadcast-poll을 때려,
+# 시청자가 없어도(새벽·무관중) 라이브 상태가 촘촘히 표본된다. Vercel Hobby cron은 하루 1회뿐이라
+# 그 공백에 연속 방송이 쪼개져 다음날로 오귀속되던 버그가 있었다(BNO 판정으로 이미 안전망은 넣었고,
+# 이 워크플로우는 표본 자체를 촘촘히 해 시작/종료 시각 정확도까지 올린다).
+#
+# 왜 GitHub Actions인가: 외부 서비스 가입 없이 이 저장소 안에서 관리(버전관리·재현). public 저장소라
+# Actions 분은 무료 무제한. 단 스케줄은 best-effort(최소 5분 간격, GH 부하 시 지연/건너뜀 가능)이며
+# 60일간 커밋이 없으면 자동 비활성 — 이 repo는 활발해 문제 없다. 1분 간격은 GH가 보장하지 않으므로
+# 진짜 1분이 필요하면 외부 유료 크론이나 Vercel Pro가 답이다(이 조합만으로도 실사용엔 충분).
+name: broadcast-poll
+
+on:
+  schedule:
+    # 5분마다(GH 스케줄 최소 실효 간격). 표기는 UTC지만 라이브 감지엔 무관.
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {} # 수동 실행(테스트)도 허용
+
+# 동시 실행 방지 — 겹쳐 돌 필요 없다(각 실행은 순간 폴 1회).
+concurrency:
+  group: broadcast-poll
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping broadcast-poll
+        env:
+          # 배포 도메인. 커스텀 도메인을 쓰면 저장소 Variables에 SITE_URL을 넣어 덮어쓴다.
+          SITE_URL: ${{ vars.SITE_URL || 'https://vic-schedule-studio.vercel.app' }}
+          # Vercel 환경변수 CRON_SECRET과 '같은 값'을 저장소 Secrets에 CRON_SECRET로 넣어야 한다.
+          # (prod 엔드포인트가 Bearer로 인증 — 없으면 401.)
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          code=$(curl -sS -o /tmp/out.txt -w "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${SITE_URL%/}/api/cron/broadcast-poll")
+          echo "HTTP ${code}"
+          cat /tmp/out.txt
+          echo
+          if [ "${code}" != "200" ]; then
+            echo "::error::broadcast-poll returned ${code} (CRON_SECRET 저장소 시크릿이 Vercel과 일치하는지 확인)"
+            exit 1
+          fi
