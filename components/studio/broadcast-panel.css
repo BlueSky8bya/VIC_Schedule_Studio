@@ -561,6 +561,40 @@ html[data-reduce-motion] .broadcast-panel > * {
 .bp-col-x:active {
   transform: scale(0.9);
 }
+/* 선택 표시(피그마 문법) — 다중 선택된 카드에 보라 링. */
+.bp-day-col.sel {
+  border-color: rgb(124 108 240 / 75%);
+  box-shadow:
+    0 0 0 2px rgb(124 108 240 / 35%),
+    0 4px 16px rgb(120 110 160 / 14%);
+}
+/* 러버밴드(드래그 다중 선택) */
+.bp-marquee {
+  position: absolute;
+  z-index: 4;
+  border: 1.5px solid rgb(124 108 240 / 70%);
+  border-radius: 4px;
+  background: rgb(124 108 240 / 10%);
+  pointer-events: none;
+}
+/* 스냅 정렬 가이드 — 드래그 중 가장자리/중앙선이 맞을 때만 잠깐 */
+.bp-guide-v,
+.bp-guide-h {
+  position: absolute;
+  z-index: 4;
+  background: rgb(236 72 153 / 75%);
+  pointer-events: none;
+}
+.bp-guide-v {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+.bp-guide-h {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
 .bp-col-resize {
   position: absolute;
   right: 2px;

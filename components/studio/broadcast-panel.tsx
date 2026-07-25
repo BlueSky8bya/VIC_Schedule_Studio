@@ -18,7 +18,24 @@
 //   아래 판서판에 날짜순으로 나란히. 기존 일정 Ctrl+C/V와 무관한 명시 버튼 액션.
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Eraser, Eye, EyeOff, Highlighter, Lock, LockOpen, MousePointer2, Pen, Redo2, Trash2, Undo2, X } from "lucide-react";
+import {
+  AlignCenterHorizontal,
+  AlignHorizontalDistributeCenter,
+  AlignStartHorizontal,
+  AlignStartVertical,
+  Eraser,
+  Eye,
+  EyeOff,
+  Highlighter,
+  Lock,
+  LockOpen,
+  MousePointer2,
+  Pen,
+  Redo2,
+  Trash2,
+  Undo2,
+  X
+} from "lucide-react";
 
 import type { BroadcastPanelDay, BroadcastPanelEvent } from "@/lib/schedules/broadcast-dto";
 import type { MonthCell } from "@/lib/calendar/month";
@@ -175,13 +192,24 @@ export function BroadcastPanel({
   const [pickerOpen, setPickerOpen] = useState(true);
   // 날짜 컬럼 자유 배치(위치·폭). 폭 비율만큼 글자도 커진다(컬럼 fontSize %) — '크게 보여주기'.
   const [cols, setCols] = useState<Map<string, ColBox>>(() => new Map());
+  // ── 선택 도구 캔버스 조작(피그마 문법): 다중 선택·그룹 이동·스냅 가이드·정렬 ──
+  const [colSel, setColSel] = useState<Set<string>>(() => new Set());
+  const colSelRef = useRef(colSel);
+  colSelRef.current = colSel;
+  const colElsRef = useRef(new Map<string, HTMLElement>()); // 높이 실측용(스냅·정렬·러버밴드)
+  const [marquee, setMarquee] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(
+    null
+  );
+  const [guides, setGuides] = useState<{ v: number[]; h: number[] }>({ v: [], h: [] });
   const dragColRef = useRef<{
     key: string;
     mode: "move" | "resize";
     startX: number;
     startY: number;
-    orig: ColBox;
+    orig: ColBox; // resize용(단일)
+    origs: Map<string, ColBox>; // move용(선택 그룹 전체의 시작 위치)
   } | null>(null);
+  const SNAP = 6; // px — 이 거리 안이면 가장자리/중앙선에 달라붙는다
   // sentDateKeys 변화에 배치 동기화 — 새 날짜는 기본 자리(왼쪽 위부터 한 줄), 빠진 날짜는 제거,
   // 이미 옮겨 둔 컬럼 위치는 유지.
   useEffect(() => {
@@ -194,6 +222,11 @@ export function BroadcastPanel({
       }
       return next;
     });
+    // 빠진 날짜는 선택에서도 제거.
+    setColSel((prev) => {
+      const next = new Set([...prev].filter((k) => sentDateKeys.includes(k)));
+      return next.size === prev.size ? prev : next;
+    });
   }, [sentDateKeys]);
   function onColPointerDown(
     e: React.PointerEvent<HTMLElement>,
@@ -205,31 +238,195 @@ export function BroadcastPanel({
     if (!orig) return;
     e.preventDefault();
     e.stopPropagation();
+    // 선택 문법(피그마): Ctrl/Shift+클릭 = 토글, 평클릭 = (선택 밖이면) 단일 선택으로 교체,
+    // 이미 선택된 카드를 잡으면 선택 유지한 채 '그룹째' 드래그.
+    let effSel = new Set(colSelRef.current);
+    if (mode === "move") {
+      if (e.ctrlKey || e.metaKey || e.shiftKey) {
+        if (effSel.has(key)) effSel.delete(key);
+        else effSel.add(key);
+        setColSel(new Set(effSel));
+        if (!effSel.has(key)) return; // 토글로 해제됐으면 드래그 시작 안 함
+      } else if (!effSel.has(key)) {
+        effSel = new Set([key]);
+        setColSel(effSel);
+      }
+    } else {
+      effSel = new Set([key]);
+      setColSel(effSel);
+    }
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragColRef.current = { key, mode, startX: e.clientX, startY: e.clientY, orig };
+    const origs = new Map<string, ColBox>();
+    for (const k of effSel) {
+      const b = cols.get(k);
+      if (b) origs.set(k, b);
+    }
+    dragColRef.current = { key, mode, startX: e.clientX, startY: e.clientY, orig, origs };
   }
   function onColPointerMove(e: React.PointerEvent<HTMLElement>) {
     const d = dragColRef.current;
     if (!d) return;
-    const dx = e.clientX - d.startX;
-    const dy = e.clientY - d.startY;
+    let dx = e.clientX - d.startX;
+    let dy = e.clientY - d.startY;
+    if (d.mode === "resize") {
+      setCols((map) => {
+        const next = new Map(map);
+        next.set(d.key, {
+          x: d.orig.x,
+          y: d.orig.y,
+          w: Math.min(COL_MAX_W, Math.max(COL_MIN_W, d.orig.w + dx))
+        });
+        return next;
+      });
+      return;
+    }
+    // ── 그룹 이동 + 스냅: 이동 그룹의 bbox 가장자리/중앙선을 나머지 카드들의 선에 붙인다 ──
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+    for (const [k, b] of d.origs) {
+      const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
+      minX = Math.min(minX, b.x);
+      minY = Math.min(minY, b.y);
+      maxX = Math.max(maxX, b.x + b.w);
+      maxY = Math.max(maxY, b.y + h);
+    }
+    const vLines: number[] = [];
+    const hLines: number[] = [];
+    for (const [k, b] of cols) {
+      if (d.origs.has(k)) continue;
+      const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
+      vLines.push(b.x, b.x + b.w / 2, b.x + b.w);
+      hLines.push(b.y, b.y + h / 2, b.y + h);
+    }
+    const activeV: number[] = [];
+    const activeH: number[] = [];
+    let bestV: { delta: number; line: number } | null = null;
+    for (const line of vLines) {
+      for (const edge of [minX + dx, (minX + maxX) / 2 + dx, maxX + dx]) {
+        const delta = line - edge;
+        if (Math.abs(delta) <= SNAP && (!bestV || Math.abs(delta) < Math.abs(bestV.delta)))
+          bestV = { delta, line };
+      }
+    }
+    let bestH: { delta: number; line: number } | null = null;
+    for (const line of hLines) {
+      for (const edge of [minY + dy, (minY + maxY) / 2 + dy, maxY + dy]) {
+        const delta = line - edge;
+        if (Math.abs(delta) <= SNAP && (!bestH || Math.abs(delta) < Math.abs(bestH.delta)))
+          bestH = { delta, line };
+      }
+    }
+    if (bestV) {
+      dx += bestV.delta;
+      activeV.push(bestV.line);
+    }
+    if (bestH) {
+      dy += bestH.delta;
+      activeH.push(bestH.line);
+    }
+    setGuides({ v: activeV, h: activeH });
     setCols((map) => {
       const next = new Map(map);
-      next.set(
-        d.key,
-        d.mode === "move"
-          ? { x: Math.max(0, d.orig.x + dx), y: Math.max(0, d.orig.y + dy), w: d.orig.w }
-          : {
-              x: d.orig.x,
-              y: d.orig.y,
-              w: Math.min(COL_MAX_W, Math.max(COL_MIN_W, d.orig.w + dx))
-            }
-      );
+      for (const [k, b] of d.origs) {
+        next.set(k, { x: Math.max(0, b.x + dx), y: Math.max(0, b.y + dy), w: b.w });
+      }
       return next;
     });
   }
   function onColPointerUp() {
     dragColRef.current = null;
+    setGuides({ v: [], h: [] });
+  }
+
+  // ── 러버밴드(빈 바닥 드래그로 다중 선택) — 선택 도구에서만 ──
+  const marqueeRef = useRef<{ x1: number; y1: number; pointerId: number } | null>(null);
+  function innerPoint(e: React.PointerEvent): { x: number; y: number } | null {
+    const inner = boardInnerRef.current;
+    if (!inner) return null;
+    const r = inner.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+  }
+  function onBoardPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (tool !== "select" || e.button !== 0) return;
+    // 카드/버튼 위에서 시작하면 러버밴드 아님(카드 자체 핸들러가 처리).
+    if ((e.target as HTMLElement).closest(".bp-day-col, button")) return;
+    const p = innerPoint(e);
+    if (!p) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    marqueeRef.current = { x1: p.x, y1: p.y, pointerId: e.pointerId };
+    setMarquee({ x1: p.x, y1: p.y, x2: p.x, y2: p.y });
+  }
+  function onBoardPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const m = marqueeRef.current;
+    if (!m || e.pointerId !== m.pointerId) return;
+    const p = innerPoint(e);
+    if (!p) return;
+    setMarquee({ x1: m.x1, y1: m.y1, x2: p.x, y2: p.y });
+    // 라이브 선택: 밴드와 겹치는 카드 전부.
+    const lo = { x: Math.min(m.x1, p.x), y: Math.min(m.y1, p.y) };
+    const hi = { x: Math.max(m.x1, p.x), y: Math.max(m.y1, p.y) };
+    const next = new Set<string>();
+    for (const [k, b] of cols) {
+      const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
+      if (b.x < hi.x && b.x + b.w > lo.x && b.y < hi.y && b.y + h > lo.y) next.add(k);
+    }
+    setColSel(next);
+  }
+  function onBoardPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const m = marqueeRef.current;
+    if (!m || e.pointerId !== m.pointerId) return;
+    const p = innerPoint(e);
+    marqueeRef.current = null;
+    setMarquee(null);
+    // 사실상 클릭(움직임 3px 미만) = 빈 바닥 클릭 → 선택 해제.
+    if (p && Math.hypot(p.x - m.x1, p.y - m.y1) < 3) setColSel(new Set());
+  }
+
+  // ── 정렬(2개 이상 선택 시) — 위 맞춤 · 세로 중앙 · 왼쪽 맞춤 · 가로 균등 간격 ──
+  function alignSelected(kind: "top" | "middle" | "left" | "distribute-x") {
+    const keys = [...colSelRef.current];
+    if (keys.length < 2) return;
+    hapticTick();
+    setCols((map) => {
+      const next = new Map(map);
+      const rects = keys
+        .map((k) => {
+          const b = next.get(k);
+          if (!b) return null;
+          const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
+          return { k, ...b, h };
+        })
+        .filter((r): r is NonNullable<typeof r> => r !== null);
+      if (rects.length < 2) return map;
+      if (kind === "top") {
+        const top = Math.min(...rects.map((r) => r.y));
+        for (const r of rects) next.set(r.k, { x: r.x, y: top, w: r.w });
+      } else if (kind === "middle") {
+        const minY = Math.min(...rects.map((r) => r.y));
+        const maxY = Math.max(...rects.map((r) => r.y + r.h));
+        const cy = (minY + maxY) / 2;
+        for (const r of rects) next.set(r.k, { x: r.x, y: Math.max(0, Math.round(cy - r.h / 2)), w: r.w });
+      } else if (kind === "left") {
+        const left = Math.min(...rects.map((r) => r.x));
+        for (const r of rects) next.set(r.k, { x: left, y: r.y, w: r.w });
+      } else {
+        // 가로 균등 간격: x 순 정렬, 양 끝 고정, 사이 간격 동일.
+        const sorted = [...rects].sort((a, b) => a.x - b.x);
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        const totalW = sorted.reduce((s, r) => s + r.w, 0);
+        const span = last.x + last.w - first.x;
+        const gap = sorted.length > 1 ? (span - totalW) / (sorted.length - 1) : 0;
+        let cursor = first.x;
+        for (const r of sorted) {
+          next.set(r.k, { x: Math.max(0, Math.round(cursor)), y: r.y, w: r.w });
+          cursor += r.w + gap;
+        }
+      }
+      return next;
+    });
   }
 
   const canvasOf = useCallback((layer: StrokeLayer) => {
@@ -503,11 +700,35 @@ export function BroadcastPanel({
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
+        // 우선순위: 카드 다중선택 해제 → 날짜 선택 해제 → 창 닫기(한 번에 하나).
+        if (colSelRef.current.size > 0) {
+          setColSel(new Set());
+          return;
+        }
         if (rangeSelect.getSelected().size > 0) {
           rangeSelect.clearSelection();
           return;
         }
         onClose();
+        return;
+      }
+      // 화살표 = 선택 카드 미세 이동(1px, Shift=10px) — 피그마 문법.
+      if (
+        colSelRef.current.size > 0 &&
+        (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown")
+      ) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+        const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        setCols((map) => {
+          const next = new Map(map);
+          for (const k of colSelRef.current) {
+            const b = next.get(k);
+            if (b) next.set(k, { x: Math.max(0, b.x + dx), y: Math.max(0, b.y + dy), w: b.w });
+          }
+          return next;
+        });
         return;
       }
       // 판서 자체 undo/redo — 편집실 Ctrl+Z(삭제복구)는 broadcastOpen 가드로 이미 차단됨.
@@ -692,6 +913,49 @@ export function BroadcastPanel({
           </div>
           <em className="bp-group-label">기록</em>
         </div>
+        {tool === "select" && colSel.size >= 2 ? (
+          <div className="bp-tool-group" role="group" aria-label="정렬">
+            <div className="bp-group-row">
+              <button
+                aria-label="위 맞춤"
+                className="bp-tool"
+                title="위 맞춤(수평 맞추기)"
+                type="button"
+                onClick={() => alignSelected("top")}
+              >
+                <AlignStartHorizontal aria-hidden="true" size={16} />
+              </button>
+              <button
+                aria-label="세로 중앙 맞춤"
+                className="bp-tool"
+                title="세로 중앙 맞춤"
+                type="button"
+                onClick={() => alignSelected("middle")}
+              >
+                <AlignCenterHorizontal aria-hidden="true" size={16} />
+              </button>
+              <button
+                aria-label="왼쪽 맞춤"
+                className="bp-tool"
+                title="왼쪽 맞춤"
+                type="button"
+                onClick={() => alignSelected("left")}
+              >
+                <AlignStartVertical aria-hidden="true" size={16} />
+              </button>
+              <button
+                aria-label="가로 균등 간격"
+                className="bp-tool"
+                title="가로 균등 간격"
+                type="button"
+                onClick={() => alignSelected("distribute-x")}
+              >
+                <AlignHorizontalDistributeCenter aria-hidden="true" size={16} />
+              </button>
+            </div>
+            <em className="bp-group-label">정렬({colSel.size})</em>
+          </div>
+        ) : null}
         {toolBlocked ? (
           <span className="bp-lock-hint">
             {layers.length === 0
@@ -799,6 +1063,10 @@ export function BroadcastPanel({
         <div
           className="bp-board-inner"
           ref={boardInnerRef}
+          onPointerDown={onBoardPointerDown}
+          onPointerMove={onBoardPointerMove}
+          onPointerUp={onBoardPointerUp}
+          onLostPointerCapture={onBoardPointerUp}
           // inline min은 CSS의 min-width/height:100%를 '덮어쓴다' — max(100%, …)로 합성해야
           // 컬럼이 적을 때도 종이가 보드 전체를 채운다(안 그러면 왼쪽 위 조각만 흰색).
           style={{
@@ -817,8 +1085,13 @@ export function BroadcastPanel({
                 const box = cols.get(day.dateKey) ?? { x: 16, y: 16, w: COL_DEFAULT_W };
                 return (
                   <article
-                    className="bp-day-col"
+                    className={`bp-day-col${colSel.has(day.dateKey) ? " sel" : ""}`}
                     key={day.dateKey}
+                    ref={(el) => {
+                      const m = colElsRef.current;
+                      if (el) m.set(day.dateKey, el);
+                      else m.delete(day.dateKey);
+                    }}
                     style={{
                       left: box.x,
                       top: box.y,
@@ -908,6 +1181,26 @@ export function BroadcastPanel({
             onPointerMove={onDrawMove}
             onPointerUp={endDraw}
           />
+          {/* 러버밴드(빈 바닥 드래그 다중 선택) 시각화 */}
+          {marquee ? (
+            <div
+              aria-hidden="true"
+              className="bp-marquee"
+              style={{
+                left: Math.min(marquee.x1, marquee.x2),
+                top: Math.min(marquee.y1, marquee.y2),
+                width: Math.abs(marquee.x2 - marquee.x1),
+                height: Math.abs(marquee.y2 - marquee.y1)
+              }}
+            />
+          ) : null}
+          {/* 스냅 정렬 가이드(드래그 중 가장자리/중앙선이 맞으면 표시) */}
+          {guides.v.map((x) => (
+            <span aria-hidden="true" className="bp-guide-v" key={`v${x}`} style={{ left: x }} />
+          ))}
+          {guides.h.map((y) => (
+            <span aria-hidden="true" className="bp-guide-h" key={`h${y}`} style={{ top: y }} />
+          ))}
         </div>
       </section>
 
