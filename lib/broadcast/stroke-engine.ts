@@ -11,14 +11,15 @@
 // - stroke point 단순화: 마지막 점에서 MIN_POINT_DIST(px) 미만 이동은 버린다(장시간 판서 메모리).
 
 export type BroadcastTool = "select" | "pen" | "hl" | "eraser";
-export type StrokeLayer = "hl" | "pen";
+/** 그리기 레이어 id — 사용자가 ➕로 자유 추가/삭제한다(배경은 DOM이라 여기 없음). */
+export type StrokeLayer = string;
 
 export type StrokePoint = { x: number; y: number };
 
 export type Stroke = {
   tool: Exclude<BroadcastTool, "select">;
-  /** eraser는 두 레이어 모두에 적용되므로 layer가 없다. pen/hl은 자기 레이어에만. */
-  layer: StrokeLayer | "both";
+  /** 이 획이 속한 레이어 id — 펜/형광펜/지우개 모두 '활성 레이어'에만 작용(그림판 문법). */
+  layer: StrokeLayer;
   color: string;
   width: number;
   points: StrokePoint[];
@@ -68,6 +69,8 @@ export type StrokeStore = {
   canRedo: () => boolean;
   /** 전체 지우기 — 명령이 아니라 상태 초기화(undo 불가). 방송 중 '새 판' 용도. */
   clearAll: () => void;
+  /** 레이어 삭제 — 그 레이어의 획을 장면·redo에서 모두 제거(undo 불가, 그림판 문법). */
+  removeLayer: (layerId: StrokeLayer) => void;
   /** 닫을 때 메모리 해제(M4c dispose 테스트 대상). */
   dispose: () => void;
 };
@@ -106,6 +109,11 @@ export function createStrokeStore(undoLimit: number = UNDO_LIMIT): StrokeStore {
       redoStack = [];
       undoFloor = 0;
     },
+    removeLayer(layerId) {
+      strokes = strokes.filter((s) => s.layer !== layerId);
+      redoStack = redoStack.filter((s) => s.layer !== layerId);
+      if (undoFloor > strokes.length) undoFloor = strokes.length;
+    },
     dispose() {
       strokes = [];
       redoStack = [];
@@ -114,9 +122,9 @@ export function createStrokeStore(undoLimit: number = UNDO_LIMIT): StrokeStore {
   };
 }
 
-/** 이 stroke가 해당 레이어 캔버스에 그려져야 하는가(eraser=both는 모든 레이어). */
+/** 이 stroke가 해당 레이어 캔버스에 그려져야 하는가. */
 export function strokeAppliesTo(stroke: Stroke, layer: StrokeLayer): boolean {
-  return stroke.layer === "both" || stroke.layer === layer;
+  return stroke.layer === layer;
 }
 
 // 렌더 도우미 — ctx 타입은 구조적으로만 요구(테스트에서 mock 가능, DOM 의존 없음).

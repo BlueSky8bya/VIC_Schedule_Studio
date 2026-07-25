@@ -17,7 +17,7 @@
 // - 미니 달력에서 떨어진 날짜를 다중선택(드래그·Ctrl·Shift) → "판서판으로 보내기" →
 //   아래 판서판에 날짜순으로 나란히. 기존 일정 Ctrl+C/V와 무관한 명시 버튼 액션.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Eraser, Eye, EyeOff, Highlighter, Lock, LockOpen, MousePointer2, Pen, Redo2, Trash2, Undo2, X } from "lucide-react";
 
 import type { BroadcastPanelDay, BroadcastPanelEvent } from "@/lib/schedules/broadcast-dto";
@@ -58,6 +58,9 @@ type ColBox = { x: number; y: number; w: number };
 const COL_DEFAULT_W = 220;
 const COL_MIN_W = 140;
 const COL_MAX_W = 520;
+
+// 그리기 레이어(동적) — 배경(날짜 카드 DOM)은 고정 기본, 나머지는 ➕로 자유 추가/삭제.
+type PanelLayer = { id: string; name: string; vis: boolean; lock: boolean };
 
 function EventCard({ event }: { event: BroadcastPanelEvent }) {
   if (event.teaser) {
@@ -127,8 +130,9 @@ export function BroadcastPanel({
   const storeRef = useRef<StrokeStore | null>(null);
   const store = (storeRef.current ??= createStrokeStore()); // 지연 초기화(렌더마다 생성 방지)
   const boardInnerRef = useRef<HTMLDivElement | null>(null);
-  const hlCanvasRef = useRef<HTMLCanvasElement | null>(null);
-  const penCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  // 동적 레이어 캔버스/썸네일 — 레이어 id → 요소(마운트/언마운트를 ref 콜백이 관리).
+  const layerCanvases = useRef(new Map<string, HTMLCanvasElement>());
+  const thumbCanvases = useRef(new Map<string, HTMLCanvasElement>());
   const liveCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const drawingRef = useRef<Stroke | null>(null);
   const drawnIdxRef = useRef(1); // committed 증분 렌더가 소화한 point 수(펜·지우개)
@@ -139,20 +143,24 @@ export function BroadcastPanel({
   const [tool, setTool] = useState<BroadcastTool>("select");
   const [penColor, setPenColor] = useState(PEN_COLORS[0]);
   const [penWidth, setPenWidth] = useState(PEN_WIDTHS[1]);
-  // 배경 = 날짜 카드 DOM(캔버스 아님 — 메모리 0, G0-rr). 표시 토글만, 잠금은 의미 없음.
-  const [layerVis, setLayerVis] = useState({ bg: true, hl: true, pen: true });
-  const [layerLock, setLayerLock] = useState({ hl: false, pen: false });
+  // 레이어 목록(위 = 맨 위 레이어). 배경(날짜 카드 DOM)은 목록 밖 고정 기본 — 표시 토글만.
+  const [layers, setLayers] = useState<PanelLayer[]>(() => [
+    { id: "layer-1", name: "레이어 1", vis: true, lock: false }
+  ]);
+  const [activeLayerId, setActiveLayerId] = useState("layer-1");
+  const layerSeq = useRef(1);
+  const [bgVis, setBgVis] = useState(true);
+  // 레이어 삭제 2단계(획까지 지워지고 undo 불가 — 오조작 방어).
+  const [layerDeleteArm, setLayerDeleteArm] = useState<string | null>(null);
+  const layerDeleteTimer = useRef<number | null>(null);
   // undo/redo 버튼 활성 + 오른쪽 레이어 썸네일 갱신용(스토어는 ref라 리렌더를 직접 못 일으킨다).
   const [strokeVersion, setStrokeVersion] = useState(0);
   // 레이어 패널 썸네일(실제 그림판 문법) — 캔버스에서 축소 복사. 배경(날짜 카드 DOM)은
   // DOM 캡처 금지 계약(ADR-0010)이라 아이콘으로만 표시.
-  const thumbHlRef = useRef<HTMLCanvasElement | null>(null);
-  const thumbPenRef = useRef<HTMLCanvasElement | null>(null);
   useEffect(() => {
-    for (const [src, thumb] of [
-      [hlCanvasRef.current, thumbHlRef.current],
-      [penCanvasRef.current, thumbPenRef.current]
-    ] as const) {
+    for (const layer of layers) {
+      const src = layerCanvases.current.get(layer.id);
+      const thumb = thumbCanvases.current.get(layer.id);
       if (!src || !thumb) continue;
       const ctx = thumb.getContext("2d");
       if (!ctx) continue;
@@ -162,7 +170,7 @@ export function BroadcastPanel({
         ctx.drawImage(src, 0, 0, src.width * s, src.height * s);
       }
     }
-  }, [strokeVersion, layerVis]);
+  }, [strokeVersion, layers]);
   // 전체 지우기 2단계 확인(undo 불가 + 잠긴 레이어 포함이라 오조작 방어, G3b).
   const [clearArmed, setClearArmed] = useState(false);
   const clearArmTimer = useRef<number | null>(null);
@@ -228,7 +236,7 @@ export function BroadcastPanel({
   }
 
   const canvasOf = useCallback((layer: StrokeLayer) => {
-    return layer === "hl" ? hlCanvasRef.current : penCanvasRef.current;
+    return layerCanvases.current.get(layer) ?? null;
   }, []);
   const scaledCtx = useCallback((canvas: HTMLCanvasElement | null) => {
     const ctx = canvas?.getContext("2d");
@@ -255,8 +263,7 @@ export function BroadcastPanel({
     [canvasOf, clearCanvas, scaledCtx, store]
   );
   const replayAll = useCallback(() => {
-    replayLayer("hl");
-    replayLayer("pen");
+    for (const id of layerCanvases.current.keys()) replayLayer(id);
     clearCanvas(liveCanvasRef.current);
   }, [replayLayer, clearCanvas]);
 
@@ -273,21 +280,17 @@ export function BroadcastPanel({
     drawingRef.current = null;
     activePtrRef.current = null;
     if (live.tool === "hl") {
-      // 라이브 → committed로 한 번에 옮긴다.
+      // 라이브 → 자기 레이어 committed로 한 번에 옮긴다.
       clearCanvas(liveCanvasRef.current);
-      const ctx = scaledCtx(hlCanvasRef.current);
+      const ctx = scaledCtx(canvasOf(live.layer));
       if (ctx) drawStroke(ctx, live);
     } else {
       // 남은 꼬리 구간 마저 커밋.
       const from = Math.max(0, drawnIdxRef.current - 1);
       if (live.points.length > drawnIdxRef.current || drawnIdxRef.current === 0) {
         const segment: Stroke = { ...live, points: live.points.slice(from) };
-        const targets: StrokeLayer[] =
-          live.layer === "both" ? ["hl", "pen"] : [live.layer as StrokeLayer];
-        for (const layer of targets) {
-          const ctx = scaledCtx(canvasOf(layer));
-          if (ctx) drawStroke(ctx, segment);
-        }
+        const ctx = scaledCtx(canvasOf(live.layer));
+        if (ctx) drawStroke(ctx, segment);
       }
     }
     store.push(live);
@@ -304,19 +307,25 @@ export function BroadcastPanel({
       const cssW = inner.clientWidth;
       const cssH = inner.clientHeight;
       const scale = backingScale(cssW, cssH, window.devicePixelRatio || 1);
+      const W = Math.round(cssW * scale);
+      const H = Math.round(cssH * scale);
+      // 크기가 다른 캔버스만 재할당(새로 추가된 레이어 캔버스 포함 — width 0으로 마운트됨).
+      let dirty = false;
+      for (const canvas of [...layerCanvases.current.values(), liveCanvasRef.current]) {
+        if (!canvas) continue;
+        if (canvas.width === W && canvas.height === H) continue;
+        canvas.width = W;
+        canvas.height = H;
+        canvas.style.width = `${cssW}px`;
+        canvas.style.height = `${cssH}px`;
+        dirty = true;
+      }
       const last = lastFitRef.current;
-      if (last.w === cssW && last.h === cssH && last.scale === scale) return;
+      if (!dirty && last.w === cssW && last.h === cssH && last.scale === scale) return;
       // 리사이즈 도중 그리던 획은 먼저 완성 커밋 — 안 하면 replay가 live를 날려 선이 증발.
       finishLiveStroke();
       lastFitRef.current = { w: cssW, h: cssH, scale };
       scaleRef.current = scale;
-      for (const canvas of [hlCanvasRef.current, penCanvasRef.current, liveCanvasRef.current]) {
-        if (!canvas) continue;
-        canvas.width = Math.round(cssW * scale);
-        canvas.height = Math.round(cssH * scale);
-        canvas.style.width = `${cssW}px`;
-        canvas.style.height = `${cssH}px`;
-      }
       replayAll();
     };
     const schedule = () => {
@@ -329,7 +338,7 @@ export function BroadcastPanel({
       ro.disconnect();
       if (fitRaf !== null) cancelAnimationFrame(fitRaf);
     };
-  }, [replayAll, finishLiveStroke]);
+  }, [replayAll, finishLiveStroke, layers]);
 
   // 닫힘 = unmount = 소멸(계약 3): stroke 메모리·타이머·rAF를 명시적으로 해제한다.
   useEffect(() => {
@@ -337,6 +346,7 @@ export function BroadcastPanel({
       store.dispose();
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (clearArmTimer.current !== null) window.clearTimeout(clearArmTimer.current);
+      if (layerDeleteTimer.current !== null) window.clearTimeout(layerDeleteTimer.current);
     };
   }, [store]);
 
@@ -346,12 +356,11 @@ export function BroadcastPanel({
     const r = inner.getBoundingClientRect();
     return { x: e.clientX - r.left, y: e.clientY - r.top };
   }
-  const activeLayer: StrokeLayer | "both" | null =
-    tool === "pen" ? "pen" : tool === "hl" ? "hl" : tool === "eraser" ? "both" : null;
+  // 그림판 문법: 펜/형광펜/지우개 전부 '활성 레이어'에만 작용. 활성 레이어가 없거나
+  // 잠김/숨김이면 그리기 차단.
+  const activeLayer = layers.find((l) => l.id === activeLayerId) ?? null;
   const toolBlocked =
-    (tool === "pen" && layerLock.pen) ||
-    (tool === "hl" && layerLock.hl) ||
-    (tool === "eraser" && layerLock.pen && layerLock.hl); // 둘 다 잠기면 지울 곳이 없다
+    tool !== "select" && (!activeLayer || activeLayer.lock || !activeLayer.vis);
 
   // rAF 병합 플러시 — move마다가 아니라 프레임당 한 번만 그린다(G3b).
   const flushDraw = useCallback(() => {
@@ -365,16 +374,12 @@ export function BroadcastPanel({
       if (ctx) drawStroke(ctx, live);
       return;
     }
-    // 펜·지우개: 새 구간만 committed 캔버스에 증분 렌더(직전 마지막 점부터 이어 그린다).
+    // 펜·지우개: 새 구간만 자기 레이어 committed 캔버스에 증분 렌더.
     if (drawnIdxRef.current !== 0 && drawnIdxRef.current >= live.points.length) return; // 새 점 없음
     const from = Math.max(0, drawnIdxRef.current - 1);
     const segment: Stroke = { ...live, points: live.points.slice(from) };
-    const targets: StrokeLayer[] =
-      live.layer === "both" ? ["hl", "pen"] : [live.layer as StrokeLayer];
-    for (const layer of targets) {
-      const ctx = scaledCtx(canvasOf(layer));
-      if (ctx) drawStroke(ctx, segment);
-    }
+    const ctx = scaledCtx(canvasOf(live.layer));
+    if (ctx) drawStroke(ctx, segment);
     drawnIdxRef.current = live.points.length;
   }, [canvasOf, clearCanvas, scaledCtx]);
   const scheduleFlush = useCallback(() => {
@@ -382,7 +387,7 @@ export function BroadcastPanel({
   }, [flushDraw]);
 
   function onDrawDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (!activeLayer || toolBlocked || e.button !== 0) return;
+    if (tool === "select" || !activeLayer || toolBlocked || e.button !== 0) return;
     if (drawingRef.current !== null) return; // 이미 다른 포인터가 그리는 중(다중 터치 가드)
     const p = boardPoint(e);
     if (!p) return;
@@ -390,15 +395,7 @@ export function BroadcastPanel({
     e.currentTarget.setPointerCapture(e.pointerId);
     drawingRef.current = {
       tool: tool as Stroke["tool"],
-      // 지우개인데 한쪽 레이어가 잠겨 있으면 잠긴 쪽은 지우지 않는다.
-      layer:
-        tool === "eraser"
-          ? layerLock.pen
-            ? "hl"
-            : layerLock.hl
-              ? "pen"
-              : "both"
-          : activeLayer,
+      layer: activeLayer.id, // 활성 레이어에만(지우개 포함 — 그림판 문법)
       color: penColor,
       width: tool === "hl" ? penWidth * 3.5 : tool === "eraser" ? penWidth * 5 : penWidth,
       points: [p]
@@ -450,6 +447,36 @@ export function BroadcastPanel({
     setStrokeVersion((v) => v + 1);
     replayAll();
   }, [clearArmed, store, replayAll, finishLiveStroke]);
+
+  // ── 레이어 추가/삭제(그림판 문법: 자유롭게) ──
+  function addLayer() {
+    hapticTick();
+    layerSeq.current += 1;
+    const id = `layer-${layerSeq.current}`;
+    setLayers((ls) => [{ id, name: `레이어 ${layerSeq.current}`, vis: true, lock: false }, ...ls]);
+    setActiveLayerId(id); // 새 레이어가 맨 위 + 바로 활성
+  }
+  function deleteLayer(id: string) {
+    // 2단계: 획까지 지워지고 되돌릴 수 없어 오조작 방어(전체 지우기와 동일 문법).
+    if (layerDeleteArm !== id) {
+      hapticTick();
+      setLayerDeleteArm(id);
+      if (layerDeleteTimer.current !== null) window.clearTimeout(layerDeleteTimer.current);
+      layerDeleteTimer.current = window.setTimeout(() => setLayerDeleteArm(null), 3000);
+      return;
+    }
+    if (layerDeleteTimer.current !== null) window.clearTimeout(layerDeleteTimer.current);
+    setLayerDeleteArm(null);
+    finishLiveStroke(); // 그 레이어에 그리던 중이면 완성부터(직후 함께 삭제됨)
+    store.removeLayer(id);
+    setLayers((ls) => {
+      const next = ls.filter((l) => l.id !== id);
+      if (activeLayerId === id) setActiveLayerId(next[0]?.id ?? "");
+      return next;
+    });
+    hapticTick();
+    setStrokeVersion((v) => v + 1);
+  }
 
   const eventsByDate = useMemo(
     () => new Map(days.map((d) => [d.dateKey, d.events] as const)),
@@ -678,7 +705,13 @@ export function BroadcastPanel({
           </div>
           <em className="bp-group-label">기록</em>
         </div>
-        {toolBlocked ? <span className="bp-lock-hint">잠긴 레이어예요 — 자물쇠를 풀어주세요</span> : null}
+        {toolBlocked ? (
+          <span className="bp-lock-hint">
+            {layers.length === 0
+              ? "레이어가 없어요 — 오른쪽 ➕로 추가해주세요"
+              : "활성 레이어가 잠겨 있거나 숨겨져 있어요"}
+          </span>
+        ) : null}
       </div>
 
       <section className="bp-picker" aria-label={`${monthLabel} 날짜 선택`}>
@@ -787,7 +820,7 @@ export function BroadcastPanel({
           }}
         >
           {/* 배경 레이어 = 날짜 카드 DOM(캔버스 아님 — 메모리 0). 표시 토글은 숨김만. */}
-          <div className={`bp-board-bg${layerVis.bg ? "" : " hidden"}`}>
+          <div className={`bp-board-bg${bgVis ? "" : " hidden"}`}>
             {sentDays.length === 0 ? (
               <p className="bp-empty">
                 보낸 날짜가 여기에 붙어요 — 선택 도구로 끌어 옮기고, 오른쪽 아래 손잡이로 키워요
@@ -854,24 +887,29 @@ export function BroadcastPanel({
               })
             )}
           </div>
-          {/* 캔버스 3장 — DOM 순서 = hl committed → hl 라이브 → pen. 라이브(형광펜 진행분)를
-              펜 '아래'에 둬야 그리는 동안과 뗀 순간의 겹침 순서가 같다(G3b-r: 위에 두면
-              진행 중엔 펜을 덮다가 커밋 순간 아래로 내려가 시각적으로 튄다). */}
-          <canvas
-            aria-hidden="true"
-            className={`bp-canvas${layerVis.hl ? "" : " hidden"}`}
-            ref={hlCanvasRef}
-          />
-          <canvas
-            aria-hidden="true"
-            className={`bp-canvas${layerVis.hl ? "" : " hidden"}`}
-            ref={liveCanvasRef}
-          />
-          <canvas
-            aria-hidden="true"
-            className={`bp-canvas${layerVis.pen ? "" : " hidden"}`}
-            ref={penCanvasRef}
-          />
+          {/* 동적 레이어 캔버스 — 패널 목록은 위=맨 위이므로 DOM엔 뒤집어 깐다(아래부터).
+              라이브 캔버스는 '활성 레이어 바로 위'에 끼워 그리는 동안과 뗀 순간의 겹침 순서가
+              같다(G3b-r 원칙의 동적판). */}
+          {[...layers].reverse().map((l) => (
+            <Fragment key={l.id}>
+              <canvas
+                aria-hidden="true"
+                className={`bp-canvas${l.vis ? "" : " hidden"}`}
+                ref={(el) => {
+                  const m = layerCanvases.current;
+                  if (el) m.set(l.id, el);
+                  else m.delete(l.id);
+                }}
+              />
+              {l.id === activeLayerId ? (
+                <canvas
+                  aria-hidden="true"
+                  className={`bp-canvas${l.vis ? "" : " hidden"}`}
+                  ref={liveCanvasRef}
+                />
+              ) : null}
+            </Fragment>
+          ))}
           {/* 드로잉 입력면 — 그리기 도구가 켜졌을 때만 포인터를 받는다(선택 도구면 통과). */}
           <div
             aria-hidden="true"
@@ -886,63 +924,111 @@ export function BroadcastPanel({
         </div>
       </section>
 
-      {/* 오른쪽 레이어 패널(실제 그림판 문법) — 위가 맨 위 레이어. 고정 3장:
-          펜 → 형광펜 → 배경(날짜 카드). 썸네일은 캔버스 축소 복사(배경은 아이콘 — DOM 캡처 금지). */}
+      {/* 오른쪽 레이어 패널(실제 그림판 문법) — 위가 맨 위 레이어. ➕로 자유 추가, ✕로 삭제
+          (2단계 확인 — 획까지 지워지고 되돌릴 수 없음). 배경(날짜 카드)은 맨 아래 고정 기본.
+          카드를 클릭하면 그 레이어가 '활성'(펜/형광펜/지우개가 작용하는 곳)이 된다. */}
       <aside className="bp-layers-panel" aria-label="레이어">
-        {(
-          [
-            ["pen", "펜"],
-            ["hl", "형광펜"],
-            ["bg", "배경"]
-          ] as const
-        ).map(([key, label]) => (
-          <div className={`bp-layer-item${layerVis[key] ? "" : " off"}`} key={key}>
+        <button aria-label="레이어 추가" className="bp-layer-add" type="button" onClick={addLayer}>
+          ＋ 레이어 추가
+        </button>
+        {layers.map((l) => (
+          <div
+            className={`bp-layer-item${l.vis ? "" : " off"}${l.id === activeLayerId ? " active" : ""}`}
+            key={l.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => setActiveLayerId(l.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setActiveLayerId(l.id);
+              }
+            }}
+          >
             <div className="bp-layer-thumb" aria-hidden="true">
-              {key === "bg" ? (
-                <span className="bp-layer-thumb-bg">📅</span>
-              ) : (
-                <canvas
-                  height={72}
-                  ref={key === "hl" ? thumbHlRef : thumbPenRef}
-                  width={128}
-                />
-              )}
+              <canvas
+                height={72}
+                width={128}
+                ref={(el) => {
+                  const m = thumbCanvases.current;
+                  if (el) m.set(l.id, el);
+                  else m.delete(l.id);
+                }}
+              />
             </div>
             <div className="bp-layer-meta">
-              <em>{label}</em>
+              <em>{l.name}</em>
               <div className="bp-layer-actions">
                 <button
-                  aria-label={`${label} 레이어 표시`}
-                  aria-pressed={layerVis[key]}
+                  aria-label={`${l.name} 표시`}
+                  aria-pressed={l.vis}
                   className="bp-layer-btn"
-                  title={layerVis[key] ? "숨기기" : "보이기"}
+                  title={l.vis ? "숨기기" : "보이기"}
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     hapticTick();
-                    setLayerVis((v) => ({ ...v, [key]: !v[key] }));
+                    setLayers((ls) => ls.map((x) => (x.id === l.id ? { ...x, vis: !x.vis } : x)));
                   }}
                 >
-                  {layerVis[key] ? <Eye size={14} /> : <EyeOff size={14} />}
+                  {l.vis ? <Eye size={14} /> : <EyeOff size={14} />}
                 </button>
-                {key !== "bg" ? (
-                  <button
-                    aria-label={`${label} 레이어 잠금`}
-                    aria-pressed={layerLock[key]}
-                    className="bp-layer-btn"
-                    title={layerLock[key] ? "잠금 풀기" : "잠그기"}
-                    type="button"
-                    onClick={() => {
-                      hapticTick();
-                      setLayerLock((v) => ({ ...v, [key]: !v[key] }));
-                    }}
-                  >
-                    {layerLock[key] ? <Lock size={14} /> : <LockOpen size={14} />}
-                  </button>
-                ) : null}
+                <button
+                  aria-label={`${l.name} 잠금`}
+                  aria-pressed={l.lock}
+                  className="bp-layer-btn"
+                  title={l.lock ? "잠금 풀기" : "잠그기"}
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    hapticTick();
+                    setLayers((ls) => ls.map((x) => (x.id === l.id ? { ...x, lock: !x.lock } : x)));
+                  }}
+                >
+                  {l.lock ? <Lock size={14} /> : <LockOpen size={14} />}
+                </button>
+                <button
+                  aria-label={
+                    layerDeleteArm === l.id ? `${l.name} 삭제 확정` : `${l.name} 삭제`
+                  }
+                  className={`bp-layer-btn danger${layerDeleteArm === l.id ? " armed" : ""}`}
+                  title="레이어 삭제 — 이 레이어의 획도 함께 지워져요(두 번 눌러 실행)"
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    deleteLayer(l.id);
+                  }}
+                >
+                  {layerDeleteArm === l.id ? <span className="bp-clear-confirm">삭제?</span> : <X size={14} />}
+                </button>
               </div>
             </div>
           </div>
         ))}
+        {/* 배경 = 고정 기본 레이어(날짜 카드 DOM) — 표시 토글만, 삭제/잠금 없음. */}
+        <div className={`bp-layer-item bp-layer-fixed${bgVis ? "" : " off"}`}>
+          <div className="bp-layer-thumb" aria-hidden="true">
+            <span className="bp-layer-thumb-bg">📅</span>
+          </div>
+          <div className="bp-layer-meta">
+            <em>배경</em>
+            <div className="bp-layer-actions">
+              <button
+                aria-label="배경 표시"
+                aria-pressed={bgVis}
+                className="bp-layer-btn"
+                title={bgVis ? "숨기기" : "보이기"}
+                type="button"
+                onClick={() => {
+                  hapticTick();
+                  setBgVis((v) => !v);
+                }}
+              >
+                {bgVis ? <Eye size={14} /> : <EyeOff size={14} />}
+              </button>
+            </div>
+          </div>
+        </div>
       </aside>
       </div>
     </div>

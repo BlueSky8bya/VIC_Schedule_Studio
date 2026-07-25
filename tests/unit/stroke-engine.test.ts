@@ -11,10 +11,10 @@ import {
   type Stroke
 } from "@/lib/broadcast/stroke-engine";
 
-function mkStroke(n: number): Stroke {
+function mkStroke(n: number, layer = "layer-1"): Stroke {
   return {
     tool: "pen",
-    layer: "pen",
+    layer,
     color: "#111",
     width: 4,
     points: [{ x: n, y: n }]
@@ -73,7 +73,7 @@ describe("stroke store — push/undo/redo", () => {
     const early = mkStroke(1);
     const eraser: Stroke = {
       tool: "eraser",
-      layer: "both",
+      layer: "layer-1",
       color: "#000",
       width: 20,
       points: [{ x: 1, y: 1 }]
@@ -84,9 +84,9 @@ describe("stroke store — push/undo/redo", () => {
     s.push(late);
     // 렌더는 strokes() 순서 그대로 재생 — eraser가 배열에서 late보다 앞이므로
     // destination-out은 early에만 영향을 주고 late는 위에 그려진다.
-    const penLayerOrder = s.strokes().filter((st) => strokeAppliesTo(st, "pen"));
-    expect(penLayerOrder).toEqual([early, eraser, late]);
-    expect(penLayerOrder.indexOf(eraser)).toBeLessThan(penLayerOrder.indexOf(late));
+    const order = s.strokes().filter((st) => strokeAppliesTo(st, "layer-1"));
+    expect(order).toEqual([early, eraser, late]);
+    expect(order.indexOf(eraser)).toBeLessThan(order.indexOf(late));
   });
 
   it("clearAll·dispose는 전부 비운다", () => {
@@ -141,13 +141,26 @@ describe("backing scale — DPR cap + 총 픽셀 cap", () => {
 });
 
 describe("레이어 적용·렌더", () => {
-  it("eraser(both)는 모든 레이어에, pen/hl은 자기 레이어에만", () => {
-    const pen = mkStroke(1);
-    const eraser: Stroke = { tool: "eraser", layer: "both", color: "#000", width: 20, points: [{ x: 0, y: 0 }] };
-    expect(strokeAppliesTo(pen, "pen")).toBe(true);
-    expect(strokeAppliesTo(pen, "hl")).toBe(false);
-    expect(strokeAppliesTo(eraser, "pen")).toBe(true);
-    expect(strokeAppliesTo(eraser, "hl")).toBe(true);
+  it("stroke는 자기 레이어에만 적용된다(지우개 포함 — 활성 레이어 문법)", () => {
+    const pen = mkStroke(1, "layer-1");
+    const eraser: Stroke = { tool: "eraser", layer: "layer-2", color: "#000", width: 20, points: [{ x: 0, y: 0 }] };
+    expect(strokeAppliesTo(pen, "layer-1")).toBe(true);
+    expect(strokeAppliesTo(pen, "layer-2")).toBe(false);
+    expect(strokeAppliesTo(eraser, "layer-2")).toBe(true);
+    expect(strokeAppliesTo(eraser, "layer-1")).toBe(false);
+  });
+
+  it("removeLayer는 그 레이어의 획을 장면·redo에서 지우고 다른 레이어는 보존한다", () => {
+    const s = createStrokeStore();
+    s.push(mkStroke(1, "A"));
+    s.push(mkStroke(2, "B"));
+    s.push(mkStroke(3, "A"));
+    s.undo(); // A(3) → redo 스택
+    s.removeLayer("A");
+    expect(s.strokes().map((st) => st.layer)).toEqual(["B"]);
+    expect(s.canRedo()).toBe(false); // redo에 있던 A(3)도 제거
+    expect(s.undo()).toBe(true); // B는 여전히 undo 가능
+    expect(s.strokes()).toHaveLength(0);
   });
 
   it("drawStroke: eraser=destination-out, 형광펜=반투명, 종료 후 상태 복원", () => {
@@ -174,9 +187,9 @@ describe("레이어 적용·렌더", () => {
         calls.push("stroke");
       }
     };
-    drawStroke(ctx, { tool: "eraser", layer: "both", color: "#000", width: 20, points: [{ x: 0, y: 0 }, { x: 10, y: 10 }] });
+    drawStroke(ctx, { tool: "eraser", layer: "layer-1", color: "#000", width: 20, points: [{ x: 0, y: 0 }, { x: 10, y: 10 }] });
     expect(ctx.opsDuringStroke[0].op).toBe("destination-out");
-    drawStroke(ctx, { tool: "hl", layer: "hl", color: "#ff0", width: 14, points: [{ x: 0, y: 0 }, { x: 10, y: 0 }] });
+    drawStroke(ctx, { tool: "hl", layer: "layer-1", color: "#ff0", width: 14, points: [{ x: 0, y: 0 }, { x: 10, y: 0 }] });
     expect(ctx.opsDuringStroke[1].op).toBe("source-over");
     expect(ctx.opsDuringStroke[1].alpha).toBeCloseTo(0.45);
     // 그리기 끝나면 합성 상태 복원
