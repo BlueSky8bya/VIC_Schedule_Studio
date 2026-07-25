@@ -5033,11 +5033,13 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
    "메이플 검은마…"처럼 잘리고, 잘린 카드는 호버 팝오버로 전체를 보여준다(실측 판정).
    중요: nowrap 텍스트는 flex/grid 조상들의 min-width:auto를 타고 '카드 자체'를 칸 밖으로
    밀어낸다 — 체인 전체에 min-width:0을 깔아야 ellipsis가 실제로 발동한다. */
-/* 이어진 막대(.span)는 제외 — 음수 마진(-7px)으로 칸 경계를 덮어 이음매를 만드는데
-   max-width:100%가 그 돌출을 잘라 세그먼트 사이가 끊겨 보였다. span 폭은 칸이 정하므로
-   nowrap 제목이 밀어낼 일도 없다. */
-.studio-calendar-panel[data-zoomed] .studio-event-pill:not(.span) {
+/* min-width:0은 모든 카드(span 포함 — 안 그러면 span 제목이 ellipsis 없이 생으로 잘린다).
+   max-width:100%만 span 제외 — span은 음수 마진(-7px)으로 칸 경계를 덮어 이음매를 만드는데
+   max-width가 그 돌출을 잘라 세그먼트 사이가 끊겨 보였다. */
+.studio-calendar-panel[data-zoomed] .studio-event-pill {
   min-width: 0;
+}
+.studio-calendar-panel[data-zoomed] .studio-event-pill:not(.span) {
   max-width: 100%;
 }
 .studio-calendar-panel[data-zoomed] .pill-main {
