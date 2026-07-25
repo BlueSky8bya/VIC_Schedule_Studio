@@ -221,6 +221,8 @@ export function BroadcastPanel({
     moved: boolean;
     startSL: number; // 드래그 시작 시 보드 scrollLeft/Top — 자동 스크롤 보정용
     startST: number;
+    maxX: number; // 시작 시점 캔버스 크기 — 드래그로 캔버스가 무한 확장되는 루프 차단
+    maxY: number;
   } | null>(null);
   // ── 가장자리 자동 스크롤: 드래그/러버밴드가 보드 끝에 닿으면 스크롤이 따라간다 ──
   const boardScrollRef = useRef<HTMLElement | null>(null);
@@ -307,7 +309,9 @@ export function BroadcastPanel({
       beforeAll: new Map(cols),
       moved: false,
       startSL: boardScrollRef.current?.scrollLeft ?? 0,
-      startST: boardScrollRef.current?.scrollTop ?? 0
+      startST: boardScrollRef.current?.scrollTop ?? 0,
+      maxX: boardInnerRef.current?.offsetWidth ?? 4000,
+      maxY: boardInnerRef.current?.offsetHeight ?? 3000
     };
   }
   // 자동 스크롤 공용: 가장자리 근접 → 속도 계산 → rAF 루프에서 스크롤 + 드래그 로직 재적용.
@@ -429,6 +433,15 @@ export function BroadcastPanel({
       activeH.push(bestH.line);
     }
     setGuides({ v: activeV, h: activeH });
+    // 캔버스 무한 확장 차단: 이동 그룹이 제스처 시작 시점의 캔버스 크기 안에 머물게 dx/dy를
+    // 그룹 단위로 클램프(자동 스크롤이 확장→스크롤→확장을 반복하는 루프 방지).
+    for (const [k, b] of d.origs) {
+      const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
+      dx = Math.min(dx, d.maxX - 8 - (b.x + b.w));
+      dy = Math.min(dy, d.maxY - 8 - (b.y + h));
+      dx = Math.max(dx, -b.x);
+      dy = Math.max(dy, -b.y);
+    }
     setCols((map) => {
       const next = new Map(map);
       for (const [k, b] of d.origs) {
@@ -454,7 +467,13 @@ export function BroadcastPanel({
   }
 
   // ── 러버밴드(빈 바닥 드래그로 다중 선택) — 선택 도구에서만 ──
-  const marqueeRef = useRef<{ x1: number; y1: number; pointerId: number } | null>(null);
+  const marqueeRef = useRef<{
+    x1: number;
+    y1: number;
+    pointerId: number;
+    maxX: number; // 시작 시점 캔버스 크기 — 밴드가 이 밖으로 못 나가게(무한 확장 루프 차단)
+    maxY: number;
+  } | null>(null);
   function innerPointC(clientX: number, clientY: number): { x: number; y: number } | null {
     const inner = boardInnerRef.current;
     if (!inner) return null;
@@ -465,8 +484,14 @@ export function BroadcastPanel({
   function marqueeTo(clientX: number, clientY: number) {
     const m = marqueeRef.current;
     if (!m) return;
-    const p = innerPointC(clientX, clientY);
-    if (!p) return;
+    const raw = innerPointC(clientX, clientY);
+    if (!raw) return;
+    // 클램프 필수: 밴드 사각형(absolute)도 스크롤 영역에 포함돼, 안 막으면
+    // 자동 스크롤 → 밴드 확장 → 스크롤 영역 증가 → … 무한 확장 루프가 된다.
+    const p = {
+      x: Math.min(Math.max(0, raw.x), m.maxX),
+      y: Math.min(Math.max(0, raw.y), m.maxY)
+    };
     setMarquee({ x1: m.x1, y1: m.y1, x2: p.x, y2: p.y });
     // 라이브 선택: 밴드와 겹치는 카드 전부.
     const lo = { x: Math.min(m.x1, p.x), y: Math.min(m.y1, p.y) };
@@ -486,7 +511,14 @@ export function BroadcastPanel({
     if (!p) return;
     e.preventDefault(); // 러버밴드 중 브라우저 텍스트 선택(파란 긁힘) 방지
     e.currentTarget.setPointerCapture(e.pointerId);
-    marqueeRef.current = { x1: p.x, y1: p.y, pointerId: e.pointerId };
+    const inner = boardInnerRef.current;
+    marqueeRef.current = {
+      x1: p.x,
+      y1: p.y,
+      pointerId: e.pointerId,
+      maxX: inner?.offsetWidth ?? 0,
+      maxY: inner?.offsetHeight ?? 0
+    };
     setMarquee({ x1: p.x, y1: p.y, x2: p.x, y2: p.y });
   }
   function onBoardPointerMove(e: React.PointerEvent<HTMLDivElement>) {
