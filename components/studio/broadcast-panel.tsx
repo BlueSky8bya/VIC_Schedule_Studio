@@ -223,6 +223,9 @@ export function BroadcastPanel({
     startST: number;
     maxX: number; // 시작 시점 캔버스 크기 — 드래그로 캔버스가 무한 확장되는 루프 차단
     maxY: number;
+    // 직전 프레임에 어느 방향으로 클램프에 걸렸는지 — 그 방향 자동 스크롤을 멈춘다.
+    // (카드는 상한에 핀 고정인데 스크롤만 계속 흐르면 포인터가 잡은 지점에서 이탈한다.)
+    clamp: { xPos: boolean; xNeg: boolean; yPos: boolean; yNeg: boolean };
   } | null>(null);
   // ── 가장자리 자동 스크롤: 드래그/러버밴드가 보드 끝에 닿으면 스크롤이 따라간다 ──
   const boardScrollRef = useRef<HTMLElement | null>(null);
@@ -313,7 +316,8 @@ export function BroadcastPanel({
       // +480: 제스처마다 이만큼은 캔버스를 '의도적으로' 넓힐 수 있다(아래·오른쪽 배치 여유).
       // 자동 스크롤 무한 확장 루프는 이 상한에서 멈춘다 — 더 넓히려면 손을 뗐다 다시 끌면 된다.
       maxX: (boardInnerRef.current?.offsetWidth ?? 4000) + 480,
-      maxY: (boardInnerRef.current?.offsetHeight ?? 3000) + 480
+      maxY: (boardInnerRef.current?.offsetHeight ?? 3000) + 480,
+      clamp: { xPos: false, xNeg: false, yPos: false, yNeg: false }
     };
   }
   // 자동 스크롤 공용: 가장자리 근접 → 속도 계산 → rAF 루프에서 스크롤 + 드래그 로직 재적용.
@@ -338,6 +342,15 @@ export function BroadcastPanel({
         : clientY < r.top + EDGE
           ? -Math.min(MAX, (r.top + EDGE - clientY) / 2 + 2)
           : 0;
+    // 카드 그룹이 클램프에 걸린 방향으로는 스크롤도 멈춘다 — 카드는 핀 고정인데 스크롤만
+    // 계속 흐르면 포인터가 잡은 지점에서 떨어져 나간다(대규모 드래그 괴리감의 원인).
+    if (kind === "col") {
+      const c = dragColRef.current?.clamp;
+      if (c) {
+        if ((a.vx > 0 && c.xPos) || (a.vx < 0 && c.xNeg)) a.vx = 0;
+        if ((a.vy > 0 && c.yPos) || (a.vy < 0 && c.yNeg)) a.vy = 0;
+      }
+    }
     if ((a.vx !== 0 || a.vy !== 0) && a.raf === null) {
       const step = () => {
         const aa = autoRef.current;
@@ -349,8 +362,15 @@ export function BroadcastPanel({
         b.scrollLeft += aa.vx;
         b.scrollTop += aa.vy;
         // 포인터가 안 움직여도 스크롤만큼 드래그가 이어지게 마지막 좌표로 재적용.
-        if (aa.kind === "col") colDragTo(aa.last.x, aa.last.y);
-        else marqueeTo(aa.last.x, aa.last.y);
+        if (aa.kind === "col") {
+          colDragTo(aa.last.x, aa.last.y);
+          // 이번 프레임에 클램프에 걸렸으면 그 방향 스크롤 즉시 중단.
+          const c = dragColRef.current?.clamp;
+          if (c) {
+            if ((aa.vx > 0 && c.xPos) || (aa.vx < 0 && c.xNeg)) aa.vx = 0;
+            if ((aa.vy > 0 && c.yPos) || (aa.vy < 0 && c.yNeg)) aa.vy = 0;
+          }
+        } else marqueeTo(aa.last.x, aa.last.y);
         aa.raf = requestAnimationFrame(step);
       };
       a.raf = requestAnimationFrame(step);
@@ -448,6 +468,12 @@ export function BroadcastPanel({
       dx = Math.max(dx, -b.x);
       dy = Math.max(dy, -b.y);
     }
+    d.clamp = {
+      xPos: dx < rawDx,
+      xNeg: dx > rawDx,
+      yPos: dy < rawDy,
+      yNeg: dy > rawDy
+    };
     if (dx !== rawDx) d.startX += rawDx - dx;
     if (dy !== rawDy) d.startY += rawDy - dy;
     setCols((map) => {
