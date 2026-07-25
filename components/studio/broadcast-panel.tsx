@@ -17,7 +17,15 @@
 // - 미니 달력에서 떨어진 날짜를 다중선택(드래그·Ctrl·Shift) → "판서판으로 보내기" →
 //   아래 판서판에 날짜순으로 나란히. 기존 일정 Ctrl+C/V와 무관한 명시 버튼 액션.
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import {
   AlignCenterHorizontal,
   AlignHorizontalDistributeCenter,
@@ -49,6 +57,7 @@ import type { MonthCell } from "@/lib/calendar/month";
 import { splitEventTitle } from "@/lib/calendar/month";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { hapticTick } from "@/lib/ui/haptics";
+import { createBroadcastHistory } from "@/lib/broadcast/history";
 import {
   appendPoint,
   backingScale,
@@ -56,6 +65,7 @@ import {
   drawPenIncremental,
   drawStroke,
   isShapeTool,
+  strokeIntersectsRect,
   strokeAppliesTo,
   type BroadcastTool,
   type Stroke,
@@ -106,7 +116,7 @@ type StrokeGeom = { points: StrokePoint[]; width: number };
 // 통합 히스토리(Ctrl+Z/Y 하나로 전부): 획 · 카드 위치/크기 · 날짜 추가/삭제 · 레이어 생성/삭제 ·
 // 선택 획 이동/확대(xform — 카드와 한 제스처면 cols도 같이 담아 Ctrl+Z 1번에 복원).
 type HistAction =
-  | { t: "stroke" } // 실제 획은 stroke store가 보관 — 여기선 순서만
+  | { t: "stroke"; stroke: Stroke }
   | { t: "cols"; before: Map<string, ColBox>; after: Map<string, ColBox> }
   | { t: "sent"; before: string[]; after: string[]; colsBefore: Map<string, ColBox> }
   | { t: "layers"; before: PanelLayer[]; after: PanelLayer[] }
@@ -123,6 +133,9 @@ type ColBox = { x: number; y: number; w: number };
 const COL_DEFAULT_W = 220;
 const COL_MIN_W = 140;
 const COL_MAX_W = 520;
+// 전체 backing store는 기존 고정 3캔버스와 같은 예산을 레이어끼리 나눠 쓴다.
+// 그래도 DOM·썸네일·재생 비용이 무한히 늘지 않게 그림판 수준의 실용 상한을 둔다.
+const MAX_DRAWING_LAYERS = 6;
 
 // 그리기 레이어(동적) — '일정'(날짜 카드 DOM)은 고정 기본, 나머지는 ➕로 자유 추가/삭제.
 type PanelLayer = { id: string; name: string; vis: boolean; lock: boolean };
@@ -188,7 +201,7 @@ export function BroadcastPanel({
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const sendBtnRef = useRef<HTMLButtonElement | null>(null);
 
-  // ── 판서 엔진(M4b): stroke 벡터 스토어 + committed 캔버스 2장(형광펜·펜) + 라이브 1장 ──
+  // ── 판서 엔진(M4b): stroke 벡터 스토어 + 레이어별 committed 캔버스 + 라이브 1장 ──
   // 배경(날짜 카드 DOM)과 캔버스는 같은 좌표면(.bp-board-inner)에 있다 — 보드가 가로
   // 스크롤돼도 카드와 판서가 '함께' 움직인다(G3b: 캔버스 고정 시 스크롤에서 좌표 분리).
   // 렌더 전략(G3b 성능): 평상시엔 committed bitmap을 유지하고 —
@@ -197,7 +210,10 @@ export function BroadcastPanel({
   //    통째로 다시 그리고(싸다), 뗄 때 한 번 committed로 옮긴다
   //  - 전체 재생(replayAll)은 undo/redo/전체 지우기/리사이즈 때만.
   const storeRef = useRef<StrokeStore | null>(null);
-  const store = (storeRef.current ??= createStrokeStore()); // 지연 초기화(렌더마다 생성 방지)
+  // undo 상한은 아래 통합 히스토리 한 곳에서 관리한다. stroke store는 장면 저장소로만
+  // 쓰고 획 undo/redo도 HistAction이 실제 stroke를 들고 직접 장면을 교체한다.
+  // scene 편집이 store 내부 redo를 비워도 통합 redo 순서가 끊기지 않는다.
+  const store = (storeRef.current ??= createStrokeStore(Number.POSITIVE_INFINITY));
   const boardInnerRef = useRef<HTMLDivElement | null>(null);
   // 동적 레이어 캔버스/썸네일 — 레이어 id → 요소(마운트/언마운트를 ref 콜백이 관리).
   const layerCanvases = useRef(new Map<string, HTMLCanvasElement>());
@@ -222,17 +238,22 @@ export function BroadcastPanel({
     { id: "layer-1", name: "레이어 1", vis: true, lock: false }
   ]);
   const [activeLayerId, setActiveLayerId] = useState("layer-1");
+  const activeLayerIdRef = useRef(activeLayerId);
+  activeLayerIdRef.current = activeLayerId;
   const layerSeq = useRef(1);
   const [bgVis, setBgVis] = useState(true);
+  const bgVisRef = useRef(bgVis);
+  bgVisRef.current = bgVis;
   // '일정' 레이어(맨 아래 고정 — 날짜 카드 DOM)도 활성 대상: 카드 선택/이동/크기는
   // 이 레이어가 활성일 때만 된다(그리기 레이어 활성 중 카드가 딸려 움직이는 혼선 제거).
   const bgActive = activeLayerId === BG_LAYER_ID;
   const bgActiveRef = useRef(bgActive);
   bgActiveRef.current = bgActive;
-  // 활성 레이어가 바뀌면 반대편 선택은 해제 — 조작 불가능한 선택 링이 남는 혼선 방지.
+  // 활성 레이어가 바뀌면 선택을 전부 해제. 그리기 레이어 A→B에서도 A의 선택 획이 남으면
+  // B가 활성인 상태로 A를 이동·삭제할 수 있어 레이어 경계가 깨진다.
   useEffect(() => {
-    if (activeLayerId === BG_LAYER_ID) setStrokeSel([]);
-    else setColSel(new Set());
+    setStrokeSel([]);
+    setColSel(new Set());
   }, [activeLayerId]);
   // undo/redo 버튼 활성 + 오른쪽 레이어 썸네일 갱신용(스토어는 ref라 리렌더를 직접 못 일으킨다).
   const [strokeVersion, setStrokeVersion] = useState(0);
@@ -259,6 +280,9 @@ export function BroadcastPanel({
   const [pickerOpen, setPickerOpen] = useState(true);
   // 날짜 컬럼 자유 배치(위치·폭). 폭 비율만큼 글자도 커진다(컬럼 fontSize %) — '크게 보여주기'.
   const [cols, setCols] = useState<Map<string, ColBox>>(() => new Map());
+  // 절대배치 카드의 실제 높이는 부모 크기에 반영되지 않는다. 실측값으로 판서판/캔버스
+  // 하단을 늘려 큰 카드의 아래까지 그릴 수 있게 한다.
+  const [colHeights, setColHeights] = useState<Map<string, number>>(() => new Map());
   // ── 선택 도구 캔버스 조작(피그마 문법): 다중 선택·그룹 이동·스냅 가이드·정렬 ──
   const [colSel, setColSel] = useState<Set<string>>(() => new Set());
   const colSelRef = useRef(colSel);
@@ -303,7 +327,7 @@ export function BroadcastPanel({
   const SNAP = 6; // px — 이 거리 안이면 가장자리/중앙선에 달라붙는다
 
   // ── 통합 히스토리 — 획/카드 배치/날짜 목록/레이어 전부 한 스택(Ctrl+Z/Y 하나로) ──
-  const histRef = useRef<{ undo: HistAction[]; redo: HistAction[] }>({ undo: [], redo: [] });
+  const histRef = useRef(createBroadcastHistory<HistAction>());
   const colsRef = useRef(cols);
   colsRef.current = cols;
   const sentRef = useRef(sentDateKeys);
@@ -311,8 +335,7 @@ export function BroadcastPanel({
   const layersRef = useRef(layers);
   layersRef.current = layers;
   const pushHist = useCallback((a: HistAction) => {
-    histRef.current.undo.push(a);
-    histRef.current.redo = [];
+    histRef.current.push(a);
     setStrokeVersion((v) => v + 1); // undo/redo 버튼 활성 갱신
   }, []);
   // sentDateKeys 변화에 배치 동기화 — 새 날짜는 기본 자리(왼쪽 위부터 한 줄), 빠진 날짜는 제거,
@@ -504,6 +527,18 @@ export function BroadcastPanel({
       maxX = Math.max(maxX, b.x + b.w);
       maxY = Math.max(maxY, b.y + h);
     }
+    if (d.strokeOrigs) {
+      for (const g of d.strokeOrigs.values()) {
+        const half = g.width / 2 + 2;
+        for (const pt of g.points) {
+          minX = Math.min(minX, pt.x - half);
+          minY = Math.min(minY, pt.y - half);
+          maxX = Math.max(maxX, pt.x + half);
+          maxY = Math.max(maxY, pt.y + half);
+        }
+      }
+    }
+    if (!Number.isFinite(minX) || !Number.isFinite(minY)) return;
     const vLines: number[] = [];
     const hLines: number[] = [];
     for (const [k, b] of cols) {
@@ -545,13 +580,10 @@ export function BroadcastPanel({
     // 카드가 확 따라잡는 이질감 제거).
     const rawDx = dx;
     const rawDy = dy;
-    for (const [k, b] of d.origs) {
-      const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
-      dx = Math.min(dx, d.maxX - 8 - (b.x + b.w));
-      dy = Math.min(dy, d.maxY - 8 - (b.y + h));
-      dx = Math.max(dx, -b.x);
-      dy = Math.max(dy, -b.y);
-    }
+    dx = Math.min(dx, d.maxX - 8 - maxX);
+    dy = Math.min(dy, d.maxY - 8 - maxY);
+    dx = Math.max(dx, -minX);
+    dy = Math.max(dy, -minY);
     d.clamp = {
       xPos: dx < rawDx,
       xNeg: dx > rawDx,
@@ -710,6 +742,7 @@ export function BroadcastPanel({
     );
     const inside = (pt: StrokePoint) =>
       pt.x >= lo.x && pt.x <= hi.x && pt.y >= lo.y && pt.y <= hi.y;
+    const selectionRect = { left: lo.x, top: lo.y, right: hi.x, bottom: hi.y };
     // 안(a)→밖(b) 세그먼트가 사각형 경계를 지나는 지점(선형 보간) — 잘린 단면이 매끈하게.
     const exitPoint = (a: StrokePoint, b: StrokePoint): StrokePoint => {
       let t = 1;
@@ -751,6 +784,14 @@ export function BroadcastPanel({
       const py = Math.min(bandH - 1, Math.max(0, Math.round((pt.y - lo.y) * scale)));
       return bandPixels.data[(py * bandW + px) * 4 + 3] > 24;
     };
+    const bandHasInk =
+      !bandPixels ||
+      (() => {
+        for (let i = 3; i < bandPixels.data.length; i += 4) {
+          if (bandPixels.data[i] > 24) return true;
+        }
+        return false;
+      })();
     const before = [...store.strokes()];
     const nextScene: Stroke[] = [];
     const picked: Stroke[] = [];
@@ -761,7 +802,9 @@ export function BroadcastPanel({
         continue;
       }
       const flags = s.points.map(inside);
-      if (!flags.some(Boolean) || !s.points.some((pt, i) => flags[i] && visibleAt(pt))) {
+      const shapeCrosses = isShapeTool(s.tool) && strokeIntersectsRect(s, selectionRect);
+      const hasVisiblePoint = s.points.some((pt, i) => flags[i] && visibleAt(pt));
+      if ((!flags.some(Boolean) && !shapeCrosses) || (!hasVisiblePoint && !(shapeCrosses && bandHasInk))) {
         nextScene.push(s); // 밴드 밖이거나, 밴드 안 구간이 전부 지워져 안 보이는 획
         continue;
       }
@@ -816,8 +859,10 @@ export function BroadcastPanel({
   // ── 선택 획 박스(그림판 선택 문법): 점선 bbox — 끌면 이동, 모서리 손잡이로 확대/축소 ──
   const strokeSelBox = useMemo(() => {
     if (tool !== "select" || strokeSel.length === 0) return null;
+    const selectedLayer = layers.find((l) => l.id === activeLayerId);
+    if (!selectedLayer?.vis || selectedLayer.lock) return null;
     const live = new Set(store.strokes());
-    const sel = strokeSel.filter((s) => live.has(s)); // 레이어 삭제 등으로 사라진 획 제외
+    const sel = strokeSel.filter((s) => live.has(s) && s.layer === activeLayerId);
     if (sel.length === 0) return null;
     let minX = Infinity;
     let minY = Infinity;
@@ -835,7 +880,7 @@ export function BroadcastPanel({
     return { x: minX, y: minY, w: maxX - minX, h: maxY - minY, sel };
     // strokeVersion: 이동/확대/undo가 획 기하를 바꿀 때 박스를 따라오게 하는 신호.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tool, strokeSel, store, strokeVersion]);
+  }, [tool, strokeSel, store, strokeVersion, layers, activeLayerId]);
   // 박스 빈 면을 잡으면 = 선택된 카드 grab과 동일한 그룹 이동 제스처(획 + 선택 카드).
   function onStrokeBoxPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (tool !== "select" || e.button !== 0) return;
@@ -870,6 +915,8 @@ export function BroadcastPanel({
     anchor: { x: number; y: number };
     startW: number;
     startH: number;
+    maxX: number;
+    maxY: number;
     origs: Map<Stroke, StrokeGeom>;
   } | null>(null);
   function onStrokeScaleDown(e: React.PointerEvent<HTMLElement>) {
@@ -882,6 +929,8 @@ export function BroadcastPanel({
       anchor: { x: strokeSelBox.x, y: strokeSelBox.y },
       startW: Math.max(8, strokeSelBox.w),
       startH: Math.max(8, strokeSelBox.h),
+      maxX: (boardInnerRef.current?.offsetWidth ?? 4000) + 480,
+      maxY: (boardInnerRef.current?.offsetHeight ?? 3000) + 480,
       origs: snapshotStrokes(strokeSelBox.sel)
     };
   }
@@ -890,10 +939,15 @@ export function BroadcastPanel({
     if (!sc || e.pointerId !== sc.pointerId) return;
     const p = innerPointC(e.clientX, e.clientY);
     if (!p) return;
-    const s = Math.max(
-      0.2,
-      Math.min(8, Math.max((p.x - sc.anchor.x) / sc.startW, (p.y - sc.anchor.y) / sc.startH))
+    const requested = Math.max(
+      (p.x - sc.anchor.x) / sc.startW,
+      (p.y - sc.anchor.y) / sc.startH
     );
+    const maxByBoard = Math.min(
+      (sc.maxX - 8 - sc.anchor.x) / sc.startW,
+      (sc.maxY - 8 - sc.anchor.y) / sc.startH
+    );
+    const s = Math.max(0.2, Math.min(8, maxByBoard, requested));
     for (const [st, g] of sc.origs) {
       st.points = g.points.map((pt) => ({
         x: sc.anchor.x + (pt.x - sc.anchor.x) * s,
@@ -1075,7 +1129,7 @@ export function BroadcastPanel({
       }
     }
     store.push(live);
-    pushHist({ t: "stroke" }); // 통합 히스토리에도 순서 기록(Ctrl+Z 하나로 전부)
+    pushHist({ t: "stroke", stroke: live }); // 중앙 기록이 획 자체도 소유(Ctrl+Z 하나로 전부)
   }, [canvasOf, clearCanvas, scaledCtx, store, pushHist]);
 
   // 리사이즈 → 크기가 실제로 변했을 때만 backing 재할당 + 명령 재생(연속 리사이즈 churn 방지).
@@ -1087,7 +1141,13 @@ export function BroadcastPanel({
       fitRaf = null;
       const cssW = inner.clientWidth;
       const cssH = inner.clientHeight;
-      const scale = backingScale(cssW, cssH, window.devicePixelRatio || 1);
+      // 동적 레이어 수 + 라이브 캔버스가 기존 3장 총예산을 나눠 쓴다.
+      const scale = backingScale(
+        cssW,
+        cssH,
+        window.devicePixelRatio || 1,
+        Math.max(1, layers.length + 1)
+      );
       const W = Math.round(cssW * scale);
       const H = Math.round(cssH * scale);
       // 크기가 다른 캔버스만 재할당(새로 추가된 레이어 캔버스 포함 — width 0으로 마운트됨).
@@ -1253,11 +1313,17 @@ export function BroadcastPanel({
   }
   const doUndo = useCallback(() => {
     finishLiveStroke(); // 그리던 획 먼저 완성 — replay가 live를 날리는 불일치 방지(G3b-r)
-    const a = histRef.current.undo.pop();
+    const a = histRef.current.undo();
     if (!a) return;
-    histRef.current.redo.push(a);
     if (a.t === "stroke") {
-      store.undo();
+      const before = store.strokes();
+      const index = before.lastIndexOf(a.stroke);
+      // 통합 히스토리와 장면이 예상 밖으로 어긋나면 액션 이동도 되돌려 fail-closed.
+      if (index < 0) {
+        histRef.current.redo();
+        return;
+      }
+      store.setStrokes([...before.slice(0, index), ...before.slice(index + 1)]);
       replayAll();
     } else if (a.t === "cols") {
       setCols(new Map(a.before));
@@ -1292,11 +1358,14 @@ export function BroadcastPanel({
   }, [store, replayAll, finishLiveStroke, onRestoreSent, activeLayerId]);
   const doRedo = useCallback(() => {
     finishLiveStroke();
-    const a = histRef.current.redo.pop();
+    const a = histRef.current.redo();
     if (!a) return;
-    histRef.current.undo.push(a);
     if (a.t === "stroke") {
-      store.redo();
+      if (store.strokes().includes(a.stroke)) {
+        histRef.current.undo();
+        return;
+      }
+      store.setStrokes([...store.strokes(), a.stroke]);
       replayAll();
     } else if (a.t === "cols") {
       setCols(new Map(a.after));
@@ -1340,7 +1409,7 @@ export function BroadcastPanel({
     setClearArmed(false);
     store.clearAll();
     // 전체 지우기는 획을 전부 소거 — 획을 참조하는 히스토리도 함께 무효라 통째로 비운다.
-    histRef.current = { undo: [], redo: [] };
+    histRef.current.clear();
     hapticTick();
     setStrokeVersion((v) => v + 1);
     replayAll();
@@ -1348,6 +1417,7 @@ export function BroadcastPanel({
 
   // ── 레이어 추가/삭제(그림판 문법: 자유롭게) ──
   function addLayer() {
+    if (layersRef.current.length >= MAX_DRAWING_LAYERS) return;
     hapticTick();
     layerSeq.current += 1;
     const id = `layer-${layerSeq.current}`;
@@ -1367,6 +1437,24 @@ export function BroadcastPanel({
     if (activeLayerId === id) setActiveLayerId(after[0]?.id ?? "");
     pushHist({ t: "layers", before, after });
     hapticTick();
+  }
+
+  function toggleLayerVisibility(id: string) {
+    const current = layersRef.current.find((l) => l.id === id);
+    if (!current) return;
+    const willHide = current.vis;
+    if (id === activeLayerIdRef.current && willHide) setStrokeSel([]);
+    hapticTick();
+    setLayers((ls) => ls.map((x) => (x.id === id ? { ...x, vis: !x.vis } : x)));
+  }
+
+  function toggleLayerLock(id: string) {
+    const current = layersRef.current.find((l) => l.id === id);
+    if (!current) return;
+    const willLock = !current.lock;
+    if (id === activeLayerIdRef.current && willLock) setStrokeSel([]);
+    hapticTick();
+    setLayers((ls) => ls.map((x) => (x.id === id ? { ...x, lock: !x.lock } : x)));
   }
 
   const eventsByDate = useMemo(
@@ -1444,8 +1532,14 @@ export function BroadcastPanel({
       ) {
         e.preventDefault();
         // 선택된 획 삭제 — 장면에서 제거(scene 스냅샷으로 undo 가능).
-        if (strokeSelRef.current.length > 0) {
-          const dead = new Set(strokeSelRef.current);
+        const selectedLayer = layersRef.current.find(
+          (l) => l.id === activeLayerIdRef.current && l.vis && !l.lock
+        );
+        const editableStrokes = selectedLayer
+          ? strokeSelRef.current.filter((s) => s.layer === selectedLayer.id)
+          : [];
+        if (editableStrokes.length > 0) {
+          const dead = new Set(editableStrokes);
           const beforeScene = [...store.strokes()];
           const afterScene = beforeScene.filter((s) => !dead.has(s));
           if (afterScene.length !== beforeScene.length) {
@@ -1456,7 +1550,7 @@ export function BroadcastPanel({
           }
           setStrokeSel([]);
         }
-        if (colSelRef.current.size > 0) {
+        if (colSelRef.current.size > 0 && bgActiveRef.current && bgVisRef.current) {
           const before = [...sentRef.current];
           const after = before.filter((k) => !colSelRef.current.has(k));
           pushHist({ t: "sent", before, after, colsBefore: new Map(colsRef.current) });
@@ -1469,6 +1563,8 @@ export function BroadcastPanel({
       // 화살표 = 선택 카드 미세 이동(1px, Shift=10px) — 피그마 문법.
       if (
         colSelRef.current.size > 0 &&
+        bgActiveRef.current &&
+        bgVisRef.current &&
         (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown")
       ) {
         e.preventDefault();
@@ -1488,7 +1584,7 @@ export function BroadcastPanel({
       // Ctrl+A = 카드 전체 선택 — '일정' 레이어가 활성일 때만(레이어 규율).
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "a") {
         e.preventDefault();
-        if (bgActiveRef.current) setColSel(new Set(sentRef.current));
+        if (bgActiveRef.current && bgVisRef.current) setColSel(new Set(sentRef.current));
         return;
       }
       // 판서 자체 undo/redo — 편집실 Ctrl+Z(삭제복구)는 broadcastOpen 가드로 이미 차단됨.
@@ -1538,10 +1634,58 @@ export function BroadcastPanel({
     };
   }, []);
 
-  const sentDays: BroadcastPanelDay[] = sentDateKeys.map((dateKey) => ({
-    dateKey,
-    events: eventsByDate.get(dateKey) ?? []
-  }));
+  const sentDays: BroadcastPanelDay[] = useMemo(
+    () =>
+      sentDateKeys.map((dateKey) => ({
+        dateKey,
+        events: eventsByDate.get(dateKey) ?? []
+      })),
+    [sentDateKeys, eventsByDate]
+  );
+
+  useLayoutEffect(() => {
+    const measure = () => {
+      const next = new Map<string, number>();
+      for (const key of sentDateKeys) {
+        const h = colElsRef.current.get(key)?.offsetHeight;
+        if (h && h > 0) next.set(key, h);
+      }
+      setColHeights((prev) => {
+        if (
+          prev.size === next.size &&
+          [...next].every(([key, height]) => prev.get(key) === height)
+        ) {
+          return prev;
+        }
+        return next;
+      });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    for (const el of colElsRef.current.values()) ro.observe(el);
+    return () => ro.disconnect();
+  }, [sentDateKeys, eventsByDate]);
+
+  const boardExtent = useMemo(() => {
+    void strokeVersion; // ref 기반 stroke 기하 변경을 이 계산에 연결하는 명시적 버전 신호
+    let maxX = 0;
+    let maxY = 280;
+    for (const [key, box] of cols) {
+      maxX = Math.max(maxX, box.x + box.w + 24);
+      maxY = Math.max(maxY, box.y + (colHeights.get(key) ?? 320) + 24);
+    }
+    const layerIds = new Set(layers.map((l) => l.id));
+    for (const stroke of store.strokes()) {
+      // 지우개는 보이는 콘텐츠가 아니므로 빈 스크롤 영역을 만들지 않는다.
+      if (stroke.tool === "eraser" || !layerIds.has(stroke.layer)) continue;
+      const half = stroke.width / 2 + 4;
+      for (const point of stroke.points) {
+        maxX = Math.max(maxX, point.x + half + 24);
+        maxY = Math.max(maxY, point.y + half + 24);
+      }
+    }
+    return { minWidth: maxX, minHeight: maxY };
+  }, [cols, colHeights, layers, store, strokeVersion]);
 
   return (
     <div className="broadcast-panel" role="dialog" aria-modal="true" aria-label="일정 그림판" ref={rootRef}>
@@ -1711,7 +1855,7 @@ export function BroadcastPanel({
             <button
               aria-label="실행 취소 (Ctrl+Z)"
               className="bp-tool"
-              disabled={histRef.current.undo.length === 0}
+              disabled={!histRef.current.canUndo()}
               title="실행 취소 — 획·카드 배치·날짜·레이어 전부 (Ctrl+Z)"
               type="button"
               onClick={doUndo}
@@ -1721,7 +1865,7 @@ export function BroadcastPanel({
             <button
               aria-label="다시 실행 (Ctrl+Shift+Z)"
               className="bp-tool"
-              disabled={histRef.current.redo.length === 0}
+              disabled={!histRef.current.canRedo()}
               title="다시 실행 (Ctrl+Shift+Z)"
               type="button"
               onClick={doRedo}
@@ -1923,8 +2067,8 @@ export function BroadcastPanel({
           // inline min은 CSS의 min-width/height:100%를 '덮어쓴다' — max(100%, …)로 합성해야
           // 컬럼이 적을 때도 종이가 보드 전체를 채운다(안 그러면 왼쪽 위 조각만 흰색).
           style={{
-            minWidth: `max(100%, ${Math.max(0, ...[...cols.values()].map((c) => c.x + c.w + 24))}px)`,
-            minHeight: `max(100%, ${Math.max(280, ...[...cols.values()].map((c) => c.y + 320))}px)`
+            minWidth: `max(100%, ${boardExtent.minWidth}px)`,
+            minHeight: `max(100%, ${boardExtent.minHeight}px)`
           }}
         >
           {/* 배경 레이어 = 날짜 카드 DOM(캔버스 아님 — 메모리 0). 표시 토글은 숨김만. */}
@@ -2092,82 +2236,78 @@ export function BroadcastPanel({
         </div>
       </section>
 
-      {/* 오른쪽 레이어 패널(실제 그림판 문법) — 위가 맨 위 레이어. ➕로 자유 추가, ✕로 삭제
-          (2단계 확인 — 획까지 지워지고 되돌릴 수 없음). 배경(날짜 카드)은 맨 아래 고정 기본.
-          카드를 클릭하면 그 레이어가 '활성'(펜/형광펜/지우개가 작용하는 곳)이 된다. */}
+      {/* 오른쪽 레이어 패널(실제 그림판 문법) — 위가 맨 위 레이어. ➕로 추가, ✕로 삭제.
+          배경(날짜 카드)은 맨 아래 고정 기본. 레이어 선택 버튼과 액션 버튼은 형제 구조로
+          분리한다(중첩 interactive control 금지). */}
       <aside className="bp-layers-panel" aria-label="레이어">
-        <button aria-label="레이어 추가" className="bp-layer-add" type="button" onClick={addLayer}>
-          ＋ 레이어 추가
+        <button
+          aria-label={`레이어 추가 (${layers.length}/${MAX_DRAWING_LAYERS})`}
+          className="bp-layer-add"
+          disabled={layers.length >= MAX_DRAWING_LAYERS}
+          title={
+            layers.length >= MAX_DRAWING_LAYERS
+              ? `레이어는 최대 ${MAX_DRAWING_LAYERS}개까지 만들 수 있어요`
+              : "레이어 추가"
+          }
+          type="button"
+          onClick={addLayer}
+        >
+          ＋ 레이어 추가 ({layers.length}/{MAX_DRAWING_LAYERS})
         </button>
         {layers.map((l) => (
           <div
             className={`bp-layer-item${l.vis ? "" : " off"}${l.id === activeLayerId ? " active" : ""}`}
             key={l.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => setActiveLayerId(l.id)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setActiveLayerId(l.id);
-              }
-            }}
           >
-            <div className="bp-layer-thumb" aria-hidden="true">
-              <canvas
-                height={72}
-                width={128}
-                ref={(el) => {
-                  const m = thumbCanvases.current;
-                  if (el) m.set(l.id, el);
-                  else m.delete(l.id);
-                }}
-              />
-            </div>
-            <div className="bp-layer-meta">
+            <button
+              aria-pressed={l.id === activeLayerId}
+              className="bp-layer-select"
+              type="button"
+              onClick={() => setActiveLayerId(l.id)}
+            >
+              <span className="bp-layer-thumb" aria-hidden="true">
+                <canvas
+                  height={72}
+                  width={128}
+                  ref={(el) => {
+                    const m = thumbCanvases.current;
+                    if (el) m.set(l.id, el);
+                    else m.delete(l.id);
+                  }}
+                />
+              </span>
               <em>{l.name}</em>
-              <div className="bp-layer-actions">
-                <button
-                  aria-label={`${l.name} 표시`}
-                  aria-pressed={l.vis}
-                  className="bp-layer-btn"
-                  title={l.vis ? "숨기기" : "보이기"}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    hapticTick();
-                    setLayers((ls) => ls.map((x) => (x.id === l.id ? { ...x, vis: !x.vis } : x)));
-                  }}
-                >
-                  {l.vis ? <Eye size={14} /> : <EyeOff size={14} />}
-                </button>
-                <button
-                  aria-label={`${l.name} 잠금`}
-                  aria-pressed={l.lock}
-                  className="bp-layer-btn"
-                  title={l.lock ? "잠금 풀기" : "잠그기"}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    hapticTick();
-                    setLayers((ls) => ls.map((x) => (x.id === l.id ? { ...x, lock: !x.lock } : x)));
-                  }}
-                >
-                  {l.lock ? <Lock size={14} /> : <LockOpen size={14} />}
-                </button>
-                <button
-                  aria-label={`${l.name} 삭제`}
-                  className="bp-layer-btn danger"
-                  title="레이어 삭제 — 이 레이어의 획도 함께 지워져요"
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteLayer(l.id);
-                  }}
-                >
-                  <X size={14} />
-                </button>
-              </div>
+            </button>
+            <div className="bp-layer-actions">
+              <button
+                aria-label={`${l.name} 표시`}
+                aria-pressed={l.vis}
+                className="bp-layer-btn"
+                title={l.vis ? "숨기기" : "보이기"}
+                type="button"
+                onClick={() => toggleLayerVisibility(l.id)}
+              >
+                {l.vis ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
+              </button>
+              <button
+                aria-label={`${l.name} 잠금`}
+                aria-pressed={l.lock}
+                className="bp-layer-btn"
+                title={l.lock ? "잠금 풀기" : "잠그기"}
+                type="button"
+                onClick={() => toggleLayerLock(l.id)}
+              >
+                {l.lock ? <Lock aria-hidden="true" size={14} /> : <LockOpen aria-hidden="true" size={14} />}
+              </button>
+              <button
+                aria-label={`${l.name} 삭제`}
+                className="bp-layer-btn danger"
+                title="레이어 삭제 — Ctrl+Z로 복원할 수 있어요"
+                type="button"
+                onClick={() => deleteLayer(l.id)}
+              >
+                <X aria-hidden="true" size={14} />
+              </button>
             </div>
           </div>
         ))}
@@ -2175,37 +2315,36 @@ export function BroadcastPanel({
             선택/이동/크기 조절이 가능(그리기 레이어 활성 중엔 카드가 안 잡힌다). */}
         <div
           className={`bp-layer-item bp-layer-fixed${bgVis ? "" : " off"}${bgActive ? " active" : ""}`}
-          role="button"
-          tabIndex={0}
-          onClick={() => setActiveLayerId(BG_LAYER_ID)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              setActiveLayerId(BG_LAYER_ID);
-            }
-          }}
         >
-          <div className="bp-layer-thumb" aria-hidden="true">
-            <span className="bp-layer-thumb-bg">📅</span>
-          </div>
-          <div className="bp-layer-meta">
+          <button
+            aria-pressed={bgActive}
+            className="bp-layer-select"
+            type="button"
+            onClick={() => {
+              setActiveLayerId(BG_LAYER_ID);
+              setTool("select"); // 일정 레이어를 고르면 카드가 바로 잡히게
+            }}
+          >
+            <span className="bp-layer-thumb" aria-hidden="true">
+              <span className="bp-layer-thumb-bg">📅</span>
+            </span>
             <em>일정</em>
-            <div className="bp-layer-actions">
-              <button
-                aria-label="일정 카드 표시"
-                aria-pressed={bgVis}
-                className="bp-layer-btn"
-                title={bgVis ? "숨기기" : "보이기"}
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation(); // 표시 토글이 활성 전환까지 시키지 않게
-                  hapticTick();
-                  setBgVis((v) => !v);
-                }}
-              >
-                {bgVis ? <Eye size={14} /> : <EyeOff size={14} />}
-              </button>
-            </div>
+          </button>
+          <div className="bp-layer-actions">
+            <button
+              aria-label="일정 카드 표시"
+              aria-pressed={bgVis}
+              className="bp-layer-btn"
+              title={bgVis ? "숨기기" : "보이기"}
+              type="button"
+              onClick={() => {
+                hapticTick();
+                if (bgVis) setColSel(new Set());
+                setBgVis((v) => !v);
+              }}
+            >
+              {bgVis ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
+            </button>
           </div>
         </div>
       </aside>

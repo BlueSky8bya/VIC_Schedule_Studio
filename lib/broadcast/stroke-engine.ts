@@ -4,8 +4,8 @@
 // 설계(G0 D4·D5 합의):
 // - ImageData 스냅샷 금지 — stroke '명령'(좌표 목록)만 저장하고, 리사이즈/undo 때마다 재생한다.
 //   1920×1080·DPR2·다중 레이어에서 스냅샷 방식은 메모리가 급증한다.
-// - 레이어 = 고정 2캔버스(형광펜 hl·펜 pen) + 배경(날짜 카드 DOM — 캔버스 아님, 메모리 0).
-//   지우개는 두 캔버스 모두에 destination-out으로 적용된다(레이어 구분 없이 '지운다'가 직관).
+// - 레이어 = 동적 그리기 캔버스 + 배경(날짜 카드 DOM — 캔버스 아님, 메모리 0).
+//   지우개는 활성 레이어 한 장에 destination-out으로 적용된다(그림판 레이어 문법).
 // - undo는 '이력'만 상한(200) — 상한을 넘긴 오래된 stroke는 화면(장면)에 남되 더 이상 undo
 //   대상이 아니게 된다(G0-rr: 화면에서 삭제 금지).
 // - stroke point 단순화: 마지막 점에서 MIN_POINT_DIST(px) 미만 이동은 버린다(장시간 판서 메모리).
@@ -49,10 +49,12 @@ export const MIN_POINT_DIST = 2; // CSS px — 이보다 촘촘한 점은 버린
 /** DPR 상한(G0-rr) — 고해상도 화면에서 backing store 폭주 방지. */
 export const DPR_CAP = 2;
 /**
- * 캔버스 '1장당' backing store 픽셀 상한(≈4K). 판서는 캔버스 3장(형광펜·펜 committed +
- * 라이브 프리뷰 1장)을 쓰므로 전체 예산 = 이 값의 최대 3배 — 이것이 메모리 계약이다(G3b).
+ * 캔버스 '1장당' backing store 픽셀 상한(≈4K). 기본 단일 캔버스 계산의 상한이며,
+ * 동적 레이어 UI는 backingScale의 surfaceCount를 넘겨 아래 전체 예산을 나눠 쓴다.
  */
 export const MAX_BACKING_PIXELS = 4096 * 2304;
+/** 동적 레이어 전체 backing store 예산 — 기존 고정 3캔버스 설계와 같은 총량. */
+export const MAX_TOTAL_BACKING_PIXELS = MAX_BACKING_PIXELS * 3;
 /** scale 하한 — 초대형 보드에서도 렌더가 완전히 뭉개지지 않는 최소 해상도.
  *  계약(G3b-r): 픽셀 상한은 이 하한까지만 유효한 **soft cap** — CSS 면적이
  *  MAX_BACKING_PIXELS/0.25² ≈ 1.5억 px²(예: 40만×380px 보드)를 넘는 비현실적 크기에선
@@ -62,11 +64,19 @@ export const MIN_BACKING_SCALE = 0.25;
 /** css 크기와 devicePixelRatio로 실제 backing scale을 정한다(DPR cap + 총 픽셀 cap).
  *  CSS 면적 자체가 상한을 넘으면 scale이 1 미만으로도 내려간다(G3b: 5K/8K 보드에서
  *  1로 클램프하면 상한이 깨졌다) — 하한은 MIN_BACKING_SCALE. */
-export function backingScale(cssW: number, cssH: number, dpr: number): number {
+export function backingScale(
+  cssW: number,
+  cssH: number,
+  dpr: number,
+  surfaceCount: number = 1
+): number {
   const capped = Math.max(MIN_BACKING_SCALE, Math.min(dpr, DPR_CAP));
   const area = cssW * cssH;
   if (area <= 0) return capped;
-  const maxScale = Math.sqrt(MAX_BACKING_PIXELS / area);
+  const surfaces = Math.max(1, Math.floor(surfaceCount));
+  const pixelBudget =
+    surfaces === 1 ? MAX_BACKING_PIXELS : MAX_TOTAL_BACKING_PIXELS / surfaces;
+  const maxScale = Math.sqrt(pixelBudget / area);
   return Math.max(MIN_BACKING_SCALE, Math.min(capped, maxScale));
 }
 
@@ -74,8 +84,89 @@ export function backingScale(cssW: number, cssH: number, dpr: number): number {
 export function appendPoint(points: StrokePoint[], p: StrokePoint): boolean {
   const last = points[points.length - 1];
   if (last && Math.hypot(p.x - last.x, p.y - last.y) < MIN_POINT_DIST) return false;
-  points.push({ x: p.x, y: p.y });
+  points.push({ ...p });
   return true;
+}
+
+export type StrokeRect = {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+};
+
+function pointInRect(p: StrokePoint, rect: StrokeRect): boolean {
+  return p.x >= rect.left && p.x <= rect.right && p.y >= rect.top && p.y <= rect.bottom;
+}
+
+/** 선분이 사각 선택 영역과 닿는지. 양 끝점이 모두 밖인 관통선도 잡는다. */
+function segmentIntersectsRect(a: StrokePoint, b: StrokePoint, rect: StrokeRect): boolean {
+  if (pointInRect(a, rect) || pointInRect(b, rect)) return true;
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  let t0 = 0;
+  let t1 = 1;
+  for (const [p, q] of [
+    [-dx, a.x - rect.left],
+    [dx, rect.right - a.x],
+    [-dy, a.y - rect.top],
+    [dy, rect.bottom - a.y]
+  ] as const) {
+    if (p === 0) {
+      if (q < 0) return false;
+      continue;
+    }
+    const t = q / p;
+    if (p < 0) t0 = Math.max(t0, t);
+    else t1 = Math.min(t1, t);
+    if (t0 > t1) return false;
+  }
+  return true;
+}
+
+/**
+ * stroke의 실제 선이 선택 사각형과 닿는지. 도형은 렌더 기하와 같은 윤곽을 검사해,
+ * 끝점·모서리가 모두 밖이어도 선택 영역을 관통하면 잡힌다.
+ */
+export function strokeIntersectsRect(stroke: Stroke, rect: StrokeRect): boolean {
+  const pts = stroke.points;
+  if (pts.length === 0) return false;
+  if (!isShapeTool(stroke.tool)) {
+    if (pts.some((p) => pointInRect(p, rect))) return true;
+    for (let i = 1; i < pts.length; i += 1) {
+      if (segmentIntersectsRect(pts[i - 1], pts[i], rect)) return true;
+    }
+    return false;
+  }
+
+  const a = pts[0];
+  const b = pts[pts.length - 1] ?? a;
+  if (stroke.tool === "line" || stroke.tool === "arrow") {
+    return segmentIntersectsRect(a, b, rect);
+  }
+  if (stroke.tool === "rect") {
+    const corners: StrokePoint[] = [
+      { x: a.x, y: a.y },
+      { x: b.x, y: a.y },
+      { x: b.x, y: b.y },
+      { x: a.x, y: b.y },
+      { x: a.x, y: a.y }
+    ];
+    return corners.slice(1).some((p, i) => segmentIntersectsRect(corners[i], p, rect));
+  }
+
+  const cx = (a.x + b.x) / 2;
+  const cy = (a.y + b.y) / 2;
+  const rx = Math.abs(b.x - a.x) / 2;
+  const ry = Math.abs(b.y - a.y) / 2;
+  let prev: StrokePoint = { x: cx + rx, y: cy };
+  for (let i = 1; i <= 64; i += 1) {
+    const t = (i / 64) * Math.PI * 2;
+    const cur = { x: cx + Math.cos(t) * rx, y: cy + Math.sin(t) * ry };
+    if (segmentIntersectsRect(prev, cur, rect)) return true;
+    prev = cur;
+  }
+  return false;
 }
 
 export type StrokeStore = {
@@ -86,6 +177,8 @@ export type StrokeStore = {
   redo: () => boolean;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  /** 카드 이동 등 다른 새 액션이 생겨 redo 미래가 무효가 될 때 획 redo도 함께 폐기. */
+  discardRedo: () => void;
   /** 전체 지우기 — 명령이 아니라 상태 초기화(undo 불가). 방송 중 '새 판' 용도. */
   clearAll: () => void;
   /** 레이어 삭제 — 그 레이어의 획을 장면·redo에서 모두 제거(undo 불가, 그림판 문법). */
@@ -126,6 +219,9 @@ export function createStrokeStore(undoLimit: number = UNDO_LIMIT): StrokeStore {
     },
     canUndo: () => strokes.length > undoFloor,
     canRedo: () => redoStack.length > 0,
+    discardRedo() {
+      redoStack = [];
+    },
     clearAll() {
       strokes = [];
       redoStack = [];

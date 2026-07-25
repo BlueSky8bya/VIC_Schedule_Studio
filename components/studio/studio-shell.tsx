@@ -5384,6 +5384,7 @@ export function StudioShell({
           <span><kbd>우클릭 긋기</kbd> 끊기</span>
           <span><kbd>드래그</kbd> 범위 선택</span>
           <span><kbd>Ctrl</kbd>+클릭 다중 선택</span>
+          <span><kbd>Ctrl</kbd>+<kbd>휠</kbd> 달력 확대</span>
           <span><kbd>←</kbd><kbd>→</kbd> 이동</span>
           <span><kbd>Esc</kbd> 닫기</span>
         </div>

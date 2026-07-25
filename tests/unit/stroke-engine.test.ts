@@ -7,8 +7,11 @@ import {
   DPR_CAP,
   drawStroke,
   MAX_BACKING_PIXELS,
+  MAX_TOTAL_BACKING_PIXELS,
+  strokeIntersectsRect,
   strokeAppliesTo,
-  type Stroke
+  type Stroke,
+  type StrokePoint
 } from "@/lib/broadcast/stroke-engine";
 
 function mkStroke(n: number, layer = "layer-1"): Stroke {
@@ -38,6 +41,15 @@ describe("stroke store — push/undo/redo", () => {
     s.push(mkStroke(1));
     s.undo();
     s.push(mkStroke(2));
+    expect(s.canRedo()).toBe(false);
+  });
+
+  it("다른 종류의 새 편집이 생기면 discardRedo로 획 redo 미래를 폐기한다", () => {
+    const s = createStrokeStore();
+    s.push(mkStroke(1));
+    s.undo();
+    expect(s.canRedo()).toBe(true);
+    s.discardRedo();
     expect(s.canRedo()).toBe(false);
   });
 
@@ -105,11 +117,12 @@ describe("stroke store — push/undo/redo", () => {
 
 describe("point 단순화", () => {
   it("마지막 점에서 2px 미만 이동은 버린다", () => {
-    const pts = [{ x: 0, y: 0 }];
+    const pts: StrokePoint[] = [{ x: 0, y: 0 }];
     expect(appendPoint(pts, { x: 1, y: 0.5 })).toBe(false);
     expect(pts).toHaveLength(1);
-    expect(appendPoint(pts, { x: 3, y: 0 })).toBe(true);
+    expect(appendPoint(pts, { x: 3, y: 0, p: 0.42 })).toBe(true);
     expect(pts).toHaveLength(2);
+    expect(pts[1].p).toBe(0.42);
   });
 });
 
@@ -137,6 +150,58 @@ describe("backing scale — DPR cap + 총 픽셀 cap", () => {
       expect(scale).toBeLessThan(1);
       expect(w * scale * (h * scale)).toBeLessThanOrEqual(MAX_BACKING_PIXELS * 1.001);
     }
+  });
+
+  it("동적 레이어는 전체 캔버스 픽셀 예산을 나눠 쓴다", () => {
+    const surfaces = 7; // 그리기 레이어 6 + 라이브 1
+    const scale = backingScale(1920, 1080, 2, surfaces);
+    const total = 1920 * scale * (1080 * scale) * surfaces;
+    expect(total).toBeLessThanOrEqual(MAX_TOTAL_BACKING_PIXELS * 1.001);
+    expect(scale).toBeGreaterThanOrEqual(0.25);
+  });
+});
+
+describe("선택 사각형 교차", () => {
+  const rect = { left: 40, top: 40, right: 60, bottom: 60 };
+
+  it("양 끝점이 밖이어도 직선이 선택 영역을 관통하면 잡힌다", () => {
+    expect(
+      strokeIntersectsRect(
+        {
+          tool: "line",
+          layer: "layer-1",
+          color: "#111",
+          width: 3,
+          points: [
+            { x: 0, y: 50 },
+            { x: 100, y: 50 }
+          ]
+        },
+        rect
+      )
+    ).toBe(true);
+  });
+
+  it("사각형 변·원 윤곽 교차를 잡고 완전히 떨어진 도형은 제외한다", () => {
+    const base = { layer: "layer-1", color: "#111", width: 3 } as const;
+    expect(
+      strokeIntersectsRect(
+        { ...base, tool: "rect", points: [{ x: 0, y: 0 }, { x: 50, y: 100 }] },
+        rect
+      )
+    ).toBe(true);
+    expect(
+      strokeIntersectsRect(
+        { ...base, tool: "ellipse", points: [{ x: 20, y: 40 }, { x: 80, y: 60 }] },
+        rect
+      )
+    ).toBe(true);
+    expect(
+      strokeIntersectsRect(
+        { ...base, tool: "rect", points: [{ x: 0, y: 0 }, { x: 20, y: 20 }] },
+        rect
+      )
+    ).toBe(false);
   });
 });
 
