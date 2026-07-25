@@ -113,7 +113,9 @@ type HistAction =
       t: "xform";
       cols: { before: Map<string, ColBox>; after: Map<string, ColBox> } | null;
       strokes: { targets: Stroke[]; before: StrokeGeom[]; after: StrokeGeom[] } | null;
-    };
+    }
+  // 부분 선택이 획을 분할해 장면 배열 구조가 바뀔 때 — 전/후 장면 스냅샷(얕은 배열 복사).
+  | { t: "scene"; before: Stroke[]; after: Stroke[] };
 
 // 판서판 위 날짜 컬럼의 자유 배치 상태(그림판답게 끌어서 이동·크기 조절 — 선택 도구에서만).
 type ColBox = { x: number; y: number; w: number };
@@ -597,6 +599,8 @@ export function BroadcastPanel({
   const marqueeRef = useRef<{
     x1: number;
     y1: number;
+    x2: number; // 마지막(클램프된) 끝점 — 놓을 때 부분 선택 사각형 계산용
+    y2: number;
     pointerId: number;
     maxX: number; // 시작 시점 캔버스 크기 — 밴드가 이 밖으로 못 나가게(무한 확장 루프 차단)
     maxY: number;
@@ -619,6 +623,8 @@ export function BroadcastPanel({
       x: Math.min(Math.max(0, raw.x), m.maxX),
       y: Math.min(Math.max(0, raw.y), m.maxY)
     };
+    m.x2 = p.x;
+    m.y2 = p.y;
     setMarquee({ x1: m.x1, y1: m.y1, x2: p.x, y2: p.y });
     // 라이브 선택: 밴드와 겹치는 카드 전부.
     const lo = { x: Math.min(m.x1, p.x), y: Math.min(m.y1, p.y) };
@@ -629,19 +635,7 @@ export function BroadcastPanel({
       if (b.x < hi.x && b.x + b.w > lo.x && b.y < hi.y && b.y + h > lo.y) next.add(k);
     }
     setColSel(next);
-    // 획(필기)도 라이브 선택 — 보이는·안 잠긴 레이어의 획만, 점 하나라도 밴드 안이면.
-    const layerOk = new Map(layersRef.current.map((l) => [l.id, l.vis && !l.lock]));
-    const hit: Stroke[] = [];
-    for (const s of store.strokes()) {
-      if (s.tool === "eraser" || !layerOk.get(s.layer)) continue;
-      for (const pt of s.points) {
-        if (pt.x >= lo.x && pt.x <= hi.x && pt.y >= lo.y && pt.y <= hi.y) {
-          hit.push(s);
-          break;
-        }
-      }
-    }
-    setStrokeSel(hit);
+    // 획은 라이브로 선택하지 않는다 — 놓는 순간 '밴드에 걸친 구간만' 잘라 선택(부분 선택).
   }
   function onBoardPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (tool !== "select" || e.button !== 0) return;
@@ -655,6 +649,8 @@ export function BroadcastPanel({
     marqueeRef.current = {
       x1: p.x,
       y1: p.y,
+      x2: p.x,
+      y2: p.y,
       pointerId: e.pointerId,
       maxX: inner?.offsetWidth ?? 0,
       maxY: inner?.offsetHeight ?? 0
@@ -678,7 +674,95 @@ export function BroadcastPanel({
     if (p && Math.hypot(p.x - m.x1, p.y - m.y1) < 3) {
       setColSel(new Set());
       setStrokeSel([]);
+      return;
     }
+    // 놓는 순간 부분 선택: 밴드에 '걸친 구간만' 잘라 선택한다(획 통째 X — 그림판 영역 선택).
+    splitSelectStrokes(
+      { x: Math.min(m.x1, m.x2), y: Math.min(m.y1, m.y2) },
+      { x: Math.max(m.x1, m.x2), y: Math.max(m.y1, m.y2) }
+    );
+  }
+
+  // ── 부분 선택(그림판 영역 선택 의미론): 밴드에 걸친 획을 경계에서 '분할'하고 안쪽
+  // 조각만 선택한다. 완전히 안이면 통째, 도형은 부분 개념이 없어 걸치면 통째. ──
+  function splitSelectStrokes(lo: { x: number; y: number }, hi: { x: number; y: number }) {
+    const layerOk = new Map(layersRef.current.map((l) => [l.id, l.vis && !l.lock]));
+    const inside = (pt: StrokePoint) =>
+      pt.x >= lo.x && pt.x <= hi.x && pt.y >= lo.y && pt.y <= hi.y;
+    // 안(a)→밖(b) 세그먼트가 사각형 경계를 지나는 지점(선형 보간) — 잘린 단면이 매끈하게.
+    const exitPoint = (a: StrokePoint, b: StrokePoint): StrokePoint => {
+      let t = 1;
+      if (b.x > hi.x && b.x !== a.x) t = Math.min(t, (hi.x - a.x) / (b.x - a.x));
+      if (b.x < lo.x && b.x !== a.x) t = Math.min(t, (lo.x - a.x) / (b.x - a.x));
+      if (b.y > hi.y && b.y !== a.y) t = Math.min(t, (hi.y - a.y) / (b.y - a.y));
+      if (b.y < lo.y && b.y !== a.y) t = Math.min(t, (lo.y - a.y) / (b.y - a.y));
+      t = Math.max(0, Math.min(1, t));
+      return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t,
+        p: a.p !== undefined || b.p !== undefined ? ((a.p ?? 0.7) + (b.p ?? 0.7)) / 2 : undefined
+      };
+    };
+    const before = [...store.strokes()];
+    const nextScene: Stroke[] = [];
+    const picked: Stroke[] = [];
+    let changed = false;
+    for (const s of before) {
+      if (s.tool === "eraser" || !layerOk.get(s.layer)) {
+        nextScene.push(s);
+        continue;
+      }
+      const flags = s.points.map(inside);
+      if (!flags.some(Boolean)) {
+        nextScene.push(s);
+        continue;
+      }
+      if (flags.every(Boolean) || isShapeTool(s.tool)) {
+        nextScene.push(s);
+        picked.push(s);
+        continue;
+      }
+      // 부분 겹침 → 연속 구간(run) 단위로 쪼갠다. 경계 보간점은 양쪽 조각이 공유해
+      // 이어 보이던 곳이 뚝 끊겨 보이지 않는다(z순서는 원래 자리 그대로).
+      changed = true;
+      let run: StrokePoint[] = [{ ...s.points[0] }];
+      let runIn = flags[0];
+      const flush = () => {
+        if (run.length > 0) {
+          const frag: Stroke = {
+            tool: s.tool,
+            layer: s.layer,
+            color: s.color,
+            width: s.width,
+            points: run
+          };
+          nextScene.push(frag);
+          if (runIn) picked.push(frag);
+        }
+      };
+      for (let i = 1; i < s.points.length; i += 1) {
+        const pt = s.points[i];
+        if (flags[i] === runIn) {
+          run.push({ ...pt });
+          continue;
+        }
+        // 경계 통과 — 나가는 쪽 기준으로 보간(들어올 땐 방향만 뒤집으면 동일).
+        const b = runIn ? exitPoint(s.points[i - 1], pt) : exitPoint(pt, s.points[i - 1]);
+        run.push(b);
+        flush();
+        run = [b, { ...pt }];
+        runIn = flags[i];
+      }
+      flush();
+    }
+    if (changed) {
+      store.setStrokes(nextScene);
+      pushHist({ t: "scene", before, after: [...nextScene] });
+      // 분할된 레이어들 재생(선언 순서 제약으로 ref 경유 — replayAll과 동일 효과).
+      for (const l of layersRef.current) replayLayerFnRef.current(l.id);
+      setStrokeVersion((v) => v + 1);
+    }
+    setStrokeSel(picked);
   }
 
   // ── 선택 획 박스(그림판 선택 문법): 점선 bbox — 끌면 이동, 모서리 손잡이로 확대/축소 ──
@@ -1135,6 +1219,10 @@ export function BroadcastPanel({
         });
         replayAll();
       }
+    } else if (a.t === "scene") {
+      store.setStrokes(a.before);
+      setStrokeSel([]); // 분할 전으로 돌아가면 분할 조각 선택은 무효
+      replayAll();
     } else {
       setLayers(a.before);
       if (!a.before.some((l) => l.id === activeLayerId)) {
@@ -1167,6 +1255,10 @@ export function BroadcastPanel({
         });
         replayAll();
       }
+    } else if (a.t === "scene") {
+      store.setStrokes(a.after);
+      setStrokeSel([]);
+      replayAll();
     } else {
       setLayers(a.after);
       if (!a.after.some((l) => l.id === activeLayerId)) {

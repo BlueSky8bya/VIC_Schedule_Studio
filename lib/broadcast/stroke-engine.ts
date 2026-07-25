@@ -90,6 +90,9 @@ export type StrokeStore = {
   clearAll: () => void;
   /** 레이어 삭제 — 그 레이어의 획을 장면·redo에서 모두 제거(undo 불가, 그림판 문법). */
   removeLayer: (layerId: StrokeLayer) => void;
+  /** 장면 통째 교체 — 부분 선택의 획 분할처럼 배열 구조가 바뀌는 편집용.
+   *  호출자가 before/after 스냅샷으로 undo를 책임진다(통합 히스토리 scene 액션). */
+  setStrokes: (next: readonly Stroke[]) => void;
   /** 닫을 때 메모리 해제(M4c dispose 테스트 대상). */
   dispose: () => void;
 };
@@ -131,6 +134,11 @@ export function createStrokeStore(undoLimit: number = UNDO_LIMIT): StrokeStore {
     removeLayer(layerId) {
       strokes = strokes.filter((s) => s.layer !== layerId);
       redoStack = redoStack.filter((s) => s.layer !== layerId);
+      if (undoFloor > strokes.length) undoFloor = strokes.length;
+    },
+    setStrokes(next) {
+      strokes = [...next];
+      redoStack = []; // 구조가 바뀐 뒤의 redo 미래는 무효
       if (undoFloor > strokes.length) undoFloor = strokes.length;
     },
     dispose() {
