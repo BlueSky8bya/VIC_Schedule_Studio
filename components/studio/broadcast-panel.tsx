@@ -795,9 +795,11 @@ export function BroadcastPanel({
         <div
           className="bp-board-inner"
           ref={boardInnerRef}
+          // inline min은 CSS의 min-width/height:100%를 '덮어쓴다' — max(100%, …)로 합성해야
+          // 컬럼이 적을 때도 종이가 보드 전체를 채운다(안 그러면 왼쪽 위 조각만 흰색).
           style={{
-            minWidth: Math.max(...[0, ...[...cols.values()].map((c) => c.x + c.w + 24)]),
-            minHeight: Math.max(280, ...[...cols.values()].map((c) => c.y + 320))
+            minWidth: `max(100%, ${Math.max(0, ...[...cols.values()].map((c) => c.x + c.w + 24))}px)`,
+            minHeight: `max(100%, ${Math.max(280, ...[...cols.values()].map((c) => c.y + 320))}px)`
           }}
         >
           {/* 배경 레이어 = 날짜 카드 DOM(캔버스 아님 — 메모리 0). 표시 토글은 숨김만. */}
