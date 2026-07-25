@@ -141,17 +141,17 @@ html {
 }
 /* 배포 버전(원본 그대로) 아래에 단축키 확장 버튼만 얹어 액션바 '가운데'에 세로로. 박스 테두리·배경
    없이(버전 배지는 원래 모습 유지) 가운데 absolute로 띄운다 — 원래 버전 태그가 있던 그 자리. */
-/* 항상 '흐름' 배치 — 예전의 absolute 정중앙 고정은 흐름 밖이라 브라우저 확대로 폭이 줄면
-   왼쪽 버튼 무리와 겹쳤고, 반대로 흐름 전환만 하면 DOM상 첫 자식이라 왼쪽 구석으로 갔다.
-   order로 왼쪽 묶음 '뒤'로 보내고 margin-left:auto — 어느 폭에서든 [왼쪽 버튼들 …
-   단축키·확대][저장·비공개·꾸미기] 한 문법, 좁으면 flex-wrap으로 아랫줄(겹침 0). */
+/* 항상 '흐름' 배치, 왼쪽 묶음 바로 뒤 인라인 — 시도 이력:
+   ① absolute 정중앙: 폭 줄면 왼쪽 버튼과 겹침 ② 흐름+왼쪽: DOM 첫 자식이라 구석행
+   ③ 흐름+margin-left:auto(오른쪽 끝): 아바타 scene의 고정 rail(태그필터)에 깔림.
+   → 결론: 버튼들과 같은 줄, 같은 간격의 '식구'로 둔다. 좁으면 flex-wrap으로 아랫줄. */
 .studio-buildbox {
-  order: 99;
+  order: 99; /* DOM상 첫 자식이지만 시각적으론 왼쪽 버튼 묶음 뒤 */
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
+  margin-left: 4px;
   pointer-events: none; /* 버전은 장식 — 버튼만 클릭 가능(아래에서 auto로). */
 }
 /* 버전 태그는 부모(.studio-buildbox)가 이미 가운데라 흐름 배치로만 되돌린다(색·펄 등 모습은 원본 유지). */
