@@ -3336,7 +3336,8 @@ html[data-reduce-motion] .role-segment button.active {
    유지되고, fixed 편집창이 그 예약 칸 위에 겹쳐 화면에 고정된다. 편집창이 열렸을 때만 fixed. */
 .studio-shell.avatar-scene .studio-workspace.editor-open .event-editor-panel {
   position: fixed;
-  top: 148px;
+  /* --dock-top = 액션바 하단 실측(JS, 스크롤/확대 추적). 침범도 빈 공간도 구조적으로 없음. */
+  top: var(--dock-top, 148px);
   bottom: 8px;
   width: 328px;
   overflow-y: auto;
@@ -3387,7 +3388,7 @@ html[data-reduce-motion] .role-segment button.active {
 }
 .studio-shell.avatar-scene .avatar-rail {
   position: fixed;
-  top: 148px;
+  top: var(--dock-top, 148px); /* 액션바 하단 실측 추적(위 편집창과 동일) */
   bottom: 8px;
   width: calc(20vw - 16px);
   display: flex;

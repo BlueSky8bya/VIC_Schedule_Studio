@@ -1845,6 +1845,32 @@ export function StudioShell({
   }, [isNarrow, viewerMode, applyCalZoom]);
   // 확대 중에는 월드컵 칩·장식을 표시만 숨긴다(저장된 선택은 그대로 — 100%로 돌아오면 복귀).
   const worldCupFxVisible = showWorldCupFeatures && calZoom === 1;
+  // 아바타 모드 고정 도크(태그필터 rail·편집창)의 top을 실측으로(--dock-top).
+  // 하드코딩 148px는 브라우저 확대(헤더·액션바가 더 두꺼워짐)에선 액션바를 침범했고,
+  // 스크롤로 막대가 화면 밖으로 나가면 위 공간이 비었다 → 액션바 하단을 따라가고,
+  // 지나가면 8px까지 올라붙는다. shell의 zoom(0.9/0.8) 좌표계 보정 포함.
+  useEffect(() => {
+    if (isNarrow) return;
+    const update = () => {
+      const bar = document.querySelector(".studio-actionbar");
+      const bottomVisual = bar ? bar.getBoundingClientRect().bottom : 0;
+      const zoomF = window.matchMedia("(min-width: 2400px)").matches
+        ? 0.8
+        : window.matchMedia("(min-width: 1700px)").matches
+          ? 0.9
+          : 1;
+      const top = Math.max(8, Math.round(bottomVisual / zoomF) + 8);
+      document.documentElement.style.setProperty("--dock-top", `${top}px`);
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+      document.documentElement.style.removeProperty("--dock-top");
+    };
+  }, [isNarrow, viewerMode]);
   // 달력 패널 '실측 폭'이 좁으면(브라우저 확대·편집창+아바타 동시 열림·태블릿) 제목 1줄
   // ellipsis 모드 — viewport가 아니라 패널 폭 기준(G0-r: 실사용 폭은 패널 상태에 좌우된다).
   const [calCompact, setCalCompact] = useState(false);
