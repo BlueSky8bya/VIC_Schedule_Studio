@@ -5030,9 +5030,17 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
   line-height: 1.3;
 }
 /* 확대(125%+) 모드: 제목도 1줄 ellipsis — 긴 제목이 줄바꿈으로 카드를 키우는 대신
-   "메이플 검은마…"처럼 잘리고, 잘린 카드는 호버 팝오버로 전체를 보여준다(실측 판정). */
+   "메이플 검은마…"처럼 잘리고, 잘린 카드는 호버 팝오버로 전체를 보여준다(실측 판정).
+   중요: nowrap 텍스트는 flex/grid 조상들의 min-width:auto를 타고 '카드 자체'를 칸 밖으로
+   밀어낸다 — 체인 전체에 min-width:0을 깔아야 ellipsis가 실제로 발동한다. */
+.studio-calendar-panel[data-zoomed] .studio-event-pill {
+  min-width: 0;
+  max-width: 100%;
+}
+.studio-calendar-panel[data-zoomed] .pill-main {
+  min-width: 0;
+}
 .studio-calendar-panel[data-zoomed] .pill-main strong {
-  display: block;
   min-width: 0;
   overflow: hidden;
   white-space: nowrap;
