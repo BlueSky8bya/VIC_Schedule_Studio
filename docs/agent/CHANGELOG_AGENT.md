@@ -4,6 +4,19 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-07-26
+
+### CHG-20260726-001 — FIX — 방송 세션 중복 유령 행 차단(bno unique, 0053)
+
+Problem: recordLiveTick 동시 폴링 read-then-insert 레이스로 같은 bno 세션 행이 중복 생성.
+자정(KST) 이후 중복은 start_day 다음날 귀속 → 방송 없는 날 "1분" 유령 막대(공개/관리자 인사이트).
+Change: 0053 — 기존 중복을 bno별 최초 행으로 병합(last_live/ended 최대값) 후 삭제 + bno unique index.
+`lib/broadcast/session.ts` insert 충돌 시 기존 행 잇기(닫혔으면 재개방).
+Validation: 마이그레이션 적용 후 실데이터 조회 — 25일 617.8분 1행만 남고 26일 유령 소멸. prod build OK.
+Rollback: `drop index broadcast_session_bno_uq` + session.ts 폴백 제거. 병합·삭제된 유령 행은 복원 불가
+(전부 진짜 세션 범위 안의 중복이라 정보 손실 없음).
+Docs: 커밋 0c10983
+
 ## v0.1.0 — 2026-07-12
 
 ### CHG-20260712-003 — FEAT — 시청자 '이 달 기록'(공개 인사이트)
