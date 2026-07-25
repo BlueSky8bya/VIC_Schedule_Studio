@@ -1899,6 +1899,16 @@ export function StudioShell({
   const zoomCollapse = calZoom > 1;
   // 제목 1줄 모드 = 인앱 확대 중이거나 패널이 실측으로 좁을 때. 팝오버도 이 조건에서 동작.
   const titleCompact = zoomCollapse || calCompact;
+  // 카드 안에서 ellipsis로 실제 잘린 텍스트(제목·부제목)가 있는지 실측 — 팝오버 열림 판정.
+  function hasClippedText(card: HTMLElement): boolean {
+    const els = card.querySelectorAll<HTMLElement>(
+      ".pill-main strong, .pill-subs li, .pill-sub-last .pill-sub-text"
+    );
+    for (const el of els) {
+      if (el.scrollWidth > el.clientWidth + 1) return true;
+    }
+    return false;
+  }
   const [zoomPeek, setZoomPeek] = useState<{ id: string; pinned: boolean } | null>(null);
   const zoomPeekRef = useRef(zoomPeek);
   zoomPeekRef.current = zoomPeek;
@@ -5602,15 +5612,11 @@ export function StudioShell({
                           onMouseEnter={
                             titleCompact && span.showTitle
                               ? (e) => {
-                                  const el = e.currentTarget;
-                                  const strong = el.querySelector(".pill-main strong");
-                                  const cut =
-                                    strong instanceof HTMLElement &&
-                                    strong.scrollWidth > strong.clientWidth + 1;
                                   // 확대 모드에선 서브가 +N로 접혀 있으니 서브 존재만으로도 열고,
-                                  // 좁은 폭 모드(브라우저 확대)에선 서브가 다 보이므로 '제목이
-                                  // 실제로 잘렸을 때만' 연다.
-                                  if (cut || (zoomCollapse && subs.length > 0))
+                                  // 좁은 폭 모드(브라우저 확대)에선 제목/부제목이 실제로 잘린
+                                  // 카드만 연다(다 보이는 카드는 팝오버 소음).
+                                  const el = e.currentTarget;
+                                  if (hasClippedText(el) || (zoomCollapse && subs.length > 0))
                                     openZoomPeek(event.id, el, false);
                                 }
                               : undefined
@@ -5622,11 +5628,7 @@ export function StudioShell({
                             titleCompact && span.showTitle
                               ? (e) => {
                                   const el = e.currentTarget;
-                                  const strong = el.querySelector(".pill-main strong");
-                                  const cut =
-                                    strong instanceof HTMLElement &&
-                                    strong.scrollWidth > strong.clientWidth + 1;
-                                  if (cut || (zoomCollapse && subs.length > 0))
+                                  if (hasClippedText(el) || (zoomCollapse && subs.length > 0))
                                     openZoomPeek(event.id, el, false);
                                 }
                               : undefined

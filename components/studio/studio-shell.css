@@ -5065,6 +5065,26 @@ html[data-reduce-motion] .studio-event-pill.cut-flash::after {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+/* 부제목도 각 줄 1줄 ellipsis — 서브가 3줄씩 감기면 카드 높이 안정이라는 compact 목적이
+   반쪽이 된다. 마지막 서브 줄(.pill-sub-last)은 [텍스트][형식점] flex라 텍스트 쪽에 적용,
+   점은 wrap 없이 오른쪽 고정. 잘린 서브도 호버 팝오버 대상(핸들러 실측). */
+.studio-calendar-panel[data-compact] .pill-subs {
+  min-width: 0;
+}
+.studio-calendar-panel[data-compact] .pill-subs li {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.studio-calendar-panel[data-compact] .pill-sub-last {
+  flex-wrap: nowrap;
+}
+.studio-calendar-panel[data-compact] .pill-sub-last .pill-sub-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* A안 M2: 확대(125%+) 시 접힌 서브 자리 — [+N 칩][형식색 점] 한 줄. */
 .pill-collapsed-row {
