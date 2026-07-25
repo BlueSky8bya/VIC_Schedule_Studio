@@ -172,7 +172,9 @@ linkNext(Q2), variantGroupId/variantLabel(불필요), status/visibilityScope(전
   팝오버·확대 차단 ②+N Enter가 편집창을 열지 않음 ③팝오버 내부 스크롤 유지 ④핀 팝오버 자동
   종료 시 앵커 포커스 복귀 ⑤wheel 리스너 달력 한정·viewer/모바일 detach
   ⑥판서 열림 중 뒤로가기 = 판서만 닫힘(내부 오버레이 hasInnerOverlay와의 우선순위 포함, G3a-r)
-  ⑦판서 키보드 토글 후 Shift+클릭 확장 기준 = 마지막 토글 칸.
+  ⑦판서 키보드 토글 후 Shift+클릭 확장 기준 = 마지막 토글 칸
+  ⑧실물 Studio export 경로(공식 포스터 PNG 생성)에서 판서·확대 무흔적 — fixture 단언(poster.spec)
+  만으론 실제 export 파이프라인을 못 본다(G3b) ⑨판서 가로 스크롤 시 카드·판서 좌표 일치.
 - Validation: 전체 Validation Commands + e2e.
 
 ## Codex 더블체크 게이트 (미통과 시 수정→재검토 반복, 통과 전 다음 단계 금지)
@@ -307,3 +309,45 @@ npm run test:e2e
   ⑥키보드 날짜 선택: 셀 role=checkbox·tabIndex·Enter/Space→`toggleIndex()`(신규 훅 API,
   Ctrl+클릭과 동일 토글) + focus-visible 링.
   검증: tsc 0 · lint 0 · build 0 · vitest 216/216. 다음 = G3a-r.
+- **G3a-r: "통과 — M4b 착수 가능"** (WARN 2 — 즉시 반영: toggleIndex가 Shift 앵커 동기화,
+  hasInnerOverlay 우선순위는 M5 스모크 ⑥⑦로). **M4a 커밋 `9717a57` push**.
+- **M4b 구현 완료**: `lib/broadcast/stroke-engine.ts` — 순수 벡터 모델(strokes/undo/redo/
+  undoFloor 상한 200=이력만 폐기·장면 유지, point 단순화 2px, backingScale=DPR cap 2+총 픽셀
+  상한 4096×2304, drawStroke=지우개 destination-out·형광펜 α0.45·상태 복원) + 9 unit tests.
+  panel: 레이어 = 배경(날짜 카드 DOM — 캔버스 0장, 메모리 0)+형광펜/펜 캔버스 2장(표시·잠금),
+  ResizeObserver→backing 재설정+명령 재생, 도구줄(선택/펜/형광펜/지우개·6색·굵기 3단·레이어·
+  undo/redo·전체 지우기), 판서 내 Ctrl+Z/Shift+Z/Y, 지우개는 잠긴 레이어 회피, unmount 시
+  store.dispose().
+- **M4c 구현 완료**: 소멸 계약 정적 단언(localStorage·sessionStorage·indexedDB·clipboard·
+  cookie·pushState·URLSearchParams 미사용 — broadcast-callsite.test.ts), export/공개 포스터
+  무흔적 e2e 단언(tests/visual/poster.spec.ts — .broadcast-panel·.bp-toolbar·.cal-zoom-* 부재).
+  검증: tsc 0 · lint 0 · build 0 · vitest 226/226. 다음 = G3b.
+- **G3b 1차: "수정 후 재검토"** (BLOCKER 3·WARN 6·NIT 2). 반영:
+  ①backingScale 하한 1 제거(scale<1 허용, 하한 0.25) + 5K/8K/횡장보드 테스트
+  ②보드 스크롤 좌표면 통일 — .bp-board-inner(width:max-content) 안에 카드+캔버스 3장+입력면,
+  보드가 스크롤 주체(strip 자체 스크롤 제거) → 카드·판서 항상 동좌표
+  ③렌더 전략 교체 — committed bitmap 유지: 펜·지우개 rAF 증분 세그먼트 렌더, 형광펜은 라이브
+  캔버스에 현재 stroke만(이음매 방지)→뗄 때 1회 커밋, 전체 재생은 undo/redo/clear/resize만
+  ④전체 지우기 2단계 확인(무장 3초, 잠긴 레이어 포함 경고 title)
+  ⑤activePointerId 추적+다중 포인터 가드+lostpointercapture 처리
+  ⑥메모리 계약 명문화(1장 상한×3장 = 전체 예산, 엔진 주석)
+  ⑦리사이즈 rAF 병합+동일 크기 skip ⑧toolbar role 제거(group — roving tabindex 불요)
+  ⑨M5 스모크 ⑧⑨ 추가(실물 export 경로·스크롤 좌표 일치)
+  ⑩NIT: undo floor 경계·재생 순서 테스트 추가, store 지연 초기화.
+  검증: tsc 0 · lint 0 · build 0 · vitest 229/229. 다음 = G3b-r.
+- **G3b-r 2차: "수정 후 재검토"** (신규 BLOCKER 3·미해소 1·신규 WARN 1). 반영:
+  ①보드 overflow:auto — 세로도 inner째 스크롤(긴 카드 잘림 해소)
+  ②`finishLiveStroke()` 신설 — undo/redo/전체 지우기/리사이즈/화면 맞춤 직전에 그리던 획을
+  완성 커밋(replay가 live를 날려 선이 증발하던 것 차단), endDraw도 이를 경유
+  ③캔버스 DOM 순서 hl→라이브→pen(형광펜 진행 중·커밋 후 겹침 순서 동일 — 튐 제거)
+  ④D6 '화면 맞춤' 버튼 구현(컬럼 유동 폭, 전환 전 획 완성, 어긋남 안내 title)
+  ⑤soft cap 계약 명문화(하한 0.25까지 유효, ≈1.5억 px² 초과는 가독성 우선 — 실사용과 두 자릿수 여유).
+  검증: tsc 0 · lint 0 · build 0 · vitest 229/229. 다음 = G3b-rr.
+- **G3b-rr 3차: "수정 후 재검토"** (화면 맞춤 BLOCKER 2). 반영:
+  ①판서(stroke) 존재 시 화면 맞춤 전환 금지(fail-closed — 버튼 disabled + 클릭 재확인,
+  좌표 변환은 컬럼별 비균등이라 불가) ②fit 모드 min-width 140→0 — 컬럼이 몇 개든 가시폭에
+  반드시 다 들어와 캔버스 밖 카드가 생기지 않는다(글자 줄바꿈 감수, opt-in 보기).
+  검증: tsc 0 · lint 0 · build 0. 다음 = G3b-rrr.
+- **G3b-rrr 4차: "수정 후 재검토"** (BLOCKER 1 — undo 전량 후 전환→redo로 옛 좌표 복원 우회).
+  반영: 잠금 조건에 `store.canRedo()` 포함(버튼 disabled + 클릭 재확인 모두). 전체 지우기는
+  redoStack도 비우므로 그 경로로만 잠금 해제. 검증: tsc 0 · lint 0 · build 0. 다음 = G3b 5차.

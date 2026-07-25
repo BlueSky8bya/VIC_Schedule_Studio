@@ -1,0 +1,165 @@
+// 방송 판서 엔진(B안 M4b, PLAN-20260725-001) — 순수 벡터 stroke 모델. DOM/캔버스 접근 없음
+// (렌더는 broadcast-panel이 담당) → vitest로 직접 검증한다.
+//
+// 설계(G0 D4·D5 합의):
+// - ImageData 스냅샷 금지 — stroke '명령'(좌표 목록)만 저장하고, 리사이즈/undo 때마다 재생한다.
+//   1920×1080·DPR2·다중 레이어에서 스냅샷 방식은 메모리가 급증한다.
+// - 레이어 = 고정 2캔버스(형광펜 hl·펜 pen) + 배경(날짜 카드 DOM — 캔버스 아님, 메모리 0).
+//   지우개는 두 캔버스 모두에 destination-out으로 적용된다(레이어 구분 없이 '지운다'가 직관).
+// - undo는 '이력'만 상한(200) — 상한을 넘긴 오래된 stroke는 화면(장면)에 남되 더 이상 undo
+//   대상이 아니게 된다(G0-rr: 화면에서 삭제 금지).
+// - stroke point 단순화: 마지막 점에서 MIN_POINT_DIST(px) 미만 이동은 버린다(장시간 판서 메모리).
+
+export type BroadcastTool = "select" | "pen" | "hl" | "eraser";
+export type StrokeLayer = "hl" | "pen";
+
+export type StrokePoint = { x: number; y: number };
+
+export type Stroke = {
+  tool: Exclude<BroadcastTool, "select">;
+  /** eraser는 두 레이어 모두에 적용되므로 layer가 없다. pen/hl은 자기 레이어에만. */
+  layer: StrokeLayer | "both";
+  color: string;
+  width: number;
+  points: StrokePoint[];
+};
+
+export const UNDO_LIMIT = 200;
+export const MIN_POINT_DIST = 2; // CSS px — 이보다 촘촘한 점은 버린다
+/** DPR 상한(G0-rr) — 고해상도 화면에서 backing store 폭주 방지. */
+export const DPR_CAP = 2;
+/**
+ * 캔버스 '1장당' backing store 픽셀 상한(≈4K). 판서는 캔버스 3장(형광펜·펜 committed +
+ * 라이브 프리뷰 1장)을 쓰므로 전체 예산 = 이 값의 최대 3배 — 이것이 메모리 계약이다(G3b).
+ */
+export const MAX_BACKING_PIXELS = 4096 * 2304;
+/** scale 하한 — 초대형 보드에서도 렌더가 완전히 뭉개지지 않는 최소 해상도.
+ *  계약(G3b-r): 픽셀 상한은 이 하한까지만 유효한 **soft cap** — CSS 면적이
+ *  MAX_BACKING_PIXELS/0.25² ≈ 1.5억 px²(예: 40만×380px 보드)를 넘는 비현실적 크기에선
+ *  가독성 하한을 우선한다. 실사용 보드(월 31컬럼 × 220px ≈ 7천px 폭)와는 두 자릿수 여유. */
+export const MIN_BACKING_SCALE = 0.25;
+
+/** css 크기와 devicePixelRatio로 실제 backing scale을 정한다(DPR cap + 총 픽셀 cap).
+ *  CSS 면적 자체가 상한을 넘으면 scale이 1 미만으로도 내려간다(G3b: 5K/8K 보드에서
+ *  1로 클램프하면 상한이 깨졌다) — 하한은 MIN_BACKING_SCALE. */
+export function backingScale(cssW: number, cssH: number, dpr: number): number {
+  const capped = Math.max(MIN_BACKING_SCALE, Math.min(dpr, DPR_CAP));
+  const area = cssW * cssH;
+  if (area <= 0) return capped;
+  const maxScale = Math.sqrt(MAX_BACKING_PIXELS / area);
+  return Math.max(MIN_BACKING_SCALE, Math.min(capped, maxScale));
+}
+
+/** 마지막 점과 너무 가까우면 버리는 append. 추가됐으면 true. */
+export function appendPoint(points: StrokePoint[], p: StrokePoint): boolean {
+  const last = points[points.length - 1];
+  if (last && Math.hypot(p.x - last.x, p.y - last.y) < MIN_POINT_DIST) return false;
+  points.push({ x: p.x, y: p.y });
+  return true;
+}
+
+export type StrokeStore = {
+  /** 장면의 모든 stroke(그려진 순서). 렌더는 이 배열을 레이어별로 재생한다. */
+  strokes: () => readonly Stroke[];
+  push: (stroke: Stroke) => void;
+  undo: () => boolean; // undo 가능했으면 true
+  redo: () => boolean;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  /** 전체 지우기 — 명령이 아니라 상태 초기화(undo 불가). 방송 중 '새 판' 용도. */
+  clearAll: () => void;
+  /** 닫을 때 메모리 해제(M4c dispose 테스트 대상). */
+  dispose: () => void;
+};
+
+export function createStrokeStore(undoLimit: number = UNDO_LIMIT): StrokeStore {
+  let strokes: Stroke[] = [];
+  let redoStack: Stroke[] = [];
+  // undoFloor 이전의 stroke는 장면에 남지만 undo 대상이 아니다(이력 상한 — G0-rr).
+  let undoFloor = 0;
+
+  return {
+    strokes: () => strokes,
+    push(stroke) {
+      strokes.push(stroke);
+      redoStack = []; // 새 입력이 들어오면 redo 미래는 폐기(표준 문법)
+      if (strokes.length - undoFloor > undoLimit) {
+        undoFloor = strokes.length - undoLimit;
+      }
+    },
+    undo() {
+      if (strokes.length <= undoFloor) return false;
+      const popped = strokes.pop();
+      if (popped) redoStack.push(popped);
+      return true;
+    },
+    redo() {
+      const back = redoStack.pop();
+      if (!back) return false;
+      strokes.push(back);
+      return true;
+    },
+    canUndo: () => strokes.length > undoFloor,
+    canRedo: () => redoStack.length > 0,
+    clearAll() {
+      strokes = [];
+      redoStack = [];
+      undoFloor = 0;
+    },
+    dispose() {
+      strokes = [];
+      redoStack = [];
+      undoFloor = 0;
+    }
+  };
+}
+
+/** 이 stroke가 해당 레이어 캔버스에 그려져야 하는가(eraser=both는 모든 레이어). */
+export function strokeAppliesTo(stroke: Stroke, layer: StrokeLayer): boolean {
+  return stroke.layer === "both" || stroke.layer === layer;
+}
+
+// 렌더 도우미 — ctx 타입은 구조적으로만 요구(테스트에서 mock 가능, DOM 의존 없음).
+type MinimalCtx = {
+  beginPath(): void;
+  moveTo(x: number, y: number): void;
+  lineTo(x: number, y: number): void;
+  stroke(): void;
+  lineCap: string;
+  lineJoin: string;
+  lineWidth: number;
+  // CanvasRenderingContext2D 호환(문자열보다 넓은 타입) — 우리는 항상 string만 쓴다.
+  strokeStyle: string | { toString(): string };
+  globalCompositeOperation: string;
+  globalAlpha: number;
+};
+
+/** stroke 하나를 ctx에 그린다(좌표는 CSS px — 호출자가 setTransform으로 scale 적용). */
+export function drawStroke(ctx: MinimalCtx, stroke: Stroke): void {
+  if (stroke.points.length === 0) return;
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.lineWidth = stroke.width;
+  if (stroke.tool === "eraser") {
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "#000";
+  } else {
+    ctx.globalCompositeOperation = "source-over";
+    // 형광펜: 반투명 + 넓은 획 — 카드 글자를 가리지 않고 강조.
+    ctx.globalAlpha = stroke.tool === "hl" ? 0.45 : 1;
+    ctx.strokeStyle = stroke.color;
+  }
+  ctx.beginPath();
+  const [first, ...rest] = stroke.points;
+  ctx.moveTo(first.x, first.y);
+  if (rest.length === 0) {
+    // 점 하나(탭) — 아주 짧은 선으로 찍어준다.
+    ctx.lineTo(first.x + 0.1, first.y + 0.1);
+  } else {
+    for (const p of rest) ctx.lineTo(p.x, p.y);
+  }
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+}

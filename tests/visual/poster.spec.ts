@@ -45,4 +45,20 @@ test.describe("public poster — visual baseline", () => {
     );
     await expect(surface).toHaveScreenshot("viewer-surface-2026-06.png");
   });
+
+  // B안 M4c: 공식 export 표면·공개 포스터에 방송 판서/편집실 확대 UI가 절대 없다는 단언.
+  // (판서는 편집실 미리보기 오버레이 전용, 확대 컨트롤은 편집실 전용 — 시청자·export 무흔적.)
+  test("export surface has no broadcast/zoom admin UI", async ({ page }) => {
+    await page.goto("/visual-fixture/poster");
+    await page.locator("[data-export-surface]").first().waitFor({ state: "visible" });
+    for (const sel of [
+      ".broadcast-panel",
+      ".bp-toolbar",
+      ".cal-zoom-ctl",
+      ".cal-zoom-float",
+      ".cal-zoom-peek"
+    ]) {
+      await expect(page.locator(sel)).toHaveCount(0);
+    }
+  });
 });

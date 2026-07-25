@@ -28,6 +28,24 @@ describe("broadcast panel — 호출부 정적 경계", () => {
     expect(shellSource).not.toMatch(/toBroadcastPanelDays\s*\(\s*\{?\s*events/);
   });
 
+  it("판서 코드는 어떤 클라이언트 저장소·클립보드·URL에도 손대지 않는다(M4c 소멸 계약)", () => {
+    // 서버 무저장을 넘어 '어디에도 안 남긴다' — 닫으면 완전 소멸이 계약이다(G0 합의).
+    for (const rel of ["components/studio/broadcast-panel.tsx", "lib/broadcast/stroke-engine.ts"]) {
+      const source = readFileSync(join(repoRoot, rel), "utf8");
+      for (const forbidden of [
+        "localStorage",
+        "sessionStorage",
+        "indexedDB",
+        "navigator.clipboard",
+        "document.cookie",
+        "pushState",
+        "URLSearchParams"
+      ]) {
+        expect(source, `${rel} must not touch ${forbidden}`).not.toContain(forbidden);
+      }
+    }
+  });
+
   it("판서 컴포넌트는 Studio 타입·studio-loader·낙관 경로를 import하지 않는다", () => {
     const panelSource = readFileSync(
       join(repoRoot, "components/studio/broadcast-panel.tsx"),

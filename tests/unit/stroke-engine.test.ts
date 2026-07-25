@@ -1,0 +1,189 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  appendPoint,
+  backingScale,
+  createStrokeStore,
+  DPR_CAP,
+  drawStroke,
+  MAX_BACKING_PIXELS,
+  strokeAppliesTo,
+  type Stroke
+} from "@/lib/broadcast/stroke-engine";
+
+function mkStroke(n: number): Stroke {
+  return {
+    tool: "pen",
+    layer: "pen",
+    color: "#111",
+    width: 4,
+    points: [{ x: n, y: n }]
+  };
+}
+
+describe("stroke store — push/undo/redo", () => {
+  it("push → undo → redo 왕복", () => {
+    const s = createStrokeStore();
+    s.push(mkStroke(1));
+    s.push(mkStroke(2));
+    expect(s.strokes()).toHaveLength(2);
+    expect(s.undo()).toBe(true);
+    expect(s.strokes()).toHaveLength(1);
+    expect(s.redo()).toBe(true);
+    expect(s.strokes()).toHaveLength(2);
+  });
+
+  it("새 stroke가 들어오면 redo 미래는 폐기된다", () => {
+    const s = createStrokeStore();
+    s.push(mkStroke(1));
+    s.undo();
+    s.push(mkStroke(2));
+    expect(s.canRedo()).toBe(false);
+  });
+
+  it("undo 이력 상한: 오래된 stroke는 '장면에 남되' undo 불가로만 전환된다", () => {
+    const s = createStrokeStore(3); // limit 3
+    for (let i = 0; i < 5; i += 1) s.push(mkStroke(i));
+    expect(s.strokes()).toHaveLength(5); // 화면에서 삭제 금지(G0-rr)
+    expect(s.undo()).toBe(true);
+    expect(s.undo()).toBe(true);
+    expect(s.undo()).toBe(true);
+    expect(s.undo()).toBe(false); // floor 도달 — 처음 2개는 undo 불가
+    expect(s.strokes()).toHaveLength(2);
+  });
+
+  it("undo floor 도달 → redo → 새 push 경계가 꼬이지 않는다", () => {
+    const s = createStrokeStore(2);
+    for (let i = 0; i < 4; i += 1) s.push(mkStroke(i)); // floor=2
+    s.undo();
+    s.undo();
+    expect(s.canUndo()).toBe(false);
+    expect(s.strokes()).toHaveLength(2);
+    s.redo(); // 3개
+    s.push(mkStroke(9)); // redo 미래 폐기 + 4개, floor 재계산(4-2=2)
+    expect(s.canRedo()).toBe(false);
+    expect(s.strokes()).toHaveLength(4);
+    expect(s.undo()).toBe(true);
+    expect(s.undo()).toBe(true);
+    expect(s.undo()).toBe(false); // floor=2 유지
+  });
+
+  it("재생 순서: pen → eraser → 나중 pen — 나중 stroke는 지워지지 않는다(전역 순서 보존)", () => {
+    const s = createStrokeStore();
+    const early = mkStroke(1);
+    const eraser: Stroke = {
+      tool: "eraser",
+      layer: "both",
+      color: "#000",
+      width: 20,
+      points: [{ x: 1, y: 1 }]
+    };
+    const late = mkStroke(2);
+    s.push(early);
+    s.push(eraser);
+    s.push(late);
+    // 렌더는 strokes() 순서 그대로 재생 — eraser가 배열에서 late보다 앞이므로
+    // destination-out은 early에만 영향을 주고 late는 위에 그려진다.
+    const penLayerOrder = s.strokes().filter((st) => strokeAppliesTo(st, "pen"));
+    expect(penLayerOrder).toEqual([early, eraser, late]);
+    expect(penLayerOrder.indexOf(eraser)).toBeLessThan(penLayerOrder.indexOf(late));
+  });
+
+  it("clearAll·dispose는 전부 비운다", () => {
+    const s = createStrokeStore();
+    s.push(mkStroke(1));
+    s.undo();
+    s.clearAll();
+    expect(s.strokes()).toHaveLength(0);
+    expect(s.canUndo()).toBe(false);
+    expect(s.canRedo()).toBe(false);
+    s.push(mkStroke(2));
+    s.dispose();
+    expect(s.strokes()).toHaveLength(0);
+  });
+});
+
+describe("point 단순화", () => {
+  it("마지막 점에서 2px 미만 이동은 버린다", () => {
+    const pts = [{ x: 0, y: 0 }];
+    expect(appendPoint(pts, { x: 1, y: 0.5 })).toBe(false);
+    expect(pts).toHaveLength(1);
+    expect(appendPoint(pts, { x: 3, y: 0 })).toBe(true);
+    expect(pts).toHaveLength(2);
+  });
+});
+
+describe("backing scale — DPR cap + 총 픽셀 cap", () => {
+  it("일반 화면: DPR 그대로(상한 2)", () => {
+    expect(backingScale(1200, 700, 1)).toBe(1);
+    expect(backingScale(1200, 700, 2)).toBe(2);
+    expect(backingScale(1200, 700, 3)).toBe(DPR_CAP);
+  });
+
+  it("4K 전체화면 + DPR2: 총 픽셀 상한이 scale을 낮춘다", () => {
+    const scale = backingScale(3840, 2000, 2);
+    expect(scale).toBeLessThan(2);
+    expect(3840 * scale * (2000 * scale)).toBeLessThanOrEqual(MAX_BACKING_PIXELS * 1.001);
+    expect(scale).toBeGreaterThanOrEqual(1);
+  });
+
+  it("5K/8K급 초대형 보드: scale이 1 미만으로 내려가 픽셀 상한을 지킨다(G3b)", () => {
+    for (const [w, h] of [
+      [5120, 2880],
+      [7680, 4320],
+      [12000, 3000] // 날짜 컬럼이 아주 많은 가로 스크롤 보드
+    ]) {
+      const scale = backingScale(w, h, 2);
+      expect(scale).toBeLessThan(1);
+      expect(w * scale * (h * scale)).toBeLessThanOrEqual(MAX_BACKING_PIXELS * 1.001);
+    }
+  });
+});
+
+describe("레이어 적용·렌더", () => {
+  it("eraser(both)는 모든 레이어에, pen/hl은 자기 레이어에만", () => {
+    const pen = mkStroke(1);
+    const eraser: Stroke = { tool: "eraser", layer: "both", color: "#000", width: 20, points: [{ x: 0, y: 0 }] };
+    expect(strokeAppliesTo(pen, "pen")).toBe(true);
+    expect(strokeAppliesTo(pen, "hl")).toBe(false);
+    expect(strokeAppliesTo(eraser, "pen")).toBe(true);
+    expect(strokeAppliesTo(eraser, "hl")).toBe(true);
+  });
+
+  it("drawStroke: eraser=destination-out, 형광펜=반투명, 종료 후 상태 복원", () => {
+    const calls: string[] = [];
+    const ctx = {
+      lineCap: "",
+      lineJoin: "",
+      lineWidth: 0,
+      strokeStyle: "",
+      globalCompositeOperation: "source-over",
+      globalAlpha: 1,
+      opsDuringStroke: [] as Array<{ op: string; alpha: number }>,
+      beginPath() {
+        calls.push("begin");
+      },
+      moveTo() {
+        calls.push("move");
+      },
+      lineTo() {
+        calls.push("line");
+      },
+      stroke() {
+        this.opsDuringStroke.push({ op: this.globalCompositeOperation, alpha: this.globalAlpha });
+        calls.push("stroke");
+      }
+    };
+    drawStroke(ctx, { tool: "eraser", layer: "both", color: "#000", width: 20, points: [{ x: 0, y: 0 }, { x: 10, y: 10 }] });
+    expect(ctx.opsDuringStroke[0].op).toBe("destination-out");
+    drawStroke(ctx, { tool: "hl", layer: "hl", color: "#ff0", width: 14, points: [{ x: 0, y: 0 }, { x: 10, y: 0 }] });
+    expect(ctx.opsDuringStroke[1].op).toBe("source-over");
+    expect(ctx.opsDuringStroke[1].alpha).toBeCloseTo(0.45);
+    // 그리기 끝나면 합성 상태 복원
+    expect(ctx.globalCompositeOperation).toBe("source-over");
+    expect(ctx.globalAlpha).toBe(1);
+    // 점 하나(탭)도 선으로 찍힌다
+    drawStroke(ctx, mkStroke(5));
+    expect(calls.filter((c) => c === "stroke")).toHaveLength(3);
+  });
+});
