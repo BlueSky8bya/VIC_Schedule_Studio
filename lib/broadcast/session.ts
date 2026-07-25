@@ -66,13 +66,21 @@ export async function recordLiveTick(state: {
           .update({ ended_at: open.last_live_at })
           .eq("id", open.id);
       }
-      await supabase.from("broadcast_session").insert({
+      const { error: insertError } = await supabase.from("broadcast_session").insert({
         start_day: kstDay(nowMs),
         started_at: nowIso,
         last_live_at: nowIso,
         bno,
         title: state.title ?? null
       });
+      // 동시 폴링 레이스로 같은 bno 행이 이미 있으면(unique index 0053에 충돌) 새로 만들지 않고
+      // 그 행을 잇는다 — 닫혔던 행이면 다시 연다(같은 bno = 같은 방송이 계속 중이라는 뜻).
+      if (insertError && bno !== null) {
+        await supabase
+          .from("broadcast_session")
+          .update({ last_live_at: nowIso, ended_at: null })
+          .eq("bno", bno);
+      }
       return;
     }
 
