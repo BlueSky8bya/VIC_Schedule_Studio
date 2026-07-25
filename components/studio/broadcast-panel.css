@@ -323,26 +323,77 @@ html[data-reduce-motion] .broadcast-panel > * {
   border-color: rgb(124 108 240 / 70%);
   background: rgb(124 108 240 / 16%);
 }
-.bp-layer {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 6px;
-  border: 1px solid #efecf7;
-  border-radius: var(--r-pill);
+/* 본문 = [캔버스 작업대 | 오른쪽 레이어 패널] — 실제 그림판 배치. */
+.bp-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: stretch;
 }
-.bp-layer em {
-  font-size: 11px;
+.bp-layers-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 172px;
+  flex: 0 0 172px;
+  padding: 14px 12px;
+  border-left: 1px solid #d9d4cd;
+  background: #faf8f5;
+  overflow-y: auto;
+}
+.bp-layer-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid #e3ded6;
+  border-radius: var(--r-md);
+  background: #ffffff;
+  transition: opacity var(--dur-1) var(--ease);
+}
+.bp-layer-item.off {
+  opacity: 0.55;
+}
+.bp-layer-thumb {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 74px;
+  border: 1px solid #eae5dd;
+  border-radius: 6px;
+  /* 투명 배경 체커보드 — 그림판 관례 */
+  background:
+    repeating-conic-gradient(#f1ede7 0% 25%, #ffffff 0% 50%) 0 0 / 14px 14px;
+  overflow: hidden;
+}
+.bp-layer-thumb canvas {
+  max-width: 100%;
+  max-height: 100%;
+}
+.bp-layer-thumb-bg {
+  font-size: 26px;
+}
+.bp-layer-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.bp-layer-meta em {
+  font-size: 12px;
   font-style: normal;
   font-weight: 800;
   color: #6f6890;
+}
+.bp-layer-actions {
+  display: inline-flex;
+  gap: 2px;
 }
 .bp-layer-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   border: 0;
   border-radius: var(--r-md);
   background: transparent;

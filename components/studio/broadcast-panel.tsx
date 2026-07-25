@@ -142,8 +142,27 @@ export function BroadcastPanel({
   // 배경 = 날짜 카드 DOM(캔버스 아님 — 메모리 0, G0-rr). 표시 토글만, 잠금은 의미 없음.
   const [layerVis, setLayerVis] = useState({ bg: true, hl: true, pen: true });
   const [layerLock, setLayerLock] = useState({ hl: false, pen: false });
-  // undo/redo 버튼 활성 상태 갱신용(스토어는 ref라 리렌더를 직접 못 일으킨다).
-  const [, bumpStroke] = useState(0);
+  // undo/redo 버튼 활성 + 오른쪽 레이어 썸네일 갱신용(스토어는 ref라 리렌더를 직접 못 일으킨다).
+  const [strokeVersion, setStrokeVersion] = useState(0);
+  // 레이어 패널 썸네일(실제 그림판 문법) — 캔버스에서 축소 복사. 배경(날짜 카드 DOM)은
+  // DOM 캡처 금지 계약(ADR-0010)이라 아이콘으로만 표시.
+  const thumbHlRef = useRef<HTMLCanvasElement | null>(null);
+  const thumbPenRef = useRef<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    for (const [src, thumb] of [
+      [hlCanvasRef.current, thumbHlRef.current],
+      [penCanvasRef.current, thumbPenRef.current]
+    ] as const) {
+      if (!src || !thumb) continue;
+      const ctx = thumb.getContext("2d");
+      if (!ctx) continue;
+      ctx.clearRect(0, 0, thumb.width, thumb.height);
+      if (src.width > 0 && src.height > 0) {
+        const s = Math.min(thumb.width / src.width, thumb.height / src.height);
+        ctx.drawImage(src, 0, 0, src.width * s, src.height * s);
+      }
+    }
+  }, [strokeVersion, layerVis]);
   // 전체 지우기 2단계 확인(undo 불가 + 잠긴 레이어 포함이라 오조작 방어, G3b).
   const [clearArmed, setClearArmed] = useState(false);
   const clearArmTimer = useRef<number | null>(null);
@@ -272,7 +291,7 @@ export function BroadcastPanel({
       }
     }
     store.push(live);
-    bumpStroke((v) => v + 1);
+    setStrokeVersion((v) => v + 1);
   }, [canvasOf, clearCanvas, scaledCtx, store]);
 
   // 리사이즈 → 크기가 실제로 변했을 때만 backing 재할당 + 명령 재생(연속 리사이즈 churn 방지).
@@ -403,14 +422,14 @@ export function BroadcastPanel({
     finishLiveStroke(); // 그리던 획 먼저 완성 — replay가 live를 날리는 불일치 방지(G3b-r)
     if (!store.undo()) return;
     hapticTick();
-    bumpStroke((v) => v + 1);
+    setStrokeVersion((v) => v + 1);
     replayAll();
   }, [store, replayAll, finishLiveStroke]);
   const doRedo = useCallback(() => {
     finishLiveStroke();
     if (!store.redo()) return;
     hapticTick();
-    bumpStroke((v) => v + 1);
+    setStrokeVersion((v) => v + 1);
     replayAll();
   }, [store, replayAll, finishLiveStroke]);
   // 전체 지우기 = 2단계: 첫 클릭은 무장(3초 내 재클릭만 실행) — undo 불가·잠긴 레이어까지
@@ -428,7 +447,7 @@ export function BroadcastPanel({
     setClearArmed(false);
     store.clearAll();
     hapticTick();
-    bumpStroke((v) => v + 1);
+    setStrokeVersion((v) => v + 1);
     replayAll();
   }, [clearArmed, store, replayAll, finishLiveStroke]);
 
@@ -618,42 +637,6 @@ export function BroadcastPanel({
           </div>
           <em className="bp-group-label">굵기</em>
         </div>
-        <div className="bp-tool-group" role="group" aria-label="레이어">
-          <div className="bp-group-row">
-            {(
-              [
-                ["bg", "배경(날짜 카드)"],
-                ["hl", "형광펜 레이어"],
-                ["pen", "펜 레이어"]
-              ] as const
-            ).map(([key, label]) => (
-              <span className="bp-layer" key={key}>
-                <em>{key === "bg" ? "배경" : key === "hl" ? "형광" : "펜"}</em>
-                <button
-                  aria-label={`${label} 표시`}
-                  aria-pressed={layerVis[key]}
-                  className="bp-layer-btn"
-                  type="button"
-                  onClick={() => setLayerVis((v) => ({ ...v, [key]: !v[key] }))}
-                >
-                  {layerVis[key] ? <Eye size={13} /> : <EyeOff size={13} />}
-                </button>
-                {key !== "bg" ? (
-                  <button
-                    aria-label={`${label} 잠금`}
-                    aria-pressed={layerLock[key]}
-                    className="bp-layer-btn"
-                    type="button"
-                    onClick={() => setLayerLock((v) => ({ ...v, [key]: !v[key] }))}
-                  >
-                    {layerLock[key] ? <Lock size={13} /> : <LockOpen size={13} />}
-                  </button>
-                ) : null}
-              </span>
-            ))}
-          </div>
-          <em className="bp-group-label">레이어</em>
-        </div>
         <div className="bp-tool-group" role="group" aria-label="기록">
           <div className="bp-group-row">
             <button
@@ -788,6 +771,7 @@ export function BroadcastPanel({
         ) : null}
       </section>
 
+      <div className="bp-main">
       <section className="bp-board" aria-label="그림판">
         {/* 스크롤 좌표면(G3b): 배경 카드·캔버스·입력면이 전부 이 inner 안 — 보드를 스크롤하면
             카드와 판서가 같이 움직여 좌표가 절대 안 어긋난다. 컬럼 자유 배치 범위만큼 inner가
@@ -901,6 +885,66 @@ export function BroadcastPanel({
           />
         </div>
       </section>
+
+      {/* 오른쪽 레이어 패널(실제 그림판 문법) — 위가 맨 위 레이어. 고정 3장:
+          펜 → 형광펜 → 배경(날짜 카드). 썸네일은 캔버스 축소 복사(배경은 아이콘 — DOM 캡처 금지). */}
+      <aside className="bp-layers-panel" aria-label="레이어">
+        {(
+          [
+            ["pen", "펜"],
+            ["hl", "형광펜"],
+            ["bg", "배경"]
+          ] as const
+        ).map(([key, label]) => (
+          <div className={`bp-layer-item${layerVis[key] ? "" : " off"}`} key={key}>
+            <div className="bp-layer-thumb" aria-hidden="true">
+              {key === "bg" ? (
+                <span className="bp-layer-thumb-bg">📅</span>
+              ) : (
+                <canvas
+                  height={72}
+                  ref={key === "hl" ? thumbHlRef : thumbPenRef}
+                  width={128}
+                />
+              )}
+            </div>
+            <div className="bp-layer-meta">
+              <em>{label}</em>
+              <div className="bp-layer-actions">
+                <button
+                  aria-label={`${label} 레이어 표시`}
+                  aria-pressed={layerVis[key]}
+                  className="bp-layer-btn"
+                  title={layerVis[key] ? "숨기기" : "보이기"}
+                  type="button"
+                  onClick={() => {
+                    hapticTick();
+                    setLayerVis((v) => ({ ...v, [key]: !v[key] }));
+                  }}
+                >
+                  {layerVis[key] ? <Eye size={14} /> : <EyeOff size={14} />}
+                </button>
+                {key !== "bg" ? (
+                  <button
+                    aria-label={`${label} 레이어 잠금`}
+                    aria-pressed={layerLock[key]}
+                    className="bp-layer-btn"
+                    title={layerLock[key] ? "잠금 풀기" : "잠그기"}
+                    type="button"
+                    onClick={() => {
+                      hapticTick();
+                      setLayerLock((v) => ({ ...v, [key]: !v[key] }));
+                    }}
+                  >
+                    {layerLock[key] ? <Lock size={14} /> : <LockOpen size={14} />}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ))}
+      </aside>
+      </div>
     </div>
   );
 }
