@@ -146,6 +146,8 @@ linkNext(Q2), variantGroupId/variantLabel(불필요), status/visibilityScope(전
   `clearSelection()`은 Set 외에 lastAnchor·진행 중 drag·click suppression까지 초기화(월 이동 후
   Shift 선택이 이전 달 anchor 재사용 금지). Escape 우선순위 = 선택 있으면 선택 해제만, 없으면 모달 닫기.
 - Validation: vitest(단축키 차단/복구, 훅 확장 — exempt 영역 클릭 시 선택 유지·기존 동작 불변)
+  + **호출 인자 정적 검증(G2 WARN)**: `toBroadcastPanelDays(` 호출부가 `schedule.viewerModePreview`
+  만 넘기는지 소스 정적 테스트로 고정(낙관적 previewSchedule/events 전달 차단)
   + 수동(떨어진 토·일 배치, 월 이동 초기화, 포커스 trap). tsc/lint/build. → **G3a 중간 검토**.
 - Rollback: 버튼 연결 1곳 제거.
 
@@ -255,3 +257,24 @@ npm run test:e2e
   ⑤업도움 띠 높이 17·글자 10.5도 편집실 스코프 배율.
   M5 스모크 필수 5항목 명시(우클릭 드래그·+N Enter·팝오버 내부 스크롤·핀 포커스 복귀·리스너 범위).
   검증: tsc 0 · lint 0 · build 0. 다음 = G1-rr.
+- **G1-rr 3차: "통과 — 커밋 가능"**. NIT(주석 문구) 수정 후 **A안 커밋 `15181d4` push**
+  (staging은 파일 명시 — scripts/_ins.mjs 제외 유지). M1·M2는 diff가 뒤섞여 논리 단위(A안)로
+  1커밋 통합 — revert 단위도 A안 전체라 오히려 단순.
+- **M3 구현 완료**: `lib/schedules/broadcast-dto.ts` — `toBroadcastPanelDays(snapshot, dateKeys)`,
+  필드 명시 구성(스프레드 0), 소스 = viewerModePreview 전제(주석 계약), 태그는 resolver로 색
+  해석 후 `BroadcastPanelTag{id,label,colorHex,isPrimary}` 내장, 업도움 배너 제외, dateKey
+  dedup+정렬, 멀티데이 n일차/총 m일(Date.UTC 산술 — 로컬 TZ 무관), 런타임 public·non-draft
+  이중 필터. `tests/unit/broadcast-dto.test.ts` 10 tests: 3계층 키 화이트리스트 정확 일치,
+  canary 8종 직렬화 부재, 금지 키 부재, 비공개·draft 부재, teaser stub '존재하되 내용 부재',
+  배치·태그 계약, 정적 import 경계. 검증: tsc 0 · lint 0 · vitest 212/212. 다음 = G2.
+- 사이드: 확대 컨트롤 잘림 수정(`57f2c75`, 가로 한 줄) + 확대 UX 3건(`effd28c`, 하단 플로팅
+  배율·핀 버튼 제거·팝오버 폭 내용 맞춤 — 사용자 피드백).
+- **G2 1차: "수정 후 재검토"** (BLOCKER 2·WARN 3). 반영:
+  ①**fail-closed teaser 마스킹** — `maskTeaser()`를 날짜 배정 '전'에 적용(가려진 기간이 다른
+  날짜로 번지는 것까지 차단) + toPanelEvent에 이중 방어. 서버 stub(mapEvent)과 동일 형태:
+  제목·설명·태그·시간·기간·카테고리("stream" 중립값) 전부 가림
+  ②unredacted teaser 픽스처(canary 제목·설명·태그·기간·시각) + 강제 마스킹 단언(7/5 번짐 부재 포함)
+  ③stub 단언 강화(startsAt 자정·isAllDay·category·dayIndex·endsAt)
+  ④레거시 "embargo" scope 적대 픽스처 추가
+  ⑤M4a Validation에 호출 인자 정적 검증 명시(viewerModePreview만 허용).
+  검증: tsc 0 · lint 0 · vitest 11/11. 다음 = G2-r.
