@@ -310,8 +310,10 @@ export function BroadcastPanel({
       moved: false,
       startSL: boardScrollRef.current?.scrollLeft ?? 0,
       startST: boardScrollRef.current?.scrollTop ?? 0,
-      maxX: boardInnerRef.current?.offsetWidth ?? 4000,
-      maxY: boardInnerRef.current?.offsetHeight ?? 3000
+      // +480: 제스처마다 이만큼은 캔버스를 '의도적으로' 넓힐 수 있다(아래·오른쪽 배치 여유).
+      // 자동 스크롤 무한 확장 루프는 이 상한에서 멈춘다 — 더 넓히려면 손을 뗐다 다시 끌면 된다.
+      maxX: (boardInnerRef.current?.offsetWidth ?? 4000) + 480,
+      maxY: (boardInnerRef.current?.offsetHeight ?? 3000) + 480
     };
   }
   // 자동 스크롤 공용: 가장자리 근접 → 속도 계산 → rAF 루프에서 스크롤 + 드래그 로직 재적용.
@@ -433,8 +435,12 @@ export function BroadcastPanel({
       activeH.push(bestH.line);
     }
     setGuides({ v: activeV, h: activeH });
-    // 캔버스 무한 확장 차단: 이동 그룹이 제스처 시작 시점의 캔버스 크기 안에 머물게 dx/dy를
-    // 그룹 단위로 클램프(자동 스크롤이 확장→스크롤→확장을 반복하는 루프 방지).
+    // 캔버스 확장 상한: 이동 그룹이 (시작 크기 + 480px) 안에 머물게 dx/dy를 그룹 단위로
+    // 클램프 — 자동 스크롤 무한 확장 루프 방지. 클램프로 깎인 만큼 기준점(startX/Y)을
+    // 옮겨(re-anchor) 포인터가 앞서가도 잡은 지점이 어긋나지 않는다(다시 움직일 때
+    // 카드가 확 따라잡는 이질감 제거).
+    const rawDx = dx;
+    const rawDy = dy;
     for (const [k, b] of d.origs) {
       const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
       dx = Math.min(dx, d.maxX - 8 - (b.x + b.w));
@@ -442,6 +448,8 @@ export function BroadcastPanel({
       dx = Math.max(dx, -b.x);
       dy = Math.max(dy, -b.y);
     }
+    if (dx !== rawDx) d.startX += rawDx - dx;
+    if (dy !== rawDy) d.startY += rawDy - dy;
     setCols((map) => {
       const next = new Map(map);
       for (const [k, b] of d.origs) {
