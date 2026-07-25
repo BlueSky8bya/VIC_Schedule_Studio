@@ -150,9 +150,6 @@ export function BroadcastPanel({
   const [activeLayerId, setActiveLayerId] = useState("layer-1");
   const layerSeq = useRef(1);
   const [bgVis, setBgVis] = useState(true);
-  // 레이어 삭제 2단계(획까지 지워지고 undo 불가 — 오조작 방어).
-  const [layerDeleteArm, setLayerDeleteArm] = useState<string | null>(null);
-  const layerDeleteTimer = useRef<number | null>(null);
   // undo/redo 버튼 활성 + 오른쪽 레이어 썸네일 갱신용(스토어는 ref라 리렌더를 직접 못 일으킨다).
   const [strokeVersion, setStrokeVersion] = useState(0);
   // 레이어 패널 썸네일(실제 그림판 문법) — 캔버스에서 축소 복사. 배경(날짜 카드 DOM)은
@@ -346,7 +343,6 @@ export function BroadcastPanel({
       store.dispose();
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (clearArmTimer.current !== null) window.clearTimeout(clearArmTimer.current);
-      if (layerDeleteTimer.current !== null) window.clearTimeout(layerDeleteTimer.current);
     };
   }, [store]);
 
@@ -457,16 +453,7 @@ export function BroadcastPanel({
     setActiveLayerId(id); // 새 레이어가 맨 위 + 바로 활성
   }
   function deleteLayer(id: string) {
-    // 2단계: 획까지 지워지고 되돌릴 수 없어 오조작 방어(전체 지우기와 동일 문법).
-    if (layerDeleteArm !== id) {
-      hapticTick();
-      setLayerDeleteArm(id);
-      if (layerDeleteTimer.current !== null) window.clearTimeout(layerDeleteTimer.current);
-      layerDeleteTimer.current = window.setTimeout(() => setLayerDeleteArm(null), 3000);
-      return;
-    }
-    if (layerDeleteTimer.current !== null) window.clearTimeout(layerDeleteTimer.current);
-    setLayerDeleteArm(null);
+    // 즉시 삭제(사용자 결정 — 확인 단계 없음). 획까지 함께 지워지고 되돌릴 수 없다.
     finishLiveStroke(); // 그 레이어에 그리던 중이면 완성부터(직후 함께 삭제됨)
     store.removeLayer(id);
     setLayers((ls) => {
@@ -988,18 +975,16 @@ export function BroadcastPanel({
                   {l.lock ? <Lock size={14} /> : <LockOpen size={14} />}
                 </button>
                 <button
-                  aria-label={
-                    layerDeleteArm === l.id ? `${l.name} 삭제 확정` : `${l.name} 삭제`
-                  }
-                  className={`bp-layer-btn danger${layerDeleteArm === l.id ? " armed" : ""}`}
-                  title="레이어 삭제 — 이 레이어의 획도 함께 지워져요(두 번 눌러 실행)"
+                  aria-label={`${l.name} 삭제`}
+                  className="bp-layer-btn danger"
+                  title="레이어 삭제 — 이 레이어의 획도 함께 지워져요"
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     deleteLayer(l.id);
                   }}
                 >
-                  {layerDeleteArm === l.id ? <span className="bp-clear-confirm">삭제?</span> : <X size={14} />}
+                  <X size={14} />
                 </button>
               </div>
             </div>
