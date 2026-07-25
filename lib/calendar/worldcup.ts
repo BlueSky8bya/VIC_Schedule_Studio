@@ -5,6 +5,10 @@
 // 대한민국 개별 경기 날짜는 조 추첨/대진에 따라 달라지므로 KOREA_MATCHES로 따로 둔다(KST 기준) —
 // 정확한 대진이 확정되면 owner가 이 배열만 채우면 달력(시청자+편집실)에 자동 표시된다.
 
+// 시즌 종료: 일정·스코어·중력공·미니게임·자동 테마 코드는 재사용할 수 있게 보존하되,
+// 프론트엔드에는 렌더하지 않는다. 다시 쓸 때 이 플래그만 true로 바꾼다.
+export const WORLD_CUP_UI_ENABLED = false;
+
 export type WorldCupMark = {
   name: string; // 라운드명·이모지. 예: "🏆 결승" / "⚽ 4강" / "⚽ 32강"
   sub?: string; // 경기 대진·스코어. 예: "스페인 1-0 아르헨티나"
@@ -49,6 +53,7 @@ export const KOREA_MATCHES: Record<string, { name: string; result?: "win" | "dra
 
 // 그 날의 월드컵 표기(있으면). 한국 경기를 단계 표기보다 우선한다.
 export function getWorldCupMark(isoDate: string): WorldCupMark | null {
+  if (!WORLD_CUP_UI_ENABLED) return null;
   const kr = KOREA_MATCHES[isoDate];
   if (kr) {
     return { name: kr.name, isKorea: true, result: kr.result, isMatch: true };
@@ -67,6 +72,7 @@ export function getWorldCupMark(isoDate: string): WorldCupMark | null {
 
 // 보고 있는 달이 월드컵 기간과 겹치는가 — 포스터 테마 자동 전환 판정용.
 export function isWorldCupMonth(year: number, month: number): boolean {
+  if (!WORLD_CUP_UI_ENABLED) return false;
   const startY = Number(WORLD_CUP_START.slice(0, 4));
   const startM = Number(WORLD_CUP_START.slice(5, 7));
   const endY = Number(WORLD_CUP_END.slice(0, 4));
