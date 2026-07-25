@@ -547,49 +547,90 @@ export function BroadcastPanel({
   }
 
   // ── 정렬(2개 이상 선택 시) — 위 맞춤 · 세로 중앙 · 왼쪽 맞춤 · 가로 균등 간격 ──
+  // 정렬은 '격자 인식': 세로 구간이 겹치는 카드끼리 = 같은 행, 가로 구간이 겹치면 = 같은 열.
+  // 전역 정렬(모두 y=min)은 2행 이상 선택에서 행을 붕괴시켜 겹침을 만들었다 — 행/열 안에서만
+  // 정렬하면 1행이든 2×4든 어떤 행렬 구조든 유지되고 겹침이 없다.
+  type AlignRect = { k: string; x: number; y: number; w: number; h: number };
+  function clusterRects(rects: AlignRect[], axis: "row" | "col"): AlignRect[][] {
+    const sorted = [...rects].sort((a, b) => (axis === "row" ? a.y - b.y : a.x - b.x));
+    const groups: AlignRect[][] = [];
+    let cur: AlignRect[] = [];
+    let end = -Infinity;
+    for (const r of sorted) {
+      const start = axis === "row" ? r.y : r.x;
+      const stop = axis === "row" ? r.y + r.h : r.x + r.w;
+      if (cur.length > 0 && start > end) {
+        groups.push(cur);
+        cur = [];
+        end = -Infinity;
+      }
+      cur.push(r);
+      end = Math.max(end, stop);
+    }
+    if (cur.length > 0) groups.push(cur);
+    return groups;
+  }
+  // 같은 행 안 가로 겹침 해소 — 왼쪽부터 훑으며 겹치면 오른쪽으로 민다(최소 간격 14).
+  function resolveRowOverlap(row: AlignRect[]): void {
+    const sorted = [...row].sort((a, b) => a.x - b.x || a.y - b.y);
+    let right = -Infinity;
+    for (const r of sorted) {
+      if (r.x < right + 14 && right !== -Infinity) r.x = right + 14;
+      right = r.x + r.w;
+    }
+  }
   function alignSelected(kind: "top" | "middle" | "left" | "distribute-x") {
     const keys = [...colSelRef.current];
     if (keys.length < 2) return;
     hapticTick();
     const before = new Map(colsRef.current);
     const next = new Map(colsRef.current);
-    const rects = keys
+    const rects: AlignRect[] = keys
       .map((k) => {
         const b = next.get(k);
         if (!b) return null;
         const h = colElsRef.current.get(k)?.offsetHeight ?? 300;
-        return { k, ...b, h };
+        return { k, x: b.x, y: b.y, w: b.w, h };
       })
-      .filter((r): r is NonNullable<typeof r> => r !== null);
+      .filter((r): r is AlignRect => r !== null);
     if (rects.length < 2) return;
-    if (kind === "top") {
-      const top = Math.min(...rects.map((r) => r.y));
-      for (const r of rects) next.set(r.k, { x: r.x, y: top, w: r.w });
-    } else if (kind === "middle") {
-      const minY = Math.min(...rects.map((r) => r.y));
-      const maxY = Math.max(...rects.map((r) => r.y + r.h));
-      const cy = (minY + maxY) / 2;
-      for (const r of rects)
-        next.set(r.k, { x: r.x, y: Math.max(0, Math.round(cy - r.h / 2)), w: r.w });
+    if (kind === "top" || kind === "middle") {
+      for (const row of clusterRects(rects, "row")) {
+        if (kind === "top") {
+          const top = Math.min(...row.map((r) => r.y));
+          for (const r of row) r.y = top;
+        } else {
+          const minY = Math.min(...row.map((r) => r.y));
+          const maxY = Math.max(...row.map((r) => r.y + r.h));
+          const cy = (minY + maxY) / 2;
+          for (const r of row) r.y = Math.max(0, Math.round(cy - r.h / 2));
+        }
+        // 세로를 맞추면 원래 어긋나 있던 카드끼리 가로로 겹칠 수 있다 → 밀어서 해소.
+        resolveRowOverlap(row);
+      }
     } else if (kind === "left") {
-      const left = Math.min(...rects.map((r) => r.x));
-      for (const r of rects) next.set(r.k, { x: left, y: r.y, w: r.w });
+      for (const col of clusterRects(rects, "col")) {
+        const left = Math.min(...col.map((r) => r.x));
+        for (const r of col) r.x = left;
+      }
     } else {
-      // 가로 균등 간격: x 순(동률이면 y 순)으로 왼쪽 끝에서 차례로. 카드들이 겹쳐 있으면
-      // '양 끝 고정' 공식은 음수 간격(더 겹침)을 만들었다 → 최소 간격 14px를 보장하고,
-      // 공간이 남을 때만 그 간격을 넓힌다.
-      const sorted = [...rects].sort((a, b) => a.x - b.x || a.y - b.y);
-      const first = sorted[0];
-      const last = sorted[sorted.length - 1];
-      const totalW = sorted.reduce((s, r) => s + r.w, 0);
-      const span = last.x + last.w - first.x;
-      const gap = Math.max(14, (span - totalW) / (sorted.length - 1));
-      let cursor = first.x;
-      for (const r of sorted) {
-        next.set(r.k, { x: Math.max(0, Math.round(cursor)), y: r.y, w: r.w });
-        cursor += r.w + gap;
+      // 가로 균등 간격: 행별로 왼쪽 끝 고정, 최소 14px 간격(공간이 남으면 그만큼 넓게).
+      for (const row of clusterRects(rects, "row")) {
+        if (row.length < 2) continue;
+        const sorted = [...row].sort((a, b) => a.x - b.x || a.y - b.y);
+        const first = sorted[0];
+        const last = sorted[sorted.length - 1];
+        const totalW = sorted.reduce((s, r) => s + r.w, 0);
+        const span = last.x + last.w - first.x;
+        const gap = Math.max(14, (span - totalW) / (sorted.length - 1));
+        let cursor = first.x;
+        for (const r of sorted) {
+          r.x = Math.max(0, Math.round(cursor));
+          cursor += r.w + gap;
+        }
       }
     }
+    for (const r of rects) next.set(r.k, { x: r.x, y: r.y, w: r.w });
     setCols(next);
     pushHist({ t: "cols", before, after: next });
   }
