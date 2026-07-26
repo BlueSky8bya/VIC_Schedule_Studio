@@ -83,9 +83,9 @@ html {
   align-items: flex-start;
   gap: 3px;
 }
-/* 왼쪽으로 이사한 배포 버전 배지 — 클릭=복사 버튼. 기본 .studio-build-tag의 절대배치/
-   pointer-events:none을 해제하고 조용한 필 모양으로. */
-.studio-build-copy {
+/* 왼쪽으로 이사한 배포 버전 배지 — 클릭=복사 버튼. 기본 .studio-build-tag(파일 뒤쪽에
+   절대배치+pointer-events:none으로 선언됨)를 확실히 이기도록 부모를 포함한 선택자로. */
+.studio-left-meta .studio-build-copy {
   position: static;
   transform: none;
   left: auto;
@@ -103,14 +103,14 @@ html {
     color var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
 }
-.studio-build-copy:hover {
+.studio-left-meta .studio-build-copy:hover {
   background: rgb(124 108 240 / 12%);
   color: #6b5bd6;
 }
-.studio-build-copy:active {
+.studio-left-meta .studio-build-copy:active {
   transform: scale(0.94);
 }
-.studio-build-copy.dev {
+.studio-left-meta .studio-build-copy.dev {
   border-color: rgb(124 108 240 / 30%);
 }
 /* 가운데: 월 이동(헤더 정중앙) */
