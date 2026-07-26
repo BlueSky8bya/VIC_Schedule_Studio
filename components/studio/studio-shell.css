@@ -76,12 +76,14 @@ html {
   margin: 0;
   white-space: nowrap;
 }
-/* 데스크 라벨(위) + 배포 버전 배지(아래) 세로 묶음 — 묶음 자체가 헤더 중앙선에 걸린다. */
+/* 데스크 라벨(위) + 배포 버전 배지(아래) 세로 묶음 — 묶음 자체가 헤더 중앙선에 걸린다.
+   조화 3요소: ① 근접 — 라벨과 배지를 한 덩어리로 붙이고(4px), ② 균형 — 배지를 라벨의
+   가로 중앙 아래에(축 정렬), ③ 통일 — 배지는 저장 칩과 같은 필 어휘. */
 .studio-left-meta {
   display: inline-flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 3px;
+  align-items: center;
+  gap: 4px;
 }
 /* 왼쪽으로 이사한 배포 버전 배지 — 클릭=복사 버튼. 기본 .studio-build-tag(파일 뒤쪽에
    절대배치+pointer-events:none으로 선언됨)를 확실히 이기도록 부모를 포함한 선택자로. */

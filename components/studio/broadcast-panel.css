@@ -1,8 +1,9 @@
 /* 방송 판서 창(B안 M4a) — 같은 창 전체화면 '불투명' 모달.
    배경을 완전 불투명으로 깔아 뒤 편집실(비공개 가능성)이 방송 화면에 비치지 않는다. */
 
-/* 실제 그림판 문법: 위 = 흰 리본(도구 묶음 + 아래 작은 라벨), 아래 = 회색 작업대 위에
-   떠 있는 흰 캔버스 시트. 따뜻한 회색으로 앱 톤만 살짝 유지. */
+/* 프로 판서 스튜디오 문법(Procreate/Figma 벤치마킹): 어두운 작업대 크롬 위에
+   '떠 있는' 라이트 아일랜드(툴바·피커·레이어)와 흰 캔버스 시트. 어두운 크롬은
+   방송 화면에서 캔버스(콘텐츠)만 도드라지게 하고, 도구는 조용히 물러난다. */
 .broadcast-panel {
   position: fixed;
   inset: 0;
@@ -11,7 +12,7 @@
   flex-direction: column;
   gap: 0;
   padding: 0;
-  background: #e8e4df; /* 작업대 회색 — 불투명(뒤 비침 금지) */
+  background: #262331; /* 어두운 작업대 — 불투명(뒤 비침 금지 계약 유지) */
   overflow-y: auto;
   /* 루트에는 애니메이션 금지(G3a) — opacity 등장이면 그 200ms 동안 뒤 비공개 화면이 비쳐
      '항상 불투명' 계약 위반. 배경은 즉시 불투명, 등장 연출은 내부 콘텐츠만. */
@@ -33,25 +34,30 @@ html[data-reduce-motion] .broadcast-panel > * {
   animation: none;
 }
 
+/* 제목줄 — 어두운 크롬의 일부(배경 없음). 제목은 밝게, 힌트는 조용하게. */
 .bp-header {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 10px 18px 8px;
-  background: #faf8f5; /* 그림판 제목줄 */
+  padding: 12px 20px 6px;
+  background: transparent;
 }
 .bp-header h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 900;
-  color: #4b4468;
+  color: #f3f0fb;
+  letter-spacing: 0.01em;
 }
 .bp-hint {
   flex: 1;
   margin: 0;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #8a84a6;
+  color: #8f88ad;
+}
+.bp-hint strong {
+  color: #b9b0e6;
 }
 .bp-close {
   display: inline-flex;
@@ -61,15 +67,17 @@ html[data-reduce-motion] .broadcast-panel > * {
   height: 38px;
   border: 0;
   border-radius: 50%;
-  background: rgb(124 108 240 / 10%);
-  color: #5b4bd0;
+  background: rgb(255 255 255 / 8%);
+  color: #cfc8ea;
   cursor: pointer;
   transition:
     background var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease),
     transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .bp-close:hover {
-  background: rgb(124 108 240 / 18%);
+  background: rgb(255 255 255 / 16%);
+  color: #ffffff;
   transform: rotate(90deg);
 }
 .bp-close:active {
@@ -80,14 +88,16 @@ html[data-reduce-motion] .bp-close:active {
   transform: none;
 }
 
-/* ── 날짜 선택 미니 달력 — 작업대 위에 뜬 팔레트 창 느낌 ── */
+/* ── 날짜 선택 미니 달력 — 툴바와 같은 어휘의 플로팅 라이트 아일랜드 ── */
 .bp-picker {
   margin: 12px 16px;
-  border: 1px solid #d9d4cd;
-  border-radius: var(--r-card);
-  background: #ffffff;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 16px;
+  background: #fdfcfa;
   padding: 10px 14px;
-  box-shadow: 0 6px 20px rgb(80 70 60 / 12%);
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 35%),
+    0 2px 8px rgb(0 0 0 / 25%);
 }
 .bp-picker-head {
   display: flex;
@@ -254,16 +264,21 @@ html[data-reduce-motion] .bp-close:active {
   color: #a6a0be;
 }
 
-/* ── 판서 도구줄(M4b) — 그림판 리본: 묶음(가운데 정렬) + 아래 라벨 + 세로 구분선 ── */
+/* ── 판서 도구줄 — 어두운 작업대 위에 '떠 있는' 라이트 아일랜드(iPad Freeform/Procreate
+   플로팅 툴바 문법). 묶음(가운데 정렬) + 아래 라벨 + hairline 구분선. ── */
 .bp-toolbar {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
   gap: 0;
-  padding: 6px 14px 4px;
-  border-bottom: 1px solid #d9d4cd;
-  background: #faf8f5;
-  box-shadow: 0 2px 8px rgb(80 70 60 / 8%);
+  margin: 6px 16px 0;
+  padding: 8px 10px 5px;
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 16px;
+  background: #fdfcfa;
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 35%),
+    0 2px 8px rgb(0 0 0 / 25%);
 }
 .bp-tool-group {
   display: flex;
@@ -272,7 +287,7 @@ html[data-reduce-motion] .bp-close:active {
   justify-content: space-between;
   gap: 4px;
   padding: 2px 14px;
-  border-right: 1px solid #e3ded6;
+  border-right: 1px solid rgb(75 68 104 / 10%);
 }
 .bp-tool-group:last-of-type {
   border-right: 0;
@@ -299,11 +314,11 @@ html[data-reduce-motion] .bp-close:active {
   gap: 4px 5px;
 }
 .bp-group-label {
-  font-size: 10px;
+  font-size: 9.5px;
   font-style: normal;
   font-weight: 800;
-  letter-spacing: 0.06em;
-  color: #a09a8c;
+  letter-spacing: 0.12em;
+  color: #aca5c2;
 }
 /* iPad 툴바 벤치마킹: 평상시 보더리스 아이콘 버튼, 활성 = 진한 액센트 채움 + 흰 아이콘
    (iOS 세그먼트 컨트롤 문법). 전환은 스프링 이징으로 '통' 하고 자리를 잡는다. */
@@ -420,7 +435,7 @@ body:has(.broadcast-panel) .tag-cpop {
 .bp-color.on {
   border-color: transparent;
   box-shadow:
-    0 0 0 2px #faf8f5,
+    0 0 0 2px #fdfcfa,
     0 0 0 4px #4b4468;
   transform: scale(1.08);
 }
@@ -478,10 +493,12 @@ body:has(.broadcast-panel) .tag-cpop {
   width: 172px;
   flex: 0 0 172px;
   padding: 12px;
-  border: 1px solid #d9d4cd;
-  border-radius: var(--r-card);
-  background: #faf8f5;
-  box-shadow: 0 6px 20px rgb(80 70 60 / 10%);
+  border: 1px solid rgb(255 255 255 / 8%);
+  border-radius: 16px;
+  background: #fdfcfa;
+  box-shadow:
+    0 12px 32px rgb(0 0 0 / 35%),
+    0 2px 8px rgb(0 0 0 / 25%);
   overflow-y: auto;
 }
 .bp-layer-item {
@@ -658,9 +675,13 @@ html[data-reduce-motion] .bp-layer-item {
   min-height: 100%;
   height: max-content; /* 카드가 보드보다 길면 inner가 자라 세로 스크롤(캔버스도 같이) */
   padding: 16px;
-  border: 1px solid #cfc9c0;
+  border: 0;
+  border-radius: 18px;
   background: #ffffff;
-  box-shadow: 0 10px 30px rgb(60 52 40 / 18%);
+  /* 어두운 작업대 위 '종이 시트' — 깊은 그림자로 확실히 떠 보인다(방송 화면의 주인공). */
+  box-shadow:
+    0 18px 50px rgb(0 0 0 / 45%),
+    0 4px 14px rgb(0 0 0 / 30%);
 }
 .bp-board-bg {
   height: 100%;
