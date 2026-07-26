@@ -54,7 +54,7 @@ import {
 import { ColorPickerPopover } from "@/components/tags/color-picker-popover";
 import type { BroadcastPanelDay, BroadcastPanelEvent } from "@/lib/schedules/broadcast-dto";
 import type { MonthCell } from "@/lib/calendar/month";
-import { splitEventTitle } from "@/lib/calendar/month";
+import { getTodayKst, splitEventTitle } from "@/lib/calendar/month";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { hapticTick } from "@/lib/ui/haptics";
 import { createBroadcastHistory } from "@/lib/broadcast/history";
@@ -1267,6 +1267,33 @@ export function BroadcastPanel({
     strokeDynRef.current = { t: e.timeStamp, x, y, f };
     return f;
   }
+  // 미니 달력 '오늘' 링용 — KST 기준(렌더마다 재계산해도 값싼 연산).
+  const todayIso = getTodayKst();
+
+  // 현재 펜 색이 도구 칩에 스밀 때의 아이콘 색 — 명도 대비로 흑/백 자동(연한 노랑 위 흰
+  // 아이콘 같은 저대비 방지). sRGB 상대 휘도 근사(WCAG 원칙, 연구 아카이브 §4).
+  const activeInkStyle = useMemo(() => {
+    const m = /^#([0-9a-f]{6})$/i.exec(penColor);
+    let light = false;
+    if (m) {
+      const n = parseInt(m[1], 16);
+      const lum =
+        0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
+      light = lum > 168;
+    }
+    return {
+      background: penColor,
+      color: light ? "#2f2a45" : "#ffffff",
+      boxShadow: `0 2px 8px ${penColor}66, inset 0 1px 0 rgb(255 255 255 / 25%)`
+    } as const;
+  }, [penColor]);
+
+  // 파밍 리젝션(연구 아카이브 §3): 펜(스타일러스) 입력이 최근에 있었으면 터치로 시작하는
+  // 획을 무시한다 — 와콤/아이패드에서 캔버스에 손바닥을 얹고 쓰는 자세 지원(OS 1차 거름 +
+  // 앱층 한 겹). 마우스는 영향 없음.
+  const lastPenTsRef = useRef(0);
+  const PALM_GUARD_MS = 1000;
+
   // 지우개 커서 — 실제 지워지는 지름(펜 굵기×5)의 원. 브라우저 커서 상한(128px) 안에서 clamp.
   const eraserCursor = useMemo(() => {
     const dia = Math.max(8, Math.min(96, Math.round(penWidth * 5)));
@@ -1280,6 +1307,9 @@ export function BroadcastPanel({
   function onDrawDown(e: React.PointerEvent<HTMLDivElement>) {
     if (tool === "select" || !activeLayer || toolBlocked || e.button !== 0) return;
     if (drawingRef.current !== null) return; // 이미 다른 포인터가 그리는 중(다중 터치 가드)
+    if (e.pointerType === "pen") lastPenTsRef.current = e.timeStamp;
+    // 파밍 리젝션: 펜을 방금까지 쓰고 있었다면 이 터치는 손바닥일 확률이 높다 — 획 금지.
+    if (e.pointerType === "touch" && e.timeStamp - lastPenTsRef.current < PALM_GUARD_MS) return;
     const p = boardPoint(e);
     if (!p) return;
     activePtrRef.current = e.pointerId;
@@ -1297,6 +1327,7 @@ export function BroadcastPanel({
     scheduleFlush();
   }
   function onDrawMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.pointerType === "pen") lastPenTsRef.current = e.timeStamp; // 파밍 가드 갱신
     const live = drawingRef.current;
     if (!live || e.pointerId !== activePtrRef.current) return;
     const p = boardPoint(e);
@@ -1761,6 +1792,10 @@ export function BroadcastPanel({
                 aria-pressed={tool === key}
                 className={`bp-tool${tool === key ? " on" : ""}`}
                 key={key}
+                // Procreate 문법(연구 아카이브 §4): 색을 쓰는 도구(펜·형광펜)가 활성이면
+                // 칩이 '현재 펜 색'으로 칠해진다 — 지금 무슨 색으로 그릴지 도구줄에서 즉시
+                // 보인다. 아이콘은 명도 대비로 흑/백 자동 선택.
+                style={tool === key && (key === "pen" || key === "hl") ? activeInkStyle : undefined}
                 title={label}
                 type="button"
                 onClick={() => {
@@ -1789,6 +1824,8 @@ export function BroadcastPanel({
                 aria-pressed={tool === key}
                 className={`bp-tool${tool === key ? " on" : ""}`}
                 key={key}
+                // 도형도 현재 펜 색으로 그려지므로 활성 칩에 색을 스민다(같은 규칙).
+                style={tool === key ? activeInkStyle : undefined}
                 title={`${label} — Shift로 정비율`}
                 type="button"
                 onClick={() => {
@@ -1881,7 +1918,14 @@ export function BroadcastPanel({
                   setPenWidth(w);
                 }}
               >
-                <i style={{ width: Math.min(w + 2, 18), height: Math.min(w + 2, 18) }} />
+                {/* 점도 현재 펜 색 — 굵기 고르는 자리에서 색·굵기를 한 번에 확인. */}
+                <i
+                  style={{
+                    width: Math.min(w + 2, 18),
+                    height: Math.min(w + 2, 18),
+                    background: penColor
+                  }}
+                />
               </button>
             ))}
           </div>
@@ -2050,6 +2094,7 @@ export function BroadcastPanel({
                   "bp-mini-cell",
                   inMonth ? "" : "outside",
                   picked ? "picked" : "",
+                  cell.isoDate === todayIso ? "today" : "",
                   cell.weekday === 0 ? "sun" : cell.weekday === 6 ? "sat" : ""
                 ]
                   .filter(Boolean)
