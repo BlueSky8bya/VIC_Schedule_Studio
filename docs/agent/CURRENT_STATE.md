@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-07-25
+Last Updated: 2026-07-26
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -28,6 +28,17 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
     [ADR-0008](decisions/ADR-0008-public-insights-aggregate-rpc.md) (마이그레이션 0049·0050 적용 완료)
   - 편집기: 공개 범위·옵션 접기(기본 접힘), 단축키 안내 축약, **새 일정 = Alt+N 하나로 통일**,
     카드 순서 드래그 삽입선 판정(카드 중심선 기준)
+- **2026-07-26에 끝난 것**(`6e1ee43`, `4c7b01c`):
+  - **하트 배지 사라짐 수정**(`6e1ee43`, 마이그레이션 0054 적용 완료): 로그인 토글
+    `toggle_event_heart`가 익명 하트를 빼고 집계를 반환 → 클라가 그 작은 수로 덮어써
+    배지(🔥 5개↑)가 사라지고 새로고침해야 복귀하던 증상. 0040에서 이 함수만 합산 누락.
+  - **방송시간 머리 손실 수정**(`6e1ee43`): 세션 started_at을 '첫 폴링 발견 시점' 대신
+    방송국 API `broad.broad_start`(실제 뱅온 시각)로 기록(`fetchSoopBroadStart`,
+    bno 일치 확인 + 이상치 가드). 시청자가 늦게 들어오면 그만큼 깎이던 문제(4h24m→4h).
+    꼬리(ended_at=last_live_at)는 보수적 추정 유지. → [[broadcast-time-tracking]]
+  - **판서 패널 손맛·필기감**(`4c7b01c`): iPad 벤치마킹 — 활성 도구 액센트 채움+스프링 팝,
+    iOS 링 스와치, 채움 CTA, getCoalescedEvents(120Hz+ 샘플), 필압 감마(^0.65)+스무딩,
+    도구별 커서(지우개=실크기 원), 레이어/카드 등장 모션(reduce-motion 존중).
 - **2026-07-25에 끝난 것(2) — 방송 가독성 2종(토리님 승인, PLAN-20260725-001)**
   (`15181d4`·`57f2c75`·`effd28c`·`3c8cd46`·`9717a57`·`6d2b359`):
   - **A안 달력 확대**: 달력 패널 위 Ctrl+휠만 가로채 `--cal-zoom` CSS 변수로 100/125/150%
