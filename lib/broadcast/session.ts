@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
+import { fetchSoopBroadStart } from "@/lib/broadcast/soop";
 
 // 방송 ON/OFF 세션 기록기 — soop-live 라우트(시청자 폴링)와 백업 cron이 매 폴링마다 호출한다.
 // 라이브 상태 전이를 broadcast_session에 한 줄로 적재한다(시작→종료 1세션). 절대 응답을 막지 않게
@@ -53,10 +54,19 @@ export async function recordLiveTick(state: {
         if (continueSame) {
           // 같은 방송 — 마지막 라이브 시각만 끌어올린다(같은 bno면 공백도 라이브로 인정돼 집계됨).
           // bno가 아직 비어 있던 열린 세션이면 이 참에 채워 넣어, 이후 판정을 정답값으로 승격한다.
-          const patch: { last_live_at: string; bno?: string } =
+          const patch: { last_live_at: string; bno?: string; started_at?: string; start_day?: string } =
             open.bno === null && bno !== null
               ? { last_live_at: nowIso, bno }
               : { last_live_at: nowIso };
+          if (open.bno === null && bno !== null) {
+            // bno를 처음 알게 된 순간, 방송국 API의 실제 시작시각으로 머리를 보정한다
+            // (첫 폴링이 방송을 늦게 발견했으면 그 사이 시간이 통째로 깎여 있었다).
+            const broadStart = await fetchSoopBroadStart(bno);
+            if (broadStart && new Date(broadStart).getTime() < new Date(open.started_at).getTime()) {
+              patch.started_at = broadStart;
+              patch.start_day = kstDay(new Date(broadStart).getTime());
+            }
+          }
           await supabase.from("broadcast_session").update(patch).eq("id", open.id);
           return;
         }
@@ -66,9 +76,14 @@ export async function recordLiveTick(state: {
           .update({ ended_at: open.last_live_at })
           .eq("id", open.id);
       }
+      // 새 세션의 시작시각은 '지금(첫 발견 시점)'이 아니라 방송국 API의 실제 방송 시작시각을
+      // 우선한다. 폴링은 시청자가 포스터를 열어야 도니, 뱅온 후 첫 시청자가 올 때까지의 시간이
+      // 통째로 누락돼 방송시간이 실제보다 짧게 집계되던 원인(머리 손실). API 실패 시 지금으로 폴백.
+      const broadStart = await fetchSoopBroadStart(bno);
+      const startedIso = broadStart ?? nowIso;
       const { error: insertError } = await supabase.from("broadcast_session").insert({
-        start_day: kstDay(nowMs),
-        started_at: nowIso,
+        start_day: kstDay(new Date(startedIso).getTime()),
+        started_at: startedIso,
         last_live_at: nowIso,
         bno,
         title: state.title ?? null
