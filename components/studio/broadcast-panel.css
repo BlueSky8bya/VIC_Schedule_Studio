@@ -59,18 +59,25 @@ html[data-reduce-motion] .broadcast-panel > * {
   justify-content: center;
   width: 38px;
   height: 38px;
-  border: 1px solid rgb(124 108 240 / 34%);
-  border-radius: var(--r-md);
-  background: #ffffff;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(124 108 240 / 10%);
   color: #5b4bd0;
   cursor: pointer;
-  transition: background var(--dur-1) var(--ease);
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .bp-close:hover {
-  background: rgb(124 108 240 / 12%);
+  background: rgb(124 108 240 / 18%);
+  transform: rotate(90deg);
 }
 .bp-close:active {
-  transform: scale(0.94);
+  transform: rotate(90deg) scale(0.9);
+}
+html[data-reduce-motion] .bp-close:hover,
+html[data-reduce-motion] .bp-close:active {
+  transform: none;
 }
 
 /* ── 날짜 선택 미니 달력 — 작업대 위에 뜬 팔레트 창 느낌 ── */
@@ -131,25 +138,37 @@ html[data-reduce-motion] .broadcast-panel > * {
 .bp-picker-toggle:active {
   transform: scale(0.97);
 }
+/* 주 행동(CTA) — 유일하게 '채워진' 버튼. 날짜를 고르면 눌러야 할 곳이 한눈에 보인다. */
 .bp-send {
-  padding: 6px 16px;
-  border: 1px solid rgb(124 108 240 / 45%);
+  padding: 7px 18px;
+  border: 0;
   border-radius: var(--r-pill);
-  background: rgb(124 108 240 / 16%);
-  color: #5b4bd0;
+  background: linear-gradient(180deg, #8577f2, #6a5ae0);
+  color: #ffffff;
   font-size: 13px;
   font-weight: 800;
   cursor: pointer;
-  transition: background var(--dur-1) var(--ease);
+  box-shadow:
+    0 2px 10px rgb(107 90 224 / 35%),
+    inset 0 1px 0 rgb(255 255 255 / 25%);
+  transition:
+    box-shadow var(--dur-1) var(--ease),
+    filter var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .bp-send:hover:not(:disabled) {
-  background: rgb(124 108 240 / 28%);
+  filter: brightness(1.06);
+  box-shadow:
+    0 4px 14px rgb(107 90 224 / 45%),
+    inset 0 1px 0 rgb(255 255 255 / 25%);
 }
 .bp-send:active:not(:disabled) {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 .bp-send:disabled {
-  opacity: 0.4;
+  background: rgb(124 108 240 / 14%);
+  color: rgb(91 75 208 / 45%);
+  box-shadow: none;
   cursor: default;
 }
 .bp-weekdays,
@@ -280,33 +299,59 @@ html[data-reduce-motion] .broadcast-panel > * {
   gap: 4px 5px;
 }
 .bp-group-label {
-  font-size: 10.5px;
+  font-size: 10px;
   font-style: normal;
-  font-weight: 700;
-  color: #8b8577;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #a09a8c;
 }
+/* iPad 툴바 벤치마킹: 평상시 보더리스 아이콘 버튼, 활성 = 진한 액센트 채움 + 흰 아이콘
+   (iOS 세그먼트 컨트롤 문법). 전환은 스프링 이징으로 '통' 하고 자리를 잡는다. */
 .bp-tool {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: 1px solid rgb(124 108 240 / 22%);
-  border-radius: var(--r-md);
-  background: #ffffff;
-  color: #5b4bd0;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #6b6486;
   cursor: pointer;
-  transition: background var(--dur-1) var(--ease);
+  transition:
+    background var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease),
+    box-shadow var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
 }
 .bp-tool:hover:not(:disabled) {
   background: rgb(124 108 240 / 10%);
+  color: #5b4bd0;
 }
 .bp-tool:active:not(:disabled) {
-  transform: scale(0.92);
+  transform: scale(0.88);
 }
 .bp-tool.on {
-  border-color: rgb(124 108 240 / 70%);
-  background: rgb(124 108 240 / 20%);
+  background: linear-gradient(180deg, #8577f2, #6a5ae0);
+  color: #ffffff;
+  box-shadow:
+    0 2px 8px rgb(107 90 224 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 25%);
+  animation: bp-pop var(--dur-2, 0.2s) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+@keyframes bp-pop {
+  0% {
+    transform: scale(0.85);
+  }
+  60% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+html[data-reduce-motion] .bp-tool.on {
+  animation: none;
 }
 .bp-tool:disabled {
   opacity: 0.35;
@@ -314,17 +359,22 @@ html[data-reduce-motion] .broadcast-panel > * {
 }
 .bp-tool.danger {
   color: #be123c;
-  border-color: rgb(190 18 60 / 25%);
 }
 .bp-tool.danger:hover:not(:disabled) {
-  background: rgb(190 18 60 / 8%);
+  background: rgb(190 18 60 / 10%);
+  color: #be123c;
 }
-/* 전체 지우기 2단계 확인 — 무장 상태(3초)는 글자 버튼으로 바뀐다. */
+/* 전체 지우기 2단계 확인 — 무장 상태(3초)는 빨강 채움 글자 버튼으로 바뀐다. */
 .bp-tool.danger.armed {
   width: auto;
   padding: 0 10px;
-  border-color: rgb(190 18 60 / 60%);
-  background: rgb(190 18 60 / 12%);
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgb(220 38 38 / 35%);
+}
+.bp-tool.danger.armed:hover:not(:disabled) {
+  background: linear-gradient(180deg, #ef4444, #dc2626);
+  color: #ffffff;
 }
 .bp-clear-confirm {
   font-size: 12px;
@@ -345,7 +395,12 @@ html[data-reduce-motion] .broadcast-panel > * {
   border: 2px solid rgb(0 0 0 / 12%);
   border-radius: 50%;
   cursor: pointer;
-  transition: transform var(--dur-1) var(--ease);
+  transition:
+    transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    box-shadow var(--dur-1) var(--ease);
+}
+.bp-color:active {
+  transform: scale(0.85);
 }
 /* 직접 고르기 — 무지개 원뿔 그라데이션 스와치. 누르면 태그 편집과 같은 인라인 피커. */
 .bp-color-custom {
@@ -359,30 +414,49 @@ body:has(.broadcast-panel) .tag-cpop {
   z-index: 10500;
 }
 .bp-color:hover {
-  transform: scale(1.12);
+  transform: scale(1.15);
 }
+/* 선택 = iOS 색 피커 링 문법: 스와치와 링 사이 흰 틈. 스와치 자체도 살짝 커진다. */
 .bp-color.on {
-  border-color: #3b3654;
-  box-shadow: 0 0 0 2px #ffffff inset;
+  border-color: transparent;
+  box-shadow:
+    0 0 0 2px #faf8f5,
+    0 0 0 4px #4b4468;
+  transform: scale(1.08);
 }
 .bp-width {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border: 1px solid rgb(124 108 240 / 22%);
-  border-radius: var(--r-md);
-  background: #ffffff;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
   cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+.bp-width:hover {
+  background: rgb(124 108 240 / 10%);
+}
+.bp-width:active {
+  transform: scale(0.88);
 }
 .bp-width i {
   border-radius: 50%;
-  background: #4b4468;
+  background: #6b6486;
+  transition: background var(--dur-1) var(--ease);
 }
 .bp-width.on {
-  border-color: rgb(124 108 240 / 70%);
-  background: rgb(124 108 240 / 16%);
+  background: linear-gradient(180deg, #8577f2, #6a5ae0);
+  box-shadow:
+    0 2px 8px rgb(107 90 224 / 40%),
+    inset 0 1px 0 rgb(255 255 255 / 25%);
+}
+.bp-width.on i {
+  background: #ffffff;
 }
 /* 본문 = [캔버스 작업대 | 오른쪽 레이어 패널] — 실제 그림판 배치.
    min-height 72vh 보장: 날짜 달력을 펼쳐도 본문(그림판·레이어 패널)이 눌려 찌그러지는 대신
@@ -419,7 +493,30 @@ body:has(.broadcast-panel) .tag-cpop {
   border: 1px solid #e3ded6;
   border-radius: var(--r-md);
   background: #ffffff;
-  transition: opacity var(--dur-1) var(--ease);
+  transition:
+    opacity var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    box-shadow var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+  animation: bp-layer-in var(--dur-2, 0.2s) var(--ease-enter, var(--ease)) both;
+}
+@keyframes bp-layer-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-reduce-motion] .bp-layer-item {
+  animation: none;
+}
+.bp-layer-item:hover:not(.active) {
+  border-color: rgb(124 108 240 / 35%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgb(80 70 60 / 10%);
 }
 .bp-layer-item.off {
   opacity: 0.55;
@@ -530,7 +627,9 @@ body:has(.broadcast-panel) .tag-cpop {
 }
 .bp-layer-item.active {
   border-color: rgb(124 108 240 / 70%);
-  box-shadow: 0 0 0 2px rgb(124 108 240 / 25%);
+  box-shadow:
+    0 0 0 2px rgb(124 108 240 / 25%),
+    0 4px 14px rgb(107 90 224 / 18%);
 }
 /* '일정' 고정 레이어도 클릭해 활성화한다(카드 조작 모드) — 커서 유지. */
 .bp-lock-hint {
@@ -583,6 +682,20 @@ body:has(.broadcast-panel) .tag-cpop {
   cursor: crosshair;
   touch-action: none; /* 펜 드래그 중 스크롤 방지 */
 }
+/* 도구별 커서 — 지금 손에 뭘 들었는지 포인터만 봐도 안다(도구 상태 가시성).
+   핫스팟은 펜촉 위치(4,20). 흰 외곽선으로 어떤 배경에서도 보인다. */
+.bp-draw-surface[data-cursor="pen"] {
+  cursor:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M4 20l1.5-5L17 3.5a2.1 2.1 0 0 1 3 3L8.5 18z' fill='%234b4468' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E")
+      4 20,
+    crosshair;
+}
+.bp-draw-surface[data-cursor="hl"] {
+  cursor:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M4 20l2-6L16 4l4 4L10 18l-6 2z' fill='%23fbbf24' stroke='white' stroke-width='1.6'/%3E%3C/svg%3E")
+      4 20,
+    crosshair;
+}
 .bp-empty {
   display: flex;
   align-items: center;
@@ -605,6 +718,22 @@ body:has(.broadcast-panel) .tag-cpop {
   border-radius: var(--r-card);
   background: #ffffff;
   box-shadow: 0 4px 16px rgb(120 110 160 / 14%);
+  /* 보내기 순간 '툭' 떨어져 자리 잡는 스프링 등장(아이패드 드롭 문법). 드래그는
+     left/top만 만지므로 등장 keyframe(transform)과 충돌하지 않는다. */
+  animation: bp-drop-in 0.28s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) both;
+}
+@keyframes bp-drop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-reduce-motion] .bp-day-col {
+  animation: none;
 }
 .bp-day-head {
   display: flex;

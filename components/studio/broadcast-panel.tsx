@@ -1244,9 +1244,20 @@ export function BroadcastPanel({
   // 펜 디바이스(스타일러스)는 실제 필압, 마우스/터치는 속도 역산(빨리 그으면 가늘고
   // 천천히 누르면 굵게 — 만년필 감각). 저역 필터로 배율이 튀지 않게 한다.
   const strokeDynRef = useRef({ t: 0, x: 0, y: 0, f: 0.75 });
-  function widthFactor(e: React.PointerEvent, x: number, y: number): number {
+  function widthFactor(
+    e: { pointerType: string; pressure: number; timeStamp: number },
+    x: number,
+    y: number
+  ): number {
     if (e.pointerType === "pen" && e.pressure > 0) {
-      return Math.min(1, Math.max(0.12, e.pressure));
+      // 감마 곡선(^0.65): 하드웨어 필압은 가볍게 쥔 구간에 몰려 있어 선형으로 쓰면
+      // 획이 내내 가늘다 — 저압을 끌어올려 실제 펜처럼 반응하게 한다(필기 앱 공통 처리).
+      // 이웃 샘플과 절반씩 섞어 필압 지터로 획이 우둘투둘해지는 것도 막는다.
+      const d = strokeDynRef.current;
+      const raw = Math.min(1, Math.max(0.12, Math.pow(e.pressure, 0.65)));
+      const f = d.f * 0.5 + raw * 0.5;
+      strokeDynRef.current = { t: e.timeStamp, x, y, f };
+      return f;
     }
     const d = strokeDynRef.current;
     const dt = Math.max(1, e.timeStamp - d.t);
@@ -1256,6 +1267,16 @@ export function BroadcastPanel({
     strokeDynRef.current = { t: e.timeStamp, x, y, f };
     return f;
   }
+  // 지우개 커서 — 실제 지워지는 지름(펜 굵기×5)의 원. 브라우저 커서 상한(128px) 안에서 clamp.
+  const eraserCursor = useMemo(() => {
+    const dia = Math.max(8, Math.min(96, Math.round(penWidth * 5)));
+    const r = dia / 2;
+    const svg =
+      `%3Csvg xmlns='http://www.w3.org/2000/svg' width='${dia + 4}' height='${dia + 4}'%3E` +
+      `%3Ccircle cx='${r + 2}' cy='${r + 2}' r='${r}' fill='rgba(255,255,255,0.35)' ` +
+      `stroke='%234b4468' stroke-width='1.5'/%3E%3C/svg%3E`;
+    return `url("data:image/svg+xml;charset=utf-8,${svg}") ${r + 2} ${r + 2}, crosshair`;
+  }, [penWidth]);
   function onDrawDown(e: React.PointerEvent<HTMLDivElement>) {
     if (tool === "select" || !activeLayer || toolBlocked || e.button !== 0) return;
     if (drawingRef.current !== null) return; // 이미 다른 포인터가 그리는 중(다중 터치 가드)
@@ -1303,8 +1324,24 @@ export function BroadcastPanel({
       scheduleFlush();
       return;
     }
-    const f = widthFactor(e, p.x, p.y);
-    if (appendPoint(live.points, { x: p.x, y: p.y, p: f })) scheduleFlush();
+    // 필기감 핵심: React 이벤트는 프레임당 1개로 뭉쳐 오지만, 스타일러스/트랙패드는
+    // 그 사이 120Hz+로 샘플을 쌓는다. getCoalescedEvents로 중간 샘플을 전부 소화해야
+    // 빠른 획도 각지지 않고 매끈하다(필기 앱 표준 — 미지원 브라우저는 이벤트 1개 폴백).
+    const native = e.nativeEvent;
+    const samples =
+      typeof native.getCoalescedEvents === "function" && native.getCoalescedEvents().length > 0
+        ? native.getCoalescedEvents()
+        : [native];
+    const inner = boardInnerRef.current;
+    if (!inner) return;
+    const rect = inner.getBoundingClientRect(); // boardPoint와 같은 기준(좌표 어긋남 금지)
+    let added = false;
+    for (const s of samples) {
+      const sp = { x: s.clientX - rect.left, y: s.clientY - rect.top };
+      const f = widthFactor(s, sp.x, sp.y);
+      if (appendPoint(live.points, { x: sp.x, y: sp.y, p: f })) added = true;
+    }
+    if (added) scheduleFlush();
   }
   function endDraw(e?: React.PointerEvent<HTMLDivElement>) {
     if (!drawingRef.current) return;
@@ -2179,7 +2216,12 @@ export function BroadcastPanel({
           <div
             aria-hidden="true"
             className="bp-draw-surface"
-            style={{ pointerEvents: tool === "select" ? "none" : "auto" }}
+            data-cursor={tool === "pen" || tool === "hl" ? tool : undefined}
+            style={{
+              pointerEvents: tool === "select" ? "none" : "auto",
+              // 지우개: 실제 지워지는 크기 그대로의 원 커서 — 어디까지 닦일지 보고 지운다.
+              cursor: tool === "eraser" ? eraserCursor : undefined
+            }}
             onLostPointerCapture={endDraw}
             onPointerCancel={endDraw}
             onPointerDown={onDrawDown}
