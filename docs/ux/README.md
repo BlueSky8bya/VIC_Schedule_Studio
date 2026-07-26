@@ -10,3 +10,7 @@
 | [`motion/`](motion/) | 모션·햅틱(진동)·꾸미기 화려함 |
 
 대부분 📊 리포트/📋 계획(역사 기록). 현행 규칙은 루트 `CLAUDE.md`·`docs/sop.md`가 진실.
+
+직접 참조:
+
+- [`broadcast-panel-inking-research.md`](broadcast-panel-inking-research.md) — 방송 판서 잉크·펜·도구 UX 근거와 저장소 적용/미적용 결정.

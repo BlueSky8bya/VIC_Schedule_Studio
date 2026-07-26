@@ -59,10 +59,17 @@ import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { hapticTick } from "@/lib/ui/haptics";
 import { createBroadcastHistory } from "@/lib/broadcast/history";
 import {
+  isPenContact,
+  mapPenPressure,
+  shouldIgnoreTouchAfterPen,
+  smoothPressure
+} from "@/lib/broadcast/inking";
+import {
   appendPoint,
   backingScale,
   createStrokeStore,
   drawPenIncremental,
+  drawPenPrediction,
   drawStroke,
   isShapeTool,
   strokeIntersectsRect,
@@ -73,6 +80,7 @@ import {
   type StrokePoint,
   type StrokeStore
 } from "@/lib/broadcast/stroke-engine";
+import { inkContrast } from "@/lib/tags/color-tone";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 // 판서 팔레트 17색(그림판식 2줄 트레이) + 마지막 칸 '직접 고르기'(네이티브 색상판).
@@ -97,6 +105,8 @@ const PEN_COLORS = [
 ];
 // 굵기 6단(펜 기준 px) — 형광펜·지우개는 배수로 키운다.
 const PEN_WIDTHS = [2, 3, 5, 8, 12, 18];
+const DAY_MS = 24 * 60 * 60 * 1000;
+const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
 type Props = {
   monthLabel: string; // 예: "2026년 7월"
@@ -219,9 +229,12 @@ export function BroadcastPanel({
   const layerCanvases = useRef(new Map<string, HTMLCanvasElement>());
   const thumbCanvases = useRef(new Map<string, HTMLCanvasElement>());
   const liveCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const predictionCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const predictedPointsRef = useRef<StrokePoint[]>([]);
   const drawingRef = useRef<Stroke | null>(null);
   const drawnIdxRef = useRef(1); // committed 증분 렌더가 소화한 point 수(펜·지우개)
   const activePtrRef = useRef<number | null>(null); // 이 포인터만 stroke를 움직인다(다중 터치 가드)
+  const activePointerTypeRef = useRef<string | null>(null);
   const rafRef = useRef<number | null>(null);
   const scaleRef = useRef(1);
   const lastFitRef = useRef({ w: 0, h: 0, scale: 0 });
@@ -1070,13 +1083,17 @@ export function BroadcastPanel({
     return layerCanvases.current.get(layer) ?? null;
   }, []);
   const scaledCtx = useCallback((canvas: HTMLCanvasElement | null) => {
-    const ctx = canvas?.getContext("2d");
+    const transient =
+      canvas === liveCanvasRef.current || canvas === predictionCanvasRef.current;
+    const ctx = canvas?.getContext("2d", { desynchronized: transient });
     if (!ctx) return null;
     ctx.setTransform(scaleRef.current, 0, 0, scaleRef.current, 0, 0);
     return ctx;
   }, []);
   const clearCanvas = useCallback((canvas: HTMLCanvasElement | null) => {
-    const ctx = canvas?.getContext("2d");
+    const transient =
+      canvas === liveCanvasRef.current || canvas === predictionCanvasRef.current;
+    const ctx = canvas?.getContext("2d", { desynchronized: transient });
     if (!ctx || !canvas) return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1096,9 +1113,28 @@ export function BroadcastPanel({
   const replayAll = useCallback(() => {
     for (const id of layerCanvases.current.keys()) replayLayer(id);
     clearCanvas(liveCanvasRef.current);
+    clearCanvas(predictionCanvasRef.current);
+    predictedPointsRef.current = [];
   }, [replayLayer, clearCanvas]);
   // 위쪽 제스처 코드(획 이동/확대)가 최신 replayLayer를 부르게 ref로 노출(선언 순서 제약 회피).
   replayLayerFnRef.current = replayLayer;
+
+  // 펜이 진행 중인 터치 획을 선점할 때 사용한다. 터치 지우개는 committed 캔버스를 이미
+  // 바꿨을 수 있으므로 해당 레이어만 재생해 취소 전 상태를 복원한다.
+  const discardLiveStroke = useCallback(() => {
+    const live = drawingRef.current;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
+    drawingRef.current = null;
+    activePtrRef.current = null;
+    activePointerTypeRef.current = null;
+    predictedPointsRef.current = [];
+    clearCanvas(liveCanvasRef.current);
+    clearCanvas(predictionCanvasRef.current);
+    if (live?.tool === "eraser") replayLayer(live.layer);
+  }, [clearCanvas, replayLayer]);
 
   // 진행 중인 stroke를 지금 즉시 '완성'으로 커밋한다. 포인터 업뿐 아니라 undo/redo/전체
   // 지우기/리사이즈 직전에도 호출 — replayAll이 live 획을 날린 채 drawnIdxRef만 앞서 있는
@@ -1112,6 +1148,9 @@ export function BroadcastPanel({
     }
     drawingRef.current = null;
     activePtrRef.current = null;
+    activePointerTypeRef.current = null;
+    predictedPointsRef.current = [];
+    clearCanvas(predictionCanvasRef.current);
     if (live.tool !== "eraser") {
       // 펜·형광펜·도형: 라이브 → 자기 레이어 committed로 한 번에 옮긴다.
       // (펜도 라이브 전체 리드로 — 증분 커밋은 '임시 직선 꼬리'가 committed에 남아
@@ -1141,18 +1180,22 @@ export function BroadcastPanel({
       fitRaf = null;
       const cssW = inner.clientWidth;
       const cssH = inner.clientHeight;
-      // 동적 레이어 수 + 라이브 캔버스가 기존 3장 총예산을 나눠 쓴다.
+      // 동적 레이어 수 + 라이브/예측 캔버스가 backing-store 총예산을 나눠 쓴다.
       const scale = backingScale(
         cssW,
         cssH,
         window.devicePixelRatio || 1,
-        Math.max(1, layers.length + 1)
+        Math.max(1, layers.length + 2)
       );
       const W = Math.round(cssW * scale);
       const H = Math.round(cssH * scale);
       // 크기가 다른 캔버스만 재할당(새로 추가된 레이어 캔버스 포함 — width 0으로 마운트됨).
       let dirty = false;
-      for (const canvas of [...layerCanvases.current.values(), liveCanvasRef.current]) {
+      for (const canvas of [
+        ...layerCanvases.current.values(),
+        liveCanvasRef.current,
+        predictionCanvasRef.current
+      ]) {
         if (!canvas) continue;
         if (canvas.width === W && canvas.height === H) continue;
         canvas.width = W;
@@ -1210,6 +1253,7 @@ export function BroadcastPanel({
   // rAF 병합 플러시 — move마다가 아니라 프레임당 한 번만 그린다(G3b).
   const flushDraw = useCallback(() => {
     rafRef.current = null;
+    clearCanvas(predictionCanvasRef.current);
     const live = drawingRef.current;
     if (!live) return;
     if (live.tool === "pen") {
@@ -1217,6 +1261,13 @@ export function BroadcastPanel({
       // 밀려 잉크가 늦게 보였다. 임시 꼬리를 안 그리므로 울퉁불퉁 잔재도 없다.
       const ctx = scaledCtx(liveCanvasRef.current);
       if (ctx) drawnIdxRef.current = drawPenIncremental(ctx, live, drawnIdxRef.current);
+      // 예측점은 확정 획과 분리된 임시 캔버스에만 그린다. 다음 실제 이벤트마다 통째로
+      // 교체하므로 잘못된 예측이 히스토리·내보내기·레이어 비트맵에 남지 않는다.
+      const predicted = predictedPointsRef.current;
+      if (predicted.length > 0) {
+        const previewCtx = scaledCtx(predictionCanvasRef.current);
+        if (previewCtx) drawPenPrediction(previewCtx, live, predicted);
+      }
       return;
     }
     if (live.tool === "hl" || isShapeTool(live.tool)) {
@@ -1249,13 +1300,12 @@ export function BroadcastPanel({
     x: number,
     y: number
   ): number {
-    if (e.pointerType === "pen" && e.pressure > 0) {
-      // 감마 곡선(^0.65): 하드웨어 필압은 가볍게 쥔 구간에 몰려 있어 선형으로 쓰면
-      // 획이 내내 가늘다 — 저압을 끌어올려 실제 펜처럼 반응하게 한다(필기 앱 공통 처리).
-      // 이웃 샘플과 절반씩 섞어 필압 지터로 획이 우둘투둘해지는 것도 막는다.
+    if (e.pointerType === "pen") {
+      // 제품 기본 감마 곡선(^0.65) + 시간 기반 EMA. 고정 샘플 비율 대신 경과 시간을 써
+      // 60Hz와 240Hz 입력에서 같은 시간 동안 같은 필압 응답을 낸다.
       const d = strokeDynRef.current;
-      const raw = Math.min(1, Math.max(0.12, Math.pow(e.pressure, 0.65)));
-      const f = d.f * 0.5 + raw * 0.5;
+      const raw = mapPenPressure(e.pressure);
+      const f = smoothPressure(d.f, raw, e.timeStamp - d.t);
       strokeDynRef.current = { t: e.timeStamp, x, y, f };
       return f;
     }
@@ -1267,32 +1317,39 @@ export function BroadcastPanel({
     strokeDynRef.current = { t: e.timeStamp, x, y, f };
     return f;
   }
-  // 미니 달력 '오늘' 링용 — KST 기준(렌더마다 재계산해도 값싼 연산).
-  const todayIso = getTodayKst();
+  // 미니 달력 '오늘' 링용 — 패널을 KST 자정 너머 계속 열어도 다음 날짜로 이동한다.
+  const [todayIso, setTodayIso] = useState(() => getTodayKst());
+  useEffect(() => {
+    let timer: number | null = null;
+    const armKstMidnight = () => {
+      const now = Date.now();
+      const nextMidnight =
+        (Math.floor((now + KST_OFFSET_MS) / DAY_MS) + 1) * DAY_MS - KST_OFFSET_MS;
+      timer = window.setTimeout(() => {
+        setTodayIso(getTodayKst());
+        armKstMidnight();
+      }, nextMidnight - now + 100);
+    };
+    armKstMidnight();
+    return () => {
+      if (timer !== null) window.clearTimeout(timer);
+    };
+  }, []);
 
-  // 현재 펜 색이 도구 칩에 스밀 때의 아이콘 색 — 명도 대비로 흑/백 자동(연한 노랑 위 흰
-  // 아이콘 같은 저대비 방지). sRGB 상대 휘도 근사(WCAG 원칙, 연구 아카이브 §4).
+  // 현재 펜 색이 도구 칩에 스밀 때의 아이콘 색 — WCAG 선형 sRGB 상대휘도로 흑/백 중
+  // 대비가 높은 쪽을 고른다. 중립 외곽선은 흰색 잉크도 흰 툴바에서 사라지지 않게 한다.
   const activeInkStyle = useMemo(() => {
-    const m = /^#([0-9a-f]{6})$/i.exec(penColor);
-    let light = false;
-    if (m) {
-      const n = parseInt(m[1], 16);
-      const lum =
-        0.2126 * ((n >> 16) & 255) + 0.7152 * ((n >> 8) & 255) + 0.0722 * (n & 255);
-      light = lum > 168;
-    }
     return {
       background: penColor,
-      color: light ? "#2f2a45" : "#ffffff",
-      boxShadow: `0 2px 8px ${penColor}66, inset 0 1px 0 rgb(255 255 255 / 25%)`
+      color: inkContrast(penColor).ink,
+      boxShadow: `0 0 0 2px var(--surface), 0 0 0 3px var(--ink-soft), 0 2px 8px ${penColor}66`
     } as const;
   }, [penColor]);
 
   // 파밍 리젝션(연구 아카이브 §3): 펜(스타일러스) 입력이 최근에 있었으면 터치로 시작하는
   // 획을 무시한다 — 와콤/아이패드에서 캔버스에 손바닥을 얹고 쓰는 자세 지원(OS 1차 거름 +
   // 앱층 한 겹). 마우스는 영향 없음.
-  const lastPenTsRef = useRef(0);
-  const PALM_GUARD_MS = 1000;
+  const lastPenContactTsRef = useRef<number | null>(null);
 
   // 지우개 커서 — 실제 지워지는 지름(펜 굵기×5)의 원. 브라우저 커서 상한(128px) 안에서 clamp.
   const eraserCursor = useMemo(() => {
@@ -1306,16 +1363,42 @@ export function BroadcastPanel({
   }, [penWidth]);
   function onDrawDown(e: React.PointerEvent<HTMLDivElement>) {
     if (tool === "select" || !activeLayer || toolBlocked || e.button !== 0) return;
-    if (drawingRef.current !== null) return; // 이미 다른 포인터가 그리는 중(다중 터치 가드)
-    if (e.pointerType === "pen") lastPenTsRef.current = e.timeStamp;
-    // 파밍 리젝션: 펜을 방금까지 쓰고 있었다면 이 터치는 손바닥일 확률이 높다 — 획 금지.
-    if (e.pointerType === "touch" && e.timeStamp - lastPenTsRef.current < PALM_GUARD_MS) return;
+    const penContact = isPenContact(e.pointerType, e.pressure, e.buttons);
+    if (penContact) lastPenContactTsRef.current = e.timeStamp;
+    if (drawingRef.current !== null) {
+      // 손바닥이 먼저 닿았어도 실제 펜촉이 우선한다. 진행 중 터치 획은 기록 없이 버리고,
+      // 터치 지우개가 건드린 레이어는 discardLiveStroke가 재생해 원상 복구한다.
+      if (penContact && activePointerTypeRef.current === "touch") {
+        const stalePointerId = activePtrRef.current;
+        discardLiveStroke();
+        if (
+          stalePointerId !== null &&
+          e.currentTarget.hasPointerCapture(stalePointerId)
+        ) {
+          e.currentTarget.releasePointerCapture(stalePointerId);
+        }
+      } else {
+        return;
+      }
+    }
+    if (
+      shouldIgnoreTouchAfterPen(
+        e.pointerType,
+        e.timeStamp,
+        lastPenContactTsRef.current
+      )
+    ) {
+      e.preventDefault();
+      return;
+    }
     const p = boardPoint(e);
     if (!p) return;
     activePtrRef.current = e.pointerId;
+    activePointerTypeRef.current = e.pointerType;
     e.currentTarget.setPointerCapture(e.pointerId);
-    strokeDynRef.current = { t: e.timeStamp, x: p.x, y: p.y, f: 0.8 };
-    const f0 = e.pointerType === "pen" && e.pressure > 0 ? Math.max(0.12, e.pressure) : 0.8;
+    predictedPointsRef.current = [];
+    const f0 = e.pointerType === "pen" ? mapPenPressure(e.pressure) : 0.8;
+    strokeDynRef.current = { t: e.timeStamp, x: p.x, y: p.y, f: f0 };
     drawingRef.current = {
       tool: tool as Stroke["tool"],
       layer: activeLayer.id, // 활성 레이어에만(지우개 포함 — 그림판 문법)
@@ -1327,12 +1410,14 @@ export function BroadcastPanel({
     scheduleFlush();
   }
   function onDrawMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (e.pointerType === "pen") lastPenTsRef.current = e.timeStamp; // 파밍 가드 갱신
+    if (isPenContact(e.pointerType, e.pressure, e.buttons)) {
+      lastPenContactTsRef.current = e.timeStamp;
+    }
     const live = drawingRef.current;
     if (!live || e.pointerId !== activePtrRef.current) return;
-    const p = boardPoint(e);
-    if (!p) return;
     if (isShapeTool(live.tool)) {
+      const p = boardPoint(e);
+      if (!p) return;
       // 도형: 시작점 고정, 끝점만 갱신. Shift = 정비율(45° 선 / 정사각형 / 정원).
       const a = live.points[0];
       let end = p;
@@ -1355,29 +1440,54 @@ export function BroadcastPanel({
       scheduleFlush();
       return;
     }
-    // 필기감 핵심: React 이벤트는 프레임당 1개로 뭉쳐 오지만, 스타일러스/트랙패드는
-    // 그 사이 120Hz+로 샘플을 쌓는다. getCoalescedEvents로 중간 샘플을 전부 소화해야
-    // 빠른 획도 각지지 않고 매끈하다(필기 앱 표준 — 미지원 브라우저는 이벤트 1개 폴백).
+    // 브라우저가 한 pointermove에 합친 위치 변화는 feature detection 뒤 한 번만 꺼낸다.
+    // 반환 샘플의 순서를 그대로 소비하고, 미지원/빈 배열이면 부모 이벤트 하나로 폴백한다.
     const native = e.nativeEvent;
-    const samples =
-      typeof native.getCoalescedEvents === "function" && native.getCoalescedEvents().length > 0
-        ? native.getCoalescedEvents()
-        : [native];
+    const coalesced =
+      typeof native.getCoalescedEvents === "function" ? native.getCoalescedEvents() : [];
+    const samples = coalesced.length > 0 ? coalesced : [native];
     const inner = boardInnerRef.current;
     if (!inner) return;
-    const rect = inner.getBoundingClientRect(); // boardPoint와 같은 기준(좌표 어긋남 금지)
+    const rect = inner.getBoundingClientRect();
     let added = false;
     for (const s of samples) {
       const sp = { x: s.clientX - rect.left, y: s.clientY - rect.top };
       const f = widthFactor(s, sp.x, sp.y);
       if (appendPoint(live.points, { x: sp.x, y: sp.y, p: f })) added = true;
     }
-    if (added) scheduleFlush();
+    const previousPredictionCount = predictedPointsRef.current.length;
+    const predicted =
+      live.tool === "pen" &&
+      e.pointerType === "pen" &&
+      typeof native.getPredictedEvents === "function"
+        ? native.getPredictedEvents()
+        : [];
+    const lastPressure = live.points[live.points.length - 1]?.p ?? 0.7;
+    predictedPointsRef.current = predicted
+      .filter((sample) => Number.isFinite(sample.clientX) && Number.isFinite(sample.clientY))
+      .map((sample) => ({
+        x: sample.clientX - rect.left,
+        y: sample.clientY - rect.top,
+        p: lastPressure
+      }));
+    if (added || previousPredictionCount > 0 || predictedPointsRef.current.length > 0) {
+      scheduleFlush();
+    }
   }
   function endDraw(e?: React.PointerEvent<HTMLDivElement>) {
     if (!drawingRef.current) return;
-    if (e && e.pointerId !== activePtrRef.current) return; // 다른 포인터의 up/cancel 무시
+    if (e && e.pointerId !== activePtrRef.current) return; // 다른 포인터의 up 무시
+    if (e && activePointerTypeRef.current === "pen") {
+      lastPenContactTsRef.current = e.timeStamp;
+    }
     finishLiveStroke();
+  }
+  function cancelDraw(e: React.PointerEvent<HTMLDivElement>) {
+    if (!drawingRef.current || e.pointerId !== activePtrRef.current) return;
+    if (activePointerTypeRef.current === "pen") {
+      lastPenContactTsRef.current = e.timeStamp;
+    }
+    discardLiveStroke();
   }
   const doUndo = useCallback(() => {
     finishLiveStroke(); // 그리던 획 먼저 완성 — replay가 live를 날리는 불일치 방지(G3b-r)
@@ -1923,7 +2033,8 @@ export function BroadcastPanel({
                   style={{
                     width: Math.min(w + 2, 18),
                     height: Math.min(w + 2, 18),
-                    background: penColor
+                    background: penColor,
+                    boxShadow: "0 0 0 1px var(--ink-soft)"
                   }}
                 />
               </button>
@@ -2090,11 +2201,12 @@ export function BroadcastPanel({
                 const evs = eventsByDate.get(cell.isoDate) ?? [];
                 const inMonth = cell.inCurrentMonth;
                 const picked = rangeSelect.selected.has(i);
+                const isToday = cell.isoDate === todayIso;
                 const cls = [
                   "bp-mini-cell",
                   inMonth ? "" : "outside",
                   picked ? "picked" : "",
-                  cell.isoDate === todayIso ? "today" : "",
+                  isToday ? "today" : "",
                   cell.weekday === 0 ? "sun" : cell.weekday === 6 ? "sat" : ""
                 ]
                   .filter(Boolean)
@@ -2104,7 +2216,8 @@ export function BroadcastPanel({
                 return (
                   <div
                     aria-checked={picked}
-                    aria-label={`${Number(cell.isoDate.slice(5, 7))}월 ${cell.dayOfMonth}일${evs.length > 0 ? ` (일정 ${evs.length}개)` : ""}`}
+                    aria-current={isToday ? "date" : undefined}
+                    aria-label={`${Number(cell.isoDate.slice(5, 7))}월 ${cell.dayOfMonth}일${isToday ? ", 오늘" : ""}${evs.length > 0 ? ` (일정 ${evs.length}개)` : ""}`}
                     className={cls}
                     data-cell-index={i}
                     key={cell.isoDate}
@@ -2249,11 +2362,18 @@ export function BroadcastPanel({
                 }}
               />
               {l.id === activeLayerId ? (
-                <canvas
-                  aria-hidden="true"
-                  className={`bp-canvas${l.vis ? "" : " hidden"}`}
-                  ref={liveCanvasRef}
-                />
+                <>
+                  <canvas
+                    aria-hidden="true"
+                    className={`bp-canvas${l.vis ? "" : " hidden"}`}
+                    ref={liveCanvasRef}
+                  />
+                  <canvas
+                    aria-hidden="true"
+                    className={`bp-canvas${l.vis ? "" : " hidden"}`}
+                    ref={predictionCanvasRef}
+                  />
+                </>
               ) : null}
             </Fragment>
           ))}
@@ -2267,8 +2387,8 @@ export function BroadcastPanel({
               // 지우개: 실제 지워지는 크기 그대로의 원 커서 — 어디까지 닦일지 보고 지운다.
               cursor: tool === "eraser" ? eraserCursor : undefined
             }}
-            onLostPointerCapture={endDraw}
-            onPointerCancel={endDraw}
+            onLostPointerCapture={cancelDraw}
+            onPointerCancel={cancelDraw}
             onPointerDown={onDrawDown}
             onPointerMove={onDrawMove}
             onPointerUp={endDraw}

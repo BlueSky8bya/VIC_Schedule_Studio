@@ -78,6 +78,7 @@
   --paper: #f8efda;
   --surface: #fffdf6;
   --surface-2: #fdf6e8;
+  --studio-workbench: #eae6e0;
   /* 빅토리×빅타민 시그니처 — 선명한 비타민 팔레트(노랑=승리/주목, 초록=빅타민/참여,
      보라=무대/선택, 핑크=팬심/하트). 노랑·초록 위 글자는 흰색 금지(짙은 잉크 사용). */
   --accent: #ffc83d; /* 비타민 옐로(주 CTA·오늘·강조). 위 글자=--on-accent */

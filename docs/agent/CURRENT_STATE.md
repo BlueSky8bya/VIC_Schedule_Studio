@@ -36,9 +36,13 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
     방송국 API `broad.broad_start`(실제 뱅온 시각)로 기록(`fetchSoopBroadStart`,
     bno 일치 확인 + 이상치 가드). 시청자가 늦게 들어오면 그만큼 깎이던 문제(4h24m→4h).
     꼬리(ended_at=last_live_at)는 보수적 추정 유지. → [[broadcast-time-tracking]]
-  - **판서 패널 손맛·필기감**(`4c7b01c`): iPad 벤치마킹 — 활성 도구 액센트 채움+스프링 팝,
-    iOS 링 스와치, 채움 CTA, getCoalescedEvents(120Hz+ 샘플), 필압 감마(^0.65)+스무딩,
-    도구별 커서(지우개=실크기 원), 레이어/카드 등장 모션(reduce-motion 존중).
+  - **판서 패널 손맛·필기감**: `4c7b01c`·`45e3711` 이후 연구값을 제품 예산으로 과장하지 않게
+    [근거 아카이브](../ux/broadcast-panel-inking-research.md)를 교정. coalesced 단일 소비 +
+    분리 prediction 캔버스, 필압 감마(^0.65)·시간 기반 EMA, pen-priority palm guard
+    (첫 touch 오탐/hover 연장/pointercancel 커밋 제거), WCAG 잉크 아이콘 대비·중립 outline,
+    KST 오늘 링 자정 갱신, 레이어 28px 표적. 작업대는 따뜻한 라이트 톤 유지. 모바일은 기능
+    진입점 자체가 없어 범위 제외. 검증: vitest 256/256 · typecheck · production build 통과;
+    연결 브라우저가 없어 실제 판서 화면/실기기 펜 검증은 미실행.
 - **2026-07-25에 끝난 것(2) — 방송 가독성 2종(토리님 승인, PLAN-20260725-001)**
   (`15181d4`·`57f2c75`·`effd28c`·`3c8cd46`·`9717a57`·`6d2b359`):
   - **A안 달력 확대**: 달력 패널 위 Ctrl+휠만 가로채 `--cal-zoom` CSS 변수로 100/125/150%

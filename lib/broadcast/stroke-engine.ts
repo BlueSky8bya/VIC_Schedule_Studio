@@ -409,6 +409,59 @@ export function drawPenIncremental(ctx: MinimalCtx, stroke: Stroke, done: number
   return d;
 }
 
+/**
+ * 확정 잉크와 분리된 예측 캔버스에만 꼬리를 그린다. 3점 이상이면 증분 렌더가 끝난
+ * 마지막 중점부터 시작해 확정 픽셀을 다시 칠하지 않는다. 다음 실제 이벤트에서 전부 폐기된다.
+ */
+export function drawPenPrediction(
+  ctx: MinimalCtx,
+  stroke: Stroke,
+  predictedPoints: StrokePoint[]
+): void {
+  const confirmed = stroke.points;
+  if (stroke.tool !== "pen" || confirmed.length === 0 || predictedPoints.length === 0) return;
+
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.globalCompositeOperation = "source-over";
+  ctx.globalAlpha = 1;
+  ctx.strokeStyle = stroke.color;
+
+  // 아직 확정 곡선이 없는 1~2점 구간은 시작점 도장만 존재한다. 전체 초기 꼬리를 그려
+  // 펜촉까지 연결하고, 3점부터는 아래의 무중복 중점 경로로 전환한다.
+  if (confirmed.length < 3) {
+    drawPenPath(ctx, { ...stroke, points: [...confirmed, ...predictedPoints] });
+    return;
+  }
+
+  const widthOf = (point: StrokePoint) =>
+    stroke.width * (0.45 + (point.p ?? 0.7) * 0.85);
+
+  const previous = confirmed[confirmed.length - 2];
+  const lastConfirmed = confirmed[confirmed.length - 1];
+  let cursor = midOf(previous, lastConfirmed);
+  const tail = [lastConfirmed, ...predictedPoints];
+
+  for (let i = 0; i < tail.length - 1; i += 1) {
+    const next = midOf(tail[i], tail[i + 1]);
+    ctx.lineWidth = widthOf(tail[i]);
+    ctx.beginPath();
+    ctx.moveTo(cursor.x, cursor.y);
+    ctx.quadraticCurveTo(tail[i].x, tail[i].y, next.x, next.y);
+    ctx.stroke();
+    cursor = next;
+  }
+
+  const tip = tail[tail.length - 1];
+  ctx.lineWidth = widthOf(tip);
+  ctx.beginPath();
+  ctx.moveTo(cursor.x, cursor.y);
+  ctx.lineTo(tip.x, tip.y);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = "source-over";
+}
+
 /** 펜 전용: 조각(중점→중점)마다 lineWidth를 필압/속도 배율로 바꿔 그린다 — 펜촉 감.
  *  조각이 이웃 3점으로만 정의돼(국소성) 증분 렌더 슬라이스와 전체 재생이 같은 기하를 만든다.
  *  round cap 겹침은 불투명 단색이라 보이지 않는다. */

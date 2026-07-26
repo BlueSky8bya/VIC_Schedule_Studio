@@ -5,6 +5,7 @@ import {
   backingScale,
   createStrokeStore,
   DPR_CAP,
+  drawPenPrediction,
   drawStroke,
   MAX_BACKING_PIXELS,
   MAX_TOTAL_BACKING_PIXELS,
@@ -153,7 +154,7 @@ describe("backing scale — DPR cap + 총 픽셀 cap", () => {
   });
 
   it("동적 레이어는 전체 캔버스 픽셀 예산을 나눠 쓴다", () => {
-    const surfaces = 7; // 그리기 레이어 6 + 라이브 1
+    const surfaces = 8; // 그리기 레이어 6 + 라이브 1 + 예측 1
     const scale = backingScale(1920, 1080, 2, surfaces);
     const total = 1920 * scale * (1080 * scale) * surfaces;
     expect(total).toBeLessThanOrEqual(MAX_TOTAL_BACKING_PIXELS * 1.001);
@@ -305,6 +306,78 @@ describe("레이어 적용·렌더", () => {
     // 필압이 굵기로 이어진다: p 0.2 < 0.6 < 1 → 조각 굵기도 단조 증가.
     expect(widths[0]).toBeLessThan(widths[1]);
     expect(widths[1]).toBeLessThan(widths[2]);
+  });
+
+  it("예측 꼬리는 마지막 확정 중점부터 시작해 확정 구간을 다시 칠하지 않는다", () => {
+    const moves: Array<[number, number]> = [];
+    const lines: Array<[number, number]> = [];
+    const ctx = {
+      lineCap: "",
+      lineJoin: "",
+      lineWidth: 0,
+      strokeStyle: "",
+      globalCompositeOperation: "source-over",
+      globalAlpha: 1,
+      beginPath() {},
+      moveTo(x: number, y: number) {
+        moves.push([x, y]);
+      },
+      lineTo(x: number, y: number) {
+        lines.push([x, y]);
+      },
+      quadraticCurveTo() {},
+      stroke() {}
+    };
+    const stroke: Stroke = {
+      tool: "pen",
+      layer: "layer-1",
+      color: "#111",
+      width: 8,
+      points: [
+        { x: 0, y: 0, p: 0.4 },
+        { x: 10, y: 0, p: 0.5 },
+        { x: 20, y: 0, p: 0.6 }
+      ]
+    };
+
+    drawPenPrediction(ctx, stroke, [{ x: 30, y: 0, p: 0.6 }]);
+
+    expect(moves[0]).toEqual([15, 0]);
+    expect(lines.at(-1)).toEqual([30, 0]);
+    expect(stroke.points).toHaveLength(3);
+  });
+
+  it("초기 예측 꼬리도 현재 펜 색과 round cap을 사용한다", () => {
+    const ctx = {
+      lineCap: "",
+      lineJoin: "",
+      lineWidth: 0,
+      strokeStyle: "",
+      globalCompositeOperation: "destination-out",
+      globalAlpha: 0,
+      beginPath() {},
+      moveTo() {},
+      lineTo() {},
+      quadraticCurveTo() {},
+      stroke() {}
+    };
+
+    drawPenPrediction(
+      ctx,
+      {
+        tool: "pen",
+        layer: "layer-1",
+        color: "#f43f5e",
+        width: 8,
+        points: [{ x: 0, y: 0, p: 0.5 }]
+      },
+      [{ x: 10, y: 0, p: 0.5 }]
+    );
+
+    expect(ctx.strokeStyle).toBe("#f43f5e");
+    expect(ctx.lineCap).toBe("round");
+    expect(ctx.globalCompositeOperation).toBe("source-over");
+    expect(ctx.globalAlpha).toBe(1);
   });
 
   it("형광펜 3점+: 곡선 보간을 쓰되 stroke는 1번(반투명 겹침 진해짐 방지)", () => {

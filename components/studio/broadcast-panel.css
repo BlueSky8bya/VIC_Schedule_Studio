@@ -5,6 +5,7 @@
    docs/ux/broadcast-panel-inking-research.md §4). 툴바·피커·레이어는 작업대 위에
    '떠 있는' 카드(아일랜드) 어휘로 한 가족을 이룬다. */
 .broadcast-panel {
+  --accent: var(--violet);
   position: fixed;
   inset: 0;
   z-index: 10000; /* 편집실 어떤 오버레이보다 위(드래그 유령 9999 포함 — 열려있는 동안 조작 없음) */
@@ -12,7 +13,7 @@
   flex-direction: column;
   gap: 0;
   padding: 0;
-  background: #eae6e0; /* 따뜻한 작업대 — 불투명(뒤 비침 금지 계약 유지) */
+  background: var(--studio-workbench); /* 따뜻한 작업대 — 불투명(뒤 비침 금지 계약 유지) */
   overflow-y: auto;
   /* 루트에는 애니메이션 금지(G3a) — opacity 등장이면 그 200ms 동안 뒤 비공개 화면이 비쳐
      '항상 불투명' 계약 위반. 배경은 즉시 불투명, 등장 연출은 내부 콘텐츠만. */
@@ -54,10 +55,10 @@ html[data-reduce-motion] .broadcast-panel > * {
   margin: 0;
   font-size: 12.5px;
   font-weight: 600;
-  color: #8a84a6;
+  color: var(--ink-soft);
 }
 .bp-hint strong {
-  color: #6b5bd6;
+  color: var(--violet);
 }
 .bp-close {
   display: inline-flex;
@@ -152,7 +153,7 @@ html[data-reduce-motion] .bp-close:active {
   padding: 7px 18px;
   border: 0;
   border-radius: var(--r-pill);
-  background: linear-gradient(180deg, #8577f2, #6a5ae0);
+  background: linear-gradient(180deg, #6a5ae0, var(--violet));
   color: #ffffff;
   font-size: 13px;
   font-weight: 800;
@@ -190,7 +191,7 @@ html[data-reduce-motion] .bp-close:active {
   text-align: center;
   font-size: 11px;
   font-weight: 800;
-  color: #8a84a6;
+  color: var(--muted);
 }
 .bp-weekdays .sun {
   color: #dc2626;
@@ -217,16 +218,19 @@ html[data-reduce-motion] .bp-close:active {
 .bp-mini-cell:hover {
   background: rgb(124 108 240 / 8%);
 }
-/* 전월/익월 회색 날짜 — 선택은 되게, '주역 아님'은 톤으로만(선택하면 또렷해짐). */
+/* 전월/익월 — 낮은 opacity로 글자 대비까지 죽이지 않고 표면 톤으로 구분한다. */
 .bp-mini-cell.outside {
-  opacity: 0.42;
+  background: var(--surface-2);
 }
 .bp-mini-cell.outside:hover,
 .bp-mini-cell.outside.picked {
-  opacity: 0.9;
+  opacity: 1;
+}
+.bp-mini-cell.outside:hover {
+  background: var(--violet-soft);
 }
 .bp-mini-cell:focus-visible {
-  outline: 2px solid rgb(124 108 240 / 70%);
+  outline: 2px solid var(--violet);
   outline-offset: -2px;
 }
 .bp-mini-cell.picked {
@@ -251,7 +255,7 @@ html[data-reduce-motion] .bp-close:active {
   min-width: 20px;
   height: 20px;
   border-radius: 50%;
-  box-shadow: 0 0 0 2px rgb(124 108 240 / 60%);
+  box-shadow: 0 0 0 2px var(--violet);
 }
 .bp-mini-num {
   font-size: 13px;
@@ -280,7 +284,7 @@ html[data-reduce-motion] .bp-close:active {
   font-size: 10px;
   font-style: normal;
   font-weight: 800;
-  color: #a6a0be;
+  color: var(--ink-soft);
 }
 
 /* ── 판서 도구줄 — 작업대 위 플로팅 카드(iPad Freeform 문법, 앱 톤 유지).
@@ -337,7 +341,7 @@ html[data-reduce-motion] .bp-close:active {
   font-style: normal;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: #a09a8c;
+  color: var(--muted);
 }
 /* iPad 툴바 벤치마킹: 평상시 보더리스 아이콘 버튼, 활성 = 진한 액센트 채움 + 흰 아이콘
    (iOS 세그먼트 컨트롤 문법). 전환은 스프링 이징으로 '통' 하고 자리를 잡는다. */
@@ -599,7 +603,7 @@ html[data-reduce-motion] .bp-layer-item {
 }
 .bp-layer-select:focus-visible {
   border-radius: 6px;
-  outline: 2px solid rgb(124 108 240 / 65%);
+  outline: 2px solid var(--violet);
   outline-offset: 2px;
 }
 .bp-layer-actions {
@@ -623,7 +627,7 @@ html[data-reduce-motion] .bp-layer-item {
   transition: background var(--dur-1) var(--ease);
 }
 .bp-layer-btn[aria-pressed="false"] {
-  color: #b9b3d1;
+  color: var(--muted);
 }
 .bp-layer-btn:hover {
   background: rgb(124 108 240 / 10%);
@@ -751,7 +755,7 @@ html[data-reduce-motion] .bp-layer-item {
   margin: 0;
   font-size: 14px;
   font-weight: 700;
-  color: #a6a0be;
+  color: var(--muted);
 }
 /* 날짜 컬럼 = 그림판 위 자유 배치 카드(선택 도구에서 끌어 이동·손잡이로 크기).
    내부 글자는 em — 컬럼 fontSize(폭 비례 %)에 따라 통째로 커진다. */
@@ -801,7 +805,7 @@ html[data-reduce-motion] .bp-day-col {
 .bp-day-head span {
   font-size: 0.93em;
   font-weight: 800;
-  color: #8a84a6;
+  color: var(--muted);
 }
 .bp-col-x {
   display: inline-flex;
@@ -896,7 +900,7 @@ html[data-reduce-motion] .bp-day-col {
   margin: 0;
   font-size: 13px;
   font-weight: 700;
-  color: #a6a0be;
+  color: var(--muted);
 }
 .bp-card {
   display: flex;
