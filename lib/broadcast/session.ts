@@ -1,5 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
-import { fetchSoopBroadStart } from "@/lib/broadcast/soop";
+import { fetchSoopBroadStart, fetchSoopVodTimes } from "@/lib/broadcast/soop";
 
 // 방송 ON/OFF 세션 기록기 — soop-live 라우트(시청자 폴링)와 백업 cron이 매 폴링마다 호출한다.
 // 라이브 상태 전이를 broadcast_session에 한 줄로 적재한다(시작→종료 1세션). 절대 응답을 막지 않게
@@ -99,12 +99,31 @@ export async function recordLiveTick(state: {
       return;
     }
 
-    // offline — 열린 세션이 있으면 마지막 라이브 확인 시각에서 종료 확정.
+    // offline — 열린 세션을 닫는다. 종료시각은 다시보기(VOD)의 정답값을 우선한다:
+    // 마지막 폴링(last_live_at) 이후 뱅종까지의 꼬리가 통째로 깎이던 손실을 VOD의
+    // reg_date(≈실제 뱅종)·길이로 보정하고, 시작도 'VOD 등록 − 길이'로 정밀화한다
+    // (더 이른 시각일 때만 — 방송 중 잠깐 열어본 폴링보다 정확). VOD가 아직 안 올라왔거나
+    // 실패하면 예전처럼 last_live_at으로 보수적 종료(다음 offline 폴링은 열린 세션이
+    // 없어 이 경로에 다시 안 들어온다 — 그 한 번의 기회에 최선을 다한다).
     if (open) {
-      await supabase
-        .from("broadcast_session")
-        .update({ ended_at: open.last_live_at })
-        .eq("id", open.id);
+      const vod = open.bno !== null ? await fetchSoopVodTimes(open.bno) : null;
+      const lastLiveMs = new Date(open.last_live_at).getTime();
+      const patch: {
+        ended_at: string;
+        last_live_at?: string;
+        started_at?: string;
+        start_day?: string;
+      } = { ended_at: open.last_live_at };
+      if (vod && new Date(vod.endedAt).getTime() >= lastLiveMs) {
+        patch.ended_at = vod.endedAt;
+        patch.last_live_at = vod.endedAt;
+        const vodStartMs = new Date(vod.startedAt).getTime();
+        if (vodStartMs < new Date(open.started_at).getTime()) {
+          patch.started_at = vod.startedAt;
+          patch.start_day = kstDay(vodStartMs);
+        }
+      }
+      await supabase.from("broadcast_session").update(patch).eq("id", open.id);
     }
   } catch {
     // 진단용 부가 기록 — 실패해도 조용히 넘어간다(시청자 응답·방송에 영향 없음).

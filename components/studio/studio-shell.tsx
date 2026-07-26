@@ -396,6 +396,33 @@ export function StudioShell({
   // #10 저장 신뢰: 모든 쓰기가 studioWrite를 거치므로 거기서 상태를 잡아 헤더 칩에 보여준다.
   // idle(아직 저장 없음)·saving(저장 중)·saved(저장됨+KST 시각)·failed(저장 실패).
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
+  // 배포 버전 배지 클릭 → 버전 문자열 복사(잠깐 '복사됨'으로 확인).
+  const [buildCopied, setBuildCopied] = useState(false);
+  const buildCopiedTimer = useRef<number | null>(null);
+  const buildSha = process.env.APP_COMMIT?.slice(0, 7) ?? "dev";
+  function copyBuildSha() {
+    hapticTick();
+    const done = () => {
+      setBuildCopied(true);
+      if (buildCopiedTimer.current) window.clearTimeout(buildCopiedTimer.current);
+      buildCopiedTimer.current = window.setTimeout(() => setBuildCopied(false), 1400);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(buildSha).then(done, () => {});
+      return;
+    }
+    // 클립보드 API가 없는 환경(http 등) 폴백.
+    const ta = document.createElement("textarea");
+    ta.value = buildSha;
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand("copy");
+      done();
+    } finally {
+      document.body.removeChild(ta);
+    }
+  }
   const [lastSavedKst, setLastSavedKst] = useState<string | null>(null);
   const savingCountRef = useRef(0); // 동시 진행 쓰기 수 — 0이 될 때 최종 상태 확정
   const savingSinceRef = useRef(0); // 저장 묶음 시작 시각(‘저장 중’ 최소 노출)
@@ -5158,7 +5185,20 @@ export function StudioShell({
             {schedule.calendar.title}
             <span aria-hidden="true">✨️</span>
           </h1>
-          <p className="eyebrow studio-eyebrow">{deskLabel}</p>
+          {/* 데스크 라벨(위) + 배포 버전 배지(아래)를 세로로 묶고, 묶음이 헤더 세로 중앙에.
+              배지는 클릭하면 버전 문자열이 복사된다(잠깐 '복사됨'으로 바뀌어 확인). */}
+          <div className="studio-left-meta">
+            <p className="eyebrow studio-eyebrow">{deskLabel}</p>
+            <button
+              aria-label={`배포 버전 ${buildSha} 복사`}
+              className={`studio-build-tag studio-build-copy${isDevInsights ? " dev" : ""}`}
+              title="클릭하면 버전이 복사돼요"
+              type="button"
+              onClick={copyBuildSha}
+            >
+              {buildCopied ? "복사됨 ✓" : buildSha}
+            </button>
+          </div>
         </div>
 
         {/* 가운데: 현재 월(크게). 이동은 하단 플로팅 < > 버튼 + 키보드 ←/→ 로.
@@ -5177,15 +5217,9 @@ export function StudioShell({
         {/* 오른쪽: 역할·도구. 배포 버전(위)+저장됨(아래) 캡슐을 역할 배지 왼쪽에 세로로 —
             모바일 헤더의 캡슐 문법과 통일(메타는 작고 조용, 저장 상태가 주). */}
         <div className="studio-role-tools">
-          <div className="studio-meta-capsule">
-            <span
-              aria-hidden="true"
-              className={`studio-build-tag${isDevInsights ? " dev" : ""}`}
-            >
-              {process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}
-            </span>
-            {renderSaveStatus()}
-          </div>
+          {/* 배포 버전 배지는 왼쪽 데스크 라벨 아래로 이사 — 여기는 저장 상태 칩만.
+              칩의 아래 끝선은 역할 배지 버튼의 아래 끝선과 맞춘다(.studio-meta-capsule). */}
+          <div className="studio-meta-capsule">{renderSaveStatus()}</div>
           {/* 미리보기 안내는 역할 배지("?") 설명 팝오버 안 작은 문구로 일원화(별도 플래그 제거). */}
           {renderRoleBadge()}
           {/* 개발자는 역할 미리보기 드롭다운, 그 외 역할은 시청자 화면 미리보기. */}

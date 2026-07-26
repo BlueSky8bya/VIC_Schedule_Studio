@@ -68,13 +68,50 @@ html {
   grid-column: 1;
   justify-self: start;
   display: flex;
-  align-items: baseline;
+  align-items: center; /* 라벨+버전 묶음이 헤더 세로 중앙에 오게(제목도 중앙 기준) */
   gap: 12px;
   min-width: 0;
 }
 .studio-eyebrow {
   margin: 0;
   white-space: nowrap;
+}
+/* 데스크 라벨(위) + 배포 버전 배지(아래) 세로 묶음 — 묶음 자체가 헤더 중앙선에 걸린다. */
+.studio-left-meta {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+/* 왼쪽으로 이사한 배포 버전 배지 — 클릭=복사 버튼. 기본 .studio-build-tag의 절대배치/
+   pointer-events:none을 해제하고 조용한 필 모양으로. */
+.studio-build-copy {
+  position: static;
+  transform: none;
+  left: auto;
+  top: auto;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border: 1px solid rgb(148 140 168 / 28%);
+  border-radius: var(--r-pill);
+  background: rgb(148 140 168 / 8%);
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.studio-build-copy:hover {
+  background: rgb(124 108 240 / 12%);
+  color: #6b5bd6;
+}
+.studio-build-copy:active {
+  transform: scale(0.94);
+}
+.studio-build-copy.dev {
+  border-color: rgb(124 108 240 / 30%);
 }
 /* 가운데: 월 이동(헤더 정중앙) */
 .studio-month-nav {
@@ -153,10 +190,13 @@ html {
 
 /* 헤더 메타 캡슐 — 배포 버전(위, 조용한 메타) + 저장됨 칩(아래, 주 상태)을 세로로.
    개발자 배지 왼쪽에 붙어 모바일 헤더 캡슐(.m-head-left)과 같은 문법. */
+/* 이제 저장 상태 칩만 담는다(버전 배지는 왼쪽 데스크 라벨 아래로 이사).
+   align-self:flex-end — 칩의 아래 끝선이 같은 줄 역할 배지 버튼의 아래 끝선과 맞는다. */
 .studio-meta-capsule {
   display: inline-flex;
   flex-direction: column;
   align-items: center;
+  align-self: flex-end;
   gap: 3px;
   margin-right: 2px;
 }

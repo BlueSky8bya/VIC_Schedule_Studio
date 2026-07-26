@@ -57,6 +57,44 @@ export async function fetchSoopBroadStart(bno: string | null): Promise<string | 
   }
 }
 
+// 다시보기(VOD) API — 방송이 끝나면 몇 분 안에 자동 등록된다. reg_date(등록시각) ≈ 실제
+// 뱅종 시각, total_file_duration(ms) = 실제 방송 길이, 썸네일 rowKey에 bno가 박혀 있어
+// 어느 방송의 VOD인지 정확히 맞출 수 있다. 뱅종 감지 시 ended_at 꼬리 손실(마지막 폴링
+// 이후 구간이 통째로 깎이던 문제)을 이 값으로 보정한다. 실패/미등록이면 null(보수적 폴백).
+const VOD_API = `https://chapi.sooplive.co.kr/api/${BJ_ID}/vods/review?page=1&per_page=20&orderby=reg_date`;
+
+export type VodTimes = { startedAt: string; endedAt: string };
+
+export async function fetchSoopVodTimes(bno: string): Promise<VodTimes | null> {
+  try {
+    const res = await fetch(VOD_API, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      data?: { reg_date?: string; ucc?: { thumb?: string; total_file_duration?: number } }[];
+    };
+    const item = (json.data ?? []).find((v) => v.ucc?.thumb?.includes(`_${bno}_`));
+    if (!item?.reg_date) return null;
+    const durMs = Number(item.ucc?.total_file_duration);
+    // "YYYY-MM-DD HH:mm:ss" (KST) → ISO(UTC)
+    const endMs = Date.parse(`${item.reg_date.replace(" ", "T")}+09:00`);
+    if (!Number.isFinite(endMs) || !Number.isFinite(durMs)) return null;
+    // 이상치 가드: 길이 1분~24h, 등록시각이 미래이거나 이틀 넘게 과거면 버린다.
+    const now = Date.now();
+    if (durMs < 60 * 1000 || durMs > 24 * 3600 * 1000) return null;
+    if (endMs > now + 10 * 60 * 1000 || endMs < now - 48 * 3600 * 1000) return null;
+    return {
+      startedAt: new Date(endMs - durMs).toISOString(),
+      endedAt: new Date(endMs).toISOString()
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchSoopLive(): Promise<LiveState> {
   try {
     const res = await fetch(LIVE_API, {
