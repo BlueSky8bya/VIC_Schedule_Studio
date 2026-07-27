@@ -65,6 +65,12 @@ import {
   smoothPressure
 } from "@/lib/broadcast/inking";
 import {
+  resolveWritableDrawingLayerId,
+  shouldEnterScheduleArrangeMode,
+  toolAfterEmptyLayerAdded,
+  toolAfterInkColorPick
+} from "@/lib/broadcast/workflow";
+import {
   appendPoint,
   backingScale,
   createStrokeStore,
@@ -210,6 +216,8 @@ export function BroadcastPanel({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const sendBtnRef = useRef<HTMLButtonElement | null>(null);
+  const pickerToggleRef = useRef<HTMLButtonElement | null>(null);
+  const scheduleLayerButtonRef = useRef<HTMLButtonElement | null>(null);
 
   // ── 판서 엔진(M4b): stroke 벡터 스토어 + 레이어별 committed 캔버스 + 라이브 1장 ──
   // 배경(날짜 카드 DOM)과 캔버스는 같은 좌표면(.bp-board-inner)에 있다 — 보드가 가로
@@ -243,7 +251,12 @@ export function BroadcastPanel({
   const [penWidth, setPenWidth] = useState(PEN_WIDTHS[2]);
   // '색 직접 고르기' 팝오버 — 네이티브 OS 색상판 대신 태그 편집과 같은 인라인 피커를 재사용
   // (주변과 같은 디자인 언어: 같은 트레이·SV 영역·톤 필터). openedWith = 취소 시 복귀 색.
-  const [colorPop, setColorPop] = useState<{ anchor: DOMRect; openedWith: string } | null>(null);
+  const [colorPop, setColorPop] = useState<{
+    anchor: DOMRect;
+    openedWith: string;
+    openedWithTool: BroadcastTool;
+    openedWithLayerId: string;
+  } | null>(null);
   const colorPopRef = useRef(colorPop);
   colorPopRef.current = colorPop;
   // 레이어 목록(위 = 맨 위 레이어). 배경(날짜 카드 DOM)은 목록 밖 고정 기본 — 표시 토글만.
@@ -253,6 +266,7 @@ export function BroadcastPanel({
   const [activeLayerId, setActiveLayerId] = useState("layer-1");
   const activeLayerIdRef = useRef(activeLayerId);
   activeLayerIdRef.current = activeLayerId;
+  const lastDrawingLayerIdRef = useRef<string | null>("layer-1");
   const layerSeq = useRef(1);
   const [bgVis, setBgVis] = useState(true);
   const bgVisRef = useRef(bgVis);
@@ -268,6 +282,14 @@ export function BroadcastPanel({
     setStrokeSel([]);
     setColSel(new Set());
   }, [activeLayerId]);
+  // 일정 카드 편집 뒤 다시 그리기 도구를 고르면 직전에 쓰던 정상 그림 레이어로 돌아간다.
+  // 숨김·잠금 레이어는 기억 후보에서 제외해 자동 전환이 곧바로 막힌 상태가 되지 않게 한다.
+  useEffect(() => {
+    const active = layers.find(
+      (layer) => layer.id === activeLayerId && layer.vis && !layer.lock
+    );
+    if (active) lastDrawingLayerIdRef.current = active.id;
+  }, [activeLayerId, layers]);
   // undo/redo 버튼 활성 + 오른쪽 레이어 썸네일 갱신용(스토어는 ref라 리렌더를 직접 못 일으킨다).
   const [strokeVersion, setStrokeVersion] = useState(0);
   // 레이어 패널 썸네일(실제 그림판 문법) — 캔버스에서 축소 복사. 배경(날짜 카드 DOM)은
@@ -345,6 +367,7 @@ export function BroadcastPanel({
   colsRef.current = cols;
   const sentRef = useRef(sentDateKeys);
   sentRef.current = sentDateKeys;
+  const hasSentOnceRef = useRef(sentDateKeys.length > 0);
   const layersRef = useRef(layers);
   layersRef.current = layers;
   const pushHist = useCallback((a: HistAction) => {
@@ -1250,6 +1273,33 @@ export function BroadcastPanel({
   const toolBlocked =
     tool !== "select" && (!activeLayer || activeLayer.lock || !activeLayer.vis);
 
+  // 도구 버튼이 켜졌는데 일정/잠금/숨김 레이어라 실제 입력은 막히는 dead state를 없앤다.
+  // 사용자 레이어 의도를 존중해 자동 생성·잠금 해제·표시 전환은 하지 않는다.
+  function activateDrawingTool(nextTool: BroadcastTool) {
+    const layerId = resolveWritableDrawingLayerId(
+      layersRef.current,
+      activeLayerIdRef.current,
+      lastDrawingLayerIdRef.current
+    );
+    if (layerId && layerId !== activeLayerIdRef.current) setActiveLayerId(layerId);
+    setTool(nextTool);
+  }
+
+  function applyInkColor(hex: string) {
+    setPenColor(hex);
+    activateDrawingTool(toolAfterInkColorPick(tool));
+  }
+
+  function restoreColorPickerContext(context: NonNullable<typeof colorPop>) {
+    setPenColor(context.openedWith);
+    setTool(context.openedWithTool);
+    const layerStillExists =
+      context.openedWithLayerId === BG_LAYER_ID ||
+      layersRef.current.some((layer) => layer.id === context.openedWithLayerId);
+    if (layerStillExists) setActiveLayerId(context.openedWithLayerId);
+    setColorPop(null);
+  }
+
   // rAF 병합 플러시 — move마다가 아니라 프레임당 한 번만 그린다(G3b).
   const flushDraw = useCallback(() => {
     rafRef.current = null;
@@ -1603,6 +1653,7 @@ export function BroadcastPanel({
     const after = [{ id, name: `레이어 ${layerSeq.current}`, vis: true, lock: false }, ...before];
     setLayers(after);
     setActiveLayerId(id); // 새 레이어가 맨 위 + 바로 활성
+    setTool(toolAfterEmptyLayerAdded(tool)); // 빈 레이어에서 선택/지우개로 한 번 더 막히지 않게
     pushHist({ t: "layers", before, after });
   }
   function deleteLayer(id: string) {
@@ -1639,6 +1690,7 @@ export function BroadcastPanel({
     () => new Map(days.map((d) => [d.dateKey, d.events] as const)),
     [days]
   );
+  const sentDateSet = useMemo(() => new Set(sentDateKeys), [sentDateKeys]);
 
   // 미니 달력 다중선택 — 편집 그리드와 완전히 분리된 자체 인스턴스(D2).
   // 보내기 버튼은 exempt: 누르는 순간 onDocDown이 선택을 지우는 것 방지(D2-b).
@@ -1658,17 +1710,38 @@ export function BroadcastPanel({
     }
     return out;
   }, [cells, rangeSelect]);
+  const selectedDateKeysNow = selectedDateKeys();
+  const sendableDateCount = selectedDateKeysNow.filter((key) => !sentDateSet.has(key)).length;
 
   function handleSend() {
-    const keys = selectedDateKeys();
-    if (keys.length === 0) return;
-    hapticTick();
+    const selectedKeys = selectedDateKeys();
     const before = [...sentRef.current];
-    const after = [...new Set([...before, ...keys])].sort();
+    const beforeSet = new Set(before);
+    const newKeys = selectedKeys.filter((key) => !beforeSet.has(key));
+    if (newKeys.length === 0) return;
+    hapticTick();
+    const after = [...before, ...newKeys].sort();
     pushHist({ t: "sent", before, after, colsBefore: new Map(colsRef.current) });
-    onSend(keys);
+    const enterArrangeMode = shouldEnterScheduleArrangeMode(
+      hasSentOnceRef.current,
+      newKeys.length
+    );
+    hasSentOnceRef.current = true;
+    if (enterArrangeMode) {
+      setBgVis(true);
+      setActiveLayerId(BG_LAYER_ID);
+      setTool("select");
+    }
+    onSend(newKeys);
     rangeSelect.clearSelection();
     setPickerOpen(false); // 보냈으면 달력은 접어 그림판 공간 확보(헤더로 다시 펼침)
+    // 선택 해제로 보내기 버튼이 disabled가 되므로 포커스를 살아 있는 다음 작업점으로 옮긴다.
+    window.requestAnimationFrame(() => {
+      const target = enterArrangeMode
+        ? scheduleLayerButtonRef.current
+        : pickerToggleRef.current;
+      target?.focus({ preventScroll: true });
+    });
   }
   function removeDay(dateKey: string) {
     const before = [...sentRef.current];
@@ -1910,7 +1983,8 @@ export function BroadcastPanel({
                 type="button"
                 onClick={() => {
                   hapticTick();
-                  setTool(key);
+                  if (key === "select") setTool(key);
+                  else activateDrawingTool(key);
                 }}
               >
                 <Icon aria-hidden="true" size={16} />
@@ -1940,7 +2014,7 @@ export function BroadcastPanel({
                 type="button"
                 onClick={() => {
                   hapticTick();
-                  setTool(key);
+                  activateDrawingTool(key);
                 }}
               >
                 <Icon aria-hidden="true" size={16} />
@@ -1961,10 +2035,9 @@ export function BroadcastPanel({
                 type="button"
                 onClick={() => {
                   hapticTick();
-                  setPenColor(c);
-                  // 색을 골랐다 = 그릴 준비 — 색을 안 쓰는 도구(선택·지우개)였다면 펜으로.
-                  // (형광펜·도형은 색을 쓰므로 유지 — 색만 바꿔서 계속 그린다.)
-                  if (tool === "select" || tool === "eraser") setTool("pen");
+                  // 선택·지우개면 펜으로, 형광펜·도형이면 도구 유지. 일정 레이어에서는
+                  // 최근 사용 가능한 그림 레이어까지 함께 복귀해 바로 그릴 수 있게 한다.
+                  applyInkColor(c);
                 }}
               />
             ))}
@@ -1983,14 +2056,15 @@ export function BroadcastPanel({
               onClick={(e) => {
                 hapticTick();
                 if (colorPop) {
-                  setColorPop(null);
+                  restoreColorPickerContext(colorPop);
                   return;
                 }
                 setColorPop({
                   anchor: e.currentTarget.getBoundingClientRect(),
-                  openedWith: penColor
+                  openedWith: penColor,
+                  openedWithTool: tool,
+                  openedWithLayerId: activeLayerId
                 });
-                if (tool === "select" || tool === "eraser") setTool("pen");
               }}
             />
           </div>
@@ -2001,14 +2075,8 @@ export function BroadcastPanel({
               canClear={false}
               kind="modifier"
               value={penColor}
-              onCancel={() => {
-                setPenColor(colorPop.openedWith);
-                setColorPop(null);
-              }}
-              onChange={(hex) => {
-                setPenColor(hex);
-                if (tool === "select" || tool === "eraser") setTool("pen");
-              }}
+              onCancel={() => restoreColorPickerContext(colorPop)}
+              onChange={applyInkColor}
               onClear={() => {}}
               onClose={() => setColorPop(null)}
             />
@@ -2169,6 +2237,7 @@ export function BroadcastPanel({
           <button
             aria-expanded={pickerOpen}
             className="bp-picker-toggle"
+            ref={pickerToggleRef}
             type="button"
             onClick={() => {
               hapticTick();
@@ -2179,12 +2248,14 @@ export function BroadcastPanel({
           </button>
           <button
             className="bp-send"
-            disabled={selectedDateKeys().length === 0}
+            disabled={sendableDateCount === 0}
             onClick={handleSend}
             ref={sendBtnRef}
             type="button"
           >
-            그림판으로 보내기{selectedDateKeys().length > 0 ? ` (${selectedDateKeys().length})` : ""}
+            {selectedDateKeysNow.length > 0 && sendableDateCount === 0
+              ? "이미 그림판에 있어요"
+              : `그림판으로 보내기${sendableDateCount > 0 ? ` (${sendableDateCount})` : ""}`}
           </button>
         </div>
         {pickerOpen ? (
@@ -2202,11 +2273,13 @@ export function BroadcastPanel({
                 const inMonth = cell.inCurrentMonth;
                 const picked = rangeSelect.selected.has(i);
                 const isToday = cell.isoDate === todayIso;
+                const sent = sentDateSet.has(cell.isoDate);
                 const cls = [
                   "bp-mini-cell",
                   inMonth ? "" : "outside",
                   picked ? "picked" : "",
                   isToday ? "today" : "",
+                  sent ? "sent" : "",
                   cell.weekday === 0 ? "sun" : cell.weekday === 6 ? "sat" : ""
                 ]
                   .filter(Boolean)
@@ -2217,7 +2290,7 @@ export function BroadcastPanel({
                   <div
                     aria-checked={picked}
                     aria-current={isToday ? "date" : undefined}
-                    aria-label={`${Number(cell.isoDate.slice(5, 7))}월 ${cell.dayOfMonth}일${isToday ? ", 오늘" : ""}${evs.length > 0 ? ` (일정 ${evs.length}개)` : ""}`}
+                    aria-label={`${Number(cell.isoDate.slice(5, 7))}월 ${cell.dayOfMonth}일${isToday ? ", 오늘" : ""}${sent ? ", 그림판에 보냄" : ""}${evs.length > 0 ? ` (일정 ${evs.length}개)` : ""}`}
                     className={cls}
                     data-cell-index={i}
                     key={cell.isoDate}
@@ -2239,6 +2312,7 @@ export function BroadcastPanel({
                       </em>
                     ))}
                     {evs.length > 2 ? <i className="bp-mini-more">+{evs.length - 2}</i> : null}
+                    {sent ? <i className="bp-mini-sent">보냄</i> : null}
                   </div>
                 );
               })}
@@ -2526,8 +2600,10 @@ export function BroadcastPanel({
           <button
             aria-pressed={bgActive}
             className="bp-layer-select"
+            ref={scheduleLayerButtonRef}
             type="button"
             onClick={() => {
+              hapticTick();
               setActiveLayerId(BG_LAYER_ID);
               setTool("select"); // 일정 레이어를 고르면 카드가 바로 잡히게
             }}

@@ -135,7 +135,36 @@ touch pan/zoom이 없어 pen 우선 비용이 작다. 두 손가락 undo/pan을 
 28px target size를 적용한다. 이름·힌트·그룹 라벨은 작은 글자 기준 4.5:1 이상을
 목표로 한다.
 
-## 6. 미적용(future work)
+## 6. 작업 문맥 자동 전환
+
+- Goodnotes는 펜 도구가 선택됐을 때 색·굵기를 같은 문맥 제어로 노출한다. Procreate는 현재
+  색을 계속 표시하고, 캔버스 변경은 현재 선택 레이어에 적용된다고 명시한다.
+  ([Goodnotes pen tool](https://support.goodnotes.com/hc/en-us/articles/7353756785679-Using-the-Pen-tool),
+  [Procreate color interface](https://help.procreate.com/procreate/handbook/colors/colors-interface),
+  [Procreate layers interface](https://help.procreate.com/procreate/handbook/5.0/layers/layers-interface))
+- 이 자료가 “색을 누르면 반드시 펜으로 바꿔야 한다”거나 “레이어를 자동 선택해야 한다”는
+  규칙을 입증하지는 않는다. 아래 전환은 도구와 레이어가 서로 맞지 않아 입력이 막히는
+  dead state를 줄이기 위한 **저장소 고유 결정**이다.
+
+**→ 적용**:
+
+- 패널 세션에서 일정을 처음 보낼 때만 고정 `일정` 레이어를 표시·활성화하고 `선택` 도구로
+  바꾼다. 모든 카드를 뺐다가 다시 보내도 이를 반복하지 않으며, 두 번째 이후 보내기와 undo/redo는
+  사용자가 작업 중인 도구·레이어 문맥을 뺏지 않는다.
+- 색을 확정하면 `선택`·`지우개`에서는 `펜`으로 전환한다. 형광펜·도형은 색을 직접 쓰는
+  도구이므로 유지한다.
+- 펜·형광펜·지우개·도형을 고를 때 현재 레이어가 `일정`이거나 쓸 수 없는 상태면 최근의
+  표시·잠금 해제 그림 레이어, 그다음 목록의 첫 사용 가능 레이어로 복귀한다. 숨김 해제,
+  잠금 해제, 레이어 자동 생성은 사용자의 명시적 레이어 결정을 바꾸므로 하지 않는다.
+- 커스텀 색 피커는 여는 것만으로 도구를 바꾸지 않는다. 미리보기 중에는 색·도구·레이어를
+  함께 전환하되 취소/Esc/바깥 클릭이면 세 상태를 모두 열기 전으로 되돌린다.
+- `선택`·`지우개` 상태에서 빈 레이어를 추가하면 쓸모없는 빈 선택/지우개 상태 대신 `펜`으로
+  시작한다. 이미 보낸 날짜는 미니 달력에서 표시하고, 중복 보내기는 undo 이력을 만들지 않는다.
+
+**→ 한계/검증**: 그리기 가능한 레이어가 하나도 없으면 자동 생성하거나 잠금을 풀지 않고 기존
+안내를 유지한다. 도구 상태 전이는 순수 함수 단위 테스트와 호출부 계약 테스트로 고정한다.
+
+## 7. 미적용(future work)
 
 - Ink API delegated trail — experimental/non-Baseline, 플랫폼 이득과 레이어 합성 검증 필요.
 - 실제 input-to-photon 지연 계측 — iPad Safari·Wacom Chrome/Edge 고속 촬영.

@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-07-26
+Last Updated: 2026-07-27
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -20,6 +20,16 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 - **운영 중(안정)**: 공개 포스터(`/`), 편집실(달력/태그/멤버/비공개 레이어), 꾸미기·PNG export,
   하트(비로그인 포함), 관리자 인사이트, 태그 2계층, 비공개 본문 암호화, 방송시간 기록.
+- **2026-07-27에 끝난 것 — 일정 그림판 작업 문맥 편의**:
+  - 패널 세션에서 처음 일정을 보내면 `일정` 레이어 표시·활성 + `선택` 도구로 자동 전환. 모든
+    카드를 뺐다가 다시 보내는 경우를 포함해 이후 보내기는 현재 그림 레이어·도구 유지. 보내기 뒤
+    disabled 버튼에 남던 키보드 포커스도 다음 작업점으로 이동.
+  - 색 선택은 `선택/지우개 → 펜`, 형광펜·도형은 유지. 펜·형광펜·지우개·도형을 고르면 최근의
+    표시·잠금 해제 그림 레이어로 자동 복귀. 숨김/잠금 자동 해제와 레이어 자동 생성은 하지 않음.
+  - 커스텀 색 미리보기 취소 시 색뿐 아니라 도구·레이어도 원복. 새 빈 레이어는 선택/지우개 상태면
+    펜으로 시작. 미니 달력에 `보냄` 표시 + 중복 전송 버튼 차단/무의미한 undo 이력 제거.
+  - 모바일은 일정 그림판 진입점이 없어 범위 제외. 검증: vitest **274/274**, typecheck,
+    changed-files lint, production build 통과. 전체 lint는 기존 파일 경고 5개 때문에 exit 1.
 - **2026-07-12에 끝난 것**(커밋 `9324779`…`c509657`):
   - 미니게임 opt-in화 + 시즌 테마 강제 해제 + 태블릿(641~1040px) 아젠다 전환 → [ADR-0009](decisions/ADR-0009-seasonal-toys-are-opt-in.md)
   - 포스터 마스트헤드/시각 위계/대비(WCAG AA) · 모션 토큰(`--ease-enter/exit`, `--dur-4/5`) ·

@@ -99,4 +99,44 @@ describe("broadcast inking callsite contracts", () => {
     );
     expect(panelSource).toContain('${isToday ? ", 오늘" : ""}');
   });
+
+  it("enters schedule arrange mode only through the first non-duplicate direct send", () => {
+    const handleSend = between("function handleSend", "function removeDay");
+
+    expect(handleSend).toContain(
+      "const newKeys = selectedKeys.filter((key) => !beforeSet.has(key))"
+    );
+    expect(handleSend).toContain("if (newKeys.length === 0) return");
+    expect(handleSend).toContain(
+      "shouldEnterScheduleArrangeMode("
+    );
+    expect(handleSend).toContain("hasSentOnceRef.current");
+    expect(handleSend).toContain("hasSentOnceRef.current = true");
+    expect(handleSend).toContain("setBgVis(true)");
+    expect(handleSend).toContain("setActiveLayerId(BG_LAYER_ID)");
+    expect(handleSend).toContain('setTool("select")');
+    expect(handleSend).toContain("onSend(newKeys)");
+  });
+
+  it("routes drawing tools and committed colors through writable-layer workflow", () => {
+    expect(panelSource.match(/activateDrawingTool\(key\)/g)).toHaveLength(2);
+    expect(panelSource).toContain("applyInkColor(c)");
+    expect(panelSource).toContain("onChange={applyInkColor}");
+    expect(panelSource).toContain("toolAfterEmptyLayerAdded(tool)");
+  });
+
+  it("opens custom color without changing context and restores preview context on cancel", () => {
+    const customColorTrigger = between(
+      'className={`bp-color bp-color-custom',
+      "</button>"
+    );
+
+    expect(customColorTrigger).toContain("openedWithTool: tool");
+    expect(customColorTrigger).toContain("openedWithLayerId: activeLayerId");
+    expect(customColorTrigger).toContain("restoreColorPickerContext(colorPop)");
+    expect(customColorTrigger).not.toContain("setTool(");
+    expect(panelSource).toContain(
+      "onCancel={() => restoreColorPickerContext(colorPop)}"
+    );
+  });
 });

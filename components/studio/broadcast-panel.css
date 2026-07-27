@@ -247,6 +247,22 @@ html[data-reduce-motion] .bp-close:active {
   font-weight: 900;
   color: #5b4bd0;
 }
+/* 이미 판에 붙인 날짜 — 재전송 전에 상태를 알리고, 선택 체크와는 다른 위치·문자로 구분한다. */
+.bp-mini-cell.sent:not(.picked) {
+  box-shadow: inset 0 0 0 1px rgb(124 108 240 / 28%);
+}
+.bp-mini-sent {
+  align-self: flex-end;
+  margin-top: auto;
+  padding: 1px 4px;
+  border-radius: var(--r-pill);
+  background: rgb(124 108 240 / 12%);
+  color: #5b4bd0;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 900;
+  line-height: 1.3;
+}
 /* 오늘 — 숫자에 링(시각 앵커). 선택과 겹쳐도 서로 방해 없음. */
 .bp-mini-cell.today .bp-mini-num {
   display: inline-flex;
