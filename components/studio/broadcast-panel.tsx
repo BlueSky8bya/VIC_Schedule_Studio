@@ -39,6 +39,7 @@ import {
   EyeOff,
   GripVertical,
   Highlighter,
+  Keyboard,
   Lock,
   LockOpen,
   MousePointer2,
@@ -1168,18 +1169,18 @@ export function BroadcastPanel({
   const canvasOf = useCallback((layer: StrokeLayer) => {
     return layerCanvases.current.get(layer) ?? null;
   }, []);
+  // desynchronized 힌트는 쓰지 않는다: 형광펜·도형 라이브 프리뷰(+예측 꼬리)는 매 프레임
+  // '전체 clear→재그리기'인데, desync 캔버스는 vsync 합성을 우회해 clear 직후 빈 화면이
+  // 그대로 노출될 수 있다 — 그리는 중 깜빡임의 원인(연구 아카이브 §1의 tearing 트레이드오프).
+  // 잉킹 지각 한계(~50ms) 안에서 rAF 1프레임 지연이 깜빡임보다 낫다.
   const scaledCtx = useCallback((canvas: HTMLCanvasElement | null) => {
-    const transient =
-      canvas === liveCanvasRef.current || canvas === predictionCanvasRef.current;
-    const ctx = canvas?.getContext("2d", { desynchronized: transient });
+    const ctx = canvas?.getContext("2d");
     if (!ctx) return null;
     ctx.setTransform(scaleRef.current, 0, 0, scaleRef.current, 0, 0);
     return ctx;
   }, []);
   const clearCanvas = useCallback((canvas: HTMLCanvasElement | null) => {
-    const transient =
-      canvas === liveCanvasRef.current || canvas === predictionCanvasRef.current;
-    const ctx = canvas?.getContext("2d", { desynchronized: transient });
+    const ctx = canvas?.getContext("2d");
     if (!ctx || !canvas) return;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -2132,7 +2133,9 @@ export function BroadcastPanel({
   // 훅·패널 핸들러가 경쟁하면 리스너 순서와 오래된 ref 읽기에 의존하게 된다).
   const rangeSelect = useCellRangeSelect<HTMLDivElement>({
     exemptRefs: [sendBtnRef],
-    escapeClears: false
+    escapeClears: false,
+    // 날짜 피커는 다중 선택이 기본 의도 — 수식키 없는 클릭도 개별 토글(체크박스 문법).
+    clickToggles: true
   });
 
   const selectedDateKeys = useCallback(() => {
@@ -2334,6 +2337,68 @@ export function BroadcastPanel({
     guardLayerClickUntilPointerRelease
   ]);
 
+  // 도구 단축키(그림판/드로잉 앱 레퍼런스): V 선택 · P 펜 · H 형광펜 · E 지우개 ·
+  // L 직선 · A 화살표 · R 사각형 · O 원 · [ ] 굵기 감소/증가 · ? 단축키 안내.
+  // 수식키 조합·입력 칸 타이핑·색 팝오버 열림 중엔 무시. capture 단계로 등록해
+  // ? 안내가 열려 있을 때의 Esc를 메인 핸들러(선택 해제/창 닫기)보다 먼저 소비한다.
+  const [kbdHelp, setKbdHelp] = useState(false);
+  useEffect(() => {
+    const TOOL_KEYS: Record<string, BroadcastTool> = {
+      v: "select",
+      p: "pen",
+      h: "hl",
+      e: "eraser",
+      l: "line",
+      a: "arrow",
+      r: "rect",
+      o: "ellipse"
+    };
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+      if (kbdHelp && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setKbdHelp(false);
+        return;
+      }
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (colorPopRef.current) return;
+      if (e.key === "?") {
+        setKbdHelp((v) => !v);
+        return;
+      }
+      const k = e.key.toLowerCase();
+      const mapped = TOOL_KEYS[k];
+      if (mapped && !e.shiftKey) {
+        hapticTick();
+        if (mapped === "select") setTool("select");
+        else activateDrawingTool(mapped);
+        return;
+      }
+      if (e.key === "[" || e.key === "]") {
+        const idx = PEN_WIDTHS.indexOf(penWidth);
+        const next = PEN_WIDTHS[idx + (e.key === "]" ? 1 : -1)];
+        if (next !== undefined) {
+          hapticTick();
+          setPenWidth(next);
+          activateDrawingTool(toolAfterInkWidthPick(tool));
+        }
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tool, penWidth, kbdHelp]);
+
   // 최초 포커스 + body scroll lock(열림 동안 뒤 화면 스크롤 금지).
   useEffect(() => {
     closeBtnRef.current?.focus();
@@ -2462,19 +2527,78 @@ export function BroadcastPanel({
               <Trash2 aria-hidden="true" size={16} />
               <span>{clearArmed ? "확실해요?" : "전체 지우기"}</span>
             </button>
+            {/* 단축키 안내 — 그림판 도움말 레퍼런스: 키 → 동작 두 열 목록. ?로도 토글. */}
+            <button
+              aria-expanded={kbdHelp}
+              className={`bp-command-button${kbdHelp ? " on" : ""}`}
+              title="단축키 안내 (?)"
+              type="button"
+              onClick={() => {
+                hapticTick();
+                setKbdHelp((v) => !v);
+              }}
+            >
+              <Keyboard aria-hidden="true" size={16} />
+              <span>단축키</span>
+            </button>
           </div>
+          {kbdHelp ? (
+            <div className="bp-kbd-help" role="dialog" aria-label="단축키 안내">
+              <div className="bp-kbd-head">
+                <strong>단축키</strong>
+                <button
+                  aria-label="단축키 안내 닫기"
+                  className="bp-kbd-close"
+                  type="button"
+                  onClick={() => setKbdHelp(false)}
+                >
+                  <X aria-hidden="true" size={14} strokeWidth={2.75} />
+                </button>
+              </div>
+              <dl>
+                {(
+                  [
+                    ["V", "선택 도구"],
+                    ["P", "펜"],
+                    ["H", "형광펜"],
+                    ["E", "지우개"],
+                    ["L", "직선"],
+                    ["A", "화살표"],
+                    ["R", "사각형"],
+                    ["O", "원"],
+                    ["[ / ]", "굵기 줄이기 / 키우기"],
+                    ["Shift+드래그", "정비율(45°·정사각형·정원)"],
+                    ["Ctrl+Z", "실행 취소"],
+                    ["Ctrl+Shift+Z / Ctrl+Y", "다시 실행"],
+                    ["Ctrl+A", "카드 전체 선택(일정 레이어)"],
+                    ["Delete", "선택한 카드·획 삭제"],
+                    ["방향키", "선택 카드 이동(Shift=10px)"],
+                    ["Esc", "선택 해제 → 창 닫기"],
+                    ["?", "이 안내 열기/닫기"]
+                  ] as const
+                ).map(([k, desc]) => (
+                  <div className="bp-kbd-row" key={k}>
+                    <dt>
+                      <kbd>{k}</kbd>
+                    </dt>
+                    <dd>{desc}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+          ) : null}
         </div>
         <div className="bp-tool-deck">
           <div className="bp-tool-group" role="group" aria-label="도구">
             <div className="bp-group-row bp-grid4">
               {(
                 [
-                  ["select", "선택", MousePointer2],
-                  ["pen", "펜", Pen],
-                  ["hl", "형광펜", Highlighter],
-                  ["eraser", "지우개", Eraser]
+                  ["select", "선택", "V", MousePointer2],
+                  ["pen", "펜", "P", Pen],
+                  ["hl", "형광펜", "H", Highlighter],
+                  ["eraser", "지우개", "E", Eraser]
                 ] as const
-              ).map(([key, label, Icon]) => (
+              ).map(([key, label, hotkey, Icon]) => (
                 <button
                   aria-label={label}
                   aria-pressed={tool === key}
@@ -2484,7 +2608,7 @@ export function BroadcastPanel({
                   // 칩이 '현재 펜 색'으로 칠해진다 — 지금 무슨 색으로 그릴지 도구줄에서 즉시
                   // 보인다. 아이콘은 명도 대비로 흑/백 자동 선택.
                   style={tool === key && (key === "pen" || key === "hl") ? activeInkStyle : undefined}
-                  title={label}
+                  title={`${label} (${hotkey})`}
                   type="button"
                   onClick={() => {
                     hapticTick();
@@ -2503,12 +2627,12 @@ export function BroadcastPanel({
             <div className="bp-group-row bp-grid4">
               {(
                 [
-                  ["line", "직선", Slash],
-                  ["arrow", "화살표", MoveUpRight],
-                  ["rect", "사각형", Square],
-                  ["ellipse", "원", Circle]
+                  ["line", "직선", "L", Slash],
+                  ["arrow", "화살표", "A", MoveUpRight],
+                  ["rect", "사각형", "R", Square],
+                  ["ellipse", "원", "O", Circle]
                 ] as const
-              ).map(([key, label, Icon]) => (
+              ).map(([key, label, hotkey, Icon]) => (
                 <button
                   aria-label={label}
                   aria-pressed={tool === key}
@@ -2516,7 +2640,7 @@ export function BroadcastPanel({
                   key={key}
                   // 도형도 현재 펜 색으로 그려지므로 활성 칩에 색을 스민다(같은 규칙).
                   style={tool === key ? activeInkStyle : undefined}
-                  title={`${label} — Shift로 정비율`}
+                  title={`${label} (${hotkey}) — Shift로 정비율`}
                   type="button"
                   onClick={() => {
                     hapticTick();

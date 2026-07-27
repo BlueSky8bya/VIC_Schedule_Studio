@@ -32,6 +32,10 @@ type Options = {
   // false면 훅이 Esc를 처리하지 않는다 — 소비자가 Esc 의미를 직접 결정할 때(판서 모달:
   // 선택 있으면 해제, 없으면 닫기 — 핸들러 두 개가 경쟁하면 리스너 순서에 의존하게 된다, G3a).
   escapeClears?: boolean;
+  // true면 '수식키 없는 클릭'도 개별 토글(체크박스 문법) — 판서 날짜 피커처럼 다중 선택이
+  // 기본 의도인 소비자용. 드래그는 여전히 범위 선택(기존과 동일). 기본 false(시트 문법:
+  // 클릭=단일 선택으로 교체 — 편집실 달력 등 기존 소비자 동작 불변).
+  clickToggles?: boolean;
 };
 
 function sameSet(a: Set<number>, b: Set<number>): boolean {
@@ -49,7 +53,8 @@ function sameSet(a: Set<number>, b: Set<number>): boolean {
 export function useCellRangeSelect<T extends HTMLElement>({
   enabled = true,
   exemptRefs,
-  escapeClears = true
+  escapeClears = true,
+  clickToggles = false
 }: Options = {}): {
   setRef: (el: T | null) => void;
   selected: Set<number>;
@@ -192,7 +197,9 @@ export function useCellRangeSelect<T extends HTMLElement>({
         if (e.shiftKey && lastAnchor != null) {
           anchor = lastAnchor;
           apply(range(lastAnchor, i));
-        } else if (e.ctrlKey || e.metaKey) {
+        } else if (e.ctrlKey || e.metaKey || clickToggles) {
+          // Ctrl/⌘ — 개별 토글. clickToggles 소비자(판서 날짜 피커)는 '수식키 없는 클릭'도
+          // 같은 토글(체크박스 문법) — 드래그로 이어지면 아래 onMove가 범위로 대체한다.
           const next = new Set(selectedRef.current);
           if (next.has(i)) next.delete(i);
           else next.add(i);
@@ -269,7 +276,7 @@ export function useCellRangeSelect<T extends HTMLElement>({
         resetInternalsRef.current = null;
       };
     },
-    [enabled, apply, escapeClears]
+    [enabled, apply, escapeClears, clickToggles]
   );
 
   return { setRef, selected, getSelected, clearSelection, toggleIndex };

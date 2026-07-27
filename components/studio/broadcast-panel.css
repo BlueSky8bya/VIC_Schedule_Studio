@@ -521,6 +521,7 @@ body:has(.broadcast-panel) .tag-cpop {
   padding: 8px;
 }
 .bp-command-bar {
+  position: relative; /* 단축키 안내 카드(.bp-kbd-help)의 기준 좌표 */
   display: flex;
   min-height: 40px;
   flex-wrap: wrap;
@@ -618,27 +619,114 @@ body:has(.broadcast-panel) .tag-cpop {
   background: #dc2626;
   color: #ffffff;
 }
-.bp-tool-deck {
+.bp-command-button.on {
+  border-color: rgb(124 108 240 / 45%);
+  background: rgb(124 108 240 / 12%);
+  color: #5b4bd0;
+}
+/* 단축키 안내 — 그림판 도움말 레퍼런스: 키 → 동작 두 열. 커맨드 바 아래 플로팅 카드. */
+.bp-kbd-help {
+  position: absolute;
+  z-index: 20;
+  top: 46px;
+  right: 8px;
+  width: 300px;
+  padding: 10px 12px;
+  border: 1px solid #e3ded6;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow:
+    0 14px 36px rgb(80 70 60 / 22%),
+    0 3px 10px rgb(80 70 60 / 10%);
+  animation: bp-in var(--dur-2, 0.2s) var(--ease-enter, var(--ease)) both;
+}
+html[data-reduce-motion] .bp-kbd-help {
+  animation: none;
+}
+.bp-kbd-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.bp-kbd-head strong {
+  color: #2f2a45;
+  font-size: 13px;
+  font-weight: 900;
+}
+.bp-kbd-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #8a84a6;
+  cursor: pointer;
+}
+.bp-kbd-close:hover {
+  background: rgb(124 108 240 / 10%);
+  color: #5b4bd0;
+}
+.bp-kbd-help dl {
   display: grid;
+  margin: 0;
+  gap: 4px;
+}
+.bp-kbd-row {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+.bp-kbd-row dt {
+  margin: 0;
+}
+.bp-kbd-row kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid rgb(75 68 104 / 18%);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: #faf8f5;
+  color: #4b4468;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.bp-kbd-row dd {
+  overflow: hidden;
+  margin: 0;
+  color: #55506b;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+/* 조화(균형): 그룹은 '콘텐츠 크기'로만 — 1fr로 늘리면 도구 사이에 거대한 빈 공간이 생겨
+   버튼이 흩어져 보였다(근접 붕괴). 빈 공간은 덱의 오른쪽 끝에 모아 두고, 좁은 창에선
+   자연스럽게 다음 줄로 감싼다. */
+.bp-tool-deck {
+  display: flex;
   width: 100%;
   min-width: 0;
-  grid-template-columns:
-    minmax(220px, 1fr)
-    minmax(220px, 1fr)
-    minmax(292px, 1.42fr)
-    minmax(190px, 0.82fr);
+  flex-wrap: wrap;
+  align-items: stretch;
   gap: 8px;
-  overflow-x: auto;
 }
 .bp-tool-group,
 .bp-tool-group:last-of-type {
   position: relative;
   display: flex;
   min-width: 0;
-  align-items: stretch;
+  flex: 0 0 auto; /* 콘텐츠 크기 — 늘어나며 생기던 빈 공간 제거(조화·균형) */
+  align-items: center;
   justify-content: center;
   gap: 7px;
-  padding: 27px 9px 9px;
+  padding: 26px 10px 9px;
   border: 1px solid rgb(75 68 104 / 10%);
   border-radius: 12px;
   background: #fbfaf8;
@@ -661,9 +749,10 @@ body:has(.broadcast-panel) .tag-cpop {
   width: 100%;
   min-height: 48px;
 }
+/* 도구 4개 = 고정 폭 열 — 창이 넓어져도 버튼 사이가 벌어지지 않는다(근접 유지). */
 .bp-group-row.bp-grid4 {
   display: grid;
-  grid-template-columns: repeat(4, minmax(44px, 1fr));
+  grid-template-columns: repeat(4, 58px);
   gap: 5px;
 }
 .bp-tool {
@@ -671,14 +760,15 @@ body:has(.broadcast-panel) .tag-cpop {
   min-width: 0;
   height: 52px;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   border: 1px solid transparent;
   border-radius: 10px;
+  color: #55506b; /* 가독성: 라벨·아이콘 대비 상향(연회색 → 본문급) */
 }
 .bp-tool span {
   overflow: hidden;
   max-width: 100%;
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1;
   text-overflow: ellipsis;
@@ -687,13 +777,10 @@ body:has(.broadcast-panel) .tag-cpop {
 .bp-tool.on {
   border-color: rgb(75 68 104 / 22%);
 }
-.bp-color-group {
-  min-width: 292px;
-}
 .bp-colors {
-  width: 100%;
-  grid-template-columns: 52px repeat(9, 20px);
-  justify-content: center;
+  grid-template-columns: 52px repeat(9, 22px);
+  gap: 4px 5px;
+  justify-content: start;
 }
 .bp-current-color {
   order: -1;
@@ -964,13 +1051,17 @@ html[data-reduce-motion] .bp-layer-item {
 
 /* Clip Studio식 레이어 목록: 카드의 썸네일·이름을 잡아 직접 끈다.
    눈/잠금/삭제는 별도 열이라 drag 시작점에서 구조적으로 제외된다. */
+/* 패널은 '콘텐츠 높이'(최대 72vh) — 예전 height:72vh 고정은 목록(flex:1)이 남은 공간을
+   전부 먹어 '일정' 고정 행이 패널 밑바닥(뷰포트 밖)으로 밀려 사라져 보였다.
+   이제 일정 행이 그림 레이어 바로 아래 항상 보인다(근접). 레이어가 많으면 목록만 스크롤. */
 .bp-layers-panel {
   gap: 8px;
   width: 248px;
-  height: 72vh;
+  height: auto;
   min-height: 0;
   max-height: 72vh;
   flex-basis: 248px;
+  align-self: flex-start;
   overflow: hidden;
   padding: 10px;
 }
@@ -995,7 +1086,7 @@ html[data-reduce-motion] .bp-layer-item {
 .bp-layer-list {
   display: grid;
   min-height: 0;
-  flex: 1;
+  flex: 0 1 auto; /* 필요한 만큼만 — 남은 공간을 먹어 '일정' 행을 밀어내지 않는다 */
   align-content: start;
   gap: 8px;
   overflow-x: hidden;
@@ -1004,12 +1095,17 @@ html[data-reduce-motion] .bp-layer-item {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
+/* 가독성: 이름을 조작 버튼과 한 줄에 쑤셔 넣지 않는다 — 위 = 썸네일+이름(전폭),
+   아래 = 조작 버튼 줄. 이름이 "레..."로 뭉개지던 원인 제거. */
 .bp-layer-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   padding: 6px;
+}
+.bp-layer-actions {
+  justify-self: end;
 }
 .bp-layer-select {
   flex-direction: row;
