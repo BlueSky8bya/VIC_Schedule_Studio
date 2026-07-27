@@ -123,6 +123,10 @@ describe("broadcast inking callsite contracts", () => {
     expect(panelSource).toContain("applyInkColor(c)");
     expect(panelSource).toContain("onChange={applyInkColor}");
     expect(panelSource).toContain("toolAfterEmptyLayerAdded(tool)");
+    expect(panelSource).toContain(
+      "activateDrawingTool(toolAfterInkWidthPick(tool))"
+    );
+    expect(panelSource.match(/resolveDrawingLayerAfterRemoval\(/g)).toHaveLength(3);
   });
 
   it("opens custom color without changing context and restores preview context on cancel", () => {

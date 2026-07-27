@@ -11,6 +11,11 @@ export function toolAfterInkColorPick(tool: BroadcastTool): BroadcastTool {
   return tool === "select" || tool === "eraser" ? "pen" : tool;
 }
 
+/** 굵기를 고른 의도: 선택에서는 펜, 굵기를 쓰는 펜·형광펜·지우개·도형은 그대로. */
+export function toolAfterInkWidthPick(tool: BroadcastTool): BroadcastTool {
+  return tool === "select" ? "pen" : tool;
+}
+
 /** 새 빈 레이어는 선택·지우개로 할 일이 없으므로 바로 펜 입력 가능한 상태로 연다. */
 export function toolAfterEmptyLayerAdded(tool: BroadcastTool): BroadcastTool {
   return toolAfterInkColorPick(tool);
@@ -29,6 +34,18 @@ export function resolveWritableDrawingLayerId(
     writable(currentId)?.id ??
     writable(rememberedId)?.id ??
     layers.find((layer) => layer.vis && !layer.lock)?.id ??
+    null
+  );
+}
+
+/** 활성 그림 레이어가 사라졌을 때: 사용 가능 레이어 우선, 없으면 상태 확인용 첫 레이어. */
+export function resolveDrawingLayerAfterRemoval(
+  layers: readonly BroadcastDrawingLayer[],
+  rememberedId: string | null
+): string | null {
+  return (
+    resolveWritableDrawingLayerId(layers, "", rememberedId) ??
+    layers[0]?.id ??
     null
   );
 }

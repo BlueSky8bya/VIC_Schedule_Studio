@@ -65,10 +65,12 @@ import {
   smoothPressure
 } from "@/lib/broadcast/inking";
 import {
+  resolveDrawingLayerAfterRemoval,
   resolveWritableDrawingLayerId,
   shouldEnterScheduleArrangeMode,
   toolAfterEmptyLayerAdded,
-  toolAfterInkColorPick
+  toolAfterInkColorPick,
+  toolAfterInkWidthPick
 } from "@/lib/broadcast/workflow";
 import {
   appendPoint,
@@ -1576,8 +1578,14 @@ export function BroadcastPanel({
       replayAll();
     } else {
       setLayers(a.before);
-      if (!a.before.some((l) => l.id === activeLayerId)) {
-        setActiveLayerId(a.before[0]?.id ?? "");
+      // 일정은 목록 밖 고정 레이어라 그대로 유지. 사라진 그림 레이어만 사용 가능 레이어로 복귀.
+      if (activeLayerId !== BG_LAYER_ID && !a.before.some((l) => l.id === activeLayerId)) {
+        const fallback = resolveDrawingLayerAfterRemoval(
+          a.before,
+          lastDrawingLayerIdRef.current
+        );
+        setActiveLayerId(fallback ?? BG_LAYER_ID);
+        if (!fallback) setTool("select");
       }
       // 복원된 레이어 캔버스는 다음 렌더에 마운트 → fit effect(deps: layers)가 사이징+재생.
     }
@@ -1615,8 +1623,13 @@ export function BroadcastPanel({
       replayAll();
     } else {
       setLayers(a.after);
-      if (!a.after.some((l) => l.id === activeLayerId)) {
-        setActiveLayerId(a.after[0]?.id ?? "");
+      if (activeLayerId !== BG_LAYER_ID && !a.after.some((l) => l.id === activeLayerId)) {
+        const fallback = resolveDrawingLayerAfterRemoval(
+          a.after,
+          lastDrawingLayerIdRef.current
+        );
+        setActiveLayerId(fallback ?? BG_LAYER_ID);
+        if (!fallback) setTool("select");
       }
     }
     hapticTick();
@@ -1663,7 +1676,14 @@ export function BroadcastPanel({
     const before = layersRef.current;
     const after = before.filter((l) => l.id !== id);
     setLayers(after);
-    if (activeLayerId === id) setActiveLayerId(after[0]?.id ?? "");
+    if (activeLayerId === id) {
+      const fallback = resolveDrawingLayerAfterRemoval(
+        after,
+        lastDrawingLayerIdRef.current
+      );
+      setActiveLayerId(fallback ?? BG_LAYER_ID);
+      if (!fallback) setTool("select");
+    }
     pushHist({ t: "layers", before, after });
     hapticTick();
   }
@@ -1727,8 +1747,8 @@ export function BroadcastPanel({
       newKeys.length
     );
     hasSentOnceRef.current = true;
+    setBgVis(true); // 직접 보낸 새 카드가 숨은 일정 레이어에 들어가 안 보이는 결과 방지
     if (enterArrangeMode) {
-      setBgVis(true);
       setActiveLayerId(BG_LAYER_ID);
       setTool("select");
     }
@@ -2094,6 +2114,9 @@ export function BroadcastPanel({
                 onClick={() => {
                   hapticTick();
                   setPenWidth(w);
+                  // 굵기를 골랐다 = 판서 의도. 일정/선택 상태면 최근 그림 레이어의 펜으로,
+                  // 이미 굵기를 쓰는 형광펜·지우개·도형이면 그 도구를 그대로 유지한다.
+                  activateDrawingTool(toolAfterInkWidthPick(tool));
                 }}
               >
                 {/* 점도 현재 펜 색 — 굵기 고르는 자리에서 색·굵기를 한 번에 확인. */}

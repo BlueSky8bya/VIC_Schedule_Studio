@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  resolveDrawingLayerAfterRemoval,
   resolveWritableDrawingLayerId,
   shouldEnterScheduleArrangeMode,
   toolAfterEmptyLayerAdded,
-  toolAfterInkColorPick
+  toolAfterInkColorPick,
+  toolAfterInkWidthPick
 } from "@/lib/broadcast/workflow";
 import type { BroadcastTool } from "@/lib/broadcast/stroke-engine";
 
@@ -22,6 +24,22 @@ describe("broadcast panel workflow", () => {
     "keeps color-capable tool context when picking ink color: %s → %s",
     (before, after) => {
       expect(toolAfterInkColorPick(before)).toBe(after);
+    }
+  );
+
+  it.each([
+    ["select", "pen"],
+    ["eraser", "eraser"],
+    ["pen", "pen"],
+    ["hl", "hl"],
+    ["line", "line"],
+    ["arrow", "arrow"],
+    ["rect", "rect"],
+    ["ellipse", "ellipse"]
+  ] satisfies [BroadcastTool, BroadcastTool][])(
+    "keeps width-capable tool context when picking ink width: %s → %s",
+    (before, after) => {
+      expect(toolAfterInkWidthPick(before)).toBe(after);
     }
   );
 
@@ -56,6 +74,27 @@ describe("broadcast panel workflow", () => {
     ];
 
     expect(resolveWritableDrawingLayerId(layers, "__schedule__", "hidden")).toBeNull();
+  });
+
+  it("falls back to a writable layer when the active drawing layer disappears", () => {
+    const layers = [
+      { id: "locked", vis: true, lock: true },
+      { id: "remembered", vis: true, lock: false },
+      { id: "visible", vis: true, lock: false }
+    ];
+
+    expect(resolveDrawingLayerAfterRemoval(layers, "remembered")).toBe("remembered");
+    expect(resolveDrawingLayerAfterRemoval(layers, "missing")).toBe("remembered");
+  });
+
+  it("keeps the first layer inspectable when no layer is writable, or returns none", () => {
+    const blocked = [
+      { id: "hidden", vis: false, lock: false },
+      { id: "locked", vis: true, lock: true }
+    ];
+
+    expect(resolveDrawingLayerAfterRemoval(blocked, "missing")).toBe("hidden");
+    expect(resolveDrawingLayerAfterRemoval([], "missing")).toBeNull();
   });
 
   it("enters schedule arrange mode only for the session's first successful direct send", () => {
