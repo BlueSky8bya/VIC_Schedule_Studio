@@ -51,7 +51,8 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
     문맥에서만 나타난다.
   - 모바일은 일정 그림판 진입점이 없어 범위 제외. 검증: vitest **294/294**, typecheck,
     changed-files lint, production build 통과. 전체 build의 기존 lint 경고 5개는 유지.
-    연결 브라우저가 없어 실제 렌더·마우스 drag·실기기 펜 스모크는 미실행.
+    구현 커밋 `376e7eb` Vercel Production 성공. 연결 브라우저가 없어 실제 렌더·마우스 drag·
+    실기기 펜 스모크는 미실행.
 - **2026-07-12에 끝난 것**(커밋 `9324779`…`c509657`):
   - 미니게임 opt-in화 + 시즌 테마 강제 해제 + 태블릿(641~1040px) 아젠다 전환 → [ADR-0009](decisions/ADR-0009-seasonal-toys-are-opt-in.md)
   - 포스터 마스트헤드/시각 위계/대비(WCAG AA) · 모션 토큰(`--ease-enter/exit`, `--dur-4/5`) ·
