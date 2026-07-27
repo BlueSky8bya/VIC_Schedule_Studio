@@ -778,6 +778,27 @@ html[data-reduce-motion] .bp-kbd-help {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* 단축키 배지 — 버튼 오른쪽 위 구석에 항상 보이는 키 힌트(안내 카드 없이도 학습된다).
+   활성(채움) 상태에선 반투명 흰색으로 색 위에서도 읽힌다. */
+.bp-tool {
+  position: relative;
+}
+.bp-tool .bp-tool-key {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-family: inherit;
+  font-size: 8.5px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: rgb(85 80 107 / 55%);
+  pointer-events: none;
+}
+.bp-tool.on .bp-tool-key {
+  color: currentColor;
+  opacity: 0.7;
+}
 .bp-tool.on {
   border-color: rgb(75 68 104 / 22%);
 }

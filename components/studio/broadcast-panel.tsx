@@ -2619,6 +2619,9 @@ export function BroadcastPanel({
                     else activateDrawingTool(key);
                   }}
                 >
+                  <kbd aria-hidden="true" className="bp-tool-key">
+                    {hotkey}
+                  </kbd>
                   <Icon aria-hidden="true" size={19} />
                   <span>{label}</span>
                 </button>
@@ -2650,6 +2653,9 @@ export function BroadcastPanel({
                     activateDrawingTool(key);
                   }}
                 >
+                  <kbd aria-hidden="true" className="bp-tool-key">
+                    {hotkey}
+                  </kbd>
                   <Icon aria-hidden="true" size={19} />
                   <span>{label}</span>
                 </button>
