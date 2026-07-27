@@ -154,11 +154,12 @@ describe("backing scale — DPR cap + 총 픽셀 cap", () => {
   });
 
   it("동적 레이어는 전체 캔버스 픽셀 예산을 나눠 쓴다", () => {
-    const surfaces = 8; // 그리기 레이어 6 + 라이브 1 + 예측 1
-    const scale = backingScale(1920, 1080, 2, surfaces);
-    const total = 1920 * scale * (1080 * scale) * surfaces;
-    expect(total).toBeLessThanOrEqual(MAX_TOTAL_BACKING_PIXELS * 1.001);
-    expect(scale).toBeGreaterThanOrEqual(0.25);
+    for (const surfaces of [8, 102, 300, 1002]) {
+      const scale = backingScale(1920, 1080, 2, surfaces);
+      const total = 1920 * scale * (1080 * scale) * surfaces;
+      expect(total).toBeLessThanOrEqual(MAX_TOTAL_BACKING_PIXELS * 1.001);
+    }
+    expect(backingScale(1920, 1080, 2, 1002)).toBeLessThan(0.25);
   });
 });
 

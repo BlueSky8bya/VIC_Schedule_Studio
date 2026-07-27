@@ -511,6 +511,253 @@ body:has(.broadcast-panel) .tag-cpop {
     inset 0 0 0 2px #4b4468,
     0 2px 6px rgb(75 68 104 / 20%);
 }
+
+/* Clip Studio 재벤치마킹(연구 아카이브 §7): 상단은 빠른 명령/현재 상태와
+   도구·속성 팔레트를 두 층으로 분리한다. 아이콘만 있던 칩에는 이름을 항상 보인다. */
+.bp-toolbar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px;
+}
+.bp-command-bar {
+  display: flex;
+  min-height: 40px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px 8px;
+  border-bottom: 1px solid rgb(75 68 104 / 10%);
+}
+.bp-command-status {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+.bp-command-status > span {
+  padding: 3px 7px;
+  border-radius: var(--r-pill);
+  background: rgb(124 108 240 / 9%);
+  color: #6b5fd0;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+}
+.bp-command-status strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2f2a45;
+  font-size: 14px;
+  font-weight: 900;
+}
+.bp-command-status strong i {
+  width: 12px;
+  height: 12px;
+  border: 1px solid rgb(47 42 69 / 22%);
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #ffffff;
+}
+.bp-command-status em {
+  overflow: hidden;
+  color: #777088;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bp-command-actions,
+.bp-context-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.bp-command-button {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid rgb(75 68 104 / 13%);
+  border-radius: 9px;
+  background: #ffffff;
+  color: #5d5672;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+.bp-command-button:hover:not(:disabled) {
+  border-color: rgb(124 108 240 / 36%);
+  background: rgb(124 108 240 / 8%);
+}
+.bp-command-button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+.bp-command-button:disabled {
+  opacity: 0.38;
+  cursor: default;
+}
+.bp-command-button.danger {
+  margin-left: 5px;
+  border-color: rgb(190 18 60 / 18%);
+  color: #be123c;
+}
+.bp-command-button.danger:hover:not(:disabled) {
+  background: rgb(190 18 60 / 8%);
+}
+.bp-command-button.danger.armed {
+  border-color: #dc2626;
+  background: #dc2626;
+  color: #ffffff;
+}
+.bp-tool-deck {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  grid-template-columns:
+    minmax(220px, 1fr)
+    minmax(220px, 1fr)
+    minmax(292px, 1.42fr)
+    minmax(190px, 0.82fr);
+  gap: 8px;
+  overflow-x: auto;
+}
+.bp-tool-group,
+.bp-tool-group:last-of-type {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: stretch;
+  justify-content: center;
+  gap: 7px;
+  padding: 27px 9px 9px;
+  border: 1px solid rgb(75 68 104 / 10%);
+  border-radius: 12px;
+  background: #fbfaf8;
+}
+.bp-property-group {
+  order: 4;
+}
+.bp-color-group {
+  order: 3;
+}
+.bp-group-label {
+  position: absolute;
+  top: 7px;
+  left: 10px;
+  color: #5f5874;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+.bp-group-row {
+  width: 100%;
+  min-height: 48px;
+}
+.bp-group-row.bp-grid4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(44px, 1fr));
+  gap: 5px;
+}
+.bp-tool {
+  width: auto;
+  min-width: 0;
+  height: 52px;
+  flex-direction: column;
+  gap: 3px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+}
+.bp-tool span {
+  overflow: hidden;
+  max-width: 100%;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bp-tool.on {
+  border-color: rgb(75 68 104 / 22%);
+}
+.bp-color-group {
+  min-width: 292px;
+}
+.bp-colors {
+  width: 100%;
+  grid-template-columns: 52px repeat(9, 20px);
+  justify-content: center;
+}
+.bp-current-color {
+  order: -1;
+  display: flex;
+  width: 52px;
+  height: 44px;
+  grid-row: span 2;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid rgb(75 68 104 / 15%);
+  border-radius: 9px;
+  background: #ffffff;
+  color: #5f5874;
+  cursor: pointer;
+}
+.bp-current-color i {
+  width: 24px;
+  height: 24px;
+  border: 1px solid rgb(0 0 0 / 15%);
+  border-radius: 50%;
+}
+.bp-current-color span {
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+.bp-current-color:hover,
+.bp-current-color.on {
+  border-color: #7c6cf0;
+  box-shadow: 0 0 0 2px rgb(124 108 240 / 14%);
+}
+.bp-property-group .bp-group-row {
+  justify-content: center;
+}
+.bp-width {
+  width: 38px;
+  height: 42px;
+  flex-direction: column;
+  gap: 3px;
+}
+.bp-width span {
+  color: #777088;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+}
+.bp-context-strip {
+  align-self: flex-start;
+  padding: 6px 8px;
+  border: 1px solid rgb(124 108 240 / 18%);
+  border-radius: 10px;
+  background: rgb(124 108 240 / 6%);
+}
+.bp-context-strip > strong {
+  margin: 0 3px;
+  color: #4b4468;
+  font-size: 11px;
+}
+.bp-context-strip .bp-group-row {
+  min-height: 0;
+}
 /* 본문 = [캔버스 작업대 | 오른쪽 레이어 패널] — 실제 그림판 배치.
    min-height 72vh 보장: 날짜 달력을 펼쳐도 본문(그림판·레이어 패널)이 눌려 찌그러지는 대신
    창 전체(.broadcast-panel, overflow-y:auto)가 스크롤된다 — 레이어 패널 높이 상시 확보. */
@@ -640,20 +887,6 @@ html[data-reduce-motion] .bp-layer-item {
   flex: 0 0 auto;
   gap: 2px;
 }
-.bp-layer-order {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 1;
-  display: grid;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid rgb(75 68 104 / 18%);
-  border-radius: 9px;
-  background: rgb(255 255 255 / 92%);
-  box-shadow: 0 2px 8px rgb(60 52 80 / 16%);
-  backdrop-filter: blur(3px);
-}
 /* 조작 버튼 — 24→28px(Fitts, 연구 아카이브 §4: 자주 쓰는 표적은 크게). */
 .bp-layer-btn {
   display: inline-flex;
@@ -728,8 +961,159 @@ html[data-reduce-motion] .bp-layer-item {
     0 0 0 2px rgb(124 108 240 / 25%),
     0 4px 14px rgb(107 90 224 / 18%);
 }
+
+/* Clip Studio식 레이어 목록: 카드의 썸네일·이름을 잡아 직접 끈다.
+   눈/잠금/삭제는 별도 열이라 drag 시작점에서 구조적으로 제외된다. */
+.bp-layers-panel {
+  gap: 8px;
+  width: 248px;
+  height: 72vh;
+  min-height: 0;
+  max-height: 72vh;
+  flex-basis: 248px;
+  overflow: hidden;
+  padding: 10px;
+}
+.bp-layers-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 1px 2px 3px;
+}
+.bp-layers-head strong {
+  color: #2f2a45;
+  font-size: 14px;
+  font-weight: 900;
+}
+.bp-layers-head span {
+  color: #817a90;
+  font-size: 9.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.bp-layer-list {
+  display: grid;
+  min-height: 0;
+  flex: 1;
+  align-content: start;
+  gap: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 6px 2px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.bp-layer-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  padding: 6px;
+}
+.bp-layer-select {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  cursor: grab;
+  touch-action: none;
+}
+.bp-layer-select:active {
+  cursor: grabbing;
+}
+.bp-layer-fixed .bp-layer-select {
+  cursor: pointer;
+  touch-action: auto;
+}
+.bp-layer-thumb {
+  width: 52px;
+  height: 42px;
+  flex: 0 0 52px;
+}
+.bp-layer-thumb-bg {
+  font-size: 20px;
+}
+.bp-layer-meta {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 3px;
+}
+.bp-layer-meta em {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bp-layer-meta svg {
+  flex: 0 0 auto;
+  color: #8a8398;
+}
+.bp-layer-actions {
+  align-self: center;
+}
+.bp-layer-item.dragging {
+  opacity: 0.3;
+  transform: none;
+  box-shadow: none;
+}
+.bp-layer-item.drop-before::before {
+  position: absolute;
+  z-index: 4;
+  top: -6px;
+  right: 2px;
+  left: 2px;
+  height: 3px;
+  border-radius: var(--r-pill);
+  background: #6a5ae0;
+  box-shadow:
+    0 0 0 2px #ffffff,
+    0 2px 7px rgb(106 90 224 / 45%);
+  content: "";
+  pointer-events: none;
+}
+.bp-layer-item.drop-before::after {
+  position: absolute;
+  z-index: 5;
+  top: -9px;
+  left: -1px;
+  width: 7px;
+  height: 7px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  background: #6a5ae0;
+  content: "";
+  pointer-events: none;
+}
+.bp-layer-drag-ghost {
+  position: fixed;
+  z-index: 10020;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  padding: 6px;
+  border: 1px solid rgb(124 108 240 / 70%);
+  border-radius: var(--r-md);
+  background: rgb(255 255 255 / 96%);
+  box-shadow:
+    0 0 0 2px rgb(124 108 240 / 20%),
+    0 14px 30px rgb(60 52 80 / 24%);
+  opacity: 0.94;
+  pointer-events: none;
+  transform: rotate(0.7deg) scale(1.015);
+}
+html[data-reduce-motion] .bp-layer-drag-ghost {
+  transform: none;
+}
 /* '일정' 고정 레이어도 클릭해 활성화한다(카드 조작 모드) — 커서 유지. */
 .bp-lock-hint {
+  align-self: flex-start;
+  padding: 4px 8px;
+  border-radius: 8px;
+  background: rgb(190 18 60 / 7%);
   font-size: 12px;
   font-weight: 700;
   color: #be123c;

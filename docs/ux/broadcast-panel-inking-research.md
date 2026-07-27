@@ -141,14 +141,18 @@ touch pan/zoom이 없어 pen 우선 비용이 작다. 두 손가락 undo/pan을 
 - 오늘은 숫자 ring으로 시각 앵커를 주고, 접근성 트리에는 `aria-current="date"`와 “오늘”을
   제공한다. KST 날짜를 쓰며 패널을 자정 넘겨 열어 두는 경우도 다음 KST 자정에 갱신한다.
 - 활성 레이어는 좌측 accent bar + 이름 강조로 표시한다. 조작 버튼은 28px로 확대한다.
-- 레이어 목록의 위/아래는 실제 합성 순서와 같아야 한다. 순서 변경은 작은 드래그 손잡이에만
-  의존하지 않고 명시적 위/아래 버튼도 제공해 키보드·정밀 포인터에서 같은 결과를 낸다.
+- Clip Studio Paint 데스크톱은 레이어 상세 영역 자체를 위아래로 끌어 stack 순서를 바꾼다.
+  별도 grip은 태블릿용이다.
+  ([Clip Studio Layer palette](https://help.clip-studio.com/en-us/manual_en/180_layers/Using_layers.htm))
 
 **→ 적용**: 선택 체크, 고대비 오늘 ring, 접근성 현재 날짜, 활성 레이어 accent/name,
 28px target size를 적용한다. 이름·힌트·그룹 라벨은 작은 글자 기준 4.5:1 이상을 목표로 한다.
-그림 레이어는 위/아래 이동 버튼으로 순서를 바꾸고, 이동 1회는 통합 undo/redo 1건으로 기록한다.
-경계 버튼은 `aria-disabled` no-op으로 남겨 이동 직후 키보드 포커스가 사라지지 않게 하고,
-변경된 위치를 live status로 알린다. `일정`은 카드 조작용 구조 레이어이자 합성 바닥이므로 고정한다.
+그림 레이어의 썸네일·이름 영역을 직접 끌어 순서를 바꾸고 카드 사이 full-width 삽입선을 표시한다.
+눈·잠금·삭제 버튼은 drag 시작점에서 제외한다. 이동 1회는 통합 undo/redo 1건이며
+`Alt+ArrowUp/Down`과 live status를 키보드 대체 경로로 둔다. `일정`은 카드 조작용 구조
+레이어이자 합성 바닥이므로 고정한다. 드래그 시작 시 drop 중간점을 한 번만 측정하고 스크롤
+좌표계에 보관해 pointer move마다 전체 목록 layout을 다시 읽지 않는다. 목록 바깥 drop,
+`pointercancel`·capture 상실·Esc는 순서와 undo 이력을 바꾸지 않는다.
 
 ## 6. 작업 문맥 자동 전환
 
@@ -187,12 +191,43 @@ touch pan/zoom이 없어 pen 우선 비용이 작다. 두 손가락 undo/pan을 
 **→ 한계/검증**: 그리기 가능한 레이어가 하나도 없으면 자동 생성하거나 잠금을 풀지 않고 기존
 안내를 유지한다. 도구 상태 전이는 순수 함수 단위 테스트와 호출부 계약 테스트로 고정한다.
 
-## 7. 미적용(future work)
+## 7. Clip Studio Paint·Windows 그림판 재벤치마킹
+
+- Clip Studio Paint는 빠른 전역 명령의 Command Bar, 도구 선택의 Tool palette, 현재 도구 설정의
+  Tool Property, 색 집합의 Color Set을 역할별로 분리한다. Command Bar는 separator와 group으로
+  명령 위계를 만든다.
+  ([Command Bar](https://help.clip-studio.com/en-us/manual_en/690_interface/Command_Bar.htm),
+  [Tool palette/Property](https://help.clip-studio.com/en-us/manual_en/150_tools/Customizing_the_Tool_and_Sub_Tool_palettes.htm),
+  [Color Set](https://help.clip-studio.com/en-us/manual_en/300_color/Color_Set_palette.htm))
+- Windows 그림판도 상단 Layers 명령으로 캔버스 옆 패널을 열고, 그 패널에서 추가·삭제·순서·
+  표시·복제·병합을 다룬다. 여기서 “명령/도구/속성/레이어의 역할을 분리한다”는 결론은
+  그림판 문서를 그대로 옮긴 사실이 아니라, Clip Studio 자료와 함께 비교해 내린 저장소 설계다.
+  ([Microsoft Paint layers](https://blogs.windows.com/windows-insider/2023/09/18/paint-app-update-adding-support-for-layers-and-transparency-begins-rolling-out-to-windows-insiders/))
+- Clip Studio Paint는 파일당 10,000개 레이어를 허용하고 많은 레이어를 검색·색 표식으로 관리한다.
+  이는 Clip Studio 자체 제품 한계이며 이 웹 캔버스가 같은 수를 안전하게 처리한다는 성능 근거가
+  아니다. 다만 6개처럼 낮은 한계와 항상 보이는 분수가 전문 도구의 작업 감각과 멀다는 비교점이다.
+  ([Clip Studio Paint layer management](https://www.clipstudio.net/en/animation/tools-techniques/))
+
+**→ 적용**:
+
+- 상단을 `명령 바 / 도구 팔레트 / 빠른 판서 설정·색상 팔레트`로 재구성한다. Undo·Redo·전체
+  지우기는 명령 바, 선택·펜·형광펜·지우개·도형은 이름이 보이는 도구 팔레트, 최근 잉크
+  색·굵기는 빠른 설정으로 둔다. 현재 도구마다 항목 구성이 바뀌는 Clip Studio의 Tool Property나
+  사용자 저장 Color Set을 구현했다고 부르지 않는다. 선택 카드 정렬은 별도 문맥 줄에서만 보인다.
+- `레이어 추가 (n/6)`을 `+ 새 레이어`로 바꾸고 6개 hard cap과 숫자 노출을 모두 제거한다.
+  동적 캔버스 backing store는 공유 총 픽셀 예산을 레이어끼리 나눠 쓰고, 레이어가 매우 많으면
+  기존 0.25 scale 아래로도 낮춰 이 픽셀 예산을 지킨다. 이는 캔버스 픽셀만의 예산이다. 레이어별
+  DOM·썸네일·stroke 명령과 목록 탐색 비용은 계속 증가하므로 물리적 무한이나 10,000개 성능을
+  약속하지 않는다. 패널 세션은 닫을 때 전부 폐기된다.
+- 상단 UI 사용자 커스터마이징, layer folder·blend mode·merge는 현재 일정 설명 도구의 범위를
+  넘으므로 이번에는 모방하지 않는다.
+
+## 8. 미적용(future work)
 
 - Ink API delegated trail — experimental/non-Baseline, 플랫폼 이득과 레이어 합성 검증 필요.
 - 실제 input-to-photon 지연 계측 — iPad Safari·Wacom Chrome/Edge 고속 촬영.
 - 두 손가락 탭 undo·pan/zoom — pen-priority와 충돌하지 않는 gesture arbitration 선행.
 - 사용자 필압 곡선 UI — 실기 QA에서 기본 곡선 불만이 확인될 때.
-- 레이어 직접 드래그 정렬 — 현재 최대 6개에서는 28px 위/아래 버튼이 더 명확하다. 삽입선,
-  pointer capture, 키보드 대체 동작을 한 계약으로 묶을 때 확장한다.
 - 긴 형광펜 획의 O(n²) 라이브 재렌더 제거 — dirty region 또는 불투명 mask 후 단일 합성 검토.
+- 레이어 수가 수백 개로 늘어나는 실사용이 확인되면 긴 목록 virtualization과 hidden-layer
+  backing store 해제를 추가한다.

@@ -53,17 +53,15 @@ export const DPR_CAP = 2;
  * 동적 레이어 UI는 backingScale의 surfaceCount를 넘겨 아래 전체 예산을 나눠 쓴다.
  */
 export const MAX_BACKING_PIXELS = 4096 * 2304;
-/** 동적 레이어 전체 backing store 예산 — 기존 고정 3캔버스 설계와 같은 총량. */
+/** 동적 레이어 전체 backing store 공유 예산 — 캔버스 수가 늘면 각 해상도를 더 낮춘다. */
 export const MAX_TOTAL_BACKING_PIXELS = MAX_BACKING_PIXELS * 3;
-/** scale 하한 — 초대형 보드에서도 렌더가 완전히 뭉개지지 않는 최소 해상도.
- *  계약(G3b-r): 픽셀 상한은 이 하한까지만 유효한 **soft cap** — CSS 면적이
- *  MAX_BACKING_PIXELS/0.25² ≈ 1.5억 px²(예: 40만×380px 보드)를 넘는 비현실적 크기에선
- *  가독성 하한을 우선한다. 실사용 보드(월 31컬럼 × 220px ≈ 7천px 폭)와는 두 자릿수 여유. */
+/** 단일 캔버스의 가독성 하한. 다중 레이어는 총 픽셀 예산을 지키기 위해 이보다 낮아질 수 있다. */
 export const MIN_BACKING_SCALE = 0.25;
 
 /** css 크기와 devicePixelRatio로 실제 backing scale을 정한다(DPR cap + 총 픽셀 cap).
  *  CSS 면적 자체가 상한을 넘으면 scale이 1 미만으로도 내려간다(G3b: 5K/8K 보드에서
- *  1로 클램프하면 상한이 깨졌다) — 하한은 MIN_BACKING_SCALE. */
+ *  1로 클램프하면 상한이 깨졌다). 동적 레이어는 임의 개수 제한 대신 해상도를 적응시켜
+ *  전체 backing pixel 예산을 지킨다. */
 export function backingScale(
   cssW: number,
   cssH: number,
@@ -77,7 +75,8 @@ export function backingScale(
   const pixelBudget =
     surfaces === 1 ? MAX_BACKING_PIXELS : MAX_TOTAL_BACKING_PIXELS / surfaces;
   const maxScale = Math.sqrt(pixelBudget / area);
-  return Math.max(MIN_BACKING_SCALE, Math.min(capped, maxScale));
+  const budgeted = Math.min(capped, maxScale);
+  return surfaces === 1 ? Math.max(MIN_BACKING_SCALE, budgeted) : budgeted;
 }
 
 /** 마지막 점과 너무 가까우면 버리는 append. 추가됐으면 true. */

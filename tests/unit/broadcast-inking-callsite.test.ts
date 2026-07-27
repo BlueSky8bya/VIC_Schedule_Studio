@@ -133,29 +133,121 @@ describe("broadcast inking callsite contracts", () => {
     expect(panelSource.match(/resolveDrawingLayerAfterRemoval\(/g)).toHaveLength(3);
   });
 
-  it("opens ready to draw and makes drawing-layer order undoable", () => {
-    const moveLayer = between("function moveLayer", "function toggleLayerVisibility");
-    const drawingLayers = between("{layers.map((l, index)", "{/* 일정 = 고정 기본 레이어");
+  it("opens ready to draw and commits a layer drag as one undoable change", () => {
+    const moveLayer = between("function moveLayer", "function layerDropBeforeId");
+    const dropTarget = between(
+      "function layerDropBeforeId",
+      "function createLayerDragGhost"
+    );
+    const dropUpdate = between(
+      "function updateLayerDropSlot",
+      "function layerAutoScrollSpeed"
+    );
+    const pointerDown = between("function onLayerPointerDown", "function onLayerPointerMove");
+    const pointerMove = between("function onLayerPointerMove", "function onLayerPointerUp");
+    const pointerUp = between("function onLayerPointerUp", "function onLayerPointerCancel");
+    const pointerCancel = between("function onLayerPointerCancel", "function onLayerKeyDown");
+    const drawingLayers = between(
+      'className="bp-layer-list"',
+      "{/* 일정 = 고정 기본 레이어"
+    );
+    const keyboardHandler = between(
+      "const onKey = (e: KeyboardEvent)",
+      'window.addEventListener("keydown", onKey)'
+    );
 
     expect(panelSource).toContain('const PEN_COLORS = [\n  "#000000"');
     expect(panelSource).toContain('useState<BroadcastTool>("pen")');
     expect(panelSource).toContain('useState("layer-1")');
     expect(moveLayer).toContain("reorderDrawingLayer(before, id, direction)");
-    expect(moveLayer.indexOf("finishLiveStroke()")).toBeLessThan(
-      moveLayer.indexOf("setLayers(after)")
+    expect(pointerDown).toContain("setPointerCapture(e.pointerId)");
+    expect(pointerDown).toContain('e.pointerType === "touch"');
+    expect(pointerDown).toContain("if (layerDragRef.current) return");
+    expect(pointerDown).toContain("candidate.getBoundingClientRect()");
+    expect(pointerDown).toContain("beforeId: undefined");
+    expect(pointerDown).toContain("trigger: e.currentTarget");
+    expect(pointerMove).toContain("< 5");
+    expect(pointerMove).toContain("createLayerDragGhost(drag)");
+    expect(pointerMove).toContain("requestAnimationFrame(runLayerAutoScroll)");
+    expect(dropTarget).toContain("resolveLayerDropBeforeId(");
+    expect(dropTarget).toContain("string | null | undefined");
+    expect(dropUpdate).toContain("{ id: drag.id, beforeId }");
+    expect(dropUpdate).not.toContain("setLayerDragUi(null)");
+    expect(pointerUp).toContain("reorderDrawingLayerBefore(before, drag.id, beforeId)");
+    expect(pointerUp).toContain("beforeId === undefined");
+    expect(pointerUp.indexOf("finishLiveStroke()")).toBeLessThan(
+      pointerUp.indexOf("setLayers(after)")
     );
-    expect(moveLayer).toContain('pushHist({ t: "layers", before, after })');
-    expect(drawingLayers).toContain("aria-disabled={index === 0}");
-    expect(drawingLayers).toContain("aria-disabled={index === layers.length - 1}");
-    expect(drawingLayers).toContain('moveLayer(l.id, "up")');
-    expect(drawingLayers).toContain('moveLayer(l.id, "down")');
+    expect(pointerUp.match(/pushHist\(/g)).toHaveLength(1);
+    expect(pointerCancel).not.toContain("pushHist(");
+    expect(pointerCancel).toContain("layerDragClickBlockedRef.current = false");
+    expect(drawingLayers).toContain("data-layer-id={l.id}");
+    expect(drawingLayers).toContain("ref={layerListRef}");
+    expect(drawingLayers).toContain("onPointerDown={(e) => onLayerPointerDown(e, l.id)}");
+    expect(drawingLayers).toContain("onPointerMove={onLayerPointerMove}");
+    expect(drawingLayers).toContain("onPointerUp={onLayerPointerUp}");
+    expect(drawingLayers).toContain("onPointerCancel={onLayerPointerCancel}");
+    expect(drawingLayers).toContain("if (layerDragRef.current) return");
+    expect(drawingLayers).toContain("layerDragClickBlockedRef.current && e.detail > 0");
+    expect(drawingLayers).toContain('aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"');
+    expect(drawingLayers).toContain("<GripVertical");
+    expect(drawingLayers).not.toContain("bp-layer-order");
+    expect(panelCss).not.toContain(".bp-layer-order");
+    expect(keyboardHandler.indexOf("layerDragRef.current")).toBeLessThan(
+      keyboardHandler.indexOf("colorPopRef.current")
+    );
+    expect(keyboardHandler).toContain("cleanupLayerDrag()");
+    expect(keyboardHandler).toContain("guardLayerClickUntilPointerRelease(");
+    expect(keyboardHandler).toContain("releasePointerCapture(");
     expect(panelSource).toContain('aria-live="polite"');
     expect(moveLayer).toContain("setLayerOrderStatus(");
+    expect(panelCss).toContain(".bp-layer-item.drop-before::before");
+    expect(panelCss).toContain(".bp-layer-drag-ghost");
+    expect(panelCss).toMatch(/\.bp-layer-list\s*\{[^}]*overflow-y: auto/s);
+  });
+
+  it("removes the arbitrary layer cap while retaining backing-pixel budgeting", () => {
+    const addLayer = between("function addLayer", "function deleteLayer");
+    const layersPanel = between(
+      '<aside className="bp-layers-panel"',
+      "</aside>"
+    );
+
+    expect(panelSource).not.toContain("MAX_DRAWING_LAYERS");
+    expect(addLayer).not.toContain("layers.length");
+    expect(addLayer).toContain('pendingLayerRevealRef.current = { id, position: "top" }');
+    expect(panelSource).toContain('pendingLayerRevealRef.current = { id, position: "nearest" }');
+    expect(layersPanel).toContain("＋ 새 레이어");
+    expect(layersPanel).not.toContain("layers.length");
+    expect(layersPanel).not.toMatch(/\d+\/\d+/);
+    expect(panelSource).toContain("Math.max(1, layers.length + 2)");
+  });
+
+  it("separates command, tool, quick-ink, and color roles with visible tool names", () => {
+    const toolbar = between(
+      '<div className="bp-toolbar"',
+      '<section className="bp-picker"'
+    );
+
+    expect(toolbar).toContain('className="bp-command-bar"');
+    expect(toolbar).toContain('className="bp-command-status"');
+    expect(toolbar).toContain('className="bp-tool-deck"');
+    expect(toolbar).toContain('className="bp-tool-group bp-property-group"');
+    expect(toolbar).toContain('className="bp-tool-group bp-color-group"');
+    expect(toolbar).toContain('aria-label="빠른 판서 설정"');
+    expect(toolbar).toContain('aria-label="색상 팔레트"');
+    expect(toolbar.match(/<span>\{label\}<\/span>/g)).toHaveLength(2);
+    expect(toolbar).toContain("<span>실행 취소</span>");
+    expect(toolbar).toContain("<span>다시 실행</span>");
+    expect(toolbar).toContain("<span>현재 색</span>");
+    expect(panelCss).toContain(".bp-command-bar");
+    expect(panelCss).toContain(".bp-tool-deck");
+    expect(panelCss).toMatch(/\.bp-tool-deck\s*\{[^}]*min-width: 0/s);
   });
 
   it("opens custom color without changing context and restores preview context on cancel", () => {
     const customColorTrigger = between(
-      'className={`bp-color bp-color-custom',
+      'className={`bp-current-color',
       "</button>"
     );
 

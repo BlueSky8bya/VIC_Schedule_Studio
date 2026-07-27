@@ -64,6 +64,57 @@ export function reorderDrawingLayer<T extends { id: string }>(
   return next;
 }
 
+/**
+ * Drag/drop용 순서 변경. dragged를 뺀 목록에서 beforeId 앞에 넣고,
+ * beforeId가 null이면 그림 레이어 stack 맨 아래에 둔다.
+ */
+export function reorderDrawingLayerBefore<T extends { id: string }>(
+  layers: readonly T[],
+  draggedId: string,
+  beforeId: string | null
+): T[] | null {
+  const dragged = layers.find((layer) => layer.id === draggedId);
+  if (!dragged || beforeId === draggedId) return null;
+  const remaining = layers.filter((layer) => layer.id !== draggedId);
+  const insertAt = beforeId === null ? remaining.length : remaining.findIndex((layer) => layer.id === beforeId);
+  if (insertAt < 0) return null;
+  const next = [...remaining];
+  next.splice(insertAt, 0, dragged);
+  return next.every((layer, index) => layer === layers[index]) ? null : next;
+}
+
+export type LayerDropBounds = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+};
+
+/**
+ * 드래그 좌표를 삽입 대상 id로 바꾼다.
+ * undefined는 목록 밖(취소), null은 목록 끝, string은 해당 레이어 앞을 뜻한다.
+ */
+export function resolveLayerDropBeforeId(
+  clientX: number,
+  clientY: number,
+  bounds: LayerDropBounds,
+  scrollTop: number,
+  slots: readonly { id: string; midpoint: number }[],
+  xMargin = 32,
+  yMargin = 52
+): string | null | undefined {
+  if (
+    clientX < bounds.left - xMargin ||
+    clientX > bounds.right + xMargin ||
+    clientY < bounds.top - yMargin ||
+    clientY > bounds.bottom + yMargin
+  ) {
+    return undefined;
+  }
+  const logicalY = clientY - bounds.top + scrollTop;
+  return slots.find((slot) => logicalY < slot.midpoint)?.id ?? null;
+}
+
 /** 패널 세션의 첫 성공 직접 보내기만 일정 배치 문맥으로 전환한다. */
 export function shouldEnterScheduleArrangeMode(
   hasSentOnce: boolean,

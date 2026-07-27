@@ -31,14 +31,13 @@ import {
   AlignHorizontalDistributeCenter,
   AlignStartHorizontal,
   AlignStartVertical,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
   Circle,
   Eraser,
   Eye,
   EyeOff,
+  GripVertical,
   Highlighter,
   Lock,
   LockOpen,
@@ -70,6 +69,8 @@ import {
 } from "@/lib/broadcast/inking";
 import {
   reorderDrawingLayer,
+  reorderDrawingLayerBefore,
+  resolveLayerDropBeforeId,
   resolveDrawingLayerAfterRemoval,
   resolveWritableDrawingLayerId,
   shouldEnterScheduleArrangeMode,
@@ -118,6 +119,16 @@ const PEN_COLORS = [
 ];
 // 굵기 6단(펜 기준 px) — 형광펜·지우개는 배수로 키운다.
 const PEN_WIDTHS = [2, 3, 5, 8, 12, 18];
+const TOOL_LABELS: Record<BroadcastTool, string> = {
+  select: "선택",
+  pen: "펜",
+  hl: "형광펜",
+  eraser: "지우개",
+  line: "직선",
+  arrow: "화살표",
+  rect: "사각형",
+  ellipse: "원"
+};
 const DAY_MS = 24 * 60 * 60 * 1000;
 const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
 
@@ -156,10 +167,6 @@ type ColBox = { x: number; y: number; w: number };
 const COL_DEFAULT_W = 220;
 const COL_MIN_W = 140;
 const COL_MAX_W = 520;
-// 전체 backing store는 기존 고정 3캔버스와 같은 예산을 레이어끼리 나눠 쓴다.
-// 그래도 DOM·썸네일·재생 비용이 무한히 늘지 않게 그림판 수준의 실용 상한을 둔다.
-const MAX_DRAWING_LAYERS = 6;
-
 // 그리기 레이어(동적) — '일정'(날짜 카드 DOM)은 고정 기본, 나머지는 ➕로 자유 추가/삭제.
 type PanelLayer = { id: string; name: string; vis: boolean; lock: boolean };
 // '일정' 고정 레이어의 활성 id — 카드 선택/이동은 이 레이어가 활성일 때만.
@@ -225,6 +232,7 @@ export function BroadcastPanel({
   const sendBtnRef = useRef<HTMLButtonElement | null>(null);
   const pickerToggleRef = useRef<HTMLButtonElement | null>(null);
   const scheduleLayerButtonRef = useRef<HTMLButtonElement | null>(null);
+  const layerListRef = useRef<HTMLDivElement | null>(null);
 
   // ── 판서 엔진(M4b): stroke 벡터 스토어 + 레이어별 committed 캔버스 + 라이브 1장 ──
   // 배경(날짜 카드 DOM)과 캔버스는 같은 좌표면(.bp-board-inner)에 있다 — 보드가 가로
@@ -275,6 +283,32 @@ export function BroadcastPanel({
   ]);
   const [activeLayerId, setActiveLayerId] = useState("layer-1");
   const [layerOrderStatus, setLayerOrderStatus] = useState("");
+  const [layerDragUi, setLayerDragUi] = useState<{
+    id: string;
+    beforeId: string | null | undefined;
+  } | null>(null);
+  const layerDragRef = useRef<{
+    id: string;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    offsetY: number;
+    card: HTMLElement;
+    trigger: HTMLButtonElement;
+    started: boolean;
+    beforeId: string | null | undefined;
+    slots: Array<{ id: string; midpoint: number }>;
+  } | null>(null);
+  const layerDragGhostRef = useRef<HTMLElement | null>(null);
+  const layerDragClickBlockedRef = useRef(false);
+  const layerDragBodySelectRef = useRef<string | null>(null);
+  const layerDragScrollRafRef = useRef<number | null>(null);
+  const layerDragPointerRef = useRef<{ x: number; y: number } | null>(null);
+  const layerDragReleaseGuardRef = useRef<(() => void) | null>(null);
+  const pendingLayerRevealRef = useRef<{
+    id: string;
+    position: "top" | "nearest";
+  } | null>(null);
   const activeLayerIdRef = useRef(activeLayerId);
   activeLayerIdRef.current = activeLayerId;
   const lastDrawingLayerIdRef = useRef<string | null>("layer-1");
@@ -381,6 +415,24 @@ export function BroadcastPanel({
   const hasSentOnceRef = useRef(sentDateKeys.length > 0);
   const layersRef = useRef(layers);
   layersRef.current = layers;
+  useLayoutEffect(() => {
+    const pending = pendingLayerRevealRef.current;
+    const list = layerListRef.current;
+    if (!pending || !list) return;
+    const card = Array.from(
+      list.querySelectorAll<HTMLElement>("[data-layer-id]")
+    ).find((candidate) => candidate.dataset.layerId === pending.id);
+    pendingLayerRevealRef.current = null;
+    if (!card) return;
+    if (pending.position === "top") {
+      list.scrollTop = 0;
+    } else {
+      card.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+    card
+      .querySelector<HTMLButtonElement>(".bp-layer-select")
+      ?.focus({ preventScroll: true });
+  }, [layers]);
   const pushHist = useCallback((a: HistAction) => {
     histRef.current.push(a);
     setStrokeVersion((v) => v + 1); // undo/redo 버튼 활성 갱신
@@ -1269,6 +1321,14 @@ export function BroadcastPanel({
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
       if (clearArmTimer.current !== null) window.clearTimeout(clearArmTimer.current);
       if (auto.raf !== null) cancelAnimationFrame(auto.raf);
+      if (layerDragScrollRafRef.current !== null) {
+        cancelAnimationFrame(layerDragScrollRafRef.current);
+      }
+      layerDragReleaseGuardRef.current?.();
+      layerDragGhostRef.current?.remove();
+      if (layerDragBodySelectRef.current !== null) {
+        document.body.style.userSelect = layerDragBodySelectRef.current;
+      }
     };
   }, [store]);
 
@@ -1277,6 +1337,7 @@ export function BroadcastPanel({
   const activeLayer = layers.find((l) => l.id === activeLayerId) ?? null;
   const toolBlocked =
     tool !== "select" && (!activeLayer || activeLayer.lock || !activeLayer.vis);
+  const activeLayerName = bgActive ? "일정" : (activeLayer?.name ?? "레이어 없음");
 
   // 도구 버튼이 켜졌는데 일정/잠금/숨김 레이어라 실제 입력은 막히는 dead state를 없앤다.
   // 사용자 레이어 의도를 존중해 자동 생성·잠금 해제·표시 전환은 하지 않는다.
@@ -1754,12 +1815,12 @@ export function BroadcastPanel({
 
   // ── 레이어 추가/삭제/순서(그림판 문법: 자유롭게) ──
   function addLayer() {
-    if (layersRef.current.length >= MAX_DRAWING_LAYERS) return;
     hapticTick();
     layerSeq.current += 1;
     const id = `layer-${layerSeq.current}`;
     const before = layersRef.current;
     const after = [{ id, name: `레이어 ${layerSeq.current}`, vis: true, lock: false }, ...before];
+    pendingLayerRevealRef.current = { id, position: "top" };
     setLayers(after);
     setActiveLayerId(id); // 새 레이어가 맨 위 + 바로 활성
     setTool(toolAfterEmptyLayerAdded(tool)); // 빈 레이어에서 선택/지우개로 한 번 더 막히지 않게
@@ -1789,6 +1850,7 @@ export function BroadcastPanel({
     const after = reorderDrawingLayer(before, id, direction);
     if (!after) return;
     finishLiveStroke();
+    pendingLayerRevealRef.current = { id, position: "nearest" };
     setLayers(after);
     pushHist({ t: "layers", before, after });
     const movedLayer = before.find((layer) => layer.id === id);
@@ -1799,6 +1861,245 @@ export function BroadcastPanel({
       );
     }
     hapticTick();
+  }
+
+  function layerDropBeforeId(
+    clientX: number,
+    clientY: number
+  ): string | null | undefined {
+    const list = layerListRef.current;
+    const drag = layerDragRef.current;
+    if (!list || !drag) return undefined;
+    const rect = list.getBoundingClientRect();
+    return resolveLayerDropBeforeId(
+      clientX,
+      clientY,
+      rect,
+      list.scrollTop,
+      drag.slots
+    );
+  }
+
+  function createLayerDragGhost(drag: NonNullable<typeof layerDragRef.current>) {
+    const rect = drag.card.getBoundingClientRect();
+    const ghost = drag.card.cloneNode(true) as HTMLElement;
+    ghost.className = "bp-layer-drag-ghost";
+    ghost.removeAttribute("data-layer-id");
+    ghost.setAttribute("aria-hidden", "true");
+    ghost.inert = true;
+    ghost.style.width = `${rect.width}px`;
+    ghost.style.left = `${rect.left}px`;
+    ghost.style.top = `${rect.top}px`;
+    ghost.querySelectorAll<HTMLElement>("button").forEach((button) => {
+      button.tabIndex = -1;
+    });
+    // cloneNode는 canvas bitmap을 복사하지 않는다. 유령 썸네일도 원본과 같게 직접 복사.
+    const sourceThumb = drag.card.querySelector("canvas");
+    const ghostThumb = ghost.querySelector("canvas");
+    if (sourceThumb && ghostThumb) {
+      ghostThumb.width = sourceThumb.width;
+      ghostThumb.height = sourceThumb.height;
+      ghostThumb.getContext("2d")?.drawImage(sourceThumb, 0, 0);
+    }
+    document.body.appendChild(ghost);
+    layerDragGhostRef.current = ghost;
+    layerDragBodySelectRef.current = document.body.style.userSelect;
+    document.body.style.userSelect = "none";
+  }
+
+  function updateLayerDropSlot(clientX: number, clientY: number) {
+    const drag = layerDragRef.current;
+    if (!drag?.started) return;
+    const beforeId = layerDropBeforeId(clientX, clientY);
+    drag.beforeId = beforeId;
+    setLayerDragUi((prev) =>
+      prev?.id === drag.id && prev.beforeId === beforeId
+        ? prev
+        : { id: drag.id, beforeId }
+    );
+  }
+
+  function layerAutoScrollSpeed(clientX: number, clientY: number): number {
+    const list = layerListRef.current;
+    if (!list) return 0;
+    const rect = list.getBoundingClientRect();
+    if (clientX < rect.left - 32 || clientX > rect.right + 32) return 0;
+    const edge = 52;
+    if (clientY < rect.top - edge || clientY > rect.bottom + edge) return 0;
+    if (clientY < rect.top + edge) {
+      return -Math.min(14, Math.ceil((rect.top + edge - clientY) / 5));
+    }
+    if (clientY > rect.bottom - edge) {
+      return Math.min(14, Math.ceil((clientY - (rect.bottom - edge)) / 5));
+    }
+    return 0;
+  }
+
+  function runLayerAutoScroll() {
+    const drag = layerDragRef.current;
+    const list = layerListRef.current;
+    const pointer = layerDragPointerRef.current;
+    if (!drag?.started || !list || pointer === null) {
+      layerDragScrollRafRef.current = null;
+      return;
+    }
+    const speed = layerAutoScrollSpeed(pointer.x, pointer.y);
+    if (speed === 0) {
+      layerDragScrollRafRef.current = null;
+      return;
+    }
+    const before = list.scrollTop;
+    list.scrollTop += speed;
+    if (list.scrollTop === before) {
+      layerDragScrollRafRef.current = null;
+      return;
+    }
+    updateLayerDropSlot(pointer.x, pointer.y);
+    layerDragScrollRafRef.current = requestAnimationFrame(runLayerAutoScroll);
+  }
+
+  const cleanupLayerDrag = useCallback(() => {
+    if (layerDragScrollRafRef.current !== null) {
+      cancelAnimationFrame(layerDragScrollRafRef.current);
+      layerDragScrollRafRef.current = null;
+    }
+    layerDragPointerRef.current = null;
+    layerDragGhostRef.current?.remove();
+    layerDragGhostRef.current = null;
+    if (layerDragBodySelectRef.current !== null) {
+      document.body.style.userSelect = layerDragBodySelectRef.current;
+      layerDragBodySelectRef.current = null;
+    }
+    layerDragRef.current = null;
+    setLayerDragUi(null);
+  }, []);
+
+  const guardLayerClickUntilPointerRelease = useCallback((pointerId: number) => {
+    layerDragReleaseGuardRef.current?.();
+    layerDragClickBlockedRef.current = true;
+    const remove = () => {
+      window.removeEventListener("pointerup", onRelease, true);
+      window.removeEventListener("pointercancel", onRelease, true);
+      if (layerDragReleaseGuardRef.current === remove) {
+        layerDragReleaseGuardRef.current = null;
+      }
+    };
+    const onRelease = (event: PointerEvent) => {
+      if (event.pointerId !== pointerId) return;
+      remove();
+      window.setTimeout(() => {
+        if (!layerDragRef.current) layerDragClickBlockedRef.current = false;
+      }, 0);
+    };
+    window.addEventListener("pointerup", onRelease, true);
+    window.addEventListener("pointercancel", onRelease, true);
+    layerDragReleaseGuardRef.current = remove;
+  }, []);
+
+  function onLayerPointerDown(e: React.PointerEvent<HTMLButtonElement>, id: string) {
+    if (e.button !== 0 || e.pointerType === "touch") return;
+    if (layerDragRef.current) return;
+    const card = e.currentTarget.closest<HTMLElement>(".bp-layer-item");
+    const list = layerListRef.current;
+    if (!card || !list) return;
+    layerDragClickBlockedRef.current = false;
+    const rect = card.getBoundingClientRect();
+    const listRect = list.getBoundingClientRect();
+    const slots = Array.from(
+      list.querySelectorAll<HTMLElement>("[data-layer-id]")
+    ).flatMap((candidate) => {
+      const candidateId = candidate.dataset.layerId;
+      if (!candidateId || candidateId === id) return [];
+      const candidateRect = candidate.getBoundingClientRect();
+      return [{
+        id: candidateId,
+        midpoint:
+          candidateRect.top -
+          listRect.top +
+          list.scrollTop +
+          candidateRect.height / 2
+      }];
+    });
+    layerDragRef.current = {
+      id,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetY: e.clientY - rect.top,
+      card,
+      trigger: e.currentTarget,
+      started: false,
+      beforeId: undefined,
+      slots
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onLayerPointerMove(e: React.PointerEvent<HTMLButtonElement>) {
+    const drag = layerDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    if (!drag.started) {
+      if (Math.hypot(e.clientX - drag.startX, e.clientY - drag.startY) < 5) return;
+      drag.started = true;
+      layerDragClickBlockedRef.current = true;
+      createLayerDragGhost(drag);
+      hapticTick();
+    }
+    e.preventDefault();
+    layerDragPointerRef.current = { x: e.clientX, y: e.clientY };
+    updateLayerDropSlot(e.clientX, e.clientY);
+    const scrollSpeed = layerAutoScrollSpeed(e.clientX, e.clientY);
+    if (scrollSpeed !== 0 && layerDragScrollRafRef.current === null) {
+      layerDragScrollRafRef.current = requestAnimationFrame(runLayerAutoScroll);
+    } else if (scrollSpeed === 0 && layerDragScrollRafRef.current !== null) {
+      cancelAnimationFrame(layerDragScrollRafRef.current);
+      layerDragScrollRafRef.current = null;
+    }
+    const ghost = layerDragGhostRef.current;
+    if (ghost) ghost.style.top = `${e.clientY - drag.offsetY}px`;
+  }
+
+  function onLayerPointerUp(e: React.PointerEvent<HTMLButtonElement>) {
+    const drag = layerDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    const started = drag.started;
+    const beforeId = drag.beforeId;
+    cleanupLayerDrag();
+    if (started) {
+      window.setTimeout(() => {
+        if (!layerDragRef.current) layerDragClickBlockedRef.current = false;
+      }, 0);
+    }
+    if (!started || beforeId === undefined) return;
+    e.preventDefault();
+    const before = layersRef.current;
+    const after = reorderDrawingLayerBefore(before, drag.id, beforeId);
+    if (!after) return;
+    finishLiveStroke();
+    setLayers(after);
+    pushHist({ t: "layers", before, after });
+    const moved = after.find((layer) => layer.id === drag.id);
+    const movedIndex = after.findIndex((layer) => layer.id === drag.id);
+    if (moved && movedIndex >= 0) {
+      setLayerOrderStatus(`${moved.name}, 위에서 ${movedIndex + 1}번째로 이동`);
+    }
+    hapticTick();
+  }
+
+  function onLayerPointerCancel(e: React.PointerEvent<HTMLButtonElement>) {
+    const drag = layerDragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    layerDragClickBlockedRef.current = false;
+    cleanupLayerDrag();
+  }
+
+  function onLayerKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, id: string) {
+    if (!e.altKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) {
+      return;
+    }
+    e.preventDefault();
+    e.stopPropagation();
+    moveLayer(id, e.key === "ArrowUp" ? "up" : "down");
   }
 
   function toggleLayerVisibility(id: string) {
@@ -1893,6 +2194,21 @@ export function BroadcastPanel({
   // 전역 단축키 차단은 호출자(studio-shell)가 broadcastOpen 가드로 수행 — 여기선 Esc/Tab만.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const layerDrag = layerDragRef.current;
+      if (e.key === "Escape" && layerDrag) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (layerDrag.started) {
+          guardLayerClickUntilPointerRelease(layerDrag.pointerId);
+        } else {
+          layerDragClickBlockedRef.current = false;
+        }
+        cleanupLayerDrag();
+        if (layerDrag.trigger.hasPointerCapture(layerDrag.pointerId)) {
+          layerDrag.trigger.releasePointerCapture(layerDrag.pointerId);
+        }
+        return;
+      }
       // 색 팝오버가 열려 있는 동안엔 팝오버가 키보드(Esc/입력)를 갖는다 — 패널 단축키 정지.
       if (colorPopRef.current) return;
       if (e.key === "Escape") {
@@ -2006,7 +2322,17 @@ export function BroadcastPanel({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose, rangeSelect, doUndo, doRedo, pushHist, onRestoreSent, store]);
+  }, [
+    onClose,
+    rangeSelect,
+    doUndo,
+    doRedo,
+    pushHist,
+    onRestoreSent,
+    store,
+    cleanupLayerDrag,
+    guardLayerClickUntilPointerRelease
+  ]);
 
   // 최초 포커스 + body scroll lock(열림 동안 뒤 화면 스크롤 금지).
   useEffect(() => {
@@ -2090,252 +2416,271 @@ export function BroadcastPanel({
         </button>
       </header>
 
-      {/* 판서 도구줄(M4b) — 실제 그림판(리본) 문법: 묶음마다 아래에 작은 라벨, 세로 구분선.
-          role은 group — toolbar 역할은 방향키 roving tabindex가 필수라(G3b) 일반 Tab 이동으로 둔다. */}
-      <div className="bp-toolbar" role="group" aria-label="판서 도구">
-        <div className="bp-tool-group" role="group" aria-label="도구">
-          <div className="bp-group-row bp-grid2">
-            {(
-              [
-                ["select", "선택", MousePointer2],
-                ["pen", "펜", Pen],
-                ["hl", "형광펜", Highlighter],
-                ["eraser", "지우개", Eraser]
-              ] as const
-            ).map(([key, label, Icon]) => (
-              <button
-                aria-label={label}
-                aria-pressed={tool === key}
-                className={`bp-tool${tool === key ? " on" : ""}`}
-                key={key}
-                // Procreate 문법(연구 아카이브 §4): 색을 쓰는 도구(펜·형광펜)가 활성이면
-                // 칩이 '현재 펜 색'으로 칠해진다 — 지금 무슨 색으로 그릴지 도구줄에서 즉시
-                // 보인다. 아이콘은 명도 대비로 흑/백 자동 선택.
-                style={tool === key && (key === "pen" || key === "hl") ? activeInkStyle : undefined}
-                title={label}
-                type="button"
-                onClick={() => {
-                  hapticTick();
-                  if (key === "select") setTool(key);
-                  else activateDrawingTool(key);
-                }}
-              >
-                <Icon aria-hidden="true" size={16} />
-              </button>
-            ))}
+      {/* Clip Studio 문법(연구 아카이브 §7): 빠른 명령과 현재 상태, 도구, 속성·색을
+          서로 다른 역할로 읽히게 한다. role은 group — 일반 Tab 이동 계약을 유지한다. */}
+      <div className="bp-toolbar" role="group" aria-label="판서 작업대">
+        <div className="bp-command-bar">
+          <div className="bp-command-status" aria-live="polite">
+            <span>현재 작업</span>
+            <strong>
+              <i aria-hidden="true" style={{ background: penColor }} />
+              {TOOL_LABELS[tool]}
+            </strong>
+            <em>
+              펜 설정 {penWidth}px · {activeLayerName}
+            </em>
           </div>
-          <em className="bp-group-label">도구</em>
-        </div>
-        <div className="bp-tool-group" role="group" aria-label="도형">
-          <div className="bp-group-row bp-grid2">
-            {(
-              [
-                ["line", "직선", Slash],
-                ["arrow", "화살표", MoveUpRight],
-                ["rect", "사각형", Square],
-                ["ellipse", "원", Circle]
-              ] as const
-            ).map(([key, label, Icon]) => (
-              <button
-                aria-label={label}
-                aria-pressed={tool === key}
-                className={`bp-tool${tool === key ? " on" : ""}`}
-                key={key}
-                // 도형도 현재 펜 색으로 그려지므로 활성 칩에 색을 스민다(같은 규칙).
-                style={tool === key ? activeInkStyle : undefined}
-                title={`${label} — Shift로 정비율`}
-                type="button"
-                onClick={() => {
-                  hapticTick();
-                  activateDrawingTool(key);
-                }}
-              >
-                <Icon aria-hidden="true" size={16} />
-              </button>
-            ))}
-          </div>
-          <em className="bp-group-label">도형</em>
-        </div>
-        <div className="bp-tool-group" role="group" aria-label="색">
-          <div className="bp-colors">
-            {PEN_COLORS.map((c) => (
-              <button
-                aria-label={`펜 색 ${c}`}
-                aria-pressed={penColor === c}
-                className={`bp-color${penColor === c ? " on" : ""}`}
-                key={c}
-                style={{ background: c }}
-                type="button"
-                onClick={() => {
-                  hapticTick();
-                  // 선택·지우개면 펜으로, 형광펜·도형이면 도구 유지. 일정 레이어에서는
-                  // 최근 사용 가능한 그림 레이어까지 함께 복귀해 바로 그릴 수 있게 한다.
-                  applyInkColor(c);
-                }}
-              />
-            ))}
-            {/* 직접 고르기 — 태그 편집과 같은 인라인 색 피커 팝오버(디자인 통일).
-                팔레트에 없는 색이 선택돼 있으면 이 칸이 그 색으로 켜진다. */}
+          <div className="bp-command-actions" role="group" aria-label="작업 기록">
             <button
-              aria-expanded={colorPop !== null}
-              aria-label="색 직접 고르기"
-              className={`bp-color bp-color-custom${PEN_COLORS.includes(penColor) && !colorPop ? "" : " on"}`}
-              style={PEN_COLORS.includes(penColor) ? undefined : { background: penColor }}
-              title="색 직접 고르기"
-              type="button"
-              // 팝오버의 light-dismiss(문서 mousedown)가 이 버튼을 '바깥'으로 오인해
-              // 닫았다 → click이 다시 여는 왕복을 막는다.
-              onMouseDown={(e) => e.stopPropagation()}
-              onClick={(e) => {
-                hapticTick();
-                if (colorPop) {
-                  restoreColorPickerContext(colorPop);
-                  return;
-                }
-                setColorPop({
-                  anchor: e.currentTarget.getBoundingClientRect(),
-                  openedWith: penColor,
-                  openedWithTool: tool,
-                  openedWithLayerId: activeLayerId
-                });
-              }}
-            />
-          </div>
-          <em className="bp-group-label">색</em>
-          {colorPop ? (
-            <ColorPickerPopover
-              anchor={colorPop.anchor}
-              canClear={false}
-              kind="modifier"
-              value={penColor}
-              onCancel={() => restoreColorPickerContext(colorPop)}
-              onChange={applyInkColor}
-              onClear={() => {}}
-              onClose={() => setColorPop(null)}
-            />
-          ) : null}
-        </div>
-        <div className="bp-tool-group" role="group" aria-label="굵기">
-          <div className="bp-group-row bp-grid3">
-            {PEN_WIDTHS.map((w) => (
-              <button
-                aria-label={`굵기 ${w}px`}
-                aria-pressed={penWidth === w}
-                className={`bp-width${penWidth === w ? " on" : ""}`}
-                key={w}
-                type="button"
-                onClick={() => {
-                  hapticTick();
-                  setPenWidth(w);
-                  // 굵기를 골랐다 = 판서 의도. 일정/선택 상태면 최근 그림 레이어의 펜으로,
-                  // 이미 굵기를 쓰는 형광펜·지우개·도형이면 그 도구를 그대로 유지한다.
-                  activateDrawingTool(toolAfterInkWidthPick(tool));
-                }}
-              >
-                {/* 점도 현재 펜 색 — 굵기 고르는 자리에서 색·굵기를 한 번에 확인. */}
-                <i
-                  style={{
-                    width: Math.min(w + 2, 18),
-                    height: Math.min(w + 2, 18),
-                    background: penColor,
-                    boxShadow: "0 0 0 1px var(--ink-soft)"
-                  }}
-                />
-              </button>
-            ))}
-          </div>
-          <em className="bp-group-label">굵기</em>
-        </div>
-        <div className="bp-tool-group" role="group" aria-label="기록">
-          <div className="bp-group-row">
-            <button
-              aria-label="실행 취소 (Ctrl+Z)"
-              className="bp-tool"
+              className="bp-command-button"
               disabled={!histRef.current.canUndo()}
-              title="실행 취소 — 획·카드 배치·날짜·레이어 전부 (Ctrl+Z)"
+              title="획·카드 배치·날짜·레이어 실행 취소 (Ctrl+Z)"
               type="button"
               onClick={doUndo}
             >
               <Undo2 aria-hidden="true" size={16} />
+              <span>실행 취소</span>
             </button>
             <button
-              aria-label="다시 실행 (Ctrl+Shift+Z)"
-              className="bp-tool"
+              className="bp-command-button"
               disabled={!histRef.current.canRedo()}
               title="다시 실행 (Ctrl+Shift+Z)"
               type="button"
               onClick={doRedo}
             >
               <Redo2 aria-hidden="true" size={16} />
+              <span>다시 실행</span>
             </button>
             <button
               aria-label={clearArmed ? "한 번 더 누르면 전체 지우기" : "전체 지우기"}
-              className={`bp-tool danger${clearArmed ? " armed" : ""}`}
-              // redo 기록만 남은 상태(전량 undo)에서도 활성 — 그래야 잠금을 풀 유일한 경로
-              // (전체 지우기 = redoStack까지 소거)가 막히지 않는다(G3b 5차).
+              className={`bp-command-button danger${clearArmed ? " armed" : ""}`}
               disabled={store.strokes().length === 0 && !store.canRedo() && !clearArmed}
-              title="전체 지우기 — 잠긴 레이어 포함, 되돌릴 수 없음 (두 번 눌러 실행)"
+              title="잠긴 레이어 포함 전체 지우기 — 두 번 눌러 실행, 되돌릴 수 없음"
               type="button"
               onClick={doClearAll}
             >
-              {clearArmed ? (
-                <span className="bp-clear-confirm">확실해요?</span>
-              ) : (
-                <Trash2 aria-hidden="true" size={16} />
-              )}
+              <Trash2 aria-hidden="true" size={16} />
+              <span>{clearArmed ? "확실해요?" : "전체 지우기"}</span>
             </button>
           </div>
-          <em className="bp-group-label">기록</em>
+        </div>
+        <div className="bp-tool-deck">
+          <div className="bp-tool-group" role="group" aria-label="도구">
+            <div className="bp-group-row bp-grid4">
+              {(
+                [
+                  ["select", "선택", MousePointer2],
+                  ["pen", "펜", Pen],
+                  ["hl", "형광펜", Highlighter],
+                  ["eraser", "지우개", Eraser]
+                ] as const
+              ).map(([key, label, Icon]) => (
+                <button
+                  aria-label={label}
+                  aria-pressed={tool === key}
+                  className={`bp-tool${tool === key ? " on" : ""}`}
+                  key={key}
+                  // Procreate 문법(연구 아카이브 §4): 색을 쓰는 도구(펜·형광펜)가 활성이면
+                  // 칩이 '현재 펜 색'으로 칠해진다 — 지금 무슨 색으로 그릴지 도구줄에서 즉시
+                  // 보인다. 아이콘은 명도 대비로 흑/백 자동 선택.
+                  style={tool === key && (key === "pen" || key === "hl") ? activeInkStyle : undefined}
+                  title={label}
+                  type="button"
+                  onClick={() => {
+                    hapticTick();
+                    if (key === "select") setTool(key);
+                    else activateDrawingTool(key);
+                  }}
+                >
+                  <Icon aria-hidden="true" size={19} />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+            <em className="bp-group-label">도구</em>
+          </div>
+          <div className="bp-tool-group" role="group" aria-label="도형">
+            <div className="bp-group-row bp-grid4">
+              {(
+                [
+                  ["line", "직선", Slash],
+                  ["arrow", "화살표", MoveUpRight],
+                  ["rect", "사각형", Square],
+                  ["ellipse", "원", Circle]
+                ] as const
+              ).map(([key, label, Icon]) => (
+                <button
+                  aria-label={label}
+                  aria-pressed={tool === key}
+                  className={`bp-tool${tool === key ? " on" : ""}`}
+                  key={key}
+                  // 도형도 현재 펜 색으로 그려지므로 활성 칩에 색을 스민다(같은 규칙).
+                  style={tool === key ? activeInkStyle : undefined}
+                  title={`${label} — Shift로 정비율`}
+                  type="button"
+                  onClick={() => {
+                    hapticTick();
+                    activateDrawingTool(key);
+                  }}
+                >
+                  <Icon aria-hidden="true" size={19} />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </div>
+            <em className="bp-group-label">도형</em>
+          </div>
+          <div className="bp-tool-group bp-color-group" role="group" aria-label="색상 팔레트">
+            <div className="bp-colors">
+              {PEN_COLORS.map((c) => (
+                <button
+                  aria-label={`펜 색 ${c}`}
+                  aria-pressed={penColor === c}
+                  className={`bp-color${penColor === c ? " on" : ""}`}
+                  key={c}
+                  style={{ background: c }}
+                  type="button"
+                  onClick={() => {
+                    hapticTick();
+                    // 선택·지우개면 펜으로, 형광펜·도형이면 도구 유지. 일정 레이어에서는
+                    // 최근 사용 가능한 그림 레이어까지 함께 복귀해 바로 그릴 수 있게 한다.
+                    applyInkColor(c);
+                  }}
+                />
+              ))}
+              {/* 직접 고르기 — 태그 편집과 같은 인라인 색 피커 팝오버(디자인 통일).
+                팔레트에 없는 색이 선택돼 있으면 이 칸이 그 색으로 켜진다. */}
+              <button
+                aria-expanded={colorPop !== null}
+                aria-label={`현재 색 ${penColor}, 색 직접 고르기`}
+                className={`bp-current-color${colorPop ? " on" : ""}`}
+                title="색 직접 고르기"
+                type="button"
+                // 팝오버의 light-dismiss(문서 mousedown)가 이 버튼을 '바깥'으로 오인해
+                // 닫았다 → click이 다시 여는 왕복을 막는다.
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  hapticTick();
+                  if (colorPop) {
+                    restoreColorPickerContext(colorPop);
+                    return;
+                  }
+                  setColorPop({
+                    anchor: e.currentTarget.getBoundingClientRect(),
+                    openedWith: penColor,
+                    openedWithTool: tool,
+                    openedWithLayerId: activeLayerId
+                  });
+                }}
+              >
+                <i aria-hidden="true" style={{ background: penColor }} />
+                <span>현재 색</span>
+              </button>
+            </div>
+            <em className="bp-group-label">색상 팔레트</em>
+            {colorPop ? (
+              <ColorPickerPopover
+                anchor={colorPop.anchor}
+                canClear={false}
+                kind="modifier"
+                value={penColor}
+                onCancel={() => restoreColorPickerContext(colorPop)}
+                onChange={applyInkColor}
+                onClear={() => {}}
+                onClose={() => setColorPop(null)}
+              />
+            ) : null}
+          </div>
+          <div
+            className="bp-tool-group bp-property-group"
+            role="group"
+            aria-label="빠른 판서 설정"
+          >
+            <div className="bp-group-row bp-grid3">
+              {PEN_WIDTHS.map((w) => (
+                <button
+                  aria-label={`굵기 ${w}px`}
+                  aria-pressed={penWidth === w}
+                  className={`bp-width${penWidth === w ? " on" : ""}`}
+                  key={w}
+                  type="button"
+                  onClick={() => {
+                    hapticTick();
+                    setPenWidth(w);
+                    // 굵기를 골랐다 = 판서 의도. 일정/선택 상태면 최근 그림 레이어의 펜으로,
+                    // 이미 굵기를 쓰는 형광펜·지우개·도형이면 그 도구를 그대로 유지한다.
+                    activateDrawingTool(toolAfterInkWidthPick(tool));
+                  }}
+                >
+                  {/* 점도 현재 펜 색 — 굵기 고르는 자리에서 색·굵기를 한 번에 확인. */}
+                  <i
+                    style={{
+                      width: Math.min(w + 2, 18),
+                      height: Math.min(w + 2, 18),
+                      background: penColor,
+                      boxShadow: "0 0 0 1px var(--ink-soft)"
+                    }}
+                  />
+                  <span>{w}</span>
+                </button>
+              ))}
+            </div>
+            <em className="bp-group-label">빠른 판서 설정</em>
+          </div>
         </div>
         {tool === "select" && colSel.size >= 2 ? (
-          <div className="bp-tool-group" role="group" aria-label="정렬">
-            <div className="bp-group-row bp-grid2">
+          <div className="bp-context-strip" role="group" aria-label="선택 정렬">
+            <strong>선택 정렬 · {colSel.size}개</strong>
+            <div className="bp-group-row">
               <button
                 aria-label="위 맞춤"
-                className="bp-tool"
+                className="bp-command-button"
                 title="위 맞춤(수평 맞추기)"
                 type="button"
                 onClick={() => alignSelected("top")}
               >
                 <AlignStartHorizontal aria-hidden="true" size={16} />
+                <span>위 맞춤</span>
               </button>
               <button
                 aria-label="세로 중앙 맞춤"
-                className="bp-tool"
+                className="bp-command-button"
                 title="세로 중앙 맞춤"
                 type="button"
                 onClick={() => alignSelected("middle")}
               >
                 <AlignCenterHorizontal aria-hidden="true" size={16} />
+                <span>세로 중앙</span>
               </button>
               <button
                 aria-label="왼쪽 맞춤"
-                className="bp-tool"
+                className="bp-command-button"
                 title="왼쪽 맞춤"
                 type="button"
                 onClick={() => alignSelected("left")}
               >
                 <AlignStartVertical aria-hidden="true" size={16} />
+                <span>왼쪽</span>
               </button>
               <button
                 aria-label="가로 균등 간격"
-                className="bp-tool"
+                className="bp-command-button"
                 title="가로 균등 간격"
                 type="button"
                 onClick={() => alignSelected("distribute-x")}
               >
                 <AlignHorizontalDistributeCenter aria-hidden="true" size={16} />
+                <span>가로 균등</span>
               </button>
             </div>
-            <em className="bp-group-label">정렬({colSel.size})</em>
           </div>
         ) : null}
         {toolBlocked ? (
           <span className="bp-lock-hint">
             {bgActive
-              ? "'일정' 레이어에선 카드 선택·이동만 — 그리려면 위 레이어를 골라주세요"
+              ? "'일정' 레이어에선 카드만 움직여요 — 펜·색·굵기를 고르면 그림 레이어로 돌아갑니다"
               : layers.length === 0
-                ? "레이어가 없어요 — 오른쪽 ➕로 추가해주세요"
+                ? "그림 레이어가 없어요 — 오른쪽에서 새 레이어를 추가해주세요"
                 : "활성 레이어가 잠겨 있거나 숨겨져 있어요"}
           </span>
         ) : null}
@@ -2676,38 +3021,59 @@ export function BroadcastPanel({
         </div>
       </section>
 
-      {/* 오른쪽 레이어 패널(실제 그림판 문법) — 위가 맨 위 레이어. 화살표로 순서 변경,
-          ➕로 추가, ✕로 삭제.
-          배경(날짜 카드)은 맨 아래 고정 기본. 레이어 선택 버튼과 액션 버튼은 형제 구조로
-          분리한다(중첩 interactive control 금지). */}
+      {/* Clip Studio desktop 문법: 그림 레이어의 썸네일·이름 영역을 직접 끌어 순서 변경.
+          액션은 형제 버튼이라 drag와 겹치지 않고, 일정 구조 레이어는 맨 아래 고정이다. */}
       <aside className="bp-layers-panel" aria-label="레이어">
         <p aria-live="polite" className="bp-layer-status" role="status">
           {layerOrderStatus}
         </p>
+        <div className="bp-layers-head">
+          <strong>레이어</strong>
+          <span>끌어서 순서 변경</span>
+        </div>
         <button
-          aria-label={`레이어 추가 (${layers.length}/${MAX_DRAWING_LAYERS})`}
+          aria-label="새 그림 레이어"
           className="bp-layer-add"
-          disabled={layers.length >= MAX_DRAWING_LAYERS}
-          title={
-            layers.length >= MAX_DRAWING_LAYERS
-              ? `레이어는 최대 ${MAX_DRAWING_LAYERS}개까지 만들 수 있어요`
-              : "레이어 추가"
-          }
+          title="새 레이어"
           type="button"
           onClick={addLayer}
         >
-          ＋ 레이어 추가 ({layers.length}/{MAX_DRAWING_LAYERS})
+          ＋ 새 레이어
         </button>
-        {layers.map((l, index) => (
+        <div
+          className="bp-layer-list"
+          ref={layerListRef}
+          role="list"
+          aria-label="그림 레이어"
+        >
+        {layers.map((l) => (
           <div
-            className={`bp-layer-item${l.vis ? "" : " off"}${l.id === activeLayerId ? " active" : ""}`}
+            className={`bp-layer-item${l.vis ? "" : " off"}${l.id === activeLayerId ? " active" : ""}${layerDragUi?.id === l.id ? " dragging" : ""}${layerDragUi?.beforeId === l.id ? " drop-before" : ""}`}
+            data-layer-id={l.id}
             key={l.id}
+            role="listitem"
           >
             <button
+              aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+              aria-label={`${l.name}, 끌어서 순서 변경`}
               aria-pressed={l.id === activeLayerId}
               className="bp-layer-select"
+              title="클릭해 선택 · 끌어서 순서 변경 · Alt+↑/↓"
               type="button"
-              onClick={() => setActiveLayerId(l.id)}
+              onClick={(e) => {
+                if (layerDragRef.current) return;
+                if (layerDragClickBlockedRef.current && e.detail > 0) {
+                  layerDragClickBlockedRef.current = false;
+                  return;
+                }
+                setActiveLayerId(l.id);
+              }}
+              onKeyDown={(e) => onLayerKeyDown(e, l.id)}
+              onLostPointerCapture={onLayerPointerCancel}
+              onPointerCancel={onLayerPointerCancel}
+              onPointerDown={(e) => onLayerPointerDown(e, l.id)}
+              onPointerMove={onLayerPointerMove}
+              onPointerUp={onLayerPointerUp}
             >
               <span className="bp-layer-thumb" aria-hidden="true">
                 <canvas
@@ -2720,34 +3086,11 @@ export function BroadcastPanel({
                   }}
                 />
               </span>
-              <em>{l.name}</em>
+              <span className="bp-layer-meta">
+                <em>{l.name}</em>
+                <GripVertical aria-hidden="true" size={17} strokeWidth={2.2} />
+              </span>
             </button>
-            <div aria-label={`${l.name} 순서`} className="bp-layer-order" role="group">
-              <button
-                aria-label={`${l.name} 위로 이동`}
-                aria-disabled={index === 0}
-                className="bp-layer-btn"
-                title={index === 0 ? "이미 맨 위 레이어예요" : "위로 이동"}
-                type="button"
-                onClick={() => moveLayer(l.id, "up")}
-              >
-                <ChevronUp aria-hidden="true" size={16} strokeWidth={2.5} />
-              </button>
-              <button
-                aria-label={`${l.name} 아래로 이동`}
-                aria-disabled={index === layers.length - 1}
-                className="bp-layer-btn"
-                title={
-                  index === layers.length - 1
-                    ? "이미 맨 아래 그림 레이어예요"
-                    : "아래로 이동"
-                }
-                type="button"
-                onClick={() => moveLayer(l.id, "down")}
-              >
-                <ChevronDown aria-hidden="true" size={16} strokeWidth={2.5} />
-              </button>
-            </div>
             <div className="bp-layer-actions">
               <button
                 aria-label={`${l.name} 표시`}
@@ -2781,10 +3124,11 @@ export function BroadcastPanel({
             </div>
           </div>
         ))}
+        </div>
         {/* 일정 = 고정 기본 레이어(날짜 카드 DOM) — 삭제/잠금 없음. 활성이면 카드
             선택/이동/크기 조절이 가능(그리기 레이어 활성 중엔 카드가 안 잡힌다). */}
         <div
-          className={`bp-layer-item bp-layer-fixed${bgVis ? "" : " off"}${bgActive ? " active" : ""}`}
+          className={`bp-layer-item bp-layer-fixed${bgVis ? "" : " off"}${bgActive ? " active" : ""}${layerDragUi?.beforeId === null && layerDragUi ? " drop-before" : ""}`}
         >
           <button
             aria-pressed={bgActive}
@@ -2800,7 +3144,9 @@ export function BroadcastPanel({
             <span className="bp-layer-thumb" aria-hidden="true">
               <span className="bp-layer-thumb-bg">📅</span>
             </span>
-            <em>일정</em>
+            <span className="bp-layer-meta">
+              <em>일정</em>
+            </span>
           </button>
           <div className="bp-layer-actions">
             <button

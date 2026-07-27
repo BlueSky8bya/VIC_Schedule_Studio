@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import {
   reorderDrawingLayer,
+  reorderDrawingLayerBefore,
   resolveDrawingLayerAfterRemoval,
+  resolveLayerDropBeforeId,
   resolveWritableDrawingLayerId,
   shouldEnterScheduleArrangeMode,
   toolAfterEmptyLayerAdded,
@@ -115,6 +117,44 @@ describe("broadcast panel workflow", () => {
     expect(reorderDrawingLayer(layers, "bottom", "down")).toBeNull();
     expect(reorderDrawingLayer(layers, "missing", "up")).toBeNull();
     expect(layers.map((layer) => layer.id)).toEqual(["top", "middle", "bottom"]);
+  });
+
+  it("inserts a dragged layer before a card or at the drawing-stack end", () => {
+    const layers = [{ id: "top" }, { id: "middle" }, { id: "bottom" }];
+
+    expect(reorderDrawingLayerBefore(layers, "bottom", "top")?.map((layer) => layer.id)).toEqual([
+      "bottom",
+      "top",
+      "middle"
+    ]);
+    expect(reorderDrawingLayerBefore(layers, "top", "bottom")?.map((layer) => layer.id)).toEqual([
+      "middle",
+      "top",
+      "bottom"
+    ]);
+    expect(reorderDrawingLayerBefore(layers, "top", null)?.map((layer) => layer.id)).toEqual([
+      "middle",
+      "bottom",
+      "top"
+    ]);
+    expect(reorderDrawingLayerBefore(layers, "middle", "bottom")).toBeNull();
+    expect(reorderDrawingLayerBefore(layers, "missing", null)).toBeNull();
+    expect(reorderDrawingLayerBefore(layers, "top", "missing")).toBeNull();
+    expect(layers.map((layer) => layer.id)).toEqual(["top", "middle", "bottom"]);
+  });
+
+  it("distinguishes a valid layer drop, stack end, and outside cancellation", () => {
+    const bounds = { left: 100, right: 340, top: 50, bottom: 450 };
+    const slots = [
+      { id: "top", midpoint: 80 },
+      { id: "middle", midpoint: 160 }
+    ];
+
+    expect(resolveLayerDropBeforeId(180, 90, bounds, 0, slots)).toBe("top");
+    expect(resolveLayerDropBeforeId(180, 230, bounds, 0, slots)).toBeNull();
+    expect(resolveLayerDropBeforeId(180, 90, bounds, 100, slots)).toBe("middle");
+    expect(resolveLayerDropBeforeId(20, 90, bounds, 0, slots)).toBeUndefined();
+    expect(resolveLayerDropBeforeId(180, 520, bounds, 0, slots)).toBeUndefined();
   });
 
   it("enters schedule arrange mode only for the session's first successful direct send", () => {

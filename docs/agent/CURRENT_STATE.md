@@ -35,10 +35,23 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
     추가. hover/down/move 추적, up/cancel/lost-capture/leave 정리, 펜·형광펜·지우개 footprint와
     도형 crosshair/아이콘 표시. 마우스 전환 시 native cursor 복구, 활성 pen 우선권·touch 무시,
     240Hz 경로는 React state 갱신 없음.
-  - 새로 열면 `펜 + #000000 + 레이어 1`로 즉시 판서 가능. 그림 레이어는 28px 위/아래 버튼으로
-    합성 순서를 바꾸며 이동 1회가 통합 undo/redo 1건. `일정` 구조 레이어는 맨 아래 고정.
-  - 모바일은 일정 그림판 진입점이 없어 범위 제외. 검증: vitest **290/290**, typecheck,
-    changed-files lint, production build 통과. 전체 lint는 기존 파일 경고 5개 때문에 exit 1.
+  - 새로 열면 `펜 + #000000 + 레이어 1`로 즉시 판서 가능. 그림 레이어의 썸네일·이름을
+    마우스/펜으로 직접 끌어 보라 삽입선 위치에 놓는다. 5px 의도 임계값, drag ghost,
+    독립 목록 edge auto-scroll, `Alt+ArrowUp/Down` 대체 경로를 제공하고 이동 1회만 통합
+    undo/redo 1건. drop 위치는 drag 시작 때 한 번 측정해 긴 목록의 pointer move layout 재측정을
+    없앴고, 다중 포인터·목록 밖 drop·Esc·pointercancel은 안전하게 취소. 새 레이어는 스크롤
+    목록 맨 위로 자동 노출·포커스하고 키보드 순서 이동도 화면 안에 유지. 눈·잠금·삭제는
+    drag에서 제외하며 `일정` 구조 레이어는 맨 아래 고정.
+  - 임의의 그림 레이어 6개 hard cap과 `(n/6)` 노출 제거. `+ 새 레이어`로 계속 추가하되 기존
+    총 backing-pixel 예산을 레이어 수로 나누고 필요하면 0.25 scale 아래까지 해상도를 적응시킨다.
+    DOM·썸네일·stroke 비용은 별도라 물리적 무한을 보장하지 않으며, 수백 레이어가 실제 요구되면
+    virtualization·hidden backing 해제를 후속 검토.
+  - 상단을 `현재 작업·기록 명령 / 이름이 보이는 도구·도형 / 색상 팔레트·빠른 판서 설정`으로
+    재구성. 좁은 데스크톱 폭은 내부 가로 스크롤, 명령 바는 줄바꿈. 선택 카드 정렬은 선택
+    문맥에서만 나타난다.
+  - 모바일은 일정 그림판 진입점이 없어 범위 제외. 검증: vitest **294/294**, typecheck,
+    changed-files lint, production build 통과. 전체 build의 기존 lint 경고 5개는 유지.
+    연결 브라우저가 없어 실제 렌더·마우스 drag·실기기 펜 스모크는 미실행.
 - **2026-07-12에 끝난 것**(커밋 `9324779`…`c509657`):
   - 미니게임 opt-in화 + 시즌 테마 강제 해제 + 태블릿(641~1040px) 아젠다 전환 → [ADR-0009](decisions/ADR-0009-seasonal-toys-are-opt-in.md)
   - 포스터 마스트헤드/시각 위계/대비(WCAG AA) · 모션 토큰(`--ease-enter/exit`, `--dur-4/5`) ·
