@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  reorderDrawingLayer,
   resolveDrawingLayerAfterRemoval,
   resolveWritableDrawingLayerId,
   shouldEnterScheduleArrangeMode,
@@ -95,6 +96,25 @@ describe("broadcast panel workflow", () => {
 
     expect(resolveDrawingLayerAfterRemoval(blocked, "missing")).toBe("hidden");
     expect(resolveDrawingLayerAfterRemoval([], "missing")).toBeNull();
+  });
+
+  it("reorders drawing layers without mutating input or crossing list boundaries", () => {
+    const layers = [{ id: "top" }, { id: "middle" }, { id: "bottom" }];
+
+    expect(reorderDrawingLayer(layers, "middle", "up")?.map((layer) => layer.id)).toEqual([
+      "middle",
+      "top",
+      "bottom"
+    ]);
+    expect(reorderDrawingLayer(layers, "middle", "down")?.map((layer) => layer.id)).toEqual([
+      "top",
+      "bottom",
+      "middle"
+    ]);
+    expect(reorderDrawingLayer(layers, "top", "up")).toBeNull();
+    expect(reorderDrawingLayer(layers, "bottom", "down")).toBeNull();
+    expect(reorderDrawingLayer(layers, "missing", "up")).toBeNull();
+    expect(layers.map((layer) => layer.id)).toEqual(["top", "middle", "bottom"]);
   });
 
   it("enters schedule arrange mode only for the session's first successful direct send", () => {

@@ -1,3 +1,5 @@
+import type { BroadcastTool } from "@/lib/broadcast/stroke-engine";
+
 export const PALM_GUARD_MS = 1000;
 export const PEN_PRESSURE_GAMMA = 0.65;
 export const PEN_PRESSURE_FLOOR = 0.12;
@@ -69,4 +71,50 @@ export function shouldIgnoreTouchAfterPen(
 
   const elapsed = timeStamp - lastPenContactTs;
   return elapsed >= 0 && elapsed < PALM_GUARD_MS;
+}
+
+/**
+ * Hardware pens often have no browser-drawn CSS cursor during contact. Return a visible
+ * board-overlay footprint while preserving each tool's actual width relationship.
+ */
+export function stylusCursorDiameter(tool: BroadcastTool, penWidth: number): number {
+  if (tool === "select") return 0;
+  const width = Number.isFinite(penWidth) && penWidth > 0 ? penWidth : 5;
+  const raw =
+    tool === "eraser"
+      ? width * 5
+      : tool === "hl"
+        ? width * 3.5
+        : tool === "pen"
+          ? width
+          : 18;
+  return Math.round(Math.max(8, Math.min(96, raw)));
+}
+
+export function shouldShowStylusToolCursor(
+  pointerType: string,
+  tool: BroadcastTool,
+  blocked: boolean
+): boolean {
+  return pointerType === "pen" && tool !== "select" && !blocked;
+}
+
+export type StylusCursorAction = "show" | "hide" | "ignore";
+
+/**
+ * Keeps one active pen authoritative while allowing a later mouse move to restore
+ * the native cursor after pen hover. Touch is ignored so palm events cannot steal it.
+ */
+export function resolveStylusCursorAction(
+  pointerType: string,
+  pointerId: number,
+  activePenPointerId: number | null,
+  tool: BroadcastTool,
+  blocked: boolean
+): StylusCursorAction {
+  if (pointerType === "touch") return "ignore";
+  if (pointerType === "mouse") return activePenPointerId === null ? "hide" : "ignore";
+  if (pointerType !== "pen") return "ignore";
+  if (activePenPointerId !== null && pointerId !== activePenPointerId) return "ignore";
+  return shouldShowStylusToolCursor(pointerType, tool, blocked) ? "show" : "hide";
 }

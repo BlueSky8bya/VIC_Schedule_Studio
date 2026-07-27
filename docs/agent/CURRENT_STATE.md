@@ -31,7 +31,13 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   - 커스텀 색 미리보기 취소 시 색뿐 아니라 도구·레이어도 원복. 새 빈 레이어는 선택/지우개 상태면
     펜으로 시작. 레이어 삭제/undo/redo 뒤에는 사용 가능한 그림 레이어를 우선 선택하고, 일정 레이어
     문맥은 이력 조작이 뺏지 않음. 미니 달력 `보냄` 표시 + 중복 전송/무의미한 undo 이력 제거.
-  - 모바일은 일정 그림판 진입점이 없어 범위 제외. 검증: vitest **284/284**, typecheck,
+  - 스타일러스에서 OS가 CSS 커서를 숨겨 판서 중 도구가 안 보이던 문제: pen 전용 DOM 커서를
+    추가. hover/down/move 추적, up/cancel/lost-capture/leave 정리, 펜·형광펜·지우개 footprint와
+    도형 crosshair/아이콘 표시. 마우스 전환 시 native cursor 복구, 활성 pen 우선권·touch 무시,
+    240Hz 경로는 React state 갱신 없음.
+  - 새로 열면 `펜 + #000000 + 레이어 1`로 즉시 판서 가능. 그림 레이어는 28px 위/아래 버튼으로
+    합성 순서를 바꾸며 이동 1회가 통합 undo/redo 1건. `일정` 구조 레이어는 맨 아래 고정.
+  - 모바일은 일정 그림판 진입점이 없어 범위 제외. 검증: vitest **290/290**, typecheck,
     changed-files lint, production build 통과. 전체 lint는 기존 파일 경고 5개 때문에 exit 1.
 - **2026-07-12에 끝난 것**(커밋 `9324779`…`c509657`):
   - 미니게임 opt-in화 + 시즌 테마 강제 해제 + 태블릿(641~1040px) 아젠다 전환 → [ADR-0009](decisions/ADR-0009-seasonal-toys-are-opt-in.md)

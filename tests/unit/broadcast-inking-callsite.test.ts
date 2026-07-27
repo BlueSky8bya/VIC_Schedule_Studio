@@ -8,6 +8,10 @@ const panelSource = readFileSync(
   join(repoRoot, "components/studio/broadcast-panel.tsx"),
   "utf8"
 );
+const panelCss = readFileSync(
+  join(repoRoot, "components/studio/broadcast-panel.css"),
+  "utf8"
+);
 
 function between(start: string, end: string) {
   const startIndex = panelSource.indexOf(start);
@@ -129,6 +133,26 @@ describe("broadcast inking callsite contracts", () => {
     expect(panelSource.match(/resolveDrawingLayerAfterRemoval\(/g)).toHaveLength(3);
   });
 
+  it("opens ready to draw and makes drawing-layer order undoable", () => {
+    const moveLayer = between("function moveLayer", "function toggleLayerVisibility");
+    const drawingLayers = between("{layers.map((l, index)", "{/* 일정 = 고정 기본 레이어");
+
+    expect(panelSource).toContain('const PEN_COLORS = [\n  "#000000"');
+    expect(panelSource).toContain('useState<BroadcastTool>("pen")');
+    expect(panelSource).toContain('useState("layer-1")');
+    expect(moveLayer).toContain("reorderDrawingLayer(before, id, direction)");
+    expect(moveLayer.indexOf("finishLiveStroke()")).toBeLessThan(
+      moveLayer.indexOf("setLayers(after)")
+    );
+    expect(moveLayer).toContain('pushHist({ t: "layers", before, after })');
+    expect(drawingLayers).toContain("aria-disabled={index === 0}");
+    expect(drawingLayers).toContain("aria-disabled={index === layers.length - 1}");
+    expect(drawingLayers).toContain('moveLayer(l.id, "up")');
+    expect(drawingLayers).toContain('moveLayer(l.id, "down")');
+    expect(panelSource).toContain('aria-live="polite"');
+    expect(moveLayer).toContain("setLayerOrderStatus(");
+  });
+
   it("opens custom color without changing context and restores preview context on cancel", () => {
     const customColorTrigger = between(
       'className={`bp-color bp-color-custom',
@@ -142,5 +166,48 @@ describe("broadcast inking callsite contracts", () => {
     expect(panelSource).toContain(
       "onCancel={() => restoreColorPickerContext(colorPop)}"
     );
+  });
+
+  it("renders a ref-driven hardware-pen cursor before live-stroke guards", () => {
+    const cursorUpdate = between(
+      "function updateStylusCursor",
+      "function hideStylusCursor"
+    );
+    const pointerDown = between("function onDrawDown", "function onDrawMove");
+    const pointerMove = between("function onDrawMove", "function endDraw");
+    const endDraw = between("function endDraw", "function cancelDraw");
+    const cancelDraw = between("function cancelDraw", "const doUndo");
+    const drawSurface = between('className="bp-draw-surface"', "marquee ?");
+
+    expect(panelSource).toContain(
+      "const stylusCursorRef = useRef<HTMLSpanElement | null>(null)"
+    );
+    expect(cursorUpdate).toContain("resolveStylusCursorAction(");
+    expect(cursorUpdate).toContain('activePointerTypeRef.current === "pen"');
+    expect(cursorUpdate).toContain('if (action === "hide") hideStylusCursor()');
+    expect(cursorUpdate).toContain("boardInnerRef.current?.getBoundingClientRect()");
+    expect(cursorUpdate).toContain("cursor.style.transform");
+    expect(cursorUpdate).toContain('cursor.classList.add("visible")');
+    expect(cursorUpdate).not.toContain("setState");
+    expect(pointerDown.indexOf("updateStylusCursor(e, rect)")).toBeLessThan(
+      pointerDown.indexOf('if (tool === "select"')
+    );
+    expect(pointerMove.indexOf("updateStylusCursor(e, rect)")).toBeLessThan(
+      pointerMove.indexOf("if (!live")
+    );
+    expect(endDraw).toContain("hideStylusCursor(e)");
+    expect(cancelDraw).toContain("hideStylusCursor(e)");
+    expect(drawSurface).toContain("onPointerEnter={updateStylusCursor}");
+    expect(drawSurface).toContain("onPointerLeave={onDrawPointerLeave}");
+    expect(drawSurface).toContain("onLostPointerCapture={cancelDraw}");
+    expect(drawSurface).toContain('className="bp-stylus-cursor"');
+    expect(drawSurface).toContain('data-tool={tool}');
+
+    expect(panelCss).toContain(".bp-stylus-cursor {");
+    expect(panelCss).toContain("z-index: 6");
+    expect(panelCss).toContain("pointer-events: none");
+    expect(panelCss).toContain(".bp-stylus-cursor.visible");
+    expect(panelCss).toContain(".bp-stylus-footprint");
+    expect(panelCss).toContain(".bp-stylus-glyph");
   });
 });

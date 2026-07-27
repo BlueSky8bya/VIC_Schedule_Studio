@@ -50,6 +50,20 @@ export function resolveDrawingLayerAfterRemoval(
   );
 }
 
+/** 목록 위 = 합성 위. 경계/미존재 이동은 히스토리를 만들지 않도록 null을 반환한다. */
+export function reorderDrawingLayer<T extends { id: string }>(
+  layers: readonly T[],
+  id: string,
+  direction: "up" | "down"
+): T[] | null {
+  const from = layers.findIndex((layer) => layer.id === id);
+  const to = from + (direction === "up" ? -1 : 1);
+  if (from < 0 || to < 0 || to >= layers.length) return null;
+  const next = [...layers];
+  [next[from], next[to]] = [next[to], next[from]];
+  return next;
+}
+
 /** 패널 세션의 첫 성공 직접 보내기만 일정 배치 문맥으로 전환한다. */
 export function shouldEnterScheduleArrangeMode(
   hasSentOnce: boolean,

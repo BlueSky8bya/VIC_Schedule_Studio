@@ -31,8 +31,10 @@ import {
   AlignHorizontalDistributeCenter,
   AlignStartHorizontal,
   AlignStartVertical,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   Circle,
   Eraser,
   Eye,
@@ -61,10 +63,13 @@ import { createBroadcastHistory } from "@/lib/broadcast/history";
 import {
   isPenContact,
   mapPenPressure,
+  resolveStylusCursorAction,
   shouldIgnoreTouchAfterPen,
-  smoothPressure
+  smoothPressure,
+  stylusCursorDiameter
 } from "@/lib/broadcast/inking";
 import {
+  reorderDrawingLayer,
   resolveDrawingLayerAfterRemoval,
   resolveWritableDrawingLayerId,
   shouldEnterScheduleArrangeMode,
@@ -93,7 +98,7 @@ import { inkContrast } from "@/lib/tags/color-tone";
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 // 판서 팔레트 17색(그림판식 2줄 트레이) + 마지막 칸 '직접 고르기'(네이티브 색상판).
 const PEN_COLORS = [
-  "#374151",
+  "#000000",
   "#94a3b8",
   "#c26a2d",
   "#f43f5e",
@@ -240,6 +245,9 @@ export function BroadcastPanel({
   const thumbCanvases = useRef(new Map<string, HTMLCanvasElement>());
   const liveCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const predictionCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const drawSurfaceRef = useRef<HTMLDivElement | null>(null);
+  const stylusCursorRef = useRef<HTMLSpanElement | null>(null);
+  const stylusCursorPointerIdRef = useRef<number | null>(null);
   const predictedPointsRef = useRef<StrokePoint[]>([]);
   const drawingRef = useRef<Stroke | null>(null);
   const drawnIdxRef = useRef(1); // committed 증분 렌더가 소화한 point 수(펜·지우개)
@@ -248,7 +256,7 @@ export function BroadcastPanel({
   const rafRef = useRef<number | null>(null);
   const scaleRef = useRef(1);
   const lastFitRef = useRef({ w: 0, h: 0, scale: 0 });
-  const [tool, setTool] = useState<BroadcastTool>("select");
+  const [tool, setTool] = useState<BroadcastTool>("pen");
   const [penColor, setPenColor] = useState(PEN_COLORS[0]);
   const [penWidth, setPenWidth] = useState(PEN_WIDTHS[2]);
   // '색 직접 고르기' 팝오버 — 네이티브 OS 색상판 대신 태그 편집과 같은 인라인 피커를 재사용
@@ -266,6 +274,7 @@ export function BroadcastPanel({
     { id: "layer-1", name: "레이어 1", vis: true, lock: false }
   ]);
   const [activeLayerId, setActiveLayerId] = useState("layer-1");
+  const [layerOrderStatus, setLayerOrderStatus] = useState("");
   const activeLayerIdRef = useRef(activeLayerId);
   activeLayerIdRef.current = activeLayerId;
   const lastDrawingLayerIdRef = useRef<string | null>("layer-1");
@@ -1263,12 +1272,6 @@ export function BroadcastPanel({
     };
   }, [store]);
 
-  function boardPoint(e: React.PointerEvent): { x: number; y: number } | null {
-    const inner = boardInnerRef.current;
-    if (!inner) return null;
-    const r = inner.getBoundingClientRect();
-    return { x: e.clientX - r.left, y: e.clientY - r.top };
-  }
   // 그림판 문법: 펜/형광펜/지우개 전부 '활성 레이어'에만 작용. 활성 레이어가 없거나
   // 잠김/숨김이면 그리기 차단.
   const activeLayer = layers.find((l) => l.id === activeLayerId) ?? null;
@@ -1413,7 +1416,94 @@ export function BroadcastPanel({
       `stroke='%234b4468' stroke-width='1.5'/%3E%3C/svg%3E`;
     return `url("data:image/svg+xml;charset=utf-8,${svg}") ${r + 2} ${r + 2}, crosshair`;
   }, [penWidth]);
+
+  const StylusCursorIcon =
+    tool === "pen"
+      ? Pen
+      : tool === "hl"
+        ? Highlighter
+        : tool === "eraser"
+          ? Eraser
+          : tool === "line"
+            ? Slash
+            : tool === "arrow"
+              ? MoveUpRight
+              : tool === "rect"
+                ? Square
+                : tool === "ellipse"
+                  ? Circle
+                  : MousePointer2;
+
+  // 마우스의 CSS cursor는 스타일러스 접촉에서 보장되지 않는다. React state를 240Hz로 갱신하지
+  // 않고 DOM transform만 바꿔, pen hover/접촉 위치에 도구 footprint와 아이콘을 띄운다.
+  function updateStylusCursor(e: React.PointerEvent<HTMLDivElement>, boardRect?: DOMRect | null) {
+    const activePenPointerId =
+      activePointerTypeRef.current === "pen" ? activePtrRef.current : null;
+    const action = resolveStylusCursorAction(
+      e.pointerType,
+      e.pointerId,
+      activePenPointerId,
+      tool,
+      toolBlocked
+    );
+    if (action !== "show") {
+      if (action === "hide") hideStylusCursor();
+      return;
+    }
+    const cursor = stylusCursorRef.current;
+    if (!cursor) return;
+    const rect = boardRect ?? boardInnerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+    const cursorSize = `${stylusCursorDiameter(tool, penWidth)}px`;
+    if (cursor.style.getPropertyValue("--bp-stylus-size") !== cursorSize) {
+      cursor.style.setProperty("--bp-stylus-size", cursorSize);
+    }
+    cursor.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
+    const contact = isPenContact(e.pointerType, e.pressure, e.buttons)
+      ? "true"
+      : "false";
+    if (cursor.dataset.contact !== contact) cursor.dataset.contact = contact;
+    stylusCursorPointerIdRef.current = e.pointerId;
+    if (!drawSurfaceRef.current?.classList.contains("stylus-active")) {
+      drawSurfaceRef.current?.classList.add("stylus-active");
+    }
+    if (!cursor.classList.contains("visible")) cursor.classList.add("visible");
+  }
+
+  function hideStylusCursor(e?: React.PointerEvent<HTMLDivElement>) {
+    if (e && e.pointerType !== "pen") return;
+    if (
+      e &&
+      stylusCursorPointerIdRef.current !== null &&
+      e.pointerId !== stylusCursorPointerIdRef.current
+    ) {
+      return;
+    }
+    stylusCursorPointerIdRef.current = null;
+    drawSurfaceRef.current?.classList.remove("stylus-active");
+    stylusCursorRef.current?.classList.remove("visible");
+  }
+
+  function onDrawPointerLeave(e: React.PointerEvent<HTMLDivElement>) {
+    // capture 중에는 표면 밖에서도 획과 커서가 펜촉을 따라간다. up/cancel에서 숨긴다.
+    if (e.pointerType === "pen" && e.pointerId !== activePtrRef.current) {
+      hideStylusCursor(e);
+    }
+  }
+
+  useEffect(() => {
+    // 도구·레이어·굵기 전환 직전 위치에 이전 footprint가 얼어붙지 않게 한다.
+    stylusCursorPointerIdRef.current = null;
+    drawSurfaceRef.current?.classList.remove("stylus-active");
+    stylusCursorRef.current?.classList.remove("visible");
+  }, [tool, toolBlocked, activeLayerId, penWidth]);
+
   function onDrawDown(e: React.PointerEvent<HTMLDivElement>) {
+    const rect = boardInnerRef.current?.getBoundingClientRect() ?? null;
+    updateStylusCursor(e, rect);
     if (tool === "select" || !activeLayer || toolBlocked || e.button !== 0) return;
     const penContact = isPenContact(e.pointerType, e.pressure, e.buttons);
     if (penContact) lastPenContactTsRef.current = e.timeStamp;
@@ -1443,8 +1533,8 @@ export function BroadcastPanel({
       e.preventDefault();
       return;
     }
-    const p = boardPoint(e);
-    if (!p) return;
+    if (!rect) return;
+    const p = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     activePtrRef.current = e.pointerId;
     activePointerTypeRef.current = e.pointerType;
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -1462,14 +1552,20 @@ export function BroadcastPanel({
     scheduleFlush();
   }
   function onDrawMove(e: React.PointerEvent<HTMLDivElement>) {
+    const pendingLive = drawingRef.current;
+    const rect =
+      e.pointerType === "pen" || pendingLive
+        ? boardInnerRef.current?.getBoundingClientRect() ?? null
+        : null;
+    updateStylusCursor(e, rect);
     if (isPenContact(e.pointerType, e.pressure, e.buttons)) {
       lastPenContactTsRef.current = e.timeStamp;
     }
-    const live = drawingRef.current;
+    const live = pendingLive;
     if (!live || e.pointerId !== activePtrRef.current) return;
     if (isShapeTool(live.tool)) {
-      const p = boardPoint(e);
-      if (!p) return;
+      if (!rect) return;
+      const p = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       // 도형: 시작점 고정, 끝점만 갱신. Shift = 정비율(45° 선 / 정사각형 / 정원).
       const a = live.points[0];
       let end = p;
@@ -1498,9 +1594,7 @@ export function BroadcastPanel({
     const coalesced =
       typeof native.getCoalescedEvents === "function" ? native.getCoalescedEvents() : [];
     const samples = coalesced.length > 0 ? coalesced : [native];
-    const inner = boardInnerRef.current;
-    if (!inner) return;
-    const rect = inner.getBoundingClientRect();
+    if (!rect) return;
     let added = false;
     for (const s of samples) {
       const sp = { x: s.clientX - rect.left, y: s.clientY - rect.top };
@@ -1527,6 +1621,7 @@ export function BroadcastPanel({
     }
   }
   function endDraw(e?: React.PointerEvent<HTMLDivElement>) {
+    hideStylusCursor(e);
     if (!drawingRef.current) return;
     if (e && e.pointerId !== activePtrRef.current) return; // 다른 포인터의 up 무시
     if (e && activePointerTypeRef.current === "pen") {
@@ -1535,6 +1630,7 @@ export function BroadcastPanel({
     finishLiveStroke();
   }
   function cancelDraw(e: React.PointerEvent<HTMLDivElement>) {
+    hideStylusCursor(e);
     if (!drawingRef.current || e.pointerId !== activePtrRef.current) return;
     if (activePointerTypeRef.current === "pen") {
       lastPenContactTsRef.current = e.timeStamp;
@@ -1656,7 +1752,7 @@ export function BroadcastPanel({
     replayAll();
   }, [clearArmed, store, replayAll, finishLiveStroke]);
 
-  // ── 레이어 추가/삭제(그림판 문법: 자유롭게) ──
+  // ── 레이어 추가/삭제/순서(그림판 문법: 자유롭게) ──
   function addLayer() {
     if (layersRef.current.length >= MAX_DRAWING_LAYERS) return;
     hapticTick();
@@ -1685,6 +1781,23 @@ export function BroadcastPanel({
       if (!fallback) setTool("select");
     }
     pushHist({ t: "layers", before, after });
+    hapticTick();
+  }
+
+  function moveLayer(id: string, direction: "up" | "down") {
+    const before = layersRef.current;
+    const after = reorderDrawingLayer(before, id, direction);
+    if (!after) return;
+    finishLiveStroke();
+    setLayers(after);
+    pushHist({ t: "layers", before, after });
+    const movedLayer = before.find((layer) => layer.id === id);
+    const movedIndex = after.findIndex((layer) => layer.id === id);
+    if (movedLayer && movedIndex >= 0) {
+      setLayerOrderStatus(
+        `${movedLayer.name}, 위에서 ${movedIndex + 1}번째로 이동`
+      );
+    }
     hapticTick();
   }
 
@@ -2367,7 +2480,7 @@ export function BroadcastPanel({
           <div className={`bp-board-bg${bgVis ? "" : " hidden"}`}>
             {sentDays.length === 0 ? (
               <p className="bp-empty">
-                보낸 날짜가 여기에 붙어요 — 선택 도구로 끌어 옮기고, 오른쪽 아래 손잡이로 키워요
+                바로 그릴 수 있어요 · 일정은 위 달력에서 골라 그림판으로 보내세요
               </p>
             ) : (
               sentDays.map((day) => {
@@ -2479,6 +2592,7 @@ export function BroadcastPanel({
             aria-hidden="true"
             className="bp-draw-surface"
             data-cursor={tool === "pen" || tool === "hl" ? tool : undefined}
+            ref={drawSurfaceRef}
             style={{
               pointerEvents: tool === "select" ? "none" : "auto",
               // 지우개: 실제 지워지는 크기 그대로의 원 커서 — 어디까지 닦일지 보고 지운다.
@@ -2487,9 +2601,31 @@ export function BroadcastPanel({
             onLostPointerCapture={cancelDraw}
             onPointerCancel={cancelDraw}
             onPointerDown={onDrawDown}
+            onPointerEnter={updateStylusCursor}
+            onPointerLeave={onDrawPointerLeave}
             onPointerMove={onDrawMove}
             onPointerUp={endDraw}
-          />
+          >
+            {/* 스타일러스는 OS가 CSS 커서를 숨길 수 있어 별도 오버레이로 도구·영향 범위를 표시.
+                마우스는 기존 네이티브 cursor를 그대로 써 이 DOM이 보이지 않는다. */}
+            <span
+              aria-hidden="true"
+              className="bp-stylus-cursor"
+              data-tool={tool}
+              ref={stylusCursorRef}
+              style={
+                {
+                  "--bp-stylus-color": penColor,
+                  "--bp-stylus-ink": activeInkStyle.color
+                } as React.CSSProperties
+              }
+            >
+              <span className="bp-stylus-footprint" />
+              <span className="bp-stylus-glyph">
+                <StylusCursorIcon aria-hidden="true" size={13} strokeWidth={2.4} />
+              </span>
+            </span>
+          </div>
           {/* 러버밴드(빈 바닥 드래그 다중 선택) 시각화 */}
           {marquee ? (
             <div
@@ -2540,10 +2676,14 @@ export function BroadcastPanel({
         </div>
       </section>
 
-      {/* 오른쪽 레이어 패널(실제 그림판 문법) — 위가 맨 위 레이어. ➕로 추가, ✕로 삭제.
+      {/* 오른쪽 레이어 패널(실제 그림판 문법) — 위가 맨 위 레이어. 화살표로 순서 변경,
+          ➕로 추가, ✕로 삭제.
           배경(날짜 카드)은 맨 아래 고정 기본. 레이어 선택 버튼과 액션 버튼은 형제 구조로
           분리한다(중첩 interactive control 금지). */}
       <aside className="bp-layers-panel" aria-label="레이어">
+        <p aria-live="polite" className="bp-layer-status" role="status">
+          {layerOrderStatus}
+        </p>
         <button
           aria-label={`레이어 추가 (${layers.length}/${MAX_DRAWING_LAYERS})`}
           className="bp-layer-add"
@@ -2558,7 +2698,7 @@ export function BroadcastPanel({
         >
           ＋ 레이어 추가 ({layers.length}/{MAX_DRAWING_LAYERS})
         </button>
-        {layers.map((l) => (
+        {layers.map((l, index) => (
           <div
             className={`bp-layer-item${l.vis ? "" : " off"}${l.id === activeLayerId ? " active" : ""}`}
             key={l.id}
@@ -2582,6 +2722,32 @@ export function BroadcastPanel({
               </span>
               <em>{l.name}</em>
             </button>
+            <div aria-label={`${l.name} 순서`} className="bp-layer-order" role="group">
+              <button
+                aria-label={`${l.name} 위로 이동`}
+                aria-disabled={index === 0}
+                className="bp-layer-btn"
+                title={index === 0 ? "이미 맨 위 레이어예요" : "위로 이동"}
+                type="button"
+                onClick={() => moveLayer(l.id, "up")}
+              >
+                <ChevronUp aria-hidden="true" size={16} strokeWidth={2.5} />
+              </button>
+              <button
+                aria-label={`${l.name} 아래로 이동`}
+                aria-disabled={index === layers.length - 1}
+                className="bp-layer-btn"
+                title={
+                  index === layers.length - 1
+                    ? "이미 맨 아래 그림 레이어예요"
+                    : "아래로 이동"
+                }
+                type="button"
+                onClick={() => moveLayer(l.id, "down")}
+              >
+                <ChevronDown aria-hidden="true" size={16} strokeWidth={2.5} />
+              </button>
+            </div>
             <div className="bp-layer-actions">
               <button
                 aria-label={`${l.name} 표시`}
