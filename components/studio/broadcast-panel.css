@@ -306,6 +306,10 @@ html[data-reduce-motion] .bp-close:active {
 /* ── 판서 도구줄 — 작업대 위 플로팅 카드(iPad Freeform 문법, 앱 톤 유지).
    묶음(가운데 정렬) + 아래 라벨 + hairline 구분선. ── */
 .bp-toolbar {
+  /* 등장 애니메이션(fill both)이 형제들 각각을 stacking context로 만들어, 뒤 형제
+     (피커·본문)가 툴바의 팝오버(단축키 안내)를 덮었다 — 툴바 층을 명시적으로 위로. */
+  position: relative;
+  z-index: 30;
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
@@ -805,6 +809,21 @@ html[data-reduce-motion] .bp-kbd-help {
   border: 1px solid rgb(0 0 0 / 15%);
   border-radius: 50%;
 }
+/* 무지개 링 — 커스텀 색 진입점 어포던스(그림판 관례). 스와치 자신에 앵커해 어긋나지 않는다.
+   가운데는 현재 색(상태), 링은 "아무 색이나 고를 수 있다"(진입점). */
+.bp-current-color .bp-custom-ring {
+  position: relative;
+}
+.bp-current-color .bp-custom-ring::after {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: conic-gradient(#e11d48, #f59e0b, #22c55e, #06b6d4, #6366f1, #d946ef, #e11d48);
+  content: "";
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+  pointer-events: none;
+}
 .bp-current-color span {
   font-size: 9px;
   font-weight: 800;
@@ -1095,17 +1114,27 @@ html[data-reduce-motion] .bp-layer-item {
   overscroll-behavior: contain;
   scrollbar-gutter: stable;
 }
-/* 가독성: 이름을 조작 버튼과 한 줄에 쑤셔 넣지 않는다 — 위 = 썸네일+이름(전폭),
-   아래 = 조작 버튼 줄. 이름이 "레..."로 뭉개지던 원인 제거. */
+/* 조화·가독성: 한 줄 정렬(썸네일 | 이름 | 조작) — 썸네일·버튼을 줄여 이름에 공간을 주고,
+   모든 카드가 같은 행 리듬을 공유한다(예전 "레..." 뭉개짐과 두 줄 헐렁함 모두 제거). */
 .bp-layer-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 4px;
   padding: 6px;
 }
-.bp-layer-actions {
-  justify-self: end;
+.bp-layer-item .bp-layer-thumb {
+  width: 40px;
+  height: 34px;
+  flex: 0 0 40px;
+}
+.bp-layer-item .bp-layer-btn {
+  width: 24px;
+  height: 24px;
+}
+.bp-layer-meta svg {
+  width: 14px;
+  height: 14px;
 }
 .bp-layer-select {
   flex-direction: row;

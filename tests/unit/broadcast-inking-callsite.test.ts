@@ -239,7 +239,8 @@ describe("broadcast inking callsite contracts", () => {
     expect(toolbar.match(/<span>\{label\}<\/span>/g)).toHaveLength(2);
     expect(toolbar).toContain("<span>실행 취소</span>");
     expect(toolbar).toContain("<span>다시 실행</span>");
-    expect(toolbar).toContain("<span>현재 색</span>");
+    // 커스텀 색 진입점 — 현재 색 스와치 + "직접 고르기" 라벨(무지개 링 어포던스).
+    expect(toolbar).toContain("<span>직접 고르기</span>");
     expect(panelCss).toContain(".bp-command-bar");
     expect(panelCss).toContain(".bp-tool-deck");
     expect(panelCss).toMatch(/\.bp-tool-deck\s*\{[^}]*min-width: 0/s);

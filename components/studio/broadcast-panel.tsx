@@ -462,7 +462,10 @@ export function BroadcastPanel({
     mode: "move" | "resize"
   ) {
     if (tool !== "select") return; // 그리기 도구 중엔 입력면이 위에 있어 어차피 안 옴 — 이중 가드
-    if (!bgActive) return; // 카드 이동/크기는 '일정' 레이어가 활성일 때만(레이어 규율)
+    // 선택 도구로 카드를 잡으면 '일정' 레이어로 자동 전환하고 그대로 이동/크기 조절을
+    // 시작한다 — 다른 레이어에 있다고 카드 조작이 막히는 dead state 제거(레이어를
+    // 먼저 고르라는 규율보다, 잡은 의도가 명백한 쪽을 따른다).
+    if (!bgActive) setActiveLayerId(BG_LAYER_ID);
     const orig = cols.get(key);
     if (!orig) return;
     e.preventDefault();
@@ -2697,8 +2700,10 @@ export function BroadcastPanel({
                   });
                 }}
               >
-                <i aria-hidden="true" style={{ background: penColor }} />
-                <span>현재 색</span>
+                {/* 무지개 링 = "여기서 아무 색이나 고를 수 있다" 어포던스(그림판 커스텀 색 관례).
+                    가운데는 현재 색 — 상태 표시와 진입점을 한 버튼이 겸한다. */}
+                <i aria-hidden="true" className="bp-custom-ring" style={{ background: penColor }} />
+                <span>직접 고르기</span>
               </button>
             </div>
             <em className="bp-group-label">색상 팔레트</em>
