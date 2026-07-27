@@ -3210,6 +3210,11 @@ export function BroadcastPanel({
               onPointerMove={onLayerPointerMove}
               onPointerUp={onLayerPointerUp}
             >
+              {/* 손잡이는 왼쪽 가장자리(리스트 드래그 관례) — 이름과 버튼 사이(중간)에
+                  떠 있으면 무엇을 잡는 표시인지 읽히지 않는다. */}
+              <span className="bp-layer-grip" aria-hidden="true">
+                <GripVertical size={14} strokeWidth={2.2} />
+              </span>
               <span className="bp-layer-thumb" aria-hidden="true">
                 <canvas
                   height={72}
@@ -3223,7 +3228,6 @@ export function BroadcastPanel({
               </span>
               <span className="bp-layer-meta">
                 <em>{l.name}</em>
-                <GripVertical aria-hidden="true" size={17} strokeWidth={2.2} />
               </span>
             </button>
             <div className="bp-layer-actions">
