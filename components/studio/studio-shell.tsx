@@ -333,16 +333,6 @@ const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] }> = {
   }
 };
 
-// B2: 제목 아래 데스크 라벨 — 역할에 맞춰 "이 화면이 무슨 작업대인지"를 한 줄로. 권한을 빼서가
-// 아니라 의도된 역할 화면으로 보이게 한다.
-const DESK_LABEL: Record<MembershipRole, string> = {
-  owner: "토리님 편집실",
-  developer: "개발자 유지보수",
-  manager: "매니저 · 방송 운영",
-  worker: "작업자 · 제작",
-  viewer: "시청자"
-};
-
 const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
   public: "모두",
   embargo: "엠바고",
@@ -1007,7 +997,6 @@ export function StudioShell({
             : ROLE_DESC[effectiveRole].summary,
         can: dropDecorate(ROLE_DESC[effectiveRole].can)
       };
-  const deskLabel = isDualRole ? "매니저 · 작업자" : DESK_LABEL[effectiveRole];
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
   const [roleHelpOpen, setRoleHelpOpen] = useState(false);
   // 진동(햅틱) 설정 토글 — navigator.vibrate 지원 기기(안드로이드)에서만 노출. SSR 불일치 방지로
@@ -5178,27 +5167,22 @@ export function StudioShell({
       ) : (
         <>
       <header className="studio-topbar">
-        {/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + 그 오른쪽 아래 끝선에 "토리님 편집실" */}
+        {/* 왼쪽 칸: 큰 제목 + 그 옆에 배포 버전 배지(헤더 세로 중앙, 클릭=버전 복사). */}
         <div className="studio-left">
           <h1 className="studio-poster-title">
             <span aria-hidden="true">✨️</span>
             {schedule.calendar.title}
             <span aria-hidden="true">✨️</span>
           </h1>
-          {/* 데스크 라벨(위) + 배포 버전 배지(아래)를 세로로 묶고, 묶음이 헤더 세로 중앙에.
-              배지는 클릭하면 버전 문자열이 복사된다(잠깐 '복사됨'으로 바뀌어 확인). */}
-          <div className="studio-left-meta">
-            <p className="eyebrow studio-eyebrow">{deskLabel}</p>
-            <button
-              aria-label={`배포 버전 ${buildSha} 복사`}
-              className={`studio-build-tag studio-build-copy${isDevInsights ? " dev" : ""}`}
-              title="클릭하면 버전이 복사돼요"
-              type="button"
-              onClick={copyBuildSha}
-            >
-              {buildCopied ? "복사됨 ✓" : buildSha}
-            </button>
-          </div>
+          <button
+            aria-label={`배포 버전 ${buildSha} 복사`}
+            className={`studio-build-tag studio-build-copy${isDevInsights ? " dev" : ""}`}
+            title="클릭하면 버전이 복사돼요"
+            type="button"
+            onClick={copyBuildSha}
+          >
+            {buildCopied ? "복사됨 ✓" : buildSha}
+          </button>
         </div>
 
         {/* 가운데: 현재 월(크게). 이동은 하단 플로팅 < > 버튼 + 키보드 ←/→ 로.

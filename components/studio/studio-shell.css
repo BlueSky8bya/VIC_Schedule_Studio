@@ -63,31 +63,19 @@ html {
   margin: 0;
   font-size: 24px;
 }
-/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + "토리님 편집실"을 제목의 아래 텍스트 선(베이스라인)에 맞춤 */
+/* 왼쪽 칸: 큰 제목(왼쪽 정렬) + 그 옆 배포 버전 배지 — 배지가 헤더 세로 중앙에 온다. */
 .studio-left {
   grid-column: 1;
   justify-self: start;
   display: flex;
-  align-items: center; /* 라벨+버전 묶음이 헤더 세로 중앙에 오게(제목도 중앙 기준) */
-  gap: 12px;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
 }
-.studio-eyebrow {
-  margin: 0;
-  white-space: nowrap;
-}
-/* 데스크 라벨(위) + 배포 버전 배지(아래) 세로 묶음 — 묶음 자체가 헤더 중앙선에 걸린다.
-   조화 3요소: ① 근접 — 라벨과 배지를 한 덩어리로 붙이고(4px), ② 균형 — 배지를 라벨의
-   가로 중앙 아래에(축 정렬), ③ 통일 — 배지는 저장 칩과 같은 필 어휘. */
-.studio-left-meta {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-/* 왼쪽으로 이사한 배포 버전 배지 — 클릭=복사 버튼. 기본 .studio-build-tag(파일 뒤쪽에
-   절대배치+pointer-events:none으로 선언됨)를 확실히 이기도록 부모를 포함한 선택자로. */
-.studio-left-meta .studio-build-copy {
+/* 배포 버전 배지 — 클릭=복사 버튼. 기본 .studio-build-tag(파일 뒤쪽에 절대배치+
+   pointer-events:none으로 선언됨)를 확실히 이기도록 부모를 포함한 선택자로.
+   제목 옆의 조용한 메타 — 저장 칩과 같은 필 어휘(통일), 제목과 10px 근접. */
+.studio-left .studio-build-copy {
   position: static;
   transform: none;
   left: auto;
@@ -95,7 +83,7 @@ html {
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
-  padding: 1px 8px;
+  padding: 2px 9px;
   border: 1px solid rgb(148 140 168 / 28%);
   border-radius: var(--r-pill);
   background: rgb(148 140 168 / 8%);
@@ -105,14 +93,14 @@ html {
     color var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
 }
-.studio-left-meta .studio-build-copy:hover {
+.studio-left .studio-build-copy:hover {
   background: rgb(124 108 240 / 12%);
   color: #6b5bd6;
 }
-.studio-left-meta .studio-build-copy:active {
+.studio-left .studio-build-copy:active {
   transform: scale(0.94);
 }
-.studio-left-meta .studio-build-copy.dev {
+.studio-left .studio-build-copy.dev {
   border-color: rgb(124 108 240 / 30%);
 }
 /* 가운데: 월 이동(헤더 정중앙) */
