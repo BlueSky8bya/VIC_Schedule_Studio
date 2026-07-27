@@ -894,20 +894,16 @@ html[data-reduce-motion] .bp-kbd-help {
   font-weight: 800;
   line-height: 1;
 }
-.bp-context-strip {
-  align-self: flex-start;
-  padding: 6px 8px;
-  border: 1px solid rgb(124 108 240 / 18%);
-  border-radius: 10px;
-  background: rgb(124 108 240 / 6%);
+/* 선택 정렬 — 덱 안의 같은 가족 카드(굵기 오른쪽). 선택 문맥임을 옅은 보라 톤으로만 구분. */
+.bp-align-group {
+  border-color: rgb(124 108 240 / 30%);
+  background: rgb(124 108 240 / 5%);
 }
-.bp-context-strip > strong {
-  margin: 0 3px;
-  color: #4b4468;
-  font-size: 11px;
-}
-.bp-context-strip .bp-group-row {
-  min-height: 0;
+.bp-align-group .bp-group-row {
+  display: inline-flex;
+  gap: 5px;
+  min-height: 48px;
+  align-items: center;
 }
 /* 본문 = [캔버스 작업대 | 오른쪽 레이어 패널] — 실제 그림판 배치.
    min-height 72vh 보장: 날짜 달력을 펼쳐도 본문(그림판·레이어 패널)이 눌려 찌그러지는 대신

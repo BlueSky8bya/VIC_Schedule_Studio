@@ -2762,10 +2762,10 @@ export function BroadcastPanel({
               [ · ]
             </kbd>
           </div>
-        </div>
-        {tool === "select" && colSel.size >= 2 ? (
-          <div className="bp-context-strip" role="group" aria-label="선택 정렬">
-            <strong>선택 정렬 · {colSel.size}개</strong>
+          {/* 선택 정렬 — 별도 줄이 아니라 굵기 그룹 오른쪽의 '같은 가족 카드'로.
+              도구 덱과 같은 어휘(그룹 카드 + 아래 라벨)라 나타나도 층이 튀지 않는다. */}
+          {tool === "select" && colSel.size >= 2 ? (
+          <div className="bp-tool-group bp-align-group" role="group" aria-label="선택 정렬">
             <div className="bp-group-row">
               <button
                 aria-label="위 맞춤"
@@ -2808,8 +2808,10 @@ export function BroadcastPanel({
                 <span>가로 균등</span>
               </button>
             </div>
+            <em className="bp-group-label">선택 정렬 · {colSel.size}개</em>
           </div>
-        ) : null}
+          ) : null}
+        </div>
         {toolBlocked ? (
           <span className="bp-lock-hint">
             {bgActive
