@@ -2726,11 +2726,7 @@ export function BroadcastPanel({
               />
             ) : null}
           </div>
-          <div
-            className="bp-tool-group bp-property-group"
-            role="group"
-            aria-label="빠른 판서 설정"
-          >
+          <div className="bp-tool-group bp-property-group" role="group" aria-label="굵기">
             <div className="bp-group-row bp-grid3">
               {PEN_WIDTHS.map((w) => (
                 <button
@@ -2760,7 +2756,11 @@ export function BroadcastPanel({
                 </button>
               ))}
             </div>
-            <em className="bp-group-label">빠른 판서 설정</em>
+            {/* 간결한 이름 + 단축키 힌트 — 도구 버튼의 키 배지와 같은 학습 문법. */}
+            <em className="bp-group-label">굵기</em>
+            <kbd aria-hidden="true" className="bp-group-key" title="굵기 줄이기/키우기 ([ / ])">
+              [ · ]
+            </kbd>
           </div>
         </div>
         {tool === "select" && colSel.size >= 2 ? (

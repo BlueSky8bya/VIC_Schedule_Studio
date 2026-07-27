@@ -234,7 +234,9 @@ describe("broadcast inking callsite contracts", () => {
     expect(toolbar).toContain('className="bp-tool-deck"');
     expect(toolbar).toContain('className="bp-tool-group bp-property-group"');
     expect(toolbar).toContain('className="bp-tool-group bp-color-group"');
-    expect(toolbar).toContain('aria-label="빠른 판서 설정"');
+    // 그룹 이름은 간결하게 "굵기" — 옆에 [ · ] 단축키 힌트 배지가 붙는다.
+    expect(toolbar).toContain('aria-label="굵기"');
+    expect(toolbar).toContain('className="bp-group-key"');
     expect(toolbar).toContain('aria-label="색상 팔레트"');
     expect(toolbar.match(/<span>\{label\}<\/span>/g)).toHaveLength(2);
     expect(toolbar).toContain("<span>실행 취소</span>");

@@ -870,6 +870,18 @@ html[data-reduce-motion] .bp-kbd-help {
 .bp-property-group .bp-group-row {
   justify-content: center;
 }
+/* 그룹 오른쪽 위 단축키 힌트 — 도구 버튼 키 배지와 같은 톤(통일). */
+.bp-group-key {
+  position: absolute;
+  top: 7px;
+  right: 10px;
+  font-family: inherit;
+  font-size: 8.5px;
+  font-weight: 900;
+  line-height: 1;
+  color: rgb(85 80 107 / 50%);
+  pointer-events: none;
+}
 .bp-width {
   width: 38px;
   height: 42px;
@@ -1145,7 +1157,13 @@ html[data-reduce-motion] .bp-layer-item {
   overflow-y: auto;
   padding: 6px 2px;
   overscroll-behavior: contain;
-  scrollbar-gutter: stable;
+  /* stable은 스크롤바 폭을 항상 예약해 목록 카드만 좁아졌다(고정 '일정' 카드와 너비 어긋남).
+     레이어 ≤6개라 스크롤 자체가 드묾 — 생길 때만 폭을 내준다. */
+  scrollbar-gutter: auto;
+}
+/* '일정' 고정 카드 — 목록 카드와 같은 좌우 인셋(2px)로 너비를 일치시킨다(통일). */
+.bp-layer-fixed {
+  margin: 0 2px;
 }
 /* 조화·가독성: 모든 레이어 카드가 같은 한 줄 리듬(손잡이 | 썸네일 | 이름 | 조작)과
    같은 높이(min-height 48px)를 공유한다 — 형제 높이 들쭉날쭉은 결함. */
