@@ -123,7 +123,9 @@ export function useSheetDragClose({ onClose }: Options) {
       samples: [{ t: performance.now(), y: e.clientY }],
       thresholdArmed: true
     };
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    // 주의: 여기서 setPointerCapture를 걸면 안 된다 — 캡처가 걸린 순간부터 click이 캡처
+    // 요소(m-sheet-top)로 향해, 안의 X·손잡이 onClick이 영영 안 불린다(실측 버그).
+    // 캡처는 슬롭(6px)을 넘어 '진짜 드래그'가 된 순간에만 건다(onPointerMove).
   }, []);
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
@@ -134,7 +136,11 @@ export function useSheetDragClose({ onClose }: Options) {
     d.dy = raw;
     if (!d.moved && Math.abs(raw) > DRAG_SLOP) {
       d.moved = true;
-      suppressClickRef.current = true;
+      try {
+        (e.currentTarget as HTMLElement).setPointerCapture(d.pointerId);
+      } catch {
+        // 캡처 실패해도 그립 존 안에서의 드래그는 그대로 동작한다.
+      }
     }
     d.samples.push({ t: performance.now(), y: e.clientY });
     if (d.samples.length > 6) d.samples.shift();
@@ -165,6 +171,16 @@ export function useSheetDragClose({ onClose }: Options) {
       const lastSample = d.samples[d.samples.length - 1];
       const dt = Math.max(1, lastSample.t - first.t);
       const velocity = (lastSample.y - first.y) / dt;
+      if (d.moved) {
+        // 이 제스처의 꼬리 click(손잡이의 onClick=닫기)만 삼킨다. click은 pointerup 직후
+        // 같은 시퀀스로 오므로, 다음 태스크(setTimeout 0)에서 반드시 해제 — 브라우저가
+        // 드래그로 판단해 click을 아예 안 쏘는 경우에 플래그가 남아 다음 정상 클릭(X)까지
+        // 삼키던 버그의 수정.
+        suppressClickRef.current = true;
+        window.setTimeout(() => {
+          suppressClickRef.current = false;
+        }, 0);
+      }
       if (!cancelled && d.moved && (d.dy > h * CLOSE_RATIO || velocity > FLICK_VELOCITY)) {
         finishClose();
         return;
