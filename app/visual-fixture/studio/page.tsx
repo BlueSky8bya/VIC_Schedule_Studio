@@ -1,4 +1,7 @@
 import { notFound } from "next/navigation";
+// 실제 /studio는 (studio)/layout.tsx가 이 CSS를 넣어준다 — fixture는 그 레이아웃 밖이라
+// 직접 가져와야 프로덕션 빌드에서도 실물과 같은 스타일로 렌더된다(dev는 CSS를 전부 실어 가려짐).
+import "@/components/studio/studio-shell.css";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 
