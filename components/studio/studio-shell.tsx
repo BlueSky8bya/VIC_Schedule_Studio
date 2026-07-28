@@ -112,6 +112,7 @@ import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/l
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
+import { flyGhost } from "@/lib/ui/fly-ghost";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 // 스튜디오 CSS는 StudioShell을 렌더하는 페이지(studio/(home), studio/calendar)에서 page-level로
@@ -785,10 +786,20 @@ export function StudioShell({
 
   // 카드 클릭 = 그 일정을 선택(편집)한다. 잇기는 드래그-놓기, 끊기는 이음새 '칼로 긋기'로만 —
   // 클릭은 어느 쪽도 하지 않는다(제목 편집하려 카드를 오갈 때 실수로 붙거나 끊기던 문제 제거).
-  function handlePillClick(eventId: string) {
+  function handlePillClick(eventId: string, cardEl?: HTMLElement) {
     const target = events.find((e) => e.id === eventId);
     if (!target) return;
     selectEvent(target);
+    // B2(데스크톱): 클릭한 카드의 잔상이 편집 패널로 날아가 안착 — '이 카드를 편집 중' 연결감.
+    // 패널이 이번 클릭으로 막 열리는 경우가 있어 두 프레임 뒤에 위치를 잰다.
+    if (cardEl && !isNarrow) {
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          const panel = document.querySelector<HTMLElement>(".event-editor-panel");
+          if (panel) flyGhost(cardEl, panel);
+        })
+      );
+    }
   }
 
   // 이음새 '칼로 긋기': 손잡이를 눌러 threshold 이상 그으면 그 연결(earlier.linkNext)만 끊는다.
@@ -3954,12 +3965,14 @@ export function StudioShell({
   // 누구에게도(개발자·소유자 포함) 보이지 않는다. 방송사고 방지: 진입/새로고침 시 항상 공개 기본.
   const mobileAgendaEvents = liveEvents;
 
-  function openMobileEdit(event: StudioScheduleEvent) {
+  function openMobileEdit(event: StudioScheduleEvent, originEl?: HTMLElement) {
     hapticTick(); // 카드 탭 손맛(Android만; iOS·미지원은 조용히 무시)
+    mobileEditOriginRef.current = originEl?.getBoundingClientRect() ?? null;
     selectEvent(event);
     setMobileEditId(event.id);
   }
-  function openMobileAdd(isoDate: string) {
+  function openMobileAdd(isoDate: string, originEl?: HTMLElement) {
+    mobileEditOriginRef.current = originEl?.getBoundingClientRect() ?? null;
     selectDate(isoDate); // 빈 폼 또는 같은 날짜의 임시 내용 복원까지 처리
     setMobileEditId("new");
   }
@@ -3968,11 +3981,100 @@ export function StudioShell({
     setSelectedEventId(null);
     setForm(createEmptyForm());
   }
+  // X·손잡이·백드롭으로 닫을 때는 열림의 정확한 역방향 — 시트가 원래 카드 자리로 줄어들며
+  // 돌아간다(B2). 드래그 닫기는 물리 그대로 아래로 슬라이드(훅이 처리), 뒤로가기·저장은 즉시.
+  function closeMobileEditAnimated() {
+    const el = mobileSheetRef.current;
+    const origin = mobileEditOriginRef.current;
+    if (!el || !origin || reduceMotionEnabled()) {
+      closeMobileEdit();
+      return;
+    }
+    const s = el.getBoundingClientRect();
+    if (s.width === 0 || s.height === 0) {
+      closeMobileEdit();
+      return;
+    }
+    el.style.transformOrigin = "top left";
+    let anim: Animation;
+    try {
+      anim = el.animate(
+        [
+          { transform: "none", borderRadius: "22px 22px 0 0", opacity: 1 },
+          {
+            transform: `translate(${origin.left - s.left}px, ${origin.top - s.top}px) scale(${
+              origin.width / s.width
+            }, ${Math.max(0.04, origin.height / s.height)})`,
+            borderRadius: "12px",
+            opacity: 0.3
+          }
+        ],
+        { duration: 300, easing: "cubic-bezier(0.3, 0, 0.8, 0.15)", fill: "forwards" }
+      );
+    } catch {
+      closeMobileEdit();
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      closeMobileEdit();
+    };
+    anim.onfinish = finish;
+    anim.oncancel = finish;
+    window.setTimeout(finish, 380); // 안전망 — 이벤트 유실에도 반드시 닫힌다
+  }
   // 모바일 편집 시트 '끌어서 닫기'(B1) — 손잡이·헤더를 잡고 아래로 쓸면 1:1로 따라오고,
   // 위로는 러버밴딩, 릴리스 속도/거리로 닫힘·복귀 결정. 닫힘 확정 순간 햅틱.
   const { sheetRef: mobileSheetRef, dragBind: mobileSheetDrag } = useSheetDragClose({
     onClose: closeMobileEdit
   });
+  // B2(모바일): 시트가 무관한 위치에서 나타나지 않고, 탭한 그 카드 자리에서 자라난다
+  // (matched geometry). 탭 순간의 카드 rect를 기억해 뒀다가 시트 마운트 직후 FLIP으로 재생.
+  const mobileEditOriginRef = useRef<DOMRect | null>(null);
+  useLayoutEffect(() => {
+    if (mobileEditId === null) return;
+    const el = mobileSheetRef.current;
+    const origin = mobileEditOriginRef.current;
+    if (!el || !origin || reduceMotionEnabled()) return;
+    el.style.animation = "none"; // 기본 슬라이드업 대신 카드-morph로 등장
+    el.style.transformOrigin = "top left";
+    const s = el.getBoundingClientRect();
+    if (s.width === 0 || s.height === 0) return;
+    const spring =
+      getComputedStyle(document.documentElement).getPropertyValue("--spring-smooth").trim();
+    const frames: Keyframe[] = [
+      {
+        transform: `translate(${origin.left - s.left}px, ${origin.top - s.top}px) scale(${
+          origin.width / s.width
+        }, ${Math.max(0.04, origin.height / s.height)})`,
+        borderRadius: "12px",
+        opacity: 0.6
+      },
+      { transform: "none", borderRadius: "22px 22px 0 0", opacity: 1 }
+    ];
+    try {
+      el.animate(frames, { duration: 440, easing: spring || "cubic-bezier(0.22, 0.61, 0.36, 1)" });
+    } catch {
+      try {
+        el.animate(frames, { duration: 320, easing: "cubic-bezier(0.22, 0.61, 0.36, 1)" });
+      } catch {
+        // WAAPI 미지원이면 그냥 즉시 등장 — 기능엔 영향 없음.
+      }
+    }
+    // 내용은 컨테이너가 자리를 잡은 뒤에 떠오른다(찌그러진 글자가 보이지 않게).
+    const content = el.querySelector<HTMLElement>(".me-form");
+    try {
+      content?.animate([{ opacity: 0 }, { opacity: 0, offset: 0.45 }, { opacity: 1 }], {
+        duration: 440,
+        easing: "ease-out"
+      });
+    } catch {
+      /* 장식 — 실패 무시 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobileEditId]);
 
   // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 시트 열기/닫기/저장.
   function openSupportSheet(event: StudioScheduleEvent) {
@@ -4259,7 +4361,7 @@ export function StudioShell({
                                 {canEdit ? (
                                   <button
                                     className="m-support-edit"
-                                    onClick={() => openMobileEdit(event)}
+                                    onClick={(e) => openMobileEdit(event, e.currentTarget)}
                                     type="button"
                                   >
                                     수정
@@ -4364,7 +4466,7 @@ export function StudioShell({
                         <button
                           className={`agenda-event m-event${dimCls}${tentCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
                           key={event.id}
-                          onClick={() => openMobileEdit(event)}
+                          onClick={(e) => openMobileEdit(event, e.currentTarget)}
                           type="button"
                         >
                           {inner}
@@ -4388,7 +4490,7 @@ export function StudioShell({
                     {canEdit && !filtering ? (
                       <button
                         className="m-add-event"
-                        onClick={() => openMobileAdd(cell.isoDate)}
+                        onClick={(e) => openMobileAdd(cell.isoDate, e.currentTarget)}
                         type="button"
                       >
                         + 일정 추가
@@ -4788,7 +4890,7 @@ export function StudioShell({
       <div
         className="m-edit-backdrop"
         onClick={(e) => {
-          if (e.target === e.currentTarget) closeMobileEdit();
+          if (e.target === e.currentTarget) closeMobileEditAnimated();
         }}
         role="presentation"
         style={vvFit ? { height: vvFit.h, top: vvFit.top, bottom: "auto" } : undefined}
@@ -4807,7 +4909,7 @@ export function StudioShell({
             <button
               className="m-sheet-grab"
               aria-label="닫기"
-              onClick={closeMobileEdit}
+              onClick={closeMobileEditAnimated}
               type="button"
             >
               <span aria-hidden="true" />
@@ -4815,7 +4917,12 @@ export function StudioShell({
             <div className="m-edit-head">
               <strong>{selectedEventId ? "일정 수정" : "새 일정"}</strong>
               <span className="m-edit-date">{selectedDate}</span>
-              <button aria-label="닫기" className="m-edit-x" onClick={closeMobileEdit} type="button">
+              <button
+                aria-label="닫기"
+                className="m-edit-x"
+                onClick={closeMobileEditAnimated}
+                type="button"
+              >
                 <X aria-hidden="true" size={20} />
               </button>
             </div>
@@ -5659,7 +5766,7 @@ export function StudioShell({
                               justDraggedRef.current = false;
                               return;
                             }
-                            handlePillClick(event.id);
+                            handlePillClick(event.id, e.currentTarget);
                           }}
                           onPointerDown={
                             draggable ? (e) => onPillPointerDown(e, event) : undefined
@@ -5674,7 +5781,7 @@ export function StudioShell({
                             // 내부 버튼의 Enter가 카드까지 올라와 편집창을 동시에 여는 것 방지.
                             if (e.key === "Enter" && e.target === e.currentTarget) {
                               e.stopPropagation();
-                              handlePillClick(event.id);
+                              handlePillClick(event.id, e.currentTarget);
                             }
                           }}
                           // A안 M2: 확대 중 hover/focus로 상세 팝오버 — '숨은 내용'이 있을 때만.

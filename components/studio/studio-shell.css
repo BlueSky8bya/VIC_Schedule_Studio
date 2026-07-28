@@ -6243,6 +6243,17 @@ html[data-reduce-motion] .modal-close:active {
   transform: none;
 }
 
+/* 카드 → 편집 패널 잔상 비행(B2 데스크톱) — flyGhost()가 1회성으로 만든다. */
+.fly-ghost {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  border: 2px solid rgb(124 108 240 / 55%);
+  border-radius: var(--r-md);
+  background: rgb(124 108 240 / 12%);
+  transform-origin: top left;
+}
+
 /* 태그 이름/색상 편집기 (왼쪽 패널) */
 .tag-editor {
   display: grid;
