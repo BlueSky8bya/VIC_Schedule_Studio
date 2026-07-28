@@ -231,7 +231,8 @@ export function WorldCupBallGoal() {
     kx0: 0, // 키커 도움닫기 시작 좌표
     ky0: 0
   });
-  const [pkText, setPkText] = useState<{
+  // 값은 아직 화면에 안 그린다(스코어 배지는 clockText가 담당) — setter만 진행 상태 기록용으로 쓴다.
+  const [, setPkText] = useState<{
     a: number;
     b: number;
     turn: 0 | 1;
@@ -2514,7 +2515,6 @@ export function WorldCupBallGoal() {
     setPkText({ a: 0, b: 0, turn: s.turn, round: 1, note: "" });
     setClockText(pkBadge(s));
   };
-  const PK_SETUP = 1500; // 키커가 슬슬 걸어나와 공 뒤에 서는 도움닫기 시간
   const PK_RUN = 640;
   const PK_RESULT = 1300;
   // 승부차기는 항상 '오른쪽' 골 하나만 쓴다. 막는 팀(차는 팀의 반대) 키퍼가 그 골을 지킨다.

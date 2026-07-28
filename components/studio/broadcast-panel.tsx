@@ -2399,7 +2399,6 @@ export function BroadcastPanel({
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tool, penWidth, kbdHelp]);
 
   // 최초 포커스 + body scroll lock(열림 동안 뒤 화면 스크롤 금지).

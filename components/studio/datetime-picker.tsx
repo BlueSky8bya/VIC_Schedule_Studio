@@ -256,6 +256,8 @@ export function DateTimePicker({
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
     };
+    // close/reposition은 렌더마다 새 클로저 — open/mobile 전환 때만 리스너를 다시 달면 된다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mobile]);
 
   // 현재 선택(없으면 오늘 21:00을 기본으로 채워 선택 시작점으로).

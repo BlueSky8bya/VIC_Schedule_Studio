@@ -59,6 +59,8 @@ export function WorldCupStudioBall({ pauseWhenMinigameOn = true }: { pauseWhenMi
       place();
       ensureLoop();
     }
+    // place/ensureLoop는 렌더마다 새로 만들어지는 안정 클로저 — hidden 전환 때만 돌면 된다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hidden]);
 
   const bounds = () => {

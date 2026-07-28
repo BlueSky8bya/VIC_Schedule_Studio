@@ -371,6 +371,7 @@ function inkStyleFor(bgs: string[], haloBg: string): CSSProperties {
 }
 // 배경색 위 글자 스타일. textColor는 더 이상 잉크로 쓰지 않는다(조화 위해 통일) — 호출부 호환용.
 export function eventInkStyle(bgColor: string, _textColor?: string): CSSProperties {
+  void _textColor;
   return inkStyleFor([bgColor], bgColor);
 }
 
