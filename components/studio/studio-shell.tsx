@@ -111,6 +111,7 @@ import { detectDevice } from "@/lib/presence/presence-client";
 import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
+import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 // 스튜디오 CSS는 StudioShell을 렌더하는 페이지(studio/(home), studio/calendar)에서 page-level로
@@ -3967,6 +3968,11 @@ export function StudioShell({
     setSelectedEventId(null);
     setForm(createEmptyForm());
   }
+  // 모바일 편집 시트 '끌어서 닫기'(B1) — 손잡이·헤더를 잡고 아래로 쓸면 1:1로 따라오고,
+  // 위로는 러버밴딩, 릴리스 속도/거리로 닫힘·복귀 결정. 닫힘 확정 순간 햅틱.
+  const { sheetRef: mobileSheetRef, dragBind: mobileSheetDrag } = useSheetDragClose({
+    onClose: closeMobileEdit
+  });
 
   // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 시트 열기/닫기/저장.
   function openSupportSheet(event: StudioScheduleEvent) {
@@ -4790,12 +4796,14 @@ export function StudioShell({
         <div
           className="m-edit-sheet"
           aria-modal="true"
+          ref={mobileSheetRef}
           role="dialog"
           style={vvFit ? { maxHeight: Math.round(vvFit.h * 0.96) } : undefined}
         >
           {/* 손잡이+헤더를 하나의 불투명 sticky 블록으로 — 스크롤 시 그 사이로 뒤 내용이
-              비쳐 '뚫리는' 구간이 안 생긴다(아래로 쓸어 닫는 모바일 표준 어포던스). */}
-          <div className="m-sheet-top">
+              비쳐 '뚫리는' 구간이 안 생긴다(아래로 쓸어 닫는 모바일 표준 어포던스).
+              여기가 '끌어서 닫기'의 그립 존이다(폼 스크롤과 충돌 안 함). */}
+          <div className="m-sheet-top" {...mobileSheetDrag}>
             <button
               className="m-sheet-grab"
               aria-label="닫기"

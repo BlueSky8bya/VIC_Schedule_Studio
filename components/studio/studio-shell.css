@@ -8761,6 +8761,8 @@ html[data-reduce-motion] .modal-close:active {
   z-index: 3;
   margin: 0 -16px;
   padding: 0 16px;
+  /* 끌어서 닫기 그립 존 — 브라우저 스크롤/새로고침 제스처가 드래그를 가로채지 않게. */
+  touch-action: none;
   /* 라운드는 부모(.m-edit-sheet)의 overflow 클립이 책임진다 — 여기 자체 radius를 주면
      부모 곡선과 어긋나 모서리에 조각이 남는다. */
   background: #f5f1ea;
