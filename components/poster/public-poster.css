@@ -4455,10 +4455,21 @@ html[data-reduce-motion] .pi-backdrop {
   background: #fff;
   color: var(--muted);
   cursor: pointer;
-  transition: transform var(--dur-1) var(--ease);
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
+}
+/* 호버 시 90° 회전 — 일정 그림판 X(.bp-close)와 같은 아이패드식 손맛(전 X 버튼 통일). */
+.pi-close:hover {
+  background: rgb(124 108 240 / 12%);
+  transform: rotate(90deg);
 }
 .pi-close:active {
-  transform: scale(0.92);
+  transform: rotate(90deg) scale(0.9);
+}
+html[data-reduce-motion] .pi-close:hover,
+html[data-reduce-motion] .pi-close:active {
+  transform: none;
 }
 .pi-body {
   display: grid;

@@ -357,7 +357,7 @@ select {
   font-weight: 900;
   box-shadow: var(--shadow-3);
   backdrop-filter: blur(8px);
-  animation: pop-in var(--dur-3) var(--ease) both;
+  animation: pop-in var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease)) both;
 }
 
 /* 값이 바뀔 때 '탁' 튀는 숫자(스코어 등) — PopNumber 컴포넌트가 변화 시 .pop을 잠깐 붙인다. */

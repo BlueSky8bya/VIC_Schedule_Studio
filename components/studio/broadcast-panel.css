@@ -670,9 +670,23 @@ html[data-reduce-motion] .bp-kbd-help {
   color: #8a84a6;
   cursor: pointer;
 }
+.bp-kbd-close {
+  transition:
+    background var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
+}
 .bp-kbd-close:hover {
   background: rgb(124 108 240 / 10%);
   color: #5b4bd0;
+  transform: rotate(90deg);
+}
+.bp-kbd-close:active {
+  transform: rotate(90deg) scale(0.9);
+}
+html[data-reduce-motion] .bp-kbd-close:hover,
+html[data-reduce-motion] .bp-kbd-close:active {
+  transform: none;
 }
 .bp-kbd-help dl {
   display: grid;

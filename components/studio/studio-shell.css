@@ -1481,8 +1481,21 @@ html[data-reduce-motion] .perf-spin {
   color: #6b5bd6;
   cursor: pointer;
 }
+.dtp-pop-x {
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
+}
 .dtp-pop-x:hover {
   background: #e9e3fb;
+  transform: rotate(90deg);
+}
+.dtp-pop-x:active {
+  transform: rotate(90deg) scale(0.9);
+}
+html[data-reduce-motion] .dtp-pop-x:hover,
+html[data-reduce-motion] .dtp-pop-x:active {
+  transform: none;
 }
 
 /* 모바일 바텀시트 */
@@ -1497,7 +1510,7 @@ html[data-reduce-motion] .perf-spin {
 }
 .dtp-sheet {
   width: 100%;
-  animation: dtp-slideup 0.28s var(--ease);
+  animation: dtp-slideup 0.44s var(--spring-smooth, var(--ease));
 }
 @keyframes dtp-fade {
   from {
@@ -1523,7 +1536,7 @@ html[data-reduce-motion] .perf-spin {
   border-radius: var(--r-lg);
   padding: 12px;
   box-shadow: 0 18px 50px rgb(60 40 120 / 28%);
-  animation: dtp-pop-in 0.16s var(--ease);
+  animation: dtp-pop-in 0.32s var(--spring-smooth, var(--ease));
 }
 .dtp-sheet .dtp-panel {
   border-radius: 22px 22px 0 0;
@@ -5270,13 +5283,20 @@ html[data-reduce-motion] .cal-zoom-peek {
   color: #5b4bd0;
   font-size: 13px;
   cursor: pointer;
-  transition: background var(--dur-1) var(--ease);
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
 }
 .cal-zoom-peek .peek-close:hover {
   background: rgb(124 108 240 / 20%);
+  transform: rotate(90deg);
 }
 .cal-zoom-peek .peek-close:active {
-  transform: scale(0.92);
+  transform: rotate(90deg) scale(0.9);
+}
+html[data-reduce-motion] .cal-zoom-peek .peek-close:hover,
+html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
+  transform: none;
 }
 .cal-zoom-peek .peek-subs {
   display: grid;
@@ -6172,7 +6192,8 @@ textarea:disabled {
   background: #ffffff;
   padding: 22px;
   box-shadow: var(--shadow-3);
-  animation: pop-in var(--dur-3) var(--ease) both;
+  /* 모달 등장은 스프링(살짝 넘쳤다 안착) — 애플 HCI 1차(A1) 폴리시. */
+  animation: pop-in var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease)) both;
 }
 .modal-head {
   display: flex;
@@ -6190,6 +6211,21 @@ textarea:disabled {
   background: transparent;
   color: var(--muted);
   cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
+}
+/* 호버 시 90° 회전 — 일정 그림판 X와 통일한 아이패드식 손맛. */
+.modal-close:hover {
+  transform: rotate(90deg);
+}
+.modal-close:active {
+  transform: rotate(90deg) scale(0.9);
+}
+html[data-reduce-motion] .modal-close:hover,
+html[data-reduce-motion] .modal-close:active {
+  transform: none;
 }
 
 /* 태그 이름/색상 편집기 (왼쪽 패널) */
@@ -8689,7 +8725,8 @@ textarea:disabled {
   /* 좌우 대칭 패딩. 하단은 고정 액션바가 처리하므로 0(safe-area는 액션바에서). */
   padding: 0 16px;
   box-shadow: 0 -12px 34px rgb(17 24 39 / 22%);
-  animation: m-sheet-up 260ms var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  animation: m-sheet-up 0.44s var(--spring-smooth, var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)))
+    both;
 }
 @keyframes m-sheet-up {
   from {
@@ -8762,6 +8799,16 @@ textarea:disabled {
   background: #f4f2ef;
   color: var(--muted, #8a93a3);
   cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
+}
+/* 모바일이라 hover는 없지만 눌림에 같은 회전 손맛(그림판 X와 통일). */
+.m-edit-x:active {
+  transform: rotate(90deg) scale(0.9);
+}
+html[data-reduce-motion] .m-edit-x:active {
+  transform: none;
 }
 /* ── 모바일 전용 편집 레이아웃(웹 우측 패널과 완전히 다른, 그룹 리스트형) ── */
 .me-form {
