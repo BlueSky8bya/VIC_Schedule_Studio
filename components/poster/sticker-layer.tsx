@@ -4,6 +4,7 @@ import { Maximize2 } from "lucide-react";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { shapeDefaultColor, type StickerInstance } from "@/lib/domain/schedule-types";
 import { ShapeSvg } from "@/components/poster/sticker-shapes";
+import { hapticTick } from "@/lib/ui/haptics";
 
 type Mode = "move" | "resize" | "rotate";
 
@@ -48,6 +49,9 @@ type Drag = {
   group?: GroupMember[];
   lastDx: number;
   lastDy: number;
+  // B3(러버밴딩/스냅 노치): 직전 프레임의 스냅 체결 여부 — 새로 '딱' 붙는 순간만 햅틱 틱.
+  snapX?: boolean;
+  snapY?: boolean;
 };
 
 type Box = { left: number; top: number; right: number; bottom: number };
@@ -268,8 +272,23 @@ export function StickerLayer({
       }
 
       if (drag.mode === "move") {
-        let cx = clamp(drag.origX + (px - drag.startX) / rect.width, 0, 1) * rect.width;
-        let cy = clamp(drag.origY + (py - drag.startY) / rect.height, 0, 1) * rect.height;
+        const rawX = drag.origX + (px - drag.startX) / rect.width;
+        const rawY = drag.origY + (py - drag.startY) / rect.height;
+        let cx = clamp(rawX, 0, 1) * rect.width;
+        let cy = clamp(rawY, 0, 1) * rect.height;
+        // B3 러버밴딩: 표면 경계를 넘는 드래그는 하드 스톱 대신 탄성 저항으로 보여준다
+        // (UIScrollView 수식). 저장 좌표는 그대로 clamp — 화면 표시만 살짝 따라나갔다가
+        // 놓으면 스프링으로 제자리. reduce-motion이면 기존 하드 스톱 유지.
+        const stickerEl = layer.querySelector<HTMLElement>(`[data-sticker-id="${drag.id}"]`);
+        if (stickerEl && !document.documentElement.hasAttribute("data-reduce-motion")) {
+          const overX = rawX < 0 ? rawX * rect.width : rawX > 1 ? (rawX - 1) * rect.width : 0;
+          const overY = rawY < 0 ? rawY * rect.height : rawY > 1 ? (rawY - 1) * rect.height : 0;
+          const rubberDim = (v: number, dim: number) =>
+            Math.sign(v) * ((Math.abs(v) * dim * 0.55) / (dim + 0.55 * Math.abs(v)));
+          stickerEl.style.transition = "none";
+          stickerEl.style.setProperty("--rub-x", `${rubberDim(overX, rect.width)}px`);
+          stickerEl.style.setProperty("--rub-y", `${rubberDim(overY, rect.height)}px`);
+        }
         // C1 스냅: 캔버스 중앙·다른 스티커 중심선과 가까우면 달라붙고 가이드 표시.
         const SNAP = 6;
         const others = stickersRef.current.filter((s) => s.id !== drag.id);
@@ -308,6 +327,12 @@ export function StickerLayer({
         if (Math.abs(r.y * rect.height - cy) > 0.5) gy = null;
         drag.lastX = r.x;
         drag.lastY = r.y;
+        // B3 스냅 노치: 가이드에 새로 '딱' 붙는 순간만 틱(기계식 노치의 물성). 떨어지면 재무장.
+        const nowSnapX = gx !== null;
+        const nowSnapY = gy !== null;
+        if ((nowSnapX && !drag.snapX) || (nowSnapY && !drag.snapY)) hapticTick();
+        drag.snapX = nowSnapX;
+        drag.snapY = nowSnapY;
         setGuides({ x: gx, y: gy });
         onChangeRef.current?.({ ...sticker, xRatio: r.x, yRatio: r.y });
         return;
@@ -357,6 +382,20 @@ export function StickerLayer({
     function onUp() {
       const drag = dragRef.current;
       if (drag) {
+        // B3: 경계 밖 러버밴딩 표시가 남아 있으면 스프링으로 제자리 복귀(저장 좌표는 이미 clamp).
+        const layer = layerRef.current;
+        const el = layer?.querySelector<HTMLElement>(`[data-sticker-id="${drag.id}"]`);
+        if (el && (el.style.getPropertyValue("--rub-x") || el.style.getPropertyValue("--rub-y"))) {
+          el.style.transition =
+            "transform 0.45s var(--spring-smooth, var(--ease-spring, ease))";
+          el.style.setProperty("--rub-x", "0px");
+          el.style.setProperty("--rub-y", "0px");
+          window.setTimeout(() => {
+            el.style.transition = "";
+            el.style.removeProperty("--rub-x");
+            el.style.removeProperty("--rub-y");
+          }, 500);
+        }
         // 그룹 이동이면 멤버 전부 저장, 아니면 대상 하나만 저장.
         const ids =
           drag.group && drag.group.length > 1 ? drag.group.map((m) => m.id) : [drag.id];
@@ -506,8 +545,11 @@ export function StickerLayer({
               "--sticker-size": `${size}px`,
               opacity: sticker.opacity,
               zIndex: sticker.zIndex,
+              // --rub-x/y: 경계 밖 러버밴딩 표시 오프셋(B3, 드래그 중에만 0이 아님).
+              // translate가 rotate보다 앞이라 화면 축 기준으로 밀린다.
               transform:
-                `translate(-50%, -50%) rotate(${sticker.rotationDeg}deg) ` +
+                `translate(calc(-50% + var(--rub-x, 0px)), calc(-50% + var(--rub-y, 0px))) ` +
+                `rotate(${sticker.rotationDeg}deg) ` +
                 `scale(${sticker.flipX ? -1 : 1}, ${sticker.flipY ? -1 : 1})`
             } as CSSProperties}
           >

@@ -119,6 +119,7 @@ import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
+import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
@@ -1615,16 +1616,26 @@ export function PublicPoster({
   );
   const interestRatio = monthHeartableCount > 0 ? myMonthHearts / monthHeartableCount : 0;
 
+  // B4 FLIP: 필터로 아젠다 날들이 사라지고/나타날 때 남은 날이 순간이동하지 않고 활주한다.
+  // 상태를 바꾸기 '전' 위치를 캡쳐하고, 커밋 직후(rAF, 페인트 전) 이동을 재생.
+  function withAgendaFlip(mutate: () => void) {
+    const container = document.querySelector<HTMLElement>(".agenda-flow");
+    const prev = captureFlip(container);
+    mutate();
+    if (prev) requestAnimationFrame(() => playFlip(container, prev));
+  }
   // 태그 칩 토글(다중 선택).
   function toggleTagFilter(id: string) {
     hapticTick(); // 셀렉터 손맛(Android만; iOS·미지원은 조용히 무시)
-    setTagFilters((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    withAgendaFlip(() =>
+      setTagFilters((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
     );
   }
   function clearFilters() {
-    setTagFilters([]);
-    setBookmarkedOnly(false);
+    withAgendaFlip(() => {
+      setTagFilters([]);
+      setBookmarkedOnly(false);
+    });
   }
   const filterActive = tagFilters.length > 0 || bookmarkedOnly;
 
@@ -3174,7 +3185,7 @@ export function PublicPoster({
                 className={`agenda-legend-tag heart ${bookmarkedOnly ? "on" : ""}`}
                 onClick={() => {
                   hapticTick(); // 같은 토글인데 누르는 자리(범례/웹/하단레일)마다 감촉이 달랐다
-                  setBookmarkedOnly((v) => !v);
+                  withAgendaFlip(() => setBookmarkedOnly((v) => !v));
                 }}
                 type="button"
               >
@@ -3283,6 +3294,7 @@ export function PublicPoster({
               return days.map(({ cell, day, mark, list }) => (
               <div
                 className={`agenda-day ${day.isToday ? "today" : ""}`}
+                data-flip-key={cell.isoDate}
                 key={cell.isoDate}
                 ref={day.isToday ? todayRowRef : undefined}
                 style={popIntro ? ({ "--ri": agendaIndex } as CSSProperties) : undefined}
@@ -3771,7 +3783,7 @@ export function PublicPoster({
                     className={`interest-toggle ${bookmarkedOnly ? "active" : ""}`}
                     onClick={() => {
                       hapticTick();
-                      setBookmarkedOnly((v) => !v);
+                      withAgendaFlip(() => setBookmarkedOnly((v) => !v));
                     }}
                     title="내가 ♥ 누른 일정만 모아서 보기"
                     type="button"
@@ -4668,7 +4680,7 @@ export function PublicPoster({
                 onClick={() => {
                   if (!canHeart) return;
                   hapticTick();
-                  setBookmarkedOnly((v) => !v);
+                  withAgendaFlip(() => setBookmarkedOnly((v) => !v));
                 }}
                 title={canHeart ? "내가 ♥ 누른 일정만 보기" : "로그인하면 관심 일정을 모아볼 수 있어요"}
                 type="button"

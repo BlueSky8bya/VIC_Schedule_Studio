@@ -113,6 +113,7 @@ import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion 
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { flyGhost } from "@/lib/ui/fly-ghost";
+import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 // 스튜디오 CSS는 StudioShell을 렌더하는 페이지(studio/(home), studio/calendar)에서 page-level로
@@ -769,9 +770,13 @@ export function StudioShell({
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   function toggleTagFilter(id: string) {
     hapticTick(); // 셀렉터 손맛(Android만; iOS·미지원은 조용히 무시)
+    // B4 FLIP: 모바일 아젠다에서 필터로 날이 사라지고/나타날 때 남은 날이 활주한다.
+    const flipContainer = document.querySelector<HTMLElement>(".agenda-flow");
+    const flipPrev = captureFlip(flipContainer);
     setTagFilters((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
+    if (flipPrev) requestAnimationFrame(() => playFlip(flipContainer, flipPrev));
   }
   function isDimmedByFilter(event: StudioScheduleEvent) {
     if (tagFilters.length === 0) return false;
@@ -4285,6 +4290,7 @@ export function StudioShell({
               return (
                 <div
                   className={`agenda-day ${day.isToday ? "today" : ""}`}
+                  data-flip-key={cell.isoDate}
                   key={cell.isoDate}
                   style={isFirstReveal ? ({ "--ri": agendaIndex } as CSSProperties) : undefined}
                 >
