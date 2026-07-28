@@ -647,6 +647,14 @@ body:has(.broadcast-panel) .tag-cpop {
 html[data-reduce-motion] .bp-kbd-help {
   animation: none;
 }
+/* 재질(C1): 단축키 안내 팝오버도 반투명 블러 유리로. */
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .bp-kbd-help {
+    background: var(--material-bg-strong, rgb(255 255 255 / 86%));
+    -webkit-backdrop-filter: var(--material-blur, blur(18px) saturate(1.7));
+    backdrop-filter: var(--material-blur, blur(18px) saturate(1.7));
+  }
+}
 .bp-kbd-head {
   display: flex;
   align-items: center;

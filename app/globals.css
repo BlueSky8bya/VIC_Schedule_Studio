@@ -103,6 +103,12 @@
   --glass: rgb(255 255 255 / 72%);
   --glass-strong: rgb(255 255 255 / 86%);
   --glass-border: rgb(255 255 255 / 70%);
+  /* 재질(애플 materials 근사, HCI 벤치마크 C1) — 떠 있는 표면(팝오버·모달)이 불투명 판이 아니라
+     '같은 공간 위 유리'로 읽히게. 반드시 @supports (backdrop-filter) 가드 안에서 기존 불투명
+     배경을 덮어쓰는 식으로 쓸 것(미지원 브라우저는 원래 배경 유지). export surface 안 금지. */
+  --material-bg: rgb(255 254 250 / 78%);
+  --material-bg-strong: rgb(255 255 255 / 86%);
+  --material-blur: blur(18px) saturate(1.7);
 
   /* 간격 (4/8 스케일) */
   --space-1: 4px;
