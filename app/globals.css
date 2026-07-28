@@ -138,6 +138,33 @@
   --ease-exit: cubic-bezier(0.3, 0, 0.8, 0.15);
   /* 통통 튀는 오버슈트 — 버튼을 뗄 때 살짝 넘쳤다 안착하는 '손맛'(스프링). */
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* ── 진짜 스프링(linear() 샘플링) — 애플 HCI 벤치마크(docs/ux/apple-hci-benchmark-report.md A1).
+     베지어 오버슈트(--ease-spring)는 '도착 직전 감속'이 물리와 달라 미묘하게 인공적이다.
+     스프링 방정식을 점으로 구운 아래 두 곡선은 시작이 빠르고(즉각 반응) 잔진동으로 안착한다.
+     duration은 잔진동까지 포함한 '정착 시간' 전체를 줘야 한다(--dur-spring-*와 짝으로 쓸 것).
+     미지원 브라우저 폴백: var(--spring-smooth, var(--ease-spring)) 체인으로 참조. */
+  /* 부드러운 스프링(살짝 넘침 후 안착, response≈0.5) — 시트·패널 등장, 레이아웃 슬라이드용 */
+  --spring-smooth: linear(
+    0, 0.0069, 0.0261, 0.0555, 0.0916, 0.1349, 0.1839, 0.2375, 0.2944,
+    0.3535, 0.414, 0.475, 0.5359, 0.5961, 0.655, 0.7122, 0.7675, 0.8204,
+    0.8709, 0.9187, 0.9425, 0.9866, 1.0245, 1.0565, 1.083, 1.1045, 1.1212,
+    1.1337, 1.1425, 1.1479, 1.1504, 1.1483, 1.1414, 1.1319, 1.1207, 1.1085,
+    1.096, 1.0835, 1.0714, 1.06, 1.0495, 1.04, 1.0315, 1.0241, 1.0177,
+    1.0124, 1.008, 1.0044, 1.0017, 0.9996, 0.9982, 0.9972, 0.9967, 0.9966,
+    0.997, 0.9975, 0.998, 0.9985, 0.999, 0.9995, 1
+  );
+  /* 통통 스프링(damping≈0.6 젤리) — 버튼 릴리스·하트·보상 순간 전용(평시 전이 금지) */
+  --spring-bouncy: linear(
+    0, 0.009, 0.035, 0.078, 0.136, 0.207, 0.288, 0.376, 0.468, 0.561,
+    0.654, 0.743, 0.827, 0.905, 0.975, 1.036, 1.088, 1.131, 1.164, 1.187,
+    1.201, 1.207, 1.205, 1.196, 1.181, 1.162, 1.139, 1.114, 1.088, 1.061,
+    1.036, 1.012, 0.99, 0.972, 0.956, 0.944, 0.935, 0.93, 0.928, 0.929,
+    0.932, 0.938, 0.945, 0.953, 0.962, 0.971, 0.98, 0.988, 0.996, 1.002,
+    1.007, 1.011, 1.013, 1.014, 1.013, 1.012, 1.01, 1.008, 1.006, 1.003,
+    1.001, 1, 0.999, 0.999, 1
+  );
+  --dur-spring-smooth: 0.5s;
+  --dur-spring-bouncy: 0.6s;
   --dur-1: 120ms; /* 토글·체크 같은 즉각 피드백 */
   --dur-2: 180ms;
   --dur-3: 240ms;
@@ -189,10 +216,18 @@
       color 0.16s var(--ease, ease),
       box-shadow 0.18s var(--ease, ease),
       opacity 0.16s var(--ease, ease),
-      transform 0.18s var(--ease-spring, var(--ease, ease));
+      /* 릴리스(뗌)는 진짜 스프링으로 통통 복귀 — 애플식 '누름=빠르게, 복귀=탄성'(A2). */
+        transform var(--dur-spring-bouncy, 0.18s) var(--spring-bouncy, var(--ease-spring, ease));
   }
   :where(button):active:not(:disabled) {
     transform: scale(0.95);
+    /* 누르는 순간은 즉각(≤100ms) 가라앉아야 반응으로 느껴진다 — 복귀용 스프링 duration이
+       누름에도 걸리면 굼뜨다. transition-property 순서(bg·border·color·shadow·opacity·transform)
+       와 1:1로 맞춘 duration 목록으로 transform만 짧게 덮는다. */
+    transition-duration: 0.16s, 0.16s, 0.16s, 0.18s, 0.16s, 0.07s;
+    transition-timing-function:
+      var(--ease, ease), var(--ease, ease), var(--ease, ease), var(--ease, ease),
+      var(--ease, ease), var(--ease-exit, ease);
   }
 }
 /* 일관된 포커스 링(키보드 이동 시) — 특이도 0이라 컴포넌트가 자유로이 덮을 수 있다. */
@@ -330,7 +365,7 @@ select {
   display: inline-block;
 }
 .pop-number.pop {
-  animation: pop-number 0.42s var(--ease-spring, ease);
+  animation: pop-number 0.42s var(--spring-bouncy, var(--ease-spring, ease));
 }
 @keyframes pop-number {
   0% {

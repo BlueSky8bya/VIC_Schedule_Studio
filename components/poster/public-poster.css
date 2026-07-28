@@ -970,8 +970,9 @@ html {
   z-index: 6;
   opacity: 0;
   transform: translateY(24px) scale(0.96);
-  /* 통통 튀어 올라오는 등장(오버슈트 스프링). */
-  animation: avatar-rise 0.5s var(--ease-spring) 0.05s forwards;
+  /* 통통 튀어 올라오는 등장(진짜 스프링 — 베지어 오버슈트 폴백). */
+  animation: avatar-rise var(--dur-spring-bouncy, 0.5s) var(--spring-bouncy, var(--ease-spring))
+    0.05s forwards;
 }
 .poster-page.avatar-scene.avatar-right .avatar-slot {
   right: 0;
@@ -1306,7 +1307,7 @@ body.cell-range-dragging {
   overflow: hidden;
   /* 아바타 ON/OFF 시 margin이 변하며 일정표가 슬라이드 — 트랜지션을 base에 둬서 클래스가 빠지는
      OFF 순간에도 부드럽게 되돌아온다(살짝 통통). */
-  transition: margin 0.55s var(--ease-spring);
+  transition: margin 0.55s var(--spring-smooth, var(--ease-spring));
 }
 .poster-scaler {
   flex: 0 0 auto;
@@ -3134,7 +3135,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
    base에 트랜지션 → ON/OFF 둘 다 부드럽게. */
 .decorate-toolbar,
 .poster-capture-row {
-  transition: margin 0.55s var(--ease-spring);
+  transition: margin 0.55s var(--spring-smooth, var(--ease-spring));
 }
 .poster-page.avatar-scene.avatar-right .decorate-toolbar,
 .poster-page.avatar-scene.avatar-right .poster-capture-row {
@@ -4402,7 +4403,9 @@ html[data-reduce-motion] .heart-toast {
   background: linear-gradient(180deg, #fffdf6, #fdf6e6);
   box-shadow: var(--shadow-3);
   overflow: hidden;
-  animation: pi-rise var(--dur-4) var(--ease-enter) both;
+  /* 등장은 스프링(살짝 넘쳤다 안착) — 유리판이 아니라 물체가 올라오는 느낌(A1). */
+  animation: pi-rise var(--dur-spring-smooth, var(--dur-4)) var(--spring-smooth, var(--ease-enter))
+    both;
 }
 @keyframes pi-rise {
   from {

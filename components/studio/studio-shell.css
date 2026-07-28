@@ -3347,7 +3347,7 @@ html[data-reduce-motion] .role-segment button.active {
 }
 /* 단축키 안내바도 아바타 rail 쪽으로 안 들어가게 같이 비켜선다(workspace와 동일 슬라이드). */
 .studio-shell.avatar-scene .kbd-hints {
-  transition: margin 0.55s var(--ease-spring);
+  transition: margin 0.55s var(--spring-smooth, var(--ease-spring));
 }
 .studio-shell.avatar-scene.avatar-left .kbd-hints {
   margin-left: calc(20vw + 4px);
