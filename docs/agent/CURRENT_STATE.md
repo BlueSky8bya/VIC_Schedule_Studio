@@ -36,6 +36,31 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
     '이 달 기록' 시트 등장·아바타 자리 등장/슬라이드·pop-number 스프링 치환. 다음 후보:
     C1(재질 토큰)·A3(코너 동심 감사)·B1(모바일 시트 드래그 닫기).
   - lint 경고 6건 제거로 `npm run lint`(max-warnings=0) 게이트 복구.
+- **2026-07-29(밤) — 애플 HCI 벤치마크 P1~P2 일괄 적용**(`a67b758`…`1aaf2c5`, 검증 12/12 PASS):
+  - **마이크로 인터랙션**: 모든 X 닫기 버튼에 그림판 X와 같은 호버 90° 회전+스프링 복귀
+    (.pi-close/.modal-close/.dtp-pop-x/.m-edit-x/.peek-close/.bp-kbd-close). 모달·팝오버·
+    바텀시트 등장을 `--spring-smooth`로 통일.
+  - **C1 재질**: `--material-*` 토큰 + 모달/날짜시간·태그색·확대 팝오버/판서 단축키 안내를
+    반투명 블러 유리로(@supports 가드, export surface 밖).
+  - **B1**: 모바일 편집 시트 끌어서 닫기(`lib/ui/use-sheet-drag-close.ts`) — 1:1 추적·위로
+    러버밴딩·릴리스 속도 스프링·임계 햅틱. **함정 2개 실측으로 잡음**: pointerdown 즉시
+    setPointerCapture 금지(click이 캡처 요소로 가서 X 먹통), click 억제 플래그는 제스처 후
+    반드시 자동 해제.
+  - **B2**: 모바일 카드→시트 matched-geometry morph(열림=카드에서 자람, X/백드롭 닫기=역방향),
+    웹은 카드 잔상 비행(`lib/ui/fly-ghost.ts`)으로 고정 편집 패널과의 연결감만.
+  - **B3**: 스티커 경계 러버밴딩(표시만, 저장 좌표는 기존 clamp·직렬 큐 불변) + 스냅 노치 햅틱.
+  - **B4**: 아젠다 필터 FLIP(`lib/ui/list-flip.ts`) — 시청자·편집실 모바일 아젠다.
+  - **D1**: 캡쳐 성공 시 완성본 미니 썸네일 스프링 팝인 + 2틱 햅틱.
+  - **부수 대어**: 편의 캡쳐(클립보드)가 **07-19부터 조용히 깨져 있었음** — `.event-subs`
+    세로 레일의 `color-mix` computed(`color(srgb …)`)를 html2canvas가 파싱 못 해 전체 throw.
+    transparent border + `::before`(currentColor+opacity)로 픽셀 동일하게 복구(`4a88582`).
+    **교훈: export surface 안에는 color-mix 금지**(html2canvas 한계).
+  - 검증 인프라: `scripts/_verify_hci.mjs`(12항목 실측), visual baseline 재캡쳐(stale이었음 —
+    clean HEAD에서도 실패 확인 후 갱신). fixture가 프로덕션 빌드에서 무스타일이던 문제
+    (studio-shell.css는 (studio) layout 소유)도 fixture 직접 import로 해결.
+  - **디스코프**: C2 타이포 역할 토큰(전면 px 토큰화) — 100+ 지점 산재라 시각 리뷰 없이
+    일괄 치환은 회귀 위험이 커 보류. A3 코너 동심 전수 감사도 스폿체크만(보상 썸네일 등
+    신규 UI는 규칙 적용). 다음 세션에서 화면 단위로 진행 권장.
 - **2026-07-27에 끝난 것 — 일정 그림판 작업 문맥 편의**:
   - 패널 세션에서 처음 일정을 보내면 `일정` 레이어 표시·활성 + `선택` 도구로 자동 전환. 모든
     카드를 뺐다가 다시 보내는 경우를 포함해 이후 보내기는 현재 그림 레이어·도구 유지. 보내기 뒤
