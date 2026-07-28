@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-07-27
+Last Updated: 2026-07-29
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -20,6 +20,22 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 - **운영 중(안정)**: 공개 포스터(`/`), 편집실(달력/태그/멤버/비공개 레이어), 꾸미기·PNG export,
   하트(비로그인 포함), 관리자 인사이트, 태그 2계층, 비공개 본문 암호화, 방송시간 기록.
+- **2026-07-29 — '이 달 기록' 닫기 정책 + 애플 HCI 벤치마크 1차**(`bb23f6f`, `bf70da9`, `028e6f0`):
+  - '이 달 기록' 시트는 **백드롭 클릭으로 닫히지 않는다**(신고 반영 — 같이보기 방송 중 오클릭
+    사고 방지). 닫기 = X·Esc·뒤로가기만. overlay-pop에 800ms 유예 안전망(방금 안쪽이 닫혔으면
+    지각 popstate도 안쪽 몫 → 미리보기 오닫힘 방지, 대신 시트 닫은 직후 0.8초 내 뒤로가기는
+    한 번 무시될 수 있음 — 의도된 비대칭).
+  - **X/백드롭 → 편집실 튕김은 현재 코드로 재현 불가**였다(dev·prod build, 정상/cold-entry/
+    좁은폭/판서 churn/더블클릭 전부 미리보기 유지 확인). 원인 미상 리포트에 대해 위 정책 변경
+    + 안전망으로 대응. 재현용 **편집실 fixture** `app/visual-fixture/studio`
+    (`VISUAL_TEST_FIXTURE=1` 전용, owner actor + 샘플 데이터, `?viewer=1`로 미리보기 cold-entry)
+    를 추가했다 — 오버레이 스택 회귀는 여기서 인증 없이 실측할 것.
+  - **애플 HCI 리서치 보고서** `docs/ux/apple-hci-benchmark-report.md`(조화·몰입·재미 3×3,
+    적용 후보 12건 P1~P3). 1차 적용(A1·A2): `globals.css`에 `--spring-smooth/--spring-bouncy`
+    `linear()` 스프링 토큰(+`--dur-spring-*`), 전역 버튼 누름 70ms 즉각/뗌 스프링 복귀,
+    '이 달 기록' 시트 등장·아바타 자리 등장/슬라이드·pop-number 스프링 치환. 다음 후보:
+    C1(재질 토큰)·A3(코너 동심 감사)·B1(모바일 시트 드래그 닫기).
+  - lint 경고 6건 제거로 `npm run lint`(max-warnings=0) 게이트 복구.
 - **2026-07-27에 끝난 것 — 일정 그림판 작업 문맥 편의**:
   - 패널 세션에서 처음 일정을 보내면 `일정` 레이어 표시·활성 + `선택` 도구로 자동 전환. 모든
     카드를 뺐다가 다시 보내는 경우를 포함해 이후 보내기는 현재 그림 레이어·도구 유지. 보내기 뒤
