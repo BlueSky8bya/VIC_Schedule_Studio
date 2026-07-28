@@ -13,6 +13,10 @@
 // 바깥은 "안쪽 칸이 남아 있으면 이번 pop은 안쪽 것"이라 보고 손을 뗀다. 안쪽이 실제로 닫히면서
 // 카운터를 내리므로, 다음 뒤로가기는 바깥 차례가 된다.
 let innerDepth = 0;
+// 안쪽 오버레이가 '마지막으로 닫힌 시각' — 카운터가 이미 0으로 내려간 뒤에 도착하는 지각 pop
+// (브라우저별 디스패치 타이밍 편차)까지 안쪽 몫으로 본다. 시트 X를 눌렀는데 그 메아리 pop이
+// 미리보기까지 닫아 편집실로 튕기는 신고의 마지막 안전망.
+let lastInnerCloseAt = 0;
 
 /** 안쪽 오버레이가 히스토리 한 칸을 쌓았다(열림). */
 export function pushInnerOverlay(): void {
@@ -22,9 +26,12 @@ export function pushInnerOverlay(): void {
 /** 안쪽 오버레이가 닫혀 그 칸이 사라졌다. */
 export function popInnerOverlay(): void {
   innerDepth = Math.max(0, innerDepth - 1);
+  lastInnerCloseAt = Date.now();
 }
 
-/** 바깥(편집실)용 — 안쪽 오버레이가 열려 있으면 이번 뒤로가기는 그쪽 몫이다. */
+/** 바깥(편집실)용 — 안쪽 오버레이가 열려 있으면(또는 방금 닫혔으면) 이번 뒤로가기는 그쪽 몫이다.
+ * 800ms 유예: 진짜 뒤로가기를 삼켜도 한 번 더 누르면 되지만, 반대로 미리보기가 잘못 닫히면
+ * 방송 화면이 통째로 편집실로 바뀌는 사고라 비대칭적으로 안전한 쪽을 고른다. */
 export function hasInnerOverlay(): boolean {
-  return innerDepth > 0;
+  return innerDepth > 0 || Date.now() - lastInnerCloseAt < 800;
 }

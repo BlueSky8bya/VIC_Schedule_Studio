@@ -1,0 +1,34 @@
+import { notFound } from "next/navigation";
+import { StudioShell } from "@/components/studio/studio-shell";
+import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
+
+// 비주얼/E2E 테스트 전용 fixture — 고정 샘플 데이터로 편집실 셸을 렌더한다(인증·DB 없이).
+// 오버레이 스택(시청자 미리보기 → '이 달 기록' 시트) 회귀를 브라우저에서 실측하기 위한 페이지.
+// `VISUAL_TEST_FIXTURE=1`일 때만 열리고, 프로덕션(플래그 없음)에서는 404 → 실사용자에게 안 노출.
+export const dynamic = "force-dynamic";
+
+export default async function VisualStudioFixture({
+  searchParams
+}: {
+  searchParams?: Promise<{ viewer?: string }>;
+}) {
+  if (process.env.VISUAL_TEST_FIXTURE !== "1") {
+    notFound();
+  }
+  const viewer = (await searchParams)?.viewer === "1";
+  return (
+    <StudioShell
+      actor={{
+        email: "fixture-owner@example.com",
+        isAuthenticated: true,
+        role: "owner",
+        trustedRole: null
+      }}
+      hasUnlockSession={false}
+      schedule={sampleStudioSchedule}
+      initialView={{ year: 2026, month: 6 }}
+      initialViewerMode={viewer}
+      initialNarrow={false}
+    />
+  );
+}

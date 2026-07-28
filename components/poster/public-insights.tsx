@@ -280,17 +280,11 @@ export function PublicInsights({
     }
   ];
 
+  // 백드롭 클릭으로는 닫지 않는다(신고 반영) — 방송 중 '같이보기' 위에서 이 시트를 쓸 때
+  // 바깥을 잘못 누르면 시트가 닫히며 화면이 훅 바뀌는 사고가 났다. 닫기는 조준된 행동만:
+  // X 버튼 · Esc · (폰) 뒤로가기.
   return (
-    <div
-      className="pi-backdrop"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          hapticTick();
-          onClose();
-        }
-      }}
-      role="presentation"
-    >
+    <div className="pi-backdrop" role="presentation">
       <section aria-label={`${month}월 기록`} className="pi-sheet" role="dialog" aria-modal="true">
         <header className="pi-head">
           <strong>
