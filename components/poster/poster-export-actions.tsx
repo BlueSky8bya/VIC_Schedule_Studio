@@ -1,7 +1,8 @@
 "use client";
 
 import { Clipboard } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { hapticTick } from "@/lib/ui/haptics";
 
 // 편의 내보내기(클립보드)는 3단계로 진행 상황을 보여준다: 준비 → 렌더링 → 복사.
 // html2canvas는 메인 스레드를 잡으므로 오버레이로 "비차단"을 만들 순 없다 — 정직하게,
@@ -27,12 +28,23 @@ export function PosterExportActions({ onBeforeCapture, onAfterCapture }: PosterE
   const [phase, setPhase] = useState<ExportPhase>("idle");
   // 폰트가 아직 안 깔린 채로 캡쳐하면 글자가 깨질 수 있어, 정착될 때까지 기다리며 안내한다.
   const [fontSettling, setFontSettling] = useState(false);
+  // 보상 순간(D1): 복사 성공 시 완성본 미니 썸네일이 스프링으로 팝인 — 내보내기는 이 앱의
+  // 성취 정점이라 토스트 한 줄 대신 '내가 만든 결과물'을 잠깐 보여준다. 잠시 후 스스로 사라진다.
+  const [rewardThumb, setRewardThumb] = useState<string | null>(null);
+  const rewardTimerRef = useRef<number | null>(null);
+  useEffect(
+    () => () => {
+      if (rewardTimerRef.current !== null) window.clearTimeout(rewardTimerRef.current);
+    },
+    []
+  );
   const busy = phase === "preparing" || phase === "rendering" || phase === "copying";
 
   async function copyPoster() {
     if (busy) {
       return;
     }
+    hapticTick(); // 프레스 틱(성공 시 확정 틱과 짝 — 2틱 관례)
     const surface = document.querySelector<HTMLElement>("[data-export-surface]");
     if (!surface) {
       setPhase("failed");
@@ -79,6 +91,21 @@ export function PosterExportActions({ onBeforeCapture, onAfterCapture }: PosterE
         })
       ]);
       setPhase("copied");
+      hapticTick(); // 확정 틱
+      // 보상 썸네일 — 원본 캔버스는 수천 px라 그대로 dataURL을 뜨면 무겁다 → 220px로 축소해 뜬다.
+      try {
+        const thumbW = 220;
+        const thumbH = Math.max(1, Math.round((canvas.height / canvas.width) * thumbW));
+        const small = document.createElement("canvas");
+        small.width = thumbW;
+        small.height = thumbH;
+        small.getContext("2d")?.drawImage(canvas, 0, 0, thumbW, thumbH);
+        setRewardThumb(small.toDataURL("image/png"));
+        if (rewardTimerRef.current !== null) window.clearTimeout(rewardTimerRef.current);
+        rewardTimerRef.current = window.setTimeout(() => setRewardThumb(null), 2400);
+      } catch {
+        // 썸네일은 장식 — 실패해도 복사 자체는 성공이므로 조용히 넘어간다.
+      }
       window.setTimeout(() => setPhase("idle"), 1800);
     } catch {
       setPhase("failed");
@@ -114,6 +141,14 @@ export function PosterExportActions({ onBeforeCapture, onAfterCapture }: PosterE
       ) : null}
       {phase === "failed" ? (
         <span className="poster-action-error">브라우저 클립보드 권한을 확인하세요.</span>
+      ) : null}
+      {rewardThumb ? (
+        <div aria-hidden="true" className="poster-export-reward">
+          {/* eslint-disable-next-line @next/next/no-img-element -- 일회성 dataURL 썸네일 */}
+          <img alt="" src={rewardThumb} />
+          <span className="poster-export-reward-spark s1">✦</span>
+          <span className="poster-export-reward-spark s2">✦</span>
+        </div>
       ) : null}
     </div>
   );

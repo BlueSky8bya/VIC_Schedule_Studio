@@ -1202,10 +1202,83 @@ body.cell-range-dragging {
 
 .viewer-actions,
 .poster-actions {
+  position: relative; /* 보상 썸네일(.poster-export-reward)의 기준 */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+/* 내보내기 보상 순간(D1) — 복사 성공 시 완성본 미니 썸네일이 버튼 위로 통통 팝인.
+   보상은 드물게·물리는 과장되게·지속은 짧게(2.4초 뒤 자동 소멸). 캡쳐 표면 밖(fixed 아님,
+   버튼 위 오버레이)이라 PNG에는 안 들어간다. */
+.poster-export-reward {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  z-index: 30;
+  padding: 6px;
+  border-radius: var(--r-md);
+  background: #fff;
+  box-shadow: var(--shadow-3);
+  pointer-events: none;
+  transform-origin: bottom left;
+  animation: export-reward-pop 0.6s var(--spring-bouncy, var(--ease-spring, var(--ease))) both;
+}
+.poster-export-reward img {
+  display: block;
+  width: 200px;
+  height: auto;
+  border-radius: calc(var(--r-md) - 6px); /* 코너 동심: 바깥 12 − 패딩 6 */
+  border: 1px solid var(--line, #ece9f5);
+}
+.poster-export-reward-spark {
+  position: absolute;
+  color: #e9b949;
+  text-shadow: 0 0 6px rgb(233 185 73 / 55%);
+  animation: export-spark 0.9s var(--ease) both;
+}
+.poster-export-reward-spark.s1 {
+  top: -8px;
+  right: -6px;
+  font-size: 15px;
+  animation-delay: 0.18s;
+}
+.poster-export-reward-spark.s2 {
+  bottom: -4px;
+  left: -8px;
+  font-size: 11px;
+  animation-delay: 0.32s;
+}
+@keyframes export-reward-pop {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes export-spark {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-30deg);
+  }
+  45% {
+    opacity: 1;
+    transform: scale(1.15) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.7) rotate(18deg);
+  }
+}
+html[data-reduce-motion] .poster-export-reward {
+  animation: none;
+}
+html[data-reduce-motion] .poster-export-reward-spark {
+  animation: none;
+  opacity: 0;
 }
 
 .icon-month-button {
