@@ -41,8 +41,6 @@ import type {
   BroadcastTag,
   ColorKey,
   ColorPaletteEntry,
-  EventCategory,
-  EventStatus,
   EventVisibilityScope,
   MembershipRole,
   PublicSchedule,
@@ -66,7 +64,6 @@ import {
   getLinkedChainIds,
   getSpanRunRange,
   getTodayKst,
-  nowKstHm,
   mixedEventStyle,
   splitEventTitle
 } from "@/lib/calendar/month";
@@ -113,7 +110,6 @@ import {
   formatShortDate,
   draftFingerprint,
   eventToForm,
-  isoToKstLocalInput,
   kstLocalInputToIso,
   teaserStillHidden,
   teaserBadgeTitle,
@@ -125,7 +121,6 @@ import {
   SUPPORT_DURATIONS,
   ROLE_LABEL,
   ROLE_DESC,
-  VISIBILITY_LABEL,
   SCOPE_LABEL,
   PRIVATE_FILTER,
   type CopiedEvent,
@@ -237,7 +232,6 @@ export function StudioShell({
   const {
     saveState,
     lastSavedKst,
-    savingCountRef,
     editedSinceSyncRef,
     inflightWritesRef,
     pendingSavesRef,
@@ -471,7 +465,7 @@ export function StudioShell({
     if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
       return;
     setEvents(schedule.events);
-  }, [schedule.events]);
+  }, [schedule.events, inflightWritesRef]);
   // pending(저장/삭제/태그 진행)을 ref로 미러링 — 위 prop 동기화 가드가 deps 없이 읽게.
   useEffect(() => {
     pendingRef.current = pending;
@@ -488,7 +482,7 @@ export function StudioShell({
     };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
-  }, []);
+  }, [inflightWritesRef]);
   // 태그·색 팔레트도 로컬 상태로 — 추가/삭제/저장을 새로고침 없이 즉시 반영(달력 색도 바로 갱신).
   const [tags, setTags] = useState(schedule.tags);
   const [palette, setPalette] = useState(schedule.palette);
@@ -499,12 +493,12 @@ export function StudioShell({
     if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
       return;
     setTags(schedule.tags);
-  }, [schedule.tags]);
+  }, [schedule.tags, inflightWritesRef]);
   useEffect(() => {
     if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
       return;
     setPalette(schedule.palette);
-  }, [schedule.palette]);
+  }, [schedule.palette, inflightWritesRef]);
   // 색상 안내 필터 — 편집실에서도 특정 태그 색만 골라볼 수 있게(시청자 화면과 동일 동작).
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   function toggleTagFilter(id: string) {
