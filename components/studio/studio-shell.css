@@ -4565,14 +4565,16 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
-/* 키보드 포커스(roving) — 기본 outline이 얇아 어디 있는지 안 보인다는 피드백 → 두꺼운 보라
-   링(안쪽) + 옅은 배경 틴트로 또렷하게. :focus-visible이라 마우스 클릭엔 안 뜬다(소음 없음). */
+/* 키보드 포커스(roving) — outline은 그리드 이웃/overflow에 가려질 수 있어 inset box-shadow로
+   그린다(칸 안쪽이라 절대 안 잘림). 두꺼운 보라 링 + 은은한 확산 + 배경 틴트 = 어느 칸에
+   커서가 있는지 한눈에. :focus-visible이라 마우스 클릭엔 안 뜬다(클릭은 selected가 담당). */
 .studio-day:focus-visible {
-  outline: 3px solid #5b4bd0;
-  outline-offset: -3px;
-  background: #f5f2fd;
-  z-index: 2; /* 이웃 칸 경계선 위로 링이 온전히 보이게 */
-  box-shadow: inset 0 0 0 1px #fff;
+  outline: none;
+  box-shadow:
+    inset 0 0 0 3px #5b4bd0,
+    inset 0 0 0 7px rgb(91 75 208 / 18%);
+  background: #efe9fc;
+  z-index: 2; /* 이웃 칸 경계선 위로 온전히 */
 }
 /* 구글 시트식 날짜 칸 범위 선택(마우스) — 시각 강조만. 칸 텍스트 긁힘도 막는다. */
 .studio-month-grid {
