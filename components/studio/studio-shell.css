@@ -9853,3 +9853,398 @@ html[data-reduce-motion] .me-seg button:active,
 html[data-reduce-motion] .m-edit-actions .button:active {
   transform: none;
 }
+
+/* 배치 7: 자주 쓰는 picker·menu·role setting.
+   권한 분기와 portal 좌표는 유지하고 trigger/popup/selected 문법만 통일한다. */
+.preview-dd-trigger,
+.manage-dd-trigger,
+.actor-badge,
+.dtp-trigger {
+  min-height: var(--control-hit);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink-soft);
+}
+
+.preview-dd-trigger,
+.manage-dd-trigger {
+  gap: var(--space-2);
+  padding-inline: var(--space-control-x);
+  font-size: var(--text-body);
+}
+
+.preview-dd-trigger.previewing {
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+  color: var(--violet);
+}
+
+.preview-dd-menu,
+.role-help-pop,
+.rest-menu,
+.dtp-panel,
+.tag-cpop {
+  border: var(--stroke-hairline) solid var(--glass-border);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+}
+
+@supports ((-webkit-backdrop-filter: var(--material-blur)) or (backdrop-filter: var(--material-blur))) {
+  .preview-dd-menu,
+  .role-help-pop,
+  .rest-menu,
+  .dtp-panel,
+  .tag-cpop {
+    background: var(--material-bg-strong);
+    -webkit-backdrop-filter: var(--material-blur);
+    backdrop-filter: var(--material-blur);
+  }
+}
+
+.preview-dd-menu {
+  top: calc(100% + var(--space-2));
+  gap: var(--space-1);
+  padding: var(--space-2);
+}
+
+.preview-dd-item,
+.rest-menu-item {
+  min-height: var(--control-hit);
+  border-radius: var(--r-control);
+  padding: var(--space-2) var(--space-3);
+  color: var(--ink-soft);
+  font-size: var(--text-body);
+}
+
+.preview-dd-item:hover,
+.rest-menu-item:hover {
+  background: var(--selection-fill);
+  color: var(--ink);
+}
+
+.preview-dd-item.active {
+  background: var(--selection-fill);
+  color: var(--violet);
+  box-shadow: inset var(--space-1) 0 0 var(--selection-border);
+}
+
+.actor-badge {
+  padding-inline: var(--space-3);
+}
+
+.role-help-q {
+  width: var(--space-5);
+  height: var(--space-5);
+  margin-left: var(--space-2);
+  border: var(--stroke-hairline) solid currentColor;
+  font-size: var(--text-label);
+}
+
+.role-help-pop {
+  top: calc(100% + var(--space-2));
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+}
+
+.role-help-title {
+  color: var(--ink);
+  font-size: var(--text-ui);
+  letter-spacing: var(--tracking-tight);
+}
+
+.role-help-email,
+.role-help-summary,
+.role-help-can,
+.role-help-cant,
+.role-help-preview,
+.rhh-label {
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+}
+
+.role-help-email,
+.role-help-summary {
+  color: var(--muted);
+}
+
+.role-help-haptics {
+  gap: var(--space-3);
+  margin-top: var(--space-1);
+  border-color: var(--line-soft);
+  padding-top: var(--space-2);
+}
+
+.rhh-switch {
+  width: var(--control-hit);
+  height: var(--space-5);
+  background: var(--line);
+}
+
+.rhh-switch.on {
+  background: var(--status-success);
+}
+
+.dtp-trigger {
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-body);
+}
+
+.dtp-trigger:hover,
+.dtp-trigger.has {
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+  color: var(--ink);
+}
+
+.dtp-trigger > svg {
+  color: var(--violet);
+}
+
+.dtp-pop-x,
+.dtp-nav,
+.dtp-foot-btn,
+.cpop-undo,
+.cpop-kind-swap,
+.cpop-done {
+  min-width: var(--control-hit);
+  min-height: var(--control-hit);
+  border-radius: var(--r-control);
+}
+
+.dtp-pop-x,
+.dtp-nav {
+  width: var(--control-hit);
+  height: var(--control-hit);
+  background: var(--surface-2);
+  color: var(--violet);
+}
+
+.dtp-panel {
+  padding: var(--space-3);
+}
+
+.dtp-title {
+  color: var(--ink);
+  font-size: var(--text-ui);
+  letter-spacing: var(--tracking-tight);
+}
+
+.dtp-cell {
+  border-radius: var(--r-control);
+  color: var(--ink-soft);
+  font-size: var(--text-body);
+}
+
+.dtp-cell:hover {
+  background: var(--selection-fill);
+}
+
+.dtp-cell.today {
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--selection-border);
+}
+
+.dtp-cell.sel {
+  background: var(--violet);
+  color: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.dtp-time,
+.dtp-readout,
+.dtp-wheel-band {
+  background: var(--surface-2);
+}
+
+.dtp-readout,
+.dtp-wheel-item.on {
+  color: var(--ink);
+}
+
+.dtp-foot {
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.dtp-foot-btn {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-body);
+}
+
+.dtp-foot-btn.ghost {
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+
+.dtp-foot-btn.primary {
+  background: var(--violet);
+  color: var(--surface);
+  box-shadow: var(--shadow-1);
+}
+
+.rest-menu {
+  padding: var(--space-1);
+}
+
+.tag-picker2 {
+  gap: var(--space-3);
+}
+
+.tp-count {
+  background: var(--selection-fill);
+  color: var(--violet);
+  font-size: var(--text-label);
+}
+
+.tp-content,
+.tp-mod-section {
+  border-color: var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  padding: var(--space-3);
+}
+
+.tp-chip {
+  min-height: var(--control-hit);
+  border-width: var(--stroke-hairline);
+  padding-inline: var(--space-3);
+  font-size: var(--text-body);
+}
+
+.tp-chip.selected {
+  box-shadow:
+    inset 0 0 0 var(--stroke-hairline) var(--selection-border),
+    var(--shadow-1);
+}
+
+.tag-cpop {
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+
+.cpop-hex {
+  min-height: var(--control-hit);
+  border-color: var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.cpop-undo,
+.cpop-kind-swap,
+.cpop-done {
+  border: var(--stroke-hairline) solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+
+.cpop-done {
+  background: var(--violet);
+  color: var(--surface);
+}
+
+.role-segment {
+  gap: var(--space-1);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  padding: var(--space-1);
+}
+
+.role-segment button {
+  min-height: var(--control-hit);
+  border-radius: var(--r-sm);
+  color: var(--muted);
+  font-size: var(--text-body);
+}
+
+.role-segment button.active {
+  background: var(--surface);
+  color: var(--violet);
+  box-shadow: var(--shadow-1);
+}
+
+@media (max-width: 640px) {
+  .preview-dd-menu,
+  .role-help-pop {
+    max-width: calc(100vw - var(--space-4));
+  }
+
+  .dtp-sheet-backdrop {
+    background: var(--selection-overlay);
+  }
+
+  .dtp-sheet .dtp-panel {
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    padding: var(--space-2) var(--space-4)
+      calc(var(--space-4) + env(safe-area-inset-bottom));
+  }
+
+  .dtp-grip {
+    width: var(--space-control-x);
+    height: var(--space-1);
+    margin: var(--space-1) auto var(--space-3);
+    background: var(--line);
+  }
+
+  .dtp-cell,
+  .dtp-foot-btn {
+    min-height: var(--control-hit);
+  }
+
+  .tag-cpop {
+    right: var(--space-2);
+    left: var(--space-2) !important;
+    width: auto;
+    max-height: calc(100svh - var(--space-4));
+    overflow-y: auto;
+    border-radius: var(--r-xl);
+  }
+}
+
+html[data-reduce-motion] .preview-dd-menu,
+html[data-reduce-motion] .role-help-pop,
+html[data-reduce-motion] .rest-menu,
+html[data-reduce-motion] .dtp-panel,
+html[data-reduce-motion] .dtp-sheet,
+html[data-reduce-motion] .dtp-grid,
+html[data-reduce-motion] .dtp-cell.sel,
+html[data-reduce-motion] .tp-chip.selected {
+  animation: none;
+}
+
+html[data-reduce-motion] .preview-dd-trigger,
+html[data-reduce-motion] .manage-dd-trigger,
+html[data-reduce-motion] .preview-dd-item,
+html[data-reduce-motion] .rhh-switch,
+html[data-reduce-motion] .rhh-knob,
+html[data-reduce-motion] .dtp-trigger,
+html[data-reduce-motion] .dtp-nav,
+html[data-reduce-motion] .dtp-cell,
+html[data-reduce-motion] .dtp-foot-btn,
+html[data-reduce-motion] .rest-menu-item,
+html[data-reduce-motion] .tp-chip,
+html[data-reduce-motion] .cpop-undo,
+html[data-reduce-motion] .cpop-kind-swap,
+html[data-reduce-motion] .cpop-done,
+html[data-reduce-motion] .role-segment button {
+  transition: none;
+}
+
+html[data-reduce-motion] .preview-dd-trigger:active,
+html[data-reduce-motion] .manage-dd-trigger:active,
+html[data-reduce-motion] .preview-dd-item:active,
+html[data-reduce-motion] .dtp-trigger:active,
+html[data-reduce-motion] .dtp-nav:active,
+html[data-reduce-motion] .dtp-cell:active,
+html[data-reduce-motion] .dtp-foot-btn:active,
+html[data-reduce-motion] .rest-menu-item:active,
+html[data-reduce-motion] .tp-chip:active,
+html[data-reduce-motion] .cpop-undo:active,
+html[data-reduce-motion] .cpop-kind-swap:active,
+html[data-reduce-motion] .cpop-done:active,
+html[data-reduce-motion] .role-segment button:active {
+  transform: none;
+}
