@@ -1438,14 +1438,22 @@ export function StudioShell({
   ]
     .filter(Boolean)
     .join(" · ");
-  // 편집 카드 임시 보관(드래프트). 모듈 상단 헬퍼(loadEditDrafts 등) 참고.
+  // 편집 카드 임시 보관(드래프트) — **메모리 전용**(P0-PRIV-1, ADR-0011 L3). 같은 세션 안에서
+  // 카드를 오갈 때만 복원되고, 새로고침하면 사라진다(localStorage 영속 금지 — 게시 전 내용 잔존 방지).
   // baseline = '깨끗한' 기준 지문(원본 일정 또는 빈 새 카드). form이 이와 다르면 미저장 변경 → 보관.
   const editDraftsRef = useRef<Map<string, EditDraft>>(new Map());
   const editBaselineRef = useRef<string>(draftFingerprint(createEmptyForm()));
   const draftHydratedRef = useRef(false);
   const [draftRestored, setDraftRestored] = useState(false);
   useEffect(() => {
-    editDraftsRef.current = loadEditDrafts(); // 새로고침/탭 닫힘에도 살아남게 localStorage에서 복구
+    // P0-PRIV-1: 드래프트는 **메모리 전용** — 게시 전 제목·URL은 scope가 public이어도 민감할
+    // 수 있는데, 예전엔 평문 localStorage에 남아 공용 기기/XSS 이후에도 잔존했다. 이제 세션
+    // 안에서만 유지(카드 전환 시 복원)하고 새로고침이면 사라진다. 과거 버전이 남긴 키는 물리 삭제.
+    try {
+      window.localStorage.removeItem(DRAFT_LS_KEY);
+    } catch {
+      /* 삭제 실패는 무시 — 다음 방문에서 재시도 */
+    }
     draftHydratedRef.current = true;
   }, []);
   // 현재 열린 카드의 보관 키 — 기존 일정은 evt:<id>, 날짜 새 카드는 new:<날짜>.
@@ -3189,7 +3197,6 @@ export function StudioShell({
     } else {
       editDraftsRef.current.delete(key);
     }
-    persistEditDrafts(editDraftsRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form, editorVisible, mobileEditId, selectedEventId, selectedDate, canEdit]);
 
@@ -3198,7 +3205,6 @@ export function StudioShell({
     const key = draftKeyFor();
     if (key) {
       editDraftsRef.current.delete(key);
-      persistEditDrafts(editDraftsRef.current);
     }
     const ev = selectedEventId ? events.find((e) => e.id === selectedEventId) : null;
     setForm(ev ? eventToForm(ev) : createEmptyForm());
@@ -3293,7 +3299,6 @@ export function StudioShell({
     setDraftRestored(false);
     editDraftsRef.current.delete(`new:${selectedDate}`);
     if (form.id) editDraftsRef.current.delete(`evt:${form.id}`);
-    persistEditDrafts(editDraftsRef.current);
 
     // 저장이 끝나면 실제 id(또는 실패 시 null)로 풀리는 약속 — "잇기"가 이걸 기다린다.
     let resolveSave: (id: string | null) => void = () => {};
@@ -3381,7 +3386,6 @@ export function StudioShell({
       editBaselineRef.current = draftFingerprint(createEmptyForm());
       editDraftsRef.current.delete(`evt:${targetId}`);
       editDraftsRef.current.delete(`new:${selectedDate}`);
-      persistEditDrafts(editDraftsRef.current);
       setDraftRestored(false);
     }
     hapticDelete(); // 또렷한 한 번(Android만; iOS·미지원은 조용히 무시)
@@ -6527,31 +6531,8 @@ function draftFingerprint(f: EventForm): string {
     f.teaserRevealAt
   ].join("");
 }
-function loadEditDrafts(): Map<string, EditDraft> {
-  const map = new Map<string, EditDraft>();
-  try {
-    const raw = window.localStorage.getItem(DRAFT_LS_KEY);
-    if (!raw) return map;
-    const obj = JSON.parse(raw) as Record<string, EditDraft>;
-    const cutoff = Date.now() - DRAFT_TTL_MS;
-    for (const [k, v] of Object.entries(obj)) {
-      if (v && typeof v.ts === "number" && v.ts >= cutoff && v.form) map.set(k, v);
-    }
-  } catch {
-    /* 깨진 값은 무시 — 보관은 부가기능이라 실패해도 편집엔 영향 없다 */
-  }
-  return map;
-}
-function persistEditDrafts(map: Map<string, EditDraft>) {
-  try {
-    const cutoff = Date.now() - DRAFT_TTL_MS;
-    const obj: Record<string, EditDraft> = {};
-    for (const [k, v] of map) if (v.ts >= cutoff) obj[k] = v;
-    window.localStorage.setItem(DRAFT_LS_KEY, JSON.stringify(obj));
-  } catch {
-    /* 용량 초과 등은 무시 */
-  }
-}
+// (loadEditDrafts/persistEditDrafts 삭제 — P0-PRIV-1. 드래프트는 메모리 전용이며,
+//  DRAFT_LS_KEY는 과거 버전이 남긴 localStorage 잔재를 물리 삭제하는 용도로만 남는다.)
 // 기존 일정 → 폼 초깃값. selectEvent와 드래프트 폐기('새로 쓰기')가 공유한다.
 function eventToForm(event: StudioScheduleEvent): EventForm {
   return {
