@@ -2,11 +2,14 @@
 // 그 아래에 스켈레톤을 깔아 위치가 튀지 않게(HCI: preserve position).
 export default function Loading() {
   return (
-    <main className="placeholder-page trusted-members-page" aria-hidden="true">
+    <main
+      className="placeholder-page trusted-members-page system-loading-page"
+      aria-busy="true"
+    >
       <section className="trusted-members-panel">
         <p className="eyebrow">VIC Studio</p>
         <h1>매니저 / 작업자 권한</h1>
-        <div className="insight-skel">
+        <div className="insight-skel" aria-hidden="true">
           <span />
           <span />
           <span />

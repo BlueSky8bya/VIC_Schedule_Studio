@@ -1197,11 +1197,11 @@ html[data-eye-comfort] {
   right: 0;
   /* 모바일은 상단 좌측 — 우상단 로그인 버튼과 같은 줄(대칭). 배지가 작아 중심이 위로 붙으므로 top을
      조금 내려 로그인 버튼과 수평 정렬. 하단엔 하트/필터/오늘 바가 있어 못 둔다. */
-  top: calc(env(safe-area-inset-top, 0px) + 18px);
+  top: calc(env(safe-area-inset-top, 0px) + var(--space-4));
   z-index: 9000;
   display: flex;
   justify-content: flex-start;
-  padding-left: calc(env(safe-area-inset-left, 0px) + 16px);
+  padding-left: calc(env(safe-area-inset-left, 0px) + var(--space-4));
   pointer-events: none; /* 배지가 일정 클릭 막지 않게 */
 }
 .netstat-badge,
@@ -1209,28 +1209,30 @@ html[data-eye-comfort] {
   pointer-events: auto;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 11px;
+  min-height: var(--control-hit);
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: var(--stroke-hairline) solid;
   border-radius: var(--r-pill);
-  font-size: 11.5px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  box-shadow: 0 5px 18px rgba(60, 40, 80, 0.2);
-  animation: netstat-rise 0.32s var(--ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+  font-size: var(--text-label);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  box-shadow: var(--shadow-2);
+  animation: netstat-rise var(--dur-3) var(--ease-enter) both;
 }
 /* 오프라인 — 호박/주황 경고 톤(공개 일정만 보고 있다는 신호) */
 .netstat-badge {
-  background: linear-gradient(180deg, #fff3da, #ffe6b8);
-  color: #8a5a12;
-  border: 1.5px solid #f3c97a;
+  background: var(--status-warning-fill);
+  color: var(--ink-soft);
+  border-color: var(--status-warning);
 }
 .netstat-dot {
-  width: 6px;
-  height: 6px;
+  width: var(--space-2);
+  height: var(--space-2);
   border-radius: 50%;
-  background: #e08a1e;
-  box-shadow: 0 0 0 0 rgba(224, 138, 30, 0.5);
-  animation: netstat-pulse 1.8s ease-out infinite;
+  background: var(--status-warning);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-warning) 50%, transparent);
+  animation: netstat-pulse var(--dur-spring-bouncy) var(--ease-exit) infinite;
 }
 .netstat-sub {
   font-weight: 700;
@@ -1239,13 +1241,14 @@ html[data-eye-comfort] {
 }
 /* 온라인 복귀 — 초록 확인 토스트(2.6s 뒤 사라짐) */
 .netstat-toast {
-  background: linear-gradient(180deg, #e3f8ea, #c9f0d6);
-  color: #1d7a44;
-  border: 1.5px solid #92dca9;
+  background: var(--status-success-fill);
+  color: var(--ink-soft);
+  border-color: var(--status-success);
 }
 .netstat-check {
-  font-size: 14px;
-  font-weight: 900;
+  color: var(--status-success);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-bold);
 }
 
 /* 위치 중립(상단/하단 어디든 자연스럽게) — scale+fade만 */
@@ -1261,13 +1264,13 @@ html[data-eye-comfort] {
 }
 @keyframes netstat-pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(224, 138, 30, 0.5);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--status-warning) 50%, transparent);
   }
   70% {
-    box-shadow: 0 0 0 7px rgba(224, 138, 30, 0);
+    box-shadow: 0 0 0 var(--space-2) transparent;
   }
   100% {
-    box-shadow: 0 0 0 0 rgba(224, 138, 30, 0);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
@@ -1275,13 +1278,13 @@ html[data-eye-comfort] {
    폭 넉넉하니 텍스트는 축약하지 않고 '· 마지막 동기화 N분 전'까지 다 보여준다. */
 @media (min-width: 641px) {
   .netstat {
-    top: calc(env(safe-area-inset-top, 0px) + 18px);
-    padding-left: 24px;
+    top: calc(env(safe-area-inset-top, 0px) + var(--space-4));
+    padding-left: var(--space-5);
   }
   .netstat-badge,
   .netstat-toast {
-    font-size: 14px;
-    padding: 10px 17px;
+    font-size: var(--text-ui);
+    padding: var(--space-2) var(--space-4);
   }
   .netstat-sub {
     display: inline; /* 웹은 폭 넉넉 → 전체 텍스트 */
@@ -1468,5 +1471,134 @@ html[data-reduce-motion] .inapp-spinner {
 }
 
 html[data-reduce-motion] .auth-panel .button {
+  transition: none;
+}
+
+/* Batch 15: recovery and route-status surfaces. Data and retry behavior stay unchanged. */
+.system-state-body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--surface-2);
+  font-family: inherit;
+}
+
+.system-state-page {
+  display: grid;
+  place-items: center;
+}
+
+.system-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.system-state-card .eyebrow {
+  margin: 0;
+  color: var(--violet);
+  font-size: var(--text-label);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-ui);
+}
+
+.system-state-card h1 {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-hero);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--lh-body);
+}
+
+.system-state-card > p:not(.eyebrow, .error-digest) {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--lh-relaxed);
+}
+
+.system-state-icon {
+  display: inline-grid;
+  min-width: var(--control-hit);
+  min-height: var(--control-hit);
+  place-items: center;
+  border: var(--stroke-hairline) solid var(--selection-border);
+  border-radius: var(--r-control);
+  background: var(--selection-fill);
+  color: var(--violet);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-bold);
+  box-shadow: var(--shadow-1);
+}
+
+.system-state-icon-danger {
+  border-color: var(--status-danger);
+  background: var(--status-danger-fill);
+  color: var(--status-danger);
+}
+
+.system-state-card .error-digest {
+  width: 100%;
+  margin: var(--space-1) 0 0;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  padding: var(--space-2) var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+
+.system-state-action {
+  min-height: var(--control-hit);
+  margin-top: var(--space-2);
+  border-radius: var(--r-control);
+  padding-inline: var(--space-control-x);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-semibold);
+}
+
+.system-loading-page .insight-skel {
+  border-radius: var(--r-control);
+}
+
+@supports (
+  (-webkit-backdrop-filter: var(--material-blur)) or
+    (backdrop-filter: var(--material-blur))
+) {
+  .netstat-badge,
+  .netstat-toast {
+    background: var(--material-bg-strong);
+    -webkit-backdrop-filter: var(--material-blur);
+    backdrop-filter: var(--material-blur);
+  }
+}
+
+@media (max-width: 640px) {
+  .system-state-page {
+    align-items: end;
+    padding: var(--space-3) var(--space-2) 0;
+  }
+
+  .system-state-card {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    padding: var(--space-5) var(--space-4)
+      calc(var(--space-5) + var(--safe-bottom));
+  }
+
+  .system-state-action {
+    width: 100%;
+  }
+}
+
+html[data-reduce-motion] .system-state-card,
+html[data-reduce-motion] .system-state-icon,
+html[data-reduce-motion] .system-state-action {
+  animation: none;
   transition: none;
 }

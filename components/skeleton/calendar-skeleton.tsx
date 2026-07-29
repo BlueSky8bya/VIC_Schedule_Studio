@@ -19,9 +19,9 @@ export function CalendarSkeleton({
   const cells = Array.from({ length: 42 });
   const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
   return (
-    <div className={`cal-skel-stage cal-skel-stage-${variant}`} aria-hidden="true">
+    <div className={`cal-skel-stage cal-skel-stage-${variant}`} aria-busy="true">
       {/* 모바일 전용(≤640px): 달력 뼈대. 웹에선 CSS로 숨긴다. */}
-      <div className={`cal-skel-card cal-skel-${variant}`}>
+      <div className={`cal-skel-card cal-skel-${variant}`} aria-hidden="true">
         {variant === "poster" && <aside className="cal-skel-rail cal-skel-rail-left" />}
 
         <div className="cal-skel-main">

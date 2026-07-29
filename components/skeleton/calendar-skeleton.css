@@ -1,106 +1,86 @@
-/* 라우트 로딩 스켈레톤.
-   웹(>640px): 목적지 텍스트만 가운데 — 풀 달력 뼈대는 실제 화면과 괴리감이 커서 안 쓴다.
-   모바일(≤640px): 달력 뼈대 + 텍스트.
-   배경색은 목적지(studio/poster)에 맞춘다. 실제 화면이 마운트되면 통째로 교체된다. */
-
+/* Route loading keeps destination geometry recognizable without exposing content. */
 @keyframes cal-skel-shimmer {
-  0% {
-    background-position: -480px 0;
+  from {
+    background-position: calc(var(--space-6) * -15) 0;
   }
-  100% {
-    background-position: 480px 0;
+
+  to {
+    background-position: calc(var(--space-6) * 15) 0;
   }
 }
+
 @keyframes cal-skel-note-pulse {
   0%,
   100% {
     opacity: 0.55;
   }
+
   50% {
     opacity: 1;
   }
 }
 
 .cal-skel-stage {
-  min-height: 100vh;
+  min-height: 100svh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* 웹 기본: 텍스트만 보이므로 화면 가운데 정렬 */
   justify-content: center;
-  gap: 14px;
-  padding: clamp(16px, 4vw, 48px) 16px 40px;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-4);
+  background: var(--surface-2);
 }
 
-/* 목적지별 배경색(웹·모바일 공통) */
-.cal-skel-stage-poster {
-  background: linear-gradient(180deg, #fffdf6, #fdf6e6);
-}
 .cal-skel-stage-studio {
-  /* 편집실(studio-shell)과 동일 톤 */
-  background:
-    radial-gradient(120% 55% at 12% -6%, #ffeef7 0%, transparent 46%),
-    radial-gradient(120% 55% at 88% -6%, #eaf1ff 0%, transparent 46%),
-    linear-gradient(180deg, #fffafd 0%, #f5f7ff 100%);
+  background: var(--studio-workbench);
 }
 
-/* 달력 카드: 모바일에서만 보인다 */
 .cal-skel-card {
   display: none;
 }
 
 .cal-skel-note {
   margin: 0;
-  font-weight: 800;
-  /* 웹: 단독 표시라 크게 */
-  font-size: clamp(18px, 2.2vw, 26px);
-  letter-spacing: -0.01em;
-  animation: cal-skel-note-pulse 1.5s ease-in-out infinite;
-}
-.cal-skel-stage-poster .cal-skel-note {
-  color: #6b4f3a;
-}
-.cal-skel-stage-studio .cal-skel-note {
-  color: #4a4566;
+  color: var(--ink-soft);
+  font-size: var(--text-display);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  animation: cal-skel-note-pulse var(--dur-spring-bouncy) var(--ease) infinite
+    alternate;
 }
 
-/* ── 모바일(≤640px): 달력 뼈대 + 캡션 ── */
 @media (max-width: 640px) {
   .cal-skel-stage {
     justify-content: flex-start;
-    /* 로딩 뼈대를 실제 첫 화면의 1일 카드 부근까지 살짝 내려, 로딩→완료 시 시선 이동을 줄인다
-       (HCI: 상태 전환에도 시선 위치를 보존). */
-    padding-top: clamp(56px, 13vh, 120px);
+    padding: calc(var(--space-6) * 2) var(--space-4)
+      calc(var(--space-6) + var(--safe-bottom));
   }
+
   .cal-skel-card {
     display: grid;
     width: 100%;
-    max-width: 1180px;
     grid-template-columns: minmax(0, 1fr);
-    gap: 16px;
-    border-radius: 22px;
-    background: linear-gradient(180deg, #fffdf6, #fdf6e6);
-    padding: clamp(14px, 2.5vw, 22px);
-    box-shadow: 0 18px 48px -28px rgba(60, 40, 20, 0.45);
-  }
-  .cal-skel-stage-studio .cal-skel-card {
-    background: #ffffff;
-  }
-  .cal-skel-note {
-    /* 모바일: 뼈대 아래 캡션이라 작게 */
-    font-size: 14px;
-    font-weight: 700;
-    order: 2;
-  }
-  /* 모바일은 카드에 "빅토리 일정표"가 이미 있으니 목적지 라벨은 빼고 "불러오는 중…"만. */
-  .cal-skel-note-label {
-    display: none;
+    gap: var(--space-4);
+    border: var(--stroke-hairline) solid var(--line);
+    border-radius: var(--r-xl);
+    background: var(--surface);
+    padding: var(--space-card);
+    box-shadow: var(--shadow-2);
   }
 
+  .cal-skel-note {
+    order: 2;
+    color: var(--muted);
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+  }
+
+  .cal-skel-note-label,
   .cal-skel-rail,
   .cal-skel-editor {
     display: none;
   }
+
   .cal-skel-main {
     min-width: 0;
   }
@@ -109,79 +89,93 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 4px 0 12px;
+    gap: var(--space-2);
+    padding: var(--space-1) 0 var(--space-3);
   }
+
   .cal-skel-spark {
-    font-size: clamp(18px, 2vw, 24px);
+    color: var(--accent-strong);
+    font-size: var(--text-display);
     opacity: 0.7;
   }
+
   .cal-skel-title {
-    font-size: clamp(20px, 2.6vw, 30px);
-    font-weight: 900;
-    letter-spacing: -0.01em;
-    color: #3a2f25;
+    color: var(--ink);
+    font-size: var(--text-display);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-tight);
     opacity: 0.85;
   }
 
   .cal-skel-monthbar {
     display: flex;
     justify-content: center;
-    padding-bottom: 14px;
+    padding-bottom: var(--space-4);
   }
+
   .cal-skel-month {
     display: block;
-    width: clamp(120px, 16vw, 180px);
-    height: clamp(22px, 2.4vw, 32px);
+    width: calc(var(--space-6) * 4);
+    height: var(--space-5);
     border-radius: var(--r-pill);
     background: linear-gradient(
       90deg,
-      rgba(120, 90, 60, 0.08) 25%,
-      rgba(120, 90, 60, 0.16) 37%,
-      rgba(120, 90, 60, 0.08) 63%
+      color-mix(in srgb, var(--muted) 8%, transparent) 25%,
+      color-mix(in srgb, var(--muted) 18%, transparent) 37%,
+      color-mix(in srgb, var(--muted) 8%, transparent) 63%
     );
-    background-size: 480px 100%;
-    animation: cal-skel-shimmer 1.4s ease-in-out infinite;
+    background-size: calc(var(--space-6) * 15) 100%;
+    animation: cal-skel-shimmer var(--dur-spring-bouncy) var(--ease) infinite
+      alternate;
+  }
+
+  .cal-skel-weekrow,
+  .cal-skel-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: var(--space-1);
   }
 
   .cal-skel-weekrow {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
-    margin-bottom: 6px;
-  }
-  .cal-skel-weekday {
-    text-align: center;
-    font-size: 12px;
-    font-weight: 800;
-    color: rgba(58, 47, 37, 0.45);
+    margin-bottom: var(--space-1);
   }
 
-  .cal-skel-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 6px;
+  .cal-skel-weekday {
+    color: var(--muted);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-bold);
+    text-align: center;
   }
+
   .cal-skel-cell {
-    aspect-ratio: 1 / 1;
-    border-radius: 10px;
+    aspect-ratio: 1;
+    border-radius: var(--r-sm);
     background: linear-gradient(
       90deg,
-      rgba(120, 90, 60, 0.05) 25%,
-      rgba(120, 90, 60, 0.12) 37%,
-      rgba(120, 90, 60, 0.05) 63%
+      color-mix(in srgb, var(--muted) 5%, transparent) 25%,
+      color-mix(in srgb, var(--muted) 14%, transparent) 37%,
+      color-mix(in srgb, var(--muted) 5%, transparent) 63%
     );
-    background-size: 480px 100%;
-    animation: cal-skel-shimmer 1.4s ease-in-out infinite;
+    background-size: calc(var(--space-6) * 15) 100%;
+    animation: cal-skel-shimmer var(--dur-spring-bouncy) var(--ease) infinite
+      alternate;
   }
+
   .cal-skel-cell:nth-child(7n + 2) {
-    animation-delay: 0.1s;
+    animation-delay: var(--dur-1);
   }
+
   .cal-skel-cell:nth-child(7n + 4) {
-    animation-delay: 0.2s;
+    animation-delay: var(--dur-2);
   }
+
   .cal-skel-cell:nth-child(7n + 6) {
-    animation-delay: 0.3s;
+    animation-delay: var(--dur-3);
   }
 }
 
+html[data-reduce-motion] .cal-skel-note,
+html[data-reduce-motion] .cal-skel-month,
+html[data-reduce-motion] .cal-skel-cell {
+  animation: none;
+}

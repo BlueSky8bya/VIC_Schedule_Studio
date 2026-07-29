@@ -2,10 +2,13 @@
 // 스켈레톤을 깔아 위치가 튀지 않게(HCI: preserve position). 비공개 데이터는 한 글자도 없다.
 export default function Loading() {
   return (
-    <main className="placeholder-page private-layer-page" aria-hidden="true">
+    <main
+      className="placeholder-page private-layer-page system-loading-page"
+      aria-busy="true"
+    >
       <section className="private-layer-shell">
         <h1>비공개 일정</h1>
-        <div className="insight-skel">
+        <div className="insight-skel" aria-hidden="true">
           <span />
           <span />
           <span />
