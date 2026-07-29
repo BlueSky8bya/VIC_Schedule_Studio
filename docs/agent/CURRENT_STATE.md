@@ -13,6 +13,24 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+**전면 UX/HCI 개선 계획 실행 중** — 코덱스 설계안(`docs/ux/audit/vic-schedule-studio-ux-hci-
+improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능/안정(P0→P1→P2) 먼저,
+그 다음 애플 기조 리디자인/애니메이션을 뼈대 위에 덮어씌움**. 결정 8건은 ADR-0011,
+권한표/불변식은 ADR-0012가 정본.
+
+- **완료(2026-07-29)**: `P0-SEC-1`(공개 범위 fail-closed — 조용한 public 변환 금지, 모바일
+  게이트 통일, 서버 잠금해제 검증), `P0-SEC-2`(미리보기 = 서버 공개 스냅샷 전용 + 진입 시
+  재조회 `preview-actions.ts` — 떡밥 가림 우회 제거), `P0-SEC-3`(오류 원문 비노출 —
+  `safe-action-error.ts`, error boundary digest만).
+- **다음 P0 순서**: `P0-AUTH-1`(태그/URL/target 검증 — L6 현행 유지 반영해 developer 회수는
+  제외) → `P0-PRIV-1`(draft localStorage 영속 중단) → `P0-PRIV-2/3`(L8 auth-session unlock,
+  legacy embargo 정리) → `P0-DATA-2`(원자적 RPC) → `P0-DATA-1`(fling 제거+tombstone 8초/24h)
+  → `P0-A11Y-1`/`P0-RESP-1`. 그 뒤 P1(빠른 생성·이동 메뉴·undo/redo·아이패드…).
+- **주의**: P0 슬라이스들의 전용 회귀 테스트(role fixture·canary)는 아직 없음 — 계획서
+  K5 매트릭스 기준으로 슬라이스 진행하며 채울 것.
+
+## (이전) Objective
+
 시청자 포스터의 **몰입·재미·편의 개선**(스냅샷 + 멀티에이전트 평가/리서치 기반)이 방금 끝났고,
 지금은 **편집실 UX 다듬기**와 **시청자 참여 기능**으로 넘어가는 중.
 
