@@ -9043,6 +9043,25 @@ html[data-reduce-motion] .m-edit-x:active {
 .title-live .tt-rest {
   color: #9a93a8;
 }
+/* 세부 줄 왼쪽 레일(|) — 포스터 카드의 세부 내용 레일과 같은 어휘. 패딩 거터 안이라
+   글자·커서를 밀지 않는다. top/height는 layout effect가 실측으로 채운다. */
+.title-live .tt-rail {
+  position: absolute;
+  left: 5px;
+  width: 3px;
+  border-radius: 2px;
+  background: #cfc7e2;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-1, 120ms) var(--ease, ease),
+    top 0.12s var(--ease, ease),
+    height 0.12s var(--ease, ease);
+}
+/* 모바일은 패딩(15px)이 넓어 레일도 살짝 안쪽으로. */
+.title-live-m .tt-rail {
+  left: 7px;
+}
 /* 웹 변형 — .event-editor-panel textarea(테두리 1px·패딩 10px·글자 16px)와 동일 금속자. */
 .title-live-web .title-live-mirror {
   padding: 10px;

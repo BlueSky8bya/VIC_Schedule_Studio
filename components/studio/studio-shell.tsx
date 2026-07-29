@@ -1453,15 +1453,48 @@ export function StudioShell({
     const v = form.publicTitle;
     const i = v.indexOf("\n");
     const first = i === -1 ? v : v.slice(0, i);
-    const rest = i === -1 ? "" : v.slice(i);
+    const rest = i === -1 ? null : v.slice(i + 1);
     return (
       <>
+        {/* 세부 줄 왼쪽 레일(|) — 포스터 카드와 같은 장식. 글자를 밀면 커서가 어긋나므로
+            패딩 거터(글자 시작 전 여백)에 절대배치, 위치는 아래 layout effect가 실측. */}
+        <span aria-hidden="true" className="tt-rail" />
         <span className="tt-first">{first}</span>
-        {rest ? <span className="tt-rest">{rest}</span> : null}
+        {rest !== null ? (
+          <>
+            {"\n"}
+            <span className="tt-rest">{rest}</span>
+          </>
+        ) : null}
         {"​" /* 끝 개행의 빈 줄 높이 보존(pre-wrap은 마지막 개행을 접는다) */}
       </>
     );
   };
+  // 레일 위치 실측 — 제목 첫 줄이 길어 두 줄로 감겨도 세부 줄 시작점을 정확히 따라간다.
+  // 모바일 시트 오픈 morph(스케일 애니) 중엔 rect가 찌그러진 값이라, morph가 끝난 뒤 한 번 더 잰다.
+  useLayoutEffect(() => {
+    const measure = () => {
+      document.querySelectorAll<HTMLElement>(".title-live").forEach((wrap) => {
+        const mirror = wrap.querySelector<HTMLElement>(".title-live-mirror");
+        const rail = wrap.querySelector<HTMLElement>(".tt-rail");
+        const rest = wrap.querySelector<HTMLElement>(".tt-rest");
+        if (!mirror || !rail) return;
+        if (!rest || !rest.textContent) {
+          rail.style.opacity = "0";
+          return;
+        }
+        const mr = mirror.getBoundingClientRect();
+        const rr = rest.getBoundingClientRect();
+        if (mr.height < 1) return; // 아직 morph 중 — 아래 재실측이 잡는다
+        rail.style.opacity = "1";
+        rail.style.top = `${rr.top - mr.top + mirror.scrollTop + 2}px`;
+        rail.style.height = `${Math.max(0, rr.height - 4)}px`;
+      });
+    };
+    measure();
+    const t = window.setTimeout(measure, 380);
+    return () => window.clearTimeout(t);
+  }, [form.publicTitle, isNarrow, mobileEditId, editorVisible]);
   const syncTitleMirror = (e: React.UIEvent<HTMLTextAreaElement>) => {
     const m = e.currentTarget.previousElementSibling as HTMLElement | null;
     if (m) m.scrollTop = e.currentTarget.scrollTop;
