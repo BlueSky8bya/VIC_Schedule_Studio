@@ -1511,22 +1511,8 @@ export function StudioShell({
       }
       if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
         event.preventDefault();
-        // 이어진 일정을 선택 중이면 월 이동 대신 체인 안에서 이전/다음 일정을 고른다(날짜 순).
-        // 태그 필터로 줄지 않게 전체 events 기준으로 체인을 잡는다.
-        const chain = selectedEventId ? getLinkedChainIds(selectedEventId, events) : null;
-        if (selectedEventId && chain && chain.size > 1) {
-          const ordered = Array.from(chain)
-            .map((id) => events.find((ev) => ev.id === id))
-            .filter((ev): ev is StudioScheduleEvent => Boolean(ev))
-            .sort((a, b) => getEventDateKey(a).localeCompare(getEventDateKey(b)));
-          const idx = ordered.findIndex((ev) => ev.id === selectedEventId);
-          const nextIdx = event.key === "ArrowLeft" ? idx - 1 : idx + 1;
-          if (nextIdx >= 0 && nextIdx < ordered.length) {
-            hapticTick();
-            selectEvent(ordered[nextIdx]);
-          }
-          return;
-        }
+        // ←/→ = 항상 월 이동. (예전 '이어진 일정 선택 중엔 체인 안 이전/다음 선택' 기능은
+        // 달이 안 넘어가는 것처럼 보여 사용자 결정으로 제거 — 2026-07-31. 재도입 금지.)
         moveMonth(event.key === "ArrowLeft" ? -1 : 1);
       }
     }
