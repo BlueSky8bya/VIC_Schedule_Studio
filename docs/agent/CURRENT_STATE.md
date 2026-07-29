@@ -24,9 +24,10 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
   `safe-action-error.ts`, error boundary digest만), `P0-AUTH-1`(`event-validation.ts` —
   날짜/링크 https/태그 payload 서버 검증 + 매니저 비공개 태그 차단 + 특성화 테스트 13개.
   L6 반영: developer 권한 회수 안 함), `P0-PRIV-1`(드래프트 메모리 전용 + legacy 키 물리 삭제).
-- **다음 P0 순서(새 세션 권장 — DB 마이그레이션·배포 순서 민감)**:
-  1. `P0-DATA-2` 원자적 RPC(event+tags+meta 한 트랜잭션, link/reorder 원자화, target rollback)
-     — DB function 추가는 additive라 상대적으로 안전, 먼저.
+- **`P0-DATA-2` 완료(2026-07-29 밤)**: 0055 마이그레이션 적용됨(save_event_atomic/
+  reorder_events_atomic/link_chain_atomic, SECURITY INVOKER). 액션 연결 + 클라 target rollback
+  (전체 스냅샷 복원 폐지). service-role 왕복 실측 검증. **실계정 첫 저장/드래그로 실전 확인 권장**.
+- **다음 P0 순서(새 세션 권장)**:
   2. `P0-PRIV-2` L8 auth-session unlock(grant 테이블/쿠키/rate limit/no-store) — **소유자
      잠금해제가 걸린 기능이라 배포 중 하위호환 필수**, 단독 세션에서 신중히.
   3. `P0-PRIV-3` legacy embargo 정리(0025 적용 감사 + enum/type/UI 제거).
