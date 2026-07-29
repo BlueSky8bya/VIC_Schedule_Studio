@@ -1091,7 +1091,7 @@ export function StudioShell({
         el?.closest(".studio-day") ||
         el?.closest(".private-toggle") ||
         el?.closest(".rest-menu") ||
-        el?.closest(".studio-monthbar") ||
+        el?.closest(".studio-month-label") ||
         el?.closest(".studio-left-panel") ||
         // 날짜·시간 선택기는 portal로 body에 떠 에디터 DOM 밖이지만, 닫기 대상이 아니다.
         el?.closest(".dtp-pop-backdrop") ||
@@ -5180,18 +5180,31 @@ export function StudioShell({
           </button>
         </div>
 
-        {/* 가운데: 현재 월(크게). 이동은 하단 플로팅 < > 버튼 + 키보드 ←/→ 로.
-            key로 월 바뀔 때 재마운트 → 방향대로 살짝 슬라이드(내가 달을 넘기는 느낌). */}
-        <div
-          className="studio-month-label"
-          aria-label="현재 월"
-          data-enter={monthDir}
-          key={`${view.year}-${view.month}`}
-        >
-          <strong>
+        {/* 가운데: ‹ 현재 월 › — 월 이동을 헤더로(사용자 요청, 하단 플로팅 < > 폐지).
+            키보드 ←/→ 도 그대로. 텍스트만 key 재마운트 → 방향대로 살짝 슬라이드. */}
+        <nav className="studio-month-label" aria-label="월 이동">
+          <button
+            aria-label="이전 달"
+            className="month-nav-btn"
+            onClick={() => moveMonth(-1)}
+            title="이전 달 (←)"
+            type="button"
+          >
+            <ChevronLeft aria-hidden="true" size={22} />
+          </button>
+          <strong data-enter={monthDir} key={`${view.year}-${view.month}`}>
             {view.year}년 {view.month}월
           </strong>
-        </div>
+          <button
+            aria-label="다음 달"
+            className="month-nav-btn"
+            onClick={() => moveMonth(1)}
+            title="다음 달 (→)"
+            type="button"
+          >
+            <ChevronRight aria-hidden="true" size={22} />
+          </button>
+        </nav>
 
         {/* 오른쪽: 역할·도구. 배포 버전(위)+저장됨(아래) 캡슐을 역할 배지 왼쪽에 세로로 —
             모바일 헤더의 캡슐 문법과 통일(메타는 작고 조용, 저장 상태가 주). */}
@@ -6252,25 +6265,7 @@ export function StudioShell({
         </aside>
       </section>
 
-      {/* 월 이동: 하단 좌·우 플로팅 < > (꾸미기·시청자 화면과 통일). 키보드 ←/→ 로도 이동. */}
-      <nav className="studio-monthbar" aria-label="월 이동">
-        <button
-          aria-label="이전 달"
-          onClick={() => moveMonth(-1)}
-          title="이전 달 (←)"
-          type="button"
-        >
-          <ChevronLeft aria-hidden="true" size={22} />
-        </button>
-        <button
-          aria-label="다음 달"
-          onClick={() => moveMonth(1)}
-          title="다음 달 (→)"
-          type="button"
-        >
-          <ChevronRight aria-hidden="true" size={22} />
-        </button>
-      </nav>
+      {/* (하단 플로팅 월 < > 폐지 — 사용자 요청으로 헤더 '‹ 2026년 7월 ›'에 통합.) */}
         </>
       )}
 

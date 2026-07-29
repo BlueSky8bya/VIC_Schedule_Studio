@@ -112,6 +112,31 @@ html {
 .studio-month-label {
   grid-column: 2;
   justify-self: center;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+/* 헤더 월 이동 ‹ › — 하단 플로팅 버튼을 헤더로 통합(사용자 요청). 라벨과 한 호흡의 조용한 원형. */
+.month-nav-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid #ece9f5;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 82%);
+  color: #6b5b95;
+  cursor: pointer;
+  box-shadow: var(--shadow-1);
+  transition:
+    transform var(--dur-1, 120ms) var(--ease, ease),
+    background var(--dur-1, 120ms) var(--ease, ease);
+}
+.month-nav-btn:hover {
+  background: #fff;
+}
+.month-nav-btn:active {
+  transform: scale(0.92);
 }
 .studio-month-label strong {
   font-size: clamp(26px, 2.5vw, 44px);
@@ -123,10 +148,10 @@ html {
   white-space: nowrap;
 }
 /* 월 바뀔 때 라벨도 방향대로 살짝 슬라이드(달력 그리드와 같은 박자). */
-.studio-month-label[data-enter="next"] {
+.studio-month-label strong[data-enter="next"] {
   animation: studio-monthlabel-next 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
-.studio-month-label[data-enter="prev"] {
+.studio-month-label strong[data-enter="prev"] {
   animation: studio-monthlabel-prev 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
 @keyframes studio-monthlabel-next {
@@ -332,48 +357,7 @@ html {
 }
 
 /* 월 이동 하단 플로팅 바 — 꾸미기/시청자 화면의 .agenda-monthbar와 같은 톤. */
-.studio-monthbar {
-  position: fixed;
-  left: var(--space-3);
-  right: var(--space-3);
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  z-index: 25;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  pointer-events: none; /* 가운데는 통과 — 버튼만 클릭 */
-}
-.studio-monthbar button {
-  pointer-events: auto;
-  display: inline-grid;
-  place-items: center;
-  width: 50px;
-  height: 50px;
-  border: 1px solid #ece9f5;
-  border-radius: var(--r-pill);
-  background: rgb(255 255 255 / 82%);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  color: #6b5b95;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgb(120 110 160 / 22%);
-  transition: transform var(--dur-1, 120ms) var(--ease, ease);
-}
-.studio-monthbar button:hover {
-  background: #fff;
-}
-.studio-monthbar button:active {
-  transform: scale(0.92);
-}
-/* 중앙에 가까운 안쪽 가장자리일수록 더 희미하게 — 일정 위로 살짝 비치게(좌·우 대칭). */
-.studio-monthbar button:first-child {
-  -webkit-mask-image: linear-gradient(to right, #000 58%, rgb(0 0 0 / 38%) 100%);
-  mask-image: linear-gradient(to right, #000 58%, rgb(0 0 0 / 38%) 100%);
-}
-.studio-monthbar button:last-child {
-  -webkit-mask-image: linear-gradient(to left, #000 58%, rgb(0 0 0 / 38%) 100%);
-  mask-image: linear-gradient(to left, #000 58%, rgb(0 0 0 / 38%) 100%);
-}
+/* (하단 플로팅 월 이동 바 제거 — 헤더 ‹ 월 › 로 통합, 사용자 요청.) */
 /* 오른쪽: 역할·도구 (같은 선상, 오른쪽 정렬) */
 .studio-role-tools {
   grid-column: 3;
