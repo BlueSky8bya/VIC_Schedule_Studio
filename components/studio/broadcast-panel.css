@@ -2190,17 +2190,36 @@ html[data-reduce-motion] .bp-send {
   display: none;
 }
 
-/* 굵기 6개는 한 줄로 — 혼자 2행이라 다른 그룹보다 높아 셸프 리듬이 깨졌다.
-   버튼 높이도 도구 버튼과 같게(52px) 맞춰 모든 그룹이 같은 키. */
-.bp-group-row.bp-grid3 {
-  display: grid;
-  grid-template-columns: repeat(6, var(--control-hit));
+/* 굵기 — 스크롤 덱이 아니라 명령줄(상태 텍스트 오른쪽) 고정 자리(사용자 요청).
+   항상 보이는 컴팩트 세그먼트: 점+숫자 세로 스택 36px 버튼 6개. */
+.bp-command-widths {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
   gap: var(--space-1);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  padding: calc(var(--space-1) / 2) var(--space-1);
 }
 
-.bp-width {
-  width: var(--control-hit);
-  height: calc(var(--control-hit) + var(--space-2));
+.bp-command-widths .bp-width {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  min-width: 0;
+  min-height: 0;
+  flex-direction: column;
+  gap: 2px;
+  border-radius: var(--r-control);
+}
+
+/* 명령줄에 굵기가 들어오며 좌우 밀도가 올라감 — 상태 텍스트는 남는 폭만, 액션은 오른쪽 끝. */
+.bp-command-bar {
+  justify-content: flex-start;
+}
+
+.bp-command-actions {
+  margin-left: auto;
 }
 
 .bp-board {

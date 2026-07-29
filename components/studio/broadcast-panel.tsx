@@ -2498,6 +2498,42 @@ export function BroadcastPanel({
               펜 설정 {penWidth}px · {activeLayerName}
             </em>
           </div>
+          {/* 굵기 — 스크롤 덱 끝에 있어 매번 가로 스크롤이 필요했다(사용자 지적). 상태 텍스트
+              바로 오른쪽 고정 자리로 이동: 항상 보이고, '펜 설정 Npx' 표기와도 붙어 읽힌다. */}
+          <div
+            aria-label="굵기"
+            className="bp-command-widths"
+            role="group"
+            title="굵기 줄이기/키우기 ([ / ])"
+          >
+            {PEN_WIDTHS.map((w) => (
+              <button
+                aria-label={`굵기 ${w}px`}
+                aria-pressed={penWidth === w}
+                className={`bp-width${penWidth === w ? " on" : ""}`}
+                key={w}
+                type="button"
+                onClick={() => {
+                  hapticTick();
+                  setPenWidth(w);
+                  // 굵기를 골랐다 = 판서 의도. 일정/선택 상태면 최근 그림 레이어의 펜으로,
+                  // 이미 굵기를 쓰는 형광펜·지우개·도형이면 그 도구를 그대로 유지한다.
+                  activateDrawingTool(toolAfterInkWidthPick(tool));
+                }}
+              >
+                {/* 점도 현재 펜 색 — 굵기 고르는 자리에서 색·굵기를 한 번에 확인. */}
+                <i
+                  style={{
+                    width: Math.min(w + 2, 16),
+                    height: Math.min(w + 2, 16),
+                    background: penColor,
+                    boxShadow: "0 0 0 1px var(--ink-soft)"
+                  }}
+                />
+                <span>{w}</span>
+              </button>
+            ))}
+          </div>
           <div className="bp-command-actions" role="group" aria-label="작업 기록">
             <button
               className="bp-command-button"
@@ -2726,44 +2762,7 @@ export function BroadcastPanel({
               />
             ) : null}
           </div>
-          <div className="bp-tool-group bp-property-group" role="group" aria-label="굵기">
-            <div className="bp-group-row bp-grid3">
-              {PEN_WIDTHS.map((w) => (
-                <button
-                  aria-label={`굵기 ${w}px`}
-                  aria-pressed={penWidth === w}
-                  className={`bp-width${penWidth === w ? " on" : ""}`}
-                  key={w}
-                  type="button"
-                  onClick={() => {
-                    hapticTick();
-                    setPenWidth(w);
-                    // 굵기를 골랐다 = 판서 의도. 일정/선택 상태면 최근 그림 레이어의 펜으로,
-                    // 이미 굵기를 쓰는 형광펜·지우개·도형이면 그 도구를 그대로 유지한다.
-                    activateDrawingTool(toolAfterInkWidthPick(tool));
-                  }}
-                >
-                  {/* 점도 현재 펜 색 — 굵기 고르는 자리에서 색·굵기를 한 번에 확인. */}
-                  <i
-                    style={{
-                      width: Math.min(w + 2, 18),
-                      height: Math.min(w + 2, 18),
-                      background: penColor,
-                      boxShadow: "0 0 0 1px var(--ink-soft)"
-                    }}
-                  />
-                  <span>{w}</span>
-                </button>
-              ))}
-            </div>
-            {/* 간결한 이름 + 단축키 힌트 — 도구 버튼의 키 배지와 같은 학습 문법. */}
-            <em className="bp-group-label">굵기</em>
-            <kbd aria-hidden="true" className="bp-group-key" title="굵기 줄이기/키우기 ([ / ])">
-              [ · ]
-            </kbd>
-          </div>
-          {/* 선택 정렬 — 별도 줄이 아니라 굵기 그룹 오른쪽의 '같은 가족 카드'로.
-              도구 덱과 같은 어휘(그룹 카드 + 아래 라벨)라 나타나도 층이 튀지 않는다. */}
+          {/* 선택 정렬 — 도구 덱과 같은 어휘(그룹 카드)라 나타나도 층이 튀지 않는다. */}
           {tool === "select" && colSel.size >= 2 ? (
           <div className="bp-tool-group bp-align-group" role="group" aria-label="선택 정렬">
             <div className="bp-group-row">
