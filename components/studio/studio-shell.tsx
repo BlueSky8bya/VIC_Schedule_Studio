@@ -100,6 +100,7 @@ import { TagPicker } from "@/components/tags/tag-picker";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { relockPrivateLayerAction, setPasscodeAction } from "@/lib/private-layer/actions";
 import { STUDIO_AGENDA_QUERY } from "@/lib/ui/breakpoints";
+import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 import {
   type CalZoom,
   createWheelStepper,
@@ -1598,6 +1599,11 @@ export function StudioShell({
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [modal, passcodeModal]);
+  // P1-DIALOG-1: 각 모달 카드에 Tab 포커스 가두기(순환)+초기 포커스. Esc·복원은 위 B2 효과.
+  const mainModalTrapRef = useFocusTrap<HTMLDivElement>(modal !== null);
+  const passcodeTrapRef = useFocusTrap<HTMLDivElement>(passcodeModal !== null);
+  const tagSheetTrapRef = useFocusTrap<HTMLDivElement>(tagSheetId !== null);
+  const supportSheetTrapRef = useFocusTrap<HTMLDivElement>(supportSheetId !== null);
   const modalOpenerRef = useRef<HTMLElement | null>(null);
   const prevModalRef = useRef<typeof modal>(null);
   useEffect(() => {
@@ -5043,7 +5049,7 @@ export function StudioShell({
         }}
         role="presentation"
       >
-        <div className="modal-card" aria-modal="true" role="dialog">
+        <div className="modal-card" aria-modal="true" role="dialog" ref={tagSheetTrapRef}>
           <div className="modal-head">
             <h2>태그 수정</h2>
             <button aria-label="닫기" className="modal-close" onClick={() => setTagSheetId(null)} type="button">
@@ -5076,7 +5082,7 @@ export function StudioShell({
         }}
         role="presentation"
       >
-        <div className="modal-card" aria-modal="true" role="dialog">
+        <div className="modal-card" aria-modal="true" role="dialog" ref={supportSheetTrapRef}>
           <div className="modal-head">
             <h2>🌱 업 도움 수정</h2>
             <button aria-label="닫기" className="modal-close" onClick={closeSupportSheet} type="button">
@@ -6652,6 +6658,7 @@ export function StudioShell({
             className={`modal-card ${modal === "tags" || modal === "notice" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
             aria-modal="true"
             role="dialog"
+            ref={mainModalTrapRef}
           >
             <div className="modal-head">
               <h2>
@@ -6752,7 +6759,7 @@ export function StudioShell({
           }}
           role="presentation"
         >
-          <div className="modal-card" aria-modal="true" role="dialog">
+          <div className="modal-card" aria-modal="true" role="dialog" ref={passcodeTrapRef}>
             <div className="modal-head">
               <h2>{passcodeModal === "change" ? "비밀번호 변경" : "비공개 일정"}</h2>
               <button
