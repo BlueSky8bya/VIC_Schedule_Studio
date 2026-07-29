@@ -32,19 +32,10 @@ export async function linkChainAction(orderedIds: string[]): Promise<LinkResult>
   if (!g.ok) return g;
   if (orderedIds.length < 2) return { ok: false, error: "이을 일정이 부족합니다." };
 
-  const now = new Date().toISOString();
-  // 각 이음을 병렬로 보낸다(순차 왕복 누적 방지).
-  const results = await Promise.all(
-    orderedIds.slice(0, -1).map((curId, i) =>
-      g.supabase
-        .from("events")
-        .update({ link_next: orderedIds[i + 1], updated_at: now })
-        .eq("id", curId)
-    )
-  );
-  const failed = results.find((r) => r.error);
-  if (failed?.error) {
-    return { ok: false, error: safeActionError("일정 연결", failed.error) };
+  // P0-DATA-2: 체인 전체를 DB 함수 한 트랜잭션으로(0055) — 중간 실패 시 반쪽 체인이 남지 않는다.
+  const { error } = await g.supabase.rpc("link_chain_atomic", { p_ordered_ids: orderedIds });
+  if (error) {
+    return { ok: false, error: safeActionError("일정 연결", error) };
   }
 
   revalidatePath("/");

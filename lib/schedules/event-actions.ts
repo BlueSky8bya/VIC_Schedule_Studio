@@ -59,17 +59,8 @@ const SLUG = "vic";
 // 죽었다. 이제 불변식 자체를 버린다 — '기타'는 태그가 아니라 인사이트의 합성 버킷(태그 0개인 공개
 // 일정 카운트)으로만 존재한다.
 
-// 날짜키(YYYY-MM-DD) 사이의 일수 차 / 일수 더하기 — 드래그 이동 시 종료일을 같은 폭으로 옮긴다.
-function diffDaysKey(from: string, to: string): number {
-  const a = new Date(`${from}T00:00:00Z`).getTime();
-  const b = new Date(`${to}T00:00:00Z`).getTime();
-  return Math.round((b - a) / 86400000);
-}
-function addDaysKey(key: string, days: number): string {
-  const d = new Date(`${key}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + days);
-  return d.toISOString().slice(0, 10);
-}
+// (diffDaysKey/addDaysKey 삭제 — 날짜 이동의 종료일 폭 계산은 0055 reorder_events_atomic가
+//  DB 트랜잭션 안에서 date 연산으로 처리한다.)
 
 // (moveEventAction 삭제 — 날짜만 옮기던 옛 액션. 지금은 아래 reorderEventsAction이 movedId로
 //  '날짜 이동 + 같은 날 순서'를 한 번에 처리하고 편집실도 그것만 부른다. 호출자 0으로 확인.)
@@ -94,37 +85,15 @@ export async function reorderEventsAction(input: {
     return { ok: false, error: "Supabase가 설정되지 않았습니다." };
   }
 
-  // 다른 날에서 끌어온 일정이면 먼저 날짜를 옮긴다(단일일 카드만 드래그 가능 → 종료일 그대로).
-  if (input.movedId) {
-    const { data: ev } = await supabase
-      .from("events")
-      .select("date_key, end_date_key")
-      .eq("id", input.movedId)
-      .maybeSingle();
-    if (ev && ev.date_key !== input.dateKey) {
-      const delta = diffDaysKey(ev.date_key as string, input.dateKey);
-      const newEnd =
-        typeof ev.end_date_key === "string" ? addDaysKey(ev.end_date_key, delta) : null;
-      const { error: moveErr } = await supabase
-        .from("events")
-        .update({ date_key: input.dateKey, end_date_key: newEnd })
-        .eq("id", input.movedId);
-      if (moveErr) {
-        return { ok: false, error: safeActionError("일정 이동", moveErr) };
-      }
-    }
-  }
-
-  // 새 순서대로 sort_order 부여(병렬).
-  const now = new Date().toISOString();
-  const results = await Promise.all(
-    input.orderedIds.map((id, index) =>
-      supabase.from("events").update({ sort_order: index, updated_at: now }).eq("id", id)
-    )
-  );
-  const failed = results.find((r) => r.error);
-  if (failed?.error) {
-    return { ok: false, error: safeActionError("순서 저장", failed.error) };
+  // P0-DATA-2: 날짜 이동 + 정렬을 DB 함수 한 트랜잭션으로(0055). 중간 실패 = 전체 롤백 —
+  // "날짜는 옮겨졌는데 순서는 옛것" 같은 반쪽 상태가 생기지 않는다.
+  const { error: reorderErr } = await supabase.rpc("reorder_events_atomic", {
+    p_date_key: input.dateKey,
+    p_ordered_ids: input.orderedIds,
+    p_moved_id: input.movedId ?? null
+  });
+  if (reorderErr) {
+    return { ok: false, error: safeActionError("일정 이동/순서 저장", reorderErr) };
   }
 
   revalidatePath("/");
@@ -248,71 +217,35 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     updated_at: new Date().toISOString()
   };
 
-  let eventId = input.id;
-
-  if (eventId) {
-    const { error } = await supabase.from("events").update(row).eq("id", eventId);
-    if (error) {
-      return { ok: false, error: safeActionError("일정 저장", error) };
-    }
-  } else {
-    const { data, error } = await supabase
-      .from("events")
-      .insert(row)
-      .select("id")
-      .single();
-    if (error || !data) {
-      return { ok: false, error: safeActionError("일정 저장", error) };
-    }
-    eventId = data.id;
-  }
-
-  if (!eventId) {
-    return { ok: false, error: "이벤트 ID를 확정할 수 없습니다." };
-  }
-
-  // 태그 재설정: 기존 삭제 후 재삽입. 태그 0개면 그대로 둔다(색 없는 흰 카드 — 강제 부착 없음).
-  await supabase.from("event_tags").delete().eq("event_id", eventId);
-
-  const finalTagIds = input.tagIds;
-  if (finalTagIds.length > 0) {
-    const tagRows = finalTagIds.map((tagId, index) => ({
-      event_id: eventId,
-      tag_id: tagId,
-      is_primary: input.primaryTagIds.includes(tagId),
-      sort_order: index
-    }));
-    const { error: tagError } = await supabase.from("event_tags").insert(tagRows);
-    if (tagError) {
-      return { ok: false, error: safeActionError("태그 저장", tagError) };
-    }
-  }
-
-  // 비공개 이벤트의 private_meta는 secret_cipher(블롭)에 이미 들어갔다 → 평문 행은 남기지 않는다.
-  // 공개 이벤트만 기존대로 평문 메타를 upsert/정리한다(공개 일정엔 비밀 본문이 없음).
+  // P0-DATA-2: 본문 + 태그 + 평문 메타를 DB 함수 한 트랜잭션으로(0055). 어느 단계가 실패해도
+  // 전체 롤백 — "본문은 바뀌었는데 태그는 옛것" 같은 부분 커밋이 생기지 않는다.
+  // 비공개 이벤트의 private_meta는 secret_cipher(블롭)에 이미 들어갔다 → 평문 메타는 null로
+  // 보내 행을 남기지 않는다(기존 계약 유지).
   const hasPrivate =
     isPublic &&
     (Boolean(input.privateTitle?.trim()) ||
       Boolean(input.privateMemo?.trim()) ||
       Boolean(input.editorNote?.trim()));
-
-  if (hasPrivate) {
-    const { error: metaError } = await supabase.from("event_private_meta").upsert(
-      {
-        event_id: eventId,
-        private_title: input.privateTitle?.trim() || null,
-        private_memo: input.privateMemo?.trim() || null,
-        editor_note: input.editorNote?.trim() || null,
-        updated_at: new Date().toISOString()
-      },
-      { onConflict: "event_id" }
-    );
-    if (metaError) {
-      return { ok: false, error: safeActionError("일정 저장", metaError) };
-    }
-  } else {
-    await supabase.from("event_private_meta").delete().eq("event_id", eventId);
+  const { data: rpcId, error: rpcError } = await supabase.rpc("save_event_atomic", {
+    p_event_id: input.id ?? null,
+    p_row: row,
+    p_tags: input.tagIds.map((tagId, index) => ({
+      tag_id: tagId,
+      is_primary: input.primaryTagIds.includes(tagId),
+      sort_order: index
+    })),
+    p_meta: hasPrivate
+      ? {
+          private_title: input.privateTitle?.trim() || "",
+          private_memo: input.privateMemo?.trim() || "",
+          editor_note: input.editorNote?.trim() || ""
+        }
+      : null
+  });
+  if (rpcError || !rpcId) {
+    return { ok: false, error: safeActionError("일정 저장", rpcError) };
   }
+  const eventId = rpcId as string;
 
   revalidatePath("/");
   revalidatePath("/studio");

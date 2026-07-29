@@ -803,7 +803,12 @@ export function StudioShell({
     if (!canEdit) return;
     const earlier = events.find((e) => e.id === earlierId);
     if (!earlier || !earlier.linkNext) return;
-    const snapshot = events;
+    // target rollback(P0-DATA-2): 실패 시 이 이음새의 linkNext만 복원(다른 편집 보존).
+    const prevNext = earlier.linkNext;
+    const restoreSeam = () =>
+      setEvents((prev) =>
+        prev.map((e) => (e.id === earlierId ? { ...e, linkNext: prevNext } : e))
+      );
     setEvents((prev) => prev.map((e) => (e.id === earlierId ? { ...e, linkNext: undefined } : e)));
     setActionError(null);
     hapticTick();
@@ -815,14 +820,14 @@ export function StudioShell({
       const result = await enqueueWrite(async () => {
         const realId = await resolveEventId(earlierId);
         if (!realId) {
-          setEvents(snapshot);
+          restoreSeam();
           return null;
         }
         return postStudioWrite("unlinkPair", { earlierId: realId });
       });
       if (!result.ok) {
         setActionError(result.error);
-        setEvents(snapshot);
+        restoreSeam();
       }
     })();
   }
@@ -2643,7 +2648,15 @@ export function StudioShell({
       if (events.find((e) => e.id === chain[i])?.linkNext !== chain[i + 1]) changed = true;
     }
     if (!changed) return;
-    const snapshot = events;
+    // target rollback(P0-DATA-2): 실패 시 체인에 포함됐던 카드들의 linkNext만 이전 값으로
+    // 복원(다른 편집 보존). 서버 쪽도 0055 link_chain_atomic이라 반쪽 체인이 안 남는다.
+    const prevLinks = new Map(
+      chain.map((id) => [id, events.find((e) => e.id === id)?.linkNext] as const)
+    );
+    const restoreChain = () =>
+      setEvents((prev) =>
+        prev.map((e) => (prevLinks.has(e.id) ? { ...e, linkNext: prevLinks.get(e.id) } : e))
+      );
     setEvents((prev) =>
       prev.map((e) => (linkMap.has(e.id) ? { ...e, linkNext: linkMap.get(e.id) } : e))
     );
@@ -2654,14 +2667,14 @@ export function StudioShell({
       const result = await enqueueWrite(async () => {
         const resolved = await Promise.all(chain.map(resolveEventId));
         if (resolved.some((id) => !id)) {
-          setEvents(snapshot);
+          restoreChain();
           return null;
         }
         return postStudioWrite("linkChain", { orderedIds: resolved as string[] });
       });
       if (!result.ok) {
         setActionError(result.error);
-        setEvents(snapshot);
+        restoreChain();
       }
     })();
   }
@@ -3281,7 +3294,6 @@ export function StudioShell({
       teaser: teaserOn,
       teaserRevealAt: teaserRevealIso
     };
-    const snapshot = events;
 
     // (FLIP은 기본 OFF — 드롭 재정렬에서만 arm. 저장은 형제 카드를 밀지 않는다.)
     setEvents((prev) =>
@@ -3315,7 +3327,13 @@ export function StudioShell({
       const result = await studioWrite("save", payload);
       if (!result.ok) {
         setActionError(result.error);
-        setEvents(snapshot); // 실패 → 되돌림
+        // P0-DATA-2(target rollback): 전체 배열 스냅샷 복원은 이 저장 '뒤'에 한 다른 편집까지
+        // 지웠다. 실패한 이 일정만 되돌린다 — 새 카드는 제거, 기존 카드는 원본 복원.
+        setEvents((prev) =>
+          isNew
+            ? prev.filter((e) => e.id !== tempId)
+            : prev.map((e) => (e.id === tempId && existing ? existing : e))
+        );
         resolveSave(null);
         pendingSavesRef.current.delete(tempId);
         return;
@@ -3441,7 +3459,17 @@ export function StudioShell({
       });
       if (!result.ok) {
         setActionError(result.error);
-        setEvents(snapshot); // 실패 → 되돌림
+        // P0-DATA-2(target rollback): 지운 그 일정만 되살리고, 이 일정을 가리키던 linkNext만
+        // 복원한다 — 삭제 이후에 한 다른 편집은 건드리지 않는다.
+        const linkedFrom = snapshot
+          .filter((e) => e.linkNext === targetId)
+          .map((e) => e.id);
+        setEvents((prev) => {
+          const base = prev.some((e) => e.id === targetId) || !removed ? prev : [...prev, removed];
+          return base.map((e) =>
+            linkedFrom.includes(e.id) ? { ...e, linkNext: targetId } : e
+          );
+        });
         deletedStackRef.current.pop(); // 복구 스택도 되돌림
       }
     });
@@ -3502,7 +3530,6 @@ export function StudioShell({
       primaryTagIds: tagIds,
       sortOrder: 0
     };
-    const snapshot = events;
     setEvents((prev) => [...prev, optimistic]);
     markJustSaved(tempId); // 통통 착지 반짝
     const undoHolder = { id: tempId };
@@ -3532,7 +3559,8 @@ export function StudioShell({
       });
       if (!result.ok) {
         setActionError(result.error);
-        setEvents(snapshot);
+        // target rollback — 방금 만든 휴뱅 카드만 제거(다른 편집 보존).
+        setEvents((prev) => prev.filter((e) => e.id !== tempId));
         deletedStackRef.current.pop();
         return;
       }
@@ -3841,7 +3869,6 @@ export function StudioShell({
       primaryTagIds: payload.primaryTagIds.slice(0, 2),
       sortOrder: 0
     };
-    const snapshot = events;
     setEvents((prev) => [...prev, optimistic]);
     // 붙여넣기를 실행취소 스택에 'remove'로 올린다 → Ctrl+Z면 방금 붙여넣은 이 카드가 사라진다.
     const undoHolder = { id: tempId };
@@ -3869,7 +3896,9 @@ export function StudioShell({
       });
       if (!result.ok) {
         setActionError(result.error);
-        setEvents(snapshot);
+        // target rollback — 붙여넣은 카드만 제거(다른 편집 보존).
+        setEvents((prev) => prev.filter((e) => e.id !== tempId));
+        deletedStackRef.current.pop();
         return;
       }
       if (result.id) {
