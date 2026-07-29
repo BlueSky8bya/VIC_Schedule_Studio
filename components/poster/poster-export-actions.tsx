@@ -8,7 +8,16 @@ import { hapticTick } from "@/lib/ui/haptics";
 // html2canvas는 메인 스레드를 잡으므로 오버레이로 "비차단"을 만들 순 없다 — 정직하게,
 // 무거운 작업이 "고장"이 아니라 "진행 중"으로 읽히도록 단계별 피드백을 준다.
 // 공식 내보내기는 Playwright(정본)이 담당한다.
-type ExportPhase = "idle" | "preparing" | "rendering" | "copying" | "copied" | "failed";
+// P1-EXPORT-1: 클립보드가 없거나 거부되면 실패로 끝내지 않고 PNG 다운로드로 폴백한다
+// (Safari/권한 거부/구형 브라우저에서도 결과물은 반드시 손에 쥐어 준다).
+type ExportPhase =
+  | "idle"
+  | "preparing"
+  | "rendering"
+  | "copying"
+  | "copied"
+  | "downloaded"
+  | "failed";
 
 type PosterExportActionsProps = {
   onBeforeCapture?: () => void | Promise<void>;
@@ -21,8 +30,22 @@ const PHASE_LABEL: Record<ExportPhase, string> = {
   rendering: "이미지 렌더링 중…",
   copying: "클립보드에 복사 중…",
   copied: "복사됨!",
+  downloaded: "이미지로 저장됨!",
   failed: "일정표 캡쳐"
 };
+
+// 클립보드 폴백 — 같은 PNG를 파일로 내려준다(파일명에 KST 날짜).
+function downloadBlob(blob: Blob) {
+  const kstDate = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `victory-schedule-${kstDate}.png`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
 
 export function PosterExportActions({ onBeforeCapture, onAfterCapture }: PosterExportActionsProps) {
   const [phase, setPhase] = useState<ExportPhase>("idle");
@@ -92,17 +115,29 @@ export function PosterExportActions({ onBeforeCapture, onAfterCapture }: PosterE
         canvas.toBlob(resolve, "image/png")
       );
 
-      if (!blob || !navigator.clipboard || !("ClipboardItem" in window)) {
-        throw new Error("Clipboard image write is unavailable.");
+      if (!blob) {
+        throw new Error("Canvas render produced no image.");
       }
 
-      setPhase("copying");
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          [blob.type]: blob
-        })
-      ]);
-      setPhase("copied");
+      // 클립보드 시도 → 실패(권한 거부·미지원)면 다운로드 폴백. 렌더 실패만 '실패'다.
+      let delivered: "copied" | "downloaded" = "downloaded";
+      if (navigator.clipboard && "ClipboardItem" in window) {
+        try {
+          setPhase("copying");
+          await navigator.clipboard.write([
+            new ClipboardItem({
+              [blob.type]: blob
+            })
+          ]);
+          delivered = "copied";
+        } catch {
+          // 거부/미지원 — 아래 다운로드로 이어진다(사용자는 결과물을 받는다).
+        }
+      }
+      if (delivered === "downloaded") {
+        downloadBlob(blob);
+      }
+      setPhase(delivered);
       hapticTick(); // 확정 틱
       // 보상 썸네일 — 원본 캔버스는 수천 px라 그대로 dataURL을 뜨면 무겁다 → 220px로 축소해 뜬다.
       try {
@@ -160,7 +195,9 @@ export function PosterExportActions({ onBeforeCapture, onAfterCapture }: PosterE
         <em className="poster-export-hint">폰트 정리 중…</em>
       ) : null}
       {phase === "failed" ? (
-        <span className="poster-action-error">브라우저 클립보드 권한을 확인하세요.</span>
+        <span className="poster-action-error">
+          캡쳐 렌더링에 실패했어요. 새로고침 후 다시 시도해 주세요.
+        </span>
       ) : null}
       {rewardThumb ? (
         <div aria-hidden="true" className="poster-export-reward">
