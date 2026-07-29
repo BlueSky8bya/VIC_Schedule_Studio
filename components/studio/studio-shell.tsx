@@ -4024,10 +4024,14 @@ export function StudioShell({
   const { sheetRef: mobileSheetRef, dragBind: mobileSheetDrag } = useSheetDragClose({
     onClose: closeMobileEdit
   });
-  // B2(데스크톱, 최종형): 카드→패널 '잔상 비행'은 두 차례 다듬고도 촌스럽다는 피드백으로 폐기.
-  // 벤치마킹 결론 — Linear/Notion/macOS(메일·캘린더) 계열 master-detail은 요소를 날리지 않는다:
-  // 리스트 쪽 선택 표시(이미 있음, 선택 링)가 연결을 맡고, 패널은 **내용만 짧게 전환**한다.
-  // 다른 일정으로 갈아탈 때 패널 내용이 6px 아래에서 빠르게 떠오르며 교체됨을 알린다(170ms).
+  // B2(데스크톱, 최종형) — '빈 날짜에 새 일정 만들기'와 '기존 카드 수정'을 시각적으로 구분하려는
+  // 시도(클릭한 카드의 잔상이 편집 패널로 날아가는 연출)를 두 차례 다듬어 봤지만, 디자인적으로
+  // 짜치다는 피드백으로 롤백했다. 벤치마킹 결론도 같았다 — Linear/Notion/macOS(메일·캘린더) 계열
+  // master-detail은 요소를 날리지 않는다: 리스트 쪽 선택 표시(이미 있는 선택 링)가 연결을 맡고,
+  // 패널은 **내용만 짧게 전환**한다. 그래서 지금은 다른 일정으로 갈아탈 때 패널 내용이 6px
+  // 아래에서 빠르게 떠오르는 절제된 전환(170ms)만 남겼다.
+  // TODO(나중에): 새 일정 작성 vs 기존 일정 수정을 안 짜치게 구분할 좋은 방법이 생기면 구현하고
+  // 싶다(예: 패널 헤더의 조용한 상태 표기, 폼 톤 미세 차이 등 — 날아다니는 연출은 금지).
   const prevSelectedRef = useRef<string | null>(null);
   useEffect(() => {
     const prev = prevSelectedRef.current;
