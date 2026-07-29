@@ -5649,6 +5649,11 @@ export function StudioShell({
                       ArrowUp: -7
                     };
                     if (e.key in nav) {
+                      // 마우스 클릭(선택 해제 등)으로 얻은 '조용한 포커스'(:focus-visible 아님)
+                      // 에선 화살표를 전역 규칙(월 이동)에 양보한다 — 아무것도 선택 안 했는데
+                      // 날짜 포커스가 움직여 달이 안 넘어가던 문제(사용자 지적). 키보드로
+                      // 들어온 포커스(focus-visible)만 roving 이동.
+                      if (!e.currentTarget.matches(":focus-visible")) return;
                       e.preventDefault();
                       e.stopPropagation();
                       focusByDate(cell.isoDate, nav[e.key]);
