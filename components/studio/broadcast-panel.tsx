@@ -2861,7 +2861,9 @@ export function BroadcastPanel({
               setPickerOpen((v) => !v);
             }}
           >
-            📅 {monthLabel} {pickerOpen ? "접기" : "날짜 고르기"}
+            {/* 좁은 사이드 칼럼에서 잘리지 않게 짧은 라벨 — 달력 이모지는 양옆 화살표·그리드가
+                이미 말해줘 뺐다. */}
+            {monthLabel} {pickerOpen ? "접기" : "펼치기"}
           </button>
           <button
             className="bp-send"

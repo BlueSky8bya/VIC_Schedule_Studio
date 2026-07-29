@@ -407,6 +407,12 @@ html {
   display: inline-block;
   text-align: left;
 }
+/* 시각(05:43)은 '저장됨'일 때만 붙어 알약 전체 폭이 상태마다 출렁였다 — 가장 긴 상태
+   ('저장됨 + 시각') 폭으로 고정하고 내용은 왼쪽 정렬해 점·텍스트가 제자리를 지킨다. */
+.save-status {
+  min-width: 11.5em;
+  justify-content: flex-start;
+}
 .save-status .ss-time {
   font-weight: var(--weight-semibold);
   color: inherit;
@@ -453,6 +459,8 @@ html {
     padding: 4px 8px;
     font-size: 11px;
     gap: 4px;
+    /* 시각이 숨는 좁은 화면은 상태 텍스트 기준으로만 고정. */
+    min-width: 8em;
   }
   .save-status .ss-time {
     display: none;
@@ -9593,6 +9601,125 @@ html[data-reduce-motion] .save-status.saving .ss-dot {
   padding: var(--space-2) var(--space-3);
 }
 
+/* ── 공개 범위 · 옵션 한 가족화(조화: 통일·균형·강조 절제) ──
+   공개 범위 행과 옵션 칩(미정·업도움·떡밥)이 한 목록에 있는데 반경·테두리 굵기·아이콘 칸·
+   트레일링 마크가 제각각이라 따로 놀았다. 같은 행 문법(헤어라인 + r-control + 44px 아이콘 칸 +
+   우측 원형 마크)으로 수렴하고, 액센트는 상태 토큰만 쓴다. */
+.opt-chip {
+  gap: var(--space-2);
+  min-height: var(--control-hit);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  padding: var(--space-2) var(--space-3);
+  color: var(--ink);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+@media (min-width: 1000px) {
+  .opt-chip {
+    /* 예전 밀착용 음수 마진 제거 — 공개 범위 행들과 같은 리듬으로 선다. */
+    margin-top: 0;
+  }
+}
+
+.opt-chip.tentative {
+  --ac: var(--status-warning);
+}
+
+.opt-chip.support {
+  --ac: var(--status-danger);
+}
+
+.opt-chip.teaser {
+  --ac: var(--violet);
+}
+
+.opt-chip-ic {
+  display: inline-flex;
+  width: var(--control-hit);
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.opt-chip:hover:not(:disabled):not(.on) {
+  border-color: var(--line);
+  background: var(--selection-fill);
+  box-shadow: none;
+  transform: none;
+}
+
+.opt-chip.on {
+  border-color: var(--line);
+  background: var(--selection-fill);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--ac);
+}
+
+.opt-chip-mark {
+  width: 20px;
+  height: 20px;
+  border-width: var(--stroke-hairline);
+  border-color: var(--line);
+  font-size: var(--text-caption);
+}
+
+.opt-chip.on .opt-chip-mark {
+  background: var(--ac);
+  border-color: var(--ac);
+  color: var(--surface);
+}
+
+/* 공개 범위 행에도 같은 우측 원형 마크 — 선택 전엔 빈 원, 선택하면 액센트 채움+체크.
+   (기존 우상단 16px 미니 배지는 행 레이아웃에선 어긋나 보였다.) */
+.scope-opt {
+  padding-right: calc(var(--space-3) + 20px + var(--space-2));
+}
+
+.scope-opt::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  right: var(--space-3);
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: transparent;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  transform: translateY(-50%);
+}
+
+.scope-opt.on::after {
+  border-color: var(--ac);
+  background: var(--ac);
+  color: var(--surface);
+  animation: scope-check-in-row var(--dur-2) var(--ease) both;
+}
+
+@keyframes scope-check-in-row {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scale(0.4);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scale(1);
+  }
+}
+
+html[data-reduce-motion] .scope-opt.on::after,
+html[data-reduce-motion] .opt-chip.on .opt-chip-mark {
+  animation: none;
+}
+
 .event-editor-panel .tag-picker2,
 .event-detail-readonly .tag-picker2 {
   gap: var(--space-3);
@@ -10982,9 +11109,11 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   padding: var(--space-panel);
 }
 
+/* 하단 여백을 스크롤러가 아니라 sticky 푸터 자신이 갖는다 — 스크롤러 padding-bottom
+   방식은 푸터 아래로 68px '투시 구간'이 생겨 지나가는 콘텐츠가 닫기 버튼 밑에 비쳤다. */
 .modal-card-notice > .notice-modal {
-  padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
-  scroll-padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
+  padding-bottom: 0;
+  scroll-padding-bottom: var(--space-panel);
 }
 
 .notice-modal {
@@ -11194,7 +11323,7 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   position: sticky;
   bottom: 0;
   z-index: 3;
-  margin: 0 calc(var(--space-panel) * -1) calc(var(--space-panel) * -1);
+  margin: 0 calc(var(--space-panel) * -1);
   border-top: var(--stroke-hairline) solid var(--line);
   background: var(--surface);
   padding: var(--space-3) var(--space-panel)
@@ -11345,7 +11474,8 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   }
 
   .modal-card-notice > .notice-modal {
-    padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
+    /* 데스크톱과 동일 — 하단 여백은 sticky 푸터가 갖는다(투시 구간 방지). */
+    padding-bottom: 0;
   }
 
   .modal-card-notice .notice-modal {
