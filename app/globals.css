@@ -147,6 +147,7 @@
   --space-control-x: var(--space-4);
   /* Apple HIG 계열 아이콘 control의 최소 hit target: 32 + 12 = 44. */
   --control-hit: calc(var(--space-6) + var(--space-3));
+  --stroke-hairline: 1px;
 
   /* 라운드 */
   --r-sm: 8px;
