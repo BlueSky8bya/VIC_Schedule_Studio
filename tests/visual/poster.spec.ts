@@ -33,7 +33,9 @@ test.describe("public poster — visual baseline", () => {
     // 표면 크기가 두 번 연속 같아질 때까지(스케일 정착) 기다린다.
     await page.waitForFunction(
       () => {
-        const el = document.querySelector("[data-export-surface]") as HTMLElement | null;
+        const el = document.querySelector(
+          "[data-export-surface]",
+        ) as HTMLElement | null;
         if (!el) return false;
         const w = window as unknown as { __ph?: number };
         const h = Math.round(el.getBoundingClientRect().height);
@@ -41,7 +43,7 @@ test.describe("public poster — visual baseline", () => {
         w.__ph = h;
         return stable && h > 0;
       },
-      { polling: 200, timeout: 5000 }
+      { polling: 200, timeout: 5000 },
     );
     await expect(surface).toHaveScreenshot("viewer-surface-2026-06.png");
   });
@@ -50,15 +52,29 @@ test.describe("public poster — visual baseline", () => {
   // (판서는 편집실 미리보기 오버레이 전용, 확대 컨트롤은 편집실 전용 — 시청자·export 무흔적.)
   test("export surface has no broadcast/zoom admin UI", async ({ page }) => {
     await page.goto("/visual-fixture/poster");
-    await page.locator("[data-export-surface]").first().waitFor({ state: "visible" });
+    const surface = page.locator("[data-export-surface]").first();
+    await surface.waitFor({ state: "visible" });
     for (const sel of [
       ".broadcast-panel",
       ".bp-toolbar",
       ".cal-zoom-ctl",
       ".cal-zoom-float",
-      ".cal-zoom-peek"
+      ".cal-zoom-peek",
     ]) {
       await expect(page.locator(sel)).toHaveCount(0);
     }
+    for (const sel of [
+      ".studio-topbar",
+      ".studio-toolbar",
+      ".modal-backdrop",
+      ".private-loading",
+      ".passcode-box",
+      ".tag-editor",
+      ".members-panel",
+      "[data-private-badge]",
+    ]) {
+      await expect(surface.locator(sel)).toHaveCount(0);
+    }
+    await expect(surface).not.toContainText("비공개");
   });
 });

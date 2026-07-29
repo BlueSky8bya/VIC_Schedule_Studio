@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 // poster CSS도 필요: 편집실 모바일 아젠다(.agenda/.agenda-rail 골격)가 포스터 CSS의 기본
 // 규칙을 공유한다 — 없으면 레일과 목록이 세로로 쌓여 실물과 다르게 보인다(실측).
 import "@/components/studio/studio-shell.css";
+import "@/components/studio/broadcast-panel.css";
 import "@/components/poster/public-poster.css";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
@@ -14,9 +15,9 @@ import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 export const dynamic = "force-dynamic";
 
 export default async function VisualStudioFixture({
-  searchParams
+  searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -28,19 +29,23 @@ export default async function VisualStudioFixture({
     sp?.role === "manager" || sp?.role === "worker" || sp?.role === "developer"
       ? sp.role
       : "owner";
+  const panel =
+    sp?.panel === "tags" || sp?.panel === "members" ? sp.panel : undefined;
   return (
     <StudioShell
       actor={{
         email: "fixture-owner@example.com",
         isAuthenticated: true,
         role,
-        trustedRole: role === "manager" ? "manager" : role === "worker" ? "worker" : null
+        trustedRole:
+          role === "manager" ? "manager" : role === "worker" ? "worker" : null,
       }}
       hasUnlockSession={false}
       schedule={sampleStudioSchedule}
       initialView={{ year: 2026, month: 6 }}
       initialViewerMode={viewer}
       initialNarrow={false}
+      initialPanel={panel}
     />
   );
 }
