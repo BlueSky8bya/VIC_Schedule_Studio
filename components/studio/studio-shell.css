@@ -8291,7 +8291,7 @@ html[data-reduce-motion] .modal-close:active {
 .studio-mobile .m-month-nav strong {
   min-width: 118px;
   text-align: center;
-  font-size: 15px;
+  font-size: var(--text-ui); /* 15 */
   font-weight: 900;
   color: #3a3550;
   font-variant-numeric: tabular-nums;
@@ -8317,10 +8317,10 @@ html[data-reduce-motion] .modal-close:active {
 }
 /* 시청자 화면(.agenda-header h1: 28px/13px)과 동일한 크기로 맞춘다. */
 .studio-mobile .agenda-header h1 {
-  font-size: 28px;
+  font-size: 28px; /* 화면 대제목 — 역할 스케일 위 전용 크기(의도적 예외) */
 }
 .studio-mobile .agenda-header h1 span {
-  font-size: 13px;
+  font-size: var(--text-body); /* 13→13.5 수렴 */
 }
 /* 역할 바: 유동 너비 — 한 줄에 나눠 갖고 스크롤 없이 보이게(넘치면 어쩔 수 없이 줄어듦) */
 .m-rolebar {
@@ -8340,7 +8340,7 @@ html[data-reduce-motion] .modal-close:active {
   align-items: center;
 }
 .m-rolebar .actor-badge strong {
-  font-size: 12px;
+  font-size: var(--text-label); /* 12→12.5 수렴 */
 }
 .m-rolebar .button,
 .m-rolebar form,
@@ -8362,13 +8362,13 @@ html[data-reduce-motion] .modal-close:active {
   gap: 3px;
   min-height: 36px;
   padding: 0 6px;
-  font-size: 12px;
+  font-size: var(--text-label); /* 12→12.5 수렴 */
   white-space: nowrap;
   overflow: hidden;
 }
 .studio-mobile .private-warning {
   margin: 8px 0;
-  font-size: 13px;
+  font-size: var(--text-body); /* 13→13.5 수렴 */
 }
 
 /* 하단 엄지존 액션레일 — 옛 '< >' 자리. 핵심 버튼을 바닥에 모아 한 손으로 누르기 쉽게.
@@ -8405,7 +8405,7 @@ html[data-reduce-motion] .modal-close:active {
   gap: 4px;
   padding: 0 8px;
   border-radius: var(--r-pill);
-  font-size: 13px;
+  font-size: var(--text-body); /* 13→13.5 수렴 */
   font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
@@ -8461,7 +8461,7 @@ html[data-reduce-motion] .modal-close:active {
   justify-content: center;
 }
 .agenda-rail .actor-badge strong {
-  font-size: 12px;
+  font-size: var(--text-label); /* 12→12.5 수렴 */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -8499,7 +8499,7 @@ html[data-reduce-motion] .modal-close:active {
   background: rgb(124 108 240 / 10%);
   box-shadow: var(--shadow-2);
   color: #5b4bd0;
-  font-size: 12px;
+  font-size: var(--text-label); /* 12→12.5 수렴 */
   font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
@@ -8587,7 +8587,7 @@ html[data-reduce-motion] .modal-close:active {
   margin: 0;
   min-height: 36px;
   padding: 0 14px;
-  font-size: 13px;
+  font-size: var(--text-body); /* 13→13.5 수렴 */
 }
 .m-support-edit {
   flex: 0 0 auto;
@@ -8599,7 +8599,7 @@ html[data-reduce-motion] .modal-close:active {
   border-radius: 9px;
   background: #fff;
   padding: 0 16px;
-  font-size: 12.5px;
+  font-size: var(--text-label); /* 12.5 */
   font-weight: 800;
   color: var(--muted);
   cursor: pointer;
@@ -8621,7 +8621,7 @@ html[data-reduce-motion] .modal-close:active {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 13px;
+  font-size: var(--text-body); /* 13→13.5 수렴 */
   font-weight: 900;
   color: #7a6a52;
 }
@@ -8634,7 +8634,7 @@ html[data-reduce-motion] .modal-close:active {
   border: 1px solid #e7dcc4;
   border-radius: var(--r-md);
   padding: 0 14px;
-  font-size: 14px;
+  font-size: var(--text-body); /* 14→13.5 수렴 */
   font-weight: 600;
   color: #2b2f38;
   background: #fffdf7;
@@ -8669,7 +8669,7 @@ html[data-reduce-motion] .modal-close:active {
   border-radius: var(--r-md);
   background: #fffaf0;
   padding: 0 12px;
-  font-size: 13px;
+  font-size: var(--text-body); /* 13→13.5 수렴 */
   font-weight: 800;
   color: #a9760a;
   text-decoration: none;
@@ -8688,7 +8688,7 @@ html[data-reduce-motion] .modal-close:active {
   margin-left: 6px;
   padding: 1px 7px;
   border-radius: var(--r-pill);
-  font-size: 10.5px;
+  font-size: var(--text-caption); /* 10.5→11 수렴 */
   font-weight: 800;
   background: #eef0f4;
   color: #5b6472;
@@ -8699,7 +8699,7 @@ html[data-reduce-motion] .modal-close:active {
   margin-left: 6px;
   padding: 1px 7px;
   border-radius: var(--r-pill);
-  font-size: 10.5px;
+  font-size: var(--text-caption); /* 10.5→11 수렴 */
   font-weight: 800;
   background: #efe9fd;
   color: #5b4aa6;
@@ -8723,7 +8723,7 @@ html[data-reduce-motion] .modal-close:active {
   border-radius: var(--r-sm);
   background: transparent;
   padding: 7px;
-  font-size: 12.5px;
+  font-size: var(--text-label); /* 12.5 */
   font-weight: 800;
   color: var(--muted, #8a93a3);
   cursor: pointer;
@@ -8744,7 +8744,7 @@ html[data-reduce-motion] .modal-close:active {
 }
 .m-manage h2 {
   margin: 0;
-  font-size: 16px;
+  font-size: var(--text-input); /* 16 */
 }
 
 /* ── 모바일 액션 색 포인트 — 웹과 같은 '틴트 칩' 언어, 다른 레이아웃 ────────────
@@ -8897,7 +8897,7 @@ html[data-reduce-motion] .modal-close:active {
   border-bottom: 1px solid #f3efe9;
 }
 .m-edit-head strong {
-  font-size: 19px;
+  font-size: var(--text-title); /* 19→18 수렴(시트 제목) */
   font-weight: 900;
 }
 .m-edit-date {
@@ -8906,7 +8906,7 @@ html[data-reduce-motion] .modal-close:active {
   padding: 4px 13px;
   color: #6b5bd6;
   font-weight: 900;
-  font-size: 17px;
+  font-size: var(--text-title); /* 17→18 수렴 */
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
 }
@@ -8949,7 +8949,7 @@ html[data-reduce-motion] .m-edit-x:active {
   background: #fff;
   box-shadow: 0 1px 3px rgb(120 100 70 / 7%);
   padding: 13px 15px;
-  font-size: 16px;
+  font-size: var(--text-input); /* 16 */
   font-weight: 700;
   line-height: 1.5;
   /* 내용이 길어지면 오른쪽 아래 손잡이를 끌어 세로로 키울 수 있다. */
@@ -8984,7 +8984,7 @@ html[data-reduce-motion] .m-edit-x:active {
   justify-content: space-between;
   gap: 8px;
   margin-top: -2px;
-  font-size: 11.5px;
+  font-size: var(--text-caption); /* 11.5→11 수렴 */
   font-weight: 600;
   color: var(--muted, #8a93a3);
 }
@@ -9030,7 +9030,7 @@ html[data-reduce-motion] .m-edit-x:active {
   flex: 1 1 auto;
   min-width: 0;
   color: #a79fb6;
-  font-size: 12px;
+  font-size: var(--text-label); /* 12→12.5 수렴 */
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -9069,7 +9069,7 @@ html[data-reduce-motion] .me-fold-body {
   gap: 9px;
 }
 .me-row-label {
-  font-size: 13.5px;
+  font-size: var(--text-body); /* 13.5 */
   font-weight: 800;
   color: #6f6a78;
 }
@@ -9090,7 +9090,7 @@ html[data-reduce-motion] .me-fold-body {
 /* 잠금 상태 안내(P0-SEC-1) — 비공개 범위가 왜 안 보이는지 그 자리에서 말해준다. */
 .me-scope-hint {
   margin: 6px 2px 0;
-  font-size: 12px;
+  font-size: var(--text-label); /* 12→12.5 수렴 */
   font-weight: 600;
   color: var(--muted, #8a93a3);
 }
@@ -9103,7 +9103,7 @@ html[data-reduce-motion] .me-fold-body {
   background: transparent;
   color: #716a82;
   font-weight: 800;
-  font-size: 14px;
+  font-size: var(--text-body); /* 14→13.5 수렴 */
   cursor: pointer;
   transition:
     background var(--dur-2) var(--ease),
@@ -9128,14 +9128,14 @@ html[data-reduce-motion] .me-fold-body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 0 10px;
-  font-size: 13.5px;
+  font-size: var(--text-body); /* 13.5 */
   font-weight: 800;
   color: #6f6a78;
 }
 .me-hint {
   margin-left: 4px;
   color: #a79fb6;
-  font-size: 11.5px;
+  font-size: var(--text-caption); /* 11.5→11 수렴 */
   font-weight: 700;
   font-style: normal;
 }
@@ -9170,7 +9170,7 @@ html[data-reduce-motion] .me-fold-body {
   background: #fffdf3;
   color: #8a6d2f;
   font-weight: 800;
-  font-size: 14px;
+  font-size: var(--text-body); /* 14→13.5 수렴 */
   cursor: pointer;
   transition:
     background var(--dur-1) var(--ease),
@@ -9198,7 +9198,7 @@ html[data-reduce-motion] .me-fold-body {
   padding: 13px;
 }
 .me-group .duration-title {
-  font-size: 12.5px;
+  font-size: var(--text-label); /* 12.5 */
   font-weight: 800;
   color: #b4543a;
 }
@@ -9212,14 +9212,14 @@ html[data-reduce-motion] .me-fold-body {
   min-height: 38px;
   padding: 0;
   border-color: #f6cdbb;
-  font-size: 13px;
+  font-size: var(--text-body); /* 13→13.5 수렴 */
 }
 /* 종료일 — 라벨 위, 스텝퍼 아래(쌓기). */
 .me-group .duration-manual {
   flex-direction: column;
   align-items: stretch;
   gap: 8px;
-  font-size: 12.5px;
+  font-size: var(--text-label); /* 12.5 */
   font-weight: 800;
   color: #b4543a;
 }
@@ -9227,7 +9227,7 @@ html[data-reduce-motion] .me-fold-body {
 .me-group .support-link-input {
   min-height: 50px;
   border-radius: 13px;
-  font-size: 16px;
+  font-size: var(--text-input); /* 16 */
 }
 .me-group .support-visit {
   min-height: 44px;
@@ -9259,7 +9259,7 @@ html[data-reduce-motion] .me-fold-body {
   flex: 1;
   min-height: 50px;
   border-radius: var(--r-card);
-  font-size: 16px;
+  font-size: var(--text-input); /* 16 */
   font-weight: 900;
 }
 /* 삭제: 보조(아이콘만, 오탭 방지로 좁게). */
@@ -9307,14 +9307,14 @@ html[data-reduce-motion] .me-fold-body {
 }
 .fold-title {
   flex: 0 0 auto;
-  font-size: 13px;
+  font-size: var(--text-body); /* 13→13.5 수렴 */
   font-weight: 900;
 }
 .fold-summary {
   flex: 1 1 auto;
   min-width: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--text-label); /* 12→12.5 수렴 */
   font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
