@@ -8979,6 +8979,35 @@ html[data-reduce-motion] .m-edit-x:active {
   padding: 4px 14px 14px;
   box-shadow: 0 1px 3px rgb(120 100 70 / 7%);
 }
+/* P1-TITLE-1 — 제목 입력 규칙 상시 helper(placeholder는 치는 순간 사라진다) + 소프트 카운터.
+   웹·모바일 공용(양쪽 폼 모두 제목칸 바로 아래). */
+.title-helper {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: -2px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted, #8a93a3);
+}
+.title-helper > span {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis; /* 카운터가 뜨면 규칙 문구를 말줄임 — 세 줄로 찌그러지지 않게 */
+}
+.title-helper em {
+  flex: 0 0 auto;
+  font-style: normal;
+  font-weight: 800;
+  color: #a79fb6;
+}
+.title-helper em.warn {
+  color: #b3701d; /* 첫 줄 20자 이상 — 포스터 카드에서 줄바꿈/축소 예고 */
+}
+
 /* P1-FLOW-1(Quick Add) — 설정 카드 접기. 데스크톱 fold-field와 같은 문법(요약 + 셰브론)을
    iOS 그룹 리스트 톤으로. 접혀 있어도 헤더 요약으로 현재 범위·옵션이 보인다. */
 .me-fold-head {

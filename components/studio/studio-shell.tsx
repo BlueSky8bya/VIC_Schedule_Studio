@@ -1440,6 +1440,21 @@ export function StudioShell({
     );
   }, [view]);
 
+  // P1-TITLE-1(L2 줄바꿈 계약 명시): 첫 줄=제목, 둘째 줄부터=세부 내용 규칙을 입력칸 아래
+  // 상시 helper로 보여준다(placeholder는 글자를 치는 순간 사라져 규칙을 잊는다). 첫 줄이
+  // 길어지면 소프트 카운터 — 포스터 카드에서 줄바꿈/축소되는 걸 저장 전에 예감하게 한다.
+  const titleFirstLineLen = form.publicTitle.split("\n")[0]?.length ?? 0;
+  const renderTitleHelper = () => (
+    <div className="title-helper">
+      <span>첫 줄 = 제목 · 둘째 줄부터 = 세부 내용</span>
+      {titleFirstLineLen >= 14 ? (
+        <em className={titleFirstLineLen >= 20 ? "warn" : ""}>
+          제목 {titleFirstLineLen}자{titleFirstLineLen >= 20 ? " — 포스터에서 길어요" : ""}
+        </em>
+      ) : null}
+    </div>
+  );
+
   // 접힌 '공개 범위 · 옵션' 헤더에 현재 값을 한 줄로 요약한다 — 접혀 있어도 이 일정이 엠바고인지,
   // 미정인지, 떡밥인지 펼치지 않고 바로 보이게(접기가 정보를 숨기면 안 된다).
   const scopeFoldSummary = [
@@ -5164,6 +5179,7 @@ export function StudioShell({
               rows={2}
               value={form.publicTitle}
             />
+            {renderTitleHelper()}
 
             {/* 설정 그룹 카드 — 공개 범위 + 업 도움을 한 카드에 묶어 목록처럼.
                 P1-FLOW-1(Quick Add): 데스크톱과 동일하게 기본 접힘 — 대부분의 일정이 '모두 공개 +
@@ -6385,6 +6401,7 @@ export function StudioShell({
                 value={form.publicTitle}
               />
             </label>
+            {renderTitleHelper()}
 
             {/* 공개 범위 + 옵션(미정·업도움·떡밥)은 접어 둔다 — 대부분의 일정은 '모두 공개 + 옵션
                 없음'이라 매번 펼쳐 볼 필요가 없다. 제목·태그(자주 쓰는 것)를 먼저 보이게 하고,

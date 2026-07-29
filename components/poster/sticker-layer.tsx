@@ -536,6 +536,22 @@ export function StickerLayer({
             data-sticker-id={sticker.id}
             key={sticker.id}
             onPointerDown={(event) => startDrag(event, sticker, "move")}
+            // P1-STICKER-0: 키보드 베이스라인 — Tab으로 스티커를 순회·선택할 수 있게 한다.
+            // 포커스=단일 선택(클릭과 동일). 선택되면 기존 전역 키(화살표 미세이동·Shift=크게·
+            // Delete 삭제·Ctrl+D 복제·Esc 해제)가 그대로 동작한다. 포인터 경로는 불변.
+            tabIndex={editable ? 0 : undefined}
+            role={editable ? "button" : undefined}
+            aria-label={editable ? `${sticker.label || "스티커"} 선택` : undefined}
+            aria-pressed={editable ? isSelected : undefined}
+            onFocus={
+              editable
+                ? () => {
+                    if (!selectedIdsRef.current.includes(sticker.id)) {
+                      onSelect?.(sticker.id, false);
+                    }
+                  }
+                : undefined
+            }
             style={{
               left: `${sticker.xRatio * 100}%`,
               top: `${sticker.yRatio * 100}%`,

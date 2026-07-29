@@ -2994,6 +2994,13 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
     0 0 18px currentColor;
 }
 /* C7 효과: 흰 외곽선(다이컷 느낌) / 진한 그림자. filter는 덮어쓰기라 조합별로 따로 정의. */
+/* P1-STICKER-0: 키보드 포커스 링 — Tab으로 고른 스티커가 어디 있는지 보이게.
+   선택 링(.selected)과 별개로, 포커스만 있고 아직 선택 전 순간에도 위치를 알린다. */
+.sticker-layer.editable .sticker-item:focus-visible {
+  outline: 2px solid #5b4bd0;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
 .sticker-item.fx-shadow {
   filter: drop-shadow(0 6px 9px rgb(0 0 0 / 45%));
 }
