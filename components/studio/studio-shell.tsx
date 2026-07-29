@@ -5080,8 +5080,26 @@ export function StudioShell({
               value={form.publicTitle}
             />
 
-            {/* 설정 그룹 카드 — 공개 범위 + 업 도움을 한 카드에 묶어 목록처럼. */}
-            <div className="me-group">
+            {/* 설정 그룹 카드 — 공개 범위 + 업 도움을 한 카드에 묶어 목록처럼.
+                P1-FLOW-1(Quick Add): 데스크톱과 동일하게 기본 접힘 — 대부분의 일정이 '모두 공개 +
+                옵션 없음'이라, 첫 생성 흐름은 제목→태그→저장만 보이게 한다. 접힌 헤더에 현재
+                값 요약(scopeFoldSummary)을 항상 보여줘 접기가 정보를 숨기지 않는다. */}
+            <div className={`me-group me-fold${scopeFoldOpen ? " open" : ""}`}>
+              <button
+                aria-expanded={scopeFoldOpen}
+                className="me-fold-head"
+                onClick={() => {
+                  hapticTick();
+                  setScopeFoldOpen((v) => !v);
+                }}
+                type="button"
+              >
+                <span className="me-row-label">공개 범위 · 옵션</span>
+                <span className="me-fold-summary">{scopeFoldSummary}</span>
+                <ChevronDown aria-hidden="true" className="me-fold-chev" size={16} />
+              </button>
+              {scopeFoldOpen ? (
+              <div className="me-fold-body">
               <div className="me-row me-row-stack">
                 <span className="me-row-label">공개 범위</span>
                 {/* P0-SEC-1: 모바일도 데스크톱과 동일 게이트 — 비공개 범위는 잠금 해제
@@ -5157,6 +5175,8 @@ export function StudioShell({
                     </div>
                   ) : null}
                 </div>
+              ) : null}
+              </div>
               ) : null}
             </div>
 

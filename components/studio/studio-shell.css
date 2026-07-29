@@ -8977,6 +8977,53 @@ html[data-reduce-motion] .m-edit-x:active {
   padding: 4px 14px 14px;
   box-shadow: 0 1px 3px rgb(120 100 70 / 7%);
 }
+/* P1-FLOW-1(Quick Add) — 설정 카드 접기. 데스크톱 fold-field와 같은 문법(요약 + 셰브론)을
+   iOS 그룹 리스트 톤으로. 접혀 있어도 헤더 요약으로 현재 범위·옵션이 보인다. */
+.me-fold-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  padding: 9px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+}
+.me-fold-head:active {
+  transform: scale(0.99);
+}
+.me-fold-summary {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: #a79fb6;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: right;
+}
+.me-fold-chev {
+  flex: 0 0 auto;
+  color: #a79fb6;
+  transition: transform var(--dur-2) var(--ease);
+}
+.me-fold.open .me-fold-chev {
+  transform: rotate(180deg);
+}
+/* 접힘 = 헤더만 남은 카드 — me-group의 아래 14px 패딩이 과해서 줄인다. */
+.me-fold:not(.open) {
+  padding-bottom: 4px;
+}
+.me-fold-body {
+  animation: fold-open var(--dur-3) var(--ease-enter) both;
+}
+html[data-reduce-motion] .me-fold-body {
+  animation: none;
+}
 .me-row {
   display: flex;
   align-items: center;
