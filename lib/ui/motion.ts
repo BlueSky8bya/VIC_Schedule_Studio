@@ -7,13 +7,19 @@
 //
 // 페인트 전 적용은 app/layout.tsx의 인라인 스크립트가 담당(FOUC 방지). 여기 함수는 설정 화면
 // (역할 배지 "?" 팝오버의 토글)에서 즉시 반영/저장하는 용도.
+//
+// P1-MOTION-1: OS prefers-reduced-motion 통합 — 인앱 설정이 **미설정**이면 OS 값을 기본으로
+// 따른다. 명시적 인앱 선택("on"/"off")은 OS보다 항상 우선(인앱 토글이 최종 결정권 유지).
 
-const REDUCE_MOTION_KEY = "vic.reduceMotion"; // localStorage: "on"이면 켬, 그 외 끔(기본 OFF)
+const REDUCE_MOTION_KEY = "vic.reduceMotion"; // localStorage: "on"/"off"/미설정(OS 따름)
 
 export function reduceMotionEnabled(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return window.localStorage.getItem(REDUCE_MOTION_KEY) === "on";
+    const v = window.localStorage.getItem(REDUCE_MOTION_KEY);
+    if (v === "on") return true;
+    if (v === "off") return false;
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   } catch {
     return false;
   }

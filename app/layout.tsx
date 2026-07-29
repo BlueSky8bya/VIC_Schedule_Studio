@@ -69,11 +69,13 @@ export default async function RootLayout({
     >
       <body>
         {/* '동작 줄이기' 설정을 페인트 전에 <html>에 반영 — 켜둔 사용자는 장식 애니메이션이
-            깜빡 떴다 사라지지 않는다(FOUC 방지). 끄면 평소대로. localStorage 접근 실패는 무시. */}
+            깜빡 떴다 사라지지 않는다(FOUC 방지). P1-MOTION-1: 인앱 설정이 없으면(미설정)
+            OS prefers-reduced-motion을 기본값으로 따른다. 명시적 인앱 선택(on/off)이 항상 이긴다
+            — 'off'를 고른 사용자는 OS가 reduce여도 앱 모션을 그대로 본다. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var d=document.documentElement;if(localStorage.getItem('vic.reduceMotion')==='on')d.setAttribute('data-reduce-motion','1');if(localStorage.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort','1')}catch(e){}"
+              "try{var d=document.documentElement;var v=localStorage.getItem('vic.reduceMotion');if(v==='on'||(v!=='off'&&matchMedia('(prefers-reduced-motion: reduce)').matches))d.setAttribute('data-reduce-motion','1');if(localStorage.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort','1')}catch(e){}"
           }}
         />
         {children}
