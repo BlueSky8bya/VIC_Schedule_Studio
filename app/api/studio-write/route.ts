@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   deleteEventAction,
   reorderEventsAction,
+  restoreEventAction,
   saveEventAction,
   updateEventTagsAction,
   updateSupportSettingsAction,
@@ -26,6 +27,9 @@ export async function POST(request: Request) {
         return json(await saveEventAction(p as SaveEventInput));
       case "delete":
         return json(await deleteEventAction(String(p.eventId)));
+      case "restore":
+        // P0-DATA-1: 삭제 취소 — tombstone을 걷어 같은 id로 복구(태그/연결/하트 보존).
+        return json(await restoreEventAction(String(p.eventId)));
       case "reorder":
         return json(
           await reorderEventsAction({

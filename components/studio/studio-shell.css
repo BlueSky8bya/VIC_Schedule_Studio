@@ -5402,6 +5402,55 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
   box-shadow: 0 6px 20px rgb(17 24 39 / 25%);
   animation: copy-toast-in 160ms ease-out;
 }
+/* P0-DATA-1 삭제 스낵바 — 하단 중앙, 실행 취소 버튼 포함(8초). 터치 타깃 44px. */
+.delete-snack {
+  position: fixed;
+  bottom: 22px;
+  left: 50%;
+  z-index: 80;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: min(92vw, 420px);
+  border-radius: var(--r-pill, 999px);
+  background: #1f2937;
+  padding: 8px 10px 8px 18px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 8px 26px rgb(17 24 39 / 30%);
+  animation: pop-in var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease)) both;
+}
+.delete-snack-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.delete-snack-undo {
+  flex: 0 0 auto;
+  min-height: 34px;
+  border: 0;
+  border-radius: var(--r-pill, 999px);
+  background: rgb(255 255 255 / 14%);
+  padding: 6px 14px;
+  color: #ffd479;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
+}
+.delete-snack-undo:hover {
+  background: rgb(255 255 255 / 22%);
+}
+.delete-snack-undo:active {
+  transform: scale(0.94);
+}
+html[data-reduce-motion] .delete-snack {
+  animation: none;
+}
 @keyframes copy-toast-in {
   from {
     opacity: 0;

@@ -116,6 +116,7 @@ export async function loadRevealedEvents(
     .select(
       "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order)"
     )
+    .is("deleted_at", null) // tombstone 제외(P0-DATA-1)
     .eq("calendar_id", calendar.id)
     .eq("visibility_scope", "public")
     .neq("status", "draft")
@@ -191,6 +192,7 @@ const loadPublicScheduleData = unstable_cache(
           .select(
             "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, status, sort_order, category, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order)"
           )
+          .is("deleted_at", null)
           .eq("calendar_id", calendar.id)
           .eq("visibility_scope", "public")
           .neq("status", "draft")

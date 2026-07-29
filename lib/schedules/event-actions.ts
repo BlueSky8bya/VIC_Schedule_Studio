@@ -254,6 +254,9 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
   return { ok: true, id: eventId };
 }
 
+// 삭제 복구 보존 시간(ADR-0011 L5) — 이 시간 안에는 같은 id로 완전 복구 가능, 지나면 물리 삭제.
+const TOMBSTONE_RETENTION_MS = 24 * 60 * 60 * 1000;
+
 export async function deleteEventAction(eventId: string): Promise<ActionResult> {
   const actor = await resolveCurrentActor(SLUG);
 
@@ -266,16 +269,56 @@ export async function deleteEventAction(eventId: string): Promise<ActionResult> 
     return { ok: false, error: "Supabase가 설정되지 않았습니다." };
   }
 
-  // event_tags / event_private_meta는 FK on delete cascade로 함께 삭제됨
-  const { error } = await supabase.from("events").delete().eq("id", eventId);
+  // P0-DATA-1: hard delete 대신 tombstone — 태그/연결/하트/비공개 메타가 FK 그대로 보존돼
+  // '실행 취소'가 같은 id로 완전 복구된다. 24시간 지난 tombstone은 지나가며 물리 삭제(purge —
+  // FK cascade로 관계 행도 함께). 낮은 트래픽이라 크론 없이 충분.
+  const { error } = await supabase
+    .from("events")
+    .update({ deleted_at: new Date().toISOString() })
+    .eq("id", eventId);
   if (error) {
     return { ok: false, error: safeActionError("일정 삭제", error) };
   }
+  await supabase
+    .from("events")
+    .delete()
+    .lt("deleted_at", new Date(Date.now() - TOMBSTONE_RETENTION_MS).toISOString());
 
   revalidatePath("/");
   revalidatePath("/studio");
   revalidatePublicSchedule();
 
+  return { ok: true, id: eventId };
+}
+
+// P0-DATA-1: 삭제 복구 — tombstone을 걷어 같은 id로 되살린다(관계 전부 보존).
+// 보존 시간(24h)이 지나 purge된 일정은 복구 불가(그때는 실패를 정직하게 알린다).
+export async function restoreEventAction(eventId: string): Promise<ActionResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!canEditSchedule(actor.role)) {
+    return { ok: false, error: "owner 또는 developer만 일정을 복구할 수 있습니다." };
+  }
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
+  }
+  const { data, error } = await supabase
+    .from("events")
+    .update({ deleted_at: null, updated_at: new Date().toISOString() })
+    .eq("id", eventId)
+    .not("deleted_at", "is", null)
+    .select("id")
+    .maybeSingle();
+  if (error) {
+    return { ok: false, error: safeActionError("일정 복구", error) };
+  }
+  if (!data) {
+    return { ok: false, error: "복구 기간(24시간)이 지났거나 이미 복구된 일정입니다." };
+  }
+
+  revalidatePath("/");
+  revalidatePath("/studio");
+  revalidatePublicSchedule();
   return { ok: true, id: eventId };
 }
 
@@ -310,6 +353,7 @@ export async function updateSupportSettingsAction(
   const { data: ev } = await admin
     .from("events")
     .select("id, is_support, calendar_id")
+    .is("deleted_at", null) // tombstone 제외(P0-DATA-1)
     .eq("id", eventId)
     .maybeSingle();
   if (!ev || ev.calendar_id !== calendar.id || !ev.is_support) {
@@ -373,6 +417,7 @@ export async function updateEventTagsAction(
   const { data: ev } = await admin
     .from("events")
     .select("id, calendar_id, visibility_scope")
+    .is("deleted_at", null)
     .eq("id", eventId)
     .maybeSingle();
   if (!ev || ev.calendar_id !== calendar.id) {

@@ -624,6 +624,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
       supabase
         .from("events")
         .select("id, date_key, is_public")
+        .is("deleted_at", null) // tombstone 제외(P0-DATA-1)
         .eq("calendar_id", calendarId)
         .gte("date_key", lastMonthStart)
         .lt("date_key", nextMonthStart),
@@ -636,6 +637,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
       supabase
         .from("events")
         .select("date_key, public_title, event_tags(broadcast_tags(display_name))")
+        .is("deleted_at", null)
         .eq("calendar_id", calendarId)
         .eq("is_public", true)
         .gte("date_key", todayKey)
@@ -769,6 +771,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
     const { data: rows } = await supabase
       .from("events")
       .select("id, date_key, public_title, is_public")
+      .is("deleted_at", null)
       .in("id", heartCounts.map((h) => h.event_id));
     for (const e of rows ?? []) {
       if ((e as { is_public?: boolean }).is_public) {
@@ -1013,6 +1016,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     supabase
       .from("events")
       .select("id, date_key")
+      .is("deleted_at", null)
       .eq("calendar_id", calendarId)
       .eq("is_public", true)
       .gte("date_key", fromStart)
@@ -1481,6 +1485,7 @@ export async function getVisitTrendsAction(
       const { data: ev } = await supabase
         .from("events")
         .select("id")
+        .is("deleted_at", null)
         .eq("calendar_id", cal.id as string)
         .eq("is_public", true)
         .eq("date_key", dk)
@@ -1828,6 +1833,7 @@ export async function getMemberInsightsAction(
     supabase
       .from("events")
       .select("id, date_key, is_public")
+      .is("deleted_at", null)
       .eq("calendar_id", calendarId)
       .eq("is_public", true)
       .gte("date_key", sixStart)
@@ -1841,6 +1847,7 @@ export async function getMemberInsightsAction(
     supabase
       .from("events")
       .select("date_key, public_title, event_tags(broadcast_tags(display_name))")
+      .is("deleted_at", null)
       .eq("calendar_id", calendarId)
       .eq("is_public", true)
       .gte("date_key", todayKey)
@@ -2042,6 +2049,7 @@ export async function getMemberInsightsAction(
     const { data: rows } = await supabase
       .from("events")
       .select("id, date_key, public_title, is_public")
+      .is("deleted_at", null)
       .in("id", heartCounts.map((h) => h.event_id));
     for (const e of rows ?? []) {
       if ((e as { is_public?: boolean }).is_public) {

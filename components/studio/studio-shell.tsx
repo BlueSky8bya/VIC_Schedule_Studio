@@ -3417,6 +3417,15 @@ export function StudioShell({
     commitDelete(targetId, events);
   }
 
+  // P0-DATA-1: 삭제 직후 8초 스낵바 — 터치에서도 Ctrl+Z 없이 '실행 취소'를 누를 수 있다(L5).
+  const [deleteSnack, setDeleteSnack] = useState<{ event: StudioScheduleEvent } | null>(null);
+  const deleteSnackTimer = useRef<number | null>(null);
+  function showDeleteSnack(removed: StudioScheduleEvent) {
+    setDeleteSnack({ event: removed });
+    if (deleteSnackTimer.current) window.clearTimeout(deleteSnackTimer.current);
+    deleteSnackTimer.current = window.setTimeout(() => setDeleteSnack(null), 8000);
+  }
+
   function commitDelete(targetId: string, snapshot: StudioScheduleEvent[]) {
     const removed = snapshot.find((e) => e.id === targetId) ?? null;
     // poof가 끝났으니 표시를 거둔다(실패해 되살아날 때 정상 모습으로 돌아오게).
@@ -3437,9 +3446,10 @@ export function StudioShell({
       setForm(createEmptyForm());
     }
     setActionError(null);
-    // Ctrl+Z 복구용으로 삭제 액션을 스택에 올린다(되돌리면 같은 내용으로 다시 만든다).
+    // Ctrl+Z 복구용 스택 + 8초 '실행 취소' 스낵바(같은 restore 경로, P0-DATA-1).
     if (removed) {
       deletedStackRef.current.push({ type: "recreate", event: removed });
+      showDeleteSnack(removed);
     }
     startTransition(async () => {
       const result = await enqueueWrite(async () => {
@@ -3706,55 +3716,33 @@ export function StudioShell({
       return;
     }
 
-    // recreate: 삭제 되돌리기 — 보관한 내용으로 새 id를 받아 다시 만든다.
-    const ev = action.event;
-    const dateKey = getEventDateKey(ev);
-    const tempId = `temp-${Math.random().toString(36).slice(2)}`;
-    setEvents((prev) => [...prev, { ...ev, id: tempId, linkNext: undefined }]);
-    setActionError(null);
-    markJustSaved(tempId); // 되살아난 카드도 통통 착지하며 반짝
-    flashToast("삭제 취소됨 (Ctrl+Z)");
+    // recreate(→ restore, P0-DATA-1): 삭제 되돌리기 — 서버 tombstone을 걷어 **같은 id**로
+    // 되살린다(태그/연결/하트/비공개 메타 보존. 예전 '재생성' 방식은 새 id라 관계가 유실됐다).
+    restoreDeletedEvent(action.event);
+  }
 
-    let resolveSave: (id: string | null) => void = () => {};
-    pendingSavesRef.current.set(
-      tempId,
-      new Promise<string | null>((r) => {
-        resolveSave = r;
-      })
-    );
+  // 삭제 복구 공통 경로 — Ctrl+Z와 삭제 스낵바 '실행 취소'가 함께 쓴다.
+  function restoreDeletedEvent(ev: StudioScheduleEvent) {
+    setDeleteSnack(null);
+    if (deleteSnackTimer.current) window.clearTimeout(deleteSnackTimer.current);
+    setEvents((prev) => (prev.some((e) => e.id === ev.id) ? prev : [...prev, ev]));
+    setActionError(null);
+    markJustSaved(ev.id); // 되살아난 카드도 통통 착지하며 반짝
+    flashToast("삭제 취소됨");
     startTransition(async () => {
-      const result = await studioWrite("save", {
-        id: undefined,
-        dateKey,
-        endDateKey: ev.endDateKey ?? "",
-        startTime: "",
-        endTime: "",
-        isAllDay: true,
-        isTentative: ev.isTentative ?? false,
-        publicTitle: ev.publicTitle,
-        publicDescription: "",
-        category: ev.category,
-        status: ev.status,
-        visibilityScope: ev.visibilityScope,
-        tagIds: ev.tagIds,
-        primaryTagIds: ev.primaryTagIds.slice(0, 2),
-        isSupport: ev.isSupport ?? false,
-        supportUrl: ev.supportUrl ?? ""
+      const result = await enqueueWrite(async () => {
+        const realId = await resolveEventId(ev.id);
+        if (!realId) return null; // 서버에 간 적 없는 임시 카드 — 클라 복원으로 충분
+        return postStudioWrite("restore", { eventId: realId });
       });
       if (!result.ok) {
         setActionError(result.error);
-        setEvents((prev) => prev.filter((e) => e.id !== tempId));
-        resolveSave(null);
-        pendingSavesRef.current.delete(tempId);
+        setEvents((prev) => prev.filter((e) => e.id !== ev.id));
         return;
       }
-      if (result.id) {
-        const realId = result.id;
-        tempToRealRef.current.set(tempId, realId); // 되살린 직후 삭제해도 서버 삭제가 실제 id로
-        setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)));
-        resolveSave(realId);
-        pendingSavesRef.current.delete(tempId);
-      }
+      hapticTick(); // 서버 확정
+      // 이 일정을 가리키던 연결(linkNext)은 서버 원본이 그대로라 새로고침으로 정본 동기화.
+      router.refresh();
     });
   }
 
@@ -5364,6 +5352,30 @@ export function StudioShell({
       {copyToast ? (
         <div className="copy-toast" role="status" aria-live="polite">
           {copyToast}
+        </div>
+      ) : null}
+      {/* P0-DATA-1: 삭제 스낵바 — 8초 동안 그 자리에서 실행 취소(터치 포함, Ctrl+Z와 같은 복구). */}
+      {deleteSnack ? (
+        <div className="delete-snack" role="status" aria-live="polite">
+          <span className="delete-snack-title">
+            &lsquo;{deleteSnack.event.publicTitle.split("\n")[0] || "일정"}&rsquo; 삭제됨
+          </span>
+          <button
+            className="delete-snack-undo"
+            onClick={() => {
+              hapticTick();
+              // Ctrl+Z 스택에서도 이 항목을 걷어낸다(스낵바로 복구했는데 Ctrl+Z가 또 복구 시도 방지).
+              const stack = deletedStackRef.current;
+              const idx = stack.findIndex(
+                (a) => a.type === "recreate" && a.event.id === deleteSnack.event.id
+              );
+              if (idx >= 0) stack.splice(idx, 1);
+              restoreDeletedEvent(deleteSnack.event);
+            }}
+            type="button"
+          >
+            실행 취소
+          </button>
         </div>
       ) : null}
       {loadingPrivate ? (
