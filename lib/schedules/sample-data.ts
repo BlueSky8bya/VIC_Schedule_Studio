@@ -5,7 +5,8 @@ import {
   defaultPalette,
   defaultTags,
   publicCalendarMeta,
-  sampleProposals
+  sampleProposals,
+  samplePublicScheduleData
 } from "@/lib/schedules/sample-public-data";
 
 // 하위 호환: 예전에 이 모듈에서 팔레트/태그를 import하던 곳을 위해 재노출(단일 정의는 공개 파일).
@@ -218,14 +219,7 @@ export const sampleStudioSchedule: StudioSchedule = {
       summary: "공개 전까지 엠바고 레이어에서만 확인합니다."
     }
   ],
-  viewerModePreview: {
-    calendar: publicCalendarMeta,
-    events: [],
-    tags: defaultTags,
-    palette: defaultPalette,
-    supportCampaigns: [],
-    stickers: [],
-    stickerAssets: [],
-    heartCount: 0
-  }
+  // 미리보기는 서버 공개 스냅샷만 쓰므로(P0-SEC-2) 샘플에서도 공개 샘플 데이터를 그대로 쓴다 —
+  // 비워두면 fixture/오프라인 미리보기가 빈 달력으로 보여 실물과 다르다.
+  viewerModePreview: samplePublicScheduleData
 };
