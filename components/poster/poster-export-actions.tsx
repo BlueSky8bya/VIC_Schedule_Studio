@@ -139,15 +139,22 @@ export function PosterExportActions({ onBeforeCapture, onAfterCapture }: PosterE
         aria-busy={busy}
       >
         <Clipboard aria-hidden="true" size={17} />
-        {PHASE_LABEL[phase]}
-        {/* 진행 점(●●●)은 버튼 '안'에서 — 라벨 옆에서 차오르니 버튼 밖 레이아웃이 안 흔들린다. */}
+        {/* 진행 중엔 라벨 대신 점(●●●)만 — 단계별 문구로 라벨이 바뀌면 버튼 폭이 실시간으로
+            출렁여 보기 싫다. 문구는 스크린리더용으로만 남긴다. */}
         {busy ? (
-          <span className="poster-export-progress" role="status">
-            <span className={`dot${phase !== "preparing" ? " done" : ""}`} />
-            <span className={`dot${phase === "rendering" || phase === "copying" ? " done" : ""}`} />
-            <span className={`dot${phase === "copying" ? " done" : ""}`} />
-          </span>
-        ) : null}
+          <>
+            <span className="sr-only" role="status">
+              {PHASE_LABEL[phase]}
+            </span>
+            <span aria-hidden="true" className="poster-export-progress">
+              <span className={`dot${phase !== "preparing" ? " done" : ""}`} />
+              <span className={`dot${phase === "rendering" || phase === "copying" ? " done" : ""}`} />
+              <span className={`dot${phase === "copying" ? " done" : ""}`} />
+            </span>
+          </>
+        ) : (
+          PHASE_LABEL[phase]
+        )}
       </button>
       {busy && fontSettling && phase === "preparing" ? (
         <em className="poster-export-hint">폰트 정리 중…</em>

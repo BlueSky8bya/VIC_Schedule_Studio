@@ -236,6 +236,19 @@
       var(--ease, ease), var(--ease-exit, ease);
   }
 }
+/* 화면에선 감추고 스크린리더에만 읽히는 텍스트(표준 visually-hidden 패턴). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* 일관된 포커스 링(키보드 이동 시) — 특이도 0이라 컴포넌트가 자유로이 덮을 수 있다. */
 :where(input, select, textarea):focus-visible {
   outline: none;

@@ -801,7 +801,11 @@ export function StudioShell({
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           const panel = document.querySelector<HTMLElement>(".event-editor-panel");
-          if (panel) flyGhost(cardEl, panel);
+          if (panel) {
+            flyGhost(cardEl, panel, {
+              stripClasses: ["selected", "primary-selected", "just-saved"]
+            });
+          }
         })
       );
     }

@@ -1,7 +1,5 @@
 import { chromium } from "playwright";
 
-const SC =
-  "C:/Users/im917/AppData/Local/Temp/claude/c--Projects-VIC-Schedule-studio/696fcde9-d03c-475b-8261-c1efce90290f/scratchpad";
 const b = await chromium.launch();
 const out = [];
 const ok = (n, p, note = "") => out.push(`${p ? "PASS" : "FAIL"} ${n}${note ? " — " + note : ""}`);
@@ -36,10 +34,14 @@ const ok = (n, p, note = "") => out.push(`${p ? "PASS" : "FAIL"} ${n}${note ? " 
             for (let i = 0; i < d.length; i += 4) sum += (d[i] + d[i + 1] + d[i + 2]) / 3;
             window.__lums.push(sum / (d.length / 4));
           }
-        } catch (e) {}
+        } catch {
+          /* 측정 실패 무시 */
+        }
         return orig.apply(this, args);
       };
-    } catch (e) {}
+    } catch {
+      /* 스텁 실패 무시 */
+    }
   });
   await p.goto("http://localhost:3000/visual-fixture/poster?mode=decorate", {
     waitUntil: "networkidle",

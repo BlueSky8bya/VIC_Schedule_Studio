@@ -6239,15 +6239,18 @@ html[data-reduce-motion] .modal-close:active {
   transform: none;
 }
 
-/* 카드 → 편집 패널 잔상 비행(B2 데스크톱) — flyGhost()가 1회성으로 만든다. */
+/* 카드 → 편집 패널 잔상 비행(B2 데스크톱) — flyGhost()가 1회성으로 만든다.
+   내용물은 클릭한 카드의 실물 복제(cloneNode)라 여기선 컨테이너 역할만: 고정 위치·클립·그림자. */
 .fly-ghost {
   position: fixed;
   z-index: 9999;
   pointer-events: none;
-  border: 2px solid rgb(124 108 240 / 55%);
-  border-radius: var(--r-md);
-  background: rgb(124 108 240 / 12%);
+  overflow: hidden;
   transform-origin: top left;
+}
+/* 복제된 카드의 호버/포커스 잔여 스타일이 도드라지지 않게 평탄화. */
+.fly-ghost > * {
+  pointer-events: none;
 }
 
 /* 태그 이름/색상 편집기 (왼쪽 패널) */
