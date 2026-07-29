@@ -3,7 +3,6 @@ import type { BroadcastTool } from "@/lib/broadcast/stroke-engine";
 export type BroadcastDrawingLayer = {
   id: string;
   vis: boolean;
-  lock: boolean;
 };
 
 /** 색을 고른 의도: 선택·지우개에서는 펜, 이미 색을 쓰는 도구에서는 현재 문맥 유지. */
@@ -28,12 +27,12 @@ export function resolveWritableDrawingLayerId(
   rememberedId: string | null
 ): string | null {
   const writable = (id: string | null) =>
-    id === null ? null : layers.find((layer) => layer.id === id && layer.vis && !layer.lock) ?? null;
+    id === null ? null : layers.find((layer) => layer.id === id && layer.vis) ?? null;
 
   return (
     writable(currentId)?.id ??
     writable(rememberedId)?.id ??
-    layers.find((layer) => layer.vis && !layer.lock)?.id ??
+    layers.find((layer) => layer.vis)?.id ??
     null
   );
 }

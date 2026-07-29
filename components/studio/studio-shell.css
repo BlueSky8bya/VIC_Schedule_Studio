@@ -4958,32 +4958,7 @@ html[data-reduce-motion] .studio-event-pill.connect-target {
 html[data-reduce-motion] .studio-event-pill.connect-target::after {
   animation: none;
 }
-/* 방금 잘린 이음새: 붉은 사선이 '싹둑' 훑고 지나가는 연출 — 카드 밖 fixed 오버레이라
-   (좌표는 끊는 순간 실측) 낙관 반영/서버 동기화로 카드가 다시 그려져도 1회만 재생된다. */
-.seam-cut-fx {
-  position: fixed;
-  width: 16px;
-  z-index: 95;
-  pointer-events: none;
-  background: linear-gradient(115deg, transparent 40%, rgb(220 38 38 / 85%) 50%, transparent 60%);
-  animation: seam-cut-slice 0.42s ease-out both;
-}
-@keyframes seam-cut-slice {
-  0% {
-    transform: translateY(-70%) rotate(6deg);
-    opacity: 0;
-  }
-  35% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(70%) rotate(6deg);
-    opacity: 0;
-  }
-}
-html[data-reduce-motion] .seam-cut-fx {
-  display: none;
-}
+/* (끊기 사선 연출은 사용자 결정으로 제거 — 분리 반동 애니메이션만 남긴다.) */
 /* 끊기 — 팽팽하던 고무줄이 풀리듯, 이음새 양쪽이 반대 방향으로 살짝 튕겼다 스프링으로
    제자리(오버슈트 1회). 사선 연출(cut-flash)과 함께 '분리'가 몸으로 읽힌다. */
 .studio-event-pill.cut-recoil-prev {

@@ -58,32 +58,30 @@ describe("broadcast panel workflow", () => {
     }
   );
 
+  // (잠금 기능은 2026-07-31 사용자 결정으로 제거 — writable = 보이는 레이어.)
   it("prefers current, then remembered, then first writable drawing layer", () => {
     const layers = [
-      { id: "top", vis: true, lock: false },
-      { id: "remembered", vis: true, lock: false },
-      { id: "locked", vis: true, lock: true }
+      { id: "top", vis: true },
+      { id: "remembered", vis: true },
+      { id: "hidden", vis: false }
     ];
 
     expect(resolveWritableDrawingLayerId(layers, "top", "remembered")).toBe("top");
     expect(resolveWritableDrawingLayerId(layers, "__schedule__", "remembered")).toBe("remembered");
-    expect(resolveWritableDrawingLayerId(layers, "locked", "missing")).toBe("top");
+    expect(resolveWritableDrawingLayerId(layers, "hidden", "missing")).toBe("top");
   });
 
-  it("never unlocks, unhides, or invents a drawing layer", () => {
-    const layers = [
-      { id: "hidden", vis: false, lock: false },
-      { id: "locked", vis: true, lock: true }
-    ];
+  it("never unhides or invents a drawing layer", () => {
+    const layers = [{ id: "hidden", vis: false }];
 
     expect(resolveWritableDrawingLayerId(layers, "__schedule__", "hidden")).toBeNull();
   });
 
   it("falls back to a writable layer when the active drawing layer disappears", () => {
     const layers = [
-      { id: "locked", vis: true, lock: true },
-      { id: "remembered", vis: true, lock: false },
-      { id: "visible", vis: true, lock: false }
+      { id: "hidden", vis: false },
+      { id: "remembered", vis: true },
+      { id: "visible", vis: true }
     ];
 
     expect(resolveDrawingLayerAfterRemoval(layers, "remembered")).toBe("remembered");
@@ -91,10 +89,7 @@ describe("broadcast panel workflow", () => {
   });
 
   it("keeps the first layer inspectable when no layer is writable, or returns none", () => {
-    const blocked = [
-      { id: "hidden", vis: false, lock: false },
-      { id: "locked", vis: true, lock: true }
-    ];
+    const blocked = [{ id: "hidden", vis: false }];
 
     expect(resolveDrawingLayerAfterRemoval(blocked, "missing")).toBe("hidden");
     expect(resolveDrawingLayerAfterRemoval([], "missing")).toBeNull();

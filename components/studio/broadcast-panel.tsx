@@ -168,7 +168,7 @@ const COL_DEFAULT_W = 220;
 const COL_MIN_W = 140;
 const COL_MAX_W = 520;
 // 그리기 레이어(동적) — '일정'(날짜 카드 DOM)은 고정 기본, 나머지는 ➕로 자유 추가/삭제.
-type PanelLayer = { id: string; name: string; vis: boolean; lock: boolean };
+type PanelLayer = { id: string; name: string; vis: boolean };
 // '일정' 고정 레이어의 활성 id — 카드 선택/이동은 이 레이어가 활성일 때만.
 const BG_LAYER_ID = "__schedule__";
 
@@ -280,7 +280,7 @@ export function BroadcastPanel({
   colorPopRef.current = colorPop;
   // 레이어 목록(위 = 맨 위 레이어). 배경(날짜 카드 DOM)은 목록 밖 고정 기본 — 표시 토글만.
   const [layers, setLayers] = useState<PanelLayer[]>(() => [
-    { id: "layer-1", name: "레이어 1", vis: true, lock: false }
+    { id: "layer-1", name: "레이어 1", vis: true }
   ]);
   const [activeLayerId, setActiveLayerId] = useState("layer-1");
   const [layerOrderStatus, setLayerOrderStatus] = useState("");
@@ -334,7 +334,7 @@ export function BroadcastPanel({
   // 숨김·잠금 레이어는 기억 후보에서 제외해 자동 전환이 곧바로 막힌 상태가 되지 않게 한다.
   useEffect(() => {
     const active = layers.find(
-      (layer) => layer.id === activeLayerId && layer.vis && !layer.lock
+      (layer) => layer.id === activeLayerId && layer.vis
     );
     if (active) lastDrawingLayerIdRef.current = active.id;
   }, [activeLayerId, layers]);
@@ -859,7 +859,7 @@ export function BroadcastPanel({
   function splitSelectStrokes(lo: { x: number; y: number }, hi: { x: number; y: number }) {
     const act = layersRef.current.find((l) => l.id === activeLayerId);
     const layerOk = new Map(
-      layersRef.current.map((l) => [l.id, l.id === act?.id && l.vis && !l.lock])
+      layersRef.current.map((l) => [l.id, l.id === act?.id && l.vis])
     );
     const inside = (pt: StrokePoint) =>
       pt.x >= lo.x && pt.x <= hi.x && pt.y >= lo.y && pt.y <= hi.y;
@@ -981,7 +981,7 @@ export function BroadcastPanel({
   const strokeSelBox = useMemo(() => {
     if (tool !== "select" || strokeSel.length === 0) return null;
     const selectedLayer = layers.find((l) => l.id === activeLayerId);
-    if (!selectedLayer?.vis || selectedLayer.lock) return null;
+    if (!selectedLayer?.vis) return null;
     const live = new Set(store.strokes());
     const sel = strokeSel.filter((s) => live.has(s) && s.layer === activeLayerId);
     if (sel.length === 0) return null;
@@ -1360,7 +1360,7 @@ export function BroadcastPanel({
   // 잠김/숨김이면 그리기 차단.
   const activeLayer = layers.find((l) => l.id === activeLayerId) ?? null;
   const toolBlocked =
-    tool !== "select" && (!activeLayer || activeLayer.lock || !activeLayer.vis);
+    tool !== "select" && (!activeLayer || !activeLayer.vis);
   const activeLayerName = bgActive ? "일정" : (activeLayer?.name ?? "레이어 없음");
 
   // 도구 버튼이 켜졌는데 일정/잠금/숨김 레이어라 실제 입력은 막히는 dead state를 없앤다.
@@ -1843,7 +1843,7 @@ export function BroadcastPanel({
     layerSeq.current += 1;
     const id = `layer-${layerSeq.current}`;
     const before = layersRef.current;
-    const after = [{ id, name: `레이어 ${layerSeq.current}`, vis: true, lock: false }, ...before];
+    const after = [{ id, name: `레이어 ${layerSeq.current}`, vis: true }, ...before];
     pendingLayerRevealRef.current = { id, position: "top" };
     setLayers(after);
     setActiveLayerId(id); // 새 레이어가 맨 위 + 바로 활성
@@ -2057,11 +2057,9 @@ export function BroadcastPanel({
       trigger: e.currentTarget,
       started: false,
       beforeId: undefined,
-      // 인접 슬롯 midpoint 간격 = 카드+간격 한 칸(균일 목록). 슬롯이 1개뿐이면 카드 높이+8.
-      step:
-        slots.length >= 2
-          ? Math.abs(slots[1].midpoint - slots[0].midpoint)
-          : rect.height + 8,
+      // 한 칸 = 카드 높이 + 목록 간격(8). ⚠ 슬롯 midpoint 차이로 재면 드래그 카드가
+      // 사이에 낀 구간은 간격이 2배로 잡혀 형제가 두 칸씩 날아갔다(실사용 버그).
+      step: rect.height + 8,
       slots
     };
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -2142,8 +2140,6 @@ export function BroadcastPanel({
     hapticTick();
     setLayers((ls) => ls.map((x) => (x.id === id ? { ...x, vis: !x.vis } : x)));
   }
-
-  // (잠그기 토글은 사용자 결정으로 UI에서 제거 — lock 상태 필드·잠김 안내는 존치.)
 
   const eventsByDate = useMemo(
     () => new Map(days.map((d) => [d.dateKey, d.events] as const)),
@@ -2259,7 +2255,7 @@ export function BroadcastPanel({
         e.preventDefault();
         // 선택된 획 삭제 — 장면에서 제거(scene 스냅샷으로 undo 가능).
         const selectedLayer = layersRef.current.find(
-          (l) => l.id === activeLayerIdRef.current && l.vis && !l.lock
+          (l) => l.id === activeLayerIdRef.current && l.vis
         );
         const editableStrokes = selectedLayer
           ? strokeSelRef.current.filter((s) => s.layer === selectedLayer.id)
@@ -2647,7 +2643,7 @@ export function BroadcastPanel({
               aria-label={clearArmed ? "한 번 더 누르면 전체 지우기" : "전체 지우기"}
               className={`bp-command-button danger${clearArmed ? " armed" : ""}`}
               disabled={store.strokes().length === 0 && !store.canRedo() && !clearArmed}
-              title="잠긴 레이어 포함 전체 지우기 — 두 번 눌러 실행, 되돌릴 수 없음"
+              title="전체 지우기 — 두 번 눌러 실행, 되돌릴 수 없음"
               type="button"
               onClick={doClearAll}
             >
@@ -2857,7 +2853,7 @@ export function BroadcastPanel({
               ? "'일정' 레이어에선 카드만 움직여요 — 펜·색·굵기를 고르면 그림 레이어로 돌아갑니다"
               : layers.length === 0
                 ? "그림 레이어가 없어요 — 오른쪽에서 새 레이어를 추가해주세요"
-                : "활성 레이어가 잠겨 있거나 숨겨져 있어요"}
+                : "활성 레이어가 숨겨져 있어요"}
           </span>
         ) : null}
       </div>
@@ -3300,8 +3296,6 @@ export function BroadcastPanel({
               >
                 {l.vis ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
               </button>
-              {/* 잠그기 버튼은 사용자 결정으로 행에서 제거(너비 확보) — 잠금 상태 자체는
-                  데이터에 남아 있고, 잠긴 레이어 안내(bp-lock-hint)도 그대로 동작한다. */}
               <button
                 aria-label={`${l.name} 삭제`}
                 className="bp-layer-btn danger"
