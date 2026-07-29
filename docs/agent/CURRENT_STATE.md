@@ -27,13 +27,18 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
 - **`P0-DATA-2` 완료(2026-07-29 밤)**: 0055 마이그레이션 적용됨(save_event_atomic/
   reorder_events_atomic/link_chain_atomic, SECURITY INVOKER). 액션 연결 + 클라 target rollback
   (전체 스냅샷 복원 폐지). service-role 왕복 실측 검증. **실계정 첫 저장/드래그로 실전 확인 권장**.
+- **`P0-PRIV-3` 완료(2026-07-29 밤)**: embargo 행 0 감사 + 0056 CHECK 제약(신규 embargo 쓰기
+  DB 차단, 적용됨) + 죽은 can_view_embargo true 기록 중단 + 샘플 현행화. 앱의 embargo 분기는
+  fail-closed 방어로 의도적 존치.
+- **`P0-A11Y-1` 부분 완료**: 모바일 편집실 월 이동 버튼 가시화(44px, sticky 헤더). fixture에
+  poster CSS import(모바일 아젠다 골격이 poster CSS 공유 — fixture 전용 갭이었음).
+  남은 A11Y-1: roving date grid + 선택일 event list, 드래그 메뉴 대안, 업도움 키보드 경로.
 - **다음 P0 순서(새 세션 권장)**:
-  2. `P0-PRIV-2` L8 auth-session unlock(grant 테이블/쿠키/rate limit/no-store) — **소유자
-     잠금해제가 걸린 기능이라 배포 중 하위호환 필수**, 단독 세션에서 신중히.
-  3. `P0-PRIV-3` legacy embargo 정리(0025 적용 감사 + enum/type/UI 제거).
-  4. `P0-DATA-1` fling 삭제 제거 + tombstone(8초 스낵바/24h 최근 삭제, L5).
-  5. `P0-A11Y-1`(모바일 월 내비 가시화·roving date grid·드래그 메뉴 대안) / `P0-RESP-1`(가로
-     차단 오버레이 제거 — F9 레이아웃과 함께).
+  1. `P0-PRIV-2` L8 auth-session unlock(grant 테이블/쿠키/rate limit/no-store) — **소유자
+     잠금해제가 걸린 기능이라 배포 중 하위호환 필수**, 단독 집중 세션에서. 비밀번호는 이미
+     커스텀으로 변경돼 있음(초기값 아님 — 강제 교체 조율 불필요, 사용자 확인).
+  2. `P0-DATA-1` fling 삭제 제거 + tombstone(8초 스낵바/24h 최근 삭제, L5) — 소비자 전수 스윕.
+  3. `P0-A11Y-1` 잔여 + `P0-RESP-1`(가로 차단 오버레이 제거 — F9 레이아웃과 함께).
   그 뒤 P1(빠른 생성·이동 메뉴·undo/redo·아이패드…), P2 토큰화, **최종적으로 애플 기조
   리디자인을 뼈대 위에**(사용자 합의된 순서).
 - **주의**: role fixture·canary 자동화는 아직 부분적(event-validation 단위 테스트만). 계획서
