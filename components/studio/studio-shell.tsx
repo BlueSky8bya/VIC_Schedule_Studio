@@ -1428,8 +1428,6 @@ export function StudioShell({
     [selectedEventId, visibleEvents]
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
-  // P0-A11Y-1 '이동' 모드 — 편집 패널의 이동 버튼으로 무장한 일정 id. 다음 날짜 클릭이 이동이 된다.
-  const [moveArmId, setMoveArmId] = useState<string | null>(null);
 
   // 접힌 '공개 범위 · 옵션' 헤더에 현재 값을 한 줄로 요약한다 — 접혀 있어도 이 일정이 엠바고인지,
   // 미정인지, 떡밥인지 펼치지 않고 바로 보이게(접기가 정보를 숨기면 안 된다).
@@ -1797,21 +1795,6 @@ export function StudioShell({
   }
 
   function selectDate(isoDate: string) {
-    // P0-A11Y-1 이동 모드: '이동' 버튼으로 무장된 상태면, 이 날짜 클릭(또는 키보드 Enter)은
-    // 선택이 아니라 **그 날짜로 이동**이다 — 드래그 없이 단일 포인터/키보드로 이동(WCAG 2.5.7).
-    if (moveArmId) {
-      const armed = events.find((e) => e.id === moveArmId);
-      setMoveArmId(null);
-      if (armed) {
-        const from = getEventDateKey(armed);
-        if (from !== isoDate) {
-          dropEventInto(armed.id, from, isoDate, null); // 드래그 드롭과 동일 경로(undo·직렬 저장 포함)
-        } else {
-          flashToast("같은 날짜예요 — 이동 취소");
-        }
-      }
-      return;
-    }
     // 이미 그 날짜의 새 일정 카드가 열려 있는데 같은 날짜를 또 누르면 → 선택 해제(카드 닫기).
     if (editorVisible && selectedDate === isoDate && selectedEventId === null) {
       setEditorVisible(false);
@@ -3846,30 +3829,8 @@ export function StudioShell({
     if (!clipboard) return;
     insertEventCopy(clipboard, selectedDate, `${selectedDate}에 붙여넣음`);
   }
-  // P0-A11Y-1: 드래그/단축키 없이도 되는 '복제' — 편집 패널 버튼이 같은 날짜로 즉시 복제한다.
-  function duplicateSelectedEvent() {
-    if (!selectedEventId) return;
-    const ev = events.find((e) => e.id === selectedEventId);
-    if (!ev) return;
-    const start = getEventDateKey(ev);
-    insertEventCopy(
-      {
-        publicTitle: ev.publicTitle,
-        spanDays: ev.endDateKey ? Math.max(0, daysBetweenIso(start, ev.endDateKey)) : 0,
-        isSupport: ev.isSupport ?? false,
-        isTentative: ev.isTentative ?? false,
-        supportUrl: ev.supportUrl ?? "",
-        category: ev.category,
-        status: ev.status,
-        visibilityScope: ev.visibilityScope,
-        tagIds: ev.tagIds,
-        primaryTagIds: ev.primaryTagIds
-      },
-      start,
-      "복제됐어요"
-    );
-  }
-  // 복사본 삽입 공통 경로 — Ctrl+V 붙여넣기와 '복제' 버튼이 함께 쓴다.
+  // (복제 버튼 제거 — Ctrl+C/V가 정식 경로. insertEventCopy는 붙여넣기 전용으로 유지.)
+  // 복사본 삽입 공통 경로 — Ctrl+V 붙여넣기가 쓴다(targetDate 파라미터화 유지).
   function insertEventCopy(payload: CopiedEvent, targetDate: string, toast: string) {
     if (!canEdit) return;
     // P0-SEC-1(fail-closed): 잠금 상태에서 비공개 일정을 붙여넣으면 예전엔 공개로 강제 변환
@@ -4026,13 +3987,6 @@ export function StudioShell({
         }
         return;
       }
-      // 이동 모드(P0-A11Y-1)는 Esc로 취소.
-      if (e.key === "Escape" && moveArmId) {
-        e.preventDefault();
-        setMoveArmId(null);
-        flashToast("이동 취소");
-        return;
-      }
       // Delete 키: 선택한 일정 삭제(버튼 없이도).
       if (e.key === "Delete" && selectedEventId) {
         e.preventDefault();
@@ -4058,7 +4012,7 @@ export function StudioShell({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events, editorVisible, form, moveArmId]);
+  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events, editorVisible, form]);
 
   // 모바일 아젠다도 데스크톱과 동일하게 — 비공개 일정은 "비공개 일정 보기"로 직접 켜기 전까진
   // 누구에게도(개발자·소유자 포함) 보이지 않는다. 방송사고 방지: 진입/새로고침 시 항상 공개 기본.
@@ -5405,12 +5359,6 @@ export function StudioShell({
           {copyToast}
         </div>
       ) : null}
-      {/* 이동 모드 안내(P0-A11Y-1) — 무장 동안 상단에 계속 떠서 다음 행동을 알려준다. */}
-      {moveArmId ? (
-        <div className="copy-toast" role="status" aria-live="polite">
-          옮길 날짜 칸을 클릭하세요 · Esc 취소
-        </div>
-      ) : null}
       {/* P0-DATA-1: 삭제 스낵바 — 8초 동안 그 자리에서 실행 취소(터치 포함, Ctrl+Z와 같은 복구). */}
       {deleteSnack ? (
         <div className="delete-snack" role="status" aria-live="polite">
@@ -6263,33 +6211,8 @@ export function StudioShell({
                   </span>
                   <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
                 </div>
-                {/* P0-A11Y-1: 드래그·단축키 없이도 되는 이동/복제(WCAG 2.5.7 단일 포인터 대안). */}
-                {selectedEventId && canEdit ? (
-                  <div className="editor-heading-tools">
-                    <button
-                      className={`editor-tool${moveArmId === selectedEventId ? " on" : ""}`}
-                      onClick={() => {
-                        hapticTick();
-                        setMoveArmId((cur) => (cur === selectedEventId ? null : selectedEventId));
-                      }}
-                      title="다른 날짜로 이동 — 누른 뒤 달력에서 옮길 날짜를 클릭(Esc 취소)"
-                      type="button"
-                    >
-                      이동
-                    </button>
-                    <button
-                      className="editor-tool"
-                      onClick={() => {
-                        hapticTick();
-                        duplicateSelectedEvent();
-                      }}
-                      title="같은 날짜에 복제"
-                      type="button"
-                    >
-                      복제
-                    </button>
-                  </div>
-                ) : null}
+                {/* (이동/복제 버튼 제거 — 사용자 결정: 드래그와 Ctrl+C/V 단축키가 충분해
+                    버튼은 헤더 소음이었다. 비드래그 대안이 다시 필요하면 git 이력에 구현이 있다.) */}
                 <button
                   className="button primary editor-save"
                   disabled={!canEdit || !form.publicTitle.trim()}
