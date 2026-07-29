@@ -4031,7 +4031,7 @@ export function StudioShell({
   // 패널은 **내용만 짧게 전환**한다. 그래서 지금은 다른 일정으로 갈아탈 때 패널 내용이 6px
   // 아래에서 빠르게 떠오르는 절제된 전환(170ms)만 남겼다.
   // TODO(나중에): 새 일정 작성 vs 기존 일정 수정을 안 짜치게 구분할 좋은 방법이 생기면 구현하고
-  // 싶다(예: 패널 헤더의 조용한 상태 표기, 폼 톤 미세 차이 등 — 날아다니는 연출은 금지).
+  // 싶다(예: 패널 헤더의 조용한 상태 표기, 폼 톤 미세 차이 등).
   const prevSelectedRef = useRef<string | null>(null);
   useEffect(() => {
     const prev = prevSelectedRef.current;
