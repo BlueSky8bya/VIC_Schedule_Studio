@@ -3644,10 +3644,29 @@ export function PublicPoster({
                   role="dialog"
                 >
                   <div className="agenda-detail-head">
-                    <span className="agenda-detail-date">
-                      {formatShortDate(dateKey)}
-                      {end && end !== dateKey ? ` ~ ${formatShortDate(end)}` : ""}
-                    </span>
+                    {(() => {
+                      // 달력과 같은 날짜 규칙(사용자 요청): 요일 표기 + 일요일·공휴일=빨강,
+                      // 토요일=파랑, 특별한 날 이름(제헌절·초복 등)은 달력 마크와 같은 톤.
+                      const wd = new Date(`${dateKey}T00:00:00Z`).getUTCDay();
+                      const mark = withoutWorldCupMark(getDayMark(dateKey));
+                      const isRed = wd === 0 || Boolean(mark?.isHoliday);
+                      const tone = isRed ? " red" : wd === 6 ? " saturday" : "";
+                      return (
+                        <span className="agenda-detail-date">
+                          <b className={`agenda-detail-day${tone}`}>
+                            {formatShortDate(dateKey)} ({WEEKDAYS[wd]})
+                          </b>
+                          {end && end !== dateKey ? ` ~ ${formatShortDate(end)}` : ""}
+                          {mark?.name ? (
+                            <em
+                              className={`agenda-mark agenda-detail-mark${mark.isHoliday ? " holiday" : ""}`}
+                            >
+                              {mark.name}
+                            </em>
+                          ) : null}
+                        </span>
+                      );
+                    })()}
                     <button
                       aria-label="닫기"
                       autoFocus

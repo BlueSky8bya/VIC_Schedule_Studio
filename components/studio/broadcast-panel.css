@@ -981,7 +981,10 @@ html[data-reduce-motion] .bp-kbd-close:active {
     border-color var(--dur-1) var(--ease),
     box-shadow var(--dur-1) var(--ease),
     transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
-  animation: bp-layer-in var(--dur-2, 0.2s) var(--ease-enter, var(--ease)) both;
+  /* ⚠ fill을 both로 두면 끝난 뒤에도 마지막 키프레임(transform:none)이 인라인 transform을
+     영구히 덮는다(애니메이션 > 인라인) — 드래그 슬라이드 프리뷰가 전부 무효화됐었다.
+     backwards면 등장 연출은 같고 종료 후엔 손을 뗀다. */
+  animation: bp-layer-in var(--dur-2, 0.2s) var(--ease-enter, var(--ease)) backwards;
 }
 @keyframes bp-layer-in {
   from {
@@ -2343,13 +2346,6 @@ html[data-reduce-motion] .bp-send {
   font-size: 20px;
 }
 
-.bp-layer-item .bp-layer-btn {
-  width: 32px;
-  height: 32px;
-  min-width: 0;
-  min-height: 0;
-}
-
 .bp-layer-actions {
   gap: 2px;
 }
@@ -2369,7 +2365,9 @@ html[data-reduce-motion] .bp-send {
   opacity: 0.45;
 }
 
-.bp-layer-item.drop-before::before {
+/* 삽입선(::before)·삽입점(::after) 모두 숨김 — 슬라이드 프리뷰가 위치를 말한다. */
+.bp-layer-item.drop-before::before,
+.bp-layer-item.drop-before::after {
   display: none;
 }
 
@@ -2377,9 +2375,13 @@ html[data-reduce-motion] .bp-layer-list .bp-layer-item {
   transition: none;
 }
 
+/* 폭 예산(스크롤바 포함 200px): 이 규칙이 위 56px 썸네일과 짝 — 44px이면 눈 버튼이
+   썸네일을 덮는다. (이전엔 이 원본 규칙이 뒤에 있어 32px 오버라이드가 졌었다.) */
 .bp-layer-item .bp-layer-btn {
-  width: var(--control-hit);
-  height: var(--control-hit);
+  width: 32px;
+  height: 32px;
+  min-width: 0;
+  min-height: 0;
   color: var(--ink-soft);
 }
 

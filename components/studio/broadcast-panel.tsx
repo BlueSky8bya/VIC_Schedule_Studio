@@ -2028,6 +2028,9 @@ export function BroadcastPanel({
     const card = e.currentTarget.closest<HTMLElement>(".bp-layer-item");
     const list = layerListRef.current;
     if (!card || !list) return;
+    // 포인터 클릭이 focus-visible 링(썸네일 둘레 보라 박스)을 남기지 않게 — 클릭 선택은
+    // onClick이 처리하고, 키보드 포커스(Tab) 경로는 그대로 살아 있다.
+    e.preventDefault();
     layerDragClickBlockedRef.current = false;
     const rect = card.getBoundingClientRect();
     const listRect = list.getBoundingClientRect();

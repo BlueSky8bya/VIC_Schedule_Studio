@@ -5786,8 +5786,14 @@ export function StudioShell({
                         isConnTarget ? "connect-target" : "",
                         isConnHover ? "connect-hover" : "",
                         connDim ? "connect-dim" : "",
-                        cutFlashId === event.id ? "cut-flash cut-recoil-prev" : "",
-                        cutFlashNextId === event.id ? "cut-recoil-next" : "",
+                        // 잘린 이음새 '그 칸'에서만 — 멀티데이면 칸마다 재생돼 사선이
+                        // 여러 번 떨어져 보였다(사용자 지적).
+                        cutFlashId === event.id && cell.isoDate === evEndKey
+                          ? "cut-flash cut-recoil-prev"
+                          : "",
+                        cutFlashNextId === event.id && cell.isoDate === evStartKey
+                          ? "cut-recoil-next"
+                          : "",
                         linkFlashIds.has(event.id) ? "just-linked" : "",
                         justSavedId === event.id ? "just-saved" : "",
                         deletingIds.has(event.id) ? "deleting" : ""

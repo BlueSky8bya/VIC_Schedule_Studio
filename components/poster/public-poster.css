@@ -5871,3 +5871,27 @@ html[data-reduce-motion] .agenda-detail-sheet {
 html[data-reduce-motion] .agenda-detail-close:active {
   transform: none;
 }
+
+/* 상세 시트 날짜 줄 — 달력과 같은 색 규칙(일·공휴일 빨강, 토 파랑) + 특별한 날 마크. */
+.agenda-detail-date {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.agenda-detail-day {
+  font-weight: 800;
+}
+
+.agenda-detail-day.red {
+  color: #e2483d;
+}
+
+.agenda-detail-day.saturday {
+  color: #2f6bd8;
+}
+
+.agenda-detail-mark {
+  font-style: normal;
+}
