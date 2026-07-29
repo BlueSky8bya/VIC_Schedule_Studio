@@ -3737,6 +3737,11 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   position: relative;
   display: inline-flex;
 }
+/* 관리 ▾ 드롭다운(IA A안) — 미리보기 드롭다운과 같은 문법(메뉴·항목 스타일 공유). */
+.manage-dd {
+  position: relative;
+  display: inline-flex;
+}
 .preview-dd-trigger {
   gap: 6px;
 }

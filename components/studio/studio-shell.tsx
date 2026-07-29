@@ -610,6 +610,8 @@ export function StudioShell({
   // 이 플래그를 더해 "매니저 권한 + 작업자 비공개 접근 + 매니저·작업자 라벨"로 그린다.
   const [previewDual, setPreviewDual] = useState(false);
   const [previewMenuOpen, setPreviewMenuOpen] = useState(false);
+  // 애플 리디자인 2화면(IA, 사용자 A안): 저빈도 관리 3종(태그·멤버·인사이트)을 '관리 ▾' 하나로.
+  const [manageMenuOpen, setManageMenuOpen] = useState(false);
   const effectiveRole: MembershipRole = previewRole ?? actor.role;
   // 미리보기 화면이 보는 역할이 관리자인가(관리자 본인 + "관리자 미리보기" 둘 다 포함).
   const isEffectivelyOwner = effectiveRole === "owner";
@@ -935,6 +937,29 @@ export function StudioShell({
       document.removeEventListener("keydown", onKey);
     };
   }, [roleHelpOpen]);
+
+  // 관리 드롭다운: 바깥을 누르거나 Esc로 닫는다(미리보기 드롭다운과 동일 문법).
+  useEffect(() => {
+    if (!manageMenuOpen) {
+      return;
+    }
+    const onPointerDown = (event: PointerEvent) => {
+      if (!(event.target as HTMLElement | null)?.closest(".manage-dd")) {
+        setManageMenuOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setManageMenuOpen(false);
+      }
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [manageMenuOpen]);
 
   // 미리보기 드롭다운: 바깥을 누르거나 Esc로 닫는다.
   useEffect(() => {
@@ -5208,38 +5233,81 @@ export function StudioShell({
           (개발자 역할 표시는 헤더의 역할 배지로 충분 — 별도 세션 안내 줄은 두지 않는다.) */}
       <div className="studio-actionbar">
         <div className="studio-actionbar-tools">
-          {/* 관리 묶음 — owner/dev 운영 도구(태그·멤버·접속자)를 한 덩어리로. 매니저/작업자(또는
-              그 역할 미리보기 중)는 비어서 렌더하지 않는다 → 액션바가 꾸미기 하나로 깔끔해진다. */}
+          {/* 애플 리디자인 2화면(IA, 사용자 A안): 저빈도 관리 3종(태그·멤버·인사이트)을
+              '관리 ▾' 드롭다운 하나로 접는다 — 자주 쓰는 것(비공개·꾸미기)만 바로 노출.
+              매니저/작업자(관리 권한 없음)는 인사이트 단일 버튼만(항목 1개에 드롭다운은 과함). */}
           {canEdit || (isDeveloper && !previewRole) ? (
-            <div className="studio-manage-group" role="group" aria-label="관리">
-              {/* 단계 배포: 태그 '정의 편집' 진입은 v3 역할(현재 개발자)만. */}
-              {canEdit && taxonomyV3 ? (
-                <button
-                  className="button io-accent io-tags"
-                  onClick={() => (blockedByPreview() ? null : setModal("tags"))}
-                  type="button"
-                >
-                  태그 편집
-                </button>
-              ) : null}
-              {canEdit ? (
-                <button
-                  className="button io-accent io-members"
-                  onClick={() => (blockedByPreview() ? null : setModal("members"))}
-                  type="button"
-                >
-                  멤버 관리
-                </button>
-              ) : null}
-              {isDeveloper && !previewRole ? (
-                <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button">
-                  🛠 월별 인사이트
-                </button>
+            <div className="manage-dd">
+              <button
+                aria-expanded={manageMenuOpen}
+                aria-haspopup="menu"
+                className="button io-accent manage-dd-trigger"
+                onClick={() => setManageMenuOpen((v) => !v)}
+                type="button"
+              >
+                관리
+                <span aria-hidden="true" className="preview-dd-caret">
+                  ▾
+                </span>
+              </button>
+              {manageMenuOpen ? (
+                <div className="preview-dd-menu" role="menu">
+                  {/* 단계 배포: 태그 '정의 편집' 진입은 v3 역할(현재 개발자)만. */}
+                  {canEdit && taxonomyV3 ? (
+                    <button
+                      className="preview-dd-item"
+                      onClick={() => {
+                        setManageMenuOpen(false);
+                        if (!blockedByPreview()) setModal("tags");
+                      }}
+                      role="menuitem"
+                      type="button"
+                    >
+                      태그 편집
+                    </button>
+                  ) : null}
+                  {canEdit ? (
+                    <button
+                      className="preview-dd-item"
+                      onClick={() => {
+                        setManageMenuOpen(false);
+                        if (!blockedByPreview()) setModal("members");
+                      }}
+                      role="menuitem"
+                      type="button"
+                    >
+                      멤버 관리
+                    </button>
+                  ) : null}
+                  {isDeveloper && !previewRole ? (
+                    <button
+                      className="preview-dd-item"
+                      onClick={() => {
+                        setManageMenuOpen(false);
+                        setModal("developer");
+                      }}
+                      role="menuitem"
+                      type="button"
+                    >
+                      🛠 월별 인사이트
+                    </button>
+                  ) : canMemberInsights ? (
+                    <button
+                      className="preview-dd-item"
+                      onClick={() => {
+                        setManageMenuOpen(false);
+                        setModal("developer");
+                      }}
+                      role="menuitem"
+                      type="button"
+                    >
+                      📊 월별 인사이트
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
             </div>
-          ) : null}
-          {/* 관리자·매니저·작업자(또는 그 역할 미리보기) — 수치 없는 4패널 멤버 인사이트. */}
-          {canMemberInsights ? (
+          ) : canMemberInsights ? (
             <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button">
               📊 월별 인사이트
             </button>
