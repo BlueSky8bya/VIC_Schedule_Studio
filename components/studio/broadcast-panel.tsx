@@ -40,8 +40,6 @@ import {
   GripVertical,
   Highlighter,
   Keyboard,
-  Lock,
-  LockOpen,
   MousePointer2,
   MoveUpRight,
   Pen,
@@ -2145,14 +2143,7 @@ export function BroadcastPanel({
     setLayers((ls) => ls.map((x) => (x.id === id ? { ...x, vis: !x.vis } : x)));
   }
 
-  function toggleLayerLock(id: string) {
-    const current = layersRef.current.find((l) => l.id === id);
-    if (!current) return;
-    const willLock = !current.lock;
-    if (id === activeLayerIdRef.current && willLock) setStrokeSel([]);
-    hapticTick();
-    setLayers((ls) => ls.map((x) => (x.id === id ? { ...x, lock: !x.lock } : x)));
-  }
+  // (잠그기 토글은 사용자 결정으로 UI에서 제거 — lock 상태 필드·잠김 안내는 존치.)
 
   const eventsByDate = useMemo(
     () => new Map(days.map((d) => [d.dateKey, d.events] as const)),
@@ -3293,7 +3284,9 @@ export function BroadcastPanel({
                 />
               </span>
               <span className="bp-layer-meta">
-                <em>{l.name}</em>
+                {/* 좁은 행에서 '레이어 12'가 '레.'로 잘렸다 — 기본 이름은 번호만 표시
+                    (전체 이름은 aria-label·title이 담당). 사용자 지정 이름은 그대로. */}
+                <em>{l.name.replace(/^레이어 (?=\d+$)/, "")}</em>
               </span>
             </button>
             <div className="bp-layer-actions">
@@ -3307,16 +3300,8 @@ export function BroadcastPanel({
               >
                 {l.vis ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
               </button>
-              <button
-                aria-label={`${l.name} 잠금`}
-                aria-pressed={l.lock}
-                className="bp-layer-btn"
-                title={l.lock ? "잠금 풀기" : "잠그기"}
-                type="button"
-                onClick={() => toggleLayerLock(l.id)}
-              >
-                {l.lock ? <Lock aria-hidden="true" size={14} /> : <LockOpen aria-hidden="true" size={14} />}
-              </button>
+              {/* 잠그기 버튼은 사용자 결정으로 행에서 제거(너비 확보) — 잠금 상태 자체는
+                  데이터에 남아 있고, 잠긴 레이어 안내(bp-lock-hint)도 그대로 동작한다. */}
               <button
                 aria-label={`${l.name} 삭제`}
                 className="bp-layer-btn danger"

@@ -548,10 +548,22 @@ export function StudioShell({
     flashToast("싹둑 — 연결을 끊었어요");
     setCutFlashId(earlierId);
     setCutFlashNextId(prevNext);
+    // 사선 좌표 캡처 — 이 일정의 마지막 칸(이음새 쪽) 오른쪽 변. setState 전에 실측해야
+    // 낙관 반영으로 pill 기하가 바뀌기 전 위치에 정확히 떨어진다.
+    const segs = document.querySelectorAll<HTMLElement>(
+      `[data-eventid="${CSS.escape(earlierId)}"]`
+    );
+    const seamEl = segs[segs.length - 1];
+    if (seamEl) {
+      const r = seamEl.getBoundingClientRect();
+      cutFxSeq.current += 1;
+      setCutFx({ left: r.right - 8, top: r.top - 4, height: r.height + 8, seq: cutFxSeq.current });
+    }
     if (cutFlashTimer.current) window.clearTimeout(cutFlashTimer.current);
     cutFlashTimer.current = window.setTimeout(() => {
       setCutFlashId(null);
       setCutFlashNextId(null);
+      setCutFx(null);
     }, 520);
     void (async () => {
       const result = await enqueueWrite(async () => {
@@ -1588,6 +1600,15 @@ export function StudioShell({
   const cutFlashTimer = useRef<number | null>(null);
   // 끊긴 이음새의 '다음' 카드 — 앞 카드와 반대 방향으로 반동(스프링 분리 연출).
   const [cutFlashNextId, setCutFlashNextId] = useState<string | null>(null);
+  // 사선(붉은 칼자국)은 카드 밖 fixed 오버레이로 1회만 — 카드 클래스에 얹으면 낙관 반영/
+  // 서버 동기화로 pill이 다시 그려질 때 애니메이션이 재시작돼 두 번 떨어져 보였다.
+  const [cutFx, setCutFx] = useState<{
+    left: number;
+    top: number;
+    height: number;
+    seq: number;
+  } | null>(null);
+  const cutFxSeq = useRef(0);
   // 방금 이어진 체인 — 딸깍 맞물림 + 보라 글로우 1회.
   const [linkFlashIds, setLinkFlashIds] = useState<Set<string>>(() => new Set());
   const linkFlashTimer = useRef<number | null>(null);
@@ -5126,6 +5147,15 @@ export function StudioShell({
           {copyToast}
         </div>
       ) : null}
+      {/* 끊기 사선 — 카드 밖 fixed 오버레이라 pill이 다시 그려져도 정확히 1회만 떨어진다. */}
+      {cutFx ? (
+        <span
+          aria-hidden="true"
+          className="seam-cut-fx"
+          key={cutFx.seq}
+          style={{ left: cutFx.left, top: cutFx.top, height: cutFx.height }}
+        />
+      ) : null}
       {/* P0-DATA-1: 삭제 스낵바 — 8초 동안 그 자리에서 실행 취소(터치 포함, Ctrl+Z와 같은 복구). */}
       {deleteSnack ? (
         <div className="delete-snack" role="status" aria-live="polite">
@@ -5786,10 +5816,9 @@ export function StudioShell({
                         isConnTarget ? "connect-target" : "",
                         isConnHover ? "connect-hover" : "",
                         connDim ? "connect-dim" : "",
-                        // 잘린 이음새 '그 칸'에서만 — 멀티데이면 칸마다 재생돼 사선이
-                        // 여러 번 떨어져 보였다(사용자 지적).
+                        // 반동만 카드에(사선은 fixed 오버레이 cutFx가 1회 담당).
                         cutFlashId === event.id && cell.isoDate === evEndKey
-                          ? "cut-flash cut-recoil-prev"
+                          ? "cut-recoil-prev"
                           : "",
                         cutFlashNextId === event.id && cell.isoDate === evStartKey
                           ? "cut-recoil-next"
