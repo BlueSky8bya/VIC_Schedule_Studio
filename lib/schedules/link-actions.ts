@@ -5,6 +5,7 @@ import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canEditSchedule } from "@/lib/permissions/roles";
+import { safeActionError } from "@/lib/utils/safe-action-error";
 
 export type LinkResult = { ok: true } | { ok: false; error: string };
 
@@ -43,7 +44,7 @@ export async function linkChainAction(orderedIds: string[]): Promise<LinkResult>
   );
   const failed = results.find((r) => r.error);
   if (failed?.error) {
-    return { ok: false, error: failed.error.message };
+    return { ok: false, error: safeActionError("일정 연결", failed.error) };
   }
 
   revalidatePath("/");
@@ -61,7 +62,7 @@ export async function unlinkPairAction(earlierId: string): Promise<LinkResult> {
     .from("events")
     .update({ link_next: null, updated_at: new Date().toISOString() })
     .eq("id", earlierId);
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: safeActionError("일정 연결 해제", error) };
 
   revalidatePath("/");
   revalidatePath("/studio");

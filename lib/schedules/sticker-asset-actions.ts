@@ -6,6 +6,7 @@ import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canManageStickerAssets } from "@/lib/permissions/roles";
+import { safeActionError } from "@/lib/utils/safe-action-error";
 
 import type { StickerAsset, StickerAssetKind } from "@/lib/domain/schedule-types";
 import { isStickerAssetKind } from "@/lib/domain/schedule-types";
@@ -66,7 +67,7 @@ export async function uploadStickerAssetAction(formData: FormData): Promise<Stic
     .from(BUCKET)
     .upload(path, file, { contentType: file.type, upsert: false });
   if (uploadError) {
-    return { ok: false, error: `업로드 실패: ${uploadError.message}` };
+    return { ok: false, error: safeActionError("이모지 업로드", uploadError) };
   }
 
   const publicUrl = supabase.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
@@ -101,7 +102,7 @@ export async function uploadStickerAssetAction(formData: FormData): Promise<Stic
   if (error || !data) {
     // 행 생성 실패 시 업로드된 파일은 정리한다.
     await supabase.storage.from(BUCKET).remove([path]);
-    return { ok: false, error: error?.message ?? "에셋 생성 실패" };
+    return { ok: false, error: safeActionError("이모지 업로드", error) };
   }
 
   revalidatePath("/");
@@ -156,7 +157,7 @@ export async function reorderStickerAssetsAction(ids: string[]): Promise<Sticker
   );
   const failed = results.find((r) => r.error);
   if (failed?.error) {
-    return { ok: false, error: failed.error.message };
+    return { ok: false, error: safeActionError("이모지 정렬 저장", failed.error) };
   }
 
   revalidatePath("/");
@@ -197,7 +198,7 @@ export async function setStickerAssetKindAction(
     .eq("id", assetId)
     .eq("calendar_id", calendar.id);
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: safeActionError("이모지 분류 저장", error) };
   }
 
   revalidatePath("/");
@@ -227,7 +228,7 @@ export async function deleteStickerAssetAction(assetId: string): Promise<Sticker
 
   const { error } = await supabase.from("sticker_assets").delete().eq("id", assetId);
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: safeActionError("이모지 삭제", error) };
   }
 
   // 스토리지 객체도 정리 (public URL에서 버킷 뒤 경로를 추출).

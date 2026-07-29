@@ -6,6 +6,7 @@ import type { BroadcastTag, ColorKey, ColorPaletteEntry, TagKind } from "@/lib/d
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canEditSchedule } from "@/lib/permissions/roles";
+import { safeActionError } from "@/lib/utils/safe-action-error";
 
 export type TagUpdateResult = { ok: true } | { ok: false; error: string };
 
@@ -133,7 +134,7 @@ export async function saveTagsAction(input: {
     if (paletteRows.length > 0) {
       const { error: palErr } = await supabase.from("color_palette").insert(paletteRows);
       if (palErr) {
-        return { ok: false, error: palErr.message };
+        return { ok: false, error: safeActionError("태그 저장", palErr) };
       }
     }
 
@@ -163,7 +164,7 @@ export async function saveTagsAction(input: {
         .select("id")
         .single();
       if (tagErr || !inserted) {
-        return { ok: false, error: tagErr?.message ?? "태그 생성 실패" };
+        return { ok: false, error: safeActionError("태그 저장", tagErr) };
       }
       tempToReal.set(c.tempId, inserted.id as string);
       created.push({
@@ -236,7 +237,7 @@ export async function saveTagsAction(input: {
     );
     const failed = results.find((r) => r.error);
     if (failed?.error) {
-      return { ok: false, error: failed.error.message };
+      return { ok: false, error: safeActionError("태그 저장", failed.error) };
     }
   }
 
@@ -274,7 +275,7 @@ export async function removeTagAction(tagId: string): Promise<TagUpdateResult> {
 
   const { error } = await supabase.from("broadcast_tags").delete().eq("id", tagId);
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: safeActionError("태그 삭제", error) };
   }
 
   // 생성 색이고 더 이상 쓰는 태그가 없으면 팔레트 항목도 삭제(스와치 정리).

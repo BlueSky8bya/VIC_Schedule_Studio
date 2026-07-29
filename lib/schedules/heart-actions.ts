@@ -2,6 +2,7 @@
 
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
+import { safeActionError } from "@/lib/utils/safe-action-error";
 
 export type HeartResult = { ok: true; count: number } | { ok: false; error: string };
 
@@ -26,7 +27,7 @@ export async function toggleEventHeartAction(
       p_event_id: eventId
     });
     if (error) {
-      return { ok: false, error: error.message };
+      return { ok: false, error: safeActionError("하트 반영", error) };
     }
     return { ok: true, count: Number(data) };
   }
@@ -39,7 +40,7 @@ export async function toggleEventHeartAction(
     p_token: token
   });
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: safeActionError("하트 반영", error) };
   }
   return { ok: true, count: Number(data) };
 }

@@ -13,7 +13,11 @@ export default function Error({
         <p className="eyebrow">VIC Studio</p>
         <h1>문제가 발생했어요</h1>
         <p>페이지를 불러오는 중 오류가 났습니다. 다시 시도해 주세요.</p>
-        {error?.message ? <div className="auth-warning">{error.message}</div> : null}
+        {/* P0-SEC-3: 원문 error.message는 DB 테이블명·내부 경로 등 서버 내부를 노출할 수
+            있어 렌더하지 않는다. 추적은 Next가 서버 로그와 짝지어 주는 digest로만. */}
+        {error?.digest ? (
+          <p className="error-digest">문의 코드: {error.digest}</p>
+        ) : null}
         <button className="button primary" onClick={() => reset()} type="button">
           다시 시도
         </button>

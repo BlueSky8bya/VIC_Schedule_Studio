@@ -4,6 +4,7 @@ import { revalidatePublicSchedule } from "@/lib/schedules/cache";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canDecorate } from "@/lib/permissions/roles";
+import { safeActionError } from "@/lib/utils/safe-action-error";
 import {
   SHAPE_KEYS,
   STICKER_ANIMS,
@@ -129,7 +130,7 @@ export async function saveStickerAction(input: SaveStickerInput): Promise<Sticke
   const friendly = (error: { code?: string; message: string }) =>
     error.code === "23503" || /asset_id_fkey/.test(error.message)
       ? "삭제된 커스텀 이모지라 추가/되살릴 수 없어요. 새로고침 후 다시 시도해 주세요."
-      : error.message;
+      : safeActionError("스티커 저장", error);
 
   let stickerId = input.id;
 
@@ -199,7 +200,7 @@ export async function saveStickerBatchAction(
   const friendly = (error: { code?: string; message: string }) =>
     error.code === "23503" || /asset_id_fkey/.test(error.message)
       ? "삭제된 커스텀 이모지라 추가/되살릴 수 없어요. 새로고침 후 다시 시도해 주세요."
-      : error.message;
+      : safeActionError("스티커 저장", error);
 
   const ids: string[] = [];
   for (const input of inputs) {
@@ -259,7 +260,7 @@ export async function deleteStickerBatchAction(
     .in("id", realIds)
     .select("id");
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: safeActionError("스티커 삭제", error) };
   }
   // RLS로 대상이 0행이면 에러 없이 "성공"하며 아무것도 안 지워진다(조용한 실패) → 명시적으로 잡는다.
   if (!data || data.length === 0) {
@@ -295,7 +296,7 @@ export async function deleteStickerAction(stickerId: string): Promise<StickerRes
     .eq("id", stickerId)
     .select("id");
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: safeActionError("스티커 삭제", error) };
   }
   if (!data || data.length === 0) {
     return {

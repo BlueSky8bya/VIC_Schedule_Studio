@@ -66,7 +66,12 @@ export async function POST(request: Request) {
   );
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    // P0-SEC-3: DB 원문 메시지는 서버 로그로만 — 클라이언트에는 일반 안내만.
+    console.error("[api-fail] 신뢰 멤버 저장:", error);
+    return NextResponse.json(
+      { error: "신뢰 멤버 저장에 실패했어요. 잠시 후 다시 시도해 주세요." },
+      { status: 500 }
+    );
   }
 
   return NextResponse.redirect(new URL("/studio/trusted-members", request.url), {

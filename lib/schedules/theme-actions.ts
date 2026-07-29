@@ -6,6 +6,7 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canEditSchedule } from "@/lib/permissions/roles";
 import { isPosterThemeKey } from "@/lib/domain/schedule-types";
+import { safeActionError } from "@/lib/utils/safe-action-error";
 
 export type ThemeResult = { ok: true } | { ok: false; error: string };
 
@@ -31,7 +32,7 @@ export async function setPosterThemeAction(theme: string): Promise<ThemeResult> 
     .update({ poster_theme: theme })
     .eq("slug", SLUG);
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: safeActionError("테마 저장", error) };
   }
 
   revalidatePath("/");
