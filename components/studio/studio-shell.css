@@ -11423,12 +11423,21 @@ html[data-reduce-motion] .members-add .role-segment button:active {
 .modal-card-developer .insights-subtabs button,
 .modal-card-dayVisit .insights-subtabs button,
 .modal-card-developer .insights-refresh,
-.modal-card-dayVisit .insights-refresh,
-.modal-card-developer .vlog-chip,
-.modal-card-dayVisit .vlog-chip {
+.modal-card-dayVisit .insights-refresh {
   min-height: var(--control-hit);
   border-radius: var(--r-control);
   font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+/* 세션 로그 필터 칩 — 44px 버튼화되며 두 줄로 꺾여 무거웠다(사용자 지적). 원래 문법대로
+   가벼운 알약(32px)으로: 일곱 칩이 한두 줄에 자연스럽게 흐른다. */
+.modal-card-developer .vlog-chip,
+.modal-card-dayVisit .vlog-chip {
+  min-height: 32px;
+  border-radius: var(--r-pill);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-label);
   font-weight: var(--weight-semibold);
 }
 
@@ -11484,13 +11493,15 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   line-height: var(--lh-body);
 }
 
+/* 기록 행 — 정보 나열(비조작)이라 44px 히트 높이가 불필요했다. 성기게 떨어져 스크롤이
+   길어지던 것(사용자 지적)을 촘촘한 행으로. */
 .modal-card-developer .dv-sessions li,
 .modal-card-dayVisit .dv-sessions li,
 .modal-card-developer .vlog-row,
 .modal-card-dayVisit .vlog-row {
-  min-height: var(--control-hit);
+  min-height: 0;
   border-bottom: var(--stroke-hairline) solid var(--line-soft);
-  padding: var(--space-2);
+  padding: var(--space-1) var(--space-2);
 }
 
 .modal-card-developer .vt-tip,
