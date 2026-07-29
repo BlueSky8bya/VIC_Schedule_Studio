@@ -1,36 +1,31 @@
 # Active ExecPlan
 
-Plan ID: PLAN-20260730-001
-Status: Completed (scope-adjusted — 4·5단계 보류 판정 포함)
+Plan ID: PLAN-20260730-002
+Status: In Progress
 Task Risk: L2
 Created / Updated: 2026-07-30
 
 ## Objective
-`components/studio/studio-shell.tsx`(~6,800줄)를 **동작 보존** 전제로 단계 분해해
-(P2-ARCH-1, 계획서 K3) 회귀를 격리 가능한 구조로 만든다.
+애플 기조 리디자인 — 벤치마크 보고서(docs/ux/apple-hci-benchmark-report.md, 조화·몰입·재미)
+기준으로 화면 단위 폴리시. 기능/동작은 불변, 시각·타이포·간격·재질만 다듬는다.
 
-## Verifiable End State
-- studio-shell.tsx가 뷰/편집폼/쓰기큐/히스토리 단위로 나뉘고, 각 단계 커밋마다
-  `next build` + fixture 회귀 스크립트(undo/redo·quickadd·ipad·today)가 통과한다.
-- 마크업·CSS 클래스·권한 게이트·공개 경계 코드는 변화 0 (순수 이동/치환).
+## 이미 적용돼 있는 것(중복 작업 금지)
+A1 스프링 토큰 · A2 버튼 릴리스 바운스 · B1 시트 드래그 닫기 · B3 스티커 러버밴딩+스냅 노치 ·
+B4 FLIP · C1 일부(상단 셸 glass·dtp/tag-cpop/줌픽 재질) · D1 내보내기 보상 썸네일.
 
-## Scope / Out of Scope
-- Scope: 코드 이동·훅 추출·특성화 테스트. Out: 동작 변경, 스타일 변경, 리디자인.
+## ⚠ 사용자 롤백 이력(다시 시도 금지)
+- 모달 카드 글래스 재질(불투명 유지 결정) · 카드→패널 fly/morph 전이(짜침 판정, 삭제)
+- 제목칸 카드 미러/레일(textarea 한계로 철회) · 이동/복제 헤더 버튼
 
-## 단계 (한 단계 = 한 커밋 = 회귀 통과)
-1. [x] 모듈 레벨 순수 코드 추출 → `lib/studio/editor-model.ts`
-   (EventForm/CopiedEvent/UndoAction/EditDraft 타입, 날짜/폼/드래프트/떡밥 헬퍼,
-   라벨 상수, SUPPORT_DURATIONS, postStudioWrite/StudioWriteResult) + 단위 테스트.
-2. [x] 프리젠테이션-only 렌더 분리 — `ReadonlyEventDetail`·`RoleBadge`(props 명시화, `2217dfb`).
-3. [x] 쓰기 큐 → `lib/studio/use-write-queue.ts` `useStudioWriteQueue`
-   (저장 칩·temp id 해석·flush 포함, 이동 저장 체인은 셸 소유 유지, `1185a1b`).
-4. [~] **평가 결과 보류**: applyHistoryAction이 setter 12개(events/selectedDate/form/토스트/
-   이동큐/서버쓰기…)에 얽혀 있어, 상태 응집(events reducer) 없이 훅으로 빼면 deps 가방만
-   커지고 이득<위험. 리디자인 후 실제 필요가 생길 때 reducer와 함께 재평가.
-5. [~] 동일 사유 보류(그리드/아젠다는 셸 상태 대부분을 소비).
+## 원칙
+- 화면당 1슬라이스 = 배포 + 스냅샷 → **사용자 눈 확인 후** 다음 화면(취향 주도 — 독주 금지).
+- 기능·마크업 구조 불변, CSS(타이포 토큰 치환·간격·동심·재질)만.
+- export surface([data-export-surface]) 안은 색·크기 불변(스티커 좌표·캡쳐 안전).
 
-**판정: 1~3단계로 ARCH-1의 실익(순수 로직 격리·큐 단일 파일·프리젠테이션 분리)은 확보 —
-애플 리디자인 진입 가능. Status → Completed(scope-adjusted).**
-
-> 직전 완료:
-> [2026-07-27_broadcast-toolbar-layer-rebuild.md](completed/2026-07-27_broadcast-toolbar-layer-rebuild.md)
+## 단계
+0. [x] 기반: 타이포 역할 토큰 6종 정의(--text-*, 값=현행 스냅) + me-seg 동심 보정.
+1. [ ] 데스크톱 편집실: 편집 패널 타이포 역할 수렴(11종→6역할), 라벨 위계 정돈.
+2. [ ] 상단 IA(계획서 IA-1): 액션 그룹 재배열 — **사용자 모형 승인 후** 실행.
+3. [ ] 모바일 아젠다·시트: 타이포 수렴, 카드 리듬.
+4. [ ] 꾸미기 팔레트/툴바: 타이포·간격.
+5. [ ] 시청자 화면(포스터 밖 크롬만): 타이포·간격. 표면 내부는 금지.
