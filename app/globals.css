@@ -133,9 +133,13 @@
   --text-input: 16px; /* 입력칸(iOS 확대 방지 하한) */
   --text-title: 18px; /* 패널 제목 */
   --text-display: 20px; /* 화면 제목·월 표기 */
+  --text-hero: 28px;
   --lh-body: 1.5;
+  --lh-relaxed: 1.65;
   --tracking-tight: -0.01em;
+  --tracking-ui: 0.01em;
   --weight-semibold: 700;
+  --weight-bold: 800;
 
   /* 간격 (4/8 스케일) */
   --space-1: 4px;
@@ -1284,4 +1288,180 @@ html[data-reduce-motion] .netstat-badge,
 html[data-reduce-motion] .netstat-toast,
 html[data-reduce-motion] .netstat-dot {
   animation: none !important;
+}
+
+/* Batch 11: login and in-app browser states. OAuth flow stays unchanged. */
+.auth-page {
+  min-height: 100svh;
+  background: var(--surface-2);
+  padding: var(--space-5);
+}
+
+.auth-panel {
+  width: min(var(--sheet-width-md), 100%);
+  gap: var(--space-4);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  padding: var(--space-6) var(--space-5);
+  box-shadow: var(--shadow-3);
+}
+
+.auth-panel-login .eyebrow {
+  color: var(--violet);
+  font-size: var(--text-label);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-ui);
+}
+
+.auth-panel-login h1 {
+  color: var(--ink);
+  font-size: var(--text-hero);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--lh-body);
+}
+
+.auth-panel p {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--lh-relaxed);
+}
+
+.auth-brand {
+  width: calc(var(--control-hit) + var(--space-5));
+  height: calc(var(--control-hit) + var(--space-5));
+  margin-bottom: var(--space-1);
+  border-radius: var(--r-xl);
+  background: var(--selection-fill);
+  color: var(--violet);
+  box-shadow: var(--shadow-2);
+}
+
+.auth-panel-login .button.primary,
+.google-login,
+.inapp-actions .button {
+  min-height: var(--control-hit);
+  border-radius: var(--r-control);
+  padding-inline: var(--space-control-x);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-ui);
+}
+
+.google-login {
+  border: var(--stroke-hairline) solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-1);
+}
+
+.google-login:hover:not(:disabled) {
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+  box-shadow: var(--shadow-2);
+}
+
+.auth-warning,
+.auth-error-card {
+  width: 100%;
+  border-radius: var(--r-control);
+  padding: var(--space-3);
+  font-size: var(--text-body);
+  line-height: var(--lh-relaxed);
+}
+
+.auth-warning {
+  border: var(--stroke-hairline) solid var(--status-warning);
+  background: var(--status-warning-fill);
+  color: var(--ink-soft);
+}
+
+.auth-error-card {
+  gap: var(--space-2);
+  border: var(--stroke-hairline) solid var(--status-danger);
+  background: var(--status-danger-fill);
+}
+
+.auth-error-card p {
+  color: var(--status-danger);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+  line-height: var(--lh-relaxed);
+}
+
+.inapp-notice {
+  gap: var(--space-2);
+}
+
+.inapp-actions {
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.inapp-trying {
+  min-height: var(--control-hit);
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+.inapp-spinner {
+  width: var(--space-4);
+  height: var(--space-4);
+  border: calc(var(--stroke-hairline) * 2) solid var(--line);
+  border-top-color: var(--violet);
+}
+
+@supports ((-webkit-backdrop-filter: var(--material-blur)) or (backdrop-filter: var(--material-blur))) {
+  .auth-panel {
+    background: var(--material-bg-strong);
+    -webkit-backdrop-filter: var(--material-blur);
+    backdrop-filter: var(--material-blur);
+  }
+}
+
+@media (max-width: 640px) {
+  .auth-page:has(.auth-panel-login),
+  .auth-page:has(.auth-minimal) {
+    align-items: end;
+    padding: var(--space-3) var(--space-2) 0;
+  }
+
+  .auth-panel-login,
+  .auth-minimal {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    padding: var(--space-5)
+      var(--space-4)
+      calc(var(--space-5) + env(safe-area-inset-bottom));
+  }
+
+  .auth-panel-login .button.primary,
+  .google-login,
+  .inapp-actions .button {
+    width: 100%;
+  }
+
+  .inapp-actions {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+html[data-reduce-motion] .auth-panel,
+html[data-reduce-motion] .auth-error-card,
+html[data-reduce-motion] .auth-brand,
+html[data-reduce-motion] .auth-brand-spark,
+html[data-reduce-motion] .inapp-spinner {
+  animation: none;
+}
+
+html[data-reduce-motion] .auth-panel .button {
+  transition: none;
 }

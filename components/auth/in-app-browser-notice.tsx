@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
+import { hapticTick } from "@/lib/ui/haptics";
 
 // 현재 주소를 안드로이드 크롬으로 여는 인텐트 URL.
 function chromeIntentUrl() {
@@ -34,6 +35,7 @@ export function InAppBrowserNotice({
     !initialInApp ? "children" : initialAndroid ? "trying" : "card"
   );
   const [android, setAndroid] = useState(initialAndroid);
+  const [copied, setCopied] = useState(false);
   const formWrapRef = useRef<HTMLDivElement>(null);
   const autoTried = useRef(false);
   // 크롬 자동전환 상태 공유(여러 효과에서). opened=크롬이 떠 웹뷰가 가려짐, returned=복귀 처리 1회만.
@@ -222,6 +224,9 @@ export function InAppBrowserNotice({
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      hapticTick();
+      window.setTimeout(() => setCopied(false), 1500);
     } catch {
       // 클립보드 권한 없으면 무시(주소창 직접 복사 가능).
     }
@@ -239,7 +244,7 @@ export function InAppBrowserNotice({
           </button>
         ) : null}
         <button className={android ? "button" : "button primary"} onClick={copyLink} type="button">
-          링크 복사
+          {copied ? "복사됨" : "링크 복사"}
         </button>
       </div>
     </div>
