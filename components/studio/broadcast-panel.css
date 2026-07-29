@@ -2318,6 +2318,84 @@ html[data-reduce-motion] .bp-layer-add:active {
     border-radius: var(--r-lg);
   }
 }
+
+/* Batch 9d: Pencil hover/contact feedback. Live stroke path remains transition-free. */
+.bp-stylus-cursor {
+  opacity: 0;
+  filter: drop-shadow(var(--shadow-1));
+  transition: none;
+}
+
+.bp-stylus-cursor.visible {
+  opacity: 1;
+}
+
+.bp-stylus-footprint {
+  border-width: var(--stroke-hairline);
+  background: var(--selection-overlay);
+  box-shadow:
+    0 0 0 var(--stroke-hairline) var(--surface),
+    0 0 0 var(--space-1) var(--selection-border);
+}
+
+.bp-stylus-cursor[data-contact="true"] .bp-stylus-footprint {
+  background: transparent;
+  box-shadow:
+    0 0 0 var(--stroke-hairline) var(--surface),
+    0 0 0 var(--space-1) var(--bp-stylus-color),
+    var(--shadow-1);
+}
+
+.bp-stylus-glyph {
+  width: var(--control-hit);
+  height: var(--control-hit);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--bp-stylus-color);
+  box-shadow: var(--shadow-2);
+}
+
+.bp-stylus-cursor[data-tool="eraser"] .bp-stylus-footprint,
+.bp-stylus-cursor[data-tool="eraser"] .bp-stylus-glyph {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.bp-draw-surface,
+.bp-canvas,
+.bp-stylus-cursor,
+.bp-stylus-footprint,
+.bp-marquee,
+.bp-stroke-sel,
+.bp-guide-v,
+.bp-guide-h {
+  transition: none;
+}
+
+.bp-layer-item.drop-before::before {
+  background: var(--violet);
+  box-shadow: 0 0 0 var(--stroke-hairline) var(--surface), var(--shadow-1);
+}
+
+.bp-lock-hint {
+  border: var(--stroke-hairline) solid var(--status-danger);
+  border-radius: var(--r-control);
+  background: var(--status-danger-fill);
+  color: var(--status-danger);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-body);
+}
+
+html[data-reduce-motion] .bp-toolbar,
+html[data-reduce-motion] .bp-picker,
+html[data-reduce-motion] .bp-layers-panel,
+html[data-reduce-motion] .bp-layer-item,
+html[data-reduce-motion] .bp-stylus-cursor,
+html[data-reduce-motion] .bp-stylus-footprint {
+  animation: none;
+  transition: none;
+}
 .bp-dots {
   display: inline-flex;
   gap: 4px;
