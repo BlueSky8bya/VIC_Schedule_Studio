@@ -5,6 +5,7 @@ import "@/components/studio/insights-charts.css";
 
 import dynamic from "next/dynamic";
 import {
+  CalendarCheck,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -1749,6 +1750,25 @@ export function StudioShell({
       return next;
     });
     bumpEditor(); // 달이 바뀌어 새 날짜로 → 폼 새로 마운트
+  }
+
+  // 모바일 편집실 '오늘' — 시청자 화면과 같은 동작(사용자 요청): 오늘이 속한 달로 복귀한 뒤
+  // 오늘 카드로 스크롤(가운데). 이미 그 달이면 스크롤만. 슬라이드가 끝난 뒤 스크롤(360ms).
+  const todayYM = { year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)) };
+  const onTodayMonth = view.year === todayYM.year && view.month === todayYM.month;
+  function jumpTodayMobile() {
+    hapticTick();
+    if (!onTodayMonth) {
+      moveMonth((todayYM.year - view.year) * 12 + (todayYM.month - view.month));
+    }
+    window.setTimeout(
+      () => {
+        document
+          .querySelector(".studio-mobile .agenda-day.today")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+      },
+      onTodayMonth ? 0 : 360
+    );
   }
 
   // 키보드 ←/→ 로 월 이동(데스크톱 편집실). 입력칸·모달·시청자 미리보기 중엔 동작 안 함.
@@ -4755,6 +4775,17 @@ export function StudioShell({
               </button>
             )
           ) : null}
+          {/* '오늘' — 시청자 화면과 같은 복귀 버튼(사용자 요청). 항상 미리보기 바로 왼쪽
+              (비공개 버튼이 있는 역할은 그 사이) — 역할이 달라도 같은 자리라 근육기억 유지. */}
+          <button
+            className="button m-io-pill m-io-today"
+            onClick={jumpTodayMobile}
+            title={onTodayMonth ? "오늘 위치로" : "오늘이 있는 달로"}
+            type="button"
+          >
+            <CalendarCheck aria-hidden="true" size={16} />
+            오늘
+          </button>
           {/* 오른쪽: 미리보기 / 시청자 화면 — 계정변경과 위치 swap. */}
           {isDeveloper ? (
             renderPreviewControl()

@@ -8802,6 +8802,15 @@ html[data-reduce-motion] .modal-close:active {
 .m-io-private:active {
   background: #ffedd6;
 }
+/* '오늘' 복귀 — 시청자 화면 mb-act와 같은 계열의 보라 톤(이동 액션). */
+.m-io-today {
+  background: #f3effc;
+  border-color: #ddd3f4;
+  color: #5b45c4;
+}
+.m-io-today:active {
+  background: #e9e2f8;
+}
 .m-io-worldcup {
   background: #f4f4f2;
   border-color: #d9d9d3;
