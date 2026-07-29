@@ -19,7 +19,6 @@ import {
   Save,
   Sparkles,
   Trash2,
-  Vibrate,
   Wrench,
   X
 } from "lucide-react";
@@ -98,7 +97,8 @@ import { PrivateLayerPanel } from "@/components/private-layer/private-layer-pane
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { DateTimePicker } from "@/components/studio/datetime-picker";
 import { TagPicker } from "@/components/tags/tag-picker";
-import { PlainEmail } from "@/components/ui/plain-email";
+import { ReadonlyEventDetail } from "@/components/studio/readonly-event-detail";
+import { RoleBadge } from "@/components/studio/role-badge";
 import { relockPrivateLayerAction, setPasscodeAction } from "@/lib/private-layer/actions";
 import { STUDIO_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 // P2-ARCH-1 1단계: 모듈 레벨 순수 코드(폼 모델·실행취소 타입·날짜/드래프트/떡밥 헬퍼·라벨·
@@ -1078,100 +1078,24 @@ export function StudioShell({
 
   // A3: 역할 배지 + "?" 도움말 팝오버. 이메일은 배지에 인라인으로 두지 않고(폭 절약·깔끔)
   // 팝오버 안 역할 라벨 아래에 보여준다.
+  // P2-ARCH-1 2단계: 역할 배지+권한 팝오버는 RoleBadge 컴포넌트로 분리(동작 0 변화).
   function renderRoleBadge() {
     return (
-      <div className="actor-badge-wrap">
-        {/* 배지 전체가 토글 버튼 — "?"만이 아니라 역할 라벨 어디를 눌러도 설명이 뜬다(웹·모바일). */}
-        <button
-          aria-expanded={roleHelpOpen}
-          aria-label="역할 권한 보기"
-          className={`actor-badge ${actor.role}`}
-          onClick={() => setRoleHelpOpen((value) => !value)}
-          type="button"
-        >
-          <strong>{roleDisplay.badgeLabel}</strong>
-          <span className="role-help-q" aria-hidden="true">
-            ?
-          </span>
-        </button>
-        {roleHelpOpen ? (
-          <div className="role-help-pop" role="dialog" aria-label="역할 권한">
-            {/* 미리보기 중이면 역할명 옆에 작게 "(미리보기 중입니다..)" — 아이콘 없이.
-                (이중도 previewRole=manager라 포함.) */}
-            <strong className="role-help-title">
-              {roleDisplay.label}
-              {previewRole !== null ? (
-                <span className="role-help-preview"> (미리보기 중입니다..)</span>
-              ) : null}
-            </strong>
-            {actor.email ? (
-              <PlainEmail className="role-help-email" value={actor.email} />
-            ) : (
-              <span className="role-help-email">비로그인</span>
-            )}
-            <p className="role-help-summary">{roleDisplay.summary}</p>
-            <ul className="role-help-can">
-              {roleDisplay.can.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-            {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. 켜면 하트·탭·저장·삭제 등에 가볍게 울린다. */}
-            {hapticsSupported ? (
-              <div className="role-help-haptics">
-                <span className="rhh-label">
-                  <Vibrate aria-hidden="true" size={14} />
-                  진동
-                </span>
-                <button
-                  aria-checked={hapticsOn}
-                  aria-label="진동 켜기/끄기"
-                  className={`rhh-switch ${hapticsOn ? "on" : ""}`}
-                  onClick={toggleHaptics}
-                  role="switch"
-                  type="button"
-                >
-                  <span className="rhh-knob" aria-hidden="true" />
-                </button>
-              </div>
-            ) : null}
-            {/* 동작 줄이기 — 장식용 반복 모션(제목 ✨·오늘 호흡·불꽃 등)을 끈다. 눈 피로↓.
-                기기 무관 항상 노출(진동과 달리 모든 화면에 적용). */}
-            <div className="role-help-haptics">
-              <span className="rhh-label">
-                <Sparkles aria-hidden="true" size={14} />
-                동작 줄이기
-              </span>
-              <button
-                aria-checked={reduceMotion}
-                aria-label="동작 줄이기 켜기/끄기"
-                className={`rhh-switch ${reduceMotion ? "on" : ""}`}
-                onClick={toggleReduceMotion}
-                role="switch"
-                type="button"
-              >
-                <span className="rhh-knob" aria-hidden="true" />
-              </button>
-            </div>
-            {/* 눈 편한 테마 — 채도·눈부심을 낮춰 오래 봐도 덜 피로하게(글자 대비는 유지). */}
-            <div className="role-help-haptics">
-              <span className="rhh-label">
-                <Eye aria-hidden="true" size={14} />
-                눈 편한 테마
-              </span>
-              <button
-                aria-checked={eyeComfort}
-                aria-label="눈 편한 테마 켜기/끄기"
-                className={`rhh-switch ${eyeComfort ? "on" : ""}`}
-                onClick={toggleEyeComfort}
-                role="switch"
-                type="button"
-              >
-                <span className="rhh-knob" aria-hidden="true" />
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
+      <RoleBadge
+        email={actor.email}
+        eyeComfort={eyeComfort}
+        hapticsOn={hapticsOn}
+        hapticsSupported={hapticsSupported}
+        onToggleEyeComfort={toggleEyeComfort}
+        onToggleHaptics={toggleHaptics}
+        onToggleOpen={() => setRoleHelpOpen((value) => !value)}
+        onToggleReduceMotion={toggleReduceMotion}
+        open={roleHelpOpen}
+        previewing={previewRole !== null}
+        reduceMotion={reduceMotion}
+        role={actor.role}
+        roleDisplay={roleDisplay}
+      />
     );
   }
 
@@ -3001,117 +2925,26 @@ export function StudioShell({
   // A1: 매니저·작업자용 읽기전용 일정 상세. owner 편집 폼을 회색으로 보여주는 대신,
   // 제목·날짜·공개범위·태그·업 도움 링크만 깔끔히 보여준다. owner_private는 애초에 비-owner에게
   // 로드되지 않는다. 매니저(canEditSupportThing)는 업 도움 이벤트에 한해 "업 도움 수정"을 쓸 수 있다.
+  // P2-ARCH-1 2단계: 읽기전용 상세는 ReadonlyEventDetail 컴포넌트로 분리(동작 0 변화).
   function renderReadonlyDetail() {
     const selectedEvent = selectedEventId
-      ? events.find((event) => event.id === selectedEventId)
+      ? events.find((event) => event.id === selectedEventId) ?? null
       : null;
     return (
-      <div className="event-detail-readonly" key={`${selectedDate}:${selectedEventId ?? "new"}`}>
-        <div className="editor-heading">
-          {/* 윗줄: 접기(>) 옆에 라벨. 읽기전용이라 저장 버튼은 없다. 날짜는 아래줄(라벨 밑 정렬). */}
-          <div className="editor-heading-bar">
-            <div className="editor-heading-left">
-              <button
-                aria-label="상세 카드 닫기"
-                className="editor-collapse"
-                onClick={() => setEditorVisible(false)}
-                title="닫기"
-                type="button"
-              >
-                <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
-              </button>
-              <p className="eyebrow">일정 보기</p>
-            </div>
-          </div>
-          <h2 className="editor-date editor-heading-date" key={selectedDate}>
-            {selectedDate}
-          </h2>
-        </div>
-        {!selectedEvent ? (
-          <p className="detail-empty">이 날의 일정을 누르면 자세히 볼 수 있어요.</p>
-        ) : (
-          <>
-            <div className="detail-row">
-              <span className="detail-label">제목</span>
-              <p className="detail-value">{selectedEvent.publicTitle || "(제목 없음)"}</p>
-            </div>
-            <div className="detail-row">
-              <span className="detail-label">공개 범위</span>
-              <p className="detail-value">{VISIBILITY_LABEL[selectedEvent.visibilityScope]}</p>
-            </div>
-            {canEditTagsThing ? (
-              // 매니저: 태그 할당을 직접 토글(최대 2개). 작업자는 읽기 전용 칩만 본다.
-              <div className="detail-row">
-                <span className="detail-label">
-                  태그 <span className="tag-picker-hint">최대 {maxEventTags}개 · 누르면 바로 적용</span>
-                </span>
-                <div className="tag-picker">
-                  {/* 게이트는 좁게 — 예전엔 disabled={pending}이었는데 그 pending은 저장·삭제·이동이
-                      함께 쓰는 transition이라, 무관한 배경 저장 하나에 태그 고르기가 통째로 죽었다
-                      ("누르면 바로 적용"이라 적어놓고). 태그 쓰기는 아래 toggleEventTag가 일정별
-                      직렬 체인 + 의도 ref + 중복 제거로 연타를 이미 감당한다. */}
-                  <TagPicker
-                    max={maxEventTags}
-                    onToggle={(id) => toggleEventTag(selectedEvent, id)}
-                    palette={palette}
-                    selectedIds={selectedEvent.tagIds}
-                    tags={viewTags}
-                  />
-                </div>
-              </div>
-            ) : selectedEvent.tagIds.length > 0 ? (
-              <div className="detail-row">
-                <span className="detail-label">태그</span>
-                <div className="detail-tags">
-                  {selectedEvent.tagIds.map((id) => {
-                    const tag = legendTags.find((item) => item.id === id);
-                    const v = tag ? tagVisual.visualOf(tag.id) : null;
-                    return tag && v && !v.missing && v.bg ? (
-                      <span
-                        className="detail-tag"
-                        key={id}
-                        style={{
-                          backgroundColor: v.bg,
-                          borderColor: v.border ?? undefined,
-                          color: v.legacyTextColor ?? undefined
-                        }}
-                      >
-                        {tag.displayName}
-                      </span>
-                    ) : null;
-                  })}
-                </div>
-              </div>
-            ) : null}
-            {selectedEvent.isSupport ? (
-              <div className="detail-row">
-                <span className="detail-label">업 도와주기</span>
-                <div className="detail-value">
-                  {selectedEvent.supportUrl ? (
-                    <a href={selectedEvent.supportUrl} rel="noreferrer" target="_blank">
-                      {selectedEvent.supportUrl}
-                    </a>
-                  ) : (
-                    "링크 없음"
-                  )}
-                  {selectedEvent.endDateKey ? (
-                    <div className="detail-sub">~ {selectedEvent.endDateKey}</div>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-            {selectedEvent.isSupport && canEditSupportThing ? (
-              <button
-                className="button"
-                onClick={() => openSupportSheet(selectedEvent)}
-                type="button"
-              >
-                업 도움 기간/링크 수정
-              </button>
-            ) : null}
-          </>
-        )}
-      </div>
+      <ReadonlyEventDetail
+        canEditSupportThing={canEditSupportThing}
+        canEditTagsThing={canEditTagsThing}
+        legendTags={legendTags}
+        maxEventTags={maxEventTags}
+        onClose={() => setEditorVisible(false)}
+        onOpenSupportSheet={openSupportSheet}
+        onToggleTag={toggleEventTag}
+        palette={palette}
+        selectedDate={selectedDate}
+        selectedEvent={selectedEvent}
+        tagVisual={tagVisual}
+        viewTags={viewTags}
+      />
     );
   }
 
