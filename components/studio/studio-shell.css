@@ -9069,14 +9069,21 @@ html[data-reduce-motion] .m-edit-x:active {
 .title-live-m .tt-rail {
   left: 8px;
 }
-/* 웹 변형 — .event-editor-panel textarea(테두리 1px·패딩 10px·글자 16px)와 동일 금속자. */
+/* 웹 변형 — .event-editor-panel textarea(테두리 1px·패딩 10px·글자 16px)와 동일 금속자.
+   굵기 700: 실제 일정 카드(제목·세부 모두 굵음)와 같은 인상 — 줄마다 크기는 못 바꾸지만
+   (글리프 폭이 달라져 커서가 어긋남) 전체 굵기 통일은 textarea·미러가 함께 바뀌어 안전. */
 .title-live-web .title-live-mirror {
   padding: 10px;
   font-size: 16px;
+  font-weight: 700;
   line-height: 1.5;
 }
 .title-live-web textarea {
+  font-weight: 700;
   line-height: 1.5;
+}
+.title-live-web textarea::placeholder {
+  font-weight: 600; /* 힌트는 살짝 가볍게 유지 */
 }
 /* 모바일 변형 — .me-title(테두리 1px·패딩 13px 15px·16px/700/1.5)와 동일 금속자. */
 .title-live-m .title-live-mirror {
