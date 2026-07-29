@@ -232,11 +232,15 @@ describe("broadcast inking callsite contracts", () => {
     expect(toolbar).toContain('className="bp-command-bar"');
     expect(toolbar).toContain('className="bp-command-status"');
     expect(toolbar).toContain('className="bp-tool-deck"');
-    expect(toolbar).toContain('className="bp-tool-group bp-property-group"');
+    // 굵기는 스크롤 덱이 아니라 명령줄 고정 자리(상태 텍스트 오른쪽) — 사용자 결정(2026-07-31).
+    expect(toolbar).toContain('className="bp-command-widths"');
+    expect(toolbar.indexOf('className="bp-command-widths"')).toBeLessThan(
+      toolbar.indexOf('className="bp-tool-deck"')
+    );
     expect(toolbar).toContain('className="bp-tool-group bp-color-group"');
-    // 그룹 이름은 간결하게 "굵기" — 옆에 [ · ] 단축키 힌트 배지가 붙는다.
     expect(toolbar).toContain('aria-label="굵기"');
-    expect(toolbar).toContain('className="bp-group-key"');
+    // [ / ] 단축키 힌트는 그룹 배지 대신 title로 유지.
+    expect(toolbar).toContain('title="굵기 줄이기/키우기 ([ / ])"');
     expect(toolbar).toContain('aria-label="색상 팔레트"');
     expect(toolbar.match(/<span>\{label\}<\/span>/g)).toHaveLength(2);
     expect(toolbar).toContain("<span>실행 취소</span>");

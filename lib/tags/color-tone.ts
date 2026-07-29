@@ -266,9 +266,11 @@ export function applyToneHsv(h: number, s: number, v: number, tone: ToneKey): st
 export const SPECTRUM_HUES = Array.from({ length: 18 }, (_, i) => (i * 350) / 18);
 
 // kind별 톤을 render에 맞춘다: 콘텐츠=칸 배경이라 '연하게'(밝은 파스텔), 형식=점이라 '진하게'.
+// 형식 톤은 s60/l50 → s72/l58로 상향(2026-07-31, 사용자 피드백 "전체적으로 너무 어두워") —
+// 탁기가 빠지고 쨍해지되, 밝은 카드 위 점 대비는 유지되는 범위.
 export function spectrumColors(isModifier: boolean): string[] {
-  const s = isModifier ? 60 : 72;
-  const l = isModifier ? 50 : 82;
+  const s = isModifier ? 72 : 72;
+  const l = isModifier ? 58 : 82;
   return SPECTRUM_HUES.map((h) => hslToHex(h, s, l));
 }
 

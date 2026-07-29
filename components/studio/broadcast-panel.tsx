@@ -339,6 +339,36 @@ export function BroadcastPanel({
   }, [activeLayerId, layers]);
   // undo/redo 버튼 활성 + 오른쪽 레이어 썸네일 갱신용(스토어는 ref라 리렌더를 직접 못 일으킨다).
   const [strokeVersion, setStrokeVersion] = useState(0);
+  // Ctrl(⌘)+휠 = 그림판만 확대/축소(그림판 앱 관례). CSS zoom이라 레이아웃·스크롤 범위가 함께
+  // 자라고, 포인터 좌표는 innerPointC 등 깔때기에서 zoom으로 나눠 보드 좌표 불변.
+  const [boardZoom, setBoardZoom] = useState(1);
+  const boardZoomRef = useRef(1);
+  useEffect(() => {
+    const el = boardScrollRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return; // 일반 휠 = 기존 스크롤 그대로
+      e.preventDefault(); // 브라우저 페이지 줌 가로채기(트랙패드 핀치 포함)
+      const cur = boardZoomRef.current;
+      const next = Math.min(3, Math.max(0.4, cur * Math.exp(-e.deltaY * 0.0018)));
+      if (next === cur) return;
+      // 커서 아래 지점이 제자리에 있도록 스크롤 보정(그림판/피그마 문법).
+      const rect = el.getBoundingClientRect();
+      const ox = e.clientX - rect.left;
+      const oy = e.clientY - rect.top;
+      const k = next / cur;
+      const sl = (el.scrollLeft + ox) * k - ox;
+      const st = (el.scrollTop + oy) * k - oy;
+      boardZoomRef.current = next;
+      setBoardZoom(next);
+      requestAnimationFrame(() => {
+        el.scrollLeft = sl;
+        el.scrollTop = st;
+      });
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
   // 레이어 패널 썸네일(실제 그림판 문법) — 캔버스에서 축소 복사. 배경(날짜 카드 DOM)은
   // DOM 캡처 금지 계약(ADR-0010)이라 아이콘으로만 표시.
   useEffect(() => {
@@ -605,8 +635,9 @@ export function BroadcastPanel({
     // 스크롤 이동분도 드래그 거리에 포함 — 자동 스크롤 중 카드가 포인터를 계속 따라온다.
     const sdx = (board?.scrollLeft ?? 0) - d.startSL;
     const sdy = (board?.scrollTop ?? 0) - d.startST;
-    let dx = clientX - d.startX + sdx;
-    let dy = clientY - d.startY + sdy;
+    // client·scroll 이동분 모두 시각(줌) 픽셀 — 보드 좌표로 환산해 드래그가 1:1로 따라온다.
+    let dx = (clientX - d.startX + sdx) / boardZoomRef.current;
+    let dy = (clientY - d.startY + sdy) / boardZoomRef.current;
     if (Math.abs(dx) + Math.abs(dy) > 1) d.moved = true;
     if (d.mode === "resize") {
       setCols((map) => {
@@ -761,7 +792,9 @@ export function BroadcastPanel({
     if (!inner) return null;
     const r = inner.getBoundingClientRect();
     // inner rect는 보드 스크롤을 반영하므로 자동 스크롤 중에도 inner 좌표가 정확하다.
-    return { x: clientX - r.left, y: clientY - r.top };
+    // Ctrl+휠 줌(CSS zoom) 중엔 rect가 시각(줌) 픽셀이라 보드 좌표로 나눠 되돌린다.
+    const z = boardZoomRef.current;
+    return { x: (clientX - r.left) / z, y: (clientY - r.top) / z };
   }
   function marqueeTo(clientX: number, clientY: number) {
     const m = marqueeRef.current;
@@ -1270,8 +1303,11 @@ export function BroadcastPanel({
     let fitRaf: number | null = null;
     const fit = () => {
       fitRaf = null;
-      const cssW = inner.clientWidth;
-      const cssH = inner.clientHeight;
+      // clientWidth는 브라우저별로 CSS zoom 반영 여부가 갈린다 — rect(항상 시각 px)를
+      // 우리 줌으로 나눠 '보드 좌표 크기'를 안정적으로 얻는다(줌해도 backing 재할당 없음).
+      const innerRect = inner.getBoundingClientRect();
+      const cssW = Math.round(innerRect.width / boardZoomRef.current);
+      const cssH = Math.round(innerRect.height / boardZoomRef.current);
       // 동적 레이어 수 + 라이브/예측 캔버스가 backing-store 총예산을 나눠 쓴다.
       const scale = backingScale(
         cssW,
@@ -1521,8 +1557,9 @@ export function BroadcastPanel({
     if (!cursor) return;
     const rect = boardRect ?? boardInnerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    // 커서 span은 줌된 inner의 자식이라 로컬(보드) 좌표로 변환해야 펜촉과 일치한다.
+    const x = (e.clientX - rect.left) / boardZoomRef.current;
+    const y = (e.clientY - rect.top) / boardZoomRef.current;
     if (!Number.isFinite(x) || !Number.isFinite(y)) return;
     const cursorSize = `${stylusCursorDiameter(tool, penWidth)}px`;
     if (cursor.style.getPropertyValue("--bp-stylus-size") !== cursorSize) {
@@ -1601,7 +1638,8 @@ export function BroadcastPanel({
       return;
     }
     if (!rect) return;
-    const p = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const bz = boardZoomRef.current;
+    const p = { x: (e.clientX - rect.left) / bz, y: (e.clientY - rect.top) / bz };
     activePtrRef.current = e.pointerId;
     activePointerTypeRef.current = e.pointerType;
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -1632,7 +1670,8 @@ export function BroadcastPanel({
     if (!live || e.pointerId !== activePtrRef.current) return;
     if (isShapeTool(live.tool)) {
       if (!rect) return;
-      const p = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const bz = boardZoomRef.current;
+      const p = { x: (e.clientX - rect.left) / bz, y: (e.clientY - rect.top) / bz };
       // 도형: 시작점 고정, 끝점만 갱신. Shift = 정비율(45° 선 / 정사각형 / 정원).
       const a = live.points[0];
       let end = p;
@@ -1662,9 +1701,10 @@ export function BroadcastPanel({
       typeof native.getCoalescedEvents === "function" ? native.getCoalescedEvents() : [];
     const samples = coalesced.length > 0 ? coalesced : [native];
     if (!rect) return;
+    const bz = boardZoomRef.current;
     let added = false;
     for (const s of samples) {
-      const sp = { x: s.clientX - rect.left, y: s.clientY - rect.top };
+      const sp = { x: (s.clientX - rect.left) / bz, y: (s.clientY - rect.top) / bz };
       const f = widthFactor(s, sp.x, sp.y);
       if (appendPoint(live.points, { x: sp.x, y: sp.y, p: f })) added = true;
     }
@@ -1679,8 +1719,8 @@ export function BroadcastPanel({
     predictedPointsRef.current = predicted
       .filter((sample) => Number.isFinite(sample.clientX) && Number.isFinite(sample.clientY))
       .map((sample) => ({
-        x: sample.clientX - rect.left,
-        y: sample.clientY - rect.top,
+        x: (sample.clientX - rect.left) / bz,
+        y: (sample.clientY - rect.top) / bz,
         p: lastPressure
       }));
     if (added || previousPredictionCount > 0 || predictedPointsRef.current.length > 0) {
@@ -2943,8 +2983,11 @@ export function BroadcastPanel({
           // inline min은 CSS의 min-width/height:100%를 '덮어쓴다' — max(100%, …)로 합성해야
           // 컬럼이 적을 때도 종이가 보드 전체를 채운다(안 그러면 왼쪽 위 조각만 흰색).
           style={{
-            minWidth: `max(100%, ${boardExtent.minWidth}px)`,
-            minHeight: `max(100%, ${boardExtent.minHeight}px)`
+            // 줌은 시각 배율만 — 보드 좌표계(획·카드 좌표)는 불변. min 크기는 스크롤포트가
+            // 줌돼도 종이가 보드를 채우도록 100%를 줌으로 역보정한다.
+            zoom: boardZoom,
+            minWidth: `max(${100 / boardZoom}%, ${boardExtent.minWidth}px)`,
+            minHeight: `max(${100 / boardZoom}%, ${boardExtent.minHeight}px)`
           }}
         >
           {/* 배경 레이어 = 날짜 카드 DOM(캔버스 아님 — 메모리 0). 표시 토글은 숨김만. */}
