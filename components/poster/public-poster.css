@@ -4798,3 +4798,339 @@ html[data-reduce-motion] .pi-skeleton {
     padding: 14px 14px 20px;
   }
 }
+
+/* 배치 5: 공개 viewer의 반복 조작 chrome.
+   data-export-surface 내부는 건드리지 않고 실제 공개 페이지(.poster-readonly) 외곽만 다듬는다. */
+.poster-readonly .public-calendar-header {
+  gap: var(--space-4);
+}
+
+.poster-readonly .public-calendar-header .poster-interest {
+  gap: var(--space-4);
+}
+
+.poster-readonly .interest-toggle,
+.poster-readonly .insights-open,
+.poster-readonly .viewer-actions .button {
+  min-height: var(--control-hit);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-1);
+}
+
+.poster-readonly .interest-toggle {
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-4) var(--space-1) var(--space-3);
+}
+
+.poster-readonly .interest-toggle:hover,
+.poster-readonly .insights-open:hover,
+.poster-readonly .viewer-actions .button:hover {
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+  box-shadow: var(--shadow-2);
+  transform: translateY(calc(-1 * var(--stroke-hairline)));
+}
+
+.poster-readonly .interest-toggle.active {
+  border-color: var(--pink);
+  background: var(--pink-soft);
+}
+
+.poster-readonly .interest-toggle .it-text strong {
+  color: var(--ink);
+  font-size: var(--text-ui);
+  letter-spacing: var(--tracking-tight);
+}
+
+.poster-readonly .interest-toggle.active .it-text strong {
+  color: var(--pink);
+}
+
+.poster-readonly .interest-toggle .it-text em {
+  color: var(--muted);
+  font-size: var(--text-caption);
+  line-height: var(--lh-body);
+}
+
+.poster-readonly .insights-open,
+.poster-readonly .viewer-actions .button {
+  gap: var(--space-2);
+  padding-inline: var(--space-control-x);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+.poster-readonly .account-form {
+  gap: var(--space-2);
+}
+
+.poster-readonly .account-email {
+  color: var(--muted);
+  font-size: var(--text-label);
+}
+
+.poster-readonly .agenda-monthbar {
+  left: var(--space-3);
+  right: var(--space-3);
+  bottom: calc(var(--space-3) + env(safe-area-inset-bottom));
+}
+
+.poster-readonly .agenda-monthbar .mb-step {
+  width: var(--control-hit);
+  height: var(--control-hit);
+  border: var(--stroke-hairline) solid var(--line);
+  background: var(--surface);
+  color: var(--violet);
+  box-shadow: var(--shadow-2);
+}
+
+.poster-readonly .agenda-monthbar .mb-step:hover {
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+  transform: translateY(calc(-1 * var(--stroke-hairline)));
+}
+
+@supports ((-webkit-backdrop-filter: var(--material-blur)) or (backdrop-filter: var(--material-blur))) {
+  .poster-readonly .interest-toggle,
+  .poster-readonly .insights-open,
+  .poster-readonly .viewer-actions .button,
+  .poster-readonly .agenda-monthbar .mb-step,
+  .poster-readonly .agenda-monthbar .mb-center {
+    background: var(--material-bg-strong);
+    -webkit-backdrop-filter: var(--material-blur);
+    backdrop-filter: var(--material-blur);
+  }
+
+  .poster-readonly .interest-toggle.active,
+  .poster-readonly .agenda-monthbar .mb-act.on {
+    background: var(--pink-soft);
+  }
+}
+
+@media (max-width: 640px) {
+  .poster-readonly .public-calendar-shell.agenda-mode {
+    padding-inline: var(--space-3);
+    padding-bottom: calc(
+      var(--control-hit) + var(--space-5) + env(safe-area-inset-bottom)
+    );
+  }
+
+  .poster-readonly .agenda-header {
+    margin: 0 calc(-1 * var(--space-3)) var(--space-2);
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    column-gap: var(--space-2);
+    row-gap: var(--space-1);
+    border-bottom: var(--stroke-hairline) solid var(--line);
+    background: var(--surface-2);
+    padding: var(--space-2) var(--space-3) var(--space-3);
+  }
+
+  .poster-readonly .agenda-title {
+    color: var(--ink);
+    font-size: var(--text-title);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .poster-readonly .agenda-month {
+    color: var(--ink-soft);
+    font-size: var(--text-body);
+    letter-spacing: var(--tracking-tight);
+  }
+
+  .poster-readonly .agenda-account button {
+    min-width: var(--control-hit);
+    min-height: var(--control-hit);
+    border: var(--stroke-hairline) solid var(--line);
+    background: var(--surface);
+    color: var(--ink-soft);
+    padding-inline: var(--space-3);
+    font-size: var(--text-label);
+  }
+
+  .poster-readonly .agenda {
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+  }
+
+  .poster-readonly .agenda-legend-rail {
+    flex-basis: calc(var(--control-hit) + var(--space-6));
+    top: calc(var(--control-hit) + var(--space-5));
+    gap: var(--space-2);
+    height: calc(
+      100svh - var(--control-hit) - var(--space-6) - var(--space-6) -
+        var(--control-hit) - var(--space-5)
+    );
+  }
+
+  .poster-readonly .agenda-legend {
+    gap: var(--space-1);
+    border: var(--stroke-hairline) solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    padding: var(--space-2);
+    box-shadow: var(--shadow-1);
+  }
+
+  .poster-readonly .agenda-legend strong,
+  .poster-readonly .agenda-legend-sub {
+    color: var(--muted);
+    font-size: var(--text-caption);
+    font-weight: var(--weight-semibold);
+  }
+
+  .poster-readonly .agenda-legend-sub {
+    margin-top: var(--space-1);
+    border-color: var(--line-soft);
+    padding: var(--space-2) var(--space-1) 0;
+  }
+
+  .poster-readonly .agenda-legend-tag {
+    grid-template-columns: var(--space-3) minmax(0, 1fr);
+    gap: var(--space-1);
+    min-height: var(--control-hit);
+    border-width: var(--stroke-hairline);
+    border-radius: var(--r-control);
+    padding: var(--space-2) var(--space-1);
+    color: var(--ink-soft);
+    font-size: var(--text-caption);
+  }
+
+  .poster-readonly .agenda-legend-tag.on {
+    border-color: var(--selection-border);
+    background: var(--selection-fill);
+    color: var(--violet);
+    box-shadow: inset 0 0 0 var(--stroke-hairline) var(--selection-border);
+  }
+
+  .poster-readonly .agenda-legend-tag.heart.on {
+    border-color: var(--pink);
+    background: var(--pink-soft);
+    color: var(--pink);
+  }
+
+  .poster-readonly .agenda-legend-clear,
+  .poster-readonly .agenda-legend-insights,
+  .poster-readonly .agenda-legend-nav .button {
+    min-height: var(--control-hit);
+    border: var(--stroke-hairline) solid var(--line);
+    border-radius: var(--r-control);
+    background: var(--surface-2);
+    color: var(--ink-soft);
+    font-size: var(--text-label);
+    box-shadow: none;
+  }
+
+  .poster-readonly .agenda-day {
+    gap: var(--space-2);
+    border: var(--stroke-hairline) solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    padding: var(--space-3);
+    box-shadow: var(--shadow-1);
+  }
+
+  .poster-readonly .agenda-day.today {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .poster-readonly .agenda-day-list {
+    gap: var(--space-2);
+  }
+
+  .poster-readonly .agenda-event {
+    gap: var(--space-2);
+  }
+
+  .poster-readonly .agenda-event + .agenda-event {
+    border-color: var(--line-soft);
+    padding-top: var(--space-2);
+  }
+
+  .poster-readonly .agenda-content {
+    gap: var(--space-1);
+  }
+
+  .poster-readonly .agenda-title {
+    color: var(--ink);
+    font-size: var(--text-body);
+    line-height: var(--lh-body);
+  }
+
+  .poster-readonly .agenda-sub,
+  .poster-readonly .agenda-subs,
+  .poster-readonly .agenda-noevent {
+    color: var(--muted);
+    font-size: var(--text-label);
+    line-height: var(--lh-body);
+  }
+
+  .poster-readonly .agenda-heart {
+    width: var(--control-hit);
+    height: var(--control-hit);
+    border-radius: var(--r-control);
+    color: var(--muted);
+    font-size: var(--text-title);
+  }
+
+  .poster-readonly .agenda-heart.bookmarked {
+    background: var(--pink-soft);
+    color: var(--pink);
+  }
+
+  .poster-readonly .agenda-monthbar .mb-center {
+    gap: var(--space-1);
+    border: var(--stroke-hairline) solid var(--line);
+    background: var(--surface);
+    padding: var(--space-1);
+    box-shadow: var(--shadow-2);
+  }
+
+  .poster-readonly .agenda-monthbar .mb-act {
+    min-height: var(--control-hit);
+    gap: var(--space-1);
+    padding-inline: var(--space-3);
+    color: var(--ink-soft);
+    font-size: var(--text-body);
+  }
+
+  .poster-readonly .agenda-monthbar .mb-act.on {
+    background: var(--pink-soft);
+    color: var(--pink);
+  }
+}
+
+html[data-reduce-motion] .poster-readonly .interest-toggle,
+html[data-reduce-motion] .poster-readonly .insights-open,
+html[data-reduce-motion] .poster-readonly .viewer-actions .button,
+html[data-reduce-motion] .poster-readonly .agenda-legend-tag,
+html[data-reduce-motion] .poster-readonly .agenda-day,
+html[data-reduce-motion] .poster-readonly .agenda-event,
+html[data-reduce-motion] .poster-readonly .agenda-heart,
+html[data-reduce-motion] .poster-readonly .agenda-monthbar .mb-step,
+html[data-reduce-motion] .poster-readonly .agenda-monthbar .mb-act {
+  transition: none;
+}
+
+html[data-reduce-motion] .poster-readonly .interest-toggle:hover,
+html[data-reduce-motion] .poster-readonly .interest-toggle:active,
+html[data-reduce-motion] .poster-readonly .insights-open:hover,
+html[data-reduce-motion] .poster-readonly .insights-open:active,
+html[data-reduce-motion] .poster-readonly .viewer-actions .button:hover,
+html[data-reduce-motion] .poster-readonly .viewer-actions .button:active,
+html[data-reduce-motion] .poster-readonly .agenda-legend-tag:active,
+html[data-reduce-motion] .poster-readonly .agenda-heart:active,
+html[data-reduce-motion] .poster-readonly .agenda-monthbar .mb-step:hover,
+html[data-reduce-motion] .poster-readonly .agenda-monthbar .mb-step:active,
+html[data-reduce-motion] .poster-readonly .agenda-monthbar .mb-act:active {
+  transform: none;
+}
+
+html[data-reduce-motion] .poster-readonly .agenda-day.today .agenda-when strong,
+html[data-reduce-motion] .poster-readonly .agenda-event.just-revealed,
+html[data-reduce-motion] .poster-readonly .heart-toast {
+  animation: none;
+}
