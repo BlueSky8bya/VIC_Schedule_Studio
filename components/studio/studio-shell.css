@@ -10248,3 +10248,79 @@ html[data-reduce-motion] .cpop-done:active,
 html[data-reduce-motion] .role-segment button:active {
   transform: none;
 }
+
+/* Batch 10: security-first private unlock modal. Unlock behavior stays untouched. */
+.modal-backdrop-passcode .modal-card {
+  width: min(100%, var(--sheet-width-md));
+  max-width: var(--sheet-width-md);
+  border: var(--stroke-hairline) solid var(--status-danger);
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+}
+
+.modal-backdrop-passcode .modal-head {
+  border-color: var(--line);
+  background: var(--status-danger-fill);
+  padding: var(--space-4) var(--space-5);
+}
+
+.modal-backdrop-passcode .modal-head h2 {
+  color: var(--ink);
+  font-size: var(--text-title);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.modal-backdrop-passcode .modal-card > :not(.modal-head) {
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+.modal-backdrop-passcode .modal-close {
+  width: var(--control-hit);
+  height: var(--control-hit);
+  color: var(--status-danger);
+}
+
+@supports ((-webkit-backdrop-filter: var(--material-blur)) or (backdrop-filter: var(--material-blur))) {
+  .modal-backdrop-passcode .modal-card {
+    background: var(--material-bg-strong);
+    -webkit-backdrop-filter: var(--material-blur);
+    backdrop-filter: var(--material-blur);
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-backdrop-passcode {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-backdrop-passcode .modal-card {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100svh - var(--space-4));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+  }
+
+  .modal-backdrop-passcode .modal-head {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .modal-backdrop-passcode .modal-card > :not(.modal-head) {
+    padding: var(--space-4)
+      var(--space-4)
+      calc(var(--space-5) + env(safe-area-inset-bottom));
+  }
+}
+
+html[data-reduce-motion] .modal-backdrop-passcode,
+html[data-reduce-motion] .modal-backdrop-passcode .modal-card {
+  animation: none;
+}
+
+html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
+  transition: none;
+}

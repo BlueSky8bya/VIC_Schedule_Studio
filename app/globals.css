@@ -154,6 +154,7 @@
   --broadcast-shelf-height: 176px;
   --broadcast-mobile-tray-height: 28svh;
   --broadcast-mobile-layer-height: 112px;
+  --sheet-width-md: 560px;
 
   /* 라운드 */
   --r-sm: 8px;
@@ -962,6 +963,133 @@ html[data-reduce-motion] .pop-number.pop {
   /* 좁은 화면에서도 "확인"이 한 글자씩 줄바꿈되지 않게(입력칸에 눌려도 버튼 폭 유지). */
   flex: 0 0 auto;
   white-space: nowrap;
+}
+
+/* Batch 10: private unlock surface. Permission and unlock flows remain unchanged. */
+.private-layer-page {
+  min-height: 100svh;
+  background: var(--surface-2);
+  padding: var(--space-6) var(--space-4);
+}
+
+.private-layer-shell {
+  max-width: none;
+  width: min(100%, var(--sheet-width-md));
+  margin: 0 auto;
+  gap: var(--space-4);
+  border: var(--stroke-hairline) solid var(--status-danger);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  padding: var(--space-5);
+  box-shadow: var(--shadow-3);
+}
+
+.private-layer-shell h1 {
+  margin: 0;
+  color: var(--ink);
+  font-size: var(--text-display);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.private-layer-shell h1::before {
+  margin-right: var(--space-2);
+  color: var(--status-danger);
+  content: "🔒";
+}
+
+.passcode-box {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.passcode-box > input,
+.passcode-input-row input {
+  min-height: var(--control-hit);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  padding-inline: var(--space-3);
+  font-size: var(--text-input);
+  box-shadow: inset 0 0 0 var(--stroke-hairline) transparent;
+}
+
+.passcode-box > input:focus,
+.passcode-input-row input:focus {
+  border-color: var(--selection-border);
+  outline: 0;
+  box-shadow: 0 0 0 var(--space-1) var(--selection-overlay);
+}
+
+.passcode-input-row {
+  gap: var(--space-2);
+}
+
+.passcode-input-row .button,
+.passcode-actions .button,
+.passcode-box > .button {
+  min-height: var(--control-hit);
+  border-radius: var(--r-control);
+  padding-inline: var(--space-4);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+.passcode-submit {
+  min-width: calc(var(--control-hit) + var(--space-6));
+}
+
+.passcode-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+
+.private-layer-shell .auth-warning,
+.passcode-box .auth-warning {
+  margin: 0;
+  border: var(--stroke-hairline) solid var(--status-danger);
+  border-radius: var(--r-control);
+  background: var(--status-danger-fill);
+  color: var(--status-danger);
+  padding: var(--space-3);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+}
+
+@media (max-width: 640px) {
+  .private-layer-page {
+    display: flex;
+    align-items: flex-end;
+    padding: var(--space-3) var(--space-2) 0;
+  }
+
+  .private-layer-shell {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+    padding: var(--space-5) var(--space-4)
+      calc(var(--space-5) + env(safe-area-inset-bottom));
+  }
+
+  .passcode-input-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .passcode-actions {
+    position: sticky;
+    bottom: 0;
+  }
+}
+
+html[data-reduce-motion] .passcode-box input,
+html[data-reduce-motion] .passcode-box .button {
+  animation: none;
+  transition: none;
 }
 
 /* (.memo-editor* 메모 편집기 제거 — 참조 0) */
