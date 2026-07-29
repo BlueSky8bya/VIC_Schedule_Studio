@@ -547,8 +547,12 @@ export function StudioShell({
     hapticTick();
     flashToast("싹둑 — 연결을 끊었어요");
     setCutFlashId(earlierId);
+    setCutFlashNextId(prevNext);
     if (cutFlashTimer.current) window.clearTimeout(cutFlashTimer.current);
-    cutFlashTimer.current = window.setTimeout(() => setCutFlashId(null), 480);
+    cutFlashTimer.current = window.setTimeout(() => {
+      setCutFlashId(null);
+      setCutFlashNextId(null);
+    }, 520);
     void (async () => {
       const result = await enqueueWrite(async () => {
         const realId = await resolveEventId(earlierId);
@@ -1582,6 +1586,11 @@ export function StudioShell({
   // 끊기 = 방금 잘린 카드(슬라이스 연출용). 우클릭 빈 공간에서 그은 빨간 선이 이음새를 스치면 끊는다.
   const [cutFlashId, setCutFlashId] = useState<string | null>(null);
   const cutFlashTimer = useRef<number | null>(null);
+  // 끊긴 이음새의 '다음' 카드 — 앞 카드와 반대 방향으로 반동(스프링 분리 연출).
+  const [cutFlashNextId, setCutFlashNextId] = useState<string | null>(null);
+  // 방금 이어진 체인 — 딸깍 맞물림 + 보라 글로우 1회.
+  const [linkFlashIds, setLinkFlashIds] = useState<Set<string>>(() => new Set());
+  const linkFlashTimer = useRef<number | null>(null);
   // 우클릭 제스처(잇기/끊기): 카드 위에서 시작=잇기(보라 선 → 후보에 놓으면 연결), 빈 곳에서
   // 시작=끊기(빨간 선이 이음새 스치면 끊김). 오버레이 SVG는 명령형으로 붙였다 뗀다(리렌더 회피).
   type RightGesture = {
@@ -2418,6 +2427,10 @@ export function StudioShell({
     setActionError(null);
     hapticTick();
     flashToast("이어붙였어요");
+    // 맞물림 연출 — 체인 전체가 한 번 딸깍(스쿼시+글로우). 애니메이션은 CSS가 담당.
+    setLinkFlashIds(new Set(chain));
+    if (linkFlashTimer.current) window.clearTimeout(linkFlashTimer.current);
+    linkFlashTimer.current = window.setTimeout(() => setLinkFlashIds(new Set()), 700);
     void (async () => {
       const result = await enqueueWrite(async () => {
         const resolved = await Promise.all(chain.map(resolveEventId));
@@ -5759,7 +5772,9 @@ export function StudioShell({
                         isConnTarget ? "connect-target" : "",
                         isConnHover ? "connect-hover" : "",
                         connDim ? "connect-dim" : "",
-                        cutFlashId === event.id ? "cut-flash" : "",
+                        cutFlashId === event.id ? "cut-flash cut-recoil-prev" : "",
+                        cutFlashNextId === event.id ? "cut-recoil-next" : "",
+                        linkFlashIds.has(event.id) ? "just-linked" : "",
                         justSavedId === event.id ? "just-saved" : "",
                         deletingIds.has(event.id) ? "deleting" : ""
                       ]

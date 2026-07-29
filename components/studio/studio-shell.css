@@ -4821,7 +4821,10 @@ body.cell-range-dragging {
     transform var(--dur-1) var(--ease),
     box-shadow var(--dur-2) var(--ease),
     border-color var(--dur-1) var(--ease),
-    background-color var(--dur-1) var(--ease);
+    background-color var(--dur-1) var(--ease),
+    /* 잇기/끊기 때 span 형태(모서리·이음 마진)가 툭 점프하지 않고 스르륵 녹아 바뀐다. */
+    border-radius var(--dur-3) var(--ease),
+    margin var(--dur-3) var(--ease);
 }
 /* 미정(아직 확정 아님) — 굵은 점선 테두리(잘 보이게). '미정' 칩은 공용 .evt-tentative. */
 .studio-event-pill.tentative {
@@ -4914,6 +4917,66 @@ html[data-reduce-motion] .studio-event-pill.connect-target {
   }
 }
 html[data-reduce-motion] .studio-event-pill.cut-flash::after {
+  animation: none;
+}
+/* 끊기 — 팽팽하던 고무줄이 풀리듯, 이음새 양쪽이 반대 방향으로 살짝 튕겼다 스프링으로
+   제자리(오버슈트 1회). 사선 연출(cut-flash)과 함께 '분리'가 몸으로 읽힌다. */
+.studio-event-pill.cut-recoil-prev {
+  animation: pill-cut-prev 0.5s var(--ease) both;
+}
+.studio-event-pill.cut-recoil-next {
+  animation: pill-cut-next 0.5s var(--ease) both;
+}
+@keyframes pill-cut-prev {
+  0% { transform: translateX(0); }
+  28% { transform: translateX(-6px); }
+  62% { transform: translateX(2px); }
+  100% { transform: none; }
+}
+@keyframes pill-cut-next {
+  0% { transform: translateX(0); }
+  28% { transform: translateX(6px); }
+  62% { transform: translateX(-2px); }
+  100% { transform: none; }
+}
+/* 잇기 — 체인 전체가 '딸깍' 맞물리는 세로 스쿼시 + 보라 링이 스며들었다 사라진다.
+   (연결 후보 링과 같은 보라 계열 — 같은 행동의 시작·끝이 한 색 가족.) */
+.studio-event-pill.just-linked {
+  animation: pill-link-snap 0.55s var(--ease) both;
+}
+@keyframes pill-link-snap {
+  0% { transform: scaleY(0.95); }
+  45% { transform: scaleY(1.04); }
+  100% { transform: none; }
+}
+.studio-event-pill.just-linked::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  z-index: 4;
+  border-radius: inherit;
+  border: 2px solid rgb(139 92 246 / 0%);
+  pointer-events: none;
+  animation: pill-link-glow 0.7s var(--ease) both;
+}
+@keyframes pill-link-glow {
+  0% {
+    border-color: rgb(139 92 246 / 0%);
+    box-shadow: 0 0 0 0 rgb(139 92 246 / 0%);
+  }
+  35% {
+    border-color: rgb(139 92 246 / 60%);
+    box-shadow: 0 0 10px 2px rgb(139 92 246 / 30%);
+  }
+  100% {
+    border-color: rgb(139 92 246 / 0%);
+    box-shadow: 0 0 0 0 rgb(139 92 246 / 0%);
+  }
+}
+html[data-reduce-motion] .studio-event-pill.cut-recoil-prev,
+html[data-reduce-motion] .studio-event-pill.cut-recoil-next,
+html[data-reduce-motion] .studio-event-pill.just-linked,
+html[data-reduce-motion] .studio-event-pill.just-linked::after {
   animation: none;
 }
 /* 저장·생성 직후: 카드가 통통 착지하며 한 번 반짝(노란 링) — "먹혔다"는 확신 + 귀여움. */
