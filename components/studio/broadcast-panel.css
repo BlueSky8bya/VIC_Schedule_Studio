@@ -2288,6 +2288,40 @@ html[data-reduce-motion] .bp-send {
   box-shadow: inset var(--space-1) 0 0 var(--violet), var(--shadow-1);
 }
 
+/* 레이어 미리보기 칸 확대(사용자 요청) — 40×34는 내용 판독이 어려웠다. */
+.bp-layer-item .bp-layer-thumb {
+  width: 72px;
+  height: 48px;
+  flex: 0 0 72px;
+}
+
+.bp-layer-item .bp-layer-thumb-bg {
+  font-size: 20px;
+}
+
+/* 드래그 순서 변경 = 슬라이드 프리뷰(그림판 문법) — 형제 카드가 transform으로 미끄러져
+   빈 칸이 열리고, 흐려진 원본이 그 칸으로 이동한다. 삽입선(::before)은 슬라이드와 겹쳐
+   중복이라 숨긴다(레이아웃·드롭 판정은 불변). */
+.bp-layer-list .bp-layer-item {
+  transition:
+    opacity var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    box-shadow var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-smooth, var(--ease));
+}
+
+.bp-layer-item.dragging {
+  opacity: 0.45;
+}
+
+.bp-layer-item.drop-before::before {
+  display: none;
+}
+
+html[data-reduce-motion] .bp-layer-list .bp-layer-item {
+  transition: none;
+}
+
 .bp-layer-item .bp-layer-btn {
   width: var(--control-hit);
   height: var(--control-hit);

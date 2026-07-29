@@ -288,6 +288,7 @@ export function BroadcastPanel({
   const [layerDragUi, setLayerDragUi] = useState<{
     id: string;
     beforeId: string | null | undefined;
+    step: number; // 카드 한 칸 높이+간격 — 슬라이드 프리뷰 이동량
   } | null>(null);
   const layerDragRef = useRef<{
     id: string;
@@ -299,6 +300,7 @@ export function BroadcastPanel({
     trigger: HTMLButtonElement;
     started: boolean;
     beforeId: string | null | undefined;
+    step: number;
     slots: Array<{ id: string; midpoint: number }>;
   } | null>(null);
   const layerDragGhostRef = useRef<HTMLElement | null>(null);
@@ -1305,9 +1307,20 @@ export function BroadcastPanel({
       fitRaf = null;
       // clientWidth는 브라우저별로 CSS zoom 반영 여부가 갈린다 — rect(항상 시각 px)를
       // 우리 줌으로 나눠 '보드 좌표 크기'를 안정적으로 얻는다(줌해도 backing 재할당 없음).
+      // ⚠ rect는 border 포함(border-box) — 빼지 않으면 캔버스가 content box보다 2px 커져
+      //   스크롤바 등장↔소멸 리사이즈 루프(초당 수십 번 깜빡임)가 돈다. floor로 절대
+      //   content box를 넘지 않게(반올림 overshoot도 같은 루프를 만든다).
       const innerRect = inner.getBoundingClientRect();
-      const cssW = Math.round(innerRect.width / boardZoomRef.current);
-      const cssH = Math.round(innerRect.height / boardZoomRef.current);
+      const innerStyle = window.getComputedStyle(inner);
+      const bx =
+        (parseFloat(innerStyle.borderLeftWidth) || 0) +
+        (parseFloat(innerStyle.borderRightWidth) || 0);
+      const by =
+        (parseFloat(innerStyle.borderTopWidth) || 0) +
+        (parseFloat(innerStyle.borderBottomWidth) || 0);
+      const z = boardZoomRef.current;
+      const cssW = Math.max(0, Math.floor(innerRect.width / z - bx));
+      const cssH = Math.max(0, Math.floor(innerRect.height / z - by));
       // 동적 레이어 수 + 라이브/예측 캔버스가 backing-store 총예산을 나눠 쓴다.
       const scale = backingScale(
         cssW,
@@ -1961,7 +1974,7 @@ export function BroadcastPanel({
     setLayerDragUi((prev) =>
       prev?.id === drag.id && prev.beforeId === beforeId
         ? prev
-        : { id: drag.id, beforeId }
+        : { id: drag.id, beforeId, step: drag.step }
     );
   }
 
@@ -2076,6 +2089,11 @@ export function BroadcastPanel({
       trigger: e.currentTarget,
       started: false,
       beforeId: undefined,
+      // 인접 슬롯 midpoint 간격 = 카드+간격 한 칸(균일 목록). 슬롯이 1개뿐이면 카드 높이+8.
+      step:
+        slots.length >= 2
+          ? Math.abs(slots[1].midpoint - slots[0].midpoint)
+          : rect.height + 8,
       slots
     };
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -2504,6 +2522,29 @@ export function BroadcastPanel({
     }
     return { minWidth: maxX, minHeight: maxY };
   }, [cols, colHeights, layers, store, strokeVersion]);
+
+  // 드래그 슬라이드 프리뷰(그림판 문법) — 놓일 자리를 향해 형제 카드가 미끄러지고,
+  // 흐려진 원본 카드가 그 빈 칸으로 이동해 '여기 놓인다'를 몸으로 보여준다.
+  // transform만 쓴다(레이아웃·드롭 판정 슬롯 불변 — 슬롯은 드래그 시작 때 실측).
+  const layerSlidePreview = (() => {
+    if (!layerDragUi || layerDragUi.beforeId === undefined) return null;
+    const from = layers.findIndex((x) => x.id === layerDragUi.id);
+    if (from < 0) return null;
+    const rawTo =
+      layerDragUi.beforeId === null
+        ? layers.length
+        : layers.findIndex((x) => x.id === layerDragUi.beforeId);
+    if (rawTo < 0) return null;
+    return { from, to: rawTo > from ? rawTo - 1 : rawTo, step: layerDragUi.step };
+  })();
+  const layerSlideOf = (i: number): number => {
+    if (!layerSlidePreview) return 0;
+    const { from, to, step } = layerSlidePreview;
+    if (i === from) return (to - from) * step;
+    if (from < to && i > from && i <= to) return -step;
+    if (to < from && i >= to && i < from) return step;
+    return 0;
+  };
 
   return (
     <div className="broadcast-panel" role="dialog" aria-modal="true" aria-label="일정 그림판" ref={rootRef}>
@@ -3215,12 +3256,17 @@ export function BroadcastPanel({
           role="list"
           aria-label="그림 레이어"
         >
-        {layers.map((l) => (
+        {layers.map((l, li) => (
           <div
             className={`bp-layer-item${l.vis ? "" : " off"}${l.id === activeLayerId ? " active" : ""}${layerDragUi?.id === l.id ? " dragging" : ""}${layerDragUi?.beforeId === l.id ? " drop-before" : ""}`}
             data-layer-id={l.id}
             key={l.id}
             role="listitem"
+            style={
+              layerSlideOf(li) !== 0
+                ? { transform: `translateY(${layerSlideOf(li)}px)` }
+                : undefined
+            }
           >
             <button
               aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"

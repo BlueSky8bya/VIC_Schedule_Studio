@@ -171,7 +171,7 @@ describe("broadcast inking callsite contracts", () => {
     expect(pointerMove).toContain("requestAnimationFrame(runLayerAutoScroll)");
     expect(dropTarget).toContain("resolveLayerDropBeforeId(");
     expect(dropTarget).toContain("string | null | undefined");
-    expect(dropUpdate).toContain("{ id: drag.id, beforeId }");
+    expect(dropUpdate).toContain("{ id: drag.id, beforeId, step: drag.step }");
     expect(dropUpdate).not.toContain("setLayerDragUi(null)");
     expect(pointerUp).toContain("reorderDrawingLayerBefore(before, drag.id, beforeId)");
     expect(pointerUp).toContain("beforeId === undefined");
