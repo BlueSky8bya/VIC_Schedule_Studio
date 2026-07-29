@@ -102,7 +102,7 @@ export const sampleStudioSchedule: StudioSchedule = {
       isAllDay: false,
       publicTitle: "비공개 합방 리허설",
       status: "scheduled",
-      visibilityScope: "embargo",
+      visibilityScope: "owner_private",
       category: "collab",
       tagIds: ["tag-collab"],
       primaryTagIds: ["tag-collab"],

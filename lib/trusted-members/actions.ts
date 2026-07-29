@@ -89,7 +89,9 @@ export async function setTrustedMemberRolesAction(
       is_manager: isManager,
       is_worker: isWorker,
       trusted_role: isManager ? "manager" : "worker",
-      can_view_embargo: true,
+      // P0-PRIV-3: can_view_embargo는 어떤 RLS/로더도 읽지 않는 죽은 플래그인데 true로 기록되고
+      // 있었다 — 엠바고는 소유자 전용(ADR-0012)이므로 오해 소지를 없애기 위해 false로 고정.
+      can_view_embargo: false,
       can_view_work: true,
       is_active: true,
       updated_at: new Date().toISOString()

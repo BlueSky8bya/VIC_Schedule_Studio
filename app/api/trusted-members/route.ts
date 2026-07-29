@@ -49,7 +49,8 @@ export async function POST(request: Request) {
   const { error } = await supabase.from("trusted_members").upsert(
     {
       calendar_id: calendar.id,
-      can_view_embargo: true,
+      // P0-PRIV-3: 죽은 플래그 — 엠바고는 소유자 전용이라 false 고정(오해 방지).
+      can_view_embargo: false,
       can_view_work: true,
       display_name: displayName,
       email,

@@ -796,8 +796,8 @@ export function TagLegendEditor({
         </span>
         <span className="tag-tip warn">
           <AlertTriangle aria-hidden="true" size={13} />
-          태그를 지우면 쌓인 통계가 흐트러져요<span className="tip-web">. 삭제보다 추가·이름 바꾸기를
-          권해요</span>.
+          태그를 지우면 쌓인 통계가 흐트러져요.<span className="tip-web"> 삭제보다 추가·이름 바꾸기를
+            권해요.</span>
         </span>
       </div>
       {/* 콘텐츠끼리 / 방식끼리 묶어 한 눈에. 드래그 순서는 묶음 안에서 유지된다. */}
