@@ -10521,11 +10521,23 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
 }
 
 /* 형식 묶음도 콘텐츠 묶음과 같은 표면 — 채움색 구분은 시트 배경과 어긋난 사각 띠처럼
-   보였다(사용자 지적). 구분은 제목 색(보라)이 담당한다. */
-.tag-editor-section.is-mod {
+   보였다(사용자 지적). 구분은 제목 색(보라)이 담당한다. (특이도: 구 모바일 규칙
+   `.tag-editor .tag-editor-section`과의 싸움을 피하려 같은 0,3,0으로 선언.) */
+.tag-editor .tag-editor-section.is-mod {
   border-style: solid;
   border-color: var(--line);
   background: var(--surface-2);
+}
+
+/* ≤999(아젠다/모바일 편집): 섹션 상자를 아예 지운다 — 좁은 화면에서 배경 판이 어긋난
+   띠처럼 보였다(형식 포함). 행 카드들이 시트 바탕 위에 바로 서고, 구분은 섹션 제목만. */
+@media (max-width: 999px) {
+  .tag-editor .tag-editor-section,
+  .tag-editor .tag-editor-section.is-mod {
+    border: 0;
+    background: none;
+    padding: 0;
+  }
 }
 
 .tag-editor-section-head {
@@ -10723,10 +10735,6 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
 
   .m-manage .tag-editor {
     padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
-  }
-
-  .tag-editor-section {
-    padding: var(--space-3);
   }
 
   .tag-editor .tag-tip .tip-web,

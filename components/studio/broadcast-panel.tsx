@@ -231,7 +231,8 @@ export function BroadcastPanel({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const sendBtnRef = useRef<HTMLButtonElement | null>(null);
-  const pickerToggleRef = useRef<HTMLButtonElement | null>(null);
+  // (구 접기 토글 → 지금은 월 라벨 span. 보내기 후 포커스 착지점으로만 쓴다.)
+  const pickerToggleRef = useRef<HTMLSpanElement | null>(null);
   const scheduleLayerButtonRef = useRef<HTMLButtonElement | null>(null);
   const layerListRef = useRef<HTMLDivElement | null>(null);
 
@@ -360,8 +361,6 @@ export function BroadcastPanel({
   // 전체 지우기 2단계 확인(undo 불가 + 잠긴 레이어 포함이라 오조작 방어, G3b).
   const [clearArmed, setClearArmed] = useState(false);
   const clearArmTimer = useRef<number | null>(null);
-  // 날짜 선택 달력 접기 — 그림판 공간 확보(보내기 후 자동 접힘, 헤더 토글로 다시 펼침).
-  const [pickerOpen, setPickerOpen] = useState(true);
   // 날짜 컬럼 자유 배치(위치·폭). 폭 비율만큼 글자도 커진다(컬럼 fontSize %) — '크게 보여주기'.
   const [cols, setCols] = useState<Map<string, ColBox>>(() => new Map());
   // 절대배치 카드의 실제 높이는 부모 크기에 반영되지 않는다. 실측값으로 판서판/캔버스
@@ -2177,7 +2176,6 @@ export function BroadcastPanel({
     }
     onSend(newKeys);
     rangeSelect.clearSelection();
-    setPickerOpen(false); // 보냈으면 달력은 접어 그림판 공간 확보(헤더로 다시 펼침)
     // 선택 해제로 보내기 버튼이 disabled가 되므로 포커스를 살아 있는 다음 작업점으로 옮긴다.
     window.requestAnimationFrame(() => {
       const target = enterArrangeMode
@@ -2825,8 +2823,7 @@ export function BroadcastPanel({
         ) : null}
       </div>
 
-      {/* 왼쪽 기둥 = 날짜 달력(위) + 아바타 자리(아래, 남은 높이 전부). 달력을 접으면
-          아바타 공간이 그만큼 커진다 — 별도 수납 UI 없이 빈 공간이 역할을 갖는다(사용자 결정). */}
+      {/* 왼쪽 기둥 — 날짜 달력 카드(콘텐츠 높이). 접기·아바타 자리는 사용자 결정으로 제거. */}
       <div className="bp-source-col">
       <section className="bp-picker" aria-label={`${monthLabel} 날짜 선택`}>
         <div className="bp-picker-head">
@@ -2856,21 +2853,10 @@ export function BroadcastPanel({
           >
             <ChevronRight aria-hidden="true" size={16} strokeWidth={2.5} />
           </button>
-          {/* 달력 접기 — 그림판 공간이 주인공. 보내면 자동으로 접히고 여기로 다시 펼친다. */}
-          <button
-            aria-expanded={pickerOpen}
-            className="bp-picker-toggle"
-            ref={pickerToggleRef}
-            type="button"
-            onClick={() => {
-              hapticTick();
-              setPickerOpen((v) => !v);
-            }}
-          >
-            {/* 좁은 사이드 칼럼에서 잘리지 않게 짧은 라벨 — 달력 이모지는 양옆 화살표·그리드가
-                이미 말해줘 뺐다. */}
-            {monthLabel} {pickerOpen ? "접기" : "펼치기"}
-          </button>
+          {/* 접기 기능은 사용자 결정으로 제거 — 달력은 항상 펼쳐져 있고 이 자리는 월 라벨만. */}
+          <span className="bp-picker-toggle" ref={pickerToggleRef} tabIndex={-1}>
+            {monthLabel}
+          </span>
           <button
             className="bp-send"
             disabled={sendableDateCount === 0}
@@ -2883,8 +2869,7 @@ export function BroadcastPanel({
               : `그림판으로 보내기${sendableDateCount > 0 ? ` (${sendableDateCount})` : ""}`}
           </button>
         </div>
-        {pickerOpen ? (
-          <>
+        <>
             <div className="bp-weekdays" aria-hidden="true">
               {WEEKDAYS.map((w, i) => (
                 <span className={i === 0 ? "sun" : i === 6 ? "sat" : ""} key={w}>
@@ -2943,14 +2928,7 @@ export function BroadcastPanel({
               })}
             </div>
           </>
-        ) : null}
       </section>
-      {/* 아바타 자리 — 방송 화면에서 스트리머 캠/아바타를 얹는 예약 공간. 기능 없음(자리 표시만),
-          시청자 화면·export에는 애초에 없는 그림판 내부 요소다. */}
-      <div aria-hidden="true" className="bp-avatar-slot">
-        <span>🎙️</span>
-        <em>아바타 자리</em>
-      </div>
       </div>
 
       <div className="bp-main">

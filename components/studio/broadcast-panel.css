@@ -1757,8 +1757,7 @@ html[data-reduce-motion] .bp-day-col {
   box-shadow: var(--shadow-1);
 }
 
-/* 왼쪽 기둥: 달력 카드(콘텐츠 높이) + 아바타 자리(남은 높이 전부) — 달력 아래가 텅 비어
-   보이던 불균형을 '역할 있는 공간'으로 채운다. 달력을 접으면 아바타 공간이 커진다. */
+/* 왼쪽 기둥: 달력 카드(콘텐츠 높이) — 작업대 위 플로팅 카드 문법. */
 .bp-source-col {
   grid-column: 1;
   display: flex;
@@ -1782,28 +1781,15 @@ html[data-reduce-motion] .bp-day-col {
   overflow-y: auto;
 }
 
-.bp-avatar-slot {
-  display: flex;
-  flex: 1;
-  min-height: calc(var(--control-hit) * 2);
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  border: var(--stroke-hairline) dashed var(--selection-border);
-  border-radius: var(--r-lg);
-  color: var(--muted);
+/* 월 라벨(구 접기 토글) — 이제 정적 라벨. 버튼 어휘(호버·눌림)를 지운다. */
+.bp-picker-toggle,
+.bp-picker-toggle:hover {
+  background: var(--surface);
+  cursor: default;
 }
 
-.bp-avatar-slot span {
-  font-size: var(--text-display);
-}
-
-.bp-avatar-slot em {
-  font-size: var(--text-label);
-  font-style: normal;
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-ui, 0.02em);
+.bp-picker-toggle:active {
+  transform: none;
 }
 
 .bp-picker-head {
@@ -2311,13 +2297,9 @@ html[data-reduce-motion] .bp-layer-add:active {
     white-space: nowrap;
   }
 
-  /* 오버레이 구도에선 기둥 래퍼를 해제(달력만 플로팅) — 아바타 자리는 화면이 좁아 생략. */
+  /* 오버레이 구도에선 기둥 래퍼를 해제(달력만 플로팅). */
   .bp-source-col {
     display: contents;
-  }
-
-  .bp-avatar-slot {
-    display: none;
   }
 
   .bp-picker {
