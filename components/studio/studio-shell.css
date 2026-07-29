@@ -5575,6 +5575,37 @@ html[data-reduce-motion] .delete-snack {
   justify-content: space-between;
   gap: 10px;
 }
+/* P0-A11Y-1: 드래그 없이도 되는 이동/복제 버튼(편집 패널 헤더). */
+.editor-heading-tools {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.editor-tool {
+  min-height: 30px;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-pill);
+  background: #fff;
+  padding: 4px 12px;
+  color: #5b4bd0;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
+}
+.editor-tool:hover {
+  background: #f3f0fb;
+}
+.editor-tool:active {
+  transform: scale(0.94);
+}
+.editor-tool.on {
+  background: #5b4bd0;
+  border-color: #5b4bd0;
+  color: #fff;
+}
 .editor-heading-left {
   display: flex;
   align-items: center;

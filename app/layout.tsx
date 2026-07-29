@@ -77,16 +77,10 @@ export default async function RootLayout({
           }}
         />
         {children}
-        {/* 세로 전용 잠금 — 휴대폰을 가로로 돌리면 전체를 덮어 "세로로 돌려주세요"를 띄운다. 웹은 OS
-            방향 잠금이 불가하므로(스크린 방향 API는 PWA/전체화면에서만) 오버레이로 가로 사용을
-            구조적으로 막는다. 가로 터치폰에서만(아래 CSS 미디어쿼리) 나타나고 태블릿·데스크톱엔 없다. */}
-        <div className="portrait-lock" aria-hidden="true">
-          <div className="portrait-lock-inner">
-            <span className="portrait-lock-icon">📱</span>
-            <strong>세로로 돌려주세요</strong>
-            <span className="portrait-lock-sub">이 화면은 세로 모드 전용이에요</span>
-          </div>
-        </div>
+        {/* (세로 전용 잠금 오버레이 제거 — P0-RESP-1. 가로 휴대폰은 MOBILE_QUERY의
+            (max-height ≤640 + coarse) 절이 이미 모바일 레이아웃으로 잡아 정상 사용 가능한데,
+            오버레이가 그 위를 통째로 덮어 사용 자체를 막고 있었다. aria-hidden인데 뒤 UI가
+            포커스 가능해 접근성 문제도 있었다.) */}
         {/* 방문 비콘은 비로그인 방문자에게도 깐다 — 일일/월별 인사이트에 '비로그인' 도달까지 잡는다.
             (로그인은 실제 역할, 비로그인은 role="anon". 서버가 actor로 실제 기록을 확정한다.) */}
         <PresenceBeacon role={actor.isAuthenticated ? actor.role : "anon"} />

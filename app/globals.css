@@ -401,51 +401,10 @@ html[data-reduce-motion] .pop-number.pop {
   animation: none;
 }
 
-/* 세로 전용 잠금 — 가로로 누운 '터치폰'에서만 전체를 덮어 세로 사용을 강제한다. 휴대폰을 가로로
-   돌리면 폭이 넓어져 데스크톱처럼 보이던 문제를 아예 차단(가로 사용 자체를 막음). 태블릿(짧은 변
-   > 640)·마우스 데스크톱은 해당 안 됨. fixed·최상위 z라 그 아래 모든 화면(시청자/스튜디오)을 덮는다. */
-.portrait-lock {
-  display: none;
-}
-@media (orientation: landscape) and (max-height: 640px) and (pointer: coarse) {
-  .portrait-lock {
-    display: flex;
-    position: fixed;
-    inset: 0;
-    z-index: 9999;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(160deg, #fbf2df, #f3e7ce);
-    color: #6b4f2a;
-    text-align: center;
-  }
-  .portrait-lock-inner {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: center;
-    padding: 24px;
-  }
-  .portrait-lock-icon {
-    font-size: 46px;
-    animation: portrait-rotate-hint 2.2s ease-in-out infinite;
-  }
-  .portrait-lock strong {
-    font-size: 20px;
-    font-weight: 900;
-  }
-  .portrait-lock-sub {
-    font-size: 13px;
-    opacity: 0.72;
-  }
-}
-@keyframes portrait-rotate-hint {
-  0%, 100% { transform: rotate(0deg); }
-  55% { transform: rotate(-88deg); }
-}
-html[data-reduce-motion] .portrait-lock-icon {
-  animation: none;
-}
+/* (세로 전용 잠금 .portrait-lock 제거 — P0-RESP-1. 가로 휴대폰은 MOBILE_QUERY의
+   (max-height ≤640 + coarse) 절이 이미 모바일 레이아웃을 적용해 정상 사용 가능하다.
+   전면 차단 오버레이는 그 사용을 막는 데다, aria-hidden인데 뒤 UI가 포커스 가능해
+   스크린리더/키보드 사용자를 보이지 않는 UI에 가두는 접근성 결함이었다.) */
 
 /* 특별한 날 탭 → 그 자리에서 색종이가 '팡' 터지는 점(point) 폭죽(빵빠레). 위 celebrate-overlay가
    상단에서 비처럼 내리는 것과 달리, 탭한 좌표에서 방사형으로 흩어진다. fixed라 export 표면 밖이고

@@ -1428,6 +1428,8 @@ export function StudioShell({
     [selectedEventId, visibleEvents]
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
+  // P0-A11Y-1 '이동' 모드 — 편집 패널의 이동 버튼으로 무장한 일정 id. 다음 날짜 클릭이 이동이 된다.
+  const [moveArmId, setMoveArmId] = useState<string | null>(null);
 
   // 접힌 '공개 범위 · 옵션' 헤더에 현재 값을 한 줄로 요약한다 — 접혀 있어도 이 일정이 엠바고인지,
   // 미정인지, 떡밥인지 펼치지 않고 바로 보이게(접기가 정보를 숨기면 안 된다).
@@ -1795,6 +1797,21 @@ export function StudioShell({
   }
 
   function selectDate(isoDate: string) {
+    // P0-A11Y-1 이동 모드: '이동' 버튼으로 무장된 상태면, 이 날짜 클릭(또는 키보드 Enter)은
+    // 선택이 아니라 **그 날짜로 이동**이다 — 드래그 없이 단일 포인터/키보드로 이동(WCAG 2.5.7).
+    if (moveArmId) {
+      const armed = events.find((e) => e.id === moveArmId);
+      setMoveArmId(null);
+      if (armed) {
+        const from = getEventDateKey(armed);
+        if (from !== isoDate) {
+          dropEventInto(armed.id, from, isoDate, null); // 드래그 드롭과 동일 경로(undo·직렬 저장 포함)
+        } else {
+          flashToast("같은 날짜예요 — 이동 취소");
+        }
+      }
+      return;
+    }
     // 이미 그 날짜의 새 일정 카드가 열려 있는데 같은 날짜를 또 누르면 → 선택 해제(카드 닫기).
     if (editorVisible && selectedDate === isoDate && selectedEventId === null) {
       setEditorVisible(false);
@@ -3826,24 +3843,51 @@ export function StudioShell({
     flashToast("일정 복사됨 · 날짜 고르고 Ctrl+V");
   }
   function pasteCopiedEvent() {
-    if (!clipboard || !canEdit) return;
-    const payload = clipboard;
+    if (!clipboard) return;
+    insertEventCopy(clipboard, selectedDate, `${selectedDate}에 붙여넣음`);
+  }
+  // P0-A11Y-1: 드래그/단축키 없이도 되는 '복제' — 편집 패널 버튼이 같은 날짜로 즉시 복제한다.
+  function duplicateSelectedEvent() {
+    if (!selectedEventId) return;
+    const ev = events.find((e) => e.id === selectedEventId);
+    if (!ev) return;
+    const start = getEventDateKey(ev);
+    insertEventCopy(
+      {
+        publicTitle: ev.publicTitle,
+        spanDays: ev.endDateKey ? Math.max(0, daysBetweenIso(start, ev.endDateKey)) : 0,
+        isSupport: ev.isSupport ?? false,
+        isTentative: ev.isTentative ?? false,
+        supportUrl: ev.supportUrl ?? "",
+        category: ev.category,
+        status: ev.status,
+        visibilityScope: ev.visibilityScope,
+        tagIds: ev.tagIds,
+        primaryTagIds: ev.primaryTagIds
+      },
+      start,
+      "복제됐어요"
+    );
+  }
+  // 복사본 삽입 공통 경로 — Ctrl+V 붙여넣기와 '복제' 버튼이 함께 쓴다.
+  function insertEventCopy(payload: CopiedEvent, targetDate: string, toast: string) {
+    if (!canEdit) return;
     // P0-SEC-1(fail-closed): 잠금 상태에서 비공개 일정을 붙여넣으면 예전엔 공개로 강제 변환
     // 됐다 — 비공개 '내용'이 공개 일정으로 복제되는 유출 경로. 조용한 변환 대신 거부한다.
     if (payload.visibilityScope !== "public" && !canReadPrivate) {
-      flashToast("비공개 일정은 '비공개 일정 보기'를 켠 뒤 붙여넣을 수 있어요");
+      flashToast("비공개 일정은 '비공개 일정 보기'를 켠 뒤 복제할 수 있어요");
       return;
     }
     const scope: EventVisibilityScope = payload.visibilityScope;
     const endDateKey =
       payload.isSupport && payload.spanDays > 0
-        ? addDaysIso(selectedDate, payload.spanDays)
+        ? addDaysIso(targetDate, payload.spanDays)
         : undefined;
     const tempId = `temp-${Math.random().toString(36).slice(2)}`;
     // 낙관적으로 즉시 붙여넣고, 서버엔 백그라운드 반영(새로고침 없이).
     const optimistic: StudioScheduleEvent = {
       id: tempId,
-      startsAt: `${selectedDate}T00:00:00+09:00`,
+      startsAt: `${targetDate}T00:00:00+09:00`,
       endDateKey,
       isSupport: payload.isSupport,
       supportUrl: payload.supportUrl || undefined,
@@ -3858,15 +3902,15 @@ export function StudioShell({
       sortOrder: 0
     };
     setEvents((prev) => [...prev, optimistic]);
-    // 붙여넣기를 실행취소 스택에 'remove'로 올린다 → Ctrl+Z면 방금 붙여넣은 이 카드가 사라진다.
+    // 실행취소 스택에 'remove'로 올린다 → Ctrl+Z면 방금 만든 이 카드가 사라진다.
     const undoHolder = { id: tempId };
     deletedStackRef.current.push({ type: "remove", holder: undoHolder });
-    flashToast(`${selectedDate}에 붙여넣음`);
+    flashToast(toast);
     setActionError(null);
     startTransition(async () => {
       const result = await studioWrite("save", {
         id: undefined,
-        dateKey: selectedDate,
+        dateKey: targetDate,
         endDateKey: endDateKey ?? "",
         startTime: "",
         endTime: "",
@@ -3982,6 +4026,13 @@ export function StudioShell({
         }
         return;
       }
+      // 이동 모드(P0-A11Y-1)는 Esc로 취소.
+      if (e.key === "Escape" && moveArmId) {
+        e.preventDefault();
+        setMoveArmId(null);
+        flashToast("이동 취소");
+        return;
+      }
       // Delete 키: 선택한 일정 삭제(버튼 없이도).
       if (e.key === "Delete" && selectedEventId) {
         e.preventDefault();
@@ -4007,7 +4058,7 @@ export function StudioShell({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events, editorVisible, form]);
+  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events, editorVisible, form, moveArmId]);
 
   // 모바일 아젠다도 데스크톱과 동일하게 — 비공개 일정은 "비공개 일정 보기"로 직접 켜기 전까진
   // 누구에게도(개발자·소유자 포함) 보이지 않는다. 방송사고 방지: 진입/새로고침 시 항상 공개 기본.
@@ -5354,6 +5405,12 @@ export function StudioShell({
           {copyToast}
         </div>
       ) : null}
+      {/* 이동 모드 안내(P0-A11Y-1) — 무장 동안 상단에 계속 떠서 다음 행동을 알려준다. */}
+      {moveArmId ? (
+        <div className="copy-toast" role="status" aria-live="polite">
+          옮길 날짜 칸을 클릭하세요 · Esc 취소
+        </div>
+      ) : null}
       {/* P0-DATA-1: 삭제 스낵바 — 8초 동안 그 자리에서 실행 취소(터치 포함, Ctrl+Z와 같은 복구). */}
       {deleteSnack ? (
         <div className="delete-snack" role="status" aria-live="polite">
@@ -5691,7 +5748,21 @@ export function StudioShell({
             key={`${view.year}-${view.month}`}
             ref={setMonthGridRef}
           >
-            {cells.map((cell, cellIndex) => {
+            {(() => {
+              // P0-A11Y-1 roving focus: 42칸이 각자 탭 스톱이면 키보드로 달력을 '건너서' 편집
+              // 패널에 가는 데 42번의 Tab이 필요했다. 탭 스톱은 한 곳(선택된 날짜, 없으면 이 달
+              // 1일)만 두고, 칸 사이 이동은 화살표(±1/±7)·Home/End(주 시작/끝)로 한다(APG grid).
+              const selIdx = cells.findIndex((c) => c.isoDate === selectedDate);
+              const rovingIdx = selIdx >= 0 ? selIdx : cells.findIndex((c) => c.inCurrentMonth);
+              const focusCell = (idx: number) => {
+                const clamped = Math.max(0, Math.min(cells.length - 1, idx));
+                document
+                  .querySelector<HTMLElement>(
+                    `.studio-month-grid [data-cell-index="${clamped}"]`
+                  )
+                  ?.focus();
+              };
+              return cells.map((cell, cellIndex) => {
               const covering = getEventsForDate(liveEvents, cell.isoDate);
               const supportHere = covering.filter((e) => e.isSupport);
               const dateEvents = covering.filter((e) => !e.isSupport);
@@ -5757,10 +5828,44 @@ export function StudioShell({
                   onPointerLeave={cancelCellHold}
                   onPointerCancel={cancelCellHold}
                   role="button"
+                  aria-label={`${cell.isoDate} ${WEEKDAYS[cell.weekday]}요일${
+                    dateEvents.length > 0 ? ` · 일정 ${dateEvents.length}개` : ""
+                  }`}
                   style={isFirstReveal ? ({ "--ri": cellIndex } as CSSProperties) : undefined}
-                  tabIndex={0}
+                  tabIndex={cellIndex === rovingIdx ? 0 : -1}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") selectDate(cell.isoDate);
+                    // P0-A11Y-1 roving grid: 화살표로 칸 이동, Home/End=주 시작/끝, Enter/Space=선택.
+                    // stopPropagation 필수 — ←/→는 전역 '월 이동' 단축키이기도 해서, 막지 않으면
+                    // 칸 포커스 이동과 월 넘김이 동시에 일어난다(실측).
+                    const nav: Record<string, number> = {
+                      ArrowRight: 1,
+                      ArrowLeft: -1,
+                      ArrowDown: 7,
+                      ArrowUp: -7
+                    };
+                    if (e.key in nav) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      focusCell(cellIndex + nav[e.key]);
+                      return;
+                    }
+                    if (e.key === "Home") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      focusCell(cellIndex - (cellIndex % 7));
+                      return;
+                    }
+                    if (e.key === "End") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      focusCell(cellIndex - (cellIndex % 7) + 6);
+                      return;
+                    }
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      selectDate(cell.isoDate);
+                    }
                   }}
                 >
                   {supportHere.map((s) => {
@@ -6070,7 +6175,8 @@ export function StudioShell({
                   </div>
                 </article>
               );
-            })}
+              });
+            })()}
           </div>
         </section>
 
@@ -6157,6 +6263,33 @@ export function StudioShell({
                   </span>
                   <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
                 </div>
+                {/* P0-A11Y-1: 드래그·단축키 없이도 되는 이동/복제(WCAG 2.5.7 단일 포인터 대안). */}
+                {selectedEventId && canEdit ? (
+                  <div className="editor-heading-tools">
+                    <button
+                      className={`editor-tool${moveArmId === selectedEventId ? " on" : ""}`}
+                      onClick={() => {
+                        hapticTick();
+                        setMoveArmId((cur) => (cur === selectedEventId ? null : selectedEventId));
+                      }}
+                      title="다른 날짜로 이동 — 누른 뒤 달력에서 옮길 날짜를 클릭(Esc 취소)"
+                      type="button"
+                    >
+                      이동
+                    </button>
+                    <button
+                      className="editor-tool"
+                      onClick={() => {
+                        hapticTick();
+                        duplicateSelectedEvent();
+                      }}
+                      title="같은 날짜에 복제"
+                      type="button"
+                    >
+                      복제
+                    </button>
+                  </div>
+                ) : null}
                 <button
                   className="button primary editor-save"
                   disabled={!canEdit || !form.publicTitle.trim()}
