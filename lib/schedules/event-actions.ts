@@ -18,6 +18,11 @@ import {
 } from "@/lib/private-layer/secret-crypto";
 import { getUnlockState } from "@/lib/private-layer/unlock";
 import { safeActionError } from "@/lib/utils/safe-action-error";
+import {
+  validateDateKey,
+  validateSupportUrl,
+  validateTagAssignment
+} from "@/lib/schedules/event-validation";
 
 export type SaveEventInput = {
   id?: string;
@@ -46,9 +51,7 @@ export type SaveEventInput = {
 export type ActionResult = { ok: true; id: string } | { ok: false; error: string };
 
 const SLUG = "vic";
-
-// 이벤트당 콘텐츠 태그 상한(피커와 동일). 방식(modifier)은 별도로 더 붙을 수 있다.
-const MAX_EVENT_TAGS = 6;
+// (태그 상한 상수는 event-validation.ts로 이동 — 서버 검증과 한 곳에서 관리)
 
 // 태그를 강제하지 않는다: 콘텐츠 대분류가 하나도 없어도(또는 방식만 있어도) 그대로 저장한다.
 // 태그 없는 일정 = 색 없는 흰 카드. 예전엔 '기타' 태그를 자동 부착해 "이벤트당 콘텐츠 ≥1" 불변식을
@@ -171,6 +174,29 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
   if (!calendar) {
     return { ok: false, error: "캘린더를 찾을 수 없습니다." };
   }
+
+  // P0-AUTH-1: 입력 검증 — 날짜 형식·업 도움 링크(https만)·태그 payload(개수/중복/소속).
+  for (const [key, label] of [
+    [input.dateKey, "시작"],
+    [input.endDateKey, "종료"]
+  ] as const) {
+    const v = validateDateKey(key, label);
+    if (!v.ok) return { ok: false, error: v.error };
+  }
+  if (!input.dateKey) {
+    return { ok: false, error: "시작 날짜가 필요합니다." };
+  }
+  if (input.isSupport) {
+    const v = validateSupportUrl(input.supportUrl);
+    if (!v.ok) return { ok: false, error: v.error };
+  }
+  const tagCheck = await validateTagAssignment(
+    supabase,
+    calendar.id,
+    input.tagIds,
+    input.primaryTagIds
+  );
+  if (!tagCheck.ok) return { ok: false, error: tagCheck.error };
 
   // 종료일이 시작일보다 뒤일 때만 멀티데이로 저장
   const endDateKey =
@@ -357,6 +383,13 @@ export async function updateSupportSettingsAction(
     return { ok: false, error: "업 도움 일정이 아닙니다." };
   }
 
+  // P0-AUTH-1: 날짜 형식 + 링크 스킴(https만) 검증 — 공개 포스터에서 시청자가 클릭하는 값.
+  {
+    const v = validateDateKey(input.endDateKey, "종료");
+    if (!v.ok) return { ok: false, error: v.error };
+    const u = validateSupportUrl(input.supportUrl);
+    if (!u.ok) return { ok: false, error: u.error };
+  }
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   if (input.endDateKey !== undefined) {
     patch.end_date_key = input.endDateKey || null;
@@ -406,18 +439,25 @@ export async function updateEventTagsAction(
 
   const { data: ev } = await admin
     .from("events")
-    .select("id, calendar_id")
+    .select("id, calendar_id, visibility_scope")
     .eq("id", eventId)
     .maybeSingle();
   if (!ev || ev.calendar_id !== calendar.id) {
     return { ok: false, error: "일정을 찾을 수 없습니다." };
   }
+  // P0-AUTH-1: 매니저는 비공개 접근이 0이므로 비공개 일정의 태그도 못 건드린다(ADR-0012).
+  // 존재 여부를 구분해 알려주지 않는다 — 비공개 일정의 존재 자체가 정보다.
+  if (actor.role === "manager" && ev.visibility_scope !== "public") {
+    return { ok: false, error: "일정을 찾을 수 없습니다." };
+  }
+  // P0-AUTH-1: payload 검증(개수/중복/대표 부분집합/이 캘린더의 활성 태그) — 조용한 slice 대신 거부.
+  const tagCheck = await validateTagAssignment(admin, calendar.id, tagIds, primaryTagIds);
+  if (!tagCheck.ok) return { ok: false, error: tagCheck.error };
 
-  // 콘텐츠 태그는 피커와 동일하게 최대 6개. 태그 0개면 그대로 둔다(색 없는 흰 카드 — 강제 부착 없음).
-  const limited = tagIds.slice(0, MAX_EVENT_TAGS);
+  // 태그 0개면 그대로 둔다(색 없는 흰 카드 — 강제 부착 없음).
   await admin.from("event_tags").delete().eq("event_id", eventId);
-  if (limited.length > 0) {
-    const rows = limited.map((tagId, index) => ({
+  if (tagIds.length > 0) {
+    const rows = tagIds.map((tagId, index) => ({
       event_id: eventId,
       tag_id: tagId,
       is_primary: primaryTagIds.includes(tagId),
