@@ -25,7 +25,8 @@ import {
   Sparkles,
   Trash2,
   Type,
-  Undo2
+  Undo2,
+  X
 } from "lucide-react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
@@ -1082,6 +1083,21 @@ export function PublicPoster({
   // 떡밥 즉시 공개 — 카운트다운이 0이 되면 캐시 우회 액션으로 실제 내용을 받아 이 맵에 덮는다.
   // (이게 있으면 렌더에서 가린 stub 대신 실제 일정을 쓴다 → 캐시 30초 안 기다리고 그 순간 풀림.)
   const [revealedEvents, setRevealedEvents] = useState<Record<string, PublicScheduleEvent>>({});
+  // 모바일 아젠다 일정 상세 시트 — 카드를 탭하면 전체 제목·기간·태그 이름을 보여준다.
+  // 공개 DTO(PublicScheduleEvent + 공개 태그)만 사용 — 비공개 필드 자체가 없다.
+  const [agendaDetail, setAgendaDetail] = useState<{
+    event: PublicScheduleEvent;
+    support: boolean;
+    dateKey: string;
+  } | null>(null);
+  useEffect(() => {
+    if (!agendaDetail) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAgendaDetail(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [agendaDetail]);
   // 방금 공개된 떡밥 id — 잠깐 '짠!' 등장 애니메이션을 입힌다(보상감). 1.8초 뒤 해제.
   const [justRevealed, setJustRevealed] = useState<Set<string>>(() => new Set());
   const revealTeaser = useCallback((id: string) => {
@@ -3430,10 +3446,27 @@ export function PublicPoster({
                         : undefined;
                     const twoColor = !support && colors.length >= 2;
                     const end = event.endDateKey;
+                    // 카드 탭 = 상세 시트(하트·링크 등 내부 컨트롤 탭은 제외).
+                    const openDetail = () => {
+                      hapticTick();
+                      setAgendaDetail({ event, support, dateKey: cell.isoDate });
+                    };
                     return (
                       <div
-                        className={`agenda-event${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}`}
+                        className={`agenda-event tappable${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}`}
                         key={(support ? "s-" : "") + event.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest("button, a")) return;
+                          openDetail();
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter" && e.key !== " ") return;
+                          if ((e.target as HTMLElement).closest("button, a")) return;
+                          e.preventDefault();
+                          openDetail();
+                        }}
                       >
                         {twoColor ? (
                           // 2색: 위/아래 반반 + 각 무늬, 가운데 경계는 마스크로 흐릿하게.
@@ -3575,6 +3608,104 @@ export function PublicPoster({
           {heartToast}
         </div>
       ) : null}
+      {/* 모바일 아젠다 일정 상세 시트 — 카드 탭으로 열리며 전체 제목·기간·태그 이름을 보여준다.
+          공개 DTO만 사용(비공개 필드 자체가 없다). fixed 오버레이라 캡쳐 PNG 밖. */}
+      {agendaDetail
+        ? (() => {
+            const { event, support, dateKey } = agendaDetail;
+            const { main, subs } = splitEventTitle(event.publicTitle);
+            const detailTags = event.tagIds.flatMap((id) => {
+              const tag = viewTags.find((t) => t.id === id);
+              if (!tag) return [];
+              const v = tagVisual.visualOf(tag.id);
+              if (v.missing || !v.bg) return [];
+              return [
+                {
+                  tag,
+                  bg: v.bg,
+                  border: v.border ?? undefined,
+                  primary: event.primaryTagIds.includes(tag.id)
+                }
+              ];
+            });
+            const end = event.endDateKey;
+            return (
+              <div
+                className="agenda-detail-backdrop"
+                role="presentation"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setAgendaDetail(null);
+                }}
+              >
+                <div
+                  aria-label="일정 상세"
+                  aria-modal="true"
+                  className="agenda-detail-sheet"
+                  role="dialog"
+                >
+                  <div className="agenda-detail-head">
+                    <span className="agenda-detail-date">
+                      {formatShortDate(dateKey)}
+                      {end && end !== dateKey ? ` ~ ${formatShortDate(end)}` : ""}
+                    </span>
+                    <button
+                      aria-label="닫기"
+                      autoFocus
+                      className="agenda-detail-close"
+                      type="button"
+                      onClick={() => {
+                        hapticTick();
+                        setAgendaDetail(null);
+                      }}
+                    >
+                      <X aria-hidden="true" size={16} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                  <p className="agenda-detail-title">
+                    {!support && event.isTentative ? (
+                      <span className="evt-tentative">미정</span>
+                    ) : null}
+                    {support ? `🌱 ${event.publicTitle}` : main}
+                  </p>
+                  {!support && subs.length > 0 ? (
+                    <ul className="agenda-detail-subs">
+                      {subs.map((sub, i) => (
+                        <li key={i}>{sub}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {detailTags.length > 0 ? (
+                    <div aria-label="태그" className="agenda-detail-tags">
+                      {detailTags.map(({ tag, bg, border, primary }) => (
+                        <span
+                          className={`agenda-detail-tag${primary ? " primary" : ""}`}
+                          key={tag.id}
+                        >
+                          <i
+                            aria-hidden="true"
+                            style={{ backgroundColor: bg, borderColor: border }}
+                          />
+                          {tag.displayName}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  {support && event.supportUrl ? (
+                    <a
+                      className="agenda-link"
+                      href={event.supportUrl}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      도우러 가기
+                      <ExternalLink aria-hidden="true" size={13} />
+                    </a>
+                  ) : null}
+                </div>
+              </div>
+            );
+          })()
+        : null}
       {/* 시청자 '이 달 기록' — 공개 데이터만(공개 일정·태그·하트 집계·방송시간 집계 RPC).
           방문자/동시접속 같은 운영 지표는 안 들어간다. fixed 오버레이라 캡쳐 PNG 밖. */}
       {insightsOpen ? (

@@ -3883,7 +3883,11 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  padding: 5px 11px;
+  /* 위 버전 배지(3px 세그먼트)와 같은 두께 — 전역 min-height(36px)가 캡슐 안에서
+     저장 칩만 두껍게 만들어 배지와 조화가 깨졌다. */
+  min-width: 0;
+  min-height: 0;
+  padding: 3px 11px;
 }
 .studio-mobile .agenda-header .m-head-left .save-status.failed {
   background: var(--status-danger-fill);
@@ -7012,6 +7016,10 @@ html[data-reduce-motion] .modal-close:active {
   flex: none;
   margin-top: 1.5px;
   color: var(--accent);
+}
+/* 아이콘 뒤 문장은 한 덩어리로 자연 줄바꿈(플렉스 아이템 조각화 방지). */
+.tag-tip-text {
+  min-width: 0;
 }
 /* 부연 설명(괄호·무늬 등)은 가로 여유 있는 웹에서만 — 모바일은 폭을 아껴 한 줄로. */
 .tip-web {
@@ -10246,9 +10254,14 @@ html[data-reduce-motion] .m-edit-actions .button:active {
   padding: var(--space-3);
 }
 
-.tp-chip {
-  min-height: var(--control-hit);
+/* 칩은 살짝 날씬하게(사용자 요청) — 44px 풀 히트 높이는 목록형 컨트롤용이고,
+   나란히 쌓이는 태그 알약은 40px이면 탭 타깃을 해치지 않으면서 가볍다. */
+.tp-chip,
+.tp-content .tp-chip,
+.tp-mods .tp-chip {
+  min-height: calc(var(--control-hit) - var(--space-1));
   border-width: var(--stroke-hairline);
+  padding-block: var(--space-1);
   padding-inline: var(--space-3);
   font-size: var(--text-body);
 }
@@ -10507,10 +10520,12 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
   padding: var(--space-card);
 }
 
+/* 형식 묶음도 콘텐츠 묶음과 같은 표면 — 채움색 구분은 시트 배경과 어긋난 사각 띠처럼
+   보였다(사용자 지적). 구분은 제목 색(보라)이 담당한다. */
 .tag-editor-section.is-mod {
   border-style: solid;
-  border-color: var(--selection-border);
-  background: var(--selection-fill);
+  border-color: var(--line);
+  background: var(--surface-2);
 }
 
 .tag-editor-section-head {
@@ -11074,6 +11089,32 @@ html[data-reduce-motion] .members-add .button {
 html[data-reduce-motion] .member-row:hover,
 html[data-reduce-motion] .members-add .role-segment button:active {
   transform: none;
+}
+
+/* 역할별 권한 표 — 모바일에서 가로로 넘치지 않게: 권한 열이 남은 폭을 갖고
+   역할 4열은 마크가 들어갈 만큼만(15%). 잘린 열 없이 한 화면에 다 보인다. */
+@media (max-width: 640px) {
+  .perm-table {
+    table-layout: fixed;
+    font-size: var(--text-caption);
+  }
+
+  .perm-table th,
+  .perm-table td {
+    padding: var(--space-2) var(--space-1);
+  }
+
+  .perm-table thead th {
+    font-size: var(--text-caption);
+  }
+
+  .perm-table thead th:not(:first-child) {
+    width: 15%;
+  }
+
+  .perm-table td {
+    width: auto;
+  }
 }
 
 /* Batch 14: occasional notice, diagnostics, and visit-record modals stay opaque. */

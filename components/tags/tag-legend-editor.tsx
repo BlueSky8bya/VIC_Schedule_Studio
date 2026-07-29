@@ -782,22 +782,29 @@ export function TagLegendEditor({
   return (
     <div className="tag-editor">
       <div className="tag-tips">
+        {/* 문장은 tag-tip-text 하나로 감싼다 — flex 컨테이너에 <b>·텍스트가 형제로 흩어지면
+            각각 개별 아이템으로 줄바꿈돼 좁은 화면에서 단어가 세로로 조각났다. */}
         <span className="tag-tip">
           <Palette aria-hidden="true" size={13} />
-          <b>콘텐츠</b>는 칸을 채우는 색<span className="tip-web">·무늬(무슨 방송)</span>,{" "}
-          <b>형식</b>은 그 위 작은 점<span className="tip-web">(어떻게)</span>
+          <span className="tag-tip-text">
+            <b>콘텐츠</b>는 칸을 채우는 색<span className="tip-web">·무늬(무슨 방송)</span>,{" "}
+            <b>형식</b>은 그 위 작은 점<span className="tip-web">(어떻게)</span>
+          </span>
         </span>
         <span className="tag-tip">
           <GripVertical aria-hidden="true" size={13} />
-          손잡이를 끌어 순서 변경 · 한 색은 한 태그만
+          <span className="tag-tip-text">손잡이를 끌어 순서 변경 · 한 색은 한 태그만</span>
         </span>
         <span className="tag-tip">
-          <Save aria-hidden="true" size={13} />새 태그는 ‘전체 저장’을 눌러야 반영돼요
+          <Save aria-hidden="true" size={13} />
+          <span className="tag-tip-text">새 태그는 ‘전체 저장’을 눌러야 반영돼요</span>
         </span>
         <span className="tag-tip warn">
           <AlertTriangle aria-hidden="true" size={13} />
-          태그를 지우면 쌓인 통계가 흐트러져요.<span className="tip-web"> 삭제보다 추가·이름 바꾸기를
-            권해요.</span>
+          <span className="tag-tip-text">
+            태그를 지우면 쌓인 통계가 흐트러져요.<span className="tip-web"> 삭제보다 추가·이름
+              바꾸기를 권해요.</span>
+          </span>
         </span>
       </div>
       {/* 콘텐츠끼리 / 방식끼리 묶어 한 눈에. 드래그 순서는 묶음 안에서 유지된다. */}

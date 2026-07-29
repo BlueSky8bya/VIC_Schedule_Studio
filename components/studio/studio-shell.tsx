@@ -3948,9 +3948,8 @@ export function StudioShell({
               </div>
               <h1>
                 {schedule.calendar.title}
-                <span>
-                  토리님 편집실 · {view.year}년 {view.month}월
-                </span>
+                {/* 월 표기는 바로 아래 월 내비가 담당 — 중복·겹침 제거(사용자 요청). */}
+                <span>편집실</span>
               </h1>
               {/* 로그아웃 — 저장됨 칩이 있던 우상단(3열) 자리. 편집실 톤과 어울리게.
                   로그아웃하면 익명 상태로 공개 포스터를 계속 본다(계정 바꾸려면 다시 로그인). */}

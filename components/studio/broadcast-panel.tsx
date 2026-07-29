@@ -349,56 +349,12 @@ export function BroadcastPanel({
       if (!ctx) continue;
       ctx.clearRect(0, 0, thumb.width, thumb.height);
       if (src.width === 0 || src.height === 0) continue;
-      // 판 전체를 축소하면 획이 점처럼 사라져 어떤 레이어인지 읽히지 않았다 — 그 레이어의
-      // 획이 실제로 있는 영역(경계 상자)만 잘라 채워 그린다. 획 좌표는 CSS 좌표계,
-      // 캔버스 픽셀은 scaleRef 배율이므로 k를 곱해 소스 영역으로 변환한다.
-      const k = scaleRef.current;
-      let minX = Infinity;
-      let minY = Infinity;
-      let maxX = -Infinity;
-      let maxY = -Infinity;
-      for (const stroke of store.strokes()) {
-        if (stroke.layer !== layer.id || stroke.tool === "eraser") continue;
-        const half = stroke.width / 2 + 2;
-        for (const p of stroke.points) {
-          if (p.x - half < minX) minX = p.x - half;
-          if (p.x + half > maxX) maxX = p.x + half;
-          if (p.y - half < minY) minY = p.y - half;
-          if (p.y + half > maxY) maxY = p.y + half;
-        }
-      }
-      if (!Number.isFinite(minX)) continue; // 빈 레이어 — 투명(체커보드 배경)만
-      // 점 하나만 있어도 과확대되지 않게 최소 시야 확보(중심 유지).
-      const minSpan = 120;
-      if (maxX - minX < minSpan) {
-        const cx = (minX + maxX) / 2;
-        minX = cx - minSpan / 2;
-        maxX = cx + minSpan / 2;
-      }
-      if (maxY - minY < minSpan) {
-        const cy = (minY + maxY) / 2;
-        minY = cy - minSpan / 2;
-        maxY = cy + minSpan / 2;
-      }
-      const sx = Math.max(0, minX * k);
-      const sy = Math.max(0, minY * k);
-      const sw = Math.min(src.width, maxX * k) - sx;
-      const sh = Math.min(src.height, maxY * k) - sy;
-      if (sw <= 0 || sh <= 0) continue;
-      const s = Math.min(thumb.width / sw, thumb.height / sh);
-      const dw = sw * s;
-      const dh = sh * s;
-      ctx.drawImage(
-        src,
-        sx,
-        sy,
-        sw,
-        sh,
-        (thumb.width - dw) / 2,
-        (thumb.height - dh) / 2,
-        dw,
-        dh
-      );
+      // 전체 그림판을 100%로 축소 렌더(사용자 결정) — 어느 '위치'에 그렸는지가 레이어 구분에
+      // 더 중요하다. (획 영역 크롭 방식은 위치 맥락이 사라져 롤백.)
+      const s = Math.min(thumb.width / src.width, thumb.height / src.height);
+      const dw = src.width * s;
+      const dh = src.height * s;
+      ctx.drawImage(src, (thumb.width - dw) / 2, (thumb.height - dh) / 2, dw, dh);
     }
   }, [strokeVersion, layers, store]);
   // 전체 지우기 2단계 확인(undo 불가 + 잠긴 레이어 포함이라 오조작 방어, G3b).
@@ -2512,13 +2468,7 @@ export function BroadcastPanel({
   }, [cols, colHeights, layers, store, strokeVersion]);
 
   return (
-    <div
-      className={`broadcast-panel${pickerOpen ? "" : " picker-collapsed"}`}
-      role="dialog"
-      aria-modal="true"
-      aria-label="일정 그림판"
-      ref={rootRef}
-    >
+    <div className="broadcast-panel" role="dialog" aria-modal="true" aria-label="일정 그림판" ref={rootRef}>
       <header className="bp-header">
         <h2>🖊️ 일정 그림판</h2>
         <p className="bp-hint">
@@ -2875,6 +2825,9 @@ export function BroadcastPanel({
         ) : null}
       </div>
 
+      {/* 왼쪽 기둥 = 날짜 달력(위) + 아바타 자리(아래, 남은 높이 전부). 달력을 접으면
+          아바타 공간이 그만큼 커진다 — 별도 수납 UI 없이 빈 공간이 역할을 갖는다(사용자 결정). */}
+      <div className="bp-source-col">
       <section className="bp-picker" aria-label={`${monthLabel} 날짜 선택`}>
         <div className="bp-picker-head">
           {/* 월 이동 — 다른 달 일정도 뽑아온다. 인덱스 기반 선택은 월이 바뀌면 다른 날짜를
@@ -2992,6 +2945,13 @@ export function BroadcastPanel({
           </>
         ) : null}
       </section>
+      {/* 아바타 자리 — 방송 화면에서 스트리머 캠/아바타를 얹는 예약 공간. 기능 없음(자리 표시만),
+          시청자 화면·export에는 애초에 없는 그림판 내부 요소다. */}
+      <div aria-hidden="true" className="bp-avatar-slot">
+        <span>🎙️</span>
+        <em>아바타 자리</em>
+      </div>
+      </div>
 
       <div className="bp-main">
       <section className="bp-board" aria-label="그림판" ref={boardScrollRef}>

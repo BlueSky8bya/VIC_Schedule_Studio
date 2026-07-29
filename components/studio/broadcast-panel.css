@@ -1757,21 +1757,53 @@ html[data-reduce-motion] .bp-day-col {
   box-shadow: var(--shadow-1);
 }
 
-.bp-picker {
+/* 왼쪽 기둥: 달력 카드(콘텐츠 높이) + 아바타 자리(남은 높이 전부) — 달력 아래가 텅 비어
+   보이던 불균형을 '역할 있는 공간'으로 채운다. 달력을 접으면 아바타 공간이 커진다. */
+.bp-source-col {
   grid-column: 1;
-  /* 콘텐츠 높이만큼만 — 기둥 전체를 차지해 아래가 텅 비어 보이던 불균형 제거.
-     레이어 패널과 같은 '작업대 위 플로팅 카드' 문법으로 통일. */
-  align-self: start;
-  max-height: calc(100% - 2 * var(--space-3));
+  display: flex;
   min-width: 0;
   min-height: 0;
+  flex-direction: column;
+  gap: var(--space-3);
   margin: var(--space-3);
+}
+
+.bp-picker {
+  flex: 0 1 auto;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
   border: var(--stroke-hairline) solid var(--line);
   border-radius: var(--r-lg);
   background: var(--surface);
   padding: var(--space-3);
   box-shadow: var(--shadow-2);
   overflow-y: auto;
+}
+
+.bp-avatar-slot {
+  display: flex;
+  flex: 1;
+  min-height: calc(var(--control-hit) * 2);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  border: var(--stroke-hairline) dashed var(--selection-border);
+  border-radius: var(--r-lg);
+  color: var(--muted);
+}
+
+.bp-avatar-slot span {
+  font-size: var(--text-display);
+}
+
+.bp-avatar-slot em {
+  font-size: var(--text-label);
+  font-style: normal;
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-ui, 0.02em);
 }
 
 .bp-picker-head {
@@ -1849,60 +1881,6 @@ html[data-reduce-motion] .bp-day-col {
   box-shadow: var(--shadow-1);
 }
 
-/* 달력 접기 = 왼쪽 기둥을 통째로 반납하고 '월 + 펼치기' 필 하나만 캔버스 위에 남긴다 —
-   그림판이 가로 전폭을 쓴다. 보드 좌표계(.bp-main 내부)는 그대로라 판서 좌표 불변. */
-.broadcast-panel.picker-collapsed {
-  grid-template-columns: 0 minmax(0, 1fr);
-}
-
-.picker-collapsed .bp-picker {
-  position: absolute;
-  top: calc(var(--control-hit) + var(--space-4));
-  left: var(--space-3);
-  z-index: 30;
-  width: auto;
-  max-height: none;
-  margin: 0;
-  padding: var(--space-1);
-  overflow: visible;
-}
-
-.picker-collapsed .bp-picker-head {
-  display: flex;
-  gap: var(--space-1);
-  margin: 0;
-}
-
-.picker-collapsed .bp-month-nav,
-.picker-collapsed .bp-send {
-  display: none;
-}
-
-.picker-collapsed .bp-toolbar {
-  left: var(--space-3);
-}
-
-/* 다시 펼칠 때 왼쪽에서 미끄러져 들어온다 — 접힘/펼침이 같은 방향 축을 공유. */
-.broadcast-panel:not(.picker-collapsed) .bp-picker {
-  animation: bp-picker-in var(--dur-2) var(--ease-enter) both;
-}
-
-@keyframes bp-picker-in {
-  from {
-    opacity: 0;
-    transform: translateX(-12px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-html[data-reduce-motion] .bp-picker {
-  animation: none;
-}
-
 .bp-mini-cell {
   border-radius: var(--r-control);
 }
@@ -1952,9 +1930,19 @@ html[data-reduce-motion] .bp-picker {
   line-height: 1;
 }
 
+/* '보냄' 글자 배지는 좁은 칸을 눌러 세로로 조각났다 — 칸 자체를 옅은 보라로 물들여
+   '이미 그림판에 있음'을 알린다(문구는 aria-label이 담당). 선택(picked)은 링+✓로 구분. */
 .bp-mini-sent {
-  align-self: center;
-  margin-top: 0;
+  display: none;
+}
+
+.bp-mini-cell.sent:not(.picked) {
+  background: var(--selection-fill);
+  box-shadow: none;
+}
+
+.bp-mini-cell.sent .bp-mini-num {
+  color: var(--violet);
 }
 
 .bp-main {
@@ -2028,6 +2016,7 @@ html[data-reduce-motion] .bp-send {
   grid-template-rows: auto minmax(0, 1fr);
 }
 
+.bp-source-col,
 .bp-picker,
 .bp-main {
   grid-row: 2;
@@ -2130,7 +2119,8 @@ html[data-reduce-motion] .bp-send {
   grid-row: 2;
   flex-wrap: nowrap;
   gap: var(--space-2);
-  align-items: center;
+  /* 그룹 박스 높이 통일(조화) — center면 굵기(2행) 그룹만 크고 나머지는 위아래가 떠 보였다. */
+  align-items: stretch;
   padding: var(--space-1) 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -2214,9 +2204,17 @@ html[data-reduce-motion] .bp-send {
   display: none;
 }
 
+/* 굵기 6개는 한 줄로 — 혼자 2행이라 다른 그룹보다 높아 셸프 리듬이 깨졌다.
+   버튼 높이도 도구 버튼과 같게(52px) 맞춰 모든 그룹이 같은 키. */
+.bp-group-row.bp-grid3 {
+  display: grid;
+  grid-template-columns: repeat(6, var(--control-hit));
+  gap: var(--space-1);
+}
+
 .bp-width {
   width: var(--control-hit);
-  height: var(--control-hit);
+  height: calc(var(--control-hit) + var(--space-2));
 }
 
 .bp-board {
@@ -2313,6 +2311,15 @@ html[data-reduce-motion] .bp-layer-add:active {
     white-space: nowrap;
   }
 
+  /* 오버레이 구도에선 기둥 래퍼를 해제(달력만 플로팅) — 아바타 자리는 화면이 좁아 생략. */
+  .bp-source-col {
+    display: contents;
+  }
+
+  .bp-avatar-slot {
+    display: none;
+  }
+
   .bp-picker {
     position: absolute;
     top: calc(var(--control-hit) + var(--space-5));
@@ -2321,10 +2328,6 @@ html[data-reduce-motion] .bp-layer-add:active {
     width: var(--broadcast-source-width);
     max-height: calc(100svh - var(--broadcast-shelf-height) - var(--space-6));
     margin: 0;
-  }
-
-  .picker-collapsed .bp-picker {
-    width: auto;
   }
 
   .bp-main {
@@ -2377,13 +2380,6 @@ html[data-reduce-motion] .bp-layer-add:active {
     padding: var(--space-2);
   }
 
-  /* 접힘: 트레이 높이를 반납하고 '펼치기' 필만 왼쪽에 남긴다. */
-  .picker-collapsed .bp-picker {
-    right: auto;
-    height: auto;
-    max-height: none;
-    padding: var(--space-1);
-  }
 
   .bp-picker-head {
     position: sticky;

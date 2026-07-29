@@ -5722,3 +5722,152 @@ html[data-reduce-motion] .pi-close:active,
 html[data-reduce-motion] .pi-retry:active {
   transform: none;
 }
+
+/* ── 모바일 아젠다 일정 상세 시트 — 카드 탭으로 열리는 공개 정보 요약(제목·기간·태그) ── */
+.agenda-event.tappable {
+  cursor: pointer;
+}
+
+.agenda-detail-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  background: rgb(15 23 42 / 40%);
+  animation: agenda-detail-fade var(--dur-2) var(--ease-enter) both;
+}
+
+.agenda-detail-sheet {
+  width: 100%;
+  max-height: 70svh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  background: var(--surface, #fffdf6);
+  padding: var(--space-4) var(--space-4)
+    calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  box-shadow: var(--shadow-3);
+  animation: agenda-detail-up var(--dur-spring-smooth, var(--dur-3))
+    var(--spring-smooth, var(--ease)) both;
+}
+
+@keyframes agenda-detail-fade {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes agenda-detail-up {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.agenda-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.agenda-detail-date {
+  color: var(--muted);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semibold);
+}
+
+.agenda-detail-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-hit);
+  height: var(--control-hit);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.agenda-detail-close:active {
+  transform: scale(0.94);
+}
+
+.agenda-detail-title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  color: var(--ink);
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  line-height: var(--lh-tight, 1.25);
+  word-break: keep-all;
+}
+
+.agenda-detail-subs {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-3);
+  padding: 0 0 0 var(--space-3);
+  border-left: 2px solid var(--line);
+  list-style: none;
+  color: var(--ink-soft);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+}
+
+.agenda-detail-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.agenda-detail-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: calc(var(--control-hit) - var(--space-2));
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  padding: var(--space-1) var(--space-3);
+  color: var(--ink);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semibold);
+}
+
+.agenda-detail-tag.primary {
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+}
+
+.agenda-detail-tag i {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border: 1px solid transparent;
+  border-radius: var(--r-pill);
+}
+
+html[data-reduce-motion] .agenda-detail-backdrop,
+html[data-reduce-motion] .agenda-detail-sheet {
+  animation: none;
+}
+
+html[data-reduce-motion] .agenda-detail-close:active {
+  transform: none;
+}
