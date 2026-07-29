@@ -4176,6 +4176,7 @@ export function PublicPoster({
                           aria-pressed={Boolean(selected.locked)}
                           className="stf-btn"
                           onClick={() => {
+                            hapticTick();
                             pushHistory();
                             patchSelected({ locked: !selected.locked });
                           }}
@@ -4248,6 +4249,7 @@ export function PublicPoster({
                           aria-pressed={Boolean(selected.locked)}
                           className="stf-btn"
                           onClick={() => {
+                            hapticTick();
                             pushHistory();
                             patchSelected({ locked: !selected.locked });
                           }}
