@@ -5533,3 +5533,192 @@ html[data-reduce-motion] .stf-group button:active,
 html[data-reduce-motion] .stf-btn:active {
   transform: none;
 }
+
+/* Batch 8: public records sheet. Viewer-only chrome; export surface remains untouched. */
+.pi-backdrop {
+  background: var(--selection-overlay);
+  padding: var(--space-5);
+}
+
+.pi-sheet {
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+}
+
+.pi-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  gap: var(--space-3);
+  border-color: var(--line);
+  background: var(--surface);
+  padding: var(--space-4) var(--space-5);
+}
+
+.pi-head strong {
+  color: var(--ink);
+  font-size: var(--text-title);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.pi-close,
+.pi-retry {
+  min-width: var(--control-hit);
+  min-height: var(--control-hit);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+
+.pi-close {
+  width: var(--control-hit);
+  height: var(--control-hit);
+}
+
+.pi-close:hover,
+.pi-retry:hover {
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+  color: var(--violet);
+}
+
+.pi-body {
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+}
+
+.pi-card {
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-1);
+}
+
+.pi-card.pi-broadcast {
+  border-color: var(--status-warning);
+  background: var(--status-warning-fill);
+}
+
+.pi-label {
+  margin-bottom: var(--space-3);
+  color: var(--muted);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.pi-stats {
+  gap: var(--space-2);
+}
+
+.pi-stat {
+  gap: var(--space-1);
+  border: var(--stroke-hairline) solid var(--line-soft);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  padding: var(--space-3);
+}
+
+.pi-stat b {
+  color: var(--ink);
+  font-size: var(--text-title);
+  font-weight: var(--weight-semibold);
+}
+
+.pi-stat span,
+.pi-empty,
+.pi-next {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+}
+
+.pi-next {
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  border-color: var(--line);
+  padding-top: var(--space-3);
+}
+
+.pi-next strong,
+.pi-top-title {
+  color: var(--ink);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+.pi-top {
+  gap: var(--space-2);
+}
+
+.pi-top li {
+  gap: var(--space-2);
+  min-height: var(--control-hit);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  padding: var(--space-2) var(--space-3);
+}
+
+.pi-bar {
+  background: var(--line-soft);
+}
+
+.pi-skeleton {
+  background: var(--surface-2);
+}
+
+@supports ((-webkit-backdrop-filter: blur(0)) or (backdrop-filter: blur(0))) {
+  .pi-head {
+    background: var(--material-bg-strong);
+    -webkit-backdrop-filter: var(--material-blur);
+    backdrop-filter: var(--material-blur);
+  }
+}
+
+@media (max-width: 640px) {
+  .pi-backdrop {
+    padding: 0;
+  }
+
+  .pi-sheet {
+    max-height: calc(100svh - var(--space-5));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+  }
+
+  .pi-head {
+    padding: var(--space-3) var(--space-4);
+  }
+
+  .pi-body {
+    padding: var(--space-3) var(--space-4)
+      calc(var(--space-5) + env(safe-area-inset-bottom));
+  }
+
+  .pi-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .pi-card {
+    padding: var(--space-3);
+  }
+}
+
+html[data-reduce-motion] .pi-close,
+html[data-reduce-motion] .pi-retry,
+html[data-reduce-motion] .pi-bar i {
+  transition: none;
+}
+
+html[data-reduce-motion] .pi-close:hover,
+html[data-reduce-motion] .pi-close:active,
+html[data-reduce-motion] .pi-retry:active {
+  transform: none;
+}
