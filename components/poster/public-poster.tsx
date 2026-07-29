@@ -93,7 +93,6 @@ import { heartTier } from "@/lib/schedules/heart-tiers";
 import { getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import {
   assignSupportLanes,
   buildCalendarMonth,
@@ -875,17 +874,9 @@ export function PublicPoster({
   // 않게 한다. 묶음의 '가장 큰 내용' 높이에만 맞추므로(과확장 없음) 짧은 쪽만 그만큼 채워진다.
   // callback ref라 그리드가 (재)마운트되는 어떤 경로에서도 자동 재설정된다. deps는 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([schedule.events, view]);
-  // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조만) + 텍스트 긁힘 방지.
-  // 선택은 React state(rangeSelected)라 다른 리렌더에도 안 지워진다.
-  // 둘 다 callback ref라 한 요소에 합쳐 단다(안정 identity라 매 렌더 재부착 없음).
-  const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>();
-  const setMonthGridRef = useCallback(
-    (el: HTMLDivElement | null) => {
-      monthGridRef(el);
-      rangeSelectRef(el);
-    },
-    [monthGridRef, rangeSelectRef]
-  );
+  // (P1-MULTI-0: 구글 시트식 범위 선택 강조는 제거 — 아무 명령도 안 붙는 시각 상태라
+  //  '여러 개를 골랐다'는 잘못된 기대만 만들었다.)
+  const setMonthGridRef = monthGridRef;
   // 실제 달력 콘텐츠가 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아니라 진짜 화면을 봤을 때만 방문 1).
   useEffect(() => {
     markContentReady();
@@ -2805,7 +2796,7 @@ export function PublicPoster({
       <article
         className={`public-day ${cell.inCurrentMonth ? "" : "outside"} ${
           day.isToday ? "today" : ""
-        }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}${
+        }${
           visibleMatch?.kind === "wc-korea-win" ? " day-win" : ""
         }`}
         data-pop={popTier ?? undefined}
@@ -3142,8 +3133,12 @@ export function PublicPoster({
         onTouchEnd={onAgendaTouchEnd}
         onTouchStart={onAgendaTouchStart}
       >
-        {interactive && legendTags.length > 0 ? (
+        {/* P1-VIEWER-1: 레일(인사이트 진입·편집실 이동 포함)은 태그 유무와 무관하게 그린다 —
+            예전엔 legendTags가 0개인 달엔 '이 달 기록' 진입점까지 통째로 사라졌다.
+            태그 필터 박스만 태그(또는 하트 필터)가 있을 때 그린다. */}
+        {interactive ? (
           <div className="agenda-legend-rail">
+          {legendTags.length > 0 || canHeart ? (
           <aside className="agenda-legend" aria-label="색상 안내(태그 필터)">
             <strong>색상 필터</strong>
             {(() => {
@@ -3226,6 +3221,7 @@ export function PublicPoster({
               </span>
             </div>
           </aside>
+          ) : null}
           {/* '이 달 기록' — 웹에선 헤더(.public-calendar-header)에 있는데, 그 헤더는 ≤1040px에서
               통째로 안 그려진다. 그래서 폰·태블릿 시청자는 만들어 둔 기록 시트를 열 방법이 아예
               없었다(진입점 0개). 새 크롬을 만들지 않고 같은 버튼을 이 레일에 둔다 — 아래 주석대로

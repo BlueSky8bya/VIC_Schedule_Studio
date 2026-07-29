@@ -1177,19 +1177,7 @@ html[data-reduce-motion] .poster-scaler {
   -webkit-user-select: none;
   -ms-user-select: none;
 }
-body.cell-range-dragging {
-  cursor: cell;
-}
-.public-day.cell-range-selected::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-  /* 채움만 — 칸마다 테두리를 그리면 붙은 칸 사이가 이중선이 된다(시트처럼 통짜 음영). */
-  background: rgb(99 102 241 / 14%);
-}
-
+/* (P1-MULTI-0: 시청자 달력의 범위 선택 강조 제거 — 액션이 없는 시각 상태였다.) */
 
 .public-calendar-header {
   display: grid;

@@ -71,7 +71,6 @@ import {
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
@@ -1366,17 +1365,9 @@ export function StudioShell({
   // 이어진 칸 높이 맞추기 — callback ref라 그리드가 어떤 경로로 (재)마운트되든(미리보기 복귀·
   // 잠금 로딩·월 변경 등) 항상 새 요소에 자동 재설정된다. deps는 데이터 변화 시 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([visibleEvents, view]);
-  // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조만) + 텍스트 긁힘 방지.
-  // 선택은 React state(rangeSelected)라 카드 드래그 등 다른 리렌더에도 안 지워진다.
-  // 둘 다 callback ref라 한 요소에 합쳐 단다(안정 identity라 매 렌더 재부착 없음).
-  const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>();
-  const setMonthGridRef = useCallback(
-    (el: HTMLDivElement | null) => {
-      monthGridRef(el);
-      rangeSelectRef(el);
-    },
-    [monthGridRef, rangeSelectRef]
-  );
+  // (P1-MULTI-0: 구글 시트식 범위 선택 강조는 제거 — 아무 명령도 안 붙는 시각 상태라
+  //  '여러 개를 골랐다'는 잘못된 기대만 만들었다. 훅은 방송 판서 도구에서 실제 액션과 함께 쓴다.)
+  const setMonthGridRef = monthGridRef;
   // 실제 편집실 화면이 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아닌 진짜 화면을 봤을 때만 방문 1).
   useEffect(() => {
     markContentReady();
@@ -5898,9 +5889,7 @@ export function StudioShell({
                 // 드래그 중 이 칸 위에 있으면 "여기에 놓기" 강조.
                 dragEventId && dropDate === cell.isoDate ? "drop-target" : "",
                 // 휴방 메뉴가 이 칸에 떠 있으면 어느 날인지 분명히 강조.
-                restMenu?.isoDate === cell.isoDate ? "rest-target" : "",
-                // 시트식 범위 선택(시각 강조). React state라 카드 드래그 리렌더에도 유지.
-                rangeSelected.has(cellIndex) ? "cell-range-selected" : ""
+                restMenu?.isoDate === cell.isoDate ? "rest-target" : ""
               ]
                 .filter(Boolean)
                 .join(" ");
