@@ -3589,6 +3589,10 @@ export function PublicPoster({
     <main
       className={`poster-page${accountSwitch ? " poster-readonly" : ""}${
         avatarCapable && avatarOn ? ` avatar-scene avatar-${avatarSide}` : ""
+      }${
+        // 태그 필터 중엔 꾸미기 스티커도 함께 물러난다(일정 카드와 같은 흐림) — 꾸미기
+        // 편집(decorate) 중엔 제외. 캡쳐 PNG는 필터 없는 서버 렌더라 영향 없음.
+        !decorate && (tagFilters.length > 0 || bookmarkedOnly) ? " tag-filtering" : ""
       }`}
       data-poster-theme={effectivePosterTheme}
     >

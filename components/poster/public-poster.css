@@ -5895,3 +5895,16 @@ html[data-reduce-motion] .agenda-detail-close:active {
 .agenda-detail-mark {
   font-style: normal;
 }
+
+/* 태그 필터 중 — 꾸미기 스티커도 일정 카드(.dimmed)와 같은 값으로 함께 물러난다.
+   스티커만 쨍하면 필터 결과보다 장식이 더 눈에 띄었다(사용자 지적). */
+.poster-page .sticker-layer {
+  transition:
+    opacity var(--dur-2) var(--ease),
+    filter var(--dur-2) var(--ease);
+}
+
+.poster-page.tag-filtering .sticker-layer {
+  opacity: 0.28;
+  filter: grayscale(0.5);
+}
