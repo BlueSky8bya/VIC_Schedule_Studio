@@ -71,9 +71,17 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
     렌더 실패만 '실패' 표기.
   - `VIEWER-1`+`MULTI-0`(`97d74d8`): 모바일 '이 달 기록' 진입을 legendTags 결합에서 해제,
     무액션 범위선택 강조 제거(판서 도구의 실제 범위선택은 유지).
-- **P1 남은 것**: DIALOG-1(오버레이 공통 프리미티브·포커스 트랩), STICKER-0(꾸미기 키보드
-  베이스라인), TITLE-1(줄바꿈 계약 helper/카운터·라이브 프리뷰, L2 저비용안).
-  이후 P2 토큰화, **최종적으로 애플 기조 리디자인을 뼈대 위에**(사용자 합의된 순서).
+- **P1 전량 완료(2026-07-30 저녁)** — MOVE-1은 사용자 결정으로 제외:
+  - `STICKER-0`+`TITLE-1`(`a40b9ab`): 스티커 Tab 포커스=선택(이후 기존 화살표/Delete/
+    Ctrl+D/Esc 전역 키가 이어받음, 포인터 불변) + 제목칸 상시 helper(첫 줄=제목 규칙,
+    14자 소프트 카운터, 20자 amber 경고) 웹·모바일 공용.
+  - `DIALOG-1`(`abd8f56`): `lib/ui/use-focus-trap.ts` 공통 훅 — 초기 포커스 진입 +
+    Tab/Shift+Tab 카드 내 순환(capture). 4개 모달(메인·비밀번호·태그 시트·업도움 시트)
+    적용. Esc·포커스 복원은 기존 B2 효과. 잔여: 시청자 '이 달 기록' 시트·모바일 편집
+    시트는 미적용(터치 중심), background inert 처리도 후속.
+- **다음 = P2**(계획서 K3): 토큰화(TOKEN-1) → StudioShell 분해(ARCH-1, behavior-preserving)
+  → ROUTE/PROTO 정리 → 꾸미기/색picker/그래프 대안/강제색·zoom/KST helper.
+  **그 다음 애플 기조 리디자인을 뼈대 위에**(사용자 합의된 순서).
 - **주의**: role fixture·canary 자동화는 아직 부분적(event-validation 단위 테스트만). 계획서
   K5 매트릭스 기준으로 슬라이스마다 채울 것.
 
