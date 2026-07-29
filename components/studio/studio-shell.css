@@ -11566,10 +11566,23 @@ html[data-reduce-motion] .members-add .role-segment button:active {
     width: 100%;
   }
 
-  .modal-card-developer .insights-tabs,
   .modal-card-developer .insights-subtabs,
   .modal-card-dayVisit .insights-subtabs {
     overflow-x: auto;
+  }
+
+  /* 탭 8개(4×2)는 스크롤 없이 통째로 보이게 — overflow-x:auto가 세로 축까지 잘라
+     몇 px짜리 스크롤이 생겼다(사용자 지적). 버튼을 압축해 두 줄이 그대로 들어간다. */
+  .modal-card-developer .insights-tabs {
+    gap: var(--space-1);
+    overflow: visible;
+  }
+
+  .modal-card-developer .insights-tab {
+    min-height: calc(var(--control-hit) - var(--space-1));
+    justify-content: center;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-label);
   }
 
   .modal-card-developer .insights-track,

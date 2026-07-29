@@ -2534,6 +2534,52 @@ export function BroadcastPanel({
               </button>
             ))}
           </div>
+          {/* 선택 정렬(2개 이상 선택 시) — 굵기 오른쪽 같은 줄(사용자 요청). 스크롤 덱이 아니라
+              항상 보이는 명령줄이라 정렬하러 내려갈 필요가 없다. */}
+          {tool === "select" && colSel.size >= 2 ? (
+            <div aria-label={`선택 정렬 (${colSel.size}개)`} className="bp-command-align" role="group">
+              <button
+                aria-label="위 맞춤"
+                className="bp-command-button"
+                title="위 맞춤(수평 맞추기)"
+                type="button"
+                onClick={() => alignSelected("top")}
+              >
+                <AlignStartHorizontal aria-hidden="true" size={16} />
+                <span>위 맞춤</span>
+              </button>
+              <button
+                aria-label="세로 중앙 맞춤"
+                className="bp-command-button"
+                title="세로 중앙 맞춤"
+                type="button"
+                onClick={() => alignSelected("middle")}
+              >
+                <AlignCenterHorizontal aria-hidden="true" size={16} />
+                <span>세로 중앙</span>
+              </button>
+              <button
+                aria-label="왼쪽 맞춤"
+                className="bp-command-button"
+                title="왼쪽 맞춤"
+                type="button"
+                onClick={() => alignSelected("left")}
+              >
+                <AlignStartVertical aria-hidden="true" size={16} />
+                <span>왼쪽</span>
+              </button>
+              <button
+                aria-label="가로 균등 간격"
+                className="bp-command-button"
+                title="가로 균등 간격"
+                type="button"
+                onClick={() => alignSelected("distribute-x")}
+              >
+                <AlignHorizontalDistributeCenter aria-hidden="true" size={16} />
+                <span>가로 균등</span>
+              </button>
+            </div>
+          ) : null}
           <div className="bp-command-actions" role="group" aria-label="작업 기록">
             <button
               className="bp-command-button"
@@ -2762,54 +2808,6 @@ export function BroadcastPanel({
               />
             ) : null}
           </div>
-          {/* 선택 정렬 — 도구 덱과 같은 어휘(그룹 카드)라 나타나도 층이 튀지 않는다. */}
-          {tool === "select" && colSel.size >= 2 ? (
-          <div className="bp-tool-group bp-align-group" role="group" aria-label="선택 정렬">
-            <div className="bp-group-row">
-              <button
-                aria-label="위 맞춤"
-                className="bp-command-button"
-                title="위 맞춤(수평 맞추기)"
-                type="button"
-                onClick={() => alignSelected("top")}
-              >
-                <AlignStartHorizontal aria-hidden="true" size={16} />
-                <span>위 맞춤</span>
-              </button>
-              <button
-                aria-label="세로 중앙 맞춤"
-                className="bp-command-button"
-                title="세로 중앙 맞춤"
-                type="button"
-                onClick={() => alignSelected("middle")}
-              >
-                <AlignCenterHorizontal aria-hidden="true" size={16} />
-                <span>세로 중앙</span>
-              </button>
-              <button
-                aria-label="왼쪽 맞춤"
-                className="bp-command-button"
-                title="왼쪽 맞춤"
-                type="button"
-                onClick={() => alignSelected("left")}
-              >
-                <AlignStartVertical aria-hidden="true" size={16} />
-                <span>왼쪽</span>
-              </button>
-              <button
-                aria-label="가로 균등 간격"
-                className="bp-command-button"
-                title="가로 균등 간격"
-                type="button"
-                onClick={() => alignSelected("distribute-x")}
-              >
-                <AlignHorizontalDistributeCenter aria-hidden="true" size={16} />
-                <span>가로 균등</span>
-              </button>
-            </div>
-            <em className="bp-group-label">선택 정렬 · {colSel.size}개</em>
-          </div>
-          ) : null}
         </div>
         {toolBlocked ? (
           <span className="bp-lock-hint">

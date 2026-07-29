@@ -1937,6 +1937,9 @@ html[data-reduce-motion] .bp-day-col {
   min-height: 0;
   gap: var(--space-3);
   padding: var(--space-3);
+  /* 보드가 플로팅 셸프 밑까지 깔리면 보드 자체의 가로 스크롤바가 셸프 뒤에 숨어
+     조작 불가(사용자 지적) — 셸프 높이만큼 바닥을 비워 스크롤바가 항상 드러난다. */
+  padding-bottom: calc(var(--broadcast-shelf-height) + var(--space-2));
   overflow: hidden;
 }
 
@@ -1957,9 +1960,9 @@ html[data-reduce-motion] .bp-day-col {
 
 .bp-layers-panel {
   width: var(--broadcast-layer-width);
-  /* 콘텐츠 높이만큼만(왼쪽 달력 카드와 같은 플로팅 문법) — 전체 높이로 늘려
-     아래가 비어 보이던 흰 기둥 제거. 길어지면 셸프 위까지만 자라고 내부 스크롤. */
-  max-height: calc(100% - var(--broadcast-shelf-height) - var(--space-4));
+  /* 콘텐츠 높이만큼만(왼쪽 달력 카드와 같은 플로팅 문법). bp-main 바닥이 이미 셸프만큼
+     비워져(스크롤바 노출) 100%면 셸프 위에서 끝난다. */
+  max-height: 100%;
   flex-basis: var(--broadcast-layer-width);
   align-self: flex-start;
   overflow-y: auto;
@@ -2222,6 +2225,14 @@ html[data-reduce-motion] .bp-send {
   margin-left: auto;
 }
 
+/* 선택 정렬(≥2개 선택 시) — 굵기 오른쪽 같은 줄의 임시 세그먼트. */
+.bp-command-align {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .bp-board {
   scroll-padding-bottom: var(--broadcast-shelf-height);
 }
@@ -2335,6 +2346,7 @@ html[data-reduce-motion] .bp-layer-add:active {
     grid-column: 1;
     grid-row: 2;
     padding: var(--space-3);
+    padding-bottom: calc(var(--broadcast-shelf-height) + var(--space-2));
   }
 
   .bp-layers-panel {
@@ -2391,6 +2403,7 @@ html[data-reduce-motion] .bp-layer-add:active {
 
   .bp-main {
     padding: var(--space-2);
+    padding-bottom: calc(var(--broadcast-shelf-height) + var(--space-2));
   }
 
   .bp-layers-panel {
