@@ -112,7 +112,6 @@ import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/l
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
-import { flyGhost } from "@/lib/ui/fly-ghost";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
@@ -791,24 +790,10 @@ export function StudioShell({
 
   // 카드 클릭 = 그 일정을 선택(편집)한다. 잇기는 드래그-놓기, 끊기는 이음새 '칼로 긋기'로만 —
   // 클릭은 어느 쪽도 하지 않는다(제목 편집하려 카드를 오갈 때 실수로 붙거나 끊기던 문제 제거).
-  function handlePillClick(eventId: string, cardEl?: HTMLElement) {
+  function handlePillClick(eventId: string) {
     const target = events.find((e) => e.id === eventId);
     if (!target) return;
     selectEvent(target);
-    // B2(데스크톱): 클릭한 카드의 잔상이 편집 패널로 날아가 안착 — '이 카드를 편집 중' 연결감.
-    // 패널이 이번 클릭으로 막 열리는 경우가 있어 두 프레임 뒤에 위치를 잰다.
-    if (cardEl && !isNarrow) {
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          const panel = document.querySelector<HTMLElement>(".event-editor-panel");
-          if (panel) {
-            flyGhost(cardEl, panel, {
-              stripClasses: ["selected", "primary-selected", "just-saved"]
-            });
-          }
-        })
-      );
-    }
   }
 
   // 이음새 '칼로 긋기': 손잡이를 눌러 threshold 이상 그으면 그 연결(earlier.linkNext)만 끊는다.
@@ -4039,6 +4024,31 @@ export function StudioShell({
   const { sheetRef: mobileSheetRef, dragBind: mobileSheetDrag } = useSheetDragClose({
     onClose: closeMobileEdit
   });
+  // B2(데스크톱, 최종형): 카드→패널 '잔상 비행'은 두 차례 다듬고도 촌스럽다는 피드백으로 폐기.
+  // 벤치마킹 결론 — Linear/Notion/macOS(메일·캘린더) 계열 master-detail은 요소를 날리지 않는다:
+  // 리스트 쪽 선택 표시(이미 있음, 선택 링)가 연결을 맡고, 패널은 **내용만 짧게 전환**한다.
+  // 다른 일정으로 갈아탈 때 패널 내용이 6px 아래에서 빠르게 떠오르며 교체됨을 알린다(170ms).
+  const prevSelectedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const prev = prevSelectedRef.current;
+    prevSelectedRef.current = selectedEventId;
+    // '전환'일 때만(처음 열림·닫힘 제외) — 열림은 패널 자체 등장 모션이 이미 있다.
+    if (!selectedEventId || prev === null || prev === selectedEventId) return;
+    if (isNarrow || reduceMotionEnabled()) return;
+    const panel = document.querySelector<HTMLElement>(".event-editor-panel");
+    try {
+      panel?.animate(
+        [
+          { opacity: 0.5, transform: "translateY(6px)" },
+          { opacity: 1, transform: "none" }
+        ],
+        { duration: 170, easing: "cubic-bezier(0.05, 0.7, 0.1, 1)" }
+      );
+    } catch {
+      /* 장식 — 실패 무시 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEventId]);
   // B2(모바일): 시트가 무관한 위치에서 나타나지 않고, 탭한 그 카드 자리에서 자라난다
   // (matched geometry). 탭 순간의 카드 rect를 기억해 뒀다가 시트 마운트 직후 FLIP으로 재생.
   const mobileEditOriginRef = useRef<DOMRect | null>(null);
@@ -5776,7 +5786,7 @@ export function StudioShell({
                               justDraggedRef.current = false;
                               return;
                             }
-                            handlePillClick(event.id, e.currentTarget);
+                            handlePillClick(event.id);
                           }}
                           onPointerDown={
                             draggable ? (e) => onPillPointerDown(e, event) : undefined
@@ -5791,7 +5801,7 @@ export function StudioShell({
                             // 내부 버튼의 Enter가 카드까지 올라와 편집창을 동시에 여는 것 방지.
                             if (e.key === "Enter" && e.target === e.currentTarget) {
                               e.stopPropagation();
-                              handlePillClick(event.id, e.currentTarget);
+                              handlePillClick(event.id);
                             }
                           }}
                           // A안 M2: 확대 중 hover/focus로 상세 팝오버 — '숨은 내용'이 있을 때만.

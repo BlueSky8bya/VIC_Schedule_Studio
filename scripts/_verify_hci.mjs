@@ -16,19 +16,21 @@ const ok = (name, pass, note = "") => {
   await p.goto("http://localhost:3000/visual-fixture/studio", { waitUntil: "networkidle", timeout: 120000 });
   await p.waitForTimeout(1200);
 
-  // 웹 ghost: 일정 카드 클릭 → .fly-ghost 잠깐 생김
-  const pill = p.locator(".studio-event-pill").first();
-  if (await pill.count()) {
-    await pill.click();
-    const ghostSeen = await p
-      .waitForSelector(".fly-ghost", { timeout: 1500 })
-      .then(() => true)
-      .catch(() => false);
-    ok("web fly-ghost on card click", ghostSeen);
-    await p.waitForTimeout(900);
-    const ghostGone = (await p.locator(".fly-ghost").count()) === 0;
-    ok("fly-ghost cleans itself", ghostGone);
-  } else ok("web fly-ghost", false, "no pill found");
+  // 웹 카드→패널 연결(최종형): 잔상 비행은 폐기 — 다른 카드로 갈아탈 때 패널 내용이
+  // 짧게 떠오르는 전환 애니메이션이 붙는지 확인.
+  const pills = p.locator(".studio-event-pill");
+  if ((await pills.count()) >= 2) {
+    await pills.nth(0).click();
+    await p.waitForTimeout(400);
+    await pills.nth(1).click();
+    await p.waitForTimeout(60);
+    const animCount = await p.evaluate(() => {
+      const panel = document.querySelector(".event-editor-panel");
+      return panel ? panel.getAnimations().length : -1;
+    });
+    ok("panel switch transition plays", animCount > 0, `animations=${animCount}`);
+    ok("no fly-ghost remnants", (await p.locator(".fly-ghost").count()) === 0);
+  } else ok("panel switch transition", false, "need 2+ pills");
 
   // 재질: 모달 열기(단축키 안내 말고 실제 modal-card가 있는 것 — 인사이트 버튼)
   const insightsBtn = p.locator("button", { hasText: /인사이트/ }).first();
