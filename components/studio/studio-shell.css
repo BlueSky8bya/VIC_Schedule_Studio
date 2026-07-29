@@ -8903,6 +8903,13 @@ html[data-reduce-motion] .m-edit-x:active {
   border-radius: var(--r-md);
   background: #f1edf9;
 }
+/* 잠금 상태 안내(P0-SEC-1) — 비공개 범위가 왜 안 보이는지 그 자리에서 말해준다. */
+.me-scope-hint {
+  margin: 6px 2px 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted, #8a93a3);
+}
 .me-seg button {
   flex: 1;
   min-height: 38px;

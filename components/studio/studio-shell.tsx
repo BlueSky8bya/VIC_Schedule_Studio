@@ -45,9 +45,9 @@ import type {
   EventStatus,
   EventVisibilityScope,
   MembershipRole,
+  PublicSchedule,
   StudioSchedule,
-  StudioScheduleEvent,
-  PublicScheduleEvent
+  StudioScheduleEvent
 } from "@/lib/domain/schedule-types";
 import type { CurrentActor } from "@/lib/auth/actor";
 import {
@@ -113,6 +113,7 @@ import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion 
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
+import { getPublicPreviewAction } from "@/lib/schedules/preview-actions";
 import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 // 스튜디오 CSS는 StudioShell을 렌더하는 페이지(studio/(home), studio/calendar)에서 page-level로
@@ -1682,6 +1683,24 @@ export function StudioShell({
     if (!viewerMode && broadcastOpenRef.current) closeBroadcastPanel();
   }, [viewerMode]);
 
+  // P0-SEC-2: 미리보기를 열 때마다 신선한 서버 공개 스냅샷을 받아온다(떡밥 가림 포함,
+  // 낙관적 재가공 금지). 실패하면 페이지 로드 시점 스냅샷(viewerModePreview)으로 동작.
+  const [previewSnapshot, setPreviewSnapshot] = useState<PublicSchedule | null>(null);
+  useEffect(() => {
+    if (!viewerMode) return;
+    let alive = true;
+    getPublicPreviewAction()
+      .then((snap) => {
+        if (alive && snap) setPreviewSnapshot(snap);
+      })
+      .catch(() => {
+        /* 실패 시 기존 스냅샷 유지 */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [viewerMode]);
+
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: StudioScheduleEvent) {
     return tagVisual.eventFills(event);
@@ -3198,10 +3217,18 @@ export function StudioShell({
     const existing = events.find((e) => e.id === form.id);
     const isNew = !form.id;
     const tempId = form.id ?? `temp-${Math.random().toString(36).slice(2)}`;
-    // 데스크톱은 안전상 비공개 레이어를 풀어야 비공개 범위를 지정한다.
-    // 모바일(소유자/개발자 본인 기기)은 잠금 없이 바로 공개 범위를 지정할 수 있다.
-    const scope: EventVisibilityScope =
-      canReadPrivate || isNarrow ? form.visibilityScope : "public";
+    // P0-SEC-1(fail-closed): 잠금 상태에서 비공개 범위를 **조용히 공개로 바꾸지 않는다**.
+    // 예전엔 데스크톱에서 `"public"`으로 강제 변환했고 모바일은 잠금 없이 통과시켰다 —
+    // 둘 다 위험(전자는 비공개 내용이 소리 없이 공개, 후자는 잠금 게이트 우회). 이제 모든
+    // 장치에서 동일하게: 비공개 범위 저장은 비공개 보기(잠금 해제)가 켜져 있어야 하고,
+    // 아니면 저장을 거부하고 이유를 말한다(서버도 동일 검증 — 클라 게이트는 1차 방어일 뿐).
+    if (form.visibilityScope !== "public" && !canReadPrivate) {
+      setActionError(
+        "비공개 범위(엠바고·작업자)는 '비공개 일정 보기'를 켠 상태에서만 저장할 수 있어요."
+      );
+      return;
+    }
+    const scope: EventVisibilityScope = form.visibilityScope;
     const endDateKey =
       form.isSupport && form.endDateKey ? form.endDateKey : undefined;
     // 떡밥: 공개 일정 + 공개 시각이 있어야 성립. 공개 시각은 KST 입력 → ISO(UTC)로.
@@ -3781,7 +3808,13 @@ export function StudioShell({
   function pasteCopiedEvent() {
     if (!clipboard || !canEdit) return;
     const payload = clipboard;
-    const scope: EventVisibilityScope = canReadPrivate ? payload.visibilityScope : "public";
+    // P0-SEC-1(fail-closed): 잠금 상태에서 비공개 일정을 붙여넣으면 예전엔 공개로 강제 변환
+    // 됐다 — 비공개 '내용'이 공개 일정으로 복제되는 유출 경로. 조용한 변환 대신 거부한다.
+    if (payload.visibilityScope !== "public" && !canReadPrivate) {
+      flashToast("비공개 일정은 '비공개 일정 보기'를 켠 뒤 붙여넣을 수 있어요");
+      return;
+    }
+    const scope: EventVisibilityScope = payload.visibilityScope;
     const endDateKey =
       payload.isSupport && payload.spanDays > 0
         ? addDaysIso(selectedDate, payload.spanDays)
@@ -4987,6 +5020,8 @@ export function StudioShell({
             <div className="me-group">
               <div className="me-row me-row-stack">
                 <span className="me-row-label">공개 범위</span>
+                {/* P0-SEC-1: 모바일도 데스크톱과 동일 게이트 — 비공개 범위는 잠금 해제
+                    (canReadPrivate) 상태에서만 고를 수 있다. 잠기면 '모두' 고정 + 안내. */}
                 <div className="me-seg" role="group" aria-label="공개 범위">
                   <button
                     className={form.visibilityScope === "public" ? "on" : ""}
@@ -4995,7 +5030,7 @@ export function StudioShell({
                   >
                     모두
                   </button>
-                  {isEffectivelyOwner ? (
+                  {canReadPrivate && isEffectivelyOwner ? (
                     <button
                       className={form.visibilityScope === "owner_private" ? "on" : ""}
                       onClick={() =>
@@ -5006,14 +5041,21 @@ export function StudioShell({
                       엠바고
                     </button>
                   ) : null}
-                  <button
-                    className={form.visibilityScope === "work" ? "on" : ""}
-                    onClick={() => setForm((cur) => ({ ...cur, visibilityScope: "work" }))}
-                    type="button"
-                  >
-                    작업자
-                  </button>
+                  {canReadPrivate ? (
+                    <button
+                      className={form.visibilityScope === "work" ? "on" : ""}
+                      onClick={() => setForm((cur) => ({ ...cur, visibilityScope: "work" }))}
+                      type="button"
+                    >
+                      작업자
+                    </button>
+                  ) : null}
                 </div>
+                {!canReadPrivate ? (
+                  <p className="me-scope-hint">
+                    비공개 범위(엠바고·작업자)는 비공개 일정 보기를 켠 뒤 고를 수 있어요.
+                  </p>
+                ) : null}
               </div>
               <div className="me-sep" />
               {renderSupportEditor()}
@@ -5122,29 +5164,13 @@ export function StudioShell({
 
   // 시청자 화면 전체보기: 스튜디오 UI를 숨기고 공개 화면만 그대로 보여준다.
   if (viewerMode) {
-    // 미리보기 일정은 서버 스냅샷(viewerModePreview)이 아니라 '편집실의 현재(낙관적) events'에서
-    // 직접 만든다 → 방금 만든/지운 일정이 새로고침 없이 즉시 반영된다(예전엔 router.refresh에 기대
-    // 옛 상태가 보였다). 공개 일정만(visibility public, draft 제외) 추리고 privateMeta는 제거해
-    // 비공개 정보가 절대 안 샌다. 스티커·하트·팔레트 등 나머지는 서버 스냅샷 그대로 쓴다.
-    // 하트 집계(관심도 🔥배지·정렬)는 공개 스냅샷(viewerModePreview)에만 있고 편집실 events엔
-    // 없다 → id로 다시 붙여준다. 안 그러면 미리보기에서 '관심' 배지가 통째로 사라져, 실제
-    // 로그아웃 공개 화면(배지 보임)과 달라 보인다.
-    const heartCountById = new Map(
-      (schedule.viewerModePreview.events ?? []).map((e) => [e.id, e.heartCount])
-    );
-    const previewSchedule = {
-      ...schedule.viewerModePreview,
-      events: events
-        .filter((e) => e.visibilityScope === "public" && e.status !== "draft")
-        .map((e) => {
-          const { privateMeta: _omit, ...rest } = e;
-          void _omit;
-          return {
-            ...rest,
-            heartCount: heartCountById.get(e.id)
-          } as unknown as PublicScheduleEvent;
-        })
-    };
+    // P0-SEC-2: 미리보기는 **서버 공개 스냅샷만** 쓴다. 예전엔 편집실 낙관적 events를 공개
+    // 모양으로 spread 재가공했는데, 그 경로는 공개 로더의 떡밥(teaser) 가림을 우회해 공개
+    // 시각 전의 실제 제목이 방송 화면(같이보기)에 노출될 수 있었다. 신선도는 미리보기를 열
+    // 때마다 서버 액션으로 새 스냅샷을 받아(previewSnapshot) 보완한다 — 저장이 끝난 변경은
+    // 즉시 반영되고, 아직 저장 중인 변경만 잠깐 이전 상태로 보인다(저장 완료 시 자동 갱신 아님,
+    // 재진입 시 갱신).
+    const previewSchedule = previewSnapshot ?? schedule.viewerModePreview;
     // 편집실/꾸미기 이동 버튼 — 웹은 포스터 위 오버레이로, 모바일은 포스터 제목 헤더 안으로 주입한다.
     const previewNav = (
       <>

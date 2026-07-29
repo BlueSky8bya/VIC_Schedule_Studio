@@ -16,6 +16,8 @@ import {
   encryptSecret,
   type SecretPayload
 } from "@/lib/private-layer/secret-crypto";
+import { getUnlockState } from "@/lib/private-layer/unlock";
+import { safeActionError } from "@/lib/utils/safe-action-error";
 
 export type SaveEventInput = {
   id?: string;
@@ -105,7 +107,7 @@ export async function reorderEventsAction(input: {
         .update({ date_key: input.dateKey, end_date_key: newEnd })
         .eq("id", input.movedId);
       if (moveErr) {
-        return { ok: false, error: moveErr.message };
+        return { ok: false, error: safeActionError("일정 이동", moveErr) };
       }
     }
   }
@@ -119,7 +121,7 @@ export async function reorderEventsAction(input: {
   );
   const failed = results.find((r) => r.error);
   if (failed?.error) {
-    return { ok: false, error: failed.error.message };
+    return { ok: false, error: safeActionError("순서 저장", failed.error) };
   }
 
   revalidatePath("/");
@@ -135,9 +137,24 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     return { ok: false, error: "owner 또는 developer만 일정을 편집할 수 있습니다." };
   }
 
-  // owner_private("나만")는 소유자 전용 — 개발자도 만들 수 없다.
-  if (input.visibilityScope === "owner_private" && actor.role !== "owner") {
-    return { ok: false, error: "'나만' 일정은 소유자만 만들 수 있습니다." };
+  // "엠바고"(owner_private, 옛 embargo 포함)는 소유자 전용 — 개발자도 만들 수 없다.
+  if (
+    (input.visibilityScope === "owner_private" || input.visibilityScope === "embargo") &&
+    actor.role !== "owner"
+  ) {
+    return { ok: false, error: "엠바고 일정은 소유자만 만들 수 있습니다." };
+  }
+  // P0-SEC-1(fail-closed, 서버 2차 방어): 비공개 범위 저장은 유효한 비공개 잠금 해제 세션이
+  // 있어야 한다(CLAUDE 규칙 5 — 비공개 접근 = 로그인 + 패스코드). 클라이언트 게이트가
+  // 우회돼도(직접 API 호출 등) 여기서 막힌다. 소유자·개발자도 예외 없음.
+  if (input.visibilityScope !== "public") {
+    const unlock = await getUnlockState(SLUG);
+    if (!unlock.hasUnlockSession) {
+      return {
+        ok: false,
+        error: "비공개 범위 일정은 비공개 레이어 잠금 해제 후에만 저장할 수 있습니다."
+      };
+    }
   }
 
   const supabase = await createSupabaseServerClient();
@@ -210,7 +227,7 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
   if (eventId) {
     const { error } = await supabase.from("events").update(row).eq("id", eventId);
     if (error) {
-      return { ok: false, error: error.message };
+      return { ok: false, error: safeActionError("일정 저장", error) };
     }
   } else {
     const { data, error } = await supabase
@@ -219,7 +236,7 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
       .select("id")
       .single();
     if (error || !data) {
-      return { ok: false, error: error?.message ?? "일정 생성 실패" };
+      return { ok: false, error: safeActionError("일정 저장", error) };
     }
     eventId = data.id;
   }
@@ -241,7 +258,7 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     }));
     const { error: tagError } = await supabase.from("event_tags").insert(tagRows);
     if (tagError) {
-      return { ok: false, error: tagError.message };
+      return { ok: false, error: safeActionError("태그 저장", tagError) };
     }
   }
 
@@ -265,7 +282,7 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
       { onConflict: "event_id" }
     );
     if (metaError) {
-      return { ok: false, error: metaError.message };
+      return { ok: false, error: safeActionError("일정 저장", metaError) };
     }
   } else {
     await supabase.from("event_private_meta").delete().eq("event_id", eventId);
@@ -293,7 +310,7 @@ export async function deleteEventAction(eventId: string): Promise<ActionResult> 
   // event_tags / event_private_meta는 FK on delete cascade로 함께 삭제됨
   const { error } = await supabase.from("events").delete().eq("id", eventId);
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: safeActionError("일정 삭제", error) };
   }
 
   revalidatePath("/");
@@ -350,7 +367,7 @@ export async function updateSupportSettingsAction(
 
   const { error } = await admin.from("events").update(patch).eq("id", eventId);
   if (error) {
-    return { ok: false, error: error.message };
+    return { ok: false, error: safeActionError("업 도움 설정 저장", error) };
   }
 
   revalidatePath("/");
@@ -408,7 +425,7 @@ export async function updateEventTagsAction(
     }));
     const { error } = await admin.from("event_tags").insert(rows);
     if (error) {
-      return { ok: false, error: error.message };
+      return { ok: false, error: safeActionError("태그 저장", error) };
     }
   }
 
