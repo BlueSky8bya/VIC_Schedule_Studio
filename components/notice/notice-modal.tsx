@@ -339,7 +339,7 @@ export function NoticeModal({
             <ol className="notice-steps3">
               <li>
                 <span className="notice-step-num">1</span>
-                <button className="button primary" onClick={() => copy("title", title)} style={{ minWidth: "7.4em" }} type="button">
+                <button className="button primary notice-copy-button" onClick={() => copy("title", title)} type="button">
                   <Copy aria-hidden="true" size={14} />
                   {copied === "title" ? "제목 복사됨!" : "제목 복사"}
                 </button>
@@ -353,7 +353,7 @@ export function NoticeModal({
               </li>
               <li>
                 <span className="notice-step-num">3</span>
-                <button className="button primary" onClick={copyBodyRich} style={{ minWidth: "7.4em" }} type="button">
+                <button className="button primary notice-copy-button" onClick={copyBodyRich} type="button">
                   <Copy aria-hidden="true" size={14} />
                   {copied === "body" ? "본문 복사됨!" : "본문 복사"}
                 </button>
@@ -363,7 +363,7 @@ export function NoticeModal({
               💡 첫 붙여넣기 뒤엔 화면 아래{" "}
               <strong>
                 탭 버튼
-                <Copy aria-hidden="true" size={13} style={{ verticalAlign: "-2px", margin: "0 2px" }} />
+                <Copy aria-hidden="true" className="notice-inline-copy-icon" size={13} />
               </strong>
               으로 이 창과 숲을 오가며 붙여넣으세요. (뒤로가기 ✕)
             </p>
@@ -411,7 +411,7 @@ export function NoticeModal({
                   붙여넣고 저장해주세요!</strong>
                 </li>
               </ol>
-              <strong style={{ display: "block", marginTop: "12px" }}>
+              <strong className="notice-setup-done">
                 이제 이 “{bookmarkName}” 북마크가 자동입력 버튼이 됐습니다 &lt;😎
               </strong>
             </details>

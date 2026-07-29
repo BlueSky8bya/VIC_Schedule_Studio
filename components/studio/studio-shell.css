@@ -10936,3 +10936,473 @@ html[data-reduce-motion] .member-row:hover,
 html[data-reduce-motion] .members-add .role-segment button:active {
   transform: none;
 }
+
+/* Batch 14: occasional notice, diagnostics, and visit-record modals stay opaque. */
+.modal-card-notice,
+.modal-card-developer,
+.modal-card-dayVisit {
+  max-width: var(--sheet-width-lg);
+  border: var(--stroke-hairline) solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+}
+
+.modal-card-notice .modal-head,
+.modal-card-developer .modal-head,
+.modal-card-dayVisit .modal-head {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  border-color: var(--line);
+  background: var(--surface);
+  padding: var(--space-4) var(--space-panel);
+}
+
+.modal-card-notice .modal-head h2,
+.modal-card-developer .modal-head h2,
+.modal-card-dayVisit .modal-head h2 {
+  color: var(--ink);
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.modal-card-notice .modal-close,
+.modal-card-developer .modal-close,
+.modal-card-dayVisit .modal-close {
+  width: var(--control-hit);
+  height: var(--control-hit);
+  color: var(--muted);
+}
+
+.modal-card-notice > .notice-modal,
+.modal-card-developer > .insights,
+.modal-card-developer > .member-insights,
+.modal-card-dayVisit > .dayvisit-wrap {
+  padding: var(--space-panel);
+}
+
+.modal-card-notice > .notice-modal {
+  padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
+  scroll-padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
+}
+
+.notice-modal {
+  gap: var(--space-4);
+}
+
+.notice-tabs {
+  gap: var(--space-1);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  padding: var(--space-1);
+}
+
+.notice-tabs button,
+.ampm-segment button {
+  min-height: var(--control-hit);
+  border-radius: var(--r-sm);
+  padding-inline: var(--space-control-x);
+  color: var(--muted);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+.notice-tabs button.active,
+.ampm-segment button.active {
+  background: var(--selection-fill);
+  color: var(--violet);
+  box-shadow: var(--shadow-1);
+}
+
+.notice-hint {
+  margin: 0;
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  color: var(--muted);
+  padding: var(--space-3);
+  font-size: var(--text-body);
+  line-height: var(--lh-relaxed);
+}
+
+.notice-hint strong {
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+}
+
+.notice-fields {
+  gap: var(--space-3);
+  align-content: start;
+}
+
+.notice-field {
+  gap: var(--space-2);
+}
+
+.notice-label {
+  color: var(--ink-soft);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semibold);
+}
+
+.notice-field input,
+.notice-field textarea {
+  min-height: var(--control-hit);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  padding: var(--space-control-y) var(--space-3);
+  font-size: var(--text-input);
+}
+
+.notice-field textarea {
+  min-height: calc(var(--control-hit) * 2);
+}
+
+.notice-field input:focus,
+.notice-field textarea:focus {
+  border-color: var(--selection-border);
+  outline: 0;
+  box-shadow: 0 0 0 var(--space-1) var(--selection-overlay);
+}
+
+.notice-time-row {
+  gap: var(--space-2);
+}
+
+.ampm-segment {
+  gap: var(--space-1);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  padding: var(--space-1);
+}
+
+.notice-preview {
+  align-content: start;
+  gap: var(--space-2);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  padding: var(--space-card);
+}
+
+.notice-preview-title,
+.notice-preview-body {
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  padding: var(--space-3);
+  font-size: var(--text-body);
+  line-height: var(--lh-relaxed);
+}
+
+.notice-methods {
+  gap: var(--space-3);
+}
+
+.notice-method,
+.notice-method.recommended {
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  padding: var(--space-card);
+  box-shadow: none;
+}
+
+.notice-method-head {
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.notice-method-head strong {
+  color: var(--ink);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-bold);
+}
+
+.notice-method-tag,
+.notice-method-tag.hot {
+  border-radius: var(--r-pill);
+  background: var(--selection-fill);
+  color: var(--violet);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+}
+
+.notice-method-desc {
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--lh-relaxed);
+}
+
+.notice-setup {
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  padding: var(--space-3);
+}
+
+.notice-setup > summary {
+  min-height: var(--control-hit);
+  color: var(--ink-soft);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+.notice-steps3 {
+  gap: var(--space-2);
+}
+
+.notice-steps3 > li {
+  gap: var(--space-2);
+}
+
+.notice-step-num {
+  width: var(--space-5);
+  height: var(--space-5);
+  background: var(--selection-fill);
+  color: var(--violet);
+  font-size: var(--text-label);
+}
+
+.notice-steps3 .button,
+.notice-steps3 a.button,
+.notice-copy-button {
+  min-height: var(--control-hit);
+  border-radius: var(--r-control);
+}
+
+.notice-copy-button {
+  min-width: calc(var(--control-hit) + var(--space-6) + var(--space-6));
+}
+
+.notice-inline-copy-icon {
+  margin-inline: var(--space-1);
+  vertical-align: middle;
+}
+
+.notice-setup-done {
+  display: block;
+  margin-top: var(--space-3);
+}
+
+.notice-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  margin: 0 calc(var(--space-panel) * -1) calc(var(--space-panel) * -1);
+  border-top: var(--stroke-hairline) solid var(--line);
+  background: var(--surface);
+  padding: var(--space-3) var(--space-panel)
+    calc(var(--space-3) + var(--safe-bottom));
+}
+
+.notice-actions .button {
+  min-height: var(--control-hit);
+  border-radius: var(--r-control);
+}
+
+.modal-card-developer .insights-head,
+.modal-card-dayVisit .dayvisit-head {
+  gap: var(--space-3);
+  border-bottom: var(--stroke-hairline) solid var(--line);
+  padding-bottom: var(--space-3);
+}
+
+.modal-card-developer .insights-month {
+  color: var(--ink);
+  font-size: var(--text-display);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.modal-card-developer .insights-tabs,
+.modal-card-developer .insights-subtabs,
+.modal-card-dayVisit .insights-subtabs {
+  gap: var(--space-1);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  padding: var(--space-1);
+}
+
+.modal-card-developer .insights-tab,
+.modal-card-developer .insights-subtabs button,
+.modal-card-dayVisit .insights-subtabs button,
+.modal-card-developer .insights-refresh,
+.modal-card-dayVisit .insights-refresh,
+.modal-card-developer .vlog-chip,
+.modal-card-dayVisit .vlog-chip {
+  min-height: var(--control-hit);
+  border-radius: var(--r-control);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+.modal-card-developer .insights-tab.active,
+.modal-card-developer .insights-subtabs button.active,
+.modal-card-dayVisit .insights-subtabs button.active,
+.modal-card-developer .vlog-chip.on,
+.modal-card-dayVisit .vlog-chip.on {
+  background: var(--selection-fill);
+  color: var(--violet);
+  box-shadow: var(--shadow-1);
+}
+
+.modal-card-developer .vcard,
+.modal-card-dayVisit .vcard,
+.modal-card-developer .insight-tile,
+.modal-card-dayVisit .insight-tile,
+.modal-card-developer .vrecent,
+.modal-card-dayVisit .vrecent {
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-1);
+}
+
+.modal-card-developer .insight-subhead,
+.modal-card-dayVisit .insight-subhead {
+  color: var(--ink);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.modal-card-developer .insight-empty,
+.modal-card-dayVisit .insight-empty,
+.modal-card-developer .vlog-empty,
+.modal-card-dayVisit .vlog-empty {
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--muted);
+  padding: var(--space-5) var(--space-3);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+}
+
+.modal-card-developer .dv-sessions li,
+.modal-card-dayVisit .dv-sessions li,
+.modal-card-developer .vlog-row,
+.modal-card-dayVisit .vlog-row {
+  min-height: var(--control-hit);
+  border-bottom: var(--stroke-hairline) solid var(--line-soft);
+  padding: var(--space-2);
+}
+
+.modal-card-developer .vt-tip,
+.modal-card-dayVisit .vt-tip {
+  max-width: calc(100% - var(--space-4));
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--ink);
+  color: var(--surface);
+  box-shadow: var(--shadow-3);
+  font-size: var(--text-label);
+}
+
+@media (min-width: 641px) {
+  .modal-card-notice .notice-modal {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .modal-card-notice .notice-tabs,
+  .modal-card-notice .notice-hint,
+  .modal-card-notice .notice-methods,
+  .modal-card-notice .notice-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-backdrop-notice,
+  .modal-backdrop-developer,
+  .modal-backdrop-dayVisit {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-card-notice,
+  .modal-card-developer,
+  .modal-card-dayVisit {
+    width: 100%;
+    max-width: none;
+    max-height: 100svh;
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+  }
+
+  .modal-card-notice > .notice-modal,
+  .modal-card-developer > .insights,
+  .modal-card-developer > .member-insights,
+  .modal-card-dayVisit > .dayvisit-wrap {
+    padding: var(--space-card);
+  }
+
+  .modal-card-notice > .notice-modal {
+    padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
+  }
+
+  .modal-card-notice .notice-modal {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .notice-time-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .notice-method,
+  .notice-method.recommended {
+    padding: var(--space-3);
+  }
+
+  .notice-steps3 > li {
+    align-items: stretch;
+  }
+
+  .notice-steps3 .button,
+  .notice-steps3 a.button {
+    flex: 1;
+  }
+
+  .notice-actions .button {
+    width: 100%;
+  }
+
+  .modal-card-developer .insights-tabs,
+  .modal-card-developer .insights-subtabs,
+  .modal-card-dayVisit .insights-subtabs {
+    overflow-x: auto;
+  }
+
+  .modal-card-developer .insights-track,
+  .modal-card-dayVisit .dayvisit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+html[data-reduce-motion] .modal-backdrop-notice,
+html[data-reduce-motion] .modal-backdrop-developer,
+html[data-reduce-motion] .modal-backdrop-dayVisit,
+html[data-reduce-motion] .modal-card-notice,
+html[data-reduce-motion] .modal-card-developer,
+html[data-reduce-motion] .modal-card-dayVisit,
+html[data-reduce-motion] .notice-modal *,
+html[data-reduce-motion] .modal-card-developer *,
+html[data-reduce-motion] .modal-card-dayVisit * {
+  animation: none;
+  transition: none;
+}
+
+html[data-reduce-motion] .notice-tabs button:active,
+html[data-reduce-motion] .ampm-segment button:active,
+html[data-reduce-motion] .modal-card-developer button:active,
+html[data-reduce-motion] .modal-card-dayVisit button:active {
+  transform: none;
+}
