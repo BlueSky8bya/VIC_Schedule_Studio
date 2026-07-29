@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
-// 실제 /studio는 (studio)/layout.tsx가 이 CSS를 넣어준다 — fixture는 그 레이아웃 밖이라
+// 실제 /studio는 (studio)/layout.tsx가 이 CSS들을 선로드한다 — fixture는 그 레이아웃 밖이라
 // 직접 가져와야 프로덕션 빌드에서도 실물과 같은 스타일로 렌더된다(dev는 CSS를 전부 실어 가려짐).
+// poster CSS도 필요: 편집실 모바일 아젠다(.agenda/.agenda-rail 골격)가 포스터 CSS의 기본
+// 규칙을 공유한다 — 없으면 레일과 목록이 세로로 쌓여 실물과 다르게 보인다(실측).
 import "@/components/studio/studio-shell.css";
+import "@/components/poster/public-poster.css";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 

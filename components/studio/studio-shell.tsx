@@ -4250,6 +4250,29 @@ export function StudioShell({
               )}
             </header>
 
+            {/* P0-A11Y-1: 월 이동을 스와이프 없이도 — 보이는 ◀ ▶(44px 터치 타깃). 스와이프·키보드와
+                같은 moveMonth 경로라 슬라이드/햅틱도 동일. */}
+            <div aria-label="월 이동" className="m-month-nav" role="group">
+              <button
+                aria-label="이전 달"
+                className="m-month-btn"
+                onClick={() => moveMonth(-1)}
+                type="button"
+              >
+                <ChevronLeft aria-hidden="true" size={20} strokeWidth={2.5} />
+              </button>
+              <strong aria-live="polite">
+                {view.year}년 {view.month}월
+              </strong>
+              <button
+                aria-label="다음 달"
+                className="m-month-btn"
+                onClick={() => moveMonth(1)}
+                type="button"
+              >
+                <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
+              </button>
+            </div>
           </div>
 
           {/* 인사이트 진입(개발자·관리자·매니저·작업자)은 아래 색상 필터 레일 맨 위로 옮겼다. */}

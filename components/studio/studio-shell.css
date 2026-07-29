@@ -8221,6 +8221,41 @@ html[data-reduce-motion] .modal-close:active {
   border: 0;
   background: none;
 }
+/* P0-A11Y-1: 모바일 월 이동 — 스와이프를 몰라도 보이는 ◀ ▶. 터치 타깃 44px. */
+.studio-mobile .m-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin: 2px 0 10px;
+}
+.studio-mobile .m-month-nav strong {
+  min-width: 118px;
+  text-align: center;
+  font-size: 15px;
+  font-weight: 900;
+  color: #3a3550;
+  font-variant-numeric: tabular-nums;
+}
+.studio-mobile .m-month-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-pill);
+  background: #ffffff;
+  color: #5b4bd0;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgb(120 110 160 / 10%);
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
+}
+.studio-mobile .m-month-btn:active {
+  transform: scale(0.92);
+  background: #f1edf9;
+}
 /* 시청자 화면(.agenda-header h1: 28px/13px)과 동일한 크기로 맞춘다. */
 .studio-mobile .agenda-header h1 {
   font-size: 28px;
