@@ -1486,9 +1486,10 @@ export function StudioShell({
         const mr = mirror.getBoundingClientRect();
         const rr = rest.getBoundingClientRect();
         if (mr.height < 1) return; // 아직 morph 중 — 아래 재실측이 잡는다
+        // 카드(.event-subs::before)처럼 서브 블록 전체 높이에 딱 맞춘다(위아래 트림 없음).
         rail.style.opacity = "1";
-        rail.style.top = `${rr.top - mr.top + mirror.scrollTop + 2}px`;
-        rail.style.height = `${Math.max(0, rr.height - 4)}px`;
+        rail.style.top = `${rr.top - mr.top + mirror.scrollTop}px`;
+        rail.style.height = `${Math.max(0, rr.height)}px`;
       });
     };
     measure();

@@ -9041,16 +9041,15 @@ html[data-reduce-motion] .m-edit-x:active {
   color: var(--ink, #1c2433);
 }
 .title-live .tt-rest {
-  color: #9a93a8;
+  color: #5b606b; /* 실제 카드 서브 줄(.event-subs/.agenda-subs)과 같은 잉크 */
 }
-/* 세부 줄 왼쪽 레일(|) — 포스터 카드의 세부 내용 레일과 같은 어휘. 패딩 거터 안이라
-   글자·커서를 밀지 않는다. top/height는 layout effect가 실측으로 채운다. */
+/* 세부 줄 왼쪽 레일(|) — 실제 카드(.event-subs::before)와 같은 어휘: 2px, 잉크색 28% 투명.
+   패딩 거터 안이라 글자·커서를 밀지 않는다. top/height는 layout effect가 실측으로 채운다. */
 .title-live .tt-rail {
   position: absolute;
   left: 5px;
-  width: 3px;
-  border-radius: 2px;
-  background: #cfc7e2;
+  width: 2px;
+  background: rgb(28 36 51 / 28%);
   opacity: 0;
   pointer-events: none;
   transition:
@@ -9058,9 +9057,9 @@ html[data-reduce-motion] .m-edit-x:active {
     top 0.12s var(--ease, ease),
     height 0.12s var(--ease, ease);
 }
-/* 모바일은 패딩(15px)이 넓어 레일도 살짝 안쪽으로. */
+/* 모바일은 패딩(15px)이 넓어 레일도 살짝 안쪽으로(글자와 간격을 카드처럼 좁게). */
 .title-live-m .tt-rail {
-  left: 7px;
+  left: 8px;
 }
 /* 웹 변형 — .event-editor-panel textarea(테두리 1px·패딩 10px·글자 16px)와 동일 금속자. */
 .title-live-web .title-live-mirror {
