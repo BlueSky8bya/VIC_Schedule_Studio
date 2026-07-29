@@ -524,6 +524,9 @@ export function StudioShell({
   const writeChainRef = useRef<Promise<void>>(Promise.resolve());
   // 통합 실행취소 스택(삭제·생성·붙여넣기 등 '되돌릴 수 있는 액션'을 LIFO로 보관).
   const deletedStackRef = useRef<UndoAction[]>([]);
+  // 다시 실행 스택(P1-HIST-1) — 실행취소가 만든 역연산을 보관. 새 작업이 생기면 비운다
+  // (외부/후속 변경과 충돌하는 '다시 실행' 방지 — 갈라진 미래의 redo는 무효).
+  const redoStackRef = useRef<UndoAction[]>([]);
   // temp id면 저장 약속을 기다려 실제 id로, 실패면 null. 실제 id는 그대로. (null이 새어와도 방어.)
   async function resolveEventId(id: string | null | undefined): Promise<string | null> {
     if (!id) return null;
@@ -2989,7 +2992,7 @@ export function StudioShell({
     );
     // Ctrl+Z용 — '옮기기 전'의 원래 날짜와 그 날 순서를 남긴다(실제로 바뀔 때만: 위 no-op 반환 뒤).
     // temp id를 옮겼다면 그 사이 실제 id로 바뀔 수 있는데, 되돌릴 때 tempToRealRef로 해소한다.
-    deletedStackRef.current.push({
+    pushUndo({
       type: "move",
       holder: { id },
       fromDate: sourceDate,
@@ -3463,7 +3466,7 @@ export function StudioShell({
     setActionError(null);
     // Ctrl+Z 복구용 스택 + 8초 '실행 취소' 스낵바(같은 restore 경로, P0-DATA-1).
     if (removed) {
-      deletedStackRef.current.push({ type: "recreate", event: removed });
+      pushUndo({ type: "recreate", event: removed });
       showDeleteSnack(removed);
     }
     startTransition(async () => {
@@ -3558,7 +3561,7 @@ export function StudioShell({
     setEvents((prev) => [...prev, optimistic]);
     markJustSaved(tempId); // 통통 착지 반짝
     const undoHolder = { id: tempId };
-    deletedStackRef.current.push({ type: "remove", holder: undoHolder }); // Ctrl+Z = 방금 만든 휴방 제거
+    pushUndo({ type: "remove", holder: undoHolder }); // Ctrl+Z = 방금 만든 휴방 제거
     setActionError(null);
     // 만든 휴뱅을 곧바로 편집 카드에 띄운다 — 우클릭 한 번으로 만들고 거기서 바로 세부(태그·기간 등)를
     // 만질 수 있게(HCI: 방금 만든 대상이 곧 편집 컨텍스트). 데스크톱 전용 흐름이라 패널을 연다.
@@ -3648,9 +3651,17 @@ export function StudioShell({
     };
   }, [restMenu]);
 
+  // P1-HIST-1: 새 '되돌릴 수 있는 작업'은 반드시 이 문으로 — undo 스택에 쌓고 redo 스택을
+  // 비운다. 실행취소 뒤 새 작업을 하면 그 시점의 '다시 실행'은 다른 미래와 충돌하므로 무효.
+  function pushUndo(action: UndoAction) {
+    deletedStackRef.current.push(action);
+    redoStackRef.current = [];
+  }
+
   // Ctrl+Z: 스택 맨 위 '액션'을 종류에 맞게 되돌린다(LIFO). 삭제=다시 만들기, 생성/붙여넣기=지우기.
   // 그래서 복사→삭제→붙여넣기→Ctrl+Z = '방금 붙여넣은 카드'만 사라지고, 한 번 더 누르면 그 전
   // 삭제가 복구된다(올바른 순서). 예전엔 항상 마지막 삭제분을 되살리는 버그가 있었다.
+  // 적용이 만든 역연산은 redo 스택으로 — Ctrl+Shift+Z(또는 Ctrl+Y)로 다시 실행.
   function restoreLastDelete() {
     if (!canEdit) {
       return;
@@ -3660,7 +3671,28 @@ export function StudioShell({
       flashToast("되돌릴 작업이 없어요");
       return;
     }
+    const inverse = applyHistoryAction(action, "undo");
+    if (inverse) redoStackRef.current.push(inverse);
+  }
 
+  function redoLastUndo() {
+    if (!canEdit) {
+      return;
+    }
+    const action = redoStackRef.current.pop();
+    if (!action) {
+      flashToast("다시 실행할 작업이 없어요");
+      return;
+    }
+    const inverse = applyHistoryAction(action, "redo");
+    if (inverse) deletedStackRef.current.push(inverse);
+  }
+
+  // 하나의 실행기가 undo/redo 양쪽을 처리한다 — redo 항목은 'undo가 만든 역연산'이라 같은
+  // 모양(UndoAction). 반환값 = 이번 적용의 역연산(호출자가 반대 스택에 쌓는다). 대상 카드가
+  // 그 사이 사라졌으면 null — 항목은 양쪽 스택 어디에도 남지 않고 소멸(충돌 가드).
+  function applyHistoryAction(action: UndoAction, mode: "undo" | "redo"): UndoAction | null {
+    const keyHint = mode === "undo" ? "Ctrl+Z" : "Ctrl+Shift+Z";
     if (action.type === "move") {
       // 드래그 이동 되돌리기 — 원래 날짜·원래 순서로 되돌린다(같은 날 안 순서만 바꾼 경우도 포함).
       // 방금 만든 카드(temp id)를 옮겼다면 그 사이 실제 id로 바뀌었을 수 있다 → 매핑으로 해소.
@@ -3670,8 +3702,16 @@ export function StudioShell({
       const moved = events.find((e) => e.id === id);
       if (!moved) {
         flashToast("되돌릴 카드를 찾을 수 없어요");
-        return;
+        return null;
       }
+      // 역연산: 옮기기 '전'(= 지금) toDate 쪽 순서를 보관 — 다시 실행하면 순서까지 제자리로.
+      const inverse: UndoAction = {
+        type: "move",
+        holder: action.holder,
+        fromDate: action.toDate,
+        toDate: action.fromDate,
+        fromOrderedIds: getEventsForDate(events, action.toDate).map((e) => e.id)
+      };
       const delta = daysBetweenIso(getEventDateKey(moved), action.fromDate);
       const orderPos = new Map(fromOrderedIds.map((eid, i) => [eid, i] as const));
       flipArmedRef.current = true; // 되돌아가는 카드도 형제와 함께 활주
@@ -3694,7 +3734,11 @@ export function StudioShell({
       markJustSaved(id); // 되돌아온 카드도 통통 안착
       setActionError(null);
       flashToast(
-        action.fromDate === action.toDate ? "순서 되돌림 (Ctrl+Z)" : "이동 취소됨 (Ctrl+Z)"
+        action.fromDate === action.toDate
+          ? `순서 되돌림 (${keyHint})`
+          : mode === "undo"
+            ? "이동 취소됨 (Ctrl+Z)"
+            : "다시 이동함 (Ctrl+Shift+Z)"
       );
       // 서버에도 같은 큐(직렬)로 역이동 — 원래 이동과 순서가 뒤바뀌지 않는다.
       enqueueMovePersist({
@@ -3703,12 +3747,14 @@ export function StudioShell({
         targetDate: action.fromDate,
         orderedIds: fromOrderedIds
       });
-      return;
+      return inverse;
     }
 
     if (action.type === "remove") {
-      // 생성/붙여넣기 되돌리기 — 그때 만든 카드를 지운다(holder.id는 실제 id로 갱신돼 있음).
+      // 생성/붙여넣기 되돌리기(또는 삭제 다시 실행) — 그 카드를 지운다(holder.id는 실제 id로
+      // 갱신돼 있음). 역연산용으로 지우기 전 카드 내용을 보관 — 되살릴 땐 같은 id tombstone 복구.
       const id = action.holder.id;
+      const snapshot = events.find((e) => e.id === id) ?? null;
       setEvents((prev) =>
         prev
           .filter((e) => e.id !== id)
@@ -3719,7 +3765,7 @@ export function StudioShell({
         setForm(createEmptyForm());
       }
       setActionError(null);
-      flashToast("붙여넣기 취소됨 (Ctrl+Z)");
+      flashToast(mode === "undo" ? "붙여넣기 취소됨 (Ctrl+Z)" : "다시 삭제됨 (Ctrl+Shift+Z)");
       startTransition(async () => {
         const result = await enqueueWrite(async () => {
           const realId = await resolveEventId(id);
@@ -3728,22 +3774,27 @@ export function StudioShell({
         });
         if (!result.ok) setActionError(result.error);
       });
-      return;
+      return snapshot ? { type: "recreate", event: snapshot } : null;
     }
 
-    // recreate(→ restore, P0-DATA-1): 삭제 되돌리기 — 서버 tombstone을 걷어 **같은 id**로
-    // 되살린다(태그/연결/하트/비공개 메타 보존. 예전 '재생성' 방식은 새 id라 관계가 유실됐다).
-    restoreDeletedEvent(action.event);
+    // recreate(→ restore, P0-DATA-1): 삭제 되돌리기(또는 생성 다시 실행) — 서버 tombstone을 걷어
+    // **같은 id**로 되살린다(태그/연결/하트/비공개 메타 보존. 예전 '재생성' 방식은 새 id라 관계가
+    // 유실됐다).
+    restoreDeletedEvent(
+      action.event,
+      mode === "undo" ? "삭제 취소됨" : "다시 실행함 (Ctrl+Shift+Z)"
+    );
+    return { type: "remove", holder: { id: action.event.id } };
   }
 
   // 삭제 복구 공통 경로 — Ctrl+Z와 삭제 스낵바 '실행 취소'가 함께 쓴다.
-  function restoreDeletedEvent(ev: StudioScheduleEvent) {
+  function restoreDeletedEvent(ev: StudioScheduleEvent, toast = "삭제 취소됨") {
     setDeleteSnack(null);
     if (deleteSnackTimer.current) window.clearTimeout(deleteSnackTimer.current);
     setEvents((prev) => (prev.some((e) => e.id === ev.id) ? prev : [...prev, ev]));
     setActionError(null);
     markJustSaved(ev.id); // 되살아난 카드도 통통 착지하며 반짝
-    flashToast("삭제 취소됨");
+    flashToast(toast);
     startTransition(async () => {
       const result = await enqueueWrite(async () => {
         const realId = await resolveEventId(ev.id);
@@ -3880,7 +3931,7 @@ export function StudioShell({
     setEvents((prev) => [...prev, optimistic]);
     // 실행취소 스택에 'remove'로 올린다 → Ctrl+Z면 방금 만든 이 카드가 사라진다.
     const undoHolder = { id: tempId };
-    deletedStackRef.current.push({ type: "remove", holder: undoHolder });
+    pushUndo({ type: "remove", holder: undoHolder });
     flashToast(toast);
     setActionError(null);
     startTransition(async () => {
@@ -4010,12 +4061,23 @@ export function StudioShell({
       }
       // (맨 N은 없앴다 — 편집 패널이 열린 동안엔 어차피 '제목 글자'로 먹혀 열기만 되고 닫기가 안 돼
       //  비대칭이었다. 열기·닫기 모두 Alt+N 하나로 통일 — 위쪽에서 INPUT 가드보다 먼저 처리한다.)
-      if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey) return;
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
       const key = e.key.toLowerCase();
+      // Ctrl+Shift+Z: 다시 실행(P1-HIST-1). Shift 조합은 이것만 — 나머지는 기존대로 차단.
+      if (key === "z" && e.shiftKey) {
+        e.preventDefault();
+        redoLastUndo();
+        return;
+      }
+      if (e.shiftKey) return;
       if (key === "z") {
         // 실수로 지운 일정 되살리기(편집 중 텍스트는 위 INPUT/TEXTAREA 가드로 보호됨).
         e.preventDefault();
         restoreLastDelete();
+      } else if (key === "y") {
+        // Ctrl+Y — Windows 관습의 다시 실행(같은 동작).
+        e.preventDefault();
+        redoLastUndo();
       } else if (key === "c" && selectedEventId && !window.getSelection()?.toString()) {
         e.preventDefault();
         copySelectedEvent();
@@ -5410,6 +5472,11 @@ export function StudioShell({
                 (a) => a.type === "recreate" && a.event.id === deleteSnack.event.id
               );
               if (idx >= 0) stack.splice(idx, 1);
+              // 스낵바 복구도 '삭제의 실행취소' — 다시 실행(Ctrl+Shift+Z)하면 재삭제되게 적재.
+              redoStackRef.current.push({
+                type: "remove",
+                holder: { id: deleteSnack.event.id }
+              });
               restoreDeletedEvent(deleteSnack.event);
             }}
             type="button"
@@ -5692,6 +5759,7 @@ export function StudioShell({
           <span><kbd>Ctrl</kbd>+<kbd>S</kbd> 저장</span>
           <span><kbd>Del</kbd> 삭제</span>
           <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> 되살리기</span>
+          <span><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> 다시 실행</span>
           <span><kbd>Ctrl</kbd>+<kbd>C</kbd>/<kbd>V</kbd> 복붙</span>
           <span><kbd>우클릭 드래그</kbd> 잇기</span>
           <span><kbd>우클릭 긋기</kbd> 끊기</span>
