@@ -10324,3 +10324,294 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-card {
 html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
   transition: none;
 }
+
+/* Batch 12: taxonomy management. Event tag picker remains a separate surface. */
+.modal-card-tags {
+  max-width: var(--sheet-width-lg);
+}
+
+.tag-editor {
+  gap: var(--space-4);
+  color: var(--ink);
+}
+
+.tag-editor .tag-tips {
+  gap: var(--space-2);
+  margin: 0;
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  padding: var(--space-3);
+}
+
+.tag-editor .tag-tip {
+  gap: var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-body);
+  line-height: var(--lh-body);
+}
+
+.tag-editor .tag-tip b {
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+}
+
+.tag-editor .tag-tip.warn {
+  color: var(--status-danger);
+}
+
+.tag-editor-section {
+  min-width: 0;
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface-2);
+  padding: var(--space-card);
+}
+
+.tag-editor-section.is-mod {
+  border-style: solid;
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+}
+
+.tag-editor-section-head {
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: 0;
+}
+
+.tag-editor-section-name {
+  color: var(--ink);
+  font-size: var(--text-title);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.tag-editor-section.is-mod .tag-editor-section-name {
+  color: var(--violet);
+}
+
+.tag-editor-section-sub,
+.tag-editor-section-empty {
+  color: var(--muted);
+  font-size: var(--text-label);
+  line-height: var(--lh-body);
+}
+
+.tag-editor .tag-cat-group {
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  padding: var(--space-2);
+  box-shadow: var(--shadow-1);
+}
+
+.tag-editor .tag-editor-row {
+  gap: var(--space-2);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.tag-editor .tag-editor-row.is-sub {
+  margin-left: var(--space-4);
+  border-top: var(--stroke-hairline) solid var(--line-soft);
+  padding-top: var(--space-2);
+}
+
+.tag-editor .tag-editor-row input {
+  min-height: var(--control-hit);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--ink);
+  padding-inline: var(--space-3);
+  font-size: var(--text-input);
+}
+
+.tag-editor .tag-editor-row input:focus {
+  border-color: var(--selection-border);
+  outline: 0;
+  box-shadow: 0 0 0 var(--space-1) var(--selection-overlay);
+}
+
+.tag-editor .tag-editor-row .tag-drag-handle,
+.tag-editor .tag-editor-row .tag-editor-remove,
+.tag-editor .tag-editor-row .tag-color-swatch {
+  min-width: var(--control-hit);
+  width: var(--control-hit);
+  height: var(--control-hit);
+  border-radius: var(--r-control);
+}
+
+.tag-editor .tag-editor-row .tag-drag-handle {
+  color: var(--muted);
+}
+
+.tag-editor .tag-editor-row .tag-color-swatch {
+  border: var(--stroke-hairline) solid var(--line);
+  box-shadow: inset 0 0 0 var(--space-1) var(--surface);
+}
+
+.tag-editor .tag-editor-row .tag-color-swatch.open {
+  border-color: var(--selection-border);
+  box-shadow:
+    inset 0 0 0 var(--space-1) var(--surface),
+    0 0 0 var(--space-1) var(--selection-overlay);
+}
+
+.tag-editor .tag-editor-row .tag-editor-remove {
+  border: var(--stroke-hairline) solid var(--status-danger);
+  background: var(--status-danger-fill);
+  color: var(--status-danger);
+}
+
+.tag-editor .tag-add-in-section {
+  min-height: var(--control-hit);
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  border: var(--stroke-hairline) dashed var(--selection-border);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  color: var(--violet);
+  padding: var(--space-control-y) var(--space-control-x);
+  font-size: var(--text-body);
+  font-weight: var(--weight-semibold);
+}
+
+.tag-editor .tag-add-in-section:hover:not(:disabled),
+.tag-editor .tag-add-in-section.mod:hover:not(:disabled) {
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+}
+
+.tag-editor .tag-add-in-section.mod {
+  border-color: var(--selection-border);
+  background: var(--surface);
+  color: var(--violet);
+}
+
+.tag-editor .tag-editor-hint.warn {
+  margin: 0;
+  border: var(--stroke-hairline) solid var(--status-danger);
+  border-radius: var(--r-control);
+  background: var(--status-danger-fill);
+  color: var(--status-danger);
+  padding: var(--space-3);
+}
+
+.tag-editor-actions {
+  gap: var(--space-2);
+}
+
+.tag-editor-actions .button.primary {
+  min-height: var(--control-hit);
+  border-radius: var(--r-control);
+  font-size: var(--text-ui);
+  font-weight: var(--weight-semibold);
+}
+
+.tag-editor-actions .button.primary.saved {
+  border-color: var(--status-success);
+  background: var(--status-success-fill);
+  color: var(--status-success);
+}
+
+.modal-card-tags .tag-editor-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 calc(var(--space-panel) * -1) calc(var(--space-panel) * -1);
+  border-top: var(--stroke-hairline) solid var(--line);
+  background: var(--material-bg-strong);
+  padding: var(--space-3) var(--space-panel)
+    calc(var(--space-3) + var(--safe-bottom));
+}
+
+@media (min-width: 641px) {
+  .modal-card-tags .tag-editor {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    padding: var(--space-panel);
+  }
+
+  .modal-card-tags .tag-tips,
+  .modal-card-tags .auth-warning,
+  .modal-card-tags .tag-editor-hint,
+  .modal-card-tags .tag-editor-actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 640px) {
+  .modal-backdrop-tags {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .modal-card-tags {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100svh - var(--space-4));
+    border-right: 0;
+    border-bottom: 0;
+    border-left: 0;
+    border-radius: var(--r-xl) var(--r-xl) 0 0;
+  }
+
+  .modal-card-tags > .tag-editor,
+  .m-manage .tag-editor {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-card);
+  }
+
+  .m-manage .tag-editor {
+    padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
+  }
+
+  .tag-editor-section {
+    padding: var(--space-3);
+  }
+
+  .tag-editor .tag-tip .tip-web,
+  .tag-editor-section-sub {
+    display: none;
+  }
+
+  .tag-editor .tag-tip:nth-child(2),
+  .tag-editor .tag-tip:nth-child(3) {
+    display: none;
+  }
+
+  .tag-editor .tag-editor-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+  }
+
+  .tag-editor .tag-editor-row.is-sub {
+    margin-left: var(--space-3);
+  }
+
+  .tag-editor .tag-editor-row input {
+    width: 100%;
+  }
+
+  .tag-editor-actions .button.primary {
+    width: 100%;
+  }
+}
+
+html[data-reduce-motion] .tag-editor .tag-editor-row,
+html[data-reduce-motion] .tag-editor .tag-add-in-section,
+html[data-reduce-motion] .tag-editor .tag-color-swatch,
+html[data-reduce-motion] .tag-editor .tag-editor-remove,
+html[data-reduce-motion] .tag-editor-actions .button {
+  animation: none;
+  transition: none;
+}
+
+html[data-reduce-motion] .tag-editor .tag-add-in-section:active {
+  transform: none;
+}

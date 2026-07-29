@@ -6291,7 +6291,7 @@ export function StudioShell({
       ) : null}
       {modal ? (
         <div
-          className="modal-backdrop"
+          className={modal === "tags" ? "modal-backdrop modal-backdrop-tags" : "modal-backdrop"}
           // 텍스트를 드래그 선택하다 배경에서 마우스를 떼도 닫히지 않도록,
           // 누름과 뗌이 모두 배경(자기 자신)에서 일어났을 때만 닫는다.
           onMouseDown={(e) => {
@@ -6306,7 +6306,7 @@ export function StudioShell({
           role="presentation"
         >
           <div
-            className={`modal-card ${modal === "tags" || modal === "notice" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
+            className={`modal-card ${modal === "tags" || modal === "notice" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}${modal === "tags" ? " modal-card-tags" : ""}`}
             aria-modal="true"
             role="dialog"
             ref={mainModalTrapRef}
@@ -6444,4 +6444,3 @@ export function StudioShell({
     </main>
   );
 }
-
