@@ -1347,6 +1347,14 @@ html[data-reduce-motion] .poster-export-reward-spark {
   display: inline-flex;
   align-items: center;
   gap: 5px;
+  margin-left: 3px;
+}
+/* 버튼(primary) 안의 진행 점 — 어두운 버튼 배경 위에서 보이게 흰 계열로. */
+.button.primary .poster-export-progress .dot {
+  background: rgb(255 255 255 / 45%);
+}
+.button.primary .poster-export-progress .dot.done {
+  background: #ffffff;
 }
 .poster-export-progress .dot {
   width: 7px;

@@ -74,7 +74,19 @@ export function PosterExportActions({ onBeforeCapture, onAfterCapture }: PosterE
       const canvas = await html2canvas(surface, {
         backgroundColor: "#ffffff",
         scale,
-        useCORS: true
+        useCORS: true,
+        // 복제 문서에서는 CSS 애니메이션이 0%부터 다시 시작된다 → 등장 애니(투명도·이동)의
+        // 초기 프레임이 랜덤하게 찍혀 '전체가 뿌옇게 바랜' 캡쳐가 나오던 원인. 복제본의
+        // 애니메이션을 전부 멈추고 큰 음수 delay로 '끝 상태'에 고정해 항상 완성된 화면만 찍는다.
+        onclone: (doc) => {
+          const style = doc.createElement("style");
+          style.textContent =
+            "[data-export-surface], [data-export-surface] * {" +
+            " animation-play-state: paused !important;" +
+            " animation-delay: -60s !important;" +
+            " transition: none !important; }";
+          doc.head.appendChild(style);
+        }
       });
       const blob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/png")
@@ -128,16 +140,17 @@ export function PosterExportActions({ onBeforeCapture, onAfterCapture }: PosterE
       >
         <Clipboard aria-hidden="true" size={17} />
         {PHASE_LABEL[phase]}
+        {/* 진행 점(●●●)은 버튼 '안'에서 — 라벨 옆에서 차오르니 버튼 밖 레이아웃이 안 흔들린다. */}
+        {busy ? (
+          <span className="poster-export-progress" role="status">
+            <span className={`dot${phase !== "preparing" ? " done" : ""}`} />
+            <span className={`dot${phase === "rendering" || phase === "copying" ? " done" : ""}`} />
+            <span className={`dot${phase === "copying" ? " done" : ""}`} />
+          </span>
+        ) : null}
       </button>
-      {busy ? (
-        <span className="poster-export-progress" role="status">
-          <span className={`dot${phase !== "preparing" ? " done" : ""}`} />
-          <span className={`dot${phase === "rendering" || phase === "copying" ? " done" : ""}`} />
-          <span className={`dot${phase === "copying" ? " done" : ""}`} />
-          {fontSettling && phase === "preparing" ? (
-            <em className="poster-export-hint">폰트 정리 중…</em>
-          ) : null}
-        </span>
+      {busy && fontSettling && phase === "preparing" ? (
+        <em className="poster-export-hint">폰트 정리 중…</em>
       ) : null}
       {phase === "failed" ? (
         <span className="poster-action-error">브라우저 클립보드 권한을 확인하세요.</span>

@@ -17,6 +17,7 @@ import {
   uploadStickerAssetAction
 } from "@/lib/schedules/sticker-asset-actions";
 import { setPosterThemeAction } from "@/lib/schedules/theme-actions";
+import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 
 type StudioDecoratePageProps = {
   params: Promise<{ year: string; month: string }>;
@@ -86,6 +87,10 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
 
   return (
     <PublicPoster
+      // 꾸미기 안의 '시청자 화면 보기'가 실제 공개 화면과 같아야 한다(하트·'내 관심' 포함).
+      // 이 두 prop이 없으면 미리보기에서 하트 UI가 통째로 빠져 편집실 미리보기와 달라 보인다.
+      accountEmail={actor.email}
+      toggleHeartAction={toggleEventHeartAction}
       avatarSlot={actor.role === "owner" || actor.role === "developer"}
       canExport
       decorate

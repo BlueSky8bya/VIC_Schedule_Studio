@@ -41,7 +41,8 @@ const ok = (name, pass, note = "") => {
       const cs = getComputedStyle(el);
       return { bf: cs.backdropFilter, bg: cs.backgroundColor };
     });
-    ok("modal material", Boolean(mat && mat.bf && mat.bf !== "none"), JSON.stringify(mat));
+    // 모달 카드 재질은 사용자 피드백으로 롤백(불투명 유지) — 재질은 팝오버(dtp/tag-cpop 등)에만.
+    ok("modal card stays opaque (rolled back)", Boolean(mat && (!mat.bf || mat.bf === "none")), JSON.stringify(mat));
     await p.screenshot({ path: SC + "/v-modal-material.png" });
     // X 호버 회전(뷰포트 밖이어도 강제 hover) — computed transform으로 판정
     try {
@@ -167,7 +168,9 @@ const ok = (name, pass, note = "") => {
           this.x = x;
         }
       };
-    } catch {}
+    } catch {
+      /* 스텁 실패해도 검증의 다른 항목엔 영향 없음 */
+    }
   });
   await p.goto("http://localhost:3000/visual-fixture/poster?mode=decorate", {
     waitUntil: "networkidle",

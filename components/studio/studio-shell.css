@@ -6195,13 +6195,9 @@ textarea:disabled {
   /* 모달 등장은 스프링(살짝 넘쳤다 안착) — 애플 HCI 1차(A1) 폴리시. */
   animation: pop-in var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease)) both;
 }
-/* 재질(C1): 모달·팝오버는 불투명 판 대신 반투명 블러 유리 — 미지원 브라우저는 기존 배경 유지. */
+/* 재질(C1): 팝오버는 불투명 판 대신 반투명 블러 유리 — 미지원 브라우저는 기존 배경 유지.
+   (모달 카드는 사용자 피드백으로 롤백 — 인사이트처럼 내용이 많은 큰 모달은 불투명이 읽기 좋다.) */
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .modal-card {
-    background: var(--material-bg-strong, rgb(255 255 255 / 86%));
-    -webkit-backdrop-filter: var(--material-blur, blur(18px) saturate(1.7));
-    backdrop-filter: var(--material-blur, blur(18px) saturate(1.7));
-  }
   .dtp-panel,
   .tag-cpop,
   .cal-zoom-peek {
@@ -7461,7 +7457,12 @@ html[data-reduce-motion] .modal-close:active {
   width: 32px;
   height: 32px;
   border-radius: var(--r-pill);
-  transition: background var(--dur-1) var(--ease);
+  /* transform도 포함 — 여기(디자인 리프레시 블록)가 base의 transition을 덮어써서 회전이
+     '즉시 스냅'되던 문제. X 글리프는 90° 돌아도 같은 모양이라, 돌아가는 과정이 안 보이면
+     아무 일도 없는 것처럼 보인다. */
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
 }
 .modal-close:hover {
   background: rgb(15 23 42 / 6%);

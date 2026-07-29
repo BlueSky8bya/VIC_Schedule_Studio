@@ -30,19 +30,29 @@ export function flyGhost(fromEl: HTMLElement, toEl: HTMLElement) {
   const dy = target.top - a.top;
   const sx = target.width / a.width;
   let anim: Animation;
+  // 이동과 페이드를 분리 — 한 애니메이션에 섞으면 감속 이징이 불투명도에도 걸려 초반부터
+  // 흐려진다(0.38s 단일 버전이 "안 보인다"던 피드백의 원인). 여정 460ms는 또렷하게 날아가고,
+  // 도착 구간 190ms에만 패널로 스며들며 사라진다.
+  g.style.opacity = "0.95";
   try {
     anim = g.animate(
       [
-        { transform: "none", opacity: 0.85 },
-        { transform: `translate(${dx}px, ${dy}px) scale(${sx}, 1)`, opacity: 0 }
+        { transform: "none" },
+        { transform: `translate(${dx}px, ${dy}px) scale(${sx}, 1)` }
       ],
       {
-        duration: 380,
+        duration: 650,
         // 감속 곡선 — 목적지를 예고하며 안착(스프링 잔진동은 잔상엔 과함).
         easing: "cubic-bezier(0.05, 0.7, 0.1, 1)",
         fill: "forwards"
       }
     );
+    g.animate([{ opacity: 0.95 }, { opacity: 0 }], {
+      delay: 460,
+      duration: 190,
+      easing: "linear",
+      fill: "forwards"
+    });
   } catch {
     g.remove();
     return;
@@ -51,5 +61,5 @@ export function flyGhost(fromEl: HTMLElement, toEl: HTMLElement) {
   anim.onfinish = cleanup;
   anim.oncancel = cleanup;
   // 안전망 — finish 이벤트가 유실돼도 유령이 화면에 남지 않게.
-  window.setTimeout(cleanup, 700);
+  window.setTimeout(cleanup, 1000);
 }
