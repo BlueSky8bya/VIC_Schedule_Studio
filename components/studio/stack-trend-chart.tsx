@@ -38,6 +38,26 @@ export function StackTrendChart({
   const [hover, setHover] = useState<Hover | null>(null);
   const max = Math.max(1, ...data.months.map((m) => m.total));
   const empty = data.cats.length === 0 || data.months.every((m) => m.total === 0);
+  // P2-INSIGHT-1: 차트의 텍스트 대안(sr-only) — 색·막대 없이도 같은 정보에 접근.
+  // showNumbers=false(공개 하트 차트 등)는 숫자 비노출 정책을 그대로 따르고 순위만 읽어준다.
+  const latest = data.months[data.months.length - 1];
+  const srSummary = (() => {
+    if (empty || !latest) return "";
+    const topCats = [...data.cats]
+      .map((c) => ({ label: c.label, n: latest.counts[c.key] ?? 0 }))
+      .filter((c) => c.n > 0)
+      .sort((a, b) => b.n - a.n)
+      .slice(0, 4);
+    const monthly = showNumbers
+      ? data.months.map((m) => `${Number(m.ym.slice(5))}월 ${m.total}`).join(", ")
+      : null;
+    const rank = topCats.length
+      ? `이번 달 상위: ${topCats
+          .map((c) => (showNumbers ? `${c.label} ${c.n}` : c.label))
+          .join(", ")}`
+      : "";
+    return [monthly ? `최근 6개월 합계 — ${monthly}.` : "", rank].filter(Boolean).join(" ");
+  })();
   // 범례를 숨긴 차트(태그 많음)는 호버 박스를 2열로 + 그 달 값이 큰 순으로 정렬해(왼쪽위→오른쪽아래)
   // 수치가 없어도 비율 높낮이를 한눈에. (방문 트렌드처럼 범례 있는 차트는 카테고리 순서 그대로.)
   const tipCats = (h: Hover) =>
@@ -54,7 +74,14 @@ export function StackTrendChart({
         <p className="insight-empty">집계할 데이터가 아직 없어요.</p>
       ) : (
         <>
-          <div className="vt-chart" role="img" aria-label={title} onPointerLeave={() => setHover(null)}>
+          <p className="sr-only">{srSummary}</p>
+          <div
+            className="vt-chart"
+            role="img"
+            aria-label={`${title} 차트`}
+            aria-hidden={srSummary ? true : undefined}
+            onPointerLeave={() => setHover(null)}
+          >
             {data.months.map((mo) => {
               const enter = (e: ReactPointerEvent<HTMLDivElement>) => {
                 if (mo.total <= 0) {

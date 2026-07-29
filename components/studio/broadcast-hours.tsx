@@ -75,8 +75,18 @@ export function BroadcastHours({
     if (touch) clearTimer.current = window.setTimeout(() => setActive(null), 2200);
   };
 
+  // P2-INSIGHT-1: 차트 텍스트 대안(sr-only) — 막대·색 없이도 같은 정보.
+  const srSummary = hasAny
+    ? `최근 6개월 방송 시간 — ${months
+        .map((mk, i) => `${Number(mk.split("-")[1])}월 ${fmtHoursLabel(monthVals[i] ?? 0)}`)
+        .join(", ")}. 이번 달 ${fmtHoursLabel(cur)}, 방송 ${days}일, 일평균 ${fmtHoursLabel(avg)}${
+        delta === null ? "" : `, 전달 대비 ${delta > 0 ? "+" : ""}${delta}%`
+      }.`
+    : "";
+
   return (
     <div className="bcast-trend">
+      {srSummary ? <p className="sr-only">{srSummary}</p> : null}
       <div className="trend-row">
         <div className="trend-head">
           <span>📺 방송 시간</span>
