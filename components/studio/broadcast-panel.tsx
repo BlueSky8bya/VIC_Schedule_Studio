@@ -164,7 +164,8 @@ type HistAction =
   | { t: "scene"; before: Stroke[]; after: Stroke[] };
 
 // 판서판 위 날짜 컬럼의 자유 배치 상태(그림판답게 끌어서 이동·크기 조절 — 선택 도구에서만).
-type ColBox = { x: number; y: number; w: number };
+// h: 세로 손잡이로 정한 명시 높이(minHeight). 없으면 내용 높이(자동).
+type ColBox = { x: number; y: number; w: number; h?: number };
 const COL_DEFAULT_W = 220;
 const COL_MIN_W = 140;
 const COL_MAX_W = 520;
@@ -384,7 +385,8 @@ export function BroadcastPanel({
   const [guides, setGuides] = useState<{ v: number[]; h: number[] }>({ v: [], h: [] });
   const dragColRef = useRef<{
     key: string;
-    mode: "move" | "resize";
+    mode: "move" | "resize" | "resize-x" | "resize-y";
+    origH: number; // 세로 손잡이 기준 높이(제스처 시작 시 실측)
     startX: number;
     startY: number;
     orig: ColBox; // resize용(단일)
@@ -464,7 +466,7 @@ export function BroadcastPanel({
   function onColPointerDown(
     e: React.PointerEvent<HTMLElement>,
     key: string,
-    mode: "move" | "resize"
+    mode: "move" | "resize" | "resize-x" | "resize-y"
   ) {
     if (tool !== "select") return; // 그리기 도구 중엔 입력면이 위에 있어 어차피 안 옴 — 이중 가드
     // 선택 도구로 카드를 잡으면 '일정' 레이어로 자동 전환하고 그대로 이동/크기 조절을
@@ -504,6 +506,7 @@ export function BroadcastPanel({
       startX: e.clientX,
       startY: e.clientY,
       orig,
+      origH: orig.h ?? colElsRef.current.get(key)?.offsetHeight ?? 300,
       origs,
       beforeAll: new Map(cols),
       moved: false,
@@ -611,13 +614,25 @@ export function BroadcastPanel({
     let dx = clientX - d.startX + sdx;
     let dy = clientY - d.startY + sdy;
     if (Math.abs(dx) + Math.abs(dy) > 1) d.moved = true;
-    if (d.mode === "resize") {
+    if (d.mode === "resize" || d.mode === "resize-x") {
+      // 모서리(기존 대각)와 오른쪽 변 = 폭(글자도 비례). 명시 높이(h)는 유지.
       setCols((map) => {
         const next = new Map(map);
         next.set(d.key, {
-          x: d.orig.x,
-          y: d.orig.y,
+          ...d.orig,
           w: Math.min(COL_MAX_W, Math.max(COL_MIN_W, d.orig.w + dx))
+        });
+        return next;
+      });
+      return;
+    }
+    if (d.mode === "resize-y") {
+      // 아래 변 = 높이만(내용은 그대로, 여백이 늘어난다). 내용보다 작게는 안 줄어든다(minHeight).
+      setCols((map) => {
+        const next = new Map(map);
+        next.set(d.key, {
+          ...d.orig,
+          h: Math.min(1600, Math.max(64, d.origH + dy))
         });
         return next;
       });
@@ -1006,6 +1021,7 @@ export function BroadcastPanel({
       startX: e.clientX,
       startY: e.clientY,
       orig: { x: 0, y: 0, w: COL_DEFAULT_W },
+      origH: 300,
       origs,
       beforeAll: new Map(colsRef.current),
       moved: false,
@@ -3001,6 +3017,8 @@ export function BroadcastPanel({
                       left: box.x,
                       top: box.y,
                       width: box.w,
+                      // 세로 손잡이로 정한 명시 높이 — 내용보다 작게는 안 줄어든다.
+                      minHeight: box.h,
                       // 폭에 비례해 글자도 커진다(내부는 em) — '크게 보여주기'가 실제로 크다.
                       fontSize: `${Math.round((box.w / COL_DEFAULT_W) * 100)}%`
                     }}
@@ -3046,12 +3064,29 @@ export function BroadcastPanel({
                         <EventCard event={ev} key={`${day.dateKey}-${ev.id}`} />
                       ))
                     )}
-                    {/* 크기 손잡이(폭·글자 함께) — 선택 도구에서만. */}
+                    {/* 크기 손잡이 — 모서리=대각(폭·글자), 오른쪽 변=너비만, 아래 변=높이만
+                        (그림판 선택 핸들 문법, 사용자 요청). 선택 도구에서만. */}
                     <span
                       aria-hidden="true"
                       className="bp-col-resize"
                       onLostPointerCapture={onColPointerUp}
                       onPointerDown={(e) => onColPointerDown(e, day.dateKey, "resize")}
+                      onPointerMove={onColPointerMove}
+                      onPointerUp={onColPointerUp}
+                    />
+                    <span
+                      aria-hidden="true"
+                      className="bp-col-resize-e"
+                      onLostPointerCapture={onColPointerUp}
+                      onPointerDown={(e) => onColPointerDown(e, day.dateKey, "resize-x")}
+                      onPointerMove={onColPointerMove}
+                      onPointerUp={onColPointerUp}
+                    />
+                    <span
+                      aria-hidden="true"
+                      className="bp-col-resize-s"
+                      onLostPointerCapture={onColPointerUp}
+                      onPointerDown={(e) => onColPointerDown(e, day.dateKey, "resize-y")}
                       onPointerMove={onColPointerMove}
                       onPointerUp={onColPointerUp}
                     />

@@ -1642,6 +1642,47 @@ html[data-reduce-motion] .bp-day-col {
   cursor: nwse-resize;
   touch-action: none;
 }
+/* 축별 손잡이(그림판 선택 핸들 문법) — 오른쪽 변=너비, 아래 변=높이. 평소엔 투명한
+   잡기 영역만 두고(커서로 알 수 있음), 카드 선택 시 가운데 짧은 바로 표시. */
+.bp-col-resize-e {
+  position: absolute;
+  top: 20px;
+  right: -4px;
+  bottom: 20px;
+  width: 10px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+.bp-col-resize-s {
+  position: absolute;
+  right: 20px;
+  bottom: -4px;
+  left: 20px;
+  height: 10px;
+  cursor: ns-resize;
+  touch-action: none;
+}
+.bp-day-col.sel .bp-col-resize-e::after,
+.bp-day-col.sel .bp-col-resize-s::after {
+  content: "";
+  position: absolute;
+  border-radius: var(--r-pill);
+  background: rgb(124 108 240 / 55%);
+}
+.bp-day-col.sel .bp-col-resize-e::after {
+  top: 50%;
+  right: 3px;
+  width: 4px;
+  height: 26px;
+  transform: translateY(-50%);
+}
+.bp-day-col.sel .bp-col-resize-s::after {
+  bottom: 3px;
+  left: 50%;
+  width: 26px;
+  height: 4px;
+  transform: translateX(-50%);
+}
 .bp-day-empty {
   margin: 0;
   font-size: 13px;
@@ -2289,13 +2330,13 @@ html[data-reduce-motion] .bp-send {
 }
 
 /* 레이어 미리보기 칸 확대(사용자 요청) — 40×34는 내용 판독이 어려웠다.
-   ⚠ 폭 예산: 패널 248 - 패널패딩 24 - 카드패딩 16 = 208px 안에
-   [손잡이 14+6 | 썸네일 60+6 | 버튼 3×36+8] = 194가 들어와야 한다(72px 썸네일 +
-   44px 버튼은 초과 → 버튼이 썸네일을 덮었다). */
+   ⚠ 폭 예산(스크롤바까지): 패널 248 - 패널패딩 24 - 스크롤바 ~8 - 카드패딩 16 = 200px.
+   [손잡이 14+6 | 썸네일 56 | 그리드 갭 4 | 버튼 3×32+갭 4] = 198 ≤ 200.
+   (60px 썸네일 + 36px 버튼 조합은 216으로 초과 — 눈 버튼이 썸네일을 덮었다.) */
 .bp-layer-item .bp-layer-thumb {
-  width: 60px;
-  height: 44px;
-  flex: 0 0 60px;
+  width: 56px;
+  height: 40px;
+  flex: 0 0 56px;
 }
 
 .bp-layer-item .bp-layer-thumb-bg {
@@ -2303,14 +2344,14 @@ html[data-reduce-motion] .bp-send {
 }
 
 .bp-layer-item .bp-layer-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   min-width: 0;
   min-height: 0;
 }
 
 .bp-layer-actions {
-  gap: var(--space-1);
+  gap: 2px;
 }
 
 /* 드래그 순서 변경 = 슬라이드 프리뷰(그림판 문법) — 형제 카드가 transform으로 미끄러져

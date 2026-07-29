@@ -5743,6 +5743,18 @@ export function StudioShell({
                         cell.weekday,
                         visibleEvents
                       );
+                      // 체인 이음변(색 일치 여부 무관) — 칠(getEventSpan)은 색이 같을 때만
+                      // 병합하지만, 선택·연결 후보 '하이라이트'는 체인 전체가 한 덩어리로
+                      // 보여야 한다(사용자 결정). CSS가 .selected/.connect-target에서만 쓴다.
+                      const evStartKey = event.startsAt.slice(0, 10);
+                      const evEndKey = event.endDateKey ?? evStartKey;
+                      const joinRight =
+                        cell.isoDate === evEndKey &&
+                        Boolean(event.linkNext) &&
+                        visibleEvents.some((o) => o.id === event.linkNext);
+                      const joinLeft =
+                        cell.isoDate === evStartKey &&
+                        visibleEvents.some((o) => o.linkNext === event.id);
                       const draggable = canEdit && !span.isMulti;
                       // 우클릭-드래그로 잇기 중: 이을 수 있는 상대는 강조(hover면 더 강하게), 나머지는 흐림.
                       const connecting = connectCandidates.size > 0;
@@ -5767,6 +5779,8 @@ export function StudioShell({
                         span.isMulti ? "span" : "",
                         span.isMulti && !span.roundLeft ? "no-left" : "",
                         span.isMulti && !span.roundRight ? "no-right" : "",
+                        joinRight ? "link-join-right" : "",
+                        joinLeft ? "link-join-left" : "",
                         draggable ? "draggable" : "",
                         dragEventId === event.id ? "dragging-src" : "",
                         isConnTarget ? "connect-target" : "",
