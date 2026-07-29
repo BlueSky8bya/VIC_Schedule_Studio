@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { resolveCurrentActor } from "@/lib/auth/actor";
-import { getCurrentSupabaseUser } from "@/lib/auth/server";
+import { getCurrentAuthSessionId, getCurrentSupabaseUser } from "@/lib/auth/server";
 import { canUsePrivateLayer } from "@/lib/permissions/roles";
 import { verifyPasscode } from "@/lib/private-layer/passcode";
+import {
+  UNLOCK_GRANT_COOKIE,
+  grantCookieOptions,
+  hashGrantToken,
+  newGrantToken
+} from "@/lib/private-layer/unlock-grant";
 
 const SLUG = "vic";
+// 무차별 대입 방어(P0-PRIV-2): 최근 10분 실패 5회 이상이면 잠시 차단.
+const ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
+const MAX_FAILED_ATTEMPTS = 5;
 
 // 비공개 레이어 잠금해제: 비밀번호 확인 → 현재 사용자 세션 발급.
 // owner/developer/worker만 가능(매니저·시청자 불가 — 매니저는 비공개를 못 본다).
@@ -58,24 +67,54 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!verifyPasscode(passcode, settings.passcode_hash)) {
+  // P0-PRIV-2: 무차별 대입 방어 — 최근 10분 실패 횟수 확인(성공 전에 먼저 본다).
+  const windowStart = new Date(Date.now() - ATTEMPT_WINDOW_MS).toISOString();
+  const { count: failCount } = await supabase
+    .from("private_unlock_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id)
+    .eq("ok", false)
+    .gte("created_at", windowStart);
+  if ((failCount ?? 0) >= MAX_FAILED_ATTEMPTS) {
+    return NextResponse.json(
+      { error: "시도가 너무 많아요. 10분 뒤 다시 시도해 주세요." },
+      { status: 429 }
+    );
+  }
+
+  const passOk = verifyPasscode(passcode, settings.passcode_hash);
+  // 시도 기록(성공/실패) + 창 밖 옛 기록 청소(지나가며 정리 — 별도 크론 불필요).
+  await Promise.all([
+    supabase.from("private_unlock_attempts").insert({ user_id: user.id, ok: passOk }),
+    supabase.from("private_unlock_attempts").delete().lt("created_at", windowStart)
+  ]);
+  if (!passOk) {
     return NextResponse.json({ error: "비밀번호가 올바르지 않습니다." }, { status: 401 });
   }
 
-  const expiresAt = new Date(
-    Date.now() + settings.unlock_duration_minutes * 60 * 1000
-  ).toISOString();
+  // P0-PRIV-2(L8): grant는 이 브라우저의 auth 세션에 결속 — 같은 계정의 다른 기기는 안 열린다.
+  const authSessionId = await getCurrentAuthSessionId();
+  if (!authSessionId) {
+    return NextResponse.json({ error: "로그인 세션을 확인할 수 없습니다." }, { status: 401 });
+  }
 
-  // 같은 사용자의 기존 세션 정리 후 새 세션 발급
+  const durationMs = settings.unlock_duration_minutes * 60 * 1000;
+  const expiresAt = new Date(Date.now() + durationMs).toISOString();
+  const token = newGrantToken();
+
+  // 이 auth 세션의 기존 grant 정리 후 새 grant 발급(세션당 1개).
   await supabase
-    .from("unlock_sessions")
+    .from("private_unlock_grants")
     .delete()
     .eq("calendar_id", calendar.id)
-    .eq("user_id", user.id);
+    .eq("user_id", user.id)
+    .eq("auth_session_id", authSessionId);
 
-  const { error } = await supabase.from("unlock_sessions").insert({
+  const { error } = await supabase.from("private_unlock_grants").insert({
+    token_hash: hashGrantToken(token),
     user_id: user.id,
     calendar_id: calendar.id,
+    auth_session_id: authSessionId,
     passcode_version: settings.passcode_version,
     expires_at: expiresAt
   });
@@ -89,5 +128,8 @@ export async function POST(request: Request) {
     );
   }
 
-  return NextResponse.json({ ok: true, expiresAt });
+  const res = NextResponse.json({ ok: true, expiresAt });
+  // opaque 토큰은 HttpOnly 쿠키에만 — JS로 못 읽고, 응답 본문에도 안 싣는다.
+  res.cookies.set(UNLOCK_GRANT_COOKIE, token, grantCookieOptions(Math.floor(durationMs / 1000)));
+  return res;
 }

@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
-import { getCurrentSupabaseUser } from "@/lib/auth/server";
+import { getCurrentAuthSessionId, getCurrentSupabaseUser } from "@/lib/auth/server";
 import { verifyPasscode } from "@/lib/private-layer/passcode";
+import { UNLOCK_GRANT_COOKIE, hashGrantToken } from "@/lib/private-layer/unlock-grant";
 
 // 초기(기본) 비공개 비밀번호 — 변경 폼 placeholder가 "처음: 0219" 힌트를 띄울 기준.
 // 관리자가 한 번이라도 다른 값으로 바꾸면 아래 isDefaultPasscode가 false가 되어 힌트가 사라진다.
@@ -34,23 +36,28 @@ export async function getUnlockState(calendarSlug: string): Promise<UnlockState>
     return { passcodeSet: false, hasUnlockSession: false, isDefaultPasscode: false };
   }
 
-  // settings(비번)와 unlock 세션은 둘 다 calendar.id·user.id만 있으면 조회 가능 → 병렬.
-  // 세션 유효성(현재 passcode_version 일치 + 미만료)은 settings를 받은 뒤 JS에서 판정한다.
-  // (예전엔 settings.passcode_version을 SQL .eq로 걸어 session을 settings 뒤에 직렬로 기다렸다.)
-  // — SQL .eq(passcode_version)/.gt(expires_at)와 완전히 동치라 비공개 게이트 동작은 그대로다.
+  // P0-PRIV-2(L8): 잠금해제는 계정 전역(unlock_sessions)이 아니라 **grant 쿠키 + auth 세션
+  // 결속**으로 판정한다. 쿠키의 opaque 토큰(sha256 해시 대조)과 현재 브라우저 auth 세션의
+  // session_id가 모두 일치해야 열림 — 같은 계정이라도 다른 기기/브라우저는 각자 비밀번호 입력.
+  // grant 쿠키만 다른 세션에 복사해도 session_id 불일치로 실패한다.
   const nowIso = new Date().toISOString();
-  const [settingsRes, sessionsRes] = await Promise.all([
+  const cookieStore = await cookies();
+  const grantToken = cookieStore.get(UNLOCK_GRANT_COOKIE)?.value ?? "";
+  const [settingsRes, grantRes, authSessionId] = await Promise.all([
     supabase
       .from("private_layer_settings")
       .select("passcode_version, passcode_hash")
       .eq("calendar_id", calendar.id)
       .maybeSingle(),
-    supabase
-      .from("unlock_sessions")
-      .select("passcode_version, expires_at")
-      .eq("calendar_id", calendar.id)
-      .eq("user_id", user.id)
-      .gt("expires_at", nowIso)
+    grantToken
+      ? supabase
+          .from("private_unlock_grants")
+          .select("user_id, calendar_id, auth_session_id, passcode_version, expires_at")
+          .eq("token_hash", hashGrantToken(grantToken))
+          .gt("expires_at", nowIso)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    getCurrentAuthSessionId()
   ]);
 
   const settings = settingsRes.data;
@@ -58,8 +65,14 @@ export async function getUnlockState(calendarSlug: string): Promise<UnlockState>
     return { passcodeSet: false, hasUnlockSession: false, isDefaultPasscode: false };
   }
 
-  const hasUnlockSession = (sessionsRes.data ?? []).some(
-    (s) => s.passcode_version === settings.passcode_version
+  const grant = grantRes.data;
+  const hasUnlockSession = Boolean(
+    grant &&
+      grant.user_id === user.id &&
+      grant.calendar_id === calendar.id &&
+      grant.passcode_version === settings.passcode_version &&
+      authSessionId &&
+      grant.auth_session_id === authSessionId
   );
 
   return {

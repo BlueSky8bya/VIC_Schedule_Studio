@@ -48,3 +48,24 @@ export const getCurrentSupabaseUser = cache(async () => {
 
   return user;
 });
+
+// 현재 브라우저 auth 세션의 session_id claim(P0-PRIV-2 잠금해제 grant 결속용).
+// getSession()은 쿠키의 JWT를 로컬 파싱만 하지만, 실제 사용자 검증은 항상
+// getCurrentSupabaseUser()(서버 왕복)와 짝으로 쓰므로 결속 값 추출 용도로는 충분하다.
+export const getCurrentAuthSessionId = cache(async (): Promise<string | null> => {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return null;
+  const {
+    data: { session }
+  } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  if (!token) return null;
+  try {
+    const payload = JSON.parse(Buffer.from(token.split(".")[1], "base64").toString("utf8")) as {
+      session_id?: string;
+    };
+    return typeof payload.session_id === "string" ? payload.session_id : null;
+  } catch {
+    return null;
+  }
+});

@@ -643,8 +643,9 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         .limit(40),
       supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
       supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
+      // P0-PRIV-2: 잠금해제는 auth-세션 결속 grants가 정본(legacy unlock_sessions는 미사용).
       supabase
-        .from("unlock_sessions")
+        .from("private_unlock_grants")
         .select("user_id, expires_at")
         .eq("calendar_id", calendarId)
         .gt("expires_at", new Date().toISOString())
@@ -1663,8 +1664,9 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
   const calendarId = cal.id as string;
 
   const [unlockRes, membersRes, passcodeRes, adminRes] = await Promise.all([
+    // P0-PRIV-2: 잠금해제는 auth-세션 결속 grants가 정본(legacy unlock_sessions는 미사용).
     supabase
-      .from("unlock_sessions")
+      .from("private_unlock_grants")
       .select("user_id, expires_at")
       .eq("calendar_id", calendarId)
       .gt("expires_at", new Date().toISOString())

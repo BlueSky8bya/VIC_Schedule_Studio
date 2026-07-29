@@ -98,7 +98,7 @@ import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { DateTimePicker } from "@/components/studio/datetime-picker";
 import { TagPicker } from "@/components/tags/tag-picker";
 import { PlainEmail } from "@/components/ui/plain-email";
-import { setPasscodeAction } from "@/lib/private-layer/actions";
+import { relockPrivateLayerAction, setPasscodeAction } from "@/lib/private-layer/actions";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import {
   type CalZoom,
@@ -5577,6 +5577,28 @@ export function StudioShell({
                   {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
                 </button>
               )
+            ) : null}
+            {/* P0-PRIV-2(L8) '지금 잠그기' — 표시 토글(위, 서버 세션 유지)과 별개로 이 브라우저의
+                잠금해제 자체를 즉시 끝낸다. 다시 보려면 비밀번호 재입력. 다른 기기는 영향 없음. */}
+            {canTogglePrivateLayer && hasUnlockSession ? (
+              <button
+                className="private-toggle io-accent io-private"
+                onClick={() => {
+                  hapticTick(); // ① 눌림
+                  setShowPrivate(false);
+                  void relockPrivateLayerAction().then((r) => {
+                    if (r.ok) {
+                      hapticTick(); // ② 서버 확정
+                      router.refresh();
+                    }
+                  });
+                }}
+                title="이 브라우저의 비공개 잠금해제를 지금 종료합니다(다시 보려면 비밀번호 입력)"
+                type="button"
+              >
+                <LockKeyhole size={15} />
+                지금 잠그기
+              </button>
             ) : null}
             {canDecorateCalendar ? (
               <Link
