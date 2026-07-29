@@ -120,23 +120,30 @@ html {
 .month-nav-btn {
   display: inline-grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 1px solid #ece9f5;
+  width: var(--control-hit);
+  height: var(--control-hit);
+  border: 1px solid var(--line);
   border-radius: var(--r-pill);
-  background: rgb(255 255 255 / 82%);
-  color: #6b5b95;
+  background: var(--surface);
+  color: var(--violet);
   cursor: pointer;
   box-shadow: var(--shadow-1);
   transition:
-    transform var(--dur-1, 120ms) var(--ease, ease),
-    background var(--dur-1, 120ms) var(--ease, ease);
+    background-color var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-spring-bouncy) var(--spring-bouncy);
 }
 .month-nav-btn:hover {
-  background: #fff;
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+  box-shadow: var(--shadow-2);
 }
 .month-nav-btn:active {
-  transform: scale(0.92);
+  box-shadow: var(--shadow-1);
+  /* press scale은 app/globals.css의 공용 button 계약을 상속한다. */
+  transition-duration: var(--dur-1);
+  transition-timing-function: var(--ease-exit);
 }
 .studio-month-label strong {
   font-size: clamp(26px, 2.5vw, 44px);
@@ -370,23 +377,28 @@ html {
 .save-status {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  border: 1px solid var(--line, #e8e1d6);
+  gap: var(--space-2);
+  min-height: calc(var(--control-hit) - var(--space-2));
+  border: 1px solid var(--line);
   border-radius: var(--r-pill);
-  background: var(--surface, #fffdf6);
-  padding: 5px 12px;
-  font-size: 12.5px;
-  font-weight: 800;
-  color: var(--muted, #8a8170);
+  background: var(--surface);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semibold);
+  color: var(--muted);
   white-space: nowrap;
-  transition: color 0.2s var(--ease, ease), border-color 0.2s var(--ease, ease);
+  font-variant-numeric: tabular-nums;
+  transition:
+    color var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    background-color var(--dur-2) var(--ease);
 }
 .save-status .ss-dot {
-  width: 8px;
-  height: 8px;
+  width: var(--space-2);
+  height: var(--space-2);
   border-radius: var(--r-pill);
   flex: none;
-  background: #94a3b8; /* idle 회색 */
+  background: var(--muted);
 }
 /* 상태 텍스트("저장 중…"/"저장 실패"/"저장됨")는 글자 수가 달라 알약 폭이 늘었다 줄며 옆을 밀던
    문제 → 가장 긴 상태 폭만큼 자리를 미리 잡아 상태가 바뀌어도 폭이 안 흔들리게(좌측 정렬 고정). */
@@ -396,31 +408,33 @@ html {
   text-align: left;
 }
 .save-status .ss-time {
-  font-weight: 900;
+  font-weight: var(--weight-semibold);
   color: inherit;
 }
 .save-status.saving {
-  color: #b45309;
-  border-color: #fcd9a8;
+  color: var(--ink);
+  border-color: var(--status-warning);
+  background: var(--status-warning-fill);
 }
 .save-status.saving .ss-dot {
-  background: #f59e0b;
-  animation: ss-pulse 1s ease-in-out infinite;
+  background: var(--status-warning);
+  animation: ss-pulse calc(var(--dur-5) * 2) var(--ease) infinite;
 }
 .save-status.saved {
-  color: #3f6212;
-  border-color: #d7e8b8;
+  color: var(--ink);
+  border-color: var(--status-success);
+  background: var(--status-success-fill);
 }
 .save-status.saved .ss-dot {
-  background: #65a30d;
+  background: var(--status-success);
 }
 .save-status.failed {
-  color: #b42318;
-  border-color: #f3c6c0;
-  background: #fff5f4;
+  color: var(--ink);
+  border-color: var(--status-danger);
+  background: var(--status-danger-fill);
 }
 .save-status.failed .ss-dot {
-  background: #dc2626;
+  background: var(--status-danger);
 }
 @keyframes ss-pulse {
   0%,
@@ -3864,7 +3878,7 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   padding: 5px 11px;
 }
 .studio-mobile .agenda-header .m-head-left .save-status.failed {
-  background: #fff5f4;
+  background: var(--status-danger-fill);
 }
 /* 계정변경(로그아웃) — 저장됨 칩이 있던 우상단(3열) 자리. 편집실 톤(연한 라인·표면) 버튼 그대로
    재사용해 주변 색과 어울리게, 한 줄로(아이콘 작게). */
@@ -4548,11 +4562,11 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   /* --cal-zoom(A안 방송용 확대, 기본 1): 칸·글자·간격이 함께 비례 — transform 없이 레이아웃만
      커져 드래그 좌표·삽입선 판정이 그대로 유효하다. 세로는 원래 내용 따라 자라는 구조라 안전. */
   min-height: calc(132px * var(--cal-zoom, 1));
-  border-right: 1px solid #f1eff8;
-  border-bottom: 1px solid #f1eff8;
-  background: #ffffff;
+  border-right: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface);
   cursor: pointer;
-  transition: background var(--dur-1) var(--ease);
+  transition: background-color var(--dur-1) var(--ease);
 }
 /* 키보드 포커스(roving) — 링은 ::after 오버레이로 그린다: 셀 자체 box-shadow는 자식(이어진
    멀티데이 일정 띠 등) '아래'에 깔려 띠가 링을 덮었다(신고). 오버레이는 칸 안 어떤 카드 위로도
@@ -4560,7 +4574,7 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
    :focus-visible이라 마우스 클릭엔 안 뜬다(클릭은 selected가 담당). */
 .studio-day:focus-visible {
   outline: none;
-  background: #efe9fc;
+  background: var(--selection-fill);
   z-index: 2; /* 이웃 칸 경계선 위로 온전히 */
 }
 .studio-day:focus-visible::after {
@@ -4570,8 +4584,8 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   z-index: 6; /* 일정 카드(z:auto~2)·업도움 띠 위, 드래그 유령/팝오버보다는 아래 */
   pointer-events: none;
   box-shadow:
-    inset 0 0 0 3px #5b4bd0,
-    inset 0 0 0 7px rgb(91 75 208 / 18%);
+    inset 0 0 0 3px var(--focus-ring),
+    inset 0 0 0 7px var(--violet-soft);
 }
 /* 구글 시트식 날짜 칸 범위 선택(마우스) — 시각 강조만. 칸 텍스트 긁힘도 막는다. */
 .studio-month-grid {
@@ -4597,29 +4611,25 @@ body.cell-range-dragging {
   z-index: 3;
   pointer-events: none;
   /* 채움만 — 칸마다 테두리 그리면 붙은 칸 사이가 이중선. 시트처럼 통짜 음영으로. */
-  background: rgb(168 85 247 / 14%);
+  background: var(--selection-overlay);
+  opacity: var(--selection-overlay-opacity);
 }
 /* 날짜 칸을 탭하면 살짝 보라 틴트로 '눌렀다'는 신호(카드는 자체 모션이 우선). */
 .studio-day:not(.outside):active {
-  background: #f7f4ff;
+  background: var(--selection-fill);
 }
 /* 첫 진입 한 번만: 날짜 칸이 왼쪽 위→오른쪽 아래로 차르륵 순차 등장(슬라이드 대신). */
 .studio-month-grid.cal-reveal .studio-day {
   animation: cal-cell-rise 0.4s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
   animation-delay: calc(var(--ri, 0) * 11ms);
 }
-/* #1: 날짜 칸 호버 시 칸 배경뿐 아니라 안의 일정 카드·업도움 띠도 함께 톤이 바뀌어
-   "이 날 전체가 선택 대상"임을 분명히 보여준다. */
+/* 날짜 칸 hover는 콘텐츠 명도를 바꾸지 않고 표면만 물들인다. 카드 가독성과 태그색은 보존한다. */
 .studio-day:not(.outside):hover {
-  background: #fff1f7;
-}
-.studio-day:not(.outside):hover .studio-event-pill,
-.studio-day:not(.outside):hover .support-bar {
-  filter: brightness(0.92) saturate(1.06);
+  background: var(--selection-fill);
 }
 
 /* 업 도움 끈(.support-bar)의 본체 스타일은 app/globals.css에 있다 — 편집실·시청자 포스터·꾸미기가
-   같은 끈을 그리므로 한 곳에서만 정의한다(위 hover 톤 규칙만 편집실 전용). */
+   같은 끈을 그리므로 한 곳에서만 정의한다. */
 
 .studio-day-head {
   position: relative;
@@ -4654,7 +4664,7 @@ body.cell-range-dragging {
 }
 
 .studio-day.future {
-  background: #ffffff;
+  background: var(--surface);
 }
 
 .studio-day.outside {
@@ -4695,36 +4705,36 @@ body.cell-range-dragging {
 
 /* 오늘: 밝은 골드 테두리 하이라이트 + 살짝 강조 배경 */
 .studio-day.today {
-  background: #fff9e6;
+  background: var(--accent-soft);
 }
 .studio-day.today::after {
-  box-shadow: inset 0 0 0 2px #ffc63d;
+  box-shadow: inset 0 0 0 2px var(--accent);
 }
 
-/* 선택: 골드(오늘)와 구분되는 귀여운 핑크 테두리 */
+/* 선택: 오늘 골드와 구분되는 무대 보라 링. hover보다 강하고 focus와 같은 의미축을 쓴다. */
 .studio-day.selected::after {
-  box-shadow: inset 0 0 0 2px #f48fb1;
-  /* 새 날짜를 선택할 때(.selected가 막 붙을 때) 바깥으로 핑크 글로우가 한 번 퍼졌다 사라진다
+  box-shadow: inset 0 0 0 2px var(--selection-border);
+  /* 새 날짜를 선택할 때(.selected가 막 붙을 때) 바깥으로 보라 글로우가 한 번 퍼졌다 사라진다
      → "이 날로 옮겼다"를 시각적으로 알려준다. 애니 종료 후엔 위 정적 box-shadow로 복귀. */
-  animation: cell-select-pop 0.42s ease;
+  animation: cell-select-pop var(--dur-4) var(--ease-enter);
 }
 @keyframes cell-select-pop {
   0% {
     box-shadow:
-      inset 0 0 0 2px #f48fb1,
-      0 0 0 5px rgb(244 143 177 / 45%);
+      inset 0 0 0 2px var(--selection-border),
+      0 0 0 5px var(--violet-soft);
   }
   100% {
     box-shadow:
-      inset 0 0 0 2px #f48fb1,
-      0 0 0 0 rgb(244 143 177 / 0%);
+      inset 0 0 0 2px var(--selection-border),
+      0 0 0 0 transparent;
   }
 }
-/* 오늘이면서 선택된 경우: 두 색을 겹쳐(안쪽 골드 + 바깥 핑크) 둘 다 보이게. */
+/* 오늘이면서 선택된 경우: 두 색을 겹쳐(안쪽 골드 + 바깥 보라) 둘 다 보이게. */
 .studio-day.today.selected::after {
   box-shadow:
-    inset 0 0 0 2px #ffc63d,
-    inset 0 0 0 4px #f48fb1;
+    inset 0 0 0 2px var(--accent),
+    inset 0 0 0 4px var(--selection-border);
 }
 
 .studio-day-head {
@@ -4787,17 +4797,19 @@ body.cell-range-dragging {
   justify-content: center;
   /* 4px 기반 일관 리듬(제목·본문·형식색 사이). 제각각이던 2/3/5px를 한 박자로 통일. */
   gap: calc(4px * var(--cal-zoom, 1));
-  border: 1px solid rgb(0 0 0 / 7%);
+  border: 1px solid var(--line);
   border-radius: var(--r-md);
-  background: rgb(255 255 255 / 72%);
+  background: var(--surface);
   cursor: pointer;
   padding: calc(clamp(7px, 0.5vw, 11px) * var(--cal-zoom, 1))
     calc(clamp(10px, 0.65vw, 15px) * var(--cal-zoom, 1));
   text-align: left;
-  box-shadow: 0 1px 2px rgb(17 24 39 / 6%);
+  box-shadow: var(--shadow-1);
   transition:
     transform var(--dur-1) var(--ease),
-    box-shadow var(--dur-2) var(--ease);
+    box-shadow var(--dur-2) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    background-color var(--dur-1) var(--ease);
 }
 /* 미정(아직 확정 아님) — 굵은 점선 테두리(잘 보이게). '미정' 칩은 공용 .evt-tentative. */
 .studio-event-pill.tentative {
@@ -6940,10 +6952,6 @@ html[data-reduce-motion] .modal-close:active {
 .modal-close:hover {
   color: #111827;
 }
-.studio-event-pill:hover {
-  filter: brightness(0.97);
-}
-
 /* 비밀번호 박스 입력칸 통일 크기 */
 .passcode-box > input {
   min-height: 46px;
@@ -8299,21 +8307,25 @@ html[data-reduce-motion] .modal-close:active {
 .studio-mobile .m-month-btn {
   display: inline-grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
-  border: 1px solid var(--line, #ece9f5);
+  width: var(--control-hit);
+  height: var(--control-hit);
+  border: 1px solid var(--line);
   border-radius: var(--r-pill);
-  background: #ffffff;
-  color: #5b4bd0;
+  background: var(--surface);
+  color: var(--violet);
   cursor: pointer;
-  box-shadow: 0 1px 4px rgb(120 110 160 / 10%);
+  box-shadow: var(--shadow-1);
   transition:
-    background var(--dur-1) var(--ease),
-    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
+    background-color var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-spring-bouncy) var(--spring-bouncy);
 }
 .studio-mobile .m-month-btn:active {
-  transform: scale(0.92);
-  background: #f1edf9;
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+  transition-duration: var(--dur-1);
+  transition-timing-function: var(--ease-exit);
 }
 /* 시청자 화면(.agenda-header h1: 28px/13px)과 동일한 크기로 맞춘다. */
 .studio-mobile .agenda-header h1 {
@@ -8398,12 +8410,12 @@ html[data-reduce-motion] .modal-close:active {
 .m-actionrail .preview-dd .button,
 .m-actionrail .preview-dd-trigger {
   width: 100%;
-  min-height: 48px;
+  min-height: calc(var(--control-hit) + var(--space-1));
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
-  padding: 0 8px;
+  padding: 0 var(--space-2);
   border-radius: var(--r-pill);
   font-size: var(--text-body); /* 13→13.5 수렴 */
   font-weight: 800;
@@ -8719,18 +8731,27 @@ html[data-reduce-motion] .modal-close:active {
 }
 .m-add-event {
   margin-top: 2px;
-  border: 1px dashed var(--line, #d8dee9);
-  border-radius: var(--r-sm);
+  min-height: var(--control-hit);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-control);
   background: transparent;
-  padding: 7px;
+  padding: var(--space-2) var(--space-3);
   font-size: var(--text-label); /* 12.5 */
-  font-weight: 800;
-  color: var(--muted, #8a93a3);
+  font-weight: var(--weight-semibold);
+  color: var(--muted);
   cursor: pointer;
 }
-.m-add-event:hover {
-  background: #fff;
-  color: var(--ink, #1c2433);
+@media (hover: hover) and (pointer: fine) {
+  .m-add-event:hover {
+    border-color: var(--selection-border);
+    background: var(--surface);
+    color: var(--ink);
+  }
+}
+.m-add-event:active {
+  border-color: var(--selection-border);
+  background: var(--selection-fill);
+  color: var(--ink);
 }
 /* 하단 관리 영역 */
 .m-manage {
@@ -8792,14 +8813,21 @@ html[data-reduce-motion] .modal-close:active {
 .m-io-private:active {
   background: #ffedd6;
 }
-/* '오늘' 복귀 — 시청자 화면 mb-act와 같은 계열의 보라 톤(이동 액션). */
+/* '오늘' 복귀 — 핵심 시간 기준점이므로 전역 accent 의미를 그대로 쓴다. */
 .m-io-today {
-  background: #f3effc;
-  border-color: #ddd3f4;
-  color: #5b45c4;
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 .m-io-today:active {
-  background: #e9e2f8;
+  background: var(--accent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .m-actionrail .m-io-today:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--on-accent);
+  }
 }
 .m-io-worldcup {
   background: #f4f4f2;
@@ -9352,5 +9380,31 @@ html[data-reduce-motion] .me-fold-body {
   }
 }
 html[data-reduce-motion] .fold-body {
+  animation: none;
+}
+
+/* 배치 3: 캘린더 반복 조작 모션은 사용자 설정 하나로 즉시 상태 전환으로 강등한다. */
+html[data-reduce-motion] .month-nav-btn,
+html[data-reduce-motion] .save-status,
+html[data-reduce-motion] .studio-day,
+html[data-reduce-motion] .studio-event-pill,
+html[data-reduce-motion] .studio-mobile .m-month-btn,
+html[data-reduce-motion] .m-add-event {
+  transition: none;
+}
+html[data-reduce-motion] .month-nav-btn:hover,
+html[data-reduce-motion] .month-nav-btn:active,
+html[data-reduce-motion] .studio-event-pill:hover,
+html[data-reduce-motion] .studio-mobile .m-month-btn:active,
+html[data-reduce-motion] .m-add-event:active {
+  transform: none;
+}
+html[data-reduce-motion] .studio-month-label strong[data-enter],
+html[data-reduce-motion] .studio-month-grid[data-enter],
+html[data-reduce-motion] .studio-month-grid.cal-reveal .studio-day,
+html[data-reduce-motion] .studio-mobile .agenda-flow[data-enter],
+html[data-reduce-motion] .studio-mobile .agenda-flow.cal-reveal .agenda-day,
+html[data-reduce-motion] .studio-day.selected::after,
+html[data-reduce-motion] .save-status.saving .ss-dot {
   animation: none;
 }

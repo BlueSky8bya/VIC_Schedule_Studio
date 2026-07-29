@@ -93,6 +93,18 @@
   --violet-soft: #f3eeff;
   --pink: #ff5f8f; /* 토리 핑크 — 하트·팬 반응 */
   --pink-soft: #ffe8f1;
+  /* 배치 3 첫 소비: Studio 선택·저장 상태. 기반 색을 참조해 테마 재매핑을 그대로 따른다. */
+  --status-success: var(--green);
+  --status-warning: var(--amber);
+  --status-danger: var(--coral);
+  --status-success-fill: var(--surface);
+  --status-warning-fill: var(--surface);
+  --status-danger-fill: var(--surface);
+  --focus-ring: var(--violet);
+  --selection-fill: var(--violet-soft);
+  --selection-overlay: var(--violet);
+  --selection-overlay-opacity: 0.14;
+  --selection-border: var(--violet);
   /* 브랜드 별칭(의미 명시용; 위 시맨틱 토큰과 동일 값) */
   --victory-yellow: var(--accent);
   --victory-green: var(--green);
@@ -133,6 +145,8 @@
   --space-5: 24px;
   --space-6: 32px;
   --space-control-x: var(--space-4);
+  /* Apple HIG 계열 아이콘 control의 최소 hit target: 32 + 12 = 44. */
+  --control-hit: calc(var(--space-6) + var(--space-3));
 
   /* 라운드 */
   --r-sm: 8px;
@@ -193,6 +207,18 @@
   --dur-3: 240ms;
   --dur-4: 300ms; /* 시트·모달 들어옴 */
   --dur-5: 500ms; /* 가장 큰 전환(달 넘김) — 이 위로는 굼뜨다 */
+}
+
+/* 지원 브라우저는 기반 surface와 섞어 테마 remap을 따른다. 미지원 환경도 위 fallback으로 의미 유지. */
+@supports (color: color-mix(in srgb, currentColor, transparent)) {
+  :root {
+    --status-success-fill: color-mix(in srgb, var(--status-success) 8%, var(--surface));
+    --status-warning-fill: color-mix(in srgb, var(--status-warning) 8%, var(--surface));
+    --status-danger-fill: color-mix(in srgb, var(--status-danger) 9%, var(--surface));
+    --selection-fill: color-mix(in srgb, var(--violet) 10%, var(--surface));
+    --selection-overlay: color-mix(in srgb, var(--violet) 14%, transparent);
+    --selection-overlay-opacity: 1;
+  }
 }
 
 * {

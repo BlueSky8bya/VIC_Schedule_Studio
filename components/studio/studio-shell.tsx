@@ -1472,6 +1472,7 @@ export function StudioShell({
   const onTodayMonth = view.year === todayYM.year && view.month === todayYM.month;
   function jumpTodayMobile() {
     hapticTick();
+    const reduceMotion = reduceMotionEnabled();
     if (!onTodayMonth) {
       moveMonth((todayYM.year - view.year) * 12 + (todayYM.month - view.month));
     }
@@ -1479,9 +1480,9 @@ export function StudioShell({
       () => {
         document
           .querySelector(".studio-mobile .agenda-day.today")
-          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+          ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
       },
-      onTodayMonth ? 0 : 360
+      onTodayMonth || reduceMotion ? 0 : 360
     );
   }
 
