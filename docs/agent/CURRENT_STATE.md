@@ -33,12 +33,16 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
 - **`P0-A11Y-1` 부분 완료**: 모바일 편집실 월 이동 버튼 가시화(44px, sticky 헤더). fixture에
   poster CSS import(모바일 아젠다 골격이 poster CSS 공유 — fixture 전용 갭이었음).
   남은 A11Y-1: roving date grid + 선택일 event list, 드래그 메뉴 대안, 업도움 키보드 경로.
-- **다음 P0 순서(새 세션 권장)**:
-  1. `P0-PRIV-2` L8 auth-session unlock(grant 테이블/쿠키/rate limit/no-store) — **소유자
-     잠금해제가 걸린 기능이라 배포 중 하위호환 필수**, 단독 집중 세션에서. 비밀번호는 이미
-     커스텀으로 변경돼 있음(초기값 아님 — 강제 교체 조율 불필요, 사용자 확인).
-  2. `P0-DATA-1` fling 삭제 제거 + tombstone(8초 스낵바/24h 최근 삭제, L5) — 소비자 전수 스윕.
-  3. `P0-A11Y-1` 잔여 + `P0-RESP-1`(가로 차단 오버레이 제거 — F9 레이아웃과 함께).
+- **`P0-PRIV-2` 완료(2026-07-30 새벽, `a576d28`)**: 잠금해제를 auth-세션 결속 grant로(0057 적용).
+  opaque 토큰 HttpOnly 쿠키 + sha256 해시 + session_id 결속, 10분 5회 rate limit, '지금 잠그기'
+  버튼, 보안 패널=grants 기준, 비번변경/개별만료 시 grant 폐기. **배포 후 기존 잠금해제 전부
+  무효 → 각 기기에서 비밀번호 1회 재입력 필요(토리님께도 안내)**. legacy unlock_sessions는
+  미참조 잔존(후속 drop). 실계정 검증 필요: 해제→새로고침 유지→지금 잠그기→재잠김, 두 기기
+  독립성, 오입력 6회 429.
+- **다음 P0 순서(새 세션)**:
+  1. `P0-DATA-1` fling 삭제 제거 + tombstone(8초 스낵바/24h 최근 삭제, L5) — 소비자 전수 스윕.
+  2. `P0-A11Y-1` 잔여(roving date grid·이동 메뉴 대안·업도움 키보드) + `P0-RESP-1`(가로 차단
+     오버레이 제거 — F9 레이아웃과 함께).
   그 뒤 P1(빠른 생성·이동 메뉴·undo/redo·아이패드…), P2 토큰화, **최종적으로 애플 기조
   리디자인을 뼈대 위에**(사용자 합의된 순서).
 - **주의**: role fixture·canary 자동화는 아직 부분적(event-validation 단위 테스트만). 계획서
