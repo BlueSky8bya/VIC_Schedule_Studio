@@ -99,6 +99,7 @@ import { DateTimePicker } from "@/components/studio/datetime-picker";
 import { TagPicker } from "@/components/tags/tag-picker";
 import { ReadonlyEventDetail } from "@/components/studio/readonly-event-detail";
 import { RoleBadge } from "@/components/studio/role-badge";
+import { useStudioWriteQueue } from "@/lib/studio/use-write-queue";
 import { relockPrivateLayerAction, setPasscodeAction } from "@/lib/private-layer/actions";
 import { STUDIO_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 // P2-ARCH-1 1단계: 모듈 레벨 순수 코드(폼 모델·실행취소 타입·날짜/드래프트/떡밥 헬퍼·라벨·
@@ -130,7 +131,6 @@ import {
   type CopiedEvent,
   type EditDraft,
   type EventForm,
-  type StudioWriteResult,
   type UndoAction
 } from "@/lib/studio/editor-model";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
@@ -233,10 +233,21 @@ export function StudioShell({
   const pendingRef = useRef(false);
   const pendingPersistRef = useRef(0); // 진행 중인 '이동 저장' 수(F5 경고 + prop 동기화 가드)
   const movePersistChainRef = useRef<Promise<void>>(Promise.resolve()); // 이동 저장 직렬화
-  // 진행 중인 모든 중대한 쓰기(save/delete/tags/reorder/support/link)의 약속 집합.
-  // flushPendingWrites가 이걸 await해 "편집이 DB·캐시에 확실히 반영된 뒤"에만 시청자
-  // 미리보기로 넘어가게 한다 → "넘어가서 새로고침 또 해야 보임" 문제를 구조적으로 없앤다.
-  const inflightWritesRef = useRef<Set<Promise<StudioWriteResult>>>(new Set());
+  // P2-ARCH-1 3단계: 전역 직렬 쓰기 큐(저장 칩·temp id 해석·flush 포함)는 훅으로 분리.
+  const {
+    saveState,
+    lastSavedKst,
+    savingCountRef,
+    editedSinceSyncRef,
+    inflightWritesRef,
+    pendingSavesRef,
+    tempToRealRef,
+    resolveEventId,
+    enqueueWrite,
+    studioWrite,
+    flushPendingWrites,
+    flashSavedChip
+  } = useStudioWriteQueue(movePersistChainRef);
   // 이벤트별 태그 토글 직렬화 — 빠르게 여러 번 눌러도 '마지막 의도'가 서버 진실이 되게(레이스로
   // 옛 요청이 새 요청을 덮어쓰지 않게). desired=최신 의도, chain=직렬 큐, sent=중복 전송 방지(레퍼런스).
   const tagDesiredRef = useRef<Map<string, string[]>>(new Map());
@@ -245,9 +256,6 @@ export function StudioShell({
   // 첫 진입(스태거)와 달 이동(슬라이드)을 구분 — 실제로 달을 한 번 넘긴 뒤에만 슬라이드를 켠다.
   const didNavigateRef = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  // #10 저장 신뢰: 모든 쓰기가 studioWrite를 거치므로 거기서 상태를 잡아 헤더 칩에 보여준다.
-  // idle(아직 저장 없음)·saving(저장 중)·saved(저장됨+KST 시각)·failed(저장 실패).
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
   // 배포 버전 배지 클릭 → 버전 문자열 복사(잠깐 '복사됨'으로 확인).
   const [buildCopied, setBuildCopied] = useState(false);
   const buildCopiedTimer = useRef<number | null>(null);
@@ -275,29 +283,7 @@ export function StudioShell({
       document.body.removeChild(ta);
     }
   }
-  const [lastSavedKst, setLastSavedKst] = useState<string | null>(null);
-  const savingCountRef = useRef(0); // 동시 진행 쓰기 수 — 0이 될 때 최종 상태 확정
-  const savingSinceRef = useRef(0); // 저장 묶음 시작 시각(‘저장 중’ 최소 노출)
-  const savedTimerRef = useRef<number | null>(null);
-  const editedSinceSyncRef = useRef(false); // 마지막 서버 새로고침 이후 편집이 있었나(미리보기 새로고침 판단)
   // (P2-KST-1: nowKstHm은 lib/calendar/month.ts 단일 출처에서 import.)
-  // Ctrl+S로 저장할 카드가 없을 때(이미 다 저장됨) — 저장중→저장됨을 잠깐 보여 '저장됐다'를 확인시킨다.
-  // 진행 중인 실제 저장이 있으면 그쪽 표시를 건드리지 않는다.
-  function flashSavedChip(): void {
-    if (savingCountRef.current > 0) return;
-    if (savedTimerRef.current) {
-      window.clearTimeout(savedTimerRef.current);
-      savedTimerRef.current = null;
-    }
-    setSaveState("saving");
-    savedTimerRef.current = window.setTimeout(() => {
-      if (savingCountRef.current === 0) {
-        setSaveState("saved");
-        setLastSavedKst(nowKstHm());
-      }
-      savedTimerRef.current = null;
-    }, 600);
-  }
   // 저장 상태 칩 — 데스크톱 헤더·모바일 역할바 양쪽에서 같은 모양으로 쓴다.
   function renderSaveStatus() {
     return (
@@ -363,114 +349,11 @@ export function StudioShell({
   // 단축키 안내바는 기본으로 접어 달력을 더 넓게 본다 — '단축키 설명' 탭을 누르면 펼쳐진다.
   const [kbdHintsOpen, setKbdHintsOpen] = useState(false);
   const backdropPressRef = useRef(false); // 모달 배경 클릭 판정(텍스트 드래그 보호)
-  // 새 일정 저장 진행 중인 임시 id → 실제 id 약속. 저장 직후 바로 "잇기"를 눌러도 temp id가
-  // 서버로 새는 일 없이(=invalid uuid 방지), 저장이 끝나길 기다렸다 실제 id로 잇는다.
-  const pendingSavesRef = useRef<Map<string, Promise<string | null>>>(new Map());
-  // 저장 끝난 temp → 실제 id 매핑(영구). 저장이 끝나면 pendingSaves 약속은 지워지므로, 저장 직후
-  // 삭제하면 resolveEventId가 약속을 못 찾아 null→서버 삭제 누락(=재방문 시 부활)했다. 그래서
-  // 실제 id를 따로 보관해, 저장된 temp는 언제든 실제 id로 해석되게 한다.
-  const tempToRealRef = useRef<Map<string, string>>(new Map());
-  // 전역 직렬 쓰기 체인 — 저장중에 한 후속 동작(삭제·수정·이동·잇기 등)도 거부/레이스 없이
-  // '제출한 순서대로' 서버에 반영된다. 즉 1→…→n번 순서로 적용한 최종 결과가 서버 진실이 된다.
-  // (낙관적 화면 갱신은 즉시, 서버 전송만 직렬화. 앞 쓰기가 실패해도 체인은 끊기지 않고 다음을 잇는다.)
-  const writeChainRef = useRef<Promise<void>>(Promise.resolve());
   // 통합 실행취소 스택(삭제·생성·붙여넣기 등 '되돌릴 수 있는 액션'을 LIFO로 보관).
   const deletedStackRef = useRef<UndoAction[]>([]);
   // 다시 실행 스택(P1-HIST-1) — 실행취소가 만든 역연산을 보관. 새 작업이 생기면 비운다
   // (외부/후속 변경과 충돌하는 '다시 실행' 방지 — 갈라진 미래의 redo는 무효).
   const redoStackRef = useRef<UndoAction[]>([]);
-  // temp id면 저장 약속을 기다려 실제 id로, 실패면 null. 실제 id는 그대로. (null이 새어와도 방어.)
-  async function resolveEventId(id: string | null | undefined): Promise<string | null> {
-    if (!id) return null;
-    if (!id.startsWith("temp-")) {
-      return id;
-    }
-    // 이미 저장돼 실제 id를 아는 temp면 그대로 돌려준다(약속이 정리됐어도 안전).
-    const known = tempToRealRef.current.get(id);
-    if (known) return known;
-    const p = pendingSavesRef.current.get(id);
-    return p ? await p : null;
-  }
-  // 모든 중대한 쓰기는 이 래퍼를 거친다. task를 '제출한 순서대로' 직렬 실행한다(전역 체인).
-  // 클릭한 순서 = 서버 적용 순서. id 해석(temp→real)도 task '안'에서 하므로, 앞 작업을 기다리느라
-  // 순서가 뒤집히지 않는다(예: 1 저장중에 2 삭제, 3 저장 → 항상 1·2·3 순). 진행 중 약속은 inflight에
-  // 등록/해제해 flushPendingWrites가 끝까지 기다릴 수 있게 한다. task가 null을 주면 보낼 게 없다는 뜻.
-  function enqueueWrite(
-    task: () => Promise<StudioWriteResult | null>
-  ): Promise<StudioWriteResult> {
-    if (savingCountRef.current === 0) {
-      savingSinceRef.current = Date.now(); // 이번 저장 묶음 시작 시각(최소 노출 시간 계산용)
-    }
-    if (savedTimerRef.current) {
-      window.clearTimeout(savedTimerRef.current);
-      savedTimerRef.current = null;
-    }
-    savingCountRef.current += 1;
-    editedSinceSyncRef.current = true; // 이후 미리보기 진입 시 서버를 새로 불러오게 표시
-    // 'saving'을 setTimeout(0)으로 트랜지션 밖에서 칠한다 — 새 일정 저장은 startTransition 안에서
-    // 불려 setState가 트랜지션(비긴급)으로 묶이는 바람에 빠른 저장에선 '저장 중'이 아예 안 칠해졌다.
-    window.setTimeout(() => {
-      if (savingCountRef.current > 0) setSaveState("saving");
-    }, 0);
-    // 직렬화: 앞 task가 끝난 뒤 이 task를 실행. 앞이 실패/거부돼도 이 task는 그대로 잇는다(거부
-    // 전파 안 함). task가 null이면 보낼 게 없으니 성공으로 본다(롤백 안 함).
-    const p: Promise<StudioWriteResult> = writeChainRef.current.then(async () => {
-      const r = await task();
-      return r ?? { ok: true, id: "" };
-    });
-    writeChainRef.current = p.then(
-      () => undefined,
-      () => undefined
-    );
-    inflightWritesRef.current.add(p);
-    // 낙관적 저장은 너무 빨라(특히 새 일정 생성) '저장 중'이 안 보일 수 있다 → 최소 ~450ms 노출.
-    const settleSaved = () => {
-      if (savingCountRef.current !== 0) return;
-      const elapsed = Date.now() - savingSinceRef.current;
-      if (elapsed >= 700) {
-        setSaveState("saved");
-      } else {
-        savedTimerRef.current = window.setTimeout(() => {
-          if (savingCountRef.current === 0) setSaveState("saved");
-        }, 700 - elapsed);
-      }
-    };
-    void p.then(
-      (r) => {
-        savingCountRef.current = Math.max(0, savingCountRef.current - 1);
-        if (!r.ok) {
-          setSaveState("failed"); // 실패는 칩에 빨갛게 + 호출부가 inline 경고도 띄운다(#12)
-        } else {
-          setLastSavedKst(nowKstHm());
-          if (savingCountRef.current === 0) settleSaved();
-        }
-      },
-      () => {
-        savingCountRef.current = Math.max(0, savingCountRef.current - 1);
-        setSaveState("failed");
-      }
-    ).finally(() => inflightWritesRef.current.delete(p));
-    return p;
-  }
-  // op/payload가 고정된(temp id 해석이 필요 없는) 일반 쓰기 — 그대로 큐에 올린다.
-  function studioWrite(op: string, payload: unknown): Promise<StudioWriteResult> {
-    return enqueueWrite(() => postStudioWrite(op, payload));
-  }
-  // 진행 중인 모든 쓰기(이동 큐 + inflight 집합)가 서버에 반영될 때까지 기다린다.
-  // 각 쓰기 액션은 완료 시 revalidatePublicSchedule(태그 무효화)를 호출하므로, flush가 끝난
-  // 직후 router.refresh()를 하면 시청자 묶음(getPublicSchedule)이 새로 계산돼 최신이 보인다.
-  async function flushPendingWrites() {
-    // 이동 큐가 도는 동안 새 inflight가 생기므로 몇 번 반복해 완전히 비운다(상한으로 무한 방지).
-    for (let i = 0; i < 6; i++) {
-      try {
-        await movePersistChainRef.current;
-      } catch {
-        /* 개별 실패는 무시 — 목적은 '대기'다 */
-      }
-      if (inflightWritesRef.current.size === 0) break;
-      await Promise.allSettled([...inflightWritesRef.current]);
-    }
-  }
   // 시청자 화면 미리보기로 넘어갈 때: 먼저 진행 중 편집을 모두 반영(flush)한 뒤 서버를 새로
   // 불러온다 → 미리보기가 'DB 진실 = 실제 시청자가 볼 것'과 항상 일치한다(추가 새로고침 불필요).
   function enterViewerMode() {
