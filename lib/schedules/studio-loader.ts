@@ -6,6 +6,7 @@ import type {
   StudioScheduleEvent
 } from "@/lib/domain/schedule-types";
 import { PRODUCT_TIMEZONE } from "@/lib/domain/schedule-types";
+import { getCurrentKstYearMonth } from "@/lib/calendar/month";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { createSupabaseServerClient } from "@/lib/auth/server";
@@ -60,7 +61,7 @@ export async function getStudioSchedule(
     };
   }
 
-  const { year, month } = currentKstYearMonth();
+  const { year, month } = getCurrentKstYearMonth();
   // calendar 행은 slug로만 조회 — preview/actor/unlock과 서로 의존이 없어 한 배치로 병렬 처리한다.
   // (예전엔 calendar를 먼저 단독 await 해서 한 라운드트립을 더 기다렸다 → TTFB 손해. calendar.id가
   //  필요한 건 그 아래 tags/palette/events 배치뿐이라 여기서 함께 병렬로 받아도 안전하다.)
@@ -151,18 +152,7 @@ export async function getStudioSchedule(
   };
 }
 
-function currentKstYearMonth() {
-  const [y, m] = new Intl.DateTimeFormat("en-CA", {
-    timeZone: PRODUCT_TIMEZONE,
-    year: "numeric",
-    month: "2-digit"
-  })
-    .format(new Date())
-    .split("-")
-    .map(Number);
-
-  return { year: y, month: m };
-}
+// (P2-KST-1: currentKstYearMonth 중복 제거 — lib/calendar/month.ts의 getCurrentKstYearMonth 사용.)
 
 function toKstIso(dateKey: string, time?: string | null) {
   return `${dateKey}T${time ?? "00:00:00"}+09:00`;

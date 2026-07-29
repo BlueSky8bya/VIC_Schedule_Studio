@@ -26,6 +26,23 @@ export function getTodayKst(): string {
   }).format(new Date());
 }
 
+// P2-KST-1: KST 변환 단일 출처 — 로더 2곳·컴포넌트 2곳·내보내기 파일명에 산재하던 중복
+// 구현을 여기로 모은다. 새 KST 변환이 필요하면 여기 추가(개별 파일에서 Intl 직접 호출 금지).
+export function getCurrentKstYearMonth(): { year: number; month: number } {
+  const [y, m] = getTodayKst().split("-").map(Number);
+  return { year: y, month: m };
+}
+
+// 저장 칩 등에 쓰는 KST 시각(HH:MM).
+export function nowKstHm(): string {
+  return new Date().toLocaleTimeString("ko-KR", {
+    timeZone: PRODUCT_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false
+  });
+}
+
 // P1-ROUTE-1: /studio/…/[year]/[month] 콜드 엔트리 파라미터 검증(단일 출처).
 // 정수·범위(2020~2099, 1~12)를 벗어나면 null — 호출부가 쿠키→KST 현재 달로 폴백한다.
 export function parseMonthParams(

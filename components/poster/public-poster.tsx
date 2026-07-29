@@ -92,6 +92,7 @@ import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { heartTier } from "@/lib/schedules/heart-tiers";
 import { getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
+import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import {
   assignSupportLanes,
@@ -107,6 +108,7 @@ import {
   getEventSpan,
   getSpanRunRange,
   getTodayKst,
+  nowKstHm,
   mixedEventStyle,
   splitEventTitle,
   type MonthCell
@@ -209,15 +211,7 @@ const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
 // 관심 단계 순위(높을수록 인기). 한 칸의 "대표 인기 단계"를 고를 때 쓴다.
 const POP_RANK: Record<string, number> = { warm: 1, hot: 2, blaze: 3, top: 4 };
 
-// 저장 칩의 KST 시각(HH:MM) — 편집실(studio-shell)과 같은 모양.
-function nowKstHm(): string {
-  return new Date().toLocaleTimeString("ko-KR", {
-    timeZone: "Asia/Seoul",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false
-  });
-}
+// (P2-KST-1: nowKstHm은 lib/calendar/month.ts 단일 출처에서 import — 편집실과 동일 모양.)
 
 // StickerInstance → 저장 입력(SaveStickerInput). 배치/단건 저장이 같은 매핑을 쓰게 모은다.
 // year/month는 호출 맥락에 따라 다름(수정=현재 보기 월, 재삽입=스티커 자체 월)이라 인자로 받는다.
@@ -874,9 +868,16 @@ export function PublicPoster({
   // 않게 한다. 묶음의 '가장 큰 내용' 높이에만 맞추므로(과확장 없음) 짧은 쪽만 그만큼 채워진다.
   // callback ref라 그리드가 (재)마운트되는 어떤 경로에서도 자동 재설정된다. deps는 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([schedule.events, view]);
-  // (P1-MULTI-0: 구글 시트식 범위 선택 강조는 제거 — 아무 명령도 안 붙는 시각 상태라
-  //  '여러 개를 골랐다'는 잘못된 기대만 만들었다.)
-  const setMonthGridRef = monthGridRef;
+  // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조) + 텍스트 긁힘 방지.
+  // (P1-MULTI-0로 제거했다가 사용자 요청으로 복원 — 방송 중 기간을 짚어주는 실사용 도구.)
+  const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>();
+  const setMonthGridRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      monthGridRef(el);
+      rangeSelectRef(el);
+    },
+    [monthGridRef, rangeSelectRef]
+  );
   // 실제 달력 콘텐츠가 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아니라 진짜 화면을 봤을 때만 방문 1).
   useEffect(() => {
     markContentReady();
@@ -1664,6 +1665,22 @@ export function PublicPoster({
         event.preventDefault();
         setSelectedSticker(null);
         setMultiIds([]);
+        return;
+      }
+      // P2-STICKER-1: 키보드 크기/회전 — 포인터 핸들 없이도 조작 완결.
+      if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        resizeSelectedBy(event.shiftKey ? 1.1 : 1.03);
+        return;
+      }
+      if (event.key === "-" || event.key === "_") {
+        event.preventDefault();
+        resizeSelectedBy(event.shiftKey ? 1 / 1.1 : 1 / 1.03);
+        return;
+      }
+      if (event.key === "[" || event.key === "]") {
+        event.preventDefault();
+        rotateSelectedBy((event.key === "[" ? -1 : 1) * (event.shiftKey ? 15 : 5));
         return;
       }
       const step = event.shiftKey ? 0.02 : 0.004;
@@ -2640,6 +2657,35 @@ export function PublicPoster({
     scheduleCommit(updatedList);
   }
 
+  // P2-STICKER-1: 키보드 크기(+/-)·회전([/]) — 화살표 미세이동과 같은 패턴(연속 입력은 하나의
+  // 실행취소 단위, 낙관 반영 + 지연 커밋). 포인터 핸들과 같은 한계값(widthRatio 0.008~0.6).
+  function adjustSelected(patch: (s: StickerInstance) => Partial<StickerInstance>) {
+    const ids = selectedIds;
+    if (ids.length === 0) return;
+    const now = Date.now();
+    if (now - nudgeBurstRef.current > 500) {
+      pushHistory();
+    }
+    nudgeBurstRef.current = now;
+    const updatedList: StickerInstance[] = [];
+    for (const id of ids) {
+      const s = stickersRef.current.find((x) => x.id === id);
+      if (!s || s.locked) continue;
+      const updated = { ...s, ...patch(s) };
+      updateStickerLocal(updated);
+      updatedList.push(updated);
+    }
+    scheduleCommit(updatedList);
+  }
+  function resizeSelectedBy(factor: number) {
+    adjustSelected((s) => ({
+      widthRatio: Math.min(0.6, Math.max(0.008, s.widthRatio * factor))
+    }));
+  }
+  function rotateSelectedBy(deltaDeg: number) {
+    adjustSelected((s) => ({ rotationDeg: Math.round(s.rotationDeg + deltaDeg) }));
+  }
+
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: PublicScheduleEvent) {
     return tagVisual.eventFills(event);
@@ -2796,7 +2842,7 @@ export function PublicPoster({
       <article
         className={`public-day ${cell.inCurrentMonth ? "" : "outside"} ${
           day.isToday ? "today" : ""
-        }${
+        }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}${
           visibleMatch?.kind === "wc-korea-win" ? " day-win" : ""
         }`}
         data-pop={popTier ?? undefined}

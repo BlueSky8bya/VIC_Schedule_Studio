@@ -67,6 +67,7 @@ import {
   getLinkedChainIds,
   getSpanRunRange,
   getTodayKst,
+  nowKstHm,
   mixedEventStyle,
   splitEventTitle
 } from "@/lib/calendar/month";
@@ -100,6 +101,7 @@ import { TagPicker } from "@/components/tags/tag-picker";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { relockPrivateLayerAction, setPasscodeAction } from "@/lib/private-layer/actions";
 import { STUDIO_AGENDA_QUERY } from "@/lib/ui/breakpoints";
+import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 import {
   type CalZoom,
@@ -425,14 +427,7 @@ export function StudioShell({
   const savingSinceRef = useRef(0); // 저장 묶음 시작 시각(‘저장 중’ 최소 노출)
   const savedTimerRef = useRef<number | null>(null);
   const editedSinceSyncRef = useRef(false); // 마지막 서버 새로고침 이후 편집이 있었나(미리보기 새로고침 판단)
-  function nowKstHm(): string {
-    return new Date().toLocaleTimeString("ko-KR", {
-      timeZone: "Asia/Seoul",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false
-    });
-  }
+  // (P2-KST-1: nowKstHm은 lib/calendar/month.ts 단일 출처에서 import.)
   // Ctrl+S로 저장할 카드가 없을 때(이미 다 저장됨) — 저장중→저장됨을 잠깐 보여 '저장됐다'를 확인시킨다.
   // 진행 중인 실제 저장이 있으면 그쪽 표시를 건드리지 않는다.
   function flashSavedChip(): void {
@@ -1377,9 +1372,17 @@ export function StudioShell({
   // 이어진 칸 높이 맞추기 — callback ref라 그리드가 어떤 경로로 (재)마운트되든(미리보기 복귀·
   // 잠금 로딩·월 변경 등) 항상 새 요소에 자동 재설정된다. deps는 데이터 변화 시 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([visibleEvents, view]);
-  // (P1-MULTI-0: 구글 시트식 범위 선택 강조는 제거 — 아무 명령도 안 붙는 시각 상태라
-  //  '여러 개를 골랐다'는 잘못된 기대만 만들었다. 훅은 방송 판서 도구에서 실제 액션과 함께 쓴다.)
-  const setMonthGridRef = monthGridRef;
+  // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조) + 텍스트 긁힘 방지.
+  // (P1-MULTI-0로 제거했다가 사용자 요청으로 복원 — 방송 중 기간을 보라 하이라이트로 짚어주는
+  //  실사용 용도가 있었다. '액션 없는 상태'가 아니라 그 자체가 판서/설명 도구다.)
+  const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>();
+  const setMonthGridRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      monthGridRef(el);
+      rangeSelectRef(el);
+    },
+    [monthGridRef, rangeSelectRef]
+  );
   // 실제 편집실 화면이 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아닌 진짜 화면을 봤을 때만 방문 1).
   useEffect(() => {
     markContentReady();
@@ -5984,7 +5987,9 @@ export function StudioShell({
                 // 드래그 중 이 칸 위에 있으면 "여기에 놓기" 강조.
                 dragEventId && dropDate === cell.isoDate ? "drop-target" : "",
                 // 휴방 메뉴가 이 칸에 떠 있으면 어느 날인지 분명히 강조.
-                restMenu?.isoDate === cell.isoDate ? "rest-target" : ""
+                restMenu?.isoDate === cell.isoDate ? "rest-target" : "",
+                // 시트식 범위 선택(시각 강조). React state라 카드 드래그 리렌더에도 유지.
+                rangeSelected.has(cellIndex) ? "cell-range-selected" : ""
               ]
                 .filter(Boolean)
                 .join(" ");

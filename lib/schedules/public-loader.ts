@@ -13,6 +13,7 @@ import {
   isStickerAssetKind
 } from "@/lib/domain/schedule-types";
 import type { PosterThemeKey } from "@/lib/domain/schedule-types";
+import { getCurrentKstYearMonth } from "@/lib/calendar/month";
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
 import { timed } from "@/lib/perf/perf";
@@ -130,7 +131,7 @@ export async function loadRevealedEvents(
 const loadPublicScheduleData = unstable_cache(
   async (calendarSlug: string): Promise<PublicSchedule> => {
     const supabase = createPublicReadClient();
-    const { year, month } = currentKstYearMonth();
+    const { year, month } = getCurrentKstYearMonth();
 
     if (!supabase) {
       return samplePublicSchedule(calendarSlug);
@@ -293,18 +294,7 @@ function mapStickerAsset(row: {
   };
 }
 
-function currentKstYearMonth() {
-  const [y, m] = new Intl.DateTimeFormat("en-CA", {
-    timeZone: PRODUCT_TIMEZONE,
-    year: "numeric",
-    month: "2-digit"
-  })
-    .format(new Date())
-    .split("-")
-    .map(Number);
-
-  return { year: y, month: m };
-}
+// (P2-KST-1: currentKstYearMonth 중복 제거 — lib/calendar/month.ts의 getCurrentKstYearMonth 사용.)
 
 // date_key(YYYY-MM-DD) + start_time(HH:mm:ss) → KST ISO 문자열
 function toKstIso(dateKey: string, time?: string | null) {
@@ -566,7 +556,7 @@ export async function getPublicBroadcastStats(months = 6): Promise<PublicBroadca
   if (!isSupabaseConfigured()) {
     return [];
   }
-  const { year, month } = currentKstYearMonth();
+  const { year, month } = getCurrentKstYearMonth();
   const from = new Date(Date.UTC(year, month - 1 - (months - 1), 1));
   const fromDay = from.toISOString().slice(0, 10);
   return loadPublicBroadcastStats(fromDay);

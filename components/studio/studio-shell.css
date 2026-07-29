@@ -4600,8 +4600,16 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 body.cell-range-dragging {
   cursor: cell;
 }
-/* (P1-MULTI-0: .cell-range-selected 제거 — 액션 없는 범위 강조는 잘못된 기대를 만들었다.
-   body.cell-range-dragging 커서는 방송 판서 도구의 실제 범위 선택이 계속 쓴다.) */
+/* 범위 선택 강조 — MULTI-0로 제거했다가 사용자 요청으로 복원(방송 중 기간 짚기 도구). */
+.studio-day.cell-range-selected::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  /* 채움만 — 칸마다 테두리 그리면 붙은 칸 사이가 이중선. 시트처럼 통짜 음영으로. */
+  background: rgb(168 85 247 / 14%);
+}
 /* 날짜 칸을 탭하면 살짝 보라 틴트로 '눌렀다'는 신호(카드는 자체 모션이 우선). */
 .studio-day:not(.outside):active {
   background: #f7f4ff;

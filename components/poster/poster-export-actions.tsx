@@ -3,6 +3,7 @@
 import { Clipboard } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { hapticTick } from "@/lib/ui/haptics";
+import { getTodayKst } from "@/lib/calendar/month";
 
 // 편의 내보내기(클립보드)는 3단계로 진행 상황을 보여준다: 준비 → 렌더링 → 복사.
 // html2canvas는 메인 스레드를 잡으므로 오버레이로 "비차단"을 만들 순 없다 — 정직하게,
@@ -34,9 +35,9 @@ const PHASE_LABEL: Record<ExportPhase, string> = {
   failed: "일정표 캡쳐"
 };
 
-// 클립보드 폴백 — 같은 PNG를 파일로 내려준다(파일명에 KST 날짜).
+// 클립보드 폴백 — 같은 PNG를 파일로 내려준다(파일명에 KST 날짜, P2-KST-1: 단일 출처).
 function downloadBlob(blob: Blob) {
-  const kstDate = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Seoul" });
+  const kstDate = getTodayKst();
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
