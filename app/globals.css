@@ -152,6 +152,8 @@
   --broadcast-source-width: 280px;
   --broadcast-layer-width: 248px;
   --broadcast-shelf-height: 176px;
+  --broadcast-mobile-tray-height: 28svh;
+  --broadcast-mobile-layer-height: 112px;
 
   /* 라운드 */
   --r-sm: 8px;
