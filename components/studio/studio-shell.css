@@ -4565,16 +4565,24 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   cursor: pointer;
   transition: background var(--dur-1) var(--ease);
 }
-/* 키보드 포커스(roving) — outline은 그리드 이웃/overflow에 가려질 수 있어 inset box-shadow로
-   그린다(칸 안쪽이라 절대 안 잘림). 두꺼운 보라 링 + 은은한 확산 + 배경 틴트 = 어느 칸에
-   커서가 있는지 한눈에. :focus-visible이라 마우스 클릭엔 안 뜬다(클릭은 selected가 담당). */
+/* 키보드 포커스(roving) — 링은 ::after 오버레이로 그린다: 셀 자체 box-shadow는 자식(이어진
+   멀티데이 일정 띠 등) '아래'에 깔려 띠가 링을 덮었다(신고). 오버레이는 칸 안 어떤 카드 위로도
+   온전히 보이고, pointer-events:none이라 조작을 막지 않는다.
+   :focus-visible이라 마우스 클릭엔 안 뜬다(클릭은 selected가 담당). */
 .studio-day:focus-visible {
   outline: none;
+  background: #efe9fc;
+  z-index: 2; /* 이웃 칸 경계선 위로 온전히 */
+}
+.studio-day:focus-visible::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 6; /* 일정 카드(z:auto~2)·업도움 띠 위, 드래그 유령/팝오버보다는 아래 */
+  pointer-events: none;
   box-shadow:
     inset 0 0 0 3px #5b4bd0,
     inset 0 0 0 7px rgb(91 75 208 / 18%);
-  background: #efe9fc;
-  z-index: 2; /* 이웃 칸 경계선 위로 온전히 */
 }
 /* 구글 시트식 날짜 칸 범위 선택(마우스) — 시각 강조만. 칸 텍스트 긁힘도 막는다. */
 .studio-month-grid {
