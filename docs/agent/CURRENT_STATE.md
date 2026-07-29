@@ -100,7 +100,11 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
   단계 계획 = `docs/agent/plans/ACTIVE_PLAN.md`(PLAN-20260730-001) — 2단계(렌더 함수 분리)
   → 3단계(쓰기 큐 훅) → 4단계(undo/redo 훅) → 5단계(그리드/아젠다 분리)는 후속 세션.
   제목칸 라이브 미러/레일은 사용자 결정으로 철회(`bfeb8a5` — textarea 구조 한계).
-- **P2 남은 것**: `ARCH-1` 2~5단계(위 계획),
+- **`ARCH-1` 완료(scope-adjusted, `2217dfb`·`1185a1b`)**: 2단계 ReadonlyEventDetail·RoleBadge
+  분리, 3단계 useStudioWriteQueue 훅(저장 칩·temp id·flush). 4·5단계(undo/redo 훅·그리드
+  분리)는 상태 응집 없인 이득<위험으로 **보류 판정**(ACTIVE_PLAN 참조). 각 단계 fixture
+  회귀 통과. **→ 다음 = 애플 기조 리디자인**(TOKEN 이관+IA 재편 포함).
+- **P2 잔여(리디자인과 무관, 선택)**:
   `COLOR-1` 색 picker 키보드/컴팩트 시트, `CONFLICT-1`(증거 게이트 — 실제 충돌 관찰 후),
   STICKER-1 잔여(스냅 큐·터치 핸들), A11Y-2 잔여(200/400% 줌·SR 실기), INSIGHT-1 잔여(데이터 표).
   **그 다음(또는 ARCH-1 후) 애플 기조 리디자인**(TOKEN 이관·IA 재편 포함).
