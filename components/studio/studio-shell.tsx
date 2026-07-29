@@ -1459,62 +1459,8 @@ export function StudioShell({
   // 상시 helper로 보여준다(placeholder는 글자를 치는 순간 사라져 규칙을 잊는다). 첫 줄이
   // 길어지면 소프트 카운터 — 포스터 카드에서 줄바꿈/축소되는 걸 저장 전에 예감하게 한다.
   const titleFirstLineLen = form.publicTitle.split("\n")[0]?.length ?? 0;
-  // 라이브 미러(사용자 요청): 쓰는 동안 입력칸 '안'에 실제 카드처럼 세부 줄 왼쪽 레일(|)을
-  // 그린다. 카드 정본은 세부 줄도 제목과 같은 잉크(구분은 레일뿐)라 글자는 textarea가 직접
-  // 그리고, 같은 금속자(폰트·패딩·줄높이 동일)의 미러는 '레일 위치 측정 골격'(투명 글자)과
-  // 레일 그리기만 담당한다 — 줄바꿈 위치가 textarea와 정확히 일치해 레일이 정확한 줄에 선다.
-  const renderTitleMirror = () => {
-    const v = form.publicTitle;
-    const i = v.indexOf("\n");
-    const first = i === -1 ? v : v.slice(0, i);
-    const rest = i === -1 ? null : v.slice(i + 1);
-    return (
-      <>
-        {/* 세부 줄 왼쪽 레일(|) — 포스터 카드와 같은 장식. 글자를 밀면 커서가 어긋나므로
-            패딩 거터(글자 시작 전 여백)에 절대배치, 위치는 아래 layout effect가 실측. */}
-        <span aria-hidden="true" className="tt-rail" />
-        <span className="tt-first">{first}</span>
-        {rest !== null ? (
-          <>
-            {"\n"}
-            <span className="tt-rest">{rest}</span>
-          </>
-        ) : null}
-        {"​" /* 끝 개행의 빈 줄 높이 보존(pre-wrap은 마지막 개행을 접는다) */}
-      </>
-    );
-  };
-  // 레일 위치 실측 — 제목 첫 줄이 길어 두 줄로 감겨도 세부 줄 시작점을 정확히 따라간다.
-  // 모바일 시트 오픈 morph(스케일 애니) 중엔 rect가 찌그러진 값이라, morph가 끝난 뒤 한 번 더 잰다.
-  useLayoutEffect(() => {
-    const measure = () => {
-      document.querySelectorAll<HTMLElement>(".title-live").forEach((wrap) => {
-        const mirror = wrap.querySelector<HTMLElement>(".title-live-mirror");
-        const rail = wrap.querySelector<HTMLElement>(".tt-rail");
-        const rest = wrap.querySelector<HTMLElement>(".tt-rest");
-        if (!mirror || !rail) return;
-        if (!rest || !rest.textContent) {
-          rail.style.opacity = "0";
-          return;
-        }
-        const mr = mirror.getBoundingClientRect();
-        const rr = rest.getBoundingClientRect();
-        if (mr.height < 1) return; // 아직 morph 중 — 아래 재실측이 잡는다
-        // 카드 정본 실측(pill-subs): 레일 = 서브 텍스트 rect 그대로(top +1px, 인셋 없음).
-        // 임의 인셋을 주면 카드와 어긋난다 — rect 좌표를 그대로 쓴다.
-        rail.style.opacity = "1";
-        rail.style.top = `${rr.top - mr.top + mirror.scrollTop}px`;
-        rail.style.height = `${Math.max(0, rr.height)}px`;
-      });
-    };
-    measure();
-    const t = window.setTimeout(measure, 380);
-    return () => window.clearTimeout(t);
-  }, [form.publicTitle, isNarrow, mobileEditId, editorVisible]);
-  const syncTitleMirror = (e: React.UIEvent<HTMLTextAreaElement>) => {
-    const m = e.currentTarget.previousElementSibling as HTMLElement | null;
-    if (m) m.scrollTop = e.currentTarget.scrollTop;
-  };
+  // (제목칸 '카드처럼 렌더' 시도는 사용자 결정으로 철회 — textarea는 줄별 들여쓰기/크기가
+  //  불가능해 카드와 정확히 같아질 수 없다(근사가 오히려 더 어색). 규칙 안내는 아래 helper가 담당.)
   const renderTitleHelper = () => (
     <div className="title-helper">
       <span>첫 줄 = 제목 · 둘째 줄부터 = 세부 내용</span>
@@ -5243,25 +5189,18 @@ export function StudioShell({
               </div>
             ) : null}
 
-            {/* 제목 — 무테 큰 입력. 화면의 초점. 첫 줄 제목, 다음 줄부터 세부.
-                P1-TITLE-1 라이브 미러: 쓰는 동안 첫 줄만 진하게 보인다(아래 .title-live 참조). */}
-            <div className="title-live title-live-m">
-              <div aria-hidden="true" className="title-live-mirror">
-                {renderTitleMirror()}
-              </div>
-              <textarea
-                className="me-title"
-                onChange={(e) => {
-                  setForm((cur) => ({ ...cur, publicTitle: e.target.value }));
-                  fitTitleHeight(); // 타이핑하며 줄이 늘면 즉시 높이 따라 키움
-                }}
-                onScroll={syncTitleMirror}
-                placeholder="제목 입력 (다음 줄부터 세부 내용)"
-                ref={mTitleRef}
-                rows={2}
-                value={form.publicTitle}
-              />
-            </div>
+            {/* 제목 — 무테 큰 입력. 화면의 초점. 첫 줄 제목, 다음 줄부터 세부(규칙은 아래 helper). */}
+            <textarea
+              className="me-title"
+              onChange={(e) => {
+                setForm((cur) => ({ ...cur, publicTitle: e.target.value }));
+                fitTitleHeight(); // 타이핑하며 줄이 늘면 즉시 높이 따라 키움
+              }}
+              placeholder="제목 입력 (다음 줄부터 세부 내용)"
+              ref={mTitleRef}
+              rows={2}
+              value={form.publicTitle}
+            />
             {renderTitleHelper()}
 
             {/* 설정 그룹 카드 — 공개 범위 + 업 도움을 한 카드에 묶어 목록처럼.
@@ -6476,22 +6415,15 @@ export function StudioShell({
 
             <label>
               제목
-              {/* P1-TITLE-1 라이브 미러 — 쓰는 동안 첫 줄=제목(진하게)·나머지=연하게. */}
-              <div className="title-live title-live-web">
-                <div aria-hidden="true" className="title-live-mirror">
-                  {renderTitleMirror()}
-                </div>
-                <textarea
-                  disabled={!canEdit}
-                  onChange={(event) =>
-                    setForm((current) => ({ ...current, publicTitle: event.target.value }))
-                  }
-                  onScroll={syncTitleMirror}
-                  placeholder="예: 풀트뱅"
-                  ref={editorTitleRef}
-                  value={form.publicTitle}
-                />
-              </div>
+              <textarea
+                disabled={!canEdit}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, publicTitle: event.target.value }))
+                }
+                placeholder="예: 풀트뱅"
+                ref={editorTitleRef}
+                value={form.publicTitle}
+              />
             </label>
             {renderTitleHelper()}
 
