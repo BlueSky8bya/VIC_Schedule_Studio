@@ -1849,6 +1849,60 @@ html[data-reduce-motion] .bp-day-col {
   box-shadow: var(--shadow-1);
 }
 
+/* 달력 접기 = 왼쪽 기둥을 통째로 반납하고 '월 + 펼치기' 필 하나만 캔버스 위에 남긴다 —
+   그림판이 가로 전폭을 쓴다. 보드 좌표계(.bp-main 내부)는 그대로라 판서 좌표 불변. */
+.broadcast-panel.picker-collapsed {
+  grid-template-columns: 0 minmax(0, 1fr);
+}
+
+.picker-collapsed .bp-picker {
+  position: absolute;
+  top: calc(var(--control-hit) + var(--space-4));
+  left: var(--space-3);
+  z-index: 30;
+  width: auto;
+  max-height: none;
+  margin: 0;
+  padding: var(--space-1);
+  overflow: visible;
+}
+
+.picker-collapsed .bp-picker-head {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+}
+
+.picker-collapsed .bp-month-nav,
+.picker-collapsed .bp-send {
+  display: none;
+}
+
+.picker-collapsed .bp-toolbar {
+  left: var(--space-3);
+}
+
+/* 다시 펼칠 때 왼쪽에서 미끄러져 들어온다 — 접힘/펼침이 같은 방향 축을 공유. */
+.broadcast-panel:not(.picker-collapsed) .bp-picker {
+  animation: bp-picker-in var(--dur-2) var(--ease-enter) both;
+}
+
+@keyframes bp-picker-in {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+html[data-reduce-motion] .bp-picker {
+  animation: none;
+}
+
 .bp-mini-cell {
   border-radius: var(--r-control);
 }
@@ -1986,9 +2040,10 @@ html[data-reduce-motion] .bp-send {
   left: calc(var(--broadcast-source-width) + var(--space-5));
   z-index: 50;
   display: grid;
-  max-height: var(--broadcast-shelf-height);
+  /* 높이 상한 + 1fr 행이 덱을 실제 콘텐츠보다 낮게 눌러 굵기 2행의 윗줄(선택 링)이
+     잘렸다 — 바닥 고정이라 위로 자라게 두면 잘릴 일이 없다. */
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
   margin: 0;
   border-color: var(--glass-border);
   border-radius: var(--r-xl);
@@ -2268,6 +2323,10 @@ html[data-reduce-motion] .bp-layer-add:active {
     margin: 0;
   }
 
+  .picker-collapsed .bp-picker {
+    width: auto;
+  }
+
   .bp-main {
     grid-column: 1;
     grid-row: 2;
@@ -2316,6 +2375,14 @@ html[data-reduce-motion] .bp-layer-add:active {
     max-height: var(--broadcast-mobile-tray-height);
     border-radius: var(--r-lg);
     padding: var(--space-2);
+  }
+
+  /* 접힘: 트레이 높이를 반납하고 '펼치기' 필만 왼쪽에 남긴다. */
+  .picker-collapsed .bp-picker {
+    right: auto;
+    height: auto;
+    max-height: none;
+    padding: var(--space-1);
   }
 
   .bp-picker-head {

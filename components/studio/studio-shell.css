@@ -9696,10 +9696,22 @@ html[data-reduce-motion] .save-status.saving .ss-dot {
   transform: translateY(-50%);
 }
 
+/* 기존 우상단 미니 배지 규칙(.scope-opt.on::after, top:7px·16px)이 특이도에서 이겨
+   체크가 모서리에 어긋나게 떠 있었다 — 같은 특이도로 위치·크기까지 전부 재선언해
+   옵션 칩 마크(우측 중앙 20px)와 정확히 같은 자리·크기로 맞춘다. */
 .scope-opt.on::after {
-  border-color: var(--ac);
+  top: 50%;
+  right: var(--space-3);
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: var(--stroke-hairline) solid var(--ac);
+  border-radius: var(--r-pill);
   background: var(--ac);
   color: var(--surface);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
   animation: scope-check-in-row var(--dur-2) var(--ease) both;
 }
 
