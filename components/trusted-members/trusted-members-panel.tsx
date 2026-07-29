@@ -38,7 +38,7 @@ import {
   setTrustedMemberRolesAction,
   type TrustedMember
 } from "@/lib/trusted-members/actions";
-import { hapticTick } from "@/lib/ui/haptics";
+import { hapticDelete, hapticTick } from "@/lib/ui/haptics";
 
 export function TrustedMembersPanel() {
   const [members, setMembers] = useState<TrustedMember[]>([]);
@@ -83,6 +83,7 @@ export function TrustedMembersPanel() {
       setError("매니저·작업자 중 하나 이상을 선택하세요.");
       return;
     }
+    hapticTick();
     const snapshot = members;
     const optimistic: TrustedMember = {
       id: `temp-${cleanEmail}`,
@@ -104,7 +105,10 @@ export function TrustedMembersPanel() {
     startTransition(async () => {
       const r = await setTrustedMemberRolesAction(cleanEmail, addManager, addWorker);
       markSync(cleanEmail, false);
-      if (r.ok) setMembers(r.members);
+      if (r.ok) {
+        setMembers(r.members);
+        hapticTick();
+      }
       else {
         setMembers(snapshot);
         setError(r.error);
@@ -132,7 +136,10 @@ export function TrustedMembersPanel() {
     startTransition(async () => {
       const r = await setTrustedMemberRolesAction(member.email, isManager, isWorker);
       markSync(member.email, false);
-      if (r.ok) setMembers(r.members);
+      if (r.ok) {
+        setMembers(r.members);
+        hapticTick();
+      }
       else {
         setMembers(snapshot);
         setError(r.error);
@@ -148,6 +155,9 @@ export function TrustedMembersPanel() {
     if (member.id.startsWith("temp-")) {
       return;
     }
+    if (!window.confirm(`${member.email} 멤버를 삭제할까요?`)) {
+      return;
+    }
     setError(null);
     setRemovingIds((prev) => new Set(prev).add(member.id));
     startTransition(async () => {
@@ -157,14 +167,18 @@ export function TrustedMembersPanel() {
         next.delete(member.id);
         return next;
       });
-      if (r.ok) setMembers(r.members);
+      if (r.ok) {
+        setMembers(r.members);
+        hapticDelete();
+      }
       else setError(r.error);
     });
   }
 
   return (
     <div className="members-panel">
-      <div className="members-perms">
+      <details className="members-perms">
+        <summary>역할별 권한 보기</summary>
         <table className="perm-table">
           <thead>
             <tr>
@@ -244,7 +258,7 @@ export function TrustedMembersPanel() {
             </tr>
           </tbody>
         </table>
-      </div>
+      </details>
 
       <div className="members-add">
         <input
@@ -318,7 +332,7 @@ export function TrustedMembersPanel() {
           const isRemoving = removingIds.has(m.id);
           return (
           <li
-            className={`member-row${isRemoving ? " removing" : ""}${isSyncing ? " syncing" : ""}`}
+            className={`member-row${m.isActive ? " is-active" : " is-inactive"}${isRemoving ? " removing" : ""}${isSyncing ? " syncing" : ""}`}
             key={m.email}
           >
             <span
@@ -334,27 +348,28 @@ export function TrustedMembersPanel() {
                 {/* 동기화 중 작은 점 — "저장되고 있다"는 신호(차단하지 않음). */}
                 {isSyncing ? <span className="member-sync-dot" title="저장 중…" aria-hidden="true" /> : null}
               </strong>
-              {/* 역할 토글 — 켜진 역할은 색 태그처럼 보이고, 누르면 즉시 켜고/끈다(낙관적). */}
-              <div className="member-role-toggles" role="group" aria-label="역할">
-                <button
-                  aria-pressed={m.isManager}
-                  className={`member-role-toggle manager ${m.isManager ? "on" : ""}`}
-                  disabled={isSyncing || isRemoving}
-                  onClick={() => setRoles(m, !m.isManager, m.isWorker)}
-                  type="button"
-                >
-                  매니저
-                </button>
-                <button
-                  aria-pressed={m.isWorker}
-                  className={`member-role-toggle worker ${m.isWorker ? "on" : ""}`}
-                  disabled={isSyncing || isRemoving}
-                  onClick={() => setRoles(m, m.isManager, !m.isWorker)}
-                  type="button"
-                >
-                  작업자
-                </button>
-              </div>
+              <span className="member-status">{m.isActive ? "활성" : "비활성"}</span>
+            </div>
+            {/* 역할 토글 — 켜진 역할은 색 태그처럼 보이고, 누르면 즉시 켜고/끈다(낙관적). */}
+            <div className="member-role-toggles" role="group" aria-label="역할">
+              <button
+                aria-pressed={m.isManager}
+                className={`member-role-toggle manager ${m.isManager ? "on" : ""}`}
+                disabled={isSyncing || isRemoving}
+                onClick={() => setRoles(m, !m.isManager, m.isWorker)}
+                type="button"
+              >
+                매니저
+              </button>
+              <button
+                aria-pressed={m.isWorker}
+                className={`member-role-toggle worker ${m.isWorker ? "on" : ""}`}
+                disabled={isSyncing || isRemoving}
+                onClick={() => setRoles(m, m.isManager, !m.isWorker)}
+                type="button"
+              >
+                작업자
+              </button>
             </div>
             <button
               aria-label="삭제"
