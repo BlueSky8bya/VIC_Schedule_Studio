@@ -6,10 +6,10 @@
   align-items: center;
   font-style: normal;
   font-weight: 800;
-  letter-spacing: -0.01em;
+  letter-spacing: var(--tracking-tight);
   padding: 1px 7px;
   border-radius: var(--r-pill);
-  line-height: 1.5;
+  line-height: var(--lh-body);
 }
 /* 단계(개막/32강/16강/8강/4강/3·4위전): 잔디 초록 칩. */
 .day-mark.wc {
@@ -121,6 +121,9 @@
   --text-input: 16px; /* 입력칸(iOS 확대 방지 하한) */
   --text-title: 18px; /* 패널 제목 */
   --text-display: 20px; /* 화면 제목·월 표기 */
+  --lh-body: 1.5;
+  --tracking-tight: -0.01em;
+  --weight-semibold: 700;
 
   /* 간격 (4/8 스케일) */
   --space-1: 4px;
@@ -129,6 +132,7 @@
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
+  --space-control-x: var(--space-4);
 
   /* 라운드 */
   --r-sm: 8px;
@@ -138,6 +142,7 @@
   --r-lg: 16px;
   --r-xl: 20px;
   --r-pill: 999px;
+  --r-control: var(--r-md);
 
   /* 그림자 (부드럽게 단계화) */
   --shadow-1: 0 1px 2px rgb(17 24 39 / 5%), 0 1px 3px rgb(17 24 39 / 4%);
@@ -498,11 +503,11 @@ html[data-reduce-motion] .pop-number.pop {
   gap: 6px;
   min-height: 40px;
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
+  border-radius: var(--r-control);
   background: var(--surface);
   color: var(--ink);
-  padding: 0 16px;
-  font-weight: 700;
+  padding: 0 var(--space-control-x);
+  font-weight: var(--weight-semibold);
   cursor: pointer;
   box-shadow: var(--shadow-1);
   transition:
