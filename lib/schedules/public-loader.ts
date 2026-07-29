@@ -5,8 +5,7 @@ import type {
   PublicSchedule,
   PublicScheduleEvent,
   StickerAsset,
-  StickerInstance,
-  SupportCampaign
+  StickerInstance
 } from "@/lib/domain/schedule-types";
 import {
   PRODUCT_TIMEZONE,
@@ -161,7 +160,6 @@ const loadPublicScheduleData = unstable_cache(
         events: [],
         tags: [],
         palette: [],
-        supportCampaigns: [],
         stickers: [],
         stickerAssets: [],
         heartCount: 0,
@@ -170,8 +168,10 @@ const loadPublicScheduleData = unstable_cache(
     }
 
     // RLS 공개 정책이 1차 방어선이지만, 쿼리에서도 명시적으로 공개분만 조회한다.
-    const [tagsRes, paletteRes, eventsRes, campaignsRes, stickersRes, assetsRes, heartsRes, eventHeartsRes] =
-      await timed("publicSchedule:db(8 parallel queries)", () =>
+    // (P2-PROTO-1: support_campaigns 쿼리 제거 — UI 소비자가 0인 죽은 payload였다.
+    //  업 도움은 이벤트 단위(is_support/support_url)가 정본.)
+    const [tagsRes, paletteRes, eventsRes, stickersRes, assetsRes, heartsRes, eventHeartsRes] =
+      await timed("publicSchedule:db(7 parallel queries)", () =>
         Promise.all([
         // 모든 공개 쿼리를 이 캘린더로 한정한다. RLS는 공개 행을 허용할 뿐 캘린더별로
         // 막지 않으므로, 캘린더가 2개 이상이 되면 application-level 스코프가 없으면 다른
@@ -198,14 +198,6 @@ const loadPublicScheduleData = unstable_cache(
           .neq("status", "draft")
           .order("date_key")
           .order("created_at"),
-        supabase
-          .from("support_campaigns")
-          .select(
-            "id, title, description, url, starts_on, ends_on, public_cta_label, highlight_color_key, is_public, is_active"
-          )
-          .eq("calendar_id", calendar.id)
-          .eq("is_public", true)
-          .eq("is_active", true),
         supabase
           .from("sticker_instances")
           .select(
@@ -258,7 +250,6 @@ const loadPublicScheduleData = unstable_cache(
         ...mapEvent(row, Date.now()),
         heartCount: heartCountByEvent.get(row.id) ?? 0
       })),
-      supportCampaigns: (campaignsRes.data ?? []).map(mapCampaign),
       stickers: (stickersRes.data ?? []).map(mapSticker),
       stickerAssets: (assetsRes.data ?? []).map(mapStickerAsset),
       heartCount: Number(heartsRes.data?.count ?? 0),
@@ -430,32 +421,6 @@ function mapPalette(row: {
     textColor: row.text_color,
     borderColor: row.border_color,
     sortOrder: row.sort_order
-  };
-}
-
-function mapCampaign(row: {
-  id: string;
-  title: string;
-  description: string | null;
-  url: string;
-  starts_on: string;
-  ends_on: string;
-  public_cta_label: string;
-  highlight_color_key: string;
-  is_public: boolean;
-  is_active: boolean;
-}): SupportCampaign {
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description ?? "",
-    label: row.public_cta_label,
-    url: row.url,
-    startsOn: row.starts_on,
-    endsOn: row.ends_on,
-    highlightColorKey: row.highlight_color_key as SupportCampaign["highlightColorKey"],
-    isPublic: row.is_public,
-    isActive: row.is_active
   };
 }
 

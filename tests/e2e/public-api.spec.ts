@@ -18,19 +18,11 @@ test("public event API excludes private planning data", async ({ request }) => {
   expect(payload).not.toContain("work");
 });
 
-test("public proposal intake accepts viewer suggestions without event writes", async ({
-  request
-}) => {
+// P2-PROTO-1: 가짜 proposals 엔드포인트 제거 — 어디에도 저장 안 되면서 202를 돌려줘
+// 실기능으로 오인될 수 있었다. 라우트가 사라졌음을 계약으로 고정한다.
+test("removed synthetic proposals endpoint stays gone", async ({ request }) => {
   const response = await request.post("/api/public/vic/proposals", {
-    data: {
-      type: "content",
-      content: "다음 달 첫 주에 시참 게임 후보를 받고 싶어요",
-      suggestedDate: "2026-06-05"
-    }
+    data: { type: "content", content: "테스트" }
   });
-
-  expect(response.status()).toBe(202);
-  const payload = await response.json();
-  expect(payload.proposal.state).toBe("new");
-  expect(JSON.stringify(payload)).not.toContain("privateMemo");
+  expect(response.status()).toBe(404);
 });

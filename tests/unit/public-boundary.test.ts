@@ -13,7 +13,7 @@ const repoRoot = join(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
 const publicSurfaceFiles = [
   "lib/schedules/public-loader.ts",
   "app/api/public/[calendarSlug]/events/route.ts",
-  "app/api/public/[calendarSlug]/proposals/route.ts",
+  // (P2-PROTO-1: proposals 라우트 삭제 — 가짜 데이터 엔드포인트였다)
   "app/api/public/[calendarSlug]/broadcast/route.ts"
 ];
 
@@ -74,8 +74,8 @@ describe("public sample fallback — no private leak", () => {
     }
   });
 
-  it("only public+active campaigns and public stickers", () => {
-    expect(samplePublicScheduleData.supportCampaigns.every((c) => c.isPublic && c.isActive)).toBe(true);
+  it("only public stickers", () => {
+    // (P2-PROTO-1: supportCampaigns payload 제거 — 검사 대상에서 삭제)
     expect(samplePublicScheduleData.stickers.every((s) => s.visiblePublicly)).toBe(true);
     // sticker-private(💖, visiblePublicly:false)는 폴백에 없다.
     expect(samplePublicScheduleData.stickers.some((s) => s.id === "sticker-private")).toBe(false);

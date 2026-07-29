@@ -168,6 +168,8 @@ type StudioShellProps = {
   initialViewerMode?: boolean;
   // 서버 UA 판정 휴대폰 여부 — 모바일 레이아웃을 처음부터 그려 깜빡임을 없앤다(클라가 보정).
   initialNarrow?: boolean;
+  // P2-ROUTE-1: /studio?panel= 딥링크로 열 관리 모달(권한 없으면 조용히 무시).
+  initialPanel?: "tags" | "members";
 };
 
 type EventForm = {
@@ -365,7 +367,8 @@ export function StudioShell({
   isDefaultPasscode,
   initialView,
   initialViewerMode = false,
-  initialNarrow = false
+  initialNarrow = false,
+  initialPanel
 }: StudioShellProps) {
   const today = getTodayKst();
   const router = useRouter();
@@ -971,6 +974,14 @@ export function StudioShell({
   // 매니저·작업자·시청자, 또는 개발자가 그 역할로 미리보기)는 레거시 뷰(세부 나누기 이전)로 본다.
   // 렌더·피커·레전드·필터에는 viewTags를, 태그 '정의 편집'(TagLegendEditor)에는 원본 tags를 쓴다.
   const taxonomyV3 = isTaxonomyV3(effectiveRole);
+  // P2-ROUTE-1: /studio?panel=tags|members 딥링크 — 옛 /studio/tags·trusted-members 북마크가
+  // 여기로 리다이렉트된다. 버튼과 같은 권한 게이트(tags=canEdit+v3, members=canEdit) 미달이면
+  // 조용히 무시(권한 오류 모달로 시청자를 놀래지 않는다). 첫 마운트 1회만.
+  useEffect(() => {
+    if (initialPanel === "tags" && canEdit && taxonomyV3) setModal("tags");
+    else if (initialPanel === "members" && canEdit) setModal("members");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const viewTags = useMemo(
     () => (taxonomyV3 ? tags : legacyTagView(tags)),
     [tags, taxonomyV3]

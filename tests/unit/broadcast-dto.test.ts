@@ -193,7 +193,6 @@ function hostileSnapshot(): PublicSchedule {
     events,
     tags,
     palette,
-    supportCampaigns: [],
     stickers: [],
     stickerAssets: [],
     heartCount: 7

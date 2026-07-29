@@ -96,36 +96,8 @@ export type VariantGroup = {
   promotedEventId?: string;
 };
 
-export type Proposal = {
-  id: string;
-  type: "slot" | "content" | "collab";
-  content: string;
-  voteCount: number;
-  state: "new" | "reviewing" | "accepted" | "rejected";
-  suggestedDate?: string;
-};
-
-export type RequestItem = {
-  id: string;
-  source: "collab" | "sponsor" | "guest" | "manual";
-  title: string;
-  state: "new" | "triaged" | "scheduled" | "closed";
-  receivedAt: string;
-  summary: string;
-};
-
-export type SupportCampaign = {
-  id: string;
-  title: string;
-  description: string;
-  label: string;
-  url: string;
-  startsOn: string;
-  endsOn: string;
-  highlightColorKey: ColorKey;
-  isPublic: boolean;
-  isActive: boolean;
-};
+// (P2-PROTO-1: Proposal/RequestItem/SupportCampaign 타입 제거 — 초기 프로토타입의 잔재로,
+//  UI 소비자·실데이터 쓰기 경로가 전혀 없었다. 업 도움은 이벤트 단위 is_support/support_url이 정본.)
 
 // 업로드한 커스텀 이모지의 분류. 팔레트 탭이자 정렬 단위 — 업로드 시 자동 판정(GIF=동적)하고,
 // 이후엔 꾸미기 팔레트에서 탭 위로 끌어다 놓아 바꾼다(애니메이션 WebP는 MIME으로 구분 불가).
@@ -310,7 +282,6 @@ export type PublicSchedule = {
   events: PublicScheduleEvent[];
   tags: BroadcastTag[];
   palette: ColorPaletteEntry[];
-  supportCampaigns: SupportCampaign[];
   stickers: StickerInstance[];
   stickerAssets: StickerAsset[]; // 업로드한 커스텀 이모지 목록(캘린더 공유)
   heartCount: number; // B2: 시청자 하트 누적 수(숫자는 노출하지 않고 비율 표시에만 사용)
@@ -321,7 +292,5 @@ export type StudioSchedule = Omit<PublicSchedule, "events" | "stickers"> & {
   viewerModePreview: PublicSchedule;
   events: StudioScheduleEvent[];
   variantGroups: VariantGroup[];
-  proposals: Proposal[];
-  requests: RequestItem[];
   stickers: StickerInstance[];
 };

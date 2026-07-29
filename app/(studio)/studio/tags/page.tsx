@@ -1,8 +1,7 @@
+import { redirect } from "next/navigation";
+
+// P2-ROUTE-1: 태그 관리의 정본은 편집실의 '태그 편집' 모달 하나다. 이 라우트는 옛 북마크용
+// 리다이렉트만 남긴다(플레이스홀더 페이지가 실제 기능처럼 보이던 문제 제거).
 export default function TagsPage() {
-  return (
-    <main className="placeholder-page">
-      <h1>방송 태그</h1>
-      <p>기본 10개 태그의 이름과 색상 수정 화면을 연결할 예정입니다.</p>
-    </main>
-  );
+  redirect("/studio?panel=tags");
 }

@@ -7,7 +7,16 @@ import { getUnlockState } from "@/lib/private-layer/unlock";
 import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
 import { timed } from "@/lib/perf/perf";
 
-export default async function StudioPage() {
+export default async function StudioPage({
+  searchParams
+}: {
+  searchParams?: Promise<{ panel?: string }>;
+}) {
+  // P2-ROUTE-1: /studio?panel=tags|members 딥링크 — 레거시 /studio/tags·/studio/trusted-members
+  // 리다이렉트의 캐노니컬 도착지. 권한 게이트는 StudioShell이 검사한다(없으면 조용히 무시).
+  const panelParam = (await searchParams)?.panel;
+  const initialPanel =
+    panelParam === "tags" || panelParam === "members" ? panelParam : undefined;
   const [actor, unlock] = await Promise.all([
     timed("page:/studio actor", () => resolveCurrentActor("vic")),
     timed("page:/studio unlock", () => getUnlockState("vic"))
@@ -31,6 +40,7 @@ export default async function StudioPage() {
       }
       initialViewerMode={mem.v === 1}
       initialNarrow={narrow}
+      initialPanel={initialPanel}
     />
   );
 }

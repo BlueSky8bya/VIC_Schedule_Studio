@@ -1,11 +1,10 @@
 import type { StudioSchedule } from "@/lib/domain/schedule-types";
-// 공개 안전 데이터(팔레트·태그·캘린더·제안)는 공개 전용 파일에서 가져와 얹는다. 이 파일은 그 위에
-// privateMeta·엠바고/작업 일정·requests 같은 스튜디오 전용/비공개 데이터만 추가한다.
+// 공개 안전 데이터(팔레트·태그·캘린더)는 공개 전용 파일에서 가져와 얹는다. 이 파일은 그 위에
+// privateMeta·엠바고/작업 일정 같은 스튜디오 전용/비공개 데이터만 추가한다.
 import {
   defaultPalette,
   defaultTags,
   publicCalendarMeta,
-  sampleProposals,
   samplePublicScheduleData
 } from "@/lib/schedules/sample-public-data";
 
@@ -142,20 +141,6 @@ export const sampleStudioSchedule: StudioSchedule = {
       promotedEventId: "evt-007"
     }
   ],
-  supportCampaigns: [
-    {
-      id: "support-001",
-      title: "업 도움 진행 중",
-      description: "빅토리님을 도와주세요",
-      label: "도우러 가기",
-      url: "https://example.com/support",
-      startsOn: "2026-06-10",
-      endsOn: "2026-06-16",
-      highlightColorKey: "lime",
-      isPublic: true,
-      isActive: true
-    }
-  ],
   stickers: [
     {
       id: "sticker-001",
@@ -208,17 +193,6 @@ export const sampleStudioSchedule: StudioSchedule = {
   ],
   stickerAssets: [],
   heartCount: 0,
-  proposals: sampleProposals,
-  requests: [
-    {
-      id: "req-001",
-      source: "collab",
-      title: "외부 게스트 합방 문의",
-      state: "triaged",
-      receivedAt: "2026-05-20T16:40:00+09:00",
-      summary: "공개 전까지 엠바고 레이어에서만 확인합니다."
-    }
-  ],
   // 미리보기는 서버 공개 스냅샷만 쓰므로(P0-SEC-2) 샘플에서도 공개 샘플 데이터를 그대로 쓴다 —
   // 비워두면 fixture/오프라인 미리보기가 빈 달력으로 보여 실물과 다르다.
   viewerModePreview: samplePublicScheduleData

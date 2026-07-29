@@ -9,7 +9,6 @@ import type {
   BroadcastTag,
   CalendarMeta,
   ColorPaletteEntry,
-  Proposal,
   PublicSchedule,
   PublicScheduleEvent
 } from "@/lib/domain/schedule-types";
@@ -62,17 +61,7 @@ export const publicCalendarMeta: CalendarMeta = {
   posterTheme: "none"
 };
 
-// 시청자 제안(공개 제출 아이디어). 공개 API는 이 중 'accepted'만 노출한다(라우트에서 필터).
-export const sampleProposals: Proposal[] = [
-  {
-    id: "prop-001",
-    type: "content",
-    content: "6월 중순 공포게임 후보 투표",
-    voteCount: 42,
-    state: "reviewing",
-    suggestedDate: "2026-06-15"
-  }
-];
+// (P2-PROTO-1: sampleProposals 제거 — 가짜 공개 API의 원천이었다.)
 
 // 공개 일정(공개 범위·비-draft만). privateMeta·엠바고/작업 일정은 여기 없다. PublicScheduleEvent 형태
 // 그대로(= 예전 public-loader의 toPublicEvent 산출물과 동일). isTentative는 공개해도 안전한 상태값.
@@ -185,20 +174,6 @@ export const samplePublicScheduleData: PublicSchedule = {
   events: publicEvents,
   tags: defaultTags,
   palette: defaultPalette,
-  supportCampaigns: [
-    {
-      id: "support-001",
-      title: "업 도움 진행 중",
-      description: "빅토리님을 도와주세요",
-      label: "도우러 가기",
-      url: "https://example.com/support",
-      startsOn: "2026-06-10",
-      endsOn: "2026-06-16",
-      highlightColorKey: "lime",
-      isPublic: true,
-      isActive: true
-    }
-  ],
   stickers: [
     {
       id: "sticker-001",

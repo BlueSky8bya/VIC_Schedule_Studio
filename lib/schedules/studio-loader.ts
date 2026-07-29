@@ -3,8 +3,7 @@ import type {
   ColorPaletteEntry,
   MembershipRole,
   StudioSchedule,
-  StudioScheduleEvent,
-  SupportCampaign
+  StudioScheduleEvent
 } from "@/lib/domain/schedule-types";
 import { PRODUCT_TIMEZONE } from "@/lib/domain/schedule-types";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
@@ -91,21 +90,19 @@ export async function getStudioSchedule(
       },
       tags: [],
       palette: [],
-      supportCampaigns: [],
       events: [],
       stickers: [],
       stickerAssets: [],
       heartCount: viewerModePreview.heartCount,
       variantGroups: [],
-      proposals: [],
-      requests: [],
       viewerModePreview
     };
   }
 
   // RLS가 역할/잠금 세션에 따라 보이는 행을 결정한다.
   // owner/developer: 전체 / manager·worker: public + (unlock 시 embargo·work)
-  const [tagsRes, paletteRes, eventsRes, campaignsRes] = await Promise.all([
+  // (P2-PROTO-1: support_campaigns 쿼리 제거 — UI 소비자 0의 죽은 payload.)
+  const [tagsRes, paletteRes, eventsRes] = await Promise.all([
     supabase
       .from("broadcast_tags")
       .select("id, tag_key, display_name, color_key, bg_hex, sort_order, is_default, is_active, parent_id, kind, v3_only")
@@ -124,13 +121,7 @@ export async function getStudioSchedule(
       .is("deleted_at", null) // tombstone 제외(P0-DATA-1)
       .eq("calendar_id", calendar.id)
       .order("date_key")
-      .order("created_at"),
-    supabase
-      .from("support_campaigns")
-      .select(
-        "id, title, description, url, starts_on, ends_on, public_cta_label, highlight_color_key, is_public, is_active"
-      )
-      .eq("calendar_id", calendar.id)
+      .order("created_at")
   ]);
 
   return {
@@ -146,7 +137,6 @@ export async function getStudioSchedule(
     },
     tags: (tagsRes.data ?? []).map(mapTag),
     palette: (paletteRes.data ?? []).map(mapPalette),
-    supportCampaigns: (campaignsRes.data ?? []).map(mapCampaign),
     events: filterEventsForViewer(
       (eventsRes.data ?? []).map((r) => mapStudioEvent(r, calendar.id)),
       actor.role,
@@ -157,8 +147,6 @@ export async function getStudioSchedule(
     stickerAssets: [],
     heartCount: viewerModePreview.heartCount,
     variantGroups: [],
-    proposals: [],
-    requests: [],
     viewerModePreview
   };
 }
@@ -320,28 +308,3 @@ function mapPalette(row: {
   };
 }
 
-function mapCampaign(row: {
-  id: string;
-  title: string;
-  description: string | null;
-  url: string;
-  starts_on: string;
-  ends_on: string;
-  public_cta_label: string;
-  highlight_color_key: string;
-  is_public: boolean;
-  is_active: boolean;
-}): SupportCampaign {
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description ?? "",
-    label: row.public_cta_label,
-    url: row.url,
-    startsOn: row.starts_on,
-    endsOn: row.ends_on,
-    highlightColorKey: row.highlight_color_key as SupportCampaign["highlightColorKey"],
-    isPublic: row.is_public,
-    isActive: row.is_active
-  };
-}

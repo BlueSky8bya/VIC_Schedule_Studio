@@ -4,6 +4,20 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-07-30
+
+### CHG-20260730-001 — REMOVE — 공개 proposals 엔드포인트·supportCampaigns payload 제거 (P2-PROTO-1)
+
+Problem: `/api/public/[slug]/proposals`는 샘플 배열만 돌려주고 POST는 어디에도 저장 안 하며
+202를 반환 — 실기능으로 오인 가능한 가짜 공개 표면. `supportCampaigns`는 public/studio 로더가
+매 요청 DB 조회해 실어 보내지만 UI 소비자 0(업 도움 정본은 이벤트 단위 is_support/support_url).
+Change: proposals 라우트 삭제(404). Proposal/RequestItem/SupportCampaign 타입,
+support_campaigns 쿼리(공개 8→7개·스튜디오 4→3개 병렬), 샘플/테스트 참조 제거.
+DB 테이블 `support_campaigns` 자체는 보존(데이터 파괴 없음 — 스키마 정리는 별도 결정).
+Validation: 소스 참조 grep 0, vitest 313 전부 통과, prod build OK. 공개 payload는 필드가
+줄기만 함(새 노출 없음 — 경계 안전 방향).
+Rollback: git revert 한 번(라우트·타입·쿼리 복원). 테이블 안 건드려 데이터 복원 불필요.
+
 ## v0.1.0 — 2026-07-26
 
 ### CHG-20260726-001 — FIX — 방송 세션 중복 유령 행 차단(bno unique, 0053)
