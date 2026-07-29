@@ -4126,8 +4126,10 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 .event-detail-readonly {
   animation: editor-card-slide 0.52s cubic-bezier(0.25, 1, 0.5, 1) both;
   /* 폼과 동일하게 고정폭 — 칸 폭에 stretch되면 슬라이드 인 중 내용이 세로로 꾸겨진다. 고정폭이면
-     overflow:hidden + 우측정렬로 오른쪽에서 깔끔히 미끄러져 들어온다(아바타 scene은 아래서 329). */
-  width: 446px;
+     overflow:hidden + 우측정렬로 오른쪽에서 깔끔히 미끄러져 들어온다(아바타 scene은 아래서 312).
+     ⚠ 이 값은 .event-editor-panel form(384)·트랙(.editor-open 400)과 반드시 함께 움직인다 —
+     폼만 384로 줄이고 여기(옛 446)를 안 줄여서 매니저/작업자 상세가 오른쪽이 잘려 보였다. */
+  width: 384px;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -4138,7 +4140,7 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
 }
 .studio-shell.avatar-scene .event-detail-readonly {
-  width: 329px; /* 345 - 거터 16 */
+  width: 312px; /* 트랙 328 - 좌거터 16 — .avatar-scene .event-editor-panel form(312)과 동일 */
 }
 .event-detail-readonly .editor-heading {
   margin-bottom: 6px;

@@ -13,19 +13,25 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ viewer?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
   }
-  const viewer = (await searchParams)?.viewer === "1";
+  const sp = await searchParams;
+  const viewer = sp?.viewer === "1";
+  // 역할별 화면 회귀 검증용(매니저/작업자 읽기전용 상세 등). viewer는 (studio) 가드 대상이라 제외.
+  const role =
+    sp?.role === "manager" || sp?.role === "worker" || sp?.role === "developer"
+      ? sp.role
+      : "owner";
   return (
     <StudioShell
       actor={{
         email: "fixture-owner@example.com",
         isAuthenticated: true,
-        role: "owner",
-        trustedRole: null
+        role,
+        trustedRole: role === "manager" ? "manager" : role === "worker" ? "worker" : null
       }}
       hasUnlockSession={false}
       schedule={sampleStudioSchedule}
