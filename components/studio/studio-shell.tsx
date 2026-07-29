@@ -100,7 +100,7 @@ import { DateTimePicker } from "@/components/studio/datetime-picker";
 import { TagPicker } from "@/components/tags/tag-picker";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { relockPrivateLayerAction, setPasscodeAction } from "@/lib/private-layer/actions";
-import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
+import { STUDIO_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import {
   type CalZoom,
   createWheelStepper,
@@ -650,10 +650,11 @@ export function StudioShell({
     hapticTick();
     setShowWorldCupFeatures(!showWorldCupFeatures);
   }
-  // 모바일(좁은 화면): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
+  // 좁은 화면(<1000px, P1-IPAD-1): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
+  // 아이패드 세로(768)·스플릿뷰도 압축 데스크톱 대신 터치 네이티브 아젠다를 받는다(L4).
   const [isNarrow, setIsNarrow] = useState(initialNarrow);
   useEffect(() => {
-    const mq = window.matchMedia(MOBILE_QUERY);
+    const mq = window.matchMedia(STUDIO_AGENDA_QUERY);
     const apply = () => setIsNarrow(mq.matches);
     apply();
     mq.addEventListener("change", apply);
@@ -1920,7 +1921,7 @@ export function StudioShell({
     setCalZoom(next);
   }, []);
   useEffect(() => {
-    // isNarrow 판정은 MOBILE_QUERY '전체'(폭 640 + 저높이·coarse pointer 포함) — 모바일
+    // isNarrow 판정은 STUDIO_AGENDA_QUERY '전체'(폭 999 + 저높이·coarse pointer 포함) — 아젠다
     // 레이아웃으로 넘어가면 배율을 초기화한다(아젠다 뷰엔 확대 개념이 없다).
     if (isNarrow && calZoomRef.current !== 1) {
       calZoomRef.current = 1;

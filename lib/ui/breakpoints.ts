@@ -43,5 +43,16 @@ export const MOBILE_QUERY = `(max-width: ${BREAKPOINTS.mobile}px), (max-height: 
  * 1040px = 표면 배율 ≈ 0.57(본문 13px → 7.4px)로, 이보다 좁으면 목록이 무조건 낫다.
  * 꾸미기(decorate)는 예외 — 편집은 항상 표면 위에서 한다(시청자와 같은 기하를 봐야 하므로).
  */
+/**
+ * 편집실이 '아젠다(목록)+시트' 토폴로지로 바뀌는 기준 — P1-IPAD-1(L4).
+ *
+ * 640~999px(아이패드 세로 768, 스플릿뷰 등)은 예전엔 데스크톱 2패널을 압축해 구겨 넣었다 —
+ * 터치 타깃이 작아지고 폼이 잘렸다. 계획서 F4대로 1000px 미만은 컨테이너 폭 기준으로
+ * 아젠다 토폴로지를 쓴다(포인터 종류로 정보 구조를 가르지 않는다). CSS 쪽 동일 분기는
+ * studio-shell.css의 999/1000 미디어쿼리와 맞춘다.
+ */
+export const STUDIO_AGENDA_MAX = 999;
+export const STUDIO_AGENDA_QUERY = `(max-width: ${STUDIO_AGENDA_MAX}px), (max-height: ${BREAKPOINTS.mobile}px) and (pointer: coarse)`;
+
 export const POSTER_AGENDA_MAX = 1040;
 export const POSTER_AGENDA_QUERY = `(max-width: ${POSTER_AGENDA_MAX}px), (max-height: ${BREAKPOINTS.mobile}px) and (pointer: coarse)`;

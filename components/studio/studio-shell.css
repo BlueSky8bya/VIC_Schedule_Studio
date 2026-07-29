@@ -450,7 +450,7 @@ html {
   }
 }
 /* 모바일: 폭 절약 — 시각 숨기고 점·글자만. */
-@media (max-width: 640px) {
+@media (max-width: 999px) {
   .save-status {
     padding: 4px 8px;
     font-size: 11px;
@@ -646,7 +646,7 @@ html {
     transform: translateY(0);
   }
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   /* 웹은 가독성 우선 — 글자·여백 키운다. */
   .draft-restored {
     margin-bottom: 4px;
@@ -970,7 +970,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 
 /* 모바일: 누르는 '패널 탭'은 엄지 닿는 아래로, 진행 정보(< > 화살표·점)는 위로.
    (정보 표현은 위 / 누르는 버튼은 아래 원칙 — 데스크톱은 통상 배치 유지.) */
-@media (max-width: 640px) {
+@media (max-width: 999px) {
   
   
   
@@ -1039,7 +1039,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
   line-height: 1.35;
 }
 /* 웹: 불꽃 칸을 넓혀 정렬되게, 글씨도 키운다. */
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .badge-criteria li {
     padding: 11px 15px;
   }
@@ -1063,7 +1063,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
   color: var(--muted, #9aa0ab);
   line-height: 1.4;
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .vt-occ-note {
     font-size: 13px;
   }
@@ -1266,7 +1266,7 @@ html[data-reduce-motion] .perf-spin {
 }
 /* 웹에서만 토글 행 간격을 더 좁힘. 폼이 display:grid; gap:14px라 그 칸 간격이 지배 →
    음수 margin-top으로 14를 상쇄해 실제 간격 ~4px로(절반 이하). 모바일은 그대로. */
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .opt-chip {
     margin-top: -10px;
   }
@@ -1691,7 +1691,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .dtp-cal {
   flex: none;
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .dtp-body {
     flex-direction: row;
     gap: 14px;
@@ -1866,7 +1866,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   box-shadow: 0 3px 10px rgb(107 91 214 / 35%);
 }
 /* 모바일 시트 — 달력·휠·버튼을 키우고, 시간 영역은 폭을 꽉 채운 카드로(빈 공간 낭비 제거). */
-@media (max-width: 640px) {
+@media (max-width: 999px) {
   .dtp-cell {
     font-size: 15px;
     border-radius: 11px;
@@ -2008,7 +2008,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .vcard-foot .vhealth {
   margin-top: 0;
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .vpanel,
   .dayvisit {
     display: grid;
@@ -2111,7 +2111,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
     box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
   }
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .vcrit,
   .vlive {
     font-size: 12px;
@@ -2295,7 +2295,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   font-weight: 700;
   color: var(--muted, #9aa0ab);
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .vt-hours-empty {
     font-size: 13px;
   }
@@ -2363,7 +2363,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border-bottom: 0;
   padding-bottom: 0;
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .own-track {
     height: 20px;
   }
@@ -2660,7 +2660,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   font-weight: 700;
   color: #8a82a6;
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .sec-kpis li {
     padding: 14px 8px;
   }
@@ -2708,7 +2708,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   font-weight: 800;
   color: #3a3550;
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .sys-email {
     font-size: 14.5px;
   }
@@ -2722,7 +2722,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border-radius: 6px;
   font-size: 12.5px;
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .vlog-chip {
     font-size: 12.5px;
     padding: 4px 13px;
@@ -2828,7 +2828,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   font-weight: 700;
 }
 /* 웹: 로그 테이블 — 인셋 패널 + zebra + 호버 좌측 액센트. */
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .vrecent ul.vlog {
     gap: 0;
     padding: 5px;
@@ -2914,7 +2914,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   font-weight: 700;
   color: #8a82a6;
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .dv-total strong {
     font-size: 38px;
   }
@@ -3238,7 +3238,7 @@ html[data-reduce-motion] .role-segment button.active {
 
 /* 데스크톱(>640px)에선 인사이트 글씨를 키운다. 모바일은 컴팩트가 생명이라 기본(작은) 크기를
    그대로 두고, 여기서만 키워 모바일 회귀가 없게 한다. */
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   
   
   
@@ -3273,7 +3273,7 @@ html[data-reduce-motion] .role-segment button.active {
   
 }
 /* 모바일: 탭 8개가 4열에 들어가도록 아이콘은 숨기고 라벨만(컴팩트). */
-@media (max-width: 640px) {
+@media (max-width: 999px) {
   
   
   /* 방문 품질 KPI(방문자·세션·스쳐감·바운스·평균/총체류·최고동접·새/재방문 = 9개)는
@@ -4433,7 +4433,7 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 /* 웹(≥641px): 태그 모달이 720px로 넓어 한 줄 한 태그면 이름칸이 크게 비어 성겨 보인다.
    가로 여백을 써서 그룹 카드를 2열(폭 되면 auto-fill)로 촘촘히 깐다 — 짧은 이름도 칸을 꽉
    채우고, 밀도가 올라간다(=CLAUDE.md 웹 다열 규칙). 헤더·추가버튼·빈안내는 전 폭. */
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .tag-editor-section {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
@@ -5355,7 +5355,7 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
 }
 /* 웹(편집실은 스티커 좌표 제약이 없어 자유롭게 키운다) — 가로 여백을 살려 제목을 더 크고 읽기 좋게,
    모서리를 한 단계 더 둥글려 카드를 또렷·세련되게. CLAUDE.md: 웹 글자는 넉넉히 크게. */
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .studio-event-pill {
     border-radius: var(--r-card);
     gap: calc(5px * var(--cal-zoom, 1)); /* 웹은 가로 여백이 넉넉 — 내부 박자도 한 단계(4→5). */
@@ -5522,7 +5522,7 @@ html[data-reduce-motion] .delete-snack {
   color: rgb(255 255 255 / 72%);
 }
 /* 모바일은 컴팩트가 생명 — 부연 설명 줄은 빼고 핵심 한 줄만 남긴다. */
-@media (max-width: 640px) {
+@media (max-width: 999px) {
   .private-unlocking-text em {
     display: none;
   }
@@ -5996,7 +5996,7 @@ html[data-reduce-motion] .delete-snack {
 }
 /* 웹: 넉넉한 칩 + 호버 떠오름·글로우, 패널 여유(가로폭 활용). */
 /* 웹: 가로폭 활용 — 흐르는 격자(여러 열) + 호버 떠오름. 칩은 큰 터치타깃 불필요. */
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .tp-content {
     grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
     gap: 8px;
@@ -6023,7 +6023,7 @@ html[data-reduce-motion] .delete-snack {
   }
 }
 /* 모바일: 2열 큰 칩(엄지존) — 부제는 숨겨 폭을 아낀다. */
-@media (max-width: 640px) {
+@media (max-width: 999px) {
   .tp-content {
     padding: 9px;
   }
@@ -6077,7 +6077,7 @@ textarea:disabled {
 /* 모바일: 태그 편집 행 = 한 줄 컴팩트 카드. 손잡이(왼쪽) → 이름(늘어남) → 색 스와치 → 삭제(끝).
    드래그 고스트(.tag-drag-ghost)는 body 직속이라 `.tag-editor` 스코프 밖이므로 같은 규칙을 함께
    지정한다(안 그러면 base 규칙으로 떨어져 너비를 뚫는다). */
-@media (max-width: 640px) {
+@media (max-width: 999px) {
   /* 모바일: 태그 = 한 장의 컴팩트 카드(한 줄). 섹션/그룹의 중첩 카드(테두리·배경·패딩)를 걷어내
      카드 하나만 남긴다. 요소가 4개뿐이라 nowrap로 한 줄에 정렬(이름칸이 먼저 줄어든다). */
   .tag-editor .tag-editor-row,
@@ -6898,7 +6898,7 @@ html[data-reduce-motion] .modal-close:active {
   display: inline-flex;
   gap: 10px;
 }
-@media (max-width: 640px) {
+@media (max-width: 999px) {
   /* 모바일은 오버레이를 쓰지 않고 포스터 제목 헤더 안에 주입한다(.agenda-preview-*).
      거기 안내 텍스트(.viewer-preview-note 재사용)는 좁은 폭에 맞춰 더 작게. */
   .viewer-preview-note {
@@ -7011,7 +7011,7 @@ html[data-reduce-motion] .modal-close:active {
 .tip-web {
   display: none;
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .tip-web {
     display: inline;
   }
@@ -7027,7 +7027,7 @@ html[data-reduce-motion] .modal-close:active {
 .tag-tip.warn svg {
   color: #dc2626;
 }
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .tag-tip {
     font-size: 13.5px;
   }
@@ -7643,7 +7643,7 @@ html[data-reduce-motion] .modal-close:active {
   font-size: 11.5px;
   color: var(--muted, #9aa0ab);
 }
-@media (max-width: 640px) {
+@media (max-width: 999px) {
   .perm-table {
     font-size: 12px;
   }
@@ -7761,7 +7761,7 @@ html[data-reduce-motion] .modal-close:active {
 }
 /* 웹 전용 — 행 위에 마우스를 올리면 살짝 떠오르며 옅은 배경(표 행처럼 hover 피드백). 모바일은
    탭 기반이라 hover 없이 그대로. (악센트바는 행 내부 패딩을 모르는 채 넣으면 겹칠 수 있어 제외.) */
-@media (min-width: 641px) {
+@media (min-width: 1000px) {
   .member-row {
     border-radius: var(--r-md);
     transition:
