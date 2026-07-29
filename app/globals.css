@@ -149,6 +149,8 @@
   --control-hit: calc(var(--space-6) + var(--space-3));
   --stroke-hairline: 1px;
   --decorate-sheet-height: 46svh;
+  --broadcast-source-width: 280px;
+  --broadcast-layer-width: 248px;
 
   /* 라운드 */
   --r-sm: 8px;
