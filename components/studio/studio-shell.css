@@ -4943,9 +4943,11 @@ html[data-reduce-motion] .studio-event-pill.connect-target {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
+/* 호버 강조는 글로우로만 — border-width를 올리면 이음변에서 0으로 열어둔 변까지
+   3px로 되살아나 세로선이 다시 그려진다(shorthand 함정). */
 .studio-event-pill.connect-target.connect-hover::after {
-  border-width: 3px;
   animation: none;
+  box-shadow: 0 0 14px 3px rgb(139 92 246 / 55%);
 }
 /* 체인 멤버가 들려버리면 이음매가 어긋난다 — 이어진 후보는 들지 않는다. */
 .studio-event-pill.connect-hover.link-join-left,
