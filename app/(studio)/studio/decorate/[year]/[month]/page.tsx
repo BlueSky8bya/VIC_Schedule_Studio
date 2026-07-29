@@ -5,6 +5,7 @@ import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
 import { canDecorate, canEditSchedule, canManageStickerAssets } from "@/lib/permissions/roles";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { createSupabaseServerClient } from "@/lib/auth/server";
+import { getTodayKst, parseMonthParams } from "@/lib/calendar/month";
 import { isPosterThemeKey, type PosterThemeKey } from "@/lib/domain/schedule-types";
 import {
   deleteStickerAction,
@@ -79,9 +80,12 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
 
   // 새로고침 복원: 쿠키에 기록된 마지막 꾸미기 달이 있으면 그 달로 연다(없으면 URL의 연·월).
   // 진입 버튼이 쿠키를 진입 월로 세팅하므로, 새 진입은 의도한 달, 이후 월 이동·새로고침은 그 달.
+  // P1-ROUTE-1: URL 값은 검증을 통과할 때만 쓴다 — 깨진 URL(NaN·범위 밖)이면 KST 현재 달.
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
-  const initialYear = mem.dy ?? Number(year);
-  const initialMonth = mem.dm ?? Number(month);
+  const urlView = parseMonthParams(year, month);
+  const todayIso = getTodayKst();
+  const initialYear = mem.dy ?? urlView?.year ?? Number(todayIso.slice(0, 4));
+  const initialMonth = mem.dm ?? urlView?.month ?? Number(todayIso.slice(5, 7));
   // 매니저는 기존 이모지로 꾸미기'만' — 커스텀 이모지 업로드·삭제 액션은 넘기지 않아 UI도 숨는다.
   const canAssets = canManageStickerAssets(actor.role, actor.isWorker === true);
 

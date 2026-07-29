@@ -26,6 +26,19 @@ export function getTodayKst(): string {
   }).format(new Date());
 }
 
+// P1-ROUTE-1: /studio/…/[year]/[month] 콜드 엔트리 파라미터 검증(단일 출처).
+// 정수·범위(2020~2099, 1~12)를 벗어나면 null — 호출부가 쿠키→KST 현재 달로 폴백한다.
+export function parseMonthParams(
+  year: string,
+  month: string
+): { year: number; month: number } | null {
+  if (!/^\d{4}$/.test(year) || !/^\d{1,2}$/.test(month)) return null;
+  const y = Number(year);
+  const m = Number(month);
+  if (y < 2020 || y > 2099 || m < 1 || m > 12) return null;
+  return { year: y, month: m };
+}
+
 export type DayState = {
   isToday: boolean;
   isPast: boolean;
