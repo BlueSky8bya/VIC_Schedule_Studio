@@ -1428,6 +1428,21 @@ export function StudioShell({
     [selectedEventId, visibleEvents]
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
+  // 키보드 달력에서 화살표로 달 경계를 넘을 때, 달 전환 후 이어서 포커스할 날짜(P0-A11Y-1).
+  const pendingFocusDateRef = useRef<string | null>(null);
+  useEffect(() => {
+    const target = pendingFocusDateRef.current;
+    if (!target) return;
+    pendingFocusDateRef.current = null;
+    // 새 달 그리드가 마운트된 다음 프레임에 포커스(슬라이드 애니메이션과 무관하게 DOM은 즉시 있음).
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        document
+          .querySelector<HTMLElement>(`.studio-month-grid [data-isodate="${target}"]`)
+          ?.focus();
+      })
+    );
+  }, [view]);
 
   // 접힌 '공개 범위 · 옵션' 헤더에 현재 값을 한 줄로 요약한다 — 접혀 있어도 이 일정이 엠바고인지,
   // 미정인지, 떡밥인지 펼치지 않고 바로 보이게(접기가 정보를 숨기면 안 된다).
@@ -5710,6 +5725,21 @@ export function StudioShell({
                   )
                   ?.focus();
               };
+              // 화살표는 '날짜' 기준으로 움직인다 — 이 달 마지막 날에서 →를 누르면 다음 달로
+              // 자연스럽게 이어진다(달 전환 후 그 날짜에 포커스 복원, APG date grid 관례).
+              const focusByDate = (fromIso: string, deltaDays: number) => {
+                const target = addDaysIso(fromIso, deltaDays);
+                const targetMonth = target.slice(0, 7);
+                const viewMonth = `${view.year}-${String(view.month).padStart(2, "0")}`;
+                if (targetMonth !== viewMonth) {
+                  pendingFocusDateRef.current = target;
+                  moveMonth(deltaDays > 0 ? 1 : -1);
+                  return;
+                }
+                document
+                  .querySelector<HTMLElement>(`.studio-month-grid [data-isodate="${target}"]`)
+                  ?.focus();
+              };
               return cells.map((cell, cellIndex) => {
               const covering = getEventsForDate(liveEvents, cell.isoDate);
               const supportHere = covering.filter((e) => e.isSupport);
@@ -5794,7 +5824,7 @@ export function StudioShell({
                     if (e.key in nav) {
                       e.preventDefault();
                       e.stopPropagation();
-                      focusCell(cellIndex + nav[e.key]);
+                      focusByDate(cell.isoDate, nav[e.key]);
                       return;
                     }
                     if (e.key === "Home") {
