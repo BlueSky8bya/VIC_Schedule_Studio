@@ -79,8 +79,14 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
     Tab/Shift+Tab 카드 내 순환(capture). 4개 모달(메인·비밀번호·태그 시트·업도움 시트)
     적용. Esc·포커스 복원은 기존 B2 효과. 잔여: 시청자 '이 달 기록' 시트·모바일 편집
     시트는 미적용(터치 중심), background inert 처리도 후속.
-- **다음 = P2**(계획서 K3): 토큰화(TOKEN-1) → StudioShell 분해(ARCH-1, behavior-preserving)
-  → ROUTE/PROTO 정리 → 꾸미기/색picker/그래프 대안/강제색·zoom/KST helper.
+- **P2 시작(2026-07-30 밤)**: `P2-ROUTE-1`+`P2-PROTO-1` 완료(`f63675c`) —
+  /studio/tags·trusted-members → /studio?panel= 리다이렉트(StudioShell panel 딥링크,
+  버튼과 동일 권한 게이트), 가짜 proposals 공개 엔드포인트 삭제(404 계약 테스트),
+  supportCampaigns/Proposal/RequestItem 죽은 payload·타입 제거(공개 8→7, 스튜디오 4→3
+  병렬 쿼리). DB 테이블은 보존. CHANGELOG_AGENT CHG-20260730-001.
+  또: TITLE-1 심화(제목칸 라이브 미러 — 첫 줄 진하게+카드식 세부 레일, `c2fce73`~`f1a1d76`).
+- **P2 남은 것**: TOKEN-1(시맨틱 토큰) → ARCH-1(StudioShell 분해, behavior-preserving) →
+  IA-1/CONFLICT-1/STICKER-1/COLOR-1/INSIGHT-1/A11Y-2/KST-1.
   **그 다음 애플 기조 리디자인을 뼈대 위에**(사용자 합의된 순서).
 - **주의**: role fixture·canary 자동화는 아직 부분적(event-validation 단위 테스트만). 계획서
   K5 매트릭스 기준으로 슬라이스마다 채울 것.
