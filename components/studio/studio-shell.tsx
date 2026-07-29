@@ -2427,8 +2427,12 @@ export function StudioShell({
     setActionError(null);
     hapticTick();
     flashToast("이어붙였어요");
-    // 맞물림 연출 — 체인 전체가 한 번 딸깍(스쿼시+글로우). 애니메이션은 CSS가 담당.
-    setLinkFlashIds(new Set(chain));
+    // 맞물림 연출 — 새로 이은 두 카드만이 아니라 '이은 결과로 한 몸이 된 체인 전체'가
+    // 딸깍(사용자 결정). 낙관 반영 후 상태 기준으로 앞뒤 연결을 전부 따라간다.
+    const afterLink = events.map((e) =>
+      linkMap.has(e.id) ? { ...e, linkNext: linkMap.get(e.id) } : e
+    );
+    setLinkFlashIds(getLinkedChainIds(anchorId, afterLink));
     if (linkFlashTimer.current) window.clearTimeout(linkFlashTimer.current);
     linkFlashTimer.current = window.setTimeout(() => setLinkFlashIds(new Set()), 700);
     void (async () => {
@@ -2605,12 +2609,21 @@ export function StudioShell({
     }
     clearConnectCandidates();
     g.svg?.remove();
+    // 제스처가 달력 안 요소에 남긴 포커스를 걷어낸다 — 남으면 ←/→가 달 이동 대신
+    // roving 날짜 이동으로 먹힌다(아무것도 선택 안 된 상태의 기대와 어긋남).
+    if (g.moved) {
+      const ae = document.activeElement as HTMLElement | null;
+      if (ae?.closest?.(".studio-month-grid")) ae.blur();
+    }
   }
   // 우클릭 눌림 — '이미 선택된 카드' 위에서 시작할 때만 잇기(보라 선), 그 외(다른 카드·빈 곳·
   // 달력 밖 어디든)는 끊기(빨간 선). 끊기를 카드 위에서 시작해도 잇기로 오인되지 않게, 또 끊는
   // 선을 달력 밖에서 시작해 주 경계 이음새까지 그어 올 수 있게 한다. 실제 시작은 6px 이상 움직였을 때.
   function beginRightGesture(e: PointerEvent) {
     if (!canEdit || e.button !== 2 || e.pointerType !== "mouse") return;
+    // 우클릭이 카드/날짜 칸에 포커스를 옮기지 않게 — 제스처 뒤 ←/→가 (roving 포커스의)
+    // 날짜 이동으로 먹혀 달 이동이 안 되던 문제(사용자 지적).
+    e.preventDefault();
     const el = e.target as HTMLElement;
     const pill = el.closest<HTMLElement>("[data-eventid]");
     const pillId = pill?.getAttribute("data-eventid") ?? null;
