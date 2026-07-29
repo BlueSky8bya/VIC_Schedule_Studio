@@ -85,8 +85,18 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
   supportCampaigns/Proposal/RequestItem 죽은 payload·타입 제거(공개 8→7, 스튜디오 4→3
   병렬 쿼리). DB 테이블은 보존. CHANGELOG_AGENT CHG-20260730-001.
   또: TITLE-1 심화(제목칸 라이브 미러 — 첫 줄 진하게+카드식 세부 레일, `c2fce73`~`f1a1d76`).
-- **P2 남은 것**: TOKEN-1(시맨틱 토큰) → ARCH-1(StudioShell 분해, behavior-preserving) →
-  IA-1/CONFLICT-1/STICKER-1/COLOR-1/INSIGHT-1/A11Y-2/KST-1.
+- **P2 추가 완료(2026-07-30 밤 2차)**: `KST-1`(월/시각 헬퍼 단일화 + UTC 경계 테스트),
+  `STICKER-1` 키보드부(+/- 크기·[/] 회전, 실행취소 묶음), `A11Y-2` 강제색부(색=정보 표면만
+  forced-color-adjust:none) — `63c9642`·`aa37bee`.
+  **⚠ MULTI-0 롤백(`63c9642`)**: 달력 드래그 범위 강조는 사용자 요청으로 복원 — 방송 중
+  기간 짚기 실사용 도구. 계획서의 '액션 없는 상태' 판정은 오판이었다. 다시 제거 금지.
+- **P2 남은 것(전부 대형 — 새 세션에서 하나씩 권장)**:
+  - `TOKEN-1` 시맨틱 토큰(대규모 visual diff — surface별 스냅샷과 함께),
+  - `ARCH-1` StudioShell 분해(behavior-preserving, 특성화 테스트 먼저),
+  - `IA-1` 상단 액션 재편(애플 리디자인과 겹침 — 리디자인 때 같이 권장),
+  - `CONFLICT-1` 다중기기 충돌 UI(증거 게이트 — 실제 충돌 사례 관찰 후),
+  - `COLOR-1` 색 picker 키보드/시트, `INSIGHT-1` 차트 텍스트 대안,
+  - STICKER-1 잔여(스냅 큐·터치 핸들), A11Y-2 잔여(200/400% 줌 실측·SR).
   **그 다음 애플 기조 리디자인을 뼈대 위에**(사용자 합의된 순서).
 - **주의**: role fixture·canary 자동화는 아직 부분적(event-validation 단위 테스트만). 계획서
   K5 매트릭스 기준으로 슬라이스마다 채울 것.
