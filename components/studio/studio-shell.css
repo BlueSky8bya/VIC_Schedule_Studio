@@ -9038,18 +9038,17 @@ html[data-reduce-motion] .m-edit-x:active {
   position: relative;
   display: block;
   width: 100%;
-  color: transparent;
-  caret-color: var(--ink, #2c2740);
 }
 .title-live textarea::placeholder {
   color: #c0b8ab;
   font-weight: 600;
 }
-.title-live .tt-first {
-  color: var(--ink, #1c2433);
-}
+/* 카드 정본은 세부 줄도 제목과 '같은 잉크'(구분은 레일뿐) — 그래서 글자는 textarea가
+   직접 그리고(투명 트릭 폐지 = 커서/IME 정렬 리스크 소멸), 미러는 레일 위치 측정과
+   레일 그리기만 담당한다. 미러 글자는 투명(측정용 골격). */
+.title-live .tt-first,
 .title-live .tt-rest {
-  color: #5b606b; /* 실제 카드 서브 줄(.event-subs/.agenda-subs)과 같은 잉크 */
+  color: transparent;
 }
 /* 세부 줄 왼쪽 레일(|) — 실제 카드(.event-subs::before)와 같은 어휘: 2px, 잉크색 28% 투명.
    패딩 거터 안이라 글자·커서를 밀지 않는다. top/height는 layout effect가 실측으로 채운다. */
