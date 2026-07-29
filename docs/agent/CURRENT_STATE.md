@@ -21,13 +21,22 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
 - **완료(2026-07-29)**: `P0-SEC-1`(공개 범위 fail-closed — 조용한 public 변환 금지, 모바일
   게이트 통일, 서버 잠금해제 검증), `P0-SEC-2`(미리보기 = 서버 공개 스냅샷 전용 + 진입 시
   재조회 `preview-actions.ts` — 떡밥 가림 우회 제거), `P0-SEC-3`(오류 원문 비노출 —
-  `safe-action-error.ts`, error boundary digest만).
-- **다음 P0 순서**: `P0-AUTH-1`(태그/URL/target 검증 — L6 현행 유지 반영해 developer 회수는
-  제외) → `P0-PRIV-1`(draft localStorage 영속 중단) → `P0-PRIV-2/3`(L8 auth-session unlock,
-  legacy embargo 정리) → `P0-DATA-2`(원자적 RPC) → `P0-DATA-1`(fling 제거+tombstone 8초/24h)
-  → `P0-A11Y-1`/`P0-RESP-1`. 그 뒤 P1(빠른 생성·이동 메뉴·undo/redo·아이패드…).
-- **주의**: P0 슬라이스들의 전용 회귀 테스트(role fixture·canary)는 아직 없음 — 계획서
-  K5 매트릭스 기준으로 슬라이스 진행하며 채울 것.
+  `safe-action-error.ts`, error boundary digest만), `P0-AUTH-1`(`event-validation.ts` —
+  날짜/링크 https/태그 payload 서버 검증 + 매니저 비공개 태그 차단 + 특성화 테스트 13개.
+  L6 반영: developer 권한 회수 안 함), `P0-PRIV-1`(드래프트 메모리 전용 + legacy 키 물리 삭제).
+- **다음 P0 순서(새 세션 권장 — DB 마이그레이션·배포 순서 민감)**:
+  1. `P0-DATA-2` 원자적 RPC(event+tags+meta 한 트랜잭션, link/reorder 원자화, target rollback)
+     — DB function 추가는 additive라 상대적으로 안전, 먼저.
+  2. `P0-PRIV-2` L8 auth-session unlock(grant 테이블/쿠키/rate limit/no-store) — **소유자
+     잠금해제가 걸린 기능이라 배포 중 하위호환 필수**, 단독 세션에서 신중히.
+  3. `P0-PRIV-3` legacy embargo 정리(0025 적용 감사 + enum/type/UI 제거).
+  4. `P0-DATA-1` fling 삭제 제거 + tombstone(8초 스낵바/24h 최근 삭제, L5).
+  5. `P0-A11Y-1`(모바일 월 내비 가시화·roving date grid·드래그 메뉴 대안) / `P0-RESP-1`(가로
+     차단 오버레이 제거 — F9 레이아웃과 함께).
+  그 뒤 P1(빠른 생성·이동 메뉴·undo/redo·아이패드…), P2 토큰화, **최종적으로 애플 기조
+  리디자인을 뼈대 위에**(사용자 합의된 순서).
+- **주의**: role fixture·canary 자동화는 아직 부분적(event-validation 단위 테스트만). 계획서
+  K5 매트릭스 기준으로 슬라이스마다 채울 것.
 
 ## (이전) Objective
 
