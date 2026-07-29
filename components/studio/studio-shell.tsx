@@ -1500,12 +1500,11 @@ export function StudioShell({
         const mr = mirror.getBoundingClientRect();
         const rr = rest.getBoundingClientRect();
         if (mr.height < 1) return; // 아직 morph 중 — 아래 재실측이 잡는다
-        // 줄박스(line-height 1.5)는 글리프 위아래로 반행간이 붙는다 — rect 그대로 쓰면 레일이
-        // 글자보다 위로 삐죽 나와 보인다(카드보다 어긋난 인상). 위아래 4px씩 안쪽으로 조여
-        // 글리프에 수직 중앙 정렬(16px 글자 + 24px 줄박스 기준 반행간 = 4px).
+        // 카드 정본 실측(pill-subs): 레일 = 서브 텍스트 rect 그대로(top +1px, 인셋 없음).
+        // 임의 인셋을 주면 카드와 어긋난다 — rect 좌표를 그대로 쓴다.
         rail.style.opacity = "1";
-        rail.style.top = `${rr.top - mr.top + mirror.scrollTop + 4}px`;
-        rail.style.height = `${Math.max(0, rr.height - 8)}px`;
+        rail.style.top = `${rr.top - mr.top + mirror.scrollTop}px`;
+        rail.style.height = `${Math.max(0, rr.height)}px`;
       });
     };
     measure();
