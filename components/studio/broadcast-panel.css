@@ -1692,6 +1692,19 @@ html[data-reduce-motion] .bp-day-col {
   font-weight: 700;
   color: var(--muted);
 }
+/* 카드 안 일정 칩 세로 자유 배치 래퍼 — 선택 도구에서 끌어 내려 늘린 카드의 빈 공간에
+   두거나 순서를 바꿔 보이게(세션 전용). 이동된 칩은 형제 위로 뜬다. */
+.bp-chip-wrap {
+  cursor: grab;
+  touch-action: none;
+}
+.bp-chip-wrap:active {
+  cursor: grabbing;
+}
+.bp-chip-wrap.moved {
+  position: relative;
+  z-index: 2;
+}
 .bp-card {
   display: flex;
   flex-direction: column;

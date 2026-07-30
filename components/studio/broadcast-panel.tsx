@@ -365,6 +365,65 @@ export function BroadcastPanel({
   const clearArmTimer = useRef<number | null>(null);
   // 날짜 컬럼 자유 배치(위치·폭). 폭 비율만큼 글자도 커진다(컬럼 fontSize %) — '크게 보여주기'.
   const [cols, setCols] = useState<Map<string, ColBox>>(() => new Map());
+  // 카드 '안' 일정 칩 세로 자유 배치(사용자 요청) — 늘린 카드의 빈 아래 공간으로 칩을
+  // 끌어 내리거나 서로 순서를 바꿔 보이게. key = `${dateKey}:${eventId}`, 값 = translateY(px).
+  // 세션 전용(창 닫으면 소멸 — 판서와 같은 수명), 카드 밖으로는 못 나가게 클램프.
+  const [chipDy, setChipDy] = useState<Map<string, number>>(() => new Map());
+  const chipDragRef = useRef<{
+    key: string;
+    pointerId: number;
+    startY: number;
+    orig: number;
+    minDy: number;
+    maxDy: number;
+  } | null>(null);
+  function onChipPointerDown(
+    e: React.PointerEvent<HTMLDivElement>,
+    dateKey: string,
+    eventId: string
+  ) {
+    if (tool !== "select" || e.button !== 0) return;
+    if (!bgActive) setActiveLayerId(BG_LAYER_ID); // 카드 조작 의도 — 일정 레이어로 자동 전환
+    e.preventDefault();
+    e.stopPropagation(); // 카드(컬럼) 이동 제스처로 새지 않게
+    const chip = e.currentTarget;
+    const card = chip.closest<HTMLElement>(".bp-day-col");
+    if (!card) return;
+    const key = `${dateKey}:${eventId}`;
+    const orig = chipDy.get(key) ?? 0;
+    const chipRect = chip.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    const head = card.querySelector(".bp-day-head")?.getBoundingClientRect();
+    chip.setPointerCapture(e.pointerId);
+    chipDragRef.current = {
+      key,
+      pointerId: e.pointerId,
+      startY: e.clientY,
+      orig,
+      minDy: orig + ((head?.bottom ?? cardRect.top + 12) + 4 - chipRect.top),
+      maxDy: orig + (cardRect.bottom - 10 - chipRect.bottom)
+    };
+    hapticTick();
+  }
+  function onChipPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const d = chipDragRef.current;
+    if (!d || d.pointerId !== e.pointerId) return;
+    e.stopPropagation();
+    const dy = Math.min(d.maxDy, Math.max(d.minDy, d.orig + (e.clientY - d.startY)));
+    setChipDy((prev) => {
+      const snapped = Math.abs(dy) < 3 ? 0 : dy; // 원위치 근처는 자석처럼 딱
+      if ((prev.get(d.key) ?? 0) === snapped) return prev;
+      const next = new Map(prev);
+      if (snapped === 0) next.delete(d.key);
+      else next.set(d.key, snapped);
+      return next;
+    });
+  }
+  function onChipPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    const d = chipDragRef.current;
+    if (!d || d.pointerId !== e.pointerId) return;
+    chipDragRef.current = null;
+  }
   // 절대배치 카드의 실제 높이는 부모 크기에 반영되지 않는다. 실측값으로 판서판/캔버스
   // 하단을 늘려 큰 카드의 아래까지 그릴 수 있게 한다.
   const [colHeights, setColHeights] = useState<Map<string, number>>(() => new Map());
@@ -3050,9 +3109,24 @@ export function BroadcastPanel({
                     {day.events.length === 0 ? (
                       <p className="bp-day-empty">일정 없음</p>
                     ) : (
-                      day.events.map((ev) => (
-                        <EventCard event={ev} key={`${day.dateKey}-${ev.id}`} />
-                      ))
+                      day.events.map((ev) => {
+                        const dy = chipDy.get(`${day.dateKey}:${ev.id}`) ?? 0;
+                        return (
+                          // 칩 세로 자유 배치 래퍼 — 선택 도구에서 끌어 내려 늘린 카드의
+                          // 빈 공간에 두거나 순서를 바꿔 보이게 한다(세션 전용).
+                          <div
+                            className={`bp-chip-wrap${dy !== 0 ? " moved" : ""}`}
+                            key={`${day.dateKey}-${ev.id}`}
+                            style={dy !== 0 ? { transform: `translateY(${dy}px)` } : undefined}
+                            onLostPointerCapture={onChipPointerUp}
+                            onPointerDown={(e) => onChipPointerDown(e, day.dateKey, ev.id)}
+                            onPointerMove={onChipPointerMove}
+                            onPointerUp={onChipPointerUp}
+                          >
+                            <EventCard event={ev} />
+                          </div>
+                        );
+                      })
                     )}
                     {/* 크기 손잡이 — 모서리=대각(폭·글자), 오른쪽 변=너비만, 아래 변=높이만
                         (그림판 선택 핸들 문법, 사용자 요청). 선택 도구에서만. */}
