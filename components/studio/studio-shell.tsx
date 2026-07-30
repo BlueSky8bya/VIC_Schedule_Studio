@@ -5912,6 +5912,18 @@ export function StudioShell({
                           }
                           onBlur={titleCompact ? () => leaveZoomPeek(event.id) : undefined}
                         >
+                          {/* 드롭 안내바 — 활주로 열린 틈 안에 정확한 삽입 위치를 표시(사용자 요청).
+                              드래그 원위치 그대로(이동 없음)인 자리엔 띄우지 않는다. */}
+                          {liIdx === eventIndex &&
+                          !(dragSrcHere && (liIdx === dragOrigIdx || liIdx === dragOrigIdx + 1)) ? (
+                            <span className="drop-insert-line" aria-hidden="true" />
+                          ) : null}
+                          {liIdx !== null &&
+                          liIdx >= dateEvents.length &&
+                          eventIndex === dateEvents.length - 1 &&
+                          !(dragSrcHere && dragOrigIdx === dateEvents.length - 1) ? (
+                            <span className="drop-insert-line end" aria-hidden="true" />
+                          ) : null}
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
                             {span.showTitle && syncingIds.includes(event.id) ? (

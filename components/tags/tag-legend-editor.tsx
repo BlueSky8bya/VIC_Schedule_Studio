@@ -296,9 +296,16 @@ export function TagLegendEditor({
     if (overId && dragId.current && overId !== dragId.current) {
       setOrderIds((cur) => moveBefore(cur, dragId.current as string, overId));
     }
-    const margin = 90;
+    // 자동 스크롤 판정은 '스크롤러' 가장자리 기준 — 창 기준이면 모달이 화면 중앙에 떠 있을 때
+    // 모달 바닥까지 끌어도 스크롤이 안 내려갔다(사용자 지적).
+    const sc = scrollerRef.current;
+    const edge =
+      sc && sc !== window
+        ? (sc as HTMLElement).getBoundingClientRect()
+        : { top: 0, bottom: window.innerHeight };
+    const margin = 72;
     scrollDirRef.current =
-      e.clientY < margin ? -1 : e.clientY > window.innerHeight - margin ? 1 : 0;
+      e.clientY < edge.top + margin ? -1 : e.clientY > edge.bottom - margin ? 1 : 0;
   }
   // FLIP 활주(그림판 레이어 문법): 드래그 중 orderIds가 바뀌면 행들이 순간이동하는 대신
   // 이전 위치에서 새 위치로 미끄러진다. 매 렌더 후 각 행의 top을 기록해 두고, 순서가 바뀐

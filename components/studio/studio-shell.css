@@ -10792,13 +10792,19 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
   color: var(--status-success);
 }
 
+/* 하단 여백은 sticky 푸터 자신이 갖는다(공지 모달과 같은 수정) — 스크롤러 padding-bottom
+   방식은 푸터 아래 투시 구간이 생겨 지나가는 행이 '전체 저장' 밑에 비쳤다(실측 재현).
+   배경도 반투명 재질 대신 불투명(모달 불투명 원칙 + 뒤 행 비침 방지). */
+.modal-card-tags > .tag-editor {
+  padding-bottom: 0;
+}
 .modal-card-tags .tag-editor-actions {
   position: sticky;
   bottom: 0;
   z-index: 2;
-  margin: 0 calc(var(--space-panel) * -1) calc(var(--space-panel) * -1);
+  margin: 0 calc(var(--space-panel) * -1);
   border-top: var(--stroke-hairline) solid var(--line);
-  background: var(--material-bg-strong);
+  background: var(--surface);
   padding: var(--space-3) var(--space-panel)
     calc(var(--space-3) + var(--safe-bottom));
 }
