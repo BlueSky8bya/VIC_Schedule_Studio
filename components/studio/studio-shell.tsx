@@ -5750,7 +5750,9 @@ export function StudioShell({
                       // 체인 이음변(색 일치 여부 무관) — 칠(getEventSpan)은 색이 같을 때만
                       // 병합하지만, 선택·연결 후보 '하이라이트'는 체인 전체가 한 덩어리로
                       // 보여야 한다(사용자 결정). CSS가 .selected/.connect-target에서만 쓴다.
-                      const evStartKey = event.startsAt.slice(0, 10);
+                      // ⚠ startsAt.slice는 UTC 날짜 — KST 셀 키와 어긋나 join/recoil 판정이
+                      // 통째로 빗나갔다(대나무 마디 링의 진범). KST 정본 헬퍼 사용.
+                      const evStartKey = getEventDateKey(event);
                       const evEndKey = event.endDateKey ?? evStartKey;
                       const joinRight =
                         cell.isoDate === evEndKey &&
