@@ -4,6 +4,7 @@ import { AlertTriangle, GripVertical, Lock, Palette, Plus, Save, Trash2 } from "
 import {
   type PointerEvent as ReactPointerEvent,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -299,6 +300,37 @@ export function TagLegendEditor({
     scrollDirRef.current =
       e.clientY < margin ? -1 : e.clientY > window.innerHeight - margin ? 1 : 0;
   }
+  // FLIP 활주(그림판 레이어 문법): 드래그 중 orderIds가 바뀌면 행들이 순간이동하는 대신
+  // 이전 위치에서 새 위치로 미끄러진다. 매 렌더 후 각 행의 top을 기록해 두고, 순서가 바뀐
+  // 렌더에서 (이전 top - 새 top)만큼 역변환을 걸었다가 다음 프레임에 풀어 전환시킨다.
+  const editorRootRef = useRef<HTMLDivElement | null>(null);
+  const rowTopsRef = useRef<Map<string, number>>(new Map());
+  useLayoutEffect(() => {
+    const root = editorRootRef.current;
+    if (!root) return;
+    const prev = rowTopsRef.current;
+    const next = new Map<string, number>();
+    const reduce = reduceMotionEnabled();
+    root.querySelectorAll<HTMLElement>("[data-tagid]").forEach((el) => {
+      const id = el.dataset.tagid;
+      if (!id) return;
+      const top = el.getBoundingClientRect().top;
+      next.set(id, top);
+      if (!draggingId || reduce || id === draggingId) return;
+      const old = prev.get(id);
+      if (old === undefined) return;
+      const delta = old - top;
+      if (Math.abs(delta) < 1) return;
+      el.style.transition = "none";
+      el.style.transform = `translateY(${delta}px)`;
+      requestAnimationFrame(() => {
+        el.style.transition = "transform 0.22s var(--ease, ease)";
+        el.style.transform = "";
+      });
+    });
+    rowTopsRef.current = next;
+  });
+
   function endDrag() {
     if (moveHandlerRef.current) {
       window.removeEventListener("pointermove", moveHandlerRef.current);
@@ -780,7 +812,7 @@ export function TagLegendEditor({
   }
 
   return (
-    <div className="tag-editor">
+    <div className="tag-editor" ref={editorRootRef}>
       <div className="tag-tips">
         {/* 문장은 tag-tip-text 하나로 감싼다 — flex 컨테이너에 <b>·텍스트가 형제로 흩어지면
             각각 개별 아이템으로 줄바꿈돼 좁은 화면에서 단어가 세로로 조각났다. */}

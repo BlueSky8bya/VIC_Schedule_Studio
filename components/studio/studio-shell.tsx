@@ -1561,6 +1561,8 @@ export function StudioShell({
   // "유령(ghost)"이 손끝을 따라오고(웹·터치 공용), 가장자리에선 자동 스크롤된다.
   // (멀티데이 막대는 칸마다 쪼개 그려 드래그가 까다로워 제외 — 단일일 카드만 끌 수 있다.)
   const [dragEventId, setDragEventId] = useState<string | null>(null);
+  // 드래그 중 형제 카드 슬라이드 프리뷰(그림판 레이어 문법) 한 칸 크기 — 카드 높이+간격.
+  const [dragChipH, setDragChipH] = useState(0);
   // 잇기(연결)를 '드래그'로만 하도록: 카드를 집으면 지금 이 카드와 이을 수 있는(연속+같은태그)
   // 상대 카드들을 강조하고 나머지는 흐릿하게, 그 위로 끌고 가 놓으면 그 구간을 잇는다.
   // (예전 클릭 2번 연결은 제목 편집 왕복 중 실수로 붙던 문제로 제거했다.)
@@ -2091,6 +2093,7 @@ export function StudioShell({
     ghost?.remove();
     dragGhostRef.current = null;
     setDragEventId(null);
+    setDragChipH(0);
     if (info?.started && target) {
       void dropEventInto(info.id, info.sourceDate, target, over);
     }
@@ -2145,6 +2148,7 @@ export function StudioShell({
         flingGhostRef.current?.remove();
         flingGhostRef.current = null;
         setDragEventId(null);
+        setDragChipH(0);
         hapticDelete();
         commitDelete(eventId, snapshot);
         flashToast("일정을 던져 버렸어요 · Ctrl+Z로 되돌리기");
@@ -2206,6 +2210,8 @@ export function StudioShell({
       document.body.appendChild(ghost);
       dragGhostRef.current = ghost;
       setDragEventId(info.id);
+      // 슬라이드 프리뷰 한 칸 = 카드 높이 + 목록 간격(5×zoom) — 형제 카드가 이만큼 밀린다.
+      setDragChipH(rect.height + 5 * calZoomRef.current);
       // 진자 물리 초기화. pivot=잡은 점, 추=카드 중심. 길이 L=잡은점→중심 거리(최소 24px),
       // φ0=로컬에서 그 벡터의 각도. 처음엔 카드가 똑바로 선 상태(추=중심 실제 위치)에서 시작해
       // 중력으로 천천히 매달린다.
@@ -5557,13 +5563,11 @@ export function StudioShell({
               const covering = getEventsForDate(liveEvents, cell.isoDate);
               const supportHere = covering.filter((e) => e.isSupport);
               const dateEvents = covering.filter((e) => !e.isSupport);
-              // 드롭 삽입선이 이 칸의 어느 카드 앞에 올지(없으면 undefined, null이면 맨 끝).
-              // 안내선은 '다른' 카드 사이 위/아래를 고를 때만 의미가 있다. 드래그 중인 카드(희미한
-              // 원위치)밖에 없는 칸이나 빈 칸엔 띄우지 않는다 — 희미한 카드가 이미 원래 자리를 보여줌.
-              let dropLineBeforeId: string | null | undefined = undefined;
-              const hasOtherEvent = dateEvents.some((e) => e.id !== dragEventId);
-              if (dragEventId && dropSlot && dropSlot.day === cell.isoDate && hasOtherEvent) {
-                // 끈(이어진 일정)은 위에 고정 — 안내선은 끈 아래에서만 뜬다.
+              // 드롭 위치 프리뷰(그림판 레이어 문법) — 삽입선 대신 형제 카드가 미끄러져
+              // 빈 칸이 열린다. liIdx = 이 칸에서 놓일 인덱스(이 칸이 드롭 대상일 때만).
+              let liIdx: number | null = null;
+              if (dragEventId && dropSlot && dropSlot.day === cell.isoDate) {
+                // 끈(이어진 일정)은 위에 고정 — 그 아래로만 들어간다.
                 const connectedCount = dateEvents.filter((e) => isConnectedEvent(e)).length;
                 let li: number;
                 if (!dropSlot.overId) {
@@ -5572,9 +5576,13 @@ export function StudioShell({
                   const oi = dateEvents.findIndex((e) => e.id === dropSlot.overId);
                   li = oi < 0 ? dateEvents.length : dropSlot.after ? oi + 1 : oi;
                 }
-                li = Math.max(li, connectedCount); // 끈 위로는 못 올라감
-                dropLineBeforeId = li >= dateEvents.length ? null : dateEvents[li].id;
+                liIdx = Math.max(li, connectedCount);
               }
+              const dragSrcHere =
+                dragEventId !== null && dateEvents.some((e) => e.id === dragEventId);
+              const dragOrigIdx = dragSrcHere
+                ? dateEvents.findIndex((e) => e.id === dragEventId)
+                : -1;
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const visibleDayMark = worldCupFxVisible
                 ? getDayMark(cell.isoDate)
@@ -5813,6 +5821,32 @@ export function StudioShell({
                           ? getSpanRunRange(pg.start, pg.end, cell.isoDate, cell.weekday)
                           : null;
                       const mixStyle = mixed && run ? mixedEventStyle(colors, run) : null;
+                      // 슬라이드 프리뷰: 드래그 카드 높이(H)만큼 형제가 밀려 빈 칸이 열린다.
+                      // 같은 날 = 레이어 목록과 동일 공식(사이 구간만 ±H), 다른 날 =
+                      // 대상 칸은 liIdx부터 +H(자리 열기), 출발 칸은 orig 아래 -H(자리 닫기).
+                      let slideY = 0;
+                      if (dragEventId && dragChipH > 0 && event.id !== dragEventId) {
+                        const H = dragChipH;
+                        if (liIdx !== null) {
+                          if (dragSrcHere && dragOrigIdx >= 0) {
+                            const to = liIdx > dragOrigIdx ? liIdx - 1 : liIdx;
+                            if (dragOrigIdx < to && eventIndex > dragOrigIdx && eventIndex <= to)
+                              slideY = -H;
+                            else if (to < dragOrigIdx && eventIndex >= to && eventIndex < dragOrigIdx)
+                              slideY = H;
+                          } else if (eventIndex >= liIdx) {
+                            slideY = H;
+                          }
+                        } else if (dragSrcHere && dragOrigIdx >= 0 && eventIndex > dragOrigIdx) {
+                          slideY = -H;
+                        }
+                      }
+                      const pillBaseStyle =
+                        mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined);
+                      const pillStyle =
+                        slideY !== 0
+                          ? { ...(pillBaseStyle ?? {}), transform: `translateY(${slideY}px)` }
+                          : pillBaseStyle;
                       return (
                         <div
                           className={pillClass}
@@ -5836,9 +5870,7 @@ export function StudioShell({
                             draggable ? (e) => onPillPointerDown(e, event) : undefined
                           }
                           role="button"
-                          style={
-                            mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined)
-                          }
+                          style={pillStyle}
                           tabIndex={0}
                           onKeyDown={(e) => {
                             // target 가드: 카드 '자신'에 포커스가 있을 때만 — +N·삭제 같은
@@ -5880,13 +5912,6 @@ export function StudioShell({
                           }
                           onBlur={titleCompact ? () => leaveZoomPeek(event.id) : undefined}
                         >
-                          {/* 드롭 안내선 — 카드 위/아래 틈에 겹치는 절대 오버레이(레이아웃 영향 없음). */}
-                          {dropLineBeforeId === event.id ? (
-                            <span className="drop-insert-line" aria-hidden="true" />
-                          ) : null}
-                          {dropLineBeforeId === null && eventIndex === dateEvents.length - 1 ? (
-                            <span className="drop-insert-line end" aria-hidden="true" />
-                          ) : null}
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
                             {span.showTitle && syncingIds.includes(event.id) ? (
