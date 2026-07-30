@@ -28,6 +28,7 @@ import {
 } from "react";
 import {
   AlignCenterHorizontal,
+  AlignEndVertical,
   AlignHorizontalDistributeCenter,
   AlignStartHorizontal,
   AlignStartVertical,
@@ -459,6 +460,10 @@ export function BroadcastPanel({
     clamp: { xPos: boolean; xNeg: boolean; yPos: boolean; yNeg: boolean };
     // 선택된 획의 제스처 시작 기하 — 카드와 '한 제스처'로 같이 이동한다(null = 획 없음).
     strokeOrigs: Map<Stroke, StrokeGeom> | null;
+    // resize-y 전용: 제스처 시작 시 칩(자유 배치 translateY) 스냅샷 — 카드 아래 변이
+    // 칩 경계를 만나면 dy를 같이 밀어 올려 삐져나감/새 겹침 없이 최소(자연 배치)까지
+    // 줄어들게 한다. dy0 기준으로 매 프레임 다시 계산 → 같은 제스처에서 도로 늘리면 복원.
+    chipSnap?: { key: string; dy0: number; top: number; bottom: number }[] | null;
   } | null>(null);
   // ── 가장자리 자동 스크롤: 드래그/러버밴드가 보드 끝에 닿으면 스크롤이 따라간다 ──
   const boardScrollRef = useRef<HTMLElement | null>(null);
@@ -578,6 +583,21 @@ export function BroadcastPanel({
       strokeOrigs:
         mode === "move" && strokeSelRef.current.length > 0
           ? snapshotStrokes(strokeSelRef.current)
+          : null,
+      // 세로 축소가 칩을 밀어 올릴 수 있게 시작 시점 칩 기하를 실측(offsetTop/Height =
+      // transform 무시한 자연 배치 좌표 — 기준으로 삼기 정확하다).
+      chipSnap:
+        mode === "resize-y"
+          ? Array.from(
+              colElsRef.current
+                .get(key)
+                ?.querySelectorAll<HTMLElement>(".bp-chip-wrap") ?? []
+            ).map((w) => ({
+              key: w.dataset.chipKey ?? "",
+              dy0: chipDy.get(w.dataset.chipKey ?? "") ?? 0,
+              top: w.offsetTop,
+              bottom: w.offsetTop + w.offsetHeight
+            }))
           : null
     };
   }
@@ -685,14 +705,43 @@ export function BroadcastPanel({
     }
     if (d.mode === "resize-y") {
       // 아래 변 = 높이만(내용은 그대로, 여백이 늘어난다). 내용보다 작게는 안 줄어든다(minHeight).
+      const newH = Math.min(1600, Math.max(64, d.origH + dy));
       setCols((map) => {
         const next = new Map(map);
-        next.set(d.key, {
-          ...d.orig,
-          h: Math.min(1600, Math.max(64, d.origH + dy))
-        });
+        next.set(d.key, { ...d.orig, h: newH });
         return next;
       });
+      // 아래 변이 자유 배치 칩을 만나면 칩 dy를 같이 밀어 올린다 — 칩이 카드 밖으로
+      // 삐져나오지 않고, 원래 안 겹치던 칩끼리 새로 겹치지도 않는다(원래 겹침은 사용자
+      // 의도이므로 그 겹침 폭만큼은 허용). dy0 기준 재계산 → 도로 늘리면 원위치 복원.
+      if (d.chipSnap && d.chipSnap.length > 0) {
+        const snap = d.chipSnap;
+        const updates = new Map<string, number>();
+        let limit = newH - 10; // 칩 시각적 하한(카드 아래 패딩 10px과 동일)
+        for (let i = snap.length - 1; i >= 0; i--) {
+          const c = snap[i];
+          // 자연 배치(dy=0)보다 위로는 안 민다 — 최소 상태 = 원래 흐름 배치.
+          const chipDyNew = Math.max(Math.min(c.dy0, limit - c.bottom), Math.min(c.dy0, 0));
+          updates.set(c.key, chipDyNew);
+          if (i > 0) {
+            // 위 칩의 허용 하한: 이 칩의 새 시각적 top. 원래 겹쳐 있었다면 그만큼은 더 허용.
+            const origGap = c.top + c.dy0 - (snap[i - 1].bottom + snap[i - 1].dy0);
+            limit = c.top + chipDyNew + Math.max(0, -origGap);
+          }
+        }
+        setChipDy((prev) => {
+          let changed = false;
+          const next = new Map(prev);
+          for (const [k, v] of updates) {
+            const snapped = Math.abs(v) < 0.5 ? 0 : Math.round(v);
+            if ((next.get(k) ?? 0) === snapped) continue;
+            changed = true;
+            if (snapped === 0) next.delete(k);
+            else next.set(k, snapped);
+          }
+          return changed ? next : prev;
+        });
+      }
       return;
     }
     // ── 그룹 이동 + 스냅: 이동 그룹의 bbox 가장자리/중앙선을 나머지 카드들의 선에 붙인다 ──
@@ -1160,7 +1209,7 @@ export function BroadcastPanel({
     });
   }
 
-  // ── 정렬(2개 이상 선택 시) — 위 맞춤 · 세로 중앙 · 왼쪽 맞춤 · 가로 균등 간격 ──
+  // ── 정렬(2개 이상 선택 시) — 위 맞춤 · 세로 중앙 · 왼쪽/오른쪽 맞춤 · 가로 균등 간격 ──
   // 정렬은 '격자 인식': 세로 구간이 겹치는 카드끼리 = 같은 행, 가로 구간이 겹치면 = 같은 열.
   // 전역 정렬(모두 y=min)은 2행 이상 선택에서 행을 붕괴시켜 겹침을 만들었다 — 행/열 안에서만
   // 정렬하면 1행이든 2×4든 어떤 행렬 구조든 유지되고 겹침이 없다.
@@ -1193,7 +1242,7 @@ export function BroadcastPanel({
       right = r.x + r.w;
     }
   }
-  function alignSelected(kind: "top" | "middle" | "left" | "distribute-x") {
+  function alignSelected(kind: "top" | "middle" | "left" | "right" | "distribute-x") {
     const keys = [...colSelRef.current];
     if (keys.length < 2) return;
     hapticTick();
@@ -1226,6 +1275,12 @@ export function BroadcastPanel({
       for (const col of clusterRects(rects, "col")) {
         const left = Math.min(...col.map((r) => r.x));
         for (const r of col) r.x = left;
+      }
+    } else if (kind === "right") {
+      // 오른쪽 맞춤: 열 안에서 오른쪽 변을 가장 오른쪽 카드에 붙인다(폭이 다르면 x가 달라진다).
+      for (const col of clusterRects(rects, "col")) {
+        const right = Math.max(...col.map((r) => r.x + r.w));
+        for (const r of col) r.x = Math.max(0, right - r.w);
       }
     } else {
       // 가로 균등 간격: 행별로 왼쪽 끝 고정, 최소 14px 간격(공간이 남으면 그만큼 넓게).
@@ -2669,6 +2724,16 @@ export function BroadcastPanel({
                 <span>왼쪽</span>
               </button>
               <button
+                aria-label="오른쪽 맞춤"
+                className="bp-command-button"
+                title="오른쪽 맞춤"
+                type="button"
+                onClick={() => alignSelected("right")}
+              >
+                <AlignEndVertical aria-hidden="true" size={16} />
+                <span>오른쪽</span>
+              </button>
+              <button
                 aria-label="가로 균등 간격"
                 className="bp-command-button"
                 title="가로 균등 간격"
@@ -3119,6 +3184,7 @@ export function BroadcastPanel({
                           // 빈 공간에 두거나 순서를 바꿔 보이게 한다(세션 전용).
                           <div
                             className={`bp-chip-wrap${dy !== 0 ? " moved" : ""}`}
+                            data-chip-key={`${day.dateKey}:${ev.id}`}
                             key={`${day.dateKey}-${ev.id}`}
                             style={dy !== 0 ? { transform: `translateY(${dy}px)` } : undefined}
                             onLostPointerCapture={onChipPointerUp}
