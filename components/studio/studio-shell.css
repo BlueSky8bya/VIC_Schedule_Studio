@@ -10906,8 +10906,9 @@ html[data-reduce-motion] .tag-editor .tag-add-in-section:active {
 }
 
 .members-perms summary {
-  min-height: var(--control-hit);
-  padding: var(--space-control-y) var(--space-control-x);
+  /* min-height는 list-item(summary)을 세로 중앙 정렬해 주지 않아 글줄이 위에 붙고
+     아래만 비었다(패딩 부조화 지적) — 상하 동일 패딩으로 상자를 만든다. */
+  padding: var(--space-3) var(--space-control-x);
   color: var(--ink-soft);
   font-size: var(--text-body);
   font-weight: var(--weight-semibold);

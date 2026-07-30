@@ -304,25 +304,33 @@ export function TagLegendEditor({
   // 이전 위치에서 새 위치로 미끄러진다. 매 렌더 후 각 행의 top을 기록해 두고, 순서가 바뀐
   // 렌더에서 (이전 top - 새 top)만큼 역변환을 걸었다가 다음 프레임에 풀어 전환시킨다.
   const editorRootRef = useRef<HTMLDivElement | null>(null);
-  const rowTopsRef = useRef<Map<string, number>>(new Map());
+  const rowTopsRef = useRef<Map<string, { x: number; y: number; h: number }>>(new Map());
   useLayoutEffect(() => {
     const root = editorRootRef.current;
     if (!root) return;
     const prev = rowTopsRef.current;
-    const next = new Map<string, number>();
+    const next = new Map<string, { x: number; y: number; h: number }>();
     const reduce = reduceMotionEnabled();
     root.querySelectorAll<HTMLElement>("[data-tagid]").forEach((el) => {
       const id = el.dataset.tagid;
       if (!id) return;
-      const top = el.getBoundingClientRect().top;
-      next.set(id, top);
+      const r = el.getBoundingClientRect();
+      next.set(id, { x: r.left, y: r.top, h: r.height });
       if (!draggingId || reduce || id === draggingId) return;
       const old = prev.get(id);
       if (old === undefined) return;
-      const delta = old - top;
-      if (Math.abs(delta) < 1) return;
+      const dx = old.x - r.left;
+      const dy = old.y - r.top;
+      // 다열 그리드에서 열을 건너뛰거나(가로 이동) 멀리 감긴 행까지 활주시키면 온 화면이
+      // 날아다닌다(사용자 지적) — 같은 열의 한두 칸(행 높이 2.5배 이내) 세로 이동만
+      // 미끄러지고 나머지는 즉시 스냅.
+      if (Math.abs(dx) > 1 || Math.abs(dy) < 1 || Math.abs(dy) > old.h * 2.5) {
+        el.style.transition = "";
+        el.style.transform = "";
+        return;
+      }
       el.style.transition = "none";
-      el.style.transform = `translateY(${delta}px)`;
+      el.style.transform = `translateY(${dy}px)`;
       requestAnimationFrame(() => {
         el.style.transition = "transform 0.22s var(--ease, ease)";
         el.style.transform = "";
