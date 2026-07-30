@@ -775,7 +775,9 @@ export function BroadcastPanel({
     setCols((map) => {
       const next = new Map(map);
       for (const [k, b] of d.origs) {
-        next.set(k, { x: Math.max(0, b.x + dx), y: Math.max(0, b.y + dy), w: b.w });
+        // ...b: 명시 높이(h)까지 그대로 — 이동이 세로 손잡이로 늘린 높이를 지우면 안 된다
+        // (높이가 무너지면 칩 자유 배치(translateY)가 카드 밖으로 붕 뜬다).
+        next.set(k, { ...b, x: Math.max(0, b.x + dx), y: Math.max(0, b.y + dy) });
       }
       return next;
     });
@@ -1242,7 +1244,8 @@ export function BroadcastPanel({
         }
       }
     }
-    for (const r of rects) next.set(r.k, { x: r.x, y: r.y, w: r.w });
+    // 원래 박스를 스프레드해 명시 높이(h)를 보존 — 정렬이 세로 늘림을 지우면 안 된다.
+    for (const r of rects) next.set(r.k, { ...next.get(r.k)!, x: r.x, y: r.y, w: r.w });
     setCols(next);
     pushHist({ t: "cols", before, after: next });
   }
@@ -2356,7 +2359,7 @@ export function BroadcastPanel({
         const next = new Map(colsRef.current);
         for (const k of colSelRef.current) {
           const b = next.get(k);
-          if (b) next.set(k, { x: Math.max(0, b.x + dx), y: Math.max(0, b.y + dy), w: b.w });
+          if (b) next.set(k, { ...b, x: Math.max(0, b.x + dx), y: Math.max(0, b.y + dy) });
         }
         setCols(next);
         pushHist({ t: "cols", before, after: next });
