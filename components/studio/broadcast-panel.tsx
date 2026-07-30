@@ -736,15 +736,20 @@ export function BroadcastPanel({
         let limit = newH - 10; // 칩 시각적 하한(카드 아래 패딩 10px과 동일)
         for (let i = snap.length - 1; i >= 0; i--) {
           const c = snap[i];
+          // 바닥 = min(packed 자리, 사용자 dy0) — packed 자리를 무조건 바닥으로 삼으면
+          // 자기 packed 슬롯보다 '위'에 놓인 칩(순서 바꿈의 전형)을 아래로 끌어내려
+          // 중간에 안 줄어드는 죽은 공백이 생긴다. 사용자가 둔 위치보다 아래로는 안 민다.
           const chipDyNew = Math.max(
             Math.min(c.dy0, limit - c.bottom),
-            packedDy.get(c.key) ?? 0
+            Math.min(packedDy.get(c.key) ?? 0, c.dy0)
           );
           updates.set(c.key, chipDyNew);
           if (i > 0) {
-            // 위 칩의 허용 하한: 이 칩의 새 시각적 top. 원래 겹쳐 있었다면 그만큼은 더 허용.
+            // 위 칩의 허용 하한: 이 칩의 새 시각적 top에서 원래 간격(최대 자연 간격 gap)을
+            // 뺀 지점 — 0px로 붙여 버리면 packed 바닥(간격 유지)과 어긋나 끝까지 줄여도
+            // 배치가 들쭉날쭉해진다. 원래 겹쳐 있던 칩(origGap<0)은 그 겹침만큼 허용.
             const origGap = c.top + c.dy0 - (snap[i - 1].bottom + snap[i - 1].dy0);
-            limit = c.top + chipDyNew + Math.max(0, -origGap);
+            limit = c.top + chipDyNew - Math.min(origGap, gap);
           }
         }
         setChipDy((prev) => {
