@@ -5733,11 +5733,17 @@ export function StudioShell({
                   ) : null}
                   <div
                     className="studio-event-list"
-                    style={
-                      weekSupCount > 0
+                    style={{
+                      ...(weekSupCount > 0
                         ? { paddingTop: Math.round((8 + weekSupCount * 20) * calZoom) }
-                        : undefined
-                    }
+                        : {}),
+                      // 드롭 대상 칸: 들어올 카드 높이만큼 실제로 늘린다 — 활주(transform)만으론
+                      // 칸이 안 자라 마지막 카드가 칸 밖으로 밀려 잘렸다(사용자 지적).
+                      // 같은 날 재정렬(늘어날 필요 없음)은 제외.
+                      ...(liIdx !== null && !dragSrcHere && dragChipH > 0
+                        ? { paddingBottom: dragChipH }
+                        : {})
+                    }}
                   >
                     {dateEvents.map((event, eventIndex) => {
                       const colors = eventColors(event);

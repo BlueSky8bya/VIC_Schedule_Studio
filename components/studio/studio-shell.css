@@ -4793,6 +4793,8 @@ body.cell-range-dragging {
 
 .studio-event-list {
   display: grid;
+  /* 드롭 대상 칸이 들어올 카드만큼 자랄 때(paddingBottom) 부드럽게 — 활주와 같은 박자. */
+  transition: padding-bottom var(--dur-2) var(--ease);
   gap: calc(5px * var(--cal-zoom, 1));
   /* 좌우 6px = 날짜 숫자(.studio-day-head 좌우 6px)와 카드 좌변을 같은 세로선에 맞춘다(정렬 조화).
      확대 시 세로만 비례(좌우를 키우면 그 세로선 정렬이 깨진다). */
