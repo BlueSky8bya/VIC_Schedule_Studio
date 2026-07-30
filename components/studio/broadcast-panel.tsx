@@ -592,12 +592,17 @@ export function BroadcastPanel({
               colElsRef.current
                 .get(key)
                 ?.querySelectorAll<HTMLElement>(".bp-chip-wrap") ?? []
-            ).map((w) => ({
-              key: w.dataset.chipKey ?? "",
-              dy0: chipDy.get(w.dataset.chipKey ?? "") ?? 0,
-              top: w.offsetTop,
-              bottom: w.offsetTop + w.offsetHeight
-            }))
+            )
+              .map((w) => ({
+                key: w.dataset.chipKey ?? "",
+                dy0: chipDy.get(w.dataset.chipKey ?? "") ?? 0,
+                top: w.offsetTop,
+                bottom: w.offsetTop + w.offsetHeight
+              }))
+              // '시각적' 위→아래 순으로 정렬 — dy로 순서를 바꿔 둔 카드(DOM 순서 ≠ 화면
+              // 순서)에서도 축소 캐스케이드가 화면상 맨 아래 칩부터 카드 바닥에 걸리게.
+              // DOM 순서로 돌면 화면 맨 아래 칩이 바닥 한계를 안 받아 삐져나간다.
+              .sort((a, b) => a.top + a.dy0 - (b.top + b.dy0))
           : null
     };
   }
@@ -715,13 +720,26 @@ export function BroadcastPanel({
       // 삐져나오지 않고, 원래 안 겹치던 칩끼리 새로 겹치지도 않는다(원래 겹침은 사용자
       // 의도이므로 그 겹침 폭만큼은 허용). dy0 기준 재계산 → 도로 늘리면 원위치 복원.
       if (d.chipSnap && d.chipSnap.length > 0) {
-        const snap = d.chipSnap;
+        const snap = d.chipSnap; // 시각적 위→아래 순(스냅샷 때 정렬)
+        // 최소 상태 = '화면에 보이는 순서' 그대로 위에서부터 빽빽하게 쌓은 배치.
+        // 칩별 자연 자리(dy=0)를 바닥으로 삼으면 dy로 순서를 바꿔 둔 카드에서 두 칩이
+        // 같은 자연 슬롯으로 수렴해 겹친다 — 바닥은 반드시 시각 순서 기준으로 잡는다.
+        const byNat = [...snap].sort((a, b) => a.top - b.top);
+        const gap = byNat.length > 1 ? Math.max(0, byNat[1].top - byNat[0].bottom) : 0;
+        const packedDy = new Map<string, number>();
+        let packedTop = byNat[0].top; // 첫 슬롯의 자연 top(헤더 아래)
+        for (const c of snap) {
+          packedDy.set(c.key, packedTop - c.top);
+          packedTop += c.bottom - c.top + gap;
+        }
         const updates = new Map<string, number>();
         let limit = newH - 10; // 칩 시각적 하한(카드 아래 패딩 10px과 동일)
         for (let i = snap.length - 1; i >= 0; i--) {
           const c = snap[i];
-          // 자연 배치(dy=0)보다 위로는 안 민다 — 최소 상태 = 원래 흐름 배치.
-          const chipDyNew = Math.max(Math.min(c.dy0, limit - c.bottom), Math.min(c.dy0, 0));
+          const chipDyNew = Math.max(
+            Math.min(c.dy0, limit - c.bottom),
+            packedDy.get(c.key) ?? 0
+          );
           updates.set(c.key, chipDyNew);
           if (i > 0) {
             // 위 칩의 허용 하한: 이 칩의 새 시각적 top. 원래 겹쳐 있었다면 그만큼은 더 허용.
