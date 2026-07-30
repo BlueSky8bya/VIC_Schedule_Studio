@@ -387,7 +387,7 @@ export function MemberInsights({
         <StackTrendChart data={d.trend.modifierByTag} showLegend={false} title="🎛️ 형식별" />
         <StackTrendChart
           data={d.trend.heartsByTag}
-          rankLabel="인기 높은 순"
+          rankLabel="일정당 평균 하트 순"
           showLegend={false}
           showNumbers={false}
           title="💗 하트 받은 태그"

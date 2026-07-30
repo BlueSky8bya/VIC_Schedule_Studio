@@ -907,7 +907,7 @@ export type TrendData = {
   broadcastDays: number; // 보는 달에 방송한 날 수(방송시간>0)
   contentByTag: TrendStack; // 콘텐츠 대분류별 6개월(휴뱅 포함)
   modifierByTag: TrendStack; // 방식(합방·시참 등)별 6개월
-  heartsByTag: TrendStack; // 하트 받은 태그 6개월(컨텐츠 방영월 기준)
+  heartsByTag: TrendStack; // 하트 받은 태그 6개월 — 일정당 평균 하트(비율, 방영월 기준)
   visitsByRole: TrendStack; // 방문 역할별 6개월(개발자 전용)
   visitsByDevice: TrendStack; // 방문 기기별 6개월(개발자 전용)
 };
@@ -1138,19 +1138,19 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     .sort((a, b) => b[1].total - a[1].total)
     .map(([key, v]) => ({ key, label: v.name, color: v.color }));
 
-  // 하트 받은 태그 6개월 — 각 일정의 하트(총합)를 그 일정의 방영월·태그에 합산.
+  // 하트 받은 태그 6개월 — '일정당 평균 하트'(비율). 하트 총합이면 일정 수가 많은 태그가
+  // 구조적으로 항상 1등이라, 그 달 그 태그 일정 수로 나눈다(하트 0 일정도 분모에 포함).
   const heartByEvent = new Map<string, number>();
   for (const r of (heartsRes.data ?? []) as { event_id: string; count: number }[]) {
     heartByEvent.set(r.event_id, Number(r.count));
   }
-  const heartTagInfo = new Map<string, { name: string; color: string; total: number }>();
-  const heartTagRows: { ym: string; key: string; n: number }[] = [];
+  const heartTagInfo = new Map<string, { name: string; color: string; h: number; e: number }>();
+  const heartAgg = new Map<string, { h: number; e: number }>(); // `${ym}|${catId}`
+  const heartSeen = new Set<string>(); // `${eventId}|${catId}` — 세부 태그 2개가 같은 대분류면 1번만
   for (const row of tagRows2) {
     const bt = row.broadcast_tags;
     const ym = eventMonth.get(row.event_id);
     if (!bt?.id || !ym) continue;
-    const h = heartByEvent.get(row.event_id) ?? 0;
-    if (h <= 0) continue;
     const cat = catMap.get(bt.id) ?? {
       id: bt.id,
       name: bt.display_name ?? "?",
@@ -1159,18 +1159,37 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       kind: "content"
     };
     if (cat.kind === "modifier") continue; // 수식어는 태그별 하트 트렌드서 제외
-    heartTagRows.push({ ym, key: cat.id, n: h });
+    const dedup = `${row.event_id}|${cat.id}`;
+    if (heartSeen.has(dedup)) continue;
+    heartSeen.add(dedup);
+    const h = heartByEvent.get(row.event_id) ?? 0;
+    const aggKey = `${ym}|${cat.id}`;
+    const agg = heartAgg.get(aggKey) ?? { h: 0, e: 0 };
+    agg.h += h;
+    agg.e += 1;
+    heartAgg.set(aggKey, agg);
     const cur = heartTagInfo.get(cat.id);
-    if (cur) cur.total += h;
-    else
+    if (cur) {
+      cur.h += h;
+      cur.e += 1;
+    } else
       heartTagInfo.set(cat.id, {
         name: cat.name,
         color: cat.bgHex ?? palette.get(cat.colorKey) ?? "#f7a8c0",
-        total: h
+        h,
+        e: 1
       });
   }
+  const heartTagRows: { ym: string; key: string; n: number }[] = [...heartAgg.entries()].map(
+    ([k, v]) => ({
+      ym: k.slice(0, 7),
+      key: k.slice(8),
+      n: Math.round((v.h / Math.max(1, v.e)) * 10) / 10
+    })
+  );
   const heartCats = [...heartTagInfo.entries()]
-    .sort((a, b) => b[1].total - a[1].total)
+    .filter(([, v]) => v.h > 0) // 6개월 내 하트 0인 태그는 기존처럼 차트에서 제외
+    .sort((a, b) => b[1].h / b[1].e - a[1].h / a[1].e)
     .map(([key, v]) => ({ key, label: v.name, color: v.color }));
 
   // 방문 역할별/기기별 6개월(개발자 전용). 둘 다 순방문자 기준: 역할별=(날짜,계정) 1회,
@@ -2079,34 +2098,53 @@ export async function getMemberInsightsAction(
   const topTitles = topSorted.slice(0, 5).map((t) => t.title);
   const topTitle = topSorted[0]?.title ?? null;
 
-  // 하트 받은 태그 6개월 — 비율만(정규화로 정확 수 숨김, 막대 비율·높이만 유지). showNumbers=false.
+  // 하트 받은 태그 6개월 — '일정당 평균 하트'(비율. 일정 수 많은 태그가 자동 1등이 되지 않게)
+  // + 정규화로 정확 수 숨김(막대 비율·높이만 유지). showNumbers=false.
   const memHeartByEvent = new Map<string, number>(
     heartCounts.map((h) => [h.event_id, Number(h.count)])
   );
-  const hbtInfo = new Map<string, { name: string; color: string; total: number }>();
-  const hbtRows: { ym: string; key: string; n: number }[] = [];
+  const hbtInfo = new Map<string, { name: string; color: string; h: number; e: number }>();
+  const hbtAgg = new Map<string, { h: number; e: number }>(); // `${ym}|${catId}`
+  const hbtSeen = new Set<string>(); // `${eventId}|${catId}` — 같은 대분류 세부 태그 중복 방지
   for (const row of tagRows) {
     const bt = row.broadcast_tags;
     const ym = eventMonth.get(row.event_id);
     if (!bt?.id || !ym) continue;
-    const h = memHeartByEvent.get(row.event_id) ?? 0;
-    if (h <= 0) continue;
     const cat = catOf(bt);
     if (cat.kind === "modifier") continue; // 수식어는 태그별 하트 트렌드서 제외
-    hbtRows.push({ ym, key: cat.id, n: h });
+    const dedup = `${row.event_id}|${cat.id}`;
+    if (hbtSeen.has(dedup)) continue;
+    hbtSeen.add(dedup);
+    const h = memHeartByEvent.get(row.event_id) ?? 0;
+    const aggKey = `${ym}|${cat.id}`;
+    const agg = hbtAgg.get(aggKey) ?? { h: 0, e: 0 };
+    agg.h += h;
+    agg.e += 1;
+    hbtAgg.set(aggKey, agg);
     const cur = hbtInfo.get(cat.id);
-    if (cur) cur.total += h;
-    else
+    if (cur) {
+      cur.h += h;
+      cur.e += 1;
+    } else
       hbtInfo.set(cat.id, {
         name: cat.name,
         color: cat.bgHex ?? colorMap.get(cat.colorKey)?.bg ?? "#f7a8c0",
-        total: h
+        h,
+        e: 1
       });
   }
+  const hbtRows: { ym: string; key: string; n: number }[] = [...hbtAgg.entries()].map(
+    ([k, v]) => ({
+      ym: k.slice(0, 7),
+      key: k.slice(8),
+      n: Math.round((v.h / Math.max(1, v.e)) * 10) / 10
+    })
+  );
   const hbtRaw = buildTrendStack(
     monthKeys,
     [...hbtInfo.entries()]
-      .sort((a, b) => b[1].total - a[1].total)
+      .filter(([, v]) => v.h > 0)
+      .sort((a, b) => b[1].h / b[1].e - a[1].h / a[1].e)
       .map(([key, v]) => ({ key, label: v.name, color: v.color })),
     hbtRows
   );

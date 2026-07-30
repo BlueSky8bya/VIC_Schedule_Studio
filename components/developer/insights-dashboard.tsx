@@ -1202,7 +1202,7 @@ export function InsightsDashboard({
         <StackTrendChart data={trend.modifierByTag} showLegend={false} title="🎛️ 형식별" />
         <StackTrendChart
           data={trend.heartsByTag}
-          rankLabel="인기 높은 순"
+          rankLabel="일정당 평균 하트 순"
           showLegend={false}
           title="💗 하트 받은 태그"
         />

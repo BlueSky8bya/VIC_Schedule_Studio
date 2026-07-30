@@ -190,7 +190,25 @@ export function PublicInsights({
 
     const contentByTag = buildStack(rootsOf, () => 1, "content");
     const modifierByTag = buildStack(rootsOf, () => 1, "modifier");
-    const heartsByTag = buildStack(rootsOf, (e) => heartCounts[e.id] ?? 0, "content");
+    // 하트는 '일정당 평균'(비율) — 하트 총합이면 일정 수 많은 태그가 구조적으로 항상 1등이다.
+    // 분모 = 그 달 그 태그의 일정 수(contentByTag, 하트 0 일정 포함).
+    const heartsRaw = buildStack(rootsOf, (e) => heartCounts[e.id] ?? 0, "content");
+    const heartsByTag: TrendStack = {
+      cats: heartsRaw.cats,
+      months: heartsRaw.months.map((m, i) => {
+        const denom = contentByTag.months[i]?.counts ?? {};
+        const counts: Record<string, number> = {};
+        let total = 0;
+        for (const [k, v] of Object.entries(m.counts)) {
+          const n = Math.round((v / Math.max(1, denom[k] ?? 0)) * 10) / 10;
+          if (n > 0) {
+            counts[k] = n;
+            total += n;
+          }
+        }
+        return { ym: m.ym, counts, total: Math.round(total * 10) / 10 };
+      })
+    };
 
     // 방송 시간(6개월) — 없는 달은 0으로 채워 months와 길이를 맞춘다.
     const hoursByYm = new Map(broadcast.map((b) => [b.ym, b.hours]));
@@ -389,7 +407,7 @@ export function PublicInsights({
             <StackTrendChart data={d.modifierByTag} showLegend={false} title="🎛️ 형식별" />
             <StackTrendChart
               data={d.heartsByTag}
-              rankLabel="인기 높은 순"
+              rankLabel="일정당 평균 하트 순"
               showLegend={false}
               showNumbers={false}
               title="💗 하트 받은 태그"
