@@ -149,15 +149,20 @@ type StrokeGeom = { points: StrokePoint[]; width: number };
 
 // 통합 히스토리(Ctrl+Z/Y 하나로 전부): 획 · 카드 위치/크기 · 날짜 추가/삭제 · 레이어 생성/삭제 ·
 // 선택 획 이동/확대(xform — 카드와 한 제스처면 cols도 같이 담아 Ctrl+Z 1번에 복원).
+// 카드 안 칩 자유 배치(translateY) 스냅샷 — 칩 드래그 자체와, 세로 축소가 칩을 밀어 올린
+// 변화(cols/xform 제스처에 동반)를 모두 Ctrl+Z 대상으로 만든다.
+type ChipDyChange = { before: Map<string, number>; after: Map<string, number> };
 type HistAction =
   | { t: "stroke"; stroke: Stroke }
-  | { t: "cols"; before: Map<string, ColBox>; after: Map<string, ColBox> }
+  | { t: "cols"; before: Map<string, ColBox>; after: Map<string, ColBox>; chips?: ChipDyChange | null }
   | { t: "sent"; before: string[]; after: string[]; colsBefore: Map<string, ColBox> }
   | { t: "layers"; before: PanelLayer[]; after: PanelLayer[] }
+  | { t: "chips"; before: Map<string, number>; after: Map<string, number> }
   | {
       t: "xform";
       cols: { before: Map<string, ColBox>; after: Map<string, ColBox> } | null;
       strokes: { targets: Stroke[]; before: StrokeGeom[]; after: StrokeGeom[] } | null;
+      chips?: ChipDyChange | null;
     }
   // 부분 선택이 획을 분할해 장면 배열 구조가 바뀔 때 — 전/후 장면 스냅샷(얕은 배열 복사).
   | { t: "scene"; before: Stroke[]; after: Stroke[] };
@@ -370,6 +375,14 @@ export function BroadcastPanel({
   // 끌어 내리거나 서로 순서를 바꿔 보이게. key = `${dateKey}:${eventId}`, 값 = translateY(px).
   // 세션 전용(창 닫으면 소멸 — 판서와 같은 수명), 카드 밖으로는 못 나가게 클램프.
   const [chipDy, setChipDy] = useState<Map<string, number>>(() => new Map());
+  const chipDyRef = useRef(chipDy);
+  chipDyRef.current = chipDy;
+  // 두 칩 배치 스냅샷이 같은가 — 제스처가 실제로 칩을 움직였을 때만 히스토리에 남긴다.
+  function sameChipDy(a: Map<string, number>, b: Map<string, number>) {
+    if (a.size !== b.size) return false;
+    for (const [k, v] of a) if (b.get(k) !== v) return false;
+    return true;
+  }
   const chipDragRef = useRef<{
     key: string;
     pointerId: number;
@@ -377,6 +390,7 @@ export function BroadcastPanel({
     orig: number;
     minDy: number;
     maxDy: number;
+    beforeAll: Map<string, number>; // 제스처 시작 시 전체 칩 배치 — Ctrl+Z 스냅샷
   } | null>(null);
   function onChipPointerDown(
     e: React.PointerEvent<HTMLDivElement>,
@@ -402,7 +416,8 @@ export function BroadcastPanel({
       startY: e.clientY,
       orig,
       minDy: orig + ((head?.bottom ?? cardRect.top + 12) + 4 - chipRect.top),
-      maxDy: orig + (cardRect.bottom - 10 - chipRect.bottom)
+      maxDy: orig + (cardRect.bottom - 10 - chipRect.bottom),
+      beforeAll: new Map(chipDyRef.current)
     };
     hapticTick();
   }
@@ -424,6 +439,11 @@ export function BroadcastPanel({
     const d = chipDragRef.current;
     if (!d || d.pointerId !== e.pointerId) return;
     chipDragRef.current = null;
+    // 제스처 단위로 히스토리 1건 — 실제로 칩 배치가 바뀌었을 때만(Ctrl+Z로 되돌리기).
+    const after = new Map(chipDyRef.current);
+    if (!sameChipDy(d.beforeAll, after)) {
+      pushHist({ t: "chips", before: d.beforeAll, after });
+    }
   }
   // 절대배치 카드의 실제 높이는 부모 크기에 반영되지 않는다. 실측값으로 판서판/캔버스
   // 하단을 늘려 큰 카드의 아래까지 그릴 수 있게 한다.
@@ -464,6 +484,8 @@ export function BroadcastPanel({
     // 칩 경계를 만나면 dy를 같이 밀어 올려 삐져나감/새 겹침 없이 최소(자연 배치)까지
     // 줄어들게 한다. dy0 기준으로 매 프레임 다시 계산 → 같은 제스처에서 도로 늘리면 복원.
     chipSnap?: { key: string; dy0: number; top: number; bottom: number }[] | null;
+    // 제스처 시작 시 전체 칩 배치 — 세로 축소가 칩을 밀어 올린 변화도 같은 Ctrl+Z 1번에 복원.
+    chipsBefore: Map<string, number>;
   } | null>(null);
   // ── 가장자리 자동 스크롤: 드래그/러버밴드가 보드 끝에 닿으면 스크롤이 따라간다 ──
   const boardScrollRef = useRef<HTMLElement | null>(null);
@@ -603,7 +625,8 @@ export function BroadcastPanel({
               // 순서)에서도 축소 캐스케이드가 화면상 맨 아래 칩부터 카드 바닥에 걸리게.
               // DOM 순서로 돌면 화면 맨 아래 칩이 바닥 한계를 안 받아 삐져나간다.
               .sort((a, b) => a.top + a.dy0 - (b.top + b.dy0))
-          : null
+          : null,
+      chipsBefore: new Map(chipDyRef.current)
     };
   }
   // 선택 획 기하 스냅샷(deep copy) — 이동/확대의 원점이자 undo before.
@@ -875,6 +898,12 @@ export function BroadcastPanel({
     // 획이 같이 움직였으면 xform 하나로 묶는다 — Ctrl+Z 1번에 카드+획이 함께 돌아온다.
     if (d?.moved) {
       const colsChange = { before: d.beforeAll, after: new Map(colsRef.current) };
+      // 세로 축소가 칩을 밀어 올렸다면(chipSnap 캐스케이드) 그 변화도 같은 액션에 —
+      // Ctrl+Z 1번에 카드 높이와 칩 배치가 함께 돌아온다.
+      const chipsAfter = new Map(chipDyRef.current);
+      const chipsChange = sameChipDy(d.chipsBefore, chipsAfter)
+        ? null
+        : { before: d.chipsBefore, after: chipsAfter };
       if (d.strokeOrigs && d.strokeOrigs.size > 0) {
         const targets = [...d.strokeOrigs.keys()];
         pushHist({
@@ -887,10 +916,16 @@ export function BroadcastPanel({
               points: s.points.map((pt) => ({ ...pt })),
               width: s.width
             }))
-          }
+          },
+          chips: chipsChange
         });
       } else {
-        pushHist({ t: "cols", before: colsChange.before, after: colsChange.after });
+        pushHist({
+          t: "cols",
+          before: colsChange.before,
+          after: colsChange.after,
+          chips: chipsChange
+        });
       }
     }
   }
@@ -1161,7 +1196,8 @@ export function BroadcastPanel({
       maxX: (boardInnerRef.current?.offsetWidth ?? 4000) + 480,
       maxY: (boardInnerRef.current?.offsetHeight ?? 3000) + 480,
       clamp: { xPos: false, xNeg: false, yPos: false, yNeg: false },
-      strokeOrigs: snapshotStrokes(strokeSelRef.current)
+      strokeOrigs: snapshotStrokes(strokeSelRef.current),
+      chipsBefore: new Map(chipDyRef.current)
     };
   }
   // 모서리 손잡이: bbox 왼쪽 위를 앵커로 균일 확대/축소 — 굵기도 비례(그림판 감각).
@@ -1878,6 +1914,9 @@ export function BroadcastPanel({
       replayAll();
     } else if (a.t === "cols") {
       setCols(new Map(a.before));
+      if (a.chips) setChipDy(new Map(a.chips.before));
+    } else if (a.t === "chips") {
+      setChipDy(new Map(a.before));
     } else if (a.t === "sent") {
       // cols 먼저 복원 — sentDateKeys prop 변화로 도는 동기화 effect가 '이전 cols'를 읽어
       // 복원된 위치를 유지한다(빠졌다 돌아온 날짜의 자리 보존).
@@ -1885,6 +1924,7 @@ export function BroadcastPanel({
       onRestoreSent(a.before);
     } else if (a.t === "xform") {
       if (a.cols) setCols(new Map(a.cols.before));
+      if (a.chips) setChipDy(new Map(a.chips.before));
       if (a.strokes) {
         a.strokes.targets.forEach((s, i) => {
           const g = a.strokes!.before[i];
@@ -1926,10 +1966,14 @@ export function BroadcastPanel({
       replayAll();
     } else if (a.t === "cols") {
       setCols(new Map(a.after));
+      if (a.chips) setChipDy(new Map(a.chips.after));
+    } else if (a.t === "chips") {
+      setChipDy(new Map(a.after));
     } else if (a.t === "sent") {
       onRestoreSent(a.after);
     } else if (a.t === "xform") {
       if (a.cols) setCols(new Map(a.cols.after));
+      if (a.chips) setChipDy(new Map(a.chips.after));
       if (a.strokes) {
         a.strokes.targets.forEach((s, i) => {
           const g = a.strokes!.after[i];
