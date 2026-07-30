@@ -4853,8 +4853,10 @@ body.cell-range-dragging {
 /* 드래그 중인 원본 카드: 자리만 흐리게 남겨 "들려 나간" 느낌. hit-test에서 빼 elementFromPoint가
    뒤의 칸/카드를 정확히 짚게 한다(원본이 가로채 안내선이 튀는 것 방지). */
 .studio-event-pill.dragging-src {
-  opacity: 0.32;
-  filter: grayscale(0.4);
+  /* 슬라이드 프리뷰 도입 후: 흐린 잔상(0.32)이 활주하는 형제와 겹쳐 지저분했다 —
+     자리는 유지하되(레이아웃·슬라이드 공식의 기준) 완전히 투명하게. 카드 모습은
+     손에 든 유령이, 빠져나간 자리는 형제들의 활주가 말해준다. hit-test 제외는 유지. */
+  opacity: 0;
   pointer-events: none;
 }
 /* 드래그로 잇기: 집은 카드와 이을 수 있는 상대만 또렷·강조하고 나머지는 흐릿하게 눌러, "지금
