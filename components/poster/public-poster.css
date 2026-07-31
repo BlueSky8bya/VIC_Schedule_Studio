@@ -4344,6 +4344,20 @@ html[data-reduce-motion] .heart-toast {
   width: 100%;
   height: 100%;
   border: 0;
+  /* 플레이어 자체 컨트롤(톱니·전체화면)은 로드 직후 몇 초 떠 있다 사라진다 — 그 구간까지
+     안 보이게, 컨트롤이 스스로 사라진 뒤(3.6s)에야 영상을 페이드-인한다. 그동안은 어두운
+     판 + LIVE 배지. 이후엔 투명 클릭 레이어가 호버를 막아 컨트롤이 다시는 안 뜬다. */
+  opacity: 0;
+  animation: slc-video-in 0.6s var(--ease) 3.6s forwards;
+}
+@keyframes slc-video-in {
+  to {
+    opacity: 1;
+  }
+}
+html[data-reduce-motion] .slc-player iframe {
+  animation: none;
+  opacity: 1; /* 모션 끔 = 지연 연출 생략(초반 컨트롤 잠깐 보임 감수) */
 }
 .slc-badge {
   position: absolute;
