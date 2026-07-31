@@ -10649,6 +10649,12 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
   color: var(--ink);
 }
 
+/* 스크롤 래퍼 — 기본은 투명(display:contents)이라 모달 밖 렌더 지점(모바일 관리 시트 등)의
+   기존 그리드 배치에 영향 0. 태그 모달에서만 아래 규칙이 진짜 스크롤 영역으로 승격시킨다. */
+.tag-editor-scroll {
+  display: contents;
+}
+
 .tag-editor .tag-tips {
   gap: var(--space-2);
   margin: 0;
@@ -10848,33 +10854,43 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
   color: var(--status-success);
 }
 
-/* 하단 여백은 sticky 푸터 자신이 갖는다(공지 모달과 같은 수정) — 스크롤러 padding-bottom
-   방식은 푸터 아래 투시 구간이 생겨 지나가는 행이 '전체 저장' 밑에 비쳤다(실측 재현).
-   배경도 반투명 재질 대신 불투명(모달 불투명 원칙 + 뒤 행 비침 방지). */
+/* '전체 저장' 푸터 — 예전 sticky는 그리드 아이템이라 스크롤포트 바닥까지 못 내려가, 버튼
+   아래 투시 구간으로 지나가는 행이 비쳤다(실측 재현·사용자 리포트 2회). 이제 태그 모달은
+   카드 본문을 [스크롤 영역(.tag-editor-scroll) + 흐름 밖 고정 푸터] 세로 flex로 나눈다 —
+   푸터는 스크롤에서 아예 빠져 항상 불투명 바닥(헤어라인 경계)이다. */
 .modal-card-tags > .tag-editor {
-  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.modal-card-tags > .tag-editor > .tag-editor-scroll {
+  display: grid;
+  gap: var(--space-4);
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px;
 }
 .modal-card-tags .tag-editor-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  margin: 0 calc(var(--space-panel) * -1);
+  flex: 0 0 auto;
+  margin: 0;
   border-top: var(--stroke-hairline) solid var(--line);
   background: var(--surface);
-  padding: var(--space-3) var(--space-panel)
-    calc(var(--space-3) + var(--safe-bottom));
+  padding: var(--space-3) 20px calc(var(--space-3) + var(--safe-bottom));
 }
 
 @media (min-width: 641px) {
-  .modal-card-tags .tag-editor {
+  .modal-card-tags > .tag-editor > .tag-editor-scroll {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     padding: var(--space-panel);
   }
 
   .modal-card-tags .tag-tips,
   .modal-card-tags .auth-warning,
-  .modal-card-tags .tag-editor-hint,
-  .modal-card-tags .tag-editor-actions {
+  .modal-card-tags .tag-editor-hint {
     grid-column: 1 / -1;
   }
 }
@@ -10895,7 +10911,11 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
     border-radius: var(--r-xl) var(--r-xl) 0 0;
   }
 
-  .modal-card-tags > .tag-editor,
+  .modal-card-tags > .tag-editor > .tag-editor-scroll {
+    grid-template-columns: minmax(0, 1fr);
+    padding: var(--space-card);
+  }
+
   .m-manage .tag-editor {
     grid-template-columns: minmax(0, 1fr);
     padding: var(--space-card);

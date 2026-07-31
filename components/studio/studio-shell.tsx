@@ -5130,8 +5130,9 @@ export function StudioShell({
               />
             </section>
 
-            {/* 공지·방문 그래프 — 보조 도구. 개발자는 둘 다, 그 외 편집자는 공지만. */}
-            {isDevInsights ? (
+            {/* 공지·방문 그래프 — 보조 도구. 웹 팝오버와 동일 규칙: '날짜(새 일정) 선택'일
+                때만 노출(기존 일정 수정 시트에선 숨김). 개발자는 둘 다, 그 외 편집자는 공지만. */}
+            {selectedEventId ? null : isDevInsights ? (
               <div className="me-tools">
                 <button className="me-tool" onClick={() => setModal("notice")} type="button">
                   📢 공지 쓰기
@@ -6567,11 +6568,12 @@ export function StudioShell({
               </button>
             ) : null}
 
-            {/* 진짜 개발자 화면(미리보기 아님)에선 공지(토리님 전용) 대신 그날 방문 그래프 버튼. */}
-            {isDevInsights ? (
+            {/* 공지·방문은 '날짜(새 일정) 선택'일 때만 — 기존 일정 수정 카드에선 숨겨 폼을
+                일정 편집에만 집중시킨다(사용자 결정 2026-07-31). 개발자는 공지+방문, 그 외
+                편집자는 공지만. NoticeModal은 공개 일정으로 공지 문구만 만드는 클라이언트
+                도구 — 비공개/owner 전용 쓰기 없음. */}
+            {selectedEventId ? null : isDevInsights ? (
               <>
-                {/* 개발자 화면에도 관리자처럼 공지 쓰기를 둔다(방문 그래프 위). NoticeModal은
-                    공개 일정으로 공지 문구만 만드는 클라이언트 도구 — 비공개/owner 전용 쓰기 없음. */}
                 <button
                   className="button notice-open"
                   onClick={() => setModal("notice")}

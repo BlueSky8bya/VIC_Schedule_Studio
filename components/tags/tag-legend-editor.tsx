@@ -828,6 +828,10 @@ export function TagLegendEditor({
 
   return (
     <div className="tag-editor" ref={editorRootRef}>
+      {/* 스크롤 래퍼 — 기본은 display:contents(다른 렌더 지점 영향 0). 태그 모달에서만 이게
+          스크롤 영역이 되고 '전체 저장' 푸터는 스크롤 밖 고정 바닥으로 빠진다(sticky는 그리드
+          아이템이라 바닥에 못 닿아 버튼 아래로 지나가는 행이 비쳤다 — 실측 리포트). */}
+      <div className="tag-editor-scroll">
       <div className="tag-tips">
         {/* 문장은 tag-tip-text 하나로 감싼다 — flex 컨테이너에 <b>·텍스트가 형제로 흩어지면
             각각 개별 아이템으로 줄바꿈돼 좁은 화면에서 단어가 세로로 조각났다. */}
@@ -906,6 +910,7 @@ export function TagLegendEditor({
 
       {error ? <div className="auth-warning">{error}</div> : null}
       {anyEmpty ? <p className="tag-editor-hint warn">색상이 비어 있는 태그가 있습니다.</p> : null}
+      </div>
       <div className="tag-editor-actions">
         <button
           className={`button primary ${saved && !dirty ? "saved" : ""}`}
