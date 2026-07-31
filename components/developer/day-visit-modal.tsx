@@ -227,7 +227,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
       {/* 24h 동시 접속(체류) */}
       <section className="vcard">
         <h4 className="insight-subhead">
-          시간대별 동접 (KST) <span className="vcrit">평균 동시 접속자</span>
+          시간대별 동접 (KST) <span className="vcrit">머문 분</span>
         </h4>
         <div
           className={`vt-hours ${dg.hasOccupancy ? "" : "empty"}`}
@@ -277,7 +277,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
           {occTip ? (
             <div className="vt-tip" style={{ "--tip-x": `${occTip.x}%` } as CSSProperties}>
               <strong>
-                평균 {fmtOcc(occTip.avg)} · 최고 {occTip.peak}
+                {fmtOcc(occTip.avg)} 머묾 · 최고 {occTip.peak}명
               </strong>
               {occTip.rows.map((r) => (
                 <span className="vt-tip-row" key={r.label}>

@@ -121,8 +121,14 @@ function StatTile({ value, label, tone }: { value: number | string; label: strin
 type VtHover = { x: number; total: number; rows: { color: string; label: string; count: number }[] };
 // 시간대 동시 접속(체류) 호버 — 평균/최고 동시 접속 + 역할/기기별 평균(소수).
 type OccHover = { x: number; avg: number; peak: number; rows: { color: string; label: string; val: number }[] };
-// 평균 동시 접속(소수) 표시 — 0.1 단위. (일별 모달과 공유)
-export const fmtOcc = (n: number) => n.toFixed(1);
+// 시간대 점유 표기 — '평균 동시 접속 0.9' 같은 소수는 직관이 약해 '머문 분'으로 환산해 보여준다.
+// avg(=구간 초/3600/관측일수) × 60 = 그 시간대에 하루 평균 머문 분. (일별 모달과 공유 — 관측일 1이라 그날 총 분)
+export const fmtOcc = (n: number) => {
+  const min = n * 60;
+  if (min <= 0) return "0분";
+  if (min < 1) return "1분 미만";
+  return `${Math.round(min)}분`;
+};
 // epoch ms → KST(=UTC+9)로 옮긴 Date(이후 getUTC*가 곧 KST 값). "HH:MM"·요일 표기에 쓴다. (일별 모달과 공유)
 export const kstOf = (ms: number) => new Date(ms + 9 * 3600 * 1000);
 export const hhmm = (ms: number) => {
@@ -736,7 +742,7 @@ export function InsightsDashboard({
         <section className="vcard">
           {/* 위 일별/주별은 '방문 수(첫 진입)'지만, 이 막대는 '그 시각에 떠 있던 인원(체류)'이다. */}
           <h4 className="insight-subhead">
-            시간대별 동접 (KST) <span className="vcrit">평균 동시 접속자</span>
+            시간대별 동접 (KST) <span className="vcrit">하루 평균 머문 분</span>
           </h4>
           <div
             className={`vt-hours ${g.hasOccupancy ? "" : "empty"}`}
@@ -787,7 +793,7 @@ export function InsightsDashboard({
             {vtHourHover ? (
               <div className="vt-tip" style={{ "--tip-x": `${vtHourHover.x}%` } as CSSProperties}>
                 <strong>
-                  평균 {fmtOcc(vtHourHover.avg)} · 최고 {vtHourHover.peak}
+                  하루 평균 {fmtOcc(vtHourHover.avg)} 머묾 · 최고 {vtHourHover.peak}명
                 </strong>
                 {vtHourHover.rows.map((r) => (
                   <span className="vt-tip-row" key={r.label}>
