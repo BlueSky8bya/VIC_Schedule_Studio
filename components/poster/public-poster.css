@@ -961,11 +961,20 @@ html {
    ON/OFF·좌우 전환에서 정렬이 '스냅'하지 않고 margin 트랜지션만 부드럽게 흐른다. */
 .poster-page.avatar-scene.avatar-right .poster-stage {
   margin-right: 25vw; /* 아바타 우측 → 달력 왼쪽 3/4 */
-  margin-left: 196px; /* 반대편 얇은 태그 필터 레일 자리 */
+  margin-left: 170px; /* 반대편 얇은 태그 필터 레일 자리 */
 }
 .poster-page.avatar-scene.avatar-left .poster-stage {
   margin-left: 25vw; /* 아바타 좌측 → 달력 오른쪽 3/4 */
-  margin-right: 196px;
+  margin-right: 170px;
+}
+/* 꾸미기 크롬(팔레트 툴바·텍스트 추가 줄)도 레일 자리만큼 비켜 겹침을 없앤다. */
+.poster-page.avatar-scene.avatar-right .decorate-toolbar,
+.poster-page.avatar-scene.avatar-right .poster-capture-row {
+  margin-left: 170px;
+}
+.poster-page.avatar-scene.avatar-left .decorate-toolbar,
+.poster-page.avatar-scene.avatar-left .poster-capture-row {
+  margin-right: 170px;
 }
 /* scene: 표면 안 오른쪽 레일을 접는다(둘째 컬럼 0) — 달력이 표면 1840 전체를 차지해 최대로
    커진다(2026-07-31 사용자 결정 — 캡쳐 삭제로 표면 고정 레이아웃 제약 해제). 컬럼 폭이
@@ -986,7 +995,7 @@ html {
   position: fixed;
   top: 76px;
   bottom: 14px;
-  width: 174px;
+  width: 148px;
   z-index: 6;
   overflow-y: auto;
   scrollbar-width: none;
@@ -1022,46 +1031,96 @@ html {
     transform: none;
   }
 }
-/* 얇은 레일 안에선 필터를 1열로 압축(칩 크기는 유지 — 폭만 좁아짐). */
+/* 얇은 레일 안에선 필터를 1열로 압축 + 전반 밀도 상향(폭 148에 맞춤). */
 .avatar-side-rail .public-legend-vertical {
   grid-template-columns: 1fr;
-  gap: 3px 0;
+  gap: 2px 0;
+  padding: 8px;
 }
 .avatar-side-rail .public-legend-vertical .legend-mods {
   grid-template-columns: 1fr;
+  gap: 2px;
 }
 .avatar-side-rail .legend-title {
-  font-size: 15px;
+  font-size: 14px;
+  margin-bottom: 5px;
 }
 .avatar-side-rail .public-legend-vertical .legend-item {
-  font-size: 13.5px;
+  font-size: 12.5px;
+  gap: 6px;
+  padding: 1px 4px;
 }
-/* 아바타 자리 상단 카드 줄 — 왼쪽 위 정보 카드, 오른쪽 위 라이브 카드(라이브 중에만).
-   아바타 몸통은 아래쪽이라 상단 여백을 쓴다. 슬롯은 pointer-events:none — 카드만 되살림. */
+/* 인기도 축약 — 2×2 미니 그리드(불꽃 칩 + 짧은 라벨), 세로를 절반으로. */
+.avatar-side-rail .legend-heart-help {
+  padding: 7px 8px;
+  margin-top: 6px;
+}
+.avatar-side-rail .legend-tier-line {
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+.avatar-side-rail .legend-tiers {
+  grid-template-columns: 1fr 1fr;
+  gap: 3px 4px;
+}
+.avatar-side-rail .legend-tiers li {
+  grid-template-columns: auto 1fr;
+  gap: 4px;
+  font-size: 10.5px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.avatar-side-rail .legend-tiers .flame {
+  min-height: 18px;
+  padding: 0 3px;
+  font-size: 10px;
+  letter-spacing: -2px;
+}
+/* 아바타 자리 상단 카드 줄 — 점선 박스의 위 모서리에 '걸쳐' 앉는다(상변을 16px 넘어감,
+   액자 모서리 배지 문법). 정보 카드 = 달력 쪽(안쪽) 모서리, 라이브 카드 = 바깥 모서리.
+   슬롯은 pointer-events:none — 카드만 되살림. */
 .avatar-top-cards {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  right: 12px;
+  top: 10px; /* = 점선 박스 상변(슬롯 padding) */
+  left: 24px;
+  right: 24px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
+  transform: translateY(-16px);
   pointer-events: auto;
   z-index: 2;
 }
-.avatar-top-cards .rail-info-card {
+/* 좌우 미러 — 정보 카드는 항상 안쪽(달력 쪽) 모서리, 라이브는 바깥쪽. */
+.poster-page.avatar-scene.avatar-left .avatar-top-cards {
+  flex-direction: row-reverse;
+}
+/* 두 카드 같은 크기(232×166) — 나란히 걸릴 때 조화(사용자 요청). */
+.avatar-top-cards .rail-info-card,
+.avatar-top-cards .soop-live-card.in-rail {
   flex: none;
-  width: 236px;
-  max-width: 60%;
+  width: 232px;
+  max-width: 48%;
+  height: 166px;
+  margin: 0;
+  box-sizing: border-box;
+}
+.avatar-top-cards .rail-info-card {
+  justify-content: center; /* 고정 높이 안에서 세로 중앙 — 위만 눌린 느낌 방지 */
   animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.28s both;
 }
 .avatar-top-cards .soop-live-card.in-rail {
-  flex: 1;
-  min-width: 0;
-  max-width: 320px;
-  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.36s both;
+}
+/* 고정 높이 카드 안에서 플레이어가 남은 세로를 채운다(비율 대신 flex). */
+.avatar-top-cards .soop-live-card.in-rail .slc-player {
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: auto;
 }
 @keyframes avatar-card-pop {
   from {
@@ -1164,6 +1223,13 @@ html[data-reduce-motion] .poster-scaler {
   /* scene 꺼짐 — 표면 레일·컬럼도 평소대로 복원(얇은 레일은 숨김). */
   .avatar-side-rail {
     display: none;
+  }
+  .poster-page.avatar-scene.avatar-right .decorate-toolbar,
+  .poster-page.avatar-scene.avatar-right .poster-capture-row,
+  .poster-page.avatar-scene.avatar-left .decorate-toolbar,
+  .poster-page.avatar-scene.avatar-left .poster-capture-row {
+    margin-left: 0;
+    margin-right: 0;
   }
   .poster-page.avatar-scene .poster-surface {
     grid-template-columns: minmax(0, 1fr) 252px;
@@ -3349,7 +3415,8 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 /* 꾸미기 chrome 전체(상단 도구바 + 하단 입력/캡쳐줄)를 아바타 scene에서 달력과 같은 폭으로 슬라이드.
    base에 트랜지션 → ON/OFF 둘 다 부드럽게. */
 .decorate-toolbar,
-.poster-capture-row {
+.poster-capture-row,
+.decorate-toolbar {
   transition: margin 0.55s var(--spring-smooth, var(--ease-spring));
 }
 .poster-page.avatar-scene.avatar-right .decorate-toolbar,
