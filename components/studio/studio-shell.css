@@ -3726,6 +3726,20 @@ html[data-reduce-motion] .event-editor-panel {
   pointer-events: none;
   z-index: 5;
   overflow: visible;
+  /* 팝오버(0.34s 스케일-인)가 반쯤 자란 뒤 선이 따라 나타난다 — 선이 먼저 완성돼 있던
+     부조화 제거. remount(key=editorKey)로 새 선택마다 다시 재생. */
+  animation: anchor-link-in 0.24s var(--ease, ease) 0.12s both;
+}
+@keyframes anchor-link-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+html[data-reduce-motion] .editor-anchor-link {
+  animation: none;
 }
 .editor-anchor-link line {
   stroke: rgb(139 92 246 / 55%);

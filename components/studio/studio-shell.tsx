@@ -1868,7 +1868,14 @@ export function StudioShell({
   // 그 칸 옆으로 미끄러져 이동. 모바일(isNarrow)은 기존 시트(m-edit-sheet) 그대로.
   const workspaceRef = useRef<HTMLElement | null>(null);
   const editorPanelRef = useRef<HTMLElement | null>(null);
-  const [editorPopPos, setEditorPopPos] = useState<{ left: number; top: number } | null>(null);
+  // 자동 배치 좌표 + 등장 원점(ox/oy = 앵커가 팝오버 로컬에서 향하는 지점) — 스케일-인이
+  // '클릭한 칸/일정에서부터 자라나듯' 보이게 transform-origin으로 쓴다.
+  const [editorPopPos, setEditorPopPos] = useState<{
+    left: number;
+    top: number;
+    ox: number;
+    oy: number;
+  } | null>(null);
   // 사용자가 헤더를 잡아 끌면 그 자리가 우선(수동 배치) — 다른 날짜/일정을 고르면 자동 배치로 복귀.
   const [editorPopManual, setEditorPopManual] = useState<{ left: number; top: number } | null>(
     null
@@ -1980,8 +1987,18 @@ export function StudioShell({
     if (top + popH > vpBottom) top = vpBottom - popH;
     if (top < vpTop) top = vpTop;
     top = Math.max(PAD, Math.min(top, Math.max(PAD, ws.offsetHeight - popH - PAD)));
-    const next = { left: Math.round(left), top: Math.round(top) };
-    setEditorPopPos((p) => (p && p.left === next.left && p.top === next.top ? p : next));
+    const next = {
+      left: Math.round(left),
+      top: Math.round(top),
+      // 등장 원점 = 앵커가 팝오버 로컬 좌표에서 가리키는 지점(팝오버 밖이면 가장자리로 클램프).
+      ox: Math.round(Math.max(0, Math.min(anchor.x - left, popW))),
+      oy: Math.round(Math.max(0, Math.min(anchor.y - top, popH)))
+    };
+    setEditorPopPos((p) =>
+      p && p.left === next.left && p.top === next.top && p.ox === next.ox && p.oy === next.oy
+        ? p
+        : next
+    );
   }, [selectedDate, getPopZoom]);
   // 헤더 드래그로 팝오버 이동. 이동 중엔 React 상태를 안 거치고 DOM(style·라인 좌표)을 직접
   // 갱신한다 — 이 컴포넌트는 커서 6천 줄 셸이라 pointermove마다 리렌더하면 툭툭 끊긴다(실측).
@@ -6307,9 +6324,12 @@ export function StudioShell({
               // 앵커 칸이 카드에 덮여 있으면(최근접점 = 앵커 그 자체) 선은 무의미 — 도트만.
               const covered = edge.x === editorAnchorPt.x && edge.y === editorAnchorPt.y;
               return (
+                // key=editorKey — 새 선택마다 remount해 페이드-인이 팝오버 등장과 함께 다시
+                // 재생된다(팝오버보다 선이 먼저 완성돼 있던 부조화 제거).
                 <svg
                   aria-hidden="true"
                   className={`editor-anchor-link ${selectedEventId ? "is-edit" : "is-new"}`}
+                  key={`link-${editorKey}`}
                 >
                   {covered ? null : (
                     <line
@@ -6326,15 +6346,25 @@ export function StudioShell({
             })()
           : null}
         {/* 앵커 팝오버 — 위치는 placeEditorPopover가 실측 배치(선택 칸 옆, flip·클램프).
-            좌표 확정 전 한 프레임은 숨겨 (0,0) 번쩍임을 막는다. 헤더를 잡아 끌면 이동. */}
+            좌표 확정 전 한 프레임은 숨겨 (0,0) 번쩍임을 막는다. 헤더를 잡아 끌면 이동.
+            key=editorKey — 새 날짜/일정을 고를 때마다 remount: 예전 위치에서 미끄러져
+            날아오지 않고, transform-origin(앵커 방향)에서 새로 자라나듯 등장한다. */}
         <aside
           className={`event-editor-panel ${selectedEventId ? "is-edit" : "is-new"}${
             panelSaved ? " panel-saved" : ""
           }${editorPopDragging ? " pop-dragging" : ""}`}
+          key={`pop-${editorKey}`}
           ref={editorPanelRef}
           style={(() => {
             const p = editorPopManual ?? editorPopPos;
-            return p ? { left: p.left, top: p.top } : { visibility: "hidden" as const };
+            if (!p) return { visibility: "hidden" as const };
+            return {
+              left: p.left,
+              top: p.top,
+              transformOrigin: editorPopPos
+                ? `${editorPopPos.ox}px ${editorPopPos.oy}px`
+                : undefined
+            };
           })()}
         >
           {/* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */}
