@@ -3887,6 +3887,27 @@ export function PublicPoster({
     );
   }
 
+  // 꾸미기 단축키 안내 접기/펴기 — 선택은 로컬에 기억(방송 준비 중 화면 정리용).
+  const [shortcutOpen, setShortcutOpen] = useState(true);
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem("vic_shortcut_help_open") === "0") setShortcutOpen(false);
+    } catch {
+      /* localStorage 접근 불가 환경 무시 */
+    }
+  }, []);
+  function toggleShortcutHelp() {
+    hapticTick();
+    setShortcutOpen((v) => {
+      try {
+        window.localStorage.setItem("vic_shortcut_help_open", v ? "0" : "1");
+      } catch {
+        /* 무시 */
+      }
+      return !v;
+    });
+  }
+
   // 레일 정보 카드(연·월 · 데뷔 D+ · 오늘) — 평소엔 표면 안 오른쪽 레일에, 아바타 scene에선
   // 아바타 자리 좌상단으로 옮겨 뜬다. 한 JSX를 두 자리에서 재사용해 마크업이 안 어긋나게 한다.
   const railInfoCard = (() => {
@@ -5037,46 +5058,74 @@ export function PublicPoster({
               )
             ) : null}
 
-            {/* #8: 단축키 안내 */}
-            <div className="shortcut-help" aria-label="단축키 안내">
-              <span className="shortcut-help-title">
+            {/* #8: 단축키 안내 — 접기/펴기(제목 pill이 토글, 선택은 로컬 기억). 나열 대신
+                의미 그룹(편집/선택·이동/기록)으로 묶고 헤어라인 구분 — 조화 3요소(그룹핑·
+                정렬·일정한 리듬), 애플 문법. */}
+            <div
+              className={`shortcut-help${shortcutOpen ? "" : " is-closed"}`}
+              aria-label="단축키 안내"
+            >
+              <button
+                aria-expanded={shortcutOpen}
+                className="shortcut-help-title"
+                onClick={toggleShortcutHelp}
+                title={shortcutOpen ? "단축키 안내 접기" : "단축키 안내 펴기"}
+                type="button"
+              >
                 <Keyboard aria-hidden="true" size={14} />
                 단축키
-              </span>
-              <ul className="shortcut-help-list">
-                <li>
-                  <kbd>Del</kbd> 삭제
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd>+<kbd>D</kbd> 복제
-                </li>
-                {/* 복사/붙여넣기는 구현돼 있고 토스트도 "다른 달에서 Ctrl+V"라고 안내하는데,
-                    정작 이 안내판에만 빠져 있었다(달 넘겨 붙이기가 이 기능의 진짜 쓸모). */}
-                <li>
-                  <kbd>Ctrl</kbd>+<kbd>C</kbd> 복사
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd>+<kbd>V</kbd> 붙여넣기(다른 달도)
-                </li>
-                <li>
-                  <kbd>Esc</kbd> 선택 해제
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd>+<kbd>Z</kbd> 실행취소
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd>+<kbd>Y</kbd> 다시실행
-                </li>
-                <li>
-                  <kbd>Ctrl</kbd>+<kbd>S</kbd> 저장
-                </li>
-                <li>
-                  <kbd>←↑↓→</kbd> 미세 이동
-                </li>
-                <li>
-                  <kbd>Shift</kbd>+클릭 여러 개 선택
-                </li>
-              </ul>
+                <ChevronDown aria-hidden="true" className="sh-chev" size={13} />
+              </button>
+              {shortcutOpen ? (
+                <div className="shortcut-help-groups">
+                  <div className="sh-group">
+                    <em>편집</em>
+                    <ul className="shortcut-help-list">
+                      <li>
+                        <kbd>Del</kbd> 삭제
+                      </li>
+                      <li>
+                        <kbd>Ctrl</kbd>+<kbd>D</kbd> 복제
+                      </li>
+                      {/* 복사/붙여넣기는 달 넘겨 붙이기가 진짜 쓸모 — 안내판에도 명시. */}
+                      <li>
+                        <kbd>Ctrl</kbd>+<kbd>C</kbd> 복사
+                      </li>
+                      <li>
+                        <kbd>Ctrl</kbd>+<kbd>V</kbd> 붙여넣기 <i>다른 달도</i>
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="sh-group">
+                    <em>선택·이동</em>
+                    <ul className="shortcut-help-list">
+                      <li>
+                        <kbd>Shift</kbd>+클릭 여러 개
+                      </li>
+                      <li>
+                        <kbd>Esc</kbd> 해제
+                      </li>
+                      <li>
+                        <kbd>←↑↓→</kbd> 미세 이동
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="sh-group">
+                    <em>기록</em>
+                    <ul className="shortcut-help-list">
+                      <li>
+                        <kbd>Ctrl</kbd>+<kbd>Z</kbd> 실행취소
+                      </li>
+                      <li>
+                        <kbd>Ctrl</kbd>+<kbd>Y</kbd> 다시실행
+                      </li>
+                      <li>
+                        <kbd>Ctrl</kbd>+<kbd>S</kbd> 저장
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              ) : null}
             </div>
 
             {stickerError ? <span className="poster-action-error">{stickerError}</span> : null}
