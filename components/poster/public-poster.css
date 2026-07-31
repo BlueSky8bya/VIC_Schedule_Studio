@@ -916,7 +916,9 @@ html[data-reduce-motion] .mb-live-dot {
 }
 
 .public-calendar-shell {
-  width: min(1840px, 100%);
+  /* 상한을 설계폭(1840)이 아니라 확대 상한(1840×1.6)으로 — 큰 화면에서 stage 폭이 1840에
+     묶여 배율이 1배에 갇히던 병목 제거(2026-07-31, 시청자도 1.6배 확대). */
+  width: min(2944px, 100%);
   margin: 0 auto;
   padding: 0 22px 18px;
 }
@@ -4309,7 +4311,9 @@ html[data-reduce-motion] .heart-toast {
    자동재생) + LIVE 배지 + 제목/보러가기 캡션. fixed = 캡쳐 표면 밖. */
 .soop-live-card {
   position: fixed;
-  right: 18px;
+  /* 좌하단 — 우하단은 레일의 인기도 카드를 가렸다(실측). 왼쪽 아래가 상시 요소가 가장 적다
+     (월 이동 ‹는 세로 중앙이라 안 겹침). */
+  left: 18px;
   bottom: 18px;
   z-index: 60;
   width: 300px;

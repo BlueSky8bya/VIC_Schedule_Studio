@@ -1463,10 +1463,10 @@ export function PublicPoster({
     // 표면이 일정 양에 따라 세로로 자란다. '폭'에만 맞춰 축소하고(글자 크기 유지), 화면보다 길면
     // 페이지를 세로 스크롤한다 — 일정이 많아도 작아지지 않고 그대로 보고 내려서 본다. 자연 크기는
     // transform에 영향 없는 offset*로 재 배율 바꿔도 피드백이 없다(폭만 보므로 더더욱).
-    // 스트리머 컨텍스트(관리자 미리보기·꾸미기=avatarSlot)는 4K 등 큰 화면에서 1배에 막히지 않고
-    // 1.6배까지 키운다 — Math.min(1,…) 캡 때문에 3840 화면이 텅 비던 낭비를 줄인다. 공개 시청자
-    // (avatarSlot 아님)는 기존대로 1배 상한(레이아웃 안정). 폭 기준 fit이라 가로 넘침은 없다.
-    const maxScale = avatarSlot ? 1.6 : 1;
+    // 큰 화면에서 1배 캡 때문에 좌우가 텅 비던 낭비 제거(2026-07-31 사용자 요청) — 공개
+    // 시청자도 1.6배까지 화면 폭에 맞춰 키운다. 확대는 transform scale 통째라 표면 내부
+    // 기하·스티커 좌표는 불변(ADR-0004 안전). 폭 기준 fit이라 가로 넘침은 없다.
+    const maxScale = 1.6;
     const measure = () => {
       const natW = scaler.offsetWidth || POSTER_DESIGN_W;
       const natH = scaler.offsetHeight || POSTER_DESIGN_H;
