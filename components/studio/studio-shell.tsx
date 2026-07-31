@@ -1985,12 +1985,18 @@ export function StudioShell({
     setEditorPopSize((s) => (s && s.w === size.w && s.h === size.h ? s : size));
     // 드래그 중엔 손이 진실 — 아무것도 안 건드린다.
     if (editorPopDragActiveRef.current) return;
-    // 수동 배치는 자동 좌표로 되돌리지 않되, 매 프레임 뷰포트 클램프는 통과시킨다 —
-    // 안 그러면 드래그 후 스크롤할 때 팝오버가 화면 밖으로 잘려나간다(리포트).
-    // 클램프에 걸릴 때만 수동 좌표를 갱신하므로 놓은 자리는 화면 안에서 그대로 유지된다.
+    // 수동 배치는 자동 좌표로 되돌리지 않되, 스크롤 시엔 자동 배치와 같은 '전부 보이게'
+    // 클램프를 매 프레임 통과시킨다(드래그용 느슨한 클램프(헤더만)로는 본문이 잘렸다 —
+    // 리포트 2회). 클램프에 걸릴 때만 갱신하므로 화면 안에선 놓은 자리 그대로다.
     const manual = editorPopManualRef.current;
     if (manual) {
-      const adj = clampPopPos(manual.left, manual.top);
+      const vpTopL = (64 - wsRect.top) / z + 8;
+      const vpBottomL = (window.innerHeight - wsRect.top) / z - 8;
+      let mTop = manual.top;
+      if (mTop + size.h > vpBottomL) mTop = vpBottomL - size.h;
+      if (mTop < vpTopL) mTop = vpTopL;
+      const mLeft = Math.max(140 - size.w, Math.min(manual.left, ws.clientWidth - 140));
+      const adj = { left: Math.round(mLeft), top: Math.round(mTop) };
       if (adj.left !== manual.left || adj.top !== manual.top) {
         editorPopManualRef.current = adj;
         setEditorPopManual(adj);
@@ -2026,7 +2032,7 @@ export function StudioShell({
         ? p
         : next
     );
-  }, [selectedDate, selectedEventId, getPopZoom, clampPopPos]);
+  }, [selectedDate, selectedEventId, getPopZoom]);
   // 헤더 드래그로 팝오버 이동. 이동 중엔 React 상태를 안 거치고 DOM(style·라인 좌표)을 직접
   // 갱신한다 — 이 컴포넌트는 커서 6천 줄 셸이라 pointermove마다 리렌더하면 툭툭 끊긴다(실측).
   // 손을 떼는 순간에만 상태로 확정(setEditorPopManual)해 React 좌표와 동기화한다.
