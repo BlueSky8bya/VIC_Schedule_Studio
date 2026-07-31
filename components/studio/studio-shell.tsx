@@ -1883,26 +1883,40 @@ export function StudioShell({
   // 드래그 진행 중 플래그(ref) — 이동 프레임마다 상태를 안 거치므로, rAF 동기화 루프가
   // '지금은 손이 잡고 있다'를 상태와 무관하게 알 수 있어야 자동 좌표로 안 되돌린다.
   const editorPopDragActiveRef = useRef(false);
+  // ⚠ 대형 모니터에선 .studio-shell에 CSS zoom(≥1700px: 0.9, ≥2400px: 0.8)이 걸린다.
+  // getBoundingClientRect는 zoom '반영 후' 화면 px를 주지만, 우리가 쓰는 CSS left/top과 SVG
+  // 좌표는 zoom이 '곱해지기 전' 로컬 px로 해석된다 → 화면 px를 그대로 쓰면 모든 좌표가
+  // 0.9배 지점에 그려져 아래 행일수록 도트가 위로 밀렸다(실사용 드리프트의 진짜 원인).
+  // 보정 배율 = 화면 폭 / 로컬 폭(offsetWidth). zoom 없으면 1.
+  const getPopZoom = useCallback(() => {
+    const ws = workspaceRef.current;
+    if (!ws || !ws.offsetWidth) return 1;
+    return ws.getBoundingClientRect().width / ws.offsetWidth || 1;
+  }, []);
   const editorAnchorPtRef = useRef<typeof editorAnchorPt>(null);
   editorAnchorPtRef.current = editorAnchorPt;
   const anchorLineRef = useRef<SVGLineElement | null>(null);
   // 수동 드래그 클램프 — '꽉 가두기'가 아니라 잡을 수 있는 최소한만 남긴다: 카드가 좌우로는
   // 140px만 화면에 걸치면 되고, 세로는 헤더 바(위 64px 아래~바닥 위 56px)만 손이 닿으면 된다.
   // 몸통이 화면/판 밖으로 나가는 건 허용 — 가두면 큰 카드일수록 이동 여유가 0이 돼 툭툭 걸린다.
-  const clampPopPos = useCallback((left: number, top: number) => {
-    const ws = workspaceRef.current;
-    const panel = editorPanelRef.current;
-    if (!ws || !panel) return { left, top };
-    const popW = panel.offsetWidth || 384;
-    const KEEP = 140; // 가로로 화면에 남겨둘 최소 폭
-    const wsTop = ws.getBoundingClientRect().top;
-    const vpTop = 64 - wsTop + 8; // 상단바 아래(헤더가 그 밑으로 숨지 않게)
-    const vpBottom = window.innerHeight - wsTop - 56; // 헤더 바가 바닥 아래로 사라지지 않게
-    return {
-      left: Math.round(Math.max(KEEP - popW, Math.min(left, ws.clientWidth - KEEP))),
-      top: Math.round(Math.max(vpTop, Math.min(top, vpBottom)))
-    };
-  }, []);
+  const clampPopPos = useCallback(
+    (left: number, top: number) => {
+      const ws = workspaceRef.current;
+      const panel = editorPanelRef.current;
+      if (!ws || !panel) return { left, top };
+      const z = getPopZoom();
+      const popW = panel.offsetWidth || 384; // offset* = 로컬 px
+      const KEEP = 140; // 가로로 화면에 남겨둘 최소 폭(로컬 px)
+      const wsTopV = ws.getBoundingClientRect().top; // 화면 px → /z 로 로컬 변환
+      const vpTop = (64 - wsTopV) / z + 8; // 상단바 아래(헤더가 그 밑으로 숨지 않게)
+      const vpBottom = (window.innerHeight - wsTopV) / z - 56; // 헤더 바가 바닥 아래로 안 사라지게
+      return {
+        left: Math.round(Math.max(KEEP - popW, Math.min(left, ws.clientWidth - KEEP))),
+        top: Math.round(Math.max(vpTop, Math.min(top, vpBottom)))
+      };
+    },
+    [getPopZoom]
+  );
   // 리더 라인의 카드 쪽 끝점 = 팝오버 사각형 가장자리에서 앵커에 가장 가까운 점.
   // (카드가 칸 오른쪽에 있으면 왼쪽 변에, 아래에 있으면 위 변에 붙는다 — 선이 카드 밑으로
   // 파고들지 않고 가장자리에서 시작해 끊겨 보이지 않는다.)
@@ -1926,13 +1940,19 @@ export function StudioShell({
     if (!ws || !panel || !cell) return;
     const wsRect = ws.getBoundingClientRect();
     const cellRect = cell.getBoundingClientRect();
+    // 화면 px(getBoundingClientRect) → 로컬 px(/z, CSS zoom 보정) — left/top·SVG 좌표는 로컬.
+    const z = getPopZoom();
+    const cellL = (cellRect.left - wsRect.left) / z;
+    const cellT = (cellRect.top - wsRect.top) / z;
+    const cellW = cellRect.width / z;
+    const cellH = cellRect.height / z;
     // 앵커 칸 중심은 수동 배치 중에도 항상 갱신(리더 라인용).
     const anchor = {
-      x: Math.round(cellRect.left - wsRect.left + cellRect.width / 2),
-      y: Math.round(cellRect.top - wsRect.top + Math.min(cellRect.height / 2, 46))
+      x: Math.round(cellL + cellW / 2),
+      y: Math.round(cellT + Math.min(cellH / 2, 46))
     };
     setEditorAnchorPt((p) => (p && p.x === anchor.x && p.y === anchor.y ? p : anchor));
-    const size = { w: panel.offsetWidth || 384, h: panel.offsetHeight || 480 };
+    const size = { w: panel.offsetWidth || 384, h: panel.offsetHeight || 480 }; // offset* = 로컬
     setEditorPopSize((s) => (s && s.w === size.w && s.h === size.h ? s : size));
     // 수동 배치(또는 드래그 중) 우선 — 자동 좌표는 덮지 않는다.
     if (editorPopManualRef.current || editorPopDragActiveRef.current) return;
@@ -1940,21 +1960,22 @@ export function StudioShell({
     const popH = size.h;
     const GAP = 12;
     const PAD = 8;
+    const wsW = ws.clientWidth; // 로컬 px
     // 가로: 칸 오른쪽 우선, 안 들어가면 왼쪽으로 flip. 그래도 안 되면 안쪽으로 클램프.
-    let left = cellRect.right - wsRect.left + GAP;
-    if (left + popW > wsRect.width - PAD) left = cellRect.left - wsRect.left - popW - GAP;
-    left = Math.max(PAD, Math.min(left, wsRect.width - popW - PAD));
+    let left = cellL + cellW + GAP;
+    if (left + popW > wsW - PAD) left = cellL - popW - GAP;
+    left = Math.max(PAD, Math.min(left, wsW - popW - PAD));
     // 세로: 칸 상단 정렬이 기본. 뷰포트(고정 상단바 아래~바닥) 안에 다 보이게 당기고,
-    // workspace 밖으로도 안 나가게 마지막으로 클램프.
-    let top = cellRect.top - wsRect.top - 4;
-    const vpTop = 64 - wsRect.top + PAD; // 상단바(~57px) 아래 (workspace 좌표계)
-    const vpBottom = window.innerHeight - wsRect.top - PAD;
+    // workspace 밖으로도 안 나가게 마지막으로 클램프. (뷰포트 값도 로컬로 변환)
+    let top = cellT - 4;
+    const vpTop = (64 - wsRect.top) / z + PAD; // 상단바(~57px) 아래
+    const vpBottom = (window.innerHeight - wsRect.top) / z - PAD;
     if (top + popH > vpBottom) top = vpBottom - popH;
     if (top < vpTop) top = vpTop;
     top = Math.max(PAD, Math.min(top, Math.max(PAD, ws.offsetHeight - popH - PAD)));
     const next = { left: Math.round(left), top: Math.round(top) };
     setEditorPopPos((p) => (p && p.left === next.left && p.top === next.top ? p : next));
-  }, [selectedDate]);
+  }, [selectedDate, getPopZoom]);
   // 헤더 드래그로 팝오버 이동. 이동 중엔 React 상태를 안 거치고 DOM(style·라인 좌표)을 직접
   // 갱신한다 — 이 컴포넌트는 커서 6천 줄 셸이라 pointermove마다 리렌더하면 툭툭 끊긴다(실측).
   // 손을 떼는 순간에만 상태로 확정(setEditorPopManual)해 React 좌표와 동기화한다.
@@ -1968,11 +1989,12 @@ export function StudioShell({
     e.preventDefault();
     const startX = e.clientX;
     const startY = e.clientY;
+    const z = getPopZoom(); // 포인터 delta는 화면 px — 로컬 px로 변환해야 1:1로 따라온다
     let moved = false;
     let last = base;
     const onMove = (ev: PointerEvent) => {
-      const dx = ev.clientX - startX;
-      const dy = ev.clientY - startY;
+      const dx = (ev.clientX - startX) / z;
+      const dy = (ev.clientY - startY) / z;
       if (!moved && Math.abs(dx) < 3 && Math.abs(dy) < 3) return; // 클릭 오차 보호
       if (!moved) {
         moved = true;

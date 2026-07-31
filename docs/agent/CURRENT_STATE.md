@@ -126,6 +126,11 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
   등높이 JS 등)로 행이 밀리며 도트가 칸 위로 떠 보이던 드리프트 해결(fixture에 강제 행
   시프트 시뮬로 검증). 드래그 중엔 editorPopDragActiveRef로 루프가 좌표를 안 되돌린다.
   + 카드 맨 위 전폭 '이동 손잡이' 스트립(모드 색 틴트+중앙 그립 필, editor-grab).
+  5차(진짜 원인): 드리프트 = **대형 모니터 CSS zoom**(≥1700px .studio-shell 0.9 / ≥2400px 0.8)
+  — gBCR은 zoom 반영 화면 px, CSS left/top·SVG 좌표는 zoom 전 로컬 px라 전부 0.9배 지점에
+  그려졌던 것(rAF는 무관). getPopZoom()=화면폭/offsetWidth 배율로 나눠 로컬 좌표로 변환,
+  드래그 delta도 /z. 2560 뷰포트(zoom 0.8) fixture에서 전 행 오차 0·드래그 1:1 실측.
+  ⚠ 교훈: 편집실에서 gBCR 좌표를 absolute/SVG에 쓸 땐 반드시 zoom 보정.
   아울러 **편집실 아바타 자리 = 항상 켜짐**
   (끄기 토글 제거, 좌/우만 선택 — vic_avatar_on 키는 이제 시청자 포스터 전용, 시청자
   미리보기는 controlled 공유를 끊고 포스터 자체 상태로). fixture+Playwright 실측(anchor/
