@@ -3923,7 +3923,10 @@ export function PublicPoster({
   // 실측**해 기준(canon) ↔ 현재(live) 사각형 사이 선형 매핑으로 x·y를 함께 보정한다.
   // 기준 사각형은 기본 지오메트리일 때마다 갱신·기억한다(콜드 스타트로 기준을 아직 못 쟀으면
   // 옛 x 상수 보정으로 폴백). DB 좌표는 언제나 기준 지오메트리 값 그대로.
-  type StickerFrame = { x: number; y: number; w: number; h: number };
+  // rows = 각 주(행)의 경계선 y(표면 비율, 첫 행 top…마지막 행 bottom). 확대/scene에서 주마다
+  // 높이가 '다르게' 변하므로(줄바꿈 재배치) y는 전체 선형이 아니라 행 구간별로 매핑해야
+  // 들쭉날쭉하지 않다(사용자 실측 리포트 — 6개 모드 비교).
+  type StickerFrame = { x: number; y: number; w: number; h: number; rows: number[] };
   const sceneOn = avatarCapable && avatarOn;
   const sceneOnRef = useRef(sceneOn);
   sceneOnRef.current = sceneOn;
@@ -3941,11 +3944,23 @@ export function PublicPoster({
     const gr = g.getBoundingClientRect();
     if (sr.width < 1 || sr.height < 1 || gr.width < 1 || gr.height < 1) return;
     // 표면·그리드가 같은 transform scale 안에 있으므로 비율은 배율과 무관하게 정확하다.
+    // 행 경계 = 각 주의 첫 칸 top + 마지막 칸 bottom(표면 비율 y).
+    const cells = g.querySelectorAll<HTMLElement>(".public-day");
+    const rows: number[] = [];
+    for (let i = 0; i < cells.length; i += 7) {
+      rows.push((cells[i].getBoundingClientRect().top - sr.top) / sr.height);
+    }
+    if (cells.length > 0) {
+      rows.push(
+        (cells[cells.length - 1].getBoundingClientRect().bottom - sr.top) / sr.height
+      );
+    }
     const next: StickerFrame = {
       x: (gr.left - sr.left) / sr.width,
       y: (gr.top - sr.top) / sr.height,
       w: gr.width / sr.width,
-      h: gr.height / sr.height
+      h: gr.height / sr.height,
+      rows
     };
     const isCanon = !sceneOnRef.current && posterZoomRef.current === 1;
     setStickerFrames((prev) => {
@@ -3954,7 +3969,9 @@ export function PublicPoster({
         Math.abs(a.x - next.x) < 1e-4 &&
         Math.abs(a.y - next.y) < 1e-4 &&
         Math.abs(a.w - next.w) < 1e-4 &&
-        Math.abs(a.h - next.h) < 1e-4;
+        Math.abs(a.h - next.h) < 1e-4 &&
+        a.rows.length === next.rows.length &&
+        a.rows.every((v, i) => Math.abs(v - next.rows[i]) < 1e-4);
       const live = same(prev.live) ? prev.live : next;
       const canon = isCanon ? (same(prev.canon) ? prev.canon : next) : prev.canon;
       return live === prev.live && canon === prev.canon ? prev : { canon, live };
@@ -3987,16 +4004,43 @@ export function PublicPoster({
         : null;
     }
     const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+    // y = 행 구간별 piecewise 매핑 — 확대/scene에서 주마다 높이가 다르게 변하므로 전체 선형은
+    // 그리드 중간에서 어긋난다(실측 리포트). 같은 행 안에서는 선형, 경계 밖은 끝 구간의
+    // 전체 비율로 외삽. 행 수가 다르면(전환 중 순간) 전체 선형으로 폴백.
+    const rowsOk =
+      canon.rows.length >= 2 && canon.rows.length === live.rows.length;
+    const mapY = (y: number, A: number[], B: number[], aH: number, bH: number) => {
+      const n = A.length;
+      const scale = bH / aH;
+      if (y <= A[0]) return B[0] + (y - A[0]) * scale;
+      if (y >= A[n - 1]) return B[n - 1] + (y - A[n - 1]) * scale;
+      for (let k = 0; k < n - 1; k++) {
+        if (y <= A[k + 1]) {
+          const seg = A[k + 1] - A[k];
+          const t = seg > 0 ? (y - A[k]) / seg : 0;
+          return B[k] + t * (B[k + 1] - B[k]);
+        }
+      }
+      return B[n - 1];
+    };
+    const toY = (y: number) =>
+      rowsOk
+        ? mapY(y, canon.rows, live.rows, canon.h, live.h)
+        : live.y + ((y - canon.y) * live.h) / canon.h;
+    const fromY = (y: number) =>
+      rowsOk
+        ? mapY(y, live.rows, canon.rows, live.h, canon.h)
+        : canon.y + ((y - live.y) * canon.h) / live.h;
     return {
       to: (s: StickerInstance) => ({
         ...s,
         xRatio: clamp01(live.x + ((s.xRatio - canon.x) * live.w) / canon.w),
-        yRatio: clamp01(live.y + ((s.yRatio - canon.y) * live.h) / canon.h)
+        yRatio: clamp01(toY(s.yRatio))
       }),
       from: (s: StickerInstance) => ({
         ...s,
         xRatio: canon.x + ((s.xRatio - live.x) * canon.w) / live.w,
-        yRatio: canon.y + ((s.yRatio - live.y) * canon.h) / live.h
+        yRatio: fromY(s.yRatio)
       })
     };
   }, [sceneOn, posterZoom, stickerFrames, FALLBACK_K]);
