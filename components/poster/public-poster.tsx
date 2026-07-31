@@ -4006,6 +4006,19 @@ export function PublicPoster({
   const probeCanonFrame = useCallback((): StickerFrame | null => {
     const main = posterMainRef.current;
     if (!main) return null;
+    // 표면 등장(pop-intro)·월 슬라이드(data-enter) 애니 중엔 rect가 이동 중이라 기준이
+    // 오염된다(로드 타이밍 따라 스티커가 엉뚱한 칸에 붙던 레이스). 애니가 끝난 뒤에만 잰다
+    // — 실패 시 measure 쪽에서 재시도한다. (표면/달력 영역 '자신'의 애니만 검사 — 불꽃 등
+    // 자손의 무한 장식 애니는 지오메트리와 무관하므로 무시.)
+    const surf = stickerSurfaceElRef.current;
+    const calArea = surf?.querySelector(".public-calendar-area");
+    const animating = [surf, calArea].some(
+      (el) =>
+        el &&
+        typeof el.getAnimations === "function" &&
+        el.getAnimations().some((a) => a.playState === "running")
+    );
+    if (animating) return null;
     const cal = posterCalRef.current;
     const sceneCls = ["avatar-scene", "avatar-left", "avatar-right"].filter((c) =>
       main.classList.contains(c)
@@ -4026,12 +4039,17 @@ export function PublicPoster({
     main.classList.remove("sticker-geom-probe");
     return frame;
   }, [readStickerFrame]);
+  const measureRetryRef = useRef<() => void>(() => {});
   const measureStickerFrames = useCallback(() => {
     const next = readStickerFrame();
     if (!next) return;
     // 기준(canon)은 언제나 probe로 얻는다 — '기본 상태로 보이는 순간'의 live를 기준 삼으면
     // 전환 애니 중간 지오메트리가 기준을 오염시킨다(토글 직후 크게 틀어지던 레이스의 원인).
     const probed = !stickerCanonRef.current ? probeCanonFrame() : null;
+    // 등장/월 슬라이드 애니 때문에 기준을 못 쟀으면 잠시 뒤 재시도(애니 종료는 RO를 안 울린다).
+    if (!stickerCanonRef.current && !probed) {
+      window.setTimeout(() => measureRetryRef.current(), 450);
+    }
     setStickerFrames((prev) => {
       const sameArr = (a: number[], b: number[]) =>
         a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < 1e-4);
@@ -4051,6 +4069,7 @@ export function PublicPoster({
       return live === prev.live && canon === prev.canon ? prev : { canon, live };
     });
   }, [readStickerFrame, probeCanonFrame]);
+  measureRetryRef.current = measureStickerFrames;
   // 월이 바뀌면 그리드 내용이 달라 기준도 무효 — 다음 실측에서 다시 probe한다.
   useEffect(() => {
     setStickerFrames({ canon: null, live: null });
