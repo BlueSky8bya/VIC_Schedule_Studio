@@ -129,6 +129,7 @@ import { writeViewCookie } from "@/lib/ui/view-cookie";
 import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
+import { createWheelStepper, normalizeWheelDelta, stepCalZoom } from "@/lib/ui/calendar-zoom";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
 // 곳(공개 /, 꾸미기, 스튜디오 시청자 미리보기)에서만 실린다.
 import "./public-poster.css";
@@ -3887,6 +3888,50 @@ export function PublicPoster({
     );
   }
 
+  // 시청자 달력 글자 확대(편집실 A안과 같은 문법) — 달력 위 Ctrl+휠로 100/125/150% 단계.
+  // 글자(칸 내용)만 커지고 표면은 세로로 자란다(배율은 폭 기준이라 그대로 = 진짜 확대).
+  const [posterZoom, setPosterZoom] = useState(1);
+  const posterCalRef = useRef<HTMLElement | null>(null);
+  const posterZoomStepperRef = useRef(createWheelStepper());
+  useEffect(() => {
+    if (showAgenda || decorate) return;
+    const el = posterCalRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey) return;
+      // 달력 위 Ctrl+휠은 항상 브라우저 줌 대신 달력 확대 — 일부만 새면 화면이 뒤죽박죽.
+      e.preventDefault();
+      const dir = posterZoomStepperRef.current.feed(
+        normalizeWheelDelta(e.deltaY, e.deltaMode),
+        e.timeStamp
+      );
+      if (dir === 0) return;
+      hapticTick();
+      setPosterZoom((z) => stepCalZoom(z, dir));
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [showAgenda, decorate]);
+
+  // 스티커 x 보정(해법 1, 2026-08-01) — 아바타 scene에선 표면 안 레일이 접혀 달력이
+  // 1572→1840으로 늘어난다. 스티커는 표면(1840) 비율 좌표라 그대로 그리면 달력 대비 왼쪽으로
+  // 밀려 보임 → 그릴 때만 x에 1840/1572를 곱하고, 꾸미기 드래그 저장 시 역보정한다.
+  // ⚠ 252(레일 폭)·16(컬럼 gap)은 .poster-surface grid-template-columns와 함께 움직인다.
+  const stickerSceneK =
+    avatarCapable && avatarOn ? POSTER_DESIGN_W / (POSTER_DESIGN_W - 252 - 16) : 1;
+  const sceneStickers = useMemo(
+    () =>
+      stickerSceneK === 1
+        ? stickers
+        : stickers.map((s) => ({ ...s, xRatio: Math.min(1, s.xRatio * stickerSceneK) })),
+    [stickers, stickerSceneK]
+  );
+  const unmapSceneSticker = useCallback(
+    (s: StickerInstance): StickerInstance =>
+      stickerSceneK === 1 ? s : { ...s, xRatio: s.xRatio / stickerSceneK },
+    [stickerSceneK]
+  );
+
   // 꾸미기 단축키 안내 접기/펴기 — 선택은 로컬에 기억(방송 준비 중 화면 정리용).
   const [shortcutOpen, setShortcutOpen] = useState(true);
   useEffect(() => {
@@ -5223,19 +5268,23 @@ export function PublicPoster({
           <StickerLayer
             avoidSelector="[data-sticker-avoid]"
             editable={decorate}
-            onChange={updateStickerLocal}
-            onCommit={commitSticker}
+            onChange={(s) => updateStickerLocal(unmapSceneSticker(s))}
+            onCommit={(s) => commitSticker(unmapSceneSticker(s))}
             onGestureStart={pushHistory}
             onSelect={handleSelect}
             selectedIds={selectedIds}
-            stickers={stickers}
+            stickers={sceneStickers}
           />
 
           {/* (메모지 컬럼 삭제 — 2026-07-31 사용자 결정. 거의 안 쓰여 왼쪽 238px를 달력에
               돌려줬다. 모든 모드(시청자·꾸미기·캡쳐)가 같은 2컬럼 지오메트리라 스티커 비율
               좌표는 모드 간 일치. 과거 달에 메모지 위에 붙였던 스티커는 그대로 둔다 — 위치가
               어색하면 꾸미기에서 직접 옮긴다.) */}
-          <section className="public-calendar-area">
+          <section
+            className="public-calendar-area"
+            ref={posterCalRef}
+            style={{ "--cal-zoom": posterZoom } as CSSProperties}
+          >
             <div className="weekday-row" aria-hidden="true">
               {WEEKDAYS.map((weekday, index) => (
                 <span
@@ -5306,6 +5355,22 @@ export function PublicPoster({
         </div>
         )}
       </section>
+
+      {/* 확대 중 배율 표시(편집실과 같은 문법) — 하단 중앙 플로팅, 누르면 100%로 복귀.
+          '맨 위로' 버튼(하단 중앙)보다 위에 떠 안 겹친다. 100%에선 사라진다. */}
+      {posterZoom > 1 ? (
+        <button
+          className="poster-zoom-float"
+          onClick={() => {
+            hapticTick();
+            setPosterZoom(1);
+          }}
+          title="100%로 되돌리기"
+          type="button"
+        >
+          🔍 {Math.round(posterZoom * 100)}%<span>초기화</span>
+        </button>
+      ) : null}
 
       {/* 월 이동 버튼을 하단 좌·우에 띄운다(가운데는 비워 '맨 위로' 버튼과 안 겹치게).
           시청자·아젠다·꾸미기 모두 — 달력을 보며 월을 넘기기 쉽게(HCI). 상단 월 pill은 폐지. */}
