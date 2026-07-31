@@ -1445,6 +1445,41 @@ export function PublicPoster({
   // 스티커·텍스트 위치가 틀어지고 글자가 가려질 수 있다. 그래서 내부는 고정 16:9 캔버스
   // (POSTER_DESIGN_W×H)로 설계하고, 화면 폭에 맞춰 통째로 축소(transform: scale)만 한다.
   // export는 변형 없는 .poster-surface를 원본 해상도로 캡쳐하므로 화질에 영향 없다.
+  // 태그 필터 카드가 세로 스크롤을 따라온다 — 표면이 transform: scale 안이라 position:sticky가
+  // 뷰포트에 안 붙는다(변환 조상이 containing block). 대신 rAF로 스크롤만큼 translateY(레일
+  // 남은 높이로 클램프). transform이라 레이아웃·표면 기하 불변(스티커 안전). 시청자 전용.
+  const legendFollowRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (decorate || showAgenda) return;
+    const el = legendFollowRef.current;
+    if (!el) return;
+    let raf = 0;
+    let cur = 0;
+    const tick = () => {
+      raf = requestAnimationFrame(tick);
+      const parent = el.parentElement; // .public-right
+      if (!parent || !el.offsetWidth) return;
+      const rect = el.getBoundingClientRect();
+      const parentRect = parent.getBoundingClientRect();
+      const scale = rect.width / el.offsetWidth || 1; // 포스터 배율(transform 포함 실측)
+      const baseTopV = rect.top - cur * scale; // 변환 전(원래 자리) 뷰포트 top
+      const baseBottomV = rect.bottom - cur * scale;
+      const wantV = Math.max(0, 14 - baseTopV); // 화면 위로 사라진 만큼 따라 내려온다
+      // 레일(.public-right) 바닥을 넘지 않게 — 남은 아래 공간(뷰포트 px)을 로컬로 환산해 클램프.
+      const maxLocal = Math.max(0, (parentRect.bottom - baseBottomV) / scale - 4);
+      const next = Math.min(wantV / scale, maxLocal);
+      if (Math.abs(next - cur) > 0.5) {
+        cur = next;
+        el.style.transform = next > 0 ? `translateY(${next}px)` : "";
+      }
+    };
+    raf = requestAnimationFrame(tick);
+    return () => {
+      cancelAnimationFrame(raf);
+      el.style.transform = "";
+    };
+  }, [decorate, showAgenda]);
+
   const posterStageRef = useRef<HTMLDivElement | null>(null);
   const posterFitRef = useRef<HTMLDivElement | null>(null);
   const posterScalerRef = useRef<HTMLDivElement | null>(null);
@@ -5012,7 +5047,7 @@ export function PublicPoster({
                 보인다(옛 플로팅 비콘의 겹침 문제가 레일 안에선 없음). 꾸미기/캡쳐엔 없음. */}
             {!decorate ? <SoopLiveBeacon inRail live={soopLive} /> : null}
 
-            <div className="public-legend-vertical" aria-label="태그 필터">
+            <div className="public-legend-vertical" aria-label="태그 필터" ref={legendFollowRef}>
               <strong className="legend-title">태그 필터</strong>
               {(() => {
                 const legendBtn = (tag: (typeof legendTags)[number]) => {

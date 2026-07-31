@@ -1424,7 +1424,8 @@ html[data-reduce-motion] .poster-export-reward-spark {
   display: grid;
   /* 메모 컬럼(238px) 삭제(2026-07-31) — 왼쪽 폭 전부를 달력(7칸 1fr)에 돌려준다.
      표면 폭 1840은 불변, 모든 모드가 같은 2컬럼이라 스티커 비율 좌표는 모드 간 일치. */
-  grid-template-columns: minmax(0, 1fr) 220px;
+  /* 우측 레일 220→252(2026-07-31): 태그 필터 2열에서 5글자 이름까지 줄바꿈 없이 커버. */
+  grid-template-columns: minmax(0, 1fr) 252px;
   /* 제목줄(auto) + 본문(내용 높이) — 본문이 자라면 표면도 함께 자란다. */
   grid-template-rows: auto auto;
   gap: 16px;
@@ -1602,9 +1603,8 @@ html[data-reduce-motion] .poster-export-reward-spark {
   align-self: stretch;
   gap: 14px;
 }
-.public-right .public-legend-vertical {
-  flex: 1; /* 색상 안내 박스가 남는 높이를 채워 달력 바닥에 끝 선을 맞춘다 */
-}
+/* (flex:1 stretch 해제 — 2026-07-31 스크롤 따라오기: 필터가 레일 바닥까지 늘어나 있으면
+   translateY로 내려갈 여유가 0이다. 자연 높이로 두고 남는 레일 공간이 이동 슬랙이 된다.) */
 /* 시청자 태그 필터 제목 — 편집실 필터 제목(.studio-left-panel h2, 17px)과 같은 크기로 맞춤. */
 .legend-title {
   display: block;
@@ -1667,6 +1667,8 @@ html[data-reduce-motion] .poster-export-reward-spark {
   gap: 8px;
   font-size: 14px;
   font-weight: 800;
+  /* 2열에서 이름이 두 줄로 꺾이지 않게 — 폭(레일 252)으로 5글자까지 한 줄 보장. */
+  white-space: nowrap;
 }
 /* A2: 클릭 가능한 범례 항목 */
 .public-legend-vertical .legend-item {
