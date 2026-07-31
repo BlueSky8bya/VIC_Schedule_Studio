@@ -1156,12 +1156,20 @@ html {
    아바타가 옆에 fixed라 legend를 줄일 필요가 없다. (별도 override 없음) */
 /* 아바타 박스: 화면(viewport)에 '고정'(방송 세팅처럼 스크롤해도 안 움직임). 우측/좌측 1/4 고정,
    하단 정렬. 모든 달에서 폭·높이 동일. 달력(stage margin 25vw)과 겹침 0. */
+/* 아바타 자리 높이 — 꾸미기에선 위에 카드+토글이 층층이 쌓여 헤더 버튼(편집실로 가기)과
+   겹치므로 그만큼(+마진) 낮춘다. 토글 위치도 같은 변수를 따라간다. */
+.poster-page.avatar-scene {
+  --avatar-h: 75vh;
+}
+.poster-page.is-decorate.avatar-scene {
+  --avatar-h: calc(75vh - 72px);
+}
 .poster-page.avatar-scene .avatar-slot {
   position: fixed;
   bottom: 0;
   top: auto;
   width: 22vw;
-  height: 75vh;
+  height: var(--avatar-h, 75vh);
   padding: 10px;
   display: flex;
   box-sizing: border-box;
@@ -1290,7 +1298,7 @@ html[data-reduce-motion] .poster-scaler {
   top: auto;
   left: 8px;
   right: auto;
-  bottom: calc(75vh + 10px); /* 아바타(아래 70vh) 바로 위 */
+  bottom: calc(var(--avatar-h, 75vh) + 10px); /* 아바타 자리 바로 위 */
   /* 이모지 칸이 줄어드는(margin 0.55s) 동안 버튼이 먼저 튀어나와 겹치던 문제 →
      줄어든 뒤에 통통 떠오르게 지연. */
   animation: avatar-ctl-in 0.4s cubic-bezier(0.22, 1.4, 0.4, 1) 0.32s both;
@@ -1299,7 +1307,7 @@ html[data-reduce-motion] .poster-scaler {
   top: auto;
   left: auto;
   right: 8px;
-  bottom: calc(75vh + 10px);
+  bottom: calc(var(--avatar-h, 75vh) + 10px);
   animation: avatar-ctl-in 0.4s cubic-bezier(0.22, 1.4, 0.4, 1) 0.32s both;
 }
 @keyframes avatar-ctl-in {
