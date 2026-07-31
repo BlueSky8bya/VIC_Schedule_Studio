@@ -37,6 +37,15 @@ export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null
           <i aria-hidden="true" />
           LIVE
         </span>
+        {/* 투명 클릭 레이어 — 호버·클릭이 iframe에 안 닿아 플레이어 컨트롤(톱니·전체화면)이
+            아예 안 뜨고, 화면 어디를 눌러도 방송으로 이동한다(2026-07-31). */}
+        <a
+          aria-label="방송 보러 가기"
+          className="slc-cover"
+          href={live.watchUrl ?? undefined}
+          rel="noopener noreferrer"
+          target="_blank"
+        />
       </div>
       {/* 캡션 전체가 링크 — '보러가기' 라벨은 뺐다(2026-07-31): 제목이 폭을 다 쓴다. */}
       <a

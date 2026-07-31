@@ -4360,6 +4360,15 @@ html[data-reduce-motion] .heart-toast {
   font-weight: 900;
   letter-spacing: 0.06em;
   pointer-events: none;
+  z-index: 2; /* 투명 클릭 레이어 위(장식 — 클릭은 통과) */
+}
+/* 플레이어 위 투명 클릭 레이어 — iframe이 포인터를 못 받아 내부 컨트롤(톱니·전체화면)이
+   안 뜨고, 영상 어디를 눌러도 방송으로 이동. */
+.slc-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: pointer;
 }
 .slc-badge i {
   width: 7px;
