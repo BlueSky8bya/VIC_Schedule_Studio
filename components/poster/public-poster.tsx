@@ -200,25 +200,25 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 // 포스터 고정 캔버스 설계 크기(16:9). 화면에선 이 크기를 통째로 축소해 보여주고,
 // export는 이 원본 크기로 캡쳐한다. 작은 화면에서도 내부 비율·스티커 위치가 절대 안 바뀐다.
-// PC 상세 팝오버 리더 선의 카드 쪽 끝점 — 위/아래에서 오는 선은 그 변의 '중앙'에 붙이고
-// (모서리 근처에 어정쩡하게 닿는 것 방지 — 사용자 요청), 좌우에서 오는 선은 앵커 높이에
-// 맞춰 수평으로 변에 붙는다. 앵커가 카드에 덮이면 앵커 그대로(=선 생략 판정).
+// PC 상세 팝오버 리더 선의 카드 쪽 끝점 — 항상 '붙는 변의 정중앙'(좌/우 변=세로 중앙,
+// 위/아래 변=가로 중앙)에 연결한다(사용자 요청). 어느 변이냐는 앵커가 사각형 밖으로
+// 벗어난 축 중 더 많이 벗어난 쪽. 앵커가 카드에 덮이면 앵커 그대로(=선 생략 판정).
 function detailEdgePoint(
   pos: { left: number; top: number },
   size: { w: number; h: number },
   anchor: { x: number; y: number }
 ) {
-  const INSET = 10;
   const L = pos.left;
   const T = pos.top;
   const R = L + size.w;
   const B = T + size.h;
-  if (anchor.y < T) return { x: Math.round(L + size.w / 2), y: T };
-  if (anchor.y > B) return { x: Math.round(L + size.w / 2), y: B };
-  return {
-    x: anchor.x < L ? L : anchor.x > R ? R : anchor.x,
-    y: Math.max(T + INSET, Math.min(anchor.y, B - INSET))
-  };
+  const cx = Math.round(L + size.w / 2);
+  const cy = Math.round(T + size.h / 2);
+  const dx = anchor.x < L ? L - anchor.x : anchor.x > R ? anchor.x - R : 0;
+  const dy = anchor.y < T ? T - anchor.y : anchor.y > B ? anchor.y - B : 0;
+  if (dx === 0 && dy === 0) return { x: anchor.x, y: anchor.y }; // 덮임 → 선 생략
+  if (dy >= dx) return { x: cx, y: anchor.y < T ? T : B };
+  return { x: anchor.x < L ? L : R, y: cy };
 }
 // 토스트 한 줄에 들어가게 제목을 줄인다(긴 제목이 화면을 가로지르지 않게).
 function trimTitle(title: string, max = 14) {
