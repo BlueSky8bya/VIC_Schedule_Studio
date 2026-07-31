@@ -4913,14 +4913,8 @@ export function PublicPoster({
           data-poster-theme={effectivePosterTheme}
           key={`surface-${view.year}-${view.month}`}
         >
-          {/* 마스트헤드 — 서비스 제목은 상단 크롬(내 관심 ↔ 이 달 기록 사이)으로 올라갔다
-              (사용자 결정 2026-07-31: export PNG는 연·월만 표기). 표면 헤더는 큰 연·월 하나 —
-              캡쳐에서도 "이 달"이 썸네일 크기에서 읽히는 앵커다. */}
-          <div className="poster-heading">
-            <em>
-              {view.year}년 {String(view.month).padStart(2, "0")}월
-            </em>
-          </div>
+          {/* (상단 마스트헤드 제거 — 2026-07-31 사용자 결정 2차. 연·월은 오른쪽 레일 정보
+              카드로 이동, 빈 세로 공간만큼 달력이 커진다. 서비스 제목은 상단 크롬에.) */}
 
           <StickerLayer
             avoidSelector="[data-sticker-avoid]"
@@ -4966,6 +4960,12 @@ export function PublicPoster({
                 const wd = new Date(`${today}T00:00:00Z`).getUTCDay();
                 return (
                   <>
+                    {/* 보는 달 — 옛 상단 마스트헤드가 여기로(캡쳐 PNG에도 이 카드가 찍힌다). */}
+                    <span className="ric-month">
+                      <b>
+                        {view.year}년 {String(view.month).padStart(2, "0")}월
+                      </b>
+                    </span>
                     {dplus !== null ? (
                       <span className="ric-debut">
                         🎂 데뷔 <b>D+{dplus}</b>

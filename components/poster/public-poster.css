@@ -1432,29 +1432,8 @@ html[data-reduce-motion] .poster-export-reward-spark {
   padding: 18px;
   box-shadow: var(--shadow-2);
 }
-/* 캡쳐 영역 안에 들어가는 마스트헤드 = 큰 연·월 하나(2026-07-31 재편).
-   서비스 제목은 상단 크롬(.poster-chrome-title)으로 올라가 캡쳐 밖 — PNG는 연·월만 표기
-   (사용자 결정). 썸네일에서 "이 달"이 읽히는 앵커라 크기와 대비(진한 골드 #7c4d05, 7.06:1)를
-   함께 준다. 크기로만 강조하면 대비가 낮을 때 '크지만 안 읽히는' 글자가 된다. */
-.poster-heading {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 0 8px;
-  border-bottom: 4px solid var(--accent, #f4b740);
-  margin-bottom: 12px;
-}
-.poster-heading em {
-  color: #7c4d05;
-  font-size: 54px;
-  font-weight: 900;
-  font-style: normal;
-  letter-spacing: -0.01em;
-  line-height: 1.1;
-  font-feature-settings: "tnum";
-  font-variant-numeric: tabular-nums;
-}
+/* (상단 마스트헤드 삭제 — 2026-07-31 2차. 연·월은 레일 정보 카드(.ric-month)로 이동,
+   세로 공간은 달력이 가져간다.) */
 
 /* 서비스 제목 — 상단 크롬 중앙(내 관심 ↔ 이 달 기록 사이). 표면 밖이라 캡쳐 비침범.
    양옆 ✨는 title-spark(모바일 아젠다와 동일 반짝임)를 공유한다. */
@@ -1577,6 +1556,17 @@ html[data-reduce-motion] .poster-export-reward-spark {
   color: #7c4d05;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
+}
+/* 보는 달 — 카드의 주인공(옛 마스트헤드 역할). 진한 골드 + 아래 액센트 라인. */
+.ric-month {
+  padding-bottom: 7px;
+  margin-bottom: 3px;
+  border-bottom: 3px solid var(--accent, #f4b740);
+}
+.ric-month b {
+  font-size: 25px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
 }
 .ric-debut b {
   font-size: 21px;
@@ -2208,9 +2198,6 @@ html[data-reduce-motion] .poster-export-reward-spark {
 /* 월 바뀔 때 포스터 표면 전체가 함께 좌/우 슬라이드 — 제목·메모·달력·색상안내·텍스트·스티커가
    다 같이 움직인다(표면을 월마다 재마운트해 재생). 중심에서 멀수록(양옆 패널) 슬라이드 폭을
    아주 살짝 더 줘서 패럴랙스 느낌. 표면이 overflow:hidden이라 넘침은 잘린다. */
-.poster-surface[data-enter] .poster-heading {
-  --ps: 24px;
-}
 .poster-surface[data-enter] .public-calendar-area {
   --ps: 30px;
 }
@@ -2220,13 +2207,11 @@ html[data-reduce-motion] .poster-export-reward-spark {
 .poster-surface[data-enter] .public-right {
   --ps: 42px; /* 오른쪽 끝(색상 안내) — 더 많이 */
 }
-.poster-surface[data-enter="next"] .poster-heading,
 .poster-surface[data-enter="next"] .public-calendar-area,
 .poster-surface[data-enter="next"] .sticker-layer,
 .poster-surface[data-enter="next"] .public-right {
   animation: poster-slide-next 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
-.poster-surface[data-enter="prev"] .poster-heading,
 .poster-surface[data-enter="prev"] .public-calendar-area,
 .poster-surface[data-enter="prev"] .sticker-layer,
 .poster-surface[data-enter="prev"] .public-right {
