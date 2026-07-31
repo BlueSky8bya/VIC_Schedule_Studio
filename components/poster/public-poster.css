@@ -2599,6 +2599,24 @@ html[data-reduce-motion] .poster-export-reward-spark {
   border-right-color: transparent;
 }
 
+/* 그리드가 border-radius:18px + overflow:hidden으로 4모서리를 둥글게 자른다. 모서리 칸이
+   사각이면 오늘(.today) 금테 ::after(border-radius:inherit)가 사각으로 그려진 뒤 그리드의
+   둥근 호에 잘려 "모서리가 끊겨" 보인다(편집실은 studio-shell.css에서 이미 같은 방식으로 해결).
+   네 모서리 칸에 안쪽 반경(18-1px 테두리=17px)을 주면 링이 곡선을 따라 그려져 잘림이 사라진다.
+   (칸 수는 항상 7의 배수 → 아래 모서리는 :nth-last-child(7)/:last-child 로 결정.) */
+.public-month-grid > .public-day:first-child {
+  border-top-left-radius: 17px;
+}
+.public-month-grid > .public-day:nth-child(7) {
+  border-top-right-radius: 17px;
+}
+.public-month-grid > .public-day:nth-last-child(7) {
+  border-bottom-left-radius: 17px;
+}
+.public-month-grid > .public-day:last-child {
+  border-bottom-right-radius: 17px;
+}
+
 .public-day.outside {
   background: #f1e9d8;
 }
@@ -4388,6 +4406,19 @@ html[data-reduce-motion] .shortcut-help-groups {
   .public-day {
     min-height: 92px;
     border-right: 0;
+  }
+
+  /* 모바일은 1열 — 위 7열 기준 모서리 반경(nth-child(7) 등)이 중간 칸을 둥글게 만든다.
+     리셋 후 1열 기준으로 다시: 첫 칸이 위 두 모서리, 마지막 칸이 아래 두 모서리. */
+  .public-month-grid > .public-day:nth-child(7),
+  .public-month-grid > .public-day:nth-last-child(7) {
+    border-radius: 0;
+  }
+  .public-month-grid > .public-day:first-child {
+    border-radius: 17px 17px 0 0;
+  }
+  .public-month-grid > .public-day:last-child {
+    border-radius: 0 0 17px 17px;
   }
 }
 
