@@ -3562,10 +3562,10 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   min-width: 0;
 }
 /* 저장 완료 반짝 — 카드 반짝(.just-saved)과 짝을 이뤄 편집 창 쪽에서도 '저장됨'을 확인시킨다.
-   패널 자체엔 배경이 없어 ::after 오버레이로 옅은 보라 발광을 한 번 훑고 사라진다. */
-.event-editor-panel.panel-saved {
-  position: relative;
-}
+   패널 자체엔 배경이 없어 ::after 오버레이로 옅은 보라 발광을 한 번 훑고 사라진다.
+   ⚠ position:relative 지정 금지 — 팝오버 전환 후 패널은 position:absolute라 이미 ::after의
+   기준이며, relative로 덮으면 저장 반짝 0.6초 동안 그리드 흐름으로 떨어져 달력 아래로
+   순간이동했다 돌아오는 버그가 된다(실사용 리포트). */
 .event-editor-panel.panel-saved::after {
   content: "";
   position: absolute;
