@@ -3933,7 +3933,8 @@ export function PublicPoster({
     w: number;
     h: number;
     cols: number[]; // 열(요일) 경계 x — 8개
-    ys: number[]; // 행별 [top, 콘텐츠 하단] 쌍 + 마지막 bottom — 2n+1개
+    rowTops: number[]; // 행(주) 경계 y — n+1개
+    cells: number[][]; // 칸별 y 앵커(칸 top·날짜줄·각 카드 상/하단·칸 bottom, DOM 순서 고정)
   };
   const sceneOn = avatarCapable && avatarOn;
   const sceneOnRef = useRef(sceneOn);
@@ -3954,43 +3955,50 @@ export function PublicPoster({
     const sr = s.getBoundingClientRect();
     const gr = g.getBoundingClientRect();
     if (sr.width < 1 || sr.height < 1 || gr.width < 1 || gr.height < 1) return null;
-    const cells = Array.from(g.querySelectorAll<HTMLElement>(".public-day"));
-    if (cells.length < 7) return null;
+    const cellEls = Array.from(g.querySelectorAll<HTMLElement>(".public-day"));
+    if (cellEls.length < 7) return null;
     const cols: number[] = [];
     for (let i = 0; i < 7; i++) {
-      cols.push((cells[i].getBoundingClientRect().left - sr.left) / sr.width);
+      cols.push((cellEls[i].getBoundingClientRect().left - sr.left) / sr.width);
     }
-    cols.push((cells[6].getBoundingClientRect().right - sr.left) / sr.width);
-    const ys: number[] = [];
-    for (let r = 0; r * 7 < cells.length; r++) {
-      const firstRect = cells[r * 7].getBoundingClientRect();
-      const top = (firstRect.top - sr.top) / sr.height;
-      const bottom = (firstRect.bottom - sr.top) / sr.height;
-      // 행 콘텐츠 하단 = 그 주 칸들의 카드·칩·업도움 띠 최하단(없으면 날짜줄 하단).
-      let cbPx = 0;
-      for (let i = r * 7; i < Math.min(r * 7 + 7, cells.length); i++) {
-        const strip = cells[i].querySelector(".day-strip");
-        if (strip) cbPx = Math.max(cbPx, strip.getBoundingClientRect().bottom);
-        cells[i]
-          .querySelectorAll(".public-event, .day-wc-match, .support-bar")
-          .forEach((el) => {
-            cbPx = Math.max(cbPx, el.getBoundingClientRect().bottom);
-          });
-      }
-      const cb = Math.min(
-        Math.max(cbPx > 0 ? (cbPx - sr.top) / sr.height : top, top),
-        bottom - 1e-6
-      );
-      ys.push(top, cb);
+    cols.push((cellEls[6].getBoundingClientRect().right - sr.left) / sr.width);
+    const rowTops: number[] = [];
+    for (let i = 0; i < cellEls.length; i += 7) {
+      rowTops.push((cellEls[i].getBoundingClientRect().top - sr.top) / sr.height);
     }
-    ys.push((cells[cells.length - 1].getBoundingClientRect().bottom - sr.top) / sr.height);
+    rowTops.push(
+      (cellEls[cellEls.length - 1].getBoundingClientRect().bottom - sr.top) / sr.height
+    );
+    // 칸별 y 앵커: [칸 top, 날짜줄 bottom, 카드1 top, 카드1 bottom, …, 칸 bottom].
+    // DOM 순서 고정이라 기준/현재 프레임의 앵커가 1:1로 짝지어진다(정렬 금지 — 짝이 깨진다).
+    // 카드 상·하단이 앵커라 카드 '옆'에 붙인 스티커는 그 카드 모서리를 정확히 따라간다.
+    const cells: number[][] = cellEls.map((cell) => {
+      const r = cell.getBoundingClientRect();
+      const top = (r.top - sr.top) / sr.height;
+      const bottom = (r.bottom - sr.top) / sr.height;
+      const list = [top];
+      const push = (px: number) => {
+        const v = (px - sr.top) / sr.height;
+        list.push(Math.min(Math.max(v, list[list.length - 1]), bottom));
+      };
+      const strip = cell.querySelector(".day-strip");
+      if (strip) push(strip.getBoundingClientRect().bottom);
+      cell.querySelectorAll(".public-event, .day-wc-match").forEach((el) => {
+        const er = el.getBoundingClientRect();
+        push(er.top);
+        push(er.bottom);
+      });
+      list.push(bottom);
+      return list;
+    });
     return {
       x: (gr.left - sr.left) / sr.width,
       y: (gr.top - sr.top) / sr.height,
       w: gr.width / sr.width,
       h: gr.height / sr.height,
       cols,
-      ys
+      rowTops,
+      cells
     };
   }, []);
   // 기준 지오메트리 probe — scene 클래스/--cal-zoom을 트랜지션 없이 잠깐 원복해 실측 후 복구.
@@ -4012,28 +4020,33 @@ export function PublicPoster({
       if (prevZoom) cal.style.setProperty("--cal-zoom", prevZoom);
       else cal.style.removeProperty("--cal-zoom");
     }
+    // ⚠ probe 클래스를 떼기 '전에' 강제 reflow — 트랜지션이 꺼진 채 원상태를 확정해, 떼는
+    // 순간 기본↔scene 재전환 애니가 새로 시작되는 것을 막는다(토글 직후 일시 틀어짐 원인).
+    void main.offsetWidth;
     main.classList.remove("sticker-geom-probe");
     return frame;
   }, [readStickerFrame]);
   const measureStickerFrames = useCallback(() => {
     const next = readStickerFrame();
     if (!next) return;
-    const isCanon = !sceneOnRef.current && posterZoomRef.current === 1;
-    // 기준을 아직 못 쟀는데 보정이 필요한 상태면(아바타 기본 ON 콜드 스타트) probe로 즉시 실측.
-    const probed = !isCanon && !stickerCanonRef.current ? probeCanonFrame() : null;
+    // 기준(canon)은 언제나 probe로 얻는다 — '기본 상태로 보이는 순간'의 live를 기준 삼으면
+    // 전환 애니 중간 지오메트리가 기준을 오염시킨다(토글 직후 크게 틀어지던 레이스의 원인).
+    const probed = !stickerCanonRef.current ? probeCanonFrame() : null;
     setStickerFrames((prev) => {
+      const sameArr = (a: number[], b: number[]) =>
+        a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < 1e-4);
       const same = (a: StickerFrame | null, b: StickerFrame) =>
         !!a &&
         Math.abs(a.x - b.x) < 1e-4 &&
         Math.abs(a.y - b.y) < 1e-4 &&
         Math.abs(a.w - b.w) < 1e-4 &&
         Math.abs(a.h - b.h) < 1e-4 &&
-        a.ys.length === b.ys.length &&
-        a.ys.every((v, i) => Math.abs(v - b.ys[i]) < 1e-4) &&
-        a.cols.length === b.cols.length &&
-        a.cols.every((v, i) => Math.abs(v - b.cols[i]) < 1e-4);
+        sameArr(a.cols, b.cols) &&
+        sameArr(a.rowTops, b.rowTops) &&
+        a.cells.length === b.cells.length &&
+        a.cells.every((c, i) => sameArr(c, b.cells[i]));
       const live = same(prev.live, next) ? prev.live : next;
-      const canonNext = isCanon ? next : (probed ?? prev.canon);
+      const canonNext = probed ?? prev.canon;
       const canon = canonNext && same(prev.canon, canonNext) ? prev.canon : canonNext;
       return live === prev.live && canon === prev.canon ? prev : { canon, live };
     });
@@ -4055,9 +4068,9 @@ export function PublicPoster({
   // ⚠ 252(레일 폭)·16(컬럼 gap)은 .poster-surface grid-template-columns와 함께 움직인다.
   const FALLBACK_K = POSTER_DESIGN_W / (POSTER_DESIGN_W - 252 - 16);
   const stickerMap = useMemo(() => {
-    if (!sceneOn && posterZoom === 1) return null; // 기본 지오메트리 = 보정 불필요
     const { canon, live } = stickerFrames;
     if (!canon || !live) {
+      // probe까지 실패한 극단 폴백 — scene x 상수 보정만이라도.
       return sceneOn
         ? {
             to: (s: StickerInstance) => ({
@@ -4070,11 +4083,12 @@ export function PublicPoster({
     }
     const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
     // 앵커 배열(canon A ↔ live B) 사이 구간별 선형 매핑 — 경계 밖은 전체 span 비율로 외삽.
-    // x 앵커 = 열 경계 8개(칸 안 내용은 stretch라 칸 안 비례가 정답 — 그리드 박스 선형은
-    // 테두리 상수 px까지 늘려 '살짝 왼쪽' 오차). y 앵커 = 행마다 [top, 콘텐츠 하단] + 최종
-    // bottom — 카드 옆 스티커는 콘텐츠 구간을, 빈 아래 공간은 슬랙 구간을 따라간다.
+    // x 앵커 = 열 경계 8개(칸 안 내용은 stretch라 칸 안 비례가 정답). y 앵커 = 스티커가 앉은
+    // '그 칸'의 [칸 top·날짜줄·각 카드 상/하단·칸 bottom] — 카드 모서리가 앵커라 카드 옆
+    // 스티커는 어느 모드에서든 그 카드 모서리에 붙는다. 칸을 못 찾으면 행 경계 매핑으로 폴백.
+    // 프레임이 같으면(기본 상태) 자연히 항등 — 전환 애니 중에도 live가 프레임 단위로 따라온다.
     const okX = canon.cols.length >= 2 && canon.cols.length === live.cols.length;
-    const okY = canon.ys.length >= 3 && canon.ys.length === live.ys.length;
+    const okRows = canon.rowTops.length >= 2 && canon.rowTops.length === live.rowTops.length;
     const mapPiece = (v: number, A: number[], B: number[], aSpan: number, bSpan: number) => {
       const n = A.length;
       const scale = aSpan > 0 ? bSpan / aSpan : 1;
@@ -4089,6 +4103,28 @@ export function PublicPoster({
       }
       return B[n - 1];
     };
+    // (x,y)가 프레임 f에서 어느 칸(index)에 있는지 — 그리드 밖이면 -1.
+    const cellIndexAt = (f: StickerFrame, x: number, y: number) => {
+      if (!okRows) return -1;
+      if (x < f.cols[0] || x > f.cols[f.cols.length - 1]) return -1;
+      if (y < f.rowTops[0] || y > f.rowTops[f.rowTops.length - 1]) return -1;
+      let col = 6;
+      for (let k = 0; k < 7; k++) {
+        if (x <= f.cols[k + 1]) {
+          col = k;
+          break;
+        }
+      }
+      let row = f.rowTops.length - 2;
+      for (let k = 0; k < f.rowTops.length - 1; k++) {
+        if (y <= f.rowTops[k + 1]) {
+          row = k;
+          break;
+        }
+      }
+      const idx = row * 7 + col;
+      return idx < f.cells.length ? idx : -1;
+    };
     const toX = (x: number) =>
       okX
         ? mapPiece(x, canon.cols, live.cols, canon.w, live.w)
@@ -4097,27 +4133,45 @@ export function PublicPoster({
       okX
         ? mapPiece(x, live.cols, canon.cols, live.w, canon.w)
         : canon.x + ((x - live.x) * canon.w) / live.w;
-    const toY = (y: number) =>
-      okY
-        ? mapPiece(y, canon.ys, live.ys, canon.h, live.h)
+    const toY = (x: number, y: number) => {
+      const ci = cellIndexAt(canon, x, y);
+      if (ci >= 0 && ci < live.cells.length) {
+        const A = canon.cells[ci];
+        const B = live.cells[ci];
+        if (A.length === B.length && A.length >= 2) {
+          return mapPiece(y, A, B, canon.h, live.h);
+        }
+      }
+      return okRows
+        ? mapPiece(y, canon.rowTops, live.rowTops, canon.h, live.h)
         : live.y + ((y - canon.y) * live.h) / canon.h;
-    const fromY = (y: number) =>
-      okY
-        ? mapPiece(y, live.ys, canon.ys, live.h, canon.h)
+    };
+    const fromY = (x: number, y: number) => {
+      const ci = cellIndexAt(live, x, y);
+      if (ci >= 0 && ci < canon.cells.length) {
+        const A = live.cells[ci];
+        const B = canon.cells[ci];
+        if (A.length === B.length && A.length >= 2) {
+          return mapPiece(y, A, B, live.h, canon.h);
+        }
+      }
+      return okRows
+        ? mapPiece(y, live.rowTops, canon.rowTops, live.h, canon.h)
         : canon.y + ((y - live.y) * canon.h) / live.h;
+    };
     return {
       to: (s: StickerInstance) => ({
         ...s,
         xRatio: clamp01(toX(s.xRatio)),
-        yRatio: clamp01(toY(s.yRatio))
+        yRatio: clamp01(toY(s.xRatio, s.yRatio))
       }),
       from: (s: StickerInstance) => ({
         ...s,
         xRatio: fromX(s.xRatio),
-        yRatio: fromY(s.yRatio)
+        yRatio: fromY(s.xRatio, s.yRatio)
       })
     };
-  }, [sceneOn, posterZoom, stickerFrames, FALLBACK_K]);
+  }, [sceneOn, stickerFrames, FALLBACK_K]);
   // dev 전용: fixture 실측 스크립트가 내부 매핑 상태를 검사할 수 있게 창에 노출(프로덕션 제외).
   useEffect(() => {
     if (process.env.NODE_ENV === "production") return;
@@ -4125,6 +4179,7 @@ export function PublicPoster({
       sceneOn,
       posterZoom,
       frames: stickerFrames,
+      map: stickerMap, // to/from 함수 — fixture 실측 스크립트가 가상 좌표를 검증할 때 사용
       mapped: stickerMap
         ? stickers.map((s) => ({ id: s.id, to: stickerMap.to(s) }))
         : null
