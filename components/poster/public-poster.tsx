@@ -4046,6 +4046,8 @@ export function PublicPoster({
   return (
     <main
       className={`poster-page${accountSwitch ? " poster-readonly" : ""}${
+        decorate ? " is-decorate" : ""
+      }${
         avatarCapable && avatarOn ? ` avatar-scene avatar-${avatarSide}` : ""
       }${
         // 태그 필터 중엔 꾸미기 스티커도 함께 물러난다(일정 카드와 같은 흐림) — 꾸미기

@@ -1059,15 +1059,16 @@ html {
   font-size: 12px;
   margin-bottom: 5px;
 }
-/* 축약형 인기도(is-compact) — 칩 상자 없이 '🔥 라벨' 2×2, 세로 최소. */
+/* 축약형 인기도(is-compact) — 칩 상자 없이 '🔥 관심  🔥🔥 높은 …' 인라인 흐름(폭에 따라
+   자연 줄바꿈), 세로 최소. */
 .legend-tiers.is-compact {
-  grid-template-columns: auto auto;
-  justify-content: space-between;
-  gap: 4px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
 }
 .legend-tiers.is-compact li {
-  grid-template-columns: auto auto;
-  justify-content: start;
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
   font-size: 11px;
   white-space: nowrap;
@@ -1095,6 +1096,11 @@ html {
   transform: translateY(calc(-100% - 8px));
   pointer-events: auto;
   z-index: 2;
+}
+/* 꾸미기에선 '아바타 자리 끄기' 토글이 점선 상변 바로 위에 떠 있다 — 그 높이만큼 더 올려
+   토글과 안 겹치게(시청자 미리보기 토글은 좌상단 고정이라 해당 없음). */
+.poster-page.is-decorate .avatar-top-cards {
+  transform: translateY(calc(-100% - 56px));
 }
 /* 좌우 미러 — 정보 카드는 항상 안쪽(달력 쪽) 모서리, 라이브는 바깥쪽. */
 .poster-page.avatar-scene.avatar-left .avatar-top-cards {
