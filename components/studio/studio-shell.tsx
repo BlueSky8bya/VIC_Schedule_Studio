@@ -1960,11 +1960,26 @@ export function StudioShell({
     const cellT = (cellRect.top - wsRect.top) / z;
     const cellW = cellRect.width / z;
     const cellH = cellRect.height / z;
-    // 앵커 칸 중심은 수동 배치 중에도 항상 갱신(리더 라인용).
-    const anchor = {
-      x: Math.round(cellL + cellW / 2),
-      y: Math.round(cellT + Math.min(cellH / 2, 46))
-    };
+    // 리더 도트의 앵커 — '일정 수정'이면 그 일정 칩의 중심(칸 첫 카드에 잘못 찍히던 문제),
+    // '새 일정(날짜)'이면 칸 상단 중심. 수동 배치 중에도 항상 갱신(리더 라인용).
+    const pill = selectedEventId
+      ? cell.querySelector<HTMLElement>(`.studio-event-pill[data-eventid="${selectedEventId}"]`) ??
+        calPanelRef.current?.querySelector<HTMLElement>(
+          `.studio-event-pill[data-eventid="${selectedEventId}"]`
+        )
+      : null;
+    const aRect = pill ? pill.getBoundingClientRect() : cellRect;
+    const aT = (aRect.top - wsRect.top) / z;
+    const aH = aRect.height / z;
+    const anchor = pill
+      ? {
+          x: Math.round((aRect.left - wsRect.left) / z + aRect.width / z / 2),
+          y: Math.round(aT + aH / 2)
+        }
+      : {
+          x: Math.round(cellL + cellW / 2),
+          y: Math.round(cellT + Math.min(cellH / 2, 46))
+        };
     setEditorAnchorPt((p) => (p && p.x === anchor.x && p.y === anchor.y ? p : anchor));
     const size = { w: panel.offsetWidth || 384, h: panel.offsetHeight || 480 }; // offset* = 로컬
     setEditorPopSize((s) => (s && s.w === size.w && s.h === size.h ? s : size));
@@ -1999,7 +2014,7 @@ export function StudioShell({
         ? p
         : next
     );
-  }, [selectedDate, getPopZoom]);
+  }, [selectedDate, selectedEventId, getPopZoom]);
   // 헤더 드래그로 팝오버 이동. 이동 중엔 React 상태를 안 거치고 DOM(style·라인 좌표)을 직접
   // 갱신한다 — 이 컴포넌트는 커서 6천 줄 셸이라 pointermove마다 리렌더하면 툭툭 끊긴다(실측).
   // 손을 떼는 순간에만 상태로 확정(setEditorPopManual)해 React 좌표와 동기화한다.
