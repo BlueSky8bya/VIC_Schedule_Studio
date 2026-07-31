@@ -38,17 +38,16 @@ export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null
           LIVE
         </span>
       </div>
+      {/* 캡션 전체가 링크 — '보러가기' 라벨은 뺐다(2026-07-31): 제목이 폭을 다 쓴다. */}
       <a
         aria-label={`지금 방송 중: ${live.title ?? ""} — SOOP에서 보기`}
         className="slc-caption"
         href={live.watchUrl ?? undefined}
         rel="noopener noreferrer"
         target="_blank"
+        title={live.title ?? "방송 중"}
       >
         <span className="slc-title">{live.title ?? "방송 중"}</span>
-        <span className="slc-go" aria-hidden="true">
-          보러가기 →
-        </span>
       </a>
     </div>
   );

@@ -4388,12 +4388,6 @@ html[data-reduce-motion] .heart-toast {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.slc-go {
-  flex: 0 0 auto;
-  color: #c01345;
-  font-size: 12px;
-  font-weight: 900;
-}
 @keyframes slb-pulse {
   0% { box-shadow: 0 0 0 0 rgb(255 255 255 / 60%); }
   70%, 100% { box-shadow: 0 0 0 7px rgb(255 255 255 / 0%); }
