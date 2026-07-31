@@ -11,16 +11,20 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ mode?: string }>;
+  searchParams?: Promise<{ mode?: string; avatar?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
   }
-  const decorate = (await searchParams)?.mode === "decorate";
+  const sp = await searchParams;
+  const decorate = sp?.mode === "decorate";
+  // avatar=1 → 아바타 자리 토글이 있는 소유자 scene을 fixture에서도 검증(스티커 좌표 매핑 실측용).
+  const avatar = sp?.avatar === "1";
   return (
     <PublicPoster
       anonymous
       accountSwitch={false}
+      avatarSlot={avatar}
       decorate={decorate}
       initialNarrow={false}
       initialYear={2026}

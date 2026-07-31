@@ -988,6 +988,14 @@ html {
   grid-template-columns: minmax(0, 1fr) 0px;
   column-gap: 0;
 }
+/* 스티커 기준 지오메트리 probe(JS가 한 프레임 안에서 scene/확대를 잠깐 원복해 실측) —
+   전환 애니를 전부 끊어 클래스 원복 즉시 목표 레이아웃을 읽을 수 있게 한다. */
+.sticker-geom-probe .poster-surface,
+.sticker-geom-probe .public-right,
+.sticker-geom-probe .poster-stage,
+.sticker-geom-probe .poster-scaler {
+  transition: none !important;
+}
 .poster-page.avatar-scene .public-right {
   min-width: 0;
   opacity: 0;
