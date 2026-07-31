@@ -5645,8 +5645,9 @@ html[data-reduce-motion] .pi-retry:active {
     var(--spring-smooth, var(--ease)) both;
 }
 
-/* PC 상세 = 앵커 팝오버(카드 옆) — 배경은 딤 없이 클릭 캐치만, 시트는 fixed 카드로.
-   좌표(left/top/width)는 인라인(카드 gBCR 기준 flip·클램프). 편집실 팝오버와 같은 스케일-인. */
+/* ── PC 상세 = 앵커 팝오버(카드 옆) — 편집실 편집 팝오버와 같은 문법: 자동 배치(flip·클램프),
+   리더 점선+도트, 헤더/그립 드래그 이동. 배경은 딤 없이 클릭 캐치만.
+   디자인: 대표 태그 1~2색(--dt-c1/--dt-c2)이 상단 그립 띠의 액센트가 되는 흰 카드. ── */
 .agenda-detail-backdrop.is-pop {
   display: block;
   background: transparent;
@@ -5654,12 +5655,21 @@ html[data-reduce-motion] .pi-retry:active {
 }
 .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   position: fixed;
+  width: 340px;
   max-height: min(64vh, 520px);
-  border-radius: var(--r-xl);
-  border: 1px solid #ece2cd;
-  padding: var(--space-4);
-  box-shadow: 0 18px 44px rgb(80 70 40 / 20%), var(--shadow-2);
+  border-radius: 18px;
+  border: 1px solid #eee3c9;
+  background: #fffefa;
+  padding: 0 18px 16px;
+  overflow: hidden auto;
+  box-shadow:
+    0 22px 48px rgb(105 84 40 / 16%),
+    0 3px 10px rgb(105 84 40 / 8%);
   animation: detail-pop-in 0.3s cubic-bezier(0.34, 1.4, 0.5, 1) both;
+}
+.agenda-detail-backdrop.is-pop .agenda-detail-sheet.pop-dragging {
+  transition: none;
+  user-select: none;
 }
 @keyframes detail-pop-in {
   from {
@@ -5672,6 +5682,94 @@ html[data-reduce-motion] .pi-retry:active {
   }
 }
 html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
+  animation: none;
+}
+/* 이동 손잡이 — 카드 전폭 상단 띠: 대표 태그색 파스텔 그라데이션 + 중앙 그립 필.
+   '색 띠 = 이 일정의 색 = 잡는 곳'이 한 몸으로 읽힌다. */
+.detail-grab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 -18px 10px;
+  padding: 9px 0 7px;
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, var(--dt-c1, #f4b740) 46%, #fff),
+    color-mix(in srgb, var(--dt-c2, #f4b740) 46%, #fff)
+  );
+  cursor: grab;
+  touch-action: none;
+}
+.detail-grab span {
+  width: 42px;
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(60 46 20 / 26%);
+}
+.agenda-detail-sheet.pop-dragging .detail-grab {
+  cursor: grabbing;
+}
+/* PC 팝오버의 헤더도 이동 손잡이 겸용. */
+.agenda-detail-backdrop.is-pop .agenda-detail-head {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+/* PC 팝오버 타이포 정돈 — 제목을 또렷한 앵커로, 세부 줄은 조용한 보조로. */
+.agenda-detail-backdrop.is-pop .agenda-detail-title {
+  font-size: 21px;
+  font-weight: 900;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: #33291a;
+}
+.agenda-detail-backdrop.is-pop .agenda-detail-subs li {
+  color: #756a4f;
+  font-weight: 700;
+}
+.agenda-detail-backdrop.is-pop .agenda-detail-day {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+}
+.agenda-detail-backdrop.is-pop .agenda-detail-tag {
+  border-color: #efe6cd;
+  background: #fbf7ea;
+  font-weight: 800;
+}
+.agenda-detail-backdrop.is-pop .agenda-detail-close {
+  border: 0;
+  background: rgb(60 46 20 / 6%);
+}
+.agenda-detail-backdrop.is-pop .agenda-detail-close:hover {
+  background: rgb(60 46 20 / 12%);
+}
+/* 카드 → 팝오버 리더 점선 + 도트(대표 태그 색) — 뷰포트 전면 svg, 클릭 통과. */
+.detail-anchor-link {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.detail-anchor-link line {
+  stroke: color-mix(in srgb, var(--dt-line, #d3a94f) 72%, transparent);
+  stroke-width: 2;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+  animation: detail-link-flow 0.9s linear infinite;
+}
+.detail-anchor-link circle {
+  fill: var(--dt-line, #d3a94f);
+  stroke: #fff;
+  stroke-width: 2;
+}
+@keyframes detail-link-flow {
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+html[data-reduce-motion] .detail-anchor-link line {
   animation: none;
 }
 /* PC 시청자: 일정 카드가 클릭 대상임을 커서로 알린다(하트 등 내부 버튼은 각자 커서). */

@@ -34,6 +34,7 @@ import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type TouchEvent as ReactTouchEvent,
   useCallback,
@@ -199,6 +200,19 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 // 포스터 고정 캔버스 설계 크기(16:9). 화면에선 이 크기를 통째로 축소해 보여주고,
 // export는 이 원본 크기로 캡쳐한다. 작은 화면에서도 내부 비율·스티커 위치가 절대 안 바뀐다.
+// PC 상세 팝오버 리더 선의 카드 쪽 끝점 = 팝오버 사각형 가장자리에서 앵커에 가장 가까운 점
+// (편집실 popEdgePoint와 동일 문법 — 선이 카드 밑으로 파고들지 않고 가장자리에 붙는다).
+function detailEdgePoint(
+  pos: { left: number; top: number },
+  size: { w: number; h: number },
+  anchor: { x: number; y: number }
+) {
+  const INSET = 10;
+  return {
+    x: Math.max(pos.left + INSET, Math.min(anchor.x, pos.left + size.w - INSET)),
+    y: Math.max(pos.top + INSET, Math.min(anchor.y, pos.top + size.h - INSET))
+  };
+}
 // 토스트 한 줄에 들어가게 제목을 줄인다(긴 제목이 화면을 가로지르지 않게).
 function trimTitle(title: string, max = 14) {
   const line = title.split("\n")[0]?.trim() ?? "";
@@ -1090,6 +1104,118 @@ export function PublicPoster({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [agendaDetail]);
+  // ── PC 상세 팝오버 배치 — 편집실 편집 팝오버와 같은 문법: 카드 옆 자동 배치(오른쪽 우선/
+  // 왼쪽 flip/화면 클램프), 카드→팝오버 리더 점선+도트, 헤더/그립을 잡아 드래그 이동.
+  // 열려 있는 동안 rAF로 매 프레임 카드 위치를 실측(스크롤·리사이즈에 선·자동 배치가 따라온다).
+  // 모두 뷰포트(fixed) 좌표 — 포스터 표면 transform 축소와 무관하게 gBCR 그대로 유효하다.
+  const detailAnchorElRef = useRef<HTMLElement | null>(null);
+  const detailSheetRef = useRef<HTMLDivElement | null>(null);
+  const detailLineRef = useRef<SVGLineElement | null>(null);
+  const [detailPos, setDetailPos] = useState<{ left: number; top: number } | null>(null);
+  const [detailManual, setDetailManual] = useState<{ left: number; top: number } | null>(null);
+  const [detailAnchorPt, setDetailAnchorPt] = useState<{ x: number; y: number } | null>(null);
+  const [detailPopSize, setDetailPopSize] = useState<{ w: number; h: number } | null>(null);
+  const detailManualRef = useRef<typeof detailManual>(null);
+  detailManualRef.current = detailManual;
+  const detailAnchorPtRef = useRef<typeof detailAnchorPt>(null);
+  detailAnchorPtRef.current = detailAnchorPt;
+  const detailDragActiveRef = useRef(false);
+  const hasDetailPop = Boolean(agendaDetail?.anchor);
+  const placeDetailPopover = useCallback(() => {
+    const el = detailAnchorElRef.current;
+    const sheet = detailSheetRef.current;
+    if (!sheet) return;
+    // 카드가 DOM에서 사라지면(월 이동 등) 상세도 닫는다 — 허공을 가리키는 선을 안 남긴다.
+    if (!el || !el.isConnected) {
+      setAgendaDetail(null);
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    const anchor = {
+      x: Math.round(r.left + r.width / 2),
+      y: Math.round(r.top + Math.min(r.height / 2, 26))
+    };
+    setDetailAnchorPt((p) => (p && p.x === anchor.x && p.y === anchor.y ? p : anchor));
+    const size = { w: sheet.offsetWidth || 340, h: sheet.offsetHeight || 300 };
+    setDetailPopSize((s) => (s && s.w === size.w && s.h === size.h ? s : size));
+    if (detailManualRef.current || detailDragActiveRef.current) return;
+    const PAD = 12;
+    let left = r.right + 12;
+    if (left + size.w > window.innerWidth - PAD) left = r.left - size.w - 12;
+    left = Math.max(PAD, Math.min(left, window.innerWidth - size.w - PAD));
+    const top = Math.max(PAD, Math.min(r.top - 6, window.innerHeight - size.h - PAD));
+    const next = { left: Math.round(left), top: Math.round(top) };
+    setDetailPos((p) => (p && p.left === next.left && p.top === next.top ? p : next));
+  }, []);
+  useLayoutEffect(() => {
+    if (!hasDetailPop) {
+      setDetailPos(null);
+      setDetailManual(null);
+      setDetailAnchorPt(null);
+      setDetailPopSize(null);
+      return;
+    }
+    placeDetailPopover();
+    let raf = 0;
+    const tick = () => {
+      placeDetailPopover();
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [hasDetailPop, agendaDetail, placeDetailPopover]);
+  // 헤더/그립 드래그 — 이동 중엔 DOM(style·선 좌표) 직접 갱신, 손 뗄 때만 상태 확정(부드러움).
+  function onDetailDragStart(e: ReactPointerEvent<HTMLDivElement>) {
+    if ((e.target as HTMLElement).closest("button, a")) return;
+    const sheet = detailSheetRef.current;
+    if (!sheet) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const baseRect = sheet.getBoundingClientRect();
+    const base = { left: baseRect.left, top: baseRect.top };
+    let moved = false;
+    let last = base;
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (!moved && Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
+      if (!moved) {
+        moved = true;
+        detailDragActiveRef.current = true;
+        sheet.classList.add("pop-dragging");
+      }
+      const w = sheet.offsetWidth;
+      last = {
+        left: Math.round(Math.max(140 - w, Math.min(base.left + dx, window.innerWidth - 140))),
+        top: Math.round(Math.max(8, Math.min(base.top + dy, window.innerHeight - 48)))
+      };
+      sheet.style.left = `${last.left}px`;
+      sheet.style.top = `${last.top}px`;
+      const a = detailAnchorPtRef.current;
+      const line = detailLineRef.current;
+      if (a && line) {
+        const edge = detailEdgePoint(last, { w, h: sheet.offsetHeight }, a);
+        line.setAttribute("x2", String(edge.x));
+        line.setAttribute("y2", String(edge.y));
+      }
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      if (moved) {
+        hapticTick();
+        setDetailManual(last);
+        detailManualRef.current = last;
+      }
+      detailDragActiveRef.current = false;
+      sheet.classList.remove("pop-dragging");
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }
   // 방금 공개된 떡밥 id — 잠깐 '짠!' 등장 애니메이션을 입힌다(보상감). 1.8초 뒤 해제.
   const [justRevealed, setJustRevealed] = useState<Set<string>>(() => new Set());
   const revealTeaser = useCallback((id: string) => {
@@ -3026,6 +3152,8 @@ export function PublicPoster({
               ? (el: HTMLElement) => {
                   const r = el.getBoundingClientRect();
                   hapticTick();
+                  detailAnchorElRef.current = el; // rAF 추적용(스크롤·리사이즈 따라 선·배치 갱신)
+                  setDetailManual(null); // 새로 열 때는 항상 카드 옆 자동 배치부터
                   setAgendaDetail({
                     event,
                     support: false,
@@ -3640,21 +3768,6 @@ export function PublicPoster({
         ? (() => {
             const { event, support, dateKey, anchor } = agendaDetail;
             const { main, subs } = splitEventTitle(event.publicTitle);
-            // PC 팝오버 배치 — 카드 오른쪽 우선, 안 들어가면 왼쪽 flip, 화면 안으로 클램프.
-            // 시트는 fixed 오버레이(표면 밖)라 포스터 배율과 무관하게 뷰포트 좌표 그대로 쓴다.
-            const POP_W = 340;
-            const popStyle: CSSProperties | undefined = anchor
-              ? (() => {
-                  let left = anchor.x + anchor.w + 10;
-                  if (left + POP_W > window.innerWidth - 12) left = anchor.x - POP_W - 10;
-                  left = Math.max(12, Math.min(left, window.innerWidth - POP_W - 12));
-                  const top = Math.max(
-                    12,
-                    Math.min(anchor.y - 6, window.innerHeight - 380)
-                  );
-                  return { left, top, width: POP_W };
-                })()
-              : undefined;
             const detailTags = event.tagIds.flatMap((id) => {
               const tag = viewTags.find((t) => t.id === id);
               if (!tag) return [];
@@ -3670,6 +3783,25 @@ export function PublicPoster({
               ];
             });
             const end = event.endDateKey;
+            // PC 팝오버 좌표(자동 배치 or 드래그 확정) + 액센트 색(대표 태그 1~2색 그라데이션).
+            const pos = anchor ? detailManual ?? detailPos : null;
+            const accent1 = detailTags[0]?.bg ?? "#f4b740";
+            const accent2 = detailTags[1]?.bg ?? accent1;
+            const lineColor = detailTags[0]?.border ?? "#d3a94f";
+            const popStyle: CSSProperties | undefined = anchor
+              ? pos
+                ? ({
+                    left: pos.left,
+                    top: pos.top,
+                    "--dt-c1": accent1,
+                    "--dt-c2": accent2
+                  } as CSSProperties)
+                : ({ visibility: "hidden", "--dt-c1": accent1, "--dt-c2": accent2 } as CSSProperties)
+              : undefined;
+            const edge =
+              anchor && pos && detailAnchorPt && detailPopSize
+                ? detailEdgePoint(pos, detailPopSize, detailAnchorPt)
+                : null;
             return (
               <div
                 className={`agenda-detail-backdrop${anchor ? " is-pop" : ""}`}
@@ -3678,14 +3810,49 @@ export function PublicPoster({
                   if (e.target === e.currentTarget) setAgendaDetail(null);
                 }}
               >
+                {/* 카드 → 팝오버 리더 점선 + 카드 쪽 도트(대표 태그 색) — 어느 일정의 상세인지
+                    시각으로 잇는다. 드래그로 멀어져도 따라 늘어난다. 카드에 덮이면 선 생략. */}
+                {edge && detailAnchorPt ? (
+                  <svg
+                    aria-hidden="true"
+                    className="detail-anchor-link"
+                    style={{ "--dt-line": lineColor } as CSSProperties}
+                  >
+                    {edge.x === detailAnchorPt.x && edge.y === detailAnchorPt.y ? null : (
+                      <line
+                        ref={detailLineRef}
+                        x1={detailAnchorPt.x}
+                        y1={detailAnchorPt.y}
+                        x2={edge.x}
+                        y2={edge.y}
+                      />
+                    )}
+                    <circle cx={detailAnchorPt.x} cy={detailAnchorPt.y} r={5} />
+                  </svg>
+                ) : null}
                 <div
                   aria-label="일정 상세"
                   aria-modal="true"
                   className="agenda-detail-sheet"
+                  ref={detailSheetRef}
                   role="dialog"
                   style={popStyle}
                 >
-                  <div className="agenda-detail-head">
+                  {/* PC: 이동 손잡이 그립(액센트 그라데이션 띠) — 잡아 끌면 통째로 이동. */}
+                  {anchor ? (
+                    <div
+                      aria-hidden="true"
+                      className="detail-grab"
+                      onPointerDown={onDetailDragStart}
+                      title="끌어서 이동"
+                    >
+                      <span />
+                    </div>
+                  ) : null}
+                  <div
+                    className="agenda-detail-head"
+                    onPointerDown={anchor ? onDetailDragStart : undefined}
+                  >
                     {(() => {
                       // 달력과 같은 날짜 규칙(사용자 요청): 요일 표기 + 일요일·공휴일=빨강,
                       // 토요일=파랑, 특별한 날 이름(제헌절·초복 등)은 달력 마크와 같은 톤.
