@@ -2008,7 +2008,7 @@ export function StudioShell({
     const availH = Math.max(260, Math.round((window.innerHeight - getChromeBottomV()) / z - 64));
     setEditorPopMaxH((v) => (v === availH ? v : availH));
     setEditorAnchorPt((p) => (p && p.x === anchor.x && p.y === anchor.y ? p : anchor));
-    const size = { w: panel.offsetWidth || 384, h: panel.offsetHeight || 480 }; // offset* = 로컬
+    const size = { w: panel.offsetWidth || 356, h: panel.offsetHeight || 480 }; // offset* = 로컬
     setEditorPopSize((s) => (s && s.w === size.w && s.h === size.h ? s : size));
     // 드래그 중엔 손이 진실 — 아무것도 안 건드린다.
     if (editorPopDragActiveRef.current) return;

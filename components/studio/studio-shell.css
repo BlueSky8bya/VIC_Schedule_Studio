@@ -3606,7 +3606,10 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   position: absolute;
   top: 0;
   left: 0;
-  width: 384px;
+  /* 폭은 내용(form/.event-detail-readonly = 356px 고정폭)을 그대로 따른다. 예전 고정 384px는
+     폼을 356으로 줄일 때 같이 안 줄어 오른쪽에 28px 유령 띠가 남았고, 리더 점선이 그 보이지
+     않는 가장자리에 붙어 카드에서 떨어져 보였다(멀리서 올수록 티가 컸다). */
+  width: max-content;
   z-index: 6; /* 일정 카드·업도움 띠 위, 모달(더 높음) 아래 */
   /* ⚠ 기본 transition 금지 — 첫 배치 때 기본값(left:0=좌상단)에서 실좌표로 바뀌는 것까지
      애니메이션돼 '좌상단에서 날아오는' 버그가 된다(실측). 첫 배치가 끝난 뒤 JS가
