@@ -961,20 +961,25 @@ html {
    ON/OFF·좌우 전환에서 정렬이 '스냅'하지 않고 margin 트랜지션만 부드럽게 흐른다. */
 .poster-page.avatar-scene.avatar-right .poster-stage {
   margin-right: 25vw; /* 아바타 우측 → 달력 왼쪽 3/4 */
-  margin-left: 170px; /* 반대편 얇은 태그 필터 레일 자리 */
+  margin-left: 162px; /* 반대편 얇은 태그 필터 레일 자리(레일 끝 160 + 최소 틈) */
 }
 .poster-page.avatar-scene.avatar-left .poster-stage {
   margin-left: 25vw; /* 아바타 좌측 → 달력 오른쪽 3/4 */
-  margin-right: 170px;
+  margin-right: 162px;
+}
+/* scene에선 셸 좌우 padding(22)도 최소로 — 레일·아바타와의 이중 여백을 걷어 달력을 키운다. */
+.poster-page.avatar-scene .public-calendar-shell {
+  padding-left: 4px;
+  padding-right: 4px;
 }
 /* 꾸미기 크롬(팔레트 툴바·텍스트 추가 줄)도 레일 자리만큼 비켜 겹침을 없앤다. */
 .poster-page.avatar-scene.avatar-right .decorate-toolbar,
 .poster-page.avatar-scene.avatar-right .poster-capture-row {
-  margin-left: 170px;
+  margin-left: 162px;
 }
 .poster-page.avatar-scene.avatar-left .decorate-toolbar,
 .poster-page.avatar-scene.avatar-left .poster-capture-row {
-  margin-right: 170px;
+  margin-right: 162px;
 }
 /* scene: 표면 안 오른쪽 레일을 접는다(둘째 컬럼 0) — 달력이 표면 1840 전체를 차지해 최대로
    커진다(2026-07-31 사용자 결정 — 캡쳐 삭제로 표면 고정 레이아웃 제약 해제). 컬럼 폭이
@@ -1059,17 +1064,18 @@ html {
   font-size: 12px;
   margin-bottom: 5px;
 }
-/* 축약형 인기도(is-compact) — 칩 상자 없이 '🔥 관심  🔥🔥 높은 …' 인라인 흐름(폭에 따라
-   자연 줄바꿈), 세로 최소. */
+/* 축약형 인기도(is-compact) — 1열 세로, 불꽃은 고정폭 들여쓰기 열 → 라벨이 한 세로선에
+   가지런히(🔥 관심 / 🔥🔥 높은 / …). */
 .legend-tiers.is-compact {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3px;
 }
 .legend-tiers.is-compact li {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 46px auto;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-size: 11px;
   white-space: nowrap;
 }
@@ -1078,6 +1084,7 @@ html {
   padding: 0;
   background: transparent;
   box-shadow: none;
+  justify-content: flex-start;
   font-size: 11px;
   letter-spacing: -2.5px;
 }
@@ -1240,6 +1247,10 @@ html[data-reduce-motion] .poster-scaler {
   .poster-page.avatar-scene.avatar-left .poster-capture-row {
     margin-left: 0;
     margin-right: 0;
+  }
+  .poster-page.avatar-scene .public-calendar-shell {
+    padding-left: 22px;
+    padding-right: 22px;
   }
   .poster-page.avatar-scene .poster-surface {
     grid-template-columns: minmax(0, 1fr) 252px;
@@ -4164,13 +4175,14 @@ html[data-reduce-motion] .poster-capture-row {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 14px;
+  /* 전폭 스트레치 금지 — 내용만큼만(오른쪽이 텅 빈 채 떠 있던 불균형 제거). */
+  align-self: flex-start;
+  width: fit-content;
+  max-width: 100%;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   background: rgb(248 250 252 / 85%);
   padding: 8px 12px;
-}
-.shortcut-help.is-closed {
-  align-self: flex-start; /* 접히면 pill 크기만큼만 차지 */
 }
 .shortcut-help-title {
   display: inline-flex;
