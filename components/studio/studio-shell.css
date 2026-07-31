@@ -2018,9 +2018,16 @@ html[data-reduce-motion] .dtp-pop-x:active {
   .vpanel,
   .dayvisit {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* minmax(0,1fr): 세션 로그 칩(nowrap 가로 스크롤 행) 같은 넓은 min-content가 칼럼을
+       밀어 그리드 전체가 패널 밖으로 넘치던(오른쪽 잘림) 것을 차단. */
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 16px;
     align-items: stretch; /* 한 행 두 카드는 같은 높이(ragged 방지) */
+  }
+  /* 그리드 아이템이 내용 min-content 아래로 줄어들 수 있어야 내부 가로 스크롤이 동작한다. */
+  .vpanel > *,
+  .dayvisit > * {
+    min-width: 0;
   }
   /* 풀폭: 요약 블록·자동문구·넓은 차트(히트맵/관리자 세션). 반폭: 일반 .vcard. */
   .vpanel > .vsum,
@@ -2059,17 +2066,27 @@ html[data-reduce-motion] .dtp-pop-x:active {
     margin-bottom: 0;
   }
 }
-/* 차트 카드 토글 줄 — 일별/주별(좌) · 역할별/기기별(우) 양끝 정렬. 막대와 안 붙게 아래 여백 넉넉히. */
+/* 차트 카드 토글 줄 — 세그먼트 두 개(일별/주별 · 역할별/기기별)가 카드 폭을 반씩 나눠 갖는다.
+   좁아지면 각 세그먼트가 '한 줄 전체'로 떨어져(들쭉날쭉한 들여쓰기 없음) 위아래로 쌓인다. */
 .vt-toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px 12px;
+  gap: 8px;
   margin: 2px 0 16px;
 }
 .vt-toolbar .insights-subtabs {
+  display: flex;
+  flex: 1 1 132px;
   margin: 0;
+}
+/* 세그먼트 안 버튼은 등폭 — iOS segmented control처럼 균등 분할. */
+.vt-toolbar .insights-subtabs button {
+  flex: 1 1 0;
+  padding-left: 8px;
+  padding-right: 8px;
+  text-align: center;
+  white-space: nowrap;
 }
 /* 소제목 옆 기준 태그 — 무엇을 색/높이로 쟀는지(세션 수·체류 시간·평균 동접…)를 옅은 알약으로. */
 .vcrit {
