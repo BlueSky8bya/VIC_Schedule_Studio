@@ -5072,8 +5072,12 @@ export function PublicPoster({
                     ) : null}
                     <span className="ric-row">
                       <em>오늘</em>
-                      <b>
-                        {formatShortDate(today)} ({WEEKDAYS[wd]})
+                      {/* 연도까지 풀 날짜 + 요일은 달력과 같은 색 문법(일=빨강, 토=파랑). */}
+                      <b className="ric-today">
+                        {Number(today.slice(0, 4))}.{formatShortDate(today)}{" "}
+                        <i className={wd === 0 ? "sunday" : wd === 6 ? "saturday" : undefined}>
+                          ({WEEKDAYS[wd]})
+                        </i>
                       </b>
                     </span>
                   </>
