@@ -5645,6 +5645,40 @@ html[data-reduce-motion] .pi-retry:active {
     var(--spring-smooth, var(--ease)) both;
 }
 
+/* PC 상세 = 앵커 팝오버(카드 옆) — 배경은 딤 없이 클릭 캐치만, 시트는 fixed 카드로.
+   좌표(left/top/width)는 인라인(카드 gBCR 기준 flip·클램프). 편집실 팝오버와 같은 스케일-인. */
+.agenda-detail-backdrop.is-pop {
+  display: block;
+  background: transparent;
+  animation: none;
+}
+.agenda-detail-backdrop.is-pop .agenda-detail-sheet {
+  position: fixed;
+  max-height: min(64vh, 520px);
+  border-radius: var(--r-xl);
+  border: 1px solid #ece2cd;
+  padding: var(--space-4);
+  box-shadow: 0 18px 44px rgb(80 70 40 / 20%), var(--shadow-2);
+  animation: detail-pop-in 0.3s cubic-bezier(0.34, 1.4, 0.5, 1) both;
+}
+@keyframes detail-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.93);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
+  animation: none;
+}
+/* PC 시청자: 일정 카드가 클릭 대상임을 커서로 알린다(하트 등 내부 버튼은 각자 커서). */
+.public-event.is-clickable {
+  cursor: pointer;
+}
+
 @keyframes agenda-detail-fade {
   from {
     opacity: 0;

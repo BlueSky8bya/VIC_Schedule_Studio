@@ -141,6 +141,9 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
   ~254px 넓어짐. 모든 모드가 같은 지오메트리라 스티커 모드 간 불일치 없음. 과거 달 메모지
   위 스티커는 그대로 존치(사용자 확정 — 필요시 꾸미기에서 수동 이동). publicMemo/memoLines
   DTO 필드는 UI 소비자 0인 레거시로 존치. 모바일 아젠다는 무변.
+  이어서: **PC 시청자 일정 상세 팝오버** — 달력 카드 클릭(Enter/Space 포함) 시 모바일 상세
+  시트와 같은 내용(agendaDetail 재사용)이 카드 옆 앵커 팝오버로 뜬다(anchor 있으면 is-pop
+  분기, fixed·flip·클램프). interactive 모드만(꾸미기·캡쳐 无). 바깥 클릭/Esc 닫기.
   아울러 **편집실 아바타 자리 = 항상 켜짐**
   (끄기 토글 제거, 좌/우만 선택 — vic_avatar_on 키는 이제 시청자 포스터 전용, 시청자
   미리보기는 controlled 공유를 끊고 포스터 자체 상태로). fixture+Playwright 실측(anchor/

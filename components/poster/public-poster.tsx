@@ -32,6 +32,7 @@ import Link from "next/link";
 import { createPortal } from "react-dom";
 import {
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
   type ReactNode,
   type TouchEvent as ReactTouchEvent,
@@ -1072,12 +1073,14 @@ export function PublicPoster({
   // 떡밥 즉시 공개 — 카운트다운이 0이 되면 캐시 우회 액션으로 실제 내용을 받아 이 맵에 덮는다.
   // (이게 있으면 렌더에서 가린 stub 대신 실제 일정을 쓴다 → 캐시 30초 안 기다리고 그 순간 풀림.)
   const [revealedEvents, setRevealedEvents] = useState<Record<string, PublicScheduleEvent>>({});
-  // 모바일 아젠다 일정 상세 시트 — 카드를 탭하면 전체 제목·기간·태그 이름을 보여준다.
+  // 일정 상세 — 모바일 아젠다는 하단 시트, PC 달력은 카드 옆 앵커 팝오버(anchor 있으면 팝오버).
   // 공개 DTO(PublicScheduleEvent + 공개 태그)만 사용 — 비공개 필드 자체가 없다.
   const [agendaDetail, setAgendaDetail] = useState<{
     event: PublicScheduleEvent;
     support: boolean;
     dateKey: string;
+    // PC: 클릭한 카드의 뷰포트 좌표(팝오버 앵커). 포스터는 transform 축소라 gBCR=화면 좌표 그대로.
+    anchor?: { x: number; y: number; w: number; h: number };
   } | null>(null);
   useEffect(() => {
     if (!agendaDetail) return;
@@ -3017,9 +3020,23 @@ export function PublicPoster({
                 ? getSpanRunRange(pg.start, pg.end, cell.isoDate, cell.weekday)
                 : null;
             const mixStyle = mixed && run ? mixedEventStyle(colors, run) : null;
+            // PC 시청자: 카드 클릭 = 상세 팝오버(모바일 시트와 같은 내용, 카드 옆에 앵커).
+            // 하트 등 내부 컨트롤 클릭은 제외. 꾸미기/캡쳐 모드는 클릭 없음(interactive만).
+            const openDesktopDetail = interactive
+              ? (el: HTMLElement) => {
+                  const r = el.getBoundingClientRect();
+                  hapticTick();
+                  setAgendaDetail({
+                    event,
+                    support: false,
+                    dateKey: cell.isoDate,
+                    anchor: { x: r.left, y: r.top, w: r.width, h: r.height }
+                  });
+                }
+              : null;
             return (
               <div
-                className={eventClass}
+                className={`${eventClass}${openDesktopDetail ? " is-clickable" : ""}`}
                 data-chain={chainKeys.get(event.id)}
                 data-color={mixed ? undefined : colors[0]?.key}
                 data-mixed={mixed ? "" : undefined}
@@ -3029,6 +3046,22 @@ export function PublicPoster({
                 data-tier={tier?.key}
                 key={event.id}
                 style={mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined)}
+                {...(openDesktopDetail
+                  ? {
+                      role: "button" as const,
+                      tabIndex: 0,
+                      onClick: (e: ReactMouseEvent<HTMLDivElement>) => {
+                        if ((e.target as HTMLElement).closest("button, a")) return;
+                        openDesktopDetail(e.currentTarget);
+                      },
+                      onKeyDown: (e: ReactKeyboardEvent<HTMLDivElement>) => {
+                        if (e.key !== "Enter" && e.key !== " ") return;
+                        if ((e.target as HTMLElement).closest("button, a")) return;
+                        e.preventDefault();
+                        openDesktopDetail(e.currentTarget);
+                      }
+                    }
+                  : {})}
               >
                 <div className="event-main">
                   {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다(이음새 어긋남 방지). */}
@@ -3605,8 +3638,23 @@ export function PublicPoster({
           공개 DTO만 사용(비공개 필드 자체가 없다). fixed 오버레이라 캡쳐 PNG 밖. */}
       {agendaDetail
         ? (() => {
-            const { event, support, dateKey } = agendaDetail;
+            const { event, support, dateKey, anchor } = agendaDetail;
             const { main, subs } = splitEventTitle(event.publicTitle);
+            // PC 팝오버 배치 — 카드 오른쪽 우선, 안 들어가면 왼쪽 flip, 화면 안으로 클램프.
+            // 시트는 fixed 오버레이(표면 밖)라 포스터 배율과 무관하게 뷰포트 좌표 그대로 쓴다.
+            const POP_W = 340;
+            const popStyle: CSSProperties | undefined = anchor
+              ? (() => {
+                  let left = anchor.x + anchor.w + 10;
+                  if (left + POP_W > window.innerWidth - 12) left = anchor.x - POP_W - 10;
+                  left = Math.max(12, Math.min(left, window.innerWidth - POP_W - 12));
+                  const top = Math.max(
+                    12,
+                    Math.min(anchor.y - 6, window.innerHeight - 380)
+                  );
+                  return { left, top, width: POP_W };
+                })()
+              : undefined;
             const detailTags = event.tagIds.flatMap((id) => {
               const tag = viewTags.find((t) => t.id === id);
               if (!tag) return [];
@@ -3624,7 +3672,7 @@ export function PublicPoster({
             const end = event.endDateKey;
             return (
               <div
-                className="agenda-detail-backdrop"
+                className={`agenda-detail-backdrop${anchor ? " is-pop" : ""}`}
                 role="presentation"
                 onClick={(e) => {
                   if (e.target === e.currentTarget) setAgendaDetail(null);
@@ -3635,6 +3683,7 @@ export function PublicPoster({
                   aria-modal="true"
                   className="agenda-detail-sheet"
                   role="dialog"
+                  style={popStyle}
                 >
                   <div className="agenda-detail-head">
                     {(() => {
