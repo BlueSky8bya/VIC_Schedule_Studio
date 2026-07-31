@@ -960,12 +960,12 @@ html {
 /* 정렬(justify)·축소기준(transform-origin)은 base 그대로(center) — margin만 바꿔 슬라이드하므로
    ON/OFF·좌우 전환에서 정렬이 '스냅'하지 않고 margin 트랜지션만 부드럽게 흐른다. */
 .poster-page.avatar-scene.avatar-right .poster-stage {
-  margin-right: 25vw; /* 아바타 우측 → 달력 왼쪽 3/4 */
-  margin-left: 162px; /* 반대편 얇은 태그 필터 레일 자리(레일 끝 160 + 최소 틈) */
+  margin-right: 22vw; /* 아바타 우측 → 달력이 나머지 전부 */
+  margin-left: 138px; /* 반대편 얇은 태그 필터 레일 자리(레일 끝 132 + 최소 틈) */
 }
 .poster-page.avatar-scene.avatar-left .poster-stage {
-  margin-left: 25vw; /* 아바타 좌측 → 달력 오른쪽 3/4 */
-  margin-right: 162px;
+  margin-left: 22vw; /* 아바타 좌측 → 달력이 나머지 전부 */
+  margin-right: 138px;
 }
 /* scene에선 셸 좌우 padding(22)도 최소로 — 레일·아바타와의 이중 여백을 걷어 달력을 키운다. */
 .poster-page.avatar-scene .public-calendar-shell {
@@ -975,11 +975,11 @@ html {
 /* 꾸미기 크롬(팔레트 툴바·텍스트 추가 줄)도 레일 자리만큼 비켜 겹침을 없앤다. */
 .poster-page.avatar-scene.avatar-right .decorate-toolbar,
 .poster-page.avatar-scene.avatar-right .poster-capture-row {
-  margin-left: 162px;
+  margin-left: 138px;
 }
 .poster-page.avatar-scene.avatar-left .decorate-toolbar,
 .poster-page.avatar-scene.avatar-left .poster-capture-row {
-  margin-right: 162px;
+  margin-right: 138px;
 }
 /* scene: 표면 안 오른쪽 레일을 접는다(둘째 컬럼 0) — 달력이 표면 1840 전체를 차지해 최대로
    커진다(2026-07-31 사용자 결정 — 캡쳐 삭제로 표면 고정 레이아웃 제약 해제). 컬럼 폭이
@@ -1000,7 +1000,7 @@ html {
   position: fixed;
   top: 76px;
   bottom: 14px;
-  width: 148px;
+  width: 120px; /* 5글자 태그명까지 딱 맞는 최소 폭 */
   z-index: 6;
   overflow-y: auto;
   scrollbar-width: none;
@@ -1051,9 +1051,9 @@ html {
   margin-bottom: 5px;
 }
 .avatar-side-rail .public-legend-vertical .legend-item {
-  font-size: 12.5px;
-  gap: 6px;
-  padding: 1px 4px;
+  font-size: 12px;
+  gap: 5px;
+  padding: 1px 3px;
 }
 /* 인기도 축약 — 2×2 미니 그리드(불꽃 칩 + 짧은 라벨), 세로를 절반으로. */
 .avatar-side-rail .legend-heart-help {
@@ -1160,7 +1160,7 @@ html {
   position: fixed;
   bottom: 0;
   top: auto;
-  width: 25vw;
+  width: 22vw;
   height: 75vh;
   padding: 10px;
   display: flex;
@@ -3442,11 +3442,11 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 }
 .poster-page.avatar-scene.avatar-right .decorate-toolbar,
 .poster-page.avatar-scene.avatar-right .poster-capture-row {
-  margin-right: 25vw;
+  margin-right: 22vw;
 }
 .poster-page.avatar-scene.avatar-left .decorate-toolbar,
 .poster-page.avatar-scene.avatar-left .poster-capture-row {
-  margin-left: 25vw;
+  margin-left: 22vw;
 }
 @media (max-width: 1099px) {
   .poster-page.avatar-scene .decorate-toolbar,
