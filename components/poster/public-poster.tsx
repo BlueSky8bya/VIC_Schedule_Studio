@@ -3932,7 +3932,8 @@ export function PublicPoster({
     y: number;
     w: number;
     h: number;
-    cols: number[]; // 열(요일) 경계 x — 8개
+    cols: number[]; // 열(요일) 경계 x — 8개(칸 판별용)
+    xs: number[]; // x 매핑 앵커 — 열마다 [칸L, 카드L, 카드R] + 마지막 칸R(카드 좌우변 고정)
     rowTops: number[]; // 행(주) 경계 y — n+1개
     cells: number[][]; // 칸별 y 앵커(칸 top·날짜줄·각 카드 상/하단·칸 bottom, DOM 순서 고정)
   };
@@ -3962,6 +3963,32 @@ export function PublicPoster({
       cols.push((cellEls[i].getBoundingClientRect().left - sr.left) / sr.width);
     }
     cols.push((cellEls[6].getBoundingClientRect().right - sr.left) / sr.width);
+    // 칸 안 카드의 좌우 여백(px 상수) — 순수 비례 매핑은 이 상수까지 비례로 늘려 카드
+    // 우변에 붙인 스티커가 ~1px대로 밀렸다. 아무 카드 하나에서 실측해 열마다
+    // [칸L, 카드L, 카드R, 칸R] 4앵커를 깐다(카드 좌우변이 앵커 = 정확히 고정).
+    let padL = 0;
+    let padR = 0;
+    const anyCard = g.querySelector(".public-event");
+    if (anyCard) {
+      const cardRect = anyCard.getBoundingClientRect();
+      const hostCell = anyCard.closest(".public-day");
+      if (hostCell) {
+        const hostRect = hostCell.getBoundingClientRect();
+        padL = Math.max(0, cardRect.left - hostRect.left) / sr.width;
+        padR = Math.max(0, hostRect.right - cardRect.right) / sr.width;
+      }
+    }
+    const xs: number[] = [];
+    for (let k = 0; k < 7; k++) {
+      const L = cols[k];
+      const R = cols[k + 1];
+      xs.push(L);
+      if (padL + padR > 0 && L + padL < R - padR) {
+        xs.push(L + padL, R - padR);
+      }
+      // (여백 실측 실패 시 열 경계만 — 이전과 동일한 폴백)
+    }
+    xs.push(cols[7]);
     const rowTops: number[] = [];
     for (let i = 0; i < cellEls.length; i += 7) {
       rowTops.push((cellEls[i].getBoundingClientRect().top - sr.top) / sr.height);
@@ -3997,6 +4024,7 @@ export function PublicPoster({
       w: gr.width / sr.width,
       h: gr.height / sr.height,
       cols,
+      xs,
       rowTops,
       cells
     };
@@ -4060,6 +4088,7 @@ export function PublicPoster({
         Math.abs(a.w - b.w) < 1e-4 &&
         Math.abs(a.h - b.h) < 1e-4 &&
         sameArr(a.cols, b.cols) &&
+        sameArr(a.xs, b.xs) &&
         sameArr(a.rowTops, b.rowTops) &&
         a.cells.length === b.cells.length &&
         a.cells.every((c, i) => sameArr(c, b.cells[i]));
@@ -4106,7 +4135,8 @@ export function PublicPoster({
     // '그 칸'의 [칸 top·날짜줄·각 카드 상/하단·칸 bottom] — 카드 모서리가 앵커라 카드 옆
     // 스티커는 어느 모드에서든 그 카드 모서리에 붙는다. 칸을 못 찾으면 행 경계 매핑으로 폴백.
     // 프레임이 같으면(기본 상태) 자연히 항등 — 전환 애니 중에도 live가 프레임 단위로 따라온다.
-    const okX = canon.cols.length >= 2 && canon.cols.length === live.cols.length;
+    const okX = canon.xs.length >= 2 && canon.xs.length === live.xs.length;
+    const okCols = canon.cols.length >= 2 && canon.cols.length === live.cols.length;
     const okRows = canon.rowTops.length >= 2 && canon.rowTops.length === live.rowTops.length;
     const mapPiece = (v: number, A: number[], B: number[], aSpan: number, bSpan: number) => {
       const n = A.length;
@@ -4146,12 +4176,16 @@ export function PublicPoster({
     };
     const toX = (x: number) =>
       okX
-        ? mapPiece(x, canon.cols, live.cols, canon.w, live.w)
-        : live.x + ((x - canon.x) * live.w) / canon.w;
+        ? mapPiece(x, canon.xs, live.xs, canon.w, live.w)
+        : okCols
+          ? mapPiece(x, canon.cols, live.cols, canon.w, live.w)
+          : live.x + ((x - canon.x) * live.w) / canon.w;
     const fromX = (x: number) =>
       okX
-        ? mapPiece(x, live.cols, canon.cols, live.w, canon.w)
-        : canon.x + ((x - live.x) * canon.w) / live.w;
+        ? mapPiece(x, live.xs, canon.xs, live.w, canon.w)
+        : okCols
+          ? mapPiece(x, live.cols, canon.cols, live.w, canon.w)
+          : canon.x + ((x - live.x) * canon.w) / live.w;
     const toY = (x: number, y: number) => {
       const ci = cellIndexAt(canon, x, y);
       if (ci >= 0 && ci < live.cells.length) {
