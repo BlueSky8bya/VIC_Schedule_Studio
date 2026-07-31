@@ -114,7 +114,11 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
   workspace 기준·JS 실측 배치 placeEditorPopover — 오른쪽 우선/왼쪽 flip/뷰포트 클램프,
   재선택 시 닫히지 않고 transition으로 이동). 달력은 편집 중에도 전폭 유지(그리드 3번째
   칸·avatar-scene fixed 편집창·≤1180 전폭 행 규칙 전부 제거). 모바일 시트는 그대로.
-  기존 바깥클릭 닫기/Esc/serialized 큐 로직 무변. 아울러 **편집실 아바타 자리 = 항상 켜짐**
+  기존 바깥클릭 닫기/Esc/serialized 큐 로직 무변. 2차(사용자 피드백): **헤더 바 드래그로
+  팝오버 이동**(수동 배치, 다른 날짜 고르면 자동 배치 복귀), **팝오버→앵커 칸 점선 리더 라인
+  +도트**(어느 칸의 편집창인지 상시 시각 연결), 헤더 날짜 "M월 D일 (요일)" 형식
+  (formatEditorDate, editor-model), 아바타 margin transitionend·달력 ResizeObserver 재배치.
+  아울러 **편집실 아바타 자리 = 항상 켜짐**
   (끄기 토글 제거, 좌/우만 선택 — vic_avatar_on 키는 이제 시청자 포스터 전용, 시청자
   미리보기는 controlled 공유를 끊고 포스터 자체 상태로). fixture+Playwright 실측(anchor/
   flip/bottom-clamp/재클릭 닫기/아바타 컨트롤) 통과.

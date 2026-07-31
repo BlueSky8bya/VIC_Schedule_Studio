@@ -3630,6 +3630,50 @@ html[data-reduce-motion] .event-editor-panel {
   transition: none;
   animation: none;
 }
+/* 헤더를 잡아 끄는 동안엔 transition 없이 손끝을 1:1로 따라온다. */
+.event-editor-panel.pop-dragging {
+  transition: none;
+  user-select: none;
+}
+/* 헤더 바 = 이동 손잡이. */
+.event-editor-panel .editor-heading-bar {
+  cursor: grab;
+  touch-action: none;
+}
+.event-editor-panel.pop-dragging .editor-heading-bar {
+  cursor: grabbing;
+}
+/* 팝오버 → 앵커 칸 리더 라인: 점선 + 칸 쪽 도트. 카드(z-index 6) 아래라 카드 쪽 끝은 숨는다.
+   좌표는 workspace 기준 px — svg가 workspace 전체를 덮는다. */
+.editor-anchor-link {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+  overflow: visible;
+}
+.editor-anchor-link line {
+  stroke: rgb(139 92 246 / 55%);
+  stroke-width: 2;
+  stroke-dasharray: 3 5;
+  stroke-linecap: round;
+  animation: anchor-link-flow 0.9s linear infinite;
+}
+.editor-anchor-link circle {
+  fill: #8b5cf6;
+  stroke: #fff;
+  stroke-width: 2;
+}
+@keyframes anchor-link-flow {
+  to {
+    stroke-dashoffset: -8;
+  }
+}
+html[data-reduce-motion] .editor-anchor-link line {
+  animation: none;
+}
 .event-editor-panel form {
   width: 384px;
   /* 폼이 자체 스크롤(overflow-y:auto) — 팝오버가 뷰포트보다 길 수 없게 상한. JS 클램프(placeEditor

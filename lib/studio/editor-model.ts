@@ -96,6 +96,12 @@ export function formatShortDate(value: string) {
 }
 
 export const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+// YYYY-MM-DD → "M월 D일 (요일)" — 편집 팝오버 헤더용. 날짜 성분만 쓰므로 타임존 무관.
+export function formatEditorDate(value: string) {
+  const [y, m, d] = value.split("-").map(Number);
+  return `${m}월 ${d}일 (${WEEKDAYS[new Date(y, m - 1, d).getDay()]})`;
+}
 // 2계층 태그: 일정 카드 하나에 달 수 있는 콘텐츠 태그 최대 수(카드 색은 대분류로 합쳐 ≤2 표시).
 export const MAX_EVENT_TAGS = 6;
 

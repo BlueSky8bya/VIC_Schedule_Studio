@@ -108,6 +108,7 @@ import {
   spanDays,
   formatSupportEnd,
   formatShortDate,
+  formatEditorDate,
   draftFingerprint,
   eventToForm,
   kstLocalInputToIso,
@@ -1866,6 +1867,32 @@ export function StudioShell({
   const workspaceRef = useRef<HTMLElement | null>(null);
   const editorPanelRef = useRef<HTMLElement | null>(null);
   const [editorPopPos, setEditorPopPos] = useState<{ left: number; top: number } | null>(null);
+  // 사용자가 헤더를 잡아 끌면 그 자리가 우선(수동 배치) — 다른 날짜/일정을 고르면 자동 배치로 복귀.
+  const [editorPopManual, setEditorPopManual] = useState<{ left: number; top: number } | null>(
+    null
+  );
+  const [editorPopDragging, setEditorPopDragging] = useState(false);
+  // 앵커 칸 중심(workspace 좌표) — 팝오버→칸 리더 라인의 칸 쪽 끝점.
+  const [editorAnchorPt, setEditorAnchorPt] = useState<{ x: number; y: number } | null>(null);
+  const editorPopManualRef = useRef<typeof editorPopManual>(null);
+  editorPopManualRef.current = editorPopManual;
+  const clampPopPos = useCallback((left: number, top: number) => {
+    const ws = workspaceRef.current;
+    const panel = editorPanelRef.current;
+    if (!ws || !panel) return { left, top };
+    const PAD = 8;
+    const popW = panel.offsetWidth || 384;
+    const popH = panel.offsetHeight || 480;
+    // 세로는 '지금 보이는 화면'(상단바 아래~바닥) 기준 — workspace 높이 기준이면 팝오버가
+    // 판 높이와 비슷할 때 이동 여유가 0이 된다. 가로는 workspace 안.
+    const wsTop = ws.getBoundingClientRect().top;
+    const vpTop = 64 - wsTop + PAD;
+    const vpBottom = window.innerHeight - wsTop - PAD;
+    return {
+      left: Math.round(Math.max(PAD, Math.min(left, ws.clientWidth - popW - PAD))),
+      top: Math.round(Math.max(vpTop, Math.min(top, vpBottom - popH)))
+    };
+  }, []);
   const placeEditorPopover = useCallback(() => {
     const ws = workspaceRef.current;
     const panel = editorPanelRef.current;
@@ -1875,6 +1902,13 @@ export function StudioShell({
     if (!ws || !panel || !cell) return;
     const wsRect = ws.getBoundingClientRect();
     const cellRect = cell.getBoundingClientRect();
+    // 앵커 칸 중심은 수동 배치 중에도 항상 갱신(리더 라인용).
+    const anchor = {
+      x: Math.round(cellRect.left - wsRect.left + cellRect.width / 2),
+      y: Math.round(cellRect.top - wsRect.top + Math.min(cellRect.height / 2, 46))
+    };
+    setEditorAnchorPt((p) => (p && p.x === anchor.x && p.y === anchor.y ? p : anchor));
+    if (editorPopManualRef.current) return; // 수동 배치 우선 — 자동 좌표는 덮지 않는다.
     const popW = panel.offsetWidth || 384;
     const popH = panel.offsetHeight || 480;
     const GAP = 12;
@@ -1894,9 +1928,48 @@ export function StudioShell({
     const next = { left: Math.round(left), top: Math.round(top) };
     setEditorPopPos((p) => (p && p.left === next.left && p.top === next.top ? p : next));
   }, [selectedDate]);
+  // 헤더 드래그로 팝오버 이동 — 시작점은 현재 좌표, 이동 중 transition 끔(.pop-dragging).
+  function onEditorPopDragStart(e: ReactPointerEvent<HTMLDivElement>) {
+    if (isNarrow) return;
+    // 버튼(닫기/저장)에서 시작한 제스처는 드래그가 아니다.
+    if ((e.target as HTMLElement).closest("button, a, input, textarea, select")) return;
+    const panel = editorPanelRef.current;
+    const base = editorPopManualRef.current ?? editorPopPos;
+    if (!panel || !base) return;
+    e.preventDefault();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    let moved = false;
+    const onMove = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      if (!moved && Math.abs(dx) < 3 && Math.abs(dy) < 3) return; // 클릭 오차 보호
+      if (!moved) {
+        moved = true;
+        setEditorPopDragging(true);
+      }
+      setEditorPopManual(clampPopPos(base.left + dx, base.top + dy));
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      if (moved) hapticTick();
+      setEditorPopDragging(false);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }
+  // 다른 날짜/일정을 고르면(editorKey 증가) 수동 배치를 버리고 새 앵커 옆 자동 배치로.
+  useEffect(() => {
+    setEditorPopManual(null);
+  }, [editorKey]);
   useLayoutEffect(() => {
     if (!editorVisible || isNarrow) {
       setEditorPopPos(null);
+      setEditorPopManual(null);
+      setEditorAnchorPt(null);
       return;
     }
     placeEditorPopover();
@@ -1912,19 +1985,29 @@ export function StudioShell({
     avatarSceneOn,
     avatarSide
   ]);
-  // 창 리사이즈·팝오버 자체 높이 변화(접기 펼침, 오류 배너 등)에도 재배치 — 바닥 클램프가 따라간다.
+  // 창 리사이즈·팝오버 자체 높이 변화(접기 펼침, 오류 배너 등)·달력 판 자체의 리사이즈(일정
+  // 추가/삭제로 칸 높이 변화)·아바타 도크 margin 슬라이드(0.52s transition — 애니 중 측정한
+  // 좌표는 스테일)에도 재배치. 앵커 라인 좌표도 같은 함수가 갱신한다.
   useEffect(() => {
     if (!editorVisible || isNarrow) return;
     const onResize = () => placeEditorPopover();
     window.addEventListener("resize", onResize);
+    const ws = workspaceRef.current;
+    const onTransEnd = (ev: TransitionEvent) => {
+      if (ev.target === ws && ev.propertyName.startsWith("margin")) placeEditorPopover();
+    };
+    ws?.addEventListener("transitionend", onTransEnd);
     const panel = editorPanelRef.current;
+    const cal = calPanelRef.current;
     const ro =
-      typeof ResizeObserver !== "undefined" && panel
+      typeof ResizeObserver !== "undefined"
         ? new ResizeObserver(() => placeEditorPopover())
         : null;
-    if (panel && ro) ro.observe(panel);
+    if (ro && panel) ro.observe(panel);
+    if (ro && cal) ro.observe(cal);
     return () => {
       window.removeEventListener("resize", onResize);
+      ws?.removeEventListener("transitionend", onTransEnd);
       ro?.disconnect();
     };
   }, [editorVisible, isNarrow, placeEditorPopover]);
@@ -6149,16 +6232,35 @@ export function StudioShell({
             보이게) — 하단 중앙 플로팅. 100%에선 사라져 평소 화면을 어지럽히지 않는다. */}
         {zoomCollapse ? <div className="cal-zoom-float">{renderCalZoomCtl()}</div> : null}
 
+        {/* 팝오버 → 앵커 칸 리더 라인 — '어느 칸의 편집창인지'를 항상 시각으로 잇는다.
+            칸 쪽 끝은 도트, 카드 쪽 끝은 카드 밑으로 숨는다. 드래그로 멀어져도 따라 늘어난다. */}
+        {editorVisible && editorAnchorPt && (editorPopManual ?? editorPopPos)
+          ? (() => {
+              const p = editorPopManual ?? editorPopPos!;
+              return (
+                <svg aria-hidden="true" className="editor-anchor-link">
+                  <line
+                    x1={editorAnchorPt.x}
+                    y1={editorAnchorPt.y}
+                    x2={p.left + 192}
+                    y2={p.top + 56}
+                  />
+                  <circle cx={editorAnchorPt.x} cy={editorAnchorPt.y} r={5} />
+                </svg>
+              );
+            })()
+          : null}
         {/* 앵커 팝오버 — 위치는 placeEditorPopover가 실측 배치(선택 칸 옆, flip·클램프).
-            좌표 확정 전 한 프레임은 숨겨 (0,0) 번쩍임을 막는다. */}
+            좌표 확정 전 한 프레임은 숨겨 (0,0) 번쩍임을 막는다. 헤더를 잡아 끌면 이동. */}
         <aside
-          className={`event-editor-panel${panelSaved ? " panel-saved" : ""}`}
+          className={`event-editor-panel${panelSaved ? " panel-saved" : ""}${
+            editorPopDragging ? " pop-dragging" : ""
+          }`}
           ref={editorPanelRef}
-          style={
-            editorPopPos
-              ? { left: editorPopPos.left, top: editorPopPos.top }
-              : { visibility: "hidden" }
-          }
+          style={(() => {
+            const p = editorPopManual ?? editorPopPos;
+            return p ? { left: p.left, top: p.top } : { visibility: "hidden" as const };
+          })()}
         >
           {/* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */}
           {!canEdit ? (
@@ -6168,8 +6270,13 @@ export function StudioShell({
              되지 않아 깜빡이지 않는다. 날짜/일정을 새로 고를 때만 쑥 내려오는 전환. */
           <form onSubmit={saveEvent} key={editorKey}>
             <div className="editor-heading">
-              {/* 한 줄: 접기(>) · 날짜 · 라벨 ─ 오른쪽 끝 저장. (높이 절약 — 날짜를 아래줄로 빼지 않음) */}
-              <div className="editor-heading-bar">
+              {/* 한 줄: 접기(>) · 날짜 · 라벨 ─ 오른쪽 끝 저장. (높이 절약 — 날짜를 아래줄로 빼지 않음)
+                  이 바를 잡아 끌면 팝오버가 통째로 이동한다(버튼 위 제스처 제외). */}
+              <div
+                className="editor-heading-bar"
+                onPointerDown={onEditorPopDragStart}
+                title="끌어서 이동"
+              >
                 <div className="editor-heading-left">
                   <button
                     aria-label="편집 카드 닫기"
@@ -6180,9 +6287,10 @@ export function StudioShell({
                   >
                     <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
                   </button>
-                  {/* key로 날짜가 바뀔 때마다 재마운트 → 쓱 바뀌는 애니메이션으로 '옮겼다'를 인지. */}
+                  {/* key로 날짜가 바뀔 때마다 재마운트 → 쓱 바뀌는 애니메이션으로 '옮겼다'를 인지.
+                      사람이 읽는 형식(7월 4일 (토)) — '어느 칸' 인지를 헤더에서도 바로 읽게. */}
                   <span className="editor-date-inline" key={selectedDate}>
-                    {selectedDate}
+                    {formatEditorDate(selectedDate)}
                   </span>
                   <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
                 </div>
