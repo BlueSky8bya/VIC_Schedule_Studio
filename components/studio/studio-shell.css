@@ -3790,7 +3790,8 @@ html[data-reduce-motion] .editor-anchor-link line {
   animation: none;
 }
 .event-editor-panel form {
-  width: 384px;
+  /* ⚠ 이 폭은 .event-detail-readonly(아래)와 반드시 함께 움직인다. */
+  width: 356px;
   /* 폼이 자체 스크롤(overflow-y:auto) — 상한 = '상단 크롬 아래 가용 세로'(--pop-max-h,
      placeEditorPopover가 매 프레임 실측). 팝오버 전체가 항상 화면 안에 들어갈 수 있어야
      스냅백·추적의 '전부 보이게' 클램프가 성립한다. */
@@ -3826,6 +3827,13 @@ html[data-reduce-motion] .editor-anchor-link line {
 .studio-workspace .event-editor-panel form {
   gap: 10px;
   padding: 14px;
+  /* 전폭 그립 스트립의 음수 마진 오차 등이 가로 스크롤바를 만들지 않게 안전벨트. */
+  overflow-x: hidden;
+}
+/* 그립 스트립 음수 마진 = 폼 패딩(위 14px)과 반드시 동치 — 기본값은 --space-4(16)라
+   압축 패딩보다 2px 커서 가로 스크롤바가 생겼다(실측 scrollWidth 384 vs clientWidth 382). */
+.studio-workspace .event-editor-panel .editor-grab {
+  margin: -14px -14px -8px;
 }
 .studio-workspace .event-editor-panel form textarea {
   min-height: 48px;
@@ -4348,9 +4356,9 @@ html[data-reduce-motion] .editor-anchor-link line {
   animation: editor-card-slide 0.52s cubic-bezier(0.25, 1, 0.5, 1) both;
   /* 폼과 동일하게 고정폭 — 칸 폭에 stretch되면 슬라이드 인 중 내용이 세로로 꾸겨진다. 고정폭이면
      overflow:hidden + 우측정렬로 오른쪽에서 깔끔히 미끄러져 들어온다(아바타 scene은 아래서 312).
-     ⚠ 이 값은 .event-editor-panel form(384)·트랙(.editor-open 400)과 반드시 함께 움직인다 —
-     폼만 384로 줄이고 여기(옛 446)를 안 줄여서 매니저/작업자 상세가 오른쪽이 잘려 보였다. */
-  width: 384px;
+     ⚠ 이 값은 .event-editor-panel form(356)과 반드시 함께 움직인다 —
+     폼만 줄이고 여기(옛 446)를 안 줄여서 매니저/작업자 상세가 오른쪽이 잘려 보였다. */
+  width: 356px;
   display: flex;
   flex-direction: column;
   gap: 0;
