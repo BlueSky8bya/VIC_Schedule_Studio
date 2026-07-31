@@ -5652,6 +5652,12 @@ html[data-reduce-motion] .pi-retry:active {
   display: block;
   background: transparent;
   animation: none;
+  /* 배경은 클릭을 막지 않는다 — 팝오버가 떠 있어도 달력이 살아 있어 다른 일정을 누르면
+     한 번에 그 상세로 교체된다(바깥 닫기는 문서 레벨 리스너가 처리). */
+  pointer-events: none;
+}
+.agenda-detail-backdrop.is-pop .agenda-detail-sheet {
+  pointer-events: auto;
 }
 /* 애플식 재질 카드 — 프로스트 유리(반투명+블러+채도), 헤어라인 테두리, 이중 부드러운 그림자,
    연속 라운드(20px), 스프링 등장. 색은 절제: 대표 태그 색은 맨 위 3px 액센트 라인과

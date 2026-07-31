@@ -200,17 +200,24 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 // 포스터 고정 캔버스 설계 크기(16:9). 화면에선 이 크기를 통째로 축소해 보여주고,
 // export는 이 원본 크기로 캡쳐한다. 작은 화면에서도 내부 비율·스티커 위치가 절대 안 바뀐다.
-// PC 상세 팝오버 리더 선의 카드 쪽 끝점 = 팝오버 사각형 가장자리에서 앵커에 가장 가까운 점
-// (편집실 popEdgePoint와 동일 문법 — 선이 카드 밑으로 파고들지 않고 가장자리에 붙는다).
+// PC 상세 팝오버 리더 선의 카드 쪽 끝점 — 위/아래에서 오는 선은 그 변의 '중앙'에 붙이고
+// (모서리 근처에 어정쩡하게 닿는 것 방지 — 사용자 요청), 좌우에서 오는 선은 앵커 높이에
+// 맞춰 수평으로 변에 붙는다. 앵커가 카드에 덮이면 앵커 그대로(=선 생략 판정).
 function detailEdgePoint(
   pos: { left: number; top: number },
   size: { w: number; h: number },
   anchor: { x: number; y: number }
 ) {
   const INSET = 10;
+  const L = pos.left;
+  const T = pos.top;
+  const R = L + size.w;
+  const B = T + size.h;
+  if (anchor.y < T) return { x: Math.round(L + size.w / 2), y: T };
+  if (anchor.y > B) return { x: Math.round(L + size.w / 2), y: B };
   return {
-    x: Math.max(pos.left + INSET, Math.min(anchor.x, pos.left + size.w - INSET)),
-    y: Math.max(pos.top + INSET, Math.min(anchor.y, pos.top + size.h - INSET))
+    x: anchor.x < L ? L : anchor.x > R ? R : anchor.x,
+    y: Math.max(T + INSET, Math.min(anchor.y, B - INSET))
   };
 }
 // 토스트 한 줄에 들어가게 제목을 줄인다(긴 제목이 화면을 가로지르지 않게).
@@ -1121,6 +1128,23 @@ export function PublicPoster({
   detailAnchorPtRef.current = detailAnchorPt;
   const detailDragActiveRef = useRef(false);
   const hasDetailPop = Boolean(agendaDetail?.anchor);
+  // PC 팝오버가 떠 있는 동안 달력은 그대로 살아 있다(배경 pointer-events:none) — 다른 일정을
+  // 누르면 '한 번에' 그 일정의 상세로 교체된다. 바깥 닫기는 여기(문서 레벨)서: 시트 안도,
+  // 새 상세로 교체될 일정 카드도 아닌 곳을 누르면 닫는다. 여는 클릭이 바로 닫지 않게 다음 틱부터.
+  useEffect(() => {
+    if (!hasDetailPop) return;
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t?.closest(".agenda-detail-sheet")) return;
+      if (t?.closest(".public-event.is-clickable")) return; // 카드 클릭 → 상세 교체가 처리
+      setAgendaDetail(null);
+    };
+    const id = window.setTimeout(() => document.addEventListener("pointerdown", onDown, true), 0);
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener("pointerdown", onDown, true);
+    };
+  }, [hasDetailPop]);
   const placeDetailPopover = useCallback(() => {
     const el = detailAnchorElRef.current;
     const sheet = detailSheetRef.current;

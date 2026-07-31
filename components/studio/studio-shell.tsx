@@ -1917,18 +1917,24 @@ export function StudioShell({
     },
     [getPopZoom]
   );
-  // 리더 라인의 카드 쪽 끝점 = 팝오버 사각형 가장자리에서 앵커에 가장 가까운 점.
-  // (카드가 칸 오른쪽에 있으면 왼쪽 변에, 아래에 있으면 위 변에 붙는다 — 선이 카드 밑으로
-  // 파고들지 않고 가장자리에서 시작해 끊겨 보이지 않는다.)
+  // 리더 라인의 카드 쪽 끝점 — 위/아래에서 오는 선은 그 변의 '중앙'에 붙이고(모서리 근처에
+  // 어정쩡하게 닿는 것 방지 — 시청자 팝오버와 동일 규칙), 좌우에서 오는 선은 앵커 높이에
+  // 맞춰 수평으로 변에 붙는다. 앵커가 카드에 덮이면 앵커 그대로(=선 생략 판정).
   function popEdgePoint(
     pos: { left: number; top: number },
     size: { w: number; h: number },
     anchor: { x: number; y: number }
   ) {
     const INSET = 10; // 모서리 라운드 안쪽으로
+    const L = pos.left;
+    const T = pos.top;
+    const R = L + size.w;
+    const B = T + size.h;
+    if (anchor.y < T) return { x: Math.round(L + size.w / 2), y: T };
+    if (anchor.y > B) return { x: Math.round(L + size.w / 2), y: B };
     return {
-      x: Math.max(pos.left + INSET, Math.min(anchor.x, pos.left + size.w - INSET)),
-      y: Math.max(pos.top + INSET, Math.min(anchor.y, pos.top + size.h - INSET))
+      x: anchor.x < L ? L : anchor.x > R ? R : anchor.x,
+      y: Math.max(T + INSET, Math.min(anchor.y, B - INSET))
     };
   }
   const placeEditorPopover = useCallback(() => {
