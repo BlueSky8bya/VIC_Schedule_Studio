@@ -3178,7 +3178,9 @@ html[data-reduce-motion] .role-segment button.active {
 .vt-tip {
   position: absolute;
   bottom: calc(100% + 6px);
-  left: clamp(48px, var(--tip-x, 50%), calc(100% - 48px));
+  /* 여백(양쪽 96px) ≥ 툴팁 반폭이어야 가장자리 막대에서 안 잘린다 — '하루 평균 N분 머묾 ·
+     최고 N명'처럼 헤더가 길어진 뒤 48px로는 부족해 오른쪽이 카드 밖으로 나갔다(실측). */
+  left: clamp(96px, var(--tip-x, 50%), calc(100% - 96px));
   transform: translateX(-50%);
   pointer-events: none;
   display: flex;
