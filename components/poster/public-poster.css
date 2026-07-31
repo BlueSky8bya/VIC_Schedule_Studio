@@ -1443,9 +1443,9 @@ html[data-reduce-motion] .poster-export-reward-spark {
 .poster-chrome-title {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin: 0;
-  font-size: 27px;
+  font-size: 34px;
   font-weight: 900;
   letter-spacing: -0.02em;
   line-height: 1.05;
