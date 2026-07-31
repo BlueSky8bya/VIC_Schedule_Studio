@@ -3604,6 +3604,11 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   left: 0;
   width: 384px;
   z-index: 6; /* 일정 카드·업도움 띠 위, 모달(더 높음) 아래 */
+  /* ⚠ 기본 transition 금지 — 첫 배치 때 기본값(left:0=좌상단)에서 실좌표로 바뀌는 것까지
+     애니메이션돼 '좌상단에서 날아오는' 버그가 된다(실측). 첫 배치가 끝난 뒤 JS가
+     .pop-settled를 붙여야 그때부터 이동이 부드럽다(리사이즈 재클램프 등 같은-인스턴스 이동). */
+}
+.event-editor-panel.pop-settled {
   transition:
     top 0.45s cubic-bezier(0.25, 1, 0.5, 1),
     left 0.45s cubic-bezier(0.25, 1, 0.5, 1);

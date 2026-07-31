@@ -2065,6 +2065,15 @@ export function StudioShell({
       return;
     }
     placeEditorPopover();
+    // 첫 배치(첫 페인트)가 지난 뒤에야 이동 transition을 켠다 — 켜진 채 첫 좌표가 들어가면
+    // 기본값(left:0)에서 목표까지의 이동이 애니메이션돼 좌상단에서 날아온다. remount(key)마다
+    // 새 노드라 클래스는 자동으로 초기화된다.
+    const panel = editorPanelRef.current;
+    if (panel && !panel.classList.contains("pop-settled")) {
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => panel.classList.add("pop-settled"))
+      );
+    }
     // 위치에 영향 주는 것들: 선택 대상·달·확대 배율·아바타 scene(달력 폭)·에디터 remount.
   }, [
     editorVisible,
