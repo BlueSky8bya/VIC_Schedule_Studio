@@ -3640,6 +3640,34 @@ html[data-reduce-motion] .event-editor-panel {
   cursor: grab;
   touch-action: none;
 }
+/* 모드 배지 — 새 일정(초록 +) vs 일정 수정(보라 ✎). 칩 모양이라 시야 구석에서도 색으로 읽힌다. */
+.editor-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0;
+  padding: 3px 9px 3px 7px;
+  border-radius: var(--r-pill, 999px);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.editor-mode-badge.is-new {
+  background: rgb(34 150 94 / 12%);
+  color: #1d7a4e;
+}
+.editor-mode-badge.is-edit {
+  background: rgb(139 92 246 / 13%);
+  color: #6d4fc4;
+}
+/* 카드 상단 액센트 — 폼 카드 윗변에 모드 색 라인(멀리서도 새/수정 구분). */
+.event-editor-panel.is-new form {
+  border-top: 3px solid rgb(34 150 94 / 55%);
+}
+.event-editor-panel.is-edit form {
+  border-top: 3px solid rgb(139 92 246 / 55%);
+}
 .event-editor-panel.pop-dragging .editor-heading-bar {
   cursor: grabbing;
 }
@@ -3665,6 +3693,13 @@ html[data-reduce-motion] .event-editor-panel {
   fill: #8b5cf6;
   stroke: #fff;
   stroke-width: 2;
+}
+/* 새 일정 = 초록 라인/도트 (수정은 기본 보라) — 카드 배지·상단 액센트와 같은 색 언어. */
+.editor-anchor-link.is-new line {
+  stroke: rgb(34 150 94 / 55%);
+}
+.editor-anchor-link.is-new circle {
+  fill: #22965e;
 }
 @keyframes anchor-link-flow {
   to {

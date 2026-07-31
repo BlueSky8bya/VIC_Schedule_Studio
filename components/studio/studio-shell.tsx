@@ -16,6 +16,8 @@ import {
   Keyboard,
   LockKeyhole,
   LogOut,
+  Pencil,
+  Plus,
   Save,
   Sparkles,
   Trash2,
@@ -1874,25 +1876,44 @@ export function StudioShell({
   const [editorPopDragging, setEditorPopDragging] = useState(false);
   // 앵커 칸 중심(workspace 좌표) — 팝오버→칸 리더 라인의 칸 쪽 끝점.
   const [editorAnchorPt, setEditorAnchorPt] = useState<{ x: number; y: number } | null>(null);
+  // 팝오버 실측 크기 — 리더 라인의 카드 쪽 끝점(사각형 최근접 가장자리) 계산용.
+  const [editorPopSize, setEditorPopSize] = useState<{ w: number; h: number } | null>(null);
   const editorPopManualRef = useRef<typeof editorPopManual>(null);
   editorPopManualRef.current = editorPopManual;
+  const editorAnchorPtRef = useRef<typeof editorAnchorPt>(null);
+  editorAnchorPtRef.current = editorAnchorPt;
+  const anchorLineRef = useRef<SVGLineElement | null>(null);
+  // 수동 드래그 클램프 — '꽉 가두기'가 아니라 잡을 수 있는 최소한만 남긴다: 카드가 좌우로는
+  // 140px만 화면에 걸치면 되고, 세로는 헤더 바(위 64px 아래~바닥 위 56px)만 손이 닿으면 된다.
+  // 몸통이 화면/판 밖으로 나가는 건 허용 — 가두면 큰 카드일수록 이동 여유가 0이 돼 툭툭 걸린다.
   const clampPopPos = useCallback((left: number, top: number) => {
     const ws = workspaceRef.current;
     const panel = editorPanelRef.current;
     if (!ws || !panel) return { left, top };
-    const PAD = 8;
     const popW = panel.offsetWidth || 384;
-    const popH = panel.offsetHeight || 480;
-    // 세로는 '지금 보이는 화면'(상단바 아래~바닥) 기준 — workspace 높이 기준이면 팝오버가
-    // 판 높이와 비슷할 때 이동 여유가 0이 된다. 가로는 workspace 안.
+    const KEEP = 140; // 가로로 화면에 남겨둘 최소 폭
     const wsTop = ws.getBoundingClientRect().top;
-    const vpTop = 64 - wsTop + PAD;
-    const vpBottom = window.innerHeight - wsTop - PAD;
+    const vpTop = 64 - wsTop + 8; // 상단바 아래(헤더가 그 밑으로 숨지 않게)
+    const vpBottom = window.innerHeight - wsTop - 56; // 헤더 바가 바닥 아래로 사라지지 않게
     return {
-      left: Math.round(Math.max(PAD, Math.min(left, ws.clientWidth - popW - PAD))),
-      top: Math.round(Math.max(vpTop, Math.min(top, vpBottom - popH)))
+      left: Math.round(Math.max(KEEP - popW, Math.min(left, ws.clientWidth - KEEP))),
+      top: Math.round(Math.max(vpTop, Math.min(top, vpBottom)))
     };
   }, []);
+  // 리더 라인의 카드 쪽 끝점 = 팝오버 사각형 가장자리에서 앵커에 가장 가까운 점.
+  // (카드가 칸 오른쪽에 있으면 왼쪽 변에, 아래에 있으면 위 변에 붙는다 — 선이 카드 밑으로
+  // 파고들지 않고 가장자리에서 시작해 끊겨 보이지 않는다.)
+  function popEdgePoint(
+    pos: { left: number; top: number },
+    size: { w: number; h: number },
+    anchor: { x: number; y: number }
+  ) {
+    const INSET = 10; // 모서리 라운드 안쪽으로
+    return {
+      x: Math.max(pos.left + INSET, Math.min(anchor.x, pos.left + size.w - INSET)),
+      y: Math.max(pos.top + INSET, Math.min(anchor.y, pos.top + size.h - INSET))
+    };
+  }
   const placeEditorPopover = useCallback(() => {
     const ws = workspaceRef.current;
     const panel = editorPanelRef.current;
@@ -1908,9 +1929,11 @@ export function StudioShell({
       y: Math.round(cellRect.top - wsRect.top + Math.min(cellRect.height / 2, 46))
     };
     setEditorAnchorPt((p) => (p && p.x === anchor.x && p.y === anchor.y ? p : anchor));
+    const size = { w: panel.offsetWidth || 384, h: panel.offsetHeight || 480 };
+    setEditorPopSize((s) => (s && s.w === size.w && s.h === size.h ? s : size));
     if (editorPopManualRef.current) return; // 수동 배치 우선 — 자동 좌표는 덮지 않는다.
-    const popW = panel.offsetWidth || 384;
-    const popH = panel.offsetHeight || 480;
+    const popW = size.w;
+    const popH = size.h;
     const GAP = 12;
     const PAD = 8;
     // 가로: 칸 오른쪽 우선, 안 들어가면 왼쪽으로 flip. 그래도 안 되면 안쪽으로 클램프.
@@ -1928,7 +1951,9 @@ export function StudioShell({
     const next = { left: Math.round(left), top: Math.round(top) };
     setEditorPopPos((p) => (p && p.left === next.left && p.top === next.top ? p : next));
   }, [selectedDate]);
-  // 헤더 드래그로 팝오버 이동 — 시작점은 현재 좌표, 이동 중 transition 끔(.pop-dragging).
+  // 헤더 드래그로 팝오버 이동. 이동 중엔 React 상태를 안 거치고 DOM(style·라인 좌표)을 직접
+  // 갱신한다 — 이 컴포넌트는 커서 6천 줄 셸이라 pointermove마다 리렌더하면 툭툭 끊긴다(실측).
+  // 손을 떼는 순간에만 상태로 확정(setEditorPopManual)해 React 좌표와 동기화한다.
   function onEditorPopDragStart(e: ReactPointerEvent<HTMLDivElement>) {
     if (isNarrow) return;
     // 버튼(닫기/저장)에서 시작한 제스처는 드래그가 아니다.
@@ -1940,21 +1965,35 @@ export function StudioShell({
     const startX = e.clientX;
     const startY = e.clientY;
     let moved = false;
+    let last = base;
     const onMove = (ev: PointerEvent) => {
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
       if (!moved && Math.abs(dx) < 3 && Math.abs(dy) < 3) return; // 클릭 오차 보호
       if (!moved) {
         moved = true;
-        setEditorPopDragging(true);
+        setEditorPopDragging(true); // transition 끄기용 1회 렌더만
       }
-      setEditorPopManual(clampPopPos(base.left + dx, base.top + dy));
+      last = clampPopPos(base.left + dx, base.top + dy);
+      panel.style.left = `${last.left}px`;
+      panel.style.top = `${last.top}px`;
+      // 리더 라인도 같은 프레임에 직접 이동(상태 경유 시 한 박자 늦게 따라온다).
+      const anchor = editorAnchorPtRef.current;
+      const line = anchorLineRef.current;
+      if (anchor && line) {
+        const edge = popEdgePoint(last, { w: panel.offsetWidth, h: panel.offsetHeight }, anchor);
+        line.setAttribute("x2", String(edge.x));
+        line.setAttribute("y2", String(edge.y));
+      }
     };
     const onUp = () => {
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
-      if (moved) hapticTick();
+      if (moved) {
+        hapticTick();
+        setEditorPopManual(last); // 확정 — 이후 리렌더에서도 이 좌표 유지
+      }
       setEditorPopDragging(false);
     };
     window.addEventListener("pointermove", onMove);
@@ -6233,18 +6272,29 @@ export function StudioShell({
         {zoomCollapse ? <div className="cal-zoom-float">{renderCalZoomCtl()}</div> : null}
 
         {/* 팝오버 → 앵커 칸 리더 라인 — '어느 칸의 편집창인지'를 항상 시각으로 잇는다.
-            칸 쪽 끝은 도트, 카드 쪽 끝은 카드 밑으로 숨는다. 드래그로 멀어져도 따라 늘어난다. */}
-        {editorVisible && editorAnchorPt && (editorPopManual ?? editorPopPos)
+            칸 쪽 끝은 도트, 카드 쪽 끝은 카드의 '앵커에 가장 가까운 가장자리'에 정확히 붙는다
+            (카드가 칸 오른쪽이면 왼쪽 변 — 선이 카드 밑으로 파고들어 끊겨 보이지 않게).
+            드래그 중엔 핸들러가 line 좌표를 직접 갱신한다. 새 일정=초록, 일정 수정=보라. */}
+        {editorVisible && editorAnchorPt && editorPopSize && (editorPopManual ?? editorPopPos)
           ? (() => {
               const p = editorPopManual ?? editorPopPos!;
+              const edge = popEdgePoint(p, editorPopSize, editorAnchorPt);
+              // 앵커 칸이 카드에 덮여 있으면(최근접점 = 앵커 그 자체) 선은 무의미 — 도트만.
+              const covered = edge.x === editorAnchorPt.x && edge.y === editorAnchorPt.y;
               return (
-                <svg aria-hidden="true" className="editor-anchor-link">
-                  <line
-                    x1={editorAnchorPt.x}
-                    y1={editorAnchorPt.y}
-                    x2={p.left + 192}
-                    y2={p.top + 56}
-                  />
+                <svg
+                  aria-hidden="true"
+                  className={`editor-anchor-link ${selectedEventId ? "is-edit" : "is-new"}`}
+                >
+                  {covered ? null : (
+                    <line
+                      ref={anchorLineRef}
+                      x1={editorAnchorPt.x}
+                      y1={editorAnchorPt.y}
+                      x2={edge.x}
+                      y2={edge.y}
+                    />
+                  )}
                   <circle cx={editorAnchorPt.x} cy={editorAnchorPt.y} r={5} />
                 </svg>
               );
@@ -6253,9 +6303,9 @@ export function StudioShell({
         {/* 앵커 팝오버 — 위치는 placeEditorPopover가 실측 배치(선택 칸 옆, flip·클램프).
             좌표 확정 전 한 프레임은 숨겨 (0,0) 번쩍임을 막는다. 헤더를 잡아 끌면 이동. */}
         <aside
-          className={`event-editor-panel${panelSaved ? " panel-saved" : ""}${
-            editorPopDragging ? " pop-dragging" : ""
-          }`}
+          className={`event-editor-panel ${selectedEventId ? "is-edit" : "is-new"}${
+            panelSaved ? " panel-saved" : ""
+          }${editorPopDragging ? " pop-dragging" : ""}`}
           ref={editorPanelRef}
           style={(() => {
             const p = editorPopManual ?? editorPopPos;
@@ -6292,7 +6342,15 @@ export function StudioShell({
                   <span className="editor-date-inline" key={selectedDate}>
                     {formatEditorDate(selectedDate)}
                   </span>
-                  <p className="eyebrow">{selectedEventId ? "일정 수정" : "새 일정"}</p>
+                  {/* 새 일정(초록 +) vs 일정 수정(보라 ✎) — 색·아이콘으로 한눈에 구분. */}
+                  <p className={`editor-mode-badge ${selectedEventId ? "is-edit" : "is-new"}`}>
+                    {selectedEventId ? (
+                      <Pencil aria-hidden="true" size={12} strokeWidth={2.5} />
+                    ) : (
+                      <Plus aria-hidden="true" size={13} strokeWidth={3} />
+                    )}
+                    {selectedEventId ? "일정 수정" : "새 일정"}
+                  </p>
                 </div>
                 {/* (이동/복제 버튼 제거 — 사용자 결정: 드래그와 Ctrl+C/V 단축키가 충분해
                     버튼은 헤더 소음이었다. 비드래그 대안이 다시 필요하면 git 이력에 구현이 있다.) */}

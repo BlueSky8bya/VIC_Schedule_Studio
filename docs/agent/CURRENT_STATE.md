@@ -118,6 +118,9 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
   팝오버 이동**(수동 배치, 다른 날짜 고르면 자동 배치 복귀), **팝오버→앵커 칸 점선 리더 라인
   +도트**(어느 칸의 편집창인지 상시 시각 연결), 헤더 날짜 "M월 D일 (요일)" 형식
   (formatEditorDate, editor-model), 아바타 margin transitionend·달력 ResizeObserver 재배치.
+  3차: 드래그 중 React 리렌더 대신 DOM 직접 갱신(끊김 제거), 클램프 완화(가로 140px·헤더만
+  화면에 남으면 됨 — 꽉 가두기 금지), 리더 라인 끝점=카드의 앵커 쪽 최근접 가장자리
+  (popEdgePoint), 새 일정(초록 +)/일정 수정(보라 ✎) 배지·라인·카드 상단 액센트 색 구분.
   아울러 **편집실 아바타 자리 = 항상 켜짐**
   (끄기 토글 제거, 좌/우만 선택 — vic_avatar_on 키는 이제 시청자 포스터 전용, 시청자
   미리보기는 controlled 공유를 끊고 포스터 자체 상태로). fixture+Playwright 실측(anchor/
