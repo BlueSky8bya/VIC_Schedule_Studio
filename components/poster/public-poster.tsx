@@ -3823,10 +3823,8 @@ export function PublicPoster({
       }`}
       data-poster-theme={effectivePosterTheme}
     >
-      {/* 토리님 SOOP 라이브 비콘 — '실제 공개 페이지'에서만. 꾸미기/export 제외(decorate),
-          편집실 '시청자 미리보기'(previewNav 존재)에서도 숨김 — 편집실 버튼과 겹치면 안 되므로.
-          fixed 오버레이라 export 표면 밖 → 공식 PNG엔 안 들어간다(실시간 정보). */}
-      {!decorate && !previewNav ? <SoopLiveBeacon live={soopLive} /> : null}
+      {/* (라이브 카드는 우측 레일 안 — 정보 카드와 태그 필터 사이 — 로 이사(2026-07-31).
+          모바일 아젠다는 하단 '오늘'→LIVE 버튼이 담당해 별도 플로팅 없음.) */}
       {/* 스티커 월 간 복사/붙여넣기 안내 토스트 */}
       {decorate && stickerClipMsg ? (
         <div className="sticker-clip-toast" role="status" aria-live="polite">
@@ -5007,6 +5005,12 @@ export function PublicPoster({
                 );
               })()}
             </div>
+
+            {/* 라이브 카드 — 정보 카드 아래·태그 필터 위(사용자 지정 위치). 라이브 중에만 렌더.
+                레일 내부 삽입이라 달력 칸·표면 크기엔 영향 없음(레일 아래 내용만 밀림 — 필터
+                2열 압축으로 확보한 높이를 쓴다). 편집실 시청자 미리보기에서도 시청자와 똑같이
+                보인다(옛 플로팅 비콘의 겹침 문제가 레일 안에선 없음). 꾸미기/캡쳐엔 없음. */}
+            {!decorate ? <SoopLiveBeacon inRail live={soopLive} /> : null}
 
             <div className="public-legend-vertical" aria-label="태그 필터">
               <strong className="legend-title">태그 필터</strong>

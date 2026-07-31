@@ -10,7 +10,7 @@ import type { SoopLive } from "@/components/poster/use-soop-live";
 // fixed라 export 표면 밖 → 공식 PNG엔 안 들어간다(실시간 정보). 임베드가 안 뜨는 환경에서도
 // 배지·제목·보러가기 링크는 남는다.
 
-export function SoopLiveBeacon({ live }: { live: SoopLive | null }) {
+export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null; inRail?: boolean }) {
   const [reduce, setReduce] = useState(false);
   useEffect(() => setReduce(reduceMotionEnabled()), []);
 
@@ -20,7 +20,10 @@ export function SoopLiveBeacon({ live }: { live: SoopLive | null }) {
     : null;
 
   return (
-    <div className="soop-live-card" data-reduce={reduce ? "" : undefined}>
+    <div
+      className={`soop-live-card${inRail ? " in-rail" : ""}`}
+      data-reduce={reduce ? "" : undefined}
+    >
       <div className="slc-player">
         {embedSrc ? (
           <iframe
