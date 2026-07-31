@@ -93,7 +93,7 @@ import type {
 import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
 import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { heartTier } from "@/lib/schedules/heart-tiers";
-import { getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
+import { debutDPlus, getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
@@ -133,12 +133,8 @@ import { useSoopLive } from "@/components/poster/use-soop-live";
 // 곳(공개 /, 꾸미기, 스튜디오 시청자 미리보기)에서만 실린다.
 import "./public-poster.css";
 
-// 내보내기 버튼은 꾸미기/소유자(canExport)일 때만 렌더된다 → 시청자(공개 /)는 안 받게 지연 로드.
-// 클라 전용(내보내기는 사용자 동작)이라 ssr:false. (html2canvas는 이 안에서 또 한 번 지연 import.)
-const PosterExportActions = dynamic(
-  () => import("@/components/poster/poster-export-actions").then((m) => m.PosterExportActions),
-  { ssr: false }
-);
+// (일정표 캡쳐(클립보드/PNG 다운로드) 기능 삭제 — 2026-07-31 사용자 결정: 토리님이 안 씀.
+//  PosterExportActions 컴포넌트·html2canvas 경로 제거. 필요해지면 git 이력에 구현이 있다.)
 
 // 스티커 일괄 저장/삭제 액션의 응답 모양(별도 export가 없어 여기 한 곳에 정의해 재사용).
 type StickerBatchResult =
@@ -152,7 +148,7 @@ type PublicPosterProps = {
   initialMonth?: number;
   // 월을 바꿀 때 부모(편집실)에 알린다 — 시청자 미리보기에서 본 달을 편집실로 돌아갈 때 잇기 위함.
   onViewChange?: (year: number, month: number) => void;
-  canExport?: boolean;
+  // (canExport 삭제 — 일정표 캡쳐 기능 제거, 2026-07-31.)
   decorate?: boolean;
   // 꾸미기에서 "시청자 화면 보기" 중이었는지(새로고침 복원용 초기값).
   initialPreviewing?: boolean;
@@ -663,7 +659,6 @@ export function PublicPoster({
   initialYear,
   onViewChange,
   schedule,
-  canExport: canExportProp = false,
   decorate: decorateProp = false,
   initialPreviewing = false,
   initialNarrow = false,
@@ -814,12 +809,11 @@ export function PublicPoster({
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [decorateProp]);
-  // 꾸미기 화면에서 "시청자 화면 보기"로 잠깐 미리보기 — 꾸미기/내보내기 도구를 숨기고
-  // 시청자 시점으로 본다. previewing 동안에는 effective decorate/canExport를 꺼서, 아래의
-  // 모든 꾸미기 로직(도구바·키보드·스티커 편집·내보내기)이 자동으로 비활성화된다.
+  // 꾸미기 화면에서 "시청자 화면 보기"로 잠깐 미리보기 — 꾸미기 도구를 숨기고
+  // 시청자 시점으로 본다. previewing 동안에는 effective decorate를 꺼서, 아래의
+  // 모든 꾸미기 로직(도구바·키보드·스티커 편집)이 자동으로 비활성화된다.
   const [previewing, setPreviewing] = useState(initialPreviewing);
   const decorate = decorateProp && !previewing;
-  const canExport = canExportProp && !previewing;
   // 토리님 SOOP 라이브 상태 — 꾸미기 아니면 폴링(편집실 '시청자 미리보기'에서도 켜서 개발자/오너가
   // 시청자가 볼 LIVE를 그대로 확인). 데스크탑 플로팅 비콘은 편집실 chrome과 겹쳐 미리보기에선 숨기고
   // (아래 마운트의 !previewNav), 모바일은 겹침 없는 하단 '오늘'→LIVE 버튼이라 미리보기에서도 보인다.
@@ -881,7 +875,7 @@ export function PublicPoster({
     }
     return perWeek;
   }, [cells, liveEvents, supportLanes]);
-  const activeSupportEvents = liveEvents.filter((e) => e.isSupport);
+  // (레일 업도움 카드 삭제로 activeSupportEvents 목록은 불필요 — 업도움 접근은 띠 클릭 팝오버.)
   // 이어진 일정 묶음 키 — 같은 묶음 칸들의 높이를 맞추는 데 쓴다(아래 useEqualChainHeights).
   const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
   // 같은 태그 구성으로 이어진 묶음은 하나의 그라데이션으로(경계 가운데). 묶음별 날짜 범위.
@@ -1139,6 +1133,7 @@ export function PublicPoster({
       const t = e.target as HTMLElement | null;
       if (t?.closest(".agenda-detail-sheet")) return;
       if (t?.closest(".public-event.is-clickable")) return; // 카드 클릭 → 상세 교체가 처리
+      if (t?.closest(".support-bar.is-clickable")) return; // 업도움 띠 클릭 → 상세 교체가 처리
       setAgendaDetail(null);
     };
     const id = window.setTimeout(() => document.addEventListener("pointerdown", onDown, true), 0);
@@ -3017,11 +3012,29 @@ export function PublicPoster({
           const isEnd = cell.isoDate === end;
           const left = isStart;
           const right = isEnd;
+          // 띠 클릭 = 업도움 상세 팝오버('도우러 가기' 포함) — 레일의 업도움 카드가 하던 일이
+          // 관심 지점(띠) 클릭으로 이사(2026-07-31). 시청자(interactive)에서만.
+          const openSupportDetail = interactive
+            ? (el: HTMLElement) => {
+                const r = el.getBoundingClientRect();
+                hapticTick();
+                detailAnchorElRef.current = el;
+                setDetailManual(null);
+                setAgendaDetail({
+                  event: s,
+                  support: true,
+                  dateKey: start,
+                  anchor: { x: r.left, y: r.top, w: r.width, h: r.height }
+                });
+              }
+            : null;
           return (
             <div
               // 필터를 켜면 일정 카드만 흐려지고 업 도움 끈은 쨍하게 남아, 안 고른 기간이 오히려
               // 제일 눈에 띄었다 → 끈도 같이 물러난다(같은 isDimmedByFilter 판정을 쓴다).
-              className={`support-bar${isDimmedByFilter(s) ? " dimmed" : ""}`}
+              className={`support-bar${isDimmedByFilter(s) ? " dimmed" : ""}${
+                openSupportDetail ? " is-clickable" : ""
+              }`}
               key={s.id}
               style={{
                 top: 26 + lane * 20,
@@ -3032,6 +3045,21 @@ export function PublicPoster({
                 borderTopRightRadius: right ? 9 : 0,
                 borderBottomRightRadius: right ? 9 : 0
               }}
+              {...(openSupportDetail
+                ? {
+                    role: "button" as const,
+                    tabIndex: 0,
+                    onClick: (e: ReactMouseEvent<HTMLDivElement>) => {
+                      e.stopPropagation();
+                      openSupportDetail(e.currentTarget);
+                    },
+                    onKeyDown: (e: ReactKeyboardEvent<HTMLDivElement>) => {
+                      if (e.key !== "Enter" && e.key !== " ") return;
+                      e.preventDefault();
+                      openSupportDetail(e.currentTarget);
+                    }
+                  }
+                : {})}
             >
               {isStart || isEnd ? <span>🌱 {s.publicTitle}</span> : null}
             </div>
@@ -4800,8 +4828,8 @@ export function PublicPoster({
           </div>
         ) : null}
 
-        {/* 텍스트 추가(왼쪽) + 캡쳐 버튼(오른쪽)을 같은 줄에. 달력을 보면서 누르기 쉽게. */}
-        {!showAgenda && (decorate || canExport) ? (
+        {/* 텍스트 추가 줄(꾸미기 전용). 옛 캡쳐 버튼 자리는 비움 — 기능 삭제(2026-07-31). */}
+        {!showAgenda && decorate ? (
           <div className="poster-capture-row">
             {decorate ? (
               <div className="text-add-row">
@@ -4858,14 +4886,6 @@ export function PublicPoster({
             ) : (
               <span />
             )}
-            {canExport ? (
-              <PosterExportActions
-                onBeforeCapture={() => {
-                  clearSelection();
-                  clearFilters();
-                }}
-              />
-            ) : null}
           </div>
         ) : null}
 
@@ -4936,30 +4956,28 @@ export function PublicPoster({
             </div>
           </section>
 
-          <aside className="public-right" aria-label="업 도움과 색상 안내">
-            {activeSupportEvents.map((s) => {
-              const start = getEventDateKey(s);
-              const end = s.endDateKey ?? start;
-              return (
-                <div className="support-card" key={s.id}>
-                  <span>🌱 {s.publicTitle}</span>
-                  <strong>
-                    {formatShortDate(start)} ~ {formatShortDate(end)}
-                  </strong>
-                  {s.supportUrl ? (
-                    <a
-                      data-sticker-avoid
-                      href={s.supportUrl}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      도우러 가기
-                      <ExternalLink aria-hidden="true" size={14} />
-                    </a>
-                  ) : null}
-                </div>
-              );
-            })}
+          <aside className="public-right" aria-label="방송 정보와 색상 안내">
+            {/* 레일 정보 카드 — 데뷔 D+N · 오늘 날짜. 업도움 카드가 있던 자리(2026-07-31 —
+                업도움 링크는 달력의 띠 클릭 → 상세 팝오버 '도우러 가기'로 이사). 모든 모드에서
+                항상 렌더(지오메트리 동일)라 캡쳐 PNG에도 찍힌다 — 포스터 정체성에 보탬. */}
+            <div className="rail-info-card">
+              {(() => {
+                const dplus = debutDPlus(today);
+                const wd = new Date(`${today}T00:00:00Z`).getUTCDay();
+                return (
+                  <>
+                    {dplus !== null ? (
+                      <span className="ric-debut">
+                        🎂 데뷔 <b>D+{dplus}</b>
+                      </span>
+                    ) : null}
+                    <span className="ric-today">
+                      오늘 <b>{formatShortDate(today)}</b> ({WEEKDAYS[wd]})
+                    </span>
+                  </>
+                );
+              })()}
+            </div>
 
             <div className="public-legend-vertical" aria-label="태그 필터">
               <strong className="legend-title">태그 필터</strong>

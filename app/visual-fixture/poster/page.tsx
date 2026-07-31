@@ -21,7 +21,6 @@ export default async function VisualPosterFixture({
     <PublicPoster
       anonymous
       accountSwitch={false}
-      canExport={decorate}
       decorate={decorate}
       initialNarrow={false}
       initialYear={2026}

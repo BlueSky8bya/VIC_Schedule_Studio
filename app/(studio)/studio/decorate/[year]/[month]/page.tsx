@@ -96,7 +96,6 @@ export default async function StudioDecoratePage({ params }: StudioDecoratePageP
       accountEmail={actor.email}
       toggleHeartAction={toggleEventHeartAction}
       avatarSlot={actor.role === "owner" || actor.role === "developer"}
-      canExport
       decorate
       initialPreviewing={mem.dp === 1}
       deleteStickerAction={deleteStickerAction}

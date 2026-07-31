@@ -144,6 +144,15 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
   이어서: **PC 시청자 일정 상세 팝오버** — 달력 카드 클릭(Enter/Space 포함) 시 모바일 상세
   시트와 같은 내용(agendaDetail 재사용)이 카드 옆 앵커 팝오버로 뜬다(anchor 있으면 is-pop
   분기, fixed·flip·클램프). interactive 모드만(꾸미기·캡쳐 无). 바깥 클릭/Esc 닫기.
+- **시청자 레일 재편 + 라이브 카드 + 캡쳐 삭제(2026-07-31, 사용자 결정)**: ① 레일(태그
+  필터 위) 업도움 카드 → **정보 카드**(🎂 데뷔 D+N(debutDPlus, holidays)·오늘 날짜 —
+  전 모드 렌더, 캡쳐에도 찍힘). ② 업도움 접근은 **달력 띠 클릭 → 상세 팝오버 '도우러
+  가기'**(support-bar.is-clickable, interactive만). ③ **라이브 카드**: 방송 중이면 우하단
+  플로팅(soop-live-card, 표면 밖 fixed)에 SOOP 임베드 플레이어(bjId/bno로
+  /{bjId}/{bno}/embed?autoPlay&mutePlay)+LIVE 배지+제목/보러가기 — 옛 좌상단 알약 비콘
+  대체(모바일은 기존 '오늘'→LIVE 버튼 유지). ④ **일정표 캡쳐(클립보드/PNG) 기능 삭제** —
+  poster-export-actions 컴포넌트·canExport prop·html2canvas 의존성 제거(토리님 미사용).
+  공식 Playwright export 경로(tests)는 별개로 존치.
   2차(디자인+기능): 편집실 팝오버 문법 이식 — 카드→팝오버 **리더 점선+도트(대표 태그 색)**,
   **그립 띠/헤더 드래그 이동**(DOM 직접 갱신+손 뗄 때 상태 확정), rAF로 카드 위치 매 프레임
   실측(스크롤·리사이즈 추적, 카드가 DOM에서 사라지면 자동 닫힘). 디자인: 대표 태그 1~2색

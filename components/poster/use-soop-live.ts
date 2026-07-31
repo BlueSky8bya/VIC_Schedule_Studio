@@ -6,9 +6,11 @@ import { useEffect, useState } from "react";
 // 한 페이지에서 한 번만 호출해 데스크탑 비콘·모바일 '오늘' 버튼이 같은 상태를 공유한다.
 export type SoopLive = {
   isLive: boolean;
+  bjId?: string; // 임베드 플레이어용(서버 응답에 포함 — 공개 채널 id)
   bjNick: string | null;
   title: string | null;
   category: string | null;
+  bno?: string | null; // 방송 번호(임베드 주소용)
   watchUrl: string | null;
 };
 

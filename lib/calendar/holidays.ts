@@ -149,6 +149,12 @@ function daysSinceDebut(isoDate: string): number {
   return Math.round((Date.UTC(y2, m2 - 1, d2) - Date.UTC(y1, m1 - 1, d1)) / 86400000);
 }
 
+// 시청자 레일 정보 카드용 — 오늘의 D+ 값(데뷔일=D+1). 데뷔 전이면 null.
+export function debutDPlus(isoDate: string): number | null {
+  const days = daysSinceDebut(isoDate);
+  return days < 0 ? null : days + 1;
+}
+
 // 스트리머(빅토리) 기념일 — 매년 같은 양력 날짜에 표기.
 const STREAMER_ANNUAL: Record<string, (isoDate: string) => string | null> = {
   "02-19": () => "🎂 토리님 생일"

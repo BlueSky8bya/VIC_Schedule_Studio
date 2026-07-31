@@ -1559,7 +1559,35 @@ html[data-reduce-motion] .poster-export-reward-spark {
 
 /* (.public-side 메모 컬럼 규칙 삭제 — 2026-07-31 메모 기능 제거.) */
 
-/* 오른쪽: 업 도움 카드(들) + 색상 안내. 달력 맨 밑줄까지 늘어지게(끝 선 정렬). */
+/* 레일 정보 카드 — 데뷔 D+N · 오늘 날짜(태그 필터 위, 옛 업도움 카드 자리). */
+.rail-info-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid #ece2cd;
+  border-radius: var(--r-lg);
+  background: #fffdf6;
+  box-shadow: var(--shadow-2);
+  padding: 13px 16px;
+  color: #6b5b34;
+  font-size: 14.5px;
+  font-weight: 800;
+}
+.rail-info-card b {
+  color: #7c4d05;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+.ric-debut b {
+  font-size: 21px;
+  line-height: 1.1;
+}
+/* 업도움 띠 = 클릭 대상(상세 팝오버) — 시청자 모드에서만 붙는 클래스. */
+.support-bar.is-clickable {
+  cursor: pointer;
+}
+
+/* 오른쪽: 색상 안내 레일. 달력 맨 밑줄까지 늘어지게(끝 선 정렬). */
 .public-right {
   display: flex;
   flex-direction: column;
@@ -4276,74 +4304,98 @@ html[data-reduce-motion] .heart-toast {
 
 /* ── SOOP 라이브 비콘 ── 방송 중일 때만 뜨는 빨강 알약. fixed = export 표면 밖(PNG 제외).
    끌어당김 최상위라 빨강+맥박. reduced-motion이면 맥박 끔. */
-.soop-live-beacon {
+/* 라이브 카드 — 우하단 플로팅(옛 좌상단 알약 비콘 대체): SOOP 임베드 플레이어(16:9, 음소거
+   자동재생) + LIVE 배지 + 제목/보러가기 캡션. fixed = 캡쳐 표면 밖. */
+.soop-live-card {
   position: fixed;
-  top: 14px;
-  left: 14px;
-  z-index: 90;
+  right: 18px;
+  bottom: 18px;
+  z-index: 60;
+  width: 300px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgb(169 15 54 / 25%);
+  background: #fffdf6;
+  box-shadow: 0 18px 44px rgb(120 20 50 / 26%);
+  animation: slb-in 260ms var(--ease) both;
+}
+.slc-player {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: #14090e;
+}
+.slc-player iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+.slc-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  max-width: min(80vw, 420px);
-  padding: 9px 16px;
+  gap: 5px;
+  padding: 3px 9px;
   border-radius: var(--r-pill);
   background: linear-gradient(135deg, #d90f45, #a90f36);
   color: #fff;
-  font-weight: 800;
-  box-shadow: 0 6px 22px rgb(169 15 54 / 38%);
-  cursor: pointer;
-  animation: slb-in 220ms var(--ease) both;
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  pointer-events: none;
 }
-.soop-live-beacon:hover {
-  box-shadow: 0 8px 26px rgb(169 15 54 / 48%);
-}
-.slb-dot {
-  flex: 0 0 auto;
-  width: 9px;
-  height: 9px;
+.slc-badge i {
+  width: 7px;
+  height: 7px;
   border-radius: var(--r-pill);
   background: #fff;
   box-shadow: 0 0 0 0 rgb(255 255 255 / 70%);
   animation: slb-pulse 1.8s ease-out infinite;
 }
-.slb-label {
-  flex: 0 0 auto;
+.slc-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  color: #3a2430;
+  text-decoration: none;
+  font-weight: 800;
   font-size: 13px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
 }
-.slb-title {
+.slc-caption:hover {
+  background: #fff3f0;
+}
+.slc-title {
+  flex: 1;
   overflow: hidden;
-  font-size: 13px;
-  font-weight: 700;
   white-space: nowrap;
   text-overflow: ellipsis;
-  opacity: 0.95;
 }
-.slb-go {
+.slc-go {
   flex: 0 0 auto;
-  font-size: 12.5px;
-  font-weight: 800;
-  opacity: 0.9;
+  color: #c01345;
+  font-size: 12px;
+  font-weight: 900;
 }
 @keyframes slb-pulse {
   0% { box-shadow: 0 0 0 0 rgb(255 255 255 / 60%); }
   70%, 100% { box-shadow: 0 0 0 7px rgb(255 255 255 / 0%); }
 }
 @keyframes slb-in {
-  from { opacity: 0; transform: translateY(-8px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 /* 동작 줄이기: 맥박·등장 모션 끔(상태는 그대로 보임). */
-.soop-live-beacon[data-reduce] { animation: none; }
-.soop-live-beacon[data-reduce] .slb-dot { animation: none; }
-/* 모바일: 컴팩트 — 제목 폭 좁히고 '보러가기' 텍스트는 숨김(알약 자체가 링크). */
-/* 모바일: 떠 있는 비콘은 숨긴다(상단이 버튼으로 붐빔) — 대신 하단 '오늘' 버튼이 LIVE로 변신. */
-@media (max-width: 640px) {
-  .soop-live-beacon { display: none; }
+.soop-live-card[data-reduce],
+.soop-live-card[data-reduce] .slc-badge i {
+  animation: none;
 }
-@media (min-width: 641px) {
-  .slb-title { max-width: 300px; }
+/* 모바일: 떠 있는 카드는 숨긴다(상단·하단이 버튼으로 붐빔) — 하단 '오늘' 버튼이 LIVE로 변신. */
+@media (max-width: 640px) {
+  .soop-live-card { display: none; }
 }
 
 
