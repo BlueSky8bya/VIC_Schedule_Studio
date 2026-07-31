@@ -3926,7 +3926,17 @@ export function PublicPoster({
   // rows = 각 주(행)의 경계선 y(표면 비율, 첫 행 top…마지막 행 bottom). 확대/scene에서 주마다
   // 높이가 '다르게' 변하므로(줄바꿈 재배치) y는 전체 선형이 아니라 행 구간별로 매핑해야
   // 들쭉날쭉하지 않다(사용자 실측 리포트 — 6개 모드 비교).
-  type StickerFrame = { x: number; y: number; w: number; h: number; rows: number[] };
+  // sh = 표면의 레이아웃(무변환) 높이 px — 행 안 오프셋을 '비율'이 아니라 'px'로 보존하기 위해
+  // 두 프레임 사이 단위 환산에 쓴다(표면 높이가 모드마다 달라 비율은 같은 px가 아니다).
+  type StickerFrame = {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    sh: number; // 표면 레이아웃(무변환) 높이 px
+    rows: number[]; // 주(행) 경계 y
+    cols: number[]; // 열(요일) 경계 x
+  };
   const sceneOn = avatarCapable && avatarOn;
   const sceneOnRef = useRef(sceneOn);
   sceneOnRef.current = sceneOn;
@@ -3944,7 +3954,8 @@ export function PublicPoster({
     const gr = g.getBoundingClientRect();
     if (sr.width < 1 || sr.height < 1 || gr.width < 1 || gr.height < 1) return;
     // 표면·그리드가 같은 transform scale 안에 있으므로 비율은 배율과 무관하게 정확하다.
-    // 행 경계 = 각 주의 첫 칸 top + 마지막 칸 bottom(표면 비율 y).
+    // 행 경계 = 각 주의 첫 칸 top + 마지막 칸 bottom, 열 경계 = 첫 행 칸들의 left + 마지막
+    // right(표면 비율). 그리드 박스 선형은 테두리·패딩 상수 px까지 늘려 미세 오차가 났다.
     const cells = g.querySelectorAll<HTMLElement>(".public-day");
     const rows: number[] = [];
     for (let i = 0; i < cells.length; i += 7) {
@@ -3955,12 +3966,21 @@ export function PublicPoster({
         (cells[cells.length - 1].getBoundingClientRect().bottom - sr.top) / sr.height
       );
     }
+    const cols: number[] = [];
+    for (let i = 0; i < Math.min(7, cells.length); i++) {
+      cols.push((cells[i].getBoundingClientRect().left - sr.left) / sr.width);
+    }
+    if (cells.length >= 7) {
+      cols.push((cells[6].getBoundingClientRect().right - sr.left) / sr.width);
+    }
     const next: StickerFrame = {
       x: (gr.left - sr.left) / sr.width,
       y: (gr.top - sr.top) / sr.height,
       w: gr.width / sr.width,
       h: gr.height / sr.height,
-      rows
+      sh: s.offsetHeight || 1,
+      rows,
+      cols
     };
     const isCanon = !sceneOnRef.current && posterZoomRef.current === 1;
     setStickerFrames((prev) => {
@@ -3971,7 +3991,9 @@ export function PublicPoster({
         Math.abs(a.w - next.w) < 1e-4 &&
         Math.abs(a.h - next.h) < 1e-4 &&
         a.rows.length === next.rows.length &&
-        a.rows.every((v, i) => Math.abs(v - next.rows[i]) < 1e-4);
+        a.rows.every((v, i) => Math.abs(v - next.rows[i]) < 1e-4) &&
+        a.cols.length === next.cols.length &&
+        a.cols.every((v, i) => Math.abs(v - next.cols[i]) < 1e-4);
       const live = same(prev.live) ? prev.live : next;
       const canon = isCanon ? (same(prev.canon) ? prev.canon : next) : prev.canon;
       return live === prev.live && canon === prev.canon ? prev : { canon, live };
@@ -4004,42 +4026,74 @@ export function PublicPoster({
         : null;
     }
     const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-    // y = 행 구간별 piecewise 매핑 — 확대/scene에서 주마다 높이가 다르게 변하므로 전체 선형은
-    // 그리드 중간에서 어긋난다(실측 리포트). 같은 행 안에서는 선형, 경계 밖은 끝 구간의
-    // 전체 비율로 외삽. 행 수가 다르면(전환 중 순간) 전체 선형으로 폴백.
-    const rowsOk =
-      canon.rows.length >= 2 && canon.rows.length === live.rows.length;
-    const mapY = (y: number, A: number[], B: number[], aH: number, bH: number) => {
-      const n = A.length;
-      const scale = bH / aH;
-      if (y <= A[0]) return B[0] + (y - A[0]) * scale;
-      if (y >= A[n - 1]) return B[n - 1] + (y - A[n - 1]) * scale;
-      for (let k = 0; k < n - 1; k++) {
-        if (y <= A[k + 1]) {
-          const seg = A[k + 1] - A[k];
-          const t = seg > 0 ? (y - A[k]) / seg : 0;
-          return B[k] + t * (B[k + 1] - B[k]);
-        }
-      }
-      return B[n - 1];
+    // x = 열(요일) 구간별 선형 — 칸 안 내용(카드)은 칸 폭에 stretch되므로 칸 안에선 비례가
+    // 정답. 그리드 박스 선형은 테두리 상수 px까지 늘려 '아주 살짝 왼쪽' 오차가 났다(리포트).
+    // y = 행(주) 구간별 + 행 안 오프셋은 '픽셀'로 보존하고 글자 배율(z)만 곱한다 — 행이
+    // 재줄바꿈으로 커져도 카드들은 행 top에 px로 붙어 있으므로, 비례 보간은 스티커만 아래로
+    // 끌어내렸다(리포트 '살짝 밑으로'). 경계 밖은 전체 비율 외삽, 구간 수 불일치는 선형 폴백.
+    const rowsOk = canon.rows.length >= 2 && canon.rows.length === live.rows.length;
+    const colsOk = canon.cols.length >= 2 && canon.cols.length === live.cols.length;
+    const zLive = posterZoom; // scene은 글자 배율 불변(1) — 확대만 행 안 내용 스케일을 바꾼다
+    const seg = (arr: number[], v: number) => {
+      // v가 속한 구간 인덱스(경계 밖은 -1/last)
+      if (v < arr[0]) return -1;
+      for (let k = 0; k < arr.length - 1; k++) if (v <= arr[k + 1]) return k;
+      return arr.length - 1;
     };
+    const mapCols = (v: number, A: number[], B: number[], aW: number, bW: number) => {
+      const n = A.length;
+      const scale = bW / aW;
+      if (v <= A[0]) return B[0] + (v - A[0]) * scale;
+      if (v >= A[n - 1]) return B[n - 1] + (v - A[n - 1]) * scale;
+      const k = seg(A, v);
+      const w = A[k + 1] - A[k];
+      const t = w > 0 ? (v - A[k]) / w : 0;
+      return B[k] + t * (B[k + 1] - B[k]);
+    };
+    // 행 안 px 보존 매핑: canon 오프셋 px × z → live 비율. 행 밖으로 넘치면 행 안으로 클램프.
+    const mapRowsPx = (
+      y: number,
+      A: number[],
+      B: number[],
+      aSH: number,
+      bSH: number,
+      z: number,
+      aH: number,
+      bH: number
+    ) => {
+      const n = A.length;
+      if (y <= A[0]) return B[0] + (y - A[0]) * (bH / aH);
+      if (y >= A[n - 1]) return B[n - 1] + (y - A[n - 1]) * (bH / aH);
+      const k = seg(A, y);
+      const offPx = (y - A[k]) * aSH * z;
+      const mapped = B[k] + offPx / bSH;
+      return Math.min(Math.max(mapped, B[k]), B[k + 1]);
+    };
+    const toX = (x: number) =>
+      colsOk
+        ? mapCols(x, canon.cols, live.cols, canon.w, live.w)
+        : live.x + ((x - canon.x) * live.w) / canon.w;
+    const fromX = (x: number) =>
+      colsOk
+        ? mapCols(x, live.cols, canon.cols, live.w, canon.w)
+        : canon.x + ((x - live.x) * canon.w) / live.w;
     const toY = (y: number) =>
       rowsOk
-        ? mapY(y, canon.rows, live.rows, canon.h, live.h)
+        ? mapRowsPx(y, canon.rows, live.rows, canon.sh, live.sh, zLive, canon.h, live.h)
         : live.y + ((y - canon.y) * live.h) / canon.h;
     const fromY = (y: number) =>
       rowsOk
-        ? mapY(y, live.rows, canon.rows, live.h, canon.h)
+        ? mapRowsPx(y, live.rows, canon.rows, live.sh, canon.sh, 1 / zLive, live.h, canon.h)
         : canon.y + ((y - live.y) * canon.h) / live.h;
     return {
       to: (s: StickerInstance) => ({
         ...s,
-        xRatio: clamp01(live.x + ((s.xRatio - canon.x) * live.w) / canon.w),
+        xRatio: clamp01(toX(s.xRatio)),
         yRatio: clamp01(toY(s.yRatio))
       }),
       from: (s: StickerInstance) => ({
         ...s,
-        xRatio: canon.x + ((s.xRatio - live.x) * canon.w) / live.w,
+        xRatio: fromX(s.xRatio),
         yRatio: fromY(s.yRatio)
       })
     };
