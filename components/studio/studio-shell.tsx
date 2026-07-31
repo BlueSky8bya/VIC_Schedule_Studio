@@ -1917,25 +1917,26 @@ export function StudioShell({
     },
     [getPopZoom]
   );
-  // 리더 라인의 카드 쪽 끝점 — 항상 '붙는 변의 정중앙'(좌/우 변=세로 중앙, 위/아래 변=가로
-  // 중앙)에 연결한다(시청자 팝오버와 동일 규칙 — 사용자 요청). 어느 변이냐는 앵커가 사각형
-  // 밖으로 더 많이 벗어난 축 기준. 앵커가 카드에 덮이면 앵커 그대로(=선 생략 판정).
+  // 리더 라인의 카드 쪽 끝점 — '팝오버 중심 → 앵커' 방향 선이 팝오버 테두리를 뚫는 지점.
+  // 앵커/팝오버가 움직이면 끝점이 테두리를 따라 연속으로 미끄러진다(변 전환에서 툭 안 튐 —
+  // 시청자 팝오버와 동일 규칙). 정면일 땐 자연히 그 변의 정중앙. 덮이면 앵커 그대로(선 생략).
   function popEdgePoint(
     pos: { left: number; top: number },
     size: { w: number; h: number },
     anchor: { x: number; y: number }
   ) {
-    const L = pos.left;
-    const T = pos.top;
-    const R = L + size.w;
-    const B = T + size.h;
-    const cx = Math.round(L + size.w / 2);
-    const cy = Math.round(T + size.h / 2);
-    const dx = anchor.x < L ? L - anchor.x : anchor.x > R ? anchor.x - R : 0;
-    const dy = anchor.y < T ? T - anchor.y : anchor.y > B ? anchor.y - B : 0;
-    if (dx === 0 && dy === 0) return { x: anchor.x, y: anchor.y }; // 덮임 → 선 생략
-    if (dy >= dx) return { x: cx, y: anchor.y < T ? T : B };
-    return { x: anchor.x < L ? L : R, y: cy };
+    const cx = pos.left + size.w / 2;
+    const cy = pos.top + size.h / 2;
+    const dx = anchor.x - cx;
+    const dy = anchor.y - cy;
+    const hw = size.w / 2;
+    const hh = size.h / 2;
+    if (Math.abs(dx) <= hw && Math.abs(dy) <= hh) return { x: anchor.x, y: anchor.y }; // 덮임
+    const t = Math.min(
+      dx !== 0 ? hw / Math.abs(dx) : Infinity,
+      dy !== 0 ? hh / Math.abs(dy) : Infinity
+    );
+    return { x: Math.round(cx + dx * t), y: Math.round(cy + dy * t) };
   }
   const placeEditorPopover = useCallback(() => {
     const ws = workspaceRef.current;
