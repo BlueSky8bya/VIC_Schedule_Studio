@@ -3923,7 +3923,8 @@ export function PublicPoster({
 
   // 태그 필터 카드 — 표면 안 레일용(follow=true: 스크롤 따라오기 ref 부착)과 아바타 scene의
   // 반대편 얇은 레일용(follow=false)이 같은 마크업을 쓴다(1열 압축·폭은 CSS 담당).
-  const renderLegendFilter = (follow: boolean) => (
+  // compact: 인기도 안내를 '🔥 관심' 짧은 라벨 2×2로 축약(얇은 레일 전용).
+  const renderLegendFilter = (follow: boolean, compact = false) => (
     <div
       className="public-legend-vertical"
       aria-label="태그 필터"
@@ -4006,20 +4007,38 @@ export function PublicPoster({
         <p className="legend-tier-line">
           <span className="hm">♥</span> 인기도
         </p>
-        <ul className="legend-tiers">
-          <li>
-            <span className="flame">🔥</span> 관심
-          </li>
-          <li>
-            <span className="flame">🔥🔥</span> 높은 관심
-          </li>
-          <li>
-            <span className="flame">🔥🔥🔥</span> 폭발적
-          </li>
-          <li>
-            <span className="flame">👑</span> 이 달 1위
-          </li>
-        </ul>
+        {compact ? (
+          // 축약형(얇은 레일) — 짧은 라벨 2×2, 칩 상자 없이 불꽃+라벨만.
+          <ul className="legend-tiers is-compact">
+            <li>
+              <span className="flame">🔥</span> 관심
+            </li>
+            <li>
+              <span className="flame">🔥🔥</span> 높은
+            </li>
+            <li>
+              <span className="flame">🔥🔥🔥</span> 폭발
+            </li>
+            <li>
+              <span className="flame">👑</span> 1위
+            </li>
+          </ul>
+        ) : (
+          <ul className="legend-tiers">
+            <li>
+              <span className="flame">🔥</span> 관심
+            </li>
+            <li>
+              <span className="flame">🔥🔥</span> 높은 관심
+            </li>
+            <li>
+              <span className="flame">🔥🔥🔥</span> 폭발적
+            </li>
+            <li>
+              <span className="flame">👑</span> 이 달 1위
+            </li>
+          </ul>
+        )}
       </div>
     </div>
   );
@@ -5230,7 +5249,7 @@ export function PublicPoster({
             className="avatar-side-rail"
             key={`asr-${avatarSide}`}
           >
-            {renderLegendFilter(false)}
+            {renderLegendFilter(false, true)}
           </aside>
         ) : null}
         </div>
