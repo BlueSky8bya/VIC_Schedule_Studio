@@ -1104,10 +1104,10 @@ html {
   pointer-events: auto;
   z-index: 2;
 }
-/* 꾸미기에선 '아바타 자리 끄기' 토글이 점선 상변 바로 위에 떠 있다 — 그 높이만큼 더 올려
-   토글과 안 겹치게(시청자 미리보기 토글은 좌상단 고정이라 해당 없음). */
+/* 꾸미기에선 '아바타 자리 끄기' 토글이 점선 상변 바로 위에 떠 있다 — 토글 높이 + 숨쉴
+   여백(카드↔토글 24px)만큼 더 올린다(시청자 미리보기 토글은 좌상단 고정이라 해당 없음). */
 .poster-page.is-decorate .avatar-top-cards {
-  transform: translateY(calc(-100% - 56px));
+  transform: translateY(calc(-100% - 72px));
 }
 /* 좌우 미러 — 정보 카드는 항상 안쪽(달력 쪽) 모서리, 라이브는 바깥쪽. */
 .poster-page.avatar-scene.avatar-left .avatar-top-cards {
