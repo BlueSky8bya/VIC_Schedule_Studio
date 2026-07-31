@@ -1355,7 +1355,9 @@
 .vt-tip {
   position: absolute;
   bottom: calc(100% + 6px);
-  left: clamp(48px, var(--tip-x, 50%), calc(100% - 48px));
+  /* 여백(양쪽 96px) ≥ 툴팁 반폭 — '하루 평균 N분 머묾 · 최고 N명' 헤더(반폭 ~91px) 기준.
+     studio-shell.css의 동일 규칙과 값이 같아야 한다(이 파일이 뒤에 로드되어 이긴다). */
+  left: clamp(96px, var(--tip-x, 50%), calc(100% - 96px));
   transform: translateX(-50%);
   pointer-events: none;
   display: flex;
