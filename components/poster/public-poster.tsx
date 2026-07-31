@@ -908,6 +908,9 @@ export function PublicPoster({
   // 않게 한다. 묶음의 '가장 큰 내용' 높이에만 맞추므로(과확장 없음) 짧은 쪽만 그만큼 채워진다.
   // callback ref라 그리드가 (재)마운트되는 어떤 경로에서도 자동 재설정된다. deps는 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([schedule.events, view]);
+  // 스티커 좌표 매핑용 실측 대상 — 달력 그리드·표면 엘리먼트(아래 스티커 프레임 실측에서 사용).
+  const stickerGridElRef = useRef<HTMLDivElement | null>(null);
+  const stickerSurfaceElRef = useRef<HTMLElement | null>(null);
   // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조) + 텍스트 긁힘 방지.
   // (P1-MULTI-0로 제거했다가 사용자 요청으로 복원 — 방송 중 기간을 짚어주는 실사용 도구.)
   const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>();
@@ -915,6 +918,7 @@ export function PublicPoster({
     (el: HTMLDivElement | null) => {
       monthGridRef(el);
       rangeSelectRef(el);
+      stickerGridElRef.current = el;
     },
     [monthGridRef, rangeSelectRef]
   );
@@ -3913,23 +3917,96 @@ export function PublicPoster({
     return () => el.removeEventListener("wheel", onWheel);
   }, [showAgenda, decorate]);
 
-  // 스티커 x 보정(해법 1, 2026-08-01) — 아바타 scene에선 표면 안 레일이 접혀 달력이
-  // 1572→1840으로 늘어난다. 스티커는 표면(1840) 비율 좌표라 그대로 그리면 달력 대비 왼쪽으로
-  // 밀려 보임 → 그릴 때만 x에 1840/1572를 곱하고, 꾸미기 드래그 저장 시 역보정한다.
+  // 스티커 좌표 보정(해법 1 고도화, 2026-08-01) — 저장 좌표의 기준은 '기본 지오메트리'
+  // (아바타 OFF·확대 100%)의 표면 비율이다. 아바타 scene(달력 1572→1840 확장)과 글자 확대
+  // (칸 높이 변화)에서는 달력 그리드 사각형 자체가 움직이므로, 상수 대신 **그리드 사각형을
+  // 실측**해 기준(canon) ↔ 현재(live) 사각형 사이 선형 매핑으로 x·y를 함께 보정한다.
+  // 기준 사각형은 기본 지오메트리일 때마다 갱신·기억한다(콜드 스타트로 기준을 아직 못 쟀으면
+  // 옛 x 상수 보정으로 폴백). DB 좌표는 언제나 기준 지오메트리 값 그대로.
+  type StickerFrame = { x: number; y: number; w: number; h: number };
+  const sceneOn = avatarCapable && avatarOn;
+  const sceneOnRef = useRef(sceneOn);
+  sceneOnRef.current = sceneOn;
+  const posterZoomRef = useRef(posterZoom);
+  posterZoomRef.current = posterZoom;
+  const [stickerFrames, setStickerFrames] = useState<{
+    canon: StickerFrame | null;
+    live: StickerFrame | null;
+  }>({ canon: null, live: null });
+  const measureStickerFrames = useCallback(() => {
+    const s = stickerSurfaceElRef.current;
+    const g = stickerGridElRef.current;
+    if (!s || !g) return;
+    const sr = s.getBoundingClientRect();
+    const gr = g.getBoundingClientRect();
+    if (sr.width < 1 || sr.height < 1 || gr.width < 1 || gr.height < 1) return;
+    // 표면·그리드가 같은 transform scale 안에 있으므로 비율은 배율과 무관하게 정확하다.
+    const next: StickerFrame = {
+      x: (gr.left - sr.left) / sr.width,
+      y: (gr.top - sr.top) / sr.height,
+      w: gr.width / sr.width,
+      h: gr.height / sr.height
+    };
+    const isCanon = !sceneOnRef.current && posterZoomRef.current === 1;
+    setStickerFrames((prev) => {
+      const same = (a: StickerFrame | null) =>
+        !!a &&
+        Math.abs(a.x - next.x) < 1e-4 &&
+        Math.abs(a.y - next.y) < 1e-4 &&
+        Math.abs(a.w - next.w) < 1e-4 &&
+        Math.abs(a.h - next.h) < 1e-4;
+      const live = same(prev.live) ? prev.live : next;
+      const canon = isCanon ? (same(prev.canon) ? prev.canon : next) : prev.canon;
+      return live === prev.live && canon === prev.canon ? prev : { canon, live };
+    });
+  }, []);
+  useEffect(() => {
+    if (showAgenda) return;
+    measureStickerFrames();
+    const ro = new ResizeObserver(() => measureStickerFrames());
+    if (stickerSurfaceElRef.current) ro.observe(stickerSurfaceElRef.current);
+    if (stickerGridElRef.current) ro.observe(stickerGridElRef.current);
+    return () => ro.disconnect();
+    // view = 월 전환 시 그리드가 remount되므로 새 엘리먼트를 다시 관찰한다.
+  }, [showAgenda, view.year, view.month, sceneOn, posterZoom, measureStickerFrames]);
+  // 콜드 스타트 폴백(기준 실측 전) — 예전 상수 x 보정만이라도.
   // ⚠ 252(레일 폭)·16(컬럼 gap)은 .poster-surface grid-template-columns와 함께 움직인다.
-  const stickerSceneK =
-    avatarCapable && avatarOn ? POSTER_DESIGN_W / (POSTER_DESIGN_W - 252 - 16) : 1;
+  const FALLBACK_K = POSTER_DESIGN_W / (POSTER_DESIGN_W - 252 - 16);
+  const stickerMap = useMemo(() => {
+    if (!sceneOn && posterZoom === 1) return null; // 기본 지오메트리 = 보정 불필요
+    const { canon, live } = stickerFrames;
+    if (!canon || !live) {
+      return sceneOn
+        ? {
+            to: (s: StickerInstance) => ({
+              ...s,
+              xRatio: Math.min(1, s.xRatio * FALLBACK_K)
+            }),
+            from: (s: StickerInstance) => ({ ...s, xRatio: s.xRatio / FALLBACK_K })
+          }
+        : null;
+    }
+    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+    return {
+      to: (s: StickerInstance) => ({
+        ...s,
+        xRatio: clamp01(live.x + ((s.xRatio - canon.x) * live.w) / canon.w),
+        yRatio: clamp01(live.y + ((s.yRatio - canon.y) * live.h) / canon.h)
+      }),
+      from: (s: StickerInstance) => ({
+        ...s,
+        xRatio: canon.x + ((s.xRatio - live.x) * canon.w) / live.w,
+        yRatio: canon.y + ((s.yRatio - live.y) * canon.h) / live.h
+      })
+    };
+  }, [sceneOn, posterZoom, stickerFrames, FALLBACK_K]);
   const sceneStickers = useMemo(
-    () =>
-      stickerSceneK === 1
-        ? stickers
-        : stickers.map((s) => ({ ...s, xRatio: Math.min(1, s.xRatio * stickerSceneK) })),
-    [stickers, stickerSceneK]
+    () => (stickerMap ? stickers.map(stickerMap.to) : stickers),
+    [stickers, stickerMap]
   );
   const unmapSceneSticker = useCallback(
-    (s: StickerInstance): StickerInstance =>
-      stickerSceneK === 1 ? s : { ...s, xRatio: s.xRatio / stickerSceneK },
-    [stickerSceneK]
+    (s: StickerInstance): StickerInstance => (stickerMap ? stickerMap.from(s) : s),
+    [stickerMap]
   );
 
   // 꾸미기 단축키 안내 접기/펴기 — 선택은 로컬에 기억(방송 준비 중 화면 정리용).
@@ -5261,6 +5338,7 @@ export function PublicPoster({
           data-export-surface
           data-poster-theme={effectivePosterTheme}
           key={`surface-${view.year}-${view.month}`}
+          ref={stickerSurfaceElRef}
         >
           {/* (상단 마스트헤드 제거 — 2026-07-31 사용자 결정 2차. 연·월은 오른쪽 레일 정보
               카드로 이동, 빈 세로 공간만큼 달력이 커진다. 서비스 제목은 상단 크롬에.) */}
