@@ -198,9 +198,6 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
 // 포스터 고정 캔버스 설계 크기(16:9). 화면에선 이 크기를 통째로 축소해 보여주고,
 // export는 이 원본 크기로 캡쳐한다. 작은 화면에서도 내부 비율·스티커 위치가 절대 안 바뀐다.
-// 메모 컬럼(238px)이 표면 폭(1840)에서 차지하는 비율 — 이 안에 스티커가 하나라도 있으면
-// 시청자에게도 메모지를 보여준다(붙인 게 있는데 종이가 사라지면 스티커가 허공에 뜬다).
-const MEMO_COLUMN_RATIO = 238 / 1840;
 // 토스트 한 줄에 들어가게 제목을 줄인다(긴 제목이 화면을 가로지르지 않게).
 function trimTitle(title: string, max = 14) {
   const line = title.split("\n")[0]?.trim() ?? "";
@@ -1045,14 +1042,6 @@ export function PublicPoster({
     monthStickers(view.year, view.month)
   );
   const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
-  // 메모지(왼쪽 238px 컬럼 = 표면 폭의 ≈13%)는 **어느 모드에서도 자리를 비우지 않는다**.
-  // 예전엔 시청자 화면에서 내용이 없으면 컬럼째 접었는데(꾸미기에선 항상 표시), 그러면 달력
-  // 컬럼이 1314→1552px로 넓어져 **표면 안 레이아웃이 모드마다 달라진다** → 비율 좌표(xRatio)로
-  // 저장되는 스티커가 시청자 화면에서 전부 가로로 밀린다(ADR-0004의 "꾸미기 == 시청자" 불변식).
-  // 내용이 없을 때는 '자리'는 그대로 두고 종이의 라벨만 감춘다(아래 is-empty).
-  const memoHasContent =
-    Boolean(schedule.calendar.publicMemo) ||
-    stickers.some((s) => s.xRatio < MEMO_COLUMN_RATIO);
   // 모바일 아젠다에서 사용자가 펼친 '빈 날 구간'(접기는 숨김이 아니라 접힘 — 탭하면 그대로 보인다).
   const [expandedGaps, setExpandedGaps] = useState<Set<string>>(() => new Set());
   // 하트 등급 승급 토스트(시청자) — 내 하트가 등급을 올렸을 때만 잠깐 뜬다.
@@ -3991,6 +3980,13 @@ export function PublicPoster({
                     </span>
                   </button>
                 ) : null}
+                {/* 서비스 제목 — 포스터 표면에서 크롬 중앙(내 관심 ↔ 이 달 기록 사이)으로 이동
+                    (2026-07-31). 표면 밖이라 캡쳐에 안 찍히고(PNG는 연·월만), 스티커 좌표 불침범. */}
+                <h1 className="poster-chrome-title">
+                  <span aria-hidden="true" className="title-spark">✨️</span>
+                  {schedule.calendar.title}
+                  <span aria-hidden="true" className="title-spark">✨️</span>
+                </h1>
                 {/* '이 달 기록' — 비로그인 시청자도 볼 수 있다. 좌상단(미니게임·아바타)·우상단(로그인)·
                     좌우 화살표(월 이동)·하단(미니게임 컨트롤)과 안 겹치는 상단 중앙 크롬 자리. */}
                 <button
@@ -4655,15 +4651,10 @@ export function PublicPoster({
           data-poster-theme={effectivePosterTheme}
           key={`surface-${view.year}-${view.month}`}
         >
-          {/* 마스트헤드 — PNG로 잘려 나가도 "빅토리의 이 달"로 읽혀야 하는 부분.
-              큰 월 숫자(썸네일에서도 보이는 앵커) + 제목 + 브랜드 색 룰. 반짝임(✨)은 캡쳐에선
-              멈추므로 정체성을 모션에 기대지 않는다 — 숫자·굵기·색이 정지 상태의 정체성이다. */}
+          {/* 마스트헤드 — 서비스 제목은 상단 크롬(내 관심 ↔ 이 달 기록 사이)으로 올라갔다
+              (사용자 결정 2026-07-31: export PNG는 연·월만 표기). 표면 헤더는 큰 연·월 하나 —
+              캡쳐에서도 "이 달"이 썸네일 크기에서 읽히는 앵커다. */}
           <div className="poster-heading">
-            <h1>
-              <span aria-hidden="true">✨️</span>
-              {schedule.calendar.title}
-              <span aria-hidden="true">✨️</span>
-            </h1>
             <em>
               {view.year}년 {String(view.month).padStart(2, "0")}월
             </em>
@@ -4680,18 +4671,10 @@ export function PublicPoster({
             stickers={stickers}
           />
 
-          {/* 메모지 — 빈 노트로 띄워두고, 토리님이 이 위에 텍스트 스티커로 하고 싶은 말을 적는다.
-              **모드와 무관하게 항상 렌더한다**: 컬럼을 접으면 달력 폭이 바뀌어 스티커(비율 좌표)가
-              시청자 화면에서 전부 밀린다. 내용이 없을 때는 이름표만 감춰(자리는 유지) '메모'라고
-              적힌 빈 상자 — 관리 도구의 문법 — 로 보이지 않게 한다. 꾸미기에선 붙일 종이를 알아야
-              하므로 이름표를 그대로 둔다(둘 다 자리는 같아 지오메트리는 동일). */}
-          <aside className="public-side" aria-label="메모">
-            <div className={`public-memo${memoHasContent || decorate ? "" : " is-empty"}`}>
-              <strong>메모</strong>
-              <div className="memo-body" />
-            </div>
-          </aside>
-
+          {/* (메모지 컬럼 삭제 — 2026-07-31 사용자 결정. 거의 안 쓰여 왼쪽 238px를 달력에
+              돌려줬다. 모든 모드(시청자·꾸미기·캡쳐)가 같은 2컬럼 지오메트리라 스티커 비율
+              좌표는 모드 간 일치. 과거 달에 메모지 위에 붙였던 스티커는 그대로 둔다 — 위치가
+              어색하면 꾸미기에서 직접 옮긴다.) */}
           <section className="public-calendar-area">
             <div className="weekday-row" aria-hidden="true">
               {WEEKDAYS.map((weekday, index) => (

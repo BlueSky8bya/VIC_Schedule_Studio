@@ -1420,8 +1420,9 @@ html[data-reduce-motion] .poster-export-reward-spark {
   width: 1840px;
   height: auto;
   display: grid;
-  /* 양옆 레일을 합쳐 ~20px 줄여, 가운데 달력(7칸 1fr)이 칸당 약 3px씩 넓어지게 한다. */
-  grid-template-columns: 238px minmax(0, 1fr) 220px;
+  /* 메모 컬럼(238px) 삭제(2026-07-31) — 왼쪽 폭 전부를 달력(7칸 1fr)에 돌려준다.
+     표면 폭 1840은 불변, 모든 모드가 같은 2컬럼이라 스티커 비율 좌표는 모드 간 일치. */
+  grid-template-columns: minmax(0, 1fr) 220px;
   /* 제목줄(auto) + 본문(내용 높이) — 본문이 자라면 표면도 함께 자란다. */
   grid-template-rows: auto auto;
   gap: 16px;
@@ -1431,52 +1432,22 @@ html[data-reduce-motion] .poster-export-reward-spark {
   padding: 18px;
   box-shadow: var(--shadow-2);
 }
-/* 메모지를 접은 시청자 화면 — 남는 238px는 달력이 가져간다(라벨만 붙은 빈 상자를 안 남긴다).
-   표면 폭(1840)은 그대로라 스티커 비율 좌표는 안전하고, 애초에 그 영역에 스티커가 있으면 접지 않는다. */
-/* (삭제됨) .poster-surface.no-memo — 메모 컬럼을 접어 달력 폭을 넓히던 규칙. 표면 안 레이아웃이
-   시청자에서만 달라져 스티커(비율 좌표)가 전부 가로로 밀렸다. 메모 칸은 이제 항상 자리를 지킨다. */
-/* 내용이 없는 메모지: 자리는 그대로 두고(지오메트리 동일) 이름표만 감춘다 — '메모'라고 적힌
-   빈 상자는 관리 도구의 문법이라 시청자 포스터에 어울리지 않는다. */
-.public-memo.is-empty > strong {
-  visibility: hidden;
-}
-
-/* 캡쳐 영역 안에 들어가는 제목 + 연/월 */
-/* 마스트헤드. 예전엔 1840px 캔버스 위에 32px 제목 한 줄뿐이라(폭의 1.7%) 제목을 잘라내면 아무
-   달력 템플릿과 구분이 안 됐다 — 공유되는 PNG는 썸네일 크기에서 "누구의 것인지" 읽혀야 한다.
-   큰 월 숫자 + 굵은 제목 + 브랜드 색 룰로 정지 상태의 정체성을 만든다. */
-/* 가운데 정렬 2단: 제목(가장 큼) → 연·월(그다음). 예전엔 왼쪽에 거대한 골드 월 숫자(72px)를
-   뒀는데 두 가지가 나빴다: ① 좌우 무게가 안 맞아 헤더가 기울어 보였고 ② 골드(#ffc83d)가 크림
-   배경에서 대비 1.52:1이라 '크지만 안 읽히는' 글자였다 — 크기로 강조하려다 눈만 피로해진다.
-   강조는 크기 + 대비로 같이 만든다. 진한 골드(#7c4d05, 7.06:1)로 연·월을 또렷하게. */
+/* 캡쳐 영역 안에 들어가는 마스트헤드 = 큰 연·월 하나(2026-07-31 재편).
+   서비스 제목은 상단 크롬(.poster-chrome-title)으로 올라가 캡쳐 밖 — PNG는 연·월만 표기
+   (사용자 결정). 썸네일에서 "이 달"이 읽히는 앵커라 크기와 대비(진한 골드 #7c4d05, 7.06:1)를
+   함께 준다. 크기로만 강조하면 대비가 낮을 때 '크지만 안 읽히는' 글자가 된다. */
 .poster-heading {
   grid-column: 1 / -1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 2px 0 12px;
+  padding: 0 0 8px;
   border-bottom: 4px solid var(--accent, #f4b740);
   margin-bottom: 12px;
 }
-.poster-heading h1 {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 0;
-  font-size: 54px;
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  line-height: 1.04;
-  color: var(--ink, #23303f);
-}
-/* 연·월 — 제목과 함께 마스트헤드의 두 기둥. 큰 글씨로 "2026년 08월"을 통째로 보여준다
-   (예전 '08'만 큰 골드 숫자로 띄우던 방식은 좌우 무게가 안 맞고 대비도 1.52:1이라 폐기).
-   KST 캡션은 뺐다 — 한국 시청자 대상이라 정보값이 0에 가깝고 잡음만 늘렸다.
-   색은 진한 골드(#7c4d05, 대비 7.06:1) — 크기와 대비를 함께 줘야 '크게 강조'가 실제로 읽힌다. */
 .poster-heading em {
   color: #7c4d05;
-  font-size: 44px;
+  font-size: 54px;
   font-weight: 900;
   font-style: normal;
   letter-spacing: -0.01em;
@@ -1484,16 +1455,20 @@ html[data-reduce-motion] .poster-export-reward-spark {
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
 }
-.poster-heading h1 span {
-  color: #d59a93;
-  font-size: 26px;
+
+/* 서비스 제목 — 상단 크롬 중앙(내 관심 ↔ 이 달 기록 사이). 표면 밖이라 캡쳐 비침범.
+   양옆 ✨는 title-spark(모바일 아젠다와 동일 반짝임)를 공유한다. */
+.poster-chrome-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 27px;
   font-weight: 900;
-  /* 제목 양옆 ✨가 천천히 반짝/둥실 — 작은 시그니처(좌우 엇갈리게). 캡쳐에선 정지 프레임. */
-  animation: spark-twinkle 2.8s ease-in-out infinite;
-  transform-origin: center;
-}
-.poster-heading h1 span:last-of-type {
-  animation-delay: 1.4s;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--ink, #23303f);
+  white-space: nowrap;
 }
 
 /* 내 관심(♥) 토글 — 헤더 띠 가운데 칸(계정변경/미리보기와 같은 줄). 포스터 표면 밖이라 캡쳐
@@ -1561,7 +1536,8 @@ html[data-reduce-motion] .poster-export-reward-spark {
 }
 /* 모바일 아젠다 제목(✨ 빅토리 일정표 ✨)의 스파클도 동일하게 반짝/둥실.
    (.agenda-header h1 span 의 부제목용 block 스타일을 덮어쓴다.) */
-.agenda-header .title-spark {
+.agenda-header .title-spark,
+.poster-chrome-title .title-spark {
   display: inline-block;
   margin: 0;
   font-size: 1em;
@@ -1570,7 +1546,8 @@ html[data-reduce-motion] .poster-export-reward-spark {
   transform-origin: center;
   animation: spark-twinkle 2.8s ease-in-out infinite;
 }
-.agenda-header .title-spark:last-of-type {
+.agenda-header .title-spark:last-of-type,
+.poster-chrome-title .title-spark:last-of-type {
   animation-delay: 1.4s;
 }
 @keyframes spark-twinkle {
@@ -1580,12 +1557,7 @@ html[data-reduce-motion] .poster-export-reward-spark {
 /* (옛 연·월 캡션 규칙은 삭제 — 위 마스트헤드 정의(.poster-heading em, 44px 진한 골드)를 그대로
    덮어써서 큰 글씨가 18px 회색으로 되돌아가고 있었다. 같은 선택자를 두 곳에 두지 않는다.) */
 
-.public-side {
-  display: flex;
-  flex-direction: column;
-  align-self: stretch; /* #2: 달력 맨 밑줄까지 늘어지도록 */
-  gap: 14px;
-}
+/* (.public-side 메모 컬럼 규칙 삭제 — 2026-07-31 메모 기능 제거.) */
 
 /* 오른쪽: 업 도움 카드(들) + 색상 안내. 달력 맨 밑줄까지 늘어지게(끝 선 정렬). */
 .public-right {
@@ -2040,10 +2012,6 @@ html[data-reduce-motion] .poster-export-reward-spark {
   font-size: 11px;
   font-weight: 900;
 }
-/* 빈 줄은 시청자 화면에서 간격으로 남긴다 */
-.public-memo .memo-body p.memo-blank {
-  min-height: 0.6em;
-}
 
 
 /* A: "관심 높음" 배지 — 집계 기반(숫자 비노출). 시청자 화면에서만 보인다.
@@ -2140,82 +2108,12 @@ html[data-reduce-motion] .poster-export-reward-spark {
 }
 
 
-.public-memo,
 .support-card {
   border: 1px solid #ece2cd;
   border-radius: var(--r-lg);
   background: #fffdf6;
   box-shadow: var(--shadow-2);
   overflow: hidden;
-}
-
-.public-memo {
-  display: flex;
-  flex-direction: column;
-  flex: 1; /* #2: 좌측 칸 높이를 가득 채워 달력 맨 밑줄까지 */
-  align-self: stretch;
-  text-align: center;
-  /* #2: 흰 공간이 아니라 '메모지'로 보이도록 색으로 구분 */
-  border-color: #f0e6c8;
-  background: #fffdf5;
-}
-.public-memo .memo-body {
-  flex: 1;
-  text-align: left;
-  /* 메모지 같은 옅은 가로 줄 */
-  background-image: repeating-linear-gradient(
-    transparent,
-    transparent 27px,
-    #f1e9d2 27px,
-    #f1e9d2 28px
-  );
-}
-.public-memo .memo-body p {
-  font-weight: 700;
-  color: #5b5234;
-}
-.memo-placeholder {
-  color: #bcae84 !important;
-  font-weight: 700 !important;
-  text-align: center;
-  line-height: 1.7;
-}
-
-.public-memo .memo-body {
-  display: grid;
-  gap: 8px;
-  padding: 16px 12px;
-}
-
-.public-memo strong {
-  display: block;
-  border-bottom: 1px solid #f0ead9;
-  background: #fbf4e2;
-  padding: 8px;
-  color: #6b5b34;
-  font-size: 18px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-}
-
-.memo-chip {
-  display: block;
-  border-bottom: 1px solid #111827;
-  padding: 3px;
-}
-
-.memo-chip.gray {
-  background: #b8b8b8;
-}
-
-.memo-chip.lavender {
-  background: #e8c8d6;
-}
-
-.public-memo p {
-  margin: 0;
-  white-space: pre-line;
-  line-height: 1.5;
 }
 
 .public-calendar-area {
@@ -2291,23 +2189,18 @@ html[data-reduce-motion] .poster-export-reward-spark {
 .poster-surface[data-enter] .sticker-layer {
   --ps: 34px;
 }
-.poster-surface[data-enter] .public-side {
-  --ps: 42px; /* 왼쪽 끝(메모) — 중심에서 멀어 더 많이 */
-}
 .poster-surface[data-enter] .public-right {
   --ps: 42px; /* 오른쪽 끝(색상 안내) — 더 많이 */
 }
 .poster-surface[data-enter="next"] .poster-heading,
 .poster-surface[data-enter="next"] .public-calendar-area,
 .poster-surface[data-enter="next"] .sticker-layer,
-.poster-surface[data-enter="next"] .public-side,
 .poster-surface[data-enter="next"] .public-right {
   animation: poster-slide-next 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
 .poster-surface[data-enter="prev"] .poster-heading,
 .poster-surface[data-enter="prev"] .public-calendar-area,
 .poster-surface[data-enter="prev"] .sticker-layer,
-.poster-surface[data-enter="prev"] .public-side,
 .poster-surface[data-enter="prev"] .public-right {
   animation: poster-slide-prev 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
