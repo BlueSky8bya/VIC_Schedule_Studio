@@ -5807,20 +5807,24 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-close:act
   pointer-events: none;
 }
 .detail-anchor-link line {
-  stroke: color-mix(in srgb, var(--dt-line, #d3a94f) 72%, transparent);
-  stroke-width: 2;
-  stroke-dasharray: 3 5;
+  /* 연한 태그 색(노랑 등)도 크림 배경에서 읽히게 — 잉크를 30% 섞어 어둡히고 굵기·간격 업,
+     흰 헤일로(drop-shadow)로 어떤 카드 위를 지나도 끊겨 안 보인다. */
+  stroke: color-mix(in srgb, var(--dt-line, #d3a94f) 70%, #4a3a18);
+  stroke-width: 2.5;
+  stroke-dasharray: 5 6;
   stroke-linecap: round;
+  filter: drop-shadow(0 0 1.5px rgb(255 255 255 / 90%));
   animation: detail-link-flow 0.9s linear infinite;
 }
 .detail-anchor-link circle {
-  fill: var(--dt-line, #d3a94f);
+  r: 5.5px;
+  fill: color-mix(in srgb, var(--dt-line, #d3a94f) 78%, #4a3a18);
   stroke: #fff;
   stroke-width: 2;
 }
 @keyframes detail-link-flow {
   to {
-    stroke-dashoffset: -8;
+    stroke-dashoffset: -11; /* dasharray(5+6) 한 주기와 일치 — 루프 이음새 없음 */
   }
 }
 html[data-reduce-motion] .detail-anchor-link line {
