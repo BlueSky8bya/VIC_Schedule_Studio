@@ -630,35 +630,23 @@ export function StudioShell({
   // 그 역할엔 안 보여야 하므로 raw isDeveloper가 아니라 effectiveRole로 판정.
   const avatarRoleOk = effectiveRole === "owner" || effectiveRole === "developer";
   const avatarEditor = avatarRoleOk && !isNarrow && avatarWideEnough;
-  const [avatarOn, setAvatarOn] = useState(true);
+  // 편집실 아바타 자리는 항상 켜짐(끄기 없음 — 사용자 결정 2026-07-31). 좌/우 위치만 고른다.
+  // (시청자 포스터의 켜기/끄기 토글은 그대로 — vic_avatar_on 키는 포스터 전용으로 남는다.)
   // 최초(메모리 없음) 디폴트는 '왼쪽', 이후엔 마지막 값(편집실·미리보기 공유) 복원.
   const [avatarSide, setAvatarSide] = useState<"left" | "right">("left");
-  // localStorage(켜짐 여부)를 읽기 전엔 scene을 렌더하지 않는다 — 기본값(켜짐)으로 한 번 그렸다가
-  // 저장값(꺼짐)으로 되돌리며 0.x초 깜빡이던 문제. useLayoutEffect라 '페인트 전'에 확정돼(SSR HTML은
-  // scene OFF 기준 → 하이드레이션 일치) 켜짐·꺼짐 어느 쪽도 한 프레임도 안 깜빡인다.
+  // localStorage(좌/우)를 읽기 전엔 scene을 렌더하지 않는다 — 기본값(왼쪽)으로 한 번 그렸다가
+  // 저장값(오른쪽)으로 점프하는 깜빡임 방지. useLayoutEffect라 '페인트 전'에 확정돼(SSR HTML은
+  // scene OFF 기준 → 하이드레이션 일치) 어느 쪽도 한 프레임도 안 깜빡인다.
   const [avatarStorageRead, setAvatarStorageRead] = useState(false);
   useLayoutEffect(() => {
     if (!avatarEditor || typeof window === "undefined") return;
     try {
-      if (window.localStorage.getItem("vic_avatar_on") === "0") setAvatarOn(false);
       if (window.localStorage.getItem("vic_avatar_side") === "right") setAvatarSide("right");
     } catch {
       /* 저장소 불가 무시 */
     }
     setAvatarStorageRead(true);
   }, [avatarEditor]);
-  function toggleAvatarOn() {
-    hapticTick();
-    setAvatarOn((v) => {
-      const next = !v;
-      try {
-        window.localStorage.setItem("vic_avatar_on", next ? "1" : "0");
-      } catch {
-        /* 무시 */
-      }
-      return next;
-    });
-  }
   function pickAvatarSide(side: "left" | "right") {
     hapticTick();
     setAvatarSide(side);
@@ -668,7 +656,7 @@ export function StudioShell({
       /* 무시 */
     }
   }
-  const avatarSceneOn = avatarEditor && avatarOn && avatarStorageRead;
+  const avatarSceneOn = avatarEditor && avatarStorageRead;
   // 새로고침 직후 슬라이드/등장 애니가 한 번 튀는 것 방지 — 마운트 전엔 애니 끄고, 마운트 후 켠다
   // (이후 사용자 토글에서만 통통 애니).
   const [avatarReady, setAvatarReady] = useState(false);
@@ -1870,6 +1858,76 @@ export function StudioShell({
     cancelPeekClose(); // 이전 팝오버의 지연 close 타이머가 새 팝오버를 닫는 것 방지
     setZoomPeek(null);
   }, [calZoom, view.year, view.month, editorVisible, selectedEventId, viewerMode, cancelPeekClose]);
+
+  // ── 편집 카드 = 앵커 팝오버(데스크탑) — 오른쪽 고정 패널 대신 '선택한 날짜 칸 옆'에 뜬다.
+  // 좌표는 .studio-workspace(position:relative) 기준 absolute. 칸 오른쪽에 자리가 없으면 왼쪽으로
+  // 뒤집고(flip), 뷰포트 아래로 넘치면 위로 당긴다. 다른 날짜를 고르면 닫히지 않고 CSS transition으로
+  // 그 칸 옆으로 미끄러져 이동. 모바일(isNarrow)은 기존 시트(m-edit-sheet) 그대로.
+  const workspaceRef = useRef<HTMLElement | null>(null);
+  const editorPanelRef = useRef<HTMLElement | null>(null);
+  const [editorPopPos, setEditorPopPos] = useState<{ left: number; top: number } | null>(null);
+  const placeEditorPopover = useCallback(() => {
+    const ws = workspaceRef.current;
+    const panel = editorPanelRef.current;
+    const cell = calPanelRef.current?.querySelector<HTMLElement>(
+      `.studio-day[data-isodate="${selectedDate}"]`
+    );
+    if (!ws || !panel || !cell) return;
+    const wsRect = ws.getBoundingClientRect();
+    const cellRect = cell.getBoundingClientRect();
+    const popW = panel.offsetWidth || 384;
+    const popH = panel.offsetHeight || 480;
+    const GAP = 12;
+    const PAD = 8;
+    // 가로: 칸 오른쪽 우선, 안 들어가면 왼쪽으로 flip. 그래도 안 되면 안쪽으로 클램프.
+    let left = cellRect.right - wsRect.left + GAP;
+    if (left + popW > wsRect.width - PAD) left = cellRect.left - wsRect.left - popW - GAP;
+    left = Math.max(PAD, Math.min(left, wsRect.width - popW - PAD));
+    // 세로: 칸 상단 정렬이 기본. 뷰포트(고정 상단바 아래~바닥) 안에 다 보이게 당기고,
+    // workspace 밖으로도 안 나가게 마지막으로 클램프.
+    let top = cellRect.top - wsRect.top - 4;
+    const vpTop = 64 - wsRect.top + PAD; // 상단바(~57px) 아래 (workspace 좌표계)
+    const vpBottom = window.innerHeight - wsRect.top - PAD;
+    if (top + popH > vpBottom) top = vpBottom - popH;
+    if (top < vpTop) top = vpTop;
+    top = Math.max(PAD, Math.min(top, Math.max(PAD, ws.offsetHeight - popH - PAD)));
+    const next = { left: Math.round(left), top: Math.round(top) };
+    setEditorPopPos((p) => (p && p.left === next.left && p.top === next.top ? p : next));
+  }, [selectedDate]);
+  useLayoutEffect(() => {
+    if (!editorVisible || isNarrow) {
+      setEditorPopPos(null);
+      return;
+    }
+    placeEditorPopover();
+    // 위치에 영향 주는 것들: 선택 대상·달·확대 배율·아바타 scene(달력 폭)·에디터 remount.
+  }, [
+    editorVisible,
+    isNarrow,
+    placeEditorPopover,
+    selectedEventId,
+    editorKey,
+    view,
+    calZoom,
+    avatarSceneOn,
+    avatarSide
+  ]);
+  // 창 리사이즈·팝오버 자체 높이 변화(접기 펼침, 오류 배너 등)에도 재배치 — 바닥 클램프가 따라간다.
+  useEffect(() => {
+    if (!editorVisible || isNarrow) return;
+    const onResize = () => placeEditorPopover();
+    window.addEventListener("resize", onResize);
+    const panel = editorPanelRef.current;
+    const ro =
+      typeof ResizeObserver !== "undefined" && panel
+        ? new ResizeObserver(() => placeEditorPopover())
+        : null;
+    if (panel && ro) ro.observe(panel);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      ro?.disconnect();
+    };
+  }, [editorVisible, isNarrow, placeEditorPopover]);
 
   useLayoutEffect(() => {
     const viewKey = `${view.year}-${view.month}`;
@@ -5044,12 +5102,11 @@ export function StudioShell({
             <div className="viewer-preview-actions">{previewNav}</div>
           </div>
         ) : null}
+        {/* 아바타 자리: 미리보기는 시청자 화면 그대로(포스터 자체 상태, 켜기/끄기 토글 유지).
+            편집실 작업화면은 항상 켜짐(좌/우만)이라 controlled 공유를 끊었다 — vic_avatar_side
+            localStorage 키는 여전히 공유돼 좌/우 선택은 양쪽에서 이어진다. */}
         <PublicPoster
           avatarSlot={avatarRoleOk}
-          avatarOn={avatarOn}
-          avatarSide={avatarSide}
-          onAvatarToggle={toggleAvatarOn}
-          onAvatarSide={pickAvatarSide}
           initialMonth={view.month}
           initialNarrow={isNarrow}
           initialYear={view.year}
@@ -5345,37 +5402,28 @@ export function StudioShell({
               📊 월별 인사이트
             </button>
           ) : null}
-          {/* 아바타 자리 토글 — 월별 인사이트 오른쪽. */}
+          {/* 아바타 자리 — 항상 켜짐(끄기 없음), 좌/우 위치만 고른다. 월별 인사이트 오른쪽. */}
           {avatarEditor ? (
             <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
-              <button
-                type="button"
-                className={`avatar-ctl-toggle${avatarOn ? " on" : ""}`}
-                aria-pressed={avatarOn}
-                onClick={toggleAvatarOn}
-              >
-                🎙️ 아바타 자리 {avatarOn ? "끄기" : "켜기"}
-              </button>
-              {avatarOn ? (
-                <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
-                  <button
-                    type="button"
-                    className={avatarSide === "left" ? "on" : ""}
-                    aria-pressed={avatarSide === "left"}
-                    onClick={() => pickAvatarSide("left")}
-                  >
-                    왼쪽
-                  </button>
-                  <button
-                    type="button"
-                    className={avatarSide === "right" ? "on" : ""}
-                    aria-pressed={avatarSide === "right"}
-                    onClick={() => pickAvatarSide("right")}
-                  >
-                    오른쪽
-                  </button>
-                </div>
-              ) : null}
+              <span className="avatar-ctl-label">🎙️ 아바타 자리</span>
+              <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
+                <button
+                  type="button"
+                  className={avatarSide === "left" ? "on" : ""}
+                  aria-pressed={avatarSide === "left"}
+                  onClick={() => pickAvatarSide("left")}
+                >
+                  왼쪽
+                </button>
+                <button
+                  type="button"
+                  className={avatarSide === "right" ? "on" : ""}
+                  aria-pressed={avatarSide === "right"}
+                  onClick={() => pickAvatarSide("right")}
+                >
+                  오른쪽
+                </button>
+              </div>
             </div>
           ) : null}
           {canEdit && isWorldCupMonth(view.year, view.month) ? (
@@ -5502,7 +5550,10 @@ export function StudioShell({
         </div>
       ) : null}
 
-      <section className={`studio-workspace ${editorVisible ? "editor-open" : ""}`}>
+      <section
+        className={`studio-workspace ${editorVisible ? "editor-open" : ""}`}
+        ref={workspaceRef}
+      >
         {/* 아바타 scene에선 색상필터가 우측 rail로 가므로 좌측 칸은 비운다(칸 폭도 0). */}
         <aside className="studio-left-panel">{avatarSceneOn ? null : studioFilterPanel}</aside>
 
@@ -6098,7 +6149,17 @@ export function StudioShell({
             보이게) — 하단 중앙 플로팅. 100%에선 사라져 평소 화면을 어지럽히지 않는다. */}
         {zoomCollapse ? <div className="cal-zoom-float">{renderCalZoomCtl()}</div> : null}
 
-        <aside className={`event-editor-panel${panelSaved ? " panel-saved" : ""}`}>
+        {/* 앵커 팝오버 — 위치는 placeEditorPopover가 실측 배치(선택 칸 옆, flip·클램프).
+            좌표 확정 전 한 프레임은 숨겨 (0,0) 번쩍임을 막는다. */}
+        <aside
+          className={`event-editor-panel${panelSaved ? " panel-saved" : ""}`}
+          ref={editorPanelRef}
+          style={
+            editorPopPos
+              ? { left: editorPopPos.left, top: editorPopPos.top }
+              : { visibility: "hidden" }
+          }
+        >
           {/* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */}
           {!canEdit ? (
             renderReadonlyDetail()

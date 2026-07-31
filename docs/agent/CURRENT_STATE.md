@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-07-30
+Last Updated: 2026-07-31
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -109,6 +109,15 @@ improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능
   월 내비 헤더 통합(사용자 요청, `0f88418`) · 3화면 모바일 타이포(`6a6129c`) ·
   4화면 꾸미기 크롬 라벨(표면 불가침, `2f31c05`). 5화면(시청자 크롬)은 기정돈 판단으로
   피드백 주도 전환. **이후 리디자인은 사용자 지적 → 그 지점 수정 루프.**
+- **편집 카드 = 앵커 팝오버 전환(2026-07-31, 사용자 결정 — 목업 승인 후)**: 데스크톱 편집
+  카드가 우측 고정 슬라이드 패널이 아니라 **선택한 날짜 칸 옆에 뜨는 앵커 팝오버**(absolute,
+  workspace 기준·JS 실측 배치 placeEditorPopover — 오른쪽 우선/왼쪽 flip/뷰포트 클램프,
+  재선택 시 닫히지 않고 transition으로 이동). 달력은 편집 중에도 전폭 유지(그리드 3번째
+  칸·avatar-scene fixed 편집창·≤1180 전폭 행 규칙 전부 제거). 모바일 시트는 그대로.
+  기존 바깥클릭 닫기/Esc/serialized 큐 로직 무변. 아울러 **편집실 아바타 자리 = 항상 켜짐**
+  (끄기 토글 제거, 좌/우만 선택 — vic_avatar_on 키는 이제 시청자 포스터 전용, 시청자
+  미리보기는 controlled 공유를 끊고 포스터 자체 상태로). fixture+Playwright 실측(anchor/
+  flip/bottom-clamp/재클릭 닫기/아바타 컨트롤) 통과.
 - **피드백 루프 3회전(2026-07-30, `4a06856`·`60ba610`·`43ebf8f`)**: 사용자 스크린샷 지적 →
   즉시 수정 방식. 주요 결정·함정 기록:
   - **그림판 왼쪽 기둥 = 달력 카드만(콘텐츠 높이, 항상 펼침)** — '접기=좌측 수납' 안도,

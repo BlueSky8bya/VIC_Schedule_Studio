@@ -3319,29 +3319,17 @@ html[data-reduce-motion] .role-segment button.active {
 
 .studio-workspace {
   display: grid;
-  /* 좌: 색상 필터(최소 폭) / 가운데: 달력(오른쪽 끝까지) / 우: 새 일정 카드(닫힘=0 → 슬라이드 인).
-     gap은 0으로 두고 좌측은 margin, 우측은 패딩으로 간격을 줘서 닫혔을 때 달력이 끝까지 가게 한다. */
-  grid-template-columns: 188px minmax(0, 1fr) 0px;
+  /* 좌: 색상 필터(최소 폭) / 가운데: 달력(오른쪽 끝까지). 편집 카드는 이제 그리드 칸이 아니라
+     '선택한 날짜 칸 옆'에 뜨는 앵커 팝오버(absolute) — 달력이 열림/닫힘에 reflow하지 않는다. */
+  grid-template-columns: 188px minmax(0, 1fr);
   gap: 0;
   padding: 18px;
-  /* 편집 패널(오른쪽)이 업 도움 등으로 길어져도 가운데 달력이 따라 늘어나지 않게 — 각 칸이 제
-     높이를 갖는다(기본 stretch면 가장 큰 칸 높이에 달력이 끌려 늘어났다). */
+  /* 팝오버(absolute) 좌표 기준. */
+  position: relative;
+  /* 각 칸이 제 높이를 갖는다(기본 stretch면 가장 큰 칸 높이에 달력이 끌려 늘어났다). */
   align-items: start;
-  /* 편집패널·아바타 도크는 미닫이문처럼 천천히 부드럽게 열린다 — grid 폭(편집패널)과 margin
-     (아바타 자리)을 같은 긴 ease-out으로 동기화. 폼은 우측 정렬(justify-items:end)이라 칸이
-     넓어질수록 오른쪽 벽에서 미끄러져 들어오는 진짜 슬라이드가 된다(스냅·오버슈트 = '확 켜짐').
-     ease-out(0.25,1,0.5,1)은 중간 속도변화가 완만해 달력 reflow 프레임 부담도 고르게 퍼진다. */
-  transition:
-    grid-template-columns 0.52s cubic-bezier(0.25, 1, 0.5, 1),
-    margin 0.52s cubic-bezier(0.25, 1, 0.5, 1);
-}
-/* 날짜를 선택하면 우측 카드(폼 446 + 좌측 거터 16=--space-4)가 밀고 들어온다.
-   컬럼폭 462 = 폼 446 + 거터 16 (이 파생 관계 깨지면 슬라이드 중 reflow 생김). */
-.studio-workspace.editor-open {
-  /* 편집패널 462→400: 폼(고정폭, 아래 .event-editor-panel form)과 반드시 함께 줄여야 한다 —
-     폼만 남으면 overflow:hidden+우측정렬이라 왼쪽이 잘린다. 400 = 폼 384 + 좌거터 16.
-     태그 칩(minmax 94px)이 3열 유지하는 하한(~370) 위 안전값. */
-  grid-template-columns: 188px minmax(0, 1fr) 400px;
+  /* 아바타 도크는 미닫이문처럼 천천히 부드럽게 열린다(margin 슬라이드). */
+  transition: margin 0.52s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 /* ── 편집실 아바타 자리(시청자와 같이 보기용) — fixed 도크. 시청자 포스터는 1/4(25vw)지만 편집실은
@@ -3353,16 +3341,9 @@ html[data-reduce-motion] .role-segment button.active {
 .studio-shell.avatar-scene.avatar-left .studio-workspace {
   margin-left: 20vw;
 }
-/* 아바타 scene: 좌측 색상필터 칸 비움(0) — 필터는 우측 rail로. 편집패널은 464→380으로 절약해
-   달력 폭에 보탠다. 달력·편집패널 칸은 명시 고정(좌칸 0으로 당겨져 달력이 사라지는 것 방지). */
+/* 아바타 scene: 좌측 색상필터 칸 비움(0) — 필터는 우측 rail로. 편집 카드는 팝오버라 칸 불필요. */
 .studio-shell.avatar-scene .studio-workspace {
-  grid-template-columns: 0 minmax(0, 1fr) 0;
-}
-.studio-shell.avatar-scene .studio-workspace.editor-open {
-  /* 편집패널 고정폭(328). 유동 minmax(330~360)면 1fr과 함께 '유연 트랙 2개'라 여닫는 동안 그리드가
-     매 프레임 트랙 분배를 다시 풀어 비-아바타(464 고정)보다 훨씬 심하게 끊겼다. 고정폭이면 유연
-     트랙은 1fr 하나뿐 → 비-아바타처럼 가볍게 슬라이드. (달력 양보폭은 30px 차이라 영향 작다.) */
-  grid-template-columns: 0 minmax(0, 1fr) 328px;
+  grid-template-columns: 0 minmax(0, 1fr);
 }
 /* 단축키 안내바도 아바타 rail 쪽으로 안 들어가게 같이 비켜선다(workspace와 동일 슬라이드). */
 .studio-shell.avatar-scene .kbd-hints {
@@ -3377,54 +3358,8 @@ html[data-reduce-motion] .role-segment button.active {
 .studio-shell.avatar-scene .studio-calendar-panel {
   grid-column: 2;
 }
-.studio-shell.avatar-scene .event-editor-panel {
-  grid-column: 3;
-}
-/* 편집창도 아바타 도크(fixed)처럼 스크롤을 따라오게 — sticky는 이 레이아웃(grid+scroll)에서 잘 안
-   붙어서, 검증된 rail과 같은 position:fixed로. grid col3(328) 트랙은 그대로 자리를 예약해 달력 폭은
-   유지되고, fixed 편집창이 그 예약 칸 위에 겹쳐 화면에 고정된다. 편집창이 열렸을 때만 fixed. */
-.studio-shell.avatar-scene .studio-workspace.editor-open .event-editor-panel {
-  position: fixed;
-  /* --dock-top = 액션바 하단 실측(JS, 스크롤/확대 추적). 침범도 빈 공간도 구조적으로 없음. */
-  top: var(--dock-top, 148px);
-  bottom: 8px;
-  width: 328px;
-  overflow-y: auto;
-  z-index: 5;
-  animation: ed-fixed-in 0.52s cubic-bezier(0.25, 1, 0.5, 1) both;
-}
-/* 아바타 왼쪽(도크 좌) → 편집창은 화면 오른쪽 끝. 아바타 오른쪽(도크 우 20vw) → 도크 왼쪽에. */
-.studio-shell.avatar-scene.avatar-left .studio-workspace.editor-open .event-editor-panel {
-  right: 18px;
-}
-.studio-shell.avatar-scene.avatar-right .studio-workspace.editor-open .event-editor-panel {
-  right: calc(20vw + 18px);
-}
-@keyframes ed-fixed-in {
-  from {
-    opacity: 0;
-    transform: translateX(36px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-/* 아바타 scene 폼도 고정폭(312 = 패널 328 - 좌거터 16). width:100%면 칸이 0→345 늘어나는 동안
-   폼도 같이 좁아져 내용이 세로로 꾸겨졌다(슬라이드 인 중 우그러짐). 고정폭이면 폼은 그대로고
-   overflow:hidden + 우측정렬(justify-items:end)로 오른쪽에서 깔끔히 미끄러져 들어온다. */
-.studio-shell.avatar-scene .event-editor-panel form {
-  width: 312px; /* 328 - 거터 16 */
-}
-/* 아바타 scene(좁은 편집창)에선 주저리 설명·힌트를 숨겨 공간을 아낀다 — 공개범위/업도움/떡밥의
-   부가 설명은 좁은 폭에서 자리만 먹는다. 라벨·값·컨트롤은 남기고 '문장형 설명'만 접는다. */
-.studio-shell.avatar-scene .event-editor-panel .teaser-when-hint,
-.studio-shell.avatar-scene .event-editor-panel .dhint,
-.studio-shell.avatar-scene .event-editor-panel .dslider-head > span:first-child,
-.studio-shell.avatar-scene .event-editor-panel .scope-locked-note,
-.studio-shell.avatar-scene .event-editor-panel .scope-opt-sub {
-  display: none;
-}
+/* (편집창의 avatar-scene 전용 fixed 배치/좁은 폭 312/힌트 숨김은 앵커 팝오버 전환으로 제거 —
+   팝오버는 scene과 무관하게 선택 칸 옆에 뜨고 폭도 384로 동일하다.) */
 /* 좁아진 달력 칸이 세로로 뚱뚱해지지 않게 최소높이를 낮춘다. */
 .studio-shell.avatar-scene .studio-day {
   min-height: 100px;
@@ -3572,29 +3507,12 @@ html[data-reduce-motion] .role-segment button.active {
   align-items: center;
   gap: 6px;
 }
-.studio-avatar-ctl .avatar-ctl-toggle {
-  min-width: 150px;
-  text-align: center;
-  border: 1px solid #e3d8f1;
-  background: #fff;
+/* 항상 켜짐(끄기 없음) — 라벨 + 좌/우 세그먼트만. */
+.studio-avatar-ctl .avatar-ctl-label {
   color: #6b5b8a;
   font-weight: 700;
   font-size: 13px;
-  padding: 7px 12px;
-  border-radius: var(--r-pill);
-  cursor: pointer;
-  transition:
-    background 0.18s ease,
-    box-shadow 0.18s ease,
-    transform 0.08s ease;
-}
-.studio-avatar-ctl .avatar-ctl-toggle.on {
-  background: #efe7fb;
-  color: #5b4a86;
-  box-shadow: inset 0 0 0 1px #cdb8ee;
-}
-.studio-avatar-ctl .avatar-ctl-toggle:active {
-  transform: scale(0.95);
+  user-select: none;
 }
 .studio-avatar-ctl .avatar-ctl-side {
   display: inline-flex;
@@ -3677,36 +3595,58 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
 .studio-left-panel {
   margin-right: 18px; /* 색상 필터와 달력 사이 간격(gap:0 대체) */
 }
-/* 새 일정 카드: 닫힘(폭 0)일 때 넘침 숨김으로 안 보이다가, 컬럼이 늘면서 폼이 슬라이드 인.
-   닫힘 상태에선 padding-left를 0으로 둔다 — 트랙이 0px인데 padding 18px이 함께 있으면
-   border-box(전역)에서 박스가 과제약돼 폼이 달력 오른쪽 끝에 ~18px 색 띠로 새어 보였다
-   ('가끔' 보이던 원인 = 브라우저별 over-constrained 처리 차이). 간격은 열렸을 때만 준다. */
+/* 편집 카드 = 앵커 팝오버 — 그리드 칸이 아니라 workspace 기준 absolute로 '선택한 날짜 칸 옆'에
+   뜬다. 좌표(top/left)는 JS(placeEditorPopover)가 실측 배치(오른쪽 우선, 부족하면 왼쪽 flip,
+   뷰포트 아래 넘침은 위로 클램프). 다른 날짜를 고르면 top/left transition으로 미끄러져 이동. */
 .event-editor-panel {
-  align-self: start;
-  /* 편집 카드가 길어도 달력이 가려지지 않게 — 패널은 화면 위에 붙고(sticky), 안의 폼이 자체
-     스크롤된다. sticky top은 '고정된 상단바(.studio-topbar top:0, ~57px)' 아래로 둬야 그 밑으로
-     안 숨는다(64). 스크롤을 따라 붙었을 때 폼이 바닥 근처까지 닿는다(아래 form max-height). */
-  position: sticky;
-  top: 64px;
-  overflow: hidden;
-  padding-left: 0;
-  /* 폼을 오른쪽 벽에 고정 → 칸 폭이 0→464로 열릴 때 폼 오른쪽 끝은 제자리, 왼쪽이 드러나며
-     오른쪽 벽에서 미닫이로 미끄러져 들어온다(왼쪽 정렬이면 reflow 와이프처럼 보인다). */
-  justify-items: end;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 384px;
+  z-index: 6; /* 일정 카드·업도움 띠 위, 모달(더 높음) 아래 */
+  transition:
+    top 0.45s cubic-bezier(0.25, 1, 0.5, 1),
+    left 0.45s cubic-bezier(0.25, 1, 0.5, 1);
 }
+/* 닫힘 = DOM에서 감춤(display) — 다시 열릴 때 이전 좌표에서 transition이 시작되지 않게 리셋. */
+.studio-workspace:not(.editor-open) .event-editor-panel {
+  display: none;
+}
+/* 열릴 때: 앵커 칸 옆에서 톡 떠오르는 스케일-인(재-앵커 이동에는 안 걸리고 열림에만 재생). */
 .studio-workspace.editor-open .event-editor-panel {
-  padding-left: var(--space-4); /* 16 — 달력과의 거터(폼 왼쪽). 위 컬럼폭 400과 물림(384+16). */
+  animation: editor-pop-in 0.34s cubic-bezier(0.34, 1.4, 0.5, 1) both;
+}
+@keyframes editor-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+html[data-reduce-motion] .event-editor-panel {
+  transition: none;
+  animation: none;
 }
 .event-editor-panel form {
-  width: 384px; /* 폭 고정 → 컬럼 애니메이션 동안 reflow 없이 슬라이드. 트랙 400 - 좌거터 16. */
-  /* 폼이 자체 스크롤(overflow-y:auto). max-height를 크게 잡아 스크롤을 따라 붙었을 때(sticky top:64)
-     화면 바닥 근처까지 닿게 한다(64 + (100dvh-74) ≈ 100dvh-10). 저장 바는 폼 하단 sticky라 항상 도달.
-     페이지 최상단(안 스크롤)에선 폼이 화면 밑으로 조금 넘칠 수 있으나 살짝 내리면 붙어서 다 보인다. */
-  max-height: calc(100dvh - 74px);
+  width: 384px;
+  /* 폼이 자체 스크롤(overflow-y:auto) — 팝오버가 뷰포트보다 길 수 없게 상한. JS 클램프(placeEditor
+     Popover)가 이 실측 높이를 받아 바닥 안에 들어오게 top을 당긴다. */
+  max-height: calc(100dvh - 110px);
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   padding-right: 4px;
+}
+/* 달력 위에 떠 있으므로 카드 그림자를 한 단계 키워 '떠 있음'을 분명히 한다.
+   (리디자인 공통 카드 규칙(--shadow-2, 파일 뒤쪽)보다 세게 — workspace 스코프로 특이도 확보.) */
+.studio-workspace .event-editor-panel form,
+.studio-workspace .event-editor-panel .event-detail-readonly {
+  box-shadow:
+    0 18px 44px rgb(80 70 120 / 16%),
+    0 2px 10px rgb(120 110 160 / 10%);
 }
 /* 색상 필터 사이드바: 폭을 최소화했으니 안쪽 여백·제목도 컴팩트하게. */
 .studio-left-panel section {
@@ -4153,9 +4093,6 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   background: #ffffff;
   padding: var(--space-4); /* 16 — 18 정리 */
   box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
-}
-.studio-shell.avatar-scene .event-detail-readonly {
-  width: 312px; /* 트랙 328 - 좌거터 16 — .avatar-scene .event-editor-panel form(312)과 동일 */
 }
 .event-detail-readonly .editor-heading {
   margin-bottom: 6px;
@@ -6186,13 +6123,6 @@ textarea:disabled {
 @media (max-width: 1180px) {
   .studio-workspace {
     grid-template-columns: 190px minmax(0, 1fr);
-  }
-
-  .event-editor-panel {
-    grid-column: 1 / -1;
-    /* 이 구간(≤1180)은 패널이 전체폭 행으로 내려온다(옆 칸 아님) → 우측정렬(오른쪽에서 슬라이드)이
-       무의미하고 폼이 오른쪽에 치우쳐 왼쪽 공백만 생긴다. 좌측 정렬로 되돌린다. */
-    justify-items: start;
   }
 }
 
