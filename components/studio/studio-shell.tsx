@@ -2051,6 +2051,13 @@ export function StudioShell({
     const base = editorPopManualRef.current ?? editorPopPos;
     if (!panel || !base) return;
     e.preventDefault();
+    // 창 밖(모니터 가장자리 너머)에서 놓아도 pointerup을 받도록 캡처 — 안 하면 up이 유실돼
+    // 드래그 상태가 영원히 살아남아 스냅백·추적 루프가 전부 멎는다(파묻힌 채 고정되던 원인).
+    try {
+      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    } catch {
+      /* 미지원/실패 무시 — 아래 blur 안전망이 받친다 */
+    }
     const startX = e.clientX;
     const startY = e.clientY;
     const z = getPopZoom(); // 포인터 delta는 화면 px — 로컬 px로 변환해야 1:1로 따라온다
@@ -2081,6 +2088,7 @@ export function StudioShell({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("blur", onUp);
       if (moved) {
         hapticTick();
         // 화면 밖으로 나간 채 놓으면 — 꾸미기 스티커처럼 '전부 보이는' 자리까지 스프링으로
@@ -2116,6 +2124,7 @@ export function StudioShell({
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
+    window.addEventListener("blur", onUp); // 캡처가 실패한 환경의 최후 안전망(창 포커스 이탈 = 종료)
   }
   // 다른 날짜/일정을 고르면(editorKey 증가) 수동 배치를 버리고 새 앵커 옆 자동 배치로.
   useEffect(() => {

@@ -1218,6 +1218,12 @@ export function PublicPoster({
     const sheet = detailSheetRef.current;
     if (!sheet) return;
     e.preventDefault();
+    // 창 밖에서 놓아도 pointerup을 받도록 캡처(유실되면 드래그 상태가 살아남아 파묻힌 채 고정).
+    try {
+      (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    } catch {
+      /* 미지원 무시 — blur 안전망 */
+    }
     const startX = e.clientX;
     const startY = e.clientY;
     const baseRect = sheet.getBoundingClientRect();
@@ -1252,6 +1258,7 @@ export function PublicPoster({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
+      window.removeEventListener("blur", onUp);
       if (moved) {
         hapticTick();
         // 화면 밖에서 놓으면 스프링으로 팅 튕겨 '전부 보이는' 자리로 복귀(편집실과 동일 문법).
@@ -1275,6 +1282,7 @@ export function PublicPoster({
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
     window.addEventListener("pointercancel", onUp);
+    window.addEventListener("blur", onUp); // 캡처 실패 환경 안전망
   }
   // 방금 공개된 떡밥 id — 잠깐 '짠!' 등장 애니메이션을 입힌다(보상감). 1.8초 뒤 해제.
   const [justRevealed, setJustRevealed] = useState<Set<string>>(() => new Set());
