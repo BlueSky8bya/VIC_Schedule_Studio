@@ -15,9 +15,13 @@ export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null
   useEffect(() => setReduce(reduceMotionEnabled()), []);
 
   if (!live?.isLive) return null;
-  const embedSrc = live.bjId
-    ? `https://play.sooplive.co.kr/${live.bjId}${live.bno ? `/${live.bno}` : ""}/embed?autoPlay=true&mutePlay=true&showChat=false`
-    : null;
+  // 방송번호(bno)가 있을 때만 임베드 — bno 없이 채널만 임베드하면 SOOP가 최신 '다시보기(VOD)'
+  // 플레이어를 트는데, VOD 플레이어는 톱니·전체화면·시간이 상시 표시라 감출 수 없다(실측).
+  // 진짜 라이브(bno 有)는 컨트롤이 안 남는 라이브 플레이어. bno 없으면 어두운 판 + LIVE 배지만.
+  const embedSrc =
+    live.bjId && live.bno
+      ? `https://play.sooplive.co.kr/${live.bjId}/${live.bno}/embed?autoPlay=true&mutePlay=true&showChat=false`
+      : null;
 
   return (
     <div
