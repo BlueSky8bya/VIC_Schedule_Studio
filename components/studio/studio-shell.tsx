@@ -2046,7 +2046,11 @@ export function StudioShell({
     const vpBottom = (window.innerHeight - wsRect.top) / z - PAD;
     if (top + popH > vpBottom) top = vpBottom - popH;
     if (top < vpTop) top = vpTop;
-    top = Math.max(PAD, Math.min(top, Math.max(PAD, ws.offsetHeight - popH - PAD)));
+    // ⚠ workspace 바닥 클램프 금지 — 빈 달에선 rAF 루프가 min-height를 '팝오버 바닥+18'로
+    // 늘리는데, 여기서 바닥-8로 다시 당기면 늘어난 만큼 또 내려가는 랫칫이 돼 팝오버가
+    // 부들거리며 가라앉았다(실사용 리포트). 뷰포트 클램프가 이미 가시성을 보장하고,
+    // workspace는 min-height가 팝오버를 따라 늘어난다.
+    top = Math.max(PAD, top);
     const next = {
       left: Math.round(left),
       top: Math.round(top),
