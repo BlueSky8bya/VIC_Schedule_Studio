@@ -817,7 +817,30 @@ export function PublicPoster({
   // 토리님 SOOP 라이브 상태 — 꾸미기 아니면 폴링(편집실 '시청자 미리보기'에서도 켜서 개발자/오너가
   // 시청자가 볼 LIVE를 그대로 확인). 데스크탑 플로팅 비콘은 편집실 chrome과 겹쳐 미리보기에선 숨기고
   // (아래 마운트의 !previewNav), 모바일은 겹침 없는 하단 '오늘'→LIVE 버튼이라 미리보기에서도 보인다.
-  const soopLive = useSoopLive(!decorate);
+  const soopLiveRaw = useSoopLive(!decorate);
+  // 테스트 전용: URL에 ?live-preview=1 을 붙이면 라이브 카드를 강제로 띄워 렌더를 확인한다
+  // (임베드는 실제 채널 플레이어 — 방송 중이 아니면 오프라인 화면). 공개-안전: 가짜 UI일 뿐
+  // 데이터 접근 없음. 확인 끝나면 파라미터만 지우면 된다.
+  const [livePreviewOn, setLivePreviewOn] = useState(false);
+  useEffect(() => {
+    try {
+      setLivePreviewOn(new URLSearchParams(window.location.search).has("live-preview"));
+    } catch {
+      /* 무시 */
+    }
+  }, []);
+  const soopLive =
+    livePreviewOn && !soopLiveRaw?.isLive
+      ? {
+          isLive: true,
+          bjId: "toryvac",
+          bjNick: "빅토리",
+          title: "라이브 카드 미리보기 (테스트)",
+          category: null,
+          bno: null,
+          watchUrl: "https://play.sooplive.co.kr/toryvac"
+        }
+      : soopLiveRaw;
   // 모바일 '오늘' 버튼은 평소엔 오늘로 이동하는 본래 기능. 오늘 행이 실제로 화면에 보이는 동안만
   // (이미 도착) 방송 중이면 그 자리를 LIVE(보러가기)로 바꾼다. 스크롤로 벗어나거나 다른 달이면 다시
   // '오늘'(이동)로 복귀 — 아래 IntersectionObserver가 가시성을 추적한다.
@@ -3839,9 +3862,10 @@ export function PublicPoster({
             const end = event.endDateKey;
             // PC 팝오버 좌표(자동 배치 or 드래그 확정) + 액센트 색(대표 태그 1~2색 그라데이션).
             const pos = anchor ? detailManual ?? detailPos : null;
-            const accent1 = detailTags[0]?.bg ?? "#f4b740";
-            const accent2 = detailTags[1]?.bg ?? accent1;
-            const lineColor = detailTags[0]?.border ?? "#d3a94f";
+            // 업도움은 띠와 같은 초록 계열로 액센트·선 색을 통일(카드 ↔ 띠 조화).
+            const accent1 = support ? "#9cc46f" : detailTags[0]?.bg ?? "#f4b740";
+            const accent2 = support ? "#7fb04e" : detailTags[1]?.bg ?? accent1;
+            const lineColor = support ? "#6a9c3d" : detailTags[0]?.border ?? "#d3a94f";
             const popStyle: CSSProperties | undefined = anchor
               ? pos
                 ? ({
@@ -4966,13 +4990,18 @@ export function PublicPoster({
                         {view.year}년 {String(view.month).padStart(2, "0")}월
                       </b>
                     </span>
+                    {/* 라벨(왼쪽, 조용히) ↔ 값(오른쪽, 굵게) 정렬 — 두 줄이 같은 문법을 공유. */}
                     {dplus !== null ? (
-                      <span className="ric-debut">
-                        🎂 데뷔 <b>D+{dplus}</b>
+                      <span className="ric-row">
+                        <em>🎂 데뷔</em>
+                        <b className="ric-dplus">D+{dplus}</b>
                       </span>
                     ) : null}
-                    <span className="ric-today">
-                      오늘 <b>{formatShortDate(today)}</b> ({WEEKDAYS[wd]})
+                    <span className="ric-row">
+                      <em>오늘</em>
+                      <b>
+                        {formatShortDate(today)} ({WEEKDAYS[wd]})
+                      </b>
                     </span>
                   </>
                 );
