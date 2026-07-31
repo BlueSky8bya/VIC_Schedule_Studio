@@ -1121,18 +1121,23 @@ html {
 .poster-page.avatar-scene.avatar-left .avatar-top-cards {
   flex-direction: row-reverse;
 }
-/* 두 카드 같은 크기(232×166) — 나란히 걸릴 때 조화(사용자 요청). */
+/* 두 카드 같은 크기 — 높이는 라이브 카드(영상 16:9 + 캡션)가 정하고, 정보 카드는 stretch로
+   따라간다(고정 166px는 폭이 줄면 영상 비율을 깨뜨렸다 — 사용자 리포트). */
+.avatar-top-cards {
+  align-items: stretch;
+}
 .avatar-top-cards .rail-info-card,
 .avatar-top-cards .soop-live-card.in-rail {
   flex: none;
   width: 232px;
   max-width: 48%;
-  height: 166px;
+  height: auto;
   margin: 0;
   box-sizing: border-box;
 }
 .avatar-top-cards .rail-info-card {
-  justify-content: center; /* 고정 높이 안에서 세로 중앙 — 위만 눌린 느낌 방지 */
+  justify-content: center; /* 라이브 카드 높이에 stretch될 때 세로 중앙 — 위만 눌린 느낌 방지 */
+  min-height: 132px; /* 라이브 없이 홀로 떠도 너무 납작하지 않게 */
   animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.28s both;
 }
 .avatar-top-cards .soop-live-card.in-rail {
@@ -1141,11 +1146,11 @@ html {
   overflow: hidden;
   animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.36s both;
 }
-/* 고정 높이 카드 안에서 플레이어가 남은 세로를 채운다(비율 대신 flex). */
+/* 영상은 정확히 16:9 — 카드 높이가 비율에서 파생된다(캡션은 자연 높이). */
 .avatar-top-cards .soop-live-card.in-rail .slc-player {
-  flex: 1;
+  flex: none;
+  aspect-ratio: 16 / 9;
   min-height: 0;
-  aspect-ratio: auto;
 }
 @keyframes avatar-card-pop {
   from {
