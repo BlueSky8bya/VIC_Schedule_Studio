@@ -2207,13 +2207,26 @@ export function StudioShell({
   // 읽기 2회 + 값이 같으면 setState가 같은 객체를 반환해 리렌더 0 — 유휴 비용은 측정뿐이다.
   useEffect(() => {
     if (!editorVisible || isNarrow) return;
+    const wsEl = workspaceRef.current;
     let raf = 0;
     const tick = () => {
       placeEditorPopover();
+      // 일정이 없어 달력이 짧은 달 — workspace(overflow:clip)가 팝오버보다 낮으면 아랫부분이
+      // 잘려 폼 하단을 누를 수 없었다. 팝오버 바닥+패딩만큼 최소 높이를 매 프레임 보장
+      // (달력이 충분히 길면 no-op, 빈 달에서만 실제로 늘어난다. 닫으면 원복).
+      const panel = editorPanelRef.current;
+      if (wsEl && panel) {
+        const need = panel.offsetTop + panel.offsetHeight + 18;
+        const cur = parseFloat(wsEl.style.minHeight || "0") || 0;
+        if (Math.abs(cur - need) > 1) wsEl.style.minHeight = `${need}px`;
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      if (wsEl) wsEl.style.minHeight = "";
+    };
   }, [editorVisible, isNarrow, placeEditorPopover]);
 
   useLayoutEffect(() => {
