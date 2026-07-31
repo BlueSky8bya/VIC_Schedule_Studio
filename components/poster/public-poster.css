@@ -5653,19 +5653,41 @@ html[data-reduce-motion] .pi-retry:active {
   background: transparent;
   animation: none;
 }
+/* 애플식 재질 카드 — 프로스트 유리(반투명+블러+채도), 헤어라인 테두리, 이중 부드러운 그림자,
+   연속 라운드(20px), 스프링 등장. 색은 절제: 대표 태그 색은 맨 위 3px 액센트 라인과
+   리더 선/도트에만 쓰고 본문은 조용한 잉크 위계로 둔다. */
 .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   position: fixed;
-  width: 340px;
+  width: 344px;
   max-height: min(64vh, 520px);
-  border-radius: 18px;
-  border: 1px solid #eee3c9;
-  background: #fffefa;
-  padding: 0 18px 16px;
+  border-radius: 20px;
+  border: 1px solid rgb(120 100 60 / 16%);
+  background: #fffdf6;
+  padding: 0 20px 18px;
   overflow: hidden auto;
   box-shadow:
-    0 22px 48px rgb(105 84 40 / 16%),
-    0 3px 10px rgb(105 84 40 / 8%);
-  animation: detail-pop-in 0.3s cubic-bezier(0.34, 1.4, 0.5, 1) both;
+    0 24px 56px rgb(80 64 32 / 18%),
+    0 2px 8px rgb(80 64 32 / 7%);
+  animation: detail-pop-in var(--dur-spring-smooth, 0.34s)
+    var(--spring-smooth, cubic-bezier(0.34, 1.4, 0.5, 1)) both;
+}
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
+    background: var(--material-bg-strong, rgb(255 253 246 / 84%));
+    -webkit-backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
+    backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
+  }
+}
+/* 맨 위 3px — 이 일정의 색(대표 태그 1~2색) 액센트 라인. 유일하게 색이 크게 말하는 곳. */
+.agenda-detail-backdrop.is-pop .agenda-detail-sheet::before {
+  content: "";
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: block;
+  height: 3px;
+  margin: 0 -20px;
+  background: linear-gradient(90deg, var(--dt-c1, #f4b740), var(--dt-c2, #f4b740));
 }
 .agenda-detail-backdrop.is-pop .agenda-detail-sheet.pop-dragging {
   transition: none;
@@ -5674,7 +5696,7 @@ html[data-reduce-motion] .pi-retry:active {
 @keyframes detail-pop-in {
   from {
     opacity: 0;
-    transform: scale(0.93);
+    transform: scale(0.94) translateY(4px);
   }
   to {
     opacity: 1;
@@ -5684,65 +5706,97 @@ html[data-reduce-motion] .pi-retry:active {
 html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   animation: none;
 }
-/* 이동 손잡이 — 카드 전폭 상단 띠: 대표 태그색 파스텔 그라데이션 + 중앙 그립 필.
-   '색 띠 = 이 일정의 색 = 잡는 곳'이 한 몸으로 읽힌다. */
+/* 이동 손잡이 — 애플 시트 문법: 재질 위 중앙 그립 필 하나(요란한 띠 없음). */
 .detail-grab {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 -18px 10px;
-  padding: 9px 0 7px;
-  background: linear-gradient(
-    100deg,
-    color-mix(in srgb, var(--dt-c1, #f4b740) 46%, #fff),
-    color-mix(in srgb, var(--dt-c2, #f4b740) 46%, #fff)
-  );
+  margin: 0 -20px;
+  padding: 8px 0 6px;
   cursor: grab;
   touch-action: none;
 }
 .detail-grab span {
-  width: 42px;
+  width: 36px;
   height: 5px;
   border-radius: 999px;
-  background: rgb(60 46 20 / 26%);
+  background: rgb(60 46 20 / 18%);
+  transition: background var(--dur-1) var(--ease);
+}
+.detail-grab:hover span {
+  background: rgb(60 46 20 / 32%);
 }
 .agenda-detail-sheet.pop-dragging .detail-grab {
   cursor: grabbing;
 }
-/* PC 팝오버의 헤더도 이동 손잡이 겸용. */
+/* 헤더(날짜 줄)도 이동 손잡이 겸용 + 아래 헤어라인 구분선. */
 .agenda-detail-backdrop.is-pop .agenda-detail-head {
   cursor: grab;
   touch-action: none;
   user-select: none;
+  align-items: center;
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgb(120 100 60 / 12%);
 }
-/* PC 팝오버 타이포 정돈 — 제목을 또렷한 앵커로, 세부 줄은 조용한 보조로. */
-.agenda-detail-backdrop.is-pop .agenda-detail-title {
-  font-size: 21px;
+/* 날짜 = 헤더의 주인공(사용자 요청: 더 크게). 요일·기간·특별한 날이 한 줄 위계로 정렬. */
+.agenda-detail-backdrop.is-pop .agenda-detail-day {
+  font-size: 19px;
   font-weight: 900;
-  letter-spacing: -0.015em;
-  line-height: 1.25;
-  color: #33291a;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.agenda-detail-backdrop.is-pop .agenda-detail-date {
+  font-size: 14px;
+  font-weight: 800;
+  color: #8b7f63;
+}
+/* 제목 — 큰 잉크 앵커. 세부 줄은 조용한 보조 위계. */
+.agenda-detail-backdrop.is-pop .agenda-detail-title {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1.24;
+  color: #2b2415;
+  text-wrap: balance;
 }
 .agenda-detail-backdrop.is-pop .agenda-detail-subs li {
-  color: #756a4f;
-  font-weight: 700;
+  color: #6f6754;
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.5;
 }
-.agenda-detail-backdrop.is-pop .agenda-detail-day {
-  font-size: 14px;
-  font-weight: 900;
-  letter-spacing: 0.01em;
-}
+/* 태그 칩 — 중립 재질 필(색은 점만). Apple 세그먼트처럼 조용하게. */
 .agenda-detail-backdrop.is-pop .agenda-detail-tag {
-  border-color: #efe6cd;
-  background: #fbf7ea;
-  font-weight: 800;
-}
-.agenda-detail-backdrop.is-pop .agenda-detail-close {
   border: 0;
-  background: rgb(60 46 20 / 6%);
+  background: rgb(120 100 60 / 7%);
+  font-weight: 800;
+  color: #57503c;
+}
+/* 닫기 — 원형 고스트 + 호버 90° 회전(앱 공통 X 손맛: .bp-close/.pi-close와 동일). */
+.agenda-detail-backdrop.is-pop .agenda-detail-close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(60 46 20 / 7%);
+  color: #6b6350;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
 }
 .agenda-detail-backdrop.is-pop .agenda-detail-close:hover {
-  background: rgb(60 46 20 / 12%);
+  background: rgb(60 46 20 / 13%);
+  transform: rotate(90deg);
+}
+.agenda-detail-backdrop.is-pop .agenda-detail-close:active {
+  transform: rotate(90deg) scale(0.9);
+}
+html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-close,
+html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-close:hover,
+html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-close:active {
+  transition: none;
+  transform: none;
 }
 /* 카드 → 팝오버 리더 점선 + 도트(대표 태그 색) — 뷰포트 전면 svg, 클릭 통과. */
 .detail-anchor-link {
