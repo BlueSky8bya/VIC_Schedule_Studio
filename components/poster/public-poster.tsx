@@ -1231,6 +1231,11 @@ export function PublicPoster({
     let moved = false;
     let last = base;
     const onMove = (ev: PointerEvent) => {
+      // up 유실 자가 치유 — 버튼이 안 눌린 move가 오면(창 밖 릴리즈 등) 즉시 종료 처리.
+      if (ev.buttons === 0) {
+        onUp();
+        return;
+      }
       const dx = ev.clientX - startX;
       const dy = ev.clientY - startY;
       if (!moved && Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
@@ -1275,6 +1280,17 @@ export function PublicPoster({
         }
         setDetailManual(snapped);
         detailManualRef.current = snapped;
+        // DOM 직접 동기화 — 드래그 직접 쓰기와 React 가상 스타일 어긋남으로 새 상태가 이전
+        // 상태와 같으면 React가 DOM을 안 고치는 함정 방지(편집실과 동일 수정).
+        sheet.style.left = `${snapped.left}px`;
+        sheet.style.top = `${snapped.top}px`;
+        const a2 = detailAnchorPtRef.current;
+        const line2 = detailLineRef.current;
+        if (a2 && line2) {
+          const e2 = detailEdgePoint(snapped, { w: sheet.offsetWidth, h: sheet.offsetHeight }, a2);
+          line2.setAttribute("x2", String(e2.x));
+          line2.setAttribute("y2", String(e2.y));
+        }
       }
       detailDragActiveRef.current = false;
       sheet.classList.remove("pop-dragging");

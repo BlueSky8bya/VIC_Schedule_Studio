@@ -3788,13 +3788,19 @@ html[data-reduce-motion] .editor-anchor-link line {
 }
 .event-editor-panel form {
   width: 384px;
-  /* 폼이 자체 스크롤(overflow-y:auto) — 팝오버가 뷰포트보다 길 수 없게 상한. JS 클램프(placeEditor
-     Popover)가 이 실측 높이를 받아 바닥 안에 들어오게 top을 당긴다. */
-  max-height: calc(100dvh - 110px);
+  /* 폼이 자체 스크롤(overflow-y:auto) — 상한 = '상단 크롬 아래 가용 세로'(--pop-max-h,
+     placeEditorPopover가 매 프레임 실측). 팝오버 전체가 항상 화면 안에 들어갈 수 있어야
+     스냅백·추적의 '전부 보이게' 클램프가 성립한다. */
+  max-height: var(--pop-max-h, calc(100dvh - 160px));
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
   padding-right: 4px;
+}
+/* 읽기전용 상세(매니저·작업자)도 같은 가용 높이 상한 + 내부 스크롤. */
+.event-editor-panel .event-detail-readonly {
+  max-height: var(--pop-max-h, calc(100dvh - 160px));
+  overflow-y: auto;
 }
 /* 달력 위에 떠 있으므로 카드 그림자를 한 단계 키워 '떠 있음'을 분명히 한다.
    (리디자인 공통 카드 규칙(--shadow-2, 파일 뒤쪽)보다 세게 — workspace 스코프로 특이도 확보.) */

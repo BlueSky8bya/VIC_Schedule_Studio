@@ -1888,6 +1888,10 @@ export function StudioShell({
   const editorSnapTimerRef = useRef<number | null>(null);
   // 앵커 칸 중심(workspace 좌표) — 팝오버→칸 리더 라인의 칸 쪽 끝점.
   const [editorAnchorPt, setEditorAnchorPt] = useState<{ x: number; y: number } | null>(null);
+  // 팝오버 폼 최대 높이(로컬 px) — '상단 크롬 아래 ~ 화면 바닥' 가용 공간 실측. 고정
+  // calc(100dvh-110px)는 크롬이 두꺼운 화면(관리바 포함 ~140px)에서 팝오버가 가용 공간보다
+  // 길어져 어떤 클램프로도 '전부 보임'이 불가능했다(스냅백이 안 돌아오는 것처럼 보이던 원인 중 하나).
+  const [editorPopMaxH, setEditorPopMaxH] = useState<number | null>(null);
   // 팝오버 실측 크기 — 리더 라인의 카드 쪽 끝점(사각형 최근접 가장자리) 계산용.
   const [editorPopSize, setEditorPopSize] = useState<{ w: number; h: number } | null>(null);
   const editorPopManualRef = useRef<typeof editorPopManual>(null);
@@ -1905,6 +1909,18 @@ export function StudioShell({
     if (!ws || !ws.offsetWidth) return 1;
     return ws.getBoundingClientRect().width / ws.offsetWidth || 1;
   }, []);
+  // 상단 고정 크롬(상단바 + 보이는 액션바)의 하단 — 팝오버가 이 아래로만 오게 하는 기준선.
+  // 예전 하드코딩 64px는 상단바만 감안해, 팝오버 머리가 관리(액션)바 '밑으로' 숨어 잡을 수
+  // 없게 되는 케이스가 있었다(--dock-top과 같은 실측 문법). 화면(visual) px 반환.
+  const getChromeBottomV = useCallback(() => {
+    const bar = document.querySelector(".studio-actionbar");
+    const topbar = document.querySelector(".studio-topbar");
+    return Math.max(
+      bar?.getBoundingClientRect().bottom ?? 0,
+      topbar?.getBoundingClientRect().bottom ?? 0,
+      0
+    );
+  }, []);
   const editorAnchorPtRef = useRef<typeof editorAnchorPt>(null);
   editorAnchorPtRef.current = editorAnchorPt;
   const anchorLineRef = useRef<SVGLineElement | null>(null);
@@ -1920,7 +1936,8 @@ export function StudioShell({
       const popW = panel.offsetWidth || 384; // offset* = 로컬 px
       const KEEP = 140; // 가로로 화면에 남겨둘 최소 폭(로컬 px)
       const wsTopV = ws.getBoundingClientRect().top; // 화면 px → /z 로 로컬 변환
-      const vpTop = (64 - wsTopV) / z + 8; // 상단바 아래(헤더가 그 밑으로 숨지 않게)
+      // 상단 크롬(상단바+액션바) 아래 — 헤더가 그 밑으로 숨어 못 잡게 되는 일 방지.
+      const vpTop = (getChromeBottomV() - wsTopV) / z + 8;
       // 헤더 바가 바닥 아래로 안 사라지게. (문서 높이 팽창은 workspace overflow:clip이 차단 —
       // 파묻힌 몸통은 가장자리에서 시각적으로 잘릴 뿐 스크롤 영역을 안 늘린다.)
       const vpBottom = (window.innerHeight - wsTopV) / z - 56;
@@ -1929,7 +1946,7 @@ export function StudioShell({
         top: Math.round(Math.max(vpTop, Math.min(top, vpBottom)))
       };
     },
-    [getPopZoom]
+    [getPopZoom, getChromeBottomV]
   );
   // 리더 라인의 카드 쪽 끝점 — '팝오버 중심 → 앵커' 방향 선이 팝오버 테두리를 뚫는 지점.
   // 앵커/팝오버가 움직이면 끝점이 테두리를 따라 연속으로 미끄러진다(변 전환에서 툭 안 튐 —
@@ -1987,6 +2004,9 @@ export function StudioShell({
           x: Math.round(cellL + cellW / 2),
           y: Math.round(cellT + Math.min(cellH / 2, 46))
         };
+    // 폼 최대 높이 = 크롬 아래 가용 세로(로컬) — 팝오버 전체가 항상 화면에 들어갈 수 있게.
+    const availH = Math.max(260, Math.round((window.innerHeight - getChromeBottomV()) / z - 64));
+    setEditorPopMaxH((v) => (v === availH ? v : availH));
     setEditorAnchorPt((p) => (p && p.x === anchor.x && p.y === anchor.y ? p : anchor));
     const size = { w: panel.offsetWidth || 384, h: panel.offsetHeight || 480 }; // offset* = 로컬
     setEditorPopSize((s) => (s && s.w === size.w && s.h === size.h ? s : size));
@@ -1997,7 +2017,7 @@ export function StudioShell({
     // 리포트 2회). 클램프에 걸릴 때만 갱신하므로 화면 안에선 놓은 자리 그대로다.
     const manual = editorPopManualRef.current;
     if (manual) {
-      const vpTopL = (64 - wsRect.top) / z + 8;
+      const vpTopL = (getChromeBottomV() - wsRect.top) / z + 8;
       const vpBottomL = (window.innerHeight - wsRect.top) / z - 8;
       let mTop = manual.top;
       if (mTop + size.h > vpBottomL) mTop = vpBottomL - size.h;
@@ -2022,7 +2042,7 @@ export function StudioShell({
     // 세로: 칸 상단 정렬이 기본. 뷰포트(고정 상단바 아래~바닥) 안에 다 보이게 당기고,
     // workspace 밖으로도 안 나가게 마지막으로 클램프. (뷰포트 값도 로컬로 변환)
     let top = cellT - 4;
-    const vpTop = (64 - wsRect.top) / z + PAD; // 상단바(~57px) 아래
+    const vpTop = (getChromeBottomV() - wsRect.top) / z + PAD; // 상단 크롬(상단바+액션바) 아래
     const vpBottom = (window.innerHeight - wsRect.top) / z - PAD;
     if (top + popH > vpBottom) top = vpBottom - popH;
     if (top < vpTop) top = vpTop;
@@ -2039,7 +2059,7 @@ export function StudioShell({
         ? p
         : next
     );
-  }, [selectedDate, selectedEventId, getPopZoom]);
+  }, [selectedDate, selectedEventId, getPopZoom, getChromeBottomV]);
   // 헤더 드래그로 팝오버 이동. 이동 중엔 React 상태를 안 거치고 DOM(style·라인 좌표)을 직접
   // 갱신한다 — 이 컴포넌트는 커서 6천 줄 셸이라 pointermove마다 리렌더하면 툭툭 끊긴다(실측).
   // 손을 떼는 순간에만 상태로 확정(setEditorPopManual)해 React 좌표와 동기화한다.
@@ -2064,6 +2084,11 @@ export function StudioShell({
     let moved = false;
     let last = base;
     const onMove = (ev: PointerEvent) => {
+      // up 유실 자가 치유 — 버튼이 안 눌린 move가 오면(창 밖 릴리즈 등) 즉시 종료 처리.
+      if (ev.buttons === 0) {
+        onUp();
+        return;
+      }
       const dx = (ev.clientX - startX) / z;
       const dy = (ev.clientY - startY) / z;
       if (!moved && Math.abs(dx) < 3 && Math.abs(dy) < 3) return; // 클릭 오차 보호
@@ -2098,7 +2123,7 @@ export function StudioShell({
         if (ws) {
           const z = getPopZoom();
           const wsTopV = ws.getBoundingClientRect().top;
-          const vpTopL = (64 - wsTopV) / z + 8;
+          const vpTopL = (getChromeBottomV() - wsTopV) / z + 8;
           const vpBottomL = (window.innerHeight - wsTopV) / z - 8;
           const w = panel.offsetWidth || 384;
           const h = panel.offsetHeight || 480;
@@ -2117,6 +2142,23 @@ export function StudioShell({
         }
         setEditorPopManual(snapped); // 확정 — 이후 리렌더에서도 이 좌표 유지
         editorPopManualRef.current = snapped; // rAF 루프가 상태 반영 전 프레임에 되돌리지 않게
+        // ⚠ DOM도 직접 동기화 — 드래그 중 직접 쓴 style과 React 가상 스타일이 어긋나면,
+        // 새 상태값이 React의 이전 값과 같을 때 React가 '변화 없음'으로 보고 DOM(드래그
+        // 값)을 안 고쳐 팝오버가 파묻힌 채 남았다(실측: state 56 vs DOM 245). 직접 쓰면
+        // 스프링 transition(pop-snapback)이 그 변화를 그대로 애니메이션한다.
+        panel.style.left = `${snapped.left}px`;
+        panel.style.top = `${snapped.top}px`;
+        const a2 = editorAnchorPtRef.current;
+        const line2 = anchorLineRef.current;
+        if (a2 && line2) {
+          const e2 = popEdgePoint(
+            snapped,
+            { w: panel.offsetWidth, h: panel.offsetHeight },
+            a2
+          );
+          line2.setAttribute("x2", String(e2.x));
+          line2.setAttribute("y2", String(e2.y));
+        }
       }
       editorPopDragActiveRef.current = false;
       setEditorPopDragging(false);
@@ -6438,15 +6480,17 @@ export function StudioShell({
           key={`pop-${editorKey}`}
           ref={editorPanelRef}
           style={(() => {
+            const maxH = editorPopMaxH ? { "--pop-max-h": `${editorPopMaxH}px` } : {};
             const p = editorPopManual ?? editorPopPos;
-            if (!p) return { visibility: "hidden" as const };
+            if (!p) return { visibility: "hidden" as const, ...maxH } as CSSProperties;
             return {
               left: p.left,
               top: p.top,
               transformOrigin: editorPopPos
                 ? `${editorPopPos.ox}px ${editorPopPos.oy}px`
-                : undefined
-            };
+                : undefined,
+              ...maxH
+            } as CSSProperties;
           })()}
         >
           {/* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */}
