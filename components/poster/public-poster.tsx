@@ -3887,6 +3887,143 @@ export function PublicPoster({
     );
   }
 
+  // 레일 정보 카드(연·월 · 데뷔 D+ · 오늘) — 평소엔 표면 안 오른쪽 레일에, 아바타 scene에선
+  // 아바타 자리 좌상단으로 옮겨 뜬다. 한 JSX를 두 자리에서 재사용해 마크업이 안 어긋나게 한다.
+  const railInfoCard = (() => {
+    const dplus = debutDPlus(today);
+    const wd = new Date(`${today}T00:00:00Z`).getUTCDay();
+    return (
+      <div className="rail-info-card">
+        {/* 보는 달 — 옛 상단 마스트헤드가 여기로. */}
+        <span className="ric-month">
+          <b>
+            {view.year}년 {String(view.month).padStart(2, "0")}월
+          </b>
+        </span>
+        {/* 라벨(왼쪽, 조용히) ↔ 값(오른쪽, 굵게) 정렬 — 두 줄이 같은 문법을 공유. */}
+        {dplus !== null ? (
+          <span className="ric-row">
+            <em>🎂 데뷔</em>
+            <b className="ric-dplus">D+{dplus}</b>
+          </span>
+        ) : null}
+        <span className="ric-row">
+          <em>오늘</em>
+          {/* 연도까지 풀 날짜 + 요일은 달력과 같은 색 문법(일=빨강, 토=파랑). */}
+          <b className="ric-today">
+            {Number(today.slice(0, 4))}.{formatShortDate(today)}{" "}
+            <i className={wd === 0 ? "sunday" : wd === 6 ? "saturday" : undefined}>
+              ({WEEKDAYS[wd]})
+            </i>
+          </b>
+        </span>
+      </div>
+    );
+  })();
+
+  // 태그 필터 카드 — 표면 안 레일용(follow=true: 스크롤 따라오기 ref 부착)과 아바타 scene의
+  // 반대편 얇은 레일용(follow=false)이 같은 마크업을 쓴다(1열 압축·폭은 CSS 담당).
+  const renderLegendFilter = (follow: boolean) => (
+    <div
+      className="public-legend-vertical"
+      aria-label="태그 필터"
+      ref={follow ? legendFollowRef : undefined}
+    >
+      <strong className="legend-title">태그 필터</strong>
+      {(() => {
+        const legendBtn = (tag: (typeof legendTags)[number]) => {
+          const v = tagVisual.visualOf(tag.id);
+          if (v.missing || !v.bg) {
+            return null;
+          }
+          const swatch = (
+            <i
+              data-color={v.colorKey ?? undefined}
+              style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
+            />
+          );
+          // A2 고도화: 다중 선택과 동기화. 선택된 게 있으면 안 고른 항목은 흐리게.
+          // 꾸미기에선 스티커 레이어가 덮어 어차피 못 누르므로 disabled로만 두고 **마크업은
+          // 시청자와 똑같이** 유지한다 — 예전엔 여기서 <span>으로 갈아끼워 범례 줄 높이가
+          // 3.8px 어긋났고, 표면 안 레이아웃이 모드마다 달라지면 스티커가 밀린다(ADR-0004).
+          const on = tagFilters.includes(tag.id);
+          const cls = [
+            "legend-item",
+            tag.kind === "modifier" ? "mod" : "",
+            on ? "active" : "",
+            tagFilters.length > 0 && !on ? "dim" : ""
+          ]
+            .filter(Boolean)
+            .join(" ");
+          return (
+            <button
+              aria-pressed={on}
+              className={cls}
+              disabled={decorate}
+              key={tag.id}
+              onClick={() => toggleTagFilter(tag.id)}
+              type="button"
+            >
+              {swatch}
+              {tag.displayName}
+            </button>
+          );
+        };
+        const content = legendTags.filter((t) => t.kind !== "modifier");
+        const mods = legendTags.filter((t) => t.kind === "modifier");
+        return (
+          <>
+            {content.map(legendBtn)}
+            {mods.length > 0 ? (
+              // 방식은 2열로 — 세로 높이를 아껴 아래 ♥ 안내가 들어갈 자리를 만든다(웹).
+              <div className="legend-mods">{mods.map(legendBtn)}</div>
+            ) : null}
+          </>
+        );
+      })()}
+      {/* '필터 해제'는 필터가 있든 없든 항상 자리(높이)를 차지한다 — 필터를 켤 때 이 버튼이
+          새로 생기면서 위 색칩들이 위로 밀려, 방금 누른 칩이 커서 밑에서 벗어나 다시 끄려면
+          마우스를 옮겨야 했다. 항상 자리만 잡아두고 보이기만 토글하면 칩이 안 움직여, 같은
+          자리에서 따닥 눌러 켜고 끌 수 있다. */}
+      <button
+        className={`legend-clear${filterActive ? "" : " is-hidden"}`}
+        onClick={() => {
+          hapticTick();
+          clearFilters();
+        }}
+        type="button"
+        aria-hidden={!filterActive}
+        tabIndex={filterActive ? 0 : -1}
+      >
+        필터 해제
+      </button>
+      {/* ♥ 의미·인기 단계 안내 — 하트 토글은 제목 위 배너로 옮겼고, 그 자리에 모바일처럼
+          설명을 둔다. margin-top:auto로 안내 박스 바닥에 붙어 빈 공간 없이 채운다.
+          **모드로 가르지 않는다**: 시청자에게만 그리면 이 박스(26px)만큼 표면이 길어져,
+          비율 좌표인 스티커가 꾸미기에서 놓은 자리보다 위로 떠 보였다(ADR-0004 불변식).
+          설명하는 대상(🔥 관심 같은 등급 배지)은 내보낸 PNG에도 찍히므로 범례로도 맞다. */}
+      <div className="legend-heart-help">
+        <p className="legend-tier-line">
+          <span className="hm">♥</span> 인기도
+        </p>
+        <ul className="legend-tiers">
+          <li>
+            <span className="flame">🔥</span> 관심
+          </li>
+          <li>
+            <span className="flame">🔥🔥</span> 높은 관심
+          </li>
+          <li>
+            <span className="flame">🔥🔥🔥</span> 폭발적
+          </li>
+          <li>
+            <span className="flame">👑</span> 이 달 1위
+          </li>
+        </ul>
+      </div>
+    </div>
+  );
+
   return (
     <main
       className={`poster-page${accountSwitch ? " poster-readonly" : ""}${
@@ -5047,156 +5184,53 @@ export function PublicPoster({
             </div>
           </section>
 
-          <aside className="public-right" aria-label="방송 정보와 색상 안내">
-            {/* 레일 정보 카드 — 데뷔 D+N · 오늘 날짜. 업도움 카드가 있던 자리(2026-07-31 —
-                업도움 링크는 달력의 띠 클릭 → 상세 팝오버 '도우러 가기'로 이사). 모든 모드에서
-                항상 렌더(지오메트리 동일)라 캡쳐 PNG에도 찍힌다 — 포스터 정체성에 보탬. */}
-            <div className="rail-info-card">
-              {(() => {
-                const dplus = debutDPlus(today);
-                const wd = new Date(`${today}T00:00:00Z`).getUTCDay();
-                return (
-                  <>
-                    {/* 보는 달 — 옛 상단 마스트헤드가 여기로(캡쳐 PNG에도 이 카드가 찍힌다). */}
-                    <span className="ric-month">
-                      <b>
-                        {view.year}년 {String(view.month).padStart(2, "0")}월
-                      </b>
-                    </span>
-                    {/* 라벨(왼쪽, 조용히) ↔ 값(오른쪽, 굵게) 정렬 — 두 줄이 같은 문법을 공유. */}
-                    {dplus !== null ? (
-                      <span className="ric-row">
-                        <em>🎂 데뷔</em>
-                        <b className="ric-dplus">D+{dplus}</b>
-                      </span>
-                    ) : null}
-                    <span className="ric-row">
-                      <em>오늘</em>
-                      {/* 연도까지 풀 날짜 + 요일은 달력과 같은 색 문법(일=빨강, 토=파랑). */}
-                      <b className="ric-today">
-                        {Number(today.slice(0, 4))}.{formatShortDate(today)}{" "}
-                        <i className={wd === 0 ? "sunday" : wd === 6 ? "saturday" : undefined}>
-                          ({WEEKDAYS[wd]})
-                        </i>
-                      </b>
-                    </span>
-                  </>
-                );
-              })()}
-            </div>
+          {/* 표면 안 오른쪽 레일 — 아바타 scene에선 접힌다(컬럼 폭 0, CSS). 내용은 아바타
+              자리(정보·라이브 카드)와 반대편 얇은 레일(태그 필터)로 이사. */}
+          <aside
+            className="public-right"
+            aria-label="방송 정보와 색상 안내"
+            aria-hidden={avatarCapable && avatarOn ? true : undefined}
+          >
+            {/* 레일 정보 카드 — 데뷔 D+N · 오늘 날짜(마크업은 railInfoCard 공용). */}
+            {railInfoCard}
 
-            {/* 라이브 카드 — 정보 카드 아래·태그 필터 위(사용자 지정 위치). 라이브 중에만 렌더.
-                레일 내부 삽입이라 달력 칸·표면 크기엔 영향 없음(레일 아래 내용만 밀림 — 필터
-                2열 압축으로 확보한 높이를 쓴다). 편집실 시청자 미리보기에서도 시청자와 똑같이
-                보인다(옛 플로팅 비콘의 겹침 문제가 레일 안에선 없음). 꾸미기/캡쳐엔 없음. */}
-            {!decorate ? <SoopLiveBeacon inRail live={soopLive} /> : null}
+            {/* 라이브 카드 — 라이브 중에만 렌더. 아바타 scene에선 아바타 자리 우상단으로
+                이사하므로 여기선 내리고(중복 iframe 방지), 평소엔 정보 카드 아래·필터 위. */}
+            {!decorate && !(avatarCapable && avatarOn) ? (
+              <SoopLiveBeacon inRail live={soopLive} />
+            ) : null}
 
-            <div className="public-legend-vertical" aria-label="태그 필터" ref={legendFollowRef}>
-              <strong className="legend-title">태그 필터</strong>
-              {(() => {
-                const legendBtn = (tag: (typeof legendTags)[number]) => {
-                  const v = tagVisual.visualOf(tag.id);
-                  if (v.missing || !v.bg) {
-                    return null;
-                  }
-                  const swatch = (
-                    <i
-                      data-color={v.colorKey ?? undefined}
-                      style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
-                    />
-                  );
-                  // A2 고도화: 다중 선택과 동기화. 선택된 게 있으면 안 고른 항목은 흐리게.
-                  // 꾸미기에선 스티커 레이어가 덮어 어차피 못 누르므로 disabled로만 두고 **마크업은
-                  // 시청자와 똑같이** 유지한다 — 예전엔 여기서 <span>으로 갈아끼워 범례 줄 높이가
-                  // 3.8px 어긋났고, 표면 안 레이아웃이 모드마다 달라지면 스티커가 밀린다(ADR-0004).
-                  const on = tagFilters.includes(tag.id);
-                  const cls = [
-                    "legend-item",
-                    tag.kind === "modifier" ? "mod" : "",
-                    on ? "active" : "",
-                    tagFilters.length > 0 && !on ? "dim" : ""
-                  ]
-                    .filter(Boolean)
-                    .join(" ");
-                  return (
-                    <button
-                      aria-pressed={on}
-                      className={cls}
-                      disabled={decorate}
-                      key={tag.id}
-                      onClick={() => toggleTagFilter(tag.id)}
-                      type="button"
-                    >
-                      {swatch}
-                      {tag.displayName}
-                    </button>
-                  );
-                };
-                const content = legendTags.filter((t) => t.kind !== "modifier");
-                const mods = legendTags.filter((t) => t.kind === "modifier");
-                return (
-                  <>
-                    {content.map(legendBtn)}
-                    {mods.length > 0 ? (
-                      // 방식은 2열로 — 세로 높이를 아껴 아래 ♥ 안내가 들어갈 자리를 만든다(웹).
-                      <div className="legend-mods">{mods.map(legendBtn)}</div>
-                    ) : null}
-                  </>
-                );
-              })()}
-              {/* '필터 해제'는 필터가 있든 없든 항상 자리(높이)를 차지한다 — 필터를 켤 때 이 버튼이
-                  새로 생기면서 위 색칩들이 위로 밀려, 방금 누른 칩이 커서 밑에서 벗어나 다시 끄려면
-                  마우스를 옮겨야 했다. 항상 자리만 잡아두고 보이기만 토글하면 칩이 안 움직여, 같은
-                  자리에서 따닥 눌러 켜고 끌 수 있다. */}
-              <button
-                className={`legend-clear${filterActive ? "" : " is-hidden"}`}
-                onClick={() => {
-                  hapticTick();
-                  clearFilters();
-                }}
-                type="button"
-                aria-hidden={!filterActive}
-                tabIndex={filterActive ? 0 : -1}
-              >
-                필터 해제
-              </button>
-              {/* ♥ 의미·인기 단계 안내 — 하트 토글은 제목 위 배너로 옮겼고, 그 자리에 모바일처럼
-                  설명을 둔다. margin-top:auto로 안내 박스 바닥에 붙어 빈 공간 없이 채운다.
-                  **모드로 가르지 않는다**: 시청자에게만 그리면 이 박스(26px)만큼 표면이 길어져,
-                  비율 좌표인 스티커가 꾸미기에서 놓은 자리보다 위로 떠 보였다(ADR-0004 불변식).
-                  설명하는 대상(🔥 관심 같은 등급 배지)은 내보낸 PNG에도 찍히므로 범례로도 맞다. */}
-              <div className="legend-heart-help">
-                <p className="legend-tier-line">
-                  <span className="hm">♥</span> 인기도
-                </p>
-                <ul className="legend-tiers">
-                  <li>
-                    <span className="flame">🔥</span> 관심
-                  </li>
-                  <li>
-                    <span className="flame">🔥🔥</span> 높은 관심
-                  </li>
-                  <li>
-                    <span className="flame">🔥🔥🔥</span> 폭발적
-                  </li>
-                  <li>
-                    <span className="flame">👑</span> 이 달 1위
-                  </li>
-                </ul>
-              </div>
-            </div>
+            {renderLegendFilter(true)}
           </aside>
         </section>
         </div>
         </div>
-        {/* 스트리머 scene: avatar 박스는 색상안내(legend) 왼쪽 모서리부터 화면 끝까지(우측 ~1/4),
-            짧아진 legend '아래'에 깔린다. left/top은 legend를 JS로 재서 맞춘다(absolute). surface
-            내부 폭은 안 바꾸므로 스티커 안전. 꾸미기는 avatarCapable=false라 안 뜸. */}
+        {/* 스트리머 scene: avatar 박스는 화면 옆 1/4 고정. 표면 안 레일은 접히고(컬럼 0)
+            정보 카드는 아바타 자리 좌상단, 라이브 카드는 우상단으로 이사(2026-07-31 사용자
+            결정 — 캡쳐 삭제로 표면 고정 레이아웃 제약 해제, 달력이 표면 전체를 쓴다). */}
         {avatarCapable ? (
           <aside className="avatar-slot" aria-label="버츄얼 스트리머 아바타 자리(관리자 전용)">
+            {avatarOn ? (
+              // key=side — 좌우 전환 때 remount로 팝인 모션이 다시 재생된다.
+              <div className="avatar-top-cards" key={`atc-${avatarSide}`}>
+                {railInfoCard}
+                {!decorate ? <SoopLiveBeacon inRail live={soopLive} /> : null}
+              </div>
+            ) : null}
             <div className="avatar-dock-inner">
               <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
             </div>
+          </aside>
+        ) : null}
+        {/* scene 전용 얇은 태그 필터 레일 — 아바타 반대편 끝에 1열로(인기도 안내까지).
+            표면 밖 fixed 크롬이라 달력(표면)은 그만큼 더 커진다. */}
+        {avatarCapable && avatarOn ? (
+          <aside
+            aria-label="태그 필터(아바타 배치)"
+            className="avatar-side-rail"
+            key={`asr-${avatarSide}`}
+          >
+            {renderLegendFilter(false)}
           </aside>
         ) : null}
         </div>

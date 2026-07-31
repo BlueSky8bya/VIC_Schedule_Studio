@@ -961,9 +961,117 @@ html {
    ON/OFF·좌우 전환에서 정렬이 '스냅'하지 않고 margin 트랜지션만 부드럽게 흐른다. */
 .poster-page.avatar-scene.avatar-right .poster-stage {
   margin-right: 25vw; /* 아바타 우측 → 달력 왼쪽 3/4 */
+  margin-left: 196px; /* 반대편 얇은 태그 필터 레일 자리 */
 }
 .poster-page.avatar-scene.avatar-left .poster-stage {
   margin-left: 25vw; /* 아바타 좌측 → 달력 오른쪽 3/4 */
+  margin-right: 196px;
+}
+/* scene: 표면 안 오른쪽 레일을 접는다(둘째 컬럼 0) — 달력이 표면 1840 전체를 차지해 최대로
+   커진다(2026-07-31 사용자 결정 — 캡쳐 삭제로 표면 고정 레이아웃 제약 해제). 컬럼 폭이
+   트랜지션으로 흐르며 달력이 부드럽게 넓어진다(레일 내용은 overflow로 조용히 잘림). */
+.poster-page.avatar-scene .poster-surface {
+  grid-template-columns: minmax(0, 1fr) 0px;
+  column-gap: 0;
+}
+.poster-page.avatar-scene .public-right {
+  min-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* scene 전용 얇은 태그 필터 레일 — 아바타 반대편 끝, 1열 + 인기도 안내까지. 표면 밖 fixed
+   크롬이라 스크롤해도 제자리(아바타 자리와 같은 문법). 등장은 옆에서 통통 슬라이드-인. */
+.avatar-side-rail {
+  position: fixed;
+  top: 76px;
+  bottom: 14px;
+  width: 174px;
+  z-index: 6;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.avatar-side-rail::-webkit-scrollbar {
+  display: none;
+}
+.poster-page.avatar-scene.avatar-right .avatar-side-rail {
+  left: 12px;
+  animation: side-rail-in-l 0.5s cubic-bezier(0.22, 1.4, 0.4, 1) 0.2s both;
+}
+.poster-page.avatar-scene.avatar-left .avatar-side-rail {
+  right: 12px;
+  animation: side-rail-in-r 0.5s cubic-bezier(0.22, 1.4, 0.4, 1) 0.2s both;
+}
+@keyframes side-rail-in-l {
+  from {
+    opacity: 0;
+    transform: translateX(-26px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes side-rail-in-r {
+  from {
+    opacity: 0;
+    transform: translateX(26px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* 얇은 레일 안에선 필터를 1열로 압축(칩 크기는 유지 — 폭만 좁아짐). */
+.avatar-side-rail .public-legend-vertical {
+  grid-template-columns: 1fr;
+  gap: 3px 0;
+}
+.avatar-side-rail .public-legend-vertical .legend-mods {
+  grid-template-columns: 1fr;
+}
+.avatar-side-rail .legend-title {
+  font-size: 15px;
+}
+.avatar-side-rail .public-legend-vertical .legend-item {
+  font-size: 13.5px;
+}
+/* 아바타 자리 상단 카드 줄 — 왼쪽 위 정보 카드, 오른쪽 위 라이브 카드(라이브 중에만).
+   아바타 몸통은 아래쪽이라 상단 여백을 쓴다. 슬롯은 pointer-events:none — 카드만 되살림. */
+.avatar-top-cards {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  pointer-events: auto;
+  z-index: 2;
+}
+.avatar-top-cards .rail-info-card {
+  flex: none;
+  width: 236px;
+  max-width: 60%;
+  animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.28s both;
+}
+.avatar-top-cards .soop-live-card.in-rail {
+  flex: 1;
+  min-width: 0;
+  max-width: 320px;
+  margin-left: auto;
+  animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.36s both;
+}
+@keyframes avatar-card-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 /* legend(색상 안내): 폭 그대로(컬럼 220), 높이만 절반 더 압축 + 내부 스크롤. flex:1 stretch 해제,
    max-height로 짧게. 폭 불변이라 달력 셀이 안 움직여 스티커 안전. 제목은 sticky(불투명 배경)로
@@ -1033,6 +1141,15 @@ html[data-reduce-motion] .poster-page.avatar-scene .avatar-ctl {
   opacity: 1;
   transform: none;
 }
+html[data-reduce-motion] .avatar-side-rail,
+html[data-reduce-motion] .avatar-top-cards .rail-info-card,
+html[data-reduce-motion] .avatar-top-cards .soop-live-card {
+  animation: none;
+}
+html[data-reduce-motion] .poster-surface,
+html[data-reduce-motion] .public-right {
+  transition: none;
+}
 html[data-reduce-motion] .poster-scaler {
   transition: none;
 }
@@ -1043,6 +1160,19 @@ html[data-reduce-motion] .poster-scaler {
   }
   .poster-page.avatar-scene .avatar-slot {
     display: none;
+  }
+  /* scene 꺼짐 — 표면 레일·컬럼도 평소대로 복원(얇은 레일은 숨김). */
+  .avatar-side-rail {
+    display: none;
+  }
+  .poster-page.avatar-scene .poster-surface {
+    grid-template-columns: minmax(0, 1fr) 252px;
+    column-gap: 16px;
+  }
+  .poster-page.avatar-scene .public-right {
+    opacity: 1;
+    overflow: visible;
+    pointer-events: auto;
   }
   /* 아바타 없으니 토글은 좌상단 헤더로 되돌린다(중간에 떠 있지 않게). */
   .poster-page.avatar-scene .avatar-ctl {
@@ -1430,6 +1560,11 @@ html[data-reduce-motion] .poster-export-reward-spark {
   grid-template-rows: auto auto;
   gap: 16px;
   align-items: stretch;
+  /* 아바타 scene ON/OFF에서 레일 컬럼(252↔0)이 흐르듯 접히고 달력이 부드럽게 넓어진다.
+     stage margin(0.55s)과 같은 스프링 리듬 — 함께 움직여 한 동작으로 읽힌다. */
+  transition:
+    grid-template-columns 0.55s var(--spring-smooth, var(--ease-spring)),
+    column-gap 0.55s var(--spring-smooth, var(--ease-spring));
   border-radius: var(--r-xl);
   background: linear-gradient(180deg, #fffdf6, #fdf6e6);
   padding: 18px;
@@ -1634,6 +1769,8 @@ html[data-reduce-motion] .poster-export-reward-spark {
   flex-direction: column;
   align-self: stretch;
   gap: 14px;
+  /* 아바타 scene에서 컬럼이 접힐 때 내용이 먼저 사라지고(0.2s) 폭이 따라 접힌다. */
+  transition: opacity 0.2s var(--ease);
 }
 /* (flex:1 stretch 해제 — 2026-07-31 스크롤 따라오기: 필터가 레일 바닥까지 늘어나 있으면
    translateY로 내려갈 여유가 0이다. 자연 높이로 두고 남는 레일 공간이 이동 슬랙이 된다.) */
