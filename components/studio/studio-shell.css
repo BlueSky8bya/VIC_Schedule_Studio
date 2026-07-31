@@ -3326,6 +3326,10 @@ html[data-reduce-motion] .role-segment button.active {
   padding: 18px;
   /* 팝오버(absolute) 좌표 기준. */
   position: relative;
+  /* 팝오버를 가장자리 밖으로 끌 때 문서 높이/폭이 늘어나지 않게 — absolute 패널이 아래로
+     파고들며 페이지가 +560px씩 자라 스크롤바가 출렁였다(드래그 툭툭 끊김의 원인). clip이라
+     파묻힌 부분은 workspace 가장자리에서 시각적으로 잘리고, 스크롤 영역엔 기여하지 않는다. */
+  overflow: clip;
   /* 각 칸이 제 높이를 갖는다(기본 stretch면 가장 큰 칸 높이에 달력이 끌려 늘어났다). */
   align-items: start;
   /* 아바타 도크는 미닫이문처럼 천천히 부드럽게 열린다(margin 슬라이드). */

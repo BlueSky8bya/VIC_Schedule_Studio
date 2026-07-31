@@ -1884,6 +1884,8 @@ export function StudioShell({
   // 화면 밖에서 놓은 직후 스프링 복귀 중 — className은 React가 소유하므로 상태로 관리
   // (classList.add는 다음 리렌더에 지워져 스프링 이징이 무시됐다).
   const [editorPopSnapback, setEditorPopSnapback] = useState(false);
+  // 연속 튕김 보장 — 이전 해제 타이머가 새 스냅백 애니 중에 발화해 스프링을 끊지 않게 리셋.
+  const editorSnapTimerRef = useRef<number | null>(null);
   // 앵커 칸 중심(workspace 좌표) — 팝오버→칸 리더 라인의 칸 쪽 끝점.
   const [editorAnchorPt, setEditorAnchorPt] = useState<{ x: number; y: number } | null>(null);
   // 팝오버 실측 크기 — 리더 라인의 카드 쪽 끝점(사각형 최근접 가장자리) 계산용.
@@ -1919,7 +1921,9 @@ export function StudioShell({
       const KEEP = 140; // 가로로 화면에 남겨둘 최소 폭(로컬 px)
       const wsTopV = ws.getBoundingClientRect().top; // 화면 px → /z 로 로컬 변환
       const vpTop = (64 - wsTopV) / z + 8; // 상단바 아래(헤더가 그 밑으로 숨지 않게)
-      const vpBottom = (window.innerHeight - wsTopV) / z - 56; // 헤더 바가 바닥 아래로 안 사라지게
+      // 헤더 바가 바닥 아래로 안 사라지게. (문서 높이 팽창은 workspace overflow:clip이 차단 —
+      // 파묻힌 몸통은 가장자리에서 시각적으로 잘릴 뿐 스크롤 영역을 안 늘린다.)
+      const vpBottom = (window.innerHeight - wsTopV) / z - 56;
       return {
         left: Math.round(Math.max(KEEP - popW, Math.min(left, ws.clientWidth - KEEP))),
         top: Math.round(Math.max(vpTop, Math.min(top, vpBottom)))
@@ -2096,8 +2100,12 @@ export function StudioShell({
           };
         }
         if (snapped.left !== last.left || snapped.top !== last.top) {
+          if (editorSnapTimerRef.current) window.clearTimeout(editorSnapTimerRef.current);
           setEditorPopSnapback(true);
-          window.setTimeout(() => setEditorPopSnapback(false), 650);
+          editorSnapTimerRef.current = window.setTimeout(
+            () => setEditorPopSnapback(false),
+            650
+          );
         }
         setEditorPopManual(snapped); // 확정 — 이후 리렌더에서도 이 좌표 유지
         editorPopManualRef.current = snapped; // rAF 루프가 상태 반영 전 프레임에 되돌리지 않게

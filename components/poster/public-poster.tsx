@@ -1143,6 +1143,8 @@ export function PublicPoster({
   const [detailPopSize, setDetailPopSize] = useState<{ w: number; h: number } | null>(null);
   // 화면 밖에서 놓은 직후 스프링 복귀 중 — className은 React 소유라 상태로(classList는 리렌더에 지워짐).
   const [detailSnapback, setDetailSnapback] = useState(false);
+  // 연속 튕김 보장 — 이전 해제 타이머가 새 스냅백 중 발화해 스프링을 끊지 않게 리셋.
+  const detailSnapTimerRef = useRef<number | null>(null);
   const detailManualRef = useRef<typeof detailManual>(null);
   detailManualRef.current = detailManual;
   const detailAnchorPtRef = useRef<typeof detailAnchorPt>(null);
@@ -1260,8 +1262,9 @@ export function PublicPoster({
           top: Math.round(Math.max(12, Math.min(last.top, window.innerHeight - h - 12)))
         };
         if (snapped.left !== last.left || snapped.top !== last.top) {
+          if (detailSnapTimerRef.current) window.clearTimeout(detailSnapTimerRef.current);
           setDetailSnapback(true);
-          window.setTimeout(() => setDetailSnapback(false), 650);
+          detailSnapTimerRef.current = window.setTimeout(() => setDetailSnapback(false), 650);
         }
         setDetailManual(snapped);
         detailManualRef.current = snapped;
