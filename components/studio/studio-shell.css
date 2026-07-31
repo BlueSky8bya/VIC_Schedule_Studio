@@ -3668,6 +3668,51 @@ html[data-reduce-motion] .event-editor-panel {
 .event-editor-panel.is-edit form {
   border-top: 3px solid rgb(139 92 246 / 55%);
 }
+/* 이동 손잡이 스트립 — 카드 상단 전폭(음수 마진으로 카드 가장자리까지), 모드 색 옅은 틴트 +
+   중앙 그립 필. 상단 액센트 라인 바로 아래 붙어 '색 띠 = 잡는 곳'으로 읽힌다. */
+.editor-grab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  /* 폼 padding(리디자인 공통 --space-4=16) 상쇄 — 카드 벽까지 닿는 전폭 스트립 */
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) -8px;
+  padding: 8px 0 7px;
+  border-radius: calc(var(--r-xl) - 3px) calc(var(--r-xl) - 3px) 0 0;
+  cursor: grab;
+  touch-action: none;
+  transition: background var(--dur-1, 0.15s) var(--ease, ease);
+}
+.editor-grab span {
+  width: 46px;
+  height: 5px;
+  border-radius: var(--r-pill, 999px);
+  background: rgb(139 92 246 / 32%);
+  transition: background var(--dur-1, 0.15s) var(--ease, ease);
+}
+.event-editor-panel.is-edit .editor-grab {
+  background: rgb(139 92 246 / 8%);
+}
+.event-editor-panel.is-new .editor-grab {
+  background: rgb(34 150 94 / 8%);
+}
+.event-editor-panel.is-new .editor-grab span {
+  background: rgb(34 150 94 / 34%);
+}
+.editor-grab:hover {
+  background: rgb(139 92 246 / 14%);
+}
+.editor-grab:hover span {
+  background: rgb(139 92 246 / 55%);
+}
+.event-editor-panel.is-new .editor-grab:hover {
+  background: rgb(34 150 94 / 14%);
+}
+.event-editor-panel.is-new .editor-grab:hover span {
+  background: rgb(34 150 94 / 55%);
+}
+.event-editor-panel.pop-dragging .editor-grab {
+  cursor: grabbing;
+}
 .event-editor-panel.pop-dragging .editor-heading-bar {
   cursor: grabbing;
 }

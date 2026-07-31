@@ -1880,6 +1880,9 @@ export function StudioShell({
   const [editorPopSize, setEditorPopSize] = useState<{ w: number; h: number } | null>(null);
   const editorPopManualRef = useRef<typeof editorPopManual>(null);
   editorPopManualRef.current = editorPopManual;
+  // 드래그 진행 중 플래그(ref) — 이동 프레임마다 상태를 안 거치므로, rAF 동기화 루프가
+  // '지금은 손이 잡고 있다'를 상태와 무관하게 알 수 있어야 자동 좌표로 안 되돌린다.
+  const editorPopDragActiveRef = useRef(false);
   const editorAnchorPtRef = useRef<typeof editorAnchorPt>(null);
   editorAnchorPtRef.current = editorAnchorPt;
   const anchorLineRef = useRef<SVGLineElement | null>(null);
@@ -1931,7 +1934,8 @@ export function StudioShell({
     setEditorAnchorPt((p) => (p && p.x === anchor.x && p.y === anchor.y ? p : anchor));
     const size = { w: panel.offsetWidth || 384, h: panel.offsetHeight || 480 };
     setEditorPopSize((s) => (s && s.w === size.w && s.h === size.h ? s : size));
-    if (editorPopManualRef.current) return; // 수동 배치 우선 — 자동 좌표는 덮지 않는다.
+    // 수동 배치(또는 드래그 중) 우선 — 자동 좌표는 덮지 않는다.
+    if (editorPopManualRef.current || editorPopDragActiveRef.current) return;
     const popW = size.w;
     const popH = size.h;
     const GAP = 12;
@@ -1972,6 +1976,7 @@ export function StudioShell({
       if (!moved && Math.abs(dx) < 3 && Math.abs(dy) < 3) return; // 클릭 오차 보호
       if (!moved) {
         moved = true;
+        editorPopDragActiveRef.current = true; // rAF 루프가 자동 좌표로 되돌리지 않게
         setEditorPopDragging(true); // transition 끄기용 1회 렌더만
       }
       last = clampPopPos(base.left + dx, base.top + dy);
@@ -1993,7 +1998,9 @@ export function StudioShell({
       if (moved) {
         hapticTick();
         setEditorPopManual(last); // 확정 — 이후 리렌더에서도 이 좌표 유지
+        editorPopManualRef.current = last; // rAF 루프가 상태 반영 전 프레임에 되돌리지 않게
       }
+      editorPopDragActiveRef.current = false;
       setEditorPopDragging(false);
     };
     window.addEventListener("pointermove", onMove);
@@ -2024,31 +2031,19 @@ export function StudioShell({
     avatarSceneOn,
     avatarSide
   ]);
-  // 창 리사이즈·팝오버 자체 높이 변화(접기 펼침, 오류 배너 등)·달력 판 자체의 리사이즈(일정
-  // 추가/삭제로 칸 높이 변화)·아바타 도크 margin 슬라이드(0.52s transition — 애니 중 측정한
-  // 좌표는 스테일)에도 재배치. 앵커 라인 좌표도 같은 함수가 갱신한다.
+  // 열려 있는 동안 매 프레임 실측 동기화(rAF) — 리사이즈·아바타 margin 슬라이드·체인 등높이
+  // JS·업도움 띠·폰트 로드 등 '배치 이후의 레이아웃 시프트'를 이벤트별로 쫓아다니지 않고
+  // 한 루프로 수렴시킨다(실서비스에서 행이 늦게 밀리며 앵커 도트가 칸 위로 떠 보이던 원인).
+  // 읽기 2회 + 값이 같으면 setState가 같은 객체를 반환해 리렌더 0 — 유휴 비용은 측정뿐이다.
   useEffect(() => {
     if (!editorVisible || isNarrow) return;
-    const onResize = () => placeEditorPopover();
-    window.addEventListener("resize", onResize);
-    const ws = workspaceRef.current;
-    const onTransEnd = (ev: TransitionEvent) => {
-      if (ev.target === ws && ev.propertyName.startsWith("margin")) placeEditorPopover();
+    let raf = 0;
+    const tick = () => {
+      placeEditorPopover();
+      raf = requestAnimationFrame(tick);
     };
-    ws?.addEventListener("transitionend", onTransEnd);
-    const panel = editorPanelRef.current;
-    const cal = calPanelRef.current;
-    const ro =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => placeEditorPopover())
-        : null;
-    if (ro && panel) ro.observe(panel);
-    if (ro && cal) ro.observe(cal);
-    return () => {
-      window.removeEventListener("resize", onResize);
-      ws?.removeEventListener("transitionend", onTransEnd);
-      ro?.disconnect();
-    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [editorVisible, isNarrow, placeEditorPopover]);
 
   useLayoutEffect(() => {
@@ -6319,6 +6314,16 @@ export function StudioShell({
           /* key는 editorKey(명시적 선택 시에만 증가) — 저장·삭제 같은 내부 상태 변화로는 재마운트
              되지 않아 깜빡이지 않는다. 날짜/일정을 새로 고를 때만 쑥 내려오는 전환. */
           <form onSubmit={saveEvent} key={editorKey}>
+            {/* 이동 손잡이 — 카드 맨 위 전폭 스트립(모드 색 틴트 + 중앙 필). 헤더 바도 같이
+                끌 수 있지만, '여길 잡으면 된다'가 보이는 전용 그립을 따로 둔다. */}
+            <div
+              aria-hidden="true"
+              className="editor-grab"
+              onPointerDown={onEditorPopDragStart}
+              title="끌어서 이동"
+            >
+              <span />
+            </div>
             <div className="editor-heading">
               {/* 한 줄: 접기(>) · 날짜 · 라벨 ─ 오른쪽 끝 저장. (높이 절약 — 날짜를 아래줄로 빼지 않음)
                   이 바를 잡아 끌면 팝오버가 통째로 이동한다(버튼 위 제스처 제외). */}
