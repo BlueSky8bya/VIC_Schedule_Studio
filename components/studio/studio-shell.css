@@ -3828,6 +3828,61 @@ html[data-reduce-motion] .editor-anchor-link line {
 .studio-workspace .event-editor-panel .fold-head {
   background: rgb(255 251 242 / 55%);
 }
+
+/* ── 팝오버 태그 트레이 애플식 정돈(조화: 통일·균형·강조 절제) ──
+   기존엔 모든 칩이 원색 채움이라 좁은 팝오버 안이 색 덩어리로 시끄러웠다.
+   애플 태그 피커 문법으로: 안 고른 칩 = 중립 표면 + 왼쪽 '색 점'(메타데이터),
+   고른 칩만 태그 색으로 채움(강조는 선택에만). 콘텐츠/형식 두 칸은 같은
+   헤어라인 카드 문법으로 통일(형식만 점선이던 비대칭 제거), 점이 왼쪽 정렬
+   축이 되어 줄이 가지런히 읽힌다(균형). 다른 화면(모바일 시트 등)은 기존
+   원색 칩 그대로 — 이 재해석은 팝오버 스코프에서만. */
+.studio-workspace .event-editor-panel .tp-content,
+.studio-workspace .event-editor-panel .tp-mod-section {
+  border: var(--stroke-hairline) solid var(--line-soft);
+  background: rgb(255 255 255 / 45%);
+}
+.studio-workspace .event-editor-panel .tp-section-label {
+  color: var(--muted);
+  font-weight: var(--weight-semibold);
+}
+.studio-workspace .event-editor-panel .tp-chip {
+  justify-content: flex-start;
+  gap: 7px;
+  border: var(--stroke-hairline) solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: var(--weight-semibold);
+  padding-inline: 11px;
+}
+.studio-workspace .event-editor-panel .tp-mods .tp-chip {
+  border-style: solid;
+}
+.studio-workspace .event-editor-panel .tp-chip::before {
+  content: "";
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: var(--r-pill);
+  background: var(--tp-bg);
+  box-shadow: inset 0 0 0 1px var(--tp-border, rgb(0 0 0 / 12%));
+  transition: background var(--dur-1) var(--ease), opacity var(--dur-1) var(--ease);
+}
+.studio-workspace .event-editor-panel .tp-chip:hover:not(:disabled):not(.selected) {
+  border-color: var(--tp-border, var(--line));
+  background: color-mix(in srgb, var(--tp-bg) 24%, var(--surface));
+}
+.studio-workspace .event-editor-panel .tp-chip.selected {
+  border-color: var(--tp-border, transparent);
+  background: var(--tp-bg);
+  color: var(--tp-ink, var(--ink));
+  font-weight: var(--weight-bold, 800);
+}
+/* 선택되면 채움이 곧 색이므로 점은 잉크색으로 흐려져 순번 배지·이름에 자리를 양보. */
+.studio-workspace .event-editor-panel .tp-chip.selected::before {
+  background: var(--tp-ink, var(--ink));
+  box-shadow: none;
+  opacity: 0.5;
+}
 /* 색상 필터 사이드바: 폭을 최소화했으니 안쪽 여백·제목도 컴팩트하게. */
 .studio-left-panel section {
   padding: 12px;
@@ -6178,8 +6233,12 @@ html[data-reduce-motion] .delete-snack {
   align-items: center;
   justify-content: center;
   gap: 5px;
-  border: 1.5px solid;
+  border: 1.5px solid var(--tp-border, currentColor);
   border-radius: var(--r-pill);
+  /* 태그 색은 인라인 CSS 변수(--tp-bg/--tp-border/--tp-ink)로 온다 — 기본 렌더는
+     예전 인라인 스타일과 동일하고, 편집 팝오버 스코프에서만 재해석한다. */
+  background: var(--tp-bg);
+  color: var(--tp-ink, inherit);
   padding: 7px 14px;
   font-size: var(--text-body); /* 13.5 */
   font-weight: 800;

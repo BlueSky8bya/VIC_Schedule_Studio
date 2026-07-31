@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, type CSSProperties } from "react";
 import type { BroadcastTag, ColorPaletteEntry } from "@/lib/domain/schedule-types";
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -56,7 +56,15 @@ export function TagPicker({
           hapticTick();
           onToggle(tag.id);
         }}
-        style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined, color: v.legacyTextColor ?? undefined }}
+        style={
+          {
+            // 색은 CSS 변수로 전달 — 기본 렌더는 이전과 동일하고, 편집 팝오버처럼
+            // 스코프별로 '색 점 + 선택 시 채움' 등으로 재해석할 수 있게 한다.
+            "--tp-bg": v.bg,
+            "--tp-border": v.border ?? undefined,
+            "--tp-ink": v.legacyTextColor ?? undefined
+          } as CSSProperties
+        }
         title={blocked ? `태그는 최대 ${max}개까지 고를 수 있어요` : tag.displayName}
         type="button"
       >
