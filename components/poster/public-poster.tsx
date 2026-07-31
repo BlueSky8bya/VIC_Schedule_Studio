@@ -1141,6 +1141,8 @@ export function PublicPoster({
   const [detailManual, setDetailManual] = useState<{ left: number; top: number } | null>(null);
   const [detailAnchorPt, setDetailAnchorPt] = useState<{ x: number; y: number } | null>(null);
   const [detailPopSize, setDetailPopSize] = useState<{ w: number; h: number } | null>(null);
+  // 화면 밖에서 놓은 직후 스프링 복귀 중 — className은 React 소유라 상태로(classList는 리렌더에 지워짐).
+  const [detailSnapback, setDetailSnapback] = useState(false);
   const detailManualRef = useRef<typeof detailManual>(null);
   detailManualRef.current = detailManual;
   const detailAnchorPtRef = useRef<typeof detailAnchorPt>(null);
@@ -1250,8 +1252,19 @@ export function PublicPoster({
       window.removeEventListener("pointercancel", onUp);
       if (moved) {
         hapticTick();
-        setDetailManual(last);
-        detailManualRef.current = last;
+        // 화면 밖에서 놓으면 스프링으로 팅 튕겨 '전부 보이는' 자리로 복귀(편집실과 동일 문법).
+        const w = sheet.offsetWidth;
+        const h = sheet.offsetHeight;
+        const snapped = {
+          left: Math.round(Math.max(12, Math.min(last.left, window.innerWidth - w - 12))),
+          top: Math.round(Math.max(12, Math.min(last.top, window.innerHeight - h - 12)))
+        };
+        if (snapped.left !== last.left || snapped.top !== last.top) {
+          setDetailSnapback(true);
+          window.setTimeout(() => setDetailSnapback(false), 650);
+        }
+        setDetailManual(snapped);
+        detailManualRef.current = snapped;
       }
       detailDragActiveRef.current = false;
       sheet.classList.remove("pop-dragging");
@@ -3944,7 +3957,7 @@ export function PublicPoster({
                 <div
                   aria-label="일정 상세"
                   aria-modal="true"
-                  className="agenda-detail-sheet"
+                  className={`agenda-detail-sheet${detailSnapback ? " pop-snapback" : ""}`}
                   ref={detailSheetRef}
                   role="dialog"
                   style={popStyle}

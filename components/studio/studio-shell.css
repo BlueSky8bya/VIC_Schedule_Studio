@@ -3613,6 +3613,15 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
     top 0.45s cubic-bezier(0.25, 1, 0.5, 1),
     left 0.45s cubic-bezier(0.25, 1, 0.5, 1);
 }
+/* 드래그를 화면 밖에서 놓았을 때 — 스프링 오버슈트로 팅 튕겨 복귀(꾸미기 스티커 문법). */
+.event-editor-panel.pop-snapback {
+  transition:
+    top 0.55s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    left 0.55s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+html[data-reduce-motion] .event-editor-panel.pop-snapback {
+  transition: none;
+}
 /* 닫힘 = DOM에서 감춤(display) — 다시 열릴 때 이전 좌표에서 transition이 시작되지 않게 리셋. */
 .studio-workspace:not(.editor-open) .event-editor-panel {
   display: none;

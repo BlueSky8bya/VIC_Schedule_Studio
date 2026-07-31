@@ -5789,6 +5789,15 @@ html[data-reduce-motion] .pi-retry:active {
   transition: none;
   user-select: none;
 }
+/* 드래그를 화면 밖에서 놓았을 때 — 스프링 오버슈트로 팅 튕겨 복귀(편집실·꾸미기 스티커 문법). */
+.agenda-detail-backdrop.is-pop .agenda-detail-sheet.pop-snapback {
+  transition:
+    top 0.55s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)),
+    left 0.55s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+html[data-reduce-motion] .agenda-detail-sheet.pop-snapback {
+  transition: none;
+}
 @keyframes detail-pop-in {
   from {
     opacity: 0;

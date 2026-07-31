@@ -1881,6 +1881,9 @@ export function StudioShell({
     null
   );
   const [editorPopDragging, setEditorPopDragging] = useState(false);
+  // 화면 밖에서 놓은 직후 스프링 복귀 중 — className은 React가 소유하므로 상태로 관리
+  // (classList.add는 다음 리렌더에 지워져 스프링 이징이 무시됐다).
+  const [editorPopSnapback, setEditorPopSnapback] = useState(false);
   // 앵커 칸 중심(workspace 좌표) — 팝오버→칸 리더 라인의 칸 쪽 끝점.
   const [editorAnchorPt, setEditorAnchorPt] = useState<{ x: number; y: number } | null>(null);
   // 팝오버 실측 크기 — 리더 라인의 카드 쪽 끝점(사각형 최근접 가장자리) 계산용.
@@ -2076,8 +2079,28 @@ export function StudioShell({
       window.removeEventListener("pointercancel", onUp);
       if (moved) {
         hapticTick();
-        setEditorPopManual(last); // 확정 — 이후 리렌더에서도 이 좌표 유지
-        editorPopManualRef.current = last; // rAF 루프가 상태 반영 전 프레임에 되돌리지 않게
+        // 화면 밖으로 나간 채 놓으면 — 꾸미기 스티커처럼 '전부 보이는' 자리까지 스프링으로
+        // 팅 튕겨 복귀한다(드래그 중엔 자유, 파묻힌 채 방치 금지 — 사용자 요청).
+        const ws = workspaceRef.current;
+        let snapped = last;
+        if (ws) {
+          const z = getPopZoom();
+          const wsTopV = ws.getBoundingClientRect().top;
+          const vpTopL = (64 - wsTopV) / z + 8;
+          const vpBottomL = (window.innerHeight - wsTopV) / z - 8;
+          const w = panel.offsetWidth || 384;
+          const h = panel.offsetHeight || 480;
+          snapped = {
+            left: Math.round(Math.max(8, Math.min(last.left, ws.clientWidth - w - 8))),
+            top: Math.round(Math.max(vpTopL, Math.min(last.top, vpBottomL - h)))
+          };
+        }
+        if (snapped.left !== last.left || snapped.top !== last.top) {
+          setEditorPopSnapback(true);
+          window.setTimeout(() => setEditorPopSnapback(false), 650);
+        }
+        setEditorPopManual(snapped); // 확정 — 이후 리렌더에서도 이 좌표 유지
+        editorPopManualRef.current = snapped; // rAF 루프가 상태 반영 전 프레임에 되돌리지 않게
       }
       editorPopDragActiveRef.current = false;
       setEditorPopDragging(false);
@@ -6394,7 +6417,7 @@ export function StudioShell({
         <aside
           className={`event-editor-panel ${selectedEventId ? "is-edit" : "is-new"}${
             panelSaved ? " panel-saved" : ""
-          }${editorPopDragging ? " pop-dragging" : ""}`}
+          }${editorPopDragging ? " pop-dragging" : ""}${editorPopSnapback ? " pop-snapback" : ""}`}
           key={`pop-${editorKey}`}
           ref={editorPanelRef}
           style={(() => {
