@@ -4,24 +4,36 @@ import { useEffect, useState } from "react";
 import { reduceMotionEnabled } from "@/lib/ui/motion";
 import type { SoopLive } from "@/components/poster/use-soop-live";
 
-// 데스크탑 전용 라이브 카드(우하단 플로팅) — 생방송 중이면 SOOP 임베드 플레이어(음소거
-// 자동재생) + LIVE 배지 + 방송 제목이 뜬다(2026-07-31, 예전 좌상단 알약 비콘을 대체).
+// 데스크탑 전용 라이브 카드(우하단 플로팅) — 생방송 중이면 SOOP 라이브 썸네일(정지 이미지,
+// 주기 갱신) + LIVE 배지 + 방송 제목이 뜬다(2026-08-01, 임베드 플레이어를 대체).
+// 임베드는 실제 스트림 접속이라 일정표를 열어둔 것만으로 시청자 수에 중복 집계되던 문제가
+// 있었다 — 썸네일 이미지는 방송 접속이 아니므로 집계에 안 잡힌다.
 // 폴링은 useSoopLive 훅. 모바일에선 CSS로 숨기고 하단 '오늘' 버튼이 LIVE로 변신(기존 유지).
-// fixed라 export 표면 밖 → 공식 PNG엔 안 들어간다(실시간 정보). 임베드가 안 뜨는 환경에서도
+// fixed라 export 표면 밖 → 공식 PNG엔 안 들어간다(실시간 정보). 썸네일이 안 뜨는 환경에서도
 // 배지·제목·보러가기 링크는 남는다.
+
+const THUMB_REFRESH_MS = 60_000;
 
 export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null; inRail?: boolean }) {
   const [reduce, setReduce] = useState(false);
   useEffect(() => setReduce(reduceMotionEnabled()), []);
 
+  // 썸네일 캐시버스트 틱 — 라이브 썸네일 서버가 주기적으로 새 프레임을 주므로
+  // 1분마다 쿼리를 바꿔 최신 장면으로 갱신한다(스트림 접속 없음).
+  const [thumbTick, setThumbTick] = useState(0);
+  const isLive = live?.isLive ?? false;
+  useEffect(() => {
+    if (!isLive) return;
+    const id = setInterval(() => setThumbTick((t) => t + 1), THUMB_REFRESH_MS);
+    return () => clearInterval(id);
+  }, [isLive]);
+
   if (!live?.isLive) return null;
-  // 방송번호(bno)가 있을 때만 임베드 — bno 없이 채널만 임베드하면 SOOP가 최신 '다시보기(VOD)'
-  // 플레이어를 트는데, VOD 플레이어는 톱니·전체화면·시간이 상시 표시라 감출 수 없다(실측).
-  // 진짜 라이브(bno 有)는 컨트롤이 안 남는 라이브 플레이어. bno 없으면 어두운 판 + LIVE 배지만.
-  const embedSrc =
-    live.bjId && live.bno
-      ? `https://play.sooplive.co.kr/${live.bjId}/${live.bno}/embed?autoPlay=true&mutePlay=true&showChat=false`
-      : null;
+  // 방송번호(bno)가 있을 때만 썸네일 — liveimg 서버가 bno 기준으로 현재 방송 장면을 준다.
+  // bno 없으면 어두운 판 + LIVE 배지만.
+  const thumbSrc = live.bno
+    ? `https://liveimg.sooplive.co.kr/m/${live.bno}?t=${thumbTick}`
+    : null;
 
   return (
     <div
@@ -29,20 +41,17 @@ export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null
       data-reduce={reduce ? "" : undefined}
     >
       <div className="slc-player">
-        {embedSrc ? (
-          <iframe
-            allow="autoplay; encrypted-media; picture-in-picture"
-            scrolling="no"
-            src={embedSrc}
-            title={`라이브 방송: ${live.title ?? ""}`}
+        {thumbSrc ? (
+          <img
+            alt={`라이브 방송 미리보기: ${live.title ?? ""}`}
+            src={thumbSrc}
           />
         ) : null}
         <span className="slc-badge">
           <i aria-hidden="true" />
           LIVE
         </span>
-        {/* 투명 클릭 레이어 — 호버·클릭이 iframe에 안 닿아 플레이어 컨트롤(톱니·전체화면)이
-            아예 안 뜨고, 화면 어디를 눌러도 방송으로 이동한다(2026-07-31). */}
+        {/* 투명 클릭 레이어 — 화면 어디를 눌러도 방송으로 이동한다. */}
         <a
           aria-label="방송 보러 가기"
           className="slc-cover"
