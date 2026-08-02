@@ -4,6 +4,21 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-08-02
+
+### CHG-20260802-001 — FIX — 방송시간 머리/꼬리 손실 재시도 보정(0059)
+
+Problem: 2026-08-02 4시간 방송(16:00:23~20:00:47)이 3시간 44분으로 과소집계. (a) 머리 ~10분 —
+세션 insert 순간 방송국 API 실패로 started_at이 첫 폴링 시각으로 굳고, bno를 이미 알아 기존
+머리 보정 분기는 영영 안 탐(보정 기회 1회뿐). (b) 꼬리 ~7분 — 뱅종 감지 순간 VOD가 아직 등록
+전이라 last_live_at에서 보수적으로 닫고 재시도 없음.
+Change: 0059 — `start_verified`/`vod_verified` boolean 추가. 라이브 tick마다 미확정 시작시각을
+broad_start로 재보정, 오프라인 tick마다 최근 6시간 내 닫힌 미확정 세션을 VOD로 재보정. 성공 시
+verified로 굳혀 API 호출 중단. 8/2 행은 VOD 정답값으로 백필(4.01h).
+Files: `db/migrations/0059_broadcast_session_verify_flags.sql`, `lib/broadcast/session.ts`
+Validation: 0059 적용 + 백필 후 실데이터 조회(4.0066h), tsc/lint/prod build OK.
+Rollback: 컬럼 2개 drop + session.ts revert. 백필 이전 값은 started 16:10:07/ended 19:53:43.
+
 ## v0.1.0 — 2026-07-30
 
 ### CHG-20260730-001 — REMOVE — 공개 proposals 엔드포인트·supportCampaigns payload 제거 (P2-PROTO-1)

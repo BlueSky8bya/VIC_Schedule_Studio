@@ -42,6 +42,9 @@ export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null
     >
       <div className="slc-player">
         {thumbSrc ? (
+          // 외부 라이브 썸네일(수십 초마다 갱신되는 서명 없는 원격 이미지)이라 next/image
+          // 최적화 대상이 아니다 — 프록시 캐시가 오히려 낡은 장면을 보여준다.
+          // eslint-disable-next-line @next/next/no-img-element
           <img
             alt={`라이브 방송 미리보기: ${live.title ?? ""}`}
             src={thumbSrc}
