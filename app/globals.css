@@ -1129,19 +1129,46 @@ html[data-reduce-motion] .passcode-box .button {
   display: flex;
   align-items: center;
   height: 17px;
-  /* 빨강 계열 구분: CK는 민무늬, 업도움 배너는 대각선 무늬.
-     배경색 위에 background-image 무늬를 깔아 글자 아래에 둔다(캡쳐에서도 보임). */
-  background-color: #fda4af;
-  background-image: repeating-linear-gradient(-45deg, rgb(0 0 0 / 16%) 0 2px, transparent 2px 7px);
+  /* 대각선 무늬 제거(2026-08-03, 사용자 결정) — 글자 가독성을 해쳤다. 은은한 장미 그라데이션
+     단색 띠 + 진한 장미 글자. 흰 하이라이트 한 줄로 '눌리는 리본' 질감. */
+  background: linear-gradient(180deg, #ffc9d3, #ffadbe);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
   color: #9f1239;
   cursor: pointer;
   overflow: hidden;
+  transition:
+    filter 0.16s var(--ease, ease),
+    box-shadow 0.16s var(--ease, ease),
+    transform 0.16s var(--ease, ease);
+}
+/* 시작 조각은 넘침 허용 — 제목·CTA가 (같은 색으로 이어진) 띠 위로 흘러가 칸 폭에 안 잘린다.
+   z-index를 한 단계 올려 뒤 조각들이 글자를 덮지 않게 한다. */
+.support-bar.sb-head {
+  overflow: visible;
+  z-index: 5;
+}
+.support-bar.sb-head span {
+  position: relative;
+  z-index: 1;
 }
 .support-bar span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
   padding: 0 6px;
   font-size: 10.5px;
   font-weight: 900;
   white-space: nowrap;
+}
+/* '도와주러 가기 →' — 띠의 남는 가로 폭을 클릭 유도 문구로 활용(시청자 화면 전용 렌더). */
+.support-bar .sb-cta {
+  font-style: normal;
+  font-weight: 800;
+  font-size: 10px;
+  color: rgb(159 18 57 / 78%);
+  border-bottom: 1px dotted rgb(159 18 57 / 45%);
+  transition: transform 0.16s var(--ease, ease), color 0.16s var(--ease, ease);
 }
 
 /* ── 태그 색 무늬(패턴) — 제거됨(2026-07-18) ──────────────────────────────

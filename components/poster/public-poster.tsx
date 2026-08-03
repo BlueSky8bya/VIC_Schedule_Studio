@@ -1367,6 +1367,9 @@ export function PublicPoster({
   const burstId = useRef(0);
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
   const interactive = !decorate;
+  // 업도움 띠 그룹 호버 — 띠는 칸마다 별도 조각이라 CSS :hover만으로는 한 조각만 밝아져
+  // 마디가 다시 보인다. 같은 일정의 모든 조각이 함께 반응하게 호버 중인 띠 id를 들고 있는다.
+  const [hoverSupportId, setHoverSupportId] = useState<string | null>(null);
   // 하트(관심)는 로그인 시청자만 — 익명 시청자에겐 ♥ 토글/모아보기를 숨긴다(서버 1인1하트 불가).
   // 색상 필터 등 다른 상호작용은 익명에게도 그대로 둔다.
   // 하트 가능 = 상호작용 화면이고 하트 액션이 연결돼 있으면(로그인이든 비로그인이든). 비로그인도
@@ -3123,6 +3126,9 @@ export function PublicPoster({
           const isEnd = cell.isoDate === end;
           const left = isStart;
           const right = isEnd;
+          // 라벨은 '시작 칸'과 '주가 바뀐 첫 칸(일요일)'에만 — 예전 isEnd 라벨은 같은 줄에서
+          // 제목이 두 번 보였다. 글자는 sb-head(overflow 허용)로 오른쪽 띠 위로 흘러간다.
+          const showLabel = isStart || (!isStart && cell.weekday === 0);
           // 띠 클릭 = 업도움 상세 팝오버('도우러 가기' 포함) — 레일의 업도움 카드가 하던 일이
           // 관심 지점(띠) 클릭으로 이사(2026-07-31). 시청자(interactive)에서만.
           const openSupportDetail = interactive
@@ -3145,12 +3151,19 @@ export function PublicPoster({
               // 제일 눈에 띄었다 → 끈도 같이 물러난다(같은 isDimmedByFilter 판정을 쓴다).
               className={`support-bar${isDimmedByFilter(s) ? " dimmed" : ""}${
                 openSupportDetail ? " is-clickable" : ""
-              }`}
+              }${showLabel ? " sb-head" : ""}${hoverSupportId === s.id ? " is-hover" : ""}`}
+              onMouseEnter={openSupportDetail ? () => setHoverSupportId(s.id) : undefined}
+              onMouseLeave={
+                openSupportDetail
+                  ? () => setHoverSupportId((cur) => (cur === s.id ? null : cur))
+                  : undefined
+              }
               key={s.id}
               style={{
                 top: 26 + lane * 20,
-                left: left ? 3 : 0,
-                right: right ? 3 : 0,
+                // 이어지는 칸은 -1px로 칸 경계선을 덮어 대나무 마디처럼 끊겨 보이지 않게.
+                left: left ? 3 : -1,
+                right: right ? 3 : -1,
                 borderTopLeftRadius: left ? 9 : 0,
                 borderBottomLeftRadius: left ? 9 : 0,
                 borderTopRightRadius: right ? 9 : 0,
@@ -3172,7 +3185,17 @@ export function PublicPoster({
                   }
                 : {})}
             >
-              {isStart || isEnd ? <span>🌱 {s.publicTitle}</span> : null}
+              {showLabel ? (
+                <span>
+                  <i className="sb-sprout" aria-hidden="true">
+                    🌱
+                  </i>
+                  {s.publicTitle}
+                  {/* 남는 가로 폭 = 클릭 유도 문구(시청자 전용, 띠 위로 흘러감) — 눌러야
+                      '도우러 가기' 링크가 보이는 구조라, 띠 스스로 "눌러도 된다"를 말해야 한다. */}
+                  {openSupportDetail ? <em className="sb-cta">도와주러 가기 →</em> : null}
+                </span>
+              ) : null}
             </div>
           );
         })}

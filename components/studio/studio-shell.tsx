@@ -6229,12 +6229,17 @@ export function StudioShell({
                     // 주 경계(토→일)에서도 끈을 끊지 않음 → 시작/끝일에만 둥글게
                     const left = isStart;
                     const right = isEnd;
+                    // 라벨은 '시작 칸'과 '주가 바뀐 첫 칸(일요일)'에만 — isEnd 라벨은 같은
+                    // 줄에서 제목이 두 번 보였다. 글자는 sb-head로 오른쪽 띠 위로 흘러간다.
+                    const showLabel = isStart || (!isStart && cellIndex % 7 === 0);
                     return (
                       <div
                         // 필터를 켜면 일정 카드만 흐려지고 업 도움 끈은 쨍하게 남아, 안 고른 기간이
                         // 오히려 제일 눈에 띄었다(시청자 화면에서 같은 이유로 이미 고쳤다).
                         // 판정은 카드와 같은 isDimmedByFilter — 끈에 태그가 없으면 필터 켤 때 물러난다.
-                        className={`support-bar${isDimmedByFilter(s) ? " filter-dim" : ""}`}
+                        className={`support-bar${isDimmedByFilter(s) ? " filter-dim" : ""}${
+                          showLabel ? " sb-head" : ""
+                        }`}
                         key={s.id}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -6249,15 +6254,16 @@ export function StudioShell({
                           // 날짜 헤더가 --cal-zoom으로 커지므로 띠 시작 높이·레인 간격도 같이
                           // 배율 — 안 그러면 125%+에서 날짜 숫자와 띠가 겹친다.
                           top: Math.round((26 + lane * 20) * calZoom),
-                          left: left ? 3 : 0,
-                          right: right ? 3 : 0,
+                          // 이어지는 칸은 -1px로 칸 경계선을 덮어 마디처럼 끊겨 보이지 않게.
+                          left: left ? 3 : -1,
+                          right: right ? 3 : -1,
                           borderTopLeftRadius: left ? 9 : 0,
                           borderBottomLeftRadius: left ? 9 : 0,
                           borderTopRightRadius: right ? 9 : 0,
                           borderBottomRightRadius: right ? 9 : 0
                         }}
                       >
-                        {isStart || isEnd ? <span>🌱 {s.publicTitle}</span> : null}
+                        {showLabel ? <span>🌱 {s.publicTitle}</span> : null}
                       </div>
                     );
                   })}
