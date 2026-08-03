@@ -10929,7 +10929,7 @@ html[data-reduce-motion] .role-segment button:active {
   margin: 0;
   border-bottom: var(--stroke-hairline) solid var(--line-soft);
   background: var(--surface-2);
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
 }
 
 .modal-backdrop-passcode .modal-head h2 {
@@ -10946,12 +10946,29 @@ html[data-reduce-motion] .role-segment button:active {
 }
 
 .modal-backdrop-passcode .modal-card > :not(.modal-head) {
-  padding: var(--space-4);
+  padding: var(--space-3);
 }
 
-/* 본문 밀도 — 입력줄과 '비밀번호 변경' 링크 사이 간격을 한 단계 좁혀 붕 뜨지 않게. */
+/* 본문 밀도 — 데스크톱 포인터 팝업이라 44px 풀 히트가 과했다(위아래로 뚱뚱, 사용자 지적).
+   입력/확인 40px, 링크는 텍스트 크기에 맞게. 간격도 한 단계 좁힌다. */
 .modal-backdrop-passcode .passcode-box {
   gap: var(--space-2);
+}
+
+.modal-backdrop-passcode .passcode-box > input,
+.modal-backdrop-passcode .passcode-input-row input,
+.modal-backdrop-passcode .passcode-input-row .button,
+.modal-backdrop-passcode .passcode-actions .button {
+  min-height: 40px;
+}
+
+/* '비밀번호 변경' 링크 — 호버 배경이 글자보다 한참 크던 것(min-height 44 + 양옆 space-4)을
+   텍스트에 딱 붙는 알약으로. */
+.modal-backdrop-passcode .passcode-box > .button {
+  min-height: 30px;
+  border-radius: var(--r-pill);
+  padding-inline: var(--space-2);
+  font-size: var(--text-label);
 }
 
 .modal-backdrop-passcode .modal-close {
@@ -10992,6 +11009,15 @@ html[data-reduce-motion] .role-segment button:active {
     padding: var(--space-4)
       var(--space-4)
       calc(var(--space-5) + env(safe-area-inset-bottom));
+  }
+
+  /* 모바일은 엄지 타깃 우선 — 데스크톱 압축(40px)을 되돌려 44px 히트 유지. */
+  .modal-backdrop-passcode .passcode-box > input,
+  .modal-backdrop-passcode .passcode-input-row input,
+  .modal-backdrop-passcode .passcode-input-row .button,
+  .modal-backdrop-passcode .passcode-actions .button,
+  .modal-backdrop-passcode .passcode-box > .button {
+    min-height: var(--control-hit);
   }
 }
 
