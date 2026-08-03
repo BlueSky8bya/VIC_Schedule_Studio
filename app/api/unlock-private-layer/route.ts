@@ -89,13 +89,17 @@ export async function POST(request: Request) {
     );
   }
 
-  // [임시 · 제거 예정] 최초공개 게이트 디자인 확인용 테스트 비번 — 환경변수가 설정된
-  // 환경에서만, verifyOnly(검증 전용) 경로에서만 통한다. 실제 잠금해제(grant 발급)에는
-  // 절대 못 쓴다. 확인 끝나면 이 분기와 .env.local의 TEASER_GATE_TEST_PASSCODE를 지울 것.
-  const testPass = (process.env.TEASER_GATE_TEST_PASSCODE ?? "").trim();
+  // 로컬 개발 전용 테스트 비번 — 실제 비번을 건드리지 않고 비공개 레이어/최초공개 게이트를
+  // 열어볼 수 있게 한다. 이중 잠금: ① NODE_ENV=development(로컬 next dev)가 아니면 코드가
+  // 죽는다(Vercel은 항상 production — 환경변수를 실수로 올려도 무력) ② 환경변수
+  // PRIVATE_LAYER_TEST_PASSCODE(.env.local, git 미추적)가 없으면 무력.
+  const testPass =
+    process.env.NODE_ENV === "development"
+      ? (process.env.PRIVATE_LAYER_TEST_PASSCODE ?? "").trim()
+      : "";
   const passOk =
     verifyPasscode(passcode, settings.passcode_hash) ||
-    (verifyOnly && testPass.length > 0 && passcode.trim() === testPass);
+    (testPass.length > 0 && passcode.trim() === testPass);
   // 시도 기록(성공/실패) + 창 밖 옛 기록 청소(지나가며 정리 — 별도 크론 불필요).
   await Promise.all([
     supabase.from("private_unlock_attempts").insert({ user_id: user.id, ok: passOk }),
