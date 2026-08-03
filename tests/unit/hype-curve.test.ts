@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   HYPE_WINDOW_S,
+  STATIC_MOTION_FRAME,
+  beatWave,
   clamp01,
   hypeChannels,
   hypeCssVars,
-  hypeIntensity
+  hypeIntensity,
+  hypeMotionCssVars,
+  hypeMotionFrame
 } from "@/lib/ui/hype-curve";
 
 const S = (sec: number) => sec * 1000;
@@ -94,5 +98,191 @@ describe("hypeChannels — 채널 매핑", () => {
     expect(vars["--hype-i"]).toMatch(/^\d\.\d{3}$/);
     expect(vars["--hy-ring-dur"]).toMatch(/^\d+\.\d{3}s$/);
     expect(vars["--hy-shake-x"]).toMatch(/^\d+\.\d{2}px$/);
+  });
+});
+
+// ── 4차: 시트 온도 · 마스터 박동 위상 · 점멸 예산 ────────────────────────────
+describe("sheetWarm — 팝오버 표면 온도", () => {
+  it("I^1.35로 0→1 단조 증가하고, 금빛(I^2.2)보다 항상 이르다", () => {
+    expect(hypeChannels(0).sheetWarm).toBe(0);
+    expect(hypeChannels(1).sheetWarm).toBeCloseTo(1, 6);
+    let prev = -1;
+    for (let i = 0; i <= 1.0001; i += 0.05) {
+      const w = hypeChannels(Math.min(1, i)).sheetWarm;
+      expect(w).toBeGreaterThanOrEqual(prev);
+      prev = w;
+    }
+    // 넓은 저채도 면은 감지가 늦으므로 중반에 이미 온도가 있어야 한다.
+    for (const i of [0.25, 0.5, 0.75]) {
+      expect(hypeChannels(i).sheetWarm).toBeGreaterThan(hypeChannels(i).goldMix);
+    }
+  });
+});
+
+describe("dash 주기 — 새 endpoint", () => {
+  it("빈도 공간에서 2.2초 → 0.52초로 감소한다", () => {
+    expect(hypeChannels(0).dashDurationS).toBeCloseTo(2.2, 6);
+    expect(hypeChannels(1).dashDurationS).toBeCloseTo(0.52, 6);
+  });
+  it("시점별 기준값이 명세와 일치한다(60/30/10/3/1초)", () => {
+    const at = (sec: number) => hypeChannels(hypeIntensity(S(sec))).dashDurationS;
+    expect(at(60)).toBeCloseTo(2.2, 2);
+    expect(at(30)).toBeCloseTo(1.174, 2);
+    expect(at(10)).toBeCloseTo(0.674, 2);
+    expect(at(3)).toBeCloseTo(0.561, 2);
+    expect(at(1)).toBeCloseTo(0.533, 2);
+  });
+});
+
+describe("beatWave — 마스터 박동 파형", () => {
+  it("한 주기에 국소 최대가 정확히 하나이고 20% 지점에서 1이다", () => {
+    expect(beatWave(0)).toBeCloseTo(0, 6);
+    expect(beatWave(0.2)).toBeCloseTo(1, 6);
+    expect(beatWave(0.55)).toBeCloseTo(0, 6);
+    expect(beatWave(0.9)).toBe(0);
+    let peaks = 0;
+    for (let q = 0.005; q < 1; q += 0.005) {
+      const a = beatWave(q - 0.005);
+      const b = beatWave(q);
+      const c = beatWave(q + 0.005);
+      if (b > a && b >= c) peaks += 1;
+    }
+    expect(peaks).toBe(1);
+  });
+  it("수축(20%)이 이완(35%)보다 빠른 비대칭이다", () => {
+    expect(beatWave(0.1)).toBeCloseTo(0.5, 1); // 상승 중간
+    expect(beatWave(0.375)).toBeCloseTo(0.5, 1); // 하강 중간
+  });
+  it("주기 밖 위상도 감싸서(fract) 같은 값을 낸다", () => {
+    expect(beatWave(1.2)).toBeCloseTo(beatWave(0.2), 6);
+  });
+});
+
+describe("점멸 예산(WCAG 2.3.1)", () => {
+  it("최대 강도에서도 박동 빈도가 초당 3회 한계에 여유를 남긴다", () => {
+    const minPeriod = hypeChannels(1).ringDurationS;
+    expect(minPeriod).toBeCloseTo(0.62, 6);
+    const hz = 1 / minPeriod;
+    expect(hz).toBeLessThan(1.7); // 임의 1초 창 peak 최대 2회 + 공개 단발 1회 = 3회(초과 아님)
+  });
+});
+
+describe("hypeMotionFrame — 절대 위상", () => {
+  it("같은 remainMs면 mount 시점과 무관하게 같은 위상을 낸다", () => {
+    const a = hypeMotionFrame(S(12), hypeIntensity(S(12)));
+    const b = hypeMotionFrame(S(12), hypeIntensity(S(12)));
+    expect(a.beatPhase).toBe(b.beatPhase);
+    expect(a.dashPhase).toBe(b.dashPhase);
+  });
+  it("위상은 0~1 안에 있고, 주기가 변해도 인접 샘플에서 튀지 않는다", () => {
+    let prev: number | null = null;
+    for (let sec = 60; sec >= 0; sec -= 0.1) {
+      const f = hypeMotionFrame(S(sec), hypeIntensity(S(sec)));
+      expect(f.beatPhase).toBeGreaterThanOrEqual(0);
+      expect(f.beatPhase).toBeLessThan(1);
+      if (prev !== null) {
+        // 되감김(1→0)을 제외하면 인접 0.1초 사이 위상 변화가 한 주기를 넘지 않는다.
+        const d = f.beatPhase - prev;
+        expect(d > 0 ? d : d + 1).toBeLessThan(0.5);
+      }
+      prev = f.beatPhase;
+    }
+  });
+  it("20ms LUT 위상이 1ms 기준 적분과 0.005 사이클 이내다", () => {
+    // 독립 재계산(정본과 같은 수식, 훨씬 촘촘한 step)
+    let acc = 0;
+    let prevF = 1 / hypeChannels(hypeIntensity(S(60))).ringDurationS;
+    let checked = 0;
+    for (let k = 1; k <= 60_000; k += 1) {
+      const remain = S(60) - k;
+      const f = 1 / hypeChannels(hypeIntensity(remain)).ringDurationS;
+      acc += ((prevF + f) / 2) * 0.001;
+      prevF = f;
+      if (k % 5_000 === 0) {
+        const lut = hypeMotionFrame(remain, hypeIntensity(remain));
+        const diff = Math.abs((acc % 1) - lut.beatPhase);
+        expect(Math.min(diff, 1 - diff)).toBeLessThan(0.005);
+        checked += 1;
+      }
+    }
+    expect(checked).toBe(12);
+  });
+  it("정적 프레임은 진폭이 0이라 파형이 곱해져도 안 움직인다", () => {
+    expect(STATIC_MOTION_FRAME.leaderPeak).toBe(0);
+    expect(STATIC_MOTION_FRAME.hopePeak).toBe(0);
+    expect(STATIC_MOTION_FRAME.dotPeak).toBe(0);
+  });
+  it("진폭 상한이 명세대로다(리더 0.70 · 기대돼요 1.08배 · 도트 1.45배)", () => {
+    const f = hypeMotionFrame(0, 1);
+    expect(f.leaderPeak).toBeCloseTo(0.7, 6);
+    expect(f.hopePeak).toBeCloseTo(0.08, 6);
+    expect(f.dotPeak).toBeCloseTo(0.45, 6);
+  });
+  it("모션 CSS 변수는 음수 delay 형식으로 직렬화된다", () => {
+    const vars = hypeMotionCssVars(hypeMotionFrame(S(5), hypeIntensity(S(5))));
+    expect(vars["--hy-beat-delay"]).toMatch(/^-?\d+\.\d{4}s$/);
+    expect(vars["--hy-dash-delay"]).toMatch(/^-?\d+\.\d{4}s$/);
+    expect(vars["--hy-hope-peak"]).toMatch(/^\d\.\d{4}$/);
+  });
+});
+
+// ── 시트 배경 대비(WCAG AA) ─────────────────────────────────────────────────
+// 배경이 강도에 따라 데워지므로 '어느 순간에도' 본문이 읽혀야 한다. 계획서 표를 믿지 않고
+// 실제 CSS에 박힌 색으로 다시 계산한다(색이 바뀌면 이 테스트가 먼저 깨진다).
+const hexToRgb = (hex: string): [number, number, number] => [
+  parseInt(hex.slice(1, 3), 16),
+  parseInt(hex.slice(3, 5), 16),
+  parseInt(hex.slice(5, 7), 16)
+];
+// color-mix(in srgb, …)는 감마 인코딩된 sRGB 성분을 그대로 선형 보간한다.
+const mixSrgb = (a: string, b: string, t: number): [number, number, number] => {
+  const [ar, ag, ab] = hexToRgb(a);
+  const [br, bg, bb] = hexToRgb(b);
+  return [ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t];
+};
+const relLuminance = ([r, g, b]: [number, number, number]): number => {
+  const f = (c: number) => {
+    const s = c / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b);
+};
+const contrast = (fg: [number, number, number], bg: [number, number, number]): number => {
+  const l1 = relLuminance(fg);
+  const l2 = relLuminance(bg);
+  const [hi, lo] = l1 > l2 ? [l1, l2] : [l2, l1];
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+describe("떡밥 시트 배경 대비", () => {
+  // public-poster.css의 실제 값.
+  const COOL = "#fffdf6";
+  const HOT = "#fff0d2";
+  const TITLE = "#2b2415"; // .agenda-detail-title (웹 팝오버)
+  const SUB = "#6f6754"; // .agenda-detail-subs li (웹 팝오버) — 가장 밝은 본문색
+  const GOLD_NUM = "#9a5800"; // .dt-count-core strong 금빛 끝점
+  const EYE_COOL = "#fffbef";
+  const EYE_HOT = "#ffefcb";
+
+  it("강도 전 구간에서 제목·부제목이 AA(4.5:1)를 넘는다", () => {
+    for (const i of [0, 0.25, 0.5, 0.75, 1]) {
+      const warm = hypeChannels(i).sheetWarm;
+      const bg = mixSrgb(COOL, HOT, warm);
+      expect(contrast(hexToRgb(TITLE), bg), `제목 대비 미달 @I=${i}`).toBeGreaterThanOrEqual(4.7);
+      expect(contrast(hexToRgb(SUB), bg), `부제목 대비 미달 @I=${i}`).toBeGreaterThanOrEqual(4.7);
+    }
+  });
+
+  it("눈 편한 테마 입력 팔레트에서도 AA를 넘는다(전역 filter 전 기준)", () => {
+    for (const i of [0, 0.5, 1]) {
+      const bg = mixSrgb(EYE_COOL, EYE_HOT, hypeChannels(i).sheetWarm);
+      expect(contrast(hexToRgb(TITLE), bg)).toBeGreaterThanOrEqual(4.7);
+      expect(contrast(hexToRgb(SUB), bg)).toBeGreaterThanOrEqual(4.7);
+    }
+  });
+
+  it("금빛 카운트다운 숫자는 가장 뜨거운 배경에서도 AA를 넘는다", () => {
+    expect(contrast(hexToRgb(GOLD_NUM), hexToRgb(HOT))).toBeGreaterThanOrEqual(4.7);
+    expect(contrast(hexToRgb(GOLD_NUM), hexToRgb(EYE_HOT))).toBeGreaterThanOrEqual(4.7);
   });
 });

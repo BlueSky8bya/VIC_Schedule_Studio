@@ -54,6 +54,7 @@ export type HypeChannels = {
   glow: number; // 따뜻한 후광 불투명도(반복 점멸 없음, 상승만)
   numberScale: number; // 남은 초 글자 크기(em)
   dashDurationS: number; // 리더 점선 흐름 주기(빈도 보간)
+  sheetWarm: number; // 팝오버 시트 표면 온도(0=크림, 1=금빛). 장식색보다 이르게 오른다.
 };
 
 // 빈도 보간 헬퍼: 주기 a→b를 '빈도' 공간에서 보간한 뒤 다시 주기로.
@@ -76,7 +77,11 @@ export function hypeChannels(intensity: number): HypeChannels {
   const i = clamp01(intensity);
   return {
     intensity: i,
-    ringDurationS: lerpPeriod(2.4, 0.55, i, 0.85),
+    // 하한 0.62s = 1.61Hz. 임의의 1초 창에 들어오는 박동 peak는 최대 2회, 여기에 공개
+    // 순간의 단발 섬광 1회를 더해도 3회로 WCAG 2.3.1(초당 3회 '초과' 금지)을 넘지 않는다.
+    // 0.55s(1.82Hz)면 최악값이 정확히 한계선에 붙어 여유가 0이라 프레임이 밀리는 순간
+    // 위반이 된다 → 체감 차이가 거의 없는 선에서 여유를 남긴다.
+    ringDurationS: lerpPeriod(2.4, 0.62, i, 0.85),
     ring1: 0.72 * Math.pow(i, 0.9),
     ring2: 0.48 * delayed(i, 0.35, 1.4),
     ring3: 0.28 * delayed(i, 0.7, 1.6),
@@ -85,7 +90,119 @@ export function hypeChannels(intensity: number): HypeChannels {
     goldMix: lerp(0, 0.78, i, 2.2),
     glow: lerp(0, 0.22, i, 4),
     numberScale: lerp(1.05, 1.85, i, 1.15),
-    dashDurationS: lerpPeriod(1.8, 0.6, i, 1.3)
+    // 리더 점선 — 시작을 더 느리게(갑자기 켜진 느낌 제거), 끝을 더 빠르게(마지막 3초의
+    // 차이가 눈에 읽히게). 지수 1.15로 중반 가속을 앞당긴다. 색·밝기가 아니라 질감 이동이라
+    // 점멸(flash) 예산에는 포함되지 않는다.
+    dashDurationS: lerpPeriod(2.2, 0.52, i, 1.15),
+    // 넓은 저채도 면은 작은 고채도 stroke보다 변화 감지가 약하다 → 금빛(I^2.2)보다 이른
+    // I^1.35로 중반부터 온도를 만든다.
+    sheetWarm: Math.pow(i, 1.35)
+  };
+}
+
+// ── 마스터 박동 위상 ────────────────────────────────────────────────────────
+// 링·리더선·기대돼요 버튼에 '같은 duration'을 주는 것만으로는 동기화가 아니다 — 각
+// CSS 애니메이션은 자기가 시작된 시점부터 세므로, 요소가 다른 순간에 mount되면 위상이
+// 어긋난다(따로 뛰면 산만하다). 그래서 위상을 시간에서 직접 계산한다.
+//
+// 주기가 계속 변하므로 elapsed/현재주기로 나누면 주기가 바뀌는 순간 위상이 점프한다.
+// 올바른 정의는 빈도의 적분이다:  phase(t) = ∫ 1/P(I(τ)) dτ  (mod 1)
+// 닫힌 형태가 없으므로 60초 구간을 사다리꼴로 미리 적분해 LUT로 들고 있는다.
+const PHASE_LUT_STEP_MS = 20; // 100ms 커밋보다 5배 촘촘 — 정밀도 대비 메모리(약 48KB)가 싸다
+const PHASE_LUT_N = Math.round((HYPE_WINDOW_S * 1000) / PHASE_LUT_STEP_MS) + 1;
+
+// remain=60초에서 0, remain이 줄수록 증가하는 누적 사이클 수.
+function buildPhaseLut(period: (i: number) => number): Float64Array {
+  const lut = new Float64Array(PHASE_LUT_N);
+  const dt = PHASE_LUT_STEP_MS / 1000;
+  let acc = 0;
+  let prev = 1 / period(hypeIntensity(HYPE_WINDOW_S * 1000));
+  for (let k = 1; k < PHASE_LUT_N; k += 1) {
+    const remainMs = HYPE_WINDOW_S * 1000 - k * PHASE_LUT_STEP_MS;
+    const f = 1 / period(hypeIntensity(remainMs));
+    acc += ((prev + f) / 2) * dt; // 사다리꼴
+    prev = f;
+    lut[k] = acc;
+  }
+  return lut;
+}
+let beatLut: Float64Array | null = null;
+let dashLut: Float64Array | null = null;
+function cyclesAt(lut: Float64Array, remainMs: number): number {
+  const x = (HYPE_WINDOW_S * 1000 - remainMs) / PHASE_LUT_STEP_MS;
+  if (x <= 0) return 0;
+  if (x >= PHASE_LUT_N - 1) return lut[PHASE_LUT_N - 1];
+  const k = Math.floor(x);
+  return lut[k] + (lut[k + 1] - lut[k]) * (x - k); // 표 사이는 선형 보간
+}
+function fract(v: number): number {
+  return v - Math.floor(v);
+}
+
+// 박동 파형 B(q) — 심장처럼 비대칭이다. 빠르게 수축(20%), 천천히 이완(35%), 나머지 휴지.
+// 상승 구간이 최소 주기에서도 100ms 넘게 유지되도록 20%를 골랐다(10Hz 커밋에서 최소 한
+// 샘플이 상승 구간에 들어간다 — 12%면 66ms라 프레임을 통째로 건너뛸 수 있었다).
+export function beatWave(q: number): number {
+  const t = fract(q);
+  if (t < 0.2) return smootherstep(t / 0.2);
+  if (t < 0.55) return 1 - smootherstep((t - 0.2) / 0.35);
+  return 0;
+}
+
+// 한 tick의 값 — 모든 host가 같은 remainMs에서 같은 값을 받는다(mount 시점 무관).
+//
+// 파형 자체는 JS가 그리지 않는다. 10Hz로 크기 값을 직접 쓰면 주기 0.62초에 샘플이 6개뿐이라
+// 박동이 뚝뚝 끊긴다 → 파형은 CSS 키프레임이 60fps로 그리고, JS는 '지금 이 순간이 주기의
+// 어디인지'만 음수 animation-delay로 못 박는다. 이러면 나중에 mount된 요소도 같은 위상에서
+// 시작하므로 링·리더선·기대돼요가 한 심장으로 뛴다(같은 duration만 주는 건 동기화가 아니다).
+export type HypeMotionFrame = {
+  beatPhase: number; // 0~1, 빈도 적분에서 나온 절대 위상
+  dashPhase: number; // 0~1
+  beatDurationS: number;
+  dashDurationS: number;
+  leaderPeak: number; // 박동 최대치(진폭은 I가, 파형은 위상이 결정 — 두 축을 안 섞는다)
+  hopePeak: number;
+  dotPeak: number;
+};
+
+export function hypeMotionFrame(remainMs: number, intensity: number): HypeMotionFrame {
+  const i = clamp01(intensity);
+  if (!beatLut) beatLut = buildPhaseLut((x) => hypeChannels(x).ringDurationS);
+  if (!dashLut) dashLut = buildPhaseLut((x) => hypeChannels(x).dashDurationS);
+  const clamped = Math.min(HYPE_WINDOW_S * 1000, Math.max(0, remainMs));
+  const ch = hypeChannels(i);
+  return {
+    beatPhase: fract(cyclesAt(beatLut, clamped)),
+    dashPhase: fract(cyclesAt(dashLut, clamped)),
+    beatDurationS: ch.ringDurationS,
+    dashDurationS: ch.dashDurationS,
+    leaderPeak: 0.7 * Math.pow(i, 1.6),
+    // 1.08은 44px 타깃의 시각 외곽을 3.5px 늘린다(hit box는 고정). 1.10 이상이면 옆 요소와 붙는다.
+    hopePeak: 0.08 * Math.pow(i, 1.4),
+    dotPeak: 0.45 * Math.pow(i, 1.6)
+  };
+}
+
+// 정지 상태(동작 줄이기·export)용 프레임 — 진폭 0이라 파형이 곱해져도 움직임이 없다.
+export const STATIC_MOTION_FRAME: HypeMotionFrame = {
+  beatPhase: 0,
+  dashPhase: 0,
+  beatDurationS: 2.4,
+  dashDurationS: 2.2,
+  leaderPeak: 0,
+  hopePeak: 0,
+  dotPeak: 0
+};
+
+export function hypeMotionCssVars(f: HypeMotionFrame): Record<string, string> {
+  return {
+    // 음수 delay = '이 애니메이션은 이미 phase만큼 진행된 상태다'. 매 tick 다시 못 박으므로
+    // duration이 변해도 위상이 표류하지 않는다.
+    "--hy-beat-delay": `${(-f.beatPhase * f.beatDurationS).toFixed(4)}s`,
+    "--hy-dash-delay": `${(-f.dashPhase * f.dashDurationS).toFixed(4)}s`,
+    "--hy-leader-peak": f.leaderPeak.toFixed(3),
+    "--hy-hope-peak": f.hopePeak.toFixed(4),
+    "--hy-dot-peak": f.dotPeak.toFixed(4)
   };
 }
 
@@ -113,6 +230,7 @@ export function hypeCssVars(c: HypeChannels): Record<string, string> {
     "--hy-gold": c.goldMix.toFixed(3),
     "--hy-glow": c.glow.toFixed(3),
     "--hy-num": c.numberScale.toFixed(3),
-    "--hy-dash-dur": `${c.dashDurationS.toFixed(3)}s`
+    "--hy-dash-dur": `${c.dashDurationS.toFixed(3)}s`,
+    "--hy-sheet-warm": c.sheetWarm.toFixed(3)
   };
 }

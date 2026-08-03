@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-08-03
+Last Updated: 2026-08-04
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -22,6 +22,22 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   실시간→1h soon 고조→10s 심장박동), 공개 순간 제목 스크램블, 떡밥 카드 클릭→상세
   팝오버(공개 시각+기대돼요). 0060 teaser_hope(0040 익명 하트 패턴, 기기토큰 1표,
   공개 전만 토글, 공개 후 "n명이 기다렸어요" 배지). 적용 완료·Playwright 실측 검증.
+- **하이프 4차 — 장인 정밀도(2026-08-04)**: 계획 `docs/ux/motion/hype-craft-plan.ko.md`를
+  6개 수정과 함께 전량 구현. ① 팝오버 라벨을 링 밖 독립 행(`.dt-count-ringbox`)으로 분리
+  — 원 하단 좁은 현(≈56px)에 6글자(≈67px)가 안 들어가 stroke와 겹치던 기하 버그.
+  ② 시트 표면을 `sheetWarm=I^1.35`로 연속 가온(불투명, 떡밥 팝오버는 공개 전 전 기간
+  `.is-teaser` → 60초 경계 재질 점프 없음). ③ 리더선을 선-로컬 `<g>` 좌표계로 바꿔 점선
+  흐름을 `stroke-dashoffset`(매 프레임 SVG paint) → `transform`으로, 박동은 고정 굵기
+  복제선의 opacity로. ④ 부제목·메타·태그 공개 스태거(`.reveal-secondary`, transform/opacity만
+  써서 레이아웃 불변; 긴 제목이면 제목 60% 확정까지 시작을 민다).
+  **위상 동기의 핵심**: 같은 duration을 주는 건 동기화가 아니다 → 빈도 적분 LUT로 절대
+  위상을 구해 `animation-delay`에 음수로 못 박는다(`hypeMotionFrame`). 파형은 CSS가 60fps로
+  그리고 JS는 10Hz로 위상만 재고정.
+  **접근성**: 박동 주기 하한 0.62s(1.61Hz) — 최악 1초에 박동 2 + 공개 단발 1 = 3회로
+  WCAG 2.3.1 한계에 여유를 남긴다(0.55s면 여유 0). 시트 대비는 실제 CSS 색으로 단위 테스트.
+  **CSS 특이도 함정 3건**: 유리 재질(`.agenda-detail-backdrop.is-pop .agenda-detail-sheet`),
+  `.detail-anchor-link line`, 박동 정지 규칙 — 클래스 단독 선택자로는 전부 조용히 진다.
+  검증: tsc·lint·vitest 350·시각 스펙 신규 6 통과, 전체 시각 실패는 기존 6건 그대로(신규 0).
 - **최초공개(떡밥) 편집실 가림(2026-08-03)**: 아직 안 풀린 떡밥은 편집실 카드/확대상세에서도
   제목 ???, 클릭 시 편집 폼 대신 비번 게이트(비공개 레이어 비번, `verifyOnly` — grant 미발급,
   rate limit 동일). 통과 id는 화면 생존 동안만 기억. 이동/드래그/복사는 게이트 없이 가능하되

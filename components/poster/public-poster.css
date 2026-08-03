@@ -2539,7 +2539,9 @@ html[data-reduce-motion] .scramble-locked {
 
 /* 공개 순간 카드가 지지직 흔들린다(글리치) — 해독이 진행되는 동안 계속. */
 .public-event.just-revealed .event-main,
-.agenda-event.just-revealed .agenda-content {
+.agenda-event.just-revealed .agenda-title {
+  /* 모바일은 .agenda-content 전체를 흔들었는데, 그러면 뒤이어 올라오는 부제목·메타까지
+     같이 지지직거려 '제목이 먼저 정체를 얻는다'는 위계가 뭉개진다 → 제목 줄만 흔든다. */
   animation: reveal-glitch 0.11s steps(2) 14;
 }
 @keyframes reveal-glitch {
@@ -2557,7 +2559,7 @@ html[data-reduce-motion] .scramble-locked {
   }
 }
 html[data-reduce-motion] .public-event.just-revealed .event-main,
-html[data-reduce-motion] .agenda-event.just-revealed .agenda-content {
+html[data-reduce-motion] .agenda-event.just-revealed .agenda-title {
   animation: none;
 }
 
@@ -2807,6 +2809,59 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
   }
 }
 
+/* ── 공개 보상 스태거 — 제목이 해독된 뒤 부제목·메타·태그가 차례로 올라온다 ──────────
+   transform/opacity만 쓴다 → 레이아웃에 전혀 관여하지 않으므로 연출 중 카드 높이가
+   변하지 않는다(늦게 mount하거나 display를 푸는 방식은 금지). 지연은 인라인 변수. */
+.reveal-secondary {
+  animation: reveal-secondary-rise 0.36s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms)
+    both;
+}
+@keyframes reveal-secondary-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 4px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* 동작 줄이기 — 공개 응답이 도착한 첫 프레임에 모든 정보가 완성 상태로 보인다.
+   숨김 값은 keyframe from에만 있으므로 animation만 끄면 끝(base에 opacity:0을 두지 않는다). */
+html[data-reduce-motion] .reveal-secondary {
+  animation: none;
+}
+
+/* ── 떡밥 시트 표면 온도 — 카드·링·숫자만 데워지고 가장 넓은 면인 시트가 차갑게 남으면
+   색 온도가 따로 논다. 표면도 같은 I로 연속으로 데운다.
+   불투명인 이유: 유리(반투명+블러)는 뒤에 있는 포스터·스티커 색에 따라 같은 I에서도 결과
+   픽셀이 달라져 대비를 보장할 수 없다. 떡밥 팝오버는 공개 전 '전 기간' 불투명이라
+   60초 경계에서 재질이 튀는 순간도 없다(I=0 색을 기존 크림과 같은 값으로 맞췄다).
+   ⚠ 특이도 주의: 유리 재질은 `.agenda-detail-backdrop.is-pop .agenda-detail-sheet`(0,3,0)로
+   걸려 있어 `.agenda-detail-sheet.is-teaser`(0,2,0)로는 이길 수 없다 — 반드시 아래 형태로. */
+.agenda-detail-sheet.is-teaser,
+.agenda-detail-backdrop .agenda-detail-sheet.is-teaser,
+.agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-teaser {
+  --hy-sheet-cool: #fffdf6;
+  --hy-sheet-hot: #fff0d2;
+  background: color-mix(
+    in srgb,
+    var(--hy-sheet-cool) calc((1 - var(--hy-sheet-warm, 0)) * 100%),
+    var(--hy-sheet-hot)
+  );
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* 눈 편한 테마는 html에 전역 filter(saturate .8 / brightness .96 / sepia .1)가 걸려 있다.
+   같은 입력색을 쓰면 필터를 통과한 뒤 탁해지므로, 필터 후 결과가 목표색이 되도록 입력을
+   따로 잡는다(대비는 두 팔레트 모두 AA 4.5:1 위에서 검증). */
+html[data-eye-comfort] .agenda-detail-sheet.is-teaser,
+html[data-eye-comfort] .agenda-detail-backdrop .agenda-detail-sheet.is-teaser,
+html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-teaser {
+  --hy-sheet-cool: #fffbef;
+  --hy-sheet-hot: #ffefcb;
+}
+
 /* 팝오버 — 카드와 같은 변수를 받아 같은 위상으로 논다(시트 박스는 안 흔든다). */
 .agenda-detail-sheet.is-hype {
   /* 반복 글로우 대신 강도에 비례하는 고정 후광(점멸 없음). */
@@ -2830,12 +2885,21 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
 /* ── 팝오버 링 카운트다운(1분 안쪽) — 계획 안 B ─────────────────────────
    링 = 물리 시간(60→0), 숫자 크기·글로우 = 강도 곡선. 정보와 감정을 분리한다. */
 .dt-count {
+  /* 링 행 + 라벨 행. 라벨을 링 안에 absolute로 얹으면 원 하단의 좁은 현(chord ≈56px)에
+     6글자(≈67px)가 들어가지 못해 stroke와 겹친다 — 숫자 크기를 줄여도 안 풀리는 기하
+     문제라 아예 행을 나눈다. 두 행 모두 고정 높이라 초가 흘러도 박스가 안 변한다. */
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  width: 132px;
+  margin: 2px auto 0;
+}
+.dt-count-ringbox {
   position: relative;
   display: grid;
   place-items: center;
   width: 132px;
   height: 132px;
-  margin: 2px auto 0;
 }
 .dt-ring {
   position: absolute;
@@ -2857,23 +2921,32 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
   filter: drop-shadow(0 0 calc(2px + var(--hy-glow, 0) * 40px) rgb(255 214 122 / 85%));
   transition: stroke-dashoffset 0.95s linear; /* 1Hz 갱신 사이를 이어 붙여 부드럽게 */
 }
+/* 눈 편한 테마의 전역 filter를 통과하면 금색이 갈색으로 탁해진다 → 노랑 성분을 더 남긴 값으로. */
+html[data-eye-comfort] .dt-ring-progress {
+  stroke: color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #ffb52e);
+}
 .dt-ring-spark {
   fill: color-mix(in srgb, #c4b5fd calc((1 - var(--hy-gold, 0)) * 100%), #ffe8a3);
   filter: drop-shadow(0 0 calc(3px + var(--hy-glow, 0) * 30px) rgb(255 236 190 / 90%));
   transition: transform 0.95s linear;
 }
 .dt-count-core {
+  /* 고정 폭 슬롯 — 숫자가 커져도 '초'의 x좌표가 안 움직인다. */
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 2px;
+  width: 82px;
   line-height: 1;
 }
 .dt-count-core strong {
   /* 강도에 따라 연속으로 커진다(1.05 → 1.85배 기준을 팝오버 크기에 맞게 스케일). */
+  min-width: 2ch; /* 10→9에서 '초'가 왼쪽으로 밀리지 않게 자릿수 슬롯을 고정 */
+  text-align: right;
   font-size: calc(var(--hy-num, 1.05) * 26px);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, #4d3f8f calc((1 - var(--hy-gold, 0)) * 100%), #a35f05);
+  color: color-mix(in srgb, #4d3f8f calc((1 - var(--hy-gold, 0)) * 100%), #9a5800);
   text-shadow: 0 0 calc(var(--hy-glow, 0) * 40px) rgb(255 214 122 / 90%);
   animation: dt-count-tick 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -2897,16 +2970,63 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
   color: rgb(90 80 130 / 62%);
 }
 .dt-count-label {
-  position: absolute;
-  bottom: 14px;
   margin: 0;
+  height: 14px;
   font-size: 11px;
+  line-height: 14px;
   font-weight: 800;
   letter-spacing: 0.02em;
+  white-space: nowrap; /* 폰트 fallback에서 줄바꿈으로 박스가 커지지 않게 */
   color: rgb(90 80 130 / 62%);
 }
 .dt-count.is-final .dt-count-label {
-  color: #a35f05;
+  color: #9a5800;
+}
+/* 모바일 — 시트 세로가 귀하다. 링을 120px로 줄이되 stroke를 조금 더 줄여(7→6 사용자 단위)
+   안쪽 지름을 확보한다. 라벨 문구·크기는 줄이지 않는다(정보는 양보 대상이 아니다). */
+@media (max-width: 640px) {
+  .dt-count {
+    gap: 6px;
+    width: 120px;
+  }
+  .dt-count-ringbox {
+    width: 120px;
+    height: 120px;
+  }
+  .dt-ring-track,
+  .dt-ring-progress {
+    stroke-width: 6;
+  }
+  .dt-count-core {
+    width: 76px;
+  }
+  .dt-count-core strong {
+    font-size: calc(var(--hy-num, 1.05) * 24px);
+  }
+  .dt-count-core span {
+    font-size: 11px;
+  }
+}
+/* 초소형 화면(≤320px) — 좌우 padding을 먼저 회수하고, 그래도 모자라면 링·숫자를 줄인다.
+   닫기 44px 타깃·라벨 11px·본문 대비는 끝까지 지킨다. */
+@media (max-width: 320px) {
+  .agenda-detail-backdrop .agenda-detail-sheet {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .dt-count {
+    width: 112px;
+  }
+  .dt-count-ringbox {
+    width: 112px;
+    height: 112px;
+  }
+  .dt-count-core {
+    width: 70px;
+  }
+  .dt-count-core strong {
+    font-size: calc(var(--hy-num, 1.05) * 22px);
+  }
 }
 html[data-reduce-motion] .dt-count-core strong,
 html[data-reduce-motion] .dt-ring-progress,
@@ -2914,45 +3034,36 @@ html[data-reduce-motion] .dt-ring-spark {
   animation: none;
   transition: none;
 }
+/* 기대돼요 — 리더 박동·도트와 같은 심장. 진폭만 다르고 위상·파형은 공유한다. */
 .agenda-detail-sheet.is-hype .dt-hope {
-  animation: hype-hope-beat var(--hy-ring-dur, 2.4s) cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
+  animation: hype-beat-scale var(--hy-beat-dur, 2.4s) linear var(--hy-beat-delay, 0s) infinite;
 }
-@keyframes hype-hope-beat {
-  0%,
+@keyframes hype-beat-scale {
+  0% {
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  20% {
+    transform: scale(calc(1 + var(--hy-hope-peak, 0)));
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  55%,
   100% {
     transform: scale(1);
   }
-  18% {
-    transform: scale(calc(1 + var(--hype-i, 0) * 0.07));
-  }
-  34% {
-    transform: scale(1);
-  }
 }
-/* 리더 점선·도트 — 같은 변수라 카드·팝오버와 정확히 같은 박자(끊겨 보이지 않게). */
-.detail-anchor-link.is-hype line {
-  animation-duration: var(--hy-dash-dur, 1.8s);
-  stroke-width: calc(2.5px + var(--hype-i, 0) * 1px);
+/* 하이프 구간의 리더선 — 색만 데운다. 굵기·박동은 위 공용 규칙(고정 굵기 + opacity 박동)이
+   담당한다: stroke-width를 강도에 물리면 매 tick SVG를 다시 칠하게 된다. */
+.detail-anchor-link.is-hype .detail-anchor-base,
+.detail-anchor-link.is-hype .detail-anchor-pulse {
   stroke: color-mix(
     in srgb,
     var(--dt-line, #7c6cf0) calc((1 - var(--hy-gold, 0)) * 100%),
     #e8a33c
   );
 }
-.detail-anchor-link.is-hype circle {
+.detail-anchor-link.is-hype .detail-anchor-dot {
   fill: color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #ffca6a);
-  animation: hype-dot-beat var(--hy-ring-dur, 2.4s) ease-out infinite;
-  transform-box: fill-box;
-  transform-origin: center;
-}
-@keyframes hype-dot-beat {
-  0%,
-  100% {
-    r: 5;
-  }
-  45% {
-    r: calc(5px + var(--hype-i, 0) * 4px);
-  }
 }
 
 /* 동작 줄이기 — 모션은 전부 끄되 '임박했다'는 정보(큰 숫자·색·후광)는 남긴다. */
@@ -2968,8 +3079,11 @@ html[data-reduce-motion] .agenda-item.teaser.hype-live::after,
 html[data-reduce-motion] .public-event.teaser.hype-live .teaser-ring,
 html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-orb,
 html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-hope,
-html[data-reduce-motion] .detail-anchor-link.is-hype line,
-html[data-reduce-motion] .detail-anchor-link.is-hype circle {
+/* 박동 규칙이 `.detail-anchor-link.is-hype .detail-anchor-*`(0,3,0)이므로 이 정지 규칙도
+   그보다 높아야 실제로 이긴다(같은 특이도면 뒤에 오는 쪽이 이겨서 조용히 안 먹는다). */
+html[data-reduce-motion] .detail-anchor-link .detail-anchor-flow,
+html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-pulse,
+html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   animation: none;
 }
 html[data-reduce-motion] .teaser-count.soon,
@@ -6875,20 +6989,79 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-close:act
   stroke-dasharray: 5 6;
   stroke-linecap: round;
   filter: drop-shadow(0 0 1.5px rgb(255 255 255 / 90%));
-  animation: detail-link-flow 0.9s linear infinite;
 }
-.detail-anchor-link circle {
+/* 점선 흐름 — 선 로컬 x축을 한 주기(5+6=11px)만큼 미는 transform. 예전의
+   stroke-dashoffset 애니메이션은 매 프레임 SVG를 다시 칠했다(선이 길수록 비쌈). */
+.detail-anchor-flow {
+  animation: detail-link-flow var(--hy-dash-dur, 0.9s) linear var(--hy-dash-delay, 0s) infinite;
+}
+@keyframes detail-link-flow {
+  to {
+    transform: translateX(-11px);
+  }
+}
+/* 박동선 — base와 같은 반복 길이(7+4=11)라 이음새가 어긋나지 않는다. 굵기는 고정이고
+   opacity만 오르내려 '굵어지며 밝아지는' 인상을 만든다. 하이프 전엔 진폭 0이라 안 보인다. */
+/* 특이도 주의: 위 `.detail-anchor-link line`(0,1,1)이 클래스 단독 선택자(0,1,0)를 이긴다 —
+   조상 클래스를 함께 써야 굵기·간격이 실제로 적용된다. */
+.detail-anchor-link .detail-anchor-pulse {
+  stroke-width: 5;
+  stroke-dasharray: 7 4;
+  opacity: 0;
+}
+.detail-anchor-dot {
   r: 5.5px;
   fill: color-mix(in srgb, var(--dt-line, #d3a94f) 78%, #4a3a18);
   stroke: #fff;
   stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
 }
-@keyframes detail-link-flow {
-  to {
-    stroke-dashoffset: -11; /* dasharray(5+6) 한 주기와 일치 — 루프 이음새 없음 */
+/* 박동은 하이프 구간에서만 돈다 — 평범한 일정 팝오버에 진폭 0짜리 애니메이션을 상시로
+   돌릴 이유가 없다(리더선은 모든 팝오버가 함께 쓰는 요소다). */
+.detail-anchor-link.is-hype .detail-anchor-pulse {
+  animation: hype-beat-opacity var(--hy-beat-dur, 2.4s) linear var(--hy-beat-delay, 0s) infinite;
+}
+.detail-anchor-link.is-hype .detail-anchor-dot {
+  animation: hype-beat-dot var(--hy-beat-dur, 2.4s) linear var(--hy-beat-delay, 0s) infinite;
+}
+/* 마스터 박동 파형 — 빠르게 수축(0→20%), 천천히 이완(20→55%), 나머지는 휴지.
+   심장처럼 비대칭이라 기계적인 사인파보다 살아 있게 읽힌다. 최소 주기 0.62s에서도
+   상승 구간이 124ms라 10Hz 커밋이 상승을 통째로 건너뛰지 않는다.
+   세 요소가 같은 duration + 같은 음수 delay를 받으므로 정확히 같은 프레임에 정점을 친다. */
+@keyframes hype-beat-opacity {
+  0% {
+    opacity: 0;
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  20% {
+    opacity: var(--hy-leader-peak, 0);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  55%,
+  100% {
+    opacity: 0;
   }
 }
-html[data-reduce-motion] .detail-anchor-link line {
+@keyframes hype-beat-dot {
+  0% {
+    transform: scale(1);
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  20% {
+    transform: scale(calc(1 + var(--hy-dot-peak, 0)));
+    animation-timing-function: cubic-bezier(0.45, 0, 0.55, 1);
+  }
+  55%,
+  100% {
+    transform: scale(1);
+  }
+}
+/* 박동 규칙이 `.detail-anchor-link.is-hype .detail-anchor-*`(0,3,0)이므로 이 정지 규칙도
+   그보다 높아야 실제로 이긴다(같은 특이도면 뒤에 오는 쪽이 이겨서 조용히 안 먹는다). */
+html[data-reduce-motion] .detail-anchor-link .detail-anchor-flow,
+html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-pulse,
+html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   animation: none;
 }
 /* PC 시청자: 일정 카드가 클릭 대상임을 커서로 알린다(하트 등 내부 버튼은 각자 커서). */

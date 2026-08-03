@@ -95,9 +95,12 @@ import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { getTeaserHopeIdsAction, toggleTeaserHopeAction } from "@/lib/schedules/hope-actions";
 import {
   HYPE_WINDOW_S,
+  STATIC_MOTION_FRAME,
   hypeChannels,
   hypeCssVars,
   hypeIntensity,
+  hypeMotionCssVars,
+  hypeMotionFrame,
   quantizeStaticIntensity
 } from "@/lib/ui/hype-curve";
 import { heartTier } from "@/lib/schedules/heart-tiers";
@@ -355,7 +358,17 @@ function recordHeartDelta(owner: string, id: string, on: boolean) {
 
 // 떡밥 카드의 "공개까지" 카운트다운. 매초 갱신, 0이 되면 onReveal()로 서버 데이터를 새로 받아
 // 가려진 제목이 드러나게 한다. SSR/CSR 시간차 hydration 경고를 피하려 마운트 전엔 ⏳만 보인다.
-function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: () => void }) {
+function TeaserCountdown({
+  revealAt,
+  onReveal,
+  motionEnabled = true
+}: {
+  revealAt: string;
+  onReveal: () => void;
+  // 꾸미기(스티커 편집) 중에는 하이프 연출을 돌리지 않는다 — 편집실은 편집에 도움되는
+  // 것만 한다. 숫자는 그대로 흐르되 10Hz 시각 루프와 박동은 아예 시작하지 않는다.
+  motionEnabled?: boolean;
+}) {
   const target = useMemo(() => Date.parse(revealAt), [revealAt]);
   const [now, setNow] = useState<number | null>(null);
   const onRevealRef = useRef(onReveal);
@@ -369,7 +382,7 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
   // 동작 줄이기면 루프를 아예 돌리지 않는다(배터리·CPU).
   const hostRef = useRef<HTMLSpanElement | null>(null);
   useEffect(() => {
-    if (Number.isNaN(target)) return;
+    if (Number.isNaN(target) || !motionEnabled) return;
     // 동작 줄이기(앱 토글이 최종 권한): 모션은 CSS가 끄고, 값은 3단계로 양자화해 1Hz만 쓴다
     // → 임박 상태는 보이되 캡처 시각에 따라 픽셀이 흔들리지 않는다(export 결정성).
     const staticOnly =
@@ -380,9 +393,14 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
       const el = hostRef.current;
       if (!el) return;
       const card = el.closest<HTMLElement>(".public-event, .agenda-item");
-      const raw = hypeIntensity(target - Date.now());
+      const remainMs = target - Date.now();
+      const raw = hypeIntensity(remainMs);
       const i = staticOnly ? quantizeStaticIntensity(raw) : raw;
-      const vars = hypeCssVars(hypeChannels(i));
+      const vars = {
+        ...hypeCssVars(hypeChannels(i)),
+        // 박동 위상 — 정지 모드에선 진폭 0 프레임이라 파형이 곱해져도 안 움직인다.
+        ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i))
+      };
       for (const [k, v] of Object.entries(vars)) {
         el.style.setProperty(k, v);
         card?.style.setProperty(k, v);
@@ -404,7 +422,7 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
       window.clearInterval(id);
       if (raf) window.cancelAnimationFrame(raf);
     };
-  }, [target]);
+  }, [target, motionEnabled]);
   const remain = now === null ? null : target - now;
   const revealed = remain !== null && remain <= 0;
   // 공개 시각이 지나면 즉시 실제 내용을 받아온다(캐시 우회 액션). 서버 시계가 reveal에 아직 안
@@ -510,6 +528,61 @@ function ScrambleText({ text }: { text: string }) {
 // 스크램블 총 길이(연출 상태를 언제 풀지 계산) — 카오스 + 글자당 확정 + 여유.
 function scrambleDurationMs(text: string): number {
   return SCRAMBLE_CHAOS_MS + Math.max(1, text.length) * SCRAMBLE_STEP_MS + 400;
+}
+
+// 리더선 기하 — 앵커점에 원점을 두고 대상점 방향으로 회전시킨 뒤, 선은 그 로컬 x축 위에
+// 눕힌다. 클립은 실제 구간(0~길이)만 남겨 흐름 애니메이션이 끝을 넘어가도 안 보이게 한다.
+// (선 좌표를 직접 고치던 예전 방식은 점선 흐름을 stroke-dashoffset으로만 굴릴 수 있었다.)
+function leaderGeom(
+  a: { x: number; y: number },
+  e: { x: number; y: number }
+): { len: number; deg: number } {
+  const dx = e.x - a.x;
+  const dy = e.y - a.y;
+  return { len: Math.hypot(dx, dy), deg: (Math.atan2(dy, dx) * 180) / Math.PI };
+}
+function applyLeaderGeom(
+  group: SVGGElement | null,
+  clip: SVGRectElement | null,
+  a: { x: number; y: number },
+  e: { x: number; y: number }
+): void {
+  if (!group) return;
+  const { len, deg } = leaderGeom(a, e);
+  group.setAttribute("transform", `translate(${a.x} ${a.y}) rotate(${deg})`);
+  clip?.setAttribute("width", String(Math.max(0, len)));
+}
+
+// 공개 보상 스태거 — 제목이 먼저 정체를 얻고, 그 다음 부제목·메타·태그가 차례로 따라온다.
+// (예전엔 제목만 해독되고 하위 정보는 이미 완성돼 보여 시선 순서가 뒤집혔다.)
+// 시작 시각은 '제목의 앞 3글자가 확정되는' 750+3×90=1,020ms가 기본이다 — 한국어 제목을
+// 알아보기 시작하는 최소 단서이자 기존 상수에서 그대로 나오는 값이라 새 매직 넘버가 아니다.
+// 다만 제목이 길면 해독이 2.5초까지 가서 부제목이 '제목보다 먼저' 끝나 위계가 뒤집힌다
+// → 제목 60%가 확정되는 시점까지 민다(짧은 제목은 1,020ms 그대로).
+const SECONDARY_BASE_MS = 1_020;
+const SECONDARY_STEP_MS = 70; // 60Hz 약 4.2프레임 — 순서는 읽히되 끊긴 목록으로 안 느껴지는 간격
+const SECONDARY_MAX_STEPS = 4; // 줄이 많아도 총 지연은 280ms에서 멈춘다
+function secondaryStartMs(title: string): number {
+  const n = Math.max(1, title.length);
+  return Math.max(SECONDARY_BASE_MS, SCRAMBLE_CHAOS_MS + Math.ceil(n * 0.6) * SCRAMBLE_STEP_MS);
+}
+// order: 부제목 0..n-1 → 메타 → 태그. 지연만 다르고 연출은 같다(디자인 통일).
+function secondaryDelayMs(title: string, order: number): number {
+  return secondaryStartMs(title) + Math.min(Math.max(0, order), SECONDARY_MAX_STEPS) * SECONDARY_STEP_MS;
+}
+// 공개 직후에만 붙는 스태거 props. transform/opacity만 쓰므로 레이아웃은 전혀 안 건드린다
+// (계획서의 inner wrapper + overflow:clip은 4px 이동에선 체감이 없고 pill-sub-last의 flex
+// 행 구조를 갈라야 해서 채택하지 않았다 — 기하 불변이라는 목적은 이쪽이 더 안전하게 달성한다).
+function revealStagger(
+  active: boolean,
+  title: string,
+  order: number
+): { className: string; style?: CSSProperties } {
+  if (!active) return { className: "" };
+  return {
+    className: " reveal-secondary",
+    style: { "--reveal-delay": `${secondaryDelayMs(title, order)}ms` } as CSSProperties
+  };
 }
 
 // 공개 시각을 사람이 읽는 KST로 — 팝오버 전용 정보(카드에는 카운트다운만 → 중복 없음).
@@ -1288,7 +1361,11 @@ export function PublicPoster({
   // 모두 뷰포트(fixed) 좌표 — 포스터 표면 transform 축소와 무관하게 gBCR 그대로 유효하다.
   const detailAnchorElRef = useRef<HTMLElement | null>(null);
   const detailSheetRef = useRef<HTMLDivElement | null>(null);
-  const detailLineRef = useRef<SVGLineElement | null>(null);
+  // 리더선은 '선 로컬 좌표계'로 그린다 — 바깥 <g>가 (앵커점 → 각도)로 옮겨 놓고, 안쪽은
+  // x축 위의 수평선일 뿐이다. 그래야 점선 흐름을 stroke-dashoffset(매 프레임 SVG paint)
+  // 대신 translateX(컴포지터)로 굴릴 수 있다. 드래그 중에는 x2/y2 대신 이 변환을 갱신한다.
+  const detailLineGroupRef = useRef<SVGGElement | null>(null);
+  const detailClipRectRef = useRef<SVGRectElement | null>(null);
   const [detailPos, setDetailPos] = useState<{ left: number; top: number } | null>(null);
   const [detailManual, setDetailManual] = useState<{ left: number; top: number } | null>(null);
   const [detailAnchorPt, setDetailAnchorPt] = useState<{ x: number; y: number } | null>(null);
@@ -1404,11 +1481,9 @@ export function PublicPoster({
       sheet.style.left = `${last.left}px`;
       sheet.style.top = `${last.top}px`;
       const a = detailAnchorPtRef.current;
-      const line = detailLineRef.current;
-      if (a && line) {
+      if (a) {
         const edge = detailEdgePoint(last, { w, h: sheet.offsetHeight }, a);
-        line.setAttribute("x2", String(edge.x));
-        line.setAttribute("y2", String(edge.y));
+        applyLeaderGeom(detailLineGroupRef.current, detailClipRectRef.current, a, edge);
       }
     };
     const onUp = () => {
@@ -1437,11 +1512,9 @@ export function PublicPoster({
         sheet.style.left = `${snapped.left}px`;
         sheet.style.top = `${snapped.top}px`;
         const a2 = detailAnchorPtRef.current;
-        const line2 = detailLineRef.current;
-        if (a2 && line2) {
+        if (a2) {
           const e2 = detailEdgePoint(snapped, { w: sheet.offsetWidth, h: sheet.offsetHeight }, a2);
-          line2.setAttribute("x2", String(e2.x));
-          line2.setAttribute("y2", String(e2.y));
+          applyLeaderGeom(detailLineGroupRef.current, detailClipRectRef.current, a2, e2);
         }
       }
       detailDragActiveRef.current = false;
@@ -1582,9 +1655,13 @@ export function PublicPoster({
     const write = () => {
       const el = detailSheetRef.current;
       if (!el) return;
-      const raw = hypeIntensity(target - Date.now());
+      const remainMs = target - Date.now();
+      const raw = hypeIntensity(remainMs);
       const i = staticOnly ? quantizeStaticIntensity(raw) : raw;
-      const vars = hypeCssVars(hypeChannels(i));
+      const vars = {
+        ...hypeCssVars(hypeChannels(i)),
+        ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i))
+      };
       for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
       el.classList.toggle("hype-live", raw > 0);
       // 리더선(팝오버 밖 SVG)도 같은 값을 받는다 — 선만 멈춰 있으면 끊겨 보인다.
@@ -3636,6 +3713,7 @@ export function PublicPoster({
                       <span className="teaser-spark" aria-hidden="true">🔮</span>
                       <p className="teaser-q">???</p>
                       <TeaserCountdown
+                        motionEnabled={interactive}
                         onReveal={() => revealTeaser(rawEvent.id, true)}
                         revealAt={event.teaserRevealAt}
                       />
@@ -3786,25 +3864,34 @@ export function PublicPoster({
                     </span>
                   ) : null;
                   const dotsInSub = dots && subs.length > 0;
+                  // 공개 보상 스태거는 '시작 칸'에서만 — 이어지는 span 칸까지 연출하면 같은
+                  // 일정이 여러 번 등장하는 것처럼 보인다.
+                  const stag = justRevealed.has(rawEvent.id) && span.showTitle;
                   return (
                     <>
                       {subs.length > 0 ? (
                         <ul className={`event-subs${span.showTitle ? "" : " span-cont"}`}>
-                          {subs.map((sub, i) =>
-                            i === subs.length - 1 && dotsInSub ? (
-                              <li key={i} className="pill-sub-last">
+                          {subs.map((sub, i) => {
+                            const rs = revealStagger(stag, main, i);
+                            return i === subs.length - 1 && dotsInSub ? (
+                              <li key={i} className={`pill-sub-last${rs.className}`} style={rs.style}>
                                 <span className="pill-sub-text">{sub}</span>
                                 {dots}
                               </li>
                             ) : (
-                              <li key={i}>{sub}</li>
-                            )
-                          )}
+                              <li className={rs.className.trim() || undefined} key={i} style={rs.style}>
+                                {sub}
+                              </li>
+                            );
+                          })}
                         </ul>
                       ) : null}
                       {/* 메타 줄: 인기 불꽃(왼쪽) + (서브가 없을 때만) 형식색 점(오른쪽). 시작 칸에만. */}
                       {span.showTitle && (tier || (dots && subs.length === 0)) ? (
-                        <div className="event-meta">
+                        <div
+                          className={`event-meta${revealStagger(stag, main, subs.length).className}`}
+                          style={revealStagger(stag, main, subs.length).style}
+                        >
                           {tier ? (
                             <span className={`event-popular tier-${tier.key}`} title={tier.label} aria-label={`관심 단계: ${tier.label}`}>
                               <span className="flame" aria-hidden="true">{tier.flames}</span>
@@ -4145,6 +4232,7 @@ export function PublicPoster({
                             <span className="teaser-spark" aria-hidden="true">🔮</span>
                             <p className="agenda-title teaser-q">???</p>
                             <TeaserCountdown
+                              motionEnabled={interactive}
                               onReveal={() => revealTeaser(rawEvent.id, true)}
                               revealAt={event.teaserRevealAt}
                             />
@@ -4275,20 +4363,32 @@ export function PublicPoster({
                               </span>
                             ) : null;
                             const dotsInSub = dots && subs.length > 0;
+                            const stag = justRevealed.has(rawEvent.id);
                             return (
                               <>
                                 {!support && subs.length > 0 ? (
                                   <ul className="agenda-subs">
-                                    {subs.map((sub, i) =>
-                                      i === subs.length - 1 && dotsInSub ? (
-                                        <li key={i} className="pill-sub-last">
+                                    {subs.map((sub, i) => {
+                                      const rs = revealStagger(stag, main, i);
+                                      return i === subs.length - 1 && dotsInSub ? (
+                                        <li
+                                          className={`pill-sub-last${rs.className}`}
+                                          key={i}
+                                          style={rs.style}
+                                        >
                                           <span className="pill-sub-text">{sub}</span>
                                           {dots}
                                         </li>
                                       ) : (
-                                        <li key={i}>{sub}</li>
-                                      )
-                                    )}
+                                        <li
+                                          className={rs.className.trim() || undefined}
+                                          key={i}
+                                          style={rs.style}
+                                        >
+                                          {sub}
+                                        </li>
+                                      );
+                                    })}
                                   </ul>
                                 ) : null}
                                 {support && event.supportUrl ? (
@@ -4304,7 +4404,10 @@ export function PublicPoster({
                                 ) : null}
                                 {/* 메타 한 줄: 관심(왼쪽) + (서브 없을 때만) 형식색 점(오른쪽). */}
                                 {tier || (dots && subs.length === 0) ? (
-                                  <div className="agenda-meta">
+                                  <div
+                                    className={`agenda-meta${revealStagger(stag, main, subs.length).className}`}
+                                    style={revealStagger(stag, main, subs.length).style}
+                                  >
                                     {tier ? (
                                       <span className={`event-popular tier-${tier.key}`} title={tier.label} aria-label={`관심 단계: ${tier.label}`}>
                                         <span className="flame" aria-hidden="true">{tier.flames}</span>
@@ -4959,15 +5062,47 @@ export function PublicPoster({
                     style={{ "--dt-line": lineColor } as CSSProperties}
                   >
                     {edge.x === detailAnchorPt.x && edge.y === detailAnchorPt.y ? null : (
-                      <line
-                        ref={detailLineRef}
-                        x1={detailAnchorPt.x}
-                        y1={detailAnchorPt.y}
-                        x2={edge.x}
-                        y2={edge.y}
-                      />
+                      (() => {
+                        const g = leaderGeom(detailAnchorPt, edge);
+                        return (
+                          <>
+                            <defs>
+                              <clipPath id="dt-leader-clip">
+                                {/* 클립은 흐름 <g>의 조상에 걸어야 한다 — 흐름 요소 자신에게
+                                    걸면 클립도 같이 움직여 구간을 못 자른다. */}
+                                <rect
+                                  height="14"
+                                  ref={detailClipRectRef}
+                                  width={Math.max(0, g.len)}
+                                  x="0"
+                                  y="-7"
+                                />
+                              </clipPath>
+                            </defs>
+                            <g
+                              ref={detailLineGroupRef}
+                              transform={`translate(${detailAnchorPt.x} ${detailAnchorPt.y}) rotate(${g.deg})`}
+                            >
+                              <g clipPath="url(#dt-leader-clip)">
+                                <g className="detail-anchor-flow">
+                                  {/* 두 선은 굵기·간격이 고정이고 위 선의 opacity만 박동한다
+                                      → 굵어졌다 밝아졌다 하는 인상을 컴포지터로만 만든다
+                                      (stroke-width/dasharray 애니메이션은 매 프레임 paint). */}
+                                  <line className="detail-anchor-base" x1={-11} x2={g.len + 11} y1={0} y2={0} />
+                                  <line className="detail-anchor-pulse" x1={-11} x2={g.len + 11} y1={0} y2={0} />
+                                </g>
+                              </g>
+                            </g>
+                          </>
+                        );
+                      })()
                     )}
-                    <circle cx={detailAnchorPt.x} cy={detailAnchorPt.y} r={5} />
+                    <circle
+                      className="detail-anchor-dot"
+                      cx={detailAnchorPt.x}
+                      cy={detailAnchorPt.y}
+                      r={5}
+                    />
                   </svg>
                 ) : null}
                 <div
@@ -4975,7 +5110,7 @@ export function PublicPoster({
                   aria-modal="true"
                   className={`agenda-detail-sheet${detailSnapback ? " pop-snapback" : ""}${
                     detailHype ? " is-hype" : ""
-                  }${detailFinal ? " is-final" : ""}${
+                  }${teaserActive ? " is-teaser" : ""}${detailFinal ? " is-final" : ""}${
                     detailJustRevealed ? " reveal-burst" : ""
                   }`}
                   ref={detailSheetRef}
@@ -5051,17 +5186,25 @@ export function PublicPoster({
                   ) : null}
                   {!support && subs.length > 0 ? (
                     <ul className="agenda-detail-subs">
-                      {subs.map((sub, i) => (
-                        <li key={i}>{sub}</li>
-                      ))}
+                      {subs.map((sub, i) => {
+                        const rs = revealStagger(detailJustRevealed, main, i);
+                        return (
+                          <li className={rs.className.trim() || undefined} key={i} style={rs.style}>
+                            {sub}
+                          </li>
+                        );
+                      })}
                     </ul>
                   ) : null}
                   {detailTags.length > 0 ? (
                     <div aria-label="태그" className="agenda-detail-tags">
-                      {detailTags.map(({ tag, bg, border, primary }) => (
+                      {detailTags.map(({ tag, bg, border, primary }, ti) => (
                         <span
-                          className={`agenda-detail-tag${primary ? " primary" : ""}`}
+                          className={`agenda-detail-tag${primary ? " primary" : ""}${
+                            revealStagger(detailJustRevealed, main, subs.length + 1 + ti).className
+                          }`}
                           key={tag.id}
+                          style={revealStagger(detailJustRevealed, main, subs.length + 1 + ti).style}
                         >
                           <i
                             aria-hidden="true"
@@ -5094,6 +5237,10 @@ export function PublicPoster({
                           따르므로 정보와 감정이 분리된다. 그 밖에는 공개 시각 알약. */}
                       {detailHype && detailRemainS !== null ? (
                         <div className={`dt-count${detailFinal ? " is-final" : ""}`}>
+                          {/* 링과 라벨은 형제다 — 예전엔 라벨이 링 안에 absolute로 얹혀 있어
+                              원 아래쪽 좁은 현(chord)에서 링 stroke와 겹쳤다(글씨 가림 버그).
+                              숫자를 줄여도 안 풀리는 기하 문제라 라벨을 링 밖 독립 행으로 뺐다. */}
+                          <div className="dt-count-ringbox">
                           <svg aria-hidden="true" className="dt-ring" viewBox="0 0 100 100">
                             <circle className="dt-ring-track" cx="50" cy="50" r="44" />
                             <circle
@@ -5122,6 +5269,7 @@ export function PublicPoster({
                           <div className="dt-count-core">
                             <strong key={detailRemainS}>{detailRemainS}</strong>
                             <span>초</span>
+                          </div>
                           </div>
                           <p className="dt-count-label">
                             {detailFinal ? "곧 공개!" : "최초공개까지"}
