@@ -92,6 +92,7 @@ import type {
 } from "@/lib/schedules/sticker-asset-actions";
 import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
 import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
+import { getTeaserHopeIdsAction, toggleTeaserHopeAction } from "@/lib/schedules/hope-actions";
 import { heartTier } from "@/lib/schedules/heart-tiers";
 import { debutDPlus, getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
@@ -367,15 +368,59 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
   if (Number.isNaN(target)) return null;
   if (remain === null) return <span className="teaser-count">⏳</span>;
   const s = Math.max(0, Math.floor(remain / 1000));
-  const d = Math.floor(s / 86400);
+  // 긴장 곡선: 하루 이상 남으면 초를 세지 않고 D-n만(조용히), 24시간 안쪽부터 실시간 시계.
+  // 1시간 안쪽(soon)은 카드가 은은히 달아오르고, 10초 안쪽(final)은 초가 심장박동처럼 뛴다.
+  if (s > 86400) {
+    return <span className="teaser-count">D-{Math.ceil(s / 86400)}</span>;
+  }
   const hh = String(Math.floor((s % 86400) / 3600)).padStart(2, "0");
   const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
   const ss = String(s % 60).padStart(2, "0");
+  const cls = `teaser-count is-live${s <= 3600 ? " soon" : ""}${s <= 10 ? " final" : ""}`;
+  return <span className={cls}>{s <= 0 ? "✨ 공개!" : `${hh}:${mm}:${ss}`}</span>;
+}
+
+// 공개 순간 제목이 ?에서 한 글자씩 확정되는 스크램블 — 공개 순간을 지켜본 시청자만의 보상.
+// reduce-motion이면 그냥 완성된 제목을 보여준다.
+const SCRAMBLE_POOL = "?※◆★!?◇?";
+function ScrambleText({ text }: { text: string }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    setShown(0);
+    if (document.documentElement.hasAttribute("data-reduce-motion")) {
+      setShown(text.length);
+      return;
+    }
+    let i = 0;
+    const id = window.setInterval(() => {
+      i += 1;
+      setShown(i);
+      if (i >= text.length) window.clearInterval(id);
+    }, 55);
+    return () => window.clearInterval(id);
+  }, [text]);
+  if (shown >= text.length) return <>{text}</>;
+  const restLen = Math.min(text.length - shown, 8);
   return (
-    <span className="teaser-count">
-      {s <= 0 ? "✨ 공개!" : d > 0 ? `D-${d} ${hh}:${mm}:${ss}` : `${hh}:${mm}:${ss}`}
-    </span>
+    <>
+      {text.slice(0, shown)}
+      <span aria-hidden="true" className="scramble-rest">
+        {Array.from({ length: restLen }, (_, k) => SCRAMBLE_POOL[(shown * 7 + k * 3) % SCRAMBLE_POOL.length]).join("")}
+      </span>
+    </>
   );
+}
+
+// 공개 시각을 사람이 읽는 KST로 — 팝오버 전용 정보(카드에는 카운트다운만 → 중복 없음).
+function formatRevealKst(iso: string): string {
+  const t = new Date(Date.parse(iso) + 9 * 3_600_000);
+  const wd = "일월화수목금토"[t.getUTCDay()];
+  const hh = t.getUTCHours();
+  const h12 = hh % 12 === 0 ? 12 : hh % 12;
+  const mm = t.getUTCMinutes();
+  return `${t.getUTCMonth() + 1}월 ${t.getUTCDate()}일 (${wd}) ${hh < 12 ? "오전" : "오후"} ${h12}시${
+    mm ? ` ${String(mm).padStart(2, "0")}분` : ""
+  }`;
 }
 
 // 공개 시각이 이미 지난 떡밥(캐시 지연으로 서버가 아직 가린 stub을 보낸 경우) — 보라 ??? 하이프
@@ -1317,6 +1362,9 @@ export function PublicPoster({
             for (const ev of list) next[ev.id] = ev;
             return next;
           });
+          // 열려 있던 그 떡밥의 상세 팝오버는 닫는다 — ???가 공개된 뒤에도 팝오버만 옛 상태로
+          // 남는 어긋남 방지(달력의 공개 연출이 주인공).
+          setAgendaDetail((cur) => (cur && ids.includes(cur.event.id) ? null : cur));
           // 이미 공개돼 화면에 떠 있던(애니 끝난) 건 다시 안 튀게, 이번에 새로 들어온 것만 표시.
           setJustRevealed((prev) => {
             const fresh = ids.filter((x) => !prev.has(x) && !revealedEvents[x]);
@@ -1355,6 +1403,57 @@ export function PublicPoster({
     }
     return map;
   });
+  // 최초공개 '기대돼요' — 로그인 여부와 무관하게 기기 토큰 1기기 1표(익명 하트 토큰 재사용).
+  // 서버 집계가 정본이고 여기엔 낙관적 오버라이드만 둔다(없으면 이벤트의 hopeCount).
+  const [hopeCounts, setHopeCounts] = useState<Record<string, number>>({});
+  const [myHopeIds, setMyHopeIds] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    if (!interactive) return;
+    if (!schedule.events.some((e) => e.teaser)) return; // 떡밥이 없으면 복원 왕복 생략
+    const token = getOrCreateDeviceToken();
+    if (!token) return;
+    let alive = true;
+    getTeaserHopeIdsAction(token)
+      .then((ids) => {
+        if (alive) setMyHopeIds(new Set(ids));
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const hopeCountOf = (ev: PublicScheduleEvent): number =>
+    hopeCounts[ev.id] ?? ev.hopeCount ?? 0;
+  function toggleHope(ev: PublicScheduleEvent) {
+    const token = getOrCreateDeviceToken();
+    if (!token) return; // 사생활 모드 등 — 조용히 무시(집계 신호일 뿐)
+    hapticTick(); // ① 눌림
+    const on = myHopeIds.has(ev.id);
+    const before = hopeCountOf(ev);
+    setMyHopeIds((prev) => {
+      const next = new Set(prev);
+      if (on) next.delete(ev.id);
+      else next.add(ev.id);
+      return next;
+    });
+    setHopeCounts((prev) => ({ ...prev, [ev.id]: Math.max(0, before + (on ? -1 : 1)) }));
+    void toggleTeaserHopeAction(ev.id, token).then((res) => {
+      if (res.ok) {
+        hapticTick(); // ② 서버 확정
+        setHopeCounts((prev) => ({ ...prev, [ev.id]: res.count }));
+      } else {
+        // 실패 → 되돌림(공개가 막 지난 경우 등 — 서버가 거절).
+        setMyHopeIds((prev) => {
+          const next = new Set(prev);
+          if (on) next.add(ev.id);
+          else next.delete(ev.id);
+          return next;
+        });
+        setHopeCounts((prev) => ({ ...prev, [ev.id]: before }));
+      }
+    });
+  }
   // 하트 서버 반영을 '일정별 직렬 큐'로 — 빠르게 껐다 켜도 서버가 클릭 순서대로 처리하고(토글
   // RPC라 순서가 곧 결과), 가장 마지막 응답만 집계에 반영해 옛 응답이 방금 켠 배지를 덮지 않게 한다.
   const heartOpRef = useRef<Map<string, { chain: Promise<void>; seq: number }>>(new Map());
@@ -3269,14 +3368,50 @@ export function PublicPoster({
         >
           {events.map((rawEvent) => {
             // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다(가린 stub 대신 진짜).
-            const event = revealedEvents[rawEvent.id] ?? rawEvent;
+            // 기대 수(hopeCount)는 공개 액션 응답에 없으니 stub의 값을 이어받는다(배지 유지).
+            const revealedEv = revealedEvents[rawEvent.id];
+            const event = revealedEv
+              ? { ...revealedEv, hopeCount: revealedEv.hopeCount ?? rawEvent.hopeCount }
+              : rawEvent;
             // 떡밥(가림): 공개 시각이 미래면 항상 ??? 카드 + 카운트다운(미리보기·실제 시청자 모두 —
             // 데이터가 있어도 ???만 보여 지연 없음). 시각이 지났는데 서버가 가린 stub(제목 빈)을
             // 보냈으면(캐시 지연) 중립 placeholder + 즉시 교체. 시각 지났고 제목 있으면 일반 렌더.
             if (event.teaser && event.teaserRevealAt) {
               if (Date.parse(event.teaserRevealAt) > Date.now()) {
+                // 클릭 = 떡밥 상세 팝오버(공개 시각 + 기대돼요) — 카드에는 카운트다운만(중복 없음).
+                const openTeaserDetail = interactive
+                  ? (el: HTMLElement) => {
+                      const r = el.getBoundingClientRect();
+                      hapticTick();
+                      detailAnchorElRef.current = el;
+                      setDetailManual(null);
+                      setAgendaDetail({
+                        event,
+                        support: false,
+                        dateKey: cell.isoDate,
+                        anchor: { x: r.left, y: r.top, w: r.width, h: r.height }
+                      });
+                    }
+                  : null;
                 return (
-                  <div className="public-event teaser" key={event.id}>
+                  <div
+                    className={`public-event teaser${openTeaserDetail ? " is-clickable" : ""}`}
+                    key={event.id}
+                    {...(openTeaserDetail
+                      ? {
+                          role: "button" as const,
+                          tabIndex: 0,
+                          onClick: (e: ReactMouseEvent<HTMLDivElement>) => {
+                            openTeaserDetail(e.currentTarget);
+                          },
+                          onKeyDown: (e: ReactKeyboardEvent<HTMLDivElement>) => {
+                            if (e.key !== "Enter" && e.key !== " ") return;
+                            e.preventDefault();
+                            openTeaserDetail(e.currentTarget);
+                          }
+                        }
+                      : {})}
+                  >
                     <div className="event-main teaser-main">
                       <span className="teaser-spark" aria-hidden="true">🔮</span>
                       <p className="teaser-q">???</p>
@@ -3384,11 +3519,18 @@ export function PublicPoster({
                   {span.showTitle ? (
                     <p>
                       {event.isTentative ? <span className="evt-tentative">미정</span> : null}
-                      {main}
+                      {/* 방금 공개된 떡밥은 ?에서 글자가 확정되는 스크램블로 등장. */}
+                      {justRevealed.has(rawEvent.id) ? <ScrambleText text={main} /> : main}
                     </p>
                   ) : (
                     <p className="span-cont">{main || " "}</p>
                   )}
+                  {/* 공개된 옛 떡밥 — 기대 rows는 남으므로 "n명이 기다렸어요" 배지가 된다. */}
+                  {span.showTitle && !event.teaser && hopeCountOf(event) > 0 ? (
+                    <em className="hope-badge" title="공개 전 '기대돼요'를 누른 사람 수">
+                      🔮 {hopeCountOf(event)}명이 기다렸어요
+                    </em>
+                  ) : null}
                 </div>
                 {/* 하트는 카드 직속(.event-main 밖)에 둔다 — 2색/무늬(data-mixed) 칸은
                     .event-main이 position:relative라, 그 안에 두면 하트 offset 기준이
@@ -3742,13 +3884,39 @@ export function PublicPoster({
                   ) : null}
                   {list.map(({ event: rawEvent, support }) => {
                     // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다.
-                    const event = revealedEvents[rawEvent.id] ?? rawEvent;
+                    // 기대 수는 공개 응답에 없으니 stub 값을 이어받는다(배지 유지).
+                    const revealedEv = revealedEvents[rawEvent.id];
+                    const event = revealedEv
+                      ? { ...revealedEv, hopeCount: revealedEv.hopeCount ?? rawEvent.hopeCount }
+                      : rawEvent;
                     // 떡밥(가림): 미래면 항상 ??? 카드(미리보기·실제 모두). 지났고 빈 stub이면
                     // placeholder+교체, 지났고 제목 있으면 일반 렌더.
                     if (event.teaser && event.teaserRevealAt) {
                       if (Date.parse(event.teaserRevealAt) > Date.now()) {
+                        // 탭 = 떡밥 상세 시트(공개 시각 + 기대돼요). 카드엔 카운트다운만(중복 없음).
+                        const openTeaserSheet = interactive
+                          ? () => {
+                              hapticTick();
+                              setAgendaDetail({ event, support: false, dateKey: cell.isoDate });
+                            }
+                          : null;
                         return (
-                          <div className="agenda-item teaser" key={event.id}>
+                          <div
+                            className={`agenda-item teaser${openTeaserSheet ? " tappable" : ""}`}
+                            key={event.id}
+                            {...(openTeaserSheet
+                              ? {
+                                  role: "button" as const,
+                                  tabIndex: 0,
+                                  onClick: openTeaserSheet,
+                                  onKeyDown: (e: ReactKeyboardEvent<HTMLDivElement>) => {
+                                    if (e.key !== "Enter" && e.key !== " ") return;
+                                    e.preventDefault();
+                                    openTeaserSheet();
+                                  }
+                                }
+                              : {})}
+                          >
                             <span className="teaser-spark" aria-hidden="true">🔮</span>
                             <p className="agenda-title teaser-q">???</p>
                             <TeaserCountdown
@@ -3833,7 +4001,11 @@ export function PublicPoster({
                               {!support && event.isTentative ? (
                                 <span className="evt-tentative">미정</span>
                               ) : null}
-                              {support ? `🌱 ${event.publicTitle}` : main}
+                              {support
+                                ? `🌱 ${event.publicTitle}`
+                                : justRevealed.has(rawEvent.id)
+                                  ? <ScrambleText text={main} />
+                                  : main}
                             </span>
                             {canHeart && !support ? (
                               <button
@@ -3848,6 +4020,12 @@ export function PublicPoster({
                               </button>
                             ) : null}
                           </p>
+                          {/* 공개된 옛 떡밥 — "n명이 기다렸어요" 배지. */}
+                          {!support && !event.teaser && hopeCountOf(event) > 0 ? (
+                            <p className="agenda-sub hope-badge">
+                              🔮 {hopeCountOf(event)}명이 기다렸어요
+                            </p>
+                          ) : null}
                           {support ? (
                             <p className="agenda-sub">
                               {formatShortDate(cell.isoDate)} ~{" "}
@@ -4504,12 +4682,16 @@ export function PublicPoster({
               ];
             });
             const end = event.endDateKey;
+            // 아직 안 풀린 떡밥 상세 — 공개 시각 + 기대돼요만(내용 0). 액센트는 떡밥 보라.
+            const teaserActive = Boolean(
+              event.teaser && event.teaserRevealAt && Date.parse(event.teaserRevealAt) > Date.now()
+            );
             // PC 팝오버 좌표(자동 배치 or 드래그 확정) + 액센트 색(대표 태그 1~2색 그라데이션).
             const pos = anchor ? detailManual ?? detailPos : null;
             // 업도움은 띠와 같은 초록 계열로 액센트·선 색을 통일(카드 ↔ 띠 조화).
-            const accent1 = support ? "#9cc46f" : detailTags[0]?.bg ?? "#f4b740";
-            const accent2 = support ? "#7fb04e" : detailTags[1]?.bg ?? accent1;
-            const lineColor = support ? "#6a9c3d" : detailTags[0]?.border ?? "#d3a94f";
+            const accent1 = support ? "#9cc46f" : teaserActive ? "#c4b5fd" : (detailTags[0]?.bg ?? "#f4b740");
+            const accent2 = support ? "#7fb04e" : teaserActive ? "#8b5cf6" : (detailTags[1]?.bg ?? accent1);
+            const lineColor = support ? "#6a9c3d" : teaserActive ? "#7c6cf0" : (detailTags[0]?.border ?? "#d3a94f");
             const popStyle: CSSProperties | undefined = anchor
               ? pos
                 ? ({
@@ -4612,10 +4794,10 @@ export function PublicPoster({
                     </button>
                   </div>
                   <p className="agenda-detail-title">
-                    {!support && event.isTentative ? (
+                    {!support && !teaserActive && event.isTentative ? (
                       <span className="evt-tentative">미정</span>
                     ) : null}
-                    {support ? `🌱 ${event.publicTitle}` : main}
+                    {support ? `🌱 ${event.publicTitle}` : teaserActive ? "🔮 ???" : main}
                   </p>
                   {!support && subs.length > 0 ? (
                     <ul className="agenda-detail-subs">
@@ -4650,6 +4832,26 @@ export function PublicPoster({
                       도우러 가기
                       <ExternalLink aria-hidden="true" size={13} />
                     </a>
+                  ) : null}
+                  {/* 떡밥 전용 — 카드엔 없는 정보만: 공개 시각(절대시각) + 기대돼요.
+                      카운트다운은 카드가 담당(중복 데이터 없음, 사용자 결정). */}
+                  {teaserActive && event.teaserRevealAt ? (
+                    <div className="detail-teaser">
+                      <p className="dt-when">
+                        <Sparkles aria-hidden="true" size={13} />
+                        {formatRevealKst(event.teaserRevealAt)} 공개
+                      </p>
+                      <button
+                        aria-pressed={myHopeIds.has(event.id)}
+                        className={`dt-hope${myHopeIds.has(event.id) ? " on" : ""}`}
+                        onClick={() => toggleHope(event)}
+                        type="button"
+                      >
+                        🔮 기대돼요
+                        {hopeCountOf(event) > 0 ? <b>{hopeCountOf(event)}</b> : null}
+                      </button>
+                      <p className="dt-hint">공개 순간, 이 카드가 실제 일정으로 바뀌어요</p>
+                    </div>
                   ) : null}
                 </div>
               </div>

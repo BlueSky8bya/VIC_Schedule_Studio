@@ -171,9 +171,17 @@ const loadPublicScheduleData = unstable_cache(
     // RLS 공개 정책이 1차 방어선이지만, 쿼리에서도 명시적으로 공개분만 조회한다.
     // (P2-PROTO-1: support_campaigns 쿼리 제거 — UI 소비자가 0인 죽은 payload였다.
     //  업 도움은 이벤트 단위(is_support/support_url)가 정본.)
-    const [tagsRes, paletteRes, eventsRes, stickersRes, assetsRes, heartsRes, eventHeartsRes] =
-      await timed("publicSchedule:db(7 parallel queries)", () =>
-        Promise.all([
+    const [
+      tagsRes,
+      paletteRes,
+      eventsRes,
+      stickersRes,
+      assetsRes,
+      heartsRes,
+      eventHeartsRes,
+      hopeRes
+    ] = await timed("publicSchedule:db(8 parallel queries)", () =>
+      Promise.all([
         // 모든 공개 쿼리를 이 캘린더로 한정한다. RLS는 공개 행을 허용할 뿐 캘린더별로
         // 막지 않으므로, 캘린더가 2개 이상이 되면 application-level 스코프가 없으면 다른
         // 공개 캘린더의 태그·팔레트·일정·스티커가 섞인다(공개 데이터끼리의 교차 혼입).
@@ -219,13 +227,21 @@ const loadPublicScheduleData = unstable_cache(
           .eq("calendar_id", calendar.id)
           .maybeSingle(),
         // A: 일정별 관심 집계(공개 안전 — user_id 비노출). 함수가 공개 일정만 집계한다.
-        supabase.rpc("get_event_heart_counts", { p_calendar_id: calendar.id })
-        ])
-      );
+        supabase.rpc("get_event_heart_counts", { p_calendar_id: calendar.id }),
+        // 최초공개 '기대돼요' 집계(0060) — 토큰 비노출, 공개 후에도 남아 배지가 된다.
+        supabase.rpc("get_teaser_hope_counts", { p_calendar_id: calendar.id })
+      ])
+    );
 
     // 일정 id → 관심 집계 수 맵. 인기 배지 판정에 쓴다.
     const heartCountByEvent = new Map<string, number>(
       ((eventHeartsRes.data as { event_id: string; count: number }[] | null) ?? []).map((row) => [
+        row.event_id,
+        Number(row.count)
+      ])
+    );
+    const hopeCountByEvent = new Map<string, number>(
+      ((hopeRes.data as { event_id: string; count: number }[] | null) ?? []).map((row) => [
         row.event_id,
         Number(row.count)
       ])
@@ -249,7 +265,9 @@ const loadPublicScheduleData = unstable_cache(
       palette: (paletteRes.data ?? []).map(mapPalette),
       events: (eventsRes.data ?? []).map((row) => ({
         ...mapEvent(row, Date.now()),
-        heartCount: heartCountByEvent.get(row.id) ?? 0
+        heartCount: heartCountByEvent.get(row.id) ?? 0,
+        // 기대 수는 떡밥 스텁에도, 공개 뒤 원본 카드에도 붙는다("n명이 기다렸어요" 배지).
+        hopeCount: hopeCountByEvent.get(row.id) ?? 0
       })),
       stickers: (stickersRes.data ?? []).map(mapSticker),
       stickerAssets: (assetsRes.data ?? []).map(mapStickerAsset),
