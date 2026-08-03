@@ -216,11 +216,6 @@ type StudioShellProps = {
 
 
 
-// 잠금 해제 직후 router.refresh()로 비공개 일정을 다시 불러올 때, "방금 풀었으니 보여줘"라는 의도를
-// 새 렌더(또는 리마운트)까지 전달하기 위한 모듈 플래그. router.refresh()는 같은 JS 컨텍스트라 이 값이
-// 유지되지만, 실제 새로고침(F5)은 모듈을 새로 로드해 false로 리셋된다 → 방송사고 방지 규칙(진입 시 공개 기본) 유지.
-let pendingUnlockReveal = false;
-
 // 최초공개 게이트의 큰 카운트다운 — 설명문 대신 '얼마나 남았는지'를 주인공으로.
 // 값이 바뀌는 숫자만 key 리마운트로 스프링 팝(초 단위 심장박동). reduce-motion은 CSS에서 끔.
 function TeaserGateCountdown({ revealAt }: { revealAt: string }) {
@@ -347,7 +342,11 @@ export function StudioShell({
     );
   }
   // 비밀번호 확인 후 팝업이 닫히고 비공개 일정이 서버에서 다시 불러와지는 동안 "불러오는 중" 표시.
-  const [loadingPrivate, startLoadingPrivate] = useTransition();
+  // ⚠ useTransition으로 감싸지 않는다 — startTransition(() => router.refresh())로 부르면
+  // refresh의 RSC 응답이 클라 트리에 반영되지 않는 문제가 재현됐다(Playwright 실측:
+  // 전환 밖의 router.refresh(잠그기 경로)는 정상, 전환 안(해제 경로)만 유실). 로딩 표시는
+  // 수동 플래그로 유지하고, 반영 효과(아래 useEffect)가 끈다.
+  const [loadingPrivate, setLoadingPrivate] = useState(false);
   // 페이지 이동(꾸미기·계정 변경 등)은 서버 왕복이라 즉시 안 바뀐다 → 눌렀다는 신호를 띄운다.
   const [navMsg, setNavMsg] = useState<string | null>(null);
   function startNav(message: string) {
@@ -366,7 +365,8 @@ export function StudioShell({
   // 방금 잠금 해제했다면(=pendingUnlockReveal), refresh로 세션이 반영(hasUnlockSession=true)되는
   // 즉시 비공개 표시를 켠다. refresh 과정에서 showPrivate 상태가 유실되더라도 확실히 다시 켜진다.
   useEffect(() => {
-    // 안전망 하드 리로드를 건너온 '방금 풀었다' 의도(1회 소비 — 이후 F5는 공개 기본 유지).
+    // 잠금해제 직후의 문서 리로드를 건너온 '방금 풀었으니 보여줘' 의도(1회 소비).
+    // 소비 후엔 플래그가 없으므로 이후 일반 F5는 '진입 시 공개 기본'(방송사고 방지) 그대로.
     let fromReload = false;
     try {
       fromReload = window.sessionStorage.getItem("vic:unlockReveal") === "1";
@@ -374,9 +374,11 @@ export function StudioShell({
     } catch {
       // 접근 불가 환경이면 무시.
     }
-    if ((pendingUnlockReveal || fromReload) && hasUnlockSession) {
-      pendingUnlockReveal = false;
+    if (fromReload && hasUnlockSession) {
       setShowPrivate(true);
+    }
+    if (hasUnlockSession) {
+      setLoadingPrivate(false); // 세션 반영 확인 → "여는 중" 종료
     }
   }, [hasUnlockSession]);
   const [modal, setModal] = useState<null | "tags" | "members" | "notice" | "developer" | "dayVisit">(
@@ -7165,28 +7167,24 @@ export function StudioShell({
               isDefaultPasscode={isDefaultPasscode}
               onDone={() => setPasscodeModal(null)}
               onUnlocked={() => {
-                // 잠금 해제 성공: 팝업 닫고 비공개 일정을 다시 불러오는 동안 "불러오는 중" 표시.
-                pendingUnlockReveal = true;
-                setPasscodeModal(null);
-                setShowPrivate(true);
-                startLoadingPrivate(() => {
-                  router.refresh();
-                });
-                // 안전망: router.refresh()가 새 세션(prop)을 못 실어오는 경우가 있다
-                // (dev에서 실측 — 서버는 해제로 렌더했는데 클라 트리에 반영이 안 됨).
-                // 1.6초 안에 반영 효과(아래 useEffect)가 pendingUnlockReveal을 못 지우면
-                // 하드 리로드로 보증한다. '방금 풀었다' 의도는 sessionStorage로 리로드를
-                // 건너 살린다(일반 F5의 '공개 기본' 규칙은 그대로 — 이 플래그는 1회 소비).
-                window.setTimeout(() => {
-                  if (pendingUnlockReveal) {
-                    try {
-                      window.sessionStorage.setItem("vic:unlockReveal", "1");
-                    } catch {
-                      // 저장 실패 시에도 리로드는 진행(표시만 수동 토글 필요).
-                    }
-                    window.location.reload();
-                  }
-                }, 1600);
+                // 잠금 해제 성공 → 곧장 문서 리로드로 비공개 상태를 싣는다.
+                // ⚠ router.refresh()/서버액션 revalidatePath로는 안 된다(Playwright 실측):
+                // 비번 모달이 닫히며 오버레이 스택이 히스토리를 되감는 순간, 라우터가 방금
+                // 도착한 RSC 페이로드를 버려 화면이 잠긴 채 남는 레이스가 있다(모달이 없는
+                // '지금 잠그기' 경로만 정상이던 이유). 리로드는 이 레이스가 원천 불가능.
+                // '방금 풀었으니 보여줘' 의도는 1회용 sessionStorage 플래그로 리로드를 건너
+                // 전달한다 — 일반 F5의 '진입 시 공개 기본'(방송사고 방지) 규칙은 그대로다.
+                // ⚠ 여기서 setPasscodeModal(null) 등 상태 변경 금지 — 모달이 닫히면 오버레이
+                // 스택 효과가 history.back()을 호출하는데, 그 되감기가 진행 중인 리로드/refresh
+                // 네비게이션을 취소해 화면이 잠긴 채 남는다(Playwright로 확정한 근본 원인:
+                // 리로드 후에도 브라우저가 이전 render id를 그대로 물고 있었다).
+                // 모달은 "확인 중…" 상태 그대로 두고 문서 리로드가 모든 걸 새로 시작하게 한다.
+                try {
+                  window.sessionStorage.setItem("vic:unlockReveal", "1");
+                } catch {
+                  // 저장 불가 환경이면 리로드 후 수동으로 '비공개 일정 보기'만 누르면 된다.
+                }
+                window.location.reload();
               }}
               setPasscodeAction={setPasscodeAction}
               startChanging={passcodeModal === "change"}

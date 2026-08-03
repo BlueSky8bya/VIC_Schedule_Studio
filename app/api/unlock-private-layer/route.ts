@@ -152,10 +152,5 @@ export async function POST(request: Request) {
   const res = NextResponse.json({ ok: true, expiresAt });
   // opaque 토큰은 HttpOnly 쿠키에만 — JS로 못 읽고, 응답 본문에도 안 싣는다.
   res.cookies.set(UNLOCK_GRANT_COOKIE, token, grantCookieOptions(Math.floor(durationMs / 1000)));
-  // [dev 진단 — 잠금 미스터리 해결까지 유지] 응답에 Set-Cookie가 실리는지(토큰은 마스킹).
-  if (process.env.NODE_ENV === "development") {
-    const sc = res.headers.get("set-cookie") ?? "(none)";
-    console.log("[unlock-debug] set-cookie:", sc.replace(/=([^;]{8})[^;]*/, "=$1…"));
-  }
   return res;
 }

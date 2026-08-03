@@ -75,16 +75,6 @@ export async function getUnlockState(calendarSlug: string): Promise<UnlockState>
       grant.auth_session_id === authSessionId
   );
 
-  // [dev 진단 — 잠금 미스터리 해결까지 유지] 판정 실패 시 어느 고리가 끊겼는지.
-  if (process.env.NODE_ENV === "development" && !hasUnlockSession) {
-    console.log("[unlock-debug] state", {
-      cookie: grantToken ? "yes" : "no",
-      grantRow: grant ? "found" : "none",
-      verMatch: grant ? grant.passcode_version === settings.passcode_version : null,
-      sessionMatch: grant ? grant.auth_session_id === authSessionId : null
-    });
-  }
-
   return {
     passcodeSet: true,
     hasUnlockSession,
