@@ -1370,9 +1370,10 @@ export function PublicPoster({
   // 하트(관심)는 로그인 시청자만 — 익명 시청자에겐 ♥ 토글/모아보기를 숨긴다(서버 1인1하트 불가).
   // 색상 필터 등 다른 상호작용은 익명에게도 그대로 둔다.
   // 하트 가능 = 상호작용 화면이고 하트 액션이 연결돼 있으면(로그인이든 비로그인이든). 비로그인도
-  // 기기 토큰으로 누를 수 있게 해 로그인 장벽을 없앤다(참여 ↑). 단 기기 토큰을 못 만들면(사생활 모드)
-  // 익명은 비활성.
-  const canHeart = interactive && serverHearts && (!anonymous || deviceToken.length >= 8);
+  // 기기 토큰으로 누를 수 있게 해 로그인 장벽을 없앤다(참여 ↑). 토큰은 마운트 효과를 기다리지 않고
+  // 토글 시점에 즉석 확보한다 — 토큰 준비 여부로 UI를 가르면 비로그인 첫 페인트에서 하트/관심
+  // UI가 통째로 빠져 로그인 화면과 레이아웃이 달라진다(사생활 모드 실패는 토글 때 토스트로 안내).
+  const canHeart = interactive && serverHearts;
 
   // "시청자 화면 보기" 미리보기는 히스토리에 한 칸 쌓아, 휴대폰/브라우저 뒤로가기를 누르면
   // 페이지를 떠나지 않고 꾸미기로 돌아온다(편집실 오버레이 스택과 같은 방식).
@@ -1791,7 +1792,14 @@ export function PublicPoster({
         let ok = false;
         let count: number | null = null;
         try {
-          const result = await toggleHeartAction(id, deviceToken);
+          // 비로그인인데 아직 토큰이 없으면(마운트 효과 전 첫 클릭) 여기서 즉석 생성한다.
+          // 생성 실패(사생활 모드)면 빈 값으로 보내져 서버가 거절 → 아래 롤백+토스트 경로.
+          let token = deviceToken;
+          if (anonymous && token.length < 8) {
+            token = getOrCreateDeviceToken();
+            if (token) setDeviceToken(token);
+          }
+          const result = await toggleHeartAction(id, token);
           ok = result.ok;
           if (result.ok) count = result.count;
         } catch {
