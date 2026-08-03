@@ -172,6 +172,9 @@ type PublicPosterProps = {
   toggleHeartAction?: (eventId: string, token?: string) => Promise<HeartResult>;
   // 시청자 화면에서 계정 변경(로그아웃) 버튼을 보일지. 실제 시청자 페이지에서만 true.
   accountSwitch?: boolean;
+  // 공개 후 "🔮 n명이 기다렸어요" 배지 노출 — 당분간 개발자 확인용으로만(사용자 결정:
+  // 카운팅은 계속 쌓되 관리자·시청자에겐 아직 안 보여준다). 기대돼요 버튼/카운트는 공통.
+  showHopeBadge?: boolean;
   // 현재 로그인한 구글 이메일 — "계정변경" 옆에 표시해 어떤 계정으로 들어와 있는지 보여준다.
   accountEmail?: string | null;
   // 비로그인(익명) 시청자 — 공개 포스터만 본다. 하트(서버 1인1하트)는 숨기고, 계정 칸은
@@ -717,6 +720,7 @@ export function PublicPoster({
   setPosterThemeAction,
   toggleHeartAction,
   accountSwitch = false,
+  showHopeBadge = false,
   accountEmail = null,
   anonymous = false,
   previewNote,
@@ -3525,8 +3529,8 @@ export function PublicPoster({
                   ) : (
                     <p className="span-cont">{main || " "}</p>
                   )}
-                  {/* 공개된 옛 떡밥 — 기대 rows는 남으므로 "n명이 기다렸어요" 배지가 된다. */}
-                  {span.showTitle && !event.teaser && hopeCountOf(event) > 0 ? (
+                  {/* 공개된 옛 떡밥 — "n명이 기다렸어요" 배지. 당분간 개발자 확인용만. */}
+                  {showHopeBadge && span.showTitle && !event.teaser && hopeCountOf(event) > 0 ? (
                     <em className="hope-badge" title="공개 전 '기대돼요'를 누른 사람 수">
                       🔮 {hopeCountOf(event)}명이 기다렸어요
                     </em>
@@ -4020,8 +4024,8 @@ export function PublicPoster({
                               </button>
                             ) : null}
                           </p>
-                          {/* 공개된 옛 떡밥 — "n명이 기다렸어요" 배지. */}
-                          {!support && !event.teaser && hopeCountOf(event) > 0 ? (
+                          {/* 공개된 옛 떡밥 — "n명이 기다렸어요" 배지. 당분간 개발자 확인용만. */}
+                          {showHopeBadge && !support && !event.teaser && hopeCountOf(event) > 0 ? (
                             <p className="agenda-sub hope-badge">
                               🔮 {hopeCountOf(event)}명이 기다렸어요
                             </p>

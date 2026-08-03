@@ -5622,6 +5622,9 @@ export function StudioShell({
           onViewChange={(year, month) => setView({ year, month })}
           previewNav={previewNav}
           schedule={previewSchedule}
+          // "n명이 기다렸어요" 배지는 당분간 개발자 확인용만(사용자 결정 — 카운팅은 쌓되
+          // 관리자·시청자에겐 아직 비노출). 역할 미리보기(effectiveRole)가 아니라 실제 역할 기준.
+          showHopeBadge={actor.role === "developer"}
           showWorldCupFeatures={showWorldCupFeatures}
           toggleHeartAction={toggleEventHeartAction}
         />
