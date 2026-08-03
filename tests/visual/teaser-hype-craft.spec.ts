@@ -92,7 +92,7 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
       host.innerHTML =
         '<div class="dt-count"><div class="dt-count-ringbox">' +
         '<svg class="dt-ring" viewBox="0 0 100 100">' +
-        '<g class="dt-ring-ticks"><line x1="41.8" x2="46.2" y1="50" y2="50"></line></g>' +
+        '<g class="dt-ring-ticks"><line x1="91.8" x2="96.2" y1="50" y2="50"></line></g>' +
         '<circle class="dt-ring-track" cx="50" cy="50" r="44"></circle></svg>' +
         '<div class="dt-count-core"><strong>10</strong></div></div></div>';
       document.body.appendChild(host);
@@ -102,12 +102,21 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
       const strong = host.querySelector<HTMLElement>(".dt-count-core strong")!;
       const cs = getComputedStyle(line);
       const half = parseFloat(cs.strokeWidth) / 2;
-      const inner = Number(line.getAttribute("x1"));
-      const outer = Number(line.getAttribute("x2"));
-      // 화면 좌표에서 숫자 반경(중심~글자 모서리)을 viewBox 단위로 환산한다.
+      // ⚠ x는 반지름이 아니라 좌표다(중심 50). 이걸 반지름으로 착각해 눈금 12개가 숫자
+      // 한가운데 뭉쳐 있었다 — 그래서 속성이 아니라 '실제로 그려진 거리'로 잰다.
       const box = svg.getBoundingClientRect();
-      const nb = strong.getBoundingClientRect();
+      const cx = box.left + box.width / 2;
+      const cy = box.top + box.height / 2;
+      const lb = line.getBoundingClientRect();
       const scale = box.width / 100;
+      const dists = [
+        Math.hypot(lb.left - cx, lb.top - cy),
+        Math.hypot(lb.right - cx, lb.bottom - cy)
+      ].map((d) => d / scale);
+      const inner = Math.min(...dists);
+      const outer = Math.max(...dists);
+      // 화면 좌표에서 숫자 상자를 viewBox 단위로 환산한다.
+      const nb = strong.getBoundingClientRect();
       // 숫자는 축 정렬 사각형이다 — 대각선 반경으로 재면 글자가 닿지도 않는 모서리까지
       // 세어 과하게 크게 나온다. 눈금 12개의 '안쪽 끝점'이 그 사각형 밖인지 직접 본다.
       const halfW = nb.width / 2 / scale;

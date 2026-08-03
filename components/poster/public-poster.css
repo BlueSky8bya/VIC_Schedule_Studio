@@ -3014,14 +3014,13 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
 .dt-count-ringbox::before {
   content: "";
   position: absolute;
-  /* 안쪽으로 더 물리고 가장자리를 길게 흘려 '경계선'이 생기지 않게 한다 — 예전엔 72%에서
-     끊겨 숫자 주변에 옅은 원이 하나 더 보였고, 거기에 눈금이 묻혔다. */
-  inset: 22%;
+  /* 숫자 뒤 온기만 남기고 '원'으로 읽히지 않게 — 중간 정지점을 없애 경계를 만들지 않는다.
+     예전엔 여기 생긴 옅은 원이 눈금으로 오인됐다(사용자 지적: 눈금이 숫자에 파묻혔다). */
+  inset: 24%;
   border-radius: 999px;
   background: radial-gradient(
-    circle at 50% 45%,
-    rgb(255 214 122 / calc(14% + var(--hy-glow, 0) * 220%)) 0%,
-    rgb(124 108 240 / calc(4% + var(--hy-glow, 0) * 30%)) 46%,
+    circle at 50% 46%,
+    rgb(255 210 120 / calc(9% + var(--hy-glow, 0) * 170%)) 0%,
     transparent 100%
   );
   pointer-events: none;
@@ -3084,8 +3083,8 @@ html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-count-ringbox::after {
    지나간 구간(빈 트랙)은 옅은 잉크 자국만 남는다. 시계 문자판 같은 '계기' 인상.
    ⚠ 안쪽(숫자 쪽)에 두면 링박스 후광의 경계와 겹쳐 숫자에 묻혀 버린다 — 반드시 바 위. */
 .dt-ring-ticks line {
-  stroke: rgb(124 108 240 / 20%);
-  stroke-width: 2.2;
+  stroke: rgb(90 76 170 / 42%);
+  stroke-width: 2.6;
   /* butt — round 캡은 양 끝을 stroke 절반만큼 늘려 바 밖으로 삐져나온다. */
   stroke-linecap: butt;
   transition: stroke 0.5s var(--ease);
@@ -3094,7 +3093,7 @@ html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-count-ringbox::after {
   opacity: calc(1 - var(--hy-calm, 0) * 0.7);
 }
 .dt-ring-ticks line.on {
-  stroke: rgb(255 255 255 / 62%);
+  stroke: rgb(255 255 255 / 88%);
 }
 /* 호 그라데이션 — 단색 바보다 깊이가 생긴다. 강도에 따라 세 정지점이 함께 데워진다. */
 .dt-grad-a {
@@ -3154,11 +3153,14 @@ html[data-eye-comfort] .dt-grad-c {
 .dt-count-core strong {
   /* 강도에 따라 연속으로 커진다(1.05 → 1.85배 기준을 팝오버 크기에 맞게 스케일).
      고요 구간에서는 그 위에 한 번 더 자란다 — 계기가 물러난 자리를 숫자가 채운다. */
-  font-size: calc(var(--hy-num, 1.05) * 26px * (1 + var(--hy-calm, 0) * 0.2));
+  font-size: calc(var(--hy-num, 1.05) * 26px * (1 + var(--hy-calm, 0) * 0.4));
   font-weight: 900;
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, #4d3f8f calc((1 - var(--hy-gold, 0)) * 100%), #9a5800);
-  text-shadow: 0 0 calc(var(--hy-glow, 0) * 40px) rgb(255 214 122 / 90%);
+  /* 금빛으로 갈수록 '옅어지면' 클라이맥스에서 되레 존재감이 약해진다(실측 스트립에서 8·3초
+     숫자가 흐릿한 갈색으로 빠졌다) → 끝점을 깊은 호박색으로 낮춰 색만 데워지고 농도는 유지한다.
+     후광도 줄인다(넓은 헤일로가 글자 가장자리를 갉아먹어 더 흐려 보였다). */
+  color: color-mix(in srgb, #4d3f8f calc((1 - var(--hy-gold, 0)) * 100%), #6b3d00);
+  text-shadow: 0 0 calc(var(--hy-glow, 0) * 22px) rgb(255 200 96 / 70%);
   animation: dt-count-tick 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 @keyframes dt-count-tick {
@@ -3287,6 +3289,33 @@ html[data-reduce-motion] .dt-ring-ticks line {
 /* 기대돼요 — 리더 박동·도트와 같은 심장. 진폭만 다르고 위상·파형은 공유한다. */
 .agenda-detail-sheet.is-hype .dt-hope {
   animation: hype-beat-scale var(--hy-beat-dur, 2.4s) linear var(--hy-beat-delay, 0s) infinite;
+}
+/* 시트가 데워지는데 버튼만 차가운 흰색으로 남으면 따로 논다(사용자 지적). 같은 --hy-gold를
+   받아 함께 익되, 시트와 '같은 색'이 되면 버튼이 배경에 먹히므로 한 단계 더 짙게 간다:
+   테두리·글자는 호박색으로 내려가고, 바탕은 시트보다 밝게 남겨 떠 있는 느낌을 지킨다.
+   고요 구간에서는 테두리가 굵어지며 존재감이 올라간다(계기가 물러난 자리를 채운다). */
+.agenda-detail-sheet.is-teaser .dt-hope {
+  border-width: calc(1.5px + var(--hy-calm, 0) * 0.8px);
+  border-color: color-mix(
+    in srgb,
+    rgb(124 108 240 / 45%) calc((1 - var(--hy-gold, 0)) * 100%),
+    rgb(154 88 0 / 62%)
+  );
+  background: color-mix(in srgb, #fff calc((1 - var(--hy-gold, 0)) * 100%), #fffaf0);
+  color: color-mix(in srgb, #5b4aa6 calc((1 - var(--hy-gold, 0)) * 100%), #6b3d00);
+  box-shadow: 0 calc(2px + var(--hy-calm, 0) * 3px)
+    calc(6px + var(--hy-calm, 0) * 12px)
+    color-mix(in srgb, rgb(124 108 240 / 18%) calc((1 - var(--hy-gold, 0)) * 100%), rgb(154 88 0 / 26%));
+}
+/* 눌린 상태(기대 중)도 같은 온도로 — 보라 그라데이션만 남으면 혼자 차갑다. */
+.agenda-detail-sheet.is-teaser .dt-hope.on {
+  border-color: transparent;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #d98a1a),
+    color-mix(in srgb, #5b4aa6 calc((1 - var(--hy-gold, 0)) * 100%), #8a4f04)
+  );
+  color: #fff;
 }
 @keyframes hype-beat-scale {
   0% {

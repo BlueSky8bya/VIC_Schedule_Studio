@@ -118,7 +118,9 @@ export function hypeChannels(intensity: number, calm = 0): HypeChannels {
     shakeDurationS: lerpPeriod(1.4, 0.45, i, 1.6),
     goldMix: lerp(0, 0.78, i, 2.2),
     glow: lerp(0, 0.22, i, 4),
-    numberScale: lerp(1.05, 1.85, i, 1.15),
+    // 1.05→1.85(지수 1.15)는 60초에 걸쳐 고르게 자라서, 인접한 초끼리 비교하면 차이가
+    // 거의 안 느껴졌다(사용자 지적). 범위를 넓히고 지수를 올려 후반에 성장을 몰아준다.
+    numberScale: lerp(1.05, 2.05, i, 1.45),
     // 리더 점선 — 시작을 더 느리게(갑자기 켜진 느낌 제거), 끝을 더 빠르게(마지막 3초의
     // 차이가 눈에 읽히게). 지수 1.15로 중반 가속을 앞당긴다. 색·밝기가 아니라 질감 이동이라
     // 점멸(flash) 예산에는 포함되지 않는다.
