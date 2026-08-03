@@ -1384,6 +1384,11 @@ export function PublicPoster({
   // 공개가 지난 뒤 새로고침으로 들어온 캐시-지연 교체(TeaserRevealing)는 조용히 갈아끼운다
   // (매 새로고침마다 팡 터지던 문제, 사용자 지적).
   const [justRevealed, setJustRevealed] = useState<Set<string>>(() => new Set());
+  // 공개 순간 폭죽을 쏘려면 popBurst가 필요한데 정의가 아래쪽이라 ref로 잡아 쓴다
+  // (revealTeaser는 deps [] 콜백 — 직접 참조하면 stale).
+  const popBurstRef = useRef<
+    ((x: number, y: number, mood: "win" | "cheer" | "console") => void) | null
+  >(null);
   const revealTeaser = useCallback((id: string, celebrate: boolean) => {
     revealTeaserAction([id])
       .then((list) => {
@@ -1399,6 +1404,16 @@ export function PublicPoster({
           setAgendaDetail((cur) => (cur && ids.includes(cur.event.id) ? null : cur));
           // 라이브로 지켜본 공개(celebrate)만 연출. 캐시-지연 교체는 조용히.
           if (!celebrate) return;
+          // 공개 순간 그 카드 자리에서 폭죽(월드컵 승리와 같은 큰 연출) — 다음 프레임에
+          // 실제 카드가 그려진 뒤 좌표를 재서 쏜다.
+          window.setTimeout(() => {
+            for (const id of ids) {
+              const el = document.querySelector<HTMLElement>(`[data-eventid="${id}"]`);
+              if (!el) continue;
+              const r = el.getBoundingClientRect();
+              popBurstRef.current?.(r.left + r.width / 2, r.top + r.height / 2, "win");
+            }
+          }, 80);
           // 이미 공개돼 화면에 떠 있던(애니 끝난) 건 다시 안 튀게, 이번에 새로 들어온 것만 표시.
           setJustRevealed((prev) => {
             const fresh = ids.filter((x) => !prev.has(x) && !revealedEvents[x]);
@@ -1411,7 +1426,7 @@ export function PublicPoster({
                 for (const x of fresh) n.delete(x);
                 return n;
               });
-            }, 1800);
+            }, 2200); // 팝 0.9s + 충격파 1.15s(+0.18 지연) 다 끝난 뒤 해제
             return next;
           });
         }
@@ -1894,6 +1909,8 @@ export function PublicPoster({
     setBursts((prev) => [...prev, { id, x: clientX, y: clientY, big, bits }]);
     window.setTimeout(() => setBursts((prev) => prev.filter((b) => b.id !== id)), 1700);
   }
+  // 떡밥 공개 순간에도 이 폭죽을 쏜다(revealTeaser는 deps [] 콜백이라 ref로 건넨다).
+  popBurstRef.current = popBurst;
 
   // 관심 토글 — 낙관적으로 즉시 반영하고, 서버 모드면 호출 후 집계 수를 권위값으로 보정한다.
   function toggleBookmark(id: string, ev?: ReactMouseEvent<HTMLButtonElement>) {
@@ -3570,6 +3587,7 @@ export function PublicPoster({
             return (
               <div
                 className={`${eventClass}${openDesktopDetail ? " is-clickable" : ""}`}
+                data-eventid={event.id} /* 공개 순간 폭죽 좌표를 잡는 앵커 */
                 data-chain={chainKeys.get(event.id)}
                 data-color={mixed ? undefined : colors[0]?.key}
                 data-mixed={mixed ? "" : undefined}
@@ -3596,6 +3614,10 @@ export function PublicPoster({
                     }
                   : {})}
               >
+                {/* 공개 순간 충격파 링(카드 밖으로 퍼짐) — 연출 끝나면 사라진다. */}
+                {justRevealed.has(rawEvent.id) ? (
+                  <span aria-hidden="true" className="reveal-shock" />
+                ) : null}
                 <div className="event-main">
                   {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다(이음새 어긋남 방지). */}
                   {span.showTitle ? (
@@ -4042,6 +4064,7 @@ export function PublicPoster({
                     return (
                       <div
                         className={`agenda-event tappable${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}`}
+                        data-eventid={support ? undefined : event.id}
                         key={(support ? "s-" : "") + event.id}
                         role="button"
                         tabIndex={0}
@@ -4056,6 +4079,9 @@ export function PublicPoster({
                           openDetail();
                         }}
                       >
+                        {justRevealed.has(rawEvent.id) ? (
+                          <span aria-hidden="true" className="reveal-shock" />
+                        ) : null}
                         {twoColor ? (
                           // 2색: 위/아래 반반 + 각 무늬, 가운데 경계는 마스크로 흐릿하게.
                           <span className="agenda-bar agenda-bar-2">
