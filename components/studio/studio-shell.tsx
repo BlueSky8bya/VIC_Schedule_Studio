@@ -1227,16 +1227,16 @@ export function StudioShell({
   const titleFirstLineLen = form.publicTitle.split("\n")[0]?.length ?? 0;
   // (제목칸 '카드처럼 렌더' 시도는 사용자 결정으로 철회 — textarea는 줄별 들여쓰기/크기가
   //  불가능해 카드와 정확히 같아질 수 없다(근사가 오히려 더 어색). 규칙 안내는 아래 helper가 담당.)
-  const renderTitleHelper = () => (
-    <div className="title-helper">
-      <span>첫 줄 = 제목 · 둘째 줄부터 = 세부 내용</span>
-      {titleFirstLineLen >= 14 ? (
+  // 규칙 문구("첫 줄 = 제목…")는 제거(사용자 결정 — placeholder가 이미 안내). 소프트 카운터만:
+  // 첫 줄이 길어질 때만 나타나 포스터 카드에서의 줄바꿈/축소를 저장 전에 예감하게 한다.
+  const renderTitleHelper = () =>
+    titleFirstLineLen >= 14 ? (
+      <div className="title-helper">
         <em className={titleFirstLineLen >= 20 ? "warn" : ""}>
           제목 {titleFirstLineLen}자{titleFirstLineLen >= 20 ? " — 포스터에서 길어요" : ""}
         </em>
-      ) : null}
-    </div>
-  );
+      </div>
+    ) : null;
 
   // 접힌 '공개 범위 · 옵션' 헤더에 현재 값을 한 줄로 요약한다 — 접혀 있어도 이 일정이 엠바고인지,
   // 미정인지, 떡밥인지 펼치지 않고 바로 보이게(접기가 정보를 숨기면 안 된다).
@@ -6003,7 +6003,9 @@ export function StudioShell({
           표시를 꺼도 잠금해제가 살아 있는 동안엔 남아서 잠글 수단을 잃지 않는다. */}
       {canTogglePrivateLayer && hasUnlockSession ? (
         <div
-          className={`private-warning private-warning-float${canReadPrivate ? "" : " is-hidden-state"}`}
+          className={`private-warning private-warning-float${canReadPrivate ? "" : " is-hidden-state"}${
+            calZoom > 1 ? " is-raised" : ""
+          }`}
           role="status"
         >
           <LockKeyhole aria-hidden="true" size={15} />
@@ -6772,7 +6774,7 @@ export function StudioShell({
                     title="닫기"
                     type="button"
                   >
-                    <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
+                    <ChevronRight aria-hidden="true" size={16} strokeWidth={2.5} />
                   </button>
                   {/* key로 날짜가 바뀔 때마다 재마운트 → 쓱 바뀌는 애니메이션으로 '옮겼다'를 인지.
                       사람이 읽는 형식(7월 4일 (토)) — '어느 칸' 인지를 헤더에서도 바로 읽게. */}

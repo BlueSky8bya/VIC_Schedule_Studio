@@ -853,6 +853,14 @@ html {
   pointer-events: auto;
   margin-left: var(--space-2);
 }
+/* 달력 확대 플로팅 컨트롤(같은 하단 중앙, bottom 18px + 높이 ~40px)과 안 겹치게 —
+   확대 중일 때만 그 위로 올라간다(전환은 부드럽게). */
+.private-warning-float {
+  transition: bottom 0.3s var(--ease);
+}
+.private-warning-float.is-raised {
+  bottom: calc(var(--space-4) + 52px + env(safe-area-inset-bottom, 0px));
+}
 /* 표시는 꺼졌지만 잠금해제가 살아 있는 상태 — 경고보다 낮은 톤(차분한 안내). */
 .private-warning-float.is-hidden-state {
   border-color: var(--line);
@@ -6200,35 +6208,44 @@ html[data-reduce-motion] .delete-snack {
   white-space: nowrap;
 }
 /* 저장 버튼 — 아이콘 없이 텍스트만, 패딩 줄여 한 줄 폭 확보. */
+/* 저장 — 헤더의 다른 요소(28px 접기·배지 칩)와 같은 스케일의 알약. 골드 톤은 유지하되
+   큼직한 사각 덩어리로 헤더에서 튀지 않게(주변 융화, 사용자 지적). */
 .editor-save {
   flex: none;
-  padding: 7px 16px;
-  font-size: var(--text-body); /* 13.5 */
+  min-height: 30px;
+  border-radius: var(--r-pill);
+  padding: 4px 14px;
+  font-size: var(--text-ui);
+  font-weight: var(--weight-bold);
 }
-/* 날짜를 접기 버튼(30px) + 간격(8px)만큼 들여, 위 줄의 라벨 시작선과 정확히 맞춘다. */
+/* 날짜를 접기 버튼(28px) + 간격(8px)만큼 들여, 위 줄의 라벨 시작선과 정확히 맞춘다. */
 .editor-heading-date {
-  margin: 0 0 2px 38px;
+  margin: 0 0 2px 36px;
 }
 /* 편집/상세 카드 왼쪽 위 '>' 접기 버튼 — 누르면 카드가 오른쪽으로 슬라이드 아웃. */
+/* '>' 접기 — 흰 사각 박스가 헤더에서 따로 놀았다(사용자 지적). 조용한 고스트 원형으로:
+   기본은 배경 없이 흐리게, 호버에서만 보라 틴트가 살아난다(닫기 X와 같은 문법). */
 .editor-collapse {
   flex: none;
   display: grid;
   place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid #ece9f5;
-  border-radius: 9px;
-  background: #fff;
-  color: #6b5bd6;
+  width: 28px;
+  height: 28px;
+  border: var(--stroke-hairline) solid transparent;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
   cursor: pointer;
   transition:
     background 0.16s var(--ease, ease),
+    color 0.16s var(--ease, ease),
     transform 0.16s var(--ease, ease),
     border-color 0.16s var(--ease, ease);
 }
 .editor-collapse:hover {
   background: #f3f0ff;
   border-color: #d9d1f5;
+  color: #6b5bd6;
   transform: translateX(2px);
 }
 .editor-collapse:active {
@@ -9588,22 +9605,16 @@ html[data-reduce-motion] .m-edit-x:active {
 }
 /* P1-TITLE-1 — 제목 입력 규칙 상시 helper(placeholder는 치는 순간 사라진다) + 소프트 카운터.
    웹·모바일 공용(양쪽 폼 모두 제목칸 바로 아래). */
+/* (규칙 문구는 제거 — 소프트 카운터만 오른쪽 정렬로 남는다.) */
 .title-helper {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 8px;
   margin-top: -2px;
   font-size: var(--text-caption); /* 11.5→11 수렴 */
   font-weight: 600;
   color: var(--muted, #8a93a3);
-}
-.title-helper > span {
-  flex: 1 1 auto;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis; /* 카운터가 뜨면 규칙 문구를 말줄임 — 세 줄로 찌그러지지 않게 */
 }
 .title-helper em {
   flex: 0 0 auto;
@@ -10031,28 +10042,32 @@ html[data-reduce-motion] .save-status.saving .ss-dot {
   letter-spacing: var(--tracking-tight);
 }
 
+/* 데스크톱 포인터 팝오버 헤더 — 44px 풀 히트 사각은 헤더에서 덩어리로 튀었다(사용자 지적).
+   접기 = 조용한 고스트 원형(28px), 저장 = 배지 칩과 같은 스케일의 알약(30px). */
 .editor-collapse,
 .editor-save {
-  min-width: var(--control-hit);
-  min-height: var(--control-hit);
-  border-color: var(--line);
-  border-radius: var(--r-control);
+  border-radius: var(--r-pill);
 }
 
 .editor-collapse {
-  width: var(--control-hit);
-  height: var(--control-hit);
-  background: var(--surface-2);
-  color: var(--violet);
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
 }
 
 .editor-collapse:hover {
   border-color: var(--selection-border);
   background: var(--selection-fill);
+  color: var(--violet);
 }
 
 .editor-save {
-  padding-inline: var(--space-control-x);
+  min-height: 30px;
+  padding-inline: var(--space-4);
   font-size: var(--text-ui);
 }
 
