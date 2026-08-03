@@ -30,8 +30,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as { passcode?: string };
+  const body = (await request.json().catch(() => ({}))) as {
+    passcode?: string;
+    verifyOnly?: boolean;
+  };
   const passcode = String(body.passcode ?? "");
+  // verifyOnly: 비밀번호가 맞는지 검증만 하고 grant/쿠키는 발급하지 않는다.
+  // 편집실의 최초공개(떡밥) 일정 게이트가 쓴다 — 게이트 통과가 비공개 레이어 잠금해제로
+  // 번지지 않게 한다. 무차별 대입 방어(시도 기록·차단)는 동일하게 적용된다.
+  const verifyOnly = body.verifyOnly === true;
   if (!passcode) {
     return NextResponse.json({ error: "비밀번호를 입력하세요." }, { status: 400 });
   }
@@ -90,6 +97,10 @@ export async function POST(request: Request) {
   ]);
   if (!passOk) {
     return NextResponse.json({ error: "비밀번호가 올바르지 않습니다." }, { status: 401 });
+  }
+
+  if (verifyOnly) {
+    return NextResponse.json({ ok: true });
   }
 
   // P0-PRIV-2(L8): grant는 이 브라우저의 auth 세션에 결속 — 같은 계정의 다른 기기는 안 열린다.

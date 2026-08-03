@@ -5399,6 +5399,161 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   cursor: help;
   filter: drop-shadow(0 0 1px rgb(124 108 240 / 60%));
 }
+
+/* ── 최초공개 편집 게이트 ─────────────────────────────────────────────
+   아직 안 풀린 떡밥 일정을 클릭하면 편집 폼 대신 뜨는 비번 확인 카드.
+   같은 팝오버 껍데기(리더 라인·드래그·닫기)를 쓰므로 여기선 '속'만 스타일링한다.
+   톤 = 떡밥 보라(#7c6cf0)를 은은하게, 형태 = 비번 팝업과 같은 입력/버튼 문법. */
+.event-editor-panel.is-gated {
+  width: min(320px, calc(100vw - 24px));
+}
+.teaser-gate-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.teaser-gate-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) 0;
+}
+.teaser-gate-badge {
+  margin: 0;
+}
+.teaser-gate-close {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.15s var(--ease),
+    transform 0.12s var(--ease);
+}
+.teaser-gate-close:hover {
+  background: rgb(124 108 240 / 10%);
+  color: var(--ink);
+}
+.teaser-gate-close:active {
+  transform: scale(0.92);
+}
+.teaser-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+}
+.teaser-gate-orb {
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 6px rgb(124 108 240 / 35%));
+  animation: teaser-gate-float 2.6s var(--ease) infinite alternate;
+}
+@keyframes teaser-gate-float {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(-4px);
+  }
+}
+.teaser-gate-title {
+  font-size: var(--text-ui);
+  font-weight: var(--weight-bold);
+  color: #6a58e8;
+  letter-spacing: var(--tracking-tight);
+}
+.teaser-gate-desc {
+  margin: 0;
+  font-size: var(--text-caption);
+  line-height: var(--lh-body);
+  color: var(--muted);
+}
+.teaser-gate-when {
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--r-pill);
+  background: rgb(124 108 240 / 10%);
+  color: #6a58e8;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+.teaser-gate-row {
+  display: flex;
+  gap: var(--space-2);
+  width: 100%;
+  margin-top: var(--space-1);
+}
+.teaser-gate-input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--control-hit, 40px);
+  padding: 0 var(--space-3);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface);
+  font-size: var(--text-body);
+  letter-spacing: 0.14em;
+  transition:
+    border-color 0.15s var(--ease),
+    box-shadow 0.15s var(--ease);
+}
+.teaser-gate-input:focus-visible {
+  outline: none;
+  border-color: #7c6cf0;
+  box-shadow: 0 0 0 3px rgb(124 108 240 / 18%);
+}
+.teaser-gate-submit {
+  flex: none;
+}
+.teaser-gate-error {
+  margin: 0;
+  font-size: var(--text-caption);
+  color: var(--danger, #c0392b);
+}
+/* 오답 흔들림 — 비번 팝업과 같은 문법(짧고 절제된 좌우 흔들림). */
+.teaser-gate.gate-shake {
+  animation: teaser-gate-shake 0.36s var(--ease);
+}
+@keyframes teaser-gate-shake {
+  20% {
+    transform: translateX(-6px);
+  }
+
+  40% {
+    transform: translateX(5px);
+  }
+
+  60% {
+    transform: translateX(-3px);
+  }
+
+  80% {
+    transform: translateX(2px);
+  }
+}
+/* 모바일 시트 안에서는 카드 폭이 넓으니 숨을 더 주고 가운데 정렬 유지. */
+.teaser-gate-sheet {
+  display: flex;
+  flex-direction: column;
+}
+.teaser-gate-sheet .teaser-gate {
+  padding: var(--space-5) var(--space-4) var(--space-6);
+}
+html[data-reduce-motion] .teaser-gate-orb,
+html[data-reduce-motion] .teaser-gate.gate-shake {
+  animation: none;
+}
 /* #8 옮긴 직후 서버 반영 전 '동기화 중' 점(돌아감). 상태 표시라 '동작 줄이기'에도 유지.
    절대 위치 오버레이로 띄워 제목을 밀지 않는다(나타났다 사라질 때 글자 좌우 점프 방지). */
 .pill-sync {
@@ -11847,6 +12002,16 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   border-radius: var(--r-lg);
   background: var(--surface-2);
   box-shadow: var(--shadow-1);
+}
+
+/* 방문탭 카드 안쪽 숨 — 데스크톱은 1000px 미디어쿼리에서 .vcard 패딩을 받지만 모바일 시트에선
+   그 규칙이 죽어 텍스트·차트가 테두리에 붙었다(사용자 지적). vrecent만 땜질됐던 것을 카드
+   전체로 확장. */
+.modal-card-developer .vcard,
+.modal-card-dayVisit .vcard,
+.modal-card-developer .insight-tile,
+.modal-card-dayVisit .insight-tile {
+  padding: var(--space-3);
 }
 
 /* 세션 로그 접이 카드 — 테두리·배경만 받고 패딩이 없어 '세션 N건'·칩이 가장자리에

@@ -38,6 +38,10 @@ export type CopiedEvent = {
   visibilityScope: EventVisibilityScope;
   tagIds: string[];
   primaryTagIds: string[];
+  // 떡밥(최초공개) 가림도 복사에 따라간다 — 안 따라가면 붙여넣는 순간 가림이 벗겨져
+  // 편집실 화면(방송 공유 중일 수 있음)에 내용이 노출된다.
+  teaser: boolean;
+  teaserRevealAt: string; // ISO(UTC). 빈 문자열=미설정. (저장 페이로드도 ISO를 받는다)
 };
 
 // 통합 실행취소(Ctrl+Z): 일반 편집기처럼 '액션 단위' LIFO 스택. 각 항목이 자기 역연산을 안다.

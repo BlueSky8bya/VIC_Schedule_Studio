@@ -141,7 +141,14 @@ import {
 } from "@/lib/ui/calendar-zoom";
 import { toBroadcastPanelDays } from "@/lib/schedules/broadcast-dto";
 import { detectDevice } from "@/lib/presence/presence-client";
-import { hapticDelete, hapticsEnabled, hapticTick, setHapticsEnabled } from "@/lib/ui/haptics";
+import {
+  hapticDelete,
+  hapticError,
+  hapticsEnabled,
+  hapticSuccess,
+  hapticTick,
+  setHapticsEnabled
+} from "@/lib/ui/haptics";
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
@@ -340,6 +347,16 @@ export function StudioShell({
   // 떡밥 공개시각 선택기(날짜·시간 팝업) 열림 — 모바일 뒤로가기 스택에 한 층으로 넣어, 뒤로가기 때
   // 이 팝업만 닫히고 새 일정 편집 카드로 돌아오게 한다(편집 카드까지 닫히지 않게).
   const [teaserPickerOpen, setTeaserPickerOpen] = useState(false);
+  // 최초공개(떡밥) 편집 게이트 — 아직 안 풀린 떡밥 일정은 편집실에서도 제목이 ???로 가려지고,
+  // 클릭하면 비공개 레이어 비밀번호 확인을 먼저 거친다(방송 화면 공유 중 오클릭 유출 방지).
+  // 한 번 확인한 일정 id는 이 화면이 살아 있는 동안 기억한다(새로고침 시 초기화 — 의도).
+  const [teaserUnlockedIds, setTeaserUnlockedIds] = useState<ReadonlySet<string>>(
+    () => new Set<string>()
+  );
+  const [teaserGatePass, setTeaserGatePass] = useState("");
+  const [teaserGateError, setTeaserGateError] = useState<string | null>(null);
+  const [teaserGateBusy, setTeaserGateBusy] = useState(false);
+  const [teaserGateShake, setTeaserGateShake] = useState(false);
   // 공개 범위 + 옵션(미정·업도움·떡밥) 묶음은 기본으로 접혀 있다 — 대부분의 일정이 '모두 공개 +
   // 옵션 없음'이라 매번 펼칠 이유가 없다. 접힌 상태에서도 헤더 요약으로 현재 값이 보인다.
   const [scopeFoldOpen, setScopeFoldOpen] = useState(false);
@@ -1022,6 +1039,16 @@ export function StudioShell({
         (e) => !e.isSupport || (e.endDateKey ?? getEventDateKey(e)) >= today
       ),
     [visibleEvents, today]
+  );
+  // 최초공개 게이트 판정 — 편집 패널이 가리키는 일정이 '아직 안 풀린 떡밥'이고 이 세션에서
+  // 비번 확인을 안 했으면 폼 대신 게이트를 띄운다. 이동/복사/드래그는 게이트와 무관하게 그대로.
+  const selectedLiveEvent = selectedEventId
+    ? (liveEvents.find((e) => e.id === selectedEventId) ?? null)
+    : null;
+  const teaserGateActive = Boolean(
+    selectedLiveEvent &&
+      teaserStillHidden(selectedLiveEvent) &&
+      !teaserUnlockedIds.has(selectedLiveEvent.id)
   );
   const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
   // 업 도움 띠가 차지하는 줄 수를 "주(週)별"로 센다. 띠가 없는 주는 0 → 그 주의 일정들이 위로
@@ -3147,6 +3174,9 @@ export function StudioShell({
   function selectEvent(event: StudioScheduleEvent, showPanel = true) {
     setSelectedDate(event.startsAt.slice(0, 10));
     setSelectedEventId(event.id);
+    // 다른 일정으로 옮겨가면 게이트 입력/오류는 새로 시작한다(통과 기록은 유지).
+    setTeaserGatePass("");
+    setTeaserGateError(null);
     // 원본을 기준(baseline)으로 삼고, TTL 안에 미저장 임시 내용이 있으면 그걸 대신 띄운다.
     const base = eventToForm(event);
     editBaselineRef.current = draftFingerprint(base);
@@ -3236,6 +3266,96 @@ export function StudioShell({
         tagVisual={tagVisual}
         viewTags={viewTags}
       />
+    );
+  }
+
+  // 최초공개 게이트 — 비공개 레이어 비밀번호를 서버에서 검증만 하고(grant 발급 없음, verifyOnly)
+  // 통과하면 이 일정 id를 화면이 살아 있는 동안 기억해 평소 편집 폼으로 전환한다.
+  async function submitTeaserGate(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const eventId = selectedEventId;
+    const pass = teaserGatePass.trim();
+    if (!eventId || !pass || teaserGateBusy) return;
+    hapticTick(); // ① 눌림(2단계 컨벤션 — 성공 톡은 서버 응답 후)
+    setTeaserGateBusy(true);
+    setTeaserGateError(null);
+    try {
+      const res = await fetch("/api/unlock-private-layer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode: pass, verifyOnly: true })
+      });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (res.ok) {
+        hapticSuccess(); // ② 서버확인
+        setTeaserGatePass("");
+        setTeaserUnlockedIds((prev) => {
+          const next = new Set(prev);
+          next.add(eventId);
+          return next;
+        });
+        bumpEditor(); // 게이트 → 폼: 같은 카드 안에서 폼이 새로 떠오르는 전환
+      } else {
+        hapticError();
+        setTeaserGateError(data.error ?? "비밀번호가 올바르지 않습니다.");
+        setTeaserGateShake(true);
+        window.setTimeout(() => setTeaserGateShake(false), 420);
+      }
+    } catch {
+      hapticError();
+      setTeaserGateError("확인하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setTeaserGateBusy(false);
+    }
+  }
+
+  // 게이트 카드 본문(데스크톱 팝오버·모바일 시트 공용) — 내용은 일절 안 보여준다.
+  // 공개 예정 시각과 비번 입력만. 이동/복사/드래그는 게이트 없이 평소처럼 가능하다.
+  function renderTeaserGate() {
+    return (
+      <form
+        className={`teaser-gate${teaserGateShake ? " gate-shake" : ""}`}
+        onSubmit={submitTeaserGate}
+      >
+        <span className="teaser-gate-orb" aria-hidden="true">
+          🔮
+        </span>
+        <strong className="teaser-gate-title">최초공개 일정</strong>
+        <p className="teaser-gate-desc">
+          공개 전까지 내용을 가려두었어요. 내용을 보거나 수정하려면 비공개 레이어
+          비밀번호를 입력해 주세요.
+        </p>
+        {selectedLiveEvent?.teaserRevealAt ? (
+          <p className="teaser-gate-when">{teaserBadgeTitle(selectedLiveEvent.teaserRevealAt)}</p>
+        ) : null}
+        <div className="teaser-gate-row">
+          <input
+            aria-label="비공개 레이어 비밀번호"
+            autoComplete="off"
+            autoFocus
+            className="teaser-gate-input"
+            onChange={(e) => {
+              setTeaserGatePass(e.target.value);
+              if (teaserGateError) setTeaserGateError(null);
+            }}
+            placeholder="비밀번호"
+            type="password"
+            value={teaserGatePass}
+          />
+          <button
+            className="button primary teaser-gate-submit"
+            disabled={teaserGateBusy || !teaserGatePass.trim()}
+            type="submit"
+          >
+            {teaserGateBusy ? "확인 중…" : "확인"}
+          </button>
+        </div>
+        {teaserGateError ? (
+          <p className="teaser-gate-error" role="alert">
+            {teaserGateError}
+          </p>
+        ) : null}
+      </form>
     );
   }
 
@@ -3913,7 +4033,10 @@ export function StudioShell({
       status: ev.status,
       visibilityScope: ev.visibilityScope,
       tagIds: ev.tagIds,
-      primaryTagIds: ev.primaryTagIds
+      primaryTagIds: ev.primaryTagIds,
+      // 아직 안 풀린 최초공개는 가림째로 복사한다(공개 시각이 지난 떡밥은 평범한 일정으로).
+      teaser: teaserStillHidden(ev),
+      teaserRevealAt: teaserStillHidden(ev) ? (ev.teaserRevealAt ?? "") : ""
     });
     flashToast("일정 복사됨 · 날짜 고르고 Ctrl+V");
   }
@@ -3952,6 +4075,8 @@ export function StudioShell({
       category: payload.category,
       tagIds: payload.tagIds,
       primaryTagIds: payload.primaryTagIds.slice(0, 2),
+      teaser: payload.teaser || undefined,
+      teaserRevealAt: payload.teaser ? payload.teaserRevealAt || undefined : undefined,
       sortOrder: 0
     };
     setEvents((prev) => [...prev, optimistic]);
@@ -3977,7 +4102,9 @@ export function StudioShell({
         tagIds: payload.tagIds,
         primaryTagIds: payload.primaryTagIds.slice(0, 2),
         isSupport: payload.isSupport,
-        supportUrl: payload.supportUrl
+        supportUrl: payload.supportUrl,
+        teaser: payload.teaser,
+        teaserRevealAt: payload.teaser ? payload.teaserRevealAt || null : null
       });
       if (!result.ok) {
         setActionError(result.error);
@@ -4518,7 +4645,10 @@ export function StudioShell({
                     {shownEvents.map((event) => {
                       const colors = eventColors(event);
                       const extraColors = tagVisual.eventExtras(event);
-                      const { main, subs } = splitEventTitle(event.publicTitle);
+                      // 아직 안 풀린 최초공개는 편집실 목록에서도 내용을 가린다(방송 화면 유출 방지).
+                      const { main, subs } = splitEventTitle(
+                        teaserStillHidden(event) ? "???" : event.publicTitle
+                      );
                       const barStyle =
                         colors.length >= 2
                           ? {
@@ -4619,7 +4749,9 @@ export function StudioShell({
                                 {!event.isSupport && event.isTentative ? (
                                   <span className="evt-tentative">미정</span>
                                 ) : null}
-                                {event.isSupport ? `🌱 ${event.publicTitle}` : main}
+                                {event.isSupport
+                                  ? `🌱 ${teaserStillHidden(event) ? "???" : event.publicTitle}`
+                                  : main}
                               </span>
                               {teaserStillHidden(event) ? (
                                 <span className="m-teaser-badge" title={teaserBadgeTitle(event.teaserRevealAt)}>
@@ -5134,7 +5266,7 @@ export function StudioShell({
               <span aria-hidden="true" />
             </button>
             <div className="m-edit-head">
-              <strong>{selectedEventId ? "일정 수정" : "새 일정"}</strong>
+              <strong>{selectedEventId ? "수정" : "신규"}</strong>
               <span className="m-edit-date">{selectedDate}</span>
               <button
                 aria-label="닫기"
@@ -5149,6 +5281,10 @@ export function StudioShell({
 
           {actionError ? <div className="auth-warning">{actionError}</div> : null}
 
+          {/* 아직 안 풀린 최초공개 일정 — 시트 껍데기는 그대로, 속만 비번 게이트로. */}
+          {teaserGateActive ? (
+            <div className="me-form teaser-gate-sheet">{renderTeaserGate()}</div>
+          ) : (
           <form
             className="me-form"
             onSubmit={(e) => {
@@ -5341,6 +5477,7 @@ export function StudioShell({
               </button>
             </div>
           </form>
+          )}
         </div>
       </div>
     );
@@ -6110,7 +6247,10 @@ export function StudioShell({
                       const isSel = editorVisible && selectedEventId === event.id;
                       // 연결된 체인이면 체인 전체에 선택 테두리를 입힌다.
                       const inSelChain = editorVisible && selectedChainIds.has(event.id);
-                      const { main, subs } = splitEventTitle(event.publicTitle);
+                      // 아직 안 풀린 최초공개는 편집실 달력에서도 내용을 가린다(방송 화면 유출 방지).
+                      const { main, subs } = splitEventTitle(
+                        teaserStillHidden(event) ? "???" : event.publicTitle
+                      );
                       const span = getEventSpan(
                         event,
                         cell.isoDate,
@@ -6405,7 +6545,10 @@ export function StudioShell({
           ? (() => {
               const ev = liveEvents.find((e) => e.id === zoomPeek.id);
               if (!ev) return null;
-              const { main, subs } = splitEventTitle(ev.publicTitle);
+              // 확대 상세도 최초공개 가림을 따른다 — 어디서든 게이트 전엔 ???만.
+              const { main, subs } = splitEventTitle(
+                teaserStillHidden(ev) ? "???" : ev.publicTitle
+              );
               // (열림 판정은 카드 핸들러가 실측으로 함 — 서브가 없어도 제목이 잘린 카드는
               //  전체 제목을 보여줄 가치가 있어 여기서 서브 유무로 걸러내지 않는다.)
               // 폭은 내용에 맞춰 줄어들고(짧은 일정 = 좁은 박스), 최대만 제한 — 고정 380px는
@@ -6493,7 +6636,9 @@ export function StudioShell({
         <aside
           className={`event-editor-panel ${selectedEventId ? "is-edit" : "is-new"}${
             panelSaved ? " panel-saved" : ""
-          }${editorPopDragging ? " pop-dragging" : ""}${editorPopSnapback ? " pop-snapback" : ""}`}
+          }${editorPopDragging ? " pop-dragging" : ""}${editorPopSnapback ? " pop-snapback" : ""}${
+            teaserGateActive ? " is-gated" : ""
+          }`}
           key={`pop-${editorKey}`}
           ref={editorPanelRef}
           style={(() => {
@@ -6510,8 +6655,38 @@ export function StudioShell({
             } as CSSProperties;
           })()}
         >
-          {/* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */}
-          {!canEdit ? (
+          {/* 아직 안 풀린 최초공개(떡밥) 일정 — 역할과 무관하게 먼저 비번 게이트.
+              같은 팝오버 껍데기(점선 리더 라인·드래그·바깥 클릭 닫기)를 그대로 쓰고 속만 바꾼다. */}
+          {teaserGateActive ? (
+            <div className="teaser-gate-wrap" key={`gate-${editorKey}`}>
+              <div
+                aria-hidden="true"
+                className="editor-grab"
+                onPointerDown={onEditorPopDragStart}
+                title="끌어서 이동"
+              >
+                <span />
+              </div>
+              <div
+                className="editor-heading-bar teaser-gate-bar"
+                onPointerDown={onEditorPopDragStart}
+                title="끌어서 이동"
+              >
+                <span className="editor-date-inline">{formatEditorDate(selectedDate)}</span>
+                <p className="editor-mode-badge is-edit teaser-gate-badge">🔮 최초공개</p>
+                <button
+                  aria-label="닫기"
+                  className="teaser-gate-close"
+                  onClick={() => setEditorVisible(false)}
+                  type="button"
+                >
+                  <X aria-hidden="true" size={16} />
+                </button>
+              </div>
+              {renderTeaserGate()}
+            </div>
+          ) : !canEdit ? (
+            /* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */
             renderReadonlyDetail()
           ) : (
           /* key는 editorKey(명시적 선택 시에만 증가) — 저장·삭제 같은 내부 상태 변화로는 재마운트
@@ -6557,7 +6732,7 @@ export function StudioShell({
                     ) : (
                       <Plus aria-hidden="true" size={13} strokeWidth={3} />
                     )}
-                    {selectedEventId ? "일정 수정" : "새 일정"}
+                    {selectedEventId ? "수정" : "신규"}
                   </p>
                 </div>
                 {/* (이동/복제 버튼 제거 — 사용자 결정: 드래그와 Ctrl+C/V 단축키가 충분해

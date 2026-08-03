@@ -5,13 +5,19 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-07-31
+Last Updated: 2026-08-03
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
 ---
 
 ## Current Objective
+
+- **최초공개(떡밥) 편집실 가림(2026-08-03)**: 아직 안 풀린 떡밥은 편집실 카드/확대상세에서도
+  제목 ???, 클릭 시 편집 폼 대신 비번 게이트(비공개 레이어 비번, `verifyOnly` — grant 미발급,
+  rate limit 동일). 통과 id는 화면 생존 동안만 기억. 이동/드래그/복사는 게이트 없이 가능하되
+  복사는 teaser 필드째 복사(CopiedEvent 확장 — 안 하면 붙여넣기가 가림을 벗겼음).
+  실기기 검증 남음: 데스크톱 팝오버 게이트 폭/리더라인, 모바일 시트 게이트, 오답 shake.
 
 **전면 UX/HCI 개선 계획 실행 중** — 코덱스 설계안(`docs/ux/audit/vic-schedule-studio-ux-hci-
 improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능/안정(P0→P1→P2) 먼저,
