@@ -10906,18 +10906,20 @@ html[data-reduce-motion] .role-segment button:active {
   transform: none;
 }
 
-/* Batch 10: security-first private unlock modal. Unlock behavior stays untouched. */
+/* 비공개 잠금해제 모달 — 예전 '보안 강조' 빨강 프레임/헤더는 주변 스튜디오 카드 언어
+   (크림 표면·헤어라인·보라 포커스)와 동화가 안 됐다(사용자 지적). 잠금 정체성은 제목의
+   🔒 하나로 충분하다 — 나머지는 다른 모달과 같은 문법. 잠금 동작 자체는 그대로. */
 .modal-backdrop-passcode .modal-card {
   width: min(100%, var(--sheet-width-md));
   max-width: var(--sheet-width-md);
-  border: var(--stroke-hairline) solid var(--status-danger);
+  border: var(--stroke-hairline) solid var(--line);
   background: var(--surface);
   box-shadow: var(--shadow-3);
 }
 
 .modal-backdrop-passcode .modal-head {
-  border-color: var(--line);
-  background: var(--status-danger-fill);
+  border-color: var(--line-soft);
+  background: var(--surface-2);
   padding: var(--space-4) var(--space-5);
 }
 
@@ -10928,6 +10930,12 @@ html[data-reduce-motion] .role-segment button:active {
   letter-spacing: var(--tracking-tight);
 }
 
+.modal-backdrop-passcode .modal-head h2::before {
+  content: "🔒";
+  margin-right: var(--space-2);
+  font-size: 0.9em;
+}
+
 .modal-backdrop-passcode .modal-card > :not(.modal-head) {
   padding: var(--space-4) var(--space-5) var(--space-5);
 }
@@ -10935,7 +10943,7 @@ html[data-reduce-motion] .role-segment button:active {
 .modal-backdrop-passcode .modal-close {
   width: var(--control-hit);
   height: var(--control-hit);
-  color: var(--status-danger);
+  color: var(--muted);
 }
 
 @supports ((-webkit-backdrop-filter: var(--material-blur)) or (backdrop-filter: var(--material-blur))) {

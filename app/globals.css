@@ -1045,6 +1045,21 @@ html[data-reduce-motion] .pop-number.pop {
   font-weight: var(--weight-semibold);
 }
 
+/* '비밀번호 변경'(잠금 폼의 직속 버튼)만 — 전폭 슬래브 대신 조용한 텍스트 버튼.
+   주 동작(확인)과 시각 위계를 가르고, 모달이 버튼 두 덩이로 무거워 보이던 것을 덜어낸다. */
+.passcode-box > .button {
+  justify-self: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+}
+
+.passcode-box > .button:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
 .passcode-submit {
   min-width: calc(var(--control-hit) + var(--space-6));
 }
