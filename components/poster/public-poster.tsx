@@ -362,10 +362,15 @@ function recordHeartDelta(owner: string, id: string, on: boolean) {
 function TeaserCountdown({
   revealAt,
   onReveal,
+  onWatch,
   motionEnabled = true
 }: {
   revealAt: string;
   onReveal: () => void;
+  // 마운트 즉시 '이 화면이 이 떡밥을 라이브로 지켜보고 있다'고 알린다. 0초에 알리면 늦다 —
+  // 그 순간 부모가 리렌더되면 이 컴포넌트가 먼저 언마운트돼 effect가 아예 안 돌고,
+  // 축하 연출이 통째로 사라진다(사용자 지적: 0초에 애니메이션이 안 나온다).
+  onWatch?: () => void;
   // 꾸미기(스티커 편집) 중에는 하이프 연출을 돌리지 않는다 — 편집실은 편집에 도움되는
   // 것만 한다. 숫자는 그대로 흐르되 10Hz 시각 루프와 박동은 아예 시작하지 않는다.
   motionEnabled?: boolean;
@@ -373,6 +378,11 @@ function TeaserCountdown({
   const target = useMemo(() => Date.parse(revealAt), [revealAt]);
   const onRevealRef = useRef(onReveal);
   onRevealRef.current = onReveal;
+  const onWatchRef = useRef(onWatch);
+  onWatchRef.current = onWatch;
+  useEffect(() => {
+    onWatchRef.current?.();
+  }, []);
   // 팝오버와 같은 공용 시계 — 초 경계에 맞춰 함께 넘어간다(각자 interval을 돌리면 어긋난다).
   const s0 = useRemainSeconds(Number.isNaN(target) ? null : target);
   // 시각 채널은 10Hz로 '요소에 직접' 기록한다 — 리렌더는 1Hz(숫자)만. 하이프 창(60초) 밖이거나
@@ -1575,6 +1585,11 @@ export function PublicPoster({
   const liveWatchedRef = useRef<Set<string>>(new Set());
   // 이미 연출을 시작한 떡밥 — 2초 재시도가 축포를 두 번 쏘지 않게 한다(세션 동안 유지).
   const celebratedRef = useRef<Set<string>>(new Set());
+  // 카운트다운이 화면에 뜬 순간 기록한다(0초가 아니라 마운트 시점). 0초에 기록하면,
+  // 그 찰나에 부모가 리렌더돼 카드가 조용한 교체 경로로 넘어가면 기록 자체를 못 남긴다.
+  const markTeaserWatched = useCallback((id: string) => {
+    liveWatchedRef.current.add(id);
+  }, []);
   const revealTeaser = useCallback((id: string, celebrate: boolean) => {
     if (celebrate) liveWatchedRef.current.add(id);
     revealTeaserAction([id])
@@ -3759,6 +3774,7 @@ export function PublicPoster({
                       <TeaserCountdown
                         motionEnabled={interactive}
                         onReveal={() => revealTeaser(rawEvent.id, true)}
+                        onWatch={() => markTeaserWatched(rawEvent.id)}
                         revealAt={event.teaserRevealAt}
                       />
                     </div>
@@ -4280,6 +4296,7 @@ export function PublicPoster({
                             <TeaserCountdown
                               motionEnabled={interactive}
                               onReveal={() => revealTeaser(rawEvent.id, true)}
+                              onWatch={() => markTeaserWatched(rawEvent.id)}
                               revealAt={event.teaserRevealAt}
                             />
                           </div>
@@ -5318,8 +5335,10 @@ export function PublicPoster({
                                   className={f <= p ? "on" : undefined}
                                   key={f}
                                   transform={`rotate(${360 * f} 50 50)`}
-                                  x1="34"
-                                  x2="37.5"
+                                  /* 링 안쪽 면(반지름 44 - stroke 7/2 = 40.5)에 바짝 붙인다 —
+                                     숫자 옆이 아니라 바에 속한 눈금으로 읽히게. */
+                                  x1="36.2"
+                                  x2="39.8"
                                   y1="50"
                                   y2="50"
                                 />

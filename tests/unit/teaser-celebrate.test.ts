@@ -13,7 +13,7 @@ class CelebrationGate {
   private liveWatched = new Set<string>();
   private celebrated = new Set<string>();
 
-  /** 카운트다운이 0에 닿아 공개를 요청했다(라이브로 본 것). */
+  /** 카운트다운이 화면에 떴다(마운트 시점에 표시 — 0초까지 기다리지 않는다). */
   watchedLive(id: string): void {
     this.liveWatched.add(id);
   }
@@ -40,6 +40,15 @@ describe("최초공개 축하 게이트", () => {
     gate.watchedLive("a"); // 카운트다운이 0에 닿음
     // 부모 리렌더로 TeaserRevealing이 대신 공개를 호출(예전 celebrate=false 경로).
     // 표시는 이미 남아 있으므로 어느 쪽 응답이 먼저 와도 연출 대상이다.
+    expect(gate.targets(["a"])).toEqual(["a"]);
+  });
+
+  it("0초 직전에 카운트다운이 언마운트돼도 연출은 살아남는다", () => {
+    const gate = new CelebrationGate();
+    // 카운트다운이 뜬 순간(=아직 30초 남았을 때) 이미 표시해 둔다.
+    gate.watchedLive("a");
+    // 0초에 부모가 리렌더되며 카운트다운이 사라져 그쪽 effect는 못 돌았다.
+    // 대신 조용한 교체 경로가 공개를 호출한다 — 그래도 연출 대상이다.
     expect(gate.targets(["a"])).toEqual(["a"]);
   });
 
