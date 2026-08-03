@@ -609,6 +609,13 @@ function useRemainSeconds(targetMs: number | null): number | null {
   return s;
 }
 
+// 서버가 '아직 안 풀린 떡밥'이라고 말하는가. 로컬 공개 캐시(revealedEvents)는 화면이 직접
+// 본 공개만 담는데, 일정을 다시 떡밥으로 되돌리면 그 캐시가 새 떡밥까지 영구히 덮어버려
+// 카운트다운이 다시는 안 나왔다 — 서버 쪽이 미래를 가리키면 캐시를 무시한다.
+function teaserStillAhead(ev: PublicScheduleEvent): boolean {
+  return Boolean(ev.teaser && ev.teaserRevealAt && Date.parse(ev.teaserRevealAt) > Date.now());
+}
+
 // 공개 시각을 사람이 읽는 KST로 — 팝오버 전용 정보(카드에는 카운트다운만 → 중복 없음).
 function formatRevealKst(iso: string): string {
   const t = new Date(Date.parse(iso) + 9 * 3_600_000);
@@ -1559,7 +1566,17 @@ export function PublicPoster({
   const popBurstRef = useRef<
     ((x: number, y: number, mood: "win" | "cheer" | "console") => void) | null
   >(null);
+  // 축하 연출의 주인은 '누가 공개를 호출했는지'가 아니라 '이 화면이 0초를 라이브로 봤는지'다.
+  // 예전엔 호출자가 넘긴 celebrate 인자로 정했는데, 카운트다운이 0에 닿은 뒤 서버 응답이
+  // 오기까지 그 사이에 부모가 한 번이라도 리렌더되면 카드가 조용한 교체 경로
+  // (TeaserRevealing, celebrate=false)로 넘어가 축포가 통째로 사라졌다 — 첫 공개는 부모가
+  // 조용해서 안 걸리고, 그 뒤부터는 상태가 늘어 리렌더 요인이 생겨 걸렸다(사용자 지적:
+  // "처음만 된다"). 라이브로 봤다는 표시를 여기에 남기면 어느 경로가 이기든 결과가 같다.
+  const liveWatchedRef = useRef<Set<string>>(new Set());
+  // 이미 연출을 시작한 떡밥 — 2초 재시도가 축포를 두 번 쏘지 않게 한다(세션 동안 유지).
+  const celebratedRef = useRef<Set<string>>(new Set());
   const revealTeaser = useCallback((id: string, celebrate: boolean) => {
+    if (celebrate) liveWatchedRef.current.add(id);
     revealTeaserAction([id])
       .then((list) => {
         if (list.length > 0) {
@@ -1572,12 +1589,16 @@ export function PublicPoster({
           // 팝오버가 그 떡밥을 열고 있으면 닫지 않는다 — 그 자리에서 ???가 실제 일정으로
           // '변신'하는 게 훨씬 좋은 구경거리다(예전엔 닫아버려 클라이맥스를 놓쳤다).
           // 내용 교체는 렌더에서 revealedEvents로 자동 반영된다.
-          // 라이브로 지켜본 공개(celebrate)만 연출. 캐시-지연 교체는 조용히.
-          if (!celebrate) return;
+          // 라이브로 지켜본 것만 연출. 캐시-지연 교체(새로고침으로 들어온 경우)는 조용히.
+          const targets = ids.filter(
+            (x) => liveWatchedRef.current.has(x) && !celebratedRef.current.has(x)
+          );
+          if (targets.length === 0) return;
+          for (const x of targets) celebratedRef.current.add(x);
           // 공개 순간 폭죽(월드컵 승리와 같은 큰 연출) — 카드에서 한 번, 팝오버가 열려 있으면
           // 거기서도 한 번 더. 다음 프레임에 실제 요소가 그려진 뒤 좌표를 잰다.
           window.setTimeout(() => {
-            for (const id of ids) {
+            for (const id of targets) {
               const el = document.querySelector<HTMLElement>(`[data-eventid="${id}"]`);
               if (el) {
                 const r = el.getBoundingClientRect();
@@ -1590,27 +1611,31 @@ export function PublicPoster({
               popBurstRef.current?.(r.left + r.width / 2, r.top + r.height / 2, "win");
             }
           }, 90);
-          // 이미 공개돼 화면에 떠 있던(애니 끝난) 건 다시 안 튀게, 이번에 새로 들어온 것만 표시.
+          // 연출 유지 시간은 스크램블 해독이 끝날 때까지(제목이 길면 더 오래) — 예전엔 연출이
+          // 중간에 잘려 글자 난동을 끝까지 못 봤다. 타이머 예약은 상태 갱신 함수 밖에서 한다
+          // (updater는 순수해야 하고, StrictMode에서 두 번 불려 중복 예약될 수 있다).
+          const holdMs = Math.max(
+            2400,
+            ...list
+              .filter((ev) => targets.includes(ev.id))
+              .map((ev) => scrambleDurationMs(ev.publicTitle || ""))
+          );
           setJustRevealed((prev) => {
-            const fresh = ids.filter((x) => !prev.has(x) && !revealedEvents[x]);
-            if (fresh.length === 0) return prev;
             const next = new Set(prev);
-            for (const x of fresh) next.add(x);
-            window.setTimeout(() => {
-              setJustRevealed((cur) => {
-                const n = new Set(cur);
-                for (const x of fresh) n.delete(x);
-                return n;
-              });
-              // 스크램블 해독이 끝날 때까지 유지(제목이 길면 더 오래) — 예전엔 연출이
-              // 중간에 잘려 글자 난동을 끝까지 못 봤다.
-            }, Math.max(2400, ...list.map((ev) => scrambleDurationMs(ev.publicTitle || ""))));
+            for (const x of targets) next.add(x);
             return next;
           });
+          window.setTimeout(() => {
+            setJustRevealed((cur) => {
+              const n = new Set(cur);
+              for (const x of targets) n.delete(x);
+              return n;
+            });
+          }, holdMs);
         }
       })
       .catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // 이제 상태를 직접 읽지 않는다(전부 ref·함수형 갱신) → 콜백 정체성이 안정적이다.
   }, []);
   const serverHearts = Boolean(toggleHeartAction);
   // 비로그인 하트용 기기 토큰(로그인 시엔 빈 값, 계정 기준으로 동작). 마운트 후 채워진다.
@@ -3683,7 +3708,7 @@ export function PublicPoster({
           {events.map((rawEvent) => {
             // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다(가린 stub 대신 진짜).
             // 기대 수(hopeCount)는 공개 액션 응답에 없으니 stub의 값을 이어받는다(배지 유지).
-            const revealedEv = revealedEvents[rawEvent.id];
+            const revealedEv = teaserStillAhead(rawEvent) ? undefined : revealedEvents[rawEvent.id];
             const event = revealedEv
               ? { ...revealedEv, hopeCount: revealedEv.hopeCount ?? rawEvent.hopeCount }
               : rawEvent;
@@ -4216,7 +4241,9 @@ export function PublicPoster({
                   {list.map(({ event: rawEvent, support }) => {
                     // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다.
                     // 기대 수는 공개 응답에 없으니 stub 값을 이어받는다(배지 유지).
-                    const revealedEv = revealedEvents[rawEvent.id];
+                    const revealedEv = teaserStillAhead(rawEvent)
+                      ? undefined
+                      : revealedEvents[rawEvent.id];
                     const event = revealedEv
                       ? { ...revealedEv, hopeCount: revealedEv.hopeCount ?? rawEvent.hopeCount }
                       : rawEvent;
