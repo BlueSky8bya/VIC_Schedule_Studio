@@ -2750,19 +2750,29 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
 .agenda-item.teaser.hype-live > * {
   animation: hype-shake var(--hy-shake-dur, 1.4s) ease-in-out infinite;
 }
+/* --hy-shake-k = 요소별 진폭 배율(기본 1). 진폭 값 자체(--hy-shake-x)는 곡선이 한 곳에서
+   흘려보내므로, 넓은 면은 배율만 키워 같은 박자로 함께 떨게 한다. */
 @keyframes hype-shake {
   0%,
   100% {
     transform: translate3d(0, 0, 0);
   }
   25% {
-    transform: translate3d(calc(var(--hy-shake-x, 0px) * -1), var(--hy-shake-x, 0px), 0);
+    transform: translate3d(
+      calc(var(--hy-shake-x, 0px) * -1 * var(--hy-shake-k, 1)),
+      calc(var(--hy-shake-x, 0px) * var(--hy-shake-k, 1)),
+      0
+    );
   }
   50% {
-    transform: translate3d(var(--hy-shake-x, 0px), calc(var(--hy-shake-x, 0px) * -1), 0);
+    transform: translate3d(
+      calc(var(--hy-shake-x, 0px) * var(--hy-shake-k, 1)),
+      calc(var(--hy-shake-x, 0px) * -1 * var(--hy-shake-k, 1)),
+      0
+    );
   }
   75% {
-    transform: translate3d(calc(var(--hy-shake-x, 0px) * -0.6), 0, 0);
+    transform: translate3d(calc(var(--hy-shake-x, 0px) * -0.6 * var(--hy-shake-k, 1)), 0, 0);
   }
 }
 /* 파동 링 3겹 — DOM을 단계별로 추가하지 않고 opacity로만 스며든다(경계 없음).
@@ -2880,6 +2890,19 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
 }
 .agenda-detail-sheet.is-hype .dt-orb {
   animation: hype-shake var(--hy-shake-dur, 1.4s) ease-in-out infinite;
+}
+/* 1분 안쪽이면 팝오버도 함께 떤다. 단 '박스'가 아니라 직속 자식들을 흔든다 —
+   시트 자체를 흔들면 닫기 버튼·기대돼요의 히트 타깃이 같이 움직여 누르기 어려워지고,
+   드래그로 옮긴 위치와도 싸운다(카드에서 쓴 것과 같은 해법).
+   진폭은 카드보다 조금 크게: 344px 표면에서 1.2px는 거의 안 보인다.
+   폭풍의 눈(10초)에 들어가면 곡선이 --hy-shake-x를 0으로 만들어 저절로 멎는다. */
+.agenda-detail-sheet.is-hype > * {
+  --hy-shake-k: 1.45;
+  animation: hype-shake var(--hy-shake-dur, 1.4s) ease-in-out infinite;
+}
+/* 그립은 빼둔다 — 잡아 끄는 손잡이가 떨면 조준이 어긋난다. */
+.agenda-detail-sheet.is-hype > .detail-grab {
+  animation: none;
 }
 
 /* ── 팝오버 링 카운트다운(1분 안쪽) — 계획 안 B ─────────────────────────
@@ -3214,6 +3237,7 @@ html[data-reduce-motion] .public-event.teaser.hype-live::after,
 html[data-reduce-motion] .agenda-item.teaser.hype-live::after,
 html[data-reduce-motion] .public-event.teaser.hype-live .teaser-ring,
 html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-orb,
+html[data-reduce-motion] .agenda-detail-sheet.is-hype > *,
 html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-hope,
 /* 박동 규칙이 `.detail-anchor-link.is-hype .detail-anchor-*`(0,3,0)이므로 이 정지 규칙도
    그보다 높아야 실제로 이긴다(같은 특이도면 뒤에 오는 쪽이 이겨서 조용히 안 먹는다). */

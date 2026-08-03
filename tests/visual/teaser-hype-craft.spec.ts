@@ -154,6 +154,45 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
     expect(res!.peak).toBe("tj-pop");
   });
 
+  test("1분 안쪽이면 팝오버 내용이 떨리되 시트 박스는 고정이다", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/visual-fixture/poster", { waitUntil: "load" });
+    const res = await page.evaluate(() => {
+      const back = document.createElement("div");
+      back.className = "agenda-detail-backdrop is-pop";
+      const sheet = document.createElement("div");
+      sheet.className = "agenda-detail-sheet is-hype is-teaser";
+      sheet.style.setProperty("--hy-shake-x", "1.2px");
+      sheet.innerHTML =
+        '<div class="detail-grab"><span></span></div>' +
+        '<p class="agenda-detail-title">제목</p>' +
+        '<div class="detail-teaser"><button class="dt-hope">기대돼요</button></div>';
+      back.appendChild(sheet);
+      document.body.appendChild(back);
+      const box = sheet.getBoundingClientRect();
+      const out = {
+        sheet: getComputedStyle(sheet).animationName,
+        title: getComputedStyle(sheet.querySelector(".agenda-detail-title")!).animationName,
+        teaser: getComputedStyle(sheet.querySelector(".detail-teaser")!).animationName,
+        grab: getComputedStyle(sheet.querySelector(".detail-grab")!).animationName,
+        k: getComputedStyle(sheet.querySelector(".agenda-detail-title")!).getPropertyValue(
+          "--hy-shake-k"
+        ),
+        boxW: Math.round(box.width),
+        boxH: Math.round(box.height)
+      };
+      back.remove();
+      return out;
+    });
+    // 내용은 떨고, 시트 자신은 안 떤다(닫기·기대돼요 히트 타깃이 움직이면 누르기 어렵다).
+    expect(res.title).toBe("hype-shake");
+    expect(res.teaser).toBe("hype-shake");
+    expect(res.sheet).not.toBe("hype-shake");
+    // 드래그 손잡이는 예외 — 조준이 어긋난다.
+    expect(res.grab).toBe("none");
+    expect(res.k.trim()).toBe("1.45");
+  });
+
   test("떡밥 시트는 강도에 따라 연속으로 데워지고 유리 재질을 끈다", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/visual-fixture/poster");
