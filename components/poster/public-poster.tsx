@@ -3280,12 +3280,17 @@ export function PublicPoster({
           // 라벨은 '시작 칸'과 '주가 바뀐 첫 칸(일요일)'에만 — 예전 isEnd 라벨은 같은 줄에서
           // 제목이 두 번 보였다. 글자는 sb-head(overflow 허용)로 오른쪽 띠 위로 흘러간다.
           const showLabel = isStart || (!isStart && cell.weekday === 0);
-          // 띠 클릭 = 업도움 상세 팝오버('도우러 가기' 포함) — 레일의 업도움 카드가 하던 일이
-          // 관심 지점(띠) 클릭으로 이사(2026-07-31). 시청자(interactive)에서만.
+          // 띠 클릭 = 곧장 업도움 링크로(사용자 결정 2026-08-03). 띠에 '도와주러 가기 →'라고
+          // 써 있는데 팝오버를 한 단계 거치는 건 문구와 어긋났다 — 여긴 팝오버가 필요 없다.
+          // 링크가 없는 업도움만 예외로 상세 팝오버(기간·제목 확인용).
           const openSupportDetail = interactive
             ? (el: HTMLElement) => {
-                const r = el.getBoundingClientRect();
                 hapticTick();
+                if (s.supportUrl) {
+                  window.open(s.supportUrl, "_blank", "noopener,noreferrer");
+                  return;
+                }
+                const r = el.getBoundingClientRect();
                 detailAnchorElRef.current = el;
                 setDetailManual(null);
                 setAgendaDetail({
@@ -3324,6 +3329,11 @@ export function PublicPoster({
                 ? {
                     role: "button" as const,
                     tabIndex: 0,
+                    // 링크가 있으면 새 탭으로 나간다는 걸 스크린리더·툴팁으로도 알린다.
+                    "aria-label": s.supportUrl
+                      ? `${s.publicTitle} 도와주러 가기(새 탭)`
+                      : `${s.publicTitle} 업 도움 상세`,
+                    title: s.supportUrl ? "도와주러 가기 (새 탭에서 열림)" : undefined,
                     onClick: (e: ReactMouseEvent<HTMLDivElement>) => {
                       e.stopPropagation();
                       openSupportDetail(e.currentTarget);
