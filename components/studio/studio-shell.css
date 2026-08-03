@@ -5527,14 +5527,18 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
 }
 .teaser-gate-submit {
   flex: none;
+  min-width: 68px; /* '확인'↔'확인 중…' 전환에도 줄 폭이 안 흔들리게 */
 }
-.teaser-gate-error {
+/* 상태 줄 — 항상 자리를 예약(빈 값 포함)해 에러 등장 시 카드 높이/팝오버 위치가 안 바뀐다. */
+.teaser-gate-status {
   margin: 0;
+  min-height: calc(var(--text-caption) * var(--lh-body, 1.5));
   font-size: var(--text-caption);
+  line-height: var(--lh-body);
   color: var(--danger, #c0392b);
 }
-/* 오답 흔들림 — 비번 팝업과 같은 문법(짧고 절제된 좌우 흔들림). */
-.teaser-gate.gate-shake {
+/* 오답 흔들림 — 입력 줄만(카드 전체를 흔들면 팝오버가 두 번 깜빡이는 느낌). */
+.teaser-gate-row.gate-shake {
   animation: teaser-gate-shake 0.36s var(--ease);
 }
 @keyframes teaser-gate-shake {
@@ -5562,7 +5566,7 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
 .teaser-gate-sheet .teaser-gate {
   padding: var(--space-5) var(--space-4) var(--space-6);
 }
-html[data-reduce-motion] .teaser-gate.gate-shake,
+html[data-reduce-motion] .teaser-gate-row.gate-shake,
 html[data-reduce-motion] .tg-num {
   animation: none;
 }
@@ -10910,17 +10914,22 @@ html[data-reduce-motion] .role-segment button:active {
    (크림 표면·헤어라인·보라 포커스)와 동화가 안 됐다(사용자 지적). 잠금 정체성은 제목의
    🔒 하나로 충분하다 — 나머지는 다른 모달과 같은 문법. 잠금 동작 자체는 그대로. */
 .modal-backdrop-passcode .modal-card {
-  width: min(100%, var(--sheet-width-md));
-  max-width: var(--sheet-width-md);
+  /* 폭은 내용(입력 한 줄)에 맞게 좁게 — 460px 시트 폭은 빈 공간만 만들었다(사용자 지적).
+     기본 .modal-card 패딩(22px)은 0으로 걷고 헤더/본문이 각자 숨을 갖는다(이중 패딩 제거). */
+  width: min(100%, 360px);
+  max-width: 360px;
   border: var(--stroke-hairline) solid var(--line);
   background: var(--surface);
+  padding: 0;
+  overflow: hidden; /* 헤더 배경이 카드 둥근 모서리를 그대로 따르게 */
   box-shadow: var(--shadow-3);
 }
 
 .modal-backdrop-passcode .modal-head {
-  border-color: var(--line-soft);
+  margin: 0;
+  border-bottom: var(--stroke-hairline) solid var(--line-soft);
   background: var(--surface-2);
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-4);
 }
 
 .modal-backdrop-passcode .modal-head h2 {
@@ -10937,7 +10946,12 @@ html[data-reduce-motion] .role-segment button:active {
 }
 
 .modal-backdrop-passcode .modal-card > :not(.modal-head) {
-  padding: var(--space-4) var(--space-5) var(--space-5);
+  padding: var(--space-4);
+}
+
+/* 본문 밀도 — 입력줄과 '비밀번호 변경' 링크 사이 간격을 한 단계 좁혀 붕 뜨지 않게. */
+.modal-backdrop-passcode .passcode-box {
+  gap: var(--space-2);
 }
 
 .modal-backdrop-passcode .modal-close {

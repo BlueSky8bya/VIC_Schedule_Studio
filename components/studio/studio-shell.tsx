@@ -3356,16 +3356,14 @@ export function StudioShell({
   // (.event-editor-panel form의 배경/그림자/점선 아웃라인)이 폼에 붙으므로 밖에 두면 떠 보인다.
   function renderTeaserGate(head?: ReactNode) {
     return (
-      <form
-        className={`teaser-gate${teaserGateShake ? " gate-shake" : ""}`}
-        onSubmit={submitTeaserGate}
-      >
+      <form className="teaser-gate" onSubmit={submitTeaserGate}>
         {head}
         {/* 설명문·아이콘 없이 카운트다운이 주인공 — 🔮은 헤더 배지에 이미 있다(중복 제거). */}
         {selectedLiveEvent?.teaserRevealAt ? (
           <TeaserGateCountdown revealAt={selectedLiveEvent.teaserRevealAt} />
         ) : null}
-        <div className="teaser-gate-row">
+        {/* 오답 흔들림은 입력 줄에만 — 카드 전체를 흔들면 팝오버가 두 번 깜빡이는 느낌(사용자 지적). */}
+        <div className={`teaser-gate-row${teaserGateShake ? " gate-shake" : ""}`}>
           <input
             aria-label="비공개 레이어 비밀번호"
             autoComplete="off"
@@ -3387,11 +3385,11 @@ export function StudioShell({
             {teaserGateBusy ? "확인 중…" : "확인"}
           </button>
         </div>
-        {teaserGateError ? (
-          <p className="teaser-gate-error" role="alert">
-            {teaserGateError}
-          </p>
-        ) : null}
+        {/* 상태 줄은 항상 렌더(빈 값 포함) — 에러가 나타나며 카드 높이가 바뀌면 팝오버가
+            재배치되며 한 번 더 움직여 보였다. 높이를 예약해 흔들림 없이 글자만 뜬다. */}
+        <p aria-live="polite" className="teaser-gate-status" role="status">
+          {teaserGateError ?? ""}
+        </p>
       </form>
     );
   }
