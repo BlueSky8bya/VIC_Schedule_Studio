@@ -3809,19 +3809,21 @@ html[data-reduce-motion] .event-editor-panel {
   display: flex;
   justify-content: center;
   align-items: center;
-  /* 폼 padding(리디자인 공통 --space-4=16) 상쇄 — 카드 벽까지 닿는 전폭 스트립 */
-  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) -8px;
-  padding: 8px 0 7px;
+  /* 폼 padding(리디자인 공통 --space-4=16) 상쇄 — 카드 벽까지 닿는 전폭 스트립.
+     아래 여백은 음수로 당기지 않는다 — 헤더 줄과 붙어 답답했다(사용자 지적, 폼 gap이 숨을 만든다). */
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) 0;
+  padding: 7px 0 6px;
   border-radius: calc(var(--r-xl) - 3px) calc(var(--r-xl) - 3px) 0 0;
   cursor: grab;
   touch-action: none;
   transition: background var(--dur-1, 0.15s) var(--ease, ease);
 }
 .editor-grab span {
-  width: 46px;
-  height: 5px;
+  /* iOS 시트 그래버 문법 — 가늘고 짧게, 색은 은은하게. */
+  width: 36px;
+  height: 4px;
   border-radius: var(--r-pill, 999px);
-  background: rgb(139 92 246 / 32%);
+  background: rgb(139 92 246 / 28%);
   transition: background var(--dur-1, 0.15s) var(--ease, ease);
 }
 .event-editor-panel.is-edit .editor-grab {
@@ -3942,7 +3944,7 @@ html[data-reduce-motion] .editor-anchor-link line {
 /* 팝오버 세로 압축(사용자 요청) — 데스크톱 포인터 전용 카드라 44px 풀 히트 없이도 조작
    가능. 여백·칩 높이를 한 단계씩 줄여 스크롤 없이 더 많은 내용이 한눈에 들어오게. */
 .studio-workspace .event-editor-panel form {
-  gap: 10px;
+  gap: 12px; /* 10→12 — 그랩·헤더·필드 사이 일정한 호흡(붙어 보인다는 지적) */
   padding: 14px;
   /* 전폭 그립 스트립의 음수 마진 오차 등이 가로 스크롤바를 만들지 않게 안전벨트. */
   overflow-x: hidden;
@@ -3950,7 +3952,7 @@ html[data-reduce-motion] .editor-anchor-link line {
 /* 그립 스트립 음수 마진 = 폼 패딩(위 14px)과 반드시 동치 — 기본값은 --space-4(16)라
    압축 패딩보다 2px 커서 가로 스크롤바가 생겼다(실측 scrollWidth 384 vs clientWidth 382). */
 .studio-workspace .event-editor-panel .editor-grab {
-  margin: -14px -14px -8px;
+  margin: -14px -14px 0; /* 아래는 폼 gap이 숨을 만든다(헤더와 붙지 않게) */
 }
 .studio-workspace .event-editor-panel form textarea {
   min-height: 48px;
@@ -6282,11 +6284,15 @@ html[data-reduce-motion] .delete-snack {
   transform: translateX(3px) scale(0.94);
 }
 
+/* 라벨은 조용한 아이브로우(작고 단정) — 내용(입력값)이 주인공이 되는 애플 폼 위계.
+   예전 16px/900은 라벨이 값보다 크고 무거워 시선이 라벨에 먼저 갔다. */
 .event-editor-panel label {
   display: grid;
-  gap: 6px;
-  font-size: var(--text-input); /* 16 */
-  font-weight: 900;
+  gap: var(--space-2);
+  font-size: var(--text-label); /* 12.5 */
+  font-weight: var(--weight-semibold);
+  color: var(--ink-soft);
+  letter-spacing: var(--tracking-tight);
 }
 
 /* 입력 칸 글씨도 라벨/주변과 조화롭게(작아 보이지 않게). */
