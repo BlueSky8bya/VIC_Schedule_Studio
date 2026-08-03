@@ -1355,8 +1355,11 @@ export function PublicPoster({
     window.addEventListener("blur", onUp); // 캡처 실패 환경 안전망
   }
   // 방금 공개된 떡밥 id — 잠깐 '짠!' 등장 애니메이션을 입힌다(보상감). 1.8초 뒤 해제.
+  // celebrate: '카운트다운이 0이 되는 순간을 이 화면에서 지켜본' 경우에만 true —
+  // 공개가 지난 뒤 새로고침으로 들어온 캐시-지연 교체(TeaserRevealing)는 조용히 갈아끼운다
+  // (매 새로고침마다 팡 터지던 문제, 사용자 지적).
   const [justRevealed, setJustRevealed] = useState<Set<string>>(() => new Set());
-  const revealTeaser = useCallback((id: string) => {
+  const revealTeaser = useCallback((id: string, celebrate: boolean) => {
     revealTeaserAction([id])
       .then((list) => {
         if (list.length > 0) {
@@ -1369,6 +1372,8 @@ export function PublicPoster({
           // 열려 있던 그 떡밥의 상세 팝오버는 닫는다 — ???가 공개된 뒤에도 팝오버만 옛 상태로
           // 남는 어긋남 방지(달력의 공개 연출이 주인공).
           setAgendaDetail((cur) => (cur && ids.includes(cur.event.id) ? null : cur));
+          // 라이브로 지켜본 공개(celebrate)만 연출. 캐시-지연 교체는 조용히.
+          if (!celebrate) return;
           // 이미 공개돼 화면에 떠 있던(애니 끝난) 건 다시 안 튀게, 이번에 새로 들어온 것만 표시.
           setJustRevealed((prev) => {
             const fresh = ids.filter((x) => !prev.has(x) && !revealedEvents[x]);
@@ -3420,7 +3425,7 @@ export function PublicPoster({
                       <span className="teaser-spark" aria-hidden="true">🔮</span>
                       <p className="teaser-q">???</p>
                       <TeaserCountdown
-                        onReveal={() => revealTeaser(rawEvent.id)}
+                        onReveal={() => revealTeaser(rawEvent.id, true)}
                         revealAt={event.teaserRevealAt}
                       />
                     </div>
@@ -3432,7 +3437,7 @@ export function PublicPoster({
                   <TeaserRevealing
                     className="public-event teaser-revealing"
                     key={event.id}
-                    onReveal={() => revealTeaser(rawEvent.id)}
+                    onReveal={() => revealTeaser(rawEvent.id, false)}
                   />
                 );
               }
@@ -3924,7 +3929,7 @@ export function PublicPoster({
                             <span className="teaser-spark" aria-hidden="true">🔮</span>
                             <p className="agenda-title teaser-q">???</p>
                             <TeaserCountdown
-                              onReveal={() => revealTeaser(rawEvent.id)}
+                              onReveal={() => revealTeaser(rawEvent.id, true)}
                               revealAt={event.teaserRevealAt}
                             />
                           </div>
@@ -3935,7 +3940,7 @@ export function PublicPoster({
                           <TeaserRevealing
                             className="agenda-item teaser-revealing"
                             key={event.id}
-                            onReveal={() => revealTeaser(rawEvent.id)}
+                            onReveal={() => revealTeaser(rawEvent.id, false)}
                           />
                         );
                       }
@@ -4797,12 +4802,16 @@ export function PublicPoster({
                       <X aria-hidden="true" size={16} strokeWidth={2.5} />
                     </button>
                   </div>
-                  <p className="agenda-detail-title">
-                    {!support && !teaserActive && event.isTentative ? (
-                      <span className="evt-tentative">미정</span>
-                    ) : null}
-                    {support ? `🌱 ${event.publicTitle}` : teaserActive ? "🔮 ???" : main}
-                  </p>
+                  {/* 떡밥은 제목 줄 생략 — 카드가 이미 ???를 말했고, 팝오버는 '기대' 무대다
+                      (아래 오브가 주인공). 중복 줄이 위계를 흐렸다(사용자 지적). */}
+                  {!teaserActive ? (
+                    <p className="agenda-detail-title">
+                      {!support && event.isTentative ? (
+                        <span className="evt-tentative">미정</span>
+                      ) : null}
+                      {support ? `🌱 ${event.publicTitle}` : main}
+                    </p>
+                  ) : null}
                   {!support && subs.length > 0 ? (
                     <ul className="agenda-detail-subs">
                       {subs.map((sub, i) => (
@@ -4840,18 +4849,20 @@ export function PublicPoster({
                   {/* 떡밥 전용 — 카드엔 없는 정보만: 공개 시각(절대시각) + 기대돼요.
                       카운트다운은 카드가 담당(중복 데이터 없음, 사용자 결정). */}
                   {teaserActive && event.teaserRevealAt ? (
+                    /* 한 축 가운데 정렬(애플 폼 위계): 오브 → 조용한 라벨 → 굵은 시각 → 주 동작 → 각주. */
                     <div className="detail-teaser">
-                      <p className="dt-when">
-                        <Sparkles aria-hidden="true" size={13} />
-                        {formatRevealKst(event.teaserRevealAt)} 공개
-                      </p>
+                      <span aria-hidden="true" className="dt-orb">
+                        🔮
+                      </span>
+                      <p className="dt-when-label">공개 예정</p>
+                      <p className="dt-when-time">{formatRevealKst(event.teaserRevealAt)}</p>
                       <button
                         aria-pressed={myHopeIds.has(event.id)}
                         className={`dt-hope${myHopeIds.has(event.id) ? " on" : ""}`}
                         onClick={() => toggleHope(event)}
                         type="button"
                       >
-                        🔮 기대돼요
+                        기대돼요
                         {hopeCountOf(event) > 0 ? <b>{hopeCountOf(event)}</b> : null}
                       </button>
                       <p className="dt-hint">공개 순간, 이 카드가 실제 일정으로 바뀌어요</p>

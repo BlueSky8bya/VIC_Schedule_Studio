@@ -2417,26 +2417,43 @@ p.agenda-sub.hope-badge {
   color: #6a58e8;
   font-size: 11.5px;
 }
-/* 떡밥 상세 — 공개 시각 + 기대돼요 버튼(팝오버/시트 공용) */
+/* 떡밥 상세 — 한 축 가운데(애플 폼 위계): 오브 → 조용한 라벨 → 굵은 시각 → 주 동작 → 각주 */
 .detail-teaser {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   justify-items: center;
-  margin-top: 4px;
+  padding: 4px 0 2px;
   text-align: center;
 }
-.detail-teaser .dt-when {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
+.detail-teaser .dt-orb {
+  font-size: 34px;
+  line-height: 1;
+  margin-bottom: 2px;
+  filter: drop-shadow(0 3px 8px rgb(124 108 240 / 40%));
+  animation: dt-orb-float 2.6s ease-in-out infinite alternate;
+}
+@keyframes dt-orb-float {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-4px);
+  }
+}
+.detail-teaser .dt-when-label {
   margin: 0;
-  padding: 5px 12px;
-  border-radius: 999px;
-  background: rgb(124 108 240 / 12%);
-  color: #6a58e8;
-  font-size: 12.5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgb(90 80 130 / 62%);
+}
+.detail-teaser .dt-when-time {
+  margin: 0 0 8px;
+  font-size: 15px;
   font-weight: 800;
+  color: #4d3f8f;
   font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
 .detail-teaser .dt-hope {
   display: inline-flex;
@@ -2473,9 +2490,12 @@ p.agenda-sub.hope-badge {
   font-variant-numeric: tabular-nums;
 }
 .detail-teaser .dt-hint {
-  margin: 0;
+  margin: 6px 0 0;
   font-size: 11px;
-  color: rgb(90 80 130 / 70%);
+  color: rgb(90 80 130 / 55%);
+}
+html[data-reduce-motion] .detail-teaser .dt-orb {
+  animation: none;
 }
 html[data-reduce-motion] .teaser-count.soon,
 html[data-reduce-motion] .teaser-count.final,
