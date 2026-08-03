@@ -2497,6 +2497,13 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
 }
 /* 공개 해독 연출 — 난수 자리는 초록 형광 모노스페이스로 미친 듯이 떨리고,
    확정된 글자는 흰빛으로 톡 박힌다(해커 영화 디코딩 문법). */
+/* ??? 구간 — 공개 직전 카드가 보여주던 그 ???를 그대로 이어받는다(같은 자간),
+   난수 색을 아직 입지 않아 '아직 안 풀린 상태'로 읽힌다. */
+.scramble-rest.scramble-qm {
+  letter-spacing: 2px;
+  color: inherit;
+  text-shadow: none;
+}
 .scramble-rest {
   display: inline-block;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -2836,9 +2843,41 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
     transform: none;
   }
 }
+/* 태그·형식색 점은 다른 어휘로 — 조용히 올라오는 부제목과 달리 톡 튀어나온다.
+   정보 위계상 마지막에 오는 '표식'이라 등장이 짧고 탄력적인 편이 맞다. */
+.agenda-detail-tag.reveal-secondary {
+  animation: reveal-tag-pop 0.34s cubic-bezier(0.2, 1.5, 0.35, 1) var(--reveal-delay, 0ms) both;
+}
+@keyframes reveal-tag-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.62);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* 카드의 형식색 점은 개별로 차례차례. 부모(서브 줄·메타)의 지연에 이어 붙인다. */
+.reveal-secondary .pill-dots i {
+  animation: reveal-tag-pop 0.3s cubic-bezier(0.2, 1.5, 0.35, 1)
+    calc(var(--reveal-delay, 0ms) + 90ms) both;
+}
+.reveal-secondary .pill-dots i:nth-child(2) {
+  animation-delay: calc(var(--reveal-delay, 0ms) + 160ms);
+}
+.reveal-secondary .pill-dots i:nth-child(3) {
+  animation-delay: calc(var(--reveal-delay, 0ms) + 230ms);
+}
 /* 동작 줄이기 — 공개 응답이 도착한 첫 프레임에 모든 정보가 완성 상태로 보인다.
    숨김 값은 keyframe from에만 있으므로 animation만 끄면 끝(base에 opacity:0을 두지 않는다). */
-html[data-reduce-motion] .reveal-secondary {
+html[data-reduce-motion] .reveal-secondary,
+html[data-reduce-motion] .agenda-detail-tag.reveal-secondary,
+html[data-reduce-motion] .reveal-secondary .pill-dots i {
   animation: none;
 }
 
@@ -2897,7 +2936,7 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
    진폭은 카드보다 조금 크게: 344px 표면에서 1.2px는 거의 안 보인다.
    폭풍의 눈(10초)에 들어가면 곡선이 --hy-shake-x를 0으로 만들어 저절로 멎는다. */
 .agenda-detail-sheet.is-hype > * {
-  --hy-shake-k: 1.45;
+  --hy-shake-k: 1.8;
   animation: hype-shake var(--hy-shake-dur, 1.4s) ease-in-out infinite;
 }
 /* 그립은 빼둔다 — 잡아 끄는 손잡이가 떨면 조준이 어긋난다. */
@@ -2995,9 +3034,11 @@ html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-count-ringbox::after {
 
 /* 눈금(5초 간격 12개) — 지나간 자리는 흐려진다. 시계 문자판 같은 '계기' 인상. */
 .dt-ring-ticks line {
-  stroke: rgb(124 108 240 / 13%);
-  stroke-width: 2.2;
-  stroke-linecap: round;
+  stroke: rgb(124 108 240 / 16%);
+  stroke-width: 2.4;
+  /* butt — round 캡은 양 끝을 stroke 절반(1.2)만큼 늘려서, 계산상 안 닿는 눈금이
+     실제로는 바를 파고들거나 안쪽으로 번진다. */
+  stroke-linecap: butt;
   transition: stroke 0.5s var(--ease);
 }
 .dt-ring-ticks line.on {

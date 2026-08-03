@@ -483,21 +483,27 @@ function TeaserCountdown({
 // 예전(글자만 슥 채워짐)은 짧은 제목이면 0.3초에 끝나 아무도 못 봤다 → 최소 1.5초는 논다.
 // reduce-motion이면 그냥 완성된 제목.
 const SCRAMBLE_POOL = "!@#$%&*?/\\<>[]{}=+~0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+const SCRAMBLE_QM_MS = 260; // ???를 잠깐 붙들고 있는 구간
 const SCRAMBLE_CHAOS_MS = 750; // 전부 난수인 구간
 const SCRAMBLE_STEP_MS = 90; // 글자당 확정 간격
 function ScrambleText({ text }: { text: string }) {
   const [tick, setTick] = useState(0);
   const [locked, setLocked] = useState(0);
   const [done, setDone] = useState(false);
+  // ??? → 난수 → 평문. 공개 직전까지 카드가 보여주던 ???를 잠깐 그대로 붙들었다가
+  // 무너뜨린다 — 바로 난수로 갈아치우면 '무엇이 풀리는 중인지'의 연결이 끊긴다.
+  const [phase, setPhase] = useState<"qm" | "chaos">("qm");
   useEffect(() => {
     setTick(0);
     setLocked(0);
     setDone(false);
+    setPhase("qm");
     if (document.documentElement.hasAttribute("data-reduce-motion")) {
       setDone(true);
       return;
     }
     const started = Date.now();
+    const toChaos = window.setTimeout(() => setPhase("chaos"), SCRAMBLE_QM_MS);
     // 난수 자리는 60ms마다 통째로 새로 뽑는다(멈춰 보이지 않게).
     const chaos = window.setInterval(() => setTick((t) => t + 1), 60);
     let lockTimer = 0;
@@ -512,15 +518,23 @@ function ScrambleText({ text }: { text: string }) {
           setDone(true);
         }
       }, SCRAMBLE_STEP_MS);
-    }, SCRAMBLE_CHAOS_MS);
+    }, SCRAMBLE_QM_MS + SCRAMBLE_CHAOS_MS);
     return () => {
       window.clearInterval(chaos);
+      window.clearTimeout(toChaos);
       window.clearTimeout(startLocking);
       if (lockTimer) window.clearInterval(lockTimer);
       void started;
     };
   }, [text]);
   if (done) return <>{text}</>;
+  if (phase === "qm") {
+    return (
+      <span aria-hidden="true" className="scramble-rest scramble-qm">
+        ???
+      </span>
+    );
+  }
   const rest = text.length - locked;
   return (
     <>
@@ -536,7 +550,7 @@ function ScrambleText({ text }: { text: string }) {
 }
 // 스크램블 총 길이(연출 상태를 언제 풀지 계산) — 카오스 + 글자당 확정 + 여유.
 function scrambleDurationMs(text: string): number {
-  return SCRAMBLE_CHAOS_MS + Math.max(1, text.length) * SCRAMBLE_STEP_MS + 400;
+  return SCRAMBLE_QM_MS + SCRAMBLE_CHAOS_MS + Math.max(1, text.length) * SCRAMBLE_STEP_MS + 400;
 }
 
 // 리더선 기하 — 앵커점에 원점을 두고 대상점 방향으로 회전시킨 뒤, 선은 그 로컬 x축 위에
@@ -568,12 +582,15 @@ function applyLeaderGeom(
 // 알아보기 시작하는 최소 단서이자 기존 상수에서 그대로 나오는 값이라 새 매직 넘버가 아니다.
 // 다만 제목이 길면 해독이 2.5초까지 가서 부제목이 '제목보다 먼저' 끝나 위계가 뒤집힌다
 // → 제목 60%가 확정되는 시점까지 민다(짧은 제목은 1,020ms 그대로).
-const SECONDARY_BASE_MS = 1_020;
+const SECONDARY_BASE_MS = SCRAMBLE_QM_MS + 1_020;
 const SECONDARY_STEP_MS = 70; // 60Hz 약 4.2프레임 — 순서는 읽히되 끊긴 목록으로 안 느껴지는 간격
 const SECONDARY_MAX_STEPS = 4; // 줄이 많아도 총 지연은 280ms에서 멈춘다
 function secondaryStartMs(title: string): number {
   const n = Math.max(1, title.length);
-  return Math.max(SECONDARY_BASE_MS, SCRAMBLE_CHAOS_MS + Math.ceil(n * 0.6) * SCRAMBLE_STEP_MS);
+  return Math.max(
+    SECONDARY_BASE_MS,
+    SCRAMBLE_QM_MS + SCRAMBLE_CHAOS_MS + Math.ceil(n * 0.6) * SCRAMBLE_STEP_MS
+  );
 }
 // order: 부제목 0..n-1 → 메타 → 태그. 지연만 다르고 연출은 같다(디자인 통일).
 function secondaryDelayMs(title: string, order: number): number {
@@ -5335,10 +5352,11 @@ export function PublicPoster({
                                   className={f <= p ? "on" : undefined}
                                   key={f}
                                   transform={`rotate(${360 * f} 50 50)`}
-                                  /* 링 안쪽 면(반지름 44 - stroke 7/2 = 40.5)에 바짝 붙인다 —
-                                     숫자 옆이 아니라 바에 속한 눈금으로 읽히게. */
-                                  x1="36.2"
-                                  x2="39.8"
+                                  /* 링 안쪽 면(반지름 44 - stroke 7/2 = 40.5)에 바짝 붙인 짧은
+                                     눈금. 숫자에 딸린 장식이 아니라 바에 속한 눈금으로 읽히게
+                                     — 숫자가 최대로 커져도(반지름 약 22) 한참 떨어져 있다. */
+                                  x1="38.6"
+                                  x2="40.2"
                                   y1="50"
                                   y2="50"
                                 />

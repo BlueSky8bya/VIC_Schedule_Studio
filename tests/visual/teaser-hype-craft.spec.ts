@@ -78,6 +78,61 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
     }
   });
 
+  test("눈금은 숫자가 아니라 원형 바 쪽에 붙어 있다", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/visual-fixture/poster", { waitUntil: "load" });
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+    const res = await page.evaluate(() => {
+      // viewBox 좌표 기준: 링 반지름 44, stroke 7 → 안쪽 면 40.5. 눈금은 그 바로 안쪽에
+      // 붙어야 하고, 숫자(최대 반지름 약 22)와는 한참 떨어져 있어야 한다.
+      const host = document.createElement("div");
+      host.className = "agenda-detail-sheet is-hype is-teaser";
+      host.innerHTML =
+        '<div class="dt-count"><div class="dt-count-ringbox">' +
+        '<svg class="dt-ring" viewBox="0 0 100 100">' +
+        '<g class="dt-ring-ticks"><line x1="38.6" x2="40.2" y1="50" y2="50"></line></g>' +
+        '<circle class="dt-ring-track" cx="50" cy="50" r="44"></circle></svg>' +
+        '<div class="dt-count-core"><strong>10</strong></div></div></div>';
+      document.body.appendChild(host);
+      host.style.setProperty("--hy-num", "1.824"); // 숫자가 가장 클 때
+      const svg = host.querySelector("svg")!;
+      const line = host.querySelector<SVGLineElement>(".dt-ring-ticks line")!;
+      const strong = host.querySelector<HTMLElement>(".dt-count-core strong")!;
+      const cs = getComputedStyle(line);
+      const half = parseFloat(cs.strokeWidth) / 2;
+      const inner = Number(line.getAttribute("x1"));
+      const outer = Number(line.getAttribute("x2"));
+      // 화면 좌표에서 숫자 반경(중심~글자 모서리)을 viewBox 단위로 환산한다.
+      const box = svg.getBoundingClientRect();
+      const nb = strong.getBoundingClientRect();
+      const scale = box.width / 100;
+      // 숫자는 축 정렬 사각형이다 — 대각선 반경으로 재면 글자가 닿지도 않는 모서리까지
+      // 세어 과하게 크게 나온다. 눈금 12개의 '안쪽 끝점'이 그 사각형 밖인지 직접 본다.
+      const halfW = nb.width / 2 / scale;
+      const halfH = nb.height / 2 / scale;
+      const clearances = Array.from({ length: 12 }, (_, k) => {
+        const rad = (k * 30 * Math.PI) / 180;
+        const x = Math.abs(inner * Math.cos(rad));
+        const y = Math.abs(inner * Math.sin(rad));
+        // 사각형 밖으로 얼마나 벗어났는지(둘 중 큰 여유)
+        return Math.max(x - halfW, y - halfH);
+      });
+      const cap = cs.strokeLinecap;
+      host.remove();
+      return { inner, outer, half, halfW, halfH, cap, minClearance: Math.min(...clearances) };
+    });
+    // 바 안쪽 면(40.5)을 넘지 않는다 — butt 캡이라 끝이 번지지도 않는다.
+    expect(res.cap).toBe("butt");
+    expect(res.outer).toBeLessThanOrEqual(40.5);
+    // 숫자가 최대(--hy-num 1.824)일 때조차 어느 눈금도 숫자 상자에 닿지 않는다.
+    expect(
+      res.minClearance,
+      `눈금이 숫자 상자(${res.halfW.toFixed(1)}×${res.halfH.toFixed(1)})를 침범한다`
+    ).toBeGreaterThan(3);
+  });
+
   test("별이 진행 호의 끝에 정확히 붙어 있다", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/visual-fixture/poster", { waitUntil: "load" });
@@ -190,7 +245,7 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
     expect(res.sheet).not.toBe("hype-shake");
     // 드래그 손잡이는 예외 — 조준이 어긋난다.
     expect(res.grab).toBe("none");
-    expect(res.k.trim()).toBe("1.45");
+    expect(res.k.trim()).toBe("1.8");
   });
 
   test("떡밥 시트는 강도에 따라 연속으로 데워지고 유리 재질을 끈다", async ({ page }) => {

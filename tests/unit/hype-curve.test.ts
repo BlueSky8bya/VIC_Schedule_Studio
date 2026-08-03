@@ -169,6 +169,30 @@ describe("점멸 예산(WCAG 2.3.1)", () => {
   });
 });
 
+describe("흔들림은 고요 이전 구간에서 실제로 보인다", () => {
+  // 지수가 2.4일 때 진폭이 곡선 맨 끝에 몰렸는데, 정작 그 끝(10초)에서 고요가 0으로
+  // 꺼버려 60~10초 내내 1px도 안 움직였다. 팝오버가 안 흔들린다는 신고의 실제 원인.
+  const shakeAt = (sec: number) =>
+    hypeChannels(hypeIntensity(S(sec)), hypeCalm(S(sec))).shakePx;
+
+  it("고요 직전(11초)에 카드 기준 1px 이상 흔들린다", () => {
+    expect(shakeAt(11)).toBeGreaterThan(1);
+  });
+
+  it("중반(30초)에도 감지 가능한 크기다", () => {
+    expect(shakeAt(30)).toBeGreaterThan(0.3);
+  });
+
+  it("팝오버는 배율 1.8배라 넓은 표면에서도 보인다", () => {
+    expect(shakeAt(15) * 1.8).toBeGreaterThan(1.5);
+  });
+
+  it("고요에 들어가면 정확히 0이 된다", () => {
+    expect(shakeAt(9)).toBe(0);
+    expect(shakeAt(1)).toBe(0);
+  });
+});
+
 describe("hypeCalm — 폭풍의 눈(마지막 10초)", () => {
   it("10초까지는 0이고, 그 뒤 0.35초 안에 1로 올라선다('갑자기'를 유지)", () => {
     expect(hypeCalm(S(11))).toBe(0);

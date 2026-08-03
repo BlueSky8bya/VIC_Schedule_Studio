@@ -108,7 +108,10 @@ export function hypeChannels(intensity: number, calm = 0): HypeChannels {
     ring2: 0.48 * delayed(i, 0.35, 1.4),
     ring3: 0.28 * delayed(i, 0.7, 1.6),
     // 흔들림은 고요가 오면 사라진다 — 이게 '갑자기 조용해졌다'의 실체다.
-    shakePx: lerp(0, 1.2, i, 2.4) * (1 - c),
+    // ⚠ 지수가 2.4면 진폭이 곡선 맨 끝에 몰리는데, 정작 그 끝(10초)에서 고요가 0으로
+    // 꺼버려 '흔들리는 구간'이 사실상 없었다(60~10초 내내 1px도 안 움직였다).
+    // 고요 이전 구간에서 실제로 보이도록 더 이르게(1.25) 더 크게(1.8px) 올린다.
+    shakePx: lerp(0, 1.8, i, 1.25) * (1 - c),
     shakeDurationS: lerpPeriod(1.4, 0.45, i, 1.6),
     goldMix: lerp(0, 0.78, i, 2.2),
     glow: lerp(0, 0.22, i, 4),
