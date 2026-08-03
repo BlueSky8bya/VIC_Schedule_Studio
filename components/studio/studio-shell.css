@@ -3812,8 +3812,9 @@ html[data-reduce-motion] .event-editor-panel {
   /* 폼 padding(리디자인 공통 --space-4=16) 상쇄 — 카드 벽까지 닿는 전폭 스트립.
      아래 여백은 음수로 당기지 않는다 — 헤더 줄과 붙어 답답했다(사용자 지적, 폼 gap이 숨을 만든다). */
   margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) 0;
-  /* 히트 영역은 두껍게(잡기 쉬움), 보이는 핸들은 가늘게 — 시각 슬림 + 조작 여유(HCI). */
-  padding: 10px 0 9px;
+  /* 잡는 띠를 넉넉하게(총 ~30px) — 좁아서 누르기 힘들다는 지적. 틴트 배경이 있어
+     두꺼워진 만큼 '여기가 손잡이'가 그대로 보인다. 핸들 막대는 가는 그대로. */
+  padding: 14px 0 12px;
   border-radius: calc(var(--r-xl) - 3px) calc(var(--r-xl) - 3px) 0 0;
   cursor: grab;
   touch-action: none;
