@@ -8041,7 +8041,18 @@ html[data-reduce-motion] .modal-close:active {
   font-weight: 800;
   color: var(--muted);
 }
+/* 값('1월 1일 ~ 1월 15일')은 절대 접히지 않는다 — 좁아지면 왼쪽 라벨이 먼저 줄어든다.
+   해가 바뀌는 기간처럼 더 긴 값이 와도 구조적으로 두 줄이 되지 않는다. */
+.dslider-head span {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .dslider-head strong {
+  flex: none;
+  white-space: nowrap;
   font-size: 14px;
   font-weight: 900;
   color: #9f1239;

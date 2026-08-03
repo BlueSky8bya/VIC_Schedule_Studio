@@ -5111,7 +5111,9 @@ export function StudioShell({
           ) : (
             <div className="duration-slider">
               <div className="dslider-head">
-                <span>기간 — 끌거나 −/+ 로</span>
+                {/* 값이 '시작 ~ 종료'로 길어져 설명이 두 줄로 밀렸다 → 조작법은 바로 옆의
+                    슬라이더·−/+ 버튼이 이미 말하고 있으므로 라벨은 대상만 말한다. */}
+                <span>기간</span>
                 <strong>{formatSupportEnd(selectedDate, form.endDateKey || selectedDate)}</strong>
               </div>
               <div className="dslider-row">
