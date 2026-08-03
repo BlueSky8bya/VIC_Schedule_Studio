@@ -93,7 +93,13 @@ import type {
 import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
 import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { getTeaserHopeIdsAction, toggleTeaserHopeAction } from "@/lib/schedules/hope-actions";
-import { HYPE_WINDOW_S, hypeChannels, hypeCssVars, hypeIntensity } from "@/lib/ui/hype-curve";
+import {
+  HYPE_WINDOW_S,
+  hypeChannels,
+  hypeCssVars,
+  hypeIntensity,
+  quantizeStaticIntensity
+} from "@/lib/ui/hype-curve";
 import { heartTier } from "@/lib/schedules/heart-tiers";
 import { debutDPlus, getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
@@ -364,28 +370,36 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
   const hostRef = useRef<HTMLSpanElement | null>(null);
   useEffect(() => {
     if (Number.isNaN(target)) return;
-    if (typeof document !== "undefined" && document.documentElement.hasAttribute("data-reduce-motion")) {
-      return;
-    }
+    // 동작 줄이기(앱 토글이 최종 권한): 모션은 CSS가 끄고, 값은 3단계로 양자화해 1Hz만 쓴다
+    // → 임박 상태는 보이되 캡처 시각에 따라 픽셀이 흔들리지 않는다(export 결정성).
+    const staticOnly =
+      typeof document !== "undefined" &&
+      document.documentElement.hasAttribute("data-reduce-motion");
     let raf = 0;
     const write = () => {
       const el = hostRef.current;
       if (!el) return;
       const card = el.closest<HTMLElement>(".public-event, .agenda-item");
-      const i = hypeIntensity(target - Date.now());
+      const raw = hypeIntensity(target - Date.now());
+      const i = staticOnly ? quantizeStaticIntensity(raw) : raw;
       const vars = hypeCssVars(hypeChannels(i));
       for (const [k, v] of Object.entries(vars)) {
         el.style.setProperty(k, v);
         card?.style.setProperty(k, v);
       }
-      card?.classList.toggle("hype-live", i > 0);
+      card?.classList.toggle("hype-live", raw > 0);
     };
     const tick = () => {
       if (document.hidden) return; // 안 보이는 탭에선 쉰다
+      if (staticOnly) {
+        write();
+        return;
+      }
       raf = window.requestAnimationFrame(write);
     };
     tick();
-    const id = window.setInterval(tick, 100); // 10Hz 커밋(60fps rAF의 1/6 비용)
+    // 10Hz 커밋(60fps rAF의 1/6 비용). 동작 줄이기면 1Hz면 충분.
+    const id = window.setInterval(tick, staticOnly ? 1000 : 100);
     return () => {
       window.clearInterval(id);
       if (raf) window.cancelAnimationFrame(raf);
@@ -1560,31 +1574,36 @@ export function PublicPoster({
   }, [detailRevealAt]);
   useEffect(() => {
     if (!detailRevealAt) return;
-    if (typeof document !== "undefined" && document.documentElement.hasAttribute("data-reduce-motion")) {
-      return;
-    }
+    const staticOnly =
+      typeof document !== "undefined" &&
+      document.documentElement.hasAttribute("data-reduce-motion");
     const target = Date.parse(detailRevealAt);
     let raf = 0;
     const write = () => {
       const el = detailSheetRef.current;
       if (!el) return;
-      const i = hypeIntensity(target - Date.now());
+      const raw = hypeIntensity(target - Date.now());
+      const i = staticOnly ? quantizeStaticIntensity(raw) : raw;
       const vars = hypeCssVars(hypeChannels(i));
       for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
-      el.classList.toggle("hype-live", i > 0);
+      el.classList.toggle("hype-live", raw > 0);
       // 리더선(팝오버 밖 SVG)도 같은 값을 받는다 — 선만 멈춰 있으면 끊겨 보인다.
       const link = document.querySelector<SVGElement>(".detail-anchor-link");
       if (link) {
         for (const [k, v] of Object.entries(vars)) link.style.setProperty(k, v);
-        link.classList.toggle("hype-live", i > 0);
+        link.classList.toggle("hype-live", raw > 0);
       }
     };
     const tick = () => {
       if (document.hidden) return;
+      if (staticOnly) {
+        write();
+        return;
+      }
       raf = window.requestAnimationFrame(write);
     };
     tick();
-    const id = window.setInterval(tick, 100);
+    const id = window.setInterval(tick, staticOnly ? 1000 : 100);
     return () => {
       window.clearInterval(id);
       if (raf) window.cancelAnimationFrame(raf);

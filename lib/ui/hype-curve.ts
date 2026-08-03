@@ -89,6 +89,17 @@ export function hypeChannels(intensity: number): HypeChannels {
   };
 }
 
+// 동작 줄이기·export 캡처용 '정적 강도'. 모션은 CSS가 끄지만 값까지 0이면 임박 상태가
+// 아예 안 보인다(계획 요구: 정지 상태에서도 임박이 명확해야 함). 그렇다고 연속값을 그대로
+// 쓰면 캡처 시각에 따라 픽셀이 달라져 스냅샷이 흔들린다 → 3단계로 양자화해 결정적으로 만든다.
+export function quantizeStaticIntensity(intensity: number): number {
+  const i = clamp01(intensity);
+  if (i <= 0) return 0;
+  if (i < 0.4) return 0.25; // 예열
+  if (i < 0.85) return 0.6; // 고조
+  return 1; // 임박
+}
+
 // 채널 → CSS 커스텀 프로퍼티(요소에 직접 기록해 10Hz 리렌더를 피한다).
 export function hypeCssVars(c: HypeChannels): Record<string, string> {
   return {
