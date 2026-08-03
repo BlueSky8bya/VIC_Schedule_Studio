@@ -401,6 +401,9 @@ export function StudioShell({
   const [teaserGateError, setTeaserGateError] = useState<string | null>(null);
   const [teaserGateBusy, setTeaserGateBusy] = useState(false);
   const [teaserGateShake, setTeaserGateShake] = useState(false);
+  // 업도움 띠 그룹 호버 — 띠는 칸마다 별도 조각이라 :hover만으론 한 조각만 밝아진다.
+  // 같은 일정의 모든 조각이 한 블록처럼 함께 반응하게 호버 중인 띠 id를 들고 있는다.
+  const [hoverSupportId, setHoverSupportId] = useState<string | null>(null);
   // 공개 범위 + 옵션(미정·업도움·떡밥) 묶음은 기본으로 접혀 있다 — 대부분의 일정이 '모두 공개 +
   // 옵션 없음'이라 매번 펼칠 이유가 없다. 접힌 상태에서도 헤더 요약으로 현재 값이 보인다.
   const [scopeFoldOpen, setScopeFoldOpen] = useState(false);
@@ -1107,6 +1110,8 @@ export function StudioShell({
       teaserStillHidden(selectedLiveEvent) &&
       !teaserUnlockedIds.has(selectedLiveEvent.id)
   );
+  // 업 도움을 편집 중이면 팝오버의 점선·리더 라인을 띠와 같은 장미색으로(보라=일반 일정).
+  const selectedIsSupport = Boolean(selectedLiveEvent?.isSupport);
   const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
   // 업 도움 띠가 차지하는 줄 수를 "주(週)별"로 센다. 띠가 없는 주는 0 → 그 주의 일정들이 위로
   // 붙는다(예전엔 달 전체 최대 줄 수를 모든 칸에 적용해, 띠 없는 주도 공중에 떠 높이만 낭비됨).
@@ -2076,12 +2081,14 @@ export function StudioShell({
     const cellW = cellRect.width / z;
     const cellH = cellRect.height / z;
     // 리더 도트의 앵커 — '일정 수정'이면 그 일정 칩의 중심(칸 첫 카드에 잘못 찍히던 문제),
-    // '새 일정(날짜)'이면 칸 상단 중심. 수동 배치 중에도 항상 갱신(리더 라인용).
+    // '새 일정(날짜)'이면 칸 상단 중심. 업 도움은 칩이 없고 띠(.support-bar)가 실체이므로
+    // 그 날짜 칸의 띠 조각을 정확히 찍는다. 수동 배치 중에도 항상 갱신(리더 라인용).
     const pill = selectedEventId
-      ? cell.querySelector<HTMLElement>(`.studio-event-pill[data-eventid="${selectedEventId}"]`) ??
+      ? (cell.querySelector<HTMLElement>(`.studio-event-pill[data-eventid="${selectedEventId}"]`) ??
+        cell.querySelector<HTMLElement>(`.support-bar[data-supportid="${selectedEventId}"]`) ??
         calPanelRef.current?.querySelector<HTMLElement>(
-          `.studio-event-pill[data-eventid="${selectedEventId}"]`
-        )
+          `.studio-event-pill[data-eventid="${selectedEventId}"], .support-bar[data-supportid="${selectedEventId}"]`
+        ))
       : null;
     const aRect = pill ? pill.getBoundingClientRect() : cellRect;
     const aT = (aRect.top - wsRect.top) / z;
@@ -6239,8 +6246,13 @@ export function StudioShell({
                         // 판정은 카드와 같은 isDimmedByFilter — 끈에 태그가 없으면 필터 켤 때 물러난다.
                         className={`support-bar${isDimmedByFilter(s) ? " filter-dim" : ""}${
                           showLabel ? " sb-head" : ""
-                        }`}
+                        }${hoverSupportId === s.id ? " is-hover" : ""}`}
+                        data-supportid={s.id}
                         key={s.id}
+                        onMouseEnter={() => setHoverSupportId(s.id)}
+                        onMouseLeave={() =>
+                          setHoverSupportId((cur) => (cur === s.id ? null : cur))
+                        }
                         onClick={(e) => {
                           e.stopPropagation();
                           // 매니저는 업 도움 설정 수정 시트를 띄운다(전체 편집 불가). 작업자는 읽기 전용.
@@ -6672,7 +6684,9 @@ export function StudioShell({
                 // 재생된다(팝오버보다 선이 먼저 완성돼 있던 부조화 제거).
                 <svg
                   aria-hidden="true"
-                  className={`editor-anchor-link ${selectedEventId ? "is-edit" : "is-new"}`}
+                  className={`editor-anchor-link ${selectedEventId ? "is-edit" : "is-new"}${
+                    selectedIsSupport ? " is-support" : ""
+                  }`}
                   key={`link-${editorKey}`}
                 >
                   {covered ? null : (
@@ -6695,6 +6709,8 @@ export function StudioShell({
             날아오지 않고, transform-origin(앵커 방향)에서 새로 자라나듯 등장한다. */}
         <aside
           className={`event-editor-panel ${selectedEventId ? "is-edit" : "is-new"}${
+            selectedIsSupport ? " is-support" : ""
+          }${
             panelSaved ? " panel-saved" : ""
           }${editorPopDragging ? " pop-dragging" : ""}${editorPopSnapback ? " pop-snapback" : ""}${
             teaserGateActive ? " is-gated" : ""
