@@ -3622,7 +3622,9 @@ export function PublicPoster({
             bandClickable ? " is-clickable" : ""
           }${showLabel ? " sb-head" : ""}${hoverSupportId === s.id ? " is-hover" : ""}`;
           const bandStyle = {
-            top: 26 + lane * 20,
+            // 머리글 높이(--day-head-h)에서 파생 — 확대해도 날짜와 겹치지 않는다.
+            // -1px은 머리글 밑선에 살짝 걸쳐 띠가 떠 보이지 않게 하는 기존 여백.
+            top: `calc(var(--day-head-h, 27px) - 1px + ${lane * 20}px)`,
             // 이어지는 칸은 -1px로 칸 경계선을 덮어 대나무 마디처럼 끊겨 보이지 않게.
             left: left ? 3 : -1,
             right: right ? 3 : -1,

@@ -35,7 +35,11 @@ describe("editor-model 날짜 헬퍼", () => {
   });
 
   it("표시 포맷", () => {
-    expect(formatSupportEnd("2026-07-01", "2026-07-07")).toBe("7월 7일 · 7일간");
+    // 조절 대상이 '기간'이라 시작~종료를 함께 보여준다(예전엔 종료일 + 일수만 보여
+    // 지금 무엇을 늘리고 줄이는지 읽히지 않았다).
+    expect(formatSupportEnd("2026-07-01", "2026-07-07")).toBe("7월 1일 ~ 7월 7일");
+    expect(formatSupportEnd("2026-07-05", "2026-07-05")).toBe("7월 5일 ~ 7월 5일");
+    expect(formatSupportEnd("2026-07-28", "2026-08-02")).toBe("7월 28일 ~ 8월 2일");
     expect(formatShortDate("2026-07-05")).toBe("7.5");
   });
 });

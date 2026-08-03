@@ -3019,29 +3019,36 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   transform-origin: center top;
   /* 세로도 함께 자라야 팝오버 높이가 튀지 않는다. 다 자란 뒤(=1)에는 내용보다 넉넉해
      박동 링(inset -5px)이 잘리지 않는다. */
-  --dt-emerge-h: 200px; /* 내용(약 171px)보다 넉넉히 — 다 자란 뒤엔 마스크·클립이 안 닿는다 */
+  /* 실측 내용 높이 177px(링박스 132 + gap 8 + 라벨 14 + gap 8 + 캡션 15)보다 넉넉히.
+     너무 빡빡하게 잡으면 마스크 페이드 구간이 캡션 위로 올라와 글자가 반쯤 지워진다. */
+  --dt-emerge-h: 196px;
   max-height: calc(var(--hy-emerge, 1) * var(--dt-emerge-h));
   overflow: clip;
-  /* 박동 링은 링박스 밖 5px까지 나간다 — 여백 없이 clip하면 위쪽이 잘린다. */
-  overflow-clip-margin: 8px;
+  /* 박동 링은 링박스 밖 5px까지 나간다. 고요 구간에는 숫자가 링 바깥까지 자라므로
+     여백을 함께 넓혀 잘리지 않게 한다. */
+  overflow-clip-margin: calc(8px + var(--hy-calm, 0) * 44px);
   /* 잘리는 모서리를 그대로 두면 칼로 자른 단면이 보인다. 클립 지점 바로 위를 20px에 걸쳐
      흐리게 지워 '차오르는' 느낌으로 만든다 — 다 자란 뒤(=1)엔 페이드 구간이 내용 아래로
      빠져 아무 영향이 없다. */
   -webkit-mask-image: linear-gradient(
     to bottom,
-    #000 calc(var(--hy-emerge, 1) * var(--dt-emerge-h) - 20px),
+    #000 calc(var(--hy-emerge, 1) * var(--dt-emerge-h) - 14px),
     transparent calc(var(--hy-emerge, 1) * var(--dt-emerge-h))
   );
   mask-image: linear-gradient(
     to bottom,
-    #000 calc(var(--hy-emerge, 1) * var(--dt-emerge-h) - 20px),
+    #000 calc(var(--hy-emerge, 1) * var(--dt-emerge-h) - 14px),
     transparent calc(var(--hy-emerge, 1) * var(--dt-emerge-h))
   );
 }
-.dt-when {
+.detail-teaser .dt-when {
   opacity: calc(1 - var(--hy-emerge, 0));
   max-height: calc((1 - var(--hy-emerge, 0)) * 52px);
   overflow: clip;
+  /* ⚠ .detail-teaser는 gap:8px 그리드다. 알약의 '높이'만 0으로 접으면 간격 8px은 그대로
+     남아 있다가, 알약이 DOM에서 빠지는 순간 통째로 사라져 아래 버튼이 8px 툭 튄다
+     (사용자 지적). 접히는 만큼 자기 간격도 같이 먹게 해 언마운트 시 변화량을 0으로 만든다. */
+  margin-top: calc(var(--hy-emerge, 0) * -8px);
 }
 /* 동작 줄이기·export — 양자화된 0/1만 오므로 중간 상태가 없다(캡처 결정성). */
 .dt-count {
@@ -3208,9 +3215,10 @@ html[data-eye-comfort] .dt-grad-c {
 .dt-count-core strong {
   /* 강도에 따라 연속으로 커진다(1.05 → 1.85배 기준을 팝오버 크기에 맞게 스케일).
      고요 구간에서는 그 위에 한 번 더 자란다 — 계기가 물러난 자리를 숫자가 채운다. */
-  /* 고요 구간 추가 성장 0.4 → 0.62. 최악 케이스는 '10'(두 자리 + 고요 최대)이고, 그때
-     글자 폭이 링 안쪽 현(chord)을 넘으면 숫자가 링을 뚫는다 — 0.75는 그 경계에 붙어 있었다. */
-  font-size: calc(var(--hy-num, 1.05) * 26px * (1 + var(--hy-calm, 0) * 0.62));
+  /* 고요 구간에서는 링·눈금이 함께 사라지므로 '링 안쪽'이라는 제약 자체가 없어진다 →
+     그 자리를 숫자가 링 바깥까지 넘겨받는다(추가 성장 1.15배). 남는 제약은 두 가지뿐:
+     아래 라벨과 겹치지 않을 것(링박스 132px 안), 팝오버 폭을 넘지 않을 것. */
+  font-size: calc(var(--hy-num, 1.05) * 26px * (1 + var(--hy-calm, 0) * 1.15));
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   /* 큰 숫자는 자간이 벌어져 보인다 — 광학 보정(애플이 큰 수치에 쓰는 트래킹). */
@@ -3314,7 +3322,9 @@ html[data-reduce-motion] .dt-count.is-final .dt-count-core strong {
     stroke-width: 6;
   }
   .dt-count-core strong {
-    font-size: calc(var(--hy-num, 1.05) * 24px);
+    /* ⚠ 고요 배율(--hy-calm)을 빼먹으면 모바일에서만 숫자가 안 커진다 — 기준 크기만
+       바꾸고 배율은 그대로 이어받아야 한다. */
+    font-size: calc(var(--hy-num, 1.05) * 24px * (1 + var(--hy-calm, 0) * 1.15));
   }
   .dt-count-when {
     font-size: 11px;
@@ -3335,7 +3345,7 @@ html[data-reduce-motion] .dt-count.is-final .dt-count-core strong {
     height: 112px;
   }
   .dt-count-core strong {
-    font-size: calc(var(--hy-num, 1.05) * 22px);
+    font-size: calc(var(--hy-num, 1.05) * 22px * (1 + var(--hy-calm, 0) * 1.15));
   }
 }
 html[data-reduce-motion] .dt-count-core strong,
@@ -3765,6 +3775,11 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 
 .public-day {
   position: relative;
+  /* 날짜 머리글 높이 — 업 도움 띠의 y도 이 값에서 나온다(한 값, 두 소비자).
+     예전엔 머리글은 min-height 27px, 띠는 top 26px으로 따로 박혀 있었는데, 확대(--cal-zoom)
+     하면 날짜 글자만 커져(17px×1.5 + padding = 28.5px) 띠가 날짜를 덮었다.
+     같은 식에서 파생시키면 어떤 배율에서도 구조적으로 겹칠 수 없다. */
+  --day-head-h: calc(27px * var(--cal-zoom, 1));
   /* 칸 높이는 행(grid-auto-rows: minmax(150px,auto))이 정하고, 칸은 그 행에 stretch로 꽉 찬다.
      일정이 많으면 행이 자라 칸도 커지므로 일정이 잘리지 않는다(클립 없음). */
   border-right: 1px solid #efe6d3;
@@ -3833,7 +3848,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
-  min-height: 27px;
+  min-height: var(--day-head-h, 27px);
   padding: 3px 6px 0;
   font-weight: 900;
 }

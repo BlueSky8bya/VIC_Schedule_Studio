@@ -87,10 +87,13 @@ export function spanDays(start: string, end: string): number {
   return Math.round((Date.UTC(ey, em - 1, ed) - Date.UTC(sy, sm - 1, sd)) / 86400000) + 1;
 }
 
-// 업 도움 종료일 표시 — "M월 D일 · N일간". 스텝퍼/슬라이더 공용.
+// 업 도움 기간 표시 — "M월 D일 ~ M월 D일". 스텝퍼/슬라이더 공용.
+// 예전엔 종료일 + 일수("8월 8일 · 6일간")만 보여줬는데, 정작 조절하는 대상이 '기간'이라
+// 시작일이 안 보이면 지금 무엇을 늘리고 줄이는지 읽히지 않았다(사용자 지적).
 export function formatSupportEnd(start: string, end: string): string {
+  const [, sm, sd] = start.split("-").map(Number);
   const [, em, ed] = end.split("-").map(Number);
-  return `${em}월 ${ed}일 · ${spanDays(start, end)}일간`;
+  return `${sm}월 ${sd}일 ~ ${em}월 ${ed}일`;
 }
 
 // YYYY-MM-DD → "M.D" (업 도움 기간 표시용 — 시청자 화면과 동일 형식)

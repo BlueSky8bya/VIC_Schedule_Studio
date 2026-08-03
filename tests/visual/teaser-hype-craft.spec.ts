@@ -144,7 +144,7 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
     ).toBeGreaterThan(3);
   });
 
-  test("최악 케이스(10초·두 자리·고요 최대)에도 숫자가 링을 넘지 않는다", async ({ page }) => {
+  test("고요에서 숫자는 링 바깥까지 자라되 라벨·팝오버 폭은 침범하지 않는다", async ({ page }) => {
     for (const width of [1440, 390]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto("/visual-fixture/poster", { waitUntil: "load" });
@@ -164,28 +164,34 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
         host.style.setProperty("--hy-num", "1.667");
         host.style.setProperty("--hy-calm", "1");
         host.style.setProperty("--hy-emerge", "1");
-        const svg = host.querySelector("svg")!;
+        const ringbox = host.querySelector<HTMLElement>(".dt-count-ringbox")!;
         const strong = host.querySelector<HTMLElement>(".dt-count-core strong")!;
-        const box = svg.getBoundingClientRect();
+        const rb = ringbox.getBoundingClientRect();
         const nb = strong.getBoundingClientRect();
-        const scale = box.width / 100;
-        // 링 안쪽 반지름(viewBox 단위): r 44 − stroke/2.
+        const svgBox = host.querySelector("svg")!.getBoundingClientRect();
         const sw = parseFloat(getComputedStyle(host.querySelector(".dt-ring-track")!).strokeWidth);
-        const innerR = 44 - sw / 2;
         const font = parseFloat(getComputedStyle(strong).fontSize);
-        const halfW = nb.width / 2 / scale; // advance 폭은 정확하다
-        // 높이는 line box가 아니라 '잉크'로 잰다 — 숫자는 어센더/디센더 여백에 닿지 않아
-        // line box로 재면 실제보다 훨씬 크게 나온다(cap height ≈ 0.72em).
-        const halfH = (font * 0.72) / 2 / scale;
-        // 글자 잉크 상자의 모서리가 안쪽 원 안에 있어야 한다.
-        const corner = Math.hypot(halfW, halfH);
+        // 링 안쪽 지름(px) — 고요에서는 이걸 '넘어야' 정상이다(링이 사라지므로).
+        const innerD = (44 - sw / 2) * 2 * (svgBox.width / 100);
         host.remove();
-        return { innerR, halfW, halfH, corner, font: `${font}px` };
+        return {
+          innerD,
+          textW: nb.width,
+          inkH: font * 0.72,
+          lineH: nb.height,
+          ringboxH: rb.height,
+          font
+        };
       });
+      // 링이 사라진 자리를 넘겨받는다 — 두 자리 숫자는 안쪽 지름보다 넓어진다.
+      expect(res.textW, `${width}px에서 숫자가 링 안에 갇혀 있다`).toBeGreaterThan(res.innerD * 0.95);
+      // 그래도 라벨과는 안 겹친다 — 줄 상자가 링박스(고정 높이) 안에 들어와야 한다.
       expect(
-        res.corner,
-        `${width}px에서 숫자 상자(${res.halfW.toFixed(1)}×${res.halfH.toFixed(1)}, ${res.font})가 링 안쪽 반지름 ${res.innerR}를 넘는다`
-      ).toBeLessThan(res.innerR - 2);
+        res.lineH,
+        `${width}px에서 숫자 줄 상자(${res.lineH.toFixed(0)}px)가 링박스(${res.ringboxH}px)를 넘어 라벨과 겹친다`
+      ).toBeLessThan(res.ringboxH - 6);
+      // 팝오버 안쪽 폭(데스크톱 344 − 좌우 20씩)도 넘지 않는다.
+      expect(res.textW).toBeLessThan(width > 640 ? 304 : 300);
     }
   });
 
@@ -438,6 +444,49 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
       expect(i.name).toBe("reveal-secondary-rise");
       // 지연 동안 숨어 있다가 제 순서에 올라온다(base에 opacity:0을 두지 않는다).
       expect(i.fill).toBe("both");
+    }
+  });
+});
+
+test.describe("업 도움 띠 — 확대해도 날짜와 안 겹친다", () => {
+  test("100/125/150% 어디서도 띠가 날짜 머리글 아래에 있다", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/visual-fixture/poster", { waitUntil: "load" });
+    await page.locator("[data-export-surface]").first().waitFor({ state: "visible" });
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+    const rows = await page.evaluate(() => {
+      const day = document.querySelector<HTMLElement>(".public-day");
+      if (!day) return null;
+      const strip = day.querySelector<HTMLElement>(".day-strip")!;
+      // fixture에 업 도움 띠가 없을 수 있으므로 실제와 같은 방식으로 하나 심는다.
+      const bar = document.createElement("a");
+      bar.className = "support-bar sb-head";
+      bar.style.top = "calc(var(--day-head-h, 27px) - 1px + 0px)";
+      bar.style.left = "-1px";
+      bar.style.right = "-1px";
+      day.appendChild(bar);
+      const out: { zoom: string; stripBottom: number; barTop: number }[] = [];
+      for (const z of ["1", "1.25", "1.5"]) {
+        day.style.setProperty("--cal-zoom", z);
+        out.push({
+          zoom: z,
+          stripBottom: strip.getBoundingClientRect().bottom,
+          barTop: bar.getBoundingClientRect().top
+        });
+      }
+      bar.remove();
+      day.style.removeProperty("--cal-zoom");
+      return out;
+    });
+    expect(rows).not.toBeNull();
+    for (const r of rows!) {
+      // 띠 윗변이 날짜 줄 밑선보다 위로 올라오면(2px 여유 초과) 날짜를 덮는다.
+      expect(
+        r.stripBottom - r.barTop,
+        `확대 ${r.zoom}에서 띠가 날짜 머리글을 ${(r.stripBottom - r.barTop).toFixed(1)}px 침범한다`
+      ).toBeLessThanOrEqual(2);
     }
   });
 });
