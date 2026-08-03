@@ -1136,6 +1136,7 @@ html[data-reduce-motion] .passcode-box .button {
   color: #9f1239;
   cursor: pointer;
   overflow: hidden;
+  text-decoration: none; /* 링크(<a>)로 렌더될 때도 밑줄 없이 리본 그대로 */
   transition:
     filter 0.16s var(--ease, ease),
     box-shadow 0.16s var(--ease, ease),

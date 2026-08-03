@@ -3282,58 +3282,88 @@ export function PublicPoster({
           const showLabel = isStart || (!isStart && cell.weekday === 0);
           // 띠 클릭 = 곧장 업도움 링크로(사용자 결정 2026-08-03). 띠에 '도와주러 가기 →'라고
           // 써 있는데 팝오버를 한 단계 거치는 건 문구와 어긋났다 — 여긴 팝오버가 필요 없다.
+          // ⚠ window.open은 브라우저 팝업 차단에 막힌다(실사용에서 '안 눌림'으로 보고됨) →
+          // 진짜 <a>로 렌더해 브라우저 기본 동작에 맡긴다(미들클릭·새 탭 열기도 자연스럽다).
           // 링크가 없는 업도움만 예외로 상세 팝오버(기간·제목 확인용).
-          const openSupportDetail = interactive
-            ? (el: HTMLElement) => {
-                hapticTick();
-                if (s.supportUrl) {
-                  window.open(s.supportUrl, "_blank", "noopener,noreferrer");
-                  return;
+          const bandClickable = interactive;
+          const openSupportDetail =
+            bandClickable && !s.supportUrl
+              ? (el: HTMLElement) => {
+                  hapticTick();
+                  const r = el.getBoundingClientRect();
+                  detailAnchorElRef.current = el;
+                  setDetailManual(null);
+                  setAgendaDetail({
+                    event: s,
+                    support: true,
+                    dateKey: start,
+                    anchor: { x: r.left, y: r.top, w: r.width, h: r.height }
+                  });
                 }
-                const r = el.getBoundingClientRect();
-                detailAnchorElRef.current = el;
-                setDetailManual(null);
-                setAgendaDetail({
-                  event: s,
-                  support: true,
-                  dateKey: start,
-                  anchor: { x: r.left, y: r.top, w: r.width, h: r.height }
-                });
+              : null;
+          const bandClass = `support-bar${isDimmedByFilter(s) ? " dimmed" : ""}${
+            bandClickable ? " is-clickable" : ""
+          }${showLabel ? " sb-head" : ""}${hoverSupportId === s.id ? " is-hover" : ""}`;
+          const bandStyle = {
+            top: 26 + lane * 20,
+            // 이어지는 칸은 -1px로 칸 경계선을 덮어 대나무 마디처럼 끊겨 보이지 않게.
+            left: left ? 3 : -1,
+            right: right ? 3 : -1,
+            borderTopLeftRadius: left ? 9 : 0,
+            borderBottomLeftRadius: left ? 9 : 0,
+            borderTopRightRadius: right ? 9 : 0,
+            borderBottomRightRadius: right ? 9 : 0
+          };
+          const bandHover = bandClickable
+            ? {
+                onMouseEnter: () => setHoverSupportId(s.id),
+                onMouseLeave: () => setHoverSupportId((cur) => (cur === s.id ? null : cur))
               }
-            : null;
+            : {};
+          const bandInner = showLabel ? (
+            <span>
+              <i className="sb-sprout" aria-hidden="true">
+                🌱
+              </i>
+              {s.publicTitle}
+              {/* 남는 가로 폭 = 클릭 유도 문구(시청자 전용, 띠 위로 흘러감). */}
+              {bandClickable ? <em className="sb-cta">도와주러 가기 →</em> : null}
+            </span>
+          ) : null;
+          if (bandClickable && s.supportUrl) {
+            return (
+              <a
+                aria-label={`${s.publicTitle} 도와주러 가기(새 탭)`}
+                className={bandClass}
+                href={s.supportUrl}
+                key={s.id}
+                onClick={(e) => {
+                  e.stopPropagation(); // 칸 클릭(범위 선택 등)으로 새지 않게 — 이동은 기본 동작
+                  hapticTick();
+                }}
+                rel="noopener noreferrer"
+                style={bandStyle}
+                target="_blank"
+                title="도와주러 가기 (새 탭에서 열림)"
+                {...bandHover}
+              >
+                {bandInner}
+              </a>
+            );
+          }
           return (
             <div
               // 필터를 켜면 일정 카드만 흐려지고 업 도움 끈은 쨍하게 남아, 안 고른 기간이 오히려
               // 제일 눈에 띄었다 → 끈도 같이 물러난다(같은 isDimmedByFilter 판정을 쓴다).
-              className={`support-bar${isDimmedByFilter(s) ? " dimmed" : ""}${
-                openSupportDetail ? " is-clickable" : ""
-              }${showLabel ? " sb-head" : ""}${hoverSupportId === s.id ? " is-hover" : ""}`}
-              onMouseEnter={openSupportDetail ? () => setHoverSupportId(s.id) : undefined}
-              onMouseLeave={
-                openSupportDetail
-                  ? () => setHoverSupportId((cur) => (cur === s.id ? null : cur))
-                  : undefined
-              }
+              className={bandClass}
               key={s.id}
-              style={{
-                top: 26 + lane * 20,
-                // 이어지는 칸은 -1px로 칸 경계선을 덮어 대나무 마디처럼 끊겨 보이지 않게.
-                left: left ? 3 : -1,
-                right: right ? 3 : -1,
-                borderTopLeftRadius: left ? 9 : 0,
-                borderBottomLeftRadius: left ? 9 : 0,
-                borderTopRightRadius: right ? 9 : 0,
-                borderBottomRightRadius: right ? 9 : 0
-              }}
+              style={bandStyle}
+              {...bandHover}
               {...(openSupportDetail
                 ? {
                     role: "button" as const,
                     tabIndex: 0,
-                    // 링크가 있으면 새 탭으로 나간다는 걸 스크린리더·툴팁으로도 알린다.
-                    "aria-label": s.supportUrl
-                      ? `${s.publicTitle} 도와주러 가기(새 탭)`
-                      : `${s.publicTitle} 업 도움 상세`,
-                    title: s.supportUrl ? "도와주러 가기 (새 탭에서 열림)" : undefined,
+                    "aria-label": `${s.publicTitle} 업 도움 상세`,
                     onClick: (e: ReactMouseEvent<HTMLDivElement>) => {
                       e.stopPropagation();
                       openSupportDetail(e.currentTarget);
@@ -3346,17 +3376,7 @@ export function PublicPoster({
                   }
                 : {})}
             >
-              {showLabel ? (
-                <span>
-                  <i className="sb-sprout" aria-hidden="true">
-                    🌱
-                  </i>
-                  {s.publicTitle}
-                  {/* 남는 가로 폭 = 클릭 유도 문구(시청자 전용, 띠 위로 흘러감) — 눌러야
-                      '도우러 가기' 링크가 보이는 구조라, 띠 스스로 "눌러도 된다"를 말해야 한다. */}
-                  {openSupportDetail ? <em className="sb-cta">도와주러 가기 →</em> : null}
-                </span>
-              ) : null}
+              {bandInner}
             </div>
           );
         })}
