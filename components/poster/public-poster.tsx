@@ -379,12 +379,15 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
   const hh = String(Math.floor((s % 86400) / 3600)).padStart(2, "0");
   const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
   const ss = String(s % 60).padStart(2, "0");
-  // 1분 안쪽(hype) = 유튜브 최초공개 직전의 그 난리 — 카드가 무지개빛으로 요동치고
-  // 남은 초가 통째로 커진다. 10초 안쪽(final)은 매 초 카운트가 쿵 떨어진다.
-  const cls = `teaser-count is-live${s <= 3600 ? " soon" : ""}${s <= 60 ? " hype" : ""}${
-    s <= 10 ? " final" : ""
-  }`;
-  if (s <= 60 && s > 0) {
+  // 1분 안쪽 = 최초공개 직전의 난리. 한 번에 최대치로 가지 않고 4단계로 점점 격해진다
+  // (벤치마크: 유튜브 프리미어·로켓 T-minus·애플 타이머 — 공통적으로 '주기 단축 → 크기
+  // 확대 → 마지막 색 전환/화이트아웃'). h1 예열(60~31s) → h2 고조(30~11s) →
+  // h3 클라이맥스(10~4s, 금빛) → h4 화이트아웃(3~1s).
+  const stage = s <= 3 ? 4 : s <= 10 ? 3 : s <= 30 ? 2 : s <= 60 ? 1 : 0;
+  const cls = `teaser-count is-live${s <= 3600 ? " soon" : ""}${
+    stage > 0 ? ` hype h${stage}` : ""
+  }${s <= 10 ? " final" : ""}`;
+  if (stage > 0) {
     // 초만 크게(분/시는 0이라 잡음) — key로 매 초 리마운트해 숫자가 쿵 떨어지는 연출.
     return (
       <span className={cls}>
@@ -393,6 +396,16 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
     );
   }
   return <span className={cls}>{s <= 0 ? "✨ 공개!" : `${hh}:${mm}:${ss}`}</span>;
+}
+
+// 남은 초 → 하이프 단계(카드의 TeaserCountdown과 같은 기준). 팝오버·리더선이 카드와
+// 정확히 같은 박자로 격해지도록 한 곳에서 계산한다.
+function hypeStageOf(remainS: number | null): number {
+  if (remainS === null || remainS > 60 || remainS <= 0) return 0;
+  if (remainS <= 3) return 4;
+  if (remainS <= 10) return 3;
+  if (remainS <= 30) return 2;
+  return 1;
 }
 
 // 공개 순간 제목이 ?에서 한 글자씩 확정되는 스크램블 — 공개 순간을 지켜본 시청자만의 보상.
@@ -1444,6 +1457,24 @@ export function PublicPoster({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  // 열려 있는 상세가 '아직 안 풀린 떡밥'이면 남은 초를 매초 센다 — 팝오버도 카드와 같은
+  // 하이프 리듬을 타게 하려는 용도(카운트다운 숫자는 카드가 담당, 여긴 분위기만).
+  const detailRevealAt =
+    agendaDetail?.event.teaser && agendaDetail.event.teaserRevealAt
+      ? agendaDetail.event.teaserRevealAt
+      : null;
+  const [detailRemainS, setDetailRemainS] = useState<number | null>(null);
+  useEffect(() => {
+    if (!detailRevealAt) {
+      setDetailRemainS(null);
+      return;
+    }
+    const target = Date.parse(detailRevealAt);
+    const tick = () => setDetailRemainS(Math.max(0, Math.round((target - Date.now()) / 1000)));
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [detailRevealAt]);
   const hopeCountOf = (ev: PublicScheduleEvent): number =>
     hopeCounts[ev.id] ?? ev.hopeCount ?? 0;
   function toggleHope(ev: PublicScheduleEvent) {
@@ -4707,6 +4738,10 @@ export function PublicPoster({
             const teaserActive = Boolean(
               event.teaser && event.teaserRevealAt && Date.parse(event.teaserRevealAt) > Date.now()
             );
+            // 카드와 같은 하이프 단계(h1~h4) — 팝오버·리더선이 카드와 한 박자로 격해진다.
+            const detailStage = teaserActive ? hypeStageOf(detailRemainS) : 0;
+            const detailHype = detailStage > 0;
+            const detailFinal = detailStage >= 3;
             // PC 팝오버 좌표(자동 배치 or 드래그 확정) + 액센트 색(대표 태그 1~2색 그라데이션).
             const pos = anchor ? detailManual ?? detailPos : null;
             // 업도움은 띠와 같은 초록 계열로 액센트·선 색을 통일(카드 ↔ 띠 조화).
@@ -4740,7 +4775,7 @@ export function PublicPoster({
                 {edge && detailAnchorPt ? (
                   <svg
                     aria-hidden="true"
-                    className="detail-anchor-link"
+                    className={`detail-anchor-link${detailHype ? ` is-hype hs${detailStage}` : ""}`}
                     style={{ "--dt-line": lineColor } as CSSProperties}
                   >
                     {edge.x === detailAnchorPt.x && edge.y === detailAnchorPt.y ? null : (
@@ -4758,7 +4793,9 @@ export function PublicPoster({
                 <div
                   aria-label="일정 상세"
                   aria-modal="true"
-                  className={`agenda-detail-sheet${detailSnapback ? " pop-snapback" : ""}`}
+                  className={`agenda-detail-sheet${detailSnapback ? " pop-snapback" : ""}${
+                    detailHype ? ` is-hype hs${detailStage}` : ""
+                  }${detailFinal ? " is-final" : ""}`}
                   ref={detailSheetRef}
                   role="dialog"
                   style={popStyle}
@@ -4864,12 +4901,20 @@ export function PublicPoster({
                     /* 한 줄 요약 + 주 동작만 — 각주·여백은 뺐다(사용자 지적: 쓸데없는 설명·빈 공간).
                        오브를 시각 옆에 나란히 둬 세로 낭비를 없애고, 기대돼요가 바로 손에 닿는다. */
                     <div className="detail-teaser">
+                      {/* 1분 안쪽엔 절대시각이 무의미해진다 → 긴박한 문구로 교체(카운트다운
+                          숫자는 카드가 담당하므로 여기선 중복 없이 분위기만). */}
                       <p className="dt-when">
                         <span aria-hidden="true" className="dt-orb">
                           🔮
                         </span>
-                        <b>{formatRevealKst(event.teaserRevealAt)}</b>
-                        <em>공개</em>
+                        {detailHype ? (
+                          <b>{detailStage >= 3 ? "곧 공개!" : "잠시 후 공개"}</b>
+                        ) : (
+                          <>
+                            <b>{formatRevealKst(event.teaserRevealAt)}</b>
+                            <em>공개</em>
+                          </>
+                        )}
                       </p>
                       <button
                         aria-pressed={myHopeIds.has(event.id)}
