@@ -6006,17 +6006,13 @@ export function StudioShell({
         </div>
       </div>
 
+      {/* 데스크톱 비공개 경고 — 레이아웃에 끼어들던 전폭 띠 대신 하단 중앙 플로팅 알약.
+          '비공개 표시 중'/'지금 잠그기' 버튼(호박색 계열)과 같은 색 언어. 조작은 위 토글이
+          담당하므로 여기엔 버튼 없이 상태 환기만(비밀번호 변경 버튼 제거 — 사용자 결정). */}
       {canReadPrivate ? (
-        <div className="private-warning">
-          <LockKeyhole aria-hidden="true" size={17} />
-          ⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.
-          {/* 웹: 끄기는 위 토글 자리로 옮겼고, 여기엔 덜 쓰는 "비밀번호 변경"을 둔다.
-              (변경은 owner/developer만 — 작업자에겐 버튼 자체를 숨긴다.) */}
-          {canEdit ? (
-            <button className="private-warning-btn" onClick={() => openChangePasscode()} type="button">
-              비밀번호 변경
-            </button>
-          ) : null}
+        <div className="private-warning private-warning-float" role="status">
+          <LockKeyhole aria-hidden="true" size={15} />
+          비공개 일정 표시 중 — 방송 화면 공유에 주의하세요
         </div>
       ) : null}
 
