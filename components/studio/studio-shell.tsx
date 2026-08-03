@@ -952,6 +952,19 @@ export function StudioShell({
     );
   }
 
+  // '지금 잠그기' — 이 브라우저의 잠금해제 grant를 즉시 폐기(다시 보려면 비밀번호 재입력).
+  // 다른 기기는 영향 없음. 하단 플로팅 배너에서 부른다.
+  function relockNow() {
+    hapticTick(); // ① 눌림
+    setShowPrivate(false);
+    void relockPrivateLayerAction().then((r) => {
+      if (r.ok) {
+        hapticTick(); // ② 서버 확정
+        router.refresh();
+      }
+    });
+  }
+
   function togglePrivateLayer() {
     if (hasUnlockSession) {
       setShowPrivate((value) => !value);
@@ -5965,28 +5978,7 @@ export function StudioShell({
                 </button>
               )
             ) : null}
-            {/* P0-PRIV-2(L8) '지금 잠그기' — 표시 토글(위, 서버 세션 유지)과 별개로 이 브라우저의
-                잠금해제 자체를 즉시 끝낸다. 다시 보려면 비밀번호 재입력. 다른 기기는 영향 없음. */}
-            {canTogglePrivateLayer && hasUnlockSession ? (
-              <button
-                className="private-toggle io-accent io-private"
-                onClick={() => {
-                  hapticTick(); // ① 눌림
-                  setShowPrivate(false);
-                  void relockPrivateLayerAction().then((r) => {
-                    if (r.ok) {
-                      hapticTick(); // ② 서버 확정
-                      router.refresh();
-                    }
-                  });
-                }}
-                title="이 브라우저의 비공개 잠금해제를 지금 종료합니다(다시 보려면 비밀번호 입력)"
-                type="button"
-              >
-                <LockKeyhole size={15} />
-                지금 잠그기
-              </button>
-            ) : null}
+            {/* ('지금 잠그기'는 하단 플로팅 배너로 이동 — 사용자 결정. 여기 액션바는 표시 토글만.) */}
             {canDecorateCalendar ? (
               <Link
                 // 매니저·작업자는 일정 편집을 못 하니 꾸미기가 1차 작업 → primary로 강조.
@@ -6007,12 +5999,25 @@ export function StudioShell({
       </div>
 
       {/* 데스크톱 비공개 경고 — 레이아웃에 끼어들던 전폭 띠 대신 하단 중앙 플로팅 알약.
-          '비공개 표시 중'/'지금 잠그기' 버튼(호박색 계열)과 같은 색 언어. 조작은 위 토글이
-          담당하므로 여기엔 버튼 없이 상태 환기만(비밀번호 변경 버튼 제거 — 사용자 결정). */}
-      {canReadPrivate ? (
-        <div className="private-warning private-warning-float" role="status">
+          '지금 잠그기'도 여기로(사용자 결정 — 상태와 그 상태를 끝내는 조작을 한자리에).
+          표시를 꺼도 잠금해제가 살아 있는 동안엔 남아서 잠글 수단을 잃지 않는다. */}
+      {canTogglePrivateLayer && hasUnlockSession ? (
+        <div
+          className={`private-warning private-warning-float${canReadPrivate ? "" : " is-hidden-state"}`}
+          role="status"
+        >
           <LockKeyhole aria-hidden="true" size={15} />
-          비공개 일정 표시 중 — 방송 화면 공유에 주의하세요
+          {canReadPrivate
+            ? "비공개 일정 표시 중 — 방송 화면 공유에 주의하세요"
+            : "비공개 잠금 해제됨 — 표시는 꺼져 있어요"}
+          <button
+            className="private-warning-btn"
+            onClick={relockNow}
+            title="이 브라우저의 비공개 잠금해제를 지금 종료합니다(다시 보려면 비밀번호 입력)"
+            type="button"
+          >
+            지금 잠그기
+          </button>
         </div>
       ) : null}
 
