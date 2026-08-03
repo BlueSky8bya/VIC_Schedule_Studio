@@ -5236,12 +5236,43 @@ export function PublicPoster({
                           중앙 대형 숫자). 링은 물리 시간(60→0)을, 글로우·크기는 강도 곡선을
                           따르므로 정보와 감정이 분리된다. 그 밖에는 공개 시각 알약. */}
                       {detailHype && detailRemainS !== null ? (
+                        (() => {
+                          // 남은 비율 p. 진행 호는 SVG 원 경로의 시작점(로컬 3시 방향)에서
+                          // 시계방향으로 길이 p만큼 그려진다 → 호의 '끝'은 시작점에서 360p°다.
+                          // 별을 12시에서 출발시키면 정확히 90° 어긋난다(사용자 지적한 그 버그).
+                          const p = Math.max(0, Math.min(1, detailRemainS / HYPE_WINDOW_S));
+                          const deg = 360 * p;
+                          // 눈금 12개(5초 간격) — 남은 호 안에 있는 것만 켠다. 시계 문자판처럼
+                          // '얼마나 남았는지'를 숫자 없이도 읽히게 하고, 빈 원의 허전함을 없앤다.
+                          const ticks = Array.from({ length: 12 }, (_, k) => k / 12);
+                          return (
                         <div className={`dt-count${detailFinal ? " is-final" : ""}`}>
                           {/* 링과 라벨은 형제다 — 예전엔 라벨이 링 안에 absolute로 얹혀 있어
                               원 아래쪽 좁은 현(chord)에서 링 stroke와 겹쳤다(글씨 가림 버그).
                               숫자를 줄여도 안 풀리는 기하 문제라 라벨을 링 밖 독립 행으로 뺐다. */}
                           <div className="dt-count-ringbox">
                           <svg aria-hidden="true" className="dt-ring" viewBox="0 0 100 100">
+                            <defs>
+                              {/* 호를 따라 색이 흐른다 — 단색 바보다 깊이가 생긴다. */}
+                              <linearGradient id="dt-ring-grad" x1="0" x2="1" y1="0" y2="1">
+                                <stop className="dt-grad-a" offset="0%" />
+                                <stop className="dt-grad-b" offset="55%" />
+                                <stop className="dt-grad-c" offset="100%" />
+                              </linearGradient>
+                            </defs>
+                            <g className="dt-ring-ticks">
+                              {ticks.map((f) => (
+                                <line
+                                  className={f <= p ? "on" : undefined}
+                                  key={f}
+                                  transform={`rotate(${360 * f} 50 50)`}
+                                  x1="34"
+                                  x2="37.5"
+                                  y1="50"
+                                  y2="50"
+                                />
+                              ))}
+                            </g>
                             <circle className="dt-ring-track" cx="50" cy="50" r="44" />
                             <circle
                               className="dt-ring-progress"
@@ -5249,32 +5280,43 @@ export function PublicPoster({
                               cy="50"
                               pathLength={1}
                               r="44"
-                              style={{
-                                strokeDasharray: 1,
-                                strokeDashoffset: 1 - Math.max(0, Math.min(1, detailRemainS / HYPE_WINDOW_S))
-                              }}
+                              style={{ strokeDasharray: 1, strokeDashoffset: 1 - p }}
                             />
-                            {/* 진행 끝을 따라가는 작은 별 — 링 위를 도는 장식(캔버스 없이 SVG만). */}
-                            <circle
-                              className="dt-ring-spark"
-                              cx="50"
-                              cy="6"
-                              r="3.2"
-                              style={{
-                                transform: `rotate(${360 * (1 - detailRemainS / HYPE_WINDOW_S)}deg)`,
-                                transformOrigin: "50px 50px"
-                              }}
-                            />
+                            {/* 진행 끝을 따라가는 별 + 꼬리 — 캔버스 없이 SVG만. 기준점은 경로
+                                시작점(94,50)이고 회전량은 호 길이와 같은 360p°라 항상 붙어 있다. */}
+                            {[
+                              { k: 2, off: -7, cls: "dt-ring-trail t2" },
+                              { k: 1, off: -3.5, cls: "dt-ring-trail t1" },
+                              { k: 0, off: 0, cls: "dt-ring-spark" }
+                            ].map(({ k, off, cls }) => (
+                              <circle
+                                className={cls}
+                                cx="94"
+                                cy="50"
+                                key={k}
+                                r={3.2 - k * 0.7}
+                                style={{
+                                  transform: `rotate(${deg + off}deg)`,
+                                  transformOrigin: "50px 50px"
+                                }}
+                              />
+                            ))}
                           </svg>
+                          {/* 숫자만 — '초'를 붙이면 두 글자의 무게 때문에 숫자가 원 중심에서
+                              왼쪽으로 밀려 보였다(사용자 지적). 자릿수가 줄면 그때그때 다시
+                              가운데로 온다(고정 슬롯 없음). */}
                           <div className="dt-count-core">
                             <strong key={detailRemainS}>{detailRemainS}</strong>
-                            <span>초</span>
                           </div>
                           </div>
                           <p className="dt-count-label">
                             {detailFinal ? "곧 공개!" : "최초공개까지"}
                           </p>
+                          {/* 링이 공개 시각 알약을 밀어냈으니 그 정보를 여기서 되살린다. */}
+                          <p className="dt-count-when">{formatRevealKst(event.teaserRevealAt)}</p>
                         </div>
+                          );
+                        })()
                       ) : (
                         <p className="dt-when">
                           <span aria-hidden="true" className="dt-orb">

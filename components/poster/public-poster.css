@@ -2901,6 +2901,21 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   width: 132px;
   height: 132px;
 }
+/* 원 안쪽의 따뜻한 후광 — 임박할수록 숫자 뒤가 달아오른다(점멸 없이 상승만).
+   빈 원 안이 허전하던 문제도 같이 해결한다. */
+.dt-count-ringbox::before {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border-radius: 999px;
+  background: radial-gradient(
+    circle at 50% 45%,
+    rgb(255 214 122 / calc(18% + var(--hy-glow, 0) * 240%)) 0%,
+    rgb(124 108 240 / calc(6% + var(--hy-glow, 0) * 40%)) 55%,
+    transparent 72%
+  );
+  pointer-events: none;
+}
 .dt-ring {
   position: absolute;
   inset: 0;
@@ -2913,36 +2928,77 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   stroke: rgb(124 108 240 / 14%);
   stroke-width: 7;
 }
+/* 눈금(5초 간격 12개) — 지나간 자리는 흐려진다. 시계 문자판 같은 '계기' 인상. */
+.dt-ring-ticks line {
+  stroke: rgb(124 108 240 / 13%);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  transition: stroke 0.5s var(--ease);
+}
+.dt-ring-ticks line.on {
+  stroke: color-mix(
+    in srgb,
+    rgb(124 108 240 / 42%) calc((1 - var(--hy-gold, 0)) * 100%),
+    rgb(240 168 58 / 62%)
+  );
+}
+/* 호 그라데이션 — 단색 바보다 깊이가 생긴다. 강도에 따라 세 정지점이 함께 데워진다. */
+.dt-grad-a {
+  stop-color: color-mix(in srgb, #9b8bff calc((1 - var(--hy-gold, 0)) * 100%), #ffd27a);
+}
+.dt-grad-b {
+  stop-color: color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #f0a83a);
+}
+.dt-grad-c {
+  stop-color: color-mix(in srgb, #6a56e8 calc((1 - var(--hy-gold, 0)) * 100%), #e8892a);
+}
 .dt-ring-progress {
   fill: none;
-  stroke: color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #f0a83a);
+  stroke: url(#dt-ring-grad);
   stroke-width: 7;
   stroke-linecap: round;
   filter: drop-shadow(0 0 calc(2px + var(--hy-glow, 0) * 40px) rgb(255 214 122 / 85%));
   transition: stroke-dashoffset 0.95s linear; /* 1Hz 갱신 사이를 이어 붙여 부드럽게 */
 }
-/* 눈 편한 테마의 전역 filter를 통과하면 금색이 갈색으로 탁해진다 → 노랑 성분을 더 남긴 값으로. */
-html[data-eye-comfort] .dt-ring-progress {
-  stroke: color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #ffb52e);
+/* 눈 편한 테마의 전역 filter를 통과하면 금색이 갈색으로 탁해진다 → 노랑 성분을 더 남긴
+   값으로. 호를 단색으로 되돌리지 않고 정지점만 바꾼다(그라데이션 유지). */
+html[data-eye-comfort] .dt-grad-a {
+  stop-color: color-mix(in srgb, #9b8bff calc((1 - var(--hy-gold, 0)) * 100%), #ffdc93);
 }
-.dt-ring-spark {
+html[data-eye-comfort] .dt-grad-b {
+  stop-color: color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #ffb52e);
+}
+html[data-eye-comfort] .dt-grad-c {
+  stop-color: color-mix(in srgb, #6a56e8 calc((1 - var(--hy-gold, 0)) * 100%), #f59a1e);
+}
+/* ⚠ transform-box를 명시하지 않으면 SVG 도형의 기본값이 fill-box라 '자기 자신'을 중심으로
+   돌아 회전이 사실상 무효가 된다(별이 호 끝에서 떨어져 보이던 원인). view-box로 고정해야
+   viewBox 좌표 (50,50) = 원 중심을 축으로 돈다. */
+.dt-ring-spark,
+.dt-ring-trail {
+  transform-box: view-box;
+  transform-origin: 50px 50px;
   fill: color-mix(in srgb, #c4b5fd calc((1 - var(--hy-gold, 0)) * 100%), #ffe8a3);
-  filter: drop-shadow(0 0 calc(3px + var(--hy-glow, 0) * 30px) rgb(255 236 190 / 90%));
   transition: transform 0.95s linear;
 }
+.dt-ring-spark {
+  filter: drop-shadow(0 0 calc(3px + var(--hy-glow, 0) * 30px) rgb(255 236 190 / 90%));
+}
+.dt-ring-trail.t1 {
+  opacity: 0.45;
+}
+.dt-ring-trail.t2 {
+  opacity: 0.2;
+}
 .dt-count-core {
-  /* 고정 폭 슬롯 — 숫자가 커져도 '초'의 x좌표가 안 움직인다. */
-  display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 2px;
-  width: 82px;
+  /* 숫자 하나뿐이라 고정 슬롯이 필요 없다 — 자릿수가 줄면 그때그때 원 중심으로 다시
+     모인다(예전엔 '초'가 붙어 있어 숫자가 왼쪽으로 밀려 보였다). */
+  display: grid;
+  place-items: center;
   line-height: 1;
 }
 .dt-count-core strong {
   /* 강도에 따라 연속으로 커진다(1.05 → 1.85배 기준을 팝오버 크기에 맞게 스케일). */
-  min-width: 2ch; /* 10→9에서 '초'가 왼쪽으로 밀리지 않게 자릿수 슬롯을 고정 */
-  text-align: right;
   font-size: calc(var(--hy-num, 1.05) * 26px);
   font-weight: 900;
   font-variant-numeric: tabular-nums;
@@ -2964,11 +3020,6 @@ html[data-eye-comfort] .dt-ring-progress {
     transform: scale(1);
   }
 }
-.dt-count-core span {
-  font-size: 12px;
-  font-weight: 800;
-  color: rgb(90 80 130 / 62%);
-}
 .dt-count-label {
   margin: 0;
   height: 14px;
@@ -2981,6 +3032,16 @@ html[data-eye-comfort] .dt-ring-progress {
 }
 .dt-count.is-final .dt-count-label {
   color: #9a5800;
+}
+/* 공개 시각 — 링이 알약을 밀어내며 사라졌던 정보. 라벨보다 한 단계 조용하게. */
+.dt-count-when {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  line-height: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  color: rgb(90 80 130 / 46%);
 }
 /* 모바일 — 시트 세로가 귀하다. 링을 120px로 줄이되 stroke를 조금 더 줄여(7→6 사용자 단위)
    안쪽 지름을 확보한다. 라벨 문구·크기는 줄이지 않는다(정보는 양보 대상이 아니다). */
@@ -2997,13 +3058,10 @@ html[data-eye-comfort] .dt-ring-progress {
   .dt-ring-progress {
     stroke-width: 6;
   }
-  .dt-count-core {
-    width: 76px;
-  }
   .dt-count-core strong {
     font-size: calc(var(--hy-num, 1.05) * 24px);
   }
-  .dt-count-core span {
+  .dt-count-when {
     font-size: 11px;
   }
 }
@@ -3021,16 +3079,15 @@ html[data-eye-comfort] .dt-ring-progress {
     width: 112px;
     height: 112px;
   }
-  .dt-count-core {
-    width: 70px;
-  }
   .dt-count-core strong {
     font-size: calc(var(--hy-num, 1.05) * 22px);
   }
 }
 html[data-reduce-motion] .dt-count-core strong,
 html[data-reduce-motion] .dt-ring-progress,
-html[data-reduce-motion] .dt-ring-spark {
+html[data-reduce-motion] .dt-ring-spark,
+html[data-reduce-motion] .dt-ring-trail,
+html[data-reduce-motion] .dt-ring-ticks line {
   animation: none;
   transition: none;
 }

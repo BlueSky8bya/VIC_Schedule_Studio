@@ -23,14 +23,21 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
           '<div class="dt-count"><div class="dt-count-ringbox">' +
           '<svg class="dt-ring" viewBox="0 0 100 100">' +
           '<circle class="dt-ring-track" cx="50" cy="50" r="44"></circle></svg>' +
-          '<div class="dt-count-core"><strong>10</strong><span>초</span></div>' +
-          '</div><p class="dt-count-label">최초공개까지</p></div>';
+          '<div class="dt-count-core"><strong>10</strong></div>' +
+          '</div><p class="dt-count-label">최초공개까지</p>' +
+          '<p class="dt-count-when">10월 1일 (수) 오후 9시</p></div>';
         document.body.appendChild(host);
         const ringbox = host.querySelector<HTMLElement>(".dt-count-ringbox")!;
         const label = host.querySelector<HTMLElement>(".dt-count-label")!;
         const core = host.querySelector<HTMLElement>(".dt-count-core")!;
         const strong = core.querySelector("strong")!;
-        const out: { num: string; ringBottom: number; labelTop: number; coreW: number }[] = [];
+        const out: {
+          num: string;
+          ringBottom: number;
+          labelTop: number;
+          coreCx: number;
+          ringCx: number;
+        }[] = [];
         const samples: [string, string][] = [
           ["1.050", "60"],
           ["1.266", "30"],
@@ -42,11 +49,13 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
           strong.textContent = text;
           const rb = ringbox.getBoundingClientRect();
           const lb = label.getBoundingClientRect();
+          const cb = core.getBoundingClientRect();
           out.push({
             num,
             ringBottom: Math.round(rb.bottom),
             labelTop: Math.round(lb.top),
-            coreW: Math.round(core.getBoundingClientRect().width)
+            coreCx: Math.round(cb.left + cb.width / 2),
+            ringCx: Math.round(rb.left + rb.width / 2)
           });
         }
         host.remove();
@@ -59,9 +68,61 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
           `${width}px / --hy-num=${r.num}에서 라벨이 링 안으로 들어갔다`
         ).toBeGreaterThanOrEqual(r.ringBottom);
       }
-      // 숫자 슬롯 폭은 자릿수·강도와 무관하게 고정 → '초'가 좌우로 밀리지 않는다.
-      const widths = rows.map((r) => r.coreW);
-      expect(Math.max(...widths) - Math.min(...widths)).toBe(0);
+      // 숫자는 자릿수가 줄어도 항상 원 중심에 다시 모인다(고정 슬롯 없이 동적 가운데 정렬).
+      for (const r of rows) {
+        expect(
+          Math.abs(r.coreCx - r.ringCx),
+          `${width}px / --hy-num=${r.num}에서 숫자가 원 중심에서 벗어났다`
+        ).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  test("별이 진행 호의 끝에 정확히 붙어 있다", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/visual-fixture/poster", { waitUntil: "load" });
+    const res = await page.evaluate(() => {
+      // 진행 호는 SVG 원 경로의 시작점(로컬 3시)에서 시계방향으로 길이 p만큼 그려진다.
+      // 별을 12시에서 출발시키면 정확히 90° 어긋난다 — 그 회귀를 막는다.
+      const host = document.createElement("div");
+      host.innerHTML =
+        '<svg class="dt-ring" viewBox="0 0 100 100" style="width:132px;height:132px">' +
+        '<circle class="dt-ring-progress" cx="50" cy="50" r="44"></circle>' +
+        '<circle class="dt-ring-spark" cx="94" cy="50" r="3.2"></circle></svg>';
+      document.body.appendChild(host);
+      const prog = host.querySelector<SVGCircleElement>(".dt-ring-progress")!;
+      const spark = host.querySelector<SVGCircleElement>(".dt-ring-spark")!;
+      const svg = host.querySelector("svg")!;
+      // 실제 화면에선 1Hz 갱신 사이를 0.95s transition으로 이어 붙이지만, 여기서는 각
+      // 시점의 '최종 위치'를 재야 하므로 보간을 끈다(안 끄면 직전 각도가 잡힌다).
+      spark.style.transition = "none";
+      const out: { p: number; gap: number }[] = [];
+      for (const p of [1, 0.95, 0.6, 0.25, 0.05]) {
+        prog.setAttribute("pathLength", "1");
+        prog.style.strokeDasharray = "1";
+        prog.style.strokeDashoffset = String(1 - p);
+        spark.style.transform = `rotate(${360 * p}deg)`;
+        spark.style.transformOrigin = "50px 50px";
+        // 호의 끝점은 경로에서 직접 읽고(getPointAtLength) 화면 좌표로 옮긴다. 별은
+        // 실제로 그려진 위치(bounding rect 중심)를 쓴다 — CSS transform이 반영된 값.
+        const len = prog.getTotalLength();
+        const end = prog.getPointAtLength(len * p);
+        const pt = svg.createSVGPoint();
+        pt.x = end.x;
+        pt.y = end.y;
+        const endScreen = pt.matrixTransform(svg.getScreenCTM()!);
+        const sb = spark.getBoundingClientRect();
+        out.push({
+          p,
+          gap: Math.hypot(sb.left + sb.width / 2 - endScreen.x, sb.top + sb.height / 2 - endScreen.y)
+        });
+      }
+      host.remove();
+      return out;
+    });
+    for (const r of res) {
+      // 화면 픽셀 기준(132px 링, viewBox 100 → 배율 1.32). 3px 이내면 육안으로 붙어 있다.
+      expect(r.gap, `p=${r.p}에서 별이 호 끝과 ${r.gap.toFixed(2)}px 떨어져 있다`).toBeLessThan(3);
     }
   });
 
