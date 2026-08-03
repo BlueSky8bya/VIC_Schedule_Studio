@@ -3361,10 +3361,7 @@ export function StudioShell({
         onSubmit={submitTeaserGate}
       >
         {head}
-        <span className="teaser-gate-orb" aria-hidden="true">
-          🔮
-        </span>
-        {/* 설명문 없이 카운트다운이 주인공 — '얼마나 남았는지'가 곧 이 카드의 존재 이유다. */}
+        {/* 설명문·아이콘 없이 카운트다운이 주인공 — 🔮은 헤더 배지에 이미 있다(중복 제거). */}
         {selectedLiveEvent?.teaserRevealAt ? (
           <TeaserGateCountdown revealAt={selectedLiveEvent.teaserRevealAt} />
         ) : null}

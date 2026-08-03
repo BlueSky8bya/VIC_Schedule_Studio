@@ -5452,21 +5452,6 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   text-align: center;
   gap: var(--space-2);
 }
-.teaser-gate-orb {
-  font-size: 40px;
-  line-height: 1;
-  filter: drop-shadow(0 3px 8px rgb(124 108 240 / 40%));
-  animation: teaser-gate-float 2.6s var(--ease) infinite alternate;
-}
-@keyframes teaser-gate-float {
-  from {
-    transform: translateY(0);
-  }
-
-  to {
-    transform: translateY(-4px);
-  }
-}
 /* 큰 카운트다운 — 설명문 없이 이 카드의 주인공. 유닛 블록 + 초 블록만 보라 강조.
    숫자는 값이 바뀔 때 key 리마운트 → 스프링 팝(아래 tg-num-in). */
 .tg-countdown {
@@ -5577,7 +5562,6 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
 .teaser-gate-sheet .teaser-gate {
   padding: var(--space-5) var(--space-4) var(--space-6);
 }
-html[data-reduce-motion] .teaser-gate-orb,
 html[data-reduce-motion] .teaser-gate.gate-shake,
 html[data-reduce-motion] .tg-num {
   animation: none;
