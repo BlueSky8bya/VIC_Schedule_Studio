@@ -126,6 +126,34 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
     }
   });
 
+  test("공개 연출이 카드 레이아웃 높이를 바꾸지 않는다", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/visual-fixture/poster", { waitUntil: "load" });
+    await page.locator("[data-export-surface]").first().waitFor({ state: "visible" });
+    const res = await page.evaluate(() => {
+      const card = document.querySelector<HTMLElement>(".public-event");
+      if (!card) return null;
+      const cell = card.parentElement as HTMLElement;
+      const base = { card: card.offsetHeight, cell: cell.offsetHeight };
+      // 공개 연출 클래스 + 충격파를 얹는다. 전부 absolute/transform이어야 하므로
+      // 레이아웃 높이는 1px도 변하면 안 된다(예전 tj-pop은 크기로 때려 깜빡임처럼 읽혔다).
+      const shock = document.createElement("span");
+      shock.className = "reveal-shock";
+      card.prepend(shock);
+      card.classList.add("just-revealed");
+      const after = { card: card.offsetHeight, cell: cell.offsetHeight };
+      const cs = getComputedStyle(card);
+      const peak = cs.animationName;
+      card.classList.remove("just-revealed");
+      shock.remove();
+      return { base, after, peak };
+    });
+    expect(res).not.toBeNull();
+    expect(res!.after.card).toBe(res!.base.card);
+    expect(res!.after.cell).toBe(res!.base.cell);
+    expect(res!.peak).toBe("tj-pop");
+  });
+
   test("떡밥 시트는 강도에 따라 연속으로 데워지고 유리 재질을 끈다", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/visual-fixture/poster");

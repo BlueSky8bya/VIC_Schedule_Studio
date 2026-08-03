@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   HYPE_WINDOW_S,
   STATIC_MOTION_FRAME,
+  beatPeriodAt,
   beatWave,
   clamp01,
+  hypeCalm,
   hypeChannels,
   hypeCssVars,
   hypeIntensity,
@@ -167,6 +169,43 @@ describe("점멸 예산(WCAG 2.3.1)", () => {
   });
 });
 
+describe("hypeCalm — 폭풍의 눈(마지막 10초)", () => {
+  it("10초까지는 0이고, 그 뒤 0.35초 안에 1로 올라선다('갑자기'를 유지)", () => {
+    expect(hypeCalm(S(11))).toBe(0);
+    expect(hypeCalm(S(10))).toBe(0);
+    expect(hypeCalm(S(9.9))).toBeGreaterThan(0);
+    expect(hypeCalm(S(9.65))).toBe(1);
+    expect(hypeCalm(S(1))).toBe(1);
+  });
+
+  it("동요는 재우고(흔들림 0) 박동은 1초로 늘린다", () => {
+    const before = hypeChannels(hypeIntensity(S(11)), hypeCalm(S(11)));
+    const after = hypeChannels(hypeIntensity(S(9)), hypeCalm(S(9)));
+    expect(before.shakePx).toBeGreaterThan(0);
+    expect(after.shakePx).toBe(0); // 갑자기 고요해진다
+    expect(after.ringDurationS).toBeCloseTo(1, 6); // 박자가 곧 시계가 된다
+    expect(after.ringDurationS).toBeGreaterThan(before.ringDurationS); // 느려진다
+  });
+
+  it("크기·빛·색은 고요와 무관하게 계속 오른다(조용해지되 더 커진다)", () => {
+    const at11 = hypeChannels(hypeIntensity(S(11)), hypeCalm(S(11)));
+    const at3 = hypeChannels(hypeIntensity(S(3)), hypeCalm(S(3)));
+    expect(at3.numberScale).toBeGreaterThan(at11.numberScale);
+    expect(at3.glow).toBeGreaterThan(at11.glow);
+    expect(at3.goldMix).toBeGreaterThan(at11.goldMix);
+    expect(at3.sheetWarm).toBeGreaterThan(at11.sheetWarm);
+  });
+
+  it("고요 구간에서 박동은 느려지는 대신 깊어진다", () => {
+    const fast = hypeMotionFrame(S(11), hypeIntensity(S(11)));
+    const calm = hypeMotionFrame(S(9), hypeIntensity(S(9)));
+    expect(calm.beatDurationS).toBeGreaterThan(fast.beatDurationS);
+    expect(calm.dotPeak).toBeGreaterThan(fast.dotPeak);
+    // 느려졌으니 점멸 예산은 더 안전해진다.
+    expect(1 / calm.beatDurationS).toBeLessThan(1 / fast.beatDurationS);
+  });
+});
+
 describe("hypeMotionFrame — 절대 위상", () => {
   it("같은 remainMs면 mount 시점과 무관하게 같은 위상을 낸다", () => {
     const a = hypeMotionFrame(S(12), hypeIntensity(S(12)));
@@ -191,11 +230,11 @@ describe("hypeMotionFrame — 절대 위상", () => {
   it("20ms LUT 위상이 1ms 기준 적분과 0.005 사이클 이내다", () => {
     // 독립 재계산(정본과 같은 수식, 훨씬 촘촘한 step)
     let acc = 0;
-    let prevF = 1 / hypeChannels(hypeIntensity(S(60))).ringDurationS;
+    let prevF = 1 / beatPeriodAt(S(60));
     let checked = 0;
     for (let k = 1; k <= 60_000; k += 1) {
       const remain = S(60) - k;
-      const f = 1 / hypeChannels(hypeIntensity(remain)).ringDurationS;
+      const f = 1 / beatPeriodAt(remain);
       acc += ((prevF + f) / 2) * 0.001;
       prevF = f;
       if (k % 5_000 === 0) {
@@ -213,7 +252,8 @@ describe("hypeMotionFrame — 절대 위상", () => {
     expect(STATIC_MOTION_FRAME.dotPeak).toBe(0);
   });
   it("진폭 상한이 명세대로다(리더 0.70 · 기대돼요 1.08배 · 도트 1.45배)", () => {
-    const f = hypeMotionFrame(0, 1);
+    // 고요 구간 밖(15초)에서 잰다 — 마지막 10초는 일부러 더 깊게 뛴다(deep 계수).
+    const f = hypeMotionFrame(S(15), 1);
     expect(f.leaderPeak).toBeCloseTo(0.7, 6);
     expect(f.hopePeak).toBeCloseTo(0.08, 6);
     expect(f.dotPeak).toBeCloseTo(0.45, 6);

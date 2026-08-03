@@ -97,6 +97,7 @@ import {
   HYPE_WINDOW_S,
   STATIC_MOTION_FRAME,
   hypeChannels,
+  hypeCalm,
   hypeCssVars,
   hypeIntensity,
   hypeMotionCssVars,
@@ -370,14 +371,10 @@ function TeaserCountdown({
   motionEnabled?: boolean;
 }) {
   const target = useMemo(() => Date.parse(revealAt), [revealAt]);
-  const [now, setNow] = useState<number | null>(null);
   const onRevealRef = useRef(onReveal);
   onRevealRef.current = onReveal;
-  useEffect(() => {
-    setNow(Date.now());
-    const id = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
+  // 팝오버와 같은 공용 시계 — 초 경계에 맞춰 함께 넘어간다(각자 interval을 돌리면 어긋난다).
+  const s0 = useRemainSeconds(Number.isNaN(target) ? null : target);
   // 시각 채널은 10Hz로 '요소에 직접' 기록한다 — 리렌더는 1Hz(숫자)만. 하이프 창(60초) 밖이거나
   // 동작 줄이기면 루프를 아예 돌리지 않는다(배터리·CPU).
   const hostRef = useRef<HTMLSpanElement | null>(null);
@@ -396,8 +393,11 @@ function TeaserCountdown({
       const remainMs = target - Date.now();
       const raw = hypeIntensity(remainMs);
       const i = staticOnly ? quantizeStaticIntensity(raw) : raw;
+      // 폭풍의 눈 — 정적 모드에선 0/1로 양자화해 캡처가 결정적이게 한다.
+      const rawCalm = hypeCalm(remainMs);
+      const calm = staticOnly ? (rawCalm > 0.5 ? 1 : 0) : rawCalm;
       const vars = {
-        ...hypeCssVars(hypeChannels(i)),
+        ...hypeCssVars(hypeChannels(i, calm)),
         // 박동 위상 — 정지 모드에선 진폭 0 프레임이라 파형이 곱해져도 안 움직인다.
         ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i))
       };
@@ -423,8 +423,7 @@ function TeaserCountdown({
       if (raf) window.cancelAnimationFrame(raf);
     };
   }, [target, motionEnabled]);
-  const remain = now === null ? null : target - now;
-  const revealed = remain !== null && remain <= 0;
+  const revealed = s0 !== null && s0 <= 0;
   // 공개 시각이 지나면 즉시 실제 내용을 받아온다(캐시 우회 액션). 서버 시계가 reveal에 아직 안
   // 닿았으면(미세한 시계차) 빈 결과 → 카드가 그대로라 짧게 재시도, 풀리면 카드가 사라져 멈춘다.
   useEffect(() => {
@@ -434,8 +433,8 @@ function TeaserCountdown({
     return () => window.clearInterval(id);
   }, [revealed]);
   if (Number.isNaN(target)) return null;
-  if (remain === null) return <span className="teaser-count" ref={hostRef}>⏳</span>;
-  const s = Math.max(0, Math.floor(remain / 1000));
+  if (s0 === null) return <span className="teaser-count" ref={hostRef}>⏳</span>;
+  const s = s0;
   // 긴장 곡선: 하루 이상 남으면 초를 세지 않고 D-n만(조용히), 24시간 안쪽부터 실시간 시계.
   // 1시간 안쪽(soon)은 카드가 은은히 달아오르고, 10초 안쪽(final)은 초가 심장박동처럼 뛴다.
   if (s > 86400) {
@@ -583,6 +582,31 @@ function revealStagger(
     className: " reveal-secondary",
     style: { "--reveal-delay": `${secondaryDelayMs(title, order)}ms` } as CSSProperties
   };
+}
+
+// 남은 초 — 카드와 팝오버가 '같은 숫자를 같은 순간에' 보여주기 위한 공용 시계.
+// 예전엔 두 곳이 각자 setInterval(1000)을 돌려서, 시작 시각이 다르면 최대 1초까지 서로 다른
+// 숫자를 보여줬다(사용자 지적: 살짝 어긋난다). interval은 시작 시점 기준으로 세기 때문에
+// 아무리 정확해도 위상이 안 맞는다 → 매번 '다음 초 경계'를 직접 계산해 그때 깨어난다.
+// 그러면 어느 컴포넌트가 언제 마운트됐든 넘어가는 순간이 같다(+8ms는 경계를 확실히 넘기려는 여유).
+function useRemainSeconds(targetMs: number | null): number | null {
+  const [s, setS] = useState<number | null>(null);
+  useEffect(() => {
+    if (targetMs === null || !Number.isFinite(targetMs)) {
+      setS(null);
+      return;
+    }
+    let timer = 0;
+    const tick = () => {
+      const diff = targetMs - Date.now();
+      // ceil — 남은 시간이 0.2초여도 '1'이다. round면 0.5초 남았을 때 0을 띄워 반 박자 빠르다.
+      setS(Math.max(0, Math.ceil(diff / 1000)));
+      timer = window.setTimeout(tick, (((diff % 1000) + 1000) % 1000) + 8);
+    };
+    tick();
+    return () => window.clearTimeout(timer);
+  }, [targetMs]);
+  return s;
 }
 
 // 공개 시각을 사람이 읽는 KST로 — 팝오버 전용 정보(카드에는 카운트다운만 → 중복 없음).
@@ -1632,19 +1656,11 @@ export function PublicPoster({
     agendaDetail?.event.teaser && agendaDetail.event.teaserRevealAt
       ? agendaDetail.event.teaserRevealAt
       : null;
-  const [detailRemainS, setDetailRemainS] = useState<number | null>(null);
-  // 숫자(1Hz)와 시각 채널(10Hz)을 분리 — 카드와 '같은 시각·같은 곡선'을 쓰므로 위상이 안 어긋난다.
-  useEffect(() => {
-    if (!detailRevealAt) {
-      setDetailRemainS(null);
-      return;
-    }
-    const target = Date.parse(detailRevealAt);
-    const tick = () => setDetailRemainS(Math.max(0, Math.round((target - Date.now()) / 1000)));
-    tick();
-    const id = window.setInterval(tick, 1000);
-    return () => window.clearInterval(id);
-  }, [detailRevealAt]);
+  // 숫자(1Hz)와 시각 채널(10Hz)을 분리. 숫자는 카드와 '같은 공용 시계'를 써서 초 경계에
+  // 함께 넘어간다 — 각자 interval을 돌리면 마운트 시각 차이만큼 어긋난다(사용자 지적).
+  const detailRemainS = useRemainSeconds(
+    detailRevealAt ? Date.parse(detailRevealAt) : null
+  );
   useEffect(() => {
     if (!detailRevealAt) return;
     const staticOnly =
@@ -1658,8 +1674,11 @@ export function PublicPoster({
       const remainMs = target - Date.now();
       const raw = hypeIntensity(remainMs);
       const i = staticOnly ? quantizeStaticIntensity(raw) : raw;
+      // 폭풍의 눈 — 정적 모드에선 0/1로 양자화해 캡처가 결정적이게 한다.
+      const rawCalm = hypeCalm(remainMs);
+      const calm = staticOnly ? (rawCalm > 0.5 ? 1 : 0) : rawCalm;
       const vars = {
-        ...hypeCssVars(hypeChannels(i)),
+        ...hypeCssVars(hypeChannels(i, calm)),
         ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i))
       };
       for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
@@ -5251,6 +5270,12 @@ export function PublicPoster({
                               원 아래쪽 좁은 현(chord)에서 링 stroke와 겹쳤다(글씨 가림 버그).
                               숫자를 줄여도 안 풀리는 기하 문제라 라벨을 링 밖 독립 행으로 뺐다. */}
                           <div className="dt-count-ringbox">
+                          {/* 여운 — 마지막 10초, 초가 바뀔 때마다 링에서 파문이 한 번 퍼진다.
+                              key로 매초 다시 마운트되므로 1초에 정확히 한 번이다(점멸 예산 안전).
+                              흔들림이 멎은 자리에 이 파문만 남아 '고요한데 더 크게' 들린다. */}
+                          {detailFinal ? (
+                            <span aria-hidden="true" className="dt-echo" key={detailRemainS} />
+                          ) : null}
                           <svg aria-hidden="true" className="dt-ring" viewBox="0 0 100 100">
                             <defs>
                               {/* 호를 따라 색이 흐른다 — 단색 바보다 깊이가 생긴다. */}

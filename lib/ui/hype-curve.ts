@@ -40,10 +40,27 @@ export function hypeIntensity(remainMs: number): number {
   return RAMP_TOP + (1 - RAMP_TOP) * Math.pow(u, BODY_EXP);
 }
 
+// ── 폭풍의 눈 ────────────────────────────────────────────────────────────────
+// 강도만 끝까지 올리면 마지막 10초가 그냥 '가장 시끄러운 구간'이 된다. 그러면 클라이맥스가
+// 소음에 묻힌다. 그래서 10초에서 동요(흔들림·잔떨림)를 한 번에 재우고, 대신 박동을 느리고
+// 깊게 — 초에 맞춰 한 번씩 — 뛰게 한다. 크기·빛·색은 계속 올라가므로 조용해지지만 더
+// 커진다(검이불누 화이불치: 화려하되 사치스럽지 않게).
+export const HYPE_CALM_S = 10; // 고요가 시작되는 남은 시간
+const CALM_RAMP_S = 0.35; // '갑자기'를 유지하되 프레임 튐은 없게 하는 최소 전이
+
+export function hypeCalm(remainMs: number): number {
+  if (!Number.isFinite(remainMs)) return 0;
+  const s = remainMs / 1000;
+  if (s > HYPE_CALM_S) return 0;
+  if (s <= HYPE_CALM_S - CALM_RAMP_S) return 1;
+  return smootherstep((HYPE_CALM_S - s) / CALM_RAMP_S);
+}
+
 // I → 각 시각 채널. 지수(alpha)로 채널마다 '언제 존재감이 커지는지'를 다르게 준다:
 // 크기·색은 낮은 지수(중반에도 변화 감지), 흔들림·백색 후광은 높은 지수(후반 집중).
 export type HypeChannels = {
   intensity: number;
+  calm: number; // 폭풍의 눈 세기(0~1) — 마지막 10초
   ringDurationS: number; // 빛 파동 주기(빈도 보간)
   ring1: number; // 링 3개의 불투명도 — DOM 추가 대신 스며들게
   ring2: number;
@@ -73,19 +90,25 @@ function delayed(i: number, start: number, alpha: number): number {
   return Math.pow((i - start) / (1 - start), alpha);
 }
 
-export function hypeChannels(intensity: number): HypeChannels {
+// calm(0~1)은 '폭풍의 눈' 세기다. 동요 채널만 재우고 주기를 늘린다 — 크기·빛·색은 안 건드린다.
+export function hypeChannels(intensity: number, calm = 0): HypeChannels {
   const i = clamp01(intensity);
+  const c = clamp01(calm);
   return {
     intensity: i,
+    calm: c,
     // 하한 0.62s = 1.61Hz. 임의의 1초 창에 들어오는 박동 peak는 최대 2회, 여기에 공개
     // 순간의 단발 섬광 1회를 더해도 3회로 WCAG 2.3.1(초당 3회 '초과' 금지)을 넘지 않는다.
     // 0.55s(1.82Hz)면 최악값이 정확히 한계선에 붙어 여유가 0이라 프레임이 밀리는 순간
     // 위반이 된다 → 체감 차이가 거의 없는 선에서 여유를 남긴다.
-    ringDurationS: lerpPeriod(2.4, 0.62, i, 0.85),
+    // 고요 구간에선 빠른 떨림(최소 0.62s)을 정확히 1초 박동으로 늘린다 — 박자가 곧 시계가
+    // 된다(10..9..8을 몸으로 세게 된다).
+    ringDurationS: lerpPeriod(2.4, 0.62, i, 0.85) * (1 - c) + 1 * c,
     ring1: 0.72 * Math.pow(i, 0.9),
     ring2: 0.48 * delayed(i, 0.35, 1.4),
     ring3: 0.28 * delayed(i, 0.7, 1.6),
-    shakePx: lerp(0, 1.2, i, 2.4),
+    // 흔들림은 고요가 오면 사라진다 — 이게 '갑자기 조용해졌다'의 실체다.
+    shakePx: lerp(0, 1.2, i, 2.4) * (1 - c),
     shakeDurationS: lerpPeriod(1.4, 0.45, i, 1.6),
     goldMix: lerp(0, 0.78, i, 2.2),
     glow: lerp(0, 0.22, i, 4),
@@ -93,7 +116,7 @@ export function hypeChannels(intensity: number): HypeChannels {
     // 리더 점선 — 시작을 더 느리게(갑자기 켜진 느낌 제거), 끝을 더 빠르게(마지막 3초의
     // 차이가 눈에 읽히게). 지수 1.15로 중반 가속을 앞당긴다. 색·밝기가 아니라 질감 이동이라
     // 점멸(flash) 예산에는 포함되지 않는다.
-    dashDurationS: lerpPeriod(2.2, 0.52, i, 1.15),
+    dashDurationS: lerpPeriod(2.2, 0.52, i, 1.15) * (1 - c) + 1.1 * c,
     // 넓은 저채도 면은 작은 고채도 stroke보다 변화 감지가 약하다 → 금빛(I^2.2)보다 이른
     // I^1.35로 중반부터 온도를 만든다.
     sheetWarm: Math.pow(i, 1.35)
@@ -111,15 +134,24 @@ export function hypeChannels(intensity: number): HypeChannels {
 const PHASE_LUT_STEP_MS = 20; // 100ms 커밋보다 5배 촘촘 — 정밀도 대비 메모리(약 48KB)가 싸다
 const PHASE_LUT_N = Math.round((HYPE_WINDOW_S * 1000) / PHASE_LUT_STEP_MS) + 1;
 
+// 남은 시간 → 그 순간의 주기. calm이 섞여 있어 강도만으로는 못 구한다(폭풍의 눈에서
+// 주기가 갑자기 늘어난다). 주기가 불연속이어도 '빈도의 적분'인 위상은 연속이라 안전하다.
+export function beatPeriodAt(remainMs: number): number {
+  return hypeChannels(hypeIntensity(remainMs), hypeCalm(remainMs)).ringDurationS;
+}
+export function dashPeriodAt(remainMs: number): number {
+  return hypeChannels(hypeIntensity(remainMs), hypeCalm(remainMs)).dashDurationS;
+}
+
 // remain=60초에서 0, remain이 줄수록 증가하는 누적 사이클 수.
-function buildPhaseLut(period: (i: number) => number): Float64Array {
+function buildPhaseLut(period: (remainMs: number) => number): Float64Array {
   const lut = new Float64Array(PHASE_LUT_N);
   const dt = PHASE_LUT_STEP_MS / 1000;
   let acc = 0;
-  let prev = 1 / period(hypeIntensity(HYPE_WINDOW_S * 1000));
+  let prev = 1 / period(HYPE_WINDOW_S * 1000);
   for (let k = 1; k < PHASE_LUT_N; k += 1) {
     const remainMs = HYPE_WINDOW_S * 1000 - k * PHASE_LUT_STEP_MS;
-    const f = 1 / period(hypeIntensity(remainMs));
+    const f = 1 / period(remainMs);
     acc += ((prev + f) / 2) * dt; // 사다리꼴
     prev = f;
     lut[k] = acc;
@@ -167,19 +199,22 @@ export type HypeMotionFrame = {
 
 export function hypeMotionFrame(remainMs: number, intensity: number): HypeMotionFrame {
   const i = clamp01(intensity);
-  if (!beatLut) beatLut = buildPhaseLut((x) => hypeChannels(x).ringDurationS);
-  if (!dashLut) dashLut = buildPhaseLut((x) => hypeChannels(x).dashDurationS);
+  if (!beatLut) beatLut = buildPhaseLut(beatPeriodAt);
+  if (!dashLut) dashLut = buildPhaseLut(dashPeriodAt);
   const clamped = Math.min(HYPE_WINDOW_S * 1000, Math.max(0, remainMs));
-  const ch = hypeChannels(i);
+  const calm = hypeCalm(remainMs);
+  const ch = hypeChannels(i, calm);
+  // 고요 구간에선 박동이 느려지는 대신 '더 깊어진다' — 조용하지만 더 크게 들리는 심장.
+  const deep = 1 + 0.35 * calm;
   return {
     beatPhase: fract(cyclesAt(beatLut, clamped)),
     dashPhase: fract(cyclesAt(dashLut, clamped)),
     beatDurationS: ch.ringDurationS,
     dashDurationS: ch.dashDurationS,
-    leaderPeak: 0.7 * Math.pow(i, 1.6),
+    leaderPeak: 0.7 * Math.pow(i, 1.6) * deep,
     // 1.08은 44px 타깃의 시각 외곽을 3.5px 늘린다(hit box는 고정). 1.10 이상이면 옆 요소와 붙는다.
-    hopePeak: 0.08 * Math.pow(i, 1.4),
-    dotPeak: 0.45 * Math.pow(i, 1.6)
+    hopePeak: 0.08 * Math.pow(i, 1.4) * deep,
+    dotPeak: 0.45 * Math.pow(i, 1.6) * deep
   };
 }
 
@@ -231,6 +266,7 @@ export function hypeCssVars(c: HypeChannels): Record<string, string> {
     "--hy-glow": c.glow.toFixed(3),
     "--hy-num": c.numberScale.toFixed(3),
     "--hy-dash-dur": `${c.dashDurationS.toFixed(3)}s`,
-    "--hy-sheet-warm": c.sheetWarm.toFixed(3)
+    "--hy-sheet-warm": c.sheetWarm.toFixed(3),
+    "--hy-calm": c.calm.toFixed(3)
   };
 }
