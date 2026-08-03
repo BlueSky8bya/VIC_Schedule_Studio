@@ -10929,12 +10929,14 @@ html[data-reduce-motion] .role-segment button:active {
   margin: 0;
   border-bottom: var(--stroke-hairline) solid var(--line-soft);
   background: var(--surface-2);
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
 }
 
+/* 텍스트 스케일 통일 — 제목·버튼 = --text-ui(15), 입력 = --text-input(16, iOS 확대 방지 하한).
+   제각각이던 17/13.5/12.5 혼재를 두 단계로 줄인다. */
 .modal-backdrop-passcode .modal-head h2 {
   color: var(--ink);
-  font-size: var(--text-title);
+  font-size: var(--text-ui);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-tight);
 }
@@ -10960,20 +10962,38 @@ html[data-reduce-motion] .role-segment button:active {
 .modal-backdrop-passcode .passcode-input-row .button,
 .modal-backdrop-passcode .passcode-actions .button {
   min-height: 40px;
+  font-size: var(--text-ui);
 }
 
-/* '비밀번호 변경' 링크 — 호버 배경이 글자보다 한참 크던 것(min-height 44 + 양옆 space-4)을
-   텍스트에 딱 붙는 알약으로. */
+.modal-backdrop-passcode .passcode-box > input,
+.modal-backdrop-passcode .passcode-input-row input {
+  font-size: var(--text-input);
+}
+
+/* '비밀번호 변경' — 창 좌우 끝까지 확장한 보조 행(사용자 지적: 어중간한 알약은 균형이
+   안 맞았다). 주 동작(확인)과는 면 색으로 위계를 가른다. */
 .modal-backdrop-passcode .passcode-box > .button {
-  min-height: 30px;
-  border-radius: var(--r-pill);
-  padding-inline: var(--space-2);
-  font-size: var(--text-label);
+  justify-self: stretch;
+  width: 100%;
+  min-height: 36px;
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: var(--text-ui);
 }
 
+.modal-backdrop-passcode .passcode-box > .button:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+/* 닫기 X가 44px로 헤더 높이를 끌어올리던 것 → 32px(헤더 위아래 여백의 실체). */
 .modal-backdrop-passcode .modal-close {
-  width: var(--control-hit);
-  height: var(--control-hit);
+  width: 32px;
+  height: 32px;
+  justify-content: center;
+  border-radius: var(--r-pill);
   color: var(--muted);
 }
 
