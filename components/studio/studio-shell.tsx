@@ -4236,6 +4236,19 @@ export function StudioShell({
         setEditorVisible(false);
         return;
       }
+      // Delete: 선택한 일정 삭제. 떡밥 게이트가 열려 있으면 포커스가 비번칸(autoFocus)이라
+      // 아래 INPUT 가드에 막혀 삭제가 안 됐다(사용자 지적) → 비번칸이 '비어 있을 때'만
+      // 여기서 먼저 처리한다(입력 중이면 평소대로 글자 지우기가 우선).
+      if (e.key === "Delete" && selectedEventId && !modal) {
+        const el = t as HTMLInputElement | null;
+        const inEmptyGate =
+          teaserGateActive && el?.tagName === "INPUT" && el.type === "password" && !el.value;
+        if (inEmptyGate) {
+          e.preventDefault();
+          deleteEvent(selectedEventId);
+          return;
+        }
+      }
       if (tag === "INPUT" || tag === "TEXTAREA" || t?.isContentEditable || modal) return;
       // 백틱(`) — 제목칸으로 바로 포커스만(글자는 안 넣음). 글자 자동포커스가 안 먹는 환경용 확실한 키.
       if (editorVisible && e.key === "`") {
@@ -4308,7 +4321,7 @@ export function StudioShell({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events, editorVisible, form]);
+  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events, editorVisible, form, teaserGateActive]);
 
   // 모바일 아젠다도 데스크톱과 동일하게 — 비공개 일정은 "비공개 일정 보기"로 직접 켜기 전까진
   // 누구에게도(개발자·소유자 포함) 보이지 않는다. 방송사고 방지: 진입/새로고침 시 항상 공개 기본.

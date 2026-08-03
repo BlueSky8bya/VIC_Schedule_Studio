@@ -379,7 +379,19 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
   const hh = String(Math.floor((s % 86400) / 3600)).padStart(2, "0");
   const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
   const ss = String(s % 60).padStart(2, "0");
-  const cls = `teaser-count is-live${s <= 3600 ? " soon" : ""}${s <= 10 ? " final" : ""}`;
+  // 1분 안쪽(hype) = 유튜브 최초공개 직전의 그 난리 — 카드가 무지개빛으로 요동치고
+  // 남은 초가 통째로 커진다. 10초 안쪽(final)은 매 초 카운트가 쿵 떨어진다.
+  const cls = `teaser-count is-live${s <= 3600 ? " soon" : ""}${s <= 60 ? " hype" : ""}${
+    s <= 10 ? " final" : ""
+  }`;
+  if (s <= 60 && s > 0) {
+    // 초만 크게(분/시는 0이라 잡음) — key로 매 초 리마운트해 숫자가 쿵 떨어지는 연출.
+    return (
+      <span className={cls}>
+        <b key={s}>{s}</b>
+      </span>
+    );
+  }
   return <span className={cls}>{s <= 0 ? "✨ 공개!" : `${hh}:${mm}:${ss}`}</span>;
 }
 
@@ -4849,23 +4861,25 @@ export function PublicPoster({
                   {/* 떡밥 전용 — 카드엔 없는 정보만: 공개 시각(절대시각) + 기대돼요.
                       카운트다운은 카드가 담당(중복 데이터 없음, 사용자 결정). */}
                   {teaserActive && event.teaserRevealAt ? (
-                    /* 한 축 가운데 정렬(애플 폼 위계): 오브 → 조용한 라벨 → 굵은 시각 → 주 동작 → 각주. */
+                    /* 한 줄 요약 + 주 동작만 — 각주·여백은 뺐다(사용자 지적: 쓸데없는 설명·빈 공간).
+                       오브를 시각 옆에 나란히 둬 세로 낭비를 없애고, 기대돼요가 바로 손에 닿는다. */
                     <div className="detail-teaser">
-                      <span aria-hidden="true" className="dt-orb">
-                        🔮
-                      </span>
-                      <p className="dt-when-label">공개 예정</p>
-                      <p className="dt-when-time">{formatRevealKst(event.teaserRevealAt)}</p>
+                      <p className="dt-when">
+                        <span aria-hidden="true" className="dt-orb">
+                          🔮
+                        </span>
+                        <b>{formatRevealKst(event.teaserRevealAt)}</b>
+                        <em>공개</em>
+                      </p>
                       <button
                         aria-pressed={myHopeIds.has(event.id)}
                         className={`dt-hope${myHopeIds.has(event.id) ? " on" : ""}`}
                         onClick={() => toggleHope(event)}
                         type="button"
                       >
-                        기대돼요
+                        {myHopeIds.has(event.id) ? "기대 중" : "기대돼요"}
                         {hopeCountOf(event) > 0 ? <b>{hopeCountOf(event)}</b> : null}
                       </button>
-                      <p className="dt-hint">공개 순간, 이 카드가 실제 일정으로 바뀌어요</p>
                     </div>
                   ) : null}
                 </div>

@@ -2417,19 +2417,38 @@ p.agenda-sub.hope-badge {
   color: #6a58e8;
   font-size: 11.5px;
 }
-/* 떡밥 상세 — 한 축 가운데(애플 폼 위계): 오브 → 조용한 라벨 → 굵은 시각 → 주 동작 → 각주 */
+/* 떡밥 상세 — 한 줄 요약(오브+시각) + 주 동작. 각주·큰 여백 없이 컴팩트하게. */
 .detail-teaser {
   display: grid;
-  gap: 4px;
+  gap: 8px;
   justify-items: center;
-  padding: 4px 0 2px;
   text-align: center;
 }
+.detail-teaser .dt-when {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 5px 12px 5px 10px;
+  border-radius: 999px;
+  background: rgb(124 108 240 / 10%);
+  color: #4d3f8f;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.detail-teaser .dt-when b {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.detail-teaser .dt-when em {
+  font-style: normal;
+  font-weight: 700;
+  color: rgb(90 80 130 / 62%);
+}
 .detail-teaser .dt-orb {
-  font-size: 34px;
+  font-size: 17px;
   line-height: 1;
-  margin-bottom: 2px;
-  filter: drop-shadow(0 3px 8px rgb(124 108 240 / 40%));
+  filter: drop-shadow(0 2px 5px rgb(124 108 240 / 40%));
   animation: dt-orb-float 2.6s ease-in-out infinite alternate;
 }
 @keyframes dt-orb-float {
@@ -2437,23 +2456,8 @@ p.agenda-sub.hope-badge {
     transform: translateY(0);
   }
   to {
-    transform: translateY(-4px);
+    transform: translateY(-2px);
   }
-}
-.detail-teaser .dt-when-label {
-  margin: 0;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: rgb(90 80 130 / 62%);
-}
-.detail-teaser .dt-when-time {
-  margin: 0 0 8px;
-  font-size: 15px;
-  font-weight: 800;
-  color: #4d3f8f;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.01em;
 }
 .detail-teaser .dt-hope {
   display: inline-flex;
@@ -2489,12 +2493,124 @@ p.agenda-sub.hope-badge {
 .detail-teaser .dt-hope b {
   font-variant-numeric: tabular-nums;
 }
-.detail-teaser .dt-hint {
-  margin: 6px 0 0;
-  font-size: 11px;
-  color: rgb(90 80 130 / 55%);
-}
 html[data-reduce-motion] .detail-teaser .dt-orb {
+  animation: none;
+}
+
+/* ── 1분 전 하이프(유튜브 최초공개 직전 느낌) ────────────────────────────
+   카드가 무지개빛으로 요동치고, 남은 초가 통째로 크게 쿵쿵 떨어진다. */
+.teaser-count.hype {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.teaser-count.hype b {
+  display: inline-block;
+  min-width: 1.1em;
+  font-size: 1.45em;
+  font-weight: 900;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 10px rgb(255 255 255 / 90%);
+  animation: hype-tick 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes hype-tick {
+  0% {
+    transform: translateY(-38%) scale(1.5);
+    opacity: 0.2;
+  }
+  35% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  45% {
+    transform: scale(0.92);
+  }
+  60% {
+    transform: scale(1);
+  }
+}
+.public-event.teaser:has(.teaser-count.hype),
+.agenda-item.teaser:has(.teaser-count.hype) {
+  /* 카드 기본 overflow:hidden이면 파동 링이 잘린다 — 하이프 동안만 풀고 기준도 잡는다.
+     ⚠ 카드 박스 자체는 절대 흔들지 않는다 — 클릭 타깃이 움직이면 누르기가 어렵다(HCI).
+     흔들림은 아래 '내용'에만 주고, 카드는 색·빛·파동만 담당한다. */
+  position: relative;
+  overflow: visible;
+  animation: hype-hue 1.4s linear infinite;
+  box-shadow:
+    0 0 0 2px rgb(255 255 255 / 65%),
+    0 6px 22px rgb(124 108 240 / 65%);
+  z-index: 3;
+}
+.public-event.teaser:has(.teaser-count.hype) .teaser-main,
+.agenda-item.teaser:has(.teaser-count.hype) > * {
+  animation: hype-shake 0.42s ease-in-out infinite;
+}
+@keyframes hype-shake {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0);
+  }
+  25% {
+    transform: translate3d(-1.5px, 1px, 0) rotate(-0.5deg);
+  }
+  50% {
+    transform: translate3d(1.5px, -1px, 0) rotate(0.5deg);
+  }
+  75% {
+    transform: translate3d(-1px, -1px, 0) rotate(-0.3deg);
+  }
+}
+@keyframes hype-hue {
+  0%,
+  100% {
+    filter: hue-rotate(0) saturate(1.15) brightness(1.06);
+  }
+  50% {
+    filter: hue-rotate(-32deg) saturate(1.5) brightness(1.16);
+  }
+}
+/* 카드를 둘러싼 빛 파동 — 1초마다 한 겹씩 퍼진다(공개가 임박했다는 신호). */
+.public-event.teaser:has(.teaser-count.hype)::before,
+.agenda-item.teaser:has(.teaser-count.hype)::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 2px solid rgb(196 181 253 / 90%);
+  animation: hype-ring 1s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes hype-ring {
+  0% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  100% {
+    transform: scale(1.14);
+    opacity: 0;
+  }
+}
+/* 10초 안쪽 — 파동이 더 빨라지고 숫자가 붉게 달아오른다. */
+.public-event.teaser:has(.teaser-count.final)::before,
+.agenda-item.teaser:has(.teaser-count.final)::before {
+  animation-duration: 0.55s;
+  border-color: rgb(255 214 122 / 95%);
+}
+.teaser-count.final b {
+  color: #ffe8a3;
+  text-shadow:
+    0 0 12px rgb(255 214 122 / 95%),
+    0 0 26px rgb(255 160 60 / 70%);
+}
+html[data-reduce-motion] .teaser-count.hype b,
+html[data-reduce-motion] .public-event.teaser:has(.teaser-count.hype),
+html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.hype),
+html[data-reduce-motion] .public-event.teaser:has(.teaser-count.hype) .teaser-main,
+html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.hype) > *,
+html[data-reduce-motion] .public-event.teaser:has(.teaser-count.hype)::before,
+html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.hype)::before {
   animation: none;
 }
 html[data-reduce-motion] .teaser-count.soon,
