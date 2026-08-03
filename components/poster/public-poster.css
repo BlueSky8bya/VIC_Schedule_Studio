@@ -2826,6 +2826,94 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
 .agenda-detail-sheet.is-hype .dt-orb {
   animation: hype-shake var(--hy-shake-dur, 1.4s) ease-in-out infinite;
 }
+
+/* ── 팝오버 링 카운트다운(1분 안쪽) — 계획 안 B ─────────────────────────
+   링 = 물리 시간(60→0), 숫자 크기·글로우 = 강도 곡선. 정보와 감정을 분리한다. */
+.dt-count {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 132px;
+  height: 132px;
+  margin: 2px auto 0;
+}
+.dt-ring {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* 12시 방향에서 시작 */
+}
+.dt-ring-track {
+  fill: none;
+  stroke: rgb(124 108 240 / 14%);
+  stroke-width: 7;
+}
+.dt-ring-progress {
+  fill: none;
+  stroke: color-mix(in srgb, #7c6cf0 calc((1 - var(--hy-gold, 0)) * 100%), #f0a83a);
+  stroke-width: 7;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 calc(2px + var(--hy-glow, 0) * 40px) rgb(255 214 122 / 85%));
+  transition: stroke-dashoffset 0.95s linear; /* 1Hz 갱신 사이를 이어 붙여 부드럽게 */
+}
+.dt-ring-spark {
+  fill: color-mix(in srgb, #c4b5fd calc((1 - var(--hy-gold, 0)) * 100%), #ffe8a3);
+  filter: drop-shadow(0 0 calc(3px + var(--hy-glow, 0) * 30px) rgb(255 236 190 / 90%));
+  transition: transform 0.95s linear;
+}
+.dt-count-core {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  line-height: 1;
+}
+.dt-count-core strong {
+  /* 강도에 따라 연속으로 커진다(1.05 → 1.85배 기준을 팝오버 크기에 맞게 스케일). */
+  font-size: calc(var(--hy-num, 1.05) * 26px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, #4d3f8f calc((1 - var(--hy-gold, 0)) * 100%), #a35f05);
+  text-shadow: 0 0 calc(var(--hy-glow, 0) * 40px) rgb(255 214 122 / 90%);
+  animation: dt-count-tick 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes dt-count-tick {
+  0% {
+    transform: translateY(-16%) scale(1.28);
+  }
+  38% {
+    transform: translateY(0) scale(1);
+  }
+  52% {
+    transform: scale(0.95);
+  }
+  70% {
+    transform: scale(1);
+  }
+}
+.dt-count-core span {
+  font-size: 12px;
+  font-weight: 800;
+  color: rgb(90 80 130 / 62%);
+}
+.dt-count-label {
+  position: absolute;
+  bottom: 14px;
+  margin: 0;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: rgb(90 80 130 / 62%);
+}
+.dt-count.is-final .dt-count-label {
+  color: #a35f05;
+}
+html[data-reduce-motion] .dt-count-core strong,
+html[data-reduce-motion] .dt-ring-progress,
+html[data-reduce-motion] .dt-ring-spark {
+  animation: none;
+  transition: none;
+}
 .agenda-detail-sheet.is-hype .dt-hope {
   animation: hype-hope-beat var(--hy-ring-dur, 2.4s) cubic-bezier(0.34, 1.56, 0.64, 1) infinite;
 }

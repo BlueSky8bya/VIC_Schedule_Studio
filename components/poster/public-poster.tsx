@@ -5070,21 +5070,53 @@ export function PublicPoster({
                     /* 한 줄 요약 + 주 동작만 — 각주·여백은 뺐다(사용자 지적: 쓸데없는 설명·빈 공간).
                        오브를 시각 옆에 나란히 둬 세로 낭비를 없애고, 기대돼요가 바로 손에 닿는다. */
                     <div className="detail-teaser">
-                      {/* 1분 안쪽엔 절대시각이 무의미해진다 → 긴박한 문구로 교체(카운트다운
-                          숫자는 카드가 담당하므로 여기선 중복 없이 분위기만). */}
-                      <p className="dt-when">
-                        <span aria-hidden="true" className="dt-orb">
-                          🔮
-                        </span>
-                        {detailHype ? (
-                          <b>{detailFinal ? "곧 공개!" : "잠시 후 공개"}</b>
-                        ) : (
-                          <>
-                            <b>{formatRevealKst(event.teaserRevealAt)}</b>
-                            <em>공개</em>
-                          </>
-                        )}
-                      </p>
+                      {/* 1분 안쪽 = 팝오버가 '카운트다운 무대'가 된다(계획 안 B: 링 진행률 +
+                          중앙 대형 숫자). 링은 물리 시간(60→0)을, 글로우·크기는 강도 곡선을
+                          따르므로 정보와 감정이 분리된다. 그 밖에는 공개 시각 알약. */}
+                      {detailHype && detailRemainS !== null ? (
+                        <div className={`dt-count${detailFinal ? " is-final" : ""}`}>
+                          <svg aria-hidden="true" className="dt-ring" viewBox="0 0 100 100">
+                            <circle className="dt-ring-track" cx="50" cy="50" r="44" />
+                            <circle
+                              className="dt-ring-progress"
+                              cx="50"
+                              cy="50"
+                              pathLength={1}
+                              r="44"
+                              style={{
+                                strokeDasharray: 1,
+                                strokeDashoffset: 1 - Math.max(0, Math.min(1, detailRemainS / HYPE_WINDOW_S))
+                              }}
+                            />
+                            {/* 진행 끝을 따라가는 작은 별 — 링 위를 도는 장식(캔버스 없이 SVG만). */}
+                            <circle
+                              className="dt-ring-spark"
+                              cx="50"
+                              cy="6"
+                              r="3.2"
+                              style={{
+                                transform: `rotate(${360 * (1 - detailRemainS / HYPE_WINDOW_S)}deg)`,
+                                transformOrigin: "50px 50px"
+                              }}
+                            />
+                          </svg>
+                          <div className="dt-count-core">
+                            <strong key={detailRemainS}>{detailRemainS}</strong>
+                            <span>초</span>
+                          </div>
+                          <p className="dt-count-label">
+                            {detailFinal ? "곧 공개!" : "최초공개까지"}
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="dt-when">
+                          <span aria-hidden="true" className="dt-orb">
+                            🔮
+                          </span>
+                          <b>{formatRevealKst(event.teaserRevealAt)}</b>
+                          <em>공개</em>
+                        </p>
+                      )}
                       <button
                         aria-pressed={myHopeIds.has(event.id)}
                         className={`dt-hope${myHopeIds.has(event.id) ? " on" : ""}`}
