@@ -393,10 +393,9 @@ export function StudioShell({
   const [teaserPickerOpen, setTeaserPickerOpen] = useState(false);
   // 최초공개(떡밥) 편집 게이트 — 아직 안 풀린 떡밥 일정은 편집실에서도 제목이 ???로 가려지고,
   // 클릭하면 비공개 레이어 비밀번호 확인을 먼저 거친다(방송 화면 공유 중 오클릭 유출 방지).
-  // 한 번 확인한 일정 id는 이 화면이 살아 있는 동안 기억한다(새로고침 시 초기화 — 의도).
-  const [teaserUnlockedIds, setTeaserUnlockedIds] = useState<ReadonlySet<string>>(
-    () => new Set<string>()
-  );
+  // ⚠ 통과는 '지금 연 이 카드 한 번'만 유효 — 카드를 다시 누르거나 닫으면 무조건 재입력
+  // (사용자 결정: 세션 기억 금지. 방송 중 1분 뒤 오클릭에도 바로 열리면 안 된다).
+  const [teaserUnlockedId, setTeaserUnlockedId] = useState<string | null>(null);
   const [teaserGatePass, setTeaserGatePass] = useState("");
   const [teaserGateError, setTeaserGateError] = useState<string | null>(null);
   const [teaserGateBusy, setTeaserGateBusy] = useState(false);
@@ -660,6 +659,11 @@ export function StudioShell({
   // 새 일정/일정 수정 카드는 달력에서 날짜(또는 일정)를 "선택했을 때"만 보여준다.
   // 편집실 진입 시엔 카드를 띄우지 않고, 칸을 클릭하면 그제서야 나온다.
   const [editorVisible, setEditorVisible] = useState(false);
+  // 편집 카드/시트가 닫히면 떡밥 게이트 통과도 즉시 소멸 — 다음에 누르면 무조건 비번 재입력
+  // (사용자 결정: 방송 중 오클릭 방지가 목적이라 '기억'이 있으면 안 된다).
+  useEffect(() => {
+    if (!editorVisible && mobileEditId === null) setTeaserUnlockedId(null);
+  }, [editorVisible, mobileEditId]);
   // 편집 폼의 remount 키 — '사용자가 명시적으로 다른 날짜/일정을 고를 때'만 올린다(selectDate·
   // selectEvent·moveMonth). 저장·삭제 같은 내부 상태 변화로는 안 올려서 폼이 다시 마운트되지(깜빡이지)
   // 않게 한다. (이전엔 key가 selectedEventId라 저장 시 null로 바뀌며 폼이 깜빡였다.)
@@ -1108,7 +1112,7 @@ export function StudioShell({
   const teaserGateActive = Boolean(
     selectedLiveEvent &&
       teaserStillHidden(selectedLiveEvent) &&
-      !teaserUnlockedIds.has(selectedLiveEvent.id)
+      teaserUnlockedId !== selectedLiveEvent.id
   );
   // 업 도움을 편집 중이면 팝오버의 점선·리더 라인을 띠와 같은 장미색으로(보라=일반 일정).
   const selectedIsSupport = Boolean(selectedLiveEvent?.isSupport);
@@ -3245,9 +3249,10 @@ export function StudioShell({
   function selectEvent(event: StudioScheduleEvent, showPanel = true) {
     setSelectedDate(event.startsAt.slice(0, 10));
     setSelectedEventId(event.id);
-    // 다른 일정으로 옮겨가면 게이트 입력/오류는 새로 시작한다(통과 기록은 유지).
+    // 일정을 (다시) 누르면 게이트도 처음부터 — 통과 기록은 '한 번 연 카드'에만 유효하다.
     setTeaserGatePass("");
     setTeaserGateError(null);
+    setTeaserUnlockedId(null);
     // 원본을 기준(baseline)으로 삼고, TTL 안에 미저장 임시 내용이 있으면 그걸 대신 띄운다.
     const base = eventToForm(event);
     editBaselineRef.current = draftFingerprint(base);
@@ -3360,11 +3365,7 @@ export function StudioShell({
       if (res.ok) {
         hapticSuccess(); // ② 서버확인
         setTeaserGatePass("");
-        setTeaserUnlockedIds((prev) => {
-          const next = new Set(prev);
-          next.add(eventId);
-          return next;
-        });
+        setTeaserUnlockedId(eventId); // 이 카드, 이번 열림 한 번만 — 닫히거나 재선택하면 리셋
         bumpEditor(); // 게이트 → 폼: 같은 카드 안에서 폼이 새로 떠오르는 전환
       } else {
         hapticError();
