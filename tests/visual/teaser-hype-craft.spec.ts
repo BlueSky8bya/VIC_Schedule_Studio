@@ -144,6 +144,51 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
     ).toBeGreaterThan(3);
   });
 
+  test("최악 케이스(10초·두 자리·고요 최대)에도 숫자가 링을 넘지 않는다", async ({ page }) => {
+    for (const width of [1440, 390]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/visual-fixture/poster", { waitUntil: "load" });
+      await page.evaluate(async () => {
+        await document.fonts.ready;
+      });
+      const res = await page.evaluate(() => {
+        const host = document.createElement("div");
+        host.className = "agenda-detail-sheet is-hype is-teaser";
+        host.innerHTML =
+          '<div class="dt-count is-final"><div class="dt-count-ringbox">' +
+          '<svg class="dt-ring" viewBox="0 0 100 100">' +
+          '<circle class="dt-ring-track" cx="50" cy="50" r="44"></circle></svg>' +
+          '<div class="dt-count-core"><strong>10</strong></div></div></div>';
+        document.body.appendChild(host);
+        // 10초 시점의 강도 곡선 값 + 고요 최대.
+        host.style.setProperty("--hy-num", "1.667");
+        host.style.setProperty("--hy-calm", "1");
+        host.style.setProperty("--hy-emerge", "1");
+        const svg = host.querySelector("svg")!;
+        const strong = host.querySelector<HTMLElement>(".dt-count-core strong")!;
+        const box = svg.getBoundingClientRect();
+        const nb = strong.getBoundingClientRect();
+        const scale = box.width / 100;
+        // 링 안쪽 반지름(viewBox 단위): r 44 − stroke/2.
+        const sw = parseFloat(getComputedStyle(host.querySelector(".dt-ring-track")!).strokeWidth);
+        const innerR = 44 - sw / 2;
+        const font = parseFloat(getComputedStyle(strong).fontSize);
+        const halfW = nb.width / 2 / scale; // advance 폭은 정확하다
+        // 높이는 line box가 아니라 '잉크'로 잰다 — 숫자는 어센더/디센더 여백에 닿지 않아
+        // line box로 재면 실제보다 훨씬 크게 나온다(cap height ≈ 0.72em).
+        const halfH = (font * 0.72) / 2 / scale;
+        // 글자 잉크 상자의 모서리가 안쪽 원 안에 있어야 한다.
+        const corner = Math.hypot(halfW, halfH);
+        host.remove();
+        return { innerR, halfW, halfH, corner, font: `${font}px` };
+      });
+      expect(
+        res.corner,
+        `${width}px에서 숫자 상자(${res.halfW.toFixed(1)}×${res.halfH.toFixed(1)}, ${res.font})가 링 안쪽 반지름 ${res.innerR}를 넘는다`
+      ).toBeLessThan(res.innerR - 2);
+    }
+  });
+
   test("별이 진행 호의 끝에 정확히 붙어 있다", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto("/visual-fixture/poster", { waitUntil: "load" });

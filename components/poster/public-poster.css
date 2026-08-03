@@ -2850,8 +2850,8 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
    transform/opacity만 쓴다 → 레이아웃에 전혀 관여하지 않으므로 연출 중 카드 높이가
    변하지 않는다(늦게 mount하거나 display를 푸는 방식은 금지). 지연은 인라인 변수. */
 .reveal-secondary {
-  animation: reveal-secondary-rise 0.36s cubic-bezier(0.22, 1, 0.36, 1) var(--reveal-delay, 0ms)
-    both;
+  animation: reveal-secondary-rise 0.36s var(--ease-enter, cubic-bezier(0.05, 0.7, 0.1, 1))
+    var(--reveal-delay, 0ms) both;
 }
 @keyframes reveal-secondary-rise {
   from {
@@ -2866,7 +2866,7 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
 /* 태그·형식색 점은 다른 어휘로 — 조용히 올라오는 부제목과 달리 톡 튀어나온다.
    정보 위계상 마지막에 오는 '표식'이라 등장이 짧고 탄력적인 편이 맞다. */
 .agenda-detail-tag.reveal-secondary {
-  animation: reveal-tag-pop 0.34s cubic-bezier(0.2, 1.5, 0.35, 1) var(--reveal-delay, 0ms) both;
+  animation: reveal-tag-pop 0.34s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1)) var(--reveal-delay, 0ms) both;
 }
 @keyframes reveal-tag-pop {
   0% {
@@ -2884,7 +2884,7 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
 }
 /* 카드의 형식색 점은 개별로 차례차례. 부모(서브 줄·메타)의 지연에 이어 붙인다. */
 .reveal-secondary .pill-dots i {
-  animation: reveal-tag-pop 0.3s cubic-bezier(0.2, 1.5, 0.35, 1)
+  animation: reveal-tag-pop 0.3s var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1))
     calc(var(--reveal-delay, 0ms) + 90ms) both;
 }
 .reveal-secondary .pill-dots i:nth-child(2) {
@@ -3019,10 +3019,24 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   transform-origin: center top;
   /* 세로도 함께 자라야 팝오버 높이가 튀지 않는다. 다 자란 뒤(=1)에는 내용보다 넉넉해
      박동 링(inset -5px)이 잘리지 않는다. */
-  max-height: calc(var(--hy-emerge, 1) * 200px);
+  --dt-emerge-h: 200px; /* 내용(약 171px)보다 넉넉히 — 다 자란 뒤엔 마스크·클립이 안 닿는다 */
+  max-height: calc(var(--hy-emerge, 1) * var(--dt-emerge-h));
   overflow: clip;
   /* 박동 링은 링박스 밖 5px까지 나간다 — 여백 없이 clip하면 위쪽이 잘린다. */
   overflow-clip-margin: 8px;
+  /* 잘리는 모서리를 그대로 두면 칼로 자른 단면이 보인다. 클립 지점 바로 위를 20px에 걸쳐
+     흐리게 지워 '차오르는' 느낌으로 만든다 — 다 자란 뒤(=1)엔 페이드 구간이 내용 아래로
+     빠져 아무 영향이 없다. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 calc(var(--hy-emerge, 1) * var(--dt-emerge-h) - 20px),
+    transparent calc(var(--hy-emerge, 1) * var(--dt-emerge-h))
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 calc(var(--hy-emerge, 1) * var(--dt-emerge-h) - 20px),
+    transparent calc(var(--hy-emerge, 1) * var(--dt-emerge-h))
+  );
 }
 .dt-when {
   opacity: calc(1 - var(--hy-emerge, 0));
@@ -3082,8 +3096,9 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   position: absolute;
   inset: -5px;
   border-radius: 999px;
-  border: 2px solid
-    color-mix(in srgb, rgb(124 108 240 / 55%) calc((1 - var(--hy-gold, 0)) * 100%), rgb(255 202 106 / 75%));
+  /* 헤어라인 — 굵은 테두리는 링과 경쟁한다. 얇게 두고 세기는 opacity로만 말한다. */
+  border: 1.5px solid
+    color-mix(in srgb, rgb(124 108 240 / 60%) calc((1 - var(--hy-gold, 0)) * 100%), rgb(255 202 106 / 80%));
   opacity: 0;
   pointer-events: none;
 }
@@ -3097,15 +3112,16 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   position: absolute;
   inset: -5px;
   border-radius: 999px;
-  border: 2px solid rgb(255 214 122 / 85%);
+  border: 1.5px solid rgb(255 214 122 / 85%);
   opacity: 0;
   pointer-events: none;
-  animation: dt-echo-out 1.15s cubic-bezier(0.16, 0.8, 0.3, 1) both;
+  /* 잔향은 나가면서 감속한다 — 등장 이징(감속)이 물리적으로 맞다. */
+  animation: dt-echo-out 1.15s var(--ease-enter, cubic-bezier(0.05, 0.7, 0.1, 1)) both;
 }
 @keyframes dt-echo-out {
   0% {
     transform: scale(1);
-    opacity: 0.7;
+    opacity: 0.62;
   }
   100% {
     transform: scale(1.34);
@@ -3121,17 +3137,18 @@ html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-count-ringbox::after {
    지나간 구간(빈 트랙)은 옅은 잉크 자국만 남는다. 시계 문자판 같은 '계기' 인상.
    ⚠ 안쪽(숫자 쪽)에 두면 링박스 후광의 경계와 겹쳐 숫자에 묻혀 버린다 — 반드시 바 위. */
 .dt-ring-ticks line {
-  stroke: rgb(90 76 170 / 42%);
-  stroke-width: 2.6;
+  /* 눈금은 보조 정보다 — 바보다 앞에 나서면 안 된다(deference). 얇고 낮은 대비로. */
+  stroke: rgb(90 76 170 / 32%);
+  stroke-width: 2;
   /* butt — round 캡은 양 끝을 stroke 절반만큼 늘려 바 밖으로 삐져나온다. */
   stroke-linecap: butt;
   transition: stroke 0.5s var(--ease);
   /* 고요가 올수록 눈금은 물러난다 — 마지막엔 숫자와 호만 남는 게 더 크게 읽힌다.
      예전엔 10초에 .is-final로 한 번에 바뀌어 뚝 끊겨 보였다(사용자 지적). */
-  opacity: calc(1 - var(--hy-calm, 0) * 0.7);
+  opacity: calc(1 - var(--hy-calm, 0) * 0.85);
 }
 .dt-ring-ticks line.on {
-  stroke: rgb(255 255 255 / 88%);
+  stroke: rgb(255 255 255 / 62%);
 }
 /* 호 그라데이션 — 단색 바보다 깊이가 생긴다. 강도에 따라 세 정지점이 함께 데워진다. */
 .dt-grad-a {
@@ -3191,28 +3208,29 @@ html[data-eye-comfort] .dt-grad-c {
 .dt-count-core strong {
   /* 강도에 따라 연속으로 커진다(1.05 → 1.85배 기준을 팝오버 크기에 맞게 스케일).
      고요 구간에서는 그 위에 한 번 더 자란다 — 계기가 물러난 자리를 숫자가 채운다. */
-  font-size: calc(var(--hy-num, 1.05) * 26px * (1 + var(--hy-calm, 0) * 0.4));
+  /* 고요 구간 추가 성장 0.4 → 0.62. 최악 케이스는 '10'(두 자리 + 고요 최대)이고, 그때
+     글자 폭이 링 안쪽 현(chord)을 넘으면 숫자가 링을 뚫는다 — 0.75는 그 경계에 붙어 있었다. */
+  font-size: calc(var(--hy-num, 1.05) * 26px * (1 + var(--hy-calm, 0) * 0.62));
   font-weight: 900;
   font-variant-numeric: tabular-nums;
+  /* 큰 숫자는 자간이 벌어져 보인다 — 광학 보정(애플이 큰 수치에 쓰는 트래킹). */
+  letter-spacing: -0.02em;
   /* 금빛으로 갈수록 '옅어지면' 클라이맥스에서 되레 존재감이 약해진다(실측 스트립에서 8·3초
      숫자가 흐릿한 갈색으로 빠졌다) → 끝점을 깊은 호박색으로 낮춰 색만 데워지고 농도는 유지한다.
      후광도 줄인다(넓은 헤일로가 글자 가장자리를 갉아먹어 더 흐려 보였다). */
   color: color-mix(in srgb, #4d3f8f calc((1 - var(--hy-gold, 0)) * 100%), #6b3d00);
   text-shadow: 0 0 calc(var(--hy-glow, 0) * 22px) rgb(255 200 96 / 70%);
-  animation: dt-count-tick 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* 오버슈트를 키프레임에 손으로 그리면(1.28 → 0.95 → 1) 물리와 다른 인공적인 튐이 된다.
+     시작/끝만 두고 잔진동은 스프링 토큰이 만들게 한다 — 도착 직전 감속이 자연스럽다. */
+  animation: dt-count-tick var(--dur-spring-smooth, 0.5s)
+    var(--spring-smooth, var(--ease-spring)) both;
 }
 @keyframes dt-count-tick {
-  0% {
-    transform: translateY(-16%) scale(1.28);
+  from {
+    transform: translateY(-13%) scale(1.16);
   }
-  38% {
-    transform: translateY(0) scale(1);
-  }
-  52% {
-    transform: scale(0.95);
-  }
-  70% {
-    transform: scale(1);
+  to {
+    transform: none;
   }
 }
 .dt-count-label {
@@ -3232,22 +3250,26 @@ html[data-eye-comfort] .dt-grad-c {
    동요는 곡선이 이미 재웠다(shake→0, 주기→1초). 여기서는 '남은 것'을 다듬는다:
    숫자는 더 깊고 느리게 떨어지고, 눈금은 물러나고, 호는 굵어진다.
    화려함을 더 얹는 대신 요소 수를 줄여 남은 것이 커 보이게 한다(검이불누 화이불치). */
+/* 고요 구간의 매초는 '튀는' 게 아니라 '내려앉는다' — 스프링(잔진동)이 아니라 감속 이징.
+   같은 동작을 두 어휘로 나눠 구간의 성격 차이를 몸으로 읽히게 한다. */
 .dt-count.is-final .dt-count-core strong {
-  animation: dt-count-toll 1s cubic-bezier(0.16, 0.9, 0.28, 1);
+  animation: dt-count-toll 0.72s var(--ease-enter, cubic-bezier(0.05, 0.7, 0.1, 1)) both;
 }
 @keyframes dt-count-toll {
-  0% {
-    transform: translateY(-8%) scale(1.16);
-    filter: brightness(1.5);
+  /* opacity는 넣지 않는다 — 숫자가 흐렸다 진해지면 클라이맥스에서 존재감이 흔들린다.
+     크기만으로 '내려앉는' 무게를 만든다. */
+  from {
+    transform: translateY(-5%) scale(1.09);
   }
-  30% {
-    transform: translateY(0) scale(1);
-    filter: brightness(1.12);
+  to {
+    transform: none;
   }
-  100% {
-    transform: scale(1);
-    filter: brightness(1);
-  }
+}
+/* ⚠ 특이도: 아래 정지 규칙은 `.dt-count.is-final .dt-count-core strong`(0,3,1)보다
+   높아야 한다. `html[data-reduce-motion] .dt-count-core strong`은 (0,2,2)라 져서,
+   동작 줄이기에서도 이 애니메이션이 계속 돌고 export가 중간 프레임을 잡았다. */
+html[data-reduce-motion] .dt-count.is-final .dt-count-core strong {
+  animation: none;
 }
 /* ── 고요에서의 시선 몰입(전부 --hy-calm 연속) ────────────────────────────
    임계값(.is-final)에 매달면 '애니메이션 없이 확 바뀌는' 느낌이 난다 — 곡선은 이미

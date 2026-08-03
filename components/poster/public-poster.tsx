@@ -657,6 +657,16 @@ function teaserStillAhead(ev: PublicScheduleEvent): boolean {
   return Boolean(ev.teaser && ev.teaserRevealAt && Date.parse(ev.teaserRevealAt) > Date.now());
 }
 
+// 링 아래 캡션용 — 시각만. 날짜는 팝오버 머리글이 이미 말하고 있어 다시 쓰면 중복이다.
+function formatRevealClockKst(iso: string): string {
+  const t = new Date(Date.parse(iso) + 9 * 3_600_000);
+  const hh = t.getUTCHours();
+  const h12 = hh % 12 === 0 ? 12 : hh % 12;
+  const mm = t.getUTCMinutes();
+  // '공개'는 바로 위 라벨("최초공개까지")이 이미 말한다 — 캡션은 시각만 말한다.
+  return `${hh < 12 ? "오전" : "오후"} ${h12}시${mm ? ` ${String(mm).padStart(2, "0")}분` : ""}`;
+}
+
 // 공개 시각을 사람이 읽는 KST로 — 팝오버 전용 정보(카드에는 카운트다운만 → 중복 없음).
 function formatRevealKst(iso: string): string {
   const t = new Date(Date.parse(iso) + 9 * 3_600_000);
@@ -5401,8 +5411,7 @@ export function PublicPoster({
                             {/* 진행 끝을 따라가는 별 + 꼬리 — 캔버스 없이 SVG만. 기준점은 경로
                                 시작점(94,50)이고 회전량은 호 길이와 같은 360p°라 항상 붙어 있다. */}
                             {[
-                              { k: 2, off: -7, cls: "dt-ring-trail t2" },
-                              { k: 1, off: -3.5, cls: "dt-ring-trail t1" },
+                              { k: 1, off: -4, cls: "dt-ring-trail t1" },
                               { k: 0, off: 0, cls: "dt-ring-spark" }
                             ].map(({ k, off, cls }) => (
                               <circle
@@ -5429,7 +5438,9 @@ export function PublicPoster({
                             {detailFinal ? "곧 공개!" : "최초공개까지"}
                           </p>
                           {/* 링이 공개 시각 알약을 밀어냈으니 그 정보를 여기서 되살린다. */}
-                          <p className="dt-count-when">{formatRevealKst(event.teaserRevealAt)}</p>
+                          <p className="dt-count-when">
+                            {formatRevealClockKst(event.teaserRevealAt)}
+                          </p>
                         </div>
                           );
                         })()
