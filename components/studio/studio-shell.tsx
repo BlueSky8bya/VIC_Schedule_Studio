@@ -4543,8 +4543,10 @@ export function StudioShell({
           </div>
 
           {/* 인사이트 진입(개발자·관리자·매니저·작업자)은 아래 색상 필터 레일 맨 위로 옮겼다. */}
-          {/* 비공개 경고 배너는 화면을 공유하는 소유자에게만 — 작업자/매니저/개발자는 표시하지 않음. */}
-          {canReadPrivate && isEffectivelyOwner ? (
+          {/* 비공개 경고 배너 — 비공개를 '보고 있는' 모든 역할에게(개발자·작업자 포함).
+              방송 화면 공유 유출 위험은 역할과 무관하고, 배너가 곧 '지금 해제 상태'라는
+              유일한 명시적 피드백이다(소유자 한정이던 예전엔 개발자가 상태 확인 불가). */}
+          {canReadPrivate ? (
             <div className="private-warning">
               <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중
               {/* 모바일: 끄기는 엄지 닿기 쉬운 이 배너에(토글은 비밀번호 변경 유지). */}
@@ -6004,14 +6006,17 @@ export function StudioShell({
         </div>
       </div>
 
-      {canReadPrivate && isEffectivelyOwner ? (
+      {canReadPrivate ? (
         <div className="private-warning">
           <LockKeyhole aria-hidden="true" size={17} />
           ⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.
-          {/* 웹: 끄기는 위 토글 자리로 옮겼고, 여기엔 덜 쓰는 "비밀번호 변경"을 둔다. */}
-          <button className="private-warning-btn" onClick={() => openChangePasscode()} type="button">
-            비밀번호 변경
-          </button>
+          {/* 웹: 끄기는 위 토글 자리로 옮겼고, 여기엔 덜 쓰는 "비밀번호 변경"을 둔다.
+              (변경은 owner/developer만 — 작업자에겐 버튼 자체를 숨긴다.) */}
+          {canEdit ? (
+            <button className="private-warning-btn" onClick={() => openChangePasscode()} type="button">
+              비밀번호 변경
+            </button>
+          ) : null}
         </div>
       ) : null}
 
