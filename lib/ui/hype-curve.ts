@@ -40,6 +40,21 @@ export function hypeIntensity(remainMs: number): number {
   return RAMP_TOP + (1 - RAMP_TOP) * Math.pow(u, BODY_EXP);
 }
 
+// ── 등장(emerge) ─────────────────────────────────────────────────────────────
+// 60초에 '공개 시각 알약'이 사라지고 링 카운트다운이 툭 나타나면, 아무리 안쪽 연출이
+// 연속이어도 시작이 띡 하고 끊긴다(사용자 지적). 66초부터 8초에 걸쳐 알약은 접히며
+// 사라지고 링은 자라며 들어온다 — 두 요소가 겹치는 구간을 둬 이음새를 없앤다.
+export const HYPE_EMERGE_S = 66; // 링이 스며들기 시작하는 남은 시간
+const EMERGE_SPAN_S = 8; // 66 → 58
+
+export function hypeEmerge(remainMs: number): number {
+  if (!Number.isFinite(remainMs)) return 0;
+  const s = remainMs / 1000;
+  if (s >= HYPE_EMERGE_S) return 0;
+  if (s <= HYPE_EMERGE_S - EMERGE_SPAN_S) return 1;
+  return smootherstep((HYPE_EMERGE_S - s) / EMERGE_SPAN_S);
+}
+
 // ── 폭풍의 눈 ────────────────────────────────────────────────────────────────
 // 강도만 끝까지 올리면 마지막 10초가 그냥 '가장 시끄러운 구간'이 된다. 그러면 클라이맥스가
 // 소음에 묻힌다. 그래서 10초에서 동요(흔들림·잔떨림)를 한 번에 재우고, 대신 박동을 느리고

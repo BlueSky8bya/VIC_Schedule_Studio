@@ -2713,9 +2713,26 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
   align-items: baseline;
   gap: 2px;
 }
+/* 시계(hh:mm:ss)와 큰 숫자를 같은 격자 칸에 겹쳐 두고 --hy-emerge로 넘겨준다.
+   알약 폭은 둘 중 큰 쪽에 맞춰지므로 교차하는 동안 자리가 안 튄다. */
+.tc-stack {
+  display: grid;
+  place-items: center;
+}
+.tc-stack > * {
+  grid-area: 1 / 1;
+}
+.tc-clock {
+  font-style: normal;
+  opacity: calc(1 - var(--hy-emerge, 0));
+}
 .teaser-count.hype b {
   display: inline-block;
   min-width: 1.1em;
+  /* min-width 안에서 기본 좌측 정렬이라 한 자리 수가 왼쪽으로 치우쳤다(사용자 지적).
+     자릿수가 줄어도 알약 한가운데 오게 한다. */
+  text-align: center;
+  opacity: var(--hy-emerge, 1); /* 시계와 교차하며 스며든다 */
   /* 크기도 연속 — 강도에 따라 1.05em → 1.85em로 시나브로 커진다. */
   font-size: calc(var(--hy-num, 1.05) * 1em);
   font-weight: 900;
@@ -2992,6 +3009,27 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
 
 /* ── 팝오버 링 카운트다운(1분 안쪽) — 계획 안 B ─────────────────────────
    링 = 물리 시간(60→0), 숫자 크기·글로우 = 강도 곡선. 정보와 감정을 분리한다. */
+/* ── 등장 교차(66→58초) ────────────────────────────────────────────────────
+   60초에 알약이 사라지고 링이 툭 나타나면 시작이 띡 하고 끊긴다. 두 요소가 겹치는
+   8초 구간을 두고, 링은 자라며 들어오고 알약은 접히며 나간다. 값은 10Hz로 흘러오는
+   --hy-emerge 하나가 전부 몰고 간다(임계값 없음 → 계단 없음). */
+.dt-count {
+  opacity: var(--hy-emerge, 1);
+  transform: scale(calc(0.82 + var(--hy-emerge, 1) * 0.18));
+  transform-origin: center top;
+  /* 세로도 함께 자라야 팝오버 높이가 튀지 않는다. 다 자란 뒤(=1)에는 내용보다 넉넉해
+     박동 링(inset -5px)이 잘리지 않는다. */
+  max-height: calc(var(--hy-emerge, 1) * 200px);
+  overflow: clip;
+  /* 박동 링은 링박스 밖 5px까지 나간다 — 여백 없이 clip하면 위쪽이 잘린다. */
+  overflow-clip-margin: 8px;
+}
+.dt-when {
+  opacity: calc(1 - var(--hy-emerge, 0));
+  max-height: calc((1 - var(--hy-emerge, 0)) * 52px);
+  overflow: clip;
+}
+/* 동작 줄이기·export — 양자화된 0/1만 오므로 중간 상태가 없다(캡처 결정성). */
 .dt-count {
   /* 링 행 + 라벨 행. 라벨을 링 안에 absolute로 얹으면 원 하단의 좁은 현(chord ≈56px)에
      6글자(≈67px)가 들어가지 못해 stroke와 겹친다 — 숫자 크기를 줄여도 안 풀리는 기하

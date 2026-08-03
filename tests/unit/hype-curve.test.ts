@@ -6,6 +6,7 @@ import {
   beatWave,
   clamp01,
   hypeCalm,
+  hypeEmerge,
   hypeChannels,
   hypeCssVars,
   hypeIntensity,
@@ -208,6 +209,38 @@ describe("흔들림은 고요 이전 구간에서 실제로 보인다", () => {
   it("고요에 들어가면 정확히 0이 된다", () => {
     expect(shakeAt(9)).toBe(0);
     expect(shakeAt(1)).toBe(0);
+  });
+});
+
+describe("hypeEmerge — 타이머 등장(66→58초)", () => {
+  it("66초부터 스며들어 58초에 완성된다(60초에 툭 나타나지 않는다)", () => {
+    expect(hypeEmerge(S(70))).toBe(0);
+    expect(hypeEmerge(S(66))).toBe(0);
+    expect(hypeEmerge(S(62))).toBeGreaterThan(0);
+    expect(hypeEmerge(S(62))).toBeLessThan(1);
+    expect(hypeEmerge(S(58))).toBe(1);
+    expect(hypeEmerge(S(30))).toBe(1);
+  });
+
+  it("60초 경계에 계단이 없다 — 이미 절반 이상 나와 있다", () => {
+    expect(hypeEmerge(S(60))).toBeGreaterThan(0.5);
+    expect(Math.abs(hypeEmerge(S(60.1)) - hypeEmerge(S(59.9)))).toBeLessThan(0.03);
+  });
+
+  it("시작·끝의 기울기가 0이라 켜짐/멈춤이 안 보인다", () => {
+    expect(hypeEmerge(S(65.9))).toBeLessThan(0.002);
+    expect(1 - hypeEmerge(S(58.1))).toBeLessThan(0.002);
+  });
+
+  it("전 구간 단조 증가하고 인접 0.05초 변화가 작다", () => {
+    let prev = 0;
+    for (let sec = 67; sec >= 57; sec -= 0.05) {
+      const cur = hypeEmerge(S(sec));
+      expect(cur).toBeGreaterThanOrEqual(prev - 1e-9);
+      expect(cur - prev).toBeLessThan(0.02);
+      prev = cur;
+    }
+    expect(prev).toBe(1);
   });
 });
 

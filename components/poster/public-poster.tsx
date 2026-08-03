@@ -94,8 +94,10 @@ import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-a
 import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { getTeaserHopeIdsAction, toggleTeaserHopeAction } from "@/lib/schedules/hope-actions";
 import {
+  HYPE_EMERGE_S,
   HYPE_WINDOW_S,
   STATIC_MOTION_FRAME,
+  hypeEmerge,
   hypeChannels,
   hypeCalm,
   hypeCssVars,
@@ -406,10 +408,14 @@ function TeaserCountdown({
       // 폭풍의 눈 — 정적 모드에선 0/1로 양자화해 캡처가 결정적이게 한다.
       const rawCalm = hypeCalm(remainMs);
       const calm = staticOnly ? (rawCalm > 0.5 ? 1 : 0) : rawCalm;
+      // 등장 — 하이프 창(60초) 바깥에서도 써야 하므로 강도와 별개로 계산한다.
+      const rawEmerge = hypeEmerge(remainMs);
+      const emerge = staticOnly ? (rawEmerge > 0.5 ? 1 : 0) : rawEmerge;
       const vars = {
         ...hypeCssVars(hypeChannels(i, calm)),
         // 박동 위상 — 정지 모드에선 진폭 0 프레임이라 파형이 곱해져도 안 움직인다.
-        ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i))
+        ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i)),
+        "--hy-emerge": emerge.toFixed(3)
       };
       for (const [k, v] of Object.entries(vars)) {
         el.style.setProperty(k, v);
@@ -460,13 +466,20 @@ function TeaserCountdown({
   // 1분 안쪽 = 최초공개 직전. 예전엔 h1~h4 이산 단계라 경계에서 툭 바뀌었다(사용자 지적) →
   // 이제 강도 I가 연속으로 오르고 시각 채널은 위 10Hz 루프가 CSS 변수로 흘려보낸다.
   // 여기 클래스는 '무엇을 그릴지'(의미)만 정한다.
-  const inHype = s <= HYPE_WINDOW_S;
+  // hype 표기는 등장 구간부터 붙인다 — 그래야 큰 숫자가 스며드는 동안에도 같은 문법으로
+  // 그려진다(60초에 클래스가 바뀌면 그 순간 스타일이 통째로 갈린다).
+  const inHype = s <= HYPE_EMERGE_S;
   const cls = `teaser-count is-live${s <= 3600 ? " soon" : ""}${inHype ? " hype" : ""}`;
-  if (inHype) {
-    // 초만 크게(분/시는 0이라 잡음) — key로 매 초 리마운트해 숫자가 쿵 떨어지는 연출.
+  // 66~58초는 시계와 큰 숫자가 함께 존재하는 구간이다. 같은 격자 칸에 겹쳐 두고
+  // --hy-emerge로 서로 넘겨준다 → 알약 폭이 큰 쪽에 맞춰져 있어 자리도 안 튄다.
+  if (s <= HYPE_EMERGE_S) {
     return (
       <span className={cls} ref={hostRef}>
-        <b key={s}>{s}</b>
+        <span className="tc-stack">
+          {s > HYPE_WINDOW_S - 2 ? <i className="tc-clock">{`${hh}:${mm}:${ss}`}</i> : null}
+          {/* 초만 크게(분/시는 0이라 잡음) — key로 매 초 리마운트해 숫자가 쿵 떨어지는 연출. */}
+          <b key={s}>{s}</b>
+        </span>
       </span>
     );
   }
@@ -1735,9 +1748,13 @@ export function PublicPoster({
       // 폭풍의 눈 — 정적 모드에선 0/1로 양자화해 캡처가 결정적이게 한다.
       const rawCalm = hypeCalm(remainMs);
       const calm = staticOnly ? (rawCalm > 0.5 ? 1 : 0) : rawCalm;
+      // 등장 — 하이프 창(60초) 바깥에서도 써야 하므로 강도와 별개로 계산한다.
+      const rawEmerge = hypeEmerge(remainMs);
+      const emerge = staticOnly ? (rawEmerge > 0.5 ? 1 : 0) : rawEmerge;
       const vars = {
         ...hypeCssVars(hypeChannels(i, calm)),
-        ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i))
+        ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i)),
+        "--hy-emerge": emerge.toFixed(3)
       };
       for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
       el.classList.toggle("hype-live", raw > 0);
@@ -5106,6 +5123,12 @@ export function PublicPoster({
             // 그릴지'(문구 전환)만 판단한다. 이산 단계(hs1~hs4)는 폐기.
             const detailHype = teaserActive && detailRemainS !== null && detailRemainS <= HYPE_WINDOW_S;
             const detailFinal = detailHype && (detailRemainS ?? 99) <= 10;
+            // 링과 알약은 66~58초 구간에서 함께 존재한다 — 알약은 접히며 사라지고 링은
+            // 자라며 들어온다. 한쪽만 있으면 60초에 DOM이 통째로 바뀌어 '띡' 하고 끊긴다.
+            const detailRing =
+              teaserActive && detailRemainS !== null && detailRemainS <= HYPE_EMERGE_S;
+            const detailPill =
+              teaserActive && (detailRemainS === null || detailRemainS > HYPE_WINDOW_S - 2);
             // PC 팝오버 좌표(자동 배치 or 드래그 확정) + 액센트 색(대표 태그 1~2색 그라데이션).
             const pos = anchor ? detailManual ?? detailPos : null;
             // 업도움은 띠와 같은 초록 계열로 액센트·선 색을 통일(카드 ↔ 띠 조화).
@@ -5316,7 +5339,7 @@ export function PublicPoster({
                       {/* 1분 안쪽 = 팝오버가 '카운트다운 무대'가 된다(계획 안 B: 링 진행률 +
                           중앙 대형 숫자). 링은 물리 시간(60→0)을, 글로우·크기는 강도 곡선을
                           따르므로 정보와 감정이 분리된다. 그 밖에는 공개 시각 알약. */}
-                      {detailHype && detailRemainS !== null ? (
+                      {detailRing && detailRemainS !== null ? (
                         (() => {
                           // 남은 비율 p. 진행 호는 SVG 원 경로의 시작점(로컬 3시 방향)에서
                           // 시계방향으로 길이 p만큼 그려진다 → 호의 '끝'은 시작점에서 360p°다.
@@ -5410,7 +5433,8 @@ export function PublicPoster({
                         </div>
                           );
                         })()
-                      ) : (
+                      ) : null}
+                      {detailPill ? (
                         <p className="dt-when">
                           <span aria-hidden="true" className="dt-orb">
                             🔮
@@ -5418,7 +5442,7 @@ export function PublicPoster({
                           <b>{formatRevealKst(event.teaserRevealAt)}</b>
                           <em>공개</em>
                         </p>
-                      )}
+                      ) : null}
                       <button
                         aria-pressed={myHopeIds.has(event.id)}
                         className={`dt-hope${myHopeIds.has(event.id) ? " on" : ""}`}
