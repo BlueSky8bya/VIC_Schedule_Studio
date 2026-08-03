@@ -366,7 +366,15 @@ export function StudioShell({
   // 방금 잠금 해제했다면(=pendingUnlockReveal), refresh로 세션이 반영(hasUnlockSession=true)되는
   // 즉시 비공개 표시를 켠다. refresh 과정에서 showPrivate 상태가 유실되더라도 확실히 다시 켜진다.
   useEffect(() => {
-    if (pendingUnlockReveal && hasUnlockSession) {
+    // 안전망 하드 리로드를 건너온 '방금 풀었다' 의도(1회 소비 — 이후 F5는 공개 기본 유지).
+    let fromReload = false;
+    try {
+      fromReload = window.sessionStorage.getItem("vic:unlockReveal") === "1";
+      if (fromReload) window.sessionStorage.removeItem("vic:unlockReveal");
+    } catch {
+      // 접근 불가 환경이면 무시.
+    }
+    if ((pendingUnlockReveal || fromReload) && hasUnlockSession) {
       pendingUnlockReveal = false;
       setShowPrivate(true);
     }
@@ -7164,6 +7172,21 @@ export function StudioShell({
                 startLoadingPrivate(() => {
                   router.refresh();
                 });
+                // 안전망: router.refresh()가 새 세션(prop)을 못 실어오는 경우가 있다
+                // (dev에서 실측 — 서버는 해제로 렌더했는데 클라 트리에 반영이 안 됨).
+                // 1.6초 안에 반영 효과(아래 useEffect)가 pendingUnlockReveal을 못 지우면
+                // 하드 리로드로 보증한다. '방금 풀었다' 의도는 sessionStorage로 리로드를
+                // 건너 살린다(일반 F5의 '공개 기본' 규칙은 그대로 — 이 플래그는 1회 소비).
+                window.setTimeout(() => {
+                  if (pendingUnlockReveal) {
+                    try {
+                      window.sessionStorage.setItem("vic:unlockReveal", "1");
+                    } catch {
+                      // 저장 실패 시에도 리로드는 진행(표시만 수동 토글 필요).
+                    }
+                    window.location.reload();
+                  }
+                }, 1600);
               }}
               setPasscodeAction={setPasscodeAction}
               startChanging={passcodeModal === "change"}
