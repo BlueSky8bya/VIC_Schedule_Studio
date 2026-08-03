@@ -6085,7 +6085,8 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   align-items: center;
   justify-content: center;
   margin: 0 -20px;
-  padding: 8px 0 6px;
+  /* 히트 영역은 두껍게(잡기 쉬움), 보이는 핸들은 가늘게 — 편집실 그랩과 같은 HCI 문법. */
+  padding: 11px 0 9px;
   cursor: grab;
   touch-action: none;
 }

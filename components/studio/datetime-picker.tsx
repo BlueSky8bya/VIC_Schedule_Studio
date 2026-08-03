@@ -3,6 +3,7 @@
 import { CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { getDayMark } from "@/lib/calendar/holidays";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticTick } from "@/lib/ui/haptics";
 
@@ -356,9 +357,12 @@ export function DateTimePicker({
               const sel = p && p.y === viewY && p.m === viewM && p.d === d;
               const isToday = today.y === viewY && today.m === viewM && today.d === d;
               const wd = (firstWd + d - 1) % 7;
+              // 국가지정 공휴일(대체공휴일 포함)도 일요일과 같은 빨간날로 — 메인 달력과 동일 기준.
+              const iso = `${viewY}-${z2(viewM)}-${z2(d)}`;
+              const holiday = getDayMark(iso)?.isHoliday === true;
               return (
                 <button
-                  className={`dtp-cell${sel ? " sel" : ""}${isToday ? " today" : ""}${wd === 0 ? " sun" : wd === 6 ? " sat" : ""}`}
+                  className={`dtp-cell${sel ? " sel" : ""}${isToday ? " today" : ""}${wd === 0 || holiday ? " sun" : wd === 6 ? " sat" : ""}`}
                   key={d}
                   onClick={() => setDay(d)}
                   type="button"

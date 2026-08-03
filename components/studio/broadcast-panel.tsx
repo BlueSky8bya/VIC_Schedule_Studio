@@ -54,6 +54,7 @@ import {
 
 import { ColorPickerPopover } from "@/components/tags/color-picker-popover";
 import type { BroadcastPanelDay, BroadcastPanelEvent } from "@/lib/schedules/broadcast-dto";
+import { getDayMark } from "@/lib/calendar/holidays";
 import type { MonthCell } from "@/lib/calendar/month";
 import { getTodayKst, splitEventTitle } from "@/lib/calendar/month";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
@@ -3119,7 +3120,12 @@ export function BroadcastPanel({
                   picked ? "picked" : "",
                   isToday ? "today" : "",
                   sent ? "sent" : "",
-                  cell.weekday === 0 ? "sun" : cell.weekday === 6 ? "sat" : ""
+                  // 국가지정 공휴일(대체공휴일 포함)도 빨간날 — 메인 달력과 동일 기준.
+                  cell.weekday === 0 || getDayMark(cell.isoDate)?.isHoliday
+                    ? "sun"
+                    : cell.weekday === 6
+                      ? "sat"
+                      : ""
                 ]
                   .filter(Boolean)
                   .join(" ");
