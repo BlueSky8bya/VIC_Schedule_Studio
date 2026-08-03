@@ -5404,18 +5404,20 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
    아직 안 풀린 떡밥 일정을 클릭하면 편집 폼 대신 뜨는 비번 확인 카드.
    같은 팝오버 껍데기(리더 라인·드래그·닫기)를 쓰므로 여기선 '속'만 스타일링한다.
    톤 = 떡밥 보라(#7c6cf0)를 은은하게, 형태 = 비번 팝업과 같은 입력/버튼 문법. */
-.event-editor-panel.is-gated {
-  width: min(320px, calc(100vw - 24px));
-}
-.teaser-gate-wrap {
+/* 게이트는 편집 폼과 같은 카드 chrome(.event-editor-panel form)을 받되 폭만 좁다 —
+   '같은 팝오버, 높이/너비만 다름'(요구사항). 뒤에 선언돼 기본 356px을 이긴다. */
+.event-editor-panel.is-gated form.teaser-gate {
+  width: 300px;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 .teaser-gate-bar {
   display: flex;
   align-items: center;
+  align-self: stretch;
   gap: var(--space-2);
-  padding: var(--space-2) var(--space-3) 0;
 }
 .teaser-gate-badge {
   margin: 0;
@@ -5449,7 +5451,6 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   align-items: center;
   text-align: center;
   gap: var(--space-2);
-  padding: var(--space-3) var(--space-4) var(--space-4);
 }
 .teaser-gate-orb {
   font-size: 34px;

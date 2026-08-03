@@ -29,7 +29,9 @@ import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
   type FormEvent,
+  Fragment,
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
   type TouchEvent as ReactTouchEvent,
   useCallback,
   useEffect,
@@ -1472,8 +1474,15 @@ export function StudioShell({
   }, [viewerMode]);
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
+  // 아직 안 풀린 최초공개(떡밥)는 태그 색도 힌트가 된다 — 공개 화면과 똑같이 무색(흰 카드)으로.
   function eventColors(event: StudioScheduleEvent) {
+    if (teaserStillHidden(event)) return [];
     return tagVisual.eventFills(event);
+  }
+  // 위와 같은 이유 — 추가 대분류 점 줄도 떡밥은 숨긴다.
+  function eventExtraColors(event: StudioScheduleEvent) {
+    if (teaserStillHidden(event)) return [];
+    return tagVisual.eventExtras(event);
   }
 
   function moveMonth(offset: number) {
@@ -3309,14 +3318,17 @@ export function StudioShell({
     }
   }
 
-  // 게이트 카드 본문(데스크톱 팝오버·모바일 시트 공용) — 내용은 일절 안 보여준다.
+  // 게이트 카드(데스크톱 팝오버·모바일 시트 공용) — 내용은 일절 안 보여준다.
   // 공개 예정 시각과 비번 입력만. 이동/복사/드래그는 게이트 없이 평소처럼 가능하다.
-  function renderTeaserGate() {
+  // head: 데스크톱 팝오버가 이동 그립·헤더 바를 form '안'에 넣을 때 쓴다 — 카드 chrome
+  // (.event-editor-panel form의 배경/그림자/점선 아웃라인)이 폼에 붙으므로 밖에 두면 떠 보인다.
+  function renderTeaserGate(head?: ReactNode) {
     return (
       <form
         className={`teaser-gate${teaserGateShake ? " gate-shake" : ""}`}
         onSubmit={submitTeaserGate}
       >
+        {head}
         <span className="teaser-gate-orb" aria-hidden="true">
           🔮
         </span>
@@ -4644,7 +4656,7 @@ export function StudioShell({
                     ) : null}
                     {shownEvents.map((event) => {
                       const colors = eventColors(event);
-                      const extraColors = tagVisual.eventExtras(event);
+                      const extraColors = eventExtraColors(event);
                       // 아직 안 풀린 최초공개는 편집실 목록에서도 내용을 가린다(방송 화면 유출 방지).
                       const { main, subs } = splitEventTitle(
                         teaserStillHidden(event) ? "???" : event.publicTitle
@@ -6241,7 +6253,7 @@ export function StudioShell({
                     {dateEvents.map((event, eventIndex) => {
                       const colors = eventColors(event);
                       // PR2: 칸 색(≤2)에 못 담은 나머지 대분류 → 작은 점 줄("더 있음").
-                      const extraColors = tagVisual.eventExtras(event);
+                      const extraColors = eventExtraColors(event);
                       // 선택 강조(테두리·X)는 오른쪽 편집/상세 패널이 열려 있을 때만 — 패널이
                       // 닫히면(다른 버튼으로 슬라이드-아웃) 카드 선택 표시도 함께 사라지게.
                       const isSel = editorVisible && selectedEventId === event.id;
@@ -6658,33 +6670,36 @@ export function StudioShell({
           {/* 아직 안 풀린 최초공개(떡밥) 일정 — 역할과 무관하게 먼저 비번 게이트.
               같은 팝오버 껍데기(점선 리더 라인·드래그·바깥 클릭 닫기)를 그대로 쓰고 속만 바꾼다. */}
           {teaserGateActive ? (
-            <div className="teaser-gate-wrap" key={`gate-${editorKey}`}>
-              <div
-                aria-hidden="true"
-                className="editor-grab"
-                onPointerDown={onEditorPopDragStart}
-                title="끌어서 이동"
-              >
-                <span />
-              </div>
-              <div
-                className="editor-heading-bar teaser-gate-bar"
-                onPointerDown={onEditorPopDragStart}
-                title="끌어서 이동"
-              >
-                <span className="editor-date-inline">{formatEditorDate(selectedDate)}</span>
-                <p className="editor-mode-badge is-edit teaser-gate-badge">🔮 최초공개</p>
-                <button
-                  aria-label="닫기"
-                  className="teaser-gate-close"
-                  onClick={() => setEditorVisible(false)}
-                  type="button"
-                >
-                  <X aria-hidden="true" size={16} />
-                </button>
-              </div>
-              {renderTeaserGate()}
-            </div>
+            <Fragment key={`gate-${editorKey}`}>
+              {renderTeaserGate(
+                <>
+                  <div
+                    aria-hidden="true"
+                    className="editor-grab"
+                    onPointerDown={onEditorPopDragStart}
+                    title="끌어서 이동"
+                  >
+                    <span />
+                  </div>
+                  <div
+                    className="editor-heading-bar teaser-gate-bar"
+                    onPointerDown={onEditorPopDragStart}
+                    title="끌어서 이동"
+                  >
+                    <span className="editor-date-inline">{formatEditorDate(selectedDate)}</span>
+                    <p className="editor-mode-badge is-edit teaser-gate-badge">🔮 최초공개</p>
+                    <button
+                      aria-label="닫기"
+                      className="teaser-gate-close"
+                      onClick={() => setEditorVisible(false)}
+                      type="button"
+                    >
+                      <X aria-hidden="true" size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </Fragment>
           ) : !canEdit ? (
             /* 매니저·작업자는 편집 불가 → 회색 폼 대신 깔끔한 읽기전용 상세를 보여준다(A1). */
             renderReadonlyDetail()
