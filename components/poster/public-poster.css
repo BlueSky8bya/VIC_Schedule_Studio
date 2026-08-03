@@ -2495,22 +2495,105 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
     transform: scale(1.05);
   }
 }
-/* 공개 스크램블 — 아직 안 풀린 뒷글자는 반투명하게 일렁이고 흰빛으로 번쩍인다. */
+/* 공개 해독 연출 — 난수 자리는 초록 형광 모노스페이스로 미친 듯이 떨리고,
+   확정된 글자는 흰빛으로 톡 박힌다(해커 영화 디코딩 문법). */
 .scramble-rest {
-  opacity: 0.55;
-  animation: scramble-flicker 0.12s steps(2) infinite;
+  display: inline-block;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #b9f6ca;
+  text-shadow:
+    0 0 6px rgb(74 222 128 / 90%),
+    0 0 14px rgb(34 197 94 / 55%);
+  animation: scramble-jitter 0.09s steps(2) infinite;
 }
-@keyframes scramble-flicker {
+@keyframes scramble-jitter {
   0% {
-    opacity: 0.35;
-    filter: brightness(1);
+    transform: translate(0, 0) skewX(0);
+    opacity: 0.85;
+  }
+  50% {
+    transform: translate(-1px, 1px) skewX(-6deg);
+    opacity: 1;
   }
   100% {
-    opacity: 0.7;
-    filter: brightness(1.6);
+    transform: translate(1px, -1px) skewX(5deg);
+    opacity: 0.8;
   }
 }
-html[data-reduce-motion] .scramble-rest {
+.scramble-locked {
+  animation: scramble-lock-in 0.22s cubic-bezier(0.2, 1.6, 0.4, 1) both;
+}
+@keyframes scramble-lock-in {
+  from {
+    text-shadow: 0 0 14px rgb(255 255 255 / 95%);
+  }
+  to {
+    text-shadow: none;
+  }
+}
+html[data-reduce-motion] .scramble-rest,
+html[data-reduce-motion] .scramble-locked {
+  animation: none;
+}
+
+/* 공개 순간 카드가 지지직 흔들린다(글리치) — 해독이 진행되는 동안 계속. */
+.public-event.just-revealed .event-main,
+.agenda-event.just-revealed .agenda-content {
+  animation: reveal-glitch 0.11s steps(2) 14;
+}
+@keyframes reveal-glitch {
+  0% {
+    transform: translate(0, 0);
+  }
+  33% {
+    transform: translate(-2px, 1px);
+  }
+  66% {
+    transform: translate(2px, -1px);
+  }
+  100% {
+    transform: translate(-1px, 0);
+  }
+}
+html[data-reduce-motion] .public-event.just-revealed .event-main,
+html[data-reduce-motion] .agenda-event.just-revealed .agenda-content {
+  animation: none;
+}
+
+/* 팝오버가 열린 채 공개되면 시트도 함께 변신 — 흰빛 플래시 + 짧은 글리치. */
+.agenda-detail-sheet.reveal-burst {
+  animation: sheet-reveal 0.9s cubic-bezier(0.18, 1.5, 0.3, 1) both;
+}
+@keyframes sheet-reveal {
+  0% {
+    transform: scale(0.94);
+    filter: brightness(2.2);
+    box-shadow:
+      0 0 50px 20px rgb(255 255 255 / 95%),
+      0 18px 44px rgb(80 70 120 / 22%);
+  }
+  22% {
+    transform: scale(1.03);
+    filter: brightness(1.35);
+  }
+  45% {
+    transform: scale(0.99);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+    box-shadow:
+      0 0 0 0 rgb(255 255 255 / 0%),
+      0 18px 44px rgb(80 70 120 / 22%);
+  }
+}
+.agenda-detail-sheet.reveal-burst .agenda-detail-title {
+  animation: reveal-glitch 0.11s steps(2) 10;
+}
+html[data-reduce-motion] .agenda-detail-sheet.reveal-burst,
+html[data-reduce-motion] .agenda-detail-sheet.reveal-burst .agenda-detail-title {
   animation: none;
 }
 /* 공개 후 남는 "n명이 기다렸어요" 배지 */

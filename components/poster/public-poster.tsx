@@ -408,35 +408,66 @@ function hypeStageOf(remainS: number | null): number {
   return 1;
 }
 
-// 공개 순간 제목이 ?에서 한 글자씩 확정되는 스크램블 — 공개 순간을 지켜본 시청자만의 보상.
-// reduce-motion이면 그냥 완성된 제목을 보여준다.
-const SCRAMBLE_POOL = "?※◆★!?◇?";
+// 공개 순간 제목 해독 연출 — 해커 영화식 디코딩. 두 국면으로 나뉜다:
+//  ① 0~0.75s: 제목 전체가 난수 문자(23436t#$@ 같은)로 미친 듯이 교체된다(60ms마다).
+//  ② 이후: 왼쪽부터 한 글자씩 '확정'되고 남은 자리는 계속 난동친다(글자당 90ms).
+// 예전(글자만 슥 채워짐)은 짧은 제목이면 0.3초에 끝나 아무도 못 봤다 → 최소 1.5초는 논다.
+// reduce-motion이면 그냥 완성된 제목.
+const SCRAMBLE_POOL = "!@#$%&*?/\\<>[]{}=+~0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+const SCRAMBLE_CHAOS_MS = 750; // 전부 난수인 구간
+const SCRAMBLE_STEP_MS = 90; // 글자당 확정 간격
 function ScrambleText({ text }: { text: string }) {
-  const [shown, setShown] = useState(0);
+  const [tick, setTick] = useState(0);
+  const [locked, setLocked] = useState(0);
+  const [done, setDone] = useState(false);
   useEffect(() => {
-    setShown(0);
+    setTick(0);
+    setLocked(0);
+    setDone(false);
     if (document.documentElement.hasAttribute("data-reduce-motion")) {
-      setShown(text.length);
+      setDone(true);
       return;
     }
-    let i = 0;
-    const id = window.setInterval(() => {
-      i += 1;
-      setShown(i);
-      if (i >= text.length) window.clearInterval(id);
-    }, 55);
-    return () => window.clearInterval(id);
+    const started = Date.now();
+    // 난수 자리는 60ms마다 통째로 새로 뽑는다(멈춰 보이지 않게).
+    const chaos = window.setInterval(() => setTick((t) => t + 1), 60);
+    let lockTimer = 0;
+    const startLocking = window.setTimeout(() => {
+      let i = 0;
+      lockTimer = window.setInterval(() => {
+        i += 1;
+        setLocked(i);
+        if (i >= text.length) {
+          window.clearInterval(lockTimer);
+          window.clearInterval(chaos);
+          setDone(true);
+        }
+      }, SCRAMBLE_STEP_MS);
+    }, SCRAMBLE_CHAOS_MS);
+    return () => {
+      window.clearInterval(chaos);
+      window.clearTimeout(startLocking);
+      if (lockTimer) window.clearInterval(lockTimer);
+      void started;
+    };
   }, [text]);
-  if (shown >= text.length) return <>{text}</>;
-  const restLen = Math.min(text.length - shown, 8);
+  if (done) return <>{text}</>;
+  const rest = text.length - locked;
   return (
     <>
-      {text.slice(0, shown)}
+      {locked > 0 ? <span className="scramble-locked">{text.slice(0, locked)}</span> : null}
       <span aria-hidden="true" className="scramble-rest">
-        {Array.from({ length: restLen }, (_, k) => SCRAMBLE_POOL[(shown * 7 + k * 3) % SCRAMBLE_POOL.length]).join("")}
+        {Array.from(
+          { length: Math.max(0, rest) },
+          (_, k) => SCRAMBLE_POOL[(tick * 13 + k * 7 + locked * 3) % SCRAMBLE_POOL.length]
+        ).join("")}
       </span>
     </>
   );
+}
+// 스크램블 총 길이(연출 상태를 언제 풀지 계산) — 카오스 + 글자당 확정 + 여유.
+function scrambleDurationMs(text: string): number {
+  return SCRAMBLE_CHAOS_MS + Math.max(1, text.length) * SCRAMBLE_STEP_MS + 400;
 }
 
 // 공개 시각을 사람이 읽는 KST로 — 팝오버 전용 정보(카드에는 카운트다운만 → 중복 없음).
@@ -1399,21 +1430,27 @@ export function PublicPoster({
             for (const ev of list) next[ev.id] = ev;
             return next;
           });
-          // 열려 있던 그 떡밥의 상세 팝오버는 닫는다 — ???가 공개된 뒤에도 팝오버만 옛 상태로
-          // 남는 어긋남 방지(달력의 공개 연출이 주인공).
-          setAgendaDetail((cur) => (cur && ids.includes(cur.event.id) ? null : cur));
+          // 팝오버가 그 떡밥을 열고 있으면 닫지 않는다 — 그 자리에서 ???가 실제 일정으로
+          // '변신'하는 게 훨씬 좋은 구경거리다(예전엔 닫아버려 클라이맥스를 놓쳤다).
+          // 내용 교체는 렌더에서 revealedEvents로 자동 반영된다.
           // 라이브로 지켜본 공개(celebrate)만 연출. 캐시-지연 교체는 조용히.
           if (!celebrate) return;
-          // 공개 순간 그 카드 자리에서 폭죽(월드컵 승리와 같은 큰 연출) — 다음 프레임에
-          // 실제 카드가 그려진 뒤 좌표를 재서 쏜다.
+          // 공개 순간 폭죽(월드컵 승리와 같은 큰 연출) — 카드에서 한 번, 팝오버가 열려 있으면
+          // 거기서도 한 번 더. 다음 프레임에 실제 요소가 그려진 뒤 좌표를 잰다.
           window.setTimeout(() => {
             for (const id of ids) {
               const el = document.querySelector<HTMLElement>(`[data-eventid="${id}"]`);
-              if (!el) continue;
-              const r = el.getBoundingClientRect();
+              if (el) {
+                const r = el.getBoundingClientRect();
+                popBurstRef.current?.(r.left + r.width / 2, r.top + r.height / 2, "win");
+              }
+            }
+            const sheet = document.querySelector<HTMLElement>(".agenda-detail-sheet.reveal-burst");
+            if (sheet) {
+              const r = sheet.getBoundingClientRect();
               popBurstRef.current?.(r.left + r.width / 2, r.top + r.height / 2, "win");
             }
-          }, 80);
+          }, 90);
           // 이미 공개돼 화면에 떠 있던(애니 끝난) 건 다시 안 튀게, 이번에 새로 들어온 것만 표시.
           setJustRevealed((prev) => {
             const fresh = ids.filter((x) => !prev.has(x) && !revealedEvents[x]);
@@ -1426,7 +1463,9 @@ export function PublicPoster({
                 for (const x of fresh) n.delete(x);
                 return n;
               });
-            }, 2200); // 팝 0.9s + 충격파 1.15s(+0.18 지연) 다 끝난 뒤 해제
+              // 스크램블 해독이 끝날 때까지 유지(제목이 길면 더 오래) — 예전엔 연출이
+              // 중간에 잘려 글자 난동을 끝까지 못 봤다.
+            }, Math.max(2400, ...list.map((ev) => scrambleDurationMs(ev.publicTitle || ""))));
             return next;
           });
         }
@@ -4773,7 +4812,10 @@ export function PublicPoster({
           공개 DTO만 사용(비공개 필드 자체가 없다). fixed 오버레이라 캡쳐 PNG 밖. */}
       {agendaDetail
         ? (() => {
-            const { event, support, dateKey, anchor } = agendaDetail;
+            const { event: rawDetailEvent, support, dateKey, anchor } = agendaDetail;
+            // 열어둔 채로 공개 시각이 지나면 이 팝오버 안에서 ???가 실제 일정으로 변신한다.
+            const event = revealedEvents[rawDetailEvent.id] ?? rawDetailEvent;
+            const detailJustRevealed = justRevealed.has(rawDetailEvent.id);
             const { main, subs } = splitEventTitle(event.publicTitle);
             const detailTags = event.tagIds.flatMap((id) => {
               const tag = viewTags.find((t) => t.id === id);
@@ -4851,7 +4893,9 @@ export function PublicPoster({
                   aria-modal="true"
                   className={`agenda-detail-sheet${detailSnapback ? " pop-snapback" : ""}${
                     detailHype ? ` is-hype hs${detailStage}` : ""
-                  }${detailFinal ? " is-final" : ""}`}
+                  }${detailFinal ? " is-final" : ""}${
+                    detailJustRevealed ? " reveal-burst" : ""
+                  }`}
                   ref={detailSheetRef}
                   role="dialog"
                   style={popStyle}
@@ -4914,7 +4958,13 @@ export function PublicPoster({
                       {!support && event.isTentative ? (
                         <span className="evt-tentative">미정</span>
                       ) : null}
-                      {support ? `🌱 ${event.publicTitle}` : main}
+                      {support ? (
+                        `🌱 ${event.publicTitle}`
+                      ) : detailJustRevealed ? (
+                        <ScrambleText text={main} />
+                      ) : (
+                        main
+                      )}
                     </p>
                   ) : null}
                   {!support && subs.length > 0 ? (
