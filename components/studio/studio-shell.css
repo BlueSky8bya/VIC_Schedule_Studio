@@ -5453,9 +5453,9 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   gap: var(--space-2);
 }
 .teaser-gate-orb {
-  font-size: 34px;
+  font-size: 40px;
   line-height: 1;
-  filter: drop-shadow(0 2px 6px rgb(124 108 240 / 35%));
+  filter: drop-shadow(0 3px 8px rgb(124 108 240 / 40%));
   animation: teaser-gate-float 2.6s var(--ease) infinite alternate;
 }
 @keyframes teaser-gate-float {
@@ -5467,27 +5467,53 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
     transform: translateY(-4px);
   }
 }
-.teaser-gate-title {
-  font-size: var(--text-ui);
-  font-weight: var(--weight-bold);
-  color: #6a58e8;
-  letter-spacing: var(--tracking-tight);
+/* 큰 카운트다운 — 설명문 없이 이 카드의 주인공. 유닛 블록 + 초 블록만 보라 강조.
+   숫자는 값이 바뀔 때 key 리마운트 → 스프링 팝(아래 tg-num-in). */
+.tg-countdown {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  margin-block: var(--space-1) var(--space-2);
 }
-.teaser-gate-desc {
-  margin: 0;
-  font-size: var(--text-caption);
-  line-height: var(--lh-body);
-  color: var(--muted);
+.tg-seg {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 54px;
+  padding: var(--space-2) var(--space-1);
+  border-radius: var(--r-lg);
+  background: rgb(124 108 240 / 8%);
 }
-.teaser-gate-when {
-  margin: 0;
-  padding: var(--space-1) var(--space-3);
-  border-radius: var(--r-pill);
-  background: rgb(124 108 240 / 10%);
+.tg-seg-accent {
+  background: rgb(124 108 240 / 16%);
+  box-shadow: inset 0 0 0 1px rgb(124 108 240 / 25%);
+}
+.tg-num {
+  display: block;
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
   color: #6a58e8;
-  font-size: var(--text-caption);
-  font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
+  animation: tg-num-in 0.34s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+@keyframes tg-num-in {
+  from {
+    opacity: 0.25;
+    transform: translateY(-7px) scale(1.12);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.tg-unit {
+  font-style: normal;
+  font-size: var(--text-caption);
+  font-weight: var(--weight-bold);
+  color: var(--muted);
 }
 .teaser-gate-row {
   display: flex;
@@ -5552,7 +5578,8 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   padding: var(--space-5) var(--space-4) var(--space-6);
 }
 html[data-reduce-motion] .teaser-gate-orb,
-html[data-reduce-motion] .teaser-gate.gate-shake {
+html[data-reduce-motion] .teaser-gate.gate-shake,
+html[data-reduce-motion] .tg-num {
   animation: none;
 }
 /* #8 옮긴 직후 서버 반영 전 '동기화 중' 점(돌아감). 상태 표시라 '동작 줄이기'에도 유지.

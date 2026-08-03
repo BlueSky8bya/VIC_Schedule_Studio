@@ -221,6 +221,38 @@ type StudioShellProps = {
 // 유지되지만, 실제 새로고침(F5)은 모듈을 새로 로드해 false로 리셋된다 → 방송사고 방지 규칙(진입 시 공개 기본) 유지.
 let pendingUnlockReveal = false;
 
+// 최초공개 게이트의 큰 카운트다운 — 설명문 대신 '얼마나 남았는지'를 주인공으로.
+// 값이 바뀌는 숫자만 key 리마운트로 스프링 팝(초 단위 심장박동). reduce-motion은 CSS에서 끔.
+function TeaserGateCountdown({ revealAt }: { revealAt: string }) {
+  const target = new Date(revealAt).getTime();
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+  const left = Math.max(0, target - now);
+  const days = Math.floor(left / 86_400_000);
+  const hours = Math.floor(left / 3_600_000) % 24;
+  const mins = Math.floor(left / 60_000) % 60;
+  const secs = Math.floor(left / 1_000) % 60;
+  const seg = (value: number, unit: string, id: string, accent = false) => (
+    <span className={`tg-seg${accent ? " tg-seg-accent" : ""}`} key={id}>
+      {/* key에 값 포함 → 값이 바뀔 때만 리마운트돼 팝 애니메이션이 그 숫자에만 걸린다. */}
+      <strong className="tg-num" key={`${id}-${value}`}>
+        {String(value).padStart(2, "0")}
+      </strong>
+      <em className="tg-unit">{unit}</em>
+    </span>
+  );
+  return (
+    <div aria-label="공개까지 남은 시간" className="tg-countdown" role="timer">
+      {days > 0 ? seg(days, "일", "d") : null}
+      {seg(hours, "시간", "h")}
+      {seg(mins, "분", "m")}
+      {seg(secs, "초", "s", true)}
+    </div>
+  );
+}
 
 export function StudioShell({
   actor,
@@ -3332,13 +3364,9 @@ export function StudioShell({
         <span className="teaser-gate-orb" aria-hidden="true">
           🔮
         </span>
-        <strong className="teaser-gate-title">최초공개 일정</strong>
-        <p className="teaser-gate-desc">
-          공개 전까지 내용을 가려두었어요. 내용을 보거나 수정하려면 비공개 레이어
-          비밀번호를 입력해 주세요.
-        </p>
+        {/* 설명문 없이 카운트다운이 주인공 — '얼마나 남았는지'가 곧 이 카드의 존재 이유다. */}
         {selectedLiveEvent?.teaserRevealAt ? (
-          <p className="teaser-gate-when">{teaserBadgeTitle(selectedLiveEvent.teaserRevealAt)}</p>
+          <TeaserGateCountdown revealAt={selectedLiveEvent.teaserRevealAt} />
         ) : null}
         <div className="teaser-gate-row">
           <input
