@@ -2624,9 +2624,17 @@ p.agenda-sub.hope-badge {
 /* 떡밥 상세 — 한 줄 요약(오브+시각) + 주 동작. 각주·큰 여백 없이 컴팩트하게. */
 .detail-teaser {
   display: grid;
-  gap: 8px;
+  /* ⚠ gap을 쓰면 안 된다. 링/알약이 '높이 0'으로 마운트·언마운트되는 구간이 있는데,
+     그리드 gap은 트랙 사이에 고정으로 들어가므로 음수 마진으로도 없앨 수 없다
+     → 요소가 들어오고 나갈 때마다 8px씩 툭 튄다(사용자 지적).
+     간격을 '버튼의 위 마진' 하나로 옮기면, 위에서 무엇이 생기고 사라지든 총 높이가
+     그 요소의 실제 높이만큼만 변한다. */
+  gap: 0;
   justify-items: center;
   text-align: center;
+}
+.detail-teaser > .dt-hope {
+  margin-top: 8px;
 }
 .detail-teaser .dt-when {
   display: inline-flex;
@@ -3026,7 +3034,7 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   overflow: clip;
   /* 박동 링은 링박스 밖 5px까지 나간다. 고요 구간에는 숫자가 링 바깥까지 자라므로
      여백을 함께 넓혀 잘리지 않게 한다. */
-  overflow-clip-margin: calc(8px + var(--hy-calm, 0) * 44px);
+  overflow-clip-margin: calc(8px + var(--hy-final, 0) * 60px);
   /* 잘리는 모서리를 그대로 두면 칼로 자른 단면이 보인다. 클립 지점 바로 위를 20px에 걸쳐
      흐리게 지워 '차오르는' 느낌으로 만든다 — 다 자란 뒤(=1)엔 페이드 구간이 내용 아래로
      빠져 아무 영향이 없다. */
@@ -3044,11 +3052,13 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
 .detail-teaser .dt-when {
   opacity: calc(1 - var(--hy-emerge, 0));
   max-height: calc((1 - var(--hy-emerge, 0)) * 52px);
+  /* ⚠ 세로 패딩도 함께 접어야 한다 — max-height를 0으로 해도 패딩(위아래 5px)은 남아
+     10px짜리 빈 줄이 버티다가, 알약이 DOM에서 빠지는 순간 통째로 사라져 툭 튄다. */
+  padding-block: calc((1 - var(--hy-emerge, 0)) * 5px);
   overflow: clip;
-  /* ⚠ .detail-teaser는 gap:8px 그리드다. 알약의 '높이'만 0으로 접으면 간격 8px은 그대로
-     남아 있다가, 알약이 DOM에서 빠지는 순간 통째로 사라져 아래 버튼이 8px 툭 튄다
-     (사용자 지적). 접히는 만큼 자기 간격도 같이 먹게 해 언마운트 시 변화량을 0으로 만든다. */
-  margin-top: calc(var(--hy-emerge, 0) * -8px);
+  /* 간격은 버튼의 위 마진이 전담한다(위 .detail-teaser 주석) → 알약은 마진 0.
+     그래야 접히는 동안에도, DOM에서 빠지는 순간에도 총 높이가 자기 높이만큼만 변한다. */
+  margin: 0;
 }
 /* 동작 줄이기·export — 양자화된 0/1만 오므로 중간 상태가 없다(캡처 결정성). */
 .dt-count {
@@ -3059,7 +3069,8 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   justify-items: center;
   gap: 8px;
   width: 132px;
-  margin: 2px auto 0;
+  /* 위 여백도 등장에 비례 — 안 그러면 링이 마운트되는 순간 2px이 툭 생긴다. */
+  margin: calc(2px * var(--hy-emerge, 1)) auto 0;
 }
 .dt-count-ringbox {
   position: relative;
@@ -3089,7 +3100,10 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   inset: 0;
   width: 100%;
   height: 100%;
-  transform: rotate(-90deg); /* 12시 방향에서 시작 */
+  /* 12시 방향에서 시작 + 마지막 10초엔 링 자체가 물러난다(축소). 숫자만 키워서는
+     '링 바깥'이 될 수 없다 — 라벨과 부딪히기 전에 링 안쪽 지름을 못 넘기 때문이다.
+     링이 작아지고 숫자가 커지면서 서로 지나쳐야 '뚫고 나온다'로 읽힌다. */
+  transform: rotate(-90deg) scale(calc(1 - var(--hy-final, 0) * 0.28));
 }
 .dt-ring-track {
   fill: none;
@@ -3152,7 +3166,7 @@ html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-count-ringbox::after {
   transition: stroke 0.5s var(--ease);
   /* 고요가 올수록 눈금은 물러난다 — 마지막엔 숫자와 호만 남는 게 더 크게 읽힌다.
      예전엔 10초에 .is-final로 한 번에 바뀌어 뚝 끊겨 보였다(사용자 지적). */
-  opacity: calc(1 - var(--hy-calm, 0) * 0.85);
+  opacity: calc(1 - var(--hy-final, 0) * 0.9);
 }
 .dt-ring-ticks line.on {
   stroke: rgb(255 255 255 / 62%);
@@ -3218,7 +3232,7 @@ html[data-eye-comfort] .dt-grad-c {
   /* 고요 구간에서는 링·눈금이 함께 사라지므로 '링 안쪽'이라는 제약 자체가 없어진다 →
      그 자리를 숫자가 링 바깥까지 넘겨받는다(추가 성장 1.15배). 남는 제약은 두 가지뿐:
      아래 라벨과 겹치지 않을 것(링박스 132px 안), 팝오버 폭을 넘지 않을 것. */
-  font-size: calc(var(--hy-num, 1.05) * 26px * (1 + var(--hy-calm, 0) * 1.15));
+  font-size: calc(var(--hy-num, 1.05) * 26px * (1 + var(--hy-final, 0) * 1.25));
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   /* 큰 숫자는 자간이 벌어져 보인다 — 광학 보정(애플이 큰 수치에 쓰는 트래킹). */
@@ -3279,22 +3293,29 @@ html[data-eye-comfort] .dt-grad-c {
 html[data-reduce-motion] .dt-count.is-final .dt-count-core strong {
   animation: none;
 }
-/* ── 고요에서의 시선 몰입(전부 --hy-calm 연속) ────────────────────────────
-   임계값(.is-final)에 매달면 '애니메이션 없이 확 바뀌는' 느낌이 난다 — 곡선은 이미
-   연속인데 표현만 계단이었다. 고요가 짙어질수록 계기(트랙·눈금·꼬리)는 물러나고
-   숫자만 남아 커진다. 요소를 더 얹는 게 아니라 덜어내서 시선을 모은다. */
+/* ── 마지막 10초의 시선 몰입(전부 --hy-final 연속) ─────────────────────────
+   ⚠ 이 채널들을 --hy-calm(11.8→10초, 1.8초짜리)에 물리면 10초 언저리에서 한꺼번에
+   변해 '10초 되자마자 확 커진다'가 된다(사용자 지적). --hy-final은 10초부터 0초까지
+   내내 진행하므로, 계기(트랙·눈금·꼬리·별)가 천천히 물러나는 동안 숫자가 계속 자라
+   결국 링이 있던 자리를 넘어간다. 요소를 얹는 게 아니라 덜어내서 시선을 모은다. */
 .dt-ring-track {
-  opacity: calc(1 - var(--hy-calm, 0) * 0.78);
+  opacity: calc(1 - var(--hy-final, 0) * 0.82);
 }
 .dt-ring-progress {
-  opacity: calc(1 - var(--hy-calm, 0) * 0.5);
-  stroke-width: calc(7 + var(--hy-calm, 0) * 1.6);
+  opacity: calc(1 - var(--hy-final, 0) * 0.62);
+  stroke-width: calc(7 + var(--hy-final, 0) * 1.6);
 }
 .dt-ring-trail {
-  opacity: calc(var(--dt-trail-a, 1) * (1 - var(--hy-calm, 0)));
+  opacity: calc(var(--dt-trail-a, 1) * (1 - var(--hy-final, 0)));
 }
 .dt-ring-spark {
-  opacity: calc(1 - var(--hy-calm, 0) * 0.55);
+  opacity: calc(1 - var(--hy-final, 0) * 0.7);
+}
+/* 라벨·캡션도 마지막엔 한 발 물러난다 — 3초 남은 거대한 숫자가 이미 다 말하고 있다.
+   완전히 지우지는 않는다(정보는 남긴다). */
+.dt-count-label,
+.dt-count-when {
+  opacity: calc(1 - var(--hy-final, 0) * 0.45);
 }
 /* 공개 시각 — 링이 알약을 밀어내며 사라졌던 정보. 라벨보다 한 단계 조용하게. */
 .dt-count-when {
@@ -3324,7 +3345,7 @@ html[data-reduce-motion] .dt-count.is-final .dt-count-core strong {
   .dt-count-core strong {
     /* ⚠ 고요 배율(--hy-calm)을 빼먹으면 모바일에서만 숫자가 안 커진다 — 기준 크기만
        바꾸고 배율은 그대로 이어받아야 한다. */
-    font-size: calc(var(--hy-num, 1.05) * 24px * (1 + var(--hy-calm, 0) * 1.15));
+    font-size: calc(var(--hy-num, 1.05) * 24px * (1 + var(--hy-final, 0) * 1.25));
   }
   .dt-count-when {
     font-size: 11px;
@@ -3345,7 +3366,7 @@ html[data-reduce-motion] .dt-count.is-final .dt-count-core strong {
     height: 112px;
   }
   .dt-count-core strong {
-    font-size: calc(var(--hy-num, 1.05) * 22px * (1 + var(--hy-calm, 0) * 1.15));
+    font-size: calc(var(--hy-num, 1.05) * 22px * (1 + var(--hy-final, 0) * 1.25));
   }
 }
 html[data-reduce-motion] .dt-count-core strong,
@@ -3365,7 +3386,7 @@ html[data-reduce-motion] .dt-ring-ticks line {
    테두리·글자는 호박색으로 내려가고, 바탕은 시트보다 밝게 남겨 떠 있는 느낌을 지킨다.
    고요 구간에서는 테두리가 굵어지며 존재감이 올라간다(계기가 물러난 자리를 채운다). */
 .agenda-detail-sheet.is-teaser .dt-hope {
-  border-width: calc(1.5px + var(--hy-calm, 0) * 0.8px);
+  border-width: calc(1.5px + var(--hy-final, 0) * 0.8px);
   border-color: color-mix(
     in srgb,
     rgb(124 108 240 / 45%) calc((1 - var(--hy-gold, 0)) * 100%),
@@ -3373,8 +3394,8 @@ html[data-reduce-motion] .dt-ring-ticks line {
   );
   background: color-mix(in srgb, #fff calc((1 - var(--hy-gold, 0)) * 100%), #fffaf0);
   color: color-mix(in srgb, #5b4aa6 calc((1 - var(--hy-gold, 0)) * 100%), #6b3d00);
-  box-shadow: 0 calc(2px + var(--hy-calm, 0) * 3px)
-    calc(6px + var(--hy-calm, 0) * 12px)
+  box-shadow: 0 calc(2px + var(--hy-final, 0) * 3px)
+    calc(6px + var(--hy-final, 0) * 12px)
     color-mix(in srgb, rgb(124 108 240 / 18%) calc((1 - var(--hy-gold, 0)) * 100%), rgb(154 88 0 / 26%));
 }
 /* 눌린 상태(기대 중)도 같은 온도로 — 보라 그라데이션만 남으면 혼자 차갑다. */

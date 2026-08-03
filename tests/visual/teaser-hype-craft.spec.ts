@@ -160,19 +160,25 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
           '<circle class="dt-ring-track" cx="50" cy="50" r="44"></circle></svg>' +
           '<div class="dt-count-core"><strong>10</strong></div></div></div>';
         document.body.appendChild(host);
-        // 10초 시점의 강도 곡선 값 + 고요 최대.
-        host.style.setProperty("--hy-num", "1.667");
-        host.style.setProperty("--hy-calm", "1");
+        // 마지막 1초: 강도 곡선 값 + 마지막 축 최대.
+        host.style.setProperty("--hy-num", "2.01");
+        host.style.setProperty("--hy-final", "1");
         host.style.setProperty("--hy-emerge", "1");
+        host.querySelector<HTMLElement>(".dt-count-core strong")!.textContent = "1";
+        // 매초 애니메이션의 첫 프레임(scale 1.09)이 아니라 '정착 상태'를 잰다.
+        host.querySelector<HTMLElement>(".dt-count-core strong")!.style.animation = "none";
         const ringbox = host.querySelector<HTMLElement>(".dt-count-ringbox")!;
         const strong = host.querySelector<HTMLElement>(".dt-count-core strong")!;
         const rb = ringbox.getBoundingClientRect();
         const nb = strong.getBoundingClientRect();
-        const svgBox = host.querySelector("svg")!.getBoundingClientRect();
-        const sw = parseFloat(getComputedStyle(host.querySelector(".dt-ring-track")!).strokeWidth);
+        // 링의 '실제로 그려진' 크기(마지막 구간에는 축소가 걸려 있다).
+        const track = host.querySelector<SVGCircleElement>(".dt-ring-track")!;
+        const tb = track.getBoundingClientRect();
+        const sw = parseFloat(getComputedStyle(track).strokeWidth);
         const font = parseFloat(getComputedStyle(strong).fontSize);
-        // 링 안쪽 지름(px) — 고요에서는 이걸 '넘어야' 정상이다(링이 사라지므로).
-        const innerD = (44 - sw / 2) * 2 * (svgBox.width / 100);
+        // 트랙 bbox는 stroke 바깥까지 포함한다 → 안쪽 지름 = bbox − stroke(양쪽).
+        const svgScale = host.querySelector("svg")!.getBoundingClientRect().width / 100;
+        const innerD = tb.width - sw * svgScale;
         host.remove();
         return {
           innerD,
@@ -183,8 +189,11 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
           font
         };
       });
-      // 링이 사라진 자리를 넘겨받는다 — 두 자리 숫자는 안쪽 지름보다 넓어진다.
-      expect(res.textW, `${width}px에서 숫자가 링 안에 갇혀 있다`).toBeGreaterThan(res.innerD * 0.95);
+      // 마지막엔 링이 물러나고 숫자가 그 자리를 넘어간다 — 글자 잉크가 링 안쪽 지름보다 크다.
+      expect(
+        res.inkH,
+        `${width}px에서 숫자(잉크 ${res.inkH.toFixed(0)}px)가 링 안쪽 지름 ${res.innerD.toFixed(0)}px을 못 넘는다`
+      ).toBeGreaterThan(res.innerD);
       // 그래도 라벨과는 안 겹친다 — 줄 상자가 링박스(고정 높이) 안에 들어와야 한다.
       expect(
         res.lineH,
@@ -444,6 +453,54 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
       expect(i.name).toBe("reveal-secondary-rise");
       // 지연 동안 숨어 있다가 제 순서에 올라온다(base에 opacity:0을 두지 않는다).
       expect(i.fill).toBe("both");
+    }
+  });
+});
+
+test.describe("등장 구간 레이아웃 연속성", () => {
+  test("66→58초 내내 총 높이가 계단 없이 이어진다(기대돼요 버튼이 안 튄다)", async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto("/visual-fixture/poster", { waitUntil: "load" });
+    await page.evaluate(async () => {
+      await document.fonts.ready;
+    });
+    const heights = await page.evaluate(() => {
+      const EM = (s: number) => {
+        if (s >= 66) return 0;
+        if (s <= 58) return 1;
+        const x = (66 - s) / 8;
+        return x * x * x * (x * (x * 6 - 15) + 10);
+      };
+      const host = document.createElement("div");
+      host.className = "agenda-detail-sheet is-teaser";
+      host.style.cssText = "position:fixed;left:0;top:0;width:344px;padding:0 20px";
+      document.body.appendChild(host);
+      const out: { s: number; h: number }[] = [];
+      // 실제 렌더와 같은 마운트 규칙: 링은 s<=66, 알약은 s>58.
+      for (let s = 68; s >= 56; s -= 0.1) {
+        const e = EM(s);
+        const ring =
+          s <= 66
+            ? '<div class="dt-count"><div class="dt-count-ringbox"></div>' +
+              '<p class="dt-count-label">최초공개까지</p>' +
+              '<p class="dt-count-when">오전 2시</p></div>'
+            : "";
+        const pill = s > 58 ? '<p class="dt-when"><b>오전 2시</b></p>' : "";
+        host.innerHTML = `<div class="detail-teaser">${ring}${pill}<button class="dt-hope">기대돼요</button></div>`;
+        const teaser = host.querySelector<HTMLElement>(".detail-teaser")!;
+        teaser.style.setProperty("--hy-emerge", String(e));
+        out.push({ s, h: teaser.getBoundingClientRect().height });
+      }
+      host.remove();
+      return out;
+    });
+    // 마운트/언마운트 경계(66, 58)를 포함해 인접 0.1초 사이 높이 변화가 작아야 한다.
+    for (let k = 1; k < heights.length; k += 1) {
+      const d = Math.abs(heights[k].h - heights[k - 1].h);
+      expect(
+        d,
+        `${heights[k].s}초에서 높이가 ${d.toFixed(1)}px 튀었다(${heights[k - 1].h.toFixed(1)} → ${heights[k].h.toFixed(1)})`
+      ).toBeLessThan(6);
     }
   });
 });

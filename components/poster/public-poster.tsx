@@ -98,6 +98,7 @@ import {
   HYPE_WINDOW_S,
   STATIC_MOTION_FRAME,
   hypeEmerge,
+  hypeFinale,
   hypeChannels,
   hypeCalm,
   hypeCssVars,
@@ -410,12 +411,15 @@ function TeaserCountdown({
       const calm = staticOnly ? (rawCalm > 0.5 ? 1 : 0) : rawCalm;
       // 등장 — 하이프 창(60초) 바깥에서도 써야 하므로 강도와 별개로 계산한다.
       const rawEmerge = hypeEmerge(remainMs);
+      const rawFinale = hypeFinale(remainMs);
       const emerge = staticOnly ? (rawEmerge > 0.5 ? 1 : 0) : rawEmerge;
+      const finale = staticOnly ? quantizeStaticIntensity(rawFinale) : rawFinale;
       const vars = {
         ...hypeCssVars(hypeChannels(i, calm)),
         // 박동 위상 — 정지 모드에선 진폭 0 프레임이라 파형이 곱해져도 안 움직인다.
         ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i)),
-        "--hy-emerge": emerge.toFixed(3)
+        "--hy-emerge": emerge.toFixed(3),
+        "--hy-final": finale.toFixed(3)
       };
       for (const [k, v] of Object.entries(vars)) {
         el.style.setProperty(k, v);
@@ -1760,11 +1764,14 @@ export function PublicPoster({
       const calm = staticOnly ? (rawCalm > 0.5 ? 1 : 0) : rawCalm;
       // 등장 — 하이프 창(60초) 바깥에서도 써야 하므로 강도와 별개로 계산한다.
       const rawEmerge = hypeEmerge(remainMs);
+      const rawFinale = hypeFinale(remainMs);
       const emerge = staticOnly ? (rawEmerge > 0.5 ? 1 : 0) : rawEmerge;
+      const finale = staticOnly ? quantizeStaticIntensity(rawFinale) : rawFinale;
       const vars = {
         ...hypeCssVars(hypeChannels(i, calm)),
         ...hypeMotionCssVars(staticOnly ? STATIC_MOTION_FRAME : hypeMotionFrame(remainMs, i)),
-        "--hy-emerge": emerge.toFixed(3)
+        "--hy-emerge": emerge.toFixed(3),
+        "--hy-final": finale.toFixed(3)
       };
       for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
       el.classList.toggle("hype-live", raw > 0);

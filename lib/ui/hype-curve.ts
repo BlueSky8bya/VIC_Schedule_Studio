@@ -55,6 +55,21 @@ export function hypeEmerge(remainMs: number): number {
   return smootherstep((HYPE_EMERGE_S - s) / EMERGE_SPAN_S);
 }
 
+// ── 마지막 10초의 '시각적 진행' ──────────────────────────────────────────────
+// 고요(calm)는 1.8초 만에 완성되는 '동요 끄기' 신호다. 크기·투명도까지 여기에 물리면
+// 10초 언저리에서 한꺼번에 변해 '10초 되자마자 확 커진다'가 된다(사용자 지적).
+// 마지막 10초 내내 천천히 진행하는 축을 따로 둔다 — 숫자는 계속 자라고, 계기(트랙·눈금·
+// 꼬리·별)는 계속 물러난다. 결국 숫자만 남아 링이 있던 자리를 넘어간다.
+export const HYPE_FINALE_S = 10;
+
+export function hypeFinale(remainMs: number): number {
+  if (!Number.isFinite(remainMs)) return 0;
+  const s = remainMs / 1000;
+  if (s >= HYPE_FINALE_S) return 0;
+  if (s <= 0) return 1;
+  return smootherstep((HYPE_FINALE_S - s) / HYPE_FINALE_S);
+}
+
 // ── 폭풍의 눈 ────────────────────────────────────────────────────────────────
 // 강도만 끝까지 올리면 마지막 10초가 그냥 '가장 시끄러운 구간'이 된다. 그러면 클라이맥스가
 // 소음에 묻힌다. 그래서 10초에서 동요(흔들림·잔떨림)를 한 번에 재우고, 대신 박동을 느리고
