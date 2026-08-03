@@ -93,6 +93,7 @@ import type {
 import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
 import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { getTeaserHopeIdsAction, toggleTeaserHopeAction } from "@/lib/schedules/hope-actions";
+import { HYPE_WINDOW_S, hypeChannels, hypeCssVars, hypeIntensity } from "@/lib/ui/hype-curve";
 import { heartTier } from "@/lib/schedules/heart-tiers";
 import { debutDPlus, getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
@@ -358,6 +359,38 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
+  // 시각 채널은 10Hz로 '요소에 직접' 기록한다 — 리렌더는 1Hz(숫자)만. 하이프 창(60초) 밖이거나
+  // 동작 줄이기면 루프를 아예 돌리지 않는다(배터리·CPU).
+  const hostRef = useRef<HTMLSpanElement | null>(null);
+  useEffect(() => {
+    if (Number.isNaN(target)) return;
+    if (typeof document !== "undefined" && document.documentElement.hasAttribute("data-reduce-motion")) {
+      return;
+    }
+    let raf = 0;
+    const write = () => {
+      const el = hostRef.current;
+      if (!el) return;
+      const card = el.closest<HTMLElement>(".public-event, .agenda-item");
+      const i = hypeIntensity(target - Date.now());
+      const vars = hypeCssVars(hypeChannels(i));
+      for (const [k, v] of Object.entries(vars)) {
+        el.style.setProperty(k, v);
+        card?.style.setProperty(k, v);
+      }
+      card?.classList.toggle("hype-live", i > 0);
+    };
+    const tick = () => {
+      if (document.hidden) return; // 안 보이는 탭에선 쉰다
+      raf = window.requestAnimationFrame(write);
+    };
+    tick();
+    const id = window.setInterval(tick, 100); // 10Hz 커밋(60fps rAF의 1/6 비용)
+    return () => {
+      window.clearInterval(id);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
+  }, [target]);
   const remain = now === null ? null : target - now;
   const revealed = remain !== null && remain <= 0;
   // 공개 시각이 지나면 즉시 실제 내용을 받아온다(캐시 우회 액션). 서버 시계가 reveal에 아직 안
@@ -369,43 +402,38 @@ function TeaserCountdown({ revealAt, onReveal }: { revealAt: string; onReveal: (
     return () => window.clearInterval(id);
   }, [revealed]);
   if (Number.isNaN(target)) return null;
-  if (remain === null) return <span className="teaser-count">⏳</span>;
+  if (remain === null) return <span className="teaser-count" ref={hostRef}>⏳</span>;
   const s = Math.max(0, Math.floor(remain / 1000));
   // 긴장 곡선: 하루 이상 남으면 초를 세지 않고 D-n만(조용히), 24시간 안쪽부터 실시간 시계.
   // 1시간 안쪽(soon)은 카드가 은은히 달아오르고, 10초 안쪽(final)은 초가 심장박동처럼 뛴다.
   if (s > 86400) {
-    return <span className="teaser-count">D-{Math.ceil(s / 86400)}</span>;
+    return (
+      <span className="teaser-count" ref={hostRef}>
+        D-{Math.ceil(s / 86400)}
+      </span>
+    );
   }
   const hh = String(Math.floor((s % 86400) / 3600)).padStart(2, "0");
   const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
   const ss = String(s % 60).padStart(2, "0");
-  // 1분 안쪽 = 최초공개 직전의 난리. 한 번에 최대치로 가지 않고 4단계로 점점 격해진다
-  // (벤치마크: 유튜브 프리미어·로켓 T-minus·애플 타이머 — 공통적으로 '주기 단축 → 크기
-  // 확대 → 마지막 색 전환/화이트아웃'). h1 예열(60~31s) → h2 고조(30~11s) →
-  // h3 클라이맥스(10~4s, 금빛) → h4 화이트아웃(3~1s).
-  const stage = s <= 3 ? 4 : s <= 10 ? 3 : s <= 30 ? 2 : s <= 60 ? 1 : 0;
-  const cls = `teaser-count is-live${s <= 3600 ? " soon" : ""}${
-    stage > 0 ? ` hype h${stage}` : ""
-  }${s <= 10 ? " final" : ""}`;
-  if (stage > 0) {
+  // 1분 안쪽 = 최초공개 직전. 예전엔 h1~h4 이산 단계라 경계에서 툭 바뀌었다(사용자 지적) →
+  // 이제 강도 I가 연속으로 오르고 시각 채널은 위 10Hz 루프가 CSS 변수로 흘려보낸다.
+  // 여기 클래스는 '무엇을 그릴지'(의미)만 정한다.
+  const inHype = s <= HYPE_WINDOW_S;
+  const cls = `teaser-count is-live${s <= 3600 ? " soon" : ""}${inHype ? " hype" : ""}`;
+  if (inHype) {
     // 초만 크게(분/시는 0이라 잡음) — key로 매 초 리마운트해 숫자가 쿵 떨어지는 연출.
     return (
-      <span className={cls}>
+      <span className={cls} ref={hostRef}>
         <b key={s}>{s}</b>
       </span>
     );
   }
-  return <span className={cls}>{s <= 0 ? "✨ 공개!" : `${hh}:${mm}:${ss}`}</span>;
-}
-
-// 남은 초 → 하이프 단계(카드의 TeaserCountdown과 같은 기준). 팝오버·리더선이 카드와
-// 정확히 같은 박자로 격해지도록 한 곳에서 계산한다.
-function hypeStageOf(remainS: number | null): number {
-  if (remainS === null || remainS > 60 || remainS <= 0) return 0;
-  if (remainS <= 3) return 4;
-  if (remainS <= 10) return 3;
-  if (remainS <= 30) return 2;
-  return 1;
+  return (
+    <span className={cls} ref={hostRef}>
+      {s <= 0 ? "✨ 공개!" : `${hh}:${mm}:${ss}`}
+    </span>
+  );
 }
 
 // 공개 순간 제목 해독 연출 — 해커 영화식 디코딩. 두 국면으로 나뉜다:
@@ -1518,6 +1546,7 @@ export function PublicPoster({
       ? agendaDetail.event.teaserRevealAt
       : null;
   const [detailRemainS, setDetailRemainS] = useState<number | null>(null);
+  // 숫자(1Hz)와 시각 채널(10Hz)을 분리 — 카드와 '같은 시각·같은 곡선'을 쓰므로 위상이 안 어긋난다.
   useEffect(() => {
     if (!detailRevealAt) {
       setDetailRemainS(null);
@@ -1528,6 +1557,38 @@ export function PublicPoster({
     tick();
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
+  }, [detailRevealAt]);
+  useEffect(() => {
+    if (!detailRevealAt) return;
+    if (typeof document !== "undefined" && document.documentElement.hasAttribute("data-reduce-motion")) {
+      return;
+    }
+    const target = Date.parse(detailRevealAt);
+    let raf = 0;
+    const write = () => {
+      const el = detailSheetRef.current;
+      if (!el) return;
+      const i = hypeIntensity(target - Date.now());
+      const vars = hypeCssVars(hypeChannels(i));
+      for (const [k, v] of Object.entries(vars)) el.style.setProperty(k, v);
+      el.classList.toggle("hype-live", i > 0);
+      // 리더선(팝오버 밖 SVG)도 같은 값을 받는다 — 선만 멈춰 있으면 끊겨 보인다.
+      const link = document.querySelector<SVGElement>(".detail-anchor-link");
+      if (link) {
+        for (const [k, v] of Object.entries(vars)) link.style.setProperty(k, v);
+        link.classList.toggle("hype-live", i > 0);
+      }
+    };
+    const tick = () => {
+      if (document.hidden) return;
+      raf = window.requestAnimationFrame(write);
+    };
+    tick();
+    const id = window.setInterval(tick, 100);
+    return () => {
+      window.clearInterval(id);
+      if (raf) window.cancelAnimationFrame(raf);
+    };
   }, [detailRevealAt]);
   const hopeCountOf = (ev: PublicScheduleEvent): number =>
     hopeCounts[ev.id] ?? ev.hopeCount ?? 0;
@@ -3550,6 +3611,8 @@ export function PublicPoster({
                         }
                       : {})}
                   >
+                    {/* 3번째 파동 링(후반부터 스며듦) — ::before/::after가 1·2번을 맡는다. */}
+                    <span aria-hidden="true" className="teaser-ring" />
                     <div className="event-main teaser-main">
                       <span className="teaser-spark" aria-hidden="true">🔮</span>
                       <p className="teaser-q">???</p>
@@ -4836,10 +4899,10 @@ export function PublicPoster({
             const teaserActive = Boolean(
               event.teaser && event.teaserRevealAt && Date.parse(event.teaserRevealAt) > Date.now()
             );
-            // 카드와 같은 하이프 단계(h1~h4) — 팝오버·리더선이 카드와 한 박자로 격해진다.
-            const detailStage = teaserActive ? hypeStageOf(detailRemainS) : 0;
-            const detailHype = detailStage > 0;
-            const detailFinal = detailStage >= 3;
+            // 카드와 같은 연속 강도 — 위 10Hz 루프가 CSS 변수로 흘려보낸다. 여기선 '무엇을
+            // 그릴지'(문구 전환)만 판단한다. 이산 단계(hs1~hs4)는 폐기.
+            const detailHype = teaserActive && detailRemainS !== null && detailRemainS <= HYPE_WINDOW_S;
+            const detailFinal = detailHype && (detailRemainS ?? 99) <= 10;
             // PC 팝오버 좌표(자동 배치 or 드래그 확정) + 액센트 색(대표 태그 1~2색 그라데이션).
             const pos = anchor ? detailManual ?? detailPos : null;
             // 업도움은 띠와 같은 초록 계열로 액센트·선 색을 통일(카드 ↔ 띠 조화).
@@ -4873,7 +4936,7 @@ export function PublicPoster({
                 {edge && detailAnchorPt ? (
                   <svg
                     aria-hidden="true"
-                    className={`detail-anchor-link${detailHype ? ` is-hype hs${detailStage}` : ""}`}
+                    className={`detail-anchor-link${detailHype ? " is-hype" : ""}`}
                     style={{ "--dt-line": lineColor } as CSSProperties}
                   >
                     {edge.x === detailAnchorPt.x && edge.y === detailAnchorPt.y ? null : (
@@ -4892,7 +4955,7 @@ export function PublicPoster({
                   aria-label="일정 상세"
                   aria-modal="true"
                   className={`agenda-detail-sheet${detailSnapback ? " pop-snapback" : ""}${
-                    detailHype ? ` is-hype hs${detailStage}` : ""
+                    detailHype ? " is-hype" : ""
                   }${detailFinal ? " is-final" : ""}${
                     detailJustRevealed ? " reveal-burst" : ""
                   }`}
@@ -5014,7 +5077,7 @@ export function PublicPoster({
                           🔮
                         </span>
                         {detailHype ? (
-                          <b>{detailStage >= 3 ? "곧 공개!" : "잠시 후 공개"}</b>
+                          <b>{detailFinal ? "곧 공개!" : "잠시 후 공개"}</b>
                         ) : (
                           <>
                             <b>{formatRevealKst(event.teaserRevealAt)}</b>
