@@ -5998,28 +5998,30 @@ export function StudioShell({
         </div>
       </div>
 
-      {/* 데스크톱 비공개 경고 — 레이아웃에 끼어들던 전폭 띠 대신 하단 중앙 플로팅 알약.
-          '지금 잠그기'도 여기로(사용자 결정 — 상태와 그 상태를 끝내는 조작을 한자리에).
-          표시를 꺼도 잠금해제가 살아 있는 동안엔 남아서 잠글 수단을 잃지 않는다. */}
-      {canTogglePrivateLayer && hasUnlockSession ? (
-        <div
-          className={`private-warning private-warning-float${canReadPrivate ? "" : " is-hidden-state"}${
-            calZoom > 1 ? " is-raised" : ""
-          }`}
-          role="status"
-        >
-          <LockKeyhole aria-hidden="true" size={15} />
-          {canReadPrivate
-            ? "비공개 일정 표시 중 — 방송 화면 공유에 주의하세요"
-            : "비공개 잠금 해제됨 — 표시는 꺼져 있어요"}
-          <button
-            className="private-warning-btn"
-            onClick={relockNow}
-            title="이 브라우저의 비공개 잠금해제를 지금 종료합니다(다시 보려면 비밀번호 입력)"
-            type="button"
-          >
-            지금 잠그기
-          </button>
+      {/* 하단 중앙 플로팅 행 — 비공개 경고 알약과 확대 배율 컨트롤을 같은 행에 나란히
+          (사용자 결정: 위아래로 쌓으면 일정을 두 줄 가린다). 각 알약은 필요할 때만 나타난다. */}
+      {(canTogglePrivateLayer && hasUnlockSession) || zoomCollapse ? (
+        <div className="bottom-float-row">
+          {canTogglePrivateLayer && hasUnlockSession ? (
+            <div
+              className={`private-warning private-warning-float${canReadPrivate ? "" : " is-hidden-state"}`}
+              role="status"
+            >
+              <LockKeyhole aria-hidden="true" size={15} />
+              {canReadPrivate
+                ? "비공개 일정 표시 중 — 방송 화면 공유에 주의하세요"
+                : "비공개 잠금 해제됨 — 표시는 꺼져 있어요"}
+              <button
+                className="private-warning-btn"
+                onClick={relockNow}
+                title="이 브라우저의 비공개 잠금해제를 지금 종료합니다(다시 보려면 비밀번호 입력)"
+                type="button"
+              >
+                지금 잠그기
+              </button>
+            </div>
+          ) : null}
+          {zoomCollapse ? <div className="cal-zoom-float">{renderCalZoomCtl()}</div> : null}
         </div>
       ) : null}
 
@@ -6646,9 +6648,8 @@ export function StudioShell({
             })()
           : null}
 
-        {/* 확대 중엔 배율 표시가 화면에 늘 남는다(스크롤로 액션바가 밀려나도 지금 몇 %인지
-            보이게) — 하단 중앙 플로팅. 100%에선 사라져 평소 화면을 어지럽히지 않는다. */}
-        {zoomCollapse ? <div className="cal-zoom-float">{renderCalZoomCtl()}</div> : null}
+        {/* (확대 배율 플로팅은 아래 하단 플로팅 행(bottom-float-row)으로 이동 — 비공개 배너와
+            같은 행에 나란히 서서 일정을 최소로 가린다.) */}
 
         {/* 팝오버 → 앵커 칸 리더 라인 — '어느 칸의 편집창인지'를 항상 시각으로 잇는다.
             칸 쪽 끝은 도트, 카드 쪽 끝은 카드의 '앵커에 가장 가까운 가장자리'에 정확히 붙는다
