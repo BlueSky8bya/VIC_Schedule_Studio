@@ -504,8 +504,9 @@ function ScrambleText({ text }: { text: string }) {
     }
     const started = Date.now();
     const toChaos = window.setTimeout(() => setPhase("chaos"), SCRAMBLE_QM_MS);
-    // 난수 자리는 60ms마다 통째로 새로 뽑는다(멈춰 보이지 않게).
-    const chaos = window.setInterval(() => setTick((t) => t + 1), 60);
+    // 난수 자리를 새로 뽑는 간격. 60ms(초당 16회)는 너무 빨라 글자가 뭉개진 노이즈로만
+    // 보였다 — 개별 글자가 인지되는 90ms로 늦춰 '난수가 돌아가는 중'이 읽히게 한다.
+    const chaos = window.setInterval(() => setTick((t) => t + 1), 90);
     let lockTimer = 0;
     const startLocking = window.setTimeout(() => {
       let i = 0;
@@ -5346,22 +5347,6 @@ export function PublicPoster({
                                 <stop className="dt-grad-c" offset="100%" />
                               </linearGradient>
                             </defs>
-                            <g className="dt-ring-ticks">
-                              {ticks.map((f) => (
-                                <line
-                                  className={f <= p ? "on" : undefined}
-                                  key={f}
-                                  transform={`rotate(${360 * f} 50 50)`}
-                                  /* 링 안쪽 면(반지름 44 - stroke 7/2 = 40.5)에 바짝 붙인 짧은
-                                     눈금. 숫자에 딸린 장식이 아니라 바에 속한 눈금으로 읽히게
-                                     — 숫자가 최대로 커져도(반지름 약 22) 한참 떨어져 있다. */
-                                  x1="38.6"
-                                  x2="40.2"
-                                  y1="50"
-                                  y2="50"
-                                />
-                              ))}
-                            </g>
                             <circle className="dt-ring-track" cx="50" cy="50" r="44" />
                             <circle
                               className="dt-ring-progress"
@@ -5371,6 +5356,22 @@ export function PublicPoster({
                               r="44"
                               style={{ strokeDasharray: 1, strokeDashoffset: 1 - p }}
                             />
+                            {/* 눈금은 바 '위에' 새긴다(반지름 41.8~46.2 = stroke 폭 40.5~47.5 안).
+                                안쪽에 두면 링박스 후광의 경계와 겹쳐 숫자 주변에 묻혀 버렸다.
+                                진행 호 뒤에 그려야 채워진 구간에서도 새김눈이 보인다. */}
+                            <g className="dt-ring-ticks">
+                              {ticks.map((f) => (
+                                <line
+                                  className={f <= p ? "on" : undefined}
+                                  key={f}
+                                  transform={`rotate(${360 * f} 50 50)`}
+                                  x1="41.8"
+                                  x2="46.2"
+                                  y1="50"
+                                  y2="50"
+                                />
+                              ))}
+                            </g>
                             {/* 진행 끝을 따라가는 별 + 꼬리 — 캔버스 없이 SVG만. 기준점은 경로
                                 시작점(94,50)이고 회전량은 호 길이와 같은 360p°라 항상 붙어 있다. */}
                             {[

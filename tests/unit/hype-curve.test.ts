@@ -175,8 +175,26 @@ describe("흔들림은 고요 이전 구간에서 실제로 보인다", () => {
   const shakeAt = (sec: number) =>
     hypeChannels(hypeIntensity(S(sec)), hypeCalm(S(sec))).shakePx;
 
-  it("고요 직전(11초)에 카드 기준 1px 이상 흔들린다", () => {
-    expect(shakeAt(11)).toBeGreaterThan(1);
+  it("고요가 시작되기 직전(12초)에 카드 기준 1px 이상 흔들린다", () => {
+    expect(shakeAt(12)).toBeGreaterThan(1);
+  });
+
+  it("고요 구간(11.8→10초)에서 흔들림이 계단 없이 잦아들어 0이 된다", () => {
+    const start = shakeAt(11.8);
+    expect(start).toBeGreaterThan(1);
+    let prev = start;
+    let peak = start;
+    for (let sec = 11.8; sec >= 10; sec -= 0.05) {
+      const cur = shakeAt(sec);
+      // 뚝 끊기지 않는다 — 인접 0.05초 사이 변화가 작다.
+      expect(Math.abs(cur - prev)).toBeLessThan(0.09);
+      peak = Math.max(peak, cur);
+      prev = cur;
+    }
+    // 감쇠가 붙기 전 아주 잠깐 부풀 수는 있다(폭풍 직전의 고조) — 다만 미미해야 한다.
+    expect(peak).toBeLessThan(start * 1.05);
+    expect(prev).toBeLessThan(0.01); // 루프 종점(≈10초)에서 사실상 멎어 있고
+    expect(shakeAt(10)).toBe(0); // 10초에는 정확히 0이다
   });
 
   it("중반(30초)에도 감지 가능한 크기다", () => {
@@ -194,16 +212,27 @@ describe("흔들림은 고요 이전 구간에서 실제로 보인다", () => {
 });
 
 describe("hypeCalm — 폭풍의 눈(마지막 10초)", () => {
-  it("10초까지는 0이고, 그 뒤 0.35초 안에 1로 올라선다('갑자기'를 유지)", () => {
-    expect(hypeCalm(S(11))).toBe(0);
-    expect(hypeCalm(S(10))).toBe(0);
-    expect(hypeCalm(S(9.9))).toBeGreaterThan(0);
-    expect(hypeCalm(S(9.65))).toBe(1);
+  it("11.8초부터 잦아들어 10초에 완성된다(숫자 '10'은 이미 조용한 자리에 떨어진다)", () => {
+    expect(hypeCalm(S(12))).toBe(0);
+    expect(hypeCalm(S(11.8))).toBe(0);
+    expect(hypeCalm(S(11))).toBeGreaterThan(0);
+    expect(hypeCalm(S(11))).toBeLessThan(1);
+    expect(hypeCalm(S(10))).toBe(1);
     expect(hypeCalm(S(1))).toBe(1);
   });
 
+  it("전이가 연속이다 — 인접 0.05초 사이에 튀지 않는다(확 바뀌는 느낌 금지)", () => {
+    let prev = hypeCalm(S(12.5));
+    for (let sec = 12.5; sec >= 9; sec -= 0.05) {
+      const cur = hypeCalm(S(sec));
+      expect(cur - prev).toBeLessThan(0.06);
+      expect(cur).toBeGreaterThanOrEqual(prev - 1e-9); // 역행 없음
+      prev = cur;
+    }
+  });
+
   it("동요는 재우고(흔들림 0) 박동은 1초로 늘린다", () => {
-    const before = hypeChannels(hypeIntensity(S(11)), hypeCalm(S(11)));
+    const before = hypeChannels(hypeIntensity(S(13)), hypeCalm(S(13)));
     const after = hypeChannels(hypeIntensity(S(9)), hypeCalm(S(9)));
     expect(before.shakePx).toBeGreaterThan(0);
     expect(after.shakePx).toBe(0); // 갑자기 고요해진다

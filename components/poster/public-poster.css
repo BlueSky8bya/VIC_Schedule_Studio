@@ -2509,10 +2509,13 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   font-weight: 900;
   letter-spacing: -0.03em;
-  color: #b9f6ca;
+  /* ⚠ 예전엔 민트 고정색이었다. 어두운 떡밥 카드에선 읽혔지만, 공개 직후의 밝은 카드와
+     크림색 팝오버에선 배경에 묻혀 난수가 거의 안 보였다(사용자 지적) → 주변 글자색을
+     따르고, 번쩍임은 그 색 자체의 후광으로 만든다(어느 배경에서도 읽힌다). */
+  color: inherit;
   text-shadow:
-    0 0 6px rgb(74 222 128 / 90%),
-    0 0 14px rgb(34 197 94 / 55%);
+    0 0 5px currentColor,
+    0 0 13px rgb(124 108 240 / 45%);
   animation: scramble-jitter 0.09s steps(2) infinite;
 }
 /* ⚠ 밝기(opacity/brightness) 왕복 금지 — 초당 11회 명멸은 광과민성 발작 기준(WCAG 2.3.1,
@@ -2937,7 +2940,50 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
    폭풍의 눈(10초)에 들어가면 곡선이 --hy-shake-x를 0으로 만들어 저절로 멎는다. */
 .agenda-detail-sheet.is-hype > * {
   --hy-shake-k: 1.8;
-  animation: hype-shake var(--hy-shake-dur, 1.4s) ease-in-out infinite;
+  /* 카드와 '똑같이' 떨면 두 물체가 한 덩어리처럼 보여 괴리감이 든다(사용자 지적).
+     큰 몸은 느리고 넓게 흔들린다 — 주기를 1.55배로 늘리고 궤적도 원형(sway)으로 바꾼다. */
+  animation: hype-sway calc(var(--hy-shake-dur, 1.4s) * 1.55) ease-in-out infinite;
+}
+/* 조각마다 위상을 조금씩 어긋나게 — 통째로 같은 박자면 딱딱한 판때기가 움직이는 것처럼
+   보인다. 어긋나야 '내용이 술렁인다'로 읽힌다. */
+.agenda-detail-sheet.is-hype > *:nth-child(2) {
+  animation-delay: -0.13s;
+}
+.agenda-detail-sheet.is-hype > *:nth-child(3) {
+  animation-delay: -0.27s;
+}
+.agenda-detail-sheet.is-hype > *:nth-child(4) {
+  animation-delay: -0.41s;
+}
+.agenda-detail-sheet.is-hype > *:nth-child(5) {
+  animation-delay: -0.19s;
+}
+@keyframes hype-sway {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  22% {
+    transform: translate3d(
+      calc(var(--hy-shake-x, 0px) * 0.95 * var(--hy-shake-k, 1)),
+      calc(var(--hy-shake-x, 0px) * -0.3 * var(--hy-shake-k, 1)),
+      0
+    );
+  }
+  48% {
+    transform: translate3d(
+      calc(var(--hy-shake-x, 0px) * -0.5 * var(--hy-shake-k, 1)),
+      calc(var(--hy-shake-x, 0px) * 0.9 * var(--hy-shake-k, 1)),
+      0
+    );
+  }
+  74% {
+    transform: translate3d(
+      calc(var(--hy-shake-x, 0px) * -0.85 * var(--hy-shake-k, 1)),
+      calc(var(--hy-shake-x, 0px) * -0.45 * var(--hy-shake-k, 1)),
+      0
+    );
+  }
 }
 /* 그립은 빼둔다 — 잡아 끄는 손잡이가 떨면 조준이 어긋난다. */
 .agenda-detail-sheet.is-hype > .detail-grab {
@@ -2968,13 +3014,15 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
 .dt-count-ringbox::before {
   content: "";
   position: absolute;
-  inset: 14%;
+  /* 안쪽으로 더 물리고 가장자리를 길게 흘려 '경계선'이 생기지 않게 한다 — 예전엔 72%에서
+     끊겨 숫자 주변에 옅은 원이 하나 더 보였고, 거기에 눈금이 묻혔다. */
+  inset: 22%;
   border-radius: 999px;
   background: radial-gradient(
     circle at 50% 45%,
-    rgb(255 214 122 / calc(18% + var(--hy-glow, 0) * 240%)) 0%,
-    rgb(124 108 240 / calc(6% + var(--hy-glow, 0) * 40%)) 55%,
-    transparent 72%
+    rgb(255 214 122 / calc(14% + var(--hy-glow, 0) * 220%)) 0%,
+    rgb(124 108 240 / calc(4% + var(--hy-glow, 0) * 30%)) 46%,
+    transparent 100%
   );
   pointer-events: none;
 }
@@ -3032,21 +3080,21 @@ html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-count-ringbox::after {
   animation: none;
 }
 
-/* 눈금(5초 간격 12개) — 지나간 자리는 흐려진다. 시계 문자판 같은 '계기' 인상. */
+/* 눈금(5초 간격 12개) — 바 위에 새긴 눈이다. 남은 구간(호가 채워진 곳)은 밝게 파이고,
+   지나간 구간(빈 트랙)은 옅은 잉크 자국만 남는다. 시계 문자판 같은 '계기' 인상.
+   ⚠ 안쪽(숫자 쪽)에 두면 링박스 후광의 경계와 겹쳐 숫자에 묻혀 버린다 — 반드시 바 위. */
 .dt-ring-ticks line {
-  stroke: rgb(124 108 240 / 16%);
-  stroke-width: 2.4;
-  /* butt — round 캡은 양 끝을 stroke 절반(1.2)만큼 늘려서, 계산상 안 닿는 눈금이
-     실제로는 바를 파고들거나 안쪽으로 번진다. */
+  stroke: rgb(124 108 240 / 20%);
+  stroke-width: 2.2;
+  /* butt — round 캡은 양 끝을 stroke 절반만큼 늘려 바 밖으로 삐져나온다. */
   stroke-linecap: butt;
   transition: stroke 0.5s var(--ease);
+  /* 고요가 올수록 눈금은 물러난다 — 마지막엔 숫자와 호만 남는 게 더 크게 읽힌다.
+     예전엔 10초에 .is-final로 한 번에 바뀌어 뚝 끊겨 보였다(사용자 지적). */
+  opacity: calc(1 - var(--hy-calm, 0) * 0.7);
 }
 .dt-ring-ticks line.on {
-  stroke: color-mix(
-    in srgb,
-    rgb(124 108 240 / 42%) calc((1 - var(--hy-gold, 0)) * 100%),
-    rgb(240 168 58 / 62%)
-  );
+  stroke: rgb(255 255 255 / 62%);
 }
 /* 호 그라데이션 — 단색 바보다 깊이가 생긴다. 강도에 따라 세 정지점이 함께 데워진다. */
 .dt-grad-a {
@@ -3091,10 +3139,10 @@ html[data-eye-comfort] .dt-grad-c {
   filter: drop-shadow(0 0 calc(3px + var(--hy-glow, 0) * 30px) rgb(255 236 190 / 90%));
 }
 .dt-ring-trail.t1 {
-  opacity: 0.45;
+  --dt-trail-a: 0.45;
 }
 .dt-ring-trail.t2 {
-  opacity: 0.2;
+  --dt-trail-a: 0.2;
 }
 .dt-count-core {
   /* 숫자 하나뿐이라 고정 슬롯이 필요 없다 — 자릿수가 줄면 그때그때 원 중심으로 다시
@@ -3104,8 +3152,9 @@ html[data-eye-comfort] .dt-grad-c {
   line-height: 1;
 }
 .dt-count-core strong {
-  /* 강도에 따라 연속으로 커진다(1.05 → 1.85배 기준을 팝오버 크기에 맞게 스케일). */
-  font-size: calc(var(--hy-num, 1.05) * 26px);
+  /* 강도에 따라 연속으로 커진다(1.05 → 1.85배 기준을 팝오버 크기에 맞게 스케일).
+     고요 구간에서는 그 위에 한 번 더 자란다 — 계기가 물러난 자리를 숫자가 채운다. */
+  font-size: calc(var(--hy-num, 1.05) * 26px * (1 + var(--hy-calm, 0) * 0.2));
   font-weight: 900;
   font-variant-numeric: tabular-nums;
   color: color-mix(in srgb, #4d3f8f calc((1 - var(--hy-gold, 0)) * 100%), #9a5800);
@@ -3160,21 +3209,22 @@ html[data-eye-comfort] .dt-grad-c {
     filter: brightness(1);
   }
 }
-/* 눈금은 한 발 물러난다 — 마지막엔 숫자와 호만 남는 게 더 크게 읽힌다. */
-.dt-count.is-final .dt-ring-ticks {
-  opacity: 0.35;
-  transition: opacity 0.6s var(--ease);
+/* ── 고요에서의 시선 몰입(전부 --hy-calm 연속) ────────────────────────────
+   임계값(.is-final)에 매달면 '애니메이션 없이 확 바뀌는' 느낌이 난다 — 곡선은 이미
+   연속인데 표현만 계단이었다. 고요가 짙어질수록 계기(트랙·눈금·꼬리)는 물러나고
+   숫자만 남아 커진다. 요소를 더 얹는 게 아니라 덜어내서 시선을 모은다. */
+.dt-ring-track {
+  opacity: calc(1 - var(--hy-calm, 0) * 0.78);
 }
-.dt-count.is-final .dt-ring-progress {
-  stroke-width: 8.5;
-  transition:
-    stroke-dashoffset 0.95s linear,
-    stroke-width 0.6s var(--ease);
+.dt-ring-progress {
+  opacity: calc(1 - var(--hy-calm, 0) * 0.5);
+  stroke-width: calc(7 + var(--hy-calm, 0) * 1.6);
 }
-/* 꼬리는 거둔다 — 빠르게 돌 때의 잔상이지, 고요한 구간의 어휘가 아니다. */
-.dt-count.is-final .dt-ring-trail {
-  opacity: 0;
-  transition: opacity 0.6s var(--ease);
+.dt-ring-trail {
+  opacity: calc(var(--dt-trail-a, 1) * (1 - var(--hy-calm, 0)));
+}
+.dt-ring-spark {
+  opacity: calc(1 - var(--hy-calm, 0) * 0.55);
 }
 /* 공개 시각 — 링이 알약을 밀어내며 사라졌던 정보. 라벨보다 한 단계 조용하게. */
 .dt-count-when {

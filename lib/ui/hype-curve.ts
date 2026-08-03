@@ -45,15 +45,18 @@ export function hypeIntensity(remainMs: number): number {
 // 소음에 묻힌다. 그래서 10초에서 동요(흔들림·잔떨림)를 한 번에 재우고, 대신 박동을 느리고
 // 깊게 — 초에 맞춰 한 번씩 — 뛰게 한다. 크기·빛·색은 계속 올라가므로 조용해지지만 더
 // 커진다(검이불누 화이불치: 화려하되 사치스럽지 않게).
-export const HYPE_CALM_S = 10; // 고요가 시작되는 남은 시간
-const CALM_RAMP_S = 0.35; // '갑자기'를 유지하되 프레임 튐은 없게 하는 최소 전이
+export const HYPE_CALM_S = 10; // 고요가 '완성'되는 남은 시간
+// 고요는 10초에 스위치처럼 켜지지 않는다 — 그 앞 1.8초에 걸쳐 잦아들어, 숫자 '10'이
+// 이미 조용해진 자리에 떨어진다. 예전엔 0.35초 만에 끊겨 애니메이션 없이 확 바뀌는
+// 느낌이었다(사용자 지적). smootherstep이라 시작·끝의 기울기도 0이라 이음새가 없다.
+const CALM_LEAD_S = 1.8;
 
 export function hypeCalm(remainMs: number): number {
   if (!Number.isFinite(remainMs)) return 0;
   const s = remainMs / 1000;
-  if (s > HYPE_CALM_S) return 0;
-  if (s <= HYPE_CALM_S - CALM_RAMP_S) return 1;
-  return smootherstep((HYPE_CALM_S - s) / CALM_RAMP_S);
+  if (s >= HYPE_CALM_S + CALM_LEAD_S) return 0;
+  if (s <= HYPE_CALM_S) return 1;
+  return smootherstep((HYPE_CALM_S + CALM_LEAD_S - s) / CALM_LEAD_S);
 }
 
 // I → 각 시각 채널. 지수(alpha)로 채널마다 '언제 존재감이 커지는지'를 다르게 준다:

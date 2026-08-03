@@ -92,7 +92,7 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
       host.innerHTML =
         '<div class="dt-count"><div class="dt-count-ringbox">' +
         '<svg class="dt-ring" viewBox="0 0 100 100">' +
-        '<g class="dt-ring-ticks"><line x1="38.6" x2="40.2" y1="50" y2="50"></line></g>' +
+        '<g class="dt-ring-ticks"><line x1="41.8" x2="46.2" y1="50" y2="50"></line></g>' +
         '<circle class="dt-ring-track" cx="50" cy="50" r="44"></circle></svg>' +
         '<div class="dt-count-core"><strong>10</strong></div></div></div>';
       document.body.appendChild(host);
@@ -123,9 +123,11 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
       host.remove();
       return { inner, outer, half, halfW, halfH, cap, minClearance: Math.min(...clearances) };
     });
-    // 바 안쪽 면(40.5)을 넘지 않는다 — butt 캡이라 끝이 번지지도 않는다.
+    // 눈금은 바 stroke 폭(반지름 40.5~47.5) '안'에 새겨진다 — 안쪽에 두면 링박스 후광
+    // 경계와 겹쳐 숫자에 묻힌다. butt 캡이라 바 밖으로 삐져나오지도 않는다.
     expect(res.cap).toBe("butt");
-    expect(res.outer).toBeLessThanOrEqual(40.5);
+    expect(res.inner).toBeGreaterThanOrEqual(40.5);
+    expect(res.outer).toBeLessThanOrEqual(47.5);
     // 숫자가 최대(--hy-num 1.824)일 때조차 어느 눈금도 숫자 상자에 닿지 않는다.
     expect(
       res.minClearance,
@@ -233,6 +235,10 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
         k: getComputedStyle(sheet.querySelector(".agenda-detail-title")!).getPropertyValue(
           "--hy-shake-k"
         ),
+        // 큰 몸은 느리게 — 카드보다 주기가 길어야 한 덩어리로 안 보인다.
+        dur: getComputedStyle(sheet.querySelector(".agenda-detail-title")!).animationDuration,
+        // 조각마다 위상이 어긋나야 '판때기'가 아니라 '술렁임'으로 읽힌다.
+        delays: Array.from(sheet.children).map((c) => getComputedStyle(c).animationDelay),
         boxW: Math.round(box.width),
         boxH: Math.round(box.height)
       };
@@ -240,12 +246,17 @@ test.describe("teaser hype 4차 — 장인 항목", () => {
       return out;
     });
     // 내용은 떨고, 시트 자신은 안 떤다(닫기·기대돼요 히트 타깃이 움직이면 누르기 어렵다).
-    expect(res.title).toBe("hype-shake");
-    expect(res.teaser).toBe("hype-shake");
+    // 그리고 카드(hype-shake)와 '다른' 어휘여야 한다 — 똑같으면 한 덩어리처럼 보인다.
+    expect(res.title).toBe("hype-sway");
+    expect(res.teaser).toBe("hype-sway");
+    expect(res.sheet).not.toBe("hype-sway");
     expect(res.sheet).not.toBe("hype-shake");
     // 드래그 손잡이는 예외 — 조준이 어긋난다.
     expect(res.grab).toBe("none");
     expect(res.k.trim()).toBe("1.8");
+    // 기본 흔들림 주기(1.4s)보다 확실히 느리다.
+    expect(parseFloat(res.dur)).toBeGreaterThan(1.4);
+    expect(new Set(res.delays).size, "조각들이 같은 위상으로 통째로 움직인다").toBeGreaterThan(1);
   });
 
   test("떡밥 시트는 강도에 따라 연속으로 데워지고 유리 재질을 끈다", async ({ page }) => {
