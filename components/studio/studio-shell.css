@@ -8325,6 +8325,17 @@ html[data-reduce-motion] .modal-close:active {
   background: #fffdf8;
   position: relative; /* 미리보기 오버레이(흰 바 대체) 기준 */
 }
+
+/* 방금 저장하고 넘어온 직후 — 아직 저장 전 스냅샷이다. 잠깐(보통 100~300ms) 살짝 눌러 두면
+   새 스냅샷으로 바뀌는 순간이 '갈아끼움'이 아니라 '또렷해짐'으로 읽힌다. 자리는 그대로다. */
+.viewer-fullscreen[data-preview-warming] {
+  opacity: 0.72;
+  transition: opacity 0.18s var(--ease);
+}
+
+.viewer-fullscreen {
+  transition: opacity 0.24s var(--ease);
+}
 /* 흰 상단 바 대신 — 미리보기 안내(왼쪽, 작게)와 이동 버튼(오른쪽)을 포스터 배경 위에 띄운다.
    가운데는 비워 포스터가 클릭을 받게(pointer-events). */
 .viewer-preview-overlay {

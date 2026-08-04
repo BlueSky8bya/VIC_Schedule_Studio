@@ -430,12 +430,20 @@ export function StudioShell({
       pendingPersistRef.current > 0 ||
       inflightWritesRef.current.size > 0;
     setViewerMode(true);
+    // 눌러두기는 **누른 즉시** 시작한다 — flush가 끝난 뒤에 켜면 그 사이(가장 오래 stale인 구간)를
+    // 또렷하게 그려버려 결국 같은 깜빡임이 남는다.
+    if (needsRefresh) setPreviewWarming(true);
     void (async () => {
       await flushPendingWrites();
       if (needsRefresh) {
         router.refresh();
         editedSinceSyncRef.current = false;
       }
+      // 스냅샷은 **쓰기가 끝난 뒤에** 받는다. 예전엔 viewerMode 변화만 보고 곧바로 받아서,
+      // 방금 누른 저장이 아직 날아가는 중인 스냅샷(= 저장 전 상태)이 잡혔다. 그 stale 값이
+      // previewSnapshot에 눌러앉아 router.refresh()가 가져온 새 데이터까지 가려, 몇 초 기다리거나
+      // 편집실을 나갔다 다시 들어와야 반영됐다(2026-08-04 실측).
+      void refreshPreviewSnapshot(needsRefresh);
     })();
   }
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
@@ -1535,20 +1543,31 @@ export function StudioShell({
   // P0-SEC-2: 미리보기를 열 때마다 신선한 서버 공개 스냅샷을 받아온다(떡밥 가림 포함,
   // 낙관적 재가공 금지). 실패하면 페이지 로드 시점 스냅샷(viewerModePreview)으로 동작.
   const [previewSnapshot, setPreviewSnapshot] = useState<PublicSchedule | null>(null);
+  // 늦게 도착한 옛 응답이 새 응답을 덮지 않게 하는 순번(요청이 겹칠 수 있다: 진입 + 저장 후 재요청).
+  const previewSeqRef = useRef(0);
+  // 방금 저장한 내용이 아직 안 실린 스냅샷을 보고 있는 동안 참을 유지한다(살짝 눌러 그린다).
+  const [previewWarming, setPreviewWarming] = useState(false);
+  const refreshPreviewSnapshot = useCallback(async (warm = false) => {
+    const seq = (previewSeqRef.current += 1);
+    if (warm) setPreviewWarming(true);
+    try {
+      const snap = await getPublicPreviewAction();
+      // 최신 요청이 아니면 버린다. 받아둔 값을 지우지도 않는다 — 화면을 비우면 깜빡인다.
+      if (snap && seq === previewSeqRef.current) setPreviewSnapshot(snap);
+    } catch {
+      /* 실패 시 기존 스냅샷 유지 */
+    } finally {
+      if (seq === previewSeqRef.current) setPreviewWarming(false);
+    }
+  }, []);
+  // 차가운 진입(북마크·쿠키 복원 등 enterViewerMode를 안 거친 경로)만 여기서 받는다.
+  // 편집실에서 넘어오는 경로는 enterViewerMode가 **쓰기 flush 뒤에** 직접 부른다.
+  const coldPreviewFetchedRef = useRef(false);
   useEffect(() => {
-    if (!viewerMode) return;
-    let alive = true;
-    getPublicPreviewAction()
-      .then((snap) => {
-        if (alive && snap) setPreviewSnapshot(snap);
-      })
-      .catch(() => {
-        /* 실패 시 기존 스냅샷 유지 */
-      });
-    return () => {
-      alive = false;
-    };
-  }, [viewerMode]);
+    if (!viewerMode || coldPreviewFetchedRef.current) return;
+    coldPreviewFetchedRef.current = true;
+    void refreshPreviewSnapshot();
+  }, [viewerMode, refreshPreviewSnapshot]);
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   // 아직 안 풀린 최초공개(떡밥)는 태그 색도 힌트가 된다 — 공개 화면과 똑같이 무색(흰 카드)으로.
@@ -5660,7 +5679,10 @@ export function StudioShell({
       </>
     );
     return (
-      <div className="viewer-fullscreen">
+      // 방금 편집하고 넘어온 순간엔 화면에 있는 게 아직 '저장 전 스냅샷'이다. 그대로 또렷하게
+      // 그렸다가 새 스냅샷으로 갈아끼우면 내용이 툭 바뀌어 깜빡임(혹은 잠깐 빈 카드)으로 읽힌다.
+      // 새 스냅샷이 올 때까지만 살짝 눌러 두고, 도착하면 제자리에서 또렷해진다.
+      <div className="viewer-fullscreen" data-preview-warming={previewWarming ? "" : undefined}>
         {navMsg ? (
           <div className="private-loading" role="status" aria-live="polite">
             <span className="private-loading-spinner" aria-hidden="true" />
