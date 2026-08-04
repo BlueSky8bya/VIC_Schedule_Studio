@@ -1358,6 +1358,38 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
   color: #8b84a3;
   font-variant-numeric: tabular-nums;
 }
+
+/* 아직 열려 있는 탭 — 끝 시각 자리에 '지금'. 오래 열어둔 방문이 목록 위쪽에 있어도
+   "이게 지금 내 탭"이 한눈에 잡혀야 한다. */
+.act-live {
+  color: var(--green);
+}
+
+.act-live::before {
+  content: "";
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  margin-right: 4px;
+  border-radius: 50%;
+  vertical-align: 1px;
+  background: var(--green);
+  animation: act-live-pulse 2s var(--ease) infinite;
+}
+
+@keyframes act-live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+html[data-reduce-motion] .act-live::before {
+  animation: none;
+}
 .act-icon {
   flex: none;
   display: grid;

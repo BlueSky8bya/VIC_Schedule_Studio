@@ -32,3 +32,16 @@ describe("행 상한 — limit이 아니라 range로 끝까지 받는다", () =>
     expect(usagePart).toContain("fetchAllRows");
   });
 });
+
+// 방문 목록 정렬 — 시작 시각으로 정렬하면 6시간째 열어둔 탭이 방금 2분 들른 방문 아래로
+// 내려가, 정작 지금 보고 있는 세션이 목록에서 안 보이는 것처럼 읽힌다(실측: 13:16~19:54
+// 914건짜리 PC 탭이 18:24 안드로이드 방문 밑에 있었다).
+describe("방문 정렬 — 마지막 활동 기준", () => {
+  it("endMs 내림차순으로 정렬한다", () => {
+    expect(CODE).toContain("sort((a, b) => b.endMs - a.endMs");
+  });
+
+  it("startMs 단독 정렬로 되돌아가지 않는다", () => {
+    expect(CODE).not.toContain("sort((a, b) => b.startMs - a.startMs)");
+  });
+});

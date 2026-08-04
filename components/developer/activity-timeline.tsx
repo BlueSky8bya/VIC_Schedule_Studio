@@ -211,9 +211,13 @@ export function ActivityTimeline({
       `날짜 ${dateKey}${v ? "" : " (그날 전체)"}`,
       v ? visitHead(v, items) : `방문 ${visits.length}건 · 항목 ${items.length}건`,
       `진단 층 ${full ? "포함" : "없음(불러오기 실패)"} · 진단 보존 3일 / 일반 90일`,
-      typeof navigator !== "undefined" ? `브라우저 ${navigator.userAgent}` : "",
+      // ⚠ 아래 세 줄은 **복사를 누른 이 기기**의 정보다. 기록된 방문의 기기가 아니다.
+      // 표시를 안 했더니 안드로이드 방문 리포트에 Windows UA가 찍혀 한 세션으로 읽혔다(실측).
+      // 방문의 기기는 위 방문 머리줄에 있다.
+      `— 아래는 복사한 기기(기록된 방문의 기기가 아님) —`,
+      typeof navigator !== "undefined" ? `복사한 브라우저 ${navigator.userAgent}` : "",
       typeof window !== "undefined"
-        ? `화면 ${window.innerWidth}×${window.innerHeight} · ${window.location.origin}`
+        ? `복사한 화면 ${window.innerWidth}×${window.innerHeight} · ${window.location.origin}`
         : "",
       `복사 시각 ${new Date().toLocaleString("ko-KR")}`,
       ""
@@ -329,6 +333,8 @@ export function ActivityTimeline({
           const isOpen = expanded.has(v.key); // 바깥 open(카드 접기)과 헷갈리지 않게 다른 이름
           const rows = groupItems(v.items);
           const changes = v.items.filter((i) => i.source === "server").length;
+          // 아직 열려 있는 탭 — 클라 배치가 최대 15초에 한 번 올라오므로 3분을 넉넉한 경계로 본다.
+          const live = Date.now() - v.endMs < 3 * 60_000;
           return (
             <li className="act-visit" key={v.key} data-open={isOpen ? "" : undefined}>
               {/* 헤더 한 줄: 토글(넓은 과녁) + 복사. 복사를 별도 줄에 두면 그 줄 왼쪽이
@@ -372,7 +378,7 @@ export function ActivityTimeline({
                     </span>
                   </span>
                   <span className="act-span">
-                    {hhmm(v.startMs)}–{hhmm(v.endMs)}
+                    {hhmm(v.startMs)}–{live ? <b className="act-live">지금</b> : hhmm(v.endMs)}
                   </span>
                 </button>
                 <button

@@ -242,7 +242,9 @@ export async function getActivityDayAction(
     });
   }
 
-  const visits = [...byKey.values()].sort((a, b) => b.startMs - a.startMs);
+  // 정렬은 **마지막 활동** 기준. 시작 시각으로 정렬하면 몇 시간째 열어둔 탭(오래 전 시작)이
+  // 방금 2분 들른 방문보다 아래로 내려간다 — "지금 보고 있는 세션이 왜 목록에 없지?"가 된다(실측).
+  const visits = [...byKey.values()].sort((a, b) => b.endMs - a.endMs || b.startMs - a.startMs);
   return { ok: true, visits, total: rows.length };
 }
 
