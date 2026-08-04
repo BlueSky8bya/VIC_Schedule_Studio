@@ -1515,19 +1515,27 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
 .usage-picks {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
   margin: 6px 0 2px;
 }
-.usage-picks label {
+/* 고르기 — 네이티브 select는 펼친 목록을 못 꾸며 이 화면 재질과 따로 놀았다. 같은 문법으로 그린다. */
+.upick {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+.upick-label {
   font-size: 10.5px;
   font-weight: 700;
   color: #a9a2be;
 }
-.usage-picks select {
+.upick-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 116px;
   border: 1px solid var(--line, #ece9f5);
   border-radius: var(--r-pill);
   background: var(--surface, #fff);
@@ -1535,13 +1543,78 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
   font-family: inherit;
   font-size: 11.5px;
   font-weight: 700;
-  padding: 3px 6px;
-  max-width: 108px;
+  padding: 3px 9px;
   cursor: pointer;
-  transition: border-color var(--dur-1) var(--ease);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    border-color var(--dur-1) var(--ease),
+    background-color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
 }
-.usage-picks select:hover {
+.upick-btn span {
+  color: #b0a9c4;
+  font-size: 9px;
+}
+.upick-btn:hover {
   border-color: #ddd6fe;
+  background: #faf9ff;
+}
+.upick-btn:active {
+  transform: scale(0.95);
+}
+.upick-btn.is-open {
+  border-color: #ddd6fe;
+  background: rgb(124 108 240 / 12%);
+}
+.upick-menu {
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 0;
+  z-index: 40;
+  min-width: 108px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-md);
+  background: var(--surface, #fff);
+  box-shadow: 0 10px 26px rgb(120 110 160 / 18%);
+  animation: upick-in var(--dur-1) var(--ease);
+}
+@keyframes upick-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+html[data-reduce-motion] .upick-menu {
+  animation: none;
+}
+.upick-menu button {
+  border: 0;
+  border-radius: var(--r-sm, 8px);
+  background: transparent;
+  color: #4a4460;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: left;
+  padding: 5px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color var(--dur-1) var(--ease);
+}
+.upick-menu button:hover {
+  background: #f7f5ff;
+}
+.upick-menu button.is-on {
+  background: rgb(124 108 240 / 12%);
+  color: #5b21b6;
 }
 .usage-reset {
   margin-left: auto;
@@ -1600,20 +1673,17 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
 }
 .usage-list > li:hover { box-shadow: inset 0 0 0 1px #ece9f5; }
 .usage-list > li[data-unnamed] .usage-name { color: #a09ab5; }
-.usage-chip {
+/* 종류 = 색 점. 상자를 두면 줄 왼쪽에 덩어리가 앉아 이름이 밀리고 목록이 어수선해진다. */
+.usage-dot {
   flex: none;
-  min-width: 30px;
-  text-align: center;
-  font-size: 9.5px;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: var(--r-pill);
-  color: #6b6480;
-  background: #f1eff7;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #c9c2dc;
 }
-.usage-chip[data-tone="route"] { background: rgb(96 165 250 / 16%); color: #2563eb; }
-.usage-chip[data-tone="panel"] { background: rgb(52 211 153 / 18%); color: #0f766e; }
-.usage-chip[data-tone="btn"] { background: rgb(124 108 240 / 12%); color: #6b5bd6; }
+.usage-dot[data-tone="route"] { background: #60a5fa; }
+.usage-dot[data-tone="panel"] { background: #34d399; }
+.usage-dot[data-tone="btn"] { background: #a78bfa; }
 .usage-name {
   min-width: 0;
   flex: 1 1 auto;
@@ -1645,11 +1715,21 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
 }
 .usage-n {
   flex: none;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
   font-size: 13px;
   font-weight: 900;
   color: #5b21b6;
   font-variant-numeric: tabular-nums;
   cursor: help;
+}
+/* 역할 필터가 켜졌을 때 숫자가 무엇의 수인지 그 자리에서 말한다. */
+.usage-n em {
+  font-style: normal;
+  font-size: 10px;
+  font-weight: 700;
+  color: #a9a2be;
 }
 .usage-actions {
   display: flex;
@@ -5975,16 +6055,46 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   /* 흔들림·기울기는 JS(rAF)로 래퍼 transform을 직접 칠한다(2색 카드도 확실히 적용). */
   transform: scale(1.06);
 }
+/* 편집 팝오버 맨 아래 관심(하트) 수 — 조용한 한 줄. 저장/삭제 같은 '행동'이 아니라 '사실'이라
+   버튼 문법을 쓰지 않고, 숫자만 또렷하게(다른 지표 타일과 같은 tabular-nums). */
+.editor-hearts {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0 0;
+  padding: 8px 12px;
+  border-radius: var(--r-md);
+  background: rgb(244 114 182 / 8%);
+  color: #b3468a;
+  font-size: 12px;
+  font-weight: 700;
+}
+.editor-hearts span {
+  color: #c98ab3;
+}
+.editor-hearts b {
+  margin-left: auto;
+  font-size: 15px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
 /* 드롭 대상 칸 — "여기에 놓기" 민트빛 강조(오늘=골드·선택=핑크와 구분). */
 .studio-day.drop-target {
   background: #e9faf1 !important;
   box-shadow: inset 0 0 0 2px #57c98a;
-  /* 슬라이드 프리뷰는 transform이라 레이아웃을 안 늘린다. 목록에 paddingBottom을 더해 칸을
-     키우지만, 주(週) 행이 이미 늘어난 상태(align-content:stretch)면 칸 높이가 고정돼 있어
-     맨 아래 카드가 칸 경계를 넘어 다음 주까지 삐져나왔다(사용자 지적).
-     칸 안에서 자르면 넘칠 일이 없다 — 드래그 중 잠깐이고, 삽입선이 위치를 알려주므로
-     잘린 카드가 정보를 가리지 않는다. */
-  overflow: hidden;
+}
+/* 들어올 카드가 놓일 자리 — **실제 그리드 자식**이라 칸(주 행)이 정확히 그만큼 자란다.
+   예전엔 형제를 transform으로 밀고 목록에 paddingBottom만 더했는데, transform은 레이아웃을
+   안 늘려 맨 아래 카드가 칸 경계를 넘어 다음 주까지 삐져나왔다(사용자 지적 2회). */
+.drop-gap {
+  border-radius: var(--r-md);
+  border: 2px dashed #57c98a;
+  background: rgb(87 201 138 / 10%);
+  transition: height var(--dur-2) var(--ease);
+}
+html[data-reduce-motion] .drop-gap {
+  transition: none;
 }
 /* 드롭 삽입선 — 어느 카드 사이에 들어갈지 보여주는 민트 막대(은은히 깜빡).
    레이아웃을 차지하지 않는 절대 오버레이(카드 위/아래 틈에 겹쳐 그림) + pointer-events:none →

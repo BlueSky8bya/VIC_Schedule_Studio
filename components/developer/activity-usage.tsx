@@ -3,6 +3,7 @@
 import { type CSSProperties, useEffect, useState } from "react";
 import { ROLE_NAME, ROLE_ORDER, describeTarget, roleBreakdown } from "@/lib/activity/labels";
 import { getActivityUsageAction, type UsageRow } from "@/lib/activity/query";
+import { UsagePick } from "@/components/developer/usage-pick";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // "적게 쓰인 기능" — 없애도 될 후보를 찾는 화면.
@@ -69,10 +70,8 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
   const areasIn = rows
     ? [...new Set(rows.map((r) => describeTarget(r.kind, r.target).area ?? "기타"))].sort()
     : [];
-  // 역할 칩도 데이터에 실제로 있는 역할만.
-  const rolesIn = rows
-    ? ROLE_ORDER.filter((rr) => rows.some((r) => (r.roles[rr] ?? 0) > 0))
-    : [];
+  // 역할은 **전부** 보여준다. 기록이 0인 역할을 목록에서 빼면 "이 역할은 이 기능을 한 번도
+  // 안 썼다"를 확인할 방법이 사라진다 — 그게 이 화면의 질문이다. 고르면 0건이 곧 답이다.
   const filtered = rows
     ? rows.filter(
         (r) =>
@@ -189,62 +188,42 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
               {/* 칩을 종류·위치·역할 세 줄로 늘어놓으면 목록보다 필터가 길어진다(실측).
                   고르는 값이 늘어날수록(위치는 계속 는다) 더 나빠지므로 드롭다운 한 줄로 묶는다. */}
               <div className="usage-picks">
-                <label>
-                  <span>종류</span>
-                  <select
-                    data-act="usage-kind"
-                    onChange={(e) => {
-                      hapticTick();
-                      setKind(e.target.value);
-                      setShowAll(false);
-                    }}
-                    value={kind}
-                  >
-                    {FILTERS.map((f) => (
-                      <option key={f.key} value={f.key}>
-                        {f.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>위치</span>
-                  <select
-                    data-act="usage-area"
-                    onChange={(e) => {
-                      hapticTick();
-                      setArea(e.target.value);
-                      setShowAll(false);
-                    }}
-                    value={area}
-                  >
-                    <option value="all">전체</option>
-                    {areasIn.map((a) => (
-                      <option key={a} value={a}>
-                        {a}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span>역할</span>
-                  <select
-                    data-act="usage-role"
-                    onChange={(e) => {
-                      hapticTick();
-                      setRole(e.target.value);
-                      setShowAll(false);
-                    }}
-                    value={role}
-                  >
-                    <option value="all">전체</option>
-                    {rolesIn.map((rr) => (
-                      <option key={rr} value={rr}>
-                        {ROLE_NAME[rr]}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+                <UsagePick
+                  act="usage-kind"
+                  label="종류"
+                  onChange={(v) => {
+                    setKind(v);
+                    setShowAll(false);
+                  }}
+                  options={FILTERS.map((f) => ({ value: f.key, label: f.label }))}
+                  value={kind}
+                />
+                <UsagePick
+                  act="usage-area"
+                  label="위치"
+                  onChange={(v) => {
+                    setArea(v);
+                    setShowAll(false);
+                  }}
+                  options={[
+                    { value: "all", label: "전체" },
+                    ...areasIn.map((a) => ({ value: a, label: a }))
+                  ]}
+                  value={area}
+                />
+                <UsagePick
+                  act="usage-role"
+                  label="역할"
+                  onChange={(v) => {
+                    setRole(v);
+                    setShowAll(false);
+                  }}
+                  options={[
+                    { value: "all", label: "전체" },
+                    ...ROLE_ORDER.map((rr) => ({ value: rr, label: ROLE_NAME[rr] }))
+                  ]}
+                  value={role}
+                />
                 {kind !== "all" || area !== "all" || role !== "all" ? (
                   <button
                     className="usage-reset"
@@ -277,17 +256,27 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
                       style={{ "--fill": `${Math.max(3, (countOf(r) / max) * 100)}%` } as CSSProperties}
                       title={tip}
                     >
-                      <span className="usage-chip" data-tone={chip.tone}>
-                        {chip.short}
-                      </span>
+                      {/* 종류는 상자 대신 색 점으로 — 왼쪽에 덩어리(버섯)가 앉아 줄이 이름부터
+                          시작하지 못했다. 점은 폭을 거의 안 먹고 색만으로 구분된다. */}
+                      <span className="usage-dot" data-tone={chip.tone} title={chip.short} />
                       <span className="usage-name">
                         {d.area ? <em className="usage-area">{d.area}</em> : null}
                         {d.name}
                         {needHint && d.hint ? <small>{d.hint}</small> : null}
                         {dev ? <code>{r.target}</code> : null}
                       </span>
-                      <b className="usage-n" title={roleBreakdown(r.roles)}>
+                      {/* 역할을 고르면 숫자는 '그 역할의 횟수'다. 안 적으면 전체 합으로 읽혀
+                          "편집실 1인데 왜 개발자 30이야?"가 된다(실측). */}
+                      <b
+                        className="usage-n"
+                        title={
+                          role === "all"
+                            ? roleBreakdown(r.roles)
+                            : `${ROLE_NAME[role]} ${countOf(r)}번 · 전체 ${r.total}번(${roleBreakdown(r.roles)})`
+                        }
+                      >
                         {countOf(r)}
+                        {role === "all" ? null : <em>{ROLE_NAME[role]}</em>}
                       </b>
                     </li>
                   );
@@ -326,7 +315,9 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
               </div>
 
               <p className="vt-occ-note">
-                숫자 = 눌린 횟수 · 올리면 역할별 내역 · 시청자는 개수만
+                {role === "all"
+                  ? "숫자 = 눌린 횟수 · 올리면 역할별 내역 · 시청자는 개수만"
+                  : `숫자 = ${ROLE_NAME[role]}가 누른 횟수 · 올리면 전체 내역`}
               </p>
             </>
           )}

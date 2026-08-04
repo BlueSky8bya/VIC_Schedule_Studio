@@ -13,6 +13,7 @@ import {
   Eye,
   EyeOff,
   Globe,
+  Heart,
   Keyboard,
   LockKeyhole,
   LogOut,
@@ -675,6 +676,10 @@ export function StudioShell({
   // 개발자 전용 "역할 미리보기"(보기 전용). 클라이언트 한정 — 쿠키/라우트는 절대 안 건드린다.
   // previewRole이 있으면 UI를 그 역할처럼 그린다(데이터·서버 권한은 그대로, 변경은 차단).
   // 새로고침하면 자동 해제(SSR은 항상 실제 역할로 렌더)되어 라우팅/쿠키 엉킴이 없다.
+  // 선택한 일정의 관심(하트) 수. 공개 스냅샷에만 있으므로 비공개 일정은 null(줄을 안 띄운다).
+  const heartCountOfSelected = selectedEventId
+    ? (schedule.viewerModePreview.events.find((e) => e.id === selectedEventId)?.heartCount ?? null)
+    : null;
   const isDeveloper = actor.role === "developer";
   const [previewRole, setPreviewRole] = useState<MembershipRole | null>(null);
   // 이중 역할(매니저·작업자) 미리보기 — 미리보기는 단일 역할이라, 이중은 previewRole="manager"에
@@ -6357,14 +6362,22 @@ export function StudioShell({
                       ...(weekSupCount > 0
                         ? { paddingTop: Math.round((8 + weekSupCount * 20) * calZoom) }
                         : {}),
-                      // 드롭 대상 칸: 들어올 카드 높이만큼 실제로 늘린다 — 활주(transform)만으론
-                      // 칸이 안 자라 마지막 카드가 칸 밖으로 밀려 잘렸다(사용자 지적).
-                      // 같은 날 재정렬(늘어날 필요 없음)은 제외.
-                      ...(liIdx !== null && !dragSrcHere && dragChipH > 0
-                        ? { paddingBottom: dragChipH }
-                        : {})
+                      // (다른 날에서 들어오는 경우의 '자리 열기'는 아래 .drop-gap 스페이서가
+                      //  실제 레이아웃으로 만든다 — paddingBottom+transform 조합은 칸을 못 늘려
+                      //  맨 아래 카드가 칸 경계를 넘었다.)
                     }}
                   >
+                    {/* 다른 날에서 카드가 들어올 자리 — **실제 레이아웃 요소**로 연다.
+                        transform으로 밀면 칸(주 행) 높이가 안 자라 맨 아래 카드가 칸 경계를
+                        넘어 다음 주까지 삐져나왔다(사용자 지적 2회). 스페이서는 그리드 자식이라
+                        칸이 정확히 그만큼 자란다. 목록 gap이 이미 한 칸 들어가므로 높이에서 뺀다. */}
+                    {liIdx !== null && !dragSrcHere && dragChipH > 0 && liIdx <= 0 ? (
+                      <div
+                        aria-hidden="true"
+                        className="drop-gap"
+                        style={{ height: Math.max(0, dragChipH - 5 * calZoom) }}
+                      />
+                    ) : null}
                     {dateEvents.map((event, eventIndex) => {
                       const colors = eventColors(event);
                       // PR2: 칸 색(≤2)에 못 담은 나머지 대분류 → 작은 점 줄("더 있음").
@@ -6463,9 +6476,10 @@ export function StudioShell({
                               slideY = -H;
                             else if (to < dragOrigIdx && eventIndex >= to && eventIndex < dragOrigIdx)
                               slideY = H;
-                          } else if (eventIndex >= liIdx) {
-                            slideY = H;
                           }
+                          // 다른 날에서 들어오는 경우는 transform으로 밀지 않는다 — 아래
+                          // .drop-gap 스페이서가 실제 자리를 만들어 칸·주 행이 함께 자란다.
+                          // (transform은 레이아웃을 안 늘려 맨 아래 카드가 칸 밖으로 나갔다.)
                         } else if (dragSrcHere && dragOrigIdx >= 0 && eventIndex > dragOrigIdx) {
                           slideY = -H;
                         }
@@ -6476,7 +6490,21 @@ export function StudioShell({
                         slideY !== 0
                           ? { ...(pillBaseStyle ?? {}), transform: `translateY(${slideY}px)` }
                           : pillBaseStyle;
-                      return (
+                      // 이 카드 '다음' 자리가 삽입 위치면 그 뒤에 스페이서를 놓는다(맨 끝 포함).
+                      const gapAfter =
+                        liIdx !== null &&
+                        !dragSrcHere &&
+                        dragChipH > 0 &&
+                        liIdx === eventIndex + 1;
+                      const gapEl = gapAfter ? (
+                        <div
+                          aria-hidden="true"
+                          className="drop-gap"
+                          key={`gap-${event.id}`}
+                          style={{ height: Math.max(0, dragChipH - 5 * calZoom) }}
+                        />
+                      ) : null;
+                      const pill = (
                         <div
                           className={pillClass}
                           data-chain={chainKeys.get(event.id)}
@@ -6656,6 +6684,8 @@ export function StudioShell({
                           })()}
                         </div>
                       );
+                      // 스페이서가 있으면 [카드, 자리]로 함께 반환한다(그리드 자식 2개).
+                      return gapEl ? [pill, gapEl] : pill;
                     })}
                   </div>
                 </article>
@@ -7086,6 +7116,18 @@ export function StudioShell({
               >
                 📢 공지 쓰기
               </button>
+            ) : null}
+
+            {/* 이 일정의 관심(하트) 수 — 편집실에서 "이게 반응이 있었나"를 그 자리에서 본다.
+                공개 스냅샷(viewerModePreview)에서 읽는다: 하트는 공개 일정에만 붙고, 숫자는
+                이미 시청자 화면이 쓰는 값이라 새로 새는 것이 없다.
+                비공개 일정은 스냅샷에 없으므로 줄 자체를 띄우지 않는다(0으로 오해되지 않게). */}
+            {selectedEventId && heartCountOfSelected !== null ? (
+              <p className="editor-hearts">
+                <Heart aria-hidden="true" size={13} strokeWidth={2.6} />
+                <span>관심</span>
+                <b>{heartCountOfSelected}</b>
+              </p>
             ) : null}
           </form>
           )}

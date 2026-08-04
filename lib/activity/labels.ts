@@ -203,6 +203,8 @@ const ACT: Record<string, TargetLabel> = {
   "usage-area-all": { name: "위치 필터: 전체", area: "인사이트" },
   "usage-role": { name: "역할 필터", area: "인사이트" },
   "usage-role-all": { name: "역할 필터: 전체", area: "인사이트" },
+  "usage-kind": { name: "종류 필터", area: "인사이트" },
+  "usage-filter-reset": { name: "필터 초기화", area: "인사이트" },
   "legend-item": { name: "태그 범례 누르기", area: "시청자 화면", hint: "태그로 걸러 보기" },
   "usage-copy": { name: "사용량 복사", area: "인사이트" },
   "usage-show-all": { name: "사용량 전체 보기", area: "인사이트" },

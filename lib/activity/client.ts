@@ -137,6 +137,10 @@ function wireClicks(): void {
       if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") return;
       const explicit = el.getAttribute("data-act");
       logActivity("ui.click", { target: explicit || autoId(el) });
+      // 로그아웃은 **누르는 즉시** 내보낸다. 안 그러면 버퍼에 남아 있던 이벤트가 세션이 끊긴
+      // 뒤에 올라가고, 서버는 그때의 신원(=비로그인)으로 역할을 매긴다 → "편집실을 비로그인이
+      // 눌렀다"는 거짓 기록이 남는다(실측). 쿠키가 아직 살아 있는 이 시점에 보내야 맞게 붙는다.
+      if (explicit === "logout") flush(true);
     },
     true
   );
