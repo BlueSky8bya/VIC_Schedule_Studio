@@ -1452,6 +1452,51 @@ export function PublicPoster({
   // 떡밥 즉시 공개 — 카운트다운이 0이 되면 캐시 우회 액션으로 실제 내용을 받아 이 맵에 덮는다.
   // (이게 있으면 렌더에서 가린 stub 대신 실제 일정을 쓴다 → 캐시 30초 안 기다리고 그 순간 풀림.)
   const [revealedEvents, setRevealedEvents] = useState<Record<string, PublicScheduleEvent>>({});
+
+  // ⚠ 마운트할 때마다 떡밥의 '지금 진실'을 캐시를 우회해 한 번 받아온다.
+  //
+  // 왜 필요한가: 편집실 미리보기가 쓰는 viewerModePreview는 **페이지가 서버에서 그려진 시점의
+  // 스냅샷**이다(공개 스케줄은 5분 캐시). 저장은 /api/studio-write 라우트로 나가므로 RSC가 다시
+  // 그려지지 않는다 → 미리보기를 껐다 켤 때마다 옛 공개시각이 되살아난다.
+  // 실측(2026-08-04 진단 로그): 저장 직후엔 자가복구로 04:48이 됐다가, 미리보기를 다시 켜니
+  // revealAt이 04:21(26분 전 값)로 되돌아가 ???가 아니라 빈 칸이 보였다.
+  // loadRevealedEvents는 캐시를 타지 않고 서버가 공개시각을 다시 판정하므로, 한 번의 왕복으로
+  // '아직 미공개면 새 공개시각이 담긴 stub, 공개됐으면 실제 내용'을 받아 상태를 바로잡는다.
+  const teaserIdsKey = useMemo(
+    () =>
+      schedule.events
+        .filter((e) => e.teaser)
+        .map((e) => e.id)
+        .sort()
+        .join(","),
+    [schedule.events]
+  );
+  useEffect(() => {
+    if (!teaserIdsKey) return;
+    const ids = teaserIdsKey.split(",");
+    let alive = true;
+    revealTeaserAction(ids)
+      .then((list) => {
+        if (!alive || list.length === 0) return;
+        setRevealedEvents((prev) => {
+          const next = { ...prev };
+          for (const ev of list) next[ev.id] = ev;
+          return next;
+        });
+        logActivity("diag.reveal", {
+          meta: {
+            phase: "mount-sync",
+            asked: ids.length,
+            got: list.length,
+            revealed: list.filter((ev) => !ev.teaser).length
+          }
+        });
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [teaserIdsKey]);
   // 일정 상세 — 모바일 아젠다는 하단 시트, PC 달력은 카드 옆 앵커 팝오버(anchor 있으면 팝오버).
   // 공개 DTO(PublicScheduleEvent + 공개 태그)만 사용 — 비공개 필드 자체가 없다.
   const [agendaDetail, setAgendaDetail] = useState<{
@@ -5065,6 +5110,7 @@ export function PublicPoster({
             <button
               aria-pressed={on}
               className={cls}
+              data-act="legend-item"
               disabled={decorate}
               key={tag.id}
               onClick={() => toggleTagFilter(tag.id)}

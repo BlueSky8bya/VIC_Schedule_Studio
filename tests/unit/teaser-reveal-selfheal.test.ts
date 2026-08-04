@@ -49,3 +49,13 @@ describe("프레즌스 키는 탭 단위", () => {
     expect(block).not.toContain("localStorage");
   });
 });
+
+describe("떡밥은 마운트마다 캐시 우회로 진실을 다시 받는다", () => {
+  it("미리보기 스냅샷은 페이지 로드 시점 값이라 저장 후 껐다 켜면 되살아난다", () => {
+    const SRC = fs.readFileSync(path.join(process.cwd(), "components/poster/public-poster.tsx"), "utf8");
+    const block = SRC.slice(SRC.indexOf("const teaserIdsKey"), SRC.indexOf("const [agendaDetail"));
+    // 마운트 동기화가 사라지면 '저장했는데 미리보기가 옛 공개시각'이 재발한다.
+    expect(block).toContain("revealTeaserAction(ids)");
+    expect(block).toContain("mount-sync");
+  });
+});

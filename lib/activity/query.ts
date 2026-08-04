@@ -139,6 +139,19 @@ export async function getActivityDayAction(
     }
   }
 
+  // 태그 이름 — filter.tag의 target은 태그 uuid다. 이름을 안 붙이면 '(알 수 없는 항목)'으로 떠
+  // "시청자가 어떤 태그를 찾는가"라는 이 이벤트의 유일한 쓸모가 사라진다(실측).
+  // 태그 이름은 공개 포스터에 그대로 노출되는 값이라 여기 붙여도 새는 것이 없다.
+  if (eventIds.length > 0) {
+    const { data: tags } = await supabase
+      .from("broadcast_tags")
+      .select("id, display_name")
+      .in("id", eventIds.slice(0, 500));
+    for (const t of (tags ?? []) as { id: string; display_name: string | null }[]) {
+      if (!titleById.has(t.id) && t.display_name) titleById.set(t.id, `#${t.display_name}`);
+    }
+  }
+
   // 알려진 계정만 이메일로 푼다 — 모르는 계정은 끝까지 익명(#n).
   const hashToEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
   const { data: members } = await supabase.from("trusted_members").select("email");

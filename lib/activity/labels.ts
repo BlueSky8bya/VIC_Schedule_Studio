@@ -35,7 +35,9 @@ const SECTION: Record<string, TargetLabel> = {
   "modal:members": { name: "멤버 관리 창", area: "관리", hint: "관리 ▾ → 멤버 관리" },
   "modal:developer": { name: "월별 인사이트 창", area: "관리", hint: "관리 ▾ → 월별 인사이트" },
   "modal:notice": { name: "공지 쓰기 창", area: "편집실" },
-  "modal:dayVisit": { name: "이용 기록 창", area: "관리", hint: "지금 보고 있는 이 창" }
+  "modal:dayVisit": { name: "이용 기록 창", area: "관리", hint: "지금 보고 있는 이 창" },
+  // 꾸미기는 라우트로 잡히므로 섹션 계측을 뺐다 — 옛 기록만 남는다.
+  decorate: { name: "꾸미기", area: "꾸미기", hint: "옛 기록(지금은 화면 진입으로 셈)" }
 };
 
 const ACT: Record<string, TargetLabel> = {
@@ -199,6 +201,9 @@ const ACT: Record<string, TargetLabel> = {
   "usage-open": { name: "적게 쓰인 기능 접기/펴기", area: "인사이트" },
   "usage-area": { name: "위치 필터", area: "인사이트" },
   "usage-area-all": { name: "위치 필터: 전체", area: "인사이트" },
+  "usage-role": { name: "역할 필터", area: "인사이트" },
+  "usage-role-all": { name: "역할 필터: 전체", area: "인사이트" },
+  "legend-item": { name: "태그 범례 누르기", area: "시청자 화면", hint: "태그로 걸러 보기" },
   "usage-copy": { name: "사용량 복사", area: "인사이트" },
   "usage-show-all": { name: "사용량 전체 보기", area: "인사이트" },
   "usage-dev": { name: "개발자 정보 켜기", area: "인사이트" },
@@ -233,6 +238,8 @@ const AUTO: Record<string, TargetLabel> = {
   ".month-nav-btn": { name: "월 이동 버튼", area: "편집실", hint: "옛 기록 (지금은 이전/다음으로 나뉨)" },
   ".me-tool": { name: "편집 패널 도구 여러 개", area: "편집실", hint: "여러 버튼이 합쳐진 값" },
   ".button": { name: "이름 없는 버튼 여러 개", area: "공통", hint: "공통 모양의 버튼들이 합쳐진 값" },
+  ".legend-item": { name: "태그 범례 누르기", area: "시청자 화면", hint: "태그로 걸러 보기" },
+  button: { name: "클래스 없는 버튼", area: "기타", hint: "이름도 클래스도 없어 구분할 수 없는 버튼들" },
   ".modal-close": { name: "창 닫기(X)", area: "공통", hint: "옛 기록" },
   ".insights-open": { name: "인사이트 열기", area: "관리", hint: "옛 기록" }
 };

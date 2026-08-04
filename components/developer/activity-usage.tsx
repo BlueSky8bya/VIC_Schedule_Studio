@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, useEffect, useState } from "react";
-import { describeTarget, roleBreakdown } from "@/lib/activity/labels";
+import { ROLE_NAME, ROLE_ORDER, describeTarget, roleBreakdown } from "@/lib/activity/labels";
 import { getActivityUsageAction, type UsageRow } from "@/lib/activity/query";
 import { hapticTick } from "@/lib/ui/haptics";
 
@@ -36,6 +36,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
   const [showAll, setShowAll] = useState(false);
   const [kind, setKind] = useState("all");
   const [area, setArea] = useState("all"); // 위치 필터 — 묶어 접는 대신 골라 본다
+  const [role, setRole] = useState("all"); // 역할 필터 — "이건 매니저만 쓰나?"를 바로 본다
   // 옆 카드(행동 타임라인)와 같은 기본 상태로 둔다 — 한쪽만 접혀 있으면 그 칸이
   // 통째로 비어 보여 어색하다(2단 배치라 세로가 짧아지지도 않는다).
   const [open, setOpen] = useState(true);
@@ -68,21 +69,32 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
   const areasIn = rows
     ? [...new Set(rows.map((r) => describeTarget(r.kind, r.target).area ?? "기타"))].sort()
     : [];
+  // 역할 칩도 데이터에 실제로 있는 역할만.
+  const rolesIn = rows
+    ? ROLE_ORDER.filter((rr) => rows.some((r) => (r.roles[rr] ?? 0) > 0))
+    : [];
   const filtered = rows
     ? rows.filter(
         (r) =>
           (kind === "all" || r.kind === kind) &&
-          (area === "all" || (describeTarget(r.kind, r.target).area ?? "기타") === area)
+          (area === "all" || (describeTarget(r.kind, r.target).area ?? "기타") === area) &&
+          (role === "all" || (r.roles[role] ?? 0) > 0)
       )
     : [];
-  const shown = showAll ? filtered : filtered.slice(0, 15);
-  const max = filtered.length > 0 ? Math.max(...filtered.map((r) => r.total)) : 1;
+  const sorted =
+    role === "all"
+      ? filtered
+      : [...filtered].sort((a, b) => (a.roles[role] ?? 0) - (b.roles[role] ?? 0));
+  const shown = showAll ? sorted : sorted.slice(0, 15);
+  // 역할을 고르면 그 역할의 횟수로 센다 — 전체 합으로 두면 "매니저는 1번인데 54로 보이는" 착시.
+  const countOf = (r: UsageRow) => (role === "all" ? r.total : (r.roles[role] ?? 0));
+  const max = filtered.length > 0 ? Math.max(...filtered.map(countOf)) : 1;
 
   // 붙여넣어 공유·점검할 수 있는 평문. **여기엔 원래 id를 반드시 포함한다** — 화면에선 숨기지만
   // "이 항목 이름이 왜 이래?" 같은 문제를 찾으려면 원본이 있어야 한다.
   const copyText = () => {
-    const head = `사용량(적은 순) ${span?.since} ~ ${span?.until} · ${days}일 · 필터=${kind}`;
-    const lines = filtered.map((r) => {
+    const head = `사용량(적은 순) ${span?.since} ~ ${span?.until} · ${days}일 · 종류=${kind} · 위치=${area} · 역할=${role}`;
+    const lines = sorted.map((r) => {
       const d = describeTarget(r.kind, r.target);
       return [
         `${r.total}`.padStart(5),
@@ -205,6 +217,37 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
                   </button>
                 ))}
               </div>
+              <div className="usage-filters" role="group" aria-label="역할">
+                <button
+                  aria-pressed={role === "all"}
+                  className={role === "all" ? "is-on" : ""}
+                  data-act="usage-role-all"
+                  onClick={() => {
+                    hapticTick();
+                    setRole("all");
+                    setShowAll(false);
+                  }}
+                  type="button"
+                >
+                  모든 역할
+                </button>
+                {rolesIn.map((rr) => (
+                  <button
+                    aria-pressed={role === rr}
+                    className={role === rr ? "is-on" : ""}
+                    data-act="usage-role"
+                    key={rr}
+                    onClick={() => {
+                      hapticTick();
+                      setRole(rr);
+                      setShowAll(false);
+                    }}
+                    type="button"
+                  >
+                    {ROLE_NAME[rr]}
+                  </button>
+                ))}
+              </div>
               <div className="usage-filters" role="group" aria-label="종류">
                 {FILTERS.map((f) => (
                   <button
@@ -235,7 +278,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
                     <li
                       key={`${r.kind}|${r.target}`}
                       data-unnamed={d.unnamed ? "1" : undefined}
-                      style={{ "--fill": `${Math.max(3, (r.total / max) * 100)}%` } as CSSProperties}
+                      style={{ "--fill": `${Math.max(3, (countOf(r) / max) * 100)}%` } as CSSProperties}
                       title={tip}
                     >
                       <span className="usage-chip" data-tone={chip.tone}>
@@ -248,7 +291,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
                         {dev ? <code>{r.target}</code> : null}
                       </span>
                       <b className="usage-n" title={roleBreakdown(r.roles)}>
-                        {r.total}
+                        {countOf(r)}
                       </b>
                     </li>
                   );
@@ -256,7 +299,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
               </ul>
 
               <div className="usage-actions">
-                {filtered.length > 15 ? (
+                {sorted.length > 15 ? (
                   <button
                     className="usage-more"
                     data-act="usage-show-all"
@@ -266,7 +309,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
                     }}
                     type="button"
                   >
-                    {showAll ? "접기" : `전체 ${filtered.length}개`}
+                    {showAll ? "접기" : `전체 ${sorted.length}개`}
                   </button>
                 ) : null}
                 <button className="act-tool" data-act="usage-copy" onClick={copy} type="button">
