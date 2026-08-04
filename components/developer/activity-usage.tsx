@@ -29,7 +29,13 @@ const FILTERS: { key: string; label: string }[] = [
   { key: "section.enter", label: "창" }
 ];
 
-export function ActivityUsage({ anchor }: { anchor: string }) {
+export function ActivityUsage({
+  anchor,
+  reloadKey = 0
+}: {
+  anchor: string;
+  reloadKey?: number;
+}) {
   const [days, setDays] = useState(30);
   const [rows, setRows] = useState<UsageRow[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -64,7 +70,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
     return () => {
       alive = false;
     };
-  }, [days, anchor]);
+  }, [days, anchor, reloadKey]);
 
   // 위치 칩은 **데이터에 실제로 있는 것만** 만든다(죽은 칩은 "없는 게 아니라 안 쓴 것"으로 오해된다).
   const areasIn = rows

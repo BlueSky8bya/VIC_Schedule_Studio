@@ -98,7 +98,13 @@ function visitGist(items: Item[]): string {
   return (server.length > 0 ? `변경 ${server.length}건 — ` : "") + head + rest;
 }
 
-export function ActivityTimeline({ dateKey }: { dateKey: string }) {
+export function ActivityTimeline({
+  dateKey,
+  reloadKey = 0
+}: {
+  dateKey: string;
+  reloadKey?: number;
+}) {
   const [visits, setVisits] = useState<ActivityVisit[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,6 +112,7 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
   const [copied, setCopied] = useState<string | null>(null); // 복사 완료 표시(방문 key, 전체는 "*")
   const [open, setOpen] = useState(true); // 옆 카드와 같은 기본 상태
   const [diag, setDiag] = useState(false); // 진단 층(보존 3일) 포함 — 버그 쫓을 때만
+  const [loadedAt, setLoadedAt] = useState<number | null>(null); // 언제 받은 값인지(굳음 감지)
 
   useEffect(() => {
     let alive = true;
@@ -118,12 +125,15 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
         else setErr(r.error);
       })
       .finally(() => {
-        if (alive) setLoading(false);
+        if (alive) {
+          setLoading(false);
+          setLoadedAt(Date.now());
+        }
       });
     return () => {
       alive = false;
     };
-  }, [dateKey, diag]);
+  }, [dateKey, diag, reloadKey]);
 
   if (loading) {
     // 스켈레톤은 실제 내용이 앉을 자리에 둔다(HCI — 위치 보존).
@@ -403,6 +413,7 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
       </ul>
       <p className="vt-occ-note">
         진한 줄 = 실제 변경 · 옅은 줄 = 열람 · 비공개는 범위만 · 보존 90일(진단 3일)
+        {loadedAt ? ` · ${hhmm(loadedAt)} 기준` : ""}
       </p>
         </>
       )}

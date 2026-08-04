@@ -43,6 +43,10 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
   const [occTip, setOccTip] = useState<OccTip | null>(null);
   const [ownTip, setOwnTip] = useState<{ x: number; top: number; text: string } | null>(null);
+  // 새로고침 신호 — 예전엔 이 버튼이 '방문 통계'만 다시 받고 행동 타임라인·사용량은 그대로였다.
+  // 창을 열어둔 채 시간이 지나면 그 두 카드가 굳어, 그 뒤에 생긴 방문(관리자 접속 등)이
+  // 영영 안 보였다(실측: 15:29에 연 창에 15:40 관리자 방문이 안 뜸).
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let alive = true;
@@ -77,6 +81,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
     setRefreshing(true);
     setRefreshed(false);
     if (refreshedTimer.current) window.clearTimeout(refreshedTimer.current);
+    setReloadKey((k) => k + 1); // 자식 카드(타임라인·사용량)도 함께 다시 받는다
     const minSpin = new Promise<void>((res) => window.setTimeout(res, 550));
     const work = getDayVisitDetailAction(dateKey).then((r) => {
       if (r.ok) setData(r.data);
@@ -306,10 +311,10 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
       </section>
 
       {/* 그날 무엇을 했는지(0062) — 방문 기록이 '언제·얼마나'라면 이건 '무엇을'이다. */}
-      <ActivityTimeline dateKey={dateKey} />
+      <ActivityTimeline dateKey={dateKey} reloadKey={reloadKey} />
 
       {/* 하루가 아니라 기간 누적 — "어떤 버튼이 안 쓰이나"는 하루로는 안 보인다. */}
-      <ActivityUsage anchor={dateKey} />
+      <ActivityUsage anchor={dateKey} reloadKey={reloadKey} />
 
       {/* 관리자 방문 기록 — 언제·어떤 계정으로 들어왔는지(설정된 owner 이메일이면 이메일로 표시). */}
       <section className="vcard">
