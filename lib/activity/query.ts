@@ -209,8 +209,12 @@ export async function getActivityDayAction(
         host.endMs = Math.max(host.endMs, t);
         continue;
       }
+      // ⚠ 키는 **안정적**이어야 한다. 예전엔 등장 순서 번호(no-key:1,2,…)를 붙였는데,
+      // 리포트 복사가 진단 층까지 포함해 다시 받으면 행 수가 달라져 번호가 밀린다 →
+      // 같은 번호가 **다른 방문**을 가리켜, 관리자 방문 리포트에 비로그인 항목이 담겼다(실측).
+      // 계정·역할로 만들면 몇 번을 다시 받아도 같은 방문을 가리킨다.
       noKey += 1;
-      key = `no-key:${noKey}`;
+      key = `nk:${r.account_hash ?? `anon-${noKey}`}:${r.role}`;
     }
     const existing = byKey.get(key);
     if (existing) {
