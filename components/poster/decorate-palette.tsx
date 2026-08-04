@@ -200,7 +200,7 @@ export function DecoratePalette({
               onClick={() => onAddEmoji(emoji)}
               title={`${emoji} 추가`}
               type="button"
-            >
+             data-act="emoji-chip">
               {emoji}
             </button>
           ))}
@@ -275,7 +275,7 @@ export function DecoratePalette({
                           : `${asset.name} 추가`
                     }
                     type="button"
-                  >
+                   data-act="emoji-chip">
                     {/* 업로드 이미지 미리보기 — 동적 URL이라 next/image 부적합 */}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img alt={asset.name} draggable={false} src={asset.fileUrl} />
@@ -289,7 +289,7 @@ export function DecoratePalette({
                       onClick={() => onRemoveAsset(asset.id)}
                       title="이 이모지 삭제"
                       type="button"
-                    >
+                     data-act="이 이모지 삭제">
                       ×
                     </button>
                   ) : null}
@@ -358,7 +358,7 @@ export function DecoratePalette({
               onClick={() => onAddShape(s.key)}
               title={`${s.label} 추가`}
               type="button"
-            >
+             data-act="emoji-chip">
               <ShapeSvg color={s.defaultColor} shapeKey={s.key} style={{ width: "74%", height: "74%" }} />
             </button>
           ))}

@@ -162,7 +162,7 @@ function Wheel({
                   onChange(i);
                 }}
                 type="button"
-              >
+               data-act="dtp-wheel-item">
                 {/* 다이얼 느낌은 크기(scale)+투명도로만 — rotateX는 글자를 위아래로 밀어 '보이는 위치
                     ≠ 버튼 영역'을 만들어(7을 눌러도 6이 선택) 빼고, 중심 정렬을 유지해 ±1·±2도 정확히
                     눌러 선택되게 한다. */}
@@ -334,13 +334,13 @@ export function DateTimePicker({
         <div className="dtp-cal" onPointerDown={onCalDown} onPointerUp={onCalUp}>
           {/* 월 이동(< >)은 달력 위에만 — 오른쪽 시간/닫기(X)와 안 겹친다. */}
           <div className="dtp-head">
-            <button className="dtp-nav" onClick={() => stepMonth(-1)} type="button" aria-label="이전 달">
+            <button className="dtp-nav" onClick={() => stepMonth(-1)} type="button" aria-label="이전 달" data-act="이전 달">
               <ChevronLeft size={18} />
             </button>
             <strong className="dtp-title">
               {viewY}년 {viewM}월
             </strong>
-            <button className="dtp-nav" onClick={() => stepMonth(1)} type="button" aria-label="다음 달">
+            <button className="dtp-nav" onClick={() => stepMonth(1)} type="button" aria-label="다음 달" data-act="다음 달">
               <ChevronRight size={18} />
             </button>
           </div>
@@ -366,7 +366,7 @@ export function DateTimePicker({
                   key={d}
                   onClick={() => setDay(d)}
                   type="button"
-                >
+                 data-act="dtp-cell">
                   {d}
                 </button>
               );
@@ -385,13 +385,13 @@ export function DateTimePicker({
         </div>
       </div>
       <div className="dtp-foot">
-        <button className="dtp-foot-btn ghost" onClick={clear} type="button">
+        <button className="dtp-foot-btn ghost" onClick={clear} type="button" data-act="dtp-foot-btn">
           지우기
         </button>
-        <button className="dtp-foot-btn ghost" onClick={setToday} type="button">
+        <button className="dtp-foot-btn ghost" onClick={setToday} type="button" data-act="dtp-foot-btn">
           지금
         </button>
-        <button className="dtp-foot-btn primary" onClick={close} type="button">
+        <button className="dtp-foot-btn primary" onClick={close} type="button" data-act="dtp-foot-btn">
           확인
         </button>
       </div>
@@ -406,7 +406,7 @@ export function DateTimePicker({
         onClick={openPicker}
         ref={triggerRef}
         type="button"
-      >
+       data-act="dtp-trigger">
         <CalendarDays aria-hidden="true" size={16} />
         <span className="dtp-trigger-text">{fmtLabel(p)}</span>
       </button>

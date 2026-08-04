@@ -927,7 +927,7 @@ export function StudioShell({
           className={`button preview-dd-trigger${previewing ? " previewing" : ""}`}
           onClick={() => setPreviewMenuOpen((value) => !value)}
           type="button"
-        >
+         data-act="preview-dd-trigger">
           {triggerText}
           {previewing ? null : (
             <span aria-hidden="true" className="preview-dd-caret">
@@ -1835,7 +1835,7 @@ export function StudioShell({
           aria-label="달력 축소"
           disabled={calZoom === 1}
           onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, -1))}
-        >
+         data-act="달력 축소">
           −
         </button>
         <button
@@ -1844,7 +1844,7 @@ export function StudioShell({
           aria-label="달력 확대 초기화(100%)"
           title="100%로 초기화"
           onClick={() => applyCalZoom(1)}
-        >
+         data-act="달력 확대 초기화">
           {Math.round(calZoom * 100)}%
         </button>
         <button
@@ -1853,7 +1853,7 @@ export function StudioShell({
           aria-label="달력 확대"
           disabled={calZoom === 1.5}
           onClick={() => applyCalZoom(stepCalZoom(calZoomRef.current, 1))}
-        >
+         data-act="달력 확대">
           ＋
         </button>
       </div>
@@ -4614,7 +4614,7 @@ export function StudioShell({
                 className="private-warning-btn"
                 onClick={() => setShowPrivate(false)}
                 type="button"
-              >
+               data-act="private-warning-btn">
                 끄기
               </button>
             </div>
@@ -4646,7 +4646,7 @@ export function StudioShell({
                       key={tag.id}
                       onClick={() => toggleTagFilter(tag.id)}
                       type="button"
-                    >
+                     data-act="agenda-legend-tag">
                       <i
                         data-color={v.colorKey ?? undefined}
                         style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
@@ -4673,7 +4673,7 @@ export function StudioShell({
                   }`}
                   onClick={() => toggleTagFilter(PRIVATE_FILTER)}
                   type="button"
-                >
+                 data-act="agenda-legend-tag">
                   <i className="legend-private-swatch" aria-hidden="true" />
                   비공개
                 </button>
@@ -4683,7 +4683,7 @@ export function StudioShell({
                   className="agenda-legend-clear"
                   onClick={() => setTagFilters([])}
                   type="button"
-                >
+                 data-act="agenda-legend-clear">
                   필터 해제
                 </button>
               ) : null}
@@ -4694,7 +4694,7 @@ export function StudioShell({
                   className="m-rail-insights"
                   onClick={() => setModal("developer")}
                   type="button"
-                >
+                 data-act="m-rail-insights">
                   {isDevInsights ? "🛠 인사이트" : "📊 인사이트"}
                 </button>
               ) : null}
@@ -4797,7 +4797,7 @@ export function StudioShell({
                                     href={event.supportUrl}
                                     rel="noopener noreferrer"
                                     target="_blank"
-                                  >
+                                   data-act="agenda-link">
                                     도우러 가기
                                     <ExternalLink aria-hidden="true" size={13} />
                                   </a>
@@ -4808,7 +4808,7 @@ export function StudioShell({
                                     className="m-support-edit"
                                     onClick={(e) => openMobileEdit(event, e.currentTarget)}
                                     type="button"
-                                  >
+                                   data-act="m-support-edit">
                                     수정
                                   </button>
                                 ) : canEditSupportThing ? (
@@ -4816,7 +4816,7 @@ export function StudioShell({
                                     className="m-support-edit"
                                     onClick={() => openSupportSheet(event)}
                                     type="button"
-                                  >
+                                   data-act="m-support-edit">
                                     수정
                                   </button>
                                 ) : null}
@@ -4915,7 +4915,7 @@ export function StudioShell({
                           key={event.id}
                           onClick={(e) => openMobileEdit(event, e.currentTarget)}
                           type="button"
-                        >
+                         data-act="agenda-event">
                           {inner}
                         </button>
                       ) : canEditTagsThing ? (
@@ -4925,7 +4925,7 @@ export function StudioShell({
                           key={event.id}
                           onClick={() => setTagSheetId(event.id)}
                           type="button"
-                        >
+                         data-act="agenda-event">
                           {inner}
                         </button>
                       ) : (
@@ -4939,7 +4939,7 @@ export function StudioShell({
                         className="m-add-event"
                         onClick={(e) => openMobileAdd(cell.isoDate, e.currentTarget)}
                         type="button"
-                      >
+                       data-act="m-add-event">
                         + 일정 추가
                       </button>
                     ) : null}
@@ -4962,7 +4962,7 @@ export function StudioShell({
                   className="button m-io m-io-tags"
                   onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "tags" ? null : "tags"))}
                   type="button"
-                >
+                 data-act="m-io-tags">
                   태그 이름 · 색상 · 순서 {mobileMgmt === "tags" ? "▲" : "▼"}
                 </button>
                 {mobileMgmt === "tags" && !previewRole ? (
@@ -4983,7 +4983,7 @@ export function StudioShell({
               className="button m-io m-io-members"
               onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "members" ? null : "members"))}
               type="button"
-            >
+             data-act="m-io-members">
               매니저 · 작업자 관리 {mobileMgmt === "members" ? "▲" : "▼"}
             </button>
             {mobileMgmt === "members" && !previewRole ? <TrustedMembersPanel /> : null}
@@ -5000,7 +5000,7 @@ export function StudioShell({
               className={`button m-io-pill m-io-worldcup${showWorldCupFeatures ? " on" : ""}`}
               onClick={toggleWorldCupFeatures}
               type="button"
-            >
+             data-act="m-io-pill">
               ⚽ 월드컵 {showWorldCupFeatures ? "끄기" : "켜기"}
             </button>
           ) : null}
@@ -5026,7 +5026,7 @@ export function StudioShell({
             onClick={jumpTodayMobile}
             title={onTodayMonth ? "오늘 위치로" : "오늘이 있는 달로"}
             type="button"
-          >
+           data-act="m-io-pill">
             <CalendarCheck aria-hidden="true" size={16} />
             오늘
           </button>
@@ -5034,7 +5034,7 @@ export function StudioShell({
           {isDeveloper ? (
             renderPreviewControl()
           ) : (
-            <button className="button m-io-pill m-io-preview" onClick={() => enterViewerMode()} type="button">
+            <button className="button m-io-pill m-io-preview" onClick={() => enterViewerMode()} type="button" data-act="m-io-pill">
               시청자 화면
             </button>
           )}
@@ -5089,7 +5089,7 @@ export function StudioShell({
                     }));
                   }}
                   type="button"
-                >
+                 data-act="하루 줄이기">
                   −
                 </button>
                 {/* 값을 좌우로 밀면(민감, 8px=1일) 종료일이 빠르게 바뀐다. 시작일 아래로는 안 내려감. */}
@@ -5129,7 +5129,7 @@ export function StudioShell({
                     setForm((current) => ({ ...current, endDateKey: addDaysIso(end, 1) }));
                   }}
                   type="button"
-                >
+                 data-act="하루 늘리기">
                   +
                 </button>
               </div>
@@ -5156,7 +5156,7 @@ export function StudioShell({
                     }));
                   }}
                   type="button"
-                >
+                 data-act="하루 줄이기">
                   −
                 </button>
                 <input
@@ -5182,7 +5182,7 @@ export function StudioShell({
                     setForm((current) => ({ ...current, endDateKey: addDaysIso(end, 1) }));
                   }}
                   type="button"
-                >
+                 data-act="하루 늘리기">
                   +
                 </button>
               </div>
@@ -5212,7 +5212,7 @@ export function StudioShell({
               href={form.supportUrl}
               rel="noopener noreferrer"
               target="_blank"
-            >
+             data-act="support-visit">
               <ExternalLink aria-hidden="true" size={13} />
               링크 열어 확인
             </a>
@@ -5235,7 +5235,7 @@ export function StudioShell({
             setForm((current) => ({ ...current, isSupport: !current.isSupport }));
           }}
           type="button"
-        >
+         data-act="opt-chip">
           <span className="opt-chip-ic" aria-hidden="true">🌱</span>
           <span className="opt-chip-label">업 도움 설정</span>
           <span className="opt-chip-mark" aria-hidden="true">✓</span>
@@ -5258,7 +5258,7 @@ export function StudioShell({
           setForm((current) => ({ ...current, isTentative: !current.isTentative }));
         }}
         type="button"
-      >
+       data-act="미정 표시">
         <span className="opt-chip-ic" aria-hidden="true">🕗</span>
         <span className="opt-chip-label">아직 확정 아님</span>
         <span className="opt-chip-mark" aria-hidden="true">✓</span>
@@ -5383,7 +5383,7 @@ export function StudioShell({
                 className="m-edit-x"
                 onClick={closeMobileEditAnimated}
                 type="button"
-              >
+               data-act="닫기">
                 <X aria-hidden="true" size={20} />
               </button>
             </div>
@@ -5405,7 +5405,7 @@ export function StudioShell({
             {draftRestored ? (
               <div className="draft-restored" role="status">
                 <span>저장 안 한 임시 내용을 불러왔어요.</span>
-                <button className="draft-restored-discard" onClick={discardDraft} type="button">
+                <button className="draft-restored-discard" onClick={discardDraft} type="button" data-act="draft-restored-discard">
                   새로 쓰기
                 </button>
               </div>
@@ -5438,7 +5438,7 @@ export function StudioShell({
                   setScopeFoldOpen((v) => !v);
                 }}
                 type="button"
-              >
+               data-act="me-fold-head">
                 <span className="me-row-label">공개 범위 · 옵션</span>
                 <span className="me-fold-summary">{scopeFoldSummary}</span>
                 <ChevronDown aria-hidden="true" className="me-fold-chev" size={16} />
@@ -5499,7 +5499,7 @@ export function StudioShell({
                       setForm((c) => ({ ...c, teaser: !c.teaser }));
                     }}
                     type="button"
-                  >
+                   data-act="opt-chip">
                     <span className="opt-chip-ic" aria-hidden="true">🔮</span>
                     <span className="opt-chip-label">일정 최초공개</span>
                     <span className="opt-chip-mark" aria-hidden="true">✓</span>
@@ -5573,7 +5573,7 @@ export function StudioShell({
                     closeMobileEdit();
                   }}
                   type="button"
-                >
+                 data-act="이 일정 삭제">
                   <Trash2 aria-hidden="true" size={18} />
                 </button>
               ) : null}
@@ -5581,7 +5581,7 @@ export function StudioShell({
                 className="button primary m-save"
                 disabled={!form.publicTitle.trim()}
                 type="submit"
-              >
+               data-act="m-save">
                 <Save aria-hidden="true" size={18} />
                 저장
               </button>
@@ -5708,7 +5708,7 @@ export function StudioShell({
           }`}
           onClick={() => toggleTagFilter(PRIVATE_FILTER)}
           type="button"
-        >
+         data-act="tag-legend-filter">
           <i className="legend-private-swatch" aria-hidden="true" />
           비공개
         </button>
@@ -5768,7 +5768,7 @@ export function StudioShell({
               restoreDeletedEvent(deleteSnack.event);
             }}
             type="button"
-          >
+           data-act="delete-snack-undo">
             실행 취소
           </button>
         </div>
@@ -5808,7 +5808,7 @@ export function StudioShell({
             title="클릭하면 버전이 복사돼요"
             type="button"
             onClick={copyBuildSha}
-          >
+           data-act="배포 버전 복사">
             {buildCopied ? "복사됨 ✓" : buildSha}
           </button>
         </div>
@@ -5851,7 +5851,7 @@ export function StudioShell({
           {isDeveloper ? (
             renderPreviewControl()
           ) : (
-            <button className="button io-accent io-preview" onClick={() => enterViewerMode()} type="button">
+            <button className="button io-accent io-preview" onClick={() => enterViewerMode()} type="button" data-act="io-preview">
               <Eye aria-hidden="true" size={16} />
               {/* '보여주기'는 관리자(owner)만 — 매니저·작업자는 '미리보기'. */}
               {isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}
@@ -5863,7 +5863,7 @@ export function StudioShell({
                 className="button io-accent io-logout"
                 onClick={() => startNav("로그아웃 중…")}
                 type="submit"
-              >
+               data-act="io-logout">
                 로그아웃
               </button>
             </form>
@@ -5890,7 +5890,7 @@ export function StudioShell({
                 className="button io-accent manage-dd-trigger"
                 onClick={() => setManageMenuOpen((v) => !v)}
                 type="button"
-              >
+               data-act="manage-dd-trigger">
                 관리
                 <span aria-hidden="true" className="preview-dd-caret">
                   ▾
@@ -5958,7 +5958,7 @@ export function StudioShell({
               ) : null}
             </div>
           ) : canMemberInsights ? (
-            <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button">
+            <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button" data-act="io-insights">
               📊 월별 인사이트
             </button>
           ) : null}
@@ -5992,7 +5992,7 @@ export function StudioShell({
               className={`button io-accent io-worldcup${showWorldCupFeatures ? " on" : ""}`}
               onClick={toggleWorldCupFeatures}
               type="button"
-            >
+             data-act="io-worldcup">
               ⚽ 월드컵 표시 {showWorldCupFeatures ? "끄기" : "켜기"}
             </button>
           ) : null}
@@ -6008,7 +6008,7 @@ export function StudioShell({
                   hapticTick();
                   setKbdHintsOpen((v) => !v);
                 }}
-              >
+               data-act="kbd-hints-btn">
                 <Keyboard aria-hidden="true" size={13} />
                 단축키
                 <ChevronDown aria-hidden="true" size={13} />
@@ -6021,7 +6021,7 @@ export function StudioShell({
                   className="private-toggle active io-accent io-private"
                   onClick={() => setShowPrivate(false)}
                   type="button"
-                >
+                 data-act="private-toggle">
                   <EyeOff size={16} />
                   비공개 끄기
                 </button>
@@ -6074,7 +6074,7 @@ export function StudioShell({
                 onClick={relockNow}
                 title="이 브라우저의 비공개 잠금해제를 지금 종료합니다(다시 보려면 비밀번호 입력)"
                 type="button"
-              >
+               data-act="지금 잠그기">
                 지금 잠그기
               </button>
             </div>
@@ -6590,7 +6590,7 @@ export function StudioShell({
                               }}
                               title="이 일정 삭제"
                               type="button"
-                            >
+                             data-act="일정 삭제">
                               <X aria-hidden="true" size={17} strokeWidth={3} />
                             </button>
                           ) : null}
@@ -6703,7 +6703,7 @@ export function StudioShell({
                         className="peek-close"
                         type="button"
                         onClick={() => closeZoomPeek({ returnFocus: true })}
-                      >
+                       data-act="상세 닫기">
                         <X aria-hidden="true" size={15} strokeWidth={3} />
                       </button>
                     </div>
@@ -6811,7 +6811,7 @@ export function StudioShell({
                       className="teaser-gate-close"
                       onClick={() => setEditorVisible(false)}
                       type="button"
-                    >
+                     data-act="닫기">
                       <X aria-hidden="true" size={16} />
                     </button>
                   </div>
@@ -6850,7 +6850,7 @@ export function StudioShell({
                     onClick={() => setEditorVisible(false)}
                     title="닫기"
                     type="button"
-                  >
+                   data-act="편집 카드 닫기">
                     <ChevronRight aria-hidden="true" size={16} strokeWidth={2.5} />
                   </button>
                   {/* key로 날짜가 바뀔 때마다 재마운트 → 쓱 바뀌는 애니메이션으로 '옮겼다'를 인지.
@@ -6886,7 +6886,7 @@ export function StudioShell({
             {draftRestored ? (
               <div className="draft-restored" role="status">
                 <span>저장 안 한 임시 내용을 불러왔어요.</span>
-                <button className="draft-restored-discard" onClick={discardDraft} type="button">
+                <button className="draft-restored-discard" onClick={discardDraft} type="button" data-act="draft-restored-discard">
                   새로 쓰기
                 </button>
               </div>
@@ -6918,7 +6918,7 @@ export function StudioShell({
                   setScopeFoldOpen((v) => !v);
                 }}
                 type="button"
-              >
+               data-act="fold-head">
                 <span className="fold-title">공개 범위 · 옵션</span>
                 <span className="fold-summary">{scopeFoldSummary}</span>
                 <ChevronDown aria-hidden="true" className="fold-chev" size={16} />
@@ -6960,7 +6960,7 @@ export function StudioShell({
                             }}
                             role="radio"
                             type="button"
-                          >
+                           data-act="scope-opt">
                             <Icon aria-hidden="true" className="scope-opt-ic" size={18} />
                             <span className="scope-opt-label">{label}</span>
                             <span className="scope-opt-sub">{sub}</span>
@@ -7005,7 +7005,7 @@ export function StudioShell({
                     setForm((c) => ({ ...c, teaser: !c.teaser }));
                   }}
                   type="button"
-                >
+                 data-act="opt-chip">
                   <span className="opt-chip-ic" aria-hidden="true">🔮</span>
                   <span className="opt-chip-label">일정 최초공개</span>
                   <span className="opt-chip-mark" aria-hidden="true">✓</span>
@@ -7107,7 +7107,7 @@ export function StudioShell({
             onClick={() => quickToggleRest(restMenu.isoDate)}
             role="menuitem"
             type="button"
-          >
+           data-act="rest-menu-item">
             <span className="rest-menu-emoji" aria-hidden="true">
               🌙
             </span>

@@ -317,7 +317,7 @@ export function PublicInsights({
               onClose();
             }}
             type="button"
-          >
+           data-act="닫기">
             <X size={18} />
           </button>
         </header>
@@ -368,7 +368,7 @@ export function PublicInsights({
             ) : failed ? (
               <p className="pi-empty pi-failed">
                 방송 기록을 못 불러왔어요.
-                <button className="pi-retry" onClick={() => setReloadKey((k) => k + 1)} type="button">
+                <button className="pi-retry" onClick={() => setReloadKey((k) => k + 1)} type="button" data-act="pi-retry">
                   다시 시도
                 </button>
               </p>

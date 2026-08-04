@@ -3691,7 +3691,7 @@ export function PublicPoster({
                 target="_blank"
                 title="도와주러 가기 (새 탭에서 열림)"
                 {...bandHover}
-              >
+               data-act="업 도움 링크 열기">
                 {bandInner}
               </a>
             );
@@ -3749,7 +3749,7 @@ export function PublicPoster({
                         : "cheer"
                   );
                 }}
-              >
+               data-act="day-mark">
                 {visibleDayMark?.name}
               </button>
             ) : (
@@ -3782,7 +3782,7 @@ export function PublicPoster({
                       : "cheer"
                 );
               }}
-            >
+             data-act="day-wc-match">
               {visibleMatch.text}
             </button>
           ) : (
@@ -3981,7 +3981,7 @@ export function PublicPoster({
                       onClick={(ev) => toggleBookmark(event.id, ev)}
                       title={bookmarked ? "관심 표시됨 · 다시 누르면 취소" : "관심 표시"}
                       type="button"
-                    >
+                     data-act="event-heart">
                       {bookmarked ? "♥" : "♡"}
                     </button>
                   ) : null}
@@ -4143,7 +4143,7 @@ export function PublicPoster({
                     key={tag.id}
                     onClick={() => toggleTagFilter(tag.id)}
                     type="button"
-                  >
+                   data-act="agenda-legend-tag">
                     <i
                       data-color={v.colorKey ?? undefined}
                       style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
@@ -4171,7 +4171,7 @@ export function PublicPoster({
                   withAgendaFlip(() => setBookmarkedOnly((v) => !v));
                 }}
                 type="button"
-              >
+               data-act="agenda-legend-tag">
                 <LiquidHeart ratio={interestRatio} />
                 내 관심
               </button>
@@ -4186,7 +4186,7 @@ export function PublicPoster({
                   clearFilters();
                 }}
                 type="button"
-              >
+               data-act="agenda-legend-clear">
                 필터 해제
               </button>
             ) : null}
@@ -4226,7 +4226,7 @@ export function PublicPoster({
               }}
               title="이 달 방송·일정 기록 보기"
               type="button"
-            >
+             data-act="이 달 기록 보기">
               📊 이 달 기록
             </button>
           ) : null}
@@ -4265,7 +4265,7 @@ export function PublicPoster({
                     }}
                     style={popIntro ? ({ "--ri": agendaIndex } as CSSProperties) : undefined}
                     type="button"
-                  >
+                   data-act="agenda-gap">
                     <span className="ag-range">
                       {from}~{to}일
                     </span>
@@ -4314,7 +4314,7 @@ export function PublicPoster({
                             celeb === "win" ? "win" : celeb === "done" ? "console" : "cheer"
                           );
                         }}
-                      >
+                       data-act="agenda-mark">
                         {markText}
                       </button>
                     ) : (
@@ -4470,7 +4470,7 @@ export function PublicPoster({
                                 onClick={(ev) => toggleBookmark(event.id, ev)}
                                 title={bookmarked ? "관심 표시됨 · 다시 누르면 취소" : "관심 표시"}
                                 type="button"
-                              >
+                               data-act="event-heart">
                                 {bookmarked ? "♥" : "♡"}
                               </button>
                             ) : null}
@@ -4535,7 +4535,7 @@ export function PublicPoster({
                                     href={event.supportUrl}
                                     rel="noopener noreferrer"
                                     target="_blank"
-                                  >
+                                   data-act="agenda-link">
                                     도우러 가기
                                     <ExternalLink aria-hidden="true" size={13} />
                                   </a>
@@ -5055,7 +5055,7 @@ export function PublicPoster({
         type="button"
         aria-hidden={!filterActive}
         tabIndex={filterActive ? 0 : -1}
-      >
+       data-act="legend-clear">
         필터 해제
       </button>
       {/* ♥ 의미·인기 단계 안내 — 하트 토글은 제목 위 배너로 옮겼고, 그 자리에 모바일처럼
@@ -5308,7 +5308,7 @@ export function PublicPoster({
                         hapticTick();
                         setAgendaDetail(null);
                       }}
-                    >
+                     data-act="닫기">
                       <X aria-hidden="true" size={16} strokeWidth={2.5} />
                     </button>
                   </div>
@@ -5365,7 +5365,7 @@ export function PublicPoster({
                       href={event.supportUrl}
                       rel="noopener noreferrer"
                       target="_blank"
-                    >
+                     data-act="agenda-link">
                       도우러 가기
                       <ExternalLink aria-hidden="true" size={13} />
                     </a>
@@ -5489,7 +5489,7 @@ export function PublicPoster({
                         className={`dt-hope${myHopeIds.has(event.id) ? " on" : ""}`}
                         onClick={() => toggleHope(event)}
                         type="button"
-                      >
+                       data-act="dt-hope">
                         {myHopeIds.has(event.id) ? "기대 중" : "기대돼요"}
                         {hopeCountOf(event) > 0 ? <b>{hopeCountOf(event)}</b> : null}
                       </button>
@@ -5522,7 +5522,7 @@ export function PublicPoster({
             className="avatar-ctl-toggle on"
             aria-pressed={true}
             onClick={toggleAvatarOn}
-          >
+           data-act="avatar-ctl-toggle">
 🎙️ 아바타 자리 끄기
           </button>
           <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
@@ -5555,7 +5555,7 @@ export function PublicPoster({
             className={`avatar-ctl-toggle ${avatarOn ? "on" : ""}`}
             aria-pressed={avatarOn}
             onClick={toggleAvatarOn}
-          >
+           data-act="avatar-ctl-toggle">
             🎙️ 아바타 자리 {avatarOn ? "끄기" : "켜기"}
           </button>
           {avatarOn ? (
@@ -5731,7 +5731,7 @@ export function PublicPoster({
                   className="avatar-ctl-toggle avatar-ctl-inheader"
                   aria-pressed={false}
                   onClick={toggleAvatarOn}
-                >
+                 data-act="avatar-ctl-toggle">
                   🎙️ 아바타 자리 켜기
                 </button>
               ) : null}
@@ -5754,7 +5754,7 @@ export function PublicPoster({
                     }}
                     title="내가 ♥ 누른 일정만 모아서 보기"
                     type="button"
-                  >
+                   data-act="관심 일정만 보기">
                     <LiquidHeart ratio={interestRatio} />
                     <span className="it-text">
                       <strong>내 관심</strong>
@@ -5855,7 +5855,7 @@ export function PublicPoster({
                 onClick={undo}
                 title="실행취소 (Ctrl+Z)"
                 type="button"
-              >
+               data-act="실행 취소">
                 <Undo2 aria-hidden="true" size={15} />
               </button>
               <button
@@ -5864,7 +5864,7 @@ export function PublicPoster({
                 onClick={redo}
                 title="다시실행 (Ctrl+Y)"
                 type="button"
-              >
+               data-act="다시실행 (Ctrl+Y)">
                 <Redo2 aria-hidden="true" size={15} />
               </button>
 
@@ -5919,7 +5919,7 @@ export function PublicPoster({
                       onClick={() => setToolbarCollapsed((v) => !v)}
                       title={toolbarCollapsed ? "펼치기" : "접기 (옮기거나 크기 조절할 때)"}
                       type="button"
-                    >
+                     data-act="stf-collapse">
                       {toolbarCollapsed ? (
                         <ChevronDown aria-hidden="true" size={15} />
                       ) : (
@@ -6074,7 +6074,7 @@ export function PublicPoster({
                           }}
                           title="네온 글로우"
                           type="button"
-                        >
+                         data-act="네온 글로우">
                           네온
                         </button>
                       </div>
@@ -6151,7 +6151,7 @@ export function PublicPoster({
                             patchSelected({ anim: undefined });
                           }}
                           type="button"
-                        >
+                         data-act="stf-btn">
                           정지
                         </button>
                         {STICKER_ANIMS.map((a) => (
@@ -6163,7 +6163,7 @@ export function PublicPoster({
                               patchSelected({ anim: a.key });
                             }}
                             type="button"
-                          >
+                           data-act="stf-btn">
                             {a.label}
                           </button>
                         ))}
@@ -6286,7 +6286,7 @@ export function PublicPoster({
                             patchSelected({ anim: undefined });
                           }}
                           type="button"
-                        >
+                         data-act="stf-btn">
                           정지
                         </button>
                         {STICKER_ANIMS.map((a) => (
@@ -6298,7 +6298,7 @@ export function PublicPoster({
                               patchSelected({ anim: a.key });
                             }}
                             type="button"
-                          >
+                           data-act="stf-btn">
                             {a.label}
                           </button>
                         ))}
@@ -6323,7 +6323,7 @@ export function PublicPoster({
                 onClick={toggleShortcutHelp}
                 title={shortcutOpen ? "단축키 안내 접기" : "단축키 안내 펴기"}
                 type="button"
-              >
+               data-act="shortcut-help-title">
                 <Keyboard aria-hidden="true" size={14} />
                 단축키
                 <ChevronDown aria-hidden="true" className="sh-chev" size={13} />
@@ -6575,7 +6575,7 @@ export function PublicPoster({
           }}
           title="100%로 되돌리기"
           type="button"
-        >
+         data-act="확대 초기화">
           🔍 {Math.round(posterZoom * 100)}%<span>초기화</span>
         </button>
       ) : null}
@@ -6593,7 +6593,7 @@ export function PublicPoster({
           }}
           title="이전 달"
           type="button"
-        >
+         data-act="이전 달">
           <ChevronLeft aria-hidden="true" size={22} />
         </button>
 
@@ -6614,7 +6614,7 @@ export function PublicPoster({
                 }}
                 title={canHeart ? "내가 ♥ 누른 일정만 보기" : "로그인하면 관심 일정을 모아볼 수 있어요"}
                 type="button"
-              >
+               data-act="mb-act">
                 <Heart aria-hidden="true" size={18} />
                 <span>관심</span>
               </button>
@@ -6631,7 +6631,7 @@ export function PublicPoster({
                 }}
                 title={`방송 중: ${soopLive.title ?? ""} — 보러가기`}
                 type="button"
-              >
+               data-act="mb-act">
                 <span className="mb-live-dot" aria-hidden="true" />
                 <span>LIVE</span>
               </button>
@@ -6641,7 +6641,7 @@ export function PublicPoster({
                 onClick={jumpToday}
                 title={onTodayMonth ? "오늘 위치로" : "오늘이 있는 달로"}
                 type="button"
-              >
+               data-act="mb-act">
                 <CalendarCheck aria-hidden="true" size={18} />
                 <span>오늘</span>
               </button>
@@ -6657,7 +6657,7 @@ export function PublicPoster({
           }}
           title="다음 달"
           type="button"
-        >
+         data-act="다음 달">
           <ChevronRight aria-hidden="true" size={22} />
         </button>
       </nav>

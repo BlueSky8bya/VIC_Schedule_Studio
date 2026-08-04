@@ -1031,7 +1031,7 @@ export function InsightsDashboard({
                           setLogRole(null);
                         }}
                         type="button"
-                      >
+                       data-act="vlog-chip">
                         전체 <b>{visits.recent.length}</b>
                       </button>
                       {ROLE_META.map((m) => {
@@ -1047,7 +1047,7 @@ export function InsightsDashboard({
                             }}
                             style={{ "--rc": m.color } as CSSProperties}
                             type="button"
-                          >
+                           data-act="vlog-chip">
                             {m.label} <b>{c}</b>
                           </button>
                         );
@@ -1077,7 +1077,7 @@ export function InsightsDashboard({
                             setLogStay(o.key);
                           }}
                           type="button"
-                        >
+                         data-act="vlog-chip">
                           {o.label} <b>{o.n}</b>
                         </button>
                       ))}
@@ -1321,7 +1321,7 @@ export function InsightsDashboard({
               onClick={refreshPanel}
               title={`${PANELS[index]?.label} 새로고침`}
               type="button"
-            >
+             data-act="insights-refresh">
               <RotateCw aria-hidden="true" size={15} />
             </button>
           </div>
@@ -1336,7 +1336,7 @@ export function InsightsDashboard({
             onClick={() => go(i)}
             role="tab"
             type="button"
-          >
+           data-act="insights-tab">
             <p.icon aria-hidden="true" size={14} />
             {p.label}
           </button>
@@ -1669,7 +1669,7 @@ export function InsightsDashboard({
           disabled={index === 0}
           onClick={() => go(index - 1)}
           type="button"
-        >
+         data-act="이전">
           <ChevronLeft aria-hidden="true" size={18} />
         </button>
         <div className="insights-dots" aria-hidden="true">
@@ -1683,7 +1683,7 @@ export function InsightsDashboard({
           disabled={index === PANELS.length - 1}
           onClick={() => go(index + 1)}
           type="button"
-        >
+         data-act="다음">
           <ChevronRight aria-hidden="true" size={18} />
         </button>
       </div>

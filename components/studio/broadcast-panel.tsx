@@ -2702,7 +2702,7 @@ export function BroadcastPanel({
           onClick={onClose}
           ref={closeBtnRef}
           type="button"
-        >
+         data-act="일정 그림판 닫기">
           <X aria-hidden="true" size={20} strokeWidth={3} />
         </button>
       </header>
@@ -2743,7 +2743,7 @@ export function BroadcastPanel({
                   // 이미 굵기를 쓰는 형광펜·지우개·도형이면 그 도구를 그대로 유지한다.
                   activateDrawingTool(toolAfterInkWidthPick(tool));
                 }}
-              >
+               data-act="bp-width">
                 {/* 점도 현재 펜 색 — 굵기 고르는 자리에서 색·굵기를 한 번에 확인. */}
                 <i
                   style={{
@@ -2767,7 +2767,7 @@ export function BroadcastPanel({
                 title="위 맞춤(수평 맞추기)"
                 type="button"
                 onClick={() => alignSelected("top")}
-              >
+               data-act="위 맞춤">
                 <AlignStartHorizontal aria-hidden="true" size={16} />
                 <span>위 맞춤</span>
               </button>
@@ -2777,7 +2777,7 @@ export function BroadcastPanel({
                 title="세로 중앙 맞춤"
                 type="button"
                 onClick={() => alignSelected("middle")}
-              >
+               data-act="세로 중앙 맞춤">
                 <AlignCenterHorizontal aria-hidden="true" size={16} />
                 <span>세로 중앙</span>
               </button>
@@ -2787,7 +2787,7 @@ export function BroadcastPanel({
                 title="왼쪽 맞춤"
                 type="button"
                 onClick={() => alignSelected("left")}
-              >
+               data-act="왼쪽 맞춤">
                 <AlignStartVertical aria-hidden="true" size={16} />
                 <span>왼쪽</span>
               </button>
@@ -2797,7 +2797,7 @@ export function BroadcastPanel({
                 title="오른쪽 맞춤"
                 type="button"
                 onClick={() => alignSelected("right")}
-              >
+               data-act="오른쪽 맞춤">
                 <AlignEndVertical aria-hidden="true" size={16} />
                 <span>오른쪽</span>
               </button>
@@ -2807,7 +2807,7 @@ export function BroadcastPanel({
                 title="가로 균등 간격"
                 type="button"
                 onClick={() => alignSelected("distribute-x")}
-              >
+               data-act="가로 균등 간격">
                 <AlignHorizontalDistributeCenter aria-hidden="true" size={16} />
                 <span>가로 균등</span>
               </button>
@@ -2820,7 +2820,7 @@ export function BroadcastPanel({
               title="획·카드 배치·날짜·레이어 실행 취소 (Ctrl+Z)"
               type="button"
               onClick={doUndo}
-            >
+             data-act="실행 취소">
               <Undo2 aria-hidden="true" size={16} />
               <span>실행 취소</span>
             </button>
@@ -2830,7 +2830,7 @@ export function BroadcastPanel({
               title="다시 실행 (Ctrl+Shift+Z)"
               type="button"
               onClick={doRedo}
-            >
+             data-act="다시 실행">
               <Redo2 aria-hidden="true" size={16} />
               <span>다시 실행</span>
             </button>
@@ -2841,7 +2841,7 @@ export function BroadcastPanel({
               title="전체 지우기 — 두 번 눌러 실행, 되돌릴 수 없음"
               type="button"
               onClick={doClearAll}
-            >
+             data-act="판서 전체 지우기">
               <Trash2 aria-hidden="true" size={16} />
               <span>{clearArmed ? "확실해요?" : "전체 지우기"}</span>
             </button>
@@ -2855,7 +2855,7 @@ export function BroadcastPanel({
                 hapticTick();
                 setKbdHelp((v) => !v);
               }}
-            >
+             data-act="단축키 안내 (?)">
               <Keyboard aria-hidden="true" size={16} />
               <span>단축키</span>
             </button>
@@ -2869,7 +2869,7 @@ export function BroadcastPanel({
                   className="bp-kbd-close"
                   type="button"
                   onClick={() => setKbdHelp(false)}
-                >
+                 data-act="단축키 안내 닫기">
                   <X aria-hidden="true" size={14} strokeWidth={2.75} />
                 </button>
               </div>
@@ -2933,7 +2933,7 @@ export function BroadcastPanel({
                     if (key === "select") setTool(key);
                     else activateDrawingTool(key);
                   }}
-                >
+                 data-act="bp-tool">
                   <kbd aria-hidden="true" className="bp-tool-key">
                     {hotkey}
                   </kbd>
@@ -2967,7 +2967,7 @@ export function BroadcastPanel({
                     hapticTick();
                     activateDrawingTool(key);
                   }}
-                >
+                 data-act="bp-tool">
                   <kbd aria-hidden="true" className="bp-tool-key">
                     {hotkey}
                   </kbd>
@@ -2994,7 +2994,7 @@ export function BroadcastPanel({
                     // 최근 사용 가능한 그림 레이어까지 함께 복귀해 바로 그릴 수 있게 한다.
                     applyInkColor(c);
                   }}
-                />
+                 data-act="bp-color" />
               ))}
               {/* 직접 고르기 — 태그 편집과 같은 인라인 색 피커 팝오버(디자인 통일).
                 팔레트에 없는 색이 선택돼 있으면 이 칸이 그 색으로 켜진다. */}
@@ -3020,7 +3020,7 @@ export function BroadcastPanel({
                     openedWithLayerId: activeLayerId
                   });
                 }}
-              >
+               data-act="색 직접 고르기">
                 {/* 무지개 링 = "여기서 아무 색이나 고를 수 있다" 어포던스(그림판 커스텀 색 관례).
                     가운데는 현재 색 — 상태 표시와 진입점을 한 버튼이 겸한다. */}
                 <i aria-hidden="true" className="bp-custom-ring" style={{ background: penColor }} />
@@ -3068,7 +3068,7 @@ export function BroadcastPanel({
               rangeSelect.clearSelection();
               onMonthNav(-1);
             }}
-          >
+           data-act="이전 달">
             <ChevronLeft aria-hidden="true" size={16} strokeWidth={2.5} />
           </button>
           <button
@@ -3080,7 +3080,7 @@ export function BroadcastPanel({
               rangeSelect.clearSelection();
               onMonthNav(1);
             }}
-          >
+           data-act="다음 달">
             <ChevronRight aria-hidden="true" size={16} strokeWidth={2.5} />
           </button>
           {/* 접기 기능은 사용자 결정으로 제거 — 달력은 항상 펼쳐져 있고 이 자리는 월 라벨만. */}
@@ -3093,7 +3093,7 @@ export function BroadcastPanel({
             onClick={handleSend}
             ref={sendBtnRef}
             type="button"
-          >
+           data-act="bp-send">
             {selectedDateKeysNow.length > 0 && sendableDateCount === 0
               ? "이미 그림판에 있어요"
               : `그림판으로 보내기${sendableDateCount > 0 ? ` (${sendableDateCount})` : ""}`}
@@ -3243,7 +3243,7 @@ export function BroadcastPanel({
                           removeDay(day.dateKey);
                         }}
                         onPointerDown={(e) => e.stopPropagation()}
-                      >
+                       data-act="bp-col-x">
                         <X aria-hidden="true" size={13} strokeWidth={3} />
                       </button>
                     </header>
@@ -3436,7 +3436,7 @@ export function BroadcastPanel({
           title="새 레이어"
           type="button"
           onClick={addLayer}
-        >
+         data-act="새 그림 레이어">
           ＋ 새 레이어
         </button>
         <div
@@ -3478,7 +3478,7 @@ export function BroadcastPanel({
               onPointerDown={(e) => onLayerPointerDown(e, l.id)}
               onPointerMove={onLayerPointerMove}
               onPointerUp={onLayerPointerUp}
-            >
+             data-act="레이어 선택">
               {/* 손잡이는 왼쪽 가장자리(리스트 드래그 관례) — 이름과 버튼 사이(중간)에
                   떠 있으면 무엇을 잡는 표시인지 읽히지 않는다. */}
               <span className="bp-layer-grip" aria-hidden="true">
@@ -3509,7 +3509,7 @@ export function BroadcastPanel({
                 title={l.vis ? "숨기기" : "보이기"}
                 type="button"
                 onClick={() => toggleLayerVisibility(l.id)}
-              >
+               data-act="bp-layer-btn">
                 {l.vis ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
               </button>
               <button
@@ -3518,7 +3518,7 @@ export function BroadcastPanel({
                 title="레이어 삭제 — Ctrl+Z로 복원할 수 있어요"
                 type="button"
                 onClick={() => deleteLayer(l.id)}
-              >
+               data-act="레이어 삭제">
                 <X aria-hidden="true" size={14} />
               </button>
             </div>
@@ -3540,7 +3540,7 @@ export function BroadcastPanel({
               setActiveLayerId(BG_LAYER_ID);
               setTool("select"); // 일정 레이어를 고르면 카드가 바로 잡히게
             }}
-          >
+           data-act="bp-layer-select">
             <span className="bp-layer-thumb" aria-hidden="true">
               <span className="bp-layer-thumb-bg">📅</span>
             </span>
@@ -3560,7 +3560,7 @@ export function BroadcastPanel({
                 if (bgVis) setColSel(new Set());
                 setBgVis((v) => !v);
               }}
-            >
+             data-act="일정 카드 표시">
               {bgVis ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
             </button>
           </div>

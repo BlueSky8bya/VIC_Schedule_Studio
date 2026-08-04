@@ -93,6 +93,73 @@ const ACT: Record<string, TargetLabel> = {
   "sticker-front": { name: "맨 앞으로", area: "꾸미기" },
   "sticker-back": { name: "맨 뒤로", area: "꾸미기" },
 
+  // ── 클래스에서 딴 id들(정적 부착). 이름은 화면 문구로, 위치를 반드시 붙인다 ──
+  // 시청자 화면
+  "agenda-event": { name: "일정 카드", area: "시청자 화면" },
+  "agenda-mark": { name: "날짜 기념 표시", area: "시청자 화면" },
+  "agenda-gap": { name: "빈 날 접기", area: "시청자 화면" },
+  "agenda-link": { name: "일정 링크 열기", area: "시청자 화면" },
+  "agenda-legend-tag": { name: "태그 필터", area: "시청자 화면", hint: "태그별 합계" },
+  "agenda-legend-clear": { name: "필터 해제", area: "시청자 화면" },
+  "legend-clear": { name: "필터 해제", area: "시청자 화면" },
+  "tag-legend-filter": { name: "태그 필터(편집실)", area: "편집실" },
+  "event-heart": { name: "하트 누르기", area: "시청자 화면" },
+  "dt-hope": { name: "기대돼요", area: "시청자 화면" },
+  "day-mark": { name: "기념일 표시", area: "시청자 화면" },
+  "day-wc-match": { name: "월드컵 경기 표시", area: "시청자 화면" },
+  "support-visit": { name: "업 도움 링크", area: "시청자 화면" },
+  "mb-act": { name: "모바일 하단 버튼", area: "시청자 화면", hint: "여러 버튼 합계" },
+  "avatar-ctl-toggle": { name: "아바타 위치 바꾸기", area: "시청자 화면" },
+  "vlog-chip": { name: "브이로그 칩", area: "시청자 화면" },
+  "pi-retry": { name: "이 달 기록 다시 불러오기", area: "시청자 화면" },
+
+  // 편집실
+  "m-add-event": { name: "일정 추가(모바일)", area: "편집실" },
+  "m-support-edit": { name: "업 도움 수정(모바일)", area: "편집실" },
+  "m-io-pill": { name: "모바일 상단 버튼", area: "편집실", hint: "여러 버튼 합계" },
+  "m-rail-insights": { name: "인사이트 열기(모바일)", area: "편집실" },
+  "me-fold-head": { name: "편집 패널 접기/펴기", area: "편집실" },
+  "fold-head": { name: "편집 패널 접기/펴기", area: "편집실" },
+  "opt-chip": { name: "일정 옵션 칩", area: "편집실", hint: "업도움·미정·떡밥 합계" },
+  "scope-opt": { name: "공개 범위 고르기", area: "편집실" },
+  "rest-menu-item": { name: "빠른 휴방 메뉴", area: "편집실" },
+  "private-toggle": { name: "비공개 보기 켜기", area: "편집실" },
+  "private-warning-btn": { name: "비공개 경고 띠", area: "편집실" },
+  "delete-snack-undo": { name: "삭제 되돌리기", area: "편집실" },
+  "draft-restored-discard": { name: "임시 저장 버리기", area: "편집실" },
+  "kbd-hints-btn": { name: "단축키 안내", area: "편집실" },
+  "shortcut-help-title": { name: "단축키 안내 접기", area: "꾸미기" },
+  "preview-dd-trigger": { name: "역할 미리보기 메뉴", area: "관리" },
+  "manage-dd-trigger": { name: "관리 ▾ 메뉴 열기", area: "관리" },
+  "io-preview": { name: "미리보기 들어가기", area: "편집실" },
+  "io-insights": { name: "인사이트 열기", area: "관리" },
+  "io-logout": { name: "로그아웃", area: "공통" },
+  "io-worldcup": { name: "월드컵 기능 켜기", area: "편집실" },
+
+  // 일정 그림판(판서)
+  "bp-tool": { name: "그림판 도구 고르기", area: "일정 그림판" },
+  "bp-width": { name: "펜 굵기", area: "일정 그림판" },
+  "bp-color": { name: "펜 색", area: "일정 그림판" },
+  "bp-col-x": { name: "칸 비우기", area: "일정 그림판" },
+  "bp-send": { name: "그림판에 날짜 보내기", area: "일정 그림판" },
+  "bp-layer-btn": { name: "레이어 버튼", area: "일정 그림판" },
+  "bp-layer-select": { name: "레이어 고르기", area: "일정 그림판" },
+
+  // 꾸미기
+  "stf-btn": { name: "스티커 툴바 기타 버튼", area: "꾸미기", hint: "아직 안 나눈 나머지" },
+  "stf-collapse": { name: "스티커 툴바 접기", area: "꾸미기" },
+  "emoji-chip": { name: "이모지 고르기", area: "꾸미기" },
+
+  // 날짜·시간 고르기
+  "dtp-trigger": { name: "날짜·시간 고르기 열기", area: "편집실" },
+  "dtp-cell": { name: "날짜 고르기", area: "편집실" },
+  "dtp-wheel-item": { name: "시간 고르기", area: "편집실" },
+  "dtp-foot-btn": { name: "날짜·시간 확인/취소", area: "편집실" },
+
+  // 인사이트 화면
+  "insights-tab": { name: "인사이트 탭 바꾸기", area: "인사이트" },
+  "insights-refresh": { name: "인사이트 새로고침", area: "인사이트" },
+
   // 이 인사이트 화면 자체(지표를 보는 행위도 기록된다)
   "activity-visit-toggle": { name: "방문 펼쳐보기", area: "인사이트" },
   "activity-expand-all": { name: "모두 펼치기", area: "인사이트" },
@@ -160,5 +227,8 @@ export function describeTarget(kind: string, target: string): TargetLabel {
   }
   const hit = ACT[target];
   if (hit) return hit;
+  // data-act에 한글 문구를 그대로 박은 것들(버튼의 aria-label/title에서 정적으로 딴 값).
+  // 이미 사람이 읽을 수 있는 말이므로 '이름 미등록'으로 낮추지 않는다 — 위치만 모를 뿐이다.
+  if (/[가-힣]/.test(target)) return { name: target, area: "기타" };
   return { name: target, area: "기타", hint: "이름이 등록되지 않은 항목", unnamed: true };
 }

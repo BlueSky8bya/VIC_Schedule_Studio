@@ -52,3 +52,15 @@ describe("뭉친 옛 값은 뭉쳤다고 말한다", () => {
     expect(dd.name).toContain("여러 개");
   });
 });
+
+describe("정적으로 박은 한글 id", () => {
+  it("한글 문구는 그 자체가 사람 말이라 '이름 미등록'으로 낮추지 않는다", () => {
+    const d = describeTarget("ui.click", "판서 전체 지우기");
+    expect(d.name).toBe("판서 전체 지우기");
+    expect(d.unnamed).toBeUndefined();
+  });
+  it("클래스에서 딴 id는 사전에서 이름·위치가 나온다", () => {
+    expect(describeTarget("ui.click", "bp-color").area).toBe("일정 그림판");
+    expect(describeTarget("ui.click", "event-heart").name).toBe("하트 누르기");
+  });
+});

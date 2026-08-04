@@ -85,17 +85,27 @@ function wire(): void {
 // 처음엔 2)로 전수 커버리지를 얻고, 중요한 버튼부터 1)로 굳히면 된다. `auto:` 접두사가
 // "이 값은 깨질 수 있다"는 표시다.
 const MAX_ID = 48;
+
+// ⚠ aria-label·textContent는 **id로 쓰지 않는다.** 사용자·외부 내용이 들어오는 자리다:
+//   `${s.publicTitle} 도와주러 가기` (일정 공개 제목) · `지금 방송 중: ${live.title}` (외부 방송)
+//   `${asset.name} 삭제` (사용자가 만든 스티커 이름) · `${l.name} 삭제` (판서 레이어 이름)
+//   카드의 textContent = 일정 제목 그 자체.
+// 그대로 쓰면 제목이 activity_event.target에 저장된다 — 이 설계의 최우선 제약 위반이다.
+// 사람이 읽을 이름이 필요하면 **소스에 data-act를 박는다**(정적이라 검토 가능).
+//
+// 상태 클래스(is-*/active/open/selected…)와 공통 클래스(button/primary/danger…)는 뺀다.
+// 공통 클래스를 고르면 서로 다른 버튼이 전부 한 항목으로 뭉친다 — 예전엔 첫 토큰을 골라
+// `className="button io-accent io-preview"`가 `.button`이 됐다(실측: '일반 버튼(합계)').
+const GENERIC_CLASS =
+  /^(button|primary|danger|secondary|icon-only|link|active|open|selected|on|is-|has-|m-io$|io-accent|tappable|pill|chip)/;
 function autoId(el: HTMLElement): string {
-  const aria = el.getAttribute("aria-label")?.trim();
-  if (aria) return `auto:${foldDigits(aria).slice(0, MAX_ID)}`;
-  // 클래스는 상태 클래스(is-*, active…)를 빼고 첫 토큰만 — 상태에 따라 id가 갈라지면 못 센다.
-  const cls = (el.className || "")
+  const tokens = (el.className || "")
     .toString()
     .split(/\s+/)
-    .find((c) => c && !/^(is-|has-|active|open|on$|selected)/.test(c));
-  if (cls) return `auto:.${cls.slice(0, MAX_ID)}`;
-  const text = (el.textContent || "").trim().replace(/\s+/g, " ");
-  if (text) return `auto:${foldDigits(text).slice(0, MAX_ID)}`;
+    .filter(Boolean);
+  // 구체적인 토큰 우선 — 없으면 남은 것 중 아무거나, 그것도 없으면 태그 이름.
+  const specific = tokens.find((c) => !GENERIC_CLASS.test(c)) ?? tokens[0];
+  if (specific) return `auto:.${foldDigits(specific).slice(0, MAX_ID)}`;
   return `auto:${el.tagName.toLowerCase()}`;
 }
 
