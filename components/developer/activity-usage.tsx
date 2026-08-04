@@ -1,7 +1,13 @@
 "use client";
 
 import { type CSSProperties, useEffect, useState } from "react";
-import { ROLE_NAME, ROLE_ORDER, describeTarget, roleBreakdown } from "@/lib/activity/labels";
+import {
+  ROLE_NAME,
+  ROLE_ORDER,
+  describeTarget,
+  roleBreakdown,
+  usageRoleCount
+} from "@/lib/activity/labels";
 import { getActivityUsageAction, type UsageRow } from "@/lib/activity/query";
 import { UsagePick } from "@/components/developer/usage-pick";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -78,21 +84,25 @@ export function ActivityUsage({
     : [];
   // 역할은 **전부** 보여준다. 기록이 0인 역할을 목록에서 빼면 "이 역할은 이 기능을 한 번도
   // 안 썼다"를 확인할 방법이 사라진다 — 그게 이 화면의 질문이다. 고르면 0건이 곧 답이다.
+  // '시청자'는 **비로그인을 포함**한다. 하트가 비로그인으로 열린 뒤 실제 시청자 기록은 거의
+  // 전부 anon으로 들어온다 — 갈라두면 역할=시청자가 늘 0건이 되어 "집계가 아예 안 된다"로
+  // 읽힌다(실측: viewer 0 / anon 38). 비로그인만 보고 싶으면 '비로그인'을 따로 고르면 된다.
+  const roleCount = (r: UsageRow, key: string): number => usageRoleCount(r.roles, key);
   const filtered = rows
     ? rows.filter(
         (r) =>
           (kind === "all" || r.kind === kind) &&
           (area === "all" || (describeTarget(r.kind, r.target).area ?? "기타") === area) &&
-          (role === "all" || (r.roles[role] ?? 0) > 0)
+          (role === "all" || roleCount(r, role) > 0)
       )
     : [];
   const sorted =
     role === "all"
       ? filtered
-      : [...filtered].sort((a, b) => (a.roles[role] ?? 0) - (b.roles[role] ?? 0));
+      : [...filtered].sort((a, b) => roleCount(a, role) - roleCount(b, role));
   const shown = showAll ? sorted : sorted.slice(0, 15);
   // 역할을 고르면 그 역할의 횟수로 센다 — 전체 합으로 두면 "매니저는 1번인데 54로 보이는" 착시.
-  const countOf = (r: UsageRow) => (role === "all" ? r.total : (r.roles[role] ?? 0));
+  const countOf = (r: UsageRow) => (role === "all" ? r.total : roleCount(r, role));
   const max = filtered.length > 0 ? Math.max(...filtered.map(countOf)) : 1;
 
   // 붙여넣어 공유·점검할 수 있는 평문. **여기엔 원래 id를 반드시 포함한다** — 화면에선 숨기지만
@@ -226,7 +236,10 @@ export function ActivityUsage({
                   }}
                   options={[
                     { value: "all", label: "전체" },
-                    ...ROLE_ORDER.map((rr) => ({ value: rr, label: ROLE_NAME[rr] }))
+                    ...ROLE_ORDER.map((rr) => ({
+                      value: rr,
+                      label: rr === "viewer" ? "시청자(비로그인 포함)" : ROLE_NAME[rr]
+                    }))
                   ]}
                   value={role}
                 />
@@ -248,6 +261,13 @@ export function ActivityUsage({
                 ) : null}
               </div>
 
+              {/* 필터가 0건이면 왜 비었는지 그 자리에서 말한다 — 빈 목록만 두면 "집계가
+                  안 되는 건가?"로 읽힌다(실측: 역할=시청자가 늘 0이었다). */}
+              {filtered.length === 0 ? (
+                <p className="insight-empty">
+                  이 조건에 맞는 기록이 이 기간에 없어요 (전체 {rows.length}개 중 0개).
+                </p>
+              ) : null}
               <ul className="usage-list">
                 {shown.map((r) => {
                   const chip = KIND_CHIP[r.kind] ?? { short: "기타", tone: "btn" };

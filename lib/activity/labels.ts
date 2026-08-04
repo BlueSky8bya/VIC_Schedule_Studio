@@ -300,6 +300,17 @@ export const ROLE_NAME: Record<string, string> = {
   viewer: "시청자",
   anon: "비로그인"
 };
+/**
+ * 사용량 화면의 역할 필터 계수. '시청자'는 **비로그인을 포함**한다.
+ * 하트가 비로그인으로 열린 뒤 실제 시청자 행동은 거의 전부 anon으로 들어와, 갈라두면
+ * 역할=시청자가 늘 0건이 되어 "집계가 아예 안 된다"로 읽힌다(실측: viewer 0 / anon 38).
+ * 비로그인만 보려면 'anon'을 직접 고른다.
+ */
+export function usageRoleCount(roles: Record<string, number>, role: string): number {
+  if (role === "viewer") return (roles.viewer ?? 0) + (roles.anon ?? 0);
+  return roles[role] ?? 0;
+}
+
 /** 역할별 횟수를 "관리자 3 · 개발자 12" 같은 한 줄로. 0인 역할은 뺀다. */
 export function roleBreakdown(roles: Record<string, number>): string {
   const parts = ROLE_ORDER.filter((r) => (roles[r] ?? 0) > 0).map(

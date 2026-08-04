@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeTarget, roleBreakdown } from "@/lib/activity/labels";
+import { describeTarget, roleBreakdown, usageRoleCount } from "@/lib/activity/labels";
 
 // 이 화면을 보는 사람은 대부분 코드를 모른다(관리자·매니저). 규약:
 //   1) 화면에 실제로 쓰인 말로 부른다
@@ -81,5 +81,23 @@ describe("역할별 분해 — 뭉치지 않는다", () => {
   });
   it("빈 값도 안전하게", () => {
     expect(roleBreakdown({})).toBe("기록 없음");
+  });
+});
+
+// 역할 필터 계수 — '시청자'가 비로그인을 포함하지 않으면, 하트가 비로그인으로 열린 뒤로는
+// 역할=시청자가 항상 0건이 되어 "집계가 아예 안 된다"로 읽힌다(2026-08-04 실측).
+describe("usageRoleCount", () => {
+  it("시청자는 비로그인을 합산한다", () => {
+    expect(usageRoleCount({ viewer: 2, anon: 38 }, "viewer")).toBe(40);
+    expect(usageRoleCount({ anon: 38 }, "viewer")).toBe(38);
+  });
+
+  it("비로그인만 고르면 비로그인만 센다", () => {
+    expect(usageRoleCount({ viewer: 2, anon: 38 }, "anon")).toBe(38);
+  });
+
+  it("다른 역할은 그대로", () => {
+    expect(usageRoleCount({ owner: 3, anon: 38 }, "owner")).toBe(3);
+    expect(usageRoleCount({ owner: 3 }, "manager")).toBe(0);
   });
 });
