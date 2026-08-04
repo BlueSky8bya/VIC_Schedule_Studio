@@ -186,85 +186,81 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
             <p className="insight-empty">아직 쌓인 기록이 없어요.</p>
           ) : (
             <>
-              <div className="usage-filters" role="group" aria-label="위치">
-                <button
-                  aria-pressed={area === "all"}
-                  className={area === "all" ? "is-on" : ""}
-                  data-act="usage-area-all"
-                  onClick={() => {
-                    hapticTick();
-                    setArea("all");
-                    setShowAll(false);
-                  }}
-                  type="button"
-                >
-                  모든 위치
-                </button>
-                {areasIn.map((a) => (
-                  <button
-                    aria-pressed={area === a}
-                    className={area === a ? "is-on" : ""}
+              {/* 칩을 종류·위치·역할 세 줄로 늘어놓으면 목록보다 필터가 길어진다(실측).
+                  고르는 값이 늘어날수록(위치는 계속 는다) 더 나빠지므로 드롭다운 한 줄로 묶는다. */}
+              <div className="usage-picks">
+                <label>
+                  <span>종류</span>
+                  <select
+                    data-act="usage-kind"
+                    onChange={(e) => {
+                      hapticTick();
+                      setKind(e.target.value);
+                      setShowAll(false);
+                    }}
+                    value={kind}
+                  >
+                    {FILTERS.map((f) => (
+                      <option key={f.key} value={f.key}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>위치</span>
+                  <select
                     data-act="usage-area"
-                    key={a}
-                    onClick={() => {
+                    onChange={(e) => {
                       hapticTick();
-                      setArea(a);
+                      setArea(e.target.value);
                       setShowAll(false);
                     }}
-                    type="button"
+                    value={area}
                   >
-                    {a}
-                  </button>
-                ))}
-              </div>
-              <div className="usage-filters" role="group" aria-label="역할">
-                <button
-                  aria-pressed={role === "all"}
-                  className={role === "all" ? "is-on" : ""}
-                  data-act="usage-role-all"
-                  onClick={() => {
-                    hapticTick();
-                    setRole("all");
-                    setShowAll(false);
-                  }}
-                  type="button"
-                >
-                  모든 역할
-                </button>
-                {rolesIn.map((rr) => (
-                  <button
-                    aria-pressed={role === rr}
-                    className={role === rr ? "is-on" : ""}
+                    <option value="all">전체</option>
+                    {areasIn.map((a) => (
+                      <option key={a} value={a}>
+                        {a}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>역할</span>
+                  <select
                     data-act="usage-role"
-                    key={rr}
-                    onClick={() => {
+                    onChange={(e) => {
                       hapticTick();
-                      setRole(rr);
+                      setRole(e.target.value);
                       setShowAll(false);
                     }}
-                    type="button"
+                    value={role}
                   >
-                    {ROLE_NAME[rr]}
-                  </button>
-                ))}
-              </div>
-              <div className="usage-filters" role="group" aria-label="종류">
-                {FILTERS.map((f) => (
+                    <option value="all">전체</option>
+                    {rolesIn.map((rr) => (
+                      <option key={rr} value={rr}>
+                        {ROLE_NAME[rr]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {kind !== "all" || area !== "all" || role !== "all" ? (
                   <button
-                    aria-pressed={kind === f.key}
-                    className={kind === f.key ? "is-on" : ""}
-                    data-act={`usage-kind-${f.key}`}
-                    key={f.key}
+                    className="usage-reset"
+                    data-act="usage-filter-reset"
                     onClick={() => {
                       hapticTick();
-                      setKind(f.key);
+                      setKind("all");
+                      setArea("all");
+                      setRole("all");
                       setShowAll(false);
                     }}
                     type="button"
                   >
-                    {f.label}
+                    초기화
                   </button>
-                ))}
+                ) : null}
               </div>
 
               <ul className="usage-list">

@@ -294,9 +294,9 @@ export async function getActivityUsageAction(days = 30, anchor?: string): Promis
       };
       acc.set(key, row);
     }
-    // 비로그인은 시청자로 합친다 — 지금 판단(어떤 기능이 안 쓰이나)에 둘을 가르는 이득이 없다.
-    const key2 = role === "anon" ? "viewer" : role;
-    row.roles[key2] = (row.roles[key2] ?? 0) + n;
+    // 비로그인은 시청자와 **가른다**. 합쳤더니 "편집실에 시청자"처럼 설명 안 되는 줄이 생겼다
+    // (로그아웃 직후 남은 배치가 세션 없이 올라가 anon으로 기록된 것). 갈라두면 그 자리에서 읽힌다.
+    row.roles[role] = (row.roles[role] ?? 0) + n;
     row.total += n;
   };
 

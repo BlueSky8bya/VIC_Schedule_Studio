@@ -70,6 +70,8 @@ describe("역할별 분해 — 뭉치지 않는다", () => {
     expect(roleBreakdown({ owner: 3, developer: 12, viewer: 5 })).toBe(
       "관리자 3 · 개발자 12 · 시청자 5"
     );
+    // 비로그인은 시청자와 가른다 — 합치면 "편집실에 시청자"처럼 설명 안 되는 줄이 생긴다.
+    expect(roleBreakdown({ developer: 1, anon: 2 })).toBe("개발자 1 · 비로그인 2");
   });
   it("0인 역할은 빼고, 순서는 관리자→매니저→작업자→개발자→시청자", () => {
     expect(roleBreakdown({ viewer: 2, manager: 1 })).toBe("매니저 1 · 시청자 2");

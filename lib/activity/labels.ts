@@ -284,15 +284,19 @@ export function describeTarget(kind: string, target: string): TargetLabel {
 }
 
 // 역할 표기 — 지표에서 뭉치지 않는다. "이 기능은 매니저만 쓴다" 같은 판단은 역할이 살아 있어야
-// 가능하다. 비로그인은 시청자로 합친다(지금 판단에 둘을 가르는 이득이 없다).
-export const ROLE_ORDER = ["owner", "manager", "worker", "developer", "viewer"] as const;
+// 가능하다.
+//
+// **비로그인(anon)을 시청자로 합치지 않는다.** 합쳤더니 "편집실에 시청자 1"처럼 설명 안 되는
+// 줄이 생겼다(실측). 편집실은 시청자가 못 들어가는데 왜? — 로그아웃 직후 남아 있던 배치가
+// 세션 없이 올라가 anon으로 기록된 것이었다. 둘을 갈라두면 그 자리에서 읽힌다.
+export const ROLE_ORDER = ["owner", "manager", "worker", "developer", "viewer", "anon"] as const;
 export const ROLE_NAME: Record<string, string> = {
   owner: "관리자",
   manager: "매니저",
   worker: "작업자",
   developer: "개발자",
   viewer: "시청자",
-  anon: "시청자"
+  anon: "비로그인"
 };
 /** 역할별 횟수를 "관리자 3 · 개발자 12" 같은 한 줄로. 0인 역할은 뺀다. */
 export function roleBreakdown(roles: Record<string, number>): string {
