@@ -981,7 +981,9 @@ export function BroadcastPanel({
   function onBoardPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (tool !== "select" || e.button !== 0) return;
     // 카드/버튼 위에서 시작하면 러버밴드 아님(카드 자체 핸들러가 처리).
-    if ((e.target as HTMLElement).closest(".bp-day-col, button")) return;
+    // 선택 박스(와 그 손잡이) 위에서 시작한 드래그는 '이동/크기 조절'이다 — 여기서 밴드까지
+    // 시작하면 선택 상자와 러버밴드가 겹쳐 두 겹으로 보인다(실측).
+    if ((e.target as HTMLElement).closest(".bp-day-col, button, .bp-stroke-sel")) return;
     const p = innerPointC(e.clientX, e.clientY);
     if (!p) return;
     e.preventDefault(); // 러버밴드 중 브라우저 텍스트 선택(파란 긁힘) 방지
@@ -1147,9 +1149,18 @@ export function BroadcastPanel({
       }
       flush();
     }
-    if (changed) {
-      store.setStrokes(nextScene);
-      pushHist({ t: "scene", before, after: [...nextScene] });
+    // ⚠ 선택한 획은 **맨 위로 올린다**(지우개 위로).
+    // 지우개는 픽셀을 지우는 게 아니라 destination-out 획으로 장면에 남아, 재생 순서대로 다시
+    // 적용된다. 그래서 선택한 그림을 '예전에 지운 자리'로 옮기면 그 지우개가 다시 덮어
+    // **지운 적 없는 부분이 지워진 것처럼** 보였다(실측, 중대). 선택 시점에 뒤로 보내면
+    // 이후 어디로 옮기든 옛 지우개가 닿지 않는다. 그림 도구의 "옮기면 맨 앞으로"와도 맞다.
+    const pickedSet = new Set(picked);
+    const lifted =
+      picked.length > 0 ? [...nextScene.filter((x) => !pickedSet.has(x)), ...picked] : nextScene;
+    const orderChanged = lifted.some((x, i) => x !== nextScene[i]);
+    if (changed || orderChanged) {
+      store.setStrokes(lifted);
+      pushHist({ t: "scene", before, after: [...lifted] });
       // 분할된 레이어들 재생(선언 순서 제약으로 ref 경유 — replayAll과 동일 효과).
       for (const l of layersRef.current) replayLayerFnRef.current(l.id);
       setStrokeVersion((v) => v + 1);

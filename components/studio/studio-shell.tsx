@@ -2127,7 +2127,10 @@ export function StudioShell({
     // 신규(날짜 대상)는 칸 위쪽에서 고정 오프셋으로 찍으면 업 도움 띠 위에 얹혀 "띠를 고르는
     // 중"처럼 보인다(실측). 띠는 목록 위 여백에 깔리므로, **일정 목록의 시작점**을 기준으로
     // 잡으면 띠가 몇 줄이든 항상 칸 본문에 붙는다. 목록이 없으면 칸 중앙으로 물러선다.
-    const listEl = pill ? null : cell.querySelector<HTMLElement>(".studio-event-list");
+    // 신규(날짜 대상)는 **날짜 숫자**를 짚는다. 일정 목록이나 칸 중앙을 짚으면 카드 위에
+    // 얹혀 "이 일정을 고르는 중인가?"로 읽힌다 — 처음 보는 사람에겐 구분이 안 된다(실측).
+    // 날짜 숫자는 어떤 상황(띠 유무·카드 유무·카드 개수)에서도 늘 칸 맨 위에 있어 흔들리지 않는다.
+    const listEl = pill ? null : cell.querySelector<HTMLElement>(".studio-day-head");
     const listRect = listEl?.getBoundingClientRect() ?? null;
     const aRect = pill ? pill.getBoundingClientRect() : (listRect ?? cellRect);
     const aT = (aRect.top - wsRect.top) / z;
