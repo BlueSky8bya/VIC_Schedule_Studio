@@ -17,9 +17,11 @@ export async function POST(request: Request) {
   const id = typeof body.id === "string" ? body.id : "";
   // 비로그인 방문자 기기 식별자(localStorage) — 고유 방문자 dedup용(서버에서 해시해 account_hash로).
   const anonId = typeof body.anonId === "string" ? body.anonId : undefined;
+  // 탭 수명 식별자(0061) — 문서 이동으로 쪼개진 구간들을 한 방문으로 잇는 그룹 키.
+  const visitKey = typeof body.visitKey === "string" ? body.visitKey : undefined;
   switch (body.op) {
     case "start":
-      return NextResponse.json(await startVisitSession(device, anonId));
+      return NextResponse.json(await startVisitSession(device, anonId, visitKey));
     case "touch":
       return NextResponse.json(await touchVisitSession(id));
     case "end":

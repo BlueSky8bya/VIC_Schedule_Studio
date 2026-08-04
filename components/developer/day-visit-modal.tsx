@@ -315,6 +315,8 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                   <b className="dv-acct">{v.account}</b>
                   <em>
                     {fmtDur(v.seconds)} · {devMeta(v.device).label}
+                    {/* 한 방문 안에서 페이지를 옮긴 횟수(0061). 예전엔 이동마다 별도 방문으로 찍혔다. */}
+                    {v.segments > 1 ? ` · 이동 ${v.segments - 1}회` : ""}
                   </em>
                 </li>
               ))}

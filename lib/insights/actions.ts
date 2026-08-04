@@ -5,6 +5,14 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails, normalizeEmail } from "@/lib/auth/config";
 import { canEditSchedule } from "@/lib/permissions/roles";
+import {
+  durMs,
+  foldVisits,
+  sEnd,
+  sStart,
+  visitSpans,
+  type SessionRow
+} from "@/lib/insights/visit-fold";
 
 // 개발자 전용 "월별 인사이트" — 보고 있는 달(year/month) 기준 집계.
 // 모든 값은 합계/개수만 — 비공개·owner_private 일정의 내용은 절대 내보내지 않는다.
@@ -154,7 +162,8 @@ const DEVICE_TREND_META = [
 // 원문 이메일·user_id는 저장하지 않고 익명 해시만. id는 서버 생성 uuid(추측 불가)라 touch/end는 id로만.
 export async function startVisitSession(
   device: string,
-  anonId?: string
+  anonId?: string,
+  visitKey?: string
 ): Promise<{ ok: boolean; id?: string }> {
   const actor = await resolveCurrentActor(SLUG);
   // 비로그인 방문자도 집계한다 — role="anon"(비로그인). 로그인은 실제 역할 + 이메일 해시(하루 1인),
@@ -173,6 +182,9 @@ export async function startVisitSession(
         account_hash: isAuthed && actor.email ? accountHashOf(actor.email) : anonHash,
         role: isAuthed ? actor.role : "anon",
         device: safeDevice,
+        // 탭 수명 그룹 키(0061). 클라 값이라 위조 가능하지만 '구간을 잇는 키'일 뿐 — 역할·계정은
+        // 위에서 서버 actor로 확정한다. 길이만 방어적으로 자른다.
+        visit_key: visitKey && visitKey.length >= 8 ? visitKey.slice(0, 64) : null,
         started_at: nowIso,
         last_seen_at: nowIso
       })
@@ -220,25 +232,8 @@ export async function endVisitSession(id: string): Promise<{ ok: boolean }> {
 
 // ── 세션 이벤트 집계 헬퍼(visit_session 기반, JS에서 계산) ──
 // 규모가 작아(스트리머 1명) 행을 받아 JS로 집계한다 — 별도 RPC 불필요. 체류는 초 단위로 정확.
-type SessionRow = {
-  day: string;
-  role: string;
-  device: string;
-  account_hash: string | null;
-  started_at: string;
-  last_seen_at: string;
-  ended_at: string | null;
-};
+// 구간→방문 접기와 시간 헬퍼는 lib/insights/visit-fold.ts(순수 모듈, 단위 테스트 대상).
 const KST_MS = 9 * 3600 * 1000;
-function sStart(r: SessionRow): number {
-  return new Date(r.started_at).getTime();
-}
-// 유효 종료 = ended_at(없으면 last_seen_at). 최소 1초(0초 방문도 한 조각 잡히게).
-function sEnd(r: SessionRow): number {
-  const start = sStart(r);
-  const raw = new Date(r.ended_at ?? r.last_seen_at).getTime();
-  return Number.isFinite(raw) && raw > start ? raw : start + 1000;
-}
 function sAcct(r: SessionRow): string {
   return r.account_hash ?? "anon";
 }
@@ -246,10 +241,6 @@ function sAcct(r: SessionRow): string {
 // 비로그인은 관객이지 운영진이 아니므로, '시청자/운영진' 2분할에선 관객 쪽으로 센다.
 function isAudience(role: string): boolean {
   return role === "viewer" || role === "anon";
-}
-// 세션 체류(ms). 의미 방문 컷·바운스·KPI 공용.
-function durMs(r: SessionRow): number {
-  return Math.max(0, sEnd(r) - sStart(r));
 }
 // R1: 이 시간 미만 체류는 '스쳐감'으로 보고 방문 수에서 제외(실수 진입·즉시 이탈). 동접/세션 목록엔 남긴다.
 const MIN_MEANINGFUL_VISIT_MS = 3000;
@@ -282,11 +273,13 @@ function summarize(rows: SessionRow[]): VisitSummary {
   const totalSeconds = Math.round(meaningful.reduce((s, r) => s + durMs(r), 0) / 1000);
   const avgSeconds = sessions > 0 ? Math.round(totalSeconds / sessions) : 0;
   const bounceRate = sessions > 0 ? bounce / sessions : 0;
-  // 최고 동접 — 의미 세션 구간 스윕.
+  // 최고 동접 — 방문 span이 아니라 '실제 가시 구간'을 스윕한다(span에는 자리비움이 섞인다).
   const ev: { t: number; d: number }[] = [];
   for (const r of meaningful) {
-    ev.push({ t: sStart(r), d: 1 });
-    ev.push({ t: sEnd(r), d: -1 });
+    for (const sp of visitSpans(r)) {
+      ev.push({ t: sp.s, d: 1 });
+      ev.push({ t: sp.e, d: -1 });
+    }
   }
   ev.sort((a, b) => a.t - b.t || a.d - b.d);
   let cnt = 0;
@@ -340,7 +333,7 @@ function buildSessionLog(
     .sort((a, b) => sStart(b) - sStart(a))
     .map((r) => {
       const startMs = sStart(r);
-      const seconds = Math.max(0, Math.round((sEnd(r) - startMs) / 1000));
+      const seconds = Math.max(0, Math.round(durMs(r) / 1000)); // 실측 체류(가시 구간 합집합)
       const label =
         r.role === "owner" && r.account_hash && hashToOwnerEmail.has(r.account_hash)
           ? hashToOwnerEmail.get(r.account_hash)!
@@ -353,7 +346,9 @@ function buildSessionLog(
         meaningful: isMeaningful(r),
         label,
         // 겸업 표식 — 역할은 매니저(겸업은 매니저로 기록)지만 작업자도 겸한 멤버.
-        dual: r.role === "manager" && Boolean(r.account_hash) && dualHashes.has(r.account_hash!)
+        dual: r.role === "manager" && Boolean(r.account_hash) && dualHashes.has(r.account_hash!),
+        // 문서 이동으로 쪼개졌던 조각 수(0061). 1이면 한 화면에만 머문 방문.
+        segments: r.segments ?? 1
       };
     });
 }
@@ -476,14 +471,15 @@ async function loadKnownAccounts(
   return new Set(rows.map((r) => r.account_hash).filter((h): h is string => Boolean(h)));
 }
 
-const SESSION_COLS = "day, role, device, account_hash, started_at, last_seen_at, ended_at";
+const SESSION_COLS =
+  "day, role, device, account_hash, started_at, last_seen_at, ended_at, visit_key";
 
 async function loadSessions(
   supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
   startDay: string,
   endDayExclusive: string
 ): Promise<SessionRow[]> {
-  return fetchAllRows<SessionRow>(() =>
+  const raw = await fetchAllRows<SessionRow>(() =>
     supabase
       .from("visit_session")
       .select(SESSION_COLS)
@@ -491,6 +487,8 @@ async function loadSessions(
       .lt("day", endDayExclusive)
       .order("id", { ascending: true })
   );
+  // 적재 즉시 '구간 → 방문'으로 접는다(0061). 이 아래 모든 집계는 방문 단위를 본다.
+  return foldVisits(raw);
 }
 // reach 슬롯: 방문자=(날짜|계정) 고유, 역할별=(날짜|계정) 고유/역할, 기기별=(날짜|계정|기기) 고유.
 // 재진입(같은 날 같은 계정 여러 세션)은 reach에선 1로 합친다(순방문자 의미 유지).
@@ -538,8 +536,10 @@ function computeOccupancy(rows: SessionRow[], observedDays: number): OccSlot[] {
   }));
   const evs = Array.from({ length: 24 }, () => [] as { t: number; d: number }[]);
   for (const r of rows) {
-    let cur = sStart(r);
-    const end = sEnd(r);
+    // 방문 span이 아니라 가시 구간별로 쪼갠다 — 자리비움이 점유로 잡히면 안 된다.
+    for (const sp of visitSpans(r)) {
+    let cur = sp.s;
+    const end = sp.e;
     while (cur < end) {
       const kst = cur + KST_MS;
       const hourEndUtc = (Math.floor(kst / 3600000) + 1) * 3600000 - KST_MS;
@@ -553,6 +553,7 @@ function computeOccupancy(rows: SessionRow[], observedDays: number): OccSlot[] {
       evs[h].push({ t: cur, d: 1 });
       evs[h].push({ t: segEnd, d: -1 });
       cur = segEnd;
+    }
     }
   }
   const denom = 3600 * Math.max(1, observedDays);
@@ -579,13 +580,16 @@ function ownerSessionsFrom(rows: SessionRow[]): OwnerSession[] {
     .map((r) => {
       const startMs = sStart(r);
       const endMs = sEnd(r);
-      const seconds = Math.max(0, Math.round((endMs - startMs) / 1000));
+      // 체류는 span(자리비움 포함)이 아니라 실측(가시 구간 합집합)으로 표시한다.
+      const seconds = Math.max(0, Math.round(durMs(r) / 1000));
       return {
         device: DEVICE_SET.has(r.device) ? r.device : "desktop",
         startMs,
         endMs,
         minutes: Math.round(seconds / 60),
-        seconds
+        seconds,
+        // 페이지 이동으로 몇 조각이었나 — 1이면 이동 없이 한 화면에 머문 방문.
+        segments: r.segments ?? 1
       };
     })
     .filter((s) => Number.isFinite(s.startMs) && Number.isFinite(s.endMs))
@@ -1012,7 +1016,8 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
         .gte("day", fromStart)
         .lt("day", nextMonthStart)
         .order("id", { ascending: true })
-    ),
+    ).then(foldVisits), // 구간 → 방문(0061)
+
     supabase
       .from("events")
       .select("id, date_key")
@@ -1254,7 +1259,8 @@ export type OwnerSession = {
   startMs: number;
   endMs: number;
   minutes: number;
-  seconds: number; // 초 단위 체류(짧은 방문은 UI가 '초'로 표시)
+  seconds: number; // 실측 체류(가시 구간 합집합). 짧은 방문은 UI가 '초'로 표시
+  segments: number; // 이 방문이 몇 조각이었나(문서 이동 횟수 = segments-1). 1이면 이동 없음
 };
 // 토글(시청자/운영진 포함)로 즉시 바뀌는 그래프 묶음 — 같은 코드로 시청자만/전체 두 벌을 만든다.
 export type VisitGraphs = {
@@ -1293,6 +1299,7 @@ export type RecentSession = {
   meaningful: boolean;
   label: string;
   dual: boolean; // 매니저·작업자 겸업 멤버의 매니저 세션(개발자 디버깅 표식)
+  segments: number; // 이 방문이 몇 조각이었나(문서 이동 횟수 = segments-1)
 };
 export type VisitTrendsResult = { ok: true; data: VisitTrends } | { ok: false; error: string };
 
@@ -1422,7 +1429,7 @@ export async function getVisitTrendsAction(
         .gte("day", monthStart)
         .lt("day", nextMonthStart)
         .order("id", { ascending: true })
-    ),
+    ).then(foldVisits), // 구간 → 방문(0061)
     loadKnownAccounts(supabase, monthStart)
   ]);
 
@@ -1465,7 +1472,7 @@ export async function getVisitTrendsAction(
   const openRate = rows.length > 0 ? rows.filter((r) => !r.ended_at).length / rows.length : 0;
   const avgStaySec =
     rows.length > 0
-      ? Math.round(rows.reduce((s, r) => s + (sEnd(r) - sStart(r)) / 1000, 0) / rows.length)
+      ? Math.round(rows.reduce((s, r) => s + durMs(r) / 1000, 0) / rows.length)
       : 0;
   const health = { todaySessions, openRate, avgStaySec };
 
@@ -1557,7 +1564,13 @@ export type DayVisitDetail = {
   ownerSessions: OwnerSession[]; // 그날 관리자 접속 세션
   // 그날 '관리자(owner)' 방문 기록 — 세션별. 언제(started_at)·기기·체류(초)·계정(설정된 owner
   // 이메일과 해시 매칭되면 이메일, 아니면 익명 태그). 일반 방문자는 절대 식별되지 않는다.
-  ownerVisits: { t: number; device: string; account: string; seconds: number }[];
+  ownerVisits: {
+    t: number;
+    device: string;
+    account: string;
+    seconds: number;
+    segments: number;
+  }[];
   // 그날 관리자(owner) 총 체류 초. 세션 합. 매우 짧으면(예: 0~1초) 화면을 사실상 안 본 것.
   ownerSeconds: number;
   summaryViewer: VisitSummary; // 그날 시청자 기준 품질 요약(R4/R5/R13)
@@ -1615,7 +1628,8 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
         t: startMs,
         device: DEVICE_SET.has(r.device) ? r.device : "desktop",
         account: hashToOwnerEmail.get(h) ?? `계정 #${acctTag.get(h)}`,
-        seconds: Math.max(0, Math.round((sEnd(r) - startMs) / 1000))
+        seconds: Math.max(0, Math.round(durMs(r) / 1000)), // 실측 체류(가시 구간 합집합)
+        segments: r.segments ?? 1
       };
     })
     .sort((a, b) => a.t - b.t);

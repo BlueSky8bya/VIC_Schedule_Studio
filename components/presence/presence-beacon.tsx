@@ -18,6 +18,29 @@ const HEARTBEAT_MS = 25_000;
 // 현재 KST 날짜(YYYY-MM-DD). 서버 ymd(kstNow())와 동일 규칙(+9h).
 const kstDay = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 
+// 방문 = '탭 수명'(0061). sessionStorage는 탭이 닫히면 사라지고, 사이트 안 문서 이동·하드 리로드·
+// 탭 숨김/복귀에는 살아남는다 → "탭 닫았다 다시 오면 새 방문"이 시간 임계값 없이 정확해진다.
+// 값에 KST 날짜를 함께 박아, 켜둔 채 자정을 넘기면 새 방문으로 끊는다(day는 start 시점에만
+// 박히므로 안 끊으면 일별 집계가 샌다 — 세션 롤오버(tick)와 같은 이유·같은 경계).
+// sessionStorage를 못 쓰면(사생활 모드 등) 매번 새 키 = 구간마다 1방문 — 이 컬럼 도입 전과 동일.
+const VISIT_KEY_STORE = "vic:visitKey";
+function visitKeyFor(day: string): string {
+  const fresh = () =>
+    typeof crypto !== "undefined" && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `tab-${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+  try {
+    const raw = window.sessionStorage.getItem(VISIT_KEY_STORE) ?? "";
+    const sep = raw.indexOf("|");
+    if (sep > 0 && raw.slice(0, sep) === day) return raw.slice(sep + 1);
+    const key = fresh();
+    window.sessionStorage.setItem(VISIT_KEY_STORE, `${day}|${key}`);
+    return key;
+  } catch {
+    return fresh();
+  }
+}
+
 // 비로그인 방문자 기기 식별자(고유 방문자 dedup용) — 하트와 같은 localStorage 키를 재사용한다.
 const ANON_ID_KEY = "vic:anonId:v1";
 function deviceAnonId(): string {
@@ -61,7 +84,8 @@ export function PresenceBeacon({ role }: { role: MembershipRole | "anon" }) {
       starting = true;
       const day = kstDay();
       try {
-        const res = await post("start", anonId ? { anonId } : undefined);
+        // visitKey는 day와 함께 계산한다 — 자정 롤오버로 begin()이 다시 불리면 키도 새로 발급된다.
+        const res = await post("start", { visitKey: visitKeyFor(day), ...(anonId ? { anonId } : {}) });
         const data = (await res.json().catch(() => null)) as { ok?: boolean; id?: string } | null;
         if (data?.ok && data.id) {
           sessionId = data.id;

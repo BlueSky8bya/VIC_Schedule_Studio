@@ -22,6 +22,11 @@ export type PresenceCounts = {
   owner: number;
   developer: number;
   total: number;
+  // 화면에 실제로 떠 있는 수(document.visibilityState === "visible").
+  // total - watching = "탭은 살아있지만 화면엔 없음". 예전엔 track이 마운트 1회뿐이라 숨긴 탭도
+  // 계속 1로 잡혔다 — 기록(visit_session)은 hidden에서 끊는데 실시간만 안 끊겨 의미가 어긋났다.
+  // 주의: visible은 '화면에 출력 중'이지 '눈으로 보는 중'이 아니다(다른 창에 가려짐·보조 모니터 등).
+  watching: number;
   // 기기별 합계 — 웹(데스크톱) / 안드로이드 / iOS / 기타 모바일.
   devices: { desktop: number; android: number; ios: number; mobile: number };
 };
@@ -34,6 +39,7 @@ const EMPTY: PresenceCounts = {
   owner: 0,
   developer: 0,
   total: 0,
+  watching: 0,
   devices: { desktop: 0, android: 0, ios: 0, mobile: 0 }
 };
 
@@ -60,7 +66,7 @@ function notify() {
 
 function recompute() {
   if (!channel) return;
-  const state = channel.presenceState<{ role?: string; device?: string }>();
+  const state = channel.presenceState<{ role?: string; device?: string; visible?: boolean }>();
   const next: PresenceCounts = { ...EMPTY, devices: { ...EMPTY.devices } };
   // 프레즌스 키 1개 = 브라우저 1대. 새로고침으로 같은 키의 옛/새 연결이 잠깐 겹쳐도(엔트리 2개)
   // 키당 1명으로만 센다 → "한 계정 2기기 = 2", 새로고침해도 수가 부풀지 않는다.
@@ -77,9 +83,33 @@ function recompute() {
     if (device && device in next.devices) {
       next.devices[device] += 1;
     }
+    // visible이 없는 엔트리는 옛 클라이언트 — 예전 의미(열려 있으면 접속)대로 '보는 중'으로 센다.
+    if (entry.visible !== false) next.watching += 1;
   }
   counts = next;
   notify();
+}
+
+// 현재 track 중인 값 — visibilitychange마다 같은 키로 다시 track해 visible만 갈아끼운다.
+let trackedRole: MembershipRole | "anon" = "anon";
+let retrackTimer: number | null = null;
+function retrack() {
+  if (!channel) return;
+  void channel.track({
+    role: trackedRole,
+    device: detectDevice(),
+    // 화면에 출력 중인가. 모바일은 화면 잠금에도 hidden이 뜬다(원하는 판정).
+    visible: typeof document !== "undefined" ? document.visibilityState === "visible" : true
+  });
+}
+// alt-tab을 빠르게 왕복하면 track 메시지가 몰린다 — 짧게 묶는다(신호 의미는 그대로).
+function retrackSoon() {
+  if (typeof window === "undefined") return;
+  if (retrackTimer !== null) window.clearTimeout(retrackTimer);
+  retrackTimer = window.setTimeout(() => {
+    retrackTimer = null;
+    retrack();
+  }, 400);
 }
 
 // 마운트 시 1회 호출 — 자기 역할을 프레즌스에 등록한다. 비로그인은 "anon"으로 track되고, 실시간
@@ -92,6 +122,7 @@ export function startPresence(role: MembershipRole | "anon") {
   if (typeof window === "undefined") return;
 
   started = true;
+  trackedRole = role;
   try {
     client = createBrowserClient(url, anon);
     // 브라우저당 '고정' 프레즌스 키 — 새로고침해도 같은 키를 재사용해 중복 카운트를 막는다.
@@ -117,10 +148,10 @@ export function startPresence(role: MembershipRole | "anon") {
       .on("presence", { event: "join" }, recompute)
       .on("presence", { event: "leave" }, recompute)
       .subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          void channel?.track({ role, device: detectDevice() });
-        }
+        if (status === "SUBSCRIBED") retrack();
       });
+    // 페이지 전역 리스너 — startPresence는 로드당 1회(started 플래그)라 해제 대상이 아니다.
+    document.addEventListener("visibilitychange", retrackSoon);
   } catch {
     // 실시간 연결 실패는 조용히 무시 — 접속자 현황은 보조 기능이라 앱 동작을 막지 않는다.
     started = false;

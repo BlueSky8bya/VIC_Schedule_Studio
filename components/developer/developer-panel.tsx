@@ -36,9 +36,17 @@ export function DeveloperPanel() {
       <p className="developer-panel-hint">
         지금 사이트에 접속 중인 사용자입니다. (실시간 갱신)
       </p>
-      <div className="developer-panel-total">
-        <strong>{c ? c.total : "…"}</strong>
-        <span>명 접속 중</span>
+      {/* 화면에 떠 있음 / 탭만 열림 — 예전 '접속 중'은 숨긴 탭도 함께 세서 실제보다 컸다.
+          visible은 '화면에 출력 중'이지 '눈으로 보는 중'은 아니다(가려진 창·보조 모니터). */}
+      <div className="developer-panel-live">
+        <div className="dp-live-tile is-watching">
+          <strong>{c ? c.watching : "…"}</strong>
+          <span>화면에 떠 있음</span>
+        </div>
+        <div className="dp-live-tile">
+          <strong>{c ? Math.max(0, c.total - c.watching) : "…"}</strong>
+          <span>탭만 열림</span>
+        </div>
       </div>
 
       <h3 className="developer-panel-subhead">역할별</h3>

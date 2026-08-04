@@ -962,20 +962,52 @@ html[data-reduce-motion] .private-warning-float {
   color: #8b7a59;
   text-transform: none;
 }
-.developer-panel-total {
+/* 실시간 2열 — 형제 타일은 같은 높이(1fr)로 두어 값 길이에 따라 어긋나지 않게 한다. */
+.developer-panel-live {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  align-items: stretch;
+}
+.dp-live-tile {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 12px 16px;
-  background: #f5f3ff;
-  border: 1px solid #ddd6fe;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px 12px;
+  background: #f6f5f9;
+  border: 1px solid #e6e2f0;
   border-radius: var(--r-md);
+  color: #6b6480;
+  transition:
+    background-color var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease);
+}
+.dp-live-tile.is-watching {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
   color: #5b21b6;
 }
-.developer-panel-total strong {
-  font-size: 30px;
+.dp-live-tile strong {
+  font-size: 26px;
   font-weight: 900;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.dp-live-tile span {
+  font-size: 12px;
+  font-weight: 700;
+}
+@media (min-width: 641px) {
+  .dp-live-tile {
+    padding: 12px 16px;
+  }
+  .dp-live-tile strong {
+    font-size: 30px;
+  }
+  .dp-live-tile span {
+    font-size: 13px;
+  }
 }
 .developer-panel-list {
   list-style: none;
