@@ -1,6 +1,6 @@
 "use client";
 
-import { isClientKind, type ClientKind } from "@/lib/activity/kinds";
+import { foldDigits, isClientKind, type ClientKind } from "@/lib/activity/kinds";
 
 // 클라 행동 기록(0062) — 열람·시선처럼 서버 왕복이 없어 지금까지 전혀 안 보이던 것들을 남긴다.
 //
@@ -87,7 +87,7 @@ function wire(): void {
 const MAX_ID = 48;
 function autoId(el: HTMLElement): string {
   const aria = el.getAttribute("aria-label")?.trim();
-  if (aria) return `auto:${aria.slice(0, MAX_ID)}`;
+  if (aria) return `auto:${foldDigits(aria).slice(0, MAX_ID)}`;
   // 클래스는 상태 클래스(is-*, active…)를 빼고 첫 토큰만 — 상태에 따라 id가 갈라지면 못 센다.
   const cls = (el.className || "")
     .toString()
@@ -95,7 +95,7 @@ function autoId(el: HTMLElement): string {
     .find((c) => c && !/^(is-|has-|active|open|on$|selected)/.test(c));
   if (cls) return `auto:.${cls.slice(0, MAX_ID)}`;
   const text = (el.textContent || "").trim().replace(/\s+/g, " ");
-  if (text) return `auto:${text.slice(0, MAX_ID)}`;
+  if (text) return `auto:${foldDigits(text).slice(0, MAX_ID)}`;
   return `auto:${el.tagName.toLowerCase()}`;
 }
 
@@ -160,6 +160,33 @@ export function logClose(openKind: ClientKind, closeKind: ClientKind, target: st
   const started = openedAt.get(key);
   openedAt.delete(key);
   logActivity(closeKind, { target, durMs: started ? Date.now() - started : undefined });
+}
+
+// ── 정착 로깅(연타 압축) ──
+// 달을 12번 넘겨 3월로 갔으면 그건 행동 12개가 아니라 의도 1개("3월 보러 가자")다. 경유지를
+// 다 남기면 정작 중요한 줄(수정·잠금해제)이 반복 줄에 덮인다 — 실측에서 한 방문 52건 중
+// 대부분이 `월 이동 offset=-1`이었다.
+// 그래서 조용해질 때까지 기다렸다가 **도착지 1건**만 남기고, 몇 번 눌렀는지는 meta.hops로 둔다.
+// (신호 = 어느 달을 보려 했나. 경유 = 배경.)
+const SETTLE_MS = 700;
+type Settling = { kind: ClientKind; target: string | null; hops: number; timer: number };
+const settling = new Map<string, Settling>();
+
+export function logSettled(kind: ClientKind, key: string, target: string | null): void {
+  if (typeof window === "undefined") return;
+  const cur = settling.get(key);
+  if (cur) window.clearTimeout(cur.timer);
+  const hops = (cur?.hops ?? 0) + 1;
+  const timer = window.setTimeout(() => {
+    const done = settling.get(key);
+    settling.delete(key);
+    if (!done) return;
+    logActivity(done.kind, {
+      target: done.target,
+      meta: done.hops > 1 ? { hops: done.hops } : null
+    });
+  }, SETTLE_MS);
+  settling.set(key, { kind, target, hops, timer });
 }
 
 /** 클릭 위임을 한 번 건다. 루트에서 1회 호출(RouteBeacon이 부른다). */

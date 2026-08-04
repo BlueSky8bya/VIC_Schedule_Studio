@@ -1254,15 +1254,56 @@ html[data-reduce-motion] .act-skeleton span {
   background: var(--surface, #fff);
   overflow: hidden;
 }
+/* 헤더 전체가 토글 버튼 — 과녁을 넓게 둔다. */
 .act-visit-head {
   display: flex;
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+  width: 100%;
+  text-align: left;
   padding: 8px 10px;
   background: #faf9fc;
+  border: 0;
   border-bottom: 1px solid var(--line, #ece9f5);
   font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background-color var(--dur-1) var(--ease);
+}
+.act-visit-head:hover {
+  background: #f4f1fa;
+}
+.act-visit-head:active {
+  transform: scale(0.995);
+}
+.act-caret {
+  color: #9a93b0;
+  font-size: 10px;
+  width: 10px;
+  flex: none;
+  transition: transform var(--dur-1) var(--ease);
+}
+/* 접힘 요약 — 펼치지 않고도 "무엇을 한 방문인가"가 보여야 한다. 한 줄 말줄임. */
+.act-gist {
+  flex-basis: 100%;
+  min-width: 0;
+  color: #7c7690;
+  font-weight: 600;
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 연속 반복 접기 표시(×N) */
+.act-rep {
+  margin-left: 5px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: rgb(124 108 240 / 12%);
+  color: #6b5bd6;
+  font-size: 10.5px;
+  font-weight: 800;
 }
 .act-dev {
   width: 8px;
@@ -1319,8 +1360,11 @@ html[data-reduce-motion] .act-skeleton span {
   color: #4a4460;
   font-style: normal;
   font-weight: 600;
+  /* 한 줄 말줄임 — anywhere로 흘리면 좁은 칸에서 글자가 세로로 쌓인다(사용량 패널 실측 결함). */
   min-width: 0;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .act-dur,
 .act-meta {
@@ -1328,15 +1372,16 @@ html[data-reduce-motion] .act-skeleton span {
   font-weight: 600;
   font-size: 11px;
 }
-@media (min-width: 641px) {
+/* 모달이 2단이라 뷰포트가 넓어도 이 칸은 좁다 → 뷰포트가 아니라 칸 폭으로 전환한다. */
+@container (min-width: 460px) {
   .act-visit-head {
     font-size: 13px;
     padding: 10px 14px;
   }
   .act-items > li {
-    /* 시각 | 행동 | 대상 | 체류 — 열 정렬(웹은 가로 여유를 쓴다) */
+    /* 시각 | 행동 | 대상 | 체류 — 열 정렬(넓을 때만) */
     display: grid;
-    grid-template-columns: 52px 104px 1fr auto;
+    grid-template-columns: 46px 96px minmax(0, 1fr) auto;
     gap: 10px;
     align-items: baseline;
     padding: 6px 14px;
@@ -1420,7 +1465,12 @@ html[data-reduce-motion] .act-skeleton span {
   grid-column: 1;
   color: #3f3a52;
   font-weight: 700;
-  overflow-wrap: anywhere;
+  /* 한 줄 + 말줄임. anywhere로 흘리면 좁은 칸에서 글자가 세로로 한 자씩 쌓인다(실측 결함).
+     전체 값은 title 속성으로 본다. */
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .usage-auto {
   margin-left: 5px;
@@ -1488,11 +1538,16 @@ html[data-reduce-motion] .act-skeleton span {
 .usage-more:active {
   transform: scale(0.985);
 }
-@media (min-width: 641px) {
-  /* 웹은 가로 여유를 쓴다 — 종류·이름·막대·숫자를 한 행으로 정렬해 세로로 훑게 한다. */
+/* 인사이트 모달은 2단이라 뷰포트가 넓어도 각 칸은 좁다 → 뷰포트가 아니라 '이 칸의 폭'으로
+   레이아웃을 바꾼다. 컨테이너 쿼리를 못 쓰는 환경에선 위의 2행 레이아웃이 그대로 유지된다. */
+.vcard {
+  container-type: inline-size;
+}
+@container (min-width: 460px) {
+  /* 넓으면 종류·이름·막대·숫자를 한 행으로 — 같은 열끼리 세로로 훑을 수 있다. */
   .usage-list > li {
-    grid-template-columns: 92px minmax(0, 1fr) 140px auto;
-    gap: 12px;
+    grid-template-columns: 80px minmax(0, 1fr) 96px auto;
+    gap: 10px;
     padding: 7px 10px;
     font-size: 13px;
   }

@@ -151,7 +151,7 @@ import {
   hapticTick,
   setHapticsEnabled
 } from "@/lib/ui/haptics";
-import { logActivity } from "@/lib/activity/client";
+import { logSettled } from "@/lib/activity/client";
 import { useSectionActivity } from "@/lib/activity/use-section";
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
@@ -1567,12 +1567,10 @@ export function StudioShell({
     });
     // 어느 달을 보러 왔는지(0062) — 월 이동은 라우트가 아니라 상태라 route.enter에 안 잡힌다.
     // updater 밖에서 부른다: updater는 StrictMode에서 두 번 실행돼 로그가 겹친다.
+    // 연타는 정착 후 '도착지 1건'으로 압축한다(연타 12번 = 의도 1개, meta.hops로 횟수만 남긴다).
     {
       const next = getAdjacentMonth(view.year, view.month, offset);
-      logActivity("month.change", {
-        target: `${next.year}-${String(next.month).padStart(2, "0")}`,
-        meta: { offset }
-      });
+      logSettled("month.change", "studio-month", `${next.year}-${String(next.month).padStart(2, "0")}`);
     }
     bumpEditor(); // 달이 바뀌어 새 날짜로 → 폼 새로 마운트
   }
@@ -6215,6 +6213,9 @@ export function StudioShell({
                   onPointerLeave={cancelCellHold}
                   onPointerCancel={cancelCellHold}
                   role="button"
+                  // 안정 id(0062) — 없으면 aria-label에서 유추해 날짜마다 다른 id가 생기고
+                  // 사용량 통계가 칸 수만큼 갈라진다("2026-08-04화요일" 같은 항목이 무한 증식).
+                  data-act="calendar-cell"
                   aria-label={`${cell.isoDate} ${WEEKDAYS[cell.weekday]}요일${
                     dateEvents.length > 0 ? ` · 일정 ${dateEvents.length}개` : ""
                   }`}

@@ -198,6 +198,13 @@ export function sanitizeTarget(raw: unknown): string | null {
 /** 보존 기간(일) — 사용자 결정. 조회할 때 지나가며 이보다 오래된 행을 지운다. */
 export const ACTIVITY_RETENTION_DAYS = 90;
 
+// 라벨에 숫자가 들어가면(날짜·개수·금액) 항목이 값마다 갈라져 통계가 무한 증식한다
+// — 실측: 날짜 칸 aria-label 때문에 "2026-08-04화요일"류가 칸 수만큼 생겼다.
+// 숫자 뭉치를 #으로 접어 같은 버튼을 한 항목으로 모은다. 근본 해법은 버튼에 data-act를 붙이는 것.
+export function foldDigits(s: string): string {
+  return s.replace(/\d+/g, "#");
+}
+
 // 서버 이벤트는 클라의 detectDevice()를 못 쓰므로 User-Agent로 같은 판정을 한다
 // (lib/presence/presence-client.ts의 detectDevice와 규칙 동일 — 어긋나면 같은 방문이 두 기기로 보인다).
 export function deviceFromUserAgent(ua: string | null | undefined): string {

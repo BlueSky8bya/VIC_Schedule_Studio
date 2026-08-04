@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   accountHashForRole,
   deviceFromUserAgent,
+  foldDigits,
   isClientKind,
   isInternalRole,
   isServerKind,
@@ -48,6 +49,16 @@ describe("버튼 전수 수집", () => {
   it("버튼 id는 target으로 들어가며 길이만 제한된다", () => {
     expect(sanitizeTarget("open-day-visit")).toBe("open-day-visit");
     expect(sanitizeTarget("auto:.month-nav-btn")).toBe("auto:.month-nav-btn");
+  });
+  it("숫자가 든 라벨은 접는다 — 안 접으면 날짜 칸마다 항목이 갈라져 통계가 무한 증식한다", () => {
+    expect(foldDigits("2026-08-04화요일")).toBe("#-#-#화요일");
+    expect(foldDigits("2026-08-05화요일 · 일정 3개")).toBe("#-#-#화요일 · 일정 #개");
+    // 같은 요일이면 날짜가 달라도 한 항목으로 모인다(요일 글자는 숫자가 아니라 남는다 —
+    // 최대 7개로 갇히므로 무한 증식은 막힌다. 완전한 해법은 버튼에 data-act를 붙이는 것).
+    expect(foldDigits("2026-08-05 수요일")).toBe(foldDigits("2026-09-16 수요일"));
+  });
+  it("숫자 없는 라벨은 그대로", () => {
+    expect(foldDigits("공지 쓰기")).toBe("공지 쓰기");
   });
 });
 
