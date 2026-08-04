@@ -6340,6 +6340,8 @@ export function StudioShell({
                     // 라벨은 '시작 칸'과 '주가 바뀐 첫 칸(일요일)'에만 — isEnd 라벨은 같은
                     // 줄에서 제목이 두 번 보였다. 글자는 sb-head로 오른쪽 띠 위로 흘러간다.
                     const showLabel = isStart || (!isStart && cellIndex % 7 === 0);
+                    // 하루짜리는 흘려보낼 다음 칸이 없다 — 칸 안에서 끝나게 따로 그린다.
+                    const solo = isStart && isEnd;
                     return (
                       <div
                         // 필터를 켜면 일정 카드만 흐려지고 업 도움 끈은 쨍하게 남아, 안 고른 기간이
@@ -6349,9 +6351,9 @@ export function StudioShell({
                         // 여러 칸에 걸쳐 있어 한 조각만 강조하면 어디까지가 그 기간인지 안 보인다.
                         className={`support-bar${isDimmedByFilter(s) ? " filter-dim" : ""}${
                           showLabel ? " sb-head" : ""
-                        }${hoverSupportId === s.id ? " is-hover" : ""}${
-                          editorVisible && selectedEventId === s.id ? " is-editing" : ""
-                        }`}
+                        }${solo ? " sb-solo" : ""}${
+                          hoverSupportId === s.id ? " is-hover" : ""
+                        }${editorVisible && selectedEventId === s.id ? " is-editing" : ""}`}
                         data-supportid={s.id}
                         key={s.id}
                         onMouseEnter={() => setHoverSupportId(s.id)}
@@ -6380,7 +6382,14 @@ export function StudioShell({
                           borderBottomRightRadius: right ? 9 : 0
                         }}
                       >
-                        {showLabel ? <span>🌱 {s.publicTitle}</span> : null}
+                        {showLabel ? (
+                          <span>
+                            <i className="sb-sprout" aria-hidden="true">
+                              🌱
+                            </i>
+                            {solo ? <b className="sb-title">{s.publicTitle}</b> : s.publicTitle}
+                          </span>
+                        ) : null}
                       </div>
                     );
                   })}

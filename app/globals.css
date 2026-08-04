@@ -1162,6 +1162,49 @@ html[data-reduce-motion] .passcode-box .button {
   font-weight: 900;
   white-space: nowrap;
 }
+/* ── 하루짜리 업 도움 ────────────────────────────────────────────────────
+   여러 날짜짜리는 시작 조각이 넘침을 허용해 제목·CTA를 오른쪽 띠 위로 흘려보낸다. 하루짜리는
+   흘려보낼 띠가 없어서, 같은 규칙을 쓰면 글자가 **남의 날짜 칸 위**로 삐져나온다.
+   그래서 칸 안에서 끝나는 별도 모양으로 그린다: 넘침을 자르고, 제목은 말줄임, 클릭 유도는
+   화살표 한 글자로 압축(뜻은 aria-label에 그대로 남는다). 편집실·시청자 화면 공통. */
+.support-bar.sb-solo {
+  overflow: hidden;
+}
+
+.support-bar.sb-solo span {
+  width: 100%;
+  gap: 4px;
+  padding: 0 5px;
+  font-size: 10px;
+}
+
+.support-bar .sb-title {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 화살표는 오른쪽 끝에 고정 — 제목이 길어도 '누를 수 있다'는 신호가 먼저 잘리면 안 된다. */
+.support-bar.sb-solo .sb-go {
+  flex: none;
+  margin-left: auto;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  color: rgb(159 18 57 / 78%);
+  transition: transform 0.16s var(--ease, ease);
+}
+
+.support-bar.sb-solo.is-clickable.is-hover .sb-go {
+  transform: translateX(2px);
+}
+
+html[data-reduce-motion] .support-bar.sb-solo.is-clickable.is-hover .sb-go {
+  transform: none;
+}
+
 /* '도와주러 가기 →' — 띠의 남는 가로 폭을 클릭 유도 문구로 활용(시청자 화면 전용 렌더). */
 .support-bar .sb-cta {
   font-style: normal;

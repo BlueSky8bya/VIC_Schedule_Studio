@@ -3747,9 +3747,14 @@ export function PublicPoster({
                   });
                 }
               : null;
+          // 하루짜리는 이어질 칸이 없다 — 글자를 오른쪽으로 흘리면 남의 날짜 위에 뜬다.
+          // 칸 안에서 끝나는 별도 모양으로 그린다(제목 말줄임 + 화살표 한 글자).
+          const solo = isStart && isEnd;
           const bandClass = `support-bar${isDimmedByFilter(s) ? " dimmed" : ""}${
             bandClickable ? " is-clickable" : ""
-          }${showLabel ? " sb-head" : ""}${hoverSupportId === s.id ? " is-hover" : ""}`;
+          }${showLabel ? " sb-head" : ""}${solo ? " sb-solo" : ""}${
+            hoverSupportId === s.id ? " is-hover" : ""
+          }`;
           const bandStyle = {
             // 머리글 높이(--day-head-h)에서 파생 — 확대해도 날짜와 겹치지 않는다.
             // -1px은 머리글 밑선에 살짝 걸쳐 띠가 떠 보이지 않게 하는 기존 여백.
@@ -3773,9 +3778,18 @@ export function PublicPoster({
               <i className="sb-sprout" aria-hidden="true">
                 🌱
               </i>
-              {s.publicTitle}
-              {/* 남는 가로 폭 = 클릭 유도 문구(시청자 전용, 띠 위로 흘러감). */}
-              {bandClickable ? <em className="sb-cta">도와주러 가기 →</em> : null}
+              {solo ? <b className="sb-title">{s.publicTitle}</b> : s.publicTitle}
+              {/* 남는 가로 폭 = 클릭 유도 문구(시청자 전용, 띠 위로 흘러감).
+                  하루짜리는 그만한 폭이 없어 화살표 한 글자로 압축한다(뜻은 aria-label에 그대로). */}
+              {bandClickable ? (
+                solo ? (
+                  <em className="sb-go" aria-hidden="true">
+                    →
+                  </em>
+                ) : (
+                  <em className="sb-cta">도와주러 가기 →</em>
+                )
+              ) : null}
             </span>
           ) : null;
           if (bandClickable && s.supportUrl) {
