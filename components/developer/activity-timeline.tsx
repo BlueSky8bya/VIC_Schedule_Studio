@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { deviceColor, deviceLabel, fmtDur, hhmm } from "@/components/developer/insights-dashboard";
 import { getActivityDayAction, type ActivityVisit } from "@/lib/activity/query";
+import { describeTarget } from "@/lib/activity/labels";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 그날 행동 타임라인(0062) — 방문(탭) 단위로 묶어 무엇을 했는지 시각순으로 보여준다.
@@ -32,6 +33,17 @@ function metaLine(meta: Record<string, unknown> | null): string {
 
 type Item = ActivityVisit["items"][number];
 type Grouped = Item & { repeat: number };
+
+// 표시 이름: 일정 제목(서버가 권한 확인 후 붙여준 것)이 있으면 그것, 없으면 사전으로 푼다.
+function itemName(it: Item): string {
+  if (it.targetLabel) return it.targetLabel;
+  if (!it.target) return "";
+  return describeTarget(it.kind, it.target).name;
+}
+function itemTitle(it: Item): string {
+  const d = it.target ? describeTarget(it.kind, it.target) : null;
+  return [it.targetLabel, d?.hint, it.target ? `id: ${it.target}` : ""].filter(Boolean).join("\n");
+}
 
 // 같은 행동이 연달아 반복되면 한 줄로 접는다(×N). 접기 전에는 '월 이동 offset=-1'이 12줄씩
 // 쌓여 정작 중요한 줄(수정·잠금해제)을 덮었다 — 반복은 정보가 아니라 배경이다.
@@ -125,7 +137,7 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
       const parts = [
         hhmm(it.t),
         it.label + (it.repeat > 1 ? ` ×${it.repeat}` : ""),
-        it.targetLabel ?? it.target ?? "",
+        itemName(it),
         it.durMs ? fmtDur(Math.round(it.durMs / 1000)) : "",
         metaLine(it.meta)
       ].filter(Boolean);
@@ -229,8 +241,10 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
                         {it.label}
                         {it.repeat > 1 ? <b className="act-rep">×{it.repeat}</b> : null}
                       </span>
-                      <span className="act-target" title={it.targetLabel ?? it.target ?? ""}>
-                        {it.targetLabel ?? it.target ?? ""}
+                      {/* 일정은 제목(권한 확인 후 조인), 그 외는 사람이 읽는 이름으로 푼다 —
+                          타임라인에 `.stf-btn` 같은 값이 그대로 뜨면 읽을 수 없다. */}
+                      <span className="act-target" title={itemTitle(it)}>
+                        {itemName(it)}
                       </span>
                       {it.durMs ? (
                         <span className="act-dur">{fmtDur(Math.round(it.durMs / 1000))}</span>

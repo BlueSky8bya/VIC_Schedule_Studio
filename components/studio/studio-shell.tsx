@@ -943,6 +943,7 @@ export function StudioShell({
               return (
               <button
                 className={`preview-dd-item${active ? " active" : ""}`}
+                data-act={`role-preview-${opt.value || "dev"}`}
                 key={opt.value || "dev"}
                 onClick={() => {
                   setPreviewMenuOpen(false);
@@ -5599,6 +5600,7 @@ export function StudioShell({
         {(canEdit || isDeveloper) && !isNarrow ? (
           <button
             className="button"
+            data-act="open-drawing-board"
             onClick={(e) => openBroadcastPanel(e.currentTarget)}
             type="button"
           >
@@ -5886,6 +5888,7 @@ export function StudioShell({
                   {canEdit && taxonomyV3 ? (
                     <button
                       className="preview-dd-item"
+                      data-act="manage-tags"
                       onClick={() => {
                         setManageMenuOpen(false);
                         if (!blockedByPreview()) setModal("tags");
@@ -5899,6 +5902,7 @@ export function StudioShell({
                   {canEdit ? (
                     <button
                       className="preview-dd-item"
+                      data-act="manage-members"
                       onClick={() => {
                         setManageMenuOpen(false);
                         if (!blockedByPreview()) setModal("members");
@@ -5912,6 +5916,7 @@ export function StudioShell({
                   {isDeveloper && !previewRole ? (
                     <button
                       className="preview-dd-item"
+                      data-act="manage-insights"
                       onClick={() => {
                         setManageMenuOpen(false);
                         setModal("developer");
@@ -5924,6 +5929,7 @@ export function StudioShell({
                   ) : canMemberInsights ? (
                     <button
                       className="preview-dd-item"
+                      data-act="manage-insights"
                       onClick={() => {
                         setManageMenuOpen(false);
                         setModal("developer");

@@ -3824,6 +3824,7 @@ export function PublicPoster({
                 return (
                   <div
                     className={`public-event teaser${openTeaserDetail ? " is-clickable" : ""}`}
+                    data-act="teaser-card"
                     key={event.id}
                     {...(openTeaserDetail
                       ? {
@@ -4410,6 +4411,7 @@ export function PublicPoster({
                     return (
                       <div
                         className={`agenda-event tappable${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}`}
+                        data-act="schedule-card"
                         data-eventid={support ? undefined : event.id}
                         key={(support ? "s-" : "") + event.id}
                         role="button"
@@ -5931,6 +5933,7 @@ export function PublicPoster({
                       <button
                         className="stf-btn"
                         onClick={duplicateSelected}
+                        data-act="sticker-duplicate-all"
                         title="모두 복제 (Ctrl+D)"
                         type="button"
                       >
@@ -5939,6 +5942,7 @@ export function PublicPoster({
                       <button
                         className="stf-btn danger"
                         onClick={deleteSelected}
+                        data-act="sticker-delete-all"
                         title="모두 삭제 (Delete)"
                         type="button"
                       >
@@ -6030,6 +6034,7 @@ export function PublicPoster({
                             patchSelected({ italic: !selected.italic });
                           }}
                           style={{ fontStyle: "italic" }}
+                          data-act="sticker-italic"
                           title="기울임"
                           type="button"
                         >
@@ -6042,6 +6047,7 @@ export function PublicPoster({
                             pushHistory();
                             patchSelected({ textBg: selected.textBg ? undefined : "#fff3a0" });
                           }}
+                          data-act="sticker-highlight"
                           title="글자 배경(하이라이트)"
                           type="button"
                         >
@@ -6111,6 +6117,7 @@ export function PublicPoster({
                             pushHistory();
                             patchSelected({ locked: !selected.locked });
                           }}
+                          data-act="sticker-lock"
                           title={selected.locked ? "잠금 해제" : "잠금 (이동/크기 방지)"}
                           type="button"
                         >
@@ -6119,6 +6126,7 @@ export function PublicPoster({
                         <button
                           className="stf-btn"
                           onClick={duplicateSelected}
+                          data-act="sticker-duplicate"
                           title="복제 (Ctrl+D)"
                           type="button"
                         >
@@ -6127,6 +6135,7 @@ export function PublicPoster({
                         <button
                           className="stf-btn danger"
                           onClick={deleteSelected}
+                          data-act="sticker-delete"
                           title="삭제 (Delete)"
                           type="button"
                         >
@@ -6184,6 +6193,7 @@ export function PublicPoster({
                             pushHistory();
                             patchSelected({ locked: !selected.locked });
                           }}
+                          data-act="sticker-lock"
                           title={selected.locked ? "잠금 해제" : "잠금 (이동/크기 방지)"}
                           type="button"
                         >
@@ -6192,6 +6202,7 @@ export function PublicPoster({
                         <button
                           className="stf-btn"
                           onClick={duplicateSelected}
+                          data-act="sticker-duplicate"
                           title="복제 (Ctrl+D)"
                           type="button"
                         >
@@ -6200,6 +6211,7 @@ export function PublicPoster({
                         <button
                           className="stf-btn danger"
                           onClick={deleteSelected}
+                          data-act="sticker-delete"
                           title="삭제 (Delete)"
                           type="button"
                         >
@@ -6220,6 +6232,7 @@ export function PublicPoster({
                           aria-pressed={selected.flipX}
                           className="stf-btn"
                           onClick={() => toggleFlip("x")}
+                          data-act="sticker-flip-x"
                           title="좌우 대칭"
                           type="button"
                         >
@@ -6229,6 +6242,7 @@ export function PublicPoster({
                           aria-pressed={selected.flipY}
                           className="stf-btn"
                           onClick={() => toggleFlip("y")}
+                          data-act="sticker-flip-y"
                           title="상하 대칭"
                           type="button"
                         >
@@ -6238,6 +6252,7 @@ export function PublicPoster({
                           aria-pressed={Boolean(selected.shadow)}
                           className="stf-btn"
                           onClick={() => toggleEffect("shadow")}
+                          data-act="sticker-shadow"
                           title="진한 그림자"
                           type="button"
                         >
@@ -6246,6 +6261,7 @@ export function PublicPoster({
                         <button
                           className="stf-btn"
                           onClick={() => reorderSelected(true)}
+                          data-act="sticker-front"
                           title="맨 앞으로"
                           type="button"
                         >
@@ -6254,6 +6270,7 @@ export function PublicPoster({
                         <button
                           className="stf-btn"
                           onClick={() => reorderSelected(false)}
+                          data-act="sticker-back"
                           title="맨 뒤로"
                           type="button"
                         >

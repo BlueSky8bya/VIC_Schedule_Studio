@@ -136,9 +136,12 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
                   <span className="usage-chip" data-tone={chip.tone}>
                     {chip.short}
                   </span>
+                  {/* 이름 + 부연을 함께 보여준다 — 모르는 이름을 hover로만 설명하면
+                      "이게 뭐지"가 그대로 남는다. 원래 id는 title에. */}
                   <span className="usage-target" title={tip}>
-                    {d.name}
+                    <b>{d.name}</b>
                     {r.auto ? <em className="usage-auto" title="마크업에서 유추한 이름" /> : null}
+                    {d.hint ? <small>{d.hint}</small> : null}
                   </span>
                   <span className="usage-bar" aria-hidden="true">
                     <i style={{ width: `${Math.max(2, (r.total / max) * 100)}%` }} />
