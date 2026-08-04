@@ -197,10 +197,13 @@ export type UsageRow = {
   auto: boolean; // target이 auto: 접두사 = 마크업에서 유추한 id(마크업이 바뀌면 갈라진다)
 };
 export type UsageResult =
-  | { ok: true; rows: UsageRow[]; days: number; since: string }
+  | { ok: true; rows: UsageRow[]; days: number; since: string; until: string }
   | { ok: false; error: string };
 
-export async function getActivityUsageAction(days = 30): Promise<UsageResult> {
+// anchor: 기준일(KST, YYYY-MM-DD). 이 날을 **끝으로** 거슬러 days일을 센다.
+// 날짜 모달 안에 있는 패널이라 기준이 '오늘'이면 보고 있는 날과 어긋난다 — 8/4를 열었는데
+// 오늘까지의 통계가 나오면 무엇을 보고 있는지 알 수 없다. anchor를 안 주면 오늘 기준.
+export async function getActivityUsageAction(days = 30, anchor?: string): Promise<UsageResult> {
   const actor = await resolveCurrentActor(SLUG);
   if (actor.role !== "developer") {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
@@ -209,7 +212,9 @@ export async function getActivityUsageAction(days = 30): Promise<UsageResult> {
   if (!supabase) return { ok: false, error: "Supabase service role 키가 필요합니다." };
 
   const span = Math.min(Math.max(1, Math.round(days)), ACTIVITY_RETENTION_DAYS);
-  const since = new Date(Date.now() + 9 * 3600_000 - (span - 1) * 86400_000)
+  const todayKst = new Date(Date.now() + 9 * 3600_000).toISOString().slice(0, 10);
+  const until = anchor && /^\d{4}-\d{2}-\d{2}$/.test(anchor) ? anchor : todayKst;
+  const since = new Date(Date.parse(`${until}T00:00:00Z`) - (span - 1) * 86400_000)
     .toISOString()
     .slice(0, 10);
 
@@ -218,12 +223,14 @@ export async function getActivityUsageAction(days = 30): Promise<UsageResult> {
       .from("activity_event")
       .select("kind, target, role")
       .gte("day", since)
+      .lte("day", until)
       .in("kind", ["ui.click", "section.enter", "route.enter"])
       .limit(20000),
     supabase
       .from("activity_daily_count")
       .select("kind, target, role, count")
       .gte("day", since)
+      .lte("day", until)
       .in("kind", ["ui.click", "section.enter", "route.enter"])
       .limit(20000)
   ]);
@@ -266,5 +273,5 @@ export async function getActivityUsageAction(days = 30): Promise<UsageResult> {
 
   // 적은 순 — 판단이 필요한 건 바닥 쪽이다.
   const rows = [...acc.values()].sort((a, b) => a.total - b.total || a.target.localeCompare(b.target));
-  return { ok: true, rows, days: span, since };
+  return { ok: true, rows, days: span, since, until };
 }

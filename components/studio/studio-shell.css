@@ -1254,6 +1254,43 @@ html[data-reduce-motion] .act-skeleton span {
   background: var(--surface, #fff);
   overflow: hidden;
 }
+/* 타임라인 머리 — 제목 + 도구(모두 펼치기·전체 복사). */
+.act-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.act-head-tools {
+  display: inline-flex;
+  gap: 4px;
+}
+.act-visit-tools {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 10px 0;
+}
+.act-tool {
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-pill);
+  background: var(--surface, #fff);
+  color: #6b5bd6;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.act-tool:hover {
+  background: #f7f5ff;
+}
+.act-tool:active {
+  transform: scale(0.94);
+}
+
 /* 헤더 전체가 토글 버튼 — 과녁을 넓게 둔다. */
 .act-visit-head {
   display: flex;
@@ -1436,6 +1473,15 @@ html[data-reduce-motion] .act-skeleton span {
 .usage-range button.is-on {
   background: rgb(124 108 240 / 14%);
   color: #5b21b6;
+}
+/* 보고 있는 구간 표기 — 날짜 모달 안이라 '오늘까지'로 오해하기 쉽다. */
+.usage-span {
+  display: block;
+  margin-top: 1px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--muted, #9aa0ab);
+  font-variant-numeric: tabular-nums;
 }
 .usage-filters {
   display: flex;

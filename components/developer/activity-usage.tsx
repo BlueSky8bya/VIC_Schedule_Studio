@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { describeTarget } from "@/lib/activity/labels";
 import { getActivityUsageAction, type UsageRow } from "@/lib/activity/query";
 import { hapticTick } from "@/lib/ui/haptics";
 
@@ -26,23 +27,27 @@ const FILTERS: { key: string; label: string }[] = [
   { key: "section.enter", label: "패널" }
 ];
 
-export function ActivityUsage() {
+export function ActivityUsage({ anchor }: { anchor: string }) {
   const [days, setDays] = useState(30);
   const [rows, setRows] = useState<UsageRow[] | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [kind, setKind] = useState("all"); // 종류 필터 — 한 종류만 보면 비교가 쉬워진다
+  const [span, setSpan] = useState<{ since: string; until: string } | null>(null);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setErr(null);
-    getActivityUsageAction(days)
+    // 기준일은 보고 있는 날 — 8/4 모달을 열면 8/4로 끝나는 N일이다(오늘까지가 아니라).
+    getActivityUsageAction(days, anchor)
       .then((r) => {
         if (!alive) return;
-        if (r.ok) setRows(r.rows);
-        else setErr(r.error);
+        if (r.ok) {
+          setRows(r.rows);
+          setSpan({ since: r.since, until: r.until });
+        } else setErr(r.error);
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -50,7 +55,7 @@ export function ActivityUsage() {
     return () => {
       alive = false;
     };
-  }, [days]);
+  }, [days, anchor]);
 
   const filtered = rows ? (kind === "all" ? rows : rows.filter((r) => r.kind === kind)) : [];
   const shown = showAll ? filtered : filtered.slice(0, 15);
@@ -59,7 +64,15 @@ export function ActivityUsage() {
   return (
     <section className="vcard">
       <header className="usage-head">
-        <h4 className="insight-subhead">사용량 — 적은 순</h4>
+        <h4 className="insight-subhead">
+          사용량 — 적은 순
+          {/* 어느 구간을 보고 있는지 명시 — 날짜 모달 안이라 '오늘까지'로 오해하기 쉽다. */}
+          {span ? (
+            <small className="usage-span">
+              {span.since} ~ {span.until}
+            </small>
+          ) : null}
+        </h4>
         <div className="usage-range" role="group" aria-label="기간">
           {RANGES.map((d) => (
             <button
@@ -114,13 +127,17 @@ export function ActivityUsage() {
           <ul className="usage-list">
             {shown.map((r) => {
               const chip = KIND_CHIP[r.kind] ?? { short: r.label, tone: "btn" };
+              // 저장은 기계용 id로, 표시는 사람 말로. 원래 id와 부연은 hover(title)에 함께 담는다
+              // — `.preview-dd-item`만 보고 그게 뭔지 아는 사람은 방금 그 코드를 쓴 사람뿐이다.
+              const d = describeTarget(r.kind, r.target);
+              const tip = [d.hint, `id: ${r.target}`].filter(Boolean).join("\n");
               return (
                 <li key={`${r.kind}|${r.target}`}>
                   <span className="usage-chip" data-tone={chip.tone}>
                     {chip.short}
                   </span>
-                  <span className="usage-target" title={r.target}>
-                    {r.target.replace(/^auto:/, "") || "(이름 없음)"}
+                  <span className="usage-target" title={tip}>
+                    {d.name}
                     {r.auto ? <em className="usage-auto" title="마크업에서 유추한 이름" /> : null}
                   </span>
                   <span className="usage-bar" aria-hidden="true">

@@ -308,7 +308,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
       <ActivityTimeline dateKey={dateKey} />
 
       {/* 하루가 아니라 기간 누적 — "어떤 버튼이 안 쓰이나"는 하루로는 안 보인다. */}
-      <ActivityUsage />
+      <ActivityUsage anchor={dateKey} />
 
       {/* 관리자 방문 기록 — 언제·어떤 계정으로 들어왔는지(설정된 owner 이메일이면 이메일로 표시). */}
       <section className="vcard">

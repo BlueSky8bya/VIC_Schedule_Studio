@@ -67,6 +67,7 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [copied, setCopied] = useState<string | null>(null); // 복사 완료 표시(방문 key, 전체는 "*")
 
   useEffect(() => {
     let alive = true;
@@ -116,9 +117,63 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
     );
   }
 
+  // 붙여넣어 공유·보관할 수 있는 평문. 화면과 같은 압축(연속 반복 ×N)을 그대로 쓴다 —
+  // 화면에서 본 것과 복사한 것이 달라지면 둘 중 뭘 믿을지 모르게 된다.
+  const visitText = (v: ActivityVisit): string => {
+    const head = `[${v.account} · ${ROLE_LABEL[v.role] ?? v.role} · ${deviceLabel(v.device)}] ${hhmm(v.startMs)}–${hhmm(v.endMs)}`;
+    const lines = groupItems(v.items).map((it) => {
+      const parts = [
+        hhmm(it.t),
+        it.label + (it.repeat > 1 ? ` ×${it.repeat}` : ""),
+        it.targetLabel ?? it.target ?? "",
+        it.durMs ? fmtDur(Math.round(it.durMs / 1000)) : "",
+        metaLine(it.meta)
+      ].filter(Boolean);
+      return "  " + parts.join("  ");
+    });
+    return [head, ...lines].join("\n");
+  };
+  const copy = async (text: string, key: string) => {
+    hapticTick();
+    try {
+      await navigator.clipboard.writeText(text);
+      hapticTick(); // 누름 → 완료 두 번(사이 간격이 실제 왕복)
+      setCopied(key);
+      window.setTimeout(() => setCopied((c) => (c === key ? null : c)), 1400);
+    } catch {
+      setCopied(null); // 클립보드 거부(권한·비보안 컨텍스트) — 조용히 실패
+    }
+  };
+  const allText = `${dateKey}\n\n${visits.map(visitText).join("\n\n")}`;
+
   return (
     <section className="vcard">
-      <h4 className="insight-subhead">행동 타임라인</h4>
+      <header className="act-head">
+        <h4 className="insight-subhead">행동 타임라인</h4>
+        <div className="act-head-tools">
+          <button
+            className="act-tool"
+            data-act="activity-expand-all"
+            onClick={() => {
+              hapticTick();
+              setExpanded((prev) =>
+                prev.size === visits.length ? new Set() : new Set(visits.map((v) => v.key))
+              );
+            }}
+            type="button"
+          >
+            {expanded.size === visits.length ? "모두 접기" : "모두 펼치기"}
+          </button>
+          <button
+            className="act-tool"
+            data-act="activity-copy"
+            onClick={() => copy(allText, "*")}
+            type="button"
+          >
+            {copied === "*" ? "복사됨" : "전체 복사"}
+          </button>
+        </div>
+      </header>
       <ul className="act-visits">
         {visits.map((v) => {
           const open = expanded.has(v.key);
@@ -154,7 +209,19 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
                 {open ? null : <span className="act-gist">{visitGist(v.items)}</span>}
               </button>
               {open ? (
-                <ol className="act-items">
+                <>
+                  {/* 펼친 김에 이 방문만 따로 복사 — 특정 세션을 공유할 때 전체는 과하다. */}
+                  <div className="act-visit-tools">
+                    <button
+                      className="act-tool"
+                      data-act="activity-copy"
+                      onClick={() => copy(visitText(v), v.key)}
+                      type="button"
+                    >
+                      {copied === v.key ? "복사됨" : "이 방문 복사"}
+                    </button>
+                  </div>
+                  <ol className="act-items">
                   {rows.map((it, i) => (
                     <li key={i} data-source={it.source}>
                       <span className="act-t">{hhmm(it.t)}</span>
@@ -171,7 +238,8 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
                       {it.meta ? <span className="act-meta">{metaLine(it.meta)}</span> : null}
                     </li>
                   ))}
-                </ol>
+                  </ol>
+                </>
               ) : null}
             </li>
           );
