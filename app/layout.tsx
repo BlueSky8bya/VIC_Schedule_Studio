@@ -16,6 +16,7 @@ import "./globals.css";
 // 포스터/스튜디오 CSS는 각 컴포넌트가 직접 import한다(아래). 루트에서 전역으로 싣지 않음으로써
 // 공개 포스터만 보는 비로그인 시청자가 스튜디오 CSS(220KB)를 렌더 차단으로 받지 않게 한다.
 import { PresenceBeacon } from "@/components/presence/presence-beacon";
+import { RouteBeacon } from "@/components/activity/route-beacon";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { resolveCurrentActor } from "@/lib/auth/actor";
@@ -91,6 +92,9 @@ export default async function RootLayout({
         {/* 방문 비콘은 비로그인 방문자에게도 깐다 — 일일/월별 인사이트에 '비로그인' 도달까지 잡는다.
             (로그인은 실제 역할, 비로그인은 role="anon". 서버가 actor로 실제 기록을 확정한다.) */}
         <PresenceBeacon role={actor.isAuthenticated ? actor.role : "anon"} />
+        {/* 어느 화면을 얼마나 봤는지(0062). 프레즌스와 분리 — deps에 pathname을 넣으면
+            SPA 라우팅마다 방문 세션이 끊긴다. */}
+        <RouteBeacon />
         {/* 오프라인 열람용 서비스워커 — 공개 포스터만 캐시(비공개·스튜디오·쓰기는 손대지 않음).
             신원(이메일/anon)이 바뀌면 캐시를 비워 공유 기기에서 이전 사용자 화면이 안 남게. */}
         <ServiceWorkerRegister

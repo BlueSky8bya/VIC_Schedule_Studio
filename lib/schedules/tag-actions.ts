@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { revalidatePublicSchedule } from "@/lib/schedules/cache";
+import { recordActivity } from "@/lib/activity/record";
 import type { BroadcastTag, ColorKey, ColorPaletteEntry, TagKind } from "@/lib/domain/schedule-types";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
@@ -244,6 +245,12 @@ export async function saveTagsAction(input: {
   revalidatePath("/");
   revalidatePath("/studio");
   revalidatePublicSchedule();
+  // 태그 이름은 남기지 않는다(사용자 자유 서술) — 몇 개를 만들고 고쳤는지만.
+  await recordActivity({
+    kind: created.length > 0 ? "tag.create" : "tag.update",
+    actor,
+    meta: { created: created.length, updated: updates.length }
+  });
   return { ok: true, created };
 }
 
@@ -297,6 +304,7 @@ export async function removeTagAction(tagId: string): Promise<TagUpdateResult> {
   revalidatePath("/");
   revalidatePath("/studio");
   revalidatePublicSchedule();
+  await recordActivity({ kind: "tag.delete", target: tagId, actor });
   return { ok: true };
 }
 

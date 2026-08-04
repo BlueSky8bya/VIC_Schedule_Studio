@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { revalidatePublicSchedule } from "@/lib/schedules/cache";
+import { recordActivity } from "@/lib/activity/record";
 import type {
   EventCategory,
   EventStatus,
@@ -99,6 +100,13 @@ export async function reorderEventsAction(input: {
   revalidatePath("/");
   revalidatePath("/studio");
   revalidatePublicSchedule();
+  // 다른 날에서 끌어온 것(movedId)과 같은 날 안 순서 바꾸기는 의미가 달라 kind를 나눈다.
+  await recordActivity({
+    kind: input.movedId ? "event.move" : "event.reorder",
+    target: input.movedId ?? input.dateKey,
+    actor,
+    meta: { date: input.dateKey, count: input.orderedIds.length }
+  });
   return { ok: true, id: input.movedId ?? input.orderedIds[0] ?? "" };
 }
 
@@ -247,9 +255,20 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
   }
   const eventId = rpcId as string;
 
-  revalidatePath("/");
-  revalidatePath("/studio");
-  revalidatePublicSchedule();
+  // 행동 기록(0062) — 제목·본문은 절대 넣지 않는다(target=uuid, meta=구조 정보만).
+  await recordActivity({
+    kind: input.id ? "event.update" : "event.create",
+    target: eventId,
+    actor,
+    meta: {
+      scope: input.visibilityScope,
+      date: input.dateKey,
+      multiday: Boolean(endDateKey),
+      tags: input.tagIds.length,
+      teaser: Boolean(input.teaser),
+      support: Boolean(input.isSupport)
+    }
+  });
 
   return { ok: true, id: eventId };
 }
@@ -284,9 +303,7 @@ export async function deleteEventAction(eventId: string): Promise<ActionResult> 
     .delete()
     .lt("deleted_at", new Date(Date.now() - TOMBSTONE_RETENTION_MS).toISOString());
 
-  revalidatePath("/");
-  revalidatePath("/studio");
-  revalidatePublicSchedule();
+  await recordActivity({ kind: "event.delete", target: eventId, actor });
 
   return { ok: true, id: eventId };
 }
@@ -383,6 +400,17 @@ export async function updateSupportSettingsAction(
   revalidatePath("/");
   revalidatePath("/studio");
   revalidatePublicSchedule();
+
+  // 어떤 필드를 건드렸는지만 남긴다 — 링크 원문(support_url)은 저장하지 않는다.
+  await recordActivity({
+    kind: "support.update",
+    target: eventId,
+    actor,
+    meta: {
+      period: input.endDateKey !== undefined,
+      link: input.supportUrl !== undefined
+    }
+  });
 
   return { ok: true, id: eventId };
 }

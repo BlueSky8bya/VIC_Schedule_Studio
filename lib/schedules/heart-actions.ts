@@ -1,5 +1,6 @@
 "use server";
 
+import { recordActivity } from "@/lib/activity/record";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { safeActionError } from "@/lib/utils/safe-action-error";
@@ -29,6 +30,8 @@ export async function toggleEventHeartAction(
     if (error) {
       return { ok: false, error: safeActionError("하트 반영", error) };
     }
+    // 행동 기록(0062) — 어떤 일정이 관심을 받는지. viewer는 account_hash가 null로 저장된다.
+    await recordActivity({ kind: "heart.toggle", target: eventId, actor, meta: { authed: true } });
     return { ok: true, count: Number(data) };
   }
 
@@ -42,6 +45,8 @@ export async function toggleEventHeartAction(
   if (error) {
     return { ok: false, error: safeActionError("하트 반영", error) };
   }
+  // 기기 토큰은 남기지 않는다 — 어떤 일정이 눌렸는지만(익명).
+  await recordActivity({ kind: "heart.toggle", target: eventId, actor, meta: { authed: false } });
   return { ok: true, count: Number(data) };
 }
 

@@ -20,3 +20,4 @@
 | [0010](ADR-0010-broadcast-panel-public-dto-only.md) | Accepted | 보안 경계 | 방송 판서는 **서버 공개 스냅샷→명시 DTO만**(spread 금지) + teaser fail-closed 마스킹 + 클라이언트 무저장 | 판서에 낙관적 실시간 반영이 필요해지면(공유 redaction 추출 방향) |
 | [0011](ADR-0011-ux-overhaul-l-decisions.md) | Accepted | UX 전면 개선 | 개선 계획 L1~L8 확정: 하루 개수 무제한, 제목 줄바꿈 유지, 메모리 draft, iPad 개요+아젠다, 삭제 8초+24h, developer 권한 현행 유지, 태그 6/2, 잠금해제 auth-session 단위 | 신뢰 멤버 증가·부제목 혼란 반복 시 |
 | [0012](ADR-0012-phase0-capability-matrix.md) | Accepted | 권한/보안 | Phase 0 capability matrix + 불변식(범위 fail-closed·미리보기 서버 스냅샷만·오류 원문 비노출) | 역할 추가·캘린더 2개 이상 시 |
+| [0013](ADR-0013-activity-log-internal-identified.md) | Accepted | 프라이버시/지표 | 행동 기록(`activity_event`): **내부자만 계정 식별**, 시청자·비로그인은 쓰기 시점에 `account_hash` null 강제. meta에 일정 제목·본문 저장 금지(ADR-0002 우회 차단). 보존 90일 | 신뢰 멤버가 다수가 되거나 시청자 개인 단위 분석이 필요해질 때(고지 선행) |

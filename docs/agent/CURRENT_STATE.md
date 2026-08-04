@@ -13,6 +13,29 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **방문 지표 재정의 + 행동 기록(2026-08-04, PLAN-20260804-003 / ADR-0013)**:
+  ① **방문 = 탭 수명**(0061 `visit_key`, sessionStorage). `visit_session` 1행은 '화면이 보인
+  한 구간'인데 문서 네비게이션(pagehide)마다 끊겨, 사이트 안에서 페이지만 옮겨도 방문이
+  늘었다 — 실측(04:11~04:20 owner 단독)에서 연속 9분 1회가 4행(4초/5분/7초/4분)으로 찍혔다.
+  `lib/insights/visit-fold.ts`가 적재 직후 구간→방문으로 접는다(같은 탭 → 같은 계정의 겹치는
+  탭; 계정 미상은 절대 안 합침). **체류는 구간 합집합** — 단순 합은 창 2개 동시 표시를 두 번 센다.
+  시간대 점유·동접은 방문 span이 아니라 `spans`(실제 가시 구간)를 스윕한다.
+  ⚠ 방문수·평균 체류의 정의가 바뀌어 **과거 수치와 직접 비교 불가**.
+  ② **실시간 프레즌스**: track이 마운트 1회뿐이라 숨긴 탭도 접속으로 셌다(기록은 hidden에서
+  끊는데 실시간만 안 끊김). 이제 `visibilitychange`마다 `visible`을 갱신 → 패널
+  '화면에 떠 있음 / 탭만 열림' 2열. **visible은 화면 출력 여부지 시선이 아니다**(가려진 창·보조 모니터).
+  ③ **행동 기록 `activity_event`(0062)** — 어느 화면·어느 일정·무엇을 고쳤는지. 개발자 패널
+  '행동 타임라인'(날짜 모달)에서 방문 단위로 재구성.
+  **불가침: meta에 일정 제목·본문 저장 금지**(target=uuid, 제목은 읽을 때 권한 확인 후 조인;
+  공개 일정만 제목, 비공개는 범위 라벨). 어기면 ADR-0002 본문 암호화가 무의미해진다.
+  **식별은 내부자(owner/manager/worker/developer)만** — viewer·비로그인은 `accountHashForRole`이
+  쓰기 시점에 `account_hash`를 null로 만들어 개인 타임라인이 구조적으로 불가능. 보존 90일.
+  server kind(실제 변경)를 클라가 사칭할 수 없다(`isClientKind`). 규약은
+  `tests/unit/activity-kinds.test.ts`가 고정.
+  **미배선(종류만 등록)**: `export.png`/`export.clipboard`(공식 내보내기는 Playwright라 인앱
+  버튼 없음)·`zoom.change`·`decorate.open`·`settings.toggle`.
+  **관측 필요**: 스티커 배치 저장이 잦으면 `sticker.move` 행이 빠르게 쌓일 수 있다(배치 1건=1행으로
+  이미 줄였지만 실사용 확인 전).
 - **⚠ 오버레이 스택 함정(2026-08-03, `cada217`)**: 모달/시트가 닫힐 때 오버레이 스택이
   history.back()을 호출하는데, 이 되감기는 **그 순간 진행 중인 router.refresh()/문서
   네비게이션을 취소**한다(잠금해제 미반영 버그의 근본 원인 — Playwright로 확정).

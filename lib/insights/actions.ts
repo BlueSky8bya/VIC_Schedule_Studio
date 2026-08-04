@@ -1,10 +1,10 @@
 "use server";
 
-import { createHash } from "node:crypto";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails, normalizeEmail } from "@/lib/auth/config";
 import { canEditSchedule } from "@/lib/permissions/roles";
+import { accountHashOf } from "@/lib/insights/account-hash";
 import {
   durMs,
   foldVisits,
@@ -130,13 +130,8 @@ function weekdayOf(dateKey: string): number {
 function firstLine(s: string): string {
   return (s ?? "").split("\n")[0].trim();
 }
-// 익명 계정 해시 — 같은 계정을 하루 단위로 셀 수 있게만 한다. 단방향(salt+이메일 → sha256)이라
-// 원문 이메일/user_id는 저장되지 않는다(개인정보 비저장 원칙 유지). salt는 서버 전용 비밀.
-function accountHashOf(email: string): string {
-  const salt =
-    process.env.VISIT_HASH_SALT || process.env.SUPABASE_SERVICE_ROLE_KEY || "vic-visit-salt";
-  return createHash("sha256").update(`${salt}:${email}`).digest("hex").slice(0, 32);
-}
+// 계정 해시는 lib/insights/account-hash.ts 한 곳에서 정의한다 — 방문 기록과 행동 기록(0062)이
+// 같은 스킴을 써야 두 테이블을 한 타임라인으로 이을 수 있다.
 
 const ROLE_ORDER = ["anon", "viewer", "worker", "manager", "owner", "developer"] as const;
 const DEVICE_SET = new Set(["desktop", "android", "ios", "mobile"]);

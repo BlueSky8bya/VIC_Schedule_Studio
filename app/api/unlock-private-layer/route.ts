@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { recordActivity } from "@/lib/activity/record";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { getCurrentAuthSessionId, getCurrentSupabaseUser } from "@/lib/auth/server";
@@ -106,10 +107,14 @@ export async function POST(request: Request) {
     supabase.from("private_unlock_attempts").delete().lt("created_at", windowStart)
   ]);
   if (!passOk) {
+    // 행동 기록(0062) — 실패한 시도도 남긴다(무차별 대입 흔적은 attempts가 10분만 들고 있다).
+    await recordActivity({ kind: "unlock.fail", meta: { verifyOnly } });
     return NextResponse.json({ error: "비밀번호가 올바르지 않습니다." }, { status: 401 });
   }
 
   if (verifyOnly) {
+    // 게이트(떡밥) 통과 — grant를 발급하지 않는 확인 전용 경로라 kind를 나눈다.
+    await recordActivity({ kind: "gate.pass" });
     return NextResponse.json({ ok: true });
   }
 
@@ -148,6 +153,8 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
+
+  await recordActivity({ kind: "unlock.success", meta: { minutes: settings.unlock_duration_minutes } });
 
   const res = NextResponse.json({ ok: true, expiresAt });
   // opaque 토큰은 HttpOnly 쿠키에만 — JS로 못 읽고, 응답 본문에도 안 싣는다.

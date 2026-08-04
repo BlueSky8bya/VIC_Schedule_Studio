@@ -21,6 +21,7 @@ import {
   kstOf,
   roleColor
 } from "@/components/developer/insights-dashboard";
+import { ActivityTimeline } from "@/components/developer/activity-timeline";
 import { getDayVisitDetailAction, type DayVisitDetail } from "@/lib/insights/actions";
 import { hapticTick } from "@/lib/ui/haptics";
 
@@ -301,6 +302,9 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
           ))}
         </ul>
       </section>
+
+      {/* 그날 무엇을 했는지(0062) — 방문 기록이 '언제·얼마나'라면 이건 '무엇을'이다. */}
+      <ActivityTimeline dateKey={dateKey} />
 
       {/* 관리자 방문 기록 — 언제·어떤 계정으로 들어왔는지(설정된 owner 이메일이면 이메일로 표시). */}
       <section className="vcard">

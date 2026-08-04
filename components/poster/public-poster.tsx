@@ -47,6 +47,7 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
+import { logActivity } from "@/lib/activity/client";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 // 월드컵 장난감(공 미니게임 + 중력 공)은 월드컵 달에만 렌더되는데 정적 import라 6,400여 줄
 // (컴포넌트 + lib/football/*)이 시청자 첫 로드 번들에 1년 내내 들어 있었다. 아래 꾸미기 UI와
@@ -1441,6 +1442,18 @@ export function PublicPoster({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [agendaDetail]);
+  // 어떤 일정을 얼마나 열어 봤는지(0062). 여는 경로가 여러 곳(카드 탭·키보드·떡밥)이라 상태
+  // 하나를 지켜본다 — 열림/닫힘이 항상 짝을 이룬다. 제목은 보내지 않는다(id만, 권한은 읽을 때).
+  const detailEventId = agendaDetail?.event.id ?? null;
+  const detailIsTeaser = Boolean(agendaDetail?.event.teaser);
+  useEffect(() => {
+    if (!detailEventId) return;
+    const openedAt = Date.now();
+    logActivity(detailIsTeaser ? "teaser.open" : "event.open", { target: detailEventId });
+    return () => {
+      logActivity("event.close", { target: detailEventId, durMs: Date.now() - openedAt });
+    };
+  }, [detailEventId, detailIsTeaser]);
   // ── PC 상세 팝오버 배치 — 편집실 편집 팝오버와 같은 문법: 카드 옆 자동 배치(오른쪽 우선/
   // 왼쪽 flip/화면 클램프), 카드→팝오버 리더 점선+도트, 헤더/그립을 잡아 드래그 이동.
   // 열려 있는 동안 rAF로 매 프레임 카드 위치를 실측(스크롤·리사이즈에 선·자동 배치가 따라온다).
@@ -2363,11 +2376,14 @@ export function PublicPoster({
   // 태그 칩 토글(다중 선택).
   function toggleTagFilter(id: string) {
     hapticTick(); // 셀렉터 손맛(Android만; iOS·미지원은 조용히 무시)
+    // 시청자가 무엇을 찾는지의 가장 직접적인 신호(0062) — 태그 id만 남긴다(이름은 자유 서술).
+    logActivity("filter.tag", { target: id, meta: { on: !tagFilters.includes(id) } });
     withAgendaFlip(() =>
       setTagFilters((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
     );
   }
   function clearFilters() {
+    logActivity("filter.clear", { meta: { tags: tagFilters.length, bookmarked: bookmarkedOnly } });
     withAgendaFlip(() => {
       setTagFilters([]);
       setBookmarkedOnly(false);

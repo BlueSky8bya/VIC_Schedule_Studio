@@ -1,7 +1,7 @@
 # Active ExecPlan
 
 Plan ID: PLAN-20260804-003
-Status: In Progress
+Status: Completed (Phase A·B 구현 완료 — 실사용 관측 후 조정)
 Task Risk: L2 (구조적 — 새 테이블 2건, 지표 정의 변경, 개인정보 방침 supersede)
 Created / Updated: 2026-08-04
 
@@ -44,24 +44,26 @@ Created / Updated: 2026-08-04
 ## 단계
 
 ### Phase A — 방문 집계 정정
-- [ ] A1. `0061_visit_key.sql` — `visit_session.visit_key text` + 인덱스
-- [ ] A2. `presence-beacon` — sessionStorage `visit_key` 발급, KST 자정 롤오버 시 재발급
-- [ ] A3. `/api/presence` + `startVisitSession(device, anonId, visitKey)`
-- [ ] A4. 집계 — 같은 계정 + 구간 겹치면 1방문, 체류는 구간 **union**(창 2개 이중계상 방지)
-- [ ] A5. `presence-client` — `track({role, device, visible})` + `visibilitychange` 재track
-- [ ] A6. 실시간 패널 2열("화면에 떠 있음 / 탭만 열림")
-- [ ] A7. 죽은 코드 참조 정리(`presence_ping`·`owner_sessions`·`presence_hourly`·`presence_peak`).
+- [x] A1. `0061_visit_key.sql` — `visit_session.visit_key text` + 인덱스
+- [x] A2. `presence-beacon` — sessionStorage `visit_key` 발급, KST 자정 롤오버 시 재발급
+- [x] A3. `/api/presence` + `startVisitSession(device, anonId, visitKey)`
+- [x] A4. 집계 — 같은 계정 + 구간 겹치면 1방문, 체류는 구간 **union**(창 2개 이중계상 방지)
+- [x] A5. `presence-client` — `track({role, device, visible})` + `visibilitychange` 재track
+- [x] A6. 실시간 패널 2열("화면에 떠 있음 / 탭만 열림")
+- [x] A7. 죽은 코드 참조 정리(`presence_ping`·`owner_sessions`·`presence_hourly`·`presence_peak`).
       **테이블 DROP은 하지 않는다**(되돌리기 비쌈) — 코드 참조만.
 
 ### Phase B — 행동 기록
-- [ ] B1. `0062_activity_event.sql` (+ grants 동일 파일)
-- [ ] B2. `lib/activity/` — 서버 record 헬퍼 + 클라 버퍼
-- [ ] B3. `/api/activity` 배치 수신
-- [ ] B4. 서버 훅 — event/sticker/tag/support/unlock/heart/hope 액션
-- [ ] B5. 클라 이벤트 — route/month/event.open/filter/export/zoom
-- [ ] B6. 재구성 패널(계정 + 날짜 → 타임라인)
-- [ ] B7. 90일 보존 청소(조회 시 지나가며 — unlock_attempts 패턴)
-- [ ] B8. ADR — "익명 지표 → 내부자 계정 단위 행동 기록" supersede
+- [x] B1. `0062_activity_event.sql` (+ grants 동일 파일)
+- [x] B2. `lib/activity/` — 서버 record 헬퍼 + 클라 버퍼
+- [x] B3. `/api/activity` 배치 수신
+- [x] B4. 서버 훅 — event/sticker/tag/support/unlock/heart/hope 액션
+- [x] B5. 클라 이벤트 — route.enter/leave(월 파라미터) · month.change · event.open/close ·
+      teaser.open · filter.tag/clear. **미배선**: export.png/clipboard(공식 내보내기는 Playwright라
+      인앱 버튼이 없다), zoom.change, decorate.open, settings.toggle — 종류만 등록돼 있고 호출부 없음.
+- [x] B6. 재구성 패널(계정 + 날짜 → 타임라인)
+- [x] B7. 90일 보존 청소(조회 시 지나가며 — unlock_attempts 패턴)
+- [x] B8. ADR — "익명 지표 → 내부자 계정 단위 행동 기록" supersede
 
 ## 검증
 

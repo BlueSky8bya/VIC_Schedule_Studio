@@ -151,6 +151,7 @@ import {
   hapticTick,
   setHapticsEnabled
 } from "@/lib/ui/haptics";
+import { logActivity } from "@/lib/activity/client";
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
@@ -1560,6 +1561,15 @@ export function StudioShell({
       setForm(createEmptyForm());
       return next;
     });
+    // 어느 달을 보러 왔는지(0062) — 월 이동은 라우트가 아니라 상태라 route.enter에 안 잡힌다.
+    // updater 밖에서 부른다: updater는 StrictMode에서 두 번 실행돼 로그가 겹친다.
+    {
+      const next = getAdjacentMonth(view.year, view.month, offset);
+      logActivity("month.change", {
+        target: `${next.year}-${String(next.month).padStart(2, "0")}`,
+        meta: { offset }
+      });
+    }
     bumpEditor(); // 달이 바뀌어 새 날짜로 → 폼 새로 마운트
   }
 

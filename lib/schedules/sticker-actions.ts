@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePublicSchedule } from "@/lib/schedules/cache";
+import { recordActivity } from "@/lib/activity/record";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canDecorate } from "@/lib/permissions/roles";
@@ -163,6 +164,13 @@ export async function saveStickerAction(input: SaveStickerInput): Promise<Sticke
   // 그 새로고침이 "편집실로 가기" 같은 이동과 경합해 한 번에 안 넘어가던 문제를 없앤다.
   revalidatePublicSchedule();
 
+  // 신규는 add, 기존 갱신은 move(위치·크기 변경이 대부분). 스티커 텍스트는 남기지 않는다.
+  await recordActivity({
+    kind: input.id && !input.id.startsWith("temp-") ? "sticker.move" : "sticker.add",
+    target: stickerId,
+    actor
+  });
+
   return { ok: true, id: stickerId };
 }
 
@@ -232,6 +240,13 @@ export async function saveStickerBatchAction(
   // 그 새로고침이 "편집실로 가기" 같은 이동과 경합해 한 번에 안 넘어가던 문제를 없앤다.
   revalidatePublicSchedule();
 
+  // 배치 1건 = 이벤트 1행(스티커마다 남기면 드래그 한 번에 수십 행이 쌓인다).
+  await recordActivity({
+    kind: "sticker.move",
+    actor,
+    meta: { count: inputs.length, batch: true }
+  });
+
   return { ok: true, ids };
 }
 
@@ -275,6 +290,8 @@ export async function deleteStickerBatchAction(
   // 그 새로고침이 "편집실로 가기" 같은 이동과 경합해 한 번에 안 넘어가던 문제를 없앤다.
   revalidatePublicSchedule();
 
+  await recordActivity({ kind: "sticker.delete", actor, meta: { count: realIds.length } });
+
   return { ok: true };
 }
 
@@ -309,6 +326,8 @@ export async function deleteStickerAction(stickerId: string): Promise<StickerRes
   // 낙관적 로컬 상태로 이미 최신이라, revalidatePath로 라우트를 즉시 새로고침하지 않는다 —
   // 그 새로고침이 "편집실로 가기" 같은 이동과 경합해 한 번에 안 넘어가던 문제를 없앤다.
   revalidatePublicSchedule();
+
+  await recordActivity({ kind: "sticker.delete", target: stickerId, actor });
 
   return { ok: true, id: stickerId };
 }

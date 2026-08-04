@@ -1201,6 +1201,155 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
     font-size: 13px;
   }
 }
+
+/* ── 행동 타임라인(0062) ──
+   모바일: 한 줄에 시각+행동만 세로로. 웹(641px+): 시각·행동·대상·체류를 정렬된 열로 —
+   같은 열에 같은 종류가 오면 눈이 세로로 훑을 수 있다(HCI: 시선 이동 최소화). */
+.act-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0 10px;
+}
+.act-skeleton span {
+  height: 14px;
+  border-radius: var(--r-sm, 6px);
+  background: linear-gradient(90deg, #efeef4 25%, #f7f6fa 37%, #efeef4 63%);
+  background-size: 400% 100%;
+  animation: act-shimmer 1.4s ease-in-out infinite;
+}
+.act-skeleton span:nth-child(2) {
+  width: 84%;
+}
+.act-skeleton span:nth-child(3) {
+  width: 62%;
+}
+@keyframes act-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+html[data-reduce-motion] .act-skeleton span {
+  animation: none;
+}
+
+.act-visits,
+.act-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.act-visits {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.act-visit {
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-md);
+  background: var(--surface, #fff);
+  overflow: hidden;
+}
+.act-visit-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 8px 10px;
+  background: #faf9fc;
+  border-bottom: 1px solid var(--line, #ece9f5);
+  font-size: 12px;
+}
+.act-dev {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+.act-acct {
+  font-weight: 800;
+  color: #3f3a52;
+}
+.act-role {
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: rgb(124 108 240 / 10%);
+  color: #6b5bd6;
+  font-weight: 700;
+  font-size: 11px;
+}
+.act-span {
+  margin-left: auto;
+  color: var(--muted, #9aa0ab);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.act-items > li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  border-top: 1px solid #f4f2f8;
+}
+.act-items > li:first-child {
+  border-top: 0;
+}
+/* 실제 변경(server)은 진하게, 열람(client)은 옅게 — 한눈에 "했다/봤다"가 갈린다. */
+.act-items > li[data-source="server"] .act-kind {
+  color: #5b21b6;
+  font-weight: 800;
+}
+.act-items > li[data-source="client"] .act-kind {
+  color: #7c7690;
+  font-weight: 600;
+}
+.act-t {
+  color: var(--muted, #9aa0ab);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  flex: none;
+}
+.act-target {
+  color: #4a4460;
+  font-style: normal;
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.act-dur,
+.act-meta {
+  color: var(--muted, #9aa0ab);
+  font-weight: 600;
+  font-size: 11px;
+}
+@media (min-width: 641px) {
+  .act-visit-head {
+    font-size: 13px;
+    padding: 10px 14px;
+  }
+  .act-items > li {
+    /* 시각 | 행동 | 대상 | 체류 — 열 정렬(웹은 가로 여유를 쓴다) */
+    display: grid;
+    grid-template-columns: 52px 104px 1fr auto;
+    gap: 10px;
+    align-items: baseline;
+    padding: 6px 14px;
+    font-size: 13px;
+    transition: background-color var(--dur-1) var(--ease);
+  }
+  .act-items > li:hover {
+    background: #fbfaff;
+  }
+  .act-meta {
+    grid-column: 3 / -1;
+  }
+}
 /* 분포/순위 막대 */
 
 

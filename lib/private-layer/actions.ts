@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { recordActivity } from "@/lib/activity/record";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { getCurrentSupabaseUser } from "@/lib/auth/server";
@@ -41,6 +42,7 @@ export async function relockPrivateLayerAction(): Promise<PasscodeResult> {
     cookieStore.delete(UNLOCK_GRANT_COOKIE);
   }
   revalidatePath("/studio");
+  await recordActivity({ kind: "lock.manual" });
   return { ok: true };
 }
 
@@ -161,6 +163,9 @@ export async function setPasscodeAction(
 
   revalidatePath("/studio");
   revalidatePath("/studio/private-layer");
+
+  // 비밀번호 자체는 당연히 남기지 않는다 — 바꿨다는 사실만.
+  await recordActivity({ kind: "passcode.change" });
 
   return { ok: true };
 }

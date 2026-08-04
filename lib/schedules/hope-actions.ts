@@ -1,5 +1,6 @@
 "use server";
 
+import { recordActivity } from "@/lib/activity/record";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { safeActionError } from "@/lib/utils/safe-action-error";
 
@@ -24,6 +25,8 @@ export async function toggleTeaserHopeAction(eventId: string, token: string): Pr
   if (error) {
     return { ok: false, error: safeActionError("기대 반영", error) };
   }
+  // 어떤 떡밥이 기대를 모으는지 — 기기 토큰은 남기지 않는다.
+  await recordActivity({ kind: "hope.toggle", target: eventId });
   return { ok: true, count: Number(data) };
 }
 
