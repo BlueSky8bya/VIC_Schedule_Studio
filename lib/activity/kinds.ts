@@ -43,6 +43,12 @@ export const SERVER_KINDS = [
 ] as const;
 
 export const CLIENT_KINDS = [
+  // 버튼 전수 수집 — target이 버튼 id다. 개별 kind를 버튼마다 만들지 않는 이유: 버튼이 늘 때마다
+  // 레지스트리를 고쳐야 하면 결국 일부만 계측되고, "안 쓰이는 버튼"은 계측 안 된 버튼과 구분이 안 된다.
+  "ui.click",
+  // 모달·패널처럼 라우트가 아닌 화면(그림판·꾸미기·태그·멤버·인사이트…). leave에 dur_ms.
+  "section.enter",
+  "section.leave",
   "route.enter",
   "route.leave",
   "month.change",
@@ -75,6 +81,9 @@ export function isServerKind(kind: string): kind is ServerKind {
 
 // 패널 표시용 라벨. 없으면 kind 원문을 그대로 쓴다.
 export const KIND_LABEL: Record<string, string> = {
+  "ui.click": "버튼",
+  "section.enter": "패널 진입",
+  "section.leave": "패널 이탈",
   "route.enter": "화면 진입",
   "route.leave": "화면 이탈",
   "month.change": "월 이동",

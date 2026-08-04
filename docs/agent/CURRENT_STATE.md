@@ -32,10 +32,18 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   쓰기 시점에 `account_hash`를 null로 만들어 개인 타임라인이 구조적으로 불가능. 보존 90일.
   server kind(실제 변경)를 클라가 사칭할 수 없다(`isClientKind`). 규약은
   `tests/unit/activity-kinds.test.ts`가 고정.
+  ④ **버튼 전수 수집 + 시청자 카운트 전환(0063, 2차 요구)** — 목적이 "어떤 버튼이 안 쓰이나"라
+  버튼마다 kind를 만들지 않는다. `ui.click` 하나에 버튼 id를 `target`으로 담고 문서 전역
+  위임(capture)으로 전부 받는다. id는 `data-act` 우선, 없으면 마크업 유추 `auto:` 접두사
+  (**깨질 수 있다는 표시** — 계속 볼 항목은 `data-act`로 굳힐 것). 라우트가 아닌 화면
+  (그림판·꾸미기·모달)은 `section.enter/leave`+`dur_ms`(`useSectionActivity`).
+  **시청자·비로그인은 이제 `activity_event`에 안 들어간다** — `activity_daily_count`에
+  (날짜×역할×종류×대상) count만. 개인 세션조차 안 남아 익명성이 집계 구조로 보장되고,
+  전수 수집의 행 폭증도 같이 막힌다. 사용량 패널은 **적은 순** 정렬(판단이 필요한 건 바닥).
   **미배선(종류만 등록)**: `export.png`/`export.clipboard`(공식 내보내기는 Playwright라 인앱
-  버튼 없음)·`zoom.change`·`decorate.open`·`settings.toggle`.
-  **관측 필요**: 스티커 배치 저장이 잦으면 `sticker.move` 행이 빠르게 쌓일 수 있다(배치 1건=1행으로
-  이미 줄였지만 실사용 확인 전).
+  버튼 없음)·`zoom.change`·`decorate.open`(섹션으로 대체)·`settings.toggle`.
+  **관측 필요**: ① 스티커 배치 저장 빈도(배치 1건=1행으로 줄였지만 실사용 확인 전)
+  ② `auto:` id 비율 — 높으면 마크업 변경 때 통계가 갈라진다.
 - **⚠ 오버레이 스택 함정(2026-08-03, `cada217`)**: 모달/시트가 닫힐 때 오버레이 스택이
   history.back()을 호출하는데, 이 되감기는 **그 순간 진행 중인 router.refresh()/문서
   네비게이션을 취소**한다(잠금해제 미반영 버그의 근본 원인 — Playwright로 확정).

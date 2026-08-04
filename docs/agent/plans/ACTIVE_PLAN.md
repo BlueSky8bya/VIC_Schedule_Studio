@@ -65,6 +65,15 @@ Created / Updated: 2026-08-04
 - [x] B7. 90일 보존 청소(조회 시 지나가며 — unlock_attempts 패턴)
 - [x] B8. ADR — "익명 지표 → 내부자 계정 단위 행동 기록" supersede
 
+### Phase C — 버튼 전수 수집 + 시청자 카운트 전환 (사용자 2차 요구)
+- [x] C1. `0063_activity_counts.sql` — `activity_daily_count` + `bump_activity_counts(jsonb)` RPC + grants
+- [x] C2. `persist()` 두 갈래 — 내부자=행(타임라인), 시청자·비로그인=카운트 증분
+- [x] C3. `ui.click` 전역 위임(capture) — `data-act` 우선, 없으면 `auto:` 유추 id
+- [x] C4. `section.enter/leave` — 그림판·꾸미기·모달(라우트 아닌 화면)
+- [x] C5. 핵심 버튼에 `data-act` 부착(월 이동·공지·방문)
+- [x] C6. 사용량 패널(적은 순, 7/30/90일) — `getActivityUsageAction`
+- [x] C7. 카운트 테이블도 90일 보존 청소
+
 ## 검증
 
 - `tsc --noEmit` · `npm run lint` · `next build` **exit code 확인**(tail만 보지 말 것)

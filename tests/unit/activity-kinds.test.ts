@@ -27,6 +27,30 @@ describe("식별 범위 — 내부자만", () => {
   });
 });
 
+describe("저장 갈래 — 내부자는 타임라인, 시청자는 카운트만(0063)", () => {
+  // record.ts의 persist()가 isInternalRole로 갈래를 정한다. 이 판정이 뒤집히면
+  // 시청자 개인 타임라인이 생기거나(프라이버시) 내부자 행동이 사라진다(지표).
+  it("내부자 역할만 activity_event 쪽", () => {
+    expect(["owner", "manager", "worker", "developer"].every(isInternalRole)).toBe(true);
+  });
+  it("시청자·비로그인은 카운트 쪽 — 개인 세션조차 남지 않는다", () => {
+    expect(["viewer", "anon"].some(isInternalRole)).toBe(false);
+  });
+});
+
+describe("버튼 전수 수집", () => {
+  it("ui.click·section은 클라 kind(서버가 아니다)", () => {
+    for (const k of ["ui.click", "section.enter", "section.leave"]) {
+      expect(isClientKind(k)).toBe(true);
+      expect(isServerKind(k)).toBe(false);
+    }
+  });
+  it("버튼 id는 target으로 들어가며 길이만 제한된다", () => {
+    expect(sanitizeTarget("open-day-visit")).toBe("open-day-visit");
+    expect(sanitizeTarget("auto:.month-nav-btn")).toBe("auto:.month-nav-btn");
+  });
+});
+
 describe("kind 구분 — 클라는 '실제 변경'을 사칭할 수 없다", () => {
   it("server kind는 클라 kind가 아니다", () => {
     expect(isServerKind("event.update")).toBe(true);

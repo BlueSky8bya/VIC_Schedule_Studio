@@ -78,6 +78,7 @@ export async function getActivityDayAction(day: string): Promise<ActivityDayResu
     .toISOString()
     .slice(0, 10);
   void supabase.from("activity_event").delete().lt("day", cutoff);
+  void supabase.from("activity_daily_count").delete().lt("day", cutoff);
 
   const { data, error } = await supabase
     .from("activity_event")
@@ -180,4 +181,90 @@ export async function getActivityDayAction(day: string): Promise<ActivityDayResu
 
   const visits = [...byKey.values()].sort((a, b) => b.startMs - a.startMs);
   return { ok: true, visits, total: rows.length };
+}
+
+// ── 사용량 집계 — "어떤 버튼·화면이 안 쓰이나" ──
+// 내부자는 activity_event(행), 시청자·비로그인은 activity_daily_count(개수)에 있으므로 둘을 합친다.
+// 적은 순으로 보여주는 게 요점이다: 많이 쓰이는 건 이미 알고 있고, 판단이 필요한 건 바닥 쪽이다.
+
+export type UsageRow = {
+  kind: string;
+  label: string;
+  target: string;
+  internal: number; // 관리자·개발자·매니저·작업자
+  viewer: number; // 시청자·비로그인
+  total: number;
+  auto: boolean; // target이 auto: 접두사 = 마크업에서 유추한 id(마크업이 바뀌면 갈라진다)
+};
+export type UsageResult =
+  | { ok: true; rows: UsageRow[]; days: number; since: string }
+  | { ok: false; error: string };
+
+export async function getActivityUsageAction(days = 30): Promise<UsageResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (actor.role !== "developer") {
+    return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
+  }
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return { ok: false, error: "Supabase service role 키가 필요합니다." };
+
+  const span = Math.min(Math.max(1, Math.round(days)), ACTIVITY_RETENTION_DAYS);
+  const since = new Date(Date.now() + 9 * 3600_000 - (span - 1) * 86400_000)
+    .toISOString()
+    .slice(0, 10);
+
+  const [eventsRes, countsRes] = await Promise.all([
+    supabase
+      .from("activity_event")
+      .select("kind, target, role")
+      .gte("day", since)
+      .in("kind", ["ui.click", "section.enter", "route.enter"])
+      .limit(20000),
+    supabase
+      .from("activity_daily_count")
+      .select("kind, target, role, count")
+      .gte("day", since)
+      .in("kind", ["ui.click", "section.enter", "route.enter"])
+      .limit(20000)
+  ]);
+  if (eventsRes.error || countsRes.error) {
+    return { ok: false, error: "사용량을 불러오지 못했어요." };
+  }
+
+  const acc = new Map<string, UsageRow>();
+  const bump = (kind: string, target: string | null, internal: boolean, n: number) => {
+    const t = target ?? "";
+    const key = `${kind}|${t}`;
+    let row = acc.get(key);
+    if (!row) {
+      row = {
+        kind,
+        label: KIND_LABEL[kind] ?? kind,
+        target: t,
+        internal: 0,
+        viewer: 0,
+        total: 0,
+        auto: t.startsWith("auto:")
+      };
+      acc.set(key, row);
+    }
+    if (internal) row.internal += n;
+    else row.viewer += n;
+    row.total += n;
+  };
+
+  for (const r of (eventsRes.data ?? []) as { kind: string; target: string | null }[]) {
+    bump(r.kind, r.target, true, 1); // activity_event에는 내부자만 들어간다(0063)
+  }
+  for (const r of (countsRes.data ?? []) as {
+    kind: string;
+    target: string | null;
+    count: number;
+  }[]) {
+    bump(r.kind, r.target, false, r.count ?? 0);
+  }
+
+  // 적은 순 — 판단이 필요한 건 바닥 쪽이다.
+  const rows = [...acc.values()].sort((a, b) => a.total - b.total || a.target.localeCompare(b.target));
+  return { ok: true, rows, days: span, since };
 }

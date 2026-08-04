@@ -25,6 +25,7 @@ type Pending = {
 let buffer: Pending[] = [];
 let idleTimer: number | null = null;
 let wired = false;
+let clickWired = false;
 
 // 방문(탭) 식별자 — 비콘이 sessionStorage에 넣어둔 값과 같은 키를 읽는다(같은 탭 = 같은 방문).
 // 여기서 만들지는 않는다. 비콘이 아직 안 돌았으면 null로 두고, 다음 이벤트에서 다시 시도한다.
@@ -73,6 +74,50 @@ function wire(): void {
   window.addEventListener("pagehide", () => flush(true));
 }
 
+// ── 버튼 전수 수집 ──
+// 버튼마다 개별 kind를 만들지 않는다. 레지스트리를 고쳐야 계측되는 구조면 결국 일부만 계측되고,
+// 목적("안 쓰이는 버튼 찾기")이 무너진다 — 안 쓰인 버튼과 계측 안 한 버튼이 구분되지 않는다.
+// 그래서 문서 하나에 위임 리스너를 걸고 target에 버튼 id를 담는다.
+//
+// id 우선순위:
+//   1) data-act="..."  — 손으로 붙인 안정적 id. 라벨을 바꿔도 지표가 안 끊긴다.
+//   2) auto:<힌트>     — 없으면 클래스/aria-label/텍스트로 유추. 편하지만 마크업이 바뀌면 갈라진다.
+// 처음엔 2)로 전수 커버리지를 얻고, 중요한 버튼부터 1)로 굳히면 된다. `auto:` 접두사가
+// "이 값은 깨질 수 있다"는 표시다.
+const MAX_ID = 48;
+function autoId(el: HTMLElement): string {
+  const aria = el.getAttribute("aria-label")?.trim();
+  if (aria) return `auto:${aria.slice(0, MAX_ID)}`;
+  // 클래스는 상태 클래스(is-*, active…)를 빼고 첫 토큰만 — 상태에 따라 id가 갈라지면 못 센다.
+  const cls = (el.className || "")
+    .toString()
+    .split(/\s+/)
+    .find((c) => c && !/^(is-|has-|active|open|on$|selected)/.test(c));
+  if (cls) return `auto:.${cls.slice(0, MAX_ID)}`;
+  const text = (el.textContent || "").trim().replace(/\s+/g, " ");
+  if (text) return `auto:${text.slice(0, MAX_ID)}`;
+  return `auto:${el.tagName.toLowerCase()}`;
+}
+
+function wireClicks(): void {
+  if (typeof document === "undefined") return;
+  // capture 단계 — 핸들러가 stopPropagation을 해도 놓치지 않는다(드래그·오버레이가 흔히 쓴다).
+  document.addEventListener(
+    "click",
+    (e) => {
+      const start = e.target as HTMLElement | null;
+      if (!start || typeof start.closest !== "function") return;
+      const el = start.closest<HTMLElement>("[data-act], button, a, [role='button']");
+      if (!el) return;
+      // 비활성 컨트롤은 '눌렀다'가 아니다.
+      if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") return;
+      const explicit = el.getAttribute("data-act");
+      logActivity("ui.click", { target: explicit || autoId(el) });
+    },
+    true
+  );
+}
+
 /** 행동 1건 기록. 부수효과만 있고 아무것도 기다리지 않는다. */
 export function logActivity(
   kind: ClientKind,
@@ -115,4 +160,12 @@ export function logClose(openKind: ClientKind, closeKind: ClientKind, target: st
   const started = openedAt.get(key);
   openedAt.delete(key);
   logActivity(closeKind, { target, durMs: started ? Date.now() - started : undefined });
+}
+
+/** 클릭 위임을 한 번 건다. 루트에서 1회 호출(RouteBeacon이 부른다). */
+export function startClickTracking(): void {
+  if (clickWired || typeof window === "undefined") return;
+  clickWired = true;
+  wire();
+  wireClicks();
 }

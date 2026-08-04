@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { logActivity } from "@/lib/activity/client";
+import { logActivity, startClickTracking } from "@/lib/activity/client";
 
 // 어느 화면을 얼마나 봤는지(0062). PresenceBeacon과 분리한 이유: 프레즌스 effect의 deps에
 // pathname을 넣으면 SPA 라우팅마다 방문 세션이 끊겼다 다시 시작된다(0061에서 고친 문제의 재발).
@@ -23,6 +23,11 @@ export function RouteBeacon() {
   const pathname = usePathname();
   // 직전 화면의 진입 시각 — 언마운트/이동 시점에 체류를 계산해 route.leave로 닫는다.
   const openedRef = useRef<{ path: string; month: string | null; at: number } | null>(null);
+
+  // 버튼 클릭 위임은 문서에 한 번만 건다(모듈 플래그로 중복 방지).
+  useEffect(() => {
+    startClickTracking();
+  }, []);
 
   useEffect(() => {
     const { path, month } = parseRoute(pathname);

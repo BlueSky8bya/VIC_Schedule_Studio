@@ -152,6 +152,7 @@ import {
   setHapticsEnabled
 } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
+import { useSectionActivity } from "@/lib/activity/use-section";
 import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
@@ -1304,6 +1305,9 @@ export function StudioShell({
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const broadcastOpenRef = useRef(false);
   broadcastOpenRef.current = broadcastOpen;
+  // 라우트가 아닌 화면(모달·전체화면 판서)의 진입/이탈(0062). URL이 안 바뀌므로 route.enter로는
+  // 절대 안 잡힌다 — "어떤 도구를 얼마나 쓰나"는 여기서만 나온다. 판서가 열려 있으면 그게 우선.
+  useSectionActivity(broadcastOpen ? "broadcast-panel" : modal ? `modal:${modal}` : null);
   const [broadcastSent, setBroadcastSent] = useState<string[]>([]);
   // 판서 날짜 고르기 달력의 월 — 편집실 view와 독립(다른 달 일정도 뽑아온다).
   // 공개 스냅샷(viewerModePreview)은 월 필터 없이 전체 공개 일정을 담고 있어 클라 이동만으로 충분.
@@ -4567,7 +4571,7 @@ export function StudioShell({
               <button
                 aria-label="이전 달"
                 className="m-month-btn"
-                onClick={() => moveMonth(-1)}
+                onClick={() => moveMonth(-1)} data-act="month-prev"
                 type="button"
               >
                 <ChevronLeft aria-hidden="true" size={20} strokeWidth={2.5} />
@@ -4578,7 +4582,7 @@ export function StudioShell({
               <button
                 aria-label="다음 달"
                 className="m-month-btn"
-                onClick={() => moveMonth(1)}
+                onClick={() => moveMonth(1)} data-act="month-next"
                 type="button"
               >
                 <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
@@ -5528,16 +5532,16 @@ export function StudioShell({
                 때만 노출(기존 일정 수정 시트에선 숨김). 개발자는 둘 다, 그 외 편집자는 공지만. */}
             {selectedEventId ? null : isDevInsights ? (
               <div className="me-tools">
-                <button className="me-tool" onClick={() => setModal("notice")} type="button">
+                <button className="me-tool" onClick={() => setModal("notice")} data-act="open-notice" type="button">
                   📢 공지 쓰기
                 </button>
-                <button className="me-tool" onClick={() => setModal("dayVisit")} type="button">
+                <button className="me-tool" onClick={() => setModal("dayVisit")} data-act="open-day-visit" type="button">
                   📈 방문
                 </button>
               </div>
             ) : canEdit ? (
               <div className="me-tools">
-                <button className="me-tool" onClick={() => setModal("notice")} type="button">
+                <button className="me-tool" onClick={() => setModal("notice")} data-act="open-notice" type="button">
                   📢 공지 쓰기
                 </button>
               </div>
@@ -5801,7 +5805,7 @@ export function StudioShell({
           <button
             aria-label="이전 달"
             className="month-nav-btn"
-            onClick={() => moveMonth(-1)}
+            onClick={() => moveMonth(-1)} data-act="month-prev"
             title="이전 달 (←)"
             type="button"
           >
@@ -5813,7 +5817,7 @@ export function StudioShell({
           <button
             aria-label="다음 달"
             className="month-nav-btn"
-            onClick={() => moveMonth(1)}
+            onClick={() => moveMonth(1)} data-act="month-next"
             title="다음 달 (→)"
             type="button"
           >
@@ -7039,14 +7043,14 @@ export function StudioShell({
               <>
                 <button
                   className="button notice-open"
-                  onClick={() => setModal("notice")}
+                  onClick={() => setModal("notice")} data-act="open-notice"
                   type="button"
                 >
                   📢 공지 쓰기
                 </button>
                 <button
                   className="button notice-open"
-                  onClick={() => setModal("dayVisit")}
+                  onClick={() => setModal("dayVisit")} data-act="open-day-visit"
                   type="button"
                 >
                   📈 방문
@@ -7055,7 +7059,7 @@ export function StudioShell({
             ) : canEdit ? (
               <button
                 className="button notice-open"
-                onClick={() => setModal("notice")}
+                onClick={() => setModal("notice")} data-act="open-notice"
                 type="button"
               >
                 📢 공지 쓰기
