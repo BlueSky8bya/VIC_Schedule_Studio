@@ -130,7 +130,8 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
         seconds: s.seconds,
         startMs: s.startMs,
         timeLabel: `${hhmm(s.startMs)}–${hhmm(s.endMs)}`,
-        tip: `${hhmm(s.startMs)}–${hhmm(s.endMs)} · ${fmtDur(s.seconds)} · ${devMeta(s.device).label}`
+        spanSeconds: Math.max(0, Math.round((s.endMs - s.startMs) / 1000)),
+        tip: `${hhmm(s.startMs)}–${hhmm(s.endMs)} · 화면에 떠 있던 시간 ${fmtDur(s.seconds)} · ${devMeta(s.device).label}`
       };
     })
     .sort((a, b) => a.startMs - b.startMs);
@@ -387,8 +388,15 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                 <li key={i}>
                   <span className="dv-dev" style={{ background: devMeta(s.device).color }} />
                   <span className="dv-time">{s.timeLabel}</span>
-                  <b>{fmtDur(s.seconds)}</b>
-                  <em>{devMeta(s.device).label}</em>
+                  {/* 시각은 방문의 '구간'(자리비움 포함), 숫자는 화면에 실제로 떠 있던 시간이다.
+                      둘이 다를 수 있어서(탭을 숨겨두면 구간만 길어진다) '봄'을 붙여 구분한다 —
+                      안 붙이면 "15:37–16:22인데 왜 13분?"이 된다(실측 질문). */}
+                  <b title="이 구간 중 화면에 떠 있던 시간">{fmtDur(s.seconds)} 봄</b>
+                  <em>
+                    {s.spanSeconds > s.seconds + 60
+                      ? `${fmtDur(s.spanSeconds)} 중 · ${devMeta(s.device).label}`
+                      : devMeta(s.device).label}
+                  </em>
                 </li>
               ))}
             </ul>
