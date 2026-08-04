@@ -2124,7 +2124,12 @@ export function StudioShell({
           `.studio-event-pill[data-eventid="${selectedEventId}"], .support-bar[data-supportid="${selectedEventId}"]`
         ))
       : null;
-    const aRect = pill ? pill.getBoundingClientRect() : cellRect;
+    // 신규(날짜 대상)는 칸 위쪽에서 고정 오프셋으로 찍으면 업 도움 띠 위에 얹혀 "띠를 고르는
+    // 중"처럼 보인다(실측). 띠는 목록 위 여백에 깔리므로, **일정 목록의 시작점**을 기준으로
+    // 잡으면 띠가 몇 줄이든 항상 칸 본문에 붙는다. 목록이 없으면 칸 중앙으로 물러선다.
+    const listEl = pill ? null : cell.querySelector<HTMLElement>(".studio-event-list");
+    const listRect = listEl?.getBoundingClientRect() ?? null;
+    const aRect = pill ? pill.getBoundingClientRect() : (listRect ?? cellRect);
     const aT = (aRect.top - wsRect.top) / z;
     const aH = aRect.height / z;
     const anchor = pill
@@ -2132,10 +2137,15 @@ export function StudioShell({
           x: Math.round((aRect.left - wsRect.left) / z + aRect.width / z / 2),
           y: Math.round(aT + aH / 2)
         }
-      : {
-          x: Math.round(cellL + cellW / 2),
-          y: Math.round(cellT + Math.min(cellH / 2, 46))
-        };
+      : listRect
+        ? {
+            x: Math.round((aRect.left - wsRect.left) / z + aRect.width / z / 2),
+            y: Math.round(aT + Math.min(aH / 2, 22))
+          }
+        : {
+            x: Math.round(cellL + cellW / 2),
+            y: Math.round(cellT + Math.min(cellH / 2, 46))
+          };
     // 폼 최대 높이 = 크롬 아래 가용 세로(로컬) — 팝오버 전체가 항상 화면에 들어갈 수 있게.
     const availH = Math.max(260, Math.round((window.innerHeight - getChromeBottomV()) / z - 64));
     setEditorPopMaxH((v) => (v === availH ? v : availH));
@@ -6205,6 +6215,11 @@ export function StudioShell({
                 "studio-day",
                 cell.inCurrentMonth ? "" : "outside",
                 editorVisible && selectedDate === cell.isoDate ? "selected" : "",
+                // 신규 작성 중이면 '날짜 칸'이 대상 — 팝오버 대표색(초록) 점선으로 칸을 두른다.
+                // 기존 일정 편집 중에는 칸이 아니라 그 카드가 대상이라 칸 강조를 끈다(경쟁 방지).
+                editorVisible && !selectedEventId && selectedDate === cell.isoDate
+                  ? "editing-new"
+                  : "",
                 day.isPast ? "past" : "future",
                 day.isToday ? "today" : "",
                 // 드래그 중 이 칸 위에 있으면 "여기에 놓기" 강조.
@@ -6303,9 +6318,13 @@ export function StudioShell({
                         // 필터를 켜면 일정 카드만 흐려지고 업 도움 끈은 쨍하게 남아, 안 고른 기간이
                         // 오히려 제일 눈에 띄었다(시청자 화면에서 같은 이유로 이미 고쳤다).
                         // 판정은 카드와 같은 isDimmedByFilter — 끈에 태그가 없으면 필터 켤 때 물러난다.
+                        // 편집 중인 업 도움은 **묶인 띠 전체**를 장미색으로 두른다 — 이 끈은
+                        // 여러 칸에 걸쳐 있어 한 조각만 강조하면 어디까지가 그 기간인지 안 보인다.
                         className={`support-bar${isDimmedByFilter(s) ? " filter-dim" : ""}${
                           showLabel ? " sb-head" : ""
-                        }${hoverSupportId === s.id ? " is-hover" : ""}`}
+                        }${hoverSupportId === s.id ? " is-hover" : ""}${
+                          editorVisible && selectedEventId === s.id ? " is-editing" : ""
+                        }`}
                         data-supportid={s.id}
                         key={s.id}
                         onMouseEnter={() => setHoverSupportId(s.id)}

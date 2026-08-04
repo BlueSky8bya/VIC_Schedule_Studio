@@ -5300,6 +5300,13 @@ html[data-reduce-motion] .editor-anchor-link line {
 /* 편집실 띠 = 편집 대상 — 시청자용 반짝/CTA 없이, 카드 호버와 같은 조용한 부각만.
    :hover 대신 그룹 상태(.is-hover — 같은 띠의 모든 조각) — 한 조각만 밝아지면
    마디가 다시 보인다(하나의 블록처럼, 사용자 결정). */
+/* 편집 중인 업 도움 — 묶인 조각 전부에 장미색 링(한 조각만 칠하면 기간이 안 보인다). */
+.studio-day .support-bar.is-editing {
+  box-shadow:
+    inset 0 0 0 2px #e11d48,
+    0 0 0 1px rgb(225 29 72 / 25%);
+  z-index: 6;
+}
 .studio-day .support-bar.is-hover {
   filter: brightness(1.04);
   box-shadow:
@@ -5679,6 +5686,17 @@ body.cell-range-dragging {
 }
 .studio-day.today::after {
   box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* 편집 대상별로 강조 색을 나눈다 — 지금 무엇을 고치는 중인지 색 하나로 읽히게.
+     신규(날짜 칸) = 초록 점선(팝오버 대표색) · 기존 일정 = 보라(카드 자체) · 업 도움 = 장미색(띠 전체).
+     점선은 box-shadow로 못 그리므로 outline을 쓴다(레이아웃을 안 밀고 모서리를 따른다). */
+.studio-day.editing-new::after {
+  box-shadow: none;
+  outline: 2px dashed #22965e; /* 리더 도트(.is-new)와 같은 초록 */
+  outline-offset: -2px;
+  border-radius: inherit;
+  animation: none;
 }
 
 /* 선택: 오늘 골드와 구분되는 무대 보라 링. hover보다 강하고 focus와 같은 의미축을 쓴다. */
@@ -6699,12 +6717,14 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
 .studio-event-pill.selected {
   background: rgb(250 204 21 / 12%);
 }
-/* 현재 클릭한 카드 — 굵고 밝은 노랑 테두리. 단, 테두리는 no-left/no-right를 따르므로
-   "이어진 쪽(좌/우)에는 선이 안 생기고" 떨어진 쪽·위/아래에만 또렷이 표시된다. */
+/* 지금 편집 중인 카드 — 굵은 보라 실선. 편집 대상별 색 규율에 맞춘다:
+   신규(날짜 칸)=초록 점선 · 일정=보라 실선 · 업 도움=장미색 띠. 예전 노랑은 '오늘(골드)'과
+   가까워 무엇이 편집 중인지 색만으로 갈리지 않았다.
+   테두리는 no-left/no-right를 따르므로 이어진 쪽엔 선이 안 생기고 떨어진 쪽·위아래만 또렷하다. */
 .studio-event-pill.primary-selected {
   border-width: 3px;
-  border-color: #facc15 !important;
-  background: rgb(250 204 21 / 26%);
+  border-color: var(--selection-border, #8b5cf6) !important;
+  background: rgb(139 92 246 / 16%);
 }
 
 /* #2: 복사/붙여넣기 알림 토스트 */
