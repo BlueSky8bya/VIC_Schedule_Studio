@@ -3855,6 +3855,12 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   pointer-events: none;
 }
 
+/* 편집실과 같은 이유 — .sb-head(z:5)가 흐림 베일(z:4) 위로 떠 다른 달인데 혼자 쨍했다.
+   띠 조각 자체를 흐려 달 경계에서만 갈리게 한다. */
+.public-day.outside .support-bar {
+  opacity: 0.4;
+}
+
 /* 다른 달 날짜는 일/토 색도 회색으로 */
 .public-day.outside .day-strip strong {
   color: #aab0ba;

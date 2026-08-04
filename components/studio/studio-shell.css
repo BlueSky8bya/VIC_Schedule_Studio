@@ -5672,6 +5672,15 @@ body.cell-range-dragging {
   pointer-events: none;
 }
 
+/* 업 도움 띠의 '시작 조각'(.sb-head)만 z:5다 — 라벨이 뒤 조각(z:4) 위로 흘러야 해서.
+   그런데 흐림 베일도 z:4라, 다른 달 칸에서 그 조각만 베일 위로 떠 **혼자 쨍하게** 보였다
+   (실측: 7월 달력의 8/3 업 도움 첫 칸). z를 낮추면 라벨이 뒤 조각에 덮이므로(같은 맥락 안이라
+   자식 z로도 못 올린다), 베일 대신 **띠 조각 자체를 흐린다**. 조각 단위라 달 경계에서만
+   흐림이 갈리고, 그건 원래 있어야 할 경계다. */
+.studio-day.outside .support-bar {
+  opacity: 0.4;
+}
+
 /* 다른 달 날짜는 토/일 색도 흐린 회보라로 (그대로 진하지 않게) */
 .studio-day.outside .studio-day-head strong {
   color: #bcbed0;
