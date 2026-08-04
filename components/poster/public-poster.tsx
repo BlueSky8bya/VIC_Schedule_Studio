@@ -48,7 +48,6 @@ import {
 import dynamic from "next/dynamic";
 import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
 import { logActivity } from "@/lib/activity/client";
-import { useSectionActivity } from "@/lib/activity/use-section";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 // 월드컵 장난감(공 미니게임 + 중력 공)은 월드컵 달에만 렌더되는데 정적 import라 6,400여 줄
 // (컴포넌트 + lib/football/*)이 시청자 첫 로드 번들에 1년 내내 들어 있었다. 아래 꾸미기 UI와
@@ -1123,9 +1122,9 @@ export function PublicPoster({
   // 모든 꾸미기 로직(도구바·키보드·스티커 편집)이 자동으로 비활성화된다.
   const [previewing, setPreviewing] = useState(initialPreviewing);
   const decorate = decorateProp && !previewing;
-  // 꾸미기는 라우트이기도 하지만 미리보기 전환으로 껐다 켜지는 '모드'라, 실제 꾸미기 상태를
-  // 섹션으로 따로 잰다(라우트 체류에는 미리보기 시간이 섞인다).
-  useSectionActivity(decorate ? "decorate" : null);
+  // 꾸미기는 그 자체가 라우트(/studio/decorate)라 route.enter/leave로 이미 잡힌다.
+  // 예전엔 섹션으로도 따로 재서 한 번의 진입이 '화면 진입 꾸미기 화면' + '패널 진입 꾸미기'
+  // 두 줄로 남고 사용량에서도 이중 계상됐다(실측) → 섹션 계측을 뺀다.
   // 토리님 SOOP 라이브 상태 — 꾸미기 아니면 폴링(편집실 '시청자 미리보기'에서도 켜서 개발자/오너가
   // 시청자가 볼 LIVE를 그대로 확인). 데스크탑 플로팅 비콘은 편집실 chrome과 겹쳐 미리보기에선 숨기고
   // (아래 마운트의 !previewNav), 모바일은 겹침 없는 하단 '오늘'→LIVE 버튼이라 미리보기에서도 보인다.
@@ -5774,6 +5773,7 @@ export function PublicPoster({
                     좌우 화살표(월 이동)·하단(미니게임 컨트롤)과 안 겹치는 상단 중앙 크롬 자리. */}
                 <button
                   className="insights-open"
+                  data-act="open-insights"
                   onClick={() => {
                     hapticTick();
                     setInsightsOpen(true);

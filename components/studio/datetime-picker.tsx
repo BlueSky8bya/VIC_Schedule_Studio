@@ -423,7 +423,7 @@ export function DateTimePicker({
                   style={anchor ? { left: anchor.left, top: anchor.top } : undefined}
                 >
                   {panel}
-                  <button className="dtp-pop-x" onClick={close} type="button" aria-label="닫기">
+                  <button className="dtp-pop-x" onClick={close} type="button" aria-label="닫기" data-act="close-datetime-picker">
                     <X size={14} />
                   </button>
                 </div>

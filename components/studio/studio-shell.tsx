@@ -1566,15 +1566,27 @@ export function StudioShell({
       setForm(createEmptyForm());
       return next;
     });
-    // 어느 달을 보러 왔는지(0062) — 월 이동은 라우트가 아니라 상태라 route.enter에 안 잡힌다.
-    // updater 밖에서 부른다: updater는 StrictMode에서 두 번 실행돼 로그가 겹친다.
-    // 연타는 정착 후 '도착지 1건'으로 압축한다(연타 12번 = 의도 1개, meta.hops로 횟수만 남긴다).
-    {
-      const next = getAdjacentMonth(view.year, view.month, offset);
-      logSettled("month.change", "studio-month", `${next.year}-${String(next.month).padStart(2, "0")}`);
-    }
+    // 월 이동 기록은 여기서 하지 않는다 — 아래 useEffect가 '실제로 착지한 view'를 보고 남긴다.
+    // (여기서 getAdjacentMonth(view…)를 쓰면 렌더 시점 클로저라, 연타가 리렌더 전에 몰릴 때
+    //  16번 다 같은 값이 찍혔다. 실측: ×16을 눌러 2025-04에 갔는데 로그는 2026-07이었다.)
     bumpEditor(); // 달이 바뀌어 새 날짜로 → 폼 새로 마운트
   }
+
+  // 어느 달을 보러 왔는지(0062). **실제로 바뀐 view**를 보고 남긴다 — 클릭 핸들러에서
+  // 계산하면 렌더 전 클로저라 도착지가 틀린다(위 moveMonth 주석의 실측 사례).
+  // 연타는 정착(700ms) 후 마지막 달 1건으로 압축되고, 누른 횟수는 meta.hops로 남는다.
+  const monthLoggedOnce = useRef(false);
+  useEffect(() => {
+    if (!monthLoggedOnce.current) {
+      monthLoggedOnce.current = true; // 최초 마운트는 진입이지 '이동'이 아니다
+      return;
+    }
+    logSettled(
+      "month.change",
+      "studio-month",
+      `${view.year}-${String(view.month).padStart(2, "0")}`
+    );
+  }, [view]);
 
   // 모바일 편집실 '오늘' — 시청자 화면과 같은 동작(사용자 요청): 오늘이 속한 달로 복귀한 뒤
   // 오늘 카드로 스크롤(가운데). 이미 그 달이면 스크롤만. 슬라이드가 끝난 뒤 스크롤(360ms).
@@ -3423,6 +3435,7 @@ export function StudioShell({
           />
           <button
             className="button primary teaser-gate-submit"
+            data-act="teaser-gate-submit"
             disabled={teaserGateBusy || !teaserGatePass.trim()}
             type="submit"
           >
@@ -4547,7 +4560,7 @@ export function StudioShell({
               {/* 로그아웃 — 저장됨 칩이 있던 우상단(3열) 자리. 편집실 톤과 어울리게.
                   로그아웃하면 익명 상태로 공개 포스터를 계속 본다(계정 바꾸려면 다시 로그인). */}
               {actor.isAuthenticated ? (
-                <form className="m-head-logout" action="/api/auth/logout" method="post">
+                <form className="m-head-logout" action="/api/auth/logout" method="post" data-act="logout">
                   <button
                     className="button"
                     onClick={() => startNav("로그아웃 중…")}
@@ -4558,7 +4571,7 @@ export function StudioShell({
                   </button>
                 </form>
               ) : (
-                <Link className="m-head-logout button" href="/login">
+                <Link className="m-head-logout button" href="/login" data-act="login">
                   로그인
                 </Link>
               )}
@@ -5272,7 +5285,7 @@ export function StudioShell({
         <div className="modal-card" aria-modal="true" role="dialog" ref={tagSheetTrapRef}>
           <div className="modal-head">
             <h2>태그 수정</h2>
-            <button aria-label="닫기" className="modal-close" onClick={() => setTagSheetId(null)} type="button">
+            <button aria-label="닫기" className="modal-close" onClick={() => setTagSheetId(null)} type="button" data-act="close-modal">
               <X aria-hidden="true" size={18} />
             </button>
           </div>
@@ -5305,7 +5318,7 @@ export function StudioShell({
         <div className="modal-card" aria-modal="true" role="dialog" ref={supportSheetTrapRef}>
           <div className="modal-head">
             <h2>🌱 업 도움 수정</h2>
-            <button aria-label="닫기" className="modal-close" onClick={closeSupportSheet} type="button">
+            <button aria-label="닫기" className="modal-close" onClick={closeSupportSheet} type="button" data-act="close-modal">
               <X aria-hidden="true" size={18} />
             </button>
           </div>
@@ -5355,6 +5368,7 @@ export function StudioShell({
           <div className="m-sheet-top" {...mobileSheetDrag}>
             <button
               className="m-sheet-grab"
+              data-act="close-sheet-grab"
               aria-label="닫기"
               onClick={closeMobileEditAnimated}
               type="button"
@@ -6858,6 +6872,7 @@ export function StudioShell({
                     버튼은 헤더 소음이었다. 비드래그 대안이 다시 필요하면 git 이력에 구현이 있다.) */}
                 <button
                   className="button primary editor-save"
+                  data-act="save-event"
                   disabled={!canEdit || !form.publicTitle.trim()}
                   type="submit"
                 >
@@ -7139,6 +7154,7 @@ export function StudioShell({
               <button
                 aria-label="닫기"
                 className="modal-close"
+                data-act="close-modal"
                 onClick={() => setModal(null)}
                 type="button"
               >
@@ -7227,6 +7243,7 @@ export function StudioShell({
               <button
                 aria-label="닫기"
                 className="modal-close"
+                data-act="close-modal"
                 onClick={() => setPasscodeModal(null)}
                 type="button"
               >

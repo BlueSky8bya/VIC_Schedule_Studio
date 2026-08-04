@@ -1332,6 +1332,17 @@ html[data-reduce-motion] .act-skeleton span {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 타임라인 항목의 위치 표시 — 이름 앞에 조용히. */
+.act-area {
+  margin-right: 5px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: #f4f2f8;
+  color: #9a93b0;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
 /* 연속 반복 접기 표시(×N) */
 .act-rep {
   margin-left: 5px;
@@ -1474,7 +1485,7 @@ html[data-reduce-motion] .act-skeleton span {
   background: rgb(124 108 240 / 14%);
   color: #5b21b6;
 }
-/* 보고 있는 구간 표기 — 날짜 모달 안이라 '오늘까지'로 오해하기 쉽다. */
+/* 보고 있는 구간 표기 — 날짜 창 안이라 '오늘까지'로 오해하기 쉽다. */
 .usage-span {
   display: block;
   margin-top: 1px;
@@ -1483,10 +1494,21 @@ html[data-reduce-motion] .act-skeleton span {
   color: var(--muted, #9aa0ab);
   font-variant-numeric: tabular-nums;
 }
+/* 읽는 법 한 문장 — 표를 보고 스스로 규칙을 알아내게 두지 않는다. */
+.usage-lead {
+  margin: 6px 2px 4px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #6b6480;
+}
+.usage-lead b {
+  color: #5b21b6;
+}
 .usage-filters {
   display: flex;
   gap: 4px;
-  margin: 6px 0 2px;
+  margin: 4px 0 2px;
   flex-wrap: wrap;
 }
 .usage-filters button {
@@ -1513,33 +1535,47 @@ html[data-reduce-motion] .act-skeleton span {
   color: #5b21b6;
 }
 
-/* 한 줄 = 한 항목. 칩 | 이름 | 막대 | 숫자. 좁은 칸에서도 접히지 않게 이름만 말줄임으로 흡수한다. */
+/* 항목 = 2줄. 위: 종류·위치·이름·횟수 / 아래: 막대·부연.
+   위치(area)를 이름 앞에 두는 이유 — 이름만으로는 어디 있는 버튼인지 찾아갈 수 없다. */
 .usage-list {
   list-style: none;
   margin: 6px 0 8px;
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 .usage-list > li {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) 52px 40px;
-  gap: 8px;
-  align-items: center;
-  min-height: 34px;
-  padding: 5px 6px;
+  padding: 6px 8px;
   border-radius: var(--r-sm, 8px);
-  font-size: 12px;
   transition: background-color var(--dur-1) var(--ease);
 }
 .usage-list > li:hover {
   background: #fbfaff;
 }
+/* 이름을 아직 안 붙인 항목은 조용히 낮춘다 — 있는 그대로 보이되 눈을 뺏지 않게. */
+.usage-list > li[data-unnamed] .usage-name {
+  color: #9a93b0;
+  font-style: italic;
+}
+.usage-line1 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.usage-line2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+  padding-left: 2px;
+}
 .usage-chip {
+  flex: none;
   font-size: 10px;
   font-weight: 800;
-  text-align: center;
-  padding: 2px 0;
+  padding: 2px 7px;
   border-radius: var(--r-pill);
   color: #6b6480;
   background: #f1eff7;
@@ -1556,39 +1592,32 @@ html[data-reduce-motion] .act-skeleton span {
   background: rgb(124 108 240 / 12%);
   color: #6b5bd6;
 }
-/* 이름(굵게) + 부연(작게, 회색) 2줄. 둘 다 한 줄 말줄임 — 목록 높이가 들쭉날쭉하면 훑기 어렵다. */
-.usage-target {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
+.usage-area {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  color: #9a93b0;
 }
-.usage-target > b {
+.usage-name {
+  min-width: 0;
+  flex: 1 1 auto;
   color: #3f3a52;
   font-weight: 700;
+  font-size: 12.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.usage-target > small {
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--muted, #9aa0ab);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* 유추 이름 표시는 글자가 아니라 점 하나로 — 목록 폭을 먹지 않게. */
-.usage-auto {
-  display: inline-block;
-  width: 4px;
-  height: 4px;
-  margin-left: 5px;
-  border-radius: 50%;
-  background: #c9c2dc;
-  vertical-align: 2px;
+.usage-n {
+  flex: none;
+  font-size: 13px;
+  font-weight: 900;
+  color: #5b21b6;
+  font-variant-numeric: tabular-nums;
+  cursor: help;
 }
 .usage-bar {
+  flex: 0 0 72px;
   height: 5px;
   border-radius: var(--r-pill);
   background: #f1eff7;
@@ -1601,23 +1630,32 @@ html[data-reduce-motion] .act-skeleton span {
   background: linear-gradient(90deg, #a78bfa, #7c6cf0);
   transition: width var(--dur-2, 260ms) var(--ease);
 }
-.usage-n {
-  text-align: right;
-  font-size: 13px;
-  font-weight: 900;
-  color: #5b21b6;
-  font-variant-numeric: tabular-nums;
-  cursor: help;
-}
-.usage-n em {
-  display: block;
-  font-style: normal;
-  font-size: 9.5px;
-  font-weight: 700;
+.usage-sub {
+  min-width: 0;
+  font-size: 10.5px;
+  font-weight: 600;
   color: var(--muted, #9aa0ab);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.usage-sub code {
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: #f1eff7;
+  color: #8b84a3;
+  font-size: 10px;
+}
+.usage-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
 }
 .usage-more {
-  width: 100%;
+  flex: 1 1 auto;
   border: 1px solid var(--line, #ece9f5);
   border-radius: var(--r-md);
   background: var(--surface, #fff);
@@ -1626,7 +1664,6 @@ html[data-reduce-motion] .act-skeleton span {
   font-weight: 800;
   padding: 7px;
   cursor: pointer;
-  margin-bottom: 8px;
   transition:
     background-color var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
@@ -1637,15 +1674,24 @@ html[data-reduce-motion] .act-skeleton span {
 .usage-more:active {
   transform: scale(0.985);
 }
-/* 칸이 넓어지면 막대에 여유를 준다(비교가 쉬워진다). 뷰포트가 아니라 칸 폭 기준. */
+.act-tool.is-on {
+  background: rgb(124 108 240 / 12%);
+  border-color: #ddd6fe;
+}
+/* 칸이 넓어지면 2줄 구조는 유지하고 여백·글자만 키운다. 한 줄로 합치면 부연이 뭉개져
+   "이게 무슨 버튼인지"가 다시 사라진다 — 그게 이 화면을 고친 이유였다. */
 @container (min-width: 460px) {
   .usage-list > li {
-    grid-template-columns: 38px minmax(0, 1fr) 120px 56px;
-    gap: 10px;
-    padding: 6px 8px;
-    font-size: 13px;
+    padding: 8px 10px;
+  }
+  .usage-name {
+    font-size: 13.5px;
+  }
+  .usage-sub {
+    font-size: 11.5px;
   }
   .usage-bar {
+    flex: 0 0 120px;
     height: 6px;
   }
 }

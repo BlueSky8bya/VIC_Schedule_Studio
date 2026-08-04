@@ -35,9 +35,17 @@ type Item = ActivityVisit["items"][number];
 type Grouped = Item & { repeat: number };
 
 // 표시 이름: 일정 제목(서버가 권한 확인 후 붙여준 것)이 있으면 그것, 없으면 사전으로 푼다.
+// uuid를 그대로 보여주지 않는다 — 코드를 모르는 사람에게 uuid는 아무 뜻도 없다.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 function itemName(it: Item): string {
   if (it.targetLabel) return it.targetLabel;
   if (!it.target) return "";
+  if (UUID_RE.test(it.target)) {
+    // 제목이 안 붙은 uuid — 스티커는 원래 제목이 없고, 일정은 이미 지워진 경우다.
+    if (it.kind.startsWith("sticker.")) return "스티커";
+    if (it.kind.startsWith("event.")) return "(지워진 일정)";
+    return "(알 수 없는 항목)";
+  }
   return describeTarget(it.kind, it.target).name;
 }
 function itemTitle(it: Item): string {
@@ -55,6 +63,17 @@ function groupItems(items: Item[]): Grouped[] {
     if (prev && prev.kind === it.kind && prev.target === it.target) {
       prev.repeat += 1;
       if (it.durMs) prev.durMs = (prev.durMs ?? 0) + it.durMs;
+      // 세는 값(hops·count)은 합산한다 — 첫 줄 것만 남기면 '×2 hops=17'처럼 나머지가 사라져
+      // 실제보다 작게 읽힌다(실측).
+      if (prev.meta && it.meta) {
+        const merged: Record<string, unknown> = { ...prev.meta };
+        for (const key of ["hops", "count"]) {
+          const a = prev.meta[key];
+          const b = it.meta[key];
+          if (typeof a === "number" && typeof b === "number") merged[key] = a + b;
+        }
+        prev.meta = merged;
+      }
       continue;
     }
     out.push({ ...it, repeat: 1 });
@@ -134,12 +153,16 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
   const visitText = (v: ActivityVisit): string => {
     const head = `[${v.account} · ${ROLE_LABEL[v.role] ?? v.role} · ${deviceLabel(v.device)}] ${hhmm(v.startMs)}–${hhmm(v.endMs)}`;
     const lines = groupItems(v.items).map((it) => {
+      const name = itemName(it);
       const parts = [
         hhmm(it.t),
         it.label + (it.repeat > 1 ? ` ×${it.repeat}` : ""),
-        itemName(it),
+        name,
         it.durMs ? fmtDur(Math.round(it.durMs / 1000)) : "",
-        metaLine(it.meta)
+        metaLine(it.meta),
+        // 화면에선 숨기는 원본 id를 복사본에는 반드시 남긴다 — 붙여넣어 오류를 찾으려면
+        // (이름이 왜 저래? 왜 뭉쳤어?) 원본이 있어야 한다. 이름과 같으면 생략.
+        it.target && it.target !== name ? `[${it.kind} ${it.target}]` : ""
       ].filter(Boolean);
       return "  " + parts.join("  ");
     });
@@ -244,6 +267,11 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
                       {/* 일정은 제목(권한 확인 후 조인), 그 외는 사람이 읽는 이름으로 푼다 —
                           타임라인에 `.stf-btn` 같은 값이 그대로 뜨면 읽을 수 없다. */}
                       <span className="act-target" title={itemTitle(it)}>
+                        {/* 위치를 앞에 붙인다 — 이름만으로는 어디 있는 건지 찾아갈 수 없다.
+                            일정 제목이 붙은 줄에는 위치가 없으므로 그대로 제목만 나온다. */}
+                        {!it.targetLabel && it.target ? (
+                          <em className="act-area">{describeTarget(it.kind, it.target).area}</em>
+                        ) : null}
                         {itemName(it)}
                       </span>
                       {it.durMs ? (
