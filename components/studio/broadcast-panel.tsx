@@ -458,6 +458,9 @@ export function BroadcastPanel({
     null
   );
   // 러버밴드로 잡힌 '획'(필기) — store 획 객체 참조. 카드처럼 이동·확대 대상(그림판 선택 문법).
+  // 그림판 안 클립보드(Ctrl+C/X/V). 시스템 클립보드에 획 좌표를 담을 형식이 없고, 담아도 다른
+  // 앱이 못 읽는다 — 이 패널이 열려 있는 동안의 메모리로 둔다.
+  const strokeClipRef = useRef<Stroke[]>([]);
   const [strokeSel, setStrokeSel] = useState<Stroke[]>([]);
   const strokeSelRef = useRef(strokeSel);
   strokeSelRef.current = strokeSel;
@@ -1023,13 +1026,13 @@ export function BroadcastPanel({
 
   // ── 부분 선택(그림판 영역 선택 의미론): 밴드에 걸친 획을 경계에서 '분할'하고 안쪽
   // 조각만 선택한다. 완전히 안이면 통째, 도형은 부분 개념이 없어 걸치면 통째.
-  // 대상은 '활성 레이어'의 획만 — 그림판 문법(선택/이동/확대가 다른 레이어를 건드리면
-  // 레이어 분리 의미가 없어진다). 활성 레이어가 잠김/숨김이면 아무것도 안 잡힌다. ──
+  //
+  // 대상은 **보이는 레이어 전부**다. 예전엔 '활성 레이어'로 한정했는데, 눈에 보이는 그림을
+  // 범위로 감쌌는데도 아무것도 안 잡히는 일이 생겼다(다른 레이어에 그렸던 것 — 실측).
+  // 화면에서 감싼 것이 안 잡히면 선택이 아니라 수수께끼가 된다. 숨긴 레이어는 화면에 없으므로
+  // 그대로 제외한다(안 보이는 걸 잡으면 그게 또 수수께끼다). ──
   function splitSelectStrokes(lo: { x: number; y: number }, hi: { x: number; y: number }) {
-    const act = layersRef.current.find((l) => l.id === activeLayerId);
-    const layerOk = new Map(
-      layersRef.current.map((l) => [l.id, l.id === act?.id && l.vis])
-    );
+    const layerOk = new Map(layersRef.current.map((l) => [l.id, l.vis]));
     const inside = (pt: StrokePoint) =>
       pt.x >= lo.x && pt.x <= hi.x && pt.y >= lo.y && pt.y <= hi.y;
     const selectionRect = { left: lo.x, top: lo.y, right: hi.x, bottom: hi.y };
@@ -1050,38 +1053,43 @@ export function BroadcastPanel({
     // 유령 선택 방지: 지우개로 지워져 화면에 없는 획이 잡히면 빈 곳에 선택 박스가 뜬다.
     // 활성 레이어 캔버스의 밴드 영역 픽셀을 한 번 읽어, '실제로 보이는' 점이 있는 획만
     // 선택 대상으로 삼는다(알파 검증).
-    const actCanvas = act ? layerCanvases.current.get(act.id) : null;
+    // 알파 검증도 **레이어마다** 읽는다(획이 속한 레이어의 캔버스로 확인해야 맞다).
     const scale = scaleRef.current;
-    let bandPixels: ImageData | null = null;
     let bandW = 0;
     let bandH = 0;
-    if (actCanvas) {
+    const bandByLayer = new Map<string, ImageData | null>();
+    for (const l of layersRef.current) {
+      if (!l.vis) continue;
+      const cv = layerCanvases.current.get(l.id);
+      if (!cv) continue;
       const sx = Math.max(0, Math.floor(lo.x * scale));
       const sy = Math.max(0, Math.floor(lo.y * scale));
-      bandW = Math.min(actCanvas.width - sx, Math.ceil((hi.x - lo.x) * scale) + 2);
-      bandH = Math.min(actCanvas.height - sy, Math.ceil((hi.y - lo.y) * scale) + 2);
-      if (bandW > 0 && bandH > 0) {
-        try {
-          bandPixels = actCanvas.getContext("2d")?.getImageData(sx, sy, bandW, bandH) ?? null;
-        } catch {
-          bandPixels = null; // 픽셀 접근 실패 시 검증 생략(선택은 동작)
-        }
+      const w = Math.min(cv.width - sx, Math.ceil((hi.x - lo.x) * scale) + 2);
+      const h = Math.min(cv.height - sy, Math.ceil((hi.y - lo.y) * scale) + 2);
+      if (w <= 0 || h <= 0) continue;
+      bandW = w;
+      bandH = h;
+      try {
+        bandByLayer.set(l.id, cv.getContext("2d")?.getImageData(sx, sy, w, h) ?? null);
+      } catch {
+        bandByLayer.set(l.id, null); // 픽셀 접근 실패 시 그 레이어는 검증 생략(선택은 동작)
       }
     }
-    const visibleAt = (pt: StrokePoint): boolean => {
-      if (!bandPixels) return true;
+    const visibleAt = (pt: StrokePoint, layerId: string): boolean => {
+      const band = bandByLayer.get(layerId);
+      if (!band) return true;
       const px = Math.min(bandW - 1, Math.max(0, Math.round((pt.x - lo.x) * scale)));
       const py = Math.min(bandH - 1, Math.max(0, Math.round((pt.y - lo.y) * scale)));
-      return bandPixels.data[(py * bandW + px) * 4 + 3] > 24;
+      return band.data[(py * bandW + px) * 4 + 3] > 24;
     };
-    const bandHasInk =
-      !bandPixels ||
-      (() => {
-        for (let i = 3; i < bandPixels.data.length; i += 4) {
-          if (bandPixels.data[i] > 24) return true;
-        }
-        return false;
-      })();
+    const layerHasInk = (layerId: string): boolean => {
+      const band = bandByLayer.get(layerId);
+      if (!band) return true;
+      for (let i = 3; i < band.data.length; i += 4) {
+        if (band.data[i] > 24) return true;
+      }
+      return false;
+    };
     const before = [...store.strokes()];
     const nextScene: Stroke[] = [];
     const picked: Stroke[] = [];
@@ -1093,8 +1101,11 @@ export function BroadcastPanel({
       }
       const flags = s.points.map(inside);
       const shapeCrosses = isShapeTool(s.tool) && strokeIntersectsRect(s, selectionRect);
-      const hasVisiblePoint = s.points.some((pt, i) => flags[i] && visibleAt(pt));
-      if ((!flags.some(Boolean) && !shapeCrosses) || (!hasVisiblePoint && !(shapeCrosses && bandHasInk))) {
+      const hasVisiblePoint = s.points.some((pt, i) => flags[i] && visibleAt(pt, s.layer));
+      if (
+        (!flags.some(Boolean) && !shapeCrosses) ||
+        (!hasVisiblePoint && !(shapeCrosses && layerHasInk(s.layer)))
+      ) {
         nextScene.push(s); // 밴드 밖이거나, 밴드 안 구간이 전부 지워져 안 보이는 획
         continue;
       }
@@ -1149,10 +1160,11 @@ export function BroadcastPanel({
   // ── 선택 획 박스(그림판 선택 문법): 점선 bbox — 끌면 이동, 모서리 손잡이로 확대/축소 ──
   const strokeSelBox = useMemo(() => {
     if (tool !== "select" || strokeSel.length === 0) return null;
-    const selectedLayer = layers.find((l) => l.id === activeLayerId);
-    if (!selectedLayer?.vis) return null;
+    // 선택은 보이는 레이어 전체를 대상으로 한다(splitSelectStrokes와 같은 규칙) — 활성 레이어로
+    // 한정하면, 감싸서 잡아놓고도 레이어를 바꾸는 순간 선택이 통째로 사라진다.
+    const visible = new Set(layers.filter((l) => l.vis).map((l) => l.id));
     const live = new Set(store.strokes());
-    const sel = strokeSel.filter((s) => live.has(s) && s.layer === activeLayerId);
+    const sel = strokeSel.filter((s) => live.has(s) && visible.has(s.layer));
     if (sel.length === 0) return null;
     let minX = Infinity;
     let minY = Infinity;
@@ -2432,6 +2444,62 @@ export function BroadcastPanel({
         onClose();
         return;
       }
+      // ── 선택한 그림 복사/잘라내기/붙여넣기 ──
+      // 편집실 스티커·일정과 같은 손버릇(Ctrl+C/X/V)을 그림판에도 준다. 붙여넣기는 **활성
+      // 레이어**로 들어간다(어디에 놓일지 예측 가능해야 한다) — 원본이 어느 레이어였든.
+      // 클립보드는 이 패널 안 메모리다: 시스템 클립보드에 획 좌표를 넣을 형식이 없고,
+      // 넣더라도 다른 앱이 읽을 수 없다.
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+        const k = e.key.toLowerCase();
+        if ((k === "c" || k === "x") && strokeSelRef.current.length > 0) {
+          e.preventDefault();
+          const visibleIds = new Set(layersRef.current.filter((l) => l.vis).map((l) => l.id));
+          const picked = strokeSelRef.current.filter((s) => visibleIds.has(s.layer));
+          // 깊은 복사 — 원본을 나중에 옮기거나 지워도 붙여넣을 내용이 흔들리지 않게.
+          strokeClipRef.current = picked.map((s) => ({
+            ...s,
+            points: s.points.map((pt) => ({ ...pt }))
+          }));
+          if (k === "x" && picked.length > 0) {
+            const dead = new Set(picked);
+            const beforeScene = [...store.strokes()];
+            const afterScene = beforeScene.filter((x) => !dead.has(x));
+            store.setStrokes(afterScene);
+            pushHist({ t: "scene", before: beforeScene, after: afterScene });
+            for (const l of layersRef.current) replayLayerFnRef.current(l.id);
+            setStrokeVersion((v) => v + 1);
+            setStrokeSel([]);
+          }
+          hapticTick();
+          return;
+        }
+        if (k === "v" && strokeClipRef.current.length > 0) {
+          e.preventDefault();
+          const act = layersRef.current.find((l) => l.id === activeLayerIdRef.current && l.vis);
+          if (!act) return; // 붙여넣을 레이어가 숨겨져 있으면 조용히 무시(안 보이는 곳에 놓지 않는다)
+          // 겹쳐 놓으면 붙었는지 알 수 없다 — 살짝 어긋나게 놓고 그걸 선택 상태로 만든다.
+          const off = 16;
+          const pasted = strokeClipRef.current.map((s) => ({
+            ...s,
+            layer: act.id,
+            points: s.points.map((pt) => ({ ...pt, x: pt.x + off, y: pt.y + off }))
+          }));
+          const beforeScene = [...store.strokes()];
+          const afterScene = [...beforeScene, ...pasted];
+          store.setStrokes(afterScene);
+          pushHist({ t: "scene", before: beforeScene, after: afterScene });
+          for (const l of layersRef.current) replayLayerFnRef.current(l.id);
+          setStrokeVersion((v) => v + 1);
+          setStrokeSel(pasted);
+          // 연달아 붙여넣으면 계단처럼 쌓이게 클립보드도 함께 민다(문서 편집기 관례).
+          strokeClipRef.current = pasted.map((s) => ({
+            ...s,
+            points: s.points.map((pt) => ({ ...pt }))
+          }));
+          hapticTick();
+          return;
+        }
+      }
       // Delete/Backspace = 선택된 것 일괄 삭제(카드·획 각각 히스토리 1건 — Ctrl+Z로 복원).
       if (
         (colSelRef.current.size > 0 || strokeSelRef.current.length > 0) &&
@@ -2439,12 +2507,12 @@ export function BroadcastPanel({
       ) {
         e.preventDefault();
         // 선택된 획 삭제 — 장면에서 제거(scene 스냅샷으로 undo 가능).
-        const selectedLayer = layersRef.current.find(
-          (l) => l.id === activeLayerIdRef.current && l.vis
+        // 선택이 보이는 레이어 전체를 대상으로 하므로 삭제도 같은 기준이어야 한다
+        // (활성 레이어만 지우면 "선택은 됐는데 일부만 지워지는" 어긋남이 난다).
+        const visibleIds = new Set(
+          layersRef.current.filter((l) => l.vis).map((l) => l.id)
         );
-        const editableStrokes = selectedLayer
-          ? strokeSelRef.current.filter((s) => s.layer === selectedLayer.id)
-          : [];
+        const editableStrokes = strokeSelRef.current.filter((s) => visibleIds.has(s.layer));
         if (editableStrokes.length > 0) {
           const dead = new Set(editableStrokes);
           const beforeScene = [...store.strokes()];
