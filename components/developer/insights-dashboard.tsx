@@ -194,6 +194,9 @@ export function VisitSummaryBlock({
           {tabs.map((t) => (
             <button
               className={cur === t.key ? "active" : ""}
+              // 안정 id(0062) — 없으면 라벨 텍스트로 유추돼 '시청자'·'운영진'이 각각 다른
+              // 항목으로 잡힌다(사용량 통계에서 같은 토글인데 3줄로 갈라짐).
+              data-act={`visit-scope-${t.key}`}
               key={t.key}
               onClick={() => {
                 hapticTick();
