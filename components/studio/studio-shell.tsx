@@ -7144,7 +7144,9 @@ export function StudioShell({
                 공개 스냅샷(viewerModePreview)에서 읽는다: 하트는 공개 일정에만 붙고, 숫자는
                 이미 시청자 화면이 쓰는 값이라 새로 새는 것이 없다.
                 비공개 일정은 스냅샷에 없으므로 줄 자체를 띄우지 않는다(0으로 오해되지 않게). */}
-            {selectedEventId && heartCountOfSelected !== null ? (
+            {/* 업 도움은 하트를 못 누른다(시청자 화면에 하트 버튼 자체가 없다) — 0으로 뜨면
+                "아무도 안 눌렀다"로 읽혀 없는 반응을 있는 것처럼 만든다. 줄 자체를 뺀다. */}
+            {selectedEventId && !selectedIsSupport && heartCountOfSelected !== null ? (
               <p className="editor-hearts">
                 <Heart aria-hidden="true" size={13} strokeWidth={2.6} />
                 <span>관심</span>
