@@ -5560,7 +5560,10 @@ html[data-reduce-motion] .editor-anchor-link line {
 .studio-day:focus-visible {
   outline: none;
   background: var(--selection-fill);
-  z-index: 2; /* 이웃 칸 경계선 위로 온전히 */
+  /* ⚠ 8 — 이웃 칸의 업도움 띠(z:4)·일정 카드(z:3)보다 위.
+     .studio-day는 z-index가 없어 쌓임 맥락을 만들지 않으므로, **이웃 칸의 자식**들이 같은
+     맥락에서 겨룬다. 예전 z:2로는 옆 칸 띠가 이 칸 모서리를 덮어 링이 잘려 보였다(실측). */
+  z-index: 8;
 }
 .studio-day:focus-visible::after {
   content: "";
@@ -5773,6 +5776,11 @@ body.cell-range-dragging {
 }
 .studio-day.editing-new:focus-visible {
   outline-offset: -5px; /* 초록 점선을 보라선 안쪽으로 물린다 */
+  z-index: 8;
+}
+/* 신규 편집 중인 칸은 포커스가 없어도 이웃 띠에 안 덮이게(초록 점선도 같은 문제를 겪는다). */
+.studio-day.editing-new {
+  z-index: 7;
 }
 
 .studio-day-head {
