@@ -1478,6 +1478,84 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   color: #4c3fd0;
 }
 
+/* ── 그림 부분 선택 ────────────────────────────────────────────────────────
+   선택한 그림 위에만 깔리는 얇은 판. 여기서만 드래그를 받아 판 전체의 러버밴드·이동과 안 섞인다. */
+.bp-region-layer {
+  position: absolute;
+  z-index: 9;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+/* 오려낼 영역 — 선택 문법(보라 파선)을 그대로 쓰되, 안쪽을 살짝 밝혀 '이 부분'이 읽히게 한다. */
+.bp-region-rect {
+  position: absolute;
+  border: 1.5px dashed var(--violet, #7c6cf0);
+  border-radius: 4px;
+  background: rgb(124 108 240 / 12%);
+  box-shadow: 0 0 0 9999px rgb(31 24 59 / 22%);
+  pointer-events: none;
+}
+
+/* 진입 버튼 — 선택 박스 왼쪽 위 바깥(손잡이는 오른쪽·아래라 겹치지 않는다). */
+.bp-region-enter {
+  position: absolute;
+  top: -11px;
+  left: -2px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 1px solid rgb(124 108 240 / 45%);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #4c3fd0;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgb(31 24 59 / 16%);
+  transition: transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+
+.bp-region-enter:active {
+  transform: scale(0.94);
+}
+
+/* 확정 막대 — 영역 바로 아래(눈이 방금 그린 사각형에서 그대로 떨어진다). */
+.bp-region-bar {
+  position: absolute;
+  z-index: 10;
+  display: inline-flex;
+  gap: 6px;
+  padding: 5px;
+  border: 1px solid rgb(75 68 104 / 16%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 96%);
+  box-shadow: 0 6px 18px rgb(31 24 59 / 20%);
+}
+
+.bp-region-bar button {
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 999px;
+  background: #4c3fd0;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 800;
+  transition: transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+
+.bp-region-bar button:active {
+  transform: scale(0.94);
+}
+
+.bp-region-bar button.ghost {
+  background: #f1eefc;
+  color: #5f5874;
+}
+
 .bp-draw-surface.stylus-active {
   cursor: none !important;
 }

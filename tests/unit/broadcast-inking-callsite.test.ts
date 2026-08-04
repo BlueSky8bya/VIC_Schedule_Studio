@@ -344,3 +344,41 @@ describe("스포이드 계약", () => {
     expect(move).toContain("e.clientX - r.left");
   });
 });
+
+// 그림 부분 선택 — 오려낸 조각을 '새 image 항목'으로 만든다. 전용 상태로 만들면 이동·확대·
+// z순서·복사/붙여넣기·되돌리기 중 하나가 반드시 빠진다(이미지를 장면 배열에 넣은 것과 같은 이유).
+describe("그림 부분 선택 계약", () => {
+  it("조각은 image 항목으로 장면에 들어간다", () => {
+    const commit = panelSource.slice(
+      panelSource.indexOf("const commitRegion"),
+      panelSource.indexOf("commitRegionRef.current = commitRegion")
+    );
+    expect(commit).toContain('tool: "image"');
+    expect(commit).toContain("store.setStrokes(after)");
+    expect(commit).toContain('pushHist({ t: "scene"');
+    expect(commit).toContain("setStrokeSel([piece])");
+  });
+
+  it("옮기기는 원본에 구멍을 내고, 복사는 원본을 건드리지 않는다", () => {
+    const crop = panelSource.slice(
+      panelSource.indexOf("const cropRegion"),
+      panelSource.indexOf("const commitRegionRef")
+    );
+    expect(crop).toContain("rctx.clearRect(sx, sy, sw, sh)");
+    expect(crop).toContain("hole");
+    const commit = panelSource.slice(
+      panelSource.indexOf("const commitRegion"),
+      panelSource.indexOf("commitRegionRef.current = commitRegion")
+    );
+    expect(commit).toContain("const off = move ? 0 : 12");
+  });
+
+  it("영역 판 위 드래그는 러버밴드를 시작하지 않는다(선택이 풀려 버린다)", () => {
+    const down = between("function onBoardPointerDown", "function onBoardPointerMove");
+    expect(down).toContain(".bp-region-layer");
+  });
+
+  it("대상이 사라지거나 도구·레이어가 바뀌면 부분 선택은 접힌다", () => {
+    expect(panelSource).toContain("if (!alive || tool !== \"select\" || imgRegion.st.layer !== activeLayerId)");
+  });
+});

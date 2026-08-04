@@ -35,6 +35,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Circle,
+  Crop,
   Eraser,
   Pipette,
   Eye,
@@ -1038,7 +1039,15 @@ export function BroadcastPanel({
     // 카드/버튼 위에서 시작하면 러버밴드 아님(카드 자체 핸들러가 처리).
     // 선택 박스(와 그 손잡이) 위에서 시작한 드래그는 '이동/크기 조절'이다 — 여기서 밴드까지
     // 시작하면 선택 상자와 러버밴드가 겹쳐 두 겹으로 보인다(실측).
-    if ((e.target as HTMLElement).closest(".bp-day-col, button, .bp-stroke-sel")) return;
+    // 부분 선택 판 위에서 시작한 드래그는 '영역 오리기'다 — 여기서 러버밴드까지 시작하면
+    // 판 전체 선택이 함께 돌아 방금 고른 그림이 풀린다(실측).
+    if (
+      (e.target as HTMLElement).closest(
+        ".bp-day-col, button, .bp-stroke-sel, .bp-region-layer, .bp-region-bar"
+      )
+    ) {
+      return;
+    }
     const p = innerPointC(e.clientX, e.clientY);
     if (!p) return;
     e.preventDefault(); // 러버밴드 중 브라우저 텍스트 선택(파란 긁힘) 방지
@@ -1240,6 +1249,131 @@ export function BroadcastPanel({
       if (other) flashSelHint(`'${other.name}' 레이어에 있어요 — 그 레이어를 골라야 선택돼요`);
     }
   }
+
+  // ── 그림 부분 선택(영역 오려내기) ────────────────────────────────────────
+  // 붙여넣은 스크린샷에서 필요한 조각만 쓰고 싶을 때. 지금까지 선택의 최소 단위가 '항목 하나'라,
+  // 스크린샷 일부만 옮기려면 밖에서 잘라 다시 붙여넣어야 했다.
+  //
+  // 오려낸 조각은 **새 image 항목**으로 만든다. 그러면 이동·확대·z순서·복사/붙여넣기·되돌리기가
+  // 전부 이미 있는 경로를 그대로 탄다(부분 선택 전용 상태를 만들면 그중 하나가 반드시 빠진다).
+  const [imgRegion, setImgRegion] = useState<{
+    st: Stroke;
+    rect: { x: number; y: number; w: number; h: number } | null;
+  } | null>(null);
+  const imgRegionRef = useRef<typeof imgRegion>(null);
+  imgRegionRef.current = imgRegion;
+  const regionDragRef = useRef<{ pointerId: number; x0: number; y0: number } | null>(null);
+
+  /** 선택이 그림 한 장일 때만 부분 선택을 걸 수 있다(여러 개를 한 번에 오리는 건 뜻이 모호하다). */
+  const soleImageSel =
+    strokeSel.length === 1 && strokeSel[0].tool === "image" && strokeSel[0].src
+      ? strokeSel[0]
+      : null;
+
+  const imgBox = (st: Stroke) => {
+    const [a, b] = [st.points[0], st.points[st.points.length - 1]];
+    return {
+      x: Math.min(a.x, b.x),
+      y: Math.min(a.y, b.y),
+      w: Math.abs(b.x - a.x),
+      h: Math.abs(b.y - a.y)
+    };
+  };
+
+  /** 판 좌표 영역 → 그 그림의 픽셀 좌표. 확대해 놓은 그림도 원본 해상도로 오려야 안 뭉갠다. */
+  const cropRegion = useCallback(
+    (
+      st: Stroke,
+      rect: { x: number; y: number; w: number; h: number },
+      hole: boolean
+    ): { src: string; holeSrc?: string } | null => {
+      const img = st.src ? imgCache.current.get(st.src) : null;
+      if (!img || !img.complete || img.naturalWidth === 0) return null;
+      const box = imgBox(st);
+      if (box.w < 1 || box.h < 1) return null;
+      const kx = img.naturalWidth / box.w;
+      const ky = img.naturalHeight / box.h;
+      const sx = Math.max(0, Math.round((rect.x - box.x) * kx));
+      const sy = Math.max(0, Math.round((rect.y - box.y) * ky));
+      const sw = Math.max(1, Math.min(img.naturalWidth - sx, Math.round(rect.w * kx)));
+      const sh = Math.max(1, Math.min(img.naturalHeight - sy, Math.round(rect.h * ky)));
+      const cut = document.createElement("canvas");
+      cut.width = sw;
+      cut.height = sh;
+      const cctx = cut.getContext("2d");
+      if (!cctx) return null;
+      cctx.drawImage(img, sx, sy, sw, sh, 0, 0, sw, sh);
+      let holeSrc: string | undefined;
+      if (hole) {
+        // '옮기기'는 원본에서 그 자리가 비어야 한다 — 안 비우면 복사와 구분이 안 된다.
+        const rest = document.createElement("canvas");
+        rest.width = img.naturalWidth;
+        rest.height = img.naturalHeight;
+        const rctx = rest.getContext("2d");
+        if (!rctx) return null;
+        rctx.drawImage(img, 0, 0);
+        rctx.clearRect(sx, sy, sw, sh);
+        holeSrc = rest.toDataURL("image/png");
+      }
+      try {
+        return { src: cut.toDataURL("image/png"), holeSrc };
+      } catch {
+        // 외부 출처 그림이면 캔버스가 오염돼 내보내기가 막힌다 — 조용히 포기한다(앱은 그대로).
+        return null;
+      }
+    },
+    []
+  );
+
+  /** 영역 확정. move=true면 원본에서 그 부분을 지운다(=옮기기), false면 원본을 그대로 둔다(=복사). */
+  const commitRegionRef = useRef<(move: boolean) => void>(() => {});
+  const commitRegion = useCallback(
+    (move: boolean) => {
+      const cur = imgRegionRef.current;
+      if (!cur?.rect || cur.rect.w < 4 || cur.rect.h < 4) return;
+      const cropped = cropRegion(cur.st, cur.rect, move);
+      if (!cropped) {
+        flashSelHint("이 그림은 오려낼 수 없어요(외부 출처)");
+        setImgRegion(null);
+        return;
+      }
+      const before = store.strokes().map((x) => ({ ...x, points: x.points.map((pt) => ({ ...pt })) }));
+      // 복사는 원본이 그대로 남으므로 살짝 어긋나게 놓는다 — 겹쳐 놓으면 옮긴 건지 만 건지 모른다.
+      const off = move ? 0 : 12;
+      const piece: Stroke = {
+        tool: "image",
+        layer: cur.st.layer,
+        color: "#000",
+        width: 1,
+        src: cropped.src,
+        points: [
+          { x: cur.rect.x + off, y: cur.rect.y + off },
+          { x: cur.rect.x + cur.rect.w + off, y: cur.rect.y + cur.rect.h + off }
+        ]
+      };
+      const live = store.strokes();
+      if (move && cropped.holeSrc) {
+        const target = live.find((x) => x === cur.st);
+        if (target) target.src = cropped.holeSrc;
+      }
+      const after = [...live, piece];
+      store.setStrokes(after);
+      pushHist({ t: "scene", before, after: after.map((x) => ({ ...x, points: x.points.map((pt) => ({ ...pt })) })) });
+      replayLayerFnRef.current(cur.st.layer);
+      setStrokeVersion((v) => v + 1);
+      setImgRegion(null);
+      setStrokeSel([piece]); // 떼자마자 선택 — 바로 끌어 옮길 수 있게
+      hapticTick();
+    },
+    [cropRegion, store, pushHist]
+  );
+  commitRegionRef.current = commitRegion;
+  // 대상이 사라지거나(삭제·되돌리기) 선택·도구·레이어가 바뀌면 부분 선택은 뜻을 잃는다 — 즉시 접는다.
+  useEffect(() => {
+    if (!imgRegion) return;
+    const alive = store.strokes().includes(imgRegion.st);
+    if (!alive || tool !== "select" || imgRegion.st.layer !== activeLayerId) setImgRegion(null);
+  }, [imgRegion, tool, activeLayerId, store, strokeVersion]);
 
   // ── 그림 붙여넣기·드롭 ──
   // 이미지는 장면 배열의 한 항목(tool:"image")으로 들어간다 — 그래야 z순서·선택·이동/확대·
@@ -2760,7 +2894,11 @@ export function BroadcastPanel({
       // 색 팝오버가 열려 있는 동안엔 팝오버가 키보드(Esc/입력)를 갖는다 — 패널 단축키 정지.
       if (colorPopRef.current) return;
       if (e.key === "Escape") {
-        // 우선순위: 스포이드 취소 → 카드/획 다중선택 해제 → 날짜 선택 해제 → 창 닫기(한 번에 하나).
+        // 우선순위: 부분 선택 취소 → 스포이드 취소 → 카드/획 다중선택 해제 → 날짜 선택 해제 → 창 닫기.
+        if (imgRegionRef.current) {
+          setImgRegion(null);
+          return;
+        }
         if (pickingRef.current) {
           setPicking(false);
           setPickPreview(null);
@@ -2785,6 +2923,13 @@ export function BroadcastPanel({
       // 넣더라도 다른 앱이 읽을 수 없다.
       if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
         const k = e.key.toLowerCase();
+        // 영역이 잡혀 있으면 복사/잘라내기는 '그 영역'을 뜻한다 — 항목 전체가 아니라.
+        const region = imgRegionRef.current;
+        if ((k === "c" || k === "x") && region?.rect) {
+          e.preventDefault();
+          commitRegionRef.current(k === "x");
+          return;
+        }
         if ((k === "c" || k === "x") && strokeSelRef.current.length > 0) {
           e.preventDefault();
           const actL = layersRef.current.find((l) => l.id === activeLayerIdRef.current && l.vis);
@@ -3362,6 +3507,8 @@ export function BroadcastPanel({
                     ["O", "원"],
                     ["I", "스포이드(색 집기)"],
                     ["Alt+클릭", "그리는 중에도 바로 색 집기"],
+                    ["그림 선택 → 영역 선택", "그림 일부만 오려 옮기기·복사"],
+                    ["Ctrl+C / Ctrl+X", "영역이 잡혀 있으면 그 영역만 복사 / 옮기기"],
                     ["[ / ]", "굵기 줄이기 / 키우기"],
                     ["Shift+드래그", "정비율(45°·정사각형·정원)"],
                     ["Ctrl+Z", "실행 취소"],
@@ -3943,6 +4090,120 @@ export function BroadcastPanel({
                 onPointerMove={onStrokeScaleMove}
                 onPointerUp={onStrokeScaleUp}
               />
+              {/* 그림 한 장만 골랐을 때 — 그 안에서 필요한 조각만 오려낼 수 있다. */}
+              {soleImageSel && !imgRegion ? (
+                <button
+                  className="bp-region-enter"
+                  data-act="bp-region-enter"
+                  onPointerDown={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    hapticTick();
+                    setImgRegion({ st: soleImageSel, rect: null });
+                  }}
+                  title="그림 안에서 영역만 골라 옮기거나 복사"
+                  type="button"
+                >
+                  <Crop aria-hidden="true" size={13} />
+                  영역 선택
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+          {/* 부분 선택 — 그림 위에만 깔리는 얇은 판. 여기서만 드래그를 받아 다른 조작과 안 섞인다. */}
+          {imgRegion ? (
+            <div
+              className="bp-region-layer"
+              style={{
+                left: imgBox(imgRegion.st).x,
+                top: imgBox(imgRegion.st).y,
+                width: imgBox(imgRegion.st).w,
+                height: imgBox(imgRegion.st).h
+              }}
+              onPointerDown={(e) => {
+                if (e.button !== 0) return;
+                e.stopPropagation();
+                const host = e.currentTarget.getBoundingClientRect();
+                const box = imgBox(imgRegion.st);
+                regionDragRef.current = {
+                  pointerId: e.pointerId,
+                  x0: box.x + (e.clientX - host.left),
+                  y0: box.y + (e.clientY - host.top)
+                };
+                e.currentTarget.setPointerCapture(e.pointerId);
+                setImgRegion((cur) => (cur ? { ...cur, rect: null } : cur));
+              }}
+              onPointerMove={(e) => {
+                const d = regionDragRef.current;
+                if (!d || d.pointerId !== e.pointerId) return;
+                const host = e.currentTarget.getBoundingClientRect();
+                const box = imgBox(imgRegion.st);
+                const x1 = box.x + (e.clientX - host.left);
+                const y1 = box.y + (e.clientY - host.top);
+                // 그림 밖으로는 못 나간다 — 없는 곳을 오릴 수는 없다.
+                const cx = Math.min(Math.max(x1, box.x), box.x + box.w);
+                const cy = Math.min(Math.max(y1, box.y), box.y + box.h);
+                setImgRegion((cur) =>
+                  cur
+                    ? {
+                        ...cur,
+                        rect: {
+                          x: Math.min(d.x0, cx),
+                          y: Math.min(d.y0, cy),
+                          w: Math.abs(cx - d.x0),
+                          h: Math.abs(cy - d.y0)
+                        }
+                      }
+                    : cur
+                );
+              }}
+              onPointerUp={(e) => {
+                if (regionDragRef.current?.pointerId === e.pointerId) {
+                  regionDragRef.current = null;
+                  hapticTick();
+                }
+              }}
+              onLostPointerCapture={() => {
+                regionDragRef.current = null;
+              }}
+            >
+              {imgRegion.rect ? (
+                <span
+                  aria-hidden="true"
+                  className="bp-region-rect"
+                  style={{
+                    left: imgRegion.rect.x - imgBox(imgRegion.st).x,
+                    top: imgRegion.rect.y - imgBox(imgRegion.st).y,
+                    width: imgRegion.rect.w,
+                    height: imgRegion.rect.h
+                  }}
+                />
+              ) : null}
+            </div>
+          ) : null}
+          {/* 확정 막대 — 영역 바로 아래. 여기서 옮길지 복사할지 고른다(Ctrl+X / Ctrl+C도 같다). */}
+          {imgRegion?.rect && imgRegion.rect.w >= 4 && imgRegion.rect.h >= 4 ? (
+            <div
+              className="bp-region-bar"
+              style={{ left: imgRegion.rect.x, top: imgRegion.rect.y + imgRegion.rect.h + 8 }}
+            >
+              <button data-act="bp-region-move" onClick={() => commitRegion(true)} type="button">
+                옮기기
+              </button>
+              <button data-act="bp-region-copy" onClick={() => commitRegion(false)} type="button">
+                복사
+              </button>
+              <button
+                className="ghost"
+                data-act="bp-region-cancel"
+                onClick={() => {
+                  hapticTick();
+                  setImgRegion(null);
+                }}
+                type="button"
+              >
+                취소
+              </button>
             </div>
           ) : null}
           {/* 선택 안내 — 다른 레이어에 있어 안 잡힌 경우처럼, 결과가 '아무 일도 안 일어남'일 때만. */}
