@@ -1543,6 +1543,8 @@ export function PublicPoster({
   const [detailPopSize, setDetailPopSize] = useState<{ w: number; h: number } | null>(null);
   // 화면 밖에서 놓은 직후 스프링 복귀 중 — className은 React 소유라 상태로(classList는 리렌더에 지워짐).
   const [detailSnapback, setDetailSnapback] = useState(false);
+  // 드래그 중 표시도 상태로 — classList로 붙이면 리렌더(카운트다운·하이프)에 지워진다.
+  const [detailDragging, setDetailDragging] = useState(false);
   // 연속 튕김 보장 — 이전 해제 타이머가 새 스냅백 중 발화해 스프링을 끊지 않게 리셋.
   const detailSnapTimerRef = useRef<number | null>(null);
   const detailManualRef = useRef<typeof detailManual>(null);
@@ -1630,6 +1632,20 @@ export function PublicPoster({
     const base = { left: baseRect.left, top: baseRect.top };
     let moved = false;
     let last = base;
+    // 리렌더가 끼어들어도 선이 옛 자리로 돌아가지 않게, 이동 중에도 상태를 따라 올린다.
+    // (이 팝오버는 떡밥 카운트다운·하이프가 초·100ms마다 리렌더를 일으킨다. 렌더는 선을
+    //  detailManual/detailPos로 다시 그리므로, 상태가 그대로면 매 프레임 옛 좌표로 덮여
+    //  '끌 때는 안 따라오고 놓으면 맞는' 증상이 된다 — 2026-08-04 실측.)
+    // 프레임당 1회로 묶어 포인터 이벤트마다 렌더가 도는 건 막는다.
+    let syncRaf = 0;
+    const syncState = () => {
+      if (syncRaf) return;
+      syncRaf = requestAnimationFrame(() => {
+        syncRaf = 0;
+        detailManualRef.current = last;
+        setDetailManual(last);
+      });
+    };
     const onMove = (ev: PointerEvent) => {
       // up 유실 자가 치유 — 버튼이 안 눌린 move가 오면(창 밖 릴리즈 등) 즉시 종료 처리.
       if (ev.buttons === 0) {
@@ -1642,7 +1658,7 @@ export function PublicPoster({
       if (!moved) {
         moved = true;
         detailDragActiveRef.current = true;
-        sheet.classList.add("pop-dragging");
+        setDetailDragging(true);
       }
       const w = sheet.offsetWidth;
       last = {
@@ -1656,8 +1672,13 @@ export function PublicPoster({
         const edge = detailEdgePoint(last, { w, h: sheet.offsetHeight }, a);
         applyLeaderGeom(detailLineGroupRef.current, detailClipRectRef.current, a, edge);
       }
+      syncState();
     };
     const onUp = () => {
+      if (syncRaf) {
+        cancelAnimationFrame(syncRaf);
+        syncRaf = 0;
+      }
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
       window.removeEventListener("pointercancel", onUp);
@@ -1689,7 +1710,7 @@ export function PublicPoster({
         }
       }
       detailDragActiveRef.current = false;
-      sheet.classList.remove("pop-dragging");
+      setDetailDragging(false);
     };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", onUp);
@@ -5343,7 +5364,9 @@ export function PublicPoster({
                 <div
                   aria-label="일정 상세"
                   aria-modal="true"
-                  className={`agenda-detail-sheet${detailSnapback ? " pop-snapback" : ""}${
+                  className={`agenda-detail-sheet${detailDragging ? " pop-dragging" : ""}${
+                    detailSnapback ? " pop-snapback" : ""
+                  }${
                     detailHype ? " is-hype" : ""
                   }${teaserActive ? " is-teaser" : ""}${detailFinal ? " is-final" : ""}${
                     detailJustRevealed ? " reveal-burst" : ""
