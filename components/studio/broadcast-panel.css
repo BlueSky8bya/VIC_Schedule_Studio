@@ -1397,6 +1397,87 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
       4 20,
     crosshair;
 }
+/* 스포이드 — 집을 지점을 정확히 찍어야 하므로 십자 커서 하나면 충분하다(도구 그림을 얹으면
+   집는 픽셀을 가린다). */
+.bp-draw-surface[data-cursor="pick"] {
+  cursor:
+    url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M18 3.5a2.1 2.1 0 0 1 3 3l-2 2-3-3z' fill='%234b4468' stroke='white' stroke-width='1.4'/%3E%3Cpath d='M15 6.5l3 3-9 9H6v-3z' fill='%23a5b4fc' stroke='white' stroke-width='1.4'/%3E%3C/svg%3E")
+      5 19,
+    crosshair;
+}
+
+/* 집기 전 색 미리보기 — 커서를 따라다니는 작은 알약. 판은 확대/축소 변환 안에 있어 좌표는
+   판 기준 상대값이다(fixed로 두면 변환만큼 어긋난다). 포인터 오른쪽 위에 놓아 집을 픽셀을 안 가린다. */
+.bp-pick-loupe {
+  position: absolute;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid rgb(75 68 104 / 18%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 94%);
+  box-shadow: 0 4px 14px rgb(31 24 59 / 18%);
+  color: #3d3757;
+  font-size: 10.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  transform: translate(14px, -30px);
+  pointer-events: none;
+}
+
+.bp-pick-loupe i {
+  width: 14px;
+  height: 14px;
+  border: 1px solid rgb(0 0 0 / 18%);
+  border-radius: 50%;
+}
+
+/* 스포이드 버튼 — 색 팔레트 옆(색을 정하는 일이 모여 있는 자리). '직접 고르기'와 같은 알약 어휘. */
+.bp-eyedrop {
+  display: flex;
+  height: 48px;
+  min-width: 58px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 10px 4px;
+  border: 1px solid rgb(75 68 104 / 15%);
+  border-radius: 9px;
+  background: #ffffff;
+  color: #5f5874;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-1) var(--ease),
+    box-shadow var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
+}
+
+.bp-eyedrop span {
+  font-size: 9.5px;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.bp-eyedrop:active {
+  transform: scale(0.94);
+}
+
+.bp-eyedrop:hover,
+.bp-eyedrop.on {
+  border-color: #7c6cf0;
+  box-shadow: 0 0 0 2px rgb(124 108 240 / 14%);
+}
+
+/* 켜진 동안엔 '지금 집는 중'이 색으로 남는다 — 모드는 눈에 보여야 빠져나올 줄 안다. */
+.bp-eyedrop.on {
+  background: #f2efff;
+  color: #4c3fd0;
+}
+
 .bp-draw-surface.stylus-active {
   cursor: none !important;
 }

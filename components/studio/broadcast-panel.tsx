@@ -36,6 +36,7 @@ import {
   ChevronRight,
   Circle,
   Eraser,
+  Pipette,
   Eye,
   EyeOff,
   GripVertical,
@@ -1751,6 +1752,85 @@ export function BroadcastPanel({
 
   // 도구 버튼이 켜졌는데 일정/잠금/숨김 레이어라 실제 입력은 막히는 dead state를 없앤다.
   // 사용자 레이어 의도를 존중해 자동 생성·잠금 해제·표시 전환은 하지 않는다.
+  // ── 스포이드 ──────────────────────────────────────────────────────────────
+  // 도구(BroadcastTool)로 만들지 않는다. 스포이드는 획을 남기지 않고 색만 집어 오는 '한 번의 동작'이라,
+  // 도구 타입에 넣으면 그리기·재생·내보내기의 모든 분기가 "이건 그릴 게 없다"를 따로 처리해야 한다.
+  // 대신 모드 하나로 두고, 집으면 원래 도구로 돌아온다(Procreate·포토샵의 Alt 집기와 같은 감촉).
+  const [picking, setPicking] = useState(false);
+  const pickingRef = useRef(false);
+  pickingRef.current = picking;
+  const [pickPreview, setPickPreview] = useState<{ x: number; y: number; hex: string } | null>(null);
+
+  const toHex = (r: number, g: number, b: number): string =>
+    "#" + [r, g, b].map((v) => v.toString(16).padStart(2, "0")).join("");
+
+  /** 화면 좌표 아래의 색. 그림 레이어를 위에서부터 훑고, 투명하면 그 아래 DOM 색을 읽는다. */
+  const sampleColorAt = useCallback(
+    (clientX: number, clientY: number): string | null => {
+      // 1) 그림 레이어 — 스택 위(z 큰 것)부터. 불투명한 픽셀을 처음 만나면 그게 보이는 색이다.
+      const order = [...stackRef.current].filter((id) => id !== BG_LAYER_ID);
+      for (const id of order) {
+        const layer = layersRef.current.find((l) => l.id === id);
+        if (!layer?.vis) continue;
+        const canvas = layerCanvases.current.get(id);
+        if (!canvas) continue;
+        const rect = canvas.getBoundingClientRect();
+        if (
+          clientX < rect.left ||
+          clientX > rect.right ||
+          clientY < rect.top ||
+          clientY > rect.bottom
+        ) {
+          continue;
+        }
+        // 캔버스 픽셀은 CSS 픽셀이 아니다 — 실제 버퍼 크기 비율로 환산한다(확대·DPR 모두 흡수).
+        const px = Math.round(((clientX - rect.left) / rect.width) * canvas.width);
+        const py = Math.round(((clientY - rect.top) / rect.height) * canvas.height);
+        try {
+          const d = canvas.getContext("2d")?.getImageData(px, py, 1, 1).data;
+          // 형광펜처럼 반투명한 획도 '집을 수 있는 색'이다. 다만 거의 투명하면 아래를 본다.
+          if (d && d[3] > 24) return toHex(d[0], d[1], d[2]);
+        } catch {
+          // 외부 출처 그림이 섞이면 캔버스가 오염돼 읽기가 막힌다 — 아래 DOM 경로로 넘어간다.
+        }
+      }
+      // 2) DOM — 날짜 카드·태그 색처럼 캔버스가 아닌 표면. 투명하지 않은 첫 배경색을 쓴다.
+      // elementsFromPoint(복수)를 쓴다: 판 위에는 투명한 입력면이 늘 덮여 있어 단수 버전은
+      // 항상 그 면만 준다. 입력면·캔버스·커서 오버레이는 건너뛰고 진짜 그려진 표면부터 본다.
+      const hits = document.elementsFromPoint(clientX, clientY) as HTMLElement[];
+      for (const hit of hits) {
+        if (hit.closest(".bp-draw-surface") || hit.tagName === "CANVAS") continue;
+        let el: HTMLElement | null = hit;
+        while (el) {
+          const bg = getComputedStyle(el).backgroundColor;
+          const m = bg.match(/rgba?\(([^)]+)\)/);
+          if (m) {
+            const parts = m[1].split(",").map((v) => parseFloat(v.trim()));
+            const alpha = parts[3] ?? 1;
+            if (alpha > 0.05) return toHex(parts[0] | 0, parts[1] | 0, parts[2] | 0);
+          }
+          el = el.parentElement;
+        }
+      }
+      return null;
+    },
+    []
+  );
+
+  /** 집어서 펜 색으로. 집고 나면 스포이드는 스스로 꺼진다(계속 집는 모드가 아니다). */
+  const pickColorAt = useCallback(
+    (clientX: number, clientY: number): boolean => {
+      const hex = sampleColorAt(clientX, clientY);
+      setPicking(false);
+      setPickPreview(null);
+      if (!hex) return false;
+      hapticTick();
+      setPenColor(hex);
+      return true;
+    },
+    [sampleColorAt]
+  );
+
   function activateDrawingTool(nextTool: BroadcastTool) {
     const layerId = resolveWritableDrawingLayerId(
       layersRef.current,
@@ -1975,6 +2055,13 @@ export function BroadcastPanel({
   function onDrawDown(e: React.PointerEvent<HTMLDivElement>) {
     const rect = boardInnerRef.current?.getBoundingClientRect() ?? null;
     updateStylusCursor(e, rect);
+    // 스포이드 모드거나 Alt를 누른 채면 색만 집고 획은 시작하지 않는다(Alt 집기 = 그림판 관례).
+    if (e.button === 0 && (picking || e.altKey)) {
+      e.preventDefault();
+      e.stopPropagation();
+      pickColorAt(e.clientX, e.clientY);
+      return;
+    }
     if (tool === "select" || !activeLayer || toolBlocked || e.button !== 0) return;
     const penContact = isPenContact(e.pointerType, e.pressure, e.buttons);
     if (penContact) lastPenContactTsRef.current = e.timeStamp;
@@ -2023,6 +2110,17 @@ export function BroadcastPanel({
     scheduleFlush();
   }
   function onDrawMove(e: React.PointerEvent<HTMLDivElement>) {
+    // 집기 전에 무슨 색인지 보여준다 — 안 보여주면 "집었는데 저 색이 아니네"를 되돌리기로 고쳐야 한다.
+    if (picking) {
+      const hex = sampleColorAt(e.clientX, e.clientY);
+      // 좌표는 **판 기준 상대값**으로 둔다. 판은 확대/축소 변환 안에 있어서 뷰포트 좌표(fixed)를
+      // 쓰면 그 변환만큼 어긋난 자리에 뜬다(실측: 커서에서 300px 옆).
+      const r = boardInnerRef.current?.getBoundingClientRect();
+      setPickPreview(
+        hex && r ? { x: e.clientX - r.left, y: e.clientY - r.top, hex } : null
+      );
+      return;
+    }
     const pendingLive = drawingRef.current;
     const rect =
       e.pointerType === "pen" || pendingLive
@@ -2662,7 +2760,12 @@ export function BroadcastPanel({
       // 색 팝오버가 열려 있는 동안엔 팝오버가 키보드(Esc/입력)를 갖는다 — 패널 단축키 정지.
       if (colorPopRef.current) return;
       if (e.key === "Escape") {
-        // 우선순위: 카드/획 다중선택 해제 → 날짜 선택 해제 → 창 닫기(한 번에 하나).
+        // 우선순위: 스포이드 취소 → 카드/획 다중선택 해제 → 날짜 선택 해제 → 창 닫기(한 번에 하나).
+        if (pickingRef.current) {
+          setPicking(false);
+          setPickPreview(null);
+          return;
+        }
         if (colSelRef.current.size > 0 || strokeSelRef.current.length > 0) {
           setColSel(new Set());
           setStrokeSel([]);
@@ -2879,8 +2982,15 @@ export function BroadcastPanel({
         return;
       }
       const k = e.key.toLowerCase();
+      if (k === "i" && !e.shiftKey) {
+        hapticTick();
+        setPicking((v) => !v);
+        setPickPreview(null);
+        return;
+      }
       const mapped = TOOL_KEYS[k];
       if (mapped && !e.shiftKey) {
+        setPicking(false);
         hapticTick();
         if (mapped === "select") setTool("select");
         else activateDrawingTool(mapped);
@@ -3250,6 +3360,8 @@ export function BroadcastPanel({
                     ["A", "화살표"],
                     ["R", "사각형"],
                     ["O", "원"],
+                    ["I", "스포이드(색 집기)"],
+                    ["Alt+클릭", "그리는 중에도 바로 색 집기"],
                     ["[ / ]", "굵기 줄이기 / 키우기"],
                     ["Shift+드래그", "정비율(45°·정사각형·정원)"],
                     ["Ctrl+Z", "실행 취소"],
@@ -3257,7 +3369,7 @@ export function BroadcastPanel({
                     ["Ctrl+A", "카드 전체 선택(일정 레이어)"],
                     ["Delete", "선택한 카드·획 삭제"],
                     ["방향키", "선택 카드 이동(Shift=10px)"],
-                    ["Esc", "선택 해제 → 창 닫기"],
+                    ["Esc", "스포이드 취소 → 선택 해제 → 창 닫기"],
                     ["?", "이 안내 열기/닫기"]
                   ] as const
                 ).map(([k, desc]) => (
@@ -3391,6 +3503,24 @@ export function BroadcastPanel({
                     가운데는 현재 색 — 상태 표시와 진입점을 한 버튼이 겸한다. */}
                 <i aria-hidden="true" className="bp-custom-ring" style={{ background: penColor }} />
                 <span>직접 고르기</span>
+              </button>
+              {/* 스포이드는 '색을 정하는 일'이라 도구줄이 아니라 색 팔레트 옆에 둔다(손이 가는 자리).
+                  켜면 판 위에서 색을 집고, 집으면 스스로 꺼져 직전 도구로 돌아온다. */}
+              <button
+                aria-label="스포이드로 색 집기"
+                aria-pressed={picking}
+                className={`bp-eyedrop${picking ? " on" : ""}`}
+                data-act="bp-eyedrop"
+                title="스포이드 (I) · Alt+클릭으로도 집기"
+                type="button"
+                onClick={() => {
+                  hapticTick();
+                  setPicking((v) => !v);
+                  setPickPreview(null);
+                }}
+              >
+                <Pipette aria-hidden="true" size={16} />
+                <span>스포이드</span>
               </button>
             </div>
             <em className="bp-group-label">색상 팔레트</em>
@@ -3710,10 +3840,10 @@ export function BroadcastPanel({
           <div
             aria-hidden="true"
             className="bp-draw-surface"
-            data-cursor={tool === "pen" || tool === "hl" ? tool : undefined}
+            data-cursor={picking ? "pick" : tool === "pen" || tool === "hl" ? tool : undefined}
             ref={drawSurfaceRef}
             style={{
-              pointerEvents: tool === "select" ? "none" : "auto",
+              pointerEvents: tool === "select" && !picking ? "none" : "auto",
               // 지우개: 실제 지워지는 크기 그대로의 원 커서 — 어디까지 닦일지 보고 지운다.
               cursor: tool === "eraser" ? eraserCursor : undefined
             }}
@@ -3725,6 +3855,18 @@ export function BroadcastPanel({
             onPointerMove={onDrawMove}
             onPointerUp={endDraw}
           >
+            {/* 집기 전 색 미리보기 — 마우스를 따라다니는 작은 알약. 집고 나서 "이 색이 아니네"를
+                되돌리기로 고치는 왕복을 없앤다. */}
+            {picking && pickPreview ? (
+              <span
+                aria-hidden="true"
+                className="bp-pick-loupe"
+                style={{ left: pickPreview.x, top: pickPreview.y }}
+              >
+                <i style={{ background: pickPreview.hex }} />
+                {pickPreview.hex.toUpperCase()}
+              </span>
+            ) : null}
             {/* 스타일러스는 OS가 CSS 커서를 숨길 수 있어 별도 오버레이로 도구·영향 범위를 표시.
                 마우스는 기존 네이티브 cursor를 그대로 써 이 DOM이 보이지 않는다. */}
             <span

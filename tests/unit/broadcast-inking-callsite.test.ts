@@ -310,3 +310,37 @@ describe("broadcast inking callsite contracts", () => {
     expect(panelCss).toContain(".bp-stylus-glyph");
   });
 });
+
+// 스포이드 — 획을 남기지 않는 '한 번의 동작'이라 BroadcastTool로 만들지 않는다. 도구 타입에
+// 넣으면 그리기·재생·내보내기의 모든 분기가 "이건 그릴 게 없다"를 따로 처리해야 한다.
+describe("스포이드 계약", () => {
+  it("도구 타입이 아니라 모드다", () => {
+    const engine = readFileSync(join(repoRoot, "lib/broadcast/stroke-engine.ts"), "utf8");
+    expect(engine).not.toContain('"eyedrop"');
+    expect(panelSource).toContain("const [picking, setPicking]");
+  });
+
+  it("스포이드 중이거나 Alt를 누르면 획을 시작하지 않는다", () => {
+    const down = between("function onDrawDown", "function onDrawMove");
+    const pickAt = down.indexOf("pickColorAt(e.clientX, e.clientY)");
+    const startStroke = down.indexOf("drawingRef.current = {");
+    expect(pickAt).toBeGreaterThanOrEqual(0);
+    expect(down).toContain("picking || e.altKey");
+    expect(startStroke).toBeGreaterThan(pickAt);
+  });
+
+  it("집으면 스스로 꺼진다(계속 집는 모드가 아니다)", () => {
+    const pick = panelSource.slice(
+      panelSource.indexOf("const pickColorAt"),
+      panelSource.indexOf("function activateDrawingTool")
+    );
+    expect(pick).toContain("setPicking(false)");
+    expect(pick).toContain("setPenColor(hex)");
+  });
+
+  it("미리보기 좌표는 판 기준 상대값이다(판이 변환 안에 있어 fixed는 어긋난다)", () => {
+    const move = between("function onDrawMove", "function endDraw");
+    expect(move).toContain("boardInnerRef.current?.getBoundingClientRect()");
+    expect(move).toContain("e.clientX - r.left");
+  });
+});
