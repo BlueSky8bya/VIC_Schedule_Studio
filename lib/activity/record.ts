@@ -8,6 +8,7 @@ import {
   accountHashForRole,
   deviceFromUserAgent,
   isClientKind,
+  isDiagKind,
   isInternalRole,
   isServerKind,
   sanitizeMeta,
@@ -75,7 +76,8 @@ async function buildRow(input: ActivityInput): Promise<Row | null> {
     dur_ms:
       typeof input.durMs === "number" && Number.isFinite(input.durMs)
         ? Math.max(0, Math.round(input.durMs))
-        : null
+        : null,
+    diag: isDiagKind(input.kind)
   };
 }
 
@@ -93,12 +95,15 @@ type Row = {
   target: string | null;
   meta: Record<string, unknown> | null;
   dur_ms: number | null;
+  diag: boolean; // 진단 층(보존 3일) — 타임라인 기본 조회에서 빠진다
 };
 
 async function persist(rows: Row[]): Promise<void> {
   if (rows.length === 0) return;
-  const events = rows.filter((r) => isInternalRole(r.role));
-  const counted = rows.filter((r) => !isInternalRole(r.role));
+  // 진단 행은 역할과 무관하게 이벤트로 남긴다 — 개수로 접으면 '무슨 일이 있었나'가 사라져
+  // 애초에 이 층을 만든 이유가 없어진다. 대신 보존이 3일로 짧다.
+  const events = rows.filter((r) => r.diag || isInternalRole(r.role));
+  const counted = rows.filter((r) => !r.diag && !isInternalRole(r.role));
   try {
     const sb = createSupabaseAdminClient();
     if (!sb) return;

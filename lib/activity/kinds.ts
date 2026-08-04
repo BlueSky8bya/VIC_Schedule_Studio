@@ -61,7 +61,14 @@ export const CLIENT_KINDS = [
   "export.clipboard",
   "decorate.open",
   "zoom.change",
-  "settings.toggle"
+  "settings.toggle",
+  // ── 진단(diag) 층 — 보존 3일. '무엇을 했나'가 아니라 '화면이 무엇을 그렸나'를 남긴다.
+  // 최초공개가 시청자 화면에 반영되지 않던 문제를 쫓을 때, 저장과 렌더 사이가 통째로 비어 있어
+  // 코드를 읽어서야 원인을 알았다. 그 구간을 로그로 메운다.
+  "diag.teaser",   // 떡밥 카드가 어떤 상태로 그려졌나(카운트다운/빈 자리/평문)
+  "diag.reveal",   // 공개 요청의 결과(몇 개 물어봐서 몇 개가 실제로 공개됐나)
+  "diag.visible",  // 탭 가시성 전이(실시간 '탭만 열림' 오판을 쫓기 위해)
+  "diag.refresh"   // 화면 갱신 트리거(새로고침·router.refresh)
 ] as const;
 
 export type ServerKind = (typeof SERVER_KINDS)[number];
@@ -80,7 +87,18 @@ export function isServerKind(kind: string): kind is ServerKind {
 }
 
 // 패널 표시용 라벨. 없으면 kind 원문을 그대로 쓴다.
+/** 진단 층인가 — 보존이 3일로 짧고, 타임라인 기본 조회에서 빠진다. */
+export function isDiagKind(kind: string): boolean {
+  return kind.startsWith("diag.");
+}
+/** 진단 로그 보존(일). 버그를 쫓을 때만 쓰므로 "어제 그거"까지면 충분하다. */
+export const DIAG_RETENTION_DAYS = 3;
+
 export const KIND_LABEL: Record<string, string> = {
+  "diag.teaser": "진단: 떡밥 카드",
+  "diag.reveal": "진단: 공개 요청",
+  "diag.visible": "진단: 탭 가시성",
+  "diag.refresh": "진단: 화면 갱신",
   "ui.click": "버튼",
   "section.enter": "패널 진입",
   "section.leave": "패널 이탈",

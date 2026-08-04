@@ -686,13 +686,37 @@ function formatRevealKst(iso: string): string {
 
 // 공개 시각이 이미 지난 떡밥(캐시 지연으로 서버가 아직 가린 stub을 보낸 경우) — 보라 ??? 하이프
 // 카드를 깜빡 띄우지 않고, 자리만 잡는 중립 placeholder를 두고 즉시 실제 내용을 받아 갈아끼운다.
-function TeaserRevealing({ onReveal, className }: { onReveal: () => void; className: string }) {
+function TeaserRevealing({
+  onReveal,
+  className,
+  eventId,
+  revealAt
+}: {
+  onReveal: () => void;
+  className: string;
+  eventId: string;
+  revealAt?: string;
+}) {
   const fired = useRef(false);
   const ref = useRef(onReveal);
   ref.current = onReveal;
+  // 진단 로그에 쓸 값도 ref로 — 이 effect는 마운트 1회만 돌아야 한다(재시도 interval 재설치 금지).
+  const diag = useRef({ eventId, revealAt });
+  diag.current = { eventId, revealAt };
   useEffect(() => {
     if (!fired.current) {
       fired.current = true;
+      // 진단(3일): 이 자리는 '비어 있는 카드'다. 여기서 못 빠져나오면 시청자에게 빈 칸이 보인다 —
+      // 실제로 그랬고, 그때 로그가 없어 코드를 읽어서야 원인을 알았다.
+      const d = diag.current;
+      logActivity("diag.teaser", {
+        target: d.eventId,
+        meta: {
+          phase: "placeholder",
+          revealAt: d.revealAt ?? "",
+          pastSec: d.revealAt ? Math.round((Date.now() - Date.parse(d.revealAt)) / 1000) : 0
+        }
+      });
       ref.current();
     }
     const id = window.setInterval(() => ref.current(), 2000);
@@ -1655,13 +1679,26 @@ export function PublicPoster({
     if (celebrate) liveWatchedRef.current.add(id);
     revealTeaserAction([id])
       .then((list) => {
+        // 진단(3일): 저장과 렌더 사이가 비어 있어 원인을 코드로만 찾을 수 있었다 — 그 구간을 남긴다.
+        logActivity("diag.reveal", {
+          target: id,
+          meta: {
+            asked: 1,
+            got: list.length,
+            revealed: list.filter((ev) => !ev.teaser).length,
+            stillMasked: list.filter((ev) => ev.teaser).length
+          }
+        });
         if (list.length > 0) {
-          const ids = list.map((ev) => ev.id);
+          // 서버는 '아직 미공개'인 것도 최신 stub으로 돌려준다(공개시각이 미래로 다시 잡힌 경우).
+          // 그건 공개가 아니므로 축하 연출 대상에서 빼고, 상태만 갈아끼워 카운트다운으로 복귀시킨다.
+          const ids = list.filter((ev) => !ev.teaser).map((ev) => ev.id);
           setRevealedEvents((prev) => {
             const next = { ...prev };
             for (const ev of list) next[ev.id] = ev;
             return next;
           });
+          if (ids.length === 0) return;
           // 팝오버가 그 떡밥을 열고 있으면 닫지 않는다 — 그 자리에서 ???가 실제 일정으로
           // '변신'하는 게 훨씬 좋은 구경거리다(예전엔 닫아버려 클라이맥스를 놓쳤다).
           // 내용 교체는 렌더에서 revealedEvents로 자동 반영된다.
@@ -3856,11 +3893,17 @@ export function PublicPoster({
                 );
               }
               if (!event.publicTitle) {
+                // 공개시각은 지났는데 서버가 준 stub에 제목이 없다 = 캐시 지연. 여기서 멈추면
+                // 카드가 빈 채로 남는다(2026-08-04 실측: 관리자가 공개시각을 미래로 다시 잡자
+                // 서버가 '아직 미공개'라며 빈 배열을 줘서 영원히 빈 칸이었다).
+                // 이제 서버가 최신 stub도 돌려주므로 스스로 카운트다운으로 복귀한다.
                 return (
                   <TeaserRevealing
                     className="public-event teaser-revealing"
+                    eventId={event.id}
                     key={event.id}
                     onReveal={() => revealTeaser(rawEvent.id, false)}
+                    revealAt={event.teaserRevealAt}
                   />
                 );
               }
@@ -4380,8 +4423,10 @@ export function PublicPoster({
                         return (
                           <TeaserRevealing
                             className="agenda-item teaser-revealing"
+                            eventId={event.id}
                             key={event.id}
                             onReveal={() => revealTeaser(rawEvent.id, false)}
+                            revealAt={event.teaserRevealAt}
                           />
                         );
                       }

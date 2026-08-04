@@ -32,6 +32,9 @@ function metaLine(meta: Record<string, unknown> | null): string {
     .join(" · ");
 }
 
+// 복사 텍스트의 줄바꿈. 소스에 개행 리터럴을 직접 쓰면 편집 중 깨지기 쉬워 상수로 둔다.
+const NL = String.fromCharCode(10);
+
 type Item = ActivityVisit["items"][number];
 type Grouped = Item & { repeat: number };
 
@@ -102,12 +105,13 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState<string | null>(null); // 복사 완료 표시(방문 key, 전체는 "*")
   const [open, setOpen] = useState(true); // 옆 카드와 같은 기본 상태
+  const [diag, setDiag] = useState(false); // 진단 층(보존 3일) 포함 — 버그 쫓을 때만
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setErr(null);
-    getActivityDayAction(dateKey)
+    getActivityDayAction(dateKey, diag)
       .then((r) => {
         if (!alive) return;
         if (r.ok) setVisits(r.visits);
@@ -119,7 +123,7 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
     return () => {
       alive = false;
     };
-  }, [dateKey]);
+  }, [dateKey, diag]);
 
   if (loading) {
     // 스켈레톤은 실제 내용이 앉을 자리에 둔다(HCI — 위치 보존).
@@ -153,9 +157,8 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
 
   // 붙여넣어 공유·보관할 수 있는 평문. 화면과 같은 압축(연속 반복 ×N)을 그대로 쓴다 —
   // 화면에서 본 것과 복사한 것이 달라지면 둘 중 뭘 믿을지 모르게 된다.
-  const visitText = (v: ActivityVisit): string => {
-    const head = `[${v.account} · ${ROLE_LABEL[v.role] ?? v.role} · ${deviceLabel(v.device)}] ${hhmm(v.startMs)}–${hhmm(v.endMs)}`;
-    const lines = groupItems(v.items).map((it) => {
+  const visitLines = (items: Item[]): string[] =>
+    groupItems(items).map((it) => {
       const name = itemName(it);
       const parts = [
         hhmm(it.t),
@@ -165,12 +168,52 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
         metaLine(it.meta),
         // 화면에선 숨기는 원본 id를 복사본에는 반드시 남긴다 — 붙여넣어 오류를 찾으려면
         // (이름이 왜 저래? 왜 뭉쳤어?) 원본이 있어야 한다. 이름과 같으면 생략.
-        it.target && it.target !== name ? `[${it.kind} ${it.target}]` : ""
+        it.target && it.target !== name ? `[${it.kind} ${it.target}]` : `[${it.kind}]`
       ].filter(Boolean);
       return "  " + parts.join("  ");
     });
-    return [head, ...lines].join("\n");
+
+  const visitHead = (v: ActivityVisit, items: Item[]): string => {
+    const changes = items.filter((i) => i.source === "server").length;
+    const diagN = items.filter((i) => i.kind.startsWith("diag.")).length;
+    return [
+      `[${v.account} · ${ROLE_LABEL[v.role] ?? v.role} · ${deviceLabel(v.device)}] ${hhmm(v.startMs)}–${hhmm(v.endMs)}`,
+      `항목 ${items.length}건 (변경 ${changes} · 진단 ${diagN})`
+    ].join(NL);
   };
+  // 붙여넣으면 바로 원인 분석이 되는 리포트. "이거 했는데 안 됐어요"에 이 한 덩어리만 붙이면
+  // 무엇을 눌렀고 화면이 무엇을 그렸는지가 다 들어 있다.
+  // 진단 층은 기본 조회에서 빠져 있으므로, 복사할 때는 **그 자리에서 다시 받아** 포함시킨다
+  // (사용자가 '진단' 버튼을 켜둔 상태였는지에 결과가 달라지면 안 된다).
+  const buildReport = async (v: ActivityVisit | null): Promise<string> => {
+    let items = v ? v.items : visits.flatMap((x) => x.items);
+    let full = diag;
+    if (!diag) {
+      const r = await getActivityDayAction(dateKey, true);
+      if (r.ok) {
+        full = true;
+        if (v) items = r.visits.find((x) => x.key === v.key)?.items ?? items;
+        else items = r.visits.flatMap((x) => x.items);
+      }
+    }
+    const env = [
+      `# VIC 이용 기록 리포트`,
+      `날짜 ${dateKey}${v ? "" : " (그날 전체)"}`,
+      v ? visitHead(v, items) : `방문 ${visits.length}건 · 항목 ${items.length}건`,
+      `진단 층 ${full ? "포함" : "없음(불러오기 실패)"} · 진단 보존 3일 / 일반 90일`,
+      typeof navigator !== "undefined" ? `브라우저 ${navigator.userAgent}` : "",
+      typeof window !== "undefined"
+        ? `화면 ${window.innerWidth}×${window.innerHeight} · ${window.location.origin}`
+        : "",
+      `복사 시각 ${new Date().toLocaleString("ko-KR")}`,
+      ""
+    ].filter(Boolean);
+    if (v) return [...env, ...visitLines(items)].join(NL);
+    // 그날 전체는 방문별로 나눠 적는다(뭉치면 어느 방문의 일인지 사라진다).
+    const byVisit = visits.map((x) => [visitHead(x, x.items), ...visitLines(x.items)].join(NL));
+    return [...env, ...byVisit].join(NL + NL);
+  };
+
   const copy = async (text: string, key: string) => {
     hapticTick();
     try {
@@ -182,7 +225,10 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
       setCopied(null); // 클립보드 거부(권한·비보안 컨텍스트) — 조용히 실패
     }
   };
-  const allText = `${dateKey}\n\n${visits.map(visitText).join("\n\n")}`;
+  const copyReport = async (v: ActivityVisit | null, key: string) => {
+    setCopied(`${key}:loading`);
+    await copy(await buildReport(v), key);
+  };
 
   return (
     <section className="vcard">
@@ -221,10 +267,23 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
           <button
             className="act-tool"
             data-act="activity-copy"
-            onClick={() => copy(allText, "*")}
+            onClick={() => copyReport(null, "*")}
             type="button"
           >
-            {copied === "*" ? "복사됨" : "복사"}
+            {copied === "*" ? "복사됨" : copied === "*:loading" ? "…" : "복사"}
+          </button>
+          <button
+            aria-pressed={diag}
+            className={`act-tool${diag ? " is-on" : ""}`}
+            data-act="activity-diag"
+            onClick={() => {
+              hapticTick();
+              setDiag((v) => !v);
+            }}
+            title="진단 층까지 화면에 표시 (복사는 항상 포함)"
+            type="button"
+          >
+            진단
           </button>
         </div>
         ) : (
@@ -276,11 +335,11 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
                   </span>
                 </button>
                 <button
-                  aria-label="이 방문 복사"
+                  aria-label="이 방문 진단 리포트 복사"
                   className="act-icon"
                   data-act="activity-copy"
-                  onClick={() => copy(visitText(v), v.key)}
-                  title="이 방문 복사"
+                  onClick={() => copyReport(v, v.key)}
+                  title="이 방문의 진단 리포트 복사 — 무엇을 눌렀고 화면이 무엇을 그렸는지까지"
                   type="button"
                 >
                   {copied === v.key ? <Check size={13} /> : <Copy size={13} />}
@@ -320,7 +379,7 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
         })}
       </ul>
       <p className="vt-occ-note">
-        진한 줄 = 실제 변경 · 옅은 줄 = 열람 · 비공개는 범위만 · 보존 90일
+        진한 줄 = 실제 변경 · 옅은 줄 = 열람 · 비공개는 범위만 · 보존 90일(진단 3일)
       </p>
         </>
       )}

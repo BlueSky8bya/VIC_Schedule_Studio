@@ -4,7 +4,7 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails } from "@/lib/auth/config";
 import { accountHashOf } from "@/lib/insights/account-hash";
-import { ACTIVITY_RETENTION_DAYS, KIND_LABEL } from "@/lib/activity/kinds";
+import { ACTIVITY_RETENTION_DAYS, DIAG_RETENTION_DAYS, KIND_LABEL } from "@/lib/activity/kinds";
 
 // 행동 타임라인 조회(0062) — 개발자 전용. 한 날의 이벤트를 방문(visit_key) 단위로 묶어 돌려준다.
 //
@@ -60,7 +60,11 @@ const SCOPE_LABEL: Record<string, string> = {
   embargo: "(엠바고 일정)"
 };
 
-export async function getActivityDayAction(day: string): Promise<ActivityDayResult> {
+// diag=true면 진단 층까지 함께 본다(버그 추적용). 기본은 제외 — 끼면 "무엇을 했나"가 안 보인다.
+export async function getActivityDayAction(
+  day: string,
+  includeDiag = false
+): Promise<ActivityDayResult> {
   const actor = await resolveCurrentActor(SLUG);
   if (actor.role !== "developer") {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
@@ -77,15 +81,20 @@ export async function getActivityDayAction(day: string): Promise<ActivityDayResu
   const cutoff = new Date(Date.now() - ACTIVITY_RETENTION_DAYS * 86400_000)
     .toISOString()
     .slice(0, 10);
-  void supabase.from("activity_event").delete().lt("day", cutoff);
+  void supabase.from("activity_event").delete().lt("day", cutoff).eq("diag", false);
   void supabase.from("activity_daily_count").delete().lt("day", cutoff);
+  // 진단 층은 3일만 — 촘촘한 만큼 빨리 쌓이고, 버그를 쫓을 때만 쓴다.
+  const diagCutoff = new Date(Date.now() - DIAG_RETENTION_DAYS * 86400_000)
+    .toISOString()
+    .slice(0, 10);
+  void supabase.from("activity_event").delete().lt("day", diagCutoff).eq("diag", true);
 
-  const { data, error } = await supabase
+  let q = supabase
     .from("activity_event")
     .select("occurred_at, visit_key, account_hash, role, device, source, kind, target, meta, dur_ms")
-    .eq("day", day)
-    .order("occurred_at", { ascending: true })
-    .limit(5000);
+    .eq("day", day);
+  if (!includeDiag) q = q.eq("diag", false);
+  const { data, error } = await q.order("occurred_at", { ascending: true }).limit(includeDiag ? 8000 : 5000);
   if (error) {
     return { ok: false, error: "행동 기록을 불러오지 못했어요." };
   }
@@ -242,6 +251,7 @@ export async function getActivityUsageAction(days = 30, anchor?: string): Promis
       .gte("day", since)
       .lte("day", until)
       .in("kind", ["ui.click", "section.enter", "route.enter"])
+      .eq("diag", false)
       .limit(20000),
     supabase
       .from("activity_daily_count")

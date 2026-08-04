@@ -2,6 +2,7 @@
 
 import { createBrowserClient } from "@supabase/ssr";
 import type { RealtimeChannel, SupabaseClient } from "@supabase/supabase-js";
+import { logActivity } from "@/lib/activity/client";
 import type { MembershipRole } from "@/lib/domain/schedule-types";
 
 // 접속자 현황(개발자 창)용 실시간 프레즌스.
@@ -93,14 +94,18 @@ function recompute() {
 // 현재 track 중인 값 — visibilitychange마다 같은 키로 다시 track해 visible만 갈아끼운다.
 let trackedRole: MembershipRole | "anon" = "anon";
 let retrackTimer: number | null = null;
+let lastVisible: boolean | null = null;
 function retrack() {
   if (!channel) return;
-  void channel.track({
-    role: trackedRole,
-    device: detectDevice(),
-    // 화면에 출력 중인가. 모바일은 화면 잠금에도 hidden이 뜬다(원하는 판정).
-    visible: typeof document !== "undefined" ? document.visibilityState === "visible" : true
-  });
+  // 화면에 출력 중인가. 모바일은 화면 잠금에도 hidden이 뜬다(원하는 판정).
+  const visible = typeof document !== "undefined" ? document.visibilityState === "visible" : true;
+  // 진단(3일): 실시간이 '탭만 열림'으로 오판한 적이 있다(프레즌스 키가 브라우저 공용이라
+  // 숨긴 탭이 보고 있는 탭을 덮었다). 전이가 바뀔 때만 남긴다 — 같은 값 반복은 소음이다.
+  if (lastVisible !== visible) {
+    lastVisible = visible;
+    logActivity("diag.visible", { meta: { visible, role: trackedRole } });
+  }
+  void channel.track({ role: trackedRole, device: detectDevice(), visible });
 }
 // alt-tab을 빠르게 왕복하면 track 메시지가 몰린다 — 짧게 묶는다(신호 의미는 그대로).
 function retrackSoon() {
@@ -125,16 +130,22 @@ export function startPresence(role: MembershipRole | "anon") {
   trackedRole = role;
   try {
     client = createBrowserClient(url, anon);
-    // 브라우저당 '고정' 프레즌스 키 — 새로고침해도 같은 키를 재사용해 중복 카운트를 막는다.
+    // 프레즌스 키는 **탭당 1개**(sessionStorage) — 새로고침엔 살아남고 탭마다 다르다.
+    //
+    // 예전엔 localStorage(브라우저당 1개)였다. 그러면 탭 두 개가 같은 키를 공유해 서로를
+    // 덮어쓴다: 숨긴 탭이 마지막에 track하면 **보고 있는 탭까지 visible=false**가 되어
+    // 실시간 패널이 '탭만 열림'으로 잡혔다(2026-08-04 실측). visible을 탭 단위로 재는 이상
+    // 키도 탭 단위여야 한다. 같은 사람이 두 탭을 열면 2로 세지만, 이제 '화면에 떠 있음 /
+    // 탭만 열림'으로 나뉘어 표시되므로 그게 오히려 사실에 가깝다.
     let presenceKey = "";
     try {
-      presenceKey = window.localStorage.getItem("vic:presenceKey") ?? "";
+      presenceKey = window.sessionStorage.getItem("vic:presenceKey") ?? "";
       if (!presenceKey) {
         presenceKey =
           typeof crypto !== "undefined" && "randomUUID" in crypto
             ? crypto.randomUUID()
             : `${Date.now()}-${Math.random()}`;
-        window.localStorage.setItem("vic:presenceKey", presenceKey);
+        window.sessionStorage.setItem("vic:presenceKey", presenceKey);
       }
     } catch {
       presenceKey =

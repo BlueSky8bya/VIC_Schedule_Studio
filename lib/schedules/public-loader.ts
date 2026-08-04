@@ -123,8 +123,15 @@ export async function loadRevealedEvents(
     .in("id", eventIds);
   if (!rows) return [];
   const now = Date.now();
-  // mapEvent: now>=reveal이면 실제 DTO, 아직이면 가린 stub(teaser=true). 실제로 공개된 것만 반환.
-  return (rows as EventRow[]).map((row) => mapEvent(row, now)).filter((e) => !e.teaser);
+  // mapEvent: now>=reveal이면 실제 DTO, 아직이면 가린 stub(teaser=true, 제목 없음).
+  //
+  // 공개된 것만 돌려주면(예전 `.filter(e => !e.teaser)`) 클라이언트가 스스로를 고칠 수 없다:
+  // 캐시된 stub의 공개시각이 지난 뒤 관리자가 공개시각을 **미래로 다시 잡으면**, 클라는
+  // "지났으니 내용 달라" → 서버는 "아직 미공개" → 빈 배열 → 카드가 빈 채로 영원히 멈춘다
+  // (새로고침해도 캐시가 같은 옛 stub을 주므로 반복. 2026-08-04 실측).
+  // 그래서 **미공개도 최신 stub으로 돌려준다** — 클라가 새 공개시각을 받아 카운트다운으로 복귀한다.
+  // 가린 stub에는 제목·태그·카테고리가 없으므로(mapEvent) 내용 유출은 0.
+  return (rows as EventRow[]).map((row) => mapEvent(row, now));
 }
 
 // 익명 공개 묶음 로더 — 캐시된다. myHeartIds는 사용자별이라 여기 포함하지 않는다(빈 배열).
