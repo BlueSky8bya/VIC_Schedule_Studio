@@ -1202,9 +1202,9 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
   }
 }
 
-/* ── 행동 타임라인(0062) ──
-   모바일: 한 줄에 시각+행동만 세로로. 웹(641px+): 시각·행동·대상·체류를 정렬된 열로 —
-   같은 열에 같은 종류가 오면 눈이 세로로 훑을 수 있다(HCI: 시선 이동 최소화). */
+/* ── 이용 기록(0062): 행동 타임라인 · 적게 쓰인 기능 ──
+   기조: 테두리 대신 배경 톤으로 묶고, 여백은 한 값으로 통일, 위계는 타이포로.
+   빈 공간을 만들지 않는다 — 도구는 제 줄을 새로 만들지 않고 헤더 끝에 붙는다. */
 .act-skeleton {
   display: flex;
   flex-direction: column;
@@ -1218,58 +1218,25 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
   background-size: 400% 100%;
   animation: act-shimmer 1.4s ease-in-out infinite;
 }
-.act-skeleton span:nth-child(2) {
-  width: 84%;
-}
-.act-skeleton span:nth-child(3) {
-  width: 62%;
-}
+.act-skeleton span:nth-child(2) { width: 84%; }
+.act-skeleton span:nth-child(3) { width: 62%; }
 @keyframes act-shimmer {
-  0% {
-    background-position: 100% 0;
-  }
-  100% {
-    background-position: 0 0;
-  }
+  0% { background-position: 100% 0; }
+  100% { background-position: 0 0; }
 }
-html[data-reduce-motion] .act-skeleton span {
-  animation: none;
-}
+html[data-reduce-motion] .act-skeleton span { animation: none; }
 
-.act-visits,
-.act-items {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.act-visits {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 8px;
-}
-.act-visit {
-  border: 1px solid var(--line, #ece9f5);
-  border-radius: var(--r-md);
-  background: var(--surface, #fff);
-  overflow: hidden;
-}
-/* 타임라인 머리 — 제목 + 도구(모두 펼치기·전체 복사). */
+/* 머리: 제목 + 도구. 도구는 오른쪽 끝(제 줄을 만들지 않는다). */
 .act-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
   flex-wrap: wrap;
 }
 .act-head-tools {
+  margin-left: auto;
   display: inline-flex;
   gap: 4px;
-}
-.act-visit-tools {
-  display: flex;
-  justify-content: flex-end;
-  padding: 6px 10px 0;
 }
 .act-tool {
   border: 1px solid var(--line, #ece9f5);
@@ -1284,213 +1251,218 @@ html[data-reduce-motion] .act-skeleton span {
     background-color var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
 }
-.act-tool:hover {
-  background: #f7f5ff;
-}
-.act-tool:active {
-  transform: scale(0.94);
+.act-tool:hover { background: #f7f5ff; }
+.act-tool:active { transform: scale(0.94); }
+.act-tool.is-on {
+  background: rgb(124 108 240 / 12%);
+  border-color: #ddd6fe;
 }
 
-/* 헤더 전체가 토글 버튼 — 과녁을 넓게 둔다. */
+.act-visits,
+.act-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.act-visits {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 8px;
+}
+/* 방문 = 테두리 없는 카드. 배경 톤만으로 묶는다(선이 많으면 시끄럽다). */
+.act-visit {
+  border-radius: var(--r-md);
+  background: #faf9fc;
+  overflow: hidden;
+  transition: background-color var(--dur-1) var(--ease);
+}
+.act-visit[data-open] { background: #f6f4fb; }
+
 .act-visit-head {
   display: flex;
   align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  width: 100%;
-  text-align: left;
-  padding: 8px 10px;
-  background: #faf9fc;
-  border: 0;
-  border-bottom: 1px solid var(--line, #ece9f5);
-  font-size: 12px;
-  font-family: inherit;
-  cursor: pointer;
-  transition: background-color var(--dur-1) var(--ease);
+  gap: 4px;
+  padding-right: 6px;
 }
-.act-visit-head:hover {
-  background: #f4f1fa;
-}
-.act-visit-head:active {
-  transform: scale(0.995);
-}
-.act-caret {
-  color: #9a93b0;
-  font-size: 10px;
-  width: 10px;
-  flex: none;
-  transition: transform var(--dur-1) var(--ease);
-}
-/* 접힘 요약 — 펼치지 않고도 "무엇을 한 방문인가"가 보여야 한다. 한 줄 말줄임. */
-.act-gist {
-  flex-basis: 100%;
+/* 토글이 헤더 폭을 다 먹고, 복사 아이콘만 끝에 붙는다 — 빈 줄도 빈 여백도 없다. */
+.act-visit-toggle {
+  flex: 1 1 auto;
   min-width: 0;
-  color: #7c7690;
-  font-weight: 600;
-  font-size: 11.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-/* 타임라인 항목의 위치 표시 — 이름 앞에 조용히. */
-.act-area {
-  margin-right: 5px;
-  padding: 0 5px;
-  border-radius: var(--r-pill);
-  background: #f4f2f8;
-  color: #9a93b0;
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 700;
-}
-/* 연속 반복 접기 표시(×N) */
-.act-rep {
-  margin-left: 5px;
-  padding: 0 5px;
-  border-radius: var(--r-pill);
-  background: rgb(124 108 240 / 12%);
-  color: #6b5bd6;
-  font-size: 10.5px;
-  font-weight: 800;
-}
-.act-dev {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex: none;
-}
-.act-acct {
-  font-weight: 800;
-  color: #3f3a52;
-}
-.act-role {
-  padding: 1px 6px;
-  border-radius: var(--r-pill);
-  background: rgb(124 108 240 / 10%);
-  color: #6b5bd6;
-  font-weight: 700;
-  font-size: 11px;
-}
-.act-span {
-  margin-left: auto;
-  color: var(--muted, #9aa0ab);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-.act-items > li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 8px;
-  padding: 5px 10px;
-  font-size: 12px;
-  border-top: 1px solid #f4f2f8;
-}
-.act-items > li:first-child {
-  border-top: 0;
-}
-/* 실제 변경(server)은 진하게, 열람(client)은 옅게 — 한눈에 "했다/봤다"가 갈린다. */
-.act-items > li[data-source="server"] .act-kind {
-  color: #5b21b6;
-  font-weight: 800;
-}
-.act-items > li[data-source="client"] .act-kind {
-  color: #7c7690;
-  font-weight: 600;
-}
-.act-t {
-  color: var(--muted, #9aa0ab);
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  flex: none;
-}
-.act-target {
-  color: #4a4460;
-  font-style: normal;
-  font-weight: 600;
-  /* 한 줄 말줄임 — anywhere로 흘리면 좁은 칸에서 글자가 세로로 쌓인다(사용량 패널 실측 결함). */
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.act-dur,
-.act-meta {
-  color: var(--muted, #9aa0ab);
-  font-weight: 600;
-  font-size: 11px;
-}
-/* 모달이 2단이라 뷰포트가 넓어도 이 칸은 좁다 → 뷰포트가 아니라 '이 칸의 폭'으로 전환한다.
-   아래 @container 규칙이 동작하려면 이 선언이 반드시 있어야 한다(없으면 규칙 전체가 무효). */
-.vcard {
-  container-type: inline-size;
-}
-@container (min-width: 460px) {
-  .act-visit-head {
-    font-size: 13px;
-    padding: 10px 14px;
-  }
-  .act-items > li {
-    /* 시각 | 행동 | 대상 | 체류 — 열 정렬(넓을 때만) */
-    display: grid;
-    grid-template-columns: 46px 96px minmax(0, 1fr) auto;
-    gap: 10px;
-    align-items: baseline;
-    padding: 6px 14px;
-    font-size: 13px;
-    transition: background-color var(--dur-1) var(--ease);
-  }
-  .act-items > li:hover {
-    background: #fbfaff;
-  }
-  .act-meta {
-    grid-column: 3 / -1;
-  }
-}
-
-/* ── 사용량(적은 순) ── 막대는 상대 비교용이라 정확한 수치는 오른쪽 숫자가 맡는다. */
-.usage-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  margin-top: 4px;
+  gap: 7px;
+  padding: 8px 4px 8px 10px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity var(--dur-1) var(--ease);
 }
-.usage-range {
-  display: inline-flex;
-  gap: 2px;
-  padding: 2px;
-  border: 1px solid var(--line, #ece9f5);
-  border-radius: var(--r-pill);
-  background: #faf9fc;
+.act-visit-toggle:hover { opacity: 0.75; }
+.act-visit-toggle:active { transform: scale(0.995); }
+.act-caret {
+  flex: none;
+  width: 9px;
+  color: #a9a2be;
+  font-size: 9px;
 }
-.usage-range button {
+.act-dev {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+.act-head-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.act-acct {
+  font-size: 12.5px;
+  font-weight: 800;
+  color: #3f3a52;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.act-sub {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #9a93b0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.act-span {
+  flex: none;
+  margin-left: auto;
+  padding-left: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #8b84a3;
+  font-variant-numeric: tabular-nums;
+}
+.act-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
   border: 0;
   border-radius: var(--r-pill);
   background: transparent;
-  color: #7c7690;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 3px 10px;
+  color: #8b84a3;
   cursor: pointer;
   transition:
     background-color var(--dur-1) var(--ease),
     color var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
 }
-.usage-range button:active {
-  transform: scale(0.94);
+.act-icon:hover {
+  background: rgb(124 108 240 / 10%);
+  color: #6b5bd6;
 }
-.usage-range button.is-on {
-  background: rgb(124 108 240 / 14%);
+.act-icon:active { transform: scale(0.9); }
+
+/* 접힘 요약 — 헤더 아래 한 줄. 펼치지 않고도 성격을 안다. */
+.act-gist {
+  margin: 0;
+  padding: 0 10px 8px 26px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #7c7690;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 항목: 시각 | 내용 | 체류. 내용은 한 셀에 묶어 좁은 칸에서도 안 깨진다. */
+.act-items {
+  padding: 2px 0 4px;
+  background: var(--surface, #fff);
+}
+.act-items > li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 10px;
+  font-size: 12px;
+  transition: background-color var(--dur-1) var(--ease);
+}
+.act-items > li:hover { background: #fbfaff; }
+.act-t {
+  color: #b0a9c4;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 11px;
+}
+.act-body {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+/* 실제 변경은 진하게, 열람은 옅게 — 한눈에 했다/봤다가 갈린다. */
+.act-items > li[data-source="server"] .act-kind {
   color: #5b21b6;
+  font-weight: 800;
 }
-/* 접기 토글 — 제목 줄 전체가 버튼(과녁을 넓게). 접힌 상태에도 요약이 보여 판단이 된다. */
+.act-items > li[data-source="client"] .act-kind {
+  color: #8b84a3;
+  font-weight: 600;
+}
+.act-kind { flex: none; }
+.act-area {
+  flex: none;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: #f1eff7;
+  color: #a09ab5;
+  font-size: 9.5px;
+  font-style: normal;
+  font-weight: 700;
+}
+.act-target {
+  min-width: 0;
+  color: #4a4460;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.act-meta {
+  flex: none;
+  color: #b0a9c4;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+.act-dur {
+  color: #8b84a3;
+  font-size: 10.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.act-rep {
+  margin-left: 4px;
+  padding: 0 5px;
+  border-radius: var(--r-pill);
+  background: rgb(124 108 240 / 12%);
+  color: #6b5bd6;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+/* ── 적게 쓰인 기능 ── */
 .usage-toggle {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   width: 100%;
   padding: 2px 0;
   border: 0;
@@ -1500,54 +1472,43 @@ html[data-reduce-motion] .act-skeleton span {
   font-family: inherit;
   transition: opacity var(--dur-1) var(--ease);
 }
-.usage-toggle:hover {
-  opacity: 0.78;
-}
-.usage-toggle:active {
-  transform: scale(0.995);
-}
-.usage-toggle .insight-subhead {
-  margin: 0;
-}
+.usage-toggle:hover { opacity: 0.75; }
+.usage-toggle .insight-subhead { margin: 0; }
 .usage-gist {
   margin-left: auto;
   font-size: 11px;
   font-weight: 700;
-  color: var(--muted, #9aa0ab);
+  color: #9a93b0;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-/* 보고 있는 구간 표기 — 날짜 창 안이라 '오늘까지'로 오해하기 쉽다. */
+.usage-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  margin: 8px 0 2px;
+}
 .usage-span {
-  display: block;
-  margin-top: 1px;
+  margin-left: auto;
   font-size: 10.5px;
   font-weight: 600;
-  color: var(--muted, #9aa0ab);
+  color: #a9a2be;
   font-variant-numeric: tabular-nums;
 }
-/* 읽는 법 한 문장 — 표를 보고 스스로 규칙을 알아내게 두지 않는다. */
-.usage-lead {
-  margin: 6px 2px 4px;
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.5;
-  color: #6b6480;
-}
-.usage-lead b {
-  color: #5b21b6;
-}
+.usage-range,
 .usage-filters {
-  display: flex;
-  gap: 4px;
-  margin: 4px 0 2px;
+  display: inline-flex;
+  gap: 3px;
   flex-wrap: wrap;
 }
+.usage-filters { margin: 4px 0 2px; }
+.usage-range button,
 .usage-filters button {
-  border: 1px solid var(--line, #ece9f5);
+  border: 1px solid transparent;
   border-radius: var(--r-pill);
-  background: var(--surface, #fff);
-  color: #7c7690;
+  background: #f4f2f8;
+  color: #8b84a3;
   font-size: 11.5px;
   font-weight: 700;
   padding: 3px 10px;
@@ -1555,20 +1516,18 @@ html[data-reduce-motion] .act-skeleton span {
   transition:
     background-color var(--dur-1) var(--ease),
     color var(--dur-1) var(--ease),
-    border-color var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
 }
-.usage-filters button:active {
-  transform: scale(0.94);
-}
+.usage-range button:active,
+.usage-filters button:active { transform: scale(0.94); }
+.usage-range button.is-on,
 .usage-filters button.is-on {
-  background: rgb(124 108 240 / 12%);
+  background: rgb(124 108 240 / 14%);
   border-color: #ddd6fe;
   color: #5b21b6;
 }
 
-/* 항목 = 2줄. 위: 종류·위치·이름·횟수 / 아래: 막대·부연.
-   위치(area)를 이름 앞에 두는 이유 — 이름만으로는 어디 있는 버튼인지 찾아갈 수 없다. */
+/* 한 항목 = 한 줄. 막대를 따로 두지 않고 배경 채움(--fill)으로 흡수한다. */
 .usage-list {
   list-style: none;
   margin: 6px 0 8px;
@@ -1578,65 +1537,57 @@ html[data-reduce-motion] .act-skeleton span {
   gap: 2px;
 }
 .usage-list > li {
-  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 9px;
   border-radius: var(--r-sm, 8px);
-  transition: background-color var(--dur-1) var(--ease);
+  background:
+    linear-gradient(90deg, rgb(124 108 240 / 11%) 0 var(--fill, 0%), transparent var(--fill, 0%));
+  transition: box-shadow var(--dur-1) var(--ease);
 }
-.usage-list > li:hover {
-  background: #fbfaff;
-}
-/* 이름을 아직 안 붙인 항목은 조용히 낮춘다 — 있는 그대로 보이되 눈을 뺏지 않게. */
-.usage-list > li[data-unnamed] .usage-name {
-  color: #9a93b0;
-  font-style: italic;
-}
-.usage-line1 {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-.usage-line2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 3px;
-  padding-left: 2px;
-}
+.usage-list > li:hover { box-shadow: inset 0 0 0 1px #ece9f5; }
+.usage-list > li[data-unnamed] .usage-name { color: #a09ab5; }
 .usage-chip {
   flex: none;
-  font-size: 10px;
+  min-width: 30px;
+  text-align: center;
+  font-size: 9.5px;
   font-weight: 800;
-  padding: 2px 7px;
+  padding: 2px 6px;
   border-radius: var(--r-pill);
   color: #6b6480;
   background: #f1eff7;
 }
-.usage-chip[data-tone="route"] {
-  background: rgb(96 165 250 / 16%);
-  color: #2563eb;
-}
-.usage-chip[data-tone="panel"] {
-  background: rgb(52 211 153 / 18%);
-  color: #0f766e;
-}
-.usage-chip[data-tone="btn"] {
-  background: rgb(124 108 240 / 12%);
-  color: #6b5bd6;
-}
-.usage-area {
-  flex: none;
-  font-size: 11px;
-  font-weight: 700;
-  color: #9a93b0;
-}
+.usage-chip[data-tone="route"] { background: rgb(96 165 250 / 16%); color: #2563eb; }
+.usage-chip[data-tone="panel"] { background: rgb(52 211 153 / 18%); color: #0f766e; }
+.usage-chip[data-tone="btn"] { background: rgb(124 108 240 / 12%); color: #6b5bd6; }
 .usage-name {
   min-width: 0;
   flex: 1 1 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
   color: #3f3a52;
   font-weight: 700;
   font-size: 12.5px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.usage-area {
+  flex: none;
+  color: #a9a2be;
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.usage-name small,
+.usage-name code {
+  min-width: 0;
+  color: #a9a2be;
+  font-size: 10.5px;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
 }
@@ -1648,84 +1599,41 @@ html[data-reduce-motion] .act-skeleton span {
   font-variant-numeric: tabular-nums;
   cursor: help;
 }
-.usage-bar {
-  flex: 0 0 72px;
-  height: 5px;
-  border-radius: var(--r-pill);
-  background: #f1eff7;
-  overflow: hidden;
-}
-.usage-bar i {
-  display: block;
-  height: 100%;
-  border-radius: var(--r-pill);
-  background: linear-gradient(90deg, #a78bfa, #7c6cf0);
-  transition: width var(--dur-2, 260ms) var(--ease);
-}
-.usage-sub {
-  min-width: 0;
-  font-size: 10.5px;
-  font-weight: 600;
-  color: var(--muted, #9aa0ab);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.usage-sub code {
-  margin-left: 6px;
-  padding: 0 4px;
-  border-radius: 4px;
-  background: #f1eff7;
-  color: #8b84a3;
-  font-size: 10px;
-}
 .usage-actions {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   align-items: center;
   flex-wrap: wrap;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .usage-more {
   flex: 1 1 auto;
   border: 1px solid var(--line, #ece9f5);
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   background: var(--surface, #fff);
   color: #6b5bd6;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 800;
-  padding: 7px;
+  padding: 5px;
   cursor: pointer;
   transition:
     background-color var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
 }
-.usage-more:hover {
-  background: #f7f5ff;
-}
-.usage-more:active {
-  transform: scale(0.985);
-}
-.act-tool.is-on {
-  background: rgb(124 108 240 / 12%);
-  border-color: #ddd6fe;
-}
-/* 칸이 넓어지면 2줄 구조는 유지하고 여백·글자만 키운다. 한 줄로 합치면 부연이 뭉개져
-   "이게 무슨 버튼인지"가 다시 사라진다 — 그게 이 화면을 고친 이유였다. */
+.usage-more:hover { background: #f7f5ff; }
+.usage-more:active { transform: scale(0.985); }
+
+/* 창이 2단이라 뷰포트가 넓어도 이 칸은 좁다 → 칸 폭 기준으로만 키운다. */
+.vcard { container-type: inline-size; }
 @container (min-width: 460px) {
-  .usage-list > li {
-    padding: 8px 10px;
+  .act-items > li {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    padding: 5px 12px;
+    font-size: 13px;
   }
-  .usage-name {
-    font-size: 13.5px;
-  }
-  .usage-sub {
-    font-size: 11.5px;
-  }
-  .usage-bar {
-    flex: 0 0 120px;
-    height: 6px;
-  }
+  .act-acct { font-size: 13.5px; }
+  .usage-list > li { padding: 7px 11px; }
+  .usage-name { font-size: 13.5px; }
 }
 /* 분포/순위 막대 */
 

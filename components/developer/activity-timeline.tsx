@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
 import { deviceColor, deviceLabel, fmtDur, hhmm } from "@/components/developer/insights-dashboard";
 import { getActivityDayAction, type ActivityVisit } from "@/lib/activity/query";
@@ -214,83 +215,88 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
         {visits.map((v) => {
           const open = expanded.has(v.key);
           const rows = groupItems(v.items);
+          const changes = v.items.filter((i) => i.source === "server").length;
           return (
-            <li className="act-visit" key={v.key}>
-              {/* 방문은 기본 접힘 — 하루에 방문이 여럿이면 펼친 채로는 아무것도 안 보인다.
-                  헤더 자체가 토글이라 클릭 과녁이 넓다(HCI: 포인터 이동 최소화). */}
-              <button
-                aria-expanded={open}
-                className="act-visit-head"
-                data-act="activity-visit-toggle"
-                onClick={() => {
-                  hapticTick();
-                  setExpanded((prev) => {
-                    const next = new Set(prev);
-                    if (next.has(v.key)) next.delete(v.key);
-                    else next.add(v.key);
-                    return next;
-                  });
-                }}
-                type="button"
-              >
-                <span className="act-caret" aria-hidden="true">
-                  {open ? "▾" : "▸"}
-                </span>
-                <span className="act-dev" style={{ background: deviceColor(v.device) }} />
-                <b className="act-acct">{v.account}</b>
-                <span className="act-role">{ROLE_LABEL[v.role] ?? v.role}</span>
-                <span className="act-span">
-                  {hhmm(v.startMs)}–{hhmm(v.endMs)} · {deviceLabel(v.device)} · {rows.length}줄
-                </span>
-                {open ? null : <span className="act-gist">{visitGist(v.items)}</span>}
-              </button>
+            <li className="act-visit" key={v.key} data-open={open ? "" : undefined}>
+              {/* 헤더 한 줄: 토글(넓은 과녁) + 복사. 복사를 별도 줄에 두면 그 줄 왼쪽이
+                  통째로 빈다 — 헤더 오른쪽 끝에 붙여 빈 공간을 없앤다. */}
+              <div className="act-visit-head">
+                <button
+                  aria-expanded={open}
+                  className="act-visit-toggle"
+                  data-act="activity-visit-toggle"
+                  onClick={() => {
+                    hapticTick();
+                    setExpanded((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(v.key)) next.delete(v.key);
+                      else next.add(v.key);
+                      return next;
+                    });
+                  }}
+                  type="button"
+                >
+                  <span className="act-caret" aria-hidden="true">
+                    {open ? "▾" : "▸"}
+                  </span>
+                  <span className="act-dev" style={{ background: deviceColor(v.device) }} />
+                  <span className="act-head-main">
+                    <b className="act-acct">{v.account}</b>
+                    <span className="act-sub">
+                      {ROLE_LABEL[v.role] ?? v.role} · {deviceLabel(v.device)}
+                      {changes > 0 ? ` · 변경 ${changes}` : ""} · {rows.length}줄
+                    </span>
+                  </span>
+                  <span className="act-span">
+                    {hhmm(v.startMs)}–{hhmm(v.endMs)}
+                  </span>
+                </button>
+                <button
+                  aria-label="이 방문 복사"
+                  className="act-icon"
+                  data-act="activity-copy"
+                  onClick={() => copy(visitText(v), v.key)}
+                  title="이 방문 복사"
+                  type="button"
+                >
+                  {copied === v.key ? <Check size={13} /> : <Copy size={13} />}
+                </button>
+              </div>
               {open ? (
-                <>
-                  {/* 펼친 김에 이 방문만 따로 복사 — 특정 세션을 공유할 때 전체는 과하다. */}
-                  <div className="act-visit-tools">
-                    <button
-                      className="act-tool"
-                      data-act="activity-copy"
-                      onClick={() => copy(visitText(v), v.key)}
-                      type="button"
-                    >
-                      {copied === v.key ? "복사됨" : "이 방문 복사"}
-                    </button>
-                  </div>
-                  <ol className="act-items">
-                  {rows.map((it, i) => (
-                    <li key={i} data-source={it.source}>
-                      <span className="act-t">{hhmm(it.t)}</span>
-                      <span className="act-kind">
-                        {it.label}
-                        {it.repeat > 1 ? <b className="act-rep">×{it.repeat}</b> : null}
-                      </span>
-                      {/* 일정은 제목(권한 확인 후 조인), 그 외는 사람이 읽는 이름으로 푼다 —
-                          타임라인에 `.stf-btn` 같은 값이 그대로 뜨면 읽을 수 없다. */}
-                      <span className="act-target" title={itemTitle(it)}>
-                        {/* 위치를 앞에 붙인다 — 이름만으로는 어디 있는 건지 찾아갈 수 없다.
-                            일정 제목이 붙은 줄에는 위치가 없으므로 그대로 제목만 나온다. */}
-                        {!it.targetLabel && it.target ? (
-                          <em className="act-area">{describeTarget(it.kind, it.target).area}</em>
+                <ol className="act-items">
+                  {rows.map((it, i) => {
+                    const d = it.target ? describeTarget(it.kind, it.target) : null;
+                    return (
+                      <li key={i} data-source={it.source}>
+                        <span className="act-t">{hhmm(it.t)}</span>
+                        <span className="act-body" title={itemTitle(it)}>
+                          <span className="act-kind">
+                            {it.label}
+                            {it.repeat > 1 ? <b className="act-rep">×{it.repeat}</b> : null}
+                          </span>
+                          {/* 위치는 이름 앞에 조용히 — 일정 제목이 붙은 줄에는 없다. */}
+                          {!it.targetLabel && d?.area ? (
+                            <em className="act-area">{d.area}</em>
+                          ) : null}
+                          <span className="act-target">{itemName(it)}</span>
+                          {it.meta ? <span className="act-meta">{metaLine(it.meta)}</span> : null}
+                        </span>
+                        {it.durMs ? (
+                          <span className="act-dur">{fmtDur(Math.round(it.durMs / 1000))}</span>
                         ) : null}
-                        {itemName(it)}
-                      </span>
-                      {it.durMs ? (
-                        <span className="act-dur">{fmtDur(Math.round(it.durMs / 1000))}</span>
-                      ) : null}
-                      {it.meta ? <span className="act-meta">{metaLine(it.meta)}</span> : null}
-                    </li>
-                  ))}
-                  </ol>
-                </>
-              ) : null}
+                      </li>
+                    );
+                  })}
+                </ol>
+              ) : (
+                <p className="act-gist">{visitGist(v.items)}</p>
+              )}
             </li>
           );
         })}
       </ul>
       <p className="vt-occ-note">
-        점이 진한 줄은 실제 변경(서버 기록), 옅은 줄은 열람입니다. 비공개 일정은 제목 대신 범위만
-        표시돼요. 보존 90일.
+        진한 줄 = 실제 변경 · 옅은 줄 = 열람 · 비공개는 범위만 · 보존 90일
       </p>
     </section>
   );

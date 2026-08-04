@@ -11,7 +11,7 @@ describe("이름은 화면에 쓰인 말로", () => {
     // broadcast-panel은 코드 이름일 뿐, 화면 버튼은 '🖊️ 일정 그림판'이다.
     expect(describeTarget("section.enter", "broadcast-panel").name).toBe("일정 그림판");
     expect(describeTarget("route.enter", "/studio").name).toBe("편집실");
-    expect(describeTarget("ui.click", "open-day-visit").name).toBe("방문 기록 열기");
+    expect(describeTarget("ui.click", "open-day-visit").name).toBe("이용 기록 열기");
   });
   it("월 이동은 어느 달인지 그대로 읽힌다", () => {
     expect(describeTarget("month.change", "2026-09").name).toBe("2026-09 보기");
