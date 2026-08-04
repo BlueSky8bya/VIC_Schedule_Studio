@@ -5680,6 +5680,15 @@ body.cell-range-dragging {
 .studio-day.outside .support-bar {
   opacity: 0.4;
 }
+/* 업 도움 띠는 '오늘/선택' 링(::after z:5)보다 위 — 링이 띠를 가로지르면 끈이 끊겨 보인다
+   (실측: 오늘 칸을 지나는 띠에 금색 실선이 그어짐). 끈은 여러 날을 잇는 하나의 대상이라
+   칸 테두리에 끊기면 안 된다. */
+.studio-day .support-bar {
+  z-index: 6;
+}
+.studio-day .support-bar.sb-head {
+  z-index: 7;
+}
 
 /* 다른 달 날짜는 토/일 색도 흐린 회보라로 (그대로 진하지 않게) */
 .studio-day.outside .studio-day-head strong {

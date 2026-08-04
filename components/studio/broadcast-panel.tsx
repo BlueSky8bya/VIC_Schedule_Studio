@@ -1277,8 +1277,18 @@ export function BroadcastPanel({
     const onPaste = (e: ClipboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      const files = [...(e.clipboardData?.files ?? [])];
-      const img = files.find((f) => f.type.startsWith("image/"));
+      // 화면 캡처(PrtSc·캡처 도구)는 files가 비고 items에만 들어오는 브라우저가 있다 —
+      // 둘 다 본다. 안 그러면 "복사한 스크린샷이 안 붙는다"가 된다.
+      const cd = e.clipboardData;
+      let img = [...(cd?.files ?? [])].find((f) => f.type.startsWith("image/")) ?? null;
+      if (!img && cd) {
+        for (const it of cd.items) {
+          if (it.kind === "file" && it.type.startsWith("image/")) {
+            img = it.getAsFile();
+            if (img) break;
+          }
+        }
+      }
       if (!img) return;
       e.preventDefault();
       readImageFile(img);

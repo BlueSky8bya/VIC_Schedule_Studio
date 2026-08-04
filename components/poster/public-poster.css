@@ -3860,6 +3860,13 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 .public-day.outside .support-bar {
   opacity: 0.4;
 }
+/* 편집실과 같은 이유 — 오늘 링이 띠를 가로질러 끈이 끊겨 보였다. 띠를 링 위로 올린다. */
+.public-day .support-bar {
+  z-index: 6;
+}
+.public-day .support-bar.sb-head {
+  z-index: 7;
+}
 
 /* 다른 달 날짜는 일/토 색도 회색으로 */
 .public-day.outside .day-strip strong {
