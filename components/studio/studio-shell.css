@@ -5734,6 +5734,41 @@ body.cell-range-dragging {
     inset 0 0 0 4px var(--selection-border);
 }
 
+/* ⚠ 키보드 포커스 링은 오늘(골드)·선택(보라)·신규(초록) 링과 **같은 ::after**를 쓴다.
+   앞쪽에 선언하면 같은 특정도에서 뒤 규칙이 이겨, 화살표로 오늘 칸에 가는 순간 링이 통째로
+   사라졌다(실측 — "감쪽같이 숨겨져" 버그로 보였다). 그래서 여기, 모든 칸 상태 링 **뒤에**
+   다시 선언해 언제나 이기게 한다.
+   오늘/선택 칸에서도 그 색을 잃지 않도록 바깥 띠에 원래 색을 남긴다 — "지금 포커스가 여기고,
+   게다가 오늘이다"가 한 번에 읽힌다. */
+.studio-day:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 3px var(--focus-ring),
+    inset 0 0 0 7px var(--violet-soft);
+}
+.studio-day.today:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 3px var(--focus-ring),
+    inset 0 0 0 7px var(--accent);
+}
+.studio-day.selected:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 3px var(--focus-ring),
+    inset 0 0 0 7px var(--selection-border);
+}
+.studio-day.today.selected:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 3px var(--focus-ring),
+    inset 0 0 0 6px var(--selection-border),
+    inset 0 0 0 9px var(--accent);
+}
+/* 신규 작성 중(초록 점선)에도 포커스가 보이게 — outline은 box-shadow와 겹치지 않는 축이라
+   둘이 함께 보인다(점선 초록 + 안쪽 보라 링). */
+.studio-day.editing-new:focus-visible::after {
+  box-shadow:
+    inset 0 0 0 3px var(--focus-ring),
+    inset 0 0 0 7px var(--violet-soft);
+}
+
 .studio-day-head {
   display: flex;
   width: 100%;
