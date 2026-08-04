@@ -1,7 +1,7 @@
 # Active ExecPlan
 
 Plan ID: PLAN-20260804-003
-Status: Completed (Phase A·B 구현 완료 — 실사용 관측 후 조정)
+Status: Completed (A·B·C 구현 + 실측 기반 정정 완료. 이후는 사용자 피드백 주도)
 Task Risk: L2 (구조적 — 새 테이블 2건, 지표 정의 변경, 개인정보 방침 supersede)
 Created / Updated: 2026-08-04
 
@@ -73,6 +73,18 @@ Created / Updated: 2026-08-04
 - [x] C5. 핵심 버튼에 `data-act` 부착(월 이동·공지·방문)
 - [x] C6. 사용량 패널(적은 순, 7/30/90일) — `getActivityUsageAction`
 - [x] C7. 카운트 테이블도 90일 보존 청소
+
+### Phase D — 실측 로그로 드러난 정정 (2026-08-04)
+- [x] D1. 월 이동 목적지 오류 — 클릭 클로저 대신 실제 바뀐 `view`를 useEffect로 기록
+- [x] D2. 반복 접기(×N)가 meta를 첫 줄 것만 남기던 문제 — hops·count 합산
+- [x] D3. 꾸미기 이중 계상(route + section) — 섹션 계측 제거
+- [x] D4. `aria-label`/`textContent`를 id로 쓰던 경로 차단(제목 유출 가능) + 회귀 테스트
+- [x] D5. 공통 클래스로 뭉치던 문제 — 가장 구체적인 토큰 선택
+- [x] D6. 클릭 요소 179곳 `data-act` 전수 부착 + 사전 등록
+- [x] D7. `describeTarget`이 `auto:` 접두사에서 빗나가던 버그
+- [x] D8. 비개발자 기준 재설계(위치 표기·용어 정리·개발자 정보 토글·전체 복사)
+- [x] D9. '📈 방문' → '📈 이용 기록'
+- [ ] 보류: 옛 `auto:` 행 삭제(하지 않기로 결정) · 떡밥 과거 공개시각 경고(하지 않기로 결정)
 
 ## 검증
 
