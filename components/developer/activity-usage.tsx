@@ -35,6 +35,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [kind, setKind] = useState("all");
+  const [open, setOpen] = useState(false); // 기본 접힘 — 이용 기록 창이 이미 길다
   const [dev, setDev] = useState(false); // 개발자 정보(원래 id) 표시
   const [copied, setCopied] = useState(false);
   const [span, setSpan] = useState<{ since: string; until: string } | null>(null);
@@ -95,15 +96,37 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
 
   return (
     <section className="vcard">
+      {/* 기본 접힘 — 이용 기록 창은 이미 길다. 제목 줄이 곧 토글이라 과녁이 넓다.
+          접힌 상태에도 "몇 개 중 몇 개가 거의 안 쓰였나"는 보여, 펼칠지 말지 판단이 된다. */}
+      <button
+        aria-expanded={open}
+        className="usage-toggle"
+        data-act="usage-open"
+        onClick={() => {
+          hapticTick();
+          setOpen((v) => !v);
+        }}
+        type="button"
+      >
+        <span className="act-caret" aria-hidden="true">
+          {open ? "▾" : "▸"}
+        </span>
+        <span className="insight-subhead">적게 쓰인 기능</span>
+        {rows ? (
+          <span className="usage-gist">
+            {rows.filter((r) => r.total <= 2).length}개가 2번 이하 · 전체 {rows.length}개
+          </span>
+        ) : null}
+      </button>
+
+      {!open ? null : (
+        <>
       <header className="usage-head">
-        <h4 className="insight-subhead">
-          적게 쓰인 기능
-          {span ? (
-            <small className="usage-span">
-              {span.since} ~ {span.until}
-            </small>
-          ) : null}
-        </h4>
+        {span ? (
+          <small className="usage-span">
+            {span.since} ~ {span.until}
+          </small>
+        ) : null}
         <div className="usage-range" role="group" aria-label="기간">
           {RANGES.map((d) => (
             <button
@@ -225,6 +248,8 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
             (관리자·매니저·작업자·개발자)과 <b>시청자</b>가 각각 몇 번인지 나와요. 시청자 쪽은
             숫자만 세고 누가 눌렀는지는 남기지 않아요.
           </p>
+        </>
+      )}
         </>
       )}
     </section>

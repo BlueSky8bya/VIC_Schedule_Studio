@@ -1455,6 +1455,7 @@ html[data-reduce-motion] .act-skeleton span {
   justify-content: space-between;
   gap: var(--space-2);
   flex-wrap: wrap;
+  margin-top: 4px;
 }
 .usage-range {
   display: inline-flex;
@@ -1484,6 +1485,37 @@ html[data-reduce-motion] .act-skeleton span {
 .usage-range button.is-on {
   background: rgb(124 108 240 / 14%);
   color: #5b21b6;
+}
+/* 접기 토글 — 제목 줄 전체가 버튼(과녁을 넓게). 접힌 상태에도 요약이 보여 판단이 된다. */
+.usage-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity var(--dur-1) var(--ease);
+}
+.usage-toggle:hover {
+  opacity: 0.78;
+}
+.usage-toggle:active {
+  transform: scale(0.995);
+}
+.usage-toggle .insight-subhead {
+  margin: 0;
+}
+.usage-gist {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted, #9aa0ab);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 /* 보고 있는 구간 표기 — 날짜 창 안이라 '오늘까지'로 오해하기 쉽다. */
 .usage-span {

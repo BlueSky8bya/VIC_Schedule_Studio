@@ -93,24 +93,40 @@ export async function getActivityDayAction(day: string): Promise<ActivityDayResu
   if (rows.length === 0) return { ok: true, visits: [], total: 0 };
 
   // 일정 제목 — 공개 일정만 붙인다. 비공개는 범위 라벨로 대체(제목을 절대 내보내지 않는다).
-  const eventIds = [...new Set(rows.map((r) => r.target).filter((t): t is string => Boolean(t)))];
+  //
+  // ⚠ target에는 일정 uuid 말고 버튼 id('calendar-cell' 등)도 섞여 있다. 그대로 .in()에 넘기면
+  //    uuid 컬럼 비교에서 형 변환 오류가 나 **조인 전체가 실패**하고, 모든 일정이 제목 없이
+  //    '(지워진 일정)'으로 보인다(실측: 멀쩡히 살아 있는 일정이 전부 그렇게 떴다).
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  const eventIds = [
+    ...new Set(rows.map((r) => r.target).filter((t): t is string => Boolean(t) && UUID_RE.test(t!)))
+  ];
   const titleById = new Map<string, string>();
   if (eventIds.length > 0) {
     const { data: evs } = await supabase
       .from("events")
-      .select("id, public_title, visibility_scope")
+      .select("id, public_title, visibility_scope, teaser, teaser_reveal_at")
       .in("id", eventIds.slice(0, 500));
+    const nowMs = Date.now();
     for (const e of (evs ?? []) as {
       id: string;
       public_title: string | null;
       visibility_scope: string;
+      teaser: boolean | null;
+      teaser_reveal_at: string | null;
     }[]) {
-      titleById.set(
-        e.id,
-        e.visibility_scope === "public"
-          ? (e.public_title ?? "(제목 없음)")
-          : (SCOPE_LABEL[e.visibility_scope] ?? "(비공개 일정)")
-      );
+      if (e.visibility_scope !== "public") {
+        titleById.set(e.id, SCOPE_LABEL[e.visibility_scope] ?? "(비공개 일정)");
+        continue;
+      }
+      // 공개 전 떡밥은 제목을 가린다. 이 창은 편집실에서 열리고 편집실은 방송에 비칠 수 있다 —
+      // 공개 시각 전 제목이 화면에 뜨면 시청자에게 새는 것과 같다(공개 로더의 가림과 같은 기준).
+      const revealMs = e.teaser && e.teaser_reveal_at ? Date.parse(e.teaser_reveal_at) : 0;
+      if (revealMs && nowMs < revealMs) {
+        titleById.set(e.id, "(공개 전 최초공개 일정)");
+        continue;
+      }
+      titleById.set(e.id, e.public_title ?? "(제목 없음)");
     }
   }
 

@@ -42,8 +42,9 @@ function itemName(it: Item): string {
   if (!it.target) return "";
   if (UUID_RE.test(it.target)) {
     // 제목이 안 붙은 uuid — 스티커는 원래 제목이 없고, 일정은 이미 지워진 경우다.
+    // teaser./heart./hope.도 대상이 일정이라 같은 갈래로 본다(예전엔 '(알 수 없는 항목)'으로 샜다).
     if (it.kind.startsWith("sticker.")) return "스티커";
-    if (it.kind.startsWith("event.")) return "(지워진 일정)";
+    if (/^(event|teaser|heart|hope)\./.test(it.kind)) return "(지워진 일정)";
     return "(알 수 없는 항목)";
   }
   return describeTarget(it.kind, it.target).name;
