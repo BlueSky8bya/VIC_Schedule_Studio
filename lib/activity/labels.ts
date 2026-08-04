@@ -35,13 +35,13 @@ const SECTION: Record<string, TargetLabel> = {
   "modal:members": { name: "멤버 관리 창", area: "관리", hint: "관리 ▾ → 멤버 관리" },
   "modal:developer": { name: "월별 인사이트 창", area: "관리", hint: "관리 ▾ → 월별 인사이트" },
   "modal:notice": { name: "공지 쓰기 창", area: "편집실" },
-  "modal:dayVisit": { name: "방문 기록 창", area: "관리", hint: "지금 보고 있는 이 창" }
+  "modal:dayVisit": { name: "이용 기록 창", area: "관리", hint: "지금 보고 있는 이 창" }
 };
 
 const ACT: Record<string, TargetLabel> = {
   // 편집실 — 달력·편집 패널
   "open-notice": { name: "공지 쓰기", area: "편집실", hint: "편집 패널의 '📢 공지 쓰기'" },
-  "open-day-visit": { name: "방문 기록 열기", area: "편집실", hint: "편집 패널의 '📈 방문'" },
+  "open-day-visit": { name: "이용 기록 열기", area: "편집실", hint: "편집 패널의 '📈 이용 기록'" },
   "open-drawing-board": { name: "일정 그림판 열기", area: "편집실", hint: "미리보기의 '🖊️ 일정 그림판'" },
   "month-prev": { name: "이전 달", area: "편집실", hint: "헤더 '‹'" },
   "month-next": { name: "다음 달", area: "편집실", hint: "헤더 '›'" },
@@ -156,6 +156,36 @@ const ACT: Record<string, TargetLabel> = {
   "dtp-wheel-item": { name: "시간 고르기", area: "편집실" },
   "dtp-foot-btn": { name: "날짜·시간 확인/취소", area: "편집실" },
 
+  // 태그 편집
+  "tag-legend-clear": { name: "태그 필터 해제", area: "태그 편집" },
+  "tag-add-in-section": { name: "태그 추가", area: "태그 편집" },
+  "tag-editor-remove": { name: "태그 삭제", area: "태그 편집" },
+  "tag-drag-handle": { name: "태그 순서 바꾸기", area: "태그 편집" },
+  "tag-tone": { name: "색 톤 고르기", area: "태그 편집" },
+  "tag-custom-clear": { name: "커스텀 색 지우기", area: "태그 편집" },
+  "cpop-swatch": { name: "색 고르기", area: "태그 편집" },
+  "cpop-kind-swap": { name: "색 방식 바꾸기", area: "태그 편집" },
+  "cpop-done": { name: "색 고르기 완료", area: "태그 편집" },
+  "tp-chip": { name: "태그 고르기", area: "편집실" },
+
+  // 멤버·보안
+  "member-role-toggle": { name: "멤버 역할 바꾸기", area: "멤버 관리" },
+  "access-expire": { name: "잠금해제 즉시 만료", area: "관리" },
+  "insight-change-passcode": { name: "비밀번호 변경", area: "관리" },
+  "passcode-submit": { name: "비밀번호 확인", area: "관리" },
+
+  // 공지
+  "notice-copy-button": { name: "공지 복사", area: "공지" },
+
+  // 시청자 화면 기타
+  "slc-caption": { name: "방송 중 배너", area: "시청자 화면" },
+  "pill-more": { name: "일정 더 보기", area: "편집실" },
+
+  // 시즌 장난감(월드컵)
+  "wc-toggle": { name: "월드컵 조작", area: "시즌 기능" },
+  "wc-tac-btn": { name: "월드컵 전술 열기", area: "시즌 기능" },
+  "wc-tac-chip": { name: "월드컵 전술 고르기", area: "시즌 기능" },
+
   // 인사이트 화면
   "insights-tab": { name: "인사이트 탭 바꾸기", area: "인사이트" },
   "insights-refresh": { name: "인사이트 새로고침", area: "인사이트" },
@@ -218,6 +248,14 @@ export function describeTarget(kind: string, target: string): TargetLabel {
     const raw = target.slice(5);
     const hit = AUTO[raw];
     if (hit) return hit;
+    // data-act를 붙이기 전에 쌓인 값도 같은 클래스면 같은 버튼이다. ACT에 클래스 토큰 이름으로
+    // 등록해 뒀으므로 점(.)만 떼고 한 번 더 찾는다 — 안 그러면 사전에 있는데도 '이름 미등록'으로
+    // 뜬다(실측: auto:.insights-tab, auto:.dtp-cell 등 50여 개가 전부 이름 없이 보였다).
+    const token = raw.startsWith(".") ? raw.slice(1) : raw;
+    const byToken = ACT[token];
+    if (byToken) return byToken;
+    // 한글 값은 옛 기록(예전엔 aria-label을 id로 썼다) — 그 자체가 사람 말이라 그대로 쓴다.
+    if (/[가-힣]/.test(token)) return { name: token, area: "기타", hint: "옛 기록" };
     return {
       name: "아직 이름을 안 붙인 버튼",
       area: "기타",

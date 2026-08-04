@@ -88,7 +88,7 @@ export function SecurityPanel({
                         disabled={expiringUserId === p.userId}
                         onClick={() => handleExpire(p.userId as string, p.email)}
                         type="button"
-                      >
+                       data-act="access-expire">
                         {expiringUserId === p.userId ? "만료 중…" : "만료시간 초기화"}
                       </button>
                     </>
@@ -134,7 +134,7 @@ export function SecurityPanel({
             onChangePasscode();
           }}
           type="button"
-        >
+         data-act="insight-change-passcode">
           비밀번호 변경
         </button>
       ) : null}

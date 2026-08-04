@@ -164,7 +164,7 @@ export function ColorPickerPopover({
       {onToggleKind ? (
         <div className="cpop-kind">
           <span className="cpop-kind-cur">{kind === "modifier" ? "형식" : "콘텐츠"}</span>
-          <button className="cpop-kind-swap" onClick={onToggleKind} type="button">
+          <button className="cpop-kind-swap" onClick={onToggleKind} type="button" data-act="cpop-kind-swap">
             {kind === "modifier" ? "콘텐츠로 바꾸기" : "형식으로 바꾸기"}
           </button>
         </div>
@@ -233,7 +233,7 @@ export function ColorPickerPopover({
           onClick={undo}
           title="직전 색으로 되돌리기"
           type="button"
-        >
+         data-act="실행취소(직전 색으로)">
           <Undo2 aria-hidden="true" size={16} />
         </button>
       </div>
@@ -258,7 +258,7 @@ export function ColorPickerPopover({
               }}
               style={{ background: preview, color: ink, borderColor: "transparent" }}
               type="button"
-            >
+             data-act="tag-tone">
               {t.label}
             </button>
           );
@@ -286,7 +286,7 @@ export function ColorPickerPopover({
                 }}
                 style={{ background: c }}
                 type="button"
-              >
+               data-act="cpop-swatch">
                 {active && exact ? <span className="cpop-swatch-check" aria-hidden="true" /> : null}
               </button>
             );
@@ -296,13 +296,13 @@ export function ColorPickerPopover({
 
       <div className="cpop-actions">
         {canClear ? (
-          <button className="tag-custom-clear" onClick={onClear} type="button">
+          <button className="tag-custom-clear" onClick={onClear} type="button" data-act="tag-custom-clear">
             기본 색으로
           </button>
         ) : (
           <span />
         )}
-        <button className="button primary cpop-done" onClick={onClose} type="button">
+        <button className="button primary cpop-done" onClick={onClose} type="button" data-act="cpop-done">
           완료
         </button>
       </div>

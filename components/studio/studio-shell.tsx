@@ -5549,7 +5549,7 @@ export function StudioShell({
                   📢 공지 쓰기
                 </button>
                 <button className="me-tool" onClick={() => setModal("dayVisit")} data-act="open-day-visit" type="button">
-                  📈 방문
+                  📈 이용 기록
                 </button>
               </div>
             ) : canEdit ? (
@@ -6631,7 +6631,7 @@ export function StudioShell({
                                       );
                                       if (pill) openZoomPeek(event.id, pill as HTMLElement, true);
                                     }}
-                                  >
+                                   data-act="pill-more">
                                     +{subs.length}
                                   </button>
                                   {dots}
@@ -7075,7 +7075,7 @@ export function StudioShell({
                   onClick={() => setModal("dayVisit")} data-act="open-day-visit"
                   type="button"
                 >
-                  📈 방문
+                  📈 이용 기록
                 </button>
               </>
             ) : canEdit ? (
@@ -7144,7 +7144,7 @@ export function StudioShell({
                   : modal === "notice"
                     ? "숲 공지 쓰기"
                     : modal === "dayVisit"
-                      ? `📈 ${selectedDate} 방문 상세`
+                      ? `📈 ${selectedDate} 이용 기록`
                       : modal === "developer"
                         ? isDevInsights
                           ? "🛠 월별 인사이트"

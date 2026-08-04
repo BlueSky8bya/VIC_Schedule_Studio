@@ -339,7 +339,7 @@ export function NoticeModal({
             <ol className="notice-steps3">
               <li>
                 <span className="notice-step-num">1</span>
-                <button className="button primary notice-copy-button" onClick={() => copy("title", title)} type="button">
+                <button className="button primary notice-copy-button" onClick={() => copy("title", title)} type="button" data-act="notice-copy-button">
                   <Copy aria-hidden="true" size={14} />
                   {copied === "title" ? "제목 복사됨!" : "제목 복사"}
                 </button>
@@ -353,7 +353,7 @@ export function NoticeModal({
               </li>
               <li>
                 <span className="notice-step-num">3</span>
-                <button className="button primary notice-copy-button" onClick={copyBodyRich} type="button">
+                <button className="button primary notice-copy-button" onClick={copyBodyRich} type="button" data-act="notice-copy-button">
                   <Copy aria-hidden="true" size={14} />
                   {copied === "body" ? "본문 복사됨!" : "본문 복사"}
                 </button>

@@ -58,7 +58,7 @@ export function ReadonlyEventDetail({
               onClick={onClose}
               title="닫기"
               type="button"
-            >
+             data-act="상세 카드 닫기">
               <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
             </button>
             <p className="eyebrow">일정 보기</p>

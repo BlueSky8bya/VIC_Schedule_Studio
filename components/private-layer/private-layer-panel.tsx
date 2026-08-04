@@ -100,7 +100,7 @@ export function PrivateLayerPanel({
               className="button primary passcode-submit"
               disabled={!passcode || unlocking}
               type="submit"
-            >
+             data-act="passcode-submit">
               {unlocking ? "확인 중…" : "확인"}
             </button>
           </form>

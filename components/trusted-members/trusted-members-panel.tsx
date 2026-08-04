@@ -358,7 +358,7 @@ export function TrustedMembersPanel() {
                 disabled={isSyncing || isRemoving}
                 onClick={() => setRoles(m, !m.isManager, m.isWorker)}
                 type="button"
-              >
+               data-act="member-role-toggle">
                 매니저
               </button>
               <button
@@ -367,7 +367,7 @@ export function TrustedMembersPanel() {
                 disabled={isSyncing || isRemoving}
                 onClick={() => setRoles(m, m.isManager, !m.isWorker)}
                 type="button"
-              >
+               data-act="member-role-toggle">
                 작업자
               </button>
             </div>
@@ -378,7 +378,7 @@ export function TrustedMembersPanel() {
               onClick={() => remove(m)}
               title="삭제"
               type="button"
-            >
+             data-act="삭제">
               <Trash2 aria-hidden="true" size={16} />
             </button>
           </li>

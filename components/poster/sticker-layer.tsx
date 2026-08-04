@@ -638,7 +638,7 @@ export function StickerLayer({
                   className={`sticker-handle resize ${sticker.xRatio < 0.5 ? "right" : "left"}`}
                   onPointerDown={(event) => startDrag(event, sticker, "resize")}
                   type="button"
-                >
+                 data-act="크기 조절">
                   <Maximize2 aria-hidden="true" size={12} />
                 </button>
               </>

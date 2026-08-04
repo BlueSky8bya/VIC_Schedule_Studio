@@ -157,7 +157,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
           onClick={refresh}
           title="이 날 방문 상세 새로고침"
           type="button"
-        >
+         data-act="이 날 방문 상세 새로고침">
           <RotateCw aria-hidden="true" size={15} />
         </button>
       </div>
@@ -413,7 +413,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                   setLogRole(null);
                 }}
                 type="button"
-              >
+               data-act="vlog-chip">
                 전체 <b>{data.sessions.length}</b>
               </button>
               {ROLE_META.map((m) => {
@@ -429,7 +429,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                     }}
                     style={{ "--rc": m.color } as CSSProperties}
                     type="button"
-                  >
+                   data-act="vlog-chip">
                     {m.label} <b>{c}</b>
                   </button>
                 );
@@ -455,7 +455,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                         setLogStay(o.key);
                       }}
                       type="button"
-                    >
+                     data-act="vlog-chip">
                       {o.label} <b>{o.n}</b>
                     </button>
                   ))}

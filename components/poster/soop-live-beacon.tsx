@@ -61,7 +61,7 @@ export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null
           href={live.watchUrl ?? undefined}
           rel="noopener noreferrer"
           target="_blank"
-        />
+         data-act="방송 보러 가기" />
       </div>
       {/* 캡션 전체가 링크 — '보러가기' 라벨은 뺐다(2026-07-31): 제목이 폭을 다 쓴다. */}
       <a
@@ -71,7 +71,7 @@ export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null
         rel="noopener noreferrer"
         target="_blank"
         title={live.title ?? "방송 중"}
-      >
+       data-act="slc-caption">
         <span className="slc-title">{live.title ?? "방송 중"}</span>
       </a>
     </div>

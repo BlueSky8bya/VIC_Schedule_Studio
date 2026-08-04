@@ -421,7 +421,7 @@ export function TagLegendEditor({
           key={tag.id}
           onClick={() => onToggleFilter(tag.id)}
           type="button"
-        >
+         data-act="tag-legend-filter">
           <i
             data-color={v.colorKey ?? undefined}
             style={{ backgroundColor: v.bg, borderColor: v.border ?? undefined }}
@@ -450,7 +450,7 @@ export function TagLegendEditor({
             className="tag-legend-clear"
             onClick={() => filterIds?.forEach((id) => onToggleFilter?.(id))}
             type="button"
-          >
+           data-act="tag-legend-clear">
             필터 해제
           </button>
         ) : null}
@@ -724,7 +724,7 @@ export function TagLegendEditor({
             onPointerDown={locked ? undefined : (e) => onHandlePointerDown(e, tag.id)}
             title={locked ? "휴뱅은 순서를 바꿀 수 없는 기본 태그예요" : "끌어서 순서 변경"}
             type="button"
-          >
+           data-act="tag-drag-handle">
             {locked ? (
               <Lock aria-hidden="true" size={15} />
             ) : (
@@ -777,7 +777,7 @@ export function TagLegendEditor({
                     style={{ background: curColor }}
                     title="색 바꾸기"
                     type="button"
-                  />
+                   data-act="태그 색 바꾸기" />
                   {openPickerId === tag.id && !locked && pickerAnchor ? (
                     <ColorPickerPopover
                       anchor={pickerAnchor}
@@ -819,7 +819,7 @@ export function TagLegendEditor({
           onClick={() => removeTag(tag.id)}
           title={locked ? "휴뱅은 삭제할 수 없는 기본 태그예요" : "이 태그 삭제"}
           type="button"
-        >
+         data-act="tag-editor-remove">
           {locked ? <Lock aria-hidden="true" size={15} /> : <Trash2 aria-hidden="true" size={15} />}
         </button>
       </div>
@@ -881,7 +881,7 @@ export function TagLegendEditor({
                 disabled={allTags.length >= MAX_TAGS}
                 onClick={() => addTag("content")}
                 type="button"
-              >
+               data-act="tag-add-in-section">
                 <Plus aria-hidden="true" size={15} /> 콘텐츠 추가
               </button>
             </div>
@@ -900,7 +900,7 @@ export function TagLegendEditor({
                 disabled={allTags.length >= MAX_TAGS}
                 onClick={() => addTag("modifier")}
                 type="button"
-              >
+               data-act="tag-add-in-section">
                 <Plus aria-hidden="true" size={15} /> 형식 추가
               </button>
             </div>

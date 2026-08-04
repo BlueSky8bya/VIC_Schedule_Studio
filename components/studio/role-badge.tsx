@@ -49,7 +49,7 @@ export function RoleBadge({
         className={`actor-badge ${role}`}
         onClick={onToggleOpen}
         type="button"
-      >
+       data-act="역할 권한 보기">
         <strong>{roleDisplay.badgeLabel}</strong>
         <span className="role-help-q" aria-hidden="true">
           ?
@@ -86,7 +86,7 @@ export function RoleBadge({
                 onClick={onToggleHaptics}
                 role="switch"
                 type="button"
-              >
+               data-act="진동 켜기/끄기">
                 <span className="rhh-knob" aria-hidden="true" />
               </button>
             </div>
@@ -104,7 +104,7 @@ export function RoleBadge({
               onClick={onToggleReduceMotion}
               role="switch"
               type="button"
-            >
+             data-act="동작 줄이기 켜기/끄기">
               <span className="rhh-knob" aria-hidden="true" />
             </button>
           </div>
@@ -121,7 +121,7 @@ export function RoleBadge({
               onClick={onToggleEyeComfort}
               role="switch"
               type="button"
-            >
+             data-act="눈 편한 테마 켜기/끄기">
               <span className="rhh-knob" aria-hidden="true" />
             </button>
           </div>

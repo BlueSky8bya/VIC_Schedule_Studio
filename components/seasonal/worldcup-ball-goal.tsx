@@ -3841,7 +3841,7 @@ export function WorldCupBallGoal() {
                 hapticTick();
               }}
               aria-pressed={tacticsOpen}
-            >
+             data-act="wc-tac-btn">
               ⚙ 전술
             </button>
             <button
@@ -3852,7 +3852,7 @@ export function WorldCupBallGoal() {
                 hapticTick();
               }}
               aria-pressed={statsOpen}
-            >
+             data-act="wc-tac-btn">
               📊 기록
             </button>
             {statsOpen && statText ? (
@@ -3999,7 +3999,7 @@ export function WorldCupBallGoal() {
                       }}
                       onMouseEnter={() => setTacticDesc(s)} // 웹 호버 → 설명 미리보기
                       onMouseLeave={() => setTacticDesc((d) => (d === s ? null : d))}
-                    >
+                     data-act="wc-tac-chip">
                       {s.name}
                     </button>
                   ))}
@@ -4021,7 +4021,7 @@ export function WorldCupBallGoal() {
             className={`wc-toggle ${running ? "on" : ""}`}
             onClick={toggleRunning}
             aria-pressed={running}
-          >
+           data-act="wc-toggle">
             <span className="wc-toggle-ico" aria-hidden="true">
               {running ? "⏸" : "▶"}
             </span>
@@ -4030,14 +4030,14 @@ export function WorldCupBallGoal() {
           </button>
         ) : null}
         {enabled ? (
-          <button type="button" className="wc-toggle" onClick={newMatch}>
+          <button type="button" className="wc-toggle" onClick={newMatch} data-act="wc-toggle">
             <span className="wc-toggle-ico" aria-hidden="true">
               ↻
             </span>
             {isMobile ? "새경기" : "새 경기"}
           </button>
         ) : null}
-        <button type="button" className="wc-toggle wc-toggle-event" onClick={toggleEnabled}>
+        <button type="button" className="wc-toggle wc-toggle-event" onClick={toggleEnabled} data-act="wc-toggle">
           <span className="wc-toggle-ico" aria-hidden="true">
             ⚽
           </span>

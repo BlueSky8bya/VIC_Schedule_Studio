@@ -67,7 +67,7 @@ export function TagPicker({
         }
         title={blocked ? `태그는 최대 ${max}개까지 고를 수 있어요` : tag.displayName}
         type="button"
-      >
+       data-act="tp-chip">
         {selected ? <b className="tp-order">{orderOf(tag.id) + 1}</b> : null}
         {tag.displayName}
       </button>
