@@ -35,6 +35,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [kind, setKind] = useState("all");
+  const [area, setArea] = useState("all"); // 위치 필터 — 묶어 접는 대신 골라 본다
   // 옆 카드(행동 타임라인)와 같은 기본 상태로 둔다 — 한쪽만 접혀 있으면 그 칸이
   // 통째로 비어 보여 어색하다(2단 배치라 세로가 짧아지지도 않는다).
   const [open, setOpen] = useState(true);
@@ -63,7 +64,17 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
     };
   }, [days, anchor]);
 
-  const filtered = rows ? (kind === "all" ? rows : rows.filter((r) => r.kind === kind)) : [];
+  // 위치 칩은 **데이터에 실제로 있는 것만** 만든다(죽은 칩은 "없는 게 아니라 안 쓴 것"으로 오해된다).
+  const areasIn = rows
+    ? [...new Set(rows.map((r) => describeTarget(r.kind, r.target).area ?? "기타"))].sort()
+    : [];
+  const filtered = rows
+    ? rows.filter(
+        (r) =>
+          (kind === "all" || r.kind === kind) &&
+          (area === "all" || (describeTarget(r.kind, r.target).area ?? "기타") === area)
+      )
+    : [];
   const shown = showAll ? filtered : filtered.slice(0, 15);
   const max = filtered.length > 0 ? Math.max(...filtered.map((r) => r.total)) : 1;
 
@@ -163,6 +174,37 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
             <p className="insight-empty">아직 쌓인 기록이 없어요.</p>
           ) : (
             <>
+              <div className="usage-filters" role="group" aria-label="위치">
+                <button
+                  aria-pressed={area === "all"}
+                  className={area === "all" ? "is-on" : ""}
+                  data-act="usage-area-all"
+                  onClick={() => {
+                    hapticTick();
+                    setArea("all");
+                    setShowAll(false);
+                  }}
+                  type="button"
+                >
+                  모든 위치
+                </button>
+                {areasIn.map((a) => (
+                  <button
+                    aria-pressed={area === a}
+                    className={area === a ? "is-on" : ""}
+                    data-act="usage-area"
+                    key={a}
+                    onClick={() => {
+                      hapticTick();
+                      setArea(a);
+                      setShowAll(false);
+                    }}
+                    type="button"
+                  >
+                    {a}
+                  </button>
+                ))}
+              </div>
               <div className="usage-filters" role="group" aria-label="종류">
                 {FILTERS.map((f) => (
                   <button

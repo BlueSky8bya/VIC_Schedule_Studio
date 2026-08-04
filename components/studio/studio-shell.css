@@ -1226,26 +1226,34 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 }
 html[data-reduce-motion] .act-skeleton span { animation: none; }
 
-/* 머리: 제목 + 도구. 도구는 오른쪽 끝(제 줄을 만들지 않는다). */
+/* 머리: 제목 + 도구. **줄바꿈하지 않는다** — 도구가 아래로 밀리면 그 줄 왼쪽이 통째로 빈다.
+   제목이 남는 폭을 먹고, 도구는 오른쪽 끝에 붙어 필요한 만큼만 차지한다. */
 .act-head {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
+  gap: 6px;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+.act-fold {
+  min-width: 0;
+  flex: 1 1 auto;
 }
 .act-head-tools {
-  margin-left: auto;
+  flex: none;
   display: inline-flex;
-  gap: 4px;
+  align-items: center;
+  gap: 3px;
 }
 .act-tool {
   border: 1px solid var(--line, #ece9f5);
   border-radius: var(--r-pill);
   background: var(--surface, #fff);
   color: #6b5bd6;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 3px 8px;
+  white-space: nowrap;
   cursor: pointer;
   transition:
     background-color var(--dur-1) var(--ease),
@@ -1349,8 +1357,8 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
   flex: none;
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   border: 0;
   border-radius: var(--r-pill);
   background: transparent;

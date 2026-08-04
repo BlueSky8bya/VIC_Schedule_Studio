@@ -230,6 +230,24 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
     await copy(await buildReport(v), key);
   };
 
+  // 같은 계정이 같은 날 여러 탭을 열면 방문이 탭 수만큼 갈라진다(visit_key = 탭). 그게 사실이지만
+  // 보는 쪽에선 "왜 여기 없지?"가 된다 — 다른 탭 줄에 쌓였을 뿐이다. 그래서 탭 번호를 붙인다.
+  const tabNo = new Map<string, { n: number; of: number }>();
+  {
+    const byAccount = new Map<string, ActivityVisit[]>();
+    for (const v of visits) {
+      const list = byAccount.get(v.account);
+      if (list) list.push(v);
+      else byAccount.set(v.account, [v]);
+    }
+    for (const list of byAccount.values()) {
+      if (list.length < 2) continue; // 하나뿐이면 번호가 오히려 소음이다
+      [...list]
+        .sort((a, b) => a.startMs - b.startMs)
+        .forEach((v, i) => tabNo.set(v.key, { n: i + 1, of: list.length }));
+    }
+  }
+
   return (
     <section className="vcard">
       <header className="act-head">
@@ -262,15 +280,17 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
             }}
             type="button"
           >
-            {expanded.size === visits.length ? "모두 접기" : "모두 펼치기"}
+            {expanded.size === visits.length ? "접기" : "펼치기"}
           </button>
           <button
-            className="act-tool"
+            aria-label="그날 전체 진단 리포트 복사"
+            className="act-icon"
             data-act="activity-copy"
             onClick={() => copyReport(null, "*")}
+            title="그날 전체 진단 리포트 복사"
             type="button"
           >
-            {copied === "*" ? "복사됨" : copied === "*:loading" ? "…" : "복사"}
+            {copied === "*" ? <Check size={13} /> : <Copy size={13} />}
           </button>
           <button
             aria-pressed={diag}
@@ -327,6 +347,9 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
                     <b className="act-acct">{v.account}</b>
                     <span className="act-sub">
                       {ROLE_LABEL[v.role] ?? v.role} · {deviceLabel(v.device)}
+                      {tabNo.has(v.key)
+                        ? ` · 탭 ${tabNo.get(v.key)!.n}/${tabNo.get(v.key)!.of}`
+                        : ""}
                       {changes > 0 ? ` · 변경 ${changes}` : ""} · {rows.length}줄
                     </span>
                   </span>

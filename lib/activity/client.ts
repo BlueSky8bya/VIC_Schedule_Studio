@@ -12,6 +12,10 @@ import { foldDigits, isClientKind, type ClientKind } from "@/lib/activity/kinds"
 
 const FLUSH_AT = 20;
 const IDLE_MS = 5000;
+// 유휴 타이머는 이벤트마다 초기화된다 → 계속 조작하면 20개가 찰 때까지 안 나간다.
+// 그래서 '첫 이벤트로부터' 이 시간이 지나면 활동 중이어도 무조건 내보낸다. 안 그러면 기록이
+// 한참 뒤에야 나타나 "왜 안 쌓이지?"가 된다(2026-08-04 실측).
+const MAX_AGE_MS = 15000;
 const MAX_BUFFER = 200; // 오프라인·연속 실패로 무한히 쌓이지 않게
 
 type Pending = {
@@ -23,7 +27,9 @@ type Pending = {
 };
 
 let buffer: Pending[] = [];
+let firstAt = 0; // 버퍼의 첫 이벤트 시각 — MAX_AGE 판정용
 let idleTimer: number | null = null;
+let ageTimer: number | null = null;
 let wired = false;
 let clickWired = false;
 
@@ -59,8 +65,13 @@ function flush(keepalive = false): void {
     window.clearTimeout(idleTimer);
     idleTimer = null;
   }
+  if (ageTimer !== null) {
+    window.clearTimeout(ageTimer);
+    ageTimer = null;
+  }
   const batch = buffer;
   buffer = [];
+  firstAt = 0;
   send(batch, keepalive);
 }
 
@@ -72,6 +83,9 @@ function wire(): void {
     if (document.visibilityState === "hidden") flush(true);
   });
   window.addEventListener("pagehide", () => flush(true));
+  // 창 두 개를 나란히 띄우면 **어느 쪽도 hidden이 되지 않는다** — visibilitychange가 안 온다.
+  // 포커스가 떠날 때도 내보내야 다른 창에서 한 일이 제때 쌓인다(2026-08-04 실측).
+  window.addEventListener("blur", () => flush(true));
 }
 
 // ── 버튼 전수 수집 ──
@@ -144,7 +158,8 @@ export function logActivity(
     durMs: typeof opts.durMs === "number" ? opts.durMs : null,
     visitKey: currentVisitKey()
   });
-  if (buffer.length >= FLUSH_AT) {
+  if (firstAt === 0) firstAt = Date.now();
+  if (buffer.length >= FLUSH_AT || Date.now() - firstAt >= MAX_AGE_MS) {
     flush();
     return;
   }
@@ -153,6 +168,14 @@ export function logActivity(
     idleTimer = null;
     flush();
   }, IDLE_MS);
+  // 활동이 끊기지 않아도 첫 이벤트로부터 MAX_AGE가 지나면 나가도록 별도 타이머를 건다
+  // (유휴 타이머는 계속 초기화되므로 이것만이 상한을 보장한다).
+  if (ageTimer === null) {
+    ageTimer = window.setTimeout(() => {
+      ageTimer = null;
+      flush();
+    }, MAX_AGE_MS);
+  }
 }
 
 // ── 체류형(열고 닫기) 도우미 ──

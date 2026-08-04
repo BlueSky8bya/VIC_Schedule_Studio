@@ -197,6 +197,8 @@ const ACT: Record<string, TargetLabel> = {
   "activity-open": { name: "타임라인 접기/펴기", area: "인사이트" },
   "activity-diag": { name: "진단 로그 보기", area: "인사이트" },
   "usage-open": { name: "적게 쓰인 기능 접기/펴기", area: "인사이트" },
+  "usage-area": { name: "위치 필터", area: "인사이트" },
+  "usage-area-all": { name: "위치 필터: 전체", area: "인사이트" },
   "usage-copy": { name: "사용량 복사", area: "인사이트" },
   "usage-show-all": { name: "사용량 전체 보기", area: "인사이트" },
   "usage-dev": { name: "개발자 정보 켜기", area: "인사이트" },
