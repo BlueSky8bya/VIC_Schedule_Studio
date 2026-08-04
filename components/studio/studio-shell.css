@@ -5570,6 +5570,10 @@ html[data-reduce-motion] .editor-anchor-link line {
   position: absolute;
   inset: 0;
   z-index: 6; /* 일정 카드(z:auto~2)·업도움 띠 위, 드래그 유령/팝오버보다는 아래 */
+  /* ⚠ 모서리 칸(첫/일곱째/끝)은 달력 라운드를 따라 border-radius가 있다. 여기서 안 물려받으면
+     링만 각진 사각형이라 둥근 코너 밖으로 튀어나가고, 그리드의 overflow가 그 부분을 잘라
+     "모서리가 뚫린" 것처럼 보인다(실측 3회). */
+  border-radius: inherit;
   pointer-events: none;
   box-shadow:
     inset 0 0 0 3px var(--focus-ring),

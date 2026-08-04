@@ -331,6 +331,9 @@ export function BroadcastPanel({
   bgVisRef.current = bgVis;
   // '일정' 레이어(맨 아래 고정 — 날짜 카드 DOM)도 활성 대상: 카드 선택/이동/크기는
   // 이 레이어가 활성일 때만 된다(그리기 레이어 활성 중 카드가 딸려 움직이는 혼선 제거).
+  // 일정 레이어(날짜 카드)를 그림 위로 올릴지. 기본은 아래 — 판서가 카드 위에 얹히는 게 보통이다.
+  // 스크린샷을 붙이고 그 위에 일정을 올려야 할 때만 뒤집는다(사용자 요청).
+  const [bgOnTop, setBgOnTop] = useState(false);
   const bgActive = activeLayerId === BG_LAYER_ID;
   const bgActiveRef = useRef(bgActive);
   bgActiveRef.current = bgActive;
@@ -1356,6 +1359,7 @@ export function BroadcastPanel({
   }
   // 모서리 손잡이: bbox 왼쪽 위를 앵커로 균일 확대/축소 — 굵기도 비례(그림판 감각).
   const strokeScaleRef = useRef<{
+    axis: "xy" | "x" | "y";
     pointerId: number;
     anchor: { x: number; y: number };
     startW: number;
@@ -1364,12 +1368,15 @@ export function BroadcastPanel({
     maxY: number;
     origs: Map<Stroke, StrokeGeom>;
   } | null>(null);
-  function onStrokeScaleDown(e: React.PointerEvent<HTMLElement>) {
+  // axis: "xy" 대각(비율 유지) · "x" 너비만 · "y" 높이만.
+  // 그림(스크린샷)은 원본 비율을 꼭 지켜야 하는 게 아니라, 칸에 맞춰 눌러 넣고 싶을 때가 있다.
+  function onStrokeScaleDown(e: React.PointerEvent<HTMLElement>, axis: "xy" | "x" | "y" = "xy") {
     if (tool !== "select" || e.button !== 0 || !strokeSelBox) return;
     e.preventDefault();
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
     strokeScaleRef.current = {
+      axis,
       pointerId: e.pointerId,
       anchor: { x: strokeSelBox.x, y: strokeSelBox.y },
       startW: Math.max(8, strokeSelBox.w),
@@ -1384,22 +1391,23 @@ export function BroadcastPanel({
     if (!sc || e.pointerId !== sc.pointerId) return;
     const p = innerPointC(e.clientX, e.clientY);
     if (!p) return;
-    const requested = Math.max(
-      (p.x - sc.anchor.x) / sc.startW,
-      (p.y - sc.anchor.y) / sc.startH
-    );
-    const maxByBoard = Math.min(
-      (sc.maxX - 8 - sc.anchor.x) / sc.startW,
-      (sc.maxY - 8 - sc.anchor.y) / sc.startH
-    );
-    const s = Math.max(0.2, Math.min(8, maxByBoard, requested));
+    const clamp = (v: number) => Math.max(0.2, Math.min(8, v));
+    const rx = clamp(Math.min((sc.maxX - 8 - sc.anchor.x) / sc.startW, (p.x - sc.anchor.x) / sc.startW));
+    const ry = clamp(Math.min((sc.maxY - 8 - sc.anchor.y) / sc.startH, (p.y - sc.anchor.y) / sc.startH));
+    // 대각은 두 축을 같은 값으로 묶어 비율을 지킨다(예전 동작). 가장자리 손잡이는 한 축만.
+    const sx = sc.axis === "y" ? 1 : sc.axis === "xy" ? Math.max(rx, ry) : rx;
+    const sy = sc.axis === "x" ? 1 : sc.axis === "xy" ? Math.max(rx, ry) : ry;
     for (const [st, g] of sc.origs) {
       st.points = g.points.map((pt) => ({
-        x: sc.anchor.x + (pt.x - sc.anchor.x) * s,
-        y: sc.anchor.y + (pt.y - sc.anchor.y) * s,
+        x: sc.anchor.x + (pt.x - sc.anchor.x) * sx,
+        y: sc.anchor.y + (pt.y - sc.anchor.y) * sy,
         p: pt.p
       }));
-      st.width = Math.max(0.5, Math.min(240, g.width * s));
+      // 획 굵기는 두 축 평균으로 — 한 축만 늘렸다고 선이 그만큼 굵어지면 어색하다.
+      // 이미지는 굵기 개념이 없으므로 건드리지 않는다.
+      if (st.tool !== "image") {
+        st.width = Math.max(0.5, Math.min(240, g.width * ((sx + sy) / 2)));
+      }
     }
     repaintStrokeLayers(sc.origs);
   }
@@ -3426,7 +3434,7 @@ export function BroadcastPanel({
           }}
         >
           {/* 배경 레이어 = 날짜 카드 DOM(캔버스 아님 — 메모리 0). 표시 토글은 숨김만. */}
-          <div className={`bp-board-bg${bgVis ? "" : " hidden"}`}>
+          <div className={`bp-board-bg${bgVis ? "" : " hidden"}${bgOnTop ? " on-top" : ""}`}>
             {sentDays.length === 0 ? (
               <p className="bp-empty">
                 바로 그릴 수 있어요 · 일정은 위 달력에서 골라 그림판으로 보내세요
@@ -3640,11 +3648,29 @@ export function BroadcastPanel({
               onPointerMove={onColPointerMove}
               onPointerUp={onColPointerUp}
             >
+              {/* 대각(비율 유지) + 오른쪽(너비) + 아래(높이) — 스크린샷을 칸에 맞춰 눌러 넣을 때
+                  비율 고정만으로는 안 되는 경우가 있다. */}
               <span
                 aria-hidden="true"
                 className="bp-stroke-sel-handle"
                 onLostPointerCapture={onStrokeScaleUp}
-                onPointerDown={onStrokeScaleDown}
+                onPointerDown={(e) => onStrokeScaleDown(e, "xy")}
+                onPointerMove={onStrokeScaleMove}
+                onPointerUp={onStrokeScaleUp}
+              />
+              <span
+                aria-hidden="true"
+                className="bp-stroke-sel-handle edge-x"
+                onLostPointerCapture={onStrokeScaleUp}
+                onPointerDown={(e) => onStrokeScaleDown(e, "x")}
+                onPointerMove={onStrokeScaleMove}
+                onPointerUp={onStrokeScaleUp}
+              />
+              <span
+                aria-hidden="true"
+                className="bp-stroke-sel-handle edge-y"
+                onLostPointerCapture={onStrokeScaleUp}
+                onPointerDown={(e) => onStrokeScaleDown(e, "y")}
                 onPointerMove={onStrokeScaleMove}
                 onPointerUp={onStrokeScaleUp}
               />
@@ -3795,6 +3821,20 @@ export function BroadcastPanel({
             </span>
           </button>
           <div className="bp-layer-actions">
+            <button
+              aria-label="일정 카드를 그림 위로"
+              aria-pressed={bgOnTop}
+              className="bp-layer-btn"
+              data-act="bp-bg-ontop"
+              title={bgOnTop ? "그림 아래로 내리기" : "그림 위로 올리기"}
+              type="button"
+              onClick={() => {
+                hapticTick();
+                setBgOnTop((v) => !v);
+              }}
+            >
+              {bgOnTop ? "⬆" : "⬇"}
+            </button>
             <button
               aria-label="일정 카드 표시"
               aria-pressed={bgVis}

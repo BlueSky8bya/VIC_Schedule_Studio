@@ -1359,6 +1359,13 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
 .bp-board-bg {
   height: 100%;
 }
+/* 일정 카드를 그림 위로 — 캔버스들은 DOM상 카드 뒤라 늘 위에 깔린다. 스크린샷을 붙이고 그
+   위에 일정을 올려야 할 때가 있어(사용자 요청) 이 토글로 순서를 뒤집는다.
+   position이 있어야 z-index가 먹는다(원래 static이었다). */
+.bp-board-bg.on-top {
+  position: relative;
+  z-index: 3;
+}
 .bp-board-bg.hidden {
   visibility: hidden; /* 배경(날짜 카드) 숨김 — 레이아웃은 유지해 캔버스 좌표 불변 */
 }
@@ -1667,6 +1674,25 @@ html[data-reduce-motion] .bp-stroke-sel {
   box-shadow: 0 1px 4px rgb(60 50 110 / 35%);
   cursor: nwse-resize;
   touch-action: none;
+}
+/* 가장자리 손잡이 — 오른쪽=너비, 아래=높이. 대각(모서리)과 헷갈리지 않게 알약 모양으로. */
+.bp-stroke-sel-handle.edge-x {
+  right: -6px;
+  bottom: 50%;
+  width: 11px;
+  height: 26px;
+  border-radius: var(--r-pill, 999px);
+  transform: translateY(50%);
+  cursor: ew-resize;
+}
+.bp-stroke-sel-handle.edge-y {
+  right: 50%;
+  bottom: -6px;
+  width: 26px;
+  height: 11px;
+  border-radius: var(--r-pill, 999px);
+  transform: translateX(50%);
+  cursor: ns-resize;
 }
 /* 스냅 정렬 가이드 — 드래그 중 가장자리/중앙선이 맞을 때만 잠깐 */
 .bp-guide-v,
