@@ -1586,6 +1586,41 @@ html[data-reduce-motion] .bp-day-col {
 /* 러버밴드(드래그 다중 선택) */
 /* 러버밴드 — 각진 1.5px 상자는 이 앱의 다른 표면(둥근 모서리·부드러운 그림자)과 따로 놀았다.
    같은 문법으로: 큰 라운드 + 옅은 채움 + 은은한 링. 뜰 때 살짝 부풀어 오른다. */
+/* 그림 파일을 끌고 왔을 때 — 놓을 수 있다는 표시. */
+.bp-board-inner.is-drop {
+  outline: 3px dashed rgb(124 108 240 / 70%);
+  outline-offset: -6px;
+}
+
+/* 선택 안내 — 화면 가운데 아래에 잠깐. 아무것도 안 잡혔을 때만 뜬다(평소엔 소음). */
+.bp-sel-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 8;
+  margin: 0;
+  padding: 7px 14px;
+  border-radius: var(--r-pill);
+  background: rgb(43 30 70 / 88%);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 8px 22px rgb(43 30 70 / 28%);
+  animation: bp-hint-in 0.18s var(--ease-enter, cubic-bezier(0.2, 0.9, 0.3, 1.2));
+}
+@keyframes bp-hint-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+}
+html[data-reduce-motion] .bp-sel-hint {
+  animation: none;
+}
+
 .bp-marquee {
   position: absolute;
   z-index: 4;

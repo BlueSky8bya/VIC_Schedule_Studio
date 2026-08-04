@@ -1246,8 +1246,10 @@ export function StudioShell({
   //  불가능해 카드와 정확히 같아질 수 없다(근사가 오히려 더 어색). 규칙 안내는 아래 helper가 담당.)
   // 규칙 문구("첫 줄 = 제목…")는 제거(사용자 결정 — placeholder가 이미 안내). 소프트 카운터만:
   // 첫 줄이 길어질 때만 나타나 포스터 카드에서의 줄바꿈/축소를 저장 전에 예감하게 한다.
+  // 업 도움은 카드가 아니라 '띠'로 그려진다 — 포스터 카드의 줄바꿈/축소를 예감시키는 이 카운터가
+  // 거기선 아무 의미가 없다(높이만 먹는 소음). 그래서 업 도움 편집에선 아예 띄우지 않는다.
   const renderTitleHelper = () =>
-    titleFirstLineLen >= 14 ? (
+    !form.isSupport && titleFirstLineLen >= 14 ? (
       <div className="title-helper">
         <em className={titleFirstLineLen >= 20 ? "warn" : ""}>
           제목 {titleFirstLineLen}자{titleFirstLineLen >= 20 ? " — 포스터에서 길어요" : ""}

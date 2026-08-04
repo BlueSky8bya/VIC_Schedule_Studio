@@ -18,11 +18,18 @@ export type BroadcastTool =
   | "line"
   | "arrow"
   | "rect"
-  | "ellipse";
+  | "ellipse"
+  /** 붙여넣기·드롭으로 들어온 그림. 도구 막대에는 없다(사용자가 고르는 도구가 아니다).
+   *  같은 장면 배열에 살면 z순서·선택·이동/확대·되돌리기·내보내기가 전부 공짜로 따라온다. */
+  | "image";
 
 /** 도형 도구 — 시작점·끝점 2점만 의미 있고, 드래그 중엔 끝점만 갱신된다(라이브 프리뷰). */
 export function isShapeTool(tool: BroadcastTool): tool is "line" | "arrow" | "rect" | "ellipse" {
   return tool === "line" || tool === "arrow" || tool === "rect" || tool === "ellipse";
+}
+/** 2점(좌상·우하)으로 사각형을 이루는 항목 — 도형 + 이미지. 선택·교차·확대가 같은 규칙이다. */
+export function isBoxItem(tool: BroadcastTool): boolean {
+  return isShapeTool(tool) || tool === "image";
 }
 /** 그리기 레이어 id — 사용자가 ➕로 자유 추가/삭제한다(배경은 DOM이라 여기 없음). */
 export type StrokeLayer = string;
@@ -37,6 +44,8 @@ export type StrokePoint = {
 
 export type Stroke = {
   tool: Exclude<BroadcastTool, "select">;
+  /** tool==="image"일 때만 — data URL. 실제 그리기는 패널이 한다(엔진은 DOM을 모른다). */
+  src?: string;
   /** 이 획이 속한 레이어 id — 펜/형광펜/지우개 모두 '활성 레이어'에만 작용(그림판 문법). */
   layer: StrokeLayer;
   color: string;
@@ -268,6 +277,8 @@ type MinimalCtx = {
 /** stroke 하나를 ctx에 그린다(좌표는 CSS px — 호출자가 setTransform으로 scale 적용). */
 export function drawStroke(ctx: MinimalCtx, stroke: Stroke): void {
   if (stroke.points.length === 0) return;
+  // 이미지는 HTMLImageElement가 필요해 엔진(DOM 비의존)이 그릴 수 없다 — 패널이 캐시로 그린다.
+  if (stroke.tool === "image") return;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.lineWidth = stroke.width;

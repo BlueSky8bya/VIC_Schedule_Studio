@@ -86,6 +86,7 @@ import {
   drawPenIncremental,
   drawPenPrediction,
   drawStroke,
+  isBoxItem,
   isShapeTool,
   strokeIntersectsRect,
   strokeAppliesTo,
@@ -125,6 +126,8 @@ const TOOL_LABELS: Record<BroadcastTool, string> = {
   pen: "펜",
   hl: "형광펜",
   eraser: "지우개",
+  // 도구 막대에는 없다(붙여넣기·드롭으로만 생긴다) — 라벨은 안내·접근성용.
+  image: "그림",
   line: "직선",
   arrow: "화살표",
   rect: "사각형",
@@ -461,6 +464,15 @@ export function BroadcastPanel({
   // 그림판 안 클립보드(Ctrl+C/X/V). 시스템 클립보드에 획 좌표를 담을 형식이 없고, 담아도 다른
   // 앱이 못 읽는다 — 이 패널이 열려 있는 동안의 메모리로 둔다.
   const strokeClipRef = useRef<Stroke[]>([]);
+  // 선택 안내(잠깐 떴다 사라짐) — "감쌌는데 아무것도 안 잡힌다"를 수수께끼로 두지 않는다.
+  const [selHint, setSelHint] = useState<string | null>(null);
+  const [dropOver, setDropOver] = useState(false); // 파일을 보드 위로 끌고 온 상태(테두리 강조)
+  const selHintTimer = useRef<number | null>(null);
+  const flashSelHint = (msg: string) => {
+    setSelHint(msg);
+    if (selHintTimer.current) window.clearTimeout(selHintTimer.current);
+    selHintTimer.current = window.setTimeout(() => setSelHint(null), 2200);
+  };
   const [strokeSel, setStrokeSel] = useState<Stroke[]>([]);
   const strokeSelRef = useRef(strokeSel);
   strokeSelRef.current = strokeSel;
@@ -978,6 +990,26 @@ export function BroadcastPanel({
     }
     // 획은 라이브로 선택하지 않는다 — 놓는 순간 '밴드에 걸친 구간만' 잘라 선택(부분 선택).
   }
+  // 파일 드롭 — 떨어뜨린 자리에 놓는다(가운데로 보내면 "어디 갔지?"가 된다).
+  function onBoardDragOver(e: React.DragEvent<HTMLDivElement>) {
+    if (![...e.dataTransfer.types].includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+    if (!dropOver) setDropOver(true);
+  }
+  function onBoardDragLeave(e: React.DragEvent<HTMLDivElement>) {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setDropOver(false);
+  }
+  function onBoardDrop(e: React.DragEvent<HTMLDivElement>) {
+    const file = [...e.dataTransfer.files].find((f) => f.type.startsWith("image/"));
+    setDropOver(false);
+    if (!file) return;
+    e.preventDefault();
+    const p = innerPointC(e.clientX, e.clientY);
+    readImageFile(file, p ? { x: Math.round(p.x), y: Math.round(p.y) } : undefined);
+  }
+
   function onBoardPointerDown(e: React.PointerEvent<HTMLDivElement>) {
     if (tool !== "select" || e.button !== 0) return;
     // 카드/버튼 위에서 시작하면 러버밴드 아님(카드 자체 핸들러가 처리).
@@ -1029,12 +1061,14 @@ export function BroadcastPanel({
   // ── 부분 선택(그림판 영역 선택 의미론): 밴드에 걸친 획을 경계에서 '분할'하고 안쪽
   // 조각만 선택한다. 완전히 안이면 통째, 도형은 부분 개념이 없어 걸치면 통째.
   //
-  // 대상은 **보이는 레이어 전부**다. 예전엔 '활성 레이어'로 한정했는데, 눈에 보이는 그림을
-  // 범위로 감쌌는데도 아무것도 안 잡히는 일이 생겼다(다른 레이어에 그렸던 것 — 실측).
-  // 화면에서 감싼 것이 안 잡히면 선택이 아니라 수수께끼가 된다. 숨긴 레이어는 화면에 없으므로
-  // 그대로 제외한다(안 보이는 걸 잡으면 그게 또 수수께끼다). ──
+  // 대상은 **활성 레이어**의 획만이다(사용자 결정) — 레이어를 나눈 이유가 '따로 손대기'라,
+  // 선택이 레이어를 넘나들면 그 분리가 무의미해진다.
+  // 대신 "감쌌는데 아무것도 안 잡힌다"가 수수께끼로 남지 않게, 밴드 안에 **다른 레이어의**
+  // 잉크가 있으면 그 사실을 말해 준다(아래 setSelHint).
   function splitSelectStrokes(lo: { x: number; y: number }, hi: { x: number; y: number }) {
-    const layerOk = new Map(layersRef.current.map((l) => [l.id, l.vis]));
+    const layerOk = new Map(
+      layersRef.current.map((l) => [l.id, l.id === activeLayerIdRef.current && l.vis])
+    );
     const inside = (pt: StrokePoint) =>
       pt.x >= lo.x && pt.x <= hi.x && pt.y >= lo.y && pt.y <= hi.y;
     const selectionRect = { left: lo.x, top: lo.y, right: hi.x, bottom: hi.y };
@@ -1084,6 +1118,15 @@ export function BroadcastPanel({
       const py = Math.min(bandH - 1, Math.max(0, Math.round((pt.y - lo.y) * scale)));
       return band.data[(py * bandW + px) * 4 + 3] > 24;
     };
+    // 안내용 엄격 판정 — 픽셀을 못 읽었으면 '있다'고 말하지 않는다(거짓 안내 방지).
+    const layerHasInkStrict = (layerId: string): boolean => {
+      const band = bandByLayer.get(layerId);
+      if (!band) return false;
+      for (let i = 3; i < band.data.length; i += 4) {
+        if (band.data[i] > 24) return true;
+      }
+      return false;
+    };
     const layerHasInk = (layerId: string): boolean => {
       const band = bandByLayer.get(layerId);
       if (!band) return true;
@@ -1102,7 +1145,7 @@ export function BroadcastPanel({
         continue;
       }
       const flags = s.points.map(inside);
-      const shapeCrosses = isShapeTool(s.tool) && strokeIntersectsRect(s, selectionRect);
+      const shapeCrosses = isBoxItem(s.tool) && strokeIntersectsRect(s, selectionRect);
       const hasVisiblePoint = s.points.some((pt, i) => flags[i] && visibleAt(pt, s.layer));
       if (
         (!flags.some(Boolean) && !shapeCrosses) ||
@@ -1111,7 +1154,7 @@ export function BroadcastPanel({
         nextScene.push(s); // 밴드 밖이거나, 밴드 안 구간이 전부 지워져 안 보이는 획
         continue;
       }
-      if (flags.every(Boolean) || isShapeTool(s.tool)) {
+      if (flags.every(Boolean) || isBoxItem(s.tool)) {
         nextScene.push(s);
         picked.push(s);
         continue;
@@ -1166,16 +1209,93 @@ export function BroadcastPanel({
       setStrokeVersion((v) => v + 1);
     }
     setStrokeSel(picked);
+    // 아무것도 안 잡혔는데 밴드 안에 '다른 레이어'의 잉크가 있으면 그 사실을 알린다.
+    if (picked.length === 0) {
+      const other = layersRef.current.find(
+        (l) => l.vis && l.id !== activeLayerIdRef.current && layerHasInkStrict(l.id)
+      );
+      if (other) flashSelHint(`'${other.name}' 레이어에 있어요 — 그 레이어를 골라야 선택돼요`);
+    }
   }
+
+  // ── 그림 붙여넣기·드롭 ──
+  // 이미지는 장면 배열의 한 항목(tool:"image")으로 들어간다 — 그래야 z순서·선택·이동/확대·
+  // 되돌리기·내보내기가 이미 있는 경로를 그대로 탄다(따로 만들면 그중 하나가 반드시 빠진다).
+  // 크기는 보드 폭의 1/3을 넘지 않게 줄여 넣는다(원본이 4000px여도 화면을 덮지 않게).
+  const insertImage = useCallback(
+    (src: string, at?: { x: number; y: number }) => {
+      const act = layersRef.current.find((l) => l.id === activeLayerIdRef.current && l.vis);
+      if (!act) return; // 숨긴 레이어에 넣으면 안 보이는 곳에 놓는 셈이다
+      const img = new Image();
+      img.onload = () => {
+        const inner = boardInnerRef.current;
+        const maxW = Math.max(120, (inner?.offsetWidth ?? 900) / 3);
+        const k = Math.min(1, maxW / Math.max(1, img.naturalWidth));
+        const w = Math.max(24, Math.round(img.naturalWidth * k));
+        const h = Math.max(24, Math.round(img.naturalHeight * k));
+        const cx = at?.x ?? Math.round(((inner?.offsetWidth ?? 900) - w) / 2);
+        const cy = at?.y ?? Math.round(((inner?.offsetHeight ?? 400) - h) / 2);
+        const item: Stroke = {
+          tool: "image",
+          layer: act.id,
+          color: "#000",
+          width: 1,
+          src,
+          points: [
+            { x: cx, y: cy },
+            { x: cx + w, y: cy + h }
+          ]
+        };
+        imgCache.current.set(src, img); // 방금 디코드한 것을 그대로 캐시에 넣는다
+        const before = [...store.strokes()];
+        const after = [...before, item];
+        store.setStrokes(after);
+        pushHist({ t: "scene", before, after: [...after] });
+        replayLayerFnRef.current(act.id);
+        setStrokeVersion((v) => v + 1);
+        setStrokeSel([item]); // 붙자마자 선택 — 바로 옮기거나 크기를 바꿀 수 있게
+        setTool("select");
+        hapticTick();
+      };
+      img.src = src;
+    },
+    [store, pushHist]
+  );
+  const readImageFile = useCallback(
+    (file: File, at?: { x: number; y: number }) => {
+      if (!file.type.startsWith("image/")) return;
+      const fr = new FileReader();
+      fr.onload = () => {
+        if (typeof fr.result === "string") insertImage(fr.result, at);
+      };
+      fr.readAsDataURL(file);
+    },
+    [insertImage]
+  );
+  // 붙여넣기 — 패널이 열려 있을 때만. 입력칸에 포커스가 있으면 그쪽이 임자다(텍스트 붙여넣기).
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const files = [...(e.clipboardData?.files ?? [])];
+      const img = files.find((f) => f.type.startsWith("image/"));
+      if (!img) return;
+      e.preventDefault();
+      readImageFile(img);
+    };
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, [readImageFile]);
 
   // ── 선택 획 박스(그림판 선택 문법): 점선 bbox — 끌면 이동, 모서리 손잡이로 확대/축소 ──
   const strokeSelBox = useMemo(() => {
     if (tool !== "select" || strokeSel.length === 0) return null;
-    // 선택은 보이는 레이어 전체를 대상으로 한다(splitSelectStrokes와 같은 규칙) — 활성 레이어로
-    // 한정하면, 감싸서 잡아놓고도 레이어를 바꾸는 순간 선택이 통째로 사라진다.
-    const visible = new Set(layers.filter((l) => l.vis).map((l) => l.id));
+    // 선택은 활성 레이어 기준(splitSelectStrokes와 같은 규칙). 레이어를 바꾸면 선택이 풀리는데,
+    // 그게 '레이어별로 따로 손댄다'는 규율의 자연스러운 결과다.
+    const selectedLayer = layers.find((l) => l.id === activeLayerId);
+    if (!selectedLayer?.vis) return null;
     const live = new Set(store.strokes());
-    const sel = strokeSel.filter((s) => live.has(s) && visible.has(s.layer));
+    const sel = strokeSel.filter((s) => live.has(s) && s.layer === activeLayerId);
     if (sel.length === 0) return null;
     let minX = Infinity;
     let minY = Infinity;
@@ -1407,6 +1527,19 @@ export function BroadcastPanel({
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   }, []);
+  // 붙여넣은 그림의 디코드 캐시. 같은 data URL을 매 재생마다 다시 디코드하면 되돌리기·리사이즈가
+  // 눈에 띄게 느려진다. 처음 만나면 로드하고, 로드가 끝나면 그 레이어만 다시 재생한다.
+  const imgCache = useRef<Map<string, HTMLImageElement>>(new Map());
+  const imageFor = useCallback((src: string, layer: StrokeLayer): HTMLImageElement | null => {
+    const hit = imgCache.current.get(src);
+    if (hit) return hit.complete && hit.naturalWidth > 0 ? hit : null;
+    const img = new Image();
+    imgCache.current.set(src, img);
+    img.onload = () => replayLayerFnRef.current(layer); // 로드 끝난 뒤 한 번만 다시 그린다
+    img.src = src;
+    return null;
+  }, []);
+
   const replayLayer = useCallback(
     (layer: StrokeLayer) => {
       const canvas = canvasOf(layer);
@@ -1414,10 +1547,26 @@ export function BroadcastPanel({
       const ctx = scaledCtx(canvas);
       if (!ctx) return;
       for (const s of store.strokes()) {
-        if (strokeAppliesTo(s, layer)) drawStroke(ctx, s);
+        if (!strokeAppliesTo(s, layer)) continue;
+        if (s.tool === "image") {
+          // 이미지는 엔진이 못 그린다(DOM 필요) — 여기서 2점 사각형에 맞춰 그린다.
+          const img = s.src ? imageFor(s.src, layer) : null;
+          if (!img) continue; // 아직 로딩 중 — onload가 다시 부른다
+          const [a, b] = [s.points[0], s.points[s.points.length - 1]];
+          const x = Math.min(a.x, b.x);
+          const y = Math.min(a.y, b.y);
+          const w = Math.abs(b.x - a.x);
+          const h = Math.abs(b.y - a.y);
+          if (w < 1 || h < 1) continue;
+          ctx.globalCompositeOperation = "source-over";
+          ctx.globalAlpha = 1;
+          (ctx as unknown as CanvasRenderingContext2D).drawImage(img, x, y, w, h);
+          continue;
+        }
+        drawStroke(ctx, s);
       }
     },
-    [canvasOf, clearCanvas, scaledCtx, store]
+    [canvasOf, clearCanvas, scaledCtx, store, imageFor]
   );
   const replayAll = useCallback(() => {
     for (const id of layerCanvases.current.keys()) replayLayer(id);
@@ -2464,8 +2613,8 @@ export function BroadcastPanel({
         const k = e.key.toLowerCase();
         if ((k === "c" || k === "x") && strokeSelRef.current.length > 0) {
           e.preventDefault();
-          const visibleIds = new Set(layersRef.current.filter((l) => l.vis).map((l) => l.id));
-          const picked = strokeSelRef.current.filter((s) => visibleIds.has(s.layer));
+          const actL = layersRef.current.find((l) => l.id === activeLayerIdRef.current && l.vis);
+          const picked = actL ? strokeSelRef.current.filter((s) => s.layer === actL.id) : [];
           // 깊은 복사 — 원본을 나중에 옮기거나 지워도 붙여넣을 내용이 흔들리지 않게.
           strokeClipRef.current = picked.map((s) => ({
             ...s,
@@ -2518,12 +2667,11 @@ export function BroadcastPanel({
       ) {
         e.preventDefault();
         // 선택된 획 삭제 — 장면에서 제거(scene 스냅샷으로 undo 가능).
-        // 선택이 보이는 레이어 전체를 대상으로 하므로 삭제도 같은 기준이어야 한다
-        // (활성 레이어만 지우면 "선택은 됐는데 일부만 지워지는" 어긋남이 난다).
-        const visibleIds = new Set(
-          layersRef.current.filter((l) => l.vis).map((l) => l.id)
-        );
-        const editableStrokes = strokeSelRef.current.filter((s) => visibleIds.has(s.layer));
+        // 선택이 활성 레이어 기준이므로 삭제도 같은 기준(어긋나면 "선택은 됐는데 일부만 지워짐").
+        const act = layersRef.current.find((l) => l.id === activeLayerIdRef.current && l.vis);
+        const editableStrokes = act
+          ? strokeSelRef.current.filter((s) => s.layer === act.id)
+          : [];
         if (editableStrokes.length > 0) {
           const dead = new Set(editableStrokes);
           const beforeScene = [...store.strokes()];
@@ -3251,8 +3399,11 @@ export function BroadcastPanel({
             카드와 판서가 같이 움직여 좌표가 절대 안 어긋난다. 컬럼 자유 배치 범위만큼 inner가
             커진다(minWidth/minHeight). */}
         <div
-          className="bp-board-inner"
+          className={`bp-board-inner${dropOver ? " is-drop" : ""}`}
           ref={boardInnerRef}
+          onDragOver={onBoardDragOver}
+          onDragLeave={onBoardDragLeave}
+          onDrop={onBoardDrop}
           onPointerDown={onBoardPointerDown}
           onPointerMove={onBoardPointerMove}
           onPointerUp={onBoardPointerUp}
@@ -3488,6 +3639,12 @@ export function BroadcastPanel({
                 onPointerUp={onStrokeScaleUp}
               />
             </div>
+          ) : null}
+          {/* 선택 안내 — 다른 레이어에 있어 안 잡힌 경우처럼, 결과가 '아무 일도 안 일어남'일 때만. */}
+          {selHint ? (
+            <p className="bp-sel-hint" role="status">
+              {selHint}
+            </p>
           ) : null}
           {/* 스냅 정렬 가이드(드래그 중 가장자리/중앙선이 맞으면 표시) */}
           {guides.v.map((x) => (
