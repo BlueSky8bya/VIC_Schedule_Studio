@@ -1458,12 +1458,11 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
   font-weight: 800;
 }
 
-/* ── 적게 쓰인 기능 ── */
-.usage-toggle {
-  display: flex;
+/* 카드 접기 — 두 카드가 같은 머리 형식을 쓴다(한쪽만 접기가 없으면 어색하다). */
+.act-fold {
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  width: 100%;
+  gap: 6px;
   padding: 2px 0;
   border: 0;
   background: transparent;
@@ -1472,8 +1471,11 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
   font-family: inherit;
   transition: opacity var(--dur-1) var(--ease);
 }
-.usage-toggle:hover { opacity: 0.75; }
-.usage-toggle .insight-subhead { margin: 0; }
+.act-fold:hover { opacity: 0.72; }
+.act-fold:active { transform: scale(0.985); }
+.act-fold .insight-subhead { margin: 0; }
+
+/* ── 적게 쓰인 기능 ── */
 .usage-gist {
   margin-left: auto;
   font-size: 11px;

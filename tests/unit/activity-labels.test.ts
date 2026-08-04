@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeTarget } from "@/lib/activity/labels";
+import { describeTarget, roleBreakdown } from "@/lib/activity/labels";
 
 // 이 화면을 보는 사람은 대부분 코드를 모른다(관리자·매니저). 규약:
 //   1) 화면에 실제로 쓰인 말로 부른다
@@ -62,5 +62,22 @@ describe("정적으로 박은 한글 id", () => {
   it("클래스에서 딴 id는 사전에서 이름·위치가 나온다", () => {
     expect(describeTarget("ui.click", "bp-color").area).toBe("일정 그림판");
     expect(describeTarget("ui.click", "event-heart").name).toBe("하트 누르기");
+  });
+});
+
+describe("역할별 분해 — 뭉치지 않는다", () => {
+  it("역할이 살아 있어야 '이 기능은 매니저만 쓴다' 같은 판단이 된다", () => {
+    expect(roleBreakdown({ owner: 3, developer: 12, viewer: 5 })).toBe(
+      "관리자 3 · 개발자 12 · 시청자 5"
+    );
+  });
+  it("0인 역할은 빼고, 순서는 관리자→매니저→작업자→개발자→시청자", () => {
+    expect(roleBreakdown({ viewer: 2, manager: 1 })).toBe("매니저 1 · 시청자 2");
+  });
+  it("모르는 역할이 생겨도 버리지 않는다(지어내지 않는 원칙과 같다)", () => {
+    expect(roleBreakdown({ ghost: 4 })).toBe("ghost 4");
+  });
+  it("빈 값도 안전하게", () => {
+    expect(roleBreakdown({})).toBe("기록 없음");
   });
 });

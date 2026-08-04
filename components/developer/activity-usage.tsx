@@ -1,7 +1,7 @@
 "use client";
 
 import { type CSSProperties, useEffect, useState } from "react";
-import { describeTarget } from "@/lib/activity/labels";
+import { describeTarget, roleBreakdown } from "@/lib/activity/labels";
 import { getActivityUsageAction, type UsageRow } from "@/lib/activity/query";
 import { hapticTick } from "@/lib/ui/haptics";
 
@@ -35,7 +35,9 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   const [kind, setKind] = useState("all");
-  const [open, setOpen] = useState(false); // 기본 접힘 — 이용 기록 창이 이미 길다
+  // 옆 카드(행동 타임라인)와 같은 기본 상태로 둔다 — 한쪽만 접혀 있으면 그 칸이
+  // 통째로 비어 보여 어색하다(2단 배치라 세로가 짧아지지도 않는다).
+  const [open, setOpen] = useState(true);
   const [dev, setDev] = useState(false); // 개발자 정보(원래 id) 표시
   const [copied, setCopied] = useState(false);
   const [span, setSpan] = useState<{ since: string; until: string } | null>(null);
@@ -76,7 +78,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
         (KIND_CHIP[r.kind]?.short ?? r.kind).padEnd(3),
         (d.area ?? "-").padEnd(7),
         d.name,
-        `| 운영진 ${r.internal} · 시청자 ${r.viewer}`,
+        `| ${roleBreakdown(r.roles)}`,
         `| kind=${r.kind} target=${r.target}${d.unnamed ? " (이름미등록)" : ""}`
       ].join("  ");
     });
@@ -98,28 +100,29 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
 
   return (
     <section className="vcard">
-      {/* 기본 접힘 — 이용 기록 창은 이미 길다. 제목 줄 전체가 토글이라 과녁이 넓고,
-          접힌 상태에도 "몇 개가 거의 안 쓰였나"가 보여 펼칠지 판단이 된다. */}
-      <button
-        aria-expanded={open}
-        className="usage-toggle"
-        data-act="usage-open"
-        onClick={() => {
-          hapticTick();
-          setOpen((v) => !v);
-        }}
-        type="button"
-      >
-        <span className="act-caret" aria-hidden="true">
-          {open ? "▾" : "▸"}
-        </span>
-        <span className="insight-subhead">적게 쓰인 기능</span>
+      {/* 옆 카드와 같은 머리 형식: [접기] 제목 … 요약. 접힌 상태에도 요약이 남는다. */}
+      <header className="act-head">
+        <button
+          aria-expanded={open}
+          className="act-fold"
+          data-act="usage-open"
+          onClick={() => {
+            hapticTick();
+            setOpen((v) => !v);
+          }}
+          type="button"
+        >
+          <span className="act-caret" aria-hidden="true">
+            {open ? "▾" : "▸"}
+          </span>
+          <span className="insight-subhead">적게 쓰인 기능</span>
+        </button>
         {rows ? (
           <span className="usage-gist">
             {lowCount}/{rows.length} 저사용
           </span>
         ) : null}
-      </button>
+      </header>
 
       {!open ? null : (
         <>
@@ -202,7 +205,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
                         {needHint && d.hint ? <small>{d.hint}</small> : null}
                         {dev ? <code>{r.target}</code> : null}
                       </span>
-                      <b className="usage-n" title={`운영진 ${r.internal} · 시청자 ${r.viewer}`}>
+                      <b className="usage-n" title={roleBreakdown(r.roles)}>
                         {r.total}
                       </b>
                     </li>
@@ -242,7 +245,7 @@ export function ActivityUsage({ anchor }: { anchor: string }) {
               </div>
 
               <p className="vt-occ-note">
-                숫자 = 눌린 횟수 · 올리면 운영진·시청자 내역 · 시청자는 개수만
+                숫자 = 눌린 횟수 · 올리면 역할별 내역 · 시청자는 개수만
               </p>
             </>
           )}

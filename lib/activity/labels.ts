@@ -270,3 +270,26 @@ export function describeTarget(kind: string, target: string): TargetLabel {
   if (/[가-힣]/.test(target)) return { name: target, area: "기타" };
   return { name: target, area: "기타", hint: "이름이 등록되지 않은 항목", unnamed: true };
 }
+
+// 역할 표기 — 지표에서 뭉치지 않는다. "이 기능은 매니저만 쓴다" 같은 판단은 역할이 살아 있어야
+// 가능하다. 비로그인은 시청자로 합친다(지금 판단에 둘을 가르는 이득이 없다).
+export const ROLE_ORDER = ["owner", "manager", "worker", "developer", "viewer"] as const;
+export const ROLE_NAME: Record<string, string> = {
+  owner: "관리자",
+  manager: "매니저",
+  worker: "작업자",
+  developer: "개발자",
+  viewer: "시청자",
+  anon: "시청자"
+};
+/** 역할별 횟수를 "관리자 3 · 개발자 12" 같은 한 줄로. 0인 역할은 뺀다. */
+export function roleBreakdown(roles: Record<string, number>): string {
+  const parts = ROLE_ORDER.filter((r) => (roles[r] ?? 0) > 0).map(
+    (r) => `${ROLE_NAME[r]} ${roles[r]}`
+  );
+  // 사전에 없는 역할이 생겨도 버리지 않는다(지어내지 않는 원칙과 같다).
+  for (const [k, v] of Object.entries(roles)) {
+    if (!ROLE_ORDER.includes(k as (typeof ROLE_ORDER)[number]) && v > 0) parts.push(`${k} ${v}`);
+  }
+  return parts.join(" · ") || "기록 없음";
+}

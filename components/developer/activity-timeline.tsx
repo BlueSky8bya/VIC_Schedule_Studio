@@ -101,6 +101,7 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState<string | null>(null); // 복사 완료 표시(방문 key, 전체는 "*")
+  const [open, setOpen] = useState(true); // 옆 카드와 같은 기본 상태
 
   useEffect(() => {
     let alive = true;
@@ -186,7 +187,23 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
   return (
     <section className="vcard">
       <header className="act-head">
-        <h4 className="insight-subhead">행동 타임라인</h4>
+        {/* 옆 카드(적게 쓰인 기능)와 같은 머리 형식 — 한쪽만 접기가 없으면 어색하다. */}
+        <button
+          aria-expanded={open}
+          className="act-fold"
+          data-act="activity-open"
+          onClick={() => {
+            hapticTick();
+            setOpen((v) => !v);
+          }}
+          type="button"
+        >
+          <span className="act-caret" aria-hidden="true">
+            {open ? "▾" : "▸"}
+          </span>
+          <span className="insight-subhead">행동 타임라인</span>
+        </button>
+        {open ? (
         <div className="act-head-tools">
           <button
             className="act-tool"
@@ -207,22 +224,29 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
             onClick={() => copy(allText, "*")}
             type="button"
           >
-            {copied === "*" ? "복사됨" : "전체 복사"}
+            {copied === "*" ? "복사됨" : "복사"}
           </button>
         </div>
+        ) : (
+          <span className="usage-gist">
+            방문 {visits.length} · {visits.reduce((n, v) => n + v.items.length, 0)}줄
+          </span>
+        )}
       </header>
+      {!open ? null : (
+        <>
       <ul className="act-visits">
         {visits.map((v) => {
-          const open = expanded.has(v.key);
+          const isOpen = expanded.has(v.key); // 바깥 open(카드 접기)과 헷갈리지 않게 다른 이름
           const rows = groupItems(v.items);
           const changes = v.items.filter((i) => i.source === "server").length;
           return (
-            <li className="act-visit" key={v.key} data-open={open ? "" : undefined}>
+            <li className="act-visit" key={v.key} data-open={isOpen ? "" : undefined}>
               {/* 헤더 한 줄: 토글(넓은 과녁) + 복사. 복사를 별도 줄에 두면 그 줄 왼쪽이
                   통째로 빈다 — 헤더 오른쪽 끝에 붙여 빈 공간을 없앤다. */}
               <div className="act-visit-head">
                 <button
-                  aria-expanded={open}
+                  aria-expanded={isOpen}
                   className="act-visit-toggle"
                   data-act="activity-visit-toggle"
                   onClick={() => {
@@ -237,7 +261,7 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
                   type="button"
                 >
                   <span className="act-caret" aria-hidden="true">
-                    {open ? "▾" : "▸"}
+                    {isOpen ? "▾" : "▸"}
                   </span>
                   <span className="act-dev" style={{ background: deviceColor(v.device) }} />
                   <span className="act-head-main">
@@ -262,7 +286,7 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
                   {copied === v.key ? <Check size={13} /> : <Copy size={13} />}
                 </button>
               </div>
-              {open ? (
+              {isOpen ? (
                 <ol className="act-items">
                   {rows.map((it, i) => {
                     const d = it.target ? describeTarget(it.kind, it.target) : null;
@@ -298,6 +322,8 @@ export function ActivityTimeline({ dateKey }: { dateKey: string }) {
       <p className="vt-occ-note">
         진한 줄 = 실제 변경 · 옅은 줄 = 열람 · 비공개는 범위만 · 보존 90일
       </p>
+        </>
+      )}
     </section>
   );
 }

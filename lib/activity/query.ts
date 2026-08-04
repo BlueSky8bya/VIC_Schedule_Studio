@@ -207,8 +207,9 @@ export type UsageRow = {
   kind: string;
   label: string;
   target: string;
-  internal: number; // 관리자·개발자·매니저·작업자
-  viewer: number; // 시청자·비로그인
+  // 역할별 횟수. 나중에 "이 기능은 매니저만 쓴다" 같은 판단을 하려면 뭉쳐두면 안 된다.
+  // 비로그인은 시청자로 합친다(둘을 가르는 게 지금 판단에 보태는 게 없다).
+  roles: Record<string, number>;
   total: number;
   auto: boolean; // target이 auto: 접두사 = 마크업에서 유추한 id(마크업이 바뀌면 갈라진다)
 };
@@ -255,7 +256,7 @@ export async function getActivityUsageAction(days = 30, anchor?: string): Promis
   }
 
   const acc = new Map<string, UsageRow>();
-  const bump = (kind: string, target: string | null, internal: boolean, n: number) => {
+  const bump = (kind: string, target: string | null, role: string, n: number) => {
     const t = target ?? "";
     const key = `${kind}|${t}`;
     let row = acc.get(key);
@@ -264,27 +265,32 @@ export async function getActivityUsageAction(days = 30, anchor?: string): Promis
         kind,
         label: KIND_LABEL[kind] ?? kind,
         target: t,
-        internal: 0,
-        viewer: 0,
+        roles: {},
         total: 0,
         auto: t.startsWith("auto:")
       };
       acc.set(key, row);
     }
-    if (internal) row.internal += n;
-    else row.viewer += n;
+    // 비로그인은 시청자로 합친다 — 지금 판단(어떤 기능이 안 쓰이나)에 둘을 가르는 이득이 없다.
+    const key2 = role === "anon" ? "viewer" : role;
+    row.roles[key2] = (row.roles[key2] ?? 0) + n;
     row.total += n;
   };
 
-  for (const r of (eventsRes.data ?? []) as { kind: string; target: string | null }[]) {
-    bump(r.kind, r.target, true, 1); // activity_event에는 내부자만 들어간다(0063)
+  for (const r of (eventsRes.data ?? []) as {
+    kind: string;
+    target: string | null;
+    role: string;
+  }[]) {
+    bump(r.kind, r.target, r.role, 1); // activity_event에는 내부자만 들어간다(0063)
   }
   for (const r of (countsRes.data ?? []) as {
     kind: string;
     target: string | null;
+    role: string;
     count: number;
   }[]) {
-    bump(r.kind, r.target, false, r.count ?? 0);
+    bump(r.kind, r.target, r.role, r.count ?? 0);
   }
 
   // 적은 순 — 판단이 필요한 건 바닥 쪽이다.
