@@ -1318,9 +1318,11 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
 }
 .act-dev {
   flex: none;
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
+  /* 흰 테두리 — 배경이 옅어 민트/파랑이 서로 번져 보이지 않게 또렷이 떨어뜨린다. */
+  box-shadow: 0 0 0 1.5px var(--surface, #fff);
 }
 .act-head-main {
   min-width: 0;
@@ -1335,6 +1337,9 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+.act-sub b {
+  font-weight: 800;
 }
 .act-sub {
   font-size: 10.5px;

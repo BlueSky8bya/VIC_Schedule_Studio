@@ -2,7 +2,7 @@
 
 import { Check, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
-import { deviceColor, deviceLabel, fmtDur, hhmm } from "@/components/developer/insights-dashboard";
+import { deviceLabel, fmtDur, hhmm, roleColor } from "@/components/developer/insights-dashboard";
 import { getActivityDayAction, type ActivityVisit } from "@/lib/activity/query";
 import { describeTarget } from "@/lib/activity/labels";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -352,11 +352,19 @@ export function ActivityTimeline({
                   <span className="act-caret" aria-hidden="true">
                     {isOpen ? "▾" : "▸"}
                   </span>
-                  <span className="act-dev" style={{ background: deviceColor(v.device) }} />
+                  {/* 점은 **역할 색**(관리자=민트·개발자=파랑·매니저=보라…). 예전엔 기기 색이라
+                      개발자와 관리자가 같은 파랑으로 보여 줄이 안 갈렸다(실측 지적).
+                      기기는 아래 줄에 글자로 이미 나오므로 색까지 쓸 필요가 없다. */}
+                  <span
+                    className="act-dev"
+                    style={{ background: roleColor(v.role) }}
+                    title={ROLE_LABEL[v.role] ?? v.role}
+                  />
                   <span className="act-head-main">
                     <b className="act-acct">{v.account}</b>
                     <span className="act-sub">
-                      {ROLE_LABEL[v.role] ?? v.role} · {deviceLabel(v.device)}
+                      <b style={{ color: roleColor(v.role) }}>{ROLE_LABEL[v.role] ?? v.role}</b> ·{" "}
+                      {deviceLabel(v.device)}
                       {tabNo.has(v.key)
                         ? ` · 탭 ${tabNo.get(v.key)!.n}/${tabNo.get(v.key)!.of}`
                         : ""}
