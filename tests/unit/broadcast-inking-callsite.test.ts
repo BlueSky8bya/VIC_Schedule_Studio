@@ -147,10 +147,8 @@ describe("broadcast inking callsite contracts", () => {
     const pointerMove = between("function onLayerPointerMove", "function onLayerPointerUp");
     const pointerUp = between("function onLayerPointerUp", "function onLayerPointerCancel");
     const pointerCancel = between("function onLayerPointerCancel", "function onLayerKeyDown");
-    const drawingLayers = between(
-      'className="bp-layer-list"',
-      "{/* 일정 = 고정 기본 레이어"
-    );
+    // 일정 행이 목록 밖 고정 자리에서 스택 안으로 들어와, 목록 블록은 컴포넌트 끝까지다.
+    const drawingLayers = between('className="bp-layer-list"', "</aside>");
     const keyboardHandler = between(
       "const onKey = (e: KeyboardEvent)",
       'window.addEventListener("keydown", onKey)'
@@ -159,7 +157,9 @@ describe("broadcast inking callsite contracts", () => {
     expect(panelSource).toContain('const PEN_COLORS = [\n  "#000000"');
     expect(panelSource).toContain('useState<BroadcastTool>("pen")');
     expect(panelSource).toContain('useState("layer-1")');
-    expect(moveLayer).toContain("reorderDrawingLayer(before, id, direction)");
+    // 일정 레이어도 같은 목록에서 옮기므로 순서 계산은 합친 스택(stackRef) 위에서 한다.
+    expect(moveLayer).toContain("reorderDrawingLayer(");
+    expect(moveLayer).toContain("stackRef.current.map((x) => ({ id: x }))");
     expect(pointerDown).toContain("setPointerCapture(e.pointerId)");
     expect(pointerDown).toContain('e.pointerType === "touch"');
     expect(pointerDown).toContain("if (layerDragRef.current) return");
@@ -173,7 +173,7 @@ describe("broadcast inking callsite contracts", () => {
     expect(dropTarget).toContain("string | null | undefined");
     expect(dropUpdate).toContain("{ id: drag.id, beforeId, step: drag.step }");
     expect(dropUpdate).not.toContain("setLayerDragUi(null)");
-    expect(pointerUp).toContain("reorderDrawingLayerBefore(before, drag.id, beforeId)");
+    expect(pointerUp).toContain("reorderDrawingLayerBefore(combined, drag.id, beforeId)");
     expect(pointerUp).toContain("beforeId === undefined");
     expect(pointerUp.indexOf("finishLiveStroke()")).toBeLessThan(
       pointerUp.indexOf("setLayers(after)")

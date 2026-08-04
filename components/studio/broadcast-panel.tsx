@@ -331,9 +331,28 @@ export function BroadcastPanel({
   bgVisRef.current = bgVis;
   // '일정' 레이어(맨 아래 고정 — 날짜 카드 DOM)도 활성 대상: 카드 선택/이동/크기는
   // 이 레이어가 활성일 때만 된다(그리기 레이어 활성 중 카드가 딸려 움직이는 혼선 제거).
-  // 일정 레이어(날짜 카드)를 그림 위로 올릴지. 기본은 아래 — 판서가 카드 위에 얹히는 게 보통이다.
-  // 스크린샷을 붙이고 그 위에 일정을 올려야 할 때만 뒤집는다(사용자 요청).
-  const [bgOnTop, setBgOnTop] = useState(false);
+  // 일정 레이어(날짜 카드)가 스택의 몇 번째인가 — 0이 맨 위. 기본은 맨 아래(판서가 카드 위).
+  // 그림 레이어들과 **같은 목록에서 끌어** 아무 자리에나 둘 수 있다(사용자 요청).
+  // layers 배열에 섞어 넣지 않고 위치만 따로 든다: 캔버스 생성·재생·삭제 경로가 전부
+  // '그림 레이어만' 도는 전제로 쓰여 있어, 거기에 카드용 가짜 항목을 넣으면 사방이 흔들린다.
+  const [bgIndex, setBgIndex] = useState(() => 1);
+  // 목록·겹침 순서용 합친 스택. 0번이 화면에서 가장 위.
+  const stack = useMemo(() => {
+    const ids: string[] = layers.map((l) => l.id);
+    const at = Math.max(0, Math.min(bgIndex, ids.length));
+    ids.splice(at, 0, BG_LAYER_ID);
+    return ids;
+  }, [layers, bgIndex]);
+  // 위에 있을수록 큰 z. DOM 순서(카드가 먼저, 캔버스가 나중)를 무시하고 이 값으로만 정한다.
+  const zOf = useCallback(
+    (id: string) => {
+      const i = stack.indexOf(id);
+      return i < 0 ? 0 : stack.length - i;
+    },
+    [stack]
+  );
+  const stackRef = useRef<string[]>([]);
+  stackRef.current = stack;
   const bgActive = activeLayerId === BG_LAYER_ID;
   const bgActiveRef = useRef(bgActive);
   bgActiveRef.current = bgActive;
@@ -2220,6 +2239,10 @@ export function BroadcastPanel({
     const before = layersRef.current;
     const after = [{ id, name: `레이어 ${layerSeq.current}`, vis: true }, ...before];
     pendingLayerRevealRef.current = { id, position: "top" };
+    // 새 레이어가 목록 맨 위로 들어오니 그 아래 있던 일정 레이어도 한 칸 밀린다. 안 밀면
+    // 일정이 제자리(고정 인덱스)에 남아 사용자가 정한 위아래 관계가 추가할 때마다 뒤집힌다.
+    // 단, 일정이 이미 맨 위면 그대로 둔다 — 그 자리는 사용자가 명시적으로 올려둔 것이다.
+    setBgIndex((i) => (i > 0 ? i + 1 : i));
     setLayers(after);
     setActiveLayerId(id); // 새 레이어가 맨 위 + 바로 활성
     setTool(toolAfterEmptyLayerAdded(tool)); // 빈 레이어에서 선택/지우개로 한 번 더 막히지 않게
@@ -2231,6 +2254,9 @@ export function BroadcastPanel({
     finishLiveStroke(); // 그 레이어에 그리던 중이면 완성부터
     const before = layersRef.current;
     const after = before.filter((l) => l.id !== id);
+    // 일정 위쪽 레이어가 사라지면 일정도 한 칸 올라와야 위아래 관계가 유지된다.
+    const removedAt = stackRef.current.indexOf(id);
+    if (removedAt >= 0) setBgIndex((i) => (removedAt < i ? i - 1 : i));
     setLayers(after);
     if (activeLayerId === id) {
       const fallback = resolveDrawingLayerAfterRemoval(
@@ -2245,19 +2271,32 @@ export function BroadcastPanel({
   }
 
   function moveLayer(id: string, direction: "up" | "down") {
+    // 일정 레이어도 목록의 한 칸이라 합친 스택에서 옮기고 다시 갈라 담는다(드롭 경로와 동일).
     const before = layersRef.current;
-    const after = reorderDrawingLayer(before, id, direction);
-    if (!after) return;
+    const nextStack = reorderDrawingLayer(
+      stackRef.current.map((x) => ({ id: x })),
+      id,
+      direction
+    );
+    if (!nextStack) return;
     finishLiveStroke();
+    const nextIds = nextStack.map((x) => x.id);
+    const nextBgIndex = nextIds.indexOf(BG_LAYER_ID);
+    const after = nextIds
+      .filter((x) => x !== BG_LAYER_ID)
+      .map((x) => before.find((l) => l.id === x))
+      .filter((l): l is PanelLayer => Boolean(l));
     pendingLayerRevealRef.current = { id, position: "nearest" };
-    setLayers(after);
-    pushHist({ t: "layers", before, after });
-    const movedLayer = before.find((layer) => layer.id === id);
-    const movedIndex = after.findIndex((layer) => layer.id === id);
-    if (movedLayer && movedIndex >= 0) {
-      setLayerOrderStatus(
-        `${movedLayer.name}, 위에서 ${movedIndex + 1}번째로 이동`
-      );
+    setBgIndex(nextBgIndex < 0 ? before.length : nextBgIndex);
+    if (after.length === before.length && after.some((l, i) => l !== before[i])) {
+      setLayers(after);
+      pushHist({ t: "layers", before, after });
+    }
+    const movedName =
+      id === BG_LAYER_ID ? "일정" : before.find((layer) => layer.id === id)?.name;
+    const movedIndex = nextIds.indexOf(id);
+    if (movedName && movedIndex >= 0) {
+      setLayerOrderStatus(`${movedName}, 위에서 ${movedIndex + 1}번째로 이동`);
     }
     hapticTick();
   }
@@ -2477,16 +2516,30 @@ export function BroadcastPanel({
     }
     if (!started || beforeId === undefined) return;
     e.preventDefault();
+    // 일정 레이어(카드)도 같은 목록에서 끈다 — 그림 레이어 배열에는 없으므로, 합친 스택으로
+    // 순서를 계산한 뒤 '그림 레이어 순서'와 '일정 레이어 위치'로 다시 갈라 담는다.
+    // (카드용 가짜 항목을 layers에 넣으면 캔버스 생성·재생·삭제 경로가 전부 흔들린다.)
     const before = layersRef.current;
-    const after = reorderDrawingLayerBefore(before, drag.id, beforeId);
-    if (!after) return;
+    const combined = stackRef.current.map((id) => ({ id }));
+    const nextStack = reorderDrawingLayerBefore(combined, drag.id, beforeId);
+    if (!nextStack) return;
     finishLiveStroke();
-    setLayers(after);
-    pushHist({ t: "layers", before, after });
-    const moved = after.find((layer) => layer.id === drag.id);
-    const movedIndex = after.findIndex((layer) => layer.id === drag.id);
-    if (moved && movedIndex >= 0) {
-      setLayerOrderStatus(`${moved.name}, 위에서 ${movedIndex + 1}번째로 이동`);
+    const nextIds = nextStack.map((x) => x.id);
+    const nextBgIndex = nextIds.indexOf(BG_LAYER_ID);
+    const after = nextIds
+      .filter((id) => id !== BG_LAYER_ID)
+      .map((id) => before.find((l) => l.id === id))
+      .filter((l): l is PanelLayer => Boolean(l));
+    setBgIndex(nextBgIndex < 0 ? before.length : nextBgIndex);
+    if (after.length === before.length && after.some((l, i) => l !== before[i])) {
+      setLayers(after);
+      pushHist({ t: "layers", before, after });
+    }
+    const movedIndex = nextIds.indexOf(drag.id);
+    const movedName =
+      drag.id === BG_LAYER_ID ? "일정" : (before.find((l) => l.id === drag.id)?.name ?? "레이어");
+    if (movedIndex >= 0) {
+      setLayerOrderStatus(`${movedName}, 위에서 ${movedIndex + 1}번째로 이동`);
     }
     hapticTick();
   }
@@ -2932,6 +2985,74 @@ export function BroadcastPanel({
     if (to < from && i >= to && i < from) return step;
     return 0;
   };
+
+  // 일정 레이어 행 — 스택 안 '제자리'에서 그린다(예전엔 목록 아래 고정이라 순서를 못 바꿨다).
+  // 컴포넌트로 빼지 않고 렌더 함수로 두는 이유: 이 행이 쓰는 상태(bgVis·bgActive·드래그 핸들러)가
+  // 전부 이 스코프에 있어, 밖으로 빼면 인자만 열 개 넘게 늘어난다.
+  const scheduleLayerRow = (slide: number) => (
+    <div key={BG_LAYER_ID} style={slide !== 0 ? { transform: `translateY(${slide}px)` } : undefined}>
+          {/* 일정 = 고정 기본 레이어(날짜 카드 DOM) — 삭제/잠금 없음. 활성이면 카드
+              선택/이동/크기 조절이 가능(그리기 레이어 활성 중엔 카드가 안 잡힌다). */}
+          <div
+            className={`bp-layer-item${bgVis ? "" : " off"}${bgActive ? " active" : ""}${layerDragUi?.id === BG_LAYER_ID ? " dragging" : ""}${layerDragUi?.beforeId === BG_LAYER_ID ? " drop-before" : ""}`}
+            data-layer-id={BG_LAYER_ID}
+            role="listitem"
+          >
+            <button
+              aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+              aria-label="일정, 끌어서 순서 변경"
+              aria-pressed={bgActive}
+              className="bp-layer-select"
+              ref={scheduleLayerButtonRef}
+              title="클릭해 선택 · 끌어서 순서 변경 · Alt+↑/↓"
+              type="button"
+              onClick={(e) => {
+                if (layerDragRef.current) return;
+                if (layerDragClickBlockedRef.current && e.detail > 0) {
+                  layerDragClickBlockedRef.current = false;
+                  return;
+                }
+                hapticTick();
+                setActiveLayerId(BG_LAYER_ID);
+                setTool("select"); // 일정 레이어를 고르면 카드가 바로 잡히게
+              }}
+              onKeyDown={(e) => onLayerKeyDown(e, BG_LAYER_ID)}
+              onLostPointerCapture={onLayerPointerCancel}
+              onPointerCancel={onLayerPointerCancel}
+              onPointerDown={(e) => onLayerPointerDown(e, BG_LAYER_ID)}
+              onPointerMove={onLayerPointerMove}
+              onPointerUp={onLayerPointerUp}
+             data-act="bp-layer-select">
+              <span className="bp-layer-grip" aria-hidden="true">
+                <GripVertical size={14} strokeWidth={2.2} />
+              </span>
+              <span className="bp-layer-thumb" aria-hidden="true">
+                <span className="bp-layer-thumb-bg">📅</span>
+              </span>
+              <span className="bp-layer-meta">
+                <em>일정</em>
+              </span>
+            </button>
+            <div className="bp-layer-actions">
+              {/* (위/아래 토글 제거 — 이제 다른 레이어처럼 목록에서 끌어 아무 자리에나 둔다.) */}
+              <button
+                aria-label="일정 카드 표시"
+                aria-pressed={bgVis}
+                className="bp-layer-btn"
+                title={bgVis ? "숨기기" : "보이기"}
+                type="button"
+                onClick={() => {
+                  hapticTick();
+                  if (bgVis) setColSel(new Set());
+                  setBgVis((v) => !v);
+                }}
+               data-act="일정 카드 표시">
+                {bgVis ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
+              </button>
+            </div>
+          </div>
+    </div>
+  );
 
   return (
     <div className="broadcast-panel" role="dialog" aria-modal="true" aria-label="일정 그림판" ref={rootRef}>
@@ -3434,7 +3555,10 @@ export function BroadcastPanel({
           }}
         >
           {/* 배경 레이어 = 날짜 카드 DOM(캔버스 아님 — 메모리 0). 표시 토글은 숨김만. */}
-          <div className={`bp-board-bg${bgVis ? "" : " hidden"}${bgOnTop ? " on-top" : ""}`}>
+          <div
+            className={`bp-board-bg${bgVis ? "" : " hidden"}`}
+            style={{ position: "relative", zIndex: zOf(BG_LAYER_ID) }}
+          >
             {sentDays.length === 0 ? (
               <p className="bp-empty">
                 바로 그릴 수 있어요 · 일정은 위 달력에서 골라 그림판으로 보내세요
@@ -3557,6 +3681,7 @@ export function BroadcastPanel({
               <canvas
                 aria-hidden="true"
                 className={`bp-canvas${l.vis ? "" : " hidden"}`}
+                style={{ zIndex: zOf(l.id) }}
                 ref={(el) => {
                   const m = layerCanvases.current;
                   if (el) m.set(l.id, el);
@@ -3568,11 +3693,13 @@ export function BroadcastPanel({
                   <canvas
                     aria-hidden="true"
                     className={`bp-canvas${l.vis ? "" : " hidden"}`}
+                    style={{ zIndex: zOf(l.id) }}
                     ref={liveCanvasRef}
                   />
                   <canvas
                     aria-hidden="true"
                     className={`bp-canvas${l.vis ? "" : " hidden"}`}
+                    style={{ zIndex: zOf(l.id) }}
                     ref={predictionCanvasRef}
                   />
                 </>
@@ -3717,7 +3844,13 @@ export function BroadcastPanel({
           role="list"
           aria-label="그림 레이어"
         >
-        {layers.map((l, li) => (
+        {/* 스택 순서(0=맨 위)대로 그린다 — 일정 레이어는 이 목록 안에서 자기 자리를 갖는다.
+            그림 레이어가 아닌 자리는 아래 '일정' 블록이 렌더되도록 null을 낸다. */}
+        {stack.map((sid, li) => {
+          if (sid === BG_LAYER_ID) return scheduleLayerRow(layerSlideOf(li));
+          const l = layers.find((x) => x.id === sid);
+          if (!l) return null;
+          return (
           <div
             className={`bp-layer-item${l.vis ? "" : " off"}${l.id === activeLayerId ? " active" : ""}${layerDragUi?.id === l.id ? " dragging" : ""}${layerDragUi?.beforeId === l.id ? " drop-before" : ""}`}
             data-layer-id={l.id}
@@ -3795,61 +3928,8 @@ export function BroadcastPanel({
               </button>
             </div>
           </div>
-        ))}
-        </div>
-        {/* 일정 = 고정 기본 레이어(날짜 카드 DOM) — 삭제/잠금 없음. 활성이면 카드
-            선택/이동/크기 조절이 가능(그리기 레이어 활성 중엔 카드가 안 잡힌다). */}
-        <div
-          className={`bp-layer-item bp-layer-fixed${bgVis ? "" : " off"}${bgActive ? " active" : ""}${layerDragUi?.beforeId === null && layerDragUi ? " drop-before" : ""}`}
-        >
-          <button
-            aria-pressed={bgActive}
-            className="bp-layer-select"
-            ref={scheduleLayerButtonRef}
-            type="button"
-            onClick={() => {
-              hapticTick();
-              setActiveLayerId(BG_LAYER_ID);
-              setTool("select"); // 일정 레이어를 고르면 카드가 바로 잡히게
-            }}
-           data-act="bp-layer-select">
-            <span className="bp-layer-thumb" aria-hidden="true">
-              <span className="bp-layer-thumb-bg">📅</span>
-            </span>
-            <span className="bp-layer-meta">
-              <em>일정</em>
-            </span>
-          </button>
-          <div className="bp-layer-actions">
-            <button
-              aria-label="일정 카드를 그림 위로"
-              aria-pressed={bgOnTop}
-              className="bp-layer-btn"
-              data-act="bp-bg-ontop"
-              title={bgOnTop ? "그림 아래로 내리기" : "그림 위로 올리기"}
-              type="button"
-              onClick={() => {
-                hapticTick();
-                setBgOnTop((v) => !v);
-              }}
-            >
-              {bgOnTop ? "⬆" : "⬇"}
-            </button>
-            <button
-              aria-label="일정 카드 표시"
-              aria-pressed={bgVis}
-              className="bp-layer-btn"
-              title={bgVis ? "숨기기" : "보이기"}
-              type="button"
-              onClick={() => {
-                hapticTick();
-                if (bgVis) setColSel(new Set());
-                setBgVis((v) => !v);
-              }}
-             data-act="일정 카드 표시">
-              {bgVis ? <Eye aria-hidden="true" size={14} /> : <EyeOff aria-hidden="true" size={14} />}
-            </button>
-          </div>
+          );
+        })}
         </div>
       </aside>
       </div>
