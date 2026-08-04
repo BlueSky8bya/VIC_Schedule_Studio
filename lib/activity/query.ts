@@ -18,6 +18,27 @@ import { ACTIVITY_RETENTION_DAYS, DIAG_RETENTION_DAYS, KIND_LABEL } from "@/lib/
 
 const SLUG = "vic";
 
+// ⚠ PostgREST는 응답 행 수를 서버 설정(기본 1000)으로 자른다 — `.limit(5000)`을 줘도 1000행만
+// 온다. 이 프로젝트가 전에 한 번 당한 함정이고(0051 주변, visit_session 광역 조회), 여기서
+// 또 났다: 하루 기록이 1000행을 넘자 **그 뒤에 생긴 방문이 통째로 사라졌다**(실측 — 화면이
+// 15:29에서 멈췄고 그 뒤 관리자 방문이 안 보였다. 조용히 잘리므로 오류도 안 난다).
+// 그래서 range()로 끝까지 넘겨 받는다. 상한(hardCap)은 폭주 방지용일 뿐 정상 범위를 안 자른다.
+const PAGE = 1000;
+async function fetchAllRows<T>(
+  make: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+  hardCap = 50_000
+): Promise<T[]> {
+  const out: T[] = [];
+  for (let from = 0; from < hardCap; from += PAGE) {
+    const { data, error } = await make(from, from + PAGE - 1);
+    if (error || !data) break;
+    out.push(...data);
+    if (data.length < PAGE) break;
+  }
+  return out;
+}
+
+
 export type ActivityItem = {
   t: number;
   kind: string;
@@ -89,16 +110,16 @@ export async function getActivityDayAction(
     .slice(0, 10);
   void supabase.from("activity_event").delete().lt("day", diagCutoff).eq("diag", true);
 
-  let q = supabase
-    .from("activity_event")
-    .select("occurred_at, visit_key, account_hash, role, device, source, kind, target, meta, dur_ms")
-    .eq("day", day);
-  if (!includeDiag) q = q.eq("diag", false);
-  const { data, error } = await q.order("occurred_at", { ascending: true }).limit(includeDiag ? 8000 : 5000);
-  if (error) {
-    return { ok: false, error: "행동 기록을 불러오지 못했어요." };
-  }
-  const rows = (data ?? []) as Row[];
+  const rows = await fetchAllRows<Row>((from, to) => {
+    let q = supabase
+      .from("activity_event")
+      .select(
+        "occurred_at, visit_key, account_hash, role, device, source, kind, target, meta, dur_ms"
+      )
+      .eq("day", day);
+    if (!includeDiag) q = q.eq("diag", false);
+    return q.order("occurred_at", { ascending: true }).range(from, to);
+  });
   if (rows.length === 0) return { ok: true, visits: [], total: 0 };
 
   // 일정 제목 — 공개 일정만 붙인다. 비공개는 범위 라벨로 대체(제목을 절대 내보내지 않는다).
@@ -257,26 +278,29 @@ export async function getActivityUsageAction(days = 30, anchor?: string): Promis
     .toISOString()
     .slice(0, 10);
 
-  const [eventsRes, countsRes] = await Promise.all([
-    supabase
-      .from("activity_event")
-      .select("kind, target, role")
-      .gte("day", since)
-      .lte("day", until)
-      .in("kind", ["ui.click", "section.enter", "route.enter"])
-      .eq("diag", false)
-      .limit(20000),
-    supabase
-      .from("activity_daily_count")
-      .select("kind, target, role, count")
-      .gte("day", since)
-      .lte("day", until)
-      .in("kind", ["ui.click", "section.enter", "route.enter"])
-      .limit(20000)
+  // 여기도 같은 상한에 걸린다 — 30일치 클릭은 쉽게 1000행을 넘고, 넘는 순간 '적게 쓰인 기능'이
+  // 앞쪽 1000행만 보고 순위를 매겨 조용히 틀린 답을 낸다.
+  const [eventRows, countRows] = await Promise.all([
+    fetchAllRows<{ kind: string; target: string | null; role: string }>((from, to) =>
+      supabase
+        .from("activity_event")
+        .select("kind, target, role")
+        .gte("day", since)
+        .lte("day", until)
+        .in("kind", ["ui.click", "section.enter", "route.enter"])
+        .eq("diag", false)
+        .range(from, to)
+    ),
+    fetchAllRows<{ kind: string; target: string | null; role: string; count: number }>((from, to) =>
+      supabase
+        .from("activity_daily_count")
+        .select("kind, target, role, count")
+        .gte("day", since)
+        .lte("day", until)
+        .in("kind", ["ui.click", "section.enter", "route.enter"])
+        .range(from, to)
+    )
   ]);
-  if (eventsRes.error || countsRes.error) {
-    return { ok: false, error: "사용량을 불러오지 못했어요." };
-  }
 
   const acc = new Map<string, UsageRow>();
   const bump = (kind: string, target: string | null, role: string, n: number) => {
@@ -300,19 +324,10 @@ export async function getActivityUsageAction(days = 30, anchor?: string): Promis
     row.total += n;
   };
 
-  for (const r of (eventsRes.data ?? []) as {
-    kind: string;
-    target: string | null;
-    role: string;
-  }[]) {
+  for (const r of eventRows) {
     bump(r.kind, r.target, r.role, 1); // activity_event에는 내부자만 들어간다(0063)
   }
-  for (const r of (countsRes.data ?? []) as {
-    kind: string;
-    target: string | null;
-    role: string;
-    count: number;
-  }[]) {
+  for (const r of countRows) {
     bump(r.kind, r.target, r.role, r.count ?? 0);
   }
 
