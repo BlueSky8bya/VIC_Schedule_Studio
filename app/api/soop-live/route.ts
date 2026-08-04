@@ -20,7 +20,12 @@ export async function GET() {
     const data = await fetchSoopLive();
     cache = { at: now, data };
     // 방송 ON/OFF 세션 기록(개발자 인사이트용). fire-and-forget — 응답을 막지 않는다.
-    void recordLiveTick({ isLive: data.isLive, title: data.title, bno: data.bno });
+    void recordLiveTick({
+      isLive: data.isLive,
+      title: data.title,
+      bno: data.bno,
+      startedAt: data.startedAt
+    });
   }
   return NextResponse.json(cache.data, {
     headers: { "Cache-Control": "public, max-age=30, s-maxage=30" }

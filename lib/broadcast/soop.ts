@@ -12,6 +12,9 @@ export type LiveState = {
   category: string | null;
   bno: string | null;
   watchUrl: string | null;
+  // 라이브일 때 '실제 방송 시작 시각'(ISO). player_live_api의 BTIME(경과 초)에서 계산한다 —
+  // 폴링이 늦어도 시작시각은 정확하다. 오프라인이거나 값이 이상하면 null.
+  startedAt: string | null;
 };
 
 export const offlineState = (): LiveState => ({
@@ -21,32 +24,45 @@ export const offlineState = (): LiveState => ({
   title: null,
   category: null,
   bno: null,
-  watchUrl: null
+  watchUrl: null,
+  startedAt: null
 });
 
-// 방송국 API — 라이브 중일 때만 broad(방송번호·실제 시작시각)가 있다. 세션 기록기가
-// '진짜 방송 시작 시각'(broad_start, KST 문자열)을 얻는 용도. 오프라인이거나 실패하면 null.
-// player_live_api는 시작시각을 주지 않아, 폴링이 방송을 늦게 발견하면 그만큼 방송시간이
-// 깎이던 문제(머리 손실)를 이 값으로 보정한다.
-const STATION_API = `https://chapi.sooplive.co.kr/api/${BJ_ID}/station`;
+// BTIME(방송 경과 초) → 시작 ISO. 0 이하·48시간 초과는 이상치로 버린다(파싱 실패·API 이변 방어).
+export function startedAtFromBtime(btime: unknown, nowMs: number): string | null {
+  const sec = Number(btime);
+  if (!Number.isFinite(sec) || sec <= 0 || sec > 48 * 3600) return null;
+  return new Date(nowMs - sec * 1000).toISOString();
+}
+
+// 실제 방송 시작 시각의 '2차 출처'. 1차는 player_live_api의 BTIME(경과 초)이고, 그게 없을 때만
+// 이걸 쓴다. 예전엔 방송국 API(chapi .../station)의 broad.broad_start를 읽었는데, SOOP가 그 필드를
+// 응답에서 빼버려(2026-08 확인) 항상 null → 시작시각이 '첫 폴링 시각'으로 굳고 방송시간의 머리가
+// 통째로 깎였다(오늘 32분 손실). 라이브 검색 API는 여전히 broad_start(KST 문자열)를 준다.
+const SEARCH_API =
+  `https://sch.sooplive.co.kr/api.php?m=liveSearch&v=1.0&szOrder=&szKeyword=${BJ_ID}` +
+  `&nPageNo=1&nListCnt=10&szPlatform=pc`;
 
 export async function fetchSoopBroadStart(bno: string | null): Promise<string | null> {
   try {
-    const res = await fetch(STATION_API, {
+    const res = await fetch(SEARCH_API, {
       headers: { "User-Agent": "Mozilla/5.0" },
       cache: "no-store",
       signal: AbortSignal.timeout(8000)
     });
     if (!res.ok) return null;
     const json = (await res.json()) as {
-      broad?: { broad_no?: number | string; broad_start?: string } | null;
+      REAL_BROAD?: { user_id?: string; broad_no?: string | number; broad_start?: string }[];
     };
-    const broad = json.broad;
-    if (!broad?.broad_start) return null;
-    // bno를 알면 같은 방송인지 확인한다(직전 방송의 시작시각을 새 방송에 붙이지 않게).
-    if (bno !== null && broad.broad_no != null && String(broad.broad_no) !== bno) return null;
+    const list = json.REAL_BROAD ?? [];
+    // bno를 알면 그 방송을, 모르면 우리 BJ의 방송을 고른다(검색 결과에 동명 방송이 섞일 수 있다).
+    const item =
+      bno !== null
+        ? list.find((v) => v.broad_no != null && String(v.broad_no) === bno)
+        : list.find((v) => v.user_id === BJ_ID);
+    if (!item?.broad_start) return null;
     // "YYYY-MM-DD HH:mm:ss" (KST) → ISO(UTC)
-    const ms = Date.parse(`${broad.broad_start.replace(" ", "T")}+09:00`);
+    const ms = Date.parse(`${item.broad_start.replace(" ", "T")}+09:00`);
     if (!Number.isFinite(ms)) return null;
     const now = Date.now();
     // 미래값·하루 넘게 과거인 값은 이상치로 버린다(시계 오차·API 이변 방어).
@@ -125,7 +141,9 @@ export async function fetchSoopLive(): Promise<LiveState> {
       bno,
       watchUrl: bno
         ? `https://play.sooplive.com/${BJ_ID}/${bno}`
-        : `https://www.sooplive.com/station/${BJ_ID}`
+        : `https://www.sooplive.com/station/${BJ_ID}`,
+      // BTIME = 방송 경과 초. 같은 응답 안에 있어 추가 요청 없이 '진짜 시작 시각'을 얻는다.
+      startedAt: startedAtFromBtime(c.BTIME, Date.now())
     };
   } catch {
     return offlineState();

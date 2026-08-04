@@ -35,6 +35,8 @@ export async function recordLiveTick(state: {
   isLive: boolean;
   title?: string | null;
   bno?: string | null;
+  // 라이브 응답이 직접 알려준 실제 시작 시각(BTIME 기반). 있으면 이걸 정답으로 쓴다.
+  startedAt?: string | null;
 }): Promise<void> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) return;
@@ -71,10 +73,11 @@ export async function recordLiveTick(state: {
               ? { last_live_at: nowIso, bno }
               : { last_live_at: nowIso };
           if (!open.start_verified) {
-            // 시작시각이 아직 폴링-폴백값이면 방송국 API의 실제 시작시각으로 머리를 보정한다.
-            // insert 순간 API가 실패했어도 여기서 tick마다 재시도하고, 성공하면 verified로
+            // 시작시각이 아직 폴링-폴백값이면 실제 시작시각으로 머리를 보정한다.
+            // insert 순간 실패했어도 여기서 tick마다 재시도하고, 성공하면 verified로
             // 굳혀 이후 호출을 멈춘다(2026-08-02 머리 10분 손실의 재발 방지 — 0059).
-            const broadStart = await fetchSoopBroadStart(bno ?? open.bno);
+            // 1순위는 이번 응답의 BTIME(추가 요청 0), 안 되면 검색 API 폴백.
+            const broadStart = state.startedAt ?? (await fetchSoopBroadStart(bno ?? open.bno));
             if (broadStart) {
               patch.start_verified = true;
               if (new Date(broadStart).getTime() < new Date(open.started_at).getTime()) {
@@ -92,10 +95,10 @@ export async function recordLiveTick(state: {
           .update({ ended_at: open.last_live_at })
           .eq("id", open.id);
       }
-      // 새 세션의 시작시각은 '지금(첫 발견 시점)'이 아니라 방송국 API의 실제 방송 시작시각을
-      // 우선한다. 폴링은 시청자가 포스터를 열어야 도니, 뱅온 후 첫 시청자가 올 때까지의 시간이
-      // 통째로 누락돼 방송시간이 실제보다 짧게 집계되던 원인(머리 손실). API 실패 시 지금으로 폴백.
-      const broadStart = await fetchSoopBroadStart(bno);
+      // 새 세션의 시작시각은 '지금(첫 발견 시점)'이 아니라 실제 방송 시작시각을 우선한다.
+      // 폴링은 시청자가 포스터를 열어야 도니, 뱅온 후 첫 시청자가 올 때까지의 시간이 통째로
+      // 누락돼 방송시간이 실제보다 짧게 집계되던 원인(머리 손실). 둘 다 실패하면 지금으로 폴백.
+      const broadStart = state.startedAt ?? (await fetchSoopBroadStart(bno));
       const startedIso = broadStart ?? nowIso;
       const { error: insertError } = await supabase.from("broadcast_session").insert({
         start_day: kstDay(new Date(startedIso).getTime()),
@@ -151,9 +154,12 @@ export async function recordLiveTick(state: {
 
     // 열린 세션이 없어도 끝이 아니다 — 방금 닫힌 세션의 꼬리를 VOD로 재보정한다(0059).
     // VOD는 방종 후 몇 분 있다가 등록되므로, 위의 '닫는 순간' 조회는 거의 항상 놓친다
-    // (2026-08-02 꼬리 7분 손실). 최근 6시간 내에 닫혔고 아직 VOD 보정을 못 받은 세션을
-    // 오프라인 tick마다 재시도하고, 성공하면 verified로 굳혀 이후 호출을 멈춘다.
-    const retryAfterIso = new Date(nowMs - 6 * 3600 * 1000).toISOString();
+    // (2026-08-02 꼬리 7분 손실). 최근에 닫혔고 아직 VOD 보정을 못 받은 세션을 오프라인
+    // tick마다 재시도하고, 성공하면 verified로 굳혀 이후 호출을 멈춘다.
+    // 창을 6h → 48h로 넓혔다: 백업 폴러(GitHub Actions)의 실효 간격이 5분이 아니라 2시간대라
+    // (GH 스케줄 스로틀) 6시간 창 안에 재시도 기회가 몇 번 없었고, 시청자가 없는 새벽 방종은
+    // 그대로 꼬리가 깎인 채 굳었다. VOD 목록은 최근 20건이라 48시간은 안전하게 커버된다.
+    const retryAfterIso = new Date(nowMs - 48 * 3600 * 1000).toISOString();
     const { data: closedRows } = await supabase
       .from("broadcast_session")
       .select("id, started_at, last_live_at, bno")

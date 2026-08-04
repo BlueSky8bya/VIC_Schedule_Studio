@@ -84,6 +84,22 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
   **보류(사용자 결정 2026-08-04)**: 옛 `auto:` 89행은 **지우지 않는다**(제목 유출 없음이 확인됐고,
   사전 수정 후 정상적으로 읽힌다). 떡밥 공개 시각이 과거일 때의 경고도 넣지 않는다.
+- **⚠ 방송시간 머리 손실 재발 → BTIME으로 이관(2026-08-05 새벽, 사용자 신고 "실제 8시간 20분인데
+  7시간대로 뜬다")**: 원인은 시작시각 정답값이 **한 곳뿐**이었던 것 — 방송국 API
+  `chapi.../station`의 `broad.broad_start`를 SOOP가 응답에서 **빼버려**(2026-08 실측: `broad`
+  객체는 있는데 `broad_start` 키 없음) `fetchSoopBroadStart`가 항상 null → `start_verified`가
+  계속 false → started_at이 '첫 폴링이 발견한 시각'으로 굳었다(당일 실측 머리 32분 손실,
+  7.88h vs 실제 8.41h). 대체 정답값: **`player_live_api`의 `BTIME`(방송 경과 초)** — 이미 매
+  폴링마다 받는 같은 응답 안에 있어 추가 요청이 없고, 폴링이 늦어도 시작시각이 정확하다
+  (`startedAtFromBtime`, 0<초≤48h 가드). 검색 API(`sch.sooplive.co.kr` liveSearch)의
+  `broad_start`를 2차 폴백으로 남겼다(station API 의존은 제거).
+  ⚠ **폴러를 정밀도의 근거로 삼지 말 것**: GitHub Actions `*/5` 크론이 실측 **2~2.5시간
+  간격**으로만 돈다(GH 스케줄 스로틀 — 워크플로우 주석에 기록). 그래서 정밀도는
+  시작=BTIME, 종료=VOD 보정이 책임지고 폴러는 '끝났음을 알아채는' 신호에 가깝다.
+  VOD 재보정 창은 6h→**48h**로 확대(성긴 폴링에서 재시도 기회가 없어 꼬리가 깎인 채 굳었다).
+  과거 행은 `scripts/backfill-broadcast-times.mjs`(드라이런 기본, `--apply`로 반영)로 보정 —
+  2026-08-05 4건 반영(진행중 세션 7.88→8.41h 외 3건 분 단위). 계약은
+  `tests/unit/broadcast-start-time.test.ts`가 고정. → [[broadcast-time-tracking]]
 - **⚠ 오버레이 스택 함정(2026-08-03, `cada217`)**: 모달/시트가 닫힐 때 오버레이 스택이
   history.back()을 호출하는데, 이 되감기는 **그 순간 진행 중인 router.refresh()/문서
   네비게이션을 취소**한다(잠금해제 미반영 버그의 근본 원인 — Playwright로 확정).
