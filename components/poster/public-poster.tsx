@@ -93,6 +93,7 @@ import type {
 } from "@/lib/schedules/sticker-asset-actions";
 import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
 import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
+import { reconcileTeaserReveal } from "@/lib/schedules/teaser-reconcile";
 import { getTeaserHopeIdsAction, toggleTeaserHopeAction } from "@/lib/schedules/hope-actions";
 import {
   HYPE_EMERGE_S,
@@ -1452,6 +1453,19 @@ export function PublicPoster({
   // 떡밥 즉시 공개 — 카운트다운이 0이 되면 캐시 우회 액션으로 실제 내용을 받아 이 맵에 덮는다.
   // (이게 있으면 렌더에서 가린 stub 대신 실제 일정을 쓴다 → 캐시 30초 안 기다리고 그 순간 풀림.)
   const [revealedEvents, setRevealedEvents] = useState<Record<string, PublicScheduleEvent>>({});
+  // 서버가 "그런 일정 없다"고 확인해 준 떡밥 id — 지워졌거나 공개가 아니게 된 것들.
+  // 낡은 공개 캐시가 준 유령 카드(빈 흰 카드)를 여기서 걷어낸다(reconcileTeaserReveal 주석 참조).
+  const [goneTeaserIds, setGoneTeaserIds] = useState<Set<string>>(() => new Set());
+  const markTeaserGone = useCallback((ids: string[]) => {
+    if (ids.length === 0) return;
+    setGoneTeaserIds((prev) => {
+      if (ids.every((id) => prev.has(id))) return prev; // 참조 유지 — 무한 리렌더 방지
+      const next = new Set(prev);
+      for (const id of ids) next.add(id);
+      return next;
+    });
+    logActivity("diag.teaser", { target: ids[0], meta: { phase: "gone", count: ids.length } });
+  }, []);
 
   // ⚠ 마운트할 때마다 떡밥의 '지금 진실'을 캐시를 우회해 한 번 받아온다.
   //
@@ -1476,18 +1490,25 @@ export function PublicPoster({
     const ids = teaserIdsKey.split(",");
     let alive = true;
     revealTeaserAction(ids)
-      .then((list) => {
-        if (!alive || list.length === 0) return;
-        setRevealedEvents((prev) => {
-          const next = { ...prev };
-          for (const ev of list) next[ev.id] = ev;
-          return next;
-        });
+      .then((result) => {
+        if (!alive) return;
+        const { events: list, goneIds } = reconcileTeaserReveal(ids, result);
+        // 서버가 '없다'고 확인해 준 id는 카드에서 치운다 — 낡은 스냅샷이 준 유령(지운 일정)이
+        // 빈 흰 카드로 남던 경로(2026-08-05 실측). 캐시 무효화 복구가 1차, 이건 2차 방어.
+        markTeaserGone(goneIds);
+        if (list.length > 0) {
+          setRevealedEvents((prev) => {
+            const next = { ...prev };
+            for (const ev of list) next[ev.id] = ev;
+            return next;
+          });
+        }
         logActivity("diag.reveal", {
           meta: {
             phase: "mount-sync",
             asked: ids.length,
             got: list.length,
+            gone: goneIds.length,
             revealed: list.filter((ev) => !ev.teaser).length
           }
         });
@@ -1496,7 +1517,8 @@ export function PublicPoster({
     return () => {
       alive = false;
     };
-  }, [teaserIdsKey]);
+    // markTeaserGone은 useCallback([]) — 정체성이 고정이라 이 동기화가 매번 다시 돌지 않는다.
+  }, [teaserIdsKey, markTeaserGone]);
   // 일정 상세 — 모바일 아젠다는 하단 시트, PC 달력은 카드 옆 앵커 팝오버(anchor 있으면 팝오버).
   // 공개 DTO(PublicScheduleEvent + 공개 태그)만 사용 — 비공개 필드 자체가 없다.
   const [agendaDetail, setAgendaDetail] = useState<{
@@ -1744,17 +1766,21 @@ export function PublicPoster({
   const revealTeaser = useCallback((id: string, celebrate: boolean) => {
     if (celebrate) liveWatchedRef.current.add(id);
     revealTeaserAction([id])
-      .then((list) => {
+      .then((result) => {
+        const { events: list, goneIds } = reconcileTeaserReveal([id], result);
         // 진단(3일): 저장과 렌더 사이가 비어 있어 원인을 코드로만 찾을 수 있었다 — 그 구간을 남긴다.
         logActivity("diag.reveal", {
           target: id,
           meta: {
             asked: 1,
             got: list.length,
+            gone: goneIds.length,
             revealed: list.filter((ev) => !ev.teaser).length,
             stillMasked: list.filter((ev) => ev.teaser).length
           }
         });
+        // 서버가 '그런 일정 없다'고 확인 → 유령 카드를 걷어내고 재시도를 끝낸다.
+        markTeaserGone(goneIds);
         if (list.length > 0) {
           // 서버는 '아직 미공개'인 것도 최신 stub으로 돌려준다(공개시각이 미래로 다시 잡힌 경우).
           // 그건 공개가 아니므로 축하 연출 대상에서 빼고, 상태만 갈아끼워 카운트다운으로 복귀시킨다.
@@ -1815,7 +1841,8 @@ export function PublicPoster({
       })
       .catch(() => {});
     // 이제 상태를 직접 읽지 않는다(전부 ref·함수형 갱신) → 콜백 정체성이 안정적이다.
-  }, []);
+    // markTeaserGone도 useCallback([])이라 정체성이 고정 — 2초 재시도가 재설치되지 않는다.
+  }, [markTeaserGone]);
   const serverHearts = Boolean(toggleHeartAction);
   // 비로그인 하트용 기기 토큰(로그인 시엔 빈 값, 계정 기준으로 동작). 마운트 후 채워진다.
   const [deviceToken, setDeviceToken] = useState("");
@@ -3911,6 +3938,9 @@ export function PublicPoster({
           style={weekSupCount > 0 ? { paddingTop: 8 + weekSupCount * 20 } : undefined}
         >
           {events.map((rawEvent) => {
+            // 서버가 '이제 없는 일정'이라고 확인해 준 떡밥(삭제/비공개 전환)은 그리지 않는다 —
+            // 낡은 캐시가 준 유령이 빈 흰 카드로 남던 자리(2026-08-05).
+            if (goneTeaserIds.has(rawEvent.id)) return null;
             // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다(가린 stub 대신 진짜).
             // 기대 수(hopeCount)는 공개 액션 응답에 없으니 stub의 값을 이어받는다(배지 유지).
             const revealedEv = teaserStillAhead(rawEvent) ? undefined : revealedEvents[rawEvent.id];
@@ -4452,6 +4482,8 @@ export function PublicPoster({
                     <span className="agenda-noevent">아직 일정이 없어요 🍃</span>
                   ) : null}
                   {list.map(({ event: rawEvent, support }) => {
+                    // 위 달력 칸과 같은 규칙 — 서버가 없다고 확인한 떡밥은 안 그린다.
+                    if (goneTeaserIds.has(rawEvent.id)) return null;
                     // 떡밥 즉시 공개 맵에 있으면 실제 일정으로 갈아끼운다.
                     // 기대 수는 공개 응답에 없으니 stub 값을 이어받는다(배지 유지).
                     const revealedEv = teaserStillAhead(rawEvent)

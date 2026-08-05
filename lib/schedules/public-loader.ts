@@ -21,6 +21,7 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { PUBLIC_SCHEDULE_CACHE_TAG } from "@/lib/schedules/cache";
+import type { TeaserRevealResult } from "@/lib/schedules/teaser-reconcile";
 
 function coercePosterTheme(value: unknown): PosterThemeKey {
   return typeof value === "string" && isPosterThemeKey(value) ? value : "none";
@@ -100,17 +101,19 @@ export async function getPublicSchedule(calendarSlug: string): Promise<PublicSch
 export async function loadRevealedEvents(
   calendarSlug: string,
   eventIds: string[]
-): Promise<PublicScheduleEvent[]> {
-  if (eventIds.length === 0) return [];
+): Promise<TeaserRevealResult> {
+  if (eventIds.length === 0) return { ok: true, events: [] };
   const supabase = createPublicReadClient();
-  if (!supabase) return [];
+  // ok=false = "확인 못 했다"(DB 미설정·캘린더 없음·쿼리 실패). 빈 결과와 반드시 구분한다 —
+  // 클라가 '없음'으로 오해하면 멀쩡한 떡밥 카드를 지워버린다(샘플/오프라인 모드).
+  if (!supabase) return { ok: false, events: [] };
   const { data: calendar } = await supabase
     .from("calendars")
     .select("id")
     .eq("slug", calendarSlug)
     .eq("is_public", true)
     .maybeSingle();
-  if (!calendar) return [];
+  if (!calendar) return { ok: false, events: [] };
   const { data: rows } = await supabase
     .from("events")
     .select(
@@ -121,7 +124,7 @@ export async function loadRevealedEvents(
     .eq("visibility_scope", "public")
     .neq("status", "draft")
     .in("id", eventIds);
-  if (!rows) return [];
+  if (!rows) return { ok: false, events: [] }; // 쿼리 실패 — '없음'이 아니다
   const now = Date.now();
   // mapEvent: now>=reveal이면 실제 DTO, 아직이면 가린 stub(teaser=true, 제목 없음).
   //
@@ -131,7 +134,10 @@ export async function loadRevealedEvents(
   // (새로고침해도 캐시가 같은 옛 stub을 주므로 반복. 2026-08-04 실측).
   // 그래서 **미공개도 최신 stub으로 돌려준다** — 클라가 새 공개시각을 받아 카운트다운으로 복귀한다.
   // 가린 stub에는 제목·태그·카테고리가 없으므로(mapEvent) 내용 유출은 0.
-  return (rows as EventRow[]).map((row) => mapEvent(row, now));
+  //
+  // ok=true인데 물어본 id가 응답에 없다 = 그 일정은 **지워졌거나 더 이상 공개가 아니다**.
+  // 클라는 그걸 근거로 캐시에 남은 유령 카드를 지운다(아래 reconcileTeaserReveal).
+  return { ok: true, events: (rows as EventRow[]).map((row) => mapEvent(row, now)) };
 }
 
 // 익명 공개 묶음 로더 — 캐시된다. myHeartIds는 사용자별이라 여기 포함하지 않는다(빈 배열).

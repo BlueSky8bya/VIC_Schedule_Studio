@@ -255,6 +255,15 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
   }
   const eventId = rpcId as string;
 
+  // ⚠ 공개 캐시 무효화는 **DB 쓰기 직후, 다른 무엇보다 먼저**. 이게 빠지면 방금 만든/고친 일정이
+  // 최대 5분(PUBLIC_SCHEDULE_REVALIDATE_SECONDS)을 시청자 화면·미리보기에 안 나온다.
+  // 2026-08-04 커밋 72f6971이 recordActivity를 넣으면서 이 세 줄을 통째로 지웠고, 그 뒤
+  // '떡밥 만들어도 미리보기에 안 뜸 / 지운 일정이 빈 흰 카드로 남음'이 재현됐다(2026-08-05 실측).
+  // tests/unit/public-cache-revalidate.test.ts가 액션별로 실제 호출을 확인한다.
+  revalidatePath("/");
+  revalidatePath("/studio");
+  revalidatePublicSchedule();
+
   // 행동 기록(0062) — 제목·본문은 절대 넣지 않는다(target=uuid, meta=구조 정보만).
   await recordActivity({
     kind: input.id ? "event.update" : "event.create",
@@ -302,6 +311,12 @@ export async function deleteEventAction(eventId: string): Promise<ActionResult> 
     .from("events")
     .delete()
     .lt("deleted_at", new Date(Date.now() - TOMBSTONE_RETENTION_MS).toISOString());
+
+  // 삭제도 즉시 무효화한다 — 안 하면 지운 일정이 최대 5분간 시청자 화면에 남는다(떡밥이면
+  // 서버가 더 이상 그 id를 못 찾아 '빈 흰 카드'로 굳는다). 72f6971에서 함께 사라졌던 세 줄.
+  revalidatePath("/");
+  revalidatePath("/studio");
+  revalidatePublicSchedule();
 
   await recordActivity({ kind: "event.delete", target: eventId, actor });
 

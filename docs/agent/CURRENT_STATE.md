@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-08-04
+Last Updated: 2026-08-05
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -667,6 +667,16 @@ npx vercel ls vic-schedule-studio --scope bluesky-s-project3                    
 
 ## Known Issues
 
+- **ISSUE-004 — (해결 2026-08-05) 일정 생성·삭제가 시청자 화면에 최대 5분간 반영 안 됨.**
+  `saveEventAction`/`deleteEventAction`에서 `revalidatePath("/")`·`revalidatePath("/studio")`·
+  `revalidatePublicSchedule()` 3줄이 커밋 `72f6971`(행동 기록 추가) 때 **통째로 삭제**돼 있었다.
+  공개 로더는 `unstable_cache(TTL 300초)`라, 무효화가 없으면 새 일정이 시청자·미리보기에 5분간
+  안 뜨고 지운 일정은 그대로 남는다. 이동/순서(`reorderEventsAction`)만 무효화가 남아 있어
+  "옮기면 반영, 새로 만들면 안 됨"이라는 헷갈리는 증상이 됐다(2026-08-05 실측 로그로 확인).
+  지운 것이 떡밥이면 서버가 그 id를 못 찾아 카드가 **빈 흰 칸**으로 굳었다(강력 새로고침도 같은
+  캐시). 재발 방지: `tests/unit/public-cache-revalidate.test.ts`가 (1) 액션을 실제로 실행해
+  `revalidateTag` 호출을 확인하고 (2) `lib/schedules/*-actions.ts`의 모든 쓰기 액션을 훑는다.
+  **교훈: 쓰기 액션에 무언가를 끼워 넣을 때 캐시 무효화 3줄을 같이 지우지 말 것.**
 - **ISSUE-001 — 편집실 실물 검증이 막혀 있음.** 편집실(`/studio/*`)은 Google 로그인이 필요해
   로컬 Playwright로 실물 확인을 못 한다. 최근 편집실 변경(공개범위 접기, 단축키, Alt+N, 드래그
   삽입선)은 타입·빌드·코드 리뷰까지만 검증됐다. Status: Open.
