@@ -775,10 +775,19 @@ html[data-reduce-motion] .bp-kbd-close:active {
   width: 100%;
   min-height: 48px;
 }
-/* 도구 4개 = 고정 폭 열 — 창이 넓어져도 버튼 사이가 벌어지지 않는다(근접 유지). */
+/* 도구/도형 격자 = 고정 폭 열 — 창이 넓어져도 버튼 사이가 벌어지지 않는다(근접 유지).
+   열 수만 다르고 폭·간격은 같다: 도구 2×3, 도형 2×2, 굵기 2×3 → 모든 그룹이 두 줄 리듬. */
 .bp-group-row.bp-grid4 {
   display: grid;
   grid-template-columns: repeat(4, 58px);
+  gap: 5px;
+}
+.bp-group-row.bp-grid3 {
+  grid-template-columns: repeat(3, 58px);
+  gap: 5px;
+}
+.bp-group-row.bp-grid2 {
+  grid-template-columns: repeat(2, 58px);
   gap: 5px;
 }
 .bp-tool {
@@ -1434,55 +1443,8 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   border-radius: 50%;
 }
 
-/* 스포이드 버튼 — 색 팔레트 옆(색을 정하는 일이 모여 있는 자리). '직접 고르기'와 같은 알약 어휘. */
-.bp-eyedrop {
-  display: flex;
-  height: 48px;
-  min-width: 58px;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 5px 10px 4px;
-  border: 1px solid rgb(75 68 104 / 15%);
-  border-radius: 9px;
-  background: #ffffff;
-  color: #5f5874;
-  cursor: pointer;
-  transition:
-    border-color var(--dur-1) var(--ease),
-    box-shadow var(--dur-1) var(--ease),
-    transform var(--dur-2) var(--ease-spring, cubic-bezier(0.34, 1.56, 0.64, 1));
-}
-
-.bp-eyedrop span {
-  font-size: 9.5px;
-  font-weight: 800;
-  line-height: 1;
-  white-space: nowrap;
-}
-
-.bp-eyedrop:active {
-  transform: scale(0.94);
-}
-
-.bp-eyedrop:hover,
-.bp-eyedrop.on {
-  border-color: #7c6cf0;
-  box-shadow: 0 0 0 2px rgb(124 108 240 / 14%);
-}
-
-/* 색 채우기 — 스포이드와 같은 알약 어휘(같은 자리, 같은 크기, 같은 옷). 켜짐 표시도 공유한다. */
-.bp-fill.on i,
-.bp-fill.on svg {
-  color: inherit;
-}
-
-/* 켜진 동안엔 '지금 집는 중'이 색으로 남는다 — 모드는 눈에 보여야 빠져나올 줄 안다. */
-.bp-eyedrop.on {
-  background: #f2efff;
-  color: #4c3fd0;
-}
+/* (스포이드·채우기 전용 알약 스타일 제거 — 2026-08-05 두 버튼이 도구 상자로 들어가
+   '.bp-tool' 어휘를 그대로 쓴다. 같은 자리, 같은 크기, 같은 옷.) */
 
 /* ── 그림 부분 선택 ────────────────────────────────────────────────────────
    선택한 그림 위에만 깔리는 얇은 판. 여기서만 드래그를 받아 판 전체의 러버밴드·이동과 안 섞인다. */
@@ -2451,6 +2413,15 @@ html[data-reduce-motion] .bp-send {
    폭(44+8px)으로 넓히고 버튼은 열을 채운다. 잘린 라벨 = 결함. */
 .bp-group-row.bp-grid4 {
   grid-template-columns: repeat(4, calc(var(--control-hit) + var(--space-2)));
+  gap: var(--space-1);
+}
+/* 도구(2×3)·도형(2×2)도 같은 열 폭 — 그룹마다 버튼 크기가 달라지면 한 줄로 안 읽힌다. */
+.bp-group-row.bp-grid3 {
+  grid-template-columns: repeat(3, calc(var(--control-hit) + var(--space-2)));
+  gap: var(--space-1);
+}
+.bp-group-row.bp-grid2 {
+  grid-template-columns: repeat(2, calc(var(--control-hit) + var(--space-2)));
   gap: var(--space-1);
 }
 

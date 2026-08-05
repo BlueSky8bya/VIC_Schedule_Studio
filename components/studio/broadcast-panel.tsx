@@ -3584,44 +3584,76 @@ export function BroadcastPanel({
         </div>
         <div className="bp-tool-deck">
           <div className="bp-tool-group" role="group" aria-label="도구">
-            <div className="bp-group-row bp-grid4">
+            {/* 6개 = 2×3 격자. 채우기·스포이드도 '무엇으로 칠할지'를 고르는 일이라 도구와 한 상자에
+                둔다(사용자 결정) — 색 팔레트 옆에 따로 서 있으면 도구를 두 군데서 찾게 된다.
+                옆 '도형' 그룹도 2×2로 맞춰 형제 그룹 높이가 같다(들쭉날쭉한 높이 = 결함). */}
+            <div className="bp-group-row bp-grid3">
               {(
                 [
                   ["select", "선택", "V", MousePointer2],
                   ["pen", "펜", "P", Pen],
                   ["hl", "형광펜", "H", Highlighter],
-                  ["eraser", "지우개", "E", Eraser]
+                  ["eraser", "지우개", "E", Eraser],
+                  ["fill", "채우기", "G", PaintBucket],
+                  ["pick", "스포이드", "I", Pipette]
                 ] as const
-              ).map(([key, label, hotkey, Icon]) => (
-                <button
-                  aria-label={label}
-                  aria-pressed={tool === key}
-                  className={`bp-tool${tool === key ? " on" : ""}`}
-                  key={key}
-                  // Procreate 문법(연구 아카이브 §4): 색을 쓰는 도구(펜·형광펜)가 활성이면
-                  // 칩이 '현재 펜 색'으로 칠해진다 — 지금 무슨 색으로 그릴지 도구줄에서 즉시
-                  // 보인다. 아이콘은 명도 대비로 흑/백 자동 선택.
-                  style={tool === key && (key === "pen" || key === "hl") ? activeInkStyle : undefined}
-                  title={`${label} (${hotkey})`}
-                  type="button"
-                  onClick={() => {
-                    hapticTick();
-                    if (key === "select") setTool(key);
-                    else activateDrawingTool(key);
-                  }}
-                 data-act="bp-tool">
-                  <kbd aria-hidden="true" className="bp-tool-key">
-                    {hotkey}
-                  </kbd>
-                  <Icon aria-hidden="true" size={19} />
-                  <span>{label}</span>
-                </button>
-              ))}
+              ).map(([key, label, hotkey, Icon]) => {
+                // 스포이드는 도구가 아니라 '집는 모드'다 — 눌린 상태(picking)로 표시하고,
+                // 색을 집으면 스스로 꺼져 직전 도구로 돌아온다(기존 동작 그대로).
+                const active = key === "pick" ? picking : tool === key && !picking;
+                return (
+                  <button
+                    aria-label={key === "pick" ? "스포이드로 색 집기" : label}
+                    aria-pressed={active}
+                    className={`bp-tool${active ? " on" : ""}`}
+                    key={key}
+                    // Procreate 문법(연구 아카이브 §4): 색을 쓰는 도구(펜·형광펜·채우기)가 활성이면
+                    // 칩이 '현재 펜 색'으로 칠해진다 — 지금 무슨 색으로 그릴지 도구줄에서 즉시
+                    // 보인다. 아이콘은 명도 대비로 흑/백 자동 선택.
+                    style={
+                      active && (key === "pen" || key === "hl" || key === "fill")
+                        ? activeInkStyle
+                        : undefined
+                    }
+                    title={
+                      key === "pick"
+                        ? "스포이드 (I) · Alt+클릭으로도 집기"
+                        : key === "fill"
+                          ? "색 채우기 (G) — 지금 레이어의 선 안쪽을 현재 색으로"
+                          : `${label} (${hotkey})`
+                    }
+                    type="button"
+                    onClick={() => {
+                      hapticTick();
+                      if (key === "pick") {
+                        setPicking((v) => !v);
+                        setPickPreview(null);
+                        return;
+                      }
+                      // 도구를 고르면 집는 모드는 끝난다(모드 두 개가 겹쳐 켜져 있지 않게).
+                      if (picking) {
+                        setPicking(false);
+                        setPickPreview(null);
+                      }
+                      if (key === "select") setTool(key);
+                      else activateDrawingTool(key);
+                    }}
+                    data-act={key === "pick" ? "bp-eyedrop" : key === "fill" ? "bp-fill" : "bp-tool"}
+                  >
+                    <kbd aria-hidden="true" className="bp-tool-key">
+                      {hotkey}
+                    </kbd>
+                    <Icon aria-hidden="true" size={19} />
+                    <span>{label}</span>
+                  </button>
+                );
+              })}
             </div>
             <em className="bp-group-label">도구</em>
           </div>
           <div className="bp-tool-group" role="group" aria-label="도형">
-            <div className="bp-group-row bp-grid4">
+            {/* 도구 그룹이 2줄(2×3)이 되면서 여기도 2×2 — 형제 그룹 높이를 맞춘다. */}
+            <div className="bp-group-row bp-grid2">
               {(
                 [
                   ["line", "직선", "L", Slash],
@@ -3701,41 +3733,6 @@ export function BroadcastPanel({
                     가운데는 현재 색 — 상태 표시와 진입점을 한 버튼이 겸한다. */}
                 <i aria-hidden="true" className="bp-custom-ring" style={{ background: penColor }} />
                 <span>직접 고르기</span>
-              </button>
-              {/* 스포이드는 '색을 정하는 일'이라 도구줄이 아니라 색 팔레트 옆에 둔다(손이 가는 자리).
-                  켜면 판 위에서 색을 집고, 집으면 스스로 꺼져 직전 도구로 돌아온다. */}
-              <button
-                aria-label="스포이드로 색 집기"
-                aria-pressed={picking}
-                className={`bp-eyedrop${picking ? " on" : ""}`}
-                data-act="bp-eyedrop"
-                title="스포이드 (I) · Alt+클릭으로도 집기"
-                type="button"
-                onClick={() => {
-                  hapticTick();
-                  setPicking((v) => !v);
-                  setPickPreview(null);
-                }}
-              >
-                <Pipette aria-hidden="true" size={16} />
-                <span>스포이드</span>
-              </button>
-              {/* 색 채우기도 '색을 쓰는 일'이라 스포이드와 같은 자리·같은 알약 어휘로 둔다
-                  (도구줄 4칸 격자를 5칸으로 깨지 않는다 — 형제 격자 리듬 유지). */}
-              <button
-                aria-label="색 채우기"
-                aria-pressed={tool === "fill"}
-                className={`bp-eyedrop bp-fill${tool === "fill" ? " on" : ""}`}
-                data-act="bp-fill"
-                title="색 채우기 (G) — 지금 레이어의 선 안쪽을 현재 색으로"
-                type="button"
-                onClick={() => {
-                  hapticTick();
-                  activateDrawingTool("fill");
-                }}
-              >
-                <PaintBucket aria-hidden="true" size={16} />
-                <span>채우기</span>
               </button>
             </div>
             <em className="bp-group-label">색상 팔레트</em>
