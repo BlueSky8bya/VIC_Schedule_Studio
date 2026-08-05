@@ -5968,8 +5968,9 @@ body.cell-range-dragging {
   display: grid;
   place-items: center;
   border-radius: inherit;
-  border: 2px dashed #a78bfa;
-  background: rgb(167 139 250 / 9%);
+  /* 유령이 겹쳐도 읽히도록 굵고 진하게(실측: 얇은 점선은 유령 아래에서 사라졌다). */
+  border: 2.5px dashed #8b5cf6;
+  background: rgb(167 139 250 / 16%);
   color: #7c6cf0;
   font-size: 11px;
   font-weight: 800;
@@ -6207,9 +6208,15 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
-  opacity: 0.97;
+  /* 반투명이어야 한다 — 같은 칸 안에서 순서를 바꿀 때는 손이 거의 안 움직이므로 유령이
+     출발 자리('원래 위치' 점선)와 삽입선 바로 위에 앉는다. 예전 0.97에서는 그 둘이 통째로
+     가려져 "어디서 왔고 어디로 들어가는지"가 안 보였다(실측: 유령 y287~444가 원래 위치
+     y285~339와 삽입선 y319를 덮음). 유령은 z-index 9999라 안내를 그 위로 올릴 수 없다 —
+     대신 유령을 비쳐 보이게 한다. */
+  opacity: 0.5;
   border-radius: var(--r-md);
-  box-shadow: 0 18px 36px rgb(90 70 140 / 32%);
+  /* 그림자도 옅게 — 짙으면 반투명이어도 아래 점선이 탁해진다. */
+  box-shadow: 0 14px 28px rgb(90 70 140 / 20%);
   /* 흔들림·기울기는 JS(rAF)로 래퍼 transform을 직접 칠한다(2색 카드도 확실히 적용). */
   transform: scale(1.06);
 }
@@ -6261,13 +6268,15 @@ html[data-reduce-motion] .drop-gap {
   position: absolute;
   left: 0;
   right: 0;
-  top: -4px;
-  height: 4px;
+  top: -5px;
+  /* 유령(z-index 9999)이 위를 지나가므로 선 자체가 굵고 진해야 비쳐 보인다. */
+  height: 5px;
   border-radius: var(--r-pill);
-  background: #2bb67c;
+  background: #17a06a;
   box-shadow:
-    0 0 0 2px rgb(43 182 124 / 22%),
-    0 1px 4px rgb(43 182 124 / 45%);
+    0 0 0 2px rgb(255 255 255 / 75%),
+    0 0 0 4px rgb(23 160 106 / 30%),
+    0 1px 5px rgb(23 160 106 / 50%);
   pointer-events: none;
   z-index: 6;
   animation: drop-line-pulse 0.85s ease-in-out infinite;
