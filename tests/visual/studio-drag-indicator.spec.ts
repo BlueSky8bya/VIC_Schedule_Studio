@@ -1,14 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// 일정 2개 이상인 칸에서 카드를 끌 때, '어디에 놓이는지' 안내가 손에 든 유령 카드에 가려
-// 안 보이던 문제(2026-08-05 사용자 지적)의 회귀 테스트.
-//
-// 처음엔 유령을 반투명하게 해서 비쳐 보이게 했는데, 사용자 결정으로 접근을 바꿨다:
-// **점선 자리 자체가 실제 카드처럼 목표 위치로 움직인다.** 그러면 안내는 유령 아래가 아니라
-// 형제 카드 사이에서 자리를 벌리며 보이고, 유령은 카드답게 불투명해도 된다.
+// 드래그 중 자리 안내 계약(2026-08-05 사용자 결정 A안):
+//   · 보라 '원래 위치' = 출발점. 드래그 내내 **그 자리 고정**.
+//   · 민트 '놓을 자리' = 도착점. 커서 따라 카드 사이를 **오르내린다**(실제 자리를 여는 스페이서).
+//   · 손에 든 유령 카드는 **불투명**(투명하게 만들지 않는다 — 가림은 안내 이동으로 푼다).
+// 앞선 시도들이 여기서 한 번씩 어긋났다: ① 유령이 안내를 덮음 ② 출발 표시를 없애고 그걸
+// 움직여 버림. 셋을 한 파일에 못박아 다시 흔들리지 않게 한다.
 
 async function stackTwoInOneCell(page: Page) {
-  // 샘플 데이터에는 한 칸에 2개인 날이 없다 — 카드 하나를 다른 카드 위로 끌어 만든다.
+  // 샘플에는 한 칸에 2개인 날이 없다 — 카드 하나를 다른 카드 위로 끌어 만든다(서버는 가로챈다).
   await page.route("**/api/studio-write", (r) =>
     r.fulfill({
       status: 200,
@@ -37,111 +37,106 @@ async function stackTwoInOneCell(page: Page) {
       )
     )
     .toBeGreaterThan(0);
+  return page.evaluate(
+    () =>
+      [...document.querySelectorAll("[data-act='calendar-cell']")].findIndex(
+        (c) => c.querySelectorAll(".studio-event-pill").length > 1
+      )
+  );
 }
 
-/** 지금 화면에서 '끌고 있는 카드의 빈 자리'(점선)와 형제 카드의 위치를 잰다. */
-function dragGeometry(page: Page) {
+/** 드래그 중 화면 상태: 출발 표시(보라)·도착 표시(민트)·유령. */
+function dragState(page: Page) {
   return page.evaluate(() => {
-    const rect = (el: Element | null) => (el ? el.getBoundingClientRect().toJSON() : null);
+    const top = (el: Element | null) => (el ? Math.round(el.getBoundingClientRect().top) : null);
     const src = document.querySelector<HTMLElement>(".studio-event-pill.dragging-src");
-    const cell = src?.closest("[data-act='calendar-cell']") ?? null;
-    const siblings = cell
-      ? [...cell.querySelectorAll<HTMLElement>(".studio-event-pill")]
-          .filter((p) => p !== src)
-          .map((p) => p.getBoundingClientRect().top)
-      : [];
+    const gap = document.querySelector<HTMLElement>(".drop-gap");
+    const ghost = document.querySelector<HTMLElement>(".event-drag-ghost");
     return {
-      src: rect(src),
-      moving: Boolean(src?.classList.contains("dragging-src-moving")),
-      label: src ? getComputedStyle(src, "::after").content : null,
-      siblingTops: siblings,
-      ghostOpacity: (() => {
-        const g = document.querySelector<HTMLElement>(".event-drag-ghost");
-        return g ? Number(getComputedStyle(g).opacity) : null;
-      })()
+      srcTop: top(src),
+      srcLabel: src ? getComputedStyle(src, "::after").content : null,
+      gapTop: top(gap),
+      gapLabel: gap ? getComputedStyle(gap, "::after").content : null,
+      gapCell: gap?.closest("[data-act='calendar-cell']")?.getAttribute("data-date") ?? null,
+      ghostOpacity: ghost ? Number(getComputedStyle(ghost).opacity) : null
     };
   });
 }
 
-test("같은 칸에서 순서를 바꾸면 점선 자리가 목표 위치로 따라 움직인다", async ({ page }) => {
-  await stackTwoInOneCell(page);
-  const cellIdx = await page.evaluate(
-    () =>
-      [...document.querySelectorAll("[data-act='calendar-cell']")].findIndex(
-        (c) => c.querySelectorAll(".studio-event-pill").length > 1
-      )
-  );
+test("같은 칸: 보라 '원래 위치'는 고정, 민트 '놓을 자리'가 오르내린다", async ({ page }) => {
+  const cellIdx = await stackTwoInOneCell(page);
   const cell = page.locator("[data-act='calendar-cell']").nth(cellIdx);
   const pill = cell.locator(".studio-event-pill").first();
+  const other = cell.locator(".studio-event-pill").nth(1);
   const a = (await pill.boundingBox())!;
+  const cx = a.x + a.width / 2;
 
-  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+  await page.mouse.move(cx, a.y + a.height / 2);
   await page.mouse.down();
-  await page.mouse.move(a.x + a.width / 2 + 6, a.y + a.height / 2 + 12, { steps: 8 });
-  const atStart = await dragGeometry(page);
-  expect(atStart.src, "끌고 있는 카드의 자리 표시가 없다").toBeTruthy();
+  await page.mouse.move(cx + 6, a.y + a.height / 2 + 10, { steps: 8 });
+  const first = await dragState(page);
+  expect(first.srcTop, "출발 표시가 없다").not.toBeNull();
+  expect(first.gapTop, "도착 표시가 없다").not.toBeNull();
+  expect(first.srcLabel ?? "").toContain("원래 위치");
 
-  // 아래 카드 자리까지 끌어내린다 → 점선이 그 자리로 내려가야 한다.
-  await page.mouse.move(a.x + a.width / 2 + 8, a.y + a.height / 2 + 58, { steps: 12 });
-  const moved = await expect
-    .poll(
-      async () => {
-        const g = await dragGeometry(page);
-        return g.src && atStart.src ? Math.round(g.src.top - atStart.src.top) : 0;
-      },
-      { timeout: 4000 }
-    )
-    .toBeGreaterThan(20);
-  void moved;
+  // 아래 카드 밑까지 끈다 → 도착 표시가 그 아래로 내려간다.
+  // 좌표는 **드래그가 시작된 뒤** 다시 잰다 — 자리가 열리면서 형제 카드가 이미 내려가 있다
+  // (드래그 전 좌표로 끌면 임계에 못 미쳐 아무 일도 안 일어난다).
+  const bLive = (await other.boundingBox())!;
+  await page.mouse.move(cx + 6, bLive.y + bLive.height + 12, { steps: 14 });
+  await expect
+    .poll(async () => (await dragState(page)).gapTop ?? -1, { timeout: 4000 })
+    .toBeGreaterThan((first.gapTop ?? 0) + 10);
 
-  const now = await dragGeometry(page);
-  // 표시가 '놓을 자리'로 바뀐다(출발점이 아니라 도착점을 가리킨다).
-  expect(now.moving).toBe(true);
-  expect(now.label ?? "").toContain("놓을 자리");
-  // 형제 카드는 그 자리를 비켜 준다(빈 자리가 실제로 열린다).
-  expect(now.siblingTops.length).toBeGreaterThan(0);
+  const low = await dragState(page);
+  expect(low.gapLabel ?? "", "도착 표시에 이름이 없다").toContain("놓을 자리");
+  // 출발 표시는 그대로 그 자리에 있다(없애지 않는다 — 사용자 지적).
+  expect(low.srcTop).toBe(first.srcTop);
+  expect(low.srcLabel ?? "").toContain("원래 위치");
+
+  // 다시 위로 끌면 도착 표시가 제자리로 올라온다(위/아래 양방향).
+  await page.mouse.move(cx + 6, a.y + 6, { steps: 14 });
+  await expect
+    .poll(async () => (await dragState(page)).gapTop ?? Number.MAX_SAFE_INTEGER, { timeout: 4000 })
+    .toBeLessThan(low.gapTop!);
+  const up = await dragState(page);
+  expect(up.srcTop, "출발 표시가 움직였다").toBe(first.srcTop);
   await page.mouse.up();
 });
 
-test("유령 카드는 카드처럼 불투명하다 — 가림은 점선 이동으로 푼다", async ({ page }) => {
-  // 사용자 결정: 투명하게 만들지 않는다. 대신 안내가 유령 밑에 깔리지 않게 움직인다.
-  await stackTwoInOneCell(page);
-  const cellIdx = await page.evaluate(
-    () =>
-      [...document.querySelectorAll("[data-act='calendar-cell']")].findIndex(
-        (c) => c.querySelectorAll(".studio-event-pill").length > 1
-      )
-  );
-  const pill = page.locator("[data-act='calendar-cell']").nth(cellIdx).locator(".studio-event-pill").first();
-  const a = (await pill.boundingBox())!;
-  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(a.x + a.width / 2 + 8, a.y + a.height / 2 + 40, { steps: 10 });
-  const g = await dragGeometry(page);
-  await page.mouse.up();
-  expect(g.ghostOpacity ?? 0).toBeGreaterThanOrEqual(0.85);
-});
-
-test("다른 칸으로 나가면 출발 자리는 '원래 위치'로 남는다", async ({ page }) => {
-  await stackTwoInOneCell(page);
-  const cellIdx = await page.evaluate(
-    () =>
-      [...document.querySelectorAll("[data-act='calendar-cell']")].findIndex(
-        (c) => c.querySelectorAll(".studio-event-pill").length > 1
-      )
-  );
+test("다른 칸으로 끌면 그 칸에 도착 표시가 열리고 출발 표시는 남는다", async ({ page }) => {
+  const cellIdx = await stackTwoInOneCell(page);
   const cell = page.locator("[data-act='calendar-cell']").nth(cellIdx);
   const pill = cell.locator(".studio-event-pill").first();
   const a = (await pill.boundingBox())!;
-  // 다른 날 칸으로 끌고 간다(같은 칸이 아니므로 '놓을 자리'가 아니라 출발점 표시가 맞다).
   const other = page.locator("[data-act='calendar-cell']").nth(cellIdx + 2);
   const b = (await other.boundingBox())!;
+
   await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
   await page.mouse.down();
   await page.mouse.move(a.x + a.width / 2 + 10, a.y + a.height / 2 + 10, { steps: 6 });
   await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 20 });
-  const g = await dragGeometry(page);
+  const s = await dragState(page);
   await page.mouse.up();
-  expect(g.moving).toBe(false);
-  expect(g.label ?? "").toContain("원래 위치");
+
+  expect(s.gapTop, "대상 칸에 자리가 안 열렸다").not.toBeNull();
+  expect(s.gapLabel ?? "").toContain("놓을 자리");
+  expect(s.srcTop, "출발 표시가 사라졌다").not.toBeNull();
+  expect(s.srcLabel ?? "").toContain("원래 위치");
+});
+
+test("유령 카드는 카드처럼 불투명하다 — 가림은 안내 이동으로 푼다", async ({ page }) => {
+  const cellIdx = await stackTwoInOneCell(page);
+  const pill = page
+    .locator("[data-act='calendar-cell']")
+    .nth(cellIdx)
+    .locator(".studio-event-pill")
+    .first();
+  const a = (await pill.boundingBox())!;
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(a.x + a.width / 2 + 8, a.y + a.height / 2 + 40, { steps: 10 });
+  const s = await dragState(page);
+  await page.mouse.up();
+  expect(s.ghostOpacity ?? 0).toBeGreaterThanOrEqual(0.85);
 });

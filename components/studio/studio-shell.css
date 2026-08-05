@@ -5977,17 +5977,6 @@ body.cell-range-dragging {
   letter-spacing: 0.02em;
   pointer-events: none;
 }
-/* 같은 칸 안에서 자리를 옮기는 중 — 점선 자리가 형제 사이로 미끄러져 '놓을 자리'를 가리킨다.
-   (다른 칸으로 나가면 이 클래스가 빠져 다시 '원래 위치' 표시로 돌아간다.) */
-.studio-event-pill.dragging-src-moving {
-  z-index: 3; /* 형제 카드가 밀려오며 점선을 덮지 않게 */
-}
-.studio-event-pill.dragging-src-moving::after {
-  content: "놓을 자리";
-  border-color: #17a06a;
-  background: rgb(87 201 138 / 18%);
-  color: #14805a;
-}
 /* 드래그로 잇기: 집은 카드와 이을 수 있는 상대만 또렷·강조하고 나머지는 흐릿하게 눌러, "지금
    여기로 끌고 오면 이어진다"를 눈으로 구분시킨다(의도 분리). 합성 전용(opacity/transform/shadow). */
 .studio-event-pill.connect-dim {
@@ -6261,10 +6250,20 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
    예전엔 형제를 transform으로 밀고 목록에 paddingBottom만 더했는데, transform은 레이아웃을
    안 늘려 맨 아래 카드가 칸 경계를 넘어 다음 주까지 삐져나왔다(사용자 지적 2회). */
 .drop-gap {
+  display: grid;
+  place-items: center;
   border-radius: var(--r-md);
-  border: 2px dashed #57c98a;
-  background: rgb(87 201 138 / 10%);
+  border: 2.5px dashed #17a06a;
+  background: rgb(87 201 138 / 16%);
+  color: #14805a;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  /* 보라 '원래 위치'와 짝을 이루는 도착 표시 — 글자로 못박아야 둘이 안 헷갈린다. */
   transition: height var(--dur-2) var(--ease);
+}
+.drop-gap::after {
+  content: "놓을 자리";
 }
 html[data-reduce-motion] .drop-gap {
   transition: none;

@@ -6231,11 +6231,6 @@ export function StudioShell({
                 }
                 liIdx = Math.max(li, connectedCount);
               }
-              const dragSrcHere =
-                dragEventId !== null && dateEvents.some((e) => e.id === dragEventId);
-              const dragOrigIdx = dragSrcHere
-                ? dateEvents.findIndex((e) => e.id === dragEventId)
-                : -1;
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const visibleDayMark = worldCupFxVisible
                 ? getDayMark(cell.isoDate)
@@ -6431,7 +6426,7 @@ export function StudioShell({
                         transform으로 밀면 칸(주 행) 높이가 안 자라 맨 아래 카드가 칸 경계를
                         넘어 다음 주까지 삐져나왔다(사용자 지적 2회). 스페이서는 그리드 자식이라
                         칸이 정확히 그만큼 자란다. 목록 gap이 이미 한 칸 들어가므로 높이에서 뺀다. */}
-                    {liIdx !== null && !dragSrcHere && dragChipH > 0 && liIdx <= 0 ? (
+                    {liIdx !== null && dragChipH > 0 && liIdx <= 0 ? (
                       <div
                         aria-hidden="true"
                         className="drop-gap"
@@ -6499,10 +6494,6 @@ export function StudioShell({
                         joinLeft ? "link-join-left" : "",
                         draggable ? "draggable" : "",
                         dragEventId === event.id ? "dragging-src" : "",
-                        // 같은 칸 안에서 자리를 옮기는 중이면 점선이 '놓을 자리'로 따라간다.
-                        dragEventId === event.id && dragSrcHere && liIdx !== null
-                          ? "dragging-src-moving"
-                          : "",
                         isConnTarget ? "connect-target" : "",
                         isConnHover ? "connect-hover" : "",
                         connDim ? "connect-dim" : "",
@@ -6527,55 +6518,15 @@ export function StudioShell({
                           ? getSpanRunRange(pg.start, pg.end, cell.isoDate, cell.weekday)
                           : null;
                       const mixStyle = mixed && run ? mixedEventStyle(colors, run) : null;
-                      // 슬라이드 프리뷰: 드래그 카드 높이(H)만큼 형제가 밀려 빈 칸이 열린다.
-                      // 같은 날 = 레이어 목록과 동일 공식(사이 구간만 ±H), 다른 날 =
-                      // 대상 칸은 liIdx부터 +H(자리 열기), 출발 칸은 orig 아래 -H(자리 닫기).
-                      // 끌고 있는 카드의 '빈 자리'(점선)도 실제 카드처럼 목표 자리로 움직인다.
-                      // 예전엔 출발 자리에 붙박여 있어서, 같은 칸 안에서 순서만 바꿀 때
-                      // (손이 거의 안 움직인다) 손에 든 유령이 그 위에 앉아 통째로 가렸다.
-                      // 이제 점선이 형제 사이로 미끄러져 들어가므로 "여기에 놓인다"가 위치로 보인다.
-                      let srcSlide = 0;
-                      if (
-                        event.id === dragEventId &&
-                        dragSrcHere &&
-                        dragChipH > 0 &&
-                        liIdx !== null &&
-                        dragOrigIdx >= 0
-                      ) {
-                        const to = liIdx > dragOrigIdx ? liIdx - 1 : liIdx;
-                        srcSlide = (to - dragOrigIdx) * dragChipH;
-                      }
-                      let slideY = 0;
-                      if (dragEventId && dragChipH > 0 && event.id !== dragEventId) {
-                        const H = dragChipH;
-                        if (liIdx !== null) {
-                          if (dragSrcHere && dragOrigIdx >= 0) {
-                            const to = liIdx > dragOrigIdx ? liIdx - 1 : liIdx;
-                            if (dragOrigIdx < to && eventIndex > dragOrigIdx && eventIndex <= to)
-                              slideY = -H;
-                            else if (to < dragOrigIdx && eventIndex >= to && eventIndex < dragOrigIdx)
-                              slideY = H;
-                          }
-                          // 다른 날에서 들어오는 경우는 transform으로 밀지 않는다 — 아래
-                          // .drop-gap 스페이서가 실제 자리를 만들어 칸·주 행이 함께 자란다.
-                          // (transform은 레이아웃을 안 늘려 맨 아래 카드가 칸 밖으로 나갔다.)
-                        } else if (dragSrcHere && dragOrigIdx >= 0 && eventIndex > dragOrigIdx) {
-                          slideY = -H;
-                        }
-                      }
-                      const pillBaseStyle =
-                        mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined);
-                      const moveY = slideY !== 0 ? slideY : srcSlide;
+                      // 자리 열기는 **항상** .drop-gap 스페이서가 맡는다(A안, 사용자 결정
+                      // 2026-08-05) — 같은 칸이든 다른 칸이든 문법이 같다. 예전엔 같은 칸일 때만
+                      // transform으로 형제를 밀었는데, 그러면 칸(주 행) 높이가 안 자라 맨 아래
+                      // 카드가 칸 밖으로 나갔고 출발 점선('원래 위치')까지 같이 밀렸다.
+                      // 지금: 보라 '원래 위치'는 제자리 고정, 민트 '놓을 자리'가 오르내린다.
                       const pillStyle =
-                        moveY !== 0
-                          ? { ...(pillBaseStyle ?? {}), transform: `translateY(${moveY}px)` }
-                          : pillBaseStyle;
+                        mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined);
                       // 이 카드 '다음' 자리가 삽입 위치면 그 뒤에 스페이서를 놓는다(맨 끝 포함).
-                      const gapAfter =
-                        liIdx !== null &&
-                        !dragSrcHere &&
-                        dragChipH > 0 &&
-                        liIdx === eventIndex + 1;
+                      const gapAfter = liIdx !== null && dragChipH > 0 && liIdx === eventIndex + 1;
                       const gapEl = gapAfter ? (
                         <div
                           aria-hidden="true"
@@ -6649,16 +6600,16 @@ export function StudioShell({
                           }
                           onBlur={titleCompact ? () => leaveZoomPeek(event.id) : undefined}
                         >
-                          {/* 드롭 안내바 — 활주로 열린 틈 안에 정확한 삽입 위치를 표시(사용자 요청).
-                              드래그 원위치 그대로(이동 없음)인 자리엔 띄우지 않는다. */}
-                          {liIdx === eventIndex &&
-                          !(dragSrcHere && (liIdx === dragOrigIdx || liIdx === dragOrigIdx + 1)) ? (
+                          {/* 드롭 안내바 — 스페이서(.drop-gap)가 자리를 여는 지금은 그것이 곧
+                              위치 표시라 선을 겹쳐 그리지 않는다. 카드 높이를 못 재 스페이서를
+                              못 여는 예외 상황(dragChipH=0)에서만 가는 막대로 대신한다. */}
+                          {liIdx === eventIndex && dragChipH <= 0 ? (
                             <span className="drop-insert-line" aria-hidden="true" />
                           ) : null}
                           {liIdx !== null &&
+                          dragChipH <= 0 &&
                           liIdx >= dateEvents.length &&
-                          eventIndex === dateEvents.length - 1 &&
-                          !(dragSrcHere && dragOrigIdx === dateEvents.length - 1) ? (
+                          eventIndex === dateEvents.length - 1 ? (
                             <span className="drop-insert-line end" aria-hidden="true" />
                           ) : null}
                           <div className="pill-main">
