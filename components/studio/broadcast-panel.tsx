@@ -2059,6 +2059,122 @@ export function BroadcastPanel({
     []
   );
 
+  // 스치듯 지운 획을 **픽셀 그대로** 깎아 비트맵 한 장으로 바꾼다.
+  //
+  // 왜 필요한가: 벡터로 자르면 획이 '굵기 단위'로 끊긴다 — 가장자리를 살짝 스쳤을 뿐인데 그
+  // 구간의 폭 전체가 사라지고, 굵은 형광펜에 작은 지우개로 구멍을 뚫을 수도 없다.
+  // (2026-08-06 사용자 지적: "내가 의도한 대로 못 지운다 — 후처리로 정리되는 것 같다.")
+  // 그런 경우에만 이 길을 탄다. 지우개가 획 폭을 통째로 덮은 경우는 그대로 벡터로 자른다(선명함).
+  //
+  // 결과가 비트맵이라도 '유령'은 안 생긴다 — 그림 항목은 알파 마스크로 선택·지우개를 판정한다.
+  const bakeStrokesToImage = useCallback(
+    (group: Stroke[], er: { points: StrokePoint[]; width: number }): {
+      ok: boolean;
+      stroke: Stroke | null;
+    } => {
+      if (group.length === 0) return { ok: false, stroke: null };
+      const scale = scaleRef.current;
+      const arrowPad = group.some((g) => g.tool === "arrow")
+        ? Math.max(...group.map((g) => Math.max(10, g.width * 3)))
+        : 0;
+      const pad = Math.max(...group.map((g) => g.width)) / 2 + arrowPad + 3;
+      let left = Infinity;
+      let top = Infinity;
+      let right = -Infinity;
+      let bottom = -Infinity;
+      for (const g of group) {
+        for (const p of g.points) {
+          if (p.x < left) left = p.x;
+          if (p.x > right) right = p.x;
+          if (p.y < top) top = p.y;
+          if (p.y > bottom) bottom = p.y;
+        }
+      }
+      if (!Number.isFinite(left)) return { ok: false, stroke: null };
+      left -= pad;
+      top -= pad;
+      right += pad;
+      bottom += pad;
+      const w = Math.ceil((right - left) * scale);
+      const h = Math.ceil((bottom - top) * scale);
+      if (w < 1 || h < 1 || w * h > 32_000_000) return { ok: false, stroke: null };
+      const cv = document.createElement("canvas");
+      cv.width = w;
+      cv.height = h;
+      const cx = cv.getContext("2d", { willReadFrequently: true });
+      if (!cx) return { ok: false, stroke: null };
+      const place = (ctx: CanvasRenderingContext2D) =>
+        ctx.setTransform(scale, 0, 0, scale, -left * scale, -top * scale);
+      if (group[0].tool === "hl") {
+        // 형광펜은 조각을 모아 불투명으로 그린 뒤 알파를 한 번만 먹인다(이음매 이중 도포 방지).
+        const tmp = document.createElement("canvas");
+        tmp.width = w;
+        tmp.height = h;
+        const tctx = tmp.getContext("2d");
+        if (!tctx) return { ok: false, stroke: null };
+        place(tctx);
+        for (const g of group) drawStroke(tctx, g, true);
+        cx.setTransform(1, 0, 0, 1, 0, 0);
+        cx.globalAlpha = HL_ALPHA;
+        cx.drawImage(tmp, 0, 0);
+        cx.globalAlpha = 1;
+      } else {
+        place(cx);
+        for (const g of group) drawStroke(cx, g);
+      }
+      // 지운 자국을 그대로 파낸다 — 라이브 미리보기에서 본 모양 그 자체.
+      place(cx);
+      cx.globalCompositeOperation = "destination-out";
+      cx.lineCap = "round";
+      cx.lineJoin = "round";
+      cx.lineWidth = er.width;
+      cx.strokeStyle = "#000";
+      if (er.points.length === 1) {
+        cx.beginPath();
+        cx.arc(er.points[0].x, er.points[0].y, er.width / 2, 0, Math.PI * 2);
+        cx.fill();
+      } else {
+        cx.beginPath();
+        er.points.forEach((p, i) => (i === 0 ? cx.moveTo(p.x, p.y) : cx.lineTo(p.x, p.y)));
+        cx.stroke();
+      }
+      cx.setTransform(1, 0, 0, 1, 0, 0);
+      cx.globalCompositeOperation = "source-over";
+      // 남은 게 없으면 항목 자체를 없앤다(투명한 유령을 남기지 않는다).
+      let any = false;
+      try {
+        const d = cx.getImageData(0, 0, w, h).data;
+        for (let i = 3; i < d.length; i += 4) {
+          if (d[i] > 8) {
+            any = true;
+            break;
+          }
+        }
+      } catch {
+        any = true; // 픽셀을 못 읽으면 있다고 보고 남긴다(지워버리는 쪽이 더 위험하다)
+      }
+      if (!any) return { ok: true, stroke: null };
+      const src = cv.toDataURL("image/png");
+      rememberBitmap(src, cv);
+      warmDecode(src, group[0].layer);
+      return {
+        ok: true,
+        stroke: {
+          tool: "image",
+          src,
+          layer: group[0].layer,
+          color: group[0].color,
+          width: 1,
+          points: [
+            { x: left, y: top },
+            { x: right, y: bottom }
+          ]
+        }
+      };
+    },
+    [rememberBitmap, warmDecode]
+  );
+
   const replayLayer = useCallback(
     (layer: StrokeLayer) => {
       const canvas = canvasOf(layer);
@@ -2162,7 +2278,7 @@ export function BroadcastPanel({
       const er = { points: live.points, width: live.width };
       // 그림은 '상자에 닿았나'가 아니라 '칠해진 픽셀을 덮었나'로 본다 — 투명한 여백만 스쳐도
       // 다시 인코딩하고 되돌리기 기록이 쌓이던 것을 막는다(화면은 그대로인데 기록만 늘었다).
-      const { next, changed, images } = applyErase(before, er, live.layer, (st, path) => {
+      const { next, changed, images, raster } = applyErase(before, er, live.layer, (st, path) => {
         const mask = st.src ? maskFor(st.src) : null;
         if (!mask) return imageHit(st, path); // 마스크를 못 만들면 상자 기준(안전한 쪽)
         return maskHitsEraser(mask, boxOf(st), path);
@@ -2171,7 +2287,25 @@ export function BroadcastPanel({
       // 그림은 픽셀에 구워 넣는다(기하가 없어 잘라낼 수 없다). 히스토리에 담기 전에 끝낸다.
       const bakedByRef = new Map<Stroke, Stroke>();
       for (const im of images) bakedByRef.set(im, bakeEraseIntoImage(im, er));
-      const after = next.map((x) => bakedByRef.get(x) ?? x);
+      // 스치듯 지운 획은 **그은 대로** 남겨야 한다 — 벡터로 자르면 그 구간의 폭이 통째로
+      // 사라진다(사용자 지적: "의도한 대로 못 지운다"). 그 획만 픽셀로 깎아 비트맵으로 바꾼다.
+      const dropped = new Set<Stroke>();
+      for (const st of raster) {
+        if (dropped.has(st) || bakedByRef.has(st)) continue;
+        // 형광펜 조각 묶음은 통째로 구워야 한다 — 하나만 비트맵이 되면 이음매에서 다시 겹친다.
+        const group =
+          st.tool === "hl" && st.seam
+            ? next.filter((x) => x.layer === st.layer && x.tool === "hl" && x.seam === st.seam)
+            : [st];
+        const baked = bakeStrokesToImage(group, er);
+        if (!baked.ok) continue; // 구울 수 없으면 원본을 그대로 둔다(사라지는 것보다 낫다)
+        if (baked.stroke) bakedByRef.set(group[0], baked.stroke);
+        else dropped.add(group[0]); // 남은 게 없다
+        for (const g of group.slice(1)) dropped.add(g);
+      }
+      const after = next
+        .filter((x) => !dropped.has(x))
+        .map((x) => bakedByRef.get(x) ?? x);
       store.setStrokes(after);
       pushHist({ t: "scene", before, after: [...after] });
       replayLayerFnRef.current(live.layer);
@@ -2179,7 +2313,16 @@ export function BroadcastPanel({
     }
     store.push(live);
     pushHist({ t: "stroke", stroke: live }); // 중앙 기록이 획 자체도 소유(Ctrl+Z 하나로 전부)
-  }, [canvasOf, clearCanvas, scaledCtx, store, pushHist, bakeEraseIntoImage, maskFor]);
+  }, [
+    canvasOf,
+    clearCanvas,
+    scaledCtx,
+    store,
+    pushHist,
+    bakeEraseIntoImage,
+    bakeStrokesToImage,
+    maskFor
+  ]);
 
   // 리사이즈 → 크기가 실제로 변했을 때만 backing 재할당 + 명령 재생(연속 리사이즈 churn 방지).
   useEffect(() => {

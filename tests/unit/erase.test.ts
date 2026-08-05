@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   applyErase,
   eraseStroke,
+  eraseVerdict,
   imageHit,
   pointErased,
   refineNearEraser,
@@ -276,5 +277,66 @@ describe("applyErase — 활성 레이어만, 바뀐 게 있을 때만", () => {
     expect(next[0]).toBe(under);
     expect(next[next.length - 1]).toBe(over);
     expect(next).toHaveLength(4); // under + 조각 2 + over
+  });
+});
+
+describe("eraseVerdict — 벡터로 자를지, 픽셀로 깎을지", () => {
+  // 2026-08-06 사용자 지적: "내가 의도한 대로 못 지운다 — 후처리로 정리되는 것 같다."
+  // 벡터로 자르면 획이 '굵기 단위'로 끊긴다. 지우개 원이 획 폭을 통째로 덮은 적이 있을 때만
+  // 자르고(그때는 픽셀과 결과가 같다), 스치기만 했으면 픽셀 그대로 깎는다.
+  it("가로질러 지나가면 벡터로 자른다(선명함 유지)", () => {
+    expect(eraseVerdict(pen([[0, 50], [200, 50]]), eraser)).toBe("cut");
+  });
+
+  it("가장자리를 나란히 스치면 픽셀로 깎는다", () => {
+    // 굵은 획(20) 옆을 지우개(10)가 평행하게 지나간다 — 폭을 덮은 적이 없다.
+    const thick = pen([[0, 50], [200, 50]], { width: 20 });
+    const along = { points: [{ x: 0, y: 62 }, { x: 200, y: 62 }], width: 10 };
+    expect(eraseVerdict(thick, along)).toBe("raster");
+  });
+
+  it("지우개가 획보다 가늘면 언제나 픽셀 — 구멍을 뚫을 수 있어야 한다", () => {
+    const fat = pen([[0, 50], [200, 50]], { width: 40 });
+    expect(eraseVerdict(fat, { points: [{ x: 100, y: 50 }], width: 10 })).toBe("raster");
+  });
+
+  it("안 닿으면 none", () => {
+    expect(eraseVerdict(pen([[0, 0], [10, 0]]), eraser)).toBe("none");
+  });
+
+  it("한 군데라도 스치기만 한 구간이 있으면 그 획은 픽셀로 깎는다", () => {
+    const thick = pen(
+      [
+        [0, 50],
+        [200, 50]
+      ],
+      { width: 20 }
+    );
+    // 첫 구간은 가로지르고(덮음), 두 번째 구간은 가장자리만 스친다.
+    const mixed = {
+      points: [
+        { x: 40, y: 0 },
+        { x: 40, y: 100 },
+        { x: 150, y: 100 },
+        { x: 150, y: 63 },
+        { x: 190, y: 63 }
+      ],
+      width: 10
+    };
+    expect(eraseVerdict(thick, mixed)).toBe("raster");
+  });
+
+  it("그림·옛 채우기 기록은 여기서 판정하지 않는다", () => {
+    expect(eraseVerdict(pen([[0, 0], [80, 80]], { tool: "image", src: "data:," }), eraser)).toBe("none");
+    expect(eraseVerdict(pen([[50, 50]], { tool: "fill" }), eraser)).toBe("none");
+  });
+
+  it("applyErase는 픽셀로 깎을 획을 따로 알려주고 자르지 않는다", () => {
+    const thick = pen([[0, 50], [200, 50]], { width: 20 });
+    const along = { points: [{ x: 0, y: 62 }, { x: 200, y: 62 }], width: 10 };
+    const r = applyErase([thick], along, "L1");
+    expect(r.raster).toEqual([thick]);
+    expect(r.next).toEqual([thick]); // 기하는 그대로 — 패널이 픽셀로 바꾼다
+    expect(r.changed).toBe(true);
   });
 });

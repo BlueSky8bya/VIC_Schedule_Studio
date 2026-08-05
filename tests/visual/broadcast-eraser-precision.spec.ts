@@ -414,3 +414,56 @@ test("⑧ 형광펜을 절반만 선택해도 이음매가 진해지거나 잘�
     );
   }
 });
+
+test("⑨ 스치듯 지우면 그은 대로만 깎인다(획이 통째로 안 끊긴다)", async ({ page }) => {
+  // 사용자 지적(2026-08-06): "내가 의도한 대로 못 지운다 — 후처리로 정리되는 것 같다."
+  // 벡터로 자르면 획이 굵기 단위로 끊겨, 가장자리를 살짝 스쳤을 뿐인데 그 구간의 폭 전체가
+  // 사라졌다. 이제 지우개가 획 폭을 통째로 덮은 적이 없으면 픽셀 그대로 깎는다.
+  await openBoard(page);
+  const box = (await page.locator(".bp-draw-surface").boundingBox())!;
+  const y = Math.round(box.y + box.height / 2);
+  const x0 = Math.round(box.x + 60);
+  const x1 = Math.round(box.x + box.width - 60);
+  const probe = Math.round((x0 + x1) / 2);
+
+  const thickness = (x: number) =>
+    page.evaluate(
+      ([px, cy]) => {
+        const cs = [...document.querySelectorAll<HTMLCanvasElement>(".bp-board canvas")];
+        let n = 0;
+        for (let dy = -40; dy <= 40; dy += 1) {
+          for (const c of cs) {
+            const r = c.getBoundingClientRect();
+            const ctx = c.getContext("2d", { willReadFrequently: true });
+            if (!ctx) continue;
+            const sx = Math.round(((px - r.left) / r.width) * c.width);
+            const sy = Math.round(((cy + dy - r.top) / r.height) * c.height);
+            if (sx < 0 || sy < 0 || sx >= c.width || sy >= c.height) continue;
+            if (ctx.getImageData(sx, sy, 1, 1).data[3] > 8) {
+              n += 1;
+              break;
+            }
+          }
+        }
+        return n;
+      },
+      [x, y] as const
+    );
+
+  await tool(page, "형광펜").click();
+  await drag(page, [x0, y], [x1, y], 24);
+  await page.waitForTimeout(150);
+  const base = await thickness(probe);
+  expect(base, "형광펜 두께를 못 쟀다").toBeGreaterThan(8);
+
+  // 위쪽 가장자리만 따라 스친다(중심선에서 10px 위) — 폭을 덮은 적이 없다.
+  await tool(page, "지우개").click();
+  await drag(page, [x0 + 20, y - 10], [x1 - 20, y - 10], 20);
+  await page.waitForTimeout(400);
+
+  const after = await thickness(probe);
+  expect(after, "스쳤는데 획이 통째로 끊겼다").toBeGreaterThan(2);
+  expect(after, "스쳤는데 아무것도 안 깎였다").toBeLessThan(base - 2);
+  // 지우개가 지나간 자리 바깥(양 끝)은 원래 두께 그대로.
+  expect(await thickness(x0 + 6)).toBeGreaterThanOrEqual(base - 2);
+});

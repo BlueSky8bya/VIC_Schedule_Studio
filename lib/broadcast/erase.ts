@@ -277,12 +277,67 @@ export function eraseStroke(stroke: Stroke, er: EraserPath): Stroke[] {
   return runs.filter((r) => r.length >= 2).map((points) => ({ ...stroke, points }));
 }
 
+/**
+ * 이 획을 **어떻게** 지울지.
+ *
+ * 벡터로 자르면 획이 '굵기 단위'로 끊긴다 — 가장자리를 살짝 스쳤을 뿐인데 그 구간의 폭 전체가
+ * 사라진다. 지우개가 획보다 가늘면(굵은 형광펜에 작은 지우개) 구멍을 뚫고 싶어도 띠 전체가
+ * 날아간다. 2026-08-06 사용자 지적: "내가 의도한 대로 못 지운다 — 후처리로 정리되는 것 같다".
+ *
+ * 그래서 지우개 원이 획의 **폭을 완전히 덮은 적이 있을 때만** 벡터로 자른다(그때는 잘린 결과가
+ * 픽셀과 정확히 일치한다 — 남은 조각의 둥근 캡이 여분을 그대로 되메운다).
+ * 스치기만 했으면 픽셀 그대로 깎는다("raster") — 그은 대로 남는다.
+ *
+ *   "none"   — 안 닿았다
+ *   "cut"    — 벡터로 자른다(선명함 유지)
+ *   "raster" — 픽셀로 깎는다(그은 모양 그대로)
+ */
+export type EraseVerdict = "none" | "cut" | "raster";
+
+/** 이 획의 판정 표본(펜·형광펜은 점열, 도형은 윤곽). */
+function verdictSamples(stroke: Stroke, er: EraserPath, half: number): StrokePoint[] {
+  if (isShapeTool(stroke.tool)) return shapeOutlines(stroke).flatMap((p) => p.points);
+  return refineNearEraser(stroke.points, er, half);
+}
+
+export function eraseVerdict(stroke: Stroke, er: EraserPath): EraseVerdict {
+  if (stroke.tool === "eraser" || stroke.tool === "image" || stroke.tool === "fill") return "none";
+  const half = stroke.width / 2;
+  const r = er.width / 2;
+  const full = r - half; // 이 거리 안이면 지우개 원이 획 폭을 통째로 덮는다
+  const samples = verdictSamples(stroke, er, half);
+  let touchedRun = false;
+  let coveredInRun = false;
+  let touchedAny = false;
+  let grazeOnlyRun = false;
+  for (const p of samples) {
+    const touched = pointErased(p, er, half);
+    if (touched) {
+      touchedAny = true;
+      touchedRun = true;
+      // 반지름 r-half 안 = 지우개 원이 획 폭을 통째로 덮은 자리(pointErased의 반지름은 r+extra).
+      if (full >= 0 && pointErased(p, er, -half)) coveredInRun = true;
+      continue;
+    }
+    if (touchedRun && !coveredInRun) grazeOnlyRun = true;
+    touchedRun = false;
+    coveredInRun = false;
+  }
+  if (touchedRun && !coveredInRun) grazeOnlyRun = true;
+  if (!touchedAny) return "none";
+  // 한 구간이라도 '스치기만' 했으면 그 획은 픽셀로 깎는다(부분만 벡터로 자르면 그 자리에서
+  // 굵기 단위로 뭉텅 사라진다 — 사용자가 불편해한 바로 그 동작).
+  return grazeOnlyRun ? "raster" : "cut";
+}
+
 export type EraseResult = {
   next: Stroke[];
   /** 실제로 뭔가 사라졌나(아무것도 안 지웠으면 히스토리에 남기지 않는다). */
   changed: boolean;
   /** 픽셀을 구워야 하는 그림들(패널이 처리) — 참조 동등성으로 next 안의 항목을 가리킨다. */
   images: Stroke[];
+  /** 벡터로 자르지 않고 **픽셀 그대로 깎을** 획들(스치듯 지운 경우). 패널이 비트맵으로 굽는다. */
+  raster: Stroke[];
 };
 
 /** 그림(비트맵) 하나가 지우개에 실제로 닿았는지 판정하는 함수. 패널이 알파 마스크로 답한다. */
@@ -312,6 +367,7 @@ export function applyErase(
 ): EraseResult {
   const next: Stroke[] = [];
   const images: Stroke[] = [];
+  const raster: Stroke[] = [];
   let changed = false;
   for (const s of scene) {
     if (s.layer !== layer) {
@@ -325,9 +381,16 @@ export function applyErase(
       if (imageTest(s, er)) images.push(s);
       continue;
     }
+    // 스치듯 지운 획은 벡터로 자르지 않는다 — 자르면 그 구간의 폭이 통째로 사라진다.
+    // 배열에는 그대로 두고 패널이 픽셀을 깎아 비트맵으로 바꾼다(그은 대로 남는다).
+    if (eraseVerdict(s, er) === "raster") {
+      next.push(s);
+      raster.push(s);
+      continue;
+    }
     const pieces = eraseStroke(s, er);
     if (pieces.length !== 1 || pieces[0] !== s) changed = true;
     next.push(...pieces);
   }
-  return { next, changed: changed || images.length > 0, images };
+  return { next, changed: changed || images.length > 0 || raster.length > 0, images, raster };
 }
