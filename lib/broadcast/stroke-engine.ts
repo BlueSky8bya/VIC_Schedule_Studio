@@ -184,6 +184,52 @@ export function strokeIntersectsRect(stroke: Stroke, rect: StrokeRect): boolean 
   return false;
 }
 
+/**
+ * 잘린 자리(seam)에서 **끝을 반굵기만큼 물린다**.
+ *
+ * 왜: 획을 선택으로 쪼개면 두 조각이 경계점을 공유한다. 각 조각은 따로 그려지고 끝에 둥근
+ * 캡(반지름 = 굵기/2)이 붙으므로, 경계점에서 캡 두 개가 완전히 겹친다. 불투명한 펜은 티가 안
+ * 나지만 **형광펜은 반투명이라 그 자리만 진하게 뭉친다**(2026-08-06 사용자 지적: "선택 절반만
+ * 했더니 중간에 겹쳐 보이고, 선택을 풀어도 그대로 남는다").
+ * 끝점을 진행 방향으로 반굵기만큼 당기면 둥근 캡이 정확히 경계까지만 닿아 — 겹치지도, 벌어지지도
+ * 않는다. 조각을 옮기면 각자 온전한 캡을 유지한다.
+ *
+ * 남는 길이가 반굵기도 안 되면 빈 배열을 준다(캡만 남는 조각 = 이웃 캡에 이미 덮인다).
+ */
+export function trimSeamEnds(
+  points: readonly StrokePoint[],
+  headCut: boolean,
+  tailCut: boolean,
+  half: number
+): StrokePoint[] {
+  let pts = points.map((p) => ({ ...p }));
+  if (half <= 0) return pts;
+  const eat = (list: StrokePoint[], fromTail: boolean): StrokePoint[] => {
+    const seq = fromTail ? [...list].reverse() : list;
+    let left = half;
+    for (let i = 1; i < seq.length; i += 1) {
+      const a = seq[i - 1];
+      const b = seq[i];
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      if (len < left) {
+        left -= len;
+        continue;
+      }
+      const t = left / len;
+      const cut: StrokePoint = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+      if (a.p !== undefined || b.p !== undefined) {
+        cut.p = (a.p ?? 0.7) + ((b.p ?? 0.7) - (a.p ?? 0.7)) * t;
+      }
+      const rest = [cut, ...seq.slice(i)];
+      return fromTail ? rest.reverse() : rest;
+    }
+    return []; // 조각 전체가 캡보다 짧다
+  };
+  if (headCut) pts = eat(pts, false);
+  if (tailCut && pts.length >= 2) pts = eat(pts, true);
+  return pts.length >= 2 ? pts : [];
+}
+
 export type StrokeStore = {
   /** 장면의 모든 stroke(그려진 순서). 렌더는 이 배열을 레이어별로 재생한다. */
   strokes: () => readonly Stroke[];

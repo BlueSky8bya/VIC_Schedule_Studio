@@ -92,6 +92,7 @@ import {
   isBoxItem,
   isShapeTool,
   strokeIntersectsRect,
+  trimSeamEnds,
   strokeAppliesTo,
   type BroadcastTool,
   type Stroke,
@@ -106,6 +107,7 @@ import {
   maskFromRgba,
   maskHitsEraser,
   maskHitsRect,
+  maskPaintedOutsideRect,
   type AlphaMask
 } from "@/lib/broadcast/image-mask";
 import { floodFill, parseHexColor } from "@/lib/broadcast/flood-fill";
@@ -1193,12 +1195,44 @@ export function BroadcastPanel({
       if (s.tool === "image") {
         // 그림은 **칠해진 픽셀**로 판정한다. 상자로 판정하면 채우기 조각(상자가 화면 절반만 하다)의
         // 투명한 여백만 긁어도 통째로 잡혔다(2026-08-05 사용자 지적).
+        const box = boxOf(s);
         const mask = s.src ? maskFor(s.src) : null;
         const hit = mask
-          ? maskHitsRect(mask, boxOf(s), selectionRect)
+          ? maskHitsRect(mask, box, selectionRect)
           : strokeIntersectsRect(s, selectionRect); // 마스크를 못 만들면 옛 상자 기준
-        nextScene.push(s);
-        if (hit) picked.push(s);
+        if (!hit) {
+          nextScene.push(s);
+          continue;
+        }
+        // 그림도 **밴드에 걸친 부분만** 잘라 선택한다(획과 같은 문법 — 사용자 지적:
+        // "채우기로 색칠된 건 선택으로 분할이 안 된다"). 밖에 남는 게 없으면 통째로 잡는다.
+        const inter = {
+          x: Math.max(lo.x, box.left),
+          y: Math.max(lo.y, box.top),
+          w: Math.min(hi.x, box.right) - Math.max(lo.x, box.left),
+          h: Math.min(hi.y, box.bottom) - Math.max(lo.y, box.top)
+        };
+        const restRemains = mask ? maskPaintedOutsideRect(mask, box, selectionRect) : false;
+        const cropped =
+          restRemains && inter.w >= 4 && inter.h >= 4 ? cropRegion(s, inter, true) : null;
+        if (!cropped?.holeSrc) {
+          nextScene.push(s);
+          picked.push(s);
+          continue;
+        }
+        changed = true;
+        // 남는 쪽은 **새 객체**로 만든다 — 원본을 고치면 되돌리기용 before 스냅샷까지 같이 바뀐다.
+        const rest: Stroke = { ...s, src: cropped.holeSrc };
+        const piece: Stroke = {
+          ...s,
+          src: cropped.src,
+          points: [
+            { x: inter.x, y: inter.y },
+            { x: inter.x + inter.w, y: inter.y + inter.h }
+          ]
+        };
+        nextScene.push(rest, piece);
+        picked.push(piece);
         continue;
       }
       const flags = s.points.map(inside);
@@ -1221,18 +1255,23 @@ export function BroadcastPanel({
       changed = true;
       let run: StrokePoint[] = [{ ...s.points[0] }];
       let runIn = flags[0];
-      const flush = () => {
-        if (run.length > 0) {
-          const frag: Stroke = {
-            tool: s.tool,
-            layer: s.layer,
-            color: s.color,
-            width: s.width,
-            points: run
-          };
-          nextScene.push(frag);
-          if (runIn) picked.push(frag);
-        }
+      let headCut = false; // 이 조각의 시작이 '잘린 자리'인가(원래 획의 끝이 아니라)
+      // 형광펜은 반투명이라 조각 두 개가 경계점을 공유하면 그 자리만 진하게 뭉친다
+      // (둥근 캡이 완전히 겹친다). 잘린 끝만 반굵기 물려 캡이 경계까지만 닿게 한다.
+      const seam = s.tool === "hl" ? s.width / 2 : 0;
+      const flush = (tailCut: boolean) => {
+        if (run.length === 0) return;
+        const points = seam > 0 ? trimSeamEnds(run, headCut, tailCut, seam) : run;
+        if (points.length < 2) return; // 캡만 남는 조각 — 이웃 캡이 이미 덮는다
+        const frag: Stroke = {
+          tool: s.tool,
+          layer: s.layer,
+          color: s.color,
+          width: s.width,
+          points
+        };
+        nextScene.push(frag);
+        if (runIn) picked.push(frag);
       };
       for (let i = 1; i < s.points.length; i += 1) {
         const pt = s.points[i];
@@ -1243,11 +1282,12 @@ export function BroadcastPanel({
         // 경계 통과 — 나가는 쪽 기준으로 보간(들어올 땐 방향만 뒤집으면 동일).
         const b = runIn ? exitPoint(s.points[i - 1], pt) : exitPoint(pt, s.points[i - 1]);
         run.push(b);
-        flush();
+        flush(true);
         run = [b, { ...pt }];
+        headCut = true;
         runIn = flags[i];
       }
-      flush();
+      flush(false);
     }
     // ⚠ 선택한 획은 **맨 위로 올린다**(지우개 위로).
     // 지우개는 픽셀을 지우는 게 아니라 destination-out 획으로 장면에 남아, 재생 순서대로 다시

@@ -296,3 +296,83 @@ test("⑥ 지우개를 쓴 뒤 한 프레임도 그림이 사라지지 않는다
   const min = await watching;
   expect(min, "지우개 커밋 직후 그림이 한 프레임 사라졌다(깜빡임)").toBeGreaterThan(0);
 });
+
+test("⑦ 채운 색도 러버밴드로 '잘라서' 선택된다(획과 같은 문법)", async ({ page }) => {
+  // 사용자 지적(2026-08-06): "채우기로 색칠된 건 선택으로 분할이 안 된다."
+  // 그림은 통째 선택이 최소 단위였다 — 획은 밴드에 걸친 구간만 잘라 주는데 그림만 예외였다.
+  await openBoard(page);
+  const box = (await page.locator(".bp-draw-surface").boundingBox())!;
+  const cx = Math.round(box.x + box.width / 2);
+  const cy = Math.round(box.y + box.height / 2);
+  const R = 90;
+
+  await tool(page, "원").click();
+  await drag(page, [cx - R, cy - R], [cx + R, cy + R]);
+  await tool(page, "채우기").click();
+  await page.mouse.click(cx, cy);
+  await page.waitForTimeout(250);
+
+  // 밴드는 **원 안쪽에만** 둔다 — 윤곽을 건드리면 도형까지 함께 잡혀 무엇이 잘렸는지 흐려진다.
+  const inLeft: [number, number] = [cx - 40, cy];
+  const inRight: [number, number] = [cx + 40, cy];
+  expect(await alphaAt(page, ...inLeft)).toBeGreaterThan(0);
+  expect(await alphaAt(page, ...inRight)).toBeGreaterThan(0);
+
+  await tool(page, "선택").click();
+  await drag(page, [cx - 70, cy - 30], [cx - 10, cy + 30]);
+  await expect(page.locator(".bp-stroke-sel")).toHaveCount(1);
+  const sel = (await page.locator(".bp-stroke-sel").boundingBox())!;
+  expect(sel.width, "선택 상자가 감싼 범위보다 크다(통째로 잡혔다)").toBeLessThan(90);
+  expect(sel.height, "선택 상자가 감싼 범위보다 크다(통째로 잡혔다)").toBeLessThan(90);
+
+  // 잘라 선택한 조각만 아래로 옮긴다 — 나머지 채운 면은 제자리에 남고, 자른 자리는 빈다.
+  await drag(page, [cx - 40, cy], [cx - 40, cy + 200], 20);
+  await page.waitForTimeout(300);
+  expect(await alphaAt(page, ...inLeft), "자른 자리가 안 비었다").toBe(0);
+  expect(await alphaAt(page, cx - 40, cy + 200), "옮긴 자리에 조각이 없다").toBeGreaterThan(0);
+  expect(await alphaAt(page, ...inRight), "나머지 채운 면까지 같이 옮겨졌다").toBeGreaterThan(0);
+});
+
+test("⑧ 형광펜을 절반만 선택해도 경계가 진해지지 않는다", async ({ page }) => {
+  // 사용자 지적(2026-08-06): 1자로 그은 형광펜을 절반만 선택하면 경계에 진한 덩어리가 생기고
+  // 선택을 풀어도 남는다. 조각 둘이 경계점을 공유하며 반투명 캡을 두 번 칠한 것.
+  await openBoard(page);
+  const box = (await page.locator(".bp-draw-surface").boundingBox())!;
+  const y = Math.round(box.y + box.height / 2);
+  const x0 = Math.round(box.x + 60);
+  const x1 = Math.round(box.x + box.width - 60);
+  const mid = Math.round((x0 + x1) / 2);
+
+  await tool(page, "형광펜").click();
+  await drag(page, [x0, y], [x1, y], 24);
+  await page.waitForTimeout(150);
+
+  const sample = async () => {
+    const xs = [x0 + 40, mid - 40, mid - 6, mid, mid + 6, mid + 40, x1 - 40];
+    const out: number[] = [];
+    for (const x of xs) out.push(await alphaAt(page, x, y));
+    return out;
+  };
+  const flat = await sample();
+  const base = Math.round(flat.reduce((a, b) => a + b, 0) / flat.length);
+  expect(base, "형광펜이 안 그려졌다").toBeGreaterThan(30);
+
+  // 왼쪽 절반만 감싼다 → 경계가 mid 부근에 생긴다.
+  await tool(page, "선택").click();
+  await drag(page, [x0 - 30, y - 40], [mid, y + 40]);
+  await expect(page.locator(".bp-stroke-sel")).toHaveCount(1);
+  const during = await sample();
+  expect(Math.max(...during), `선택 중 경계가 진해졌다(${during.join(",")})`).toBeLessThanOrEqual(
+    base + 12
+  );
+
+  // 선택 해제 — 사용자가 말한 "풀어도 겹친 채로 남는다"가 여기서 드러난다.
+  await page.mouse.click(Math.round(box.x + 20), Math.round(box.y + box.height - 20));
+  await expect(page.locator(".bp-stroke-sel")).toHaveCount(0);
+  const after = await sample();
+  expect(Math.max(...after), `해제 뒤에도 경계가 진하다(${after.join(",")})`).toBeLessThanOrEqual(
+    base + 12
+  );
+  // 획이 끊겨 보이지도 않는다(캡이 경계까지 닿는다).
+  expect(Math.min(...after), `경계가 벌어졌다(${after.join(",")})`).toBeGreaterThan(base - 25);
+});

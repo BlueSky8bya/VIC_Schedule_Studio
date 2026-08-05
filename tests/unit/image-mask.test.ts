@@ -5,6 +5,7 @@ import {
   maskFromRgba,
   maskHitsEraser,
   maskHitsRect,
+  maskPaintedOutsideRect,
   type AlphaMask
 } from "@/lib/broadcast/image-mask";
 import type { Stroke } from "@/lib/broadcast/stroke-engine";
@@ -121,5 +122,25 @@ describe("maskFromRgba — 줄여도 가는 선이 사라지지 않는다", () =
     expect(maskHitsRect(mask, boxOf(img(0, 0, 100, 100)), { left: 0, top: 0, right: 100, bottom: 100 })).toBe(
       false
     );
+  });
+});
+
+describe("maskPaintedOutsideRect — 잘라낼 의미가 있나", () => {
+  const mask = halfMask(); // 왼쪽 절반만 칠해진 8×8
+  const box = boxOf(img(0, 0, 80, 80));
+
+  it("칠해진 부분을 다 감쌌으면 밖에 남는 게 없다(통째 선택)", () => {
+    expect(maskPaintedOutsideRect(mask, box, { left: -5, top: -5, right: 85, bottom: 85 })).toBe(false);
+    // 왼쪽 절반만 감싸도 그게 칠해진 전부다.
+    expect(maskPaintedOutsideRect(mask, box, { left: -5, top: -5, right: 41, bottom: 85 })).toBe(false);
+  });
+
+  it("일부만 감쌌으면 밖에 남는다(잘라서 선택)", () => {
+    expect(maskPaintedOutsideRect(mask, box, { left: 0, top: 0, right: 20, bottom: 80 })).toBe(true);
+    expect(maskPaintedOutsideRect(mask, box, { left: 0, top: 0, right: 80, bottom: 20 })).toBe(true);
+  });
+
+  it("투명한 쪽만 감쌌으면 당연히 밖에 남는다", () => {
+    expect(maskPaintedOutsideRect(mask, box, { left: 50, top: 0, right: 80, bottom: 80 })).toBe(true);
   });
 });

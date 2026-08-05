@@ -71,6 +71,23 @@ export function maskHitsRect(mask: AlphaMask, box: Box, rect: Box): boolean {
   return false;
 }
 
+/** 이 사각형 **바깥에** 칠해진 픽셀이 남아 있나(= 잘라낼 의미가 있나). */
+export function maskPaintedOutsideRect(mask: AlphaMask, box: Box, rect: Box): boolean {
+  const c = toCells(box, mask, rect);
+  for (let y = 0; y < mask.h; y += 1) {
+    const row = y * mask.w;
+    const inRow = c !== null && y >= c.y0 && y <= c.y1;
+    for (let x = 0; x < mask.w; x += 1) {
+      if (inRow && c !== null && x >= c.x0 && x <= c.x1) {
+        x = c.x1; // 안쪽 칸은 건너뛴다
+        continue;
+      }
+      if (mask.a[row + x] >= ALPHA_MIN) return true;
+    }
+  }
+  return false;
+}
+
 /** 지우개 자국(굵은 선)이 **칠해진 픽셀**을 실제로 덮나. */
 export function maskHitsEraser(
   mask: AlphaMask,

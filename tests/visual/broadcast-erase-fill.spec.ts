@@ -104,31 +104,6 @@ test("채우기는 한 번 계산해 굳는다 — 선택되고, 다시 번지�
   expect(await alphaAt(page, probeX, probeY)).toBe(0);
 });
 
-/**
- * 가운데 세로줄을 훑어 '위아래가 모두 칠해진' 투명 구간(=구멍)의 중심 y를 잰다.
- * 단순 bbox는 못 쓴다 — 채운 조각을 아래로 옮기면 위쪽 빈 띠까지 포함돼 구멍과 구분이 안 된다.
- */
-function holeCenterY(page: Page) {
-  return page.evaluate(() => {
-    const c = document.querySelector<HTMLCanvasElement>(".bp-board canvas");
-    const ctx = c?.getContext("2d", { willReadFrequently: true });
-    if (!c || !ctx) return null;
-    const x = Math.floor(c.width / 2);
-    const col = ctx.getImageData(x, 0, 1, c.height).data;
-    const clear = (y: number) => col[y * 4 + 3] === 0;
-    let y = 0;
-    while (y < c.height && clear(y)) y += 1; // 위쪽 빈 띠 건너뛰기
-    for (; y < c.height; y += 1) {
-      if (!clear(y)) continue;
-      const start = y;
-      while (y < c.height && clear(y)) y += 1;
-      if (y >= c.height) return null; // 아래로 끝까지 뚫림 = 구멍이 아니라 바깥
-      return { center: (start + y - 1) / 2, height: y - start };
-    }
-    return null;
-  });
-}
-
 test("채운 곳을 지우면 구멍이 비트맵에 남는다(옮기면 따라간다)", async ({ page }) => {
   await openBoard(page);
   await page.waitForTimeout(700); // 판 크기가 잡힌 뒤에 그린다
@@ -136,31 +111,36 @@ test("채운 곳을 지우면 구멍이 비트맵에 남는다(옮기면 따라�
   const cx = Math.round(box.x + box.width / 2);
   const cy = Math.round(box.y + box.height / 2);
 
+  // 사각형 안만 채운다 — 판 전체를 채우면 옮긴 조각 밑에 여전히 채운 면이 깔려 있어
+  // '구멍이 따라왔는지'를 픽셀로 구분할 수 없다.
+  await tool(page, "사각형").click();
+  await drag(page, [cx - 100, cy - 60], [cx + 100, cy + 60]);
   await tool(page, "채우기").click();
   await page.mouse.click(cx, cy);
+  await page.waitForTimeout(250);
   expect(await alphaAt(page, cx, cy)).toBeGreaterThan(0);
-  expect(await holeCenterY(page)).toBeNull(); // 아직 구멍 없음
 
   // 채운 면에 구멍을 낸다. 조각을 다시 인코딩·디코딩하므로 반영까지 잠깐 걸린다.
   await tool(page, "지우개").click();
-  await drag(page, [cx - 80, cy], [cx + 80, cy]);
-  await expect
-    .poll(async () => (await holeCenterY(page))?.height ?? 0, { timeout: 5000 })
-    .toBeGreaterThan(8);
-  const before = (await holeCenterY(page))!;
+  await drag(page, [cx - 60, cy], [cx + 60, cy]);
+  await expect.poll(async () => alphaAt(page, cx, cy), { timeout: 5000 }).toBe(0);
 
-  // 선택해서 아래로 옮기면 구멍도 같이 내려간다 = 픽셀에 구워졌다는 뜻.
-  // (예전 방식이면 재생 때 다시 번져 구멍 자체가 메워진다.)
+  // 칠해진 부분을 **전부** 감싸면 통째로 잡힌다(분할 조건이 아니다). 빈 곳으로 옮긴다.
   await tool(page, "선택").click();
-  await drag(page, [box.x + 6, box.y + 6], [box.x + box.width - 6, box.y + box.height - 6]);
+  await drag(page, [cx - 130, cy - 90], [cx + 130, cy + 90]);
   await expect(page.locator(".bp-stroke-sel")).toHaveCount(1);
   const sel = (await page.locator(".bp-stroke-sel").boundingBox())!;
+  const dx = -Math.min(280, Math.round(sel.x - box.x - 10));
   await drag(
     page,
     [sel.x + sel.width / 2, sel.y + sel.height / 2],
-    [sel.x + sel.width / 2, sel.y + sel.height / 2 + 90]
+    [sel.x + sel.width / 2 + dx, sel.y + sel.height / 2]
   );
-  await expect
-    .poll(async () => (await holeCenterY(page))?.center ?? 0, { timeout: 5000 })
-    .toBeGreaterThan(before.center + 60);
+  await page.waitForTimeout(400);
+  // 옮긴 자리에 '구멍 + 그 위아래 채운 면'이 그대로 재현된다 = 픽셀에 구워졌다는 뜻.
+  // (예전 방식이면 재생 때 다시 번져 구멍 자체가 메워진다.)
+  expect(await alphaAt(page, cx + dx, cy), "구멍이 안 따라왔다").toBe(0);
+  expect(await alphaAt(page, cx + dx, cy - 40), "조각 본체가 안 따라왔다").toBeGreaterThan(0);
+  expect(await alphaAt(page, cx + dx, cy + 40)).toBeGreaterThan(0);
+  expect(await alphaAt(page, cx, cy - 40), "원래 자리에 그대로 남아 있다").toBe(0);
 });
