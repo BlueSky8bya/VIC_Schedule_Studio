@@ -722,7 +722,18 @@ npx vercel ls vic-schedule-studio --scope bluesky-s-project3                    
   캐시). 재발 방지: `tests/unit/public-cache-revalidate.test.ts`가 (1) 액션을 실제로 실행해
   `revalidateTag` 호출을 확인하고 (2) `lib/schedules/*-actions.ts`의 모든 쓰기 액션을 훑는다.
   **교훈: 쓰기 액션에 무언가를 끼워 넣을 때 캐시 무효화 3줄을 같이 지우지 말 것.**
-- **ISSUE-001 — 편집실 실물 검증이 막혀 있음.** 편집실(`/studio/*`)은 Google 로그인이 필요해
+- **ISSUE-001 — (2026-08-05 해소) 편집실 실물 검증.** 이제 두 겹으로 닫혀 있다:
+  ① 브라우저(`tests/visual/studio-editor.spec.ts`) — fixture로 편집실을 띄우고 `/api/studio-write`를
+  가로채 클라가 보내는 **명령의 내용·순서**를 검사.
+  ② 서버 왕복(`npm run test:integration`) — 서버 액션 → 실제 DB(RPC save_event_atomic /
+  reorder_events_atomic) → 공개 로더 재조회까지. 생성·수정·삭제·복구·태그·이동·최초공개 가림·
+  잠금 없이 비공개 저장 거절. **RLS는 이 층의 대상이 아니다**(actor를 owner로 고정하고
+  service-role로 접근한다 — RLS는 공개 경계 e2e와 SQL 정책 담당).
+  남은 진짜 공백은 '브라우저에서 진짜 로그인 세션으로' 도는 경로뿐인데, 그건 테스트용 인증
+  우회로를 만들어야 해서 **일부러 안 만들었다**(보안 경계가 최우선 — CLAUDE 충돌 우선순위 1).
+  ⚠ 통합 테스트 안전 규칙: 과거 달에만, 제목에 `[통합테스트]` 표식, afterAll에서 물리 삭제 +
+  잔여 0 확인. 이걸 어기면 시청자 실시간 화면이 오염된다.
+- **ISSUE-001(원문) — 편집실 실물 검증이 막혀 있음.** 편집실(`/studio/*`)은 Google 로그인이 필요해
   로컬 Playwright로 실물 확인을 못 한다. 최근 편집실 변경(공개범위 접기, 단축키, Alt+N, 드래그
   삽입선)은 타입·빌드·코드 리뷰까지만 검증됐다. Status: Open.
   → 다음에 편집실을 만질 땐 사용자에게 실물 확인을 요청하거나, 테스트용 로그인 경로를 마련할 것.

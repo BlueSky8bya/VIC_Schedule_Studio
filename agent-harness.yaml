@@ -46,6 +46,8 @@ commands:
   test: "npm run test" # vitest
   test_e2e: "npm run test:e2e"
   test_visual: "npm run test:visual"
+  # 실제 Supabase에 왕복한다(자격증명 없으면 스스로 건너뜀). 과거 달에만 쓰고 끝나면 물리 삭제.
+  test_integration: "npm run test:integration"
   harness_verify: "npm run harness:verify"
   migrate: "node scripts/apply-db.mjs db/migrations/<file>.sql" # 수동·멱등, .env.local 사용
 
