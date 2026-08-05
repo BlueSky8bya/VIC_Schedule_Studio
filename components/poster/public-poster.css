@@ -2070,17 +2070,20 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   letter-spacing: 0.05em;
   color: #a99668;
 }
+/* 1열로 세우면 오른쪽 절반이 통째로 비어 패널 안에서 이 블록만 성겨 보였다(위 태그·방식은
+   전부 2열). 같은 2열 문법으로 2×2 — 오른쪽 여백이 내용으로 차고 세로도 절반이 된다. */
 .legend-tiers {
   display: grid;
-  gap: 1px;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px; /* 태그 목록(4px 2px)과 같은 리듬 */
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .legend-tiers li {
   display: grid;
-  /* 불꽃 3개(👑 포함)가 딱 들어가는 고정 칸 + 라벨 — 라벨 왼쪽 끝이 네 줄 모두 같다. */
-  grid-template-columns: 34px 1fr;
+  /* 불꽃 3개(👑 포함)가 잘리지 않는 고정 칸 + 라벨 — 네 칸의 라벨 왼쪽 끝이 같다. */
+  grid-template-columns: 38px 1fr;
   align-items: center;
   gap: 8px; /* 색칩↔이름과 같은 간격 */
   padding: 2px 6px; /* .legend-item과 동일 */
@@ -2088,6 +2091,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   font-size: 12px;
   font-weight: 800;
   color: #6b6450;
+  white-space: nowrap; /* 2열이라 좁아진 칸에서 라벨이 꺾이지 않게 */
 }
 .legend-tiers .flame {
   display: inline-flex;
@@ -2095,7 +2099,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   min-height: 18px; /* 태그 색칩과 같은 높이 */
   font-size: 12px;
   line-height: 1;
-  letter-spacing: -2px;
+  letter-spacing: -2.5px;
 }
 
 .legend-clear {
