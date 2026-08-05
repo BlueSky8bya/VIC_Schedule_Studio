@@ -5100,6 +5100,7 @@ export function StudioShell({
               return (
                 <button
                   className={active ? "active" : ""}
+                  data-act="support-duration"
                   disabled={!editable}
                   key={opt.days}
                   onClick={() => setForm((current) => ({ ...current, endDateKey: end }))}

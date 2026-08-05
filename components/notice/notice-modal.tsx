@@ -189,6 +189,7 @@ export function NoticeModal({
       <div className="notice-tabs" role="group" aria-label="공지 종류">
         <button
           className={!isUp ? "active" : ""}
+          data-act="notice-kind-tab"
           onClick={() => {
             hapticTick();
             setKind("bangon");

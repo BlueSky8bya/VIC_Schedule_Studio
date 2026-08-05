@@ -153,6 +153,7 @@ const ACT: Record<string, TargetLabel> = {
 
   // 일정 그림판(판서)
   "bp-eyedrop": { name: "스포이드(색 집기)", area: "일정 그림판", hint: "그림에서 색을 찍어 펜 색으로" },
+  "bp-fill": { name: "색 채우기", area: "일정 그림판", hint: "선 안쪽을 현재 색으로 (G)" },
   "bp-region-enter": { name: "영역 선택 시작", area: "일정 그림판", hint: "붙여넣은 그림에서 일부만 오려내기" },
   "bp-region-copy": { name: "영역 복사", area: "일정 그림판", hint: "고른 영역을 복사본으로" },
   "bp-region-move": { name: "영역 오려 옮기기", area: "일정 그림판" },
@@ -261,6 +262,10 @@ const ACT: Record<string, TargetLabel> = {
   "notice-copy-bookmarklet": { name: "북마클릿 코드 복사", area: "공지" },
   "notice-copy-all": { name: "제목+본문 한 번에 복사", area: "공지" },
   "notice-open-soop": { name: "숲 공지 페이지 열기", area: "공지" },
+  "notice-kind-tab": { name: "공지 종류 고르기", area: "공지", hint: "방온/업 도움 탭" },
+  "sticker-font-weight": { name: "글자 굵기", area: "꾸미기" },
+  "support-duration": { name: "업 도움 기간 고르기", area: "편집실" },
+  "tag-editor-save": { name: "태그 저장", area: "태그 편집" },
 
   // 클래스 토큰으로만 잡히던 것들(auto: 경로가 점을 떼고 여기서 찾는다).
   "agenda-login": { name: "로그인", area: "시청자 화면", hint: "모바일 화면 아래 계정 줄" },

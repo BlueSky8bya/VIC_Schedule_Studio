@@ -914,6 +914,7 @@ export function TagLegendEditor({
       <div className="tag-editor-actions">
         <button
           className={`button primary ${saved && !dirty ? "saved" : ""}`}
+          data-act="tag-editor-save"
           disabled={pending || busy || anyEmpty || (!dirty && !saved)}
           onClick={saveAll}
           type="button"

@@ -19,6 +19,9 @@ export type BroadcastTool =
   | "arrow"
   | "rect"
   | "ellipse"
+  /** 색 채우기(페인트 통). 점 하나만 남기고, 재생할 때 그 자리에서 픽셀을 다시 채운다
+   *  — 엔진은 픽셀을 모르므로(DOM 비의존) 실제 채움은 패널이 한다(image와 같은 규약). */
+  | "fill"
   /** 붙여넣기·드롭으로 들어온 그림. 도구 막대에는 없다(사용자가 고르는 도구가 아니다).
    *  같은 장면 배열에 살면 z순서·선택·이동/확대·되돌리기·내보내기가 전부 공짜로 따라온다. */
   | "image";
@@ -278,7 +281,8 @@ type MinimalCtx = {
 export function drawStroke(ctx: MinimalCtx, stroke: Stroke): void {
   if (stroke.points.length === 0) return;
   // 이미지는 HTMLImageElement가 필요해 엔진(DOM 비의존)이 그릴 수 없다 — 패널이 캐시로 그린다.
-  if (stroke.tool === "image") return;
+  // 색 채우기도 마찬가지(픽셀 읽기가 필요) — 패널의 재생 루프가 flood-fill로 처리한다.
+  if (stroke.tool === "image" || stroke.tool === "fill") return;
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.lineWidth = stroke.width;

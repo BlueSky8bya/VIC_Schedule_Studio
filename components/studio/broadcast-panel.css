@@ -1472,6 +1472,12 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
   box-shadow: 0 0 0 2px rgb(124 108 240 / 14%);
 }
 
+/* 색 채우기 — 스포이드와 같은 알약 어휘(같은 자리, 같은 크기, 같은 옷). 켜짐 표시도 공유한다. */
+.bp-fill.on i,
+.bp-fill.on svg {
+  color: inherit;
+}
+
 /* 켜진 동안엔 '지금 집는 중'이 색으로 남는다 — 모드는 눈에 보여야 빠져나올 줄 안다. */
 .bp-eyedrop.on {
   background: #f2efff;

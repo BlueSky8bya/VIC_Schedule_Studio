@@ -6153,6 +6153,7 @@ export function PublicPoster({
                           {TEXT_WEIGHTS.map((w) => (
                             <button
                               className={(selected.fontWeight ?? 700) === w.w ? "active" : ""}
+                              data-act="sticker-font-weight"
                               key={w.w}
                               onClick={() => {
                                 pushHistory();

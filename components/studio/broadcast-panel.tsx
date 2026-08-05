@@ -45,6 +45,7 @@ import {
   Keyboard,
   MousePointer2,
   MoveUpRight,
+  PaintBucket,
   Pen,
   Redo2,
   Slash,
@@ -98,6 +99,7 @@ import {
   type StrokePoint,
   type StrokeStore
 } from "@/lib/broadcast/stroke-engine";
+import { floodFill, parseHexColor } from "@/lib/broadcast/flood-fill";
 import { inkContrast } from "@/lib/tags/color-tone";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -128,6 +130,7 @@ const TOOL_LABELS: Record<BroadcastTool, string> = {
   pen: "펜",
   hl: "형광펜",
   eraser: "지우개",
+  fill: "색 채우기",
   // 도구 막대에는 없다(붙여넣기·드롭으로만 생긴다) — 라벨은 안내·접근성용.
   image: "그림",
   line: "직선",
@@ -1172,7 +1175,8 @@ export function BroadcastPanel({
     const picked: Stroke[] = [];
     let changed = false;
     for (const s of before) {
-      if (s.tool === "eraser" || !layerOk.get(s.layer)) {
+      // 채우기는 '점 하나'라 옮기면 엉뚱한 자리를 다시 채운다 — 지우개와 같이 선택에서 뺀다.
+      if (s.tool === "eraser" || s.tool === "fill" || !layerOk.get(s.layer)) {
         nextScene.push(s);
         continue;
       }
@@ -1712,6 +1716,29 @@ export function BroadcastPanel({
     return null;
   }, []);
 
+  // 색 채우기 — 그 레이어 캔버스의 픽셀을 직접 읽어 같은 색 영역을 채운다(엔진은 픽셀을 모른다).
+  // 좌표는 판 기준 CSS 좌표라 backing scale을 곱해 실제 픽셀 자리로 바꾼다.
+  // **지금 레이어 안에서만** 경계가 잡힌다 — 다른 레이어에 그린 선은 벽이 되지 않는다(그림판 문법).
+  const applyFill = useCallback(
+    (canvas: HTMLCanvasElement | null, at: StrokePoint, hex: string): boolean => {
+      const ctx = canvas?.getContext("2d", { willReadFrequently: true });
+      if (!ctx || !canvas) return false;
+      const rgba = parseHexColor(hex);
+      if (!rgba) return false;
+      const scale = scaleRef.current;
+      const px = at.x * scale;
+      const py = at.y * scale;
+      if (px < 0 || py < 0 || px >= canvas.width || py >= canvas.height) return false;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const painted = floodFill(img, px, py, rgba);
+      if (painted > 0) ctx.putImageData(img, 0, 0);
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      return painted > 0;
+    },
+    []
+  );
+
   const replayLayer = useCallback(
     (layer: StrokeLayer) => {
       const canvas = canvasOf(layer);
@@ -1735,10 +1762,15 @@ export function BroadcastPanel({
           (ctx as unknown as CanvasRenderingContext2D).drawImage(img, x, y, w, h);
           continue;
         }
+        if (s.tool === "fill") {
+          // 채우기는 '그 시점까지 그려진 픽셀' 위에 부어야 결과가 같다 — 순서대로 여기서 실행.
+          applyFill(canvas, s.points[0], s.color);
+          continue;
+        }
         drawStroke(ctx, s);
       }
     },
-    [canvasOf, clearCanvas, scaledCtx, store, imageFor]
+    [canvasOf, clearCanvas, scaledCtx, store, imageFor, applyFill]
   );
   const replayAll = useCallback(() => {
     for (const id of layerCanvases.current.keys()) replayLayer(id);
@@ -2227,6 +2259,23 @@ export function BroadcastPanel({
     }
     if (!rect) return;
     const p = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    // 색 채우기: 끄는 동작이 없다 — 누른 그 자리에서 한 번에 끝나고 stroke 한 줄로 기록된다
+    // (되돌리기·리사이즈 재생이 다른 도구와 똑같이 동작한다).
+    if (tool === "fill") {
+      e.preventDefault();
+      const stroke: Stroke = {
+        tool: "fill",
+        layer: activeLayer.id,
+        color: penColor,
+        width: 0,
+        points: [{ x: p.x, y: p.y }]
+      };
+      if (applyFill(canvasOf(activeLayer.id), stroke.points[0], penColor)) {
+        store.push(stroke);
+        pushHist({ t: "stroke", stroke }); // 다른 획과 같은 Ctrl+Z 하나로 되돌린다
+      }
+      return;
+    }
     activePtrRef.current = e.pointerId;
     activePointerTypeRef.current = e.pointerType;
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -3087,7 +3136,7 @@ export function BroadcastPanel({
     guardLayerClickUntilPointerRelease
   ]);
 
-  // 도구 단축키(그림판/드로잉 앱 레퍼런스): V 선택 · P 펜 · H 형광펜 · E 지우개 ·
+  // 도구 단축키(그림판/드로잉 앱 레퍼런스): V 선택 · P 펜 · H 형광펜 · E 지우개 · G 채우기 ·
   // L 직선 · A 화살표 · R 사각형 · O 원 · [ ] 굵기 감소/증가 · ? 단축키 안내.
   // 수식키 조합·입력 칸 타이핑·색 팝오버 열림 중엔 무시. capture 단계로 등록해
   // ? 안내가 열려 있을 때의 Esc를 메인 핸들러(선택 해제/창 닫기)보다 먼저 소비한다.
@@ -3098,6 +3147,7 @@ export function BroadcastPanel({
       p: "pen",
       h: "hl",
       e: "eraser",
+      g: "fill",
       l: "line",
       a: "arrow",
       r: "rect",
@@ -3501,6 +3551,7 @@ export function BroadcastPanel({
                     ["P", "펜"],
                     ["H", "형광펜"],
                     ["E", "지우개"],
+                    ["G", "색 채우기(선 안쪽)"],
                     ["L", "직선"],
                     ["A", "화살표"],
                     ["R", "사각형"],
@@ -3668,6 +3719,23 @@ export function BroadcastPanel({
               >
                 <Pipette aria-hidden="true" size={16} />
                 <span>스포이드</span>
+              </button>
+              {/* 색 채우기도 '색을 쓰는 일'이라 스포이드와 같은 자리·같은 알약 어휘로 둔다
+                  (도구줄 4칸 격자를 5칸으로 깨지 않는다 — 형제 격자 리듬 유지). */}
+              <button
+                aria-label="색 채우기"
+                aria-pressed={tool === "fill"}
+                className={`bp-eyedrop bp-fill${tool === "fill" ? " on" : ""}`}
+                data-act="bp-fill"
+                title="색 채우기 (G) — 지금 레이어의 선 안쪽을 현재 색으로"
+                type="button"
+                onClick={() => {
+                  hapticTick();
+                  activateDrawingTool("fill");
+                }}
+              >
+                <PaintBucket aria-hidden="true" size={16} />
+                <span>채우기</span>
               </button>
             </div>
             <em className="bp-group-label">색상 팔레트</em>
