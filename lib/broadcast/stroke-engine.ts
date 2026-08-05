@@ -49,8 +49,15 @@ export type StrokePoint = {
   p?: number;
 };
 
+/** 형광펜 불투명도 — 한 번 칠하면 이 알파. 조각으로 쪼개도 **합쳐서 한 번만** 칠해야 한다. */
+export const HL_ALPHA = 0.45;
+
 export type Stroke = {
   tool: Exclude<BroadcastTool, "select">;
+  /** 같은 원본 획에서 쪼개진 조각들의 표식(선택 분할). 반투명 도구(형광펜)는 조각을 따로 칠하면
+   *  이음매가 두 번 칠해져 진해진다 — 렌더가 이 표식으로 조각을 모아 **한 판에 그린 뒤** 한 번만
+   *  덧입힌다. 조각을 따로 옮겨도 결과는 같다(각자 온전한 모양). */
+  seam?: string;
   /** tool==="image"일 때만 — data URL. 실제 그리기는 패널이 한다(엔진은 DOM을 모른다). */
   src?: string;
   /** 이 획이 속한 레이어 id — 펜/형광펜/지우개 모두 '활성 레이어'에만 작용(그림판 문법). */
@@ -184,52 +191,6 @@ export function strokeIntersectsRect(stroke: Stroke, rect: StrokeRect): boolean 
   return false;
 }
 
-/**
- * 잘린 자리(seam)에서 **끝을 반굵기만큼 물린다**.
- *
- * 왜: 획을 선택으로 쪼개면 두 조각이 경계점을 공유한다. 각 조각은 따로 그려지고 끝에 둥근
- * 캡(반지름 = 굵기/2)이 붙으므로, 경계점에서 캡 두 개가 완전히 겹친다. 불투명한 펜은 티가 안
- * 나지만 **형광펜은 반투명이라 그 자리만 진하게 뭉친다**(2026-08-06 사용자 지적: "선택 절반만
- * 했더니 중간에 겹쳐 보이고, 선택을 풀어도 그대로 남는다").
- * 끝점을 진행 방향으로 반굵기만큼 당기면 둥근 캡이 정확히 경계까지만 닿아 — 겹치지도, 벌어지지도
- * 않는다. 조각을 옮기면 각자 온전한 캡을 유지한다.
- *
- * 남는 길이가 반굵기도 안 되면 빈 배열을 준다(캡만 남는 조각 = 이웃 캡에 이미 덮인다).
- */
-export function trimSeamEnds(
-  points: readonly StrokePoint[],
-  headCut: boolean,
-  tailCut: boolean,
-  half: number
-): StrokePoint[] {
-  let pts = points.map((p) => ({ ...p }));
-  if (half <= 0) return pts;
-  const eat = (list: StrokePoint[], fromTail: boolean): StrokePoint[] => {
-    const seq = fromTail ? [...list].reverse() : list;
-    let left = half;
-    for (let i = 1; i < seq.length; i += 1) {
-      const a = seq[i - 1];
-      const b = seq[i];
-      const len = Math.hypot(b.x - a.x, b.y - a.y);
-      if (len < left) {
-        left -= len;
-        continue;
-      }
-      const t = left / len;
-      const cut: StrokePoint = { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
-      if (a.p !== undefined || b.p !== undefined) {
-        cut.p = (a.p ?? 0.7) + ((b.p ?? 0.7) - (a.p ?? 0.7)) * t;
-      }
-      const rest = [cut, ...seq.slice(i)];
-      return fromTail ? rest.reverse() : rest;
-    }
-    return []; // 조각 전체가 캡보다 짧다
-  };
-  if (headCut) pts = eat(pts, false);
-  if (tailCut && pts.length >= 2) pts = eat(pts, true);
-  return pts.length >= 2 ? pts : [];
-}
-
 export type StrokeStore = {
   /** 장면의 모든 stroke(그려진 순서). 렌더는 이 배열을 레이어별로 재생한다. */
   strokes: () => readonly Stroke[];
@@ -327,8 +288,10 @@ type MinimalCtx = {
   globalAlpha: number;
 };
 
-/** stroke 하나를 ctx에 그린다(좌표는 CSS px — 호출자가 setTransform으로 scale 적용). */
-export function drawStroke(ctx: MinimalCtx, stroke: Stroke): void {
+/** stroke 하나를 ctx에 그린다(좌표는 CSS px — 호출자가 setTransform으로 scale 적용).
+ *  opaque=true면 형광펜도 불투명하게 그린다 — 조각을 한 판에 모아 그린 뒤 그 판 전체에
+ *  한 번만 알파를 먹이는 경로에서 쓴다(이음매 이중 도포 방지). */
+export function drawStroke(ctx: MinimalCtx, stroke: Stroke, opaque = false): void {
   if (stroke.points.length === 0) return;
   // 이미지는 HTMLImageElement가 필요해 엔진(DOM 비의존)이 그릴 수 없다 — 패널이 캐시로 그린다.
   // 색 채우기도 마찬가지(픽셀 읽기가 필요) — 패널의 재생 루프가 flood-fill로 처리한다.
@@ -343,7 +306,7 @@ export function drawStroke(ctx: MinimalCtx, stroke: Stroke): void {
   } else {
     ctx.globalCompositeOperation = "source-over";
     // 형광펜: 반투명 + 넓은 획 — 카드 글자를 가리지 않고 강조.
-    ctx.globalAlpha = stroke.tool === "hl" ? 0.45 : 1;
+    ctx.globalAlpha = stroke.tool === "hl" && !opaque ? HL_ALPHA : 1;
     ctx.strokeStyle = stroke.color;
   }
   if (stroke.tool === "pen") {

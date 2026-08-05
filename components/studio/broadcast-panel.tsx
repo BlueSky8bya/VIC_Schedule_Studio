@@ -89,10 +89,10 @@ import {
   drawPenIncremental,
   drawPenPrediction,
   drawStroke,
+  HL_ALPHA,
   isBoxItem,
   isShapeTool,
   strokeIntersectsRect,
-  trimSeamEnds,
   strokeAppliesTo,
   type BroadcastTool,
   type Stroke,
@@ -987,6 +987,8 @@ export function BroadcastPanel({
   }
 
   // ── 러버밴드(빈 바닥 드래그로 다중 선택) — 선택 도구에서만 ──
+  // 쪼갠 조각 묶음에 붙일 표식 번호(형광펜 이음매 — 아래 splitSelectStrokes 참고).
+  const seamSeq = useRef(0);
   const marqueeRef = useRef<{
     x1: number;
     y1: number;
@@ -1255,20 +1257,21 @@ export function BroadcastPanel({
       changed = true;
       let run: StrokePoint[] = [{ ...s.points[0] }];
       let runIn = flags[0];
-      let headCut = false; // 이 조각의 시작이 '잘린 자리'인가(원래 획의 끝이 아니라)
-      // 형광펜은 반투명이라 조각 두 개가 경계점을 공유하면 그 자리만 진하게 뭉친다
-      // (둥근 캡이 완전히 겹친다). 잘린 끝만 반굵기 물려 캡이 경계까지만 닿게 한다.
-      const seam = s.tool === "hl" ? s.width / 2 : 0;
-      const flush = (tailCut: boolean) => {
-        if (run.length === 0) return;
-        const points = seam > 0 ? trimSeamEnds(run, headCut, tailCut, seam) : run;
-        if (points.length < 2) return; // 캡만 남는 조각 — 이웃 캡이 이미 덮는다
+      // 형광펜은 반투명이라 조각을 따로 칠하면 경계에서 둥근 캡이 겹쳐 그 자리만 진해진다.
+      // 끝을 물려 피하려 했더니 이번엔 캡이 둥글게 잘려 알약처럼 보였다(둥근 끝은 이어붙일 수
+      // 없다 — 2026-08-06 실측). 그래서 **기하는 그대로 두고**, 같은 원본에서 나온 조각들에
+      // 표식을 달아 렌더가 한 판에 모아 그린 뒤 알파를 한 번만 먹인다.
+      const seamId =
+        s.tool === "hl" ? s.seam ?? `seam-${Date.now().toString(36)}-${seamSeq.current++}` : undefined;
+      const flush = () => {
+        if (run.length < 2) return;
         const frag: Stroke = {
           tool: s.tool,
           layer: s.layer,
           color: s.color,
           width: s.width,
-          points
+          points: run,
+          ...(seamId ? { seam: seamId } : {})
         };
         nextScene.push(frag);
         if (runIn) picked.push(frag);
@@ -1282,12 +1285,11 @@ export function BroadcastPanel({
         // 경계 통과 — 나가는 쪽 기준으로 보간(들어올 땐 방향만 뒤집으면 동일).
         const b = runIn ? exitPoint(s.points[i - 1], pt) : exitPoint(pt, s.points[i - 1]);
         run.push(b);
-        flush(true);
+        flush();
         run = [b, { ...pt }];
-        headCut = true;
         runIn = flags[i];
       }
-      flush(false);
+      flush();
     }
     // ⚠ 선택한 획은 **맨 위로 올린다**(지우개 위로).
     // 지우개는 픽셀을 지우는 게 아니라 destination-out 획으로 장면에 남아, 재생 순서대로 다시
@@ -2012,14 +2014,69 @@ export function BroadcastPanel({
     [readyBitmap, rememberBitmap, warmDecode]
   );
 
+  // 같은 원본에서 쪼개진 형광펜 조각들을 **한 판에 모아 그린 뒤** 알파를 한 번만 먹인다.
+  // 조각마다 따로 칠하면 경계에서 둥근 캡이 겹쳐 그 자리만 진해지고(사용자 지적), 끝을 물려
+  // 피하면 이번엔 캡이 둥글게 잘려 알약처럼 보인다. 한 판에 불투명으로 그리면 겹침이 사라지고
+  // 모양도 원래 획 그대로다. 판은 그 묶음의 범위만큼만 만든다(전체 캔버스를 매번 새로 잡지 않게).
+  const drawSeamGroup = useCallback(
+    (canvas: HTMLCanvasElement | null, group: Stroke[]) => {
+      const ctx = canvas?.getContext("2d");
+      if (!ctx || !canvas || group.length === 0) return;
+      const scale = scaleRef.current;
+      const pad = Math.max(...group.map((g) => g.width)) / 2 + 2;
+      let left = Infinity;
+      let top = Infinity;
+      let right = -Infinity;
+      let bottom = -Infinity;
+      for (const g of group) {
+        for (const p of g.points) {
+          if (p.x < left) left = p.x;
+          if (p.x > right) right = p.x;
+          if (p.y < top) top = p.y;
+          if (p.y > bottom) bottom = p.y;
+        }
+      }
+      if (!Number.isFinite(left)) return;
+      const x0 = Math.max(0, Math.floor((left - pad) * scale));
+      const y0 = Math.max(0, Math.floor((top - pad) * scale));
+      const x1 = Math.min(canvas.width, Math.ceil((right + pad) * scale));
+      const y1 = Math.min(canvas.height, Math.ceil((bottom + pad) * scale));
+      if (x1 <= x0 || y1 <= y0) return;
+      const off = document.createElement("canvas");
+      off.width = x1 - x0;
+      off.height = y1 - y0;
+      const octx = off.getContext("2d");
+      if (!octx) return;
+      octx.setTransform(scale, 0, 0, scale, -x0, -y0);
+      for (const g of group) drawStroke(octx, g, true); // 불투명으로 — 알파는 판 전체에 한 번
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.globalAlpha = HL_ALPHA;
+      ctx.drawImage(off, x0, y0);
+      ctx.globalAlpha = 1;
+      ctx.setTransform(scale, 0, 0, scale, 0, 0); // 호출자의 좌표계로 되돌린다
+    },
+    []
+  );
+
   const replayLayer = useCallback(
     (layer: StrokeLayer) => {
       const canvas = canvasOf(layer);
       clearCanvas(canvas);
       const ctx = scaledCtx(canvas);
       if (!ctx) return;
+      const drawnSeams = new Set<string>();
       for (const s of store.strokes()) {
         if (!strokeAppliesTo(s, layer)) continue;
+        if (s.tool === "hl" && s.seam) {
+          if (drawnSeams.has(s.seam)) continue; // 묶음은 첫 조각 자리에서 한 번에 그렸다
+          drawnSeams.add(s.seam);
+          drawSeamGroup(
+            canvas,
+            store.strokes().filter((x) => x.layer === layer && x.tool === "hl" && x.seam === s.seam)
+          );
+          continue;
+        }
         if (s.tool === "image") {
           // 이미지는 엔진이 못 그린다(DOM 필요) — 여기서 2점 사각형에 맞춰 그린다.
           const bmp = s.src ? imageFor(s.src, layer) : null;
@@ -2038,7 +2095,7 @@ export function BroadcastPanel({
         drawStroke(ctx, s);
       }
     },
-    [canvasOf, clearCanvas, scaledCtx, store, imageFor]
+    [canvasOf, clearCanvas, scaledCtx, store, imageFor, drawSeamGroup]
   );
   const replayAll = useCallback(() => {
     for (const id of layerCanvases.current.keys()) replayLayer(id);

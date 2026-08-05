@@ -333,9 +333,11 @@ test("⑦ 채운 색도 러버밴드로 '잘라서' 선택된다(획과 같은 �
   expect(await alphaAt(page, ...inRight), "나머지 채운 면까지 같이 옮겨졌다").toBeGreaterThan(0);
 });
 
-test("⑧ 형광펜을 절반만 선택해도 경계가 진해지지 않는다", async ({ page }) => {
-  // 사용자 지적(2026-08-06): 1자로 그은 형광펜을 절반만 선택하면 경계에 진한 덩어리가 생기고
-  // 선택을 풀어도 남는다. 조각 둘이 경계점을 공유하며 반투명 캡을 두 번 칠한 것.
+test("⑧ 형광펜을 절반만 선택해도 이음매가 진해지거나 잘록해지지 않는다", async ({ page }) => {
+  // 사용자 지적(2026-08-06): ① 1자로 그은 형광펜을 절반만 선택하면 경계에 진한 덩어리가 생기고
+  // 해제해도 남는다(조각 둘이 반투명 캡을 두 번 칠함). ② 끝을 물려 피했더니 이번엔 캡이 둥글게
+  // 잘려 알약 여러 개처럼 보였다(둥근 끝은 이어붙일 수 없다).
+  // 그래서 두 가지를 함께 본다: 경계의 **농도**(진해지지 않았나)와 **두께**(잘록해지지 않았나).
   await openBoard(page);
   const box = (await page.locator(".bp-draw-surface").boundingBox())!;
   const y = Math.round(box.y + box.height / 2);
@@ -347,32 +349,68 @@ test("⑧ 형광펜을 절반만 선택해도 경계가 진해지지 않는다",
   await drag(page, [x0, y], [x1, y], 24);
   await page.waitForTimeout(150);
 
-  const sample = async () => {
-    const xs = [x0 + 40, mid - 40, mid - 6, mid, mid + 6, mid + 40, x1 - 40];
+  const xs = [x0 + 40, mid - 40, mid - 6, mid, mid + 6, mid + 40, x1 - 40];
+  const alphas = async () => {
     const out: number[] = [];
     for (const x of xs) out.push(await alphaAt(page, x, y));
     return out;
   };
-  const flat = await sample();
+  /** 세로로 훑어 잉크가 있는 픽셀 수 = 획 두께(잘록해짐 검출). */
+  const thickness = async (x: number) =>
+    page.evaluate(
+      ([px, cy]) => {
+        const cs = [...document.querySelectorAll<HTMLCanvasElement>(".bp-board canvas")];
+        let n = 0;
+        for (let dy = -40; dy <= 40; dy += 1) {
+          let ink = false;
+          for (const c of cs) {
+            const r = c.getBoundingClientRect();
+            const ctx = c.getContext("2d", { willReadFrequently: true });
+            if (!ctx) continue;
+            const sx = Math.round(((px - r.left) / r.width) * c.width);
+            const sy = Math.round(((cy + dy - r.top) / r.height) * c.height);
+            if (sx < 0 || sy < 0 || sx >= c.width || sy >= c.height) continue;
+            if (ctx.getImageData(sx, sy, 1, 1).data[3] > 8) {
+              ink = true;
+              break;
+            }
+          }
+          if (ink) n += 1;
+        }
+        return n;
+      },
+      [x, y] as const
+    );
+
+  const flat = await alphas();
   const base = Math.round(flat.reduce((a, b) => a + b, 0) / flat.length);
+  const baseThick = await thickness(x0 + 40);
   expect(base, "형광펜이 안 그려졌다").toBeGreaterThan(30);
+  expect(baseThick, "획 두께를 못 쟀다").toBeGreaterThan(4);
 
   // 왼쪽 절반만 감싼다 → 경계가 mid 부근에 생긴다.
   await tool(page, "선택").click();
   await drag(page, [x0 - 30, y - 40], [mid, y + 40]);
   await expect(page.locator(".bp-stroke-sel")).toHaveCount(1);
-  const during = await sample();
+  const during = await alphas();
   expect(Math.max(...during), `선택 중 경계가 진해졌다(${during.join(",")})`).toBeLessThanOrEqual(
     base + 12
   );
 
-  // 선택 해제 — 사용자가 말한 "풀어도 겹친 채로 남는다"가 여기서 드러난다.
+  // 선택 해제 — "풀어도 겹친 채로 남는다"가 여기서 드러난다.
   await page.mouse.click(Math.round(box.x + 20), Math.round(box.y + box.height - 20));
   await expect(page.locator(".bp-stroke-sel")).toHaveCount(0);
-  const after = await sample();
+  const after = await alphas();
   expect(Math.max(...after), `해제 뒤에도 경계가 진하다(${after.join(",")})`).toBeLessThanOrEqual(
     base + 12
   );
-  // 획이 끊겨 보이지도 않는다(캡이 경계까지 닿는다).
   expect(Math.min(...after), `경계가 벌어졌다(${after.join(",")})`).toBeGreaterThan(base - 25);
+
+  // 두께 — 경계 부근이 알약처럼 잘록해지면 안 된다.
+  for (const x of [mid - 8, mid - 2, mid, mid + 2, mid + 8]) {
+    const t = await thickness(x);
+    expect(t, `이음매가 잘록하다(x=${x}: ${t} vs ${baseThick})`).toBeGreaterThanOrEqual(
+      baseThick - 2
+    );
+  }
 });
