@@ -99,6 +99,7 @@ import {
   type StrokePoint,
   type StrokeStore
 } from "@/lib/broadcast/stroke-engine";
+import { applyErase } from "@/lib/broadcast/erase";
 import { floodFill, parseHexColor } from "@/lib/broadcast/flood-fill";
 import { inkContrast } from "@/lib/tags/color-tone";
 
@@ -1175,8 +1176,7 @@ export function BroadcastPanel({
     const picked: Stroke[] = [];
     let changed = false;
     for (const s of before) {
-      // 채우기는 '점 하나'라 옮기면 엉뚱한 자리를 다시 채운다 — 지우개와 같이 선택에서 뺀다.
-      if (s.tool === "eraser" || s.tool === "fill" || !layerOk.get(s.layer)) {
+      if (s.tool === "eraser" || !layerOk.get(s.layer)) {
         nextScene.push(s);
         continue;
       }
@@ -1719,22 +1719,143 @@ export function BroadcastPanel({
   // 색 채우기 — 그 레이어 캔버스의 픽셀을 직접 읽어 같은 색 영역을 채운다(엔진은 픽셀을 모른다).
   // 좌표는 판 기준 CSS 좌표라 backing scale을 곱해 실제 픽셀 자리로 바꾼다.
   // **지금 레이어 안에서만** 경계가 잡힌다 — 다른 레이어에 그린 선은 벽이 되지 않는다(그림판 문법).
-  const applyFill = useCallback(
-    (canvas: HTMLCanvasElement | null, at: StrokePoint, hex: string): boolean => {
+  // 색 채우기 = **그 순간의 픽셀을 한 번 계산해 비트맵 조각으로 굳힌다**.
+  //
+  // 예전엔 '찍은 점'만 남기고 재생할 때마다 다시 부었다. 그러면 나중에 지우개로 경계를 뚫거나
+  // 획을 옮긴 뒤 화면이 다시 그려질 때 **그때의 픽셀 기준으로 다시 번져** 엉뚱한 곳이 칠해졌다
+  // (2026-08-05 사용자 지적: "선택할 때 채우기가 겹쳐 적용된다"). 결과를 조각으로 굳히면
+  // 재생은 그림 한 장을 그리는 일이 되어 몇 번을 다시 그려도 같다. 붙여넣은 그림과 같은 규약이라
+  // 선택·이동·크기변경·지우개도 공짜로 따라온다.
+  const makeFillPatch = useCallback(
+    (canvas: HTMLCanvasElement | null, at: StrokePoint, hex: string): Stroke | null => {
       const ctx = canvas?.getContext("2d", { willReadFrequently: true });
-      if (!ctx || !canvas) return false;
+      if (!ctx || !canvas) return null;
       const rgba = parseHexColor(hex);
-      if (!rgba) return false;
+      if (!rgba) return null;
       const scale = scaleRef.current;
       const px = at.x * scale;
       const py = at.y * scale;
-      if (px < 0 || py < 0 || px >= canvas.width || py >= canvas.height) return false;
+      if (px < 0 || py < 0 || px >= canvas.width || py >= canvas.height) return null;
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const painted = floodFill(img, px, py, rgba);
-      if (painted > 0) ctx.putImageData(img, 0, 0);
+      const before = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const original = new Uint8ClampedArray(before.data); // 비교용 원본
+      const painted = floodFill(before, px, py, rgba);
+      if (painted > 0) ctx.putImageData(before, 0, 0); // 화면에는 지금 바로 반영(조각 디코딩을 기다리지 않는다)
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      return painted > 0;
+      if (painted === 0) return null;
+
+      // 바뀐 픽셀만 골라 조각으로 — 화면 전체 크기 PNG를 남기면 되돌리기·재생이 무거워진다.
+      const { width, height, data } = before;
+      let minX = width;
+      let minY = height;
+      let maxX = -1;
+      let maxY = -1;
+      for (let y = 0; y < height; y += 1) {
+        for (let x = 0; x < width; x += 1) {
+          const i = (y * width + x) * 4;
+          if (
+            data[i] === original[i] &&
+            data[i + 1] === original[i + 1] &&
+            data[i + 2] === original[i + 2] &&
+            data[i + 3] === original[i + 3]
+          ) {
+            continue;
+          }
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+      if (maxX < minX || maxY < minY) return null;
+      const w = maxX - minX + 1;
+      const h = maxY - minY + 1;
+      const patch = document.createElement("canvas");
+      patch.width = w;
+      patch.height = h;
+      const pctx = patch.getContext("2d");
+      if (!pctx) return null;
+      const out = pctx.createImageData(w, h);
+      for (let y = 0; y < h; y += 1) {
+        for (let x = 0; x < w; x += 1) {
+          const src = ((y + minY) * width + (x + minX)) * 4;
+          const dst = (y * w + x) * 4;
+          const same =
+            data[src] === original[src] &&
+            data[src + 1] === original[src + 1] &&
+            data[src + 2] === original[src + 2] &&
+            data[src + 3] === original[src + 3];
+          if (same) continue; // 안 바뀐 픽셀은 투명하게 둔다(원래 그림을 덮지 않게)
+          out.data[dst] = data[src];
+          out.data[dst + 1] = data[src + 1];
+          out.data[dst + 2] = data[src + 2];
+          out.data[dst + 3] = data[src + 3];
+        }
+      }
+      pctx.putImageData(out, 0, 0);
+      return {
+        tool: "image",
+        src: patch.toDataURL("image/png"),
+        layer: "", // 호출부가 채운다
+        color: hex,
+        width: 0,
+        // 이미지와 같은 2점(좌상·우하) 규약 — CSS 좌표로 되돌린다.
+        points: [
+          { x: minX / scale, y: minY / scale },
+          { x: (maxX + 1) / scale, y: (maxY + 1) / scale }
+        ]
+      };
+    },
+    []
+  );
+
+  // 그림(붙여넣기·채우기 조각)은 기하가 없어 잘라낼 수 없다 — 픽셀에 지우개를 **구워 넣고**
+  // 다시 인코딩한다. 그래야 "화면엔 없는데 데이터엔 남아 선택되는" 유령이 안 생긴다.
+  // 화면에 그려진 그림은 이미 디코드 캐시(imgCache)에 있으므로 **동기로** 굽는다 — 그래야
+  // 되돌리기/다시실행 기록에 '구워진 결과'가 그대로 담긴다(비동기로 나중에 갈아끼우면
+  // 다시실행이 지우기 전 그림으로 되돌아간다).
+  const bakeEraseIntoImage = useCallback(
+    (stroke: Stroke, er: { points: StrokePoint[]; width: number }): Stroke => {
+      if (!stroke.src) return stroke;
+      const img = imgCache.current.get(stroke.src);
+      if (!img || !img.complete || img.naturalWidth === 0) return stroke; // 아직 로딩 중 — 원본 유지
+      const a = stroke.points[0];
+      const b = stroke.points[stroke.points.length - 1] ?? a;
+      const left = Math.min(a.x, b.x);
+      const top = Math.min(a.y, b.y);
+      const w = Math.abs(b.x - a.x);
+      const h = Math.abs(b.y - a.y);
+      if (w < 1 || h < 1) return stroke;
+      // 원본 해상도를 지킨다(반복 편집으로 흐려지지 않게).
+      const sx = img.naturalWidth / w;
+      const sy = img.naturalHeight / h;
+      const cv = document.createElement("canvas");
+      cv.width = img.naturalWidth;
+      cv.height = img.naturalHeight;
+      const cx = cv.getContext("2d");
+      if (!cx) return stroke;
+      cx.drawImage(img, 0, 0);
+      cx.globalCompositeOperation = "destination-out";
+      cx.lineCap = "round";
+      cx.lineJoin = "round";
+      cx.lineWidth = er.width * ((sx + sy) / 2);
+      cx.strokeStyle = "#000";
+      if (er.points.length === 1) {
+        const p = er.points[0];
+        cx.beginPath();
+        cx.arc((p.x - left) * sx, (p.y - top) * sy, (er.width / 2) * sx, 0, Math.PI * 2);
+        cx.fill();
+      } else {
+        cx.beginPath();
+        er.points.forEach((p, i) => {
+          const x = (p.x - left) * sx;
+          const y = (p.y - top) * sy;
+          if (i === 0) cx.moveTo(x, y);
+          else cx.lineTo(x, y);
+        });
+        cx.stroke();
+      }
+      return { ...stroke, src: cv.toDataURL("image/png") };
     },
     []
   );
@@ -1762,15 +1883,10 @@ export function BroadcastPanel({
           (ctx as unknown as CanvasRenderingContext2D).drawImage(img, x, y, w, h);
           continue;
         }
-        if (s.tool === "fill") {
-          // 채우기는 '그 시점까지 그려진 픽셀' 위에 부어야 결과가 같다 — 순서대로 여기서 실행.
-          applyFill(canvas, s.points[0], s.color);
-          continue;
-        }
         drawStroke(ctx, s);
       }
     },
-    [canvasOf, clearCanvas, scaledCtx, store, imageFor, applyFill]
+    [canvasOf, clearCanvas, scaledCtx, store, imageFor]
   );
   const replayAll = useCallback(() => {
     for (const id of layerCanvases.current.keys()) replayLayer(id);
@@ -1829,9 +1945,26 @@ export function BroadcastPanel({
         if (ctx) drawStroke(ctx, segment);
       }
     }
+    if (live.tool === "eraser") {
+      // 지우개는 장면에 남기지 않는다 — **지운 것을 실제로 덜어낸다**(2026-08-05 사용자 지적:
+      // "지운 게 왜 선택되냐"). 예전엔 destination-out 획을 그대로 쌓아 화면에서만 가렸고,
+      // 그 획을 옮기면 지운 부분이 되살아났다.
+      const before = [...store.strokes()];
+      const er = { points: live.points, width: live.width };
+      const { next, changed, images } = applyErase(before, er, live.layer);
+      if (!changed) return;
+      // 그림은 픽셀에 구워 넣는다(기하가 없어 잘라낼 수 없다). 히스토리에 담기 전에 끝낸다.
+      const bakedByRef = new Map<Stroke, Stroke>();
+      for (const im of images) bakedByRef.set(im, bakeEraseIntoImage(im, er));
+      const after = next.map((x) => bakedByRef.get(x) ?? x);
+      store.setStrokes(after);
+      pushHist({ t: "scene", before, after: [...after] });
+      replayLayerFnRef.current(live.layer);
+      return;
+    }
     store.push(live);
     pushHist({ t: "stroke", stroke: live }); // 중앙 기록이 획 자체도 소유(Ctrl+Z 하나로 전부)
-  }, [canvasOf, clearCanvas, scaledCtx, store, pushHist]);
+  }, [canvasOf, clearCanvas, scaledCtx, store, pushHist, bakeEraseIntoImage]);
 
   // 리사이즈 → 크기가 실제로 변했을 때만 backing 재할당 + 명령 재생(연속 리사이즈 churn 방지).
   useEffect(() => {
@@ -2263,16 +2396,19 @@ export function BroadcastPanel({
     // (되돌리기·리사이즈 재생이 다른 도구와 똑같이 동작한다).
     if (tool === "fill") {
       e.preventDefault();
-      const stroke: Stroke = {
-        tool: "fill",
-        layer: activeLayer.id,
-        color: penColor,
-        width: 0,
-        points: [{ x: p.x, y: p.y }]
-      };
-      if (applyFill(canvasOf(activeLayer.id), stroke.points[0], penColor)) {
+      const patch = makeFillPatch(canvasOf(activeLayer.id), { x: p.x, y: p.y }, penColor);
+      if (patch) {
+        const stroke: Stroke = { ...patch, layer: activeLayer.id };
         store.push(stroke);
         pushHist({ t: "stroke", stroke }); // 다른 획과 같은 Ctrl+Z 하나로 되돌린다
+        // 조각을 디코드 캐시에 미리 넣는다 — 다음 재생(선택·되돌리기·리사이즈)에서 한 프레임
+        // 비어 보이지 않게. 화면은 위 putImageData로 이미 채워져 있다.
+        if (stroke.src && !imgCache.current.has(stroke.src)) {
+          const el = new Image();
+          el.onload = () => replayLayerFnRef.current(activeLayer.id);
+          imgCache.current.set(stroke.src, el);
+          el.src = stroke.src;
+        }
       }
       return;
     }
