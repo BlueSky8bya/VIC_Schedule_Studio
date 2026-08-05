@@ -52,7 +52,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         >
           <form action="/api/auth/login" method="post">
             <input name="next" type="hidden" value={next} />
-            <button className="button primary" disabled={!configured} type="submit">
+            <button className="button primary" data-act="google-login" disabled={!configured} type="submit">
               Google로 로그인
             </button>
           </form>

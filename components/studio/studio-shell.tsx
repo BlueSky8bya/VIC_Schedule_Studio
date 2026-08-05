@@ -4602,6 +4602,7 @@ export function StudioShell({
                 <form className="m-head-logout" action="/api/auth/logout" method="post" data-act="logout">
                   <button
                     className="button"
+                    data-act="logout"
                     onClick={() => startNav("로그아웃 중…")}
                     type="submit"
                   >
@@ -5045,12 +5046,13 @@ export function StudioShell({
           ) : null}
           {canTogglePrivateLayer ? (
             isEffectivelyOwner && canReadPrivate ? (
-              <button className="button primary" onClick={() => openChangePasscode()} type="button">
+              <button className="button primary" data-act="change-passcode" onClick={() => openChangePasscode()} type="button">
                 비밀번호 변경
               </button>
             ) : (
               <button
                 className={canReadPrivate ? "button primary" : "button m-io-pill m-io-private"}
+                data-act="private-toggle"
                 onClick={togglePrivateLayer}
                 type="button"
               >
@@ -5365,11 +5367,12 @@ export function StudioShell({
             {actionError ? <div className="auth-warning">{actionError}</div> : null}
             {renderSupportFields(true)}
             <div className="passcode-actions">
-              <button className="button" onClick={closeSupportSheet} type="button">
+              <button className="button" data-act="support-sheet-cancel" onClick={closeSupportSheet} type="button">
                 취소
               </button>
               <button
                 className="button primary"
+                data-act="support-sheet-save"
                 disabled={supportSaving}
                 onClick={saveSupportSettings}
                 type="button"
@@ -5644,7 +5647,7 @@ export function StudioShell({
     // 편집실/꾸미기 이동 버튼 — 웹은 포스터 위 오버레이로, 모바일은 포스터 제목 헤더 안으로 주입한다.
     const previewNav = (
       <>
-        <button className="button" onClick={() => setViewerMode(false)} type="button">
+        <button className="button" data-act="back-to-studio" onClick={() => setViewerMode(false)} type="button">
           <ChevronLeft aria-hidden="true" size={16} />
           {isNarrow ? "편집실" : "편집실로 가기"}
         </button>
@@ -5664,6 +5667,7 @@ export function StudioShell({
         {canDecorateCalendar && !isNarrow ? (
           <Link
             className="button"
+            data-act="go-decorate"
             href={`/studio/decorate/${view.year}/${view.month}`}
             onClick={() => {
               // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
@@ -5910,7 +5914,7 @@ export function StudioShell({
               </button>
             </form>
           ) : (
-            <Link className="button" href="/login">
+            <Link className="button" data-act="login" href="/login">
               로그인
             </Link>
           )}
@@ -7135,6 +7139,7 @@ export function StudioShell({
             events.find((e) => e.id === selectedEventId)?.isSupport ? (
               <button
                 className="button danger"
+                data-act="delete-support"
                 onClick={() => deleteEvent(selectedEventId)}
                 type="button"
               >

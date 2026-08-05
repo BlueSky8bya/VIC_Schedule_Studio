@@ -156,7 +156,7 @@ export function MemberInsights({
       return (
         <p className="insight-empty">
           보안 정보를 불러오지 못했어요.
-          <button className="button" onClick={retrySecurity} style={{ marginLeft: 8 }} type="button">
+          <button className="button" data-act="security-retry" onClick={retrySecurity} style={{ marginLeft: 8 }} type="button">
             다시 시도
           </button>
         </p>

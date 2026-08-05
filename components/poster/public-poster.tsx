@@ -5952,6 +5952,7 @@ export function PublicPoster({
                 <>
                   <Link
                     className="button"
+                    data-act="back-to-studio"
                     href="/studio"
                     onClick={() => {
                       // 꾸미기에서 보던 달을 편집실 월(sy/sm)로 넘기고, 시청자 미리보기 플래그(v)는 꺼서
@@ -5965,6 +5966,7 @@ export function PublicPoster({
                   {previewing ? (
                     <button
                       className="button"
+                      data-act="back-to-decorate"
                       onClick={() => setPreviewing(false)}
                       type="button"
                     >
@@ -5974,6 +5976,7 @@ export function PublicPoster({
                   ) : (
                     <button
                       className="button"
+                      data-act="decorate-preview"
                       onClick={() => setPreviewing(true)}
                       type="button"
                     >
@@ -5995,7 +5998,7 @@ export function PublicPoster({
                   {!anonymous && accountEmail ? (
                     <PlainEmail className="account-email" title={accountEmail} value={accountEmail} />
                   ) : null}
-                  <button className="button" type="submit">
+                  <button className="button" data-act={anonymous ? "login" : "logout"} type="submit">
                     {anonymous ? "로그인" : "로그아웃"}
                   </button>
                 </form>
@@ -6591,6 +6594,7 @@ export function PublicPoster({
                 />
                 <button
                   className="button"
+                  data-act="sticker-add-text"
                   disabled={!textDraft.trim()}
                   onClick={() => void addText()}
                   type="button"

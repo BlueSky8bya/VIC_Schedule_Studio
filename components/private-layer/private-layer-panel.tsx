@@ -108,6 +108,7 @@ export function PrivateLayerPanel({
           {canManage ? (
             <button
               className="button"
+              data-act="passcode-change-open"
               onClick={() => {
                 hapticTick();
                 setChanging(true);
@@ -136,6 +137,7 @@ export function PrivateLayerPanel({
           <div className="passcode-actions">
             <button
               className="button"
+              data-act="passcode-change-cancel"
               // 취소는 순수 클라이언트 동작(닫기/되돌아가기)이라 서버 저장 중이라고 막을 이유가 없다.
               // (옆 '저장'의 disabled={... || pending}은 정당 — 그건 실제로 서버를 부른다.)
               onClick={() => {
@@ -154,6 +156,7 @@ export function PrivateLayerPanel({
             </button>
             <button
               className="button primary"
+              data-act="passcode-change-save"
               disabled={newPw.trim().length < 4 || pending}
               onClick={changePasscode}
               type="button"

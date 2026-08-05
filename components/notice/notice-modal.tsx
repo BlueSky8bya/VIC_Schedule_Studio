@@ -346,7 +346,7 @@ export function NoticeModal({
               </li>
               <li>
                 <span className="notice-step-num">2</span>
-                <a className="button" href={soopWriteUrl} rel="noopener noreferrer" target="_blank">
+                <a className="button" data-act="notice-open-soop" href={soopWriteUrl} rel="noopener noreferrer" target="_blank">
                   <ExternalLink aria-hidden="true" size={14} />
                   숲 공지 페이지 열기
                 </a>
@@ -392,7 +392,7 @@ export function NoticeModal({
                 <li>
                   먼저 아래 코드를 복사해주세요!
                   <div className="notice-autofill-row">
-                    <button className="button" onClick={() => copy("mark", BOOKMARKLET_SAFE)} type="button">
+                    <button className="button" data-act="notice-copy-bookmarklet" onClick={() => copy("mark", BOOKMARKLET_SAFE)} type="button">
                       <Copy aria-hidden="true" size={13} />
                       {copied === "mark" ? "복사됨!" : "① 북마클릿 코드 복사"}
                     </button>
@@ -421,6 +421,7 @@ export function NoticeModal({
                 <span className="notice-step-num">1</span>
                 <button
                   className="button primary"
+                  data-act="notice-copy-all"
                   onClick={() => copy("payload", autofillPayload)}
                   type="button"
                 >
@@ -430,7 +431,7 @@ export function NoticeModal({
               </li>
               <li>
                 <span className="notice-step-num">2</span>
-                <a className="button" href={soopWriteUrl} rel="noopener noreferrer" target="_blank">
+                <a className="button" data-act="notice-open-soop" href={soopWriteUrl} rel="noopener noreferrer" target="_blank">
                   <ExternalLink aria-hidden="true" size={14} />
                   숲 공지 페이지 열기
                 </a>
@@ -445,7 +446,7 @@ export function NoticeModal({
       </div>
 
       <div className="notice-actions">
-        <button className="button" onClick={onClose} type="button">
+        <button className="button" data-act="notice-close" onClick={onClose} type="button">
           닫기
         </button>
       </div>

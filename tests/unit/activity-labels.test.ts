@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { describeTarget, roleBreakdown, usageRoleCount } from "@/lib/activity/labels";
+import {
+  USAGE_ROLE_ORDER,
+  describeTarget,
+  roleBreakdown,
+  usageRoleBreakdown,
+  usageRoleCount
+} from "@/lib/activity/labels";
 
 // 이 화면을 보는 사람은 대부분 코드를 모른다(관리자·매니저). 규약:
 //   1) 화면에 실제로 쓰인 말로 부른다
@@ -99,5 +105,57 @@ describe("usageRoleCount", () => {
   it("다른 역할은 그대로", () => {
     expect(usageRoleCount({ owner: 3, anon: 38 }, "owner")).toBe(3);
     expect(usageRoleCount({ owner: 3 }, "manager")).toBe(0);
+  });
+});
+
+// 2026-08-05: 사용량('적게 쓰인 기능') 화면에서는 비로그인을 시청자에 합쳐 한 줄로 보여준다.
+// 하트 말고는 로그인이 필요 없어 같은 사람의 같은 행동이 두 줄로 쪼개지고, "시청자는 이걸
+// 안 쓰네"로 잘못 읽혔다. 타임라인 쪽 roleBreakdown은 그대로 갈라 본다(이상 신호 탐지용).
+describe("usageRoleBreakdown — 사용량 화면은 시청자 한 덩어리", () => {
+  it("비로그인을 시청자에 합친다", () => {
+    expect(usageRoleBreakdown({ viewer: 2, anon: 38 })).toBe("시청자 40");
+    expect(usageRoleBreakdown({ developer: 1, anon: 2 })).toBe("개발자 1 · 시청자 2");
+  });
+  it("'비로그인'이라는 말 자체가 안 나온다", () => {
+    expect(usageRoleBreakdown({ anon: 5 })).not.toContain("비로그인");
+  });
+  it("역할 목록에도 비로그인이 없다", () => {
+    expect(USAGE_ROLE_ORDER).not.toContain("anon");
+    expect(USAGE_ROLE_ORDER).toContain("viewer");
+  });
+  it("모르는 역할은 그대로 남기고, 빈 값도 안전하게", () => {
+    expect(usageRoleBreakdown({ ghost: 4 })).toBe("ghost 4");
+    expect(usageRoleBreakdown({})).toBe("기록 없음");
+  });
+  it("타임라인용 roleBreakdown은 여전히 가른다", () => {
+    expect(roleBreakdown({ developer: 1, anon: 2 })).toBe("개발자 1 · 비로그인 2");
+  });
+});
+
+// 소스에 박은 data-act는 전부 사전에 있어야 한다 — 없으면 화면에 '아직 이름을 안 붙인 버튼'으로
+// 뜬다(2026-08-05 실측: bp-eyedrop·bp-region-* 등이 그랬다). 새 버튼을 만들면 여기서 걸린다.
+describe("모든 data-act에 이름이 있다", () => {
+  it("사전에 없는 data-act가 소스에 없다", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const files: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+        const p = path.join(dir, e.name);
+        if (e.isDirectory()) walk(p);
+        else if (e.name.endsWith(".tsx")) files.push(p);
+      }
+    };
+    walk(path.join(process.cwd(), "components"));
+    walk(path.join(process.cwd(), "app"));
+    const missing = new Set<string>();
+    for (const f of files) {
+      const src = fs.readFileSync(f, "utf8");
+      for (const m of src.matchAll(/data-act="([^"{}]+)"/g)) {
+        const id = m[1];
+        if (describeTarget("ui.click", id).unnamed) missing.add(`${path.basename(f)}:${id}`);
+      }
+    }
+    expect([...missing]).toEqual([]);
   });
 });

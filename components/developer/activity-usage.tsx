@@ -3,9 +3,9 @@
 import { type CSSProperties, useEffect, useState } from "react";
 import {
   ROLE_NAME,
-  ROLE_ORDER,
+  USAGE_ROLE_ORDER,
   describeTarget,
-  roleBreakdown,
+  usageRoleBreakdown,
   usageRoleCount
 } from "@/lib/activity/labels";
 import { getActivityUsageAction, type UsageRow } from "@/lib/activity/query";
@@ -84,9 +84,10 @@ export function ActivityUsage({
     : [];
   // 역할은 **전부** 보여준다. 기록이 0인 역할을 목록에서 빼면 "이 역할은 이 기능을 한 번도
   // 안 썼다"를 확인할 방법이 사라진다 — 그게 이 화면의 질문이다. 고르면 0건이 곧 답이다.
-  // '시청자'는 **비로그인을 포함**한다. 하트가 비로그인으로 열린 뒤 실제 시청자 기록은 거의
-  // 전부 anon으로 들어온다 — 갈라두면 역할=시청자가 늘 0건이 되어 "집계가 아예 안 된다"로
-  // 읽힌다(실측: viewer 0 / anon 38). 비로그인만 보고 싶으면 '비로그인'을 따로 고르면 된다.
+  // 이 화면에서 '시청자'는 로그인·비로그인을 합친 하나다(목록에도 '비로그인'을 따로 두지 않는다).
+  // 하트 말고는 로그인이 필요 없어 실제 시청자 기록은 거의 전부 비로그인으로 들어온다 —
+  // 갈라두면 같은 사람의 같은 행동이 두 줄로 쪼개져 "시청자는 이걸 안 쓰네"로 잘못 읽힌다
+  // (실측: viewer 0 / anon 38). 로그인 여부가 궁금한 자리는 타임라인 쪽(roleBreakdown)이다.
   const roleCount = (r: UsageRow, key: string): number => usageRoleCount(r.roles, key);
   const filtered = rows
     ? rows.filter(
@@ -116,7 +117,7 @@ export function ActivityUsage({
         (KIND_CHIP[r.kind]?.short ?? r.kind).padEnd(3),
         (d.area ?? "-").padEnd(7),
         d.name,
-        `| ${roleBreakdown(r.roles)}`,
+        `| ${usageRoleBreakdown(r.roles)}`,
         `| kind=${r.kind} target=${r.target}${d.unnamed ? " (이름미등록)" : ""}`
       ].join("  ");
     });
@@ -236,10 +237,9 @@ export function ActivityUsage({
                   }}
                   options={[
                     { value: "all", label: "전체" },
-                    ...ROLE_ORDER.map((rr) => ({
-                      value: rr,
-                      label: rr === "viewer" ? "시청자(비로그인 포함)" : ROLE_NAME[rr]
-                    }))
+                    // 비로그인은 시청자에 합쳐 한 항목으로 — 시청자에게 로그인 여부는
+                    // "이 기능을 쓰나 마나"를 바꾸지 않는다(하트 말고는 로그인이 필요 없다).
+                    ...USAGE_ROLE_ORDER.map((rr) => ({ value: rr, label: ROLE_NAME[rr] }))
                   ]}
                   value={role}
                 />
@@ -297,8 +297,8 @@ export function ActivityUsage({
                         className="usage-n"
                         title={
                           role === "all"
-                            ? roleBreakdown(r.roles)
-                            : `${ROLE_NAME[role]} ${countOf(r)}번 · 전체 ${r.total}번(${roleBreakdown(r.roles)})`
+                            ? usageRoleBreakdown(r.roles)
+                            : `${ROLE_NAME[role]} ${countOf(r)}번 · 전체 ${r.total}번(${usageRoleBreakdown(r.roles)})`
                         }
                       >
                         {countOf(r)}

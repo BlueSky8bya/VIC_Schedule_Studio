@@ -239,11 +239,11 @@ export function InAppBrowserNotice({
       <p>Chrome이나 Safari로 열어주세요.</p>
       <div className="inapp-actions">
         {android ? (
-          <button className="button primary" onClick={openInChrome} type="button">
+          <button className="button primary" data-act="open-in-chrome" onClick={openInChrome} type="button">
             📲 Chrome으로 열기
           </button>
         ) : null}
-        <button className={android ? "button" : "button primary"} onClick={copyLink} type="button">
+        <button className={android ? "button" : "button primary"} data-act="copy-app-link" onClick={copyLink} type="button">
           {copied ? "복사됨" : "링크 복사"}
         </button>
       </div>

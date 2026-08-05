@@ -26,7 +26,20 @@ const ROUTE: Record<string, TargetLabel> = {
   "/studio/decorate": { name: "꾸미기 화면", area: "꾸미기", hint: "스티커·배경을 꾸미는 화면" },
   "/studio/private-layer": { name: "비공개 설정 화면", area: "관리" },
   "/studio/tags": { name: "태그 관리 화면", area: "관리" },
-  "/studio/trusted-members": { name: "멤버 관리 화면", area: "관리" }
+  "/studio/trusted-members": { name: "멤버 관리 화면", area: "관리" },
+  "/login": { name: "로그인 화면", area: "공통" },
+  // 화면 검사용 고정 화면 — 실제 사용자 화면이 아니라 자동 검사(Playwright)가 여는 곳이다.
+  // 사람 기록에 섞이면 "이 화면은 뭐지"가 되므로 그렇다고 이름에 적어 준다.
+  "/visual-fixture/poster": {
+    name: "화면 검사용 포스터",
+    area: "검사",
+    hint: "자동 화면 검사가 여는 고정 화면(사람 방문 아님)"
+  },
+  "/visual-fixture/studio": {
+    name: "화면 검사용 편집실",
+    area: "검사",
+    hint: "자동 화면 검사가 여는 고정 화면(사람 방문 아님)"
+  }
 };
 
 const SECTION: Record<string, TargetLabel> = {
@@ -139,6 +152,11 @@ const ACT: Record<string, TargetLabel> = {
   "io-worldcup": { name: "월드컵 기능 켜기", area: "편집실" },
 
   // 일정 그림판(판서)
+  "bp-eyedrop": { name: "스포이드(색 집기)", area: "일정 그림판", hint: "그림에서 색을 찍어 펜 색으로" },
+  "bp-region-enter": { name: "영역 선택 시작", area: "일정 그림판", hint: "붙여넣은 그림에서 일부만 오려내기" },
+  "bp-region-copy": { name: "영역 복사", area: "일정 그림판", hint: "고른 영역을 복사본으로" },
+  "bp-region-move": { name: "영역 오려 옮기기", area: "일정 그림판" },
+  "bp-region-cancel": { name: "영역 선택 취소", area: "일정 그림판" },
   "bp-tool": { name: "그림판 도구 고르기", area: "일정 그림판" },
   "bp-width": { name: "펜 굵기", area: "일정 그림판" },
   "bp-color": { name: "펜 색", area: "일정 그림판" },
@@ -218,7 +236,55 @@ const ACT: Record<string, TargetLabel> = {
   "usage-kind-section.enter": { name: "종류 필터: 창", area: "인사이트" },
   "visit-scope-viewer": { name: "범위: 시청자", area: "인사이트" },
   "visit-scope-operator": { name: "범위: 운영진", area: "인사이트" },
-  "visit-scope-all": { name: "범위: 전체", area: "인사이트" }
+  "visit-scope-all": { name: "범위: 전체", area: "인사이트" },
+
+  // ── 2026-08-05: '이름 없는 버튼 여러 개(.button)'로 뭉쳐 있던 것들. 공통 모양(.button)만
+  // 걸친 버튼이라 마크업 유추가 전부 한 항목이 됐다 — 소스에 data-act를 박아 갈라냈다.
+  "back-to-studio": { name: "편집실로 가기", area: "시청자 화면", hint: "미리보기·꾸미기에서 편집실로" },
+  "back-to-decorate": { name: "꾸미기로 가기", area: "꾸미기" },
+  "go-decorate": { name: "꾸미러 가기", area: "편집실", hint: "미리보기의 '꾸미러 가기'" },
+  "decorate-preview": { name: "시청자 화면 미리보기", area: "꾸미기" },
+  "sticker-add-text": { name: "글자 스티커 추가", area: "꾸미기" },
+  "support-sheet-cancel": { name: "업 도움 수정 취소", area: "편집실" },
+  "support-sheet-save": { name: "업 도움 수정 저장", area: "편집실" },
+  "support-edit-open": { name: "업 도움 기간/링크 수정 열기", area: "편집실" },
+  "delete-support": { name: "업 도움 삭제", area: "편집실" },
+  "google-login": { name: "Google로 로그인", area: "공통" },
+  "open-in-chrome": { name: "Chrome으로 열기", area: "공통", hint: "앱 내 브라우저 안내" },
+  "copy-app-link": { name: "링크 복사", area: "공통", hint: "앱 내 브라우저 안내" },
+  "member-add": { name: "멤버 추가", area: "멤버 관리" },
+  "security-retry": { name: "보안 정보 다시 시도", area: "관리" },
+  "passcode-change-open": { name: "비밀번호 변경 열기", area: "관리" },
+  "passcode-change-save": { name: "비밀번호 변경 저장", area: "관리" },
+  "passcode-change-cancel": { name: "비밀번호 변경 취소", area: "관리" },
+  "notice-close": { name: "공지 창 닫기", area: "공지" },
+  "notice-copy-bookmarklet": { name: "북마클릿 코드 복사", area: "공지" },
+  "notice-copy-all": { name: "제목+본문 한 번에 복사", area: "공지" },
+  "notice-open-soop": { name: "숲 공지 페이지 열기", area: "공지" },
+
+  // 클래스 토큰으로만 잡히던 것들(auto: 경로가 점을 떼고 여기서 찾는다).
+  "agenda-login": { name: "로그인", area: "시청자 화면", hint: "모바일 화면 아래 계정 줄" },
+  "agenda-logout": { name: "로그아웃", area: "시청자 화면", hint: "모바일 화면 아래 계정 줄" },
+  "agenda-legend-insights": { name: "이 달 기록 보기", area: "시청자 화면" },
+  "insights-open": { name: "이 달 기록 보기", area: "시청자 화면" },
+  "m-io-tags": { name: "태그 편집(모바일)", area: "관리" },
+  "m-io-members": { name: "멤버 관리(모바일)", area: "관리" },
+  "m-io-today": { name: "오늘로(모바일)", area: "편집실" },
+  "m-io-private": { name: "비공개 일정 보기(모바일)", area: "편집실" },
+  "m-del": { name: "일정 삭제(모바일)", area: "편집실" },
+  "m-save": { name: "일정 저장(모바일)", area: "편집실" },
+  "editor-save": { name: "일정 저장", area: "편집실" },
+  "support-visit-link": { name: "업 도움 링크 열기", area: "시청자 화면" },
+
+  // 옛 기록: data-act에 한글 문구를 그대로 박았던 값들. 이름은 이미 사람 말이라 위치만 붙인다.
+  "이전 달": { name: "이전 달", area: "시청자 화면" },
+  "다음 달": { name: "다음 달", area: "시청자 화면" },
+  "이 달 기록 보기": { name: "이 달 기록 보기", area: "시청자 화면" },
+  "방송 보러 가기": { name: "방송 보러 가기", area: "시청자 화면" },
+  "업 도움 링크 열기": { name: "업 도움 링크 열기", area: "시청자 화면" },
+  "실행 취소": { name: "실행 취소", area: "꾸미기" },
+  "다시실행 (Ctrl+Y)": { name: "다시 실행", area: "꾸미기" },
+  닫기: { name: "닫기", area: "공통", hint: "여러 창의 닫기 합계" }
 };
 
 // 이름을 안 붙여 마크업에서 유추된 값(`auto:`). 같은 클래스를 쓰는 버튼들이 한 항목으로 뭉치므로
@@ -239,7 +305,14 @@ const AUTO: Record<string, TargetLabel> = {
   ".studio-event-pill": { name: "편집실 일정 카드", area: "편집실" },
   ".month-nav-btn": { name: "월 이동 버튼", area: "편집실", hint: "옛 기록 (지금은 이전/다음으로 나뉨)" },
   ".me-tool": { name: "편집 패널 도구 여러 개", area: "편집실", hint: "여러 버튼이 합쳐진 값" },
-  ".button": { name: "이름 없는 버튼 여러 개", area: "공통", hint: "공통 모양의 버튼들이 합쳐진 값" },
+  ".button": {
+    name: "이름 없던 버튼 여러 개",
+    area: "공통",
+    // 2026-08-05에 이 버튼들에 전부 data-act를 박아 갈라놨다. 그 전에 쌓인 기록만 여기 남는다.
+    hint: "옛 기록 — 이름 붙이기 전(2026-08-05) 합쳐져 쌓인 값"
+  },
+  ".agenda-login": { name: "로그인", area: "시청자 화면", hint: "모바일 화면 아래 계정 줄" },
+  ".agenda-logout": { name: "로그아웃", area: "시청자 화면", hint: "모바일 화면 아래 계정 줄" },
   ".legend-item": { name: "태그 범례 누르기", area: "시청자 화면", hint: "태그로 걸러 보기" },
   button: { name: "클래스 없는 버튼", area: "기타", hint: "이름도 클래스도 없어 구분할 수 없는 버튼들" },
   ".modal-close": { name: "창 닫기(X)", area: "공통", hint: "옛 기록" },
@@ -309,6 +382,32 @@ export const ROLE_NAME: Record<string, string> = {
 export function usageRoleCount(roles: Record<string, number>, role: string): number {
   if (role === "viewer") return (roles.viewer ?? 0) + (roles.anon ?? 0);
   return roles[role] ?? 0;
+}
+
+/** 사용량 화면의 역할 목록 — '비로그인'은 시청자에 합쳐 두 줄로 갈리지 않게 한다. */
+export const USAGE_ROLE_ORDER = ["owner", "manager", "worker", "developer", "viewer"] as const;
+
+/**
+ * 사용량 화면 전용 역할 내역 — 비로그인을 시청자에 합쳐 "시청자 9"처럼 한 덩어리로 보여준다.
+ * 이 화면의 질문은 "어떤 역할이 이 기능을 안 쓰나"이고, 시청자에게 로그인 여부는 그 답을 바꾸지
+ * 않는다(하트 말고는 로그인이 필요 없다). 반대로 타임라인은 `roleBreakdown`을 그대로 써서
+ * 갈라 본다 — 거긴 "왜 편집실에 비로그인이 찍혔지" 같은 이상 신호를 읽는 자리다.
+ */
+export function usageRoleBreakdown(roles: Record<string, number>): string {
+  const merged: Record<string, number> = { ...roles };
+  if (merged.anon) {
+    merged.viewer = (merged.viewer ?? 0) + merged.anon;
+    delete merged.anon;
+  }
+  const parts = USAGE_ROLE_ORDER.filter((r) => (merged[r] ?? 0) > 0).map(
+    (r) => `${ROLE_NAME[r]} ${merged[r]}`
+  );
+  for (const [k, v] of Object.entries(merged)) {
+    if (!USAGE_ROLE_ORDER.includes(k as (typeof USAGE_ROLE_ORDER)[number]) && v > 0) {
+      parts.push(`${k} ${v}`);
+    }
+  }
+  return parts.join(" · ") || "기록 없음";
 }
 
 /** 역할별 횟수를 "관리자 3 · 개발자 12" 같은 한 줄로. 0인 역할은 뺀다. */

@@ -302,6 +302,7 @@ export function TrustedMembersPanel() {
           </div>
           <button
             className="button primary"
+            data-act="member-add"
             disabled={!email.trim()}
             onClick={add}
             type="button"

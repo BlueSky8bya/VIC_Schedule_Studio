@@ -140,7 +140,7 @@ export function ReadonlyEventDetail({
             </div>
           ) : null}
           {selectedEvent.isSupport && canEditSupportThing ? (
-            <button className="button" onClick={() => onOpenSupportSheet(selectedEvent)} type="button">
+            <button className="button" data-act="support-edit-open" onClick={() => onOpenSupportSheet(selectedEvent)} type="button">
               업 도움 기간/링크 수정
             </button>
           ) : null}
