@@ -99,7 +99,15 @@ import {
   type StrokePoint,
   type StrokeStore
 } from "@/lib/broadcast/stroke-engine";
-import { applyErase } from "@/lib/broadcast/erase";
+import { applyErase, imageHit } from "@/lib/broadcast/erase";
+import {
+  boxOf,
+  MASK_MAX,
+  maskFromRgba,
+  maskHitsEraser,
+  maskHitsRect,
+  type AlphaMask
+} from "@/lib/broadcast/image-mask";
 import { floodFill, parseHexColor } from "@/lib/broadcast/flood-fill";
 import { inkContrast } from "@/lib/tags/color-tone";
 
@@ -134,6 +142,8 @@ const TOOL_LABELS: Record<BroadcastTool, string> = {
   fill: "색 채우기",
   // 도구 막대에는 없다(붙여넣기·드롭으로만 생긴다) — 라벨은 안내·접근성용.
   image: "그림",
+  // 도구 막대에는 없다 — 도형을 부분적으로 지웠을 때 남는 윤곽 조각.
+  poly: "선 조각",
   line: "직선",
   arrow: "화살표",
   rect: "사각형",
@@ -1180,6 +1190,17 @@ export function BroadcastPanel({
         nextScene.push(s);
         continue;
       }
+      if (s.tool === "image") {
+        // 그림은 **칠해진 픽셀**로 판정한다. 상자로 판정하면 채우기 조각(상자가 화면 절반만 하다)의
+        // 투명한 여백만 긁어도 통째로 잡혔다(2026-08-05 사용자 지적).
+        const mask = s.src ? maskFor(s.src) : null;
+        const hit = mask
+          ? maskHitsRect(mask, boxOf(s), selectionRect)
+          : strokeIntersectsRect(s, selectionRect); // 마스크를 못 만들면 옛 상자 기준
+        nextScene.push(s);
+        if (hit) picked.push(s);
+        continue;
+      }
       const flags = s.points.map(inside);
       const shapeCrosses = isBoxItem(s.tool) && strokeIntersectsRect(s, selectionRect);
       const hasVisiblePoint = s.points.some((pt, i) => flags[i] && visibleAt(pt, s.layer));
@@ -1284,6 +1305,13 @@ export function BroadcastPanel({
     };
   };
 
+  // 비트맵 도우미는 아래(디코드 캐시 부근)에서 정의된다 — 선언 순서 제약을 ref로 넘긴다
+  // (replayLayerFnRef와 같은 방식).
+  const readyBitmapRef = useRef<
+    (src: string) => { src: CanvasImageSource; w: number; h: number } | null
+  >(() => null);
+  const rememberBitmapRef = useRef<(src: string, canvas: HTMLCanvasElement) => void>(() => {});
+
   /** 판 좌표 영역 → 그 그림의 픽셀 좌표. 확대해 놓은 그림도 원본 해상도로 오려야 안 뭉갠다. */
   const cropRegion = useCallback(
     (
@@ -1291,16 +1319,18 @@ export function BroadcastPanel({
       rect: { x: number; y: number; w: number; h: number },
       hole: boolean
     ): { src: string; holeSrc?: string } | null => {
-      const img = st.src ? imgCache.current.get(st.src) : null;
-      if (!img || !img.complete || img.naturalWidth === 0) return null;
+      // 방금 만든 조각은 아직 디코드 전일 수 있다 — 그때는 손에 든 캔버스로 오린다(readyBitmap).
+      const bmp = st.src ? readyBitmapRef.current(st.src) : null;
+      if (!bmp) return null;
+      const img = bmp.src;
       const box = imgBox(st);
       if (box.w < 1 || box.h < 1) return null;
-      const kx = img.naturalWidth / box.w;
-      const ky = img.naturalHeight / box.h;
+      const kx = bmp.w / box.w;
+      const ky = bmp.h / box.h;
       const sx = Math.max(0, Math.round((rect.x - box.x) * kx));
       const sy = Math.max(0, Math.round((rect.y - box.y) * ky));
-      const sw = Math.max(1, Math.min(img.naturalWidth - sx, Math.round(rect.w * kx)));
-      const sh = Math.max(1, Math.min(img.naturalHeight - sy, Math.round(rect.h * ky)));
+      const sw = Math.max(1, Math.min(bmp.w - sx, Math.round(rect.w * kx)));
+      const sh = Math.max(1, Math.min(bmp.h - sy, Math.round(rect.h * ky)));
       const cut = document.createElement("canvas");
       cut.width = sw;
       cut.height = sh;
@@ -1311,16 +1341,19 @@ export function BroadcastPanel({
       if (hole) {
         // '옮기기'는 원본에서 그 자리가 비어야 한다 — 안 비우면 복사와 구분이 안 된다.
         const rest = document.createElement("canvas");
-        rest.width = img.naturalWidth;
-        rest.height = img.naturalHeight;
+        rest.width = bmp.w;
+        rest.height = bmp.h;
         const rctx = rest.getContext("2d");
         if (!rctx) return null;
         rctx.drawImage(img, 0, 0);
         rctx.clearRect(sx, sy, sw, sh);
         holeSrc = rest.toDataURL("image/png");
+        rememberBitmapRef.current(holeSrc, rest); // 디코드 전에도 바로 그린다(빈 프레임 방지)
       }
       try {
-        return { src: cut.toDataURL("image/png"), holeSrc };
+        const src = cut.toDataURL("image/png");
+        rememberBitmapRef.current(src, cut);
+        return { src, holeSrc };
       } catch {
         // 외부 출처 그림이면 캔버스가 오염돼 내보내기가 막힌다 — 조용히 포기한다(앱은 그대로).
         return null;
@@ -1706,15 +1739,87 @@ export function BroadcastPanel({
   // 붙여넣은 그림의 디코드 캐시. 같은 data URL을 매 재생마다 다시 디코드하면 되돌리기·리사이즈가
   // 눈에 띄게 느려진다. 처음 만나면 로드하고, 로드가 끝나면 그 레이어만 다시 재생한다.
   const imgCache = useRef<Map<string, HTMLImageElement>>(new Map());
-  const imageFor = useCallback((src: string, layer: StrokeLayer): HTMLImageElement | null => {
-    const hit = imgCache.current.get(src);
-    if (hit) return hit.complete && hit.naturalWidth > 0 ? hit : null;
+  // 방금 우리가 만든 그림(채우기 조각·지우개를 구운 결과·오려낸 조각)은 **캔버스로 이미 손에**
+  // 있다. data URL을 디코드해 오기까지 몇 프레임이 비는데, 그 사이 재생이 돌면 그림이 잠깐
+  // 사라진다 = 지우개를 쓸 때마다 깜빡임(2026-08-05 사용자 지적). 캔버스를 그대로 들고 있다가
+  // 즉시 그린다. 디코드가 끝나면 이미지 쪽을 쓰고 캔버스는 버린다(메모리).
+  const bmpCache = useRef<Map<string, HTMLCanvasElement>>(new Map());
+  const BMP_KEEP = 12;
+  const rememberBitmap = useCallback((src: string, canvas: HTMLCanvasElement) => {
+    bmpCache.current.set(src, canvas);
+    while (bmpCache.current.size > BMP_KEEP) {
+      const oldest = bmpCache.current.keys().next().value;
+      if (oldest === undefined) break;
+      bmpCache.current.delete(oldest);
+    }
+  }, []);
+  /** 지금 당장 그릴 수 있는 비트맵(디코드 끝난 이미지 우선, 없으면 방금 만든 캔버스). */
+  const readyBitmap = useCallback(
+    (src: string): { src: CanvasImageSource; w: number; h: number } | null => {
+      const img = imgCache.current.get(src);
+      if (img && img.complete && img.naturalWidth > 0) {
+        bmpCache.current.delete(src); // 디코드가 끝났으니 캔버스는 더 들고 있을 이유가 없다
+        return { src: img, w: img.naturalWidth, h: img.naturalHeight };
+      }
+      const cv = bmpCache.current.get(src);
+      if (cv) return { src: cv, w: cv.width, h: cv.height };
+      return null;
+    },
+    []
+  );
+  const imageFor = useCallback(
+    (src: string, layer: StrokeLayer): { src: CanvasImageSource; w: number; h: number } | null => {
+      const ready = readyBitmap(src);
+      if (ready) return ready;
+      if (!imgCache.current.has(src)) {
+        const img = new Image();
+        imgCache.current.set(src, img);
+        img.onload = () => replayLayerFnRef.current(layer); // 로드 끝난 뒤 한 번만 다시 그린다
+        img.src = src;
+      }
+      return null;
+    },
+    [readyBitmap]
+  );
+  readyBitmapRef.current = readyBitmap;
+  rememberBitmapRef.current = rememberBitmap;
+  /** 디코드를 시작만 시켜 둔다(캔버스로 이미 그릴 수 있는 그림의 뒷정리용). */
+  const warmDecode = useCallback((src: string, layer: StrokeLayer) => {
+    if (imgCache.current.has(src)) return;
     const img = new Image();
     imgCache.current.set(src, img);
-    img.onload = () => replayLayerFnRef.current(layer); // 로드 끝난 뒤 한 번만 다시 그린다
+    img.onload = () => replayLayerFnRef.current(layer);
     img.src = src;
-    return null;
   }, []);
+
+  // 그림의 알파 마스크 — 선택·지우개가 '상자'가 아니라 '칠해진 픽셀'을 보게 한다.
+  // (채우기 조각의 상자는 화면 절반만 해서, 상자로 판정하면 여백만 긁어도 통째로 잡혔다.)
+  const maskCache = useRef<Map<string, AlphaMask | null>>(new Map());
+  const maskFor = useCallback(
+    (src: string): AlphaMask | null => {
+      const hit = maskCache.current.get(src);
+      if (hit !== undefined) return hit;
+      const bmp = readyBitmap(src);
+      if (!bmp) return null; // 아직 못 그린다 — 이번엔 상자 기준으로 넘어간다(다음에 다시 시도)
+      const cv = document.createElement("canvas");
+      const k = Math.min(1, MASK_MAX / Math.max(1, Math.max(bmp.w, bmp.h)));
+      cv.width = Math.max(1, Math.round(bmp.w * k));
+      cv.height = Math.max(1, Math.round(bmp.h * k));
+      const cx = cv.getContext("2d", { willReadFrequently: true });
+      if (!cx) return null;
+      try {
+        cx.drawImage(bmp.src, 0, 0, cv.width, cv.height);
+        const d = cx.getImageData(0, 0, cv.width, cv.height);
+        const mask = maskFromRgba(d.data, cv.width, cv.height, MASK_MAX);
+        maskCache.current.set(src, mask);
+        return mask;
+      } catch {
+        maskCache.current.set(src, null); // 외부 출처로 오염된 캔버스 — 상자 기준으로 되돌아간다
+        return null;
+      }
+    },
+    [readyBitmap]
+  );
 
   // 색 채우기 — 그 레이어 캔버스의 픽셀을 직접 읽어 같은 색 영역을 채운다(엔진은 픽셀을 모른다).
   // 좌표는 판 기준 CSS 좌표라 backing scale을 곱해 실제 픽셀 자리로 바꾼다.
@@ -1793,9 +1898,11 @@ export function BroadcastPanel({
         }
       }
       pctx.putImageData(out, 0, 0);
+      const src = patch.toDataURL("image/png");
+      rememberBitmap(src, patch); // 디코드 전에도 바로 그릴 수 있게(첫 재생에서 안 비게)
       return {
         tool: "image",
-        src: patch.toDataURL("image/png"),
+        src,
         layer: "", // 호출부가 채운다
         color: hex,
         width: 0,
@@ -1806,7 +1913,7 @@ export function BroadcastPanel({
         ]
       };
     },
-    []
+    [rememberBitmap]
   );
 
   // 그림(붙여넣기·채우기 조각)은 기하가 없어 잘라낼 수 없다 — 픽셀에 지우개를 **구워 넣고**
@@ -1817,8 +1924,8 @@ export function BroadcastPanel({
   const bakeEraseIntoImage = useCallback(
     (stroke: Stroke, er: { points: StrokePoint[]; width: number }): Stroke => {
       if (!stroke.src) return stroke;
-      const img = imgCache.current.get(stroke.src);
-      if (!img || !img.complete || img.naturalWidth === 0) return stroke; // 아직 로딩 중 — 원본 유지
+      const bmp = readyBitmap(stroke.src);
+      if (!bmp) return stroke; // 아직 못 그린다 — 원본 유지
       const a = stroke.points[0];
       const b = stroke.points[stroke.points.length - 1] ?? a;
       const left = Math.min(a.x, b.x);
@@ -1827,14 +1934,14 @@ export function BroadcastPanel({
       const h = Math.abs(b.y - a.y);
       if (w < 1 || h < 1) return stroke;
       // 원본 해상도를 지킨다(반복 편집으로 흐려지지 않게).
-      const sx = img.naturalWidth / w;
-      const sy = img.naturalHeight / h;
+      const sx = bmp.w / w;
+      const sy = bmp.h / h;
       const cv = document.createElement("canvas");
-      cv.width = img.naturalWidth;
-      cv.height = img.naturalHeight;
+      cv.width = bmp.w;
+      cv.height = bmp.h;
       const cx = cv.getContext("2d");
       if (!cx) return stroke;
-      cx.drawImage(img, 0, 0);
+      cx.drawImage(bmp.src, 0, 0);
       cx.globalCompositeOperation = "destination-out";
       cx.lineCap = "round";
       cx.lineJoin = "round";
@@ -1855,9 +1962,14 @@ export function BroadcastPanel({
         });
         cx.stroke();
       }
-      return { ...stroke, src: cv.toDataURL("image/png") };
+      const src = cv.toDataURL("image/png");
+      // 구운 결과를 **캔버스 그대로** 들고 있는다 — 디코드를 기다리는 동안 그림이 사라져
+      // 지우개를 쓸 때마다 한 번씩 깜빡이던 원인이다.
+      rememberBitmap(src, cv);
+      warmDecode(src, stroke.layer);
+      return { ...stroke, src };
     },
-    []
+    [readyBitmap, rememberBitmap, warmDecode]
   );
 
   const replayLayer = useCallback(
@@ -1870,8 +1982,8 @@ export function BroadcastPanel({
         if (!strokeAppliesTo(s, layer)) continue;
         if (s.tool === "image") {
           // 이미지는 엔진이 못 그린다(DOM 필요) — 여기서 2점 사각형에 맞춰 그린다.
-          const img = s.src ? imageFor(s.src, layer) : null;
-          if (!img) continue; // 아직 로딩 중 — onload가 다시 부른다
+          const bmp = s.src ? imageFor(s.src, layer) : null;
+          if (!bmp) continue; // 아직 로딩 중 — onload가 다시 부른다
           const [a, b] = [s.points[0], s.points[s.points.length - 1]];
           const x = Math.min(a.x, b.x);
           const y = Math.min(a.y, b.y);
@@ -1880,7 +1992,7 @@ export function BroadcastPanel({
           if (w < 1 || h < 1) continue;
           ctx.globalCompositeOperation = "source-over";
           ctx.globalAlpha = 1;
-          (ctx as unknown as CanvasRenderingContext2D).drawImage(img, x, y, w, h);
+          (ctx as unknown as CanvasRenderingContext2D).drawImage(bmp.src, x, y, w, h);
           continue;
         }
         drawStroke(ctx, s);
@@ -1951,7 +2063,13 @@ export function BroadcastPanel({
       // 그 획을 옮기면 지운 부분이 되살아났다.
       const before = [...store.strokes()];
       const er = { points: live.points, width: live.width };
-      const { next, changed, images } = applyErase(before, er, live.layer);
+      // 그림은 '상자에 닿았나'가 아니라 '칠해진 픽셀을 덮었나'로 본다 — 투명한 여백만 스쳐도
+      // 다시 인코딩하고 되돌리기 기록이 쌓이던 것을 막는다(화면은 그대로인데 기록만 늘었다).
+      const { next, changed, images } = applyErase(before, er, live.layer, (st, path) => {
+        const mask = st.src ? maskFor(st.src) : null;
+        if (!mask) return imageHit(st, path); // 마스크를 못 만들면 상자 기준(안전한 쪽)
+        return maskHitsEraser(mask, boxOf(st), path);
+      });
       if (!changed) return;
       // 그림은 픽셀에 구워 넣는다(기하가 없어 잘라낼 수 없다). 히스토리에 담기 전에 끝낸다.
       const bakedByRef = new Map<Stroke, Stroke>();
@@ -1964,7 +2082,7 @@ export function BroadcastPanel({
     }
     store.push(live);
     pushHist({ t: "stroke", stroke: live }); // 중앙 기록이 획 자체도 소유(Ctrl+Z 하나로 전부)
-  }, [canvasOf, clearCanvas, scaledCtx, store, pushHist, bakeEraseIntoImage]);
+  }, [canvasOf, clearCanvas, scaledCtx, store, pushHist, bakeEraseIntoImage, maskFor]);
 
   // 리사이즈 → 크기가 실제로 변했을 때만 backing 재할당 + 명령 재생(연속 리사이즈 churn 방지).
   useEffect(() => {

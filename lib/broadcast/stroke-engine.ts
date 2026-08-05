@@ -19,6 +19,10 @@ export type BroadcastTool =
   | "arrow"
   | "rect"
   | "ellipse"
+  /** 균일 굵기 폴리라인. 도구 막대에는 없다 — 지우개가 도형(사각형·원·화살표)을 부분적으로
+   *  지웠을 때 **남은 윤곽 조각**이 이 모양으로 남는다(귀퉁이만 지웠다고 도형이 통째로
+   *  사라지지 않게). 렌더는 형광펜과 같은 균일 굵기 경로, 불투명. */
+  | "poly"
   /** 색 채우기(페인트 통). 점 하나만 남기고, 재생할 때 그 자리에서 픽셀을 다시 채운다
    *  — 엔진은 픽셀을 모르므로(DOM 비의존) 실제 채움은 패널이 한다(image와 같은 규약). */
   | "fill"
@@ -340,6 +344,18 @@ export function drawStroke(ctx: MinimalCtx, stroke: Stroke): void {
         const y = cy + Math.sin(t) * ry;
         if (i === 0) ctx.moveTo(x, y);
         else ctx.lineTo(x, y);
+      }
+    }
+  } else if (stroke.tool === "poly") {
+    // 도형에서 잘라낸 윤곽 조각 — **곧은 폴리라인 그대로** 그린다.
+    // 중점 이차베지어로 부드럽게 하면 직각 모서리가 크게 깎여, 사각형 한가운데를 지웠을 뿐인데
+    // 네 귀퉁이가 30px씩 사라진 것처럼 보였다(실측). 손으로 그은 획이 아니라 기하다.
+    ctx.moveTo(stroke.points[0].x, stroke.points[0].y);
+    if (stroke.points.length === 1) {
+      ctx.lineTo(stroke.points[0].x + 0.1, stroke.points[0].y + 0.1);
+    } else {
+      for (let i = 1; i < stroke.points.length; i += 1) {
+        ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
       }
     }
   } else {
