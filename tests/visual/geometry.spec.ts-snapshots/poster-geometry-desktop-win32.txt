@@ -1,7 +1,7 @@
 {
   "surface": {
     "w": 1840,
-    "h": 1137
+    "h": 998
   },
   "dayCount": 42,
   "dayHeights": [

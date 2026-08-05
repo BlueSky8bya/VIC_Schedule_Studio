@@ -45,7 +45,12 @@ test.describe("public poster — visual baseline", () => {
       },
       { polling: 200, timeout: 5000 },
     );
-    await expect(surface).toHaveScreenshot("viewer-surface-2026-06.png");
+    // 라이브 카드 썸네일은 외부 방송 화면이라 실행마다 다르다(실측: 1% 픽셀이 매번 red).
+    // 레이아웃은 그대로 검사하고 그 영역만 가린다 — 안 가리면 이 게이트가 상시 red가 되어
+    // 진짜 회귀를 못 잡는다.
+    await expect(surface).toHaveScreenshot("viewer-surface-2026-06.png", {
+      mask: [page.locator(".slc-player")]
+    });
   });
 
   // B안 M4c: 공식 export 표면·공개 포스터에 방송 판서/편집실 확대 UI가 절대 없다는 단언.
