@@ -5953,6 +5953,10 @@ body.cell-range-dragging {
    카드 색은 인라인 style로 오므로 !important로 눌러 고스트만 남긴다. */
 .studio-event-pill.dragging-src {
   pointer-events: none;
+  /* 출발 표시로 바뀌는 순간이 딱딱하지 않게(색·그림자만 — 레이아웃은 안 건드린다). */
+  transition:
+    background var(--dur-1) var(--ease),
+    box-shadow var(--dur-1) var(--ease);
   background: transparent !important;
   box-shadow: none !important;
   border-color: transparent !important;
@@ -6249,18 +6253,34 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
 /* 들어올 카드가 놓일 자리 — **실제 그리드 자식**이라 칸(주 행)이 정확히 그만큼 자란다.
    예전엔 형제를 transform으로 밀고 목록에 paddingBottom만 더했는데, transform은 레이아웃을
    안 늘려 맨 아래 카드가 칸 경계를 넘어 다음 주까지 삐져나왔다(사용자 지적 2회). */
+/* 도착 표시(자리 열기) — 드래그 중에는 후보 자리마다 **접힌 상태로 미리** 깔려 있고,
+   지금 놓일 자리에만 .on이 붙어 열린다. 접힌 것은 높이 0 + 테두리 0이라 흔적이 없다.
+   높이가 전환되므로 아래 카드들이 밀리는 것도 함께 부드러워진다(요소가 사라졌다 생기면
+   그 순간 툭 끊긴다 — 사용자 지적). */
 .drop-gap {
   display: grid;
   place-items: center;
+  overflow: hidden;
+  height: 0;
   border-radius: var(--r-md);
-  border: 2.5px dashed #17a06a;
-  background: rgb(87 201 138 / 16%);
+  border: 0 dashed #17a06a;
+  background: rgb(87 201 138 / 0%);
   color: #14805a;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.02em;
+  opacity: 0;
+  transition:
+    height var(--dur-2) var(--ease),
+    opacity var(--dur-2) var(--ease),
+    background var(--dur-2) var(--ease),
+    border-width var(--dur-1) var(--ease);
+}
+.drop-gap.on {
   /* 보라 '원래 위치'와 짝을 이루는 도착 표시 — 글자로 못박아야 둘이 안 헷갈린다. */
-  transition: height var(--dur-2) var(--ease);
+  border-width: 2.5px;
+  background: rgb(87 201 138 / 16%);
+  opacity: 1;
 }
 .drop-gap::after {
   content: "놓을 자리";

@@ -50,7 +50,8 @@ function dragState(page: Page) {
   return page.evaluate(() => {
     const top = (el: Element | null) => (el ? Math.round(el.getBoundingClientRect().top) : null);
     const src = document.querySelector<HTMLElement>(".studio-event-pill.dragging-src");
-    const gap = document.querySelector<HTMLElement>(".drop-gap");
+    // 드래그 중에는 후보 자리마다 접힌 스페이서가 깔려 있다 — **열린 것**(.on)이 지금 놓일 자리다.
+    const gap = document.querySelector<HTMLElement>(".drop-gap.on");
     const ghost = document.querySelector<HTMLElement>(".event-drag-ghost");
     return {
       srcTop: top(src),
@@ -139,4 +140,44 @@ test("유령 카드는 카드처럼 불투명하다 — 가림은 안내 이동�
   const s = await dragState(page);
   await page.mouse.up();
   expect(s.ghostOpacity ?? 0).toBeGreaterThanOrEqual(0.85);
+});
+
+test("자리가 열릴 때 툭 끊기지 않고 이어진다(중간 높이가 실제로 지나간다)", async ({ page }) => {
+  // '부드럽다'를 눈이 아니라 숫자로 본다: 삽입 위치가 바뀐 직후 열리는 자리의 높이를 촘촘히
+  // 샘플링해, 0과 최종 높이 사이의 **중간값**이 실제로 관측되는지 확인한다.
+  // (예전 구현은 요소가 사라졌다 새로 생겨 0 → H로 즉시 점프했다.)
+  const cellIdx = await stackTwoInOneCell(page);
+  const cell = page.locator("[data-act='calendar-cell']").nth(cellIdx);
+  const pill = cell.locator(".studio-event-pill").first();
+  const other = cell.locator(".studio-event-pill").nth(1);
+  const a = (await pill.boundingBox())!;
+  const cx = a.x + a.width / 2;
+
+  await page.mouse.move(cx, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(cx + 6, a.y + a.height / 2 + 10, { steps: 8 });
+  const bLive = (await other.boundingBox())!;
+
+  // 아래로 넘긴 직후부터 높이를 촘촘히 잰다.
+  const samples: number[] = [];
+  await page.mouse.move(cx + 6, bLive.y + bLive.height + 12, { steps: 4 });
+  for (let i = 0; i < 14; i += 1) {
+    samples.push(
+      await page.evaluate(() => {
+        // 드래그 중엔 모든 칸에 접힌 스페이서가 깔려 있다 — 지금 '열리고 있는' 것 = 가장 높은 것.
+        const hs = [...document.querySelectorAll<HTMLElement>(".drop-gap")].map((e) =>
+          Math.round(e.getBoundingClientRect().height)
+        );
+        return hs.length > 0 ? Math.max(...hs) : -1;
+      })
+    );
+    await page.waitForTimeout(20);
+  }
+  await page.mouse.up();
+
+  const max = Math.max(...samples);
+  expect(max, "자리가 아예 안 열렸다").toBeGreaterThan(20);
+  // 0과 최종 높이 사이 값이 한 번이라도 관측돼야 '전환'이다.
+  const mid = samples.filter((h) => h > 2 && h < max - 2);
+  expect(mid.length, `높이가 즉시 점프했다: ${samples.join(",")}`).toBeGreaterThan(0);
 });

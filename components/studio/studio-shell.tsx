@@ -6231,6 +6231,10 @@ export function StudioShell({
                 }
                 liIdx = Math.max(li, connectedCount);
               }
+              // 드래그 중이면 이 칸의 모든 후보 자리에 스페이서를 미리 깔아 둔다(아래 주석 참조).
+              // 이름이 겹치지 않게 dropActive — 상단의 dragActiveRef(포인터 상태)와 별개다.
+              const dropActive = dragEventId !== null && dragChipH > 0;
+              const dropGapH = Math.max(0, dragChipH - 5 * calZoom);
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const visibleDayMark = worldCupFxVisible
                 ? getDayMark(cell.isoDate)
@@ -6422,15 +6426,19 @@ export function StudioShell({
                       //  맨 아래 카드가 칸 경계를 넘었다.)
                     }}
                   >
-                    {/* 다른 날에서 카드가 들어올 자리 — **실제 레이아웃 요소**로 연다.
-                        transform으로 밀면 칸(주 행) 높이가 안 자라 맨 아래 카드가 칸 경계를
-                        넘어 다음 주까지 삐져나왔다(사용자 지적 2회). 스페이서는 그리드 자식이라
-                        칸이 정확히 그만큼 자란다. 목록 gap이 이미 한 칸 들어가므로 높이에서 뺀다. */}
-                    {liIdx !== null && dragChipH > 0 && liIdx <= 0 ? (
+                    {/* 카드가 들어올 자리 — **실제 레이아웃 요소**로 연다. transform으로 밀면
+                        칸(주 행) 높이가 안 자라 맨 아래 카드가 칸 경계를 넘어 다음 주까지
+                        삐져나왔다(사용자 지적 2회). 스페이서는 그리드 자식이라 칸이 정확히
+                        그만큼 자란다. 목록 gap이 이미 한 칸 들어가므로 높이에서 뺀다.
+                        ⚠ 드래그 중에는 **모든 후보 자리에 높이 0짜리 스페이서를 미리 둔다**.
+                        활성 자리에만 DOM을 만들면 삽입 위치가 바뀔 때마다 요소가 사라졌다 새로
+                        생겨 카드가 툭툭 끊겨 뛴다(사용자 지적). 미리 두고 높이만 0↔H로 바꾸면
+                        열림·닫힘이 CSS 전환으로 이어진다. */}
+                    {dropActive ? (
                       <div
                         aria-hidden="true"
-                        className="drop-gap"
-                        style={{ height: Math.max(0, dragChipH - 5 * calZoom) }}
+                        className={`drop-gap${liIdx !== null && liIdx <= 0 ? " on" : ""}`}
+                        style={{ height: liIdx !== null && liIdx <= 0 ? dropGapH : 0 }}
                       />
                     ) : null}
                     {dateEvents.map((event, eventIndex) => {
@@ -6525,14 +6533,15 @@ export function StudioShell({
                       // 지금: 보라 '원래 위치'는 제자리 고정, 민트 '놓을 자리'가 오르내린다.
                       const pillStyle =
                         mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined);
-                      // 이 카드 '다음' 자리가 삽입 위치면 그 뒤에 스페이서를 놓는다(맨 끝 포함).
-                      const gapAfter = liIdx !== null && dragChipH > 0 && liIdx === eventIndex + 1;
-                      const gapEl = gapAfter ? (
+                      // 이 카드 '다음' 자리(맨 끝 포함)에도 스페이서를 미리 둔다 — 활성일 때만
+                      // 높이가 열린다. 삽입 위치가 옮겨가도 DOM이 유지돼야 전환이 이어진다.
+                      const gapAfter = liIdx !== null && liIdx === eventIndex + 1;
+                      const gapEl = dropActive ? (
                         <div
                           aria-hidden="true"
-                          className="drop-gap"
+                          className={`drop-gap${gapAfter ? " on" : ""}`}
                           key={`gap-${event.id}`}
-                          style={{ height: Math.max(0, dragChipH - 5 * calZoom) }}
+                          style={{ height: gapAfter ? dropGapH : 0 }}
                         />
                       ) : null;
                       const pill = (
