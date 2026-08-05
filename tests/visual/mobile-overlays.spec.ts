@@ -128,12 +128,33 @@ test("역할별 권한 표가 모바일에서 가로 스크롤 없이 한 화면
         (h) =>
           getComputedStyle(h).display !== "none" && (h as HTMLElement).getBoundingClientRect().width > 0
       ),
-      // 한 글자 머리글은 색이 곧 이름이다 — 범례 칩 색과 열 머리글 색이 어긋나면 못 읽는다.
-      colorsMatch: ["pl-owner", "pl-dev", "pl-manager", "pl-worker"].every((cls, i) => {
+      // 한 글자 머리글은 색이 곧 이름이다 — 머리글 칩과 범례 칩이 **같은 부품**이어야 짝이 읽힌다
+      // (색·크기·모서리). 하나라도 어긋나면 눈이 둘을 다른 것으로 본다.
+      chipsMatch: ["pl-owner", "pl-dev", "pl-manager", "pl-worker"].every((cls, i) => {
         const chip = document.querySelector(`.perm-legend .${cls}`);
-        const head = t.querySelectorAll("thead th")[i + 1];
+        const head = t.querySelectorAll("thead th")[i + 1]?.querySelector(".perm-role-short");
         if (!chip || !head) return false;
-        return getComputedStyle(chip).backgroundColor === getComputedStyle(head).backgroundColor;
+        const a = getComputedStyle(chip);
+        const b = getComputedStyle(head);
+        return (
+          a.backgroundColor === b.backgroundColor &&
+          a.color === b.color &&
+          a.borderRadius === b.borderRadius &&
+          Math.abs(chip.getBoundingClientRect().width - head.getBoundingClientRect().width) < 1
+        );
+      }),
+      // 범례는 표 **아래**에 온다 — 위에 두면 표 위쪽이 왼쪽만 무거워진다(사용자 지적).
+      legendBelowTable:
+        (document.querySelector(".perm-legend")?.getBoundingClientRect().top ?? 0) >
+        t.getBoundingClientRect().bottom - 1,
+      // 머리글 칩이 본문 ✓ 동그라미와 같은 세로줄에 선다(리듬) — 중심 x가 어긋나면 안 된다.
+      chipsAligned: [...t.querySelectorAll("thead th")].slice(1).every((h, i) => {
+        const chip = h.querySelector(".perm-role-short");
+        const cell = t.querySelectorAll("tbody tr")[0]?.children[i + 1];
+        if (!chip || !cell) return false;
+        const cr = chip.getBoundingClientRect();
+        const dr = cell.getBoundingClientRect();
+        return Math.abs((cr.left + cr.right) / 2 - (dr.left + dr.right) / 2) <= 1;
       }),
       legend: document.querySelector(".perm-legend") !== null,
       legendShown:
@@ -150,5 +171,7 @@ test("역할별 권한 표가 모바일에서 가로 스크롤 없이 한 화면
   expect(geo.fullHidden, "모바일인데 긴 머리글이 그대로 보인다").toBe(true);
   expect(geo.shortShown, "축약 머리글이 안 보인다 — 열이 뭘 가리키는지 알 수 없다").toBe(true);
   expect(geo.legendShown, "축약했는데 범례가 없다").toBe(true);
-  expect(geo.colorsMatch, "범례 칩 색과 열 머리글 색이 다르다 — 짝을 못 짓는다").toBe(true);
+  expect(geo.chipsMatch, "머리글 칩과 범례 칩이 다른 부품이다 — 짝을 못 짓는다").toBe(true);
+  expect(geo.legendBelowTable, "범례가 표 위에 있다 — 표 위쪽이 한쪽만 무거워진다").toBe(true);
+  expect(geo.chipsAligned, "머리글 칩이 본문 표시와 같은 세로줄에 안 선다").toBe(true);
 });

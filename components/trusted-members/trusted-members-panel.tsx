@@ -179,12 +179,6 @@ export function TrustedMembersPanel() {
     <div className="members-panel">
       <details className="members-perms">
         <summary>역할별 권한 보기</summary>
-        {/* 모바일 범례 — 좁은 화면에서는 머리글을 한 글자로 줄인다(가로 스크롤 없이 한눈에).
-            줄인 글자가 무엇인지 여기서 한 줄로 말해 준다. 웹에서는 숨긴다(머리글이 이미 온전). */}
-        <p className="perm-legend" aria-hidden="true">
-          <span className="pl-owner">관</span> 관리자 · <span className="pl-dev">개</span> 개발자 ·{" "}
-          <span className="pl-manager">매</span> 매니저 · <span className="pl-worker">작</span> 작업자
-        </p>
         <table className="perm-table">
           <thead>
             <tr>
@@ -278,6 +272,22 @@ export function TrustedMembersPanel() {
             </tr>
           </tbody>
         </table>
+        {/* 모바일 범례 — 좁은 화면에서는 머리글을 한 글자로 줄인다(가로 스크롤 없이 한눈에).
+            줄인 글자가 무엇인지 여기서 한 줄로 말해 준다. 웹에서는 숨긴다(머리글이 이미 온전). */}
+        <p className="perm-legend" aria-hidden="true">
+          <b className="pl-item">
+            <span className="pl-owner">관</span> 관리자
+          </b>
+          <b className="pl-item">
+            <span className="pl-dev">개</span> 개발자
+          </b>
+          <b className="pl-item">
+            <span className="pl-manager">매</span> 매니저
+          </b>
+          <b className="pl-item">
+            <span className="pl-worker">작</span> 작업자
+          </b>
+        </p>
       </details>
 
       <div className="members-add">

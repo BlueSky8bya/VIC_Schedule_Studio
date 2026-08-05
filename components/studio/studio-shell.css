@@ -12717,7 +12717,14 @@ html[data-reduce-motion] .members-add .role-segment button:active {
 /* 역할별 권한 표 — 모바일은 가로 스크롤 없이 한 화면에 들어와야 한다.
    실측(2026-08-05, 390px): 머리글 '관리자'가 nowrap이라 열 최소폭이 54px로 굳어
    표가 359px가 되고 감싼 상자(341px)를 넘쳤다 — 표는 min-content보다 못 줄어든다.
-   그래서 머리글을 한 글자(관·개·매·작)로 줄이고 그 뜻은 위 범례가 말한다. */
+   그래서 머리글을 한 글자(관·개·매·작)로 줄인다.
+
+   조화(통일·균형·리듬):
+   · 통일 — 머리글의 한 글자와 아래 범례가 **같은 칩**(같은 크기·모서리·색)이다. 두 곳이
+     같은 부품이라 눈이 한 번에 짝을 짓는다. 색 블록을 셀 전체에 깔지 않는다(머리가 무거워진다).
+   · 균형 — 칩은 본문 ✓ 동그라미와 같은 지름·같은 중심선이라 4열이 곧은 세로줄을 이룬다.
+     범례는 표 **아래**에 가운데로 둔다(위에 좌측정렬로 두면 표 위가 왼쪽만 무거워진다 — 사용자 지적).
+   · 리듬 — 머리글 → 균일한 행 → 얇은 선 → 각주 한 줄. 위아래 여백이 같다. */
 @media (max-width: 640px) {
   .perm-table,
   .members-perms .perm-table {
@@ -12751,63 +12758,72 @@ html[data-reduce-motion] .members-add .role-segment button:active {
     display: inline;
   }
 
-  /* 한 글자로 줄인 머리글은 **색이 곧 이름**이다 — 위 범례 칩과 같은 색을 써야 짝이 읽힌다.
-     멤버 패널은 머리글을 회색 한 색으로 덮으므로(.members-perms .perm-table thead th)
-     모바일에서는 역할 색을 되살린다. */
-  .members-perms .perm-table thead th:nth-child(2) {
-    background: #e8f9f0;
-    color: #1f8a55;
-  }
-  .members-perms .perm-table thead th:nth-child(3) {
-    background: #e9f1fe;
-    color: #2f6fd0;
-  }
-  .members-perms .perm-table thead th:nth-child(4) {
-    background: #efeafd;
-    color: #6b5bd6;
-  }
-  .members-perms .perm-table thead th:nth-child(5) {
-    background: #fff3e0;
-    color: #b5651d;
-  }
-  .perm-table thead th .perm-role-short {
-    font-weight: 900;
-  }
-}
-@media (max-width: 640px) {
-  .perm-legend {
-    display: block;
-    margin: 0 0 6px;
+  /* 머리글 줄은 한 가지 바탕으로 잔잔하게 — 역할 구분은 셀 색이 아니라 '칩'이 한다. */
+  .perm-table thead th,
+  .members-perms .perm-table thead th {
+    background: var(--surface-2, #faf8ff);
     color: var(--ink-soft, #6a6385);
-    font-size: var(--text-caption);
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-2);
   }
+
+  /* 칩 = 범례와 완전히 같은 부품(아래 .perm-legend span과 같은 값). 본문 ✓ 동그라미(17px)와
+     같은 지름이라 4열이 곧은 세로줄로 읽힌다. */
+  .perm-table thead th .perm-role-short,
   .perm-legend span {
     display: inline-grid;
     place-items: center;
     width: 17px;
     height: 17px;
-    margin-right: 1px;
     border-radius: 6px;
+    font-size: 11px;
     font-weight: 900;
+    line-height: 1;
   }
-  /* 표 머리글의 역할 색과 같은 색 — 범례와 표가 같은 문법으로 읽힌다. */
+  .perm-table thead th:nth-child(2) .perm-role-short,
   .perm-legend .pl-owner {
     background: #e8f9f0;
     color: #1f8a55;
   }
+  .perm-table thead th:nth-child(3) .perm-role-short,
   .perm-legend .pl-dev {
     background: #e9f1fe;
     color: #2f6fd0;
   }
+  .perm-table thead th:nth-child(4) .perm-role-short,
   .perm-legend .pl-manager {
     background: #efeafd;
     color: #6b5bd6;
   }
+  .perm-table thead th:nth-child(5) .perm-role-short,
   .perm-legend .pl-worker {
     background: #fff3e0;
     color: #b5651d;
+  }
+
+  /* 각주 한 줄 — 표 아래, 가운데. 얇은 선으로 표와 끊고 위아래 여백을 같게 준다. */
+  .perm-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 2px 10px;
+    margin: 0;
+    border-top: var(--stroke-hairline, 1px) solid var(--line-soft, #efeaf7);
+    padding: var(--space-2) var(--space-2) 0;
+    color: var(--ink-soft, #6a6385);
+    font-size: var(--text-caption);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    text-align: center;
+  }
+  /* 칩과 이름은 한 덩어리 — 줄이 바뀌어도 짝이 갈라지지 않는다. */
+  .perm-legend .pl-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: 700;
+    white-space: nowrap;
   }
 }
 
