@@ -77,17 +77,18 @@ test("같은 칸: 보라 '원래 위치'는 고정, 민트 '놓을 자리'가 �
   await page.mouse.move(cx + 6, a.y + a.height / 2 + 10, { steps: 8 });
   const first = await dragState(page);
   expect(first.srcTop, "출발 표시가 없다").not.toBeNull();
-  expect(first.gapTop, "도착 표시가 없다").not.toBeNull();
   expect(first.srcLabel ?? "").toContain("원래 위치");
+  // 원래 있던 그 자리를 가리키는 동안에는 도착 표시를 열지 않는다 — 같은 공간을 두 표시가
+  // 겹쳐 가리키면 뭘 하려는지 오히려 흐려진다(사용자 결정).
+  expect(first.gapTop, "같은 자리인데 도착 표시가 떴다").toBeNull();
 
-  // 아래 카드 밑까지 끈다 → 도착 표시가 그 아래로 내려간다.
-  // 좌표는 **드래그가 시작된 뒤** 다시 잰다 — 자리가 열리면서 형제 카드가 이미 내려가 있다
-  // (드래그 전 좌표로 끌면 임계에 못 미쳐 아무 일도 안 일어난다).
+  // 아래 카드 밑까지 끈다 → 그제서야 도착 표시가 열린다.
+  // 좌표는 **드래그가 시작된 뒤** 다시 잰다 — 형제 카드가 이미 움직였을 수 있다.
   const bLive = (await other.boundingBox())!;
   await page.mouse.move(cx + 6, bLive.y + bLive.height + 12, { steps: 14 });
   await expect
     .poll(async () => (await dragState(page)).gapTop ?? -1, { timeout: 4000 })
-    .toBeGreaterThan((first.gapTop ?? 0) + 10);
+    .toBeGreaterThan((first.srcTop ?? 0) + 10);
 
   const low = await dragState(page);
   expect(low.gapLabel ?? "", "도착 표시에 이름이 없다").toContain("놓을 자리");
@@ -95,11 +96,11 @@ test("같은 칸: 보라 '원래 위치'는 고정, 민트 '놓을 자리'가 �
   expect(low.srcTop).toBe(first.srcTop);
   expect(low.srcLabel ?? "").toContain("원래 위치");
 
-  // 다시 위로 끌면 도착 표시가 제자리로 올라온다(위/아래 양방향).
+  // 다시 원래 자리로 돌아오면 도착 표시가 닫힌다(원래 위치만 남는다).
   await page.mouse.move(cx + 6, a.y + 6, { steps: 14 });
   await expect
-    .poll(async () => (await dragState(page)).gapTop ?? Number.MAX_SAFE_INTEGER, { timeout: 4000 })
-    .toBeLessThan(low.gapTop!);
+    .poll(async () => (await dragState(page)).gapTop, { timeout: 4000 })
+    .toBeNull();
   const up = await dragState(page);
   expect(up.srcTop, "출발 표시가 움직였다").toBe(first.srcTop);
   await page.mouse.up();

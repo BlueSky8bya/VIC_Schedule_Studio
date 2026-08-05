@@ -96,3 +96,43 @@ test("긴 제목이어도 스낵바가 화면을 안 넘는다", async ({ page }
   expect(geo.left).toBeGreaterThanOrEqual(0);
   expect(geo.right).toBeLessThanOrEqual(geo.docW);
 });
+
+test("역할별 권한 표가 모바일에서 가로 스크롤 없이 한 화면에 들어온다", async ({ page }) => {
+  // 실측(2026-08-05): 머리글 '관리자'가 nowrap이라 열 최소폭이 굳어 표가 감싼 상자를 넘쳤다
+  // (표는 min-content보다 못 줄어든다). 모바일에서는 머리글을 한 글자로 줄이고 범례로 설명한다.
+  await page.goto("/visual-fixture/studio?panel=members");
+  await page.locator(".members-perms summary").click();
+  const table = page.locator(".perm-table");
+  await table.waitFor();
+
+  const geo = await page.evaluate(() => {
+    const t = document.querySelector<HTMLTableElement>(".perm-table")!;
+    const wrap = t.parentElement!;
+    return {
+      tableW: Math.round(t.getBoundingClientRect().width),
+      wrapClient: wrap.clientWidth,
+      wrapScroll: wrap.scrollWidth,
+      docScroll: document.documentElement.scrollWidth,
+      docClient: document.documentElement.clientWidth,
+      // innerText는 모달 안 요소에서 빈 문자열이 나오는 경우가 있어 textContent로 읽는다.
+      shortHeads: [...t.querySelectorAll("thead th .perm-role-short")].map(
+        (h) => h.textContent?.trim() ?? ""
+      ),
+      fullHidden: [...t.querySelectorAll("thead th .perm-role-full")].every(
+        (h) => getComputedStyle(h).display === "none"
+      ),
+      legend: document.querySelector(".perm-legend") !== null,
+      legendShown:
+        document.querySelector(".perm-legend") !== null &&
+        getComputedStyle(document.querySelector(".perm-legend")!).display !== "none"
+    };
+  });
+
+  expect(geo.tableW, "표가 감싼 상자를 넘는다(가로 스크롤)").toBeLessThanOrEqual(geo.wrapClient);
+  expect(geo.wrapScroll, "가로로 스크롤된다").toBeLessThanOrEqual(geo.wrapClient + 1);
+  expect(geo.docScroll, "페이지 자체가 가로로 넘친다").toBeLessThanOrEqual(geo.docClient + 1);
+  // 축약 머리글(한 글자) + 뜻을 알려주는 범례가 함께 있어야 읽을 수 있다.
+  expect(geo.shortHeads).toEqual(["관", "개", "매", "작"]);
+  expect(geo.fullHidden, "모바일인데 긴 머리글이 그대로 보인다").toBe(true);
+  expect(geo.legendShown, "축약했는데 범례가 없다").toBe(true);
+});

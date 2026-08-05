@@ -12704,8 +12704,10 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   transform: none;
 }
 
-/* 역할별 권한 표 — 모바일에서 가로로 넘치지 않게: 권한 열이 남은 폭을 갖고
-   역할 4열은 마크가 들어갈 만큼만(15%). 잘린 열 없이 한 화면에 다 보인다. */
+/* 역할별 권한 표 — 모바일은 가로 스크롤 없이 한 화면에 들어와야 한다.
+   실측(2026-08-05, 390px): 머리글 '관리자'가 nowrap이라 열 최소폭이 54px로 굳어
+   표가 359px가 되고 감싼 상자(341px)를 넘쳤다 — 표는 min-content보다 못 줄어든다.
+   그래서 머리글을 한 글자(관·개·매·작)로 줄이고 그 뜻은 위 범례가 말한다. */
 @media (max-width: 640px) {
   .perm-table {
     table-layout: fixed;
@@ -12714,19 +12716,68 @@ html[data-reduce-motion] .members-add .role-segment button:active {
 
   .perm-table th,
   .perm-table td {
-    padding: var(--space-2) var(--space-1);
+    padding: var(--space-2) 2px;
   }
 
   .perm-table thead th {
     font-size: var(--text-caption);
   }
 
-  .perm-table thead th:not(:first-child) {
-    width: 15%;
+  /* 역할 4열 = 마크(칩)가 들어갈 만큼만. 나머지는 전부 권한 이름 몫. */
+  .perm-table thead th:not(:first-child),
+  .perm-table td {
+    width: 34px;
   }
 
-  .perm-table td {
-    width: auto;
+  .perm-table .perm-role-full {
+    display: none;
+  }
+
+  .perm-table .perm-role-short {
+    display: inline;
+  }
+}
+/* 축약 머리글은 모바일에서만 — 웹에서는 온전한 역할명을 그대로 쓴다. */
+.perm-table .perm-role-short {
+  display: none;
+}
+.perm-legend {
+  display: none;
+}
+@media (max-width: 640px) {
+  .perm-legend {
+    display: block;
+    margin: 0 0 6px;
+    color: var(--ink-soft, #6a6385);
+    font-size: var(--text-caption);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .perm-legend span {
+    display: inline-grid;
+    place-items: center;
+    width: 17px;
+    height: 17px;
+    margin-right: 1px;
+    border-radius: 6px;
+    font-weight: 900;
+  }
+  /* 표 머리글의 역할 색과 같은 색 — 범례와 표가 같은 문법으로 읽힌다. */
+  .perm-legend .pl-owner {
+    background: #e8f9f0;
+    color: #1f8a55;
+  }
+  .perm-legend .pl-dev {
+    background: #e9f1fe;
+    color: #2f6fd0;
+  }
+  .perm-legend .pl-manager {
+    background: #efeafd;
+    color: #6b5bd6;
+  }
+  .perm-legend .pl-worker {
+    background: #fff3e0;
+    color: #b5651d;
   }
 }
 

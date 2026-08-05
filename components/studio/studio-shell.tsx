@@ -6235,6 +6235,15 @@ export function StudioShell({
               // 이름이 겹치지 않게 dropActive — 상단의 dragActiveRef(포인터 상태)와 별개다.
               const dropActive = dragEventId !== null && dragChipH > 0;
               const dropGapH = Math.max(0, dragChipH - 5 * calZoom);
+              // 놓을 자리가 '원래 있던 그 자리'면 도착 표시를 열지 않는다 — 같은 공간을 두 표시가
+              // 겹쳐 가리키면 뭘 하려는지 오히려 흐려진다. 그땐 보라 '원래 위치'만 남는다
+              // (사용자 결정 2026-08-05). 자리를 벗어나는 순간 도착 표시가 다시 열린다.
+              const srcIdxHere = dragEventId
+                ? dateEvents.findIndex((e) => e.id === dragEventId)
+                : -1;
+              const dropIsNoop =
+                srcIdxHere >= 0 && liIdx !== null && (liIdx === srcIdxHere || liIdx === srcIdxHere + 1);
+              const gapOpen = (idx: number) => liIdx !== null && liIdx === idx && !dropIsNoop;
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const visibleDayMark = worldCupFxVisible
                 ? getDayMark(cell.isoDate)
@@ -6437,8 +6446,11 @@ export function StudioShell({
                     {dropActive ? (
                       <div
                         aria-hidden="true"
-                        className={`drop-gap${liIdx !== null && liIdx <= 0 ? " on" : ""}`}
-                        style={{ height: liIdx !== null && liIdx <= 0 ? dropGapH : 0 }}
+                        className={`drop-gap${gapOpen(0) || (liIdx !== null && liIdx < 0 && !dropIsNoop) ? " on" : ""}`}
+                        style={{
+                          height:
+                            gapOpen(0) || (liIdx !== null && liIdx < 0 && !dropIsNoop) ? dropGapH : 0
+                        }}
                       />
                     ) : null}
                     {dateEvents.map((event, eventIndex) => {
@@ -6535,7 +6547,7 @@ export function StudioShell({
                         mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined);
                       // 이 카드 '다음' 자리(맨 끝 포함)에도 스페이서를 미리 둔다 — 활성일 때만
                       // 높이가 열린다. 삽입 위치가 옮겨가도 DOM이 유지돼야 전환이 이어진다.
-                      const gapAfter = liIdx !== null && liIdx === eventIndex + 1;
+                      const gapAfter = gapOpen(eventIndex + 1);
                       const gapEl = dropActive ? (
                         <div
                           aria-hidden="true"

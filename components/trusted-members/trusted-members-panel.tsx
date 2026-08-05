@@ -179,14 +179,34 @@ export function TrustedMembersPanel() {
     <div className="members-panel">
       <details className="members-perms">
         <summary>역할별 권한 보기</summary>
+        {/* 모바일 범례 — 좁은 화면에서는 머리글을 한 글자로 줄인다(가로 스크롤 없이 한눈에).
+            줄인 글자가 무엇인지 여기서 한 줄로 말해 준다. 웹에서는 숨긴다(머리글이 이미 온전). */}
+        <p className="perm-legend" aria-hidden="true">
+          <span className="pl-owner">관</span> 관리자 · <span className="pl-dev">개</span> 개발자 ·{" "}
+          <span className="pl-manager">매</span> 매니저 · <span className="pl-worker">작</span> 작업자
+        </p>
         <table className="perm-table">
           <thead>
             <tr>
               <th scope="col">권한</th>
-              <th scope="col">관리자</th>
-              <th scope="col">개발자</th>
-              <th scope="col">매니저</th>
-              <th scope="col">작업자</th>
+              {/* 화면 폭에 따라 '관리자'↔'관'을 바꿔 보여준다. 읽어 주는 이름(aria-label)은
+                  항상 온전한 역할명이라 스크린리더는 축약과 무관하다. */}
+              <th scope="col" aria-label="관리자">
+                <span className="perm-role-full">관리자</span>
+                <span className="perm-role-short">관</span>
+              </th>
+              <th scope="col" aria-label="개발자">
+                <span className="perm-role-full">개발자</span>
+                <span className="perm-role-short">개</span>
+              </th>
+              <th scope="col" aria-label="매니저">
+                <span className="perm-role-full">매니저</span>
+                <span className="perm-role-short">매</span>
+              </th>
+              <th scope="col" aria-label="작업자">
+                <span className="perm-role-full">작업자</span>
+                <span className="perm-role-short">작</span>
+              </th>
             </tr>
           </thead>
           {/* 행 순서 = '데칼코마니'(상하 대칭). 중앙(엠바고)을 축으로 위/아래 4행이 각 열의 ✓/✕
