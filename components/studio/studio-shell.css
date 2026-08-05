@@ -6218,8 +6218,9 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   border-radius: var(--r-md);
   /* 그림자도 옅게 — 짙으면 반투명이어도 아래 점선이 탁해진다. */
   box-shadow: 0 14px 28px rgb(90 70 140 / 20%);
-  /* 흔들림·기울기는 JS(rAF)로 래퍼 transform을 직접 칠한다(2색 카드도 확실히 적용). */
+  /* 위치·크기는 JS(rAF)가 스프링으로 칠한다(2색 카드도 확실히 적용). 회전은 쓰지 않는다. */
   transform: scale(1.06);
+  will-change: left, top, transform;
 }
 /* 편집 팝오버 맨 아래 관심(하트) 수 — 조용한 한 줄. 저장/삭제 같은 '행동'이 아니라 '사실'이라
    버튼 문법을 쓰지 않고, 숫자만 또렷하게(다른 지표 타일과 같은 tabular-nums). */
@@ -13364,5 +13365,35 @@ html[data-reduce-motion] .notice-tabs button:active,
 html[data-reduce-motion] .ampm-segment button:active,
 html[data-reduce-motion] .modal-card-developer button:active,
 html[data-reduce-motion] .modal-card-dayVisit button:active {
+  transform: none;
+}
+
+/* 옮긴 일정이 새 자리에 '뿅' 하고 정착하는 펄스(2026-08-06 사용자 결정).
+   회전은 쓰지 않는다 — 카드는 눕지 않고, 크기와 그림자로만 도착을 말한다(애플 문법).
+   유령은 JS 스프링으로 이 카드 자리까지 빨려 들어오고, 사라지는 순간 이 펄스가 이어받는다. */
+@keyframes card-landed {
+  0% {
+    transform: scale(0.94);
+    filter: brightness(1.06);
+  }
+  55% {
+    transform: scale(1.035);
+  }
+  100% {
+    transform: scale(1);
+    filter: brightness(1);
+  }
+}
+.studio-event-pill.just-landed {
+  animation: card-landed 380ms cubic-bezier(0.22, 1.2, 0.36, 1) both;
+  /* 도착한 카드가 이웃에 가리지 않게 잠깐 위로. */
+  position: relative;
+  z-index: 2;
+}
+html[data-reduce-motion] .studio-event-pill.just-landed {
+  animation: none;
+}
+/* 집어 든 유령은 기울지 않는다 — 크기와 그림자만으로 '들렸다'를 말한다. */
+html[data-reduce-motion] .event-drag-ghost {
   transform: none;
 }

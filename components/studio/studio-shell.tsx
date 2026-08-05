@@ -53,14 +53,15 @@ import type {
   StudioScheduleEvent
 } from "@/lib/domain/schedule-types";
 import {
-  DRAG_DAMP,
-  DRAG_GRAVITY,
-  DRAG_MIN_LEN,
   FLING_SPEED,
-  FLING_SPIN,
-  softTilt,
-  WOBBLE_DEG,
-  WOBBLE_RAND
+  FOLLOW_DAMP,
+  FOLLOW_STIFF,
+  LAND_DAMP,
+  LAND_MAX_MS,
+  LAND_STIFF,
+  LIFT_SCALE,
+  springStep,
+  swayOffset
 } from "@/lib/studio/drag-physics";
 import type { CurrentActor } from "@/lib/auth/actor";
 import {
@@ -2498,32 +2499,35 @@ export function StudioShell({
   const cellHoldRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cellHoldPosRef = useRef<{ x: number; y: number } | null>(null);
   const suppressCellClickRef = useRef(false); // 롱프레스로 메뉴 연 직후 click(=selectDate) 한 번 무시
-  // 유령 물리감(태그 편집과 동일): 관성 지연 + 움직임 방향 기울기 + 랜덤 흔들림.
+  // 유령 손맛(2026-08-06 사용자 결정): **회전 없음.** 손을 임계감쇠 스프링으로 뒤따르고,
+  // 아주 작은 흔들림으로만 살아있게 하고, 놓으면 목적지로 '뿅' 빨려 들어간다.
   // CSS 애니메이션 대신 JS로 transform을 직접 칠해, 2색(그라데이션) 카드에도 확실히 적용된다.
   const edPosRef = useRef({ x: 0, y: 0 });
+  const edVelPosRef = useRef({ x: 0, y: 0 }); // 스프링 속도(px/s)
   const edTargetRef = useRef({ x: 0, y: 0 });
-  // 진자(pendulum) 물리 — 잡은 점(pivot)에 매달린 추(카드 중심)를 Verlet로 시뮬레이션한다.
-  // 마우스를 빙빙 돌리면 추가 휙휙 돌아 360° 회전(헬리콥터), 멈추면 달처럼 천천히 아래로 정착.
-  const edBobRef = useRef({ x: 0, y: 0 }); // 추 현재 위치
-  const edBobPrevRef = useRef({ x: 0, y: 0 }); // 추 이전 위치(Verlet 속도용)
-  const edOffRef = useRef({ x: 0, y: 0 }); // 잡은 지점(pivot)의 카드 내 오프셋
-  const edLenRef = useRef(1); // 진자 길이(잡은 점→카드 중심 거리)
-  const edPhi0Ref = useRef(0); // 카드 로컬에서 (잡은 점→중심) 벡터의 각도(rad)
-  const edWobRef = useRef(0);
+  const edFrameRef = useRef(0); // 이전 프레임 시각(ms) — 스프링 dt
   const edReducedRef = useRef(false);
-  // 던지기(fling) — 빙빙 돌리다 놓으면 그 순간 속도+회전을 받아 포물선으로 날아간다.
-  const edDegRef = useRef(0); // 현재 카드 회전각(deg)
-  const edAngVelRef = useRef(0); // 회전 각속도(deg/frame, 부호 유지)
-  const edWorldPrevRef = useRef(0); // 이전 프레임 월드각(각속도 계산용)
+  // 던지기(fling) — 빠르게 뿌리면 포물선으로 날아가 화면 밖에서 삭제된다(회전 없이 작아지며).
   const edVelRef = useRef({ x: 0, y: 0 }); // 포인터 속도(px/ms)
   const edPtrRef = useRef<{ x: number; y: number; t: number } | null>(null);
   const flingRafRef = useRef<number | null>(null);
   const flingGhostRef = useRef<HTMLElement | null>(null);
+  // 착지 중인 유령(놓은 뒤 새 자리로 빨려 들어가는 중) — 새 드래그가 시작되면 즉시 치운다.
+  const landRafRef = useRef<number | null>(null);
+  const landGhostRef = useRef<HTMLElement | null>(null);
+  function cancelLanding() {
+    if (landRafRef.current !== null) cancelAnimationFrame(landRafRef.current);
+    landRafRef.current = null;
+    landGhostRef.current?.remove();
+    landGhostRef.current = null;
+  }
 
   useEffect(() => {
     return () => {
       if (dragRaf.current) cancelAnimationFrame(dragRaf.current);
       if (flingRafRef.current) cancelAnimationFrame(flingRafRef.current);
+      if (landRafRef.current) cancelAnimationFrame(landRafRef.current);
+      landGhostRef.current?.remove();
       dragGhostRef.current?.remove();
       flingGhostRef.current?.remove();
       if (dragMoveRef.current) window.removeEventListener("pointermove", dragMoveRef.current);
@@ -2538,55 +2542,95 @@ export function StudioShell({
       ghost.style.top = `${edTargetRef.current.y}px`;
     } else if (ghost) {
       // 포인터가 멈추면 move 이벤트가 끊겨 속도가 옛값에 박힌다 → 매 프레임 감쇠시켜,
-      // 멈췄다 천천히 놓는 평범한 드롭이 실수로 던져지지 않게 한다(빙빙 돌리는 중엔 move가
-      // 계속 들어와 속도가 유지된다).
+      // 멈췄다 천천히 놓는 평범한 드롭이 실수로 던져지지 않게 한다.
       edVelRef.current.x *= 0.9;
       edVelRef.current.y *= 0.9;
+      const now = performance.now();
+      const dt = edFrameRef.current ? (now - edFrameRef.current) / 1000 : 1 / 60;
+      edFrameRef.current = now;
       const pos = edPosRef.current;
+      const vel = edVelPosRef.current;
       const t = edTargetRef.current;
-      pos.x += (t.x - pos.x) * 0.18; // 위치도 관성 있게 더 부드럽게 뒤따른다
-      pos.y += (t.y - pos.y) * 0.18;
-      // 진자: pivot = 잡은 점(카드 좌상단 + 오프셋). 추(bob)를 Verlet로 적분 + 막대 길이 구속.
-      const pivotX = pos.x + edOffRef.current.x;
-      const pivotY = pos.y + edOffRef.current.y;
-      const bob = edBobRef.current;
-      const prev = edBobPrevRef.current;
-      const G = DRAG_GRAVITY; // 중력(절제된 값 — lib/studio/drag-physics.ts)
-      const DAMP = DRAG_DAMP; // 저항을 충분히 줘 발발거림·과한 스윙을 잡는다(관성은 남기되 절제)
-      const vx = (bob.x - prev.x) * DAMP;
-      const vy = (bob.y - prev.y) * DAMP;
-      prev.x = bob.x;
-      prev.y = bob.y;
-      bob.x += vx;
-      bob.y += vy + G; // 중력은 아래로
-      // 막대 길이 구속: pivot에서 항상 L 거리에 있게 당긴다(원운동 → 빙빙 돌리면 360° 가능).
-      const dx = bob.x - pivotX;
-      const dy = bob.y - pivotY;
-      const dist = Math.hypot(dx, dy) || 1;
-      const L = edLenRef.current;
-      bob.x = pivotX + (dx / dist) * L;
-      bob.y = pivotY + (dy / dist) * L;
-      // 카드 회전 = (pivot→추) 월드각 − 로컬(잡은점→중심)각. 미세 흔들림 추가.
-      const worldAngle = Math.atan2(bob.y - pivotY, bob.x - pivotX);
-      // 각속도(deg/frame) 추적 — 놓는 순간 던지기 회전에 쓴다. 2π 경계 보정 + EMA로 매끈하게.
-      let dA = worldAngle - edWorldPrevRef.current;
-      while (dA > Math.PI) dA -= Math.PI * 2;
-      while (dA < -Math.PI) dA += Math.PI * 2;
-      edWorldPrevRef.current = worldAngle;
-      edAngVelRef.current = edAngVelRef.current * 0.7 + ((dA * 180) / Math.PI) * 0.3;
-      edWobRef.current += 0.12;
-      const w = edWobRef.current;
-      const wobble = Math.sin(w) * WOBBLE_DEG + (Math.random() - 0.5) * WOBBLE_RAND; // deg
-      // 기울기는 **부드럽게 포화**시킨다 — 빙빙 돌려도 90°로 꺾이지 않는다(2026-08-06 사용자 지적).
-      // 물리(추의 각속도)는 그대로라 '빙빙 돌려서 던지기'는 계속 된다.
-      const raw = ((worldAngle - edPhi0Ref.current) * 180) / Math.PI;
-      const deg = softTilt(raw) + wobble;
-      edDegRef.current = deg;
+      // 손을 임계감쇠 스프링으로 뒤따른다 — 찰랑임 없이 '살짝 늦게' 붙는 무게감(iOS 문법).
+      const sx = springStep(pos.x, vel.x, t.x, FOLLOW_STIFF, FOLLOW_DAMP, dt);
+      const sy = springStep(pos.y, vel.y, t.y, FOLLOW_STIFF, FOLLOW_DAMP, dt);
+      pos.x = sx.pos;
+      pos.y = sy.pos;
+      vel.x = sx.vel;
+      vel.y = sy.vel;
+      // 살아있는 느낌은 회전이 아니라 아주 작은 흔들림으로 — 빠르게 움직일 때만 살아난다.
+      const speed = Math.hypot(edVelRef.current.x, edVelRef.current.y);
+      const w = swayOffset(now, speed);
       ghost.style.left = `${pos.x}px`;
       ghost.style.top = `${pos.y}px`;
-      ghost.style.transform = `rotate(${deg}deg) scale(1.06)`;
+      ghost.style.transform = `translate3d(${w.x.toFixed(2)}px, ${w.y.toFixed(2)}px, 0) scale(${LIFT_SCALE})`;
     }
     dragRaf.current = requestAnimationFrame(dragAutoScroll);
+  }
+
+  /**
+   * 놓은 유령을 **목적지 카드 자리로 빨아들이며** 사라지게 한다('뿅').
+   * 낙관적 갱신이 끝난 다음 프레임에 실제 카드를 찾아 그 사각형으로 스프링 이동한 뒤,
+   * 유령을 지우고 실제 카드에 짧은 정착 펄스를 준다. 목적지를 못 찾으면 그냥 사라진다.
+   */
+  function landGhost(ghost: HTMLElement, eventId: string) {
+    if (edReducedRef.current) {
+      ghost.remove();
+      return;
+    }
+    cancelLanding(); // 앞선 착지가 남아 있으면 먼저 치운다(유령 두 장 금지)
+    ghost.classList.add("landing");
+    landGhostRef.current = ghost;
+    const start = performance.now();
+    let prev = start;
+    const pos = { x: edPosRef.current.x, y: edPosRef.current.y };
+    const vel = { x: edVelPosRef.current.x, y: edVelPosRef.current.y };
+    let scale = LIFT_SCALE;
+    const finish = () => {
+      if (landRafRef.current !== null) cancelAnimationFrame(landRafRef.current);
+      landRafRef.current = null;
+      landGhostRef.current = null;
+      ghost.remove();
+      const el = document.querySelector<HTMLElement>(
+        `.studio-event-pill[data-eventid="${eventId}"]`
+      );
+      if (el) {
+        el.classList.remove("just-landed");
+        void el.offsetWidth; // 리플로우 한 번 — 같은 카드를 연달아 옮겨도 매번 다시 재생된다
+        el.classList.add("just-landed");
+        window.setTimeout(() => el.classList.remove("just-landed"), 500);
+      }
+    };
+    const step = () => {
+      const now = performance.now();
+      const dt = (now - prev) / 1000;
+      prev = now;
+      const el = document.querySelector<HTMLElement>(
+        `.studio-event-pill[data-eventid="${eventId}"]`
+      );
+      if (!el || now - start > LAND_MAX_MS) {
+        finish();
+        return;
+      }
+      const r = el.getBoundingClientRect();
+      const nx = springStep(pos.x, vel.x, r.left, LAND_STIFF, LAND_DAMP, dt);
+      const ny = springStep(pos.y, vel.y, r.top, LAND_STIFF, LAND_DAMP, dt);
+      pos.x = nx.pos;
+      pos.y = ny.pos;
+      vel.x = nx.vel;
+      vel.y = ny.vel;
+      scale += (1 - scale) * Math.min(1, dt * 14);
+      ghost.style.left = `${pos.x}px`;
+      ghost.style.top = `${pos.y}px`;
+      ghost.style.transform = `scale(${scale.toFixed(3)})`;
+      ghost.style.opacity = String(Math.max(0, 0.92 - (now - start) / LAND_MAX_MS));
+      if (Math.hypot(pos.x - r.left, pos.y - r.top) < 1.5) {
+        finish();
+        return;
+      }
+      landRafRef.current = requestAnimationFrame(step);
+    };
+    landRafRef.current = requestAnimationFrame(step);
   }
 
   function endEventDrag() {
@@ -2610,13 +2654,10 @@ export function StudioShell({
     const target = dropDateRef.current;
     const over = dropOverRef.current;
     const ghost = dragGhostRef.current;
-    // 던지기 판정 — 놓는 순간 충분히 빠르거나(px/ms) 빙빙 돌고 있으면(deg/frame) 날려보낸다.
+    // 던지기 판정 — 회전을 없앴으므로 **뿌린 속도**만 본다(px/ms).
     const v = edVelRef.current;
     const speed = Math.hypot(v.x, v.y);
-    const angSpeed = Math.abs(edAngVelRef.current);
-    const flung = Boolean(
-      info?.started && ghost && !edReducedRef.current && (speed > FLING_SPEED || angSpeed > FLING_SPIN)
-    );
+    const flung = Boolean(info?.started && ghost && !edReducedRef.current && speed > FLING_SPEED);
     setDropDate(null);
     setDropSlot(null);
     dropDateRef.current = null;
@@ -2627,26 +2668,28 @@ export function StudioShell({
       // Ctrl+Z 복구 스택에 적재 — 던져서 버리고, 되돌리면 같은 자리로 다시 생긴다). 새 드래그/언마운트로
       // 중간에 끊기면 삭제하지 않는다.
       dragGhostRef.current = null;
-      launchFling(ghost!, v, edAngVelRef.current, info!.id, events);
+      launchFling(ghost!, v, info!.id, events);
       dragInfoRef.current = null;
       return;
     }
-    ghost?.remove();
     dragGhostRef.current = null;
     setDragEventId(null);
     setDragChipH(0);
     if (info?.started && target) {
       void dropEventInto(info.id, info.sourceDate, target, over);
+      // 놓은 유령을 새 자리로 빨아들이며 사라지게 한다('뿅') — 순간이동처럼 툭 끊기지 않게.
+      if (ghost) landGhost(ghost, info.id);
+    } else {
+      ghost?.remove();
     }
     dragInfoRef.current = null;
   }
 
-  // 던지기: 받은 속도(px/ms)·각속도(deg/frame)로 유령을 포물선 + 회전시켜 화면 밖으로 날린다.
+  // 던지기: 받은 속도(px/ms)로 유령을 포물선으로 날린다(회전 없음 — 작아지며 멀어진다).
   // 화면 밖으로 완전히 벗어나면 그 일정을 삭제한다(commitDelete = 낙관적 제거 + Ctrl+Z 스택).
   function launchFling(
     ghost: HTMLElement,
     v: { x: number; y: number },
-    angVel: number,
     eventId: string,
     snapshot: StudioScheduleEvent[]
   ) {
@@ -2658,9 +2701,7 @@ export function StudioShell({
     fy = (fy / sp) * m;
     let posX = edPosRef.current.x;
     let posY = edPosRef.current.y;
-    let deg = edDegRef.current;
-    let dvel = angVel;
-    if (Math.abs(dvel) < 7) dvel = dvel >= 0 ? 7 : -7; // 프로펠러처럼 계속 돌게 최소 회전 보장
+    let scale = LIFT_SCALE;
     const G = 1.7; // 던지기 중력(px/frame^2)
     flingGhostRef.current = ghost;
     const step = () => {
@@ -2668,11 +2709,10 @@ export function StudioShell({
       fx *= 0.99; // 공기저항(가로)
       posX += fx;
       posY += fy;
-      deg += dvel;
-      dvel *= 0.992;
+      scale = Math.max(0.7, scale - 0.006); // 멀어지듯 조금씩 작아진다(회전 없음)
       ghost.style.left = `${posX}px`;
       ghost.style.top = `${posY}px`;
-      ghost.style.transform = `rotate(${deg}deg) scale(1.06)`;
+      ghost.style.transform = `scale(${scale.toFixed(3)})`;
       const gw = ghost.offsetWidth;
       const gh = ghost.offsetHeight;
       if (
@@ -2753,29 +2793,15 @@ export function StudioShell({
       setDragEventId(info.id);
       // 슬라이드 프리뷰 한 칸 = 카드 높이 + 목록 간격(5×zoom) — 형제 카드가 이만큼 밀린다.
       setDragChipH(rect.height + 5 * calZoomRef.current);
-      // 진자 물리 초기화. pivot=잡은 점, 추=카드 중심. 길이 L=잡은점→중심 거리(최소 24px),
-      // φ0=로컬에서 그 벡터의 각도. 처음엔 카드가 똑바로 선 상태(추=중심 실제 위치)에서 시작해
-      // 중력으로 천천히 매달린다.
+      cancelLanding(); // 앞 카드가 아직 착지 중이면 치우고 시작한다
+      // 스프링 추적 초기화 — 잡은 그 자리에서 시작해 손을 뒤따른다(회전 없음).
       edPosRef.current = { x: rect.left, y: rect.top };
       edTargetRef.current = { x: rect.left, y: rect.top };
-      edWobRef.current = 0;
+      edVelPosRef.current = { x: 0, y: 0 };
+      edFrameRef.current = 0;
       // 던지기 속도 추적 초기화.
       edVelRef.current = { x: 0, y: 0 };
       edPtrRef.current = null;
-      edAngVelRef.current = 0;
-      edDegRef.current = 0;
-      edOffRef.current = { x: info.offX, y: info.offY };
-      const lvx = rect.width / 2 - info.offX;
-      const lvy = rect.height / 2 - info.offY;
-      // 진자 길이를 넉넉히(최소 80px) — 짧으면 작은 손움직임에도 크게 휘둘려(특히 중앙 잡을 때
-      // 옆으로만 움직여도 빙글) 과민해진다. 길게 두면 같은 움직임에도 회전이 완만해진다.
-      edLenRef.current = Math.max(DRAG_MIN_LEN, Math.hypot(lvx, lvy));
-      edPhi0Ref.current = Math.atan2(lvy, lvx);
-      edWorldPrevRef.current = edPhi0Ref.current; // 시작 월드각 = φ0
-      const pivotX = rect.left + info.offX;
-      const pivotY = rect.top + info.offY;
-      edBobRef.current = { x: pivotX + lvx, y: pivotY + lvy };
-      edBobPrevRef.current = { x: pivotX + lvx, y: pivotY + lvy };
       edReducedRef.current =
         reduceMotionEnabled() /* OS reduce-motion 무시 — 앱 토글만 */;
       // 드래그 동안 어디서도 글자가 선택(긁힘)되지 않게.

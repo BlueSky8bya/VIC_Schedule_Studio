@@ -183,9 +183,9 @@ test("자리가 열릴 때 툭 끊기지 않고 이어진다(중간 높이가 �
   expect(mid.length, `높이가 즉시 점프했다: ${samples.join(",")}`).toBeGreaterThan(0);
 });
 
-test("빙빙 돌려도 카드가 눕지 않는다(진자 절제)", async ({ page }) => {
-  // 2026-08-06 사용자 지적: "빙빙 돌릴 수 있게 한 게 과하다 — 90도로 꺾여서 옮길 때 불편하다."
-  // 기울기를 부드럽게 포화시켰다(softTilt). 물리는 남기되 각도만 한계를 둔다.
+test("끌 때 회전이 아예 없고, 손을 부드럽게 뒤따른다", async ({ page }) => {
+  // 2026-08-06 사용자 결정: 회전(진자)은 없앤다. 대신 스프링으로 부드럽게 따라오고,
+  // 놓으면 새 자리로 '뿅' 들어간다. 여기서는 ① 회전 0 ② 즉시 순간이동 아님을 좌표로 본다.
   await page.goto("/visual-fixture/studio");
   const card = page.locator(".studio-event-pill").first();
   await card.waitFor();
@@ -194,29 +194,102 @@ test("빙빙 돌려도 카드가 눕지 않는다(진자 절제)", async ({ page
   await page.mouse.down();
   await page.mouse.move(b.x + b.width / 2 + 12, b.y + b.height / 2 + 12, { steps: 3 });
 
-  /** 지금 유령 카드의 회전각(deg) — transform 행렬에서 뽑는다. */
-  const tilt = () =>
+  /** 유령의 회전각(deg)과 위치 — transform 행렬에서 뽑는다. */
+  const ghostState = () =>
     page.evaluate(() => {
       const g = document.querySelector<HTMLElement>(".event-drag-ghost");
       if (!g) return null;
       const m = new DOMMatrixReadOnly(getComputedStyle(g).transform);
-      return (Math.atan2(m.b, m.a) * 180) / Math.PI;
+      // 위치는 style.left/top으로 읽는다 — getBoundingClientRect는 확대(scale 1.06)만큼
+      // 좌상단이 밀려 보여서 '따라붙었나' 판정이 상수만큼 틀어진다.
+      return {
+        deg: (Math.atan2(m.b, m.a) * 180) / Math.PI,
+        x: parseFloat(g.style.left) || 0,
+        y: parseFloat(g.style.top) || 0
+      };
     });
 
-  // 큰 원을 몇 바퀴 돌린다 — 예전이면 여기서 카드가 90° 넘게 뒤집혔다.
-  let worst = 0;
+  // 큰 원을 몇 바퀴 돌린다 — 예전에는 여기서 카드가 90° 넘게 뒤집혔다.
+  let worstDeg = 0;
   const cx = b.x + b.width / 2;
   const cy = b.y + b.height / 2;
   const R = 120;
-  for (let turn = 0; turn < 3; turn += 1) {
+  for (let turn = 0; turn < 2; turn += 1) {
     for (let i = 0; i < 16; i += 1) {
       const t = (i / 16) * Math.PI * 2;
       await page.mouse.move(cx + Math.cos(t) * R, cy + Math.sin(t) * R);
-      const d = await tilt();
-      if (d !== null) worst = Math.max(worst, Math.abs(d));
+      const st = await ghostState();
+      if (st) worstDeg = Math.max(worstDeg, Math.abs(st.deg));
     }
   }
+  expect(worstDeg, `카드가 ${worstDeg.toFixed(1)}° 기울었다 — 회전은 없어야 한다`).toBeLessThan(0.6);
+
+  // 스프링 기준점(잡은 지점 오프셋)은 실측으로 잡는다 — 카드 안쪽 여백·확대 때문에
+  // '커서 − 카드폭/2'로 가정하면 몇 px 어긋난다.
+  await page.mouse.move(cx, cy);
+  await page.waitForTimeout(500); // 충분히 정착
+  const settled = (await ghostState())!;
+  const offX = cx - settled.x;
+  const offY = cy - settled.y;
+
+  // 손을 크게 옮긴 직후엔 아직 도착 전이어야 한다(즉시 순간이동 = 툭툭 끊기는 느낌).
+  // 화면 아래쪽으로 크게 가면 자동 스크롤이 걸려 좌표 기준이 흔들린다 — 뷰포트 안에서만 움직인다.
+  const scrollBefore = await page.evaluate(() => window.scrollY);
+  const tx = cx + 200;
+  const ty = cy + 40;
+  await page.mouse.move(tx, ty);
+  const mid = (await ghostState())!;
+  const lag = Math.hypot(mid.x - (tx - offX), mid.y - (ty - offY));
+  expect(lag, "유령이 손에 즉시 박힌다(스프링 지연이 없다)").toBeGreaterThan(2);
+  // 그리고 곧 따라붙는다(영영 뒤처지지 않는다).
+  await expect
+    .poll(
+      async () => {
+        const st = await ghostState();
+        if (!st) return 999;
+        return Math.hypot(st.x - (tx - offX), st.y - (ty - offY));
+      },
+      { timeout: 2000 }
+    )
+    .toBeLessThan(2);
+  expect(await page.evaluate(() => window.scrollY), "자동 스크롤이 끼어들었다").toBe(scrollBefore);
   await page.mouse.up();
-  expect(worst, `끄는 동안 카드가 ${Math.round(worst)}°까지 누웠다`).toBeLessThan(22);
-  expect(worst, "회전이 아예 없다(물리감이 죽었다)").toBeGreaterThan(0.2);
+});
+
+test("놓으면 새 자리로 빨려 들어가 '뿅' 하고 정착한다", async ({ page }) => {
+  // 유령이 그 자리에서 툭 사라지고 카드가 다른 곳에 순간이동하면 멋이 없다(사용자 지적).
+  // 놓은 유령은 새 자리까지 스프링으로 이동한 뒤 사라지고, 도착한 카드가 짧게 정착 펄스를 준다.
+  await page.route("**/api/studio-write", (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, id: "srv-1" })
+    })
+  );
+  await page.goto("/visual-fixture/studio");
+  await page.locator(".studio-event-pill").first().waitFor();
+  const from = (await page.locator(".studio-event-pill").nth(0).boundingBox())!;
+  const cells = page.locator("[data-act='calendar-cell']");
+  // 비어 있는 칸을 하나 고른다(그 칸으로 옮긴다).
+  const emptyIdx = await page.evaluate(() => {
+    const list = [...document.querySelectorAll("[data-act='calendar-cell']")];
+    return list.findIndex((c) => c.querySelectorAll(".studio-event-pill").length === 0);
+  });
+  expect(emptyIdx).toBeGreaterThanOrEqual(0);
+  const to = (await cells.nth(emptyIdx).boundingBox())!;
+
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2 + 12, from.y + from.height / 2 + 8, { steps: 4 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 18 });
+  await page.mouse.up();
+
+  // 유령이 즉시 사라지지 않고, 착지 애니메이션이 끝나면 정리된다.
+  const stillThere = await page.locator(".event-drag-ghost").count();
+  expect(stillThere, "놓자마자 유령이 사라졌다(착지 연출 없음)").toBe(1);
+  // 도착한 카드에 정착 펄스가 붙는다.
+  await expect(page.locator(".studio-event-pill.just-landed")).toHaveCount(1, { timeout: 2000 });
+  // 그리고 유령은 반드시 치워진다(멈춘 유령을 남기지 않는다).
+  await expect(page.locator(".event-drag-ghost")).toHaveCount(0, { timeout: 2000 });
+  await expect(page.locator(".studio-event-pill.just-landed")).toHaveCount(0, { timeout: 2000 });
 });
