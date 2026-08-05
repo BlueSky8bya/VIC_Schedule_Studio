@@ -48,12 +48,17 @@ function currentVisitKey(): string | null {
 
 function send(batch: Pending[], keepalive: boolean): void {
   if (batch.length === 0) return;
+  // 방문 키는 **보낼 때** 다시 찍는다. 쌓을 때만 읽으면, 페이지가 열린 직후의 기록
+  // (route.enter 등)이 비콘보다 먼저 나가 visit_key 없이 저장된다 → 같은 탭인데도 방문이
+  // 둘로 갈려 "60분 방문에 항목 1건"이 됐다(2026-08-05 실측). flush는 최소 몇 초 뒤라
+  // 그때는 키가 있다. 그래도 없으면(사생활 모드 등) null 그대로 — 서버가 계정·시간으로 붙인다.
+  const stamped = batch.map((e) => (e.visitKey ? e : { ...e, visitKey: currentVisitKey() }));
   try {
     void fetch("/api/activity", {
       method: "POST",
       headers: { "content-type": "application/json" },
       keepalive,
-      body: JSON.stringify({ events: batch })
+      body: JSON.stringify({ events: stamped })
     }).catch(() => {});
   } catch {
     /* 무시 */

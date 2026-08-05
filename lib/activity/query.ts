@@ -5,6 +5,7 @@ import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails } from "@/lib/auth/config";
 import { accountHashOf } from "@/lib/insights/account-hash";
 import { ACTIVITY_RETENTION_DAYS, DIAG_RETENTION_DAYS, KIND_LABEL } from "@/lib/activity/kinds";
+import { chooseHostVisit, type HostVisit } from "@/lib/activity/visit-attach";
 
 // 행동 타임라인 조회(0062) — 개발자 전용. 한 날의 이벤트를 방문(visit_key) 단위로 묶어 돌려준다.
 //
@@ -181,66 +182,135 @@ export async function getActivityDayAction(
   }
   const anonTag = new Map<string, number>();
 
-  // 방문 단위로 묶는다. visit_key가 없는 건(서버 이벤트) 계정 기준으로 같은 방문에 얹는다 —
-  // 서버 액션은 sessionStorage를 볼 수 없어 visit_key가 비어 있다.
+  // 방문 단위로 묶는다. **두 번에 나눠** 묶는 이유(2026-08-05 실측):
+  // 예전엔 한 번에 훑으면서 visit_key 없는 행을 '그때까지 만들어진 방문'에 얹었다. 그런데
+  // 키 없는 행이 그 탭의 **첫 기록**이면(로드 직후 route.enter — 비콘이 키를 넣기 전) 얹을
+  // 방문이 아직 없어 별도 방문이 만들어지고, 뒤이어 온 같은 탭의 키 있는 기록은 또 다른
+  // 방문이 된다 → 한 탭이 둘로 갈려 "60분 방문인데 항목 1건"이 됐다.
+  // 그래서 ① 키 있는 행으로 방문을 다 만든 뒤 ② 키 없는 행을 계정·역할·시간으로 붙인다.
   const byKey = new Map<string, ActivityVisit>();
+  const hostOf = new Map<string, { key: string; accountHash: string | null; role: string }>();
   let noKey = 0;
-  for (const r of rows) {
-    const t = new Date(r.occurred_at).getTime();
-    const item: ActivityItem = {
-      t,
-      kind: r.kind,
-      label: KIND_LABEL[r.kind] ?? r.kind,
-      source: r.source === "server" ? "server" : "client",
-      target: r.target,
-      targetLabel: r.target ? (titleById.get(r.target) ?? null) : null,
-      meta: r.meta,
-      durMs: r.dur_ms
-    };
-    let key = r.visit_key;
-    if (!key) {
-      // 계정이 있으면 그 계정의 '진행 중인' 방문에 붙인다(시각이 가장 가까운 것).
-      const mine = r.account_hash
-        ? [...byKey.values()].filter((v) => v.account !== "익명" && v.role === r.role)
-        : [];
-      const host = mine.length > 0 ? mine[mine.length - 1] : null;
-      if (host) {
-        host.items.push(item);
-        host.endMs = Math.max(host.endMs, t);
-        continue;
-      }
-      // ⚠ 키는 **안정적**이어야 한다. 예전엔 등장 순서 번호(no-key:1,2,…)를 붙였는데,
-      // 리포트 복사가 진단 층까지 포함해 다시 받으면 행 수가 달라져 번호가 밀린다 →
-      // 같은 번호가 **다른 방문**을 가리켜, 관리자 방문 리포트에 비로그인 항목이 담겼다(실측).
-      // 계정·역할로 만들면 몇 번을 다시 받아도 같은 방문을 가리킨다.
-      noKey += 1;
-      key = `nk:${r.account_hash ?? `anon-${noKey}`}:${r.role}`;
-    }
-    const existing = byKey.get(key);
-    if (existing) {
-      existing.items.push(item);
-      existing.endMs = Math.max(existing.endMs, t);
-      continue;
-    }
-    let account = "익명";
-    if (r.account_hash) {
-      const email = hashToEmail.get(r.account_hash);
-      if (email) account = email;
-      else {
-        if (!anonTag.has(r.account_hash)) anonTag.set(r.account_hash, anonTag.size + 1);
-        account = `계정 #${anonTag.get(r.account_hash)}`;
-      }
-    }
+
+  const itemOf = (r: Row): ActivityItem => ({
+    t: new Date(r.occurred_at).getTime(),
+    kind: r.kind,
+    label: KIND_LABEL[r.kind] ?? r.kind,
+    source: r.source === "server" ? "server" : "client",
+    target: r.target,
+    targetLabel: r.target ? (titleById.get(r.target) ?? null) : null,
+    meta: r.meta,
+    durMs: r.dur_ms
+  });
+  const accountLabel = (hash: string | null): string => {
+    if (!hash) return "익명";
+    const email = hashToEmail.get(hash);
+    if (email) return email;
+    if (!anonTag.has(hash)) anonTag.set(hash, anonTag.size + 1);
+    return `계정 #${anonTag.get(hash)}`;
+  };
+  const openVisit = (key: string, r: Row, item: ActivityItem) => {
     byKey.set(key, {
       key,
-      account,
+      account: accountLabel(r.account_hash),
       role: r.role,
       device: r.device,
-      startMs: t,
-      endMs: t,
+      startMs: item.t,
+      endMs: item.t,
       items: [item]
     });
+    hostOf.set(key, { key, accountHash: r.account_hash, role: r.role });
+  };
+  const addTo = (visit: ActivityVisit, item: ActivityItem) => {
+    visit.items.push(item);
+    visit.startMs = Math.min(visit.startMs, item.t);
+    visit.endMs = Math.max(visit.endMs, item.t);
+  };
+
+  // ① 키 있는 행 — 방문의 뼈대.
+  for (const r of rows) {
+    if (!r.visit_key) continue;
+    const item = itemOf(r);
+    const existing = byKey.get(r.visit_key);
+    if (existing) addTo(existing, item);
+    else openVisit(r.visit_key, r, item);
   }
+
+  // ②-a 진짜 방문 구간(visit_session)을 먼저 근거로 쓴다. 행동 기록만 보면 그 방문의 '첫
+  // 키 있는 기록' 이후만 알 수 있어, 로드 직후의 키 없는 기록(16:33 route.enter)이 20분 뒤
+  // 시작하는 방문에 안 붙는다(실측). 세션 행은 방문이 실제로 언제 시작했는지 알고 있다.
+  const sessions = await fetchAllRows<{
+    visit_key: string | null;
+    account_hash: string | null;
+    role: string;
+    started_at: string;
+    last_seen_at: string | null;
+  }>((from, to) =>
+    supabase
+      .from("visit_session")
+      .select("visit_key, account_hash, role, started_at, last_seen_at")
+      .eq("day", day)
+      .not("visit_key", "is", null)
+      .range(from, to)
+  );
+  // 같은 visit_key의 여러 구간을 한 방문으로 합친다(0061 — 구간은 탭 숨김마다 끊긴다).
+  const sessionSpans = new Map<string, HostVisit>();
+  for (const v of sessions) {
+    if (!v.visit_key) continue;
+    const st = Date.parse(v.started_at);
+    const en = Date.parse(v.last_seen_at ?? v.started_at);
+    const cur = sessionSpans.get(v.visit_key);
+    if (cur) {
+      cur.startMs = Math.min(cur.startMs, st);
+      cur.endMs = Math.max(cur.endMs, en);
+      continue;
+    }
+    sessionSpans.set(v.visit_key, {
+      key: v.visit_key,
+      accountHash: v.account_hash,
+      role: v.role,
+      startMs: st,
+      endMs: en
+    });
+  }
+  const spanHosts = [...sessionSpans.values()];
+
+  // ②-b 키 없는 행 — 서버 액션(sessionStorage를 못 봄)과 옛 기록(키가 붙기 전 찍힌 것).
+  for (const r of rows) {
+    if (r.visit_key) continue;
+    const item = itemOf(r);
+    const hosts = [...byKey.values()].map((v) => ({
+      key: v.key,
+      accountHash: hostOf.get(v.key)?.accountHash ?? null,
+      role: v.role,
+      startMs: v.startMs,
+      endMs: v.endMs
+    }));
+    const ev = { t: item.t, accountHash: r.account_hash, role: r.role };
+    // 세션 구간이 우선 — 방문의 진짜 시작·끝을 아는 쪽이다. 없으면 행동 기록 방문으로 폴백.
+    const span = chooseHostVisit(ev, spanHosts, 60_000);
+    if (span) {
+      const existing = byKey.get(span.key);
+      if (existing) addTo(existing, item);
+      else openVisit(span.key, r, item);
+      continue;
+    }
+    const host = chooseHostVisit(ev, hosts);
+    if (host) {
+      addTo(byKey.get(host.key) as ActivityVisit, item);
+      continue;
+    }
+    // 붙일 방문이 없으면 계정·역할로 안정적인 키를 만든다. 등장 순서 번호를 쓰면 리포트를
+    // 다시 받을 때(진단 포함 여부로 행 수가 달라짐) 번호가 밀려 **다른 방문**을 가리킨다(실측).
+    noKey += 1;
+    const key = `nk:${r.account_hash ?? `anon-${noKey}`}:${r.role}`;
+    const existing = byKey.get(key);
+    if (existing) addTo(existing, item);
+    else openVisit(key, r, item);
+  }
+
+  // 두 번에 나눠 담았으니 방문 안 시간 순서를 다시 맞춘다(화면은 시간 순으로 읽는다).
+  for (const v of byKey.values()) v.items.sort((a, b) => a.t - b.t);
 
   // 정렬은 **마지막 활동** 기준. 시작 시각으로 정렬하면 몇 시간째 열어둔 탭(오래 전 시작)이
   // 방금 2분 들른 방문보다 아래로 내려간다 — "지금 보고 있는 세션이 왜 목록에 없지?"가 된다(실측).

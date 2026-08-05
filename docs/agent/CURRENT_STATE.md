@@ -667,6 +667,15 @@ npx vercel ls vic-schedule-studio --scope bluesky-s-project3                    
 
 ## Known Issues
 
+- **ISSUE-005 — (해결 2026-08-05) 한 탭이 두 방문으로 갈려 타임라인이 텅 비어 보임.**
+  방문 키(`visit_key`)는 프레즌스 비콘이 sessionStorage에 넣는데, 화면 진입 기록(route.enter)이
+  그보다 먼저 나가 `visit_key=null`로 저장됐다. 묶기 로직은 키 없는 행을 '그때까지 만들어진
+  방문'에만 얹어서, 그 행이 탭의 첫 기록이면 별도 방문이 생기고 뒤이은 키 있는 기록은 또 다른
+  방문이 됐다 → 60분 방문인데 '항목 1건'(2026-08-05 실측, owner 16:33~17:44).
+  ① 클라가 **보낼 때** 키를 다시 찍고 ② 묶기는 두 번에 나눠(키 있는 행으로 뼈대 → 키 없는 행을
+  `visit_session` 구간·계정·역할로 붙임) 옛 기록도 제자리를 찾는다.
+  ⚠ 같이 확인된 사실: 그날 owner 이벤트는 실제로 11건뿐이었다(클릭 0). 데이터 유실이 아니라
+  **정말 아무 버튼도 안 누른 방문**이었다 — 지표를 의심하기 전에 원본 행을 먼저 본다.
 - **ISSUE-004 — (해결 2026-08-05) 일정 생성·삭제가 시청자 화면에 최대 5분간 반영 안 됨.**
   `saveEventAction`/`deleteEventAction`에서 `revalidatePath("/")`·`revalidatePath("/studio")`·
   `revalidatePublicSchedule()` 3줄이 커밋 `72f6971`(행동 기록 추가) 때 **통째로 삭제**돼 있었다.
