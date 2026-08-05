@@ -182,3 +182,41 @@ test("자리가 열릴 때 툭 끊기지 않고 이어진다(중간 높이가 �
   const mid = samples.filter((h) => h > 2 && h < max - 2);
   expect(mid.length, `높이가 즉시 점프했다: ${samples.join(",")}`).toBeGreaterThan(0);
 });
+
+test("빙빙 돌려도 카드가 눕지 않는다(진자 절제)", async ({ page }) => {
+  // 2026-08-06 사용자 지적: "빙빙 돌릴 수 있게 한 게 과하다 — 90도로 꺾여서 옮길 때 불편하다."
+  // 기울기를 부드럽게 포화시켰다(softTilt). 물리는 남기되 각도만 한계를 둔다.
+  await page.goto("/visual-fixture/studio");
+  const card = page.locator(".studio-event-pill").first();
+  await card.waitFor();
+  const b = (await card.boundingBox())!;
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2 + 12, b.y + b.height / 2 + 12, { steps: 3 });
+
+  /** 지금 유령 카드의 회전각(deg) — transform 행렬에서 뽑는다. */
+  const tilt = () =>
+    page.evaluate(() => {
+      const g = document.querySelector<HTMLElement>(".event-drag-ghost");
+      if (!g) return null;
+      const m = new DOMMatrixReadOnly(getComputedStyle(g).transform);
+      return (Math.atan2(m.b, m.a) * 180) / Math.PI;
+    });
+
+  // 큰 원을 몇 바퀴 돌린다 — 예전이면 여기서 카드가 90° 넘게 뒤집혔다.
+  let worst = 0;
+  const cx = b.x + b.width / 2;
+  const cy = b.y + b.height / 2;
+  const R = 120;
+  for (let turn = 0; turn < 3; turn += 1) {
+    for (let i = 0; i < 16; i += 1) {
+      const t = (i / 16) * Math.PI * 2;
+      await page.mouse.move(cx + Math.cos(t) * R, cy + Math.sin(t) * R);
+      const d = await tilt();
+      if (d !== null) worst = Math.max(worst, Math.abs(d));
+    }
+  }
+  await page.mouse.up();
+  expect(worst, `끄는 동안 카드가 ${Math.round(worst)}°까지 누웠다`).toBeLessThan(22);
+  expect(worst, "회전이 아예 없다(물리감이 죽었다)").toBeGreaterThan(0.2);
+});

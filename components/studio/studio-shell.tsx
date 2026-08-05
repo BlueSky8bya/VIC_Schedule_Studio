@@ -52,6 +52,16 @@ import type {
   StudioSchedule,
   StudioScheduleEvent
 } from "@/lib/domain/schedule-types";
+import {
+  DRAG_DAMP,
+  DRAG_GRAVITY,
+  DRAG_MIN_LEN,
+  FLING_SPEED,
+  FLING_SPIN,
+  softTilt,
+  WOBBLE_DEG,
+  WOBBLE_RAND
+} from "@/lib/studio/drag-physics";
 import type { CurrentActor } from "@/lib/auth/actor";
 import {
   assignSupportLanes,
@@ -2541,8 +2551,8 @@ export function StudioShell({
       const pivotY = pos.y + edOffRef.current.y;
       const bob = edBobRef.current;
       const prev = edBobPrevRef.current;
-      const G = 0.3; // 중력
-      const DAMP = 0.9; // 저항을 충분히 줘 발발거림·과한 스윙을 잡는다(관성은 남기되 절제)
+      const G = DRAG_GRAVITY; // 중력(절제된 값 — lib/studio/drag-physics.ts)
+      const DAMP = DRAG_DAMP; // 저항을 충분히 줘 발발거림·과한 스윙을 잡는다(관성은 남기되 절제)
       const vx = (bob.x - prev.x) * DAMP;
       const vy = (bob.y - prev.y) * DAMP;
       prev.x = bob.x;
@@ -2566,8 +2576,11 @@ export function StudioShell({
       edAngVelRef.current = edAngVelRef.current * 0.7 + ((dA * 180) / Math.PI) * 0.3;
       edWobRef.current += 0.12;
       const w = edWobRef.current;
-      const wobble = Math.sin(w) * 1.1 + (Math.random() - 0.5) * 0.7; // deg
-      const deg = ((worldAngle - edPhi0Ref.current) * 180) / Math.PI + wobble;
+      const wobble = Math.sin(w) * WOBBLE_DEG + (Math.random() - 0.5) * WOBBLE_RAND; // deg
+      // 기울기는 **부드럽게 포화**시킨다 — 빙빙 돌려도 90°로 꺾이지 않는다(2026-08-06 사용자 지적).
+      // 물리(추의 각속도)는 그대로라 '빙빙 돌려서 던지기'는 계속 된다.
+      const raw = ((worldAngle - edPhi0Ref.current) * 180) / Math.PI;
+      const deg = softTilt(raw) + wobble;
       edDegRef.current = deg;
       ghost.style.left = `${pos.x}px`;
       ghost.style.top = `${pos.y}px`;
@@ -2602,7 +2615,7 @@ export function StudioShell({
     const speed = Math.hypot(v.x, v.y);
     const angSpeed = Math.abs(edAngVelRef.current);
     const flung = Boolean(
-      info?.started && ghost && !edReducedRef.current && (speed > 1.1 || angSpeed > 16)
+      info?.started && ghost && !edReducedRef.current && (speed > FLING_SPEED || angSpeed > FLING_SPIN)
     );
     setDropDate(null);
     setDropSlot(null);
@@ -2756,7 +2769,7 @@ export function StudioShell({
       const lvy = rect.height / 2 - info.offY;
       // 진자 길이를 넉넉히(최소 80px) — 짧으면 작은 손움직임에도 크게 휘둘려(특히 중앙 잡을 때
       // 옆으로만 움직여도 빙글) 과민해진다. 길게 두면 같은 움직임에도 회전이 완만해진다.
-      edLenRef.current = Math.max(80, Math.hypot(lvx, lvy));
+      edLenRef.current = Math.max(DRAG_MIN_LEN, Math.hypot(lvx, lvy));
       edPhi0Ref.current = Math.atan2(lvy, lvx);
       edWorldPrevRef.current = edPhi0Ref.current; // 시작 월드각 = φ0
       const pivotX = rect.left + info.offX;
