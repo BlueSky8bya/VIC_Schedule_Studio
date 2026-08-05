@@ -3,6 +3,7 @@ import {
   FOLLOW_DAMP,
   FOLLOW_STIFF,
   springStep,
+  SWAY_IDLE,
   SWAY_MAX,
   swayOffset
 } from "@/lib/studio/drag-physics";
@@ -60,8 +61,12 @@ describe("springStep — 손을 뒤따르는 감각", () => {
 });
 
 describe("swayOffset — 회전 대신 아주 작은 흔들림", () => {
-  it("멈춰 있으면 흔들리지 않는다", () => {
-    expect(swayOffset(1234, 0)).toEqual({ x: 0, y: 0 });
+  it("들고 가만히 있어도 아주 조금은 숨 쉰다(완전 정지는 죽어 보인다)", () => {
+    const amp = Math.max(
+      ...Array.from({ length: 400 }, (_, i) => Math.abs(swayOffset(i * 13, 0).x))
+    );
+    expect(amp).toBeGreaterThan(0.4);
+    expect(amp).toBeLessThanOrEqual(SWAY_MAX * SWAY_IDLE + 1e-6);
   });
 
   it("빠르게 움직여도 진폭이 작다(멋 부리다 읽기 힘들어지지 않게)", () => {
@@ -72,10 +77,18 @@ describe("swayOffset — 회전 대신 아주 작은 흔들림", () => {
     }
   });
 
-  it("느리게 움직이면 더 작게 흔들린다", () => {
-    const slow = Math.max(...Array.from({ length: 200 }, (_, i) => Math.abs(swayOffset(i * 17, 0.2).x)));
-    const fast = Math.max(...Array.from({ length: 200 }, (_, i) => Math.abs(swayOffset(i * 17, 2).x)));
-    expect(slow).toBeLessThan(fast);
+  it("빠르게 움직일수록 크게 흔들린다", () => {
+    const amp = (speed: number) =>
+      Math.max(...Array.from({ length: 400 }, (_, i) => Math.abs(swayOffset(i * 13, speed).x)));
+    expect(amp(0)).toBeLessThan(amp(0.35));
+    expect(amp(0.35)).toBeLessThan(amp(2));
+  });
+
+  it("눈에 보일 만큼은 흔들린다(1px 미만이면 없는 것과 같다)", () => {
+    const amp = Math.max(
+      ...Array.from({ length: 400 }, (_, i) => Math.abs(swayOffset(i * 13, 1).x))
+    );
+    expect(amp).toBeGreaterThan(1.5);
   });
 
   it("난수가 아니다 — 같은 시각이면 같은 값(프레임마다 튀지 않는다)", () => {

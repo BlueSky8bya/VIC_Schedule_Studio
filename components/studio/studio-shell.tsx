@@ -3341,7 +3341,9 @@ export function StudioShell({
       })
     );
     setSelectedDate(targetDate);
-    markJustSaved(id); // A3: 착지한 카드가 통통 안착(+대상 셀은 .selected의 cell-select-pop)
+    // ⚠ 여기서 markJustSaved를 부르지 않는다. 옮긴 카드는 유령이 새 자리로 빨려 들어간 뒤
+    // 착지 펄스(.just-landed)를 이미 받는다 — 둘 다 켜면 "따닥" 두 번 반짝여 산만하다
+    // (2026-08-06 사용자 지적). '반짝'은 저장·생성처럼 결과가 눈에 안 보이는 일에만 쓴다.
     flashToast(targetDate === sourceDate ? "순서를 바꿨어요" : `${targetDate}로 옮겼어요`);
     // 서버 저장은 직렬 큐로 — 빠른 연속 이동도 순서대로 저장돼 마지막 위치가 서버 최종값이 된다.
     enqueueMovePersist({ id, sourceDate, targetDate, orderedIds });

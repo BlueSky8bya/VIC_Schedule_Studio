@@ -19,9 +19,11 @@ export const LAND_DAMP = 24;
 export const LAND_MAX_MS = 420;
 /** 집었을 때 크기. */
 export const LIFT_SCALE = 1.06;
-/** 흔들림(회전 아님 — 위치를 아주 조금 흔든다). 최대 진폭(px)과 속도에 따른 반응. */
-export const SWAY_MAX = 1.6;
-export const SWAY_SPEED_FULL = 1.2; // px/ms — 이 속도면 흔들림이 최대
+/** 흔들림(회전 아님 — 위치를 흔든다). 최대 진폭(px)과 속도에 따른 반응. */
+export const SWAY_MAX = 3.2;
+export const SWAY_SPEED_FULL = 0.7; // px/ms — 이 속도면 흔들림이 최대
+/** 들고 가만히 있을 때도 남는 최소 비율 — '손에 들려 있다'는 숨결(완전 정지는 죽어 보인다). */
+export const SWAY_IDLE = 0.32;
 /** 던져 버릴 때(화면 밖) 판정 — 회전이 없어졌으므로 **속도만** 본다. */
 export const FLING_SPEED = 1.35;
 
@@ -45,8 +47,8 @@ export function springStep(
  * 난수를 쓰지 않는다(주기가 다른 사인 합 = '불규칙해 보이지만' 프레임마다 재현 가능하고 검증된다).
  */
 export function swayOffset(tMs: number, speed: number): { x: number; y: number } {
-  const k = Math.min(1, Math.max(0, speed / SWAY_SPEED_FULL));
-  if (k <= 0) return { x: 0, y: 0 };
+  const moving = Math.min(1, Math.max(0, speed / SWAY_SPEED_FULL));
+  const k = SWAY_IDLE + (1 - SWAY_IDLE) * moving; // 멈춰 있어도 아주 조금은 숨 쉰다
   const amp = SWAY_MAX * k;
   const t = tMs / 1000;
   return {

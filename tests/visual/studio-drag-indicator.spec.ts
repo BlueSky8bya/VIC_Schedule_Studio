@@ -253,6 +253,35 @@ test("끌 때 회전이 아예 없고, 손을 부드럽게 뒤따른다", async 
     )
     .toBeLessThan(2);
   expect(await page.evaluate(() => window.scrollY), "자동 스크롤이 끼어들었다").toBe(scrollBefore);
+
+  // 회전을 없앤 대신 '손에 들려 있다'는 아주 작은 흔들림이 살아 있어야 한다(위치 흔들림).
+  // 손을 멈춘 채로 지켜본다 — 값이 전혀 안 변하면 죽은 카드처럼 보인다(2026-08-06 사용자 지적).
+  const sway = await page.evaluate(
+    () =>
+      new Promise<{ span: number; max: number }>((resolve) => {
+        const g = document.querySelector<HTMLElement>(".event-drag-ghost")!;
+        const xs: number[] = [];
+        const ys: number[] = [];
+        let n = 0;
+        const tick = () => {
+          const m = new DOMMatrixReadOnly(getComputedStyle(g).transform);
+          xs.push(m.e);
+          ys.push(m.f);
+          if (++n < 40) requestAnimationFrame(tick);
+          else
+            resolve({
+              span: Math.max(
+                Math.max(...xs) - Math.min(...xs),
+                Math.max(...ys) - Math.min(...ys)
+              ),
+              max: Math.max(...xs.map(Math.abs), ...ys.map(Math.abs))
+            });
+        };
+        requestAnimationFrame(tick);
+      })
+  );
+  expect(sway.span, "들고 있는데 흔들림이 전혀 없다").toBeGreaterThan(0.4);
+  expect(sway.max, "흔들림이 과하다(읽기 방해)").toBeLessThan(4);
   await page.mouse.up();
 });
 
@@ -282,6 +311,23 @@ test("놓으면 새 자리로 빨려 들어가 '뿅' 하고 정착한다", async
   await page.mouse.down();
   await page.mouse.move(from.x + from.width / 2 + 12, from.y + from.height / 2 + 8, { steps: 4 });
   await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 18 });
+  // 놓기 **직전에** 애니메이션 수집기를 건다 — 착지 연출이 몇 개 켜지는지 세기 위해.
+  // 예전에는 옮긴 카드에 '저장 반짝'(.just-saved / pill-settle)까지 겹쳐 "따닥" 두 번 번쩍였다
+  // (2026-08-06 사용자 지적). 카드에 걸리는 애니메이션은 착지 펄스 하나여야 한다.
+  await page.evaluate(() => {
+    const w = window as unknown as { __anims?: string[] };
+    w.__anims = [];
+    document.addEventListener(
+      "animationstart",
+      (e) => {
+        const t = e.target as HTMLElement | null;
+        if (t?.classList?.contains("studio-event-pill")) {
+          w.__anims!.push((e as AnimationEvent).animationName);
+        }
+      },
+      true
+    );
+  });
   await page.mouse.up();
 
   // 유령이 즉시 사라지지 않고, 착지 애니메이션이 끝나면 정리된다.
@@ -292,4 +338,8 @@ test("놓으면 새 자리로 빨려 들어가 '뿅' 하고 정착한다", async
   // 그리고 유령은 반드시 치워진다(멈춘 유령을 남기지 않는다).
   await expect(page.locator(".event-drag-ghost")).toHaveCount(0, { timeout: 2000 });
   await expect(page.locator(".studio-event-pill.just-landed")).toHaveCount(0, { timeout: 2000 });
+  const anims = await page.evaluate(
+    () => (window as unknown as { __anims?: string[] }).__anims ?? []
+  );
+  expect(anims, `착지 연출이 ${anims.length}개 겹쳤다(${anims.join(", ")})`).toEqual(["card-landed"]);
 });
