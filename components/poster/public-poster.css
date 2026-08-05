@@ -2082,8 +2082,9 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
 }
 .legend-tiers li {
   display: grid;
-  /* 불꽃 3개(👑 포함)가 잘리지 않는 고정 칸 + 라벨 — 네 칸의 라벨 왼쪽 끝이 같다. */
-  grid-template-columns: 38px 1fr;
+  /* 불꽃 3개가 '넘치지 않고' 들어가는 고정 칸 + 라벨 — 네 칸의 라벨 왼쪽 끝이 같다.
+     칸이 실제 불꽃 폭보다 좁으면 넘친 만큼 아래 gap을 먹어 '🔥🔥🔥폭발적'처럼 붙어 보인다. */
+  grid-template-columns: 42px 1fr;
   align-items: center;
   gap: 8px; /* 색칩↔이름과 같은 간격 */
   padding: 2px 6px; /* .legend-item과 동일 */
@@ -2097,9 +2098,9 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   display: inline-flex;
   align-items: center;
   min-height: 18px; /* 태그 색칩과 같은 높이 */
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1;
-  letter-spacing: -2.5px;
+  letter-spacing: -1.5px;
 }
 
 .legend-clear {
