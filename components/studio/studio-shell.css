@@ -12704,13 +12704,27 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   transform: none;
 }
 
+/* 축약 머리글·범례는 모바일에서만 — 웹에서는 온전한 역할명을 그대로 쓴다.
+   ⚠ 이 두 기본 규칙은 아래 모바일 미디어쿼리보다 **먼저** 와야 한다. 특이도가 같아서
+   뒤에 오면 모바일에서도 이 display:none이 이겨 머리글이 통째로 비어 버린다(2026-08-05 실제 버그). */
+.perm-table .perm-role-short {
+  display: none;
+}
+.perm-legend {
+  display: none;
+}
+
 /* 역할별 권한 표 — 모바일은 가로 스크롤 없이 한 화면에 들어와야 한다.
    실측(2026-08-05, 390px): 머리글 '관리자'가 nowrap이라 열 최소폭이 54px로 굳어
    표가 359px가 되고 감싼 상자(341px)를 넘쳤다 — 표는 min-content보다 못 줄어든다.
    그래서 머리글을 한 글자(관·개·매·작)로 줄이고 그 뜻은 위 범례가 말한다. */
 @media (max-width: 640px) {
-  .perm-table {
+  .perm-table,
+  .members-perms .perm-table {
     table-layout: fixed;
+    /* 위(12648)의 max-content를 되돌린다 — 축약 머리글이 다시 보이면 max-content가 표를 넓힌다. */
+    width: 100%;
+    min-width: 0;
     font-size: var(--text-caption);
   }
 
@@ -12736,13 +12750,29 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   .perm-table .perm-role-short {
     display: inline;
   }
-}
-/* 축약 머리글은 모바일에서만 — 웹에서는 온전한 역할명을 그대로 쓴다. */
-.perm-table .perm-role-short {
-  display: none;
-}
-.perm-legend {
-  display: none;
+
+  /* 한 글자로 줄인 머리글은 **색이 곧 이름**이다 — 위 범례 칩과 같은 색을 써야 짝이 읽힌다.
+     멤버 패널은 머리글을 회색 한 색으로 덮으므로(.members-perms .perm-table thead th)
+     모바일에서는 역할 색을 되살린다. */
+  .members-perms .perm-table thead th:nth-child(2) {
+    background: #e8f9f0;
+    color: #1f8a55;
+  }
+  .members-perms .perm-table thead th:nth-child(3) {
+    background: #e9f1fe;
+    color: #2f6fd0;
+  }
+  .members-perms .perm-table thead th:nth-child(4) {
+    background: #efeafd;
+    color: #6b5bd6;
+  }
+  .members-perms .perm-table thead th:nth-child(5) {
+    background: #fff3e0;
+    color: #b5651d;
+  }
+  .perm-table thead th .perm-role-short {
+    font-weight: 900;
+  }
 }
 @media (max-width: 640px) {
   .perm-legend {

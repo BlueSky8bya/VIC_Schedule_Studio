@@ -121,6 +121,20 @@ test("역할별 권한 표가 모바일에서 가로 스크롤 없이 한 화면
       fullHidden: [...t.querySelectorAll("thead th .perm-role-full")].every(
         (h) => getComputedStyle(h).display === "none"
       ),
+      // 축약 머리글이 **실제로 보이는지**. 2026-08-05 버그: 기본 display:none 규칙이 모바일
+      // 미디어쿼리 뒤에 와서(특이도 동일) 긴 이름·짧은 이름이 둘 다 숨겨져 머리글이 텅 비었다.
+      // textContent만 보면 안 잡힌다 — 렌더 폭으로 본다.
+      shortShown: [...t.querySelectorAll("thead th .perm-role-short")].every(
+        (h) =>
+          getComputedStyle(h).display !== "none" && (h as HTMLElement).getBoundingClientRect().width > 0
+      ),
+      // 한 글자 머리글은 색이 곧 이름이다 — 범례 칩 색과 열 머리글 색이 어긋나면 못 읽는다.
+      colorsMatch: ["pl-owner", "pl-dev", "pl-manager", "pl-worker"].every((cls, i) => {
+        const chip = document.querySelector(`.perm-legend .${cls}`);
+        const head = t.querySelectorAll("thead th")[i + 1];
+        if (!chip || !head) return false;
+        return getComputedStyle(chip).backgroundColor === getComputedStyle(head).backgroundColor;
+      }),
       legend: document.querySelector(".perm-legend") !== null,
       legendShown:
         document.querySelector(".perm-legend") !== null &&
@@ -134,5 +148,7 @@ test("역할별 권한 표가 모바일에서 가로 스크롤 없이 한 화면
   // 축약 머리글(한 글자) + 뜻을 알려주는 범례가 함께 있어야 읽을 수 있다.
   expect(geo.shortHeads).toEqual(["관", "개", "매", "작"]);
   expect(geo.fullHidden, "모바일인데 긴 머리글이 그대로 보인다").toBe(true);
+  expect(geo.shortShown, "축약 머리글이 안 보인다 — 열이 뭘 가리키는지 알 수 없다").toBe(true);
   expect(geo.legendShown, "축약했는데 범례가 없다").toBe(true);
+  expect(geo.colorsMatch, "범례 칩 색과 열 머리글 색이 다르다 — 짝을 못 짓는다").toBe(true);
 });
