@@ -195,3 +195,60 @@ describe("공개 캐시 무효화 — 쓰기마다 반드시", () => {
     spy.mockRestore();
   });
 });
+
+// ── 쓰기 창구(/api/studio-write)까지 이어지는지 ──
+// 편집실의 실제 쓰기는 서버 액션을 '직접' 부르지 않고 이 라우트를 거친다(keepalive fetch).
+// 액션만 테스트하면 라우트가 다른 액션을 부르거나 op를 빠뜨려도 안 잡힌다 — 2026-08-05의
+// '생성·삭제가 시청자 화면에 5분간 안 뜸'이 바로 이 경로의 사고였다.
+const { POST } = await import("@/app/api/studio-write/route");
+
+describe("쓰기 라우트(/api/studio-write) → 캐시 무효화", () => {
+  const call = (op: string, payload: Record<string, unknown>) =>
+    POST(
+      new Request("http://localhost/api/studio-write", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ op, payload })
+      })
+    );
+
+  beforeEach(() => {
+    revalidateTag.mockClear();
+    revalidatePath.mockClear();
+  });
+
+  const OPS: Array<[string, Record<string, unknown>]> = [
+    ["save", { ...baseSave }],
+    ["delete", { eventId: "evt-1" }],
+    ["restore", { eventId: "evt-1" }],
+    ["reorder", { dateKey: "2025-10-01", orderedIds: ["evt-1"] }],
+    ["tags", { eventId: "evt-1", tagIds: [], primaryTagIds: [] }],
+    ["support", { eventId: "evt-1", supportUrl: "" }]
+  ];
+
+  for (const [op, payload] of OPS) {
+    it(`op=${op} → 200 + public-schedule 무효화`, async () => {
+      const res = await call(op, payload);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toMatchObject({ ok: true });
+      expect(revalidateTag).toHaveBeenCalledWith(PUBLIC_SCHEDULE_CACHE_TAG);
+    });
+  }
+
+  it("모르는 op는 400이고 캐시를 안 건드린다", async () => {
+    const res = await call("nope", {});
+    expect(res.status).toBe(400);
+    expect(revalidateTag).not.toHaveBeenCalled();
+  });
+
+  it("라우트가 다루는 op 목록이 위 표와 일치한다(새 op가 조용히 늘지 않게)", async () => {
+    const fs = await import("node:fs");
+    const path = await import("node:path");
+    const src = fs.readFileSync(path.join(process.cwd(), "app/api/studio-write/route.ts"), "utf8");
+    const ops = [...src.matchAll(/case "([a-zA-Z]+)":/g)].map((m) => m[1]).sort();
+    // linkChain/unlinkPair는 링크 액션(별도 파일)에서 무효화한다 — 여기 표에는 없다.
+    expect(ops).toEqual(
+      ["delete", "linkChain", "reorder", "restore", "save", "support", "tags", "unlinkPair"].sort()
+    );
+  });
+});

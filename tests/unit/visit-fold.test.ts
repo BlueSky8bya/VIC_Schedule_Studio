@@ -137,3 +137,45 @@ describe("foldVisits — 탭 수명", () => {
     expect(sStart(out[0])).toBeLessThan(sStart(out[1]));
   });
 });
+
+// ── 자정(KST) 경계 ──
+// 켜둔 탭이 자정을 넘기면 비콘이 새 방문 키를 발급한다(키에 KST 날짜가 박혀 있다). 접기가 그걸
+// 무시하고 합치면 하루 집계가 이웃 날로 샌다 — 조용히 어긋나는 종류라 여기서 못박는다.
+describe("자정을 넘긴 탭", () => {
+  const beforeMidnight: SessionRow = {
+    day: "2026-08-04",
+    role: "owner",
+    device: "desktop",
+    account_hash: ACCT,
+    started_at: "2026-08-04T14:30:00.000Z", // KST 23:30
+    last_seen_at: "2026-08-04T14:59:00.000Z", // KST 23:59
+    ended_at: "2026-08-04T14:59:00.000Z",
+    visit_key: "tab-day1"
+  };
+  const afterMidnight: SessionRow = {
+    ...beforeMidnight,
+    day: "2026-08-05",
+    started_at: "2026-08-04T15:01:00.000Z", // KST 00:01 (다음날)
+    last_seen_at: "2026-08-04T15:20:00.000Z",
+    ended_at: "2026-08-04T15:20:00.000Z",
+    visit_key: "tab-day2"
+  };
+
+  it("서로 다른 날의 방문은 합치지 않는다", () => {
+    const out = foldVisits([beforeMidnight, afterMidnight]);
+    expect(out).toHaveLength(2);
+    expect(out.map((r) => r.day)).toEqual(["2026-08-04", "2026-08-05"]);
+  });
+
+  it("겹치는 시간이라도 날이 다르면 따로 센다(같은 계정이어도)", () => {
+    const overlapping = { ...afterMidnight, started_at: beforeMidnight.last_seen_at };
+    const out = foldVisits([beforeMidnight, overlapping]);
+    expect(out).toHaveLength(2);
+  });
+
+  it("같은 날 같은 탭의 구간은 여전히 하나로 접힌다(회귀 방지)", () => {
+    const later = { ...beforeMidnight, started_at: "2026-08-04T14:59:30.000Z" };
+    const out = foldVisits([beforeMidnight, later]);
+    expect(out).toHaveLength(1);
+  });
+});

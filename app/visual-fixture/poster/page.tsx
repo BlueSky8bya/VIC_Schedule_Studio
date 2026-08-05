@@ -11,13 +11,42 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ mode?: string; avatar?: string }>;
+  searchParams?: Promise<{ mode?: string; avatar?: string; teaser?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
   }
   const sp = await searchParams;
   const decorate = sp?.mode === "decorate";
+  // teaser=<초> — 지금부터 N초 뒤 공개되는 '최초공개' 일정을 하나 끼워 넣는다(테스트 전용).
+  // 시간에 걸린 기능이라 고정 샘플로는 검증이 안 된다: 공개 전 제목이 DOM에 새지 않는지,
+  // 카운트다운이 0에서 실제로 공개 요청을 쏘는지를 브라우저에서 보려면 '곧 공개될 것'이 필요하다.
+  const teaserIn = Number(sp?.teaser ?? "");
+  const schedule =
+    Number.isFinite(teaserIn) && teaserIn > 0
+      ? {
+          ...samplePublicScheduleData,
+          events: [
+            ...samplePublicScheduleData.events,
+            {
+              // 공개 로더가 만드는 '가린 stub'과 같은 모양 — 제목·태그·카테고리가 비어 있다.
+              id: "fixture-teaser",
+              startsAt: "2026-06-18T00:00:00+09:00",
+              isAllDay: true,
+              isTentative: false,
+              publicTitle: "",
+              status: "scheduled" as const,
+              visibilityScope: "public" as const,
+              category: "stream" as const,
+              tagIds: [],
+              primaryTagIds: [],
+              sortOrder: 0,
+              teaser: true,
+              teaserRevealAt: new Date(Date.now() + teaserIn * 1000).toISOString()
+            }
+          ]
+        }
+      : samplePublicScheduleData;
   // avatar=1 → 아바타 자리 토글이 있는 소유자 scene을 fixture에서도 검증(스티커 좌표 매핑 실측용).
   const avatar = sp?.avatar === "1";
   return (
@@ -29,7 +58,7 @@ export default async function VisualPosterFixture({
       initialNarrow={false}
       initialYear={2026}
       initialMonth={6}
-      schedule={samplePublicScheduleData}
+      schedule={schedule}
     />
   );
 }

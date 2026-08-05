@@ -5,6 +5,8 @@ import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails, normalizeEmail } from "@/lib/auth/config";
 import { canEditSchedule } from "@/lib/permissions/roles";
 import { accountHashOf } from "@/lib/insights/account-hash";
+import { fetchAllRows } from "@/lib/db/paginate";
+import { kstDayKey } from "@/lib/calendar/month";
 import {
   durMs,
   foldVisits,
@@ -113,9 +115,8 @@ export type InsightsResult = { ok: true; data: InsightsData } | { ok: false; err
 // 비공개 접근 자격자 한 명 — 활성 잠금 세션이 있으면 expiresAt(만료시간)·userId가 채워진다.
 export type AccessPerson = { email: string; expiresAt: string | null; userId: string | null };
 
-function kstNow(): Date {
-  return new Date(Date.now() + 9 * 3600 * 1000);
-}
+// '오늘(KST)' 키는 단일 출처(kstDayKey)를 쓴다 — 적재(day 컬럼)와 조회가 어긋나지 않게.
+const todayKstKey = (): string => kstDayKey();
 function ymd(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
@@ -173,7 +174,7 @@ export async function startVisitSession(
     const { data, error } = await supabase
       .from("visit_session")
       .insert({
-        day: ymd(kstNow()),
+        day: todayKstKey(),
         account_hash: isAuthed && actor.email ? accountHashOf(actor.email) : anonHash,
         role: isAuthed ? actor.role : "anon",
         device: safeDevice,
@@ -387,16 +388,12 @@ function emptyOccSlot(): OccSlot {
 type Pageable = {
   range: (from: number, to: number) => PromiseLike<{ data: unknown[] | null; error: unknown }>;
 };
-async function fetchAllRows<T>(make: () => Pageable): Promise<T[]> {
-  const PAGE = 1000;
-  const out: T[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await make().range(from, from + PAGE - 1);
-    if (error || !Array.isArray(data) || data.length === 0) break;
-    out.push(...(data as T[]));
-    if (data.length < PAGE) break;
-  }
-  return out;
+/** 이 파일 호출부는 `() => 쿼리빌더` 형태다 — range 인자를 직접 받는 공용 헬퍼에 맞춰 주는 어댑터.
+ *  페이지네이션 규칙 자체는 lib/db/paginate.ts 하나로만 존재한다(두 번 당한 1000행 cap). */
+function fetchAllRowsPaged<T>(make: () => Pageable): Promise<T[]> {
+  return fetchAllRows<T>(
+    (from, to) => make().range(from, to) as PromiseLike<{ data: T[] | null; error: unknown }>
+  );
 }
 
 // user_id → 이메일. 예전엔 사람 수만큼 auth.admin.getUserById()를 불러(한 곳은 for+await 직렬)
@@ -456,7 +453,7 @@ async function loadKnownAccounts(
         .filter((h): h is string => Boolean(h))
     );
   }
-  const rows = await fetchAllRows<{ account_hash: string | null }>(() =>
+  const rows = await fetchAllRowsPaged<{ account_hash: string | null }>(() =>
     supabase
       .from("visit_session")
       .select("account_hash")
@@ -474,7 +471,7 @@ async function loadSessions(
   startDay: string,
   endDayExclusive: string
 ): Promise<SessionRow[]> {
-  const raw = await fetchAllRows<SessionRow>(() =>
+  const raw = await fetchAllRowsPaged<SessionRow>(() =>
     supabase
       .from("visit_session")
       .select(SESSION_COLS)
@@ -615,7 +612,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   const monthStart = `${y}-${pad(m)}-01`;
   const nextMonthStart = ymd(new Date(Date.UTC(y, m, 1)));
   const lastMonthStart = ymd(new Date(Date.UTC(y, m - 2, 1)));
-  const todayKey = ymd(kstNow());
+  const todayKey = todayKstKey();
   const curYm = `${y}-${pad(m)}`;
 
   const [eventsRangeRes, tagsRangeRes, nextRes, paletteRes, heartCountsRes, unlockRes, membersRes, passcodeRes] =
@@ -1004,7 +1001,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
   const nextMonthStart = ymd(new Date(Date.UTC(year, month, 1)));
 
   const [visitRows, eventsRes, tagsRes, paletteRes, heartsRes, bcastRes] = await Promise.all([
-    fetchAllRows<SessionRow>(() =>
+    fetchAllRowsPaged<SessionRow>(() =>
       supabase
         .from("visit_session")
         .select(SESSION_COLS)
@@ -1417,7 +1414,7 @@ export async function getVisitTrendsAction(
   }
   // 이 달 세션과 '이전에 본 계정 집합'은 서로 독립이다 → 같이 출발시킨다(예전엔 줄 세워 왕복 2배).
   const [rows, knownAccounts] = await Promise.all([
-    fetchAllRows<SessionRow>(() =>
+    fetchAllRowsPaged<SessionRow>(() =>
       supabase
         .from("visit_session")
         .select(SESSION_COLS)
@@ -1462,7 +1459,7 @@ export async function getVisitTrendsAction(
   }
 
   // 수집 상태 — 오늘 세션 수 / 미종료 비율 / 평균 체류초(전체). 비콘(end) 유실 점검용.
-  const todayKey = ymd(kstNow());
+  const todayKey = todayKstKey();
   const todaySessions = rows.filter((r) => r.day === todayKey).length;
   const openRate = rows.length > 0 ? rows.filter((r) => !r.ended_at).length / rows.length : 0;
   const avgStaySec =
@@ -1848,7 +1845,7 @@ export async function getMemberInsightsAction(
   const m = month;
   const monthStart = `${y}-${pad(m)}-01`;
   const nextMonthStart = ymd(new Date(Date.UTC(y, m, 1)));
-  const todayKey = ymd(kstNow());
+  const todayKey = todayKstKey();
   const curYm = `${y}-${pad(m)}`;
   const monthKeys: string[] = [];
   for (let i = 5; i >= 0; i -= 1) {
@@ -1883,7 +1880,7 @@ export async function getMemberInsightsAction(
       .limit(40),
     supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
     supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
-    fetchAllRows<{ day: string; account_hash: string | null; started_at: string }>(() =>
+    fetchAllRowsPaged<{ day: string; account_hash: string | null; started_at: string }>(() =>
       supabase
         .from("visit_session")
         .select("day, account_hash, started_at")

@@ -12,9 +12,12 @@ const CODE = SRC.split("\n")
   .join("\n");
 
 describe("행 상한 — limit이 아니라 range로 끝까지 받는다", () => {
-  it("페이지네이션 헬퍼가 있다", () => {
-    expect(SRC).toContain("async function fetchAllRows");
-    expect(CODE).toContain(".range(from, to)");
+  it("페이지네이션은 공용 헬퍼(lib/db/paginate)로만 한다", () => {
+    // 2026-08-05: 같은 루프가 activity/insights 두 곳에 복제돼 있었다 — 한 곳만 고치면 다른 곳이
+    // 그대로 남는 구조라 함정이 반복된다. 규칙 자체를 한 파일로 모았다.
+    expect(SRC).toContain('from "@/lib/db/paginate"');
+    expect(CODE).toMatch(/fetchAllRows</);
+    expect(CODE).not.toContain("async function fetchAllRows");
   });
 
   it("네 자리 이상 limit을 쓰지 않는다 — '다 온다'는 착각을 준다", () => {

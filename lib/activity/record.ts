@@ -16,11 +16,10 @@ import {
   type ActivityKind,
   type ActivitySource
 } from "@/lib/activity/kinds";
+import { kstDayKey } from "@/lib/calendar/month";
 
-// KST 날짜(방문 기록과 같은 규칙 +9h) — 범위 조회·보존 청소의 기준.
-function kstDayString(): string {
-  return new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
-}
+// KST 날짜(방문 기록과 같은 규칙) — 범위 조회·보존 청소의 기준. 계산은 단일 출처를 쓴다.
+const kstDayString = (): string => kstDayKey();
 
 // 행동 기록 쓰기(0062). 서버 이벤트 = 권한을 통과한 실제 변경(진실). 실패해도 앱 동작을 막지 않는다.
 //

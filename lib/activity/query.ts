@@ -6,6 +6,7 @@ import { getOwnerEmails } from "@/lib/auth/config";
 import { accountHashOf } from "@/lib/insights/account-hash";
 import { ACTIVITY_RETENTION_DAYS, DIAG_RETENTION_DAYS, KIND_LABEL } from "@/lib/activity/kinds";
 import { chooseHostVisit, type HostVisit } from "@/lib/activity/visit-attach";
+import { fetchAllRows } from "@/lib/db/paginate";
 
 // 행동 타임라인 조회(0062) — 개발자 전용. 한 날의 이벤트를 방문(visit_key) 단위로 묶어 돌려준다.
 //
@@ -24,22 +25,6 @@ const SLUG = "vic";
 // 또 났다: 하루 기록이 1000행을 넘자 **그 뒤에 생긴 방문이 통째로 사라졌다**(실측 — 화면이
 // 15:29에서 멈췄고 그 뒤 관리자 방문이 안 보였다. 조용히 잘리므로 오류도 안 난다).
 // 그래서 range()로 끝까지 넘겨 받는다. 상한(hardCap)은 폭주 방지용일 뿐 정상 범위를 안 자른다.
-const PAGE = 1000;
-async function fetchAllRows<T>(
-  make: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
-  hardCap = 50_000
-): Promise<T[]> {
-  const out: T[] = [];
-  for (let from = 0; from < hardCap; from += PAGE) {
-    const { data, error } = await make(from, from + PAGE - 1);
-    if (error || !data) break;
-    out.push(...data);
-    if (data.length < PAGE) break;
-  }
-  return out;
-}
-
-
 export type ActivityItem = {
   t: number;
   kind: string;

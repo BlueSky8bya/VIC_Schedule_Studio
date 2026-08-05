@@ -16,6 +16,20 @@ export type MonthCell = {
   weekday: number; // 0=일 ... 6=토
 };
 
+/**
+ * 임의 시각의 **KST 날짜 키**(YYYY-MM-DD). 기록 적재(day 컬럼)·범위 조회·보존 청소가 전부 이 값을
+ * 기준으로 움직인다. 한국은 서머타임이 없어 고정 +9h로 충분하다.
+ *
+ * 이 함수가 하나여야 하는 이유: 예전엔 같은 계산이 세 곳에 따로 있었다
+ * (`month.ts` Intl · `activity/record.ts` +9h · `insights/actions.ts` kstNow+ymd).
+ * 값이 같아 보여도 한 곳만 고치면 자정 경계에서 기록이 서로 다른 날에 적재된다 —
+ * 그런 어긋남은 조용하고, 나중에 집계가 안 맞는 모습으로만 드러난다.
+ */
+export function kstDayKey(at: number | Date = Date.now()): string {
+  const ms = typeof at === "number" ? at : at.getTime();
+  return new Date(ms + 9 * 3_600_000).toISOString().slice(0, 10);
+}
+
 // KST 기준 오늘 날짜(YYYY-MM-DD)
 export function getTodayKst(): string {
   return new Intl.DateTimeFormat("en-CA", {
