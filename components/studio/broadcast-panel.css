@@ -775,20 +775,16 @@ html[data-reduce-motion] .bp-kbd-close:active {
   width: 100%;
   min-height: 48px;
 }
-/* 도구/도형 격자 = 고정 폭 열 — 창이 넓어져도 버튼 사이가 벌어지지 않는다(근접 유지).
-   열 수만 다르고 폭·간격은 같다: 도구 2×3, 도형 2×2, 굵기 2×3 → 모든 그룹이 두 줄 리듬. */
-.bp-group-row.bp-grid4 {
+/* 도구·도형은 한 줄 — 고정 폭 열이라 창이 넓어져도 버튼 사이가 벌어지지 않는다(근접 유지).
+   열 수만 다르고(도구 6 · 도형 4) 폭·간격은 같아 두 그룹이 한 문법으로 읽힌다. */
+.bp-group-row.bp-grid4,
+.bp-group-row.bp-grid6 {
   display: grid;
-  grid-template-columns: repeat(4, 58px);
+  grid-template-columns: repeat(4, 62px);
   gap: 5px;
 }
-.bp-group-row.bp-grid3 {
-  grid-template-columns: repeat(3, 58px);
-  gap: 5px;
-}
-.bp-group-row.bp-grid2 {
-  grid-template-columns: repeat(2, 58px);
-  gap: 5px;
+.bp-group-row.bp-grid6 {
+  grid-template-columns: repeat(6, 62px);
 }
 .bp-tool {
   width: auto;
@@ -2411,17 +2407,14 @@ html[data-reduce-motion] .bp-send {
 
 /* 44px 열에선 '형광펜/사각형' 3글자 라벨이 '형…'으로 잘렸다 — 라벨이 온전히 들어가는
    폭(44+8px)으로 넓히고 버튼은 열을 채운다. 잘린 라벨 = 결함. */
+/* '스포이드'(4글자)까지 온전히 들어가는 폭 — 잘린 라벨은 결함이다(실측: '스포…'). */
 .bp-group-row.bp-grid4 {
-  grid-template-columns: repeat(4, calc(var(--control-hit) + var(--space-2)));
+  grid-template-columns: repeat(4, calc(var(--control-hit) + var(--space-4)));
   gap: var(--space-1);
 }
-/* 도구(2×3)·도형(2×2)도 같은 열 폭 — 그룹마다 버튼 크기가 달라지면 한 줄로 안 읽힌다. */
-.bp-group-row.bp-grid3 {
-  grid-template-columns: repeat(3, calc(var(--control-hit) + var(--space-2)));
-  gap: var(--space-1);
-}
-.bp-group-row.bp-grid2 {
-  grid-template-columns: repeat(2, calc(var(--control-hit) + var(--space-2)));
+/* 도구는 한 줄 6칸 — 열 폭은 도형과 같다(그룹마다 버튼 크기가 다르면 한 줄로 안 읽힌다). */
+.bp-group-row.bp-grid6 {
+  grid-template-columns: repeat(6, calc(var(--control-hit) + var(--space-4)));
   gap: var(--space-1);
 }
 

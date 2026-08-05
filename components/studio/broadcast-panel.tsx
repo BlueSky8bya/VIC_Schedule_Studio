@@ -3584,10 +3584,10 @@ export function BroadcastPanel({
         </div>
         <div className="bp-tool-deck">
           <div className="bp-tool-group" role="group" aria-label="도구">
-            {/* 6개 = 2×3 격자. 채우기·스포이드도 '무엇으로 칠할지'를 고르는 일이라 도구와 한 상자에
-                둔다(사용자 결정) — 색 팔레트 옆에 따로 서 있으면 도구를 두 군데서 찾게 된다.
-                옆 '도형' 그룹도 2×2로 맞춰 형제 그룹 높이가 같다(들쭉날쭉한 높이 = 결함). */}
-            <div className="bp-group-row bp-grid3">
+            {/* 채우기·스포이드도 '무엇으로 칠할지'를 고르는 일이라 도구와 한 상자에 둔다
+                (사용자 결정) — 색 팔레트 옆에 따로 서 있으면 도구를 두 군데서 찾게 된다.
+                배치는 한 줄 6칸(사용자 결정) — 옆 '도형'도 한 줄이라 두 그룹 높이가 같다. */}
+            <div className="bp-group-row bp-grid6">
               {(
                 [
                   ["select", "선택", "V", MousePointer2],
@@ -3652,8 +3652,7 @@ export function BroadcastPanel({
             <em className="bp-group-label">도구</em>
           </div>
           <div className="bp-tool-group" role="group" aria-label="도형">
-            {/* 도구 그룹이 2줄(2×3)이 되면서 여기도 2×2 — 형제 그룹 높이를 맞춘다. */}
-            <div className="bp-group-row bp-grid2">
+            <div className="bp-group-row bp-grid4">
               {(
                 [
                   ["line", "직선", "L", Slash],
