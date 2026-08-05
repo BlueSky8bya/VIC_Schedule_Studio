@@ -6686,10 +6686,16 @@ html[data-reduce-motion] .tg-num {
    조화: 액션바 필과 같은 보라 캡슐 어휘를 유리(반투명+블러) 재질로 띄워 '달력 위에
    떠 있는 컨트롤'로 읽히게 한다 — 작고 하얀 이물질처럼 보이던 것 교정. */
 .cal-zoom-float {
+  /* ⚠ 가운데 정렬을 transform으로 하지 않는다 — 이 요소의 등장 애니메이션이 transform을
+     쓰면 그 값이 translateX(-50%)를 **덮어써** 반쯤 오른쪽으로 밀리고, 좁은 화면에서는
+     그대로 잘린다(2026-08-05 모바일 실측: 390px에서 삭제 스낵바가 6px 넘쳐 잘림).
+     left/right + margin auto는 transform과 서로 간섭하지 않는다. */
   position: fixed;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: calc(18px + var(--safe-bottom, 0px));
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: max-content;
   z-index: 1200;
   animation: peek-in var(--dur-2, 0.18s) var(--ease-enter, var(--ease)) both;
 }
@@ -6908,12 +6914,19 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
 }
 /* P0-DATA-1 삭제 스낵바 — 하단 중앙, 실행 취소 버튼 포함(8초). 터치 타깃 44px. */
 .delete-snack {
+  /* ⚠ 가운데 정렬을 transform으로 하지 않는다 — 이 요소의 등장 애니메이션이 transform을
+     쓰면 그 값이 translateX(-50%)를 **덮어써** 반쯤 오른쪽으로 밀리고, 좁은 화면에서는
+     그대로 잘린다(2026-08-05 모바일 실측: 390px에서 삭제 스낵바가 6px 넘쳐 잘림).
+     left/right + margin auto는 transform과 서로 간섭하지 않는다. */
   position: fixed;
-  bottom: 22px;
-  left: 50%;
+  /* 모바일 하단 제스처 바를 피한다(안전 영역). */
+  bottom: calc(22px + var(--safe-bottom, 0px));
+  left: 0;
+  right: 0;
   z-index: 80;
-  transform: translateX(-50%);
+  margin-inline: auto;
   display: flex;
+  width: max-content;
   align-items: center;
   gap: 12px;
   max-width: min(92vw, 420px);

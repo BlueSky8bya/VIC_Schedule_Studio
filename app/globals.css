@@ -424,10 +424,16 @@ select {
   }
 }
 .celebrate-toast {
+  /* ⚠ 가운데 정렬을 transform으로 하지 않는다 — 이 요소의 등장 애니메이션이 transform을
+     쓰면 그 값이 translateX(-50%)를 **덮어써** 반쯤 오른쪽으로 밀리고, 좁은 화면에서는
+     그대로 잘린다(2026-08-05 모바일 실측: 390px에서 삭제 스낵바가 6px 넘쳐 잘림).
+     left/right + margin auto는 transform과 서로 간섭하지 않는다. */
   position: absolute;
   top: 18px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  margin-inline: auto;
+  width: max-content;
   border-radius: var(--r-pill);
   background: var(--glass-strong);
   padding: 10px 20px;

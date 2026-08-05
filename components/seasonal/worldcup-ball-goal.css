@@ -624,10 +624,16 @@
   opacity: 0.7;
 }
 .wc-names-pop {
+  /* ⚠ 가운데 정렬을 transform으로 하지 않는다 — 이 요소의 등장 애니메이션이 transform을
+     쓰면 그 값이 translateX(-50%)를 **덮어써** 반쯤 오른쪽으로 밀리고, 좁은 화면에서는
+     그대로 잘린다(2026-08-05 모바일 실측: 390px에서 삭제 스낵바가 6px 넘쳐 잘림).
+     left/right + margin auto는 transform과 서로 간섭하지 않는다. */
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
   top: 46px;
-  transform: translateX(-50%);
+  margin-inline: auto;
+  width: max-content;
   max-width: 92vw;
   padding: 6px 13px;
   border-radius: var(--r-pill);
@@ -1011,9 +1017,10 @@
 /* 선수 정보 카드 — 호버(웹)/탭(모바일) 시. 등번호·역할·포메이션·카드 + 체력·능력치 미니바. */
 .wc-pcard {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 70px;
-  transform: translateX(-50%);
+  margin-inline: auto;
   width: min(280px, 86vw);
   pointer-events: none;
   padding: 9px 11px;
@@ -1228,11 +1235,14 @@
    한 줄 설명을 띄운다. 한 번에 한 전술. flex 가운데 항목이라 양옆 칼럼은 안 밀린다. */
 .wc-tac-desc {
   position: absolute;
-  left: 50%;
-  top: 50%;
   /* 가로 중앙. 양옆 메뉴 사이 빈 공간이 좁아 다 못 들어가므로 넓게(가로>세로) 두고 겹치는 부분은
-     pointer-events:none으로 탭이 칩까지 통과한다(겹쳐도 누르기 안 막힘). */
-  transform: translate(-50%, -50%);
+     pointer-events:none으로 탭이 칩까지 통과한다(겹쳐도 누르기 안 막힘).
+     ⚠ 중앙 정렬을 transform으로 하지 않는다 — 등장 애니메이션(wc-drop-in)이 transform을 쓰면
+     그 값이 translate(-50%,-50%)를 덮어써 박스가 오른쪽·아래로 밀린다(좁은 화면에서 잘림).
+     inset:0 + margin:auto는 애니메이션과 서로 간섭하지 않는다. */
+  inset: 0;
+  margin: auto;
+  height: fit-content;
   width: min(260px, 70%);
   display: flex;
   flex-direction: column;
@@ -1611,7 +1621,6 @@ body.wc-game-lock {
     right: 104px;
     width: auto;
     max-width: none;
-    transform: translateY(-50%);
     padding: 9px 11px;
   }
   .wc-tac-desc-name {
