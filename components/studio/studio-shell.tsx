@@ -6499,6 +6499,10 @@ export function StudioShell({
                         joinLeft ? "link-join-left" : "",
                         draggable ? "draggable" : "",
                         dragEventId === event.id ? "dragging-src" : "",
+                        // 같은 칸 안에서 자리를 옮기는 중이면 점선이 '놓을 자리'로 따라간다.
+                        dragEventId === event.id && dragSrcHere && liIdx !== null
+                          ? "dragging-src-moving"
+                          : "",
                         isConnTarget ? "connect-target" : "",
                         isConnHover ? "connect-hover" : "",
                         connDim ? "connect-dim" : "",
@@ -6526,6 +6530,21 @@ export function StudioShell({
                       // 슬라이드 프리뷰: 드래그 카드 높이(H)만큼 형제가 밀려 빈 칸이 열린다.
                       // 같은 날 = 레이어 목록과 동일 공식(사이 구간만 ±H), 다른 날 =
                       // 대상 칸은 liIdx부터 +H(자리 열기), 출발 칸은 orig 아래 -H(자리 닫기).
+                      // 끌고 있는 카드의 '빈 자리'(점선)도 실제 카드처럼 목표 자리로 움직인다.
+                      // 예전엔 출발 자리에 붙박여 있어서, 같은 칸 안에서 순서만 바꿀 때
+                      // (손이 거의 안 움직인다) 손에 든 유령이 그 위에 앉아 통째로 가렸다.
+                      // 이제 점선이 형제 사이로 미끄러져 들어가므로 "여기에 놓인다"가 위치로 보인다.
+                      let srcSlide = 0;
+                      if (
+                        event.id === dragEventId &&
+                        dragSrcHere &&
+                        dragChipH > 0 &&
+                        liIdx !== null &&
+                        dragOrigIdx >= 0
+                      ) {
+                        const to = liIdx > dragOrigIdx ? liIdx - 1 : liIdx;
+                        srcSlide = (to - dragOrigIdx) * dragChipH;
+                      }
                       let slideY = 0;
                       if (dragEventId && dragChipH > 0 && event.id !== dragEventId) {
                         const H = dragChipH;
@@ -6546,9 +6565,10 @@ export function StudioShell({
                       }
                       const pillBaseStyle =
                         mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined);
+                      const moveY = slideY !== 0 ? slideY : srcSlide;
                       const pillStyle =
-                        slideY !== 0
-                          ? { ...(pillBaseStyle ?? {}), transform: `translateY(${slideY}px)` }
+                        moveY !== 0
+                          ? { ...(pillBaseStyle ?? {}), transform: `translateY(${moveY}px)` }
                           : pillBaseStyle;
                       // 이 카드 '다음' 자리가 삽입 위치면 그 뒤에 스페이서를 놓는다(맨 끝 포함).
                       const gapAfter =

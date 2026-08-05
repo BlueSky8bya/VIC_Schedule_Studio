@@ -5977,6 +5977,17 @@ body.cell-range-dragging {
   letter-spacing: 0.02em;
   pointer-events: none;
 }
+/* 같은 칸 안에서 자리를 옮기는 중 — 점선 자리가 형제 사이로 미끄러져 '놓을 자리'를 가리킨다.
+   (다른 칸으로 나가면 이 클래스가 빠져 다시 '원래 위치' 표시로 돌아간다.) */
+.studio-event-pill.dragging-src-moving {
+  z-index: 3; /* 형제 카드가 밀려오며 점선을 덮지 않게 */
+}
+.studio-event-pill.dragging-src-moving::after {
+  content: "놓을 자리";
+  border-color: #17a06a;
+  background: rgb(87 201 138 / 18%);
+  color: #14805a;
+}
 /* 드래그로 잇기: 집은 카드와 이을 수 있는 상대만 또렷·강조하고 나머지는 흐릿하게 눌러, "지금
    여기로 끌고 오면 이어진다"를 눈으로 구분시킨다(의도 분리). 합성 전용(opacity/transform/shadow). */
 .studio-event-pill.connect-dim {
@@ -6208,12 +6219,9 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
-  /* 반투명이어야 한다 — 같은 칸 안에서 순서를 바꿀 때는 손이 거의 안 움직이므로 유령이
-     출발 자리('원래 위치' 점선)와 삽입선 바로 위에 앉는다. 예전 0.97에서는 그 둘이 통째로
-     가려져 "어디서 왔고 어디로 들어가는지"가 안 보였다(실측: 유령 y287~444가 원래 위치
-     y285~339와 삽입선 y319를 덮음). 유령은 z-index 9999라 안내를 그 위로 올릴 수 없다 —
-     대신 유령을 비쳐 보이게 한다. */
-  opacity: 0.5;
+  /* 유령은 거의 불투명하게 둔다(손에 든 카드는 카드처럼 보여야 한다). 가림 문제는 투명도가
+     아니라 **점선 자리를 실제 카드처럼 움직여서** 푼다 — .dragging-src-moving 참조. */
+  opacity: 0.92;
   border-radius: var(--r-md);
   /* 그림자도 옅게 — 짙으면 반투명이어도 아래 점선이 탁해진다. */
   box-shadow: 0 14px 28px rgb(90 70 140 / 20%);
