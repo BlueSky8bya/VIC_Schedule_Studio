@@ -467,3 +467,60 @@ test("⑨ 스치듯 지우면 그은 대로만 깎인다(획이 통째로 안 �
   // 지우개가 지나간 자리 바깥(양 끝)은 원래 두께 그대로.
   expect(await thickness(x0 + 6)).toBeGreaterThanOrEqual(base - 2);
 });
+
+test("⑩ 손을 떼도 지운 모양이 그대로다(깜빡임·각짐·더 파임 없음)", async ({ page }) => {
+  // 사용자 지적(2026-08-06): "마우스 떼는 순간 깜빡이면서 조금 각져지거나 더 안쪽으로 지워진다."
+  // 그리는 중(라이브 픽셀)과 커밋 뒤(장면 재생)가 다르면 이 검사에서 좌표로 드러난다.
+  await openBoard(page);
+  const box = (await page.locator(".bp-draw-surface").boundingBox())!;
+  const y = Math.round(box.y + box.height / 2);
+  const x0 = Math.round(box.x + 60);
+  const x1 = Math.round(box.x + box.width - 60);
+  const mid = Math.round((x0 + x1) / 2);
+
+  await tool(page, "형광펜").click();
+  await drag(page, [x0, y], [x1, y], 24);
+  await page.waitForTimeout(150);
+
+  // 가운데를 가로질러 지운다 — 아직 손은 안 뗀다.
+  await tool(page, "지우개").click();
+  await page.mouse.move(mid, y - 60);
+  await page.mouse.down();
+  await page.mouse.move(mid + 30, y + 60, { steps: 12 });
+  await page.waitForTimeout(120);
+
+  /** 이 가로줄에서 잉크가 끊긴 구간(=지워진 폭). */
+  const gapOn = async (row: number) => {
+    const runs = await inkRuns(page, row, x0 - 10, x1 + 10);
+    if (runs.length < 2) return null;
+    return { start: runs[0][1], end: runs[1][0], width: runs[1][0] - runs[0][1] };
+  };
+  const liveCenter = await gapOn(y);
+  const liveEdge = await gapOn(y - 6); // 획 가장자리 쪽 — 벡터 절단이 가장 크게 어긋나던 자리
+  expect(liveCenter, "지우는 중인데 획이 안 끊겼다").not.toBeNull();
+
+  // 손을 떼는 순간부터 30프레임 — 획이 한 프레임도 사라지면 안 된다(깜빡임).
+  const watching = watchAlpha(page, x0 + 30, y, 30);
+  await page.mouse.up();
+  const minAlpha = await watching;
+  await page.waitForTimeout(300);
+  expect(minAlpha, "손 떼는 순간 획이 한 프레임 사라졌다").toBeGreaterThan(0);
+
+  const doneCenter = await gapOn(y);
+  const doneEdge = await gapOn(y - 6);
+  expect(doneCenter, "손 떼니 지운 자리가 메워졌다").not.toBeNull();
+  expect(
+    Math.abs(doneCenter!.width - liveCenter!.width),
+    `중심선: 지운 폭이 ${liveCenter!.width} → ${doneCenter!.width}로 바뀌었다`
+  ).toBeLessThanOrEqual(3);
+  if (liveEdge && doneEdge) {
+    expect(
+      Math.abs(doneEdge.width - liveEdge.width),
+      `가장자리: 지운 폭이 ${liveEdge.width} → ${doneEdge.width}로 바뀌었다(각지거나 더 파임)`
+    ).toBeLessThanOrEqual(3);
+    expect(
+      Math.abs(doneEdge.start - liveEdge.start),
+      "가장자리에서 지운 자리의 시작점이 밀렸다"
+    ).toBeLessThanOrEqual(3);
+  }
+});

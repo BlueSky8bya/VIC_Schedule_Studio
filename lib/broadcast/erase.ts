@@ -300,6 +300,16 @@ function verdictSamples(stroke: Stroke, er: EraserPath, half: number): StrokePoi
   return refineNearEraser(stroke.points, er, half);
 }
 
+/**
+ * 벡터로 잘라도 눈에 안 띄는 획 반굵기(CSS px).
+ *
+ * 벡터 절단은 **중심선에서만** 픽셀과 일치한다. 잘린 끝은 획 굵기의 반원이라, 획 가장자리로
+ * 갈수록 지운 자리가 반굵기만큼 더 파이고 모서리가 각져 보인다(지우개 원을 따라가지 않는다).
+ * 얇은 펜은 그 차이가 2~3px라 안 보이지만 형광펜·굵은 펜은 확연하다(2026-08-06 사용자 지적:
+ * "손 떼는 순간 조금 각져지거나 더 안쪽으로 지워진다"). 그래서 굵은 획은 픽셀로 깎는다.
+ */
+export const VECTOR_EXACT_HALF = 3;
+
 export function eraseVerdict(stroke: Stroke, er: EraserPath): EraseVerdict {
   if (stroke.tool === "eraser" || stroke.tool === "image" || stroke.tool === "fill") return "none";
   const half = stroke.width / 2;
@@ -327,7 +337,9 @@ export function eraseVerdict(stroke: Stroke, er: EraserPath): EraseVerdict {
   if (!touchedAny) return "none";
   // 한 구간이라도 '스치기만' 했으면 그 획은 픽셀로 깎는다(부분만 벡터로 자르면 그 자리에서
   // 굵기 단위로 뭉텅 사라진다 — 사용자가 불편해한 바로 그 동작).
-  return grazeOnlyRun ? "raster" : "cut";
+  if (grazeOnlyRun) return "raster";
+  // 굵은 획은 가로질러 지워도 잘린 끝이 '획 굵기의 반원'이라 지우개 원과 다르다 — 픽셀로 깎는다.
+  return half > VECTOR_EXACT_HALF ? "raster" : "cut";
 }
 
 export type EraseResult = {

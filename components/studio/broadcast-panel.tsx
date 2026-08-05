@@ -92,6 +92,7 @@ import {
   HL_ALPHA,
   isBoxItem,
   isShapeTool,
+  smoothPathSamples,
   strokeIntersectsRect,
   strokeAppliesTo,
   type BroadcastTool,
@@ -2275,7 +2276,9 @@ export function BroadcastPanel({
       // "지운 게 왜 선택되냐"). 예전엔 destination-out 획을 그대로 쌓아 화면에서만 가렸고,
       // 그 획을 옮기면 지운 부분이 되살아났다.
       const before = [...store.strokes()];
-      const er = { points: live.points, width: live.width };
+      // 지우개 경로는 **화면에 그려진 곡선 그대로** 쓴다. 원래 점을 잇는 직선으로 판정하면
+      // 꺾이는 곳에서 곡선과 어긋나 손 떼는 순간 지운 자리가 각지거나 더 파여 보였다.
+      const er = { points: smoothPathSamples(live.points), width: live.width };
       // 그림은 '상자에 닿았나'가 아니라 '칠해진 픽셀을 덮었나'로 본다 — 투명한 여백만 스쳐도
       // 다시 인코딩하고 되돌리기 기록이 쌓이던 것을 막는다(화면은 그대로인데 기록만 늘었다).
       const { next, changed, images, raster } = applyErase(before, er, live.layer, (st, path) => {

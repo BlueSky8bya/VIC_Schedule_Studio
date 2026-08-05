@@ -402,6 +402,42 @@ function drawSmoothPath(ctx: MinimalCtx, pts: StrokePoint[]): void {
   ctx.lineTo(last.x, last.y);
 }
 
+/**
+ * drawSmoothPath가 **실제로 그리는 곡선**을 점열로 뽑는다(같은 기하, 같은 순서).
+ *
+ * 왜 필요한가: 지우개는 화면에 이 곡선으로 그려지는데, 장면에서 덜어낼 때는 원래 점을 잇는
+ * **직선 폴리라인**으로 판정했다. 곡선과 현(弦)은 방향이 꺾이는 곳에서 어긋나 — 손을 떼는
+ * 순간 지운 자리가 각지거나 안쪽으로 더 파여 보였다(2026-08-06 사용자 지적).
+ * 커밋 때 이 함수로 뽑은 점열을 지우개 경로로 쓰면 '본 대로' 지워진다.
+ */
+export function smoothPathSamples(pts: readonly StrokePoint[], step = 1.5): StrokePoint[] {
+  if (pts.length === 0) return [];
+  if (pts.length <= 2) return pts.map((p) => ({ ...p }));
+  const out: StrokePoint[] = [{ ...pts[0] }];
+  const push = (x: number, y: number) => {
+    const last = out[out.length - 1];
+    if (Math.hypot(x - last.x, y - last.y) > 1e-6) out.push({ x, y });
+  };
+  const m0 = midOf(pts[0], pts[1]);
+  push(m0.x, m0.y);
+  for (let i = 1; i < pts.length - 1; i += 1) {
+    const from = out[out.length - 1];
+    const c = pts[i];
+    const to = midOf(pts[i], pts[i + 1]);
+    // 이차베지어를 길이에 맞춰 잘게 뽑는다(현 길이 기준 — 곡률이 커도 충분히 촘촘하다).
+    const rough = Math.hypot(c.x - from.x, c.y - from.y) + Math.hypot(to.x - c.x, to.y - c.y);
+    const n = Math.max(1, Math.ceil(rough / step));
+    for (let k = 1; k <= n; k += 1) {
+      const t = k / n;
+      const u = 1 - t;
+      push(u * u * from.x + 2 * u * t * c.x + t * t * to.x, u * u * from.y + 2 * u * t * c.y + t * t * to.y);
+    }
+  }
+  const last = pts[pts.length - 1];
+  push(last.x, last.y);
+  return out;
+}
+
 /** 펜 증분 렌더(라이브 캔버스용): '확정된' 조각만 그린다 — 임시 직선 꼬리를 안 그려
  *  울퉁불퉁 잔재가 없고, 프레임당 새 조각 몇 개만 그려 긴 낙서에서도 지연이 없다.
  *  done = 지금까지 소화한 진행도(0 = 처음). 반환 = 새 진행도. 스타일은 매번 설정.
