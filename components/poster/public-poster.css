@@ -1081,16 +1081,17 @@ html {
 }
 .legend-tiers.is-compact li {
   display: grid;
-  grid-template-columns: 30px auto;
+  /* 칸이 불꽃 3개 실폭(39px, 실측)보다 좁으면 넘친 만큼 gap을 먹어 '🔥🔥🔥폭발'처럼 붙는다. */
+  grid-template-columns: 41px auto;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 12px; /* 얇은 레일 태그(.legend-item 12px)와 같은 크기 */
   white-space: nowrap;
 }
 .legend-tiers.is-compact .flame {
   min-height: 0;
   font-size: 11px;
-  letter-spacing: -2.5px;
+  letter-spacing: -2px;
 }
 /* 아바타 자리 상단 카드 줄 — 점선 박스 '위'에 얹힌다(박스 안 침범 금지 — 아바타 가림 방지,
    사용자 지정). 카드 바닥이 점선 상변에서 8px 위. 정보 카드 = 달력 쪽(안쪽) 모서리,
@@ -2065,9 +2066,9 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   gap: 5px;
   margin: 0 0 var(--space-1); /* 4 */
   padding: 0 6px; /* .legend-item과 같은 들여쓰기 */
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 900;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.03em;
   color: #a99668;
 }
 /* 1열로 세우면 오른쪽 절반이 통째로 비어 패널 안에서 이 블록만 성겨 보였다(위 태그·방식은
@@ -2084,12 +2085,15 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   display: grid;
   /* 불꽃 3개가 '넘치지 않고' 들어가는 고정 칸 + 라벨 — 네 칸의 라벨 왼쪽 끝이 같다.
      칸이 실제 불꽃 폭보다 좁으면 넘친 만큼 아래 gap을 먹어 '🔥🔥🔥폭발적'처럼 붙어 보인다. */
-  grid-template-columns: 42px 1fr;
+  /* 불꽃 3개 실폭 39px(11px 글꼴 기준, 실측) — 칸은 그보다 넓어야 gap을 안 먹는다. */
+  grid-template-columns: 41px 1fr;
   align-items: center;
-  gap: 8px; /* 색칩↔이름과 같은 간격 */
-  padding: 2px 6px; /* .legend-item과 동일 */
+  gap: 5px;
+  padding: 2px 4px;
   border-radius: var(--r-sm);
-  font-size: 12px;
+  /* 위 태그 목록(.legend-item 14px)과 같은 글자 크기 — 같은 패널에서 여기만 작으면
+     '부록'처럼 보인다. 대신 불꽃 칸·간격을 좁혀 2열 폭 안에 넣는다. */
+  font-size: 14px;
   font-weight: 800;
   color: #6b6450;
   white-space: nowrap; /* 2열이라 좁아진 칸에서 라벨이 꺾이지 않게 */
@@ -2100,7 +2104,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   min-height: 18px; /* 태그 색칩과 같은 높이 */
   font-size: 11px;
   line-height: 1;
-  letter-spacing: -1.5px;
+  letter-spacing: -2px; /* 3개 실폭이 칸(36px) 안에 — 넘치면 라벨에 달라붙는다 */
 }
 
 .legend-clear {
