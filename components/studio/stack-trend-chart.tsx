@@ -121,14 +121,12 @@ export function StackTrendChart({
                   onPointerLeave={() => setHover(null)}
                 >
                   <div className="vt-barwrap">
+                    {/* ⚠ 여기에 title을 달지 않는다 — 이 차트는 이미 자체 호버 박스를 띄우므로
+                        브라우저 기본 툴팁이 뒤늦게 겹쳐 뜬다(두 개가 따로 논다).
+                        '진행 중'이라는 사실은 아래 호버 박스 안에 한 줄로 넣는다. */}
                     <div
                       className={`vt-bar${isPartial ? " partial" : ""}`}
                       style={{ height: `${(mo.total / max) * 100}%` }}
-                      title={
-                        isPartial && partial
-                          ? `이번 달은 진행 중 — ${partial.elapsedDays}/${partial.totalDays}일까지의 값이에요.`
-                          : undefined
-                      }
                     >
                       <div className="vt-fill">
                         {data.cats.map((c) => {
@@ -205,6 +203,12 @@ export function StackTrendChart({
                   </div>
                 );
               })()}
+              {/* 진행 중인 달을 짚었을 때만 — 브라우저 기본 툴팁 대신 이 박스 안에서 알린다. */}
+              {partial && hover.ym === latest?.ym ? (
+                <span className="vt-tip-note partial">
+                  진행 중 · {partial.elapsedDays}/{partial.totalDays}일
+                </span>
+              ) : null}
             </div>,
             document.body
           )

@@ -1028,17 +1028,33 @@
 
 /* 진행 중인 달(마지막 칸) — 빗금 + 열린 윗면. 끝난 달과 같은 자격으로 읽히면 안 된다.
    (8월 7일치를 7월 전체와 나란히 놓고 "줄었다"로 읽던 오독을 막는 표시) */
+/* ⚠ 빗금을 background-image로 주면 안 된다 — `.trend-bar.cur`의 채움이 gradient(=background-image)라
+   덮어써서 막대가 통째로 투명해진다. 실제로 그렇게 나갔다: 이번 달 막대가 사라지고 점선만 공중에
+   떠 보였다(2026-08-07). 그래서 채움은 그대로 두고 ::before로 덮는다. */
 .trend-bar.partial,
 .vt-bar.partial,
 .dsess-bar.partial {
-  background-image: repeating-linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.55) 0 3px,
-    rgba(255, 255, 255, 0) 3px 7px
-  );
+  position: relative; /* ::before 덮개 기준 (.dsess-bar는 기본이 static이다) */
+  min-height: 5px; /* 값이 작아도 '막대'로 보이게 — 점선만 남으면 떠 있는 선처럼 읽힌다 */
   border-top: 1px dashed rgba(91, 52, 240, 0.55);
   border-top-left-radius: 0;
   border-top-right-radius: 0;
+}
+.trend-bar.partial::before,
+.vt-bar.partial::before,
+.dsess-bar.partial::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* .vt-bar는 색 세그먼트(.vt-fill)가 자식이라, z-index 없으면 빗금이 그 아래 깔려 안 보인다. */
+  z-index: 1;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.5) 0 3px,
+    rgba(255, 255, 255, 0) 3px 7px
+  );
 }
 .vt-day.partial {
   color: var(--violet, #5b34f0);
@@ -1447,6 +1463,13 @@
   font-size: 10px;
   font-weight: 800;
   color: #cfc9e0;
+}
+/* 호버 박스 맨 아래 '진행 중' 한 줄 — .vt-tip은 세로 flex라 그대로 마지막 줄이 된다. */
+.vt-tip-note.partial {
+  margin-top: 3px;
+  padding-top: 3px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  color: #ded7ff;
 }
 .vt-tip-row {
   display: flex;
