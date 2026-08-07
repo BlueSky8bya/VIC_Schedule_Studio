@@ -557,8 +557,14 @@ function computeOccupancy(
   const full = 3600 * Math.max(1, observedDays);
   return sec.map((b, h) => {
     // 진행 중인 칸은 지나간 만큼으로만 나눈다(최소 60초 — 정각 직후 1~2초를 나누면 발산한다).
+    // 아직 오지 않은 칸은 오늘 몫을 분모에서 뺀다 — 안 그러면 '오늘'이 0인 관측일로 끼어
+    // 저녁 시간대가 실제보다 낮게 찍힌다(월별 차트에서만 의미 있다).
     const denom =
-      partial && partial.hour === h ? Math.max(60, Math.min(3600, partial.elapsedSec)) : full;
+      partial && partial.hour === h
+        ? Math.max(60, Math.min(3600, partial.elapsedSec))
+        : partial && h > partial.hour
+          ? 3600 * Math.max(1, observedDays - 1)
+          : full;
     const occ = emptyOccSlot();
     occ.avg = b.total / denom;
     for (const role of ROLE_ORDER) occ.roles[role] = (b.role[role] ?? 0) / denom;
@@ -590,7 +596,10 @@ function ownerSessionsFrom(rows: SessionRow[]): OwnerSession[] {
         minutes: Math.round(seconds / 60),
         seconds,
         // 페이지 이동으로 몇 조각이었나 — 1이면 이동 없이 한 화면에 머문 방문.
-        segments: r.segments ?? 1
+        segments: r.segments ?? 1,
+        // 비콘 end가 아직 안 왔고 최근까지 하트비트가 있으면 '지금 떠 있는' 방문으로 본다.
+        // (5분은 하트비트 60초의 넉넉한 배수 — 네트워크가 한두 번 끊겨도 살아 있다고 본다.)
+        live: !r.ended_at && Date.now() - endMs < 5 * 60_000
       };
     })
     .filter((s) => Number.isFinite(s.startMs) && Number.isFinite(s.endMs))
@@ -1262,6 +1271,9 @@ export type OwnerSession = {
   minutes: number;
   seconds: number; // 실측 체류(가시 구간 합집합). 짧은 방문은 UI가 '초'로 표시
   segments: number; // 이 방문이 몇 조각이었나(문서 이동 횟수 = segments-1). 1이면 이동 없음
+  // 아직 안 끝난 방문(ended_at 없음 = 지금 떠 있음). 끝난 방문과 같은 모양으로 그리면
+  // 켜져 있는 세션이 이미 끝난 것처럼 읽힌다.
+  live: boolean;
 };
 // 토글(시청자/운영진 포함)로 즉시 바뀌는 그래프 묶음 — 같은 코드로 시청자만/전체 두 벌을 만든다.
 export type VisitGraphs = {
@@ -1324,6 +1336,13 @@ export async function getVisitTrendsAction(
   const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
   // 그 달 1일의 요일(0=일). 주차를 단순 7일 묶음이 아니라 달력 주(일요일 시작)로 끊기 위함.
   const firstWeekday = new Date(Date.UTC(y, m - 1, 1)).getUTCDay();
+  // 이번 달을 보고 있으면 마지막 시간대는 아직 진행 중이다 — 3600초로 나누면 지금 시간대가
+  // 늘 실제의 몇 분의 일로 찍힌다(일별 모달에서 22시가 1/5로 나온 것과 같은 원인).
+  const nowKstMs = Date.now() + KST_MS;
+  const monthPartial =
+    new Date(nowKstMs).toISOString().slice(0, 7) === `${y}-${pad(m)}`
+      ? { hour: Math.floor((nowKstMs % 86400000) / 3600000), elapsedSec: (nowKstMs % 3600000) / 1000 }
+      : undefined;
   const emptySlot = (): VisitSlot => ({
     roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
     devices: Object.fromEntries([...DEVICE_SET].map((d) => [d, 0])),
@@ -1382,7 +1401,7 @@ export async function getVisitTrendsAction(
       const slot = hours[v.hour];
       if (v.device in slot.devices) slot.devices[v.device] += 1;
     }
-    const occupancy = computeOccupancy(subset, observedDayCount(subset));
+    const occupancy = computeOccupancy(subset, observedDayCount(subset), monthPartial);
     const hasOccupancy = subset.length > 0 && occupancy.some((o) => o.avg > 0);
     const heatmap = Array.from({ length: 7 }, () => Array.from({ length: 24 }, () => 0));
     for (const r of subset) {

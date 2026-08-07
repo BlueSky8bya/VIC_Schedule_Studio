@@ -17,9 +17,11 @@ import {
   deviceLabel,
   fmtDur,
   fmtOcc,
+  HourTicks,
   hhmm,
   kstOf,
-  roleColor
+  roleColor,
+  withAlpha
 } from "@/components/developer/insights-dashboard";
 import { ActivityTimeline } from "@/components/developer/activity-timeline";
 import { ActivityUsage } from "@/components/developer/activity-usage";
@@ -131,16 +133,23 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
     .map((s) => {
       const d = kstOf(s.startMs);
       const startFrac = (d.getUTCHours() + d.getUTCMinutes() / 60) / 24;
-      const widthFrac = Math.min(1 - startFrac, Math.max(s.seconds / 3600 / 24, 0));
+      // 가로축은 '언제'다 → 막대 폭은 시작~끝(span). 예전엔 폭에 실측 체류(가시 구간 합집합)를
+      // 써서, 자리비움이 섞인 방문이 실제보다 훨씬 일찍 끝난 것처럼 그려졌다.
+      // 실측 체류는 막대 '안'을 채우는 길이로 보여준다(연한 테두리 = 자리비움 포함 구간).
+      const spanSeconds = Math.max(0, Math.round((s.endMs - s.startMs) / 1000));
+      const widthFrac = Math.min(1 - startFrac, Math.max(spanSeconds / 86400, 0.002));
+      const seenFrac = spanSeconds > 0 ? Math.min(1, s.seconds / spanSeconds) : 1;
       return {
         startFrac,
         widthFrac,
+        seenFrac,
+        live: s.live,
         device: s.device,
         seconds: s.seconds,
         startMs: s.startMs,
-        timeLabel: `${hhmm(s.startMs)}–${hhmm(s.endMs)}`,
-        spanSeconds: Math.max(0, Math.round((s.endMs - s.startMs) / 1000)),
-        tip: `${hhmm(s.startMs)}–${hhmm(s.endMs)} · 화면에 떠 있던 시간 ${fmtDur(s.seconds)} · ${devMeta(s.device).label}`
+        timeLabel: `${hhmm(s.startMs)}–${s.live ? "지금" : hhmm(s.endMs)}`,
+        spanSeconds,
+        tip: `${hhmm(s.startMs)}–${s.live ? "지금(계속 중)" : hhmm(s.endMs)} · 화면에 떠 있던 시간 ${fmtDur(s.seconds)} · ${devMeta(s.device).label}`
       };
     })
     .sort((a, b) => a.startMs - b.startMs);
@@ -378,7 +387,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                 <div className="own-track">
                   {segs.map((s, i) => (
                     <span
-                      className="own-seg"
+                      className={`own-seg${s.live ? " live" : ""}`}
                       key={i}
                       onPointerEnter={(e) => onOwnSeg(e, s.tip)}
                       onPointerMove={(e) => onOwnSeg(e, s.tip)}
@@ -386,20 +395,22 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                       style={{
                         left: `${s.startFrac * 100}%`,
                         width: `${s.widthFrac * 100}%`,
-                        background: devMeta(s.device).color
+                        background: withAlpha(devMeta(s.device).color, 0.3)
                       }}
                       title={s.tip}
-                    />
+                    >
+                      {/* 막대 = 있었던 구간, 안쪽 = 실제로 화면에 떠 있던 시간. */}
+                      <i
+                        style={{
+                          width: `${s.seenFrac * 100}%`,
+                          background: devMeta(s.device).color
+                        }}
+                      />
+                    </span>
                   ))}
                 </div>
               </div>
-              <div className="own-axis solo" aria-hidden="true">
-                <span>0</span>
-                <span>6</span>
-                <span>12</span>
-                <span>18</span>
-                <span>24</span>
-              </div>
+              <HourTicks className="own-axis solo" />
               {ownTip ? (
                 <div
                   className="vt-tip own-tip"

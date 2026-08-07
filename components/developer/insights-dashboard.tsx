@@ -25,6 +25,7 @@ import { BroadcastHours } from "@/components/studio/broadcast-hours";
 import { HighlightCards } from "@/components/studio/highlight-cards";
 import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
+import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
 import { PlainEmail } from "@/components/ui/plain-email";
 import {
   getInsightsAction,
@@ -35,6 +36,7 @@ import {
   type VisitSummary,
   type VisitTrends
 } from "@/lib/insights/actions";
+import { kstDay, monthProgress } from "@/lib/insights/month-progress";
 import { getPerfStatsAction, type PerfStatRow } from "@/lib/insights/perf-actions";
 import { clearUnlockSessionForUserAction } from "@/lib/private-layer/actions";
 import { HEART_BLAZE, HEART_CROWN, HEART_HOT, HEART_MIN } from "@/lib/schedules/heart-tiers";
@@ -152,6 +154,33 @@ export const deviceColor = (key: string) =>
   DEVICE_META.find((m) => m.key === key)?.color ?? "#9aa0ab";
 export const deviceLabel = (key: string) =>
   DEVICE_META.find((m) => m.key === key)?.label ?? key;
+// #rrggbb → rgba(). 접속 세션 막대가 '있었던 구간'(연하게)과 '실제로 떠 있던 시간'(진하게)
+// 두 겹이라 같은 색의 옅은 판이 필요하다. color-mix는 구형 사파리에서 안 먹어 JS로 만든다.
+export const withAlpha = (hex: string, a: number) => {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
+
+// 24시간 축(KST) — 시간 트랙(관리자 접속 세션)용. 시각은 '경계'라 눈금을 h/24 지점에 정확히 놓는다.
+// 3시간 간격 + 양 끝(0·24). 예전엔 0/6/12/18/24 다섯 개를 space-between으로 흩뿌려, 라벨 폭의
+// 절반만큼 어긋나고 사이가 비어 위치를 눈대중으로 외삽하게 했다(그래서 21시 막대가 23시로 읽혔다).
+export function HourTicks({ className = "" }: { className?: string }) {
+  return (
+    <div className={`hour-ticks ${className}`.trim()} aria-hidden="true">
+      {Array.from({ length: 9 }, (_, i) => i * 3).map((h) => (
+        <span
+          data-edge={h === 0 ? "start" : h === 24 ? "end" : undefined}
+          key={h}
+          style={{ left: `${(h / 24) * 100}%` }}
+        >
+          {h}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 // 방문 품질 요약 블록(개발자 전용 — 방문 패널/일일 상세 공용). 시청자 기준이 기본이고, '운영진 포함'
 // 토글로 개발자·관리자 테스트 트래픽까지 합산. 위 분리 배지로 숫자가 부풀었는지 바로 보인다.
@@ -573,12 +602,21 @@ export function InsightsDashboard({
     const max = Math.max(1, ...series.map(totalOf));
     // 시간대 막대 높이 스케일은 '평균 동시 접속'의 최댓값 기준(상대 스케일이라 절대치가 작아도 형태가 보임).
     const om = Math.max(0.0001, ...g.occupancy.map((s) => s.avg));
+    // 이번 달을 보고 있으면 오늘은 아직 안 끝났고, 그 뒤 날짜는 아직 오지 않았다.
+    // 둘 다 '0'과 구분해서 그린다(오늘=진행 중, 이후=아직 안 옴).
+    const todayKey = kstDay();
+    const todayDay =
+      todayKey.slice(0, 7) === `${year}-${String(month).padStart(2, "0")}`
+        ? Number(todayKey.slice(8, 10))
+        : 0;
     // 관리자 접속 세션을 KST 날짜별로 묶고, 각 세션을 24h 트랙 좌표(시작%·길이%)로 — 수면/스크린타임
     // 타임라인처럼 "언제·몇 분·어느 기기"를 한 줄로 보여준다(최근 날짜가 위).
     const devMeta = (k: string) => DEVICE_META.find((m) => m.key === k) ?? DEVICE_META[0];
     type OwnSeg = {
       startFrac: number;
       widthFrac: number;
+      seenFrac: number; // 그 구간 중 실제로 화면에 떠 있던 비율(막대 안쪽 채움)
+      live: boolean;
       device: string;
       label: string; // 툴팁: "18:03–18:47 · 45분 · 안드로이드"
     };
@@ -587,13 +625,18 @@ export function InsightsDashboard({
       const d = kstOf(s.startMs);
       const key = d.toISOString().slice(0, 10);
       const startFrac = (d.getUTCHours() + d.getUTCMinutes() / 60) / 24;
-      const widthFrac = Math.min(1 - startFrac, Math.max(s.seconds / 3600 / 24, 0));
+      // 폭은 시작~끝(span). 실측 체류를 폭으로 쓰면 자리비움이 섞인 방문이 일찍 끝난 것처럼 그려진다.
+      const spanSec = Math.max(0, Math.round((s.endMs - s.startMs) / 1000));
+      const widthFrac = Math.min(1 - startFrac, Math.max(spanSec / 86400, 0.002));
+      const seenFrac = spanSec > 0 ? Math.min(1, s.seconds / spanSec) : 1;
       const entry = ownerDayMap.get(key) ?? { label: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`, segs: [] };
       entry.segs.push({
         startFrac,
         widthFrac,
+        seenFrac,
+        live: s.live,
         device: s.device,
-        label: `${hhmm(s.startMs)}–${hhmm(s.endMs)} · ${fmtDur(s.seconds)} · ${devMeta(s.device).label}`
+        label: `${hhmm(s.startMs)}–${s.live ? "지금(계속 중)" : hhmm(s.endMs)} · 화면에 떠 있던 시간 ${fmtDur(s.seconds)} · ${devMeta(s.device).label}`
       });
       ownerDayMap.set(key, entry);
     }
@@ -847,12 +890,13 @@ export function InsightsDashboard({
                     ))}
                   </div>
                 ))}
-                <div className="vheat-axis">
-                  <span>0</span>
-                  <span>6</span>
-                  <span>12</span>
-                  <span>18</span>
-                  <span>23</span>
+                {/* 칸(=1시간) 중앙에 3시간마다 라벨 + 오른쪽 끝에 24. 예전엔 0/6/12/18/23을
+                    space-between으로 흩뿌려 라벨이 실제 칸보다 반 칸 왼쪽으로 밀렸다. */}
+                <div className="vheat-axis" aria-hidden="true">
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <span key={h}>{h % 3 === 0 ? h : ""}</span>
+                  ))}
+                  <b>24</b>
                 </div>
               </div>
             );
@@ -873,7 +917,7 @@ export function InsightsDashboard({
                     <div className="own-track">
                       {d.segs.map((s, i) => (
                         <span
-                          className="own-seg"
+                          className={`own-seg${s.live ? " live" : ""}`}
                           key={i}
                           onPointerEnter={(e) => onOwnSeg(e, s.label)}
                           onPointerMove={(e) => onOwnSeg(e, s.label)}
@@ -881,21 +925,23 @@ export function InsightsDashboard({
                           style={{
                             left: `${s.startFrac * 100}%`,
                             width: `${s.widthFrac * 100}%`,
-                            background: devMeta(s.device).color
+                            background: withAlpha(devMeta(s.device).color, 0.3)
                           }}
                           title={s.label}
-                        />
+                        >
+                          {/* 막대 = 있었던 구간, 안쪽 = 실제로 화면에 떠 있던 시간. */}
+                          <i
+                            style={{
+                              width: `${s.seenFrac * 100}%`,
+                              background: devMeta(s.device).color
+                            }}
+                          />
+                        </span>
                       ))}
                     </div>
                   </div>
                 ))}
-                <div className="own-axis" aria-hidden="true">
-                  <span>0</span>
-                  <span>6</span>
-                  <span>12</span>
-                  <span>18</span>
-                  <span>24</span>
-                </div>
+                <HourTicks className="own-axis" />
                 {ownerTip ? (
                   <div
                     className="vt-tip own-tip"
@@ -942,9 +988,13 @@ export function InsightsDashboard({
                 ))}
                 {g.days.map((d) => (
                   <span
-                    className="vmini-cell"
+                    className={`vmini-cell${d.day === todayDay ? " today" : ""}${
+                      todayDay > 0 && d.day > todayDay ? " fut" : ""
+                    }`}
                     key={d.day}
-                    title={`${month}/${d.day} · 체류 ${fmtDur(d.stay)} · ${d.total}방문`}
+                    title={`${month}/${d.day} · 체류 ${fmtDur(d.stay)} · ${d.total}방문${
+                      d.day === todayDay ? " (오늘 — 진행 중)" : ""
+                    }`}
                     style={{ background: d.stay > 0 ? `rgba(52,211,153,${0.18 + (d.stay / stayMax) * 0.75})` : "#f3f1ee" }}
                   >
                     {d.day}
@@ -994,13 +1044,16 @@ export function InsightsDashboard({
                           });
                         return (
                           <div
-                            className="dsess-col"
+                            className={`dsess-col${todayDay > 0 && i + 1 > todayDay ? " fut" : ""}`}
                             key={i}
                             onPointerEnter={enter}
                             onPointerMove={enter}
                           >
                             <div className="dsess-barwrap">
-                              <div className="dsess-bar" style={{ height: `${(n / dmax) * 100}%` }} />
+                              <div
+                                className={`dsess-bar${i + 1 === todayDay ? " partial" : ""}`}
+                                style={{ height: `${(n / dmax) * 100}%` }}
+                              />
                             </div>
                             <span className="dsess-x">{(i + 1) % 5 === 0 || i === 0 ? i + 1 : ""}</span>
                           </div>
@@ -1160,9 +1213,15 @@ export function InsightsDashboard({
       const prevYy = i > 0 ? Number(trend.months[i - 1].split("-")[0]) : null;
       return { showYear: i === 0 || yy !== prevYy, yy: yy % 100, mm };
     });
+    // 마지막 칸의 달 — 이게 이번 달이면 아직 진행 중이다(배지·막대 표시가 달라진다).
+    const lastYm = trend.months[trend.months.length - 1] ?? "";
+    const partial = monthProgress(lastYm);
     return (
       <>
-        <p className="insight-note">최근 6개월 추이 · 배지는 지난달 대비 변화</p>
+        <p className="insight-note">
+          최근 6개월 추이 · 배지는 지난달 대비 변화
+          {partial ? " (이번 달은 진행 중이라 지난달 같은 페이스와 비교)" : ""}
+        </p>
         <BroadcastHours
           months={trend.months}
           broadcastHours={trend.broadcastHours}
@@ -1172,31 +1231,23 @@ export function InsightsDashboard({
         {series.map((s) => {
           const cur = s.values[s.values.length - 1] ?? 0;
           const prev = s.values[s.values.length - 2] ?? 0;
-          const delta = prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
           const max = Math.max(1, ...s.values);
           return (
             <div className="trend-row" key={s.key}>
               <div className="trend-head">
                 <span>{s.label}</span>
                 <strong>{cur.toLocaleString()}</strong>
-                {delta === null ? (
-                  <em className="trend-new">신규</em>
-                ) : delta === 0 ? (
-                  // 지난달과 동률이면 방향색(빨강/파랑) 대신 중립 대시로 — "변화 없음".
-                  <em className="insight-trend flat">—</em>
-                ) : (
-                  <em className={`insight-trend ${delta > 0 ? "up" : "down"}`}>
-                    {delta > 0 ? "▲" : "▼"}
-                    {Math.abs(delta)}%
-                  </em>
-                )}
+                <TrendDeltaBadge cur={cur} prev={prev} ym={lastYm} />
               </div>
               <div className="trend-spark">
                 {s.values.map((v, i) => (
                   <div className="trend-bcol" key={i}>
                     <div className="trend-bwrap">
+                      {/* 진행 중인 달은 빗금 — 옆 칸(완료된 달)과 같은 자격으로 읽히면 안 된다. */}
                       <div
-                        className={`trend-bar ${i === s.values.length - 1 ? "cur" : ""}`}
+                        className={`trend-bar ${i === s.values.length - 1 ? "cur" : ""}${
+                          partial && i === s.values.length - 1 ? " partial" : ""
+                        }`}
                         data-v={`${v}`}
                         style={{ height: `${(v / max) * 100}%` }}
                       />

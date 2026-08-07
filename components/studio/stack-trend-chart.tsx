@@ -6,6 +6,7 @@ import "@/components/studio/insights-charts.css";
 import { type PointerEvent as ReactPointerEvent, useState } from "react";
 import { createPortal } from "react-dom";
 import type { TrendStack } from "@/lib/insights/actions";
+import { monthProgress } from "@/lib/insights/month-progress";
 
 // 카테고리별(태그/역할/기기) 6개월 누적 막대 트렌드.
 // 호버 분해 박스는 body로 포털 + position:fixed로 띄운다 → 차트가 모달 스크롤 안에 쌓여 있어도
@@ -41,6 +42,8 @@ export function StackTrendChart({
   // P2-INSIGHT-1: 차트의 텍스트 대안(sr-only) — 색·막대 없이도 같은 정보에 접근.
   // showNumbers=false(공개 하트 차트 등)는 숫자 비노출 정책을 그대로 따르고 순위만 읽어준다.
   const latest = data.months[data.months.length - 1];
+  // 마지막 칸이 이번 달이면 아직 진행 중 — 옆 칸(끝난 달)과 같은 자격으로 읽히면 안 된다.
+  const partial = latest ? monthProgress(latest.ym) : null;
   const srSummary = (() => {
     if (empty || !latest) return "";
     const topCats = [...data.cats]
@@ -56,7 +59,12 @@ export function StackTrendChart({
           .map((c) => (showNumbers ? `${c.label} ${c.n}` : c.label))
           .join(", ")}`
       : "";
-    return [monthly ? `최근 6개월 합계 — ${monthly}.` : "", rank].filter(Boolean).join(" ");
+    const note = partial
+      ? `마지막 달은 진행 중이에요(${partial.elapsedDays}/${partial.totalDays}일).`
+      : "";
+    return [monthly ? `최근 6개월 합계 — ${monthly}.` : "", rank, note]
+      .filter(Boolean)
+      .join(" ");
   })();
   // 범례를 숨긴 차트(태그 많음)는 호버 박스를 2열로 + 그 달 값이 큰 순으로 정렬해(왼쪽위→오른쪽아래)
   // 수치가 없어도 비율 높낮이를 한눈에. (방문 트렌드처럼 범례 있는 차트는 카테고리 순서 그대로.)
@@ -82,7 +90,8 @@ export function StackTrendChart({
             aria-hidden={srSummary ? true : undefined}
             onPointerLeave={() => setHover(null)}
           >
-            {data.months.map((mo) => {
+            {data.months.map((mo, mi) => {
+              const isPartial = Boolean(partial) && mi === data.months.length - 1;
               const enter = (e: ReactPointerEvent<HTMLDivElement>) => {
                 if (mo.total <= 0) {
                   setHover(null);
@@ -112,7 +121,15 @@ export function StackTrendChart({
                   onPointerLeave={() => setHover(null)}
                 >
                   <div className="vt-barwrap">
-                    <div className="vt-bar" style={{ height: `${(mo.total / max) * 100}%` }}>
+                    <div
+                      className={`vt-bar${isPartial ? " partial" : ""}`}
+                      style={{ height: `${(mo.total / max) * 100}%` }}
+                      title={
+                        isPartial && partial
+                          ? `이번 달은 진행 중 — ${partial.elapsedDays}/${partial.totalDays}일까지의 값이에요.`
+                          : undefined
+                      }
+                    >
                       <div className="vt-fill">
                         {data.cats.map((c) => {
                           const n = mo.counts[c.key] ?? 0;
@@ -127,7 +144,9 @@ export function StackTrendChart({
                       </div>
                     </div>
                   </div>
-                  <span className="vt-day">{Number(mo.ym.slice(5, 7))}월</span>
+                  <span className={`vt-day${isPartial ? " partial" : ""}`}>
+                    {Number(mo.ym.slice(5, 7))}월
+                  </span>
                 </div>
               );
             })}

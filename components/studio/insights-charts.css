@@ -1026,6 +1026,41 @@
   background: linear-gradient(180deg, #8b7cf0, #6b5bd6);
 }
 
+/* 진행 중인 달(마지막 칸) — 빗금 + 열린 윗면. 끝난 달과 같은 자격으로 읽히면 안 된다.
+   (8월 7일치를 7월 전체와 나란히 놓고 "줄었다"로 읽던 오독을 막는 표시) */
+.trend-bar.partial,
+.vt-bar.partial,
+.dsess-bar.partial {
+  background-image: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0 3px,
+    rgba(255, 255, 255, 0) 3px 7px
+  );
+  border-top: 1px dashed rgba(91, 52, 240, 0.55);
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.vt-day.partial {
+  color: var(--violet, #5b34f0);
+}
+
+/* 진행 중임을 적는 칩 — 배지 옆. 숫자 배지(▲▼)와 달리 방향색을 쓰지 않는다. */
+.trend-partial {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: var(--r-pill, 999px);
+  background: rgba(91, 52, 240, 0.09);
+  color: #6b5bd6;
+  font-size: 10.5px;
+  font-weight: 800;
+  font-style: normal;
+  white-space: nowrap;
+}
+/* '같은 페이스 환산치와 비교'한 값 — ≈가 붙는다(가정이 섞였다는 표시). */
+.insight-trend.pace {
+  opacity: 0.88;
+}
+
 .trend-bcol > span {
   margin-top: 3px;
   /* 1줄("5월")이든 2줄("26년/1월")이든 같은 높이를 차지해 막대 시작(바닥선)이 어긋나지 않게. */
@@ -1521,6 +1556,12 @@
 
 .bcast-dcol:hover .bcast-dbar[data-on] {
   filter: brightness(1.12) saturate(1.1);
+}
+
+/* 아직 오지 않은 날 — '방송 안 함(0)'과 구분. 같은 회색이면 이번 달 후반이 통째로 쉰 것처럼 보인다. */
+.bcast-dcol.fut .bcast-dbar,
+.bcast-dcol.fut .bcast-dx {
+  opacity: 0.4;
 }
 
 .bcast-dx {

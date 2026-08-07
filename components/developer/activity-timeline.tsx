@@ -113,9 +113,15 @@ function groupItems(items: Item[]): Grouped[] {
 function visitGist(items: Item[]): string {
   const server = items.filter((i) => i.source === "server");
   const pick = (server.length > 0 ? server : items).map((i) => i.label);
-  const uniq: string[] = [];
-  for (const label of pick) if (!uniq.includes(label)) uniq.push(label);
-  const head = uniq.slice(0, 3).join(" · ");
+  // 횟수까지 남긴다 — 라벨만 접으면 "저장 12번"이 "저장"이 되어, 접힌 줄만 보고는 한 번 한 일과
+  // 반복한 일이 구별되지 않는다(Map은 처음 나온 순서를 지킨다).
+  const n = new Map<string, number>();
+  for (const label of pick) n.set(label, (n.get(label) ?? 0) + 1);
+  const uniq = [...n.entries()];
+  const head = uniq
+    .slice(0, 3)
+    .map(([label, c]) => (c > 1 ? `${label} ×${c}` : label))
+    .join(" · ");
   const rest = uniq.length > 3 ? ` 외 ${uniq.length - 3}` : "";
   return (server.length > 0 ? `변경 ${server.length}건 — ` : "") + head + rest;
 }

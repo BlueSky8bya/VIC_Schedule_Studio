@@ -4,6 +4,8 @@
 import "@/components/studio/insights-charts.css";
 
 import { useLayoutEffect, useRef, useState } from "react";
+import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
+import { monthProgress } from "@/lib/insights/month-progress";
 
 // 방송시간(시간, 소수) → "32시간 30분" 표기. 0이면 "0분".
 export function fmtHoursLabel(h: number): string {
@@ -33,7 +35,9 @@ export function BroadcastHours({
   const monthVals = broadcastHours;
   const cur = monthVals[monthVals.length - 1] ?? 0;
   const prev = monthVals[monthVals.length - 2] ?? 0;
-  const delta = prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
+  const lastYm = months[months.length - 1] ?? "";
+  // 이번 달을 보고 있으면 마지막 막대·남은 날짜 칸은 '아직 안 온 시간'이다(0이 아니라).
+  const partial = monthProgress(lastYm);
   const monthMax = Math.max(0.1, ...monthVals);
   const daily = broadcastDaily;
   const dayMax = Math.max(0.1, ...daily);
@@ -80,7 +84,7 @@ export function BroadcastHours({
     ? `최근 6개월 방송 시간 — ${months
         .map((mk, i) => `${Number(mk.split("-")[1])}월 ${fmtHoursLabel(monthVals[i] ?? 0)}`)
         .join(", ")}. 이번 달 ${fmtHoursLabel(cur)}, 방송 ${days}일, 일평균 ${fmtHoursLabel(avg)}${
-        delta === null ? "" : `, 전달 대비 ${delta > 0 ? "+" : ""}${delta}%`
+        partial ? ` (${partial.elapsedDays}/${partial.totalDays}일 진행 중)` : ""
       }.`
     : "";
 
@@ -91,23 +95,16 @@ export function BroadcastHours({
         <div className="trend-head">
           <span>📺 방송 시간</span>
           <strong>{fmtHoursLabel(cur)}</strong>
-          {delta === null ? (
-            <em className="trend-new">신규</em>
-          ) : delta === 0 ? (
-            <em className="insight-trend flat">—</em>
-          ) : (
-            <em className={`insight-trend ${delta > 0 ? "up" : "down"}`}>
-              {delta > 0 ? "▲" : "▼"}
-              {Math.abs(delta)}%
-            </em>
-          )}
+          <TrendDeltaBadge cur={cur} prev={prev} ym={lastYm} fmt={fmtHoursLabel} />
         </div>
         <div className="trend-spark">
           {monthVals.map((v, i) => (
             <div className="trend-bcol" key={i}>
               <div className="trend-bwrap">
                 <div
-                  className={`trend-bar ${i === monthVals.length - 1 ? "cur" : ""}`}
+                  className={`trend-bar ${i === monthVals.length - 1 ? "cur" : ""}${
+                    partial && i === monthVals.length - 1 ? " partial" : ""
+                  }`}
                   data-v={fmtHoursLabel(v)}
                   style={{ height: `${(v / monthMax) * 100}%` }}
                 />
@@ -151,7 +148,8 @@ export function BroadcastHours({
         ) : null}
         {daily.map((v, i) => (
           <div
-            className="bcast-dcol"
+            // 이번 달이면 아직 오지 않은 날은 흐리게 — '방송 안 함'과 '아직 안 옴'은 다르다.
+            className={`bcast-dcol${partial && i + 1 > partial.elapsedDays ? " fut" : ""}`}
             key={i}
             aria-label={`${i + 1}일 ${fmtHoursLabel(v)}`}
             onPointerEnter={(e) => {

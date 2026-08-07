@@ -2935,6 +2935,10 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .dsess-col:hover .dsess-bar {
   filter: brightness(1.12);
 }
+/* 아직 오지 않은 날 — 0인 날과 구분(막대 자리는 남기되 흐리게). */
+.dsess-col.fut {
+  opacity: 0.4;
+}
 .dsess-x {
   margin-top: 2px;
   text-align: center;
@@ -3153,14 +3157,41 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .own-seg:hover {
   filter: brightness(1.08);
 }
-.own-axis {
-  display: flex;
-  justify-content: space-between;
-  margin-left: 48px; /* 40px(날짜) + 8px(gap) — 트랙 시작과 정렬 */
+/* 막대 = 있었던 구간(연한 판), 안쪽 = 실제로 화면에 떠 있던 시간(진한 색).
+   폭에 체류를 쓰던 때는 자리비움이 섞인 방문이 일찍 끝난 것처럼 그려졌다. */
+.own-seg > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: inherit;
+}
+/* 아직 안 끝난 세션 — 오른쪽 끝을 열어두고(직각) 테두리로 '계속 중'을 표시. */
+.own-seg.live {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  box-shadow: 2px 0 0 var(--violet, #5b34f0);
+}
+/* 24h 눈금(0·3·…·24) — 시각은 '경계'라 h/24 지점에 정확히 놓는다. 양 끝은 잘리지 않게 안쪽 정렬. */
+.hour-ticks {
+  position: relative;
+  height: 12px;
   margin-top: 1px;
   font-size: 10px;
   font-weight: 700;
   color: #a9a2bd;
+}
+.hour-ticks > span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+}
+.hour-ticks > span[data-edge="start"] {
+  transform: none;
+}
+.hour-ticks > span[data-edge="end"] {
+  transform: translateX(-100%);
+}
+.own-axis {
+  margin-left: 48px; /* 40px(날짜) + 8px(gap) — 트랙 시작과 정렬 */
 }
 /* 세션 툴팁 — 막대 바로 위에 띄운다. 선택자를 .vt-tip.own-tip(2-class)로 둬야 뒤에 오는
    .vt-tip(translateX·bottom) 규칙을 명시도로 이긴다(안 그러면 바 위로 안 올라가 막대에 가림).
@@ -3339,13 +3370,27 @@ html[data-reduce-motion] .dtp-pop-x:active {
   height: 12px;
   border-radius: 2px;
 }
+/* 히트맵 축 — 칸(=1시간)과 같은 격자로 깔고 3시간마다 칸 중앙에 라벨, 오른쪽 끝에 24.
+   예전엔 0/6/12/18/23을 space-between으로 흩뿌려 라벨이 칸보다 반 칸 왼쪽으로 밀렸다. */
 .vheat-axis {
+  position: relative;
   display: flex;
-  justify-content: space-between;
+  gap: 3px;
   margin-left: 19px;
   font-size: 9px;
   font-weight: 700;
   color: #a9a2bd;
+}
+.vheat-axis > span {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+}
+.vheat-axis > b {
+  position: absolute;
+  right: 0;
+  transform: translateX(50%);
+  font-weight: 700;
 }
 /* R8 날짜별 미니 달력 */
 .vmini {
@@ -3372,6 +3417,13 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .vmini-cell.empty {
   background: transparent !important;
+}
+/* 오늘 = 진행 중(아직 더 쌓인다) / 그 뒤 = 아직 안 옴. 둘 다 '0인 날'과 달리 보여야 한다. */
+.vmini-cell.today {
+  box-shadow: inset 0 0 0 2px var(--violet, #5b34f0);
+}
+.vmini-cell.fut {
+  opacity: 0.4;
 }
 /* R11 데이터 건강 */
 .vhealth {

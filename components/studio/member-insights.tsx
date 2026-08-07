@@ -21,6 +21,8 @@ import { HighlightCards } from "@/components/studio/highlight-cards";
 import { BroadcastHours } from "@/components/studio/broadcast-hours";
 import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
+import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
+import { monthProgress } from "@/lib/insights/month-progress";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 관리자·매니저·작업자용 월별 인사이트 — 수치 없는 4패널(일정·참여·트렌드·하이라이트).
@@ -222,8 +224,12 @@ export function MemberInsights({
           <div className="insight-tile" data-tone="public">
             <strong>
               {d.content.thisMonthContent}
+              {/* 배지의 근거를 적어둔다 — 숫자만 있으면 무엇과 비교한 값인지 알 수 없다. */}
               {contentTrend !== 0 ? (
-                <em className={`insight-trend ${contentTrend > 0 ? "up" : "down"}`}>
+                <em
+                  className={`insight-trend ${contentTrend > 0 ? "up" : "down"}`}
+                  title={`지난달 ${d.content.lastMonthContent}건과 비교`}
+                >
                   {contentTrend > 0 ? "▲" : "▼"}
                   {Math.abs(contentTrend)}
                 </em>
@@ -333,9 +339,15 @@ export function MemberInsights({
       { key: "content", label: "🗓️ 컨텐츠", values: d.trend.content },
       { key: "hearts", label: "💗 하트", values: d.trend.hearts }
     ];
+    // 마지막 칸이 이번 달이면 아직 진행 중 — 배지 기준과 막대 표시가 달라진다.
+    const lastYm = d.trend.months[d.trend.months.length - 1] ?? "";
+    const partial = monthProgress(lastYm);
     return (
       <>
-        <p className="insight-note">최근 6개월 추이 · 배지는 지난달 대비 변화</p>
+        <p className="insight-note">
+          최근 6개월 추이 · 배지는 지난달 대비 변화
+          {partial ? " (이번 달은 진행 중이라 지난달 같은 페이스와 비교)" : ""}
+        </p>
         <BroadcastHours
           months={d.trend.months}
           broadcastHours={d.trend.broadcastHours}
@@ -345,30 +357,23 @@ export function MemberInsights({
         {series.map((s) => {
           const cur = s.values[s.values.length - 1] ?? 0;
           const prev = s.values[s.values.length - 2] ?? 0;
-          const delta = prev > 0 ? Math.round(((cur - prev) / prev) * 100) : null;
           const max = Math.max(1, ...s.values);
           return (
             <div className="trend-row" key={s.key}>
               <div className="trend-head">
                 <span>{s.label}</span>
                 <strong>{cur.toLocaleString()}</strong>
-                {delta === null ? (
-                  <em className="trend-new">신규</em>
-                ) : delta === 0 ? (
-                  <em className="insight-trend flat">—</em>
-                ) : (
-                  <em className={`insight-trend ${delta > 0 ? "up" : "down"}`}>
-                    {delta > 0 ? "▲" : "▼"}
-                    {Math.abs(delta)}%
-                  </em>
-                )}
+                <TrendDeltaBadge cur={cur} prev={prev} ym={lastYm} />
               </div>
               <div className="trend-spark">
                 {s.values.map((v, i) => (
                   <div className="trend-bcol" key={i}>
                     <div className="trend-bwrap">
+                      {/* 진행 중인 달은 빗금 — 끝난 달과 같은 자격으로 읽히면 안 된다. */}
                       <div
-                        className={`trend-bar ${i === s.values.length - 1 ? "cur" : ""}`}
+                        className={`trend-bar ${i === s.values.length - 1 ? "cur" : ""}${
+                          partial && i === s.values.length - 1 ? " partial" : ""
+                        }`}
                         data-v={`${v}`}
                         style={{ height: `${Math.max(4, Math.round((v / max) * 100))}%` }}
                       />
