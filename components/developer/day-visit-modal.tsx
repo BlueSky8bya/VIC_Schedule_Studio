@@ -120,6 +120,10 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
       ? dg.visits.total
       : Object.values(dg.visits.devices).reduce((a, b) => a + b, 0);
   const om = Math.max(0.0001, ...dg.occupancy.map((s) => s.avg));
+  // 오늘을 보고 있으면 아직 안 지난 칸이 있다. 이걸 빈 칸과 똑같이 그리면 "왜 저긴 비었지"가
+  // 아니라 "왜 저긴 찍혔지"가 된다 — 눈금이 성겨(예전 6시간 간격) 22시 막대가 23·24시로 읽혔다.
+  const nowMark = data.nowMark;
+  const nowHour = nowMark === null ? 24 : Math.floor(nowMark);
   const devMeta = (k: string) => DEVICE_META.find((m) => m.key === k) ?? DEVICE_META[0];
 
   // 관리자 세션 → 24h 트랙 좌표 + 목록(시작 순).
@@ -257,7 +261,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
             };
             return (
               <div
-                className="vt-hcol"
+                className={`vt-hcol${h > nowHour ? " fut" : ""}`}
                 key={h}
                 onPointerEnter={enter}
                 onPointerMove={enter}
@@ -278,10 +282,27 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
                     })}
                   </div>
                 </div>
-                <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
+                {/* 3시간 간격 — 6시간이면 18 라벨 뒤로 라벨 없는 칸이 5개 남아, 눈이 간격을
+                    외삽해 오른쪽 끝을 24시로 읽는다(실측 2026-08-07: 21·22시 막대를 23·24시로 봄). */}
+                <span className="vt-hlabel">{h % 3 === 0 ? h : ""}</span>
               </div>
             );
           })}
+          {/* 축의 끝을 눈으로 닫아준다 — 마지막 칸이 23시(24시가 아님)임을 말해주는 유일한 표시. */}
+          <span aria-hidden className="vt-hend">
+            24
+          </span>
+          {nowMark !== null ? (
+            <span
+              className="vt-now"
+              style={{ left: `${(nowMark / 24) * 100}%` }}
+              title={`지금 ${String(nowHour).padStart(2, "0")}:${String(
+                Math.floor((nowMark - nowHour) * 60)
+              ).padStart(2, "0")} KST`}
+            >
+              <i>지금</i>
+            </span>
+          ) : null}
           {occTip ? (
             <div className="vt-tip" style={{ "--tip-x": `${occTip.x}%` } as CSSProperties}>
               <strong>

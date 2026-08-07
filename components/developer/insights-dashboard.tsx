@@ -789,10 +789,14 @@ export function InsightsDashboard({
                       })}
                     </div>
                   </div>
-                  <span className="vt-hlabel">{h % 6 === 0 ? h : ""}</span>
+                  {/* 3시간 간격 — 6시간이면 라벨 없는 칸이 몰려 끝 칸을 24시로 오독한다. */}
+                  <span className="vt-hlabel">{h % 3 === 0 ? h : ""}</span>
                 </div>
               );
             })}
+            <span aria-hidden className="vt-hend">
+              24
+            </span>
             {vtHourHover ? (
               <div className="vt-tip" style={{ "--tip-x": `${vtHourHover.x}%` } as CSSProperties}>
                 <strong>

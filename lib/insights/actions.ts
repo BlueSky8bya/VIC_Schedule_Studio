@@ -520,7 +520,13 @@ function observedDayCount(rows: SessionRow[]): number {
   return new Set(rows.map((r) => r.day)).size;
 }
 // 시간대별(KST 0..23) 평균 동접(=구간 초/3600/관측일수)과 최고 동접(스윕). 세션을 시간 경계로 쪼갠다.
-function computeOccupancy(rows: SessionRow[], observedDays: number): OccSlot[] {
+// partial: '아직 진행 중인 시간'(오늘 현재 시각이 걸친 칸). 그 칸만 분모를 경과 초로 바꾼다 —
+// 3600으로 나누면 22:13에 본 22시 막대가 실제 동접의 5분의 1로 찍혀 "갑자기 빠졌다"로 읽힌다.
+function computeOccupancy(
+  rows: SessionRow[],
+  observedDays: number,
+  partial?: { hour: number; elapsedSec: number }
+): OccSlot[] {
   const sec = Array.from({ length: 24 }, () => ({
     role: {} as Record<string, number>,
     device: {} as Record<string, number>,
@@ -548,8 +554,11 @@ function computeOccupancy(rows: SessionRow[], observedDays: number): OccSlot[] {
     }
     }
   }
-  const denom = 3600 * Math.max(1, observedDays);
+  const full = 3600 * Math.max(1, observedDays);
   return sec.map((b, h) => {
+    // 진행 중인 칸은 지나간 만큼으로만 나눈다(최소 60초 — 정각 직후 1~2초를 나누면 발산한다).
+    const denom =
+      partial && partial.hour === h ? Math.max(60, Math.min(3600, partial.elapsedSec)) : full;
     const occ = emptyOccSlot();
     occ.avg = b.total / denom;
     for (const role of ROLE_ORDER) occ.roles[role] = (b.role[role] ?? 0) / denom;
@@ -1572,6 +1581,9 @@ export type DayVisitDetail = {
   newVisitors: number; // R12: 그날 처음 본 시청자
   returningVisitors: number; // R12: 그날 재방문 시청자
   sessions: RecentSession[]; // 그날 전체 세션 로그(최근 순 — 개발자 디버깅)
+  // 오늘이면 '지금'의 KST 소수 시각(0~24), 다른 날이면 null. 시간대 차트가 아직 안 지난 칸을
+  // 흐리게 두고 현재 위치에 마커를 그리는 데 쓴다 — '데이터 없음'과 '아직 안 옴'은 다르다.
+  nowMark: number | null;
 };
 export type DayVisitDetailResult = { ok: true; data: DayVisitDetail } | { ok: false; error: string };
 
@@ -1592,9 +1604,18 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
 
   const rows = await loadSessions(supabase, dateKey, nextDay);
 
+  // 오늘을 보고 있나 — 그러면 마지막 칸은 '아직 진행 중'이다(분모·마커·흐림에 모두 쓴다).
+  const nowKst = Date.now() + KST_MS;
+  const isToday = new Date(nowKst).toISOString().slice(0, 10) === dateKey;
+  const nowMark = isToday ? (nowKst % 86400000) / 3600000 : null;
+  const partial =
+    nowMark === null
+      ? undefined
+      : { hour: Math.floor(nowMark), elapsedSec: (nowKst % 3600000) / 1000 };
+
   // 토글별 묶음(역할/기기 분해 + 시간대 동접). 동일 로직으로 시청자/운영진/전체 세 벌.
   const buildDay = (subset: SessionRow[]): DayScopeGraphs => {
-    const occupancy = computeOccupancy(subset, 1);
+    const occupancy = computeOccupancy(subset, 1, partial);
     return {
       visits: reachSlot(subset),
       occupancy,
@@ -1659,7 +1680,8 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
       operators,
       newVisitors,
       returningVisitors,
-      sessions
+      sessions,
+      nowMark
     }
   };
 }

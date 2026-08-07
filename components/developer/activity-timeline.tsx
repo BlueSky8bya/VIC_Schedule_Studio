@@ -36,7 +36,7 @@ function metaLine(meta: Record<string, unknown> | null): string {
 const NL = String.fromCharCode(10);
 
 type Item = ActivityVisit["items"][number];
-type Grouped = Item & { repeat: number };
+type Grouped = Item & { repeat: number; lastT: number };
 
 // 표시 이름: 일정 제목(서버가 권한 확인 후 붙여준 것)이 있으면 그것, 없으면 사전으로 푼다.
 // uuid를 그대로 보여주지 않는다 — 코드를 모르는 사람에게 uuid는 아무 뜻도 없다.
@@ -58,15 +58,37 @@ function itemTitle(it: Item): string {
   return [it.targetLabel, d?.hint, it.target ? `id: ${it.target}` : ""].filter(Boolean).join("\n");
 }
 
+// 접기 판정용 meta 지문 — 값이 다르면 같은 행동이 아니다.
+// hops·count는 합산 대상(아래에서 더한다)이라 지문에서 뺀다. 이게 없던 때는 target이 없는
+// diag.visible이 kind만으로 뭉쳐 **visible=true와 false가 한 줄로 합쳐졌다**(실측 2026-08-07:
+// 켜짐/숨김 전환 5번이 "visible=true ×5"가 되어, 탭을 다시 켠 21:32가 안 보였다).
+const MERGED_KEYS = new Set(["hops", "count"]);
+function metaSig(meta: Record<string, unknown> | null): string {
+  if (!meta) return "";
+  return Object.keys(meta)
+    .filter((k) => !MERGED_KEYS.has(k))
+    .sort()
+    .map((k) => `${k}=${String(meta[k])}`)
+    .join("|");
+}
+
 // 같은 행동이 연달아 반복되면 한 줄로 접는다(×N). 접기 전에는 '월 이동 offset=-1'이 12줄씩
 // 쌓여 정작 중요한 줄(수정·잠금해제)을 덮었다 — 반복은 정보가 아니라 배경이다.
 // 체류(dur_ms)는 합산한다: 같은 화면을 오갔으면 합이 그 화면에 머문 시간이다.
+// 시각은 첫 항목 것만 남기지 않는다 — lastT를 들고 있다가 화면·복사본에 '첫–끝'으로 쓴다.
+// (예전엔 첫 시각만 보여, 4시간에 걸친 5건이 "17:55 ×5"로 보이고 뒤의 21:32가 사라졌다.)
 function groupItems(items: Item[]): Grouped[] {
   const out: Grouped[] = [];
   for (const it of items) {
     const prev = out[out.length - 1];
-    if (prev && prev.kind === it.kind && prev.target === it.target) {
+    if (
+      prev &&
+      prev.kind === it.kind &&
+      prev.target === it.target &&
+      metaSig(prev.meta) === metaSig(it.meta)
+    ) {
       prev.repeat += 1;
+      prev.lastT = it.t;
       if (it.durMs) prev.durMs = (prev.durMs ?? 0) + it.durMs;
       // 세는 값(hops·count)은 합산한다 — 첫 줄 것만 남기면 '×2 hops=17'처럼 나머지가 사라져
       // 실제보다 작게 읽힌다(실측).
@@ -81,7 +103,7 @@ function groupItems(items: Item[]): Grouped[] {
       }
       continue;
     }
-    out.push({ ...it, repeat: 1 });
+    out.push({ ...it, repeat: 1, lastT: it.t });
   }
   return out;
 }
@@ -171,7 +193,9 @@ export function ActivityTimeline({
     groupItems(items).map((it) => {
       const name = itemName(it);
       const parts = [
-        hhmm(it.t),
+        // 접힌 줄은 '첫–끝'. 첫 시각만 쓰면 리포트를 붙여넣은 사람이 "그 뒤로 아무 일도 없었다"로
+        // 읽는다(실측: 21:32의 재진입이 17:55 한 줄에 먹혔다).
+        it.lastT - it.t >= 60_000 ? `${hhmm(it.t)}–${hhmm(it.lastT)}` : hhmm(it.t),
         it.label + (it.repeat > 1 ? ` ×${it.repeat}` : ""),
         name,
         it.durMs ? fmtDur(Math.round(it.durMs / 1000)) : "",
@@ -398,7 +422,12 @@ export function ActivityTimeline({
                     const d = it.target ? describeTarget(it.kind, it.target) : null;
                     return (
                       <li key={i} data-source={it.source}>
-                        <span className="act-t">{hhmm(it.t)}</span>
+                        {/* 접힌 줄(×N)이 시간 폭을 가지면 끝 시각도 보여준다 — 40px 칸이라
+                            옆으로 붙이지 않고 아래에 작게 쌓는다. */}
+                        <span className="act-t">
+                          {hhmm(it.t)}
+                          {it.lastT - it.t >= 60_000 ? <i>↓{hhmm(it.lastT)}</i> : null}
+                        </span>
                         <span className="act-body" title={itemTitle(it)}>
                           <span className="act-kind">
                             {it.label}
