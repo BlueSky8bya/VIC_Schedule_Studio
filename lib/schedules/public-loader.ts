@@ -80,7 +80,16 @@ function createPublicReadClient() {
   );
 }
 
-export async function getPublicSchedule(calendarSlug: string): Promise<PublicSchedule> {
+export async function getPublicSchedule(
+  calendarSlug: string,
+  options: {
+    // false = 개인 관심 목록(myHeartIds)을 조회하지 않는다(빈 배열). 쿠키를 아예 읽지 않으므로
+    // 응답이 '모든 사람에게 동일'해져 CDN에 캐시할 수 있다 — 공개 API 라우트가 쓴다.
+    // (개인 필드가 낀 응답을 CDN이 합치면 남의 하트 목록이 섞이는 사고가 된다.)
+    includeMyHeartIds?: boolean;
+  } = {}
+): Promise<PublicSchedule> {
+  const { includeMyHeartIds = true } = options;
   // Supabase 미설정(키 없음)이면 샘플 데이터로 폴백한다 — 개발/테스트 보호.
   if (!isSupabaseConfigured()) {
     return samplePublicSchedule(calendarSlug);
@@ -89,7 +98,7 @@ export async function getPublicSchedule(calendarSlug: string): Promise<PublicSch
   // 익명 공개 묶음(캐시 대상) + 로그인 사용자의 개인 관심 목록(비캐시)을 합친다.
   const [data, myHeartIds] = await Promise.all([
     loadPublicScheduleData(calendarSlug),
-    loadMyHeartIds(calendarSlug)
+    includeMyHeartIds ? loadMyHeartIds(calendarSlug) : Promise.resolve([])
   ]);
 
   return { ...data, myHeartIds };

@@ -4,6 +4,23 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-08-08
+
+### CHG-20260808-001 — PERF/BOUNDARY — 공개 events API 익명화 + CDN 캐시(s-maxage=300)
+
+Problem: `/api/public/[calendarSlug]/events`가 (a) `myHeartIds`(로그인 사용자 개인 하트 목록)를
+싣고 쿠키를 읽어 매 요청 람다+DB 왕복(`Cache-Control: max-age=0`, X-Vercel-Cache 항상 MISS),
+(b) 개인 필드 때문에 CDN 캐시를 걸 수도 없는 구조였다. 실측: 웜 ~100-180ms, 콜드 ~2.1s.
+Change: `getPublicSchedule(slug, { includeMyHeartIds:false })` 옵션 추가(기본 true — 포스터 SSR
+경로는 그대로). 라우트는 false로 호출해 응답을 완전 익명으로 만들고
+`Cache-Control: public, s-maxage=300`(방송 라우트와 같은 한 겹 원칙, SWR 없음, Data Cache 300초와 동주기).
+Files: `lib/schedules/public-loader.ts`, `app/api/public/[calendarSlug]/events/route.ts`
+Validation: tsc/lint/prod build exit 0, `tests/unit/public-boundary.test.ts`·`server-timing.test.ts` 통과.
+포스터 SSR은 이 라우트를 쓰지 않음(소비자 grep — e2e 테스트뿐)을 확인.
+Note: 이 API만 편집 반영이 최악 CDN 300 + Data Cache 300 = 몇 분 늦을 수 있다(포스터는 revalidateTag로 즉시).
+같이 실측한 것: 공개 payload gzip 19KB(events 278건) — 월 분할(Phase 6)은 아직 불필요, 50KB쯤에서 재검토.
+Rollback: 라우트에서 옵션·헤더 두 줄 제거.
+
 ## v0.1.0 — 2026-08-02
 
 ### CHG-20260802-001 — FIX — 방송시간 머리/꼬리 손실 재시도 보정(0059)
