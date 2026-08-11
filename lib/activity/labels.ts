@@ -305,7 +305,11 @@ const AUTO: Record<string, TargetLabel> = {
     area: "꾸미기",
     hint: "복제·삭제·뒤집기 등이 합쳐진 옛 기록 (지금은 버튼별로 따로 셉니다)"
   },
-  ".public-event": { name: "최초공개 카드", area: "시청자 화면", hint: "옛 기록" },
+  ".public-event": {
+    name: "일정 카드(공개 포스터)",
+    area: "시청자 화면",
+    hint: "포스터의 일정 카드 전체가 합쳐진 값 (최초공개 열기는 '최초공개 카드 열기'로 따로 셉니다)"
+  },
   ".agenda-event": { name: "일정 카드", area: "시청자 화면", hint: "옛 기록" },
   ".studio-event-pill": { name: "편집실 일정 카드", area: "편집실" },
   ".month-nav-btn": { name: "월 이동 버튼", area: "편집실", hint: "옛 기록 (지금은 이전/다음으로 나뉨)" },
