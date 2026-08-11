@@ -3791,6 +3791,9 @@ export function PublicPoster({
             // 머리글 높이(--day-head-h)에서 파생 — 확대해도 날짜와 겹치지 않는다.
             // -1px은 머리글 밑선에 살짝 걸쳐 띠가 떠 보이지 않게 하는 기존 여백.
             top: `calc(var(--day-head-h, 27px) - 1px + ${lane * 20}px)`,
+            // 광택 sweep 지연용 요일 인덱스 — 조각들이 순서대로 반짝여 빛줄기 하나가
+            // 띠 전체를 훑는 것처럼 이어진다(CSS .support-bar.is-clickable 참고).
+            ["--sb-col" as string]: cell.weekday,
             // 이어지는 칸은 -1px로 칸 경계선을 덮어 대나무 마디처럼 끊겨 보이지 않게.
             left: left ? 3 : -1,
             right: right ? 3 : -1,

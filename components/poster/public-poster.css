@@ -1882,7 +1882,11 @@ html[data-reduce-motion] .poster-export-reward-spark {
   background-position:
     240% 0,
     0 0;
-  animation: sb-sheen 4.6s ease-in-out 1.2s infinite;
+  animation: sb-sheen 4.6s ease-in-out infinite;
+  /* 광택 sweep을 요일(--sb-col)만큼 지연 — 조각들이 동시에 각자 반짝이면 대나무 마디처럼
+     끊겨 보인다. 칸 폭이 같으니 칸당 0.4s(sweep이 한 칸을 지나는 시간) 지연이면 빛줄기
+     하나가 띠 전체를 왼→오로 훑고 지나가는 것처럼 이어진다(한 블록처럼, 사용자 결정). */
+  animation-delay: calc(1.2s + var(--sb-col, 0) * 0.4s);
 }
 @keyframes sb-sheen {
   0% {
@@ -1899,15 +1903,27 @@ html[data-reduce-motion] .poster-export-reward-spark {
   }
 }
 /* 그룹 호버(.is-hover — 같은 띠의 모든 조각에 함께 붙는다): 한 조각만 밝아지면 마디가
-   다시 보이므로 :hover 대신 상태 클래스로 통일. */
+   다시 보이므로 :hover 대신 상태 클래스로 통일.
+   ⚠ 바깥 drop shadow 금지 — 조각마다 그림자를 드리우면 이웃 조각 위에 그림자의 세로 가장자리가
+   얹히고 이음새에서 겹쳐 진해져, 호버할 때마다 대나무 마디가 되살아난다(실측). 픽셀 단위로
+   균일한 효과(brightness/inset)만 써야 여러 조각이 한 블록으로 읽힌다. */
 .support-bar.is-clickable.is-hover {
   filter: brightness(1.05) saturate(1.08);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 60%),
+    inset 0 -2px 0 rgb(159 18 57 / 18%);
+}
+/* 하루짜리(솔로)는 조각이 하나뿐 — 마디 걱정이 없으니 떠오르는 그림자를 그대로 쓴다. */
+.support-bar.sb-solo.is-clickable.is-hover {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 60%),
     0 3px 10px rgb(159 18 57 / 28%);
 }
 .support-bar.is-clickable:active {
-  filter: brightness(0.98);
+  /* scale은 누른 조각만 쪼그라들어 이음새가 벌어진다 — 밝기 감쇠만(솔로는 아래 예외). */
+  filter: brightness(0.96);
+}
+.support-bar.sb-solo.is-clickable:active {
   transform: scale(0.997);
 }
 .support-bar.is-clickable:focus-visible {
