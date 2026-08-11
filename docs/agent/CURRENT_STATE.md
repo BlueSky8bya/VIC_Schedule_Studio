@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-08-05
+Last Updated: 2026-08-12
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -13,6 +13,15 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **콜드 엔트리 체감 속도(2026-08-12, `6cd0221`)**: URL 직접 진입 흰 화면의 원인은
+  루트 layout·loading.tsx가 둘 다 `resolveCurrentActor`(GoTrue 왕복)를 await하던 것.
+  스켈레톤 톤은 이제 힌트 쿠키 `vic_lt`(30일, StudioShell="s"/독립 포스터="p")만 읽고,
+  actor 의존 비콘(Presence·SW)은 `ActorTail`+Suspense로 분리해 셸이 즉시 스트리밍된다.
+  **가드 불변**: (studio) 그룹 layout의 viewer→`/` 리다이렉트와 page의 actor 분기는
+  그대로 서버에서 확정 — vic_lt는 배경/문구용 힌트일 뿐 권한에 절대 쓰지 말 것.
+  남은 후보(미착수): 미들웨어 익명 패스트패스(인증 쿠키 없으면 getUser 생략),
+  콜드 스타트 워밍 핑(외부 5분 핑; Vercel every-min cron은 Pro 필요),
+  (studio) 가드의 스트리밍화(보안 경계라 신중 — ADR감).
 - **방문 지표 재정의 + 행동 기록(2026-08-04, PLAN-20260804-003 / ADR-0013)**:
   ① **방문 = 탭 수명**(0061 `visit_key`, sessionStorage). `visit_session` 1행은 '화면이 보인
   한 구간'인데 문서 네비게이션(pagehide)마다 끊겨, 사이트 안에서 페이지만 옮겨도 방문이
