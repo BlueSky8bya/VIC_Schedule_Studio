@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import {
@@ -56,13 +57,33 @@ export const metadata: Metadata = {
   formatDetection: { email: false, telephone: false, address: false }
 };
 
-export default async function RootLayout({
+// actor(GoTrue 왕복)에 기대는 비콘·서비스워커만 떼어낸 꼬리. 루트 레이아웃 본체가 이걸
+// await하면 셸 HTML 전체(loading.tsx 스켈레톤 포함)가 인증 왕복이 끝날 때까지 한 바이트도
+// 안 나간다 — 콜드 엔트리 흰 화면의 원인. Suspense 뒤로 보내 셸은 즉시 흘려보내고,
+// 비콘은 actor가 풀리는 대로 스트리밍으로 뒤따라온다(둘 다 화면에 안 그리는 컴포넌트라
+// 늦게 붙어도 시각적 차이 없음).
+async function ActorTail() {
+  // 로그인 사용자만 실시간 프레즌스에 등록(개발자 창 접속자 현황용). 비로그인은 집계 제외.
+  const actor = await resolveCurrentActor("vic");
+  return (
+    <>
+      {/* 방문 비콘은 비로그인 방문자에게도 깐다 — 일일/월별 인사이트에 '비로그인' 도달까지 잡는다.
+          (로그인은 실제 역할, 비로그인은 role="anon". 서버가 actor로 실제 기록을 확정한다.) */}
+      <PresenceBeacon role={actor.isAuthenticated ? actor.role : "anon"} />
+      {/* 오프라인 열람용 서비스워커 — 공개 포스터만 캐시(비공개·스튜디오·쓰기는 손대지 않음).
+          신원(이메일/anon)이 바뀌면 캐시를 비워 공유 기기에서 이전 사용자 화면이 안 남게. */}
+      <ServiceWorkerRegister
+        identity={actor.isAuthenticated ? (actor.email ?? actor.role) : "anon"}
+      />
+    </>
+  );
+}
+
+export default function RootLayout({
   children
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // 로그인 사용자만 실시간 프레즌스에 등록(개발자 창 접속자 현황용). 비로그인은 집계 제외.
-  const actor = await resolveCurrentActor("vic");
   return (
     <html
       lang="ko"
@@ -89,17 +110,13 @@ export default async function RootLayout({
             (max-height ≤640 + coarse) 절이 이미 모바일 레이아웃으로 잡아 정상 사용 가능한데,
             오버레이가 그 위를 통째로 덮어 사용 자체를 막고 있었다. aria-hidden인데 뒤 UI가
             포커스 가능해 접근성 문제도 있었다.) */}
-        {/* 방문 비콘은 비로그인 방문자에게도 깐다 — 일일/월별 인사이트에 '비로그인' 도달까지 잡는다.
-            (로그인은 실제 역할, 비로그인은 role="anon". 서버가 actor로 실제 기록을 확정한다.) */}
-        <PresenceBeacon role={actor.isAuthenticated ? actor.role : "anon"} />
         {/* 어느 화면을 얼마나 봤는지(0062). 프레즌스와 분리 — deps에 pathname을 넣으면
             SPA 라우팅마다 방문 세션이 끊긴다. */}
         <RouteBeacon />
-        {/* 오프라인 열람용 서비스워커 — 공개 포스터만 캐시(비공개·스튜디오·쓰기는 손대지 않음).
-            신원(이메일/anon)이 바뀌면 캐시를 비워 공유 기기에서 이전 사용자 화면이 안 남게. */}
-        <ServiceWorkerRegister
-          identity={actor.isAuthenticated ? (actor.email ?? actor.role) : "anon"}
-        />
+        {/* actor 의존 꼬리(위 ActorTail 주석 참고) — 셸 스트리밍을 막지 않게 Suspense 뒤로. */}
+        <Suspense fallback={null}>
+          <ActorTail />
+        </Suspense>
         {/* 오프라인/온라인 상태 인앱 표시(배지+복귀 토스트) — export surface 바깥(body 직속)이라 캡쳐 무영향. */}
         <OfflineIndicator />
         {/* 배포 확인용 커밋 해시는 개발자 화면(편집실 액션바 중앙)에만 표시한다(studio-shell). */}

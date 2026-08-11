@@ -142,7 +142,7 @@ import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
-import { writeViewCookie } from "@/lib/ui/view-cookie";
+import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
@@ -1016,6 +1016,11 @@ export function PublicPoster({
   showWorldCupFeatures: showWorldCupFeaturesProp
 }: PublicPosterProps) {
   const [showWorldCupFeatures] = useWorldCupVisibility(showWorldCupFeaturesProp);
+  // 다음 콜드 엔트리의 로딩 스켈레톤 톤 힌트 — 독립 포스터 화면(`/`)일 때만 "포스터"로.
+  // accountSwitch=false인 편집실/꾸미기 미리보기는 편집 맥락이라 힌트를 건드리지 않는다.
+  useEffect(() => {
+    if (accountSwitch) writeLoadingToneCookie("p");
+  }, [accountSwitch]);
   // 스티커 저장/삭제가 서버에 들어가는 동안만 세는 카운터(아래 beforeunload 경고용).
   // 실제 전송은 keepalive fetch(/api/sticker-write)로 보낸다 → 스티커를 옮기/추가/삭제하고 바로
   // 달을 넘기거나 창을 닫/새로고침해도 브라우저가 전송을 끝까지 보장해 작업이 유실되지 않는다.

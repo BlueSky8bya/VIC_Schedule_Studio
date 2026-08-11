@@ -25,6 +25,21 @@ export function parseViewCookie(raw: string | undefined | null): ViewMemory {
   }
 }
 
+// 로딩 스켈레톤 톤 힌트("s"=편집실 · "p"=포스터). loading.tsx가 첫 페인트 전에 어느 톤을
+// 그릴지 고르는 용도라 서버 인증 조회(actor)를 기다리면 목적을 잃는다 — 쿠키만 보고 즉시 결정.
+// 힌트가 틀려도 배경/문구가 잠깐 다를 뿐 권한과 무관(실제 화면은 서버가 actor로 확정).
+// vic_view와 달리 지속 쿠키(30일) — 브라우저를 껐다 다음날 들어와도 톤이 유지돼야 의미가 있다.
+export const LOADING_TONE_COOKIE = "vic_lt";
+
+export type LoadingTone = "s" | "p";
+
+export function writeLoadingToneCookie(tone: LoadingTone) {
+  if (typeof document === "undefined") {
+    return;
+  }
+  document.cookie = `${LOADING_TONE_COOKIE}=${tone}; path=/; samesite=lax; max-age=${60 * 60 * 24 * 30}`;
+}
+
 // 클라이언트에서 현재 쿠키에 patch를 병합해 다시 쓴다(세션 쿠키).
 export function writeViewCookie(patch: ViewMemory) {
   if (typeof document === "undefined") {

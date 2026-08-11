@@ -170,7 +170,7 @@ import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { getPublicPreviewAction } from "@/lib/schedules/preview-actions";
-import { writeViewCookie } from "@/lib/ui/view-cookie";
+import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 // 스튜디오 CSS는 StudioShell을 렌더하는 페이지(studio/(home), studio/calendar)에서 page-level로
 // import한다 — 그래야 <head>에 렌더 차단으로 올라가 모바일 첫 진입에도 깜빡임(FOUC)이 없다.
@@ -676,6 +676,8 @@ export function StudioShell({
   // 초기값이 이미 쿠키에서 온 값이라 첫 기록은 같은 값(무해) — 덮어쓰기 걱정 없음.
   useEffect(() => {
     writeViewCookie({ sy: view.year, sm: view.month, v: viewerMode ? 1 : 0 });
+    // 다음 콜드 엔트리의 로딩 스켈레톤 톤 힌트 — 편집실을 쓰는 사람은 "편집실" 톤으로.
+    writeLoadingToneCookie("s");
   }, [view, viewerMode]);
 
   // 새 일정/일정 수정 카드는 달력에서 날짜(또는 일정)를 "선택했을 때"만 보여준다.
