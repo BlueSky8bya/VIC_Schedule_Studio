@@ -4472,7 +4472,11 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
      폼을 356으로 줄일 때 같이 안 줄어 오른쪽에 28px 유령 띠가 남았고, 리더 점선이 그 보이지
      않는 가장자리에 붙어 카드에서 떨어져 보였다(멀리서 올수록 티가 컸다). */
   width: max-content;
-  z-index: 6; /* 일정 카드·업도움 띠 위, 모달(더 높음) 아래 */
+  /* 칸 내부 어떤 층(띠 머리 z:7, 포커스 칸 z:8 포함)보다도 위 — .studio-day가 쌓임 맥락을
+     안 만들어 칸 자식들과 같은 맥락에서 겨루기 때문. 예전 리터럴 6은 띠 머리(7)에 져서
+     팝오버 위로 띠가 얹혔다(실측: 창이 좁아 팝오버가 띠 위로 클램프된 화면).
+     z-스케일 규칙은 globals.css :root 참고. */
+  z-index: var(--z-cal-pop, 12);
   /* ⚠ 기본 transition 금지 — 첫 배치 때 기본값(left:0=좌상단)에서 실좌표로 바뀌는 것까지
      애니메이션돼 '좌상단에서 날아오는' 버그가 된다(실측). 첫 배치가 끝난 뒤 JS가
      .pop-settled를 붙여야 그때부터 이동이 부드럽다(리사이즈 재클램프 등 같은-인스턴스 이동). */
@@ -4603,7 +4607,7 @@ html[data-reduce-motion] .event-editor-panel {
 .event-editor-panel.pop-dragging .editor-heading-bar {
   cursor: grabbing;
 }
-/* 팝오버 → 앵커 칸 리더 라인: 점선 + 칸 쪽 도트. 카드(z-index 6) 아래라 카드 쪽 끝은 숨는다.
+/* 팝오버 → 앵커 칸 리더 라인: 점선 + 칸 쪽 도트. 팝오버(--z-cal-pop) 아래라 카드 쪽 끝은 숨는다.
    좌표는 workspace 기준 px — svg가 workspace 전체를 덮는다. */
 .editor-anchor-link {
   position: absolute;
@@ -4611,7 +4615,7 @@ html[data-reduce-motion] .event-editor-panel {
   width: 100%;
   height: 100%;
   pointer-events: none;
-  z-index: 5;
+  z-index: var(--z-cal-leader, 5);
   overflow: visible;
   /* 팝오버(0.34s 스케일-인)가 반쯤 자란 뒤 선이 따라 나타난다 — 선이 먼저 완성돼 있던
      부조화 제거. remount(key=editorKey)로 새 선택마다 다시 재생. */
@@ -5452,7 +5456,7 @@ html[data-reduce-motion] .editor-anchor-link line {
 /* 편집 중인 업 도움 — 이어진 전체를 **하나의 일정**으로 본다: 위/아래는 늘 긋고, 좌/우는
    시작·끝 조각에만. 조각마다 사방을 두르면 대나무 마디처럼 칸 경계마다 선이 생긴다(실측). */
 .studio-day .support-bar.is-editing {
-  z-index: 6;
+  z-index: var(--z-cal-ribbon, 6);
   border-top: 2px dashed #e11d48;
   border-bottom: 2px dashed #e11d48;
   border-left: 0;
@@ -5717,16 +5721,16 @@ html[data-reduce-motion] .editor-anchor-link line {
 .studio-day:focus-visible {
   outline: none;
   background: var(--selection-fill);
-  /* ⚠ 8 — 이웃 칸의 업도움 띠(z:4)·일정 카드(z:3)보다 위.
+  /* ⚠ 이웃 칸의 업도움 띠(--z-cal-ribbon-head까지)보다 위.
      .studio-day는 z-index가 없어 쌓임 맥락을 만들지 않으므로, **이웃 칸의 자식**들이 같은
      맥락에서 겨룬다. 예전 z:2로는 옆 칸 띠가 이 칸 모서리를 덮어 링이 잘려 보였다(실측). */
-  z-index: 8;
+  z-index: var(--z-cal-cell-raised, 8);
 }
 .studio-day:focus-visible::after {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 6; /* 일정 카드(z:auto~2)·업도움 띠 위, 드래그 유령/팝오버보다는 아래 */
+  z-index: var(--z-cal-focus-ring, 6); /* 일정 카드 위, 드래그 유령/팝오버(--z-cal-pop)보다는 아래 */
   /* ⚠ 모서리 칸(첫/일곱째/끝)은 달력 라운드를 따라 border-radius가 있다. 여기서 안 물려받으면
      링만 각진 사각형이라 둥근 코너 밖으로 튀어나가고, 그리드의 overflow가 그 부분을 잘라
      "모서리가 뚫린" 것처럼 보인다(실측 3회). */
@@ -5757,7 +5761,7 @@ body.cell-range-dragging {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: var(--z-cal-range, 3);
   pointer-events: none;
   /* 채움만 — 칸마다 테두리 그리면 붙은 칸 사이가 이중선. 시트처럼 통짜 음영으로. */
   background: var(--selection-overlay);
@@ -5782,7 +5786,7 @@ body.cell-range-dragging {
 
 .studio-day-head {
   position: relative;
-  z-index: 1;
+  z-index: var(--z-cal-cell-head, 1);
 }
 
 /* #7: 7번째 칸도 1px 테두리 폭을 유지하되 색만 투명 → 모든 칸 안쪽 너비 동일(줄바꿈 일관). */
@@ -5828,13 +5832,13 @@ body.cell-range-dragging {
   position: absolute;
   inset: 0 -1px -1px 0;
   /* 스티커 레이어보다 아래(셀 콘텐츠보다는 위)로 둬, 스티커는 흐려지지 않게 한다. */
-  z-index: 4;
+  z-index: var(--z-cal-dim, 4);
   background: rgb(242 240 248 / 60%);
   pointer-events: none;
 }
 
-/* 업 도움 띠의 '시작 조각'(.sb-head)만 z:5다 — 라벨이 뒤 조각(z:4) 위로 흘러야 해서.
-   그런데 흐림 베일도 z:4라, 다른 달 칸에서 그 조각만 베일 위로 떠 **혼자 쨍하게** 보였다
+/* 업 도움 띠의 '시작 조각'(.sb-head)만 한 층 위다(--z-cal-ribbon-head) — 라벨이 뒤 조각 위로
+   흘러야 해서. 그런데 흐림 베일과의 층 관계 때문에, 다른 달 칸에서 그 조각만 베일 위로 떠 **혼자 쨍하게** 보였다
    (실측: 7월 달력의 8/3 업 도움 첫 칸). z를 낮추면 라벨이 뒤 조각에 덮이므로(같은 맥락 안이라
    자식 z로도 못 올린다), 베일 대신 **띠 조각 자체를 흐린다**. 조각 단위라 달 경계에서만
    흐림이 갈리고, 그건 원래 있어야 할 경계다. */
@@ -5845,10 +5849,10 @@ body.cell-range-dragging {
    (실측: 오늘 칸을 지나는 띠에 금색 실선이 그어짐). 끈은 여러 날을 잇는 하나의 대상이라
    칸 테두리에 끊기면 안 된다. */
 .studio-day .support-bar {
-  z-index: 6;
+  z-index: var(--z-cal-ribbon, 6);
 }
 .studio-day .support-bar.sb-head {
-  z-index: 7;
+  z-index: var(--z-cal-ribbon-head, 7);
 }
 
 /* 다른 달 날짜는 토/일 색도 흐린 회보라로 (그대로 진하지 않게) */
@@ -5865,7 +5869,7 @@ body.cell-range-dragging {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: 5;
+  z-index: var(--z-cal-select-ring, 5);
   border-radius: inherit;
   pointer-events: none;
 }
