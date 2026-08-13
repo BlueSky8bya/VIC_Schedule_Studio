@@ -6413,6 +6413,14 @@ html[data-reduce-motion] .studio-event-pill.just-linked::after {
   background: rgb(87 201 138 / 16%);
   opacity: 1;
 }
+/* 접힌 스페이서는 grid 자식이라 높이 0이어도 목록 gap을 하나 더 만든다 — 드래그 중
+   카드 사이 간격이 5px→10px로 벌어져 열린 '놓을 자리' 주변(정상 gap)과 어긋났다(사용자 지적).
+   스페이서 자신의 음수 마진은 트랙 최소 0 clamp에 먹혀서, **다음 형제**(카드)의 음수 마진으로
+   여분 gap을 상쇄한다(카드 트랙은 높이>gap이라 안 잘린다). 카드의 기존 margin 전환(dur-3)이
+   열리고 닫힐 때 이 보정도 부드럽게 풀어준다. 데스크톱(gap 7px)은 아래 미디어에서 덮는다. */
+.drop-gap:not(.on) + * {
+  margin-top: calc(-5px * var(--cal-zoom, 1));
+}
 .drop-gap::after {
   content: "놓을 자리";
 }
@@ -6986,6 +6994,10 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
   .studio-event-list {
     gap: calc(7px * var(--cal-zoom, 1));
     padding: calc(9px * var(--cal-zoom, 1)) 6px;
+  }
+  /* 접힌 스페이서의 여분 gap 상쇄(다음 형제 음수 마진)도 웹 gap(7px)에 맞춘다. */
+  .drop-gap:not(.on) + * {
+    margin-top: calc(-7px * var(--cal-zoom, 1));
   }
 }
 /* PR2: 칸 색(≤2 대분류)에 못 담은 나머지 대분류 색 점 줄 — 색 안 늘리고 "더 있음" 암시. */
