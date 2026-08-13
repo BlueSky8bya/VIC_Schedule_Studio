@@ -6092,7 +6092,9 @@ body.cell-range-dragging {
   /* 글자로 못박는다 — 점선만으로는 "여기가 출발점"인지 "여기로 들어간다"인지 헷갈린다. */
   content: "원래 위치";
   position: absolute;
-  inset: 0;
+  /* 카드 보더(1px) 바깥까지 덮는다 — inset:0(패딩 박스)이면 민트 '놓을 자리'(.drop-gap,
+     카드 바깥 크기 그대로)보다 사방 1px 안쪽에 그려져 두 점선 상자의 여백이 어긋난다. */
+  inset: -1px;
   display: grid;
   place-items: center;
   border-radius: inherit;
@@ -6104,6 +6106,10 @@ body.cell-range-dragging {
   font-weight: 800;
   letter-spacing: 0.02em;
   pointer-events: none;
+}
+/* 미정 카드는 보더가 2px — 그만큼 더 내밀어야 바깥 크기가 같아진다. */
+.studio-event-pill.tentative.dragging-src::after {
+  inset: -2px;
 }
 /* 드래그로 잇기: 집은 카드와 이을 수 있는 상대만 또렷·강조하고 나머지는 흐릿하게 눌러, "지금
    여기로 끌고 오면 이어진다"를 눈으로 구분시킨다(의도 분리). 합성 전용(opacity/transform/shadow). */
