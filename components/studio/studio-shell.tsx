@@ -151,7 +151,8 @@ import {
   type CalZoom,
   createWheelStepper,
   normalizeWheelDelta,
-  stepCalZoom
+  stepCalZoom,
+  studioShellZoom
 } from "@/lib/ui/calendar-zoom";
 import { toBroadcastPanelDays } from "@/lib/schedules/broadcast-dto";
 import { detectDevice } from "@/lib/presence/presence-client";
@@ -1834,11 +1835,7 @@ export function StudioShell({
         bar?.getBoundingClientRect().bottom ?? 0,
         topbar?.getBoundingClientRect().bottom ?? 0
       );
-      const zoomF = window.matchMedia("(min-width: 2400px)").matches
-        ? 0.8
-        : window.matchMedia("(min-width: 1700px)").matches
-          ? 0.9
-          : 1;
+      const zoomF = studioShellZoom();
       const top = Math.max(8, Math.round(bottomVisual / zoomF) + 8);
       document.documentElement.style.setProperty("--dock-top", `${top}px`);
     };
@@ -2794,7 +2791,10 @@ export function StudioShell({
       dragGhostRef.current = ghost;
       setDragEventId(info.id);
       // 슬라이드 프리뷰 한 칸 = 카드 높이 + 목록 간격(5×zoom) — 형제 카드가 이만큼 밀린다.
-      setDragChipH(rect.height + 5 * calZoomRef.current);
+      // ⚠ 레이아웃 px로 저장한다: 이 값은 zoom 안쪽 스페이서(.drop-gap)의 인라인 height가
+      // 되는데, rect.height는 셸 CSS zoom(≥1700px 0.9)이 이미 곱해진 화면 px라 그대로 쓰면
+      // 배율이 두 번 먹어 '놓을 자리'가 '원래 위치'보다 10% 낮았다(큰 화면에서만 재현).
+      setDragChipH(rect.height / studioShellZoom() + 5 * calZoomRef.current);
       cancelLanding(); // 앞 카드가 아직 착지 중이면 치우고 시작한다
       // 스프링 추적 초기화 — 잡은 그 자리에서 시작해 손을 뒤따른다(회전 없음).
       edPosRef.current = { x: rect.left, y: rect.top };

@@ -5,6 +5,20 @@
 // 한 제스처에 wheel 이벤트가 수십 개 와서 순식간에 끝까지 가버린다. 예측 가능한 3단만 두고
 // 누적 임계값 + cooldown으로 "한 제스처 ≈ 한 단계"를 보장한다.
 
+/**
+ * 스튜디오 셸 전체 CSS `zoom`(studio-shell.css: ≥1700px 0.9, ≥2400px 0.8)의 현재 배율.
+ * ⚠ CSS zoom 아래에서 `getBoundingClientRect()`는 이미 배율이 곱해진 **화면 px**를 돌려준다.
+ * 그 값을 같은 zoom 안쪽 요소의 인라인 `height`/`width`(레이아웃 px)로 되쓰면 배율이 두 번
+ * 곱해진다(0.9×0.9) — 드래그 '놓을 자리' 스페이서가 카드보다 10% 낮았던 원인. 레이아웃 px가
+ * 필요하면 실측값을 이 값으로 나눈다. (미디어쿼리와 반드시 같은 임계값을 유지할 것.)
+ */
+export function studioShellZoom(): number {
+  if (typeof window === "undefined") return 1;
+  if (window.matchMedia("(min-width: 2400px)").matches) return 0.8;
+  if (window.matchMedia("(min-width: 1700px)").matches) return 0.9;
+  return 1;
+}
+
 export const CAL_ZOOM_STEPS = [1, 1.25, 1.5] as const;
 export type CalZoom = (typeof CAL_ZOOM_STEPS)[number];
 

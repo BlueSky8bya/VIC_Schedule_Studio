@@ -127,6 +127,36 @@ test("다른 칸으로 끌면 그 칸에 도착 표시가 열리고 출발 표�
   expect(s.srcLabel ?? "").toContain("원래 위치");
 });
 
+test("큰 화면(셸 zoom 0.9)에서도 '놓을 자리' 높이 = '원래 위치' 높이", async ({ page }) => {
+  // ≥1700px에서 .studio-shell에 CSS zoom 0.9가 걸린다. getBoundingClientRect는 그 배율이 이미
+  // 곱해진 화면 px라, 그 값을 zoom 안쪽 스페이서의 인라인 height로 되쓰면 0.9가 두 번 먹어
+  // 민트 '놓을 자리'가 보라 '원래 위치'보다 10% 낮았다(2026-08-16 사용자 지적, 1440에선 안 보임).
+  await page.setViewportSize({ width: 1800, height: 1200 });
+  const cellIdx = await stackTwoInOneCell(page);
+  const cell = page.locator("[data-act='calendar-cell']").nth(cellIdx);
+  const pill = cell.locator(".studio-event-pill").first();
+  const a = (await pill.boundingBox())!;
+  const other = page.locator("[data-act='calendar-cell']").nth(cellIdx + 2);
+  const b = (await other.boundingBox())!;
+
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(a.x + a.width / 2 + 10, a.y + a.height / 2 + 10, { steps: 6 });
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 20 });
+  await page.waitForTimeout(400); // 높이 전환이 끝날 때까지
+  const hs = await page.evaluate(() => {
+    const src = document.querySelector<HTMLElement>(".studio-event-pill.dragging-src");
+    const gap = document.querySelector<HTMLElement>(".drop-gap.on");
+    return {
+      src: src?.getBoundingClientRect().height ?? -1,
+      gap: gap?.getBoundingClientRect().height ?? -1
+    };
+  });
+  await page.mouse.up();
+  expect(hs.src).toBeGreaterThan(0);
+  expect(Math.abs(hs.gap - hs.src), `놓을 자리 ${hs.gap} vs 원래 위치 ${hs.src}`).toBeLessThan(0.5);
+});
+
 test("유령 카드는 카드처럼 불투명하다 — 가림은 안내 이동으로 푼다", async ({ page }) => {
   const cellIdx = await stackTwoInOneCell(page);
   const pill = page
