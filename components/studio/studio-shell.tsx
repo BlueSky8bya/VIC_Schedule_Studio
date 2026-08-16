@@ -550,6 +550,12 @@ export function StudioShell({
   // 일정은 로컬 상태로 들고 낙관적으로 갱신한다 — 잇기·복붙·저장·삭제가 서버 왕복/새로고침을
   // 기다리지 않고 화면에 즉시 반영되게 해서 "하는 맛"을 살린다. 서버 데이터가 바뀌면 다시 맞춘다.
   const [events, setEvents] = useState(schedule.events);
+  // 항상 '지금' 배열 — pointerdown 때 등록한 드롭 핸들러처럼 옛 렌더 클로저에서 불리는 코드가
+  // 그 사이 바뀐 상태(예: 저장 완료로 temp id → 실제 id 교체)를 놓치지 않게 한다.
+  const eventsRef = useRef(events);
+  eventsRef.current = events;
+  // temp id와 실제 id를 같은 카드로 본다 — 저장 직후 id가 바뀌는 찰나에 잡힌 드래그가 실패하지 않게.
+  const canonId = (eid: string) => tempToRealRef.current.get(eid) ?? eid;
   const resyncNeededRef = useRef(false); // 서버 진실 재동기화가 필요한데 아직 반영 안 됨(아래 참조)
   useEffect(() => {
     // 저장·삭제·이동이 진행 중이면 서버 prop이 낙관적 화면을 덮어써 카드가 '이전 위치로
@@ -3326,14 +3332,22 @@ export function StudioShell({
     targetDate: string,
     over: { id: string; after: boolean } | null
   ) {
-    const moved = events.find((ev) => ev.id === id);
+    // ⚠ 이 함수는 pointerdown 때 등록된 리스너(옛 렌더 클로저)에서 불린다. 그 사이 새 카드의
+    // 저장이 끝나 id가 temp → 실제로 바뀌었을 수 있다 — 2026-08-16 실측: 만든 직후 끈 카드가
+    // 화면에선 순서가 안 바뀌고(옛 id로 찾다 놓침) 서버에만 저장돼, 새로고침하면 순서가 달랐다.
+    // 그래서 ① 배열은 ref로 '지금' 것을 읽고 ② id 비교는 전부 canonId(temp↔실제 동일시)로 한다.
+    const live = eventsRef.current;
+    const cid = canonId(id);
+    const moved = live.find((ev) => canonId(ev.id) === cid);
     if (!moved) return;
+    id = moved.id; // 이후 로직은 '지금 배열에 있는' id로 통일
 
     // target 날짜의 (드래그 중인 카드를 뺀) 현재 표시 순서.
-    const dayEvents = getEventsForDate(events, targetDate).filter((e) => e.id !== id);
+    const dayEvents = getEventsForDate(live, targetDate).filter((e) => canonId(e.id) !== cid);
     let insertIdx = dayEvents.length; // 기본: 맨 끝
-    if (over && over.id !== id) {
-      const idx = dayEvents.findIndex((e) => e.id === over.id);
+    if (over && canonId(over.id) !== cid) {
+      const overId = canonId(over.id);
+      const idx = dayEvents.findIndex((e) => canonId(e.id) === overId);
       if (idx >= 0) insertIdx = over.after ? idx + 1 : idx;
     }
     // 끈(이어진/멀티데이 일정)은 항상 맨 위에 고정 — 그 위로는 못 끼운다. 끈 아래로만 배치.
@@ -3346,7 +3360,7 @@ export function StudioShell({
     ];
 
     // 바뀐 게 없으면(같은 날 + 같은 순서) 아무것도 안 한다.
-    const currentIds = getEventsForDate(events, targetDate).map((e) => e.id);
+    const currentIds = getEventsForDate(live, targetDate).map((e) => e.id);
     if (targetDate === sourceDate && orderedIds.join() === currentIds.join()) {
       return;
     }
@@ -3363,23 +3377,25 @@ export function StudioShell({
       holder: { id },
       fromDate: sourceDate,
       toDate: targetDate,
-      fromOrderedIds: getEventsForDate(events, sourceDate).map((e) => e.id)
+      fromOrderedIds: getEventsForDate(live, sourceDate).map((e) => e.id)
     });
 
-    const orderPos = new Map(orderedIds.map((eid, i) => [eid, i] as const));
+    const orderPos = new Map(orderedIds.map((eid, i) => [canonId(eid), i] as const));
     flipArmedRef.current = true; // 드래그 재정렬 — 이 변화에만 형제 카드 FLIP 활주를 허용.
     // 낙관적 반영(즉시). 서버 prop이 이걸 덮어쓰지 않게 위 prop 동기화는 pendingPersist 동안 멈춘다.
+    // updater 안에서도 canonId — setEvents가 실행되는 순간 id가 또 바뀌어 있을 수 있다.
     setEvents((prev) =>
       prev.map((ev) => {
         let next = ev;
-        if (ev.id === id && targetDate !== sourceDate) {
+        const evc = canonId(ev.id);
+        if (evc === cid && targetDate !== sourceDate) {
           next = {
             ...next,
             startsAt: next.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, targetDate),
             endDateKey: next.endDateKey ? addDaysIso(next.endDateKey, delta) : next.endDateKey
           };
         }
-        const pos = orderPos.get(ev.id);
+        const pos = orderPos.get(evc);
         if (pos !== undefined) next = { ...next, sortOrder: pos };
         return next;
       })
@@ -4058,10 +4074,9 @@ export function StudioShell({
     if (action.type === "move") {
       // 드래그 이동 되돌리기 — 원래 날짜·원래 순서로 되돌린다(같은 날 안 순서만 바꾼 경우도 포함).
       // 방금 만든 카드(temp id)를 옮겼다면 그 사이 실제 id로 바뀌었을 수 있다 → 매핑으로 해소.
-      const id = tempToRealRef.current.get(action.holder.id) ?? action.holder.id;
-      const remap = (eid: string) => tempToRealRef.current.get(eid) ?? eid;
-      const fromOrderedIds = action.fromOrderedIds.map(remap);
-      const moved = events.find((e) => e.id === id);
+      const id = canonId(action.holder.id);
+      const fromOrderedIds = action.fromOrderedIds.map(canonId);
+      const moved = eventsRef.current.find((e) => canonId(e.id) === id);
       if (!moved) {
         flashToast("되돌릴 카드를 찾을 수 없어요");
         return null;
@@ -4072,7 +4087,7 @@ export function StudioShell({
         holder: action.holder,
         fromDate: action.toDate,
         toDate: action.fromDate,
-        fromOrderedIds: getEventsForDate(events, action.toDate).map((e) => e.id)
+        fromOrderedIds: getEventsForDate(eventsRef.current, action.toDate).map((e) => e.id)
       };
       const delta = daysBetweenIso(getEventDateKey(moved), action.fromDate);
       const orderPos = new Map(fromOrderedIds.map((eid, i) => [eid, i] as const));
@@ -4080,14 +4095,15 @@ export function StudioShell({
       setEvents((prev) =>
         prev.map((ev) => {
           let next = ev;
-          if (ev.id === id && action.fromDate !== action.toDate) {
+          const evc = canonId(ev.id);
+          if (evc === id && action.fromDate !== action.toDate) {
             next = {
               ...next,
               startsAt: next.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, action.fromDate),
               endDateKey: next.endDateKey ? addDaysIso(next.endDateKey, delta) : next.endDateKey
             };
           }
-          const pos = orderPos.get(ev.id);
+          const pos = orderPos.get(evc);
           if (pos !== undefined) next = { ...next, sortOrder: pos };
           return next;
         })

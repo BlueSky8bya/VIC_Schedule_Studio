@@ -169,3 +169,63 @@ test("중대한 쓰기는 keepalive로 나간다 — 저장 도중 떠나도 전
   const flags = await page.evaluate(() => (window as unknown as { __ka: boolean[] }).__ka);
   expect(flags.every(Boolean)).toBe(true);
 });
+
+test("만들자마자 끈 카드: 끄는 도중 저장이 끝나 id가 바뀌어도 화면·서버 순서가 같다", async ({ page }) => {
+  // 2026-08-16 실측(8/17 칸): 새 카드를 만들고 곧바로 끌었더니 서버에는 순서가 저장됐는데
+  // 편집자 화면은 옛 순서 그대로였고('저장됨' 배지도 정상), 새로고침하니 순서가 달랐다.
+  // 원인: 드롭 핸들러가 pointerdown 때의 렌더 클로저라 카드 id를 temp로 알고 있는데, 끄는 사이
+  // 저장이 끝나 배열에서는 실제 id로 바뀌어 낙관적 반영(setEvents)이 그 카드를 못 찾았다.
+  // 서버 저장은 temp→실제 매핑으로 정상 전송 → 화면만 거짓말. 여기서는 그 찰나를 재현한다:
+  // save 응답을 1.5초 늦추고, 그 사이 temp 카드를 집어 빈 칸으로 천천히 끌어 저장 완료 뒤 놓는다.
+  const { reqs } = await interceptWrites(page, {
+    delayFor: (r) => (r.op === "save" ? 1500 : 0)
+  });
+  await openStudio(page);
+
+  const cells = page.locator("[data-act='calendar-cell']");
+  const emptyIdxs = await page.evaluate(() =>
+    [...document.querySelectorAll("[data-act='calendar-cell']")]
+      .map((c, i) => (c.querySelectorAll(".studio-event-pill").length === 0 ? i : -1))
+      .filter((i) => i >= 0)
+  );
+  expect(emptyIdxs.length).toBeGreaterThan(1);
+  const fromCell = cells.nth(emptyIdxs[0]);
+  const toCell = cells.nth(emptyIdxs[1]);
+  const toDate = await toCell.getAttribute("data-isodate");
+
+  await fromCell.click();
+  await page.locator("textarea, input[type='text']").first().fill("바로 끌 일정");
+  await page.locator("[data-act='save-event']").click();
+  // 낙관적 temp 카드가 뜬다(아직 저장 응답 전).
+  const temp = fromCell.locator(".studio-event-pill[data-eventid^='temp-']");
+  await temp.waitFor({ timeout: 3000 });
+  await page.keyboard.press("Escape"); // 편집 패널을 닫아 달력 위를 가리지 않게(드롭 판정)
+  await page.waitForTimeout(250);
+  const a = (await temp.boundingBox())!;
+  const b = (await toCell.boundingBox())!;
+
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(a.x + a.width / 2 + 12, a.y + a.height / 2 + 8, { steps: 4 });
+  // 끄는 도중 저장 완료(1.5초) → id가 temp에서 srv-1로 바뀐다.
+  await page.waitForTimeout(1900);
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 12 });
+  await page.mouse.up();
+
+  // ① 화면: 카드(이제 실제 id)가 대상 칸에 있어야 한다. 예전엔 원래 칸에 남았다.
+  const cellOf = () =>
+    page.evaluate(
+      () =>
+        document
+          .querySelector(".studio-event-pill[data-eventid='srv-1']")
+          ?.closest("[data-act='calendar-cell']")
+          ?.getAttribute("data-isodate") ?? null
+    );
+  await expect.poll(cellOf, { timeout: 5000 }).toBe(toDate);
+  // ② 서버: reorder가 실제 id로, 대상 날짜로 나갔다(화면과 같은 진실).
+  await expect.poll(() => reqs.filter((r) => r.op === "reorder").length, { timeout: 5000 }).toBe(1);
+  const reorder = reqs.find((r) => r.op === "reorder")!;
+  expect(reorder.payload.movedId).toBe("srv-1");
+  expect(reorder.payload.dateKey).toBe(toDate);
+  expect(reorder.payload.orderedIds).toEqual(["srv-1"]);
+});
