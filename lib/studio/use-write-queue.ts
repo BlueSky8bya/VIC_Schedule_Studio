@@ -13,7 +13,12 @@ import { postStudioWrite, type StudioWriteResult } from "@/lib/studio/editor-mod
 
 export type SaveState = "idle" | "saving" | "saved" | "failed";
 
-export function useStudioWriteQueue(movePersistChainRef: MutableRefObject<Promise<void>>) {
+export function useStudioWriteQueue(
+  movePersistChainRef: MutableRefObject<Promise<void>>,
+  // 진행 중 쓰기(inflight)가 0이 되는 순간마다 부른다 — 셸이 '실패한 이동의 서버 재동기화'처럼
+  // "큐가 완전히 빈 뒤에만 할 수 있는 일"을 여기에 건다(ref로 받아 최신 클로저를 쓴다).
+  onDrainRef?: MutableRefObject<(() => void) | null>
+) {
   // #10 저장 신뢰: 모든 쓰기가 studioWrite를 거치므로 거기서 상태를 잡아 헤더 칩에 보여준다.
   const [saveState, setSaveState] = useState<SaveState>("idle");
   const [lastSavedKst, setLastSavedKst] = useState<string | null>(null);
@@ -97,7 +102,10 @@ export function useStudioWriteQueue(movePersistChainRef: MutableRefObject<Promis
           setSaveState("failed");
         }
       )
-      .finally(() => inflightWritesRef.current.delete(p));
+      .finally(() => {
+        inflightWritesRef.current.delete(p);
+        if (inflightWritesRef.current.size === 0) onDrainRef?.current?.();
+      });
     return p;
   }
 

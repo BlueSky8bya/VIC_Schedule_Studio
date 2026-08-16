@@ -282,6 +282,8 @@ export function StudioShell({
   const pendingRef = useRef(false);
   const pendingPersistRef = useRef(0); // 진행 중인 '이동 저장' 수(F5 경고 + prop 동기화 가드)
   const movePersistChainRef = useRef<Promise<void>>(Promise.resolve()); // 이동 저장 직렬화
+  // 쓰기 큐가 완전히 빌 때 부를 콜백(아래 requestServerResync — 실패한 이동의 서버 재동기화).
+  const writeDrainRef = useRef<(() => void) | null>(null);
   // P2-ARCH-1 3단계: 전역 직렬 쓰기 큐(저장 칩·temp id 해석·flush 포함)는 훅으로 분리.
   const {
     saveState,
@@ -295,7 +297,7 @@ export function StudioShell({
     studioWrite,
     flushPendingWrites,
     flashSavedChip
-  } = useStudioWriteQueue(movePersistChainRef);
+  } = useStudioWriteQueue(movePersistChainRef, writeDrainRef);
   // 이벤트별 태그 토글 직렬화 — 빠르게 여러 번 눌러도 '마지막 의도'가 서버 진실이 되게(레이스로
   // 옛 요청이 새 요청을 덮어쓰지 않게). desired=최신 의도, chain=직렬 큐, sent=중복 전송 방지(레퍼런스).
   const tagDesiredRef = useRef<Map<string, string[]>>(new Map());
@@ -548,16 +550,38 @@ export function StudioShell({
   // 일정은 로컬 상태로 들고 낙관적으로 갱신한다 — 잇기·복붙·저장·삭제가 서버 왕복/새로고침을
   // 기다리지 않고 화면에 즉시 반영되게 해서 "하는 맛"을 살린다. 서버 데이터가 바뀌면 다시 맞춘다.
   const [events, setEvents] = useState(schedule.events);
+  const resyncNeededRef = useRef(false); // 서버 진실 재동기화가 필요한데 아직 반영 안 됨(아래 참조)
   useEffect(() => {
     // 저장·삭제·이동이 진행 중이면 서버 prop이 낙관적 화면을 덮어써 카드가 '이전 위치로
     // 순간이동'하던 문제를 막는다. 작업이 끝난 뒤(idle)의 prop 변화에서만 서버 데이터로 맞춘다.
     if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
       return;
     setEvents(schedule.events);
+    resyncNeededRef.current = false; // 서버 진실이 실제로 화면에 반영됐다
   }, [schedule.events, inflightWritesRef]);
+  // 이동 저장이 실패/누락됐을 때 '서버 진실로 되돌리기'는 큐가 빈 뒤에만 가능하다 — 진행 중에
+  // router.refresh()를 불러도 위 가드가 그 prop을 버려서, 화면은 낙관적 순서인 채 서버는 옛
+  // 순서로 영영 갈라졌다(2026-08-16 실측: 편집자 화면 [미정, FC, 20시] vs 새로고침 [FC, 미정, 20시]).
+  // 플래그로 남겨 두고 idle이 될 때 refresh, 반영이 확인될 때(위 effect) 지운다.
+  function requestServerResync() {
+    resyncNeededRef.current = true;
+    if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
+      return; // 큐가 비면 enqueueMovePersist의 finally가 다시 부른다
+    flashToast("순서 저장이 안 돼 서버 순서로 되돌렸어요 — 다시 옮겨 주세요");
+    router.refresh();
+  }
+  // 이동 큐뿐 아니라 일반 쓰기(저장·삭제·태그)가 마지막으로 끝나는 순간에도 미룬 재동기화를 실행 —
+  // 이동 실패 시점에 다른 저장이 아직 날아가는 중이면 위 가드에 걸려 finally에서 못 했기 때문.
+  writeDrainRef.current = () => {
+    if (resyncNeededRef.current) requestServerResync();
+  };
   // pending(저장/삭제/태그 진행)을 ref로 미러링 — 위 prop 동기화 가드가 deps 없이 읽게.
   useEffect(() => {
     pendingRef.current = pending;
+    // 트랜지션(저장/삭제/태그)이 끝나는 순간에도 미룬 재동기화를 실행 — 이동 실패 시점에 이게
+    // 아직 true라 requestServerResync가 물러났다면, 여기 말고는 다시 부를 곳이 없다.
+    if (!pending && resyncNeededRef.current) requestServerResync();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pending]);
   // 중대한 변경(생성·삭제·편집·태그·이동)이 아직 서버에 안 들어갔는데 새로고침/닫기 하면
   // "분명 지웠는데 다시 생겨있네?" 같은 불일치가 난다 → 그 짧은 진행 중에만 한 번 경고한다.
@@ -3251,6 +3275,8 @@ export function StudioShell({
       .finally(() => {
         pendingPersistRef.current = Math.max(0, pendingPersistRef.current - 1);
         setSyncingIds((p) => p.filter((x) => x !== move.id)); // 반영 끝 → 표시 제거
+        // 이번 큐의 어느 이동이든 서버에 못 들어갔으면, 큐가 빈 지금 서버 진실로 되돌린다.
+        if (resyncNeededRef.current) requestServerResync();
       });
   }
 
@@ -3261,9 +3287,23 @@ export function StudioShell({
     orderedIds: string[];
   }) {
     const realMovedId = await resolveEventId(move.id);
-    if (!realMovedId) return; // 저장 실패/취소 — 둘 곳 없음
+    if (!realMovedId) {
+      // 옮긴 카드의 저장이 실패/취소돼 서버에 없다 — 화면만 옮겨진 채 두면 새로고침 때 갈라진다.
+      resyncNeededRef.current = true;
+      return;
+    }
     const realOrderedIds = await Promise.all(move.orderedIds.map((eid) => resolveEventId(eid)));
-    if (realOrderedIds.some((x) => x == null)) return; // 같은 날 미저장 카드 — 다음 이동 때 정리됨
+    if (realOrderedIds.some((x) => x == null)) {
+      // 같은 날에 저장 실패한 카드가 섞여 있다. 예전엔 조용히 버렸는데("다음 이동 때 정리됨"),
+      // 다음 이동이 없으면 이번 순서는 영영 서버에 안 갔다 → 실패한 카드만 빼고 저장한다.
+      // (그 카드는 서버에 없으니 순서에서 빠져도 서버 진실과 어긋나지 않는다.)
+      const kept = realOrderedIds.filter((x): x is string => x != null);
+      if (kept.length === 0) {
+        resyncNeededRef.current = true;
+        return;
+      }
+      realOrderedIds.splice(0, realOrderedIds.length, ...kept);
+    }
     // keepalive 전송(studioWrite) → 옮기고 바로 달을 넘기거나 창을 닫아도 전송이 끝까지 보장된다.
     // (일반 fetch/서버액션은 페이지를 떠나면 중간에 끊겨 "옮긴 곳에 저장 안 됨"이 났다.)
     const result = await studioWrite("reorder", {
@@ -3273,7 +3313,9 @@ export function StudioShell({
     });
     if (!result.ok) {
       setActionError(result.error);
-      router.refresh(); // 서버 진실로 재동기화(잘못된 중간 상태로 순간이동하지 않게)
+      // 서버 진실로 재동기화 — 단, 지금은 pendingPersistRef>0이라 곧바로 refresh해도 prop 동기화
+      // 가드가 버린다. 플래그만 세우고 큐가 빈 뒤(finally)에 실제 refresh한다.
+      resyncNeededRef.current = true;
     }
   }
 

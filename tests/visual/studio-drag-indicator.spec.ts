@@ -157,6 +157,75 @@ test("큰 화면(셸 zoom 0.9)에서도 '놓을 자리' 높이 = '원래 위치'
   expect(Math.abs(hs.gap - hs.src), `놓을 자리 ${hs.gap} vs 원래 위치 ${hs.src}`).toBeLessThan(0.5);
 });
 
+test("순서 저장이 실패하면 서버 순서로 되돌아온다(다른 저장이 진행 중이어도)", async ({ page }) => {
+  // 2026-08-16 실측: 이동 저장 실패 시 곧바로 router.refresh()를 불렀는데, 그 결과가 도착하는
+  // 순간 다른 쓰기(저장)가 아직 진행 중이면 prop 동기화 가드가 그 결과를 버렸다 → 편집자 화면은
+  // 옮긴 순서·서버는 옛 순서로 영영 갈라졌다. 여기서는 '휴방' 저장을 3초 늦추고 그 사이 이동을
+  // 실패시켜, 저장이 끝난 뒤 카드가 서버(원래) 칸으로 돌아오는지 본다.
+  await page.route("**/api/studio-write", async (r) => {
+    const body = r.request().postDataJSON() as { op?: string };
+    if (body?.op === "reorder") {
+      return r.fulfill({
+        status: 403,
+        contentType: "application/json",
+        body: JSON.stringify({ ok: false, error: "테스트: 순서 저장 실패" })
+      });
+    }
+    if (body?.op === "save") await new Promise((res) => setTimeout(res, 3000));
+    return r.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ ok: true, id: "srv-1" })
+    });
+  });
+  await page.goto("/visual-fixture/studio");
+  await page.locator(".studio-event-pill").first().waitFor();
+  const src = page.locator(".studio-event-pill").first();
+  const srcId = await src.getAttribute("data-eventid");
+  const srcDate = await src.evaluate(
+    (el) => el.closest("[data-act='calendar-cell']")?.getAttribute("data-isodate") ?? null
+  );
+  const emptyIdxs = await page.evaluate(() =>
+    [...document.querySelectorAll("[data-act='calendar-cell']")]
+      .map((c, i) => (c.querySelectorAll(".studio-event-pill").length === 0 ? i : -1))
+      .filter((i) => i >= 0)
+  );
+  expect(emptyIdxs.length).toBeGreaterThan(0);
+  const cells = page.locator("[data-act='calendar-cell']");
+  const targetCell = cells.nth(emptyIdxs[0]);
+  const targetDate = await targetCell.getAttribute("data-isodate");
+
+  // ① 다른 카드를 열고 Ctrl+S → save가 3초간 진행 중이 된다.
+  await page.locator(".studio-event-pill").nth(1).click();
+  await page.locator(".studio-editor-panel, [data-act='editor-panel']").first().waitFor({ timeout: 3000 }).catch(() => {});
+  await page.keyboard.press("Control+s");
+  await page.waitForTimeout(150);
+
+  // ② 그 사이 카드를 다른 빈 칸으로 끈다 → reorder 실패. (패널이 열려 레이아웃이 바뀌었을 수
+  //    있으니 좌표는 지금 다시 잰다.)
+  const a = (await src.boundingBox())!;
+  const b = (await targetCell.boundingBox())!;
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(a.x + a.width / 2 + 12, a.y + a.height / 2 + 8, { steps: 4 });
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 18 });
+  await page.mouse.up();
+
+  const cellOf = () =>
+    page.evaluate(
+      (id) =>
+        document
+          .querySelector(`.studio-event-pill[data-eventid="${id}"]`)
+          ?.closest("[data-act='calendar-cell']")
+          ?.getAttribute("data-isodate") ?? null,
+      srcId
+    );
+  // 낙관적으로는 일단 옮겨진다.
+  await expect.poll(cellOf, { timeout: 3000 }).toBe(targetDate);
+  // 저장(3초)이 끝난 뒤 서버 진실(원래 칸)로 되돌아와야 한다. 예전엔 영영 targetDate였다.
+  await expect.poll(cellOf, { timeout: 12000 }).toBe(srcDate);
+});
+
 test("유령 카드는 카드처럼 불투명하다 — 가림은 안내 이동으로 푼다", async ({ page }) => {
   const cellIdx = await stackTwoInOneCell(page);
   const pill = page
