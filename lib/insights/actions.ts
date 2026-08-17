@@ -964,7 +964,6 @@ function computeBroadcast(
 ): { broadcastHours: number[]; broadcastDaily: number[]; broadcastDays: number } {
   const bMonthSec = new Map(monthKeys.map((k) => [k, 0]));
   const bDaySec = new Map<number, number>(); // 보는 달 일별(일=1..말일)
-  const bDays = new Set<string>();
   for (const r of bcastRows) {
     const start = new Date(r.started_at).getTime();
     const end = new Date(r.ended_at ?? r.last_live_at).getTime();
@@ -973,20 +972,23 @@ function computeBroadcast(
     if (sec <= 0) continue;
     const ym = r.start_day.slice(0, 7);
     if (bMonthSec.has(ym)) bMonthSec.set(ym, (bMonthSec.get(ym) ?? 0) + sec);
-    bDays.add(r.start_day);
     if (ym === `${year}-${pad(month)}`) {
       const d = Number(r.start_day.slice(8, 10));
       bDaySec.set(d, (bDaySec.get(d) ?? 0) + sec);
     }
   }
+  // 반올림 자릿수는 시청자 '이 달 기록'의 공개 RPC(0049 월별 1자리 / 0050 일별 2자리)와 같게 —
+  // 예전엔 일별도 1자리라 같은 날이 편집실 13.1h(13시간 6분), 시청자 13.13h(13시간 8분)로 달랐다.
   const round1 = (h: number) => Math.round(h * 10) / 10;
+  const round2 = (h: number) => Math.round(h * 100) / 100;
   const daysInViewMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
   const broadcastHours = monthKeys.map((k) => round1((bMonthSec.get(k) ?? 0) / 3600));
   const broadcastDaily = Array.from({ length: daysInViewMonth }, (_, i) =>
-    round1((bDaySec.get(i + 1) ?? 0) / 3600)
+    round2((bDaySec.get(i + 1) ?? 0) / 3600)
   );
-  const viewYm = `${year}-${pad(month)}`;
-  const broadcastDays = [...bDays].filter((d) => d.slice(0, 7) === viewYm).length;
+  // 방송일수도 시청자 화면과 같은 정의(일별 값 > 0)로 — 원본 초 단위로 세면 반올림 후
+  // 0.00h인 몇 초짜리 세션이 하루로 잡혀 일평균 분모가 어긋난다.
+  const broadcastDays = broadcastDaily.filter((h) => h > 0).length;
   return { broadcastHours, broadcastDaily, broadcastDays };
 }
 
