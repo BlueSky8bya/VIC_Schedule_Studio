@@ -121,34 +121,50 @@ export function TagLegendEditor({
     [allTags, effectivePalette]
   );
 
-  const [draft, setDraft] = useState<Record<string, Draft>>(() =>
-    Object.fromEntries(
-      tags.map((t) => [
-        t.id,
-        { name: t.displayName, colorKey: t.colorKey, bgHex: t.bgHex ?? null, parentId: t.parentId, kind: t.kind }
-      ])
-    )
-  );
+  const draftOf = (t: BroadcastTag): Draft => ({
+    name: t.displayName,
+    colorKey: t.colorKey,
+    bgHex: t.bgHex ?? null,
+    parentId: t.parentId,
+    kind: t.kind
+  });
+  const sameDraft = (a: Draft | undefined, b: Draft | undefined) =>
+    !!a &&
+    !!b &&
+    a.name === b.name &&
+    a.colorKey === b.colorKey &&
+    (a.bgHex ?? null) === (b.bgHex ?? null) &&
+    (a.parentId ?? null) === (b.parentId ?? null) &&
+    a.kind === b.kind;
 
-  // 부모 태그 목록이 바뀌면(저장 반영) 드래프트도 맞춘다. 기존 편집값·드래프트 항목은 유지.
+  // 최신 props를 비동기 콜백(저장 완료 후 재동기화)에서 읽기 위한 거울. (useState 업데이터가
+  // 렌더 중 실행되므로 그보다 먼저 갱신해 둔다.)
+  const tagsRef = useRef(tags);
+  tagsRef.current = tags;
+  const [draft, setDraft] = useState<Record<string, Draft>>(() =>
+    Object.fromEntries(tags.map((t) => [t.id, draftOf(t)]))
+  );
+  // 사용자가 '직접 손댄' 행 id. 손대지 않은 행은 부모 props(다른 사용자의 저장·router.refresh·
+  // 내 다른 행 저장)가 바뀔 때마다 서버값으로 다시 맞춘다 — 예전엔 한 번 만든 드래프트를 끝까지
+  // 들고 있어서 낡은 값이 다음 '전체 저장' 때 서버를 덮어썼다. 저장 성공 시 그 배치의 id는 해제.
+  const dirtyIdsRef = useRef<Set<string>>(new Set());
+  const markDirty = (id: string) => dirtyIdsRef.current.add(id);
+
+  // 손대지 않은 행만 props로 재동기화. 편집 중(dirty)·저장 전 드래프트(new:) 항목은 유지.
+  function syncDraftFromProps(cur: Record<string, Draft>, src: BroadcastTag[]) {
+    const next: Record<string, Draft> = {};
+    for (const t of src) {
+      const mine = cur[t.id];
+      next[t.id] = mine && dirtyIdsRef.current.has(t.id) ? mine : draftOf(t);
+    }
+    for (const id of Object.keys(cur)) {
+      if (!next[id] && isNew(id)) next[id] = cur[id];
+    }
+    return next;
+  }
   useEffect(() => {
-    setDraft((cur) => {
-      const next: Record<string, Draft> = {};
-      for (const t of tags) {
-        next[t.id] = cur[t.id] ?? {
-          name: t.displayName,
-          colorKey: t.colorKey,
-          bgHex: t.bgHex ?? null,
-          parentId: t.parentId,
-          kind: t.kind
-        };
-      }
-      // 아직 저장 안 한 드래프트(new:) 항목은 그대로 보존.
-      for (const id of Object.keys(cur)) {
-        if (!next[id] && isNew(id)) next[id] = cur[id];
-      }
-      return next;
-    });
+    setDraft((cur) => syncDraftFromProps(cur, tags));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tags]);
 
   // 드래프트(저장 전) 색 정리 — 어떤 태그도 더는 안 쓰는 새 색은 버린다. 방식↔콘텐츠 토글을
@@ -169,17 +185,35 @@ export function TagLegendEditor({
   const [orderIds, setOrderIds] = useState<string[]>(() =>
     tags.filter(isTopTag).map((t) => t.id)
   );
+  // 드래그로 순서를 손댔는지. 손대지 않았으면 props 순서를 그대로 따른다(다른 사용자의 순서
+  // 저장·refresh 반영). 손댔으면 기존 순서를 보존하고 새로 온 id만 뒤에 붙인다.
+  const orderDirtyRef = useRef(false);
+  function syncOrderFromProps(cur: string[], src: BroadcastTag[], drafts: BroadcastTag[]) {
+    const ids = [...src, ...drafts]
+      .filter(isTopTag)
+      .map((t) => t.id)
+      .filter((id): id is string => Boolean(id));
+    if (!orderDirtyRef.current) return ids;
+    const kept = cur.filter((id) => Boolean(id) && ids.includes(id));
+    const added = ids.filter((id) => !kept.includes(id));
+    return [...kept, ...added];
+  }
   useEffect(() => {
-    setOrderIds((cur) => {
-      const ids = [...tags, ...newTags]
-        .filter(isTopTag)
-        .map((t) => t.id)
-        .filter((id): id is string => Boolean(id));
-      const kept = cur.filter((id) => Boolean(id) && ids.includes(id));
-      const added = ids.filter((id) => !kept.includes(id));
-      return [...kept, ...added];
-    });
+    setOrderIds((cur) => syncOrderFromProps(cur, tags, newTags));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tags, newTags]);
+  // 드래그 pointermove 핸들러는 pointerdown 시점에 등록돼 그 렌더의 allTags를 닫아 두므로,
+  // 잠금 판정(휴뱅)은 항상 최신 목록을 보는 ref로 한다.
+  const allTagsRef = useRef(allTags);
+  allTagsRef.current = allTags;
+  // 삭제·저장 서버 호출을 한 줄로 직렬화 — 저장이 삭제 중인 태그 행을 다시 써 넣거나, 삭제 응답이
+  // 저장 뒤 도착해 순서가 꼬이지 않게. (UI 게이팅은 그대로 좁게 유지.)
+  const opChainRef = useRef<Promise<void>>(Promise.resolve());
+  function enqueueOp(fn: () => Promise<void>): Promise<void> {
+    const p = opChainRef.current.then(fn, fn);
+    opChainRef.current = p.catch(() => undefined);
+    return p;
+  }
   // 대분류(드래그 순서대로) + 각 대분류의 세부(sortOrder 순).
   const orderedTops = orderIds
     .map((id) => allTags.find((t) => t.id === id))
@@ -192,6 +226,9 @@ export function TagLegendEditor({
   // 휴뱅(dayoff)은 시스템 기본 태그 — 순서 변경·이름 변경·색 변경·삭제를 모두 막는다.
   // (식별은 표시 이름이 아니라 tag_key로 — 이름을 바꿔도 안 깨지게.)
   const isLocked = (id: string) => allTags.find((t) => t.id === id)?.tagKey === "dayoff";
+  // 드래그 핸들러(등록 시점 클로저)용 — 최신 목록 기준 잠금 판정.
+  const isLockedNow = (id: string) =>
+    allTagsRef.current.find((t) => t.id === id)?.tagKey === "dayoff";
 
   // 순서 변경 — 포인터(마우스+터치) 통합. 손잡이를 누르면 행을 그대로 복제한 "유령(ghost)"이
   // 손가락/커서를 따라 들려 움직이고(웹·모바일 동일), 화면 가장자리에선 자동 스크롤된다.
@@ -226,7 +263,8 @@ export function TagLegendEditor({
   function moveBefore(list: string[], from: string, before: string) {
     if (from === before) return list;
     // 휴뱅은 자기 자신을 옮기지도, 다른 태그를 그 앞으로 보내지도 못한다(항상 최상단 고정).
-    if (isLocked(from) || isLocked(before)) return list;
+    if (isLockedNow(from) || isLockedNow(before)) return list;
+    orderDirtyRef.current = true;
     const next = list.filter((id) => id !== from);
     const idx = next.indexOf(before);
     next.splice(idx, 0, from);
@@ -544,15 +582,35 @@ export function TagLegendEditor({
       return;
     }
     lockDeletes();
-    const color = tag ? palette.find((c) => c.key === tag.colorKey) : undefined;
+    // 되돌림용 색 — 팔레트에 없는 커스텀(bgHex) 태그도 항상 엔트리를 만들어 롤백이 빠지지 않게.
+    // (예전엔 팔레트에 없으면 onTagAdded를 건너뛰어 서버엔 남고 화면에서만 사라진 채로 굳었다.)
+    const color: ColorPaletteEntry | undefined = tag
+      ? palette.find((c) => c.key === tag.colorKey) ??
+        (() => {
+          const hex = tag.bgHex ?? "#eeeeee";
+          const entry: ColorPaletteEntry = {
+            key: tag.colorKey,
+            name: tag.displayName,
+            bgColor: hex,
+            textColor: inkContrast(hex).ink,
+            borderColor: hex,
+            sortOrder: 0
+          };
+          return entry;
+        })()
+      : undefined;
     setError(null);
     onTagRemoved?.(tagId); // 낙관적 제거
     startBusy(async () => {
-      const result = await removeTagAction(tagId);
-      if (!result.ok) {
-        setError(result.error);
-        if (tag && color) onTagAdded?.(tag, color); // 실패 → 되돌림
-      }
+      await enqueueOp(async () => {
+        const result = await removeTagAction(tagId);
+        if (result.ok) {
+          dirtyIdsRef.current.delete(tagId);
+        } else {
+          setError(result.error);
+          if (tag && color) onTagAdded?.(tag, color); // 실패 → 되돌림
+        }
+      });
     });
   }
 
@@ -588,6 +646,7 @@ export function TagLegendEditor({
         setNewColors((prev) => [...prev, { ...gen, sortOrder: 0 }]);
       }
     }
+    markDirty(tagId);
     setDraft((cur) => ({ ...cur, [tagId]: { ...cur[tagId], kind: newKind, colorKey: nextKey } }));
   }
 
@@ -652,47 +711,76 @@ export function TagLegendEditor({
       pushTag(top, ti, null);
       childrenOf(top.id).forEach((child, ci) => pushTag(child, ci, top.id));
     });
+    // 되돌림 스냅샷 — updates와 같은 필드 집합(bgHex·parentId·kind 포함). 일부만 담으면 실패 후
+    // 부모에 낙관적 값(색·부모·종류)이 그대로 남았다.
     const prev: TagUpdate[] = tags.map((t) => ({
       id: t.id,
       displayName: t.displayName,
       colorKey: t.colorKey,
-      sortOrder: t.sortOrder
+      bgHex: t.bgHex ?? null,
+      sortOrder: t.sortOrder,
+      parentId: t.parentId ?? null,
+      kind: t.kind
     }));
+    // 이번 배치에 실은 드래프트값·순서 스냅샷 — 저장 중 사용자가 더 손댄 행은 응답이 와도 덮지 않고
+    // dirty로 남긴다(다음 저장에 실림). 손대지 않은 행만 서버값으로 재동기화한다.
+    const submitted: Record<string, Draft> = {};
+    for (const u of updates) if (draft[u.id]) submitted[u.id] = draft[u.id];
+    for (const c of creates) if (draft[c.tempId]) submitted[c.tempId] = draft[c.tempId];
+    const submittedOrder = orderIds.slice();
     onTagsUpdated?.(updates); // 기존 태그 변경은 낙관적 반영(달력 색 즉시 갱신)
     startTransition(async () => {
-      const result = await saveTagsAction({ updates, creates });
-      if (result.ok) {
-        // 새 태그는 진짜 id가 생긴 뒤 부모(달력)에 반영.
-        for (const c of result.created) {
-          onTagAdded?.(c.tag, c.color);
-        }
-        // 드래프트 정리 + 임시 id → 진짜 id로 치환(순서·드래프트맵 동기화).
-        if (result.created.length > 0) {
-          setOrderIds((cur) =>
-            cur.map((id) => result.created.find((c) => c.tempId === id)?.tag.id ?? id)
-          );
+      await enqueueOp(async () => {
+        const result = await saveTagsAction({ updates, creates });
+        if (result.ok) {
+          // 새 태그는 진짜 id가 생긴 뒤 부모(달력)에 반영.
+          for (const c of result.created) {
+            onTagAdded?.(c.tag, c.color);
+          }
+          const createdTempIds = new Set(result.created.map((c) => c.tempId));
+          // 임시 id → 진짜 id 치환(순서·드래프트맵). 저장 중 편집된 드래프트는 새 id 밑으로 옮겨
+          // 보존하고 dirty 표시, 그대로인 것만 서버값으로.
+          setOrderIds((cur) => {
+            const mapped = cur.map(
+              (id) => result.created.find((c) => c.tempId === id)?.tag.id ?? id
+            );
+            const untouched = cur.every((id, i) => submittedOrder[i] === id);
+            if (untouched) orderDirtyRef.current = false;
+            return mapped;
+          });
           setDraft((cur) => {
             const next = { ...cur };
             for (const c of result.created) {
+              const mine = cur[c.tempId];
               delete next[c.tempId];
-              next[c.tag.id] = {
-                name: c.tag.displayName,
-                colorKey: c.tag.colorKey,
-                bgHex: c.tag.bgHex ?? null,
-                parentId: c.tag.parentId,
-                kind: c.tag.kind
-              };
+              const untouched = sameDraft(mine, submitted[c.tempId]);
+              if (untouched || !mine) {
+                next[c.tag.id] = draftOf(c.tag);
+                dirtyIdsRef.current.delete(c.tag.id);
+              } else {
+                next[c.tag.id] = mine;
+                dirtyIdsRef.current.add(c.tag.id);
+              }
+            }
+            // 저장 중 더 손대지 않은 행은 dirty 해제 + 최신 props(있으면)로 재동기화. 아직 props에
+            // 안 실린 행은 [tags] 효과가 도착 시점에 맞춘다.
+            for (const u of updates) {
+              if (!sameDraft(cur[u.id], submitted[u.id])) continue;
+              dirtyIdsRef.current.delete(u.id);
+              const latest = tagsRef.current.find((t) => t.id === u.id);
+              if (latest) next[u.id] = draftOf(latest);
             }
             return next;
           });
+          // 이번 배치에 실린 드래프트 태그만 정리 — 저장 중 추가된 드래프트는 남긴다(예전엔 전부
+          // 비워 '✓ 저장됨' 뜨는 사이 방금 만든 행이 소리 없이 사라졌다). 색은 draft 정리 효과가 치운다.
+          setNewTags((cur) => cur.filter((t) => !createdTempIds.has(t.id)));
+          flashSaved();
+        } else {
+          setError(result.error);
+          onTagsUpdated?.(prev); // 실패 → 되돌림
         }
-        setNewTags([]);
-        setNewColors([]);
-        flashSaved();
-      } else {
-        setError(result.error);
-        onTagsUpdated?.(prev); // 실패 → 되돌림
-      }
+      });
     });
   }
 
@@ -738,7 +826,13 @@ export function TagLegendEditor({
           onChange={
             locked
               ? undefined
-              : (e) => setDraft((cur) => ({ ...cur, [tag.id]: { ...d, name: e.target.value } }))
+              : (e) => {
+                  markDirty(tag.id);
+                  const name = e.target.value;
+                  // 최신 cur 기준으로 병합 — 렌더 시점 d를 통째로 쓰면 저장 응답 등으로 그 사이 바뀐
+                  // 다른 필드(색·종류)를 옛값으로 되돌린다.
+                  setDraft((cur) => ({ ...cur, [tag.id]: { ...(cur[tag.id] ?? d), name } }));
+                }
           }
           readOnly={locked}
           title={locked ? "휴뱅은 이름을 바꿀 수 없어요" : undefined}
@@ -787,10 +881,12 @@ export function TagLegendEditor({
                         toggleKind(tag.id);
                         setOpenPickerId(null); // kind 바뀌면 다른 섹션으로 이동 → 팝오버 닫는다
                       }}
-                      onChange={(hex) =>
-                        setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: hex } }))
-                      }
+                      onChange={(hex) => {
+                        markDirty(tag.id);
+                        setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: hex } }));
+                      }}
                       onClear={() => {
+                        markDirty(tag.id);
                         setDraft((cur) => ({ ...cur, [tag.id]: { ...cur[tag.id], bgHex: null } }));
                         setOpenPickerId(null);
                       }}

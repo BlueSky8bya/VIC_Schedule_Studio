@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, Trash2, Users } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // #4: 이메일로부터 결정적으로 고르는 다양한 프로필(이모지 + 그라데이션).
 const AVATAR_EMOJIS = [
@@ -51,8 +51,20 @@ export function TrustedMembersPanel() {
   // 체감 성능: 모든 동작을 화면에 먼저 반영하고(낙관적) 서버와 조용히 맞춘다. 동기화 중인
   // 이메일엔 작은 점, 빠지는 행엔 접힘 애니메이션 — "내가 누른 게 바로 반영된다"는 유대감.
   const [syncing, setSyncing] = useState<Set<string>>(() => new Set());
-  const [removingIds, setRemovingIds] = useState<Set<string>>(() => new Set());
-  const [, startTransition] = useTransition();
+  // 삭제 중 표시는 이메일로 키운다 — id는 낙관적 temp→실제로 바뀌므로 id 키는 중간에 어긋난다.
+  const [removingEmails, setRemovingEmails] = useState<Set<string>>(() => new Set());
+  // 모든 쓰기(추가·역할·삭제)는 한 줄로 직렬화한다 — 동시에 두 요청이 나가면 각 응답의 전체 목록
+  // (setMembers(r.members))이 서로를 덮어써 '나중 응답이 진실'이 되는 경주가 생긴다. 실패해도
+  // 다음 작업은 이어간다(then(run, run)).
+  const opChainRef = useRef<Promise<void>>(Promise.resolve());
+  // 최신 목록을 큐 안에서 읽기 위한 거울(렌더 클로저의 낡은 members를 잡지 않으려고).
+  const membersRef = useRef<TrustedMember[]>([]);
+  membersRef.current = members;
+
+  function enqueue(run: () => Promise<void>) {
+    const task = () => run().catch(() => undefined);
+    opChainRef.current = opChainRef.current.then(task, task);
+  }
 
   useEffect(() => {
     listTrustedMembersAction()
@@ -72,6 +84,22 @@ export function TrustedMembersPanel() {
     });
   }
 
+  // 실패 시 되돌리기 = 렌더 시점 스냅샷 복원이 아니라 서버 진실 재조회. 스냅샷 복원은 그 사이
+  // 성공한 다른 쓰기까지 되감고, temp- 행을 영구히 남기는 문제가 있었다. 재조회마저 실패하면
+  // 이 작업의 변경만 함수형으로 되돌린다(fallback).
+  async function recoverAfterFailure(fallback: (cur: TrustedMember[]) => TrustedMember[]) {
+    const r = await listTrustedMembersAction().catch(() => null);
+    if (r && r.ok) commitMembers(r.members);
+    else commitMembers(fallback(membersRef.current));
+  }
+
+  // 서버가 준 전체 목록을 확정한다. 다음 큐 작업이 렌더 전에 곧장 이어질 수 있으므로 거울(ref)도
+  // 같은 순간 갱신해 큐 안에서 항상 최신 목록을 읽게 한다.
+  function commitMembers(next: TrustedMember[]) {
+    membersRef.current = next;
+    setMembers(next);
+  }
+
   function add() {
     setError(null);
     const cleanEmail = email.trim().toLowerCase();
@@ -84,34 +112,46 @@ export function TrustedMembersPanel() {
       return;
     }
     hapticTick();
-    const snapshot = members;
+    const isManager = addManager;
+    const isWorker = addWorker;
     const optimistic: TrustedMember = {
       id: `temp-${cleanEmail}`,
       email: cleanEmail,
       displayName: null,
-      trustedRole: addManager ? "manager" : "worker",
-      isManager: addManager,
-      isWorker: addWorker,
+      trustedRole: isManager ? "manager" : "worker",
+      isManager,
+      isWorker,
       isActive: true
     };
-    // 이미 있는 이메일이면 역할만 갱신(중복 행 방지), 아니면 맨 아래에 바로 추가.
-    setMembers((prev) =>
-      prev.some((m) => m.email === cleanEmail)
-        ? prev.map((m) => (m.email === cleanEmail ? { ...m, ...optimistic, id: m.id } : m))
-        : [...prev, optimistic]
-    );
+    // 이미 있는 이메일이면 역할만 갱신(중복 행 방지, id·표시명은 유지), 아니면 맨 아래에 바로 추가.
+    // 되돌리기용으로 '이 작업 전' 그 이메일 행을 함수형 업데이트 안에서 잡아둔다(낡은 클로저 X).
+    let before: TrustedMember | undefined;
+    setMembers((prev) => {
+      before = prev.find((m) => m.email === cleanEmail);
+      return before
+        ? prev.map((m) =>
+            m.email === cleanEmail
+              ? { ...m, trustedRole: optimistic.trustedRole, isManager, isWorker, isActive: true }
+              : m
+          )
+        : [...prev, optimistic];
+    });
     markSync(cleanEmail, true);
     setEmail("");
-    startTransition(async () => {
-      const r = await setTrustedMemberRolesAction(cleanEmail, addManager, addWorker);
+    enqueue(async () => {
+      const r = await setTrustedMemberRolesAction(cleanEmail, isManager, isWorker);
       markSync(cleanEmail, false);
       if (r.ok) {
-        setMembers(r.members);
+        commitMembers(r.members);
         hapticTick();
-      }
-      else {
-        setMembers(snapshot);
+      } else {
         setError(r.error);
+        const prevRow = before;
+        await recoverAfterFailure((cur) =>
+          prevRow
+            ? cur.map((m) => (m.email === cleanEmail ? prevRow : m))
+            : cur.filter((m) => m.email !== cleanEmail)
+        );
       }
     });
   }
@@ -124,25 +164,29 @@ export function TrustedMembersPanel() {
       setError("멤버는 적어도 한 역할이 필요해요. 빼려면 삭제하세요.");
       return;
     }
-    const snapshot = members;
-    setMembers((prev) =>
-      prev.map((m) =>
-        m.id === member.id
+    // 이메일로 매칭 — id는 temp→실제로 바뀔 수 있어 불안정.
+    let before: TrustedMember | undefined;
+    setMembers((prev) => {
+      before = prev.find((m) => m.email === member.email);
+      return prev.map((m) =>
+        m.email === member.email
           ? { ...m, isManager, isWorker, trustedRole: isManager ? "manager" : "worker" }
           : m
-      )
-    );
+      );
+    });
     markSync(member.email, true);
-    startTransition(async () => {
+    enqueue(async () => {
       const r = await setTrustedMemberRolesAction(member.email, isManager, isWorker);
       markSync(member.email, false);
       if (r.ok) {
-        setMembers(r.members);
+        commitMembers(r.members);
         hapticTick();
-      }
-      else {
-        setMembers(snapshot);
+      } else {
         setError(r.error);
+        const prevRow = before;
+        await recoverAfterFailure((cur) =>
+          prevRow ? cur.map((m) => (m.email === member.email ? prevRow : m)) : cur
+        );
       }
     });
   }
@@ -150,28 +194,38 @@ export function TrustedMembersPanel() {
   // 삭제 — 행을 접히는 애니메이션으로 보내고(바로 사라지는 느낌), 서버 확정 후 목록에서 뺀다.
   // 실패하면 접힘을 풀어 행이 되살아난다.
   function remove(member: TrustedMember) {
-    // 아직 서버 동기화 전(임시 id)인 멤버는 그 id로 지울 수 없다(uuid 아님 → 오류). 동기화가
-    // 끝나 실제 id가 잡힌 뒤에만 삭제한다(버튼도 동기화 중엔 비활성).
-    if (member.id.startsWith("temp-")) {
-      return;
-    }
     if (!window.confirm(`${member.email} 멤버를 삭제할까요?`)) {
       return;
     }
     setError(null);
-    setRemovingIds((prev) => new Set(prev).add(member.id));
-    startTransition(async () => {
-      const r = await removeTrustedMemberAction(member.id);
-      setRemovingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(member.id);
-        return next;
-      });
-      if (r.ok) {
-        setMembers(r.members);
-        hapticDelete();
+    const targetEmail = member.email;
+    setRemovingEmails((prev) => new Set(prev).add(targetEmail));
+    enqueue(async () => {
+      // 직렬 큐라 여기 도착했을 땐 앞선 추가가 끝나 있다 — 임시 id 대신 '지금' 목록에서 이메일로
+      // 실제 id를 찾는다. 추가가 실패해 행이 이미 사라졌다면(또는 여전히 temp면) 지울 게 없으니
+      // 조용히 접힘만 풀고 끝낸다(추가 실패 에러가 이미 떠 있다).
+      const live = membersRef.current.find((m) => m.email === targetEmail);
+      const clearRemoving = () =>
+        setRemovingEmails((prev) => {
+          const next = new Set(prev);
+          next.delete(targetEmail);
+          return next;
+        });
+      if (!live || live.id.startsWith("temp-")) {
+        clearRemoving();
+        return;
       }
-      else setError(r.error);
+      const r = await removeTrustedMemberAction(live.id);
+      clearRemoving();
+      if (r.ok) {
+        commitMembers(r.members);
+        hapticDelete();
+      } else {
+        setError(r.error);
+        // 삭제는 낙관적으로 목록에서 빼지 않았으므로(접힘 표시만) 목록 되돌릴 게 없다.
+        // 다만 서버 상태가 어긋났을 수 있어 진실을 한 번 맞춘다.
+        await recoverAfterFailure((cur) => cur);
+      }
     });
   }
 
@@ -360,7 +414,7 @@ export function TrustedMembersPanel() {
         {members.map((m) => {
           const avatar = avatarFor(m.email);
           const isSyncing = syncing.has(m.email);
-          const isRemoving = removingIds.has(m.id);
+          const isRemoving = removingEmails.has(m.email);
           return (
           <li
             className={`member-row${m.isActive ? " is-active" : " is-inactive"}${isRemoving ? " removing" : ""}${isSyncing ? " syncing" : ""}`}

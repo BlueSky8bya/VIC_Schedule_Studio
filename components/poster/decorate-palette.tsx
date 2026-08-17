@@ -77,14 +77,30 @@ export function DecoratePalette({
   const [dragId, setDragId] = useState<string | null>(null);
   const [dropId, setDropId] = useState<string | null>(null);
   const [dropTab, setDropTab] = useState<StickerAssetKind | null>(null);
-  const startRef = useRef<{ x: number; y: number; id: string } | null>(null);
+  // 누른 순간의 에셋 '객체'를 잡아 둔다 — id만 들고 있으면 업로드가 끝나 임시 id가 실제 id로
+  // 바뀐 사이 놓았을 때 못 찾아 "눌렀는데 안 올라가는" 일이 났다.
+  const startRef = useRef<{ x: number; y: number; id: string; asset: StickerAsset } | null>(null);
   const draggingRef = useRef(false);
   const clickBlockedRef = useRef(false);
   const addedByPointerRef = useRef(false);
+  // 업로드 중엔 순서를 바꿀 수 없다는 짧은 안내(클립보드 안내와 같은 1.4초 토스트 어휘).
+  const [notice, setNotice] = useState<string | null>(null);
+  const noticeTimerRef = useRef<number | null>(null);
+  function flashNotice(msg: string) {
+    setNotice(msg);
+    if (noticeTimerRef.current) {
+      window.clearTimeout(noticeTimerRef.current);
+    }
+    noticeTimerRef.current = window.setTimeout(() => setNotice(null), 1400);
+  }
 
   const shown = assetTab === "all" ? assets : assets.filter((a) => a.kind === assetTab);
   const countOf = (key: AssetTabKey) =>
     key === "all" ? assets.length : assets.filter((a) => a.kind === key).length;
+  // 놓는 순간 기준으로 에셋을 다시 찾는다: 같은 id가 아직 있으면 그것(최신 값), 없으면(업로드
+  // 완료로 id가 바뀜) 누를 때 잡아 둔 객체로 대신한다.
+  const resolveAsset = (start: { id: string; asset: StickerAsset }) =>
+    assets.find((a) => a.id === start.id) ?? start.asset;
 
   function resetDrag() {
     startRef.current = null;
@@ -106,7 +122,7 @@ export function DecoratePalette({
     if (!canManageAssets || pendingAssetIds.has(asset.id) || e.button !== 0) {
       return;
     }
-    startRef.current = { x: e.clientX, y: e.clientY, id: asset.id };
+    startRef.current = { x: e.clientX, y: e.clientY, id: asset.id, asset };
     e.currentTarget.setPointerCapture(e.pointerId);
   }
 
@@ -149,18 +165,26 @@ export function DecoratePalette({
     }
     // 캡처를 걸었지만 끌지는 않았다 = 그냥 누른 것 → 여기서 추가한다(click은 오지 않는다).
     if (!draggingRef.current) {
-      const asset = assets.find((a) => a.id === start.id);
+      const asset = resolveAsset(start);
       resetDrag();
-      if (asset) {
+      // 아직 올리는 중인 임시 에셋은 서버 id가 없어 스티커로 못 올린다(버튼도 disabled).
+      if (!pendingAssetIds.has(asset.id)) {
         addedByPointerRef.current = true;
         onAddImageSticker(asset);
       }
       return;
     }
+    // 업로드 중인 에셋이 하나라도 있으면 순서·분류 저장을 보류한다 — 임시 id를 서버에 보낼 수
+    // 없고, 빠뜨리고 보내면 방금 올린 이모지의 자리가 어긋난다. 짧게 알리고 그대로 둔다.
+    if (pendingAssetIds.size > 0) {
+      resetDrag();
+      flashNotice("올리는 중엔 순서를 바꿀 수 없어요 — 잠시 후 다시 끌어 주세요");
+      return;
+    }
     if (dropTab) {
-      const moved = assets.find((a) => a.id === start.id);
-      if (moved && moved.kind !== dropTab) {
-        onSetAssetKind(start.id, dropTab);
+      const moved = resolveAsset(start);
+      if (moved.kind !== dropTab) {
+        onSetAssetKind(moved.id, dropTab);
       }
     } else if (dropId && dropId !== start.id) {
       const next = [...assets];
@@ -300,6 +324,11 @@ export function DecoratePalette({
         ) : assets.length > 0 ? (
           <p className="asset-empty">
             이 칸은 비어 있어요. 다른 칸의 이모지를 이 탭 위로 끌어다 놓으면 옮겨져요.
+          </p>
+        ) : null}
+        {notice ? (
+          <p className="asset-empty" role="status" aria-live="polite">
+            {notice}
           </p>
         ) : null}
 

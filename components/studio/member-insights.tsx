@@ -109,6 +109,8 @@ export function MemberInsights({
     if (res.ok) {
       const fresh = await getOwnerSecurityAction();
       if (fresh.ok) setSecurityData(fresh.data);
+      // 만료는 됐지만 재조회가 실패하면 화면이 옛 세션 목록에 머문다 → 첫 로드처럼 에러+재시도를 노출.
+      else setSecurityError(fresh.error);
       return { ok: true };
     }
     return { ok: false, error: res.error };

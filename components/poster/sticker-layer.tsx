@@ -1,7 +1,7 @@
 "use client";
 
 import { Maximize2 } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { shapeDefaultColor, type StickerInstance } from "@/lib/domain/schedule-types";
 import { ShapeSvg } from "@/components/poster/sticker-shapes";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -45,6 +45,9 @@ type Drag = {
   origRotation: number; // 회전 시: 시작 시점 회전각(deg)
   origWidthRatio: number; // 크기조절 시: 시작 시점 너비 비율
   startDist: number; // 크기조절 시: 시작 시점 중심~포인터 거리(px). 상대 배율 계산용
+  // 잡은 스티커의 DOM 요소 — 러버밴딩 CSS 변수를 걸고 푸는 대상. id로 다시 querySelector하면
+  // 드래그 도중 insert가 끝나 id가 바뀐(temp→실제) 순간 못 찾아 변수가 영영 안 지워졌다.
+  el: HTMLElement | null;
   // C3: 2개 이상 선택 후 그룹 이동 시 함께 옮길 멤버들과 마지막 유효 델타.
   group?: GroupMember[];
   lastDx: number;
@@ -67,6 +70,9 @@ type StickerLayerProps = {
   onGestureStart?: () => void;
   // 이 셀렉터에 해당하는 요소(예: "도우러 가기" 버튼)와는 스티커가 겹치지 않게 밀어낸다.
   avoidSelector?: string;
+  // 어떤 id든 '현재 통용되는' id로(신규 스티커 insert가 끝나 temp→실제로 바뀐 뒤에도 드래그·
+  // 그룹·저장 경로가 같은 스티커를 계속 가리키게). 없으면 항등.
+  canonId?: (id: string) => string;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -175,7 +181,8 @@ export function StickerLayer({
   onChange,
   onCommit,
   onGestureStart,
-  avoidSelector
+  avoidSelector,
+  canonId
 }: StickerLayerProps) {
   const layerRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<Drag | null>(null);
@@ -201,6 +208,32 @@ export function StickerLayer({
   onGestureStartRef.current = onGestureStart;
   const selectedIdsRef = useRef(selectedIds);
   selectedIdsRef.current = selectedIds;
+  const canonIdRef = useRef(canonId);
+  canonIdRef.current = canonId;
+  // id 비교는 전부 이걸로 — 드래그 시작 때 잡은 id(temp)와 지금 배열의 id(실제)가 달라도 같은 스티커.
+  // (ref만 읽으므로 안정된 참조 — 전역 포인터 리스너 effect가 재등록되지 않는다.)
+  const canon = useCallback((id: string) => canonIdRef.current?.(id) ?? id, []);
+  const findById = useCallback(
+    (id: string) => {
+      const c = canon(id);
+      return stickersRef.current.find((item) => canon(item.id) === c);
+    },
+    [canon]
+  );
+  // 드래그 중인 스티커의 DOM. 시작 때 잡아 둔 요소를 우선 쓰고, id 교체(key 변경)로 리마운트돼
+  // 떨어져 나갔으면 canon id로 다시 찾아 갈아 끼운다 — 러버밴딩 변수 정리가 항상 진짜 요소에 닿게.
+  const dragElement = useCallback(
+    (drag: Drag, layer: HTMLElement | null): HTMLElement | null => {
+      if (drag.el?.isConnected) {
+        return drag.el;
+      }
+      const next =
+        layer?.querySelector<HTMLElement>(`[data-sticker-id="${canon(drag.id)}"]`) ?? null;
+      drag.el = next;
+      return next;
+    },
+    [canon]
+  );
 
   useEffect(() => {
     const layer = layerRef.current;
@@ -231,8 +264,12 @@ export function StickerLayer({
       const rect = layer.getBoundingClientRect();
       const px = event.clientX - rect.left;
       const py = event.clientY - rect.top;
-      const sticker = stickersRef.current.find((item) => item.id === drag.id);
+      const sticker = findById(drag.id);
       if (!sticker) {
+        // 드래그 대상이 사라졌다(insert 실패로 제거 등) → 얼어붙은 드래그로 남기지 않고 깨끗이 종료.
+        dragRef.current = null;
+        setGuides({ x: null, y: null });
+        setLevelGuideY(null);
         return;
       }
 
@@ -263,7 +300,7 @@ export function StickerLayer({
         }
         setGuides({ x: null, y: null });
         for (const m of members) {
-          const target = stickersRef.current.find((s) => s.id === m.id);
+          const target = findById(m.id);
           if (target) {
             onChangeRef.current?.({ ...target, xRatio: m.origX + dx, yRatio: m.origY + dy });
           }
@@ -279,7 +316,7 @@ export function StickerLayer({
         // B3 러버밴딩: 표면 경계를 넘는 드래그는 하드 스톱 대신 탄성 저항으로 보여준다
         // (UIScrollView 수식). 저장 좌표는 그대로 clamp — 화면 표시만 살짝 따라나갔다가
         // 놓으면 스프링으로 제자리. reduce-motion이면 기존 하드 스톱 유지.
-        const stickerEl = layer.querySelector<HTMLElement>(`[data-sticker-id="${drag.id}"]`);
+        const stickerEl = dragElement(drag, layer);
         if (stickerEl && !document.documentElement.hasAttribute("data-reduce-motion")) {
           const overX = rawX < 0 ? rawX * rect.width : rawX > 1 ? (rawX - 1) * rect.width : 0;
           const overY = rawY < 0 ? rawY * rect.height : rawY > 1 ? (rawY - 1) * rect.height : 0;
@@ -291,7 +328,8 @@ export function StickerLayer({
         }
         // C1 스냅: 캔버스 중앙·다른 스티커 중심선과 가까우면 달라붙고 가이드 표시.
         const SNAP = 6;
-        const others = stickersRef.current.filter((s) => s.id !== drag.id);
+        const dragCanon = canon(drag.id);
+        const others = stickersRef.current.filter((s) => canon(s.id) !== dragCanon);
         const xLines = [rect.width / 2, ...others.map((s) => s.xRatio * rect.width)];
         const yLines = [rect.height / 2, ...others.map((s) => s.yRatio * rect.height)];
         let gx: number | null = null;
@@ -383,8 +421,7 @@ export function StickerLayer({
       const drag = dragRef.current;
       if (drag) {
         // B3: 경계 밖 러버밴딩 표시가 남아 있으면 스프링으로 제자리 복귀(저장 좌표는 이미 clamp).
-        const layer = layerRef.current;
-        const el = layer?.querySelector<HTMLElement>(`[data-sticker-id="${drag.id}"]`);
+        const el = dragElement(drag, layerRef.current);
         if (el && (el.style.getPropertyValue("--rub-x") || el.style.getPropertyValue("--rub-y"))) {
           el.style.transition =
             "transform 0.45s var(--spring-smooth, var(--ease-spring, ease))";
@@ -400,7 +437,7 @@ export function StickerLayer({
         const ids =
           drag.group && drag.group.length > 1 ? drag.group.map((m) => m.id) : [drag.id];
         for (const id of ids) {
-          const sticker = stickersRef.current.find((item) => item.id === id);
+          const sticker = findById(id);
           if (sticker) {
             onCommitRef.current?.(sticker);
           }
@@ -417,7 +454,7 @@ export function StickerLayer({
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
     };
-  }, [editable]);
+  }, [editable, findById, dragElement, canon]);
 
   function startDrag(event: React.PointerEvent, sticker: StickerInstance, mode: Mode) {
     if (!editable) {
@@ -431,7 +468,8 @@ export function StickerLayer({
     }
     const additive = event.shiftKey || event.metaKey || event.ctrlKey;
     const selection = selectedIdsRef.current;
-    const alreadyInGroup = selection.includes(sticker.id) && selection.length > 1;
+    const alreadyInGroup =
+      selection.some((id) => canon(id) === canon(sticker.id)) && selection.length > 1;
 
     // 선택 갱신: Shift/Ctrl=토글, 일반 클릭=단일 선택(이미 그룹의 일원이면 그룹 유지하고 이동).
     if (mode === "move") {
@@ -461,11 +499,11 @@ export function StickerLayer({
     if (mode === "move" && !additive && alreadyInGroup) {
       group = selection
         .map((id) => {
-          const s = stickersRef.current.find((item) => item.id === id);
+          const s = findById(id);
           if (!s) {
             return null;
           }
-          const el = layer.querySelector<HTMLElement>(`[data-sticker-id="${id}"]`);
+          const el = layer.querySelector<HTMLElement>(`[data-sticker-id="${s.id}"]`);
           const b = el?.getBoundingClientRect();
           return {
             id,
@@ -481,6 +519,8 @@ export function StickerLayer({
     dragRef.current = {
       id: sticker.id,
       mode,
+      // 이동은 스티커 박스 자체가 currentTarget; 핸들(크기/회전)은 부모 .sticker-item을 잡는다.
+      el: (event.currentTarget as HTMLElement).closest<HTMLElement>(".sticker-item"),
       startX,
       startY,
       origX: sticker.xRatio,

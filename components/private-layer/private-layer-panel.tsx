@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import type { PasscodeResult } from "@/lib/private-layer/actions";
 import { hapticError, hapticSuccess, hapticTick } from "@/lib/ui/haptics";
 
@@ -30,6 +30,11 @@ export function PrivateLayerPanel({
   const [pending, startTransition] = useTransition();
 
   const [changing, setChanging] = useState(startChanging && canManage);
+  // 부모가 마운트된 채로 startChanging/canManage를 바꾸면(router.refresh 후 권한 재계산 등)
+  // 초기값 한 번으로 굳은 상태가 안 따라오던 문제 → props 변화를 따라간다.
+  useEffect(() => {
+    setChanging(startChanging && canManage);
+  }, [startChanging, canManage]);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
   // 비밀번호 확인(검증) 진행 상태 — 버튼이 "확인 중…"으로 바뀐다.
@@ -40,22 +45,31 @@ export function PrivateLayerPanel({
   async function unlock() {
     setError(null);
     setUnlocking(true);
-    const res = await fetch("/api/unlock-private-layer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ passcode })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.ok) {
-      // 검증 성공 → 따뜻한 성공 진동 + 부모가 팝업을 닫고 "일정을 불러오는 중…"을 띄운 뒤 새로고침(⚠배너 연출).
-      hapticSuccess();
-      onUnlocked?.();
-    } else {
-      setUnlocking(false);
-      setError(data.error ?? "잠금 해제에 실패했습니다.");
-      // 실패 연출: 에러 진동 + 입력칸 흔들기(붉은 테두리).
+    try {
+      const res = await fetch("/api/unlock-private-layer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        // 검증 성공 → 따뜻한 성공 진동 + 부모가 팝업을 닫고 "일정을 불러오는 중…"을 띄운 뒤 새로고침(⚠배너 연출).
+        hapticSuccess();
+        onUnlocked?.();
+      } else {
+        setError(data.error ?? "잠금 해제에 실패했습니다.");
+        // 실패 연출: 에러 진동 + 입력칸 흔들기(붉은 테두리).
+        hapticError();
+        setShake(true);
+      }
+    } catch {
+      setError("잠금 해제에 실패했습니다.");
       hapticError();
       setShake(true);
+    } finally {
+      // 성공/실패/네트워크 오류 어느 경로든 "확인 중…"을 반드시 푼다 — 성공 후 부모가 패널을
+      // 안 닫고 두는 경우(또는 refresh 취소) 버튼이 영원히 잠기던 문제.
+      setUnlocking(false);
     }
   }
 

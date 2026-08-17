@@ -69,16 +69,47 @@ export function ColorPickerPopover({
   // hex가 '사용자 조작으로' 바뀔 때만 부모에 반영한다. 첫 렌더(마운트)에서는 부르지 않는다 —
   // 안 그러면 피커를 '열기만' 해도 현재 색이 bgHex로 박혀(안 건드렸는데 커스텀 처리) 버린다.
   const mounted = useRef(false);
+  // 마지막으로 부모에 올려보낸 hex — 부모가 그 값을 다시 value로 내려주면 '내 에코'라 무시한다.
+  const lastEmittedRef = useRef<string>(value.toLowerCase());
+  // 부모(value)로부터 동기화 중이면 다음 emit을 한 번 건너뛴다(부모 값을 다시 부모에 되쏘지 않게).
+  const skipEmitRef = useRef(false);
+  // 드래그(sv/hue 포인터 잡은 동안)에는 부모 동기화가 손 위치와 싸우지 않게 잠시 무시한다.
+  const draggingRef = useRef(false);
   useEffect(() => {
     if (!mounted.current) {
       mounted.current = true;
       return;
     }
-    onChange(hex);
     setHexText(hex);
+    if (skipEmitRef.current) {
+      skipEmitRef.current = false;
+      return;
+    }
+    lastEmittedRef.current = hex.toLowerCase();
+    onChange(hex);
     // onChange는 매 렌더 안정적이지 않을 수 있어 hex만 의존.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hex]);
+
+  // 부모의 value가 바깥 요인(실행취소·서버 재검증·다른 곳의 변경)으로 바뀌면 내부 hsv/hex도 따라간다.
+  // 예외: 내가 방금 올려보낸 값의 에코, 드래그 중, 이미 같은 색.
+  useEffect(() => {
+    const incoming = value.toLowerCase();
+    if (draggingRef.current) return;
+    if (incoming === lastEmittedRef.current) return;
+    if (incoming === hex.toLowerCase()) return;
+    if (!/^#[0-9a-f]{6}$/.test(incoming)) return;
+    const next = hexToHsv(value);
+    const roundTrip = hsvToHex(next.h, next.s, next.v).toLowerCase();
+    // hsv 왕복(hsvToHex(hexToHsv)) 반올림 차이로 emit이 나가면 부모 값을 미묘하게 덮어쓴다 → 건너뛴다.
+    // 단, 왕복 결과가 지금 hex와 같으면 [hex] effect가 아예 안 돌므로 스킵 플래그를 세우지 않는다.
+    lastEmittedRef.current = roundTrip;
+    skipEmitRef.current = roundTrip !== hex.toLowerCase();
+    setHsv(next);
+    setHexText(value);
+    // hex는 내부 파생값 — value 변화에만 반응한다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   // 조작 직전 현재 hex를 스택에 쌓는다(최근 30개). 되돌릴 지점을 만든다.
   function snapshot() {
@@ -177,11 +208,18 @@ export function ColorPickerPopover({
         className="cpop-sv"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
+          draggingRef.current = true;
           snapshot(); // 드래그 시작 = 되돌릴 지점 1개
           pickSv(e);
         }}
         onPointerMove={(e) => {
           if (e.buttons) pickSv(e);
+        }}
+        onPointerUp={() => {
+          draggingRef.current = false;
+        }}
+        onPointerCancel={() => {
+          draggingRef.current = false;
         }}
         ref={svRef}
         style={{
@@ -197,11 +235,18 @@ export function ColorPickerPopover({
         className="cpop-hue"
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
+          draggingRef.current = true;
           snapshot();
           pickHue(e);
         }}
         onPointerMove={(e) => {
           if (e.buttons) pickHue(e);
+        }}
+        onPointerUp={() => {
+          draggingRef.current = false;
+        }}
+        onPointerCancel={() => {
+          draggingRef.current = false;
         }}
         ref={hueRef}
       >
