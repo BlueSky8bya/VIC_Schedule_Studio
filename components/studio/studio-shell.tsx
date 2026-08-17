@@ -555,7 +555,23 @@ export function StudioShell({
   const eventsRef = useRef(events);
   eventsRef.current = events;
   // temp id와 실제 id를 같은 카드로 본다 — 저장 직후 id가 바뀌는 찰나에 잡힌 드래그가 실패하지 않게.
-  const canonId = (eid: string) => tempToRealRef.current.get(eid) ?? eid;
+  // ref만 읽으므로 안정 참조(useCallback []) — effect deps에 넣어도 매 렌더 재실행되지 않는다.
+  const canonId = useCallback(
+    (eid: string) => tempToRealRef.current.get(eid) ?? eid,
+    [tempToRealRef]
+  );
+  // DOM에서 카드 요소 찾기 — data-eventid가 temp든 실제든(교체 렌더 전후) 같은 카드로 찾는다.
+  function findPillEl(eid: string): HTMLElement | null {
+    const direct = document.querySelector<HTMLElement>(
+      `.studio-event-pill[data-eventid="${CSS.escape(eid)}"]`
+    );
+    if (direct) return direct;
+    const want = canonId(eid);
+    for (const el of document.querySelectorAll<HTMLElement>(".studio-event-pill[data-eventid]")) {
+      if (canonId(el.getAttribute("data-eventid") ?? "") === want) return el;
+    }
+    return null;
+  }
   const resyncNeededRef = useRef(false); // 서버 진실 재동기화가 필요한데 아직 반영 안 됨(아래 참조)
   useEffect(() => {
     // 저장·삭제·이동이 진행 중이면 서버 prop이 낙관적 화면을 덮어써 카드가 '이전 위치로
@@ -644,24 +660,28 @@ export function StudioShell({
   // 카드 클릭 = 그 일정을 선택(편집)한다. 잇기는 드래그-놓기, 끊기는 이음새 '칼로 긋기'로만 —
   // 클릭은 어느 쪽도 하지 않는다(제목 편집하려 카드를 오갈 때 실수로 붙거나 끊기던 문제 제거).
   function handlePillClick(eventId: string) {
-    const target = events.find((e) => e.id === eventId);
+    const target = eventsRef.current.find((e) => canonId(e.id) === canonId(eventId));
     if (!target) return;
     selectEvent(target);
   }
 
   // 이음새 '칼로 긋기': 손잡이를 눌러 threshold 이상 그으면 그 연결(earlier.linkNext)만 끊는다.
   // 단순 클릭(움직임 없음)은 아무 일도 안 한다 → 제목 편집 중 실수 끊김 방지.
-  function performSeamCut(earlierId: string) {
+  function performSeamCut(rawEarlierId: string) {
     if (!canEdit) return;
-    const earlier = events.find((e) => e.id === earlierId);
+    // 제스처 핸들러(옛 렌더 클로저)에서 불린다 — 배열은 ref, id는 canonId(temp↔실제 동일시).
+    const earlierId = canonId(rawEarlierId);
+    const earlier = eventsRef.current.find((e) => canonId(e.id) === earlierId);
     if (!earlier || !earlier.linkNext) return;
     // target rollback(P0-DATA-2): 실패 시 이 이음새의 linkNext만 복원(다른 편집 보존).
     const prevNext = earlier.linkNext;
     const restoreSeam = () =>
       setEvents((prev) =>
-        prev.map((e) => (e.id === earlierId ? { ...e, linkNext: prevNext } : e))
+        prev.map((e) => (canonId(e.id) === earlierId ? { ...e, linkNext: prevNext } : e))
       );
-    setEvents((prev) => prev.map((e) => (e.id === earlierId ? { ...e, linkNext: undefined } : e)));
+    setEvents((prev) =>
+      prev.map((e) => (canonId(e.id) === earlierId ? { ...e, linkNext: undefined } : e))
+    );
     setActionError(null);
     hapticTick();
     flashToast("싹둑 — 연결을 끊었어요");
@@ -1172,7 +1192,7 @@ export function StudioShell({
   const teaserGateActive = Boolean(
     selectedLiveEvent &&
       teaserStillHidden(selectedLiveEvent) &&
-      teaserUnlockedId !== selectedLiveEvent.id
+      (teaserUnlockedId === null || canonId(teaserUnlockedId) !== canonId(selectedLiveEvent.id))
   );
   // 업 도움을 편집 중이면 팝오버의 점선·리더 라인을 띠와 같은 장미색으로(보라=일반 일정).
   const selectedIsSupport = Boolean(selectedLiveEvent?.isSupport);
@@ -2449,7 +2469,8 @@ export function StudioShell({
     const armed = flipArmedRef.current;
     flipArmedRef.current = false;
     document.querySelectorAll<HTMLElement>(".studio-event-pill[data-eventid]").forEach((el) => {
-      const id = el.dataset.eventid;
+      // temp→실제 id 교체 렌더에서도 같은 카드로 이어 붙인다(키가 바뀌면 그 카드만 활주를 놓쳤다).
+      const id = el.dataset.eventid ? canonId(el.dataset.eventid) : "";
       if (!id) return;
       const last = el.getBoundingClientRect();
       const busy =
@@ -2490,7 +2511,7 @@ export function StudioShell({
       }
       seamPrev.current.set(id, seam);
     });
-  }, [visibleEvents, view, dragEventId]);
+  }, [visibleEvents, view, dragEventId, canonId]);
 
   const [dropDate, setDropDate] = useState<string | null>(null);
   const dropDateRef = useRef<string | null>(null);
@@ -2620,9 +2641,7 @@ export function StudioShell({
       landRafRef.current = null;
       landGhostRef.current = null;
       ghost.remove();
-      const el = document.querySelector<HTMLElement>(
-        `.studio-event-pill[data-eventid="${eventId}"]`
-      );
+      const el = findPillEl(eventId);
       if (el) {
         el.classList.remove("just-landed");
         void el.offsetWidth; // 리플로우 한 번 — 같은 카드를 연달아 옮겨도 매번 다시 재생된다
@@ -2634,9 +2653,7 @@ export function StudioShell({
       const now = performance.now();
       const dt = (now - prev) / 1000;
       prev = now;
-      const el = document.querySelector<HTMLElement>(
-        `.studio-event-pill[data-eventid="${eventId}"]`
-      );
+      const el = findPillEl(eventId);
       if (!el || now - start > LAND_MAX_MS) {
         finish();
         return;
@@ -2697,7 +2714,7 @@ export function StudioShell({
       // Ctrl+Z 복구 스택에 적재 — 던져서 버리고, 되돌리면 같은 자리로 다시 생긴다). 새 드래그/언마운트로
       // 중간에 끊기면 삭제하지 않는다.
       dragGhostRef.current = null;
-      launchFling(ghost!, v, info!.id, events);
+      launchFling(ghost!, v, canonId(info!.id));
       dragInfoRef.current = null;
       return;
     }
@@ -2707,7 +2724,8 @@ export function StudioShell({
     if (info?.started && target) {
       void dropEventInto(info.id, info.sourceDate, target, over);
       // 놓은 유령을 새 자리로 빨아들이며 사라지게 한다('뿅') — 순간이동처럼 툭 끊기지 않게.
-      if (ghost) landGhost(ghost, info.id);
+      // 끄는 사이 저장이 끝나 id가 바뀌었을 수 있다 → 실제 id로 착지 대상을 찾는다.
+      if (ghost) landGhost(ghost, canonId(info.id));
     } else {
       ghost?.remove();
     }
@@ -2716,12 +2734,7 @@ export function StudioShell({
 
   // 던지기: 받은 속도(px/ms)로 유령을 포물선으로 날린다(회전 없음 — 작아지며 멀어진다).
   // 화면 밖으로 완전히 벗어나면 그 일정을 삭제한다(commitDelete = 낙관적 제거 + Ctrl+Z 스택).
-  function launchFling(
-    ghost: HTMLElement,
-    v: { x: number; y: number },
-    eventId: string,
-    snapshot: StudioScheduleEvent[]
-  ) {
+  function launchFling(ghost: HTMLElement, v: { x: number; y: number }, eventId: string) {
     let fx = v.x * 16; // px/frame(~16ms)
     let fy = v.y * 16;
     const sp = Math.hypot(fx, fy) || 1;
@@ -2760,7 +2773,7 @@ export function StudioShell({
         setDragEventId(null);
         setDragChipH(0);
         hapticDelete();
-        commitDelete(eventId, snapshot);
+        commitDelete(eventId); // canonId·현재 배열은 commitDelete 안에서 해석
         flashToast("일정을 던져 버렸어요 · Ctrl+Z로 되돌리기");
         return;
       }
@@ -2877,7 +2890,7 @@ export function StudioShell({
     dropOverRef.current = null;
     if (dayEl) {
       const pills = Array.from(dayEl.querySelectorAll<HTMLElement>("[data-eventid]")).filter(
-        (el) => el.getAttribute("data-eventid") !== info.id
+        (el) => canonId(el.getAttribute("data-eventid") ?? "") !== canonId(info.id)
       );
       for (const el of pills) {
         const r = el.getBoundingClientRect();
@@ -2954,22 +2967,26 @@ export function StudioShell({
 
   // "끈"(이어진 일정): 멀티데이거나 link로 앞뒤가 이어진 일정. 같은 날에서 항상 위로 정렬된다.
   function isConnectedEvent(e: StudioScheduleEvent) {
+    const c = canonId(e.id);
     return (
       (e.endDateKey != null && e.endDateKey > getEventDateKey(e)) ||
       Boolean(e.linkNext) ||
-      events.some((o) => o.linkNext === e.id)
+      eventsRef.current.some((o) => o.linkNext != null && canonId(o.linkNext) === c)
     );
   }
 
   // 드래그로 집은 카드와 '이을 수 있는' 상대들을 계산해 강조/흐림을 켠다. 이을 수 있음 =
   // buildLinkChain이 성립(둘 사이 매일 연속 + 맞닿는 변의 대표 태그 일치). 없으면 순수 이동 드래그.
   function armConnectCandidates(draggedId: string) {
-    const dragged = events.find((e) => e.id === draggedId);
+    // 제스처(옛 렌더 클로저)에서 불린다 — 배열은 ref, id는 canonId(DOM은 실제·클로저는 temp일 수 있다).
+    const live = eventsRef.current;
+    const dc = canonId(draggedId);
+    const dragged = live.find((e) => canonId(e.id) === dc);
     if (!dragged || dragged.isSupport) return;
     const set = new Set<string>();
-    for (const other of events) {
-      if (other.id === draggedId || other.isSupport) continue;
-      if (buildLinkChain(dragged, other, events)) set.add(other.id);
+    for (const other of live) {
+      if (canonId(other.id) === dc || other.isSupport) continue;
+      if (buildLinkChain(dragged, other, live)) set.add(other.id);
     }
     connectCandidatesRef.current = set;
     setConnectCandidates(set);
@@ -2988,42 +3005,53 @@ export function StudioShell({
 
   // 두 카드 사이 구간을 잇는다(각 일정 linkNext = 다음 id). 낙관 반영 후 서버엔 실제 id로.
   // 드래그-놓기(연결)와 (임시로 남긴) 클릭-잇기 양쪽에서 쓴다.
-  function connectChain(anchorId: string, targetId: string) {
+  function connectChain(rawAnchorId: string, rawTargetId: string) {
     if (!canEdit) return;
-    const anchor = events.find((e) => e.id === anchorId);
-    const target = events.find((e) => e.id === targetId);
+    // 제스처 핸들러(옛 렌더 클로저)에서 불린다 — 배열은 ref로 '지금' 것을, id는 canonId로 비교.
+    // 예전엔 DOM의 실제 id와 클로저 배열의 temp id가 어긋나 조용히 return(잇기가 죽음)하거나,
+    // 서버엔 실제 id로 잇고 화면(temp 키)엔 반영이 안 됐다.
+    const live = eventsRef.current;
+    const anchor = live.find((e) => canonId(e.id) === canonId(rawAnchorId));
+    const target = live.find((e) => canonId(e.id) === canonId(rawTargetId));
     if (!anchor || !target) return;
-    const chain = buildLinkChain(anchor, target, events);
+    const chain = buildLinkChain(anchor, target, live);
     if (!chain || chain.length < 2) return;
+    const chainC = chain.map(canonId);
+    const findC = (arr: StudioScheduleEvent[], c: string) => arr.find((e) => canonId(e.id) === c);
     // 이미 그대로 이어져 있으면(변화 없음) 서버 쓰기·토스트 없이 조용히 넘어간다.
-    const linkMap = new Map<string, string>();
+    const linkMap = new Map<string, string>(); // canon(earlier) → 다음 카드의 '지금 배열' id
     let changed = false;
-    for (let i = 0; i < chain.length - 1; i += 1) {
-      linkMap.set(chain[i], chain[i + 1]);
-      if (events.find((e) => e.id === chain[i])?.linkNext !== chain[i + 1]) changed = true;
+    for (let i = 0; i < chainC.length - 1; i += 1) {
+      const nextLive = findC(live, chainC[i + 1]);
+      const nextId = nextLive?.id ?? chain[i + 1];
+      linkMap.set(chainC[i], nextId);
+      const curNext = findC(live, chainC[i])?.linkNext;
+      if (!curNext || canonId(curNext) !== chainC[i + 1]) changed = true;
     }
     if (!changed) return;
     // target rollback(P0-DATA-2): 실패 시 체인에 포함됐던 카드들의 linkNext만 이전 값으로
     // 복원(다른 편집 보존). 서버 쪽도 0055 link_chain_atomic이라 반쪽 체인이 안 남는다.
-    const prevLinks = new Map(
-      chain.map((id) => [id, events.find((e) => e.id === id)?.linkNext] as const)
-    );
+    const prevLinks = new Map(chainC.map((c) => [c, findC(live, c)?.linkNext] as const));
     const restoreChain = () =>
       setEvents((prev) =>
-        prev.map((e) => (prevLinks.has(e.id) ? { ...e, linkNext: prevLinks.get(e.id) } : e))
+        prev.map((e) => {
+          const c = canonId(e.id);
+          return prevLinks.has(c) ? { ...e, linkNext: prevLinks.get(c) } : e;
+        })
       );
-    setEvents((prev) =>
-      prev.map((e) => (linkMap.has(e.id) ? { ...e, linkNext: linkMap.get(e.id) } : e))
-    );
+    const applyLinks = (arr: StudioScheduleEvent[]) =>
+      arr.map((e) => {
+        const c = canonId(e.id);
+        return linkMap.has(c) ? { ...e, linkNext: linkMap.get(c) } : e;
+      });
+    setEvents(applyLinks);
     setActionError(null);
     hapticTick();
     flashToast("이어붙였어요");
     // 맞물림 연출 — 새로 이은 두 카드만이 아니라 '이은 결과로 한 몸이 된 체인 전체'가
     // 딸깍(사용자 결정). 낙관 반영 후 상태 기준으로 앞뒤 연결을 전부 따라간다.
-    const afterLink = events.map((e) =>
-      linkMap.has(e.id) ? { ...e, linkNext: linkMap.get(e.id) } : e
-    );
-    setLinkFlashIds(getLinkedChainIds(anchorId, afterLink));
+    const afterLink = applyLinks(live);
+    setLinkFlashIds(getLinkedChainIds(anchor.id, afterLink));
     if (linkFlashTimer.current) window.clearTimeout(linkFlashTimer.current);
     linkFlashTimer.current = window.setTimeout(() => setLinkFlashIds(new Set()), 700);
     void (async () => {
@@ -3031,7 +3059,7 @@ export function StudioShell({
         const resolved = await Promise.all(chain.map(resolveEventId));
         if (resolved.some((id) => !id)) {
           restoreChain();
-          return null;
+          return { ok: false, error: "일정 저장이 끝나지 않아 잇지 못했어요." };
         }
         return postStudioWrite("linkChain", { orderedIds: resolved as string[] });
       });
@@ -3049,17 +3077,16 @@ export function StudioShell({
   // 주 경계(토→일)로 갈라진 경우엔 토요일 오른쪽 절반이나 일요일 왼쪽 절반 어느 쪽을 그어도 끊긴다.
   function collectSeams(): { id: string; x1: number; x2: number; top: number; bottom: number }[] {
     const out: { id: string; x1: number; x2: number; top: number; bottom: number }[] = [];
-    for (const ev of events) {
+    // 제스처 중(옛 렌더 클로저) 호출 — 배열은 ref, 요소는 temp/실제 id 어느 쪽이든 찾는다.
+    for (const ev of eventsRef.current) {
       if (!ev.linkNext) continue;
-      const el = document.querySelector<HTMLElement>(`[data-eventid="${CSS.escape(ev.id)}"]`);
+      const el = findPillEl(ev.id);
       if (el) {
         const r = el.getBoundingClientRect();
         // earlier 오른쪽 절반(중앙~오른쪽 변, 살짝 넘겨).
         out.push({ id: ev.id, x1: r.left + r.width / 2, x2: r.right + 3, top: r.top - 3, bottom: r.bottom + 3 });
       }
-      const nextEl = document.querySelector<HTMLElement>(
-        `[data-eventid="${CSS.escape(ev.linkNext)}"]`
-      );
+      const nextEl = findPillEl(ev.linkNext);
       if (nextEl) {
         const nr = nextEl.getBoundingClientRect();
         // next 왼쪽 절반(왼쪽 변~중앙).
@@ -3274,13 +3301,14 @@ export function StudioShell({
     orderedIds: string[];
   }) {
     pendingPersistRef.current += 1;
-    setSyncingIds((p) => (p.includes(move.id) ? p : [...p, move.id])); // 이 카드에 '동기화 중' 표시
+    const syncId = canonId(move.id);
+    setSyncingIds((p) => (p.includes(syncId) ? p : [...p, syncId])); // 이 카드에 '동기화 중' 표시
     movePersistChainRef.current = movePersistChainRef.current
       .catch(() => {})
       .then(() => runMovePersist(move))
       .finally(() => {
         pendingPersistRef.current = Math.max(0, pendingPersistRef.current - 1);
-        setSyncingIds((p) => p.filter((x) => x !== move.id)); // 반영 끝 → 표시 제거
+        setSyncingIds((p) => p.filter((x) => x !== syncId)); // 반영 끝 → 표시 제거
         // 이번 큐의 어느 이동이든 서버에 못 들어갔으면, 큐가 빈 지금 서버 진실로 되돌린다.
         if (resyncNeededRef.current) requestServerResync();
       });
@@ -3435,24 +3463,32 @@ export function StudioShell({
 
   // 이벤트 하나의 태그 저장을 직렬 큐에 태운다. 큐의 각 단계는 '그 시점의 최신 의도'(desired)를
   // 보내므로, 빠른 연속 토글은 마지막 상태로 collapse되고 옛 요청이 새 요청을 덮어쓰지 못한다.
-  function queueTagWrite(eventId: string) {
+  function queueTagWrite(rawEventId: string) {
+    // temp id와 실제 id를 한 큐로 — 저장 직후 id가 바뀌어도 '마지막 의도'가 같은 체인에서 이어진다.
+    const eventId = canonId(rawEventId);
     const prev = tagWriteChainRef.current.get(eventId) ?? Promise.resolve();
     const run = prev.then(async () => {
       const desired = tagDesiredRef.current.get(eventId);
       if (!desired) return;
       if (tagSentRef.current.get(eventId) === desired) return; // 이미 같은 상태를 보냄(토글 없었음)
       tagSentRef.current.set(eventId, desired);
-      const res = await studioWrite("tags", {
-        eventId,
-        tagIds: desired,
-        primaryTagIds: desired
+      // 새 카드(temp id)면 저장이 끝나 실제 id가 나올 때까지 기다렸다가 보낸다 — 예전엔 temp id를
+      // 그대로 보내 서버가 못 찾고, 화면엔 태그가 켜진 채 남았다(새로고침하면 사라짐).
+      const res = await enqueueWrite(async () => {
+        const realId = await resolveEventId(eventId);
+        if (!realId) return { ok: false, error: "일정 저장이 끝나지 않아 태그를 반영하지 못했어요." };
+        return postStudioWrite("tags", {
+          eventId: realId,
+          tagIds: desired,
+          primaryTagIds: desired
+        });
       });
       if (!res.ok) {
         setActionError(res.error);
         // 서버 실패 → 진실로 재동기화하고 의도 캐시 비운다(다음 토글은 서버 상태에서 출발).
         tagDesiredRef.current.delete(eventId);
         tagSentRef.current.delete(eventId);
-        router.refresh();
+        requestServerResync();
       } else {
         hapticTick(); // ② 서버확인 톡(2단계 컨벤션 — 누름 톡은 피커 칩에서 이미 울림)
       }
@@ -3462,8 +3498,9 @@ export function StudioShell({
 
   function toggleEventTag(event: StudioScheduleEvent, tagId: string) {
     if (blockedByPreview()) return;
+    const eid = canonId(event.id);
     // 현재 의도(직렬 큐 기준)에서 출발 — 빠른 연속 토글에도 stale prop을 안 읽는다.
-    const cur = tagDesiredRef.current.get(event.id) ?? event.tagIds;
+    const cur = tagDesiredRef.current.get(eid) ?? event.tagIds;
     const has = cur.includes(tagId);
     const rawNext = has
       ? cur.filter((id) => id !== tagId)
@@ -3474,14 +3511,14 @@ export function StudioShell({
       return; // 이미 최대 — 변화 없음
     }
     const nextTagIds = rawNext;
-    tagDesiredRef.current.set(event.id, nextTagIds);
+    tagDesiredRef.current.set(eid, nextTagIds);
     setActionError(null);
     setEvents((prev) =>
       prev.map((e) =>
-        e.id === event.id ? { ...e, tagIds: nextTagIds, primaryTagIds: nextTagIds } : e
+        canonId(e.id) === eid ? { ...e, tagIds: nextTagIds, primaryTagIds: nextTagIds } : e
       )
     );
-    queueTagWrite(event.id);
+    queueTagWrite(eid);
   }
 
   // A1: 매니저·작업자용 읽기전용 일정 상세. owner 편집 폼을 회색으로 보여주는 대신,
@@ -3530,7 +3567,8 @@ export function StudioShell({
       if (res.ok) {
         hapticSuccess(); // ② 서버확인
         setTeaserGatePass("");
-        setTeaserUnlockedId(eventId); // 이 카드, 이번 열림 한 번만 — 닫히거나 재선택하면 리셋
+        // 왕복 사이 저장이 끝나 id가 바뀌었을 수 있다 → 실제 id로 기록(안 그러면 방금 푼 카드가 도로 잠김).
+        setTeaserUnlockedId(canonId(eventId)); // 이 카드, 이번 열림 한 번만 — 닫히거나 재선택하면 리셋
         bumpEditor(); // 게이트 → 폼: 같은 카드 안에서 폼이 새로 떠오르는 전환
       } else {
         hapticError();
@@ -3629,9 +3667,15 @@ export function StudioShell({
     }
     hapticTick(); // ① 눌림: 누른 즉시 "눌렀다" 톡(서버확인 톡은 응답 후 — 2단계 컨벤션)
 
-    const existing = events.find((e) => e.id === form.id);
+    // form.id는 새 카드 첫 저장 직후 temp id일 수 있고, 그 사이 실제 id로 바뀌어 있을 수 있다 —
+    // canonId로 '지금 배열의' 카드를 찾는다(못 찾으면 옛 로직대로 '기존 없음'으로 흐른다).
+    const formCanon = form.id ? canonId(form.id) : undefined;
+    const existing = formCanon
+      ? eventsRef.current.find((e) => canonId(e.id) === formCanon)
+      : undefined;
     const isNew = !form.id;
-    const tempId = form.id ?? `temp-${Math.random().toString(36).slice(2)}`;
+    // 기존 카드면 '지금 배열에 있는' id로 통일(temp였다가 실제로 바뀐 경우 실제 id).
+    const tempId = existing?.id ?? form.id ?? `temp-${Math.random().toString(36).slice(2)}`;
     // P0-SEC-1(fail-closed): 잠금 상태에서 비공개 범위를 **조용히 공개로 바꾸지 않는다**.
     // 예전엔 데스크톱에서 `"public"`으로 강제 변환했고 모바일은 잠금 없이 통과시켰다 —
     // 둘 다 위험(전자는 비공개 내용이 소리 없이 공개, 후자는 잠금 게이트 우회). 이제 모든
@@ -3671,7 +3715,7 @@ export function StudioShell({
     };
     // 서버로 보낼 입력은 폼 초기화 전에 미리 만들어 둔다.
     const payload = {
-      id: form.id,
+      id: isNew ? undefined : tempId, // 기존 카드면 '지금 배열의' id(temp면 전송 직전 실제 id로 해석)
       dateKey: selectedDate,
       endDateKey: form.isSupport ? form.endDateKey : "",
       startTime: "",
@@ -3693,7 +3737,9 @@ export function StudioShell({
 
     // (FLIP은 기본 OFF — 드롭 재정렬에서만 arm. 저장은 형제 카드를 밀지 않는다.)
     setEvents((prev) =>
-      isNew ? [...prev, optimistic] : prev.map((e) => (e.id === tempId ? optimistic : e))
+      isNew
+        ? [...prev, optimistic]
+        : prev.map((e) => (canonId(e.id) === canonId(tempId) ? { ...optimistic, id: e.id } : e))
     );
     // 저장 후에도 '그 일정을 계속 편집'하는 상태로 둔다(빈 카드로 리셋하지 않음) — 폼 key(editorKey)도
     // 안 올려 재마운트/깜빡임이 없다. 새 일정이면 임시 id로 선택을 잡아두고, 완료 시 실제 id로 옮긴다.
@@ -3720,7 +3766,15 @@ export function StudioShell({
     }
 
     startTransition(async () => {
-      const result = await studioWrite("save", payload);
+      // 기존 카드 수정인데 그 카드가 아직 temp id(첫 저장 진행 중)면, 실제 id가 나올 때까지
+      // 기다렸다 그 id로 보낸다 — 예전엔 temp id를 그대로 보내 서버가 '새 일정'으로 하나 더 만들었다.
+      const result = isNew
+        ? await studioWrite("save", payload)
+        : await enqueueWrite(async () => {
+            const realId = await resolveEventId(payload.id);
+            if (!realId) return { ok: false, error: "앞선 저장이 끝나지 않아 반영하지 못했어요." };
+            return postStudioWrite("save", { ...payload, id: realId });
+          });
       if (!result.ok) {
         setActionError(result.error);
         // P0-DATA-2(target rollback): 전체 배열 스냅샷 복원은 이 저장 '뒤'에 한 다른 편집까지
@@ -3728,7 +3782,7 @@ export function StudioShell({
         setEvents((prev) =>
           isNew
             ? prev.filter((e) => e.id !== tempId)
-            : prev.map((e) => (e.id === tempId && existing ? existing : e))
+            : prev.map((e) => (canonId(e.id) === canonId(tempId) && existing ? existing : e))
         );
         resolveSave(null);
         pendingSavesRef.current.delete(tempId);
@@ -3782,35 +3836,38 @@ export function StudioShell({
     });
   }
 
-  function deleteEvent(targetId: string) {
+  function deleteEvent(rawTargetId: string) {
     if (blockedByPreview()) return;
     if (!canEdit) {
       return;
     }
-    if (!events.some((e) => e.id === targetId)) return;
+    // temp id ↔ 실제 id를 같은 카드로 본다(저장 직후 지우기). 배열은 ref로 '지금' 것을 읽는다.
+    const targetId = canonId(rawTargetId);
+    if (!eventsRef.current.some((e) => canonId(e.id) === targetId)) return;
     // 편집 중인 바로 그 일정을 지우면 카드를 '닫지(슬라이드 아웃)' 않고 같은 자리에서 빈 새 카드로
     // 비운다 — 여러 개를 연속으로 지울 때 카드가 들어갔다 나왔다 하지 않게(공간 안정성). editorKey는
     // 안 올려 매끄럽게. 다른 일정 삭제는 편집 카드를 건드리지 않는다.
-    if (selectedEventId === targetId) {
+    if (selectedEventId && canonId(selectedEventId) === targetId) {
       setSelectedEventId(null);
       setForm(createEmptyForm());
       // 임시 보관 정리 — 지운 일정의 드래프트를 버리고, 복원 안내 박스를 닫고, 기준을 빈 폼으로
       // 내린다. 안 하면 ① 안내 박스가 남고(DEL로 지워도 안 사라짐) ② 비워진 폼이 옛 기준 대비
       // '변경'으로 잡혀 캡처가 빈 드래프트를 다시 저장해 잔류한다.
       editBaselineRef.current = draftFingerprint(createEmptyForm());
+      editDraftsRef.current.delete(`evt:${rawTargetId}`);
       editDraftsRef.current.delete(`evt:${targetId}`);
       editDraftsRef.current.delete(`new:${selectedDate}`);
       setDraftRestored(false);
     }
     hapticDelete(); // 또렷한 한 번(Android만; iOS·미지원은 조용히 무시)
     // 톡! 줄어들며 사라지는 동안만 잠깐 카드를 남겼다가 실제로 제거한다(reduced-motion이면 즉시).
+    // 스냅샷은 commitDelete가 실행되는 순간의 배열을 쓴다(230ms 사이의 다른 편집을 안 잃게).
     if (!prefersReducedMotion() && !deletingIds.has(targetId)) {
-      const snapshot = events;
       setDeletingIds((prev) => new Set(prev).add(targetId));
-      window.setTimeout(() => commitDelete(targetId, snapshot), 230);
+      window.setTimeout(() => commitDelete(targetId), 230);
       return;
     }
-    commitDelete(targetId, events);
+    commitDelete(targetId);
   }
 
   // P0-DATA-1: 삭제 직후 8초 스낵바 — 터치에서도 Ctrl+Z 없이 '실행 취소'를 누를 수 있다(L5).
@@ -3822,8 +3879,10 @@ export function StudioShell({
     deleteSnackTimer.current = window.setTimeout(() => setDeleteSnack(null), 8000);
   }
 
-  function commitDelete(targetId: string, snapshot: StudioScheduleEvent[]) {
-    const removed = snapshot.find((e) => e.id === targetId) ?? null;
+  function commitDelete(rawTargetId: string) {
+    const targetId = canonId(rawTargetId);
+    const snapshot = eventsRef.current;
+    const removed = snapshot.find((e) => canonId(e.id) === targetId) ?? null;
     // poof가 끝났으니 표시를 거둔다(실패해 되살아날 때 정상 모습으로 돌아오게).
     setDeletingIds((prev) => {
       if (!prev.has(targetId)) return prev;
@@ -3831,20 +3890,25 @@ export function StudioShell({
       next.delete(targetId);
       return next;
     });
-    // 낙관적 제거 + 이 일정을 가리키던 linkNext도 함께 정리.
+    // 낙관적 제거 + 이 일정을 가리키던 linkNext도 함께 정리. updater 안에서도 canonId —
+    // 실행 순간 temp가 실제 id로 바뀌어 있어도 빗나가지 않는다.
     setEvents((prev) =>
       prev
-        .filter((e) => e.id !== targetId)
-        .map((e) => (e.linkNext === targetId ? { ...e, linkNext: undefined } : e))
+        .filter((e) => canonId(e.id) !== targetId)
+        .map((e) =>
+          e.linkNext && canonId(e.linkNext) === targetId ? { ...e, linkNext: undefined } : e
+        )
     );
-    if (selectedEventId === targetId) {
+    if (selectedEventId && canonId(selectedEventId) === targetId) {
       setSelectedEventId(null);
       setForm(createEmptyForm());
     }
     setActionError(null);
     // Ctrl+Z 복구용 스택 + 8초 '실행 취소' 스낵바(같은 restore 경로, P0-DATA-1).
+    let undoEntry: UndoAction | null = null;
     if (removed) {
-      pushUndo({ type: "recreate", event: removed });
+      undoEntry = { type: "recreate", event: removed };
+      pushUndo(undoEntry);
       showDeleteSnack(removed);
     }
     startTransition(async () => {
@@ -3852,15 +3916,6 @@ export function StudioShell({
         // 큐 차례가 와서 실행 — 이 시점엔 앞(생성) 작업이 끝나 temp가 실제 id로 풀려 있다.
         const realId = await resolveEventId(targetId);
         if (!realId) return null; // 서버에 정말 없음(저장 실패/미저장) → 보낼 것 없음
-        // 저장이 삭제 애니메이션 중에 끝나 temp가 실제 id로 바뀐 경우, temp로 건 로컬 제거가 빗나갈
-        // 수 있으니 실제 id로도 한 번 더 제거(화면에 되살아 보이지 않게).
-        if (realId !== targetId) {
-          setEvents((prev) =>
-            prev
-              .filter((e) => e.id !== realId)
-              .map((e) => (e.linkNext === realId ? { ...e, linkNext: undefined } : e))
-          );
-        }
         return postStudioWrite("delete", { eventId: realId });
       });
       if (!result.ok) {
@@ -3868,15 +3923,20 @@ export function StudioShell({
         // P0-DATA-2(target rollback): 지운 그 일정만 되살리고, 이 일정을 가리키던 linkNext만
         // 복원한다 — 삭제 이후에 한 다른 편집은 건드리지 않는다.
         const linkedFrom = snapshot
-          .filter((e) => e.linkNext === targetId)
-          .map((e) => e.id);
+          .filter((e) => e.linkNext && canonId(e.linkNext) === targetId)
+          .map((e) => canonId(e.id));
         setEvents((prev) => {
-          const base = prev.some((e) => e.id === targetId) || !removed ? prev : [...prev, removed];
+          const base =
+            prev.some((e) => canonId(e.id) === targetId) || !removed ? prev : [...prev, removed];
           return base.map((e) =>
-            linkedFrom.includes(e.id) ? { ...e, linkNext: targetId } : e
+            linkedFrom.includes(canonId(e.id)) ? { ...e, linkNext: removed?.id ?? targetId } : e
           );
         });
-        deletedStackRef.current.pop(); // 복구 스택도 되돌림
+        // 복구 스택도 되돌림 — 맨 위(pop)가 아니라 '이 항목'을 뺀다(그 사이 다른 작업이 쌓였을 수 있다).
+        if (undoEntry) {
+          const idx = deletedStackRef.current.lastIndexOf(undoEntry);
+          if (idx >= 0) deletedStackRef.current.splice(idx, 1);
+        }
       }
     });
   }
@@ -3939,7 +3999,8 @@ export function StudioShell({
     setEvents((prev) => [...prev, optimistic]);
     markJustSaved(tempId); // 통통 착지 반짝
     const undoHolder = { id: tempId };
-    pushUndo({ type: "remove", holder: undoHolder }); // Ctrl+Z = 방금 만든 휴방 제거
+    const undoAction: UndoAction = { type: "remove", holder: undoHolder };
+    pushUndo(undoAction); // Ctrl+Z = 방금 만든 휴방 제거
     setActionError(null);
     // 만든 휴뱅을 곧바로 편집 카드에 띄운다 — 우클릭 한 번으로 만들고 거기서 바로 세부(태그·기간 등)를
     // 만질 수 있게(HCI: 방금 만든 대상이 곧 편집 컨텍스트). 데스크톱 전용 흐름이라 패널을 연다.
@@ -3967,7 +4028,7 @@ export function StudioShell({
         setActionError(result.error);
         // target rollback — 방금 만든 휴뱅 카드만 제거(다른 편집 보존).
         setEvents((prev) => prev.filter((e) => e.id !== tempId));
-        deletedStackRef.current.pop();
+        dropUndoEntry(undoAction);
         return;
       }
       hapticTick(); // ② 서버확인
@@ -4034,6 +4095,14 @@ export function StudioShell({
   function pushUndo(action: UndoAction) {
     deletedStackRef.current.push(action);
     redoStackRef.current = [];
+  }
+  // 낙관적 작업이 서버에서 실패해 되돌릴 때 — 맨 위(pop)가 아니라 '그 항목'을 뺀다. 응답을 기다리는
+  // 사이 사용자가 다른 작업(다른 undo 항목)을 쌓았을 수 있어, pop은 엉뚱한 항목을 지웠다.
+  function dropUndoEntry(action: UndoAction) {
+    const idx = deletedStackRef.current.lastIndexOf(action);
+    if (idx >= 0) deletedStackRef.current.splice(idx, 1);
+    const r = redoStackRef.current.lastIndexOf(action);
+    if (r >= 0) redoStackRef.current.splice(r, 1);
   }
 
   // Ctrl+Z: 스택 맨 위 '액션'을 종류에 맞게 되돌린다(LIFO). 삭제=다시 만들기, 생성/붙여넣기=지우기.
@@ -4131,14 +4200,18 @@ export function StudioShell({
     if (action.type === "remove") {
       // 생성/붙여넣기 되돌리기(또는 삭제 다시 실행) — 그 카드를 지운다(holder.id는 실제 id로
       // 갱신돼 있음). 역연산용으로 지우기 전 카드 내용을 보관 — 되살릴 땐 같은 id tombstone 복구.
-      const id = action.holder.id;
-      const snapshot = events.find((e) => e.id === id) ?? null;
+      // 'move'와 같은 규칙: id는 canonId, 배열은 ref — 붙여넣기 저장이 아직 진행 중일 때(temp)
+      // Ctrl+Z를 눌러도 실제 id로 바뀐 카드를 정확히 잡는다.
+      const id = canonId(action.holder.id);
+      const snapshot = eventsRef.current.find((e) => canonId(e.id) === id) ?? null;
       setEvents((prev) =>
         prev
-          .filter((e) => e.id !== id)
-          .map((e) => (e.linkNext === id ? { ...e, linkNext: undefined } : e))
+          .filter((e) => canonId(e.id) !== id)
+          .map((e) =>
+            e.linkNext && canonId(e.linkNext) === id ? { ...e, linkNext: undefined } : e
+          )
       );
-      if (selectedEventId === id) {
+      if (selectedEventId && canonId(selectedEventId) === id) {
         setSelectedEventId(null);
         setForm(createEmptyForm());
       }
@@ -4162,14 +4235,19 @@ export function StudioShell({
       action.event,
       mode === "undo" ? "삭제 취소됨" : "다시 실행함 (Ctrl+Shift+Z)"
     );
-    return { type: "remove", holder: { id: action.event.id } };
+    return { type: "remove", holder: { id: canonId(action.event.id) } };
   }
 
   // 삭제 복구 공통 경로 — Ctrl+Z와 삭제 스낵바 '실행 취소'가 함께 쓴다.
-  function restoreDeletedEvent(ev: StudioScheduleEvent, toast = "삭제 취소됨") {
+  function restoreDeletedEvent(rawEv: StudioScheduleEvent, toast = "삭제 취소됨") {
     setDeleteSnack(null);
     if (deleteSnackTimer.current) window.clearTimeout(deleteSnackTimer.current);
-    setEvents((prev) => (prev.some((e) => e.id === ev.id) ? prev : [...prev, ev]));
+    // 스냅샷이 temp id로 남아 있어도 서버 복원은 실제 id로 간다 — 로컬도 같은 id로 되살려
+    // 두 개(temp 유령 + 실제)가 잠깐 겹치지 않게 한다.
+    const ev = { ...rawEv, id: canonId(rawEv.id) };
+    setEvents((prev) =>
+      prev.some((e) => canonId(e.id) === ev.id) ? prev : [...prev, ev]
+    );
     setActionError(null);
     markJustSaved(ev.id); // 되살아난 카드도 통통 착지하며 반짝
     flashToast(toast);
@@ -4181,12 +4259,13 @@ export function StudioShell({
       });
       if (!result.ok) {
         setActionError(result.error);
-        setEvents((prev) => prev.filter((e) => e.id !== ev.id));
+        setEvents((prev) => prev.filter((e) => canonId(e.id) !== ev.id));
         return;
       }
       hapticTick(); // 서버 확정
-      // 이 일정을 가리키던 연결(linkNext)은 서버 원본이 그대로라 새로고침으로 정본 동기화.
-      router.refresh();
+      // 이 일정을 가리키던 연결(linkNext)은 서버 원본이 그대로라 정본 동기화 — 큐가 빈 뒤에
+      // (진행 중 쓰기가 있으면 prop 동기화 가드가 결과를 버리므로 requestServerResync로 미룬다).
+      requestServerResync();
     });
   }
 
@@ -4314,7 +4393,8 @@ export function StudioShell({
     setEvents((prev) => [...prev, optimistic]);
     // 실행취소 스택에 'remove'로 올린다 → Ctrl+Z면 방금 만든 이 카드가 사라진다.
     const undoHolder = { id: tempId };
-    pushUndo({ type: "remove", holder: undoHolder });
+    const undoAction: UndoAction = { type: "remove", holder: undoHolder };
+    pushUndo(undoAction);
     flashToast(toast);
     setActionError(null);
     startTransition(async () => {
@@ -4342,7 +4422,7 @@ export function StudioShell({
         setActionError(result.error);
         // target rollback — 붙여넣은 카드만 제거(다른 편집 보존).
         setEvents((prev) => prev.filter((e) => e.id !== tempId));
-        deletedStackRef.current.pop();
+        dropUndoEntry(undoAction);
         return;
       }
       if (result.id) {
@@ -4647,27 +4727,31 @@ export function StudioShell({
   function saveSupportSettings() {
     if (blockedByPreview()) return;
     if (!supportSheetId) return;
-    const id = supportSheetId;
+    const id = canonId(supportSheetId);
+    const endDateKey = form.endDateKey;
+    const supportUrl = form.supportUrl;
     setActionError(null);
     setSupportSaving(true);
     setEvents((cur) =>
       cur.map((e) =>
-        e.id === id
-          ? { ...e, endDateKey: form.endDateKey || undefined, supportUrl: form.supportUrl || undefined }
+        canonId(e.id) === id
+          ? { ...e, endDateKey: endDateKey || undefined, supportUrl: supportUrl || undefined }
           : e
       )
     ); // 낙관적 반영
     startTransition(async () => {
-      const result = await studioWrite("support", {
-        eventId: id,
-        endDateKey: form.endDateKey,
-        supportUrl: form.supportUrl
+      // 방금 만든 업 도움(temp id)이면 저장이 끝나 실제 id가 나올 때까지 기다렸다 보낸다.
+      const result = await enqueueWrite(async () => {
+        const realId = await resolveEventId(id);
+        if (!realId) return { ok: false, error: "일정 저장이 끝나지 않아 업 도움 설정을 반영하지 못했어요." };
+        return postStudioWrite("support", { eventId: realId, endDateKey, supportUrl });
       });
       setSupportSaving(false);
       if (result.ok) {
         closeSupportSheet();
       } else {
         setActionError(result.error);
+        requestServerResync(); // 낙관적 반영을 서버 진실로 되돌린다
       }
     });
   }
@@ -4913,7 +4997,7 @@ export function StudioShell({
                         const sEnd = event.endDateKey ?? cell.isoDate;
                         return (
                           <div
-                            className={`agenda-event m-support${dimCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
+                            className={`agenda-event m-support${dimCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(canonId(event.id)) ? " deleting" : ""}`}
                             key={event.id}
                           >
                             {/* 시청자 화면과 동일한 초록 세로 바(업 도움 고정색). */}
@@ -5052,7 +5136,7 @@ export function StudioShell({
                       );
                       return canEdit ? (
                         <button
-                          className={`agenda-event m-event${dimCls}${tentCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
+                          className={`agenda-event m-event${dimCls}${tentCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(canonId(event.id)) ? " deleting" : ""}`}
                           key={event.id}
                           onClick={(e) => openMobileEdit(event, e.currentTarget)}
                           type="button"
@@ -5062,7 +5146,7 @@ export function StudioShell({
                       ) : canEditTagsThing ? (
                         // 매니저: 일정을 누르면 태그만 고치는 시트가 열린다(데스크톱 상세의 태그 편집과 동치).
                         <button
-                          className={`agenda-event m-event${dimCls}${tentCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(event.id) ? " deleting" : ""}`}
+                          className={`agenda-event m-event${dimCls}${tentCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(canonId(event.id)) ? " deleting" : ""}`}
                           key={event.id}
                           onClick={() => setTagSheetId(event.id)}
                           type="button"
@@ -5413,7 +5497,7 @@ export function StudioShell({
   // 모바일 매니저용 태그 수정 시트 — 일정의 태그 할당(최대 2개)만 고친다. toggleEventTag가
   // 낙관적 반영 + 서버 저장 + 미리보기 차단을 모두 처리한다.
   function renderMobileTagSheet() {
-    const event = tagSheetId ? events.find((e) => e.id === tagSheetId) : null;
+    const event = tagSheetId ? events.find((e) => canonId(e.id) === canonId(tagSheetId)) : null;
     if (!event) {
       return null;
     }
@@ -5807,6 +5891,9 @@ export function StudioShell({
             편집실 작업화면은 항상 켜짐(좌/우만)이라 controlled 공유를 끊었다 — vic_avatar_side
             localStorage 키는 여전히 공유돼 좌/우 선택은 양쪽에서 이어진다. */}
         <PublicPoster
+          // 하트 세션 델타의 소유자 — 같은 브라우저 탭에서 개발자→관리자처럼 계정을 바꿔 미리보기를
+          // 열면 이전 계정의 낙관적 하트가 섞이지 않게 계정별로 나눈다(accountSwitch가 아니라 표시 없음).
+          accountEmail={actor.email}
           avatarSlot={avatarRoleOk}
           initialMonth={view.month}
           initialNarrow={isNarrow}
@@ -5911,7 +5998,7 @@ export function StudioShell({
               // 스낵바 복구도 '삭제의 실행취소' — 다시 실행(Ctrl+Shift+Z)하면 재삭제되게 적재.
               redoStackRef.current.push({
                 type: "remove",
-                holder: { id: deleteSnack.event.id }
+                holder: { id: canonId(deleteSnack.event.id) }
               });
               restoreDeletedEvent(deleteSnack.event);
             }}
@@ -6327,7 +6414,7 @@ export function StudioShell({
                 if (!dropSlot.overId) {
                   li = dateEvents.length;
                 } else {
-                  const oi = dateEvents.findIndex((e) => e.id === dropSlot.overId);
+                  const oi = dateEvents.findIndex((e) => canonId(e.id) === canonId(dropSlot.overId!));
                   li = oi < 0 ? dateEvents.length : dropSlot.after ? oi + 1 : oi;
                 }
                 liIdx = Math.max(li, connectedCount);
@@ -6340,7 +6427,7 @@ export function StudioShell({
               // 겹쳐 가리키면 뭘 하려는지 오히려 흐려진다. 그땐 보라 '원래 위치'만 남는다
               // (사용자 결정 2026-08-05). 자리를 벗어나는 순간 도착 표시가 다시 열린다.
               const srcIdxHere = dragEventId
-                ? dateEvents.findIndex((e) => e.id === dragEventId)
+                ? dateEvents.findIndex((e) => canonId(e.id) === canonId(dragEventId))
                 : -1;
               const dropIsNoop =
                 srcIdxHere >= 0 && liIdx !== null && (liIdx === srcIdxHere || liIdx === srcIdxHere + 1);
@@ -6627,7 +6714,7 @@ export function StudioShell({
                           : "",
                         linkFlashIds.has(event.id) ? "just-linked" : "",
                         justSavedId === event.id ? "just-saved" : "",
-                        deletingIds.has(event.id) ? "deleting" : ""
+                        deletingIds.has(canonId(event.id)) ? "deleting" : ""
                       ]
                         .filter(Boolean)
                         .join(" ");
@@ -6736,7 +6823,7 @@ export function StudioShell({
                           ) : null}
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
-                            {span.showTitle && syncingIds.includes(event.id) ? (
+                            {span.showTitle && syncingIds.includes(canonId(event.id)) ? (
                               <span className="pill-sync" aria-hidden="true" title="동기화 중…" />
                             ) : null}
                             {/* 미정 칩(세로 미/정)은 strong 밖, flex 부모(.pill-main, align-items:center)

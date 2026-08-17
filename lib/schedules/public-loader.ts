@@ -95,13 +95,59 @@ export async function getPublicSchedule(
     return samplePublicSchedule(calendarSlug);
   }
 
-  // 익명 공개 묶음(캐시 대상) + 로그인 사용자의 개인 관심 목록(비캐시)을 합친다.
-  const [data, myHeartIds] = await Promise.all([
+  // 익명 공개 묶음(캐시 대상) + 로그인 사용자의 개인 관심 목록(비캐시) + 하트 집계(비캐시)를 합친다.
+  const [data, myHeartIds, liveHeartCounts] = await Promise.all([
     loadPublicScheduleData(calendarSlug),
-    includeMyHeartIds ? loadMyHeartIds(calendarSlug) : Promise.resolve([])
+    includeMyHeartIds ? loadMyHeartIds(calendarSlug) : Promise.resolve([]),
+    loadLiveEventHeartCounts(calendarSlug)
   ]);
 
-  return { ...data, myHeartIds };
+  // 하트 집계는 캐시 묶음(300초)에 든 값 위에 방금 읽은 값을 덮는다. 하트는 편집이 아니라
+  // 시청자 행동이라 캐시 무효화를 안 거는데(cache.ts), 그러면 같은 PC에서 계정을 바꿔 다시
+  // 들어오거나 편집실이 시청자 미리보기를 열 때 최대 5분 옛 수가 보였다. 집계 RPC 1회는
+  // 싸고 응답이 '모두에게 같아' CDN 캐시(공개 API)에도 안전하다. 실패하면 캐시값 유지.
+  if (!liveHeartCounts) {
+    return { ...data, myHeartIds };
+  }
+  return {
+    ...data,
+    events: data.events.map((event) => ({
+      ...event,
+      heartCount: liveHeartCounts.get(event.id) ?? 0
+    })),
+    myHeartIds
+  };
+}
+
+// slug → calendar id. 사실상 불변이라 길게 캐시한다(집계 RPC의 인자로만 쓴다).
+const loadPublicCalendarId = unstable_cache(
+  async (calendarSlug: string): Promise<string | null> => {
+    const supabase = createPublicReadClient();
+    if (!supabase) return null;
+    const { data } = await supabase
+      .from("calendars")
+      .select("id")
+      .eq("slug", calendarSlug)
+      .eq("is_public", true)
+      .maybeSingle();
+    return data?.id ?? null;
+  },
+  ["public-calendar-id"],
+  { revalidate: 3600, tags: [PUBLIC_SCHEDULE_CACHE_TAG] }
+);
+
+// 일정별 하트 집계 — 캐시하지 않는다(공개 안전: 함수가 공개 일정만, user_id/token 비노출).
+// null = 조회 실패(호출자는 캐시된 값을 그대로 쓴다).
+async function loadLiveEventHeartCounts(calendarSlug: string): Promise<Map<string, number> | null> {
+  const supabase = createPublicReadClient();
+  if (!supabase) return null;
+  const calendarId = await loadPublicCalendarId(calendarSlug);
+  if (!calendarId) return null;
+  const { data, error } = await supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId });
+  if (error || !data) return null;
+  return new Map(
+    (data as { event_id: string; count: number }[]).map((row) => [row.event_id, Number(row.count)])
+  );
 }
 
 // 떡밥 즉시 공개 — 캐시(30초)를 우회해 DB를 직접 읽는다. 주어진 일정들 중 '공개 시각이 지난'

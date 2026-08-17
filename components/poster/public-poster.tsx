@@ -1292,11 +1292,34 @@ export function PublicPoster({
   // "내 이모지" 보관함 — 로컬 상태로 들고 있어 업로드·삭제를 새로고침(왕복) 없이 즉시 반영한다.
   // (서버 router.refresh를 기다리면 몇 초씩 늦게 떠/늦게 사라져 답답하다.)
   const [assets, setAssets] = useState<StickerAsset[]>(schedule.stickerAssets);
-  useEffect(() => {
-    setAssets(schedule.stickerAssets);
-  }, [schedule.stickerAssets]);
+  // 비동기 흐름(업로드 반복문·직렬 큐 이후 되돌리기)에서 '지금' 보관함을 읽기 위한 거울.
+  const assetsRef = useRef(assets);
+  assetsRef.current = assets;
   // 업로드 진행 중인(아직 서버 저장 전) 임시 에셋 id — 스피너 표시 + 클릭(스티커 추가) 차단용.
   const [pendingAssetIds, setPendingAssetIds] = useState<Set<string>>(() => new Set());
+  // 이 세션에서 지운 에셋 id — 삭제보다 먼저 떠난 revalidate 스냅샷이 되살리지 못하게.
+  const deletedAssetIdsRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    // 서버 스냅샷을 통째로 덮어쓰지 않고 '병합'한다 — 업로드 중인 임시 에셋, 방금 올린 에셋,
+    // 아직 서버가 안 돌려준 낙관적 편집(순서·분류)이 리시드에 지워지던 문제(revalidate가
+    // 업로드/정렬보다 먼저 도착) 방지. 로컬이 우선이고, 서버에만 있는 새 에셋만 받아들인다.
+    setAssets((cur) => {
+      const server = schedule.stickerAssets.filter((a) => !deletedAssetIdsRef.current.has(a.id));
+      const serverById = new Map(server.map((a) => [a.id, a]));
+      const localIds = new Set(cur.map((a) => a.id));
+      const merged: StickerAsset[] = cur.map((a) => {
+        const s = serverById.get(a.id);
+        // 서버 값(URL·이름 등)은 받되, 낙관적으로 바꾼 순서·분류는 로컬 우선. 임시/미반영은 그대로.
+        return s ? { ...s, kind: a.kind, sortOrder: a.sortOrder } : a;
+      });
+      // 서버에만 있는 새 에셋(다른 세션 업로드 등)은 자기 sortOrder 자리로.
+      for (const s of server) {
+        if (!localIds.has(s.id)) merged.push(s);
+      }
+      merged.sort((a, b) => a.sortOrder - b.sortOrder);
+      return merged;
+    });
+  }, [schedule.stickerAssets]);
   // 보관함 분류 탭(전체/아바타/이모티콘/움직이는 이모티콘).
   const [assetTab, setAssetTab] = useState<AssetTabKey>("all");
   // 보관함 쓰기(정렬·분류) 직렬 큐 — 마지막 드래그가 저장의 진실.
@@ -1981,7 +2004,10 @@ export function PublicPoster({
   }
   // 하트 서버 반영을 '일정별 직렬 큐'로 — 빠르게 껐다 켜도 서버가 클릭 순서대로 처리하고(토글
   // RPC라 순서가 곧 결과), 가장 마지막 응답만 집계에 반영해 옛 응답이 방금 켠 배지를 덮지 않게 한다.
-  const heartOpRef = useRef<Map<string, { chain: Promise<void>; seq: number }>>(new Map());
+  // done=false인 동안(서버 응답 대기)은 새 schedule prop이 와도 그 일정의 집계·내 하트를 덮지 않는다.
+  const heartOpRef = useRef<Map<string, { chain: Promise<void>; seq: number; done: boolean }>>(
+    new Map()
+  );
   // 하트를 누를 때 화면에 떠오르는 ♥ 입자들(틱톡식 좋아요 연출). 잠깐 떴다 사라진다.
   const [floaters, setFloaters] = useState<HeartFloater[]>([]);
   // 특별한 날(공휴일·기념일·월드컵·한국 승) 탭 시 그 자리에서 터지는 점(point) 폭죽들.
@@ -2227,8 +2253,39 @@ export function PublicPoster({
   // 키보드 미세이동 등에서 최신 스티커 배열을 읽기 위한 ref + 저장 디바운스 타이머
   const stickersRef = useRef<StickerInstance[]>([]);
   const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 디바운스 저장 대기열: canon id → 마지막 로컬 값. 타이머 하나가 전부 flush한다.
+  // (예전엔 타이머 하나에 '마지막 호출의 목록'만 매달려, B를 미세이동하면 A의 대기 저장이
+  //  통째로 사라졌다 — 이제 스티커별로 누적되고 어떤 것도 잃지 않는다.)
+  const pendingCommitRef = useRef<Map<string, StickerInstance>>(new Map());
+  // 신규 스티커 insert 진행 중인 임시 id → 실제 id 약속(실패면 null). 편집실(use-write-queue)의
+  // pendingSavesRef/tempToRealRef와 같은 패턴 — insert 중에 옮기고·돌리고·지운 조작이 id 확정 뒤
+  // 실제 행에 그대로 반영되게 한다(예전엔 temp id면 조용히 버려져 "옮겼는데 새로고침하면 제자리").
+  const stickerPendingRef = useRef<Map<string, Promise<string | null>>>(new Map());
+  // insert 끝난 임시 id → 실제 id 매핑(영구). 옛 id를 들고 있는 클로저(드래그·타이머·스택)가
+  // 나중에 와도 실제 id로 해석되게.
+  const stickerTempToRealRef = useRef<Map<string, string>>(new Map());
   const nudgeBurstRef = useRef(0); // 방향키 연속 입력을 한 단위로 묶기 위한 타임스탬프
   stickersRef.current = stickers;
+  // 어떤 id든 '현재 통용되는' id로. 실제 id는 그대로, 재발급된 id는 새 id로.
+  const canonStickerId = useCallback(
+    (id: string) => stickerTempToRealRef.current.get(id) ?? id,
+    []
+  );
+  // temp id면 insert 약속을 기다려 실제 id로(실패면 null). 실제 id는 그대로.
+  async function resolveStickerId(id: string): Promise<string | null> {
+    if (!id.startsWith("temp-")) {
+      return id;
+    }
+    const known = stickerTempToRealRef.current.get(id);
+    if (known) return known;
+    const p = stickerPendingRef.current.get(id);
+    return p ? await p : null;
+  }
+  // 현재 로컬 상태에서 이 id(옛 id 포함)의 스티커를 찾는다 — 저장할 '최신 값'의 출처.
+  function findLocalSticker(id: string): StickerInstance | undefined {
+    const canon = canonStickerId(id);
+    return stickersRef.current.find((s) => s.id === canon || s.id === id);
+  }
   // C2: 실행취소/다시실행 — 현재 달 스티커 배열 스냅샷 스택.
   // ref를 단일 진실 소스로 둔다: 비동기 undo/redo(applySnapshot→remapId) 도중 setState
   // 타이밍/클로저로 인해 redo 스택 push가 유실되던 문제를 막는다. state는 버튼 활성화
@@ -2251,6 +2308,8 @@ export function PublicPoster({
   useEffect(() => {
     // 떠나는 달의 최신 로컬 상태를 캐시에 저장(이 렌더 시점 stickers는 아직 이전 달 것).
     const prev = prevViewRef.current;
+    // 떠나는 달에 아직 디바운스 대기 중인 저장이 있으면 '그 달' 좌표로 지금 보낸다(잃지 않게).
+    flushPendingCommits(prev.year, prev.month);
     monthStickerCacheRef.current.set(`${prev.year}-${prev.month}`, stickersRef.current);
     prevViewRef.current = { year: view.year, month: view.month };
     // 들어오는 달은 캐시(이번 세션 편집 보존)가 있으면 그걸로, 없으면 서버 prop으로 시드한다.
@@ -2266,6 +2325,11 @@ export function PublicPoster({
     commitStacks([], []); // 달이 바뀌면 실행취소/다시실행 히스토리는 초기화
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view.year, view.month]);
+  // 언마운트(시청자 미리보기 전환·페이지 이탈) 때도 디바운스 대기 저장을 비운다 — 타이머만 죽고
+  // 값은 안 가는 유실 방지. 최신 클로저를 ref로 들고 있어 마지막 렌더의 view/액션을 쓴다.
+  const flushCommitsRef = useRef<() => void>(() => {});
+  flushCommitsRef.current = () => flushPendingCommits();
+  useEffect(() => () => flushCommitsRef.current(), []);
 
   // 하트 상태 = 서버 myHeartIds(진실) + 이번 세션 델타. 시청자 미리보기를 닫았다 열면 컴포넌트가
   // 리마운트되며 bookmarks가 schedule.myHeartIds(페이지 로드 스냅샷)로 초기화되는데, 그러면 이 세션에
@@ -2307,6 +2371,44 @@ export function PublicPoster({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // 마운트 뒤 schedule prop이 바뀌면(편집실 미리보기의 신선한 스냅샷 도착·router.refresh·계정 전환
+  // 후 재렌더) 하트 집계와 내 하트를 서버값으로 다시 맞춘다. 예전엔 둘 다 마운트 시점 useState
+  // 초기값에 갇혀 있어, 미리보기가 새 스냅샷을 받아도 페이지 로드 때 수가 그대로 보였다.
+  // 규칙: 서버 응답을 기다리는 일정(heartOpRef done=false)은 건드리지 않는다 — 낙관적 상태가
+  // 진실이고, 그 서버 응답이 곧 권위값을 준다. 세션 델타는 내 하트 목록에 그대로 덮는다.
+  const scheduleHeartSyncRef = useRef(schedule);
+  useEffect(() => {
+    if (scheduleHeartSyncRef.current === schedule) return; // 첫 마운트는 위 효과가 담당
+    scheduleHeartSyncRef.current = schedule;
+    const inFlight = (id: string) => {
+      const op = heartOpRef.current.get(id);
+      return Boolean(op && !op.done);
+    };
+    setHeartCounts((prev) => {
+      const next = { ...prev };
+      for (const event of schedule.events) {
+        if (typeof event.heartCount !== "number" || inFlight(event.id)) continue;
+        next[event.id] = event.heartCount;
+      }
+      return next;
+    });
+    // 내 하트: 로그인 사용자만 서버(myHeartIds)가 계정 기준 진실을 준다. 비로그인은 서버 렌더에
+    // 내 목록이 없으니(기기 토큰은 클라만 안다) 마운트 때 받은 목록을 그대로 둔다.
+    if (!serverHearts || anonymous) return;
+    const delta = loadHeartDelta(heartOwner);
+    const set = new Set(schedule.myHeartIds ?? []);
+    for (const id of delta.off) set.delete(id);
+    for (const id of delta.on) set.add(id);
+    setBookmarks((prev) => {
+      // 응답 대기 중인 일정은 낙관적 값을 유지한다.
+      for (const id of prev) if (inFlight(id)) set.add(id);
+      for (const id of set) if (inFlight(id) && !prev.includes(id)) set.delete(id);
+      const next = [...set];
+      if (next.length === prev.length && next.every((id) => prev.includes(id))) return prev;
+      return next;
+    });
+  }, [schedule, serverHearts, anonymous, heartOwner]);
 
   // 하트를 켤 때 누른 자리에서 ♥들이 스멀스멀 떠오르게 한다(움직임 최소화 설정이면 생략).
   function spawnHearts(x: number, y: number) {
@@ -2434,7 +2536,9 @@ export function PublicPoster({
         } catch {
           ok = false;
         }
-        const isLatest = heartOpRef.current.get(id)?.seq === seq;
+        const cur = heartOpRef.current.get(id);
+        const isLatest = cur?.seq === seq;
+        if (isLatest && cur) cur.done = true;
         if (!isLatest) {
           return; // 더 최신 토글이 이미 진행 중 — 옛 응답으로 화면을 건드리지 않는다.
         }
@@ -2462,7 +2566,7 @@ export function PublicPoster({
         }
         heartToastTimerRef.current = window.setTimeout(() => setHeartToast(null), 2600);
       });
-    heartOpRef.current.set(id, { chain, seq });
+    heartOpRef.current.set(id, { chain, seq, done: false });
   }
   const isBookmarked = (id: string) => bookmarks.includes(id);
 
@@ -2719,41 +2823,45 @@ export function PublicPoster({
   }
 
   function updateStickerLocal(updated: StickerInstance) {
-    setStickers((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    // 드래그 중 insert가 끝나 id가 바뀌어도(temp→실제) 갱신이 빗나가지 않게 canon id로 맞춘다.
+    const canon = canonStickerId(updated.id);
+    setStickers((prev) =>
+      prev.map((s) => (s.id === canon ? (updated.id === canon ? updated : { ...updated, id: canon }) : s))
+    );
   }
 
-  async function commitSticker(sticker: StickerInstance) {
-    if (!saveStickerAction || sticker.id.startsWith("temp-")) {
-      return; // 아직 insert 진행 중인 신규 스티커는 id 확정 후 저장됨
+  function commitSticker(sticker: StickerInstance) {
+    return commitStickerAt(sticker, view.year, view.month);
+  }
+
+  // 스티커 속성 저장. year/month는 호출 맥락(보통 현재 보기 달; 달 이동 직전 flush는 떠나는 달).
+  // temp id(insert 진행 중)면 실제 id가 나올 때까지 기다렸다가 '그 시점의 최신 로컬 값'을 실제
+  // 행에 저장한다 — insert 중에 한 이동/회전/잠금/색 변경이 어느 것도 버려지지 않는다.
+  async function commitStickerAt(sticker: StickerInstance, year: number, month: number) {
+    if (!saveStickerAction) {
+      return;
     }
-    const result = await saveStickerAction({
-      id: sticker.id,
-      year: view.year,
-      month: view.month,
-      emoji: sticker.kind === "emoji" ? sticker.label : undefined,
-      assetId: sticker.kind === "image" ? sticker.assetId : undefined,
-      shapeKey: sticker.kind === "shape" ? sticker.shapeKey : undefined,
-      text: sticker.kind === "text" ? sticker.label : undefined,
-      textColor: sticker.textColor,
-      fontWeight: sticker.fontWeight,
-      fontFamily: sticker.fontFamily,
-      textAlign: sticker.textAlign,
-      textBg: sticker.textBg,
-      textFx: sticker.textFx,
-      italic: sticker.italic,
-      outline: sticker.outline,
-      shadow: sticker.shadow,
-      anim: sticker.anim,
-      locked: sticker.locked,
-      xRatio: sticker.xRatio,
-      yRatio: sticker.yRatio,
-      widthRatio: sticker.widthRatio,
-      rotationDeg: sticker.rotationDeg,
-      flipX: sticker.flipX,
-      flipY: sticker.flipY,
-      opacity: sticker.opacity,
-      zIndex: sticker.zIndex
-    });
+    let payload = sticker;
+    if (sticker.id.startsWith("temp-")) {
+      const known = stickerTempToRealRef.current.get(sticker.id);
+      if (known) {
+        // 매핑이 이미 있으면 기다릴 게 없다 — 방금 받은 값(아직 렌더 전일 수 있음)을 그대로 쓴다.
+        payload = { ...sticker, id: known };
+      } else {
+        const realId = await resolveStickerId(sticker.id);
+        if (!realId) {
+          return; // insert 실패 → 로컬에서 이미 제거됨, 저장할 행이 없다.
+        }
+        // 기다리는 사이 더 바뀌었을 수 있으니 최신 로컬 값(없으면 넘겨받은 값)으로.
+        const latest = findLocalSticker(sticker.id) ?? sticker;
+        payload = { ...latest, id: realId };
+      }
+    }
+    // 이 세션에서 지운 행은 다시 살리지 않는다(insert 대기 중 삭제 → 실제 id로 지워진 뒤 늦게 온 저장).
+    if (deletedStickerIdsRef.current.has(payload.id)) {
+      return;
+    }
+    const result = await saveStickerAction(stickerToSaveInput(payload, year, month, true));
     if (!result.ok) {
       setStickerError(result.error);
     }
@@ -2765,10 +2873,9 @@ export function PublicPoster({
       return;
     }
     pushHistory();
-    const tempId = `temp-${Math.random().toString(36).slice(2)}`;
-    const nextZ = stickers.reduce((max, s) => Math.max(max, s.zIndex), 0) + 1;
-    const fresh: StickerInstance = {
-      id: tempId,
+    // 생성 경로는 persistNewSticker 하나 — id 확정·매핑·되돌리기 스택 remap을 한 곳에서.
+    await persistNewSticker({
+      id: `temp-${Math.random().toString(36).slice(2)}`,
       kind: "emoji",
       label: value,
       year: view.year,
@@ -2780,31 +2887,9 @@ export function PublicPoster({
       flipX: false,
       flipY: false,
       opacity: 1,
-      zIndex: nextZ,
+      zIndex: nextZIndex(),
       visiblePublicly: true
-    };
-    setStickers((prev) => [...prev, fresh]);
-    setSelectedSticker(tempId);
-    const result = await saveStickerAction({
-      year: fresh.year,
-      month: fresh.month,
-      emoji: fresh.label,
-      xRatio: fresh.xRatio,
-      yRatio: fresh.yRatio,
-      widthRatio: fresh.widthRatio,
-      rotationDeg: fresh.rotationDeg,
-      flipX: fresh.flipX,
-      flipY: fresh.flipY,
-      opacity: fresh.opacity,
-      zIndex: fresh.zIndex
     });
-    if (result.ok) {
-      setStickers((prev) => prev.map((s) => (s.id === tempId ? { ...s, id: result.id } : s)));
-      setSelectedSticker((cur) => (cur === tempId ? result.id : cur));
-    } else {
-      setStickers((prev) => prev.filter((s) => s.id !== tempId));
-      setStickerError(result.error);
-    }
   }
 
   // C6: 텍스트 스티커를 달력에 올린다. 기본은 흰 외곽선(가독성)으로 시작.
@@ -2872,10 +2957,8 @@ export function PublicPoster({
       return;
     }
     pushHistory();
-    const tempId = `temp-${Math.random().toString(36).slice(2)}`;
-    const nextZ = stickers.reduce((max, s) => Math.max(max, s.zIndex), 0) + 1;
-    const fresh: StickerInstance = {
-      id: tempId,
+    await persistNewSticker({
+      id: `temp-${Math.random().toString(36).slice(2)}`,
       kind: "image",
       label: asset.name,
       imageUrl: asset.fileUrl,
@@ -2889,31 +2972,9 @@ export function PublicPoster({
       flipX: false,
       flipY: false,
       opacity: 1,
-      zIndex: nextZ,
+      zIndex: nextZIndex(),
       visiblePublicly: true
-    };
-    setStickers((prev) => [...prev, fresh]);
-    setSelectedSticker(tempId);
-    const result = await saveStickerAction({
-      year: fresh.year,
-      month: fresh.month,
-      assetId: asset.id,
-      xRatio: fresh.xRatio,
-      yRatio: fresh.yRatio,
-      widthRatio: fresh.widthRatio,
-      rotationDeg: fresh.rotationDeg,
-      flipX: fresh.flipX,
-      flipY: fresh.flipY,
-      opacity: fresh.opacity,
-      zIndex: fresh.zIndex
     });
-    if (result.ok) {
-      setStickers((prev) => prev.map((s) => (s.id === tempId ? { ...s, id: result.id } : s)));
-      setSelectedSticker((cur) => (cur === tempId ? result.id : cur));
-    } else {
-      setStickers((prev) => prev.filter((s) => s.id !== tempId));
-      setStickerError(result.error);
-    }
   }
 
   // 이미지 파일 업로드 → 커스텀 이모지로 등록. 여러 개를 한 번에(파일 선택·드래그앤드롭).
@@ -2933,6 +2994,9 @@ export function PublicPoster({
     let lastError: string | null = null;
     // 순차 업로드 (서버·스토리지 부하를 줄이고 실패 메시지를 모은다).
     // try/finally로 감싸 어떤 이유로 액션이 throw해도 "올리는 중…"이 안 멈추게 한다(에러 표시).
+    // 여러 파일의 낙관적 sortOrder는 로컬 카운터로 하나씩 내려간다 — 렌더 클로저의 assets[0]을
+    // 반복문 안에서 읽으면 전부 같은 값이 돼 순서가 뒤엉켰다.
+    let nextSort = Math.min(0, ...assetsRef.current.map((a) => a.sortOrder)) - 1;
     try {
       for (const file of images) {
         // 낙관적 표시: 로컬 미리보기(objectURL)로 "내 이모지"에 즉시 띄우고,
@@ -2946,7 +3010,7 @@ export function PublicPoster({
           fileType: file.type,
           // 서버와 같은 규칙으로 미리 판정 — GIF만 확실히 '움직이는 이모티콘'.
           kind: file.type === "image/gif" ? "anim" : "static",
-          sortOrder: (assets[0]?.sortOrder ?? 0) - 1
+          sortOrder: nextSort--
         };
         // 새 에셋은 sort_order가 가장 작아(맨 앞) 결국 맨 왼쪽에 온다.
         // 로딩 자리표시도 처음부터 맨 왼쪽(prepend)에 둬, 완료 시 좌우로 튀지 않게 한다.
@@ -2965,7 +3029,10 @@ export function PublicPoster({
             img.onerror = () => resolve();
             img.src = saved.fileUrl;
           });
-          setAssets((prev) => prev.map((a) => (a.id === tempId ? saved : a)));
+          // 자리는 로컬(맨 앞) 그대로 — 서버 sortOrder로 갈아끼우면 완료 순간 칩이 튄다.
+          setAssets((prev) =>
+            prev.map((a) => (a.id === tempId ? { ...saved, sortOrder: a.sortOrder } : a))
+          );
           setPendingAssetIds((prev) => {
             const next = new Set(prev);
             next.delete(tempId);
@@ -3007,7 +3074,7 @@ export function PublicPoster({
 
   // 드래그로 바꾼 보관함 순서 저장 — 낙관적으로 먼저 바꾸고, 실패하면 되돌린다.
   async function reorderAssets(orderedIds: string[]) {
-    const prev = assets;
+    const prev = assetsRef.current;
     const byId = new Map(prev.map((a) => [a.id, a]));
     const next = orderedIds
       .map((id, index) => {
@@ -3029,7 +3096,17 @@ export function PublicPoster({
       )
     );
     if (!result.ok) {
-      setAssets(prev);
+      // 되돌리기는 '옛 배열로 통째 교체'가 아니라 id별 옛 순서를 지금 목록에 다시 입힌다 —
+      // 직렬 큐를 기다리는 사이 올라온 에셋(스냅샷엔 없음)이 같이 지워지던 문제 방지.
+      const oldOrder = new Map(prev.map((a) => [a.id, a.sortOrder]));
+      setAssets((cur) =>
+        cur
+          .map((a) => {
+            const so = oldOrder.get(a.id);
+            return so === undefined ? a : { ...a, sortOrder: so };
+          })
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+      );
       setStickerError(result.error);
     } else {
       hapticTick(); // 서버 확정 — 집을 때 톡, 저장되면 한 번 더.
@@ -3041,7 +3118,7 @@ export function PublicPoster({
     if (assetId.startsWith("temp-")) {
       return;
     }
-    const prev = assets;
+    const prevKind = assetsRef.current.find((a) => a.id === assetId)?.kind;
     setAssets((cur) => cur.map((a) => (a.id === assetId ? { ...a, kind } : a)));
     const result = await queueAssetWrite(() =>
       stickerWrite<StickerAssetOpResult>(
@@ -3051,7 +3128,10 @@ export function PublicPoster({
       )
     );
     if (!result.ok) {
-      setAssets(prev);
+      // 그 에셋의 분류만 되돌린다(옛 배열 통째 교체 X — 그새 바뀐 다른 것들을 지키기 위해).
+      if (prevKind) {
+        setAssets((cur) => cur.map((a) => (a.id === assetId ? { ...a, kind: prevKind } : a)));
+      }
       setStickerError(result.error);
     } else {
       hapticTick();
@@ -3064,14 +3144,16 @@ export function PublicPoster({
       return;
     }
     // 낙관적 삭제: 보관함에서 즉시 빼고(새로고침 대기 없이 바로 사라짐), 이를 쓰는 스티커도 함께 정리.
-    const removed = assets.find((a) => a.id === assetId);
+    const removed = assetsRef.current.find((a) => a.id === assetId);
+    deletedAssetIdsRef.current.add(assetId);
     setAssets((prev) => prev.filter((a) => a.id !== assetId));
+    // 실패 시 되돌릴 수 있게, 화면에서 걷어낸 스티커도 붙잡아 둔다.
+    const removedStickers = stickersRef.current.filter((s) => s.assetId === assetId);
     setStickers((prev) => prev.filter((s) => s.assetId !== assetId));
     // 에셋 삭제는 이를 쓰는 스티커를 서버에서 함께 지운다(FK cascade) → 월 재시드 때 stale prop
     // 에서 되살아나지 않도록 그 id들도 기억한다(모든 달 포함).
-    schedule.stickers
-      .filter((s) => s.assetId === assetId)
-      .forEach((s) => deletedStickerIdsRef.current.add(s.id));
+    const rememberedIds = schedule.stickers.filter((s) => s.assetId === assetId).map((s) => s.id);
+    rememberedIds.forEach((id) => deletedStickerIdsRef.current.add(id));
     // 실행취소/다시실행 히스토리에서도 이 에셋을 쓰는 스티커를 함께 비운다 —
     // 그렇지 않으면 Undo가 죽은 에셋을 되살리려다 FK 오류를 낸다.
     const scrub = (stacks: StickerInstance[][]) =>
@@ -3080,7 +3162,24 @@ export function PublicPoster({
     const result = await deleteStickerAssetAction(assetId);
     if (!result.ok) {
       setStickerError(result.error);
-      if (removed) setAssets((prev) => [...prev, removed]); // 실패 → 되돌림
+      // 실패 → 에셋을 원래 자리(sortOrder)로, 걷어낸 스티커도 다시, 삭제 기억도 지운다.
+      // (되돌리기 스택은 이미 비웠다 — 그 스티커들의 되돌리기 이력만 잃고 화면은 정상 복구.)
+      deletedAssetIdsRef.current.delete(assetId);
+      rememberedIds.forEach((id) => deletedStickerIdsRef.current.delete(id));
+      if (removed) {
+        setAssets((prev) =>
+          prev.some((a) => a.id === assetId)
+            ? prev
+            : [...prev, removed].sort((a, b) => a.sortOrder - b.sortOrder)
+        );
+      }
+      if (removedStickers.length > 0) {
+        setStickers((prev) => {
+          const have = new Set(prev.map((s) => s.id));
+          const restored = removedStickers.filter((s) => !have.has(s.id));
+          return restored.length > 0 ? [...prev, ...restored] : prev;
+        });
+      }
     }
   }
 
@@ -3095,8 +3194,13 @@ export function PublicPoster({
     const removedStickers = stickersRef.current.filter((s) => idSet.has(s.id));
     setStickers((prev) => prev.filter((s) => !idSet.has(s.id)));
     clearSelection();
-    // 임시(미저장) 스티커는 서버 호출 없이 로컬에서만 제거된다.
-    const realIds = ids.filter((id) => !id.startsWith("temp-"));
+    // insert 진행 중(temp)인 스티커도 실제 id가 나올 때까지 기다렸다가 서버에서 지운다 —
+    // 예전처럼 로컬만 지우면 서버에 고아 행이 남아 새로고침 때 유령으로 되살아났다.
+    // (화면에선 위에서 이미 즉시 사라졌다; 기다림은 서버 쪽만.)
+    ids.forEach((id) => pendingCommitRef.current.delete(canonStickerId(id)));
+    const realIds = (await Promise.all(ids.map((id) => resolveStickerId(id)))).filter(
+      (id): id is string => id !== null
+    );
     if (realIds.length === 0) {
       return;
     }
@@ -3278,47 +3382,60 @@ export function PublicPoster({
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, [decorate, anchorId]);
 
-  // 신규 스티커를 로컬에 추가하고 저장 후 실제 id로 교체(복제 등에서 재사용).
+  // 신규 스티커 생성의 '유일한' 경로(이모지·이미지·텍스트·도형·복제·붙여넣기 전부).
+  // 낙관적으로 로컬에 먼저 올리고 insert → 실제 id로 remap(로컬·선택·다중선택·되돌리기 스택·
+  // 달 캐시). insert 동안 이 스티커에 온 조작은 commitSticker가 약속(stickerPendingRef)을
+  // 기다렸다가 실제 id로 보내고, 여기서도 마지막으로 한 번 더 '기다리는 동안 바뀐 값'을 실제
+  // 행에 맞춰 저장한다(드래그처럼 commit 호출이 temp 시절에 이미 지나간 경우의 안전망).
   async function persistNewSticker(fresh: StickerInstance) {
     if (!saveStickerAction) {
       return;
     }
+    const tempId = fresh.id;
     setStickers((prev) => [...prev, fresh]);
-    setSelectedSticker(fresh.id);
-    const result = await saveStickerAction({
-      year: fresh.year,
-      month: fresh.month,
-      emoji: fresh.kind === "emoji" ? fresh.label : undefined,
-      assetId: fresh.kind === "image" ? fresh.assetId : undefined,
-      shapeKey: fresh.kind === "shape" ? fresh.shapeKey : undefined,
-      text: fresh.kind === "text" ? fresh.label : undefined,
-      textColor: fresh.textColor,
-      fontWeight: fresh.fontWeight,
-      fontFamily: fresh.fontFamily,
-      textAlign: fresh.textAlign,
-      textBg: fresh.textBg,
-      textFx: fresh.textFx,
-      italic: fresh.italic,
-      outline: fresh.outline,
-      shadow: fresh.shadow,
-      anim: fresh.anim,
-      locked: fresh.locked,
-      xRatio: fresh.xRatio,
-      yRatio: fresh.yRatio,
-      widthRatio: fresh.widthRatio,
-      rotationDeg: fresh.rotationDeg,
-      flipX: fresh.flipX,
-      flipY: fresh.flipY,
-      opacity: fresh.opacity,
-      zIndex: fresh.zIndex
+    setSelectedSticker(tempId);
+    // 약속은 await '전에' 등록한다 — 등록 전에 온 commit이 "약속 없음=실패"로 오판하지 않게.
+    let settle: (id: string | null) => void = () => {};
+    const promise = new Promise<string | null>((resolve) => {
+      settle = resolve;
     });
+    stickerPendingRef.current.set(tempId, promise);
+    let result: StickerResult;
+    try {
+      result = await saveStickerAction(stickerToSaveInput(fresh, fresh.year, fresh.month, false));
+    } catch {
+      result = { ok: false, error: "저장에 실패했어요." };
+    }
     if (result.ok) {
-      setStickers((prev) => prev.map((s) => (s.id === fresh.id ? { ...s, id: result.id } : s)));
-      setSelectedSticker((cur) => (cur === fresh.id ? result.id : cur));
+      const realId = result.id;
+      remapId(tempId, realId);
+      settle(realId);
+      stickerPendingRef.current.delete(tempId);
+      // insert 중에 로컬 값이 바뀌었으면(드래그·회전 등) 실제 행에 그 값을 반영한다.
+      // 아직 렌더 안 된 갱신까지 잡으려고 한 틱 뒤 canon id로 다시 읽어 필드를 비교한다.
+      // (그새 지워졌으면 로컬에 없다 → 저장할 것도 없다.)
+      await new Promise<void>((r) => window.setTimeout(r, 0));
+      const latest = findLocalSticker(tempId);
+      if (latest && !stickerFieldsEqual(latest, fresh)) {
+        void commitStickerAt({ ...latest, id: realId }, latest.year, latest.month);
+      }
     } else {
-      setStickers((prev) => prev.filter((s) => s.id !== fresh.id));
+      // 실패 → 로컬(선택·다중선택 포함)에서 걷어내고, 기다리던 commit들엔 '없음'을 알린다.
+      setStickers((prev) => prev.filter((s) => s.id !== tempId));
+      setSelectedSticker((cur) => (cur === tempId ? null : cur));
+      setMultiIds((prev) => (prev.includes(tempId) ? prev.filter((id) => id !== tempId) : prev));
+      pendingCommitRef.current.delete(tempId);
+      settle(null);
+      stickerPendingRef.current.delete(tempId);
       setStickerError(result.error);
     }
+  }
+
+  // id를 뺀 모든 저장 필드가 같은가(insert 중 로컬이 바뀌었는지 판정용).
+  function stickerFieldsEqual(a: StickerInstance, b: StickerInstance): boolean {
+    const ka = stickerToSaveInput(a, a.year, a.month, false);
+    const kb = stickerToSaveInput(b, b.year, b.month, false);
+    return (Object.keys(ka) as (keyof SaveStickerInput)[]).every((k) => ka[k] === kb[k]);
   }
 
   function nextZIndex() {
@@ -3335,12 +3452,26 @@ export function PublicPoster({
     commitStacks([...undoRef.current.slice(-49), snapshot()], []);
   }
   // 재삽입으로 새 id가 발급되면 로컬 상태·히스토리 스택의 옛 id를 모두 새 id로 바꾼다.
+  // 로컬 배열·선택·다중선택·되돌리기 스택·달 캐시·디바운스 대기열까지 전부 — 어디 하나라도 옛 id가
+  // 남으면 나중에 undo가 실제 행을 지우고 복제본을 다시 넣거나, 달을 옮겼다 오면 임시 좀비가 남는다.
   function remapId(oldId: string, newId: string) {
+    stickerTempToRealRef.current.set(oldId, newId);
     const swap = (arr: StickerInstance[]) =>
       arr.map((s) => (s.id === oldId ? { ...s, id: newId } : s));
     setStickers((prev) => swap(prev));
     commitStacks(undoRef.current.map(swap), redoRef.current.map(swap));
     setSelectedSticker((cur) => (cur === oldId ? newId : cur));
+    setMultiIds((prev) => (prev.includes(oldId) ? prev.map((id) => (id === oldId ? newId : id)) : prev));
+    for (const [key, arr] of monthStickerCacheRef.current) {
+      if (arr.some((s) => s.id === oldId)) {
+        monthStickerCacheRef.current.set(key, swap(arr));
+      }
+    }
+    const queued = pendingCommitRef.current.get(oldId);
+    if (queued) {
+      pendingCommitRef.current.delete(oldId);
+      pendingCommitRef.current.set(newId, { ...queued, id: newId });
+    }
   }
   // 스냅샷(target) 상태로 되돌리고, 그 차이를 서버에도 반영(삭제·재삽입·수정).
   async function applySnapshot(rawTarget: StickerInstance[]) {
@@ -3352,11 +3483,15 @@ export function PublicPoster({
     clearSelection();
     const targetIds = new Set(target.map((s) => s.id));
     const curIds = new Set(current.map((s) => s.id));
-    // 1) target에 없는 현재 스티커 → 서버에서 삭제(배치 한 번).
-    const toDelete = current
-      .filter((s) => !targetIds.has(s.id) && !s.id.startsWith("temp-"))
-      .map((s) => s.id);
+    // 1) target에 없는 현재 스티커 → 서버에서 삭제(배치 한 번). insert 진행 중(temp)이던 것도
+    //    실제 id가 나올 때까지 기다려 지운다 — 안 그러면 서버에 고아 행이 남아 새로고침 때 유령.
+    const toDelete = (
+      await Promise.all(
+        current.filter((s) => !targetIds.has(s.id)).map((s) => resolveStickerId(s.id))
+      )
+    ).filter((id): id is string => id !== null);
     if (toDelete.length > 0) {
+      toDelete.forEach((id) => deletedStickerIdsRef.current.add(id));
       if (deleteStickerBatchAction) {
         const r = await deleteStickerBatchAction(toDelete);
         if (!r.ok) setStickerError(r.error);
@@ -3377,17 +3512,25 @@ export function PublicPoster({
       }
     }
     // 3) 양쪽에 다 있는 스티커 → 값 저장(이동/크기 등 되돌림 반영). 배치 한 번으로.
-    const toUpdate = target.filter((s) => curIds.has(s.id) && !s.id.startsWith("temp-"));
+    //    temp id는 실제 id로 해석해 보낸다(insert 실패한 건 저장할 행이 없으니 제외).
+    const toUpdate = (
+      await Promise.all(
+        target
+          .filter((s) => curIds.has(s.id))
+          .map(async (s) => {
+            const realId = await resolveStickerId(s.id);
+            return realId ? { ...s, id: realId } : null;
+          })
+      )
+    ).filter((s): s is StickerInstance => s !== null);
     if (toUpdate.length > 0 && saveStickerBatchAction) {
       const r = await saveStickerBatchAction(
         toUpdate.map((s) => stickerToSaveInput(s, view.year, view.month, true))
       );
       if (!r.ok) setStickerError(r.error);
     } else {
-      for (const s of target) {
-        if (curIds.has(s.id)) {
-          await commitSticker(s);
-        }
+      for (const s of toUpdate) {
+        await commitSticker(s);
       }
     }
   }
@@ -3514,16 +3657,29 @@ export function PublicPoster({
     void commitSticker(updated);
   }
 
+  // 디바운스 저장: 스티커별로 마지막 값을 누적하고(canon id 키), 타이머 하나가 전부 보낸다.
   function scheduleCommit(stickersToSave: StickerInstance | StickerInstance[]) {
     const list = Array.isArray(stickersToSave) ? stickersToSave : [stickersToSave];
+    for (const s of list) {
+      const canon = canonStickerId(s.id);
+      pendingCommitRef.current.set(canon, s.id === canon ? s : { ...s, id: canon });
+    }
     if (commitTimerRef.current) {
       clearTimeout(commitTimerRef.current);
     }
-    commitTimerRef.current = setTimeout(() => {
-      for (const s of list) {
-        void commitSticker(s);
-      }
-    }, 350);
+    commitTimerRef.current = setTimeout(() => flushPendingCommits(), 350);
+  }
+  // 대기열을 지금 비운다(타이머 만료·달 이동·언마운트). year/month를 주면 그 달로 저장(떠나는 달).
+  function flushPendingCommits(year = view.year, month = view.month) {
+    if (commitTimerRef.current) {
+      clearTimeout(commitTimerRef.current);
+      commitTimerRef.current = null;
+    }
+    const batch = [...pendingCommitRef.current.values()];
+    pendingCommitRef.current.clear();
+    for (const s of batch) {
+      void commitStickerAt(s, year, month);
+    }
   }
 
   // 키보드 미세 이동(저장은 디바운스). 다중 선택 시 선택 전체를 함께 옮긴다.
@@ -6648,6 +6804,7 @@ export function PublicPoster({
 
           <StickerLayer
             avoidSelector="[data-sticker-avoid]"
+            canonId={canonStickerId}
             editable={decorate}
             onChange={(s) => updateStickerLocal(unmapSceneSticker(s))}
             onCommit={(s) => commitSticker(unmapSceneSticker(s))}
