@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-08-12
+Last Updated: 2026-08-18
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -13,6 +13,18 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **temp id·옛 클로저·낙관-서버 갈라짐 전수 정리 + 하트 즉시성(2026-08-18, `9a22389`·`0cf3ec7`)**:
+  `04f8a3f`(끄는 도중 id 교체 경합)와 같은 부류를 편집실·포스터·꾸미기·태그·멤버·비공개 패널
+  전체에서 정리. **규칙**: 제스처/비동기 콜백은 배열을 ref로, id는 `canonId`(temp↔실제 동일시)로
+  비교; 저장 중 카드에 대한 조작은 실제 id 확정 뒤 같은 큐에서 전송; 서버 스냅샷은 로컬 낙관
+  상태와 '병합'(덮어쓰기 금지); 부모 props가 바뀌면 손대지 않은 항목만 재동기화.
+  하트: 일정별 집계는 공개 캐시(300초) 밖에서 매 요청 신선하게 읽어 덮는다(public-loader
+  `loadLiveEventHeartCounts`, 실패 시 캐시값); PublicPoster는 schedule prop 변화 때 집계·내 하트를
+  재동기화하되 응답 대기 중(heartOpRef `done=false`) 일정은 낙관값 유지; 편집실 미리보기는
+  accountEmail로 세션 델타를 계정별 분리. 검증: tsc/lint/build/vitest 600 + visual 4 spec(19).
+  ⚠ studio-editor '만들자마자 끈 카드' 테스트가 마지막 순서로 돌 때 1회 fling 판정으로 flake
+  (재실행 2/2 통과) — 속도 판정이 마우스 step 타이밍에 민감. 반복되면 테스트의 마지막 move
+  steps를 늘리거나 FLING_SPEED 여유를 볼 것.
 - **콜드 엔트리 체감 속도(2026-08-12, `6cd0221`)**: URL 직접 진입 흰 화면의 원인은
   루트 layout·loading.tsx가 둘 다 `resolveCurrentActor`(GoTrue 왕복)를 await하던 것.
   스켈레톤 톤은 이제 힌트 쿠키 `vic_lt`(30일, StudioShell="s"/독립 포스터="p")만 읽고,
