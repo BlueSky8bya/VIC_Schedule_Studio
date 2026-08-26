@@ -198,10 +198,6 @@ const DayVisitModal = dynamic(
   () => import("@/components/developer/day-visit-modal").then((m) => m.DayVisitModal),
   { ssr: false }
 );
-const NoticeModal = dynamic(
-  () => import("@/components/notice/notice-modal").then((m) => m.NoticeModal),
-  { ssr: false }
-);
 const TrustedMembersPanel = dynamic(
   () => import("@/components/trusted-members/trusted-members-panel").then((m) => m.TrustedMembersPanel),
   { ssr: false }
@@ -399,7 +395,7 @@ export function StudioShell({
       setLoadingPrivate(false); // 세션 반영 확인 → "여는 중" 종료
     }
   }, [hasUnlockSession]);
-  const [modal, setModal] = useState<null | "tags" | "members" | "notice" | "developer" | "dayVisit">(
+  const [modal, setModal] = useState<null | "tags" | "members" | "developer" | "dayVisit">(
     null
   );
   // 빠른 휴방: 날짜 우클릭/롱프레스로 뜨는 미니 메뉴(화면 좌표 + 그 날 휴방 여부).
@@ -1418,8 +1414,8 @@ export function StudioShell({
     setBroadcastSent((prev) => prev.filter((k) => k !== dateKey));
   }
 
-  // 모바일 오버레이 스택: 편집 시트 → (그 위에) 공지 모달. 레이어마다 히스토리 항목을 하나씩 쌓아,
-  // 휴대폰 뒤로가기를 누르면 맨 위 레이어만 닫힌다(공지 → 편집 시트 → 스튜디오). 비번 팝업은
+  // 모바일 오버레이 스택: 편집 시트 → (그 위에) 모달(인사이트·이용 기록 등). 레이어마다 히스토리
+  // 항목을 하나씩 쌓아, 휴대폰 뒤로가기를 누르면 맨 위 레이어만 닫힌다(모달 → 편집 시트 → 스튜디오). 비번 팝업은
   // 별도 오버레이(passcodeModal)라 스택엔 안 넣되, 스크롤 잠금엔 포함한다.
   const modalIsStackable = modal !== null;
   const overlayDepth = (mobileEditId !== null ? 1 : 0) + (modalIsStackable ? 1 : 0);
@@ -1435,7 +1431,7 @@ export function StudioShell({
   // 사이트를 종료해 버린다(비공개 일정 잠금해제 입력창에서 발생). 다른 모달 위에도 뜰 수 있어
   // 스택 '맨 위'로 친다.
   const passcodeDepth = passcodeModal !== null ? 1 : 0;
-  // 히스토리 스택 깊이 = 오버레이(편집 시트·공지) + 매니저/작업자 시트 + 비번 팝업 + 미리보기.
+  // 히스토리 스택 깊이 = 오버레이(편집 시트·모달) + 매니저/작업자 시트 + 비번 팝업 + 미리보기.
   // viewerMode도 한 칸 쌓아야, 휴대폰 뒤로가기를 누를 때 로그인 흐름으로 빠지지 않고
   // 편집실로 돌아온다. (스크롤 잠금은 overlayLocked만 사용 — 미리보기 자체 스크롤은 살린다.)
   // 방송 판서도 한 칸 — 미리보기(viewerMode) '위'에 뜨므로, 뒤로가기는 판서만 닫고 미리보기는
@@ -5777,21 +5773,13 @@ export function StudioShell({
               />
             </section>
 
-            {/* 공지·방문 그래프 — 보조 도구. 웹 팝오버와 동일 규칙: '날짜(새 일정) 선택'일
-                때만 노출(기존 일정 수정 시트에선 숨김). 개발자는 둘 다, 그 외 편집자는 공지만. */}
+            {/* 이용 기록(개발자 전용) — 보조 도구. 웹 팝오버와 동일 규칙: '날짜(새 일정) 선택'일
+                때만 노출(기존 일정 수정 시트에선 숨김). (숲 '공지 쓰기'는 2026-08-27 제거 —
+                관리자가 안 쓰는 기능.) */}
             {selectedEventId ? null : isDevInsights ? (
               <div className="me-tools">
-                <button className="me-tool" onClick={() => setModal("notice")} data-act="open-notice" type="button">
-                  📢 공지 쓰기
-                </button>
                 <button className="me-tool" onClick={() => setModal("dayVisit")} data-act="open-day-visit" type="button">
                   📈 이용 기록
-                </button>
-              </div>
-            ) : canEdit ? (
-              <div className="me-tools">
-                <button className="me-tool" onClick={() => setModal("notice")} data-act="open-notice" type="button">
-                  📢 공지 쓰기
                 </button>
               </div>
             ) : null}
@@ -7306,34 +7294,16 @@ export function StudioShell({
               </button>
             ) : null}
 
-            {/* 공지·방문은 '날짜(새 일정) 선택'일 때만 — 기존 일정 수정 카드에선 숨겨 폼을
-                일정 편집에만 집중시킨다(사용자 결정 2026-07-31). 개발자는 공지+방문, 그 외
-                편집자는 공지만. NoticeModal은 공개 일정으로 공지 문구만 만드는 클라이언트
-                도구 — 비공개/owner 전용 쓰기 없음. */}
+            {/* 이용 기록(개발자 전용)은 '날짜(새 일정) 선택'일 때만 — 기존 일정 수정 카드에선 숨겨
+                폼을 일정 편집에만 집중시킨다(사용자 결정 2026-07-31). (숲 '공지 쓰기' 버튼·모달은
+                2026-08-27 제거 — 관리자가 안 쓰는 기능.) */}
             {selectedEventId ? null : isDevInsights ? (
-              <>
-                <button
-                  className="button notice-open"
-                  onClick={() => setModal("notice")} data-act="open-notice"
-                  type="button"
-                >
-                  📢 공지 쓰기
-                </button>
-                <button
-                  className="button notice-open"
-                  onClick={() => setModal("dayVisit")} data-act="open-day-visit"
-                  type="button"
-                >
-                  📈 이용 기록
-                </button>
-              </>
-            ) : canEdit ? (
               <button
-                className="button notice-open"
-                onClick={() => setModal("notice")} data-act="open-notice"
+                className="button aux-open"
+                onClick={() => setModal("dayVisit")} data-act="open-day-visit"
                 type="button"
               >
-                📢 공지 쓰기
+                📈 이용 기록
               </button>
             ) : null}
 
@@ -7395,7 +7365,7 @@ export function StudioShell({
           role="presentation"
         >
           <div
-            className={`modal-card modal-card-${modal} ${modal === "tags" || modal === "members" || modal === "notice" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
+            className={`modal-card modal-card-${modal} ${modal === "tags" || modal === "members" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
             aria-modal="true"
             role="dialog"
             ref={mainModalTrapRef}
@@ -7404,9 +7374,7 @@ export function StudioShell({
               <h2>
                 {modal === "tags"
                   ? "태그 이름 · 색상 편집"
-                  : modal === "notice"
-                    ? "숲 공지 쓰기"
-                    : modal === "dayVisit"
+                  : modal === "dayVisit"
                       ? `📈 ${selectedDate} 이용 기록`
                       : modal === "developer"
                         ? isDevInsights
@@ -7488,31 +7456,6 @@ export function StudioShell({
                 />
               )
             ) : null}
-            {modal === "notice"
-              ? (() => {
-                  // 업 공지 자동 채움: 지금 편집 중인 폼이 업 도움이면 (저장 전이라도) 폼 값을, 아니면
-                  // 그 날짜에 저장된 업 도움 일정의 값을 쓴다. 제목→대상, 업 도움 링크→링크.
-                  const savedSupport = getEventsForDate(events, selectedDate).find(
-                    (e) => e.isSupport
-                  );
-                  const upTarget = form.isSupport
-                    ? form.publicTitle
-                    : (savedSupport?.publicTitle ?? "");
-                  const upLink = form.isSupport
-                    ? form.supportUrl
-                    : (savedSupport?.supportUrl ?? "");
-                  return (
-                    <NoticeModal
-                      dateKey={selectedDate}
-                      initialKind={form.isSupport ? "up" : "bangon"}
-                      initialUpLink={upLink}
-                      initialUpTarget={upTarget}
-                      mobile={isNarrow}
-                      onClose={() => setModal(null)}
-                    />
-                  );
-                })()
-              : null}
           </div>
         </div>
       ) : null}

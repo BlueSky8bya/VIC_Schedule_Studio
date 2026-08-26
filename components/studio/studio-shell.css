@@ -764,7 +764,6 @@ html {
   font-size: 15px;
 }
 
-
 .actor-badge.owner {
   border-color: #8fd6bd;
   background: #effaf6;
@@ -1043,10 +1042,6 @@ html[data-reduce-motion] .private-warning-float {
 
 /* 패널 탭 — 8개를 동일 너비 4×2 격자로(좌우 대칭, ragged한 줄바꿈 없음, 동일 히트 타깃). */
 
-
-
-
-
 /* 관리자 인사이트의 "보안" 탭 — 4칸 너비로 다음 줄에 좌우로 길게(1×4). */
 
 /* 슬라이딩 뷰포트 — 패널들이 가로로 늘어서고 translateX로 넘어간다. 모든 패널이 항상
@@ -1055,7 +1050,6 @@ html[data-reduce-motion] .private-warning-float {
 /* 새로고침 중엔 보고 있는 칸을 흐리게(살짝 블러) → 그래프·수치가 실제로 다시 로딩되는 게 보인다. */
 
 /* 흐려진 칸 위에 뜨는 로딩 베일 — 회전 아이콘 + '불러오는 중…'. 위치 고정(눈 이동 최소). */
-
 
 @keyframes insights-veil-in {
   from {
@@ -1066,19 +1060,10 @@ html[data-reduce-motion] .private-warning-float {
   }
 }
 
-
-
 /* 패널 전환 stagger — 지금 보이는(data-active=N) 패널의 직계 자식들이 위→아래로 차례로 떠오른다.
    트랙이 모든 패널을 translate로 들고 있어(리마운트 X) data-active가 바뀔 때만 애니가 새로 적용돼
    재생된다(같은 패널 내 데이터 갱신은 data-active 불변이라 안 깜빡임). nth-child 지연은 항상 깔아둬도
    animation이 없으면 무해. reduce-motion이면 아래에서 끈다. */
-
-
-
-
-
-
-
 
 @keyframes ins-rise {
   from {
@@ -1094,13 +1079,6 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
   animation: none !important;
 }
 
-
-
-
-
-
-
-
 /* 모바일: 누르는 '패널 탭'은 엄지 닿는 아래로, 진행 정보(< > 화살표·점)는 위로.
    (정보 표현은 위 / 누르는 버튼은 아래 원칙 — 데스크톱은 통상 배치 유지.) */
 @media (max-width: 999px) {
@@ -1112,21 +1090,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 
 /* 통계 타일 — 큰 숫자(위) + 라벨(아래), 따뜻한 톤. 세로 레이아웃(좁은 칸 그대로). */
 
-
-
 /* 값이 텍스트(요일 등)면 숫자보다 살짝 작게. */
-
-
-
-
-
-
-
-
-
-
-
-
 
 /* 관심 배지 받는 기준 — 불꽃/왕관 + 라벨 + 조건. 개발자 인사이트 '참여' 패널. */
 .badge-criteria {
@@ -1815,23 +1779,9 @@ html[data-reduce-motion] .upick-menu {
 }
 /* 분포/순위 막대 */
 
-
-
-
-
-
-
 /* 키-값 행 */
 
-
-
-
-
-
-
 /* 보안 패널: 열린 비공개 잠금 일괄 만료 버튼 — 활성 세션 목록 바로 아래, 폭 가득. */
-
-
 
 /* 서버 성능 표(시스템 패널) — 구간(라벨) + n·평균·p95·최대(ms). p95 색으로 느린 구간 강조. */
 .perf-head-row {
@@ -1955,8 +1905,6 @@ html[data-reduce-motion] .perf-spin {
   color: #9a93ad;
 }
 /* 로딩 스켈레톤 */
-
-
 
 @keyframes insight-shimmer {
   from {
@@ -3798,9 +3746,6 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 /* 신뢰 멤버 역할 칩 */
 
-
-
-
 /* 보안 패널: 비밀번호 변경 버튼(잠금 중에도 변경 경로). 잠금 암호 섹션 아래 폭 가득. */
 
 /* 보안 패널: 역할별 접근 자격자 카드(소유자/개발자/작업자) — 사람마다 개별 만료. */
@@ -3887,16 +3832,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 /* 다음 방송 강조 카드 */
 /* 다음 방송 — 라벨(왼쪽) + 날짜·제목칩(오른쪽)을 가로로 펼쳐 넓은 박스의 빈 오른쪽을 채운다. */
 
-
-
-
-
-
-
-
 /* 소유자 계정 목록 — 한 줄에 한 이메일(이메일 중간에서 줄이 잘리지 않게). */
-
-
 
 /* 월 표기 헤더 */
 
@@ -3906,8 +3842,6 @@ html[data-reduce-motion] .dtp-pop-x:active {
 
 /* 갱신 직후 잠깐 뜨는 확인 칩 — 평소엔 접혀(opacity 0, 살짝 오른쪽) 자리만 안 차지하고,
    data-on일 때 톡 떠올랐다 사라진다. 새로고침이 "먹혔다"는 분명한 티. */
-
-
 
 /* 완료 순간 버튼이 초록으로 한 번 펄스(아이콘도 초록) — 빠른 응답에도 분명한 신호. */
 
@@ -3920,8 +3854,6 @@ html[data-reduce-motion] .dtp-pop-x:active {
   }
 }
 
-
-
 /* 새로고침 중엔 아이콘이 한 바퀴씩 계속 돈다(진행 신호). */
 
 @keyframes insights-spin {
@@ -3930,11 +3862,6 @@ html[data-reduce-motion] .dtp-pop-x:active {
   }
 }
 /* 방문 패널 일별/주별 토글 */
-
-
-
-
-
 
 /* 세그먼트 선택 손맛 — 고른 알약이 통 튀어 안착(스프링 pop). 버튼이 가변폭이라 '슬라이드 thumb'
    대신 pop으로(슬라이드는 JS 폭측정 필요). 클래스가 붙을 때(=선택 순간)만 1회 재생, 데이터 갱신엔
@@ -3958,29 +3885,12 @@ html[data-reduce-motion] .role-segment button.active {
 }
 /* 다음 방송: 날짜 + 일정 제목 칩들(콤마 나열 대신 둥근 박스). */
 
-
-
 /* 인기 컨텐츠(제목) 막대: 제목은 윗줄에 전체폭으로(길어도 됨), 막대는 아랫줄에 전체폭으로 —
    모든 막대가 같은 x(왼쪽)에서 시작해 정렬되고, 값에 비례해 길게 그려진다. */
 
-
-
-
 /* 신뢰 멤버: 이메일이 길면 이메일을 말줄임 — 역할 태그(매니저/작업자)는 안 잘리게. */
 
-
 /* 트렌드 패널: 항목별 6개월 스파크 막대 + 지난달 대비 배지 */
-
-
-
-
-
-
-
-
-
-
-
 
 /* 연도 바뀌는 칸: "26년"을 윗줄에 작게(예: 26년 / 1월). */
 
@@ -3989,26 +3899,10 @@ html[data-reduce-motion] .role-segment button.active {
    (차트가 같은 이유로 이미 분리된 것과 동일한 조치.) */
 /* 막대 호버: 살짝 강조 + 수치 칩(data-v)을 위에 띄워 "지금 보고 있다"는 느낌을 준다. */
 
-
-
-
-
 /* 방송 시간 — 월별 막대(트렌드 row 재사용) + 요약 칩 + 이 달 일별 미니 막대. */
-
-
-
-
 
 /* 일별 방송시간 값 툴팁 — 호버(데스크톱)·탭(모바일) 시 활성 막대 위에 한 개만 뜬다. left는
    JS에서 활성 칸 중심으로 계산하되 clamp로 차트 폭 안에 가둬 양 끝(1일·말일)도 안 잘린다. */
-
-
-
-
-
-
-
-
 
 /* 호버 분해 툴팁은 차트(.vt-chart) 한 곳에 떠서 hovered 막대 위치를 따라가되, 차트 폭 안에서
    clamp되어 어느 칸이든(맨 끝 포함) 절대 안 잘린다. */
@@ -4102,8 +3996,6 @@ html[data-reduce-motion] .role-segment button.active {
   font-weight: 900;
 }
 
-
-
 /* 데스크톱(>640px)에선 인사이트 글씨를 키운다. 모바일은 컴팩트가 생명이라 기본(작은) 크기를
    그대로 두고, 여기서만 키워 모바일 회귀가 없게 한다. */
 @media (min-width: 1000px) {
@@ -4162,13 +4054,7 @@ html[data-reduce-motion] .role-segment button.active {
   }
 }
 
-
-
-
-
-
 /* 타일·카드 호버 시 살짝 떠오름(상호작용 피드백). */
-
 
 .vt-hlabel {
   margin-top: 3px;
@@ -5353,7 +5239,6 @@ html[data-reduce-motion] .editor-anchor-link line {
   color: var(--muted, #8a8077);
 }
 
-
 /* 헤더·사이드바 글씨가 전반적으로 작다는 피드백 → 편집실 한정으로 키운다(시청자/포스터 영향 없음). */
 .studio-eyebrow {
   font-size: 16px;
@@ -5452,12 +5337,7 @@ html[data-reduce-motion] .editor-anchor-link line {
 }
 /* 색상 안내를 필터로 쓸 때(클릭 토글) — 전체폭 행(표처럼). 켜진 행은 왼쪽 악센트 바. */
 
-
-
 /* 켜진 행 왼쪽 악센트 바 */
-
-
-
 
 /* 필터에 안 맞는 일정은 흐리게(편집실 그리드·모바일 아젠다 공용) */
 /* 필터 미해당 일정 — 흐리게(점선 아님). 데스크톱 칩·모바일 아젠다 카드 공통.
@@ -9645,89 +9525,6 @@ html[data-reduce-motion] .modal-close:active {
   font-size: 13px;
   font-weight: 700;
 }
-
-/* #1: 숲 공지 쓰기 — 폼 카드 아래 버튼 + 모달 */
-.notice-open {
-  width: 100%;
-  margin-top: 6px;
-  justify-content: center;
-  border-color: #f4b740;
-  background: #fff7e6;
-  color: #92400e;
-  font-weight: 800;
-}
-.notice-modal {
-  display: grid;
-  gap: 14px;
-}
-/* 공지 종류 탭: [뱅온 공지 | 업 도움 공지] */
-.notice-tabs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill, 999px);
-  background: #fff;
-  padding: 4px;
-}
-.notice-tabs button {
-  border: 0;
-  border-radius: var(--r-pill, 999px);
-  background: transparent;
-  padding: 9px 0;
-  color: var(--muted);
-  font-size: 16px;
-  font-weight: 800;
-  cursor: pointer;
-  transition:
-    background var(--dur-2) var(--ease),
-    color var(--dur-2) var(--ease),
-    transform var(--dur-1) var(--ease);
-}
-.notice-tabs button:active {
-  transform: scale(0.96);
-}
-.notice-tabs button.active {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.notice-hint {
-  margin: 0;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.5;
-}
-.notice-fields {
-  display: grid;
-  gap: 12px;
-}
-.notice-field {
-  display: grid;
-  gap: 5px;
-}
-.notice-label {
-  color: var(--muted);
-  font-size: 15px;
-  font-weight: 800;
-}
-.notice-field input,
-.notice-field textarea {
-  width: 100%;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: #fff;
-  padding: 9px 11px;
-  font: inherit;
-  font-size: 16px;
-  resize: vertical;
-}
-.notice-time-row {
-  display: flex;
-  gap: 8px;
-}
-.notice-time-row input {
-  flex: 1;
-}
 .ampm-segment {
   display: inline-flex;
   flex: 0 0 auto;
@@ -9755,195 +9552,6 @@ html[data-reduce-motion] .modal-close:active {
 .ampm-segment button.active {
   background: var(--accent);
   color: var(--on-accent);
-}
-.notice-preview {
-  display: grid;
-  gap: 8px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--surface, #fbfaf6);
-  padding: 12px 14px;
-}
-.notice-preview-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.notice-preview-title {
-  border-radius: var(--r-md);
-  background: #fff;
-  padding: 8px 10px;
-  font-size: 14px;
-  font-weight: 800;
-  /* 실제 올라가는 모습대로 가운데 정렬로 미리 보여준다(웹·모바일 공통). */
-  text-align: center;
-}
-.notice-preview-body {
-  margin: 0;
-  border-radius: var(--r-md);
-  background: #fff;
-  padding: 10px 12px;
-  font-family: inherit;
-  font-size: 13px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
-  text-align: center;
-}
-.notice-emoticon {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 700;
-}
-/* 모바일: 설명 없이 이모티콘만 가운데로. */
-.notice-emoticon.center {
-  justify-content: center;
-}
-.notice-emoticon img {
-  width: 56px;
-  height: auto;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm, 8px);
-  background: #fff;
-}
-.notice-emoticon-text {
-  display: grid;
-  gap: 6px;
-  justify-items: start;
-}
-.notice-emoticon-text .button {
-  min-height: 30px;
-}
-
-/* 숲에 올리는 두 가지 방법 카드 */
-.notice-methods {
-  display: grid;
-  gap: 12px;
-}
-.notice-method {
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: #fff;
-  padding: 14px;
-}
-.notice-method.recommended {
-  border-color: #f4b740;
-  background: #fffdf3;
-  box-shadow: 0 2px 10px rgb(244 183 64 / 14%);
-}
-.notice-method-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-.notice-method-head strong {
-  font-size: 15px;
-}
-.notice-method-no {
-  border-radius: var(--r-pill, 999px);
-  background: #eef2f7;
-  padding: 2px 10px;
-  color: #475569;
-  font-size: 12px;
-  font-weight: 900;
-}
-.notice-method-no.auto {
-  background: #f4b740;
-  color: #4a3a10;
-}
-.notice-method-tag {
-  margin-left: auto;
-  border-radius: var(--r-pill, 999px);
-  background: #f1f5f9;
-  padding: 2px 10px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 800;
-}
-.notice-method-tag.hot {
-  background: #ffe4e6;
-  color: #be123c;
-}
-.notice-method-desc {
-  margin: 0 0 10px;
-  color: var(--ink-soft, #475569);
-  font-size: 13px;
-  line-height: 1.6;
-}
-.notice-method-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-/* 방법 2: 처음 한 번 설정(접이식) */
-.notice-setup {
-  margin-bottom: 12px;
-  border: 1px dashed var(--line);
-  border-radius: var(--r-md);
-  background: #fff;
-  padding: 8px 12px;
-}
-.notice-setup > summary {
-  cursor: pointer;
-  font-size: 12.5px;
-  font-weight: 800;
-  color: var(--muted);
-}
-/* 방법 2: 매번 하는 3단계 */
-.notice-steps3 {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.notice-steps3 > li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.notice-step-num {
-  display: inline-grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: var(--r-pill, 999px);
-  background: #f4b740;
-  color: #4a3a10;
-  font-size: 13px;
-  font-weight: 900;
-}
-.notice-step-text {
-  font-size: 13px;
-  font-weight: 800;
-  color: #b45309;
-}
-.notice-autofill-steps {
-  margin: 10px 0 0;
-  padding-left: 18px;
-  display: grid;
-  gap: 10px;
-  font-size: 13px;
-  line-height: 1.6;
-}
-.notice-autofill-row {
-  margin-top: 6px;
-}
-.notice-autofill-note {
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-.notice-actions {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
 }
 
 /* #6: 태그 편집 하단 버튼 행(추가 + 전체 저장) */
@@ -10896,6 +10504,17 @@ html[data-reduce-motion] .me-fold-body {
 .me-tools {
   display: flex;
   gap: 8px;
+}
+/* 웹 편집 폼 카드 아래 보조 버튼(개발자 '이용 기록'). 옛 숲 '공지 쓰기' 버튼 스타일을 이름만 바꿔
+   이어받았다(2026-08-27 공지 기능 제거). */
+.aux-open {
+  width: 100%;
+  margin-top: 6px;
+  justify-content: center;
+  border-color: #f4b740;
+  background: #fff7e6;
+  color: #92400e;
+  font-weight: 800;
 }
 .me-tool {
   flex: 1;
@@ -13004,8 +12623,7 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   }
 }
 
-/* Batch 14: occasional notice, diagnostics, and visit-record modals stay opaque. */
-.modal-card-notice,
+/* Batch 14: occasional diagnostics and visit-record modals stay opaque. */
 .modal-card-developer,
 .modal-card-dayVisit {
   max-width: var(--sheet-width-lg);
@@ -13014,7 +12632,6 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   box-shadow: var(--shadow-3);
 }
 
-.modal-card-notice .modal-head,
 .modal-card-developer .modal-head,
 .modal-card-dayVisit .modal-head {
   position: sticky;
@@ -13025,7 +12642,6 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   padding: var(--space-4) var(--space-panel);
 }
 
-.modal-card-notice .modal-head h2,
 .modal-card-developer .modal-head h2,
 .modal-card-dayVisit .modal-head h2 {
   color: var(--ink);
@@ -13034,7 +12650,6 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   letter-spacing: var(--tracking-tight);
 }
 
-.modal-card-notice .modal-close,
 .modal-card-developer .modal-close,
 .modal-card-dayVisit .modal-close {
   width: var(--control-hit);
@@ -13042,33 +12657,12 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   color: var(--muted);
 }
 
-.modal-card-notice > .notice-modal,
 .modal-card-developer > .insights,
 .modal-card-developer > .member-insights,
 .modal-card-dayVisit > .dayvisit-wrap {
   padding: var(--space-panel);
 }
 
-/* 하단 여백을 스크롤러가 아니라 sticky 푸터 자신이 갖는다 — 스크롤러 padding-bottom
-   방식은 푸터 아래로 68px '투시 구간'이 생겨 지나가는 콘텐츠가 닫기 버튼 밑에 비쳤다. */
-.modal-card-notice > .notice-modal {
-  padding-bottom: 0;
-  scroll-padding-bottom: var(--space-panel);
-}
-
-.notice-modal {
-  gap: var(--space-4);
-}
-
-.notice-tabs {
-  gap: var(--space-1);
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-control);
-  background: var(--surface-2);
-  padding: var(--space-1);
-}
-
-.notice-tabs button,
 .ampm-segment button {
   min-height: var(--control-hit);
   border-radius: var(--r-sm);
@@ -13078,67 +12672,10 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   font-weight: var(--weight-semibold);
 }
 
-.notice-tabs button.active,
 .ampm-segment button.active {
   background: var(--selection-fill);
   color: var(--violet);
   box-shadow: var(--shadow-1);
-}
-
-.notice-hint {
-  margin: 0;
-  border-radius: var(--r-control);
-  background: var(--surface-2);
-  color: var(--muted);
-  padding: var(--space-3);
-  font-size: var(--text-body);
-  line-height: var(--lh-relaxed);
-}
-
-.notice-hint strong {
-  color: var(--ink);
-  font-weight: var(--weight-semibold);
-}
-
-.notice-fields {
-  gap: var(--space-3);
-  align-content: start;
-}
-
-.notice-field {
-  gap: var(--space-2);
-}
-
-.notice-label {
-  color: var(--ink-soft);
-  font-size: var(--text-label);
-  font-weight: var(--weight-semibold);
-}
-
-.notice-field input,
-.notice-field textarea {
-  min-height: var(--control-hit);
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-control);
-  background: var(--surface);
-  color: var(--ink);
-  padding: var(--space-control-y) var(--space-3);
-  font-size: var(--text-input);
-}
-
-.notice-field textarea {
-  min-height: calc(var(--control-hit) * 2);
-}
-
-.notice-field input:focus,
-.notice-field textarea:focus {
-  border-color: var(--selection-border);
-  outline: 0;
-  box-shadow: 0 0 0 var(--space-1) var(--selection-overlay);
-}
-
-.notice-time-row {
-  gap: var(--space-2);
 }
 
 .ampm-segment {
@@ -13147,132 +12684,6 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   border-radius: var(--r-control);
   background: var(--surface-2);
   padding: var(--space-1);
-}
-
-.notice-preview {
-  align-content: start;
-  gap: var(--space-2);
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-  padding: var(--space-card);
-}
-
-.notice-preview-title,
-.notice-preview-body {
-  border-radius: var(--r-control);
-  background: var(--surface);
-  color: var(--ink);
-  padding: var(--space-3);
-  font-size: var(--text-body);
-  line-height: var(--lh-relaxed);
-}
-
-.notice-methods {
-  gap: var(--space-3);
-}
-
-.notice-method,
-.notice-method.recommended {
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-  padding: var(--space-card);
-  box-shadow: none;
-}
-
-.notice-method-head {
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
-}
-
-.notice-method-head strong {
-  color: var(--ink);
-  font-size: var(--text-ui);
-  font-weight: var(--weight-bold);
-}
-
-.notice-method-tag,
-.notice-method-tag.hot {
-  border-radius: var(--r-pill);
-  background: var(--selection-fill);
-  color: var(--violet);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--text-caption);
-  font-weight: var(--weight-semibold);
-}
-
-.notice-method-desc {
-  color: var(--muted);
-  font-size: var(--text-body);
-  line-height: var(--lh-relaxed);
-}
-
-.notice-setup {
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-control);
-  background: var(--surface);
-  padding: var(--space-3);
-}
-
-.notice-setup > summary {
-  min-height: var(--control-hit);
-  color: var(--ink-soft);
-  font-size: var(--text-body);
-  font-weight: var(--weight-semibold);
-}
-
-.notice-steps3 {
-  gap: var(--space-2);
-}
-
-.notice-steps3 > li {
-  gap: var(--space-2);
-}
-
-.notice-step-num {
-  width: var(--space-5);
-  height: var(--space-5);
-  background: var(--selection-fill);
-  color: var(--violet);
-  font-size: var(--text-label);
-}
-
-.notice-steps3 .button,
-.notice-steps3 a.button,
-.notice-copy-button {
-  min-height: var(--control-hit);
-  border-radius: var(--r-control);
-}
-
-.notice-copy-button {
-  min-width: calc(var(--control-hit) + var(--space-6) + var(--space-6));
-}
-
-.notice-inline-copy-icon {
-  margin-inline: var(--space-1);
-  vertical-align: middle;
-}
-
-.notice-setup-done {
-  display: block;
-  margin-top: var(--space-3);
-}
-
-.notice-actions {
-  position: sticky;
-  bottom: 0;
-  z-index: 3;
-  margin: 0 calc(var(--space-panel) * -1);
-  border-top: var(--stroke-hairline) solid var(--line);
-  background: var(--surface);
-  padding: var(--space-3) var(--space-panel)
-    calc(var(--space-3) + var(--safe-bottom));
-}
-
-.notice-actions .button {
-  min-height: var(--control-hit);
-  border-radius: var(--r-control);
 }
 
 .modal-card-developer .insights-head,
@@ -13427,30 +12838,15 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   font-size: var(--text-label);
 }
 
-@media (min-width: 641px) {
-  .modal-card-notice .notice-modal {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-
-  .modal-card-notice .notice-tabs,
-  .modal-card-notice .notice-hint,
-  .modal-card-notice .notice-methods,
-  .modal-card-notice .notice-actions {
-    grid-column: 1 / -1;
-  }
-}
-
 @media (max-width: 640px) {
-  .modal-backdrop-notice,
   .modal-backdrop-developer,
   .modal-backdrop-dayVisit {
     align-items: flex-end;
     padding: 0;
   }
 
-  .modal-card-notice,
   .modal-card-developer,
-  .modal-card-dayVisit {
+.modal-card-dayVisit {
     width: 100%;
     max-width: none;
     max-height: 100svh;
@@ -13460,43 +12856,10 @@ html[data-reduce-motion] .members-add .role-segment button:active {
     border-radius: var(--r-xl) var(--r-xl) 0 0;
   }
 
-  .modal-card-notice > .notice-modal,
   .modal-card-developer > .insights,
-  .modal-card-developer > .member-insights,
-  .modal-card-dayVisit > .dayvisit-wrap {
+.modal-card-developer > .member-insights,
+.modal-card-dayVisit > .dayvisit-wrap {
     padding: var(--space-card);
-  }
-
-  .modal-card-notice > .notice-modal {
-    /* 데스크톱과 동일 — 하단 여백은 sticky 푸터가 갖는다(투시 구간 방지). */
-    padding-bottom: 0;
-  }
-
-  .modal-card-notice .notice-modal {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .notice-time-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .notice-method,
-  .notice-method.recommended {
-    padding: var(--space-3);
-  }
-
-  .notice-steps3 > li {
-    align-items: stretch;
-  }
-
-  .notice-steps3 .button,
-  .notice-steps3 a.button {
-    flex: 1;
-  }
-
-  .notice-actions .button {
-    width: 100%;
   }
 
   .modal-card-developer .insights-subtabs,
@@ -13524,20 +12887,16 @@ html[data-reduce-motion] .members-add .role-segment button:active {
   }
 }
 
-html[data-reduce-motion] .modal-backdrop-notice,
 html[data-reduce-motion] .modal-backdrop-developer,
 html[data-reduce-motion] .modal-backdrop-dayVisit,
-html[data-reduce-motion] .modal-card-notice,
 html[data-reduce-motion] .modal-card-developer,
 html[data-reduce-motion] .modal-card-dayVisit,
-html[data-reduce-motion] .notice-modal *,
 html[data-reduce-motion] .modal-card-developer *,
 html[data-reduce-motion] .modal-card-dayVisit * {
   animation: none;
   transition: none;
 }
 
-html[data-reduce-motion] .notice-tabs button:active,
 html[data-reduce-motion] .ampm-segment button:active,
 html[data-reduce-motion] .modal-card-developer button:active,
 html[data-reduce-motion] .modal-card-dayVisit button:active {

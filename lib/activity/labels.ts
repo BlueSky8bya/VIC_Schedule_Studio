@@ -47,7 +47,6 @@ const SECTION: Record<string, TargetLabel> = {
   "modal:tags": { name: "태그 편집 창", area: "관리", hint: "관리 ▾ → 태그 편집" },
   "modal:members": { name: "멤버 관리 창", area: "관리", hint: "관리 ▾ → 멤버 관리" },
   "modal:developer": { name: "월별 인사이트 창", area: "관리", hint: "관리 ▾ → 월별 인사이트" },
-  "modal:notice": { name: "공지 쓰기 창", area: "편집실" },
   "modal:dayVisit": { name: "이용 기록 창", area: "관리", hint: "지금 보고 있는 이 창" },
   // 꾸미기는 라우트로 잡히므로 섹션 계측을 뺐다 — 옛 기록만 남는다.
   decorate: { name: "꾸미기", area: "꾸미기", hint: "옛 기록(지금은 화면 진입으로 셈)" }
@@ -55,7 +54,6 @@ const SECTION: Record<string, TargetLabel> = {
 
 const ACT: Record<string, TargetLabel> = {
   // 편집실 — 달력·편집 패널
-  "open-notice": { name: "공지 쓰기", area: "편집실", hint: "편집 패널의 '📢 공지 쓰기'" },
   "open-day-visit": { name: "이용 기록 열기", area: "편집실", hint: "편집 패널의 '📈 이용 기록'" },
   "open-drawing-board": { name: "일정 그림판 열기", area: "편집실", hint: "미리보기의 '🖊️ 일정 그림판'" },
   "month-prev": { name: "이전 달", area: "편집실", hint: "헤더 '‹'" },
@@ -197,8 +195,6 @@ const ACT: Record<string, TargetLabel> = {
   "insight-change-passcode": { name: "비밀번호 변경", area: "관리" },
   "passcode-submit": { name: "비밀번호 확인", area: "관리" },
 
-  // 공지
-  "notice-copy-button": { name: "공지 복사", area: "공지" },
 
   // 시청자 화면 기타
   "slc-caption": { name: "방송 중 배너", area: "시청자 화면" },
@@ -260,11 +256,6 @@ const ACT: Record<string, TargetLabel> = {
   "passcode-change-open": { name: "비밀번호 변경 열기", area: "관리" },
   "passcode-change-save": { name: "비밀번호 변경 저장", area: "관리" },
   "passcode-change-cancel": { name: "비밀번호 변경 취소", area: "관리" },
-  "notice-close": { name: "공지 창 닫기", area: "공지" },
-  "notice-copy-bookmarklet": { name: "북마클릿 코드 복사", area: "공지" },
-  "notice-copy-all": { name: "제목+본문 한 번에 복사", area: "공지" },
-  "notice-open-soop": { name: "숲 공지 페이지 열기", area: "공지" },
-  "notice-kind-tab": { name: "공지 종류 고르기", area: "공지", hint: "방온/업 도움 탭" },
   "sticker-font-weight": { name: "글자 굵기", area: "꾸미기" },
   "support-duration": { name: "업 도움 기간 고르기", area: "편집실" },
   "tag-editor-save": { name: "태그 저장", area: "태그 편집" },
