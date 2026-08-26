@@ -6155,7 +6155,7 @@ export function StudioShell({
                     onClick={() => setModal("developer")}
                     type="button"
                   >
-                    🛠 월별 인사이트
+                    월별 인사이트
                   </button>
                 ) : canMemberInsights ? (
                   <button
@@ -6164,13 +6164,13 @@ export function StudioShell({
                     onClick={() => setModal("developer")}
                     type="button"
                   >
-                    📊 월별 인사이트
+                    월별 인사이트
                   </button>
                 ) : null}
               </div>
             ) : canMemberInsights ? (
               <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button" data-act="io-insights">
-                📊 월별 인사이트
+                월별 인사이트
               </button>
             ) : null}
             {canEdit && isWorldCupMonth(view.year, view.month) ? (
