@@ -33,6 +33,10 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   확인은 기존 `?live-preview=1`), 공개 로더만 사용(`/`와
   같은 공개 경계), robots noindex. OBS 브라우저 소스(1920×1080)에 그대로 올리는 용도.
   fixture `?fixed=left|right`로 같은 경로 검증.
+  **여백 다이어트**(사용자: 달력 너비 챙기기): scene에서 슬롯 안쪽 패딩 14→10, stage가 슬롯 안으로
+  `--avatar-gap`(4px) 파고듦, 레일 쪽 `--rail-gutter` 138→134(레일 가장자리 12→8), 셸 패딩 4→0,
+  표면 가로 패딩 18→6(scene 전용 — 레일 컬럼 접기와 같은 부류, 스티커는 canon↔live 매핑 보정).
+  1920 실측: 달력 그리드 1371→~1410px(+3%), 배율 0.760→0.77.
   검증: tsc·lint·build exit 0, vitest 612, 비주얼 69(지오메트리 게이트·포스터 픽셀 기준선은
   **의도한 레이아웃 변경으로 갱신**), 신규 `tests/visual/avatar-scene.spec.ts` 4.
   알려진 것(기존): 하단 좌우 월 이동 ‹ › 버튼이 아바타 점선 박스 영역과 겹침(이전 75vh 박스도

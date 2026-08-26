@@ -961,27 +961,34 @@ html {
 .poster-page.avatar-scene {
   --avatar-col: clamp(300px, 18.75vw, 380px);
 }
+/* 여백 다이어트(2026-08-27, 사용자 요청 "달력 너비 챙기기"): 아바타 쪽은 슬롯 안쪽 패딩(10px)
+   영역으로 6px 파고들어 카드↔달력 틈 8px만 남기고, 레일 쪽은 레일 120 + 가장자리 8 + 틈 2 = 130.
+   셸 패딩은 0. 표면 안 가로 패딩도 scene에선 6px(아래) — 합쳐서 달력 그리드가 ~4% 넓어진다. */
+.poster-page.avatar-scene {
+  --avatar-gap: 4px; /* 슬롯 안쪽으로 파고드는 양(슬롯 padding 10 − 카드↔달력 최소 틈 6) */
+  --rail-gutter: 134px; /* 레일 120 + 가장자리 8 + 틈 6 */
+}
 .poster-page.avatar-scene.avatar-right .poster-stage {
-  margin-right: var(--avatar-col); /* 아바타 우측 → 달력이 나머지 전부 */
-  margin-left: 138px; /* 반대편 얇은 태그 필터 레일 자리(레일 끝 132 + 최소 틈) */
+  margin-right: calc(var(--avatar-col) - var(--avatar-gap)); /* 아바타 우측 → 달력이 나머지 전부 */
+  margin-left: var(--rail-gutter); /* 반대편 얇은 태그 필터 레일 자리 */
 }
 .poster-page.avatar-scene.avatar-left .poster-stage {
-  margin-left: var(--avatar-col); /* 아바타 좌측 → 달력이 나머지 전부 */
-  margin-right: 138px;
+  margin-left: calc(var(--avatar-col) - var(--avatar-gap)); /* 아바타 좌측 → 달력이 나머지 전부 */
+  margin-right: var(--rail-gutter);
 }
-/* scene에선 셸 좌우 padding(22)도 최소로 — 레일·아바타와의 이중 여백을 걷어 달력을 키운다. */
+/* scene에선 셸 좌우 padding(22)을 0으로 — 레일·아바타와의 이중 여백을 걷어 달력을 키운다. */
 .poster-page.avatar-scene .public-calendar-shell {
-  padding-left: 4px;
-  padding-right: 4px;
+  padding-left: 0;
+  padding-right: 0;
 }
 /* 꾸미기 크롬(팔레트 툴바·텍스트 추가 줄)도 레일 자리만큼 비켜 겹침을 없앤다. */
 .poster-page.avatar-scene.avatar-right .decorate-toolbar,
 .poster-page.avatar-scene.avatar-right .poster-capture-row {
-  margin-left: 138px;
+  margin-left: var(--rail-gutter);
 }
 .poster-page.avatar-scene.avatar-left .decorate-toolbar,
 .poster-page.avatar-scene.avatar-left .poster-capture-row {
-  margin-right: 138px;
+  margin-right: var(--rail-gutter);
 }
 /* scene: 표면 안 오른쪽 레일을 접는다(둘째 컬럼 0) — 달력이 표면 1840 전체를 차지해 최대로
    커진다(2026-07-31 사용자 결정 — 캡쳐 삭제로 표면 고정 레이아웃 제약 해제). 컬럼 폭이
@@ -989,6 +996,10 @@ html {
 .poster-page.avatar-scene .poster-surface {
   grid-template-columns: minmax(0, 1fr) 0px;
   column-gap: 0;
+  /* 가로 패딩 18→6: 접힌 레일 쪽·아바타 쪽 모두 빈 테두리라 달력 그리드에 돌려준다(scene 전용
+     지오메트리 — 레일 컬럼 접기와 같은 부류, 스티커는 canon↔live 앵커 매핑으로 보정). */
+  padding-left: 6px;
+  padding-right: 6px;
 }
 /* 스티커 기준 지오메트리 probe(JS가 한 프레임 안에서 scene/확대를 잠깐 원복해 실측) —
    전환 애니를 전부 끊어 클래스 원복 즉시 목표 레이아웃을 읽을 수 있게 한다. */
@@ -1019,11 +1030,11 @@ html {
   display: none;
 }
 .poster-page.avatar-scene.avatar-right .avatar-side-rail {
-  left: 12px;
+  left: 8px;
   animation: side-rail-in-l 0.5s cubic-bezier(0.22, 1.4, 0.4, 1) 0.2s both;
 }
 .poster-page.avatar-scene.avatar-left .avatar-side-rail {
-  right: 12px;
+  right: 8px;
   animation: side-rail-in-r 0.5s cubic-bezier(0.22, 1.4, 0.4, 1) 0.2s both;
 }
 @keyframes side-rail-in-l {
@@ -1184,7 +1195,7 @@ html {
   bottom: 14px;
   width: var(--avatar-col);
   height: auto;
-  padding: 0 14px;
+  padding: 0 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1294,6 +1305,8 @@ html[data-reduce-motion] .poster-scaler {
   .poster-page.avatar-scene .poster-surface {
     grid-template-columns: minmax(0, 1fr) 252px;
     column-gap: 16px;
+    padding-left: 18px;
+    padding-right: 18px;
   }
   .poster-page.avatar-scene .public-right {
     opacity: 1;
@@ -1689,7 +1702,8 @@ html[data-reduce-motion] .poster-export-reward-spark {
      stage margin(0.55s)과 같은 스프링 리듬 — 함께 움직여 한 동작으로 읽힌다. */
   transition:
     grid-template-columns 0.55s var(--spring-smooth, var(--ease-spring)),
-    column-gap 0.55s var(--spring-smooth, var(--ease-spring));
+    column-gap 0.55s var(--spring-smooth, var(--ease-spring)),
+    padding 0.55s var(--spring-smooth, var(--ease-spring));
   border-radius: var(--r-xl);
   background: linear-gradient(180deg, #fffdf6, #fdf6e6);
   padding: 14px 18px; /* 세로만 18→14(밀도 압축) — 가로는 그대로(열 지오메트리 불변) */
@@ -4764,11 +4778,11 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 }
 .poster-page.avatar-scene.avatar-right .decorate-toolbar,
 .poster-page.avatar-scene.avatar-right .poster-capture-row {
-  margin-right: var(--avatar-col);
+  margin-right: calc(var(--avatar-col) - var(--avatar-gap));
 }
 .poster-page.avatar-scene.avatar-left .decorate-toolbar,
 .poster-page.avatar-scene.avatar-left .poster-capture-row {
-  margin-left: var(--avatar-col);
+  margin-left: calc(var(--avatar-col) - var(--avatar-gap));
 }
 @media (max-width: 1099px) {
   .poster-page.avatar-scene .decorate-toolbar,

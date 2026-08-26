@@ -63,7 +63,10 @@ test.describe("avatar scene — 방송 화면(1920×1080)", () => {
     expect(Math.abs(m.info!.w - m.cards!.w)).toBeLessThan(1.5);
     expect(m.monthWrapped).toBe(false);
     expect(overlaps(m.cards, m.dock)).toBe(false);
-    expect(overlaps(m.slot, m.stage)).toBe(false);
+    // 슬롯 '박스'는 stage가 안쪽 패딩으로 4px 파고들도록 설계(여백 다이어트) — 겹침 판정은
+    // 실제 콘텐츠(카드 스택·점선 박스)와 레일 기준.
+    expect(overlaps(m.cards, m.stage)).toBe(false);
+    expect(overlaps(m.dock, m.stage)).toBe(false);
     expect(overlaps(m.rail, m.stage)).toBe(false);
     expect(Math.round(m.slot!.w)).toBe(360);
   });
@@ -89,7 +92,7 @@ test.describe("avatar scene — 방송 화면(1920×1080)", () => {
     expect(m.ctlPreview).toBeNull();
     expect(m.ctlInslot).toBeNull();
     expect(m.slot).not.toBeNull();
-    expect(m.slot!.x).toBeGreaterThan(m.stage!.r);
+    expect(m.cards!.x).toBeGreaterThan(m.stage!.r);
     expect(Math.abs(m.info!.w - m.cards!.w)).toBeLessThan(1.5);
   });
 
