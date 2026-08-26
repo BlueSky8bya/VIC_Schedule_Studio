@@ -29,7 +29,8 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   떨어져 방송 화면 글씨가 너무 작아짐(사용자 스크린샷). scene도 평소처럼 **폭 fit만**(세로는
   스크롤). `sceneFit`·`--poster-dy`·resize 리스너 제거. <1100px: 슬롯은 꾸미기 토글만 좌상단.
   **뱅송 미리보기 URL `/onair`**(`app/onair/page.tsx`): 로그인 없이 열리는 고정 scene
-  (`avatarFixed` prop — 항상 켜짐·토글 없음, `?side=right`, `?y=&m=`), 공개 로더만 사용(`/`와
+  (`avatarFixed` prop — 항상 켜짐·토글 없음, `?side=right`, `?y=&m=`, 방송 아닐 때 라이브 카드
+  확인은 기존 `?live-preview=1`), 공개 로더만 사용(`/`와
   같은 공개 경계), robots noindex. OBS 브라우저 소스(1920×1080)에 그대로 올리는 용도.
   fixture `?fixed=left|right`로 같은 경로 검증.
   검증: tsc·lint·build exit 0, vitest 612, 비주얼 69(지오메트리 게이트·포스터 픽셀 기준선은

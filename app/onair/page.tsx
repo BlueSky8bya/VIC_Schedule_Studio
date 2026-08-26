@@ -9,6 +9,8 @@ import { getPublicSchedule } from "@/lib/schedules/public-loader";
 //   /onair            아바타 자리 왼쪽(기본)
 //   /onair?side=right 아바타 자리 오른쪽
 //   /onair?y=2026&m=9 특정 달로 열기(생략하면 이번 달)
+//   /onair?live-preview=1 방송 중이 아닐 때도 가짜 라이브 카드를 띄워 배치 확인(기존 테스트 파라미터,
+//                         public-poster의 livePreviewOn — 썸네일은 bno가 없어 어두운 판+LIVE 배지만)
 // 로그인 없이 열린다(OBS 브라우저 소스는 쿠키가 없다). 공개 로더만 쓰므로 `/`와 같은 공개 데이터
 // 경계 — 비공개·엠바고·작업자 일정은 애초에 실리지 않는다. 아바타 scene은 순수 레이아웃(빈 자리)이라
 // 권한과 무관. 관리자 토글(켜기/끄기·좌우)은 안 그린다 — 화면에 붙잡을 크롬을 남기지 않는다.
