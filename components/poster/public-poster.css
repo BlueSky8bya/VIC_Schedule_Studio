@@ -956,12 +956,17 @@ html {
 }
 /* 정렬(justify)·축소기준(transform-origin)은 base 그대로(center) — margin만 바꿔 슬라이드하므로
    ON/OFF·좌우 전환에서 정렬이 '스냅'하지 않고 margin 트랜지션만 부드럽게 흐른다. */
+/* 방송 모드 고정 컴포지션(2026-08-27) — 아바타 열은 vw가 아니라 OBS 기준(1920×1080)에서 딱
+   360px이 되는 clamp(18.75vw). 창이 달라도 브라우저 소스 안에선 결정적, 작은 창은 300px 하한. */
+.poster-page.avatar-scene {
+  --avatar-col: clamp(300px, 18.75vw, 380px);
+}
 .poster-page.avatar-scene.avatar-right .poster-stage {
-  margin-right: 22vw; /* 아바타 우측 → 달력이 나머지 전부 */
+  margin-right: var(--avatar-col); /* 아바타 우측 → 달력이 나머지 전부 */
   margin-left: 138px; /* 반대편 얇은 태그 필터 레일 자리(레일 끝 132 + 최소 틈) */
 }
 .poster-page.avatar-scene.avatar-left .poster-stage {
-  margin-left: 22vw; /* 아바타 좌측 → 달력이 나머지 전부 */
+  margin-left: var(--avatar-col); /* 아바타 좌측 → 달력이 나머지 전부 */
   margin-right: 138px;
 }
 /* scene에선 셸 좌우 padding(22)도 최소로 — 레일·아바타와의 이중 여백을 걷어 달력을 키운다. */
@@ -1096,46 +1101,48 @@ html {
 /* 아바타 자리 상단 카드 줄 — 점선 박스 '위'에 얹힌다(박스 안 침범 금지 — 아바타 가림 방지,
    사용자 지정). 카드 바닥이 점선 상변에서 8px 위. 정보 카드 = 달력 쪽(안쪽) 모서리,
    라이브 카드 = 바깥 모서리. 슬롯은 pointer-events:none — 카드만 되살림. */
+/* 세로 스택(2026-08-27, "한눈에"): 정보 카드 위 · 라이브 카드 아래, 둘 다 열 전폭. 예전엔
+   두 카드가 나란히(각 max 48%)라 폭이 반토막 나 '2026년 08 / 월'이 줄바꿈됐다. 슬롯 세로 flex
+   열의 첫 아이템(흐름) — 아래 점선 박스가 남는 높이를 가져간다. */
 .avatar-top-cards {
-  position: absolute;
-  top: 10px; /* = 점선 박스 상변(슬롯 padding) 기준선 */
-  left: 24px;
-  right: 24px;
+  position: relative;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  transform: translateY(calc(-100% - 8px));
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  flex: none;
   pointer-events: auto;
   z-index: 2;
-}
-/* 꾸미기에선 '아바타 자리 끄기' 토글이 점선 상변 바로 위에 떠 있다 — 토글 높이 + 숨쉴
-   여백(카드↔토글 24px)만큼 더 올린다(시청자 미리보기 토글은 좌상단 고정이라 해당 없음). */
-.poster-page.is-decorate .avatar-top-cards {
-  transform: translateY(calc(-100% - 72px));
-}
-/* 좌우 미러 — 정보 카드는 항상 안쪽(달력 쪽) 모서리, 라이브는 바깥쪽. */
-.poster-page.avatar-scene.avatar-left .avatar-top-cards {
-  flex-direction: row-reverse;
-}
-/* 두 카드 같은 크기 — 높이는 라이브 카드(영상 16:9 + 캡션)가 정하고, 정보 카드는 stretch로
-   따라간다(고정 166px는 폭이 줄면 영상 비율을 깨뜨렸다 — 사용자 리포트). */
-.avatar-top-cards {
-  align-items: stretch;
 }
 .avatar-top-cards .rail-info-card,
 .avatar-top-cards .soop-live-card.in-rail {
   flex: none;
-  width: 232px;
-  max-width: 48%;
+  width: 100%;
+  max-width: none;
   height: auto;
   margin: 0;
   box-sizing: border-box;
 }
 .avatar-top-cards .rail-info-card {
-  justify-content: center; /* 라이브 카드 높이에 stretch될 때 세로 중앙 — 위만 눌린 느낌 방지 */
-  min-height: 132px; /* 라이브 없이 홀로 떠도 너무 납작하지 않게 */
+  justify-content: center;
+  padding: 16px 18px 13px;
   animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.28s both;
+}
+/* 열이 넓어진 만큼(1920에서 332px) 글자를 한 단계 키운다 — 방송 화면에서 달·D+가 또렷하게. */
+.avatar-top-cards .ric-month b {
+  font-size: 27px;
+}
+.avatar-top-cards .ric-month::after {
+  font-size: 16px;
+}
+.avatar-top-cards .ric-row em {
+  font-size: 13.5px;
+}
+.avatar-top-cards .ric-row b {
+  font-size: 15.5px;
+}
+.avatar-top-cards .ric-row .ric-dplus {
+  font-size: 22px;
 }
 .avatar-top-cards .soop-live-card.in-rail {
   display: flex;
@@ -1168,20 +1175,19 @@ html {
    하단 정렬. 모든 달에서 폭·높이 동일. 달력(stage margin 25vw)과 겹침 0. */
 /* 아바타 자리 높이 — 꾸미기에선 위에 카드+토글이 층층이 쌓여 헤더 버튼(편집실로 가기)과
    겹치므로 그만큼(+마진) 낮춘다. 토글 위치도 같은 변수를 따라간다. */
-.poster-page.avatar-scene {
-  --avatar-h: 75vh;
-}
-.poster-page.is-decorate.avatar-scene {
-  --avatar-h: calc(75vh - 72px);
-}
+/* 슬롯 = 헤더 아래(76)부터 바닥(14)까지 세로 flex 열(태그 레일과 같은 상·하 기준선):
+   [카드 스택][꾸미기 토글][점선 박스]. 박스가 flex:1로 '남는 높이'를 결정적으로 차지 —
+   예전 75vh 고정 + 카드를 위로 translate하던 매직 넘버(꾸미기 -72px)를 없앴다. */
 .poster-page.avatar-scene .avatar-slot {
   position: fixed;
-  bottom: 0;
-  top: auto;
-  width: 22vw;
-  height: var(--avatar-h, 75vh);
-  padding: 10px;
+  top: 76px;
+  bottom: 14px;
+  width: var(--avatar-col);
+  height: auto;
+  padding: 0 14px;
   display: flex;
+  flex-direction: column;
+  gap: 10px;
   box-sizing: border-box;
   pointer-events: none;
   z-index: 6;
@@ -1210,6 +1216,7 @@ html {
 .avatar-dock-inner {
   flex: 1 1 auto;
   min-width: 0;
+  min-height: 0;
   box-sizing: border-box;
   border: 1.5px dashed rgb(120 110 90 / 30%);
   border-radius: 18px;
@@ -1252,7 +1259,21 @@ html[data-reduce-motion] .poster-scaler {
   .poster-page.avatar-scene .poster-stage {
     margin: 0;
   }
+  /* 슬롯은 꾸미기 '아바타 자리 끄기' 토글만 남겨 좌상단으로(아바타 없으니 중간에 떠 있지
+     않게). 카드 스택·점선 박스는 숨김 — 시청자 미리보기 슬롯은 내용이 없어 보이지 않는다. */
   .poster-page.avatar-scene .avatar-slot {
+    top: 14px;
+    left: 16px;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    padding: 0;
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  .poster-page.avatar-scene .avatar-slot .avatar-top-cards,
+  .poster-page.avatar-scene .avatar-slot .avatar-dock-inner {
     display: none;
   }
   /* scene 꺼짐 — 표면 레일·컬럼도 평소대로 복원(얇은 레일은 숨김). */
@@ -1279,12 +1300,7 @@ html[data-reduce-motion] .poster-scaler {
     overflow: visible;
     pointer-events: auto;
   }
-  /* 아바타 없으니 토글은 좌상단 헤더로 되돌린다(중간에 떠 있지 않게). */
   .poster-page.avatar-scene .avatar-ctl {
-    top: 14px;
-    left: 16px;
-    right: auto;
-    bottom: auto;
     animation: none;
   }
 }
@@ -1304,20 +1320,21 @@ html[data-reduce-motion] .poster-scaler {
 .header-left .avatar-ctl-inheader {
   margin: 0;
 }
-.poster-page.avatar-scene.avatar-left .avatar-ctl {
-  top: auto;
-  left: 8px;
-  right: auto;
-  bottom: calc(var(--avatar-h, 75vh) + 10px); /* 아바타 자리 바로 위 */
-  /* 이모지 칸이 줄어드는(margin 0.55s) 동안 버튼이 먼저 튀어나와 겹치던 문제 →
-     줄어든 뒤에 통통 떠오르게 지연. */
-  animation: avatar-ctl-in 0.4s cubic-bezier(0.22, 1.4, 0.4, 1) 0.32s both;
-}
-.poster-page.avatar-scene.avatar-right .avatar-ctl {
+/* 꾸미기 토글(켜짐) — 슬롯 안 흐름 아이템(카드 스택 아래·점선 박스 위). 슬롯은
+   pointer-events:none이라 여기서 되살린다. 이모지 칸이 줄어드는(margin 0.55s) 동안 버튼이 먼저
+   튀어나와 겹치던 문제 → 줄어든 뒤에 통통 떠오르게 지연. */
+.avatar-ctl.avatar-ctl-inslot {
+  position: relative;
   top: auto;
   left: auto;
-  right: 8px;
-  bottom: calc(var(--avatar-h, 75vh) + 10px);
+  right: auto;
+  bottom: auto;
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  pointer-events: auto;
+  z-index: 2;
   animation: avatar-ctl-in 0.4s cubic-bezier(0.22, 1.4, 0.4, 1) 0.32s both;
 }
 @keyframes avatar-ctl-in {
@@ -1644,7 +1661,9 @@ html[data-reduce-motion] .poster-export-reward-spark {
 }
 .poster-scaler {
   flex: 0 0 auto;
-  transform: scale(var(--poster-scale, 1));
+  /* --poster-dy: 아바타 scene 높이 fit에서 달력을 영역 세로 중앙에 두는 오프셋(JS). 균일
+     translate라 표면 안 비율 좌표(스티커)는 그대로. 평소엔 0. */
+  transform: translateY(var(--poster-dy, 0px)) scale(var(--poster-scale, 1));
   transform-origin: top center; /* 위·가운데 기준 축소 → stage 높이(축소높이)에 딱 맞음 */
   /* 아바타 ON/OFF로 margin이 변하면 RO가 배율을 '단계적'으로 다시 줘 스케일이 끊겨 보인다 —
      transform에 짧은 트랜지션을 둬 단계 사이를 메워 부드럽게 한다. */
@@ -1666,7 +1685,7 @@ html[data-reduce-motion] .poster-export-reward-spark {
   grid-template-columns: minmax(0, 1fr) 252px;
   /* 제목줄(auto) + 본문(내용 높이) — 본문이 자라면 표면도 함께 자란다. */
   grid-template-rows: auto auto;
-  gap: 16px;
+  gap: 12px 16px;
   align-items: stretch;
   /* 아바타 scene ON/OFF에서 레일 컬럼(252↔0)이 흐르듯 접히고 달력이 부드럽게 넓어진다.
      stage margin(0.55s)과 같은 스프링 리듬 — 함께 움직여 한 동작으로 읽힌다. */
@@ -1675,7 +1694,7 @@ html[data-reduce-motion] .poster-export-reward-spark {
     column-gap 0.55s var(--spring-smooth, var(--ease-spring));
   border-radius: var(--r-xl);
   background: linear-gradient(180deg, #fffdf6, #fdf6e6);
-  padding: 18px;
+  padding: 14px 18px; /* 세로만 18→14(밀도 압축) — 가로는 그대로(열 지오메트리 불변) */
   box-shadow: var(--shadow-2);
 }
 /* (상단 마스트헤드 삭제 — 2026-07-31 2차. 연·월은 레일 정보 카드(.ric-month)로 이동,
@@ -3708,11 +3727,11 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 /* 주(행) 높이는 '내용에 맞춰' 자란다(min 150px로 한산한 달도 너무 납작하지 않게). 일정이 많은
    주는 칸이 커지고 표면이 함께 커져 일정을 절대 안 자른다. 전체는 JS가 화면에 맞춰 축소한다. */
 .public-month-grid {
-  grid-auto-rows: minmax(150px, auto);
+  grid-auto-rows: minmax(132px, auto); /* 150→132(2026-08-27 밀도 압축 — 한눈에) */
 }
 
 .weekday-row {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   border: 1px solid #efe9dd;
   border-radius: var(--r-card);
   background: #fbf7ee;
@@ -3720,7 +3739,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 }
 
 .weekday-row span {
-  padding: 7px 0;
+  padding: 5px 0;
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.05em;
@@ -3831,7 +3850,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
      예전엔 머리글은 min-height 27px, 띠는 top 26px으로 따로 박혀 있었는데, 확대(--cal-zoom)
      하면 날짜 글자만 커져(17px×1.5 + padding = 28.5px) 띠가 날짜를 덮었다.
      같은 식에서 파생시키면 어떤 배율에서도 구조적으로 겹칠 수 없다. */
-  --day-head-h: calc(27px * var(--cal-zoom, 1));
+  --day-head-h: calc(25px * var(--cal-zoom, 1));
   /* 칸 높이는 행(grid-auto-rows: minmax(150px,auto))이 정하고, 칸은 그 행에 stretch로 꽉 찬다.
      일정이 많으면 행이 자라 칸도 커지므로 일정이 잘리지 않는다(클립 없음). */
   border-right: 1px solid #efe6d3;
@@ -3913,8 +3932,8 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   align-items: center;
   justify-content: flex-start;
   gap: 4px;
-  min-height: var(--day-head-h, 27px);
-  padding: 3px 6px 0;
+  min-height: var(--day-head-h, 25px);
+  padding: 2px 6px 0;
   font-weight: 900;
 }
 /* 상속 line-height(1.5)로 줄 상자가 커지지 않게 못박는다 — 칩 유무와 무관하게 높이 동일. */
@@ -4123,8 +4142,8 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 
 .day-events {
   display: grid;
-  gap: 5px;
-  padding: 6px 5px 8px;
+  gap: 4px;
+  padding: 5px 5px 6px;
 }
 
 /* 일정별 색상 박스 (태그 색) */
@@ -4132,11 +4151,11 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   position: relative; /* 하트를 카드 오른쪽 위에 절대배치하기 위한 기준 */
   display: flex;
   flex-direction: column; /* 제목은 맨 위, 방식 점(.pill-dots)은 margin-top:auto로 맨 아래 */
-  gap: 3px;
+  gap: 2px;
   border: 1px solid rgb(0 0 0 / 10%);
   border-radius: var(--r-sm);
   background: #f3f4f6;
-  padding: 5px 8px;
+  padding: 4px 8px;
   box-shadow: 0 1px 1px rgb(17 24 39 / 5%);
   /* opacity·filter가 목록에 있어야 필터 흐림(.dimmed)이 스르륵 물러난다 — 예전엔 이 둘이 빠져
      있어 칩을 누르는 순간 달력 절반이 뚝 끊기듯 회색이 됐다(GPU 친화 속성이라 비용도 없다). */
@@ -4747,11 +4766,11 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 }
 .poster-page.avatar-scene.avatar-right .decorate-toolbar,
 .poster-page.avatar-scene.avatar-right .poster-capture-row {
-  margin-right: 22vw;
+  margin-right: var(--avatar-col);
 }
 .poster-page.avatar-scene.avatar-left .decorate-toolbar,
 .poster-page.avatar-scene.avatar-left .poster-capture-row {
-  margin-left: 22vw;
+  margin-left: var(--avatar-col);
 }
 @media (max-width: 1099px) {
   .poster-page.avatar-scene .decorate-toolbar,
