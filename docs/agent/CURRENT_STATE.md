@@ -13,6 +13,22 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **관심 단계 = 카드 테두리 링 + 👑(2026-08-27, 사용자 아이디어)**: 불꽃 알약(`.event-popular`, 카드
+  바닥 한 줄 ≈18px)이 행마다 쌓여 달력 비율을 무너뜨리던 것 → 카드 안 absolute `.tier-ring`(높이 0)
+  + 1위 `.tier-crown`(우하단 모서리)으로 교체. `TierMark` 컴포넌트, 데스크탑·아젠다 카드 마지막
+  자식. 단계: 관심=주황 1.5px 링+halo 숨쉬기(7s) · 높은=2px+아래 변 불꽃 일렁임 · 폭발=빨강, 빠르게 ·
+  1위=금색 링 + `@property --tier-a` conic 회전 반짝 + 👑 bob. 본문 레이어(`.event-main/.event-subs/
+  .event-meta`) z-index 1, 링 0(2색 카드는 `> .tier-ring.tier-ring`로 재지정). 카드마다 위상 분산
+  (nth-child). 동작 줄이기·내보내기: 애니 정지, 링 두께/색으로 단계 구분. 모바일 아젠다: 정적 링
+  (inset -4/-6)+👑 오른쪽. 범례 3곳(웹·축약·아젠다 도움말) 🔥→`.tier-swatch` 견본. 정밀 라벨은
+  `.tier-ring` role=img aria-label·title. fixture `?hearts=1`(6/14/30/45/0 순환)로 검증,
+  `tests/visual/heart-tier.spec.ts` 3(링=티어 수·불꽃 0·본문 z 1·표면 높이 하트 유무 동일·모바일).
+- **월 이동 깜빡임 수정(아바타 scene)**: 원인 = 월 바뀜→스티커 canon 리셋→`probeCanonFrame`이
+  한 프레임 동안 `avatar-scene/left/right` 클래스를 뗐다 붙임 → 슬롯 `display:none↔flex`, 세로
+  레일·정보 카드 등장 애니(opacity 0→1) 재생. 수정: probe는 클래스를 안 건드리고
+  `.poster-page.sticker-geom-probe .poster-surface`가 표면 안 배치(레일 252·gap 16·가로 패딩 18)만
+  !important로 기본값 복원 — canon은 표면 대비 비율이라 결과 동일. avatar-scene.spec에 24프레임
+  opacity 샘플 테스트 추가(min ≥ 0.999, display none 0회).
 - **아바타 scene "한눈에" — 세로 스택·전역 밀도 압축·고정 컴포지션(2026-08-27, PLAN-20260827-004)**:
   뱅온 미리보기가 OBS 1920×1080 안에서 한 화면에 들어오게. 사용자 결정("토리님은 한 눈에 들어오는
   게 취향"). ① 오른쪽 칸 카드 **세로 스택**(`.avatar-top-cards` 슬롯 안 흐름·column·열 전폭) —

@@ -96,6 +96,48 @@ test.describe("avatar scene — 방송 화면(1920×1080)", () => {
     expect(Math.abs(m.info!.w - m.cards!.w)).toBeLessThan(1.5);
   });
 
+  test("월 이동 때 레일·정보 카드·슬롯이 깜빡이지 않는다(probe가 scene 클래스를 안 뗀다)", async ({
+    page
+  }) => {
+    // 동작 줄이기를 끄고(등장 애니가 살아 있는 상태에서) 실측 — 옛 구현은 canon 리셋→probe에서
+    // avatar-scene 클래스를 뗐다 붙여 슬롯 display:none↔flex·레일 opacity 0→1 재생으로 깜빡였다.
+    await page.addInitScript(() => {
+      try {
+        window.localStorage.removeItem("vic.reduceMotion");
+      } catch {
+        /* noop */
+      }
+    });
+    await page.goto("/visual-fixture/poster?fixed=left");
+    await page.locator(".poster-page.avatar-scene").waitFor();
+    await page.waitForTimeout(1500); // 등장 애니 종료
+    const r = await page.evaluate(async () => {
+      const rail = document.querySelector(".avatar-side-rail")!;
+      const card = document.querySelector(".avatar-top-cards .rail-info-card")!;
+      const slot = document.querySelector(".avatar-slot")!;
+      const btn = document.querySelector<HTMLElement>('[data-act="다음 달"]');
+      if (!btn) return { err: "no next button", min: 0, hidden: true };
+      const mins: number[] = [];
+      let hidden = false;
+      btn.click();
+      for (let i = 0; i < 24; i++) {
+        await new Promise((res) => requestAnimationFrame(res));
+        mins.push(
+          Math.min(
+            +getComputedStyle(rail).opacity,
+            +getComputedStyle(card).opacity,
+            +getComputedStyle(slot).opacity
+          )
+        );
+        if (getComputedStyle(slot).display === "none") hidden = true;
+      }
+      return { err: null, min: Math.min(...mins), hidden };
+    });
+    expect(r.err).toBeNull();
+    expect(r.hidden).toBe(false);
+    expect(r.min).toBeGreaterThanOrEqual(0.999);
+  });
+
   test("scene OFF(기본 시청자): 슬롯 없음, 폭 fit", async ({ page }) => {
     await page.goto("/visual-fixture/poster");
     await page.locator("[data-export-surface]").waitFor();

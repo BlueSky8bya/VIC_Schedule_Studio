@@ -109,7 +109,7 @@ import {
   hypeMotionFrame,
   quantizeStaticIntensity
 } from "@/lib/ui/hype-curve";
-import { heartTier } from "@/lib/schedules/heart-tiers";
+import { heartTier, type HeartTier } from "@/lib/schedules/heart-tiers";
 import { debutDPlus, getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
 import { isWorldCupMonth } from "@/lib/calendar/worldcup";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
@@ -218,6 +218,27 @@ type PublicPosterProps = {
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
+
+// 관심 단계 표식(2026-08-27) — 카드 '테두리'에 얹는 링(+1위는 👑 모서리 배지). 예전 불꽃 알약은
+// 카드 바닥에 한 줄(≈18px)을 먹어 행마다 쌓이면 달력 비율을 무너뜨렸다(사용자 지적). 링·배지는
+// absolute라 높이 0 — 내용은 그대로. 단계 라벨은 role=img aria-label·title로 남긴다.
+function TierMark({ tier }: { tier: HeartTier }) {
+  return (
+    <>
+      <span
+        aria-label={`관심 단계: ${tier.label}`}
+        className={`tier-ring tier-${tier.key}`}
+        role="img"
+        title={tier.label}
+      />
+      {tier.key === "top" ? (
+        <span aria-hidden="true" className="tier-crown">
+          👑
+        </span>
+      ) : null}
+    </>
+  );
+}
 
 // 포스터 고정 캔버스 설계 크기(16:9). 화면에선 이 크기를 통째로 축소해 보여주고,
 // export는 이 원본 크기로 캡쳐한다. 작은 화면에서도 내부 비율·스티커 위치가 절대 안 바뀐다.
@@ -4344,23 +4365,21 @@ export function PublicPoster({
                           })}
                         </ul>
                       ) : null}
-                      {/* 메타 줄: 인기 불꽃(왼쪽) + (서브가 없을 때만) 형식색 점(오른쪽). 시작 칸에만. */}
-                      {span.showTitle && (tier || (dots && subs.length === 0)) ? (
+                      {/* 메타 줄: (서브가 없을 때만) 형식색 점. 시작 칸에만. 관심 단계는 카드 테두리
+                          (TierMark, 높이 0)로 옮겨 이 줄이 더는 카드를 키우지 않는다. */}
+                      {span.showTitle && dots && subs.length === 0 ? (
                         <div
                           className={`event-meta${revealStagger(stag, main, subs.length).className}`}
                           style={revealStagger(stag, main, subs.length).style}
                         >
-                          {tier ? (
-                            <span className={`event-popular tier-${tier.key}`} title={tier.label} aria-label={`관심 단계: ${tier.label}`}>
-                              <span className="flame" aria-hidden="true">{tier.flames}</span>
-                            </span>
-                          ) : null}
-                          {dots && subs.length === 0 ? dots : null}
+                          {dots}
                         </div>
                       ) : null}
                     </>
                   );
                 })()}
+                {/* 관심 단계 링·👑 — 마지막 자식(무늬 위, 본문 아래 z-index 0). 시작 칸에만. */}
+                {tier && span.showTitle ? <TierMark tier={tier} /> : null}
               </div>
             );
           })}
@@ -4520,16 +4539,16 @@ export function PublicPoster({
               {/* 모바일 좁은 레일(92px) — 라벨을 짧게 줄여 '불꽃+라벨'을 한 줄(가로)에 담는다.
                   (세로로 쌓으면 불꽃이 어느 라벨 것인지 헷갈림.) 웹 범례는 긴 라벨 유지. */}
               <span>
-                <b className="flame">🔥</b> 관심
+                <i aria-hidden="true" className="tier-swatch tier-warm" /> 관심
               </span>
               <span>
-                <b className="flame">🔥🔥</b> 높음
+                <i aria-hidden="true" className="tier-swatch tier-hot" /> 높음
               </span>
               <span>
-                <b className="flame">🔥🔥🔥</b> 폭발
+                <i aria-hidden="true" className="tier-swatch tier-blaze" /> 폭발
               </span>
               <span>
-                <b className="flame">👑</b> 1위
+                <i aria-hidden="true" className="tier-swatch tier-top">👑</i> 1위
               </span>
             </div>
           </aside>
@@ -4740,6 +4759,7 @@ export function PublicPoster({
                         className={`agenda-event tappable${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}`}
                         data-act="schedule-card"
                         data-eventid={support ? undefined : event.id}
+                        data-tier={tier?.key}
                         key={(support ? "s-" : "") + event.id}
                         role="button"
                         tabIndex={0}
@@ -4868,24 +4888,20 @@ export function PublicPoster({
                                     <ExternalLink aria-hidden="true" size={13} />
                                   </a>
                                 ) : null}
-                                {/* 메타 한 줄: 관심(왼쪽) + (서브 없을 때만) 형식색 점(오른쪽). */}
-                                {tier || (dots && subs.length === 0) ? (
+                                {/* 메타 한 줄: (서브 없을 때만) 형식색 점. 관심 단계는 카드 링(TierMark). */}
+                                {dots && subs.length === 0 ? (
                                   <div
                                     className={`agenda-meta${revealStagger(stag, main, subs.length).className}`}
                                     style={revealStagger(stag, main, subs.length).style}
                                   >
-                                    {tier ? (
-                                      <span className={`event-popular tier-${tier.key}`} title={tier.label} aria-label={`관심 단계: ${tier.label}`}>
-                                        <span className="flame" aria-hidden="true">{tier.flames}</span>
-                                      </span>
-                                    ) : null}
-                                    {dots && subs.length === 0 ? dots : null}
+                                    {dots}
                                   </div>
                                 ) : null}
                               </>
                             );
                           })()}
                         </div>
+                        {tier ? <TierMark tier={tier} /> : null}
                       </div>
                     );
                   })}
@@ -5055,15 +5071,15 @@ export function PublicPoster({
     );
     if (animating) return null;
     const cal = posterCalRef.current;
-    const sceneCls = ["avatar-scene", "avatar-left", "avatar-right"].filter((c) =>
-      main.classList.contains(c)
-    );
+    // scene 클래스는 건드리지 않는다(2026-08-27). 예전엔 avatar-scene/left/right를 뗐다 붙였는데,
+    // 그 한 프레임에 아바타 슬롯이 display:none↔flex, 세로 레일·정보 카드의 등장 애니 셀렉터가
+    // 끊겼다 이어져 월 이동(canon 리셋→probe)마다 opacity 0에서 다시 떠오르며 깜빡였다.
+    // 기준 지오메트리에 필요한 건 표면 '안' 배치(레일 컬럼·패딩)뿐 — .sticker-geom-probe가
+    // CSS로 그것만 기본값으로 되돌린다(스테이지 마진·배율은 비율 좌표와 무관).
     main.classList.add("sticker-geom-probe");
-    sceneCls.forEach((c) => main.classList.remove(c));
     const prevZoom = cal?.style.getPropertyValue("--cal-zoom") ?? "";
     cal?.style.setProperty("--cal-zoom", "1");
     const frame = readStickerFrame();
-    sceneCls.forEach((c) => main.classList.add(c));
     if (cal) {
       if (prevZoom) cal.style.setProperty("--cal-zoom", prevZoom);
       else cal.style.removeProperty("--cal-zoom");
@@ -5400,31 +5416,31 @@ export function PublicPoster({
           // 축약형(얇은 레일) — 짧은 라벨 2×2, 칩 상자 없이 불꽃+라벨만.
           <ul className="legend-tiers is-compact">
             <li>
-              <span className="flame">🔥</span> 관심
+              <i aria-hidden="true" className="tier-swatch tier-warm" /> 관심
             </li>
             <li>
-              <span className="flame">🔥🔥</span> 높은
+              <i aria-hidden="true" className="tier-swatch tier-hot" /> 높은
             </li>
             <li>
-              <span className="flame">🔥🔥🔥</span> 폭발
+              <i aria-hidden="true" className="tier-swatch tier-blaze" /> 폭발
             </li>
             <li>
-              <span className="flame">👑</span> 1위
+              <i aria-hidden="true" className="tier-swatch tier-top">👑</i> 1위
             </li>
           </ul>
         ) : (
           <ul className="legend-tiers">
             <li>
-              <span className="flame">🔥</span> 관심
+              <i aria-hidden="true" className="tier-swatch tier-warm" /> 관심
             </li>
             <li>
-              <span className="flame">🔥🔥</span> 높은 관심
+              <i aria-hidden="true" className="tier-swatch tier-hot" /> 높은 관심
             </li>
             <li>
-              <span className="flame">🔥🔥🔥</span> 폭발적
+              <i aria-hidden="true" className="tier-swatch tier-blaze" /> 폭발적
             </li>
             <li>
-              <span className="flame">👑</span> 이 달 1위
+              <i aria-hidden="true" className="tier-swatch tier-top">👑</i> 이 달 1위
             </li>
           </ul>
         )}
