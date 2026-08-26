@@ -1661,9 +1661,7 @@ html[data-reduce-motion] .poster-export-reward-spark {
 }
 .poster-scaler {
   flex: 0 0 auto;
-  /* --poster-dy: 아바타 scene 높이 fit에서 달력을 영역 세로 중앙에 두는 오프셋(JS). 균일
-     translate라 표면 안 비율 좌표(스티커)는 그대로. 평소엔 0. */
-  transform: translateY(var(--poster-dy, 0px)) scale(var(--poster-scale, 1));
+  transform: scale(var(--poster-scale, 1));
   transform-origin: top center; /* 위·가운데 기준 축소 → stage 높이(축소높이)에 딱 맞음 */
   /* 아바타 ON/OFF로 margin이 변하면 RO가 배율을 '단계적'으로 다시 줘 스케일이 끊겨 보인다 —
      transform에 짧은 트랜지션을 둬 단계 사이를 메워 부드럽게 한다. */

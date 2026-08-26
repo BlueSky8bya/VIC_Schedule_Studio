@@ -25,11 +25,15 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   슬롯 = `top:76/bottom:14` 세로 flex 열 [카드][꾸미기 토글 `.avatar-ctl-inslot`(JSX를 슬롯
   안으로 이동)][점선 박스 flex:1] — `--avatar-h`·translate 매직 넘버 제거. 시청자 미리보기
   scene(≥1100px)은 fit을 **폭·높이 둘 다**(`min(w/natW, availH/natH, 1.6)`) + `--poster-dy`
-  translate로 세로 중앙(균일 변환 → 스티커 좌표 불변). **꾸미기는 높이 fit 제외**(툴바 크롬이
-  stage 위 874px라 달력이 0.22배로 짓눌림 — 실측) → 예전대로 폭 fit+스크롤. <1100px: 슬롯은
-  꾸미기 토글만 좌상단. 실측 1920: 배율 0.727→0.76, dy 162, 스크롤 0.
+  translate로 세로 중앙 — **당일 철회**: prod 8월(6주·고밀도, 표면 ~1200)에서 배율이 ~0.6으로
+  떨어져 방송 화면 글씨가 너무 작아짐(사용자 스크린샷). scene도 평소처럼 **폭 fit만**(세로는
+  스크롤). `sceneFit`·`--poster-dy`·resize 리스너 제거. <1100px: 슬롯은 꾸미기 토글만 좌상단.
+  **뱅송 미리보기 URL `/onair`**(`app/onair/page.tsx`): 로그인 없이 열리는 고정 scene
+  (`avatarFixed` prop — 항상 켜짐·토글 없음, `?side=right`, `?y=&m=`), 공개 로더만 사용(`/`와
+  같은 공개 경계), robots noindex. OBS 브라우저 소스(1920×1080)에 그대로 올리는 용도.
+  fixture `?fixed=left|right`로 같은 경로 검증.
   검증: tsc·lint·build exit 0, vitest 612, 비주얼 69(지오메트리 게이트·포스터 픽셀 기준선은
-  **의도한 레이아웃 변경으로 갱신**), 신규 `tests/visual/avatar-scene.spec.ts` 3.
+  **의도한 레이아웃 변경으로 갱신**), 신규 `tests/visual/avatar-scene.spec.ts` 4.
   알려진 것(기존): 하단 좌우 월 이동 ‹ › 버튼이 아바타 점선 박스 영역과 겹침(이전 75vh 박스도
   동일). 액션바 '월별 인사이트' 버튼 이모지(🛠/📊) 제거(모달 제목은 유지).
 - **그림판 펜 카드 위 첫 클릭·미리보기 아바타 컨트롤·동작 줄이기 기본값(2026-08-27)**:

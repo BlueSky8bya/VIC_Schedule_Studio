@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ mode?: string; avatar?: string; teaser?: string }>;
+  searchParams?: Promise<{ mode?: string; avatar?: string; teaser?: string; fixed?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -49,10 +49,13 @@ export default async function VisualPosterFixture({
       : samplePublicScheduleData;
   // avatar=1 → 아바타 자리 토글이 있는 소유자 scene을 fixture에서도 검증(스티커 좌표 매핑 실측용).
   const avatar = sp?.avatar === "1";
+  // fixed=left|right → /onair(뱅송 미리보기)와 같은 고정 scene(토글 없음)을 fixture에서 검증.
+  const fixed = sp?.fixed === "left" || sp?.fixed === "right" ? sp.fixed : undefined;
   return (
     <PublicPoster
       anonymous
       accountSwitch={false}
+      avatarFixed={fixed}
       avatarSlot={avatar}
       decorate={decorate}
       initialNarrow={false}

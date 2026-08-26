@@ -1,7 +1,8 @@
 # Active ExecPlan
 
 Plan ID: PLAN-20260827-004
-Status: Completed (①②③ 구현 + 실측 검증 완료; 꾸미기는 높이 fit 제외로 정정)
+Status: Completed (①②③ 구현 후 ③의 '높이 fit'은 당일 철회 — prod 8월에서 배율 ~0.6, 글씨 축소.
+scene도 폭 fit만. 추가: 뱅송 미리보기 URL `/onair`(avatarFixed, 로그인 없음, 공개 로더만))
 Task Risk: L2 (구조적 — 포스터 전역 밀도 변경 = 지오메트리 게이트 baseline 의도적 갱신, 아바타 scene 레이아웃 재구성, fit 배율 계산 확장)
 Created / Updated: 2026-08-27
 

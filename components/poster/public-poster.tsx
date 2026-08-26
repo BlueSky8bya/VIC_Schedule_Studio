@@ -209,6 +209,10 @@ type PublicPosterProps = {
   avatarSide?: "left" | "right";
   onAvatarToggle?: () => void;
   onAvatarSide?: (side: "left" | "right") => void;
+  // 뱅송 미리보기(/onair) 전용: 아바타 scene을 지정한 쪽으로 '항상 켜짐'에 고정하고 관리자 토글은
+  // 그리지 않는다(OBS 브라우저 소스는 로그인이 없으므로 URL만으로 scene이 나와야 한다). 공개 데이터만
+  // 그리는 레이아웃 옵션 — 권한과 무관, 비공개 데이터는 애초에 이 컴포넌트에 없다.
+  avatarFixed?: "left" | "right";
   // 편집실 미리보기에서는 관리자 토글 상태를 직접 받는다. 일반 공개 화면은 기기별 저장값 사용.
   showWorldCupFeatures?: boolean;
 };
@@ -1011,6 +1015,7 @@ export function PublicPoster({
   avatarSlot = false,
   avatarOn: avatarOnProp,
   avatarSide: avatarSideProp,
+  avatarFixed,
   onAvatarToggle,
   onAvatarSide,
   showWorldCupFeatures: showWorldCupFeaturesProp
@@ -1401,7 +1406,7 @@ export function PublicPoster({
   // 관리자 아바타 자리(스트리머 scene). 꾸미기(decorate)에서도 허용 — 현재 방식은 surface를 통째로
   // uniform scale(축소)만 하므로 스티커 좌표(1840 design 기준)가 안 틀어진다(시청자=avatar OFF와도
   // 동일 좌표). 캡처(PNG)는 export 표면 밖이라 아바타가 안 들어간다. localStorage는 owner 로컬.
-  const avatarCapable = avatarSlot;
+  const avatarCapable = avatarSlot || !!avatarFixed;
   // 편집실(studio-shell)에서 controlled로 내려주면(onAvatarToggle 존재) 그 상태/세터를 그대로 쓴다 →
   // 편집실↔미리보기가 같은 상태를 공유(켠 채 넘어가도 켜져 있음). 그 외(미설정)엔 내부 상태+localStorage.
   const avatarControlled = typeof onAvatarToggle === "function";
@@ -1439,8 +1444,8 @@ export function PublicPoster({
       /* 무시 */
     }
   }
-  const avatarOn = avatarControlled ? avatarOnProp ?? true : avatarOnState;
-  const avatarSide = avatarControlled ? avatarSideProp ?? "left" : avatarSideState;
+  const avatarOn = avatarFixed ? true : avatarControlled ? avatarOnProp ?? true : avatarOnState;
+  const avatarSide = avatarFixed ?? (avatarControlled ? avatarSideProp ?? "left" : avatarSideState);
   const toggleAvatarOn = avatarControlled ? onAvatarToggle! : toggleAvatarOnInternal;
   const pickAvatarSide = avatarControlled ? onAvatarSide! : pickAvatarSideInternal;
 
@@ -2185,14 +2190,8 @@ export function PublicPoster({
   const [posterScale, setPosterScale] = useState(1);
   // 표면(달력)이 일정 양에 따라 세로로 자라므로, 축소 전 '자연 높이'를 재서 stage 높이/배율 계산에 쓴다.
   const [posterNaturalH, setPosterNaturalH] = useState(POSTER_DESIGN_H);
-  // 아바타 scene 높이 fit(2026-08-27 "한눈에"): 방송 화면(OBS 1920×1080)에선 어떤 달도 스크롤 없이
-  // 한 화면에 들어가야 한다. scene이고 ≥1100px(scene이 켜지는 폭)이면 폭뿐 아니라 가용 높이에도
-  // 맞춰 축소하고, 남는 세로는 위아래로 나눠(dy) 달력을 영역 가운데 둔다. 균일 scale+translate라
-  // 표면 안 비율 좌표(스티커)는 불변. null이면 평소(폭 fit + 세로 스크롤).
-  const [sceneFit, setSceneFit] = useState<{ h: number; dy: number } | null>(null);
-  // 꾸미기는 제외 — 위에 팔레트 툴바·텍스트 줄 등 크롬이 커서(실측 stage top 874px) 높이 fit이 달력을
-  // 0.2배로 짓누른다. 편집 중엔 예전대로 폭 fit + 세로 스크롤.
-  const sceneFitOn = avatarCapable && avatarOn && !decorate;
+  // (아바타 scene '높이 fit'은 2026-08-27 당일 철회 — 8월처럼 6주·고밀도 달에서 배율이 0.6까지
+  //  떨어져 방송 화면 글씨가 너무 작아졌다. scene도 평소처럼 '폭 기준' fit만 한다.)
   useEffect(() => {
     if (showAgenda) {
       return; // 모바일 아젠다(목록)는 고정 캔버스를 쓰지 않는다.
@@ -2216,23 +2215,11 @@ export function PublicPoster({
       if (w <= 0) {
         return;
       }
-      let next = Math.max(0.12, Math.min(maxScale, w / natW));
-      let fit: { h: number; dy: number } | null = null;
-      if (sceneFitOn && window.matchMedia("(min-width: 1100px)").matches) {
-        // 가용 높이 = 뷰포트 − stage의 문서상 top − 셸 바닥 padding(18). 문서 좌표로 재야 스크롤
-        // 위치와 무관하게 같은 값이 나온다(꾸미기 툴바 등 위쪽 크롬 높이는 자연히 포함된다).
-        const top = stage.getBoundingClientRect().top + window.scrollY;
-        const availH = Math.max(120, Math.floor(window.innerHeight - top - 18));
-        next = Math.max(0.12, Math.min(next, availH / natH));
-        fit = { h: availH, dy: Math.max(0, Math.round((availH - natH * next) / 2)) };
-      }
+      const next = Math.max(0.12, Math.min(maxScale, w / natW));
       // 값이 그대로면 set을 부르지 않는다 — ResizeObserver는 창을 끄는 동안 프레임마다 불리는데,
       // 그때마다 포스터 트리 전체(달력 42칸)를 다시 그릴 이유가 없다.
       setPosterScale((prev) => (Math.abs(prev - next) < 0.0005 ? prev : next));
       setPosterNaturalH((prev) => (Math.abs(prev - natH) < 0.5 ? prev : natH));
-      setSceneFit((prev) =>
-        prev === fit || (prev && fit && prev.h === fit.h && prev.dy === fit.dy) ? prev : fit
-      );
     };
     measure();
     // 창 크기 조절 중엔 콜백이 프레임보다 자주 올 수 있다. 프레임당 한 번으로 모아서 잰다
@@ -2250,16 +2237,13 @@ export function PublicPoster({
     const ro = new ResizeObserver(onResize);
     ro.observe(scaler); // 달 변경 등으로 자연 높이가 바뀌면 stage 높이 갱신
     ro.observe(stage); // 뷰포트 폭 변하면 배율 갱신
-    // 창 '높이'만 변하면 stage 폭이 그대로라 RO가 안 깨운다 — scene 높이 fit은 resize로 듣는다.
-    window.addEventListener("resize", onResize);
     return () => {
       if (raf) {
         window.cancelAnimationFrame(raf);
       }
-      window.removeEventListener("resize", onResize);
       ro.disconnect();
     };
-  }, [showAgenda, decorate, avatarSlot, sceneFitOn]);
+  }, [showAgenda, decorate, avatarSlot]);
 
 
 
@@ -5864,7 +5848,7 @@ export function PublicPoster({
           두면 켜고 끌 때 shell 폭이 전체폭↔가운데로 바뀌며 좌우로 흔들려 버튼이 따라 움직였다.
           viewport 고정(fixed)은 스크롤을 따라 내려와 달력을 가려서 뺐다 — 페이지와 함께 스크롤된다.
           켜짐엔 끄기+위치(왼/오른쪽), 꺼짐엔 켜기. 데스크탑·관리자 전용. */}
-      {avatarCapable && !showAgenda && !decorate ? (
+      {avatarCapable && !avatarFixed && !showAgenda && !decorate ? (
         <div className="avatar-ctl avatar-ctl-preview" role="group" aria-label="아바타 자리 설정(관리자 전용)">
           <button
             type="button"
@@ -6771,7 +6755,7 @@ export function PublicPoster({
         <div
           className="poster-stage"
           ref={posterStageRef}
-          style={{ height: sceneFit ? sceneFit.h : posterNaturalH * posterScale }}
+          style={{ height: posterNaturalH * posterScale }}
         >
         <div
           className="poster-scaler"
@@ -6779,7 +6763,6 @@ export function PublicPoster({
           style={
             {
               "--poster-scale": posterScale,
-              "--poster-dy": `${sceneFit?.dy ?? 0}px`,
               width: POSTER_DESIGN_W
             } as CSSProperties
           }
