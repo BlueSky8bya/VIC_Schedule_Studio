@@ -13,6 +13,12 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **최종 전체 검토(2026-08-27 밤, 정리 작업 회귀 점검)**: 런타임 코드의 drop 테이블/함수·삭제 라우트·삭제 모듈
+  참조 0(에이전트 감사). 발견·수정: ① 죽은 CSS 제거기가 `:not(.dead)` 규칙을 통째로 지워 단축키 칩이 풀림 →
+  `.kbd-hints span`으로 복원(5ec57cd) ② `db/policies`가 drop된 스티커 테이블·`is_worker`를 참조하고
+  `is_active_worker` 원본을 되살릴 수 있어 정리(9d8bed4) ③ 관심 링 `@property` 미지원 폴백. 프레즌스 '지금
+  접속' 임계 300s/180s ≫ 60s 하트비트라 안전. prod 스모크·verify-public·비주얼 77·vitest 490 통과.
+  **e2e(`npm run test:e2e`)는 dev 서버+실DB로 돌며 visit_session/activity_event에 익명 행을 남긴다 — 통계 오염 주의.**
 - **정리 5건 실행(2026-08-27, CHG-20260827-003)**: 폴링 완화(soop-live·presence 25s→60s), 공개 로더
   `calendar_hearts` 쿼리 + `PublicSchedule.heartCount` 삭제(소비자 0), `scripts/_verify_*.mjs` 11개 삭제,
   죽은 CSS 1,101줄 제거(정확 문자열+템플릿 접두 스캔, `evt-pat`은 `:not()` 참조라 유지), DB 0066
