@@ -17,7 +17,8 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   `calendar_hearts` 쿼리 + `PublicSchedule.heartCount` 삭제(소비자 0), `scripts/_verify_*.mjs` 11개 삭제,
   죽은 CSS 1,101줄 제거(정확 문자열+템플릿 접두 스캔, `evt-pat`은 `:not()` 참조라 유지), DB 0066
   (visit_log·presence_ping·presence_hourly/peak/active_days·owner_sessions·calendar_hearts·add_calendar_heart
-  drop — 백업 `docs/agent/backups/2026-08-27_legacy-presence.json`). **0066은 코드 배포 뒤 적용.**
+  drop — 백업 `docs/agent/backups/2026-08-27_legacy-presence.json`). **0066 prod 적용 완료(2026-08-27,
+  c2194a8 배포 확인 후; 테이블 3·함수 5 drop 검증, 공개 API 200).**
   남은 후보: `unlock_sessions`(코드가 아직 delete 호출 — 별도 결정), 콜드 스타트 워밍 핑.
 - **관심 단계 링 v2(2026-08-27 재설계)**: v1(바깥 spread+넓은 halo)이 모바일에서 이웃 링끼리 겹치고 짙어
   난잡(사용자 리포트). v2 = 링을 카드 '안쪽'에 마스크(padding-box 도려냄, inset −1px로 카드 테두리를 대체)
