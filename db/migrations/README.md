@@ -43,3 +43,4 @@
 | 0042–0043 | perf_samples / perf_samples_grants |
 | 0044 | silver_color_open_run_tag |
 | 0065 | retire_stickers_and_worker — 스티커 테이블 drop·작업자 컬럼 drop (ADR-0015; 코드 배포 후 적용) |
+| 0066 | drop_legacy_presence_and_calendar_hearts — visit_log·presence_ping(+hourly/peak/active_days)·owner_sessions·calendar_hearts(+add_calendar_heart) drop (코드 소비자 0; 백업 `docs/agent/backups/2026-08-27_legacy-presence.json`; 코드 배포 후 적용) |

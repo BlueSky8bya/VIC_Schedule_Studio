@@ -13,6 +13,20 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **정리 5건 실행(2026-08-27, CHG-20260827-003)**: 폴링 완화(soop-live·presence 25s→60s), 공개 로더
+  `calendar_hearts` 쿼리 + `PublicSchedule.heartCount` 삭제(소비자 0), `scripts/_verify_*.mjs` 11개 삭제,
+  죽은 CSS 1,101줄 제거(정확 문자열+템플릿 접두 스캔, `evt-pat`은 `:not()` 참조라 유지), DB 0066
+  (visit_log·presence_ping·presence_hourly/peak/active_days·owner_sessions·calendar_hearts·add_calendar_heart
+  drop — 백업 `docs/agent/backups/2026-08-27_legacy-presence.json`). **0066은 코드 배포 뒤 적용.**
+  남은 후보: `unlock_sessions`(코드가 아직 delete 호출 — 별도 결정), 콜드 스타트 워밍 핑.
+- **관심 단계 링 v2(2026-08-27 재설계)**: v1(바깥 spread+넓은 halo)이 모바일에서 이웃 링끼리 겹치고 짙어
+  난잡(사용자 리포트). v2 = 링을 카드 '안쪽'에 마스크(padding-box 도려냄, inset −1px로 카드 테두리를 대체)
+  → 절대 안 겹침; 색 사다리 살구→복숭아코랄→로즈코랄→금(2→2.5px에서 멈춤); 폭발·1위만 conic 그라데이션이
+  링을 따라 회전(`tier-sweep`, transform이라 합성 친화); halo는 형제 `.tier-halo`(마스크가 그림자를
+  잘라서 분리) spread 0 저농도 숨쉬기, 모바일 아젠다는 halo 없음. **주의: 링에 `overflow:hidden` 금지**
+  (padding-box로 잘라 border 채움이 사라진다). 범례 견본은 `.tier-swatch.tier-swatch`로 특이도 확보.
+- **편집실 액션바 오른쪽 묶음 정리(2026-08-27)**: 역할 배지 높이 44→36(로그아웃과 통일), 배지 팝오버·헤더
+  미리보기 메뉴는 오른쪽 끝 정렬(왼쪽으로 펼침 — 오른쪽 잘림 버그 수정).
 - **월드컵/축구 시뮬 전부 삭제(2026-08-27, 사용자 결정 — CHG-20260827-002, ADR-0009 Superseded)**:
   `components/seasonal`(미니게임·중력공 ~6,100줄), `lib/football`(28파일), `tests/unit/football`, `docs/sim`,
   `lib/calendar/worldcup.ts`, `lib/ui/use-worldcup-visibility.ts`, `components/ui/pop-number.tsx`,
@@ -34,7 +48,7 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   스토리지 --delete → 0065 apply**(옛 코드가 스티커 테이블을 읽음) — **전부 적용 완료(2026-08-27)**: prod 배포
   확인 후 버킷 객체 12개·버킷 삭제(Storage API), 0065 OK(테이블 404·is_worker 없음). 검증: tsc·lint·build 0, vitest 618,
   비주얼 77(지오메트리·포스터 기준선 의도 갱신).
-- **정리 후보 조사(2026-08-27, 에이전트 감사)**: 즉시 안전 — 죽은 프레즌스 DB 객체(visit_log·presence_ping·
+- **정리 후보 조사(2026-08-27, 에이전트 감사 — 즉시 안전 항목은 위 CHG-20260827-003으로 실행됨)**: 즉시 안전 — 죽은 프레즌스 DB 객체(visit_log·presence_ping·
   presence_hourly/peak/active_days·owner_sessions·add_calendar_heart), `calendar_hearts` 공개 로더 쿼리(소비자 0),
   폴링 간격(soop-live 25s·presence 25s → 60s), `scripts/_verify_*.mjs` 15개, 죽은 CSS ~760줄(동적 클래스
   오탐 주의). 결정 필요 — 월드컵/축구 시뮬(`WORLD_CUP_UI_ENABLED=false`, ~15,500줄, ADR-0009 뒤집기).

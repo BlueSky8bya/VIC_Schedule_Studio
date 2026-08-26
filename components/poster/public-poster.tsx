@@ -145,6 +145,8 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 function TierMark({ tier }: { tier: HeartTier }) {
   return (
     <>
+      {/* halo는 링과 형제(링의 마스크가 자기 그림자를 잘라서). 관심(warm)은 halo 없음 — 조용한 단계. */}
+      {tier.key !== "warm" ? <span aria-hidden="true" className={`tier-halo tier-${tier.key}`} /> : null}
       <span
         aria-label={`관심 단계: ${tier.label}`}
         className={`tier-ring tier-${tier.key}`}

@@ -174,5 +174,4 @@ export const samplePublicScheduleData: PublicSchedule = {
   events: publicEvents,
   tags: defaultTags,
   palette: defaultPalette,
-  heartCount: 0
 };

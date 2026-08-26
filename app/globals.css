@@ -574,25 +574,6 @@ select {
   border-color: #f3a3a3;
 }
 
-.placeholder-page {
-  display: grid;
-  min-height: 100vh;
-  align-content: center;
-  justify-items: center;
-  gap: 10px;
-  padding: 32px;
-  text-align: center;
-}
-
-.placeholder-page h1 {
-  margin: 0;
-}
-
-.placeholder-page p {
-  margin: 0;
-  color: var(--muted);
-}
-
 .auth-page {
   display: grid;
   min-height: 100vh;
@@ -794,12 +775,6 @@ select {
 
 /* (.auth-success / .role-route-list* 제거 — 참조 0) */
 
-.trusted-members-page {
-  align-content: start;
-  justify-items: stretch;
-  padding-top: 48px;
-}
-
 .trusted-members-panel {
   display: grid;
   width: min(760px, 100%);
@@ -824,12 +799,7 @@ select {
 }
 
 /* 비공개 레이어 설정/잠금해제 패널 */
-.private-layer-shell {
-  max-width: 560px;
-  margin: 40px auto;
-  display: grid;
-  gap: 16px;
-}
+
 /* (.private-layer-controls / -status / -block* / .auth-notice 제거 — 참조 0) */
 
 /* 최소화된 로그인 게이트 */
@@ -887,32 +857,6 @@ select {
 }
 
 /* Batch 10: private unlock surface. Permission and unlock flows remain unchanged. */
-
-.private-layer-shell {
-  max-width: none;
-  width: min(100%, var(--sheet-width-md));
-  margin: 0 auto;
-  gap: var(--space-4);
-  border: var(--stroke-hairline) solid var(--status-danger);
-  border-radius: var(--r-xl);
-  background: var(--surface);
-  padding: var(--space-5);
-  box-shadow: var(--shadow-3);
-}
-
-.private-layer-shell h1 {
-  margin: 0;
-  color: var(--ink);
-  font-size: var(--text-display);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-tight);
-}
-
-.private-layer-shell h1::before {
-  margin-right: var(--space-2);
-  color: var(--status-danger);
-  content: "🔒";
-}
 
 .passcode-box {
   display: grid;
@@ -977,7 +921,6 @@ select {
   gap: var(--space-2);
 }
 
-.private-layer-shell .auth-warning,
 .passcode-box .auth-warning {
   margin: 0;
   border: var(--stroke-hairline) solid var(--status-danger);
@@ -992,15 +935,7 @@ select {
 @media (max-width: 640px) {
   
 
-  .private-layer-shell {
-    width: 100%;
-    border-right: 0;
-    border-bottom: 0;
-    border-left: 0;
-    border-radius: var(--r-xl) var(--r-xl) 0 0;
-    padding: var(--space-5) var(--space-4)
-      calc(var(--space-5) + env(safe-area-inset-bottom));
-  }
+  
 
   .passcode-input-row {
     display: grid;
@@ -1129,13 +1064,17 @@ html[data-reduce-motion] .support-bar.sb-solo.is-clickable.is-hover .sb-go {
    아니라 정보(일정 유형 구분·색 견본) 그 자체라, 색이 정보인 표면만 저자 색을 유지한다.
    텍스트·버튼·포커스 링 등 나머지는 시스템 색을 그대로 따른다(가독성 우선). */
 @media (forced-colors: active) {
-  .studio-event-pill,        /* 편집실 달력 일정 칩 */
-  .public-event,             /* 시청자 포스터 일정 카드 */
-  .agenda-event,             /* 모바일 아젠다 일정 카드 */
-  .agenda-legend-tag i,      /* 태그 필터 색 견본 점 */
-  .tp-chip,                  /* 태그 선택 칩 */
-  .pill-dots i,              /* 추가 대분류 색 점 줄 */
-  .sticker-item {            /* 꾸미기 스티커(이모지·도형 색) */
+  .studio-event-pill,
+/* 편집실 달력 일정 칩 */
+  .public-event,
+/* 시청자 포스터 일정 카드 */
+  .agenda-event,
+/* 모바일 아젠다 일정 카드 */
+  .agenda-legend-tag i,
+/* 태그 필터 색 견본 점 */
+  .tp-chip,
+/* 태그 선택 칩 */
+  .pill-dots i {            /* 꾸미기 스티커(이모지·도형 색) */
     forced-color-adjust: none;
   }
 }
@@ -1152,12 +1091,7 @@ html[data-reduce-motion] .flame,
 html[data-reduce-motion] .public-day.today,
 html[data-reduce-motion] .agenda-day.today .agenda-when strong,
 html[data-reduce-motion] .auth-brand,
-html[data-reduce-motion] .auth-brand-spark,
-html[data-reduce-motion] .sticker-anim-float,
-html[data-reduce-motion] .sticker-anim-twinkle,
-html[data-reduce-motion] .sticker-anim-jiggle,
-html[data-reduce-motion] .sticker-anim-spin,
-html[data-reduce-motion] .sticker-anim-pulse {
+html[data-reduce-motion] .auth-brand-spark {
   animation: none !important;
 }
 
@@ -1546,10 +1480,6 @@ html[data-reduce-motion] .auth-panel .button {
   padding-inline: var(--space-control-x);
   font-size: var(--text-ui);
   font-weight: var(--weight-semibold);
-}
-
-.system-loading-page .insight-skel {
-  border-radius: var(--r-control);
 }
 
 @supports (

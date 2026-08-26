@@ -125,3 +125,19 @@ Files: 위 + `components/poster/public-poster.{tsx,css}`, `components/studio/stu
   `lib/calendar/{holidays,month}.ts`, `app/globals.css`.
 Validation: tsc·lint 0, vitest 490(축구 테스트 12파일 삭제분 제외), 비주얼 스위트.
 Rollback: git 이력(2026-08-27). 다시 넣는다면 dynamic import + opt-in(ADR-0009 원칙)으로.
+
+### CHG-20260827-003 — REMOVE/PERF — 레거시 프레즌스·하트 객체 drop(0066) + 폴링 완화 + 죽은 코드 정리
+
+Problem: 코드 소비자가 0인 DB 객체(visit_log·presence_ping·presence_hourly/peak/active_days·owner_sessions·
+  calendar_hearts·add_calendar_heart)와 공개 로더의 `calendar_hearts` 쿼리, 검증용 일회성 스크립트 11개,
+  죽은 CSS ~1,100줄이 남아 있었고, soop-live·presence 폴링이 25s로 과했다.
+Change: `db/migrations/0066_drop_legacy_presence_and_calendar_hearts.sql`(멱등, 전부 if exists). 공개
+  로더 5쿼리로(`PublicSchedule.heartCount` 필드 삭제 — 공개 DTO에서 필드 하나 제거, 값 노출 없음).
+  `components/poster/use-soop-live.ts` 60s, `components/presence/presence-beacon.tsx` 60s(체류는 ended_at
+  기준이라 정확도 손실 없음). `scripts/_verify_*.mjs` 삭제. CSS 1,101줄 제거.
+Files: 위 + `lib/schedules/{public-loader,studio-loader,sample-data,sample-public-data}.ts`,
+  `lib/domain/schedule-types.ts`, `components/poster/public-poster.css`, `components/studio/studio-shell.css`,
+  `app/globals.css`, `db/migrations/README.md`.
+Validation: tsc·lint 0, vitest 490, 비주얼 스위트, 죽은 CSS 재스캔 0(evt-pat 제외).
+Rollback: 0011/0023/0024/0025/0026/0027 재적용(빈 객체) + 백업 JSON(`docs/agent/backups/2026-08-27_legacy-presence.json`)
+  으로 행 복원. 코드는 git 이력.

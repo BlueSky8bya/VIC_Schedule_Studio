@@ -91,7 +91,6 @@ export async function getStudioSchedule(
       tags: [],
       palette: [],
       events: [],
-      heartCount: viewerModePreview.heartCount,
       variantGroups: [],
       viewerModePreview
     };
@@ -140,7 +139,6 @@ export async function getStudioSchedule(
       actor.role,
       unlock.hasUnlockSession
     ),
-    heartCount: viewerModePreview.heartCount,
     variantGroups: [],
     viewerModePreview
   };

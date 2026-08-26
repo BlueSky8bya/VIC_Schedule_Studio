@@ -147,7 +147,6 @@ export type PublicSchedule = {
   events: PublicScheduleEvent[];
   tags: BroadcastTag[];
   palette: ColorPaletteEntry[];
-  heartCount: number; // B2: 시청자 하트 누적 수(숫자는 노출하지 않고 비율 표시에만 사용)
   myHeartIds?: string[]; // A: 현재 로그인 사용자가 관심 표시한 일정 id 목록(본인 것만, 개인 상태 복원용)
 };
 

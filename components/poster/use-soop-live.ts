@@ -14,7 +14,8 @@ export type SoopLive = {
   watchUrl: string | null;
 };
 
-const POLL_MS = 25_000;
+// 60s(2026-08-27, 25s에서 완화 — 서버가 20s 캐시라 체감 지연은 최대 ~80s, 방송 시작 알림은 분 단위면 충분).
+const POLL_MS = 60_000;
 
 export function useSoopLive(enabled = true): SoopLive | null {
   const [live, setLive] = useState<SoopLive | null>(null);

@@ -226,7 +226,6 @@ const loadPublicScheduleData = unstable_cache(
         events: [],
         tags: [],
         palette: [],
-        heartCount: 0,
         myHeartIds: []
       };
     }
@@ -238,10 +237,9 @@ const loadPublicScheduleData = unstable_cache(
       tagsRes,
       paletteRes,
       eventsRes,
-      heartsRes,
       eventHeartsRes,
       hopeRes
-    ] = await timed("publicSchedule:db(6 parallel queries)", () =>
+    ] = await timed("publicSchedule:db(5 parallel queries)", () =>
       Promise.all([
         // 모든 공개 쿼리를 이 캘린더로 한정한다. RLS는 공개 행을 허용할 뿐 캘린더별로
         // 막지 않으므로, 캘린더가 2개 이상이 되면 application-level 스코프가 없으면 다른
@@ -268,11 +266,6 @@ const loadPublicScheduleData = unstable_cache(
           .neq("status", "draft")
           .order("date_key")
           .order("created_at"),
-        supabase
-          .from("calendar_hearts")
-          .select("count")
-          .eq("calendar_id", calendar.id)
-          .maybeSingle(),
         // A: 일정별 관심 집계(공개 안전 — user_id 비노출). 함수가 공개 일정만 집계한다.
         supabase.rpc("get_event_heart_counts", { p_calendar_id: calendar.id }),
         // 최초공개 '기대돼요' 집계(0060) — 토큰 비노출, 공개 후에도 남아 배지가 된다.
@@ -316,7 +309,6 @@ const loadPublicScheduleData = unstable_cache(
         // 기대 수는 떡밥 스텁에도, 공개 뒤 원본 카드에도 붙는다("n명이 기다렸어요" 배지).
         hopeCount: hopeCountByEvent.get(row.id) ?? 0
       })),
-      heartCount: Number(heartsRes.data?.count ?? 0),
       myHeartIds: []
     };
   },

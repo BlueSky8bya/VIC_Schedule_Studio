@@ -141,7 +141,6 @@ export const sampleStudioSchedule: StudioSchedule = {
       promotedEventId: "evt-007"
     }
   ],
-  heartCount: 0,
   // 미리보기는 서버 공개 스냅샷만 쓰므로(P0-SEC-2) 샘플에서도 공개 샘플 데이터를 그대로 쓴다 —
   // 비워두면 fixture/오프라인 미리보기가 빈 달력으로 보여 실물과 다르다.
   viewerModePreview: samplePublicScheduleData

@@ -117,16 +117,7 @@
   padding: 0 3px 1px;
 }
 /* 콘텐츠와 방식 가르는 소제목(모바일 세로 필터). 예전 #a2925e = 3.03:1(AA 미달). */
-.agenda-legend-sub {
-  margin-top: 3px;
-  padding-top: 6px;
-  border-top: 1px dashed #e3d6bb;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 0.04em;
-  color: var(--muted);
-  padding-left: 3px;
-}
+
 .agenda-legend-tag {
   display: grid;
   /* minmax(0,1fr): 라벨 컬럼이 내용 min-content 밑으로도 줄어들 수 있게 → 긴 라벨이 레일 폭
@@ -206,22 +197,11 @@
   inset: -6px 4px auto;
   border-top: 1px solid var(--line-soft, #f4ecdb);
 }
-.agenda-legend-tag.heart .agenda-legend-heart {
-  display: inline-grid;
-  place-items: center;
-  width: 12px;
-  height: 12px;
-  border: 0;
-  border-radius: 0;
-  font-size: 12px;
-  color: #d7b9a6;
-}
+
 .agenda-legend-tag.heart.on {
   color: #be123c;
 }
-.agenda-legend-tag.heart.on .agenda-legend-heart {
-  color: #e11d48;
-}
+
 .agenda-legend-clear {
   margin-top: 2px;
   border: 1px solid var(--line, #ece2cd);
@@ -379,22 +359,9 @@
   align-self: center;
   min-width: 0;
 }
-.agenda-header .agenda-preview-right {
-  grid-column: 3;
-  grid-row: 1;
-  justify-self: end;
-  align-self: center;
-  display: inline-flex;
-  gap: 6px;
-}
+
 /* 좁은 제목 헤더 안이라 버튼은 컴팩트하게(왼쪽 여백 줄여 겹침 방지). */
-.agenda-header .agenda-preview-right .button {
-  min-height: 30px;
-  gap: 2px;
-  padding: 0 9px;
-  font-size: 12px;
-  white-space: nowrap;
-}
+
 .agenda-header h1 {
   grid-column: 2;
   grid-row: 1;
@@ -1457,8 +1424,7 @@ body.cell-range-dragging {
    .calendar-title-block* / .month-controls* 제거 — 참조 0.
    ※ 살아있는 .heart-floater가 쓰는 @keyframes heart-rise는 아래쪽 정의가 그대로 남아있다. */
 
-.viewer-actions,
-.poster-actions {
+.viewer-actions {
   position: relative; /* 보상 썸네일(.poster-export-reward)의 기준 */
   display: flex;
   flex-wrap: wrap;
@@ -1468,44 +1434,7 @@ body.cell-range-dragging {
 /* 내보내기 보상 순간(D1) — 복사 성공 시 완성본 미니 썸네일이 버튼 위로 통통 팝인.
    보상은 드물게·물리는 과장되게·지속은 짧게(2.4초 뒤 자동 소멸). 캡쳐 표면 밖(fixed 아님,
    버튼 위 오버레이)이라 PNG에는 안 들어간다. */
-.poster-export-reward {
-  position: absolute;
-  bottom: calc(100% + 10px);
-  left: 0;
-  z-index: 30;
-  padding: 6px;
-  border-radius: var(--r-md);
-  background: #fff;
-  box-shadow: var(--shadow-3);
-  pointer-events: none;
-  transform-origin: bottom left;
-  animation: export-reward-pop 0.6s var(--spring-bouncy, var(--ease-spring, var(--ease))) both;
-}
-.poster-export-reward img {
-  display: block;
-  width: 200px;
-  height: auto;
-  border-radius: calc(var(--r-md) - 6px); /* 코너 동심: 바깥 12 − 패딩 6 */
-  border: 1px solid var(--line, #ece9f5);
-}
-.poster-export-reward-spark {
-  position: absolute;
-  color: #e9b949;
-  text-shadow: 0 0 6px rgb(233 185 73 / 55%);
-  animation: export-spark 0.9s var(--ease) both;
-}
-.poster-export-reward-spark.s1 {
-  top: -8px;
-  right: -6px;
-  font-size: 15px;
-  animation-delay: 0.18s;
-}
-.poster-export-reward-spark.s2 {
-  bottom: -4px;
-  left: -8px;
-  font-size: 11px;
-  animation-delay: 0.32s;
-}
+
 @keyframes export-reward-pop {
   from {
     opacity: 0;
@@ -1530,28 +1459,7 @@ body.cell-range-dragging {
     transform: scale(0.7) rotate(18deg);
   }
 }
-html[data-reduce-motion] .poster-export-reward {
-  animation: none;
-}
-html[data-reduce-motion] .poster-export-reward-spark {
-  animation: none;
-  opacity: 0;
-}
 
-.icon-month-button {
-  display: inline-grid;
-  width: 34px;
-  height: 34px;
-  place-items: center;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: transparent;
-  color: #6b5b53;
-  cursor: pointer;
-  transition:
-    background var(--dur-1) var(--ease),
-    color var(--dur-1) var(--ease);
-}
 .viewer-actions {
   justify-content: flex-end;
 }
@@ -1571,52 +1479,10 @@ html[data-reduce-motion] .poster-export-reward-spark {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-.poster-actions .button {
-  gap: 7px;
-  /* 진행 중엔 라벨 없이 점(●●●)만 보여 폭 변동이 없다 — 남는 상태 라벨("일정표 캡쳐"/"복사됨!")
-     기준으로만 고정 폭을 잡는다(em 기반=폰트 스케일 안전, 라벨 중앙 정렬). */
-  min-width: 9em;
-  justify-content: center;
-}
-
-.poster-action-error {
-  color: #b42318;
-  font-size: 13px;
-  font-weight: 700;
-}
 
 /* 내보내기 3단계(준비→렌더링→복사) 진행 점 + 폰트 정착 안내 */
-.poster-export-progress {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  margin-left: 3px;
-}
+
 /* 버튼(primary) 안의 진행 점 — 어두운 버튼 배경 위에서 보이게 흰 계열로. */
-.button.primary .poster-export-progress .dot {
-  background: rgb(255 255 255 / 45%);
-}
-.button.primary .poster-export-progress .dot.done {
-  background: #ffffff;
-}
-.poster-export-progress .dot {
-  width: 7px;
-  height: 7px;
-  border-radius: var(--r-pill);
-  background: rgba(60, 40, 20, 0.22);
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-.poster-export-progress .dot.done {
-  background: var(--brand, #d59a93);
-  transform: scale(1.15);
-}
-.poster-export-progress .poster-export-hint {
-  margin-left: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  font-style: normal;
-  color: var(--muted, #8a8077);
-}
 
 /* #1: 월간 일정표 바로 위 캡쳐 버튼 줄 */
 
@@ -1977,15 +1843,6 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   letter-spacing: -0.01em;
 }
 /* 콘텐츠와 방식을 가르는 소제목(세로 안내). */
-.legend-subhead {
-  margin-top: 5px;
-  padding-top: 6px;
-  border-top: 1px dashed #e6dcc2;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  color: #a99668;
-}
 
 /* 콘텐츠 색상 안내(세로) — 태그 최대 20종 + 하트 + 필터해제까지 달력 높이 안에 들어오도록
    간격을 최소로 압축한다(미래 태그 2종까지 미리 감안). */
@@ -3535,40 +3392,8 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 }
 
 /* (.memo-edit-* 메모 편집 바 제거 — 참조 0) */
-.memo-align-group {
-  display: inline-flex;
-  gap: 2px;
-  border: 1px solid #efe3c2;
-  border-radius: var(--r-pill, 999px);
-  background: #fffef9;
-  padding: 2px;
-}
-.memo-align-group button {
-  display: inline-grid;
-  place-items: center;
-  min-width: 28px;
-  height: 26px;
-  border: 0;
-  border-radius: var(--r-pill, 999px);
-  background: transparent;
-  color: #8a7a4a;
-  font-size: 13px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.memo-align-group button.active {
-  background: #f4b740;
-  color: #4a3a10;
-}
+
 /* (.memo-edit-input/-state · .memo-line-* 줄별 편집기 제거 — 참조 0) */
-.memo-indent-level {
-  display: inline-grid;
-  place-items: center;
-  min-width: 16px;
-  color: #8a7a4a;
-  font-size: 11px;
-  font-weight: 900;
-}
 
 /* (불꽃 알약 .event-popular 삭제 — 2026-08-27. 관심 단계는 카드 테두리 링 .tier-ring으로.) */
 
@@ -3602,14 +3427,6 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
     opacity: 0;
     transform: translate(calc(-50% + var(--dx, 0px)), -190%) scale(0.9);
   }
-}
-
-.support-card {
-  border: 1px solid #ece2cd;
-  border-radius: var(--r-lg);
-  background: #fffdf6;
-  box-shadow: var(--shadow-2);
-  overflow: hidden;
 }
 
 .public-calendar-area {
@@ -3850,11 +3667,8 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 }
 
 /* 관심 단계 = 카드 '테두리'만(2026-08-27, 불꽃 알약 대체 — 알약이 카드 바닥 한 줄(≈18px)을 먹어
-   행마다 쌓이면 달력 비율이 무너졌다). 링(.tier-ring)은 카드 안 absolute라 높이 0. 내용이 링 위에
-   오도록 본문 레이어를 z-index 1로 띄운다(무늬 .evt-pat는 그대로 아래). 색은 태그색과 독립 —
-   채움·밑줄 없이 테두리(안 1px + 바깥 spread)와 바깥 halo만 쓴다(사용자 지정: 테두리 하이라이팅만).
-   단계가 오를수록 테두리가 두꺼워지고(1→2→3px) 색이 주황→진주황→빨강→금으로, halo가 넓고 빠르게
-   숨쉰다. 1위는 금색 + 카드 우상단 모서리 위에서 흔들리는 👑(배경 없이 생으로). */
+   행마다 쌓이면 달력 비율이 무너졌다). 링(.tier-ring)·halo(.tier-halo)는 카드 안 absolute라 높이 0.
+   내용이 링 위에 오도록 본문 레이어를 z-index 1로 띄운다. 스타일 사양은 아래 'v2' 블록. */
 .public-event > .event-main,
 .public-event > .event-subs,
 .public-event > .event-meta {
@@ -3867,7 +3681,8 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 /* 2색 카드는 자식 전부를 position:relative·z-index 1로 바꾸는 규칙(.public-event[data-mixed] >
    :not(.evt-pat))이 있어 링·👑이 흐름 안으로 들어가(링 = 카드 바닥 금색 띠, 👑 = 왼쪽 아래로 밀림 —
    사용자 리포트) 본문과 같은 층에 그려졌다. 둘 다 absolute·층을 되돌린다(특이도 0,4,0 > 0,3,0). */
-.public-event[data-mixed] > .tier-ring.tier-ring {
+.public-event[data-mixed] > .tier-ring.tier-ring,
+.public-event[data-mixed] > .tier-halo.tier-halo {
   position: absolute;
   z-index: 0;
 }
@@ -3875,71 +3690,96 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   position: absolute;
   z-index: 3;
 }
+/* ── 관심 단계 링 v2 (2026-08-27 재설계) ──────────────────────────────────────────────
+   v1(안 1px + 바깥 spread 1~3px + 넓은 halo)은 모바일에서 이웃 링끼리 겹치고 웹에서도 짙어 난잡했다
+   (사용자 리포트). 원칙:
+   ① 링은 카드 '안쪽'에 그린다(inset 0 + 안쪽 마스크) → 카드 밖으로 1px도 안 나가 이웃과 절대 안 겹친다.
+   ② 두께 경쟁 대신 색 사다리: 살구(관심) → 복숭아코랄(높음) → 로즈코랄(폭발) → 금(1위). 1.5px → 2px에서 멈춤.
+   ③ '빛'은 바깥 halo가 아니라 링 자체를 따라 흐르는 광택(conic 그라데이션 회전) — 폭발·1위만. 낮은
+      단계는 정적(조용함이 곧 위계).
+   ④ halo(.tier-halo, 별도 형제 — 마스크가 그림자를 잘라서)는 spread 0·저농도로 '온기'만: 겹쳐도 딱딱한
+      선이 안 생긴다. 모바일 아젠다는 halo 없음.
+   본문(.event-main…)은 z-index 1로 링 위. 링·halo는 높이 0(absolute) — 달력 비율에 영향 없음. */
 .tier-ring {
   position: absolute;
-  inset: 0;
+  inset: -1px; /* 카드 자체 1px 테두리까지 덮어 링이 곧 카드의 테두리가 된다(안쪽 선 두 겹 X) */
   z-index: 0;
   border-radius: inherit;
-  /* 안쪽 1px(선명한 경계) + 바깥 spread(두께 = 단계) — 카드 안 여백을 안 먹고 두꺼워진다.
-     카드 사이 간격 4px 안에서 최대 3px. */
-  border: 1px solid var(--tier-c, transparent);
-  box-shadow: 0 0 0 var(--tier-w, 1px) var(--tier-c, transparent);
+  border: var(--tier-w, 2px) solid transparent;
   pointer-events: none;
+  /* (overflow:hidden 금지 — padding-box로 잘라 border 영역의 채움까지 지워 링이 사라진다. 마스크가 곧 클립.)
+     안쪽(padding-box)을 도려낸 마스크 → 테두리 두께만 남는 링. 모서리는 둥근 형태를 따른다. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  mask:
+    linear-gradient(#000 0 0) padding-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
 }
-/* 바깥 halo — opacity만 숨쉰다(GPU 친화). 카드마다 위상을 어긋나게(아래 nth-child). */
+/* 링 채움 — border-box를 정확히 덮는 ::before(밖으로 1px도 안 나가 스크롤 overflow를 안 만든다 —
+   큰 정사각형을 회전시키던 초안은 마스크로 안 보여도 scrollWidth를 키워 모바일 가로 넘침이 났다).
+   광택은 요소 회전이 아니라 conic-gradient의 시작 각(@property --tier-a)을 돌린다. 정적 단계는 단색. */
+@property --tier-a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
 .tier-ring::before {
   content: "";
   position: absolute;
-  inset: calc(-1px - var(--tier-w, 1px));
+  inset: calc(-1 * var(--tier-w, 2px));
+  background: var(--tier-c, transparent);
+}
+.tier-ring.tier-blaze::before,
+.tier-ring.tier-top::before {
+  background: conic-gradient(from var(--tier-a), var(--tier-stops));
+  animation: tier-sweep var(--tier-dur, 3.4s) linear infinite;
+  animation-delay: var(--tier-phase, 0s);
+}
+.tier-halo {
+  position: absolute;
+  inset: -1px;
+  z-index: 0;
   border-radius: inherit;
-  box-shadow: 0 0 var(--tier-halo, 6px) var(--tier-halo-spread, 0px) var(--tier-c, transparent);
-  opacity: var(--tier-halo-lo, 0.4);
-  animation: tier-breathe var(--tier-dur, 6s) ease-in-out infinite;
+  pointer-events: none;
+  box-shadow: 0 0 var(--tier-halo, 8px) 0 var(--tier-c, transparent);
+  opacity: var(--tier-halo-lo, 0.3);
+  animation: tier-breathe var(--tier-dur-halo, 4s) ease-in-out infinite;
   animation-delay: var(--tier-phase, 0s);
 }
-.tier-ring.tier-warm {
-  --tier-c: #f59e0b;
-  --tier-w: 1px;
-  --tier-halo: 6px;
-  --tier-halo-lo: 0.3;
-  --tier-halo-hi: 0.65;
-  --tier-dur: 6s;
-}
-.tier-ring.tier-hot {
-  --tier-c: #f97316;
+.tier-warm {
+  --tier-c: #f3b85c;
   --tier-w: 2px;
+}
+.tier-hot {
+  --tier-c: #f28a63;
+  --tier-w: 2px;
+  --tier-halo: 10px;
+  --tier-halo-lo: 0.3;
+  --tier-halo-hi: 0.55;
+  --tier-dur-halo: 4.2s;
+}
+.tier-blaze {
+  --tier-c: #ee6b8b;
+  --tier-w: 2.5px;
+  --tier-stops: #ee6b8b, #ffa36e 22%, #ee6b8b 48%, #ffc07a 72%, #ee6b8b;
+  --tier-dur: 3.6s;
   --tier-halo: 12px;
-  --tier-halo-spread: 1px;
-  --tier-halo-lo: 0.45;
-  --tier-halo-hi: 1;
-  --tier-dur: 3.4s;
+  --tier-halo-lo: 0.35;
+  --tier-halo-hi: 0.65;
+  --tier-dur-halo: 2.8s;
 }
-.tier-ring.tier-blaze {
-  --tier-c: #dc2626;
-  --tier-w: 3px;
-  --tier-halo: 18px;
-  --tier-halo-spread: 2px;
-  --tier-halo-lo: 0.5;
-  --tier-halo-hi: 1;
-  --tier-dur: 2s;
-}
-/* 폭발은 규칙적 숨이 아니라 '타오르는' 불규칙 깜빡임. */
-.tier-ring.tier-blaze::before {
-  animation-name: tier-flicker;
-}
-.tier-ring.tier-top {
-  --tier-c: #eab308;
-  --tier-w: 3px;
-  --tier-halo: 16px;
-  --tier-halo-spread: 2px;
-  --tier-halo-lo: 0.55;
-  --tier-halo-hi: 1;
-  --tier-dur: 2.6s;
-}
-/* 1위 테두리 자체도 은은히 밝아졌다 어두워졌다(금이 '반짝'이는 느낌, 밴드·밑줄 없음). */
-.tier-ring.tier-top {
-  animation: tier-gold 2.6s ease-in-out infinite;
-  animation-delay: var(--tier-phase, 0s);
+.tier-top {
+  --tier-c: #e4b02a;
+  --tier-w: 2.5px;
+  --tier-stops: #e4b02a, #fff4c2 18%, #e4b02a 40%, #f9df8c 62%, #e4b02a 80%, #fff4c2 92%, #e4b02a;
+  --tier-dur: 3.2s;
+  --tier-halo: 14px;
+  --tier-halo-lo: 0.4;
+  --tier-halo-hi: 0.7;
+  --tier-dur-halo: 2.6s;
 }
 .tier-crown {
   position: absolute;
@@ -3949,96 +3789,70 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   font-size: 15px;
   line-height: 1;
   pointer-events: none;
-  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 35%));
+  filter: drop-shadow(0 1px 1.5px rgb(120 80 0 / 30%));
   transform-origin: 50% 90%;
-  animation: tier-crown-bob 1.8s ease-in-out infinite;
+  animation: tier-crown-bob 2.4s ease-in-out infinite;
 }
 /* 위상 분산 — 이웃 카드가 같은 박자로 숨쉬면 기계적으로 보인다. */
-.public-event:nth-child(3n + 2) .tier-ring {
+.public-event:nth-child(3n + 2) .tier-ring,
+.public-event:nth-child(3n + 2) .tier-halo {
   --tier-phase: -1.3s;
 }
-.public-event:nth-child(3n) .tier-ring {
+.public-event:nth-child(3n) .tier-ring,
+.public-event:nth-child(3n) .tier-halo {
   --tier-phase: -2.6s;
 }
 @keyframes tier-breathe {
   0%,
   100% {
-    opacity: var(--tier-halo-lo, 0.4);
+    opacity: var(--tier-halo-lo, 0.3);
   }
   50% {
-    opacity: var(--tier-halo-hi, 0.9);
+    opacity: var(--tier-halo-hi, 0.5);
   }
 }
-@keyframes tier-flicker {
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-  18% {
-    opacity: 1;
-  }
-  31% {
-    opacity: 0.55;
-  }
-  47% {
-    opacity: 0.95;
-  }
-  62% {
-    opacity: 0.7;
-  }
-  80% {
-    opacity: 1;
-  }
-}
-@keyframes tier-gold {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.35);
+@keyframes tier-sweep {
+  to {
+    --tier-a: 360deg;
   }
 }
 @keyframes tier-crown-bob {
   0%,
   100% {
-    transform: rotate(-14deg);
+    transform: rotate(-7deg);
   }
   50% {
-    transform: rotate(14deg) translateY(-1px);
+    transform: rotate(7deg) translateY(-1px);
   }
 }
-/* 동작 줄이기·내보내기 정지 프레임 — 단계는 테두리 두께·색·halo 농도로 여전히 구분된다. */
-html[data-reduce-motion] .tier-ring,
+/* 동작 줄이기·내보내기 정지 프레임 — 단계는 링 색·두께(+정지된 그라데이션)로 여전히 구분된다. */
 html[data-reduce-motion] .tier-ring::before,
+html[data-reduce-motion] .tier-halo,
 html[data-reduce-motion] .tier-crown {
   animation: none;
 }
-html[data-reduce-motion] .tier-ring::before {
-  opacity: var(--tier-halo-hi, 0.9);
+html[data-reduce-motion] .tier-halo {
+  opacity: var(--tier-halo-hi, 0.5);
 }
-/* 모바일 아젠다: 행(가로 카드)을 감싸는 정적 링 — 숨쉬기 없음(배터리), 👑은 오른쪽 위. */
+/* 모바일 아젠다: 행(가로 카드)을 살짝 감싸는 링 — 행 간격 7px 안에서 위아래 3px만 나가므로 이웃 링과
+   안 겹친다. halo 없음(겹침·배터리). 광택 회전·👑은 그대로. */
 .agenda-event {
   position: relative;
 }
 .agenda-event .tier-ring {
-  inset: -4px -6px;
-  border-radius: 10px;
+  inset: -3px -6px;
+  border-radius: 9px;
 }
-.agenda-event .tier-ring,
-.agenda-event .tier-ring::before {
-  animation: none;
-}
-.agenda-event .tier-ring::before {
-  opacity: var(--tier-halo-hi, 0.9);
+.agenda-event .tier-halo {
+  display: none;
 }
 .agenda-event .tier-crown {
   right: -10px;
   top: -12px;
-  animation: none;
 }
-/* 범례 견본 — 카드 링을 작은 상자로 축약(두께·색·halo 그대로). */
-.tier-swatch {
+/* 범례 견본 — 링을 작은 상자로 축약(색·두께 그대로, 광택은 정지 그라데이션). 웹 범례·모바일 도움말의
+   generic `li i`/`span i` 테두리 규칙을 이기도록 클래스를 겹쳐 특이도(0,2,0)를 올려 둔다. */
+.tier-swatch.tier-swatch {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4047,30 +3861,18 @@ html[data-reduce-motion] .tier-ring::before {
   height: 14px;
   margin: 0 3px;
   border-radius: 5px;
-  border: 1px solid var(--tier-c);
-  box-shadow:
-    0 0 0 var(--tier-w, 1px) var(--tier-c),
-    0 0 6px var(--tier-c);
+  border: var(--tier-w, 2px) solid var(--tier-c);
   background: #fffdf6;
   font-size: 10px;
   line-height: 1;
   font-style: normal;
 }
-.tier-swatch.tier-warm {
-  --tier-c: #f59e0b;
-  --tier-w: 1px;
-}
-.tier-swatch.tier-hot {
-  --tier-c: #f97316;
-  --tier-w: 2px;
-}
-.tier-swatch.tier-blaze {
-  --tier-c: #dc2626;
-  --tier-w: 3px;
-}
-.tier-swatch.tier-top {
-  --tier-c: #eab308;
-  --tier-w: 3px;
+.tier-swatch.tier-swatch.tier-blaze,
+.tier-swatch.tier-swatch.tier-top {
+  border-color: transparent;
+  background:
+    linear-gradient(#fffdf6, #fffdf6) padding-box,
+    conic-gradient(from 0deg, var(--tier-stops)) border-box;
 }
 
 .public-day.outside .day-strip {
@@ -4433,47 +4235,6 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   margin-right: 4px;
 }
 
-.support-card {
-  display: grid;
-  align-content: start;
-  gap: var(--space-3); /* 12 — 10 정리 */
-  /* 제목이 짧아도 카드 폭은 아래 색상 안내와 같게(사이드바 전체 폭) — 세로 정렬만 start. */
-  align-self: stretch;
-  /* 범례 패널과 같은 안쪽 여백 12px(정렬 조화). 표면 안 — 스티커 좌표 살짝 바뀜. */
-  padding: var(--space-3); /* 12 — 14 정리 */
-}
-
-.support-card span {
-  font-weight: 900;
-}
-
-.support-card strong {
-  font-size: 20px;
-}
-
-.support-card p {
-  margin: 0;
-  color: #4b5563;
-  line-height: 1.5;
-}
-
-.support-card a {
-  /* 꾸미기 모드의 스티커 레이어(z-index:5, pointer-events:auto)가 클릭을 가로채지
-     않도록 '도우러 가기' 링크를 그 위로 올린다 → 소유자·개발자·신뢰멤버가 링크를 확인 가능. */
-  position: relative;
-  z-index: 6;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2); /* 8 */
-  min-height: 40px;
-  border: 1px solid #84b74f;
-  border-radius: var(--r-sm); /* 8 (토큰화) */
-  background: #e6f7c7;
-  color: #334b0b;
-  font-weight: 900;
-}
-
 /* ── 스티커(이모지) 레이어 ── */
 
 /* C11 촉감: 잡으면 그림자가 깊어져 살짝 떠오른 느낌(회전·플립 transform과 충돌 없음) */
@@ -4495,51 +4256,8 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 
 /* (.text-panel 텍스트 스티커 편집 패널 제거 — 참조 0) */
 /* 글꼴 / 굵기 / 정렬 / (기울임·배경) / (크기·투명도) — 줄 단위로 배치 */
-.text-controls {
-  display: grid;
-  gap: 11px;
-}
-.text-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 24px;
-}
-.text-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
-.text-edit-input {
-  flex: 1;
-  min-width: 0;
-  min-height: 40px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  padding: 8px 11px;
-  font-size: 14px;
-  font-weight: 700;
-  font-family: inherit;
-  line-height: 1.4;
-  resize: vertical;
-}
 /* (.text-weight-group / .text-font-group / .text-align-group / .text-toggle-btn 제거 — 참조 0) */
-.text-size-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  font-size: 12.5px;
-  font-weight: 900;
-  color: #475569;
-}
-.text-size-control input[type="range"] {
-  width: 120px;
-  flex: 0 0 auto;
-  height: 6px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
 
 /* C: 선택한 스티커 옆에 떠다니는 편집 바 — 화면 고정(fixed)이라 위쪽 패널 왕복이 사라지고,
    선택을 풀면 사라지므로 캡쳐(선택 해제 후 진행)에도 잡히지 않는다. */
@@ -4552,13 +4270,6 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
    혼자 줄바꿈되는 거 방지). 모자라면 wrap. */
 
 /* P2 데코 도형: 팔레트 칩(SVG 미리보기) · 캔버스 렌더 · 도형 색 피커 라벨. */
-.shape-chip {
-  display: inline-grid;
-  place-items: center;
-}
-.shape-chip svg {
-  display: block;
-}
 
 /* 슬라이더 행 — 라벨은 고정폭(크기/투명도 시작점 정렬), 슬라이더는 남는 공간 다 차지.
    같은 행에 액션 버튼이 있으면 자연스레 그 앞까지 늘어남(spacer 불필요). */
@@ -4570,37 +4281,7 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 
 /* 그룹 줄 — 스프링 슬라이드-인(펼칠 때만, 접기는 즉시 정리). */
 
-@keyframes sh-groups-in {
-  from {
-    opacity: 0;
-    transform: translateX(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.sh-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding-left: 14px;
-  border-left: 1px solid #e6e0f4; /* 그룹 사이 헤어라인 */
-}
-.sh-group:first-child {
-  padding-left: 0;
-  border-left: 0;
-}
 /* 그룹 라벨 — 작고 조용하게(항목과 위계 구분), 항목 pill과 같은 세로 중심. */
-.sh-group em {
-  font-style: normal;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.03em;
-  color: #9a90bd;
-  white-space: nowrap;
-}
 
 /* 항목 속 보조 주석(예: 붙여넣기 '다른 달도') — 본문보다 한 톤 조용하게. */
 
@@ -5536,108 +5217,6 @@ html[data-reduce-motion] .poster-readonly .heart-toast {
 
 /* 배치 6: 꾸미기 chrome. 작품·선택 링 geometry는 유지하고 inspector 표면만 정돈한다. */
 
-.palette-group {
-  gap: var(--space-2);
-  border: var(--stroke-hairline) solid var(--line-soft);
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-  padding: var(--space-3);
-}
-
-.palette-label {
-  color: var(--ink-soft);
-  font-size: var(--text-label);
-  font-weight: var(--weight-semibold);
-  letter-spacing: var(--tracking-tight);
-}
-
-.upload-drop {
-  gap: var(--space-1);
-  border: var(--stroke-hairline) dashed var(--selection-border);
-  border-radius: var(--r-lg);
-  background: var(--selection-fill);
-  padding: var(--space-4) var(--space-3);
-}
-
-.upload-drop:hover,
-.upload-drop.dragover {
-  border-color: var(--focus-ring);
-  background: var(--selection-fill);
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--focus-ring);
-}
-
-.upload-drop-icon {
-  width: var(--control-hit);
-  height: var(--control-hit);
-  margin-bottom: 0;
-  background: var(--surface);
-  color: var(--violet);
-}
-
-.upload-drop-title {
-  color: var(--ink);
-  font-size: var(--text-body);
-}
-
-.upload-drop-hint {
-  color: var(--muted);
-  font-size: var(--text-caption);
-  line-height: var(--lh-body);
-}
-
-.text-add-input,
-.poster-actions .button {
-  min-height: var(--control-hit);
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-control);
-  background: var(--surface);
-  color: var(--ink);
-}
-
-.text-add-input {
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--text-input);
-}
-
-.poster-actions .button {
-  padding-inline: var(--space-control-x);
-  font-size: var(--text-body);
-}
-
-@media (max-width: 640px) {
-  
-
-  
-
-  
-
-  
-
-  
-
-  .palette-group {
-    padding: var(--space-2);
-  }
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-}
-
-html[data-reduce-motion] .upload-drop {
-  transition: none;
-}
-
 /* Batch 8: public records sheet. Viewer-only chrome; export surface remains untouched. */
 .pi-backdrop {
   background: var(--selection-overlay);
@@ -6288,16 +5867,16 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   white-space: nowrap;
 }
 .adt-badge.tier-warm {
-  --tier-c: #d97706;
+  --tier-c: #c8892c;
 }
 .adt-badge.tier-hot {
-  --tier-c: #ea580c;
+  --tier-c: #d9613a;
 }
 .adt-badge.tier-blaze {
-  --tier-c: #dc2626;
+  --tier-c: #d3496f;
 }
 .adt-badge.tier-top {
-  --tier-c: #a16207;
+  --tier-c: #a67c12;
 }
 
 html[data-reduce-motion] .agenda-detail-backdrop,

@@ -192,8 +192,7 @@ function hostileSnapshot(): PublicSchedule {
     calendar: {},
     events,
     tags,
-    palette,
-    heartCount: 7
+    palette
   } as unknown as PublicSchedule;
 }
 

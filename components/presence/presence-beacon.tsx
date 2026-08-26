@@ -13,7 +13,9 @@ import { isContentReady, onContentReady } from "@/lib/presence/content-ready";
 //    화면이 '보일 때만' 기록하므로 프리렌더·백그라운드 로드(안 본 유령 방문)는 잡히지 않는다.
 //    KST 자정을 넘기면(켜둔 채 날짜 변경) 현재 세션을 끝내고 새 날짜로 새 세션 — 안 그러면 다음날
 //    방문기록에 안 잡힌다(day는 start 시점에만 박힌다).
-const HEARTBEAT_MS = 25_000;
+// 60s(2026-08-27, 25s에서 완화) — 체류 = ended_at 기준이라 정확도 손실 없음. 비정상 종료(end 못 보냄)만
+// last_seen 해상도가 60s로 거칠어진다. 요청 수 −58%.
+const HEARTBEAT_MS = 60_000;
 
 // 현재 KST 날짜(YYYY-MM-DD). 서버 ymd(kstNow())와 동일 규칙(+9h).
 const kstDay = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
