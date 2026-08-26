@@ -1425,7 +1425,7 @@ body.cell-range-dragging {
    ※ 살아있는 .heart-floater가 쓰는 @keyframes heart-rise는 아래쪽 정의가 그대로 남아있다. */
 
 .viewer-actions {
-  position: relative; /* 보상 썸네일(.poster-export-reward)의 기준 */
+  position: relative; /* (옛 내보내기 보상 썸네일의 기준점 — 썸네일은 철수, relative는 다른 absolute 자식용으로 유지) */
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -1435,30 +1435,6 @@ body.cell-range-dragging {
    보상은 드물게·물리는 과장되게·지속은 짧게(2.4초 뒤 자동 소멸). 캡쳐 표면 밖(fixed 아님,
    버튼 위 오버레이)이라 PNG에는 안 들어간다. */
 
-@keyframes export-reward-pop {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.6);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-@keyframes export-spark {
-  0% {
-    opacity: 0;
-    transform: scale(0.4) rotate(-30deg);
-  }
-  45% {
-    opacity: 1;
-    transform: scale(1.15) rotate(0deg);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.7) rotate(18deg);
-  }
-}
 
 .viewer-actions {
   justify-content: flex-end;

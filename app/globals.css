@@ -1064,17 +1064,14 @@ html[data-reduce-motion] .support-bar.sb-solo.is-clickable.is-hover .sb-go {
    아니라 정보(일정 유형 구분·색 견본) 그 자체라, 색이 정보인 표면만 저자 색을 유지한다.
    텍스트·버튼·포커스 링 등 나머지는 시스템 색을 그대로 따른다(가독성 우선). */
 @media (forced-colors: active) {
+  /* 편집실 일정 칩 · 시청자 포스터 카드 · 모바일 아젠다 카드 · 태그 필터 견본 점 · 태그 선택 칩 ·
+     추가 대분류 색 점 줄 — 색이 곧 정보라 forced-color-adjust를 끈다. */
   .studio-event-pill,
-/* 편집실 달력 일정 칩 */
   .public-event,
-/* 시청자 포스터 일정 카드 */
   .agenda-event,
-/* 모바일 아젠다 일정 카드 */
   .agenda-legend-tag i,
-/* 태그 필터 색 견본 점 */
   .tp-chip,
-/* 태그 선택 칩 */
-  .pill-dots i {            /* 꾸미기 스티커(이모지·도형 색) */
+  .pill-dots i {
     forced-color-adjust: none;
   }
 }
