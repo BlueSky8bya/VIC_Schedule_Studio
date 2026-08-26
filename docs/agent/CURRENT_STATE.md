@@ -13,6 +13,17 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **그림판 펜 카드 위 첫 클릭·미리보기 아바타 컨트롤·동작 줄이기 기본값(2026-08-27)**:
+  ① `.bp-draw-surface`에 `z-index: 50` — 일정 레이어가 스택 zIndex를 갖게 된 `526585e` 이후
+  입력면이 카드 아래로 깔려 카드 안에서 시작한 펜 획이 안 그려지던 회귀(입력면은 투명, 선택
+  도구일 땐 pointer-events none이라 카드 조작 불변). ② 시청자 미리보기 `.avatar-ctl-preview`를
+  fixed→absolute(.poster-page 기준) — 스크롤 따라 내려와 달력 가리던 것. ③ **동작 줄이기 기본
+  OFF**: layout 인라인 스크립트·`reduceMotionEnabled()` 모두 'on'일 때만 켬(P1-MOTION-1의 OS
+  prefers-reduced-motion 시딩 철회, 사용자 결정; CLAUDE.md 갱신). 월드컵 CSS의 OS 미디어쿼리
+  게이트도 `html[data-reduce-motion]`로. 눈 편한 테마는 이미 기본 ON(변경 없음).
+  ④ 액션바 아바타 세그먼트 가운데 라벨을 흐린 작은 글자+양옆 hairline으로 — 버튼처럼 보이던 것.
+  검증: fixture e2e(카드 안 첫 클릭 획 alpha 255·선택 도구 카드 도달·OS reduce 에뮬레이션에서
+  data-reduce-motion 없음·미리보기 컨트롤 스크롤 동반), 그림판 e2e 18, 비주얼 14, 기준선 1건.
 - **태그 순서 변경 수술 이식 + 액션바 IA 복원(2026-08-27)**: wak-schedule `38ba152`를 이식.
   순수 모델 `lib/tags/reorder.ts`(`reorderAtEdge` 행+edge 목적지·같은 결과=같은 참조 no-op·
   휴뱅 머리 고정 클램프, `edgeForPointer` 중앙선±데드존 히스테리시스) + 단위 테스트 12개.

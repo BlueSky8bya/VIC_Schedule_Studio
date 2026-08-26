@@ -1330,9 +1330,12 @@ html[data-reduce-motion] .poster-scaler {
     transform: none;
   }
 }
-/* 시청자 미리보기 아바타 컨트롤 — 좌상단(헤더 왼쪽 자리)에 항상 고정. 헤더 흐름에 두면 켜고 끌 때
-   shell 폭이 전체폭↔가운데로 바뀌며 헤더가 좌우로 흔들려 버튼이 따라 움직였다. fixed라 안 흔들린다. */
+/* 시청자 미리보기 아바타 컨트롤 — 페이지 좌상단(헤더 왼쪽 자리)에 둔다. 헤더 흐름에 두면 켜고 끌 때
+   shell 폭이 전체폭↔가운데로 바뀌며 헤더가 좌우로 흔들려 버튼이 따라 움직였다.
+   absolute(.poster-page 기준): 스크롤하면 페이지와 함께 올라간다 — fixed였을 땐 스크롤을 내려도
+   따라 내려와 달력을 가렸다(사용자 지적). */
 .avatar-ctl-preview {
+  position: absolute;
   top: 14px;
   left: 16px;
   right: auto;

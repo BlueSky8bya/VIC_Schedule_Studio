@@ -2,24 +2,21 @@
 // 방침: 진동(haptics)과 같은 결의 "편의 설정". 켜면 <html data-reduce-motion="1">가 붙어
 // CSS가 '장식용' 무한 애니메이션(제목 반짝임·오늘 강조 호흡·불꽃 깜빡임·스티커 흔들림 등)을
 // 끈다. 스피너·저장 점·드래그 안내선 같은 '의미 있는' 모션은 유지한다(상태를 알려주므로).
-// OS의 prefers-reduced-motion은 별도로 CSS @media가 이미 존중한다 — 이 토글은 그 위에 얹는
-// 사용자 명시 설정(OS 설정과 무관하게 끄고 싶은 사람용). 기본 OFF.
+// 기본 OFF. 이 토글이 유일한 결정권 — CSS는 OS 미디어쿼리가 아니라 항상 html[data-reduce-motion]만
+// 본다(OS 설정과 무관하게 앱 모션을 그대로 보고 싶은 사람이 다수라는 사용자 결정, 2026-08-27).
 //
 // 페인트 전 적용은 app/layout.tsx의 인라인 스크립트가 담당(FOUC 방지). 여기 함수는 설정 화면
 // (역할 배지 "?" 팝오버의 토글)에서 즉시 반영/저장하는 용도.
 //
-// P1-MOTION-1: OS prefers-reduced-motion 통합 — 인앱 설정이 **미설정**이면 OS 값을 기본으로
-// 따른다. 명시적 인앱 선택("on"/"off")은 OS보다 항상 우선(인앱 토글이 최종 결정권 유지).
+// (P1-MOTION-1의 OS prefers-reduced-motion 시딩은 2026-08-27 철회 — 미설정=OFF.)
 
-const REDUCE_MOTION_KEY = "vic.reduceMotion"; // localStorage: "on"/"off"/미설정(OS 따름)
+const REDUCE_MOTION_KEY = "vic.reduceMotion"; // localStorage: "on"/"off"/미설정(=off)
 
 export function reduceMotionEnabled(): boolean {
   if (typeof window === "undefined") return false;
   try {
     const v = window.localStorage.getItem(REDUCE_MOTION_KEY);
-    if (v === "on") return true;
-    if (v === "off") return false;
-    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    return v === "on"; // 미설정·off 모두 OFF
   } catch {
     return false;
   }

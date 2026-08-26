@@ -1385,6 +1385,10 @@ html[data-reduce-motion] .bp-layer-drag-ghost {
 .bp-draw-surface {
   position: absolute;
   inset: 0;
+  /* 레이어 스택(캔버스·일정 카드 zIndex=zOf, on-top=3) 위에 둔다 — 일정 레이어가 스택에 들어가
+     z-index를 갖게 된 뒤(526585e) 입력면이 카드 아래로 깔려, 펜을 카드 안에서 먼저 찍으면 카드가
+     pointerdown을 먹고(select 아니면 무시) 아무것도 안 그려졌다. 투명한 면이라 시각 영향 없음. */
+  z-index: 50;
   cursor: crosshair;
   touch-action: none; /* 펜 드래그 중 스크롤 방지 */
 }

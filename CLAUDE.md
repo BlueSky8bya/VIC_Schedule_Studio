@@ -95,10 +95,10 @@ owner/developer/worker; owner_private → owner only. Manager has zero private a
 - **Motion & feedback by default:** `:active` scale, state transitions via `var(--ease)`,
   meaningful enter/exit; charts get centered+clamped hover value tooltips. Static = regression.
 - **Haptics:** `hapticTick()` on toggles/selectors/confirms (press→server-confirm = two ticks).
-- Respect reduced motion via `html[data-reduce-motion]`. The in-app toggle is the final
-  authority; when the user hasn't chosen in-app, OS `prefers-reduced-motion` seeds the
-  default (P1-MOTION-1). Never gate motion on the OS media query directly in CSS —
-  always target `html[data-reduce-motion]`.
+- Respect reduced motion via `html[data-reduce-motion]`. The in-app toggle is the only
+  authority and defaults to OFF (OS `prefers-reduced-motion` seeding was withdrawn
+  2026-08-27); eye-comfort theme defaults to ON. Never gate motion on the OS media query
+  directly in CSS — always target `html[data-reduce-motion]`.
 - **HCI:** minimize eye/pointer travel, keep related things close, preserve position across
   state changes (a loading skeleton sits where the real content will land).
 

@@ -6197,7 +6197,9 @@ export function StudioShell({
               >
                 왼쪽
               </button>
-              <span className="avatar-ctl-label">아바타 자리</span>
+              <span aria-hidden="true" className="avatar-ctl-label">
+                아바타 자리
+              </span>
               <button
                 type="button"
                 className={avatarSide === "right" ? "on" : ""}

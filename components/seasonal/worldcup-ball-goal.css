@@ -355,10 +355,9 @@
     margin-top: -5px;
   }
 }
-@media (prefers-reduced-motion: reduce) {
-  .wc-player-celebrate {
-    animation: none;
-  }
+/* 동작 줄이기 — 앱 토글(html[data-reduce-motion])만 본다(OS 미디어쿼리 직접 게이트 금지). */
+html[data-reduce-motion] .wc-player-celebrate {
+  animation: none;
 }
 .wc-team-0 {
   background: radial-gradient(circle at 35% 30%, #ff6a6a, #d92d2d);
