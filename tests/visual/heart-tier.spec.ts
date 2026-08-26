@@ -28,11 +28,20 @@ test.describe("heart tier — 테두리 링", () => {
         crowns: document.querySelectorAll(".public-event .tier-crown").length,
         popular: document.querySelectorAll(".event-popular").length,
         legend: document.querySelectorAll(".legend-tiers .tier-swatch").length,
-        layering: tiers.map((c) => ({
-          mixed: c.hasAttribute("data-mixed"),
-          ringZ: getComputedStyle(c.querySelector(".tier-ring")!).zIndex,
-          mainZ: getComputedStyle(c.querySelector(".event-main")!).zIndex
-        }))
+        layering: tiers.map((c) => {
+          const ring = c.querySelector<HTMLElement>(".tier-ring")!;
+          const crown = c.querySelector<HTMLElement>(".tier-crown");
+          return {
+            mixed: c.hasAttribute("data-mixed"),
+            ringZ: getComputedStyle(ring).zIndex,
+            ringPos: getComputedStyle(ring).position,
+            // 링은 카드 박스와 일치(흐름 안으로 밀려 바닥 띠가 되면 높이 0이 아니다)
+            ringH: ring.offsetHeight,
+            cardH: c.offsetHeight,
+            crownPos: crown ? getComputedStyle(crown).position : null,
+            mainZ: getComputedStyle(c.querySelector(".event-main")!).zIndex
+          };
+        })
       };
     });
     expect(m.tiers).toBeGreaterThan(0);
@@ -40,8 +49,15 @@ test.describe("heart tier — 테두리 링", () => {
     expect(m.crowns).toBeGreaterThanOrEqual(1);
     expect(m.popular).toBe(0);
     expect(m.legend).toBe(4);
+    // 2색 카드(data-mixed)의 자식 position:relative 규칙에 링·👑이 끌려가면 안 된다(사용자 리포트:
+    // 링이 카드 바닥 금색 띠, 👑이 왼쪽 아래로 밀림).
+    expect(m.layering.some((l) => l.mixed)).toBe(true);
     for (const l of m.layering) {
       expect(l.ringZ).toBe("0");
+      expect(l.ringPos).toBe("absolute");
+      // inset:0 = 카드 padding box(카드 자체 1px 테두리 안쪽) → 높이 차 = 테두리 2px까지 정상
+      expect(Math.abs(l.ringH - l.cardH)).toBeLessThanOrEqual(2);
+      if (l.crownPos) expect(l.crownPos).toBe("absolute");
       expect(l.mainZ).toBe("1");
     }
   });

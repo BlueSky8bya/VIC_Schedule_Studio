@@ -3891,11 +3891,12 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   color: var(--ink, #23303f);
 }
 
-/* 관심 단계 = 카드 '테두리'(2026-08-27, 불꽃 알약 대체 — 알약이 카드 바닥 한 줄(≈18px)을 먹어
-   행마다 쌓이면 달력 비율이 무너졌다). 링(.tier-ring)은 카드 안 absolute라 높이 0. 내용이 링·일렁임
-   위에 오도록 본문 레이어를 z-index 1로 띄운다(무늬 .evt-pat는 그대로 아래). 색은 태그색과 독립 —
-   채움이 아니라 테두리·바깥 halo만 쓴다. 단계가 오를수록 제목이 굵어지고 링이 진해지며 더 활활:
-   관심 = 잔불 숨쉬기 · 높은 = 아래 변 불꽃 일렁임 · 폭발 = 빨강, 더 빠르게 · 1위 = 금색 회전 반짝 + 👑. */
+/* 관심 단계 = 카드 '테두리'만(2026-08-27, 불꽃 알약 대체 — 알약이 카드 바닥 한 줄(≈18px)을 먹어
+   행마다 쌓이면 달력 비율이 무너졌다). 링(.tier-ring)은 카드 안 absolute라 높이 0. 내용이 링 위에
+   오도록 본문 레이어를 z-index 1로 띄운다(무늬 .evt-pat는 그대로 아래). 색은 태그색과 독립 —
+   채움·밑줄 없이 테두리(안 1px + 바깥 spread)와 바깥 halo만 쓴다(사용자 지정: 테두리 하이라이팅만).
+   단계가 오를수록 테두리가 두꺼워지고(1→2→3px) 색이 주황→진주황→빨강→금으로, halo가 넓고 빠르게
+   숨쉰다. 1위는 금색 + 카드 우상단 모서리 위에서 흔들리는 👑(배경 없이 생으로). */
 .public-event > .event-main,
 .public-event > .event-subs,
 .public-event > .event-meta {
@@ -3905,123 +3906,94 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 .public-event[data-tier] .event-main p {
   font-weight: 900;
 }
-/* 2색 카드는 자식 전부를 z-index 1로 띄우는 규칙(.public-event[data-mixed] > :not(.evt-pat))이 있어
-   링이 본문과 같은 층에서 DOM 뒤(=위)에 그려진다 — 링만 다시 0으로(특이도 0,4,0 > 0,3,0). */
+/* 2색 카드는 자식 전부를 position:relative·z-index 1로 바꾸는 규칙(.public-event[data-mixed] >
+   :not(.evt-pat))이 있어 링·👑이 흐름 안으로 들어가(링 = 카드 바닥 금색 띠, 👑 = 왼쪽 아래로 밀림 —
+   사용자 리포트) 본문과 같은 층에 그려졌다. 둘 다 absolute·층을 되돌린다(특이도 0,4,0 > 0,3,0). */
 .public-event[data-mixed] > .tier-ring.tier-ring {
+  position: absolute;
   z-index: 0;
+}
+.public-event[data-mixed] > .tier-crown.tier-crown {
+  position: absolute;
+  z-index: 3;
 }
 .tier-ring {
   position: absolute;
   inset: 0;
   z-index: 0;
   border-radius: inherit;
-  border: 1.5px solid var(--tier-c, transparent);
+  /* 안쪽 1px(선명한 경계) + 바깥 spread(두께 = 단계) — 카드 안 여백을 안 먹고 두꺼워진다.
+     카드 사이 간격 4px 안에서 최대 3px. */
+  border: 1px solid var(--tier-c, transparent);
+  box-shadow: 0 0 0 var(--tier-w, 1px) var(--tier-c, transparent);
   pointer-events: none;
 }
-/* 바깥 halo — 은은하게 숨쉰다(opacity만, GPU 친화). 카드마다 위상을 어긋나게(아래 nth-child). */
+/* 바깥 halo — opacity만 숨쉰다(GPU 친화). 카드마다 위상을 어긋나게(아래 nth-child). */
 .tier-ring::before {
   content: "";
   position: absolute;
-  inset: -1px;
+  inset: calc(-1px - var(--tier-w, 1px));
   border-radius: inherit;
-  box-shadow: 0 0 var(--tier-halo, 8px) var(--tier-c, transparent);
-  opacity: 0.55;
-  animation: tier-breathe var(--tier-dur, 7s) ease-in-out infinite;
+  box-shadow: 0 0 var(--tier-halo, 6px) var(--tier-halo-spread, 0px) var(--tier-c, transparent);
+  opacity: var(--tier-halo-lo, 0.4);
+  animation: tier-breathe var(--tier-dur, 6s) ease-in-out infinite;
   animation-delay: var(--tier-phase, 0s);
-}
-/* 아래 변 불꽃 일렁임(높은·폭발) — 카드 안 아래 38%에 옅은 그라데이션이 scaleY로 흔들린다. */
-.tier-ring::after {
-  content: "";
-  position: absolute;
-  left: 8%;
-  right: 8%;
-  bottom: 0;
-  height: 38%;
-  border-radius: 0 0 var(--r-sm) var(--r-sm);
-  background: linear-gradient(to top, var(--tier-lick, transparent), transparent);
-  transform-origin: bottom center;
-  opacity: 0;
 }
 .tier-ring.tier-warm {
-  --tier-c: rgb(249 115 22 / 55%);
-  --tier-halo: 7px;
-  --tier-dur: 7s;
+  --tier-c: #f59e0b;
+  --tier-w: 1px;
+  --tier-halo: 6px;
+  --tier-halo-lo: 0.3;
+  --tier-halo-hi: 0.65;
+  --tier-dur: 6s;
 }
 .tier-ring.tier-hot {
-  --tier-c: rgb(239 88 40 / 78%);
-  --tier-halo: 11px;
-  --tier-dur: 4.5s;
-  --tier-lick: rgb(251 146 60 / 30%);
-  --tier-lick-dur: 2.4s;
-  border-width: 2px;
+  --tier-c: #f97316;
+  --tier-w: 2px;
+  --tier-halo: 12px;
+  --tier-halo-spread: 1px;
+  --tier-halo-lo: 0.45;
+  --tier-halo-hi: 1;
+  --tier-dur: 3.4s;
 }
 .tier-ring.tier-blaze {
-  --tier-c: rgb(220 38 38 / 88%);
-  --tier-halo: 15px;
-  --tier-dur: 3s;
-  --tier-lick: rgb(239 68 68 / 38%);
-  --tier-lick-dur: 1.7s;
-  border-width: 2px;
+  --tier-c: #dc2626;
+  --tier-w: 3px;
+  --tier-halo: 18px;
+  --tier-halo-spread: 2px;
+  --tier-halo-lo: 0.5;
+  --tier-halo-hi: 1;
+  --tier-dur: 2s;
 }
-.tier-ring.tier-hot::after,
-.tier-ring.tier-blaze::after {
-  opacity: 0.7;
-  animation: tier-lick var(--tier-lick-dur, 2.4s) ease-in-out infinite;
-  animation-delay: var(--tier-phase, 0s);
-}
-/* 1위 — 금색 링 + 링 위를 도는 반짝(conic 각도를 @property로 회전 → 사각 모서리 안 튐) + 👑. */
-@property --tier-a {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
+/* 폭발은 규칙적 숨이 아니라 '타오르는' 불규칙 깜빡임. */
+.tier-ring.tier-blaze::before {
+  animation-name: tier-flicker;
 }
 .tier-ring.tier-top {
-  --tier-c: rgb(234 179 8 / 90%);
-  --tier-halo: 14px;
-  --tier-dur: 3.6s;
-  border-width: 2px;
+  --tier-c: #eab308;
+  --tier-w: 3px;
+  --tier-halo: 16px;
+  --tier-halo-spread: 2px;
+  --tier-halo-lo: 0.55;
+  --tier-halo-hi: 1;
+  --tier-dur: 2.6s;
 }
-.tier-ring.tier-top::after {
-  inset: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  height: auto;
-  border-radius: inherit;
-  padding: 2px;
-  opacity: 1;
-  background: conic-gradient(
-    from var(--tier-a, 0deg),
-    transparent 0 60%,
-    rgb(255 246 190 / 95%) 74%,
-    transparent 88%
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  transform: none;
-  animation: tier-spin 3.2s linear infinite;
+/* 1위 테두리 자체도 은은히 밝아졌다 어두워졌다(금이 '반짝'이는 느낌, 밴드·밑줄 없음). */
+.tier-ring.tier-top {
+  animation: tier-gold 2.6s ease-in-out infinite;
+  animation-delay: var(--tier-phase, 0s);
 }
 .tier-crown {
   position: absolute;
-  right: -4px;
-  bottom: -5px;
+  top: -11px;
+  right: -6px;
   z-index: 3;
-  padding: 1px 2px;
-  border-radius: var(--r-pill, 999px);
-  background: #fff;
-  box-shadow:
-    0 1px 3px rgb(120 80 0 / 30%),
-    0 0 0 1px rgb(234 179 8 / 60%);
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1;
   pointer-events: none;
-  animation: tier-crown-bob 2.6s ease-in-out infinite;
+  filter: drop-shadow(0 1px 2px rgb(0 0 0 / 35%));
+  transform-origin: 50% 90%;
+  animation: tier-crown-bob 1.8s ease-in-out infinite;
 }
 /* 위상 분산 — 이웃 카드가 같은 박자로 숨쉬면 기계적으로 보인다. */
 .public-event:nth-child(3n + 2) .tier-ring {
@@ -4033,51 +4005,61 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 @keyframes tier-breathe {
   0%,
   100% {
-    opacity: 0.35;
+    opacity: var(--tier-halo-lo, 0.4);
   }
   50% {
-    opacity: 0.9;
+    opacity: var(--tier-halo-hi, 0.9);
   }
 }
-@keyframes tier-lick {
+@keyframes tier-flicker {
   0%,
   100% {
+    opacity: 0.6;
+  }
+  18% {
+    opacity: 1;
+  }
+  31% {
     opacity: 0.55;
-    transform: scaleY(0.85);
   }
-  40% {
+  47% {
     opacity: 0.95;
-    transform: scaleY(1.08);
   }
-  70% {
+  62% {
     opacity: 0.7;
-    transform: scaleY(0.95);
+  }
+  80% {
+    opacity: 1;
   }
 }
-@keyframes tier-spin {
-  to {
-    --tier-a: 360deg;
+@keyframes tier-gold {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.35);
   }
 }
 @keyframes tier-crown-bob {
   0%,
   100% {
-    transform: translateY(0) rotate(-6deg);
+    transform: rotate(-14deg);
   }
   50% {
-    transform: translateY(-1.5px) rotate(6deg);
+    transform: rotate(14deg) translateY(-1px);
   }
 }
-/* 동작 줄이기·내보내기 정지 프레임 — 단계는 링 두께·색·halo 농도로 여전히 구분된다. */
+/* 동작 줄이기·내보내기 정지 프레임 — 단계는 테두리 두께·색·halo 농도로 여전히 구분된다. */
+html[data-reduce-motion] .tier-ring,
 html[data-reduce-motion] .tier-ring::before,
-html[data-reduce-motion] .tier-ring::after,
 html[data-reduce-motion] .tier-crown {
   animation: none;
 }
 html[data-reduce-motion] .tier-ring::before {
-  opacity: 0.6;
+  opacity: var(--tier-halo-hi, 0.9);
 }
-/* 모바일 아젠다: 행(가로 카드)을 감싸는 정적 링 — 일렁임·숨쉬기 없음(배터리), 👑은 오른쪽. */
+/* 모바일 아젠다: 행(가로 카드)을 감싸는 정적 링 — 숨쉬기 없음(배터리), 👑은 오른쪽 위. */
 .agenda-event {
   position: relative;
 }
@@ -4085,52 +4067,52 @@ html[data-reduce-motion] .tier-ring::before {
   inset: -4px -6px;
   border-radius: 10px;
 }
-.agenda-event .tier-ring::before,
-.agenda-event .tier-ring::after {
+.agenda-event .tier-ring,
+.agenda-event .tier-ring::before {
   animation: none;
 }
-.agenda-event .tier-ring::after {
-  display: none;
-}
-.agenda-event .tier-ring.tier-top::after {
-  display: block;
+.agenda-event .tier-ring::before {
+  opacity: var(--tier-halo-hi, 0.9);
 }
 .agenda-event .tier-crown {
-  right: -8px;
-  bottom: auto;
-  top: -7px;
+  right: -10px;
+  top: -12px;
   animation: none;
 }
-/* 범례 견본 — 카드 링을 작은 상자로 축약(태그 색칩과 같은 줄 높이). */
+/* 범례 견본 — 카드 링을 작은 상자로 축약(두께·색·halo 그대로). */
 .tier-swatch {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  width: 30px;
-  height: 16px;
-  border-radius: 6px;
-  border: 1.5px solid var(--tier-c);
-  box-shadow: 0 0 6px var(--tier-c);
+  width: 26px;
+  height: 14px;
+  margin: 0 3px;
+  border-radius: 5px;
+  border: 1px solid var(--tier-c);
+  box-shadow:
+    0 0 0 var(--tier-w, 1px) var(--tier-c),
+    0 0 6px var(--tier-c);
   background: #fffdf6;
   font-size: 10px;
   line-height: 1;
   font-style: normal;
 }
 .tier-swatch.tier-warm {
-  --tier-c: rgb(249 115 22 / 55%);
+  --tier-c: #f59e0b;
+  --tier-w: 1px;
 }
 .tier-swatch.tier-hot {
-  --tier-c: rgb(239 88 40 / 78%);
-  border-width: 2px;
+  --tier-c: #f97316;
+  --tier-w: 2px;
 }
 .tier-swatch.tier-blaze {
-  --tier-c: rgb(220 38 38 / 88%);
-  border-width: 2px;
+  --tier-c: #dc2626;
+  --tier-w: 3px;
 }
 .tier-swatch.tier-top {
-  --tier-c: rgb(234 179 8 / 90%);
-  border-width: 2px;
+  --tier-c: #eab308;
+  --tier-w: 3px;
 }
 
 .public-day.outside .day-strip {

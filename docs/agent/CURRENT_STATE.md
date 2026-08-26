@@ -16,11 +16,15 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 - **관심 단계 = 카드 테두리 링 + 👑(2026-08-27, 사용자 아이디어)**: 불꽃 알약(`.event-popular`, 카드
   바닥 한 줄 ≈18px)이 행마다 쌓여 달력 비율을 무너뜨리던 것 → 카드 안 absolute `.tier-ring`(높이 0)
   + 1위 `.tier-crown`(우하단 모서리)으로 교체. `TierMark` 컴포넌트, 데스크탑·아젠다 카드 마지막
-  자식. 단계: 관심=주황 1.5px 링+halo 숨쉬기(7s) · 높은=2px+아래 변 불꽃 일렁임 · 폭발=빨강, 빠르게 ·
-  1위=금색 링 + `@property --tier-a` conic 회전 반짝 + 👑 bob. 본문 레이어(`.event-main/.event-subs/
-  .event-meta`) z-index 1, 링 0(2색 카드는 `> .tier-ring.tier-ring`로 재지정). 카드마다 위상 분산
-  (nth-child). 동작 줄이기·내보내기: 애니 정지, 링 두께/색으로 단계 구분. 모바일 아젠다: 정적 링
-  (inset -4/-6)+👑 오른쪽. 범례 3곳(웹·축약·아젠다 도움말) 🔥→`.tier-swatch` 견본. 정밀 라벨은
+  자식. **테두리만**(사용자 지정 — 2차 피드백으로 아래 변 불꽃 밴드·conic 회전 반짝 제거): 안 1px +
+  바깥 spread(두께 1→2→3→3px) + halo 숨쉬기. 관심=#f59e0b 1px · 높은=#f97316 2px · 폭발=#dc2626 3px
+  불규칙 flicker · 1위=#eab308 3px brightness 반짝 + 👑(배경 없이 생으로, 카드 우상단 모서리 위
+  top:-11/right:-6, rotate ±14° bob). 본문 레이어(`.event-main/.event-subs/.event-meta`) z-index 1,
+  링 0. **2색 카드 함정**: `.public-event[data-mixed] > :not(.evt-pat){position:relative;z-index:1}`가
+  링·👑까지 흐름 안으로 끌어 링이 카드 바닥 띠·👑이 왼쪽 아래로 밀렸음(사용자 리포트) →
+  `> .tier-ring.tier-ring`/`> .tier-crown.tier-crown`에 absolute·층 재지정(spec이 position·높이 검사).
+  카드마다 위상 분산(nth-child). 동작 줄이기·내보내기: 애니 정지, 두께/색/halo로 구분. 모바일 아젠다:
+  정적 링(inset -4/-6)+👑 오른쪽 위. 범례 3곳(웹·축약·아젠다 도움말) 🔥→`.tier-swatch` 견본. 정밀 라벨은
   `.tier-ring` role=img aria-label·title. fixture `?hearts=1`(6/14/30/45/0 순환)로 검증,
   `tests/visual/heart-tier.spec.ts` 3(링=티어 수·불꽃 0·본문 z 1·표면 높이 하트 유무 동일·모바일).
 - **월 이동 깜빡임 수정(아바타 scene)**: 원인 = 월 바뀜→스티커 canon 리셋→`probeCanonFrame`이
