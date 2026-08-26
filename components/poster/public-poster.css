@@ -7778,6 +7778,44 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   border: 1px solid transparent;
   border-radius: var(--r-pill);
 }
+/* 관심 단계 줄 — 태그 칩과 같은 문법(알약·라벨 크기)에 단계 색을 입힌 한 줄. 링 견본 + "관심 단계"
+   (조용히) + 단계명(단계 색, 굵게). 글자색은 카드 링보다 한 단계 어둡게(크림 배경 대비). */
+.agenda-detail-tier {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  padding: var(--space-1) var(--space-3) var(--space-1) var(--space-2);
+  border: var(--stroke-hairline) solid color-mix(in srgb, var(--tier-c) 45%, transparent);
+  border-radius: var(--r-pill);
+  background: color-mix(in srgb, var(--tier-c) 9%, var(--surface-2));
+  color: var(--ink);
+  font-size: var(--text-label);
+  font-weight: var(--weight-semibold);
+}
+.agenda-detail-tier .tier-swatch {
+  margin: 0 4px 0 2px;
+}
+.agenda-detail-tier .adt-label {
+  color: var(--muted);
+  font-weight: 700;
+}
+.agenda-detail-tier b {
+  color: var(--tier-c);
+  font-weight: 900;
+}
+.agenda-detail-tier.tier-warm {
+  --tier-c: #d97706;
+}
+.agenda-detail-tier.tier-hot {
+  --tier-c: #ea580c;
+}
+.agenda-detail-tier.tier-blaze {
+  --tier-c: #dc2626;
+}
+.agenda-detail-tier.tier-top {
+  --tier-c: #a16207;
+}
 
 html[data-reduce-motion] .agenda-detail-backdrop,
 html[data-reduce-motion] .agenda-detail-sheet {

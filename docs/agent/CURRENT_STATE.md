@@ -24,7 +24,9 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   링·👑까지 흐름 안으로 끌어 링이 카드 바닥 띠·👑이 왼쪽 아래로 밀렸음(사용자 리포트) →
   `> .tier-ring.tier-ring`/`> .tier-crown.tier-crown`에 absolute·층 재지정(spec이 position·높이 검사).
   카드마다 위상 분산(nth-child). 동작 줄이기·내보내기: 애니 정지, 두께/색/halo로 구분. 모바일 아젠다:
-  정적 링(inset -4/-6)+👑 오른쪽 위. 범례 3곳(웹·축약·아젠다 도움말) 🔥→`.tier-swatch` 견본. 정밀 라벨은
+  정적 링(inset -4/-6)+👑 오른쪽 위. 범례 3곳(웹·축약·아젠다 도움말) 🔥→`.tier-swatch` 견본.
+  **상세 팝오버/시트에 단계 글자**(`.agenda-detail-tier`: 견본 + "관심 단계" + 관심/높은 관심/폭발적
+  관심/최고 인기 — 링만으론 관심↔폭발 구분이 어렵다는 3차 피드백; PC 팝오버·모바일 시트 공용). 정밀 라벨은
   `.tier-ring` role=img aria-label·title. fixture `?hearts=1`(6/14/30/45/0 순환)로 검증,
   `tests/visual/heart-tier.spec.ts` 3(링=티어 수·불꽃 0·본문 z 1·표면 높이 하트 유무 동일·모바일).
 - **월 이동 깜빡임 수정(아바타 scene)**: 원인 = 월 바뀜→스티커 canon 리셋→`probeCanonFrame`이

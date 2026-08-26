@@ -5706,6 +5706,22 @@ export function PublicPoster({
                       ))}
                     </div>
                   ) : null}
+                  {/* 관심 단계 라벨 — 카드 링(두께·색)만으론 관심↔높은↔폭발 구분이 어렵다(사용자):
+                      팝오버/시트에서 글자로 명시. 같은 heartTier 단일 출처, 숫자는 여전히 비노출. */}
+                  {(() => {
+                    if (support || teaserActive) return null;
+                    const t = heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id));
+                    if (!t) return null;
+                    return (
+                      <p aria-label={`관심 단계: ${t.label}`} className={`agenda-detail-tier tier-${t.key}`}>
+                        <i aria-hidden="true" className={`tier-swatch tier-${t.key}`}>
+                          {t.key === "top" ? "👑" : null}
+                        </i>
+                        <span className="adt-label">관심 단계</span>
+                        <b>{t.label}</b>
+                      </p>
+                    );
+                  })()}
                   {support && event.supportUrl ? (
                     <a
                       className="agenda-link"
