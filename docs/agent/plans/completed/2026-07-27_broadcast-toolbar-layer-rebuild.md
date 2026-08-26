@@ -43,7 +43,7 @@ Windows 그림판을 비교해 `명령 / 도구 / 빠른 판서 설정·색상 �
 
 ## Relevant Context
 
-- [잉크·도구 UX 연구](../../ux/broadcast-panel-inking-research.md)
+- [잉크·도구 UX 연구](../../../ux/broadcast-panel-inking-research.md)
 - [Clip Studio Layer palette](https://help.clip-studio.com/en-us/manual_en/180_layers/Using_layers.htm):
   Windows/macOS에서 layer detail 영역을 직접 위아래 drag
 - [Clip Studio Command Bar](https://help.clip-studio.com/en-us/manual_en/690_interface/Command_Bar.htm):

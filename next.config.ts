@@ -8,8 +8,8 @@ const nextConfig: NextConfig = {
     APP_COMMIT: process.env.VERCEL_GIT_COMMIT_SHA ?? "dev"
   },
   experimental: {
-    // 커스텀 이모지 업로드는 최대 2MB까지 허용한다. Server Action 기본 본문 한도(1MB)에 막혀
-    // 1~2MB 파일이 프레임워크 단에서 거부되며 "올리는 중…"에서 멈추던 문제를 푼다.
+    // Server Action 본문 한도(기본 1MB) 상향. 원래 근거였던 커스텀 이모지 업로드는 2026-08-27 스티커
+    // 철수로 사라졌지만, 그림판(방송 화면) 저장 등 큰 페이로드 여유분으로 4MB를 유지한다.
     serverActions: {
       bodySizeLimit: "4mb"
     }

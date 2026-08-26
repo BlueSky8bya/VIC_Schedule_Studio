@@ -14,7 +14,7 @@
 - `[data-export-surface]` 안에는 상호작용 크롬(버튼·필터·토글)을 넣지 않는다 — PNG에 박힌다.
 - 웹(≥641px)과 모바일(≤640px)은 **다른 레이아웃**이다. 같은 DOM을 축소한 것 = 결함.
 - 디자인 토큰(`app/globals.css :root`)을 쓴다. 하드코딩 금지.
-- 낙관적 쓰기는 직렬 큐 + keepalive(`/api/studio-write`, `/api/sticker-write`).
+- 낙관적 쓰기는 직렬 큐 + keepalive(`/api/studio-write`).
 - 게이팅은 좁게. 전역 pending으로 무관한 버튼을 막지 않는다.
 - 인사이트 차트는 편집실·시청자가 **같은 컴포넌트**를 쓴다(`insights-charts.css` 공유). 갈라놓지 마라.
 

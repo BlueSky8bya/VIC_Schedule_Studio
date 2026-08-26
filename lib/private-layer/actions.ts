@@ -61,7 +61,6 @@ export async function clearUnlockSessionForUserAction(userId: string): Promise<C
   }
 
   revalidatePath("/studio");
-  revalidatePath("/studio/private-layer");
 
   return { ok: true, cleared: 1 };
 }
@@ -134,7 +133,6 @@ export async function setPasscodeAction(
   ]);
 
   revalidatePath("/studio");
-  revalidatePath("/studio/private-layer");
 
   // 비밀번호 자체는 당연히 남기지 않는다 — 바꿨다는 사실만.
   await recordActivity({ kind: "passcode.change" });

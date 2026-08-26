@@ -11,9 +11,7 @@ grant select on
   public.color_palette,
   public.events,
   public.event_tags,
-  public.support_campaigns,
-  public.sticker_instances,
-  public.sticker_assets
+  public.support_campaigns
 to anon, authenticated;
 
 -- 비공개 읽기 (authenticated만; RLS가 unlock 세션/소유자 검사)
@@ -28,8 +26,6 @@ grant insert, update, delete on
   public.broadcast_tags,
   public.color_palette,
   public.support_campaigns,
-  public.sticker_assets,
-  public.sticker_instances,
   public.trusted_members,
   public.private_layer_settings
 to authenticated;

@@ -8,8 +8,6 @@ alter table public.events enable row level security;
 alter table public.event_private_meta enable row level security;
 alter table public.event_tags enable row level security;
 alter table public.support_campaigns enable row level security;
-alter table public.sticker_assets enable row level security;
-alter table public.sticker_instances enable row level security;
 alter table public.platform_admins enable row level security;
 
 -- platform_admins에는 허용 정책이 없다: anon/auth 클라이언트로는 읽기/쓰기가 불가능하며
@@ -166,10 +164,6 @@ create policy "public can read public support campaigns"
 on public.support_campaigns for select
 using (is_public = true and is_active = true);
 
-create policy "public can read visible stickers"
-on public.sticker_instances for select
-using (is_visible = true);
-
 create policy "owners can manage trusted members"
 on public.trusted_members for all
 using (public.is_calendar_admin(calendar_id))
@@ -192,15 +186,5 @@ with check (public.is_calendar_admin(calendar_id));
 
 create policy "owners can manage support campaigns"
 on public.support_campaigns for all
-using (public.is_calendar_admin(calendar_id))
-with check (public.is_calendar_admin(calendar_id));
-
-create policy "owners can manage sticker assets"
-on public.sticker_assets for all
-using (public.is_calendar_admin(calendar_id))
-with check (public.is_calendar_admin(calendar_id));
-
-create policy "owners can manage sticker instances"
-on public.sticker_instances for all
 using (public.is_calendar_admin(calendar_id))
 with check (public.is_calendar_admin(calendar_id));

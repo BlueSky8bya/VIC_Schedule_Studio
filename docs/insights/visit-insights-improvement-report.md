@@ -12,7 +12,7 @@
 옛 모델(`visit_log` 일1회 + `presence_ping` 분 단위 버킷)을 **`visit_session` 한 테이블**로 통합했다.
 
 - **한 줄 = 화면이 보이는 한 번의 방문.** 재진입하면 또 한 줄(여러 번 기록).
-- 컬럼: `started_at`(진입) · `last_seen_at`(25초 하트비트) · `ended_at`(이탈, null이면 last_seen을 종료로).
+- 컬럼: `started_at`(진입) · `last_seen_at`(60초 하트비트 — 2026-08-27 25초에서 완화) · `ended_at`(이탈, null이면 last_seen을 종료로).
 - **체류 = `coalesce(ended_at, last_seen_at) − started_at` (초 단위).** 분 버킷의 반올림 한계 제거.
 - **유령 방문 차단**: `content-ready` 신호(실제 달력 = PublicPoster/StudioShell 마운트) + `visible`일 때만 세션 시작 → 프리렌더·프리패치·백그라운드 로드(안 본 화면)는 0.
 - 집계는 RPC 없이 JS에서(스트리머 1명 규모라 행을 받아 계산). 모든 그래프(일일 상세·월별 방문 패널·트렌드)가 같은 소스.

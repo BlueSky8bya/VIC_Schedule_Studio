@@ -1,5 +1,9 @@
 # VIC Schedule Studio SOP
 
+> **2026-08-27 갱신 메모:** 작업자 역할·스티커/포스터 꾸미기·PNG 내보내기·편집실 비공개 레이어 UI는 철수했다
+> (ADR-0014/0015). 아래 본문의 '작업자'·'스티커'·'꾸미기' 절은 역사 기록이며, 현재 규칙은 `CLAUDE.md`와
+> `docs/agent/CURRENT_STATE.md`가 정본이다. 신뢰 멤버 = 매니저만.
+
 ## 1. 프로젝트 정체성
 
 프로젝트명: VIC Schedule Studio  

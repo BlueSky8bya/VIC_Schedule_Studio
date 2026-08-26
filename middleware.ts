@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
 }
 
 // 미들웨어가 하는 일은 '탐색 가능한 페이지'의 인증 쿠키 갱신(getUser)뿐이다. 그런데 matcher가
-// /api/* 를 전부 먹고 있어서, 25초마다 도는 비콘 두 개(use-soop-live의 /api/soop-live,
+// /api/* 를 전부 먹고 있어서, 60초마다 도는 비콘 두 개(use-soop-live의 /api/soop-live,
 // presence-beacon의 /api/presence)까지 매번 GoTrue를 왕복시켰다 — 동접 200이면 초당 ~16건이
 // 아무도 안 읽는 사용자 조회에 쓰인다. 아래 셋은 쿠키 갱신이 필요 없다:
 //   · /api/soop-live  — 완전 공개(액터 안 읽음)

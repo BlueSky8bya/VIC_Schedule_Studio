@@ -33,7 +33,6 @@ Forbidden public fields:
 | --- | --- | --- | --- | --- |
 | viewer | yes | no | no | n/a |
 | manager | yes | unlock required | no | one calendar |
-| worker | yes | unlock required | no | one calendar |
 | owner | yes | unlock required | yes | own calendar |
 | developer | yes | unlock required | yes | all calendars |
 
@@ -65,7 +64,7 @@ Role resolution is server-side only.
 4. If the verified Google email is in `platform_admins`, return developer (checked first, cross-calendar).
 5. Else if the verified Google email is in `OWNER_EMAIL` (a comma-separated list — a streamer may use more than one account), return owner.
 6. Otherwise query `trusted_members` by calendar slug and Google email with the service-role client.
-7. Active trusted members resolve to `manager` or `worker`.
+7. Active trusted members resolve to `manager` (the worker role was retired 2026-08-27, ADR-0015).
 8. Everyone else resolves to viewer.
 
 In the database, `is_developer()` reads `platform_admins`, and `is_calendar_admin()`

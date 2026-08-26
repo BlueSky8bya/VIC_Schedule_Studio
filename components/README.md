@@ -6,10 +6,10 @@
 | 폴더 | 내용 | 핵심 파일 |
 |---|---|---|
 | `studio/` | ⭐ 편집실 전체 | `studio-shell.tsx`(메인·거대)+`.css`, `member-insights`, `security-panel`, `stack-trend-chart`, `highlight-cards`, `datetime-picker` |
-| `poster/` | ⭐ 시청자 포스터·꾸미기·스티커 | `public-poster.tsx`(+`.css`), `decorate-palette`, `sticker-layer`, `sticker-shapes`, `soop-live-beacon`, `theme-switch` |
+| `poster/` | ⭐ 시청자 포스터(달력·아젠다·관심 링·최초공개·아바타 씬) | `public-poster.tsx`(+`.css`), `public-insights`, `soop-live-beacon`, `use-soop-live` |
 | `developer/` | 개발자 진단 | 인사이트 대시보드, 역할 미리보기, 방문 모달 |
 | `tags/` | 태그 범례·편집기 | |
-| `trusted-members/` | 신뢰 멤버 패널 | |
+| `trusted-members/` | 신뢰 멤버(매니저) 패널 — 이메일 추가/삭제 | |
 | `private-layer/` | 비공개 레이어 패널 | |
 | `presence/` | 접속 비콘 | |
 | `auth/` | 인앱 브라우저 안내 등 | |

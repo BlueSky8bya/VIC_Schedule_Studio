@@ -18,8 +18,8 @@ project:
 risk_profiles:
   - GENERAL
   - SECURITY # 공개 API·공개 로더가 비공개 데이터를 절대 흘리면 안 됨
-  - PRIVACY # 엠바고(owner_private)·작업자 일정, 본문 AES-256-GCM 암호화
-  - AUTH # Google 로그인 + 패스코드 언락 세션, 역할(owner/manager/worker/developer)
+  - PRIVACY # 엠바고(owner_private)·work 범위 일정(서버 모델만 잔존), 본문 AES-256-GCM 암호화
+  - AUTH # Google 로그인 + 패스코드(최초공개 게이트), 역할(owner/manager/developer/viewer)
   - DESTRUCTIVE_DATA # db/migrations 수동 적용, 키 분실 시 복호 불가
 
 entrypoints:

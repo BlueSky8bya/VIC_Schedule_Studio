@@ -3734,7 +3734,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 }
 .tier-ring.tier-blaze::before,
 .tier-ring.tier-top::before {
-  background: conic-gradient(from var(--tier-a), var(--tier-stops));
+  background: conic-gradient(from var(--tier-a, 0deg), var(--tier-stops));
   animation: tier-sweep var(--tier-dur, 3.4s) linear infinite;
   animation-delay: var(--tier-phase, 0s);
 }

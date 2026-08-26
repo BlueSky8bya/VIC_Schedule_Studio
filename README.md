@@ -2,7 +2,7 @@
 
 VIC Schedule Studio is a streamer-first schedule studio built for Victory.
 
-It provides a public monthly calendar for viewers, an owner-only editing studio for the streamer, a passcode-protected private layer for trusted managers/workers, support campaign highlighting, customizable broadcast tags, sticker decoration, and poster-style image export.
+It provides a public monthly calendar for viewers, an owner-only editing studio for the streamer, a passcode-gated teaser (최초공개) reveal, support (업 도움) highlighting, customizable broadcast tags, viewer hearts with interest tiers, an OBS broadcast preview (`/onair`) and a broadcast drawing board. (Sticker decoration, PNG export and the worker role were retired on 2026-08-27 — ADR-0014/0015.)
 
 The product is designed around one core rule:
 
@@ -10,10 +10,10 @@ The product is designed around one core rule:
 
 ## Current Routes
 
-- `/`: Google-auth gate, then server-side role routing (viewer → public poster, owner/staff → studio)
+- `/`: public poster (anonymous allowed); logged-in owner/manager/developer get a studio link
+- `/onair`: anonymous broadcast preview (avatar scene fixed) for OBS
 - `/studio`: owner-first studio with month navigation and date-based event editing
-- `/studio/decorate/[year]/[month]`: sticker/text decoration + poster capture
-- `/studio/tags`, `/studio/trusted-members`, `/studio/private-layer`: owner settings
+- `/studio/tags`, `/studio/trusted-members`: owner settings (tags, trusted managers)
 - `/api/public/[slug]/events`: public schedule DTO (private fields excluded)
 
 ## Deployment
@@ -27,12 +27,12 @@ See [docs/deployment.md](docs/deployment.md) for the full production runbook
 - Google login appears first when opening the app.
 - Authenticated Google email controls role routing.
 - Owner-only studio interactions for adding, editing, and deleting local schedule items.
-- Private-layer preview with owner/manager/worker roles.
+- Developer role preview (owner/manager/viewer screens, client-only).
 - Broadcast tag palette with maximum two representative colors per date.
 - Support campaign card and date highlighting.
 - Public DTO leakage tests.
 
-Persistence is still partly local sample data. Supabase Auth, trusted member lookup, RLS-backed writes, passcode hashing, and storage-backed sticker uploads are the next implementation phase.
+Persistence is Supabase (Postgres + RLS); sample data is only used by the visual fixtures.
 
 ## Authentication Model
 
@@ -41,10 +41,10 @@ The app resolves the current role on the server.
 1. No Supabase session means the user sees the Google login gate.
 2. Supabase sessions are trusted for elevated roles only when they come from Google OAuth.
 3. A Google email listed in `OWNER_EMAIL` means `owner`. `OWNER_EMAIL` is a comma-separated list, so one streamer can use multiple Google accounts as the same owner.
-4. Google email listed in active `trusted_members` means `manager` or `worker`.
+4. Google email listed in active `trusted_members` means `manager`.
 5. Any other authenticated Google email is treated as `viewer`.
 
-Only `owner` can write. `manager` and `worker` are read-only and can only see private-layer data after a valid unlock session.
+Only `owner` can write schedules. `manager` may edit support period/link and assign event tags; managers have no private-layer access.
 
 In local development, set `OWNER_EMAIL` to your Google account. Before handoff, replace it with Victory's Google account email (or several, comma-separated, if the streamer uses more than one account). When more than one is listed, the first is the primary owner (`calendars.owner_id`) and the rest are synced into `calendar_co_owners` by `db/seeds/0013_sync_co_owners.sql`. If Supabase environment variables are empty, Google login is disabled.
 

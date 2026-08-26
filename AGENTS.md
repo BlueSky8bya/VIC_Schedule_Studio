@@ -45,7 +45,7 @@ Security reviewer must verify:
 
 ## UI Critic
 
-Use for viewer mode clarity, poster mode quality, sticker readability, tag color readability, and mobile layout.
+Use for viewer mode clarity, poster mode quality, tag color readability, and mobile layout.
 
 UI critic must keep:
 
