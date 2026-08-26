@@ -8,15 +8,14 @@ drop table if exists public.sticker_instances cascade;
 drop table if exists public.sticker_assets cascade;
 
 -- 2) 스티커 스토리지 정책·헬퍼(0006_sticker_uploads). 버킷 안 객체는 scripts로 먼저 비운다
---    (SQL에서 storage.objects를 지우지 않는다 — 실수 방지). 버킷 행은 객체가 0일 때만 지운다.
+--    (SQL에서 storage.objects/buckets를 지우지 않는다 — Supabase가 금지).
 drop policy if exists "sticker assets read" on storage.objects;
 drop policy if exists "sticker assets insert" on storage.objects;
 drop policy if exists "sticker assets update" on storage.objects;
 drop policy if exists "sticker assets delete" on storage.objects;
 drop function if exists public.can_decorate_vic();
-delete from storage.buckets
-where id = 'sticker-assets'
-  and not exists (select 1 from storage.objects o where o.bucket_id = 'sticker-assets');
+-- 버킷 행은 SQL로 지울 수 없다(Supabase: "Direct deletion from storage tables is not allowed") →
+-- scripts/cleanup-sticker-storage.mjs --delete 가 Storage API로 객체·버킷을 지운다.
 
 -- 3) 작업자 역할 — RLS의 is_active_worker()는 항상 false(정책 본문은 그대로 두어 work 범위 행이
 --    관리자(owner/dev) + 잠금해제에만 열린다). 그 다음 컬럼을 지운다(함수가 더는 참조하지 않으므로).

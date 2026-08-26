@@ -63,4 +63,7 @@ if (names.length > 0) {
   if (!res.ok) throw new Error(`delete ${res.status}: ${await res.text()}`);
   console.log("deleted", names.length);
 }
-console.log("done — 이제 0065 마이그레이션을 적용하면 빈 버킷 행도 지워진다.");
+// 객체가 0이면 버킷 자체도 지운다(SQL에선 storage.buckets 직접 삭제가 금지됨).
+const del = await fetch(`${url}/storage/v1/bucket/${BUCKET}`, { method: "DELETE", headers: H });
+console.log("bucket delete", del.status, del.ok ? "" : (await del.text()).slice(0, 120));
+console.log("done — 이제 0065 마이그레이션을 적용한다.");

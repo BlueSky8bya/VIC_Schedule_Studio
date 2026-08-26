@@ -22,7 +22,8 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   `relockPrivateLayerAction` 삭제. DB: `0065_retire_stickers_and_worker.sql`(테이블 2 drop·스토리지 정책·
   빈 버킷·`is_active_worker()`=false·`is_worker` drop) + `scripts/cleanup-sticker-storage.mjs`. 백업:
   `docs/agent/backups/2026-08-27_stickers.json` + 원본 이미지 12개. **배포 순서: push → Vercel 확인 →
-  스토리지 --delete → 0065 apply**(옛 코드가 스티커 테이블을 읽음). 검증: tsc·lint·build 0, vitest 618,
+  스토리지 --delete → 0065 apply**(옛 코드가 스티커 테이블을 읽음) — **전부 적용 완료(2026-08-27)**: prod 배포
+  확인 후 버킷 객체 12개·버킷 삭제(Storage API), 0065 OK(테이블 404·is_worker 없음). 검증: tsc·lint·build 0, vitest 618,
   비주얼 77(지오메트리·포스터 기준선 의도 갱신).
 - **정리 후보 조사(2026-08-27, 에이전트 감사)**: 즉시 안전 — 죽은 프레즌스 DB 객체(visit_log·presence_ping·
   presence_hourly/peak/active_days·owner_sessions·add_calendar_heart), `calendar_hearts` 공개 로더 쿼리(소비자 0),
