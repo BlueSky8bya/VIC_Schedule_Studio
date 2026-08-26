@@ -193,8 +193,6 @@ function hostileSnapshot(): PublicSchedule {
     events,
     tags,
     palette,
-    stickers: [],
-    stickerAssets: [],
     heartCount: 7
   } as unknown as PublicSchedule;
 }

@@ -971,14 +971,7 @@ html {
   padding-right: 0;
 }
 /* 꾸미기 크롬(팔레트 툴바·텍스트 추가 줄)도 레일 자리만큼 비켜 겹침을 없앤다. */
-.poster-page.avatar-scene.avatar-right .decorate-toolbar,
-.poster-page.avatar-scene.avatar-right .poster-capture-row {
-  margin-left: var(--rail-gutter);
-}
-.poster-page.avatar-scene.avatar-left .decorate-toolbar,
-.poster-page.avatar-scene.avatar-left .poster-capture-row {
-  margin-right: var(--rail-gutter);
-}
+
 /* scene: 표면 안 오른쪽 레일을 접는다(둘째 컬럼 0) — 달력이 표면 1840 전체를 차지해 최대로
    커진다(2026-07-31 사용자 결정 — 캡쳐 삭제로 표면 고정 레이아웃 제약 해제). 컬럼 폭이
    트랜지션으로 흐르며 달력이 부드럽게 넓어진다(레일 내용은 overflow로 조용히 잘림). */
@@ -992,21 +985,11 @@ html {
 }
 /* 스티커 기준 지오메트리 probe(JS가 한 프레임 안에서 scene/확대를 잠깐 원복해 실측) —
    전환 애니를 전부 끊어 클래스 원복 즉시 목표 레이아웃을 읽을 수 있게 한다. */
-.sticker-geom-probe .poster-surface,
-.sticker-geom-probe .public-right,
-.sticker-geom-probe .poster-stage,
-.sticker-geom-probe .poster-scaler {
-  transition: none !important;
-}
+
 /* probe 중엔 scene 클래스를 떼지 않고(슬롯·레일·카드 등장 애니 재생 방지) 표면 '안' 배치만 기본값
    (레일 컬럼 252 + gap 16 + 가로 패딩 18)으로 되돌린다 — 기준(canon) 프레임은 표면 대비 비율이라
    이것만 같으면 예전 '클래스 원복' 실측과 동일하다. */
-.poster-page.sticker-geom-probe .poster-surface {
-  grid-template-columns: minmax(0, 1fr) 252px !important;
-  column-gap: 16px !important;
-  padding-left: 18px !important;
-  padding-right: 18px !important;
-}
+
 .poster-page.avatar-scene .public-right {
   min-width: 0;
   opacity: 0;
@@ -1288,13 +1271,7 @@ html[data-reduce-motion] .poster-scaler {
   .avatar-side-rail {
     display: none;
   }
-  .poster-page.avatar-scene.avatar-right .decorate-toolbar,
-  .poster-page.avatar-scene.avatar-right .poster-capture-row,
-  .poster-page.avatar-scene.avatar-left .decorate-toolbar,
-  .poster-page.avatar-scene.avatar-left .poster-capture-row {
-    margin-left: 0;
-    margin-right: 0;
-  }
+  
   .poster-page.avatar-scene .public-calendar-shell {
     padding-left: 22px;
     padding-right: 22px;
@@ -1642,18 +1619,6 @@ html[data-reduce-motion] .poster-export-reward-spark {
 }
 
 /* #1: 월간 일정표 바로 위 캡쳐 버튼 줄 */
-.poster-capture-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-bottom: 10px;
-}
-.poster-capture-row .text-add-row {
-  flex: 1 1 320px;
-  min-width: 0;
-}
 
 /* 포스터 고정 캔버스: 내부는 항상 1840×1035(16:9) 그대로 그려지고, .poster-scaler가
    화면 폭에 맞춰 통째로 축소(transform: scale)만 한다. 화면이 좁아져도 reflow가 없어
@@ -3605,7 +3570,6 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   font-weight: 900;
 }
 
-
 /* (불꽃 알약 .event-popular 삭제 — 2026-08-27. 관심 단계는 카드 테두리 링 .tier-ring으로.) */
 
 /* 하트를 누를 때 떠오르는 ♥ 입자 — 화면 위 fixed 레이어, 클릭 막지 않음. */
@@ -3639,7 +3603,6 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
     transform: translate(calc(-50% + var(--dx, 0px)), -190%) scale(0.9);
   }
 }
-
 
 .support-card {
   border: 1px solid #ece2cd;
@@ -3716,19 +3679,15 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 .poster-surface[data-enter] .public-calendar-area {
   --ps: 30px;
 }
-.poster-surface[data-enter] .sticker-layer {
-  --ps: 34px;
-}
+
 .poster-surface[data-enter] .public-right {
   --ps: 42px; /* 오른쪽 끝(색상 안내) — 더 많이 */
 }
 .poster-surface[data-enter="next"] .public-calendar-area,
-.poster-surface[data-enter="next"] .sticker-layer,
 .poster-surface[data-enter="next"] .public-right {
   animation: poster-slide-next 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
 .poster-surface[data-enter="prev"] .public-calendar-area,
-.poster-surface[data-enter="prev"] .sticker-layer,
 .poster-surface[data-enter="prev"] .public-right {
   animation: poster-slide-prev 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
@@ -3867,7 +3826,6 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 .public-day.outside .day-strip strong {
   color: #aab0ba;
 }
-
 
 .day-strip {
   display: flex;
@@ -4574,772 +4532,18 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 }
 
 /* ── 스티커(이모지) 레이어 ── */
-.sticker-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  pointer-events: none; /* 뷰어 모드: 클릭 통과 */
-}
-.sticker-layer.editable {
-  pointer-events: auto; /* 꾸미기 모드: 빈 곳 클릭 시 선택 해제 */
-}
 
-.sticker-item {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  line-height: 1;
-  filter: drop-shadow(0 2px 2px rgb(0 0 0 / 12%));
-  pointer-events: none;
-  user-select: none;
-  transition: filter var(--dur-1) var(--ease);
-}
-.sticker-layer.editable .sticker-item {
-  pointer-events: auto;
-  cursor: grab;
-  touch-action: none;
-}
 /* C11 촉감: 잡으면 그림자가 깊어져 살짝 떠오른 느낌(회전·플립 transform과 충돌 없음) */
-.sticker-layer.editable .sticker-item:active {
-  cursor: grabbing;
-  filter: drop-shadow(0 8px 12px rgb(0 0 0 / 30%));
-}
 
 /* C1 정렬 가이드 라인 (드래그 중에만) */
-.sticker-guide {
-  position: absolute;
-  z-index: 50;
-  background: #ec4899;
-  box-shadow: 0 0 0 0.5px rgb(236 72 153 / 40%);
-  pointer-events: none;
-}
-.sticker-guide.vertical {
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  transform: translateX(-0.5px);
-}
-.sticker-guide.horizontal {
-  left: 0;
-  right: 0;
-  height: 1px;
-  transform: translateY(-0.5px);
-}
-/* #4: 회전 수평 가이드 — 호박색 점선 + "수평" 라벨로 정렬됐음을 알린다. */
-.sticker-guide.level {
-  left: 0;
-  right: 0;
-  height: 0;
-  background: transparent;
-  border-top: 2px dashed #f59e0b;
-  box-shadow: none;
-  transform: translateY(-1px);
-}
-.sticker-guide.level em {
-  position: absolute;
-  top: -9px;
-  left: 50%;
-  transform: translateX(-50%);
-  border-radius: var(--r-pill, 999px);
-  background: #f59e0b;
-  padding: 1px 8px;
-  color: #fff;
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 900;
-}
 
-.sticker-emoji {
-  font-size: inherit;
-  line-height: 1;
-}
+/* #4: 회전 수평 가이드 — 호박색 점선 + "수평" 라벨로 정렬됐음을 알린다. */
+
 /* C6 텍스트 스티커
    white-space: pre → 자동 줄바꿈 없음(위치 옮겨도 너비 안 줄어듦) + 줄바꿈/공백(들여쓰기) 그대로 유지. */
-.sticker-text {
-  padding: 0 2px;
-  font-weight: 900;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  white-space: pre;
-  text-align: left;
-}
-/* P1b 네온 글로우 — 글자색(currentColor)으로 번지는 빛. 그라데이션은 인라인으로 처리(여긴 없음). */
-.sticker-text.tfx-neon {
-  text-shadow:
-    0 0 4px currentColor,
-    0 0 10px currentColor,
-    0 0 18px currentColor;
-}
-/* C7 효과: 흰 외곽선(다이컷 느낌) / 진한 그림자. filter는 덮어쓰기라 조합별로 따로 정의. */
-/* P1-STICKER-0: 키보드 포커스 링 — Tab으로 고른 스티커가 어디 있는지 보이게.
-   선택 링(.selected)과 별개로, 포커스만 있고 아직 선택 전 순간에도 위치를 알린다. */
-.sticker-layer.editable .sticker-item:focus-visible {
-  outline: 2px solid #5b4bd0;
-  outline-offset: 3px;
-  border-radius: 4px;
-}
-.sticker-item.fx-shadow {
-  filter: drop-shadow(0 6px 9px rgb(0 0 0 / 45%));
-}
-.sticker-item.fx-outline {
-  filter: drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff)
-    drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff);
-}
-.sticker-item.fx-outline.fx-shadow {
-  filter: drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff)
-    drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)
-    drop-shadow(0 5px 7px rgb(0 0 0 / 45%));
-}
-.sticker-image {
-  display: block;
-  height: auto;
-  user-select: none;
-  -webkit-user-drag: none;
-}
 
-/* (선택 표시는 .sticker-item.selected::after 링이 그린다 — 예전 outline은 스티커 상자에
-   딱 붙어 있어 작은 스티커에선 핸들과 겹쳤다. 링은 작을 때 최소 크기로 부풀어 오른다.) */
+/* (꾸미기·스티커 CSS 전부 제거 — 2026-08-27 ADR-0015. git 이력 참고.) */
 
-/* 움직이는 스티커(P1) — 안쪽 요소에만 적용해 외곽 .sticker-item의 rotate/flip과 충돌하지 않게.
-   합성 친화(transform/opacity)만. 라이브 포스터에서 실제로 움직인다(내보내기는 정지 프레임).
-   transform이 먹게 inline-block. reduced-motion은 globals.css 전역 catch-all이 멈춘다. */
-.sticker-anim {
-  display: inline-block;
-  transform-origin: center;
-  will-change: transform, opacity;
-}
-.sticker-anim-float {
-  animation: sticker-float 2.6s ease-in-out infinite;
-}
-.sticker-anim-twinkle {
-  animation: sticker-twinkle 1.7s ease-in-out infinite;
-}
-.sticker-anim-jiggle {
-  animation: sticker-jiggle 0.5s ease-in-out infinite;
-}
-.sticker-anim-spin {
-  animation: sticker-spin 3.6s linear infinite;
-}
-.sticker-anim-pulse {
-  animation: sticker-pulse 1.3s ease-in-out infinite;
-}
-/* (변경) 선택 중에도 움직임을 멈추지 않는다 — 툴바에서 누른 효과를 바로 확인하기 위해.
-   드래그/리사이즈 핸들은 별도 pointer 영역이라 움직이는 와중에도 잡힌다. */
-@keyframes sticker-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-9%);
-  }
-}
-@keyframes sticker-twinkle {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(0.9);
-  }
-}
-@keyframes sticker-jiggle {
-  0%,
-  100% {
-    transform: rotate(-4deg);
-  }
-  50% {
-    transform: rotate(4deg);
-  }
-}
-@keyframes sticker-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@keyframes sticker-pulse {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.13);
-  }
-}
-
-/* ── 선택 링 · 핸들 · 회전 핫존 ───────────────────────────────────────────
-   작은 스티커를 조작하는 문제는 디자인 툴들의 오래된 갈림길이다. 두 가지를 지킨다:
-
-   1) 핸들 크기는 '화면 기준 고정' — 스티커 크기에 비례시키는 툴은 없다(작아지면 못 누른다).
-      우리 표면은 .poster-scaler가 scale(var(--poster-scale))로 통째로 줄이므로, 그 안의 px은
-      배율에 딸려 흔들린다 → 1/배율로 나눠 어느 배율에서도 같은 크기로 보이게 한다.
-   2) Sketch식 '최소 선택 박스' — 스티커가 핸들보다 작아지면 링을 최소 크기까지 부풀려
-      핸들을 스티커 '밖'으로 밀어낸다. 이모지를 핸들이 덮지 않고, 핸들은 항상 누를 수 있다.
-      덤으로 작은 스티커도 링 전체(72px)가 이동 손잡이가 된다.
-   회전은 알약 버튼을 없애고 링 바깥 띠(핫존)로 옮겼다 — 작은 스티커에 버튼 2개는 과했다. */
-.sticker-item {
-  /* 화면에서 이만큼으로 보이게 할 값들(표면 좌표계로 환산). */
-  --h-size: calc(28px / var(--poster-scale, 1)); /* 핸들 시각 크기 */
-  --h-hit: calc(44px / var(--poster-scale, 1)); /* 핸들 터치 타깃(투명) */
-  --ring-min: calc(72px / var(--poster-scale, 1)); /* 최소 선택 박스 */
-  --rot-band: calc(22px / var(--poster-scale, 1)); /* 회전 핫존 띠 폭 */
-  /* 스티커 상자에서 링까지의 거리 — 큰 스티커는 예전처럼 5px, 작으면 최소 박스까지 벌어진다. */
-  --ring-out: max(
-    calc(5px / var(--poster-scale, 1)),
-    calc((var(--ring-min) - var(--sticker-size, 0px)) / 2)
-  );
-}
-
-/* 선택 링(= 부풀려지는 선택 박스). 링 안쪽 전체가 이동 손잡이(이벤트는 .sticker-item으로 버블). */
-.sticker-item.selected::after {
-  content: "";
-  position: absolute;
-  inset: calc(-1 * var(--ring-out));
-  border: calc(1.5px / var(--poster-scale, 1)) solid rgb(99 102 241 / 85%);
-  border-radius: calc(6px / var(--poster-scale, 1));
-  pointer-events: auto;
-}
-
-/* 회전 핫존 — 링 바깥 띠. 크롬 없이 잡아 돌린다. ::after(링)보다 뒤에 칠해지므로 안쪽은 링이 먹는다. */
-.sticker-rotzone {
-  position: absolute;
-  inset: calc(-1 * (var(--ring-out) + var(--rot-band)));
-  border-radius: calc(10px / var(--poster-scale, 1));
-  cursor: grab;
-  touch-action: none;
-}
-.sticker-rotzone:active {
-  cursor: grabbing;
-}
-/* 안 보이는 조작 영역은 아무도 못 찾는다 → 호버하면 띠 경계가 옅은 점선으로 드러나고 ⟳가 뜬다.
-   힌트는 '아래'에 둔다 — 선택하면 떠 있는 편집 툴바가 보통 스티커 위를 덮기 때문. */
-.sticker-rotzone:hover {
-  outline: calc(1.5px / var(--poster-scale, 1)) dashed rgb(99 102 241 / 40%);
-  outline-offset: calc(-2px / var(--poster-scale, 1));
-  border-radius: calc(10px / var(--poster-scale, 1));
-}
-.sticker-rotzone::after {
-  content: "⟳";
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translate(-50%, 12%);
-  color: #6366f1;
-  font-size: calc(15px / var(--poster-scale, 1));
-  font-weight: 900;
-  line-height: 1;
-  text-shadow:
-    0 0 calc(3px / var(--poster-scale, 1)) #fff,
-    0 0 calc(6px / var(--poster-scale, 1)) #fff;
-  opacity: 0;
-  transition: opacity var(--dur-1) var(--ease);
-}
-.sticker-rotzone:hover::after {
-  opacity: 0.95;
-}
-
-.sticker-handle {
-  position: absolute;
-  display: grid;
-  place-items: center;
-  width: var(--h-size);
-  height: var(--h-size);
-  border: calc(1.5px / var(--poster-scale, 1)) solid #6366f1;
-  border-radius: var(--r-pill);
-  background: #ffffff;
-  color: #4f46e5;
-  cursor: pointer;
-  box-shadow: var(--shadow-2);
-  touch-action: none;
-  z-index: 2; /* 링·핫존 위 */
-  transition:
-    transform var(--dur-1) var(--ease),
-    background var(--dur-1) var(--ease);
-}
-/* 보이는 건 작게, 누르는 건 크게 — 손가락(44px)은 투명 여백으로 확보한다. */
-.sticker-handle::before {
-  content: "";
-  position: absolute;
-  inset: calc((var(--h-size) - var(--h-hit)) / 2);
-}
-.sticker-handle svg {
-  width: calc(13px / var(--poster-scale, 1));
-  height: calc(13px / var(--poster-scale, 1));
-}
-.sticker-handle:hover {
-  background: var(--violet-soft);
-  transform: scale(1.1);
-}
-/* 크기 핸들은 링 좌/우 가운데 — 링 '바깥'에 반쯤 걸치게. 어느 쪽에 둘지는 스티커가 놓인
-   사분면에 따라(캔버스 밖으로 나가지 않게). 세로 가운데 정렬은 margin으로(hover scale 충돌 방지). */
-.sticker-handle.resize {
-  top: 50%;
-  margin-top: calc(-0.5 * var(--h-size));
-  cursor: nwse-resize;
-}
-.sticker-handle.resize.left {
-  left: calc(-1 * (var(--ring-out) + var(--h-size) / 2));
-}
-.sticker-handle.resize.right {
-  right: calc(-1 * (var(--ring-out) + var(--h-size) / 2));
-}
-
-/* ── 꾸미기 도구 모음 ── */
-.decorate-toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 14px;
-  border: 1px solid rgb(255 255 255 / 70%);
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgb(255 255 255 / 82%), rgb(255 255 255 / 68%));
-  padding: 14px 16px;
-  box-shadow:
-    0 10px 30px rgb(17 24 39 / 8%),
-    inset 0 1px 0 rgb(255 255 255 / 80%);
-  backdrop-filter: blur(12px);
-}
-
-/* 꾸미기 도구 2단: 왼쪽=이모지(더 넓게), 오른쪽=텍스트 — 약 6:4 비율 */
-.decorate-cols {
-  display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-  gap: 16px;
-  align-items: stretch; /* 두 칼럼 높이를 같게 → 업로드 칸 밑단을 텍스트 카드와 맞춤 */
-}
-/* 꾸미기 chrome 전체(상단 도구바 + 하단 입력/캡쳐줄)를 아바타 scene에서 달력과 같은 폭으로 슬라이드.
-   base에 트랜지션 → ON/OFF 둘 다 부드럽게. */
-.decorate-toolbar,
-.poster-capture-row,
-.decorate-toolbar {
-  transition: margin 0.55s var(--spring-smooth, var(--ease-spring));
-}
-.poster-page.avatar-scene.avatar-right .decorate-toolbar,
-.poster-page.avatar-scene.avatar-right .poster-capture-row {
-  margin-right: calc(var(--avatar-col) - var(--avatar-gap));
-}
-.poster-page.avatar-scene.avatar-left .decorate-toolbar,
-.poster-page.avatar-scene.avatar-left .poster-capture-row {
-  margin-left: calc(var(--avatar-col) - var(--avatar-gap));
-}
-@media (max-width: 1099px) {
-  .poster-page.avatar-scene .decorate-toolbar,
-  .poster-page.avatar-scene .poster-capture-row {
-    margin: 0;
-  }
-}
-html[data-reduce-motion] .decorate-toolbar,
-html[data-reduce-motion] .poster-capture-row {
-  transition: none;
-}
-.decorate-col-left,
-.decorate-col-right {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-/* 오른쪽 묶음(내 이모지+업로드)이 칸 높이를 채운다(이모지 칸과 밑단 맞춤). */
-.decorate-cols > .palette-group:last-child {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-height: 0;
-}
-/* 저장된 내 이모지 박스: 남는 높이를 더 많이 차지하되, 많아지면 박스 안에서만 스크롤. */
-.decorate-cols > .palette-group:last-child .asset-palette {
-  flex: 2 1 0;
-  min-height: 96px;
-  max-height: none;
-}
-/* 업로드 드롭존: 바닥 쪽에 일정 크기로(저장 박스가 없으면 남는 공간을 채움) */
-.decorate-cols > .palette-group:last-child .upload-drop {
-  flex: 1 1 0;
-  min-height: 120px;
-  align-content: center;
-}
-@media (max-width: 1100px) {
-  .decorate-cols {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* C2: 실행취소/다시실행 컨트롤 */
-.decorate-history {
-  display: flex;
-  gap: 6px;
-}
-.decorate-history .button.icon-only {
-  width: 38px;
-  min-height: 34px;
-  padding: 0;
-  border-radius: var(--r-pill);
-}
-
-/* C9/C10: 포스터 테마 선택(소유자) */
-.theme-switch {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-left: 4px;
-  padding-left: 10px;
-  border-left: 1px solid rgb(15 23 42 / 12%);
-}
-.theme-switch button {
-  min-height: 32px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill);
-  background: var(--surface);
-  padding: 0 12px;
-  color: var(--muted);
-  font-size: 12.5px;
-  font-weight: 800;
-  cursor: pointer;
-  transition:
-    background var(--dur-1) var(--ease),
-    color var(--dur-1) var(--ease);
-}
-.theme-switch button:hover {
-  color: var(--ink);
-}
-.theme-switch button.active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-}
-
-/* 팔레트 묶음: 라벨 + 격자 */
-.palette-group {
-  display: grid;
-  gap: 8px;
-  /* 칼럼이 늘어나도 라벨·탭·팔레트 행을 위로 모은다(카테고리 전환 시 탭 버튼 위아래로
-     빈 공간이 벌어지던 문제 방지 — grid stretch가 탭 행에 여백을 분배하던 게 원인). */
-  align-content: start;
-}
-.palette-label {
-  font-size: var(--text-label); /* 12→12.5 수렴 */
-  font-weight: 800;
-  color: #475569;
-  letter-spacing: 0.01em;
-}
-
-/* C6 텍스트 스티커 추가 줄 */
-.text-add-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-/* 저장 칩(문구 입력칸 왼쪽) — 줄어들지 않게 고정, 세로 가운데. */
-.text-add-row .save-status {
-  flex: 0 0 auto;
-}
-.text-add-input {
-  flex: 1;
-  min-width: 0;
-  min-height: 44px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: var(--surface);
-  padding: 8px 12px;
-  color: var(--ink);
-  font-size: 14px;
-  font-family: inherit;
-  line-height: 1.4;
-  resize: vertical;
-}
-.text-add-row .button {
-  flex: 0 0 auto;
-}
-/* C6 글자색 선택(패널) */
-.text-color-control input[type="color"] {
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: 1px solid rgb(15 23 42 / 12%);
-  border-radius: var(--r-sm);
-  background: none;
-  cursor: pointer;
-}
-
-/* 업로드 드롭존: 저장 칸과 분리된 드래그 앤 드롭/클릭 영역 */
-.upload-drop {
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  border: 1.5px dashed rgb(99 102 241 / 45%);
-  border-radius: var(--r-card);
-  background: rgb(99 102 241 / 4%);
-  padding: 16px 14px;
-  cursor: pointer;
-  text-align: center;
-  transition:
-    background 0.12s ease,
-    border-color 0.12s ease,
-    box-shadow 0.12s ease;
-}
-.upload-drop:hover {
-  background: rgb(99 102 241 / 9%);
-  border-color: rgb(99 102 241 / 70%);
-}
-.upload-drop.dragover {
-  background: rgb(99 102 241 / 14%);
-  border-color: #6366f1;
-  border-style: solid;
-  box-shadow: 0 0 0 3px rgb(99 102 241 / 20%);
-}
-.upload-drop.busy {
-  opacity: 0.65;
-  cursor: progress;
-}
-.upload-drop-icon {
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  margin-bottom: 2px;
-  border-radius: var(--r-pill);
-  background: rgb(99 102 241 / 12%);
-  color: #4f46e5;
-}
-.upload-drop-title {
-  color: #4338ca;
-  font-size: var(--text-body); /* 13→13.5 수렴 */
-  font-weight: 800;
-}
-.upload-drop-hint {
-  color: #94a3b8;
-  font-size: var(--text-caption); /* 11.5→11 수렴 */
-  font-weight: 600;
-}
-
-/* 업로드한 커스텀 이모지 보관(저장) 칸 */
-.asset-palette {
-  max-height: 132px;
-}
-.asset-chip {
-  position: relative;
-  aspect-ratio: 1;
-}
-.asset-chip .emoji-chip {
-  width: 100%;
-  height: 100%;
-  padding: 4px;
-}
-.asset-chip .emoji-chip img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-.asset-del {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  display: none;
-  place-items: center;
-  width: 16px;
-  height: 16px;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: #ef4444;
-  color: #fff;
-  font-size: 12px;
-  line-height: 1;
-  cursor: pointer;
-}
-.asset-chip:hover .asset-del {
-  display: grid;
-}
-/* 업로드 진행 중인 임시 칩: 살짝 흐리게 + 작은 스피너로 "올리는 중"을 알린다. */
-.asset-chip.uploading .emoji-chip {
-  cursor: default;
-  position: relative;
-}
-.asset-chip.uploading .emoji-chip img {
-  opacity: 0.45;
-}
-.asset-spinner {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 16px;
-  height: 16px;
-  margin: -8px 0 0 -8px;
-  border: 2px solid rgba(0, 0, 0, 0.18);
-  border-top-color: rgba(0, 0, 0, 0.55);
-  border-radius: 50%;
-  animation: asset-spin 0.7s linear infinite;
-}
-@keyframes asset-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* ── 내 이모지 보관함: 분류 탭 + 드래그 정렬 ──
-   칩끼리 끌면 순서가 바뀌고, 분류 탭 위에 놓으면 그 칸(아바타/정적/동적)으로 옮겨진다. */
-.asset-tabs button i {
-  display: inline-block;
-  margin-left: 4px;
-  color: var(--muted);
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 800;
-  font-variant-numeric: tabular-nums;
-}
-.asset-tabs button.active i {
-  color: inherit;
-  opacity: 0.72;
-}
-/* 끌고 온 이모지를 받을 탭 — 받을 수 있다는 걸 확실히(점선 테두리 + 살짝 커짐). */
-.asset-tabs button.drop-tab {
-  border-color: var(--brand, #ec4899);
-  border-style: dashed;
-  background: #fff1f7;
-  color: var(--brand, #ec4899);
-  transform: scale(1.06);
-  transition:
-    transform var(--dur-1, 0.14s) var(--ease),
-    background var(--dur-1, 0.14s) var(--ease);
-}
-.asset-palette .asset-chip {
-  touch-action: none; /* 드래그 중 스크롤/줌 제스처가 끼어들지 않게 */
-  transition:
-    transform var(--dur-1, 0.14s) var(--ease),
-    opacity var(--dur-1, 0.14s) var(--ease);
-}
-.asset-chip.dragging {
-  opacity: 0.4;
-  transform: scale(0.92);
-}
-/* 놓을 자리 표시: 대상 칩을 살짝 밀고 왼쪽에 삽입선을 그린다(편집실 드롭 인디케이터와 같은 어휘). */
-.asset-chip.drop-here {
-  transform: translateX(3px);
-}
-.asset-chip.drop-here::before {
-  content: "";
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  left: -3px;
-  z-index: 2;
-  width: 2px;
-  border-radius: 2px;
-  background: var(--brand, #ec4899);
-}
-.asset-empty {
-  margin: 2px 0 0;
-  color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 700;
-  line-height: 1.5;
-}
-@media (min-width: 641px) {
-  .asset-empty {
-    font-size: 12.5px;
-  }
-}
-
-/* 이모지 팔레트: 칸이 많아 스크롤되는 격자. 칩은 테두리 없이 호버로만 강조. */
-.emoji-palette {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(38px, 1fr));
-  gap: 2px;
-  max-height: 188px;
-  overflow-y: auto;
-  padding: 4px;
-  border-radius: var(--r-md);
-  background: rgb(248 250 252 / 70%);
-  box-shadow: inset 0 0 0 1px rgb(15 23 42 / 5%);
-  scrollbar-width: thin;
-  scrollbar-color: rgb(148 163 184 / 70%) transparent;
-}
-.emoji-palette::-webkit-scrollbar {
-  width: 8px;
-}
-.emoji-palette::-webkit-scrollbar-thumb {
-  border: 2px solid transparent;
-  border-radius: var(--r-sm);
-  background-clip: padding-box;
-  background-color: rgb(148 163 184 / 60%);
-}
-.emoji-palette::-webkit-scrollbar-track {
-  background: transparent;
-}
-.emoji-chip {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 1;
-  border: 0;
-  border-radius: 10px;
-  background: transparent;
-  cursor: pointer;
-  font-size: 22px;
-  line-height: 1;
-  transition:
-    transform 0.1s ease,
-    background 0.12s ease;
-}
-.emoji-chip:hover {
-  background: rgb(99 102 241 / 12%);
-  transform: scale(1.18);
-}
-.emoji-chip:active {
-  transform: scale(0.9);
-}
-
-/* C5b: 이모지 카테고리 탭 */
-.emoji-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start; /* 줄이 늘어나도 버튼이 세로로 늘어나지 않게 */
-  align-content: flex-start;
-  gap: 4px;
-}
-.emoji-tabs button {
-  flex: 0 0 auto;
-  height: 30px; /* 고정 높이 — 선택/포커스 시 높이가 확장되던 버그 방지 */
-  border: 1px solid var(--line);
-  border-radius: var(--r-pill);
-  background: var(--surface);
-  padding: 0 11px;
-  color: var(--muted);
-  font-size: 12.5px;
-  font-weight: 800;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    background var(--dur-1) var(--ease),
-    color var(--dur-1) var(--ease),
-    border-color var(--dur-1) var(--ease);
-}
-.emoji-tabs button:hover {
-  color: var(--ink);
-}
-.emoji-tabs button.active {
-  border-color: var(--accent);
-  background: var(--accent-soft);
-  color: var(--accent-strong);
-}
-
-/* (.sticker-panel* / .sticker-preview / .opacity-control* 제거 — 참조 0) */
-.sticker-group-count {
-  padding-left: 2px;
-  font-size: var(--text-body); /* 13→13.5 수렴 */
-  font-weight: 900;
-  color: var(--accent-strong);
-}
-.sticker-preview-img {
-  width: 24px;
-  height: 24px;
-  object-fit: contain;
-}
-.sticker-panel-divider {
-  width: 1px;
-  height: 22px;
-  background: rgb(15 23 42 / 12%);
-}
 .button.danger {
   border-color: #fca5a5;
   background: #fef2f2;
@@ -5363,23 +4567,7 @@ html[data-reduce-motion] .poster-capture-row {
   align-items: center;
   gap: 8px;
 }
-.text-panel-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-.text-panel-row.grow {
-  flex: 1;
-  min-width: 180px;
-}
-.text-panel-label {
-  flex: 0 0 40px;
-  font-size: var(--text-label); /* 12.5 */
-  font-weight: 900;
-  color: #475569;
-  white-space: nowrap;
-}
+
 .text-edit-input {
   flex: 1;
   min-width: 0;
@@ -5409,295 +4597,36 @@ html[data-reduce-motion] .poster-capture-row {
   accent-color: var(--accent);
   cursor: pointer;
 }
-.text-panel-actions {
-  justify-content: flex-end;
-  border-top: 1px solid var(--line-soft);
-  padding-top: 11px;
-}
 
 /* C: 선택한 스티커 옆에 떠다니는 편집 바 — 화면 고정(fixed)이라 위쪽 패널 왕복이 사라지고,
    선택을 풀면 사라지므로 캡쳐(선택 해제 후 진행)에도 잡히지 않는다. */
-.sticker-toolbar-float {
-  z-index: 70;
-  width: max-content;
-  /* 움직임 6버튼+라벨, 텍스트 정렬+배경+bg색+네온이 한 줄에 들어가도록 폭 확보. */
-  max-width: min(360px, 94vw);
-  border: 1px solid rgb(15 23 42 / 10%);
-  border-radius: 13px;
-  background: #ffffff;
-  box-shadow: 0 14px 36px rgb(17 24 39 / 24%);
-  animation: sticker-toolbar-pop 150ms var(--ease);
-  overflow: hidden;
-}
+
 /* 헤더: 종류 라벨 + 접기 버튼 */
-.stf-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  border-bottom: 1px solid rgb(15 23 42 / 8%);
-  background: linear-gradient(#f8fafc, #f1f5f9);
-  padding: 4px 5px 4px 11px;
-}
-.stf-title {
-  font-size: var(--text-label); /* 12→12.5 수렴 */
-  font-weight: 900;
-  color: #475569;
-}
-.stf-collapse {
-  display: inline-grid;
-  place-items: center;
-  width: 26px;
-  height: 24px;
-  border: 0;
-  border-radius: 7px;
-  background: transparent;
-  color: #64748b;
-  cursor: pointer;
-}
-.stf-collapse:hover {
-  background: rgb(15 23 42 / 7%);
-}
-.stf-body {
-  display: grid;
-  gap: 7px;
-  padding: 9px 10px 10px;
-}
-.stf-text-top {
-  display: flex;
-  gap: 6px;
-}
-.stf-textarea {
-  flex: 1;
-  min-width: 0;
-  min-height: 38px;
-  max-height: 120px;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  padding: 6px 9px;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1.35;
-  resize: vertical;
-}
-.stf-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
-}
-.stf-icons {
-  gap: 5px;
-}
+
 /* 아랫줄 버튼들을 늘려 줄 너비를 꽉 채워, 윗줄(투명도·복제·삭제)과 양끝을 맞춘다. */
-.stf-icons .stf-btn {
-  flex: 1 1 auto;
-}
-.stf-select {
-  flex: 1 1 auto;
-  min-width: 92px;
-  height: 30px;
-  border: 1.5px solid #d4dae4;
-  border-radius: var(--r-sm);
-  background: #ffffff;
-  padding: 0 8px;
-  font: inherit;
-  font-size: 12.5px;
-  font-weight: 800;
-  cursor: pointer;
-}
-.stf-group {
-  display: inline-flex;
-  gap: 4px;
-}
-.stf-group button,
-.stf-btn {
-  display: inline-grid;
-  place-items: center;
-  min-width: 30px;
-  height: 30px;
-  border: 1.5px solid #d4dae4;
-  border-radius: var(--r-sm);
-  background: #ffffff;
-  padding: 0 8px;
-  color: #334155;
-  font-size: 12.5px;
-  font-weight: 800;
-  cursor: pointer;
-  transition:
-    background var(--dur-1) var(--ease),
-    border-color var(--dur-1) var(--ease);
-}
-.stf-group button:hover,
-.stf-btn:hover {
-  border-color: #a9b2c2;
-  background: #f8fafc;
-}
-.stf-group button.active,
-.stf-btn.active,
-.stf-btn[aria-pressed="true"] {
-  border-color: var(--accent);
-  background: var(--accent);
-  color: var(--on-accent);
-}
+
 /* 움직임(anim) 피커 행 — 라벨 + 짧은 버튼들. 버튼은 패딩을 줄여 한 줄에 들어가게(콩닥이 자기
    혼자 줄바꿈되는 거 방지). 모자라면 wrap. */
-.stf-anim {
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-}
-.stf-anim .stf-btn {
-  padding: 0 6px;
-  min-width: auto;
-}
-.stf-anim-label {
-  font-size: 11px;
-  font-weight: 800;
-  color: #64748b;
-  margin-right: 2px;
-}
+
 /* P2 데코 도형: 팔레트 칩(SVG 미리보기) · 캔버스 렌더 · 도형 색 피커 라벨. */
 .shape-chip {
   display: inline-grid;
   place-items: center;
 }
-.shape-chip svg,
-.sticker-shape {
+.shape-chip svg {
   display: block;
 }
-.stf-btn.danger {
-  border-color: #fca5a5;
-  background: #fef2f2;
-  color: #b42318;
-}
-.stf-btn.danger:hover {
-  background: #fee2e2;
-}
-.stf-color {
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex: 0 0 auto;
-  border: 1.5px solid #d4dae4;
-  border-radius: var(--r-sm);
-  overflow: hidden;
-  cursor: pointer;
-}
-.stf-color input {
-  width: 150%;
-  height: 150%;
-  border: 0;
-  padding: 0;
-  background: none;
-  cursor: pointer;
-}
+
 /* 슬라이더 행 — 라벨은 고정폭(크기/투명도 시작점 정렬), 슬라이더는 남는 공간 다 차지.
    같은 행에 액션 버튼이 있으면 자연스레 그 앞까지 늘어남(spacer 불필요). */
-.stf-opacity {
-  display: flex;
-  flex: 1 1 auto;
-  min-width: 0;
-  align-items: center;
-  gap: 8px;
-  font-size: 11.5px;
-  font-weight: 800;
-  color: #475569;
-}
-.stf-label-w {
-  flex: 0 0 38px;
-}
-.stf-opacity input[type="range"] {
-  flex: 1 1 auto;
-  min-width: 60px;
-  width: auto;
-  height: 6px;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-.stf-spacer {
-  flex: 1 1 auto;
-}
-@keyframes sticker-toolbar-pop {
-  from {
-    opacity: 0;
-    transform: translateY(5px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.decorate-hint {
-  margin: 0;
-  border-left: 3px solid var(--accent);
-  border-radius: 0 var(--r-md) var(--r-md) 0;
-  background: var(--accent-soft);
-  padding: 11px 14px;
-  color: var(--ink-soft);
-  font-size: 13px;
-  line-height: 1.6;
-}
 
 /* #8: 단축키 안내 박스 */
 /* 단축키 안내 — 편집실 .kbd-hints와 동일 디자인(키+설명 칩, 한 줄, 보라 톤). */
 /* 단축키 안내 — 제목 pill이 접기/펴기 토글. 펼치면 의미 그룹 3개(편집/선택·이동/기록)가
    헤어라인으로 나뉜 한 줄 흐름(조화 3요소: 그룹핑·정렬·일정 리듬). */
-.shortcut-help {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 14px;
-  /* 전폭 스트레치 금지 — 내용만큼만(오른쪽이 텅 빈 채 떠 있던 불균형 제거). */
-  align-self: flex-start;
-  width: fit-content;
-  max-width: 100%;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: rgb(248 250 252 / 85%);
-  padding: 8px 12px;
-}
-.shortcut-help-title {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 9px 4px 11px;
-  border: 0;
-  border-radius: 9px;
-  background: #efe9fb;
-  color: #5b4bd0;
-  font-size: 12.5px;
-  font-weight: 900;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    background var(--dur-1, 0.15s) var(--ease),
-    transform var(--dur-1, 0.15s) var(--ease);
-}
-.shortcut-help-title:hover {
-  background: #e6ddf9;
-}
-.shortcut-help-title:active {
-  transform: scale(0.96);
-}
-.shortcut-help-title .sh-chev {
-  transition: transform 0.25s var(--ease);
-}
-.shortcut-help.is-closed .sh-chev {
-  transform: rotate(-90deg);
-}
+
 /* 그룹 줄 — 스프링 슬라이드-인(펼칠 때만, 접기는 즉시 정리). */
-.shortcut-help-groups {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
-  min-width: 0;
-  animation: sh-groups-in 0.32s cubic-bezier(0.22, 1.4, 0.4, 1) both;
-}
+
 @keyframes sh-groups-in {
   from {
     opacity: 0;
@@ -5708,9 +4637,7 @@ html[data-reduce-motion] .poster-capture-row {
     transform: none;
   }
 }
-html[data-reduce-motion] .shortcut-help-groups {
-  animation: none;
-}
+
 .sh-group {
   display: inline-flex;
   align-items: center;
@@ -5731,49 +4658,8 @@ html[data-reduce-motion] .shortcut-help-groups {
   color: #9a90bd;
   white-space: nowrap;
 }
-.sh-group .shortcut-help-list {
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.shortcut-help-list li {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 10px 4px 6px;
-  border: 1px solid #ece8f7;
-  border-radius: 9px;
-  background: #f7f5fc;
-  color: #5f5780;
-  font-size: 12.5px;
-  font-weight: 700;
-  white-space: nowrap;
-}
+
 /* 항목 속 보조 주석(예: 붙여넣기 '다른 달도') — 본문보다 한 톤 조용하게. */
-.shortcut-help-list li i {
-  font-style: normal;
-  font-size: 10.5px;
-  font-weight: 800;
-  color: #9a90bd;
-}
-.shortcut-help kbd {
-  display: inline-grid;
-  place-items: center;
-  min-width: 21px;
-  height: 21px;
-  padding: 0 6px;
-  border: 1px solid #d3cbef;
-  border-bottom-width: 2px;
-  border-radius: 6px;
-  background: #fff;
-  color: #5b4bd0;
-  font-size: 11px;
-  font-weight: 800;
-  font-family: inherit;
-}
 
 .public-legend {
   grid-column: 2 / 4;
@@ -6118,27 +5004,6 @@ html[data-reduce-motion] .heart-toast {
   transform: translateX(-50%);
 }
 
-.sticker-clip-toast {
-  position: fixed;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 95;
-  border-radius: var(--r-pill);
-  background: #1f2937;
-  padding: 9px 18px;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 800;
-  box-shadow: 0 6px 20px rgb(17 24 39 / 28%);
-  pointer-events: none;
-  animation: sticker-clip-in 160ms ease-out;
-}
-@keyframes sticker-clip-in {
-  from { opacity: 0; transform: translate(-50%, -6px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
-
 /* ── SOOP 라이브 비콘 ── 방송 중일 때만 뜨는 빨강 알약. fixed = export 표면 밖(PNG 제외).
    끌어당김 최상위라 빨강+맥박. reduced-motion이면 맥박 끔. */
 /* 라이브 카드 — 우하단 플로팅(옛 좌상단 알약 비콘 대체): SOOP 임베드 플레이어(16:9, 음소거
@@ -6299,7 +5164,6 @@ html[data-reduce-motion] .slc-player img {
 @media (max-width: 640px) {
   .soop-live-card { display: none; }
 }
-
 
 /* ── 시청자 '이 달 기록'(공개 인사이트) 시트 ─────────────────────────────
    상단 중앙 크롬('내 관심' 옆) 버튼으로 연다. 포스터 표면 밖 → 캡쳐 PNG에 안 들어간다.
@@ -6757,72 +5621,6 @@ html[data-reduce-motion] .poster-readonly .heart-toast {
 }
 
 /* 배치 6: 꾸미기 chrome. 작품·선택 링 geometry는 유지하고 inspector 표면만 정돈한다. */
-.decorate-toolbar {
-  gap: var(--space-3);
-  margin-bottom: var(--space-4);
-  border: var(--stroke-hairline) solid var(--glass-border);
-  border-radius: var(--r-xl);
-  background: var(--surface);
-  padding: var(--space-4);
-  box-shadow: var(--shadow-2);
-}
-
-@supports ((-webkit-backdrop-filter: var(--material-blur)) or (backdrop-filter: var(--material-blur))) {
-  .decorate-toolbar,
-  .sticker-toolbar-float {
-    background: var(--material-bg-strong);
-    -webkit-backdrop-filter: var(--material-blur);
-    backdrop-filter: var(--material-blur);
-  }
-}
-
-.decorate-history {
-  gap: var(--space-2);
-}
-
-.decorate-history .button.icon-only,
-.theme-switch button {
-  min-width: var(--control-hit);
-  min-height: var(--control-hit);
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-control);
-  background: var(--surface);
-  color: var(--ink-soft);
-}
-
-.theme-switch {
-  gap: var(--space-1);
-  margin-left: var(--space-1);
-  border-color: var(--line);
-  padding-left: var(--space-3);
-}
-
-.theme-switch button {
-  padding-inline: var(--space-3);
-  font-size: var(--text-label);
-}
-
-.theme-switch button:hover {
-  border-color: var(--selection-border);
-  background: var(--selection-fill);
-}
-
-.theme-switch button.active {
-  border-color: var(--selection-border);
-  background: var(--selection-fill);
-  color: var(--violet);
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--selection-border);
-}
-
-.decorate-cols {
-  gap: var(--space-4);
-}
-
-.decorate-col-left,
-.decorate-col-right,
-.decorate-cols > .palette-group:last-child {
-  gap: var(--space-3);
-}
 
 .palette-group {
   gap: var(--space-2);
@@ -6837,53 +5635,6 @@ html[data-reduce-motion] .poster-readonly .heart-toast {
   font-size: var(--text-label);
   font-weight: var(--weight-semibold);
   letter-spacing: var(--tracking-tight);
-}
-
-.emoji-tabs {
-  flex-wrap: nowrap;
-  gap: var(--space-1);
-  overflow-x: auto;
-  padding-bottom: var(--space-1);
-}
-
-.emoji-tabs button {
-  min-height: var(--control-hit);
-  height: var(--control-hit);
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-pill);
-  background: var(--surface);
-  padding-inline: var(--space-3);
-  color: var(--muted);
-  font-size: var(--text-label);
-}
-
-.emoji-tabs button:hover {
-  border-color: var(--selection-border);
-  background: var(--selection-fill);
-  color: var(--ink);
-}
-
-.emoji-tabs button.active {
-  border-color: var(--selection-border);
-  background: var(--selection-fill);
-  color: var(--violet);
-}
-
-.emoji-palette,
-.asset-palette {
-  gap: var(--space-1);
-  border-radius: var(--r-control);
-  background: var(--surface);
-  padding: var(--space-2);
-  box-shadow: inset 0 0 0 var(--stroke-hairline) var(--line-soft);
-}
-
-.emoji-chip {
-  border-radius: var(--r-control);
-}
-
-.emoji-chip:hover {
-  background: var(--selection-fill);
 }
 
 .upload-drop {
@@ -6914,24 +5665,13 @@ html[data-reduce-motion] .poster-readonly .heart-toast {
   font-size: var(--text-body);
 }
 
-.upload-drop-hint,
-.asset-empty {
+.upload-drop-hint {
   color: var(--muted);
   font-size: var(--text-caption);
   line-height: var(--lh-body);
 }
 
-.poster-capture-row {
-  gap: var(--space-3);
-  margin-bottom: var(--space-3);
-}
-
-.text-add-row {
-  gap: var(--space-2);
-}
-
 .text-add-input,
-.text-add-row .button,
 .poster-actions .button {
   min-height: var(--control-hit);
   border: var(--stroke-hairline) solid var(--line);
@@ -6945,214 +5685,43 @@ html[data-reduce-motion] .poster-readonly .heart-toast {
   font-size: var(--text-input);
 }
 
-.text-add-row .button,
 .poster-actions .button {
   padding-inline: var(--space-control-x);
   font-size: var(--text-body);
 }
 
-.sticker-toolbar-float {
-  max-width: min(
-    calc(var(--control-hit) * 8),
-    calc(100vw - var(--space-3))
-  );
-  border: var(--stroke-hairline) solid var(--glass-border);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-3);
-}
-
-.stf-head {
-  gap: var(--space-2);
-  border-color: var(--line);
-  background: var(--surface-2);
-  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
-}
-
-.stf-title,
-.stf-anim-label,
-.stf-opacity {
-  color: var(--ink-soft);
-  font-size: var(--text-label);
-}
-
-.stf-collapse,
-.stf-group button,
-.stf-btn,
-.stf-color,
-.stf-select {
-  min-width: var(--control-hit);
-  min-height: var(--control-hit);
-  height: var(--control-hit);
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-control);
-  background: var(--surface);
-  color: var(--ink-soft);
-}
-
-.stf-collapse {
-  width: var(--control-hit);
-}
-
-.stf-body {
-  gap: var(--space-2);
-  padding: var(--space-3);
-}
-
-.stf-row,
-.stf-group,
-.stf-text-top {
-  gap: var(--space-1);
-}
-
-.stf-textarea {
-  min-height: var(--control-hit);
-  border-color: var(--line);
-  border-radius: var(--r-control);
-  background: var(--surface);
-  padding: var(--space-2) var(--space-3);
-  color: var(--ink);
-  font-size: var(--text-body);
-  line-height: var(--lh-body);
-}
-
-.stf-group button:hover,
-.stf-btn:hover,
-.stf-collapse:hover {
-  border-color: var(--selection-border);
-  background: var(--selection-fill);
-}
-
-.stf-group button.active,
-.stf-btn.active,
-.stf-btn[aria-pressed="true"] {
-  border-color: var(--selection-border);
-  background: var(--selection-fill);
-  color: var(--violet);
-}
-
-.stf-btn.danger {
-  border-color: var(--status-danger);
-  background: var(--status-danger-fill);
-  color: var(--status-danger);
-}
-
 @media (max-width: 640px) {
-  .poster-page:has(.decorate-toolbar) {
-    padding-bottom: calc(var(--decorate-sheet-height) + var(--space-6));
-  }
+  
 
-  .decorate-toolbar {
-    position: fixed;
-    right: var(--space-2);
-    bottom: calc(var(--space-2) + env(safe-area-inset-bottom));
-    left: var(--space-2);
-    z-index: 60;
-    max-height: var(--decorate-sheet-height);
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    margin: 0;
-    border-radius: var(--r-xl);
-    padding: var(--space-3);
-    box-shadow: var(--shadow-3);
-  }
+  
 
-  .decorate-cols {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-3);
-  }
+  
 
-  .decorate-history {
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    border-radius: var(--r-control);
-    background: var(--surface-2);
-    padding: var(--space-2);
-  }
+  
 
-  .theme-switch {
-    flex-wrap: nowrap;
-  }
+  
 
   .palette-group {
     padding: var(--space-2);
   }
 
-  .emoji-palette {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-  }
+  
 
-  .decorate-cols > .palette-group:last-child .asset-palette,
-  .decorate-cols > .palette-group:last-child .upload-drop {
-    min-height: calc(var(--control-hit) * 2);
-  }
+  
 
-  .poster-capture-row {
-    position: fixed;
-    right: var(--space-2);
-    bottom: calc(
-      var(--decorate-sheet-height) + var(--space-3) + env(safe-area-inset-bottom)
-    );
-    left: var(--space-2);
-    z-index: 61;
-    flex-wrap: nowrap;
-    margin: 0;
-    border: var(--stroke-hairline) solid var(--glass-border);
-    border-radius: var(--r-lg);
-    background: var(--surface);
-    padding: var(--space-2);
-    box-shadow: var(--shadow-2);
-  }
+  
 
-  .poster-capture-row .text-add-row {
-    min-width: 0;
-  }
+  
 
-  .poster-capture-row .save-status {
-    display: none;
-  }
+  
 
-  .poster-capture-row .poster-actions .button {
-    min-width: var(--control-hit);
-    padding-inline: var(--space-3);
-  }
+  
 
-  .sticker-toolbar-float {
-    max-height: calc(var(--decorate-sheet-height) - var(--space-4));
-    overflow-y: auto;
-  }
+  
 }
 
-html[data-reduce-motion] .decorate-toolbar,
-html[data-reduce-motion] .poster-capture-row,
-html[data-reduce-motion] .theme-switch button,
-html[data-reduce-motion] .emoji-tabs button,
-html[data-reduce-motion] .emoji-chip,
-html[data-reduce-motion] .upload-drop,
-html[data-reduce-motion] .asset-chip,
-html[data-reduce-motion] .sticker-toolbar-float,
-html[data-reduce-motion] .stf-collapse,
-html[data-reduce-motion] .stf-group button,
-html[data-reduce-motion] .stf-btn {
+html[data-reduce-motion] .upload-drop {
   transition: none;
-}
-
-html[data-reduce-motion] .sticker-toolbar-float,
-html[data-reduce-motion] .asset-spinner {
-  animation: none;
-}
-
-html[data-reduce-motion] .emoji-chip:hover,
-html[data-reduce-motion] .emoji-chip:active,
-html[data-reduce-motion] .asset-chip.dragging,
-html[data-reduce-motion] .asset-chip.drop-here,
-html[data-reduce-motion] .stf-collapse:active,
-html[data-reduce-motion] .stf-group button:active,
-html[data-reduce-motion] .stf-btn:active {
-  transform: none;
 }
 
 /* Batch 8: public records sheet. Viewer-only chrome; export surface remains untouched. */
@@ -7852,13 +6421,4 @@ html[data-reduce-motion] .agenda-detail-close:active {
 
 /* 태그 필터 중 — 꾸미기 스티커도 일정 카드(.dimmed)와 같은 값으로 함께 물러난다.
    스티커만 쨍하면 필터 결과보다 장식이 더 눈에 띄었다(사용자 지적). */
-.poster-page .sticker-layer {
-  transition:
-    opacity var(--dur-2) var(--ease),
-    filter var(--dur-2) var(--ease);
-}
 
-.poster-page.tag-filtering .sticker-layer {
-  opacity: 0.28;
-  filter: grayscale(0.5);
-}

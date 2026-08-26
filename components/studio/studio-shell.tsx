@@ -17,7 +17,6 @@ import {
   Pencil,
   Plus,
   Save,
-  Sparkles,
   Trash2,
   X
 } from "lucide-react";
@@ -90,7 +89,6 @@ const WorldCupStudioBall = dynamic(
   { ssr: false }
 );
 import {
-  canDecorate,
   canEditEventTags,
   canEditSchedule,
   canEditSupport,
@@ -746,9 +744,6 @@ export function StudioShell({
     : null;
   const isDeveloper = actor.role === "developer";
   const [previewRole, setPreviewRole] = useState<MembershipRole | null>(null);
-  // 이중 역할(매니저·작업자) 미리보기 — 미리보기는 단일 역할이라, 이중은 previewRole="manager"에
-  // 이 플래그를 더해 "매니저 권한 + 작업자 비공개 접근 + 매니저·작업자 라벨"로 그린다.
-  const [previewDual, setPreviewDual] = useState(false);
   const [previewMenuOpen, setPreviewMenuOpen] = useState(false);
   // 태그 편집기의 저장 전 변경 여부(에디터가 알려줌) — 닫기 경고 게이트.
   const tagsDirtyRef = useRef(false);
@@ -823,24 +818,13 @@ export function StudioShell({
   const isDevInsights = isDeveloper && !previewRole;
   const canMemberInsights =
     !isDevInsights &&
-    (effectiveRole === "owner" || effectiveRole === "manager" || effectiveRole === "worker");
+    (effectiveRole === "owner" || effectiveRole === "manager");
 
   const canEdit = canEditSchedule(effectiveRole);
-  const canDecorateCalendar = canDecorate(effectiveRole);
-  // 매니저(방송 운영)는 업 도움 기간/링크 수정 가능, 작업자(worker)는 읽기 전용.
+  // 매니저(방송 운영)는 업 도움 기간/링크 수정 가능.
   const canEditSupportThing = canEditSupport(effectiveRole);
   // 매니저는 일정별 태그 할당도 편집할 수 있다(태그 자체 생성/삭제는 여전히 관리자/개발자 전용).
   const canEditTagsThing = canEditEventTags(effectiveRole);
-  // 비공개 레이어 사용 자격(소유자/개발자/작업자). 매니저는 비공개를 전혀 못 본다. 미리보기 중엔
-  // 미리보기 역할 기준, 평소엔 실제 작업자 겸직(actor.isWorker)도 인정한다.
-  const effIsWorker = previewDual
-    ? true
-    : previewRole
-      ? effectiveRole === "worker"
-      : actor.isWorker === true;
-
-  // 이중 역할(매니저+작업자)은 실제 계정이 둘 다일 때만(미리보기 중엔 단일 역할로 본다).
-  const isDualRole = previewDual || (!previewRole && Boolean(actor.isManager && actor.isWorker));
 
   // 단계 배포: v3 역할(현재 개발자만)은 분류 v3(세부·modifier·신설 그룹)를 그대로 본다. 그 외(관리자·
   // 매니저·작업자·시청자, 또는 개발자가 그 역할로 미리보기)는 레거시 뷰(세부 나누기 이전)로 본다.
@@ -871,32 +855,12 @@ export function StudioShell({
       ),
     [viewTags]
   );
-  // 모바일은 "달력 꾸미기"가 PC 전용이라 진입을 숨긴다 → 역할 설명에서도 꾸미기·달력 이미지 저장
-  // 관련 항목을 빼서, 폰에서 못 하는 걸 할 수 있다고 안내하지 않게 한다.
-  const dropDecorate = (items: string[]) =>
-    isNarrow ? items.filter((c) => !c.includes("꾸미기") && !c.includes("달력 이미지")) : items;
-  const roleDisplay = isDualRole
-    ? {
-        label: "매니저 · 작업자",
-        // 모바일 레일(92px)에선 배지가 색상 필터 폭을 넘지 않게 짧게. 팝오버 제목은 full(label).
-        badgeLabel: "매니저+",
-        summary: isNarrow ? "방송 운영을 도와요." : "방송 운영과 꾸미기를 함께 도와요.",
-        can: dropDecorate([
-          "업 도움 기간·링크 수정",
-          "이미 생성된 일정의 태그 수정",
-          "스티커·이미지로 달력 꾸미기 · 달력 이미지 캡쳐",
-          "작업자 일정 보기(엠바고 X)"
-        ])
-      }
-    : {
-        label: ROLE_LABEL[effectiveRole],
-        badgeLabel: ROLE_LABEL[effectiveRole],
-        summary:
-          isNarrow && effectiveRole === "worker"
-            ? "제작을 도와요."
-            : ROLE_DESC[effectiveRole].summary,
-        can: dropDecorate(ROLE_DESC[effectiveRole].can)
-      };
+  const roleDisplay = {
+    label: ROLE_LABEL[effectiveRole],
+    badgeLabel: ROLE_LABEL[effectiveRole],
+    summary: ROLE_DESC[effectiveRole].summary,
+    can: ROLE_DESC[effectiveRole].can
+  };
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
   const [roleHelpOpen, setRoleHelpOpen] = useState(false);
   // 진동(햅틱) 설정 토글 — navigator.vibrate 지원 기기(안드로이드)에서만 노출. SSR 불일치 방지로
@@ -940,7 +904,7 @@ export function StudioShell({
     hapticTick();
   };
   const canReadPrivate =
-    canReadPrivateLayer(effectiveRole, effIsWorker, hasUnlockSession) && showPrivate;
+    canReadPrivateLayer(effectiveRole, hasUnlockSession) && showPrivate;
 
 
   // 미리보기 중 변경 차단(보기 전용). 막았으면 true. (문구는 짧게 — 모바일 컴팩트.)
@@ -952,16 +916,8 @@ export function StudioShell({
     return false;
   }
   // 역할 미리보기 적용/해제. 시청자는 기존 viewerMode 경로 재사용, 나머지는 previewRole.
-  function applyPreview(role: MembershipRole | "" | "dual") {
+  function applyPreview(role: MembershipRole | "") {
     setRoleHelpOpen(false);
-    if (role === "dual") {
-      // 이중(매니저·작업자): 매니저 권한 베이스 + 작업자 비공개 접근(effIsWorker)로 그린다.
-      setViewerMode(false);
-      setPreviewRole("manager");
-      setPreviewDual(true);
-      return;
-    }
-    setPreviewDual(false);
     if (role === "" || role === effectiveRole) {
       setPreviewRole(null);
       setViewerMode(false);
@@ -978,19 +934,17 @@ export function StudioShell({
   // 개발자 전용 통합 미리보기 드롭다운(커스텀 — 주변 pill 버튼과 통일). 트리거가 곧 현재 상태
   // 표시(미리보기 중이면 "○○ 화면" + 강조색), 메뉴 맨 위 "개발자 화면"이 복귀. 헤더에만 둔다.
   function renderPreviewControl() {
-    const options: { value: MembershipRole | "" | "dual"; label: string }[] = [
+    const options: { value: MembershipRole | ""; label: string }[] = [
       { value: "", label: "개발자 화면" },
       { value: "owner", label: "관리자 화면" },
       { value: "manager", label: "매니저 화면" },
-      { value: "worker", label: "작업자 화면" },
-      { value: "dual", label: "매니저 · 작업자 화면" },
       { value: "viewer", label: "시청자 화면" }
     ];
     // 미리보기 중엔 트리거를 "그 역할 화면에 실제로 있는 버튼"(= 비개발자의 시청자 화면 버튼)으로
     // 위장한다 — 역할별 디자인·너비를 그대로 확인하려고. 모바일 "시청자 화면" / 웹 "시청자 화면 미리보기",
     // 세모(▾)도 숨긴다. 단 개발자가 다시 열 수 있게 특정 색 강조 + 흐릿한 텍스트(=원래 세계로 돌아가는
     // '비밀 차원문'). 클릭하면 드롭다운이 다시 열린다. 미리보기 아닐 땐 평소대로 "미리보기 ▾".
-    const previewing = previewDual || previewRole !== null;
+    const previewing = previewRole !== null;
     // '보여주기'는 관리자(owner) 미리보기일 때만 — 그 외 역할(매니저·작업자·시청자) 미리보기는 '미리보기'.
     const triggerText = previewing
       ? isNarrow
@@ -1018,8 +972,7 @@ export function StudioShell({
         {previewMenuOpen ? (
           <div className="preview-dd-menu" role="menu">
             {options.map((opt) => {
-              const active =
-                opt.value === "dual" ? previewDual : !previewDual && (previewRole ?? "") === opt.value;
+              const active = (previewRole ?? "") === opt.value;
               return (
               <button
                 className={`preview-dd-item${active ? " active" : ""}`}
@@ -5156,7 +5109,7 @@ export function StudioShell({
               onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "members" ? null : "members"))}
               type="button"
              data-act="m-io-members">
-              매니저 · 작업자 관리 {mobileMgmt === "members" ? "▲" : "▼"}
+              매니저 관리 {mobileMgmt === "members" ? "▲" : "▼"}
             </button>
             {mobileMgmt === "members" && !previewRole ? <TrustedMembersPanel /> : null}
           </section>
@@ -5738,23 +5691,6 @@ export function StudioShell({
             🖊️ 일정 그림판
           </button>
         ) : null}
-        {/* 꾸미기는 PC 전용 — 모바일(isNarrow)에선 진입 버튼을 숨긴다. */}
-        {canDecorateCalendar && !isNarrow ? (
-          <Link
-            className="button"
-            data-act="go-decorate"
-            href={`/studio/decorate/${view.year}/${view.month}`}
-            onClick={() => {
-              // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
-              // dp=0으로 리셋: "꾸미기로 가기"는 항상 꾸미기 화면으로(직전 미리보기 상태 무시).
-              writeViewCookie({ dy: view.year, dm: view.month, dp: 0 });
-              startNav(isNarrow ? "꾸미기 여는 중…" : "꾸미기 화면을 여는 중입니다…");
-            }}
-          >
-            <Sparkles aria-hidden="true" size={16} />
-            꾸미러 가기
-          </Link>
-        ) : null}
       </>
     );
     return (
@@ -6108,21 +6044,6 @@ export function StudioShell({
                 단축키
                 <ChevronDown aria-hidden="true" size={13} />
               </button>
-            ) : null}
-            {canDecorateCalendar ? (
-              <Link
-                // 매니저·작업자는 일정 편집을 못 하니 꾸미기가 1차 작업 → primary로 강조.
-                className={`button io-accent ${canEdit ? "io-decorate" : "primary"}`}
-                href={`/studio/decorate/${view.year}/${view.month}`}
-                onClick={() => {
-                  // 진입 월을 쿠키에 박아 둔다 → 꾸미기 새로고침 시 이 달부터(이후 월 이동도 추적).
-                  // dp=0으로 리셋: "꾸미기로 가기"는 항상 꾸미기 화면으로(직전 미리보기 상태 무시).
-                  writeViewCookie({ dy: view.year, dm: view.month, dp: 0 });
-                  startNav(isNarrow ? "꾸미기 여는 중…" : "꾸미기 화면을 여는 중입니다…");
-                }}
-              >
-                달력 꾸미기
-              </Link>
             ) : null}
           </div>
         </div>
@@ -7166,7 +7087,7 @@ export function StudioShell({
                         ? isDevInsights
                           ? "🛠 월별 인사이트"
                           : "📊 월별 인사이트"
-                        : "매니저 · 작업자 관리"}
+                        : "매니저 관리"}
               </h2>
               <button
                 aria-label="닫기"

@@ -13,6 +13,22 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **달력 꾸미기(스티커)·작업자 역할 철수 + drop(2026-08-27, ADR-0015)**: 관리자 결정. 코드: 꾸미기 라우트·
+  팔레트·스티커 레이어/도형·테마 스위치·`api/sticker-write`·스티커/테마 액션·`public-poster.tsx` 스티커
+  상태/좌표 매핑/probe/툴바(파일 7,0xx→4,26x줄)·CSS ~33KB 삭제. 공개 로더 스티커 조회 제거(**공개 DTO에서
+  `stickers/stickerAssets` 삭제**, CHG-20260827-001). 작업자: `MembershipRole`에서 제거, 권한 함수 isWorker
+  인자 제거, 신뢰 멤버 = 매니저만(패널 재작성: 이메일 추가/삭제, 역할 표 3열), 개발자 역할 미리보기에서
+  작업자/이중 제거. 레거시 `api/trusted-members`·`api/private-layer`·`studio/private-layer`·
+  `relockPrivateLayerAction` 삭제. DB: `0065_retire_stickers_and_worker.sql`(테이블 2 drop·스토리지 정책·
+  빈 버킷·`is_active_worker()`=false·`is_worker` drop) + `scripts/cleanup-sticker-storage.mjs`. 백업:
+  `docs/agent/backups/2026-08-27_stickers.json` + 원본 이미지 12개. **배포 순서: push → Vercel 확인 →
+  스토리지 --delete → 0065 apply**(옛 코드가 스티커 테이블을 읽음). 검증: tsc·lint·build 0, vitest 618,
+  비주얼 77(지오메트리·포스터 기준선 의도 갱신).
+- **정리 후보 조사(2026-08-27, 에이전트 감사)**: 즉시 안전 — 죽은 프레즌스 DB 객체(visit_log·presence_ping·
+  presence_hourly/peak/active_days·owner_sessions·add_calendar_heart), `calendar_hearts` 공개 로더 쿼리(소비자 0),
+  폴링 간격(soop-live 25s·presence 25s → 60s), `scripts/_verify_*.mjs` 15개, 죽은 CSS ~760줄(동적 클래스
+  오탐 주의). 결정 필요 — 월드컵/축구 시뮬(`WORLD_CUP_UI_ENABLED=false`, ~15,500줄, ADR-0009 뒤집기).
+  activity 라벨 사전의 낡은 항목은 과거 행 판독용이라 **삭제 비권장**.
 - **편집실 비공개 레이어 UI 철수(2026-08-27, ADR-0014)**: 관리자가 '공개 범위 옵션'·'비공개 일정 보기'를
   안 씀. 제거: 액션바·모바일 툴바 토글, 하단 '지금 잠그기' 배너(`relockNow`), 모바일 '비공개 일정 표시
   중' 배너, 범례 '비공개' 필터 칩(웹·아젠다), 편집 폼 공개 범위 피커(웹 `scope-picker`·모바일

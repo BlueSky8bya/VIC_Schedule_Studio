@@ -26,7 +26,7 @@ export default async function VisualStudioFixture({
   const viewer = sp?.viewer === "1";
   // 역할별 화면 회귀 검증용(매니저/작업자 읽기전용 상세 등). viewer는 (studio) 가드 대상이라 제외.
   const role =
-    sp?.role === "manager" || sp?.role === "worker" || sp?.role === "developer"
+    sp?.role === "manager" || sp?.role === "developer"
       ? sp.role
       : "owner";
   const panel =
@@ -37,8 +37,7 @@ export default async function VisualStudioFixture({
         email: "fixture-owner@example.com",
         isAuthenticated: true,
         role,
-        trustedRole:
-          role === "manager" ? "manager" : role === "worker" ? "worker" : null,
+        trustedRole: role === "manager" ? "manager" : null,
       }}
       hasUnlockSession={false}
       schedule={sampleStudioSchedule}

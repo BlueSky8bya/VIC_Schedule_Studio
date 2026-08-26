@@ -4,6 +4,8 @@
 // ── 식별 범위(사용자 결정 2026-08-04) ──
 // 내부자만 계정 단위로 남긴다. viewer·비로그인은 account_hash를 **쓰기 시점에 null로 강제**한다
 // (읽는 쪽에서 거르는 게 아니라 애초에 저장하지 않는다 → 개인 타임라인이 구조적으로 불가능).
+// "worker"는 2026-08-27 역할 철수 — 과거 행의 판독을 위해 내부자 집합엔 남긴다.
+// "worker"는 2026-08-27 역할 철수 — 과거 행의 판독을 위해 내부자 집합엔 남긴다.
 const INTERNAL_ROLES = new Set(["owner", "manager", "worker", "developer"]);
 export function isInternalRole(role: string): boolean {
   return INTERNAL_ROLES.has(role);

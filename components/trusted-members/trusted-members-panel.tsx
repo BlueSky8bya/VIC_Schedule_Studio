@@ -33,19 +33,18 @@ function avatarFor(email: string) {
   };
 }
 import {
+  addTrustedManagerAction,
   listTrustedMembersAction,
   removeTrustedMemberAction,
-  setTrustedMemberRolesAction,
   type TrustedMember
 } from "@/lib/trusted-members/actions";
 import { hapticDelete, hapticTick } from "@/lib/ui/haptics";
 
+// 신뢰 멤버 = 매니저 한 종류(2026-08-27, ADR-0015 — 작업자 역할·달력 꾸미기 철수). 역할 토글이
+// 없어져 패널은 '이메일 추가 → 목록 → 삭제'만 남는다.
 export function TrustedMembersPanel() {
   const [members, setMembers] = useState<TrustedMember[]>([]);
   const [email, setEmail] = useState("");
-  // 한 계정에 매니저·작업자 둘 다 가능 — 추가 시 어느 역할(들)로 시작할지.
-  const [addManager, setAddManager] = useState(true);
-  const [addWorker, setAddWorker] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true); // 첫 조회 전엔 "없어요" 대신 로딩 표시
   // 체감 성능: 모든 동작을 화면에 먼저 반영하고(낙관적) 서버와 조용히 맞춘다. 동기화 중인
@@ -53,7 +52,7 @@ export function TrustedMembersPanel() {
   const [syncing, setSyncing] = useState<Set<string>>(() => new Set());
   // 삭제 중 표시는 이메일로 키운다 — id는 낙관적 temp→실제로 바뀌므로 id 키는 중간에 어긋난다.
   const [removingEmails, setRemovingEmails] = useState<Set<string>>(() => new Set());
-  // 모든 쓰기(추가·역할·삭제)는 한 줄로 직렬화한다 — 동시에 두 요청이 나가면 각 응답의 전체 목록
+  // 모든 쓰기(추가·삭제)는 한 줄로 직렬화한다 — 동시에 두 요청이 나가면 각 응답의 전체 목록
   // (setMembers(r.members))이 서로를 덮어써 '나중 응답이 진실'이 되는 경주가 생긴다. 실패해도
   // 다음 작업은 이어간다(then(run, run)).
   const opChainRef = useRef<Promise<void>>(Promise.resolve());
@@ -107,39 +106,26 @@ export function TrustedMembersPanel() {
       setError("이메일을 입력하세요.");
       return;
     }
-    if (!addManager && !addWorker) {
-      setError("매니저·작업자 중 하나 이상을 선택하세요.");
-      return;
-    }
     hapticTick();
-    const isManager = addManager;
-    const isWorker = addWorker;
     const optimistic: TrustedMember = {
       id: `temp-${cleanEmail}`,
       email: cleanEmail,
       displayName: null,
-      trustedRole: isManager ? "manager" : "worker",
-      isManager,
-      isWorker,
       isActive: true
     };
-    // 이미 있는 이메일이면 역할만 갱신(중복 행 방지, id·표시명은 유지), 아니면 맨 아래에 바로 추가.
+    // 이미 있는 이메일이면 활성으로 되살림(중복 행 방지, id·표시명은 유지), 아니면 맨 아래에 바로 추가.
     // 되돌리기용으로 '이 작업 전' 그 이메일 행을 함수형 업데이트 안에서 잡아둔다(낡은 클로저 X).
     let before: TrustedMember | undefined;
     setMembers((prev) => {
       before = prev.find((m) => m.email === cleanEmail);
       return before
-        ? prev.map((m) =>
-            m.email === cleanEmail
-              ? { ...m, trustedRole: optimistic.trustedRole, isManager, isWorker, isActive: true }
-              : m
-          )
+        ? prev.map((m) => (m.email === cleanEmail ? { ...m, isActive: true } : m))
         : [...prev, optimistic];
     });
     markSync(cleanEmail, true);
     setEmail("");
     enqueue(async () => {
-      const r = await setTrustedMemberRolesAction(cleanEmail, isManager, isWorker);
+      const r = await addTrustedManagerAction(cleanEmail);
       markSync(cleanEmail, false);
       if (r.ok) {
         commitMembers(r.members);
@@ -151,41 +137,6 @@ export function TrustedMembersPanel() {
           prevRow
             ? cur.map((m) => (m.email === cleanEmail ? prevRow : m))
             : cur.filter((m) => m.email !== cleanEmail)
-        );
-      }
-    });
-  }
-
-  // 역할 토글 — 칩이 즉시 바뀌고(낙관적), 뒤에서 서버와 맞춘다. 둘 다 끄려 하면 막는다.
-  function setRoles(member: TrustedMember, isManager: boolean, isWorker: boolean) {
-    hapticTick();
-    setError(null);
-    if (!isManager && !isWorker) {
-      setError("멤버는 적어도 한 역할이 필요해요. 빼려면 삭제하세요.");
-      return;
-    }
-    // 이메일로 매칭 — id는 temp→실제로 바뀔 수 있어 불안정.
-    let before: TrustedMember | undefined;
-    setMembers((prev) => {
-      before = prev.find((m) => m.email === member.email);
-      return prev.map((m) =>
-        m.email === member.email
-          ? { ...m, isManager, isWorker, trustedRole: isManager ? "manager" : "worker" }
-          : m
-      );
-    });
-    markSync(member.email, true);
-    enqueue(async () => {
-      const r = await setTrustedMemberRolesAction(member.email, isManager, isWorker);
-      markSync(member.email, false);
-      if (r.ok) {
-        commitMembers(r.members);
-        hapticTick();
-      } else {
-        setError(r.error);
-        const prevRow = before;
-        await recoverAfterFailure((cur) =>
-          prevRow ? cur.map((m) => (m.email === member.email ? prevRow : m)) : cur
         );
       }
     });
@@ -251,21 +202,14 @@ export function TrustedMembersPanel() {
                 <span className="perm-role-full">매니저</span>
                 <span className="perm-role-short">매</span>
               </th>
-              <th scope="col" aria-label="작업자">
-                <span className="perm-role-full">작업자</span>
-                <span className="perm-role-short">작</span>
-              </th>
             </tr>
           </thead>
-          {/* 행 순서 = '데칼코마니'(상하 대칭). 중앙(엠바고)을 축으로 위/아래 4행이 각 열의 ✓/✕
-              패턴까지 완전히 거울처럼 맞는다(같은 권한 패턴끼리 짝을 지어 배치). 매니저·작업자 열이
-              위아래로 대칭 무늬를 이룬다. 의미가 아니라 '보기 좋은 대칭'을 위한 정렬. */}
+          {/* (작업자 열·꾸미기/캡쳐/이모지/비공개 보기 행은 2026-08-27 기능·역할 철수로 제거.) */}
           <tbody>
             <tr>
               <th scope="row">일정 편집</th>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
-              <td className="no">✕</td>
               <td className="no">✕</td>
             </tr>
             <tr>
@@ -273,55 +217,17 @@ export function TrustedMembersPanel() {
               <td className="yes">✓</td>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
-              <td className="no">✕</td>
-            </tr>
-            <tr>
-              <th scope="row">작업자 일정 보기</th>
-              <td className="yes">✓</td>
-              <td className="yes">✓</td>
-              <td className="no">✕</td>
-              <td className="yes">✓</td>
-            </tr>
-            <tr>
-              <th scope="row">달력 꾸미기</th>
-              <td className="yes">✓</td>
-              <td className="yes">✓</td>
-              <td className="yes">✓</td>
-              <td className="yes">✓</td>
-            </tr>
-            <tr>
-              <th scope="row">엠바고 일정 보기</th>
-              <td className="yes">✓</td>
-              <td className="no">✕</td>
-              <td className="no">✕</td>
-              <td className="no">✕</td>
-            </tr>
-            <tr>
-              <th scope="row">달력 이미지 캡쳐</th>
-              <td className="yes">✓</td>
-              <td className="yes">✓</td>
-              <td className="yes">✓</td>
-              <td className="yes">✓</td>
-            </tr>
-            <tr>
-              <th scope="row">이모지 추가·삭제</th>
-              <td className="yes">✓</td>
-              <td className="yes">✓</td>
-              <td className="no">✕</td>
-              <td className="yes">✓</td>
             </tr>
             <tr>
               <th scope="row">생성된 일정 태그 수정</th>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
-              <td className="no">✕</td>
             </tr>
             <tr>
               <th scope="row">태그·멤버·비번 관리</th>
               <td className="yes">✓</td>
               <td className="yes">✓</td>
-              <td className="no">✕</td>
               <td className="no">✕</td>
             </tr>
           </tbody>
@@ -337,9 +243,6 @@ export function TrustedMembersPanel() {
           </b>
           <b className="pl-item">
             <span className="pl-manager">매</span> 매니저
-          </b>
-          <b className="pl-item">
-            <span className="pl-worker">작</span> 작업자
           </b>
         </p>
       </details>
@@ -359,31 +262,6 @@ export function TrustedMembersPanel() {
           value={email}
         />
         <div className="members-add-controls">
-          {/* 다중 선택 — 한 계정에 매니저·작업자 둘 다 줄 수 있다. */}
-          <div className="role-segment" role="group" aria-label="역할(복수 선택 가능)">
-            <button
-              aria-pressed={addManager}
-              className={addManager ? "active" : ""}
-              onClick={() => {
-                hapticTick();
-                setAddManager((v) => !v);
-              }}
-              type="button"
-            >
-              매니저
-            </button>
-            <button
-              aria-pressed={addWorker}
-              className={addWorker ? "active" : ""}
-              onClick={() => {
-                hapticTick();
-                setAddWorker((v) => !v);
-              }}
-              type="button"
-            >
-              작업자
-            </button>
-          </div>
           <button
             className="button primary"
             data-act="member-add"
@@ -392,7 +270,7 @@ export function TrustedMembersPanel() {
             type="button"
           >
             <Plus aria-hidden="true" size={16} />
-            추가
+            매니저 추가
           </button>
         </div>
       </div>
@@ -433,28 +311,7 @@ export function TrustedMembersPanel() {
                 {/* 동기화 중 작은 점 — "저장되고 있다"는 신호(차단하지 않음). */}
                 {isSyncing ? <span className="member-sync-dot" title="저장 중…" aria-hidden="true" /> : null}
               </strong>
-              <span className="member-status">{m.isActive ? "활성" : "비활성"}</span>
-            </div>
-            {/* 역할 토글 — 켜진 역할은 색 태그처럼 보이고, 누르면 즉시 켜고/끈다(낙관적). */}
-            <div className="member-role-toggles" role="group" aria-label="역할">
-              <button
-                aria-pressed={m.isManager}
-                className={`member-role-toggle manager ${m.isManager ? "on" : ""}`}
-                disabled={isSyncing || isRemoving}
-                onClick={() => setRoles(m, !m.isManager, m.isWorker)}
-                type="button"
-               data-act="member-role-toggle">
-                매니저
-              </button>
-              <button
-                aria-pressed={m.isWorker}
-                className={`member-role-toggle worker ${m.isWorker ? "on" : ""}`}
-                disabled={isSyncing || isRemoving}
-                onClick={() => setRoles(m, m.isManager, !m.isWorker)}
-                type="button"
-               data-act="member-role-toggle">
-                작업자
-              </button>
+              <span className="member-status">{m.isActive ? "매니저 · 활성" : "매니저 · 비활성"}</span>
             </div>
             <button
               aria-label="삭제"

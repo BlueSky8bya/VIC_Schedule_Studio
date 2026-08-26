@@ -91,13 +91,12 @@ export type InsightsData = {
     passcodeUpdatedAt: string | null;
     unlockDurationMinutes: number | null;
     activeUnlocks: { email: string; expiresAt: string }[];
-    members: { email: string; manager: boolean; worker: boolean }[];
+    members: { email: string; manager: boolean }[];
     // 비공개를 열 수 있는 사람을 역할별로(매니저 제외 — 비공개 권한 없음). 활성 세션이면 expiresAt·userId가
     // 채워지고(개별 만료용), 없으면 둘 다 null("세션 없음").
     access: {
       owners: AccessPerson[];
       developers: AccessPerson[];
-      workers: AccessPerson[];
     };
   };
   system: {
@@ -357,13 +356,12 @@ async function loadDualMemberHashes(
   if (!cal) return new Set();
   const { data } = await supabase
     .from("trusted_members")
-    .select("email, is_manager, is_worker")
+    .select("email, is_manager")
     .eq("calendar_id", cal.id as string)
     .eq("is_active", true);
   const set = new Set<string>();
-  for (const m of (data ?? []) as { email: string; is_manager?: boolean; is_worker?: boolean }[]) {
-    if (m.is_manager && m.is_worker && m.email) set.add(accountHashOf(m.email));
-  }
+  // (겸직(매니저+작업자) 판별은 작업자 철수(2026-08-27)로 항상 빈 집합 — 호출부 호환을 위해 함수는 유지.)
+  void data;
   return set;
 }
 function emptyVisitSlot(): VisitSlot {
@@ -668,7 +666,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         .order("expires_at", { ascending: true }),
       supabase
         .from("trusted_members")
-        .select("email, is_manager, is_worker, trusted_role")
+        .select("email, is_manager, trusted_role")
         .eq("calendar_id", calendarId)
         .eq("is_active", true),
       supabase
@@ -824,8 +822,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
     const role = (mem as { trusted_role?: string }).trusted_role;
     return {
       email: (mem as { email: string }).email,
-      manager: Boolean((mem as { is_manager?: boolean }).is_manager ?? role === "manager"),
-      worker: Boolean((mem as { is_worker?: boolean }).is_worker ?? role === "worker")
+      manager: Boolean((mem as { is_manager?: boolean }).is_manager ?? role === "manager")
     };
   });
   const unlockRows = (unlockRes.data ?? []) as { user_id: string; expires_at: string }[];
@@ -855,7 +852,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   const dbOwnerEmail = await emailFor(cal.owner_id as string | undefined);
   const bindingOk = Boolean(ownerEmails[0] && dbOwnerEmail && ownerEmails[0] === dbOwnerEmail);
 
-  // 비공개 접근 자격자(매니저 제외) — 소유자(env)·개발자(platform_admins)·작업자(신뢰 멤버).
+  // 비공개 접근 자격자(매니저 제외) — 소유자(env)·개발자(platform_admins). (작업자 철수 2026-08-27)
   const { data: adminRows } = await supabase.from("platform_admins").select("email");
   const developerEmails = [
     ...new Set(
@@ -864,11 +861,9 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         .filter((e): e is string => Boolean(e))
     )
   ];
-  const workerEmails = members.filter((m) => m.worker).map((m) => m.email);
   const access = {
     owners: ownerEmails.map(toAccess),
-    developers: developerEmails.map(toAccess),
-    workers: workerEmails.map(toAccess)
+    developers: developerEmails.map(toAccess)
   };
 
   return {
@@ -1714,7 +1709,7 @@ export type OwnerSecurityData = {
   passcodeVersion: number | null;
   passcodeUpdatedAt: string | null;
   unlockDurationMinutes: number | null;
-  access: { owners: AccessPerson[]; developers: AccessPerson[]; workers: AccessPerson[] };
+  access: { owners: AccessPerson[]; developers: AccessPerson[] };
 };
 export type OwnerSecurityResult =
   | { ok: true; data: OwnerSecurityData }
@@ -1736,7 +1731,7 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
   }
   const calendarId = cal.id as string;
 
-  const [unlockRes, membersRes, passcodeRes, adminRes] = await Promise.all([
+  const [unlockRes, passcodeRes, adminRes] = await Promise.all([
     // P0-PRIV-2: 잠금해제는 auth-세션 결속 grants가 정본(legacy unlock_sessions는 미사용).
     supabase
       .from("private_unlock_grants")
@@ -1744,11 +1739,6 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
       .eq("calendar_id", calendarId)
       .gt("expires_at", new Date().toISOString())
       .order("expires_at", { ascending: true }),
-    supabase
-      .from("trusted_members")
-      .select("email, is_worker, trusted_role")
-      .eq("calendar_id", calendarId)
-      .eq("is_active", true),
     supabase
       .from("private_layer_settings")
       .select("passcode_version, passcode_updated_at, unlock_duration_minutes")
@@ -1787,13 +1777,6 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
     return { email, expiresAt: s?.expiresAt ?? null, userId: s?.userId ?? null };
   };
 
-  const workerEmails = [
-    ...new Set(
-      ((membersRes.data ?? []) as { email: string; is_worker?: boolean; trusted_role?: string }[])
-        .filter((m) => Boolean(m.is_worker ?? m.trusted_role === "worker"))
-        .map((m) => m.email)
-    )
-  ];
   const passcode = passcodeRes.data as {
     passcode_version?: number;
     passcode_updated_at?: string;
@@ -1809,8 +1792,7 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
       unlockDurationMinutes: passcode?.unlock_duration_minutes ?? null,
       access: {
         owners: getOwnerEmails().map(toAccess),
-        developers: [],
-        workers: workerEmails.map(toAccess)
+        developers: []
       }
     }
   };

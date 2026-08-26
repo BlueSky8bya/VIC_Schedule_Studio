@@ -48,18 +48,5 @@
     132,
     132
   ],
-  "stickers": [
-    {
-      "id": "sticker-001",
-      "left": "82%",
-      "top": "4%",
-      "width": ""
-    },
-    {
-      "id": "sticker-002",
-      "left": "7%",
-      "top": "32%",
-      "width": ""
-    }
-  ]
+  "stickers": []
 }

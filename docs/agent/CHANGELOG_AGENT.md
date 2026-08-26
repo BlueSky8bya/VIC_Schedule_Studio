@@ -96,3 +96,20 @@ Change: 표면 재배치 규칙 삭제, 641~1040px는 아젠다(목록) 레이�
 Files: `components/poster/public-poster.{tsx,css}`, `lib/ui/breakpoints.ts`
 Validation: Playwright 900px → `layout: agenda` 확인.
 Rollback: 미디어쿼리 복구(스티커 드리프트가 되살아남 — 하지 말 것).
+
+### CHG-20260827-001 — REMOVE — 달력 꾸미기(스티커)·작업자 역할 철수, 테이블 drop (ADR-0015)
+
+Problem: 관리자가 꾸미기를 안 쓰고(스티커 2행·에셋 12행·신뢰 멤버 0명) 작업자는 권한이 0개인 역할이 됐다.
+Change: 꾸미기 라우트·팔레트·스티커 레이어·`api/sticker-write`·서버 액션·`public-poster.tsx` 스티커
+  상태/좌표 매핑/툴바(~2,800줄)·CSS ~33KB 삭제. **공개 API DTO에서 `stickers`/`stickerAssets` 필드 제거**
+  (`GET /api/public/vic/events` 응답 모양 변경 — 외부 소비자 없음). 작업자 역할 제거(매니저만).
+  0065: `sticker_instances`·`sticker_assets` drop, 스토리지 정책·빈 버킷 삭제, `is_active_worker()`=false,
+  `trusted_members.is_worker` drop. 레거시 `api/trusted-members`·`api/private-layer`·
+  `studio/private-layer` 삭제.
+Files: `components/poster/public-poster.{tsx,css}`, `lib/schedules/public-loader.ts`, `lib/domain/schedule-types.ts`,
+  `lib/permissions/roles.ts`, `lib/auth/actor.ts`, `lib/trusted-members/actions.ts`,
+  `components/trusted-members/trusted-members-panel.tsx`, `db/migrations/0065_retire_stickers_and_worker.sql`,
+  `scripts/cleanup-sticker-storage.mjs`, 백업 `docs/agent/backups/2026-08-27_*`.
+Validation: tsc·lint·build 0, vitest 618, 비주얼 77(지오메트리·포스터 기준선 의도 갱신). 배포 순서: 코드 push →
+  Vercel 배포 확인 → 스토리지 비우기 → 0065 적용(옛 코드가 스티커 테이블을 읽으므로 순서 엄수).
+Rollback: git 이력 + 백업 JSON/이미지. 스키마는 새 마이그레이션으로 재생성(되돌리기 비쌈 — 감수).

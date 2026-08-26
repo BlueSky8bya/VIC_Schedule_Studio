@@ -9,7 +9,6 @@ const REDESIGN_TOKENS = [
   "--broadcast-shelf-height",
   "--broadcast-source-width",
   "--control-hit",
-  "--decorate-sheet-height",
   "--focus-ring",
   "--lh-body",
   "--lh-relaxed",

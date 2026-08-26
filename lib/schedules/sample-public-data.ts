@@ -174,40 +174,5 @@ export const samplePublicScheduleData: PublicSchedule = {
   events: publicEvents,
   tags: defaultTags,
   palette: defaultPalette,
-  stickers: [
-    {
-      id: "sticker-001",
-      kind: "emoji",
-      label: "⭐",
-      year: 2026,
-      month: 6,
-      xRatio: 0.82,
-      yRatio: 0.04,
-      widthRatio: 0.06,
-      rotationDeg: -12,
-      flipX: false,
-      flipY: false,
-      opacity: 0.9,
-      zIndex: 2,
-      visiblePublicly: true
-    },
-    {
-      id: "sticker-002",
-      kind: "emoji",
-      label: "🌸",
-      year: 2026,
-      month: 6,
-      xRatio: 0.07,
-      yRatio: 0.32,
-      widthRatio: 0.07,
-      rotationDeg: -18,
-      flipX: false,
-      flipY: false,
-      opacity: 0.88,
-      zIndex: 2,
-      visiblePublicly: true
-    }
-  ],
-  stickerAssets: [],
   heartCount: 0
 };

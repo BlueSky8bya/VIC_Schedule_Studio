@@ -12,7 +12,7 @@ export type SecurityPanelData = {
   passcodeVersion: number | null;
   passcodeUpdatedAt: string | null;
   unlockDurationMinutes: number | null;
-  access: { owners: AccessPerson[]; developers: AccessPerson[]; workers: AccessPerson[] };
+  access: { owners: AccessPerson[]; developers: AccessPerson[] };
 };
 
 function kst(iso: string | null): Date | null {
@@ -145,7 +145,6 @@ export function SecurityPanel({
       ) : null}
       {renderSection("관리자", "관리자", "owner", data.access.owners)}
       {showDevelopers ? renderSection("개발자", "개발자", "developer", data.access.developers) : null}
-      {renderSection("작업자", "작업자", "worker", data.access.workers)}
     </>
   );
 }

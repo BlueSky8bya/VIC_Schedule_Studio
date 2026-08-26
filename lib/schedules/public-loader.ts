@@ -4,13 +4,10 @@ import type {
   MemoLine,
   PublicSchedule,
   PublicScheduleEvent,
-  StickerAsset,
-  StickerInstance
 } from "@/lib/domain/schedule-types";
 import {
   PRODUCT_TIMEZONE,
-  isPosterThemeKey,
-  isStickerAssetKind
+  isPosterThemeKey
 } from "@/lib/domain/schedule-types";
 import type { PosterThemeKey } from "@/lib/domain/schedule-types";
 import { getCurrentKstYearMonth } from "@/lib/calendar/month";
@@ -229,8 +226,6 @@ const loadPublicScheduleData = unstable_cache(
         events: [],
         tags: [],
         palette: [],
-        stickers: [],
-        stickerAssets: [],
         heartCount: 0,
         myHeartIds: []
       };
@@ -243,12 +238,10 @@ const loadPublicScheduleData = unstable_cache(
       tagsRes,
       paletteRes,
       eventsRes,
-      stickersRes,
-      assetsRes,
       heartsRes,
       eventHeartsRes,
       hopeRes
-    ] = await timed("publicSchedule:db(8 parallel queries)", () =>
+    ] = await timed("publicSchedule:db(6 parallel queries)", () =>
       Promise.all([
         // 모든 공개 쿼리를 이 캘린더로 한정한다. RLS는 공개 행을 허용할 뿐 캘린더별로
         // 막지 않으므로, 캘린더가 2개 이상이 되면 application-level 스코프가 없으면 다른
@@ -275,20 +268,6 @@ const loadPublicScheduleData = unstable_cache(
           .neq("status", "draft")
           .order("date_key")
           .order("created_at"),
-        supabase
-          .from("sticker_instances")
-          .select(
-            "id, emoji, text_content, text_color, font_weight, font_family, text_align, text_bg, text_fx, italic, outline, shadow, anim, shape_key, locked, year, month, x_ratio, y_ratio, width_ratio, rotation_deg, flip_x, flip_y, opacity, z_index, is_visible, asset_id, sticker_assets(name, file_url, file_type)"
-          )
-          .eq("calendar_id", calendar.id)
-          .eq("is_visible", true),
-        supabase
-          .from("sticker_assets")
-          .select("id, name, file_url, file_type, kind, sort_order")
-          .eq("calendar_id", calendar.id)
-          // 사용자가 팔레트에서 드래그로 정한 순서가 먼저. 동률이면 최신순(업로드 직후 앞으로).
-          .order("sort_order", { ascending: true })
-          .order("created_at", { ascending: false }),
         supabase
           .from("calendar_hearts")
           .select("count")
@@ -337,8 +316,6 @@ const loadPublicScheduleData = unstable_cache(
         // 기대 수는 떡밥 스텁에도, 공개 뒤 원본 카드에도 붙는다("n명이 기다렸어요" 배지).
         hopeCount: hopeCountByEvent.get(row.id) ?? 0
       })),
-      stickers: (stickersRes.data ?? []).map(mapSticker),
-      stickerAssets: (assetsRes.data ?? []).map(mapStickerAsset),
       heartCount: Number(heartsRes.data?.count ?? 0),
       myHeartIds: []
     };
@@ -360,24 +337,6 @@ async function loadMyHeartIds(calendarSlug: string): Promise<string[]> {
     .select("event_id, events!inner(calendars!inner(slug))")
     .eq("events.calendars.slug", calendarSlug);
   return ((data as { event_id: string }[] | null) ?? []).map((row) => row.event_id);
-}
-
-function mapStickerAsset(row: {
-  id: string;
-  name: string;
-  file_url: string;
-  file_type: string;
-  kind?: string | null;
-  sort_order?: number | null;
-}): StickerAsset {
-  return {
-    id: row.id,
-    name: row.name,
-    fileUrl: row.file_url,
-    fileType: row.file_type,
-    kind: isStickerAssetKind(row.kind) ? row.kind : "static",
-    sortOrder: Number(row.sort_order ?? 0)
-  };
 }
 
 // (P2-KST-1: currentKstYearMonth 중복 제거 — lib/calendar/month.ts의 getCurrentKstYearMonth 사용.)
@@ -497,96 +456,6 @@ function mapPalette(row: {
     textColor: row.text_color,
     borderColor: row.border_color,
     sortOrder: row.sort_order
-  };
-}
-
-function mapSticker(row: {
-  id: string;
-  emoji: string | null;
-  text_content?: string | null;
-  text_color?: string | null;
-  font_weight?: number | null;
-  font_family?: string | null;
-  text_align?: string | null;
-  text_bg?: string | null;
-  text_fx?: string | null;
-  italic?: boolean | null;
-  outline?: boolean | null;
-  shadow?: boolean | null;
-  anim?: string | null;
-  shape_key?: string | null;
-  locked?: boolean | null;
-  year: number;
-  month: number;
-  x_ratio: number | string;
-  y_ratio: number | string;
-  width_ratio: number | string;
-  rotation_deg: number | string;
-  flip_x?: boolean | null;
-  flip_y?: boolean | null;
-  opacity: number | string;
-  z_index: number;
-  is_visible: boolean;
-  asset_id?: string | null;
-  sticker_assets:
-    | { name: string; file_url: string; file_type: string }[]
-    | { name: string; file_url: string; file_type: string }
-    | null;
-}): StickerInstance {
-  const asset = Array.isArray(row.sticker_assets)
-    ? row.sticker_assets[0]
-    : row.sticker_assets;
-  // 텍스트 > 이미지 > 도형 > 이모지 순으로 종류를 판정한다.
-  const text = (row.text_content ?? "").trim();
-  const isText = text.length > 0;
-  const isImage = !isText && Boolean(row.asset_id && asset?.file_url);
-  const isShape = !isText && !isImage && Boolean(row.shape_key);
-  const kind: StickerInstance["kind"] = isText
-    ? "text"
-    : isImage
-      ? "image"
-      : isShape
-        ? "shape"
-        : "emoji";
-
-  return {
-    id: row.id,
-    kind,
-    label: isText
-      ? text
-      : isImage
-        ? (asset?.name ?? "")
-        : isShape
-          ? (row.shape_key ?? "")
-          : (row.emoji ?? ""),
-    imageUrl: isImage ? asset?.file_url : undefined,
-    assetId: isImage ? (row.asset_id ?? undefined) : undefined,
-    shapeKey: isShape ? (row.shape_key ?? undefined) : undefined,
-    // 도형도 text_color를 fill로 재사용 → 텍스트/도형 모두 textColor를 채운다.
-    textColor: isText || isShape ? (row.text_color ?? "#1f2937") : undefined,
-    fontWeight: isText ? (row.font_weight ?? 700) : undefined,
-    fontFamily: isText ? (row.font_family ?? "sans") : undefined,
-    textAlign: isText
-      ? ((row.text_align as StickerInstance["textAlign"]) ?? "left")
-      : undefined,
-    textBg: isText ? (row.text_bg ?? undefined) : undefined,
-    textFx: isText ? ((row.text_fx as StickerInstance["textFx"]) ?? undefined) : undefined,
-    italic: isText ? (row.italic ?? false) : undefined,
-    outline: row.outline ?? false,
-    shadow: row.shadow ?? false,
-    anim: (row.anim as StickerInstance["anim"]) ?? undefined,
-    locked: row.locked ?? false,
-    year: row.year,
-    month: row.month,
-    xRatio: Number(row.x_ratio),
-    yRatio: Number(row.y_ratio),
-    widthRatio: Number(row.width_ratio),
-    rotationDeg: Number(row.rotation_deg),
-    flipX: row.flip_x ?? false,
-    flipY: row.flip_y ?? false,
-    opacity: Number(row.opacity),
-    zIndex: row.z_index,
-    visiblePublicly: row.is_visible
   };
 }
 

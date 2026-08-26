@@ -141,57 +141,6 @@ export const sampleStudioSchedule: StudioSchedule = {
       promotedEventId: "evt-007"
     }
   ],
-  stickers: [
-    {
-      id: "sticker-001",
-      kind: "emoji",
-      label: "⭐",
-      year: 2026,
-      month: 6,
-      xRatio: 0.82,
-      yRatio: 0.04,
-      widthRatio: 0.06,
-      rotationDeg: -12,
-      flipX: false,
-      flipY: false,
-      opacity: 0.9,
-      zIndex: 2,
-      visiblePublicly: true
-    },
-    {
-      id: "sticker-002",
-      kind: "emoji",
-      label: "🌸",
-      year: 2026,
-      month: 6,
-      xRatio: 0.07,
-      yRatio: 0.32,
-      widthRatio: 0.07,
-      rotationDeg: -18,
-      flipX: false,
-      flipY: false,
-      opacity: 0.88,
-      zIndex: 2,
-      visiblePublicly: true
-    },
-    {
-      id: "sticker-private",
-      kind: "emoji",
-      label: "💖",
-      year: 2026,
-      month: 6,
-      xRatio: 0.2,
-      yRatio: 0.1,
-      widthRatio: 0.12,
-      rotationDeg: 0,
-      flipX: false,
-      flipY: false,
-      opacity: 1,
-      zIndex: 3,
-      visiblePublicly: false
-    }
-  ],
-  stickerAssets: [],
   heartCount: 0,
   // 미리보기는 서버 공개 스냅샷만 쓰므로(P0-SEC-2) 샘플에서도 공개 샘플 데이터를 그대로 쓴다 —
   // 비워두면 fixture/오프라인 미리보기가 빈 달력으로 보여 실물과 다르다.

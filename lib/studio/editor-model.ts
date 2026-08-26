@@ -146,7 +146,6 @@ export const ROLE_LABEL: Record<MembershipRole, string> = {
   owner: "관리자",
   developer: "개발자",
   manager: "매니저",
-  worker: "작업자",
   viewer: "시청자"
 };
 
@@ -164,27 +163,15 @@ export const VISIBILITY_LABEL: Record<EventVisibilityScope, string> = {
 export const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] }> = {
   owner: {
     summary: "일정 발행과 전체 관리를 맡아요.",
-    can: [
-      "일정·태그·멤버·비밀번호 관리",
-      "달력 꾸미기 · 달력 이미지 캡쳐",
-      "비공개 일정 보기(‘엠바고’ 포함)"
-    ]
+    can: ["일정·태그·멤버·비밀번호 관리", "최초공개(떡밥) 일정 관리"]
   },
   developer: {
     summary: "시스템을 유지보수해요.",
-    can: [
-      "일정·태그·멤버 유지보수",
-      "달력 꾸미기 · 달력 이미지 캡쳐",
-      "작업자 일정 보기(엠바고 X)"
-    ]
+    can: ["일정·태그·멤버 유지보수", "월별 인사이트·이용 기록"]
   },
   manager: {
     summary: "방송 운영을 도와요.",
-    can: ["업 도움 기간·링크 수정", "이미 생성된 일정의 태그 수정", "달력 꾸미기 · 달력 이미지 캡쳐"]
-  },
-  worker: {
-    summary: "꾸미기·제작을 도와요.",
-    can: ["스티커·이미지로 달력 꾸미기", "달력 이미지 캡쳐", "작업자 일정 보기(엠바고 X)"]
+    can: ["업 도움 기간·링크 수정", "이미 생성된 일정의 태그 수정"]
   },
   viewer: {
     summary: "공개 일정을 봐요.",

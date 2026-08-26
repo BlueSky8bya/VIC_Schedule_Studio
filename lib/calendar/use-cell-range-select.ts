@@ -174,7 +174,7 @@ export function useCellRangeSelect<T extends HTMLElement>({
         // 카드/버튼/링크/입력/스티커 위에서 시작하면 선택 안 함(그 요소 동작 우선).
         if (
           target.closest(
-            "button, a, input, textarea, select, label, .studio-event-pill, [data-sticker-layer], [data-sticker-avoid]"
+            "button, a, input, textarea, select, label, .studio-event-pill"
           )
         ) {
           return;

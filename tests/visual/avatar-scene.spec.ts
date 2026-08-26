@@ -71,19 +71,6 @@ test.describe("avatar scene — 방송 화면(1920×1080)", () => {
     expect(Math.round(m.slot!.w)).toBe(360);
   });
 
-  test("꾸미기 scene: 토글이 카드와 박스 사이, 겹침 0", async ({ page }) => {
-    await page.goto("/visual-fixture/poster?avatar=1&mode=decorate");
-    await page.locator(".poster-page.avatar-scene").waitFor();
-    await page.waitForTimeout(700);
-    const m = await readScene(page);
-    expect(Math.abs(m.stage!.h - m.natH * m.scale)).toBeLessThan(1);
-    expect(m.ctlInslot).not.toBeNull();
-    expect(m.ctlInslot!.y).toBeGreaterThanOrEqual(m.cards!.b);
-    expect(m.ctlInslot!.b).toBeLessThanOrEqual(m.dock!.y);
-    expect(overlaps(m.ctlInslot, m.cards)).toBe(false);
-    expect(overlaps(m.ctlInslot, m.dock)).toBe(false);
-  });
-
   test("고정 scene(fixed=right, /onair 경로): 토글 없이 켜지고 오른쪽", async ({ page }) => {
     await page.goto("/visual-fixture/poster?fixed=right");
     await page.locator(".poster-page.avatar-scene.avatar-right").waitFor();

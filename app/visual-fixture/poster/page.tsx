@@ -11,13 +11,12 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ mode?: string; avatar?: string; teaser?: string; fixed?: string; hearts?: string }>;
+  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
   }
   const sp = await searchParams;
-  const decorate = sp?.mode === "decorate";
   // teaser=<초> — 지금부터 N초 뒤 공개되는 '최초공개' 일정을 하나 끼워 넣는다(테스트 전용).
   // 시간에 걸린 기능이라 고정 샘플로는 검증이 안 된다: 공개 전 제목이 DOM에 새지 않는지,
   // 카운트다운이 0에서 실제로 공개 요청을 쏘는지를 브라우저에서 보려면 '곧 공개될 것'이 필요하다.
@@ -66,7 +65,6 @@ export default async function VisualPosterFixture({
       accountSwitch={false}
       avatarFixed={fixed}
       avatarSlot={avatar}
-      decorate={decorate}
       initialNarrow={false}
       initialYear={2026}
       initialMonth={6}

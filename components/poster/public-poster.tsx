@@ -1,35 +1,15 @@
 "use client";
 
 import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  BringToFront,
   CalendarCheck,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  ChevronUp,
-  Copy,
   ExternalLink,
-  Eye,
-  FlipHorizontal,
-  FlipVertical,
   Heart,
-  Keyboard,
-  Lock,
   LogIn,
   LogOut,
-  Redo2,
-  SendToBack,
-  Sparkles,
-  Trash2,
-  Type,
-  Undo2,
   X
 } from "lucide-react";
-import Link from "next/link";
-import { createPortal } from "react-dom";
 import {
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -46,7 +26,6 @@ import {
   useState
 } from "react";
 import dynamic from "next/dynamic";
-import { StickerLayer, TEXT_FONT_STACK } from "@/components/poster/sticker-layer";
 import { logActivity } from "@/lib/activity/client";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 // 월드컵 장난감(공 미니게임 + 중력 공)은 월드컵 달에만 렌더되는데 정적 import라 6,400여 줄
@@ -60,37 +39,15 @@ const WorldCupStudioBall = dynamic(
   () => import("@/components/seasonal/worldcup-studio-ball").then((m) => m.WorldCupStudioBall),
   { ssr: false }
 );
-// 꾸미기 전용 UI는 decorate일 때만 렌더된다 → 지연 로드로 시청자(공개 /) 번들서 제외(ssr:false:
-// 사용자 동작으로 여는 꾸미기 화면이라 SSR 불필요, 진입 시 잠깐 로드).
-const ThemeSwitch = dynamic(
-  () => import("@/components/poster/theme-switch").then((m) => m.ThemeSwitch),
-  { ssr: false }
-);
-const DecoratePalette = dynamic(
-  () => import("@/components/poster/decorate-palette").then((m) => m.DecoratePalette),
-  { ssr: false }
-);
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
 const PublicInsights = dynamic(
   () => import("@/components/poster/public-insights").then((m) => m.PublicInsights),
   { ssr: false }
 );
 import {
-  STICKER_ANIMS,
-  shapeDefaultColor,
   type PublicSchedule,
-  type PublicScheduleEvent,
-  type StickerAsset,
-  type StickerAssetKind,
-  type StickerInstance
+  type PublicScheduleEvent
 } from "@/lib/domain/schedule-types";
-import type { AssetTabKey } from "@/components/poster/decorate-palette";
-import type { ThemeResult } from "@/lib/schedules/theme-actions";
-import type { SaveStickerInput, StickerResult } from "@/lib/schedules/sticker-actions";
-import type {
-  StickerAssetOpResult,
-  StickerAssetResult
-} from "@/lib/schedules/sticker-asset-actions";
 import { getAnonHeartIdsAction, type HeartResult } from "@/lib/schedules/heart-actions";
 import { revealTeaserAction } from "@/lib/schedules/teaser-actions";
 import { reconcileTeaserReveal } from "@/lib/schedules/teaser-reconcile";
@@ -128,7 +85,6 @@ import {
   getEventSpan,
   getSpanRunRange,
   getTodayKst,
-  nowKstHm,
   mixedEventStyle,
   splitEventTitle,
   type MonthCell
@@ -154,36 +110,15 @@ import "./public-poster.css";
 // (일정표 캡쳐(클립보드/PNG 다운로드) 기능 삭제 — 2026-07-31 사용자 결정: 토리님이 안 씀.
 //  PosterExportActions 컴포넌트·html2canvas 경로 제거. 필요해지면 git 이력에 구현이 있다.)
 
-// 스티커 일괄 저장/삭제 액션의 응답 모양(별도 export가 없어 여기 한 곳에 정의해 재사용).
-type StickerBatchResult =
-  | { ok: true; ids: string[] }
-  | { ok: true }
-  | { ok: false; error: string };
-
 type PublicPosterProps = {
   schedule: PublicSchedule;
   initialYear?: number;
   initialMonth?: number;
   // 월을 바꿀 때 부모(편집실)에 알린다 — 시청자 미리보기에서 본 달을 편집실로 돌아갈 때 잇기 위함.
   onViewChange?: (year: number, month: number) => void;
-  // (canExport 삭제 — 일정표 캡쳐 기능 제거, 2026-07-31.)
-  decorate?: boolean;
-  // 꾸미기에서 "시청자 화면 보기" 중이었는지(새로고침 복원용 초기값).
-  initialPreviewing?: boolean;
+  // (canExport 삭제 — 일정표 캡쳐 기능 제거, 2026-07-31. decorate·스티커 액션 props 삭제 — 꾸미기 기능 제거, 2026-08-27.)
   // 서버 UA 판정 휴대폰 여부 — 모바일 아젠다를 처음부터 그려 깜빡임을 없앤다(클라가 보정).
   initialNarrow?: boolean;
-  saveStickerAction?: (input: SaveStickerInput) => Promise<StickerResult>;
-  deleteStickerAction?: (id: string) => Promise<StickerResult>;
-  // 다중 동작(다중 삭제·undo/redo)을 한 번에 저장/삭제 — 권한확인·캐시무효화를 1회로 묶는다.
-  saveStickerBatchAction?: (
-    inputs: SaveStickerInput[]
-  ) => Promise<{ ok: true; ids: string[] } | { ok: false; error: string }>;
-  deleteStickerBatchAction?: (
-    ids: string[]
-  ) => Promise<{ ok: true } | { ok: false; error: string }>;
-  uploadStickerAssetAction?: (formData: FormData) => Promise<StickerAssetResult>;
-  deleteStickerAssetAction?: (id: string) => Promise<StickerAssetResult>;
-  setPosterThemeAction?: (theme: string) => Promise<ThemeResult>;
   // A: 일정 관심(하트) 토글. 주어지면 서버 집계 연동, 없으면 기기별 localStorage로만 동작.
   toggleHeartAction?: (eventId: string, token?: string) => Promise<HeartResult>;
   // 시청자 화면에서 계정 변경(로그아웃) 버튼을 보일지. 실제 시청자 페이지에서만 true.
@@ -277,43 +212,6 @@ const POP_RANK: Record<string, number> = { warm: 1, hot: 2, blaze: 3, top: 4 };
 
 // (P2-KST-1: nowKstHm은 lib/calendar/month.ts 단일 출처에서 import — 편집실과 동일 모양.)
 
-// StickerInstance → 저장 입력(SaveStickerInput). 배치/단건 저장이 같은 매핑을 쓰게 모은다.
-// year/month는 호출 맥락에 따라 다름(수정=현재 보기 월, 재삽입=스티커 자체 월)이라 인자로 받는다.
-function stickerToSaveInput(
-  s: StickerInstance,
-  year: number,
-  month: number,
-  withId: boolean
-): SaveStickerInput {
-  return {
-    id: withId ? s.id : undefined,
-    year,
-    month,
-    emoji: s.kind === "emoji" ? s.label : undefined,
-    assetId: s.kind === "image" ? s.assetId : undefined,
-    shapeKey: s.kind === "shape" ? s.shapeKey : undefined,
-    text: s.kind === "text" ? s.label : undefined,
-    textColor: s.textColor,
-    fontWeight: s.fontWeight,
-    fontFamily: s.fontFamily,
-    textAlign: s.textAlign,
-    textBg: s.textBg,
-    textFx: s.textFx,
-    italic: s.italic,
-    outline: s.outline,
-    shadow: s.shadow,
-    anim: s.anim,
-    locked: s.locked,
-    xRatio: s.xRatio,
-    yRatio: s.yRatio,
-    widthRatio: s.widthRatio,
-    rotationDeg: s.rotationDeg,
-    flipX: s.flipX,
-    flipY: s.flipY,
-    opacity: s.opacity,
-    zIndex: s.zIndex
-  };
-}
 
 // (구) 전역·영구 북마크 키 — 서버 진실을 통째로 덮어써 DB와 desync(채워졌는데 DB엔 없음 →
 // 다시 눌러도 토글 OFF만 돼 카운트가 안 늘던 버그)를 냈다. 이제 쓰지 않고, 마운트 때 청소한다.
@@ -830,202 +728,12 @@ type BurstBit = {
   dur: number; // 지속(ms)
 };
 
-// 추천 이모지 팔레트 — 카테고리 탭으로 나눠 관리(#5b). 종류를 대폭 확충.
-const EMOJI_CATEGORIES: { key: string; label: string; emojis: string[] }[] = [
-  {
-    key: "face",
-    label: "표정",
-    emojis: [
-      "😀", "😃", "😄", "😁", "😆", "😅", "🤣", "😂", "🙂", "🙃",
-      "🫠", "😊", "😇", "🥰", "😍", "🤩", "😘", "😗", "☺️", "😚",
-      "😙", "🥲", "😋", "😛", "😜", "🤪", "😝", "🤑", "🤗", "🤭",
-      "🫢", "🫣", "🤫", "🤔", "🫡", "🤐", "🤨", "😐", "😑", "😶",
-      "🫥", "😶‍🌫️", "😏", "😒", "🙄", "😬", "😮‍💨", "🤥", "🫨", "😌",
-      "😔", "😪", "🤤", "😴", "😷", "🤒", "🤕", "🤢", "🤮", "🤧",
-      "🥵", "🥶", "🥴", "😵", "😵‍💫", "🤯", "🤠", "🥳", "🥸", "😎",
-      "🤓", "🧐", "😕", "🫤", "😟", "🙁", "☹️", "😮", "😯", "😲",
-      "😳", "🥺", "🥹", "😦", "😧", "😨", "😰", "😥", "😢", "😭",
-      "😱", "😖", "😣", "😞", "😓", "😩", "😫", "🥱", "😤", "😡",
-      "😠", "🤬", "😈", "👿", "💀", "☠️", "💩", "🤡", "👹", "👺",
-      "👻", "👽", "👾", "🤖", "😺", "😸", "😹", "😻", "😼", "😽",
-      "🙀", "😿", "😾", "🙈", "🙉", "🙊", "💋"
-    ]
-  },
-  {
-    key: "hand",
-    label: "손짓·사람",
-    emojis: [
-      "👍", "👎", "👏", "🙌", "🙏", "🤝", "✌️", "🤟", "🤙", "👋",
-      "💪", "🦾", "🫶", "👌", "🤌", "🤏", "🤞", "🫰", "✊", "👊",
-      "🤛", "🤜", "🖐️", "✋", "🖖", "🫲", "🫱", "👐", "🤲", "🫳",
-      "🫴", "☝️", "👆", "👇", "👈", "👉", "✍️", "🤚", "🖕", "🦵",
-      "🦶", "👂", "👃", "👀", "👁️", "👄", "🦷", "🧠", "🫀", "🗣️",
-      "👶", "🧒", "👦", "👧", "🧑", "👨", "👩", "🧓", "👮", "🦸",
-      "🦹", "🧙", "🧚", "🧛", "🧜", "🧝", "🧞", "🧟", "💃", "🕺",
-      "👯", "🧖", "🧗", "🏃", "🚶", "🧘", "👫", "👬", "👭", "👪"
-    ]
-  },
-  {
-    key: "heart",
-    label: "하트",
-    emojis: [
-      "❤️", "🧡", "💛", "💚", "💙", "💜", "🤎", "🖤", "🤍", "🩷",
-      "🩵", "🩶", "💖", "💕", "💗", "💓", "💞", "💘", "💝", "💟",
-      "❣️", "💌", "💋", "❤️‍🔥", "❤️‍🩹", "💔", "♥️", "💑", "💏", "🫶",
-      "😍", "🥰", "😘", "💐", "🌹", "💒", "😻", "😽", "🫂", "👩‍❤️‍👨",
-      "👩‍❤️‍💋‍👨", "🥹"
-    ]
-  },
-  {
-    key: "spark",
-    label: "반짝·기호",
-    emojis: [
-      "⭐", "🌟", "✨", "💫", "⚡", "🔥", "💥", "🌈", "💯", "❗",
-      "❕", "‼️", "⁉️", "💢", "💦", "💨", "🕳️", "💬", "💭", "🗯️",
-      "♨️", "🌀", "✅", "✔️", "❌", "⭕", "🚫", "❓", "❔", "❎",
-      "➕", "➖", "➗", "✖️", "🟰", "💲", "💱", "⚠️", "🔱", "♻️",
-      "🔰", "✳️", "✴️", "❇️", "🆗", "🆕", "🆒", "🆙", "🔟", "🔢",
-      "▶️", "⏸️", "⏯️", "⏹️", "🔼", "🔽", "⏫", "⏬", "🔀", "🔁",
-      "🔂", "🔄", "🔃", "➡️", "⬅️", "⬆️", "⬇️", "↗️", "↘️", "↩️",
-      "🔴", "🟠", "🟡", "🟢", "🔵", "🟣", "⚫", "⚪", "🟥", "🟦"
-    ]
-  },
-  {
-    key: "party",
-    label: "축하·놀이",
-    emojis: [
-      "🎉", "🎊", "🎈", "🎁", "🎀", "🥇", "🥈", "🥉", "🏆", "🏅",
-      "🎖️", "🎯", "🎮", "🕹️", "🎲", "🃏", "🀄", "🧩", "🎰", "🎳",
-      "🎫", "🎟️", "🪅", "🪩", "🎏", "🎐", "🧧", "🎆", "🎇", "🧨",
-      "🎄", "🎃", "🎗️", "🎠", "🎡", "🎢", "🎪", "🤹", "🎭", "🪄",
-      "🧸", "🪀", "🪁", "🔮", "🎴", "🥏", "🪃", "🛝", "🎺", "📣"
-    ]
-  },
-  {
-    key: "music",
-    label: "음악·취미",
-    emojis: [
-      "🎤", "🎧", "🎼", "🎹", "🥁", "🪘", "🎷", "🎺", "🎸", "🪕",
-      "🎻", "🪗", "📯", "🎙️", "🎚️", "🎛️", "🎬", "📷", "📸", "📹",
-      "🎥", "📽️", "🎨", "🖌️", "🖍️", "🖊️", "🖋️", "✏️", "📝", "📚",
-      "📖", "📕", "📗", "📘", "📙", "🏀", "⚽", "🏈", "⚾", "🥎",
-      "🎾", "🏐", "🏉", "🥏", "🎱", "🪀", "🏓", "🏸", "🥊", "🥋",
-      "⛳", "🏌️", "⛸️", "🎣", "🤿", "🛹", "🛼", "🛷", "🥌", "🎽",
-      "🏆", "🚴", "🏊", "🏄", "🧗", "🤸", "⛷️", "🏂", "🏋️", "🤺"
-    ]
-  },
-  {
-    key: "animal",
-    label: "동물",
-    emojis: [
-      "🐰", "🐱", "🐶", "🐻", "🐻‍❄️", "🐼", "🐨", "🐯", "🦁", "🐸",
-      "🐧", "🐥", "🐣", "🐤", "🦄", "🦋", "🐢", "🐳", "🐋", "🐬",
-      "🐙", "🦑", "🦐", "🦀", "🐡", "🐠", "🐟", "🦈", "🦊", "🐭",
-      "🐹", "🐮", "🐷", "🐗", "🐔", "🦉", "🦅", "🦆", "🦢",
-      "🦩", "🦚", "🦜", "🐝", "🐞", "🦗", "🕷️", "🦂", "🐌", "🦕",
-      "🦖", "🐉", "🐲", "🦔", "🐺", "🐴", "🦓", "🦒", "🐘", "🦣",
-      "🦛", "🦏", "🐪", "🐫", "🦙", "🐑", "🐐", "🦌", "🐕", "🦮",
-      "🐩", "🐈", "🐈‍⬛", "🐓", "🦃", "🕊️", "🐇", "🦝", "🦨", "🦡",
-      "🦦", "🦥", "🐿️", "🦇", "🐾", "🦤", "🪲", "🐛"
-    ]
-  },
-  {
-    key: "plant",
-    label: "식물·꽃",
-    emojis: [
-      "🌸", "💮", "🏵️", "🌹", "🥀", "🌺", "🌻", "🌼", "🌷", "🪷",
-      "💐", "🌱", "🪴", "🌲", "🌳", "🌴", "🌵", "🌾", "🌿", "☘️",
-      "🍀", "🎍", "🎋", "🍃", "🍂", "🍁", "🍄", "🪻"
-    ]
-  },
-  {
-    key: "food",
-    label: "음식",
-    emojis: [
-      "🍓", "🫐", "🍒", "🍑", "🥭", "🍍", "🥥", "🍎", "🍏", "🍐",
-      "🍊", "🍋", "🍌", "🍉", "🍇", "🍈", "🥝", "🍅", "🥑", "🍆",
-      "🥕", "🌽", "🥔", "🥬", "🥦", "🌶️", "🫛", "🫚", "🍠", "🥐", "🍞", "🥖", "🥨", "🧀", "🥞",
-      "🧇", "🍳", "🥚", "🍕", "🍔", "🌭", "🥪", "🌮", "🌯", "🍟",
-      "🍜", "🍝", "🍲", "🍛", "🍣", "🍱", "🍙", "🍚", "🍘", "🍢",
-      "🍡", "🍧", "🍨", "🍦", "🥧", "🧁", "🍰", "🎂", "🍮", "🍭",
-      "🍬", "🍫", "🍩", "🍪", "🌰", "🍯", "🍿", "🥛", "☕", "🍵",
-      "🧋", "🥤", "🧃", "🧉", "🍶", "🍺", "🍻", "🥂", "🍷", "🍸"
-    ]
-  },
-  {
-    key: "season",
-    label: "계절·날씨",
-    emojis: [
-      "🌸", "🌷", "🐝", "🦋", "🌱", "🐣", "☀️", "🌊", "🏖️", "🍉",
-      "🍧", "⛱️", "🩴", "🕶️", "🌴", "🍁", "🍂", "🌾", "🎃", "🌰",
-      "🍄", "❄️", "⛄", "☃️", "🎄", "🎅", "🤶", "🦌", "🧣", "🧤",
-      "🌙", "🌛", "🌜", "🌝", "🌞", "⭐", "🌟", "☁️", "⛅", "🌥️",
-      "🌦️", "🌧️", "⛈️", "🌩️", "🌨️", "🌬️", "🌪️", "🌫️", "🌈", "☔",
-      "💧", "💦", "🔥", "⚡", "🌠", "🌌", "🪐", "🌍"
-    ]
-  },
-  {
-    key: "travel",
-    label: "여행·탈것",
-    emojis: [
-      "🚗", "🚕", "🚙", "🚌", "🚎", "🏎️", "🚓", "🚑", "🚒", "🚐",
-      "🛻", "🚚", "🚛", "🚜", "🛵", "🏍️", "🛺", "🚲", "🛴", "🚨",
-      "🚝", "🚄", "🚅", "🚈", "🚂", "🚆", "🚇", "🚊", "🚉", "✈️",
-      "🛫", "🛬", "🛩️", "🚁", "🚀", "🛸", "🛶", "⛵", "🚤", "🛥️",
-      "🚢", "⚓", "🗺️", "🧭", "🏔️", "⛰️", "🌋", "🏕️", "🏖️", "🏝️",
-      "🏞️", "🗽", "🗼", "🏰", "🏯", "🎡", "🎢", "🎠", "⛲", "🌁"
-    ]
-  },
-  {
-    key: "object",
-    label: "사물",
-    emojis: [
-      "💎", "👑", "💍", "🔮", "📌", "📍", "💌", "🔔", "🔕", "🧸",
-      "🪄", "🫧", "🎐", "🛍️", "🎒", "👜", "👛", "👝", "🎁", "👗",
-      "👚", "👕", "👖", "🧥", "👔", "👒", "🎩", "🧢", "🕶️",
-      "👓", "💄", "💅", "📱", "💻", "🖥️", "⌨️", "🖱️", "🖨️", "📷",
-      "📺", "📻", "⏰", "⏲️", "⏳", "🕰️", "🔑", "🗝️", "🔒", "🔓",
-      "💡", "🔦", "🕯️", "🧷", "📎", "🖇️", "✂️", "📏", "📐", "🪙",
-      "💰", "💵", "💸", "💳", "🧧", "📦", "📫", "✉️", "📨", "🔭",
-      "🔬", "🧲", "🧪", "💊", "🩹", "🩺", "🌡️", "🧹", "🪥", "🧼"
-    ]
-  }
-];
-
-// #7: 텍스트 스티커 글꼴/굵기 선택지
-const TEXT_FONTS = [
-  { key: "sans", label: "기본" },
-  { key: "round", label: "손글씨" },
-  { key: "display", label: "제목" },
-  { key: "serif", label: "명조" },
-  { key: "jua", label: "둥근" },
-  { key: "dohyeon", label: "고딕" },
-  { key: "pen", label: "펜글씨" },
-  { key: "gamja", label: "감자" },
-  { key: "gugi", label: "붓글씨" },
-  { key: "melody", label: "멜로디" }
-];
-const TEXT_WEIGHTS = [
-  { w: 400, label: "보통" },
-  { w: 700, label: "굵게" },
-  { w: 900, label: "두껍게" }
-];
-
 export function PublicPoster({
   initialMonth,
   initialYear,
   onViewChange,
   schedule,
-  decorate: decorateProp = false,
-  initialPreviewing = false,
   initialNarrow = false,
-  saveStickerAction: saveStickerActionRaw,
-  deleteStickerAction: deleteStickerActionRaw,
-  saveStickerBatchAction: saveStickerBatchActionRaw,
-  deleteStickerBatchAction: deleteStickerBatchActionRaw,
-  uploadStickerAssetAction,
-  deleteStickerAssetAction,
-  setPosterThemeAction,
   toggleHeartAction,
   accountSwitch = false,
   showHopeBadge = false,
@@ -1047,144 +755,10 @@ export function PublicPoster({
   useEffect(() => {
     if (accountSwitch) writeLoadingToneCookie("p");
   }, [accountSwitch]);
-  // 스티커 저장/삭제가 서버에 들어가는 동안만 세는 카운터(아래 beforeunload 경고용).
-  // 실제 전송은 keepalive fetch(/api/sticker-write)로 보낸다 → 스티커를 옮기/추가/삭제하고 바로
-  // 달을 넘기거나 창을 닫/새로고침해도 브라우저가 전송을 끝까지 보장해 작업이 유실되지 않는다.
-  // raw 액션 prop은 "이 기능이 켜져 있는지"의 게이트로만 쓰고(서버 호출은 라우트가 대신), 응답은
-  // 기존 액션과 같은 모양({ok,sticker}/{ok,stickers}/{ok,error})이라 호출부를 바꿀 필요가 없다.
-  const pendingSaveRef = useRef(0);
-  // #저장칩 — 꾸미기에서도 편집실처럼 저장 상태를 항상 보여준다(저장중/저장됨/실패 + KST).
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | "failed">("idle");
-  const [lastSavedKst, setLastSavedKst] = useState<string | null>(null);
-  const savingSinceRef = useRef(0); // '저장 중' 최소 노출 계산용
-  const savedTimerRef = useRef<number | null>(null);
-  const stickerWrite = useCallback(
-    async <T,>(op: string, payload: unknown, fallback: T): Promise<T> => {
-      if (pendingSaveRef.current === 0) savingSinceRef.current = Date.now();
-      if (savedTimerRef.current) {
-        window.clearTimeout(savedTimerRef.current);
-        savedTimerRef.current = null;
-      }
-      pendingSaveRef.current += 1;
-      // 매크로태스크로 빼 항상 긴급으로 칠해지게(편집실 studioWrite와 동일 이유).
-      window.setTimeout(() => {
-        if (pendingSaveRef.current > 0) setSaveState("saving");
-      }, 0);
-      let result = fallback;
-      let ok = false;
-      try {
-        const res = await fetch("/api/sticker-write", {
-          method: "POST",
-          headers: { "content-type": "application/json" },
-          keepalive: true,
-          body: JSON.stringify({ op, payload })
-        });
-        const data = await res.json().catch(() => null);
-        result = (data ?? fallback) as T;
-        ok = Boolean((result as { ok?: boolean })?.ok);
-      } catch {
-        result = fallback;
-        ok = false;
-      } finally {
-        pendingSaveRef.current = Math.max(0, pendingSaveRef.current - 1);
-        if (!ok) {
-          setSaveState("failed"); // 실패는 칩에 빨갛게 계속 — 조용히 사라지지 않게(#12)
-        } else if (pendingSaveRef.current === 0) {
-          setLastSavedKst(nowKstHm());
-          const elapsed = Date.now() - savingSinceRef.current;
-          if (elapsed >= 700) {
-            setSaveState("saved");
-          } else {
-            savedTimerRef.current = window.setTimeout(() => {
-              if (pendingSaveRef.current === 0) setSaveState("saved");
-            }, 700 - elapsed);
-          }
-        }
-      }
-      return result;
-    },
-    []
-  );
-  // Ctrl+S — 꾸미기엔 따로 '저장 버튼'이 없다(스티커는 조작 즉시 keepalive 저장). 저장할 게 없으면
-  // '이미 저장됨'을 칩으로 잠깐 확인시킨다(진행 중 저장이 있으면 그 표시를 안 건드림).
-  const flashSavedChip = useCallback(() => {
-    if (pendingSaveRef.current > 0) return;
-    if (savedTimerRef.current) {
-      window.clearTimeout(savedTimerRef.current);
-      savedTimerRef.current = null;
-    }
-    setSaveState("saving");
-    savedTimerRef.current = window.setTimeout(() => {
-      if (pendingSaveRef.current === 0) {
-        setSaveState("saved");
-        setLastSavedKst(nowKstHm());
-      }
-      savedTimerRef.current = null;
-    }, 600);
-  }, []);
-  const saveStickerAction = useMemo(
-    () =>
-      saveStickerActionRaw
-        ? (input: SaveStickerInput) =>
-            stickerWrite<StickerResult>("save", input, { ok: false, error: "저장에 실패했어요." })
-        : undefined,
-    [saveStickerActionRaw, stickerWrite]
-  );
-  const deleteStickerAction = useMemo(
-    () =>
-      deleteStickerActionRaw
-        ? (id: string) =>
-            stickerWrite<StickerResult>("delete", { id }, { ok: false, error: "삭제에 실패했어요." })
-        : undefined,
-    [deleteStickerActionRaw, stickerWrite]
-  );
-  const saveStickerBatchAction = useMemo(
-    () =>
-      saveStickerBatchActionRaw
-        ? (inputs: SaveStickerInput[]) =>
-            stickerWrite<StickerBatchResult>("saveBatch", { inputs }, {
-              ok: false,
-              error: "저장에 실패했어요."
-            })
-        : undefined,
-    [saveStickerBatchActionRaw, stickerWrite]
-  );
-  const deleteStickerBatchAction = useMemo(
-    () =>
-      deleteStickerBatchActionRaw
-        ? (ids: string[]) =>
-            stickerWrite<StickerBatchResult>("deleteBatch", { ids }, {
-              ok: false,
-              error: "삭제에 실패했어요."
-            })
-        : undefined,
-    [deleteStickerBatchActionRaw, stickerWrite]
-  );
-  // 스티커 저장/삭제가 아직 서버에 안 들어갔는데 새로고침/닫기 하면 작업을 잃을 수 있어 경고한다.
-  // 꾸미기 화면에서만, 그리고 실제로 진행 중일 때만 뜬다(평소엔 방해 없음).
-  useEffect(() => {
-    if (!decorateProp) return;
-    const handler = (e: BeforeUnloadEvent) => {
-      if (pendingSaveRef.current > 0) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [decorateProp]);
-  // 꾸미기 화면에서 "시청자 화면 보기"로 잠깐 미리보기 — 꾸미기 도구를 숨기고
-  // 시청자 시점으로 본다. previewing 동안에는 effective decorate를 꺼서, 아래의
-  // 모든 꾸미기 로직(도구바·키보드·스티커 편집)이 자동으로 비활성화된다.
-  const [previewing, setPreviewing] = useState(initialPreviewing);
-  const decorate = decorateProp && !previewing;
-  // 꾸미기는 그 자체가 라우트(/studio/decorate)라 route.enter/leave로 이미 잡힌다.
-  // 예전엔 섹션으로도 따로 재서 한 번의 진입이 '화면 진입 꾸미기 화면' + '패널 진입 꾸미기'
-  // 두 줄로 남고 사용량에서도 이중 계상됐다(실측) → 섹션 계측을 뺀다.
   // 토리님 SOOP 라이브 상태 — 꾸미기 아니면 폴링(편집실 '시청자 미리보기'에서도 켜서 개발자/오너가
   // 시청자가 볼 LIVE를 그대로 확인). 데스크탑 플로팅 비콘은 편집실 chrome과 겹쳐 미리보기에선 숨기고
   // (아래 마운트의 !previewNav), 모바일은 겹침 없는 하단 '오늘'→LIVE 버튼이라 미리보기에서도 보인다.
-  const soopLiveRaw = useSoopLive(!decorate);
+  const soopLiveRaw = useSoopLive();
   // 테스트 전용: URL에 ?live-preview=1 을 붙이면 라이브 카드를 강제로 띄워 렌더를 확인한다
   // (임베드는 실제 채널 플레이어 — 방송 중이 아니면 오프라인 화면). 공개-안전: 가짜 UI일 뿐
   // 데이터 접근 없음. 확인 끝나면 파라미터만 지우면 된다.
@@ -1212,13 +786,6 @@ export function PublicPoster({
   // (이미 도착) 방송 중이면 그 자리를 LIVE(보러가기)로 바꾼다. 스크롤로 벗어나거나 다른 달이면 다시
   // '오늘'(이동)로 복귀 — 아래 IntersectionObserver가 가시성을 추적한다.
   const [todayVisible, setTodayVisible] = useState(false);
-  // 꾸미기에서 미리보기 상태를 쿠키에 기록 → 새로고침 시 서버가 그 화면(미리보기/꾸미기)으로 바로 렌더.
-  useEffect(() => {
-    if (decorateProp) {
-      writeViewCookie({ dp: previewing ? 1 : 0 });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [previewing]);
   // 처음 화면에 들어왔을 때만 잠깐, 인기(관심) 단계별로 날짜 칸을 부각하는 애니메이션을 켠다.
   // 이후(월 이동 등)엔 꺼서 산만하지 않게 한다.
   const [popIntro, setPopIntro] = useState(true);
@@ -1226,13 +793,6 @@ export function PublicPoster({
     const timer = window.setTimeout(() => setPopIntro(false), 2600);
     return () => window.clearTimeout(timer);
   }, []);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [dragOver, setDragOver] = useState(false);
-  const [textDraft, setTextDraft] = useState(""); // C6: 추가할 텍스트 스티커 문구
-  const [emojiCat, setEmojiCat] = useState(EMOJI_CATEGORIES[0].key); // #5b: 선택된 이모지 카테고리
-  const activeEmojis =
-    EMOJI_CATEGORIES.find((c) => c.key === emojiCat)?.emojis ?? EMOJI_CATEGORIES[0].emojis;
   const [view, setView] = useState({
     year: initialYear ?? schedule.calendar.defaultYear,
     month: initialMonth ?? schedule.calendar.defaultMonth
@@ -1274,9 +834,6 @@ export function PublicPoster({
   // 않게 한다. 묶음의 '가장 큰 내용' 높이에만 맞추므로(과확장 없음) 짧은 쪽만 그만큼 채워진다.
   // callback ref라 그리드가 (재)마운트되는 어떤 경로에서도 자동 재설정된다. deps는 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([schedule.events, view]);
-  // 스티커 좌표 매핑용 실측 대상 — 달력 그리드·표면 엘리먼트(아래 스티커 프레임 실측에서 사용).
-  const stickerGridElRef = useRef<HTMLDivElement | null>(null);
-  const stickerSurfaceElRef = useRef<HTMLElement | null>(null);
   // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조) + 텍스트 긁힘 방지.
   // (P1-MULTI-0로 제거했다가 사용자 요청으로 복원 — 방송 중 기간을 짚어주는 실사용 도구.)
   const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>();
@@ -1284,7 +841,6 @@ export function PublicPoster({
     (el: HTMLDivElement | null) => {
       monthGridRef(el);
       rangeSelectRef(el);
-      stickerGridElRef.current = el;
     },
     [monthGridRef, rangeSelectRef]
   );
@@ -1315,49 +871,6 @@ export function PublicPoster({
     [viewTags]
   );
 
-  // "내 이모지" 보관함 — 로컬 상태로 들고 있어 업로드·삭제를 새로고침(왕복) 없이 즉시 반영한다.
-  // (서버 router.refresh를 기다리면 몇 초씩 늦게 떠/늦게 사라져 답답하다.)
-  const [assets, setAssets] = useState<StickerAsset[]>(schedule.stickerAssets);
-  // 비동기 흐름(업로드 반복문·직렬 큐 이후 되돌리기)에서 '지금' 보관함을 읽기 위한 거울.
-  const assetsRef = useRef(assets);
-  assetsRef.current = assets;
-  // 업로드 진행 중인(아직 서버 저장 전) 임시 에셋 id — 스피너 표시 + 클릭(스티커 추가) 차단용.
-  const [pendingAssetIds, setPendingAssetIds] = useState<Set<string>>(() => new Set());
-  // 이 세션에서 지운 에셋 id — 삭제보다 먼저 떠난 revalidate 스냅샷이 되살리지 못하게.
-  const deletedAssetIdsRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    // 서버 스냅샷을 통째로 덮어쓰지 않고 '병합'한다 — 업로드 중인 임시 에셋, 방금 올린 에셋,
-    // 아직 서버가 안 돌려준 낙관적 편집(순서·분류)이 리시드에 지워지던 문제(revalidate가
-    // 업로드/정렬보다 먼저 도착) 방지. 로컬이 우선이고, 서버에만 있는 새 에셋만 받아들인다.
-    setAssets((cur) => {
-      const server = schedule.stickerAssets.filter((a) => !deletedAssetIdsRef.current.has(a.id));
-      const serverById = new Map(server.map((a) => [a.id, a]));
-      const localIds = new Set(cur.map((a) => a.id));
-      const merged: StickerAsset[] = cur.map((a) => {
-        const s = serverById.get(a.id);
-        // 서버 값(URL·이름 등)은 받되, 낙관적으로 바꾼 순서·분류는 로컬 우선. 임시/미반영은 그대로.
-        return s ? { ...s, kind: a.kind, sortOrder: a.sortOrder } : a;
-      });
-      // 서버에만 있는 새 에셋(다른 세션 업로드 등)은 자기 sortOrder 자리로.
-      for (const s of server) {
-        if (!localIds.has(s.id)) merged.push(s);
-      }
-      merged.sort((a, b) => a.sortOrder - b.sortOrder);
-      return merged;
-    });
-  }, [schedule.stickerAssets]);
-  // 보관함 분류 탭(전체/아바타/이모티콘/움직이는 이모티콘).
-  const [assetTab, setAssetTab] = useState<AssetTabKey>("all");
-  // 보관함 쓰기(정렬·분류) 직렬 큐 — 마지막 드래그가 저장의 진실.
-  const assetQueueRef = useRef<Promise<void>>(Promise.resolve());
-
-  // 살아있는 커스텀 이모지(에셋) id 집합. 삭제된 에셋을 가리키는 이미지 스티커를 다시
-  // 저장하면 FK 위반(sticker_instances_asset_id_fkey)이 난다 — undo/복제 등 어떤 경로로든
-  // 죽은 에셋을 되살리기 전에 이 집합으로 걸러낸다. (저장 전 임시 에셋도 살아있는 것으로 본다.)
-  const liveAssetIds = useMemo(() => new Set(assets.map((a) => a.id)), [assets]);
-  const isStickerAssetAlive = (s: StickerInstance) =>
-    s.kind !== "image" || (s.assetId != null && liveAssetIds.has(s.assetId));
-
   // B1: 오늘이 데뷔 기념일·D+·생일이면 축하 연출(컨페티)을 1회 띄운다.
   const todayCelebration = useMemo(() => {
     const mark = getDayMark(today);
@@ -1386,33 +899,8 @@ export function PublicPoster({
     return () => clearTimeout(timer);
   }, [todayCelebration]);
 
-  // C9/C10: 포스터 테마(계절/배경). 소유자만 바꿀 수 있고 모든 시청자에게 반영된다.
-  const [posterTheme, setPosterTheme] = useState(schedule.calendar.posterTheme);
-  async function changeTheme(theme: string) {
-    if (!setPosterThemeAction) {
-      return;
-    }
-    const prev = posterTheme;
-    setPosterTheme(theme as typeof posterTheme); // 낙관적 반영
-    // 클릭 즉시 '내 의도'를 쿠키에 기록(타임스탬프 포함) — 서버 저장(DB 쓰기 ~0.3s)이 끝나기 전에
-    // 새로고침해도 꾸미기 page가 이 쿠키를 먼저 읽어 바로 반영한다. 15초 지나면 만료라 묵은 값이
-    // 영구히 우선되지 않는다(그 뒤엔 DB 신선 읽기가 진실).
-    try {
-      document.cookie = `vic_theme=${theme}|${Date.now()}; path=/; max-age=60; samesite=lax`;
-    } catch {
-      /* 쿠키 불가 환경 무시 */
-    }
-    const result = await setPosterThemeAction(theme);
-    if (!result.ok) {
-      setPosterTheme(prev);
-      setStickerError(result.error);
-      try {
-        document.cookie = `vic_theme=${prev}|${Date.now()}; path=/; max-age=60; samesite=lax`;
-      } catch {
-        /* 무시 */
-      }
-    }
-  }
+  // C9/C10: 포스터 테마(계절/배경) — 서버 값 그대로(테마 변경 UI는 꾸미기와 함께 철수, 2026-08-27).
+  const posterTheme = schedule.calendar.posterTheme;
   // 보는 달이 월드컵 기간(2026-06~07)과 겹치면 포스터 테마를 월드컵으로 자동 전환한다 —
   // 단 토리님이 그 달 테마를 직접 고르지 않았을 때만("none"). 예전엔 owner 선택보다 우선했는데,
   // 그러면 대회 두 달 내내 직접 꾸민 포스터가 잔디밭으로 덮이고 내보낸 PNG까지 축구 포스터가 된다.
@@ -1470,13 +958,6 @@ export function PublicPoster({
   const toggleAvatarOn = avatarControlled ? onAvatarToggle! : toggleAvatarOnInternal;
   const pickAvatarSide = avatarControlled ? onAvatarSide! : pickAvatarSideInternal;
 
-  // 스티커는 달(월)마다 따로 — 현재 보는 달의 스티커만 로컬 상태로 다룬다.
-  const monthStickers = (year: number, month: number) =>
-    schedule.stickers.filter((s) => s.year === year && s.month === month);
-  const [stickers, setStickers] = useState<StickerInstance[]>(() =>
-    monthStickers(view.year, view.month)
-  );
-  const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
   // 모바일 아젠다에서 사용자가 펼친 '빈 날 구간'(접기는 숨김이 아니라 접힘 — 탭하면 그대로 보인다).
   const [expandedGaps, setExpandedGaps] = useState<Set<string>>(() => new Set());
   // 하트 등급 승급 토스트(시청자) — 내 하트가 등급을 올렸을 때만 잠깐 뜬다.
@@ -1493,12 +974,6 @@ export function PublicPoster({
     window.addEventListener("wc-minigame-enabled", onMini);
     return () => window.removeEventListener("wc-minigame-enabled", onMini);
   }, []);
-  // C3: 다중 선택 — 기본(primary) 선택 외에 추가로 선택된 스티커들.
-  const [multiIds, setMultiIds] = useState<string[]>([]);
-  const [stickerError, setStickerError] = useState<string | null>(null);
-  // 스티커 복사/붙여넣기 안내 토스트(월 간 복붙 — 잠깐 떴다 사라짐).
-  const [stickerClipMsg, setStickerClipMsg] = useState<string | null>(null);
-  const stickerClipTimerRef = useRef<number | null>(null);
   // A2 고도화: 여러 태그를 동시에 고르고, "관심만 보기"까지 더해 보고 싶은 일정만 추려 본다.
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
@@ -2042,7 +1517,7 @@ export function PublicPoster({
   >([]);
   const burstId = useRef(0);
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
-  const interactive = !decorate;
+  const interactive = true;
   // 업도움 띠 그룹 호버 — 띠는 칸마다 별도 조각이라 CSS :hover만으로는 한 조각만 밝아져
   // 마디가 다시 보인다. 같은 일정의 모든 조각이 함께 반응하게 호버 중인 띠 id를 들고 있는다.
   const [hoverSupportId, setHoverSupportId] = useState<string | null>(null);
@@ -2054,29 +1529,6 @@ export function PublicPoster({
   // UI가 통째로 빠져 로그인 화면과 레이아웃이 달라진다(사생활 모드 실패는 토글 때 토스트로 안내).
   const canHeart = interactive && serverHearts;
 
-  // "시청자 화면 보기" 미리보기는 히스토리에 한 칸 쌓아, 휴대폰/브라우저 뒤로가기를 누르면
-  // 페이지를 떠나지 않고 꾸미기로 돌아온다(편집실 오버레이 스택과 같은 방식).
-  const previewDepthRef = useRef(0);
-  const ignorePreviewPop = useRef(false);
-  const previewBackClosing = useRef(false);
-  // popstate 리스너는 한 번만 등록하므로(deps []) 최신 값을 ref로 읽는다.
-  const previewingRef = useRef(previewing);
-  previewingRef.current = previewing;
-  useEffect(() => {
-    const depth = previewing ? 1 : 0;
-    const prev = previewDepthRef.current;
-    if (depth > prev) {
-      window.history.pushState({ vicPreview: true }, "");
-    } else if (depth < prev) {
-      if (previewBackClosing.current) {
-        previewBackClosing.current = false; // 뒤로가기로 닫힘 → 브라우저가 이미 정리함
-      } else {
-        ignorePreviewPop.current = true; // 버튼으로 닫힘 → 쌓은 항목 정리(그 popstate는 무시)
-        window.history.back();
-      }
-    }
-    previewDepthRef.current = depth;
-  }, [previewing]);
   // '이 달 기록' 시트도 같은 방식으로 히스토리 한 칸을 쌓는다 — 폰에서 뒤로가기를 누르면 시트만
   // 닫혀야 하는데, 안 쌓아두면 페이지를 통째로 떠나(이전 화면으로) 버린다.
   const insightsDepthRef = useRef(0);
@@ -2134,19 +1586,10 @@ export function PublicPoster({
         queueMicrotask(popInnerOverlay);
         return;
       }
-      if (ignorePreviewPop.current) {
-        ignorePreviewPop.current = false;
-        return;
-      }
       if (insightsOpenRef.current) {
         insightsBackClosing.current = true;
         setInsightsOpen(false);
         return;
-      }
-      // 미리보기 중일 때만 처리 — 아니면 일반 뒤로가기를 방해하지 않는다.
-      if (previewingRef.current) {
-        previewBackClosing.current = true;
-        setPreviewing(false);
       }
     }
     window.addEventListener("popstate", onPop);
@@ -2164,7 +1607,7 @@ export function PublicPoster({
     mq.addEventListener("change", update);
     return () => mq.removeEventListener("change", update);
   }, []);
-  const showAgenda = isNarrow && !decorate;
+  const showAgenda = isNarrow;
 
   // 포스터(시청자/꾸미기/export 표면)는 화면마다 reflow되면 안 된다 — 소유자가 찍은
   // 스티커·텍스트 위치가 틀어지고 글자가 가려질 수 있다. 그래서 내부는 고정 16:9 캔버스
@@ -2175,7 +1618,7 @@ export function PublicPoster({
   // 남은 높이로 클램프). transform이라 레이아웃·표면 기하 불변(스티커 안전). 시청자 전용.
   const legendFollowRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (decorate || showAgenda) return;
+    if (showAgenda) return;
     const el = legendFollowRef.current;
     if (!el) return;
     let raf = 0;
@@ -2203,7 +1646,7 @@ export function PublicPoster({
       cancelAnimationFrame(raf);
       el.style.transform = "";
     };
-  }, [decorate, showAgenda]);
+  }, [showAgenda]);
 
   const posterStageRef = useRef<HTMLDivElement | null>(null);
   const posterFitRef = useRef<HTMLDivElement | null>(null);
@@ -2264,100 +1707,10 @@ export function PublicPoster({
       }
       ro.disconnect();
     };
-  }, [showAgenda, decorate, avatarSlot]);
+  }, [showAgenda, avatarSlot]);
 
 
 
-
-  // 이 세션에서 삭제한 스티커 id. 달을 다시 시드할 때 schedule prop(서버 스냅샷)이 캐시 탓에
-  // 아직 그 스티커를 들고 있을 수 있어, 지운 게 월 이동 후 되살아나는 걸 막는다.
-  const deletedStickerIdsRef = useRef<Set<string>>(new Set());
-  // 이 세션에서 편집한 달별 스티커 최신 상태(낙관적 로컬). schedule prop은 페이지 로드 시점
-  // 스냅샷이라, 달을 옮겼다 돌아오면 prop으로 리시드돼 "이번 세션에 추가/이동/편집한 게
-  // 사라져 보이는" 되돌림이 났다. 이 캐시로 떠난 달의 최신 상태를 보존해 다시 와도 그대로 보인다
-  // (DB엔 keepalive로 이미 저장됨 — 캐시는 화면 연속성용).
-  const monthStickerCacheRef = useRef<Map<string, StickerInstance[]>>(new Map());
-  const prevViewRef = useRef<{ year: number; month: number }>({ year: view.year, month: view.month });
-  // 키보드 미세이동 등에서 최신 스티커 배열을 읽기 위한 ref + 저장 디바운스 타이머
-  const stickersRef = useRef<StickerInstance[]>([]);
-  const commitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // 디바운스 저장 대기열: canon id → 마지막 로컬 값. 타이머 하나가 전부 flush한다.
-  // (예전엔 타이머 하나에 '마지막 호출의 목록'만 매달려, B를 미세이동하면 A의 대기 저장이
-  //  통째로 사라졌다 — 이제 스티커별로 누적되고 어떤 것도 잃지 않는다.)
-  const pendingCommitRef = useRef<Map<string, StickerInstance>>(new Map());
-  // 신규 스티커 insert 진행 중인 임시 id → 실제 id 약속(실패면 null). 편집실(use-write-queue)의
-  // pendingSavesRef/tempToRealRef와 같은 패턴 — insert 중에 옮기고·돌리고·지운 조작이 id 확정 뒤
-  // 실제 행에 그대로 반영되게 한다(예전엔 temp id면 조용히 버려져 "옮겼는데 새로고침하면 제자리").
-  const stickerPendingRef = useRef<Map<string, Promise<string | null>>>(new Map());
-  // insert 끝난 임시 id → 실제 id 매핑(영구). 옛 id를 들고 있는 클로저(드래그·타이머·스택)가
-  // 나중에 와도 실제 id로 해석되게.
-  const stickerTempToRealRef = useRef<Map<string, string>>(new Map());
-  const nudgeBurstRef = useRef(0); // 방향키 연속 입력을 한 단위로 묶기 위한 타임스탬프
-  stickersRef.current = stickers;
-  // 어떤 id든 '현재 통용되는' id로. 실제 id는 그대로, 재발급된 id는 새 id로.
-  const canonStickerId = useCallback(
-    (id: string) => stickerTempToRealRef.current.get(id) ?? id,
-    []
-  );
-  // temp id면 insert 약속을 기다려 실제 id로(실패면 null). 실제 id는 그대로.
-  async function resolveStickerId(id: string): Promise<string | null> {
-    if (!id.startsWith("temp-")) {
-      return id;
-    }
-    const known = stickerTempToRealRef.current.get(id);
-    if (known) return known;
-    const p = stickerPendingRef.current.get(id);
-    return p ? await p : null;
-  }
-  // 현재 로컬 상태에서 이 id(옛 id 포함)의 스티커를 찾는다 — 저장할 '최신 값'의 출처.
-  function findLocalSticker(id: string): StickerInstance | undefined {
-    const canon = canonStickerId(id);
-    return stickersRef.current.find((s) => s.id === canon || s.id === id);
-  }
-  // C2: 실행취소/다시실행 — 현재 달 스티커 배열 스냅샷 스택.
-  // ref를 단일 진실 소스로 둔다: 비동기 undo/redo(applySnapshot→remapId) 도중 setState
-  // 타이밍/클로저로 인해 redo 스택 push가 유실되던 문제를 막는다. state는 버튼 활성화
-  // 렌더링용 거울일 뿐이고, 스택 로직은 항상 ref를 읽고 쓴다.
-  const undoRef = useRef<StickerInstance[][]>([]);
-  const redoRef = useRef<StickerInstance[][]>([]);
-  const [undoStack, setUndoStack] = useState<StickerInstance[][]>([]);
-  const [redoStack, setRedoStack] = useState<StickerInstance[][]>([]);
-  // ref(진실) + state(렌더용)를 함께 갱신한다.
-  function commitStacks(undo: StickerInstance[][], redo: StickerInstance[][]) {
-    undoRef.current = undo;
-    redoRef.current = redo;
-    setUndoStack(undo);
-    setRedoStack(redo);
-  }
-
-  // 달을 바꿀 때만 해당 달 스티커로 다시 시드한다.
-  // (스티커 저장 시 서버 revalidate로 schedule이 갱신되어도 로컬 상태가 우선 —
-  //  그렇지 않으면 추가/이동/회전 직후 선택이 풀려 패널·핸들이 사라진다.)
-  useEffect(() => {
-    // 떠나는 달의 최신 로컬 상태를 캐시에 저장(이 렌더 시점 stickers는 아직 이전 달 것).
-    const prev = prevViewRef.current;
-    // 떠나는 달에 아직 디바운스 대기 중인 저장이 있으면 '그 달' 좌표로 지금 보낸다(잃지 않게).
-    flushPendingCommits(prev.year, prev.month);
-    monthStickerCacheRef.current.set(`${prev.year}-${prev.month}`, stickersRef.current);
-    prevViewRef.current = { year: view.year, month: view.month };
-    // 들어오는 달은 캐시(이번 세션 편집 보존)가 있으면 그걸로, 없으면 서버 prop으로 시드한다.
-    const key = `${view.year}-${view.month}`;
-    const cached = monthStickerCacheRef.current.get(key);
-    const seed =
-      cached ??
-      schedule.stickers.filter((s) => s.year === view.year && s.month === view.month);
-    setStickers(seed.filter((s) => !deletedStickerIdsRef.current.has(s.id)));
-    setSelectedSticker(null);
-    setMultiIds([]);
-    // 색상 필터/관심만 보기는 달을 넘겨도 그대로 유지한다(사용자가 선택을 다시 안 해도 되게).
-    commitStacks([], []); // 달이 바뀌면 실행취소/다시실행 히스토리는 초기화
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view.year, view.month]);
-  // 언마운트(시청자 미리보기 전환·페이지 이탈) 때도 디바운스 대기 저장을 비운다 — 타이머만 죽고
-  // 값은 안 가는 유실 방지. 최신 클로저를 ref로 들고 있어 마지막 렌더의 view/액션을 쓴다.
-  const flushCommitsRef = useRef<() => void>(() => {});
-  flushCommitsRef.current = () => flushPendingCommits();
-  useEffect(() => () => flushCommitsRef.current(), []);
 
   // 하트 상태 = 서버 myHeartIds(진실) + 이번 세션 델타. 시청자 미리보기를 닫았다 열면 컴포넌트가
   // 리마운트되며 bookmarks가 schedule.myHeartIds(페이지 로드 스냅샷)로 초기화되는데, 그러면 이 세션에
@@ -2669,105 +2022,9 @@ export function PublicPoster({
   }
   const filterActive = tagFilters.length > 0 || bookmarkedOnly;
 
-  // 꾸미기 중 스티커 키보드 조작: Delete 삭제 · 화살표 이동(Shift=크게) · Ctrl/Cmd+D 복제.
+  // 시청자에서 ←/→ 로 월 이동(입력 칸 안에서는 무시).
   useEffect(() => {
-    if (!decorate || !selectedSticker) {
-      return;
-    }
-    function onKey(event: KeyboardEvent) {
-      const target = event.target as HTMLElement | null;
-      const tag = target?.tagName;
-      // 입력 칸에서 누른 경우는 무시(텍스트 편집 보호)
-      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
-        return;
-      }
-      if ((event.ctrlKey || event.metaKey) && (event.key === "d" || event.key === "D")) {
-        event.preventDefault();
-        duplicateSelected();
-        return;
-      }
-      if ((event.ctrlKey || event.metaKey) && (event.key === "c" || event.key === "C")) {
-        event.preventDefault();
-        copySelected();
-        return;
-      }
-      if (event.key === "Delete" || event.key === "Backspace") {
-        event.preventDefault();
-        void deleteSelected();
-        return;
-      }
-      // Esc = 선택 해제. 없으면 스티커를 고른 채로는 키보드로 빠져나갈 방법이 없다 —
-      // 아래 월 이동도 화살표를 스티커 미세이동에 양보하므로, 빈 캔버스를 마우스로 찾아
-      // 눌러야만 했다. Esc는 누구나 먼저 눌러보는 키다.
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setSelectedSticker(null);
-        setMultiIds([]);
-        return;
-      }
-      // P2-STICKER-1: 키보드 크기/회전 — 포인터 핸들 없이도 조작 완결.
-      if (event.key === "+" || event.key === "=") {
-        event.preventDefault();
-        resizeSelectedBy(event.shiftKey ? 1.1 : 1.03);
-        return;
-      }
-      if (event.key === "-" || event.key === "_") {
-        event.preventDefault();
-        resizeSelectedBy(event.shiftKey ? 1 / 1.1 : 1 / 1.03);
-        return;
-      }
-      if (event.key === "[" || event.key === "]") {
-        event.preventDefault();
-        rotateSelectedBy((event.key === "[" ? -1 : 1) * (event.shiftKey ? 15 : 5));
-        return;
-      }
-      const step = event.shiftKey ? 0.02 : 0.004;
-      if (event.key === "ArrowUp") {
-        event.preventDefault();
-        nudgeSelected(0, -step);
-      } else if (event.key === "ArrowDown") {
-        event.preventDefault();
-        nudgeSelected(0, step);
-      } else if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        nudgeSelected(-step, 0);
-      } else if (event.key === "ArrowRight") {
-        event.preventDefault();
-        nudgeSelected(step, 0);
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [decorate, selectedSticker, multiIds]);
-
-  // 스티커 붙여넣기(Ctrl/⌘+V) — 선택이 없어도 동작(다른 빈 달에 붙이기용). view가 바뀌면 재구독해
-  // 항상 '지금 보고 있는 달'에 붙는다(다른 월 꾸미기로 이동 후 붙여넣기 지원).
-  useEffect(() => {
-    if (!decorate) {
-      return;
-    }
-    function onKey(event: KeyboardEvent) {
-      if (!(event.ctrlKey || event.metaKey) || (event.key !== "v" && event.key !== "V")) {
-        return;
-      }
-      const target = event.target as HTMLElement | null;
-      const tag = target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
-        return;
-      }
-      event.preventDefault();
-      pasteClipboard();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [decorate, view.year, view.month]);
-
-  // 시청자·꾸미기에서 ←/→ 로 월 이동. 단, 꾸미기에서 스티커를 선택 중이면 위 핸들러가
-  // 화살표를 미세이동에 쓰므로 그때는 비활성(스티커 미선택/시청자에서만 월 이동).
-  useEffect(() => {
-    if (showAgenda || (decorate && selectedSticker)) {
+    if (showAgenda) {
       return;
     }
     function onKey(event: KeyboardEvent) {
@@ -2790,991 +2047,7 @@ export function PublicPoster({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [decorate, selectedSticker, showAgenda, view.year, view.month]);
-
-  // C2: 실행취소/다시실행 단축키(선택 여부와 무관하게 동작).
-  useEffect(() => {
-    if (!decorate) {
-      return;
-    }
-    function onKey(event: KeyboardEvent) {
-      if (!(event.ctrlKey || event.metaKey)) {
-        return;
-      }
-      const target = event.target as HTMLElement | null;
-      const tag = target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
-        return;
-      }
-      const key = event.key.toLowerCase();
-      if (key === "z" && !event.shiftKey) {
-        event.preventDefault();
-        undo();
-      } else if (key === "y" || (key === "z" && event.shiftKey)) {
-        event.preventDefault();
-        redo();
-      } else if (key === "s") {
-        // Ctrl/⌘+S: 브라우저 페이지 저장 가로채기 → 저장 칩으로 '저장됨' 확인(스티커는 이미 즉시 저장).
-        event.preventDefault();
-        flashSavedChip();
-      }
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [decorate, undoStack, redoStack]);
-
-  // C3: 현재 선택된 모든 스티커 id(primary + 추가 선택). primary가 항상 맨 앞.
-  const selectedIds = selectedSticker
-    ? [selectedSticker, ...multiIds.filter((id) => id !== selectedSticker)]
-    : multiIds;
-
-  // 선택 핸들러: Shift/Ctrl 클릭=토글(다중), 일반 클릭=단일.
-  function handleSelect(id: string | null, additive?: boolean) {
-    if (!id) {
-      setSelectedSticker(null);
-      setMultiIds([]);
-      return;
-    }
-    if (!additive) {
-      setSelectedSticker(id);
-      setMultiIds([]);
-      return;
-    }
-    if (id === selectedSticker) {
-      // primary를 토글로 끄면 추가 선택의 첫 항목을 primary로 승격.
-      setSelectedSticker(multiIds[0] ?? null);
-      setMultiIds((prev) => prev.slice(1));
-      return;
-    }
-    setMultiIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-    if (!selectedSticker) {
-      setSelectedSticker(id);
-    }
-  }
-
-  function clearSelection() {
-    setSelectedSticker(null);
-    setMultiIds([]);
-  }
-
-  function updateStickerLocal(updated: StickerInstance) {
-    // 드래그 중 insert가 끝나 id가 바뀌어도(temp→실제) 갱신이 빗나가지 않게 canon id로 맞춘다.
-    const canon = canonStickerId(updated.id);
-    setStickers((prev) =>
-      prev.map((s) => (s.id === canon ? (updated.id === canon ? updated : { ...updated, id: canon }) : s))
-    );
-  }
-
-  function commitSticker(sticker: StickerInstance) {
-    return commitStickerAt(sticker, view.year, view.month);
-  }
-
-  // 스티커 속성 저장. year/month는 호출 맥락(보통 현재 보기 달; 달 이동 직전 flush는 떠나는 달).
-  // temp id(insert 진행 중)면 실제 id가 나올 때까지 기다렸다가 '그 시점의 최신 로컬 값'을 실제
-  // 행에 저장한다 — insert 중에 한 이동/회전/잠금/색 변경이 어느 것도 버려지지 않는다.
-  async function commitStickerAt(sticker: StickerInstance, year: number, month: number) {
-    if (!saveStickerAction) {
-      return;
-    }
-    let payload = sticker;
-    if (sticker.id.startsWith("temp-")) {
-      const known = stickerTempToRealRef.current.get(sticker.id);
-      if (known) {
-        // 매핑이 이미 있으면 기다릴 게 없다 — 방금 받은 값(아직 렌더 전일 수 있음)을 그대로 쓴다.
-        payload = { ...sticker, id: known };
-      } else {
-        const realId = await resolveStickerId(sticker.id);
-        if (!realId) {
-          return; // insert 실패 → 로컬에서 이미 제거됨, 저장할 행이 없다.
-        }
-        // 기다리는 사이 더 바뀌었을 수 있으니 최신 로컬 값(없으면 넘겨받은 값)으로.
-        const latest = findLocalSticker(sticker.id) ?? sticker;
-        payload = { ...latest, id: realId };
-      }
-    }
-    // 이 세션에서 지운 행은 다시 살리지 않는다(insert 대기 중 삭제 → 실제 id로 지워진 뒤 늦게 온 저장).
-    if (deletedStickerIdsRef.current.has(payload.id)) {
-      return;
-    }
-    const result = await saveStickerAction(stickerToSaveInput(payload, year, month, true));
-    if (!result.ok) {
-      setStickerError(result.error);
-    }
-  }
-
-  async function addEmoji(emoji: string) {
-    const value = emoji.trim();
-    if (!value || !saveStickerAction) {
-      return;
-    }
-    pushHistory();
-    // 생성 경로는 persistNewSticker 하나 — id 확정·매핑·되돌리기 스택 remap을 한 곳에서.
-    await persistNewSticker({
-      id: `temp-${Math.random().toString(36).slice(2)}`,
-      kind: "emoji",
-      label: value,
-      year: view.year,
-      month: view.month,
-      xRatio: 0.5,
-      yRatio: 0.5,
-      widthRatio: 0.08,
-      rotationDeg: 0,
-      flipX: false,
-      flipY: false,
-      opacity: 1,
-      zIndex: nextZIndex(),
-      visiblePublicly: true
-    });
-  }
-
-  // C6: 텍스트 스티커를 달력에 올린다. 기본은 흰 외곽선(가독성)으로 시작.
-  async function addText() {
-    const value = textDraft.trim();
-    if (!value || !saveStickerAction) {
-      return;
-    }
-    pushHistory();
-    setTextDraft("");
-    await persistNewSticker({
-      id: `temp-${Math.random().toString(36).slice(2)}`,
-      kind: "text",
-      label: value,
-      textColor: "#1f2937",
-      fontWeight: 700,
-      fontFamily: "sans",
-      textAlign: "left",
-      outline: false,
-      shadow: false,
-      year: view.year,
-      month: view.month,
-      xRatio: 0.5,
-      yRatio: 0.5,
-      // 처음엔 작게 시작(예전 0.16은 너무 커서 창을 넘어 크기 핸들을 못 누르던 문제). 툴바 "크기"로 조절.
-      widthRatio: 0.1,
-      rotationDeg: 0,
-      flipX: false,
-      flipY: false,
-      opacity: 1,
-      zIndex: nextZIndex(),
-      visiblePublicly: true
-    });
-  }
-
-  // P2: 데코 도형을 달력에 올린다(프리셋 색으로 시작 → 툴바에서 재채색).
-  async function addShape(shapeKey: string) {
-    if (!saveStickerAction) {
-      return;
-    }
-    pushHistory();
-    await persistNewSticker({
-      id: `temp-${Math.random().toString(36).slice(2)}`,
-      kind: "shape",
-      label: shapeKey,
-      shapeKey,
-      textColor: shapeDefaultColor(shapeKey),
-      year: view.year,
-      month: view.month,
-      xRatio: 0.5,
-      yRatio: 0.5,
-      widthRatio: 0.1,
-      rotationDeg: 0,
-      flipX: false,
-      flipY: false,
-      opacity: 1,
-      zIndex: nextZIndex(),
-      visiblePublicly: true
-    });
-  }
-
-  // 업로드한 커스텀 이모지(이미지)를 달력에 올린다.
-  async function addImageSticker(asset: StickerAsset) {
-    if (!saveStickerAction) {
-      return;
-    }
-    pushHistory();
-    await persistNewSticker({
-      id: `temp-${Math.random().toString(36).slice(2)}`,
-      kind: "image",
-      label: asset.name,
-      imageUrl: asset.fileUrl,
-      assetId: asset.id,
-      year: view.year,
-      month: view.month,
-      xRatio: 0.5,
-      yRatio: 0.5,
-      widthRatio: 0.12,
-      rotationDeg: 0,
-      flipX: false,
-      flipY: false,
-      opacity: 1,
-      zIndex: nextZIndex(),
-      visiblePublicly: true
-    });
-  }
-
-  // 이미지 파일 업로드 → 커스텀 이모지로 등록. 여러 개를 한 번에(파일 선택·드래그앤드롭).
-  async function handleUploadFiles(files: File[]) {
-    if (!uploadStickerAssetAction) {
-      return;
-    }
-    const images = files.filter((f) => f.type.startsWith("image/"));
-    if (images.length === 0) {
-      if (files.length > 0) {
-        setStickerError("이미지 파일만 올릴 수 있습니다.");
-      }
-      return;
-    }
-    setStickerError(null);
-    setUploading(true);
-    let lastError: string | null = null;
-    // 순차 업로드 (서버·스토리지 부하를 줄이고 실패 메시지를 모은다).
-    // try/finally로 감싸 어떤 이유로 액션이 throw해도 "올리는 중…"이 안 멈추게 한다(에러 표시).
-    // 여러 파일의 낙관적 sortOrder는 로컬 카운터로 하나씩 내려간다 — 렌더 클로저의 assets[0]을
-    // 반복문 안에서 읽으면 전부 같은 값이 돼 순서가 뒤엉켰다.
-    let nextSort = Math.min(0, ...assetsRef.current.map((a) => a.sortOrder)) - 1;
-    try {
-      for (const file of images) {
-        // 낙관적 표시: 로컬 미리보기(objectURL)로 "내 이모지"에 즉시 띄우고,
-        // 서버 저장이 끝나면 진짜 에셋(id·URL)으로 교체한다 — 업로드가 바로 보이게.
-        const tempId = `temp-asset-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const previewUrl = URL.createObjectURL(file);
-        const tempAsset: StickerAsset = {
-          id: tempId,
-          name: file.name.replace(/\.[^.]+$/, "") || "커스텀 이모지",
-          fileUrl: previewUrl,
-          fileType: file.type,
-          // 서버와 같은 규칙으로 미리 판정 — GIF만 확실히 '움직이는 이모티콘'.
-          kind: file.type === "image/gif" ? "anim" : "static",
-          sortOrder: nextSort--
-        };
-        // 새 에셋은 sort_order가 가장 작아(맨 앞) 결국 맨 왼쪽에 온다.
-        // 로딩 자리표시도 처음부터 맨 왼쪽(prepend)에 둬, 완료 시 좌우로 튀지 않게 한다.
-        setAssets((prev) => [tempAsset, ...prev]);
-        setPendingAssetIds((prev) => new Set(prev).add(tempId));
-
-        const formData = new FormData();
-        formData.append("file", file);
-        const result = await uploadStickerAssetAction(formData);
-        if (result.ok && result.asset) {
-          const saved = result.asset;
-          // 실제 저장 이미지(스토리지 URL)를 먼저 디코드한 뒤 교체 → src 교체 시 깜빡임 제거.
-          await new Promise<void>((resolve) => {
-            const img = new Image();
-            img.onload = () => resolve();
-            img.onerror = () => resolve();
-            img.src = saved.fileUrl;
-          });
-          // 자리는 로컬(맨 앞) 그대로 — 서버 sortOrder로 갈아끼우면 완료 순간 칩이 튄다.
-          setAssets((prev) =>
-            prev.map((a) => (a.id === tempId ? { ...saved, sortOrder: a.sortOrder } : a))
-          );
-          setPendingAssetIds((prev) => {
-            const next = new Set(prev);
-            next.delete(tempId);
-            return next;
-          });
-        } else {
-          setPendingAssetIds((prev) => {
-            const next = new Set(prev);
-            next.delete(tempId);
-            return next;
-          });
-          // 실패 → 임시 미리보기 제거.
-          setAssets((prev) => prev.filter((a) => a.id !== tempId));
-          if (!result.ok) lastError = result.error;
-        }
-        URL.revokeObjectURL(previewUrl);
-      }
-    } catch {
-      lastError =
-        "업로드에 실패했어요. 파일이 너무 크거나(2MB 이하) 네트워크 문제일 수 있어요.";
-    } finally {
-      setUploading(false);
-    }
-    if (lastError) {
-      setStickerError(lastError);
-    }
-  }
-
-  // 보관함(정렬·분류) 쓰기는 직렬 큐로 — 빠르게 여러 번 끌어도 마지막 순서가 서버의 진실이 된다
-  // (요청이 서로 앞지르면 낙관적 화면과 DB가 어긋난다).
-  async function queueAssetWrite<T>(run: () => Promise<T>): Promise<T> {
-    const next = assetQueueRef.current.then(run, run);
-    assetQueueRef.current = next.then(
-      () => undefined,
-      () => undefined
-    );
-    return next;
-  }
-
-  // 드래그로 바꾼 보관함 순서 저장 — 낙관적으로 먼저 바꾸고, 실패하면 되돌린다.
-  async function reorderAssets(orderedIds: string[]) {
-    const prev = assetsRef.current;
-    const byId = new Map(prev.map((a) => [a.id, a]));
-    const next = orderedIds
-      .map((id, index) => {
-        const asset = byId.get(id);
-        return asset ? { ...asset, sortOrder: index } : null;
-      })
-      .filter((a): a is StickerAsset => a !== null);
-    if (next.length !== prev.length) {
-      return; // 업로드 중 목록이 바뀐 경우 — 다음 드래그에서 다시 저장된다.
-    }
-    setAssets(next);
-    // 아직 저장 안 된 임시 에셋은 서버에 보낼 수 없다(업로드가 끝나면 맨 앞으로 들어온다).
-    const ids = next.map((a) => a.id).filter((id) => !id.startsWith("temp-"));
-    const result = await queueAssetWrite(() =>
-      stickerWrite<StickerAssetOpResult>(
-        "assetOrder",
-        { ids },
-        { ok: false, error: "순서 저장에 실패했어요." }
-      )
-    );
-    if (!result.ok) {
-      // 되돌리기는 '옛 배열로 통째 교체'가 아니라 id별 옛 순서를 지금 목록에 다시 입힌다 —
-      // 직렬 큐를 기다리는 사이 올라온 에셋(스냅샷엔 없음)이 같이 지워지던 문제 방지.
-      const oldOrder = new Map(prev.map((a) => [a.id, a.sortOrder]));
-      setAssets((cur) =>
-        cur
-          .map((a) => {
-            const so = oldOrder.get(a.id);
-            return so === undefined ? a : { ...a, sortOrder: so };
-          })
-          .sort((a, b) => a.sortOrder - b.sortOrder)
-      );
-      setStickerError(result.error);
-    } else {
-      hapticTick(); // 서버 확정 — 집을 때 톡, 저장되면 한 번 더.
-    }
-  }
-
-  // 분류(아바타/이모티콘/움직이는 이모티콘) 이동 — 탭 위로 끌어다 놓았을 때.
-  async function setAssetKind(assetId: string, kind: StickerAssetKind) {
-    if (assetId.startsWith("temp-")) {
-      return;
-    }
-    const prevKind = assetsRef.current.find((a) => a.id === assetId)?.kind;
-    setAssets((cur) => cur.map((a) => (a.id === assetId ? { ...a, kind } : a)));
-    const result = await queueAssetWrite(() =>
-      stickerWrite<StickerAssetOpResult>(
-        "assetKind",
-        { id: assetId, kind },
-        { ok: false, error: "분류 변경에 실패했어요." }
-      )
-    );
-    if (!result.ok) {
-      // 그 에셋의 분류만 되돌린다(옛 배열 통째 교체 X — 그새 바뀐 다른 것들을 지키기 위해).
-      if (prevKind) {
-        setAssets((cur) => cur.map((a) => (a.id === assetId ? { ...a, kind: prevKind } : a)));
-      }
-      setStickerError(result.error);
-    } else {
-      hapticTick();
-    }
-  }
-
-  // 업로드한 커스텀 이모지 삭제 (이를 쓰는 스티커도 함께 사라짐).
-  async function removeAsset(assetId: string) {
-    if (!deleteStickerAssetAction) {
-      return;
-    }
-    // 낙관적 삭제: 보관함에서 즉시 빼고(새로고침 대기 없이 바로 사라짐), 이를 쓰는 스티커도 함께 정리.
-    const removed = assetsRef.current.find((a) => a.id === assetId);
-    deletedAssetIdsRef.current.add(assetId);
-    setAssets((prev) => prev.filter((a) => a.id !== assetId));
-    // 실패 시 되돌릴 수 있게, 화면에서 걷어낸 스티커도 붙잡아 둔다.
-    const removedStickers = stickersRef.current.filter((s) => s.assetId === assetId);
-    setStickers((prev) => prev.filter((s) => s.assetId !== assetId));
-    // 에셋 삭제는 이를 쓰는 스티커를 서버에서 함께 지운다(FK cascade) → 월 재시드 때 stale prop
-    // 에서 되살아나지 않도록 그 id들도 기억한다(모든 달 포함).
-    const rememberedIds = schedule.stickers.filter((s) => s.assetId === assetId).map((s) => s.id);
-    rememberedIds.forEach((id) => deletedStickerIdsRef.current.add(id));
-    // 실행취소/다시실행 히스토리에서도 이 에셋을 쓰는 스티커를 함께 비운다 —
-    // 그렇지 않으면 Undo가 죽은 에셋을 되살리려다 FK 오류를 낸다.
-    const scrub = (stacks: StickerInstance[][]) =>
-      stacks.map((snap) => snap.filter((s) => s.assetId !== assetId));
-    commitStacks(scrub(undoRef.current), scrub(redoRef.current));
-    const result = await deleteStickerAssetAction(assetId);
-    if (!result.ok) {
-      setStickerError(result.error);
-      // 실패 → 에셋을 원래 자리(sortOrder)로, 걷어낸 스티커도 다시, 삭제 기억도 지운다.
-      // (되돌리기 스택은 이미 비웠다 — 그 스티커들의 되돌리기 이력만 잃고 화면은 정상 복구.)
-      deletedAssetIdsRef.current.delete(assetId);
-      rememberedIds.forEach((id) => deletedStickerIdsRef.current.delete(id));
-      if (removed) {
-        setAssets((prev) =>
-          prev.some((a) => a.id === assetId)
-            ? prev
-            : [...prev, removed].sort((a, b) => a.sortOrder - b.sortOrder)
-        );
-      }
-      if (removedStickers.length > 0) {
-        setStickers((prev) => {
-          const have = new Set(prev.map((s) => s.id));
-          const restored = removedStickers.filter((s) => !have.has(s.id));
-          return restored.length > 0 ? [...prev, ...restored] : prev;
-        });
-      }
-    }
-  }
-
-  async function deleteSelected() {
-    const ids = selectedIds;
-    if (ids.length === 0 || (!deleteStickerAction && !deleteStickerBatchAction)) {
-      return;
-    }
-    pushHistory();
-    const idSet = new Set(ids);
-    // 실패 시 되돌릴 수 있게, 지우기 전 대상 스티커를 보관한다.
-    const removedStickers = stickersRef.current.filter((s) => idSet.has(s.id));
-    setStickers((prev) => prev.filter((s) => !idSet.has(s.id)));
-    clearSelection();
-    // insert 진행 중(temp)인 스티커도 실제 id가 나올 때까지 기다렸다가 서버에서 지운다 —
-    // 예전처럼 로컬만 지우면 서버에 고아 행이 남아 새로고침 때 유령으로 되살아났다.
-    // (화면에선 위에서 이미 즉시 사라졌다; 기다림은 서버 쪽만.)
-    ids.forEach((id) => pendingCommitRef.current.delete(canonStickerId(id)));
-    const realIds = (await Promise.all(ids.map((id) => resolveStickerId(id)))).filter(
-      (id): id is string => id !== null
-    );
-    if (realIds.length === 0) {
-      return;
-    }
-    // 월 재시드 때 stale prop에서 되살아나지 않도록 삭제 id를 기억한다.
-    realIds.forEach((id) => deletedStickerIdsRef.current.add(id));
-    // 서버 삭제가 실패하면(권한·대상 문제) 낙관적 제거를 되돌려 "지워진 척" 가리지 않게 한다.
-    const rollback = (message: string) => {
-      setStickerError(message);
-      realIds.forEach((id) => deletedStickerIdsRef.current.delete(id));
-      setStickers((prev) => {
-        const have = new Set(prev.map((s) => s.id));
-        const restored = removedStickers.filter((s) => !have.has(s.id));
-        return restored.length > 0 ? [...prev, ...restored] : prev;
-      });
-    };
-    // 다중 삭제는 배치(.in() 단일 쿼리 + 무효화 1회)로 — 동접 중 캐시 thrash를 줄인다.
-    if (deleteStickerBatchAction) {
-      const result = await deleteStickerBatchAction(realIds);
-      if (!result.ok) {
-        rollback(result.error);
-      }
-    } else if (deleteStickerAction) {
-      for (const id of realIds) {
-        const result = await deleteStickerAction(id);
-        if (!result.ok) {
-          rollback(result.error);
-        }
-      }
-    }
-  }
-
-  function changeOpacity(value: number) {
-    const id = selectedSticker;
-    if (!id) {
-      return;
-    }
-    const sticker = stickers.find((s) => s.id === id);
-    if (sticker) {
-      updateStickerLocal({ ...sticker, opacity: value });
-    }
-  }
-
-  // 좌우/상하 대칭 토글. 토글 즉시 저장.
-  function toggleFlip(axis: "x" | "y") {
-    const id = selectedSticker;
-    if (!id) {
-      return;
-    }
-    const sticker = stickers.find((s) => s.id === id);
-    if (!sticker) {
-      return;
-    }
-    pushHistory();
-    const updated =
-      axis === "x"
-        ? { ...sticker, flipX: !sticker.flipX }
-        : { ...sticker, flipY: !sticker.flipY };
-    updateStickerLocal(updated);
-    void commitSticker(updated);
-  }
-
-  // C6: 텍스트 스티커 글자색 변경(즉시 저장).
-  function changeTextColor(color: string) {
-    const sticker = stickers.find((s) => s.id === selectedSticker);
-    if (!sticker) {
-      return;
-    }
-    const updated = { ...sticker, textColor: color };
-    updateStickerLocal(updated);
-    void commitSticker(updated);
-  }
-
-  // #7: 텍스트 스티커 전용 — 문구/굵기/글꼴/크기 변경.
-  function patchSelected(patch: Partial<StickerInstance>, commit = true) {
-    const sticker = stickers.find((s) => s.id === selectedSticker);
-    if (!sticker) {
-      return;
-    }
-    const updated = { ...sticker, ...patch };
-    updateStickerLocal(updated);
-    if (commit) {
-      void commitSticker(updated);
-    }
-  }
-  function changeText(value: string) {
-    patchSelected({ label: value }, false);
-  }
-
-  // C7: 외곽선/그림자 효과 토글(즉시 저장).
-  function toggleEffect(effect: "outline" | "shadow") {
-    const sticker = stickers.find((s) => s.id === selectedSticker);
-    if (!sticker) {
-      return;
-    }
-    pushHistory();
-    const updated =
-      effect === "outline"
-        ? { ...sticker, outline: !sticker.outline }
-        : { ...sticker, shadow: !sticker.shadow };
-    updateStickerLocal(updated);
-    void commitSticker(updated);
-  }
-
-  const selected = stickers.find((s) => s.id === selectedSticker) ?? null;
-
-  // C: 선택한 스티커 옆에 떠서 따라다니는 편집 바의 화면 위치 계산.
-  // 위쪽에 자리가 없으면 아래로 뒤집고, 가로는 스티커 중심에 맞춰 화면 안으로 가둔다.
-  // 드래그 중 stickers가 바뀌면 매번 다시 계산해 스티커를 따라 움직인다.
-  const anchorId = selectedIds[0] ?? null;
-  const floatRef = useRef<HTMLDivElement>(null);
-  const [floatStyle, setFloatStyle] = useState<CSSProperties | null>(null);
-  // 편집 바는 document.body로 포털 렌더한다 — 위쪽 도구바의 backdrop-filter가 fixed 기준을
-  // 가로채 엉뚱한 곳에 뜨던 문제를 없앤다. (포털은 클라이언트 마운트 후에만)
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-  // 편집 바 접기 — 옮기거나 모서리로 크기 조절할 때 가리지 않게. 새 스티커를 고르면 다시 펼친다.
-  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
-  useEffect(() => setToolbarCollapsed(false), [anchorId]);
-  useLayoutEffect(() => {
-    if (!decorate || !anchorId) {
-      setFloatStyle(null);
-      return;
-    }
-    function place() {
-      const el = document.querySelector<HTMLElement>(`[data-sticker-id="${anchorId}"]`);
-      const bar = floatRef.current;
-      if (!el || !bar) {
-        return;
-      }
-      const r = el.getBoundingClientRect();
-      const bw = bar.offsetWidth;
-      const bh = bar.offsetHeight;
-      const gap = 12;
-      const margin = 8;
-      const vw = window.innerWidth;
-      const vh = window.innerHeight;
-      // 편집 바(불투명·z-index 70·body 포털)가 헤더 띠(편집실로 돌아가기·계정변경 버튼)를
-      // 덮으면 그 버튼의 첫 클릭을 가로채 "두 번 눌러야 넘어가는" 문제가 생긴다. 그래서
-      // 헤더 아래쪽을 상단 한계로 삼아, 바가 헤더 영역으로 올라가지 않게 한다.
-      const header = document.querySelector<HTMLElement>(".public-calendar-header");
-      const topLimit = (header ? header.getBoundingClientRect().bottom : 0) + margin;
-      let top = r.top - gap - bh; // 기본: 스티커 위
-      if (top < topLimit) {
-        top = r.bottom + gap; // 위가 좁거나 헤더를 침범하면 스티커 아래로
-      }
-      if (top + bh > vh - margin) {
-        top = Math.max(topLimit, vh - margin - bh);
-      }
-      let left = r.left + r.width / 2 - bw / 2; // 스티커 중심 정렬
-      left = Math.min(Math.max(margin, left), Math.max(margin, vw - margin - bw));
-      setFloatStyle({ position: "fixed", top, left });
-    }
-    place();
-    window.addEventListener("scroll", place, true);
-    window.addEventListener("resize", place);
-    return () => {
-      window.removeEventListener("scroll", place, true);
-      window.removeEventListener("resize", place);
-    };
-  }, [decorate, anchorId, selectedIds.length, stickers, view, toolbarCollapsed, selected?.kind]);
-
-  // 편집 바는 예전엔 달력(스티커 레이어) 배경을 클릭해야만 닫혔다. 화면 어디를 눌러도 닫히게
-  // 한다 — 단, 스티커 자체나 편집 바 위 클릭은 제외(그건 선택/조작이라 닫으면 안 된다).
-  useEffect(() => {
-    if (!decorate || !anchorId) {
-      return;
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as HTMLElement | null;
-      if (!target) {
-        return;
-      }
-      if (target.closest(".sticker-item") || target.closest(".sticker-toolbar-float")) {
-        return;
-      }
-      clearSelection();
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [decorate, anchorId]);
-
-  // 신규 스티커 생성의 '유일한' 경로(이모지·이미지·텍스트·도형·복제·붙여넣기 전부).
-  // 낙관적으로 로컬에 먼저 올리고 insert → 실제 id로 remap(로컬·선택·다중선택·되돌리기 스택·
-  // 달 캐시). insert 동안 이 스티커에 온 조작은 commitSticker가 약속(stickerPendingRef)을
-  // 기다렸다가 실제 id로 보내고, 여기서도 마지막으로 한 번 더 '기다리는 동안 바뀐 값'을 실제
-  // 행에 맞춰 저장한다(드래그처럼 commit 호출이 temp 시절에 이미 지나간 경우의 안전망).
-  async function persistNewSticker(fresh: StickerInstance) {
-    if (!saveStickerAction) {
-      return;
-    }
-    const tempId = fresh.id;
-    setStickers((prev) => [...prev, fresh]);
-    setSelectedSticker(tempId);
-    // 약속은 await '전에' 등록한다 — 등록 전에 온 commit이 "약속 없음=실패"로 오판하지 않게.
-    let settle: (id: string | null) => void = () => {};
-    const promise = new Promise<string | null>((resolve) => {
-      settle = resolve;
-    });
-    stickerPendingRef.current.set(tempId, promise);
-    let result: StickerResult;
-    try {
-      result = await saveStickerAction(stickerToSaveInput(fresh, fresh.year, fresh.month, false));
-    } catch {
-      result = { ok: false, error: "저장에 실패했어요." };
-    }
-    if (result.ok) {
-      const realId = result.id;
-      remapId(tempId, realId);
-      settle(realId);
-      stickerPendingRef.current.delete(tempId);
-      // insert 중에 로컬 값이 바뀌었으면(드래그·회전 등) 실제 행에 그 값을 반영한다.
-      // 아직 렌더 안 된 갱신까지 잡으려고 한 틱 뒤 canon id로 다시 읽어 필드를 비교한다.
-      // (그새 지워졌으면 로컬에 없다 → 저장할 것도 없다.)
-      await new Promise<void>((r) => window.setTimeout(r, 0));
-      const latest = findLocalSticker(tempId);
-      if (latest && !stickerFieldsEqual(latest, fresh)) {
-        void commitStickerAt({ ...latest, id: realId }, latest.year, latest.month);
-      }
-    } else {
-      // 실패 → 로컬(선택·다중선택 포함)에서 걷어내고, 기다리던 commit들엔 '없음'을 알린다.
-      setStickers((prev) => prev.filter((s) => s.id !== tempId));
-      setSelectedSticker((cur) => (cur === tempId ? null : cur));
-      setMultiIds((prev) => (prev.includes(tempId) ? prev.filter((id) => id !== tempId) : prev));
-      pendingCommitRef.current.delete(tempId);
-      settle(null);
-      stickerPendingRef.current.delete(tempId);
-      setStickerError(result.error);
-    }
-  }
-
-  // id를 뺀 모든 저장 필드가 같은가(insert 중 로컬이 바뀌었는지 판정용).
-  function stickerFieldsEqual(a: StickerInstance, b: StickerInstance): boolean {
-    const ka = stickerToSaveInput(a, a.year, a.month, false);
-    const kb = stickerToSaveInput(b, b.year, b.month, false);
-    return (Object.keys(ka) as (keyof SaveStickerInput)[]).every((k) => ka[k] === kb[k]);
-  }
-
-  function nextZIndex() {
-    return stickersRef.current.reduce((max, s) => Math.max(max, s.zIndex), 0) + 1;
-  }
-
-  // ── C2: 실행취소/다시실행 ──────────────────────────────────────────
-  // 변형(추가·삭제·이동·크기·회전·대칭·순서·복제) 직전에 현재 상태를 스냅샷한다.
-  function snapshot(): StickerInstance[] {
-    return stickersRef.current.map((s) => ({ ...s }));
-  }
-  function pushHistory() {
-    // 새 변형은 redo 가지를 무효화한다(표준 undo/redo 동작).
-    commitStacks([...undoRef.current.slice(-49), snapshot()], []);
-  }
-  // 재삽입으로 새 id가 발급되면 로컬 상태·히스토리 스택의 옛 id를 모두 새 id로 바꾼다.
-  // 로컬 배열·선택·다중선택·되돌리기 스택·달 캐시·디바운스 대기열까지 전부 — 어디 하나라도 옛 id가
-  // 남으면 나중에 undo가 실제 행을 지우고 복제본을 다시 넣거나, 달을 옮겼다 오면 임시 좀비가 남는다.
-  function remapId(oldId: string, newId: string) {
-    stickerTempToRealRef.current.set(oldId, newId);
-    const swap = (arr: StickerInstance[]) =>
-      arr.map((s) => (s.id === oldId ? { ...s, id: newId } : s));
-    setStickers((prev) => swap(prev));
-    commitStacks(undoRef.current.map(swap), redoRef.current.map(swap));
-    setSelectedSticker((cur) => (cur === oldId ? newId : cur));
-    setMultiIds((prev) => (prev.includes(oldId) ? prev.map((id) => (id === oldId ? newId : id)) : prev));
-    for (const [key, arr] of monthStickerCacheRef.current) {
-      if (arr.some((s) => s.id === oldId)) {
-        monthStickerCacheRef.current.set(key, swap(arr));
-      }
-    }
-    const queued = pendingCommitRef.current.get(oldId);
-    if (queued) {
-      pendingCommitRef.current.delete(oldId);
-      pendingCommitRef.current.set(newId, { ...queued, id: newId });
-    }
-  }
-  // 스냅샷(target) 상태로 되돌리고, 그 차이를 서버에도 반영(삭제·재삽입·수정).
-  async function applySnapshot(rawTarget: StickerInstance[]) {
-    // 삭제된 커스텀 이모지를 가리키는 이미지 스티커는 되돌려도 재삽입할 수 없으므로(FK)
-    // 스냅샷에서 제외한다 — 죽은 에셋만 빠지고 나머지 되돌리기는 정상 동작한다.
-    const target = rawTarget.filter(isStickerAssetAlive);
-    const current = stickersRef.current;
-    setStickers(target);
-    clearSelection();
-    const targetIds = new Set(target.map((s) => s.id));
-    const curIds = new Set(current.map((s) => s.id));
-    // 1) target에 없는 현재 스티커 → 서버에서 삭제(배치 한 번). insert 진행 중(temp)이던 것도
-    //    실제 id가 나올 때까지 기다려 지운다 — 안 그러면 서버에 고아 행이 남아 새로고침 때 유령.
-    const toDelete = (
-      await Promise.all(
-        current.filter((s) => !targetIds.has(s.id)).map((s) => resolveStickerId(s.id))
-      )
-    ).filter((id): id is string => id !== null);
-    if (toDelete.length > 0) {
-      toDelete.forEach((id) => deletedStickerIdsRef.current.add(id));
-      if (deleteStickerBatchAction) {
-        const r = await deleteStickerBatchAction(toDelete);
-        if (!r.ok) setStickerError(r.error);
-      } else if (deleteStickerAction) {
-        for (const id of toDelete) await deleteStickerAction(id);
-      }
-    }
-    // 2) 현재에 없는 target 스티커 → 재삽입(새 id 발급 후 remap). 인덱스로 id를 되짚어야 해
-    //    안전하게 단건 호출을 유지한다(배치로 묶으면 remap 인덱스 어긋남 위험).
-    for (const s of target) {
-      if (!curIds.has(s.id) && saveStickerAction) {
-        const result = await saveStickerAction(stickerToSaveInput(s, s.year, s.month, false));
-        if (result.ok) {
-          remapId(s.id, result.id);
-        } else {
-          setStickerError(result.error);
-        }
-      }
-    }
-    // 3) 양쪽에 다 있는 스티커 → 값 저장(이동/크기 등 되돌림 반영). 배치 한 번으로.
-    //    temp id는 실제 id로 해석해 보낸다(insert 실패한 건 저장할 행이 없으니 제외).
-    const toUpdate = (
-      await Promise.all(
-        target
-          .filter((s) => curIds.has(s.id))
-          .map(async (s) => {
-            const realId = await resolveStickerId(s.id);
-            return realId ? { ...s, id: realId } : null;
-          })
-      )
-    ).filter((s): s is StickerInstance => s !== null);
-    if (toUpdate.length > 0 && saveStickerBatchAction) {
-      const r = await saveStickerBatchAction(
-        toUpdate.map((s) => stickerToSaveInput(s, view.year, view.month, true))
-      );
-      if (!r.ok) setStickerError(r.error);
-    } else {
-      for (const s of toUpdate) {
-        await commitSticker(s);
-      }
-    }
-  }
-  function undo() {
-    if (undoRef.current.length === 0) {
-      return;
-    }
-    const target = undoRef.current[undoRef.current.length - 1];
-    // 현재 상태를 redo 스택으로 올리고 undo 스택에서 하나 뺀다(ref가 진실, 동기 갱신).
-    commitStacks(undoRef.current.slice(0, -1), [...redoRef.current, snapshot()]);
-    void applySnapshot(target);
-  }
-  function redo() {
-    if (redoRef.current.length === 0) {
-      return;
-    }
-    const target = redoRef.current[redoRef.current.length - 1];
-    commitStacks([...undoRef.current, snapshot()], redoRef.current.slice(0, -1));
-    void applySnapshot(target);
-  }
-
-  // 복제: 선택한 스티커를 살짝 옮긴 위치에 똑같이 하나 더.
-  function duplicateSelected() {
-    const sources = selectedIds
-      .map((id) => stickersRef.current.find((x) => x.id === id))
-      .filter((s): s is StickerInstance => Boolean(s))
-      // 삭제된 커스텀 이모지를 가리키는 스티커는 복제해도 저장이 막히므로(FK) 제외.
-      .filter(isStickerAssetAlive);
-    if (sources.length === 0) {
-      return;
-    }
-    pushHistory();
-    let z = nextZIndex();
-    for (const s of sources) {
-      void persistNewSticker({
-        ...s,
-        id: `temp-${Math.random().toString(36).slice(2)}`,
-        xRatio: Math.min(1, s.xRatio + 0.03),
-        yRatio: Math.min(1, s.yRatio + 0.03),
-        zIndex: z++
-      });
-    }
-  }
-
-  // ── 스티커 월 간 복사/붙여넣기 ──
-  // 월 이동은 라우트 리로드라 메모리 클립보드가 사라진다 → localStorage에 담아 다른 월에서도 붙인다.
-  // 붙여넣을 때 좌표(xRatio/yRatio)를 그대로 둬, 복사한 그 자리에 그대로 붙는다(오프셋 없음).
-  const STICKER_CLIPBOARD_KEY = "vic:sticker-clipboard:v1";
-  function flashClipMsg(msg: string) {
-    setStickerClipMsg(msg);
-    if (stickerClipTimerRef.current) {
-      window.clearTimeout(stickerClipTimerRef.current);
-    }
-    stickerClipTimerRef.current = window.setTimeout(() => setStickerClipMsg(null), 1400);
-  }
-  function copySelected() {
-    const items = selectedIds
-      .map((id) => stickersRef.current.find((x) => x.id === id))
-      .filter((s): s is StickerInstance => Boolean(s))
-      .filter(isStickerAssetAlive)
-      // 전체를 그대로 저장 — 붙여넣을 때 id·year·month·zIndex만 새로 덮어쓴다(좌표는 보존).
-      .map((s) => ({ ...s }));
-    if (items.length === 0) {
-      return;
-    }
-    try {
-      window.localStorage.setItem(STICKER_CLIPBOARD_KEY, JSON.stringify(items));
-      flashClipMsg(`스티커 ${items.length}개 복사됨 — 다른 달에서 Ctrl+V`);
-    } catch {
-      /* 사생활 모드 등 localStorage 불가 — 조용히 무시 */
-    }
-  }
-  function pasteClipboard() {
-    let raw: string | null = null;
-    try {
-      raw = window.localStorage.getItem(STICKER_CLIPBOARD_KEY);
-    } catch {
-      return;
-    }
-    if (!raw) {
-      return;
-    }
-    let items: StickerInstance[];
-    try {
-      items = JSON.parse(raw);
-    } catch {
-      return;
-    }
-    if (!Array.isArray(items) || items.length === 0) {
-      return;
-    }
-    pushHistory();
-    let z = nextZIndex();
-    for (const it of items) {
-      // 다른 달에 붙이면 '복사한 그 자리' 그대로. 같은 달이면 원본과 겹쳐 구분이 안 되니 살짝 오프셋.
-      const sameMonth = it.year === view.year && it.month === view.month;
-      const off = sameMonth ? 0.03 : 0;
-      void persistNewSticker({
-        ...it,
-        id: `temp-${Math.random().toString(36).slice(2)}`,
-        year: view.year,
-        month: view.month,
-        xRatio: Math.min(1, it.xRatio + off),
-        yRatio: Math.min(1, it.yRatio + off),
-        zIndex: z++
-      });
-    }
-    flashClipMsg(`스티커 ${items.length}개 붙여넣음`);
-  }
-
-  // 레이어 순서: 맨 앞 / 맨 뒤로 보내기.
-  function reorderSelected(toFront: boolean) {
-    const s = stickersRef.current.find((x) => x.id === selectedSticker);
-    if (!s) {
-      return;
-    }
-    pushHistory();
-    const zs = stickersRef.current.map((x) => x.zIndex);
-    const updated = {
-      ...s,
-      zIndex: toFront ? Math.max(0, ...zs) + 1 : Math.min(0, ...zs) - 1
-    };
-    updateStickerLocal(updated);
-    void commitSticker(updated);
-  }
-
-  // 디바운스 저장: 스티커별로 마지막 값을 누적하고(canon id 키), 타이머 하나가 전부 보낸다.
-  function scheduleCommit(stickersToSave: StickerInstance | StickerInstance[]) {
-    const list = Array.isArray(stickersToSave) ? stickersToSave : [stickersToSave];
-    for (const s of list) {
-      const canon = canonStickerId(s.id);
-      pendingCommitRef.current.set(canon, s.id === canon ? s : { ...s, id: canon });
-    }
-    if (commitTimerRef.current) {
-      clearTimeout(commitTimerRef.current);
-    }
-    commitTimerRef.current = setTimeout(() => flushPendingCommits(), 350);
-  }
-  // 대기열을 지금 비운다(타이머 만료·달 이동·언마운트). year/month를 주면 그 달로 저장(떠나는 달).
-  function flushPendingCommits(year = view.year, month = view.month) {
-    if (commitTimerRef.current) {
-      clearTimeout(commitTimerRef.current);
-      commitTimerRef.current = null;
-    }
-    const batch = [...pendingCommitRef.current.values()];
-    pendingCommitRef.current.clear();
-    for (const s of batch) {
-      void commitStickerAt(s, year, month);
-    }
-  }
-
-  // 키보드 미세 이동(저장은 디바운스). 다중 선택 시 선택 전체를 함께 옮긴다.
-  function nudgeSelected(dx: number, dy: number) {
-    const ids = selectedIds;
-    if (ids.length === 0) {
-      return;
-    }
-    // 연속된 방향키 입력은 하나의 실행취소 단위로 묶는다(0.5초 간격 기준).
-    const now = Date.now();
-    if (now - nudgeBurstRef.current > 500) {
-      pushHistory();
-    }
-    nudgeBurstRef.current = now;
-    const updatedList: StickerInstance[] = [];
-    for (const id of ids) {
-      const s = stickersRef.current.find((x) => x.id === id);
-      if (!s) {
-        continue;
-      }
-      const updated = {
-        ...s,
-        xRatio: Math.min(1, Math.max(0, s.xRatio + dx)),
-        yRatio: Math.min(1, Math.max(0, s.yRatio + dy))
-      };
-      updateStickerLocal(updated);
-      updatedList.push(updated);
-    }
-    scheduleCommit(updatedList);
-  }
-
-  // P2-STICKER-1: 키보드 크기(+/-)·회전([/]) — 화살표 미세이동과 같은 패턴(연속 입력은 하나의
-  // 실행취소 단위, 낙관 반영 + 지연 커밋). 포인터 핸들과 같은 한계값(widthRatio 0.008~0.6).
-  function adjustSelected(patch: (s: StickerInstance) => Partial<StickerInstance>) {
-    const ids = selectedIds;
-    if (ids.length === 0) return;
-    const now = Date.now();
-    if (now - nudgeBurstRef.current > 500) {
-      pushHistory();
-    }
-    nudgeBurstRef.current = now;
-    const updatedList: StickerInstance[] = [];
-    for (const id of ids) {
-      const s = stickersRef.current.find((x) => x.id === id);
-      if (!s || s.locked) continue;
-      const updated = { ...s, ...patch(s) };
-      updateStickerLocal(updated);
-      updatedList.push(updated);
-    }
-    scheduleCommit(updatedList);
-  }
-  function resizeSelectedBy(factor: number) {
-    adjustSelected((s) => ({
-      widthRatio: Math.min(0.6, Math.max(0.008, s.widthRatio * factor))
-    }));
-  }
-  function rotateSelectedBy(deltaDeg: number) {
-    adjustSelected((s) => ({ rotationDeg: Math.round(s.rotationDeg + deltaDeg) }));
-  }
+  }, [showAgenda, view.year, view.month]);
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: PublicScheduleEvent) {
@@ -3831,9 +2104,7 @@ export function PublicPoster({
     // 월은 화면 구분 없이 하나(sy/sm)로 통일한다 — 시청자에서 본 달이 계정 전환 후 편집실로도
     // 이어진다("마지막 본 달"). 꾸미기는 편집 맥락이 달라 별도 키(dy/dm)를 유지. 편집실 미리보기는
     // accountSwitch=false라 여기서 안 쓰고, onViewChange로 편집실 쿠키(sy/sm)가 처리한다.
-    if (decorateProp) {
-      writeViewCookie({ dy: next.year, dm: next.month });
-    } else if (accountSwitch) {
+    if (accountSwitch) {
       writeViewCookie({ sy: next.year, sm: next.month });
     }
   }
@@ -4927,10 +3198,9 @@ export function PublicPoster({
   // 글자(칸 내용)만 커지고 표면은 세로로 자란다(배율은 폭 기준이라 그대로 = 진짜 확대).
   const [posterZoom, setPosterZoom] = useState(1);
   const posterCalRef = useRef<HTMLElement | null>(null);
-  const posterMainRef = useRef<HTMLElement | null>(null); // 스티커 기준 probe가 scene 클래스 원복에 사용
   const posterZoomStepperRef = useRef(createWheelStepper());
   useEffect(() => {
-    if (showAgenda || decorate) return;
+    if (showAgenda) return;
     const el = posterCalRef.current;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
@@ -4947,357 +3217,7 @@ export function PublicPoster({
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
-  }, [showAgenda, decorate]);
-
-  // 스티커 좌표 보정(해법 1 최종형, 2026-08-01) — 저장 좌표의 기준은 '기본 지오메트리'
-  // (아바타 OFF·확대 100%)의 표면 비율. scene/확대에서 달력 그리드가 움직이면 기준(canon)↔
-  // 현재(live) 지오메트리를 실측해 구간별 매핑으로 보정한다(저장 시 역매핑, DB 불변).
-  // - x: 열(요일) 경계 8개 실측 → 칸 구간별 선형(칸 안 내용은 stretch라 비례가 정답).
-  // - y: 행마다 [행 top → 콘텐츠 하단 → 행 bottom] 두 구간 앵커 — 카드는 행 top부터 쌓이므로
-  //   카드 옆 스티커는 콘텐츠 구간을, 빈 아래 공간의 스티커는 슬랙 구간을 따라간다.
-  //   (전행 비례·px×글자배율 모델은 6모드 fixture 실측에서 각각 아래로 드리프트 — 폐기.)
-  // - 아바타 기본 ON 등으로 기준을 잴 기회가 없어도 probe가 한 프레임 안에서 scene 클래스·
-  //   --cal-zoom을 잠깐 원복해 기준을 실측한다(트랜지션 off + 동기 블록 = paint 전이라 안 보임).
-  type StickerFrame = {
-    x: number;
-    y: number;
-    w: number;
-    h: number;
-    cols: number[]; // 열(요일) 경계 x — 8개(칸 판별용)
-    xs: number[]; // x 매핑 앵커 — 열마다 [칸L, 카드L, 카드R] + 마지막 칸R(카드 좌우변 고정)
-    rowTops: number[]; // 행(주) 경계 y — n+1개
-    cells: number[][]; // 칸별 y 앵커(칸 top·날짜줄·각 카드 상/하단·칸 bottom, DOM 순서 고정)
-  };
-  const sceneOn = avatarCapable && avatarOn;
-  const sceneOnRef = useRef(sceneOn);
-  sceneOnRef.current = sceneOn;
-  const posterZoomRef = useRef(posterZoom);
-  posterZoomRef.current = posterZoom;
-  const [stickerFrames, setStickerFrames] = useState<{
-    canon: StickerFrame | null;
-    live: StickerFrame | null;
-  }>({ canon: null, live: null });
-  const stickerCanonRef = useRef<StickerFrame | null>(null);
-  stickerCanonRef.current = stickerFrames.canon;
-  // 현재 DOM에서 프레임 실측 — 표면·그리드가 같은 transform scale 안이라 비율은 배율 무관 정확.
-  const readStickerFrame = useCallback((): StickerFrame | null => {
-    const s = stickerSurfaceElRef.current;
-    const g = stickerGridElRef.current;
-    if (!s || !g) return null;
-    const sr = s.getBoundingClientRect();
-    const gr = g.getBoundingClientRect();
-    if (sr.width < 1 || sr.height < 1 || gr.width < 1 || gr.height < 1) return null;
-    const cellEls = Array.from(g.querySelectorAll<HTMLElement>(".public-day"));
-    if (cellEls.length < 7) return null;
-    const cols: number[] = [];
-    for (let i = 0; i < 7; i++) {
-      cols.push((cellEls[i].getBoundingClientRect().left - sr.left) / sr.width);
-    }
-    cols.push((cellEls[6].getBoundingClientRect().right - sr.left) / sr.width);
-    // 칸 안 카드의 좌우 여백(px 상수) — 순수 비례 매핑은 이 상수까지 비례로 늘려 카드
-    // 우변에 붙인 스티커가 ~1px대로 밀렸다. 아무 카드 하나에서 실측해 열마다
-    // [칸L, 카드L, 카드R, 칸R] 4앵커를 깐다(카드 좌우변이 앵커 = 정확히 고정).
-    let padL = 0;
-    let padR = 0;
-    const anyCard = g.querySelector(".public-event");
-    if (anyCard) {
-      const cardRect = anyCard.getBoundingClientRect();
-      const hostCell = anyCard.closest(".public-day");
-      if (hostCell) {
-        const hostRect = hostCell.getBoundingClientRect();
-        padL = Math.max(0, cardRect.left - hostRect.left) / sr.width;
-        padR = Math.max(0, hostRect.right - cardRect.right) / sr.width;
-      }
-    }
-    const xs: number[] = [];
-    for (let k = 0; k < 7; k++) {
-      const L = cols[k];
-      const R = cols[k + 1];
-      xs.push(L);
-      if (padL + padR > 0 && L + padL < R - padR) {
-        xs.push(L + padL, R - padR);
-      }
-      // (여백 실측 실패 시 열 경계만 — 이전과 동일한 폴백)
-    }
-    xs.push(cols[7]);
-    const rowTops: number[] = [];
-    for (let i = 0; i < cellEls.length; i += 7) {
-      rowTops.push((cellEls[i].getBoundingClientRect().top - sr.top) / sr.height);
-    }
-    rowTops.push(
-      (cellEls[cellEls.length - 1].getBoundingClientRect().bottom - sr.top) / sr.height
-    );
-    // 칸별 y 앵커: [칸 top, 날짜줄 bottom, 카드1 top, 카드1 bottom, …, 칸 bottom].
-    // DOM 순서 고정이라 기준/현재 프레임의 앵커가 1:1로 짝지어진다(정렬 금지 — 짝이 깨진다).
-    // 카드 상·하단이 앵커라 카드 '옆'에 붙인 스티커는 그 카드 모서리를 정확히 따라간다.
-    const cells: number[][] = cellEls.map((cell) => {
-      const r = cell.getBoundingClientRect();
-      const top = (r.top - sr.top) / sr.height;
-      const bottom = (r.bottom - sr.top) / sr.height;
-      const list = [top];
-      const push = (px: number) => {
-        const v = (px - sr.top) / sr.height;
-        list.push(Math.min(Math.max(v, list[list.length - 1]), bottom));
-      };
-      const strip = cell.querySelector(".day-strip");
-      if (strip) push(strip.getBoundingClientRect().bottom);
-      cell.querySelectorAll(".public-event, .day-wc-match").forEach((el) => {
-        const er = el.getBoundingClientRect();
-        push(er.top);
-        push(er.bottom);
-      });
-      list.push(bottom);
-      return list;
-    });
-    return {
-      x: (gr.left - sr.left) / sr.width,
-      y: (gr.top - sr.top) / sr.height,
-      w: gr.width / sr.width,
-      h: gr.height / sr.height,
-      cols,
-      xs,
-      rowTops,
-      cells
-    };
-  }, []);
-  // 기준 지오메트리 probe — scene 클래스/--cal-zoom을 트랜지션 없이 잠깐 원복해 실측 후 복구.
-  // 전 과정이 동기라 브라우저가 그 사이를 paint하지 않는다(깜빡임 없음).
-  const probeCanonFrame = useCallback((): StickerFrame | null => {
-    const main = posterMainRef.current;
-    if (!main) return null;
-    // 표면 등장(pop-intro)·월 슬라이드(data-enter) 애니 중엔 rect가 이동 중이라 기준이
-    // 오염된다(로드 타이밍 따라 스티커가 엉뚱한 칸에 붙던 레이스). 애니가 끝난 뒤에만 잰다
-    // — 실패 시 measure 쪽에서 재시도한다. (표면/달력 영역 '자신'의 애니만 검사 — 불꽃 등
-    // 자손의 무한 장식 애니는 지오메트리와 무관하므로 무시.)
-    const surf = stickerSurfaceElRef.current;
-    const calArea = surf?.querySelector(".public-calendar-area");
-    const animating = [surf, calArea].some(
-      (el) =>
-        el &&
-        typeof el.getAnimations === "function" &&
-        el.getAnimations().some((a) => a.playState === "running")
-    );
-    if (animating) return null;
-    const cal = posterCalRef.current;
-    // scene 클래스는 건드리지 않는다(2026-08-27). 예전엔 avatar-scene/left/right를 뗐다 붙였는데,
-    // 그 한 프레임에 아바타 슬롯이 display:none↔flex, 세로 레일·정보 카드의 등장 애니 셀렉터가
-    // 끊겼다 이어져 월 이동(canon 리셋→probe)마다 opacity 0에서 다시 떠오르며 깜빡였다.
-    // 기준 지오메트리에 필요한 건 표면 '안' 배치(레일 컬럼·패딩)뿐 — .sticker-geom-probe가
-    // CSS로 그것만 기본값으로 되돌린다(스테이지 마진·배율은 비율 좌표와 무관).
-    main.classList.add("sticker-geom-probe");
-    const prevZoom = cal?.style.getPropertyValue("--cal-zoom") ?? "";
-    cal?.style.setProperty("--cal-zoom", "1");
-    const frame = readStickerFrame();
-    if (cal) {
-      if (prevZoom) cal.style.setProperty("--cal-zoom", prevZoom);
-      else cal.style.removeProperty("--cal-zoom");
-    }
-    // ⚠ probe 클래스를 떼기 '전에' 강제 reflow — 트랜지션이 꺼진 채 원상태를 확정해, 떼는
-    // 순간 기본↔scene 재전환 애니가 새로 시작되는 것을 막는다(토글 직후 일시 틀어짐 원인).
-    void main.offsetWidth;
-    main.classList.remove("sticker-geom-probe");
-    return frame;
-  }, [readStickerFrame]);
-  const measureRetryRef = useRef<() => void>(() => {});
-  const measureStickerFrames = useCallback(() => {
-    const next = readStickerFrame();
-    if (!next) return;
-    // 기준(canon)은 언제나 probe로 얻는다 — '기본 상태로 보이는 순간'의 live를 기준 삼으면
-    // 전환 애니 중간 지오메트리가 기준을 오염시킨다(토글 직후 크게 틀어지던 레이스의 원인).
-    const probed = !stickerCanonRef.current ? probeCanonFrame() : null;
-    // 등장/월 슬라이드 애니 때문에 기준을 못 쟀으면 잠시 뒤 재시도(애니 종료는 RO를 안 울린다).
-    if (!stickerCanonRef.current && !probed) {
-      window.setTimeout(() => measureRetryRef.current(), 450);
-    }
-    setStickerFrames((prev) => {
-      const sameArr = (a: number[], b: number[]) =>
-        a.length === b.length && a.every((v, i) => Math.abs(v - b[i]) < 1e-4);
-      const same = (a: StickerFrame | null, b: StickerFrame) =>
-        !!a &&
-        Math.abs(a.x - b.x) < 1e-4 &&
-        Math.abs(a.y - b.y) < 1e-4 &&
-        Math.abs(a.w - b.w) < 1e-4 &&
-        Math.abs(a.h - b.h) < 1e-4 &&
-        sameArr(a.cols, b.cols) &&
-        sameArr(a.xs, b.xs) &&
-        sameArr(a.rowTops, b.rowTops) &&
-        a.cells.length === b.cells.length &&
-        a.cells.every((c, i) => sameArr(c, b.cells[i]));
-      const live = same(prev.live, next) ? prev.live : next;
-      const canonNext = probed ?? prev.canon;
-      const canon = canonNext && same(prev.canon, canonNext) ? prev.canon : canonNext;
-      return live === prev.live && canon === prev.canon ? prev : { canon, live };
-    });
-  }, [readStickerFrame, probeCanonFrame]);
-  measureRetryRef.current = measureStickerFrames;
-  // 월이 바뀌면 그리드 내용이 달라 기준도 무효 — 다음 실측에서 다시 probe한다.
-  useEffect(() => {
-    setStickerFrames({ canon: null, live: null });
-  }, [view.year, view.month]);
-  useEffect(() => {
-    if (showAgenda) return;
-    measureStickerFrames();
-    const ro = new ResizeObserver(() => measureStickerFrames());
-    if (stickerSurfaceElRef.current) ro.observe(stickerSurfaceElRef.current);
-    if (stickerGridElRef.current) ro.observe(stickerGridElRef.current);
-    return () => ro.disconnect();
-    // view = 월 전환 시 그리드가 remount되므로 새 엘리먼트를 다시 관찰한다.
-  }, [showAgenda, view.year, view.month, sceneOn, posterZoom, measureStickerFrames]);
-  // 콜드 스타트 폴백(기준 실측 전) — 예전 상수 x 보정만이라도.
-  // ⚠ 252(레일 폭)·16(컬럼 gap)은 .poster-surface grid-template-columns와 함께 움직인다.
-  const FALLBACK_K = POSTER_DESIGN_W / (POSTER_DESIGN_W - 252 - 16);
-  const stickerMap = useMemo(() => {
-    const { canon, live } = stickerFrames;
-    if (!canon || !live) {
-      // probe까지 실패한 극단 폴백 — scene x 상수 보정만이라도.
-      return sceneOn
-        ? {
-            to: (s: StickerInstance) => ({
-              ...s,
-              xRatio: Math.min(1, s.xRatio * FALLBACK_K)
-            }),
-            from: (s: StickerInstance) => ({ ...s, xRatio: s.xRatio / FALLBACK_K })
-          }
-        : null;
-    }
-    const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-    // 앵커 배열(canon A ↔ live B) 사이 구간별 선형 매핑 — 경계 밖은 전체 span 비율로 외삽.
-    // x 앵커 = 열 경계 8개(칸 안 내용은 stretch라 칸 안 비례가 정답). y 앵커 = 스티커가 앉은
-    // '그 칸'의 [칸 top·날짜줄·각 카드 상/하단·칸 bottom] — 카드 모서리가 앵커라 카드 옆
-    // 스티커는 어느 모드에서든 그 카드 모서리에 붙는다. 칸을 못 찾으면 행 경계 매핑으로 폴백.
-    // 프레임이 같으면(기본 상태) 자연히 항등 — 전환 애니 중에도 live가 프레임 단위로 따라온다.
-    const okX = canon.xs.length >= 2 && canon.xs.length === live.xs.length;
-    const okCols = canon.cols.length >= 2 && canon.cols.length === live.cols.length;
-    const okRows = canon.rowTops.length >= 2 && canon.rowTops.length === live.rowTops.length;
-    const mapPiece = (v: number, A: number[], B: number[], aSpan: number, bSpan: number) => {
-      const n = A.length;
-      const scale = aSpan > 0 ? bSpan / aSpan : 1;
-      if (v <= A[0]) return B[0] + (v - A[0]) * scale;
-      if (v >= A[n - 1]) return B[n - 1] + (v - A[n - 1]) * scale;
-      for (let k = 0; k < n - 1; k++) {
-        if (v <= A[k + 1]) {
-          const w = A[k + 1] - A[k];
-          const t = w > 0 ? (v - A[k]) / w : 0;
-          return B[k] + t * (B[k + 1] - B[k]);
-        }
-      }
-      return B[n - 1];
-    };
-    // (x,y)가 프레임 f에서 어느 칸(index)에 있는지 — 그리드 밖이면 -1.
-    const cellIndexAt = (f: StickerFrame, x: number, y: number) => {
-      if (!okRows) return -1;
-      if (x < f.cols[0] || x > f.cols[f.cols.length - 1]) return -1;
-      if (y < f.rowTops[0] || y > f.rowTops[f.rowTops.length - 1]) return -1;
-      let col = 6;
-      for (let k = 0; k < 7; k++) {
-        if (x <= f.cols[k + 1]) {
-          col = k;
-          break;
-        }
-      }
-      let row = f.rowTops.length - 2;
-      for (let k = 0; k < f.rowTops.length - 1; k++) {
-        if (y <= f.rowTops[k + 1]) {
-          row = k;
-          break;
-        }
-      }
-      const idx = row * 7 + col;
-      return idx < f.cells.length ? idx : -1;
-    };
-    const toX = (x: number) =>
-      okX
-        ? mapPiece(x, canon.xs, live.xs, canon.w, live.w)
-        : okCols
-          ? mapPiece(x, canon.cols, live.cols, canon.w, live.w)
-          : live.x + ((x - canon.x) * live.w) / canon.w;
-    const fromX = (x: number) =>
-      okX
-        ? mapPiece(x, live.xs, canon.xs, live.w, canon.w)
-        : okCols
-          ? mapPiece(x, live.cols, canon.cols, live.w, canon.w)
-          : canon.x + ((x - live.x) * canon.w) / live.w;
-    const toY = (x: number, y: number) => {
-      const ci = cellIndexAt(canon, x, y);
-      if (ci >= 0 && ci < live.cells.length) {
-        const A = canon.cells[ci];
-        const B = live.cells[ci];
-        if (A.length === B.length && A.length >= 2) {
-          return mapPiece(y, A, B, canon.h, live.h);
-        }
-      }
-      return okRows
-        ? mapPiece(y, canon.rowTops, live.rowTops, canon.h, live.h)
-        : live.y + ((y - canon.y) * live.h) / canon.h;
-    };
-    const fromY = (x: number, y: number) => {
-      const ci = cellIndexAt(live, x, y);
-      if (ci >= 0 && ci < canon.cells.length) {
-        const A = live.cells[ci];
-        const B = canon.cells[ci];
-        if (A.length === B.length && A.length >= 2) {
-          return mapPiece(y, A, B, live.h, canon.h);
-        }
-      }
-      return okRows
-        ? mapPiece(y, live.rowTops, canon.rowTops, live.h, canon.h)
-        : canon.y + ((y - live.y) * canon.h) / live.h;
-    };
-    return {
-      to: (s: StickerInstance) => ({
-        ...s,
-        xRatio: clamp01(toX(s.xRatio)),
-        yRatio: clamp01(toY(s.xRatio, s.yRatio))
-      }),
-      from: (s: StickerInstance) => ({
-        ...s,
-        xRatio: fromX(s.xRatio),
-        yRatio: fromY(s.xRatio, s.yRatio)
-      })
-    };
-  }, [sceneOn, stickerFrames, FALLBACK_K]);
-  // dev 전용: fixture 실측 스크립트가 내부 매핑 상태를 검사할 수 있게 창에 노출(프로덕션 제외).
-  useEffect(() => {
-    if (process.env.NODE_ENV === "production") return;
-    (window as unknown as { __stickerMapDebug?: unknown }).__stickerMapDebug = {
-      sceneOn,
-      posterZoom,
-      frames: stickerFrames,
-      map: stickerMap, // to/from 함수 — fixture 실측 스크립트가 가상 좌표를 검증할 때 사용
-      mapped: stickerMap
-        ? stickers.map((s) => ({ id: s.id, to: stickerMap.to(s) }))
-        : null
-    };
-  });
-  const sceneStickers = useMemo(
-    () => (stickerMap ? stickers.map(stickerMap.to) : stickers),
-    [stickers, stickerMap]
-  );
-  const unmapSceneSticker = useCallback(
-    (s: StickerInstance): StickerInstance => (stickerMap ? stickerMap.from(s) : s),
-    [stickerMap]
-  );
-
-  // 꾸미기 단축키 안내 접기/펴기 — 선택은 로컬에 기억(방송 준비 중 화면 정리용).
-  const [shortcutOpen, setShortcutOpen] = useState(true);
-  useEffect(() => {
-    try {
-      if (window.localStorage.getItem("vic_shortcut_help_open") === "0") setShortcutOpen(false);
-    } catch {
-      /* localStorage 접근 불가 환경 무시 */
-    }
-  }, []);
-  function toggleShortcutHelp() {
-    hapticTick();
-    setShortcutOpen((v) => {
-      try {
-        window.localStorage.setItem("vic_shortcut_help_open", v ? "0" : "1");
-      } catch {
-        /* 무시 */
-      }
-      return !v;
-    });
-  }
+  }, [showAgenda]);
 
   // 레일 정보 카드(연·월 · 데뷔 D+ · 오늘) — 평소엔 표면 안 오른쪽 레일에, 아바타 scene에선
   // 아바타 자리 좌상단으로 옮겨 뜬다. 한 JSX를 두 자리에서 재사용해 마크업이 안 어긋나게 한다.
@@ -5373,7 +3293,6 @@ export function PublicPoster({
               aria-pressed={on}
               className={cls}
               data-act="legend-item"
-              disabled={decorate}
               key={tag.id}
               onClick={() => toggleTagFilter(tag.id)}
               type="button"
@@ -5459,25 +3378,16 @@ export function PublicPoster({
   return (
     <main
       className={`poster-page${accountSwitch ? " poster-readonly" : ""}${
-        decorate ? " is-decorate" : ""
-      }${
         avatarCapable && avatarOn ? ` avatar-scene avatar-${avatarSide}` : ""
       }${
         // 태그 필터 중엔 꾸미기 스티커도 함께 물러난다(일정 카드와 같은 흐림) — 꾸미기
         // 편집(decorate) 중엔 제외. 캡쳐 PNG는 필터 없는 서버 렌더라 영향 없음.
-        !decorate && (tagFilters.length > 0 || bookmarkedOnly) ? " tag-filtering" : ""
+        tagFilters.length > 0 || bookmarkedOnly ? " tag-filtering" : ""
       }`}
       data-poster-theme={effectivePosterTheme}
-      ref={posterMainRef}
     >
       {/* (라이브 카드는 우측 레일 안 — 정보 카드와 태그 필터 사이 — 로 이사(2026-07-31).
           모바일 아젠다는 하단 '오늘'→LIVE 버튼이 담당해 별도 플로팅 없음.) */}
-      {/* 스티커 월 간 복사/붙여넣기 안내 토스트 */}
-      {decorate && stickerClipMsg ? (
-        <div className="sticker-clip-toast" role="status" aria-live="polite">
-          {stickerClipMsg}
-        </div>
-      ) : null}
       {/* 하트 승급 순간 — 화면 밖(fixed)이라 캡쳐 PNG엔 안 들어간다. */}
       {heartToast ? (
         <div className="heart-toast" role="status" aria-live="polite">
@@ -5888,7 +3798,7 @@ export function PublicPoster({
           두면 켜고 끌 때 shell 폭이 전체폭↔가운데로 바뀌며 좌우로 흔들려 버튼이 따라 움직였다.
           viewport 고정(fixed)은 스크롤을 따라 내려와 달력을 가려서 뺐다 — 페이지와 함께 스크롤된다.
           켜짐엔 끄기+위치(왼/오른쪽), 꺼짐엔 켜기. 데스크탑·관리자 전용. */}
-      {avatarCapable && !avatarFixed && !showAgenda && !decorate ? (
+      {avatarCapable && !avatarFixed && !showAgenda ? (
         <div className="avatar-ctl avatar-ctl-preview" role="group" aria-label="아바타 자리 설정(관리자 전용)">
           <button
             type="button"
@@ -6065,16 +3975,6 @@ export function PublicPoster({
               {/* 달력 꾸미기 꺼짐 상태 켜기 토글만 헤더에 둔다. 시청자 미리보기는 켜짐/꺼짐 모두 좌상단
                   고정 오버레이(.avatar-ctl-preview)로 뺀다 — 헤더는 shell 폭이 토글마다 바뀌며 좌우로
                   흔들려 버튼이 따라 움직였다(fixed면 안 흔들림). */}
-              {avatarCapable && !avatarOn && decorate ? (
-                <button
-                  type="button"
-                  className="avatar-ctl-toggle avatar-ctl-inheader"
-                  aria-pressed={false}
-                  onClick={toggleAvatarOn}
-                 data-act="avatar-ctl-toggle">
-                  🎙️ 아바타 자리 켜기
-                </button>
-              ) : null}
             </div>
 
             {/* 월 이동은 시청자·꾸미기 모두 하단 플로팅 < > 바로 통일(달력 보며 넘기기 편하게).
@@ -6128,44 +4028,6 @@ export function PublicPoster({
 
             {/* 편집실로 돌아가기 + 시청자 화면 보기(미리보기 토글)는 우측 상단(계정변경 옆)에 둔다. */}
             <div className="viewer-actions">
-              {decorateProp ? (
-                <>
-                  <Link
-                    className="button"
-                    data-act="back-to-studio"
-                    href="/studio"
-                    onClick={() => {
-                      // 꾸미기에서 보던 달을 편집실 월(sy/sm)로 넘기고, 시청자 미리보기 플래그(v)는 꺼서
-                      // /studio가 미리보기가 아니라 '실제 편집실'로 열리게 한다(이전에 켠 v:1이 남아 있었음).
-                      writeViewCookie({ sy: view.year, sm: view.month, v: 0 });
-                    }}
-                  >
-                    <ChevronLeft aria-hidden="true" size={16} />
-                    편집실로 가기
-                  </Link>
-                  {previewing ? (
-                    <button
-                      className="button"
-                      data-act="back-to-decorate"
-                      onClick={() => setPreviewing(false)}
-                      type="button"
-                    >
-                      <Sparkles aria-hidden="true" size={16} />
-                      꾸미기로 가기
-                    </button>
-                  ) : (
-                    <button
-                      className="button"
-                      data-act="decorate-preview"
-                      onClick={() => setPreviewing(true)}
-                      type="button"
-                    >
-                      <Eye aria-hidden="true" size={16} />
-                      시청자 화면 미리보기
-                    </button>
-                  )}
-                </>
-              ) : null}
               {accountSwitch ? (
                 // 웹 헤더는 데스크톱 전용(public-calendar-header) — 웹뷰가 없으니 익명 로그인은
                 // /api/auth/login으로 바로 OAuth를 시작한다(/login 디투어·Chrome 유도 불필요).
@@ -6188,607 +4050,6 @@ export function PublicPoster({
         )}
 
         {showAgenda ? renderAgenda() : null}
-
-        {decorate ? (
-          <div className="decorate-toolbar" aria-label="꾸미기 도구">
-            <div className="decorate-history" role="group" aria-label="실행취소/다시실행">
-              <button
-                className="button icon-only"
-                disabled={undoStack.length === 0}
-                onClick={undo}
-                title="실행취소 (Ctrl+Z)"
-                type="button"
-               data-act="실행 취소">
-                <Undo2 aria-hidden="true" size={15} />
-              </button>
-              <button
-                className="button icon-only"
-                disabled={redoStack.length === 0}
-                onClick={redo}
-                title="다시실행 (Ctrl+Y)"
-                type="button"
-               data-act="다시실행 (Ctrl+Y)">
-                <Redo2 aria-hidden="true" size={15} />
-              </button>
-
-              {/* C9/C10: 포스터 테마 — 소유자만(액션이 있을 때만) 노출 */}
-              {setPosterThemeAction ? (
-                <ThemeSwitch posterTheme={posterTheme} onChange={(t) => void changeTheme(t)} />
-              ) : null}
-            </div>
-
-            <DecoratePalette
-              activeEmojis={activeEmojis}
-              assets={assets}
-              assetTab={assetTab}
-              canDeleteAssets={Boolean(deleteStickerAssetAction)}
-              canManageAssets={Boolean(uploadStickerAssetAction)}
-              canUpload={Boolean(uploadStickerAssetAction)}
-              categories={EMOJI_CATEGORIES}
-              dragOver={dragOver}
-              emojiCat={emojiCat}
-              fileInputRef={fileInputRef}
-              onAddEmoji={(e) => void addEmoji(e)}
-              onAddImageSticker={(a) => void addImageSticker(a)}
-              onAddShape={(k) => void addShape(k)}
-              onAssetTab={setAssetTab}
-              onDragOver={setDragOver}
-              onEmojiCat={setEmojiCat}
-              onRemoveAsset={(id) => void removeAsset(id)}
-              onReorderAssets={(ids) => void reorderAssets(ids)}
-              onSetAssetKind={(id, kind) => void setAssetKind(id, kind)}
-              onUploadFiles={(files) => void handleUploadFiles(files)}
-              pendingAssetIds={pendingAssetIds}
-              uploading={uploading}
-            />
-
-            {anchorId && mounted ? (
-              createPortal(
-                <div
-                  className="sticker-toolbar-float"
-                  ref={floatRef}
-                  style={floatStyle ?? { position: "fixed", top: -9999, left: -9999 }}
-                >
-                  <div className="stf-head">
-                    <span className="stf-title">
-                      {selectedIds.length > 1
-                        ? `${selectedIds.length}개 선택`
-                        : selected?.kind === "text"
-                          ? "텍스트"
-                          : "스티커"}
-                    </span>
-                    <button
-                      className="stf-collapse"
-                      onClick={() => setToolbarCollapsed((v) => !v)}
-                      title={toolbarCollapsed ? "펼치기" : "접기 (옮기거나 크기 조절할 때)"}
-                      type="button"
-                     data-act="stf-collapse">
-                      {toolbarCollapsed ? (
-                        <ChevronDown aria-hidden="true" size={15} />
-                      ) : (
-                        <ChevronUp aria-hidden="true" size={15} />
-                      )}
-                    </button>
-                  </div>
-
-                  {toolbarCollapsed ? null : selectedIds.length > 1 ? (
-                    <div className="stf-body stf-row">
-                      <button
-                        className="stf-btn"
-                        onClick={duplicateSelected}
-                        data-act="sticker-duplicate-all"
-                        title="모두 복제 (Ctrl+D)"
-                        type="button"
-                      >
-                        <Copy aria-hidden="true" size={15} />
-                      </button>
-                      <button
-                        className="stf-btn danger"
-                        onClick={deleteSelected}
-                        data-act="sticker-delete-all"
-                        title="모두 삭제 (Delete)"
-                        type="button"
-                      >
-                        <Trash2 aria-hidden="true" size={15} />
-                      </button>
-                    </div>
-                  ) : selected && selected.kind === "text" ? (
-                    <div className="stf-body">
-                      <div className="stf-text-top">
-                        <textarea
-                          aria-label="텍스트 내용"
-                          className="stf-textarea"
-                          maxLength={200}
-                          onBlur={() => commitSticker(selected)}
-                          onChange={(event) => changeText(event.target.value)}
-                          onFocus={() => pushHistory()}
-                          rows={2}
-                          value={selected.label}
-                        />
-                        <label className="stf-color" title="글자색">
-                          <input
-                            onChange={(event) => changeTextColor(event.target.value)}
-                            type="color"
-                            value={selected.textColor ?? "#1f2937"}
-                          />
-                        </label>
-                      </div>
-                      <div className="stf-row">
-                        <select
-                          aria-label="글꼴"
-                          className="stf-select"
-                          onChange={(event) => {
-                            pushHistory();
-                            patchSelected({ fontFamily: event.target.value });
-                          }}
-                          value={selected.fontFamily ?? "sans"}
-                        >
-                          {TEXT_FONTS.map((f) => (
-                            <option key={f.key} style={{ fontFamily: TEXT_FONT_STACK[f.key] }} value={f.key}>
-                              {f.label}
-                            </option>
-                          ))}
-                        </select>
-                        <div className="stf-group" role="group" aria-label="굵기">
-                          {TEXT_WEIGHTS.map((w) => (
-                            <button
-                              className={(selected.fontWeight ?? 700) === w.w ? "active" : ""}
-                              data-act="sticker-font-weight"
-                              key={w.w}
-                              onClick={() => {
-                                pushHistory();
-                                patchSelected({ fontWeight: w.w });
-                              }}
-                              style={{ fontWeight: w.w }}
-                              type="button"
-                            >
-                              {w.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="stf-row">
-                        <div className="stf-group" role="group" aria-label="정렬">
-                          {(
-                            [
-                              { key: "left", Icon: AlignLeft },
-                              { key: "center", Icon: AlignCenter },
-                              { key: "right", Icon: AlignRight }
-                            ] as const
-                          ).map(({ key, Icon }) => (
-                            <button
-                              aria-label={`${key} 정렬`}
-                              className={(selected.textAlign ?? "left") === key ? "active" : ""}
-                              key={key}
-                              onClick={() => {
-                                pushHistory();
-                                patchSelected({ textAlign: key });
-                              }}
-                              type="button"
-                            >
-                              <Icon aria-hidden="true" size={14} />
-                            </button>
-                          ))}
-                        </div>
-                        <button
-                          aria-pressed={Boolean(selected.italic)}
-                          className="stf-btn"
-                          onClick={() => {
-                            pushHistory();
-                            patchSelected({ italic: !selected.italic });
-                          }}
-                          style={{ fontStyle: "italic" }}
-                          data-act="sticker-italic"
-                          title="기울임"
-                          type="button"
-                        >
-                          가
-                        </button>
-                        <button
-                          aria-pressed={Boolean(selected.textBg)}
-                          className="stf-btn"
-                          onClick={() => {
-                            pushHistory();
-                            patchSelected({ textBg: selected.textBg ? undefined : "#fff3a0" });
-                          }}
-                          data-act="sticker-highlight"
-                          title="글자 배경(하이라이트)"
-                          type="button"
-                        >
-                          배경
-                        </button>
-                        {selected.textBg ? (
-                          <label className="stf-color" title="배경색">
-                            <input
-                              onChange={(event) => patchSelected({ textBg: event.target.value })}
-                              type="color"
-                              value={selected.textBg}
-                            />
-                          </label>
-                        ) : null}
-                        <span className="stf-spacer" />
-                        <button
-                          aria-pressed={selected.textFx === "neon"}
-                          className="stf-btn"
-                          onClick={() => {
-                            pushHistory();
-                            patchSelected({
-                              textFx: selected.textFx === "neon" ? undefined : "neon"
-                            });
-                          }}
-                          title="네온 글로우"
-                          type="button"
-                         data-act="네온 글로우">
-                          네온
-                        </button>
-                      </div>
-                      <div className="stf-row">
-                        <label className="stf-opacity" title="글자 크기">
-                          <span className="stf-label-w">크기</span>
-                          <input
-                            max={0.15}
-                            min={0.04}
-                            onChange={(event) =>
-                              patchSelected({ widthRatio: Number(event.target.value) }, false)
-                            }
-                            onPointerDown={() => pushHistory()}
-                            onPointerUp={() => commitSticker(selected)}
-                            step={0.0025}
-                            type="range"
-                            value={Math.min(selected.widthRatio, 0.15)}
-                          />
-                        </label>
-                      </div>
-                      <div className="stf-row">
-                        <label className="stf-opacity" title="투명도">
-                          <span className="stf-label-w">투명도</span>
-                          <input
-                            max={1}
-                            min={0.1}
-                            onChange={(event) => changeOpacity(Number(event.target.value))}
-                            onPointerDown={() => pushHistory()}
-                            onPointerUp={() => commitSticker(selected)}
-                            step={0.05}
-                            type="range"
-                            value={selected.opacity}
-                          />
-                        </label>
-                        <button
-                          aria-pressed={Boolean(selected.locked)}
-                          className="stf-btn"
-                          onClick={() => {
-                            hapticTick();
-                            pushHistory();
-                            patchSelected({ locked: !selected.locked });
-                          }}
-                          data-act="sticker-lock"
-                          title={selected.locked ? "잠금 해제" : "잠금 (이동/크기 방지)"}
-                          type="button"
-                        >
-                          <Lock aria-hidden="true" size={15} />
-                        </button>
-                        <button
-                          className="stf-btn"
-                          onClick={duplicateSelected}
-                          data-act="sticker-duplicate"
-                          title="복제 (Ctrl+D)"
-                          type="button"
-                        >
-                          <Copy aria-hidden="true" size={15} />
-                        </button>
-                        <button
-                          className="stf-btn danger"
-                          onClick={deleteSelected}
-                          data-act="sticker-delete"
-                          title="삭제 (Delete)"
-                          type="button"
-                        >
-                          <Trash2 aria-hidden="true" size={15} />
-                        </button>
-                      </div>
-                      <div className="stf-row stf-anim" role="group" aria-label="움직임">
-                        <span className="stf-anim-label">움직임</span>
-                        <button
-                          className={`stf-btn ${!selected.anim ? "active" : ""}`}
-                          onClick={() => {
-                            pushHistory();
-                            patchSelected({ anim: undefined });
-                          }}
-                          type="button"
-                         data-act="stf-btn">
-                          정지
-                        </button>
-                        {STICKER_ANIMS.map((a) => (
-                          <button
-                            className={`stf-btn ${selected.anim === a.key ? "active" : ""}`}
-                            key={a.key}
-                            onClick={() => {
-                              pushHistory();
-                              patchSelected({ anim: a.key });
-                            }}
-                            type="button"
-                           data-act="stf-btn">
-                            {a.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : selected ? (
-                    <div className="stf-body">
-                      <div className="stf-row">
-                        <label className="stf-opacity" title="투명도">
-                          <span className="stf-label-w">투명도</span>
-                          <input
-                            max={1}
-                            min={0.1}
-                            onChange={(event) => changeOpacity(Number(event.target.value))}
-                            onPointerDown={() => pushHistory()}
-                            onPointerUp={() => commitSticker(selected)}
-                            step={0.05}
-                            type="range"
-                            value={selected.opacity}
-                          />
-                        </label>
-                        <button
-                          aria-pressed={Boolean(selected.locked)}
-                          className="stf-btn"
-                          onClick={() => {
-                            hapticTick();
-                            pushHistory();
-                            patchSelected({ locked: !selected.locked });
-                          }}
-                          data-act="sticker-lock"
-                          title={selected.locked ? "잠금 해제" : "잠금 (이동/크기 방지)"}
-                          type="button"
-                        >
-                          <Lock aria-hidden="true" size={15} />
-                        </button>
-                        <button
-                          className="stf-btn"
-                          onClick={duplicateSelected}
-                          data-act="sticker-duplicate"
-                          title="복제 (Ctrl+D)"
-                          type="button"
-                        >
-                          <Copy aria-hidden="true" size={15} />
-                        </button>
-                        <button
-                          className="stf-btn danger"
-                          onClick={deleteSelected}
-                          data-act="sticker-delete"
-                          title="삭제 (Delete)"
-                          type="button"
-                        >
-                          <Trash2 aria-hidden="true" size={15} />
-                        </button>
-                      </div>
-                      <div className="stf-row stf-icons">
-                        {selected.kind === "shape" ? (
-                          <label className="stf-color" title="도형 색">
-                            <input
-                              onChange={(event) => changeTextColor(event.target.value)}
-                              type="color"
-                              value={selected.textColor ?? "#ff6b9d"}
-                            />
-                          </label>
-                        ) : null}
-                        <button
-                          aria-pressed={selected.flipX}
-                          className="stf-btn"
-                          onClick={() => toggleFlip("x")}
-                          data-act="sticker-flip-x"
-                          title="좌우 대칭"
-                          type="button"
-                        >
-                          <FlipHorizontal aria-hidden="true" size={15} />
-                        </button>
-                        <button
-                          aria-pressed={selected.flipY}
-                          className="stf-btn"
-                          onClick={() => toggleFlip("y")}
-                          data-act="sticker-flip-y"
-                          title="상하 대칭"
-                          type="button"
-                        >
-                          <FlipVertical aria-hidden="true" size={15} />
-                        </button>
-                        <button
-                          aria-pressed={Boolean(selected.shadow)}
-                          className="stf-btn"
-                          onClick={() => toggleEffect("shadow")}
-                          data-act="sticker-shadow"
-                          title="진한 그림자"
-                          type="button"
-                        >
-                          그림자
-                        </button>
-                        <button
-                          className="stf-btn"
-                          onClick={() => reorderSelected(true)}
-                          data-act="sticker-front"
-                          title="맨 앞으로"
-                          type="button"
-                        >
-                          <BringToFront aria-hidden="true" size={15} />
-                        </button>
-                        <button
-                          className="stf-btn"
-                          onClick={() => reorderSelected(false)}
-                          data-act="sticker-back"
-                          title="맨 뒤로"
-                          type="button"
-                        >
-                          <SendToBack aria-hidden="true" size={15} />
-                        </button>
-                      </div>
-                      <div className="stf-row stf-anim" role="group" aria-label="움직임">
-                        <span className="stf-anim-label">움직임</span>
-                        <button
-                          className={`stf-btn ${!selected.anim ? "active" : ""}`}
-                          onClick={() => {
-                            pushHistory();
-                            patchSelected({ anim: undefined });
-                          }}
-                          type="button"
-                         data-act="stf-btn">
-                          정지
-                        </button>
-                        {STICKER_ANIMS.map((a) => (
-                          <button
-                            className={`stf-btn ${selected.anim === a.key ? "active" : ""}`}
-                            key={a.key}
-                            onClick={() => {
-                              pushHistory();
-                              patchSelected({ anim: a.key });
-                            }}
-                            type="button"
-                           data-act="stf-btn">
-                            {a.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>,
-                document.body
-              )
-            ) : null}
-
-            {/* #8: 단축키 안내 — 접기/펴기(제목 pill이 토글, 선택은 로컬 기억). 나열 대신
-                의미 그룹(편집/선택·이동/기록)으로 묶고 헤어라인 구분 — 조화 3요소(그룹핑·
-                정렬·일정한 리듬), 애플 문법. */}
-            <div
-              className={`shortcut-help${shortcutOpen ? "" : " is-closed"}`}
-              aria-label="단축키 안내"
-            >
-              <button
-                aria-expanded={shortcutOpen}
-                className="shortcut-help-title"
-                onClick={toggleShortcutHelp}
-                title={shortcutOpen ? "단축키 안내 접기" : "단축키 안내 펴기"}
-                type="button"
-               data-act="shortcut-help-title">
-                <Keyboard aria-hidden="true" size={14} />
-                단축키
-                <ChevronDown aria-hidden="true" className="sh-chev" size={13} />
-              </button>
-              {shortcutOpen ? (
-                <div className="shortcut-help-groups">
-                  <div className="sh-group">
-                    <em>편집</em>
-                    <ul className="shortcut-help-list">
-                      <li>
-                        <kbd>Del</kbd> 삭제
-                      </li>
-                      <li>
-                        <kbd>Ctrl</kbd>+<kbd>D</kbd> 복제
-                      </li>
-                      {/* 복사/붙여넣기는 달 넘겨 붙이기가 진짜 쓸모 — 안내판에도 명시. */}
-                      <li>
-                        <kbd>Ctrl</kbd>+<kbd>C</kbd> 복사
-                      </li>
-                      <li>
-                        <kbd>Ctrl</kbd>+<kbd>V</kbd> 붙여넣기 <i>다른 달도</i>
-                      </li>
-                    </ul>
-                  </div>
-                  <div className="sh-group">
-                    <em>선택·이동</em>
-                    <ul className="shortcut-help-list">
-                      <li>
-                        <kbd>Shift</kbd>+클릭 여러 개
-                      </li>
-                      <li>
-                        <kbd>Esc</kbd> 해제
-                      </li>
-                      <li>
-                        <kbd>←↑↓→</kbd> 미세 이동
-                      </li>
-                    </ul>
-                  </div>
-                  <div className="sh-group">
-                    <em>기록</em>
-                    <ul className="shortcut-help-list">
-                      <li>
-                        <kbd>Ctrl</kbd>+<kbd>Z</kbd> 실행취소
-                      </li>
-                      <li>
-                        <kbd>Ctrl</kbd>+<kbd>Y</kbd> 다시실행
-                      </li>
-                      <li>
-                        <kbd>Ctrl</kbd>+<kbd>S</kbd> 저장
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              ) : null}
-            </div>
-
-            {stickerError ? <span className="poster-action-error">{stickerError}</span> : null}
-          </div>
-        ) : null}
-
-        {/* 텍스트 추가 줄(꾸미기 전용). 옛 캡쳐 버튼 자리는 비움 — 기능 삭제(2026-07-31). */}
-        {!showAgenda && decorate ? (
-          <div className="poster-capture-row">
-            {decorate ? (
-              <div className="text-add-row">
-                {/* 저장 상태 칩 — 달력 바로 위, 문구 입력칸 왼쪽 동일선상(편집실과 같은 모양). */}
-                <span
-                  className={`save-status ${saveState}`}
-                  aria-live="polite"
-                  title={
-                    saveState === "failed"
-                      ? "저장에 실패했어요. 잠시 후 다시 시도해 주세요"
-                      : saveState === "saving"
-                        ? "저장 중이에요"
-                        : lastSavedKst
-                          ? `마지막 저장 ${lastSavedKst} KST`
-                          : "변경사항이 저장돼 있어요"
-                  }
-                >
-                  <span className="ss-dot" aria-hidden="true" />
-                  <em>
-                    {saveState === "saving"
-                      ? "저장 중…"
-                      : saveState === "failed"
-                        ? "저장 실패"
-                        : "저장됨"}
-                  </em>
-                  {saveState === "saved" && lastSavedKst ? (
-                    <b className="ss-time">{lastSavedKst}</b>
-                  ) : null}
-                </span>
-                <input
-                  className="text-add-input"
-                  maxLength={60}
-                  onChange={(event) => setTextDraft(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      event.preventDefault();
-                      void addText();
-                    }
-                  }}
-                  placeholder="문구 입력 후 Enter 또는 추가 → 달력에 텍스트 스티커로 올라가요"
-                  type="text"
-                  value={textDraft}
-                />
-                <button
-                  className="button"
-                  data-act="sticker-add-text"
-                  disabled={!textDraft.trim()}
-                  onClick={() => void addText()}
-                  type="button"
-                >
-                  <Type aria-hidden="true" size={15} />
-                  추가
-                </button>
-              </div>
-            ) : (
-              <span />
-            )}
-          </div>
-        ) : null}
 
         {showAgenda ? null : (
         <div className="poster-fit" ref={posterFitRef}>
@@ -6813,22 +4074,9 @@ export function PublicPoster({
           data-export-surface
           data-poster-theme={effectivePosterTheme}
           key={`surface-${view.year}-${view.month}`}
-          ref={stickerSurfaceElRef}
         >
           {/* (상단 마스트헤드 제거 — 2026-07-31 사용자 결정 2차. 연·월은 오른쪽 레일 정보
               카드로 이동, 빈 세로 공간만큼 달력이 커진다. 서비스 제목은 상단 크롬에.) */}
-
-          <StickerLayer
-            avoidSelector="[data-sticker-avoid]"
-            canonId={canonStickerId}
-            editable={decorate}
-            onChange={(s) => updateStickerLocal(unmapSceneSticker(s))}
-            onCommit={(s) => commitSticker(unmapSceneSticker(s))}
-            onGestureStart={pushHistory}
-            onSelect={handleSelect}
-            selectedIds={selectedIds}
-            stickers={sceneStickers}
-          />
 
           {/* (메모지 컬럼 삭제 — 2026-07-31 사용자 결정. 거의 안 쓰여 왼쪽 238px를 달력에
               돌려줬다. 모든 모드(시청자·꾸미기·캡쳐)가 같은 2컬럼 지오메트리라 스티커 비율
@@ -6869,7 +4117,7 @@ export function PublicPoster({
 
             {/* 라이브 카드 — 라이브 중에만 렌더. 아바타 scene에선 아바타 자리 우상단으로
                 이사하므로 여기선 내리고(중복 iframe 방지), 평소엔 정보 카드 아래·필터 위. */}
-            {!decorate && !(avatarCapable && avatarOn) ? (
+            {!(avatarCapable && avatarOn) ? (
               <SoopLiveBeacon inRail live={soopLive} />
             ) : null}
 
@@ -6887,39 +4135,7 @@ export function PublicPoster({
               // key=side — 좌우 전환 때 remount로 팝인 모션이 다시 재생된다.
               <div className="avatar-top-cards" key={`atc-${avatarSide}`}>
                 {railInfoCard}
-                {!decorate ? <SoopLiveBeacon inRail live={soopLive} /> : null}
-              </div>
-            ) : null}
-            {/* 아바타 자리 토글(켜짐) — 달력 꾸미기에서만, 슬롯 안 흐름(카드 스택 아래·점선 박스 위)에
-                뜬다. 데스크탑·관리자 전용. */}
-            {!showAgenda && avatarOn && decorate ? (
-              <div className="avatar-ctl avatar-ctl-inslot" role="group" aria-label="아바타 자리 설정(관리자 전용)">
-                <button
-                  type="button"
-                  className="avatar-ctl-toggle on"
-                  aria-pressed={true}
-                  onClick={toggleAvatarOn}
-                 data-act="avatar-ctl-toggle">
-🎙️ 아바타 자리 끄기
-                </button>
-                <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
-                  <button
-                    type="button"
-                    className={avatarSide === "left" ? "on" : ""}
-                    aria-pressed={avatarSide === "left"}
-                    onClick={() => pickAvatarSide("left")}
-                  >
-                    왼쪽
-                  </button>
-                  <button
-                    type="button"
-                    className={avatarSide === "right" ? "on" : ""}
-                    aria-pressed={avatarSide === "right"}
-                    onClick={() => pickAvatarSide("right")}
-                  >
-                    오른쪽
-                  </button>
-                </div>
+                <SoopLiveBeacon inRail live={soopLive} />
               </div>
             ) : null}
             <div className="avatar-dock-inner">

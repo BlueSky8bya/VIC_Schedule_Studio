@@ -1,14 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { cookies } from "next/headers";
 import { recordActivity } from "@/lib/activity/record";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { resolveCurrentActor } from "@/lib/auth/actor";
-import { getCurrentSupabaseUser } from "@/lib/auth/server";
 import { canEditSchedule } from "@/lib/permissions/roles";
 import { hashPasscode, verifyPasscode } from "@/lib/private-layer/passcode";
-import { UNLOCK_GRANT_COOKIE, hashGrantToken } from "@/lib/private-layer/unlock-grant";
 
 export type PasscodeResult = { ok: true } | { ok: false; error: string };
 export type ClearUnlocksResult = { ok: true; cleared: number } | { ok: false; error: string };
@@ -20,31 +17,6 @@ const SLUG = "vic";
 //  개별 만료(clearUnlockSessionForUserAction)는 보안 패널에서 실제로 쓰인다. 전체 초기화 버튼이
 //  필요하면 그건 새 기능이다 — git 이력에 구현이 남아 있다.)
 
-// P0-PRIV-2(L8): '지금 잠그기' — 이 브라우저(auth 세션)의 잠금해제 grant를 즉시 폐기한다.
-// 다른 기기/브라우저의 grant는 그대로(각자 자기 세션만 관리). 쿠키도 함께 지운다.
-export async function relockPrivateLayerAction(): Promise<PasscodeResult> {
-  const user = await getCurrentSupabaseUser();
-  if (!user) {
-    return { ok: false, error: "로그인이 필요합니다." };
-  }
-  const supabase = createSupabaseAdminClient();
-  if (!supabase) {
-    return { ok: false, error: "Supabase service role 키가 필요합니다." };
-  }
-  const cookieStore = await cookies();
-  const token = cookieStore.get(UNLOCK_GRANT_COOKIE)?.value;
-  if (token) {
-    await supabase
-      .from("private_unlock_grants")
-      .delete()
-      .eq("token_hash", hashGrantToken(token))
-      .eq("user_id", user.id);
-    cookieStore.delete(UNLOCK_GRANT_COOKIE);
-  }
-  revalidatePath("/studio");
-  await recordActivity({ kind: "lock.manual" });
-  return { ok: true };
-}
 
 // owner/developer가 특정 한 사람의 비공개 잠금 세션만 즉시 만료한다(보안 패널 역할별 카드의 개별 만료).
 export async function clearUnlockSessionForUserAction(userId: string): Promise<ClearUnlocksResult> {

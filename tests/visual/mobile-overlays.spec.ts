@@ -130,7 +130,7 @@ test("역할별 권한 표가 모바일에서 가로 스크롤 없이 한 화면
       ),
       // 한 글자 머리글은 색이 곧 이름이다 — 머리글 칩과 범례 칩이 **같은 부품**이어야 짝이 읽힌다
       // (색·크기·모서리). 하나라도 어긋나면 눈이 둘을 다른 것으로 본다.
-      chipsMatch: ["pl-owner", "pl-dev", "pl-manager", "pl-worker"].every((cls, i) => {
+      chipsMatch: ["pl-owner", "pl-dev", "pl-manager"].every((cls, i) => {
         const chip = document.querySelector(`.perm-legend .${cls}`);
         const head = t.querySelectorAll("thead th")[i + 1]?.querySelector(".perm-role-short");
         if (!chip || !head) return false;
@@ -167,7 +167,7 @@ test("역할별 권한 표가 모바일에서 가로 스크롤 없이 한 화면
   expect(geo.wrapScroll, "가로로 스크롤된다").toBeLessThanOrEqual(geo.wrapClient + 1);
   expect(geo.docScroll, "페이지 자체가 가로로 넘친다").toBeLessThanOrEqual(geo.docClient + 1);
   // 축약 머리글(한 글자) + 뜻을 알려주는 범례가 함께 있어야 읽을 수 있다.
-  expect(geo.shortHeads).toEqual(["관", "개", "매", "작"]);
+  expect(geo.shortHeads).toEqual(["관", "개", "매"]);
   expect(geo.fullHidden, "모바일인데 긴 머리글이 그대로 보인다").toBe(true);
   expect(geo.shortShown, "축약 머리글이 안 보인다 — 열이 뭘 가리키는지 알 수 없다").toBe(true);
   expect(geo.legendShown, "축약했는데 범례가 없다").toBe(true);

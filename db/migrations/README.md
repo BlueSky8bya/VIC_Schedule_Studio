@@ -42,3 +42,4 @@
 | 0041 | event_teaser (떡밥) |
 | 0042–0043 | perf_samples / perf_samples_grants |
 | 0044 | silver_color_open_run_tag |
+| 0065 | retire_stickers_and_worker — 스티커 테이블 drop·작업자 컬럼 drop (ADR-0015; 코드 배포 후 적용) |

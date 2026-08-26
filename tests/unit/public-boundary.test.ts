@@ -74,13 +74,6 @@ describe("public sample fallback — no private leak", () => {
     }
   });
 
-  it("only public stickers", () => {
-    // (P2-PROTO-1: supportCampaigns payload 제거 — 검사 대상에서 삭제)
-    expect(samplePublicScheduleData.stickers.every((s) => s.visiblePublicly)).toBe(true);
-    // sticker-private(💖, visiblePublicly:false)는 폴백에 없다.
-    expect(samplePublicScheduleData.stickers.some((s) => s.id === "sticker-private")).toBe(false);
-  });
-
   it("getPublicSchedule('vic') carries no private keys", async () => {
     const schedule = await getPublicSchedule("vic");
     const payload = JSON.stringify(schedule);

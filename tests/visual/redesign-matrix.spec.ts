@@ -119,7 +119,7 @@ test.describe("Apple redesign visual matrix", () => {
     await settle(page, ".studio-shell");
     await expect(page.locator(".modal-card-tags")).toHaveCount(0);
 
-    for (const role of ["owner", "developer", "manager", "worker"] as const) {
+    for (const role of ["owner", "developer", "manager"] as const) {
       await page.goto(`/visual-fixture/studio?role=${role}&viewer=1`);
       await settle(page, ".poster-page");
       const drawingButtons = page.getByRole("button", { name: "일정 그림판" });

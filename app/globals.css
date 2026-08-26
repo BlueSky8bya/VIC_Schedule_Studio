@@ -157,7 +157,6 @@
   /* Apple HIG 계열 아이콘 control의 최소 hit target: 32 + 12 = 44. */
   --control-hit: calc(var(--space-6) + var(--space-3));
   --stroke-hairline: 1px;
-  --decorate-sheet-height: 46svh;
   --broadcast-source-width: 280px;
   --broadcast-layer-width: 248px;
   --broadcast-shelf-height: 176px;
@@ -878,65 +877,6 @@ html[data-reduce-motion] .pop-number.pop {
   line-height: 1.6;
 }
 
-.trusted-member-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) 150px auto;
-  gap: 10px;
-  align-items: end;
-}
-
-.trusted-member-form label {
-  display: grid;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 800;
-}
-
-.trusted-member-form input,
-.trusted-member-form select {
-  min-height: 40px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 0 10px;
-}
-
-.trusted-member-list {
-  display: grid;
-  gap: 8px;
-}
-
-.trusted-member-list article {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto;
-  gap: 12px;
-  align-items: center;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: #fbfcfe;
-  padding: 12px;
-}
-
-.trusted-member-list span {
-  color: var(--muted);
-}
-
-.trusted-member-list em {
-  border-radius: var(--r-pill);
-  background: #e8f4f4;
-  color: var(--accent-strong);
-  padding: 4px 8px;
-  font-size: 12px;
-  font-style: normal;
-  font-weight: 800;
-}
-
-@media (max-width: 760px) {
-  .trusted-member-form,
-  .trusted-member-list article {
-    grid-template-columns: 1fr;
-  }
-}
-
 /* 비공개 레이어 설정/잠금해제 패널 */
 .private-layer-shell {
   max-width: 560px;
@@ -1001,11 +941,6 @@ html[data-reduce-motion] .pop-number.pop {
 }
 
 /* Batch 10: private unlock surface. Permission and unlock flows remain unchanged. */
-.private-layer-page {
-  min-height: 100svh;
-  background: var(--surface-2);
-  padding: var(--space-6) var(--space-4);
-}
 
 .private-layer-shell {
   max-width: none;
@@ -1109,11 +1044,7 @@ html[data-reduce-motion] .pop-number.pop {
 }
 
 @media (max-width: 640px) {
-  .private-layer-page {
-    display: flex;
-    align-items: flex-end;
-    padding: var(--space-3) var(--space-2) 0;
-  }
+  
 
   .private-layer-shell {
     width: 100%;

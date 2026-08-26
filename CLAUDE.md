@@ -1,7 +1,8 @@
 # VIC Schedule Studio — Agent Guide
 
-Streamer-first broadcast schedule studio for Victory: public schedule poster +
-private (work/embargo) layers + monthly poster decoration/export.
+Streamer-first broadcast schedule studio for Victory: public schedule poster + studio editor +
+teaser (최초공개) gate + broadcast drawing board. (Poster decoration/stickers, PNG export, and the
+worker role were retired — ADR-0014/0015, 2026-08-27.)
 
 **Core promise:** viewers receive ONLY public schedule data. Private, embargo, work,
 owner-only, operational, and admin data must never leak into public UI or public API.
@@ -14,9 +15,9 @@ uniform. A cold "admin-panel" feel is a regression.
 - **Perceived performance:** every click / save / route change / upload / unlock / export feels
   responsive — clear loading, transition, optimistic feedback, and recovery states.
 - **User–system bond:** warm, trustworthy, role-aware — not a cold admin panel.
-- **Playful motion:** schedule planning and poster decoration feel cute, alive, and fun without
+- **Playful motion:** schedule planning and the poster feel cute, alive, and fun without
   hurting clarity or accessibility.
-- **Role-specific flow:** owner / manager / worker / developer / viewer each feel they are in the
+- **Role-specific flow:** owner / manager / developer / viewer each feel they are in the
   right place with the right tools.
 
 (Concrete forms — design unity, no wasted space, platform-tailored, HCI — are in **Design rules**.)
@@ -25,15 +26,15 @@ uniform. A cold "admin-panel" feel is a regression.
 
 - **Stack:** Next.js 15 (App Router) + React 19 + TypeScript · Supabase (Postgres + RLS;
   service-role only server-side) · Vercel (auto-deploy on push to `main`) · tests: Vitest
-  (unit) + Playwright (`tests/e2e`, `tests/visual`; also official poster PNG export).
+  (unit) + Playwright (`tests/e2e`, `tests/visual`).
 - **Commands:** dev `next dev` · checks `tsc --noEmit` / `npm run lint` / `next build` ·
   tests `vitest run` / `npm run test:e2e`.
 - **Tree** (each folder has a routing `README.md`): `app/` routes · `components/` UI ·
   `lib/` domain + data loaders/actions · `db/migrations/` SQL · `scripts/` ops · `docs/` topic tree.
-- **Routes:** `/` = public poster (anon allowed). `(studio)/studio/{calendar/[year]/[month],
-  decorate/[year]/[month],private-layer,tags,trusted-members}` = studio (viewer→`/` guard).
+- **Routes:** `/` = public poster (anon allowed). `/onair` = broadcast preview (anon, avatar scene
+  fixed). `(studio)/studio/{calendar/[year]/[month],tags,trusted-members}` = studio (viewer→`/` guard).
   `api/public/[calendarSlug]/*` = the public boundary (public-loader only);
-  `api/{studio-write,sticker-write,unlock-private-layer,private-layer,presence,trusted-members,auth/*}`.
+  `api/{studio-write,unlock-private-layer,presence,activity,soop-live,broadcast,cron,auth/*}`.
 - Studio month routes are bookmark/cold-entry only — no runtime route-based month nav.
 
 ## Non-negotiable
@@ -53,25 +54,21 @@ uniform. A cold "admin-panel" feel is a regression.
 
 - **Viewer** — public poster only (filters, hearts, support links, month nav). No private
   toggle, edit, or admin.
-- **Worker** — stickers/decoration. (Server model still allows unlocked **work** schedules, but
-  the studio toggle was retired 2026-08-27 — ADR-0014.)
-  Cannot edit schedules, tags, members, passcodes, or support.
-- **Manager** — **no private access at all** (no unlock button; public only). May edit support
-  period/link (`canEditSupport`) and assign event tags (`canEditEventTags`, max 2). May
-  decorate + export. Cannot edit schedule bodies, create/delete/recolor tags, manage
+- **Manager** — the only trusted-member role (worker retired 2026-08-27, ADR-0015). **No private
+  access at all** (public only). May edit support period/link (`canEditSupport`) and assign event
+  tags (`canEditEventTags`). Cannot edit schedule bodies, create/delete/recolor tags, manage
   members/passcodes, or touch owner-only.
 - **Owner** (UI label "관리자", role key `owner`) — full control; may use multiple owner Google accounts.
 - **Developer** — diagnostics (presence panel) + role preview (read-only, client-only, resets
   on refresh, never escalates real permissions).
-- A trusted member can be manager AND worker (`is_manager`/`is_worker`); effective role =
-  manager when `is_manager`.
 
 ## Visibility scopes (3)
 
 `모두`(public) / `엠바고`(owner_private — **owner only, even developers can't read or create**;
 DB value stays `owner_private`, old `embargo` merged in) / `작업자`(work).
 **Read access** (private needs login + passcode): public → everyone; work →
-owner/developer/worker; owner_private → owner only. Manager has zero private access.
+owner/developer; owner_private → owner only. Manager has zero private access. (Studio UI for
+private layers is retired — ADR-0014; the server model stays.)
 
 ## Invariants (high-frequency facts)
 
@@ -120,10 +117,10 @@ owner/developer/worker; owner_private → owner only. Manager has zero private a
 - **Plan:** affected route/component, role/permission impact, public/private boundary, KST
   assumptions, per-role expected behavior.
 - **Build:** narrow; follow existing patterns; **keep server permission checks** (client gates
-  are never the only protection); don't make manager/worker schedule-editable unless asked;
+  are never the only protection); don't make manager schedule-editable unless asked;
   prefer role-specific screens over disabled owner controls.
-- **Evaluate:** no private leak · owner-only stays owner-only · manager ≠ worker · viewer clean ·
-  private warning clear · export has no admin UI · **regression review** (create/drag/reorder/
+- **Evaluate:** no private leak · owner-only stays owner-only · manager ≠ owner · viewer clean ·
+  `/onair` has no admin UI · **regression review** (create/drag/reorder/
   save-order, optimistic-vs-server-prop sync, gating scope, nearby layout/padding) · design
   unity · platform-tailored + motion + haptics · note verification.
 

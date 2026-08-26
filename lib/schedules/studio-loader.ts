@@ -17,18 +17,17 @@ import { decryptSecret, isCiphertext } from "@/lib/private-layer/secret-crypto";
 
 // 서버에서 비공개 이벤트를 역할/잠금해제에 따라 응답에서 제거한다(클라이언트 필터와 동일 규칙).
 // RLS와 별개의 2차 방어 — "엠바고"(owner_private, 옛 embargo 통합)는 소유자 전용, "작업자"(work)는
-// 소유자·개발자·작업자만(매니저는 비공개 전부 제외). (CLAUDE.md 규칙 9·10)
+// 소유자·개발자만(매니저는 비공개 전부 제외). (CLAUDE.md 규칙 9·10)
 function filterEventsForViewer(
   events: StudioScheduleEvent[],
   role: MembershipRole,
-  isWorker: boolean,
   hasUnlockSession: boolean
 ): StudioScheduleEvent[] {
   return events.filter((event) => {
     if (event.visibilityScope === "public") {
       return true;
     }
-    if (!canReadPrivateLayer(role, isWorker, hasUnlockSession)) {
+    if (!canReadPrivateLayer(role, hasUnlockSession)) {
       return false;
     }
     // "엠바고"(owner_private) + 옛 embargo 행은 소유자만.
@@ -92,8 +91,6 @@ export async function getStudioSchedule(
       tags: [],
       palette: [],
       events: [],
-      stickers: [],
-      stickerAssets: [],
       heartCount: viewerModePreview.heartCount,
       variantGroups: [],
       viewerModePreview
@@ -101,7 +98,7 @@ export async function getStudioSchedule(
   }
 
   // RLS가 역할/잠금 세션에 따라 보이는 행을 결정한다.
-  // owner/developer: 전체 / manager·worker: public + (unlock 시 embargo·work)
+  // owner/developer: 전체 / manager: public
   // (P2-PROTO-1: support_campaigns 쿼리 제거 — UI 소비자 0의 죽은 payload.)
   const [tagsRes, paletteRes, eventsRes] = await Promise.all([
     supabase
@@ -141,11 +138,8 @@ export async function getStudioSchedule(
     events: filterEventsForViewer(
       (eventsRes.data ?? []).map((r) => mapStudioEvent(r, calendar.id)),
       actor.role,
-      actor.isWorker === true,
       unlock.hasUnlockSession
     ),
-    stickers: [],
-    stickerAssets: [],
     heartCount: viewerModePreview.heartCount,
     variantGroups: [],
     viewerModePreview

@@ -18,11 +18,11 @@ const ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
 const MAX_FAILED_ATTEMPTS = 5;
 
 // 비공개 레이어 잠금해제: 비밀번호 확인 → 현재 사용자 세션 발급.
-// owner/developer/worker만 가능(매니저·시청자 불가 — 매니저는 비공개를 못 본다).
+// owner/developer만 가능(매니저·시청자 불가). 최초공개 게이트(verifyOnly)·비밀번호 변경이 이 라우트를 쓴다.
 export async function POST(request: Request) {
   const actor = await resolveCurrentActor(SLUG);
 
-  if (!actor.isAuthenticated || !canUsePrivateLayer(actor.role, actor.isWorker === true)) {
+  if (!actor.isAuthenticated || !canUsePrivateLayer(actor.role)) {
     return NextResponse.json({ error: "권한이 없습니다." }, { status: 403 });
   }
 
