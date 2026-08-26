@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-08-18
+Last Updated: 2026-08-27
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -13,6 +13,19 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **태그 순서 변경 수술 이식 + 액션바 IA 복원(2026-08-27)**: wak-schedule `38ba152`를 이식.
+  순수 모델 `lib/tags/reorder.ts`(`reorderAtEdge` 행+edge 목적지·같은 결과=같은 참조 no-op·
+  휴뱅 머리 고정 클램프, `edgeForPointer` 중앙선±데드존 히스테리시스) + 단위 테스트 12개.
+  에디터: 유령 포인터 1:1(관성·회전·흔들림 제거), 콘텐츠↔형식 경계 드래그 차단, 자동 스크롤
+  중 판정 갱신, Esc(capture)/pointercancel/blur 시 시작 스냅샷 복구, 들린 행=점선 슬롯.
+  태그 모달 dirty 닫기(X·배경·Esc) → '계속 편집/버리고 닫기' 오버레이(`.modal-discard-ask`,
+  에디터 `onDirtyChange`는 ref 대입만). `applyTagUpdates`가 kind/parentId도 낙관 반영.
+  감사 문서: `docs/tags/tag-editor-reorder-ux-audit.md`. 토큰 `--violet-rgb` 추가.
+  액션바: '관리 ▾' 드롭다운 철회 → 태그 편집·멤버 관리·월별 인사이트를 `.studio-manage-group`으로
+  바로 노출(권한 게이트 불변). 웹은 `.studio-actionbar-tools`가 3열 그리드(1fr·auto·1fr) —
+  가운데 열에 아바타 세그먼트 [왼쪽 · 아바타 자리 · 오른쪽](🎙️ 제거, 슬롯 힌트도 텍스트만).
+  검증: tsc/lint/build/vitest 612, 편집실 e2e 15, fixture 실측(세그먼트 중심 오차 <0.01px),
+  `studio-owner-web-light` 기준선 갱신(액션바 줄만 diff).
 - **temp id·옛 클로저·낙관-서버 갈라짐 전수 정리 + 하트 즉시성(2026-08-18, `9a22389`·`0cf3ec7`)**:
   `04f8a3f`(끄는 도중 id 교체 경합)와 같은 부류를 편집실·포스터·꾸미기·태그·멤버·비공개 패널
   전체에서 정리. **규칙**: 제스처/비동기 콜백은 배열을 ref로, id는 `canonId`(temp↔실제 동일시)로

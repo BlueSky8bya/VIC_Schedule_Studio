@@ -69,11 +69,13 @@ const ACT: Record<string, TargetLabel> = {
   "close-datetime-picker": { name: "날짜·시간 고르기 닫기", area: "편집실" },
   "close-sheet-grab": { name: "편집 시트 손잡이로 닫기", area: "편집실(모바일)" },
 
-  // 관리 ▾ 메뉴
+  // 관리 묶음(액션바 왼쪽, 바로 노출). manage-menu/manage-dd-trigger는 옛 드롭다운 기록용.
   "manage-menu": { name: "관리 ▾ 메뉴 열기", area: "관리" },
-  "manage-tags": { name: "태그 편집", area: "관리", hint: "관리 ▾ 안" },
-  "manage-members": { name: "멤버 관리", area: "관리", hint: "관리 ▾ 안" },
-  "manage-insights": { name: "월별 인사이트", area: "관리", hint: "관리 ▾ 안" },
+  "manage-tags": { name: "태그 편집", area: "관리" },
+  "manage-members": { name: "멤버 관리", area: "관리" },
+  "manage-insights": { name: "월별 인사이트", area: "관리" },
+  "mda-keep": { name: "태그 변경 계속 편집", area: "관리" },
+  "mda-discard": { name: "태그 변경 버리고 닫기", area: "관리" },
   "mobile-open-tags": { name: "태그 편집(모바일)", area: "관리" },
   "mobile-open-members": { name: "멤버 관리(모바일)", area: "관리" },
   "open-insights": { name: "인사이트 열기", area: "관리" },

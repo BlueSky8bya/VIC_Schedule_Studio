@@ -24,6 +24,7 @@ import {
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { ColorPickerPopover } from "@/components/tags/color-picker-popover";
 import { hapticTick } from "@/lib/ui/haptics";
+import { edgeForPointer, reorderAtEdge, type ReorderEdge } from "@/lib/tags/reorder";
 
 type TagUpdate = {
   id: string;
@@ -59,6 +60,8 @@ type TagLegendEditorProps = {
   onTagAdded?: (tag: BroadcastTag, color: ColorPaletteEntry) => void;
   onTagRemoved?: (tagId: string) => void;
   onTagsUpdated?: (updates: TagUpdate[]) => void;
+  // 저장 전 변경 여부를 부모(모달 소유자)에게 알림 — 닫기 경고 게이트용.
+  onDirtyChange?: (dirty: boolean) => void;
   // 읽기 전용 색상 안내를 "필터"로도 쓸 때(편집실/시청자). 누르면 그 태그만 골라본다.
   filterIds?: string[];
   onToggleFilter?: (tagId: string) => void;
@@ -81,6 +84,7 @@ export function TagLegendEditor({
   onTagAdded,
   onTagRemoved,
   onTagsUpdated,
+  onDirtyChange,
   filterIds,
   onToggleFilter
 }: TagLegendEditorProps) {
@@ -185,6 +189,7 @@ export function TagLegendEditor({
   const [orderIds, setOrderIds] = useState<string[]>(() =>
     tags.filter(isTopTag).map((t) => t.id)
   );
+
   // 드래그로 순서를 손댔는지. 손대지 않았으면 props 순서를 그대로 따른다(다른 사용자의 순서
   // 저장·refresh 반영). 손댔으면 기존 순서를 보존하고 새로 온 id만 뒤에 붙인다.
   const orderDirtyRef = useRef(false);
@@ -206,6 +211,18 @@ export function TagLegendEditor({
   // 잠금 판정(휴뱅)은 항상 최신 목록을 보는 ref로 한다.
   const allTagsRef = useRef(allTags);
   allTagsRef.current = allTags;
+  const lastDirtySentRef = useRef<boolean | null>(null);
+  // 드래그 핸들러(등록 시점 클로저)용 최신값 미러 — 스냅샷·종류 판정이 항상 현재를 본다.
+  const orderIdsRef = useRef<string[]>([]);
+  orderIdsRef.current = orderIds;
+  const draftRef = useRef<Record<string, Draft>>({});
+  draftRef.current = draft;
+  // 드래그 중 종류(콘텐츠/형식) 판정 — 저장 전 kind 토글(드래프트)까지 반영해 화면 분리와 일치.
+  const kindOfNow = (id: string) => {
+    const d = draftRef.current[id];
+    if (d) return d.parentId ? "content" : d.kind;
+    return allTagsRef.current.find((t) => t.id === id)?.kind ?? "content";
+  };
   // 삭제·저장 서버 호출을 한 줄로 직렬화 — 저장이 삭제 중인 태그 행을 다시 써 넣거나, 삭제 응답이
   // 저장 뒤 도착해 순서가 꼬이지 않게. (UI 게이팅은 그대로 좁게 유지.)
   const opChainRef = useRef<Promise<void>>(Promise.resolve());
@@ -240,15 +257,16 @@ export function TagLegendEditor({
   const scrollDirRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const moveHandlerRef = useRef<((e: PointerEvent) => void) | null>(null);
-  // 들었을 때의 "물리감"용 — 유령이 커서를 관성 있게 뒤따르고(지연), 움직임 방향으로 기울며(모멘텀),
-  // 살짝 랜덤하게 흔들린다. target=커서 따라갈 목표 좌표, pos=현재 좌표(보간), rot=현재 기울기.
-  const dragTargetRef = useRef({ x: 0, y: 0 });
-  const dragPosRef = useRef({ x: 0, y: 0 });
-  const dragRotRef = useRef(0);
-  const dragRotVelRef = useRef(0); // 회전 속도(스프링) — 매달린 듯 swing
-  const dragGravityRef = useRef(0); // 잡은 지점이 중심에서 벗어난 만큼의 "매달림" 기울기
-  const dragWobbleRef = useRef(0); // 랜덤 흔들림 위상(매 프레임 조금씩 흐른다)
-  const dragReducedRef = useRef(false); // 모션 최소화 환경이면 흔들림·관성을 끈다
+  // 유령은 포인터와 1:1로 붙는다 — 관성·회전·랜덤 흔들림은 정밀 조작(정렬)의 판정 지점과
+  // 시각 객체를 갈라놓아 "내 손보다 목록이 먼저 튄다"는 감각을 만들었다(감사 P0). 제거.
+  const lastPointerRef = useRef({ x: 0, y: 0 }); // 자동 스크롤 중 재판정용 마지막 포인터
+  const lastDropRef = useRef<{ overId: string; edge: ReorderEdge } | null>(null);
+  const dragStartOrderRef = useRef<{ order: string[]; dirty: boolean } | null>(null);
+  const dragEndHandlersRef = useRef<{
+    commit: () => void;
+    cancel: () => void;
+    key: (ev: KeyboardEvent) => void;
+  } | null>(null);
   // 드래그 중 언마운트되면 떠다니던 ghost·리스너·애니메이션을 정리한다.
   useEffect(() => {
     return () => {
@@ -257,17 +275,28 @@ export function TagLegendEditor({
       if (moveHandlerRef.current) {
         window.removeEventListener("pointermove", moveHandlerRef.current);
       }
+      const h = dragEndHandlersRef.current;
+      if (h) {
+        window.removeEventListener("pointerup", h.commit);
+        window.removeEventListener("pointercancel", h.cancel);
+        window.removeEventListener("blur", h.cancel);
+        document.removeEventListener("keydown", h.key, true);
+      }
     };
   }, []);
 
-  function moveBefore(list: string[], from: string, before: string) {
-    if (from === before) return list;
-    // 휴뱅은 자기 자신을 옮기지도, 다른 태그를 그 앞으로 보내지도 못한다(항상 최상단 고정).
-    if (isLockedNow(from) || isLockedNow(before)) return list;
-    orderDirtyRef.current = true;
-    const next = list.filter((id) => id !== from);
-    const idx = next.indexOf(before);
-    next.splice(idx, 0, from);
+  // edge(행의 위/아래 절반) 기반 재배열 — 기존 '앞에 넣기'만 있던 단방향 모델은 항목을
+  // 맨 끝으로 못 내렸다(감사 P0). 휴뱅은 머리 고정: 그 앞 목적지는 고정 구간 뒤로 클램프.
+  function applyDrop(cur: string[], from: string, overId: string, edge: ReorderEdge) {
+    if (isLockedNow(from)) return cur;
+    let leading = 0;
+    for (const id of cur) {
+      if (id === from) continue;
+      if (isLockedNow(id)) leading += 1;
+      else break;
+    }
+    const next = reorderAtEdge(cur, from, overId, edge, leading);
+    if (next !== cur) orderDirtyRef.current = true;
     return next;
   }
   // 가장 가까운 스크롤 가능한 조상(모달 내부 스크롤 vs 페이지)을 찾는다.
@@ -282,58 +311,45 @@ export function TagLegendEditor({
     }
     return window;
   }
-  // 자동 스크롤 + 유령 물리(관성·모멘텀 기울기·랜덤 흔들림)를 한 프레임 루프에서 처리한다.
+  // 자동 스크롤 전용 프레임 루프. 스크롤로 포인터 아래 내용이 밀리므로 판정도 함께 갱신
+  // — 마지막 행 아래(목록 끝)로도 스크롤하며 내릴 수 있다.
   function dragLoop() {
     const dir = scrollDirRef.current;
     const sc = scrollerRef.current;
     if (dir !== 0 && sc) {
       if (sc === window) window.scrollBy(0, 11 * dir);
       else (sc as HTMLElement).scrollTop += 11 * dir;
-    }
-    const ghost = ghostRef.current;
-    if (ghost && dragReducedRef.current) {
-      // 모션 최소화: 흔들림·관성 없이 그대로 따라가게.
-      const target = dragTargetRef.current;
-      ghost.style.left = `${target.x}px`;
-      ghost.style.top = `${target.y}px`;
-    } else if (ghost) {
-      const pos = dragPosRef.current;
-      const target = dragTargetRef.current;
-      const prevX = pos.x;
-      // 관성: 목표(커서)로 천천히 보간돼 살짝 뒤따른다.
-      pos.x += (target.x - pos.x) * 0.22;
-      pos.y += (target.y - pos.y) * 0.22;
-      const vx = pos.x - prevX; // 가로 속도 → 움직이는 방향으로 기운다(모멘텀)
-      const momentum = Math.max(-11, Math.min(11, vx * 0.5));
-      // 매달림(중력) 각도 + 모멘텀을 목표로 스프링 swing. (얇은 바라 모멘텀도 약하게.)
-      const targetAngle = dragGravityRef.current + momentum;
-      dragRotVelRef.current += (targetAngle - dragRotRef.current) * 0.1;
-      dragRotVelRef.current *= 0.8;
-      dragRotRef.current += dragRotVelRef.current;
-      // 랜덤 흔들림 — 얇은 바라 기존의 약 1/3 세기로만.
-      dragWobbleRef.current += 0.12;
-      const w = dragWobbleRef.current;
-      const wobble =
-        Math.sin(w) * 0.47 + Math.sin(w * 1.7 + 0.6) * 0.3 + (Math.random() - 0.5) * 0.27;
-      ghost.style.left = `${pos.x}px`;
-      ghost.style.top = `${pos.y}px`;
-      ghost.style.transform = `rotate(${dragRotRef.current + wobble}deg) scale(1.05)`;
+      updateDropTarget(lastPointerRef.current.x, lastPointerRef.current.y);
     }
     rafRef.current = requestAnimationFrame(dragLoop);
+  }
+  // 포인터 아래 행을 찾아 목적지(행+edge)를 갱신한다. 같은 목적지면 아무 일도 하지 않는다
+  // (pointermove마다 렌더가 돌던 P1 해소 — reorderAtEdge의 같은-참조 반환과 이중 방어).
+  function updateDropTarget(x: number, y: number) {
+    const from = dragId.current;
+    if (!from) return;
+    const el = document.elementFromPoint(x, y) as HTMLElement | null;
+    const row = el?.closest("[data-tagid]") as HTMLElement | null;
+    const overId = row?.getAttribute("data-tagid");
+    if (!row || !overId || overId === from) return;
+    // 콘텐츠↔형식 경계는 드래그로 못 넘는다 — 화면은 종류별로 갈라 그리므로 넘어가면
+    // 아무 변화도 안 보이면서 전역 순서만 뒤틀렸다(감사 P1). 종류 변경은 색 팝오버의 토글로.
+    if (kindOfNow(overId) !== kindOfNow(from)) return;
+    const r = row.getBoundingClientRect();
+    const prev = lastDropRef.current;
+    const edge = edgeForPointer(y, r.top, r.height, prev?.overId === overId ? prev.edge : null);
+    if (prev && prev.overId === overId && prev.edge === edge) return;
+    lastDropRef.current = { overId, edge };
+    setOrderIds((cur) => applyDrop(cur, from, overId, edge));
   }
   function onPointerMove(e: PointerEvent) {
     const ghost = ghostRef.current;
     if (!ghost) return;
-    // 직접 위치를 박지 않고 "목표"만 갱신 → dragLoop이 관성 있게 따라간다.
-    dragTargetRef.current = {
-      x: e.clientX - offsetRef.current.x,
-      y: e.clientY - offsetRef.current.y
-    };
-    const el = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-    const overId = el?.closest("[data-tagid]")?.getAttribute("data-tagid");
-    if (overId && dragId.current && overId !== dragId.current) {
-      setOrderIds((cur) => moveBefore(cur, dragId.current as string, overId));
-    }
+    lastPointerRef.current = { x: e.clientX, y: e.clientY };
+    // 유령 = 포인터 1:1(들어올린 지점 오프셋 유지) — 판정 지점과 시각 객체가 일치한다.
+    ghost.style.left = `${e.clientX - offsetRef.current.x}px`;
+    ghost.style.top = `${e.clientY - offsetRef.current.y}px`;
+    updateDropTarget(e.clientX, e.clientY);
     // 자동 스크롤 판정은 '스크롤러' 가장자리 기준 — 창 기준이면 모달이 화면 중앙에 떠 있을 때
     // 모달 바닥까지 끌어도 스크롤이 안 내려갔다(사용자 지적).
     const sc = scrollerRef.current;
@@ -384,7 +400,17 @@ export function TagLegendEditor({
     rowTopsRef.current = next;
   });
 
-  function endDrag() {
+  // 드롭(commit) 또는 취소 — 취소면 드래그 시작 시점 순서로 복구한다(Esc·pointercancel·
+  // 창 포커스 상실). 등록한 리스너 4종을 어느 경로로 끝나든 전부 대칭 해제한다(감사 P2).
+  function finishDrag(cancelled: boolean) {
+    const h = dragEndHandlersRef.current;
+    if (h) {
+      window.removeEventListener("pointerup", h.commit);
+      window.removeEventListener("pointercancel", h.cancel);
+      window.removeEventListener("blur", h.cancel);
+      document.removeEventListener("keydown", h.key, true);
+      dragEndHandlersRef.current = null;
+    }
     if (moveHandlerRef.current) {
       window.removeEventListener("pointermove", moveHandlerRef.current);
       moveHandlerRef.current = null;
@@ -394,6 +420,15 @@ export function TagLegendEditor({
     rafRef.current = null;
     ghostRef.current?.remove();
     ghostRef.current = null;
+    lastDropRef.current = null;
+    if (cancelled) {
+      const snap = dragStartOrderRef.current;
+      if (snap) {
+        setOrderIds(snap.order);
+        orderDirtyRef.current = snap.dirty;
+      }
+    }
+    dragStartOrderRef.current = null;
     dragId.current = null;
     setDraggingId(null);
   }
@@ -412,25 +447,32 @@ export function TagLegendEditor({
     document.body.appendChild(ghost);
     ghostRef.current = ghost;
     offsetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-    // 물리 초기화: 현재 위치=목표=잡은 자리, 기울기·흔들림 0에서 시작.
-    dragPosRef.current = { x: rect.left, y: rect.top };
-    dragTargetRef.current = { x: rect.left, y: rect.top };
-    dragRotRef.current = 0;
-    dragRotVelRef.current = 0;
-    dragWobbleRef.current = 0;
-    // 태그 순서 변경은 잡은 위치 축·중력을 쓰지 않는다(중앙 축, 가벼운 흔들림만).
+    lastPointerRef.current = { x: e.clientX, y: e.clientY };
     ghost.style.transformOrigin = "center";
-    dragGravityRef.current = 0;
-    dragReducedRef.current = reduceMotionEnabled(); // OS reduce-motion 무시 — 앱 토글만
     scrollerRef.current = findScroller(row);
     dragId.current = id;
     setDraggingId(id);
     scrollDirRef.current = 0;
+    // 취소 복구용 스냅샷 — 드롭 전 미리보기 순서는 아직 진실이 아니다.
+    dragStartOrderRef.current = { order: orderIdsRef.current.slice(), dirty: orderDirtyRef.current };
+    lastDropRef.current = null;
     rafRef.current = requestAnimationFrame(dragLoop);
     moveHandlerRef.current = onPointerMove;
+    const commit = () => finishDrag(false);
+    const cancel = () => finishDrag(true);
+    const key = (ev: KeyboardEvent) => {
+      if (ev.key !== "Escape") return;
+      // 모달 Esc-닫기(document 버블 단계)보다 먼저(capture) 먹는다 — 드래그 취소가 우선.
+      ev.preventDefault();
+      ev.stopPropagation();
+      finishDrag(true);
+    };
+    dragEndHandlersRef.current = { commit, cancel, key };
     window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", endDrag, { once: true });
-    window.addEventListener("pointercancel", endDrag, { once: true });
+    window.addEventListener("pointerup", commit, { once: true });
+    window.addEventListener("pointercancel", cancel, { once: true });
+    window.addEventListener("blur", cancel, { once: true });
+    document.addEventListener("keydown", key, true);
   }
 
   // 읽기 전용(좌측 패널): 색상 안내. onToggleFilter가 있으면 필터 버튼으로 동작한다.
@@ -666,6 +708,12 @@ export function TagLegendEditor({
   );
   const hasNew = newTags.length > 0;
   const dirty = orderChanged || contentChanged || hasNew;
+  // 부모(모달 닫기 게이트)에 dirty 통지 — 이 지점은 canEdit 조기 return 뒤라 훅을 못 쓴다.
+  // 렌더 단계 직접 호출 + 변화 감지 ref: 콜백 계약은 'ref 대입만'(setState 금지)이라 안전.
+  if (onDirtyChange && lastDirtySentRef.current !== dirty) {
+    lastDirtySentRef.current = dirty;
+    onDirtyChange(dirty);
+  }
   // 순서만 바뀌었으면 "변경된 순서 저장", 그 외(이름·색·새 태그)는 "전체 저장".
   const saveLabel =
     orderChanged && !contentChanged && !hasNew ? "변경된 순서 저장" : "전체 저장";

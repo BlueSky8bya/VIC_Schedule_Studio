@@ -90,6 +90,7 @@
   --coral: #f26d5b;
   --amber: #f4b740;
   --violet: #5b34f0; /* 무대/선택/포커스(흰 글자). 기존보다 채도↑ */
+  --violet-rgb: 91 52 240; /* rgb(var(--violet-rgb) / a%) 알파 조합용 — --violet과 같은 색 */
   --violet-soft: #f3eeff;
   --pink: #ff5f8f; /* 토리 핑크 — 하트·팬 반응 */
   --pink-soft: #ffe8f1;

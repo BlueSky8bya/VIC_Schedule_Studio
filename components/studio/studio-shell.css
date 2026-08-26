@@ -4367,27 +4367,25 @@ html[data-reduce-motion] .role-segment button.active {
   letter-spacing: 0.02em;
   user-select: none;
 }
-/* 토글 — 편집실 상단바 우측(.studio-role-tools) 안에 인라인으로(고정 자리, 안 움직임). */
+/* 세그먼트 — 액션바 가운데 열(.studio-actionbar-tools 그리드 2열)에 [왼쪽 · 아바타 자리 · 오른쪽].
+   라벨이 가운데, 방향 버튼이 양옆이라 '어느 쪽'인지가 라벨 기준으로 읽힌다. 항상 켜짐(끄기 없음). */
 .studio-avatar-ctl {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-}
-/* 항상 켜짐(끄기 없음) — 라벨 + 좌/우 세그먼트만. */
-.studio-avatar-ctl .avatar-ctl-label {
-  color: #6b5b8a;
-  font-weight: 700;
-  font-size: 13px;
-  user-select: none;
-}
-.studio-avatar-ctl .avatar-ctl-side {
-  display: inline-flex;
   gap: 2px;
   padding: 2px;
   background: #f4eefb;
   border-radius: var(--r-pill);
 }
-.studio-avatar-ctl .avatar-ctl-side button {
+.studio-avatar-ctl .avatar-ctl-label {
+  padding: 0 10px;
+  color: #6b5b8a;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
+  user-select: none;
+}
+.studio-avatar-ctl button {
   border: 0;
   background: transparent;
   color: #6b5b8a;
@@ -4401,12 +4399,12 @@ html[data-reduce-motion] .role-segment button.active {
     box-shadow 0.12s ease,
     transform 0.08s ease;
 }
-.studio-avatar-ctl .avatar-ctl-side button.on {
+.studio-avatar-ctl button.on {
   background: #fff;
   color: #5b4a86;
   box-shadow: 0 1px 4px rgb(91 74 134 / 18%);
 }
-.studio-avatar-ctl .avatar-ctl-side button:active {
+.studio-avatar-ctl button:active {
   transform: scale(0.95);
 }
 html[data-reduce-motion] .studio-shell.avatar-scene .studio-workspace,
@@ -4847,11 +4845,6 @@ html[data-reduce-motion] .editor-anchor-link line {
   position: relative;
   display: inline-flex;
 }
-/* 관리 ▾ 드롭다운(IA A안) — 미리보기 드롭다운과 같은 문법(메뉴·항목 스타일 공유). */
-.manage-dd {
-  position: relative;
-  display: inline-flex;
-}
 .preview-dd-trigger {
   gap: 6px;
 }
@@ -4908,15 +4901,42 @@ html[data-reduce-motion] .editor-anchor-link line {
   border-radius: var(--r-md);
 }
 .studio-actionbar-tools {
-  position: relative; /* 가운데 버전 태그+단축키 토글(.studio-buildbox) 기준 */
+  position: relative;
   display: flex;
   flex: 1 1 auto; /* 남는 폭을 채워, 관리 묶음=왼쪽 / 꾸미기=오른쪽 끝으로 가르게 한다. */
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   min-width: 0;
-  /* 가운데 세로 스택(버전 + 단축키 버튼 ≈42px)이 넘치지 않게 최소 높이 확보. */
   min-height: 44px;
+}
+/* 왼쪽 묶음(관리 3종 + 시즌 토글) — 그리드 1열. */
+.studio-actionbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+/* 웹: 3열 그리드(1fr · auto · 1fr) — 가운데 열(아바타 자리 세그먼트)이 남는 폭과 무관하게
+   액션바 정중앙에 놓인다. 열을 명시해 아바타 세그먼트가 없을 때도 좌/우 묶음이 제자리. */
+@media (min-width: 641px) {
+  .studio-actionbar-tools {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .studio-actionbar-left {
+    grid-column: 1;
+    justify-self: start;
+  }
+  .studio-avatar-ctl {
+    grid-column: 2;
+    justify-self: center;
+  }
+  .studio-actionbar-right {
+    grid-column: 3;
+    justify-self: end;
+  }
 }
 /* 배포 버전(커밋) — 액션바 가운데(클릭 안 됨). 기본(비개발자)은 흐린 회색 텍스트,
    개발자(.dev)는 모바일 배지처럼 또렷한 보라 펄로 꾸민다. */
@@ -7908,6 +7928,7 @@ textarea:disabled {
   z-index: 60;
 }
 .modal-card {
+  position: relative; /* 닫기 경고 오버레이(.modal-discard-ask)의 기준 */
   width: 100%;
   max-width: 460px;
   border-radius: var(--r-xl);
@@ -8068,7 +8089,16 @@ html[data-reduce-motion] .modal-close:active {
 }
 /* 드래그 중인 원래 자리는 들려 나간 듯 흐린 placeholder로(고스트=행 전체가 커서를 따라감). */
 .tag-editor-row.dragging {
-  opacity: 0.3;
+  /* 미리보기 순서상 '놓일 자리'를 빈 슬롯으로 — 점선 테두리 + 상호작용 보라 옅은 채움.
+     (라이브 미리보기 모델에선 이 슬롯이 곧 삽입 표시다 — 별도 삽입선은 이중 신호라 뺐다.) */
+  opacity: 0.45;
+  outline: 2px dashed rgb(var(--violet-rgb) / 45%);
+  outline-offset: -2px;
+  background: rgb(var(--violet-rgb) / 6%);
+  border-radius: 10px;
+}
+.tag-editor-row.dragging > * {
+  opacity: 0.55;
 }
 /* 손가락/커서를 따라 떠다니는 복제본 — 실제로 카드를 들어 옮기는 느낌. */
 .tag-drag-ghost {
@@ -8080,7 +8110,8 @@ html[data-reduce-motion] .modal-close:active {
   border-radius: 10px;
   background: #fff;
   box-shadow: 0 14px 30px rgb(17 24 39 / 28%);
-  transform: scale(1.03) rotate(-1deg);
+  /* 정밀 조작(정렬) 중엔 회전·흔들림 없이 1:1 — 판정 지점과 시각 객체 일치(감사 P0). */
+  transform: scale(1.02);
   opacity: 0.97;
 }
 .tag-editor-row input {
@@ -11661,7 +11692,6 @@ html[data-reduce-motion] .m-edit-actions .button:active {
 /* 배치 7: 자주 쓰는 picker·menu·role setting.
    권한 분기와 portal 좌표는 유지하고 trigger/popup/selected 문법만 통일한다. */
 .preview-dd-trigger,
-.manage-dd-trigger,
 .actor-badge,
 .dtp-trigger {
   min-height: var(--control-hit);
@@ -11671,8 +11701,7 @@ html[data-reduce-motion] .m-edit-actions .button:active {
   color: var(--ink-soft);
 }
 
-.preview-dd-trigger,
-.manage-dd-trigger {
+.preview-dd-trigger {
   gap: var(--space-2);
   padding-inline: var(--space-control-x);
   font-size: var(--text-body);
@@ -12025,7 +12054,6 @@ html[data-reduce-motion] .tp-chip.selected {
 }
 
 html[data-reduce-motion] .preview-dd-trigger,
-html[data-reduce-motion] .manage-dd-trigger,
 html[data-reduce-motion] .preview-dd-item,
 html[data-reduce-motion] .rhh-switch,
 html[data-reduce-motion] .rhh-knob,
@@ -12043,7 +12071,6 @@ html[data-reduce-motion] .role-segment button {
 }
 
 html[data-reduce-motion] .preview-dd-trigger:active,
-html[data-reduce-motion] .manage-dd-trigger:active,
 html[data-reduce-motion] .preview-dd-item:active,
 html[data-reduce-motion] .dtp-trigger:active,
 html[data-reduce-motion] .dtp-nav:active,
@@ -13538,4 +13565,43 @@ html[data-reduce-motion] .studio-event-pill.just-landed {
 /* 집어 든 유령은 기울지 않는다 — 크기와 그림자만으로 '들렸다'를 말한다. */
 html[data-reduce-motion] .event-drag-ghost {
   transform: none;
+}
+
+/* ── 태그 모달 닫기 경고(저장 전 변경 버리기 확인) ───────────────────────── */
+.modal-discard-ask {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  background: rgb(255 255 255 / 55%);
+  backdrop-filter: blur(3px);
+  border-radius: inherit;
+}
+.modal-discard-ask .mda-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface);
+  box-shadow: var(--shadow-3);
+}
+.modal-discard-ask .mda-card p {
+  margin: 0;
+  font-size: var(--text-ui);
+  font-weight: 800;
+  color: var(--ink);
+}
+.modal-discard-ask .mda-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.modal-discard-ask .mda-discard {
+  color: #b3261e;
+  border-color: rgb(179 38 30 / 35%);
+}
+.modal-discard-ask .mda-discard:hover {
+  background: rgb(179 38 30 / 8%);
 }

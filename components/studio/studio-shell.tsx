@@ -50,7 +50,8 @@ import type {
   MembershipRole,
   PublicSchedule,
   StudioSchedule,
-  StudioScheduleEvent
+  StudioScheduleEvent,
+  TagKind
 } from "@/lib/domain/schedule-types";
 import {
   FLING_SPEED,
@@ -758,8 +759,20 @@ export function StudioShell({
   // 이 플래그를 더해 "매니저 권한 + 작업자 비공개 접근 + 매니저·작업자 라벨"로 그린다.
   const [previewDual, setPreviewDual] = useState(false);
   const [previewMenuOpen, setPreviewMenuOpen] = useState(false);
-  // 애플 리디자인 2화면(IA, 사용자 A안): 저빈도 관리 3종(태그·멤버·인사이트)을 '관리 ▾' 하나로.
-  const [manageMenuOpen, setManageMenuOpen] = useState(false);
+  // 태그 편집기의 저장 전 변경 여부(에디터가 알려줌) — 닫기 경고 게이트.
+  const tagsDirtyRef = useRef(false);
+  const [tagsDiscardAsk, setTagsDiscardAsk] = useState(false);
+  // 태그 모달 닫기 요청 — dirty면 바로 닫지 않고 버리기 확인을 띄운다(드래그 직후엔 이미
+  // 화면 순서가 바뀌어 '적용된 것처럼' 보이므로, 조용한 유실이 특히 배신감이 크다).
+  const requestCloseModal = useCallback(() => {
+    setModal((cur) => {
+      if (cur === "tags" && tagsDirtyRef.current) {
+        setTagsDiscardAsk(true);
+        return cur;
+      }
+      return null;
+    });
+  }, []);
   const effectiveRole: MembershipRole = previewRole ?? actor.role;
   // 미리보기 화면이 보는 역할이 관리자인가(관리자 본인 + "관리자 미리보기" 둘 다 포함).
   const isEffectivelyOwner = effectiveRole === "owner";
@@ -1087,29 +1100,6 @@ export function StudioShell({
       document.removeEventListener("keydown", onKey);
     };
   }, [roleHelpOpen]);
-
-  // 관리 드롭다운: 바깥을 누르거나 Esc로 닫는다(미리보기 드롭다운과 동일 문법).
-  useEffect(() => {
-    if (!manageMenuOpen) {
-      return;
-    }
-    const onPointerDown = (event: PointerEvent) => {
-      if (!(event.target as HTMLElement | null)?.closest(".manage-dd")) {
-        setManageMenuOpen(false);
-      }
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setManageMenuOpen(false);
-      }
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [manageMenuOpen]);
 
   // 미리보기 드롭다운: 바깥을 누르거나 Esc로 닫는다.
   useEffect(() => {
@@ -1470,11 +1460,17 @@ export function StudioShell({
       if (e.key !== "Escape") return;
       e.stopPropagation();
       if (passcodeModal !== null) setPasscodeModal(null);
-      else setModal(null);
+      else if (tagsDiscardAsk) setTagsDiscardAsk(false); // 확인창에서 Esc = 계속 편집
+      else requestCloseModal();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [modal, passcodeModal]);
+  }, [modal, passcodeModal, tagsDiscardAsk, requestCloseModal]);
+  // 모달이 바뀌거나 닫히면 확인창·dirty 흔적을 정리.
+  useEffect(() => {
+    setTagsDiscardAsk(false);
+    if (modal !== "tags") tagsDirtyRef.current = false;
+  }, [modal]);
   // P1-DIALOG-1: 각 모달 카드에 Tab 포커스 가두기(순환)+초기 포커스. Esc·복원은 위 B2 효과.
   const mainModalTrapRef = useFocusTrap<HTMLDivElement>(modal !== null);
   const passcodeTrapRef = useFocusTrap<HTMLDivElement>(passcodeModal !== null);
@@ -4301,7 +4297,15 @@ export function StudioShell({
     }
   }
   function applyTagUpdates(
-    updates: { id: string; displayName: string; colorKey: ColorKey; bgHex?: string | null; sortOrder?: number }[]
+    updates: {
+      id: string;
+      displayName: string;
+      colorKey: ColorKey;
+      bgHex?: string | null;
+      sortOrder?: number;
+      kind?: TagKind;
+      parentId?: string | null;
+    }[]
   ) {
     setTags((prev) => {
       const mapped = prev.map((t) => {
@@ -4313,7 +4317,11 @@ export function StudioShell({
               colorKey: u.colorKey,
               // bgHex가 payload에 오면 반영(커스텀 색 즉시 카드/범례에). undefined면 유지.
               bgHex: u.bgHex === undefined ? t.bgHex : u.bgHex,
-              sortOrder: u.sortOrder ?? t.sortOrder
+              sortOrder: u.sortOrder ?? t.sortOrder,
+              // 종류/부모 변경도 즉시 반영 — 서버엔 저장되는데 이 세션의 섹션 분류만
+              // 옛날에 머무르던 문제(태그 감사 P2).
+              kind: u.kind ?? t.kind,
+              parentId: u.parentId === undefined ? t.parentId : u.parentId
             }
           : t;
       });
@@ -5969,7 +5977,7 @@ export function StudioShell({
           {avatarSceneOn ? <div className="avatar-rail-filter">{studioFilterPanel}</div> : null}
           <div className="avatar-slot">
             <div className="avatar-dock-inner">
-              <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
+              <span className="avatar-slot-hint">아바타 자리</span>
             </div>
           </div>
         </aside>
@@ -6114,122 +6122,92 @@ export function StudioShell({
           (개발자 역할 표시는 헤더의 역할 배지로 충분 — 별도 세션 안내 줄은 두지 않는다.) */}
       <div className="studio-actionbar">
         <div className="studio-actionbar-tools">
-          {/* 애플 리디자인 2화면(IA, 사용자 A안): 저빈도 관리 3종(태그·멤버·인사이트)을
-              '관리 ▾' 드롭다운 하나로 접는다 — 자주 쓰는 것(비공개·꾸미기)만 바로 노출.
-              매니저/작업자(관리 권한 없음)는 인사이트 단일 버튼만(항목 1개에 드롭다운은 과함). */}
-          {canEdit || (isDeveloper && !previewRole) ? (
-            <div className="manage-dd">
-              <button
-                aria-expanded={manageMenuOpen}
-                aria-haspopup="menu"
-                className="button io-accent manage-dd-trigger"
-                onClick={() => setManageMenuOpen((v) => !v)}
-                type="button"
-               data-act="manage-dd-trigger">
-                관리
-                <span aria-hidden="true" className="preview-dd-caret">
-                  ▾
-                </span>
+          {/* 왼쪽 묶음(그리드 1열) — 관리 3종(태그·멤버·인사이트)은 바로 노출(드롭다운 접기 철회,
+              사용자 요청). 매니저/작업자(또는 그 역할 미리보기)는 멤버판 인사이트 하나만 남는다. */}
+          <div className="studio-actionbar-left">
+            {canEdit || (isDeveloper && !previewRole) ? (
+              <div className="studio-manage-group" role="group" aria-label="관리">
+                {/* 단계 배포: 태그 '정의 편집' 진입은 v3 역할(현재 개발자)만. */}
+                {canEdit && taxonomyV3 ? (
+                  <button
+                    className="button io-accent io-tags"
+                    data-act="manage-tags"
+                    onClick={() => (blockedByPreview() ? null : setModal("tags"))}
+                    type="button"
+                  >
+                    태그 편집
+                  </button>
+                ) : null}
+                {canEdit ? (
+                  <button
+                    className="button io-accent io-members"
+                    data-act="manage-members"
+                    onClick={() => (blockedByPreview() ? null : setModal("members"))}
+                    type="button"
+                  >
+                    멤버 관리
+                  </button>
+                ) : null}
+                {isDeveloper && !previewRole ? (
+                  <button
+                    className="button io-accent io-insights"
+                    data-act="manage-insights"
+                    onClick={() => setModal("developer")}
+                    type="button"
+                  >
+                    🛠 월별 인사이트
+                  </button>
+                ) : canMemberInsights ? (
+                  <button
+                    className="button io-accent io-insights"
+                    data-act="manage-insights"
+                    onClick={() => setModal("developer")}
+                    type="button"
+                  >
+                    📊 월별 인사이트
+                  </button>
+                ) : null}
+              </div>
+            ) : canMemberInsights ? (
+              <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button" data-act="io-insights">
+                📊 월별 인사이트
               </button>
-              {manageMenuOpen ? (
-                <div className="preview-dd-menu" role="menu">
-                  {/* 단계 배포: 태그 '정의 편집' 진입은 v3 역할(현재 개발자)만. */}
-                  {canEdit && taxonomyV3 ? (
-                    <button
-                      className="preview-dd-item"
-                      data-act="manage-tags"
-                      onClick={() => {
-                        setManageMenuOpen(false);
-                        if (!blockedByPreview()) setModal("tags");
-                      }}
-                      role="menuitem"
-                      type="button"
-                    >
-                      태그 편집
-                    </button>
-                  ) : null}
-                  {canEdit ? (
-                    <button
-                      className="preview-dd-item"
-                      data-act="manage-members"
-                      onClick={() => {
-                        setManageMenuOpen(false);
-                        if (!blockedByPreview()) setModal("members");
-                      }}
-                      role="menuitem"
-                      type="button"
-                    >
-                      멤버 관리
-                    </button>
-                  ) : null}
-                  {isDeveloper && !previewRole ? (
-                    <button
-                      className="preview-dd-item"
-                      data-act="manage-insights"
-                      onClick={() => {
-                        setManageMenuOpen(false);
-                        setModal("developer");
-                      }}
-                      role="menuitem"
-                      type="button"
-                    >
-                      🛠 월별 인사이트
-                    </button>
-                  ) : canMemberInsights ? (
-                    <button
-                      className="preview-dd-item"
-                      data-act="manage-insights"
-                      onClick={() => {
-                        setManageMenuOpen(false);
-                        setModal("developer");
-                      }}
-                      role="menuitem"
-                      type="button"
-                    >
-                      📊 월별 인사이트
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          ) : canMemberInsights ? (
-            <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button" data-act="io-insights">
-              📊 월별 인사이트
-            </button>
-          ) : null}
-          {/* 아바타 자리 — 항상 켜짐(끄기 없음), 좌/우 위치만 고른다. 월별 인사이트 오른쪽. */}
+            ) : null}
+            {canEdit && isWorldCupMonth(view.year, view.month) ? (
+              <button
+                aria-pressed={showWorldCupFeatures}
+                className={`button io-accent io-worldcup${showWorldCupFeatures ? " on" : ""}`}
+                onClick={toggleWorldCupFeatures}
+                type="button"
+               data-act="io-worldcup">
+                ⚽ 월드컵 표시 {showWorldCupFeatures ? "끄기" : "켜기"}
+              </button>
+            ) : null}
+          </div>
+          {/* 아바타 자리 — 항상 켜짐(끄기 없음), 좌/우 위치만 고른다. 액션바 가운데 열에
+              [왼쪽 · 아바타 자리 · 오른쪽] 한 세그먼트로(라벨이 가운데, 방향 버튼이 양옆). */}
           {avatarEditor ? (
             <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
-              <span className="avatar-ctl-label">🎙️ 아바타 자리</span>
-              <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
-                <button
-                  type="button"
-                  className={avatarSide === "left" ? "on" : ""}
-                  aria-pressed={avatarSide === "left"}
-                  onClick={() => pickAvatarSide("left")}
-                >
-                  왼쪽
-                </button>
-                <button
-                  type="button"
-                  className={avatarSide === "right" ? "on" : ""}
-                  aria-pressed={avatarSide === "right"}
-                  onClick={() => pickAvatarSide("right")}
-                >
-                  오른쪽
-                </button>
-              </div>
+              <button
+                type="button"
+                className={avatarSide === "left" ? "on" : ""}
+                aria-pressed={avatarSide === "left"}
+                onClick={() => pickAvatarSide("left")}
+                data-act="avatar-ctl-toggle"
+              >
+                왼쪽
+              </button>
+              <span className="avatar-ctl-label">아바타 자리</span>
+              <button
+                type="button"
+                className={avatarSide === "right" ? "on" : ""}
+                aria-pressed={avatarSide === "right"}
+                onClick={() => pickAvatarSide("right")}
+                data-act="avatar-ctl-toggle"
+              >
+                오른쪽
+              </button>
             </div>
-          ) : null}
-          {canEdit && isWorldCupMonth(view.year, view.month) ? (
-            <button
-              aria-pressed={showWorldCupFeatures}
-              className={`button io-accent io-worldcup${showWorldCupFeatures ? " on" : ""}`}
-              onClick={toggleWorldCupFeatures}
-              type="button"
-             data-act="io-worldcup">
-              ⚽ 월드컵 표시 {showWorldCupFeatures ? "끄기" : "켜기"}
-            </button>
           ) : null}
           {/* 우측 묶음: 단축키 + 비공개 일정 보기(토글) + 달력 꾸미기.
               (저장 상태 칩은 헤더의 버전 캡슐 아래로 이사 — 사용자 지정 배치.) */}
@@ -7408,7 +7386,7 @@ export function StudioShell({
           }}
           onMouseUp={(e) => {
             if (backdropPressRef.current && e.target === e.currentTarget) {
-              setModal(null);
+              requestCloseModal();
             }
             backdropPressRef.current = false;
           }}
@@ -7438,7 +7416,7 @@ export function StudioShell({
                 aria-label="닫기"
                 className="modal-close"
                 data-act="close-modal"
-                onClick={() => setModal(null)}
+                onClick={requestCloseModal}
                 type="button"
               >
                 <X aria-hidden="true" size={18} />
@@ -7448,6 +7426,9 @@ export function StudioShell({
             {modal === "tags" && taxonomyV3 ? (
               <TagLegendEditor
                 canEdit
+                onDirtyChange={(d) => {
+                  tagsDirtyRef.current = d;
+                }}
                 onTagAdded={applyTagAdd}
                 onTagRemoved={applyTagRemove}
                 onTagsUpdated={applyTagUpdates}
@@ -7456,6 +7437,36 @@ export function StudioShell({
                 saveTagsAction={saveTagsAction}
                 tags={tags}
               />
+            ) : null}
+            {tagsDiscardAsk ? (
+              <div className="modal-discard-ask" role="alertdialog" aria-label="변경사항 확인">
+                <div className="mda-card">
+                  <p>저장하지 않은 변경사항이 있어요.</p>
+                  <div className="mda-actions">
+                    <button
+                      autoFocus
+                      className="button"
+                      onClick={() => setTagsDiscardAsk(false)}
+                      type="button"
+                      data-act="mda-keep"
+                    >
+                      계속 편집
+                    </button>
+                    <button
+                      className="button mda-discard"
+                      onClick={() => {
+                        setTagsDiscardAsk(false);
+                        tagsDirtyRef.current = false;
+                        setModal(null);
+                      }}
+                      type="button"
+                      data-act="mda-discard"
+                    >
+                      버리고 닫기
+                    </button>
+                  </div>
+                </div>
+              </div>
             ) : null}
             {modal === "members" ? <TrustedMembersPanel /> : null}
             {modal === "dayVisit" ? <DayVisitModal dateKey={selectedDate} /> : null}

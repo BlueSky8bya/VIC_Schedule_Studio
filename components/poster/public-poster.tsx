@@ -6875,7 +6875,7 @@ export function PublicPoster({
               </div>
             ) : null}
             <div className="avatar-dock-inner">
-              <span className="avatar-slot-hint">🎙️ 아바타 자리</span>
+              <span className="avatar-slot-hint">아바타 자리</span>
             </div>
           </aside>
         ) : null}
