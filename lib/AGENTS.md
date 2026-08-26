@@ -19,5 +19,5 @@
 
 ## Verification
 ```bash
-npm run test        # vitest (public-dto, owner-email, football taxonomy 등)
+npm run test        # vitest (public-dto, owner-email 등)
 ```

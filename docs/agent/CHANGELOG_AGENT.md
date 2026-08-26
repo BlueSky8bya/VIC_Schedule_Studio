@@ -113,3 +113,15 @@ Files: `components/poster/public-poster.{tsx,css}`, `lib/schedules/public-loader
 Validation: tsc·lint·build 0, vitest 618, 비주얼 77(지오메트리·포스터 기준선 의도 갱신). 배포 순서: 코드 push →
   Vercel 배포 확인 → 스토리지 비우기 → 0065 적용(옛 코드가 스티커 테이블을 읽으므로 순서 엄수).
 Rollback: git 이력 + 백업 JSON/이미지. 스키마는 새 마이그레이션으로 재생성(되돌리기 비쌈 — 감수).
+
+### CHG-20260827-002 — REMOVE — 월드컵/축구 시뮬 전부 삭제 (ADR-0009 Superseded)
+
+Problem: `WORLD_CUP_UI_ENABLED=false`로 런타임 도달 불가인 코드 ≈15,500줄(미니게임·중력공·RL 시뮬·연구 문서)이
+  빌드·테스트·검색 노이즈로 남아 있었고, 관리자가 재사용 의사가 없다.
+Change: `components/seasonal`, `lib/football`, `tests/unit/football`, `docs/sim`, `lib/calendar/worldcup.ts`,
+  `lib/ui/use-worldcup-visibility.ts`, `components/ui/pop-number.tsx` 삭제. `holidays.ts` DayMark에서 월드컵
+  필드 제거, 포스터·편집실 토글/자동 테마/경기 칩/공 렌더 제거, CSS 제거. 공개 경계·DB 변경 없음.
+Files: 위 + `components/poster/public-poster.{tsx,css}`, `components/studio/studio-shell.{tsx,css}`,
+  `lib/calendar/{holidays,month}.ts`, `app/globals.css`.
+Validation: tsc·lint 0, vitest 490(축구 테스트 12파일 삭제분 제외), 비주얼 스위트.
+Rollback: git 이력(2026-08-27). 다시 넣는다면 dynamic import + opt-in(ADR-0009 원칙)으로.

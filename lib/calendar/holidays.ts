@@ -4,25 +4,12 @@
 // 선거일·임시공휴일도 포함한다. 2028년 이후는 추가 필요.
 // 24절기 표기는 아직 2026년만 채워져 있다(빨간날 아님). (정확도 검증 권장)
 
-import { getWorldCupMark } from "@/lib/calendar/worldcup";
-
-export type MarkKind = "wc" | "wc-korea" | "wc-korea-win" | "wc-korea-done" | "wc-final";
 export type DayMark = {
-  name: string; // 헤더(날짜숫자 옆) 표기 — 공휴일/절기/복날/기념일/월드컵 단계(개막·32강). 경기만 있는 날은 "".
+  name: string; // 헤더(날짜숫자 옆) 표기 — 공휴일/절기/복날/기념일
   isHoliday: boolean; // true면 빨간날(공휴일/대체공휴일), false면 단순 표기(기념일/절기)
-  kind?: MarkKind; // 헤더 마크 스타일(월드컵 단계표기)
-  // 월드컵 '경기'(대진·스코어)는 헤더가 아니라 칸 본문 칩으로 낸다. 헤더 슬롯은 절기·복날 등에 양보.
-  match?: { text: string; kind: MarkKind; celebrate: "win" | "done" | "cheer" };
 };
-
-// 월드컵 표시를 끈 화면용. 같은 날의 공휴일·절기·기념일은 유지하고 월드컵 단계/경기만 제거한다.
-export function withoutWorldCupMark(mark: DayMark | null): DayMark | null {
-  if (!mark) return null;
-  if (mark.kind) return null; // kind는 현재 월드컵 단계 표기에만 사용한다.
-  if (!mark.match) return mark;
-  if (!mark.name) return null;
-  return { ...mark, match: undefined };
-}
+// (월드컵 단계/경기 표기(MarkKind·match·withoutWorldCupMark)는 2026-08-27 월드컵 기능 삭제로 제거 —
+//  ADR-0009 Superseded.)
 
 // 매년 고정(양력) 공휴일 — 빨간날
 const HOLIDAYS_FIXED: Record<string, string> = {
@@ -443,21 +430,9 @@ function substituteFixedFromHoliday(isoDate: string): string | null {
   return null;
 }
 
-function wcKind(wc: NonNullable<ReturnType<typeof getWorldCupMark>>): MarkKind {
-  return wc.result === "win"
-    ? "wc-korea-win"
-    : wc.result // 끝난 무/패 — 다가오는 경기 빨강 테두리 대신 차분한 마감 스타일
-      ? "wc-korea-done"
-      : wc.isKorea
-        ? "wc-korea"
-        : wc.isFinal
-          ? "wc-final"
-          : "wc";
-}
-
 // 헤더(날짜숫자 옆)에 뜰 마크 — 우선순위 순. 월드컵 '경기'(스코어 있는 날)는 여기서 제외하고
 // 칸 본문 칩으로 따로 낸다(아래 getDayMark). 단, 월드컵 '단계표기'(개막/32강/…)는 헤더에 남긴다.
-function getHeaderMark(isoDate: string, wc: ReturnType<typeof getWorldCupMark>): DayMark | null {
+export function getDayMark(isoDate: string): DayMark | null {
   const md = isoDate.slice(5);
 
   if (HOLIDAYS_YEARLY[isoDate]) return { name: HOLIDAYS_YEARLY[isoDate], isHoliday: true };
@@ -468,8 +443,6 @@ function getHeaderMark(isoDate: string, wc: ReturnType<typeof getWorldCupMark>):
   }
   const sub = substituteFixedFromHoliday(isoDate);
   if (sub) return { name: sub, isHoliday: true };
-  // 월드컵 '단계표기'(경기 아님: 개막/32강/16강/8강)만 헤더에. 경기는 본문 칩으로(getDayMark).
-  if (wc && !wc.isMatch) return { name: wc.name, isHoliday: false, kind: wcKind(wc) };
   if (STREAMER_ONCE[isoDate]) return { name: STREAMER_ONCE[isoDate], isHoliday: false };
   const annual = STREAMER_ANNUAL[md];
   if (annual) {
@@ -485,27 +458,3 @@ function getHeaderMark(isoDate: string, wc: ReturnType<typeof getWorldCupMark>):
   return null;
 }
 
-export function getDayMark(isoDate: string): DayMark | null {
-  const wc = getWorldCupMark(isoDate);
-  // 월드컵 '경기'(스코어/한국전)는 칸 본문 칩으로 — 헤더 슬롯은 절기·복날(초복)·기념일에 양보한다.
-  const match =
-    wc && wc.isMatch
-      ? {
-          text: wc.sub ? `${wc.name} ${wc.sub}` : wc.name,
-          kind: wcKind(wc),
-          celebrate: (wc.result === "win" ? "win" : wc.result ? "done" : "cheer") as
-            | "win"
-            | "done"
-            | "cheer"
-        }
-      : undefined;
-
-  const header = getHeaderMark(isoDate, wc);
-  if (!header && !match) return null;
-  return {
-    name: header?.name ?? "",
-    isHoliday: header?.isHoliday ?? false,
-    kind: header?.kind,
-    match
-  };
-}

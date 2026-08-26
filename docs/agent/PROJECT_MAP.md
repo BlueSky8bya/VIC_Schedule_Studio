@@ -12,7 +12,6 @@
 | `app/api/studio-write` | 낙관적 쓰기 창구(keepalive) | `route.ts` | op + payload → 액션 | ADR-0006 | AUTH |
 | `components/poster/**` | 시청자 포스터 · 공개 인사이트 | `public-poster.tsx` | 공개 스케줄 → 화면 | `components/README.md` | SECURITY |
 | `components/studio/**` | 편집실 셸 · 관리자 인사이트 · 차트 | `studio-shell.tsx` | 스튜디오 스케줄 → 화면 | `components/AGENTS.md` | AUTH |
-| `components/seasonal/**` | 시즌 장난감(월드컵 미니게임·중력공) | `worldcup-ball-goal.tsx` | 사용자 opt-in → 오버레이 | ADR-0009 | GENERAL |
 | `lib/schedules/public-loader.ts` | **공개 데이터 단일 출처** | `getPublicSchedule` | Supabase(anon) → 공개 DTO | `lib/AGENTS.md` | SECURITY, PRIVACY |
 | `lib/schedules/studio-loader.ts` + `*-actions.ts` | 스튜디오 읽기/쓰기 | 서버 액션 | 액터 + 입력 → DB | `lib/schedules/README.md` | AUTH |
 | `lib/private-layer/**` | 패스코드 언락 · 본문 암호화 | `secret-crypto.ts` | 평문 ↔ AES-256-GCM | ADR-0002 | PRIVACY |

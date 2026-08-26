@@ -81,13 +81,7 @@ import {
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import { markContentReady } from "@/lib/presence/content-ready";
-import { getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
-import { isWorldCupMonth } from "@/lib/calendar/worldcup";
-// 월드컵 달에만 뜨는 중력 공 — 정적 import면 lib/football까지 편집실 첫 로드 번들에 얹힌다.
-const WorldCupStudioBall = dynamic(
-  () => import("@/components/seasonal/worldcup-studio-ball").then((m) => m.WorldCupStudioBall),
-  { ssr: false }
-);
+import { getDayMark } from "@/lib/calendar/holidays";
 import {
   canEditEventTags,
   canEditSchedule,
@@ -166,7 +160,6 @@ import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { getPublicPreviewAction } from "@/lib/schedules/preview-actions";
 import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
-import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 // 스튜디오 CSS는 StudioShell을 렌더하는 페이지(studio/(home), studio/calendar)에서 page-level로
 // import한다 — 그래야 <head>에 렌더 차단으로 올라가 모바일 첫 진입에도 깜빡임(FOUC)이 없다.
 // (컴포넌트에서 import하면 loading.tsx 이후 스트리밍으로 늦게 적용돼 잠깐 무스타일로 보였다.)
@@ -452,13 +445,6 @@ export function StudioShell({
   }
   // 시청자 공개 화면 전체보기 (팝업이 아니라 화면 전체를 교체)
   const [viewerMode, setViewerMode] = useState(initialViewerMode);
-  const [showWorldCupFeatures, setShowWorldCupFeatures] = useWorldCupVisibility();
-  // A안 확대 중에는 저장된 사용자 선택을 덮지 않고 표시만 자동으로 숨긴다
-  // (달력 확대의 목적은 '일정 글자'라 월드컵 칩·공은 확대 시 소음 — 아래 worldCupFxVisible 참조).
-  function toggleWorldCupFeatures() {
-    hapticTick();
-    setShowWorldCupFeatures(!showWorldCupFeatures);
-  }
   // 좁은 화면(<1000px, P1-IPAD-1): 편집실을 아젠다(목록) + 인라인 편집 형태로 전환한다.
   // 아이패드 세로(768)·스플릿뷰도 압축 데스크톱 대신 터치 네이티브 아젠다를 받는다(L4).
   const [isNarrow, setIsNarrow] = useState(initialNarrow);
@@ -1786,8 +1772,6 @@ export function StudioShell({
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, [isNarrow, viewerMode, applyCalZoom]);
-  // 확대 중에는 월드컵 칩·장식을 표시만 숨긴다(저장된 선택은 그대로 — 100%로 돌아오면 복귀).
-  const worldCupFxVisible = showWorldCupFeatures && calZoom === 1;
   // 아바타 모드 고정 도크(태그필터 rail·편집창)의 top을 실측으로(--dock-top).
   // 하드코딩 148px는 브라우저 확대(헤더·액션바가 더 두꺼워짐)에선 액션바를 침범했고,
   // 스크롤로 막대가 화면 밖으로 나가면 위 공간이 비었다 → 액션바 하단을 따라가고,
@@ -4832,8 +4816,7 @@ export function StudioShell({
             >
               {monthCells.map((cell, agendaIndex) => {
               const day = classifyDay(cell.isoDate, cell.weekday, today);
-              const rawMark = getDayMark(cell.isoDate);
-              const mark = showWorldCupFeatures ? rawMark : withoutWorldCupMark(rawMark);
+              const mark = getDayMark(cell.isoDate);
               const dayEvents = mobileAgendaEvents
                 .filter((e) => getEventDateKey(e) === cell.isoDate)
                 // 편집실 드래그로 정한 같은 날 표시 순서(sort_order)를 편집실 모바일 아젠다도 따른다.
@@ -4862,14 +4845,8 @@ export function StudioShell({
                     <span className="agenda-wd">{WEEKDAYS[cell.weekday]}</span>
                   </div>
                   <div className="agenda-day-list">
-                    {mark && (mark.name || mark.match) ? (
-                      <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>
-                        {mark.match
-                          ? mark.name
-                            ? `${mark.match.text} · ${mark.name}`
-                            : mark.match.text
-                          : mark.name}
-                      </span>
+                    {mark?.name ? (
+                      <span className={`agenda-mark ${mark.isHoliday ? "holiday" : ""}`}>{mark.name}</span>
                     ) : null}
                     {dayEvents.length === 0 ? (
                       <span className="agenda-noevent">예정된 일정 없음</span>
@@ -5119,16 +5096,6 @@ export function StudioShell({
             누르기 쉬운 핵심 버튼(미리보기·비공개)을 엄지 닿는 바닥에 모았다.
             계정변경(로그아웃)은 헤더 우상단으로 옮겼다(저장됨 칩이 있던 자리). */}
         <nav className="m-actionrail" aria-label="편집실 도구">
-          {canEdit && isWorldCupMonth(view.year, view.month) ? (
-            <button
-              aria-pressed={showWorldCupFeatures}
-              className={`button m-io-pill m-io-worldcup${showWorldCupFeatures ? " on" : ""}`}
-              onClick={toggleWorldCupFeatures}
-              type="button"
-             data-act="m-io-pill">
-              ⚽ 월드컵 {showWorldCupFeatures ? "끄기" : "켜기"}
-            </button>
-          ) : null}
           {/* 비밀번호(최초공개 게이트용) 변경 — 관리자만. 비공개 일정 보기 토글 자리(2026-08-27 철수). */}
           {isEffectivelyOwner ? (
             <button className="button m-io-pill m-io-private" data-act="change-passcode" onClick={() => openChangePasscode()} type="button">
@@ -5729,7 +5696,6 @@ export function StudioShell({
           // "n명이 기다렸어요" 배지는 당분간 개발자 확인용만(사용자 결정 — 카운팅은 쌓되
           // 관리자·시청자에겐 아직 비노출). 역할 미리보기(effectiveRole)가 아니라 실제 역할 기준.
           showHopeBadge={actor.role === "developer"}
-          showWorldCupFeatures={showWorldCupFeatures}
           toggleHeartAction={toggleEventHeartAction}
         />
         {broadcastOpen ? (
@@ -5769,11 +5735,6 @@ export function StudioShell({
         avatarReady ? "" : " avatar-no-anim"
       }`}
     >
-      {/* 편집실 중력 축구공(월드컵 기간만) — 편집 중 간단히 갖고 노는 장식. 일정 작업 방해 0.
-          (시청자 화면 미리보기에선 위 PublicPoster가 '전체' 미니게임을 직접 띄운다.) */}
-      {worldCupFxVisible && isWorldCupMonth(view.year, view.month) && !viewerMode ? (
-        <WorldCupStudioBall pauseWhenMinigameOn={false} />
-      ) : null}
       {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
           flex-column이라 둘이 절대 안 겹친다. scene일 때만 필터를 여기 담는다. */}
       {avatarEditor ? (
@@ -5892,8 +5853,9 @@ export function StudioShell({
           {/* 배포 버전 배지는 왼쪽 데스크 라벨 아래로 이사 — 여기는 저장 상태 칩만.
               칩의 아래 끝선은 역할 배지 버튼의 아래 끝선과 맞춘다(.studio-meta-capsule). */}
           <div className="studio-meta-capsule">{renderSaveStatus()}</div>
+          {/* 역할 배지·로그아웃은 액션바 오른쪽(단축키 옆)으로 이사(2026-08-27 사용자 지정 배치) —
+              헤더는 저장 상태 + 미리보기만. */}
           {/* 미리보기 안내는 역할 배지("?") 설명 팝오버 안 작은 문구로 일원화(별도 플래그 제거). */}
-          {renderRoleBadge()}
           {/* 개발자는 역할 미리보기 드롭다운, 그 외 역할은 시청자 화면 미리보기. */}
           {isDeveloper ? (
             renderPreviewControl()
@@ -5903,21 +5865,6 @@ export function StudioShell({
               {/* '보여주기'는 관리자(owner)만 — 매니저·작업자는 '미리보기'. */}
               {isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}
             </button>
-          )}
-          {actor.isAuthenticated ? (
-            <form action="/api/auth/logout" method="post">
-              <button
-                className="button io-accent io-logout"
-                onClick={() => startNav("로그아웃 중…")}
-                type="submit"
-               data-act="io-logout">
-                로그아웃
-              </button>
-            </form>
-          ) : (
-            <Link className="button" data-act="login" href="/login">
-              로그인
-            </Link>
           )}
         </div>
       </header>
@@ -5989,16 +5936,6 @@ export function StudioShell({
                 월별 인사이트
               </button>
             ) : null}
-            {canEdit && isWorldCupMonth(view.year, view.month) ? (
-              <button
-                aria-pressed={showWorldCupFeatures}
-                className={`button io-accent io-worldcup${showWorldCupFeatures ? " on" : ""}`}
-                onClick={toggleWorldCupFeatures}
-                type="button"
-               data-act="io-worldcup">
-                ⚽ 월드컵 표시 {showWorldCupFeatures ? "끄기" : "켜기"}
-              </button>
-            ) : null}
           </div>
           {/* 아바타 자리 — 항상 켜짐(끄기 없음), 좌/우 위치만 고른다. 액션바 가운데 열에
               [왼쪽 · 아바타 자리 · 오른쪽] 한 세그먼트로(라벨이 가운데, 방향 버튼이 양옆). */}
@@ -6045,6 +5982,24 @@ export function StudioShell({
                 <ChevronDown aria-hidden="true" size={13} />
               </button>
             ) : null}
+            {/* 역할 배지("?" 권한 팝오버) + 로그아웃 — 헤더 우상단에서 여기로(사용자 지정 배치:
+                단축키 · 역할 · 로그아웃 순). */}
+            {renderRoleBadge()}
+            {actor.isAuthenticated ? (
+              <form action="/api/auth/logout" method="post">
+                <button
+                  className="button io-accent io-logout"
+                  onClick={() => startNav("로그아웃 중…")}
+                  type="submit"
+                 data-act="io-logout">
+                  로그아웃
+                </button>
+              </form>
+            ) : (
+              <Link className="button" data-act="login" href="/login">
+                로그인
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -6169,9 +6124,7 @@ export function StudioShell({
                 srcIdxHere >= 0 && liIdx !== null && (liIdx === srcIdxHere || liIdx === srcIdxHere + 1);
               const gapOpen = (idx: number) => liIdx !== null && liIdx === idx && !dropIsNoop;
               const day = classifyDay(cell.isoDate, cell.weekday, today);
-              const visibleDayMark = worldCupFxVisible
-                ? getDayMark(cell.isoDate)
-                : withoutWorldCupMark(getDayMark(cell.isoDate));
+              const visibleDayMark = getDayMark(cell.isoDate);
               // 이 칸이 속한 주의 업 도움 줄 수만큼만 위 여백을 둔다(띠 없는 주는 0).
               const weekSupCount = weekSupportLaneCount[Math.floor(cellIndex / 7)] ?? 0;
 
@@ -6333,21 +6286,11 @@ export function StudioShell({
                   <div className="studio-day-head">
                     <strong className={numClass}>{cell.dayOfMonth}</strong>
                     {visibleDayMark?.name ? (
-                      <em
-                        className={`day-mark${
-                          visibleDayMark.kind ? ` ${visibleDayMark.kind}` : ""
-                        }`}
-                      >
+                      <em className="day-mark">
                         {visibleDayMark.name}
                       </em>
                     ) : null}
                   </div>
-                  {/* 월드컵 경기 대진·스코어 — 헤더(초복 등)와 별개로 칸 본문 칩(편집실도 시청자와 동일). */}
-                  {visibleDayMark?.match ? (
-                    <div className={`day-wc-match ${visibleDayMark.match.kind}`}>
-                      {visibleDayMark.match.text}
-                    </div>
-                  ) : null}
                   <div
                     className="studio-event-list"
                     style={{

@@ -1,37 +1,3 @@
-/* ── 월드컵 일정 표기(day-mark) — 편집실·시청자 포스터 공통. 깔끔한 칩 스타일. ── */
-.day-mark.wc,
-.day-mark.wc-korea,
-.day-mark.wc-final {
-  display: inline-flex;
-  align-items: center;
-  font-style: normal;
-  font-weight: 800;
-  letter-spacing: var(--tracking-tight);
-  padding: 1px 7px;
-  border-radius: var(--r-pill);
-  line-height: var(--lh-body);
-}
-/* 단계(개막/32강/16강/8강/4강/3·4위전): 잔디 초록 칩. */
-.day-mark.wc {
-  color: #1f7a47;
-  background: #e6f5ec;
-  box-shadow: inset 0 0 0 1px rgb(31 122 71 / 22%);
-}
-/* 한국 경기: 깔끔한 흰 칩 + 한국 레드 테두리·글씨(가독성↑, 과하지 않게). */
-.day-mark.wc-korea {
-  color: #cd2e3a;
-  background: #fff;
-  box-shadow:
-    inset 0 0 0 1.5px #cd2e3a,
-    0 1px 4px rgb(205 46 58 / 18%);
-}
-/* 결승: 금빛 칩. */
-.day-mark.wc-final {
-  color: #946200;
-  background: #fdf3d6;
-  box-shadow: inset 0 0 0 1px rgb(184 134 11 / 35%);
-}
-
 /* 배포 버전(커밋 해시) — 왼쪽 아래 아주 연하고 작게. 클릭/캡처 방해 안 함. */
 .build-tag {
   position: fixed;
@@ -465,26 +431,6 @@ select {
 }
 
 /* 값이 바뀔 때 '탁' 튀는 숫자(스코어 등) — PopNumber 컴포넌트가 변화 시 .pop을 잠깐 붙인다. */
-.pop-number {
-  display: inline-block;
-}
-.pop-number.pop {
-  animation: pop-number 0.42s var(--spring-bouncy, var(--ease-spring, ease));
-}
-@keyframes pop-number {
-  0% {
-    transform: scale(1);
-  }
-  35% {
-    transform: scale(1.4);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-html[data-reduce-motion] .pop-number.pop {
-  animation: none;
-}
 
 /* (세로 전용 잠금 .portrait-lock 제거 — P0-RESP-1. 가로 휴대폰은 MOBILE_QUERY의
    (max-height ≤640 + coarse) 절이 이미 모바일 레이아웃을 적용해 정상 사용 가능하다.

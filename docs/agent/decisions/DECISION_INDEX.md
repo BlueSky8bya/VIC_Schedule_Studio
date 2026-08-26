@@ -16,7 +16,7 @@
 | [0006](ADR-0006-optimistic-writes-keepalive-queue.md) | Accepted | 쓰기 경로 | 에디터/꾸미기 낙관적 쓰기는 **직렬 큐** + `keepalive` fetch(`/api/studio-write`, `/api/sticker-write`) | 실시간 협업(다중 편집자 동시 쓰기)을 도입할 때 |
 | [0007](ADR-0007-anon-hearts-device-token.md) | Accepted | 참여 | 하트는 비로그인 허용(기기 토큰). 로그인 장벽이 참여 병목이었음 | 어뷰징이 실제로 관측되면 |
 | [0008](ADR-0008-public-insights-aggregate-rpc.md) | Accepted | 공개 경계 | 시청자 인사이트는 **집계 전용 SECURITY DEFINER RPC**로만. 방문/체류(운영 지표)는 공개 금지, 하트 개수는 비노출(비율만) | 방문자 지표를 공개하기로 하거나 캘린더가 2개 이상이 되면 |
-| [0009](ADR-0009-seasonal-toys-are-opt-in.md) | Accepted | 시즌 연출 | 미니게임·시즌 테마는 **기본 꺼짐 + 클릭 통과 + 오너 테마 우선**. 장난감은 포스터의 뚜껑이 아니다 | 특정 기간 자동 노출을 원하면(좁은 조건으로만) |
+| [0009](ADR-0009-seasonal-toys-are-opt-in.md) | Superseded | 시즌 연출 | 미니게임·시즌 테마는 **기본 꺼짐 + 클릭 통과 + 오너 테마 우선**. 장난감은 포스터의 뚜껑이 아니다 | 특정 기간 자동 노출을 원하면(좁은 조건으로만) | ← 2026-08-27 월드컵 기능 전부 삭제(CHG-20260827-002)
 | [0010](ADR-0010-broadcast-panel-public-dto-only.md) | Accepted | 보안 경계 | 방송 판서는 **서버 공개 스냅샷→명시 DTO만**(spread 금지) + teaser fail-closed 마스킹 + 클라이언트 무저장 | 판서에 낙관적 실시간 반영이 필요해지면(공유 redaction 추출 방향) |
 | [0011](ADR-0011-ux-overhaul-l-decisions.md) | Accepted | UX 전면 개선 | 개선 계획 L1~L8 확정: 하루 개수 무제한, 제목 줄바꿈 유지, 메모리 draft, iPad 개요+아젠다, 삭제 8초+24h, developer 권한 현행 유지, 태그 6/2, 잠금해제 auth-session 단위 | 신뢰 멤버 증가·부제목 혼란 반복 시 |
 | [0012](ADR-0012-phase0-capability-matrix.md) | Accepted | 권한/보안 | Phase 0 capability matrix + 불변식(범위 fail-closed·미리보기 서버 스냅샷만·오류 원문 비노출) | 역할 추가·캘린더 2개 이상 시 |

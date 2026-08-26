@@ -28,17 +28,6 @@ import {
 import dynamic from "next/dynamic";
 import { logActivity } from "@/lib/activity/client";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
-// 월드컵 장난감(공 미니게임 + 중력 공)은 월드컵 달에만 렌더되는데 정적 import라 6,400여 줄
-// (컴포넌트 + lib/football/*)이 시청자 첫 로드 번들에 1년 내내 들어 있었다. 아래 꾸미기 UI와
-// 같은 방식으로 지연 로드한다(ssr:false — 장난감이라 SSR 불필요).
-const WorldCupBallGoal = dynamic(
-  () => import("@/components/seasonal/worldcup-ball-goal").then((m) => m.WorldCupBallGoal),
-  { ssr: false }
-);
-const WorldCupStudioBall = dynamic(
-  () => import("@/components/seasonal/worldcup-studio-ball").then((m) => m.WorldCupStudioBall),
-  { ssr: false }
-);
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
 const PublicInsights = dynamic(
   () => import("@/components/poster/public-insights").then((m) => m.PublicInsights),
@@ -67,8 +56,7 @@ import {
   quantizeStaticIntensity
 } from "@/lib/ui/hype-curve";
 import { heartTier, type HeartTier } from "@/lib/schedules/heart-tiers";
-import { debutDPlus, getDayMark, withoutWorldCupMark } from "@/lib/calendar/holidays";
-import { isWorldCupMonth } from "@/lib/calendar/worldcup";
+import { debutDPlus, getDayMark } from "@/lib/calendar/holidays";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
 import {
@@ -99,7 +87,6 @@ import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
-import { useWorldCupVisibility } from "@/lib/ui/use-worldcup-visibility";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
 import { createWheelStepper, normalizeWheelDelta, stepCalZoom } from "@/lib/ui/calendar-zoom";
@@ -148,8 +135,6 @@ type PublicPosterProps = {
   // 그리지 않는다(OBS 브라우저 소스는 로그인이 없으므로 URL만으로 scene이 나와야 한다). 공개 데이터만
   // 그리는 레이아웃 옵션 — 권한과 무관, 비공개 데이터는 애초에 이 컴포넌트에 없다.
   avatarFixed?: "left" | "right";
-  // 편집실 미리보기에서는 관리자 토글 상태를 직접 받는다. 일반 공개 화면은 기기별 저장값 사용.
-  showWorldCupFeatures?: boolean;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -746,10 +731,8 @@ export function PublicPoster({
   avatarSide: avatarSideProp,
   avatarFixed,
   onAvatarToggle,
-  onAvatarSide,
-  showWorldCupFeatures: showWorldCupFeaturesProp
+  onAvatarSide
 }: PublicPosterProps) {
-  const [showWorldCupFeatures] = useWorldCupVisibility(showWorldCupFeaturesProp);
   // 다음 콜드 엔트리의 로딩 스켈레톤 톤 힌트 — 독립 포스터 화면(`/`)일 때만 "포스터"로.
   // accountSwitch=false인 편집실/꾸미기 미리보기는 편집 맥락이라 힌트를 건드리지 않는다.
   useEffect(() => {
@@ -901,16 +884,7 @@ export function PublicPoster({
 
   // C9/C10: 포스터 테마(계절/배경) — 서버 값 그대로(테마 변경 UI는 꾸미기와 함께 철수, 2026-08-27).
   const posterTheme = schedule.calendar.posterTheme;
-  // 보는 달이 월드컵 기간(2026-06~07)과 겹치면 포스터 테마를 월드컵으로 자동 전환한다 —
-  // 단 토리님이 그 달 테마를 직접 고르지 않았을 때만("none"). 예전엔 owner 선택보다 우선했는데,
-  // 그러면 대회 두 달 내내 직접 꾸민 포스터가 잔디밭으로 덮이고 내보낸 PNG까지 축구 포스터가 된다.
-  // 포스터의 저자는 토리님이다 — 시즌 테마는 '기본값 제안'이지 '강제'가 아니다.
-  const effectivePosterTheme =
-    posterTheme !== "none"
-      ? posterTheme
-      : showWorldCupFeatures && isWorldCupMonth(view.year, view.month)
-        ? "worldcup"
-        : posterTheme;
+  const effectivePosterTheme = posterTheme;
 
   // 관리자 아바타 자리(스트리머 scene). 꾸미기(decorate)에서도 허용 — 현재 방식은 surface를 통째로
   // uniform scale(축소)만 하므로 스티커 좌표(1840 design 기준)가 안 틀어진다(시청자=avatar OFF와도
@@ -965,15 +939,6 @@ export function PublicPoster({
   const heartToastTimerRef = useRef<number | null>(null);
   // 시청자 '이 달 기록' 시트 열림.
   const [insightsOpen, setInsightsOpen] = useState(false);
-  // 미니게임이 켜졌는지 — 켜지면 캐주얼 중력 축구공을 아예 언마운트한다(둘 다 뜨면 어수선하고,
-  // 공이 미니게임 버튼 위에 굴러와 앉는다). 공 컴포넌트 내부의 숨김 상태에 기대지 않고 여기서
-  // 렌더 자체를 끊는다 — 미니게임을 켰는데 공이 그대로 남던 문제가 실제로 있었다.
-  const [minigameOn, setMinigameOn] = useState(false);
-  useEffect(() => {
-    const onMini = (e: Event) => setMinigameOn(Boolean((e as CustomEvent).detail?.enabled));
-    window.addEventListener("wc-minigame-enabled", onMini);
-    return () => window.removeEventListener("wc-minigame-enabled", onMini);
-  }, []);
   // A2 고도화: 여러 태그를 동시에 고르고, "관심만 보기"까지 더해 보고 싶은 일정만 추려 본다.
   const [tagFilters, setTagFilters] = useState<string[]>([]);
   const [bookmarkedOnly, setBookmarkedOnly] = useState(false);
@@ -2180,11 +2145,8 @@ export function PublicPoster({
     const supportHere = covering.filter((e) => e.isSupport);
     const events = covering.filter((e) => !e.isSupport);
     const day = classifyDay(cell.isoDate, cell.weekday, today);
-    const visibleDayMark = showWorldCupFeatures
-      ? getDayMark(cell.isoDate)
-      : withoutWorldCupMark(getDayMark(cell.isoDate));
+    const visibleDayMark = getDayMark(cell.isoDate);
     const showHeaderMark = Boolean(visibleDayMark?.name);
-    const visibleMatch = visibleDayMark?.match ?? null;
 
     // 이 칸의 대표 관심 단계 — 진입 시 단계별로 칸을 부각하는 애니메이션(data-pop)에 쓴다.
     let popTier: string | null = null;
@@ -2203,9 +2165,7 @@ export function PublicPoster({
       <article
         className={`public-day ${cell.inCurrentMonth ? "" : "outside"} ${
           day.isToday ? "today" : ""
-        }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}${
-          visibleMatch?.kind === "wc-korea-win" ? " day-win" : ""
-        }`}
+        }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}`}
         data-pop={popTier ?? undefined}
         data-cell-index={cellIndex}
         key={cell.isoDate}
@@ -2346,64 +2306,24 @@ export function PublicPoster({
           </strong>
           {showHeaderMark ? (
             interactive ? (
-              // 특별한 날 표기를 탭하면 그 자리에서 빵빠레가 터진다. 한국 승은 큰 폭죽.
+              // 특별한 날 표기를 탭하면 그 자리에서 빵빠레가 터진다.
               <button
                 type="button"
-                className={`day-mark celebratable${
-                  visibleDayMark?.kind ? ` ${visibleDayMark.kind}` : ""
-                }`}
+                className="day-mark celebratable"
                 onClick={(e) => {
                   const r = e.currentTarget.getBoundingClientRect();
-                  popBurst(
-                    r.left + r.width / 2,
-                    r.top + r.height / 2,
-                    visibleDayMark?.kind === "wc-korea-win"
-                      ? "win"
-                      : visibleDayMark?.kind === "wc-korea-done"
-                        ? "console"
-                        : "cheer"
-                  );
+                  popBurst(r.left + r.width / 2, r.top + r.height / 2, "cheer");
                 }}
                data-act="day-mark">
                 {visibleDayMark?.name}
               </button>
             ) : (
-              <em
-                className={`day-mark${
-                  visibleDayMark?.kind ? ` ${visibleDayMark.kind}` : ""
-                }`}
-              >
+              <em className="day-mark">
                 {visibleDayMark?.name}
               </em>
             )
           ) : null}
         </div>
-        {/* 월드컵 경기 대진·스코어 — 헤더에 욱여넣지 않고 칸 본문 전체폭 칩으로(통일·균형·리듬).
-            헤더 슬롯은 초복·절기 등에 양보. 탭하면 이 칩에서 빵빠레(한국 승=큰 폭죽). */}
-        {visibleMatch ? (
-          interactive ? (
-            <button
-              type="button"
-              className={`day-wc-match ${visibleMatch.kind}`}
-              onClick={(e) => {
-                const r = e.currentTarget.getBoundingClientRect();
-                popBurst(
-                  r.left + r.width / 2,
-                  r.top + r.height / 2,
-                  visibleMatch.celebrate === "win"
-                    ? "win"
-                    : visibleMatch.celebrate === "done"
-                      ? "console"
-                      : "cheer"
-                );
-              }}
-             data-act="day-wc-match">
-              {visibleMatch.text}
-            </button>
-          ) : (
-            <div className={`day-wc-match ${visibleMatch.kind}`}>{visibleMatch.text}</div>
-          )
-        ) : null}
         <div
           className="day-events"
           style={weekSupCount > 0 ? { paddingTop: 8 + weekSupCount * 20 } : undefined}
@@ -2695,8 +2615,7 @@ export function PublicPoster({
         ...support.map((event) => ({ event, support: true })),
         ...evs.map((event) => ({ event, support: false }))
       ];
-      const rawMark = getDayMark(cell.isoDate);
-      const mark = showWorldCupFeatures ? rawMark : withoutWorldCupMark(rawMark);
+      const mark = getDayMark(cell.isoDate);
       // 필터가 없으면 1일~말일 모든 날을 보여준다(빈 날은 "예정된 공개 일정 없음").
       // 필터 중이면 조건에 맞는 일정이 있는 날만 남긴다.
       if (list.length > 0 || !filtering) {
@@ -2913,28 +2832,15 @@ export function PublicPoster({
                 </div>
                 <div className="agenda-day-list">
                   {mark ? (() => {
-                    // 모바일 아젠다는 폭이 넉넉해 헤더 마크(초복/절기)와 월드컵 경기를 한 pill에 함께.
-                    const markKind = mark.match?.kind ?? mark.kind;
-                    const markText = mark.match
-                      ? mark.name
-                        ? `${mark.match.text} · ${mark.name}`
-                        : mark.match.text
-                      : mark.name;
+                                      const markText = mark.name;
                     if (!markText) return null;
                     return interactive ? (
                       <button
                         type="button"
-                        className={`agenda-mark celebratable ${mark.isHoliday ? "holiday" : ""}${
-                          markKind === "wc-korea-win" ? " wc-korea-win" : ""
-                        }`}
+                        className={`agenda-mark celebratable ${mark.isHoliday ? "holiday" : ""}`}
                         onClick={(e) => {
                           const r = e.currentTarget.getBoundingClientRect();
-                          const celeb = mark.match?.celebrate;
-                          popBurst(
-                            r.left + r.width / 2,
-                            r.top + r.height / 2,
-                            celeb === "win" ? "win" : celeb === "done" ? "console" : "cheer"
-                          );
+                          popBurst(r.left + r.width / 2, r.top + r.height / 2, "cheer");
                         }}
                        data-act="agenda-mark">
                         {markText}
@@ -3545,7 +3451,7 @@ export function PublicPoster({
                       // 달력과 같은 날짜 규칙(사용자 요청): 요일 표기 + 일요일·공휴일=빨강,
                       // 토요일=파랑, 특별한 날 이름(제헌절·초복 등)은 달력 마크와 같은 톤.
                       const wd = new Date(`${dateKey}T00:00:00Z`).getUTCDay();
-                      const mark = withoutWorldCupMark(getDayMark(dateKey));
+                      const mark = getDayMark(dateKey);
                       const isRed = wd === 0 || Boolean(mark?.isHoliday);
                       const tone = isRed ? " red" : wd === 6 ? " saturday" : "";
                       return (
@@ -3895,28 +3801,6 @@ export function PublicPoster({
             </span>
           ))}
         </div>
-      ) : null}
-      {/* 월드컵 시즌 미니 놀이(공·골대) — 상호작용 모드(시청자)에서 월드컵 기간에만. export 표면 밖이라
-          캡처(PNG)엔 안 들어가고, 레이어가 클릭 통과(pointer-events:none)라 일정 조작을 방해하지 않는다.
-          관리자가 아바타 자리를 켜면(avatar-scene) 아바타가 골대를 덮으므로 게임을 끈다. 단 아바타
-          scene은 데스크탑(!showAgenda)서만 실제로 뜨므로, 모바일(showAgenda)에선 avatarOn이어도
-          억제하지 않는다 — 안 그러면 dev가 모바일 시청자 미리보기서 게임을 못 켜는 버그가 났다. */}
-      {interactive &&
-      showWorldCupFeatures &&
-      isWorldCupMonth(view.year, view.month) &&
-      !(avatarCapable && avatarOn && !showAgenda) ? (
-        <WorldCupBallGoal />
-      ) : null}
-      {/* 편집실 중력 축구공 — 시청자(웹·모바일)도 늘 잡고 놀 수 있게. 레이어 클릭 통과(공만 잡힘),
-          export 밖. 풀 미니게임(위)과 별개의 캐주얼 토이. 아바타 scene은 데스크탑(!showAgenda)서만
-          뜨므로 모바일(showAgenda)에선 avatarOn이어도 억제 X — owner/dev가 모바일 시청자 미리보기서도
-          중력공이 뜨게(미니게임과 동일 조건). */}
-      {interactive &&
-      showWorldCupFeatures &&
-      isWorldCupMonth(view.year, view.month) &&
-      !minigameOn &&
-      !(avatarCapable && avatarOn && !showAgenda) ? (
-        <WorldCupStudioBall />
       ) : null}
       <section className={`public-calendar-shell ${showAgenda ? "agenda-mode" : ""}`}>
         {showAgenda ? (

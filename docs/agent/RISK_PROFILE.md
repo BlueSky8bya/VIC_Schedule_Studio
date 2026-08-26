@@ -15,7 +15,7 @@ Last reviewed: 2026-07-12
 
 ## Inactive Profiles Reviewed
 
-- `RESEARCH` / `ML_EVALUATION`: 축구 시뮬(`lib/football`, `docs/sim/`)이 있지만 **연구 산출물이 아니라 재미 기능**이다. 통계 주장·논문·라벨 정의가 걸린 게 없다 → 비활성. (시뮬 결과로 무언가를 주장하기 시작하면 켠다.)
+- `RESEARCH` / `ML_EVALUATION`: 해당 없음(축구 시뮬 `lib/football`·`docs/sim`은 2026-08-27 삭제).
 - `HEALTH`: 해당 없음.
 - `FINANCE` / `PAYMENTS`: 결제 없음. "업 도움"은 외부 링크로 보내는 안내일 뿐 결제 흐름이 아니다.
 - `LEGAL_COMPLIANCE`: 개인정보는 이메일·기기 토큰·익명 해시 수준. 규제 대상 데이터 없음.

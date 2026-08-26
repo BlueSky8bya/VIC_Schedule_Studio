@@ -13,6 +13,15 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **월드컵/축구 시뮬 전부 삭제(2026-08-27, 사용자 결정 — CHG-20260827-002, ADR-0009 Superseded)**:
+  `components/seasonal`(미니게임·중력공 ~6,100줄), `lib/football`(28파일), `tests/unit/football`, `docs/sim`,
+  `lib/calendar/worldcup.ts`, `lib/ui/use-worldcup-visibility.ts`, `components/ui/pop-number.tsx`,
+  `tests/unit/calendar/holidays.test.ts`(월드컵만 검사) 삭제. `holidays.ts`의 `MarkKind`/`match`/
+  `withoutWorldCupMark` 제거(DayMark = name·isHoliday만), `classifyDay`의 markKind/wcMatch 제거. 포스터·
+  편집실의 월드컵 토글·자동 테마·경기 칩·공 렌더 제거, CSS(wc-·worldcup 테마·pop-number) 제거.
+  `WORLD_CUP_UI_ENABLED=false`라 동작 변화 0. 활동 라벨 사전의 io-worldcup 항목은 과거 행 판독용으로 유지.
+- **편집실 헤더 정리(2026-08-27 사용자 지정 배치)**: 역할 배지("개발자 ?")·로그아웃을 헤더 우상단에서 액션바
+  오른쪽으로 — 순서 **단축키 · 역할 배지 · 로그아웃**. 헤더 우측은 저장 상태 + 미리보기만.
 - **달력 꾸미기(스티커)·작업자 역할 철수 + drop(2026-08-27, ADR-0015)**: 관리자 결정. 코드: 꾸미기 라우트·
   팔레트·스티커 레이어/도형·테마 스위치·`api/sticker-write`·스티커/테마 액션·`public-poster.tsx` 스티커
   상태/좌표 매핑/probe/툴바(파일 7,0xx→4,26x줄)·CSS ~33KB 삭제. 공개 로더 스티커 조회 제거(**공개 DTO에서

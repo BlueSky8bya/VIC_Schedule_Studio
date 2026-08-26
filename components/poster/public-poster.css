@@ -4134,72 +4134,15 @@ button.day-mark.celebratable:active { transform: scale(0.88); }
 /* 월드컵 경기 대진·스코어 칩 — 날짜칸 본문 최상단의 전체폭 칩. 헤더엔 짧은 라운드 pill만 두고
    경기 결과는 여기로 내려, 헤더가 다른 날과 같은 1줄로 통일되고(리듬) 국가 풀네임이 넉넉한
    본문 폭에 한 줄로 들어온다(균형). 결승은 금빛, 그 외 경기는 월드컵 보라 톤. */
-.day-wc-match {
-  display: block;
-  width: calc(100% - 8px);
-  margin: 3px 4px 0;
-  padding: 2px 8px;
-  border-radius: var(--r-pill, 999px);
-  background: rgb(124 108 240 / 10%);
-  border: 1px solid rgb(124 108 240 / 22%);
-  color: #4b4287;
-  font-size: 10px;
-  font-weight: 800;
-  line-height: 1.6;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: pointer;
-  transition:
-    transform var(--dur-1) var(--ease),
-    filter var(--dur-1) var(--ease);
-}
-button.day-wc-match {
-  -webkit-appearance: none;
-  appearance: none;
-  font-family: inherit;
-}
-.day-wc-match:hover {
-  filter: brightness(1.05);
-}
-.day-wc-match:active {
-  transform: scale(0.96);
-}
+
 /* 결승 — 금빛(우승 축하). */
-.day-wc-match.wc-final {
-  background: rgb(244 183 64 / 20%);
-  border-color: rgb(214 158 10 / 42%);
-  color: #915d05;
-}
+
 /* 한국 경기 — 승은 금빛, 무/패는 차분한 회색 마감. */
-.day-wc-match.wc-korea-win {
-  background: rgb(244 183 64 / 22%);
-  border-color: rgb(214 158 10 / 46%);
-  color: #915d05;
-}
-.day-wc-match.wc-korea-done {
-  background: rgb(148 140 168 / 12%);
-  border-color: rgb(120 113 140 / 30%);
-  color: #5b5570;
-}
 
 /* 한국이 이긴 날 — 금빛 글자만. 셀 금테 하이라이트·은은한 맥동 글로우는 제거(탭 시 축포로 충분).
    (solid 금색만; 예전 background-clip:text 그라데이션은 글자가 '투명'하게 비던 사고로 폐기.) */
-button.day-mark.wc-korea-win,
-.day-mark.wc-korea-win,
-button.agenda-mark.wc-korea-win {
-  color: #b45309;
-  font-weight: 900;
-}
 
 /* 끝난 무/패 한국 경기 — 빨강 테두리(다가오는 강조) 없이 차분한 회색 마감. */
-button.day-mark.wc-korea-done,
-.day-mark.wc-korea-done,
-button.agenda-mark.wc-korea-done {
-  color: #6b7280;
-  font-weight: 800;
-}
 
 /* 모바일 아젠다의 특별한 날 표기도 탭하면 빵빠레 — 기존 .agenda-mark 시각 그대로 두고 버튼만 리셋. */
 /* 버튼 UA 기본값(16px/400·가운데정렬·버튼크롬)이 .agenda-mark(11.5px/800·좌측)을 덮어쓰지 않게
@@ -4859,40 +4802,11 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 }
 
 /* 월드컵(2026 기간 자동) — 잔디 그린을 은은하게, 카드/텍스트는 불투명이라 가독성 유지. */
-.poster-page[data-poster-theme="worldcup"] {
-  /* 바깥은 줄무늬 없는 연한 잔디(진한 줄무늬는 surface 보드에만). 아바타 자리는 이 연한 배경 위. */
-  background:
-    radial-gradient(120% 80% at 50% -10%, #d6f0db 0%, transparent 65%),
-    linear-gradient(180deg, #d3eed9, #c2e6cc);
-}
+
 /* 잔디 그라운드 — 두 톤 초록 세로 줄무늬(축구장 잔디) + 진한 잔디 베이스. 카드는 불투명이라
    글자 가독성 유지된다. */
-.poster-surface[data-poster-theme="worldcup"] {
-  background:
-    repeating-linear-gradient(
-      90deg,
-      rgb(38 130 74 / 16%) 0,
-      rgb(38 130 74 / 16%) 70px,
-      transparent 70px,
-      transparent 140px
-    ),
-    linear-gradient(160deg, #bfe6c7 0%, #97d2a6 55%, #b6e2bf 100%);
-}
-.poster-surface[data-poster-theme="worldcup"]::before {
-  content: "⚽";
-}
-.poster-surface[data-poster-theme="worldcup"]::after {
-  content: "🏆";
-}
+
 /* 모바일 아젠다 헤더(크림 기본)도 월드컵 잔디색에 맞춰 — 페이지 배경과 따로 놀지 않게. */
-.poster-page[data-poster-theme="worldcup"] .agenda-header {
-  background: linear-gradient(180deg, #d4efd9 72%, #c6e8ce);
-  border-bottom-color: #a6d2b1;
-}
-.poster-page[data-poster-theme="worldcup"] .agenda-account button {
-  border-color: #a6d2b1;
-  color: #3f7a55;
-}
 
 /* ── P3: 더 화려한 배경(그라데이션/패턴). 달력 카드는 불투명이라 텍스트 가독성 유지. ── */
 .poster-page[data-poster-theme="sunset"] {

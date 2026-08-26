@@ -1,6 +1,7 @@
 # ADR-0009: 시즌 장난감(미니게임·테마)은 포스터를 덮지 않는다 — opt-in
 
-Status: Accepted
+Status: Superseded
+Superseded-by: 월드컵/축구 시뮬 전부 삭제(2026-08-27, 사용자 결정 — CHG-20260827-002). 코드는 git 이력.
 Date: 2026-07-12
 Related: `components/seasonal/worldcup-ball-goal.tsx`(기본값), `worldcup-ball-goal.css`(.wc-dim),
 `components/poster/public-poster.tsx`(effectivePosterTheme, 중력공 언마운트)
