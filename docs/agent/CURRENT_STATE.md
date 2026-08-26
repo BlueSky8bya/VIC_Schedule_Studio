@@ -13,6 +13,21 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **관심 단계 = 이 달 최다 대비 비율 + 절대 하한(2026-08-27, 사용자 결정)**: 절대 수(높은 12+·폭발 25+)
+  만 쓰던 동안 8월 실측(최다 12, 나머지 5~11)에선 '관심'과 👑만 남았다. `heartTier(count, isTop,
+  maxHeart)` — 관심 5+ · 높은 = 최다 50%↑ & 6+ · 폭발 = 최다 80%↑ & 8+ · 👑 = 최다(공동) & 10+.
+  `maxHeart`/`topEventIds`는 **보는 달 일정만**으로(예전엔 로드된 전체 달의 최댓값이라 "이 달 1위"가
+  전체 1위였음). 낙관적 heartCounts에서 파생 → 내 하트 누름/취소·👑 이동이 같은 프레임에 반영, 남의
+  하트는 재진입 때. 트레이드오프(남의 하트로 내 단계 하락 가능)는 알고 수용. 인사이트 '관심 단계 받는
+  기준' 문구 갱신. 단위 테스트 `tests/unit/heart-tiers.test.ts` 7.
+- **상세 팝오버 단계 배지 재설계(디자인 피드백)**: 별도 "아이콘 관심 단계 최고 인기" 줄 삭제 → 제목 줄을
+  flex(좌 `.adt-text` ↔ 우 `.adt-badge`)로, 헤더(날짜↔닫기)와 같은 좌우 리듬. 배지 = 단계 색 글자 +
+  옅은 채움 알약, 1위만 "👑 최고 인기". 제목이 길면 다음 줄 오른쪽 끝(margin-left:auto).
+- **숲 '공지 쓰기' 기능 제거(관리자가 안 씀)**: `components/notice/notice-modal.tsx` 삭제, studio-shell의
+  버튼(웹 폼 아래·모바일 me-tools)·모달 타입·본문 제거, `.notice-*`/`.modal-card-notice`/
+  `.modal-backdrop-notice` CSS 제거(개발자 '이용 기록' 버튼은 `.aux-open`으로 이름만 바꿔 유지),
+  `lib/activity/labels.ts`의 notice 항목 제거. 이벤트 카테고리 `"notice"`(schedule-types)는 별개 —
+  건드리지 않음.
 - **관심 단계 = 카드 테두리 링 + 👑(2026-08-27, 사용자 아이디어)**: 불꽃 알약(`.event-popular`, 카드
   바닥 한 줄 ≈18px)이 행마다 쌓여 달력 비율을 무너뜨리던 것 → 카드 안 absolute `.tier-ring`(높이 0)
   + 1위 `.tier-crown`(우하단 모서리)으로 교체. `TierMark` 컴포넌트, 데스크탑·아젠다 카드 마지막

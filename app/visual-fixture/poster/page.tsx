@@ -51,13 +51,13 @@ export default async function VisualPosterFixture({
   const avatar = sp?.avatar === "1";
   // fixed=left|right → /onair(뱅송 미리보기)와 같은 고정 scene(토글 없음)을 fixture에서 검증.
   const fixed = sp?.fixed === "left" || sp?.fixed === "right" ? sp.fixed : undefined;
-  // hearts=1 → 일정에 하트 집계를 순환 주입(6/14/30/45/0) — 관심 단계 링(관심·높은·폭발·1위)을
+  // hearts=1 → 일정에 하트 집계를 순환 주입(6/24/40/45/0; 최다 45 기준 관심·높은·폭발·1위) — 관심 단계 링을
   // 시청자 fixture에서 검증. 지오메트리 게이트(기본 fixture)는 무영향.
   const hearts = sp?.hearts === "1";
   const shown = hearts
     ? {
         ...schedule,
-        events: schedule.events.map((e, i) => ({ ...e, heartCount: [6, 14, 30, 45, 0][i % 5] }))
+        events: schedule.events.map((e, i) => ({ ...e, heartCount: [6, 24, 40, 45, 0][i % 5] }))
       }
     : schedule;
   return (

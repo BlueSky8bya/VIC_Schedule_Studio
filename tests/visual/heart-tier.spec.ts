@@ -62,7 +62,9 @@ test.describe("heart tier — 테두리 링", () => {
     }
   });
 
-  test("상세 팝오버에 관심 단계 라벨(글자)이 뜬다 — 단계마다 다른 텍스트", async ({ page }) => {
+  test("상세 팝오버 제목 줄 오른쪽에 관심 단계 배지 — 단계마다 다른 텍스트, 제목과 같은 줄", async ({
+    page
+  }) => {
     await page.goto("/visual-fixture/poster?hearts=1");
     await page.locator("[data-export-surface]").waitFor();
     await page.waitForTimeout(600);
@@ -70,18 +72,25 @@ test.describe("heart tier — 테두리 링", () => {
     for (const key of ["warm", "hot", "blaze", "top"]) {
       const card = page.locator(`.public-event[data-tier="${key}"]`).first();
       await card.click();
-      const line = page.locator(".agenda-detail-sheet .agenda-detail-tier");
-      await line.waitFor();
-      seen[key] = (await line.locator("b").textContent()) ?? "";
-      await expect(line).toHaveClass(new RegExp(`tier-${key}`));
+      const badge = page.locator(".agenda-detail-sheet .agenda-detail-title .adt-badge");
+      await badge.waitFor();
+      seen[key] = ((await badge.textContent()) ?? "").trim();
+      await expect(badge).toHaveClass(new RegExp(`tier-${key}`));
+      // 좌 제목 ↔ 우 배지: 배지가 제목 텍스트 오른쪽에, 제목 줄 안에(별도 줄 아님)
+      const [tb, bb] = await Promise.all([
+        page.locator(".agenda-detail-sheet .agenda-detail-title .adt-text").boundingBox(),
+        badge.boundingBox()
+      ]);
+      expect(bb!.x).toBeGreaterThan(tb!.x + tb!.width - 1);
+      expect(Math.abs(bb!.y + bb!.height / 2 - (tb!.y + tb!.height / 2))).toBeLessThan(tb!.height);
       await page.keyboard.press("Escape");
       await page.locator(".agenda-detail-sheet").waitFor({ state: "detached" });
     }
-    expect(seen).toEqual({ warm: "관심", hot: "높은 관심", blaze: "폭발적 관심", top: "최고 인기" });
-    // 티어 없는 카드엔 줄이 없다
+    expect(seen).toEqual({ warm: "관심", hot: "높은 관심", blaze: "폭발적 관심", top: "👑 최고 인기" });
+    // 티어 없는 카드엔 배지가 없다
     await page.locator(".public-event:not([data-tier])").first().click();
     await page.locator(".agenda-detail-sheet").waitFor();
-    await expect(page.locator(".agenda-detail-sheet .agenda-detail-tier")).toHaveCount(0);
+    await expect(page.locator(".agenda-detail-sheet .adt-badge")).toHaveCount(0);
   });
 
   test("표면 자연 높이: 하트 유무 동일(링은 높이 0)", async ({ page }) => {

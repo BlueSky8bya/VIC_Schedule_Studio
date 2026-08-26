@@ -2512,8 +2512,9 @@ export function PublicPoster({
     // '내 하트가 이 일정의 등급을 올린 순간'만 알려준다 — 집계가 조용히 바뀌면 내가 뭘 했는지
     // 아무도 모른다. 남의 하트가 revalidation으로 들어올 땐 절대 안 뜬다(이 토글 경로에서만 계산).
     if (!wasOn) {
-      const before = heartTier(heartCounts[id] ?? 0, topEventIds.has(id));
-      const after = heartTier((heartCounts[id] ?? 0) + 1, topEventIds.has(id));
+      const cur = heartCounts[id] ?? 0;
+      const before = heartTier(cur, topEventIds.has(id), maxHeart);
+      const after = heartTier(cur + 1, cur + 1 >= maxHeart, Math.max(maxHeart, cur + 1));
       if (after && after.key !== before?.key) {
         const title = liveEvents.find((e) => e.id === id)?.publicTitle ?? "이 일정";
         setHeartToast(
@@ -2598,23 +2599,30 @@ export function PublicPoster({
   }
   const isBookmarked = (id: string) => bookmarks.includes(id);
 
-  // A(#3): 관심 단계는 "이번 달 최다 하트" 대비 상대 + 최소 절대 기준의 혼합으로 정한다.
-  // 50~100명 규모에서 한두 명 차이로 단계가 출렁이지 않게 상대(ratio)를 쓰고,
-  // 최소 3개 floor로 노이즈를 막는다. maxHeart는 현재 보이는 집계의 최댓값.
+  // 관심 단계 = "보는 달 최다 하트" 대비 비율 + 절대 하한(lib/schedules/heart-tiers 단일 출처).
+  // maxHeart는 '보는 달' 일정만의 최댓값 — 예전엔 로드된 전체 달을 통틀어 재서 "이 달 1위"가 사실은
+  // 전체 1위였다(2026-08-27 정정). 낙관적 heartCounts에서 파생되므로 내 하트 누름/취소에 즉시 반영.
   const maxHeart = useMemo(() => {
-    const counts = Object.values(heartCounts);
-    return counts.length > 0 ? Math.max(...counts) : 0;
-  }, [heartCounts]);
+    const ym = `${view.year}-${String(view.month).padStart(2, "0")}`;
+    let max = 0;
+    for (const e of schedule.events) {
+      if (!getEventDateKey(e).startsWith(ym)) continue;
+      const c = heartCounts[e.id] ?? 0;
+      if (c > max) max = c;
+    }
+    return max;
+  }, [heartCounts, schedule.events, view.year, view.month]);
   // 이 달 최다 하트와 같은(공동 1위 포함) 일정 id들 — 이들에 👑을 붙인다. 공동 1위를 함께 왕관으로
   // 두면 다른 일정에 하트를 눌러 동점이 돼도 기존 왕관이 사라지지 않는다(단조).
   const topEventIds = useMemo(() => {
     const ids = new Set<string>();
     if (maxHeart <= 0) return ids;
-    for (const [id, c] of Object.entries(heartCounts)) {
-      if (c === maxHeart) ids.add(id);
+    const ym = `${view.year}-${String(view.month).padStart(2, "0")}`;
+    for (const e of schedule.events) {
+      if ((heartCounts[e.id] ?? 0) === maxHeart && getEventDateKey(e).startsWith(ym)) ids.add(e.id);
     }
     return ids;
-  }, [heartCounts, maxHeart]);
+  }, [heartCounts, maxHeart, schedule.events, view.year, view.month]);
 
   // "내 관심"은 보고 있는 달 기준으로 따로 센다. 휴뱅(방송 안 함) 일정은 하트 대상이 아니라 제외.
   // 분모 = 이 달 휴뱅 제외 일정 수(내가 누를 수 있는 최대), 분자 = 그중 내가 ♥ 누른 수.
@@ -3912,7 +3920,7 @@ export function PublicPoster({
     if (interactive) {
       let bestRank = 0;
       for (const e of events) {
-        const t = heartTier(heartCounts[e.id] ?? 0, topEventIds.has(e.id));
+        const t = heartTier(heartCounts[e.id] ?? 0, topEventIds.has(e.id), maxHeart);
         if (t && POP_RANK[t.key] > bestRank) {
           bestRank = POP_RANK[t.key];
           popTier = t.key;
@@ -4224,7 +4232,7 @@ export function PublicPoster({
             // 스티커가 꾸미기에서 놓은 자리보다 칸 대비 위로 떠 보였다(ADR-0004 "꾸미기 == 시청자").
             // 집계(heartCount)는 서버에서 오는 같은 값이라 두 화면이 같은 배지를 그린다.
             const tier = span.showTitle
-              ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id))
+              ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart)
               : null;
             const eventClass = [
               "public-event",
@@ -4740,7 +4748,7 @@ export function PublicPoster({
                     const bookmarked = isBookmarked(event.id);
                     const tier =
                       interactive && !support
-                        ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id))
+                        ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart)
                         : null;
                     const single = support
                       ? { background: "#84b74f" }
@@ -5663,16 +5671,32 @@ export function PublicPoster({
                       (아래 오브가 주인공). 중복 줄이 위계를 흐렸다(사용자 지적). */}
                   {!teaserActive ? (
                     <p className="agenda-detail-title">
-                      {!support && event.isTentative ? (
-                        <span className="evt-tentative">미정</span>
-                      ) : null}
-                      {support ? (
-                        `🌱 ${event.publicTitle}`
-                      ) : detailJustRevealed ? (
-                        <ScrambleText text={main} />
-                      ) : (
-                        main
-                      )}
+                      <span className="adt-text">
+                        {!support && event.isTentative ? (
+                          <span className="evt-tentative">미정</span>
+                        ) : null}
+                        {support ? (
+                          `🌱 ${event.publicTitle}`
+                        ) : detailJustRevealed ? (
+                          <ScrambleText text={main} />
+                        ) : (
+                          main
+                        )}
+                      </span>
+                      {/* 관심 단계 배지 — 제목 줄 오른쪽 끝(좌 제목 ↔ 우 배지). 카드 링만으론 관심↔
+                          높은↔폭발 구분이 어려워 글자로 명시(사용자). 같은 heartTier 단일 출처,
+                          하트 숫자는 비노출. 별도 줄로 두면 좌우 균형이 무너져 제목 줄에 붙인다. */}
+                      {(() => {
+                        if (support) return null;
+                        const t = heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart);
+                        if (!t) return null;
+                        return (
+                          <span aria-label={`관심 단계: ${t.label}`} className={`adt-badge tier-${t.key}`}>
+                            {t.key === "top" ? "👑 " : null}
+                            {t.label}
+                          </span>
+                        );
+                      })()}
                     </p>
                   ) : null}
                   {!support && subs.length > 0 ? (
@@ -5706,22 +5730,6 @@ export function PublicPoster({
                       ))}
                     </div>
                   ) : null}
-                  {/* 관심 단계 라벨 — 카드 링(두께·색)만으론 관심↔높은↔폭발 구분이 어렵다(사용자):
-                      팝오버/시트에서 글자로 명시. 같은 heartTier 단일 출처, 숫자는 여전히 비노출. */}
-                  {(() => {
-                    if (support || teaserActive) return null;
-                    const t = heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id));
-                    if (!t) return null;
-                    return (
-                      <p aria-label={`관심 단계: ${t.label}`} className={`agenda-detail-tier tier-${t.key}`}>
-                        <i aria-hidden="true" className={`tier-swatch tier-${t.key}`}>
-                          {t.key === "top" ? "👑" : null}
-                        </i>
-                        <span className="adt-label">관심 단계</span>
-                        <b>{t.label}</b>
-                      </p>
-                    );
-                  })()}
                   {support && event.supportUrl ? (
                     <a
                       className="agenda-link"
