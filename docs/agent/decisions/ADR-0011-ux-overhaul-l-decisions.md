@@ -1,6 +1,6 @@
 # ADR-0011: 전면 UX/HCI 개선 계획의 L1~L8 사용자 결정
 
-- Status: Accepted
+Status: Accepted
 - Date: 2026-07-29
 - 근거 문서: `docs/ux/audit/vic-schedule-studio-ux-hci-improvement-plan_260729.md` (코덱스 설계안, §L)
 - 결정자: 사용자(개발자, blackspace665)

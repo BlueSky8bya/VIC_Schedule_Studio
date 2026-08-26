@@ -11,18 +11,14 @@ import {
   ChevronRight,
   ExternalLink,
   Eye,
-  EyeOff,
-  Globe,
   Heart,
   Keyboard,
-  LockKeyhole,
   LogOut,
   Pencil,
   Plus,
   Save,
   Sparkles,
   Trash2,
-  Wrench,
   X
 } from "lucide-react";
 import Link from "next/link";
@@ -99,8 +95,7 @@ import {
   canEditSchedule,
   canEditSupport,
   canReadOwnerPrivate,
-  canReadPrivateLayer,
-  canUsePrivateLayer
+  canReadPrivateLayer
 } from "@/lib/permissions/roles";
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
@@ -114,7 +109,7 @@ import { TagPicker } from "@/components/tags/tag-picker";
 import { ReadonlyEventDetail } from "@/components/studio/readonly-event-detail";
 import { RoleBadge } from "@/components/studio/role-badge";
 import { useStudioWriteQueue } from "@/lib/studio/use-write-queue";
-import { relockPrivateLayerAction, setPasscodeAction } from "@/lib/private-layer/actions";
+import { setPasscodeAction } from "@/lib/private-layer/actions";
 import { STUDIO_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 // P2-ARCH-1 1단계: 모듈 레벨 순수 코드(폼 모델·실행취소 타입·날짜/드래프트/떡밥 헬퍼·라벨·
 // studio-write 클라이언트)는 lib/studio/editor-model.ts로 이동(동작 변화 0).
@@ -843,7 +838,6 @@ export function StudioShell({
     : previewRole
       ? effectiveRole === "worker"
       : actor.isWorker === true;
-  const canTogglePrivateLayer = canUsePrivateLayer(effectiveRole, effIsWorker);
 
   // 이중 역할(매니저+작업자)은 실제 계정이 둘 다일 때만(미리보기 중엔 단일 역할로 본다).
   const isDualRole = previewDual || (!previewRole && Boolean(actor.isManager && actor.isWorker));
@@ -1048,26 +1042,8 @@ export function StudioShell({
     );
   }
 
-  // '지금 잠그기' — 이 브라우저의 잠금해제 grant를 즉시 폐기(다시 보려면 비밀번호 재입력).
-  // 다른 기기는 영향 없음. 하단 플로팅 배너에서 부른다.
-  function relockNow() {
-    hapticTick(); // ① 눌림
-    setShowPrivate(false);
-    void relockPrivateLayerAction().then((r) => {
-      if (r.ok) {
-        hapticTick(); // ② 서버 확정
-        router.refresh();
-      }
-    });
-  }
-
-  function togglePrivateLayer() {
-    if (hasUnlockSession) {
-      setShowPrivate((value) => !value);
-    } else {
-      setPasscodeModal("unlock");
-    }
-  }
+  // (비공개 일정 보기 토글·지금 잠그기는 2026-08-27 철수 — 관리자가 안 쓰는 기능(ADR-0014). 서버의
+  //  비공개 모델·권한 검사는 그대로고 편집실 UI만 없앴다. 비밀번호는 최초공개 게이트·변경에만 쓴다.)
   // 비밀번호 변경 팝업 열기 — 다른 모달(인사이트) 위에 따로 띄운다(그 모달은 닫지 않음 →
   // 취소하면 리로드 없이 그 화면 그대로 드러난다).
   function openChangePasscode() {
@@ -1315,20 +1291,17 @@ export function StudioShell({
       </div>
     ) : null;
 
-  // 접힌 '공개 범위 · 옵션' 헤더에 현재 값을 한 줄로 요약한다 — 접혀 있어도 이 일정이 엠바고인지,
-  // 미정인지, 떡밥인지 펼치지 않고 바로 보이게(접기가 정보를 숨기면 안 된다).
-  const scopeFoldSummary = [
-    form.visibilityScope === "owner_private"
-      ? "🔒 엠바고"
-      : form.visibilityScope === "work"
-        ? "🔧 작업자"
-        : "🌐 모두",
-    form.isTentative ? "미정" : null,
-    form.isSupport ? "🌱 업 도움" : null,
-    form.teaser ? "🔮 최초공개" : null
-  ]
-    .filter(Boolean)
-    .join(" · ");
+  // 접힌 '옵션' 헤더에 현재 값을 한 줄로 요약한다 — 접혀 있어도 이 일정이 미정인지, 떡밥인지
+  // 펼치지 않고 바로 보이게(접기가 정보를 숨기면 안 된다). 아무 옵션도 없으면 '없음'.
+  // (공개 범위 항목은 2026-08-27 철수 — 모든 일정이 '모두'.)
+  const scopeFoldSummary =
+    [
+      form.isTentative ? "미정" : null,
+      form.isSupport ? "🌱 업 도움" : null,
+      form.teaser ? "🔮 최초공개" : null
+    ]
+      .filter(Boolean)
+      .join(" · ") || "없음";
   // 편집 카드 임시 보관(드래프트) — **메모리 전용**(P0-PRIV-1, ADR-0011 L3). 같은 세션 안에서
   // 카드를 오갈 때만 복원되고, 새로고침하면 사라진다(localStorage 영속 금지 — 게시 전 내용 잔존 방지).
   // baseline = '깨끗한' 기준 지문(원본 일정 또는 빈 새 카드). form이 이와 다르면 미저장 변경 → 보관.
@@ -4832,22 +4805,6 @@ export function StudioShell({
           </div>
 
           {/* 인사이트 진입(개발자·관리자·매니저·작업자)은 아래 색상 필터 레일 맨 위로 옮겼다. */}
-          {/* 비공개 경고 배너 — 비공개를 '보고 있는' 모든 역할에게(개발자·작업자 포함).
-              방송 화면 공유 유출 위험은 역할과 무관하고, 배너가 곧 '지금 해제 상태'라는
-              유일한 명시적 피드백이다(소유자 한정이던 예전엔 개발자가 상태 확인 불가). */}
-          {canReadPrivate ? (
-            <div className="private-warning">
-              <LockKeyhole aria-hidden="true" size={16} />⚠ 비공개 일정 표시 중
-              {/* 모바일: 끄기는 엄지 닿기 쉬운 이 배너에(토글은 비밀번호 변경 유지). */}
-              <button
-                className="private-warning-btn"
-                onClick={() => setShowPrivate(false)}
-                type="button"
-               data-act="private-warning-btn">
-                끄기
-              </button>
-            </div>
-          ) : null}
 
           <section
             className="agenda agenda-studio"
@@ -4893,20 +4850,6 @@ export function StudioShell({
                   </>
                 );
               })()}
-              {/* 비공개(공개 아님) 일정만 골라보기 — 잠금 해제로 비공개가 보일 때만. */}
-              {canReadPrivate ? (
-                <button
-                  aria-pressed={tagFilters.includes(PRIVATE_FILTER)}
-                  className={`agenda-legend-tag ${tagFilters.includes(PRIVATE_FILTER) ? "on" : ""} ${
-                    filtering && !tagFilters.includes(PRIVATE_FILTER) ? "dim" : ""
-                  }`}
-                  onClick={() => toggleTagFilter(PRIVATE_FILTER)}
-                  type="button"
-                 data-act="agenda-legend-tag">
-                  <i className="legend-private-swatch" aria-hidden="true" />
-                  비공개
-                </button>
-              ) : null}
               {filtering ? (
                 <button
                   className="agenda-legend-clear"
@@ -5233,21 +5176,11 @@ export function StudioShell({
               ⚽ 월드컵 {showWorldCupFeatures ? "끄기" : "켜기"}
             </button>
           ) : null}
-          {canTogglePrivateLayer ? (
-            isEffectivelyOwner && canReadPrivate ? (
-              <button className="button primary" data-act="change-passcode" onClick={() => openChangePasscode()} type="button">
-                비밀번호 변경
-              </button>
-            ) : (
-              <button
-                className={canReadPrivate ? "button primary" : "button m-io-pill m-io-private"}
-                data-act="private-toggle"
-                onClick={togglePrivateLayer}
-                type="button"
-              >
-                {canReadPrivate ? "비공개 중" : "비공개 일정"}
-              </button>
-            )
+          {/* 비밀번호(최초공개 게이트용) 변경 — 관리자만. 비공개 일정 보기 토글 자리(2026-08-27 철수). */}
+          {isEffectivelyOwner ? (
+            <button className="button m-io-pill m-io-private" data-act="change-passcode" onClick={() => openChangePasscode()} type="button">
+              비밀번호 변경
+            </button>
           ) : null}
           {/* '오늘' — 시청자 화면과 같은 복귀 버튼(사용자 요청). 항상 미리보기 바로 왼쪽
               (비공개 버튼이 있는 역할은 그 사이) — 역할이 달라도 같은 자리라 근육기억 유지. */}
@@ -5657,10 +5590,10 @@ export function StudioShell({
             />
             {renderTitleHelper()}
 
-            {/* 설정 그룹 카드 — 공개 범위 + 업 도움을 한 카드에 묶어 목록처럼.
-                P1-FLOW-1(Quick Add): 데스크톱과 동일하게 기본 접힘 — 대부분의 일정이 '모두 공개 +
-                옵션 없음'이라, 첫 생성 흐름은 제목→태그→저장만 보이게 한다. 접힌 헤더에 현재
-                값 요약(scopeFoldSummary)을 항상 보여줘 접기가 정보를 숨기지 않는다. */}
+            {/* 설정 그룹 카드 — 옵션(미정·업 도움·최초공개)을 한 카드에 묶어 목록처럼.
+                P1-FLOW-1(Quick Add): 데스크톱과 동일하게 기본 접힘 — 대부분의 일정이 '옵션 없음'이라,
+                첫 생성 흐름은 제목→태그→저장만 보이게 한다. 접힌 헤더에 현재 값 요약(scopeFoldSummary)을
+                항상 보여줘 접기가 정보를 숨기지 않는다. (공개 범위 선택은 2026-08-27 철수.) */}
             <div className={`me-group me-fold${scopeFoldOpen ? " open" : ""}`}>
               <button
                 aria-expanded={scopeFoldOpen}
@@ -5671,52 +5604,12 @@ export function StudioShell({
                 }}
                 type="button"
                data-act="me-fold-head">
-                <span className="me-row-label">공개 범위 · 옵션</span>
+                <span className="me-row-label">옵션</span>
                 <span className="me-fold-summary">{scopeFoldSummary}</span>
                 <ChevronDown aria-hidden="true" className="me-fold-chev" size={16} />
               </button>
               {scopeFoldOpen ? (
               <div className="me-fold-body">
-              <div className="me-row me-row-stack">
-                <span className="me-row-label">공개 범위</span>
-                {/* P0-SEC-1: 모바일도 데스크톱과 동일 게이트 — 비공개 범위는 잠금 해제
-                    (canReadPrivate) 상태에서만 고를 수 있다. 잠기면 '모두' 고정 + 안내. */}
-                <div className="me-seg" role="group" aria-label="공개 범위">
-                  <button
-                    className={form.visibilityScope === "public" ? "on" : ""}
-                    onClick={() => setForm((cur) => ({ ...cur, visibilityScope: "public" }))}
-                    type="button"
-                  >
-                    모두
-                  </button>
-                  {canReadPrivate && isEffectivelyOwner ? (
-                    <button
-                      className={form.visibilityScope === "owner_private" ? "on" : ""}
-                      onClick={() =>
-                        setForm((cur) => ({ ...cur, visibilityScope: "owner_private" }))
-                      }
-                      type="button"
-                    >
-                      엠바고
-                    </button>
-                  ) : null}
-                  {canReadPrivate ? (
-                    <button
-                      className={form.visibilityScope === "work" ? "on" : ""}
-                      onClick={() => setForm((cur) => ({ ...cur, visibilityScope: "work" }))}
-                      type="button"
-                    >
-                      작업자
-                    </button>
-                  ) : null}
-                </div>
-                {!canReadPrivate ? (
-                  <p className="me-scope-hint">
-                    비공개 범위(엠바고·작업자)는 비공개 일정 보기를 켠 뒤 고를 수 있어요.
-                  </p>
-                ) : null}
-              </div>
-              <div className="me-sep" />
               {renderSupportEditor()}
               {/* 떡밥(가림) — 공개 일정에만. 웹과 같은 구조(teaser-field + 칩 + 공개시각 카드/힌트)로
                   통일 → 미정·업도움과 간격도 동일. */}
@@ -5931,19 +5824,6 @@ export function StudioShell({
         palette={palette}
         tags={viewTags}
       />
-      {canReadPrivate ? (
-        <button
-          aria-pressed={tagFilters.includes(PRIVATE_FILTER)}
-          className={`tag-legend-filter ${tagFilters.includes(PRIVATE_FILTER) ? "on" : ""} ${
-            tagFilters.length > 0 && !tagFilters.includes(PRIVATE_FILTER) ? "dim" : ""
-          }`}
-          onClick={() => toggleTagFilter(PRIVATE_FILTER)}
-          type="button"
-         data-act="tag-legend-filter">
-          <i className="legend-private-swatch" aria-hidden="true" />
-          비공개
-        </button>
-      ) : null}
     </section>
   );
 
@@ -6136,6 +6016,18 @@ export function StudioShell({
                     멤버 관리
                   </button>
                 ) : null}
+                {/* 비밀번호(최초공개 게이트용) 변경 — 관리자만. 예전엔 비공개 보기를 켠 뒤 배너에서
+                    바꿨는데 그 경로가 철수돼 관리 묶음으로 옮겼다(2026-08-27). */}
+                {isEffectivelyOwner ? (
+                  <button
+                    className="button io-accent io-passcode"
+                    data-act="change-passcode"
+                    onClick={() => (blockedByPreview() ? null : openChangePasscode())}
+                    type="button"
+                  >
+                    비밀번호 변경
+                  </button>
+                ) : null}
                 {isDeveloper && !previewRole ? (
                   <button
                     className="button io-accent io-insights"
@@ -6199,8 +6091,8 @@ export function StudioShell({
               </button>
             </div>
           ) : null}
-          {/* 우측 묶음: 단축키 + 비공개 일정 보기(토글) + 달력 꾸미기.
-              (저장 상태 칩은 헤더의 버전 캡슐 아래로 이사 — 사용자 지정 배치.) */}
+          {/* 우측 묶음: 단축키 + 달력 꾸미기. (비공개 일정 보기 토글은 2026-08-27 철수.
+              저장 상태 칩은 헤더의 버전 캡슐 아래로 이사 — 사용자 지정 배치.) */}
           <div className="studio-actionbar-right">
             {canEdit ? (
               <button
@@ -6217,29 +6109,6 @@ export function StudioShell({
                 <ChevronDown aria-hidden="true" size={13} />
               </button>
             ) : null}
-            {canTogglePrivateLayer ? (
-              isEffectivelyOwner && canReadPrivate ? (
-                // 웹: 처음 켠 자리(토글)에 그대로 "비공개 끄기" — 마우스 이동 최소화. 비밀번호 변경은 경고 배너로.
-                <button
-                  className="private-toggle active io-accent io-private"
-                  onClick={() => setShowPrivate(false)}
-                  type="button"
-                 data-act="private-toggle">
-                  <EyeOff size={16} />
-                  비공개 끄기
-                </button>
-              ) : (
-                <button
-                  className={`${canReadPrivate ? "private-toggle active" : "private-toggle"} io-accent io-private`}
-                  onClick={togglePrivateLayer}
-                  type="button"
-                >
-                  {canReadPrivate ? <EyeOff size={16} /> : <Eye size={16} />}
-                  {canReadPrivate ? "비공개 표시 중" : "비공개 일정 보기"}
-                </button>
-              )
-            ) : null}
-            {/* ('지금 잠그기'는 하단 플로팅 배너로 이동 — 사용자 결정. 여기 액션바는 표시 토글만.) */}
             {canDecorateCalendar ? (
               <Link
                 // 매니저·작업자는 일정 편집을 못 하니 꾸미기가 1차 작업 → primary로 강조.
@@ -6259,30 +6128,10 @@ export function StudioShell({
         </div>
       </div>
 
-      {/* 하단 중앙 플로팅 행 — 비공개 경고 알약과 확대 배율 컨트롤을 같은 행에 나란히
-          (사용자 결정: 위아래로 쌓으면 일정을 두 줄 가린다). 각 알약은 필요할 때만 나타난다. */}
-      {(canTogglePrivateLayer && hasUnlockSession) || zoomCollapse ? (
+      {/* 하단 중앙 플로팅 행 — 확대 배율 컨트롤(필요할 때만). (비공개 경고 알약은 2026-08-27 철수.) */}
+      {zoomCollapse ? (
         <div className="bottom-float-row">
-          {canTogglePrivateLayer && hasUnlockSession ? (
-            <div
-              className={`private-warning private-warning-float${canReadPrivate ? "" : " is-hidden-state"}`}
-              role="status"
-            >
-              <LockKeyhole aria-hidden="true" size={15} />
-              {canReadPrivate
-                ? "비공개 일정 표시 중 — 방송 화면 공유에 주의하세요"
-                : "비공개 잠금 해제됨 — 표시는 꺼져 있어요"}
-              <button
-                className="private-warning-btn"
-                onClick={relockNow}
-                title="이 브라우저의 비공개 잠금해제를 지금 종료합니다(다시 보려면 비밀번호 입력)"
-                type="button"
-               data-act="지금 잠그기">
-                지금 잠그기
-              </button>
-            </div>
-          ) : null}
-          {zoomCollapse ? <div className="cal-zoom-float">{renderCalZoomCtl()}</div> : null}
+          <div className="cal-zoom-float">{renderCalZoomCtl()}</div>
         </div>
       ) : null}
 
@@ -7142,9 +6991,10 @@ export function StudioShell({
             </label>
             {renderTitleHelper()}
 
-            {/* 공개 범위 + 옵션(미정·업도움·떡밥)은 접어 둔다 — 대부분의 일정은 '모두 공개 + 옵션
-                없음'이라 매번 펼쳐 볼 필요가 없다. 제목·태그(자주 쓰는 것)를 먼저 보이게 하고,
-                이 묶음은 헤더에 현재 상태를 요약해 보여준 뒤 필요할 때만 펼친다. 기본 접힘. */}
+            {/* 옵션(미정·업도움·떡밥)은 접어 둔다 — 대부분의 일정은 '옵션 없음'이라 매번 펼쳐 볼
+                필요가 없다. 제목·태그(자주 쓰는 것)를 먼저 보이게 하고, 이 묶음은 헤더에 현재 상태를
+                요약해 보여준 뒤 필요할 때만 펼친다. 기본 접힘. (공개 범위 피커는 2026-08-27 철수 —
+                모든 일정이 '모두'. 비공개 모델은 서버에 그대로.) */}
             <div className={`fold-field${scopeFoldOpen ? " open" : ""}`}>
               <button
                 aria-expanded={scopeFoldOpen}
@@ -7155,76 +7005,12 @@ export function StudioShell({
                 }}
                 type="button"
                data-act="fold-head">
-                <span className="fold-title">공개 범위 · 옵션</span>
+                <span className="fold-title">옵션</span>
                 <span className="fold-summary">{scopeFoldSummary}</span>
                 <ChevronDown aria-hidden="true" className="fold-chev" size={16} />
               </button>
               {scopeFoldOpen ? (
                 <div className="fold-body">
-            <div className="scope-field">
-              <span className="scope-field-label">공개 범위</span>
-              {canReadPrivate ? (
-                (() => {
-                  // 역할별 옵션 — 개발자/작업자는 엠바고(owner_private) 없음. 카드 수만큼 칸을 만들어
-                  // (2개면 2칸) 오른쪽 빈 공간 없이 폭을 꽉 채운다.
-                  const opts = [
-                    { v: "public", Icon: Globe, label: "모두", sub: "누구나 봐요" },
-                    ...(isEffectivelyOwner
-                      ? [{ v: "owner_private", Icon: LockKeyhole, label: "엠바고", sub: "관리자만" }]
-                      : []),
-                    { v: "work", Icon: Wrench, label: "작업자", sub: "작업자까지" }
-                  ];
-                  return (
-                    // 행 목록 문법(리디자인) — 옵션 칩과 같은 세로 리듬. 인라인 칼럼 지정은
-                    // 리디자인 단일 칼럼 규칙을 덮어써 제거했다.
-                    <div aria-label="공개 범위" className="scope-picker" role="radiogroup">
-                      {opts.map(({ v, Icon, label, sub }) => {
-                        const on = form.visibilityScope === v;
-                        return (
-                          <button
-                            aria-checked={on}
-                            className={`scope-opt${on ? " on" : ""}`}
-                            data-scope={v}
-                            disabled={!canEdit}
-                            key={v}
-                            onClick={() => {
-                              hapticTick();
-                              setForm((current) => ({
-                                ...current,
-                                visibilityScope: v as EventVisibilityScope
-                              }));
-                            }}
-                            role="radio"
-                            type="button"
-                           data-act="scope-opt">
-                            <Icon aria-hidden="true" className="scope-opt-ic" size={18} />
-                            <span className="scope-opt-label">{label}</span>
-                            <span className="scope-opt-sub">{sub}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })()
-              ) : (
-                // 비공개 레이어 잠김: 공개 범위는 "모두"로 고정. 풀면 역할에 맞는 범위가 늘어난다
-                // (관리자=엠바고·작업자, 개발자·작업자=작업자).
-                <div className="scope-picker locked">
-                  <div aria-disabled="true" className="scope-opt on" data-scope="public">
-                    <Globe aria-hidden="true" className="scope-opt-ic" size={18} />
-                    <span className="scope-opt-label">모두</span>
-                    <span className="scope-opt-sub">누구나 봐요</span>
-                  </div>
-                  <p className="scope-locked-note">
-                    <LockKeyhole aria-hidden="true" size={12} />{" "}
-                    {isEffectivelyOwner
-                      ? "비공개 레이어를 풀면 엠바고·작업자 선택"
-                      : "비공개 레이어를 풀면 작업자도 선택 가능"}
-                  </p>
-                </div>
-              )}
-            </div>
-
             {/* 옵션 칩 순서(웹·모바일 통일): 미정 → 업도움 → 떡밥 */}
             {renderSupportEditor()}
 

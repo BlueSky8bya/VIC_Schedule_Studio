@@ -21,3 +21,4 @@
 | [0011](ADR-0011-ux-overhaul-l-decisions.md) | Accepted | UX 전면 개선 | 개선 계획 L1~L8 확정: 하루 개수 무제한, 제목 줄바꿈 유지, 메모리 draft, iPad 개요+아젠다, 삭제 8초+24h, developer 권한 현행 유지, 태그 6/2, 잠금해제 auth-session 단위 | 신뢰 멤버 증가·부제목 혼란 반복 시 |
 | [0012](ADR-0012-phase0-capability-matrix.md) | Accepted | 권한/보안 | Phase 0 capability matrix + 불변식(범위 fail-closed·미리보기 서버 스냅샷만·오류 원문 비노출) | 역할 추가·캘린더 2개 이상 시 |
 | [0013](ADR-0013-activity-log-internal-identified.md) | Accepted | 프라이버시/지표 | 행동 기록(`activity_event`): **내부자만 계정 식별**, 시청자·비로그인은 쓰기 시점에 `account_hash` null 강제. meta에 일정 제목·본문 저장 금지(ADR-0002 우회 차단). 보존 90일 | 신뢰 멤버가 다수가 되거나 시청자 개인 단위 분석이 필요해질 때(고지 선행) |
+| [0014](ADR-0014-private-layer-ui-retired.md) | Accepted | 역할 UX/보안 | 편집실 **비공개 레이어 UI 철수**(비공개 보기 토글·공개 범위 피커·배너·필터). 서버 모델·RLS·fail-closed 저장 검사는 그대로, 새 일정은 항상 public. 비밀번호는 **최초공개 게이트·변경 전용**(관리 묶음) | 관리자가 엠바고/작업자 일정을 다시 쓰고 싶을 때(UI만 복원) |

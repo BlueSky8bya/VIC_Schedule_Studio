@@ -43,7 +43,9 @@ uniform. A cold "admin-panel" feel is a regression.
 3. Only `owner` can create / edit / delete schedules.
 4. `developer` maintains the system but cannot read/create owner-only content; public API
    stays private-free for developers too.
-5. Private-layer access = Google login + valid passcode unlock session.
+5. Private-layer access = Google login + valid passcode unlock session. (Studio UI for viewing
+   private layers / picking a scope was retired 2026-08-27 — ADR-0014; the server model stays,
+   new events are always public, the passcode now serves the teaser (최초공개) gate + change only.)
 6. Poster/export mode: no admin UI, no private badges, no edit/unlock controls; export
    surfaces use `[data-export-surface]`.
 
@@ -51,7 +53,8 @@ uniform. A cold "admin-panel" feel is a regression.
 
 - **Viewer** — public poster only (filters, hearts, support links, month nav). No private
   toggle, edit, or admin.
-- **Worker** — view unlocked **work** schedules only (not embargo). Stickers/decoration.
+- **Worker** — stickers/decoration. (Server model still allows unlocked **work** schedules, but
+  the studio toggle was retired 2026-08-27 — ADR-0014.)
   Cannot edit schedules, tags, members, passcodes, or support.
 - **Manager** — **no private access at all** (no unlock button; public only). May edit support
   period/link (`canEditSupport`) and assign event tags (`canEditEventTags`, max 2). May
@@ -72,7 +75,8 @@ owner/developer/worker; owner_private → owner only. Manager has zero private a
 
 ## Invariants (high-frequency facts)
 
-- Private-layer banner, exact: `⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.`
+- Private-layer banner (retired from studio UI 2026-08-27, ADR-0014; keep this exact text if it
+  ever returns): `⚠ 비공개 일정 표시 중입니다. 방송 화면 공유에 주의하세요.`
 - Max 2 tags per event; a date cell shows ≤2 representative colors.
 - Tag create/delete/recolor = owner/developer only.
 - Support feature term = "업 도움".

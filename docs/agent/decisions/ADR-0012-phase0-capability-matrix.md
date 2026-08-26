@@ -1,6 +1,6 @@
 # ADR-0012: Phase 0 — 역할 capability matrix와 공개/비공개 불변식 고정
 
-- Status: Accepted
+Status: Accepted
 - Date: 2026-07-29
 - 상위 결정: ADR-0011(L1~L8), 계획 `docs/ux/audit/vic-schedule-studio-ux-hci-improvement-plan_260729.md`
 - 목적: P0 보안 슬라이스들이 공유하는 **한 장의 권한표**. server action, RLS, UI, test가 전부

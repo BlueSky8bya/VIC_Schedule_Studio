@@ -4987,6 +4987,16 @@ html[data-reduce-motion] .editor-anchor-link line {
   border-color: #aee3d6;
   color: #0a6c5c;
 }
+.io-passcode {
+  background: #f3eefb; /* 라벤더 = 보안(비밀번호) — 옛 비공개 토글의 보라 계열을 잇는다 */
+  border-color: #dccbf3;
+  color: #5b4a86;
+}
+.io-passcode:hover:not(:disabled) {
+  background: #ebe2f8;
+  border-color: #cdb8ee;
+  color: #4d3d75;
+}
 .io-insights {
   background: #ecf4ff; /* 블루 = 정보/데이터(인사이트) */
   border-color: #cfe2f8;

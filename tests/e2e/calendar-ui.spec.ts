@@ -16,11 +16,9 @@ test("studio renders read-only for unauthenticated viewers", async ({
 
   await expect(page.getByRole("heading", { name: "빅토리 일정표" })).toBeVisible();
 
-  // 비로그인 시청자 경계: 편집/비공개 접근 불가 단서가 보여야 한다.
+  // 비로그인 시청자 경계: 편집 불가 단서가 보여야 한다. ('비공개 일정 보기' 토글은 2026-08-27 철수.)
   await expect(page.getByRole("link", { name: "로그인" })).toBeVisible();
-  await expect(
-    page.getByRole("button", { name: "비공개 일정 보기" })
-  ).toBeDisabled();
+  await expect(page.getByRole("button", { name: "비공개 일정 보기" })).toHaveCount(0);
 
   // 비공개 레이어 경고는 절대 노출되면 안 된다.
   await expect(
