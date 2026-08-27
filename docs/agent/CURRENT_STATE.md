@@ -20,7 +20,9 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 - **애플 HCI 감성 다듬기 2차(2026-08-27, 사용자 지시 — 출석 도장은 하지 않음)**:
   · **B1 시청자 모바일 시트 끌어서 닫기** — 편집실 시트의 `use-sheet-drag-close` 훅을 시청자 상세 시트에 연결.
     그립 존 `.agenda-detail-top`(sticky·touch-action:none·음수 마진으로 시트 맨 위) + 손잡이 `.agenda-detail-grab`,
-    PC 팝오버(anchor)는 래퍼만(정적, 바인딩 없음 — 이동 드래그가 따로). 같은 요소에 ref 둘 → 콜백 ref 병합.
+    **그립 존은 손잡이 줄만**(≈27px, 배경 없음) — 헤더까지 sticky로 두면 X(44px) 탓에 두꺼워져 제목을 가렸다(사용자
+    리포트, 수정). **모바일 X 제거**(사용자 결정): 손잡이 = 접근 가능한 닫기 버튼(탭=닫기) + 스와이프 + 배경 탭 + Esc.
+    PC 팝오버(anchor)는 X 유지, 그립 없음. 같은 요소에 ref 둘 → 콜백 ref 병합.
     게이트: `tests/visual/viewer-sheet-drag.spec.ts`.
   · **C1 재질 마무리** — 시청자 모바일 시트·편집실 모바일 편집 시트(+sticky 그립 존)·라이브 카드·복사 토스트·삭제
     스낵바(다크 재질)를 `--material-*`로. export surface 밖만.

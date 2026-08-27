@@ -3455,11 +3455,26 @@ export function PublicPoster({
                       <span />
                     </div>
                   ) : null}
-                  {/* 모바일: 손잡이+헤더 = 끌어서 닫기 그립 존(sticky). PC는 래퍼만(바인딩 없음). */}
-                  <div className="agenda-detail-top" {...(anchor ? {} : detailDragBind)}>
+                  {/* 모바일: 손잡이 줄만 끌어서 닫기 그립 존(sticky, 얇게). 날짜줄·X는 본문과 함께 흐른다 —
+                      헤더까지 sticky로 두면 X(44px) 때문에 두꺼워져 스크롤 시 제목을 가렸다(사용자 리포트). */}
                   {anchor ? null : (
-                    <div aria-hidden="true" className="agenda-detail-grab">
-                      <span />
+                    <div className="agenda-detail-top" {...detailDragBind}>
+                      {/* 손잡이 = 접근 가능한 닫기 버튼(탭 = 닫기, iOS 그래버 문법). 모바일엔 X가 없다 —
+                          손잡이 탭·스와이프·배경 탭·Esc 네 경로면 충분(사용자 결정). 드래그 뒤 꼬리 click은
+                          훅의 onClickCapture가 삼킨다. */}
+                      <button
+                        aria-label="닫기"
+                        autoFocus
+                        className="agenda-detail-grab"
+                        data-act="닫기"
+                        onClick={() => {
+                          hapticTick();
+                          setAgendaDetail(null);
+                        }}
+                        type="button"
+                      >
+                        <span />
+                      </button>
                     </div>
                   )}
                   <div
@@ -3489,19 +3504,22 @@ export function PublicPoster({
                         </span>
                       );
                     })()}
-                    <button
-                      aria-label="닫기"
-                      autoFocus
-                      className="agenda-detail-close"
-                      type="button"
-                      onClick={() => {
-                        hapticTick();
-                        setAgendaDetail(null);
-                      }}
-                     data-act="닫기">
-                      <X aria-hidden="true" size={16} strokeWidth={2.5} />
-                    </button>
-                  </div>
+                    {/* X는 PC 팝오버만(모바일은 손잡이가 닫기). */}
+                    {anchor ? (
+                      <button
+                        aria-label="닫기"
+                        autoFocus
+                        className="agenda-detail-close"
+                        type="button"
+                        onClick={() => {
+                          hapticTick();
+                          setAgendaDetail(null);
+                        }}
+                        data-act="닫기"
+                      >
+                        <X aria-hidden="true" size={16} strokeWidth={2.5} />
+                      </button>
+                    ) : null}
                   </div>
                   {/* 떡밥은 제목 줄 생략 — 카드가 이미 ???를 말했고, 팝오버는 '기대' 무대다
                       (아래 오브가 주인공). 중복 줄이 위계를 흐렸다(사용자 지적). */}
