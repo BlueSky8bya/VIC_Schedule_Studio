@@ -16,7 +16,9 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 - **후속 정리 3건(2026-08-27, 사용자 결정)**: ① prod의 유령 `work` 일정 1건(2025-11-04, 2026-08-03 테스트 잔재)
   hard delete — 비공개 범위 잔여 0. ② `unlock_sessions` drop(**0067 prod 적용 완료**): `has_private_unlock()`를
   private_unlock_grants(auth 세션 결속) 모델로 이식 후 drop, 코드의 legacy delete 3곳 제거. ③ 콜드 스타트 워밍
-  `.github/workflows/warm.yml`(5분 표기, GH 실효 ~2h — 진짜 5분은 cron-job.org에 `/`·`/api/public/vic/events` 등록).
+  `.github/workflows/warm.yml`(5분 표기, GH 실효 ~2h) + **cron-job.org(사용자 계정)에 5분 잡 2개 등록 완료(2026-08-27)**:
+  "빅토리 일정표 깨우기 (첫 화면)" `/` · "(일정 API)" `/api/public/vic/events`. 같은 계정의 "빅토리 방송 감지"
+  (`/api/cron/broadcast-poll`, 1분)는 **꺼져 있음** — 켜려면 Advanced 헤더 `Authorization: Bearer <CRON_SECRET>` 필요.
 - **애플 HCI 감성 다듬기 2차(2026-08-27, 사용자 지시 — 출석 도장은 하지 않음)**:
   · **B1 시청자 모바일 시트 끌어서 닫기** — 편집실 시트의 `use-sheet-drag-close` 훅을 시청자 상세 시트에 연결.
     그립 존 `.agenda-detail-top`(sticky·touch-action:none·음수 마진으로 시트 맨 위) + 손잡이 `.agenda-detail-grab`,
