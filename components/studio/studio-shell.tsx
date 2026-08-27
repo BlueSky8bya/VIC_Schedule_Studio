@@ -5096,12 +5096,6 @@ export function StudioShell({
             누르기 쉬운 핵심 버튼(미리보기·비공개)을 엄지 닿는 바닥에 모았다.
             계정변경(로그아웃)은 헤더 우상단으로 옮겼다(저장됨 칩이 있던 자리). */}
         <nav className="m-actionrail" aria-label="편집실 도구">
-          {/* 비밀번호(최초공개 게이트용) 변경 — 관리자만. 비공개 일정 보기 토글 자리(2026-08-27 철수). */}
-          {isEffectivelyOwner ? (
-            <button className="button m-io-pill m-io-private" data-act="change-passcode" onClick={() => openChangePasscode()} type="button">
-              비밀번호 변경
-            </button>
-          ) : null}
           {/* '오늘' — 시청자 화면과 같은 복귀 버튼(사용자 요청). 항상 미리보기 바로 왼쪽
               (비공개 버튼이 있는 역할은 그 사이) — 역할이 달라도 같은 자리라 근육기억 유지. */}
           <button
@@ -5897,18 +5891,6 @@ export function StudioShell({
                     type="button"
                   >
                     멤버 관리
-                  </button>
-                ) : null}
-                {/* 비밀번호(최초공개 게이트용) 변경 — 관리자만. 예전엔 비공개 보기를 켠 뒤 배너에서
-                    바꿨는데 그 경로가 철수돼 관리 묶음으로 옮겼다(2026-08-27). */}
-                {isEffectivelyOwner ? (
-                  <button
-                    className="button io-accent io-passcode"
-                    data-act="change-passcode"
-                    onClick={() => (blockedByPreview() ? null : openChangePasscode())}
-                    type="button"
-                  >
-                    비밀번호 변경
                   </button>
                 ) : null}
                 {isDeveloper && !previewRole ? (

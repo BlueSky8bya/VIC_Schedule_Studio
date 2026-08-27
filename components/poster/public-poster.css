@@ -5444,6 +5444,15 @@ html[data-reduce-motion] .pi-retry:active {
     var(--spring-smooth, cubic-bezier(0.34, 1.4, 0.5, 1)) both;
 }
 @supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* C1(2026-08-27): 모바일 바텀시트도 같은 재질 — 딤 위에 떠 있는 프로스트 유리. */
+  .agenda-detail-backdrop:not(.is-pop) .agenda-detail-sheet {
+    background: var(--material-bg-strong, rgb(255 255 255 / 86%));
+    -webkit-backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
+    backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
+  }
+  .agenda-detail-backdrop:not(.is-pop) .agenda-detail-top {
+    background: var(--material-bg-strong, rgb(255 255 255 / 86%));
+  }
   .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
     background: var(--material-bg-strong, rgb(255 253 246 / 84%));
     -webkit-backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
@@ -5728,6 +5737,41 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   }
 }
 
+/* B1(2026-08-27) 모바일 시트 상단 그립 존 — 손잡이 + 헤더. sticky라 본문을 스크롤해도 늘 잡힌다.
+   음수 마진으로 시트 패딩을 뚫고 맨 위에 붙이고, 배경을 깔아 아래로 지나가는 본문을 가린다.
+   touch-action:none — 브라우저 스크롤/당겨서 새로고침이 드래그를 가로채지 않게. */
+.agenda-detail-top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) 0;
+  padding: var(--space-2) var(--space-4) 0;
+  background: var(--surface, #fffdf6);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.agenda-detail-grab {
+  display: flex;
+  justify-content: center;
+  padding: 0 0 var(--space-2);
+}
+.agenda-detail-grab span {
+  width: 36px;
+  height: 5px;
+  border-radius: var(--r-pill);
+  background: rgb(120 100 60 / 22%);
+}
+/* PC 팝오버: 래퍼는 투명 통과(헤더가 이동 손잡이 겸용, 그립 없음). */
+.agenda-detail-backdrop.is-pop .agenda-detail-top {
+  position: static;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  touch-action: auto;
+  user-select: auto;
+  -webkit-user-select: auto;
+}
 .agenda-detail-head {
   display: flex;
   align-items: center;
@@ -5891,3 +5935,11 @@ html[data-reduce-motion] .agenda-detail-close:active {
 /* 태그 필터 중 — 꾸미기 스티커도 일정 카드(.dimmed)와 같은 값으로 함께 물러난다.
    스티커만 쨍하면 필터 결과보다 장식이 더 눈에 띄었다(사용자 지적). */
 
+/* ── C1 재질(2026-08-27): 라이브 카드(좌하단 고정)·하트 토스트도 같은 프로스트 유리. export surface 밖. */
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .soop-live-card {
+    background: var(--material-bg-strong, rgb(255 255 255 / 86%));
+    -webkit-backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
+    backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
+  }
+}

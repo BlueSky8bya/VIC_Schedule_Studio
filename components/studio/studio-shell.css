@@ -4818,16 +4818,6 @@ html[data-reduce-motion] .editor-anchor-link line {
   border-color: #aee3d6;
   color: #0a6c5c;
 }
-.io-passcode {
-  background: #f3eefb; /* 라벤더 = 보안(비밀번호) — 옛 비공개 토글의 보라 계열을 잇는다 */
-  border-color: #dccbf3;
-  color: #5b4a86;
-}
-.io-passcode:hover:not(:disabled) {
-  background: #ebe2f8;
-  border-color: #cdb8ee;
-  color: #4d3d75;
-}
 .io-insights {
   background: #ecf4ff; /* 블루 = 정보/데이터(인사이트) */
   border-color: #cfe2f8;
@@ -4884,7 +4874,8 @@ html[data-reduce-motion] .editor-anchor-link line {
   align-items: center;
   gap: 6px;
   padding: 4px 6px;
-  border-radius: var(--r-card);
+  /* A3 코너 동심(2026-08-27): 안쪽 버튼 r-control(12) + 세로 패딩 4 = 16 — 실측 Δ2 교정. */
+  border-radius: calc(var(--r-control) + var(--space-1));
   background: rgba(120, 110, 160, 0.07);
 }
 /* 우측 묶음: 비공개 일정 보기(토글) + 달력 꾸미기를 액션바 오른쪽 끝으로 모은다. */
@@ -9631,14 +9622,6 @@ html[data-reduce-motion] .modal-close:active {
 .m-io-preview:active {
   background: #e3e9f4;
 }
-.m-io-private {
-  background: #fff5e9;
-  border-color: #f1d6ad;
-  color: #9a5a12; /* amber = 주의(민감 토글) */
-}
-.m-io-private:active {
-  background: #ffedd6;
-}
 /* '오늘' 복귀 — 핵심 시간 기준점이므로 전역 accent 의미를 그대로 쓴다. */
 .m-io-today {
   background: var(--accent-soft);
@@ -10750,7 +10733,8 @@ html[data-reduce-motion] .m-edit-actions .button:active {
 .preview-dd-item,
 .rest-menu-item {
   min-height: var(--control-hit);
-  border-radius: var(--r-control);
+  /* A3 코너 동심(2026-08-27): 메뉴 r-lg(16) − 패딩 8 − 테두리 1 ≈ 7 → r-sm(8). r-control(12)은 실측 Δ5. */
+  border-radius: var(--r-sm);
   padding: var(--space-2) var(--space-3);
   color: var(--ink-soft);
   font-size: var(--text-body);
@@ -12242,4 +12226,25 @@ html[data-reduce-motion] .event-drag-ghost {
 }
 .modal-discard-ask .mda-discard:hover {
   background: rgb(179 38 30 / 8%);
+}
+
+/* ── C1 재질 마무리(2026-08-27, HCI 벤치마크) — 아직 불투명 판이던 떠 있는 표면을 같은 재질로.
+   모바일 편집 시트: 딤 위 프로스트 유리(시트 배경 86% + 블러). sticky 그립 존은 본문이 아래로 지나가므로
+   같은 재질색(블러 없음 — 중첩 backdrop-filter는 비용만 들고 차이 없음). 토스트/스낵바: 다크 재질.
+   export surface 밖의 표면만 — 규칙 준수. */
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .m-edit-sheet {
+    background: var(--material-bg-strong);
+    -webkit-backdrop-filter: var(--material-blur);
+    backdrop-filter: var(--material-blur);
+  }
+  .m-sheet-top {
+    background: var(--material-bg-strong);
+  }
+  .copy-toast,
+  .delete-snack {
+    background: rgb(31 41 55 / 86%);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    backdrop-filter: blur(14px) saturate(1.4);
+  }
 }

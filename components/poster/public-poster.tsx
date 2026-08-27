@@ -84,6 +84,7 @@ import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
+import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
@@ -1050,6 +1051,12 @@ export function PublicPoster({
   // 모두 뷰포트(fixed) 좌표 — 포스터 표면 transform 축소와 무관하게 gBCR 그대로 유효하다.
   const detailAnchorElRef = useRef<HTMLElement | null>(null);
   const detailSheetRef = useRef<HTMLDivElement | null>(null);
+  // B1(시청자 모바일 시트, 2026-08-27): 손잡이·헤더를 잡고 끌어 닫기 — 편집실 모바일 편집 시트와 같은 훅
+  // (1:1 추적·위로 러버밴딩·릴리스 속도 스프링·닫힘 임계 햅틱). PC 팝오버(anchor)는 이동 드래그가
+  // 따로 있어 바인딩하지 않는다. 같은 요소에 ref 둘 → 콜백 ref로 합친다.
+  const { sheetRef: detailDragSheetRef, dragBind: detailDragBind } = useSheetDragClose({
+    onClose: () => setAgendaDetail(null)
+  });
   // 리더선은 '선 로컬 좌표계'로 그린다 — 바깥 <g>가 (앵커점 → 각도)로 옮겨 놓고, 안쪽은
   // x축 위의 수평선일 뿐이다. 그래야 점선 흐름을 stroke-dashoffset(매 프레임 SVG paint)
   // 대신 translateX(컴포지터)로 굴릴 수 있다. 드래그 중에는 x2/y2 대신 이 변환을 갱신한다.
@@ -3430,7 +3437,10 @@ export function PublicPoster({
                   }${teaserActive ? " is-teaser" : ""}${detailFinal ? " is-final" : ""}${
                     detailJustRevealed ? " reveal-burst" : ""
                   }`}
-                  ref={detailSheetRef}
+                  ref={(el) => {
+                    detailSheetRef.current = el;
+                    detailDragSheetRef.current = el;
+                  }}
                   role="dialog"
                   style={popStyle}
                 >
@@ -3445,6 +3455,13 @@ export function PublicPoster({
                       <span />
                     </div>
                   ) : null}
+                  {/* 모바일: 손잡이+헤더 = 끌어서 닫기 그립 존(sticky). PC는 래퍼만(바인딩 없음). */}
+                  <div className="agenda-detail-top" {...(anchor ? {} : detailDragBind)}>
+                  {anchor ? null : (
+                    <div aria-hidden="true" className="agenda-detail-grab">
+                      <span />
+                    </div>
+                  )}
                   <div
                     className="agenda-detail-head"
                     onPointerDown={anchor ? onDetailDragStart : undefined}
@@ -3484,6 +3501,7 @@ export function PublicPoster({
                      data-act="닫기">
                       <X aria-hidden="true" size={16} strokeWidth={2.5} />
                     </button>
+                  </div>
                   </div>
                   {/* 떡밥은 제목 줄 생략 — 카드가 이미 ???를 말했고, 팝오버는 '기대' 무대다
                       (아래 오브가 주인공). 중복 줄이 위계를 흐렸다(사용자 지적). */}

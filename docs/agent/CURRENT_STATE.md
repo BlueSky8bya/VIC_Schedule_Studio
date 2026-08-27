@@ -17,8 +17,16 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   hard delete — 비공개 범위 잔여 0. ② `unlock_sessions` drop(**0067 prod 적용 완료**): `has_private_unlock()`를
   private_unlock_grants(auth 세션 결속) 모델로 이식 후 drop, 코드의 legacy delete 3곳 제거. ③ 콜드 스타트 워밍
   `.github/workflows/warm.yml`(5분 표기, GH 실효 ~2h — 진짜 5분은 cron-job.org에 `/`·`/api/public/vic/events` 등록).
-- **다음: 애플 HCI 감성 다듬기 B1 → C1 → A3**(사용자 지시, 출석 도장은 하지 않음). B1 = 모바일 일정 상세 시트
-  드래그 닫기(1:1 추적·러버밴딩·릴리스 속도 스프링·detent 햅틱).
+- **애플 HCI 감성 다듬기 2차(2026-08-27, 사용자 지시 — 출석 도장은 하지 않음)**:
+  · **B1 시청자 모바일 시트 끌어서 닫기** — 편집실 시트의 `use-sheet-drag-close` 훅을 시청자 상세 시트에 연결.
+    그립 존 `.agenda-detail-top`(sticky·touch-action:none·음수 마진으로 시트 맨 위) + 손잡이 `.agenda-detail-grab`,
+    PC 팝오버(anchor)는 래퍼만(정적, 바인딩 없음 — 이동 드래그가 따로). 같은 요소에 ref 둘 → 콜백 ref 병합.
+    게이트: `tests/visual/viewer-sheet-drag.spec.ts`.
+  · **C1 재질 마무리** — 시청자 모바일 시트·편집실 모바일 편집 시트(+sticky 그립 존)·라이브 카드·복사 토스트·삭제
+    스낵바(다크 재질)를 `--material-*`로. export surface 밖만.
+  · **A3 코너 동심** — 허깅 쌍 실측(.scratch 감사 스크립트): 관리 묶음 14→`calc(r-control+4)`=16, 메뉴 항목
+    r-control(12)→r-sm(8) (메뉴 16−패딩 8−테두리 1). 나머지 쌍(시트 안 버튼 등)은 모서리에 안 닿아 규칙 비적용.
+  · 액션바 "비밀번호 변경" 버튼(웹 관리 묶음·모바일 툴바) 제거 — 월별 인사이트 보안 탭에 동일 기능(사용자 지시).
 - **최종 전체 검토(2026-08-27 밤, 정리 작업 회귀 점검)**: 런타임 코드의 drop 테이블/함수·삭제 라우트·삭제 모듈
   참조 0(에이전트 감사). 발견·수정: ① 죽은 CSS 제거기가 `:not(.dead)` 규칙을 통째로 지워 단축키 칩이 풀림 →
   `.kbd-hints span`으로 복원(5ec57cd) ② `db/policies`가 drop된 스티커 테이블·`is_worker`를 참조하고
