@@ -5,7 +5,7 @@
   bottom: 5px;
   z-index: 1;
   color: rgb(120 120 120 / 32%);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 600;
   letter-spacing: 0.02em;
   font-variant-numeric: tabular-nums;
@@ -93,6 +93,7 @@
      SF 스타일 '역할' 스케일 — px 산재(한 패널에 10~18px 11종) 대신 6역할로 수렴한다.
      값은 현재 관행의 대표값 스냅(정의 시점 시각 변화 0). 화면별 리디자인 슬라이스에서
      점진 치환하고, 웹(≥641px) 상향이 필요한 역할은 그 화면 미디어쿼리에서 토큰을 재정의. */
+  --text-micro: 10.5px; /* 극소 보조(날짜 마크·칩 안 숫자·각주의 각주) — 이보다 작은 8~9.5px는 raw 유지 */
   --text-caption: 11px; /* 보조 각주·배지 소문자 */
   --text-label: 12.5px; /* 필드 라벨·범례·힌트 */
   --text-body: 13.5px; /* 본문·목록 */
@@ -423,7 +424,7 @@ select {
   background: var(--glass-strong);
   padding: 10px 20px;
   color: var(--ink);
-  font-size: 15px;
+  font-size: var(--text-ui);
   font-weight: 900;
   box-shadow: var(--shadow-3);
   backdrop-filter: blur(8px);
@@ -485,7 +486,7 @@ select {
   font-size: 16px;
   line-height: 1;
 }
-.burst.big .burst-bit.emoji { font-size: 19px; }
+.burst.big .burst-bit.emoji { font-size: var(--text-display); }
 @keyframes burst-fly {
   0% { transform: translate(-50%, -50%) scale(0.4) rotate(0deg); opacity: 0; }
   12% { opacity: 1; }
@@ -501,7 +502,7 @@ select {
 
 .eyebrow {
   color: var(--accent-strong);
-  font-size: 13px;
+  font-size: var(--text-body);
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -623,7 +624,7 @@ select {
 .auth-panel-login .button.primary {
   width: 100%;
   min-height: 46px;
-  font-size: 15px;
+  font-size: var(--text-ui);
 }
 .auth-brand {
   position: relative;
@@ -642,7 +643,7 @@ select {
   position: absolute;
   top: -6px;
   right: -6px;
-  font-size: 18px;
+  font-size: var(--text-title);
   animation: auth-spark 2.4s ease-in-out infinite;
 }
 @keyframes auth-brand-float {
@@ -701,7 +702,7 @@ select {
 .auth-warning {
   border-radius: var(--r-sm);
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 700;
   line-height: 1.5;
 }
@@ -722,12 +723,12 @@ select {
   padding: var(--space-3); /* 12 — 12/14 정리 */
 }
 .auth-error-card .auth-error-emoji {
-  font-size: 18px;
+  font-size: var(--text-title);
   line-height: 1.4;
 }
 .auth-error-card p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 700;
   line-height: 1.5;
   color: #b4453a;
@@ -756,7 +757,7 @@ select {
   gap: 10px;
   padding: 18px 8px;
   color: var(--muted, #6b5b34);
-  font-size: 14px;
+  font-size: var(--text-body);
   font-weight: 700;
 }
 .inapp-spinner {
@@ -996,7 +997,7 @@ html[data-reduce-motion] .passcode-box .button {
   gap: 5px;
   min-width: 0;
   padding: 0 6px;
-  font-size: 10.5px;
+  font-size: var(--text-micro);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -1013,7 +1014,7 @@ html[data-reduce-motion] .passcode-box .button {
   width: 100%;
   gap: 4px;
   padding: 0 5px;
-  font-size: 10px;
+  font-size: var(--text-micro);
 }
 
 .support-bar .sb-title {
@@ -1028,7 +1029,7 @@ html[data-reduce-motion] .passcode-box .button {
 .support-bar.sb-solo .sb-go {
   flex: none;
   margin-left: auto;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 900;
   color: rgb(159 18 57 / 78%);
@@ -1047,7 +1048,7 @@ html[data-reduce-motion] .support-bar.sb-solo.is-clickable.is-hover .sb-go {
 .support-bar .sb-cta {
   font-style: normal;
   font-weight: 800;
-  font-size: 10px;
+  font-size: var(--text-micro);
   color: rgb(159 18 57 / 78%);
   border-bottom: 1px dotted rgb(159 18 57 / 45%);
   transition: transform 0.16s var(--ease, ease), color 0.16s var(--ease, ease);

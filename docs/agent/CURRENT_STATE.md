@@ -13,6 +13,20 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **애플 HCI 감성 다듬기 3차(2026-08-27, 사용자 지시 — B2·D3·C2로 보고서 후보 소진)**:
+  · **B2 시청자 모바일 카드→시트 줌 전이** — 탭한 카드 rect를 `agendaDetailOriginRef`에 기억, 시트 마운트 직후
+    WAAPI FLIP(translate+scale, `--spring-smooth`)으로 카드 자리에서 자라남, 내용은 45% 이후 페이드인. 손잡이 탭·
+    배경 탭 닫기는 `closeAgendaDetailAnimated`(정확한 역방향 300ms), 드래그 닫기는 훅의 슬라이드, Esc 즉시.
+    PC 팝오버(anchor)·동작 줄이기 제외. 편집실 모바일 편집 시트(4585~)와 같은 문법.
+  · **D3 방송 ON 모프** — 모바일 하단 '오늘'↔LIVE를 **한 버튼**으로(이전엔 두 요소 교체): 빨강은 `::before` opacity로
+    차오르고, false→true 전이 순간만 `.just-live` 젤리 팝(`--spring-bouncy`) + 햅틱 2틱(시작·확정 620ms).
+    첫 마운트에 이미 LIVE면 조용. 데스크탑 `.soop-live-card`는 좌하단에서 스프링 스케일 등장 + LIVE 배지 팝.
+    (fixture 달에 오늘이 없어 모바일 전이는 브라우저 검증 불가 — 코드 경로 검토·데스크탑 카드 실측.)
+  · **C2 타이포 역할 토큰화** — raw px 278곳을 `--text-*`로(exact/±0.5px 근사: 10·10.5→micro(신설 10.5),
+    11·11.5→caption, 12·12.5→label, 13·13.5·14→body, 14.5~15.5→ui, 17·18→title, 19·20→display, 28→hero).
+    **`@media (min-width)` 안(웹 확대 단)은 raw 유지** — 2단 타이포 보존. 8~9.5px·16·22px 이상은 raw.
+    검증: 13화면 전/후 레이아웃 지표(`.scratch-pw/layout-metrics.mjs` — 줄수·높이·너비·잘림·문서 폭) 비교
+    → 줄바꿈·잘림·높이 급변 0건, 편집실 모바일 문서 높이 +19px(행마다 0.5px 누적)만. 스크린샷 육안 이상 없음.
 - **후속 정리 3건(2026-08-27, 사용자 결정)**: ① prod의 유령 `work` 일정 1건(2025-11-04, 2026-08-03 테스트 잔재)
   hard delete — 비공개 범위 잔여 0. ② `unlock_sessions` drop(**0067 prod 적용 완료**): `has_private_unlock()`를
   private_unlock_grants(auth 세션 결속) 모델로 이식 후 drop, 코드의 legacy delete 3곳 제거. ③ 콜드 스타트 워밍

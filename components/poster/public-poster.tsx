@@ -1057,6 +1057,80 @@ export function PublicPoster({
   const { sheetRef: detailDragSheetRef, dragBind: detailDragBind } = useSheetDragClose({
     onClose: () => setAgendaDetail(null)
   });
+  // B2(시청자 모바일, 2026-08-27): 시트가 무관한 위치에서 올라오지 않고 **탭한 카드 자리에서 자라난다**
+  // (matched geometry — 편집실 모바일 편집 시트와 같은 문법). 탭 순간의 카드 rect를 기억했다가 시트
+  // 마운트 직후 FLIP으로 재생. 손잡이 탭·배경 탭 닫기는 정확한 역방향(카드 자리로 줄어듦), 드래그
+  // 닫기는 물리 그대로 아래로(훅), Esc는 즉시. PC 팝오버(anchor)·동작 줄이기는 제외.
+  const agendaDetailOriginRef = useRef<DOMRect | null>(null);
+  useLayoutEffect(() => {
+    if (!agendaDetail || agendaDetail.anchor) return;
+    const el = detailSheetRef.current;
+    const origin = agendaDetailOriginRef.current;
+    if (!el || !origin || reduceMotionEnabled()) return;
+    el.style.animation = "none"; // 기본 슬라이드업 대신 카드-morph
+    el.style.transformOrigin = "top left";
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) return;
+    const spring = getComputedStyle(document.documentElement).getPropertyValue("--spring-smooth").trim();
+    const frames: Keyframe[] = [
+      {
+        transform: `translate(${origin.left - r.left}px, ${origin.top - r.top}px) scale(${origin.width / r.width}, ${Math.max(0.04, origin.height / r.height)})`,
+        borderRadius: "12px",
+        opacity: 0.6
+      },
+      { transform: "none", borderRadius: "20px 20px 0 0", opacity: 1 }
+    ];
+    try {
+      el.animate(frames, { duration: 440, easing: spring || "cubic-bezier(0.22, 0.61, 0.36, 1)" });
+      // 내용은 컨테이너가 자리를 잡은 뒤 떠오른다(찌그러진 글자가 안 보이게).
+      for (const child of Array.from(el.children) as HTMLElement[]) {
+        child.animate([{ opacity: 0 }, { opacity: 0, offset: 0.45 }, { opacity: 1 }], { duration: 440, easing: "ease-out" });
+      }
+    } catch {
+      /* WAAPI 미지원 — 즉시 등장, 기능 영향 없음 */
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agendaDetail?.event.id, agendaDetail?.anchor]);
+  const closeAgendaDetailAnimated = () => {
+    const el = detailSheetRef.current;
+    const origin = agendaDetailOriginRef.current;
+    if (!el || !origin || agendaDetail?.anchor || reduceMotionEnabled()) {
+      setAgendaDetail(null);
+      return;
+    }
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 || r.height === 0) {
+      setAgendaDetail(null);
+      return;
+    }
+    el.style.transformOrigin = "top left";
+    let anim: Animation;
+    try {
+      anim = el.animate(
+        [
+          { transform: "none", borderRadius: "20px 20px 0 0", opacity: 1 },
+          {
+            transform: `translate(${origin.left - r.left}px, ${origin.top - r.top}px) scale(${origin.width / r.width}, ${Math.max(0.04, origin.height / r.height)})`,
+            borderRadius: "12px",
+            opacity: 0.3
+          }
+        ],
+        { duration: 300, easing: "cubic-bezier(0.3, 0, 0.8, 0.15)", fill: "forwards" }
+      );
+    } catch {
+      setAgendaDetail(null);
+      return;
+    }
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      setAgendaDetail(null);
+    };
+    anim.onfinish = finish;
+    anim.oncancel = finish;
+    window.setTimeout(finish, 380); // 안전망
+  };
   // 리더선은 '선 로컬 좌표계'로 그린다 — 바깥 <g>가 (앵커점 → 각도)로 옮겨 놓고, 안쪽은
   // x축 위의 수평선일 뿐이다. 그래야 점선 흐름을 stroke-dashoffset(매 프레임 SVG paint)
   // 대신 translateX(컴포지터)로 굴릴 수 있다. 드래그 중에는 x2/y2 대신 이 변환을 갱신한다.
@@ -2113,6 +2187,23 @@ export function PublicPoster({
     const delay = !onTodayMonth ? 360 : needClear ? 60 : 0;
     window.setTimeout(scrollToToday, delay);
   }
+  // D3: 방송이 '켜지는 순간'(false→true 전이)만 젤리 팝 + 햅틱. 첫 마운트에 이미 LIVE면 조용히.
+  const [liveJustOn, setLiveJustOn] = useState(false);
+  const prevLiveRef = useRef<boolean | null>(null);
+  const liveNow = Boolean(soopLive?.isLive);
+  useEffect(() => {
+    const prev = prevLiveRef.current;
+    prevLiveRef.current = liveNow;
+    if (prev === false && liveNow) {
+      setLiveJustOn(true);
+      hapticTick();
+      const t = window.setTimeout(() => {
+        setLiveJustOn(false);
+        hapticTick(); // 확정(변신 끝) — 두 번째 틱
+      }, 620);
+      return () => window.clearTimeout(t);
+    }
+  }, [liveNow]);
   // 오늘 행이 화면에 보이는 동안만 todayVisible=true → 그때 방송 중이면 '오늘' 자리를 LIVE로 바꾼다.
   // 스크롤로 오늘 행을 벗어나거나 다른 달이면(오늘 행이 렌더 안 됨) false → '오늘'(이동) 버튼 복귀.
   useEffect(() => {
@@ -2944,8 +3035,9 @@ export function PublicPoster({
                     const twoColor = !support && colors.length >= 2;
                     const end = event.endDateKey;
                     // 카드 탭 = 상세 시트(하트·링크 등 내부 컨트롤 탭은 제외).
-                    const openDetail = () => {
+                    const openDetail = (originEl?: HTMLElement | null) => {
                       hapticTick();
+                      agendaDetailOriginRef.current = originEl?.getBoundingClientRect() ?? null;
                       setAgendaDetail({ event, support, dateKey: cell.isoDate });
                     };
                     return (
@@ -2959,13 +3051,13 @@ export function PublicPoster({
                         tabIndex={0}
                         onClick={(e) => {
                           if ((e.target as HTMLElement).closest("button, a")) return;
-                          openDetail();
+                          openDetail(e.currentTarget);
                         }}
                         onKeyDown={(e) => {
                           if (e.key !== "Enter" && e.key !== " ") return;
                           if ((e.target as HTMLElement).closest("button, a")) return;
                           e.preventDefault();
-                          openDetail();
+                          openDetail(e.currentTarget);
                         }}
                       >
                         {justRevealed.has(rawEvent.id) ? (
@@ -3372,7 +3464,7 @@ export function PublicPoster({
                 className={`agenda-detail-backdrop${anchor ? " is-pop" : ""}`}
                 role="presentation"
                 onClick={(e) => {
-                  if (e.target === e.currentTarget) setAgendaDetail(null);
+                  if (e.target === e.currentTarget) closeAgendaDetailAnimated();
                 }}
               >
                 {/* 카드 → 팝오버 리더 점선 + 카드 쪽 도트(대표 태그 색) — 어느 일정의 상세인지
@@ -3469,7 +3561,7 @@ export function PublicPoster({
                         data-act="닫기"
                         onClick={() => {
                           hapticTick();
-                          setAgendaDetail(null);
+                          closeAgendaDetailAnimated();
                         }}
                         type="button"
                       >
@@ -4137,31 +4229,41 @@ export function PublicPoster({
             ) : null}
             {/* '오늘' 버튼: 다른 달이면 오늘로 이동. 이미 오늘 달이라 이동이 무의미한데 방송 중이면,
                 그 자리를 'LIVE'(보러가기)로 재활용한다 — 모바일 상단이 버튼으로 붐벼 따로 못 두므로. */}
-            {soopLive?.isLive && todayVisible ? (
-              <button
-                className="mb-act live"
-                onClick={() => {
-                  if (!soopLive.watchUrl) return;
-                  hapticTick();
-                  window.open(soopLive.watchUrl, "_blank", "noopener,noreferrer");
-                }}
-                title={`방송 중: ${soopLive.title ?? ""} — 보러가기`}
-                type="button"
-               data-act="mb-act">
-                <span className="mb-live-dot" aria-hidden="true" />
-                <span>LIVE</span>
-              </button>
-            ) : (
-              <button
-                className="mb-act"
-                onClick={jumpToday}
-                title={onTodayMonth ? "오늘 위치로" : "오늘이 있는 달로"}
-                type="button"
-               data-act="mb-act">
-                <CalendarCheck aria-hidden="true" size={18} />
-                <span>오늘</span>
-              </button>
-            )}
+            {/* D3(2026-08-27): '오늘'과 LIVE는 **한 요소**가 변신한다(다이나믹 아일랜드 문법) — 방송이 켜지는
+                순간 같은 자리가 빨강으로 차오르며 젤리 팝(--spring-bouncy) + 햅틱, 내용은 크로스페이드.
+                두 요소를 갈아끼우던 이전 방식은 '뿅' 교체였다. */}
+            {(() => {
+              const live = Boolean(soopLive?.isLive && todayVisible);
+              return (
+                <button
+                  className={`mb-act${live ? " live" : ""}${liveJustOn ? " just-live" : ""}`}
+                  onClick={() => {
+                    if (live) {
+                      if (!soopLive?.watchUrl) return;
+                      hapticTick();
+                      window.open(soopLive.watchUrl, "_blank", "noopener,noreferrer");
+                      return;
+                    }
+                    jumpToday();
+                  }}
+                  title={live ? `방송 중: ${soopLive?.title ?? ""} — 보러가기` : onTodayMonth ? "오늘 위치로" : "오늘이 있는 달로"}
+                  type="button"
+                  data-act="mb-act"
+                >
+                  {live ? (
+                    <>
+                      <span className="mb-live-dot" aria-hidden="true" />
+                      <span>LIVE</span>
+                    </>
+                  ) : (
+                    <>
+                      <CalendarCheck aria-hidden="true" size={18} />
+                      <span>오늘</span>
+                    </>
+                  )}
+                </button>
+              );
+            })()}
           </div>
         ) : null}
 
