@@ -1,7 +1,6 @@
 alter table public.calendars enable row level security;
 alter table public.trusted_members enable row level security;
 alter table public.private_layer_settings enable row level security;
-alter table public.unlock_sessions enable row level security;
 alter table public.color_palette enable row level security;
 alter table public.broadcast_tags enable row level security;
 alter table public.events enable row level security;
@@ -77,14 +76,16 @@ language sql
 security definer
 set search_path = public
 as $$
+  -- 0067(2026-08-27): 옛 unlock_sessions → private_unlock_grants(브라우저 auth 세션 결속, 0057).
   select exists (
     select 1
-    from public.unlock_sessions s
-    join public.private_layer_settings p on p.calendar_id = s.calendar_id
-    where s.calendar_id = target_calendar_id
-      and s.user_id = auth.uid()
-      and s.passcode_version = p.passcode_version
-      and s.expires_at > now()
+    from public.private_unlock_grants g
+    join public.private_layer_settings p on p.calendar_id = g.calendar_id
+    where g.calendar_id = target_calendar_id
+      and g.user_id = auth.uid()
+      and g.auth_session_id = coalesce(auth.jwt() ->> 'session_id', '')
+      and g.passcode_version = p.passcode_version
+      and g.expires_at > now()
   );
 $$;
 

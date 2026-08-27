@@ -44,17 +44,13 @@ export async function clearUnlockSessionForUserAction(userId: string): Promise<C
     return { ok: false, error: "캘린더를 찾을 수 없습니다." };
   }
 
-  // P0-PRIV-2: 새 grant(세션 결속)와 legacy unlock_sessions 둘 다 지운다 — 이 사용자의
-  // '모든 세션' 잠그기(L8의 all-session revoke는 보안 패널의 이 개별 만료가 담당).
-  const [grantsRes, legacyRes] = await Promise.all([
-    supabase
-      .from("private_unlock_grants")
-      .delete()
-      .eq("calendar_id", calendar.id)
-      .eq("user_id", userId),
-    supabase.from("unlock_sessions").delete().eq("calendar_id", calendar.id).eq("user_id", userId)
-  ]);
-  const error = grantsRes.error ?? legacyRes.error;
+  // P0-PRIV-2: 이 사용자의 grant(세션 결속)를 전부 지운다 = '모든 세션' 잠그기(L8의 all-session
+  // revoke는 보안 패널의 이 개별 만료가 담당). (legacy unlock_sessions는 0067에서 drop — 2026-08-27.)
+  const { error } = await supabase
+    .from("private_unlock_grants")
+    .delete()
+    .eq("calendar_id", calendar.id)
+    .eq("user_id", userId);
   if (error) {
     console.error("[action-fail] 잠금 세션 초기화:", error);
     return { ok: false, error: "잠금 세션 초기화에 실패했어요. 잠시 후 다시 시도해 주세요." };
@@ -126,11 +122,8 @@ export async function setPasscodeAction(
     return { ok: false, error: error.message };
   }
 
-  // 비밀번호가 바뀌면 기존 grant/세션은 version 불일치로 자동 무효화되지만, 깔끔히 삭제한다.
-  await Promise.all([
-    supabase.from("private_unlock_grants").delete().eq("calendar_id", calendar.id),
-    supabase.from("unlock_sessions").delete().eq("calendar_id", calendar.id)
-  ]);
+  // 비밀번호가 바뀌면 기존 grant는 version 불일치로 자동 무효화되지만, 깔끔히 삭제한다.
+  await supabase.from("private_unlock_grants").delete().eq("calendar_id", calendar.id);
 
   revalidatePath("/studio");
 

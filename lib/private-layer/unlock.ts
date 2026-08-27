@@ -16,7 +16,7 @@ export type UnlockState = {
 };
 
 // 현재 사용자가 비공개 레이어 잠금을 해제한 세션이 있는지, 비밀번호가 설정돼 있는지.
-// unlock_sessions / private_layer_settings는 RLS 정책이 없어 admin(service_role)로만 접근한다.
+// private_unlock_grants / private_layer_settings는 RLS 정책이 없어 admin(service_role)로만 접근한다.
 export async function getUnlockState(calendarSlug: string): Promise<UnlockState> {
   const supabase = createSupabaseAdminClient();
   if (!supabase) {

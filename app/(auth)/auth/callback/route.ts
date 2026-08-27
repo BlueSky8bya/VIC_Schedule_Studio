@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { providerErrorToCode } from "@/lib/auth/auth-errors";
 
@@ -18,22 +17,16 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createSupabaseServerClient();
-    const { data, error } = (await supabase?.auth.exchangeCodeForSession(code)) ?? {};
+    const { error } = (await supabase?.auth.exchangeCodeForSession(code)) ?? {};
 
     if (error) {
       // 날 것의 supabase 메시지를 URL에 노출하지 않는다 — 안정적인 코드만.
       return redirectToLogin(request, "exchange", next);
     }
 
-    // 새 로그인(재로그인·계정변경 포함)은 비공개 잠금 세션을 초기화 — 방송 안전상 재로그인 시
-    // 비밀번호를 다시 입력하게 한다. (정상 새로고침/토큰 갱신은 콜백을 안 거치므로 영향 없음.)
-    const userId = data?.user?.id ?? data?.session?.user?.id;
-    if (userId) {
-      const admin = createSupabaseAdminClient();
-      if (admin) {
-        await admin.from("unlock_sessions").delete().eq("user_id", userId);
-      }
-    }
+    // 새 로그인(재로그인·계정변경 포함)이면 비공개 잠금은 자동으로 다시 잠긴다: grant가 브라우저
+    // auth 세션(session_id)에 결속돼 있어 새 세션에선 일치하는 grant가 없다(0057). 옛 unlock_sessions
+    // 초기화 호출은 0067 drop과 함께 제거(2026-08-27).
   }
 
   return NextResponse.redirect(new URL(next, request.url));

@@ -31,7 +31,6 @@ grant insert, update, delete on
 to authenticated;
 
 -- unlock 세션: 본인 세션 생성/조회 (RLS 정책은 Stage 4에서 추가)
-grant select, insert, delete on public.unlock_sessions to authenticated;
 
 -- service_role(서버 관리자 클라이언트)은 전체 접근. RLS는 우회하지만 테이블 권한은 필요.
 grant all on all tables in schema public to service_role;

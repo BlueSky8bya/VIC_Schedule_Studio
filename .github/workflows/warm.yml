@@ -1,0 +1,36 @@
+# 콜드 스타트 워밍 핑 — 한동안 아무도 안 열면 Vercel(Hobby) 서버리스 함수가 잠들어 첫 방문자가
+# 첫 화면에 2~4초를 기다린다. 5분마다 시청자 첫 화면(`/`)과 공개 일정 API를 GET으로 두드려 깨워둔다.
+# 사용자 결정 2026-08-27("외부 5분 핑"). 서버 렌더만 타고 JS는 안 돌므로 방문/접속 통계
+# (visit_session·activity_event — 둘 다 클라이언트 비콘)에는 안 잡힌다.
+#
+# ⚠ GitHub 스케줄은 best-effort — broadcast-poll 실측(2026-08-04)으로는 5분 표기가 실제 2~2.5시간
+#   간격으로 돈다. 진짜 5분을 원하면 cron-job.org(무료) 같은 외부 크론에 같은 URL 2개를 등록한다:
+#   https://vic-schedule-studio.vercel.app/  ·  https://vic-schedule-studio.vercel.app/api/public/vic/events
+name: warm
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: warm
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping poster + public API
+        env:
+          SITE_URL: ${{ vars.SITE_URL || 'https://vic-schedule-studio.vercel.app' }}
+        run: |
+          set -u
+          for path in "/" "/api/public/vic/events"; do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 30 "${SITE_URL%/}${path}?warm=1")
+            echo "${path} -> HTTP ${code}"
+            if [ "${code}" != "200" ]; then
+              echo "::warning::${path} returned ${code}"
+            fi
+          done
