@@ -13,6 +13,12 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **후속 정리 3건(2026-08-27, 사용자 결정)**: ① prod의 유령 `work` 일정 1건(2025-11-04, 2026-08-03 테스트 잔재)
+  hard delete — 비공개 범위 잔여 0. ② `unlock_sessions` drop(**0067 prod 적용 완료**): `has_private_unlock()`를
+  private_unlock_grants(auth 세션 결속) 모델로 이식 후 drop, 코드의 legacy delete 3곳 제거. ③ 콜드 스타트 워밍
+  `.github/workflows/warm.yml`(5분 표기, GH 실효 ~2h — 진짜 5분은 cron-job.org에 `/`·`/api/public/vic/events` 등록).
+- **다음: 애플 HCI 감성 다듬기 B1 → C1 → A3**(사용자 지시, 출석 도장은 하지 않음). B1 = 모바일 일정 상세 시트
+  드래그 닫기(1:1 추적·러버밴딩·릴리스 속도 스프링·detent 햅틱).
 - **최종 전체 검토(2026-08-27 밤, 정리 작업 회귀 점검)**: 런타임 코드의 drop 테이블/함수·삭제 라우트·삭제 모듈
   참조 0(에이전트 감사). 발견·수정: ① 죽은 CSS 제거기가 `:not(.dead)` 규칙을 통째로 지워 단축키 칩이 풀림 →
   `.kbd-hints span`으로 복원(5ec57cd) ② `db/policies`가 drop된 스티커 테이블·`is_worker`를 참조하고

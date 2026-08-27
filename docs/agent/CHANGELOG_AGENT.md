@@ -141,3 +141,14 @@ Files: 위 + `lib/schedules/{public-loader,studio-loader,sample-data,sample-publ
 Validation: tsc·lint 0, vitest 490, 비주얼 스위트, 죽은 CSS 재스캔 0(evt-pat 제외).
 Rollback: 0011/0023/0024/0025/0026/0027 재적용(빈 객체) + 백업 JSON(`docs/agent/backups/2026-08-27_legacy-presence.json`)
   으로 행 복원. 코드는 git 이력.
+
+### CHG-20260827-004 — DB/AUTH — unlock_sessions drop + has_private_unlock() grants 모델 이식 (0067)
+
+Problem: 0057 이후 잠금해제 정본은 private_unlock_grants인데 RLS 함수 `has_private_unlock()`만 옛 `unlock_sessions`를
+  읽어 사실상 항상 false였고(새 행 없음), 코드 3곳이 '혹시 남은 행 지우기'만 호출했다.
+Change: 함수를 grants 모델로 이식(같은 사용자 + `auth.jwt()->>'session_id'` 결속 + 비밀번호 버전 + 미만료) 뒤 테이블
+  drop. 코드: relockSessions·비밀번호 변경·로그인 콜백의 legacy delete 제거. `db/policies/0001_rls.sql` 함수 본문 동기화.
+Files: `db/migrations/0067_drop_unlock_sessions.sql`, `lib/private-layer/{actions,unlock}.ts`, `app/(auth)/auth/callback/route.ts`,
+  `db/policies/{0001_rls,0002_grants}.sql`.
+Validation: 적용 후 테이블 부재·함수 본문 grants 참조·무인증 호출 false·정책 4개 유지·prod 200. tsc·lint 0, vitest 490.
+Rollback: 0001_rls의 옛 함수 본문 + 테이블 재생성(데이터 가치 없음 — 만료 세션 1행뿐이었음).
