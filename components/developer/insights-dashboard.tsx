@@ -189,9 +189,11 @@ export function HourTicks({ className = "" }: { className?: string }) {
   );
 }
 
-// 방문 품질 요약 블록(개발자 전용 — 방문 패널/일일 상세 공용). 시청자 기준이 기본이고, '운영진 포함'
-// 토글로 개발자·관리자 테스트 트래픽까지 합산. 위 분리 배지로 숫자가 부풀었는지 바로 보인다.
+// 방문 품질 요약 블록(개발자 전용 — 방문 패널/일일 상세 공용). 토글 순서·기본값은 운영진 → 시청자 → 전체
+// (2026-08-28 관리자 결정: 처음 열면 운영진). 위 분리 배지로 숫자가 부풀었는지 바로 보인다.
 export type VisitScope = "viewer" | "operator" | "all";
+// 처음 열었을 때의 범위 — 방문 패널·일별 모달·요약 블록(비제어형) 셋이 같은 값을 써야 한다.
+export const DEFAULT_VISIT_SCOPE: VisitScope = "operator";
 export function VisitSummaryBlock({
   viewer,
   operator,
@@ -210,20 +212,21 @@ export function VisitSummaryBlock({
   scope?: VisitScope;
   onScope?: (s: VisitScope) => void;
 }) {
-  const [localScope, setLocalScope] = useState<VisitScope>("viewer");
+  const [localScope, setLocalScope] = useState<VisitScope>(DEFAULT_VISIT_SCOPE);
   const cur = scope ?? localScope;
   const setScope = onScope ?? setLocalScope;
   const s = cur === "viewer" ? viewer : cur === "operator" ? operator : all;
   const tabs: { key: VisitScope; label: string }[] = [
-    { key: "viewer", label: "시청자" },
     { key: "operator", label: "운영진" },
+    { key: "viewer", label: "시청자" },
     { key: "all", label: "전체" }
   ];
   return (
     <div className="vsum">
       <div className="vsum-head">
+        {/* 분리 배지 순서도 토글과 같게(운영진 → 시청자) — 눈이 두 줄을 오갈 때 자리가 맞아야 한다. */}
         <span className="vsum-split">
-          시청자 <b>{viewer.visitors}</b>명 · 운영진 <b>{operator.visitors}</b>명 · 세션{" "}
+          운영진 <b>{operator.visitors}</b>명 · 시청자 <b>{viewer.visitors}</b>명 · 세션{" "}
           <b>{all.sessions}</b>회
         </span>
         <div className="insights-subtabs vsum-toggle">
@@ -361,7 +364,7 @@ export function InsightsDashboard({
   const [visitsLoading, setVisitsLoading] = useState(true);
   const [visitView, setVisitView] = useState<"day" | "week">("day");
   const [visitDim, setVisitDim] = useState<"role" | "device">("role");
-  const [visitScope, setVisitScope] = useState<VisitScope>("viewer"); // 시청자/운영진/전체 — 그래프까지 즉시 전환
+  const [visitScope, setVisitScope] = useState<VisitScope>(DEFAULT_VISIT_SCOPE); // 운영진/시청자/전체 — 그래프까지 즉시 전환
   const [vtHover, setVtHover] = useState<VtHover | null>(null);
   const [vtHourHover, setVtHourHover] = useState<OccHover | null>(null); // 시간대 점유(체류) 분해 툴팁
   const [ownerTip, setOwnerTip] = useState<{ x: number; top: number; text: string } | null>(null); // 관리자 세션 띠 툴팁

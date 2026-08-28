@@ -9,6 +9,7 @@ import {
   useState
 } from "react";
 import {
+  DEFAULT_VISIT_SCOPE,
   DEVICE_META,
   ROLE_META,
   type VisitScope,
@@ -40,7 +41,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   const refreshedTimer = useRef<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [dim, setDim] = useState<"role" | "device">("role");
-  const [scope, setScope] = useState<VisitScope>("viewer"); // 시청자/운영진/전체 — 분해·동접 즉시 전환
+  const [scope, setScope] = useState<VisitScope>(DEFAULT_VISIT_SCOPE); // 운영진/시청자/전체 — 분해·동접 즉시 전환
   const [logRole, setLogRole] = useState<string | null>(null); // 세션 로그 역할 필터(null=전체)
   const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
   const [occTip, setOccTip] = useState<OccTip | null>(null);

@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-08-27
+Last Updated: 2026-08-28
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -13,6 +13,12 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **방문 집계 '개발자 2' 수정 + 범위 토글 재배치(2026-08-28, 사용자 신고)**: 한 탭에서 로그아웃↔로그인이
+  섞이면 `foldOne`이 계정 해시를 '해시 있는 첫 행'에서 집어 "역할=developer, 계정=anon 토큰" 방문이 생겨
+  `(날짜|계정)` 순방문자 집계가 개발자 1명을 2명으로 셌다(prod 08-27·08-28 실측 재현). 계정 해시는 역할을
+  정한 조각(main)→같은 역할 조각→아무 조각 순(`lib/insights/visit-fold.ts`), 회귀 테스트 2건. 과거 행은
+  원본 그대로라 재집계로 자동 교정(마이그레이션 없음). 시청자/운영진/전체 토글은 **운영진→시청자→전체**
+  순 + 처음 열면 운영진(`DEFAULT_VISIT_SCOPE`, 방문 패널·일별 모달·요약 블록 공용).
 - **애플 HCI 감성 다듬기 3차(2026-08-27, 사용자 지시 — B2·D3·C2로 보고서 후보 소진)**:
   · **B2 시청자 모바일 카드→시트 줌 전이** — 탭한 카드 rect를 `agendaDetailOriginRef`에 기억, 시트 마운트 직후
     WAAPI FLIP(translate+scale, `--spring-smooth`)으로 카드 자리에서 자라남, 내용은 45% 이후 페이드인. 손잡이 탭·

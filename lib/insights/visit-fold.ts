@@ -81,7 +81,15 @@ function foldOne(rows: SessionRow[]): SessionRow {
   const lastRow = rows.reduce((a, b) => (sEnd(b) > sEnd(a) ? b : a));
   return {
     ...main,
-    account_hash: rows.find((r) => r.account_hash)?.account_hash ?? null,
+    // 계정은 역할을 정한 조각(main)을 따른다. 한 탭에서 로그아웃↔로그인이 일어나면 비로그인 조각은
+    // 기기 토큰 해시, 로그인 조각은 이메일 해시라 스킴이 다르다 — 예전처럼 '해시 있는 첫 행'을 집으면
+    // "역할=developer, 계정=anon 토큰" 방문이 생겨 순방문자 집계에서 같은 사람이 2명으로 찍혔다
+    // (2026-08-28 실측: 개발자 1명이 '개발자 2'). 순서: main → 같은 역할 조각 → 아무 조각.
+    account_hash:
+      main.account_hash ??
+      rows.find((r) => r.role === main.role && r.account_hash)?.account_hash ??
+      rows.find((r) => r.account_hash)?.account_hash ??
+      null,
     started_at: new Date(spans[0].s).toISOString(),
     ended_at: lastRow.ended_at ? endIso : null,
     last_seen_at: endIso,

@@ -136,6 +136,41 @@ describe("foldVisits — 탭 수명", () => {
     const out = foldVisits(rows);
     expect(sStart(out[0])).toBeLessThan(sStart(out[1]));
   });
+
+  // 회귀(2026-08-28 실측): 한 탭에서 로그아웃↔로그인. 비로그인 조각(기기 토큰 해시)이 먼저 오면
+  // 역할은 developer(가장 오래 머문 조각)인데 계정은 anon 해시가 붙어, (날짜|계정) 순방문자 집계에서
+  // 개발자 1명이 '개발자 2'로 찍혔다. 계정 해시는 역할을 정한 조각을 따라야 한다.
+  it("한 탭에 로그인 상태가 섞이면 계정 해시는 역할을 정한 조각을 따른다", () => {
+    const rows = [
+      seg("12:29:00", "12:30:00", { role: "developer", account_hash: "dev-email-hash" }),
+      seg("12:30:08", "12:30:23", { role: "anon", account_hash: "anon-device-hash" }),
+      seg("12:30:28", "12:31:51", { role: "developer", account_hash: "dev-email-hash" })
+    ];
+    // anon 조각이 배열 앞에 오는 순서로도(실측은 id 순 — 로그아웃 전 조각이 먼저였지만 반대도 가능)
+    const reversed = [rows[1], rows[0], rows[2]];
+    for (const input of [rows, reversed]) {
+      const out = foldVisits(input);
+      expect(out).toHaveLength(1);
+      expect(out[0].role).toBe("developer");
+      expect(out[0].account_hash).toBe("dev-email-hash");
+    }
+    // 같은 날 다른 탭의 developer 방문과 (날짜|계정) 키가 같아야 '1명'으로 합산된다.
+    const other = seg("01:29:00", "01:31:00", { role: "developer", account_hash: "dev-email-hash", visit_key: "tab-0" });
+    const keys = new Set(foldVisits([other, ...rows]).map((v) => `${v.day}|${v.account_hash}`));
+    expect(keys.size).toBe(1);
+  });
+
+  it("역할을 정한 조각에 해시가 없으면 같은 역할의 다른 조각 → 아무 조각 순으로 집는다", () => {
+    const rows = [
+      seg("12:00:00", "12:00:05", { role: "anon", account_hash: "anon-device-hash" }),
+      seg("12:00:05", "12:10:00", { role: "viewer", account_hash: null }),
+      seg("12:10:00", "12:10:10", { role: "viewer", account_hash: "viewer-email-hash" })
+    ];
+    const out = foldVisits(rows);
+    expect(out).toHaveLength(1);
+    expect(out[0].role).toBe("viewer");
+    expect(out[0].account_hash).toBe("viewer-email-hash");
+  });
 });
 
 // ── 자정(KST) 경계 ──
