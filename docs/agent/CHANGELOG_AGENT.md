@@ -6,6 +6,21 @@
 
 ## v0.1.0 — 2026-08-31
 
+### CHG-20260831-005 — MIGRATION — 날짜 다시보기 팝오버 → 중앙 '창' 승격 + 썸네일 미리보기(0072)
+
+Problem: 팝오버가 작아 미리보기 없이 텍스트뿐(사용자 요청 — 작은 창 + 미리보기 + 링크 이동 +
+스택 관리).
+Change: 0072 vod_archive.thumb(SOOP 대표 스냅샷 URL) 저장 + 재백필(377건). 공개 DTO엔
+`thumbKey`(rowKey만 — URL 접두 반복 전송 안 함). PC 날짜 클릭 → 화면 중앙 420px 창:
+16:9 썸네일(클릭=재생, 재생 오브+길이 배지) + 제목 + 챕터. **히스토리 스택** = '이 달 기록'
+시트와 같은 규약(pushState + pushInnerOverlay/popInnerOverlay + 메아리 pop 무시, popstate 한 곳).
+Files: `db/migrations/0072_vod_archive_thumb.sql`, `lib/broadcast/vod-archive.ts`,
+`scripts/backfill-vod-archive.mjs`, `lib/schedules/public-loader.ts`, `lib/domain/schedule-types.ts`,
+`components/poster/public-poster.{tsx,css}`
+Validation: Playwright 실측 — 창·썸네일·챕터 105개, 뒤로가기=창만 닫힘(페이지 유지),
+백드롭 닫기 후 히스토리 잔여 0(추가 뒤로가기 정상 이탈) · tsc/vitest/build exit 0.
+Rollback: 모달 → 이전 팝오버 커밋 revert, thumb 컬럼은 무해하게 잔존 가능.
+
 ### CHG-20260831-004 — MIGRATION/BOUNDARY — 팬 타임라인 챕터(0071) — Phase 2 A안 출고
 
 Problem: 다시보기 링크만으론 "그 순간"을 못 찾는다. 팬 타임라인(89% VOD에 존재)이 댓글에 묻혀 있었다.

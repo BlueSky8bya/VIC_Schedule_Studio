@@ -927,31 +927,133 @@ html[data-reduce-motion] .mb-live-dot {
 html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   animation: none;
 }
+/* 날짜 다시보기 '창' — 화면 중앙의 작은 창(팝오버 → 창 승격, 2026-08-31 사용자 결정).
+   백드롭은 일정 상세와 같은 딤 재질, 창은 썸네일 미리보기 + 제목 + 챕터를 세로로. */
 .day-vod-backdrop {
   position: fixed;
   inset: 0;
   z-index: 88; /* 일정 상세(90) 아래, 하트 입자(60) 위 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgb(15 23 42 / 40%);
+  animation: agenda-detail-fade var(--dur-2) var(--ease-enter, ease-out) both;
 }
-.day-vod-pop {
-  position: fixed;
+.day-vod-modal {
+  width: min(420px, 100%);
+  max-height: min(80vh, 640px);
   display: flex;
   flex-direction: column;
-  gap: 7px;
-  padding: 12px 14px 14px;
   border: 1px solid var(--line, #ece9f5);
   border-radius: var(--r-lg, 16px);
   background: #fff;
-  box-shadow: 0 14px 34px rgb(60 70 110 / 22%);
-  animation: day-vod-in var(--dur-1) var(--ease);
-  /* 챕터를 펼치면 길어진다 — 화면 밖으로 나가지 않게 자체 스크롤. */
-  max-height: min(70vh, 560px);
-  overflow-y: auto;
+  box-shadow: 0 22px 48px rgb(30 40 80 / 30%);
+  overflow: hidden;
+  animation: day-vod-in var(--dur-2) var(--ease-enter, ease-out) both;
 }
-.dvp-vod {
+html[data-reduce-motion] .day-vod-backdrop,
+html[data-reduce-motion] .day-vod-modal {
+  animation: none;
+}
+.dvm-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 12px 8px 16px;
+}
+.dvm-close {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: #f4f2f8;
+  color: #6f6a78;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.dvm-close:hover {
+  background: #ece9f5;
+  transform: rotate(90deg);
+}
+.dvm-close:active { transform: scale(0.9); }
+.dvm-body {
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 14px;
+  padding: 0 16px 16px;
 }
+.dvm-vod {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* 미리보기 — 16:9 스냅샷 + 중앙 재생 오브 + 우하단 길이 배지. 클릭 = 처음부터 재생. */
+.dvm-thumb {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--r-md, 12px);
+  overflow: hidden;
+  background: linear-gradient(135deg, #e8edf8, #dde5f4);
+  transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
+}
+.dvm-thumb:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgb(53 100 224 / 24%);
+}
+.dvm-thumb:active { transform: scale(0.99); }
+.dvm-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.dvm-play {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  padding-left: 3px;
+  border-radius: 50%;
+  background: rgb(20 30 60 / 55%);
+  color: #fff;
+  backdrop-filter: blur(2px);
+  transition: background-color var(--dur-1) var(--ease);
+}
+.dvm-thumb:hover .dvm-play { background: rgb(53 100 224 / 80%); }
+.dvm-dur {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 2px 8px;
+  border-radius: var(--r-pill, 999px);
+  background: rgb(15 23 42 / 65%);
+  color: #fff;
+  font-style: normal;
+  font-size: var(--text-caption);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+.dvm-title {
+  color: #3f3a52;
+  font-size: var(--text-ui);
+  font-weight: 800;
+  line-height: 1.35;
+  text-decoration: none;
+}
+.dvm-title:hover { color: #3564e0; }
 
 /* ── 다시보기 챕터(팬 타임라인, 0071) — 팝오버·모바일 아젠다 공용 ──
    코너 헤더가 그룹 앵커, 구간 길이가 무게, 항목 탭 = 그 시각 점프. */
@@ -1079,36 +1181,7 @@ html[data-reduce-motion] .day-vod-pop {
 .dvp-date.saturday {
   color: #2563eb;
 }
-/* 팝오버 안 칩은 상세 팝오버의 CTA와 같은 파랑 그라데이션 풀폭 버튼. */
-.day-vod-pop .agenda-link.vod {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  margin-top: 0;
-  padding: 11px 12px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #5d8bf4, #3564e0);
-  color: #fff;
-  font-size: var(--text-ui);
-  font-weight: 900;
-  text-decoration: none;
-  box-shadow: 0 6px 16px rgb(53 100 224 / 26%);
-  transition:
-    filter var(--dur-1) var(--ease),
-    transform var(--dur-1) var(--ease);
-}
-.day-vod-pop .agenda-link.vod:hover {
-  filter: brightness(1.06);
-}
-.day-vod-pop .agenda-link.vod:active {
-  transform: scale(0.98);
-}
-.day-vod-pop .agenda-link.vod .agenda-vod-dur {
-  color: #dbe6ff;
-  opacity: 1;
-}
+/* (팝오버 CTA 규칙 삭제 — 팝오버가 '창'(.day-vod-modal)으로 승격되며 참조 0.) */
 .agenda-link.vod:active {
   transform: scale(0.97);
 }

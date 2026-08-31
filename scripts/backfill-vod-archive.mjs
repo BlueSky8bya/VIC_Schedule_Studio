@@ -75,6 +75,8 @@ function mapItem(item) {
     read_cnt: Number(item.count?.read_cnt) || 0,
     // 101=전체 공개, 107=구독(플러스) 전용. 미상은 0(공개 칩에서 자동 제외 — fail-closed).
     auth_no: Number.isFinite(Number(item.auth_no)) ? Number(item.auth_no) : 0,
+    // 대표 썸네일(0072) — 날짜 다시보기 창의 미리보기.
+    thumb: typeof item.ucc?.thumb === "string" ? item.ucc.thumb : "",
     synced_at: new Date().toISOString()
   };
 }

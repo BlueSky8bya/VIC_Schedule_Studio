@@ -154,6 +154,9 @@ export type PublicVodEntry = {
   // 챕터를 펼칠 때 /api/public/[slug]/vod-timeline에서 따로 받는다.
   chapters?: number;
   timelineBy?: string;
+  // 대표 썸네일 rowKey(0072) — URL 공통 접두는 클라가 조립(payload 절약):
+  // https://videoimg.sooplive.com/php/SnapshotLoad.php?rowKey={thumbKey}
+  thumbKey?: string;
 };
 
 // 팬 타임라인 본문(챕터 목록) — 시각(초)·라벨·팬이 적은 코너 헤더.

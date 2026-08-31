@@ -96,7 +96,8 @@ describe("mapApiItem", () => {
       commentCnt: 3,
       likeCnt: 10,
       readCnt: 9972,
-      authNo: 101
+      authNo: 101,
+      thumb: "//videoimg.sooplive.com/php/SnapshotLoad.php?rowKey=20260830_304937F2_296752157_2_r"
     });
   });
   it("구독(플러스) 전용은 auth_no=107로 남고, 값이 없으면 0(미상 — 공개 칩에서 자동 제외)", () => {
@@ -125,7 +126,8 @@ describe("chainBroadcastDays — 30분 이내 재시작은 같은 방송", () =>
     commentCnt: 0,
     likeCnt: 0,
     readCnt: 0,
-    authNo: 101
+    authNo: 101,
+    thumb: ""
   });
 
   it("자정 넘은 재시작(간격 10분)이 앞 방송 날짜를 잇는다 — 이행적", () => {

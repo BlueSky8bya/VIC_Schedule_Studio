@@ -278,7 +278,7 @@ const loadPublicScheduleData = unstable_cache(
         // 안 되므로 칩을 내보내지 않는다(0069, 2026-08-31 사용자 결정). 미상(0)도 제외.
         supabase
           .from("vod_archive")
-          .select("title_no, broadcast_day, title, duration_ms")
+          .select("title_no, broadcast_day, title, duration_ms, thumb")
           .eq("auth_no", 101)
           .order("broadcast_day", { ascending: false })
           .limit(1000),
@@ -328,16 +328,22 @@ const loadPublicScheduleData = unstable_cache(
             (t) => [Number(t.title_no), t]
           )
         );
-        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number }[] | null) ?? [])
+        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string }[] | null) ?? [])
           .map((row) => {
             const tl = tlByNo.get(Number(row.title_no));
+            // 썸네일은 rowKey만 — URL 공통 접두를 365번 반복 전송하지 않는다.
+            const thumbKey =
+              typeof row.thumb === "string"
+                ? (/[?&]rowKey=([^&]+)/.exec(row.thumb)?.[1] ?? "")
+                : "";
             return {
               dateKey: String(row.broadcast_day).slice(0, 10),
               titleNo: Number(row.title_no),
               title: typeof row.title === "string" ? row.title : "",
               durationMs: Number(row.duration_ms) || 0,
               chapters: tl ? Number(tl.entry_count) || 0 : 0,
-              timelineBy: tl && typeof tl.author_nick === "string" ? tl.author_nick : ""
+              timelineBy: tl && typeof tl.author_nick === "string" ? tl.author_nick : "",
+              thumbKey
             };
           })
           .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0);

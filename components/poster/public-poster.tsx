@@ -1023,7 +1023,14 @@ export function PublicPoster({
   const vodsByDate = useMemo(() => {
     const map = new Map<
       string,
-      { titleNo: number; title: string; durationMs: number; chapters?: number; timelineBy?: string }[]
+      {
+        titleNo: number;
+        title: string;
+        durationMs: number;
+        chapters?: number;
+        timelineBy?: string;
+        thumbKey?: string;
+      }[]
     >();
     for (const v of schedule.vods ?? []) {
       const list = map.get(v.dateKey);
@@ -1033,13 +1040,11 @@ export function PublicPoster({
     for (const list of map.values()) list.sort((a, b) => a.titleNo - b.titleNo);
     return map;
   }, [schedule.vods]);
-  // 날짜 칸 다시보기 팝오버(PC) — 일정 카드가 없는 날(특히 2024~25, 일정 시스템 이전)도
+  // 날짜 칸 다시보기 '창'(PC) — 일정 카드가 없는 날(특히 2024~25, 일정 시스템 이전)도
   // 칸 배경 클릭으로 그 날 다시보기에 들어가는 유일한 통로다(2026-08-31 사용자 요청).
-  // 카드가 있는 날도 배경 클릭이면 이 팝오버(카드 클릭은 기존 상세). 모바일 아젠다는
-  // 일정 없는 날 줄에 칩을 인라인으로 그려 팝오버가 필요 없다.
-  const [dayVodPop, setDayVodPop] = useState<{ dateKey: string; x: number; y: number } | null>(
-    null
-  );
+  // 팝오버가 아니라 화면 중앙의 작은 창: 썸네일 미리보기 + 제목 + 챕터를 한 자리에서.
+  // 모바일 아젠다는 일정 없는 날 줄에 칩·챕터를 인라인으로 그려 창이 필요 없다.
+  const [dayVodPop, setDayVodPop] = useState<{ dateKey: string } | null>(null);
   useEffect(() => {
     if (!dayVodPop) return;
     const onKey = (e: KeyboardEvent) => {
@@ -1048,6 +1053,41 @@ export function PublicPoster({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [dayVodPop]);
+  // 히스토리 스택 — '이 달 기록' 시트와 같은 규약(아래 1619~ 참조): 열 때 pushState+
+  // pushInnerOverlay(편집실 미리보기 조정), X/백드롭/Esc 닫기는 우리가 history.back()으로
+  // 정리(메아리 pop 무시), 뒤로가기 닫기는 브라우저가 정리. popstate 처리는 한 곳(onPop).
+  const dayVodDepthRef = useRef(0);
+  const dayVodBackClosing = useRef(false);
+  const ignoreDayVodPop = useRef(false);
+  const dayVodOpenRef = useRef(false);
+  dayVodOpenRef.current = dayVodPop !== null;
+  useEffect(() => {
+    const depth = dayVodPop ? 1 : 0;
+    const prev = dayVodDepthRef.current;
+    if (depth > prev) {
+      window.history.pushState({ vicDayVod: true }, "");
+      pushInnerOverlay();
+    } else if (depth < prev) {
+      if (dayVodBackClosing.current) {
+        dayVodBackClosing.current = false;
+        popInnerOverlay();
+      } else {
+        ignoreDayVodPop.current = true;
+        window.history.back();
+      }
+    }
+    dayVodDepthRef.current = depth;
+  }, [dayVodPop]);
+  // 창이 열린 채 포스터가 통째로 사라지면(미리보기 닫힘) 카운터를 반드시 내린다 — 인사이트와 동일.
+  useEffect(
+    () => () => {
+      if (dayVodDepthRef.current > 0) {
+        popInnerOverlay();
+        dayVodDepthRef.current = 0;
+      }
+    },
+    []
+  );
   // 일정 상세 — 모바일 아젠다는 하단 시트, PC 달력은 카드 옆 앵커 팝오버(anchor 있으면 팝오버).
   // 공개 DTO(PublicScheduleEvent + 공개 태그)만 사용 — 비공개 필드 자체가 없다.
   const [agendaDetail, setAgendaDetail] = useState<{
@@ -1654,6 +1694,13 @@ export function PublicPoster({
   // (편집실 안에서 열렸을 때의 조정은 위 pushInnerOverlay/popInnerOverlay가 맡는다.)
   useEffect(() => {
     function onPop() {
+      // 날짜 다시보기 창의 메아리(X/백드롭 닫기 후 우리가 부른 history.back()) — 무시하고
+      // 카운터만 디스패치 뒤에 내린다(인사이트와 같은 microtask 이유).
+      if (ignoreDayVodPop.current) {
+        ignoreDayVodPop.current = false;
+        queueMicrotask(popInnerOverlay);
+        return;
+      }
       if (ignoreInsightsPop.current) {
         // 우리가 시트를 닫으며 부른 history.back()의 메아리 — 이제야 카운터를 내린다(위 주석 참고).
         // 단, 카운터 내림은 이 popstate '한 번의 동기 디스패치'가 끝난 뒤로 미룬다(microtask).
@@ -1664,6 +1711,12 @@ export function PublicPoster({
         // 디스패치가 끝난 뒤 내리면 순서와 무관하게 바깥은 이번 pop을 안쪽 것으로 본다.
         ignoreInsightsPop.current = false;
         queueMicrotask(popInnerOverlay);
+        return;
+      }
+      // 위에 뜬 것부터: 날짜 다시보기 창(백드롭이 다른 조작을 막아 인사이트와 동시에 못 뜬다).
+      if (dayVodOpenRef.current) {
+        dayVodBackClosing.current = true;
+        setDayVodPop(null);
         return;
       }
       if (insightsOpenRef.current) {
@@ -2314,7 +2367,7 @@ export function PublicPoster({
                 const t = e.target as HTMLElement;
                 if (t.closest(".public-event, .support-bar, button, a")) return;
                 hapticTick();
-                setDayVodPop({ dateKey: cell.isoDate, x: e.clientX, y: e.clientY });
+                setDayVodPop({ dateKey: cell.isoDate });
               }
             : undefined
         }
@@ -3483,18 +3536,14 @@ export function PublicPoster({
       ) : null}
       {/* 모바일 아젠다 일정 상세 시트 — 카드 탭으로 열리며 전체 제목·기간·태그 이름을 보여준다.
           공개 DTO만 사용(비공개 필드 자체가 없다). fixed 오버레이라 캡쳐 PNG 밖. */}
-      {/* 날짜 칸 다시보기 팝오버(PC) — 클릭 지점 근처 고정, 화면 밖으로 안 나가게 클램프.
-          투명 백드롭이 바깥 클릭을 받는다(Esc·월 이동도 닫음). */}
+      {/* 날짜 다시보기 '창'(PC) — 화면 중앙의 작은 창: 썸네일 미리보기(클릭 = 재생) + 제목 +
+          챕터. 닫기 = X·백드롭·Esc·뒤로가기(히스토리 스택은 위 dayVod* 참조). */}
       {dayVodPop
         ? (() => {
             const list = vodsByDate.get(dayVodPop.dateKey) ?? [];
             const wd = new Date(`${dayVodPop.dateKey}T00:00:00Z`).getUTCDay();
             const mark = getDayMark(dayVodPop.dateKey);
             const tone = wd === 0 || Boolean(mark?.isHoliday) ? " red" : wd === 6 ? " saturday" : "";
-            const width = 300; // 제목·챕터 라벨이 읽히는 폭(넘치면 …)
-            const height = 58 + list.length * 50;
-            const left = Math.max(8, Math.min(dayVodPop.x + 10, window.innerWidth - width - 8));
-            const top = Math.max(8, Math.min(dayVodPop.y + 10, window.innerHeight - height - 8));
             return (
               <div
                 className="day-vod-backdrop"
@@ -3503,44 +3552,78 @@ export function PublicPoster({
                 }}
                 role="presentation"
               >
-                <div
-                  aria-label="다시보기"
-                  className="day-vod-pop"
-                  role="dialog"
-                  style={{ left, top, width }}
-                >
-                  <b className={`dvp-date${tone}`}>
-                    {Number(dayVodPop.dateKey.slice(0, 4))}.{formatShortDate(dayVodPop.dateKey)} (
-                    {WEEKDAYS[wd]})
-                  </b>
-                  {list.map((vod, vi, arr) => (
-                    <div className="dvp-vod" key={vod.titleNo}>
-                      <a
-                        className="agenda-link vod"
-                        data-act="vod-replay"
-                        href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
-                        onClick={() => hapticTick()}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                        title={vod.title || undefined}
-                      >
-                        <Play aria-hidden="true" size={13} strokeWidth={2.6} />
-                        <span className="agenda-vod-title">
-                          {vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`}
-                        </span>
-                        {vod.durationMs > 0 ? (
-                          <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
-                        ) : null}
-                      </a>
-                      <VodChapters
-                        chapters={vod.chapters ?? 0}
-                        durationMs={vod.durationMs}
-                        slug={schedule.calendar.slug}
-                        timelineBy={vod.timelineBy ?? ""}
-                        titleNo={vod.titleNo}
-                      />
-                    </div>
-                  ))}
+                <div aria-label="다시보기" aria-modal="true" className="day-vod-modal" role="dialog">
+                  <div className="dvm-head">
+                    <b className={`dvp-date${tone}`}>
+                      {Number(dayVodPop.dateKey.slice(0, 4))}.{formatShortDate(dayVodPop.dateKey)} (
+                      {WEEKDAYS[wd]})
+                    </b>
+                    <button
+                      aria-label="닫기"
+                      autoFocus
+                      className="dvm-close"
+                      data-act="닫기"
+                      onClick={() => {
+                        hapticTick();
+                        setDayVodPop(null);
+                      }}
+                      type="button"
+                    >
+                      <X aria-hidden="true" size={16} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                  <div className="dvm-body">
+                    {list.map((vod, vi, arr) => {
+                      const playerUrl = `https://vod.sooplive.co.kr/player/${vod.titleNo}`;
+                      const label = vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`;
+                      return (
+                        <div className="dvm-vod" key={vod.titleNo}>
+                          {/* 미리보기 = SOOP 대표 스냅샷. 클릭하면 처음부터 재생(새 탭). */}
+                          <a
+                            className="dvm-thumb"
+                            data-act="vod-replay"
+                            href={playerUrl}
+                            onClick={() => hapticTick()}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                            title={label}
+                          >
+                            {vod.thumbKey ? (
+                              <img
+                                alt=""
+                                loading="lazy"
+                                src={`https://videoimg.sooplive.com/php/SnapshotLoad.php?rowKey=${vod.thumbKey}`}
+                              />
+                            ) : null}
+                            <span aria-hidden="true" className="dvm-play">
+                              <Play size={16} strokeWidth={2.6} />
+                            </span>
+                            {vod.durationMs > 0 ? (
+                              <em className="dvm-dur">{formatVodDuration(vod.durationMs)}</em>
+                            ) : null}
+                          </a>
+                          <a
+                            className="dvm-title"
+                            data-act="vod-replay"
+                            href={playerUrl}
+                            onClick={() => hapticTick()}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                            title={label}
+                          >
+                            {label}
+                          </a>
+                          <VodChapters
+                            chapters={vod.chapters ?? 0}
+                            durationMs={vod.durationMs}
+                            slug={schedule.calendar.slug}
+                            timelineBy={vod.timelineBy ?? ""}
+                            titleNo={vod.titleNo}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             );

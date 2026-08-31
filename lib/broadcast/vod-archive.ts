@@ -24,6 +24,8 @@ export type VodArchiveRow = {
   readCnt: number;
   // SOOP 시청 권한(0069). 101=전체 공개, 107=구독(플러스) 전용 — 공개 칩은 101만 내보낸다.
   authNo: number;
+  // 대표 썸네일 URL(0072) — 날짜 다시보기 창의 미리보기.
+  thumb: string;
 };
 
 // thumb rowKey: "YYYYMMDD_HEX_BNO_seq_r" — 날짜(방송 시작일 KST)와 bno가 박혀 있다.
@@ -102,7 +104,8 @@ export function mapApiItem(item: ApiItem): VodArchiveRow | null {
     readCnt: Number(item.count?.read_cnt) || 0,
     // 값이 없거나 이상하면 0(=미상) — 101(공개)로 지어내지 않는다: 공개 칩은 101만 나가므로
     // 미상은 자동으로 숨는 쪽(fail-closed)이다.
-    authNo: Number.isFinite(Number(item.auth_no)) ? Number(item.auth_no) : 0
+    authNo: Number.isFinite(Number(item.auth_no)) ? Number(item.auth_no) : 0,
+    thumb: typeof item.ucc?.thumb === "string" ? item.ucc.thumb : ""
   };
 }
 
@@ -184,14 +187,14 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
     // 된다 — 같은 알고리즘이라 결과는 멱등이고, 경계에서 어긋난 날짜가 있으면 이때 교정된다.
     const recent = await supabase
       .from("vod_archive")
-      .select("title_no, bno, broadcast_day, title, duration_ms, reg_date, comment_cnt, like_cnt, read_cnt, auth_no")
+      .select("title_no, bno, broadcast_day, title, duration_ms, reg_date, comment_cnt, like_cnt, read_cnt, auth_no, thumb")
       .order("reg_date", { ascending: false, nullsFirst: false })
       .limit(40);
     const fetchedIds = new Set(rows.map((r) => r.titleNo));
     type StoredRow = {
       title_no: number; bno: string | null; broadcast_day: string; title: string;
       duration_ms: number; reg_date: string | null; comment_cnt: number; like_cnt: number;
-      read_cnt: number; auth_no: number;
+      read_cnt: number; auth_no: number; thumb: string;
     };
     for (const s of ((recent.data as StoredRow[] | null) ?? [])) {
       if (fetchedIds.has(Number(s.title_no))) continue;
@@ -205,7 +208,8 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
         commentCnt: Number(s.comment_cnt) || 0,
         likeCnt: Number(s.like_cnt) || 0,
         readCnt: Number(s.read_cnt) || 0,
-        authNo: Number(s.auth_no) || 0
+        authNo: Number(s.auth_no) || 0,
+        thumb: typeof s.thumb === "string" ? s.thumb : ""
       });
     }
     chainBroadcastDays(rows);
@@ -221,6 +225,7 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
         like_cnt: r.likeCnt,
         read_cnt: r.readCnt,
         auth_no: r.authNo,
+        thumb: r.thumb,
         synced_at: new Date().toISOString()
       })),
       { onConflict: "title_no" }
