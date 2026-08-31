@@ -762,6 +762,11 @@ export function PublicPoster({
   useEffect(() => {
     if (accountSwitch) writeLoadingToneCookie("p");
   }, [accountSwitch]);
+  // 시청자 화면엔 빌드 표시 UI가 없어(포스터 청결 원칙) "이 탭이 옛 빌드인지"를 확인할 길이 없었다.
+  // 콘솔에만 커밋 해시를 남긴다 — 편집실 좌상단 빌드 태그와 같은 값이면 두 탭이 같은 배포본.
+  useEffect(() => {
+    console.info(`VIC build ${process.env.APP_COMMIT?.slice(0, 7) ?? "dev"}`);
+  }, []);
   // 토리님 SOOP 라이브 상태 — 꾸미기 아니면 폴링(편집실 '시청자 미리보기'에서도 켜서 개발자/오너가
   // 시청자가 볼 LIVE를 그대로 확인). 데스크탑 플로팅 비콘은 편집실 chrome과 겹쳐 미리보기에선 숨기고
   // (아래 마운트의 !previewNav), 모바일은 겹침 없는 하단 '오늘'→LIVE 버튼이라 미리보기에서도 보인다.

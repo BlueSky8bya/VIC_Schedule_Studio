@@ -9184,7 +9184,9 @@ html[data-reduce-motion] .modal-close:active {
 
 /* ── 모바일 편집실(아젠다 + 인라인 편집) ── */
 .studio-mobile {
-  padding: 0 14px calc(80px + env(safe-area-inset-bottom, 0px));
+  /* 좌우 패딩 = 공유 토큰(globals.css --m-agenda-pad-x) — 시청자 .agenda-mode와 같은 변수라
+     두 화면의 날짜 카드 폭이 '정의상' 동일(2026-09-01 재발 방지 잠금). */
+  padding: 0 var(--m-agenda-pad-x, 14px) calc(80px + env(safe-area-inset-bottom, 0px));
 }
 /* 헤더+역할바는 스크롤을 따라온다(관리 창 바로 위까지). m-scroll-region 안에서만 sticky. */
 .m-scroll-region {
@@ -9194,8 +9196,8 @@ html[data-reduce-motion] .modal-close:active {
   position: sticky;
   top: 0;
   z-index: 12;
-  margin: 0 -14px;
-  padding: 6px 14px 8px;
+  margin: 0 calc(-1 * var(--m-agenda-pad-x, 14px));
+  padding: 6px var(--m-agenda-pad-x, 14px) 8px;
   background: linear-gradient(180deg, #f4f6fb 88%, rgb(244 246 251 / 0%));
 }
 /* 스튜디오 헤더는 컴팩트하게(고정 영역을 너무 키우지 않게) */
@@ -9317,7 +9319,8 @@ html[data-reduce-motion] .modal-close:active {
 /* 오른쪽 레일: 인사이트 버튼(위) + 색상 필터(아래)를 같은 92px 폭으로 세로로 쌓는다.
    레일을 통째로 sticky로 — 스크롤을 내려도 버튼까지 색상 필터와 함께 따라온다. */
 .agenda-rail {
-  flex: 0 0 92px;
+  /* 레일 폭 = 공유 토큰 — 시청자 .agenda-legend-rail과 같은 변수(92px). */
+  flex: 0 0 var(--m-agenda-rail-w, 92px);
   position: sticky;
   top: 88px;
   align-self: flex-start;

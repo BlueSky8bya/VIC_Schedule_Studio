@@ -9,7 +9,9 @@
   /* 색상 필터(범례)를 오른쪽 레일로 — 콘텐츠 우선 + 엄지(오른손) 접근성. */
   flex-direction: row-reverse;
   align-items: flex-start;
-  gap: 10px;
+  /* 카드↔레일 간격은 공유 토큰(globals.css) — 편집실 .agenda.agenda-studio도 이 규칙을 그대로
+     상속하므로 두 화면의 날짜 카드 폭이 함께 움직인다. */
+  gap: var(--m-agenda-gap, 10px);
   margin-top: 4px;
 }
 /* 태블릿·좁은 창(641~1040px): 같은 목록이지만 폰이 아니다 — 폭을 다 쓰면 한 줄이 지나치게 길어져
@@ -21,9 +23,9 @@
     margin-inline: auto;
     gap: 16px;
   }
-  .agenda-legend-rail {
-    flex-basis: 116px;
-  }
+  /* (죽은 규칙 정리 2026-09-01: 여기 있던 .agenda-legend-rail { flex-basis: 116px }는 아래
+     기본 규칙의 flex 축약형(0 0 92px)이 소스 순서상 항상 이겨 한 번도 적용된 적 없고,
+     리팩터링 한 번이면 시청자만 116으로 되살아나 편집실(92)과 어긋날 지뢰라 제거.) */
   .agenda-event p {
     font-size: 15px;
   }
@@ -40,10 +42,10 @@
    버튼이 화면 밖으로 숨었다. svh는 ① 스크롤해도 안 변하고 ② 주소창이 보여도 버튼이 화면 안에
    들어와 다양한 모바일 높이에 안전. 필터가 길면 박스 '안쪽'만 스크롤. */
 .agenda-legend-rail {
-  /* 92px = 편집실 모바일 레일(.agenda-rail)과 동일 폭 — 날짜칸(agenda-flow) 너비가 두 화면에서
-     같아진다(2026-09-01 사용자: 편집실 기준 통일). 긴 라벨('CK / 핀볼' 등)은 wrap이 받는다
-     (한때 nowrap 잘림 때문에 104px였던 이력 — wrap 허용 후엔 92로 안전). */
-  flex: 0 0 92px;
+  /* 공유 토큰(92px) = 편집실 모바일 레일(.agenda-rail)과 같은 변수 — 날짜칸(agenda-flow) 너비가
+     두 화면에서 '정의상' 같다(2026-09-01 사용자: 편집실 기준 통일). 긴 라벨('CK / 핀볼' 등)은
+     wrap이 받는다(한때 nowrap 잘림 때문에 104px였던 이력 — wrap 허용 후엔 92로 안전). */
+  flex: 0 0 var(--m-agenda-rail-w, 92px);
   position: sticky;
   top: 74px;
   align-self: flex-start;
@@ -267,11 +269,11 @@
      (테마 색, 예: 월드컵 녹색)이 헤더 위로 삐져나온다(크림 테마일 땐 같은 색이라 안 보였음).
      헤더 자체 padding(9px)이 브라우저 바와의 숨 쉴 틈을 준다. */
   padding-top: 0;
-  /* 좌우 패딩을 22→14로 좁혀 아젠다 카드 폭을 편집실 모바일(.studio-mobile 14)과 동일하게.
+  /* 좌우 패딩 = 공유 토큰(14px) — 편집실 모바일(.studio-mobile)과 같은 변수라 카드 폭이 항상 동일.
      같은 글자 수의 특별한 날 표기(예: 7/15 스코어·초복)가 시청자에서만 줄바꿈되던 것 해소.
      데스크톱 포스터 서페이스(.public-calendar-shell 기본 22)는 건드리지 않는다. */
-  padding-left: 14px;
-  padding-right: 14px;
+  padding-left: var(--m-agenda-pad-x, 14px);
+  padding-right: var(--m-agenda-pad-x, 14px);
   /* 하단 고정 바에 마지막 카드가 가리지 않도록 여유. (안전영역 포함) */
   padding-bottom: calc(74px + env(safe-area-inset-bottom, 0px));
 }
@@ -280,10 +282,9 @@
   position: sticky;
   top: 0;
   z-index: 8;
-  /* 좌우 14 — .agenda-mode 셸 패딩(14)과 맞춰 헤더가 화면 폭 끝까지 꽉 차게(full-bleed).
-     아젠다 셸 폭을 편집실 모바일(14)과 같게 맞추면서 이 값도 22→14로 내렸다. */
-  margin: 0 -14px 8px;
-  padding: 9px 14px 10px;
+  /* 좌우 = 셸 패딩 토큰 — .agenda-mode 셸 패딩과 항상 같아 헤더가 화면 폭 끝까지 꽉 차게(full-bleed). */
+  margin: 0 calc(-1 * var(--m-agenda-pad-x, 14px)) 8px;
+  padding: 9px var(--m-agenda-pad-x, 14px) 10px;
   background: linear-gradient(180deg, #fbf2df 72%, #f7eddb);
   border-bottom: 1px solid #e3d6bb;
   /* 2행 그리드: [여백 | 제목·월(가운데) | 계정변경·이메일(오른쪽)].
@@ -579,6 +580,12 @@ html[data-reduce-motion] .mb-live-dot {
   flex: 1;
   min-width: 0;
   display: grid;
+  /* ⚠ 암시적 그리드 컬럼의 최소폭은 min-content — 카드 안의 안 꺾이는 내용(nowrap 칩 줄 등)이
+     컨테이너보다 넓으면 날짜 카드가 컨테이너를 뚫고 레일 쪽으로 삐져나간다. 시청자/편집실은
+     내용(수정 버튼·VOD 칩 등)이 달라 삐져나가는 양도 달라, 같은 기하인데 카드 '보이는 폭'이
+     화면마다 어긋났다(2026-09-01 실측: 360px 시청자 230→232.6 오버플로). minmax(0,1fr)로
+     카드 폭 = 컨테이너 폭을 못 박는다 — 내용은 카드 '안'에서 wrap/말줄임으로 해결할 것. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
 }
 /* 첫 진입 한 번만: 모바일은 위→아래로 한 칸씩 떠오른다.
