@@ -238,8 +238,9 @@ const loadPublicScheduleData = unstable_cache(
       paletteRes,
       eventsRes,
       eventHeartsRes,
-      hopeRes
-    ] = await timed("publicSchedule:db(5 parallel queries)", () =>
+      hopeRes,
+      vodsRes
+    ] = await timed("publicSchedule:db(6 parallel queries)", () =>
       Promise.all([
         // 모든 공개 쿼리를 이 캘린더로 한정한다. RLS는 공개 행을 허용할 뿐 캘린더별로
         // 막지 않으므로, 캘린더가 2개 이상이 되면 application-level 스코프가 없으면 다른
@@ -269,7 +270,14 @@ const loadPublicScheduleData = unstable_cache(
         // A: 일정별 관심 집계(공개 안전 — user_id 비노출). 함수가 공개 일정만 집계한다.
         supabase.rpc("get_event_heart_counts", { p_calendar_id: calendar.id }),
         // 최초공개 '기대돼요' 집계(0060) — 토큰 비노출, 공개 후에도 남아 배지가 된다.
-        supabase.rpc("get_teaser_hope_counts", { p_calendar_id: calendar.id })
+        supabase.rpc("get_teaser_hope_counts", { p_calendar_id: calendar.id }),
+        // 다시보기 아카이브(0068) — 공개 메타만(번호·날짜·길이). 최신순 1000행 한도(PostgREST
+        // 기본 cap과 같은 값이라 잘려도 '가장 오래된 다시보기'부터 빠진다 — 안전한 방향).
+        supabase
+          .from("vod_archive")
+          .select("title_no, broadcast_day, duration_ms")
+          .order("broadcast_day", { ascending: false })
+          .limit(1000)
       ])
     );
 
@@ -303,6 +311,14 @@ const loadPublicScheduleData = unstable_cache(
       },
       tags: (tagsRes.data ?? []).map(mapTag),
       palette: (paletteRes.data ?? []).map(mapPalette),
+      // 명시적 DTO 구성(스프레드 금지) — 공개 경계를 넘는 값은 하나하나 고른다.
+      vods: ((vodsRes.data as { title_no: number; broadcast_day: string; duration_ms: number }[] | null) ?? [])
+        .map((row) => ({
+          dateKey: String(row.broadcast_day).slice(0, 10),
+          titleNo: Number(row.title_no),
+          durationMs: Number(row.duration_ms) || 0
+        }))
+        .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0),
       events: (eventsRes.data ?? []).map((row) => ({
         ...mapEvent(row, Date.now()),
         heartCount: heartCountByEvent.get(row.id) ?? 0,

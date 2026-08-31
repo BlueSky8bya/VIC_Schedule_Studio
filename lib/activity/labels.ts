@@ -178,6 +178,7 @@ const ACT: Record<string, TargetLabel> = {
   "mb-act": { name: "모바일 하단 버튼", area: "시청자 화면", hint: "여러 버튼 합계" },
   "avatar-ctl-toggle": { name: "아바타 위치 바꾸기", area: "시청자 화면" },
   "vlog-chip": { name: "브이로그 칩", area: "시청자 화면" },
+  "vod-replay": { name: "다시보기 열기", area: "시청자 화면", hint: "날짜 상세의 '다시보기' — 숲 VOD로 이동" },
   "pi-retry": { name: "이 달 기록 다시 불러오기", area: "시청자 화면" },
 
   // 편집실

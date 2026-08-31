@@ -851,6 +851,20 @@ html[data-reduce-motion] .mb-live-dot {
   font-size: var(--text-body);
   font-weight: 800;
 }
+/* 다시보기(0068) — 업도움(초록)과 같은 문법, 톤만 숲 파랑. 길이는 옅은 보조 글자. */
+.agenda-link.vod {
+  background: #e9f0fe;
+  color: #2455c9;
+}
+.agenda-link.vod:active {
+  transform: scale(0.97);
+}
+.agenda-vod-dur {
+  font-style: normal;
+  font-weight: 700;
+  font-size: var(--text-caption);
+  opacity: 0.72;
+}
 /* [Phase 6] 관심(♥) 버튼: 시각 크기는 유지하되 탭 영역을 40×40으로 확장(음수 마진으로
    줄 높이는 거의 그대로). 모바일에서 손끝으로 정확히 누르기 쉽게. */
 .agenda-heart {
@@ -5638,6 +5652,15 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
 }
 .agenda-detail-backdrop.is-pop .agenda-link:active {
   transform: scale(0.98);
+}
+/* PC 팝오버의 다시보기 CTA — 업도움 초록 CTA와 같은 자리·모양, 숲 파랑 그라데이션. */
+.agenda-detail-backdrop.is-pop .agenda-link.vod {
+  background: linear-gradient(135deg, #5d8bf4, #3564e0);
+  box-shadow: 0 6px 16px rgb(53 100 224 / 26%);
+}
+.agenda-detail-backdrop.is-pop .agenda-link.vod .agenda-vod-dur {
+  color: #dbe6ff;
+  opacity: 1;
 }
 /* 닫기 — 원형 고스트 + 호버 90° 회전(앱 공통 X 손맛: .bp-close/.pi-close와 동일). */
 .agenda-detail-backdrop.is-pop .agenda-detail-close {

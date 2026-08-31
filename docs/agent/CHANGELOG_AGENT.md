@@ -4,6 +4,28 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-08-31
+
+### CHG-20260831-001 — MIGRATION/BOUNDARY — 숲 다시보기(VOD) 아카이브 + 공개 API `vods` 필드(0068)
+
+Problem: 시청자가 지난 방송을 다시 보려면 숲 방송국을 직접 뒤져야 했다. 날짜↔다시보기 매핑·영상
+길이 데이터가 사이트에 없었다(PLAN-20260831-001 Phase 1).
+Change: `vod_archive` 테이블(0068, RLS enable + **anon SELECT 허용** — 공개 메타만: 번호·날짜·제목·
+길이·조회수, 개인정보 없음. service_role DML grant 포함). 수집기 `lib/broadcast/vod-archive.ts`
+(chapi vods/review, rowKey에서 방송 시작일·bno 추출, fail-soft) + broadcast-poll 크론이 오프라인
+30분마다 1페이지 증분 동기화(새 행 생기면 revalidatePublicSchedule). 초기 백필
+`scripts/backfill-vod-archive.mjs` — prod에 376건 적재 완료(스킵 0). 공개 API(PublicSchedule)에
+`vods: {dateKey,titleNo,durationMs}[]` 명시적 DTO 추가(제목 미포함 — payload 절약), 시청자 날짜
+상세에 '다시보기 (N시간 M분)' 칩(모바일 알약·PC 파랑 CTA, vod.sooplive.co.kr/player/{titleNo}).
+Files: `db/migrations/0068_vod_archive.sql`, `lib/broadcast/vod-archive.ts`,
+`app/api/cron/broadcast-poll/route.ts`, `lib/schedules/public-loader.ts`,
+`lib/domain/schedule-types.ts`, `components/poster/public-poster.{tsx,css}`,
+`scripts/backfill-vod-archive.mjs`, `lib/activity/labels.ts`, `tests/unit/vod-archive.test.ts`
+Validation: tsc/lint/prod build exit 0 · vitest 11건(파싱·귀속) 통과 · anon REST 읽기 실측 ·
+공개 API 응답 `vods` 376건 확인 · Playwright 실측(모바일 시트+PC 팝오버 칩 렌더, href 정상).
+Note: 비공식 API — 실패 시 조용히 스킵, 기존 행 유지. `?changeSecond=` 점프는 Phase 2 검증 항목.
+Rollback: 포스터 칩·로더 `vods` 제거 후 `drop table public.vod_archive` (데이터는 백필로 재생 가능).
+
 ## v0.1.0 — 2026-08-08
 
 ### CHG-20260808-001 — PERF/BOUNDARY — 공개 events API 익명화 + CDN 캐시(s-maxage=300)

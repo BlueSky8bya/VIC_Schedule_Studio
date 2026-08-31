@@ -142,11 +142,21 @@ export type CalendarMeta = {
   memoLines?: MemoLine[]; // B: 줄별 정렬·들여쓰기. 있으면 이걸로 렌더, 없으면 publicMemo 줄바꿈 폴백
 };
 
+// 숲 다시보기(VOD) 링크(0068) — 공개 메타데이터만. 날짜 상세의 '다시보기' 칩 원천.
+// 제목은 싣지 않는다(일정 제목이 이미 그 날을 설명 + 공개 payload 절약). 플레이어 URL은
+// 클라가 titleNo로 조립한다(vod.sooplive.co.kr/player/{titleNo}).
+export type PublicVodEntry = {
+  dateKey: string; // 방송 시작일(KST, YYYY-MM-DD)
+  titleNo: number;
+  durationMs: number;
+};
+
 export type PublicSchedule = {
   calendar: CalendarMeta;
   events: PublicScheduleEvent[];
   tags: BroadcastTag[];
   palette: ColorPaletteEntry[];
+  vods?: PublicVodEntry[]; // 다시보기 아카이브(없으면 빈 취급 — 샘플/오프라인 모드)
   myHeartIds?: string[]; // A: 현재 로그인 사용자가 관심 표시한 일정 id 목록(본인 것만, 개인 상태 복원용)
 };
 

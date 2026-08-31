@@ -1,7 +1,8 @@
 # Active ExecPlan
 
 Plan ID: PLAN-20260831-001
-Status: Proposed (사용자 방향 확정 대기 — 아래 "결정 필요" 참조)
+Status: Phase 1 Completed (2026-08-31, CHG-20260831-001 — 백필 376건·칩 실측 완료) /
+Phase 2 Proposed (타임라인 활용 방식 사용자 결정 대기)
 Task Risk: L2 (구조적 — 새 외부 데이터 소스(SOOP VOD/댓글) + 마이그레이션 + 공개 API 확장 + 시청자 UI)
 Created / Updated: 2026-08-31
 

@@ -13,12 +13,14 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
-- **[착수 대기] 숲 VOD 아카이브 + 팬 타임라인(2026-08-31, 사용자 '대대적 공사' 구상)**:
-  다시보기 376개 전체 + 댓글 크롤링 실측 완료(무인증 공개 API — 목록/댓글/플레이어 URL 전부 확인,
-  타임라인 댓글은 표본 96개 VOD 중 81개=84%에 존재). 계획 = `plans/ACTIVE_PLAN.md`
-  PLAN-20260831-001(Proposed). 사용자 결정 대기: Phase 2 활용 방식(챕터 점프/검색/코너 트렌드/
-  팬 크레딧), 작성자 닉 표시·동의, Phase 1(vod_archive+날짜→다시보기 칩) 착수 시점.
-  `?changeSecond=` 점프 파라미터는 브라우저 검증 필요.
+- **숲 VOD 아카이브(PLAN-20260831-001) — Phase 1 완료, Phase 2 대기(2026-08-31)**:
+  Phase 1 출고 — `vod_archive`(0068, anon SELECT 허용·service_role grant) + 수집기
+  `lib/broadcast/vod-archive.ts` + broadcast-poll 오프라인 30분 증분 + 백필 376건(prod 적재 완료,
+  스킵 0) + 공개 API `vods` DTO + 시청자 날짜 상세 '다시보기 (N시간 M분)' 칩(CHG-20260831-001).
+  **Phase 2(팬 타임라인) 대기**: 활용 방식(챕터 점프/검색/코너 트렌드/팬 크레딧)·작성자 닉 표시·
+  동의 여부는 사용자 결정 대기. 타임라인 댓글은 표본 96개 VOD 중 81개=84%에 존재(포맷 일정).
+  `?changeSecond=` 점프 파라미터 브라우저 검증도 Phase 2 몫. 후속 아이디어: VOD 길이로 세션 기록
+  이전 과거 달 방송시간 백필(인사이트 확장).
 - **'적게 쓰인 기능' 카드에서 철수 기능 갈라내기(2026-08-31, 사용자 지시)**: 이 카드는 "없앨 후보"를
   찾는 화면인데 이미 지운 기능(꾸미기/스티커 ADR-0015 · 월드컵 ADR-0009 · 비공개 레이어 UI ADR-0014 ·
   작업자 미리보기)이 바닥에 깔려 후보를 덮었다. `lib/activity/labels.ts`에 `retired` 표식(RETIRED_* 세트

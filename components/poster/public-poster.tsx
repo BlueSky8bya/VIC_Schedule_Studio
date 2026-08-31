@@ -8,6 +8,7 @@ import {
   Heart,
   LogIn,
   LogOut,
+  Play,
   X
 } from "lucide-react";
 import {
@@ -1016,6 +1017,18 @@ export function PublicPoster({
     };
     // markTeaserGone은 useCallback([]) — 정체성이 고정이라 이 동기화가 매번 다시 돌지 않는다.
   }, [teaserIdsKey, markTeaserGone]);
+  // 다시보기(VOD) — 날짜(방송 시작일)별 매핑(0068). 하루에 여러 번 방송하면 여러 개.
+  // 등록 순서(=방송 순서)대로 보이게 titleNo 오름차순으로 정렬해 둔다.
+  const vodsByDate = useMemo(() => {
+    const map = new Map<string, { titleNo: number; durationMs: number }[]>();
+    for (const v of schedule.vods ?? []) {
+      const list = map.get(v.dateKey);
+      if (list) list.push(v);
+      else map.set(v.dateKey, [v]);
+    }
+    for (const list of map.values()) list.sort((a, b) => a.titleNo - b.titleNo);
+    return map;
+  }, [schedule.vods]);
   // 일정 상세 — 모바일 아젠다는 하단 시트, PC 달력은 카드 옆 앵커 팝오버(anchor 있으면 팝오버).
   // 공개 DTO(PublicScheduleEvent + 공개 태그)만 사용 — 비공개 필드 자체가 없다.
   const [agendaDetail, setAgendaDetail] = useState<{
@@ -3687,6 +3700,28 @@ export function PublicPoster({
                       <ExternalLink aria-hidden="true" size={13} />
                     </a>
                   ) : null}
+                  {/* 다시보기(0068) — 그 날 방송의 VOD로 바로 이동. 방송 시작일 귀속이라 새벽까지
+                      이어진 방송도 '시작한 날' 카드에 붙는다. 하루 여러 방송이면 순서 번호를 단다.
+                      떡밥·업도움 상세엔 없다(떡밥은 미래, 업도움은 기간이지 방송이 아니다). */}
+                  {!support && !teaserActive
+                    ? (vodsByDate.get(dateKey) ?? []).map((vod, vi, arr) => (
+                        <a
+                          className="agenda-link vod"
+                          data-act="vod-replay"
+                          href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
+                          key={vod.titleNo}
+                          onClick={() => hapticTick()}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          <Play aria-hidden="true" size={13} strokeWidth={2.6} />
+                          다시보기{arr.length > 1 ? ` ${vi + 1}` : ""}
+                          {vod.durationMs > 0 ? (
+                            <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
+                          ) : null}
+                        </a>
+                      ))
+                    : null}
                   {/* 떡밥 전용 — 카드엔 없는 정보만: 공개 시각(절대시각) + 기대돼요.
                       카운트다운은 카드가 담당(중복 데이터 없음, 사용자 결정). */}
                   {teaserActive && event.teaserRevealAt ? (
@@ -4287,4 +4322,14 @@ function formatShortDate(value: string) {
   const [, month, day] = value.split("-");
 
   return `${Number(month)}.${Number(day)}`;
+}
+
+// 다시보기 길이(ms) → "5시간 12분" / "45분". 초는 버린다 — 칩에서 초 단위는 소음이다.
+function formatVodDuration(ms: number): string {
+  const totalMin = Math.round(ms / 60_000);
+  if (totalMin < 1) return "";
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m}분`;
+  return m === 0 ? `${h}시간` : `${h}시간 ${m}분`;
 }
