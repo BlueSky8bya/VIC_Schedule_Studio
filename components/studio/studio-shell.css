@@ -1905,6 +1905,9 @@ html[data-reduce-motion] .perf-spin {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2, 8px);
+  /* 모바일: 위 '아직 확정 아님' 칩과의 간격 — 칩 개별 margin-top(4px)을 0으로 눌렀으니
+     행이 대신 진다(2026-09-01 사용자 지적: 사이 패딩이 너무 없음). 웹은 아래 @media가 덮음. */
+  margin-top: var(--space-1, 4px);
 }
 .band-kind-row .opt-chip {
   margin-top: 0;
