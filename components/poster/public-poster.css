@@ -40,9 +40,10 @@
    버튼이 화면 밖으로 숨었다. svh는 ① 스크롤해도 안 변하고 ② 주소창이 보여도 버튼이 화면 안에
    들어와 다양한 모바일 높이에 안전. 필터가 길면 박스 '안쪽'만 스크롤. */
 .agenda-legend-rail {
-  /* 폭 정돈: 92px는 'CK / 핀볼'·'📊 이 달 기록'의 min-content(nowrap)보다 좁아 레일이 뷰포트
-     밖으로 밀려 라벨이 잘렸다. 라벨을 wrap 허용(아래)하고 폭을 살짝 넓혀 안 잘리게. */
-  flex: 0 0 104px;
+  /* 92px = 편집실 모바일 레일(.agenda-rail)과 동일 폭 — 날짜칸(agenda-flow) 너비가 두 화면에서
+     같아진다(2026-09-01 사용자: 편집실 기준 통일). 긴 라벨('CK / 핀볼' 등)은 wrap이 받는다
+     (한때 nowrap 잘림 때문에 104px였던 이력 — wrap 허용 후엔 92로 안전). */
+  flex: 0 0 92px;
   position: sticky;
   top: 74px;
   align-self: flex-start;
@@ -855,6 +856,11 @@ html[data-reduce-motion] .mb-live-dot {
 .agenda-link.vod {
   background: #e9f0fe;
   color: #2455c9;
+}
+/* 기간 안내(support_kind period) '자세히 보기' — 라벤더 띠와 같은 색 언어(정형화). */
+.agenda-link.period {
+  background: #efeafd;
+  color: #5b21b6;
 }
 /* 라벨 = VOD 제목 — 넘치면 …로 자른다(전체 제목은 title 툴팁). 아이콘·길이는 고정 폭,
    제목만 줄어든다(min-width:0이 없으면 flex 자식이 안 줄어 칩이 터진다). */
@@ -6067,6 +6073,11 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
 .agenda-detail-backdrop.is-pop .agenda-link.vod {
   background: linear-gradient(135deg, #5d8bf4, #3564e0);
   box-shadow: 0 6px 16px rgb(53 100 224 / 26%);
+}
+/* 기간 안내 '자세히 보기' — 라벤더 그라데이션(띠와 같은 색 언어). */
+.agenda-detail-backdrop.is-pop .agenda-link.period {
+  background: linear-gradient(135deg, #9d7bf0, #7c5cd6);
+  box-shadow: 0 6px 16px rgb(124 92 214 / 26%);
 }
 .agenda-detail-backdrop.is-pop .agenda-link.vod .agenda-vod-dur {
   color: #dbe6ff;

@@ -3409,7 +3409,7 @@ export function PublicPoster({
                                 ) : null}
                                 {support && event.supportUrl ? (
                                   <a
-                                    className="agenda-link"
+                                    className={`agenda-link${event.supportKind === "period" ? " period" : ""}`}
                                     href={event.supportUrl}
                                     rel="noopener noreferrer"
                                     target="_blank"
@@ -4053,7 +4053,7 @@ export function PublicPoster({
                   ) : null}
                   {support && event.supportUrl ? (
                     <a
-                      className="agenda-link"
+                      className={`agenda-link${event.supportKind === "period" ? " period" : ""}`}
                       href={event.supportUrl}
                       rel="noopener noreferrer"
                       target="_blank"
