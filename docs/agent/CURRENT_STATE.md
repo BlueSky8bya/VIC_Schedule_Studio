@@ -17,10 +17,13 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   Phase 1 출고 — `vod_archive`(0068, anon SELECT 허용·service_role grant) + 수집기
   `lib/broadcast/vod-archive.ts` + broadcast-poll 오프라인 30분 증분 + 백필 376건(prod 적재 완료,
   스킵 0) + 공개 API `vods` DTO + 시청자 날짜 상세 '다시보기 (N시간 M분)' 칩(CHG-20260831-001).
-  **30분 체인(2026-08-31 사용자 결정)**: 직전 VOD 종료와 간격 30분 이내면 같은 방송 —
-  앞 방송의 broadcast_day를 잇는다(`chainBroadcastDays`, 이행적·regDate 없으면 끊음). 수집기는
-  최근 저장 40행을 합쳐 체인(페이지 경계 커버), 백필 재실행으로 prod 1건 교정(빅주총회
-  04-13→04-12). 같은 날 여러 VOD는 날짜 카드에 '다시보기 1·2'로 함께 붙는다.
+  **귀속 규칙 2건(2026-08-31 사용자 결정)**: ① 30분 체인 — 직전 VOD 종료와 간격 30분 이내면
+  같은 방송, 앞 방송의 broadcast_day를 잇는다(`chainBroadcastDays`, 이행적). 수집기는 최근 저장
+  40행을 합쳐 체인(페이지 경계 커버). ② **방송일 경계 = 새벽 6시 KST**('다시보기 가중치') —
+  6시 이전 시작 방송은 전날 밤 방송으로 귀속(`attributeBroadcastDay`). 단 rowKey가 실측 시작
+  날짜와 다르면 rowKey 우선(SOOP이 세션 기준으로 준 값). 백필 재실행으로 prod 22건 교정
+  (별별랭킹·플러스뱅송 1/6→1/5 등 — 1/6 휴뱅 카드에 새벽 방송이 붙던 어긋남 해소).
+  같은 날 여러 VOD는 날짜 카드에 '다시보기 1·2'로 함께 붙는다.
   **Phase 2(팬 타임라인) 대기**: 활용 방식(챕터 점프/검색/코너 트렌드/팬 크레딧)·작성자 닉 표시·
   동의 여부는 사용자 결정 대기. 타임라인 댓글은 표본 96개 VOD 중 81개=84%에 존재(포맷 일정).
   `?changeSecond=` 점프 파라미터 브라우저 검증도 Phase 2 몫. 후속 아이디어: VOD 길이로 세션 기록

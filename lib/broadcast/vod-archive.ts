@@ -40,19 +40,34 @@ export function kstStringToIso(value: unknown): string | null {
   return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
 }
 
-// 방송 시작일 귀속: rowKey 날짜 1순위(정답값), 없으면 등록시각(≈뱅종) − 길이의 KST 날짜.
+// 방송일 경계 = 새벽 6시(KST) — 자정이 아니다(2026-08-31 사용자 결정, '다시보기 가중치').
+// 00:03에 켠 별별랭킹은 달력상 1/6이지만 사람 감각·편집실 일정으론 **1/5 밤 방송**이다
+// (실측: 1/6은 휴뱅인데 새벽 방송 2개가 붙어 일정과 어긋났다). 6시 이전 시작은 전날로 귀속.
+export const VOD_DAY_CUTOFF_HOURS = 6;
+
+const kstDayOf = (ms: number): string => new Date(ms + 9 * 3600_000).toISOString().slice(0, 10);
+
+// 방송 시작일 귀속 우선순위:
+//  1) rowKey 날짜가 실측 시작 날짜와 '다르면' rowKey를 믿는다 — SOOP이 이미 세션 기준으로
+//     보정해 준 값이거나(실측: 8/25 01:17 시작 VOD의 rowKey가 8/24), 등록 지연으로 우리
+//     계산이 틀린 경우다.
+//  2) rowKey가 달력상 시작 날짜 그대로인데 시작이 새벽(6시 이전)이면 전날로 내린다(위 경계).
+//  3) rowKey가 없으면 실측 시작에 6시 경계를 적용한 날짜.
 export function attributeBroadcastDay(
   rowKeyDay: string | null,
   regDateIso: string | null,
   durationMs: number
 ): string | null {
-  if (rowKeyDay) return rowKeyDay;
-  if (!regDateIso) return null;
-  const endMs = Date.parse(regDateIso);
-  if (!Number.isFinite(endMs)) return null;
+  const endMs = regDateIso !== null ? Date.parse(regDateIso) : Number.NaN;
+  if (!Number.isFinite(endMs)) return rowKeyDay;
   const startMs = endMs - (Number.isFinite(durationMs) && durationMs > 0 ? durationMs : 0);
-  // KST 날짜 문자열
-  return new Date(startMs + 9 * 3600_000).toISOString().slice(0, 10);
+  const literalDay = kstDayOf(startMs);
+  const dawnDay = kstDayOf(startMs - VOD_DAY_CUTOFF_HOURS * 3600_000);
+  if (rowKeyDay) {
+    if (rowKeyDay === literalDay && literalDay !== dawnDay) return dawnDay;
+    return rowKeyDay;
+  }
+  return dawnDay;
 }
 
 type ApiItem = {

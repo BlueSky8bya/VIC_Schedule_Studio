@@ -38,6 +38,22 @@ function kstStringToIso(value) {
   const ms = Date.parse(`${value.replace(" ", "T")}+09:00`);
   return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
 }
+// 방송일 경계 = 새벽 6시(KST) — lib/broadcast/vod-archive.ts의 attributeBroadcastDay와 동일 규칙.
+const CUTOFF_H = 6;
+const kstDayOf = (ms) => new Date(ms + 9 * 3600_000).toISOString().slice(0, 10);
+function attributeDay(rowKeyDay, regIso, dur) {
+  const endMs = regIso !== null ? Date.parse(regIso) : NaN;
+  if (!Number.isFinite(endMs)) return rowKeyDay;
+  const startMs = endMs - (Number.isFinite(dur) && dur > 0 ? dur : 0);
+  const literalDay = kstDayOf(startMs);
+  const dawnDay = kstDayOf(startMs - CUTOFF_H * 3600_000);
+  if (rowKeyDay) {
+    if (rowKeyDay === literalDay && literalDay !== dawnDay) return dawnDay;
+    return rowKeyDay;
+  }
+  return dawnDay;
+}
+
 function mapItem(item) {
   const titleNo = Number(item.title_no);
   if (!Number.isFinite(titleNo) || titleNo <= 0) return null;
@@ -45,10 +61,7 @@ function mapItem(item) {
   const dur = Number.isFinite(durRaw) && durRaw > 0 ? Math.round(durRaw) : 0;
   const rowKey = parseThumbRowKey(item.ucc?.thumb);
   const regIso = kstStringToIso(item.reg_date);
-  let day = rowKey?.day ?? null;
-  if (!day && regIso) {
-    day = new Date(Date.parse(regIso) - dur + 9 * 3600_000).toISOString().slice(0, 10);
-  }
+  const day = attributeDay(rowKey?.day ?? null, regIso, dur);
   if (!day) return null;
   return {
     title_no: titleNo,

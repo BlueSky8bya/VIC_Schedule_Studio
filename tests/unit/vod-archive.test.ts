@@ -39,13 +39,34 @@ describe("kstStringToIso", () => {
   });
 });
 
-describe("attributeBroadcastDay — 방송 '시작일' 귀속", () => {
-  it("rowKey 날짜가 있으면 그게 정답", () => {
+describe("attributeBroadcastDay — 방송 '시작일' 귀속(방송일 경계 = 새벽 6시 KST)", () => {
+  it("rowKey가 실측 시작 날짜와 다르면 rowKey가 정답(SOOP이 이미 세션 기준으로 준 값)", () => {
+    // 실측 사례: 8/25 01:17 시작 VOD의 rowKey가 8/24 — 그대로 믿는다.
+    expect(attributeBroadcastDay("2026-08-24", "2026-08-24T19:03:00.000Z", 166 * 60_000)).toBe(
+      "2026-08-24"
+    );
     expect(attributeBroadcastDay("2026-08-30", "2026-08-30T18:52:13.000Z", 1)).toBe("2026-08-30");
   });
-  it("rowKey가 없으면 등록시각-길이의 KST 날짜 — 자정 넘긴 방송이 시작한 날로 붙는다", () => {
+  it("새벽(6시 이전) 시작은 전날로 — 1/6 00:03 별별랭킹은 1/5 밤 방송(실측 사례)", () => {
+    // 뱅종 1/6 02:38 KST, 길이 155분 → 시작 1/6 00:03 KST. rowKey는 달력 그대로 1/6이었다.
+    expect(attributeBroadcastDay("2026-01-06", "2026-01-05T17:38:00.000Z", 155 * 60_000)).toBe(
+      "2026-01-05"
+    );
+  });
+  it("6시 정각 시작은 그 날, 5:59는 전날(경계)", () => {
+    // 시작 06:00 KST = 21:00Z 전날. 길이 60분 → 뱅종 07:00 KST.
+    expect(attributeBroadcastDay("2026-01-06", "2026-01-05T22:00:00.000Z", 60 * 60_000)).toBe(
+      "2026-01-06"
+    );
+    expect(attributeBroadcastDay("2026-01-06", "2026-01-05T21:59:00.000Z", 60 * 60_000)).toBe(
+      "2026-01-05"
+    );
+  });
+  it("rowKey가 없으면 등록시각-길이 + 6시 경계 — 자정 넘긴 방송이 시작한 날로 붙는다", () => {
     // 뱅종(등록) 08-31 03:52 KST, 길이 10.9시간 → 시작 08-30 16:59 KST
     expect(attributeBroadcastDay(null, "2026-08-30T18:52:13.000Z", 39135834)).toBe("2026-08-30");
+    // 뱅종 08-31 02:00 KST, 길이 1시간 → 시작 08-31 01:00 KST(새벽) → 08-30
+    expect(attributeBroadcastDay(null, "2026-08-30T17:00:00.000Z", 3600_000)).toBe("2026-08-30");
   });
   it("둘 다 없으면 null(귀속 불가 행은 버린다)", () => {
     expect(attributeBroadcastDay(null, null, 0)).toBeNull();
