@@ -2315,6 +2315,14 @@ export function PublicPoster({
             : undefined
         }
       >
+        {/* 호버 ▶ 배지 — 가상요소를 쓰면 outside 베일·today 링(::after)과 슬롯이 충돌해
+            좌상단으로 튄다(실측). 실제 요소 + hover 표시로. 비인터랙티브(포스터/캡쳐)에선
+            cellVods가 없어 DOM 자체가 없다. */}
+        {cellVods ? (
+          <span aria-hidden="true" className="day-vod-hint">
+            ▶
+          </span>
+        ) : null}
         {supportHere.map((s) => {
           const lane = supportLanes.lanes.get(s.id) ?? 0;
           const start = getEventDateKey(s);
@@ -3001,28 +3009,6 @@ export function PublicPoster({
                     // 쉬는 날은 누락된 레코드가 아니라 쉬는 날이다.
                     <span className="agenda-noevent">아직 일정이 없어요 🍃</span>
                   ) : null}
-                  {/* 일정 카드가 없는 날의 다시보기 — 카드가 없으면 상세 시트도 없어 이 칩이
-                      유일한 통로다(특히 2024~25, 일정 시스템 이전). 카드 있는 날은 상세 시트가
-                      이미 안내하므로 중복해 그리지 않는다. */}
-                  {interactive && list.length === 0
-                    ? (vodsByDate.get(cell.isoDate) ?? []).map((vod, vi, arr) => (
-                        <a
-                          className="agenda-link vod agenda-vod-inline"
-                          data-act="vod-replay"
-                          href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
-                          key={vod.titleNo}
-                          onClick={() => hapticTick()}
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          <Play aria-hidden="true" size={13} strokeWidth={2.6} />
-                          다시보기{arr.length > 1 ? ` ${vi + 1}` : ""}
-                          {vod.durationMs > 0 ? (
-                            <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
-                          ) : null}
-                        </a>
-                      ))
-                    : null}
                   {list.map(({ event: rawEvent, support }) => {
                     // 위 달력 칸과 같은 규칙 — 서버가 없다고 확인한 떡밥은 안 그린다.
                     if (goneTeaserIds.has(rawEvent.id)) return null;
@@ -3258,6 +3244,29 @@ export function PublicPoster({
                       </div>
                     );
                   })}
+                  {/* 다시보기 진입로(모바일) — 날짜 줄의 인라인 칩이 유일한 통로다(일정 상세의
+                      다시보기 버튼은 2026-08-31 제거). 일정 유무와 무관하게 그 날 방송이 있으면
+                      항상 같은 자리(카드들 '아래')에 붙는다 — 위치 일관 + 계획(카드)이 먼저,
+                      기록(다시보기)이 나중이라는 시간 위계(HCI). */}
+                  {interactive
+                    ? (vodsByDate.get(cell.isoDate) ?? []).map((vod, vi, arr) => (
+                        <a
+                          className="agenda-link vod agenda-vod-inline"
+                          data-act="vod-replay"
+                          href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
+                          key={vod.titleNo}
+                          onClick={() => hapticTick()}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          <Play aria-hidden="true" size={13} strokeWidth={2.6} />
+                          다시보기{arr.length > 1 ? ` ${vi + 1}` : ""}
+                          {vod.durationMs > 0 ? (
+                            <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
+                          ) : null}
+                        </a>
+                      ))
+                    : null}
                 </div>
               </div>
               ));
@@ -3794,28 +3803,8 @@ export function PublicPoster({
                       <ExternalLink aria-hidden="true" size={13} />
                     </a>
                   ) : null}
-                  {/* 다시보기(0068) — 그 날 방송의 VOD로 바로 이동. 방송 시작일 귀속이라 새벽까지
-                      이어진 방송도 '시작한 날' 카드에 붙는다. 하루 여러 방송이면 순서 번호를 단다.
-                      떡밥·업도움 상세엔 없다(떡밥은 미래, 업도움은 기간이지 방송이 아니다). */}
-                  {!support && !teaserActive
-                    ? (vodsByDate.get(dateKey) ?? []).map((vod, vi, arr) => (
-                        <a
-                          className="agenda-link vod"
-                          data-act="vod-replay"
-                          href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
-                          key={vod.titleNo}
-                          onClick={() => hapticTick()}
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          <Play aria-hidden="true" size={13} strokeWidth={2.6} />
-                          다시보기{arr.length > 1 ? ` ${vi + 1}` : ""}
-                          {vod.durationMs > 0 ? (
-                            <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
-                          ) : null}
-                        </a>
-                      ))
-                    : null}
+                  {/* (다시보기 버튼은 일정 상세에서 뺐다 — 2026-08-31 사용자 결정. 진입로는
+                      날짜 쪽으로 일원화: PC = 날짜 칸 클릭 팝오버, 모바일 = 날짜 줄 인라인 칩.) */}
                   {/* 떡밥 전용 — 카드엔 없는 정보만: 공개 시각(절대시각) + 기대돼요.
                       카운트다운은 카드가 담당(중복 데이터 없음, 사용자 결정). */}
                   {teaserActive && event.teaserRevealAt ? (
