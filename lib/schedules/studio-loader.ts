@@ -113,7 +113,7 @@ export async function getStudioSchedule(
     supabase
       .from("events")
       .select(
-        "id, date_key, end_date_key, link_next, is_support, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, secret_cipher, status, sort_order, category, visibility_scope, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order), event_private_meta(private_title, private_memo, editor_note)"
+        "id, date_key, end_date_key, link_next, is_support, support_kind, support_url, start_time, end_time, is_all_day, is_tentative, public_title, public_description, secret_cipher, status, sort_order, category, visibility_scope, teaser, teaser_reveal_at, event_tags(tag_id, is_primary, sort_order), event_private_meta(private_title, private_memo, editor_note)"
       )
       .is("deleted_at", null) // tombstone 제외(P0-DATA-1)
       .eq("calendar_id", calendar.id)
@@ -164,6 +164,7 @@ type StudioEventRow = {
   end_date_key: string | null;
   link_next: string | null;
   is_support: boolean;
+  support_kind: string | null;
   support_url: string | null;
   start_time: string | null;
   end_time: string | null;
@@ -227,6 +228,7 @@ function mapStudioEvent(row: StudioEventRow, calendarId: string): StudioSchedule
       row.end_date_key && row.end_date_key > row.date_key ? row.end_date_key : undefined,
     linkNext: row.link_next ?? undefined,
     isSupport: row.is_support,
+    supportKind: row.is_support ? (row.support_kind === "period" ? "period" : "up") : undefined,
     supportUrl: row.support_url ?? undefined,
     isAllDay: row.is_all_day,
     isTentative: row.is_tentative ?? false,

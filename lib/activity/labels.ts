@@ -337,6 +337,8 @@ const ACT: Record<string, TargetLabel> = {
   "이 달 기록 보기": { name: "이 달 기록 보기", area: "시청자 화면" },
   "방송 보러 가기": { name: "방송 보러 가기", area: "시청자 화면" },
   "업 도움 링크 열기": { name: "업 도움 링크 열기", area: "시청자 화면" },
+  "기간 안내 링크 열기": { name: "기간 안내 링크 열기", area: "시청자 화면" },
+  "support-kind": { name: "띠 종류 고르기", area: "편집실", hint: "업 도움 ↔ 기간 안내" },
   "실행 취소": { name: "실행 취소", area: "꾸미기" },
   "다시실행 (Ctrl+Y)": { name: "다시 실행", area: "꾸미기" },
   닫기: { name: "닫기", area: "공통", hint: "여러 창의 닫기 합계" }

@@ -15,6 +15,7 @@ export type EventForm = {
   publicTitle: string;
   endDateKey: string;
   isSupport: boolean;
+  supportKind: "up" | "period"; // 'period' = 단순 기간 안내(CTA 없음, 링크 선택)
   isTentative: boolean;
   supportUrl: string;
   category: EventCategory;
@@ -31,6 +32,7 @@ export type CopiedEvent = {
   publicTitle: string;
   spanDays: number;
   isSupport: boolean;
+  supportKind: "up" | "period";
   isTentative: boolean;
   supportUrl: string;
   category: EventCategory;
@@ -194,6 +196,7 @@ export function createEmptyForm(): EventForm {
     publicTitle: "",
     endDateKey: "",
     isSupport: false,
+    supportKind: "up",
     isTentative: false,
     supportUrl: "",
     category: "stream",
@@ -219,6 +222,7 @@ export function draftFingerprint(f: EventForm): string {
     f.publicTitle,
     f.endDateKey,
     f.isSupport,
+    f.supportKind,
     f.isTentative,
     f.supportUrl,
     f.category,
@@ -238,6 +242,7 @@ export function eventToForm(event: StudioScheduleEvent): EventForm {
     publicTitle: event.publicTitle,
     endDateKey: event.endDateKey ?? "",
     isSupport: event.isSupport ?? false,
+    supportKind: event.supportKind ?? "up",
     isTentative: event.isTentative ?? false,
     supportUrl: event.supportUrl ?? "",
     category: event.category,

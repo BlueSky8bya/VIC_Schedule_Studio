@@ -1902,6 +1902,29 @@ html[data-reduce-motion] .perf-spin {
 .opt-chip.support {
   --ac: #e23b54; /* 업 도움 기간(빨강 띠)과 색 통일 */
 }
+/* 띠 종류 라디오(업 도움 / 기간 안내) — 옵션 칩 문법 그대로 2열. 기간 안내는 라벤더 띠와
+   색 통일. 업 도움 설정을 켰을 때만 나타나는 하위 선택이라 살짝 들여쓴다. */
+.support-kind-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2, 8px);
+  padding-left: var(--space-3, 12px);
+}
+.support-kind-row .opt-chip {
+  margin-top: 0;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+}
+@media (min-width: 1000px) {
+  .support-kind-row {
+    margin-top: -6px;
+  }
+}
+.opt-chip.support-kind {
+  --ac: #e23b54;
+}
+.opt-chip.support-kind:last-child {
+  --ac: #7c5cd6; /* 기간 안내(라벤더 띠)와 색 통일 */
+}
 .opt-chip:hover:not(:disabled):not(.on) {
   border-color: color-mix(in srgb, var(--ac) 50%, var(--line, #e7e3f2));
   transform: translateY(-2px);

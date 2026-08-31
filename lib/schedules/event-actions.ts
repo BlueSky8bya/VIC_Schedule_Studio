@@ -41,6 +41,7 @@ export type SaveEventInput = {
   tagIds: string[];
   primaryTagIds: string[];
   isSupport?: boolean;
+  supportKind?: "up" | "period"; // 'period' = 단순 기간 안내(CTA 없음, 링크 선택) — 2026-09-01
   supportUrl?: string;
   privateTitle?: string;
   privateMemo?: string;
@@ -211,6 +212,8 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     is_all_day: input.isAllDay,
     is_tentative: input.isTentative ?? false,
     is_support: input.isSupport ?? false,
+    // 화이트리스트 강제: 'period' 외엔 전부 'up'(기본). 업 도움이 아니면 항상 'up'으로 리셋.
+    support_kind: input.isSupport && input.supportKind === "period" ? "period" : "up",
     support_url: input.isSupport ? input.supportUrl?.trim() || null : null,
     // 비공개는 평문 자리에 플레이스홀더, 공개는 실제 평문.
     public_title: isPublic ? publicTitleTrim : PRIVATE_PLACEHOLDER_TITLE,

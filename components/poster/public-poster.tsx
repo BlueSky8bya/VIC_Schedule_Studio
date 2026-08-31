@@ -809,10 +809,14 @@ export function PublicPoster({
   // 업 도움은 기간(종료일, KST)이 지나면 전부 자동으로 내린다 — 달력 띠·줄 칸·우측 안내 카드
   // 어디서도 끝난 업 도움은 그리지 않는다. 종료일이 오늘 이전이면 이벤트 집합에서 제외해, 모든
   // 업 도움 시각화(레인 배정·주별 줄 수·띠·카드)가 한 소스에서 일관되게 사라지게 한다.
+  // 단순 기간 안내(supportKind 'period')는 예외 — 정보성 기록이라 지나도 남긴다(2026-09-01).
   const liveEvents = useMemo(
     () =>
       schedule.events.filter(
-        (e) => !e.isSupport || (e.endDateKey ?? getEventDateKey(e)) >= today
+        (e) =>
+          !e.isSupport ||
+          e.supportKind === "period" ||
+          (e.endDateKey ?? getEventDateKey(e)) >= today
       ),
     [schedule.events, today]
   );
@@ -1076,7 +1080,9 @@ export function PublicPoster({
   //    아직이면 Pload{autoPlay:true,startVideoSeconds} — 허용 브라우저는 그 초부터 즉시 소리 켠
   //    재생, 차단 브라우저는 그 지점 포스터+▶ 하나.
   const [dayVodJump, setDayVodJump] = useState<{ titleNo: number; sec: number } | null>(null);
-  const [dayVodReady, setDayVodReady] = useState<ReadonlySet<number>>(new Set());
+  // 재생이 실제로 시작된 방송들 — 이때에야 스냅샷 커버를 걷는다. 그 전까지는 토리님이 지정한
+  // 썸네일이 계속 보인다(클릭은 통과라 1클릭 재생은 그대로 — 2026-09-01 사용자 절충).
+  const [dayVodLive, setDayVodLive] = useState<ReadonlySet<number>>(new Set());
   const dayVodApisRef = useRef(new Map<number, (msg: Record<string, unknown>) => void>());
   const dayVodAliveRef = useRef(new Set<number>());
   const dayVodPausedRef = useRef(new Set<number>());
@@ -1084,7 +1090,7 @@ export function PublicPoster({
   useEffect(() => {
     // 창이 닫히거나 다른 날짜로 바뀌면 플레이어 상태를 전부 비운다.
     setDayVodJump(null);
-    setDayVodReady(new Set());
+    setDayVodLive(new Set());
     dayVodApisRef.current.clear();
     dayVodAliveRef.current.clear();
     dayVodPausedRef.current.clear();
@@ -1115,16 +1121,16 @@ export function PublicPoster({
         const pending = dayVodPendingRef.current.get(titleNo);
         dayVodPendingRef.current.delete(titleNo);
         post(buildDayVodPload(titleNo, pending ?? 0, pending !== undefined));
-        setDayVodReady((prev) => {
+      } else if (data.cmd === "PupdateMediaEvent") {
+        // buffer/timeUpdate/play 무엇이든 = 미디어 엔진이 굴러갔다 → 이후 점프는 PseekTo로,
+        // 지정 썸네일 커버도 이때 걷는다. (재생 전엔 아무 이벤트도 오지 않는다 — 실측.)
+        dayVodAliveRef.current.add(titleNo);
+        setDayVodLive((prev) => {
           if (prev.has(titleNo)) return prev;
           const next = new Set(prev);
           next.add(titleNo);
           return next;
         });
-      } else if (data.cmd === "PupdateMediaEvent") {
-        // buffer/timeUpdate/play 무엇이든 = 미디어 엔진이 굴러갔다 → 이후 점프는 PseekTo로.
-        // (재생이 시작되지 않은 상태에선 아무 이벤트도 오지 않는다 — 실측.)
-        dayVodAliveRef.current.add(titleNo);
         // 일시정지 추적 — 정지 중 챕터 점프는 seek 후 지연 Pplay로 재개해야 해서(아래 참조).
         const evType = data.event?.type;
         if (evType === "pause") dayVodPausedRef.current.add(titleNo);
@@ -2531,12 +2537,19 @@ export function PublicPoster({
                   });
                 }
               : null;
-          // 하루짜리는 이어질 칸이 없다 — 글자를 오른쪽으로 흘리면 남의 날짜 위에 뜬다.
-          // 칸 안에서 끝나는 별도 모양으로 그린다(제목 말줄임 + 화살표 한 글자).
-          const solo = isStart && isEnd;
+          // 라벨 칸에서 이 주(週)에 띠가 몇 칸 이어지는지 — 1칸뿐이면(하루짜리, 일요일에 끝나는
+          // 이어짐, 토요일 시작) 글자를 흘릴 띠가 없어 남의 날짜 위로 튄다(2026-09-01 사용자
+          // 신고: 일요일 종료 칸). 그 경우 칸 안에서 끝나는 압축 모양(말줄임+화살표 한 글자)으로.
+          const remainDays = Math.round(
+            (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${cell.isoDate}T00:00:00Z`)) / 86_400_000
+          );
+          const segSpan = Math.min(Math.max(remainDays, 0), 6 - cell.weekday) + 1;
+          const solo = showLabel && segSpan <= 1;
+          // 단순 기간 안내(2026-09-01): 도와주러 갈 필요 없는 정보성 띠 — CTA·색·아이콘을 바꾼다.
+          const period = s.supportKind === "period";
           const bandClass = `support-bar${isDimmedByFilter(s) ? " dimmed" : ""}${
             bandClickable ? " is-clickable" : ""
-          }${showLabel ? " sb-head" : ""}${solo ? " sb-solo" : ""}${
+          }${showLabel ? " sb-head" : ""}${solo ? " sb-solo" : ""}${period ? " sb-period" : ""}${
             hoverSupportId === s.id ? " is-hover" : ""
           }`;
           const bandStyle = {
@@ -2563,18 +2576,19 @@ export function PublicPoster({
           const bandInner = showLabel ? (
             <span>
               <i className="sb-sprout" aria-hidden="true">
-                🌱
+                {period ? "📌" : "🌱"}
               </i>
               {solo ? <b className="sb-title">{s.publicTitle}</b> : s.publicTitle}
-              {/* 남는 가로 폭 = 클릭 유도 문구(시청자 전용, 띠 위로 흘러감).
-                  하루짜리는 그만한 폭이 없어 화살표 한 글자로 압축한다(뜻은 aria-label에 그대로). */}
-              {bandClickable ? (
+              {/* 남는 가로 폭 = 클릭 유도 문구(시청자 전용, 띠 위로 흘러감). 기간 안내는 링크가
+                  있을 때만 조용한 '자세히 보기'. 하루짜리는 그만한 폭이 없어 화살표 한 글자로
+                  압축한다(뜻은 aria-label에 그대로). */}
+              {bandClickable && (!period || s.supportUrl) ? (
                 solo ? (
                   <em className="sb-go" aria-hidden="true">
                     →
                   </em>
                 ) : (
-                  <em className="sb-cta">도와주러 가기 →</em>
+                  <em className="sb-cta">{period ? "자세히 보기 →" : "도와주러 가기 →"}</em>
                 )
               ) : null}
             </span>
@@ -2582,7 +2596,7 @@ export function PublicPoster({
           if (bandClickable && s.supportUrl) {
             return (
               <a
-                aria-label={`${s.publicTitle} 도와주러 가기(새 탭)`}
+                aria-label={`${s.publicTitle} ${period ? "관련 링크 열기" : "도와주러 가기"}(새 탭)`}
                 className={bandClass}
                 href={s.supportUrl}
                 key={s.id}
@@ -2593,9 +2607,9 @@ export function PublicPoster({
                 rel="noopener noreferrer"
                 style={bandStyle}
                 target="_blank"
-                title="도와주러 가기 (새 탭에서 열림)"
+                title={period ? "자세히 보기 (새 탭에서 열림)" : "도와주러 가기 (새 탭에서 열림)"}
                 {...bandHover}
-               data-act="업 도움 링크 열기">
+               data-act={period ? "기간 안내 링크 열기" : "업 도움 링크 열기"}>
                 {bandInner}
               </a>
             );
@@ -2612,7 +2626,7 @@ export function PublicPoster({
                 ? {
                     role: "button" as const,
                     tabIndex: 0,
-                    "aria-label": `${s.publicTitle} 업 도움 상세`,
+                    "aria-label": `${s.publicTitle} ${period ? "기간 안내" : "업 도움"} 상세`,
                     onClick: (e: ReactMouseEvent<HTMLDivElement>) => {
                       e.stopPropagation();
                       openSupportDetail(e.currentTarget);
@@ -3320,7 +3334,7 @@ export function PublicPoster({
                                 <span className="evt-tentative">미정</span>
                               ) : null}
                               {support
-                                ? `🌱 ${event.publicTitle}`
+                                ? `${event.supportKind === "period" ? "📌" : "🌱"} ${event.publicTitle}`
                                 : justRevealed.has(rawEvent.id)
                                   ? <ScrambleText text={main} />
                                   : main}
@@ -3399,7 +3413,7 @@ export function PublicPoster({
                                     rel="noopener noreferrer"
                                     target="_blank"
                                    data-act="agenda-link">
-                                    도우러 가기
+                                    {event.supportKind === "period" ? "자세히 보기" : "도우러 가기"}
                                     <ExternalLink aria-hidden="true" size={13} />
                                   </a>
                                 ) : null}
@@ -3699,7 +3713,7 @@ export function PublicPoster({
                         <div className="dvm-vod" key={vod.titleNo}>
                           {/* 플레이어는 창이 열릴 때부터 깔린다(fromApi=1, autoPlay:false 초기화).
                               첫 클릭 = 플레이어 안 ▶ = 어떤 브라우저에서도 1클릭 소리 켠 재생.
-                              준비될 때까지 지정 스냅샷 커버가 덮고(클릭 통과) 준비되면 걷힌다. */}
+                              지정 썸네일 커버는 실제 재생이 시작될 때까지 덮는다(클릭 통과). */}
                           <div className="dvm-thumb is-playing">
                             <iframe
                               allow="autoplay; fullscreen; encrypted-media"
@@ -3708,7 +3722,7 @@ export function PublicPoster({
                             />
                             <span
                               aria-hidden="true"
-                              className={`dvm-cover${dayVodReady.has(vod.titleNo) ? " is-gone" : ""}`}
+                              className={`dvm-cover${dayVodLive.has(vod.titleNo) ? " is-gone" : ""}`}
                             >
                               {vod.thumbQuery ? (
                                 <img
@@ -3988,7 +4002,7 @@ export function PublicPoster({
                           <span className="evt-tentative">미정</span>
                         ) : null}
                         {support ? (
-                          `🌱 ${event.publicTitle}`
+                          `${event.supportKind === "period" ? "📌" : "🌱"} ${event.publicTitle}`
                         ) : detailJustRevealed ? (
                           <ScrambleText text={main} />
                         ) : (
@@ -4049,7 +4063,7 @@ export function PublicPoster({
                       rel="noopener noreferrer"
                       target="_blank"
                      data-act="agenda-link">
-                      도우러 가기
+                      {event.supportKind === "period" ? "자세히 보기" : "도우러 가기"}
                       <ExternalLink aria-hidden="true" size={13} />
                     </a>
                   ) : null}

@@ -1078,10 +1078,14 @@ export function StudioShell({
   // 업 도움은 기간(종료일, KST)이 지나면 편집실에서도 자동으로 내린다 — 시청자 화면과 동일하게
   // 끝난 업 도움은 달력 띠·줄 칸·모바일 어젠다 어디서도 그리지 않는다. 일반 일정은 그대로 두고
   // 끝난 업 도움만 제외해, 업 도움 시각화가 한 소스에서 일관되게 사라지게 한다.
+  // 단순 기간 안내(supportKind 'period')는 예외 — 정보성 기록이라 지나도 남긴다(2026-09-01).
   const liveEvents = useMemo(
     () =>
       visibleEvents.filter(
-        (e) => !e.isSupport || (e.endDateKey ?? getEventDateKey(e)) >= today
+        (e) =>
+          !e.isSupport ||
+          e.supportKind === "period" ||
+          (e.endDateKey ?? getEventDateKey(e)) >= today
       ),
     [visibleEvents, today]
   );
@@ -1236,7 +1240,7 @@ export function StudioShell({
   const scopeFoldSummary =
     [
       form.isTentative ? "미정" : null,
-      form.isSupport ? "🌱 업 도움" : null,
+      form.isSupport ? (form.supportKind === "period" ? "📌 기간 안내" : "🌱 업 도움") : null,
       form.teaser ? "🔮 최초공개" : null
     ]
       .filter(Boolean)
@@ -3602,6 +3606,7 @@ export function StudioShell({
       endDateKey,
       linkNext: existing?.linkNext,
       isSupport: form.isSupport,
+      supportKind: form.isSupport ? form.supportKind : undefined,
       supportUrl: form.supportUrl || undefined,
       isAllDay: true,
       isTentative: form.isTentative,
@@ -3632,6 +3637,7 @@ export function StudioShell({
       tagIds: form.tagIds,
       primaryTagIds: form.primaryTagIds.slice(0, 2),
       isSupport: form.isSupport,
+      supportKind: form.supportKind,
       supportUrl: form.supportUrl,
       teaser: teaserOn,
       teaserRevealAt: teaserRevealIso
@@ -4252,6 +4258,7 @@ export function StudioShell({
       publicTitle: ev.publicTitle,
       spanDays: ev.endDateKey ? Math.max(0, daysBetweenIso(start, ev.endDateKey)) : 0,
       isSupport: ev.isSupport ?? false,
+      supportKind: ev.supportKind ?? "up",
       isTentative: ev.isTentative ?? false,
       supportUrl: ev.supportUrl ?? "",
       category: ev.category,
@@ -4291,6 +4298,7 @@ export function StudioShell({
       startsAt: `${targetDate}T00:00:00+09:00`,
       endDateKey,
       isSupport: payload.isSupport,
+      supportKind: payload.isSupport ? payload.supportKind : undefined,
       supportUrl: payload.supportUrl || undefined,
       isAllDay: true,
       isTentative: payload.isTentative,
@@ -4328,6 +4336,7 @@ export function StudioShell({
         tagIds: payload.tagIds,
         primaryTagIds: payload.primaryTagIds.slice(0, 2),
         isSupport: payload.isSupport,
+        supportKind: payload.supportKind,
         supportUrl: payload.supportUrl,
         teaser: payload.teaser,
         teaserRevealAt: payload.teaser ? payload.teaserRevealAt || null : null
@@ -4900,7 +4909,7 @@ export function StudioShell({
                                     rel="noopener noreferrer"
                                     target="_blank"
                                    data-act="agenda-link">
-                                    도우러 가기
+                                    {event.supportKind === "period" ? "자세히 보기" : "도우러 가기"}
                                     <ExternalLink aria-hidden="true" size={13} />
                                   </a>
                                 ) : null}
@@ -4959,7 +4968,7 @@ export function StudioShell({
                                   <span className="evt-tentative">미정</span>
                                 ) : null}
                                 {event.isSupport
-                                  ? `🌱 ${teaserStillHidden(event) ? "???" : event.publicTitle}`
+                                  ? `${event.supportKind === "period" ? "📌" : "🌱"} ${teaserStillHidden(event) ? "???" : event.publicTitle}`
                                   : main}
                               </span>
                               {teaserStillHidden(event) ? (
@@ -5270,7 +5279,7 @@ export function StudioShell({
         <label className="support-link-field">
           <span className="support-link-label">
             <ExternalLink aria-hidden="true" size={13} />
-            업 도움 링크
+            {form.supportKind === "period" ? "관련 링크 (선택)" : "업 도움 링크"}
           </span>
           <input
             className="support-link-input"
@@ -5318,6 +5327,38 @@ export function StudioShell({
           <span className="opt-chip-label">업 도움 설정</span>
           <span className="opt-chip-mark" aria-hidden="true">✓</span>
         </button>
+        {/* 띠 종류(2026-09-01): 업 도움(도와주러 가기 CTA) vs 단순 기간 안내(CTA 없음, 링크 선택).
+            예: 마비노기 알파테스트 9/4~6 — 도와주러 갈 필요 없는 정보성 기간. */}
+        {form.isSupport ? (
+          <div aria-label="띠 종류" className="support-kind-row" role="radiogroup">
+            {(
+              [
+                ["up", "🌱", "업 도움"],
+                ["period", "📌", "기간 안내"]
+              ] as const
+            ).map(([kind, ic, label]) => (
+              <button
+                aria-pressed={form.supportKind === kind}
+                className={`opt-chip support-kind${form.supportKind === kind ? " on" : ""}`}
+                disabled={!canEdit}
+                key={kind}
+                onClick={() => {
+                  if (form.supportKind === kind) return;
+                  hapticTick();
+                  setForm((current) => ({ ...current, supportKind: kind }));
+                }}
+                role="radio"
+                aria-checked={form.supportKind === kind}
+                type="button"
+                data-act="support-kind"
+              >
+                <span aria-hidden="true" className="opt-chip-ic">{ic}</span>
+                <span className="opt-chip-label">{label}</span>
+                <span aria-hidden="true" className="opt-chip-mark">✓</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
         {form.isSupport ? renderSupportFields(canEdit) : null}
       </>
     );
@@ -6224,8 +6265,15 @@ export function StudioShell({
                     // 라벨은 '시작 칸'과 '주가 바뀐 첫 칸(일요일)'에만 — isEnd 라벨은 같은
                     // 줄에서 제목이 두 번 보였다. 글자는 sb-head로 오른쪽 띠 위로 흘러간다.
                     const showLabel = isStart || (!isStart && cellIndex % 7 === 0);
-                    // 하루짜리는 흘려보낼 다음 칸이 없다 — 칸 안에서 끝나게 따로 그린다.
-                    const solo = isStart && isEnd;
+                    // 라벨 칸에서 이 주(週)에 띠가 몇 칸 이어지는지 — 1칸뿐이면(하루짜리,
+                    // 일요일 종료 이어짐, 토요일 시작) 글자가 남의 날짜 위로 튄다(시청자 화면과
+                    // 같은 2026-09-01 신고). 칸 안에서 끝나는 압축 모양(sb-solo)으로.
+                    const remainDays = Math.round(
+                      (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${cell.isoDate}T00:00:00Z`)) /
+                        86_400_000
+                    );
+                    const segSpan = Math.min(Math.max(remainDays, 0), 6 - (cellIndex % 7)) + 1;
+                    const solo = showLabel && segSpan <= 1;
                     return (
                       <div
                         // 필터를 켜면 일정 카드만 흐려지고 업 도움 끈은 쨍하게 남아, 안 고른 기간이
@@ -6235,7 +6283,7 @@ export function StudioShell({
                         // 여러 칸에 걸쳐 있어 한 조각만 강조하면 어디까지가 그 기간인지 안 보인다.
                         className={`support-bar${isDimmedByFilter(s) ? " filter-dim" : ""}${
                           showLabel ? " sb-head" : ""
-                        }${solo ? " sb-solo" : ""}${
+                        }${solo ? " sb-solo" : ""}${s.supportKind === "period" ? " sb-period" : ""}${
                           hoverSupportId === s.id ? " is-hover" : ""
                         }${editorVisible && selectedEventId === s.id ? " is-editing" : ""}`}
                         data-supportid={s.id}
@@ -6269,7 +6317,7 @@ export function StudioShell({
                         {showLabel ? (
                           <span>
                             <i className="sb-sprout" aria-hidden="true">
-                              🌱
+                              {s.supportKind === "period" ? "📌" : "🌱"}
                             </i>
                             {solo ? <b className="sb-title">{s.publicTitle}</b> : s.publicTitle}
                           </span>

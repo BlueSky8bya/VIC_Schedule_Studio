@@ -1054,6 +1054,22 @@ html[data-reduce-motion] .support-bar.sb-solo.is-clickable.is-hover .sb-go {
   transition: transform 0.16s var(--ease, ease), color 0.16s var(--ease, ease);
 }
 
+/* ── 단순 기간 안내(sb-period) ─────────────────────────────────────────────
+   도와주러 갈 필요 없는 정보성 기간(예: 알파테스트 일정 — 2026-09-01 사용자 요청).
+   같은 리본 문법에 채도만 낮춘 라벤더 — 장미(업 도움)와 한눈에 구분되면서 형제로 읽힌다.
+   편집실·시청자 공통(단일 출처). */
+.support-bar.sb-period {
+  background: linear-gradient(180deg, #e3defc, #cfc5f7);
+  color: #5b21b6;
+}
+.support-bar.sb-period.sb-solo .sb-go {
+  color: rgb(91 33 182 / 78%);
+}
+.support-bar.sb-period .sb-cta {
+  color: rgb(91 33 182 / 78%);
+  border-bottom-color: rgb(91 33 182 / 45%);
+}
+
 /* ── 태그 색 무늬(패턴) — 제거됨(2026-07-18) ──────────────────────────────
    예전엔 비슷한 색을 무늬(대각선/점/격자)로 갈라 색맹 구분 단서로 썼다. 커스텀 색(Phase 1)에서
    토리님이 hue를 자유롭게 골라 '진짜 다른 색'으로 구분하기로 하고, 텍스처가 글자 가독성을 해쳐

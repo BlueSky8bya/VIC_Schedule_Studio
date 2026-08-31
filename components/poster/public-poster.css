@@ -2226,6 +2226,28 @@ body.cell-range-dragging {
   color: #9f1239;
   transform: translateX(2px);
 }
+/* 기간 안내(sb-period) 클릭형 — 장미 대신 라벤더로 같은 광택 문법(색만 다른 형제). */
+.support-bar.sb-period.is-clickable {
+  background-image:
+    linear-gradient(115deg, transparent 38%, rgb(255 255 255 / 55%) 50%, transparent 62%),
+    linear-gradient(180deg, #e3defc, #cfc5f7);
+}
+.support-bar.sb-period.is-clickable.is-hover {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 60%),
+    inset 0 -2px 0 rgb(91 33 182 / 18%);
+}
+.support-bar.sb-period.sb-solo.is-clickable.is-hover {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 60%),
+    0 3px 10px rgb(91 33 182 / 24%);
+}
+.support-bar.sb-period.is-clickable:focus-visible {
+  outline-color: #5b21b6;
+}
+.support-bar.sb-period.is-clickable.is-hover .sb-cta {
+  color: #5b21b6;
+}
 html[data-reduce-motion] .support-bar.is-clickable,
 html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   animation: none;
