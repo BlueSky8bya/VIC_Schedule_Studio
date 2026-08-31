@@ -25,13 +25,14 @@ import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
 import { monthProgress } from "@/lib/insights/month-progress";
 import { hapticTick } from "@/lib/ui/haptics";
 
-// 관리자·매니저·작업자용 월별 인사이트 — 수치 없는 4패널(일정·참여·트렌드·하이라이트).
+// 관리자·매니저용 월별 인사이트 — 수치 없는 4패널(트렌드·일정·참여·하이라이트).
 // 데이터는 getMemberInsightsAction이 이미 수치를 빼고(보안/시스템/방문 원시값 없음, 막대는 0~1 비율)
 // 내려주므로 여기선 그대로 그린다. 허용된 하트 합계(이 달/누적)만 숫자로 보인다.
+// 트렌드가 첫 탭 = 기본 화면 — 개발자판(insights-dashboard)과 같은 순서(2026-08-31 사용자 지시).
 const PANELS = [
+  { key: "trend", label: "트렌드", icon: LineChart },
   { key: "content", label: "일정", icon: CalendarDays },
   { key: "engagement", label: "참여", icon: Heart },
-  { key: "trend", label: "트렌드", icon: LineChart },
   { key: "highlight", label: "하이라이트", icon: Trophy }
 ] as const;
 
@@ -439,7 +440,14 @@ export function MemberInsights({
     return <HighlightCards cards={cards} />;
   }
 
-  const renderers = [renderContent, renderEngagement, renderTrend, renderHighlights];
+  // 인덱스 평행 배열이 아니라 key로 짝을 맞춘다 — 탭 순서를 바꿀 때 렌더러가 따라오지 않아
+  // 엉뚱한 패널이 그려지는 사고를 구조적으로 막는다.
+  const renderers: Record<string, (d: MemberInsightsData) => ReactNode> = {
+    content: renderContent,
+    engagement: renderEngagement,
+    trend: renderTrend,
+    highlight: renderHighlights
+  };
 
   return (
     <div className="insights">
@@ -473,9 +481,9 @@ export function MemberInsights({
           data-active={index}
           style={{ transform: `translateX(-${index * 100}%)` }}
         >
-          {panels.map((p, i) => (
+          {panels.map((p) => (
             <section className="insights-panel" key={p.key}>
-              {p.key === "security" ? renderSecurity() : withData(renderers[i])}
+              {p.key === "security" ? renderSecurity() : withData(renderers[p.key])}
             </section>
           ))}
         </div>

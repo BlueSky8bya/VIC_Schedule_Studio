@@ -67,12 +67,14 @@ export const DEVICE_META: { key: string; label: string; color: string }[] = [
 ];
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
 
-// 통일성: 비개발자에게 배포하는 4패널(일정·참여·트렌드·하이라이트)을 2×4 격자 윗줄에 두고,
-// 개발자 전용(실시간·방문·보안·시스템)은 아랫줄에. 아래 트랙 섹션 순서도 이와 일치해야 한다.
+// 통일성: 비개발자에게 배포하는 4패널(트렌드·일정·참여·하이라이트)을 2×4 격자 윗줄에 두고,
+// 개발자 전용(실시간·방문·보안·시스템)은 아랫줄에. 아래 트랙 섹션 순서도 이와 일치해야 한다
+// (CSS가 data-active=n ↔ nth-child로 짝을 맞춘다 — 여기만 바꾸면 안 된다).
+// 트렌드가 첫 탭 = 기본 화면(2026-08-31 사용자 지시 — 열자마자 흐름부터).
 const PANELS = [
+  { key: "trend", label: "트렌드", icon: LineChart },
   { key: "content", label: "일정", icon: CalendarDays },
   { key: "engagement", label: "참여", icon: Heart },
-  { key: "trend", label: "트렌드", icon: LineChart },
   { key: "highlight", label: "하이라이트", icon: Trophy },
   { key: "live", label: "실시간", icon: Radio },
   { key: "visits", label: "방문", icon: TrendingUp },
@@ -1426,7 +1428,10 @@ export function InsightsDashboard({
           data-active={index}
           style={{ transform: `translateX(-${index * 100}%)` }}
         >
-          {/* 1) 일정·콘텐츠(이 달) — 공유 4패널 윗줄 */}
+          {/* 1) 트렌드(최근 6개월) — 기본 화면(첫 탭) */}
+          <section className="insights-panel">{renderTrend()}</section>
+
+          {/* 2) 일정·콘텐츠(이 달) — 공유 4패널 윗줄 */}
           <section className="insights-panel">
             {withData((d) => {
               const trend = d.content.thisMonthContent - d.content.lastMonthContent;
@@ -1495,7 +1500,7 @@ export function InsightsDashboard({
             })}
           </section>
 
-          {/* 4) 참여·인기(이 달) */}
+          {/* 3) 참여·인기(이 달) */}
           <section className="insights-panel">
             {withData((d) => {
               const monMax = Math.max(1, ...d.engagement.monthly.map((x) => x.count));
@@ -1589,9 +1594,6 @@ export function InsightsDashboard({
             })}
           </section>
 
-          {/* 5) 트렌드(최근 6개월) */}
-          <section className="insights-panel">{renderTrend()}</section>
-
           {/* 4) 이 달의 하이라이트 */}
           <section className="insights-panel">{renderHighlights()}</section>
 
@@ -1603,7 +1605,7 @@ export function InsightsDashboard({
           {/* 6) 방문(이 달) — 개발자 전용 */}
           <section className="insights-panel">{renderVisits()}</section>
 
-          {/* 7) 보안·접근 — 공용 SecurityPanel(개발자는 개발자 섹션까지 모두 표시). */}
+          {/* 7) 보안·접근 — 공용 SecurityPanel(개발자는 개발자 섹션까지 모두 표시) */}
           <section className="insights-panel">
             {withData((d) => (
               <SecurityPanel
@@ -1621,7 +1623,7 @@ export function InsightsDashboard({
             ))}
           </section>
 
-          {/* 6) 시스템·운영 */}
+          {/* 8) 시스템·운영 */}
           <section className="insights-panel">
             {withData((d) => (
               <>
