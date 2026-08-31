@@ -150,6 +150,16 @@ export type PublicVodEntry = {
   titleNo: number;
   title: string;
   durationMs: number;
+  // 팬 타임라인(0071) 요약 — 챕터 개수·작성자 닉(크레딧). 본문(entries)은 무거워서 번들에 안 싣고
+  // 챕터를 펼칠 때 /api/public/[slug]/vod-timeline에서 따로 받는다.
+  chapters?: number;
+  timelineBy?: string;
+};
+
+// 팬 타임라인 본문(챕터 목록) — 시각(초)·라벨·팬이 적은 코너 헤더.
+export type PublicVodTimeline = {
+  authorNick: string;
+  entries: { sec: number; label: string; section: string | null }[];
 };
 
 export type PublicSchedule = {

@@ -6,6 +6,27 @@
 
 ## v0.1.0 — 2026-08-31
 
+### CHG-20260831-004 — MIGRATION/BOUNDARY — 팬 타임라인 챕터(0071) — Phase 2 A안 출고
+
+Problem: 다시보기 링크만으론 "그 순간"을 못 찾는다. 팬 타임라인(89% VOD에 존재)이 댓글에 묻혀 있었다.
+Change: 0071 `vod_timeline`(anon SELECT — 숲 공개 댓글 파싱본, service_role grant). 파서
+`lib/broadcast/vod-timeline.ts`(HH:MM:SS 항목 + [코너] 헤더 정리, 최다 타임스탬프 댓글 선택),
+백필 376개 중 335개(89%) 적재, 증분 = broadcast-poll 30분 주기에 최근 14일 8개 재수집.
+공개 API: 번들 vods에 chapters/timelineBy 요약, 본문은 `/api/public/[slug]/vod-timeline?titleNo=`
+(s-maxage 3600). UI `VodChapters`(팝오버·모바일 공용): 코너 헤더 그룹 + 구간 길이 표기 +
+'타임라인 · ○○님' 크레딧, 항목 탭 = `?change_second=초` 점프(**실측 확정** — 구 changeSecond는
+무효, 플레이어 번들에서 snake_case 확인). 스틸 트랙(SnapshotLoad 시간 파라미터)은 실측 결과
+단일 대표컷뿐이라 보류.
+Files: `db/migrations/0071_vod_timeline.sql`, `lib/broadcast/vod-timeline.ts`,
+`scripts/backfill-vod-timelines.mjs`, `app/api/public/[calendarSlug]/vod-timeline/route.ts`,
+`app/api/cron/broadcast-poll/route.ts`, `lib/schedules/public-loader.ts`,
+`lib/domain/schedule-types.ts`, `components/poster/vod-chapters.tsx`,
+`components/poster/public-poster.{tsx,css}`, `tests/unit/vod-timeline.test.ts`
+Validation: 파서 유닛 6건 · change_second 브라우저 실측(3600 지정→3602 재생) · PC 팝오버(챕터
+47개·코너·길이·href)·모바일(128개 리스트) 실측 · tsc/build exit 0.
+Note: 작성자 닉 크레딧 공개 표기 — 팬 동의는 토리님 통해 받는 것 권장(미완 항목).
+Rollback: UI·라우트 제거 후 `drop table public.vod_timeline`.
+
 ### CHG-20260831-003 — MIGRATION — 방송시간 통계에 다시보기(VOD) 폴백(0070) + 보는 달 앵커
 
 Problem: broadcast_session은 2026-06 도입이라 그 이전 달의 방송시간이 모든 인사이트에서 0이었다.

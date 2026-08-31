@@ -180,6 +180,8 @@ const ACT: Record<string, TargetLabel> = {
   "vlog-chip": { name: "브이로그 칩", area: "시청자 화면" },
   "vod-replay": { name: "다시보기 열기", area: "시청자 화면", hint: "날짜 상세의 '다시보기' — 숲 VOD로 이동" },
   "day-vod-open": { name: "날짜 칸 다시보기 열기", area: "시청자 화면", hint: "날짜 칸 배경 클릭 → 다시보기 팝오버" },
+  "vod-chapters-open": { name: "다시보기 챕터 펼치기", area: "시청자 화면", hint: "팬 타임라인 챕터 목록" },
+  "vod-chapter-jump": { name: "챕터로 점프", area: "시청자 화면", hint: "그 시각부터 숲 VOD 재생" },
   "pi-retry": { name: "이 달 기록 다시 불러오기", area: "시청자 화면" },
 
   // 편집실

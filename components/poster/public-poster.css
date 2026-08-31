@@ -943,6 +943,121 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   background: #fff;
   box-shadow: 0 14px 34px rgb(60 70 110 / 22%);
   animation: day-vod-in var(--dur-1) var(--ease);
+  /* 챕터를 펼치면 길어진다 — 화면 밖으로 나가지 않게 자체 스크롤. */
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+}
+.dvp-vod {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ── 다시보기 챕터(팬 타임라인, 0071) — 팝오버·모바일 아젠다 공용 ──
+   코너 헤더가 그룹 앵커, 구간 길이가 무게, 항목 탭 = 그 시각 점프. */
+.agenda-vod-block {
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+.vod-chapters {
+  width: 100%;
+  min-width: 0;
+}
+.vch-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  padding: 3px 4px;
+  font-family: inherit;
+  font-size: var(--text-caption);
+  font-weight: 800;
+  color: #3564e0;
+  cursor: pointer;
+  transition: opacity var(--dur-1) var(--ease);
+}
+.vch-toggle:hover { opacity: 0.75; }
+.vch-toggle:active { transform: scale(0.97); }
+.vch-caret {
+  width: 9px;
+  font-size: 9px;
+  color: #93a8dd;
+}
+.vch-by {
+  margin-left: 3px;
+  font-style: normal;
+  font-size: var(--text-micro);
+  font-weight: 700;
+  color: #a3aec9;
+}
+.vch-note {
+  margin: 2px 4px 4px;
+  font-size: var(--text-caption);
+  color: #a3aec9;
+}
+.vch-list {
+  list-style: none;
+  width: 100%;
+  margin: 2px 0 4px;
+  padding: 5px 6px;
+  max-height: 250px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border-radius: var(--r-md, 12px);
+  background: #f6f9ff;
+}
+.vch-sec {
+  margin: 7px 4px 2px;
+  font-size: var(--text-micro);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #7c8db8;
+}
+.vch-list > li:first-child .vch-sec { margin-top: 1px; }
+.vch-item {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 4px 6px;
+  border-radius: var(--r-sm, 8px);
+  text-decoration: none;
+  transition: background-color var(--dur-1) var(--ease);
+}
+.vch-item:hover { background: #e9f0fe; }
+.vch-item:active { transform: scale(0.99); }
+.vch-t {
+  flex: none;
+  min-width: 40px;
+  font-size: var(--text-caption);
+  font-weight: 800;
+  color: #3564e0;
+  font-variant-numeric: tabular-nums;
+}
+.vch-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: #3f3a52;
+}
+.vch-span {
+  flex: none;
+  font-style: normal;
+  font-size: var(--text-micro);
+  font-weight: 700;
+  color: #a3aec9;
 }
 @keyframes day-vod-in {
   from {

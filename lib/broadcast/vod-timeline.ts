@@ -1,0 +1,159 @@
+import { createSupabaseAdminClient } from "@/lib/auth/admin";
+import { BJ_ID } from "@/lib/broadcast/soop";
+
+// 팬 타임라인(다시보기 챕터) 수집·파싱(0071) — PLAN-20260831-001 Phase 2 A안.
+// 숲 다시보기 댓글에서 타임라인 댓글(타임스탬프 3개 이상)을 골라 {sec, label, section}[]로
+// 파싱한다. 비공식 API + 팬 창작 포맷이라 전부 fail-soft: 못 읽으면 그 VOD만 조용히 빈다.
+
+export type TimelineEntry = {
+  sec: number;
+  label: string;
+  section: string | null; // 팬이 적은 [코너] 헤더 — 예: "소통", "게임 - FC26"
+};
+
+// "1:02:03 라벨" / "02:15 라벨" 줄 → 초 + 라벨. 라벨 앞의 장식 기호(ㄴ, -, ·)는 남긴다 —
+// 팬이 들여쓰기로 쓰는 대댓글식 계층이라 지우면 문맥이 사라진다.
+const ENTRY_RE = /^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s+(.+?)\s*$/;
+// "[💬:소통]" / "[  게 임  ] - FC26" 같은 코너 헤더 줄.
+const SECTION_RE = /^\s*\[\s*([^\]]+?)\s*\]\s*(?:[-–]\s*(.+?))?\s*$/;
+
+// 코너 이름 정리: 이모지·콜론 접두 제거("💬:소통"→"소통"), 벌린 공백 접기("게 임"→"게임").
+function cleanSection(inner: string, tail?: string): string {
+  let name = inner.replace(/^[^가-힣A-Za-z0-9]*:?\s*/, "").replace(/\s*:\s*$/, "");
+  name = name.replace(/([가-힣])\s+(?=[가-힣])/g, "$1");
+  if (tail) name = `${name} - ${tail}`;
+  return name.trim();
+}
+
+/** 타임라인 댓글 원문 → 챕터 배열(시각 오름차순 보장, 파싱 불가 줄은 건너뜀). */
+export function parseTimeline(text: string): TimelineEntry[] {
+  const out: TimelineEntry[] = [];
+  let section: string | null = null;
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const entry = ENTRY_RE.exec(line);
+    if (entry) {
+      const h = entry[3] !== undefined ? Number(entry[1]) : 0;
+      const m = entry[3] !== undefined ? Number(entry[2]) : Number(entry[1]);
+      const s = entry[3] !== undefined ? Number(entry[3]) : Number(entry[2]);
+      const sec = h * 3600 + m * 60 + s;
+      const label = entry[4].trim();
+      if (label.length > 0 && Number.isFinite(sec)) out.push({ sec, label, section });
+      continue;
+    }
+    const head = SECTION_RE.exec(line);
+    if (head) {
+      const name = cleanSection(head[1], head[2]);
+      if (name.length > 0) section = name;
+      continue;
+    }
+    // 그 외 장식 줄(✨타임라인✨ 등)은 무시.
+  }
+  out.sort((a, b) => a.sec - b.sec);
+  return out;
+}
+
+type CommentItem = { p_comment_no?: number; user_nick?: string; comment?: string };
+
+/** 댓글 목록에서 '가장 촘촘한' 타임라인 댓글을 고른다(타임스탬프 수 최대, 3개 미만은 무시). */
+export function pickTimelineComment(
+  comments: CommentItem[]
+): { nick: string; commentNo: number | null; entries: TimelineEntry[] } | null {
+  let best: { nick: string; commentNo: number | null; entries: TimelineEntry[] } | null = null;
+  for (const c of comments) {
+    if (typeof c.comment !== "string") continue;
+    const entries = parseTimeline(c.comment);
+    if (entries.length < 3) continue;
+    if (!best || entries.length > best.entries.length) {
+      best = {
+        nick: typeof c.user_nick === "string" ? c.user_nick : "",
+        commentNo: Number.isFinite(Number(c.p_comment_no)) ? Number(c.p_comment_no) : null,
+        entries
+      };
+    }
+  }
+  return best;
+}
+
+async function fetchComments(titleNo: number): Promise<CommentItem[]> {
+  const out: CommentItem[] = [];
+  // 타임라인은 보통 1페이지에 있다 — 2페이지까지만 본다(댓글이 많은 VOD 대비).
+  for (let page = 1; page <= 2; page += 1) {
+    try {
+      const res = await fetch(
+        `https://chapi.sooplive.co.kr/api/${BJ_ID}/title/${titleNo}/comment?page=${page}&per_page=30`,
+        { headers: { "User-Agent": "Mozilla/5.0" }, cache: "no-store", signal: AbortSignal.timeout(8000) }
+      );
+      if (!res.ok) break;
+      const json = (await res.json()) as { data?: CommentItem[]; meta?: { last_page?: number } };
+      out.push(...(json.data ?? []));
+      if (page >= (json.meta?.last_page ?? 1)) break;
+    } catch {
+      break;
+    }
+  }
+  return out;
+}
+
+/**
+ * 주어진 VOD들의 타임라인을 다시 수집해 vod_timeline에 upsert한다(없으면 빈 행 — "확인했음" 표시).
+ * 증분 크론(broadcast-poll)과 백필이 같이 쓴다. 요청 사이 간격을 둔다(비공식 API 예의).
+ */
+export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolean; saved: number }> {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase || titleNos.length === 0) return { ok: false, saved: 0 };
+  let saved = 0;
+  for (const titleNo of titleNos) {
+    const comments = await fetchComments(titleNo);
+    const best = pickTimelineComment(comments);
+    const { error } = await supabase.from("vod_timeline").upsert(
+      {
+        title_no: titleNo,
+        author_nick: best?.nick ?? "",
+        comment_no: best?.commentNo ?? null,
+        entry_count: best?.entries.length ?? 0,
+        entries: best?.entries ?? [],
+        synced_at: new Date().toISOString()
+      },
+      { onConflict: "title_no" }
+    );
+    if (!error) saved += 1;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  return { ok: true, saved };
+}
+
+/**
+ * 증분 대상 고르기: 최근 N일 안에 등록된 VOD(팬 타임라인이 며칠에 걸쳐 갱신된다) 중
+ * 아직 한 번도 안 본 것 우선, 그다음 오래 전에 본 것 순으로 최대 limit개.
+ */
+export async function pickTimelineSyncTargets(limit = 8, days = 14): Promise<number[]> {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return [];
+  const sinceIso = new Date(Date.now() - days * 86400_000).toISOString();
+  const [vodsRes, tlRes] = await Promise.all([
+    supabase
+      .from("vod_archive")
+      .select("title_no, reg_date")
+      .gte("reg_date", sinceIso)
+      .order("reg_date", { ascending: false })
+      .limit(40),
+    supabase
+      .from("vod_timeline")
+      .select("title_no, synced_at")
+      .gte("synced_at", new Date(Date.now() - 60 * 86400_000).toISOString())
+  ]);
+  const synced = new Map(
+    (((tlRes.data as { title_no: number; synced_at: string }[] | null) ?? [])).map((r) => [
+      Number(r.title_no),
+      Date.parse(r.synced_at)
+    ])
+  );
+  const vods = ((vodsRes.data as { title_no: number }[] | null) ?? []).map((r) => Number(r.title_no));
+  const fresh = vods.filter((no) => !synced.has(no));
+  const stale = vods
+    .filter((no) => synced.has(no))
+    .sort((a, b) => (synced.get(a) ?? 0) - (synced.get(b) ?? 0));
+  return [...fresh, ...stale].slice(0, limit);
+}

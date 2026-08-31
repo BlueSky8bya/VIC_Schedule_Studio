@@ -91,6 +91,7 @@ import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
+import { VodChapters } from "@/components/poster/vod-chapters";
 import { createWheelStepper, normalizeWheelDelta, stepCalZoom } from "@/lib/ui/calendar-zoom";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
 // 곳(공개 /, 꾸미기, 스튜디오 시청자 미리보기)에서만 실린다.
@@ -1020,7 +1021,10 @@ export function PublicPoster({
   // 다시보기(VOD) — 날짜(방송 시작일)별 매핑(0068). 하루에 여러 번 방송하면 여러 개.
   // 등록 순서(=방송 순서)대로 보이게 titleNo 오름차순으로 정렬해 둔다.
   const vodsByDate = useMemo(() => {
-    const map = new Map<string, { titleNo: number; title: string; durationMs: number }[]>();
+    const map = new Map<
+      string,
+      { titleNo: number; title: string; durationMs: number; chapters?: number; timelineBy?: string }[]
+    >();
     for (const v of schedule.vods ?? []) {
       const list = map.get(v.dateKey);
       if (list) list.push(v);
@@ -3250,25 +3254,33 @@ export function PublicPoster({
                       기록(다시보기)이 나중이라는 시간 위계(HCI). */}
                   {interactive
                     ? (vodsByDate.get(cell.isoDate) ?? []).map((vod, vi, arr) => (
-                        <a
-                          className="agenda-link vod agenda-vod-inline"
-                          data-act="vod-replay"
-                          href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
-                          key={vod.titleNo}
-                          onClick={() => hapticTick()}
-                          rel="noopener noreferrer"
-                          target="_blank"
-                          title={vod.title || undefined}
-                        >
-                          <Play aria-hidden="true" size={13} strokeWidth={2.6} />
-                          {/* 라벨 = VOD 제목(넘치면 …). 제목이 비어 있을 때만 '다시보기 N' 폴백. */}
-                          <span className="agenda-vod-title">
-                            {vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`}
-                          </span>
-                          {vod.durationMs > 0 ? (
-                            <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
-                          ) : null}
-                        </a>
+                        <div className="agenda-vod-block" key={vod.titleNo}>
+                          <a
+                            className="agenda-link vod agenda-vod-inline"
+                            data-act="vod-replay"
+                            href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
+                            onClick={() => hapticTick()}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                            title={vod.title || undefined}
+                          >
+                            <Play aria-hidden="true" size={13} strokeWidth={2.6} />
+                            {/* 라벨 = VOD 제목(넘치면 …). 제목이 비어 있을 때만 '다시보기 N' 폴백. */}
+                            <span className="agenda-vod-title">
+                              {vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`}
+                            </span>
+                            {vod.durationMs > 0 ? (
+                              <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
+                            ) : null}
+                          </a>
+                          <VodChapters
+                            chapters={vod.chapters ?? 0}
+                            durationMs={vod.durationMs}
+                            slug={schedule.calendar.slug}
+                            timelineBy={vod.timelineBy ?? ""}
+                            titleNo={vod.titleNo}
+                          />
+                        </div>
                       ))
                     : null}
                 </div>
@@ -3479,7 +3491,7 @@ export function PublicPoster({
             const wd = new Date(`${dayVodPop.dateKey}T00:00:00Z`).getUTCDay();
             const mark = getDayMark(dayVodPop.dateKey);
             const tone = wd === 0 || Boolean(mark?.isHoliday) ? " red" : wd === 6 ? " saturday" : "";
-            const width = 264; // 제목 라벨이 어느 정도 읽히는 폭(넘치면 …)
+            const width = 300; // 제목·챕터 라벨이 읽히는 폭(넘치면 …)
             const height = 58 + list.length * 50;
             const left = Math.max(8, Math.min(dayVodPop.x + 10, window.innerWidth - width - 8));
             const top = Math.max(8, Math.min(dayVodPop.y + 10, window.innerHeight - height - 8));
@@ -3502,24 +3514,32 @@ export function PublicPoster({
                     {WEEKDAYS[wd]})
                   </b>
                   {list.map((vod, vi, arr) => (
-                    <a
-                      className="agenda-link vod"
-                      data-act="vod-replay"
-                      href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
-                      key={vod.titleNo}
-                      onClick={() => hapticTick()}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                      title={vod.title || undefined}
-                    >
-                      <Play aria-hidden="true" size={13} strokeWidth={2.6} />
-                      <span className="agenda-vod-title">
-                        {vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`}
-                      </span>
-                      {vod.durationMs > 0 ? (
-                        <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
-                      ) : null}
-                    </a>
+                    <div className="dvp-vod" key={vod.titleNo}>
+                      <a
+                        className="agenda-link vod"
+                        data-act="vod-replay"
+                        href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
+                        onClick={() => hapticTick()}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                        title={vod.title || undefined}
+                      >
+                        <Play aria-hidden="true" size={13} strokeWidth={2.6} />
+                        <span className="agenda-vod-title">
+                          {vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`}
+                        </span>
+                        {vod.durationMs > 0 ? (
+                          <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
+                        ) : null}
+                      </a>
+                      <VodChapters
+                        chapters={vod.chapters ?? 0}
+                        durationMs={vod.durationMs}
+                        slug={schedule.calendar.slug}
+                        timelineBy={vod.timelineBy ?? ""}
+                        titleNo={vod.titleNo}
+                      />
+                    </div>
                   ))}
                 </div>
               </div>

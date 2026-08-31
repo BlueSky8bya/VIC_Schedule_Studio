@@ -239,8 +239,9 @@ const loadPublicScheduleData = unstable_cache(
       eventsRes,
       eventHeartsRes,
       hopeRes,
-      vodsRes
-    ] = await timed("publicSchedule:db(6 parallel queries)", () =>
+      vodsRes,
+      timelinesRes
+    ] = await timed("publicSchedule:db(7 parallel queries)", () =>
       Promise.all([
         // 모든 공개 쿼리를 이 캘린더로 한정한다. RLS는 공개 행을 허용할 뿐 캘린더별로
         // 막지 않으므로, 캘린더가 2개 이상이 되면 application-level 스코프가 없으면 다른
@@ -280,6 +281,12 @@ const loadPublicScheduleData = unstable_cache(
           .select("title_no, broadcast_day, title, duration_ms")
           .eq("auth_no", 101)
           .order("broadcast_day", { ascending: false })
+          .limit(1000),
+        // 팬 타임라인 요약(0071) — 개수·작성자 닉만(본문은 챕터 펼칠 때 별도 라우트).
+        supabase
+          .from("vod_timeline")
+          .select("title_no, entry_count, author_nick")
+          .gt("entry_count", 0)
           .limit(1000)
       ])
     );
@@ -315,14 +322,26 @@ const loadPublicScheduleData = unstable_cache(
       tags: (tagsRes.data ?? []).map(mapTag),
       palette: (paletteRes.data ?? []).map(mapPalette),
       // 명시적 DTO 구성(스프레드 금지) — 공개 경계를 넘는 값은 하나하나 고른다.
-      vods: ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number }[] | null) ?? [])
-        .map((row) => ({
-          dateKey: String(row.broadcast_day).slice(0, 10),
-          titleNo: Number(row.title_no),
-          title: typeof row.title === "string" ? row.title : "",
-          durationMs: Number(row.duration_ms) || 0
-        }))
-        .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0),
+      vods: (() => {
+        const tlByNo = new Map(
+          (((timelinesRes.data as { title_no: number; entry_count: number; author_nick: string }[] | null) ?? [])).map(
+            (t) => [Number(t.title_no), t]
+          )
+        );
+        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number }[] | null) ?? [])
+          .map((row) => {
+            const tl = tlByNo.get(Number(row.title_no));
+            return {
+              dateKey: String(row.broadcast_day).slice(0, 10),
+              titleNo: Number(row.title_no),
+              title: typeof row.title === "string" ? row.title : "",
+              durationMs: Number(row.duration_ms) || 0,
+              chapters: tl ? Number(tl.entry_count) || 0 : 0,
+              timelineBy: tl && typeof tl.author_nick === "string" ? tl.author_nick : ""
+            };
+          })
+          .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0);
+      })(),
       events: (eventsRes.data ?? []).map((row) => ({
         ...mapEvent(row, Date.now()),
         heartCount: heartCountByEvent.get(row.id) ?? 0,
@@ -558,6 +577,37 @@ const loadPublicBroadcastDaily = async (
       hours: Number(row.hours ?? 0)
     }));
 };
+
+// 팬 타임라인 본문(0071) — 챕터를 펼칠 때만 부른다(개별 VOD 단위, CDN 캐시 안전: 익명 동일).
+// 원문이 숲 공개 댓글이라 anon SELECT 정책으로 직접 읽는다. 명시적 DTO(스프레드 금지).
+export async function getPublicVodTimeline(
+  titleNo: number
+): Promise<import("@/lib/domain/schedule-types").PublicVodTimeline | null> {
+  if (!isSupabaseConfigured() || !Number.isFinite(titleNo) || titleNo <= 0) return null;
+  const supabase = createPublicReadClient();
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from("vod_timeline")
+    .select("author_nick, entries")
+    .eq("title_no", titleNo)
+    .gt("entry_count", 0)
+    .maybeSingle();
+  if (!data) return null;
+  const raw = Array.isArray(data.entries) ? (data.entries as unknown[]) : [];
+  const entries = raw
+    .filter((e): e is Record<string, unknown> => Boolean(e) && typeof e === "object")
+    .map((e) => ({
+      sec: Number(e.sec),
+      label: typeof e.label === "string" ? e.label : "",
+      section: typeof e.section === "string" ? e.section : null
+    }))
+    .filter((e) => Number.isFinite(e.sec) && e.sec >= 0 && e.label.length > 0);
+  if (entries.length === 0) return null;
+  return {
+    authorNick: typeof data.author_nick === "string" ? data.author_nick : "",
+    entries
+  };
+}
 
 // 이번 달 1일~말일의 일별 방송시간(길이 = 그 달 일수, 방송 없는 날은 0).
 export async function getPublicBroadcastDaily(year: number, month: number): Promise<number[]> {
