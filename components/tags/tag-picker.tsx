@@ -74,17 +74,17 @@ export function TagPicker({
     );
   };
 
+  // 두 묶음(콘텐츠·형식)은 같은 카드 문법(.tp-group: 라벨이 칸 '안'에)으로 통일한다 —
+  // 예전엔 콘텐츠 라벨만 칸 밖에 떠 있어 비대칭이었다(2026-08-31 사용자 지적).
+  // 선택 개수(n/max) 배지는 이 컴포넌트가 아니라 호출부의 '태그' 제목 옆에 붙는다.
   return (
     <div className="tag-picker2">
-      <div className="tp-head">
-        <span className="tp-section-label">콘텐츠</span>
-        <span className="tp-count">
-          {selectedIds.length}/{max}
-        </span>
+      <div className="tp-group">
+        <div className="tp-section-label">콘텐츠</div>
+        <div className="tp-content">{contentTags.map((t) => chip(t, false))}</div>
       </div>
-      <div className="tp-content">{contentTags.map((t) => chip(t, false))}</div>
       {modifierTags.length > 0 ? (
-        <div className="tp-mod-section">
+        <div className="tp-group tp-group-mods">
           <div className="tp-section-label">형식</div>
           <div className="tp-mods">{modifierTags.map((t) => chip(t, false))}</div>
         </div>

@@ -4511,12 +4511,8 @@ html[data-reduce-motion] .editor-anchor-link line {
 .studio-workspace .event-editor-panel .tag-picker2 {
   gap: var(--space-2);
 }
-.studio-workspace .event-editor-panel .tp-content,
-.studio-workspace .event-editor-panel .tp-mod-section {
+.studio-workspace .event-editor-panel .tp-group {
   padding: 9px 10px;
-}
-.studio-workspace .event-editor-panel .tp-mod-section {
-  margin-top: 0;
 }
 .studio-workspace .event-editor-panel .tp-content,
 .studio-workspace .event-editor-panel .tp-mods {
@@ -4542,8 +4538,7 @@ html[data-reduce-motion] .editor-anchor-link line {
    헤어라인 카드 문법으로 통일(형식만 점선이던 비대칭 제거), 점이 왼쪽 정렬
    축이 되어 줄이 가지런히 읽힌다(균형). 다른 화면(모바일 시트 등)은 기존
    원색 칩 그대로 — 이 재해석은 팝오버 스코프에서만. */
-.studio-workspace .event-editor-panel .tp-content,
-.studio-workspace .event-editor-panel .tp-mod-section {
+.studio-workspace .event-editor-panel .tp-group {
   border: var(--stroke-hairline) solid var(--line-soft);
   background: var(--surface-2);
 }
@@ -7188,13 +7183,8 @@ html[data-reduce-motion] .delete-snack {
   display: grid;
   gap: 12px;
 }
-.tp-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-/* (.tp-search 태그 검색 입력 제거 — 참조 0) */
+/* (.tp-search 태그 검색 입력 제거 — 참조 0. .tp-head도 제거 — 카운트 배지는 호출부의
+   '태그' 제목 옆으로 이사, 2026-08-31.) */
 .tp-count {
   flex: none;
   padding: 4px 10px;
@@ -7204,6 +7194,20 @@ html[data-reduce-motion] .delete-snack {
   font-weight: 900;
   color: #6b5b95;
 }
+/* 묶음 카드 — 콘텐츠·형식이 같은 문법(라벨이 칸 '안'). 예전엔 콘텐츠 라벨만 칸 밖이라
+   비대칭이었다(2026-08-31 통일). 형식은 변형(.tp-group-mods)으로 점선·보라 틴트만 다르게. */
+.tp-group {
+  padding: 10px 11px 11px;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-card);
+  background: linear-gradient(180deg, #fffefb, #faf8fd);
+}
+/* 방식 칸 — 콘텐츠와 다른 묶음임을 점선·중립 톤으로만 표시(방식 색이 제각각이라 칸은 안 튀게). */
+.tp-group-mods {
+  border-style: dashed;
+  border-color: var(--line, #e2dff0);
+  background: linear-gradient(180deg, #fcfbff, #f6f4fb);
+}
 /* 콘텐츠 칩 묶음 — 균등 그리드(칩이 칸을 꽉 채워 좌·우 정렬, 마지막 줄도 안 비뚤어짐). */
 /* 모바일 기본: 2열 큰 칩(엄지로 누르기 편하게). 웹은 아래 미디어쿼리서 흐르는 격자로 바뀐다. */
 .tp-content {
@@ -7212,18 +7216,6 @@ html[data-reduce-motion] .delete-snack {
   gap: 8px;
   /* 자체 스크롤(overflow:auto + max-height)을 두지 않는다 — 내용이 안 넘칠 땐 휠을 삼키고
      부모로도 안 넘겨(스크롤 트랩) 편집 패널이 안 움직이던 버그. 칩은 적어서 패널과 함께 흐른다. */
-  padding: 11px;
-  border: 1px solid var(--line, #ece9f5);
-  border-radius: var(--r-card);
-  background: linear-gradient(180deg, #fffefb, #faf8fd);
-}
-/* 방식 칸 — 콘텐츠와 다른 묶음임을 점선·중립 톤으로만 표시(방식 색이 제각각이라 칸은 안 튀게). */
-.tp-mod-section {
-  margin-top: 10px;
-  padding: 10px 11px 11px;
-  border: 1px dashed var(--line, #e2dff0);
-  border-radius: var(--r-card);
-  background: linear-gradient(180deg, #fcfbff, #f6f4fb);
 }
 .tp-section-label {
   display: flex;
@@ -10491,10 +10483,8 @@ html[data-reduce-motion] .opt-chip.on .opt-chip-mark {
   gap: var(--space-3);
 }
 
-.event-editor-panel .tp-content,
-.event-editor-panel .tp-mod-section,
-.event-detail-readonly .tp-content,
-.event-detail-readonly .tp-mod-section {
+.event-editor-panel .tp-group,
+.event-detail-readonly .tp-group {
   border-color: var(--line);
   border-radius: var(--r-control);
   background: var(--surface-2);
@@ -10969,8 +10959,7 @@ html[data-reduce-motion] .m-edit-actions .button:active {
   font-size: var(--text-label);
 }
 
-.tp-content,
-.tp-mod-section {
+.tp-group {
   border-color: var(--line);
   border-radius: var(--r-control);
   background: var(--surface-2);

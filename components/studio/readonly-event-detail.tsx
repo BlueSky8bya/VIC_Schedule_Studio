@@ -84,7 +84,11 @@ export function ReadonlyEventDetail({
             // 매니저: 태그 할당을 직접 토글. 작업자는 읽기 전용 칩만 본다.
             <div className="detail-row">
               <span className="detail-label">
-                태그 <span className="tag-picker-hint">최대 {maxEventTags}개 · 누르면 바로 적용</span>
+                태그{" "}
+                <b className="tp-count" title={`최대 ${maxEventTags}개까지 고를 수 있어요`}>
+                  {selectedEvent.tagIds.length}/{maxEventTags}
+                </b>{" "}
+                <span className="tag-picker-hint">누르면 바로 적용</span>
               </span>
               <div className="tag-picker">
                 {/* 게이트는 좁게 — 태그 쓰기는 toggleEventTag가 일정별 직렬 체인 + 의도 ref +

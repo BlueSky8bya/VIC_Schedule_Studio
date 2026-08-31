@@ -5362,7 +5362,12 @@ export function StudioShell({
       >
         <div className="modal-card" aria-modal="true" role="dialog" ref={tagSheetTrapRef}>
           <div className="modal-head">
-            <h2>태그 수정</h2>
+            <h2>
+              태그 수정{" "}
+              <b className="tp-count" title={`최대 ${maxEventTags}개까지 고를 수 있어요`}>
+                {event.tagIds.length}/{maxEventTags}
+              </b>
+            </h2>
             <button aria-label="닫기" className="modal-close" onClick={() => setTagSheetId(null)} type="button" data-act="close-modal">
               <X aria-hidden="true" size={18} />
             </button>
@@ -5568,7 +5573,10 @@ export function StudioShell({
             <section className="me-group me-tag-group" aria-label="태그 선택">
               <div className="me-grouphead">
                 <span className="me-grouptitle">
-                  태그 <em className="me-hint">최대 {maxEventTags}개</em>
+                  태그{" "}
+                  <b className="tp-count" title={`최대 ${maxEventTags}개까지 고를 수 있어요`}>
+                    {form.tagIds.length}/{maxEventTags}
+                  </b>
                 </span>
               </div>
               <TagPicker
@@ -6901,7 +6909,10 @@ export function StudioShell({
 
             <section className="tag-picker" aria-label="태그 선택">
               <h3>
-                태그 <span className="tag-picker-hint">최대 {maxEventTags}개</span>
+                태그{" "}
+                <b className="tp-count" title={`최대 ${maxEventTags}개까지 고를 수 있어요`}>
+                  {form.tagIds.length}/{maxEventTags}
+                </b>
               </h3>
               <TagPicker
                 disabled={!canEdit}
