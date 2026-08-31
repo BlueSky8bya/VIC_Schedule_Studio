@@ -46,16 +46,23 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   + 증분(broadcast-poll 30분, 최근 14일 8개), 공개 라우트 vod-timeline, `VodChapters` UI(코너 헤더
   그룹·구간 길이·'타임라인 (○○님 감사합니다)' 크레딧, 새 탭 링크 = `?change_second=초` — 실측 확정, 구
   changeSecond 무효). 스틸 트랙은 실측 후 보류(SnapshotLoad = 단일 대표컷).
-  ⑧ **인라인 재생 = 숲 iframe API**(`3813127`, 2026-09-01): 임베드 `?fromApi=1` → PonReady 수신 후
-  Pload{autoPlay,mutePlay:false,startVideoSeconds} postMessage(origin 정확 일치 허용 목록 —
-  vod.sooplive.com/.co.kr). URL 파라미터(mutePlay=false)만으론 플레이어가 재생 시도조차 안 해
-  '한 번 더 클릭' 버그. 허용 브라우저(숲 상시 시청자=MEI 높음)는 즉시 소리 켠 재생, 차단 시
-  그 지점 포스터+▶ 1클릭 폴백. 재생 후 챕터 점프 = PseekTo(iframe 재마운트 제거 — 광고 재시작
-  없음). PupdateMediaEvent 수신 = 미디어 엔진 가동 표식(`dayVodMediaAliveRef`).
+  ⑧ **인라인 재생 = 숲 iframe API**(`3813127`→`240841e`→`1306ede`, 2026-09-01): 임베드
+  `?fromApi=1`, 창 열 때 iframe을 바로 깔고 PonReady 후 **Pload{autoPlay:false}로 초기화만**
+  (무음, ▶ 대기) — 첫 클릭이 곧 프레임 안 ▶라 어떤 브라우저든 1클릭 소리 켠 재생(엄격 정책
+  실측). 스냅샷 커버(`dvm-cover`, 클릭 통과)는 **실제 재생 시작까지 유지** — 토리님 지정
+  썸네일이 계속 보인다(사용자 절충). 챕터 점프 = PseekTo —
+  **seconds는 반드시 {time, seekType} 객체**(숫자면 0초 리셋), **seek 직후 Pplay 연달아 금지**
+  (시킹 끊겨 0초 리셋 — 정지 중일 때만 pause 이벤트 추적 후 1.2s 지연 재개). 리로드 없음 =
+  광고 재시작 없음. origin 정확 일치 허용 목록(vod.sooplive.com/.co.kr).
   숲 댓글 API는 HTML 이스케이프(이중 &amp;amp; 실재) — 파서 `decodeHtmlEntities`(3회 반복 상한),
   백필 스크립트 복제본 동일, prod vod_timeline 90행 제자리 교정 완료(잔여 0).
   **남은 것**: 팬 닉 표기 동의(토리님 경유 권장), B안(순간 검색 — 파싱 데이터 재사용, UI만),
   '1년 전 오늘' 아이디어.
+- **업 도움 띠 종류 support_kind(2026-09-01, `1306ede`, 0073)**: 'up'(기본, 도와주러 가기
+  CTA) | 'period'(단순 기간 안내 — 라벤더+📌, CTA는 링크 있을 때만 '자세히 보기', **만료돼도
+  안 사라짐** — 정보성 기록). 편집 폼에 종류 라디오, 색 정의는 globals `.sb-period`(단일 출처).
+  마비노기 알파테스트(9/3~6)를 period로 실전환. 같은 커밋: 띠 라벨이 주 안에서 1칸뿐이면
+  (일요일 종료 등) sb-solo 압축 — 남의 칸 위로 튀던 오버플로 수정(시청자+편집실).
 - **'적게 쓰인 기능' 카드에서 철수 기능 갈라내기(2026-08-31, 사용자 지시)**: 이 카드는 "없앨 후보"를
   찾는 화면인데 이미 지운 기능(꾸미기/스티커 ADR-0015 · 월드컵 ADR-0009 · 비공개 레이어 UI ADR-0014 ·
   작업자 미리보기)이 바닥에 깔려 후보를 덮었다. `lib/activity/labels.ts`에 `retired` 표식(RETIRED_* 세트
