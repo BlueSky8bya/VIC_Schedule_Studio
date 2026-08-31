@@ -897,19 +897,21 @@ html[data-reduce-motion] .mb-live-dot {
 }
 .day-vod-hint {
   position: absolute;
-  right: 6px;
-  bottom: 6px;
-  z-index: 8; /* 칸 안 콘텐츠(카드 2·베일 4·인기 링 7)보다 위 — 배지가 가려지면 힌트가 아니다 */
+  /* 헤더 줄(--day-head-h 25px 예약 영역)의 오른쪽 끝 — 우하단에 두면 카드가 꽉 찬 칸에서
+     마지막 카드를 덮었다(실측 지적). 헤더엔 카드가 절대 올라오지 않아 구조적으로 안 겹친다. */
+  top: 3px;
+  right: 5px;
+  z-index: 8; /* 헤더(1)·베일(4)·인기 링(7)보다 위 — 배지가 가려지면 힌트가 아니다 */
   display: none;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
   padding-left: 2px; /* ▶ 글리프 광학 중심 보정 */
   border-radius: 50%;
   background: linear-gradient(135deg, #5d8bf4, #3564e0);
   color: #fff;
-  font-size: 11px;
-  box-shadow: 0 4px 12px rgb(53 100 224 / 38%);
+  font-size: 9px;
+  box-shadow: 0 3px 9px rgb(53 100 224 / 38%);
   pointer-events: none;
 }
 .public-day.has-vod:hover .day-vod-hint {
