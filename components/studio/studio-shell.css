@@ -4459,17 +4459,23 @@ html[data-reduce-motion] .editor-anchor-link line {
   max-height: var(--pop-max-h, calc(100dvh - 160px));
   overflow-y: auto;
   overscroll-behavior: contain;
-  scrollbar-width: thin;
-  /* 스크롤바 자리를 항상 예약 — 옵션을 펼쳐 내용이 길어지는 순간 스크롤바가 폭을 11px
-     훔쳐가 태그 3열이 2열로 무너지고 입력칸이 가장자리에 눌리던 버그(2026-09-01 신고). */
-  scrollbar-gutter: stable;
-  padding-right: 4px;
+  /* 스크롤바는 숨긴다(휠·터치 스크롤은 그대로) — thin+gutter 예약은 ① 스크롤 생기는 순간
+     폭이 11px 줄어 태그 3열이 무너졌고 ② 예약(stable)하면 스크롤이 없을 때 오른쪽 모서리가
+     비어 좌로 치우쳐 보였다(2026-09-01 연쇄 신고). 숨기면 폭이 어떤 상태에서도 동일하고
+     좌우가 항상 대칭이다. 좁은 팝오버라 스크롤 위치 표시의 손실도 작다. */
+  scrollbar-width: none;
+}
+.event-editor-panel form::-webkit-scrollbar {
+  display: none; /* 구형 Chromium 폴백 */
 }
 /* 읽기전용 상세(매니저·작업자)도 같은 가용 높이 상한 + 내부 스크롤. */
 .event-editor-panel .event-detail-readonly {
   max-height: var(--pop-max-h, calc(100dvh - 160px));
   overflow-y: auto;
-  scrollbar-gutter: stable;
+  scrollbar-width: none;
+}
+.event-editor-panel .event-detail-readonly::-webkit-scrollbar {
+  display: none;
 }
 /* 달력 위에 떠 있으므로 카드 그림자를 한 단계 키워 '떠 있음'을 분명히 한다.
    (리디자인 공통 카드 규칙(--shadow-2, 파일 뒤쪽)보다 세게 — workspace 스코프로 특이도 확보.)
