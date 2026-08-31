@@ -5346,7 +5346,6 @@ export function StudioShell({
               >
                 <span aria-hidden="true" className="opt-chip-ic">{ic}</span>
                 <span className="opt-chip-label">{label}</span>
-                <span aria-hidden="true" className="opt-chip-mark">✓</span>
               </button>
             );
           })}
@@ -5372,7 +5371,6 @@ export function StudioShell({
        data-act="미정 표시">
         <span className="opt-chip-ic" aria-hidden="true">🕗</span>
         <span className="opt-chip-label">아직 확정 아님</span>
-        <span className="opt-chip-mark" aria-hidden="true">✓</span>
       </button>
     );
   }
@@ -5579,7 +5577,6 @@ export function StudioShell({
                    data-act="opt-chip">
                     <span className="opt-chip-ic" aria-hidden="true">🔮</span>
                     <span className="opt-chip-label">일정 최초공개</span>
-                    <span className="opt-chip-mark" aria-hidden="true">✓</span>
                   </button>
                   {form.teaser ? (
                     <div className="teaser-when">
@@ -6930,7 +6927,6 @@ export function StudioShell({
                  data-act="opt-chip">
                   <span className="opt-chip-ic" aria-hidden="true">🔮</span>
                   <span className="opt-chip-label">일정 최초공개</span>
-                  <span className="opt-chip-mark" aria-hidden="true">✓</span>
                 </button>
                 {form.teaser ? (
                   <div className="teaser-when">
