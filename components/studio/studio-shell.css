@@ -9511,6 +9511,7 @@ html[data-reduce-motion] .modal-close:active {
 /* ── 업 도움 편집 필드(편집실 + 수정 시트 공용) ───────────────────────────── */
 .support-fields {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* 내부 min-content가 커도 카드 폭 안에서 압축 */
   gap: 14px;
   /* 띠 테마 변수(정형화, 2026-09-01) — 업 도움(장미)이 기본값. 아래 [data-kind="period"]
      한 블록이 같은 변수만 보라로 갈아끼운다: 부품은 공유, 색만 교체. */
@@ -10206,6 +10207,9 @@ html[data-reduce-motion] .me-fold-body {
 }
 .fold-body {
   display: grid;
+  /* 암시적 auto 트랙은 자식의 min-content가 크면 컨테이너보다 넓어진다 — 업 도움 필드가
+     옵션 카드 밖으로 21px 삐져나오던 원인(2026-09-01 실측). 컨테이너 폭으로 클램프. */
+  grid-template-columns: minmax(0, 1fr);
   gap: 10px;
   border-top: 1px solid var(--line, #ece9f5);
   border-radius: 0 0 var(--r-md) var(--r-md);
