@@ -73,6 +73,8 @@ function mapItem(item) {
     comment_cnt: Number(item.count?.comment_cnt) || 0,
     like_cnt: Number(item.count?.like_cnt) || 0,
     read_cnt: Number(item.count?.read_cnt) || 0,
+    // 101=전체 공개, 107=구독(플러스) 전용. 미상은 0(공개 칩에서 자동 제외 — fail-closed).
+    auth_no: Number.isFinite(Number(item.auth_no)) ? Number(item.auth_no) : 0,
     synced_at: new Date().toISOString()
   };
 }

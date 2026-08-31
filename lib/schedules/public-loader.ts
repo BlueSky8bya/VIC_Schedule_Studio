@@ -273,9 +273,12 @@ const loadPublicScheduleData = unstable_cache(
         supabase.rpc("get_teaser_hope_counts", { p_calendar_id: calendar.id }),
         // 다시보기 아카이브(0068) — 공개 메타만(번호·날짜·길이). 최신순 1000행 한도(PostgREST
         // 기본 cap과 같은 값이라 잘려도 '가장 오래된 다시보기'부터 빠진다 — 안전한 방향).
+        // auth_no=101(전체 공개)만 — 구독(플러스) 전용(107)은 일반 시청자가 클릭해도 재생이
+        // 안 되므로 칩을 내보내지 않는다(0069, 2026-08-31 사용자 결정). 미상(0)도 제외.
         supabase
           .from("vod_archive")
           .select("title_no, broadcast_day, duration_ms")
+          .eq("auth_no", 101)
           .order("broadcast_day", { ascending: false })
           .limit(1000)
       ])

@@ -78,6 +78,7 @@ describe("mapApiItem", () => {
     title_no: 205801207,
     title_name: "라이츄후열~",
     reg_date: "2026-08-31 03:52:13",
+    auth_no: 101,
     ucc: {
       thumb: "//videoimg.sooplive.com/php/SnapshotLoad.php?rowKey=20260830_304937F2_296752157_2_r",
       total_file_duration: 39135834
@@ -94,8 +95,13 @@ describe("mapApiItem", () => {
       regDate: "2026-08-30T18:52:13.000Z",
       commentCnt: 3,
       likeCnt: 10,
-      readCnt: 9972
+      readCnt: 9972,
+      authNo: 101
     });
+  });
+  it("구독(플러스) 전용은 auth_no=107로 남고, 값이 없으면 0(미상 — 공개 칩에서 자동 제외)", () => {
+    expect(mapApiItem({ ...item, auth_no: 107 })?.authNo).toBe(107);
+    expect(mapApiItem({ ...item, auth_no: undefined })?.authNo).toBe(0);
   });
   it("title_no가 없으면 버린다", () => {
     expect(mapApiItem({ ...item, title_no: undefined })).toBeNull();
@@ -118,7 +124,8 @@ describe("chainBroadcastDays — 30분 이내 재시작은 같은 방송", () =>
     regDate: endIsoUtc,
     commentCnt: 0,
     likeCnt: 0,
-    readCnt: 0
+    readCnt: 0,
+    authNo: 101
   });
 
   it("자정 넘은 재시작(간격 10분)이 앞 방송 날짜를 잇는다 — 이행적", () => {

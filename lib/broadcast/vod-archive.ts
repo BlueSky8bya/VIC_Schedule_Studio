@@ -22,6 +22,8 @@ export type VodArchiveRow = {
   commentCnt: number;
   likeCnt: number;
   readCnt: number;
+  // SOOP 시청 권한(0069). 101=전체 공개, 107=구독(플러스) 전용 — 공개 칩은 101만 내보낸다.
+  authNo: number;
 };
 
 // thumb rowKey: "YYYYMMDD_HEX_BNO_seq_r" — 날짜(방송 시작일 KST)와 bno가 박혀 있다.
@@ -74,6 +76,7 @@ type ApiItem = {
   title_no?: number;
   title_name?: string;
   reg_date?: string;
+  auth_no?: number | string;
   ucc?: { thumb?: string; total_file_duration?: number | string };
   count?: { comment_cnt?: number; like_cnt?: number; read_cnt?: number };
 };
@@ -96,7 +99,10 @@ export function mapApiItem(item: ApiItem): VodArchiveRow | null {
     regDate: regIso,
     commentCnt: Number(item.count?.comment_cnt) || 0,
     likeCnt: Number(item.count?.like_cnt) || 0,
-    readCnt: Number(item.count?.read_cnt) || 0
+    readCnt: Number(item.count?.read_cnt) || 0,
+    // 값이 없거나 이상하면 0(=미상) — 101(공개)로 지어내지 않는다: 공개 칩은 101만 나가므로
+    // 미상은 자동으로 숨는 쪽(fail-closed)이다.
+    authNo: Number.isFinite(Number(item.auth_no)) ? Number(item.auth_no) : 0
   };
 }
 
@@ -178,13 +184,14 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
     // 된다 — 같은 알고리즘이라 결과는 멱등이고, 경계에서 어긋난 날짜가 있으면 이때 교정된다.
     const recent = await supabase
       .from("vod_archive")
-      .select("title_no, bno, broadcast_day, title, duration_ms, reg_date, comment_cnt, like_cnt, read_cnt")
+      .select("title_no, bno, broadcast_day, title, duration_ms, reg_date, comment_cnt, like_cnt, read_cnt, auth_no")
       .order("reg_date", { ascending: false, nullsFirst: false })
       .limit(40);
     const fetchedIds = new Set(rows.map((r) => r.titleNo));
     type StoredRow = {
       title_no: number; bno: string | null; broadcast_day: string; title: string;
-      duration_ms: number; reg_date: string | null; comment_cnt: number; like_cnt: number; read_cnt: number;
+      duration_ms: number; reg_date: string | null; comment_cnt: number; like_cnt: number;
+      read_cnt: number; auth_no: number;
     };
     for (const s of ((recent.data as StoredRow[] | null) ?? [])) {
       if (fetchedIds.has(Number(s.title_no))) continue;
@@ -197,7 +204,8 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
         regDate: s.reg_date,
         commentCnt: Number(s.comment_cnt) || 0,
         likeCnt: Number(s.like_cnt) || 0,
-        readCnt: Number(s.read_cnt) || 0
+        readCnt: Number(s.read_cnt) || 0,
+        authNo: Number(s.auth_no) || 0
       });
     }
     chainBroadcastDays(rows);
@@ -212,6 +220,7 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
         comment_cnt: r.commentCnt,
         like_cnt: r.likeCnt,
         read_cnt: r.readCnt,
+        auth_no: r.authNo,
         synced_at: new Date().toISOString()
       })),
       { onConflict: "title_no" }
