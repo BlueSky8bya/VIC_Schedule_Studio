@@ -129,6 +129,19 @@ function chainDays(rows) {
   return changed;
 }
 
+// ── 날짜 귀속 명시적 예외(2026-08-31 사용자 지적) ──
+// '새벽 6시 경계' 규칙은 밤 방송의 연장(00~05시 시작)을 전날로 붙이는 게 목적인데, 대회 연습
+// 시즌의 "새벽에 '그 날' 세션을 시작"하는 방송(WBD 야구 05:31·04:31, FC25 03~05시대)까지
+// 전날로 끌어와 한 날짜에 'N일차'와 'N+1일차'가 섞였다. 제목의 일차 번호가 명확한 근거라
+// 이 목록만 손으로 고정한다(일반 규칙은 유지 — 별별랭킹 00:03 같은 케이스가 다수다).
+const DAY_OVERRIDES = new Map([
+  [154012373, "2025-03-13"], // [WBD] 야구 연습 2일차 -1 (05:31 시작 — 13일 세션)
+  [154108485, "2025-03-14"], // [WBD] 야구 연습 3일차 (04:31 시작 — 14일 세션)
+  [137094755, "2024-09-23"], // [버축대2] FC25 연습 3일차 (04:50 시작 — 23일 세션)
+  [137222735, "2024-09-24"], // [버축대2] FC25 연습 4일차 -1 (03:40 시작 — 24일 세션)
+  [137281079, "2024-09-24"]  // [버축대2] FC25 연습 4일차 -2 (다음날 05:30 — 4일차에 붙임)
+]);
+
 // 전체 페이지를 먼저 모아 체인한 뒤 upsert한다 — 체인은 페이지 경계를 넘는다.
 let page = 1;
 let skipped = 0;
@@ -147,7 +160,16 @@ for (;;) {
   await sleep(300);
 }
 const chained = chainDays(all);
+let overridden = 0;
+for (const r of all) {
+  const o = DAY_OVERRIDES.get(r.title_no);
+  if (o && r.broadcast_day !== o) {
+    console.log(`  예외 귀속: ${r.title_no} ${r.broadcast_day} → ${o} (${r.title.slice(0, 30)})`);
+    r.broadcast_day = o;
+    overridden += 1;
+  }
+}
 for (let i = 0; i < all.length; i += 100) {
   await upsert(all.slice(i, i + 100));
 }
-console.log(`완료: ${all.length}건 저장, 체인 보정 ${chained}건, ${skipped}건 스킵(날짜 귀속 불가).`);
+console.log(`완료: ${all.length}건 저장, 체인 보정 ${chained}건, 예외 귀속 ${overridden}건, ${skipped}건 스킵(날짜 귀속 불가).`);
