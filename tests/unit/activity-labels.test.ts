@@ -132,6 +132,32 @@ describe("usageRoleBreakdown — 사용량 화면은 시청자 한 덩어리", (
   });
 });
 
+// 2026-08-31: '적게 쓰인 기능'은 없앨 후보를 찾는 화면 — 이미 철수한 기능(꾸미기·월드컵·
+// 비공개 레이어 UI·작업자, ADR-0009/0014/0015)은 retired 표식으로 갈라낸다. 사전에서 항목을
+// 지우면 옛 기록이 '이름 미등록'으로 떨어지므로 지우지 않고 표식만 얹는다.
+describe("철수한 기능은 retired로 표시된다", () => {
+  it("꾸미기·월드컵·비공개 UI·작업자 미리보기", () => {
+    expect(describeTarget("ui.click", "sticker-delete").retired).toBe(true);
+    expect(describeTarget("ui.click", "wc-toggle").retired).toBe(true);
+    expect(describeTarget("ui.click", "private-toggle").retired).toBe(true);
+    expect(describeTarget("ui.click", "role-preview-worker").retired).toBe(true);
+    expect(describeTarget("route.enter", "/studio/decorate").retired).toBe(true);
+    expect(describeTarget("section.enter", "decorate").retired).toBe(true);
+  });
+  it("auto: 접두사(옛 기록)도 같은 버튼이면 같이 표시된다", () => {
+    expect(describeTarget("ui.click", "auto:.stf-btn").retired).toBe(true);
+  });
+  it("살아있는 기능엔 붙지 않는다 — 비밀번호 변경은 최초공개 게이트용으로 살아 있다", () => {
+    expect(describeTarget("ui.click", "save-event").retired).toBeUndefined();
+    expect(describeTarget("ui.click", "change-passcode").retired).toBeUndefined();
+    expect(describeTarget("section.enter", "broadcast-panel").retired).toBeUndefined();
+  });
+  it("역할 필터에서 작업자는 빠지고, 옛 기록 내역엔 '작업자 N'으로 남는다", () => {
+    expect(USAGE_ROLE_ORDER).not.toContain("worker");
+    expect(usageRoleBreakdown({ worker: 3, owner: 1 })).toBe("관리자 1 · 작업자 3");
+  });
+});
+
 // 소스에 박은 data-act는 전부 사전에 있어야 한다 — 없으면 화면에 '아직 이름을 안 붙인 버튼'으로
 // 뜬다(2026-08-05 실측: bp-eyedrop·bp-region-* 등이 그랬다). 새 버튼을 만들면 여기서 걸린다.
 describe("모든 data-act에 이름이 있다", () => {

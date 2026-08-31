@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-08-28
+Last Updated: 2026-08-31
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -13,6 +13,13 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **'적게 쓰인 기능' 카드에서 철수 기능 갈라내기(2026-08-31, 사용자 지시)**: 이 카드는 "없앨 후보"를
+  찾는 화면인데 이미 지운 기능(꾸미기/스티커 ADR-0015 · 월드컵 ADR-0009 · 비공개 레이어 UI ADR-0014 ·
+  작업자 미리보기)이 바닥에 깔려 후보를 덮었다. `lib/activity/labels.ts`에 `retired` 표식(RETIRED_* 세트
+  한 곳 관리 — 사전 항목은 지우지 않는다, 지우면 '이름 미등록'으로 떨어짐), 카드에선 후보 목록 밖
+  "이미 지운 기능 N개" 접힌 묶음으로(채움 막대 없음·한 톤 다운, 복사본엔 포함). 위치 필터·저사용
+  요약도 살아있는 것만 계수, 역할 필터에서 '작업자' 제거(내역 줄엔 '작업자 N' 유지). 기록 보존 90일이
+  지나면 묶음도 자연 소멸.
 - **방문 집계 '개발자 2' 수정 + 범위 토글 재배치(2026-08-28, 사용자 신고)**: 한 탭에서 로그아웃↔로그인이
   섞이면 `foldOne`이 계정 해시를 '해시 있는 첫 행'에서 집어 "역할=developer, 계정=anon 토큰" 방문이 생겨
   `(날짜|계정)` 순방문자 집계가 개발자 1명을 2명으로 셌다(prod 08-27·08-28 실측 재현). 계정 해시는 역할을

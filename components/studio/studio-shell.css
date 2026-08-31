@@ -1645,6 +1645,55 @@ html[data-reduce-motion] .upick-menu {
 .usage-more:hover { background: #f7f5ff; }
 .usage-more:active { transform: scale(0.985); }
 
+/* 이미 지운 기능(ADR-0009/0014/0015) — 후보 목록 아래 접힌 묶음. 후보와 같은 보라 채움을 쓰지
+   않는다: 이건 "판단할 것"이 아니라 "이미 판단한 것"이라 시각 무게를 한 단 내린다. */
+.usage-retired { margin: 2px 0 8px; }
+.usage-retired-head {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  border-radius: var(--r-sm, 8px);
+  background: #f4f2f8;
+  color: #8b84a3;
+  font-family: inherit;
+  font-size: var(--text-caption);
+  font-weight: 800;
+  text-align: left;
+  padding: 6px 9px;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.usage-retired-head:hover { background: #efedf6; }
+.usage-retired-head:active { transform: scale(0.985); }
+.usage-retired-head em {
+  margin-left: auto;
+  font-style: normal;
+  font-size: var(--text-micro);
+  font-weight: 700;
+  color: #a9a2be;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* 지운 기능 줄: 채움 막대 없음 + 전체적으로 한 톤 죽인다(이름·점·숫자 모두). */
+.usage-list[data-retired] { margin-top: 4px; }
+.usage-list[data-retired] > li { background: transparent; }
+.usage-list[data-retired] .usage-dot { background: #d4cfe2; }
+.usage-list[data-retired] .usage-name { color: #8b84a3; }
+.usage-list[data-retired] .usage-n { color: #a9a2be; }
+.usage-gone {
+  flex: none;
+  border-radius: var(--r-pill);
+  background: #eceaf2;
+  color: #9a93b0;
+  font-size: var(--text-micro);
+  font-weight: 700;
+  padding: 1px 6px;
+}
+
 /* 창이 2단이라 뷰포트가 넓어도 이 칸은 좁다 → 칸 폭 기준으로만 키운다. */
 .vcard { container-type: inline-size; }
 @container (min-width: 460px) {

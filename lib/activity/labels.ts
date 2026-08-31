@@ -17,7 +17,59 @@ export type TargetLabel = {
   hint?: string;
   /** true면 아직 이름을 안 붙인 것 — 화면에서 그렇게 안내한다. */
   unnamed?: boolean;
+  /** true면 이미 철수한 기능 — 기록만 남는다. '적게 쓰인 기능'은 없앨 후보를 찾는 화면이라
+   *  이미 없앤 것이 후보 사이에 끼면 목록이 거짓말을 한다(따로 갈라 보여준다). */
+  retired?: boolean;
 };
+
+// ── 이미 철수한 기능들(2026-08-27) — 여기 한 곳에서만 관리한다 ──
+//  · ADR-0009 Superseded: 월드컵/축구 시뮬 전부 삭제
+//  · ADR-0014: 편집실 비공개 레이어 UI 철수(보기 토글·공개 범위 피커·경고 띠)
+//  · ADR-0015: 달력 꾸미기(스티커)·작업자 역할 철수
+// 기록 보존이 90일이라 당분간 집계에 계속 나타난다. 사전 항목 자체는 지우지 않는다 —
+// 지우면 옛 기록이 '이름 미등록'으로 떨어져 더 못 읽게 된다.
+const RETIRED_TARGETS = new Set([
+  // 꾸미기(스티커) — ADR-0015
+  "sticker-duplicate",
+  "sticker-delete",
+  "sticker-duplicate-all",
+  "sticker-delete-all",
+  "sticker-lock",
+  "sticker-italic",
+  "sticker-highlight",
+  "sticker-flip-x",
+  "sticker-flip-y",
+  "sticker-shadow",
+  "sticker-front",
+  "sticker-back",
+  "sticker-add-text",
+  "sticker-font-weight",
+  "stf-btn",
+  "stf-collapse",
+  "emoji-chip",
+  "shortcut-help-title",
+  "back-to-decorate",
+  "go-decorate",
+  "decorate-preview",
+  "실행 취소",
+  "다시실행 (Ctrl+Y)",
+  // 월드컵 — ADR-0009
+  "wc-toggle",
+  "wc-tac-btn",
+  "wc-tac-chip",
+  "io-worldcup",
+  "day-wc-match",
+  // 비공개 레이어 UI — ADR-0014 (비밀번호 변경은 최초공개 게이트용으로 살아 있다)
+  "private-toggle",
+  "private-warning-btn",
+  "m-io-private",
+  "scope-opt",
+  // 작업자 역할 — ADR-0015
+  "role-preview-worker",
+  "role-preview-dual"
+]);
+const RETIRED_ROUTES = new Set(["/studio/decorate", "/studio/private-layer"]);
+const RETIRED_SECTIONS = new Set(["decorate"]);
 
 const ROUTE: Record<string, TargetLabel> = {
   "/": { name: "공개 포스터", area: "시청자 화면", hint: "시청자가 보는 첫 화면" },
@@ -216,6 +268,7 @@ const ACT: Record<string, TargetLabel> = {
   "activity-open": { name: "타임라인 접기/펴기", area: "인사이트" },
   "activity-diag": { name: "진단 로그 보기", area: "인사이트" },
   "usage-open": { name: "적게 쓰인 기능 접기/펴기", area: "인사이트" },
+  "usage-retired-open": { name: "지운 기능 묶음 접기/펴기", area: "인사이트" },
   "usage-area": { name: "위치 필터", area: "인사이트" },
   "usage-area-all": { name: "위치 필터: 전체", area: "인사이트" },
   "usage-role": { name: "역할 필터", area: "인사이트" },
@@ -324,27 +377,33 @@ const AUTO: Record<string, TargetLabel> = {
 /** target을 사람이 읽는 이름으로. 못 풀면 이름을 지어내지 않고 '이름 미등록'으로 표시한다. */
 export function describeTarget(kind: string, target: string): TargetLabel {
   if (!target) return { name: "(대상 없음)" };
+  // 철수한 기능은 사전 어디서 풀리든 retired 표식을 얹는다(항목마다 박아두면 흩어져서 샌다).
+  const mark = (label: TargetLabel, retired: boolean): TargetLabel =>
+    retired ? { ...label, retired: true } : label;
   if (kind === "route.enter" || kind === "route.leave") {
-    return ROUTE[target] ?? { name: target, area: "기타", unnamed: true };
+    const hit = ROUTE[target] ?? { name: target, area: "기타", unnamed: true };
+    return mark(hit, RETIRED_ROUTES.has(target));
   }
   if (kind === "section.enter" || kind === "section.leave") {
-    return SECTION[target] ?? { name: target, area: "기타", unnamed: true };
+    const hit = SECTION[target] ?? { name: target, area: "기타", unnamed: true };
+    return mark(hit, RETIRED_SECTIONS.has(target));
   }
   if (kind === "month.change") {
     return { name: `${target} 보기`, area: "편집실", hint: "달력에서 그 달로 이동" };
   }
   if (target.startsWith("auto:")) {
     const raw = target.slice(5);
-    const hit = AUTO[raw];
-    if (hit) return hit;
     // data-act를 붙이기 전에 쌓인 값도 같은 클래스면 같은 버튼이다. ACT에 클래스 토큰 이름으로
     // 등록해 뒀으므로 점(.)만 떼고 한 번 더 찾는다 — 안 그러면 사전에 있는데도 '이름 미등록'으로
     // 뜬다(실측: auto:.insights-tab, auto:.dtp-cell 등 50여 개가 전부 이름 없이 보였다).
     const token = raw.startsWith(".") ? raw.slice(1) : raw;
+    const retired = RETIRED_TARGETS.has(token);
+    const hit = AUTO[raw];
+    if (hit) return mark(hit, retired);
     const byToken = ACT[token];
-    if (byToken) return byToken;
+    if (byToken) return mark(byToken, retired);
     // 한글 값은 옛 기록(예전엔 aria-label을 id로 썼다) — 그 자체가 사람 말이라 그대로 쓴다.
-    if (/[가-힣]/.test(token)) return { name: token, area: "기타", hint: "옛 기록" };
+    if (/[가-힣]/.test(token)) return mark({ name: token, area: "기타", hint: "옛 기록" }, retired);
     return {
       name: "아직 이름을 안 붙인 버튼",
       area: "기타",
@@ -353,7 +412,7 @@ export function describeTarget(kind: string, target: string): TargetLabel {
     };
   }
   const hit = ACT[target];
-  if (hit) return hit;
+  if (hit) return mark(hit, RETIRED_TARGETS.has(target));
   // data-act에 한글 문구를 그대로 박은 것들(버튼의 aria-label/title에서 정적으로 딴 값).
   // 이미 사람이 읽을 수 있는 말이므로 '이름 미등록'으로 낮추지 않는다 — 위치만 모를 뿐이다.
   if (/[가-힣]/.test(target)) return { name: target, area: "기타" };
@@ -386,8 +445,10 @@ export function usageRoleCount(roles: Record<string, number>, role: string): num
   return roles[role] ?? 0;
 }
 
-/** 사용량 화면의 역할 목록 — '비로그인'은 시청자에 합쳐 두 줄로 갈리지 않게 한다. */
-export const USAGE_ROLE_ORDER = ["owner", "manager", "worker", "developer", "viewer"] as const;
+/** 사용량 화면의 역할 목록 — '비로그인'은 시청자에 합쳐 두 줄로 갈리지 않게 한다.
+ *  '작업자'는 뺐다(역할 자체가 철수 — ADR-0015): 고를 수 없는 역할의 필터는 죽은 칩이다.
+ *  옛 기록의 작업자 횟수는 내역 줄(usageRoleBreakdown)에 '작업자 N'으로 계속 나온다. */
+export const USAGE_ROLE_ORDER = ["owner", "manager", "developer", "viewer"] as const;
 
 /**
  * 사용량 화면 전용 역할 내역 — 비로그인을 시청자에 합쳐 "시청자 9"처럼 한 덩어리로 보여준다.
@@ -406,7 +467,8 @@ export function usageRoleBreakdown(roles: Record<string, number>): string {
   );
   for (const [k, v] of Object.entries(merged)) {
     if (!USAGE_ROLE_ORDER.includes(k as (typeof USAGE_ROLE_ORDER)[number]) && v > 0) {
-      parts.push(`${k} ${v}`);
+      // 목록에서 뺀 옛 역할(작업자)도 이름이 있으면 사람 말로 — 기록을 버리지 않는다.
+      parts.push(`${ROLE_NAME[k] ?? k} ${v}`);
     }
   }
   return parts.join(" · ") || "기록 없음";
