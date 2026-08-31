@@ -142,12 +142,13 @@ export type CalendarMeta = {
   memoLines?: MemoLine[]; // B: 줄별 정렬·들여쓰기. 있으면 이걸로 렌더, 없으면 publicMemo 줄바꿈 폴백
 };
 
-// 숲 다시보기(VOD) 링크(0068) — 공개 메타데이터만. 날짜 상세의 '다시보기' 칩 원천.
-// 제목은 싣지 않는다(일정 제목이 이미 그 날을 설명 + 공개 payload 절약). 플레이어 URL은
-// 클라가 titleNo로 조립한다(vod.sooplive.co.kr/player/{titleNo}).
+// 숲 다시보기(VOD) 링크(0068) — 공개 메타데이터만(SOOP에서 누구나 보는 값). 칩 라벨은
+// VOD 제목을 그대로 쓴다(2026-08-31 사용자 결정 — '다시보기'보다 내용이 보인다).
+// 플레이어 URL은 클라가 titleNo로 조립한다(vod.sooplive.co.kr/player/{titleNo}).
 export type PublicVodEntry = {
   dateKey: string; // 방송 시작일(KST, YYYY-MM-DD)
   titleNo: number;
+  title: string;
   durationMs: number;
 };
 

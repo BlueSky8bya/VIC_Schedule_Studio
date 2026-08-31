@@ -856,10 +856,26 @@ html[data-reduce-motion] .mb-live-dot {
   background: #e9f0fe;
   color: #2455c9;
 }
-/* 아젠다 인라인 칩(일정 없는 날) — 줄에 붙는 작은 알약. 안에서 줄바꿈하면
-   '다시보기 1' 아래 길이가 떨어져 두 줄 알약이 된다(실측) — 한 줄 고정. */
+/* 라벨 = VOD 제목 — 넘치면 …로 자른다(전체 제목은 title 툴팁). 아이콘·길이는 고정 폭,
+   제목만 줄어든다(min-width:0이 없으면 flex 자식이 안 줄어 칩이 터진다). */
+.agenda-vod-title {
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-link.vod svg,
+.agenda-link.vod .agenda-vod-dur {
+  flex: none;
+}
+/* 아젠다 인라인 칩 — 줄에 붙는 작은 알약. 부모(.agenda-day-list)가 grid라
+   justify-self로 앉히고 min-width:0이 필수 — 없으면 nowrap 제목의 min-content가
+   그리드 칸을 뚫고 카드 밖까지 밀고 나간다(실측: 긴 제목이 카드 테두리를 넘음). */
 .agenda-vod-inline {
-  align-self: flex-start;
+  justify-self: start;
+  min-width: 0;
+  max-width: 100%;
   margin-top: 2px;
   min-height: 34px;
   text-decoration: none;
@@ -954,7 +970,7 @@ html[data-reduce-motion] .day-vod-pop {
   gap: 6px;
   width: 100%;
   margin-top: 0;
-  padding: 11px 0;
+  padding: 11px 12px;
   border-radius: 12px;
   background: linear-gradient(135deg, #5d8bf4, #3564e0);
   color: #fff;

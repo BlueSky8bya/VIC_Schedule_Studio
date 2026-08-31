@@ -277,7 +277,7 @@ const loadPublicScheduleData = unstable_cache(
         // 안 되므로 칩을 내보내지 않는다(0069, 2026-08-31 사용자 결정). 미상(0)도 제외.
         supabase
           .from("vod_archive")
-          .select("title_no, broadcast_day, duration_ms")
+          .select("title_no, broadcast_day, title, duration_ms")
           .eq("auth_no", 101)
           .order("broadcast_day", { ascending: false })
           .limit(1000)
@@ -315,10 +315,11 @@ const loadPublicScheduleData = unstable_cache(
       tags: (tagsRes.data ?? []).map(mapTag),
       palette: (paletteRes.data ?? []).map(mapPalette),
       // 명시적 DTO 구성(스프레드 금지) — 공개 경계를 넘는 값은 하나하나 고른다.
-      vods: ((vodsRes.data as { title_no: number; broadcast_day: string; duration_ms: number }[] | null) ?? [])
+      vods: ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number }[] | null) ?? [])
         .map((row) => ({
           dateKey: String(row.broadcast_day).slice(0, 10),
           titleNo: Number(row.title_no),
+          title: typeof row.title === "string" ? row.title : "",
           durationMs: Number(row.duration_ms) || 0
         }))
         .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0),
