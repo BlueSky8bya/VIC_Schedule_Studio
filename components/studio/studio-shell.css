@@ -1899,31 +1899,29 @@ html[data-reduce-motion] .perf-spin {
 .opt-chip.tentative {
   --ac: #e08407;
 }
-.opt-chip.support {
-  --ac: #e23b54; /* 업 도움 기간(빨강 띠)과 색 통일 */
-}
-/* 띠 종류 라디오(업 도움 / 기간 안내) — 옵션 칩 문법 그대로 2열. 기간 안내는 라벤더 띠와
-   색 통일. 업 도움 설정을 켰을 때만 나타나는 하위 선택이라 살짝 들여쓴다. */
-.support-kind-row {
+/* 달력 띠 종류(2026-09-01 대개편) — 칩 두 개가 곧 스위치: 켜진 칩 다시 누르면 끔.
+   마스터 토글·하위 라디오·들여쓰기 없이 한 줄. 업 도움 = 장미, 기간 안내 = 보라. */
+.band-kind-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-2, 8px);
-  padding-left: var(--space-3, 12px);
 }
-.support-kind-row .opt-chip {
+.band-kind-row .opt-chip {
   margin-top: 0;
-  padding: var(--space-2, 8px) var(--space-3, 12px);
+}
+.band-kind-row .opt-chip-label {
+  white-space: nowrap; /* '업 도움'이 좁은 패널에서 두 줄로 꺾이지 않게 */
 }
 @media (min-width: 1000px) {
-  .support-kind-row {
-    margin-top: -6px;
+  .band-kind-row {
+    margin-top: -10px; /* opt-chip 가족과 같은 행 간격 규칙 */
   }
 }
-.opt-chip.support-kind {
-  --ac: #e23b54;
+.opt-chip.band-kind.up {
+  --ac: #e23b54; /* 업 도움 띠(장미)와 통일 */
 }
-.opt-chip.support-kind:last-child {
-  --ac: #7c5cd6; /* 기간 안내(라벤더 띠)와 색 통일 */
+.opt-chip.band-kind.period {
+  --ac: #7c5cd6; /* 기간 안내 띠(라벤더)와 통일 */
 }
 .opt-chip:hover:not(:disabled):not(.on) {
   border-color: color-mix(in srgb, var(--ac) 50%, var(--line, #e7e3f2));
@@ -4188,6 +4186,8 @@ html[data-reduce-motion] .perf-windows button.active {
   user-select: none;
 }
 .studio-avatar-ctl button {
+  display: inline-grid; /* 아이콘 라벨(ArrowLeft/RightToLine) 수직·수평 중앙 */
+  place-items: center;
   border: 0;
   background: transparent;
   color: #6b5b8a;
@@ -8456,7 +8456,7 @@ html[data-reduce-motion] .modal-close:active {
   gap: 9px;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
-  background: #fff8f9;
+  background: var(--sd-card);
   padding: 12px 14px;
 }
 .duration-title {
@@ -8471,25 +8471,25 @@ html[data-reduce-motion] .modal-close:active {
 }
 .duration-chips button {
   min-height: 34px;
-  border: 1px solid #f4c4cc;
+  border: 1px solid var(--sd-border);
   border-radius: var(--r-pill);
   background: #ffffff;
   padding: 0 6px;
   font-size: var(--text-body);
   font-weight: 800;
-  color: #9f1239;
+  color: var(--sd-ink);
   cursor: pointer;
   transition:
     background var(--dur-1) var(--ease),
     transform var(--dur-1) var(--ease);
 }
 .duration-chips button:hover:not(:disabled) {
-  background: #ffe4e8;
+  background: var(--sd-hover);
   transform: translateY(-1px);
 }
 .duration-chips button.active {
-  border-color: #fb7185;
-  background: #fb7185;
+  border-color: var(--sd-strong);
+  background: var(--sd-strong);
   color: #ffffff;
 }
 .duration-manual {
@@ -8521,10 +8521,10 @@ html[data-reduce-motion] .modal-close:active {
   width: 42px;
   height: 42px;
   flex: 0 0 auto;
-  border: 1px solid #f4c4cc;
+  border: 1px solid var(--sd-border);
   border-radius: var(--r-md);
   background: #fff;
-  color: #9f1239;
+  color: var(--sd-ink);
   font-size: 22px;
   font-weight: 900;
   line-height: 1;
@@ -8534,7 +8534,7 @@ html[data-reduce-motion] .modal-close:active {
     transform var(--dur-1) var(--ease);
 }
 .duration-stepper .dstep:hover:not(:disabled) {
-  background: #ffe4e8;
+  background: var(--sd-hover);
 }
 .duration-stepper .dstep:active:not(:disabled) {
   transform: scale(0.9);
@@ -8548,7 +8548,7 @@ html[data-reduce-motion] .modal-close:active {
   text-align: center;
   font-size: var(--text-ui);
   font-weight: 800;
-  color: #9f1239;
+  color: var(--sd-ink);
 }
 /* 값 좌우 스와이프(모바일) — 스크롤 대신 드래그가 잡히게 + '밀 수 있다'는 커서/표시. */
 .duration-stepper .dstep-scrub {
@@ -8558,7 +8558,7 @@ html[data-reduce-motion] .modal-close:active {
   -webkit-user-select: none;
   border-radius: 10px;
   background: #fff;
-  border: 1px dashed #f4c4cc;
+  border: 1px dashed var(--sd-border);
   min-height: 42px;
   display: inline-flex;
   align-items: center;
@@ -8573,11 +8573,11 @@ html[data-reduce-motion] .modal-close:active {
 /* 미는 중: 확대 + 코랄 발광 + 좌우 화살표 힌트가 떠서 "조정 중"을 한눈에. */
 .duration-stepper .dstep-scrub.scrubbing {
   transform: scale(1.06);
-  background: #fff0f3;
+  background: var(--sd-soft);
   border-style: solid;
-  border-color: #fb7185;
-  box-shadow: 0 0 0 4px rgb(251 113 133 / 18%);
-  color: #e0567a;
+  border-color: var(--sd-strong);
+  box-shadow: 0 0 0 4px var(--sd-glow);
+  color: var(--sd-mid);
   animation: scrub-pulse 1s var(--ease) infinite;
 }
 .duration-stepper .dstep-scrub.scrubbing::before,
@@ -8586,8 +8586,8 @@ html[data-reduce-motion] .modal-close:active {
   position: absolute;
   width: 7px;
   height: 7px;
-  border-top: 2px solid #fb7185;
-  border-right: 2px solid #fb7185;
+  border-top: 2px solid var(--sd-strong);
+  border-right: 2px solid var(--sd-strong);
   opacity: 0.9;
 }
 .duration-stepper .dstep-scrub.scrubbing::before {
@@ -8606,10 +8606,10 @@ html[data-reduce-motion] .modal-close:active {
 @keyframes scrub-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 4px rgb(251 113 133 / 18%);
+    box-shadow: 0 0 0 4px var(--sd-glow);
   }
   50% {
-    box-shadow: 0 0 0 7px rgb(251 113 133 / 9%);
+    box-shadow: 0 0 0 7px var(--sd-glow-soft);
   }
 }
 @keyframes scrub-nudge-l {
@@ -8665,7 +8665,7 @@ html[data-reduce-motion] .modal-close:active {
   white-space: nowrap;
   font-size: var(--text-body);
   font-weight: 900;
-  color: #9f1239;
+  color: var(--sd-ink);
 }
 .dslider-row {
   display: flex;
@@ -8682,10 +8682,10 @@ html[data-reduce-motion] .modal-close:active {
   width: 36px;
   height: 36px;
   flex: 0 0 auto;
-  border: 1px solid #f4c4cc;
+  border: 1px solid var(--sd-border);
   border-radius: 50%;
   background: #fff;
-  color: #e0567a;
+  color: var(--sd-mid);
   font-size: var(--text-display);
   font-weight: 900;
   line-height: 1;
@@ -8696,8 +8696,8 @@ html[data-reduce-motion] .modal-close:active {
     transform var(--dur-1) var(--ease);
 }
 .dslider-row .dstep:hover:not(:disabled) {
-  background: #ffe4e8;
-  border-color: #fb7185;
+  background: var(--sd-hover);
+  border-color: var(--sd-strong);
   transform: translateY(-1px);
 }
 .dslider-row .dstep:active:not(:disabled) {
@@ -8714,10 +8714,10 @@ html[data-reduce-motion] .modal-close:active {
   width: 100%;
   height: 16px;
   border-radius: var(--r-sm);
-  border: 1px solid #f4c4cc;
+  border: 1px solid var(--sd-border);
   background:
-    repeating-linear-gradient(90deg, rgb(251 113 133 / 26%) 0 1.5px, transparent 1.5px 11px),
-    linear-gradient(180deg, #fff6f8, #ffe7ec);
+    repeating-linear-gradient(90deg, var(--sd-stripe) 0 1.5px, transparent 1.5px 11px),
+    linear-gradient(180deg, var(--sd-track-a), var(--sd-track-b));
   cursor: pointer;
 }
 /* 썸 = 작은 달력 한 장(상단 코랄 띠 + 흰 본체). */
@@ -8727,9 +8727,9 @@ html[data-reduce-motion] .modal-close:active {
   width: 26px;
   height: 30px;
   border-radius: 7px;
-  border: 1.5px solid #fb7185;
-  background: linear-gradient(180deg, #fb7185 0 9px, #ffffff 9px);
-  box-shadow: 0 2px 7px rgb(159 18 57 / 30%);
+  border: 1.5px solid var(--sd-strong);
+  background: linear-gradient(180deg, var(--sd-strong) 0 9px, #ffffff 9px);
+  box-shadow: 0 2px 7px var(--sd-thumb-shadow);
   cursor: grab;
   transition: transform var(--dur-1) var(--ease);
 }
@@ -8741,18 +8741,18 @@ html[data-reduce-motion] .modal-close:active {
   width: 26px;
   height: 30px;
   border-radius: 7px;
-  border: 1.5px solid #fb7185;
-  background: linear-gradient(180deg, #fb7185 0 9px, #ffffff 9px);
-  box-shadow: 0 2px 7px rgb(159 18 57 / 30%);
+  border: 1.5px solid var(--sd-strong);
+  background: linear-gradient(180deg, var(--sd-strong) 0 9px, #ffffff 9px);
+  box-shadow: 0 2px 7px var(--sd-thumb-shadow);
   cursor: grab;
 }
 .duration-slider input[type="range"]::-moz-range-track {
   height: 16px;
   border-radius: var(--r-sm);
-  border: 1px solid #f4c4cc;
+  border: 1px solid var(--sd-border);
   background:
-    repeating-linear-gradient(90deg, rgb(251 113 133 / 26%) 0 1.5px, transparent 1.5px 11px),
-    linear-gradient(180deg, #fff6f8, #ffe7ec);
+    repeating-linear-gradient(90deg, var(--sd-stripe) 0 1.5px, transparent 1.5px 11px),
+    linear-gradient(180deg, var(--sd-track-a), var(--sd-track-b));
 }
 .duration-slider input[type="range"]:disabled {
   opacity: 0.5;
@@ -9501,6 +9501,37 @@ html[data-reduce-motion] .modal-close:active {
 .support-fields {
   display: grid;
   gap: 14px;
+  /* 띠 테마 변수(정형화, 2026-09-01) — 업 도움(장미)이 기본값. 아래 [data-kind="period"]
+     한 블록이 같은 변수만 보라로 갈아끼운다: 부품은 공유, 색만 교체. */
+  --sd-card: #fff8f9;
+  --sd-border: #f4c4cc;
+  --sd-ink: #9f1239;
+  --sd-mid: #e0567a;
+  --sd-strong: #fb7185;
+  --sd-hover: #ffe4e8;
+  --sd-soft: #fff0f3;
+  --sd-stripe: rgb(251 113 133 / 26%);
+  --sd-glow: rgb(251 113 133 / 18%);
+  --sd-glow-soft: rgb(251 113 133 / 9%);
+  --sd-track-a: #fff6f8;
+  --sd-track-b: #ffe7ec;
+  --sd-thumb-shadow: rgb(159 18 57 / 30%);
+}
+/* 기간 안내(보라) — 시청자 라벤더 띠(.sb-period)와 같은 계열. */
+.support-fields[data-kind="period"] {
+  --sd-card: #f8f6fe;
+  --sd-border: #ded4f6;
+  --sd-ink: #5b21b6;
+  --sd-mid: #7c5cd6;
+  --sd-strong: #8b6ce8;
+  --sd-hover: #ece7fb;
+  --sd-soft: #f3effd;
+  --sd-stripe: rgb(139 108 232 / 26%);
+  --sd-glow: rgb(139 108 232 / 18%);
+  --sd-glow-soft: rgb(139 108 232 / 9%);
+  --sd-track-a: #f8f6fe;
+  --sd-track-b: #eae3fa;
+  --sd-thumb-shadow: rgb(76 29 149 / 30%);
 }
 /* 업 도움 링크: 라벨 위 / 전체 폭 입력칸 아래로 깔끔하게 쌓는다. */
 .support-link-field {
@@ -10022,7 +10053,7 @@ html[data-reduce-motion] .me-fold-body {
   gap: 11px;
   border: 0;
   border-radius: var(--r-card);
-  background: #fff5ef;
+  background: var(--sd-card);
   padding: 13px;
 }
 .me-group .duration-title {

@@ -5,6 +5,8 @@ import "@/components/studio/insights-charts.css";
 
 import dynamic from "next/dynamic";
 import {
+  ArrowLeftToLine,
+  ArrowRightToLine,
   CalendarCheck,
   ChevronDown,
   ChevronLeft,
@@ -5133,11 +5135,12 @@ export function StudioShell({
 
   // 업 도움 편집 — 켜기/끄기 + 기간 + 링크 + 링크 확인. 웹 폼과 모바일 편집 시트 공용.
   // 업 도움 기간·링크 입력부. editable=true면 신뢰 멤버도 고칠 수 있다(토글은 별도, 소유자 전용).
+  // data-kind = 색 테마 스위치(장미↔보라) — 부품은 공유하고 변수만 갈아입는다(정형화).
+  // ('업 도움 기간' 제목 줄은 제거 — 바로 위 종류 칩이 이미 무엇의 기간인지 말한다.)
   function renderSupportFields(editable: boolean) {
     return (
-      <div className="support-fields">
+      <div className="support-fields" data-kind={form.supportKind}>
         <div className="support-duration">
-          <span className="duration-title">업 도움 기간</span>
           <div className="duration-chips">
             {SUPPORT_DURATIONS.map((opt) => {
               const end = addDaysIso(selectedDate, opt.days);
@@ -5310,45 +5313,34 @@ export function StudioShell({
   }
 
   function renderSupportEditor() {
+    // 달력 띠(2026-09-01 대개편): 마스터 토글 + 하위 라디오(3줄, '업 도움' 세 번 반복·들여쓰기)
+    // 대신 종류 칩 두 개가 곧 스위치다 — 켜진 칩을 다시 누르면 끔, 다른 칩을 누르면 그 종류로.
+    // 업 도움 = 장미, 기간 안내 = 보라(아래 필드까지 같은 테마 변수로 이어진다).
     return (
       <>
         {renderTentativeToggle()}
-        <button
-          aria-pressed={form.isSupport}
-          className={`opt-chip support${form.isSupport ? " on" : ""}`}
-          disabled={!canEdit}
-          onClick={() => {
-            hapticTick();
-            setForm((current) => ({ ...current, isSupport: !current.isSupport }));
-          }}
-          type="button"
-         data-act="opt-chip">
-          <span className="opt-chip-ic" aria-hidden="true">🌱</span>
-          <span className="opt-chip-label">업 도움 설정</span>
-          <span className="opt-chip-mark" aria-hidden="true">✓</span>
-        </button>
-        {/* 띠 종류(2026-09-01): 업 도움(도와주러 가기 CTA) vs 단순 기간 안내(CTA 없음, 링크 선택).
-            예: 마비노기 알파테스트 9/4~6 — 도와주러 갈 필요 없는 정보성 기간. */}
-        {form.isSupport ? (
-          <div aria-label="띠 종류" className="support-kind-row" role="radiogroup">
-            {(
-              [
-                ["up", "🌱", "업 도움"],
-                ["period", "📌", "기간 안내"]
-              ] as const
-            ).map(([kind, ic, label]) => (
+        <div aria-label="달력 띠" className="band-kind-row" role="group">
+          {(
+            [
+              ["up", "🌱", "업 도움"],
+              ["period", "📌", "기간 안내"]
+            ] as const
+          ).map(([kind, ic, label]) => {
+            const on = form.isSupport && form.supportKind === kind;
+            return (
               <button
-                aria-pressed={form.supportKind === kind}
-                className={`opt-chip support-kind${form.supportKind === kind ? " on" : ""}`}
+                aria-pressed={on}
+                className={`opt-chip band-kind ${kind}${on ? " on" : ""}`}
                 disabled={!canEdit}
                 key={kind}
                 onClick={() => {
-                  if (form.supportKind === kind) return;
                   hapticTick();
-                  setForm((current) => ({ ...current, supportKind: kind }));
+                  setForm((current) => ({
+                    ...current,
+                    isSupport: !(current.isSupport && current.supportKind === kind),
+                    supportKind: kind
+                  }));
                 }}
-                role="radio"
-                aria-checked={form.supportKind === kind}
                 type="button"
                 data-act="support-kind"
               >
@@ -5356,9 +5348,9 @@ export function StudioShell({
                 <span className="opt-chip-label">{label}</span>
                 <span aria-hidden="true" className="opt-chip-mark">✓</span>
               </button>
-            ))}
-          </div>
-        ) : null}
+            );
+          })}
+        </div>
         {form.isSupport ? renderSupportFields(canEdit) : null}
       </>
     );
@@ -5972,8 +5964,9 @@ export function StudioShell({
               [왼쪽 · 아바타 자리 · 오른쪽] 한 세그먼트로(라벨이 가운데, 방향 버튼이 양옆). */}
           {avatarEditor ? (
             <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
-              {/* 방향 라벨은 기호로 — '왼쪽/오른쪽' 글자 수 차이로 세그먼트 좌우 폭이 어긋났다
-                  (2026-09-01 사용자 요청). 뜻은 aria-label이 담는다. */}
+              {/* 방향은 아이콘으로 — 텍스트 기호 <<<·>>>는 폭은 맞췄지만 "상어 아가미" 같다는
+                  피드백(2026-09-01). '이쪽 벽에 붙이기'를 그대로 그린 화살표+선 아이콘으로
+                  교체(양쪽 같은 폭 유지). 뜻은 aria-label이 담는다. */}
               <button
                 type="button"
                 className={avatarSide === "left" ? "on" : ""}
@@ -5982,7 +5975,7 @@ export function StudioShell({
                 onClick={() => pickAvatarSide("left")}
                 data-act="avatar-ctl-toggle"
               >
-                {"<<<"}
+                <ArrowLeftToLine aria-hidden="true" size={14} strokeWidth={2.4} />
               </button>
               <span aria-hidden="true" className="avatar-ctl-label">
                 아바타 자리
@@ -5995,7 +5988,7 @@ export function StudioShell({
                 onClick={() => pickAvatarSide("right")}
                 data-act="avatar-ctl-toggle"
               >
-                {">>>"}
+                <ArrowRightToLine aria-hidden="true" size={14} strokeWidth={2.4} />
               </button>
             </div>
           ) : null}
@@ -6288,6 +6281,7 @@ export function StudioShell({
                         }${editorVisible && selectedEventId === s.id ? " is-editing" : ""}`}
                         data-supportid={s.id}
                         key={s.id}
+                        title={s.publicTitle} /* 말줄임된 제목의 전문(호버 툴팁) */
                         onMouseEnter={() => setHoverSupportId(s.id)}
                         onMouseLeave={() =>
                           setHoverSupportId((cur) => (cur === s.id ? null : cur))

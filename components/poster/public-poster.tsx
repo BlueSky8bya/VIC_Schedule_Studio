@@ -2607,7 +2607,7 @@ export function PublicPoster({
                 rel="noopener noreferrer"
                 style={bandStyle}
                 target="_blank"
-                title={period ? "자세히 보기 (새 탭에서 열림)" : "도와주러 가기 (새 탭에서 열림)"}
+                title={`${s.publicTitle} — ${period ? "자세히 보기" : "도와주러 가기"} (새 탭에서 열림)`}
                 {...bandHover}
                data-act={period ? "기간 안내 링크 열기" : "업 도움 링크 열기"}>
                 {bandInner}
@@ -2621,6 +2621,7 @@ export function PublicPoster({
               className={bandClass}
               key={s.id}
               style={bandStyle}
+              title={s.publicTitle} /* 좁은 칸에서 말줄임된 제목의 전문(호버 툴팁) */
               {...bandHover}
               {...(openSupportDetail
                 ? {
