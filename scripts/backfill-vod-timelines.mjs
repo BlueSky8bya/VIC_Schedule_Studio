@@ -20,6 +20,23 @@ const H = { apikey: K, Authorization: `Bearer ${K}`, "Content-Type": "applicatio
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // ── lib/broadcast/vod-timeline.ts의 파서 복제 ──
+function decodeHtmlEntities(text) {
+  let out = text;
+  for (let i = 0; i < 3; i += 1) {
+    const next = out
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&");
+    if (next === out) break;
+    out = next;
+  }
+  return out;
+}
 const ENTRY_RE = /^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s+(.+?)\s*$/;
 const SECTION_RE = /^\s*\[\s*([^\]]+?)\s*\]\s*(?:[-–]\s*(.+?))?\s*$/;
 function cleanSection(inner, tail) {
@@ -31,7 +48,7 @@ function cleanSection(inner, tail) {
 function parseTimeline(text) {
   const out = [];
   let section = null;
-  for (const rawLine of text.split(/\r?\n/)) {
+  for (const rawLine of decodeHtmlEntities(text).split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line) continue;
     const entry = ENTRY_RE.exec(line);
@@ -86,7 +103,7 @@ for (const titleNo of vods) {
     const entries = parseTimeline(c.comment);
     if (entries.length < 3) continue;
     if (!best || entries.length > best.entries.length) {
-      best = { nick: c.user_nick ?? "", commentNo: c.p_comment_no ?? null, entries };
+      best = { nick: decodeHtmlEntities(c.user_nick ?? ""), commentNo: c.p_comment_no ?? null, entries };
     }
   }
   if (best) withTl += 1;

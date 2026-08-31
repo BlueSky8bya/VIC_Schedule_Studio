@@ -34,6 +34,17 @@ describe("parseTimeline", () => {
   it("타임라인이 아닌 텍스트는 빈 배열", () => {
     expect(parseTimeline("/쓰담//쓰담/")).toEqual([]);
   });
+  it("숲 API의 HTML 이스케이프를 푼다 — 이중 이스케이프 포함(2026-09-01 prod 실측)", () => {
+    const entries = parseTimeline(
+      "00:01:00 ILLIT - It&#039;s Me\n00:02:00 빙밍&amp;amp;추사랑\n00:03:00 비명 -&amp;gt; 동가리\n00:04:00 &quot;가난하게 컸어?&quot; 챌린지"
+    );
+    expect(entries.map((e) => e.label)).toEqual([
+      "ILLIT - It's Me",
+      "빙밍&추사랑",
+      "비명 -> 동가리",
+      '"가난하게 컸어?" 챌린지'
+    ]);
+  });
 });
 
 describe("pickTimelineComment", () => {

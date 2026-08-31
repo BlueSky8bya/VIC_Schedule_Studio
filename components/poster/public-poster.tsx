@@ -190,6 +190,24 @@ function detailEdgePoint(
   return { x: Math.round(cx + dx * t), y: Math.round(cy + dy * t) };
 }
 // 토스트 한 줄에 들어가게 제목을 줄인다(긴 제목이 화면을 가로지르지 않게).
+// 숲 임베드 iframe API의 Pload 명령 — PonReady를 받은 플레이어에게 재생 설정을 통째로 넘긴다.
+// autoPlay:true + mutePlay:false = 플레이어가 음소거로 시동을 걸고 스스로 소리를 켜는 공식 경로
+// (채팅·추천·광고성 부가 UI는 전부 끔 — 미리보기 띠는 영상만).
+function buildDayVodPload(titleNo: number, sec: number): Record<string, unknown> {
+  return {
+    cmd: "Pload",
+    id: titleNo,
+    autoPlay: true,
+    mutePlay: false,
+    showChat: false,
+    isViewCnt: true,
+    isRecommendShow: false,
+    isEndRecommendShow: false,
+    startVideoSeconds: sec,
+    endVideoSeconds: 0
+  };
+}
+
 function trimTitle(title: string, max = 14) {
   const line = title.split("\n")[0]?.trim() ?? "";
   return line.length > max ? `${line.slice(0, max)}…` : line;
@@ -1045,13 +1063,65 @@ export function PublicPoster({
   // 팝오버가 아니라 화면 중앙의 작은 창: 썸네일 미리보기 + 제목 + 챕터를 한 자리에서.
   // 모바일 아젠다는 일정 없는 날 줄에 칩·챕터를 인라인으로 그려 창이 필요 없다.
   const [dayVodPop, setDayVodPop] = useState<{ dateKey: string } | null>(null);
-  // 창 안 인라인 플레이어 — 챕터/썸네일 클릭 시 미리보기 영역이 그 시점부터 재생하는 임베드로
-  // 바뀐다(vod.sooplive .../embed?change_second= — 2026-08-31 실측: 프레임 차단 없음, 시킹 반영).
+  // 창 안 인라인 플레이어 — 숲 임베드 iframe API(?fromApi=1, 2026-09-01 번들 분석+실측 확정):
+  //  · URL 파라미터만으로 소리 켠 자동재생을 요청하면(mutePlay=false) 플레이어가 재생을 시도조차
+  //    않고 클릭 대기 오버레이를 띄운다 — "한 번 더 클릭해야 재생" 버그의 원인.
+  //  · API 모드: 플레이어가 부모로 PonReady를 쏘면 Pload{autoPlay,mutePlay:false,startVideoSeconds}
+  //    로 응답한다. 자동재생 허용 브라우저(숲을 자주 보는 시청자)는 그 초부터 즉시 소리 켠 재생,
+  //    차단 브라우저는 그 지점 포스터+▶ 하나만(그 클릭은 플레이어 안이라 소리 켠 재생 성공).
+  //  · 재생이 한 번 시작된 뒤의 챕터 점프는 PseekTo — iframe 리로드가 없어 광고도 다시 안 돈다.
   const [dayVodPlaying, setDayVodPlaying] = useState<{ titleNo: number; sec: number } | null>(null);
+  // PonReady 전에 예약된 시작 초 / 살아있는 플레이어로 보내는 통로 / 미디어가 굴러간 적 있는지.
+  const dayVodSecRef = useRef(0);
+  const dayVodApiRef = useRef<{ post: (msg: Record<string, unknown>) => void } | null>(null);
+  const dayVodMediaAliveRef = useRef(false);
   useEffect(() => {
     // 창이 닫히거나 다른 날짜로 바뀌면 플레이어를 내린다(이전 방송이 소리 없이 계속 돌지 않게).
     setDayVodPlaying(null);
   }, [dayVodPop]);
+  const dayVodPlayingTitleNo = dayVodPlaying?.titleNo ?? null;
+  useEffect(() => {
+    if (dayVodPlayingTitleNo === null) return;
+    // 임베드는 vod.sooplive.co.kr → vod.sooplive.com으로 넘어갈 수 있다 — 정확 일치 허용 목록.
+    const SOOP_ORIGINS = new Set(["https://vod.sooplive.com", "https://vod.sooplive.co.kr"]);
+    const onMsg = (e: MessageEvent) => {
+      if (!SOOP_ORIGINS.has(e.origin) || !e.source) return;
+      const data = e.data as { cmd?: unknown; id?: unknown; event?: { type?: unknown } } | null;
+      if (!data || typeof data.cmd !== "string" || data.id !== String(dayVodPlayingTitleNo)) return;
+      if (data.cmd === "PonReady") {
+        const player = e.source as Window;
+        const origin = e.origin;
+        dayVodApiRef.current = { post: (msg) => player.postMessage(msg, origin) };
+        dayVodApiRef.current.post(buildDayVodPload(dayVodPlayingTitleNo, dayVodSecRef.current));
+      } else if (data.cmd === "PupdateMediaEvent") {
+        // buffer/timeUpdate/play 무엇이든 = 미디어 엔진이 굴러갔다 → 이후 점프는 PseekTo로.
+        // (자동재생이 차단된 상태에선 아무 이벤트도 오지 않는다 — 실측.)
+        dayVodMediaAliveRef.current = true;
+      }
+    };
+    window.addEventListener("message", onMsg);
+    return () => {
+      window.removeEventListener("message", onMsg);
+      dayVodApiRef.current = null;
+      dayVodMediaAliveRef.current = false;
+    };
+  }, [dayVodPlayingTitleNo]);
+  // 썸네일·챕터 클릭의 단일 진입점 — 같은 방송이 이미 떠 있으면 iframe을 갈지 않고
+  // postMessage로만 움직인다(리로드 없음 = 광고 재시작 없음, 소리 상태 유지).
+  const jumpDayVod = (titleNo: number, sec: number) => {
+    dayVodSecRef.current = sec;
+    const api = dayVodApiRef.current;
+    if (dayVodPlaying?.titleNo === titleNo && api) {
+      if (dayVodMediaAliveRef.current) {
+        api.post({ cmd: "PseekTo", seconds: sec });
+        api.post({ cmd: "Pplay" }); // 일시정지 중이었으면 이어서 — 재생 중엔 무해
+      } else {
+        // 자동재생이 차단돼 아직 안 굴러간 상태 — 시작 지점만 옮긴 Pload를 다시 보낸다.
+        api.post(buildDayVodPload(titleNo, sec));
+      }
+    }
+    setDayVodPlaying({ titleNo, sec }); // ↗ 새 탭 링크의 초 표기 동기화
+  };
   useEffect(() => {
     if (!dayVodPop) return;
     const onKey = (e: KeyboardEvent) => {
@@ -3600,13 +3670,13 @@ export function PublicPoster({
                       return (
                         <div className="dvm-vod" key={vod.titleNo}>
                           {playing ? (
-                            // 인라인 플레이어 — 챕터를 누를 때마다 그 시점으로 다시 연다(key로 재마운트).
+                            // 인라인 플레이어 — iframe API 모드(fromApi=1). 시작 초·시킹은 위
+                            // jumpDayVod의 postMessage가 담당하므로 src는 고정(재마운트 없음).
                             // 새 탭 링크는 우상단 ↗로 유지(크게 보고 싶을 때).
                             <div className="dvm-thumb is-playing">
                               <iframe
                                 allow="autoplay; fullscreen; encrypted-media"
-                                key={playing.sec}
-                                src={`https://vod.sooplive.co.kr/player/${vod.titleNo}/embed?change_second=${playing.sec}&autoPlay=true&mutePlay=false`}
+                                src={`https://vod.sooplive.co.kr/player/${vod.titleNo}/embed?fromApi=1`}
                                 title={label}
                               />
                               <a
@@ -3631,7 +3701,7 @@ export function PublicPoster({
                               onClick={(e) => {
                                 e.preventDefault();
                                 hapticTick();
-                                setDayVodPlaying({ titleNo: vod.titleNo, sec: 0 });
+                                jumpDayVod(vod.titleNo, 0);
                               }}
                               rel="noopener noreferrer"
                               target="_blank"
@@ -3667,7 +3737,7 @@ export function PublicPoster({
                             chapters={vod.chapters ?? 0}
                             defaultOpen={arr.length === 1}
                             durationMs={vod.durationMs}
-                            onJump={(sec) => setDayVodPlaying({ titleNo: vod.titleNo, sec })}
+                            onJump={(sec) => jumpDayVod(vod.titleNo, sec)}
                             slug={schedule.calendar.slug}
                             timelineBy={vod.timelineBy ?? ""}
                             titleNo={vod.titleNo}

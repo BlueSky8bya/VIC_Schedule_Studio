@@ -12,6 +12,27 @@ export type TimelineEntry = {
   section: string | null; // 팬이 적은 [코너] 헤더 — 예: "소통", "게임 - FC26"
 };
 
+// 숲 댓글 API는 본문을 HTML 이스케이프해서 준다("IT&#039;s Me") — 저장 전에 푼다.
+// 이중 이스케이프도 실재해서(&amp;amp;, &amp;gt; — 2026-09-01 prod 실측) 안정될 때까지 반복,
+// 상한 3회(팬이 진짜 "&amp;"를 쓰고 싶던 극단은 포기 — 표시 깨짐보다 낫다).
+function decodeHtmlEntities(text: string): string {
+  let out = text;
+  for (let i = 0; i < 3; i += 1) {
+    const next = out
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+      .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number(dec)))
+      .replace(/&quot;/g, '"')
+      .replace(/&apos;/g, "'")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&amp;/g, "&");
+    if (next === out) break;
+    out = next;
+  }
+  return out;
+}
+
 // "1:02:03 라벨" / "02:15 라벨" 줄 → 초 + 라벨. 라벨 앞의 장식 기호(ㄴ, -, ·)는 남긴다 —
 // 팬이 들여쓰기로 쓰는 대댓글식 계층이라 지우면 문맥이 사라진다.
 const ENTRY_RE = /^\s*(\d{1,2}):(\d{2})(?::(\d{2}))?\s+(.+?)\s*$/;
@@ -30,7 +51,7 @@ function cleanSection(inner: string, tail?: string): string {
 export function parseTimeline(text: string): TimelineEntry[] {
   const out: TimelineEntry[] = [];
   let section: string | null = null;
-  for (const rawLine of text.split(/\r?\n/)) {
+  for (const rawLine of decodeHtmlEntities(text).split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line) continue;
     const entry = ENTRY_RE.exec(line);
@@ -68,7 +89,7 @@ export function pickTimelineComment(
     if (entries.length < 3) continue;
     if (!best || entries.length > best.entries.length) {
       best = {
-        nick: typeof c.user_nick === "string" ? c.user_nick : "",
+        nick: typeof c.user_nick === "string" ? decodeHtmlEntities(c.user_nick) : "",
         commentNo: Number.isFinite(Number(c.p_comment_no)) ? Number(c.p_comment_no) : null,
         entries
       };
