@@ -4479,12 +4479,16 @@ html[data-reduce-motion] .editor-anchor-link line {
   overflow-y: auto;
   overscroll-behavior: contain;
   scrollbar-width: thin;
+  /* 스크롤바 자리를 항상 예약 — 옵션을 펼쳐 내용이 길어지는 순간 스크롤바가 폭을 11px
+     훔쳐가 태그 3열이 2열로 무너지고 입력칸이 가장자리에 눌리던 버그(2026-09-01 신고). */
+  scrollbar-gutter: stable;
   padding-right: 4px;
 }
 /* 읽기전용 상세(매니저·작업자)도 같은 가용 높이 상한 + 내부 스크롤. */
 .event-editor-panel .event-detail-readonly {
   max-height: var(--pop-max-h, calc(100dvh - 160px));
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 /* 달력 위에 떠 있으므로 카드 그림자를 한 단계 키워 '떠 있음'을 분명히 한다.
    (리디자인 공통 카드 규칙(--shadow-2, 파일 뒤쪽)보다 세게 — workspace 스코프로 특이도 확보.)
@@ -4548,6 +4552,13 @@ html[data-reduce-motion] .editor-anchor-link line {
 .studio-workspace .event-editor-panel .tp-mods .tp-chip {
   min-height: 33px;
   padding-block: 4px;
+  min-width: 0;
+}
+/* 팝오버 폭은 356px 고정 — auto-fill이 스크롤바 유무 따라 3↔2열로 출렁이지 않게
+   3열로 못 박는다(2026-09-01 사용자 지적: "똑같이 3열로"). */
+.studio-workspace .event-editor-panel .tp-content,
+.studio-workspace .event-editor-panel .tp-mods {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .studio-workspace .event-editor-panel .fold-head {
   min-height: 38px;
@@ -9551,6 +9562,7 @@ html[data-reduce-motion] .modal-close:active {
 }
 .support-link-input {
   width: 100%;
+  min-width: 0; /* grid 자식 — 긴 URL 값이 칸을 밀어 패널 밖으로 넘치지 않게 */
   min-height: 46px;
   border: 1px solid #e7dcc4;
   border-radius: var(--r-md);
