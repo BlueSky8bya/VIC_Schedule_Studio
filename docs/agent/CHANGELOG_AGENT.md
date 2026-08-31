@@ -6,6 +6,21 @@
 
 ## v0.1.0 — 2026-08-31
 
+### CHG-20260831-002 — DATA — 과거 일정 카드 153건 자동 생성(≤2025-12, VOD 제목 유추)
+
+Problem: 일정 시스템 이전 시대(2024-02~2025-12)는 다시보기는 있는데 달력이 텅 비어
+"그 날 무슨 방송이었나"를 칩 제목 말고는 알 수 없었다(사용자 지시 — VOD 제목으로 유추 생성).
+Change: `scripts/backfill-history-events.mjs` — vod_archive의 broadcast_day ≤ 2025-12-31 중
+일정 0개인 153일에 events 생성(캘린더 vic). 제목 = VOD 제목에서 분할 접미사(" - N") 제거·중복
+합침, 여러 방송이면 main+줄바꿈 sub, 새벽 귀속이 아니면 "N시 " 접두(기존 카드 문법). 기본값
+scheduled/public/stream·태그 없음(중립색)·start_time 없음(시각은 제목에 — 기존 관례).
+멱등(일정 있는 날 스킵), --dry 미리보기.
+Files: `scripts/backfill-history-events.mjs`, `db/backfills/2026-08-31-history-events.json`(생성 id 153건)
+Validation: --dry 검토 후 실행, 2024-03 그리드·모바일 아젠다 실측(분할 접힘·main+sub·시각
+접두·칩 공존 확인).
+Rollback: id 목록(`db/backfills/2026-08-31-history-events.json`)으로 일괄 delete — 전부
+≤2025-12-31 과거 달이라 시청자 실시간 화면 위험 없음.
+
 ### CHG-20260831-001 — MIGRATION/BOUNDARY — 숲 다시보기(VOD) 아카이브 + 공개 API `vods` 필드(0068)
 
 Problem: 시청자가 지난 방송을 다시 보려면 숲 방송국을 직접 뒤져야 했다. 날짜↔다시보기 매핑·영상
