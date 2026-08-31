@@ -68,9 +68,10 @@ const cal = await fetch(`${U}/rest/v1/calendars?select=id&slug=eq.vic`, { header
 const calendarId = cal[0]?.id;
 if (!calendarId) throw new Error("캘린더(vic)를 찾지 못했습니다.");
 
-// 태그 사전(이름 → id/kind). 이름이 바뀌면 매핑이 조용히 빠지므로 마지막에 미매치 이름을 알린다.
+// 태그 사전(kind|이름 → id). '기타'가 콘텐츠·형식 양쪽에 있으므로 kind까지 키에 넣는다.
+// 이름이 바뀌면 매핑이 조용히 빠지므로 마지막에 미매치 이름을 알린다.
 const tags = await all(`broadcast_tags?select=id,display_name,kind&calendar_id=eq.${calendarId}&is_active=eq.true&order=sort_order.asc`);
-const tagByName = new Map(tags.map((t) => [t.display_name, t]));
+const tagByName = new Map(tags.map((t) => [`${t.kind}|${t.display_name}`, t]));
 
 // 제목 키워드 → 태그 이름. 콘텐츠는 **순서가 우선순위**(첫 매치 = 대표 태그).
 const CONTENT_RULES = [
@@ -106,15 +107,21 @@ function tagsForTitle(title) {
   const picked = [];
   for (const [name, re] of CONTENT_RULES) {
     if (!re.test(title)) continue;
-    const t = tagByName.get(name);
+    const t = tagByName.get(`content|${name}`);
     if (!t) { missedTagNames.add(name); continue; }
     picked.push(t);
     if (picked.length >= 3) break; // 콘텐츠는 3개까지(대표 = 첫 번째)
   }
+  // 콘텐츠 매치가 하나도 없으면 콘텐츠 '기타'로 — 형식 태그만 남으면 대표(색)가 없는 카드가 된다.
+  if (picked.length === 0) {
+    const etc = tagByName.get("content|기타");
+    if (etc) picked.push(etc);
+    else missedTagNames.add("기타(콘텐츠)");
+  }
   for (const [name, re] of MODIFIER_RULES) {
     if (picked.length >= 6) break;
     if (!re.test(title)) continue;
-    const t = tagByName.get(name);
+    const t = tagByName.get(`modifier|${name}`);
     if (!t) { missedTagNames.add(name); continue; }
     picked.push(t);
   }
