@@ -85,6 +85,44 @@ export function mapApiItem(item: ApiItem): VodArchiveRow | null {
   };
 }
 
+// 방송이 터져 자정 넘어 재시작하면(새 bno) VOD가 갈라져 재시작분이 '다음날'로 귀속된다 —
+// 사람 감각으론 같은 밤 방송이다(실사례: 04-13 밤 방송 → 04-14 00시 "방송터짐!!!" + 재시작).
+// 그래서 **직전 VOD 종료와 간격이 30분 이내면 같은 방송으로 보고 앞 방송의 날짜를 잇는다**
+// (2026-08-31 사용자 결정). 날짜가 같아지면 시청자 카드엔 '다시보기 1·2'로 함께 붙는다.
+export const VOD_CHAIN_GAP_MS = 30 * 60_000;
+
+const vodStartMs = (r: VodArchiveRow): number | null =>
+  r.regDate === null ? null : Date.parse(r.regDate) - r.durationMs;
+
+/**
+ * 시작시각 오름차순으로 훑으며 30분 이내로 이어지는 VOD에 앞 방송의 broadcastDay를 전파한다
+ * (제자리 갱신, 반환 = 바뀐 행 수). 체인은 이행적이다: 터짐→재시작→재재시작이 전부 첫 방송 날.
+ * regDate가 없는 행은 체인을 끊는다(간격을 잴 수 없으면 잇지 않는다 — 보수적).
+ */
+export function chainBroadcastDays(rows: VodArchiveRow[]): number {
+  const sorted = rows
+    .filter((r) => r.regDate !== null)
+    .sort((a, b) => (vodStartMs(a) ?? 0) - (vodStartMs(b) ?? 0));
+  let changed = 0;
+  let prevEnd: number | null = null;
+  let chainDay: string | null = null;
+  for (const r of sorted) {
+    const start = vodStartMs(r)!;
+    const end = Date.parse(r.regDate!);
+    // 겹침(음수 간격)도 같은 방송이다 — 길이 반올림·등록 지연으로 생긴다.
+    if (prevEnd !== null && chainDay !== null && start - prevEnd <= VOD_CHAIN_GAP_MS) {
+      if (r.broadcastDay !== chainDay) {
+        r.broadcastDay = chainDay;
+        changed += 1;
+      }
+    } else {
+      chainDay = r.broadcastDay;
+    }
+    prevEnd = Math.max(prevEnd ?? Number.NEGATIVE_INFINITY, end);
+  }
+  return changed;
+}
+
 export async function fetchVodListPage(page: number): Promise<VodArchiveRow[] | null> {
   try {
     const res = await fetch(VOD_LIST_API(page), {
@@ -120,6 +158,34 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
       .select("title_no")
       .in("title_no", rows.map((r) => r.titleNo));
     const knownSet = new Set(((known.data as { title_no: number }[] | null) ?? []).map((r) => Number(r.title_no)));
+    // 30분 체인은 '직전 방송'을 알아야 한다. 새로 받은 묶음에 직전 방송이 없을 수 있으므로
+    // (증분 1페이지 경계), 저장돼 있는 최근 행을 합쳐서 함께 체인한다. 저장 행도 다시 upsert
+    // 된다 — 같은 알고리즘이라 결과는 멱등이고, 경계에서 어긋난 날짜가 있으면 이때 교정된다.
+    const recent = await supabase
+      .from("vod_archive")
+      .select("title_no, bno, broadcast_day, title, duration_ms, reg_date, comment_cnt, like_cnt, read_cnt")
+      .order("reg_date", { ascending: false, nullsFirst: false })
+      .limit(40);
+    const fetchedIds = new Set(rows.map((r) => r.titleNo));
+    type StoredRow = {
+      title_no: number; bno: string | null; broadcast_day: string; title: string;
+      duration_ms: number; reg_date: string | null; comment_cnt: number; like_cnt: number; read_cnt: number;
+    };
+    for (const s of ((recent.data as StoredRow[] | null) ?? [])) {
+      if (fetchedIds.has(Number(s.title_no))) continue;
+      rows.push({
+        titleNo: Number(s.title_no),
+        bno: s.bno,
+        broadcastDay: String(s.broadcast_day).slice(0, 10),
+        title: s.title,
+        durationMs: Number(s.duration_ms) || 0,
+        regDate: s.reg_date,
+        commentCnt: Number(s.comment_cnt) || 0,
+        likeCnt: Number(s.like_cnt) || 0,
+        readCnt: Number(s.read_cnt) || 0
+      });
+    }
+    chainBroadcastDays(rows);
     const { error } = await supabase.from("vod_archive").upsert(
       rows.map((r) => ({
         title_no: r.titleNo,

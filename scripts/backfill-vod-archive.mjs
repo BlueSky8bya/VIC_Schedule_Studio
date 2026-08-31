@@ -85,21 +85,54 @@ async function upsert(rows) {
   if (!res.ok) throw new Error(`upsert 실패: ${res.status} ${await res.text()}`);
 }
 
+// 30분 체인(lib/broadcast/vod-archive.ts의 chainBroadcastDays와 동일 규칙):
+// 직전 VOD 종료와 간격 30분 이내면 같은 방송 — 앞 방송의 broadcast_day를 잇는다(이행적).
+const GAP_MS = 30 * 60_000;
+function chainDays(rows) {
+  const sorted = rows
+    .filter((r) => r.reg_date !== null)
+    .sort(
+      (a, b) => (Date.parse(a.reg_date) - a.duration_ms) - (Date.parse(b.reg_date) - b.duration_ms)
+    );
+  let changed = 0;
+  let prevEnd = null;
+  let chainDay = null;
+  for (const r of sorted) {
+    const start = Date.parse(r.reg_date) - r.duration_ms;
+    const end = Date.parse(r.reg_date);
+    if (prevEnd !== null && chainDay !== null && start - prevEnd <= GAP_MS) {
+      if (r.broadcast_day !== chainDay) {
+        changed += 1;
+        console.log(`  체인: ${r.title_no} ${r.broadcast_day} → ${chainDay} (${r.title.slice(0, 30)})`);
+        r.broadcast_day = chainDay;
+      }
+    } else {
+      chainDay = r.broadcast_day;
+    }
+    prevEnd = Math.max(prevEnd ?? -Infinity, end);
+  }
+  return changed;
+}
+
+// 전체 페이지를 먼저 모아 체인한 뒤 upsert한다 — 체인은 페이지 경계를 넘는다.
 let page = 1;
-let total = 0;
 let skipped = 0;
+const all = [];
 for (;;) {
   const json = await fetchPage(page);
   const items = Array.isArray(json.data) ? json.data : [];
   if (items.length === 0) break;
   const rows = items.map(mapItem).filter(Boolean);
   skipped += items.length - rows.length;
-  if (rows.length > 0) await upsert(rows);
-  total += rows.length;
+  all.push(...rows);
   const last = json.meta?.last_page ?? page;
-  console.log(`페이지 ${page}/${last}: ${rows.length}건 upsert (누적 ${total})`);
+  console.log(`페이지 ${page}/${last}: ${rows.length}건 수집 (누적 ${all.length})`);
   if (page >= last) break;
   page += 1;
   await sleep(300);
 }
-console.log(`완료: ${total}건 저장, ${skipped}건 스킵(날짜 귀속 불가).`);
+const chained = chainDays(all);
+for (let i = 0; i < all.length; i += 100) {
+  await upsert(all.slice(i, i + 100));
+}
+console.log(`완료: ${all.length}건 저장, 체인 보정 ${chained}건, ${skipped}건 스킵(날짜 귀속 불가).`);

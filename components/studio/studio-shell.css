@@ -7314,10 +7314,10 @@ html[data-reduce-motion] .delete-snack {
 /* 웹: 넉넉한 칩 + 호버 떠오름·글로우, 패널 여유(가로폭 활용). */
 /* 웹: 가로폭 활용 — 흐르는 격자(여러 열) + 호버 떠오름. 칩은 큰 터치타깃 불필요. */
 @media (min-width: 1000px) {
+  /* 패딩은 묶음 카드(.tp-group)만 갖는다 — 그리드에 또 주면 콘텐츠 칸만 이중 패딩(형식과 비대칭). */
   .tp-content {
     grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
     gap: 8px;
-    padding: 13px;
   }
   .tp-mods {
     grid-template-columns: repeat(auto-fill, minmax(94px, 1fr));
@@ -7341,9 +7341,6 @@ html[data-reduce-motion] .delete-snack {
 }
 /* 모바일: 2열 큰 칩(엄지존) — 부제는 숨겨 폭을 아낀다. */
 @media (max-width: 999px) {
-  .tp-content {
-    padding: 9px;
-  }
   .tp-chip {
     padding: 8px 12px;
     font-size: var(--text-body); /* 14→13.5 수렴 */

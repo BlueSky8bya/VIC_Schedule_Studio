@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   attributeBroadcastDay,
+  chainBroadcastDays,
   kstStringToIso,
   mapApiItem,
-  parseThumbRowKey
+  parseThumbRowKey,
+  type VodArchiveRow
 } from "@/lib/broadcast/vod-archive";
 
 // 다시보기 아카이브(0068) 파싱 규칙 — 시청자 화면의 '날짜 → 다시보기' 매핑이 여기서 갈린다.
@@ -79,5 +81,55 @@ describe("mapApiItem", () => {
   });
   it("날짜 귀속이 안 되면 버린다", () => {
     expect(mapApiItem({ ...item, reg_date: undefined, ucc: { total_file_duration: 1000 } })).toBeNull();
+  });
+});
+
+// 30분 체인(2026-08-31 사용자 결정) — 방송이 터져 자정 넘어 재시작해도(새 bno·새 VOD)
+// 직전 종료와 30분 이내면 같은 방송: 앞 방송의 날짜를 잇는다. 실사례 04-13 밤 방송 →
+// 04-14 00시 "방송터짐!!!" + 재시작이 사람 감각으론 전부 13일 밤 방송.
+describe("chainBroadcastDays — 30분 이내 재시작은 같은 방송", () => {
+  const row = (titleNo: number, day: string, endIsoUtc: string, durMin: number): VodArchiveRow => ({
+    titleNo,
+    bno: String(titleNo),
+    broadcastDay: day,
+    title: "",
+    durationMs: durMin * 60_000,
+    regDate: endIsoUtc,
+    commentCnt: 0,
+    likeCnt: 0,
+    readCnt: 0
+  });
+
+  it("자정 넘은 재시작(간격 10분)이 앞 방송 날짜를 잇는다 — 이행적", () => {
+    // 13일 21시(KST)~14일 00:10 방송 → 00:20 터짐 21분 → 00:45 재시작 4시간
+    const a = row(1, "2026-04-13", "2026-04-13T15:10:00.000Z", 190); // 종료 00:10 KST
+    const b = row(2, "2026-04-14", "2026-04-13T15:41:00.000Z", 21); // 시작 00:20, 종료 00:41
+    const c = row(3, "2026-04-14", "2026-04-13T19:45:00.000Z", 240); // 시작 00:45
+    const changed = chainBroadcastDays([a, b, c]);
+    expect(changed).toBe(2);
+    expect(b.broadcastDay).toBe("2026-04-13");
+    expect(c.broadcastDay).toBe("2026-04-13");
+  });
+
+  it("간격이 30분을 넘으면 새 방송 — 제 날짜 유지", () => {
+    const a = row(1, "2026-04-13", "2026-04-13T15:00:00.000Z", 120);
+    const b = row(2, "2026-04-14", "2026-04-14T10:00:00.000Z", 60);
+    expect(chainBroadcastDays([a, b])).toBe(0);
+    expect(b.broadcastDay).toBe("2026-04-14");
+  });
+
+  it("겹침(음수 간격)도 같은 방송으로 잇는다", () => {
+    const a = row(1, "2026-04-13", "2026-04-13T15:10:00.000Z", 190);
+    const b = row(2, "2026-04-14", "2026-04-13T16:00:00.000Z", 55); // 시작이 a 종료보다 5분 이전
+    expect(chainBroadcastDays([a, b])).toBe(1);
+    expect(b.broadcastDay).toBe("2026-04-13");
+  });
+
+  it("regDate 없는 행은 체인을 끊는다(보수적) + 이미 같은 날이면 변경 0", () => {
+    const a = row(1, "2026-04-13", "2026-04-13T15:10:00.000Z", 190);
+    const noReg = { ...row(2, "2026-04-14", "x", 10), regDate: null };
+    const c = row(3, "2026-04-13", "2026-04-13T15:30:00.000Z", 10);
+    expect(chainBroadcastDays([a, noReg, c])).toBe(0);
+    expect(noReg.broadcastDay).toBe("2026-04-14");
   });
 });
