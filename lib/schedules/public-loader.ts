@@ -331,10 +331,11 @@ const loadPublicScheduleData = unstable_cache(
         return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string }[] | null) ?? [])
           .map((row) => {
             const tl = tlByNo.get(Number(row.title_no));
-            // 썸네일은 rowKey만 — URL 공통 접두를 365번 반복 전송하지 않는다.
-            const thumbKey =
-              typeof row.thumb === "string"
-                ? (/[?&]rowKey=([^&]+)/.exec(row.thumb)?.[1] ?? "")
+            // 썸네일은 쿼리 문자열만(접두 반복 전송 안 함). column·t까지 보존해야 스트리머가
+            // 지정한 썸네일 지점이 나온다 — rowKey만 남기면 0초 컷(2026-09-01 실측 수정).
+            const thumbQuery =
+              typeof row.thumb === "string" && row.thumb.includes("?")
+                ? row.thumb.slice(row.thumb.indexOf("?") + 1)
                 : "";
             return {
               dateKey: String(row.broadcast_day).slice(0, 10),
@@ -343,7 +344,7 @@ const loadPublicScheduleData = unstable_cache(
               durationMs: Number(row.duration_ms) || 0,
               chapters: tl ? Number(tl.entry_count) || 0 : 0,
               timelineBy: tl && typeof tl.author_nick === "string" ? tl.author_nick : "",
-              thumbKey
+              thumbQuery
             };
           })
           .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0);

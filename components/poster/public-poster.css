@@ -1218,6 +1218,12 @@ html[data-reduce-motion] .day-vod-modal {
   min-height: 0;
   flex: 1 1 auto;
 }
+/* 미리보기는 절대 안 짜부라진다 — flex 압축을 허용하면 16:9가 띠처럼 잘렸다(2026-09-01 실측
+   신고). 챕터가 남는 높이를 갖고, 화면이 아주 낮으면 챕터 쪽이 짧아지는 게 맞는 우선순위. */
+.dvm-body[data-single] .dvm-thumb,
+.dvm-body[data-single] .dvm-title {
+  flex: none;
+}
 .dvm-body[data-single] .vod-chapters {
   min-height: 0;
   display: flex;

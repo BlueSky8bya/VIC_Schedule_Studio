@@ -1029,7 +1029,7 @@ export function PublicPoster({
         durationMs: number;
         chapters?: number;
         timelineBy?: string;
-        thumbKey?: string;
+        thumbQuery?: string;
       }[]
     >();
     for (const v of schedule.vods ?? []) {
@@ -3637,11 +3637,11 @@ export function PublicPoster({
                               target="_blank"
                               title={label}
                             >
-                              {vod.thumbKey ? (
+                              {vod.thumbQuery ? (
                                 <img
                                   alt=""
                                   loading="lazy"
-                                  src={`https://videoimg.sooplive.com/php/SnapshotLoad.php?rowKey=${vod.thumbKey}`}
+                                  src={`https://videoimg.sooplive.com/php/SnapshotLoad.php?${vod.thumbQuery}`}
                                 />
                               ) : null}
                               <span aria-hidden="true" className="dvm-play">

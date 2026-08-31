@@ -154,9 +154,11 @@ export type PublicVodEntry = {
   // 챕터를 펼칠 때 /api/public/[slug]/vod-timeline에서 따로 받는다.
   chapters?: number;
   timelineBy?: string;
-  // 대표 썸네일 rowKey(0072) — URL 공통 접두는 클라가 조립(payload 절약):
-  // https://videoimg.sooplive.com/php/SnapshotLoad.php?rowKey={thumbKey}
-  thumbKey?: string;
+  // 대표 썸네일 쿼리(0072) — SnapshotLoad의 쿼리 문자열 전체(rowKey=...&column=...&t=...).
+  // column·t가 **스트리머가 지정한 썸네일 지점**을 담는다(2026-09-01 실측: 숲 웹 카드와 동일
+  // URL) — rowKey만 남기면 0초/대기화면 컷으로 퇴화한다. URL 공통 접두는 클라가 조립:
+  // https://videoimg.sooplive.com/php/SnapshotLoad.php?{thumbQuery}
+  thumbQuery?: string;
 };
 
 // 팬 타임라인 본문(챕터 목록) — 시각(초)·라벨·팬이 적은 코너 헤더.
