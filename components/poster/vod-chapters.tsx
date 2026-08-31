@@ -111,7 +111,7 @@ export function VodChapters({
       >
         <span aria-hidden="true" className="vch-caret">{open ? "▾" : "▸"}</span>
         챕터 {chapters}개
-        {timelineBy ? <em className="vch-by">타임라인 · {timelineBy}님</em> : null}
+        {timelineBy ? <em className="vch-by">타임라인 ({timelineBy}님 감사합니다)</em> : null}
       </button>
       {!open ? null : loading ? (
         <p className="vch-note">불러오는 중…</p>

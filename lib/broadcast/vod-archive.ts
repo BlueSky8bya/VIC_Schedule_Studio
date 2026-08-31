@@ -147,7 +147,25 @@ export function chainBroadcastDays(rows: VodArchiveRow[]): number {
   return changed;
 }
 
-export async function fetchVodListPage(page: number): Promise<VodArchiveRow[] | null> {
+// 날짜 귀속 명시적 예외 — scripts/backfill-vod-archive.mjs의 DAY_OVERRIDES와 같은 목록(2026-08-31).
+// 전체 스윕(아래 syncVodArchiveDeep)이 옛 행을 다시 쓰므로 여기에도 없으면 예외가 풀려버린다.
+const DAY_OVERRIDES = new Map<number, string>([
+  [154012373, "2025-03-13"], // [WBD] 야구 연습 2일차 -1 (새벽 시작 — 13일 세션)
+  [154108485, "2025-03-14"], // [WBD] 야구 연습 3일차
+  [137094755, "2024-09-23"], // [버축대2] FC25 연습 3일차
+  [137222735, "2024-09-24"], // [버축대2] FC25 연습 4일차 -1
+  [137281079, "2024-09-24"] // [버축대2] FC25 연습 4일차 -2
+]);
+function applyDayOverrides(rows: VodArchiveRow[]): void {
+  for (const r of rows) {
+    const o = DAY_OVERRIDES.get(r.titleNo);
+    if (o) r.broadcastDay = o;
+  }
+}
+
+export async function fetchVodListPage(
+  page: number
+): Promise<{ rows: VodArchiveRow[]; lastPage: number } | null> {
   try {
     const res = await fetch(VOD_LIST_API(page), {
       headers: { "User-Agent": "Mozilla/5.0" },
@@ -155,9 +173,12 @@ export async function fetchVodListPage(page: number): Promise<VodArchiveRow[] | 
       signal: AbortSignal.timeout(8000)
     });
     if (!res.ok) return null;
-    const json = (await res.json()) as { data?: ApiItem[] };
+    const json = (await res.json()) as { data?: ApiItem[]; meta?: { last_page?: number } };
     if (!Array.isArray(json.data)) return null;
-    return json.data.map(mapApiItem).filter((r): r is VodArchiveRow => r !== null);
+    return {
+      rows: json.data.map(mapApiItem).filter((r): r is VodArchiveRow => r !== null),
+      lastPage: Number(json.meta?.last_page) || page
+    };
   } catch {
     return null;
   }
@@ -170,10 +191,10 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
   if (!supabase) return { ok: false, upserted: 0 };
   let rows: VodArchiveRow[] = [];
   for (let p = 1; p <= pages; p += 1) {
-    const pageRows = await fetchVodListPage(p);
-    if (!pageRows) break; // 실패 페이지부터 중단 — 부분 성공분은 그대로 반영
-    rows = rows.concat(pageRows);
-    if (pageRows.length === 0) break;
+    const page = await fetchVodListPage(p);
+    if (!page) break; // 실패 페이지부터 중단 — 부분 성공분은 그대로 반영
+    rows = rows.concat(page.rows);
+    if (page.rows.length === 0) break;
   }
   if (rows.length === 0) return { ok: false, upserted: 0 };
   try {
@@ -213,6 +234,7 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
       });
     }
     chainBroadcastDays(rows);
+    applyDayOverrides(rows);
     const { error } = await supabase.from("vod_archive").upsert(
       rows.map((r) => ({
         title_no: r.titleNo,
@@ -236,5 +258,76 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
     return { ok: true, upserted: rows.length };
   } catch {
     return { ok: false, upserted: 0 };
+  }
+}
+
+/**
+ * 전체 카탈로그 스윕(12시간 주기, maybeSyncVodPipeline이 부른다) — 토리님이 **한참 지난 VOD**의
+ * 제목·썸네일·공개범위를 나중에 고쳐도 사이트가 따라가게 전 페이지를 다시 읽는다.
+ * 삭제 반영 포함: 목록에서 사라진 VOD는 우리 행도 지운다(죽은 다시보기 링크 방지). 단
+ * **전량 수집이 완전할 때만 + 소량일 때만**(비공식 API 이변으로 목록이 텅 비면 오인 삭제 —
+ * fail-safe). 요청 ~20회/12시간이라 부담 없음.
+ */
+export async function syncVodArchiveDeep(): Promise<{ ok: boolean; total: number; deleted: number }> {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return { ok: false, total: 0, deleted: 0 };
+  const all: VodArchiveRow[] = [];
+  let page = 1;
+  let lastPage = 1;
+  let complete = true;
+  for (;;) {
+    const res = await fetchVodListPage(page);
+    if (!res) {
+      complete = false;
+      break;
+    }
+    all.push(...res.rows);
+    lastPage = Math.max(lastPage, res.lastPage);
+    if (page >= lastPage || res.rows.length === 0) break;
+    page += 1;
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  if (all.length === 0) return { ok: false, total: 0, deleted: 0 };
+  chainBroadcastDays(all);
+  applyDayOverrides(all);
+  try {
+    for (let i = 0; i < all.length; i += 200) {
+      const { error } = await supabase.from("vod_archive").upsert(
+        all.slice(i, i + 200).map((r) => ({
+          title_no: r.titleNo,
+          bno: r.bno,
+          broadcast_day: r.broadcastDay,
+          title: r.title,
+          duration_ms: r.durationMs,
+          reg_date: r.regDate,
+          comment_cnt: r.commentCnt,
+          like_cnt: r.likeCnt,
+          read_cnt: r.readCnt,
+          auth_no: r.authNo,
+          thumb: r.thumb,
+          synced_at: new Date().toISOString()
+        })),
+        { onConflict: "title_no" }
+      );
+      if (error) return { ok: false, total: all.length, deleted: 0 };
+    }
+    let deleted = 0;
+    if (complete) {
+      const ids = new Set(all.map((r) => r.titleNo));
+      const dbRows = await supabase.from("vod_archive").select("title_no");
+      const gone = (((dbRows.data as { title_no: number }[] | null) ?? []))
+        .map((r) => Number(r.title_no))
+        .filter((no) => !ids.has(no));
+      if (gone.length > 0 && gone.length <= 20) {
+        await supabase.from("vod_archive").delete().in("title_no", gone);
+        await supabase.from("vod_timeline").delete().in("title_no", gone);
+        deleted = gone.length;
+      }
+    }
+    // 제목·썸네일·범위·삭제가 공개 화면에 바로 반영되게 캐시 무효화.
+    revalidatePublicSchedule();
+    return { ok: true, total: all.length, deleted };
+  } catch {
+    return { ok: false, total: all.length, deleted: 0 };
   }
 }

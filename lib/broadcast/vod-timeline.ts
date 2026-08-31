@@ -1,6 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { BJ_ID } from "@/lib/broadcast/soop";
-import { syncVodArchive } from "@/lib/broadcast/vod-archive";
+import { syncVodArchive, syncVodArchiveDeep } from "@/lib/broadcast/vod-archive";
 
 // 팬 타임라인(다시보기 챕터) 수집·파싱(0071) — PLAN-20260831-001 Phase 2 A안.
 // 숲 다시보기 댓글에서 타임라인 댓글(타임스탬프 3개 이상)을 골라 {sec, label, section}[]로
@@ -154,8 +154,23 @@ export async function maybeSyncVodPipeline(): Promise<{
   if (Number.isFinite(lastMs) && Date.now() - lastMs < intervalMin * 60_000) {
     return { ran: false, tier, sinceEndMin: sinceEnd };
   }
-  await syncVodArchive(1);
-  const [limit, days] = tier === "burst" ? [1, 1] : tier === "hot" ? [3, 2] : [8, 14];
+  // 평시엔 12시간에 한 번 **전체 카탈로그 스윕** — 한참 지난 VOD의 제목·썸네일 수정, 구독 전환,
+  // 삭제까지 따라간다(가장 오래 안 본 행의 synced_at이 스윕 필요의 무상태 마커).
+  let deep = false;
+  if (tier === "calm") {
+    const { data: oldest } = await supabase
+      .from("vod_archive")
+      .select("synced_at")
+      .order("synced_at", { ascending: true })
+      .limit(1);
+    const oldestIso = (oldest as { synced_at: string }[] | null)?.[0]?.synced_at;
+    deep = !oldestIso || Date.now() - Date.parse(oldestIso) > 12 * 3600_000;
+  }
+  if (deep) await syncVodArchiveDeep();
+  else await syncVodArchive(1);
+  // 타임라인: 평시엔 기간 제한 없이 오래 안 본 순으로 순환(8개/30분 → 전체 ~20시간 주기) —
+  // 옛 타임라인의 나중 수정도 하루 안에 흡수된다. 뱅종 직후엔 최신만 빠르게.
+  const [limit, days] = tier === "burst" ? [1, 1] : tier === "hot" ? [3, 2] : [8, 3650];
   await syncVodTimelines(await pickTimelineSyncTargets(limit, days));
   return { ran: true, tier, sinceEndMin: sinceEnd };
 }
@@ -185,16 +200,14 @@ export async function pickTimelineSyncTargets(limit = 8, days = 14): Promise<num
   if (!supabase) return [];
   const sinceIso = new Date(Date.now() - days * 86400_000).toISOString();
   const [vodsRes, tlRes] = await Promise.all([
+    // days가 크면(평시 전체 순환) 사실상 전 카탈로그가 후보 — 500이면 수년치 여유.
     supabase
       .from("vod_archive")
       .select("title_no, reg_date")
       .gte("reg_date", sinceIso)
       .order("reg_date", { ascending: false })
-      .limit(40),
-    supabase
-      .from("vod_timeline")
-      .select("title_no, synced_at")
-      .gte("synced_at", new Date(Date.now() - 60 * 86400_000).toISOString())
+      .limit(500),
+    supabase.from("vod_timeline").select("title_no, synced_at")
   ]);
   const synced = new Map(
     (((tlRes.data as { title_no: number; synced_at: string }[] | null) ?? [])).map((r) => [

@@ -1236,6 +1236,15 @@ html[data-reduce-motion] .day-vod-modal {
   overscroll-behavior: contain;
   border-radius: var(--r-md, 12px);
 }
+/* 다중 VOD 날(예: 하루 2방송) — 창 전체 스크롤(방송 사이 이동)과 **타임라인 자체 스크롤**이
+   공존해야 한다(2026-09-01 사용자 지적: 첫 방송 챕터가 통째로 펼쳐져 두 번째 방송까지
+   한참 내려가야 했다). 각 챕터 목록을 캡 + 자체 스크롤로. */
+.dvm-body:not([data-single]) .vch-scroll {
+  max-height: 300px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--r-md, 12px);
+}
 @keyframes day-vod-in {
   from {
     opacity: 0;
