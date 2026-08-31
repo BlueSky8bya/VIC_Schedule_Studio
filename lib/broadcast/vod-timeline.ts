@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { BJ_ID } from "@/lib/broadcast/soop";
+import { syncVodArchive } from "@/lib/broadcast/vod-archive";
 
 // 팬 타임라인(다시보기 챕터) 수집·파싱(0071) — PLAN-20260831-001 Phase 2 A안.
 // 숲 다시보기 댓글에서 타임라인 댓글(타임스탬프 3개 이상)을 골라 {sec, label, section}[]로
@@ -122,6 +123,41 @@ export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolea
     await new Promise((r) => setTimeout(r, 200));
   }
   return { ok: true, saved };
+}
+
+/**
+ * VOD·타임라인 증분 동기화의 단일 진입점 — **호출 주기가 아니라 DB 스로틀**로 조절한다.
+ * 백업 크론(1분)·시청자 폴링(soop-live) 어느 쪽이 불러도 같은 간격을 지킨다:
+ *   뱅종 30분 안 = 1분 / 60분 안 = 5분 / 평시 = 30분 (2026-08-31 사용자 확정).
+ * 근거를 서버 시계 분(min % N)이 아니라 '마지막 동기화 시각(vod_archive.synced_at)'으로 두는
+ * 이유: 크론 호출 타이밍에 기대면 한 번 어긋날 때 통째로 굶는다(2026-09-01 prod 실측 —
+ * 타임라인이 하루 종일 0건). 방송 중 호출 금지는 호출자가 보장한다.
+ */
+export async function maybeSyncVodPipeline(): Promise<{
+  ran: boolean;
+  tier: string;
+  sinceEndMin: number | null;
+}> {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return { ran: false, tier: "no-admin", sinceEndMin: null };
+  const sinceEnd = await minutesSinceLastBroadcastEnd();
+  const tier =
+    sinceEnd !== null && sinceEnd <= 30 ? "burst" : sinceEnd !== null && sinceEnd <= 60 ? "hot" : "calm";
+  const intervalMin = tier === "burst" ? 1 : tier === "hot" ? 5 : 30;
+  const { data } = await supabase
+    .from("vod_archive")
+    .select("synced_at")
+    .order("synced_at", { ascending: false })
+    .limit(1);
+  const lastIso = (data as { synced_at: string }[] | null)?.[0]?.synced_at;
+  const lastMs = lastIso ? Date.parse(lastIso) : 0;
+  if (Number.isFinite(lastMs) && Date.now() - lastMs < intervalMin * 60_000) {
+    return { ran: false, tier, sinceEndMin: sinceEnd };
+  }
+  await syncVodArchive(1);
+  const [limit, days] = tier === "burst" ? [1, 1] : tier === "hot" ? [3, 2] : [8, 14];
+  await syncVodTimelines(await pickTimelineSyncTargets(limit, days));
+  return { ran: true, tier, sinceEndMin: sinceEnd };
 }
 
 /** 마지막 뱅종 후 지난 분(分). 세션 기록이 없으면 null. 뱅종 직후 고속 수집 창 판정용. */

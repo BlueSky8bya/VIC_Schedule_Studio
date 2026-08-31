@@ -1205,12 +1205,30 @@ html[data-reduce-motion] .day-vod-modal {
   font-weight: 600;
   color: #3f3a52;
 }
-.vch-span {
-  flex: none;
-  font-style: normal;
-  font-size: var(--text-micro);
-  font-weight: 700;
-  color: #a3aec9;
+/* (.vch-span 구간 길이 표기 제거 — 2026-09-01 사용자 결정) */
+
+/* ── 날짜 창(단일 방송): 미리보기 고정 + 타임라인 전용 스크롤 ──
+   "의식하는 대로" 굴러가게: 챕터 위 휠 = 챕터만(overscroll contain이 경계에서 체이닝 차단),
+   미리보기 위 휠 = 아무것도 안 움직임(창 본문이 안 흐르니 플레이어가 항상 보인다). */
+.dvm-body[data-single] {
+  overflow: hidden;
+  flex: 1 1 auto; /* 창 높이를 다 써서 남는 공간 = 챕터 스크롤 영역 */
+}
+.dvm-body[data-single] .dvm-vod {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+.dvm-body[data-single] .vod-chapters {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.dvm-body[data-single] .vch-scroll {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--r-md, 12px);
 }
 @keyframes day-vod-in {
   from {

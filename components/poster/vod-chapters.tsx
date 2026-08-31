@@ -98,16 +98,7 @@ export function VodChapters({
       ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
       : `${m}:${String(s).padStart(2, "0")}`;
   };
-  // 구간 길이 = 다음 항목까지(마지막은 영상 끝까지). 1분 미만은 소음이라 생략.
-  const spanOf = (i: number): string | null => {
-    const list = timeline?.entries ?? [];
-    const endSec = i + 1 < list.length ? list[i + 1].sec : Math.round(durationMs / 1000);
-    const span = endSec - list[i].sec;
-    if (!(span >= 60)) return null;
-    const h = Math.floor(span / 3600);
-    const m = Math.round((span % 3600) / 60);
-    return h > 0 ? (m > 0 ? `${h}시간 ${m}분` : `${h}시간`) : `${m}분`;
-  };
+  void durationMs; // (구간 길이 표기는 2026-09-01 사용자 결정으로 제거 — 시각·라벨만 남긴다)
 
   return (
     <div className="vod-chapters">
@@ -127,13 +118,14 @@ export function VodChapters({
       ) : failed || !timeline ? (
         <p className="vch-note">챕터를 불러오지 못했어요.</p>
       ) : (
-        <div className="vch-list">
-          {groups.map((g, gi) => (
-            <section className="vch-group" key={gi}>
-              {g.section ? <div className="vch-sec">{g.section}</div> : null}
-              {g.items.map((e) => {
-                const span = spanOf(e.idx);
-                return (
+        /* 스크롤 래퍼는 목록과 분리 — 날짜 창(단일 방송)에선 이 래퍼만 흐르고 미리보기는 고정.
+           columns를 스크롤 요소에 직접 걸면 높이 제한이 열 개수를 불리므로(가로 넘침) 분리 필수. */
+        <div className="vch-scroll">
+          <div className="vch-list">
+            {groups.map((g, gi) => (
+              <section className="vch-group" key={gi}>
+                {g.section ? <div className="vch-sec">{g.section}</div> : null}
+                {g.items.map((e) => (
                   <a
                     className="vch-item"
                     data-act="vod-chapter-jump"
@@ -151,12 +143,11 @@ export function VodChapters({
                   >
                     <time className="vch-t">{hhmmss(e.sec)}</time>
                     <span className="vch-label">{e.label}</span>
-                    {span ? <em className="vch-span">{span}</em> : null}
                   </a>
-                );
-              })}
-            </section>
-          ))}
+                ))}
+              </section>
+            ))}
+          </div>
         </div>
       )}
     </div>

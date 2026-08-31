@@ -1,17 +1,15 @@
 import { NextResponse } from "next/server";
 import { recordLiveTick } from "@/lib/broadcast/session";
 import { fetchSoopLive } from "@/lib/broadcast/soop";
-import { syncVodArchive } from "@/lib/broadcast/vod-archive";
-import {
-  minutesSinceLastBroadcastEnd,
-  pickTimelineSyncTargets,
-  syncVodTimelines
-} from "@/lib/broadcast/vod-timeline";
+import { maybeSyncVodPipeline } from "@/lib/broadcast/vod-timeline";
 
 // 방송 ON/OFF 백업 폴러 — 시청자 트래픽이 없을 때도(방문자 0명 새벽 방송 등) 방송 세션이
 // 빠짐없이 열리고 닫히도록 Vercel cron이 주기적으로 친다. soop-live 라우트와 같은 기록기를 호출.
 // 시청자 폴링이 1차 신호, 이건 빈 구간을 메우는 백업(특히 뱅종 확정).
 export const dynamic = "force-dynamic";
+// Vercel(Hobby) 함수 기본 10초 — 평시 스윕(타임라인 8개 = 댓글 최대 16요청 + 간격)이 그 안에
+// 못 끝나 도중에 죽을 수 있다(2026-09-01 prod에서 동기화가 하루 종일 0건이던 유력 원인).
+export const maxDuration = 60;
 
 export async function GET(req: Request) {
   // Vercel cron은 CRON_SECRET이 있으면 Authorization: Bearer <secret>로 호출한다. 설정돼 있으면 검증.
@@ -29,24 +27,11 @@ export async function GET(req: Request) {
     bno: state.bno,
     startedAt: state.startedAt
   });
-  // 다시보기 아카이브(0068)·팬 타임라인(0071) 증분 동기화 — 오프라인일 때만(방송 중엔 확정 전).
-  // 세 단 주기(2026-08-31 사용자 확정 — 타임라인이 보통 뱅종 5분 안에 올라온다):
-  //  · 뱅종 후 30분 안 = 버스트: 외부 크론이 치는 **1분마다** VOD 1페이지 + 최신 타임라인 1개
-  //  · 뱅종 후 60분 안 = 고속: 5분마다 + 최신 3개
-  //  · 그 외 = 평시: 30분마다 + 최근 14일 8개(팬의 나중 수정도 이 스윕이 흡수)
-  let vodSynced = false;
-  let timelinesSynced = 0;
-  if (!state.isLive) {
-    const min = new Date().getUTCMinutes();
-    const sinceEnd = await minutesSinceLastBroadcastEnd();
-    const tier =
-      sinceEnd !== null && sinceEnd <= 30 ? "burst" : sinceEnd !== null && sinceEnd <= 60 ? "hot" : "calm";
-    const due = tier === "burst" ? true : tier === "hot" ? min % 5 === 0 : min % 30 === 0;
-    if (due) {
-      vodSynced = (await syncVodArchive(1)).ok;
-      const [limit, days] = tier === "burst" ? [1, 1] : tier === "hot" ? [3, 2] : [8, 14];
-      timelinesSynced = (await syncVodTimelines(await pickTimelineSyncTargets(limit, days))).saved;
-    }
-  }
-  return NextResponse.json({ ok: true, isLive: state.isLive, vodSynced, timelinesSynced });
+  // 다시보기·팬 타임라인 증분 — 단일 진입점(maybeSyncVodPipeline)이 DB 스로틀로 주기를 지킨다
+  // (뱅종 30분 안 = 1분 / 60분 안 = 5분 / 평시 = 30분). 방송 중엔 안 돌린다(VOD 확정 전).
+  // 결과를 응답에 실어 cron-job.org 실행 기록에서 육안 확인 가능하게 한다.
+  const sync = state.isLive
+    ? { ran: false, tier: "live", sinceEndMin: null as number | null }
+    : await maybeSyncVodPipeline();
+  return NextResponse.json({ ok: true, isLive: state.isLive, sync });
 }

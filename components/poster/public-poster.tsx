@@ -3589,7 +3589,7 @@ export function PublicPoster({
                       <X aria-hidden="true" size={16} strokeWidth={2.5} />
                     </button>
                   </div>
-                  <div className="dvm-body">
+                  <div className="dvm-body" data-single={list.length === 1 ? "" : undefined}>
                     {list.map((vod, vi, arr) => {
                       const playerUrl = `https://vod.sooplive.co.kr/player/${vod.titleNo}`;
                       const label = vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`;
@@ -3606,7 +3606,7 @@ export function PublicPoster({
                               <iframe
                                 allow="autoplay; fullscreen; encrypted-media"
                                 key={playing.sec}
-                                src={`https://vod.sooplive.co.kr/player/${vod.titleNo}/embed?change_second=${playing.sec}&autoPlay=true&mutePlay=true`}
+                                src={`https://vod.sooplive.co.kr/player/${vod.titleNo}/embed?change_second=${playing.sec}&autoPlay=true&mutePlay=false`}
                                 title={label}
                               />
                               <a
