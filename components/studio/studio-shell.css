@@ -4167,13 +4167,19 @@ html[data-reduce-motion] .perf-windows button.active {
   color: #6b5b8a;
   font-weight: 700;
   font-size: var(--text-body);
-  padding: 6px 12px;
+  /* 히트 영역 확대(2026-09-01 사용자: 누르기 힘듦) — 상위 90% 줌을 감안해 아이콘 18px +
+     패딩·최소높이 크게(렌더 실측 ~46×32 타깃). 세그먼트 존재감도 같이 또렷해진다. */
+  padding: 9px 16px;
+  min-height: 36px;
   border-radius: var(--r-pill);
   cursor: pointer;
   transition:
     background 0.15s ease,
     box-shadow 0.12s ease,
     transform 0.08s ease;
+}
+.studio-avatar-ctl button:not(.on):hover {
+  background: rgb(255 255 255 / 60%); /* '여기 누를 수 있다' — 비활성 쪽에도 호버 응답 */
 }
 .studio-avatar-ctl button.on {
   background: #fff;

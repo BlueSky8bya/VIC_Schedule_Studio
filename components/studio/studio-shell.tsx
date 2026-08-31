@@ -5972,7 +5972,7 @@ export function StudioShell({
                 onClick={() => pickAvatarSide("left")}
                 data-act="avatar-ctl-toggle"
               >
-                <ArrowLeftToLine aria-hidden="true" size={14} strokeWidth={2.4} />
+                <ArrowLeftToLine aria-hidden="true" size={18} strokeWidth={2.4} />
               </button>
               <span aria-hidden="true" className="avatar-ctl-label">
                 아바타 자리
@@ -5985,7 +5985,7 @@ export function StudioShell({
                 onClick={() => pickAvatarSide("right")}
                 data-act="avatar-ctl-toggle"
               >
-                <ArrowRightToLine aria-hidden="true" size={14} strokeWidth={2.4} />
+                <ArrowRightToLine aria-hidden="true" size={18} strokeWidth={2.4} />
               </button>
             </div>
           ) : null}
