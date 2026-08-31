@@ -21,7 +21,8 @@ export async function GET(
   }
 
   const [months, daily] = await Promise.all([
-    getPublicBroadcastStats(6),
+    // 보는 달로 끝나는 6개월 — 과거 달(다시보기 시대)을 보고 있으면 그 시대의 트렌드가 나온다.
+    getPublicBroadcastStats(6, { year, month }),
     getPublicBroadcastDaily(year, month)
   ]);
 

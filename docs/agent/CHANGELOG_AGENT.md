@@ -6,6 +6,21 @@
 
 ## v0.1.0 — 2026-08-31
 
+### CHG-20260831-003 — MIGRATION — 방송시간 통계에 다시보기(VOD) 폴백(0070) + 보는 달 앵커
+
+Problem: broadcast_session은 2026-06 도입이라 그 이전 달의 방송시간이 모든 인사이트에서 0이었다.
+또 시청자 '이 달 기록'의 월별 방송시간이 '오늘' 기준 6개월 고정이라 과거 달을 보면 항상 0.
+Change: 0070 — 공개 RPC(get_public_broadcast_stats/daily)를 '세션 없는 날 = vod_archive 길이 합'
+폴백으로 교체(세션 있는 날은 세션이 정답 — 이중 집계 금지, 구독 전용 VOD 포함 = 실제 방송 총량).
+서버 로더(lib/insights/actions.ts)에도 같은 규칙의 mergeVodFallback — 개발자 트렌드·멤버 인사이트
+공용. getPublicBroadcastStats에 anchor(보는 달) 추가 + broadcast 라우트가 year/month를 앵커로 전달
+(앵커 달 이후는 잘라냄). 태그 인사이트는 생성된 과거 일정에서 자동 집계(코드 변경 없음).
+Files: `db/migrations/0070_broadcast_stats_vod_fallback.sql`, `lib/insights/actions.ts`,
+`lib/schedules/public-loader.ts`, `app/api/public/[calendarSlug]/broadcast/route.ts`
+Validation: RPC 실측(2024-02 22.6h~2026-08, 월 누락 없음) · 시청자 2024-03 기록 실측(방송 시간
+77시간 6분·월 트렌드·일별 막대·콘텐츠별 태그 섹션) · tsc/lint/build exit 0.
+Rollback: 0049/0050 원문 재적용 + 로더 merge 제거.
+
 ### CHG-20260831-002 — DATA — 과거 일정 카드 자동 생성(≤2025-12, VOD 제목 유추) — v2 168건+태그
 
 Problem: 일정 시스템 이전 시대(2024-02~2025-12)는 다시보기는 있는데 달력이 텅 비어

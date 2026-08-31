@@ -987,6 +987,28 @@ function computeBroadcast(
   return { broadcastHours, broadcastDaily, broadcastDays };
 }
 
+type VodFallbackRow = { broadcast_day: string; duration_ms: number; reg_date: string | null };
+// 세션 기록이 없는 날의 방송시간을 다시보기(VOD) 길이로 채운다(0070 공개 RPC와 동일 규칙).
+// broadcast_session은 2026-06 도입이라 그 이전 시대는 통째로 비어 있었다 — vod_archive(0068)의
+// 길이·등록시각으로 유사 세션 행을 만들어 잇는다. **세션이 있는 날은 세션이 정답**(이중 집계 금지).
+function mergeVodFallback(sess: BcastRow[], vods: VodFallbackRow[]): BcastRow[] {
+  const sessDays = new Set(sess.map((r) => r.start_day.slice(0, 10)));
+  const out = [...sess];
+  for (const v of vods) {
+    const day = String(v.broadcast_day).slice(0, 10);
+    if (v.reg_date === null || sessDays.has(day)) continue;
+    const endMs = Date.parse(v.reg_date);
+    if (!Number.isFinite(endMs) || !(v.duration_ms > 0)) continue;
+    out.push({
+      start_day: day,
+      started_at: new Date(endMs - v.duration_ms).toISOString(),
+      last_live_at: v.reg_date,
+      ended_at: v.reg_date
+    });
+  }
+  return out;
+}
+
 // 트렌드 패널용 — 방문·컨텐츠의 최근 6개월 월별 추이. (하트 6개월은 getInsightsAction이 이미 줌.)
 export async function getTrendAction(year: number, month: number): Promise<TrendResult> {
   const actor = await resolveCurrentActor(SLUG);
@@ -1015,7 +1037,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
   const fromStart = `${monthKeys[0]}-01`;
   const nextMonthStart = ymd(new Date(Date.UTC(year, month, 1)));
 
-  const [visitRows, eventsRes, tagsRes, paletteRes, heartsRes, bcastRes] = await Promise.all([
+  const [visitRows, eventsRes, tagsRes, paletteRes, heartsRes, bcastRes, vodRes] = await Promise.all([
     fetchAllRowsPaged<SessionRow>(() =>
       supabase
         .from("visit_session")
@@ -1045,7 +1067,13 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       .from("broadcast_session")
       .select("start_day, started_at, last_live_at, ended_at")
       .gte("start_day", fromStart)
-      .lt("start_day", nextMonthStart)
+      .lt("start_day", nextMonthStart),
+    // 세션 이전 시대(≤2026-05) 방송시간 폴백용 다시보기 길이(0068) — mergeVodFallback가 합친다.
+    supabase
+      .from("vod_archive")
+      .select("broadcast_day, duration_ms, reg_date")
+      .gte("broadcast_day", fromStart)
+      .lt("broadcast_day", nextMonthStart)
   ]);
 
   const catMap = await loadTagCategoryMap(supabase, calendarId); // 세부→대분류 롤업
@@ -1224,7 +1252,10 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
   }
 
   const { broadcastHours, broadcastDaily, broadcastDays } = computeBroadcast(
-    (bcastRes.data ?? []) as BcastRow[],
+    mergeVodFallback(
+      (bcastRes.data ?? []) as BcastRow[],
+      (vodRes.data ?? []) as VodFallbackRow[]
+    ),
     monthKeys,
     year,
     month
@@ -1879,7 +1910,7 @@ export async function getMemberInsightsAction(
   }
   const sixStart = `${monthKeys[0]}-01`;
 
-  const [eventsRes, tagsRes, nextRes, paletteRes, heartsRes, visitRows, bcastRes] = await Promise.all([
+  const [eventsRes, tagsRes, nextRes, paletteRes, heartsRes, visitRows, bcastRes, vodRes] = await Promise.all([
     supabase
       .from("events")
       .select("id, date_key, is_public")
@@ -1918,9 +1949,20 @@ export async function getMemberInsightsAction(
       .from("broadcast_session")
       .select("start_day, started_at, last_live_at, ended_at")
       .gte("start_day", sixStart)
-      .lt("start_day", nextMonthStart)
+      .lt("start_day", nextMonthStart),
+    // 세션 이전 시대 방송시간 폴백(0068 다시보기 길이) — 세션 없는 날만 채운다.
+    supabase
+      .from("vod_archive")
+      .select("broadcast_day, duration_ms, reg_date")
+      .gte("broadcast_day", sixStart)
+      .lt("broadcast_day", nextMonthStart)
   ]);
-  const broadcast = computeBroadcast((bcastRes.data ?? []) as BcastRow[], monthKeys, y, m);
+  const broadcast = computeBroadcast(
+    mergeVodFallback((bcastRes.data ?? []) as BcastRow[], (vodRes.data ?? []) as VodFallbackRow[]),
+    monthKeys,
+    y,
+    m
+  );
 
   // 휴뱅 일정 id + 태그(6개월) 집계. 세부는 대분류로 롤업.
   const catMap = await loadTagCategoryMap(supabase, calendarId);

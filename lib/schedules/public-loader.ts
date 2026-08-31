@@ -518,15 +518,22 @@ const loadPublicBroadcastStats = async (fromDay: string): Promise<PublicBroadcas
     }));
 };
 
-// 최근 N개월(이번 달 포함) 방송 기록. 시청자·비로그인 모두 볼 수 있다.
-export async function getPublicBroadcastStats(months = 6): Promise<PublicBroadcastMonth[]> {
+// 최근 N개월 방송 기록. 시청자·비로그인 모두 볼 수 있다.
+// anchor = '보는 달'(끝 달). 안 주면 이번 달. 과거 달을 보고 있으면 그 달로 끝나는 N개월이어야
+// 한다 — 오늘 기준으로 고정하면 2024년을 보는데 2026년 통계가 나온다(2026-08-31 실측 수정).
+export async function getPublicBroadcastStats(
+  months = 6,
+  anchor?: { year: number; month: number }
+): Promise<PublicBroadcastMonth[]> {
   if (!isSupabaseConfigured()) {
     return [];
   }
-  const { year, month } = getCurrentKstYearMonth();
+  const { year, month } = anchor ?? getCurrentKstYearMonth();
   const from = new Date(Date.UTC(year, month - 1 - (months - 1), 1));
   const fromDay = from.toISOString().slice(0, 10);
-  return loadPublicBroadcastStats(fromDay);
+  const untilYm = `${year}-${String(month).padStart(2, "0")}`;
+  // RPC는 시작일만 받으므로(열린 끝) 앵커 달 이후는 여기서 잘라낸다.
+  return (await loadPublicBroadcastStats(fromDay)).filter((r) => r.ym <= untilYm);
 }
 
 // 일별 방송시간(그 달) — 관리자 인사이트와 같은 일별 막대를 시청자에게도 그리기 위해.
