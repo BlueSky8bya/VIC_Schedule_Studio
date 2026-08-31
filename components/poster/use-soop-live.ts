@@ -12,6 +12,7 @@ export type SoopLive = {
   category: string | null;
   bno?: string | null; // 방송 번호(임베드 주소용)
   watchUrl: string | null;
+  build?: string | null; // 서버 배포 커밋 — 옛 빌드로 떠 있는 시청자 탭의 자동 새로고침용
 };
 
 // 60s(2026-08-27, 25s에서 완화 — 서버가 20s 캐시라 체감 지연은 최대 ~80s, 방송 시작 알림은 분 단위면 충분).

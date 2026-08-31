@@ -771,6 +771,41 @@ export function PublicPoster({
   // 시청자가 볼 LIVE를 그대로 확인). 데스크탑 플로팅 비콘은 편집실 chrome과 겹쳐 미리보기에선 숨기고
   // (아래 마운트의 !previewNav), 모바일은 겹침 없는 하단 '오늘'→LIVE 버튼이라 미리보기에서도 보인다.
   const soopLiveRaw = useSoopLive();
+  // 새 배포 자동 반영(시청자 전용) — 시청자 탭은 며칠씩 떠 있어 폴링 데이터는 최신인데 코드/CSS는
+  // 옛 빌드로 남는다(2026-09-01 '카드 폭이 화면마다 다르다' 재신고의 실체 = 옛 빌드로 떠 있던 탭).
+  // 60초 라이브 폴링에 실린 서버 빌드 해시가 내 번들 해시와 다르면, 탭이 화면에서 사라진 순간
+  // (숨김)에만 조용히 새로고침한다 — 보는 중엔 절대 안 끊는다(스크롤·필터 유지). 편집실/미리보기는
+  // 제외(accountSwitch=false): 편집 중 새로고침은 최적화 큐·팝오버를 죽인다. 롤백·CDN 캐시로
+  // 해시가 왔다갔다해도 같은 값으론 한 번만 시도(sessionStorage)해 새로고침 루프를 막는다.
+  const serverBuild = soopLiveRaw?.build ?? null;
+  useEffect(() => {
+    if (!accountSwitch || !serverBuild || serverBuild === "dev") return;
+    const mine = process.env.APP_COMMIT ?? "dev";
+    if (mine === "dev" || serverBuild === mine) return;
+    try {
+      if (window.sessionStorage.getItem("vic:reloadedFor") === serverBuild) return;
+    } catch {
+      /* sessionStorage 불가 — 루프 가드 없이 새로고침은 위험하므로 포기 */
+      return;
+    }
+    const doReload = () => {
+      try {
+        window.sessionStorage.setItem("vic:reloadedFor", serverBuild);
+      } catch {
+        return;
+      }
+      window.location.reload();
+    };
+    if (document.visibilityState === "hidden") {
+      doReload();
+      return;
+    }
+    const onVis = () => {
+      if (document.visibilityState === "hidden") doReload();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [accountSwitch, serverBuild]);
   // 테스트 전용: URL에 ?live-preview=1 을 붙이면 라이브 카드를 강제로 띄워 렌더를 확인한다
   // (임베드는 실제 채널 플레이어 — 방송 중이 아니면 오프라인 화면). 공개-안전: 가짜 UI일 뿐
   // 데이터 접근 없음. 확인 끝나면 파라미터만 지우면 된다.

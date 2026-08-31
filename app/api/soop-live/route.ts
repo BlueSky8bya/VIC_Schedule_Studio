@@ -36,7 +36,13 @@ export async function GET() {
       after(() => maybeSyncVodPipeline().catch(() => {}));
     }
   }
-  return NextResponse.json(cache.data, {
-    headers: { "Cache-Control": "public, max-age=30, s-maxage=30" }
-  });
+  // build: 서버의 현재 배포 커밋 — 시청자 탭이 오래 떠 있으면 데이터(이 폴링)는 최신인데
+  // 코드/CSS는 옛 빌드로 남는다. 클라이언트가 자기 번들 해시와 비교해 새 배포를 감지한다
+  // (public-poster의 숨김 시 자동 새로고침). 공개-안전: 커밋 해시는 편집실 빌드 태그로 이미 노출.
+  return NextResponse.json(
+    { ...cache.data, build: process.env.APP_COMMIT ?? "dev" },
+    {
+      headers: { "Cache-Control": "public, max-age=30, s-maxage=30" }
+    }
+  );
 }
