@@ -5763,10 +5763,10 @@ body.cell-range-dragging {
   display: grid;
   /* 드롭 대상 칸이 들어올 카드만큼 자랄 때(paddingBottom) 부드럽게 — 활주와 같은 박자. */
   transition: padding-bottom var(--dur-2) var(--ease);
-  gap: calc(5px * var(--cal-zoom, 1));
+  gap: calc(4px * var(--cal-zoom, 1)); /* 높이 다이어트(2026-09-01) — 뷰어와 같은 방향 */
   /* 좌우 6px = 날짜 숫자(.studio-day-head 좌우 6px)와 카드 좌변을 같은 세로선에 맞춘다(정렬 조화).
      확대 시 세로만 비례(좌우를 키우면 그 세로선 정렬이 깨진다). */
-  padding: calc(7px * var(--cal-zoom, 1)) 6px;
+  padding: calc(6px * var(--cal-zoom, 1)) 6px;
 }
 
 .studio-event-pill {
@@ -5777,13 +5777,14 @@ body.cell-range-dragging {
      비어 보이고, 삭제 X(top:50%)도 내용 중앙과 어긋난다. 내용을 세로 가운데로 모아 균형을
      맞추고 X도 내용 중앙에 오게 한다(내용≈높이인 일반 카드엔 영향 없음). */
   justify-content: center;
-  /* 4px 기반 일관 리듬(제목·본문·형식색 사이). 제각각이던 2/3/5px를 한 박자로 통일. */
-  gap: calc(4px * var(--cal-zoom, 1));
+  /* 일관 리듬(제목·본문·형식색 사이) — 높이 다이어트로 4→3px(2026-09-01, 글자는 그대로). */
+  gap: calc(3px * var(--cal-zoom, 1));
   border: 1px solid var(--line);
   border-radius: var(--r-md);
   background: var(--surface);
   cursor: pointer;
-  padding: calc(clamp(7px, 0.5vw, 11px) * var(--cal-zoom, 1))
+  /* 상하 패딩 한 단계 감량(7~11 → 5~9) — 좌우는 그대로(높이만 다이어트). */
+  padding: calc(clamp(5px, 0.4vw, 9px) * var(--cal-zoom, 1))
     calc(clamp(10px, 0.65vw, 15px) * var(--cal-zoom, 1));
   text-align: left;
   box-shadow: var(--shadow-1);
@@ -6464,7 +6465,7 @@ html[data-reduce-motion] .tg-num {
    18px(border 2 + padding 16)로 맞춰도 안전. */
 .pill-subs {
   display: grid;
-  gap: 2px;
+  gap: 1px;
   margin: 0;
   /* 세로 레일↔서브 텍스트 간격 16→8(절반). 뷰어 .event-subs(8)와 통일. */
   padding: 0 0 0 8px;
@@ -6480,7 +6481,7 @@ html[data-reduce-motion] .tg-num {
      좌표 제약이 없어 안전.) 최소 12px로 가독성 확보. */
   font-size: calc(clamp(12px, 0.72vw, 15px) * var(--cal-zoom, 1));
   font-weight: 800;
-  line-height: 1.3;
+  line-height: 1.25;
 }
 /* 제목 1줄 모드([data-compact] = 인앱 확대 125%+ '또는' 패널 실측 폭 < 1080 — 브라우저 확대·
    편집창+아바타 동시 열림·태블릿): 긴 제목이 줄바꿈으로 카드를 키우는 대신 "메이플 검은마…"처럼
