@@ -3078,19 +3078,19 @@ export function PublicPoster({
             {/* 남는 공간에 인기 배지 단계 안내(웹과 동일, 모바일용으로 간결하게). */}
             <div className="agenda-tier-help">
               <strong>♥ 인기도</strong>
-              {/* 모바일 좁은 레일(92px) — 라벨을 짧게 줄여 '불꽃+라벨'을 한 줄(가로)에 담는다.
-                  (세로로 쌓으면 불꽃이 어느 라벨 것인지 헷갈림.) 웹 범례는 긴 라벨 유지. */}
-              <span>
-                <i aria-hidden="true" className="tier-swatch tier-warm" /> 관심
+              {/* 좁은 레일(92px = 편집실과 통일) — 텍스트 라벨은 잘려서 뺐다(2026-09-01 사용자:
+                  이미지로만). 단계 순서는 스와치 색 강도가 말하고, 뜻은 title·aria-label이 담는다. */}
+              <span aria-label="관심" title="관심">
+                <i aria-hidden="true" className="tier-swatch tier-warm" />
               </span>
-              <span>
-                <i aria-hidden="true" className="tier-swatch tier-hot" /> 높음
+              <span aria-label="높은 관심" title="높은 관심">
+                <i aria-hidden="true" className="tier-swatch tier-hot" />
               </span>
-              <span>
-                <i aria-hidden="true" className="tier-swatch tier-blaze" /> 폭발
+              <span aria-label="폭발적" title="폭발적">
+                <i aria-hidden="true" className="tier-swatch tier-blaze" />
               </span>
-              <span>
-                <i aria-hidden="true" className="tier-swatch tier-top">👑</i> 1위
+              <span aria-label="이 달 1위" title="이 달 1위">
+                <i aria-hidden="true" className="tier-swatch tier-top">👑</i>
               </span>
             </div>
           </aside>
