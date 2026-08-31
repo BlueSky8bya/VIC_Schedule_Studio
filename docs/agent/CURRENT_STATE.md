@@ -44,8 +44,16 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   `syncVodArchiveDeep` — 옛 VOD 수정·삭제 추적, 타임라인 전체 ~20시간 순환; 크론+soop-live
   after() 이중 트리거, prod 자가치유 실증 8/31=소요카님 63챕터) — vod_timeline(백필 335/376)
   + 증분(broadcast-poll 30분, 최근 14일 8개), 공개 라우트 vod-timeline, `VodChapters` UI(코너 헤더
-  그룹·구간 길이·'타임라인 · ○○님' 크레딧, 탭 = `?change_second=초` 점프 — 실측 확정, 구
+  그룹·구간 길이·'타임라인 (○○님 감사합니다)' 크레딧, 새 탭 링크 = `?change_second=초` — 실측 확정, 구
   changeSecond 무효). 스틸 트랙은 실측 후 보류(SnapshotLoad = 단일 대표컷).
+  ⑧ **인라인 재생 = 숲 iframe API**(`3813127`, 2026-09-01): 임베드 `?fromApi=1` → PonReady 수신 후
+  Pload{autoPlay,mutePlay:false,startVideoSeconds} postMessage(origin 정확 일치 허용 목록 —
+  vod.sooplive.com/.co.kr). URL 파라미터(mutePlay=false)만으론 플레이어가 재생 시도조차 안 해
+  '한 번 더 클릭' 버그. 허용 브라우저(숲 상시 시청자=MEI 높음)는 즉시 소리 켠 재생, 차단 시
+  그 지점 포스터+▶ 1클릭 폴백. 재생 후 챕터 점프 = PseekTo(iframe 재마운트 제거 — 광고 재시작
+  없음). PupdateMediaEvent 수신 = 미디어 엔진 가동 표식(`dayVodMediaAliveRef`).
+  숲 댓글 API는 HTML 이스케이프(이중 &amp;amp; 실재) — 파서 `decodeHtmlEntities`(3회 반복 상한),
+  백필 스크립트 복제본 동일, prod vod_timeline 90행 제자리 교정 완료(잔여 0).
   **남은 것**: 팬 닉 표기 동의(토리님 경유 권장), B안(순간 검색 — 파싱 데이터 재사용, UI만),
   '1년 전 오늘' 아이디어.
 - **'적게 쓰인 기능' 카드에서 철수 기능 갈라내기(2026-08-31, 사용자 지시)**: 이 카드는 "없앨 후보"를
