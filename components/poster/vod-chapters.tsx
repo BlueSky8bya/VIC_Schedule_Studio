@@ -17,13 +17,17 @@ export function VodChapters({
   titleNo,
   durationMs,
   chapters,
-  timelineBy
+  timelineBy,
+  onJump
 }: {
   slug: string;
   titleNo: number;
   durationMs: number;
   chapters: number;
   timelineBy: string;
+  // 있으면 챕터 클릭 = 부모의 인라인 플레이어로 그 시점 재생(날짜 창 — 미리보기 영역 활용).
+  // 없으면(모바일 아젠다) 기존처럼 숲 플레이어 새 탭.
+  onJump?: (sec: number) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [timeline, setTimeline] = useState<PublicVodTimeline | null>(null);
@@ -104,7 +108,13 @@ export function VodChapters({
                   className="vch-item"
                   data-act="vod-chapter-jump"
                   href={`https://vod.sooplive.co.kr/player/${titleNo}?change_second=${e.sec}`}
-                  onClick={() => hapticTick()}
+                  onClick={(ev) => {
+                    hapticTick();
+                    if (onJump) {
+                      ev.preventDefault();
+                      onJump(e.sec);
+                    }
+                  }}
                   rel="noopener noreferrer"
                   target="_blank"
                 >

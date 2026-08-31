@@ -6,6 +6,22 @@
 
 ## v0.1.0 — 2026-08-31
 
+### CHG-20260831-006 — FEATURE — 날짜 창 인라인 플레이어 + 스크롤 잠금 + 타임라인 고속 수집
+
+Problem: ① 창 안 스크롤이 끝에 닿으면 바깥 달력이 흘렀다 ② 챕터 클릭이 새 탭 이동뿐이라
+미리보기 영역이 첫 컷 한 장짜리였다 ③ 뱅종 5분 안에 올라오는 팬 타임라인이 최대 30분 늦게 반영.
+Change: ① body overflow 잠금 + .dvm-body/.vch-list overscroll-behavior: contain(이중 방어).
+② 챕터/썸네일 클릭 = 미리보기 자리에서 **임베드 플레이어**로 그 시점 재생
+(`/player/{no}/embed?change_second=` — 실측: 프레임 차단 없음·시킹 반영, 프리롤 광고는 SOOP 정책).
+챕터 재클릭 = key 재마운트로 시점 갱신, 우상단 ↗ = 그 시점 새 탭. 모바일 아젠다는 기존 새 탭 유지
+(onJump 없음). ③ broadcast-poll 두 단 주기: 뱅종 후 60분 = 5분마다(최신 3개 — 최악 10분 반영),
+평시 = 30분마다 14일 스윕(팬의 나중 수정 흡수 — minutesSinceLastBroadcastEnd로 판정).
+Files: `components/poster/{public-poster.tsx,public-poster.css,vod-chapters.tsx}`,
+`lib/broadcast/vod-timeline.ts`, `app/api/cron/broadcast-poll/route.ts`
+Validation: Playwright 실측 — overflow hidden·휠에도 scrollY 0·닫으면 해제, 인라인 iframe
+change_second 1024→1948 갱신·실재생(프리롤 표시)·↗ 링크 · tsc/build exit 0.
+Rollback: 커밋 revert(스키마 변화 없음).
+
 ### CHG-20260831-005 — MIGRATION — 날짜 다시보기 팝오버 → 중앙 '창' 승격 + 썸네일 미리보기(0072)
 
 Problem: 팝오버가 작아 미리보기 없이 텍스트뿐(사용자 요청 — 작은 창 + 미리보기 + 링크 이동 +

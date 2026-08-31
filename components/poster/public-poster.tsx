@@ -1045,6 +1045,13 @@ export function PublicPoster({
   // 팝오버가 아니라 화면 중앙의 작은 창: 썸네일 미리보기 + 제목 + 챕터를 한 자리에서.
   // 모바일 아젠다는 일정 없는 날 줄에 칩·챕터를 인라인으로 그려 창이 필요 없다.
   const [dayVodPop, setDayVodPop] = useState<{ dateKey: string } | null>(null);
+  // 창 안 인라인 플레이어 — 챕터/썸네일 클릭 시 미리보기 영역이 그 시점부터 재생하는 임베드로
+  // 바뀐다(vod.sooplive .../embed?change_second= — 2026-08-31 실측: 프레임 차단 없음, 시킹 반영).
+  const [dayVodPlaying, setDayVodPlaying] = useState<{ titleNo: number; sec: number } | null>(null);
+  useEffect(() => {
+    // 창이 닫히거나 다른 날짜로 바뀌면 플레이어를 내린다(이전 방송이 소리 없이 계속 돌지 않게).
+    setDayVodPlaying(null);
+  }, [dayVodPop]);
   useEffect(() => {
     if (!dayVodPop) return;
     const onKey = (e: KeyboardEvent) => {
@@ -1052,6 +1059,16 @@ export function PublicPoster({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
+  }, [dayVodPop]);
+  // 창이 열려 있는 동안 바깥 달력 스크롤 잠금 — 창 안 목록을 굴리다 끝에 닿으면 달력이
+  // 따라 흐르던 문제(사용자 지적). CSS overscroll-behavior와 이중 방어.
+  useEffect(() => {
+    if (!dayVodPop) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
   }, [dayVodPop]);
   // 히스토리 스택 — '이 달 기록' 시트와 같은 규약(아래 1619~ 참조): 열 때 pushState+
   // pushInnerOverlay(편집실 미리보기 조정), X/백드롭/Esc 닫기는 우리가 history.back()으로
@@ -3576,32 +3593,65 @@ export function PublicPoster({
                     {list.map((vod, vi, arr) => {
                       const playerUrl = `https://vod.sooplive.co.kr/player/${vod.titleNo}`;
                       const label = vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`;
+                      const playing =
+                        dayVodPlaying !== null && dayVodPlaying.titleNo === vod.titleNo
+                          ? dayVodPlaying
+                          : null;
                       return (
                         <div className="dvm-vod" key={vod.titleNo}>
-                          {/* 미리보기 = SOOP 대표 스냅샷. 클릭하면 처음부터 재생(새 탭). */}
-                          <a
-                            className="dvm-thumb"
-                            data-act="vod-replay"
-                            href={playerUrl}
-                            onClick={() => hapticTick()}
-                            rel="noopener noreferrer"
-                            target="_blank"
-                            title={label}
-                          >
-                            {vod.thumbKey ? (
-                              <img
-                                alt=""
-                                loading="lazy"
-                                src={`https://videoimg.sooplive.com/php/SnapshotLoad.php?rowKey=${vod.thumbKey}`}
+                          {playing ? (
+                            // 인라인 플레이어 — 챕터를 누를 때마다 그 시점으로 다시 연다(key로 재마운트).
+                            // 새 탭 링크는 우상단 ↗로 유지(크게 보고 싶을 때).
+                            <div className="dvm-thumb is-playing">
+                              <iframe
+                                allow="autoplay; fullscreen; encrypted-media"
+                                key={playing.sec}
+                                src={`https://vod.sooplive.co.kr/player/${vod.titleNo}/embed?change_second=${playing.sec}&autoPlay=true&mutePlay=true`}
+                                title={label}
                               />
-                            ) : null}
-                            <span aria-hidden="true" className="dvm-play">
-                              <Play size={16} strokeWidth={2.6} />
-                            </span>
-                            {vod.durationMs > 0 ? (
-                              <em className="dvm-dur">{formatVodDuration(vod.durationMs)}</em>
-                            ) : null}
-                          </a>
+                              <a
+                                aria-label="숲에서 크게 보기"
+                                className="dvm-ext"
+                                data-act="vod-replay"
+                                href={`${playerUrl}?change_second=${playing.sec}`}
+                                onClick={() => hapticTick()}
+                                rel="noopener noreferrer"
+                                target="_blank"
+                                title="숲에서 크게 보기"
+                              >
+                                <ExternalLink aria-hidden="true" size={13} strokeWidth={2.6} />
+                              </a>
+                            </div>
+                          ) : (
+                            /* 미리보기 = SOOP 대표 스냅샷. 클릭 = 그 자리에서 처음부터 재생. */
+                            <a
+                              className="dvm-thumb"
+                              data-act="vod-replay"
+                              href={playerUrl}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                hapticTick();
+                                setDayVodPlaying({ titleNo: vod.titleNo, sec: 0 });
+                              }}
+                              rel="noopener noreferrer"
+                              target="_blank"
+                              title={label}
+                            >
+                              {vod.thumbKey ? (
+                                <img
+                                  alt=""
+                                  loading="lazy"
+                                  src={`https://videoimg.sooplive.com/php/SnapshotLoad.php?rowKey=${vod.thumbKey}`}
+                                />
+                              ) : null}
+                              <span aria-hidden="true" className="dvm-play">
+                                <Play size={16} strokeWidth={2.6} />
+                              </span>
+                              {vod.durationMs > 0 ? (
+                                <em className="dvm-dur">{formatVodDuration(vod.durationMs)}</em>
+                              ) : null}
+                            </a>
+                          )}
                           <a
                             className="dvm-title"
                             data-act="vod-replay"
@@ -3616,6 +3666,7 @@ export function PublicPoster({
                           <VodChapters
                             chapters={vod.chapters ?? 0}
                             durationMs={vod.durationMs}
+                            onJump={(sec) => setDayVodPlaying({ titleNo: vod.titleNo, sec })}
                             slug={schedule.calendar.slug}
                             timelineBy={vod.timelineBy ?? ""}
                             titleNo={vod.titleNo}

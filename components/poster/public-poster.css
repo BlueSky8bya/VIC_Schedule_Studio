@@ -986,6 +986,7 @@ html[data-reduce-motion] .day-vod-modal {
 .dvm-body {
   min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain; /* 목록 끝에서 휠이 바깥 달력으로 새지 않게(+body 잠금 이중 방어) */
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1017,6 +1018,33 @@ html[data-reduce-motion] .day-vod-modal {
   object-fit: cover;
   display: block;
 }
+/* 인라인 플레이어 상태 — 같은 자리에 임베드가 앉는다(호버 리프트는 끔: 재생 중 화면이 들썩이면 소음). */
+.dvm-thumb.is-playing,
+.dvm-thumb.is-playing:hover {
+  transform: none;
+  box-shadow: 0 6px 18px rgb(20 30 60 / 25%);
+}
+.dvm-thumb.is-playing iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+.dvm-ext {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(15 23 42 / 60%);
+  color: #fff;
+  transition: background-color var(--dur-1) var(--ease), transform var(--dur-1) var(--ease);
+}
+.dvm-ext:hover { background: rgb(53 100 224 / 85%); }
+.dvm-ext:active { transform: scale(0.9); }
 .dvm-play {
   position: absolute;
   inset: 0;
@@ -1111,6 +1139,7 @@ html[data-reduce-motion] .day-vod-modal {
   padding: 5px 6px;
   max-height: 250px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 1px;

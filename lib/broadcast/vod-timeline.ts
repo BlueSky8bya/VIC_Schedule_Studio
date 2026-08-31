@@ -124,6 +124,22 @@ export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolea
   return { ok: true, saved };
 }
 
+/** 마지막 뱅종 후 지난 분(分). 세션 기록이 없으면 null. 뱅종 직후 고속 수집 창 판정용. */
+export async function minutesSinceLastBroadcastEnd(): Promise<number | null> {
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) return null;
+  const { data } = await supabase
+    .from("broadcast_session")
+    .select("ended_at")
+    .not("ended_at", "is", null)
+    .order("ended_at", { ascending: false })
+    .limit(1);
+  const iso = (data as { ended_at: string }[] | null)?.[0]?.ended_at;
+  if (!iso) return null;
+  const diff = (Date.now() - Date.parse(iso)) / 60_000;
+  return Number.isFinite(diff) ? diff : null;
+}
+
 /**
  * 증분 대상 고르기: 최근 N일 안에 등록된 VOD(팬 타임라인이 며칠에 걸쳐 갱신된다) 중
  * 아직 한 번도 안 본 것 우선, 그다음 오래 전에 본 것 순으로 최대 limit개.
