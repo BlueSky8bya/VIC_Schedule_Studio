@@ -5931,14 +5931,17 @@ export function StudioShell({
               [왼쪽 · 아바타 자리 · 오른쪽] 한 세그먼트로(라벨이 가운데, 방향 버튼이 양옆). */}
           {avatarEditor ? (
             <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
+              {/* 방향 라벨은 기호로 — '왼쪽/오른쪽' 글자 수 차이로 세그먼트 좌우 폭이 어긋났다
+                  (2026-09-01 사용자 요청). 뜻은 aria-label이 담는다. */}
               <button
                 type="button"
                 className={avatarSide === "left" ? "on" : ""}
+                aria-label="아바타 왼쪽에 두기"
                 aria-pressed={avatarSide === "left"}
                 onClick={() => pickAvatarSide("left")}
                 data-act="avatar-ctl-toggle"
               >
-                왼쪽
+                {"<<<"}
               </button>
               <span aria-hidden="true" className="avatar-ctl-label">
                 아바타 자리
@@ -5946,11 +5949,12 @@ export function StudioShell({
               <button
                 type="button"
                 className={avatarSide === "right" ? "on" : ""}
+                aria-label="아바타 오른쪽에 두기"
                 aria-pressed={avatarSide === "right"}
                 onClick={() => pickAvatarSide("right")}
                 data-act="avatar-ctl-toggle"
               >
-                오른쪽
+                {">>>"}
               </button>
             </div>
           ) : null}
