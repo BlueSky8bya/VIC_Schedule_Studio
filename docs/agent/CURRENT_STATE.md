@@ -39,7 +39,10 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   길이 합 — 공개 RPC + 서버 로더 mergeVodFallback 동일 규칙) + 공개 월별 통계 '보는 달' 앵커.
   과거 달 '이 달 기록'·인사이트에서 방송시간·태그 통계가 살아난다(2024-03 실측 77.1h).
   ⑦ **Phase 2 A안 출고**(CHG-20260831-004/005, 0071/0072): 팬 타임라인 챕터 + PC 날짜 클릭은
-  중앙 '창'(썸네일 미리보기·제목·챕터, 히스토리 스택 = 인사이트 시트 규약) — vod_timeline(백필 335/376)
+  중앙 '창'(지정 썸네일 미리보기·인라인 임베드 플레이어·챕터 2열, 히스토리 스택 = 인사이트 시트
+  규약). 동기화 = `maybeSyncVodPipeline` 단일 진입점(DB 스로틀 1/5/30분 + 12시간 전체 스윕
+  `syncVodArchiveDeep` — 옛 VOD 수정·삭제 추적, 타임라인 전체 ~20시간 순환; 크론+soop-live
+  after() 이중 트리거, prod 자가치유 실증 8/31=소요카님 63챕터) — vod_timeline(백필 335/376)
   + 증분(broadcast-poll 30분, 최근 14일 8개), 공개 라우트 vod-timeline, `VodChapters` UI(코너 헤더
   그룹·구간 길이·'타임라인 · ○○님' 크레딧, 탭 = `?change_second=초` 점프 — 실측 확정, 구
   changeSecond 무효). 스틸 트랙은 실측 후 보류(SnapshotLoad = 단일 대표컷).
