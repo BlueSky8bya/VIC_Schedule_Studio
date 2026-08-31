@@ -3239,35 +3239,23 @@ export function PublicPoster({
     return () => el.removeEventListener("wheel", onWheel);
   }, [showAgenda]);
 
-  // 레일 정보 카드(연·월 · 데뷔 D+ · 오늘) — 평소엔 표면 안 오른쪽 레일에, 아바타 scene에선
-  // 아바타 자리 좌상단으로 옮겨 뜬다. 한 JSX를 두 자리에서 재사용해 마크업이 안 어긋나게 한다.
+  // 레일 정보 카드 — 평소엔 표면 안 오른쪽 레일에, 아바타 scene에선 아바타 자리 좌상단으로
+  // 옮겨 뜬다. 한 JSX를 두 자리에서 재사용해 마크업이 안 어긋나게 한다.
+  // 2026-08-31 사용자 결정: 한 줄로 압축(연·월 ↔ D+N) — '데뷔'·'오늘' 줄 삭제. 오늘 날짜는
+  // 달력의 오늘 칸이 이미 말하고, 카드가 낮아진 만큼 생방송 미리보기가 위로 올라온다.
   const railInfoCard = (() => {
     const dplus = debutDPlus(today);
-    const wd = new Date(`${today}T00:00:00Z`).getUTCDay();
     return (
       <div className="rail-info-card">
-        {/* 보는 달 — 옛 상단 마스트헤드가 여기로. */}
         <span className="ric-month">
           <b>
             {view.year}년 {String(view.month).padStart(2, "0")}월
           </b>
-        </span>
-        {/* 라벨(왼쪽, 조용히) ↔ 값(오른쪽, 굵게) 정렬 — 두 줄이 같은 문법을 공유. */}
-        {dplus !== null ? (
-          <span className="ric-row">
-            <em>🎂 데뷔</em>
-            <b className="ric-dplus">D+{dplus}</b>
-          </span>
-        ) : null}
-        <span className="ric-row">
-          <em>오늘</em>
-          {/* 연도까지 풀 날짜 + 요일은 달력과 같은 색 문법(일=빨강, 토=파랑). */}
-          <b className="ric-today">
-            {Number(today.slice(0, 4))}.{formatShortDate(today)}{" "}
-            <i className={wd === 0 ? "sunday" : wd === 6 ? "saturday" : undefined}>
-              ({WEEKDAYS[wd]})
-            </i>
-          </b>
+          {dplus !== null ? (
+            <b className="ric-dplus" title="데뷔 D+">
+              D+{dplus}
+            </b>
+          ) : null}
         </span>
       </div>
     );

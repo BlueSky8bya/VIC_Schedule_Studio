@@ -1134,23 +1134,17 @@ html {
 }
 .avatar-top-cards .rail-info-card {
   justify-content: center;
-  padding: 16px 18px 13px;
+  padding: 14px 18px;
   animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.28s both;
 }
 /* 열이 넓어진 만큼(1920에서 332px) 글자를 한 단계 키운다 — 방송 화면에서 달·D+가 또렷하게. */
-.avatar-top-cards .ric-month b {
+.avatar-top-cards .ric-month > b:first-child {
   font-size: 27px;
 }
-.avatar-top-cards .ric-month::after {
+.avatar-top-cards .ric-month > b:first-child::after {
   font-size: 16px;
 }
-.avatar-top-cards .ric-row em {
-  font-size: var(--text-body);
-}
-.avatar-top-cards .ric-row b {
-  font-size: var(--text-ui);
-}
-.avatar-top-cards .ric-row .ric-dplus {
+.avatar-top-cards .ric-dplus {
   font-size: 22px;
 }
 .avatar-top-cards .soop-live-card.in-rail {
@@ -1680,77 +1674,45 @@ body.cell-range-dragging {
   /* 위가 살짝 밝은 크림 그라데이션 — 평면 단색보다 '포스터 카드'로 읽힌다(캡쳐에도 찍힘). */
   background: linear-gradient(180deg, #fffef9 0%, #fffdf6 45%, #fdf6e4 100%);
   box-shadow: var(--shadow-2);
-  padding: 14px 16px 11px;
+  /* 한 줄 카드(2026-08-31: 데뷔·오늘 줄 삭제) — 위아래 대칭 여백. */
+  padding: 12px 16px;
 }
 .rail-info-card b {
   color: #7c4d05;
   font-weight: 900;
   font-variant-numeric: tabular-nums;
 }
-/* 보는 달 — 카드의 주인공(옛 마스트헤드 역할). 진한 골드 + 은은한 액센트 헤어라인. */
+/* 보는 달(왼쪽, 주인공) ↔ 데뷔 D+(오른쪽, 골드) — 한 줄. */
 .ric-month {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding-bottom: 9px;
-  margin-bottom: 6px;
-  border-bottom: 2px solid color-mix(in srgb, var(--accent, #f4b740) 60%, transparent);
+  gap: 10px;
 }
-.ric-month b {
+.ric-month > b:first-child {
   font-size: 23px;
   line-height: 1.15;
   letter-spacing: -0.015em;
-}
-/* 월 옆 반짝 장식 — 상단 크롬 제목의 ✨ 문법을 카드 안으로(포스터 정체성 통일). */
-.ric-month::after {
-  content: "✨";
-  font-size: var(--text-body);
-  opacity: 0.75;
-}
-/* 라벨(왼쪽, 조용히) ↔ 값(오른쪽, 굵게) — 두 줄이 같은 세로 리듬을 공유. */
-.ric-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 3px 0;
-}
-.ric-row em {
-  font-style: normal;
-  font-size: var(--text-label);
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: #a3946f;
+  /* ✨(::after)가 글자에서 떨어져 다음 줄로 내려가지 않게 — 한 줄 카드의 생명. */
   white-space: nowrap;
 }
-.ric-row b {
-  font-size: var(--text-ui);
+/* 월 옆 반짝 장식 — 상단 크롬 제목의 ✨ 문법을 카드 안으로(포스터 정체성 통일). */
+.ric-month > b:first-child::after {
+  content: "✨";
+  font-size: var(--text-body);
+  font-weight: 400;
+  opacity: 0.75;
+  margin-left: 7px;
 }
-.ric-row .ric-dplus {
+.ric-dplus {
   font-size: var(--text-title);
   line-height: 1.1;
+  white-space: nowrap;
   /* D+ 숫자만 골드 그라데이션 텍스트 — 카드 안에서 기념일 숫자가 은은하게 주인공. */
   background: linear-gradient(180deg, #b8860b, #7c4d05);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-/* 오늘 값 = 옅은 골드 칩 — '지금'이 카드에서 한눈에 잡힌다(달력의 오늘 칸 강조와 짝). */
-.ric-row .ric-today {
-  padding: 2px 8px;
-  border-radius: var(--r-pill, 999px);
-  background: color-mix(in srgb, var(--accent, #f4b740) 18%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent, #f4b740) 32%, transparent);
-}
-.ric-row .ric-today i {
-  font-style: normal;
-}
-/* 요일 색은 달력 헤더와 같은 문법 — 일=빨강, 토=파랑. */
-.ric-row .ric-today i.sunday {
-  color: #dc2626;
-}
-.ric-row .ric-today i.saturday {
-  color: #2563eb;
 }
 /* 업도움 띠 = 클릭 대상(상세 팝오버) — 시청자 모드에서만 붙는 클래스. */
 /* 시청자 업도움 띠 — '눌러도 되는 것'임을 띠 스스로 말하게(사용자 요청: 호버 무반응 해소).
