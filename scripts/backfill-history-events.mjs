@@ -1,16 +1,17 @@
-// 과거 일정 카드 자동 생성(2026-08-31 사용자 지시) — 일정 시스템 이전(≤2025-12-31)의
-// '다시보기는 있는데 일정 카드가 없는 날'에 VOD 제목으로 유추한 일정을 만들어 준다.
+// 과거 일정 카드 자동 생성 v2(2026-08-31 사용자 지시) — 일정 시스템 이전(≤2025-12-31)의
+// '다시보기는 있는데 일정 카드가 없는 날'에 VOD 제목으로 유추한 일정을 만든다.
 //
-// 규칙:
-//  - 대상: vod_archive의 broadcast_day ≤ 2025-12-31 중, 그 날 events(deleted_at null)가 0개인 날
-//  - 제목: VOD 제목에서 분할 접미사(" - 1" 등)를 떼고 중복을 합친 뒤, 여러 개면 줄바꿈으로
-//    이어 붙인다(카드의 main+sub 문법). 저녁 시작(새벽 귀속 아님)이면 "N시 " 접두 — 기존
-//    2026 카드 문법("21시 라이츄합방")과 통일
-//  - status/visibility/category = 기본값(scheduled/public/stream), 태그 없음(중립색)
-//  - 멱등: 이미 일정이 있는 날은 건너뜀. 생성한 id는 JSON으로 남긴다(롤백용)
+// v2 규칙(사용자 피드백 반영):
+//  - 하루를 무조건 카드 1장으로 합치지 않는다 — **정제 제목이 다르면 별도 일정**(분위기 구분).
+//    같은 제목의 분할(-1/-2)만 한 장으로 접는다. sort_order = 방송 순서.
+//  - **태그 자동 부여**: 제목 키워드 → 콘텐츠 태그(첫 매치가 대표) + 형식 태그, 최대 6개.
+//    아무것도 안 맞으면 태그 없음(중립색) — 틀린 태그보다 무태그가 낫다.
+//  - 저녁 시작(새벽 귀속 아님)이면 "N시 " 접두(기존 카드 문법). 기본값 scheduled/public/stream.
+//  - 멱등: 일정이 이미 있는 날은 건너뜀. 생성 id는 JSON으로 남긴다(롤백용).
 //
-// 사용: node scripts/backfill-history-events.mjs          (실행)
-//       node scripts/backfill-history-events.mjs --dry    (미리보기만)
+// 사용: node scripts/backfill-history-events.mjs --dry            (미리보기)
+//       node scripts/backfill-history-events.mjs                  (실행)
+//       node scripts/backfill-history-events.mjs --purge <json>   (해당 id 목록 일괄 삭제)
 import { readFileSync, writeFileSync } from "node:fs";
 
 function parseEnvLocal() {
@@ -33,6 +34,24 @@ const H = { apikey: K, Authorization: `Bearer ${K}` };
 const DRY = process.argv.includes("--dry");
 const CUTOFF = "2025-12-31";
 
+// ── 퍼지 모드: 생성 기록 JSON의 id를 일괄 hard delete(event_tags는 FK cascade) ──
+const purgeIdx = process.argv.indexOf("--purge");
+if (purgeIdx !== -1) {
+  const file = process.argv[purgeIdx + 1];
+  if (!file) throw new Error("--purge <json파일> 형식으로 주세요.");
+  const ids = JSON.parse(readFileSync(file, "utf8")).ids.map((r) => r.id);
+  for (let i = 0; i < ids.length; i += 80) {
+    const chunk = ids.slice(i, i + 80);
+    const res = await fetch(`${U}/rest/v1/events?id=in.(${chunk.join(",")})`, {
+      method: "DELETE",
+      headers: H
+    });
+    if (!res.ok) throw new Error(`delete 실패: ${res.status} ${await res.text()}`);
+  }
+  console.log(`퍼지 완료: ${ids.length}건 삭제.`);
+  process.exit(0);
+}
+
 async function all(path) {
   const out = [];
   for (let off = 0; ; off += 500) {
@@ -45,10 +64,55 @@ async function all(path) {
   return out;
 }
 
-// 캘린더 id (slug=vic)
 const cal = await fetch(`${U}/rest/v1/calendars?select=id&slug=eq.vic`, { headers: H }).then((r) => r.json());
 const calendarId = cal[0]?.id;
 if (!calendarId) throw new Error("캘린더(vic)를 찾지 못했습니다.");
+
+// 태그 사전(이름 → id/kind). 이름이 바뀌면 매핑이 조용히 빠지므로 마지막에 미매치 이름을 알린다.
+const tags = await all(`broadcast_tags?select=id,display_name,kind&calendar_id=eq.${calendarId}&is_active=eq.true&order=sort_order.asc`);
+const tagByName = new Map(tags.map((t) => [t.display_name, t]));
+
+// 제목 키워드 → 태그 이름. 콘텐츠는 **순서가 우선순위**(첫 매치 = 대표 태그).
+const CONTENT_RULES = [
+  ["대회", /대회|[0-9]+강|결승|본선|경기|마라톤|대잔치|배그전쟁|뱅온전쟁|3배싸움|드림팀|티어 ?배치|생컨|버축대|사이클|WBD|릴동파|아이스골프|왁타배그|왁징어게임|배그 삼국지|티어게임|해상전쟁|공주배그|하렘배그|커플 서바이벌|고멤드림|점프맵|아라포|보물찾기|올랜설/],
+  ["합방", /합방|고릴뱅|시점|w\.|참여|초대|민박|같이|리스닝파티|신년회|갈틱|도방|레슨|1:1|나작비/],
+  ["게임", /배그|배틀그라운드|스타 |스타!|스타 연습|롤 |롤!|FC2[56]|마크|마인크래프트|좀보이드|배틀크러쉬|골프|야구|괴식|델타룬|링피트|픽크타|포챔스|경도|잔디|메이플|엔드필드|Darkwater|데바데|농구|오버워치|산나비|맹든링|돌발서버|채무의숲|Palworld|포켓몬|엔더드래곤|8번출구|DEVOUR|왁피스|찍먹|게임/],
+  ["풀트", /풀트|촉각슈트|스트레칭|춤뱅/],
+  ["서버", /서버|왁조트/],
+  ["시네티", /시네티/],
+  ["월드컵", /월드컵/],
+  ["소통", /소통|노가리|눕뱅|잔잔|후기|짧뱅|토크|빅이봤|별별랭킹|상식퀴즈|타로|릴스|썰|이야기|Q&A|큐앤|가리!|데뷔|구경|테스트|정해보/]
+];
+const MODIFIER_RULES = [
+  ["연습", /연습|프클/],
+  ["모캡", /모캡|모션캡/],
+  ["VRChat", /VRC/i],
+  ["시참", /시참/],
+  ["리캡보기", /리캡/],
+  ["구플뱅", /구플/],
+  ["오픈런", /오픈런/],
+  ["비방", /비방/],
+  ["카페보기", /카페/]
+];
+const missedTagNames = new Set();
+function tagsForTitle(title) {
+  const picked = [];
+  for (const [name, re] of CONTENT_RULES) {
+    if (!re.test(title)) continue;
+    const t = tagByName.get(name);
+    if (!t) { missedTagNames.add(name); continue; }
+    picked.push(t);
+    if (picked.length >= 3) break; // 콘텐츠는 3개까지(대표 = 첫 번째)
+  }
+  for (const [name, re] of MODIFIER_RULES) {
+    if (picked.length >= 6) break;
+    if (!re.test(title)) continue;
+    const t = tagByName.get(name);
+    if (!t) { missedTagNames.add(name); continue; }
+    picked.push(t);
+  }
+  return picked;
+}
 
 const vods = await all(
   `vod_archive?select=title_no,broadcast_day,title,duration_ms,reg_date&broadcast_day=lte.${CUTOFF}&order=reg_date.asc`
@@ -58,7 +122,6 @@ const events = await all(
 );
 const haveEvents = new Set(events.map((e) => e.date_key));
 
-// 분할 접미사 제거(" - 1"/" -2" 꼬리) 후 공백 정리
 const cleanTitle = (t) => t.replace(/\s*[-–]\s*\d{1,2}\s*$/, "").trim();
 const kstStartOf = (v) => new Date(Date.parse(v.reg_date) - v.duration_ms + 9 * 3600_000);
 
@@ -69,45 +132,79 @@ for (const v of vods) {
   byDay.set(v.broadcast_day, l);
 }
 
-const rows = [];
+// 생성 행: 정제 제목이 다르면 별도 일정(그 날 방송 순서 = sort_order).
+const rows = []; // { calendar_id, date_key, public_title, sort_order, _tags: [{id,kind}] }
 for (const [day, list] of [...byDay.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
   if (haveEvents.has(day)) continue;
-  // 중복 제거(등장 순서 유지)
-  const titles = [];
+  const groups = []; // { title, firstVod }
   for (const v of list) {
     const t = cleanTitle(v.title);
-    if (t && !titles.includes(t)) titles.push(t);
+    if (!t) continue;
+    const g = groups.find((x) => x.title === t);
+    if (!g) groups.push({ title: t, firstVod: v });
   }
-  if (titles.length === 0) continue;
-  // 시작 "N시 " 접두 — 새벽 귀속(달력상 시작일 ≠ broadcast_day)이 아닌 첫 VOD의 KST 시각.
-  const first = list.find((v) => kstStartOf(v).toISOString().slice(0, 10) === day);
-  const hour = first ? kstStartOf(first).getUTCHours() : null;
-  const main = hour !== null ? `${hour}시 ${titles[0]}` : titles[0];
-  rows.push({
-    calendar_id: calendarId,
-    date_key: day,
-    public_title: [main, ...titles.slice(1)].join("\n")
+  groups.forEach((g, i) => {
+    const start = kstStartOf(g.firstVod);
+    const sameDay = start.toISOString().slice(0, 10) === day;
+    const main = sameDay ? `${start.getUTCHours()}시 ${g.title}` : g.title;
+    rows.push({
+      calendar_id: calendarId,
+      date_key: day,
+      public_title: main,
+      sort_order: i,
+      _tags: tagsForTitle(g.title)
+    });
   });
 }
 
-console.log(`VOD 있는 날 ${byDay.size} · 이미 일정 있는 날 ${haveEvents.size} · 생성 대상 ${rows.length}일`);
-for (const r of rows.slice(0, 8)) console.log(`  ${r.date_key} | ${r.public_title.split("\n").join(" ⏎ ").slice(0, 70)}`);
-if (rows.length > 8) console.log(`  … 외 ${rows.length - 8}일`);
+console.log(`VOD 있는 날 ${byDay.size} · 이미 일정 있는 날 스킵 ${haveEvents.size} · 생성 일정 ${rows.length}건`);
+for (const r of rows.slice(0, 14)) {
+  console.log(`  ${r.date_key}#${r.sort_order} [${r._tags.map((t) => t.display_name).join("·") || "무태그"}] ${r.public_title.slice(0, 56)}`);
+}
+if (rows.length > 14) console.log(`  … 외 ${rows.length - 14}건`);
+const untagged = rows.filter((r) => r._tags.length === 0);
+console.log(`무태그 ${untagged.length}건:`);
+for (const r of untagged) console.log(`   ${r.date_key} | ${r.public_title.slice(0, 60)}`);
+if (missedTagNames.size > 0) console.log(`⚠ 사전에 없는 태그 이름: ${[...missedTagNames].join(", ")}`);
 if (DRY) process.exit(0);
 
 let created = [];
 for (let i = 0; i < rows.length; i += 100) {
+  const chunk = rows.slice(i, i + 100);
   const res = await fetch(`${U}/rest/v1/events`, {
     method: "POST",
     headers: { ...H, "Content-Type": "application/json", Prefer: "return=representation" },
-    body: JSON.stringify(rows.slice(i, i + 100))
+    body: JSON.stringify(chunk.map(({ _tags, ...row }) => row))
   });
   if (!res.ok) throw new Error(`insert 실패: ${res.status} ${await res.text()}`);
   const got = await res.json();
-  created = created.concat(got.map((e) => ({ id: e.id, date_key: e.date_key })));
+  // (date_key, public_title)로 짝을 맞춘다 — 응답 순서에 기대지 않는다.
+  for (const e of got) {
+    const src = chunk.find((r) => r.date_key === e.date_key && r.public_title === e.public_title);
+    created.push({ id: e.id, date_key: e.date_key, tags: src?._tags ?? [] });
+  }
+}
+// 태그 부여 — 첫 콘텐츠 태그가 대표(is_primary).
+const tagRows = [];
+for (const c of created) {
+  c.tags.forEach((t, i) => {
+    tagRows.push({ event_id: c.id, tag_id: t.id, is_primary: i === 0 && t.kind === "content", sort_order: i });
+  });
+}
+for (let i = 0; i < tagRows.length; i += 200) {
+  const res = await fetch(`${U}/rest/v1/event_tags`, {
+    method: "POST",
+    headers: { ...H, "Content-Type": "application/json", Prefer: "return=minimal" },
+    body: JSON.stringify(tagRows.slice(i, i + 200))
+  });
+  if (!res.ok) throw new Error(`event_tags insert 실패: ${res.status} ${await res.text()}`);
 }
 writeFileSync(
-  new URL("../.scratch-pw/generated-history-events.json", import.meta.url),
-  JSON.stringify({ generatedAt: new Date().toISOString(), count: created.length, ids: created }, null, 2)
+  new URL("../db/backfills/2026-08-31-history-events.json", import.meta.url),
+  JSON.stringify(
+    { generatedAt: new Date().toISOString(), count: created.length, ids: created.map(({ id, date_key }) => ({ id, date_key })) },
+    null,
+    2
+  )
 );
-console.log(`생성 완료: ${created.length}건 (id 목록 → .scratch-pw/generated-history-events.json)`);
+console.log(`생성 완료: 일정 ${created.length}건 · 태그 ${tagRows.length}건 (id 목록 → db/backfills/2026-08-31-history-events.json)`);

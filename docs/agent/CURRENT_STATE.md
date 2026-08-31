@@ -1,1112 +1,937 @@
-# Current State — VIC Schedule Studio
+# Current State ??VIC Schedule Studio
 
-> **에이전트에게**: 이 파일이 "지금 이 프로젝트의 현재 시제"다. 과거 일기장이 아니다.
-> 작업 시작 전에 여기부터 읽고, 의미 있는 작업(기능·구조·마이그레이션)이 끝나면 **여기를 갱신**한다.
-> 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
-> 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
+> **?먯씠?꾪듃?먭쾶**: ???뚯씪??"吏湲????꾨줈?앺듃???꾩옱 ?쒖젣"?? 怨쇨굅 ?쇨린?μ씠 ?꾨땲??
+> ?묒뾽 ?쒖옉 ?꾩뿉 ?ш린遺???쎄퀬, ?섎? ?덈뒗 ?묒뾽(湲곕뒫쨌援ъ“쨌留덉씠洹몃젅?댁뀡)???앸굹硫?**?ш린瑜?媛깆떊**?쒕떎.
+> ?꾨즺????궗???ш린 ?볦? 留먭퀬 git log? `docs/decisions/`(ADR)濡?蹂대궦??
+> ?몄뀡 ?쒖옉 ?????뚯씪? SessionStart ?낆씠 ?먮룞?쇰줈 ?쎌뼱 ?ｋ뒗??`.claude/settings.json`).
 
 Last Updated: 2026-08-31
 Project Version: 0.1.0
-Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
+Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 理쒖냼 ?꾩엯??
 
 ---
 
 ## Current Objective
 
-- **숲 VOD 아카이브(PLAN-20260831-001) — Phase 1 완료, Phase 2 대기(2026-08-31)**:
-  Phase 1 출고 — `vod_archive`(0068, anon SELECT 허용·service_role grant) + 수집기
-  `lib/broadcast/vod-archive.ts` + broadcast-poll 오프라인 30분 증분 + 백필 376건(prod 적재 완료,
-  스킵 0) + 공개 API `vods` DTO + 시청자 날짜 상세 '다시보기 (N시간 M분)' 칩(CHG-20260831-001).
-  **귀속 규칙 2건(2026-08-31 사용자 결정)**: ① 30분 체인 — 직전 VOD 종료와 간격 30분 이내면
-  같은 방송, 앞 방송의 broadcast_day를 잇는다(`chainBroadcastDays`, 이행적). 수집기는 최근 저장
-  40행을 합쳐 체인(페이지 경계 커버). ② **방송일 경계 = 새벽 6시 KST**('다시보기 가중치') —
-  6시 이전 시작 방송은 전날 밤 방송으로 귀속(`attributeBroadcastDay`). 단 rowKey가 실측 시작
-  날짜와 다르면 rowKey 우선(SOOP이 세션 기준으로 준 값). 백필 재실행으로 prod 22건 교정
-  (별별랭킹·플러스뱅송 1/6→1/5 등 — 1/6 휴뱅 카드에 새벽 방송이 붙던 어긋남 해소).
-  같은 날 여러 VOD는 날짜 카드에 '다시보기 1·2'로 함께 붙는다. ③ **구독(플러스) 전용 제외**
-  (0069) — SOOP `auth_no`(101=공개, 107=구독 전용) 저장, 공개 칩은 101만(일반 시청자는 107
-  재생 불가; 미상 0도 fail-closed 제외). prod 실측 107=11건(플러스뱅송 9 + 제목 무표기 2).
-  전수 감사(2026-08-31): 일정↔VOD 어긋남 0건, 유일 잔여 = 2025-03 WBD 2일차 -1/-2가
-  46분 간격으로 12/13일 분할(체인 30분 밖, 일정 없는 시대라 실해 없음 — 사용자 보류).
-  ④ **날짜 진입로**: PC = 날짜 칸 배경 클릭 → 다시보기 팝오버(`day-vod-pop`, hover에만
-  ▶ 배지+링 — 포스터 캡쳐 불침범), 모바일 = 날짜 줄 인라인 칩(모든 방송 날, 카드 아래).
-  일정 상세의 다시보기 버튼은 제거(진입로 날짜 일원화). 칩 라벨 = VOD 제목(말줄임, 툴팁 전문).
-  ⑤ **과거 일정 카드 153건 생성**(CHG-20260831-002): ≤2025-12 일정 없던 VOD 날에 제목 유추
-  카드(분할 접미사 제거·중복 합침·"N시 " 접두). 롤백 id = db/backfills/2026-08-31-history-events.json.
-  **Phase 2(팬 타임라인) 대기**: 활용 방식(챕터 점프/검색/코너 트렌드/팬 크레딧)·작성자 닉 표시·
-  동의 여부는 사용자 결정 대기. 타임라인 댓글은 표본 96개 VOD 중 81개=84%에 존재(포맷 일정).
-  `?changeSecond=` 점프 파라미터 브라우저 검증도 Phase 2 몫. 후속 아이디어: VOD 길이로 세션 기록
-  이전 과거 달 방송시간 백필(인사이트 확장).
-- **'적게 쓰인 기능' 카드에서 철수 기능 갈라내기(2026-08-31, 사용자 지시)**: 이 카드는 "없앨 후보"를
-  찾는 화면인데 이미 지운 기능(꾸미기/스티커 ADR-0015 · 월드컵 ADR-0009 · 비공개 레이어 UI ADR-0014 ·
-  작업자 미리보기)이 바닥에 깔려 후보를 덮었다. `lib/activity/labels.ts`에 `retired` 표식(RETIRED_* 세트
-  한 곳 관리 — 사전 항목은 지우지 않는다, 지우면 '이름 미등록'으로 떨어짐), 카드에선 후보 목록 밖
-  "이미 지운 기능 N개" 접힌 묶음으로(채움 막대 없음·한 톤 다운, 복사본엔 포함). 위치 필터·저사용
-  요약도 살아있는 것만 계수, 역할 필터에서 '작업자' 제거(내역 줄엔 '작업자 N' 유지). 기록 보존 90일이
-  지나면 묶음도 자연 소멸.
-- **월별 인사이트 탭 순서 = 트렌드 먼저(2026-08-31, 사용자 지시)**: 개발자판(insights-dashboard)·
-  멤버판(member-insights) 모두 트렌드→일정→참여→하이라이트, 기본(첫) 탭 = 트렌드. CSS가
-  data-active=n ↔ nth-child로 짝을 맞추므로 개발자판은 트랙 섹션 DOM도 같이 이동. 멤버판 렌더러는
-  인덱스 평행 배열 → key 매핑으로 바꿔 순서 변경이 렌더러를 못 끌고 가는 사고를 구조적으로 차단.
-- **방문 집계 '개발자 2' 수정 + 범위 토글 재배치(2026-08-28, 사용자 신고)**: 한 탭에서 로그아웃↔로그인이
-  섞이면 `foldOne`이 계정 해시를 '해시 있는 첫 행'에서 집어 "역할=developer, 계정=anon 토큰" 방문이 생겨
-  `(날짜|계정)` 순방문자 집계가 개발자 1명을 2명으로 셌다(prod 08-27·08-28 실측 재현). 계정 해시는 역할을
-  정한 조각(main)→같은 역할 조각→아무 조각 순(`lib/insights/visit-fold.ts`), 회귀 테스트 2건. 과거 행은
-  원본 그대로라 재집계로 자동 교정(마이그레이션 없음). 시청자/운영진/전체 토글은 **운영진→시청자→전체**
-  순 + 처음 열면 운영진(`DEFAULT_VISIT_SCOPE`, 방문 패널·일별 모달·요약 블록 공용).
-- **애플 HCI 감성 다듬기 3차(2026-08-27, 사용자 지시 — B2·D3·C2로 보고서 후보 소진)**:
-  · **B2 시청자 모바일 카드→시트 줌 전이** — 탭한 카드 rect를 `agendaDetailOriginRef`에 기억, 시트 마운트 직후
-    WAAPI FLIP(translate+scale, `--spring-smooth`)으로 카드 자리에서 자라남, 내용은 45% 이후 페이드인. 손잡이 탭·
-    배경 탭 닫기는 `closeAgendaDetailAnimated`(정확한 역방향 300ms), 드래그 닫기는 훅의 슬라이드, Esc 즉시.
-    PC 팝오버(anchor)·동작 줄이기 제외. 편집실 모바일 편집 시트(4585~)와 같은 문법.
-  · **D3 방송 ON 모프** — 모바일 하단 '오늘'↔LIVE를 **한 버튼**으로(이전엔 두 요소 교체): 빨강은 `::before` opacity로
-    차오르고, false→true 전이 순간만 `.just-live` 젤리 팝(`--spring-bouncy`) + 햅틱 2틱(시작·확정 620ms).
-    첫 마운트에 이미 LIVE면 조용. 데스크탑 `.soop-live-card`는 좌하단에서 스프링 스케일 등장 + LIVE 배지 팝.
-    (fixture 달에 오늘이 없어 모바일 전이는 브라우저 검증 불가 — 코드 경로 검토·데스크탑 카드 실측.)
-  · **C2 타이포 역할 토큰화** — raw px 278곳을 `--text-*`로(exact/±0.5px 근사: 10·10.5→micro(신설 10.5),
-    11·11.5→caption, 12·12.5→label, 13·13.5·14→body, 14.5~15.5→ui, 17·18→title, 19·20→display, 28→hero).
-    **`@media (min-width)` 안(웹 확대 단)은 raw 유지** — 2단 타이포 보존. 8~9.5px·16·22px 이상은 raw.
-    검증: 13화면 전/후 레이아웃 지표(`.scratch-pw/layout-metrics.mjs` — 줄수·높이·너비·잘림·문서 폭) 비교
-    → 줄바꿈·잘림·높이 급변 0건, 편집실 모바일 문서 높이 +19px(행마다 0.5px 누적)만. 스크린샷 육안 이상 없음.
-- **후속 정리 3건(2026-08-27, 사용자 결정)**: ① prod의 유령 `work` 일정 1건(2025-11-04, 2026-08-03 테스트 잔재)
-  hard delete — 비공개 범위 잔여 0. ② `unlock_sessions` drop(**0067 prod 적용 완료**): `has_private_unlock()`를
-  private_unlock_grants(auth 세션 결속) 모델로 이식 후 drop, 코드의 legacy delete 3곳 제거. ③ 콜드 스타트 워밍
-  `.github/workflows/warm.yml`(5분 표기, GH 실효 ~2h) + **cron-job.org(사용자 계정)에 5분 잡 2개 등록 완료(2026-08-27)**:
-  "빅토리 일정표 깨우기 (첫 화면)" `/` · "(일정 API)" `/api/public/vic/events`. 같은 계정의 "빅토리 방송 감지"
-  (`/api/cron/broadcast-poll`, 1분)는 **꺼져 있음** — 켜려면 Advanced 헤더 `Authorization: Bearer <CRON_SECRET>` 필요.
-- **애플 HCI 감성 다듬기 2차(2026-08-27, 사용자 지시 — 출석 도장은 하지 않음)**:
-  · **B1 시청자 모바일 시트 끌어서 닫기** — 편집실 시트의 `use-sheet-drag-close` 훅을 시청자 상세 시트에 연결.
-    그립 존 `.agenda-detail-top`(sticky·touch-action:none·음수 마진으로 시트 맨 위) + 손잡이 `.agenda-detail-grab`,
-    **그립 존은 손잡이 줄만**(≈27px, 배경 없음) — 헤더까지 sticky로 두면 X(44px) 탓에 두꺼워져 제목을 가렸다(사용자
-    리포트, 수정). **모바일 X 제거**(사용자 결정): 손잡이 = 접근 가능한 닫기 버튼(탭=닫기) + 스와이프 + 배경 탭 + Esc.
-    PC 팝오버(anchor)는 X 유지, 그립 없음. 같은 요소에 ref 둘 → 콜백 ref 병합.
-    게이트: `tests/visual/viewer-sheet-drag.spec.ts`.
-  · **C1 재질 마무리** — 시청자 모바일 시트·편집실 모바일 편집 시트(+sticky 그립 존)·라이브 카드·복사 토스트·삭제
-    스낵바(다크 재질)를 `--material-*`로. export surface 밖만.
-  · **A3 코너 동심** — 허깅 쌍 실측(.scratch 감사 스크립트): 관리 묶음 14→`calc(r-control+4)`=16, 메뉴 항목
-    r-control(12)→r-sm(8) (메뉴 16−패딩 8−테두리 1). 나머지 쌍(시트 안 버튼 등)은 모서리에 안 닿아 규칙 비적용.
-  · 액션바 "비밀번호 변경" 버튼(웹 관리 묶음·모바일 툴바) 제거 — 월별 인사이트 보안 탭에 동일 기능(사용자 지시).
-- **최종 전체 검토(2026-08-27 밤, 정리 작업 회귀 점검)**: 런타임 코드의 drop 테이블/함수·삭제 라우트·삭제 모듈
-  참조 0(에이전트 감사). 발견·수정: ① 죽은 CSS 제거기가 `:not(.dead)` 규칙을 통째로 지워 단축키 칩이 풀림 →
-  `.kbd-hints span`으로 복원(5ec57cd) ② `db/policies`가 drop된 스티커 테이블·`is_worker`를 참조하고
-  `is_active_worker` 원본을 되살릴 수 있어 정리(9d8bed4) ③ 관심 링 `@property` 미지원 폴백. 프레즌스 '지금
-  접속' 임계 300s/180s ≫ 60s 하트비트라 안전. prod 스모크·verify-public·비주얼 77·vitest 490 통과.
-  **e2e(`npm run test:e2e`)는 dev 서버+실DB로 돌며 visit_session/activity_event에 익명 행을 남긴다 — 통계 오염 주의.**
-- **정리 5건 실행(2026-08-27, CHG-20260827-003)**: 폴링 완화(soop-live·presence 25s→60s), 공개 로더
-  `calendar_hearts` 쿼리 + `PublicSchedule.heartCount` 삭제(소비자 0), `scripts/_verify_*.mjs` 11개 삭제,
-  죽은 CSS 1,101줄 제거(정확 문자열+템플릿 접두 스캔, `evt-pat`은 `:not()` 참조라 유지), DB 0066
-  (visit_log·presence_ping·presence_hourly/peak/active_days·owner_sessions·calendar_hearts·add_calendar_heart
-  drop — 백업 `docs/agent/backups/2026-08-27_legacy-presence.json`). **0066 prod 적용 완료(2026-08-27,
-  c2194a8 배포 확인 후; 테이블 3·함수 5 drop 검증, 공개 API 200).**
-  남은 후보: `unlock_sessions`(코드가 아직 delete 호출 — 별도 결정), 콜드 스타트 워밍 핑.
-- **관심 단계 링 v2(2026-08-27 재설계)**: v1(바깥 spread+넓은 halo)이 모바일에서 이웃 링끼리 겹치고 짙어
-  난잡(사용자 리포트). v2 = 링을 카드 '안쪽'에 마스크(padding-box 도려냄, inset −1px로 카드 테두리를 대체)
-  → 절대 안 겹침; 색 사다리 살구→복숭아코랄→로즈코랄→금(2→2.5px에서 멈춤); 폭발·1위만 conic 그라데이션이
-  링을 따라 회전(`tier-sweep`, transform이라 합성 친화); halo는 형제 `.tier-halo`(마스크가 그림자를
-  잘라서 분리) spread 0 저농도 숨쉬기, 모바일 아젠다는 halo 없음. **주의: 링에 `overflow:hidden` 금지**
-  (padding-box로 잘라 border 채움이 사라진다). 범례 견본은 `.tier-swatch.tier-swatch`로 특이도 확보.
-- **편집실 액션바 오른쪽 묶음 정리(2026-08-27)**: 역할 배지 높이 44→36(로그아웃과 통일), 배지 팝오버·헤더
-  미리보기 메뉴는 오른쪽 끝 정렬(왼쪽으로 펼침 — 오른쪽 잘림 버그 수정).
-- **월드컵/축구 시뮬 전부 삭제(2026-08-27, 사용자 결정 — CHG-20260827-002, ADR-0009 Superseded)**:
-  `components/seasonal`(미니게임·중력공 ~6,100줄), `lib/football`(28파일), `tests/unit/football`, `docs/sim`,
+- **??VOD ?꾩뭅?대툕(PLAN-20260831-001) ??Phase 1 ?꾨즺, Phase 2 ?湲?2026-08-31)**:
+  Phase 1 異쒓퀬 ??`vod_archive`(0068, anon SELECT ?덉슜쨌service_role grant) + ?섏쭛湲?  `lib/broadcast/vod-archive.ts` + broadcast-poll ?ㅽ봽?쇱씤 30遺?利앸텇 + 諛깊븘 376嫄?prod ?곸옱 ?꾨즺,
+  ?ㅽ궢 0) + 怨듦컻 API `vods` DTO + ?쒖껌???좎쭨 ?곸꽭 '?ㅼ떆蹂닿린 (N?쒓컙 M遺?' 移?CHG-20260831-001).
+  **洹??洹쒖튃 2嫄?2026-08-31 ?ъ슜??寃곗젙)**: ??30遺?泥댁씤 ??吏곸쟾 VOD 醫낅즺? 媛꾧꺽 30遺??대궡硫?  媛숈? 諛⑹넚, ??諛⑹넚??broadcast_day瑜??뉖뒗??`chainBroadcastDays`, ?댄뻾??. ?섏쭛湲곕뒗 理쒓렐 ???  40?됱쓣 ?⑹퀜 泥댁씤(?섏씠吏 寃쎄퀎 而ㅻ쾭). ??**諛⑹넚??寃쎄퀎 = ?덈꼍 6??KST**('?ㅼ떆蹂닿린 媛以묒튂') ??  6???댁쟾 ?쒖옉 諛⑹넚? ?꾨궇 諛?諛⑹넚?쇰줈 洹??`attributeBroadcastDay`). ??rowKey媛 ?ㅼ륫 ?쒖옉
+  ?좎쭨? ?ㅻⅤ硫?rowKey ?곗꽑(SOOP???몄뀡 湲곗??쇰줈 以 媛?. 諛깊븘 ?ъ떎?됱쑝濡?prod 22嫄?援먯젙
+  (蹂꾨퀎??궧쨌?뚮윭?ㅻ콉??1/6??/5 ????1/6 ?대콉 移대뱶???덈꼍 諛⑹넚??遺숇뜕 ?닿툔???댁냼).
+  媛숈? ???щ윭 VOD???좎쭨 移대뱶??'?ㅼ떆蹂닿린 1쨌2'濡??④퍡 遺숇뒗?? ??**援щ룆(?뚮윭?? ?꾩슜 ?쒖쇅**
+  (0069) ??SOOP `auth_no`(101=怨듦컻, 107=援щ룆 ?꾩슜) ??? 怨듦컻 移⑹? 101留??쇰컲 ?쒖껌?먮뒗 107
+  ?ъ깮 遺덇?; 誘몄긽 0??fail-closed ?쒖쇅). prod ?ㅼ륫 107=11嫄??뚮윭?ㅻ콉??9 + ?쒕ぉ 臾댄몴湲?2).
+  ?꾩닔 媛먯궗(2026-08-31): ?쇱젙?봙OD ?닿툔??0嫄? ?좎씪 ?붿뿬 = 2025-03 WBD 2?쇱감 -1/-2媛
+  46遺?媛꾧꺽?쇰줈 12/13??遺꾪븷(泥댁씤 30遺?諛? ?쇱젙 ?녿뒗 ?쒕????ㅽ빐 ?놁쓬 ???ъ슜??蹂대쪟).
+  ??**?좎쭨 吏꾩엯濡?*: PC = ?좎쭨 移?諛곌꼍 ?대┃ ???ㅼ떆蹂닿린 ?앹삤踰?`day-vod-pop`, hover?먮쭔
+  ??諛곗?+留????ъ뒪??罹≪퀜 遺덉묠踰?, 紐⑤컮??= ?좎쭨 以??몃씪??移?紐⑤뱺 諛⑹넚 ?? 移대뱶 ?꾨옒).
+  ?쇱젙 ?곸꽭???ㅼ떆蹂닿린 踰꾪듉? ?쒓굅(吏꾩엯濡??좎쭨 ?쇱썝??. 移??쇰꺼 = VOD ?쒕ぉ(留먯쨪?? ?댄똻 ?꾨Ц).
+  ??**怨쇨굅 ?쇱젙 移대뱶 153嫄??앹꽦**(CHG-20260831-002): ??025-12 ?쇱젙 ?녿뜕 VOD ?좎뿉 ?쒕ぉ ?좎텛
+  移대뱶(遺꾪븷 ?묐????쒓굅쨌以묐났 ?⑹묠쨌"N??" ?묐몢). 濡ㅻ갚 id = db/backfills/2026-08-31-history-events.json.
+  **Phase 2(????꾨씪?? ?湲?*: ?쒖슜 諛⑹떇(梨뺥꽣 ?먰봽/寃??肄붾꼫 ?몃젋?????щ젅??쨌?묒꽦?????쒖떆쨌
+  ?숈쓽 ?щ????ъ슜??寃곗젙 ?湲? ??꾨씪???볤?? ?쒕낯 96媛?VOD 以?81媛?84%??議댁옱(?щ㎎ ?쇱젙).
+  `?changeSecond=` ?먰봽 ?뚮씪誘명꽣 釉뚮씪?곗? 寃利앸룄 Phase 2 紐? ?꾩냽 ?꾩씠?붿뼱: VOD 湲몄씠濡??몄뀡 湲곕줉
+  ?댁쟾 怨쇨굅 ??諛⑹넚?쒓컙 諛깊븘(?몄궗?댄듃 ?뺤옣).
+- **'?곴쾶 ?곗씤 湲곕뒫' 移대뱶?먯꽌 泥좎닔 湲곕뒫 媛덈씪?닿린(2026-08-31, ?ъ슜??吏??**: ??移대뱶??"?놁븿 ?꾨낫"瑜?  李얜뒗 ?붾㈃?몃뜲 ?대? 吏??湲곕뒫(袁몃?湲??ㅽ떚而?ADR-0015 쨌 ?붾뱶而?ADR-0009 쨌 鍮꾧났媛??덉씠??UI ADR-0014 쨌
+  ?묒뾽??誘몃━蹂닿린)??諛붾떏??源붾젮 ?꾨낫瑜???뿀?? `lib/activity/labels.ts`??`retired` ?쒖떇(RETIRED_* ?명듃
+  ??怨?愿由????ъ쟾 ??ぉ? 吏?곗? ?딅뒗?? 吏?곕㈃ '?대쫫 誘몃벑濡??쇰줈 ?⑥뼱吏?, 移대뱶?먯꽑 ?꾨낫 紐⑸줉 諛?  "?대? 吏??湲곕뒫 N媛? ?묓엺 臾띠쓬?쇰줈(梨꾩? 留됰? ?놁쓬쨌?????ㅼ슫, 蹂듭궗蹂몄뿏 ?ы븿). ?꾩튂 ?꾪꽣쨌??ъ슜
+  ?붿빟???댁븘?덈뒗 寃껊쭔 怨꾩닔, ??븷 ?꾪꽣?먯꽌 '?묒뾽?? ?쒓굅(?댁뿭 以꾩뿏 '?묒뾽??N' ?좎?). 湲곕줉 蹂댁〈 90?쇱씠
+  吏?섎㈃ 臾띠쓬???먯뿰 ?뚮㈇.
+- **?붾퀎 ?몄궗?댄듃 ???쒖꽌 = ?몃젋??癒쇱?(2026-08-31, ?ъ슜??吏??**: 媛쒕컻?먰뙋(insights-dashboard)쨌
+  硫ㅻ쾭??member-insights) 紐⑤몢 ?몃젋?쒋넂?쇱젙?믪갭?р넂?섏씠?쇱씠?? 湲곕낯(泥? ??= ?몃젋?? CSS媛
+  data-active=n ??nth-child濡?吏앹쓣 留욎텛誘濡?媛쒕컻?먰뙋? ?몃옓 ?뱀뀡 DOM??媛숈씠 ?대룞. 硫ㅻ쾭???뚮뜑?щ뒗
+  ?몃뜳???됲뻾 諛곗뿴 ??key 留ㅽ븨?쇰줈 諛붽퓭 ?쒖꽌 蹂寃쎌씠 ?뚮뜑?щ? 紐??뚭퀬 媛???ш퀬瑜?援ъ“?곸쑝濡?李⑤떒.
+- **諛⑸Ц 吏묎퀎 '媛쒕컻??2' ?섏젙 + 踰붿쐞 ?좉? ?щ같移?2026-08-28, ?ъ슜???좉퀬)**: ????뿉??濡쒓렇?꾩썐?붾줈洹몄씤??  ?욎씠硫?`foldOne`??怨꾩젙 ?댁떆瑜?'?댁떆 ?덈뒗 泥????먯꽌 吏묒뼱 "??븷=developer, 怨꾩젙=anon ?좏겙" 諛⑸Ц???앷꺼
+  `(?좎쭨|怨꾩젙)` ?쒕갑臾몄옄 吏묎퀎媛 媛쒕컻??1紐낆쓣 2紐낆쑝濡??뚮떎(prod 08-27쨌08-28 ?ㅼ륫 ?ы쁽). 怨꾩젙 ?댁떆????븷??  ?뺥븳 議곌컖(main)?믨컳? ??븷 議곌컖?믪븘臾?議곌컖 ??`lib/insights/visit-fold.ts`), ?뚭? ?뚯뒪??2嫄? 怨쇨굅 ?됱?
+  ?먮낯 洹몃?濡쒕씪 ?ъ쭛怨꾨줈 ?먮룞 援먯젙(留덉씠洹몃젅?댁뀡 ?놁쓬). ?쒖껌???댁쁺吏??꾩껜 ?좉?? **?댁쁺吏꾟넂?쒖껌?먥넂?꾩껜**
+  ??+ 泥섏쓬 ?대㈃ ?댁쁺吏?`DEFAULT_VISIT_SCOPE`, 諛⑸Ц ?⑤꼸쨌?쇰퀎 紐⑤떖쨌?붿빟 釉붾줉 怨듭슜).
+- **?좏뵆 HCI 媛먯꽦 ?ㅻ벉湲?3李?2026-08-27, ?ъ슜??吏????B2쨌D3쨌C2濡?蹂닿퀬???꾨낫 ?뚯쭊)**:
+  쨌 **B2 ?쒖껌??紐⑤컮??移대뱶?믪떆??以??꾩씠** ????븳 移대뱶 rect瑜?`agendaDetailOriginRef`??湲곗뼲, ?쒗듃 留덉슫??吏곹썑
+    WAAPI FLIP(translate+scale, `--spring-smooth`)?쇰줈 移대뱶 ?먮━?먯꽌 ?먮씪?? ?댁슜? 45% ?댄썑 ?섏씠?쒖씤. ?먯옟?????    諛곌꼍 ???リ린??`closeAgendaDetailAnimated`(?뺥솗????갑??300ms), ?쒕옒洹??リ린???낆쓽 ?щ씪?대뱶, Esc 利됱떆.
+    PC ?앹삤踰?anchor)쨌?숈옉 以꾩씠湲??쒖쇅. ?몄쭛??紐⑤컮???몄쭛 ?쒗듃(4585~)? 媛숈? 臾몃쾿.
+  쨌 **D3 諛⑹넚 ON 紐⑦봽** ??紐⑤컮???섎떒 '?ㅻ뒛'?봍IVE瑜?**??踰꾪듉**?쇰줈(?댁쟾?????붿냼 援먯껜): 鍮④컯? `::before` opacity濡?    李⑥삤瑜닿퀬, false?뭪rue ?꾩씠 ?쒓컙留?`.just-live` ?ㅻ━ ??`--spring-bouncy`) + ?낇떛 2???쒖옉쨌?뺤젙 620ms).
+    泥?留덉슫?몄뿉 ?대? LIVE硫?議곗슜. ?곗뒪?ы깙 `.soop-live-card`??醫뚰븯?⑥뿉???ㅽ봽留??ㅼ????깆옣 + LIVE 諛곗? ??
+    (fixture ?ъ뿉 ?ㅻ뒛???놁뼱 紐⑤컮???꾩씠??釉뚮씪?곗? 寃利?遺덇? ??肄붾뱶 寃쎈줈 寃?졖룸뜲?ㅽ겕??移대뱶 ?ㅼ륫.)
+  쨌 **C2 ??댄룷 ??븷 ?좏겙??* ??raw px 278怨녹쓣 `--text-*`濡?exact/짹0.5px 洹쇱궗: 10쨌10.5?뭢icro(?좎꽕 10.5),
+    11쨌11.5?뭖aption, 12쨌12.5?뭠abel, 13쨌13.5쨌14?뭕ody, 14.5~15.5?뭫i, 17쨌18?뭪itle, 19쨌20?뭗isplay, 28?뭜ero).
+    **`@media (min-width)` ?????뺣? ??? raw ?좎?** ??2????댄룷 蹂댁〈. 8~9.5px쨌16쨌22px ?댁긽? raw.
+    寃利? 13?붾㈃ ?????덉씠?꾩썐 吏??`.scratch-pw/layout-metrics.mjs` ??以꾩닔쨌?믪씠쨌?덈퉬쨌?섎┝쨌臾몄꽌 ?? 鍮꾧탳
+    ??以꾨컮轅댟룹옒由셋룸넂??湲됰? 0嫄? ?몄쭛??紐⑤컮??臾몄꽌 ?믪씠 +19px(?됰쭏??0.5px ?꾩쟻)留? ?ㅽ겕由곗꺑 ?≪븞 ?댁긽 ?놁쓬.
+- **?꾩냽 ?뺣━ 3嫄?2026-08-27, ?ъ슜??寃곗젙)**: ??prod???좊졊 `work` ?쇱젙 1嫄?2025-11-04, 2026-08-03 ?뚯뒪???붿옱)
+  hard delete ??鍮꾧났媛?踰붿쐞 ?붿뿬 0. ??`unlock_sessions` drop(**0067 prod ?곸슜 ?꾨즺**): `has_private_unlock()`瑜?  private_unlock_grants(auth ?몄뀡 寃곗냽) 紐⑤뜽濡??댁떇 ??drop, 肄붾뱶??legacy delete 3怨??쒓굅. ??肄쒕뱶 ?ㅽ????뚮컢
+  `.github/workflows/warm.yml`(5遺??쒓린, GH ?ㅽ슚 ~2h) + **cron-job.org(?ъ슜??怨꾩젙)??5遺???2媛??깅줉 ?꾨즺(2026-08-27)**:
+  "鍮낇넗由??쇱젙??源⑥슦湲?(泥??붾㈃)" `/` 쨌 "(?쇱젙 API)" `/api/public/vic/events`. 媛숈? 怨꾩젙??"鍮낇넗由?諛⑹넚 媛먯?"
+  (`/api/cron/broadcast-poll`, 1遺???**爰쇱졇 ?덉쓬** ??耳쒕젮硫?Advanced ?ㅻ뜑 `Authorization: Bearer <CRON_SECRET>` ?꾩슂.
+- **?좏뵆 HCI 媛먯꽦 ?ㅻ벉湲?2李?2026-08-27, ?ъ슜??吏????異쒖꽍 ?꾩옣? ?섏? ?딆쓬)**:
+  쨌 **B1 ?쒖껌??紐⑤컮???쒗듃 ?뚯뼱???リ린** ???몄쭛???쒗듃??`use-sheet-drag-close` ?낆쓣 ?쒖껌???곸꽭 ?쒗듃???곌껐.
+    洹몃┰ 議?`.agenda-detail-top`(sticky쨌touch-action:none쨌?뚯닔 留덉쭊?쇰줈 ?쒗듃 留??? + ?먯옟??`.agenda-detail-grab`,
+    **洹몃┰ 議댁? ?먯옟??以꾨쭔**(??7px, 諛곌꼍 ?놁쓬) ???ㅻ뜑源뚯? sticky濡??먮㈃ X(44px) ?볦뿉 ?먭볼?뚯졇 ?쒕ぉ??媛?몃떎(?ъ슜??    由ы룷?? ?섏젙). **紐⑤컮??X ?쒓굅**(?ъ슜??寃곗젙): ?먯옟??= ?묎렐 媛?ν븳 ?リ린 踰꾪듉(???リ린) + ?ㅼ??댄봽 + 諛곌꼍 ??+ Esc.
+    PC ?앹삤踰?anchor)??X ?좎?, 洹몃┰ ?놁쓬. 媛숈? ?붿냼??ref ????肄쒕갚 ref 蹂묓빀.
+    寃뚯씠?? `tests/visual/viewer-sheet-drag.spec.ts`.
+  쨌 **C1 ?ъ쭏 留덈Т由?* ???쒖껌??紐⑤컮???쒗듃쨌?몄쭛??紐⑤컮???몄쭛 ?쒗듃(+sticky 洹몃┰ 議?쨌?쇱씠釉?移대뱶쨌蹂듭궗 ?좎뒪?맞룹궘??    ?ㅻ궢諛??ㅽ겕 ?ъ쭏)瑜?`--material-*`濡? export surface 諛뽯쭔.
+  쨌 **A3 肄붾꼫 ?숈떖** ???덇퉭 ???ㅼ륫(.scratch 媛먯궗 ?ㅽ겕由쏀듃): 愿由?臾띠쓬 14??calc(r-control+4)`=16, 硫붾돱 ??ぉ
+    r-control(12)?뭨-sm(8) (硫붾돱 16?믫뙣??8?믫뀒?먮━ 1). ?섎㉧吏 ???쒗듃 ??踰꾪듉 ??? 紐⑥꽌由ъ뿉 ???우븘 洹쒖튃 鍮꾩쟻??
+  쨌 ?≪뀡諛?"鍮꾨?踰덊샇 蹂寃? 踰꾪듉(??愿由?臾띠쓬쨌紐⑤컮???대컮) ?쒓굅 ???붾퀎 ?몄궗?댄듃 蹂댁븞 ??뿉 ?숈씪 湲곕뒫(?ъ슜??吏??.
+- **理쒖쥌 ?꾩껜 寃??2026-08-27 諛? ?뺣━ ?묒뾽 ?뚭? ?먭?)**: ?고???肄붾뱶??drop ?뚯씠釉??⑥닔쨌??젣 ?쇱슦?맞룹궘??紐⑤뱢
+  李몄“ 0(?먯씠?꾪듃 媛먯궗). 諛쒓껄쨌?섏젙: ??二쎌? CSS ?쒓굅湲곌? `:not(.dead)` 洹쒖튃???듭㎏濡?吏???⑥텞??移⑹씠 ?由???  `.kbd-hints span`?쇰줈 蹂듭썝(5ec57cd) ??`db/policies`媛 drop???ㅽ떚而??뚯씠釉붋?is_worker`瑜?李몄“?섍퀬
+  `is_active_worker` ?먮낯???섏궡由????덉뼱 ?뺣━(9d8bed4) ??愿??留?`@property` 誘몄????대갚. ?꾨젅利뚯뒪 '吏湲?  ?묒냽' ?꾧퀎 300s/180s ??60s ?섑듃鍮꾪듃???덉쟾. prod ?ㅻえ??톢erify-public쨌鍮꾩＜??77쨌vitest 490 ?듦낵.
+  **e2e(`npm run test:e2e`)??dev ?쒕쾭+?짣B濡??뚮ŉ visit_session/activity_event???듬챸 ?됱쓣 ?④릿?????듦퀎 ?ㅼ뿼 二쇱쓽.**
+- **?뺣━ 5嫄??ㅽ뻾(2026-08-27, CHG-20260827-003)**: ?대쭅 ?꾪솕(soop-live쨌presence 25s??0s), 怨듦컻 濡쒕뜑
+  `calendar_hearts` 荑쇰━ + `PublicSchedule.heartCount` ??젣(?뚮퉬??0), `scripts/_verify_*.mjs` 11媛???젣,
+  二쎌? CSS 1,101以??쒓굅(?뺥솗 臾몄옄???쒗뵆由??묐몢 ?ㅼ틪, `evt-pat`? `:not()` 李몄“???좎?), DB 0066
+  (visit_log쨌presence_ping쨌presence_hourly/peak/active_days쨌owner_sessions쨌calendar_hearts쨌add_calendar_heart
+  drop ??諛깆뾽 `docs/agent/backups/2026-08-27_legacy-presence.json`). **0066 prod ?곸슜 ?꾨즺(2026-08-27,
+  c2194a8 諛고룷 ?뺤씤 ?? ?뚯씠釉?3쨌?⑥닔 5 drop 寃利? 怨듦컻 API 200).**
+  ?⑥? ?꾨낫: `unlock_sessions`(肄붾뱶媛 ?꾩쭅 delete ?몄텧 ??蹂꾨룄 寃곗젙), 肄쒕뱶 ?ㅽ????뚮컢 ??
+- **愿???④퀎 留?v2(2026-08-27 ?ъ꽕怨?**: v1(諛붽묑 spread+?볦? halo)??紐⑤컮?쇱뿉???댁썐 留곷겮由?寃뱀튂怨?吏숈뼱
+  ?쒖옟(?ъ슜??由ы룷??. v2 = 留곸쓣 移대뱶 '?덉そ'??留덉뒪??padding-box ?꾨젮?? inset ??px濡?移대뱶 ?뚮몢由щ? ?泥?
+  ???덈? ??寃뱀묠; ???щ떎由??닿뎄?믩났??븘肄붾엫?믩줈利덉퐫?꾟넂湲?2??.5px?먯꽌 硫덉땄); ??컻쨌1?꾨쭔 conic 洹몃씪?곗씠?섏씠
+  留곸쓣 ?곕씪 ?뚯쟾(`tier-sweep`, transform?대씪 ?⑹꽦 移쒗솕); halo???뺤젣 `.tier-halo`(留덉뒪?ш? 洹몃┝?먮?
+  ?섎씪??遺꾨━) spread 0 ??띾룄 ?⑥돩湲? 紐⑤컮???꾩젨?ㅻ뒗 halo ?놁쓬. **二쇱쓽: 留곸뿉 `overflow:hidden` 湲덉?**
+  (padding-box濡??섎씪 border 梨꾩????щ씪吏꾨떎). 踰붾? 寃щ낯? `.tier-swatch.tier-swatch`濡??뱀씠???뺣낫.
+- **?몄쭛???≪뀡諛??ㅻⅨ履?臾띠쓬 ?뺣━(2026-08-27)**: ??븷 諛곗? ?믪씠 44??6(濡쒓렇?꾩썐怨??듭씪), 諛곗? ?앹삤踰꽷룻뿤??  誘몃━蹂닿린 硫붾돱???ㅻⅨ履????뺣젹(?쇱そ?쇰줈 ?쇱묠 ???ㅻⅨ履??섎┝ 踰꾧렇 ?섏젙).
+- **?붾뱶而?異뺢뎄 ?쒕? ?꾨? ??젣(2026-08-27, ?ъ슜??寃곗젙 ??CHG-20260827-002, ADR-0009 Superseded)**:
+  `components/seasonal`(誘몃땲寃뚯엫쨌以묐젰怨?~6,100以?, `lib/football`(28?뚯씪), `tests/unit/football`, `docs/sim`,
   `lib/calendar/worldcup.ts`, `lib/ui/use-worldcup-visibility.ts`, `components/ui/pop-number.tsx`,
-  `tests/unit/calendar/holidays.test.ts`(월드컵만 검사) 삭제. `holidays.ts`의 `MarkKind`/`match`/
-  `withoutWorldCupMark` 제거(DayMark = name·isHoliday만), `classifyDay`의 markKind/wcMatch 제거. 포스터·
-  편집실의 월드컵 토글·자동 테마·경기 칩·공 렌더 제거, CSS(wc-·worldcup 테마·pop-number) 제거.
-  `WORLD_CUP_UI_ENABLED=false`라 동작 변화 0. 활동 라벨 사전의 io-worldcup 항목은 과거 행 판독용으로 유지.
-- **편집실 헤더 정리(2026-08-27 사용자 지정 배치)**: 역할 배지("개발자 ?")·로그아웃을 헤더 우상단에서 액션바
-  오른쪽으로 — 순서 **단축키 · 역할 배지 · 로그아웃**. 헤더 우측은 저장 상태 + 미리보기만.
-- **달력 꾸미기(스티커)·작업자 역할 철수 + drop(2026-08-27, ADR-0015)**: 관리자 결정. 코드: 꾸미기 라우트·
-  팔레트·스티커 레이어/도형·테마 스위치·`api/sticker-write`·스티커/테마 액션·`public-poster.tsx` 스티커
-  상태/좌표 매핑/probe/툴바(파일 7,0xx→4,26x줄)·CSS ~33KB 삭제. 공개 로더 스티커 조회 제거(**공개 DTO에서
-  `stickers/stickerAssets` 삭제**, CHG-20260827-001). 작업자: `MembershipRole`에서 제거, 권한 함수 isWorker
-  인자 제거, 신뢰 멤버 = 매니저만(패널 재작성: 이메일 추가/삭제, 역할 표 3열), 개발자 역할 미리보기에서
-  작업자/이중 제거. 레거시 `api/trusted-members`·`api/private-layer`·`studio/private-layer`·
-  `relockPrivateLayerAction` 삭제. DB: `0065_retire_stickers_and_worker.sql`(테이블 2 drop·스토리지 정책·
-  빈 버킷·`is_active_worker()`=false·`is_worker` drop) + `scripts/cleanup-sticker-storage.mjs`. 백업:
-  `docs/agent/backups/2026-08-27_stickers.json` + 원본 이미지 12개. **배포 순서: push → Vercel 확인 →
-  스토리지 --delete → 0065 apply**(옛 코드가 스티커 테이블을 읽음) — **전부 적용 완료(2026-08-27)**: prod 배포
-  확인 후 버킷 객체 12개·버킷 삭제(Storage API), 0065 OK(테이블 404·is_worker 없음). 검증: tsc·lint·build 0, vitest 618,
-  비주얼 77(지오메트리·포스터 기준선 의도 갱신).
-- **정리 후보 조사(2026-08-27, 에이전트 감사 — 즉시 안전 항목은 위 CHG-20260827-003으로 실행됨)**: 즉시 안전 — 죽은 프레즌스 DB 객체(visit_log·presence_ping·
-  presence_hourly/peak/active_days·owner_sessions·add_calendar_heart), `calendar_hearts` 공개 로더 쿼리(소비자 0),
-  폴링 간격(soop-live 25s·presence 25s → 60s), `scripts/_verify_*.mjs` 15개, 죽은 CSS ~760줄(동적 클래스
-  오탐 주의). 결정 필요 — 월드컵/축구 시뮬(`WORLD_CUP_UI_ENABLED=false`, ~15,500줄, ADR-0009 뒤집기).
-  activity 라벨 사전의 낡은 항목은 과거 행 판독용이라 **삭제 비권장**.
-- **편집실 비공개 레이어 UI 철수(2026-08-27, ADR-0014)**: 관리자가 '공개 범위 옵션'·'비공개 일정 보기'를
-  안 씀. 제거: 액션바·모바일 툴바 토글, 하단 '지금 잠그기' 배너(`relockNow`), 모바일 '비공개 일정 표시
-  중' 배너, 범례 '비공개' 필터 칩(웹·아젠다), 편집 폼 공개 범위 피커(웹 `scope-picker`·모바일
-  `me-seg`), `canTogglePrivateLayer`/`togglePrivateLayer`. 접힘 헤더 "공개 범위 · 옵션"→**"옵션"**,
-  요약은 미정/업 도움/최초공개만(없으면 "없음"). **서버 모델·권한·fail-closed 저장 검사·공개 API 경계는
-  불변** — 새 일정은 항상 public. 비밀번호는 최초공개 게이트(`verifyOnly`)·변경 전용: '비밀번호 변경'
-  버튼을 관리 묶음(웹, `.io-passcode`)·모바일 툴바(옛 토글 자리)에 관리자만. prod 비공개 일정 1건
-  (work)은 편집실에서 안 보임 — 관리자 결정 대기(공개 전환/삭제). e2e calendar-ui의 토글 기대 제거.
-- **관심 단계 = 이 달 최다 대비 비율 + 절대 하한(2026-08-27, 사용자 결정)**: 절대 수(높은 12+·폭발 25+)
-  만 쓰던 동안 8월 실측(최다 12, 나머지 5~11)에선 '관심'과 👑만 남았다. `heartTier(count, isTop,
-  maxHeart)` — 관심 5+ · 높은 = 최다 50%↑ & 6+ · 폭발 = 최다 80%↑ & 8+ · 👑 = 최다(공동) & 10+.
-  `maxHeart`/`topEventIds`는 **보는 달 일정만**으로(예전엔 로드된 전체 달의 최댓값이라 "이 달 1위"가
-  전체 1위였음). 낙관적 heartCounts에서 파생 → 내 하트 누름/취소·👑 이동이 같은 프레임에 반영, 남의
-  하트는 재진입 때. 트레이드오프(남의 하트로 내 단계 하락 가능)는 알고 수용. 인사이트 '관심 단계 받는
-  기준' 문구 갱신. 단위 테스트 `tests/unit/heart-tiers.test.ts` 7.
-- **상세 팝오버 단계 배지 재설계(디자인 피드백)**: 별도 "아이콘 관심 단계 최고 인기" 줄 삭제 → 제목 줄을
-  flex(좌 `.adt-text` ↔ 우 `.adt-badge`)로, 헤더(날짜↔닫기)와 같은 좌우 리듬. 배지 = 단계 색 글자 +
-  옅은 채움 알약, 1위만 "👑 최고 인기". 제목이 길면 다음 줄 오른쪽 끝(margin-left:auto).
-- **숲 '공지 쓰기' 기능 제거(관리자가 안 씀)**: `components/notice/notice-modal.tsx` 삭제, studio-shell의
-  버튼(웹 폼 아래·모바일 me-tools)·모달 타입·본문 제거, `.notice-*`/`.modal-card-notice`/
-  `.modal-backdrop-notice` CSS 제거(개발자 '이용 기록' 버튼은 `.aux-open`으로 이름만 바꿔 유지),
-  `lib/activity/labels.ts`의 notice 항목 제거. 이벤트 카테고리 `"notice"`(schedule-types)는 별개 —
-  건드리지 않음.
-- **관심 단계 = 카드 테두리 링 + 👑(2026-08-27, 사용자 아이디어)**: 불꽃 알약(`.event-popular`, 카드
-  바닥 한 줄 ≈18px)이 행마다 쌓여 달력 비율을 무너뜨리던 것 → 카드 안 absolute `.tier-ring`(높이 0)
-  + 1위 `.tier-crown`(우하단 모서리)으로 교체. `TierMark` 컴포넌트, 데스크탑·아젠다 카드 마지막
-  자식. **테두리만**(사용자 지정 — 2차 피드백으로 아래 변 불꽃 밴드·conic 회전 반짝 제거): 안 1px +
-  바깥 spread(두께 1→2→3→3px) + halo 숨쉬기. 관심=#f59e0b 1px · 높은=#f97316 2px · 폭발=#dc2626 3px
-  불규칙 flicker · 1위=#eab308 3px brightness 반짝 + 👑(배경 없이 생으로, 카드 우상단 모서리 위
-  top:-11/right:-6, rotate ±14° bob). 본문 레이어(`.event-main/.event-subs/.event-meta`) z-index 1,
-  링 0. **2색 카드 함정**: `.public-event[data-mixed] > :not(.evt-pat){position:relative;z-index:1}`가
-  링·👑까지 흐름 안으로 끌어 링이 카드 바닥 띠·👑이 왼쪽 아래로 밀렸음(사용자 리포트) →
-  `> .tier-ring.tier-ring`/`> .tier-crown.tier-crown`에 absolute·층 재지정(spec이 position·높이 검사).
-  카드마다 위상 분산(nth-child). 동작 줄이기·내보내기: 애니 정지, 두께/색/halo로 구분. 모바일 아젠다:
-  정적 링(inset -4/-6)+👑 오른쪽 위. 범례 3곳(웹·축약·아젠다 도움말) 🔥→`.tier-swatch` 견본.
-  **상세 팝오버/시트에 단계 글자**(`.agenda-detail-tier`: 견본 + "관심 단계" + 관심/높은 관심/폭발적
-  관심/최고 인기 — 링만으론 관심↔폭발 구분이 어렵다는 3차 피드백; PC 팝오버·모바일 시트 공용). 정밀 라벨은
-  `.tier-ring` role=img aria-label·title. fixture `?hearts=1`(6/14/30/45/0 순환)로 검증,
-  `tests/visual/heart-tier.spec.ts` 3(링=티어 수·불꽃 0·본문 z 1·표면 높이 하트 유무 동일·모바일).
-- **월 이동 깜빡임 수정(아바타 scene)**: 원인 = 월 바뀜→스티커 canon 리셋→`probeCanonFrame`이
-  한 프레임 동안 `avatar-scene/left/right` 클래스를 뗐다 붙임 → 슬롯 `display:none↔flex`, 세로
-  레일·정보 카드 등장 애니(opacity 0→1) 재생. 수정: probe는 클래스를 안 건드리고
-  `.poster-page.sticker-geom-probe .poster-surface`가 표면 안 배치(레일 252·gap 16·가로 패딩 18)만
-  !important로 기본값 복원 — canon은 표면 대비 비율이라 결과 동일. avatar-scene.spec에 24프레임
-  opacity 샘플 테스트 추가(min ≥ 0.999, display none 0회).
-- **아바타 scene "한눈에" — 세로 스택·전역 밀도 압축·고정 컴포지션(2026-08-27, PLAN-20260827-004)**:
-  뱅온 미리보기가 OBS 1920×1080 안에서 한 화면에 들어오게. 사용자 결정("토리님은 한 눈에 들어오는
-  게 취향"). ① 오른쪽 칸 카드 **세로 스택**(`.avatar-top-cards` 슬롯 안 흐름·column·열 전폭) —
-  나란히 max 48%라 `2026년 08 / 월` 줄바꿈되던 것 해소, in-rail 정보 카드 타이포 한 단계 ↑.
-  ② **전역 밀도 ~12% 압축**(글자 크기 유지): 행 최소 150→132, weekday 10/7→8/5, 표면 세로
-  padding 18→14·row-gap 16→12, day-events 5/6-5-8→4/5-5-6, 카드 gap 3→2·padding 5→4, 날짜
-  머리 27→25. 6월 fixture 표면 998→872. scene 전용 압축은 꾸미기≠시청자 지오메트리라 금지 —
-  전역이라 canon 프레임이 두 모드에서 같이 바뀜(기존 스티커는 칸 대비 소폭 이동 가능).
-  ③ **고정 컴포지션**: `--avatar-col: clamp(300px, 18.75vw, 380px)`(1920에서 정확히 360),
-  슬롯 = `top:76/bottom:14` 세로 flex 열 [카드][꾸미기 토글 `.avatar-ctl-inslot`(JSX를 슬롯
-  안으로 이동)][점선 박스 flex:1] — `--avatar-h`·translate 매직 넘버 제거. 시청자 미리보기
-  scene(≥1100px)은 fit을 **폭·높이 둘 다**(`min(w/natW, availH/natH, 1.6)`) + `--poster-dy`
-  translate로 세로 중앙 — **당일 철회**: prod 8월(6주·고밀도, 표면 ~1200)에서 배율이 ~0.6으로
-  떨어져 방송 화면 글씨가 너무 작아짐(사용자 스크린샷). scene도 평소처럼 **폭 fit만**(세로는
-  스크롤). `sceneFit`·`--poster-dy`·resize 리스너 제거. <1100px: 슬롯은 꾸미기 토글만 좌상단.
-  **뱅송 미리보기 URL `/onair`**(`app/onair/page.tsx`): 로그인 없이 열리는 고정 scene
-  (`avatarFixed` prop — 항상 켜짐·토글 없음, `?side=right`, `?y=&m=`, 방송 아닐 때 라이브 카드
-  확인은 기존 `?live-preview=1`), 공개 로더만 사용(`/`와
-  같은 공개 경계), robots noindex. OBS 브라우저 소스(1920×1080)에 그대로 올리는 용도.
-  fixture `?fixed=left|right`로 같은 경로 검증.
-  **여백 다이어트**(사용자: 달력 너비 챙기기): scene에서 슬롯 안쪽 패딩 14→10, stage가 슬롯 안으로
-  `--avatar-gap`(4px) 파고듦, 레일 쪽 `--rail-gutter` 138→134(레일 가장자리 12→8), 셸 패딩 4→0,
-  표면 가로 패딩 18→6(scene 전용 — 레일 컬럼 접기와 같은 부류, 스티커는 canon↔live 매핑 보정).
-  1920 실측: 달력 그리드 1371→~1410px(+3%), 배율 0.760→0.77.
-  검증: tsc·lint·build exit 0, vitest 612, 비주얼 69(지오메트리 게이트·포스터 픽셀 기준선은
-  **의도한 레이아웃 변경으로 갱신**), 신규 `tests/visual/avatar-scene.spec.ts` 4.
-  알려진 것(기존): 하단 좌우 월 이동 ‹ › 버튼이 아바타 점선 박스 영역과 겹침(이전 75vh 박스도
-  동일). 액션바 '월별 인사이트' 버튼 이모지(🛠/📊) 제거(모달 제목은 유지).
-- **그림판 펜 카드 위 첫 클릭·미리보기 아바타 컨트롤·동작 줄이기 기본값(2026-08-27)**:
-  ① `.bp-draw-surface`에 `z-index: 50` — 일정 레이어가 스택 zIndex를 갖게 된 `526585e` 이후
-  입력면이 카드 아래로 깔려 카드 안에서 시작한 펜 획이 안 그려지던 회귀(입력면은 투명, 선택
-  도구일 땐 pointer-events none이라 카드 조작 불변). ② 시청자 미리보기 `.avatar-ctl-preview`를
-  fixed→absolute(.poster-page 기준) — 스크롤 따라 내려와 달력 가리던 것. ③ **동작 줄이기 기본
-  OFF**: layout 인라인 스크립트·`reduceMotionEnabled()` 모두 'on'일 때만 켬(P1-MOTION-1의 OS
-  prefers-reduced-motion 시딩 철회, 사용자 결정; CLAUDE.md 갱신). 월드컵 CSS의 OS 미디어쿼리
-  게이트도 `html[data-reduce-motion]`로. 눈 편한 테마는 이미 기본 ON(변경 없음).
-  ④ 액션바 아바타 세그먼트 가운데 라벨을 흐린 작은 글자+양옆 hairline으로 — 버튼처럼 보이던 것.
-  검증: fixture e2e(카드 안 첫 클릭 획 alpha 255·선택 도구 카드 도달·OS reduce 에뮬레이션에서
-  data-reduce-motion 없음·미리보기 컨트롤 스크롤 동반), 그림판 e2e 18, 비주얼 14, 기준선 1건.
-- **태그 순서 변경 수술 이식 + 액션바 IA 복원(2026-08-27)**: wak-schedule `38ba152`를 이식.
-  순수 모델 `lib/tags/reorder.ts`(`reorderAtEdge` 행+edge 목적지·같은 결과=같은 참조 no-op·
-  휴뱅 머리 고정 클램프, `edgeForPointer` 중앙선±데드존 히스테리시스) + 단위 테스트 12개.
-  에디터: 유령 포인터 1:1(관성·회전·흔들림 제거), 콘텐츠↔형식 경계 드래그 차단, 자동 스크롤
-  중 판정 갱신, Esc(capture)/pointercancel/blur 시 시작 스냅샷 복구, 들린 행=점선 슬롯.
-  태그 모달 dirty 닫기(X·배경·Esc) → '계속 편집/버리고 닫기' 오버레이(`.modal-discard-ask`,
-  에디터 `onDirtyChange`는 ref 대입만). `applyTagUpdates`가 kind/parentId도 낙관 반영.
-  감사 문서: `docs/tags/tag-editor-reorder-ux-audit.md`. 토큰 `--violet-rgb` 추가.
-  액션바: '관리 ▾' 드롭다운 철회 → 태그 편집·멤버 관리·월별 인사이트를 `.studio-manage-group`으로
-  바로 노출(권한 게이트 불변). 웹은 `.studio-actionbar-tools`가 3열 그리드(1fr·auto·1fr) —
-  가운데 열에 아바타 세그먼트 [왼쪽 · 아바타 자리 · 오른쪽](🎙️ 제거, 슬롯 힌트도 텍스트만).
-  검증: tsc/lint/build/vitest 612, 편집실 e2e 15, fixture 실측(세그먼트 중심 오차 <0.01px),
-  `studio-owner-web-light` 기준선 갱신(액션바 줄만 diff).
-- **temp id·옛 클로저·낙관-서버 갈라짐 전수 정리 + 하트 즉시성(2026-08-18, `9a22389`·`0cf3ec7`)**:
-  `04f8a3f`(끄는 도중 id 교체 경합)와 같은 부류를 편집실·포스터·꾸미기·태그·멤버·비공개 패널
-  전체에서 정리. **규칙**: 제스처/비동기 콜백은 배열을 ref로, id는 `canonId`(temp↔실제 동일시)로
-  비교; 저장 중 카드에 대한 조작은 실제 id 확정 뒤 같은 큐에서 전송; 서버 스냅샷은 로컬 낙관
-  상태와 '병합'(덮어쓰기 금지); 부모 props가 바뀌면 손대지 않은 항목만 재동기화.
-  하트: 일정별 집계는 공개 캐시(300초) 밖에서 매 요청 신선하게 읽어 덮는다(public-loader
-  `loadLiveEventHeartCounts`, 실패 시 캐시값); PublicPoster는 schedule prop 변화 때 집계·내 하트를
-  재동기화하되 응답 대기 중(heartOpRef `done=false`) 일정은 낙관값 유지; 편집실 미리보기는
-  accountEmail로 세션 델타를 계정별 분리. 검증: tsc/lint/build/vitest 600 + visual 4 spec(19).
-  ⚠ studio-editor '만들자마자 끈 카드' 테스트가 마지막 순서로 돌 때 1회 fling 판정으로 flake
-  (재실행 2/2 통과) — 속도 판정이 마우스 step 타이밍에 민감. 반복되면 테스트의 마지막 move
-  steps를 늘리거나 FLING_SPEED 여유를 볼 것.
-- **콜드 엔트리 체감 속도(2026-08-12, `6cd0221`)**: URL 직접 진입 흰 화면의 원인은
-  루트 layout·loading.tsx가 둘 다 `resolveCurrentActor`(GoTrue 왕복)를 await하던 것.
-  스켈레톤 톤은 이제 힌트 쿠키 `vic_lt`(30일, StudioShell="s"/독립 포스터="p")만 읽고,
-  actor 의존 비콘(Presence·SW)은 `ActorTail`+Suspense로 분리해 셸이 즉시 스트리밍된다.
-  **가드 불변**: (studio) 그룹 layout의 viewer→`/` 리다이렉트와 page의 actor 분기는
-  그대로 서버에서 확정 — vic_lt는 배경/문구용 힌트일 뿐 권한에 절대 쓰지 말 것.
-  남은 후보(미착수): 미들웨어 익명 패스트패스(인증 쿠키 없으면 getUser 생략),
-  콜드 스타트 워밍 핑(외부 5분 핑; Vercel every-min cron은 Pro 필요),
-  (studio) 가드의 스트리밍화(보안 경계라 신중 — ADR감).
-- **방문 지표 재정의 + 행동 기록(2026-08-04, PLAN-20260804-003 / ADR-0013)**:
-  ① **방문 = 탭 수명**(0061 `visit_key`, sessionStorage). `visit_session` 1행은 '화면이 보인
-  한 구간'인데 문서 네비게이션(pagehide)마다 끊겨, 사이트 안에서 페이지만 옮겨도 방문이
-  늘었다 — 실측(04:11~04:20 owner 단독)에서 연속 9분 1회가 4행(4초/5분/7초/4분)으로 찍혔다.
-  `lib/insights/visit-fold.ts`가 적재 직후 구간→방문으로 접는다(같은 탭 → 같은 계정의 겹치는
-  탭; 계정 미상은 절대 안 합침). **체류는 구간 합집합** — 단순 합은 창 2개 동시 표시를 두 번 센다.
-  시간대 점유·동접은 방문 span이 아니라 `spans`(실제 가시 구간)를 스윕한다.
-  ⚠ 방문수·평균 체류의 정의가 바뀌어 **과거 수치와 직접 비교 불가**.
-  ② **실시간 프레즌스**: track이 마운트 1회뿐이라 숨긴 탭도 접속으로 셌다(기록은 hidden에서
-  끊는데 실시간만 안 끊김). 이제 `visibilitychange`마다 `visible`을 갱신 → 패널
-  '화면에 떠 있음 / 탭만 열림' 2열. **visible은 화면 출력 여부지 시선이 아니다**(가려진 창·보조 모니터).
-  ③ **행동 기록 `activity_event`(0062)** — 어느 화면·어느 일정·무엇을 고쳤는지. 개발자 패널
-  '행동 타임라인'(날짜 모달)에서 방문 단위로 재구성.
-  **불가침: meta에 일정 제목·본문 저장 금지**(target=uuid, 제목은 읽을 때 권한 확인 후 조인;
-  공개 일정만 제목, 비공개는 범위 라벨). 어기면 ADR-0002 본문 암호화가 무의미해진다.
-  **식별은 내부자(owner/manager/worker/developer)만** — viewer·비로그인은 `accountHashForRole`이
-  쓰기 시점에 `account_hash`를 null로 만들어 개인 타임라인이 구조적으로 불가능. 보존 90일.
-  server kind(실제 변경)를 클라가 사칭할 수 없다(`isClientKind`). 규약은
-  `tests/unit/activity-kinds.test.ts`가 고정.
-  ④ **버튼 전수 수집 + 시청자 카운트 전환(0063, 2차 요구)** — 목적이 "어떤 버튼이 안 쓰이나"라
-  버튼마다 kind를 만들지 않는다. `ui.click` 하나에 버튼 id를 `target`으로 담고 문서 전역
-  위임(capture)으로 전부 받는다. id는 `data-act` 우선, 없으면 마크업 유추 `auto:` 접두사
-  (**깨질 수 있다는 표시** — 계속 볼 항목은 `data-act`로 굳힐 것). 라우트가 아닌 화면
-  (그림판·꾸미기·모달)은 `section.enter/leave`+`dur_ms`(`useSectionActivity`).
-  **시청자·비로그인은 이제 `activity_event`에 안 들어간다** — `activity_daily_count`에
-  (날짜×역할×종류×대상) count만. 개인 세션조차 안 남아 익명성이 집계 구조로 보장되고,
-  전수 수집의 행 폭증도 같이 막힌다. 사용량 패널은 **적은 순** 정렬(판단이 필요한 건 바닥).
-  **미배선(종류만 등록)**: `export.png`/`export.clipboard`(공식 내보내기는 Playwright라 인앱
-  버튼 없음)·`zoom.change`·`decorate.open`(섹션으로 대체)·`settings.toggle`.
-  **관측 필요**: ① 스티커 배치 저장 빈도(배치 1건=1행으로 줄였지만 실사용 확인 전)
-  ② `auto:` id 비율 — 높으면 마크업 변경 때 통계가 갈라진다.
+  `tests/unit/calendar/holidays.test.ts`(?붾뱶而듬쭔 寃?? ??젣. `holidays.ts`??`MarkKind`/`match`/
+  `withoutWorldCupMark` ?쒓굅(DayMark = name쨌isHoliday留?, `classifyDay`??markKind/wcMatch ?쒓굅. ?ъ뒪?걔?  ?몄쭛?ㅼ쓽 ?붾뱶而??좉?쨌?먮룞 ?뚮쭏쨌寃쎄린 移㈑룰났 ?뚮뜑 ?쒓굅, CSS(wc-쨌worldcup ?뚮쭏쨌pop-number) ?쒓굅.
+  `WORLD_CUP_UI_ENABLED=false`???숈옉 蹂??0. ?쒕룞 ?쇰꺼 ?ъ쟾??io-worldcup ??ぉ? 怨쇨굅 ???먮룆?⑹쑝濡??좎?.
+- **?몄쭛???ㅻ뜑 ?뺣━(2026-08-27 ?ъ슜??吏??諛곗튂)**: ??븷 諛곗?("媛쒕컻???")쨌濡쒓렇?꾩썐???ㅻ뜑 ?곗긽?⑥뿉???≪뀡諛?  ?ㅻⅨ履쎌쑝濡????쒖꽌 **?⑥텞??쨌 ??븷 諛곗? 쨌 濡쒓렇?꾩썐**. ?ㅻ뜑 ?곗륫? ????곹깭 + 誘몃━蹂닿린留?
+- **?щ젰 袁몃?湲??ㅽ떚而?쨌?묒뾽????븷 泥좎닔 + drop(2026-08-27, ADR-0015)**: 愿由ъ옄 寃곗젙. 肄붾뱶: 袁몃?湲??쇱슦?맞?  ?붾젅?맞룹뒪?곗빱 ?덉씠???꾪삎쨌?뚮쭏 ?ㅼ쐞移샕?api/sticker-write`쨌?ㅽ떚而??뚮쭏 ?≪뀡쨌`public-poster.tsx` ?ㅽ떚而?  ?곹깭/醫뚰몴 留ㅽ븨/probe/?대컮(?뚯씪 7,0xx??,26x以?쨌CSS ~33KB ??젣. 怨듦컻 濡쒕뜑 ?ㅽ떚而?議고쉶 ?쒓굅(**怨듦컻 DTO?먯꽌
+  `stickers/stickerAssets` ??젣**, CHG-20260827-001). ?묒뾽?? `MembershipRole`?먯꽌 ?쒓굅, 沅뚰븳 ?⑥닔 isWorker
+  ?몄옄 ?쒓굅, ?좊ː 硫ㅻ쾭 = 留ㅻ땲?留??⑤꼸 ?ъ옉?? ?대찓??異붽?/??젣, ??븷 ??3??, 媛쒕컻????븷 誘몃━蹂닿린?먯꽌
+  ?묒뾽???댁쨷 ?쒓굅. ?덇굅??`api/trusted-members`쨌`api/private-layer`쨌`studio/private-layer`쨌
+  `relockPrivateLayerAction` ??젣. DB: `0065_retire_stickers_and_worker.sql`(?뚯씠釉?2 drop쨌?ㅽ넗由ъ? ?뺤콉쨌
+  鍮?踰꾪궥쨌`is_active_worker()`=false쨌`is_worker` drop) + `scripts/cleanup-sticker-storage.mjs`. 諛깆뾽:
+  `docs/agent/backups/2026-08-27_stickers.json` + ?먮낯 ?대?吏 12媛? **諛고룷 ?쒖꽌: push ??Vercel ?뺤씤 ??  ?ㅽ넗由ъ? --delete ??0065 apply**(??肄붾뱶媛 ?ㅽ떚而??뚯씠釉붿쓣 ?쎌쓬) ??**?꾨? ?곸슜 ?꾨즺(2026-08-27)**: prod 諛고룷
+  ?뺤씤 ??踰꾪궥 媛앹껜 12媛쑣룸쾭????젣(Storage API), 0065 OK(?뚯씠釉?404쨌is_worker ?놁쓬). 寃利? tsc쨌lint쨌build 0, vitest 618,
+  鍮꾩＜??77(吏?ㅻ찓?몃━쨌?ъ뒪??湲곗????섎룄 媛깆떊).
+- **?뺣━ ?꾨낫 議곗궗(2026-08-27, ?먯씠?꾪듃 媛먯궗 ??利됱떆 ?덉쟾 ??ぉ? ??CHG-20260827-003?쇰줈 ?ㅽ뻾??**: 利됱떆 ?덉쟾 ??二쎌? ?꾨젅利뚯뒪 DB 媛앹껜(visit_log쨌presence_ping쨌
+  presence_hourly/peak/active_days쨌owner_sessions쨌add_calendar_heart), `calendar_hearts` 怨듦컻 濡쒕뜑 荑쇰━(?뚮퉬??0),
+  ?대쭅 媛꾧꺽(soop-live 25s쨌presence 25s ??60s), `scripts/_verify_*.mjs` 15媛? 二쎌? CSS ~760以??숈쟻 ?대옒??  ?ㅽ깘 二쇱쓽). 寃곗젙 ?꾩슂 ???붾뱶而?異뺢뎄 ?쒕?(`WORLD_CUP_UI_ENABLED=false`, ~15,500以? ADR-0009 ?ㅼ쭛湲?.
+  activity ?쇰꺼 ?ъ쟾???≪? ??ぉ? 怨쇨굅 ???먮룆?⑹씠??**??젣 鍮꾧텒??*.
+- **?몄쭛??鍮꾧났媛??덉씠??UI 泥좎닔(2026-08-27, ADR-0014)**: 愿由ъ옄媛 '怨듦컻 踰붿쐞 ?듭뀡'쨌'鍮꾧났媛??쇱젙 蹂닿린'瑜?  ???. ?쒓굅: ?≪뀡諛붋룸え諛붿씪 ?대컮 ?좉?, ?섎떒 '吏湲??좉렇湲? 諛곕꼫(`relockNow`), 紐⑤컮??'鍮꾧났媛??쇱젙 ?쒖떆
+  以? 諛곕꼫, 踰붾? '鍮꾧났媛? ?꾪꽣 移??뮤룹븘?좊떎), ?몄쭛 ??怨듦컻 踰붿쐞 ?쇱빱(??`scope-picker`쨌紐⑤컮??  `me-seg`), `canTogglePrivateLayer`/`togglePrivateLayer`. ?묓옒 ?ㅻ뜑 "怨듦컻 踰붿쐞 쨌 ?듭뀡"??*"?듭뀡"**,
+  ?붿빟? 誘몄젙/???꾩?/理쒖큹怨듦컻留??놁쑝硫?"?놁쓬"). **?쒕쾭 紐⑤뜽쨌沅뚰븳쨌fail-closed ???寃??룰났媛?API 寃쎄퀎??  遺덈?** ?????쇱젙? ??긽 public. 鍮꾨?踰덊샇??理쒖큹怨듦컻 寃뚯씠??`verifyOnly`)쨌蹂寃??꾩슜: '鍮꾨?踰덊샇 蹂寃?
+  踰꾪듉??愿由?臾띠쓬(?? `.io-passcode`)쨌紐⑤컮???대컮(???좉? ?먮━)??愿由ъ옄留? prod 鍮꾧났媛??쇱젙 1嫄?  (work)? ?몄쭛?ㅼ뿉????蹂댁엫 ??愿由ъ옄 寃곗젙 ?湲?怨듦컻 ?꾪솚/??젣). e2e calendar-ui???좉? 湲곕? ?쒓굅.
+- **愿???④퀎 = ????理쒕떎 ?鍮?鍮꾩쑉 + ?덈? ?섑븳(2026-08-27, ?ъ슜??寃곗젙)**: ?덈? ???믪? 12+쨌??컻 25+)
+  留??곕뜕 ?숈븞 8???ㅼ륫(理쒕떎 12, ?섎㉧吏 5~11)?먯꽑 '愿??怨??몣留??⑥븯?? `heartTier(count, isTop,
+  maxHeart)` ??愿??5+ 쨌 ?믪? = 理쒕떎 50%??& 6+ 쨌 ??컻 = 理쒕떎 80%??& 8+ 쨌 ?몣 = 理쒕떎(怨듬룞) & 10+.
+  `maxHeart`/`topEventIds`??**蹂대뒗 ???쇱젙留?*?쇰줈(?덉쟾??濡쒕뱶???꾩껜 ?ъ쓽 理쒕뙎媛믪씠??"????1??媛
+  ?꾩껜 1?꾩???. ?숆???heartCounts?먯꽌 ?뚯깮 ?????섑듃 ?꾨쫫/痍⑥냼쨌?몣 ?대룞??媛숈? ?꾨젅?꾩뿉 諛섏쁺, ?⑥쓽
+  ?섑듃???ъ쭊???? ?몃젅?대뱶?ㅽ봽(?⑥쓽 ?섑듃濡????④퀎 ?섎씫 媛?????뚭퀬 ?섏슜. ?몄궗?댄듃 '愿???④퀎 諛쏅뒗
+  湲곗?' 臾멸뎄 媛깆떊. ?⑥쐞 ?뚯뒪??`tests/unit/heart-tiers.test.ts` 7.
+- **?곸꽭 ?앹삤踰??④퀎 諛곗? ?ъ꽕怨??붿옄???쇰뱶諛?**: 蹂꾨룄 "?꾩씠肄?愿???④퀎 理쒓퀬 ?멸린" 以???젣 ???쒕ぉ 以꾩쓣
+  flex(醫?`.adt-text` ????`.adt-badge`)濡? ?ㅻ뜑(?좎쭨?붾떕湲?? 媛숈? 醫뚯슦 由щ벉. 諛곗? = ?④퀎 ??湲??+
+  ?낆? 梨꾩? ?뚯빟, 1?꾨쭔 "?몣 理쒓퀬 ?멸린". ?쒕ぉ??湲몃㈃ ?ㅼ쓬 以??ㅻⅨ履???margin-left:auto).
+- **??'怨듭? ?곌린' 湲곕뒫 ?쒓굅(愿由ъ옄媛 ???)**: `components/notice/notice-modal.tsx` ??젣, studio-shell??  踰꾪듉(?????꾨옒쨌紐⑤컮??me-tools)쨌紐⑤떖 ??끒룸낯臾??쒓굅, `.notice-*`/`.modal-card-notice`/
+  `.modal-backdrop-notice` CSS ?쒓굅(媛쒕컻??'?댁슜 湲곕줉' 踰꾪듉? `.aux-open`?쇰줈 ?대쫫留?諛붽퓭 ?좎?),
+  `lib/activity/labels.ts`??notice ??ぉ ?쒓굅. ?대깽??移댄뀒怨좊━ `"notice"`(schedule-types)??蹂꾧컻 ??  嫄대뱶由ъ? ?딆쓬.
+- **愿???④퀎 = 移대뱶 ?뚮몢由?留?+ ?몣(2026-08-27, ?ъ슜???꾩씠?붿뼱)**: 遺덇퐙 ?뚯빟(`.event-popular`, 移대뱶
+  諛붾떏 ??以???8px)???됰쭏???볦뿬 ?щ젰 鍮꾩쑉??臾대꼫?⑤━??寃???移대뱶 ??absolute `.tier-ring`(?믪씠 0)
+  + 1??`.tier-crown`(?고븯??紐⑥꽌由??쇰줈 援먯껜. `TierMark` 而댄룷?뚰듃, ?곗뒪?ы깙쨌?꾩젨??移대뱶 留덉?留?  ?먯떇. **?뚮몢由щ쭔**(?ъ슜??吏????2李??쇰뱶諛깆쑝濡??꾨옒 蹂 遺덇퐙 諛대뱶쨌conic ?뚯쟾 諛섏쭩 ?쒓굅): ??1px +
+  諛붽묑 spread(?먭퍡 1??????px) + halo ?⑥돩湲? 愿??#f59e0b 1px 쨌 ?믪?=#f97316 2px 쨌 ??컻=#dc2626 3px
+  遺덇퇋移?flicker 쨌 1??#eab308 3px brightness 諛섏쭩 + ?몣(諛곌꼍 ?놁씠 ?앹쑝濡? 移대뱶 ?곗긽??紐⑥꽌由???  top:-11/right:-6, rotate 짹14째 bob). 蹂몃Ц ?덉씠??`.event-main/.event-subs/.event-meta`) z-index 1,
+  留?0. **2??移대뱶 ?⑥젙**: `.public-event[data-mixed] > :not(.evt-pat){position:relative;z-index:1}`媛
+  留겶뤘윉묎퉴吏 ?먮쫫 ?덉쑝濡??뚯뼱 留곸씠 移대뱶 諛붾떏 ?졖뤘윉묒씠 ?쇱そ ?꾨옒濡?諛?몄쓬(?ъ슜??由ы룷?? ??  `> .tier-ring.tier-ring`/`> .tier-crown.tier-crown`??absolute쨌痢??ъ???spec??position쨌?믪씠 寃??.
+  移대뱶留덈떎 ?꾩긽 遺꾩궛(nth-child). ?숈옉 以꾩씠湲걔룸궡蹂대궡湲? ?좊땲 ?뺤?, ?먭퍡/??halo濡?援щ텇. 紐⑤컮???꾩젨??
+  ?뺤쟻 留?inset -4/-6)+?몣 ?ㅻⅨ履??? 踰붾? 3怨??뮤룹텞?승룹븘?좊떎 ?꾩?留? ?뵦??.tier-swatch` 寃щ낯.
+  **?곸꽭 ?앹삤踰??쒗듃???④퀎 湲??*(`.agenda-detail-tier`: 寃щ낯 + "愿???④퀎" + 愿???믪? 愿????컻??  愿??理쒓퀬 ?멸린 ??留곷쭔?쇰줎 愿?р넄??컻 援щ텇???대졄?ㅻ뒗 3李??쇰뱶諛? PC ?앹삤踰꽷룸え諛붿씪 ?쒗듃 怨듭슜). ?뺣? ?쇰꺼?
+  `.tier-ring` role=img aria-label쨌title. fixture `?hearts=1`(6/14/30/45/0 ?쒗솚)濡?寃利?
+  `tests/visual/heart-tier.spec.ts` 3(留??곗뼱 ?샕룸텋苑?0쨌蹂몃Ц z 1쨌?쒕㈃ ?믪씠 ?섑듃 ?좊Т ?숈씪쨌紐⑤컮??.
+- **???대룞 源쒕묀???섏젙(?꾨컮? scene)**: ?먯씤 = ??諛붾쒋넂?ㅽ떚而?canon 由ъ뀑??probeCanonFrame`??  ???꾨젅???숈븞 `avatar-scene/left/right` ?대옒?ㅻ? ?먮떎 遺숈엫 ???щ’ `display:none?봣lex`, ?몃줈
+  ?덉씪쨌?뺣낫 移대뱶 ?깆옣 ?좊땲(opacity 0??) ?ъ깮. ?섏젙: probe???대옒?ㅻ? ??嫄대뱶由ш퀬
+  `.poster-page.sticker-geom-probe .poster-surface`媛 ?쒕㈃ ??諛곗튂(?덉씪 252쨌gap 16쨌媛濡??⑤뵫 18)留?  !important濡?湲곕낯媛?蹂듭썝 ??canon? ?쒕㈃ ?鍮?鍮꾩쑉?대씪 寃곌낵 ?숈씪. avatar-scene.spec??24?꾨젅??  opacity ?섑뵆 ?뚯뒪??異붽?(min ??0.999, display none 0??.
+- **?꾨컮? scene "?쒕늿?? ???몃줈 ?ㅽ깮쨌?꾩뿭 諛???뺤텞쨌怨좎젙 而댄룷吏??2026-08-27, PLAN-20260827-004)**:
+  諭낆삩 誘몃━蹂닿린媛 OBS 1920횞1080 ?덉뿉?????붾㈃???ㅼ뼱?ㅺ쾶. ?ъ슜??寃곗젙("?좊━?섏? ???덉뿉 ?ㅼ뼱?ㅻ뒗
+  寃?痍⑦뼢"). ???ㅻⅨ履?移?移대뱶 **?몃줈 ?ㅽ깮**(`.avatar-top-cards` ?щ’ ???먮쫫쨌column쨌???꾪룺) ??  ?섎???max 48%??`2026??08 / ?? 以꾨컮轅덈릺??寃??댁냼, in-rail ?뺣낫 移대뱶 ??댄룷 ???④퀎 ??
+  ??**?꾩뿭 諛??~12% ?뺤텞**(湲???ш린 ?좎?): ??理쒖냼 150??32, weekday 10/7??/5, ?쒕㈃ ?몃줈
+  padding 18??4쨌row-gap 16??2, day-events 5/6-5-8??/5-5-6, 移대뱶 gap 3??쨌padding 5??, ?좎쭨
+  癒몃━ 27??5. 6??fixture ?쒕㈃ 998??72. scene ?꾩슜 ?뺤텞? 袁몃?湲겸돖?쒖껌??吏?ㅻ찓?몃━??湲덉? ??  ?꾩뿭?대씪 canon ?꾨젅?꾩씠 ??紐⑤뱶?먯꽌 媛숈씠 諛붾?湲곗〈 ?ㅽ떚而ㅻ뒗 移??鍮??뚰룺 ?대룞 媛??.
+  ??**怨좎젙 而댄룷吏??*: `--avatar-col: clamp(300px, 18.75vw, 380px)`(1920?먯꽌 ?뺥솗??360),
+  ?щ’ = `top:76/bottom:14` ?몃줈 flex ??[移대뱶][袁몃?湲??좉? `.avatar-ctl-inslot`(JSX瑜??щ’
+  ?덉쑝濡??대룞)][?먯꽑 諛뺤뒪 flex:1] ??`--avatar-h`쨌translate 留ㅼ쭅 ?섎쾭 ?쒓굅. ?쒖껌??誘몃━蹂닿린
+  scene(??100px)? fit??**??룸넂??????*(`min(w/natW, availH/natH, 1.6)`) + `--poster-dy`
+  translate濡??몃줈 以묒븰 ??**?뱀씪 泥좏쉶**: prod 8??6二셋룰퀬諛?? ?쒕㈃ ~1200)?먯꽌 諛곗쑉??~0.6?쇰줈
+  ?⑥뼱??諛⑹넚 ?붾㈃ 湲?④? ?덈Т ?묒븘吏??ъ슜???ㅽ겕由곗꺑). scene???됱냼泥섎읆 **??fit留?*(?몃줈??  ?ㅽ겕濡?. `sceneFit`쨌`--poster-dy`쨌resize 由ъ뒪???쒓굅. <1100px: ?щ’? 袁몃?湲??좉?留?醫뚯긽??
+  **諭낆넚 誘몃━蹂닿린 URL `/onair`**(`app/onair/page.tsx`): 濡쒓렇???놁씠 ?대━??怨좎젙 scene
+  (`avatarFixed` prop ????긽 耳쒖쭚쨌?좉? ?놁쓬, `?side=right`, `?y=&m=`, 諛⑹넚 ?꾨땺 ???쇱씠釉?移대뱶
+  ?뺤씤? 湲곗〈 `?live-preview=1`), 怨듦컻 濡쒕뜑留??ъ슜(`/`?
+  媛숈? 怨듦컻 寃쎄퀎), robots noindex. OBS 釉뚮씪?곗? ?뚯뒪(1920횞1080)??洹몃?濡??щ━???⑸룄.
+  fixture `?fixed=left|right`濡?媛숈? 寃쎈줈 寃利?
+  **?щ갚 ?ㅼ씠?댄듃**(?ъ슜?? ?щ젰 ?덈퉬 梨숆린湲?: scene?먯꽌 ?щ’ ?덉そ ?⑤뵫 14??0, stage媛 ?щ’ ?덉쑝濡?  `--avatar-gap`(4px) ?뚭퀬?? ?덉씪 履?`--rail-gutter` 138??34(?덉씪 媛?μ옄由?12??), ???⑤뵫 4??,
+  ?쒕㈃ 媛濡??⑤뵫 18??(scene ?꾩슜 ???덉씪 而щ읆 ?묎린? 媛숈? 遺瑜? ?ㅽ떚而ㅻ뒗 canon?봪ive 留ㅽ븨 蹂댁젙).
+  1920 ?ㅼ륫: ?щ젰 洹몃━??1371??1410px(+3%), 諛곗쑉 0.760??.77.
+  寃利? tsc쨌lint쨌build exit 0, vitest 612, 鍮꾩＜??69(吏?ㅻ찓?몃━ 寃뚯씠?맞룻룷?ㅽ꽣 ?쎌? 湲곗??좎?
+  **?섎룄???덉씠?꾩썐 蹂寃쎌쑝濡?媛깆떊**), ?좉퇋 `tests/visual/avatar-scene.spec.ts` 4.
+  ?뚮젮吏?寃?湲곗〈): ?섎떒 醫뚯슦 ???대룞 ????踰꾪듉???꾨컮? ?먯꽑 諛뺤뒪 ?곸뿭怨?寃뱀묠(?댁쟾 75vh 諛뺤뒪??  ?숈씪). ?≪뀡諛?'?붾퀎 ?몄궗?댄듃' 踰꾪듉 ?대え吏(?썱/?뱤) ?쒓굅(紐⑤떖 ?쒕ぉ? ?좎?).
+- **洹몃┝????移대뱶 ??泥??대┃쨌誘몃━蹂닿린 ?꾨컮? 而⑦듃濡ㅒ룸룞??以꾩씠湲?湲곕낯媛?2026-08-27)**:
+  ??`.bp-draw-surface`??`z-index: 50` ???쇱젙 ?덉씠?닿? ?ㅽ깮 zIndex瑜?媛뽮쾶 ??`526585e` ?댄썑
+  ?낅젰硫댁씠 移대뱶 ?꾨옒濡?源붾젮 移대뱶 ?덉뿉???쒖옉?????띿씠 ??洹몃젮吏???뚭?(?낅젰硫댁? ?щ챸, ?좏깮
+  ?꾧뎄????pointer-events none?대씪 移대뱶 議곗옉 遺덈?). ???쒖껌??誘몃━蹂닿린 `.avatar-ctl-preview`瑜?  fixed?뭓bsolute(.poster-page 湲곗?) ???ㅽ겕濡??곕씪 ?대젮? ?щ젰 媛由щ뜕 寃? ??**?숈옉 以꾩씠湲?湲곕낯
+  OFF**: layout ?몃씪???ㅽ겕由쏀듃쨌`reduceMotionEnabled()` 紐⑤몢 'on'???뚮쭔 耳?P1-MOTION-1??OS
+  prefers-reduced-motion ?쒕뵫 泥좏쉶, ?ъ슜??寃곗젙; CLAUDE.md 媛깆떊). ?붾뱶而?CSS??OS 誘몃뵒?댁옘由?  寃뚯씠?몃룄 `html[data-reduce-motion]`濡? ???명븳 ?뚮쭏???대? 湲곕낯 ON(蹂寃??놁쓬).
+  ???≪뀡諛??꾨컮? ?멸렇癒쇳듃 媛?대뜲 ?쇰꺼???먮┛ ?묒? 湲???묒쁿 hairline?쇰줈 ??踰꾪듉泥섎읆 蹂댁씠??寃?
+  寃利? fixture e2e(移대뱶 ??泥??대┃ ??alpha 255쨌?좏깮 ?꾧뎄 移대뱶 ?꾨떖쨌OS reduce ?먮??덉씠?섏뿉??  data-reduce-motion ?놁쓬쨌誘몃━蹂닿린 而⑦듃濡??ㅽ겕濡??숇컲), 洹몃┝??e2e 18, 鍮꾩＜??14, 湲곗???1嫄?
+- **?쒓렇 ?쒖꽌 蹂寃??섏닠 ?댁떇 + ?≪뀡諛?IA 蹂듭썝(2026-08-27)**: wak-schedule `38ba152`瑜??댁떇.
+  ?쒖닔 紐⑤뜽 `lib/tags/reorder.ts`(`reorderAtEdge` ??edge 紐⑹쟻吏쨌媛숈? 寃곌낵=媛숈? 李몄“ no-op쨌
+  ?대콉 癒몃━ 怨좎젙 ?대옩?? `edgeForPointer` 以묒븰?졖깅뜲?쒖〈 ?덉뒪?뚮━?쒖뒪) + ?⑥쐞 ?뚯뒪??12媛?
+  ?먮뵒?? ?좊졊 ?ъ씤??1:1(愿?굿룻쉶?꽷룻쓷?ㅻ┝ ?쒓굅), 肄섑뀗痢졻넄?뺤떇 寃쎄퀎 ?쒕옒洹?李⑤떒, ?먮룞 ?ㅽ겕濡?  以??먯젙 媛깆떊, Esc(capture)/pointercancel/blur ???쒖옉 ?ㅻ깄??蹂듦뎄, ?ㅻ┛ ???먯꽑 ?щ’.
+  ?쒓렇 紐⑤떖 dirty ?リ린(X쨌諛곌꼍쨌Esc) ??'怨꾩냽 ?몄쭛/踰꾨━怨??リ린' ?ㅻ쾭?덉씠(`.modal-discard-ask`,
+  ?먮뵒??`onDirtyChange`??ref ??낅쭔). `applyTagUpdates`媛 kind/parentId???숆? 諛섏쁺.
+  媛먯궗 臾몄꽌: `docs/tags/tag-editor-reorder-ux-audit.md`. ?좏겙 `--violet-rgb` 異붽?.
+  ?≪뀡諛? '愿由??? ?쒕∼?ㅼ슫 泥좏쉶 ???쒓렇 ?몄쭛쨌硫ㅻ쾭 愿由?룹썡蹂??몄궗?댄듃瑜?`.studio-manage-group`?쇰줈
+  諛붾줈 ?몄텧(沅뚰븳 寃뚯씠??遺덈?). ?뱀? `.studio-actionbar-tools`媛 3??洹몃━??1fr쨌auto쨌1fr) ??  媛?대뜲 ?댁뿉 ?꾨컮? ?멸렇癒쇳듃 [?쇱そ 쨌 ?꾨컮? ?먮━ 쨌 ?ㅻⅨ履?(?럺截??쒓굅, ?щ’ ?뚰듃???띿뒪?몃쭔).
+  寃利? tsc/lint/build/vitest 612, ?몄쭛??e2e 15, fixture ?ㅼ륫(?멸렇癒쇳듃 以묒떖 ?ㅼ감 <0.01px),
+  `studio-owner-web-light` 湲곗???媛깆떊(?≪뀡諛?以꾨쭔 diff).
+- **temp id쨌???대줈?쨌?숆?-?쒕쾭 媛덈씪吏??꾩닔 ?뺣━ + ?섑듃 利됱떆??2026-08-18, `9a22389`쨌`0cf3ec7`)**:
+  `04f8a3f`(?꾨뒗 ?꾩쨷 id 援먯껜 寃쏀빀)? 媛숈? 遺瑜섎? ?몄쭛?ㅒ룻룷?ㅽ꽣쨌袁몃?湲걔룻깭洹맞룸ħ踰꽷룸퉬怨듦컻 ?⑤꼸
+  ?꾩껜?먯꽌 ?뺣━. **洹쒖튃**: ?쒖뒪泥?鍮꾨룞湲?肄쒕갚? 諛곗뿴??ref濡? id??`canonId`(temp?붿떎???숈씪??濡?  鍮꾧탳; ???以?移대뱶?????議곗옉? ?ㅼ젣 id ?뺤젙 ??媛숈? ?먯뿉???꾩넚; ?쒕쾭 ?ㅻ깄?룹? 濡쒖뺄 ?숆?
+  ?곹깭? '蹂묓빀'(??뼱?곌린 湲덉?); 遺紐?props媛 諛붾뚮㈃ ?먮?吏 ?딆? ??ぉ留??щ룞湲고솕.
+  ?섑듃: ?쇱젙蹂?吏묎퀎??怨듦컻 罹먯떆(300珥? 諛뽰뿉??留??붿껌 ?좎꽑?섍쾶 ?쎌뼱 ??뒗??public-loader
+  `loadLiveEventHeartCounts`, ?ㅽ뙣 ??罹먯떆媛?; PublicPoster??schedule prop 蹂????吏묎퀎쨌???섑듃瑜?  ?щ룞湲고솕?섎릺 ?묐떟 ?湲?以?heartOpRef `done=false`) ?쇱젙? ?숆?媛??좎?; ?몄쭛??誘몃━蹂닿린??  accountEmail濡??몄뀡 ?명?瑜?怨꾩젙蹂?遺꾨━. 寃利? tsc/lint/build/vitest 600 + visual 4 spec(19).
+  ??studio-editor '留뚮뱾?먮쭏????移대뱶' ?뚯뒪?멸? 留덉?留??쒖꽌濡?????1??fling ?먯젙?쇰줈 flake
+  (?ъ떎??2/2 ?듦낵) ???띾룄 ?먯젙??留덉슦??step ??대컢??誘쇨컧. 諛섎났?섎㈃ ?뚯뒪?몄쓽 留덉?留?move
+  steps瑜??섎━嫄곕굹 FLING_SPEED ?ъ쑀瑜?蹂?寃?
+- **肄쒕뱶 ?뷀듃由?泥닿컧 ?띾룄(2026-08-12, `6cd0221`)**: URL 吏곸젒 吏꾩엯 ???붾㈃???먯씤?
+  猷⑦듃 layout쨌loading.tsx媛 ????`resolveCurrentActor`(GoTrue ?뺣났)瑜?await?섎뜕 寃?
+  ?ㅼ펷?덊넠 ?ㅼ? ?댁젣 ?뚰듃 荑좏궎 `vic_lt`(30?? StudioShell="s"/?낅┰ ?ъ뒪??"p")留??쎄퀬,
+  actor ?섏〈 鍮꾩퐯(Presence쨌SW)? `ActorTail`+Suspense濡?遺꾨━???몄씠 利됱떆 ?ㅽ듃由щ컢?쒕떎.
+  **媛??遺덈?**: (studio) 洹몃９ layout??viewer??/` 由щ떎?대젆?몄? page??actor 遺꾧린??  洹몃?濡??쒕쾭?먯꽌 ?뺤젙 ??vic_lt??諛곌꼍/臾멸뎄???뚰듃??肉?沅뚰븳???덈? ?곗? 留?寃?
+  ?⑥? ?꾨낫(誘몄갑??: 誘몃뱾?⑥뼱 ?듬챸 ?⑥뒪?명뙣???몄쬆 荑좏궎 ?놁쑝硫?getUser ?앸왂),
+  肄쒕뱶 ?ㅽ????뚮컢 ???몃? 5遺??? Vercel every-min cron? Pro ?꾩슂),
+  (studio) 媛?쒖쓽 ?ㅽ듃由щ컢??蹂댁븞 寃쎄퀎???좎쨷 ??ADR媛?.
+- **諛⑸Ц 吏???ъ젙??+ ?됰룞 湲곕줉(2026-08-04, PLAN-20260804-003 / ADR-0013)**:
+  ??**諛⑸Ц = ???섎챸**(0061 `visit_key`, sessionStorage). `visit_session` 1?됱? '?붾㈃??蹂댁씤
+  ??援ш컙'?몃뜲 臾몄꽌 ?ㅻ퉬寃뚯씠??pagehide)留덈떎 ?딄꺼, ?ъ씠???덉뿉???섏씠吏留???꺼??諛⑸Ц??  ?섏뿀?????ㅼ륫(04:11~04:20 owner ?⑤룆)?먯꽌 ?곗냽 9遺?1?뚭? 4??4珥?5遺?7珥?4遺??쇰줈 李랁삍??
+  `lib/insights/visit-fold.ts`媛 ?곸옱 吏곹썑 援ш컙?믩갑臾몄쑝濡??묐뒗??媛숈? ????媛숈? 怨꾩젙??寃뱀튂??  ?? 怨꾩젙 誘몄긽? ?덈? ???⑹묠). **泥대쪟??援ш컙 ?⑹쭛??* ???⑥닚 ?⑹? 李?2媛??숈떆 ?쒖떆瑜???踰??쇰떎.
+  ?쒓컙? ?먯쑀쨌?숈젒? 諛⑸Ц span???꾨땲??`spans`(?ㅼ젣 媛??援ш컙)瑜??ㅼ쐲?쒕떎.
+  ??諛⑸Ц?샕룻룊洹?泥대쪟???뺤쓽媛 諛붾뚯뼱 **怨쇨굅 ?섏튂? 吏곸젒 鍮꾧탳 遺덇?**.
+  ??**?ㅼ떆媛??꾨젅利뚯뒪**: track??留덉슫??1?뚮퓧?대씪 ?④릿 ??룄 ?묒냽?쇰줈 ?뚮떎(湲곕줉? hidden?먯꽌
+  ?딅뒗???ㅼ떆媛꾨쭔 ???딄?). ?댁젣 `visibilitychange`留덈떎 `visible`??媛깆떊 ???⑤꼸
+  '?붾㈃?????덉쓬 / ??쭔 ?대┝' 2?? **visible? ?붾㈃ 異쒕젰 ?щ?吏 ?쒖꽑???꾨땲??*(媛?ㅼ쭊 李승룸낫議?紐⑤땲??.
+  ??**?됰룞 湲곕줉 `activity_event`(0062)** ???대뒓 ?붾㈃쨌?대뒓 ?쇱젙쨌臾댁뾿??怨좎낀?붿?. 媛쒕컻???⑤꼸
+  '?됰룞 ??꾨씪??(?좎쭨 紐⑤떖)?먯꽌 諛⑸Ц ?⑥쐞濡??ш뎄??
+  **遺덇?移? meta???쇱젙 ?쒕ぉ쨌蹂몃Ц ???湲덉?**(target=uuid, ?쒕ぉ? ?쎌쓣 ??沅뚰븳 ?뺤씤 ??議곗씤;
+  怨듦컻 ?쇱젙留??쒕ぉ, 鍮꾧났媛쒕뒗 踰붿쐞 ?쇰꺼). ?닿린硫?ADR-0002 蹂몃Ц ?뷀샇?붽? 臾댁쓽誘명빐吏꾨떎.
+  **?앸퀎? ?대???owner/manager/worker/developer)留?* ??viewer쨌鍮꾨줈洹몄씤? `accountHashForRole`??  ?곌린 ?쒖젏??`account_hash`瑜?null濡?留뚮뱾??媛쒖씤 ??꾨씪?몄씠 援ъ“?곸쑝濡?遺덇??? 蹂댁〈 90??
+  server kind(?ㅼ젣 蹂寃?瑜??대씪媛 ?ъ묶?????녿떎(`isClientKind`). 洹쒖빟?
+  `tests/unit/activity-kinds.test.ts`媛 怨좎젙.
+  ??**踰꾪듉 ?꾩닔 ?섏쭛 + ?쒖껌??移댁슫???꾪솚(0063, 2李??붽뎄)** ??紐⑹쟻??"?대뼡 踰꾪듉?????곗씠????  踰꾪듉留덈떎 kind瑜?留뚮뱾吏 ?딅뒗?? `ui.click` ?섎굹??踰꾪듉 id瑜?`target`?쇰줈 ?닿퀬 臾몄꽌 ?꾩뿭
+  ?꾩엫(capture)?쇰줈 ?꾨? 諛쏅뒗?? id??`data-act` ?곗꽑, ?놁쑝硫?留덊겕???좎텛 `auto:` ?묐몢??  (**源⑥쭏 ???덈떎???쒖떆** ??怨꾩냽 蹂???ぉ? `data-act`濡?援논옄 寃?. ?쇱슦?멸? ?꾨땶 ?붾㈃
+  (洹몃┝?먃룰씀誘멸린쨌紐⑤떖)? `section.enter/leave`+`dur_ms`(`useSectionActivity`).
+  **?쒖껌?먃룸퉬濡쒓렇?몄? ?댁젣 `activity_event`?????ㅼ뼱媛꾨떎** ??`activity_daily_count`??  (?좎쭨횞??븷횞醫낅쪟횞??? count留? 媛쒖씤 ?몄뀡議곗감 ???⑥븘 ?듬챸?깆씠 吏묎퀎 援ъ“濡?蹂댁옣?섍퀬,
+  ?꾩닔 ?섏쭛??????쬆??媛숈씠 留됲엺?? ?ъ슜???⑤꼸? **?곸? ??* ?뺣젹(?먮떒???꾩슂??嫄?諛붾떏).
+  **誘몃같??醫낅쪟留??깅줉)**: `export.png`/`export.clipboard`(怨듭떇 ?대낫?닿린??Playwright???몄빋
+  踰꾪듉 ?놁쓬)쨌`zoom.change`쨌`decorate.open`(?뱀뀡?쇰줈 ?泥?쨌`settings.toggle`.
+  **愿痢??꾩슂**: ???ㅽ떚而?諛곗튂 ???鍮덈룄(諛곗튂 1嫄?1?됱쑝濡?以꾩?吏留??ㅼ궗???뺤씤 ??
+  ??`auto:` id 鍮꾩쑉 ???믪쑝硫?留덊겕??蹂寃????듦퀎媛 媛덈씪吏꾨떎.
 
-  **⚠ 계측 함정 3건(2026-08-04 실측으로 확정, 재발 금지)**
-  1. **버튼 id에 `aria-label`·`textContent`를 쓰지 않는다.** 그 자리에 사용자·외부 내용이
-     들어온다 — `${s.publicTitle} 도와주러 가기`(일정 공개 제목), `지금 방송 중: ${live.title}`,
-     `${asset.name} 삭제`, `${l.name} 삭제`, 카드의 textContent=일정 제목 그 자체.
-     한때 aria-label이 1순위였다(제목이 target에 저장될 수 있었다 — 실제 데이터에는 안 남았음).
-     지금은 `className`만 본다. 사람이 읽을 이름이 필요하면 **소스에 `data-act`를 박는다**.
-     `tests/unit/activity-autoid.test.ts`가 회귀를 막는다.
-  2. **클래스는 가장 구체적인 토큰을 고른다.** 첫 토큰을 고르면
-     `className="button io-accent io-preview"` → `.button`이 되어 서로 다른 버튼이 전부
-     한 항목으로 뭉친다(실측: '일반 버튼(합계)').
-  3. **상태를 클릭 핸들러 클로저에서 읽어 기록하지 않는다.** 연타가 리렌더 전에 몰리면 전부
-     같은 값이 찍힌다 — 월 이동 ×16이 전부 '2026-07'로 기록됐지만 실제 착지는 2025-04였다.
-     `useEffect`로 **실제로 바뀐 상태**를 보고 남긴다.
+  **??怨꾩륫 ?⑥젙 3嫄?2026-08-04 ?ㅼ륫?쇰줈 ?뺤젙, ?щ컻 湲덉?)**
+  1. **踰꾪듉 id??`aria-label`쨌`textContent`瑜??곗? ?딅뒗??** 洹??먮━???ъ슜?먃룹쇅遺 ?댁슜??     ?ㅼ뼱?⑤떎 ??`${s.publicTitle} ?꾩?二쇰윭 媛湲?(?쇱젙 怨듦컻 ?쒕ぉ), `吏湲?諛⑹넚 以? ${live.title}`,
+     `${asset.name} ??젣`, `${l.name} ??젣`, 移대뱶??textContent=?쇱젙 ?쒕ぉ 洹??먯껜.
+     ?쒕븣 aria-label??1?쒖쐞????쒕ぉ??target????λ맆 ???덉뿀?????ㅼ젣 ?곗씠?곗뿉?????⑥븯??.
+     吏湲덉? `className`留?蹂몃떎. ?щ엺???쎌쓣 ?대쫫???꾩슂?섎㈃ **?뚯뒪??`data-act`瑜?諛뺣뒗??*.
+     `tests/unit/activity-autoid.test.ts`媛 ?뚭?瑜?留됰뒗??
+  2. **?대옒?ㅻ뒗 媛??援ъ껜?곸씤 ?좏겙??怨좊Ⅸ??** 泥??좏겙??怨좊Ⅴ硫?     `className="button io-accent io-preview"` ??`.button`???섏뼱 ?쒕줈 ?ㅻⅨ 踰꾪듉???꾨?
+     ????ぉ?쇰줈 萸됱튇???ㅼ륫: '?쇰컲 踰꾪듉(?⑷퀎)').
+  3. **?곹깭瑜??대┃ ?몃뱾???대줈??먯꽌 ?쎌뼱 湲곕줉?섏? ?딅뒗??** ?고?媛 由щ젋???꾩뿉 紐곕━硫??꾨?
+     媛숈? 媛믪씠 李랁엺???????대룞 횞16???꾨? '2026-07'濡?湲곕줉?먯?留??ㅼ젣 李⑹???2025-04???
+     `useEffect`濡?**?ㅼ젣濡?諛붾??곹깭**瑜?蹂닿퀬 ?④릿??
 
-  **표시 규약**: 이 화면을 보는 사람은 대부분 코드를 모른다. 이름은 화면 문구로, **위치(area)**
-  를 함께, 기계용 id는 '개발자 정보' 토글에서만. 모르는 값은 지어내지 말고 '이름 미등록'.
+  **?쒖떆 洹쒖빟**: ???붾㈃??蹂대뒗 ?щ엺? ?遺遺?肄붾뱶瑜?紐⑤Ⅸ?? ?대쫫? ?붾㈃ 臾멸뎄濡? **?꾩튂(area)**
+  瑜??④퍡, 湲곌퀎??id??'媛쒕컻???뺣낫' ?좉??먯꽌留? 紐⑤Ⅴ??媛믪? 吏?대궡吏 留먭퀬 '?대쫫 誘몃벑濡?.
   `lib/activity/labels.ts` + `tests/unit/activity-labels.test.ts`.
-  `describeTarget`은 `auto:.<토큰>`도 점을 떼고 ACT를 한 번 더 찾는다(안 그러면 사전에 있는데도
-  전부 '이름 미등록'으로 뜬다 — 실제로 그랬다).
+  `describeTarget`? `auto:.<?좏겙>`???먯쓣 ?쇨퀬 ACT瑜???踰???李얜뒗????洹몃윭硫??ъ쟾???덈뒗?곕룄
+  ?꾨? '?대쫫 誘몃벑濡??쇰줈 ?щ떎 ???ㅼ젣濡?洹몃옱??.
 
-  **⑤ 진단(diag) 층 + 자가 복구(2026-08-04 2차)**
-  - **떡밥이 시청자 화면에서 빈 칸으로 멈추던 버그**: 캐시된 stub의 공개시각이 지난 뒤 관리자가
-    공개시각을 **미래로 다시 잡으면**, 클라는 "지났으니 내용 달라" → 서버(`loadRevealedEvents`)는
-    `.filter(e => !e.teaser)`로 **빈 배열** → 카드가 영원히 빈 채로 남았다(새로고침해도 캐시가
-    같은 옛 stub을 주므로 반복). → 서버가 **미공개도 최신 stub으로** 돌려준다(제목 없음 = 유출 0).
-    클라는 새 공개시각을 받아 카운트다운으로 복귀한다. 회귀 테스트로 필터 재도입을 막는다.
-  - **실시간이 '탭만 열림'으로 오판**: 프레즌스 키가 localStorage(브라우저 공용)라 두 탭이 같은
-    키를 덮어썼다 — 숨긴 탭이 마지막에 track하면 보고 있는 탭까지 `visible=false`. → **탭당 키**
-    (sessionStorage). 같은 사람 두 탭은 2로 세지만 '화면에 떠 있음/탭만 열림'으로 나뉘어 정확하다.
-  - **진단 층(0064 `activity_event.diag`)**: `diag.teaser`(카드가 어떤 상태로 그려졌나)·
-    `diag.reveal`(공개 요청 결과)·`diag.visible`(가시성 전이)·`diag.refresh`. **보존 3일**
-    (일반 90일) — 촘촘한 만큼 빨리 쌓이고 버그 쫓을 때만 쓴다. 타임라인·사용량 기본 조회에서 제외,
-    '진단' 버튼으로만 표시. **복사는 항상 진단을 포함**한다(켜뒀는지에 결과가 달라지면 안 된다).
-  - **세션 진단 리포트 복사**: 방문마다 복사 버튼 → 환경(브라우저·화면·주소·시각) + 그 방문의
-    전 항목(원본 kind/target/meta 포함). "이거 했는데 안 됐어요"에 이것만 붙이면 원인 추적이 된다.
-  - 컬럼명이 `diag`인 이유: `verbose`는 Postgres 키워드와 부딪혀 인덱스 술어에서 문법 오류가 난다.
+  **??吏꾨떒(diag) 痢?+ ?먭? 蹂듦뎄(2026-08-04 2李?**
+  - **?〓갈???쒖껌???붾㈃?먯꽌 鍮?移몄쑝濡?硫덉텛??踰꾧렇**: 罹먯떆??stub??怨듦컻?쒓컖??吏????愿由ъ옄媛
+    怨듦컻?쒓컖??**誘몃옒濡??ㅼ떆 ?≪쑝硫?*, ?대씪??"吏?ъ쑝???댁슜 ?щ씪" ???쒕쾭(`loadRevealedEvents`)??    `.filter(e => !e.teaser)`濡?**鍮?諛곗뿴** ??移대뱶媛 ?곸썝??鍮?梨꾨줈 ?⑥븯???덈줈怨좎묠?대룄 罹먯떆媛
+    媛숈? ??stub??二쇰?濡?諛섎났). ???쒕쾭媛 **誘멸났媛쒕룄 理쒖떊 stub?쇰줈** ?뚮젮以???쒕ぉ ?놁쓬 = ?좎텧 0).
+    ?대씪????怨듦컻?쒓컖??諛쏆븘 移댁슫?몃떎?댁쑝濡?蹂듦??쒕떎. ?뚭? ?뚯뒪?몃줈 ?꾪꽣 ?щ룄?낆쓣 留됰뒗??
+  - **?ㅼ떆媛꾩씠 '??쭔 ?대┝'?쇰줈 ?ㅽ뙋**: ?꾨젅利뚯뒪 ?ㅺ? localStorage(釉뚮씪?곗? 怨듭슜)??????씠 媛숈?
+    ?ㅻ? ??뼱?쇰떎 ???④릿 ??씠 留덉?留됱뿉 track?섎㈃ 蹂닿퀬 ?덈뒗 ??퉴吏 `visible=false`. ??**??떦 ??*
+    (sessionStorage). 媛숈? ?щ엺 ????? 2濡??몄?留?'?붾㈃?????덉쓬/??쭔 ?대┝'?쇰줈 ?섎돇???뺥솗?섎떎.
+  - **吏꾨떒 痢?0064 `activity_event.diag`)**: `diag.teaser`(移대뱶媛 ?대뼡 ?곹깭濡?洹몃젮議뚮굹)쨌
+    `diag.reveal`(怨듦컻 ?붿껌 寃곌낵)쨌`diag.visible`(媛?쒖꽦 ?꾩씠)쨌`diag.refresh`. **蹂댁〈 3??*
+    (?쇰컲 90?? ??珥섏킌??留뚰겮 鍮⑤━ ?볦씠怨?踰꾧렇 已볦쓣 ?뚮쭔 ?대떎. ??꾨씪?맞룹궗?⑸웾 湲곕낯 議고쉶?먯꽌 ?쒖쇅,
+    '吏꾨떒' 踰꾪듉?쇰줈留??쒖떆. **蹂듭궗????긽 吏꾨떒???ы븿**?쒕떎(耳쒕??붿???寃곌낵媛 ?щ씪吏硫????쒕떎).
+  - **?몄뀡 吏꾨떒 由ы룷??蹂듭궗**: 諛⑸Ц留덈떎 蹂듭궗 踰꾪듉 ???섍꼍(釉뚮씪?곗?쨌?붾㈃쨌二쇱냼쨌?쒓컖) + 洹?諛⑸Ц??    ????ぉ(?먮낯 kind/target/meta ?ы븿). "?닿굅 ?덈뒗?????먯뼱?????닿쾬留?遺숈씠硫??먯씤 異붿쟻???쒕떎.
+  - 而щ읆紐낆씠 `diag`???댁쑀: `verbose`??Postgres ?ㅼ썙?쒖? 遺?ろ? ?몃뜳???좎뼱?먯꽌 臾몃쾿 ?ㅻ쪟媛 ?쒕떎.
 
-  **보류(사용자 결정 2026-08-04)**: 옛 `auto:` 89행은 **지우지 않는다**(제목 유출 없음이 확인됐고,
-  사전 수정 후 정상적으로 읽힌다). 떡밥 공개 시각이 과거일 때의 경고도 넣지 않는다.
-- **⚠ 방송시간 머리 손실 재발 → BTIME으로 이관(2026-08-05 새벽, 사용자 신고 "실제 8시간 20분인데
-  7시간대로 뜬다")**: 원인은 시작시각 정답값이 **한 곳뿐**이었던 것 — 방송국 API
-  `chapi.../station`의 `broad.broad_start`를 SOOP가 응답에서 **빼버려**(2026-08 실측: `broad`
-  객체는 있는데 `broad_start` 키 없음) `fetchSoopBroadStart`가 항상 null → `start_verified`가
-  계속 false → started_at이 '첫 폴링이 발견한 시각'으로 굳었다(당일 실측 머리 32분 손실,
-  7.88h vs 실제 8.41h). 대체 정답값: **`player_live_api`의 `BTIME`(방송 경과 초)** — 이미 매
-  폴링마다 받는 같은 응답 안에 있어 추가 요청이 없고, 폴링이 늦어도 시작시각이 정확하다
-  (`startedAtFromBtime`, 0<초≤48h 가드). 검색 API(`sch.sooplive.co.kr` liveSearch)의
-  `broad_start`를 2차 폴백으로 남겼다(station API 의존은 제거).
-  ⚠ **폴러를 정밀도의 근거로 삼지 말 것**: GitHub Actions `*/5` 크론이 실측 **2~2.5시간
-  간격**으로만 돈다(GH 스케줄 스로틀 — 워크플로우 주석에 기록). 그래서 정밀도는
-  시작=BTIME, 종료=VOD 보정이 책임지고 폴러는 '끝났음을 알아채는' 신호에 가깝다.
-  VOD 재보정 창은 6h→**48h**로 확대(성긴 폴링에서 재시도 기회가 없어 꼬리가 깎인 채 굳었다).
-  과거 행은 `scripts/backfill-broadcast-times.mjs`(드라이런 기본, `--apply`로 반영)로 보정 —
-  2026-08-05 4건 반영(진행중 세션 7.88→8.41h 외 3건 분 단위). 계약은
-  `tests/unit/broadcast-start-time.test.ts`가 고정. → [[broadcast-time-tracking]]
-- **⚠ 오버레이 스택 함정(2026-08-03, `cada217`)**: 모달/시트가 닫힐 때 오버레이 스택이
-  history.back()을 호출하는데, 이 되감기는 **그 순간 진행 중인 router.refresh()/문서
-  네비게이션을 취소**한다(잠금해제 미반영 버그의 근본 원인 — Playwright로 확정).
-  오버레이를 닫으면서 서버 갱신을 함께 트리거해야 하면: 상태로 닫지 말고 문서 리로드로
-  한 번에 처리하거나, 히스토리 되감기가 끝난 뒤 갱신할 것.
-- **최초공개 시청자 기대 기능(2026-08-03, `6de578e`)**: 카운트다운 긴장 곡선(D-n→24h
-  실시간→1h soon 고조→10s 심장박동), 공개 순간 제목 스크램블, 떡밥 카드 클릭→상세
-  팝오버(공개 시각+기대돼요). 0060 teaser_hope(0040 익명 하트 패턴, 기기토큰 1표,
-  공개 전만 토글, 공개 후 "n명이 기다렸어요" 배지). 적용 완료·Playwright 실측 검증.
-- **하이프 4차 — 장인 정밀도(2026-08-04)**: 계획 `docs/ux/motion/hype-craft-plan.ko.md`를
-  6개 수정과 함께 전량 구현. ① 팝오버 라벨을 링 밖 독립 행(`.dt-count-ringbox`)으로 분리
-  — 원 하단 좁은 현(≈56px)에 6글자(≈67px)가 안 들어가 stroke와 겹치던 기하 버그.
-  ② 시트 표면을 `sheetWarm=I^1.35`로 연속 가온(불투명, 떡밥 팝오버는 공개 전 전 기간
-  `.is-teaser` → 60초 경계 재질 점프 없음). ③ 리더선을 선-로컬 `<g>` 좌표계로 바꿔 점선
-  흐름을 `stroke-dashoffset`(매 프레임 SVG paint) → `transform`으로, 박동은 고정 굵기
-  복제선의 opacity로. ④ 부제목·메타·태그 공개 스태거(`.reveal-secondary`, transform/opacity만
-  써서 레이아웃 불변; 긴 제목이면 제목 60% 확정까지 시작을 민다).
-  **위상 동기의 핵심**: 같은 duration을 주는 건 동기화가 아니다 → 빈도 적분 LUT로 절대
-  위상을 구해 `animation-delay`에 음수로 못 박는다(`hypeMotionFrame`). 파형은 CSS가 60fps로
-  그리고 JS는 10Hz로 위상만 재고정.
-  **접근성**: 박동 주기 하한 0.62s(1.61Hz) — 최악 1초에 박동 2 + 공개 단발 1 = 3회로
-  WCAG 2.3.1 한계에 여유를 남긴다(0.55s면 여유 0). 시트 대비는 실제 CSS 색으로 단위 테스트.
-  **CSS 특이도 함정 3건**: 유리 재질(`.agenda-detail-backdrop.is-pop .agenda-detail-sheet`),
-  `.detail-anchor-link line`, 박동 정지 규칙 — 클래스 단독 선택자로는 전부 조용히 진다.
-  검증: tsc·lint·vitest 350·시각 스펙 신규 6 통과, 전체 시각 실패는 기존 6건 그대로(신규 0).
-- **최초공개(떡밥) 편집실 가림(2026-08-03)**: 아직 안 풀린 떡밥은 편집실 카드/확대상세에서도
-  제목 ???, 클릭 시 편집 폼 대신 비번 게이트(비공개 레이어 비번, `verifyOnly` — grant 미발급,
-  rate limit 동일). 통과 id는 화면 생존 동안만 기억. 이동/드래그/복사는 게이트 없이 가능하되
-  복사는 teaser 필드째 복사(CopiedEvent 확장 — 안 하면 붙여넣기가 가림을 벗겼음).
-  실기기 검증 남음: 데스크톱 팝오버 게이트 폭/리더라인, 모바일 시트 게이트, 오답 shake.
+  **蹂대쪟(?ъ슜??寃곗젙 2026-08-04)**: ??`auto:` 89?됱? **吏?곗? ?딅뒗??*(?쒕ぉ ?좎텧 ?놁쓬???뺤씤?먭퀬,
+  ?ъ쟾 ?섏젙 ???뺤긽?곸쑝濡??쏀엺??. ?〓갈 怨듦컻 ?쒓컖??怨쇨굅???뚯쓽 寃쎄퀬???ｌ? ?딅뒗??
+- **??諛⑹넚?쒓컙 癒몃━ ?먯떎 ?щ컻 ??BTIME?쇰줈 ?닿?(2026-08-05 ?덈꼍, ?ъ슜???좉퀬 "?ㅼ젣 8?쒓컙 20遺꾩씤??  7?쒓컙?濡??щ떎")**: ?먯씤? ?쒖옉?쒓컖 ?뺣떟媛믪씠 **??怨노퓧**?댁뿀??寃???諛⑹넚援?API
+  `chapi.../station`??`broad.broad_start`瑜?SOOP媛 ?묐떟?먯꽌 **鍮쇰쾭??*(2026-08 ?ㅼ륫: `broad`
+  媛앹껜???덈뒗??`broad_start` ???놁쓬) `fetchSoopBroadStart`媛 ??긽 null ??`start_verified`媛
+  怨꾩냽 false ??started_at??'泥??대쭅??諛쒓껄???쒓컖'?쇰줈 援녹뿀???뱀씪 ?ㅼ륫 癒몃━ 32遺??먯떎,
+  7.88h vs ?ㅼ젣 8.41h). ?泥??뺣떟媛? **`player_live_api`??`BTIME`(諛⑹넚 寃쎄낵 珥?** ???대? 留?  ?대쭅留덈떎 諛쏅뒗 媛숈? ?묐떟 ?덉뿉 ?덉뼱 異붽? ?붿껌???녾퀬, ?대쭅????뼱???쒖옉?쒓컖???뺥솗?섎떎
+  (`startedAtFromBtime`, 0<珥댿돞48h 媛??. 寃??API(`sch.sooplive.co.kr` liveSearch)??  `broad_start`瑜?2李??대갚?쇰줈 ?④꼈??station API ?섏〈? ?쒓굅).
+  ??**?대윭瑜??뺣??꾩쓽 洹쇨굅濡??쇱? 留?寃?*: GitHub Actions `*/5` ?щ줎???ㅼ륫 **2~2.5?쒓컙
+  媛꾧꺽**?쇰줈留??덈떎(GH ?ㅼ?以??ㅻ줈? ???뚰겕?뚮줈??二쇱꽍??湲곕줉). 洹몃옒???뺣??꾨뒗
+  ?쒖옉=BTIME, 醫낅즺=VOD 蹂댁젙??梨낆엫吏怨??대윭??'?앸궗?뚯쓣 ?뚯븘梨꾨뒗' ?좏샇??媛源앸떎.
+  VOD ?щ낫??李쎌? 6h??*48h**濡??뺣?(?깃릿 ?대쭅?먯꽌 ?ъ떆??湲고쉶媛 ?놁뼱 瑗щ━媛 源롮씤 梨?援녹뿀??.
+  怨쇨굅 ?됱? `scripts/backfill-broadcast-times.mjs`(?쒕씪?대윴 湲곕낯, `--apply`濡?諛섏쁺)濡?蹂댁젙 ??  2026-08-05 4嫄?諛섏쁺(吏꾪뻾以??몄뀡 7.88??.41h ??3嫄?遺??⑥쐞). 怨꾩빟?
+  `tests/unit/broadcast-start-time.test.ts`媛 怨좎젙. ??[[broadcast-time-tracking]]
+- **???ㅻ쾭?덉씠 ?ㅽ깮 ?⑥젙(2026-08-03, `cada217`)**: 紐⑤떖/?쒗듃媛 ?ロ옄 ???ㅻ쾭?덉씠 ?ㅽ깮??  history.back()???몄텧?섎뒗?? ???섍컧湲곕뒗 **洹??쒓컙 吏꾪뻾 以묒씤 router.refresh()/臾몄꽌
+  ?ㅻ퉬寃뚯씠?섏쓣 痍⑥냼**?쒕떎(?좉툑?댁젣 誘몃컲??踰꾧렇??洹쇰낯 ?먯씤 ??Playwright濡??뺤젙).
+  ?ㅻ쾭?덉씠瑜??レ쑝硫댁꽌 ?쒕쾭 媛깆떊???④퍡 ?몃━嫄고빐???섎㈃: ?곹깭濡??レ? 留먭퀬 臾몄꽌 由щ줈?쒕줈
+  ??踰덉뿉 泥섎━?섍굅?? ?덉뒪?좊━ ?섍컧湲곌? ?앸궃 ??媛깆떊??寃?
+- **理쒖큹怨듦컻 ?쒖껌??湲곕? 湲곕뒫(2026-08-03, `6de578e`)**: 移댁슫?몃떎??湲댁옣 怨≪꽑(D-n??4h
+  ?ㅼ떆媛꾟넂1h soon 怨좎“??0s ?ъ옣諛뺣룞), 怨듦컻 ?쒓컙 ?쒕ぉ ?ㅽ겕?⑤툝, ?〓갈 移대뱶 ?대┃?믪긽??  ?앹삤踰?怨듦컻 ?쒓컖+湲곕??쇱슂). 0060 teaser_hope(0040 ?듬챸 ?섑듃 ?⑦꽩, 湲곌린?좏겙 1??
+  怨듦컻 ?꾨쭔 ?좉?, 怨듦컻 ??"n紐낆씠 湲곕떎?몄뼱?? 諛곗?). ?곸슜 ?꾨즺쨌Playwright ?ㅼ륫 寃利?
+- **?섏씠??4李????μ씤 ?뺣???2026-08-04)**: 怨꾪쉷 `docs/ux/motion/hype-craft-plan.ko.md`瑜?  6媛??섏젙怨??④퍡 ?꾨웾 援ы쁽. ???앹삤踰??쇰꺼??留?諛??낅┰ ??`.dt-count-ringbox`)?쇰줈 遺꾨━
+  ?????섎떒 醫곸? ????6px)??6湲????7px)媛 ???ㅼ뼱媛 stroke? 寃뱀튂??湲고븯 踰꾧렇.
+  ???쒗듃 ?쒕㈃??`sheetWarm=I^1.35`濡??곗냽 媛??遺덊닾紐? ?〓갈 ?앹삤踰꾨뒗 怨듦컻 ????湲곌컙
+  `.is-teaser` ??60珥?寃쎄퀎 ?ъ쭏 ?먰봽 ?놁쓬). ??由щ뜑?좎쓣 ??濡쒖뺄 `<g>` 醫뚰몴怨꾨줈 諛붽퓭 ?먯꽑
+  ?먮쫫??`stroke-dashoffset`(留??꾨젅??SVG paint) ??`transform`?쇰줈, 諛뺣룞? 怨좎젙 援듦린
+  蹂듭젣?좎쓽 opacity濡? ??遺?쒕ぉ쨌硫뷀?쨌?쒓렇 怨듦컻 ?ㅽ깭嫄?`.reveal-secondary`, transform/opacity留?  ?⑥꽌 ?덉씠?꾩썐 遺덈?; 湲??쒕ぉ?대㈃ ?쒕ぉ 60% ?뺤젙源뚯? ?쒖옉??誘쇰떎).
+  **?꾩긽 ?숆린???듭떖**: 媛숈? duration??二쇰뒗 嫄??숆린?붽? ?꾨땲????鍮덈룄 ?곷텇 LUT濡??덈?
+  ?꾩긽??援ы빐 `animation-delay`???뚯닔濡?紐?諛뺣뒗??`hypeMotionFrame`). ?뚰삎? CSS媛 60fps濡?  洹몃━怨?JS??10Hz濡??꾩긽留??ш퀬??
+  **?묎렐??*: 諛뺣룞 二쇨린 ?섑븳 0.62s(1.61Hz) ??理쒖븙 1珥덉뿉 諛뺣룞 2 + 怨듦컻 ?⑤컻 1 = 3?뚮줈
+  WCAG 2.3.1 ?쒓퀎???ъ쑀瑜??④릿??0.55s硫??ъ쑀 0). ?쒗듃 ?鍮꾨뒗 ?ㅼ젣 CSS ?됱쑝濡??⑥쐞 ?뚯뒪??
+  **CSS ?뱀씠???⑥젙 3嫄?*: ?좊━ ?ъ쭏(`.agenda-detail-backdrop.is-pop .agenda-detail-sheet`),
+  `.detail-anchor-link line`, 諛뺣룞 ?뺤? 洹쒖튃 ???대옒???⑤룆 ?좏깮?먮줈???꾨? 議곗슜??吏꾨떎.
+  寃利? tsc쨌lint쨌vitest 350쨌?쒓컖 ?ㅽ럺 ?좉퇋 6 ?듦낵, ?꾩껜 ?쒓컖 ?ㅽ뙣??湲곗〈 6嫄?洹몃?濡??좉퇋 0).
+- **理쒖큹怨듦컻(?〓갈) ?몄쭛??媛由?2026-08-03)**: ?꾩쭅 ???由??〓갈? ?몄쭛??移대뱶/?뺣??곸꽭?먯꽌??  ?쒕ぉ ???, ?대┃ ???몄쭛 ?????鍮꾨쾲 寃뚯씠??鍮꾧났媛??덉씠??鍮꾨쾲, `verifyOnly` ??grant 誘몃컻湲?
+  rate limit ?숈씪). ?듦낵 id???붾㈃ ?앹〈 ?숈븞留?湲곗뼲. ?대룞/?쒕옒洹?蹂듭궗??寃뚯씠???놁씠 媛?ν븯??  蹂듭궗??teaser ?꾨뱶吏?蹂듭궗(CopiedEvent ?뺤옣 ?????섎㈃ 遺숈뿬?ｊ린媛 媛由쇱쓣 踰쀪꼈??.
+  ?ㅺ린湲?寃利??⑥쓬: ?곗뒪?ы넲 ?앹삤踰?寃뚯씠????由щ뜑?쇱씤, 紐⑤컮???쒗듃 寃뚯씠?? ?ㅻ떟 shake.
 
-**전면 UX/HCI 개선 계획 실행 중** — 코덱스 설계안(`docs/ux/audit/vic-schedule-studio-ux-hci-
-improvement-plan_260729.md`)을 사용자 승인 하에 진행. 방침: **기능/안정(P0→P1→P2) 먼저,
-그 다음 애플 기조 리디자인/애니메이션을 뼈대 위에 덮어씌움**. 결정 8건은 ADR-0011,
-권한표/불변식은 ADR-0012가 정본.
+**?꾨㈃ UX/HCI 媛쒖꽑 怨꾪쉷 ?ㅽ뻾 以?* ??肄붾뜳???ㅺ퀎??`docs/ux/audit/vic-schedule-studio-ux-hci-
+improvement-plan_260729.md`)???ъ슜???뱀씤 ?섏뿉 吏꾪뻾. 諛⑹묠: **湲곕뒫/?덉젙(P0?뭁1?뭁2) 癒쇱?,
+洹??ㅼ쓬 ?좏뵆 湲곗“ 由щ뵒?먯씤/?좊땲硫붿씠?섏쓣 堉덈? ?꾩뿉 ??뼱?뚯?**. 寃곗젙 8嫄댁? ADR-0011,
+沅뚰븳??遺덈??앹? ADR-0012媛 ?뺣낯.
 
-- **완료(2026-07-29)**: `P0-SEC-1`(공개 범위 fail-closed — 조용한 public 변환 금지, 모바일
-  게이트 통일, 서버 잠금해제 검증), `P0-SEC-2`(미리보기 = 서버 공개 스냅샷 전용 + 진입 시
-  재조회 `preview-actions.ts` — 떡밥 가림 우회 제거), `P0-SEC-3`(오류 원문 비노출 —
-  `safe-action-error.ts`, error boundary digest만), `P0-AUTH-1`(`event-validation.ts` —
-  날짜/링크 https/태그 payload 서버 검증 + 매니저 비공개 태그 차단 + 특성화 테스트 13개.
-  L6 반영: developer 권한 회수 안 함), `P0-PRIV-1`(드래프트 메모리 전용 + legacy 키 물리 삭제).
-- **`P0-DATA-2` 완료(2026-07-29 밤)**: 0055 마이그레이션 적용됨(save_event_atomic/
-  reorder_events_atomic/link_chain_atomic, SECURITY INVOKER). 액션 연결 + 클라 target rollback
-  (전체 스냅샷 복원 폐지). service-role 왕복 실측 검증. **실계정 첫 저장/드래그로 실전 확인 권장**.
-- **`P0-PRIV-3` 완료(2026-07-29 밤)**: embargo 행 0 감사 + 0056 CHECK 제약(신규 embargo 쓰기
-  DB 차단, 적용됨) + 죽은 can_view_embargo true 기록 중단 + 샘플 현행화. 앱의 embargo 분기는
-  fail-closed 방어로 의도적 존치.
-- **`P0-A11Y-1` 부분 완료**: 모바일 편집실 월 이동 버튼 가시화(44px, sticky 헤더). fixture에
-  poster CSS import(모바일 아젠다 골격이 poster CSS 공유 — fixture 전용 갭이었음).
-  남은 A11Y-1: roving date grid + 선택일 event list, 드래그 메뉴 대안, 업도움 키보드 경로.
-- **`P0-PRIV-2` 완료(2026-07-30 새벽, `a576d28`)**: 잠금해제를 auth-세션 결속 grant로(0057 적용).
-  opaque 토큰 HttpOnly 쿠키 + sha256 해시 + session_id 결속, 10분 5회 rate limit, '지금 잠그기'
-  버튼, 보안 패널=grants 기준, 비번변경/개별만료 시 grant 폐기. **배포 후 기존 잠금해제 전부
-  무효 → 각 기기에서 비밀번호 1회 재입력 필요(토리님께도 안내)**. legacy unlock_sessions는
-  미참조 잔존(후속 drop). 실계정 검증 필요: 해제→새로고침 유지→지금 잠그기→재잠김, 두 기기
-  독립성, 오입력 6회 429.
-- **`P0-DATA-1` 완료(2026-07-30, `e302e57`)**: 0058 tombstone(적용됨) + restore 액션/op +
-  전 조회 경로 deleted_at 필터 + Ctrl+Z를 같은-id 복구로 교체 + 8초 실행취소 스낵바.
-  fling은 복구 가능해져 존치(제거 여부는 이후 판단). '최근 삭제' 보관함 UI는 미구현(P1 후보).
-  DB 왕복 실측 4항목 검증. **실계정 검증: 삭제→스낵바 실행취소→태그·하트 보존 확인**.
-- **`P0-A11Y-1`/`P0-RESP-1` 완료(2026-07-30, `89092c0`) → P0 12/12 전부 완료 🎉**:
-  roving focus 달력(단일 탭 스톱+화살표/Home/End — ←/→가 전역 월 이동과 겹쳐 stopPropagation
-  필수였던 함정 기록), 편집 패널 [이동][복제] 버튼(이동=버튼+날짜 클릭, WCAG 2.5.7 비드래그
-  대안, insertEventCopy 공통 경로), 가로폰 차단 오버레이 제거(MOBILE_QUERY가 이미 커버).
-  A11Y 잔여 소과제(업도움 키보드 경로·공개 semantic list·SR 실기 검증)는 P1에서.
-- **P1 진행 중**. `P1-FLOW-1` Quick Add 완료(2026-07-30, `c90d917`): 모바일 시트의
-  공개범위·미정·업도움·최초공개 묶음을 기본 접힘 카드로(데스크톱 fold-field와 동일 문법,
-  `me-fold`, scopeFoldSummary 공유) — 새 일정 quick tier = 제목→태그→저장. 계획서의
-  '셀 팝오버' 안은 사용자 선호(새 일정 = 옆 패널 유지)에 따라 채택 안 함.
-  `P1-MOVE-1`은 사용자 결정으로 **제외**(이동/복제 버튼 롤백 — 드래그+Ctrl C/V로 충분).
-- **`P1-HIST-1` 완료(2026-07-30, `c6f073c`)**: 통합 다시 실행 — undo/redo 이중 스택,
-  단일 실행기(applyHistoryAction)가 적용마다 역연산을 반대 스택에 적재. 새 작업은
-  pushUndo 단일 창구로 들어와 redo를 비운다(충돌 가드). Ctrl+Shift+Z/Ctrl+Y.
-  삭제 스낵바 복구도 redo 계약에 편입. fixture+스텁 검증 6항목 PASS(_verify_undo_redo).
-- **모바일 '오늘' 버튼(사용자 요청, `494e4a7`)**: 하단 레일 시청자 화면 왼쪽 고정 슬롯,
-  시청자 화면과 같은 복귀 동작(달 이동 후 오늘 카드 중앙 스크롤).
-- **P1 추가 완료(2026-07-30 오후)**:
-  - `IPAD-1`(`b9184c0`): 1000px 미만 편집실 = 아젠다 토폴로지(STUDIO_AGENDA_QUERY 999px,
-    studio-shell.css 640/641→999/1000 전량 이동). 1024 가로는 데스크톱 유지. 포스터 CSS는
-    기존 1040 경계 그대로. 남은 것: 세로 태블릿용 컴팩트 월 오버뷰 스트립(F4)은 미구현.
-  - `ROUTE-1`(`e3c65d7`): 월 라우트 URL>쿠키>KST(예전엔 params 통째 무시). parseMonthParams
-    단일 출처+단위테스트. 꾸미기 라우트는 쿠키 우선 유지(의도된 설계), NaN 구멍만 봉합.
-  - `MOTION-1`(`c9353e6`): 인앱 미설정이면 OS prefers-reduced-motion 따름, 명시적 인앱
-    선택이 항상 우선. CSS 게이트는 계속 html[data-reduce-motion] 단일(CLAUDE.md 갱신).
-  - `EXPORT-1`(`7e3b28c`): 클립보드 거부/미지원 → PNG 다운로드 폴백(KST 파일명).
-    렌더 실패만 '실패' 표기.
-  - `VIEWER-1`+`MULTI-0`(`97d74d8`): 모바일 '이 달 기록' 진입을 legendTags 결합에서 해제,
-    무액션 범위선택 강조 제거(판서 도구의 실제 범위선택은 유지).
-- **P1 전량 완료(2026-07-30 저녁)** — MOVE-1은 사용자 결정으로 제외:
-  - `STICKER-0`+`TITLE-1`(`a40b9ab`): 스티커 Tab 포커스=선택(이후 기존 화살표/Delete/
-    Ctrl+D/Esc 전역 키가 이어받음, 포인터 불변) + 제목칸 상시 helper(첫 줄=제목 규칙,
-    14자 소프트 카운터, 20자 amber 경고) 웹·모바일 공용.
-  - `DIALOG-1`(`abd8f56`): `lib/ui/use-focus-trap.ts` 공통 훅 — 초기 포커스 진입 +
-    Tab/Shift+Tab 카드 내 순환(capture). 4개 모달(메인·비밀번호·태그 시트·업도움 시트)
-    적용. Esc·포커스 복원은 기존 B2 효과. 잔여: 시청자 '이 달 기록' 시트·모바일 편집
-    시트는 미적용(터치 중심), background inert 처리도 후속.
-- **P2 시작(2026-07-30 밤)**: `P2-ROUTE-1`+`P2-PROTO-1` 완료(`f63675c`) —
-  /studio/tags·trusted-members → /studio?panel= 리다이렉트(StudioShell panel 딥링크,
-  버튼과 동일 권한 게이트), 가짜 proposals 공개 엔드포인트 삭제(404 계약 테스트),
-  supportCampaigns/Proposal/RequestItem 죽은 payload·타입 제거(공개 8→7, 스튜디오 4→3
-  병렬 쿼리). DB 테이블은 보존. CHANGELOG_AGENT CHG-20260730-001.
-  또: TITLE-1 심화(제목칸 라이브 미러 — 첫 줄 진하게+카드식 세부 레일, `c2fce73`~`f1a1d76`).
-- **P2 추가 완료(2026-07-30 밤 2차)**: `KST-1`(월/시각 헬퍼 단일화 + UTC 경계 테스트),
-  `STICKER-1` 키보드부(+/- 크기·[/] 회전, 실행취소 묶음), `A11Y-2` 강제색부(색=정보 표면만
-  forced-color-adjust:none) — `63c9642`·`aa37bee`.
-  **⚠ MULTI-0 롤백(`63c9642`)**: 달력 드래그 범위 강조는 사용자 요청으로 복원 — 방송 중
-  기간 짚기 실사용 도구. 계획서의 '액션 없는 상태' 판정은 오판이었다. 다시 제거 금지.
-- **P2 3차(2026-07-30 심야)**: `INSIGHT-1` 1차(`4af3ec9`) — 방송시간/트렌드 차트 sr-only
-  요약(숫자 비노출 정책 존중, 요약 있으면 차트 aria-hidden). 웹 제목칸 굵기 카드와 통일(`a1ca16f`).
-- **판정(supersede 아님, 병합)**: `TOKEN-1`은 기반(색·간격·라운드·그림자·모션 시맨틱 토큰,
-  globals :root 단일 관리처)이 **이미 구축돼 있음** — 남은 '산재 리터럴 전면 이관'과 `IA-1`
-  (상단 재편)은 애플 리디자인이 같은 선언을 다시 만지므로 **리디자인 단계에 병합**(두 번 작업 방지).
-- **`ARCH-1` 1단계 완료(`d96d793`)**: 모듈 레벨 순수 코드(~300줄)를
-  `lib/studio/editor-model.ts`로 추출(동작 0 변화, 특성화 테스트 8건 + fixture 회귀 4종 통과).
-  단계 계획 = `docs/agent/plans/ACTIVE_PLAN.md`(PLAN-20260730-001) — 2단계(렌더 함수 분리)
-  → 3단계(쓰기 큐 훅) → 4단계(undo/redo 훅) → 5단계(그리드/아젠다 분리)는 후속 세션.
-  제목칸 라이브 미러/레일은 사용자 결정으로 철회(`bfeb8a5` — textarea 구조 한계).
-- **`ARCH-1` 완료(scope-adjusted, `2217dfb`·`1185a1b`)**: 2단계 ReadonlyEventDetail·RoleBadge
-  분리, 3단계 useStudioWriteQueue 훅(저장 칩·temp id·flush). 4·5단계(undo/redo 훅·그리드
-  분리)는 상태 응집 없인 이득<위험으로 **보류 판정**(ACTIVE_PLAN 참조). 각 단계 fixture
-  회귀 통과. **→ 다음 = 애플 기조 리디자인**(TOKEN 이관+IA 재편 포함).
-- **🎨 애플 리디자인 계획 항목 완주(`2f31c05`, PLAN-20260730-002 Completed)**:
-  1화면 편집 패널 타이포(`c64dbc5`) · 2화면 상단 IA 관리 드롭다운(사용자 A안, `b63644f`) ·
-  월 내비 헤더 통합(사용자 요청, `0f88418`) · 3화면 모바일 타이포(`6a6129c`) ·
-  4화면 꾸미기 크롬 라벨(표면 불가침, `2f31c05`). 5화면(시청자 크롬)은 기정돈 판단으로
-  피드백 주도 전환. **이후 리디자인은 사용자 지적 → 그 지점 수정 루프.**
-- **편집 카드 = 앵커 팝오버 전환(2026-07-31, 사용자 결정 — 목업 승인 후)**: 데스크톱 편집
-  카드가 우측 고정 슬라이드 패널이 아니라 **선택한 날짜 칸 옆에 뜨는 앵커 팝오버**(absolute,
-  workspace 기준·JS 실측 배치 placeEditorPopover — 오른쪽 우선/왼쪽 flip/뷰포트 클램프,
-  재선택 시 닫히지 않고 transition으로 이동). 달력은 편집 중에도 전폭 유지(그리드 3번째
-  칸·avatar-scene fixed 편집창·≤1180 전폭 행 규칙 전부 제거). 모바일 시트는 그대로.
-  기존 바깥클릭 닫기/Esc/serialized 큐 로직 무변. 2차(사용자 피드백): **헤더 바 드래그로
-  팝오버 이동**(수동 배치, 다른 날짜 고르면 자동 배치 복귀), **팝오버→앵커 칸 점선 리더 라인
-  +도트**(어느 칸의 편집창인지 상시 시각 연결), 헤더 날짜 "M월 D일 (요일)" 형식
-  (formatEditorDate, editor-model), 아바타 margin transitionend·달력 ResizeObserver 재배치.
-  3차: 드래그 중 React 리렌더 대신 DOM 직접 갱신(끊김 제거), 클램프 완화(가로 140px·헤더만
-  화면에 남으면 됨 — 꽉 가두기 금지), 리더 라인 끝점=카드의 앵커 쪽 최근접 가장자리
-  (popEdgePoint), 새 일정(초록 +)/일정 수정(보라 ✎) 배지·라인·카드 상단 액센트 색 구분.
-  4차: 앵커 좌표를 이벤트가 아니라 **rAF 루프로 매 프레임 실측 동기화**(placeEditorPopover,
-  변화 없으면 setState 동일 객체 → 리렌더 0) — 실서비스에서 배치 후 레이아웃 시프트(체인
-  등높이 JS 등)로 행이 밀리며 도트가 칸 위로 떠 보이던 드리프트 해결(fixture에 강제 행
-  시프트 시뮬로 검증). 드래그 중엔 editorPopDragActiveRef로 루프가 좌표를 안 되돌린다.
-  + 카드 맨 위 전폭 '이동 손잡이' 스트립(모드 색 틴트+중앙 그립 필, editor-grab).
-  5차(진짜 원인): 드리프트 = **대형 모니터 CSS zoom**(≥1700px .studio-shell 0.9 / ≥2400px 0.8)
-  — gBCR은 zoom 반영 화면 px, CSS left/top·SVG 좌표는 zoom 전 로컬 px라 전부 0.9배 지점에
-  그려졌던 것(rAF는 무관). getPopZoom()=화면폭/offsetWidth 배율로 나눠 로컬 좌표로 변환,
-  드래그 delta도 /z. 2560 뷰포트(zoom 0.8) fixture에서 전 행 오차 0·드래그 1:1 실측.
-  ⚠ 교훈: 편집실에서 gBCR 좌표를 absolute/SVG에 쓸 땐 반드시 zoom 보정.
-  ⚠ 교훈2(f77e2ac): 드래그처럼 DOM style을 직접 쓰는 상호작용은 종료 시 **DOM도 직접
-  동기화**해야 한다 — 새 상태가 React의 이전 상태와 같으면 React가 diff 없음으로 보고
-  드래그가 남긴 DOM 값을 안 고친다(파묻힘 미복귀의 진범). 상단 기준선은 하드코딩 대신
-  getChromeBottomV(상단바+액션바 실측), 팝오버 최대높이는 --pop-max-h(가용 세로 실측).
-  파묻힘 회귀는 22항목 매트릭스(4방향 플링·크롬 침범·up유실·blur·연속·스크롤 × 2뷰포트)로 검증.
-  후속 수정: 저장 반짝(.panel-saved)의 잔존 position:relative가 팝오버를 0.6초간 그리드로
-  떨어뜨리던 버그(`e256889`) · 태그 모달 저장 푸터 투시 제거(스크롤 래퍼 display:contents
-  패턴 + 흐름 밖 고정 푸터) · 공지/방문 버튼은 날짜 선택(새 일정)에만 노출(`e41bca5`).
-  6차 스타일(사용자 요청): 카드 밖 4px 오프셋 모드색 점선 아웃라인(리더 라인과 같은 색
-  언어) + 앵커 도트 흐림(r4.5, fill-opacity .42, 흰 테두리)(`beac3d6`) — 카드 반투명은
-  '집중이 안 된다' 피드백으로 **롤백**(불투명 var(--surface) 복귀) + 팝오버 세로 압축
-  (폼 gap/패딩·칩 33px·트레이 여백·fold-head 38px 한 단계씩 축소) + 카드 폭 384→356
-  (압축 후 비율이 옆으로 뚱뚱해 보인다는 피드백; form·readonly 동시 이동 필수).
-  ⚠ 함정: .editor-grab 전폭 스트립 음수 마진은 폼 패딩과 동치여야 — 패딩만 줄이면
-  2px 튀어나와 폼(overflow-y:auto)에 가로 스크롤바가 생긴다(overflow-x:hidden 안전벨트 추가).
-  7차 태그 트레이
-  애플식 정돈: 태그 색을 인라인 style 대신 **CSS 변수(--tp-bg/--tp-border/--tp-ink)**로
-  넘기고(tag-picker.tsx, 기본 렌더 불변 — 모바일 시트 fixture로 확인) 팝오버 스코프에서만
-  재해석 — 안 고른 칩 = 중립 표면 + 왼쪽 9px '색 점', 고른 칩만 태그 색 채움, 호버 =
-  color-mix 24% 틴트, 콘텐츠/형식 칸 같은 헤어라인 문법(형식만 점선이던 비대칭 제거).
-  ⚠ 함정: dev 서버 살아있는 채 `npm run build` 돌리면 .next를 덮어써 정적 청크 전부
-  ERR_ABORTED(무스타일 렌더) — 빌드 후 dev 재시작 필요.
-- **시청자 포스터 헤더 재편 + 메모 컬럼 삭제(2026-07-31, 사용자 결정)**: 서비스 제목
-  '✨빅토리 일정표✨'는 상단 크롬(내 관심 ↔ 이 달 기록 사이, .poster-chrome-title)으로 이동
-  — **공식 PNG export는 연·월만 표기**(사용자 확정). 표면 헤더 = 큰 '2026년 07월'(54px).
-  왼쪽 메모지(238px) 컬럼은 기능째 삭제(surface 2컬럼: 달력 1fr + 우측 220px) — 달력이
-  ~254px 넓어짐. 모든 모드가 같은 지오메트리라 스티커 모드 간 불일치 없음. 과거 달 메모지
-  위 스티커는 그대로 존치(사용자 확정 — 필요시 꾸미기에서 수동 이동). publicMemo/memoLines
-  DTO 필드는 UI 소비자 0인 레거시로 존치. 모바일 아젠다는 무변.
-  이어서: **PC 시청자 일정 상세 팝오버** — 달력 카드 클릭(Enter/Space 포함) 시 모바일 상세
-  시트와 같은 내용(agendaDetail 재사용)이 카드 옆 앵커 팝오버로 뜬다(anchor 있으면 is-pop
-  분기, fixed·flip·클램프). interactive 모드만(꾸미기·캡쳐 无). 바깥 클릭/Esc 닫기.
-- **시청자 레일 재편 + 라이브 카드 + 캡쳐 삭제(2026-07-31, 사용자 결정)**: ① 레일(태그
-  필터 위) 업도움 카드 → **정보 카드**(🎂 데뷔 D+N(debutDPlus, holidays)·오늘 날짜 —
-  전 모드 렌더, 캡쳐에도 찍힘). ② 업도움 접근은 **달력 띠 클릭 → 상세 팝오버 '도우러
-  가기'**(support-bar.is-clickable, interactive만). ③ **라이브 카드**: 방송 중이면 우하단
-  플로팅(soop-live-card, 표면 밖 fixed)에 SOOP 임베드 플레이어(bjId/bno로
-  /{bjId}/{bno}/embed?autoPlay&mutePlay)+LIVE 배지+제목/보러가기 — 옛 좌상단 알약 비콘
-  대체(모바일은 기존 '오늘'→LIVE 버튼 유지). ④ **일정표 캡쳐(클립보드/PNG) 기능 삭제** —
-  poster-export-actions 컴포넌트·canExport prop·html2canvas 의존성 제거(토리님 미사용).
-  공식 Playwright export 경로(tests)는 별개로 존치.
-  2차(디자인+기능): 편집실 팝오버 문법 이식 — 카드→팝오버 **리더 점선+도트(대표 태그 색)**,
-  **그립 띠/헤더 드래그 이동**(DOM 직접 갱신+손 뗄 때 상태 확정), rAF로 카드 위치 매 프레임
-  실측(스크롤·리사이즈 추적, 카드가 DOM에서 사라지면 자동 닫힘). 디자인: 대표 태그 1~2색
-  그라데이션 그립 띠(--dt-c1/c2) + 흰 카드 + 타이포 정돈(제목 21px 앵커).
-  아울러 **편집실 아바타 자리 = 항상 켜짐**
-  (끄기 토글 제거, 좌/우만 선택 — vic_avatar_on 키는 이제 시청자 포스터 전용, 시청자
-  미리보기는 controlled 공유를 끊고 포스터 자체 상태로). fixture+Playwright 실측(anchor/
-  flip/bottom-clamp/재클릭 닫기/아바타 컨트롤) 통과.
-- **아바타 scene 재배치(2026-07-31 밤, `ca74d37`, 사용자 목업 승인)**: 아바타 자리 ON이면
-  (시청자 미리보기+꾸미기 공통) 표면 안 오른쪽 레일을 접고(grid 컬럼 252→0 트랜지션) 달력이
-  표면 1840 전체 차지. 태그 필터 = 아바타 **반대편** 얇은 1열 fixed 레일(.avatar-side-rail,
-  인기도 포함), 정보 카드 = 아바타 자리 좌상단·라이브 카드 = 우상단(.avatar-top-cards).
-  스프링 슬라이드/팝-인, reduce-motion 존중, <1100px는 평소 복원. 마크업 공용화:
-  railInfoCard/renderLegendFilter 추출. ⚠ 스티커는 표면 비율 좌표라 scene(달력 폭 확장)에선
-  비-scene 배치와 가로로 어긋남 — 꾸미기도 scene이 켜지므로 scene에서 꾸미면 scene과 일치.
-  캡쳐 삭제로 '표면 고정 레이아웃(ADR-0004)' 제약은 사용자 결정으로 해제됨.
-  후속(2026-08-01, ~`7b58cd9`): 레일 120px·아바타 22vw·여백 다이어트, 인기도 1열 축약
-  (is-compact), 카드=점선 박스 완전 위(+꾸미기는 --avatar-h 72px 축소로 헤더/토글 회피),
-  꾸미기 단축키 안내 접기+의미 그룹 3개,
-  시청자 달력 Ctrl+휠 글자 확대 100/125/150(포스터 --cal-zoom, 하단 배율 배지).
-- **스티커 scene/확대 드리프트 최종 해결(2026-08-01, ~`b865b5f`)**: 저장 좌표(DB)는 기본
-  지오메트리(아바타 OFF·100%) 표면 비율 그대로, 렌더 시 기준(canon)↔현재(live) **실측 앵커
-  구간별 매핑**으로 보정(저장 시 역매핑). x 앵커=열 경계+각 열의 카드 좌/우변(여백 상수 고정),
-  y 앵커=스티커가 앉은 칸의 [칸 top·날짜줄·각 카드 상/하단·칸 bottom]. 기준은 항상 probe
-  (한 프레임 안에서 scene 클래스/--cal-zoom을 트랜지션 off로 원복→실측→복구, reflow 후 클래스
-  해제로 재전환 방지)로만 얻고, 표면 등장/월 슬라이드 애니 중엔 미루고 450ms 재시도(중간
-  지오메트리 오염 방지). 월 전환 시 기준 무효화. Playwright 실측: 6모드(아바타×확대) 카드
-  4지점 delta 0.0px, 5회 로드 동일 수렴. fixture `?avatar=1`, dev `__stickerMapDebug`.
-  ⚠ 상수 폴백의 252/16은 .poster-surface 컬럼과 동기.
-- **피드백 루프 3회전(2026-07-30, `4a06856`·`60ba610`·`43ebf8f`)**: 사용자 스크린샷 지적 →
-  즉시 수정 방식. 주요 결정·함정 기록:
-  - **그림판 왼쪽 기둥 = 달력 카드만(콘텐츠 높이, 항상 펼침)** — '접기=좌측 수납' 안도,
-    그 다음 '아바타 점선 자리' 안도 사용자 결정으로 순차 제거. 접기 토글 자체가 없어졌고
-    헤더는 월 라벨 span. 접기/아바타 존 재도입 금지.
-  - 레이어 썸네일은 **전체 판 100% 축소**가 정본(획 bbox 크롭 안은 위치 맥락 상실로 롤백).
-  - 미니 달력 '보냄'은 글자 배지 금지 — 칸 하이라이트 + aria-label만.
-  - 도구 셸프: max-height 상한 금지(바닥 고정, 위로 성장 — 상한이 굵기 행을 잘랐음),
-    굵기 6개 한 줄, 그룹 stretch로 등고.
-  - 공지류 모달: 하단 여백은 스크롤러 padding-bottom이 아니라 **sticky 푸터 자신이** 가진다
-    (스크롤러 방식은 푸터 아래 투시 구간 발생).
-  - `.scope-opt.on::after` 같은 높은 특이도 구규칙은 리디자인 오버라이드 시 **같은 특이도로
-    기하까지 전부 재선언**해야 함(체크 마크 어긋남 사고).
-  - flex 컨테이너 안 혼합 인라인 텍스트는 조각화됨 — 문장은 항상 단일 span으로 감싸기(tag-tip).
-  - 저장 배지: 최장 상태 폭 min-width 고정 + 좌측 정렬(출렁임 금지 패턴).
-  - **신규 기능**: 모바일 시청자 일정 카드 탭 → 상세 바텀시트(`agenda-detail-*`, 공개 DTO만,
-    태그 이름·색 표시). 데스크톱 미연결(아젠다 전용).
-  - 검증: tsc·build·vitest 324개 통과. Playwright visual은 미실행(신규 시트 baseline 없음 —
-    다음 visual matrix 배치에서 수용할 것).
-- (시작 기록) 애플 리디자인 시작(`c64dbc5`, PLAN-20260730-002): 기반=타이포 역할 토큰 6종
-  (--text-*, 현행값 스냅) + 1화면(데스크톱 편집 패널) 11종 px→6역할 수렴 + me-seg 동심.
-  방식: 화면당 1슬라이스 배포→**사용자 눈 확인 후** 다음(2=상단 IA는 모형 승인 선행,
-  3=모바일, 4=꾸미기, 5=시청자 크롬). 롤백 금지 목록(모달 글래스·fly 전이 등)은 플랜 참조.
-- **✅ 사용자 실기기 검증 완료(2026-07-30, `4f2cc3c` 기준)**: 범위선택 복원·undo/redo·
-  키보드 달력·모달 트랩·월 북마크/panel 딥링크·평소 편집 흐름·저장 칩·읽기전용 상세·
-  역할 팝오버·스티커 키보드·캡쳐 폴백·모바일 시트/오늘/스낵바·아젠다 경계 — 전부 정상 확인.
-- **P2 잔여(리디자인과 무관, 선택)**:
-  `COLOR-1` 색 picker 키보드/컴팩트 시트, `CONFLICT-1`(증거 게이트 — 실제 충돌 관찰 후),
-  STICKER-1 잔여(스냅 큐·터치 핸들), A11Y-2 잔여(200/400% 줌·SR 실기), INSIGHT-1 잔여(데이터 표).
-  **그 다음(또는 ARCH-1 후) 애플 기조 리디자인**(TOKEN 이관·IA 재편 포함).
-- **주의**: role fixture·canary 자동화는 아직 부분적(event-validation 단위 테스트만). 계획서
-  K5 매트릭스 기준으로 슬라이스마다 채울 것.
+- **?꾨즺(2026-07-29)**: `P0-SEC-1`(怨듦컻 踰붿쐞 fail-closed ??議곗슜??public 蹂??湲덉?, 紐⑤컮??  寃뚯씠???듭씪, ?쒕쾭 ?좉툑?댁젣 寃利?, `P0-SEC-2`(誘몃━蹂닿린 = ?쒕쾭 怨듦컻 ?ㅻ깄???꾩슜 + 吏꾩엯 ??  ?ъ“??`preview-actions.ts` ???〓갈 媛由??고쉶 ?쒓굅), `P0-SEC-3`(?ㅻ쪟 ?먮Ц 鍮꾨끂異???  `safe-action-error.ts`, error boundary digest留?, `P0-AUTH-1`(`event-validation.ts` ??  ?좎쭨/留곹겕 https/?쒓렇 payload ?쒕쾭 寃利?+ 留ㅻ땲? 鍮꾧났媛??쒓렇 李⑤떒 + ?뱀꽦???뚯뒪??13媛?
+  L6 諛섏쁺: developer 沅뚰븳 ?뚯닔 ????, `P0-PRIV-1`(?쒕옒?꾪듃 硫붾え由??꾩슜 + legacy ??臾쇰━ ??젣).
+- **`P0-DATA-2` ?꾨즺(2026-07-29 諛?**: 0055 留덉씠洹몃젅?댁뀡 ?곸슜??save_event_atomic/
+  reorder_events_atomic/link_chain_atomic, SECURITY INVOKER). ?≪뀡 ?곌껐 + ?대씪 target rollback
+  (?꾩껜 ?ㅻ깄??蹂듭썝 ?먯?). service-role ?뺣났 ?ㅼ륫 寃利? **?ㅺ퀎??泥?????쒕옒洹몃줈 ?ㅼ쟾 ?뺤씤 沅뚯옣**.
+- **`P0-PRIV-3` ?꾨즺(2026-07-29 諛?**: embargo ??0 媛먯궗 + 0056 CHECK ?쒖빟(?좉퇋 embargo ?곌린
+  DB 李⑤떒, ?곸슜?? + 二쎌? can_view_embargo true 湲곕줉 以묐떒 + ?섑뵆 ?꾪뻾?? ?깆쓽 embargo 遺꾧린??  fail-closed 諛⑹뼱濡??섎룄??議댁튂.
+- **`P0-A11Y-1` 遺遺??꾨즺**: 紐⑤컮???몄쭛?????대룞 踰꾪듉 媛?쒗솕(44px, sticky ?ㅻ뜑). fixture??  poster CSS import(紐⑤컮???꾩젨??怨④꺽??poster CSS 怨듭쑀 ??fixture ?꾩슜 媛?씠?덉쓬).
+  ?⑥? A11Y-1: roving date grid + ?좏깮??event list, ?쒕옒洹?硫붾돱 ??? ?낅룄? ?ㅻ낫??寃쎈줈.
+- **`P0-PRIV-2` ?꾨즺(2026-07-30 ?덈꼍, `a576d28`)**: ?좉툑?댁젣瑜?auth-?몄뀡 寃곗냽 grant濡?0057 ?곸슜).
+  opaque ?좏겙 HttpOnly 荑좏궎 + sha256 ?댁떆 + session_id 寃곗냽, 10遺?5??rate limit, '吏湲??좉렇湲?
+  踰꾪듉, 蹂댁븞 ?⑤꼸=grants 湲곗?, 鍮꾨쾲蹂寃?媛쒕퀎留뚮즺 ??grant ?먭린. **諛고룷 ??湲곗〈 ?좉툑?댁젣 ?꾨?
+  臾댄슚 ??媛?湲곌린?먯꽌 鍮꾨?踰덊샇 1???ъ엯???꾩슂(?좊━?섍퍡???덈궡)**. legacy unlock_sessions??  誘몄갭議??붿〈(?꾩냽 drop). ?ㅺ퀎??寃利??꾩슂: ?댁젣?믪깉濡쒓퀬移??좎??믪?湲??좉렇湲겸넂?ъ옞源, ??湲곌린
+  ?낅┰?? ?ㅼ엯??6??429.
+- **`P0-DATA-1` ?꾨즺(2026-07-30, `e302e57`)**: 0058 tombstone(?곸슜?? + restore ?≪뀡/op +
+  ??議고쉶 寃쎈줈 deleted_at ?꾪꽣 + Ctrl+Z瑜?媛숈?-id 蹂듦뎄濡?援먯껜 + 8珥??ㅽ뻾痍⑥냼 ?ㅻ궢諛?
+  fling? 蹂듦뎄 媛?ν빐??議댁튂(?쒓굅 ?щ????댄썑 ?먮떒). '理쒓렐 ??젣' 蹂닿???UI??誘멸뎄??P1 ?꾨낫).
+  DB ?뺣났 ?ㅼ륫 4??ぉ 寃利? **?ㅺ퀎??寃利? ??젣?믪뒪?듬컮 ?ㅽ뻾痍⑥냼?믫깭洹맞룻븯??蹂댁〈 ?뺤씤**.
+- **`P0-A11Y-1`/`P0-RESP-1` ?꾨즺(2026-07-30, `89092c0`) ??P0 12/12 ?꾨? ?꾨즺 ?럦**:
+  roving focus ?щ젰(?⑥씪 ???ㅽ넲+?붿궡??Home/End ?????믨? ?꾩뿭 ???대룞怨?寃뱀퀜 stopPropagation
+  ?꾩닔????⑥젙 湲곕줉), ?몄쭛 ?⑤꼸 [?대룞][蹂듭젣] 踰꾪듉(?대룞=踰꾪듉+?좎쭨 ?대┃, WCAG 2.5.7 鍮꾨뱶?섍렇
+  ??? insertEventCopy 怨듯넻 寃쎈줈), 媛濡쒗룿 李⑤떒 ?ㅻ쾭?덉씠 ?쒓굅(MOBILE_QUERY媛 ?대? 而ㅻ쾭).
+  A11Y ?붿뿬 ?뚭낵???낅룄? ?ㅻ낫??寃쎈줈쨌怨듦컻 semantic list쨌SR ?ㅺ린 寃利???P1?먯꽌.
+- **P1 吏꾪뻾 以?*. `P1-FLOW-1` Quick Add ?꾨즺(2026-07-30, `c90d917`): 紐⑤컮???쒗듃??  怨듦컻踰붿쐞쨌誘몄젙쨌?낅룄?쨌理쒖큹怨듦컻 臾띠쓬??湲곕낯 ?묓옒 移대뱶濡??곗뒪?ы넲 fold-field? ?숈씪 臾몃쾿,
+  `me-fold`, scopeFoldSummary 怨듭쑀) ?????쇱젙 quick tier = ?쒕ぉ?믫깭洹멤넂??? 怨꾪쉷?쒖쓽
+  '? ?앹삤踰? ?덉? ?ъ슜???좏샇(???쇱젙 = ???⑤꼸 ?좎?)???곕씪 梨꾪깮 ????
+  `P1-MOVE-1`? ?ъ슜??寃곗젙?쇰줈 **?쒖쇅**(?대룞/蹂듭젣 踰꾪듉 濡ㅻ갚 ???쒕옒洹?Ctrl C/V濡?異⑸텇).
+- **`P1-HIST-1` ?꾨즺(2026-07-30, `c6f073c`)**: ?듯빀 ?ㅼ떆 ?ㅽ뻾 ??undo/redo ?댁쨷 ?ㅽ깮,
+  ?⑥씪 ?ㅽ뻾湲?applyHistoryAction)媛 ?곸슜留덈떎 ??뿰?곗쓣 諛섎? ?ㅽ깮???곸옱. ???묒뾽?
+  pushUndo ?⑥씪 李쎄뎄濡??ㅼ뼱? redo瑜?鍮꾩슫??異⑸룎 媛??. Ctrl+Shift+Z/Ctrl+Y.
+  ??젣 ?ㅻ궢諛?蹂듦뎄??redo 怨꾩빟???몄엯. fixture+?ㅽ뀅 寃利?6??ぉ PASS(_verify_undo_redo).
+- **紐⑤컮??'?ㅻ뒛' 踰꾪듉(?ъ슜???붿껌, `494e4a7`)**: ?섎떒 ?덉씪 ?쒖껌???붾㈃ ?쇱そ 怨좎젙 ?щ’,
+  ?쒖껌???붾㈃怨?媛숈? 蹂듦? ?숈옉(???대룞 ???ㅻ뒛 移대뱶 以묒븰 ?ㅽ겕濡?.
+- **P1 異붽? ?꾨즺(2026-07-30 ?ㅽ썑)**:
+  - `IPAD-1`(`b9184c0`): 1000px 誘몃쭔 ?몄쭛??= ?꾩젨???좏뤃濡쒖?(STUDIO_AGENDA_QUERY 999px,
+    studio-shell.css 640/641??99/1000 ?꾨웾 ?대룞). 1024 媛濡쒕뒗 ?곗뒪?ы넲 ?좎?. ?ъ뒪??CSS??    湲곗〈 1040 寃쎄퀎 洹몃?濡? ?⑥? 寃? ?몃줈 ?쒕툝由우슜 而댄뙥?????ㅻ쾭酉??ㅽ듃由?F4)? 誘멸뎄??
+  - `ROUTE-1`(`e3c65d7`): ???쇱슦??URL>荑좏궎>KST(?덉쟾??params ?듭㎏ 臾댁떆). parseMonthParams
+    ?⑥씪 異쒖쿂+?⑥쐞?뚯뒪?? 袁몃?湲??쇱슦?몃뒗 荑좏궎 ?곗꽑 ?좎?(?섎룄???ㅺ퀎), NaN 援щ찉留?遊됲빀.
+  - `MOTION-1`(`c9353e6`): ?몄빋 誘몄꽕?뺤씠硫?OS prefers-reduced-motion ?곕쫫, 紐낆떆???몄빋
+    ?좏깮????긽 ?곗꽑. CSS 寃뚯씠?몃뒗 怨꾩냽 html[data-reduce-motion] ?⑥씪(CLAUDE.md 媛깆떊).
+  - `EXPORT-1`(`7e3b28c`): ?대┰蹂대뱶 嫄곕?/誘몄?????PNG ?ㅼ슫濡쒕뱶 ?대갚(KST ?뚯씪紐?.
+    ?뚮뜑 ?ㅽ뙣留?'?ㅽ뙣' ?쒓린.
+  - `VIEWER-1`+`MULTI-0`(`97d74d8`): 紐⑤컮??'????湲곕줉' 吏꾩엯??legendTags 寃고빀?먯꽌 ?댁젣,
+    臾댁븸??踰붿쐞?좏깮 媛뺤“ ?쒓굅(?먯꽌 ?꾧뎄???ㅼ젣 踰붿쐞?좏깮? ?좎?).
+- **P1 ?꾨웾 ?꾨즺(2026-07-30 ???** ??MOVE-1? ?ъ슜??寃곗젙?쇰줈 ?쒖쇅:
+  - `STICKER-0`+`TITLE-1`(`a40b9ab`): ?ㅽ떚而?Tab ?ъ빱???좏깮(?댄썑 湲곗〈 ?붿궡??Delete/
+    Ctrl+D/Esc ?꾩뿭 ?ㅺ? ?댁뼱諛쏆쓬, ?ъ씤??遺덈?) + ?쒕ぉ移??곸떆 helper(泥?以??쒕ぉ 洹쒖튃,
+    14???뚰봽??移댁슫?? 20??amber 寃쎄퀬) ?뮤룸え諛붿씪 怨듭슜.
+  - `DIALOG-1`(`abd8f56`): `lib/ui/use-focus-trap.ts` 怨듯넻 ????珥덇린 ?ъ빱??吏꾩엯 +
+    Tab/Shift+Tab 移대뱶 ???쒗솚(capture). 4媛?紐⑤떖(硫붿씤쨌鍮꾨?踰덊샇쨌?쒓렇 ?쒗듃쨌?낅룄? ?쒗듃)
+    ?곸슜. Esc쨌?ъ빱??蹂듭썝? 湲곗〈 B2 ?④낵. ?붿뿬: ?쒖껌??'????湲곕줉' ?쒗듃쨌紐⑤컮???몄쭛
+    ?쒗듃??誘몄쟻???곗튂 以묒떖), background inert 泥섎━???꾩냽.
+- **P2 ?쒖옉(2026-07-30 諛?**: `P2-ROUTE-1`+`P2-PROTO-1` ?꾨즺(`f63675c`) ??  /studio/tags쨌trusted-members ??/studio?panel= 由щ떎?대젆??StudioShell panel ?λ쭅??
+  踰꾪듉怨??숈씪 沅뚰븳 寃뚯씠??, 媛吏?proposals 怨듦컻 ?붾뱶?ъ씤????젣(404 怨꾩빟 ?뚯뒪??,
+  supportCampaigns/Proposal/RequestItem 二쎌? payload쨌????쒓굅(怨듦컻 8??, ?ㅽ뒠?붿삤 4??
+  蹂묐젹 荑쇰━). DB ?뚯씠釉붿? 蹂댁〈. CHANGELOG_AGENT CHG-20260730-001.
+  ?? TITLE-1 ?ы솕(?쒕ぉ移??쇱씠釉?誘몃윭 ??泥?以?吏꾪븯寃?移대뱶???몃? ?덉씪, `c2fce73`~`f1a1d76`).
+- **P2 異붽? ?꾨즺(2026-07-30 諛?2李?**: `KST-1`(???쒓컖 ?ы띁 ?⑥씪??+ UTC 寃쎄퀎 ?뚯뒪??,
+  `STICKER-1` ?ㅻ낫?쒕?(+/- ?ш린쨌[/] ?뚯쟾, ?ㅽ뻾痍⑥냼 臾띠쓬), `A11Y-2` 媛뺤젣?됰?(???뺣낫 ?쒕㈃留?  forced-color-adjust:none) ??`63c9642`쨌`aa37bee`.
+  **??MULTI-0 濡ㅻ갚(`63c9642`)**: ?щ젰 ?쒕옒洹?踰붿쐞 媛뺤“???ъ슜???붿껌?쇰줈 蹂듭썝 ??諛⑹넚 以?  湲곌컙 吏싰린 ?ㅼ궗???꾧뎄. 怨꾪쉷?쒖쓽 '?≪뀡 ?녿뒗 ?곹깭' ?먯젙? ?ㅽ뙋?댁뿀?? ?ㅼ떆 ?쒓굅 湲덉?.
+- **P2 3李?2026-07-30 ?ъ빞)**: `INSIGHT-1` 1李?`4af3ec9`) ??諛⑹넚?쒓컙/?몃젋??李⑦듃 sr-only
+  ?붿빟(?レ옄 鍮꾨끂異??뺤콉 議댁쨷, ?붿빟 ?덉쑝硫?李⑦듃 aria-hidden). ???쒕ぉ移?援듦린 移대뱶? ?듭씪(`a1ca16f`).
+- **?먯젙(supersede ?꾨떂, 蹂묓빀)**: `TOKEN-1`? 湲곕컲(?됀룰컙寃㈑룸씪?대뱶쨌洹몃┝?먃룸え???쒕㎤???좏겙,
+  globals :root ?⑥씪 愿由ъ쿂)??**?대? 援ъ텞???덉쓬** ???⑥? '?곗옱 由ы꽣???꾨㈃ ?닿?'怨?`IA-1`
+  (?곷떒 ?ы렪)? ?좏뵆 由щ뵒?먯씤??媛숈? ?좎뼵???ㅼ떆 留뚯?誘濡?**由щ뵒?먯씤 ?④퀎??蹂묓빀**(??踰??묒뾽 諛⑹?).
+- **`ARCH-1` 1?④퀎 ?꾨즺(`d96d793`)**: 紐⑤뱢 ?덈꺼 ?쒖닔 肄붾뱶(~300以?瑜?  `lib/studio/editor-model.ts`濡?異붿텧(?숈옉 0 蹂?? ?뱀꽦???뚯뒪??8嫄?+ fixture ?뚭? 4醫??듦낵).
+  ?④퀎 怨꾪쉷 = `docs/agent/plans/ACTIVE_PLAN.md`(PLAN-20260730-001) ??2?④퀎(?뚮뜑 ?⑥닔 遺꾨━)
+  ??3?④퀎(?곌린 ???? ??4?④퀎(undo/redo ?? ??5?④퀎(洹몃━???꾩젨??遺꾨━)???꾩냽 ?몄뀡.
+  ?쒕ぉ移??쇱씠釉?誘몃윭/?덉씪? ?ъ슜??寃곗젙?쇰줈 泥좏쉶(`bfeb8a5` ??textarea 援ъ“ ?쒓퀎).
+- **`ARCH-1` ?꾨즺(scope-adjusted, `2217dfb`쨌`1185a1b`)**: 2?④퀎 ReadonlyEventDetail쨌RoleBadge
+  遺꾨━, 3?④퀎 useStudioWriteQueue ?????移㈑톞emp id쨌flush). 4쨌5?④퀎(undo/redo ?끒룰렇由щ뱶
+  遺꾨━)???곹깭 ?묒쭛 ?놁씤 ?대뱷<?꾪뿕?쇰줈 **蹂대쪟 ?먯젙**(ACTIVE_PLAN 李몄“). 媛??④퀎 fixture
+  ?뚭? ?듦낵. **???ㅼ쓬 = ?좏뵆 湲곗“ 由щ뵒?먯씤**(TOKEN ?닿?+IA ?ы렪 ?ы븿).
+- **?렓 ?좏뵆 由щ뵒?먯씤 怨꾪쉷 ??ぉ ?꾩＜(`2f31c05`, PLAN-20260730-002 Completed)**:
+  1?붾㈃ ?몄쭛 ?⑤꼸 ??댄룷(`c64dbc5`) 쨌 2?붾㈃ ?곷떒 IA 愿由??쒕∼?ㅼ슫(?ъ슜??A?? `b63644f`) 쨌
+  ???대퉬 ?ㅻ뜑 ?듯빀(?ъ슜???붿껌, `0f88418`) 쨌 3?붾㈃ 紐⑤컮????댄룷(`6a6129c`) 쨌
+  4?붾㈃ 袁몃?湲??щ＼ ?쇰꺼(?쒕㈃ 遺덇?移? `2f31c05`). 5?붾㈃(?쒖껌???щ＼)? 湲곗젙???먮떒?쇰줈
+  ?쇰뱶諛?二쇰룄 ?꾪솚. **?댄썑 由щ뵒?먯씤? ?ъ슜??吏????洹?吏???섏젙 猷⑦봽.**
+- **?몄쭛 移대뱶 = ?듭빱 ?앹삤踰??꾪솚(2026-07-31, ?ъ슜??寃곗젙 ??紐⑹뾽 ?뱀씤 ??**: ?곗뒪?ы넲 ?몄쭛
+  移대뱶媛 ?곗륫 怨좎젙 ?щ씪?대뱶 ?⑤꼸???꾨땲??**?좏깮???좎쭨 移??놁뿉 ?⑤뒗 ?듭빱 ?앹삤踰?*(absolute,
+  workspace 湲곗?쨌JS ?ㅼ륫 諛곗튂 placeEditorPopover ???ㅻⅨ履??곗꽑/?쇱そ flip/酉고룷???대옩??
+  ?ъ꽑?????ロ엳吏 ?딄퀬 transition?쇰줈 ?대룞). ?щ젰? ?몄쭛 以묒뿉???꾪룺 ?좎?(洹몃━??3踰덉㎏
+  移맞톋vatar-scene fixed ?몄쭛李승룐돞1180 ?꾪룺 ??洹쒖튃 ?꾨? ?쒓굅). 紐⑤컮???쒗듃??洹몃?濡?
+  湲곗〈 諛붽묑?대┃ ?リ린/Esc/serialized ??濡쒖쭅 臾대?. 2李??ъ슜???쇰뱶諛?: **?ㅻ뜑 諛??쒕옒洹몃줈
+  ?앹삤踰??대룞**(?섎룞 諛곗튂, ?ㅻⅨ ?좎쭨 怨좊Ⅴ硫??먮룞 諛곗튂 蹂듦?), **?앹삤踰꾟넂?듭빱 移??먯꽑 由щ뜑 ?쇱씤
+  +?꾪듃**(?대뒓 移몄쓽 ?몄쭛李쎌씤吏 ?곸떆 ?쒓컖 ?곌껐), ?ㅻ뜑 ?좎쭨 "M??D??(?붿씪)" ?뺤떇
+  (formatEditorDate, editor-model), ?꾨컮? margin transitionend쨌?щ젰 ResizeObserver ?щ같移?
+  3李? ?쒕옒洹?以?React 由щ젋?????DOM 吏곸젒 媛깆떊(?딄? ?쒓굅), ?대옩???꾪솕(媛濡?140px쨌?ㅻ뜑留?  ?붾㈃???⑥쑝硫?????苑?媛?먭린 湲덉?), 由щ뜑 ?쇱씤 ?앹젏=移대뱶???듭빱 履?理쒓렐??媛?μ옄由?  (popEdgePoint), ???쇱젙(珥덈줉 +)/?쇱젙 ?섏젙(蹂대씪 ?? 諛곗?쨌?쇱씤쨌移대뱶 ?곷떒 ?≪꽱????援щ텇.
+  4李? ?듭빱 醫뚰몴瑜??대깽?멸? ?꾨땲??**rAF 猷⑦봽濡?留??꾨젅???ㅼ륫 ?숆린??*(placeEditorPopover,
+  蹂???놁쑝硫?setState ?숈씪 媛앹껜 ??由щ젋??0) ???ㅼ꽌鍮꾩뒪?먯꽌 諛곗튂 ???덉씠?꾩썐 ?쒗봽??泥댁씤
+  ?깅넂??JS ??濡??됱씠 諛由щŉ ?꾪듃媛 移??꾨줈 ??蹂댁씠???쒕━?꾪듃 ?닿껐(fixture??媛뺤젣 ??  ?쒗봽???쒕?濡?寃利?. ?쒕옒洹?以묒뿏 editorPopDragActiveRef濡?猷⑦봽媛 醫뚰몴瑜????섎룎由곕떎.
+  + 移대뱶 留????꾪룺 '?대룞 ?먯옟?? ?ㅽ듃由?紐⑤뱶 ???댄듃+以묒븰 洹몃┰ ?? editor-grab).
+  5李?吏꾩쭨 ?먯씤): ?쒕━?꾪듃 = **???紐⑤땲??CSS zoom**(??700px .studio-shell 0.9 / ??400px 0.8)
+  ??gBCR? zoom 諛섏쁺 ?붾㈃ px, CSS left/top쨌SVG 醫뚰몴??zoom ??濡쒖뺄 px???꾨? 0.9諛?吏?먯뿉
+  洹몃젮議뚮뜕 寃?rAF??臾닿?). getPopZoom()=?붾㈃??offsetWidth 諛곗쑉濡??섎닠 濡쒖뺄 醫뚰몴濡?蹂??
+  ?쒕옒洹?delta??/z. 2560 酉고룷??zoom 0.8) fixture?먯꽌 ?????ㅼ감 0쨌?쒕옒洹?1:1 ?ㅼ륫.
+  ??援먰썕: ?몄쭛?ㅼ뿉??gBCR 醫뚰몴瑜?absolute/SVG??????諛섎뱶??zoom 蹂댁젙.
+  ??援먰썕2(f77e2ac): ?쒕옒洹몄쿂??DOM style??吏곸젒 ?곕뒗 ?곹샇?묒슜? 醫낅즺 ??**DOM??吏곸젒
+  ?숆린??*?댁빞 ?쒕떎 ?????곹깭媛 React???댁쟾 ?곹깭? 媛숈쑝硫?React媛 diff ?놁쓬?쇰줈 蹂닿퀬
+  ?쒕옒洹멸? ?④릿 DOM 媛믪쓣 ??怨좎튇???뚮Щ??誘몃났洹??吏꾨쾾). ?곷떒 湲곗??좎? ?섎뱶肄붾뵫 ???  getChromeBottomV(?곷떒諛??≪뀡諛??ㅼ륫), ?앹삤踰?理쒕??믪씠??--pop-max-h(媛???몃줈 ?ㅼ륫).
+  ?뚮Щ???뚭???22??ぉ 留ㅽ듃由?뒪(4諛⑺뼢 ?뚮쭅쨌?щ＼ 移⑤쾾쨌up?좎떎쨌blur쨌?곗냽쨌?ㅽ겕濡?횞 2酉고룷??濡?寃利?
+  ?꾩냽 ?섏젙: ???諛섏쭩(.panel-saved)???붿〈 position:relative媛 ?앹삤踰꾨? 0.6珥덇컙 洹몃━?쒕줈
+  ?⑥뼱?⑤━??踰꾧렇(`e256889`) 쨌 ?쒓렇 紐⑤떖 ????명꽣 ?ъ떆 ?쒓굅(?ㅽ겕濡??섑띁 display:contents
+  ?⑦꽩 + ?먮쫫 諛?怨좎젙 ?명꽣) 쨌 怨듭?/諛⑸Ц 踰꾪듉? ?좎쭨 ?좏깮(???쇱젙)?먮쭔 ?몄텧(`e41bca5`).
+  6李??ㅽ????ъ슜???붿껌): 移대뱶 諛?4px ?ㅽ봽??紐⑤뱶???먯꽑 ?꾩썐?쇱씤(由щ뜑 ?쇱씤怨?媛숈? ??  ?몄뼱) + ?듭빱 ?꾪듃 ?먮┝(r4.5, fill-opacity .42, ???뚮몢由?(`beac3d6`) ??移대뱶 諛섑닾紐낆?
+  '吏묒쨷?????쒕떎' ?쇰뱶諛깆쑝濡?**濡ㅻ갚**(遺덊닾紐?var(--surface) 蹂듦?) + ?앹삤踰??몃줈 ?뺤텞
+  (??gap/?⑤뵫쨌移?33px쨌?몃젅???щ갚쨌fold-head 38px ???④퀎??異뺤냼) + 移대뱶 ??384??56
+  (?뺤텞 ??鍮꾩쑉???놁쑝濡??깅슧??蹂댁씤?ㅻ뒗 ?쇰뱶諛? form쨌readonly ?숈떆 ?대룞 ?꾩닔).
+  ???⑥젙: .editor-grab ?꾪룺 ?ㅽ듃由??뚯닔 留덉쭊? ???⑤뵫怨??숈튂?ъ빞 ???⑤뵫留?以꾩씠硫?  2px ??대굹? ??overflow-y:auto)??媛濡??ㅽ겕濡ㅻ컮媛 ?앷릿??overflow-x:hidden ?덉쟾踰⑦듃 異붽?).
+  7李??쒓렇 ?몃젅??  ?좏뵆???뺣룉: ?쒓렇 ?됱쓣 ?몃씪??style ???**CSS 蹂??--tp-bg/--tp-border/--tp-ink)**濡?  ?섍린怨?tag-picker.tsx, 湲곕낯 ?뚮뜑 遺덈? ??紐⑤컮???쒗듃 fixture濡??뺤씤) ?앹삤踰??ㅼ퐫?꾩뿉?쒕쭔
+  ?ы빐??????怨좊Ⅸ 移?= 以묐┰ ?쒕㈃ + ?쇱そ 9px '????, 怨좊Ⅸ 移⑸쭔 ?쒓렇 ??梨꾩?, ?몃쾭 =
+  color-mix 24% ?댄듃, 肄섑뀗痢??뺤떇 移?媛숈? ?ㅼ뼱?쇱씤 臾몃쾿(?뺤떇留??먯꽑?대뜕 鍮꾨?移??쒓굅).
+  ???⑥젙: dev ?쒕쾭 ?댁븘?덈뒗 梨?`npm run build` ?뚮━硫?.next瑜???뼱???뺤쟻 泥?겕 ?꾨?
+  ERR_ABORTED(臾댁뒪????뚮뜑) ??鍮뚮뱶 ??dev ?ъ떆???꾩슂.
+- **?쒖껌???ъ뒪???ㅻ뜑 ?ы렪 + 硫붾え 而щ읆 ??젣(2026-07-31, ?ъ슜??寃곗젙)**: ?쒕퉬???쒕ぉ
+  '?⑤퉭?좊━ ?쇱젙?쒋쑉'???곷떒 ?щ＼(??愿????????湲곕줉 ?ъ씠, .poster-chrome-title)?쇰줈 ?대룞
+  ??**怨듭떇 PNG export???걔룹썡留??쒓린**(?ъ슜???뺤젙). ?쒕㈃ ?ㅻ뜑 = ??'2026??07??(54px).
+  ?쇱そ 硫붾え吏(238px) 而щ읆? 湲곕뒫吏???젣(surface 2而щ읆: ?щ젰 1fr + ?곗륫 220px) ???щ젰??  ~254px ?볦뼱吏? 紐⑤뱺 紐⑤뱶媛 媛숈? 吏?ㅻ찓?몃━???ㅽ떚而?紐⑤뱶 媛?遺덉씪移??놁쓬. 怨쇨굅 ??硫붾え吏
+  ???ㅽ떚而ㅻ뒗 洹몃?濡?議댁튂(?ъ슜???뺤젙 ???꾩슂??袁몃?湲곗뿉???섎룞 ?대룞). publicMemo/memoLines
+  DTO ?꾨뱶??UI ?뚮퉬??0???덇굅?쒕줈 議댁튂. 紐⑤컮???꾩젨?ㅻ뒗 臾대?.
+  ?댁뼱?? **PC ?쒖껌???쇱젙 ?곸꽭 ?앹삤踰?* ???щ젰 移대뱶 ?대┃(Enter/Space ?ы븿) ??紐⑤컮???곸꽭
+  ?쒗듃? 媛숈? ?댁슜(agendaDetail ?ъ궗????移대뱶 ???듭빱 ?앹삤踰꾨줈 ?щ떎(anchor ?덉쑝硫?is-pop
+  遺꾧린, fixed쨌flip쨌?대옩??. interactive 紐⑤뱶留?袁몃?湲걔룹벙爾???. 諛붽묑 ?대┃/Esc ?リ린.
+- **?쒖껌???덉씪 ?ы렪 + ?쇱씠釉?移대뱶 + 罹≪퀜 ??젣(2026-07-31, ?ъ슜??寃곗젙)**: ???덉씪(?쒓렇
+  ?꾪꽣 ?? ?낅룄? 移대뱶 ??**?뺣낫 移대뱶**(?럟 ?곕퇃 D+N(debutDPlus, holidays)쨌?ㅻ뒛 ?좎쭨 ??  ??紐⑤뱶 ?뚮뜑, 罹≪퀜?먮룄 李랁옒). ???낅룄? ?묎렐? **?щ젰 ???대┃ ???곸꽭 ?앹삤踰?'?꾩슦??  媛湲?**(support-bar.is-clickable, interactive留?. ??**?쇱씠釉?移대뱶**: 諛⑹넚 以묒씠硫??고븯??  ?뚮줈??soop-live-card, ?쒕㈃ 諛?fixed)??SOOP ?꾨쿋???뚮젅?댁뼱(bjId/bno濡?  /{bjId}/{bno}/embed?autoPlay&mutePlay)+LIVE 諛곗?+?쒕ぉ/蹂대윭媛湲?????醫뚯긽???뚯빟 鍮꾩퐯
+  ?泥?紐⑤컮?쇱? 湲곗〈 '?ㅻ뒛'?묹IVE 踰꾪듉 ?좎?). ??**?쇱젙??罹≪퀜(?대┰蹂대뱶/PNG) 湲곕뒫 ??젣** ??  poster-export-actions 而댄룷?뚰듃쨌canExport prop쨌html2canvas ?섏〈???쒓굅(?좊━??誘몄궗??.
+  怨듭떇 Playwright export 寃쎈줈(tests)??蹂꾧컻濡?議댁튂.
+  2李??붿옄??湲곕뒫): ?몄쭛???앹삤踰?臾몃쾿 ?댁떇 ??移대뱶?믫뙘?ㅻ쾭 **由щ뜑 ?먯꽑+?꾪듃(????쒓렇 ??**,
+  **洹몃┰ ???ㅻ뜑 ?쒕옒洹??대룞**(DOM 吏곸젒 媛깆떊+???????곹깭 ?뺤젙), rAF濡?移대뱶 ?꾩튂 留??꾨젅??  ?ㅼ륫(?ㅽ겕濡ㅒ룸━?ъ씠利?異붿쟻, 移대뱶媛 DOM?먯꽌 ?щ씪吏硫??먮룞 ?ロ옒). ?붿옄?? ????쒓렇 1~2??  洹몃씪?곗씠??洹몃┰ ??--dt-c1/c2) + ??移대뱶 + ??댄룷 ?뺣룉(?쒕ぉ 21px ?듭빱).
+  ?꾩슱??**?몄쭛???꾨컮? ?먮━ = ??긽 耳쒖쭚**
+  (?꾧린 ?좉? ?쒓굅, 醫??곕쭔 ?좏깮 ??vic_avatar_on ?ㅻ뒗 ?댁젣 ?쒖껌???ъ뒪???꾩슜, ?쒖껌??  誘몃━蹂닿린??controlled 怨듭쑀瑜??딄퀬 ?ъ뒪???먯껜 ?곹깭濡?. fixture+Playwright ?ㅼ륫(anchor/
+  flip/bottom-clamp/?ы겢由??リ린/?꾨컮? 而⑦듃濡? ?듦낵.
+- **?꾨컮? scene ?щ같移?2026-07-31 諛? `ca74d37`, ?ъ슜??紐⑹뾽 ?뱀씤)**: ?꾨컮? ?먮━ ON?대㈃
+  (?쒖껌??誘몃━蹂닿린+袁몃?湲?怨듯넻) ?쒕㈃ ???ㅻⅨ履??덉씪???묎퀬(grid 而щ읆 252?? ?몃옖吏?? ?щ젰??  ?쒕㈃ 1840 ?꾩껜 李⑥?. ?쒓렇 ?꾪꽣 = ?꾨컮? **諛섎???* ?뉗? 1??fixed ?덉씪(.avatar-side-rail,
+  ?멸린???ы븿), ?뺣낫 移대뱶 = ?꾨컮? ?먮━ 醫뚯긽?㉱룸씪?대툕 移대뱶 = ?곗긽??.avatar-top-cards).
+  ?ㅽ봽留??щ씪?대뱶/???? reduce-motion 議댁쨷, <1100px???됱냼 蹂듭썝. 留덊겕??怨듭슜??
+  railInfoCard/renderLegendFilter 異붿텧. ???ㅽ떚而ㅻ뒗 ?쒕㈃ 鍮꾩쑉 醫뚰몴??scene(?щ젰 ???뺤옣)?먯꽑
+  鍮?scene 諛곗튂? 媛濡쒕줈 ?닿툔????袁몃?湲곕룄 scene??耳쒖?誘濡?scene?먯꽌 袁몃?硫?scene怨??쇱튂.
+  罹≪퀜 ??젣濡?'?쒕㈃ 怨좎젙 ?덉씠?꾩썐(ADR-0004)' ?쒖빟? ?ъ슜??寃곗젙?쇰줈 ?댁젣??
+  ?꾩냽(2026-08-01, ~`7b58cd9`): ?덉씪 120px쨌?꾨컮? 22vw쨌?щ갚 ?ㅼ씠?댄듃, ?멸린??1??異뺤빟
+  (is-compact), 移대뱶=?먯꽑 諛뺤뒪 ?꾩쟾 ??+袁몃?湲곕뒗 --avatar-h 72px 異뺤냼濡??ㅻ뜑/?좉? ?뚰뵾),
+  袁몃?湲??⑥텞???덈궡 ?묎린+?섎? 洹몃９ 3媛?
+  ?쒖껌???щ젰 Ctrl+??湲???뺣? 100/125/150(?ъ뒪??--cal-zoom, ?섎떒 諛곗쑉 諛곗?).
+- **?ㅽ떚而?scene/?뺣? ?쒕━?꾪듃 理쒖쥌 ?닿껐(2026-08-01, ~`b865b5f`)**: ???醫뚰몴(DB)??湲곕낯
+  吏?ㅻ찓?몃━(?꾨컮? OFF쨌100%) ?쒕㈃ 鍮꾩쑉 洹몃?濡? ?뚮뜑 ??湲곗?(canon)?뷀쁽??live) **?ㅼ륫 ?듭빱
+  援ш컙蹂?留ㅽ븨**?쇰줈 蹂댁젙(???????ℓ??. x ?듭빱=??寃쎄퀎+媛??댁쓽 移대뱶 醫??곕?(?щ갚 ?곸닔 怨좎젙),
+  y ?듭빱=?ㅽ떚而ㅺ? ?됱? 移몄쓽 [移?top쨌?좎쭨以꽷룰컖 移대뱶 ???섎떒쨌移?bottom]. 湲곗?? ??긽 probe
+  (???꾨젅???덉뿉??scene ?대옒??--cal-zoom???몃옖吏??off濡??먮났?믪떎痢△넂蹂듦뎄, reflow ???대옒??  ?댁젣濡??ъ쟾??諛⑹?)濡쒕쭔 ?산퀬, ?쒕㈃ ?깆옣/???щ씪?대뱶 ?좊땲 以묒뿏 誘몃（怨?450ms ?ъ떆??以묎컙
+  吏?ㅻ찓?몃━ ?ㅼ뿼 諛⑹?). ???꾪솚 ??湲곗? 臾댄슚?? Playwright ?ㅼ륫: 6紐⑤뱶(?꾨컮?횞?뺣?) 移대뱶
+  4吏??delta 0.0px, 5??濡쒕뱶 ?숈씪 ?섎졃. fixture `?avatar=1`, dev `__stickerMapDebug`.
+  ???곸닔 ?대갚??252/16? .poster-surface 而щ읆怨??숆린.
+- **?쇰뱶諛?猷⑦봽 3?뚯쟾(2026-07-30, `4a06856`쨌`60ba610`쨌`43ebf8f`)**: ?ъ슜???ㅽ겕由곗꺑 吏????  利됱떆 ?섏젙 諛⑹떇. 二쇱슂 寃곗젙쨌?⑥젙 湲곕줉:
+  - **洹몃┝???쇱そ 湲곕뫁 = ?щ젰 移대뱶留?肄섑뀗痢??믪씠, ??긽 ?쇱묠)** ??'?묎린=醫뚯륫 ?섎궔' ?덈룄,
+    洹??ㅼ쓬 '?꾨컮? ?먯꽑 ?먮━' ?덈룄 ?ъ슜??寃곗젙?쇰줈 ?쒖감 ?쒓굅. ?묎린 ?좉? ?먯껜媛 ?놁뼱議뚭퀬
+    ?ㅻ뜑?????쇰꺼 span. ?묎린/?꾨컮? 議??щ룄??湲덉?.
+  - ?덉씠???몃꽕?쇱? **?꾩껜 ??100% 異뺤냼**媛 ?뺣낯(??bbox ?щ∼ ?덉? ?꾩튂 留λ씫 ?곸떎濡?濡ㅻ갚).
+  - 誘몃땲 ?щ젰 '蹂대깂'? 湲??諛곗? 湲덉? ??移??섏씠?쇱씠??+ aria-label留?
+  - ?꾧뎄 ?명봽: max-height ?곹븳 湲덉?(諛붾떏 怨좎젙, ?꾨줈 ?깆옣 ???곹븳??援듦린 ?됱쓣 ?섎옄??,
+    援듦린 6媛???以? 洹몃９ stretch濡??깃퀬.
+  - 怨듭?瑜?紐⑤떖: ?섎떒 ?щ갚? ?ㅽ겕濡ㅻ윭 padding-bottom???꾨땲??**sticky ?명꽣 ?먯떊??* 媛吏꾨떎
+    (?ㅽ겕濡ㅻ윭 諛⑹떇? ?명꽣 ?꾨옒 ?ъ떆 援ш컙 諛쒖깮).
+  - `.scope-opt.on::after` 媛숈? ?믪? ?뱀씠??援ш퇋移숈? 由щ뵒?먯씤 ?ㅻ쾭?쇱씠????**媛숈? ?뱀씠?꾨줈
+    湲고븯源뚯? ?꾨? ?ъ꽑??*?댁빞 ??泥댄겕 留덊겕 ?닿툔???ш퀬).
+  - flex 而⑦뀒?대꼫 ???쇳빀 ?몃씪???띿뒪?몃뒗 議곌컖?붾맖 ??臾몄옣? ??긽 ?⑥씪 span?쇰줈 媛먯떥湲?tag-tip).
+  - ???諛곗?: 理쒖옣 ?곹깭 ??min-width 怨좎젙 + 醫뚯륫 ?뺣젹(異쒕쟻??湲덉? ?⑦꽩).
+  - **?좉퇋 湲곕뒫**: 紐⑤컮???쒖껌???쇱젙 移대뱶 ?????곸꽭 諛뷀??쒗듃(`agenda-detail-*`, 怨듦컻 DTO留?
+    ?쒓렇 ?대쫫쨌???쒖떆). ?곗뒪?ы넲 誘몄뿰寃??꾩젨???꾩슜).
+  - 寃利? tsc쨌build쨌vitest 324媛??듦낵. Playwright visual? 誘몄떎???좉퇋 ?쒗듃 baseline ?놁쓬 ??    ?ㅼ쓬 visual matrix 諛곗튂?먯꽌 ?섏슜??寃?.
+- (?쒖옉 湲곕줉) ?좏뵆 由щ뵒?먯씤 ?쒖옉(`c64dbc5`, PLAN-20260730-002): 湲곕컲=??댄룷 ??븷 ?좏겙 6醫?  (--text-*, ?꾪뻾媛??ㅻ깄) + 1?붾㈃(?곗뒪?ы넲 ?몄쭛 ?⑤꼸) 11醫?px????븷 ?섎졃 + me-seg ?숈떖.
+  諛⑹떇: ?붾㈃??1?щ씪?댁뒪 諛고룷??*?ъ슜?????뺤씤 ??* ?ㅼ쓬(2=?곷떒 IA??紐⑦삎 ?뱀씤 ?좏뻾,
+  3=紐⑤컮?? 4=袁몃?湲? 5=?쒖껌???щ＼). 濡ㅻ갚 湲덉? 紐⑸줉(紐⑤떖 湲?섏뒪쨌fly ?꾩씠 ??? ?뚮옖 李몄“.
+- **???ъ슜???ㅺ린湲?寃利??꾨즺(2026-07-30, `4f2cc3c` 湲곗?)**: 踰붿쐞?좏깮 蹂듭썝쨌undo/redo쨌
+  ?ㅻ낫???щ젰쨌紐⑤떖 ?몃옪쨌??遺곷쭏??panel ?λ쭅??룻룊???몄쭛 ?먮쫫쨌???移㈑룹씫湲곗쟾???곸꽭쨌
+  ??븷 ?앹삤踰꽷룹뒪?곗빱 ?ㅻ낫?쑣룹벙爾??대갚쨌紐⑤컮???쒗듃/?ㅻ뒛/?ㅻ궢諛붋룹븘?좊떎 寃쎄퀎 ???꾨? ?뺤긽 ?뺤씤.
+- **P2 ?붿뿬(由щ뵒?먯씤怨?臾닿?, ?좏깮)**:
+  `COLOR-1` ??picker ?ㅻ낫??而댄뙥???쒗듃, `CONFLICT-1`(利앷굅 寃뚯씠?????ㅼ젣 異⑸룎 愿李???,
+  STICKER-1 ?붿뿬(?ㅻ깄 ?먃룻꽣移??몃뱾), A11Y-2 ?붿뿬(200/400% 以뙿톁R ?ㅺ린), INSIGHT-1 ?붿뿬(?곗씠????.
+  **洹??ㅼ쓬(?먮뒗 ARCH-1 ?? ?좏뵆 湲곗“ 由щ뵒?먯씤**(TOKEN ?닿?쨌IA ?ы렪 ?ы븿).
+- **二쇱쓽**: role fixture쨌canary ?먮룞?붾뒗 ?꾩쭅 遺遺꾩쟻(event-validation ?⑥쐞 ?뚯뒪?몃쭔). 怨꾪쉷??  K5 留ㅽ듃由?뒪 湲곗??쇰줈 ?щ씪?댁뒪留덈떎 梨꾩슱 寃?
 
-## (이전) Objective
+## (?댁쟾) Objective
 
-시청자 포스터의 **몰입·재미·편의 개선**(스냅샷 + 멀티에이전트 평가/리서치 기반)이 방금 끝났고,
-지금은 **편집실 UX 다듬기**와 **시청자 참여 기능**으로 넘어가는 중.
+?쒖껌???ъ뒪?곗쓽 **紐곗엯쨌?щ?쨌?몄쓽 媛쒖꽑**(?ㅻ깄??+ 硫?곗뿉?댁쟾???됯?/由ъ꽌移?湲곕컲)??諛⑷툑 ?앸궗怨?
+吏湲덉? **?몄쭛??UX ?ㅻ벉湲?*? **?쒖껌??李몄뿬 湲곕뒫**?쇰줈 ?섏뼱媛??以?
 
 ## Current Status
 
-- **운영 중(안정)**: 공개 포스터(`/`), 편집실(달력/태그/멤버/비공개 레이어), 꾸미기·PNG export,
-  하트(비로그인 포함), 관리자 인사이트, 태그 2계층, 비공개 본문 암호화, 방송시간 기록.
-- **2026-07-29 — '이 달 기록' 닫기 정책 + 애플 HCI 벤치마크 1차**(`bb23f6f`, `bf70da9`, `028e6f0`):
-  - '이 달 기록' 시트는 **백드롭 클릭으로 닫히지 않는다**(신고 반영 — 같이보기 방송 중 오클릭
-    사고 방지). 닫기 = X·Esc·뒤로가기만. overlay-pop에 800ms 유예 안전망(방금 안쪽이 닫혔으면
-    지각 popstate도 안쪽 몫 → 미리보기 오닫힘 방지, 대신 시트 닫은 직후 0.8초 내 뒤로가기는
-    한 번 무시될 수 있음 — 의도된 비대칭).
-  - **X/백드롭 → 편집실 튕김은 현재 코드로 재현 불가**였다(dev·prod build, 정상/cold-entry/
-    좁은폭/판서 churn/더블클릭 전부 미리보기 유지 확인). 원인 미상 리포트에 대해 위 정책 변경
-    + 안전망으로 대응. 재현용 **편집실 fixture** `app/visual-fixture/studio`
-    (`VISUAL_TEST_FIXTURE=1` 전용, owner actor + 샘플 데이터, `?viewer=1`로 미리보기 cold-entry)
-    를 추가했다 — 오버레이 스택 회귀는 여기서 인증 없이 실측할 것.
-  - **애플 HCI 리서치 보고서** `docs/ux/apple-hci-benchmark-report.md`(조화·몰입·재미 3×3,
-    적용 후보 12건 P1~P3). 1차 적용(A1·A2): `globals.css`에 `--spring-smooth/--spring-bouncy`
-    `linear()` 스프링 토큰(+`--dur-spring-*`), 전역 버튼 누름 70ms 즉각/뗌 스프링 복귀,
-    '이 달 기록' 시트 등장·아바타 자리 등장/슬라이드·pop-number 스프링 치환. 다음 후보:
-    C1(재질 토큰)·A3(코너 동심 감사)·B1(모바일 시트 드래그 닫기).
-  - lint 경고 6건 제거로 `npm run lint`(max-warnings=0) 게이트 복구.
-- **2026-07-29(밤) — 애플 HCI 벤치마크 P1~P2 일괄 적용**(`a67b758`…`1aaf2c5`, 검증 12/12 PASS):
-  - **마이크로 인터랙션**: 모든 X 닫기 버튼에 그림판 X와 같은 호버 90° 회전+스프링 복귀
-    (.pi-close/.modal-close/.dtp-pop-x/.m-edit-x/.peek-close/.bp-kbd-close). 모달·팝오버·
-    바텀시트 등장을 `--spring-smooth`로 통일.
-  - **C1 재질**: `--material-*` 토큰 + 모달/날짜시간·태그색·확대 팝오버/판서 단축키 안내를
-    반투명 블러 유리로(@supports 가드, export surface 밖).
-  - **B1**: 모바일 편집 시트 끌어서 닫기(`lib/ui/use-sheet-drag-close.ts`) — 1:1 추적·위로
-    러버밴딩·릴리스 속도 스프링·임계 햅틱. **함정 2개 실측으로 잡음**: pointerdown 즉시
-    setPointerCapture 금지(click이 캡처 요소로 가서 X 먹통), click 억제 플래그는 제스처 후
-    반드시 자동 해제.
-  - **B2**: 모바일 카드→시트 matched-geometry morph(열림=카드에서 자람, X/백드롭 닫기=역방향),
-    웹은 카드 잔상 비행(`lib/ui/fly-ghost.ts`)으로 고정 편집 패널과의 연결감만.
-  - **B3**: 스티커 경계 러버밴딩(표시만, 저장 좌표는 기존 clamp·직렬 큐 불변) + 스냅 노치 햅틱.
-  - **B4**: 아젠다 필터 FLIP(`lib/ui/list-flip.ts`) — 시청자·편집실 모바일 아젠다.
-  - **D1**: 캡쳐 성공 시 완성본 미니 썸네일 스프링 팝인 + 2틱 햅틱.
-  - **부수 대어**: 편의 캡쳐(클립보드)가 **07-19부터 조용히 깨져 있었음** — `.event-subs`
-    세로 레일의 `color-mix` computed(`color(srgb …)`)를 html2canvas가 파싱 못 해 전체 throw.
-    transparent border + `::before`(currentColor+opacity)로 픽셀 동일하게 복구(`4a88582`).
-    **교훈: export surface 안에는 color-mix 금지**(html2canvas 한계).
-  - 검증 인프라: `scripts/_verify_hci.mjs`(12항목 실측), visual baseline 재캡쳐(stale이었음 —
-    clean HEAD에서도 실패 확인 후 갱신). fixture가 프로덕션 빌드에서 무스타일이던 문제
-    (studio-shell.css는 (studio) layout 소유)도 fixture 직접 import로 해결.
-  - **디스코프**: C2 타이포 역할 토큰(전면 px 토큰화) — 100+ 지점 산재라 시각 리뷰 없이
-    일괄 치환은 회귀 위험이 커 보류. A3 코너 동심 전수 감사도 스폿체크만(보상 썸네일 등
-    신규 UI는 규칙 적용). 다음 세션에서 화면 단위로 진행 권장.
-- **2026-07-27에 끝난 것 — 일정 그림판 작업 문맥 편의**:
-  - 패널 세션에서 처음 일정을 보내면 `일정` 레이어 표시·활성 + `선택` 도구로 자동 전환. 모든
-    카드를 뺐다가 다시 보내는 경우를 포함해 이후 보내기는 현재 그림 레이어·도구 유지. 보내기 뒤
-    disabled 버튼에 남던 키보드 포커스도 다음 작업점으로 이동. 숨긴 일정 레이어에 새 날짜를 보내도
-    레이어 표시를 복구해 결과가 즉시 보임.
-  - 색 선택은 `선택/지우개 → 펜`, 굵기 선택은 `선택 → 펜`; 형광펜·지우개·도형처럼 해당 값을
-    직접 쓰는 도구는 유지. 색·굵기·그리기 도구를 고르면 최근의 표시·잠금 해제 그림 레이어로
-    자동 복귀. 숨김/잠금 자동 해제와 레이어 자동 생성은 하지 않음.
-  - 커스텀 색 미리보기 취소 시 색뿐 아니라 도구·레이어도 원복. 새 빈 레이어는 선택/지우개 상태면
-    펜으로 시작. 레이어 삭제/undo/redo 뒤에는 사용 가능한 그림 레이어를 우선 선택하고, 일정 레이어
-    문맥은 이력 조작이 뺏지 않음. 미니 달력 `보냄` 표시 + 중복 전송/무의미한 undo 이력 제거.
-  - 스타일러스에서 OS가 CSS 커서를 숨겨 판서 중 도구가 안 보이던 문제: pen 전용 DOM 커서를
-    추가. hover/down/move 추적, up/cancel/lost-capture/leave 정리, 펜·형광펜·지우개 footprint와
-    도형 crosshair/아이콘 표시. 마우스 전환 시 native cursor 복구, 활성 pen 우선권·touch 무시,
-    240Hz 경로는 React state 갱신 없음.
-  - 새로 열면 `펜 + #000000 + 레이어 1`로 즉시 판서 가능. 그림 레이어의 썸네일·이름을
-    마우스/펜으로 직접 끌어 보라 삽입선 위치에 놓는다. 5px 의도 임계값, drag ghost,
-    독립 목록 edge auto-scroll, `Alt+ArrowUp/Down` 대체 경로를 제공하고 이동 1회만 통합
-    undo/redo 1건. drop 위치는 drag 시작 때 한 번 측정해 긴 목록의 pointer move layout 재측정을
-    없앴고, 다중 포인터·목록 밖 drop·Esc·pointercancel은 안전하게 취소. 새 레이어는 스크롤
-    목록 맨 위로 자동 노출·포커스하고 키보드 순서 이동도 화면 안에 유지. 눈·잠금·삭제는
-    drag에서 제외하며 `일정` 구조 레이어는 맨 아래 고정.
-  - 임의의 그림 레이어 6개 hard cap과 `(n/6)` 노출 제거. `+ 새 레이어`로 계속 추가하되 기존
-    총 backing-pixel 예산을 레이어 수로 나누고 필요하면 0.25 scale 아래까지 해상도를 적응시킨다.
-    DOM·썸네일·stroke 비용은 별도라 물리적 무한을 보장하지 않으며, 수백 레이어가 실제 요구되면
-    virtualization·hidden backing 해제를 후속 검토.
-  - 상단을 `현재 작업·기록 명령 / 이름이 보이는 도구·도형 / 색상 팔레트·빠른 판서 설정`으로
-    재구성. 좁은 데스크톱 폭은 내부 가로 스크롤, 명령 바는 줄바꿈. 선택 카드 정렬은 선택
-    문맥에서만 나타난다.
-  - 모바일은 일정 그림판 진입점이 없어 범위 제외. 검증: vitest **294/294**, typecheck,
-    changed-files lint, production build 통과. 전체 build의 기존 lint 경고 5개는 유지.
-    구현 커밋 `376e7eb` Vercel Production 성공. 연결 브라우저가 없어 실제 렌더·마우스 drag·
-    실기기 펜 스모크는 미실행.
-- **2026-07-12에 끝난 것**(커밋 `9324779`…`c509657`):
-  - 미니게임 opt-in화 + 시즌 테마 강제 해제 + 태블릿(641~1040px) 아젠다 전환 → [ADR-0009](decisions/ADR-0009-seasonal-toys-are-opt-in.md)
-  - 포스터 마스트헤드/시각 위계/대비(WCAG AA) · 모션 토큰(`--ease-enter/exit`, `--dur-4/5`) ·
-    빈 날 접기 · 셀 호버 · 하트 승급 토스트
-  - **시청자 '이 달 기록'(공개 인사이트)** — 관리자와 같은 차트 재사용, 집계 RPC로만 개방 →
-    [ADR-0008](decisions/ADR-0008-public-insights-aggregate-rpc.md) (마이그레이션 0049·0050 적용 완료)
-  - 편집기: 공개 범위·옵션 접기(기본 접힘), 단축키 안내 축약, **새 일정 = Alt+N 하나로 통일**,
-    카드 순서 드래그 삽입선 판정(카드 중심선 기준)
-- **2026-07-26에 끝난 것**(`6e1ee43`, `4c7b01c`):
-  - **하트 배지 사라짐 수정**(`6e1ee43`, 마이그레이션 0054 적용 완료): 로그인 토글
-    `toggle_event_heart`가 익명 하트를 빼고 집계를 반환 → 클라가 그 작은 수로 덮어써
-    배지(🔥 5개↑)가 사라지고 새로고침해야 복귀하던 증상. 0040에서 이 함수만 합산 누락.
-  - **방송시간 머리 손실 수정**(`6e1ee43`): 세션 started_at을 '첫 폴링 발견 시점' 대신
-    방송국 API `broad.broad_start`(실제 뱅온 시각)로 기록(`fetchSoopBroadStart`,
-    bno 일치 확인 + 이상치 가드). 시청자가 늦게 들어오면 그만큼 깎이던 문제(4h24m→4h).
-    꼬리(ended_at=last_live_at)는 보수적 추정 유지. → [[broadcast-time-tracking]]
-  - **판서 패널 손맛·필기감**: `4c7b01c`·`45e3711` 이후 연구값을 제품 예산으로 과장하지 않게
-    [근거 아카이브](../ux/broadcast-panel-inking-research.md)를 교정. coalesced 단일 소비 +
-    분리 prediction 캔버스, 필압 감마(^0.65)·시간 기반 EMA, pen-priority palm guard
-    (첫 touch 오탐/hover 연장/pointercancel 커밋 제거), WCAG 잉크 아이콘 대비·중립 outline,
-    KST 오늘 링 자정 갱신, 레이어 28px 표적. 작업대는 따뜻한 라이트 톤 유지. 모바일은 기능
-    진입점 자체가 없어 범위 제외. 검증: vitest 256/256 · typecheck · production build 통과;
-    연결 브라우저가 없어 실제 판서 화면/실기기 펜 검증은 미실행.
-- **2026-07-25에 끝난 것(2) — 방송 가독성 2종(토리님 승인, PLAN-20260725-001)**
-  (`15181d4`·`57f2c75`·`effd28c`·`3c8cd46`·`9717a57`·`6d2b359`):
-  - **A안 달력 확대**: 달력 패널 위 Ctrl+휠만 가로채 `--cal-zoom` CSS 변수로 100/125/150%
-    단계 확대(브라우저 줌의 모바일 전환 부작용 회피). 125%+는 서브 접기 `+N` + 상세 팝오버
-    (핀·Esc·실측 배치·포커스 복귀). 트랙패드 정규화·드래그/FLIP/유령 회귀 가드,
-    buildbox `−/%/＋` + 확대 중 하단 플로팅 배율 표시. `lib/ui/calendar-zoom.ts`(13 tests).
-  - **B안 방송 판서**: 미리보기(owner/developer·PC)에서 여는 전체화면 불투명 모달.
-    서버 공개 스냅샷→명시 DTO만(→ [ADR-0010](decisions/ADR-0010-broadcast-panel-public-dto-only.md),
-    teaser fail-closed 마스킹, 유출 canary 테스트). 미니 달력 다중선택→날짜순 나란히,
-    stroke 벡터 엔진(`lib/broadcast/stroke-engine.ts`, 증분 렌더·undo 200·DPR/픽셀 cap),
-    배경 DOM+캔버스 3장 동좌표 스크롤, 화면 맞춤(판서 있으면 잠금), 히스토리 스택 편입
-    (뒤로가기=판서만 닫힘), 닫으면 완전 소멸(저장소·클립보드 미사용 정적 단언).
-  - 훅 확장: `useCellRangeSelect`에 exemptRefs·getSelected·clearSelection·toggleIndex·
-    escapeClears(opt-in, 기존 소비처 불변).
-  - 검증: tsc/lint/build 0 · vitest 229/229 · Codex 더블체크 게이트 총 16회(G0×3 · G1×3 ·
-    G2×2 · G3a×2 · G3b×6) 전부 통과. **남은 검증**: 실기기 스모크
-    [docs/ux/broadcast-tools-qa-checklist.md](../ux/broadcast-tools-qa-checklist.md) 전항 미실행.
-- **2026-07-25에 끝난 것**(`9911cb7`, `a03670e`):
-  - **방송시간 오귀속 수정 + 재발 방지**(`9911cb7`, 마이그레이션 0051): 연속 방송이 새벽·무관중
-    폴링 공백(`SESSION_GAP_MS` 4h)을 만나 두 세션으로 쪼개지고 뒷부분이 다음날로 오귀속되던 버그
-    (실제 22일 9h34m→3h41m). SOOP **BNO(방송번호)**를 세션 연속성 정답값으로 도입 —
-    `broadcast_session.bno` + `recordLiveTick(bno)`, bno 같으면 공백 무시하고 이어 붙임. 과거
-    22·23일 데이터도 보정(1회, 하드코딩 id). → [[broadcast-time-tracking]] 갱신.
-  - **월별 방송시간 툴팁 잘림**(`9911cb7`): 최신 막대가 100시간대(3자리)면 `.trend-bar::after`가
-    가운데 정렬이라 패널 밖으로 잘리던 것 → 첫·마지막 막대만 가장자리 정렬.
-  - **모바일 아젠다 형식색 점**(`a03670e`): PC처럼 마지막 서브 줄 오른쪽에 인라인(높이 절약) +
-    오른쪽 정렬. 편집실은 왼쪽 정렬 별도 줄이었음. `.agenda-subs .pill-sub-last` 추가.
-- **2026-07-21에 끝난 것**(`6c52a2a`): 시청자/편집실 다듬기 3종 —
-  (1) 비로그인 '이 달 기록'의 최근 6개월 트렌드(StackTrendChart, vt-*)가 스타일 없이 깨지던 것.
-  vt-* 구조 규칙이 `studio-shell.css`(=편집실 전용)에만 있어서 — 2026-07-17 하이라이트 카드와 **동일
-  버그 클래스**. 구조 규칙을 공유 `insights-charts.css`로 옮겨 해결(anon playwright로 3차트 렌더 확인).
-  (2) 모바일 시청자 아젠다 폭(좌우 22)이 편집실(`.studio-mobile` 14)보다 좁아 같은 글자 수 특별한 날
-  표기가 시청자에서만 줄바꿈 → `.agenda-mode` 좌우 14로 통일(데스크톱 서페이스 기본 22 불변). 색상
-  필터 레일은 시청자 104 vs 편집실 92인데 시청자 레일은 '이 달 기록'·미니게임·'내 관심' 라벨이 92↓에서
-  잘려 유지 → 잔여 ~12px 폭차는 의도. (3) 특별한 날 조합 표기 순서 '이름·경기'→'경기·이름'.
-- **2026-07-17에 끝난 것**: '이 달 기록'·인사이트 잘림 3종 —
-  (1) 하이라이트 카드 스타일이 `studio-shell.css`(= (studio) 레이아웃 전용)에만 있어 **비로그인
-  시청자에겐 통째로 안 붙던 버그**를 발견해 `insights-charts.css`로 이동(차트가 이미 같은 이유로
-  분리돼 있던 것과 동일 조치). (2) 긴 제목 = 가로 스크롤 대신 …+호버/탭 툴팁(`.hl-sub`도 검사),
-  문장형 sub는 아랫줄 전체 폭. (3) 일별 방송시간 툴팁을 툴팁 실측 폭으로 clamp(고정 32px이라
-  1일·말일에서 패널 `overflow-x:hidden`에 잘렸다). 포스터 상단 '내 관심'/'이 달 기록' 간격 추가.
-- **2026-07-17(2)**: 꾸미기 — 업로드한 커스텀 이모지를 눌러도 달력에 안 올라가던 버그.
-  칩 래퍼 div에 `setPointerCapture`를 걸면 뒤따르는 click이 **캡처 요소로 리타겟**돼 안쪽
-  `<button>`의 onClick이 아예 오지 않는다(브라우저 실측). 캡처는 관리 권한자에게만 걸려
-  관리자에게서만 재현됐고, 같은 이유로 칩의 × 삭제도 죽어 있었다. → 캡처 경로에선 pointerup에서
-  직접 추가하고, ×는 캡처를 걸지 않는다. **교훈: 포인터 캡처 + 안쪽 버튼 onClick 조합 금지.**
-- **2026-07-17(3)**: 꾸미기에서 놓은 스티커가 시청자 화면에서 칸 대비 위로 떠 보이던 문제.
-  표면 **안**에 모드로 갈리는 것이 있으면 안 된다(ADR-0004). 범인은 **🔥 관심 등급 배지**
-  (`tier`가 `interactive &&`로 게이팅 → 꾸미기엔 없음): 이 배지가 카드 흐름에 있어 1행 +7px,
-  2행 +19px → 표면 26px 김 → 칸은 26px 내려가고 스티커는 비율이라 14px만 내려가 ≈12px 어긋남.
-  같이 고친 것: 메모 칸(내용 없으면 시청자만 컬럼째 접혀 가로로 밀 수 있던 잠복 버그) → 항상
-  자리 유지 + 라벨만 숨김 · 범례 태그(꾸미기만 `<span>`이라 3.8px 차) → 마크업 통일 + disabled ·
-  ♥ 인기도 안내 박스도 모드 무관 렌더. 실측: 표면 높이·달력 42칸·범례 Δ **전부 0**.
-  → 남은 리스크(2026-07-17 **감수하기로 결정**): 하트가 5개(`HEART_MIN`) 문턱을 넘으면 그 카드에
-  배지가 생기며 칸이 7~19px 커진다 → 월초에 놓은 스티커가 하트가 쌓이며 조금씩 밀린다.
-  단 그 순간에도 꾸미기·시청자·PNG는 서로 일치한다(등급 상승 🔥→🔥🔥→👑은 줄이 이미 있어 높이 불변
-  — 문제는 0↔5 문턱 하나뿐). 배지를 absolute로 빼는 안은 **기각**: 표면이 26px 줄어 기존 스티커를
-  전부 한 번 재조정해야 하고, 카드 네 귀퉁이가 이미 ♡(우상)·형식색 점(우하)·제목(좌상)·소제목(좌하)로
-  차 있어 어디에 놔도 겹친다. '메타 줄 항상 예약' 안도 기각(35개 중 26개 카드가 그 줄이 없어 포스터가
-  100px 넘게 길어진다). 다시 꺼내려면 이 비용부터 반박할 것.
-- **2026-07-17(4)**: 작은 스티커의 크기·회전 핸들이 스티커를 삼키던 문제. 디자인 툴 밴치마킹
-  (Sketch=선택박스 부풀리기 / Figma=핸들 숨김 / PS·AI=겹쳐 쌓기, 공통점은 **핸들을 객체 크기에
-  비례시키는 툴이 없다**) 후 **Sketch식 최소 선택박스**를 채택: 스티커가 작으면 링을 화면 기준
-  72px까지 부풀려 핸들을 스티커 밖으로 밀어내고, 링 안쪽 전체가 이동 손잡이가 된다.
-  회전은 알약 버튼을 없애고 링 바깥 22px 띠(Photoshop식 핫존, 호버 시 점선+⟳ 힌트)로.
-  핸들은 `--poster-scale` 역보정으로 **어느 배율에서도 화면 28px**(히트영역 44px).
-  → 참고: 이 값들은 `.sticker-item`의 `--h-size/--h-hit/--ring-min/--rot-band/--ring-out`.
-- **2026-07-17(5) — 개선안 배치 1~3 적용**(`1d50628`, `ba59cb3`, `3c30810`, `20f3682`):
-  하트 2단계 햅틱 + 실패 토스트(액션이 **throw**하면 롤백조차 안 되던 구멍을 실물 테스트로 발견) ·
-  월이동/관심토글/필터해제/시트X 촉감 통일 · 브로드 게이팅 3곳 제거(TagPicker·태그삭제·취소) +
-  tags/palette prop에 in-flight 가드 · 미들웨어 matcher에서 비콘·공개 API 제외 · 월드컵 장난감
-  dynamic 전환(`/` 177→152 kB, 꾸미기 181→151 kB).
-  → **곁가지로 프로덕션 500 발견·수정**: `/api/public/vic/events`가 Server-Timing 헤더의 한글
-  desc 때문에 매 요청 500이었다(헤더는 ByteString만). 공개 API 계약인데 e2e가 NOT RUN이라
-  흘러갔다. `ServerTiming.header()`에서 방어 + 유닛 테스트 4개 추가(vitest 140).
-  **교훈: e2e(`npm run test:e2e`)를 계속 안 돌리면 공개 계약이 조용히 깨진다.**
-- **2026-07-17(6) — 개선안 배치 4~6**(`d276c91`, `c17955a`, `a52b1dd`, `3a5eac4`):
-  필터 흐림에 업 도움 끈 포함 + 스르륵 전환 · 리사이즈 rAF 스로틀(폭 안 바뀌면 갱신 0회) ·
-  `getEventsForDate` 정리(**단 감사의 "O(N²) 최우선"은 실측 결과 오판 — filter가 sort보다 먼저라
-  병목 아님. 250건에서 0.22→0.20ms**) · 폰/태블릿 '이 달 기록' 진입점(ISSUE-002 해소) + 바텀시트 ·
-  하트 탭타깃 44px(의사요소 — 표면 지오메트리 불변 확인).
-  → 새 안전망: `tests/unit/events-for-date.test.ts` 10개(달력 정렬 규칙 고정). vitest 150.
-  → **함정 2개 기록**: ① 미디어쿼리는 우선순위를 안 올린다(모바일 블록은 기본 규칙 뒤에 둘 것)
-  ② **PowerShell 5.1 `Set-Content`로 한글 문서를 쓰면 깨진다**(시스템 코드페이지) — 문서 수정은
-  Edit 도구로만.
-- **2026-07-17(7) — 개선안 배치 7~10 + 신고 대응**(`69b619f`, `492de15`, `a07caf1`, `dc69957`,
-  `29f5d6f`, `503d628`): 인사이트 로딩 점프 46→4px·정직한 실패 · 폰 뒤로가기로 시트만 닫히게 ·
-  버튼 셋(켜기/이 달 기록/편집실) 옷 통일 + 미니게임 칩 32px · 하이라이트 네 장 골격 통일 ·
-  Esc 해제/단축키 안내 · **드래그 이동 Ctrl+Z** · 서버 왕복(admin 싱글턴·캐시헤더·page 병렬·
-  GoTrue N+1·0051 RPC+폴백) · **죽은 코드 1,483줄 제거**.
-  → 겹친 오버레이 뒤로가기: 편집실과 그 안의 포스터가 **각각** popstate를 들어 한 번에 둘 다
-  닫혔다. "안쪽이 표식 남기고 바깥이 건너뛴다"는 **실패**(바깥이 먼저 불려 안쪽을 언마운트시킨다).
-  → `lib/ui/overlay-pop.ts` 카운터 방식으로 해결. 새 오버레이를 겹칠 땐 이걸 쓸 것.
-    (**2026-07-18 정정**: 이 카운터도 '순서 무관'이 아니었다 — 아래 (8) 참고.)
-- **2026-07-18 — 신고 2건**(`f5c058d`, `3272736`):
-  ① '이 달 기록' X/바깥클릭이 미리보기까지 닫아 편집실로 튕김. 원인: overlay-pop 카운터를
-     안쪽 메아리 핸들러가 **동기적으로** 내렸는데, 미리보기 안 포스터는 새로 마운트된 자식이라
-     그 popstate 리스너가 바깥(StudioShell)보다 **먼저** 불릴 수 있다 → 바깥이 볼 땐 이미
-     innerDepth=0 → '내 pop'이라 오인해 viewerMode를 닫았다. (7)의 '순서 무관' 가정이 틀림.
-     → 메아리의 `popInnerOverlay()`를 `queueMicrotask`로 미뤄 그 디스패치가 끝난 뒤 내린다 →
-     리스너 순서와 무관하게 바깥은 이번 pop을 안쪽 것으로 본다. **교훈: 겹친 popstate에서
-     공유 카운터는 그 디스패치 안에서 내리지 말 것(microtask로 미룰 것).**
-  ② 자동 '기타' 태그가 `display_name==="기타"` 리터럴에 묶여, 운영자가 그 태그를 지우자
-     아무 태그도 안 붙었다. **불변식("이벤트당 콘텐츠 ≥1")을 버렸다**: 태그 0개 = 색 없는
-     흰 카드 허용(서버·클라 강제 부착 제거), '기타'는 인사이트에서만 합성 버킷(태그 0개 공개
-     일정, 휴뱅 제외)으로 카운트. **교훈: UI/DB 불변식을 특정 태그 '이름'에 묶지 말 것.**
-- **부분 완료**: 축구/월드컵 시뮬 — taxonomy·기초 적립 완료(68 테스트). 물리·인지 제약 정밀화 남음.
-  월드컵 자동 테마는 `KOREA_MATCHES` 수동 입력 대기.
-- **2026-07-18 — 태그 색 커스텀화 프로젝트 시작**(계획 `docs/tags/custom-tag-color-plan.md` v4.1,
-  코덱스 4라운드 적대검수 반영·디스코프). 방향: 무늬 유지(색맹 단서)+가독성만 고침+커스텀 bg_hex+
-  단일 resolver. **Phase 0-pre 첫 슬라이스 완료**(`b36b01c`): 공개 sample/type 분리 —
-  `sample-public-data.ts` 신설, 공개 트리(public-loader·proposals route)가 privateMeta·requests
-  품은 sampleStudioSchedule을 import하던 공개경계 잠복 위반 제거 + `public-boundary.test.ts`(정적
-  import 가드 + 폴백 누출검사). 공개 API 출력 불변.
-  **Phase 0-pre 비주얼 스위트도 완료**(`76f5186`): dangling이던 `test:visual`을 실제 스위트로 —
-  `app/visual-fixture/poster`(VISUAL_TEST_FIXTURE=1 전용 route, 플래그 없으면 not-found·포스터
-  미노출) + `playwright.visual.config.ts`(production build, viewport/DPR 고정, 애니 정지) +
-  baseline(viewer-surface, `[data-export-surface]`만, OS별=현재 win32). **함정**: 언더스코어 폴더
-  (`app/__x`)는 Next private라 라우팅 제외 → route 폴더명에 언더스코어 금지.
-  **Phase 0A 진행 중**: 특성화 테스트(`tag-visual-contract.test.ts`, 17개)로 현재 색/잉크 동작을
-  못박고(`edbee1d`), 단일 resolver `lib/tags/tag-visual.ts`(`createTagVisualResolver`) 신설
-  (`2263540`) — visualOf(rootTagId·kind·colorKey·bg·border·legacyTextColor·patternKey·missing),
-  이벤트 분배는 month.ts에 위임(정의상 동일). **시청자 포스터 카드 색을 resolver로 이관**(`217cbce`),
-  비주얼 하네스로 구코드 vs 이관 = **픽셀 동일 증명**. **비주얼 하네스 flaky였다**(교훈): render
-  타이밍 변화가 전역 diff 유발 — 원인 ①월드컵 공 JS rAF(CSS animations:disabled로 안 멈춤)
-  ②`--poster-scale`가 폰트 로드 타이밍에 좌우. → 스펙에 reduce-motion 토글(localStorage
-  `vic.reduceMotion=on`)로 rAF 정지 + 폰트 후 resize 재측정 + 표면 높이 안정 대기로 굳힘.
-  **다음**: 나머지 표면 이관(studio-shell 카드·insights 4맵·칩·범례). ⚠ Phase 1 전 필수:
-  pattern_key CSS 재작업(`data-pattern` + {shape,ink,alpha}), 무늬 CVD 자동배정.
-- **미착수**: 시청자 출석 도장(체크인) — 계획서만 있음(`docs/insights/viewer-checkin-attendance-plan.md`).
+- **?댁쁺 以??덉젙)**: 怨듦컻 ?ъ뒪??`/`), ?몄쭛???щ젰/?쒓렇/硫ㅻ쾭/鍮꾧났媛??덉씠??, 袁몃?湲걔텾NG export,
+  ?섑듃(鍮꾨줈洹몄씤 ?ы븿), 愿由ъ옄 ?몄궗?댄듃, ?쒓렇 2怨꾩링, 鍮꾧났媛?蹂몃Ц ?뷀샇?? 諛⑹넚?쒓컙 湲곕줉.
+- **2026-07-29 ??'????湲곕줉' ?リ린 ?뺤콉 + ?좏뵆 HCI 踰ㅼ튂留덊겕 1李?*(`bb23f6f`, `bf70da9`, `028e6f0`):
+  - '????湲곕줉' ?쒗듃??**諛깅뱶濡??대┃?쇰줈 ?ロ엳吏 ?딅뒗??*(?좉퀬 諛섏쁺 ??媛숈씠蹂닿린 諛⑹넚 以??ㅽ겢由?    ?ш퀬 諛⑹?). ?リ린 = X쨌Esc쨌?ㅻ줈媛湲곕쭔. overlay-pop??800ms ?좎삁 ?덉쟾留?諛⑷툑 ?덉そ???ロ삍?쇰㈃
+    吏媛?popstate???덉そ 紐???誘몃━蹂닿린 ?ㅻ떕??諛⑹?, ????쒗듃 ?レ? 吏곹썑 0.8珥????ㅻ줈媛湲곕뒗
+    ??踰?臾댁떆?????덉쓬 ???섎룄??鍮꾨?移?.
+  - **X/諛깅뱶濡????몄쭛???뺢?? ?꾩옱 肄붾뱶濡??ы쁽 遺덇?**???dev쨌prod build, ?뺤긽/cold-entry/
+    醫곸????먯꽌 churn/?붾툝?대┃ ?꾨? 誘몃━蹂닿린 ?좎? ?뺤씤). ?먯씤 誘몄긽 由ы룷?몄뿉 ??????뺤콉 蹂寃?    + ?덉쟾留앹쑝濡???? ?ы쁽??**?몄쭛??fixture** `app/visual-fixture/studio`
+    (`VISUAL_TEST_FIXTURE=1` ?꾩슜, owner actor + ?섑뵆 ?곗씠?? `?viewer=1`濡?誘몃━蹂닿린 cold-entry)
+    瑜?異붽??덈떎 ???ㅻ쾭?덉씠 ?ㅽ깮 ?뚭????ш린???몄쬆 ?놁씠 ?ㅼ륫??寃?
+  - **?좏뵆 HCI 由ъ꽌移?蹂닿퀬??* `docs/ux/apple-hci-benchmark-report.md`(議고솕쨌紐곗엯쨌?щ? 3횞3,
+    ?곸슜 ?꾨낫 12嫄?P1~P3). 1李??곸슜(A1쨌A2): `globals.css`??`--spring-smooth/--spring-bouncy`
+    `linear()` ?ㅽ봽留??좏겙(+`--dur-spring-*`), ?꾩뿭 踰꾪듉 ?꾨쫫 70ms 利됯컖/???ㅽ봽留?蹂듦?,
+    '????湲곕줉' ?쒗듃 ?깆옣쨌?꾨컮? ?먮━ ?깆옣/?щ씪?대뱶쨌pop-number ?ㅽ봽留?移섑솚. ?ㅼ쓬 ?꾨낫:
+    C1(?ъ쭏 ?좏겙)쨌A3(肄붾꼫 ?숈떖 媛먯궗)쨌B1(紐⑤컮???쒗듃 ?쒕옒洹??リ린).
+  - lint 寃쎄퀬 6嫄??쒓굅濡?`npm run lint`(max-warnings=0) 寃뚯씠??蹂듦뎄.
+- **2026-07-29(諛? ???좏뵆 HCI 踰ㅼ튂留덊겕 P1~P2 ?쇨큵 ?곸슜**(`a67b758`??1aaf2c5`, 寃利?12/12 PASS):
+  - **留덉씠?щ줈 ?명꽣?숈뀡**: 紐⑤뱺 X ?リ린 踰꾪듉??洹몃┝??X? 媛숈? ?몃쾭 90째 ?뚯쟾+?ㅽ봽留?蹂듦?
+    (.pi-close/.modal-close/.dtp-pop-x/.m-edit-x/.peek-close/.bp-kbd-close). 紐⑤떖쨌?앹삤踰꽷?    諛뷀??쒗듃 ?깆옣??`--spring-smooth`濡??듭씪.
+  - **C1 ?ъ쭏**: `--material-*` ?좏겙 + 紐⑤떖/?좎쭨?쒓컙쨌?쒓렇?됀룻솗? ?앹삤踰??먯꽌 ?⑥텞???덈궡瑜?    諛섑닾紐?釉붾윭 ?좊━濡?@supports 媛?? export surface 諛?.
+  - **B1**: 紐⑤컮???몄쭛 ?쒗듃 ?뚯뼱???リ린(`lib/ui/use-sheet-drag-close.ts`) ??1:1 異붿쟻쨌?꾨줈
+    ?щ쾭諛대뵫쨌由대━???띾룄 ?ㅽ봽留겶룹엫怨??낇떛. **?⑥젙 2媛??ㅼ륫?쇰줈 ?≪쓬**: pointerdown 利됱떆
+    setPointerCapture 湲덉?(click??罹≪쿂 ?붿냼濡?媛??X 癒뱁넻), click ?듭젣 ?뚮옒洹몃뒗 ?쒖뒪泥???    諛섎뱶???먮룞 ?댁젣.
+  - **B2**: 紐⑤컮??移대뱶?믪떆??matched-geometry morph(?대┝=移대뱶?먯꽌 ?먮엺, X/諛깅뱶濡??リ린=??갑??,
+    ?뱀? 移대뱶 ?붿긽 鍮꾪뻾(`lib/ui/fly-ghost.ts`)?쇰줈 怨좎젙 ?몄쭛 ?⑤꼸怨쇱쓽 ?곌껐媛먮쭔.
+  - **B3**: ?ㅽ떚而?寃쎄퀎 ?щ쾭諛대뵫(?쒖떆留? ???醫뚰몴??湲곗〈 clamp쨌吏곷젹 ??遺덈?) + ?ㅻ깄 ?몄튂 ?낇떛.
+  - **B4**: ?꾩젨???꾪꽣 FLIP(`lib/ui/list-flip.ts`) ???쒖껌?먃룻렪吏묒떎 紐⑤컮???꾩젨??
+  - **D1**: 罹≪퀜 ?깃났 ???꾩꽦蹂?誘몃땲 ?몃꽕???ㅽ봽留??앹씤 + 2???낇떛.
+  - **遺?????*: ?몄쓽 罹≪퀜(?대┰蹂대뱶)媛 **07-19遺??議곗슜??源⑥졇 ?덉뿀??* ??`.event-subs`
+    ?몃줈 ?덉씪??`color-mix` computed(`color(srgb ??`)瑜?html2canvas媛 ?뚯떛 紐????꾩껜 throw.
+    transparent border + `::before`(currentColor+opacity)濡??쎌? ?숈씪?섍쾶 蹂듦뎄(`4a88582`).
+    **援먰썕: export surface ?덉뿉??color-mix 湲덉?**(html2canvas ?쒓퀎).
+  - 寃利??명봽?? `scripts/_verify_hci.mjs`(12??ぉ ?ㅼ륫), visual baseline ?ъ벙爾?stale?댁뿀????    clean HEAD?먯꽌???ㅽ뙣 ?뺤씤 ??媛깆떊). fixture媛 ?꾨줈?뺤뀡 鍮뚮뱶?먯꽌 臾댁뒪??쇱씠??臾몄젣
+    (studio-shell.css??(studio) layout ?뚯쑀)??fixture 吏곸젒 import濡??닿껐.
+  - **?붿뒪肄뷀봽**: C2 ??댄룷 ??븷 ?좏겙(?꾨㈃ px ?좏겙?? ??100+ 吏???곗옱???쒓컖 由щ럭 ?놁씠
+    ?쇨큵 移섑솚? ?뚭? ?꾪뿕??而?蹂대쪟. A3 肄붾꼫 ?숈떖 ?꾩닔 媛먯궗???ㅽ뤏泥댄겕留?蹂댁긽 ?몃꽕????    ?좉퇋 UI??洹쒖튃 ?곸슜). ?ㅼ쓬 ?몄뀡?먯꽌 ?붾㈃ ?⑥쐞濡?吏꾪뻾 沅뚯옣.
+- **2026-07-27???앸궃 寃????쇱젙 洹몃┝???묒뾽 臾몃㎘ ?몄쓽**:
+  - ?⑤꼸 ?몄뀡?먯꽌 泥섏쓬 ?쇱젙??蹂대궡硫?`?쇱젙` ?덉씠???쒖떆쨌?쒖꽦 + `?좏깮` ?꾧뎄濡??먮룞 ?꾪솚. 紐⑤뱺
+    移대뱶瑜?類먮떎媛 ?ㅼ떆 蹂대궡??寃쎌슦瑜??ы븿???댄썑 蹂대궡湲곕뒗 ?꾩옱 洹몃┝ ?덉씠?는룸룄援??좎?. 蹂대궡湲???    disabled 踰꾪듉???⑤뜕 ?ㅻ낫???ъ빱?ㅻ룄 ?ㅼ쓬 ?묒뾽?먯쑝濡??대룞. ?④릿 ?쇱젙 ?덉씠?댁뿉 ???좎쭨瑜?蹂대궡??    ?덉씠???쒖떆瑜?蹂듦뎄??寃곌낵媛 利됱떆 蹂댁엫.
+  - ???좏깮? `?좏깮/吏?곌컻 ????, 援듦린 ?좏깮? `?좏깮 ????; ?뺢킅?쑣룹??곌컻쨌?꾪삎泥섎읆 ?대떦 媛믪쓣
+    吏곸젒 ?곕뒗 ?꾧뎄???좎?. ?됀룰도湲걔룰렇由ш린 ?꾧뎄瑜?怨좊Ⅴ硫?理쒓렐???쒖떆쨌?좉툑 ?댁젣 洹몃┝ ?덉씠?대줈
+    ?먮룞 蹂듦?. ?④?/?좉툑 ?먮룞 ?댁젣? ?덉씠???먮룞 ?앹꽦? ?섏? ?딆쓬.
+  - 而ㅼ뒪? ??誘몃━蹂닿린 痍⑥냼 ???됰퓧 ?꾨땲???꾧뎄쨌?덉씠?대룄 ?먮났. ??鍮??덉씠?대뒗 ?좏깮/吏?곌컻 ?곹깭硫?    ?쒖쑝濡??쒖옉. ?덉씠????젣/undo/redo ?ㅼ뿉???ъ슜 媛?ν븳 洹몃┝ ?덉씠?대? ?곗꽑 ?좏깮?섍퀬, ?쇱젙 ?덉씠??    臾몃㎘? ?대젰 議곗옉??類륁? ?딆쓬. 誘몃땲 ?щ젰 `蹂대깂` ?쒖떆 + 以묐났 ?꾩넚/臾댁쓽誘명븳 undo ?대젰 ?쒓굅.
+  - ?ㅽ??쇰윭?ㅼ뿉??OS媛 CSS 而ㅼ꽌瑜??④꺼 ?먯꽌 以??꾧뎄媛 ??蹂댁씠??臾몄젣: pen ?꾩슜 DOM 而ㅼ꽌瑜?    異붽?. hover/down/move 異붿쟻, up/cancel/lost-capture/leave ?뺣━, ?쑣룻삎愿묓렂쨌吏?곌컻 footprint?
+    ?꾪삎 crosshair/?꾩씠肄??쒖떆. 留덉슦???꾪솚 ??native cursor 蹂듦뎄, ?쒖꽦 pen ?곗꽑沅뙿톞ouch 臾댁떆,
+    240Hz 寃쎈줈??React state 媛깆떊 ?놁쓬.
+  - ?덈줈 ?대㈃ `??+ #000000 + ?덉씠??1`濡?利됱떆 ?먯꽌 媛?? 洹몃┝ ?덉씠?댁쓽 ?몃꽕?셋룹씠由꾩쓣
+    留덉슦???쒖쑝濡?吏곸젒 ?뚯뼱 蹂대씪 ?쎌엯???꾩튂???볥뒗?? 5px ?섎룄 ?꾧퀎媛? drag ghost,
+    ?낅┰ 紐⑸줉 edge auto-scroll, `Alt+ArrowUp/Down` ?泥?寃쎈줈瑜??쒓났?섍퀬 ?대룞 1?뚮쭔 ?듯빀
+    undo/redo 1嫄? drop ?꾩튂??drag ?쒖옉 ????踰?痢≪젙??湲?紐⑸줉??pointer move layout ?ъ륫?뺤쓣
+    ?놁빐怨? ?ㅼ쨷 ?ъ씤?걔룸ぉ濡?諛?drop쨌Esc쨌pointercancel? ?덉쟾?섍쾶 痍⑥냼. ???덉씠?대뒗 ?ㅽ겕濡?    紐⑸줉 留??꾨줈 ?먮룞 ?몄텧쨌?ъ빱?ㅽ븯怨??ㅻ낫???쒖꽌 ?대룞???붾㈃ ?덉뿉 ?좎?. ?댟룹옞湲댟룹궘?쒕뒗
+    drag?먯꽌 ?쒖쇅?섎ŉ `?쇱젙` 援ъ“ ?덉씠?대뒗 留??꾨옒 怨좎젙.
+  - ?꾩쓽??洹몃┝ ?덉씠??6媛?hard cap怨?`(n/6)` ?몄텧 ?쒓굅. `+ ???덉씠??濡?怨꾩냽 異붽??섎릺 湲곗〈
+    珥?backing-pixel ?덉궛???덉씠???섎줈 ?섎늻怨??꾩슂?섎㈃ 0.25 scale ?꾨옒源뚯? ?댁긽?꾨? ?곸쓳?쒗궓??
+    DOM쨌?몃꽕?셋톝troke 鍮꾩슜? 蹂꾨룄??臾쇰━??臾댄븳??蹂댁옣?섏? ?딆쑝硫? ?섎갚 ?덉씠?닿? ?ㅼ젣 ?붽뎄?섎㈃
+    virtualization쨌hidden backing ?댁젣瑜??꾩냽 寃??
+  - ?곷떒??`?꾩옱 ?묒뾽쨌湲곕줉 紐낅졊 / ?대쫫??蹂댁씠???꾧뎄쨌?꾪삎 / ?됱긽 ?붾젅?맞룸튌瑜??먯꽌 ?ㅼ젙`?쇰줈
+    ?ш뎄?? 醫곸? ?곗뒪?ы넲 ??? ?대? 媛濡??ㅽ겕濡? 紐낅졊 諛붾뒗 以꾨컮轅? ?좏깮 移대뱶 ?뺣젹? ?좏깮
+    臾몃㎘?먯꽌留??섑??쒕떎.
+  - 紐⑤컮?쇱? ?쇱젙 洹몃┝??吏꾩엯?먯씠 ?놁뼱 踰붿쐞 ?쒖쇅. 寃利? vitest **294/294**, typecheck,
+    changed-files lint, production build ?듦낵. ?꾩껜 build??湲곗〈 lint 寃쎄퀬 5媛쒕뒗 ?좎?.
+    援ы쁽 而ㅻ컠 `376e7eb` Vercel Production ?깃났. ?곌껐 釉뚮씪?곗?媛 ?놁뼱 ?ㅼ젣 ?뚮뜑쨌留덉슦??drag쨌
+    ?ㅺ린湲????ㅻえ?щ뒗 誘몄떎??
+- **2026-07-12???앸궃 寃?*(而ㅻ컠 `9324779`??c509657`):
+  - 誘몃땲寃뚯엫 opt-in??+ ?쒖쫵 ?뚮쭏 媛뺤젣 ?댁젣 + ?쒕툝由?641~1040px) ?꾩젨???꾪솚 ??[ADR-0009](decisions/ADR-0009-seasonal-toys-are-opt-in.md)
+  - ?ъ뒪??留덉뒪?명뿤???쒓컖 ?꾧퀎/?鍮?WCAG AA) 쨌 紐⑥뀡 ?좏겙(`--ease-enter/exit`, `--dur-4/5`) 쨌
+    鍮????묎린 쨌 ? ?몃쾭 쨌 ?섑듃 ?밴툒 ?좎뒪??  - **?쒖껌??'????湲곕줉'(怨듦컻 ?몄궗?댄듃)** ??愿由ъ옄? 媛숈? 李⑦듃 ?ъ궗?? 吏묎퀎 RPC濡쒕쭔 媛쒕갑 ??    [ADR-0008](decisions/ADR-0008-public-insights-aggregate-rpc.md) (留덉씠洹몃젅?댁뀡 0049쨌0050 ?곸슜 ?꾨즺)
+  - ?몄쭛湲? 怨듦컻 踰붿쐞쨌?듭뀡 ?묎린(湲곕낯 ?묓옒), ?⑥텞???덈궡 異뺤빟, **???쇱젙 = Alt+N ?섎굹濡??듭씪**,
+    移대뱶 ?쒖꽌 ?쒕옒洹??쎌엯???먯젙(移대뱶 以묒떖??湲곗?)
+- **2026-07-26???앸궃 寃?*(`6e1ee43`, `4c7b01c`):
+  - **?섑듃 諛곗? ?щ씪吏??섏젙**(`6e1ee43`, 留덉씠洹몃젅?댁뀡 0054 ?곸슜 ?꾨즺): 濡쒓렇???좉?
+    `toggle_event_heart`媛 ?듬챸 ?섑듃瑜?鍮쇨퀬 吏묎퀎瑜?諛섑솚 ???대씪媛 洹??묒? ?섎줈 ??뼱??    諛곗?(?뵦 5媛쒋넁)媛 ?щ씪吏怨??덈줈怨좎묠?댁빞 蹂듦??섎뜕 利앹긽. 0040?먯꽌 ???⑥닔留??⑹궛 ?꾨씫.
+  - **諛⑹넚?쒓컙 癒몃━ ?먯떎 ?섏젙**(`6e1ee43`): ?몄뀡 started_at??'泥??대쭅 諛쒓껄 ?쒖젏' ???    諛⑹넚援?API `broad.broad_start`(?ㅼ젣 諭낆삩 ?쒓컖)濡?湲곕줉(`fetchSoopBroadStart`,
+    bno ?쇱튂 ?뺤씤 + ?댁긽移?媛??. ?쒖껌?먭? ??쾶 ?ㅼ뼱?ㅻ㈃ 洹몃쭔??源롮씠??臾몄젣(4h24m??h).
+    瑗щ━(ended_at=last_live_at)??蹂댁닔??異붿젙 ?좎?. ??[[broadcast-time-tracking]]
+  - **?먯꽌 ?⑤꼸 ?먮쭧쨌?꾧린媛?*: `4c7b01c`쨌`45e3711` ?댄썑 ?곌뎄媛믪쓣 ?쒗뭹 ?덉궛?쇰줈 怨쇱옣?섏? ?딄쾶
+    [洹쇨굅 ?꾩뭅?대툕](../ux/broadcast-panel-inking-research.md)瑜?援먯젙. coalesced ?⑥씪 ?뚮퉬 +
+    遺꾨━ prediction 罹붾쾭?? ?꾩븬 媛먮쭏(^0.65)쨌?쒓컙 湲곕컲 EMA, pen-priority palm guard
+    (泥?touch ?ㅽ깘/hover ?곗옣/pointercancel 而ㅻ컠 ?쒓굅), WCAG ?됲겕 ?꾩씠肄??鍮꽷룹쨷由?outline,
+    KST ?ㅻ뒛 留??먯젙 媛깆떊, ?덉씠??28px ?쒖쟻. ?묒뾽????곕쑜???쇱씠?????좎?. 紐⑤컮?쇱? 湲곕뒫
+    吏꾩엯???먯껜媛 ?놁뼱 踰붿쐞 ?쒖쇅. 寃利? vitest 256/256 쨌 typecheck 쨌 production build ?듦낵;
+    ?곌껐 釉뚮씪?곗?媛 ?놁뼱 ?ㅼ젣 ?먯꽌 ?붾㈃/?ㅺ린湲???寃利앹? 誘몄떎??
+- **2026-07-25???앸궃 寃?2) ??諛⑹넚 媛?낆꽦 2醫??좊━???뱀씤, PLAN-20260725-001)**
+  (`15181d4`쨌`57f2c75`쨌`effd28c`쨌`3c8cd46`쨌`9717a57`쨌`6d2b359`):
+  - **A???щ젰 ?뺣?**: ?щ젰 ?⑤꼸 ??Ctrl+?좊쭔 媛濡쒖콈 `--cal-zoom` CSS 蹂?섎줈 100/125/150%
+    ?④퀎 ?뺣?(釉뚮씪?곗? 以뚯쓽 紐⑤컮???꾪솚 遺?묒슜 ?뚰뵾). 125%+???쒕툕 ?묎린 `+N` + ?곸꽭 ?앹삤踰?    (?쨌Esc쨌?ㅼ륫 諛곗튂쨌?ъ빱??蹂듦?). ?몃옓?⑤뱶 ?뺢퇋?붋룸뱶?섍렇/FLIP/?좊졊 ?뚭? 媛??
+    buildbox `??%/竊? + ?뺣? 以??섎떒 ?뚮줈??諛곗쑉 ?쒖떆. `lib/ui/calendar-zoom.ts`(13 tests).
+  - **B??諛⑹넚 ?먯꽌**: 誘몃━蹂닿린(owner/developer쨌PC)?먯꽌 ?щ뒗 ?꾩껜?붾㈃ 遺덊닾紐?紐⑤떖.
+    ?쒕쾭 怨듦컻 ?ㅻ깄?룐넂紐낆떆 DTO留???[ADR-0010](decisions/ADR-0010-broadcast-panel-public-dto-only.md),
+    teaser fail-closed 留덉뒪?? ?좎텧 canary ?뚯뒪??. 誘몃땲 ?щ젰 ?ㅼ쨷?좏깮?믩궇吏쒖닚 ?섎???
+    stroke 踰≫꽣 ?붿쭊(`lib/broadcast/stroke-engine.ts`, 利앸텇 ?뚮뜑쨌undo 200쨌DPR/?쎌? cap),
+    諛곌꼍 DOM+罹붾쾭??3???숈쥖???ㅽ겕濡? ?붾㈃ 留욎땄(?먯꽌 ?덉쑝硫??좉툑), ?덉뒪?좊━ ?ㅽ깮 ?몄엯
+    (?ㅻ줈媛湲??먯꽌留??ロ옒), ?レ쑝硫??꾩쟾 ?뚮㈇(??μ냼쨌?대┰蹂대뱶 誘몄궗???뺤쟻 ?⑥뼵).
+  - ???뺤옣: `useCellRangeSelect`??exemptRefs쨌getSelected쨌clearSelection쨌toggleIndex쨌
+    escapeClears(opt-in, 湲곗〈 ?뚮퉬泥?遺덈?).
+  - 寃利? tsc/lint/build 0 쨌 vitest 229/229 쨌 Codex ?붾툝泥댄겕 寃뚯씠??珥?16??G0횞3 쨌 G1횞3 쨌
+    G2횞2 쨌 G3a횞2 쨌 G3b횞6) ?꾨? ?듦낵. **?⑥? 寃利?*: ?ㅺ린湲??ㅻえ??    [docs/ux/broadcast-tools-qa-checklist.md](../ux/broadcast-tools-qa-checklist.md) ?꾪빆 誘몄떎??
+- **2026-07-25???앸궃 寃?*(`9911cb7`, `a03670e`):
+  - **諛⑹넚?쒓컙 ?ㅺ????섏젙 + ?щ컻 諛⑹?**(`9911cb7`, 留덉씠洹몃젅?댁뀡 0051): ?곗냽 諛⑹넚???덈꼍쨌臾닿?以?    ?대쭅 怨듬갚(`SESSION_GAP_MS` 4h)??留뚮굹 ???몄뀡?쇰줈 履쇨컻吏怨??룸?遺꾩씠 ?ㅼ쓬?좊줈 ?ㅺ??띾릺??踰꾧렇
+    (?ㅼ젣 22??9h34m??h41m). SOOP **BNO(諛⑹넚踰덊샇)**瑜??몄뀡 ?곗냽???뺣떟媛믪쑝濡??꾩엯 ??    `broadcast_session.bno` + `recordLiveTick(bno)`, bno 媛숈쑝硫?怨듬갚 臾댁떆?섍퀬 ?댁뼱 遺숈엫. 怨쇨굅
+    22쨌23???곗씠?곕룄 蹂댁젙(1?? ?섎뱶肄붾뵫 id). ??[[broadcast-time-tracking]] 媛깆떊.
+  - **?붾퀎 諛⑹넚?쒓컙 ?댄똻 ?섎┝**(`9911cb7`): 理쒖떊 留됰?媛 100?쒓컙?(3?먮━)硫?`.trend-bar::after`媛
+    媛?대뜲 ?뺣젹?대씪 ?⑤꼸 諛뽰쑝濡??섎━??寃???泥ヂ룸쭏吏留?留됰?留?媛?μ옄由??뺣젹.
+  - **紐⑤컮???꾩젨???뺤떇????*(`a03670e`): PC泥섎읆 留덉?留??쒕툕 以??ㅻⅨ履쎌뿉 ?몃씪???믪씠 ?덉빟) +
+    ?ㅻⅨ履??뺣젹. ?몄쭛?ㅼ? ?쇱そ ?뺣젹 蹂꾨룄 以꾩씠?덉쓬. `.agenda-subs .pill-sub-last` 異붽?.
+- **2026-07-21???앸궃 寃?*(`6c52a2a`): ?쒖껌???몄쭛???ㅻ벉湲?3醫???  (1) 鍮꾨줈洹몄씤 '????湲곕줉'??理쒓렐 6媛쒖썡 ?몃젋??StackTrendChart, vt-*)媛 ?ㅽ????놁씠 源⑥???寃?
+  vt-* 援ъ“ 洹쒖튃??`studio-shell.css`(=?몄쭛???꾩슜)?먮쭔 ?덉뼱????2026-07-17 ?섏씠?쇱씠??移대뱶? **?숈씪
+  踰꾧렇 ?대옒??*. 援ъ“ 洹쒖튃??怨듭쑀 `insights-charts.css`濡???꺼 ?닿껐(anon playwright濡?3李⑦듃 ?뚮뜑 ?뺤씤).
+  (2) 紐⑤컮???쒖껌???꾩젨????醫뚯슦 22)???몄쭛??`.studio-mobile` 14)蹂대떎 醫곸븘 媛숈? 湲?????밸퀎????  ?쒓린媛 ?쒖껌?먯뿉?쒕쭔 以꾨컮轅???`.agenda-mode` 醫뚯슦 14濡??듭씪(?곗뒪?ы넲 ?쒗럹?댁뒪 湲곕낯 22 遺덈?). ?됱긽
+  ?꾪꽣 ?덉씪? ?쒖껌??104 vs ?몄쭛??92?몃뜲 ?쒖껌???덉씪? '????湲곕줉'쨌誘몃땲寃뚯엫쨌'??愿?? ?쇰꺼??92?볦뿉??  ?섎젮 ?좎? ???붿뿬 ~12px ??감???섎룄. (3) ?밸퀎????議고빀 ?쒓린 ?쒖꽌 '?대쫫쨌寃쎄린'??寃쎄린쨌?대쫫'.
+- **2026-07-17???앸궃 寃?*: '????湲곕줉'쨌?몄궗?댄듃 ?섎┝ 3醫???  (1) ?섏씠?쇱씠??移대뱶 ?ㅽ??쇱씠 `studio-shell.css`(= (studio) ?덉씠?꾩썐 ?꾩슜)?먮쭔 ?덉뼱 **鍮꾨줈洹몄씤
+  ?쒖껌?먯뿉寃??듭㎏濡???遺숇뜕 踰꾧렇**瑜?諛쒓껄??`insights-charts.css`濡??대룞(李⑦듃媛 ?대? 媛숈? ?댁쑀濡?  遺꾨━???덈뜕 寃껉낵 ?숈씪 議곗튂). (2) 湲??쒕ぉ = 媛濡??ㅽ겕濡???????몃쾭/???댄똻(`.hl-sub`??寃??,
+  臾몄옣??sub???꾨옯以??꾩껜 ?? (3) ?쇰퀎 諛⑹넚?쒓컙 ?댄똻???댄똻 ?ㅼ륫 ??쑝濡?clamp(怨좎젙 32px?대씪
+  1?셋룸쭚?쇱뿉???⑤꼸 `overflow-x:hidden`???섎졇??. ?ъ뒪???곷떒 '??愿??/'????湲곕줉' 媛꾧꺽 異붽?.
+- **2026-07-17(2)**: 袁몃?湲????낅줈?쒗븳 而ㅼ뒪? ?대え吏瑜??뚮윭???щ젰?????щ씪媛??踰꾧렇.
+  移??섑띁 div??`setPointerCapture`瑜?嫄몃㈃ ?ㅻ뵲瑜대뒗 click??**罹≪쿂 ?붿냼濡?由ы?寃?*???덉そ
+  `<button>`??onClick???꾩삁 ?ㅼ? ?딅뒗??釉뚮씪?곗? ?ㅼ륫). 罹≪쿂??愿由?沅뚰븳?먯뿉寃뚮쭔 嫄몃젮
+  愿由ъ옄?먭쾶?쒕쭔 ?ы쁽?먭퀬, 媛숈? ?댁쑀濡?移⑹쓽 횞 ??젣??二쎌뼱 ?덉뿀?? ??罹≪쿂 寃쎈줈?먯꽑 pointerup?먯꽌
+  吏곸젒 異붽??섍퀬, 횞??罹≪쿂瑜?嫄몄? ?딅뒗?? **援먰썕: ?ъ씤??罹≪쿂 + ?덉そ 踰꾪듉 onClick 議고빀 湲덉?.**
+- **2026-07-17(3)**: 袁몃?湲곗뿉???볦? ?ㅽ떚而ㅺ? ?쒖껌???붾㈃?먯꽌 移??鍮??꾨줈 ??蹂댁씠??臾몄젣.
+  ?쒕㈃ **??*??紐⑤뱶濡?媛덈━??寃껋씠 ?덉쑝硫????쒕떎(ADR-0004). 踰붿씤? **?뵦 愿???깃툒 諛곗?**
+  (`tier`媛 `interactive &&`濡?寃뚯씠????袁몃?湲곗뿏 ?놁쓬): ??諛곗?媛 移대뱶 ?먮쫫???덉뼱 1??+7px,
+  2??+19px ???쒕㈃ 26px 源 ??移몄? 26px ?대젮媛怨??ㅽ떚而ㅻ뒗 鍮꾩쑉?대씪 14px留??대젮媛 ??2px ?닿툔??
+  媛숈씠 怨좎튇 寃? 硫붾え 移??댁슜 ?놁쑝硫??쒖껌?먮쭔 而щ읆吏??묓? 媛濡쒕줈 諛 ???덈뜕 ?좊났 踰꾧렇) ????긽
+  ?먮━ ?좎? + ?쇰꺼留??④? 쨌 踰붾? ?쒓렇(袁몃?湲곕쭔 `<span>`?대씪 3.8px 李? ??留덊겕???듭씪 + disabled 쨌
+  ???멸린???덈궡 諛뺤뒪??紐⑤뱶 臾닿? ?뚮뜑. ?ㅼ륫: ?쒕㈃ ?믪씠쨌?щ젰 42移맞룸쾾濡 ? **?꾨? 0**.
+  ???⑥? 由ъ뒪??2026-07-17 **媛먯닔?섍린濡?寃곗젙**): ?섑듃媛 5媛?`HEART_MIN`) 臾명꽦???섏쑝硫?洹?移대뱶??  諛곗?媛 ?앷린硫?移몄씠 7~19px 而ㅼ쭊?????붿큹???볦? ?ㅽ떚而ㅺ? ?섑듃媛 ?볦씠硫?議곌툑??諛由곕떎.
+  ??洹??쒓컙?먮룄 袁몃?湲걔룹떆泥?옄쨌PNG???쒕줈 ?쇱튂?쒕떎(?깃툒 ?곸듅 ?뵦?믮윍π윍β넂?몣? 以꾩씠 ?대? ?덉뼱 ?믪씠 遺덈?
+  ??臾몄젣??0?? 臾명꽦 ?섎굹肉?. 諛곗?瑜?absolute濡?鍮쇰뒗 ?덉? **湲곌컖**: ?쒕㈃??26px 以꾩뼱 湲곗〈 ?ㅽ떚而ㅻ?
+  ?꾨? ??踰??ъ“?뺥빐???섍퀬, 移대뱶 ??洹?곸씠媛 ?대? ???곗긽)쨌?뺤떇?????고븯)쨌?쒕ぉ(醫뚯긽)쨌?뚯젣紐?醫뚰븯)濡?  李??덉뼱 ?대뵒???붾룄 寃뱀튇?? '硫뷀? 以???긽 ?덉빟' ?덈룄 湲곌컖(35媛?以?26媛?移대뱶媛 洹?以꾩씠 ?놁뼱 ?ъ뒪?곌?
+  100px ?섍쾶 湲몄뼱吏꾨떎). ?ㅼ떆 爰쇰궡?ㅻ㈃ ??鍮꾩슜遺??諛섎컯??寃?
+- **2026-07-17(4)**: ?묒? ?ㅽ떚而ㅼ쓽 ?ш린쨌?뚯쟾 ?몃뱾???ㅽ떚而ㅻ? ?쇳궎??臾몄젣. ?붿옄????諛댁튂留덊궧
+  (Sketch=?좏깮諛뺤뒪 遺?由ш린 / Figma=?몃뱾 ?④? / PS쨌AI=寃뱀퀜 ?볤린, 怨듯넻?먯? **?몃뱾??媛앹껜 ?ш린??  鍮꾨??쒗궎???댁씠 ?녿떎**) ??**Sketch??理쒖냼 ?좏깮諛뺤뒪**瑜?梨꾪깮: ?ㅽ떚而ㅺ? ?묒쑝硫?留곸쓣 ?붾㈃ 湲곗?
+  72px源뚯? 遺????몃뱾???ㅽ떚而?諛뽰쑝濡?諛?대궡怨? 留??덉そ ?꾩껜媛 ?대룞 ?먯옟?닿? ?쒕떎.
+  ?뚯쟾? ?뚯빟 踰꾪듉???놁븷怨?留?諛붽묑 22px ??Photoshop???レ〈, ?몃쾭 ???먯꽑+???뚰듃)濡?
+  ?몃뱾? `--poster-scale` ??낫?뺤쑝濡?**?대뒓 諛곗쑉?먯꽌???붾㈃ 28px**(?덊듃?곸뿭 44px).
+  ??李멸퀬: ??媛믩뱾? `.sticker-item`??`--h-size/--h-hit/--ring-min/--rot-band/--ring-out`.
+- **2026-07-17(5) ??媛쒖꽑??諛곗튂 1~3 ?곸슜**(`1d50628`, `ba59cb3`, `3c30810`, `20f3682`):
+  ?섑듃 2?④퀎 ?낇떛 + ?ㅽ뙣 ?좎뒪???≪뀡??**throw**?섎㈃ 濡ㅻ갚議곗감 ???섎뜕 援щ찉???ㅻЪ ?뚯뒪?몃줈 諛쒓껄) 쨌
+  ?붿씠??愿?ы넗湲/?꾪꽣?댁젣/?쒗듃X 珥됯컧 ?듭씪 쨌 釉뚮줈??寃뚯씠??3怨??쒓굅(TagPicker쨌?쒓렇??젣쨌痍⑥냼) +
+  tags/palette prop??in-flight 媛??쨌 誘몃뱾?⑥뼱 matcher?먯꽌 鍮꾩퐯쨌怨듦컻 API ?쒖쇅 쨌 ?붾뱶而??λ궃媛?  dynamic ?꾪솚(`/` 177??52 kB, 袁몃?湲?181??51 kB).
+  ??**怨곴?吏濡??꾨줈?뺤뀡 500 諛쒓껄쨌?섏젙**: `/api/public/vic/events`媛 Server-Timing ?ㅻ뜑???쒓?
+  desc ?뚮Ц??留??붿껌 500?댁뿀???ㅻ뜑??ByteString留?. 怨듦컻 API 怨꾩빟?몃뜲 e2e媛 NOT RUN?대씪
+  ?섎윭媛붾떎. `ServerTiming.header()`?먯꽌 諛⑹뼱 + ?좊떅 ?뚯뒪??4媛?異붽?(vitest 140).
+  **援먰썕: e2e(`npm run test:e2e`)瑜?怨꾩냽 ???뚮━硫?怨듦컻 怨꾩빟??議곗슜??源⑥쭊??**
+- **2026-07-17(6) ??媛쒖꽑??諛곗튂 4~6**(`d276c91`, `c17955a`, `a52b1dd`, `3a5eac4`):
+  ?꾪꽣 ?먮┝?????꾩? ???ы븿 + ?ㅻⅤ瑜??꾪솚 쨌 由ъ궗?댁쫰 rAF ?ㅻ줈?(????諛붾뚮㈃ 媛깆떊 0?? 쨌
+  `getEventsForDate` ?뺣━(**??媛먯궗??"O(N짼) 理쒖슦??? ?ㅼ륫 寃곌낵 ?ㅽ뙋 ??filter媛 sort蹂대떎 癒쇱???  蹂묐ぉ ?꾨떂. 250嫄댁뿉??0.22??.20ms**) 쨌 ???쒕툝由?'????湲곕줉' 吏꾩엯??ISSUE-002 ?댁냼) + 諛뷀??쒗듃 쨌
+  ?섑듃 ???源?44px(?섏궗?붿냼 ???쒕㈃ 吏?ㅻ찓?몃━ 遺덈? ?뺤씤).
+  ?????덉쟾留? `tests/unit/events-for-date.test.ts` 10媛??щ젰 ?뺣젹 洹쒖튃 怨좎젙). vitest 150.
+  ??**?⑥젙 2媛?湲곕줉**: ??誘몃뵒?댁옘由щ뒗 ?곗꽑?쒖쐞瑜????щ┛??紐⑤컮??釉붾줉? 湲곕낯 洹쒖튃 ?ㅼ뿉 ??寃?
+  ??**PowerShell 5.1 `Set-Content`濡??쒓? 臾몄꽌瑜??곕㈃ 源⑥쭊??*(?쒖뒪??肄붾뱶?섏씠吏) ??臾몄꽌 ?섏젙?
+  Edit ?꾧뎄濡쒕쭔.
+- **2026-07-17(7) ??媛쒖꽑??諛곗튂 7~10 + ?좉퀬 ???*(`69b619f`, `492de15`, `a07caf1`, `dc69957`,
+  `29f5d6f`, `503d628`): ?몄궗?댄듃 濡쒕뵫 ?먰봽 46??px쨌?뺤쭅???ㅽ뙣 쨌 ???ㅻ줈媛湲곕줈 ?쒗듃留??ロ엳寃?쨌
+  踰꾪듉 ??耳쒓린/????湲곕줉/?몄쭛?? ???듭씪 + 誘몃땲寃뚯엫 移?32px 쨌 ?섏씠?쇱씠??????怨④꺽 ?듭씪 쨌
+  Esc ?댁젣/?⑥텞???덈궡 쨌 **?쒕옒洹??대룞 Ctrl+Z** 쨌 ?쒕쾭 ?뺣났(admin ?깃??는룹틦?쒗뿤?붋톚age 蹂묐젹쨌
+  GoTrue N+1쨌0051 RPC+?대갚) 쨌 **二쎌? 肄붾뱶 1,483以??쒓굅**.
+  ??寃뱀튇 ?ㅻ쾭?덉씠 ?ㅻ줈媛湲? ?몄쭛?ㅺ낵 洹??덉쓽 ?ъ뒪?곌? **媛곴컖** popstate瑜??ㅼ뼱 ??踰덉뿉 ????  ?ロ삍?? "?덉そ???쒖떇 ?④린怨?諛붽묑??嫄대꼫?대떎"??**?ㅽ뙣**(諛붽묑??癒쇱? 遺덈젮 ?덉そ???몃쭏?댄듃?쒗궓??.
+  ??`lib/ui/overlay-pop.ts` 移댁슫??諛⑹떇?쇰줈 ?닿껐. ???ㅻ쾭?덉씠瑜?寃뱀튌 ???닿구 ??寃?
+    (**2026-07-18 ?뺤젙**: ??移댁슫?곕룄 '?쒖꽌 臾닿?'???꾨땲?덈떎 ???꾨옒 (8) 李멸퀬.)
+- **2026-07-18 ???좉퀬 2嫄?*(`f5c058d`, `3272736`):
+  ??'????湲곕줉' X/諛붽묑?대┃??誘몃━蹂닿린源뚯? ?レ븘 ?몄쭛?ㅻ줈 ?뺢?. ?먯씤: overlay-pop 移댁슫?곕?
+     ?덉そ 硫붿븘由??몃뱾?ш? **?숆린?곸쑝濡?* ?대졇?붾뜲, 誘몃━蹂닿린 ???ъ뒪?곕뒗 ?덈줈 留덉슫?몃맂 ?먯떇?대씪
+     洹?popstate 由ъ뒪?덇? 諛붽묑(StudioShell)蹂대떎 **癒쇱?** 遺덈┫ ???덈떎 ??諛붽묑??蹂????대?
+     innerDepth=0 ??'??pop'?대씪 ?ㅼ씤??viewerMode瑜??レ븯?? (7)??'?쒖꽌 臾닿?' 媛?뺤씠 ?由?
+     ??硫붿븘由ъ쓽 `popInnerOverlay()`瑜?`queueMicrotask`濡?誘몃쨪 洹??붿뒪?⑥튂媛 ?앸궃 ???대┛????     由ъ뒪???쒖꽌? 臾닿??섍쾶 諛붽묑? ?대쾲 pop???덉そ 寃껋쑝濡?蹂몃떎. **援먰썕: 寃뱀튇 popstate?먯꽌
+     怨듭쑀 移댁슫?곕뒗 洹??붿뒪?⑥튂 ?덉뿉???대━吏 留?寃?microtask濡?誘몃０ 寃?.**
+  ???먮룞 '湲고?' ?쒓렇媛 `display_name==="湲고?"` 由ы꽣?댁뿉 臾띠뿬, ?댁쁺?먭? 洹??쒓렇瑜?吏?곗옄
+     ?꾨Т ?쒓렇????遺숈뿀?? **遺덈???"?대깽?몃떦 肄섑뀗痢???")??踰꾨졇??*: ?쒓렇 0媛?= ???녿뒗
+     ??移대뱶 ?덉슜(?쒕쾭쨌?대씪 媛뺤젣 遺李??쒓굅), '湲고?'???몄궗?댄듃?먯꽌留??⑹꽦 踰꾪궥(?쒓렇 0媛?怨듦컻
+     ?쇱젙, ?대콉 ?쒖쇅)?쇰줈 移댁슫?? **援먰썕: UI/DB 遺덈??앹쓣 ?뱀젙 ?쒓렇 '?대쫫'??臾띠? 留?寃?**
+- **遺遺??꾨즺**: 異뺢뎄/?붾뱶而??쒕? ??taxonomy쨌湲곗큹 ?곷┰ ?꾨즺(68 ?뚯뒪??. 臾쇰━쨌?몄? ?쒖빟 ?뺣????⑥쓬.
+  ?붾뱶而??먮룞 ?뚮쭏??`KOREA_MATCHES` ?섎룞 ?낅젰 ?湲?
+- **2026-07-18 ???쒓렇 ??而ㅼ뒪????꾨줈?앺듃 ?쒖옉**(怨꾪쉷 `docs/tags/custom-tag-color-plan.md` v4.1,
+  肄붾뜳??4?쇱슫???곷?寃??諛섏쁺쨌?붿뒪肄뷀봽). 諛⑺뼢: 臾대뒳 ?좎?(?됰㏏ ?⑥꽌)+媛?낆꽦留?怨좎묠+而ㅼ뒪? bg_hex+
+  ?⑥씪 resolver. **Phase 0-pre 泥??щ씪?댁뒪 ?꾨즺**(`b36b01c`): 怨듦컻 sample/type 遺꾨━ ??  `sample-public-data.ts` ?좎꽕, 怨듦컻 ?몃━(public-loader쨌proposals route)媛 privateMeta쨌requests
+  ?덉? sampleStudioSchedule??import?섎뜕 怨듦컻寃쎄퀎 ?좊났 ?꾨컲 ?쒓굅 + `public-boundary.test.ts`(?뺤쟻
+  import 媛??+ ?대갚 ?꾩텧寃??. 怨듦컻 API 異쒕젰 遺덈?.
+  **Phase 0-pre 鍮꾩＜???ㅼ쐞?몃룄 ?꾨즺**(`76f5186`): dangling?대뜕 `test:visual`???ㅼ젣 ?ㅼ쐞?몃줈 ??  `app/visual-fixture/poster`(VISUAL_TEST_FIXTURE=1 ?꾩슜 route, ?뚮옒洹??놁쑝硫?not-found쨌?ъ뒪??  誘몃끂異? + `playwright.visual.config.ts`(production build, viewport/DPR 怨좎젙, ?좊땲 ?뺤?) +
+  baseline(viewer-surface, `[data-export-surface]`留? OS蹂??꾩옱 win32). **?⑥젙**: ?몃뜑?ㅼ퐫???대뜑
+  (`app/__x`)??Next private???쇱슦???쒖쇅 ??route ?대뜑紐낆뿉 ?몃뜑?ㅼ퐫??湲덉?.
+  **Phase 0A 吏꾪뻾 以?*: ?뱀꽦???뚯뒪??`tag-visual-contract.test.ts`, 17媛?濡??꾩옱 ???됲겕 ?숈옉??  紐삳컯怨?`edbee1d`), ?⑥씪 resolver `lib/tags/tag-visual.ts`(`createTagVisualResolver`) ?좎꽕
+  (`2263540`) ??visualOf(rootTagId쨌kind쨌colorKey쨌bg쨌border쨌legacyTextColor쨌patternKey쨌missing),
+  ?대깽??遺꾨같??month.ts???꾩엫(?뺤쓽???숈씪). **?쒖껌???ъ뒪??移대뱶 ?됱쓣 resolver濡??닿?**(`217cbce`),
+  鍮꾩＜???섎꽕?ㅻ줈 援ъ퐫??vs ?닿? = **?쎌? ?숈씪 利앸챸**. **鍮꾩＜???섎꽕??flaky???*(援먰썕): render
+  ??대컢 蹂?붽? ?꾩뿭 diff ?좊컻 ???먯씤 ?좎썡?쒖뻐 怨?JS rAF(CSS animations:disabled濡???硫덉땄)
+  ??--poster-scale`媛 ?고듃 濡쒕뱶 ??대컢??醫뚯슦. ???ㅽ럺??reduce-motion ?좉?(localStorage
+  `vic.reduceMotion=on`)濡?rAF ?뺤? + ?고듃 ??resize ?ъ륫??+ ?쒕㈃ ?믪씠 ?덉젙 ?湲곕줈 援논옒.
+  **?ㅼ쓬**: ?섎㉧吏 ?쒕㈃ ?닿?(studio-shell 移대뱶쨌insights 4留돠룹묩쨌踰붾?). ??Phase 1 ???꾩닔:
+  pattern_key CSS ?ъ옉??`data-pattern` + {shape,ink,alpha}), 臾대뒳 CVD ?먮룞諛곗젙.
+- **誘몄갑??*: ?쒖껌??異쒖꽍 ?꾩옣(泥댄겕?? ??怨꾪쉷?쒕쭔 ?덉쓬(`docs/insights/viewer-checkin-attendance-plan.md`).
 
 ## Active Work
 
-**시간대 동접 차트 오독 + 타임라인 접기 손실 수정(2026-08-07)** — 실측 조사 결과 데이터는 정상
-(8/7 22:13 기준 23시 0건, 마지막 막대는 21·22시). 문제는 표시였다: ① 눈금이 6시간 간격뿐이라
-오른쪽 끝을 24시로 외삽해 읽음 → **3시간 간격 + 오른쪽 끝 `24` 끝선**(일별 모달·월별 대시보드 공통).
-② 아직 안 지난 칸과 0인 칸이 같아 보임 → **오늘이면 `nowMark`(KST 소수 시각)로 '지금' 마커 +
-이후 칸 흐리게**(`DayVisitDetail.nowMark`). ③ 진행 중인 시간의 분모가 3600초 고정이라 22시가
-실제의 1/5로 찍힘 → `computeOccupancy(rows, days, partial)`가 그 칸만 **경과 초로 나눔**(하한 60초).
-④ 행동 타임라인 접기가 `kind+target`만 봐서 `diag.visible`의 true/false가 한 줄로 뭉쳤고, 시각도
-첫 항목 것만 남아 4시간 뒤 재진입이 사라짐 → **meta 지문(hops·count 제외) 비교 + `lastT`로
-'첫–끝' 표시**(화면·복사 리포트 동일). 검증: tsc/lint/build/vitest 592 통과, 브라우저 실측 미수행.
+**?쒓컙? ?숈젒 李⑦듃 ?ㅻ룆 + ??꾨씪???묎린 ?먯떎 ?섏젙(2026-08-07)** ???ㅼ륫 議곗궗 寃곌낵 ?곗씠?곕뒗 ?뺤긽
+(8/7 22:13 湲곗? 23??0嫄? 留덉?留?留됰???21쨌22??. 臾몄젣???쒖떆??? ???덇툑??6?쒓컙 媛꾧꺽肉먯씠???ㅻⅨ履??앹쓣 24?쒕줈 ?몄궫???쎌쓬 ??**3?쒓컙 媛꾧꺽 + ?ㅻⅨ履???`24` ?앹꽑**(?쇰퀎 紐⑤떖쨌?붾퀎 ??쒕낫??怨듯넻).
+???꾩쭅 ??吏??移멸낵 0??移몄씠 媛숈븘 蹂댁엫 ??**?ㅻ뒛?대㈃ `nowMark`(KST ?뚯닔 ?쒓컖)濡?'吏湲? 留덉빱 +
+?댄썑 移??먮━寃?*(`DayVisitDetail.nowMark`). ??吏꾪뻾 以묒씤 ?쒓컙??遺꾨え媛 3600珥?怨좎젙?대씪 22?쒓?
+?ㅼ젣??1/5濡?李랁옒 ??`computeOccupancy(rows, days, partial)`媛 洹?移몃쭔 **寃쎄낵 珥덈줈 ?섎닎**(?섑븳 60珥?.
+???됰룞 ??꾨씪???묎린媛 `kind+target`留?遊먯꽌 `diag.visible`??true/false媛 ??以꾨줈 萸됱낀怨? ?쒓컖??泥???ぉ 寃껊쭔 ?⑥븘 4?쒓컙 ???ъ쭊?낆씠 ?щ씪吏???**meta 吏臾?hops쨌count ?쒖쇅) 鍮꾧탳 + `lastT`濡?'泥モ볥걹' ?쒖떆**(?붾㈃쨌蹂듭궗 由ы룷???숈씪). 寃利? tsc/lint/build/vitest 592 ?듦낵, 釉뚮씪?곗? ?ㅼ륫 誘몄닔??
 
-**'진행 중인 구간'을 완료된 구간과 구별 — 인사이트 전반(2026-08-07, 위 수정의 확장)** —
-같은 계열의 오독을 전 표면에서 제거했다. ① 6개월 추이 배지가 이번 달 며칠치를 지난달 전체와
-비교해 매달 초마다 ▼70%가 뜨던 것 → `lib/insights/month-progress.ts`(순수, KST) +
-`components/studio/trend-delta-badge.tsx` 공용 배지. 진행 중이면 `≈`(지난달 같은 페이스 환산치와
-비교) + '진행 중 7/31일' 칩 + 마지막 막대 빗금. 개발자 인사이트·멤버 인사이트·방송시간·
-StackTrendChart(시청자 공개 인사이트 포함) 전부 같은 규칙. ② 월별 시간대 동접도 진행 중인 칸은
-경과 초로 나누고, 아직 안 온 칸은 오늘을 관측일에서 뺀다. ③ 관리자 접속 세션 트랙: 막대 폭이
-실측 체류였던 것 → **span(시작~끝)**, 안쪽 채움 = 실제로 떠 있던 시간, 미종료 세션은 `.live`
-(오른쪽 열림 + '지금'). ④ 일별 세션·미니달력·방송 일별 막대에 오늘/미래 구분. ⑤ 24h 축 통일
-(3시간 간격 + 끝 `24`): 히트맵은 칸 중앙 정렬로 교정, 관리자 트랙은 `HourTicks`(경계 눈금)로 교체.
-⑥ 방문 요약(`visitGist`)이 라벨만 접어 횟수를 잃던 것 → ×N 유지. 검증: tsc/lint/build/vitest 600
-(month-progress 8 신규) 통과, 브라우저 실측 미수행.
+**'吏꾪뻾 以묒씤 援ш컙'???꾨즺??援ш컙怨?援щ퀎 ???몄궗?댄듃 ?꾨컲(2026-08-07, ???섏젙???뺤옣)** ??媛숈? 怨꾩뿴???ㅻ룆?????쒕㈃?먯꽌 ?쒓굅?덈떎. ??6媛쒖썡 異붿씠 諛곗?媛 ?대쾲 ??硫곗튌移섎? 吏?쒕떖 ?꾩껜?
+鍮꾧탳??留ㅻ떖 珥덈쭏????0%媛 ?⑤뜕 寃???`lib/insights/month-progress.ts`(?쒖닔, KST) +
+`components/studio/trend-delta-badge.tsx` 怨듭슜 諛곗?. 吏꾪뻾 以묒씠硫?`??(吏?쒕떖 媛숈? ?섏씠???섏궛移섏?
+鍮꾧탳) + '吏꾪뻾 以?7/31?? 移?+ 留덉?留?留됰? 鍮쀪툑. 媛쒕컻???몄궗?댄듃쨌硫ㅻ쾭 ?몄궗?댄듃쨌諛⑹넚?쒓컙쨌
+StackTrendChart(?쒖껌??怨듦컻 ?몄궗?댄듃 ?ы븿) ?꾨? 媛숈? 洹쒖튃. ???붾퀎 ?쒓컙? ?숈젒??吏꾪뻾 以묒씤 移몄?
+寃쎄낵 珥덈줈 ?섎늻怨? ?꾩쭅 ????移몄? ?ㅻ뒛??愿痢≪씪?먯꽌 類?? ??愿由ъ옄 ?묒냽 ?몄뀡 ?몃옓: 留됰? ??씠
+?ㅼ륫 泥대쪟???寃???**span(?쒖옉~??**, ?덉そ 梨꾩? = ?ㅼ젣濡????덈뜕 ?쒓컙, 誘몄쥌猷??몄뀡? `.live`
+(?ㅻⅨ履??대┝ + '吏湲?). ???쇰퀎 ?몄뀡쨌誘몃땲?щ젰쨌諛⑹넚 ?쇰퀎 留됰????ㅻ뒛/誘몃옒 援щ텇. ??24h 異??듭씪
+(3?쒓컙 媛꾧꺽 + ??`24`): ?덊듃留듭? 移?以묒븰 ?뺣젹濡?援먯젙, 愿由ъ옄 ?몃옓? `HourTicks`(寃쎄퀎 ?덇툑)濡?援먯껜.
+??諛⑸Ц ?붿빟(`visitGist`)???쇰꺼留??묒뼱 ?잛닔瑜??껊뜕 寃???횞N ?좎?. 寃利? tsc/lint/build/vitest 600
+(month-progress 8 ?좉퇋) ?듦낵, 釉뚮씪?곗? ?ㅼ륫 誘몄닔??
 
-**태그 색 커스텀화 — 기능 전체 구현 완료**(Phase 0~3, `85d6faf`까지). 커스텀 색이 전 표면 일관
-반영(카드·2색·점·칩·범례·상세·인사이트) + 편집기 색 칸(단색 입력 + 톤 프리셋 파스텔/부드럽게/선명/
-깊게 + 대비 배지 AA + 기본 되돌리기) + 서버 검증(#RRGGBB·대분류만·재부모 NULL). 무늬 전면 제거.
-DB `bg_hex` 컬럼(0052) 적용됨. **색 편집 UI 재설계 완료**(`fe403a5`): 네이티브 color input(쓰기
-어렵고 디자인 따로 놀고 행이 늘어 좌우스크롤)을 버리고 **팝오버 색 피커**로 — 행은 스와치 하나,
-팝오버에 SV영역(좌표)+색조 슬라이더+톤 프리셋(4칸)+프리셋12색+미리보기/hex. 앱 토큰으로 통일.
-**포털(body)+fixed**라 편집기 overflow에 안 잘림(스와치 rect 기준 배치, 화면밖이면 위로 flip).
-마운트 onChange 억제(열기만 해도 색 박히던 버그 방지). AA배지 제거(잡음), 흐릴 때만 경고.
-`color-picker-popover.tsx` + `color-tone.ts`(HSV/톤/대비). **남음 = 실사용 후 자잘한 디자인 피드백.**
-아래는 세부 이력.
+**?쒓렇 ??而ㅼ뒪?????湲곕뒫 ?꾩껜 援ы쁽 ?꾨즺**(Phase 0~3, `85d6faf`源뚯?). 而ㅼ뒪? ?됱씠 ???쒕㈃ ?쇨?
+諛섏쁺(移대뱶쨌2?됀룹젏쨌移㈑룸쾾濡쨌?곸꽭쨌?몄궗?댄듃) + ?몄쭛湲???移??⑥깋 ?낅젰 + ???꾨━???뚯뒪??遺?쒕읇寃??좊챸/
+源딄쾶 + ?鍮?諛곗? AA + 湲곕낯 ?섎룎由ш린) + ?쒕쾭 寃利?#RRGGBB쨌?遺꾨쪟留뙿룹옱遺紐?NULL). 臾대뒳 ?꾨㈃ ?쒓굅.
+DB `bg_hex` 而щ읆(0052) ?곸슜?? **???몄쭛 UI ?ъ꽕怨??꾨즺**(`fe403a5`): ?ㅼ씠?곕툕 color input(?곌린
+?대졄怨??붿옄???곕줈 ?怨??됱씠 ?섏뼱 醫뚯슦?ㅽ겕濡???踰꾨━怨?**?앹삤踰????쇱빱**濡????됱? ?ㅼ?移??섎굹,
+?앹삤踰꾩뿉 SV?곸뿭(醫뚰몴)+?됱“ ?щ씪?대뜑+???꾨━??4移?+?꾨━??2??誘몃━蹂닿린/hex. ???좏겙?쇰줈 ?듭씪.
+**?ы꽭(body)+fixed**???몄쭛湲?overflow?????섎┝(?ㅼ?移?rect 湲곗? 諛곗튂, ?붾㈃諛뽰씠硫??꾨줈 flip).
+留덉슫??onChange ?듭젣(?닿린留??대룄 ??諛뺥엳??踰꾧렇 諛⑹?). AA諛곗? ?쒓굅(?≪쓬), ?먮┫ ?뚮쭔 寃쎄퀬.
+`color-picker-popover.tsx` + `color-tone.ts`(HSV/???鍮?. **?⑥쓬 = ?ㅼ궗?????먯옒???붿옄???쇰뱶諛?**
+?꾨옒???몃? ?대젰.
 
---- (세부 이력) ---
-태그 색 커스텀화 — 0A(resolver 이관)·0B(가독성) 완료, **무늬 전면 제거 완료**(`cd53f06`,
-baseline 교정 `5d2039e`). 토리님 결정으로 무늬 알파↓론 체감 없어 아예 제거 — 카드/칩 단색.
-globals.css `[data-color=*]` 무늬 + `.evt-pat` 삭제, eventInkStyle isPatternColor 분기 제거(2-arg),
-2색 `.evt-pat` 오버레이 제거. geometry Δ0. **Phase 1 대폭 단순화**: 무늬 없으니 pattern_key CSS
-재작업·CVD 자동배정 blocker **소멸**(bg_hex 컬럼만). **함정 기록**: CSS 변경 후 비주얼 baseline이
-안 바뀌면 **`.next/cache` 제거**하고 재빌드(next build가 옛 CSS를 캐시함 — 무늬 제거 때 실제로 당함).
-**Phase 1 첫 슬라이스 완료**(`198c3d1`): `broadcast_tags.bg_hex` 컬럼(0052, **prod 적용됨**) +
-resolver `buildEffectivePalette`(대분류 bg_hex가 colorKey 엔트리 덮어씀 → 카드·칩·범례 전부 bg_hex
-반영, 없으면 palette 폴백=렌더 불변) + 로더 select/매핑 + BroadcastTag.bgHex. 커스텀 색이 end-to-end
-흐름(태그에 bg_hex 넣으면 즉시 표시). **배포 순서 지킴**: 마이그레이션 먼저 적용 후 push.
-**Phase 2 완료**(`922674d`): saveTagsAction이 bgHex 검증(#RRGGBB)·저장(대분류만, 세부/재부모 NULL
-강제) + 편집기 대분류 행에 `<input type=color>` + '팔레트로' 되돌리기 + Draft.bgHex 배선 + 낙관 반영.
-**커스텀 색 end-to-end 사용 가능** — 관리자가 색 골라 저장하면 카드·칩·범례 반영. **토리님 원래 목표
-(원하는 색 지정) 달성.** **남음(폴리시)**: Phase 3 = HSLuv 색환 피커(현재는 네이티브 color input) +
-톤 프리셋. 지금도 기능은 완전 동작 — 피커는 UX 고급화일 뿐. (ADR-0006 keepalive 라우팅은 태그 저장
-전반의 기존 tech-debt로 별건.)
-아래는 이전 0A/0B 상세.
-- (이전) **0B 1차(가독성)**(`164fb71`, 지금은 무늬 제거로 대체됨).
-0B: 무늬 알파↓(indigo 34→18·mint 10→6·sky 11→7·gen 6~7%) + eventInkStyle 전 카드 헤일로
-(text-shadow=paint-only라 굵기·레이아웃 불변, 스티커 안전). 무늬는 유지(색맹=hue별 '모양'이 담당).
-**geometry.spec 하드 게이트 신설**(offset 기반=결정적: 표면 자연 폭/높이·칸 높이·스티커 비율좌표) +
-비주얼 fixture에 무늬 카드(대회=indigo) 추가(샘플에 무늬-fill 카드가 없어 커버 못 하던 구멍). 지오 Δ0
-실측. **비주얼 하네스 교훈 추가**: getBoundingClientRect는 transform:scale subpixel로 run간 흔들림 →
-지오는 offsetWidth/Height + 인라인 스타일로 측정할 것. **다음**: 0B 더(scrim 강화/AA 미달 태그) 또는
-Phase 1(bg_hex). ⚠ 미이관(의도): 상세 칩 raw colorKey, insights 4맵(bg_hex는 Phase 1). ⚠ Phase 1
-전 필수: pattern_key CSS 재작업(`data-pattern`+{shape,ink,alpha}), 무늬 CVD 자동배정.
+--- (?몃? ?대젰) ---
+?쒓렇 ??而ㅼ뒪?????0A(resolver ?닿?)쨌0B(媛?낆꽦) ?꾨즺, **臾대뒳 ?꾨㈃ ?쒓굅 ?꾨즺**(`cd53f06`,
+baseline 援먯젙 `5d2039e`). ?좊━??寃곗젙?쇰줈 臾대뒳 ?뚰뙆?볥줎 泥닿컧 ?놁뼱 ?꾩삁 ?쒓굅 ??移대뱶/移??⑥깋.
+globals.css `[data-color=*]` 臾대뒳 + `.evt-pat` ??젣, eventInkStyle isPatternColor 遺꾧린 ?쒓굅(2-arg),
+2??`.evt-pat` ?ㅻ쾭?덉씠 ?쒓굅. geometry ?0. **Phase 1 ????⑥닚??*: 臾대뒳 ?놁쑝??pattern_key CSS
+?ъ옉?끒텰VD ?먮룞諛곗젙 blocker **?뚮㈇**(bg_hex 而щ읆留?. **?⑥젙 湲곕줉**: CSS 蹂寃???鍮꾩＜??baseline????諛붾뚮㈃ **`.next/cache` ?쒓굅**?섍퀬 ?щ퉴??next build媛 ??CSS瑜?罹먯떆????臾대뒳 ?쒓굅 ???ㅼ젣濡??뱁븿).
+**Phase 1 泥??щ씪?댁뒪 ?꾨즺**(`198c3d1`): `broadcast_tags.bg_hex` 而щ읆(0052, **prod ?곸슜??*) +
+resolver `buildEffectivePalette`(?遺꾨쪟 bg_hex媛 colorKey ?뷀듃由???뼱? ??移대뱶쨌移㈑룸쾾濡 ?꾨? bg_hex
+諛섏쁺, ?놁쑝硫?palette ?대갚=?뚮뜑 遺덈?) + 濡쒕뜑 select/留ㅽ븨 + BroadcastTag.bgHex. 而ㅼ뒪? ?됱씠 end-to-end
+?먮쫫(?쒓렇??bg_hex ?ｌ쑝硫?利됱떆 ?쒖떆). **諛고룷 ?쒖꽌 吏??*: 留덉씠洹몃젅?댁뀡 癒쇱? ?곸슜 ??push.
+**Phase 2 ?꾨즺**(`922674d`): saveTagsAction??bgHex 寃利?#RRGGBB)쨌????遺꾨쪟留? ?몃?/?щ?紐?NULL
+媛뺤젣) + ?몄쭛湲??遺꾨쪟 ?됱뿉 `<input type=color>` + '?붾젅?몃줈' ?섎룎由ш린 + Draft.bgHex 諛곗꽑 + ?숆? 諛섏쁺.
+**而ㅼ뒪? ??end-to-end ?ъ슜 媛??* ??愿由ъ옄媛 ??怨⑤씪 ??ν븯硫?移대뱶쨌移㈑룸쾾濡 諛섏쁺. **?좊━???먮옒 紐⑺몴
+(?먰븯????吏?? ?ъ꽦.** **?⑥쓬(?대━??**: Phase 3 = HSLuv ?됲솚 ?쇱빱(?꾩옱???ㅼ씠?곕툕 color input) +
+???꾨━?? 吏湲덈룄 湲곕뒫? ?꾩쟾 ?숈옉 ???쇱빱??UX 怨좉툒?붿씪 肉? (ADR-0006 keepalive ?쇱슦?낆? ?쒓렇 ????꾨컲??湲곗〈 tech-debt濡?蹂꾧굔.)
+?꾨옒???댁쟾 0A/0B ?곸꽭.
+- (?댁쟾) **0B 1李?媛?낆꽦)**(`164fb71`, 吏湲덉? 臾대뒳 ?쒓굅濡??泥대맖).
+0B: 臾대뒳 ?뚰뙆??indigo 34??8쨌mint 10??쨌sky 11??쨌gen 6~7%) + eventInkStyle ??移대뱶 ?ㅼ씪濡?(text-shadow=paint-only??援듦린쨌?덉씠?꾩썐 遺덈?, ?ㅽ떚而??덉쟾). 臾대뒳???좎?(?됰㏏=hue蹂?'紐⑥뼇'???대떦).
+**geometry.spec ?섎뱶 寃뚯씠???좎꽕**(offset 湲곕컲=寃곗젙?? ?쒕㈃ ?먯뿰 ???믪씠쨌移??믪씠쨌?ㅽ떚而?鍮꾩쑉醫뚰몴) +
+鍮꾩＜??fixture??臾대뒳 移대뱶(???indigo) 異붽?(?섑뵆??臾대뒳-fill 移대뱶媛 ?놁뼱 而ㅻ쾭 紐??섎뜕 援щ찉). 吏???0
+?ㅼ륫. **鍮꾩＜???섎꽕??援먰썕 異붽?**: getBoundingClientRect??transform:scale subpixel濡?run媛??붾뱾由???吏?ㅻ뒗 offsetWidth/Height + ?몃씪???ㅽ??쇰줈 痢≪젙??寃? **?ㅼ쓬**: 0B ??scrim 媛뺥솕/AA 誘몃떖 ?쒓렇) ?먮뒗
+Phase 1(bg_hex). ??誘몄씠愿(?섎룄): ?곸꽭 移?raw colorKey, insights 4留?bg_hex??Phase 1). ??Phase 1
+???꾩닔: pattern_key CSS ?ъ옉??`data-pattern`+{shape,ink,alpha}), 臾대뒳 CVD ?먮룞諛곗젙.
 
-## 배포가 안 될 때 (2026-07-17 실제로 겪음 — 다음 에이전트가 같은 길로 헤매지 말 것)
+## 諛고룷媛 ??????(2026-07-17 ?ㅼ젣濡?寃れ쓬 ???ㅼ쓬 ?먯씠?꾪듃媛 媛숈? 湲몃줈 ?ㅻℓ吏 留?寃?
 
-**증상**: `git push`는 성공하는데 Vercel Deployments에 **새 항목이 아예 안 생긴다**(실패도 아니고 무반응).
-프로덕션은 옛 빌드를 계속 서빙한다.
+**利앹긽**: `git push`???깃났?섎뒗??Vercel Deployments??**????ぉ???꾩삁 ???앷릿??*(?ㅽ뙣???꾨땲怨?臾대컲??.
+?꾨줈?뺤뀡? ??鍮뚮뱶瑜?怨꾩냽 ?쒕튃?쒕떎.
 
-**원인은 대개 우리 코드/설정이 아니다.** 2026-07-17엔 **GitHub 장애**였다 — Vercel 대시보드가
-"GitHub Outage — affecting automatic deployments and account connection" 배너를 직접 띄웠다.
-곁가지 증상: 대시보드의 GitHub 관련 칸이 회색 스켈레톤으로 멈춤(=계정 연결 API 실패), 배포가
-붙어도 8분+ 지연.
+**?먯씤? ?媛??곕━ 肄붾뱶/?ㅼ젙???꾨땲??** 2026-07-17??**GitHub ?μ븷**?????Vercel ??쒕낫?쒓?
+"GitHub Outage ??affecting automatic deployments and account connection" 諛곕꼫瑜?吏곸젒 ?꾩썱??
+怨곴?吏 利앹긽: ??쒕낫?쒖쓽 GitHub 愿??移몄씠 ?뚯깋 ?ㅼ펷?덊넠?쇰줈 硫덉땄(=怨꾩젙 ?곌껐 API ?ㅽ뙣), 諛고룷媛
+遺숈뼱??8遺? 吏??
 
-**진단 순서**(위에서부터, 각 단계가 서로 다른 원인을 배제한다)
-1. `git ls-remote origin refs/heads/main` — 원격에 커밋이 실제로 갔는지. (갔으면 우리 잘못 아님)
-2. **배포된 사이트를 직접 읽어** 어느 커밋까지 반영됐는지 확인(추측 금지). 예:
-   `https://vic-schedule-studio.vercel.app/` HTML에서 `/_next/static/css/*` 를 받아 특정 클래스
-   존재 여부로 판독. (2026-07-17엔 삭제한 `.home-grid`가 남아 있는지로 판정했다.)
-3. Vercel → Deployments: **새 항목이 없다** = 이벤트 미수신(장애·연결). `Error` = 빌드 실패(로그 보기).
-   `Canceled` = Ignored Build Step. `Queued/Building` = 그냥 밀린 것(기다린다).
-4. Vercel 대시보드 상단 **배너**(장애 공지) · `status.vercel.com` · `githubstatus.com`.
-5. GitHub 쪽: 저장소 Settings → **Webhooks는 비어 있는 게 정상**이다(Vercel은 GitHub App을 쓴다.
-   여기서 헤맸다). 볼 곳은 Settings → **GitHub Apps** → Vercel → Repository access.
+**吏꾨떒 ?쒖꽌**(?꾩뿉?쒕??? 媛??④퀎媛 ?쒕줈 ?ㅻⅨ ?먯씤??諛곗젣?쒕떎)
+1. `git ls-remote origin refs/heads/main` ???먭꺽??而ㅻ컠???ㅼ젣濡?媛붾뒗吏. (媛붿쑝硫??곕━ ?섎せ ?꾨떂)
+2. **諛고룷???ъ씠?몃? 吏곸젒 ?쎌뼱** ?대뒓 而ㅻ컠源뚯? 諛섏쁺?먮뒗吏 ?뺤씤(異붿륫 湲덉?). ??
+   `https://vic-schedule-studio.vercel.app/` HTML?먯꽌 `/_next/static/css/*` 瑜?諛쏆븘 ?뱀젙 ?대옒??   議댁옱 ?щ?濡??먮룆. (2026-07-17????젣??`.home-grid`媛 ?⑥븘 ?덈뒗吏濡??먯젙?덈떎.)
+3. Vercel ??Deployments: **????ぉ???녿떎** = ?대깽??誘몄닔???μ븷쨌?곌껐). `Error` = 鍮뚮뱶 ?ㅽ뙣(濡쒓렇 蹂닿린).
+   `Canceled` = Ignored Build Step. `Queued/Building` = 洹몃깷 諛由?寃?湲곕떎由곕떎).
+4. Vercel ??쒕낫???곷떒 **諛곕꼫**(?μ븷 怨듭?) 쨌 `status.vercel.com` 쨌 `githubstatus.com`.
+5. GitHub 履? ??μ냼 Settings ??**Webhooks??鍮꾩뼱 ?덈뒗 寃??뺤긽**?대떎(Vercel? GitHub App???대떎.
+   ?ш린???ㅻ㎏??. 蹂?怨녹? Settings ??**GitHub Apps** ??Vercel ??Repository access.
 
-**장애/연결 문제일 때 우회 배포(=GitHub를 안 거치고 로컬 코드를 Vercel이 빌드)**
+**?μ븷/?곌껐 臾몄젣?????고쉶 諛고룷(=GitHub瑜???嫄곗튂怨?濡쒖뺄 肄붾뱶瑜?Vercel??鍮뚮뱶)**
 ```bash
-npx vercel link --yes --project vic-schedule-studio --scope bluesky-s-project3   # 최초 1회(.vercel 생성)
-npx vercel --prod --yes                                                          # 즉시 프로덕션 배포
-npx vercel ls vic-schedule-studio --scope bluesky-s-project3                     # 배포 목록 확인
+npx vercel link --yes --project vic-schedule-studio --scope bluesky-s-project3   # 理쒖큹 1??.vercel ?앹꽦)
+npx vercel --prod --yes                                                          # 利됱떆 ?꾨줈?뺤뀡 諛고룷
+npx vercel ls vic-schedule-studio --scope bluesky-s-project3                     # 諛고룷 紐⑸줉 ?뺤씤
 ```
-- CLI는 이미 `bluesky8bya`로 로그인돼 있다. `.vercel/`은 `.gitignore`에 있다.
-- **주의**: `vercel link`가 `.env.local`을 프로젝트 환경변수로 **덮어쓴다**(그리고 .gitignore에 추가).
-  로컬에만 있던 값이 있었다면 확인할 것.
-- Git 연결이 실제로 풀렸다면 `npx vercel git connect` (대화형 확인 필요 — 에이전트는 못 누른다.
-  사용자에게 터미널에서 직접 실행 요청할 것. 성공 시 `> Connected` 출력).
+- CLI???대? `bluesky8bya`濡?濡쒓렇?몃뤌 ?덈떎. `.vercel/`? `.gitignore`???덈떎.
+- **二쇱쓽**: `vercel link`媛 `.env.local`???꾨줈?앺듃 ?섍꼍蹂?섎줈 **??뼱?대떎**(洹몃━怨?.gitignore??異붽?).
+  濡쒖뺄?먮쭔 ?덈뜕 媛믪씠 ?덉뿀?ㅻ㈃ ?뺤씤??寃?
+- Git ?곌껐???ㅼ젣濡???몃떎硫?`npx vercel git connect` (??뷀삎 ?뺤씤 ?꾩슂 ???먯씠?꾪듃??紐??꾨Ⅸ??
+  ?ъ슜?먯뿉寃??곕??먯뿉??吏곸젒 ?ㅽ뻾 ?붿껌??寃? ?깃났 ??`> Connected` 異쒕젰).
 
-**교훈**: "push했으니 배포됐겠지"로 보고하지 말 것. **배포된 사이트를 읽어서** 확인하고 말하라.
+**援먰썕**: "push?덉쑝??諛고룷?먭쿋吏"濡?蹂닿퀬?섏? 留?寃? **諛고룷???ъ씠?몃? ?쎌뼱??* ?뺤씤?섍퀬 留먰븯??
 
 ## Known Issues
 
-- **ISSUE-008 — (해결 2026-08-05) 그림판: 지우개가 주변까지 지우고, 채운 색이 범위 밖인데 선택됨.**
-  뿌리 3개. ① 획은 포인터가 움직인 만큼만 점을 남긴다(빠르면 20~60px 간격) — 그 점 단위로
-  지우니 점 하나가 닿으면 양옆 구간이 통째로 날아갔다 → 지우개 근처만 1.5px로 다시 샘플링해
-  자른다(`refineNearEraser`). ② 도형은 닿으면 통째 삭제였다 → 윤곽을 폴리라인으로 펴서 닿은
-  만큼만 덜어내고 남은 조각은 `tool:"poly"`. **poly는 곡선 보간 없이 곧은 선으로 그린다** —
-  중점 베지어로 그렸더니 직각 모서리가 30px씩 깎였다(실측). ③ 그림(채우기 조각)을 상자로
-  판정했다 — 채우기 상자는 화면 절반만 하고 대부분 투명이라 여백만 긁어도 통째로 잡혔다 →
-  알파 마스크(`lib/broadcast/image-mask.ts`)로 칠해진 픽셀을 본다(선택·지우개 양쪽).
-  덤으로 깜빡임: 구운 PNG가 디코드될 때까지 재생에서 그림이 빠졌다 → 방금 만든 캔버스를
-  들고 있다가 즉시 그린다(`bmpCache`).
-  전수 점검표는 `docs/ux/broadcast-eraser-checklist.md`(A~E 25항목, 전부 자동 검증 + 뮤테이션).
-- **비주얼 기준선의 외부 의존(2026-08-05).** 포스터 기준선이 **방송 ON/OFF**에 흔들렸다
-  (라이브 카드가 통째로 사라지며 레일 레이아웃이 밀림 — 23583px diff). 썸네일 마스크만으로는
-  부족하다(카드의 **유무**가 레이아웃이다). `poster.spec.ts`가 `/api/soop-live`를 가로채
-  `isLive:false`로 고정한다. **규칙: 외부 실시간 상태가 레이아웃을 바꾸면 마스크가 아니라
-  라우트 스텁으로 고정한다.**
-- **ISSUE-007 — (해결 2026-08-05) 비주얼 스냅샷 6건 red = 기준선 미갱신.**
-  원인은 커밋 `711ef82`(2026-07-31, 사용자 결정) **상단 마스트헤드 제거** — 연·월을 레일 정보
-  카드로 옮기며 표면이 1137→998px(−139)로 짧아졌는데 지오메트리·픽셀 기준선을 그때 다시 안 찍었다.
-  추적 방법 기록: dev 서버에서 재면 1137(옛 값), prod 빌드에서 998 → "커밋이 아니라 빌드 모드
-  차이"로 보였는데, 실제로는 **dev가 다른 라우트의 CSS까지 전부 실어** 옛 레이아웃을 흉내 낸
-  것이었다. 지오메트리 판단은 반드시 prod 빌드(visual config)로 한다.
-  지금 상태가 의도된 모습이라 6건 모두 재기록했다(지오메트리 diff는 surface.h 한 줄뿐 —
-  칸 높이 150·스티커 비율 좌표 불변).
-  **규칙: 레이아웃을 의도적으로 바꾸는 커밋은 같은 커밋에서 `npm run test:visual -- --update-snapshots`
-  를 돌려 기준선을 함께 갱신한다.** 안 그러면 게이트가 상시 red가 되어 진짜 드리프트를 못 잡는다.
-- **안정성 테스트 확충(2026-08-05).** 오늘 사고들이 전부 "테스트가 없어서 몰랐던" 곳이라
-  6개 축을 메웠다. 앞으로 이 영역을 만지면 여기부터 돌린다.
-  ① 편집실 실물 e2e(`tests/visual/studio-editor.spec.ts`) — `/api/studio-write`를 가로채
-  **명령 내용·순서**를 검사한다(운영 DB 무접촉). 저장/실패 표시/직렬 큐/삭제→되돌리기/드래그
-  이동/keepalive. ISSUE-001(편집실 실물 검증 불가)의 실질적 우회로.
-  ② 그림판 되돌리기·다시실행(`broadcast-undo.spec.ts`) — 지우개·채우기가 장면 통째 교체
-  경로라 새로 위험해진 자리. 그림판은 서버 저장이 없어 되돌리기가 유일한 안전망이다.
-  ③ 쓰기 라우트→캐시 무효화(`public-cache-revalidate.test.ts`) — 라우트 op 6종 + 미등록 op.
-  ④ 최초공개(`teaser-reveal.spec.ts`) — 공개 전 제목이 DOM·RSC payload 어디에도 없는지,
-  카운트다운이 0에서 실제로 요청을 쏘는지, 실패해도 화면이 죽지 않는지. fixture `?teaser=<초>`.
-  ⑤ 자정(KST) 경계 — `kstDayKey` 단일 출처로 모으고(적재/조회가 갈리면 조용히 어긋난다)
-  경계·연말·윤년 + 탭이 자정을 넘길 때 방문이 안 합쳐지는지.
-  ⑥ 1000행 cap — 페이지네이션을 `lib/db/paginate.ts` 하나로 모으고 경계/오류/무한루프 방어.
-  ⚠ 가짜 시계(page.clock)는 SSR 카운트다운과 어긋나 하이드레이션 오류를 만든다 — 실제 대기로.
-- **ISSUE-006 — (해결 2026-08-05) 그림판: 채우기가 다시 번지고, 지운 게 선택됐다.**
-  ① 채우기를 '찍은 점' stroke로 저장해 **재생마다 다시 flood fill**했다 → 나중에 경계가 뚫리거나
-  획이 움직인 뒤 화면이 다시 그려질 때 엉뚱한 데까지 번졌다. 이제 채운 결과를 그 자리에서
-  비트맵 조각(image stroke)으로 굳힌다 — 재생은 그림 한 장 그리기라 몇 번을 그려도 같고,
-  선택·이동·크기변경·지우개가 붙여넣은 그림과 같은 규약으로 공짜로 따라온다.
-  ② 지우개가 destination-out **획으로 장면에 남아** 화면에서만 가렸다. 그 획을 선택하면
-  '지우개 위로 올리기' 로직 때문에 지운 부분이 그 자리에서 되살아났다(실측: alpha 0→255).
-  이제 커밋 시점에 기하를 덜어낸다(펜·형광펜은 남은 구간으로 분할, 도형은 통째 삭제,
-  그림은 픽셀에 구워 넣기). 지우개 stroke는 더 이상 저장하지 않는다.
-  검증은 **브라우저 실물**: `tests/visual/broadcast-erase-fill.spec.ts` 3종(옛 코드에서 3종 모두
-  실패 → 새 코드 통과 확인). fixture(`/visual-fixture/studio`)로 로그인 없이 편집실을 띄운다 —
-  ISSUE-001(편집실 실물 검증 불가)의 우회로가 생겼으니 앞으로 편집실 회귀도 이 길을 쓴다.
-- **ISSUE-005 — (해결 2026-08-05) 한 탭이 두 방문으로 갈려 타임라인이 텅 비어 보임.**
-  방문 키(`visit_key`)는 프레즌스 비콘이 sessionStorage에 넣는데, 화면 진입 기록(route.enter)이
-  그보다 먼저 나가 `visit_key=null`로 저장됐다. 묶기 로직은 키 없는 행을 '그때까지 만들어진
-  방문'에만 얹어서, 그 행이 탭의 첫 기록이면 별도 방문이 생기고 뒤이은 키 있는 기록은 또 다른
-  방문이 됐다 → 60분 방문인데 '항목 1건'(2026-08-05 실측, owner 16:33~17:44).
-  ① 클라가 **보낼 때** 키를 다시 찍고 ② 묶기는 두 번에 나눠(키 있는 행으로 뼈대 → 키 없는 행을
-  `visit_session` 구간·계정·역할로 붙임) 옛 기록도 제자리를 찾는다.
-  ⚠ 같이 확인된 사실: 그날 owner 이벤트는 실제로 11건뿐이었다(클릭 0). 데이터 유실이 아니라
-  **정말 아무 버튼도 안 누른 방문**이었다 — 지표를 의심하기 전에 원본 행을 먼저 본다.
-- **ISSUE-004 — (해결 2026-08-05) 일정 생성·삭제가 시청자 화면에 최대 5분간 반영 안 됨.**
-  `saveEventAction`/`deleteEventAction`에서 `revalidatePath("/")`·`revalidatePath("/studio")`·
-  `revalidatePublicSchedule()` 3줄이 커밋 `72f6971`(행동 기록 추가) 때 **통째로 삭제**돼 있었다.
-  공개 로더는 `unstable_cache(TTL 300초)`라, 무효화가 없으면 새 일정이 시청자·미리보기에 5분간
-  안 뜨고 지운 일정은 그대로 남는다. 이동/순서(`reorderEventsAction`)만 무효화가 남아 있어
-  "옮기면 반영, 새로 만들면 안 됨"이라는 헷갈리는 증상이 됐다(2026-08-05 실측 로그로 확인).
-  지운 것이 떡밥이면 서버가 그 id를 못 찾아 카드가 **빈 흰 칸**으로 굳었다(강력 새로고침도 같은
-  캐시). 재발 방지: `tests/unit/public-cache-revalidate.test.ts`가 (1) 액션을 실제로 실행해
-  `revalidateTag` 호출을 확인하고 (2) `lib/schedules/*-actions.ts`의 모든 쓰기 액션을 훑는다.
-  **교훈: 쓰기 액션에 무언가를 끼워 넣을 때 캐시 무효화 3줄을 같이 지우지 말 것.**
-- **ISSUE-001 — (2026-08-05 해소) 편집실 실물 검증.** 이제 두 겹으로 닫혀 있다:
-  ① 브라우저(`tests/visual/studio-editor.spec.ts`) — fixture로 편집실을 띄우고 `/api/studio-write`를
-  가로채 클라가 보내는 **명령의 내용·순서**를 검사.
-  ② 서버 왕복(`npm run test:integration`) — 서버 액션 → 실제 DB(RPC save_event_atomic /
-  reorder_events_atomic) → 공개 로더 재조회까지. 생성·수정·삭제·복구·태그·이동·최초공개 가림·
-  잠금 없이 비공개 저장 거절. **RLS는 이 층의 대상이 아니다**(actor를 owner로 고정하고
-  service-role로 접근한다 — RLS는 공개 경계 e2e와 SQL 정책 담당).
-  남은 진짜 공백은 '브라우저에서 진짜 로그인 세션으로' 도는 경로뿐인데, 그건 테스트용 인증
-  우회로를 만들어야 해서 **일부러 안 만들었다**(보안 경계가 최우선 — CLAUDE 충돌 우선순위 1).
-  ⚠ 통합 테스트 안전 규칙: 과거 달에만, 제목에 `[통합테스트]` 표식, afterAll에서 물리 삭제 +
-  잔여 0 확인. 이걸 어기면 시청자 실시간 화면이 오염된다.
-- **ISSUE-001(원문) — 편집실 실물 검증이 막혀 있음.** 편집실(`/studio/*`)은 Google 로그인이 필요해
-  로컬 Playwright로 실물 확인을 못 한다. 최근 편집실 변경(공개범위 접기, 단축키, Alt+N, 드래그
-  삽입선)은 타입·빌드·코드 리뷰까지만 검증됐다. Status: Open.
-  → 다음에 편집실을 만질 땐 사용자에게 실물 확인을 요청하거나, 테스트용 로그인 경로를 마련할 것.
-- **ISSUE-002 — 모바일에는 '이 달 기록' 진입점이 없다.** 버튼(`.insights-open`)이
-  `.public-calendar-header`에만 있는데 모바일(≤640px)은 아젠다 레이아웃이라 이 헤더를 안 그린다
-  → 모바일 시청자는 공개 인사이트를 열 수 없다. Status: Open(미요청, 별도 판단 필요).
-- **ISSUE-003 — 미리보기 낙관 경로가 teaser를 안 가린다.** `studio-shell.tsx`의 viewerMode
-  미리보기는 낙관적 `events`에서 공개 일정을 추리는데(spread + privateMeta 제거), 공개 시각 전
-  teaser의 실제 `publicTitle`이 서버 redaction 없이 그대로 미리보기에 노출될 수 있다(방송 화면
-  공유 시 유출면). 판서(B안)는 ADR-0010으로 이 경로를 우회했지만 미리보기 자체는 남아 있다.
-  Status: Open (2026-07-25 판서 작업 중 발견 — 수정 시 spread 제거 + 공유 redaction 적용 방향).
+- **ISSUE-008 ??(?닿껐 2026-08-05) 洹몃┝?? 吏?곌컻媛 二쇰?源뚯? 吏?곌퀬, 梨꾩슫 ?됱씠 踰붿쐞 諛뽰씤???좏깮??**
+  肉뚮━ 3媛? ???띿? ?ъ씤?곌? ?吏곸씤 留뚰겮留??먯쓣 ?④릿??鍮좊Ⅴ硫?20~60px 媛꾧꺽) ??洹????⑥쐞濡?  吏?곕땲 ???섎굹媛 ?우쑝硫??묒쁿 援ш컙???듭㎏濡??좎븘媛붾떎 ??吏?곌컻 洹쇱쿂留?1.5px濡??ㅼ떆 ?섑뵆留곹빐
+  ?먮Ⅸ??`refineNearEraser`). ???꾪삎? ?우쑝硫??듭㎏ ??젣??????ㅺ낸???대━?쇱씤?쇰줈 ?댁꽌 ?우?
+  留뚰겮留??쒖뼱?닿퀬 ?⑥? 議곌컖? `tool:"poly"`. **poly??怨≪꽑 蹂닿컙 ?놁씠 怨㏃? ?좎쑝濡?洹몃┛??* ??  以묒젏 踰좎??대줈 洹몃졇?붾땲 吏곴컖 紐⑥꽌由ш? 30px??源롮????ㅼ륫). ??洹몃┝(梨꾩슦湲?議곌컖)???곸옄濡?  ?먯젙?덈떎 ??梨꾩슦湲??곸옄???붾㈃ ?덈컲留??섍퀬 ?遺遺??щ챸?대씪 ?щ갚留?湲곸뼱???듭㎏濡??≫삍????  ?뚰뙆 留덉뒪??`lib/broadcast/image-mask.ts`)濡?移좏빐吏??쎌???蹂몃떎(?좏깮쨌吏?곌컻 ?묒そ).
+  ?ㅼ쑝濡?源쒕묀?? 援ъ슫 PNG媛 ?붿퐫?쒕맆 ?뚭퉴吏 ?ъ깮?먯꽌 洹몃┝??鍮좎죱????諛⑷툑 留뚮뱺 罹붾쾭?ㅻ?
+  ?ㅺ퀬 ?덈떎媛 利됱떆 洹몃┛??`bmpCache`).
+  ?꾩닔 ?먭??쒕뒗 `docs/ux/broadcast-eraser-checklist.md`(A~E 25??ぉ, ?꾨? ?먮룞 寃利?+ 裕ㅽ뀒?댁뀡).
+- **鍮꾩＜??湲곗??좎쓽 ?몃? ?섏〈(2026-08-05).** ?ъ뒪??湲곗??좎씠 **諛⑹넚 ON/OFF**???붾뱾?몃떎
+  (?쇱씠釉?移대뱶媛 ?듭㎏濡??щ씪吏硫??덉씪 ?덉씠?꾩썐??諛由???23583px diff). ?몃꽕??留덉뒪?щ쭔?쇰줈??  遺議깊븯??移대뱶??**?좊Т**媛 ?덉씠?꾩썐?대떎). `poster.spec.ts`媛 `/api/soop-live`瑜?媛濡쒖콈
+  `isLive:false`濡?怨좎젙?쒕떎. **洹쒖튃: ?몃? ?ㅼ떆媛??곹깭媛 ?덉씠?꾩썐??諛붽씀硫?留덉뒪?ш? ?꾨땲??  ?쇱슦???ㅽ뀅?쇰줈 怨좎젙?쒕떎.**
+- **ISSUE-007 ??(?닿껐 2026-08-05) 鍮꾩＜???ㅻ깄??6嫄?red = 湲곗???誘멸갚??**
+  ?먯씤? 而ㅻ컠 `711ef82`(2026-07-31, ?ъ슜??寃곗젙) **?곷떒 留덉뒪?명뿤???쒓굅** ???걔룹썡???덉씪 ?뺣낫
+  移대뱶濡???린硫??쒕㈃??1137??98px(??39)濡?吏㏃븘議뚮뒗??吏?ㅻ찓?몃━쨌?쎌? 湲곗??좎쓣 洹몃븣 ?ㅼ떆 ??李띿뿀??
+  異붿쟻 諛⑸쾿 湲곕줉: dev ?쒕쾭?먯꽌 ?щ㈃ 1137(??媛?, prod 鍮뚮뱶?먯꽌 998 ??"而ㅻ컠???꾨땲??鍮뚮뱶 紐⑤뱶
+  李⑥씠"濡?蹂댁??붾뜲, ?ㅼ젣濡쒕뒗 **dev媛 ?ㅻⅨ ?쇱슦?몄쓽 CSS源뚯? ?꾨? ?ㅼ뼱** ???덉씠?꾩썐???됰궡 ??  寃껋씠?덈떎. 吏?ㅻ찓?몃━ ?먮떒? 諛섎뱶??prod 鍮뚮뱶(visual config)濡??쒕떎.
+  吏湲??곹깭媛 ?섎룄??紐⑥뒿?대씪 6嫄?紐⑤몢 ?ш린濡앺뻽??吏?ㅻ찓?몃━ diff??surface.h ??以꾨퓧 ??  移??믪씠 150쨌?ㅽ떚而?鍮꾩쑉 醫뚰몴 遺덈?).
+  **洹쒖튃: ?덉씠?꾩썐???섎룄?곸쑝濡?諛붽씀??而ㅻ컠? 媛숈? 而ㅻ컠?먯꽌 `npm run test:visual -- --update-snapshots`
+  瑜??뚮젮 湲곗??좎쓣 ?④퍡 媛깆떊?쒕떎.** ??洹몃윭硫?寃뚯씠?멸? ?곸떆 red媛 ?섏뼱 吏꾩쭨 ?쒕━?꾪듃瑜?紐??〓뒗??
+- **?덉젙???뚯뒪???뺤땐(2026-08-05).** ?ㅻ뒛 ?ш퀬?ㅼ씠 ?꾨? "?뚯뒪?멸? ?놁뼱??紐곕옄?? 怨녹씠??  6媛?異뺤쓣 硫붿썱?? ?욎쑝濡????곸뿭??留뚯?硫??ш린遺???뚮┛??
+  ???몄쭛???ㅻЪ e2e(`tests/visual/studio-editor.spec.ts`) ??`/api/studio-write`瑜?媛濡쒖콈
+  **紐낅졊 ?댁슜쨌?쒖꽌**瑜?寃?ы븳???댁쁺 DB 臾댁젒珥?. ????ㅽ뙣 ?쒖떆/吏곷젹 ????젣?믩릺?뚮━湲??쒕옒洹?  ?대룞/keepalive. ISSUE-001(?몄쭛???ㅻЪ 寃利?遺덇?)???ㅼ쭏???고쉶濡?
+  ??洹몃┝???섎룎由ш린쨌?ㅼ떆?ㅽ뻾(`broadcast-undo.spec.ts`) ??吏?곌컻쨌梨꾩슦湲곌? ?λ㈃ ?듭㎏ 援먯껜
+  寃쎈줈???덈줈 ?꾪뿕?댁쭊 ?먮━. 洹몃┝?먯? ?쒕쾭 ??μ씠 ?놁뼱 ?섎룎由ш린媛 ?좎씪???덉쟾留앹씠??
+  ???곌린 ?쇱슦?멤넂罹먯떆 臾댄슚??`public-cache-revalidate.test.ts`) ???쇱슦??op 6醫?+ 誘몃벑濡?op.
+  ??理쒖큹怨듦컻(`teaser-reveal.spec.ts`) ??怨듦컻 ???쒕ぉ??DOM쨌RSC payload ?대뵒?먮룄 ?녿뒗吏,
+  移댁슫?몃떎?댁씠 0?먯꽌 ?ㅼ젣濡??붿껌???섎뒗吏, ?ㅽ뙣?대룄 ?붾㈃??二쎌? ?딅뒗吏. fixture `?teaser=<珥?`.
+  ???먯젙(KST) 寃쎄퀎 ??`kstDayKey` ?⑥씪 異쒖쿂濡?紐⑥쑝怨??곸옱/議고쉶媛 媛덈━硫?議곗슜???닿툔?쒕떎)
+  寃쎄퀎쨌?곕쭚쨌?ㅻ뀈 + ??씠 ?먯젙???섍만 ??諛⑸Ц?????⑹퀜吏?붿?.
+  ??1000??cap ???섏씠吏?ㅼ씠?섏쓣 `lib/db/paginate.ts` ?섎굹濡?紐⑥쑝怨?寃쎄퀎/?ㅻ쪟/臾댄븳猷⑦봽 諛⑹뼱.
+  ??媛吏??쒓퀎(page.clock)??SSR 移댁슫?몃떎?닿낵 ?닿툔???섏씠?쒕젅?댁뀡 ?ㅻ쪟瑜?留뚮뱺?????ㅼ젣 ?湲곕줈.
+- **ISSUE-006 ??(?닿껐 2026-08-05) 洹몃┝?? 梨꾩슦湲곌? ?ㅼ떆 踰덉?怨? 吏??寃??좏깮?먮떎.**
+  ??梨꾩슦湲곕? '李띿? ?? stroke濡???ν빐 **?ъ깮留덈떎 ?ㅼ떆 flood fill**?덈떎 ???섏쨷??寃쎄퀎媛 ?ル━嫄곕굹
+  ?띿씠 ?吏곸씤 ???붾㈃???ㅼ떆 洹몃젮吏????됰슧???곌퉴吏 踰덉죱?? ?댁젣 梨꾩슫 寃곌낵瑜?洹??먮━?먯꽌
+  鍮꾪듃留?議곌컖(image stroke)?쇰줈 援논엺?????ъ깮? 洹몃┝ ????洹몃━湲곕씪 紐?踰덉쓣 洹몃젮??媛숆퀬,
+  ?좏깮쨌?대룞쨌?ш린蹂寃승룹??곌컻媛 遺숈뿬?ｌ? 洹몃┝怨?媛숈? 洹쒖빟?쇰줈 怨듭쭨濡??곕씪?⑤떎.
+  ??吏?곌컻媛 destination-out **?띿쑝濡??λ㈃???⑥븘** ?붾㈃?먯꽌留?媛?몃떎. 洹??띿쓣 ?좏깮?섎㈃
+  '吏?곌컻 ?꾨줈 ?щ━湲? 濡쒖쭅 ?뚮Ц??吏??遺遺꾩씠 洹??먮━?먯꽌 ?섏궡?꾨궗???ㅼ륫: alpha 0??55).
+  ?댁젣 而ㅻ컠 ?쒖젏??湲고븯瑜??쒖뼱?몃떎(?쑣룻삎愿묓렂? ?⑥? 援ш컙?쇰줈 遺꾪븷, ?꾪삎? ?듭㎏ ??젣,
+  洹몃┝? ?쎌???援ъ썙 ?ｊ린). 吏?곌컻 stroke?????댁긽 ??ν븯吏 ?딅뒗??
+  寃利앹? **釉뚮씪?곗? ?ㅻЪ**: `tests/visual/broadcast-erase-fill.spec.ts` 3醫???肄붾뱶?먯꽌 3醫?紐⑤몢
+  ?ㅽ뙣 ????肄붾뱶 ?듦낵 ?뺤씤). fixture(`/visual-fixture/studio`)濡?濡쒓렇???놁씠 ?몄쭛?ㅼ쓣 ?꾩슫????  ISSUE-001(?몄쭛???ㅻЪ 寃利?遺덇?)???고쉶濡쒓? ?앷꼈?쇰땲 ?욎쑝濡??몄쭛???뚭?????湲몄쓣 ?대떎.
+- **ISSUE-005 ??(?닿껐 2026-08-05) ????씠 ??諛⑸Ц?쇰줈 媛덈젮 ??꾨씪?몄씠 ??鍮꾩뼱 蹂댁엫.**
+  諛⑸Ц ??`visit_key`)???꾨젅利뚯뒪 鍮꾩퐯??sessionStorage???ｋ뒗?? ?붾㈃ 吏꾩엯 湲곕줉(route.enter)??  洹몃낫??癒쇱? ?섍? `visit_key=null`濡???λ릱?? 臾띔린 濡쒖쭅? ???녿뒗 ?됱쓣 '洹몃븣源뚯? 留뚮뱾?댁쭊
+  諛⑸Ц'?먮쭔 ?뱀뼱?? 洹??됱씠 ??쓽 泥?湲곕줉?대㈃ 蹂꾨룄 諛⑸Ц???앷린怨??ㅼ씠? ???덈뒗 湲곕줉? ???ㅻⅨ
+  諛⑸Ц???먮떎 ??60遺?諛⑸Ц?몃뜲 '??ぉ 1嫄?(2026-08-05 ?ㅼ륫, owner 16:33~17:44).
+  ???대씪媛 **蹂대궪 ??* ?ㅻ? ?ㅼ떆 李띻퀬 ??臾띔린????踰덉뿉 ?섎닠(???덈뒗 ?됱쑝濡?堉덈? ?????녿뒗 ?됱쓣
+  `visit_session` 援ш컙쨌怨꾩젙쨌??븷濡?遺숈엫) ??湲곕줉???쒖옄由щ? 李얜뒗??
+  ??媛숈씠 ?뺤씤???ъ떎: 洹몃궇 owner ?대깽?몃뒗 ?ㅼ젣濡?11嫄대퓧?댁뿀???대┃ 0). ?곗씠???좎떎???꾨땲??  **?뺣쭚 ?꾨Т 踰꾪듉?????꾨Ⅸ 諛⑸Ц**?댁뿀????吏?쒕? ?섏떖?섍린 ?꾩뿉 ?먮낯 ?됱쓣 癒쇱? 蹂몃떎.
+- **ISSUE-004 ??(?닿껐 2026-08-05) ?쇱젙 ?앹꽦쨌??젣媛 ?쒖껌???붾㈃??理쒕? 5遺꾧컙 諛섏쁺 ????**
+  `saveEventAction`/`deleteEventAction`?먯꽌 `revalidatePath("/")`쨌`revalidatePath("/studio")`쨌
+  `revalidatePublicSchedule()` 3以꾩씠 而ㅻ컠 `72f6971`(?됰룞 湲곕줉 異붽?) ??**?듭㎏濡???젣**???덉뿀??
+  怨듦컻 濡쒕뜑??`unstable_cache(TTL 300珥?`?? 臾댄슚?붽? ?놁쑝硫????쇱젙???쒖껌?먃룸?由щ낫湲곗뿉 5遺꾧컙
+  ???④퀬 吏???쇱젙? 洹몃?濡??⑤뒗?? ?대룞/?쒖꽌(`reorderEventsAction`)留?臾댄슚?붽? ?⑥븘 ?덉뼱
+  "??린硫?諛섏쁺, ?덈줈 留뚮뱾硫??????대씪???룰컝由щ뒗 利앹긽???먮떎(2026-08-05 ?ㅼ륫 濡쒓렇濡??뺤씤).
+  吏??寃껋씠 ?〓갈?대㈃ ?쒕쾭媛 洹?id瑜?紐?李얠븘 移대뱶媛 **鍮???移?*?쇰줈 援녹뿀??媛뺣젰 ?덈줈怨좎묠??媛숈?
+  罹먯떆). ?щ컻 諛⑹?: `tests/unit/public-cache-revalidate.test.ts`媛 (1) ?≪뀡???ㅼ젣濡??ㅽ뻾??  `revalidateTag` ?몄텧???뺤씤?섍퀬 (2) `lib/schedules/*-actions.ts`??紐⑤뱺 ?곌린 ?≪뀡???묐뒗??
+  **援먰썕: ?곌린 ?≪뀡??臾댁뼵媛瑜??쇱썙 ?ｌ쓣 ??罹먯떆 臾댄슚??3以꾩쓣 媛숈씠 吏?곗? 留?寃?**
+- **ISSUE-001 ??(2026-08-05 ?댁냼) ?몄쭛???ㅻЪ 寃利?** ?댁젣 ??寃뱀쑝濡??ロ? ?덈떎:
+  ??釉뚮씪?곗?(`tests/visual/studio-editor.spec.ts`) ??fixture濡??몄쭛?ㅼ쓣 ?꾩슦怨?`/api/studio-write`瑜?  媛濡쒖콈 ?대씪媛 蹂대궡??**紐낅졊???댁슜쨌?쒖꽌**瑜?寃??
+  ???쒕쾭 ?뺣났(`npm run test:integration`) ???쒕쾭 ?≪뀡 ???ㅼ젣 DB(RPC save_event_atomic /
+  reorder_events_atomic) ??怨듦컻 濡쒕뜑 ?ъ“?뚭퉴吏. ?앹꽦쨌?섏젙쨌??젣쨌蹂듦뎄쨌?쒓렇쨌?대룞쨌理쒖큹怨듦컻 媛由셋?  ?좉툑 ?놁씠 鍮꾧났媛????嫄곗젅. **RLS????痢듭쓽 ??곸씠 ?꾨땲??*(actor瑜?owner濡?怨좎젙?섍퀬
+  service-role濡??묎렐?쒕떎 ??RLS??怨듦컻 寃쎄퀎 e2e? SQL ?뺤콉 ?대떦).
+  ?⑥? 吏꾩쭨 怨듬갚? '釉뚮씪?곗??먯꽌 吏꾩쭨 濡쒓렇???몄뀡?쇰줈' ?꾨뒗 寃쎈줈肉먯씤?? 洹멸굔 ?뚯뒪?몄슜 ?몄쬆
+  ?고쉶濡쒕? 留뚮뱾?댁빞 ?댁꽌 **?쇰?????留뚮뱾?덈떎**(蹂댁븞 寃쎄퀎媛 理쒖슦????CLAUDE 異⑸룎 ?곗꽑?쒖쐞 1).
+  ???듯빀 ?뚯뒪???덉쟾 洹쒖튃: 怨쇨굅 ?ъ뿉留? ?쒕ぉ??`[?듯빀?뚯뒪??` ?쒖떇, afterAll?먯꽌 臾쇰━ ??젣 +
+  ?붿뿬 0 ?뺤씤. ?닿구 ?닿린硫??쒖껌???ㅼ떆媛??붾㈃???ㅼ뿼?쒕떎.
+- **ISSUE-001(?먮Ц) ???몄쭛???ㅻЪ 寃利앹씠 留됲? ?덉쓬.** ?몄쭛??`/studio/*`)? Google 濡쒓렇?몄씠 ?꾩슂??  濡쒖뺄 Playwright濡??ㅻЪ ?뺤씤??紐??쒕떎. 理쒓렐 ?몄쭛??蹂寃?怨듦컻踰붿쐞 ?묎린, ?⑥텞?? Alt+N, ?쒕옒洹?  ?쎌엯??? ??끒룸퉴?쑣룹퐫??由щ럭源뚯?留?寃利앸릱?? Status: Open.
+  ???ㅼ쓬???몄쭛?ㅼ쓣 留뚯쭏 ???ъ슜?먯뿉寃??ㅻЪ ?뺤씤???붿껌?섍굅?? ?뚯뒪?몄슜 濡쒓렇??寃쎈줈瑜?留덈젴??寃?
+- **ISSUE-002 ??紐⑤컮?쇱뿉??'????湲곕줉' 吏꾩엯?먯씠 ?녿떎.** 踰꾪듉(`.insights-open`)??  `.public-calendar-header`?먮쭔 ?덈뒗??紐⑤컮????40px)? ?꾩젨???덉씠?꾩썐?대씪 ???ㅻ뜑瑜???洹몃┛??  ??紐⑤컮???쒖껌?먮뒗 怨듦컻 ?몄궗?댄듃瑜??????녿떎. Status: Open(誘몄슂泥? 蹂꾨룄 ?먮떒 ?꾩슂).
+- **ISSUE-003 ??誘몃━蹂닿린 ?숆? 寃쎈줈媛 teaser瑜???媛由곕떎.** `studio-shell.tsx`??viewerMode
+  誘몃━蹂닿린???숆???`events`?먯꽌 怨듦컻 ?쇱젙??異붾━?붾뜲(spread + privateMeta ?쒓굅), 怨듦컻 ?쒓컖 ??  teaser???ㅼ젣 `publicTitle`???쒕쾭 redaction ?놁씠 洹몃?濡?誘몃━蹂닿린???몄텧?????덈떎(諛⑹넚 ?붾㈃
+  怨듭쑀 ???좎텧硫?. ?먯꽌(B????ADR-0010?쇰줈 ??寃쎈줈瑜??고쉶?덉?留?誘몃━蹂닿린 ?먯껜???⑥븘 ?덈떎.
+  Status: Open (2026-07-25 ?먯꽌 ?묒뾽 以?諛쒓껄 ???섏젙 ??spread ?쒓굅 + 怨듭쑀 redaction ?곸슜 諛⑺뼢).
 
-## Locked / Stable Areas — 명시적 이유 없이 건드리지 말 것
-
-| 영역 | 왜 잠겨 있나 | 근거 |
+## Locked / Stable Areas ??紐낆떆???댁쑀 ?놁씠 嫄대뱶由ъ? 留?寃?
+| ?곸뿭 | ???좉꺼 ?덈굹 | 洹쇨굅 |
 |---|---|---|
-| `lib/schedules/public-loader.ts` + `app/api/public/*` | 공개 경계. 비공개 필드가 새면 제품의 핵심 약속이 깨진다 | [ADR-0001](decisions/ADR-0001-public-private-server-boundary.md) |
-| 공개 인사이트에 들어가는 값 | 방문/체류(운영 지표)는 공개 금지. 방송·하트는 **집계만** | [ADR-0008](decisions/ADR-0008-public-insights-aggregate-rpc.md) |
-| 포스터 표면 지오메트리(폭 1840 고정, JS 스케일) | 뷰포트 미디어쿼리로 표면 내부를 재배치하면 스티커 좌표가 어긋난다 | [ADR-0004](decisions/ADR-0004-poster-surface-geometry.md) |
-| 시즌 연출(미니게임·테마) | 기본 꺼짐·클릭 통과·오너 테마 우선 | [ADR-0009](decisions/ADR-0009-seasonal-toys-are-opt-in.md) |
-| `PRIVATE_DATA_ENC_KEY` / 암호화 배포 순서 | 키 분실 = 비공개 본문 복구 불가 | [ADR-0002](decisions/ADR-0002-private-content-encryption.md) |
-| 오너 바인딩(`OWNER_EMAIL` + `calendars.owner_id`) | 한쪽만 바꾸면 RLS로 저장이 조용히 실패 | [ADR-0003](decisions/ADR-0003-owner-dual-binding.md) |
-| 스튜디오 월 라우트 | 북마크/콜드 진입 전용. 런타임 라우트 월 이동 금지 | [ADR-0005](decisions/ADR-0005-month-routes-cold-entry-only.md) |
+| `lib/schedules/public-loader.ts` + `app/api/public/*` | 怨듦컻 寃쎄퀎. 鍮꾧났媛??꾨뱶媛 ?덈㈃ ?쒗뭹???듭떖 ?쎌냽??源⑥쭊??| [ADR-0001](decisions/ADR-0001-public-private-server-boundary.md) |
+| 怨듦컻 ?몄궗?댄듃???ㅼ뼱媛??媛?| 諛⑸Ц/泥대쪟(?댁쁺 吏????怨듦컻 湲덉?. 諛⑹넚쨌?섑듃??**吏묎퀎留?* | [ADR-0008](decisions/ADR-0008-public-insights-aggregate-rpc.md) |
+| ?ъ뒪???쒕㈃ 吏?ㅻ찓?몃━(??1840 怨좎젙, JS ?ㅼ??? | 酉고룷??誘몃뵒?댁옘由щ줈 ?쒕㈃ ?대?瑜??щ같移섑븯硫??ㅽ떚而?醫뚰몴媛 ?닿툔?쒕떎 | [ADR-0004](decisions/ADR-0004-poster-surface-geometry.md) |
+| ?쒖쫵 ?곗텧(誘몃땲寃뚯엫쨌?뚮쭏) | 湲곕낯 爰쇱쭚쨌?대┃ ?듦낵쨌?ㅻ꼫 ?뚮쭏 ?곗꽑 | [ADR-0009](decisions/ADR-0009-seasonal-toys-are-opt-in.md) |
+| `PRIVATE_DATA_ENC_KEY` / ?뷀샇??諛고룷 ?쒖꽌 | ??遺꾩떎 = 鍮꾧났媛?蹂몃Ц 蹂듦뎄 遺덇? | [ADR-0002](decisions/ADR-0002-private-content-encryption.md) |
+| ?ㅻ꼫 諛붿씤??`OWNER_EMAIL` + `calendars.owner_id`) | ?쒖そ留?諛붽씀硫?RLS濡???μ씠 議곗슜???ㅽ뙣 | [ADR-0003](decisions/ADR-0003-owner-dual-binding.md) |
+| ?ㅽ뒠?붿삤 ???쇱슦??| 遺곷쭏??肄쒕뱶 吏꾩엯 ?꾩슜. ?고????쇱슦?????대룞 湲덉? | [ADR-0005](decisions/ADR-0005-month-routes-cold-entry-only.md) |
 
 ## Open Decisions
 
-- 하트 인기 배지를 절대 임계값 → **상대 순위**로 전환하기로 합의만 됨(미구현).
-- 공개 인사이트에 방문자 지표를 넣을지(현재는 의도적으로 제외 — ADR-0008).
-- 꾸미기 심화 중 보류: 칸별 데코 / 스티커 그룹 / 스티커 팩.
+- ?섑듃 ?멸린 諛곗?瑜??덈? ?꾧퀎媛???**?곷? ?쒖쐞**濡??꾪솚?섍린濡??⑹쓽留???誘멸뎄??.
+- 怨듦컻 ?몄궗?댄듃??諛⑸Ц??吏?쒕? ?ｌ쓣吏(?꾩옱???섎룄?곸쑝濡??쒖쇅 ??ADR-0008).
+- 袁몃?湲??ы솕 以?蹂대쪟: 移몃퀎 ?곗퐫 / ?ㅽ떚而?洹몃９ / ?ㅽ떚而???
 
 ## Next Exact Steps
 
-0. **마이그레이션 0051 적용** — `node scripts/apply-db.mjs db/migrations/0051_visit_known_accounts.sql`
-   (새/재방문 판정용 DISTINCT RPC + `(day, account_hash)` 인덱스. 미적용이어도 코드가 옛 경로로
-   폴백하므로 급하진 않지만, 적용해야 인사이트 열 때의 순차 왕복 40회+가 사라진다.)
-1. **개선안 백로그 배치 1~10 전부 완료**(`docs/plans/refinement-backlog-2026-07.md`).
-   보류 항목과 "이 감사에서 배운 것"은 그 문서 머리에 정리돼 있다.
+0. **留덉씠洹몃젅?댁뀡 0051 ?곸슜** ??`node scripts/apply-db.mjs db/migrations/0051_visit_known_accounts.sql`
+   (???щ갑臾??먯젙??DISTINCT RPC + `(day, account_hash)` ?몃뜳?? 誘몄쟻?⑹씠?대룄 肄붾뱶媛 ??寃쎈줈濡?   ?대갚?섎?濡?湲됲븯吏??딆?留? ?곸슜?댁빞 ?몄궗?댄듃 ???뚯쓽 ?쒖감 ?뺣났 40??媛 ?щ씪吏꾨떎.)
+1. **媛쒖꽑??諛깅줈洹?諛곗튂 1~10 ?꾨? ?꾨즺**(`docs/plans/refinement-backlog-2026-07.md`).
+   蹂대쪟 ??ぉ怨?"??媛먯궗?먯꽌 諛곗슫 寃?? 洹?臾몄꽌 癒몃━???뺣━???덈떎.
 
-1. 시청자 출석 도장: `docs/insights/viewer-checkin-attendance-plan.md`의 A안(오늘만, 서버 KST 강제).
-   `event_hearts` 패턴 복제(비로그인 기기 토큰 포함), 마이그레이션 + `*_grants.sql` 잊지 말 것.
-2. 멀티에이전트 리뷰가 제안한 Phase 3 잔여(사용자 승인 시): 시청자 저장/공유 버튼 + OG 메타 +
-   월별 고정 PNG URL, LIVE/카운트다운 pill, 꾸미기 스탬프 모드, 휴방 상태를 1급 셀 상태로.
-3. 축구 시뮬: GK 손→패스/개인기 규칙·물리·인지 제약 정밀화(`docs/sim/`).
+1. ?쒖껌??異쒖꽍 ?꾩옣: `docs/insights/viewer-checkin-attendance-plan.md`??A???ㅻ뒛留? ?쒕쾭 KST 媛뺤젣).
+   `event_hearts` ?⑦꽩 蹂듭젣(鍮꾨줈洹몄씤 湲곌린 ?좏겙 ?ы븿), 留덉씠洹몃젅?댁뀡 + `*_grants.sql` ?딆? 留?寃?
+2. 硫?곗뿉?댁쟾??由щ럭媛 ?쒖븞??Phase 3 ?붿뿬(?ъ슜???뱀씤 ??: ?쒖껌?????怨듭쑀 踰꾪듉 + OG 硫뷀? +
+   ?붾퀎 怨좎젙 PNG URL, LIVE/移댁슫?몃떎??pill, 袁몃?湲??ㅽ꺃??紐⑤뱶, ?대갑 ?곹깭瑜?1湲?? ?곹깭濡?
+3. 異뺢뎄 ?쒕?: GK ?먥넂?⑥뒪/媛쒖씤湲?洹쒖튃쨌臾쇰━쨌?몄? ?쒖빟 ?뺣???`docs/sim/`).
 
-## Last Verified (2026-07-17, 배치 1~10 이후 · 프로덕션 실측)
+## Last Verified (2026-07-17, 諛곗튂 1~10 ?댄썑 쨌 ?꾨줈?뺤뀡 ?ㅼ륫)
 
-| 확인 | 결과 |
+| ?뺤씤 | 寃곌낵 |
 |---|---|
-| 프로덕션이 최신인가(사이트 직접 판독) | **예** — 삭제한 `.home-grid`가 배포 CSS에서 사라짐 = `503d628`까지 반영 |
-| `/api/public/vic/events` | **200** (한글 Server-Timing 헤더로 매 요청 500이던 것 수정됨) |
-| 배포 경로 | GitHub 장애로 자동배포가 멈춰 **`npx vercel --prod`로 직접 배포**함(위 "배포가 안 될 때" 참고) |
-| GitHub 자동배포 | 장애 회복 중(8분+ 지연 관측). 복구되면 push→배포가 저절로 정상화된다 |
+| ?꾨줈?뺤뀡??理쒖떊?멸?(?ъ씠??吏곸젒 ?먮룆) | **??* ????젣??`.home-grid`媛 諛고룷 CSS?먯꽌 ?щ씪吏?= `503d628`源뚯? 諛섏쁺 |
+| `/api/public/vic/events` | **200** (?쒓? Server-Timing ?ㅻ뜑濡?留??붿껌 500?대뜕 寃??섏젙?? |
+| 諛고룷 寃쎈줈 | GitHub ?μ븷濡??먮룞諛고룷媛 硫덉떠 **`npx vercel --prod`濡?吏곸젒 諛고룷**????"諛고룷媛 ?????? 李멸퀬) |
+| GitHub ?먮룞諛고룷 | ?μ븷 ?뚮났 以?8遺? 吏??愿痢?. 蹂듦뎄?섎㈃ push?믩같?ш? ??덈줈 ?뺤긽?붾맂??|
 
-## Last Verified (2026-07-17, 배치 1~3 이후)
+## Last Verified (2026-07-17, 諛곗튂 1~3 ?댄썑)
 
 | command | result |
 |---|---|
 | `npm run typecheck` / `npm run build` | PASS (exit 0) |
-| `npm run test` (vitest) | PASS — **140** tests (server-timing 4 신규) |
-| `npm run test:e2e` | **여전히 NOT RUN** — 이것 때문에 공개 API 500을 오래 못 봤다. 다음에 꼭 돌릴 것 |
-| 공개 API 실물 | `/api/public/vic/events` 200(240건) · `/api/soop-live` 200 · `/api/presence` start 200 |
-| 하트 실물(Playwright, vibrate 후킹) | 정상 [12,12] 두 톡(37~43ms 간격) · 실패 [12,20-60-20] + 토스트 후 2.6초 자동 해제 |
-| 번들(로컬 prod 빌드) | `/` 152 kB · 꾸미기 151 kB · 편집실 221 kB. 초기 스크립트 16개에 월드컵·축구 코드 없음 |
-| 7월(월드컵 달) 연출 실물 | 미니게임 버튼·중력 공·결승 표기 497ms에 정상 등장 |
+| `npm run test` (vitest) | PASS ??**140** tests (server-timing 4 ?좉퇋) |
+| `npm run test:e2e` | **?ъ쟾??NOT RUN** ???닿쾬 ?뚮Ц??怨듦컻 API 500???ㅻ옒 紐?遊ㅻ떎. ?ㅼ쓬??瑗??뚮┫ 寃?|
+| 怨듦컻 API ?ㅻЪ | `/api/public/vic/events` 200(240嫄? 쨌 `/api/soop-live` 200 쨌 `/api/presence` start 200 |
+| ?섑듃 ?ㅻЪ(Playwright, vibrate ?꾪궧) | ?뺤긽 [12,12] ????37~43ms 媛꾧꺽) 쨌 ?ㅽ뙣 [12,20-60-20] + ?좎뒪????2.6珥??먮룞 ?댁젣 |
+| 踰덈뱾(濡쒖뺄 prod 鍮뚮뱶) | `/` 152 kB 쨌 袁몃?湲?151 kB 쨌 ?몄쭛??221 kB. 珥덇린 ?ㅽ겕由쏀듃 16媛쒖뿉 ?붾뱶而돠룹텞援?肄붾뱶 ?놁쓬 |
+| 7???붾뱶而??? ?곗텧 ?ㅻЪ | 誘몃땲寃뚯엫 踰꾪듉쨌以묐젰 怨돠룰껐???쒓린 497ms???뺤긽 ?깆옣 |
 
-## Last Verified (2026-07-17, 이전)
+## Last Verified (2026-07-17, ?댁쟾)
 
 | command | result |
 |---|---|
 | `npm run typecheck` | PASS |
-| `npm run lint` | 0 errors (기존 경고 4 — `--max-warnings=0`이라 exit 1) |
+| `npm run lint` | 0 errors (湲곗〈 寃쎄퀬 4 ??`--max-warnings=0`?대씪 exit 1) |
 | `npm run build` | PASS (exit 0) |
-| `npm run test` (vitest) | PASS — 136 tests |
-| 공개 '이 달 기록' 실물(Playwright, prod build, 비로그인) | PASS — 하이라이트 카드 스타일 적용, `pi-body` 가로 넘침 0(560=560), 긴 제목 …+툴팁(그리드 폭 안), 일별 툴팁 안 잘림 |
-| 편집실 인사이트 '트렌드' 탭 실물 | **NOT VERIFIED** (로그인 필요 — ISSUE-001; 같은 컴포넌트를 공개 시트에서 검증) |
-| 꾸미기 팔레트(DecoratePalette) 실물 | PASS — 로그인 벽 우회용 임시 라우트에 실제 컴포넌트를 올려 Playwright로: 수정 전 "칩 클릭→아무 일 없음"·"× 안 됨" 재현, 수정 후 클릭/터치탭 추가·× 삭제·드래그 순서·탭 분류이동 전부 OK, 중복 추가 없음. 임시 라우트는 삭제함 |
+| `npm run test` (vitest) | PASS ??136 tests |
+| 怨듦컻 '????湲곕줉' ?ㅻЪ(Playwright, prod build, 鍮꾨줈洹몄씤) | PASS ???섏씠?쇱씠??移대뱶 ?ㅽ????곸슜, `pi-body` 媛濡??섏묠 0(560=560), 湲??쒕ぉ ???댄똻(洹몃━??????, ?쇰퀎 ?댄똻 ???섎┝ |
+| ?몄쭛???몄궗?댄듃 '?몃젋?? ???ㅻЪ | **NOT VERIFIED** (濡쒓렇???꾩슂 ??ISSUE-001; 媛숈? 而댄룷?뚰듃瑜?怨듦컻 ?쒗듃?먯꽌 寃利? |
+| 袁몃?湲??붾젅??DecoratePalette) ?ㅻЪ | PASS ??濡쒓렇??踰??고쉶???꾩떆 ?쇱슦?몄뿉 ?ㅼ젣 而댄룷?뚰듃瑜??щ젮 Playwright濡? ?섏젙 ??"移??대┃?믪븘臾????놁쓬"쨌"횞 ???? ?ы쁽, ?섏젙 ???대┃/?곗튂??異붽?쨌횞 ??젣쨌?쒕옒洹??쒖꽌쨌??遺꾨쪟?대룞 ?꾨? OK, 以묐났 異붽? ?놁쓬. ?꾩떆 ?쇱슦?몃뒗 ??젣??|
 
 ## Last Verified (2026-07-12)
 
 | command | result |
 |---|---|
 | `npm run typecheck` | PASS |
-| `npm run lint` | 0 errors (기존 경고 4) |
+| `npm run lint` | 0 errors (湲곗〈 寃쎄퀬 4) |
 | `npm run build` | PASS (exit 0) |
-| `npm run test` (vitest) | PASS — 136 tests |
+| `npm run test` (vitest) | PASS ??136 tests |
 | `npm run test:e2e` / `test:visual` | NOT RUN |
-| 마이그레이션 0048·0049·0050 | 적용 완료(Supabase) |
-| 공개 포스터 실물(Playwright, prod build) | PASS — 미니게임 opt-in, 태블릿 아젠다, 인사이트 시트 |
-| 편집실 실물 | **NOT VERIFIED** (로그인 필요 — ISSUE-001) |
+| 留덉씠洹몃젅?댁뀡 0048쨌0049쨌0050 | ?곸슜 ?꾨즺(Supabase) |
+| 怨듦컻 ?ъ뒪???ㅻЪ(Playwright, prod build) | PASS ??誘몃땲寃뚯엫 opt-in, ?쒕툝由??꾩젨?? ?몄궗?댄듃 ?쒗듃 |
+| ?몄쭛???ㅻЪ | **NOT VERIFIED** (濡쒓렇???꾩슂 ??ISSUE-001) |
 
 ---
 
-## 이 저장소의 하네스 범위
+## ????μ냼???섎꽕??踰붿쐞
 
-`project-initializing_260710.md`의 **최소 도입안**만 채택했다.
-채택: 이 파일 · ADR(`docs/decisions/`) · 매니페스트(`agent-harness.yaml`) · provenance ·
-**자동화 훅**(`.claude/settings.json`: SessionStart 브리핑 + Stop 시 상태 갱신 확인).
-미채택: `docs/agent/` 별도 트리, 상시 ExecPlan/Handoff, `CHANGELOG_AGENT.md`, 코드 내 `[WH-CHANGE]`
-주석 규격 — 각각 기존 `docs/` 트리, `docs/plans/`, 한국어 git log, 이미 짙은 "왜" 주석과 중복이다.
+`project-initializing_260710.md`??**理쒖냼 ?꾩엯??*留?梨꾪깮?덈떎.
+梨꾪깮: ???뚯씪 쨌 ADR(`docs/decisions/`) 쨌 留ㅻ땲?섏뒪??`agent-harness.yaml`) 쨌 provenance 쨌
+**?먮룞????*(`.claude/settings.json`: SessionStart 釉뚮━??+ Stop ???곹깭 媛깆떊 ?뺤씤).
+誘몄콈?? `docs/agent/` 蹂꾨룄 ?몃━, ?곸떆 ExecPlan/Handoff, `CHANGELOG_AGENT.md`, 肄붾뱶 ??`[WH-CHANGE]`
+二쇱꽍 洹쒓꺽 ??媛곴컖 湲곗〈 `docs/` ?몃━, `docs/plans/`, ?쒓뎅??git log, ?대? 吏숈? "?? 二쇱꽍怨?以묐났?대떎.
