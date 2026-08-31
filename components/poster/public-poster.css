@@ -941,8 +941,9 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   animation: agenda-detail-fade var(--dur-2) var(--ease-enter, ease-out) both;
 }
 .day-vod-modal {
-  width: min(420px, 100%);
-  max-height: min(80vh, 640px);
+  /* 넓은 창(2026-08-31 사용자 피드백) — 미리보기를 크게, 챕터는 아래 2열 신문식. */
+  width: min(720px, 100%);
+  max-height: min(86vh, 820px);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line, #ece9f5);
@@ -1133,7 +1134,6 @@ html[data-reduce-motion] .day-vod-modal {
   color: #a3aec9;
 }
 .vch-list {
-  list-style: none;
   width: 100%;
   margin: 2px 0 4px;
   padding: 5px 6px;
@@ -1146,6 +1146,12 @@ html[data-reduce-motion] .day-vod-modal {
   border-radius: var(--r-md, 12px);
   background: #f6f9ff;
 }
+/* 코너 그룹 — 모바일(기본)은 세로로 그냥 쌓인다. */
+.vch-group {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
 .vch-sec {
   margin: 7px 4px 2px;
   font-size: var(--text-micro);
@@ -1153,7 +1159,23 @@ html[data-reduce-motion] .day-vod-modal {
   letter-spacing: 0.02em;
   color: #7c8db8;
 }
-.vch-list > li:first-child .vch-sec { margin-top: 1px; }
+.vch-group:first-child .vch-sec { margin-top: 1px; }
+/* 날짜 창에선 세로 스크롤 긴 줄 대신 **2열 신문식**(사용자 피드백) — 그룹(코너)이 배치 단위,
+   헤더가 열 끝에 홀로 남지 않게 그룹째 내려간다. 창 본문(.dvm-body)이 스크롤을 맡는다. */
+.dvm-vod .vch-list {
+  display: block;
+  max-height: none;
+  overflow: visible;
+  columns: 2;
+  column-gap: 12px;
+  padding: 8px 10px;
+}
+.dvm-vod .vch-group {
+  display: block;
+  break-inside: avoid;
+  margin-bottom: 8px;
+}
+.dvm-vod .vch-item { padding: 4px 8px; }
 .vch-item {
   display: flex;
   align-items: baseline;
@@ -4255,7 +4277,10 @@ html[data-reduce-motion] .tier-halo {
 /* 특별한 날 표기를 탭하면 빵빠레가 터진다 — 버튼이지만 기존 em(.day-mark)과 똑같이 보이게 리셋.
    호버 시 살짝 밝게, 누르면 쏙 들어가 '눌렀다' 손맛(데스크탑 hover + 모바일 active). */
 button.day-mark.celebratable {
-  flex: 1;
+  /* flex:1로 헤더의 남는 폭을 통째로 먹으면, 날짜 옆 '빈 공간' 클릭이 전부 이 버튼에 흡수돼
+     다시보기 창 가드(button 제외)에 걸린다(2026-09-01 실측 신고 — 입추 날 창 안 뜸).
+     글자 폭만 차지하고 남는 공간은 칸 배경으로 남긴다(말줄임은 min-width:0 + 최대폭으로). */
+  flex: 0 1 auto;
   min-width: 0;
   margin-left: 4px;
   border: 0;

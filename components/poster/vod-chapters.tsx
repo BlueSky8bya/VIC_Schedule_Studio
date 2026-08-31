@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PublicVodTimeline } from "@/lib/domain/schedule-types";
 import { hapticTick } from "@/lib/ui/haptics";
 
@@ -18,7 +18,8 @@ export function VodChapters({
   durationMs,
   chapters,
   timelineBy,
-  onJump
+  onJump,
+  defaultOpen
 }: {
   slug: string;
   titleNo: number;
@@ -28,34 +29,65 @@ export function VodChapters({
   // 있으면 챕터 클릭 = 부모의 인라인 플레이어로 그 시점 재생(날짜 창 — 미리보기 영역 활용).
   // 없으면(모바일 아젠다) 기존처럼 숲 플레이어 새 탭.
   onJump?: (sec: number) => void;
+  // true면 마운트하자마자 펼친다(날짜 창에서 방송이 하나뿐일 때 — 클릭 한 번 절약).
+  defaultOpen?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(Boolean(defaultOpen) && chapters > 0);
   const [timeline, setTimeline] = useState<PublicVodTimeline | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
 
+  // 펼친 순간에만 본문을 받아온다(자동 펼침 포함) — 접힌 칩마다 미리 받으면 낭비.
+  // ⚠ loading을 의존성/가드에 넣지 않는다 — setLoading(true)가 이 effect를 재실행시키면
+  // 이전 실행의 cleanup(alive=false)이 돌아 도착한 응답을 버리고 '불러오는 중'에 갇힌다(실측).
+  useEffect(() => {
+    if (!open || timeline !== null || failed) return;
+    let alive = true;
+    setLoading(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/public/${slug}/vod-timeline?titleNo=${titleNo}`);
+        const json = (await res.json()) as PublicVodTimeline;
+        if (!alive) return;
+        if (Array.isArray(json.entries) && json.entries.length > 0) setTimeline(json);
+        else setFailed(true);
+      } catch {
+        if (alive) setFailed(true);
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [open, timeline, failed, slug, titleNo]);
+
+  // 코너(section) 단위 그룹 — 날짜 창에선 이 그룹이 2열 신문식 배치의 단위가 된다
+  // (헤더와 항목이 열 경계에서 찢어지지 않게). 코너 없는 옛 타임라인은 한 덩어리.
+  const groups = useMemo(() => {
+    const list = timeline?.entries ?? [];
+    const raw: { section: string | null; items: { sec: number; label: string; idx: number }[] }[] = [];
+    list.forEach((e, idx) => {
+      const last = raw[raw.length - 1];
+      if (last && last.section === e.section) last.items.push({ sec: e.sec, label: e.label, idx });
+      else raw.push({ section: e.section, items: [{ sec: e.sec, label: e.label, idx }] });
+    });
+    // 그룹이 열 배치 단위(break-inside: avoid)라, 거대한 그룹(코너 없는 옛 타임라인)이 통짜면
+    // 2열이 1열로 퇴화한다 — 8개 단위로 분절(헤더는 첫 조각만, 이후 조각은 이어지는 무헤더).
+    const out: typeof raw = [];
+    for (const g of raw) {
+      for (let i = 0; i < g.items.length; i += 8) {
+        out.push({ section: i === 0 ? g.section : null, items: g.items.slice(i, i + 8) });
+      }
+    }
+    return out;
+  }, [timeline]);
+
   if (chapters <= 0) return null;
 
-  const toggle = async () => {
+  const toggle = () => {
     hapticTick();
-    if (open) {
-      setOpen(false);
-      return;
-    }
-    setOpen(true);
-    if (timeline || loading) return;
-    setLoading(true);
-    setFailed(false);
-    try {
-      const res = await fetch(`/api/public/${slug}/vod-timeline?titleNo=${titleNo}`);
-      const json = (await res.json()) as PublicVodTimeline;
-      if (Array.isArray(json.entries) && json.entries.length > 0) setTimeline(json);
-      else setFailed(true);
-    } catch {
-      setFailed(true);
-    } finally {
-      setLoading(false);
-    }
+    setOpen((v) => !v);
   };
 
   const hhmmss = (sec: number) => {
@@ -95,37 +127,37 @@ export function VodChapters({
       ) : failed || !timeline ? (
         <p className="vch-note">챕터를 불러오지 못했어요.</p>
       ) : (
-        <ol className="vch-list">
-          {timeline.entries.map((e, i) => {
-            const prevSection = i > 0 ? timeline.entries[i - 1].section : null;
-            const span = spanOf(i);
-            return (
-              <li key={`${e.sec}-${i}`}>
-                {e.section && e.section !== prevSection ? (
-                  <div className="vch-sec">{e.section}</div>
-                ) : null}
-                <a
-                  className="vch-item"
-                  data-act="vod-chapter-jump"
-                  href={`https://vod.sooplive.co.kr/player/${titleNo}?change_second=${e.sec}`}
-                  onClick={(ev) => {
-                    hapticTick();
-                    if (onJump) {
-                      ev.preventDefault();
-                      onJump(e.sec);
-                    }
-                  }}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                >
-                  <time className="vch-t">{hhmmss(e.sec)}</time>
-                  <span className="vch-label">{e.label}</span>
-                  {span ? <em className="vch-span">{span}</em> : null}
-                </a>
-              </li>
-            );
-          })}
-        </ol>
+        <div className="vch-list">
+          {groups.map((g, gi) => (
+            <section className="vch-group" key={gi}>
+              {g.section ? <div className="vch-sec">{g.section}</div> : null}
+              {g.items.map((e) => {
+                const span = spanOf(e.idx);
+                return (
+                  <a
+                    className="vch-item"
+                    data-act="vod-chapter-jump"
+                    href={`https://vod.sooplive.co.kr/player/${titleNo}?change_second=${e.sec}`}
+                    key={`${e.sec}-${e.idx}`}
+                    onClick={(ev) => {
+                      hapticTick();
+                      if (onJump) {
+                        ev.preventDefault();
+                        onJump(e.sec);
+                      }
+                    }}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    <time className="vch-t">{hhmmss(e.sec)}</time>
+                    <span className="vch-label">{e.label}</span>
+                    {span ? <em className="vch-span">{span}</em> : null}
+                  </a>
+                );
+              })}
+            </section>
+          ))}
+        </div>
       )}
     </div>
   );

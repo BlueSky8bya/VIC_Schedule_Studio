@@ -30,20 +30,22 @@ export async function GET(req: Request) {
     startedAt: state.startedAt
   });
   // 다시보기 아카이브(0068)·팬 타임라인(0071) 증분 동기화 — 오프라인일 때만(방송 중엔 확정 전).
-  // 두 단 주기(2026-08-31 사용자 요청 — 타임라인이 보통 뱅종 5분 안에 올라온다):
-  //  · 뱅종 후 60분 안 = 고속 창: 5분마다 VOD 1페이지 + 최신 타임라인 3개 → 최악 10분 안에 반영
-  //  · 그 외 = 평시: 30분마다 VOD 1페이지 + 최근 14일 타임라인 8개(팬의 나중 수정도 이 스윕이 흡수)
+  // 세 단 주기(2026-08-31 사용자 확정 — 타임라인이 보통 뱅종 5분 안에 올라온다):
+  //  · 뱅종 후 30분 안 = 버스트: 외부 크론이 치는 **1분마다** VOD 1페이지 + 최신 타임라인 1개
+  //  · 뱅종 후 60분 안 = 고속: 5분마다 + 최신 3개
+  //  · 그 외 = 평시: 30분마다 + 최근 14일 8개(팬의 나중 수정도 이 스윕이 흡수)
   let vodSynced = false;
   let timelinesSynced = 0;
   if (!state.isLive) {
     const min = new Date().getUTCMinutes();
     const sinceEnd = await minutesSinceLastBroadcastEnd();
-    const hot = sinceEnd !== null && sinceEnd <= 60;
-    if (hot ? min % 5 === 0 : min % 30 === 0) {
+    const tier =
+      sinceEnd !== null && sinceEnd <= 30 ? "burst" : sinceEnd !== null && sinceEnd <= 60 ? "hot" : "calm";
+    const due = tier === "burst" ? true : tier === "hot" ? min % 5 === 0 : min % 30 === 0;
+    if (due) {
       vodSynced = (await syncVodArchive(1)).ok;
-      timelinesSynced = (
-        await syncVodTimelines(await pickTimelineSyncTargets(hot ? 3 : 8, hot ? 2 : 14))
-      ).saved;
+      const [limit, days] = tier === "burst" ? [1, 1] : tier === "hot" ? [3, 2] : [8, 14];
+      timelinesSynced = (await syncVodTimelines(await pickTimelineSyncTargets(limit, days))).saved;
     }
   }
   return NextResponse.json({ ok: true, isLive: state.isLive, vodSynced, timelinesSynced });

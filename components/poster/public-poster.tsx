@@ -3665,6 +3665,7 @@ export function PublicPoster({
                           </a>
                           <VodChapters
                             chapters={vod.chapters ?? 0}
+                            defaultOpen={arr.length === 1}
                             durationMs={vod.durationMs}
                             onJump={(sec) => setDayVodPlaying({ titleNo: vod.titleNo, sec })}
                             slug={schedule.calendar.slug}
