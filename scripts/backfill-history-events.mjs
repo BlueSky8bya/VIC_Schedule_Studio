@@ -75,16 +75,20 @@ const tagByName = new Map(tags.map((t) => [t.display_name, t]));
 // 제목 키워드 → 태그 이름. 콘텐츠는 **순서가 우선순위**(첫 매치 = 대표 태그).
 const CONTENT_RULES = [
   ["대회", /대회|[0-9]+강|결승|본선|경기|마라톤|대잔치|배그전쟁|뱅온전쟁|3배싸움|드림팀|티어 ?배치|생컨|버축대|사이클|WBD|릴동파|아이스골프|왁타배그|왁징어게임|배그 삼국지|티어게임|해상전쟁|공주배그|하렘배그|커플 서바이벌|고멤드림|점프맵|아라포|보물찾기|올랜설/],
-  ["합방", /합방|고릴뱅|시점|w\.|참여|초대|민박|같이|리스닝파티|신년회|갈틱|도방|레슨|1:1|나작비/],
-  ["게임", /배그|배틀그라운드|스타 |스타!|스타 연습|롤 |롤!|FC2[56]|마크|마인크래프트|좀보이드|배틀크러쉬|골프|야구|괴식|델타룬|링피트|픽크타|포챔스|경도|잔디|메이플|엔드필드|Darkwater|데바데|농구|오버워치|산나비|맹든링|돌발서버|채무의숲|Palworld|포켓몬|엔더드래곤|8번출구|DEVOUR|왁피스|찍먹|게임/],
+  ["합방", /합방|고릴뱅|시점|w\.|참여|초대|민박|같이|리스닝파티|신년회|갈틱|도방|레슨|1:1|나작비|님 안녕/],
+  // 아르마(Arma)·60 Minutes to Extinction(방탈출)·백룸·구구덕(구스구스덕)·마리오(카트/고양이)·
+  // 인슈라오디드(Enshrouded)·미메시스·베이비스탭·클로버 핏·프클(FC 프로클럽)·점프킹 = 전부 게임
+  // (2026-08-31 사용자 정정 + 검색 확인). 괴식(먹방)은 게임이 아니라 소통으로 이동.
+  ["게임", /배그|배틀그라운드|스타 |스타!|스타 연습|롤 |롤!|FC2[56]|마크|마인크래프트|좀보이드|배틀크러쉬|골프|야구|델타룬|링피트|픽크타|포챔스|경도|잔디|메이플|엔드필드|Darkwater|데바데|농구|오버워치|산나비|맹든링|돌발서버|채무의숲|Palworld|포켓몬|엔더드래곤|8번출구|DEVOUR|왁피스|찍먹|아르마|Arma|60 ?[Mm]inutes|[Ee]scape ?[Rr]oom|방탈출|백룸|구구덕|구스구스덕|마리오|인슈라오디드|Enshrouded|미메시스|베이비스탭|클로버 핏|길드|점프킹|프클|Shapes|게임/],
   ["풀트", /풀트|촉각슈트|스트레칭|춤뱅/],
   ["서버", /서버|왁조트/],
   ["시네티", /시네티/],
   ["월드컵", /월드컵/],
-  ["소통", /소통|노가리|눕뱅|잔잔|후기|짧뱅|토크|빅이봤|별별랭킹|상식퀴즈|타로|릴스|썰|이야기|Q&A|큐앤|가리!|데뷔|구경|테스트|정해보/]
+  // 괴식(먹방)·새해맞이·감컴&버컴(감스트/버튜버 컴퍼니 소식 — 검색 확인)·오타마톤(악기 장난감)은 소통.
+  ["소통", /소통|노가리|눕뱅|잔잔|후기|짧뱅|토크|빅이봤|별별랭킹|상식퀴즈|타로|릴스|썰|이야기|Q&A|큐앤|가리!|데뷔|구경|테스트|정해보|괴식|새해|감컴|버컴|오타마톤|베스 |인상!|후열대화|챌린지|기타치|롤링페이퍼/]
 ];
 const MODIFIER_RULES = [
-  ["연습", /연습|프클/],
+  ["연습", /연습/],
   ["모캡", /모캡|모션캡/],
   ["VRChat", /VRC/i],
   ["시참", /시참/],
@@ -92,7 +96,8 @@ const MODIFIER_RULES = [
   ["구플뱅", /구플/],
   ["오픈런", /오픈런/],
   ["비방", /비방/],
-  ["카페보기", /카페/]
+  // 빅이봤 = 토리님 숲 방송국(게시판) 보기 → 카페보기(2026-08-31 사용자 정정).
+  ["카페보기", /카페|빅이봤/]
 ];
 const missedTagNames = new Set();
 function tagsForTitle(title) {
@@ -132,27 +137,38 @@ for (const v of vods) {
   byDay.set(v.broadcast_day, l);
 }
 
-// 생성 행: 정제 제목이 다르면 별도 일정(그 날 방송 순서 = sort_order).
+// 생성 행: '+'로 이어진 활동은 **각각 별도 일정**(2026-08-31 사용자 지시), 같은 텍스트는
+// 하루 안에서 중복 제거. " - " 소제목 구조는 길 때만 줄바꿈으로 들여쓴다(카드 main+sub 문법).
+// 시각 접두는 각 VOD의 첫 조각에만(뒤 조각들의 내부 시각은 모른다).
 const rows = []; // { calendar_id, date_key, public_title, sort_order, _tags: [{id,kind}] }
 for (const [day, list] of [...byDay.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
   if (haveEvents.has(day)) continue;
-  const groups = []; // { title, firstVod }
+  const segs = []; // { text, vod, first }
   for (const v of list) {
     const t = cleanTitle(v.title);
     if (!t) continue;
-    const g = groups.find((x) => x.title === t);
-    if (!g) groups.push({ title: t, firstVod: v });
+    t.split(/\s*\+\s*/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((s, si) => {
+        if (segs.some((x) => x.text === s)) return;
+        segs.push({ text: s, vod: v, first: si === 0 });
+      });
   }
-  groups.forEach((g, i) => {
-    const start = kstStartOf(g.firstVod);
+  segs.forEach((g, i) => {
+    const start = kstStartOf(g.vod);
     const sameDay = start.toISOString().slice(0, 10) === day;
-    const main = sameDay ? `${start.getUTCHours()}시 ${g.title}` : g.title;
+    let parts = [g.text];
+    if (g.text.length > 16 && g.text.includes(" - ")) {
+      parts = g.text.split(" - ").map((s) => s.trim()).filter(Boolean);
+    }
+    const hour = g.first && sameDay ? `${start.getUTCHours()}시 ` : "";
     rows.push({
       calendar_id: calendarId,
       date_key: day,
-      public_title: main,
+      public_title: [hour + parts[0], ...parts.slice(1)].join("\n"),
       sort_order: i,
-      _tags: tagsForTitle(g.title)
+      _tags: tagsForTitle(g.text)
     });
   });
 }

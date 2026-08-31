@@ -11,12 +11,13 @@
 Problem: 일정 시스템 이전 시대(2024-02~2025-12)는 다시보기는 있는데 달력이 텅 비어
 "그 날 무슨 방송이었나"를 칩 제목 말고는 알 수 없었다(사용자 지시 — VOD 제목으로 유추 생성).
 Change: `scripts/backfill-history-events.mjs` — vod_archive의 broadcast_day ≤ 2025-12-31 중
-일정 0개인 153일에 events 생성(캘린더 vic). v1(하루 1장·무태그 153건)은 사용자 피드백으로
-`--purge`로 전량 삭제 후 v2 재생성: **정제 제목이 다르면 별도 일정**(분위기 구분, 168건) +
-**제목 키워드 → 태그 자동 부여**(콘텐츠 첫 매치 = 대표, 형식 태그 병기, 최대 6개 — 327건,
-무태그 0). 제목 = 분할 접미사(" - N") 제거·"N시 " 접두(새벽 귀속 제외). 기본값
-scheduled/public/stream. 멱등(일정 있는 날 스킵), --dry 미리보기, --purge 롤백.
-Files: `scripts/backfill-history-events.mjs`, `db/backfills/2026-08-31-history-events.json`(생성 id 168건)
+일정 0개인 153일에 events 생성(캘린더 vic). v1(하루 1장·무태그)→v2(제목별 분리+태그)→
+**v3(최종)**: '+'로 이어진 활동을 **각각 별도 일정**으로(224건), " - " 소제목 구조는 길 때만
+줄바꿈 들여쓰기(main+sub 문법), **제목 키워드 → 태그 자동 부여**(콘텐츠 첫 매치 = 대표,
+최대 6개 — 387건, 무태그 0). 사용자 정정 반영: 아르마·60 Minutes to Extinction 등 = 게임
+(검색 확인), 빅이봤 = 카페보기(숲 방송국 보기), 괴식 = 소통, 프클 = 게임. "N시 " 접두는 각
+VOD 첫 조각에만. 기본값 scheduled/public/stream. 멱등, --dry 미리보기, --purge 롤백.
+Files: `scripts/backfill-history-events.mjs`, `db/backfills/2026-08-31-history-events.json`(생성 id 224건)
 Validation: --dry 검토(무태그 0 확인) 후 실행, 2024-03·2025-11 그리드 실측(분리 카드·태그
 색·2색 그라데이션·칩 공존 확인).
 Rollback: `node scripts/backfill-history-events.mjs --purge db/backfills/2026-08-31-history-events.json`
