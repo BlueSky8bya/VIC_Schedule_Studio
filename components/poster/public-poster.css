@@ -1723,6 +1723,13 @@ html[data-reduce-motion] .poster-scaler {
     padding-left: 22px;
     padding-right: 22px;
   }
+  /* ⚠ 위 복원(22px)이 모바일 아젠다의 .agenda-mode(14px, 특이도 0,2,0 < 여기 0,3,0)까지 눌러,
+     아바타 슬롯이 있는 owner/developer '시청자 미리보기'만 실제 시청자보다 좌우가 8px 넓었다
+     (2026-09-01 재신고 실측: 카드 214 vs 230 @360). 미리보기 = 시청자 화면과 동일해야 한다. */
+  .poster-page.avatar-scene .public-calendar-shell.agenda-mode {
+    padding-left: var(--m-agenda-pad-x, 14px);
+    padding-right: var(--m-agenda-pad-x, 14px);
+  }
   .poster-page.avatar-scene .poster-surface {
     grid-template-columns: minmax(0, 1fr) 252px;
     column-gap: 16px;
