@@ -1029,6 +1029,21 @@ export function PublicPoster({
     for (const list of map.values()) list.sort((a, b) => a.titleNo - b.titleNo);
     return map;
   }, [schedule.vods]);
+  // 날짜 칸 다시보기 팝오버(PC) — 일정 카드가 없는 날(특히 2024~25, 일정 시스템 이전)도
+  // 칸 배경 클릭으로 그 날 다시보기에 들어가는 유일한 통로다(2026-08-31 사용자 요청).
+  // 카드가 있는 날도 배경 클릭이면 이 팝오버(카드 클릭은 기존 상세). 모바일 아젠다는
+  // 일정 없는 날 줄에 칩을 인라인으로 그려 팝오버가 필요 없다.
+  const [dayVodPop, setDayVodPop] = useState<{ dateKey: string; x: number; y: number } | null>(
+    null
+  );
+  useEffect(() => {
+    if (!dayVodPop) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setDayVodPop(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [dayVodPop]);
   // 일정 상세 — 모바일 아젠다는 하단 시트, PC 달력은 카드 옆 앵커 팝오버(anchor 있으면 팝오버).
   // 공개 DTO(PublicScheduleEvent + 공개 태그)만 사용 — 비공개 필드 자체가 없다.
   const [agendaDetail, setAgendaDetail] = useState<{
@@ -2157,6 +2172,7 @@ export function PublicPoster({
   }
   function moveMonth(offset: number) {
     didNavigateRef.current = true;
+    setDayVodPop(null); // 팝오버는 화면 고정 좌표라 달이 바뀌면 근거를 잃는다
     setMonthDir(offset >= 0 ? "next" : "prev");
     const next = getAdjacentMonth(view.year, view.month, offset);
     setView(next);
@@ -2274,14 +2290,30 @@ export function PublicPoster({
       }
     }
 
+    // 이 날 다시보기(공개분)가 있으면 칸 배경 클릭 = 다시보기 팝오버. 카드·업도움 띠·버튼
+    // 클릭은 각자의 동작이 우선이다(closest 가드). 포스터/미리보기(비인터랙티브)에선 없음.
+    const cellVods = interactive ? vodsByDate.get(cell.isoDate) : undefined;
     return (
       <article
         className={`public-day ${cell.inCurrentMonth ? "" : "outside"} ${
           day.isToday ? "today" : ""
-        }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}`}
+        }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}${
+          cellVods ? " has-vod" : ""
+        }`}
         data-pop={popTier ?? undefined}
         data-cell-index={cellIndex}
+        data-act={cellVods ? "day-vod-open" : undefined}
         key={cell.isoDate}
+        onClick={
+          cellVods
+            ? (e) => {
+                const t = e.target as HTMLElement;
+                if (t.closest(".public-event, .support-bar, button, a")) return;
+                hapticTick();
+                setDayVodPop({ dateKey: cell.isoDate, x: e.clientX, y: e.clientY });
+              }
+            : undefined
+        }
       >
         {supportHere.map((s) => {
           const lane = supportLanes.lanes.get(s.id) ?? 0;
@@ -2969,6 +3001,28 @@ export function PublicPoster({
                     // 쉬는 날은 누락된 레코드가 아니라 쉬는 날이다.
                     <span className="agenda-noevent">아직 일정이 없어요 🍃</span>
                   ) : null}
+                  {/* 일정 카드가 없는 날의 다시보기 — 카드가 없으면 상세 시트도 없어 이 칩이
+                      유일한 통로다(특히 2024~25, 일정 시스템 이전). 카드 있는 날은 상세 시트가
+                      이미 안내하므로 중복해 그리지 않는다. */}
+                  {interactive && list.length === 0
+                    ? (vodsByDate.get(cell.isoDate) ?? []).map((vod, vi, arr) => (
+                        <a
+                          className="agenda-link vod agenda-vod-inline"
+                          data-act="vod-replay"
+                          href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
+                          key={vod.titleNo}
+                          onClick={() => hapticTick()}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                        >
+                          <Play aria-hidden="true" size={13} strokeWidth={2.6} />
+                          다시보기{arr.length > 1 ? ` ${vi + 1}` : ""}
+                          {vod.durationMs > 0 ? (
+                            <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
+                          ) : null}
+                        </a>
+                      ))
+                    : null}
                   {list.map(({ event: rawEvent, support }) => {
                     // 위 달력 칸과 같은 규칙 — 서버가 없다고 확인한 떡밥은 안 그린다.
                     if (goneTeaserIds.has(rawEvent.id)) return null;
@@ -3404,6 +3458,58 @@ export function PublicPoster({
       ) : null}
       {/* 모바일 아젠다 일정 상세 시트 — 카드 탭으로 열리며 전체 제목·기간·태그 이름을 보여준다.
           공개 DTO만 사용(비공개 필드 자체가 없다). fixed 오버레이라 캡쳐 PNG 밖. */}
+      {/* 날짜 칸 다시보기 팝오버(PC) — 클릭 지점 근처 고정, 화면 밖으로 안 나가게 클램프.
+          투명 백드롭이 바깥 클릭을 받는다(Esc·월 이동도 닫음). */}
+      {dayVodPop
+        ? (() => {
+            const list = vodsByDate.get(dayVodPop.dateKey) ?? [];
+            const wd = new Date(`${dayVodPop.dateKey}T00:00:00Z`).getUTCDay();
+            const mark = getDayMark(dayVodPop.dateKey);
+            const tone = wd === 0 || Boolean(mark?.isHoliday) ? " red" : wd === 6 ? " saturday" : "";
+            const width = 236;
+            const height = 58 + list.length * 50;
+            const left = Math.max(8, Math.min(dayVodPop.x + 10, window.innerWidth - width - 8));
+            const top = Math.max(8, Math.min(dayVodPop.y + 10, window.innerHeight - height - 8));
+            return (
+              <div
+                className="day-vod-backdrop"
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setDayVodPop(null);
+                }}
+                role="presentation"
+              >
+                <div
+                  aria-label="다시보기"
+                  className="day-vod-pop"
+                  role="dialog"
+                  style={{ left, top, width }}
+                >
+                  <b className={`dvp-date${tone}`}>
+                    {Number(dayVodPop.dateKey.slice(0, 4))}.{formatShortDate(dayVodPop.dateKey)} (
+                    {WEEKDAYS[wd]})
+                  </b>
+                  {list.map((vod, vi, arr) => (
+                    <a
+                      className="agenda-link vod"
+                      data-act="vod-replay"
+                      href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
+                      key={vod.titleNo}
+                      onClick={() => hapticTick()}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <Play aria-hidden="true" size={13} strokeWidth={2.6} />
+                      다시보기{arr.length > 1 ? ` ${vi + 1}` : ""}
+                      {vod.durationMs > 0 ? (
+                        <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
+                      ) : null}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })()
+        : null}
       {agendaDetail
         ? (() => {
             const { event: rawDetailEvent, support, dateKey, anchor } = agendaDetail;

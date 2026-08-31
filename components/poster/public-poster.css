@@ -856,6 +856,97 @@ html[data-reduce-motion] .mb-live-dot {
   background: #e9f0fe;
   color: #2455c9;
 }
+/* 아젠다 인라인 칩(일정 없는 날) — 줄에 붙는 작은 알약. 안에서 줄바꿈하면
+   '다시보기 1' 아래 길이가 떨어져 두 줄 알약이 된다(실측) — 한 줄 고정. */
+.agenda-vod-inline {
+  align-self: flex-start;
+  margin-top: 2px;
+  min-height: 34px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ── 날짜 칸 다시보기 팝오버(PC) — 칸 배경 클릭 진입. 일정 카드 없는 날(2024~25)의
+   유일한 다시보기 통로. 포스터 캡쳐 불침범: 힌트는 hover에만, 팝오버는 클릭 후에만. ── */
+.public-day.has-vod {
+  cursor: pointer;
+}
+.public-day.has-vod:hover::after {
+  content: "▶";
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  font-size: 9px;
+  color: #94a9d8;
+  pointer-events: none;
+}
+.day-vod-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 88; /* 일정 상세(90) 아래, 하트 입자(60) 위 */
+}
+.day-vod-pop {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 12px 14px 14px;
+  border: 1px solid var(--line, #ece9f5);
+  border-radius: var(--r-lg, 16px);
+  background: #fff;
+  box-shadow: 0 14px 34px rgb(60 70 110 / 22%);
+  animation: day-vod-in var(--dur-1) var(--ease);
+}
+@keyframes day-vod-in {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.97);
+  }
+}
+html[data-reduce-motion] .day-vod-pop {
+  animation: none;
+}
+.dvp-date {
+  font-size: var(--text-ui);
+  font-weight: 900;
+  color: #3f3a52;
+}
+.dvp-date.red {
+  color: #dc2626;
+}
+.dvp-date.saturday {
+  color: #2563eb;
+}
+/* 팝오버 안 칩은 상세 팝오버의 CTA와 같은 파랑 그라데이션 풀폭 버튼. */
+.day-vod-pop .agenda-link.vod {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 0;
+  padding: 11px 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #5d8bf4, #3564e0);
+  color: #fff;
+  font-size: var(--text-ui);
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 6px 16px rgb(53 100 224 / 26%);
+  transition:
+    filter var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.day-vod-pop .agenda-link.vod:hover {
+  filter: brightness(1.06);
+}
+.day-vod-pop .agenda-link.vod:active {
+  transform: scale(0.98);
+}
+.day-vod-pop .agenda-link.vod .agenda-vod-dur {
+  color: #dbe6ff;
+  opacity: 1;
+}
 .agenda-link.vod:active {
   transform: scale(0.97);
 }

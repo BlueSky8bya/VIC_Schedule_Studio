@@ -179,6 +179,7 @@ const ACT: Record<string, TargetLabel> = {
   "avatar-ctl-toggle": { name: "아바타 위치 바꾸기", area: "시청자 화면" },
   "vlog-chip": { name: "브이로그 칩", area: "시청자 화면" },
   "vod-replay": { name: "다시보기 열기", area: "시청자 화면", hint: "날짜 상세의 '다시보기' — 숲 VOD로 이동" },
+  "day-vod-open": { name: "날짜 칸 다시보기 열기", area: "시청자 화면", hint: "날짜 칸 배경 클릭 → 다시보기 팝오버" },
   "pi-retry": { name: "이 달 기록 다시 불러오기", area: "시청자 화면" },
 
   // 편집실
