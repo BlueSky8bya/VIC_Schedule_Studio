@@ -941,9 +941,10 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   animation: agenda-detail-fade var(--dur-2) var(--ease-enter, ease-out) both;
 }
 .day-vod-modal {
-  /* 넓은 창(2026-08-31 사용자 피드백) — 미리보기를 크게, 챕터는 아래 2열 신문식. */
-  width: min(720px, 100%);
-  max-height: min(86vh, 820px);
+  /* 더 넓은 창(2026-09-01 사용자 피드백 2차) — 미리보기가 주인공. 낮은 화면에선 미리보기가
+     max-height(아래 .dvm-thumb)로 잡히고 플레이어가 알아서 레터박스를 그린다. */
+  width: min(1040px, 100%);
+  max-height: min(92vh, 1000px);
   display: flex;
   flex-direction: column;
   border: 1px solid var(--line, #ece9f5);
@@ -1003,6 +1004,9 @@ html[data-reduce-motion] .day-vod-modal {
   position: relative;
   display: block;
   aspect-ratio: 16 / 9;
+  /* 창이 커진 뒤(1040px) 낮은 노트북에서 16:9 전체 높이(~570px)가 챕터를 밀어내지 않게 캡 —
+     캡에 걸리면 상자만 납작해지고 영상은 플레이어가 레터박스로 가운데 그린다(아래 배경 #000). */
+  max-height: 56vh;
   border-radius: var(--r-md, 12px);
   overflow: hidden;
   background: linear-gradient(135deg, #e8edf8, #dde5f4);
@@ -1024,6 +1028,7 @@ html[data-reduce-motion] .day-vod-modal {
 .dvm-thumb.is-playing:hover {
   transform: none;
   box-shadow: 0 6px 18px rgb(20 30 60 / 25%);
+  background: #000; /* max-height 캡으로 생기는 레터박스가 플레이어 검정과 이어지게 */
 }
 .dvm-thumb.is-playing iframe {
   width: 100%;
@@ -1177,7 +1182,9 @@ html[data-reduce-motion] .day-vod-modal {
   display: block;
   max-height: none;
   overflow: visible;
-  columns: 2;
+  /* 고정 2열 → 열 최소폭 기준 자동(창 1040px에선 3열) — 짧은 챕터 라벨이 넓은 열에서
+     휑하게 남던 것을 밀도로 회수. 좁은 화면에선 자연히 2열/1열로 줄어든다. */
+  columns: 300px;
   column-gap: 12px;
   padding: 8px 10px;
 }
@@ -1251,7 +1258,7 @@ html[data-reduce-motion] .day-vod-modal {
    공존해야 한다(2026-09-01 사용자 지적: 첫 방송 챕터가 통째로 펼쳐져 두 번째 방송까지
    한참 내려가야 했다). 각 챕터 목록을 캡 + 자체 스크롤로. */
 .dvm-body:not([data-single]) .vch-scroll {
-  max-height: 300px;
+  max-height: clamp(300px, 38vh, 460px); /* 창이 커진 만큼 캡도 화면 높이에 비례해 여유 있게 */
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: var(--r-md, 12px);
