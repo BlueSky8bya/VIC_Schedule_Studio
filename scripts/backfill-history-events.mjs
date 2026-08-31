@@ -76,19 +76,22 @@ const tagByName = new Map(tags.map((t) => [`${t.kind}|${t.display_name}`, t]));
 // 제목 키워드 → 태그 이름. 콘텐츠는 **순서가 우선순위**(첫 매치 = 대표 태그).
 const CONTENT_RULES = [
   ["대회", /대회|[0-9]+강|결승|본선|경기|마라톤|대잔치|배그전쟁|뱅온전쟁|3배싸움|드림팀|티어 ?배치|생컨|버축대|사이클|WBD|릴동파|아이스골프|왁타배그|왁징어게임|배그 삼국지|티어게임|해상전쟁|공주배그|하렘배그|커플 서바이벌|고멤드림|점프맵|아라포|보물찾기|올랜설/],
-  ["합방", /합방|고릴뱅|시점|w\.|참여|초대|민박|같이|리스닝파티|신년회|갈틱|도방|레슨|1:1|나작비|님 안녕/],
+  // 합방 = **명시적 신호만**(2026-08-31 사용자 지적 — 고릴뱅은 게릴라 단독 방송, '시점'은 대회
+  // 본인 시점, '참여'도 합방이 아니다). 넓게 잡던 v3 이전 규칙은 오탐이 많았다. 모자란 부분은
+  // 아래 팬 타임라인 근거(tlCollab)가 보충한다.
+  ["합방", /합방|w\.|초대|민박|1:1|레슨|나작비|님 안녕/],
   // 서버가 게임보다 앞 — 채무의숲·맹든링·돌발서버는 '서버 이름'(2026-08-31 사용자 정정)이라
   // 마크류 단어가 섞여도 대표는 서버여야 한다.
   ["서버", /서버|왁조트|채무의숲|맹든링/],
   // 아르마(Arma)·60 Minutes to Extinction(방탈출)·백룸·구구덕(구스구스덕)·마리오(카트/고양이)·
   // 인슈라오디드(Enshrouded)·미메시스·베이비스탭·클로버 핏·프클(FC 프로클럽)·점프킹 = 전부 게임
   // (2026-08-31 사용자 정정 + 검색 확인). 괴식(먹방)은 게임이 아니라 소통으로 이동.
-  ["게임", /배그|배틀그라운드|스타 |스타!|스타 연습|롤 |롤!|FC2[56]|마크|마인크래프트|좀보이드|배틀크러쉬|골프|야구|델타룬|링피트|픽크타|포챔스|경도|잔디|메이플|엔드필드|Darkwater|데바데|농구|오버워치|산나비|Palworld|포켓몬|엔더드래곤|8번출구|DEVOUR|왁피스|찍먹|아르마|Arma|60 ?[Mm]inutes|[Ee]scape ?[Rr]oom|방탈출|백룸|구구덕|구스구스덕|마리오|인슈라오디드|Enshrouded|미메시스|베이비스탭|클로버 핏|길드|점프킹|프클|Shapes|게임/],
+  ["게임", /배그|배틀그라운드|스타 |스타!|스타 연습|롤 |롤!|FC2[56]|마크|마인크래프트|좀보이드|배틀크러쉬|골프|야구|델타룬|링피트|픽크타|포챔스|경도|잔디|메이플|엔드필드|Darkwater|데바데|농구|오버워치|산나비|Palworld|포켓몬|엔더드래곤|8번출구|DEVOUR|왁피스|찍먹|아르마|Arma|60 ?[Mm]inutes|[Ee]scape ?[Rr]oom|방탈출|백룸|구구덕|구스구스덕|마리오|인슈라오디드|Enshrouded|미메시스|베이비스탭|클로버 핏|길드|점프킹|프클|Shapes|갈틱|게임/],
   ["풀트", /풀트|촉각슈트|스트레칭|춤뱅/],
   ["시네티", /시네티/],
   ["월드컵", /월드컵/],
   // 괴식(먹방)·새해맞이·감컴&버컴(감스트/버튜버 컴퍼니 소식 — 검색 확인)·오타마톤(악기 장난감)은 소통.
-  ["소통", /소통|노가리|눕뱅|잔잔|후기|짧뱅|토크|빅이봤|별별랭킹|상식퀴즈|타로|릴스|썰|이야기|Q&A|큐앤|가리!|데뷔|구경|테스트|정해보|괴식|새해|감컴|버컴|오타마톤|베스 |인상!|후열대화|챌린지|기타치|롤링페이퍼/]
+  ["소통", /소통|노가리|눕뱅|잔잔|후기|짧뱅|토크|빅이봤|별별랭킹|상식퀴즈|타로|릴스|썰|이야기|Q&A|큐앤|가리!|데뷔|구경|테스트|정해보|괴식|새해|감컴|버컴|오타마톤|베스 |인상!|후열대화|챌린지|기타치|롤링페이퍼|고릴뱅/]
 ];
 const MODIFIER_RULES = [
   ["연습", /연습/],
@@ -102,6 +105,11 @@ const MODIFIER_RULES = [
   // 빅이봤 = 토리님 숲 방송국(게시판) 보기 → 카페보기(2026-08-31 사용자 정정).
   ["카페보기", /카페|빅이봤/]
 ];
+// (타임라인 근거 합방 판정은 시도 후 폐기 — 2026-08-31 실측: 팬 타임라인의 '합방' 언급은
+// 거의 전부 "합방 예정/공지/신청글/후기" 같은 **다른 방송 얘기**라, 그 방송이 합방이라는
+// 증거가 못 된다(포켓몬 Z-A·빅이봤·EQ 테스트가 전부 오탐). 합방은 제목 명시 신호만 쓴다.
+// 타임라인 크롤 캐시(.scratch-pw/vod-timelines.json)는 Phase 2 활용을 위해 남겨둔다.)
+
 const missedTagNames = new Set();
 function tagsForTitle(title) {
   const picked = [];
@@ -152,17 +160,16 @@ for (const v of vods) {
 const rows = []; // { calendar_id, date_key, public_title, sort_order, _tags: [{id,kind}] }
 for (const [day, list] of [...byDay.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
   if (haveEvents.has(day)) continue;
-  const segs = []; // { text, vod, first }
+  const segs = []; // { text, vod, first, only }
   for (const v of list) {
     const t = cleanTitle(v.title);
     if (!t) continue;
-    t.split(/\s*\+\s*/)
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .forEach((s, si) => {
-        if (segs.some((x) => x.text === s)) return;
-        segs.push({ text: s, vod: v, first: si === 0 });
-      });
+    const parts = t.split(/\s*\+\s*/).map((s) => s.trim()).filter(Boolean);
+    parts.forEach((s, si) => {
+      if (segs.some((x) => x.text === s)) return;
+      // only = 이 VOD의 유일한 조각 — 타임라인(VOD 단위 증거)을 조각에 안전하게 귀속할 수 있는 경우.
+      segs.push({ text: s, vod: v, first: si === 0, only: parts.length === 1 });
+    });
   }
   segs.forEach((g, i) => {
     const start = kstStartOf(g.vod);
@@ -183,10 +190,10 @@ for (const [day, list] of [...byDay.entries()].sort((a, b) => (a[0] < b[0] ? -1 
 }
 
 console.log(`VOD 있는 날 ${byDay.size} · 이미 일정 있는 날 스킵 ${haveEvents.size} · 생성 일정 ${rows.length}건`);
-for (const r of rows.slice(0, 14)) {
-  console.log(`  ${r.date_key}#${r.sort_order} [${r._tags.map((t) => t.display_name).join("·") || "무태그"}] ${r.public_title.slice(0, 56)}`);
+for (const r of (DRY ? rows : rows.slice(0, 14))) {
+  console.log(`  ${r.date_key}#${r.sort_order} [${r._tags.map((t) => t.display_name).join("·") || "무태그"}] ${r.public_title.split("\n").join(" ⏎ ").slice(0, 64)}`);
 }
-if (rows.length > 14) console.log(`  … 외 ${rows.length - 14}건`);
+if (!DRY && rows.length > 14) console.log(`  … 외 ${rows.length - 14}건`);
 const untagged = rows.filter((r) => r._tags.length === 0);
 console.log(`무태그 ${untagged.length}건:`);
 for (const r of untagged) console.log(`   ${r.date_key} | ${r.public_title.slice(0, 60)}`);
