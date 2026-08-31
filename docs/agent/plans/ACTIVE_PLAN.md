@@ -1,64 +1,68 @@
 # Active ExecPlan
 
-Plan ID: PLAN-20260827-004
-Status: Completed (①②③ 구현 후 ③의 '높이 fit'은 당일 철회 — prod 8월에서 배율 ~0.6, 글씨 축소.
-scene도 폭 fit만. 추가: 뱅송 미리보기 URL `/onair`(avatarFixed, 로그인 없음, 공개 로더만))
-Task Risk: L2 (구조적 — 포스터 전역 밀도 변경 = 지오메트리 게이트 baseline 의도적 갱신, 아바타 scene 레이아웃 재구성, fit 배율 계산 확장)
-Created / Updated: 2026-08-27
+Plan ID: PLAN-20260831-001
+Status: Proposed (사용자 방향 확정 대기 — 아래 "결정 필요" 참조)
+Task Risk: L2 (구조적 — 새 외부 데이터 소스(SOOP VOD/댓글) + 마이그레이션 + 공개 API 확장 + 시청자 UI)
+Created / Updated: 2026-08-31
 
 ## Objective
 
-뱅온(아바타 scene) 화면이 OBS 1920×1080 브라우저 소스 안에서 **한눈에** 들어오게 한다
-(사용자·빅토리 취향: "한 눈에 들어오는 게 취향"). 사진 증상: 오른쪽 정보 카드가 반토막 폭이라
-`2026년 08 / 월` 줄바꿈, 달력은 8월(6주·고밀도)에 표면 1840×1360(1.35)이라 1:1에 가깝게 보임.
+토리님 숲 방송국의 **다시보기(VOD) 탭 전체 + 댓글(팬 타임라인)** 을 서버가 주기 수집해:
+1) 시청자 화면에서 방송 날짜 클릭 → 해당 다시보기로 바로 이동(+영상 길이 표시),
+2) 팬이 남긴 타임라인 댓글을 파싱해 사이트 데이터로 활용(활용 방식은 사용자와 결정).
 
-## 실측 (2026-08-27, 1920×1080)
+## 사전 조사 결과 (2026-08-31 실측 — 전부 무인증 공개 API)
 
-- 8월 prod 표면 자연 크기 1840×1360, scene stage 1337×988(가용 1006) → 폭 기준 fit이라 오른쪽을
-  줄여도 비율은 안 변함. 원인 = 달력 콘텐츠 높이(표면 폭 1840 고정·높이 콘텐츠 기준 불변식).
-- 정보 카드 232px·max 48% → 180px에서 줄바꿈.
+- **VOD 목록**: `chapi.sooplive.co.kr/api/toryvac/vods/review?page=N&per_page=20&orderby=reg_date`
+  → 총 **376개 · 19페이지**. 항목마다 `title_no`(VOD id), `title_name`, `reg_date`(등록≈뱅종, KST),
+  `ucc.total_file_duration`(ms), `ucc.thumb`(rowKey에 **방송 시작 날짜 + bno** 포함 —
+  `broadcast_session.bno`와 정확 조인 가능, 기존 `fetchSoopVodTimes`가 이미 이 매칭 사용),
+  `count.comment_cnt/like_cnt/read_cnt`. `auto_delete_remain_hours`는 빈 값(만료 예정 없음).
+- **댓글**: `chapi.sooplive.co.kr/api/toryvac/title/{title_no}/comment?page=N` (per_page 최대 30,
+  페이지네이션 meta 제공). 대댓글은 `c_comment_cnt`로 존재만 확인(필요 시 별도 엔드포인트 탐사).
+- **타임라인 댓글 커버리지**: 표본 5페이지(96개 VOD) 스캔 → **81개(84%)에 타임라인 존재**.
+  최근 페이지들은 사실상 전부(1·10·15페이지 각 20/20), 유일한 공백은 채널 초창기(19페이지 3/16 —
+  타임라인 문화 정착 전). 판정 휴리스틱: 타임스탬프 3개 이상 or '타임라인' 포함.
+  주 작성자 두 분(리야-, 소요카). 포맷 일정: `HH:MM:SS 설명` 줄 + 섹션 헤더 `[소통]`/`[게임] - FC26`.
+  최대 108줄짜리도 존재(2,590자).
+- **플레이어 URL**: `https://vod.sooplive.co.kr/player/{title_no}` → 200 OK.
+  특정 시각 점프 파라미터(`?changeSecond=초`)는 **브라우저 실측 필요**(코드 반영 전 검증).
+- 기존 자산: `lib/broadcast/soop.ts`(BJ_ID, VOD API 일부 사용), `broadcast_session.bno`(0051),
+  외부 크론(cron-job.org) 패턴, 뱅종 시 VOD 조회 훅(broadcast-poll).
 
-## 확정 방향 (사용자, 2026-08-27 01:43)
+## Phase 1 — VOD 아카이브 + 시청자 날짜→다시보기 (방향 확정됨)
 
-① 오른쪽 칸 **세로 스택**(정보 카드 위, 라이브 카드 아래, 열 전폭) — 줄바꿈 소멸.
-② **전역 밀도 압축 ~10%** — 행 최소높이·칩/칸 패딩·간격(글자 크기는 유지: 방송 화면 가독성).
-   scene 전용 압축은 꾸미기≠시청자 지오메트리 → 스티커 어긋남이라 금지. 전역이면 canon 프레임이
-   두 모드에서 같이 바뀌어 불변식 유지. (기존 스티커는 칸 대비 소폭 이동 가능 — 보고.)
-③ **방송 모드 고정 컴포지션** — 아바타 열 `--avatar-col: clamp(300px, 18.75vw, 380px)`(1920에서
-   정확히 360px), 태그 레일 120+12, 나머지 = 달력 영역. scene에선 fit을 **폭·높이 둘 다**로
-   (`min(w/natW, availH/natH, 1.6)`) → 어떤 달도 1080 안에 들어감. 달력은 영역 안에서 **세로
-   중앙**(`--poster-dy` translate, 균일 scale이라 스티커 좌표 안전).
-   아바타 자리는 `top:76 / bottom:14` 세로 flex 열 = [카드 스택][꾸미기 토글][점선 박스(flex:1)] —
-   `--avatar-h` 매직 넘버 제거, 박스는 남는 높이를 결정적으로 차지.
+1. **마이그레이션 `vod_archive`**: `title_no` pk, `bno`, `broadcast_day`(KST 귀속 — rowKey 날짜 1순위,
+   없으면 reg_date−duration), `title`, `duration_ms`, `reg_date`, `comment_cnt`, `like_cnt`, `read_cnt`,
+   `synced_at`. RLS deny-all + service_role grant(**0035/0043 교훈 — grants 파일 필수**).
+2. **수집기**: 서버 액션/크론 — 증분(1페이지 폴링, 새 title_no만) + 초기 백필 스크립트(19페이지,
+   376개 · 요청 간 250ms). 뱅종 감지 훅(broadcast-poll)에서도 1회 트리거.
+3. **공개 경계**: VOD 링크·길이는 공개 데이터 → public-loader에 날짜별 `{vodUrl, durationMs}` 명시적
+   DTO로 추가(스프레드 금지). 캐시 revalidate 3줄 규칙 준수.
+4. **시청자 UI**: 날짜 상세(카드/시트)에 "다시보기 ▶ (5시간 12분)" 칩 — 과거 날짜 + VOD 있을 때만.
+   하루 여러 VOD면 목록. 인사이트 '방송 시간' 데이터도 VOD 길이로 **과거(세션 기록 이전) 백필** 가능.
 
-## 원칙 / 불가침
+## Phase 2 — 팬 타임라인 수집 + 활용 (활용처 미정 — 사용자와 결정)
 
-- 표면 폭 1840 고정, 높이 콘텐츠 기준 — 유지. 스티커 좌표 = 기본 지오메트리 표면 비율(ADR-0004).
-- 꾸미기 == 시청자 지오메트리. scene 전용 밀도 금지.
-- 지오메트리 게이트(`tests/visual/geometry.spec.ts`) baseline 갱신은 **이 변경이 의도한 레이아웃
-  변경**이므로 허용 — 커밋 메시지에 명시.
-- 시청자(avatarSlot=false)·모바일(≤640)·<1100px(scene off)은 ②만 영향, ①③ 무영향.
-- 내보내기 표면(`[data-export-surface]`)에 관리 UI 없음 — 불변.
+1. **수집**: 새 VOD의 댓글 1~2페이지 → 휴리스틱(타임스탬프 ≥3 or '타임라인')으로 후보 →
+   파싱 `{sec, label, section}` + 작성자 닉 → `vod_timeline`(+`vod_timeline_entry` or JSONB).
+2. **활용 후보** (하나 이상 선택):
+   A. 날짜 상세에 챕터 목록 — 항목 클릭 = 해당 시각으로 VOD 점프
+   B. 전체 검색 — "기타 친 날 언제였지?" → 타임라인 전문 검색
+   C. 인사이트 — 섹션 헤더 파싱으로 코너별(소통/게임/노래) 시간 배분 트렌드
+   D. 타임라인 작성자 크레딧 표시(팬 기여 부각)
+3. **주의**: 타임라인은 **팬 창작물** — 사이트 게재 시 닉네임 크레딧 + 가능하면 사전 동의(리야-,
+   소요카 두 분). 닉네임은 공개 댓글의 공개 정보지만 최소 수집 원칙 유지.
 
-## 단계
+## 공통 리스크
 
-- [x] P0. 컨텍스트 재수집(세션 유실) + 본 플랜.
-- [x] A. CSS ① — `.avatar-top-cards` flow·column·전폭, 카드 max-width 해제, in-rail 정보 카드 타이포 확대.
-- [x] B. CSS ③ — `--avatar-col`, stage margin, `.avatar-slot` top/bottom flex 열, dock flex:1,
-      `.avatar-ctl-inslot`(꾸미기 토글을 슬롯 안 흐름으로), `--avatar-h`·translate 규칙 제거,
-      <1100 media에서 슬롯=토글만 좌상단.
-- [x] C. TSX ③ — measure(): scene && ≥1100px이면 높이 fit + dy; stage 높이 = 가용 높이; 창 resize 리스너;
-      꾸미기 토글 JSX를 슬롯 안으로 이동.
-- [x] D. CSS ② — grid-auto-rows 150→132, weekday-row 10/7→8/5, surface gap 16→12·세로 padding 18→14,
-      day-events 5/6-5-8→4/5-5-6, public-event gap 3→2·padding 5→4, day-strip head 27→25·padding 3→2.
-- [x] E. 검증 — tsc·lint·build exit code, vitest, e2e(그림판·포스터), 비주얼(geometry·poster baseline
-      의도 갱신), fixture 실측 스크립트(1920×1080·1366×768, viewer/decorate, left/right): stage 바닥 ≤
-      뷰포트, 카드 스택 폭=열 폭·줄바꿈 0, 토글↔카드↔박스 겹침 0, 스티커 매핑 e2e(geometry) 통과.
-- [x] F. CURRENT_STATE 갱신, 커밋·푸시.
+- 비공식 API — 필드 소멸 전례 있음(station broad_start, 2026-08). 실패는 조용히 스킵 + 기존 데이터
+  유지(fail-soft), 파서에 이상치 가드.
+- 크롤링 부하 최소화: 증분 위주, 백필 1회, 요청 간격 두기, User-Agent 명시.
+- 공개 경계: 댓글 원문·닉은 운영 데이터로 시작(개발자만) → 공개 표면에 내보낼 때 별도 DTO 심사.
 
-## 검증
+## 결정 필요 (사용자)
 
-- `tsc --noEmit` · `npm run lint` · `next build` **exit code 확인**
-- 공개 경계: 변경 없음(CSS/클라 레이아웃만).
-- 회귀: 아바타 ON/OFF·좌우 전환 애니(margin transition) 유지, 시청자 미리보기 토글 좌상단 유지,
-  scene 확대(Ctrl+휠)는 높이 fit 안에서 동작.
+1. Phase 2 활용 방식 A~D 중 무엇부터? (A가 Phase 1과 시너지 최대)
+2. 타임라인 게재 시 작성자 닉 표시 여부 / 동의 구할지
+3. Phase 1 바로 착수 여부
