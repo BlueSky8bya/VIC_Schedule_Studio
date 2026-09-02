@@ -861,21 +861,8 @@ export function PublicPoster({
     [schedule.events, today]
   );
   const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
-  // 업 도움 띠 줄 수를 "주별"로 — 띠 없는 주는 0이라 그 주 일정이 위로 붙는다(높이 낭비 방지).
-  const weekSupportLaneCount = useMemo(() => {
-    const perWeek: number[] = [];
-    for (let w = 0; w * 7 < cells.length; w += 1) {
-      let maxLane = -1;
-      for (const c of cells.slice(w * 7, w * 7 + 7)) {
-        for (const s of getEventsForDate(liveEvents, c.isoDate)) {
-          if (!s.isSupport) continue;
-          maxLane = Math.max(maxLane, supportLanes.lanes.get(s.id) ?? 0);
-        }
-      }
-      perWeek[w] = maxLane + 1;
-    }
-    return perWeek;
-  }, [cells, liveEvents, supportLanes]);
+  // (띠 줄 수 "주별" 계산은 칸별 계산으로 대체 — 2026-09-02. 띠가 안 지나가는 칸까지 주 최대값
+  //  만큼 내려앉아 빈 줄이 생겼다. 이제 각 칸이 자기를 지나는 띠의 최고 레인만큼만 비운다.)
   // (레일 업도움 카드 삭제로 activeSupportEvents 목록은 불필요 — 업도움 접근은 띠 클릭 팝오버.)
   // 이어진 일정 묶음 키 — 같은 묶음 칸들의 높이를 맞추는 데 쓴다(아래 useEqualChainHeights).
   const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
@@ -2491,10 +2478,17 @@ export function PublicPoster({
   }
 
   // 날짜 칸 렌더러.
-  function renderDayCell(cell: MonthCell, weekSupCount: number, cellIndex: number) {
+  function renderDayCell(cell: MonthCell, cellIndex: number) {
     const covering = getEventsForDate(liveEvents, cell.isoDate);
     const supportHere = covering.filter((e) => e.isSupport);
     const events = covering.filter((e) => !e.isSupport);
+    // 이 칸을 실제로 지나는 띠의 최고 레인 깊이 — 일정 목록은 딱 그만큼만 내려앉는다.
+    // 레인 번호가 절대 위치(top: lane×20)라 '개수'가 아니라 '최고 레인+1'이어야 한다:
+    // 레인0 띠가 이 칸을 안 지나가도 레인1 띠가 지나가면 40px을 비워야 겹치지 않는다.
+    const cellLaneDepth = supportHere.reduce(
+      (max, s) => Math.max(max, (supportLanes.lanes.get(s.id) ?? 0) + 1),
+      0
+    );
     const day = classifyDay(cell.isoDate, cell.weekday, today);
     const visibleDayMark = getDayMark(cell.isoDate);
     const showHeaderMark = Boolean(visibleDayMark?.name);
@@ -2710,7 +2704,7 @@ export function PublicPoster({
         </div>
         <div
           className="day-events"
-          style={weekSupCount > 0 ? { paddingTop: 8 + weekSupCount * 20 } : undefined}
+          style={cellLaneDepth > 0 ? { paddingTop: 8 + cellLaneDepth * 20 } : undefined}
         >
           {events.map((rawEvent) => {
             // 서버가 '이제 없는 일정'이라고 확인해 준 떡밥(삭제/비공개 전환)은 그리지 않는다 —
@@ -4530,9 +4524,7 @@ export function PublicPoster({
             </div>
 
             <div className="public-month-grid" aria-label="월간 공개 일정" ref={setMonthGridRef}>
-              {cells.map((cell, i) =>
-                renderDayCell(cell, weekSupportLaneCount[Math.floor(i / 7)] ?? 0, i)
-              )}
+              {cells.map((cell, i) => renderDayCell(cell, i))}
             </div>
           </section>
 

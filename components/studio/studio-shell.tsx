@@ -1104,22 +1104,8 @@ export function StudioShell({
   // 업 도움을 편집 중이면 팝오버의 점선·리더 라인을 띠와 같은 장미색으로(보라=일반 일정).
   const selectedIsSupport = Boolean(selectedLiveEvent?.isSupport);
   const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
-  // 업 도움 띠가 차지하는 줄 수를 "주(週)별"로 센다. 띠가 없는 주는 0 → 그 주의 일정들이 위로
-  // 붙는다(예전엔 달 전체 최대 줄 수를 모든 칸에 적용해, 띠 없는 주도 공중에 떠 높이만 낭비됨).
-  const weekSupportLaneCount = useMemo(() => {
-    const perWeek: number[] = [];
-    for (let w = 0; w * 7 < cells.length; w += 1) {
-      let maxLane = -1;
-      for (const c of cells.slice(w * 7, w * 7 + 7)) {
-        for (const s of getEventsForDate(liveEvents, c.isoDate)) {
-          if (!s.isSupport) continue;
-          maxLane = Math.max(maxLane, supportLanes.lanes.get(s.id) ?? 0);
-        }
-      }
-      perWeek[w] = maxLane + 1;
-    }
-    return perWeek;
-  }, [cells, liveEvents, supportLanes]);
+  // (띠 줄 수 "주별" 계산은 칸별 계산으로 대체 — 2026-09-02, 시청자 포스터와 동일 규칙.
+  //  띠가 안 지나가는 칸까지 주 최대값만큼 내려앉아 빈 줄이 생겼다.)
   // 이어진 일정 묶음 키 + 묶음 칸 높이 맞추기(글자 수 달라도 이음새 안 어긋나게).
   const chainKeys = useMemo(() => buildChainKeys(visibleEvents), [visibleEvents]);
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
@@ -6150,8 +6136,13 @@ export function StudioShell({
               const gapOpen = (idx: number) => liIdx !== null && liIdx === idx && !dropIsNoop;
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const visibleDayMark = getDayMark(cell.isoDate);
-              // 이 칸이 속한 주의 업 도움 줄 수만큼만 위 여백을 둔다(띠 없는 주는 0).
-              const weekSupCount = weekSupportLaneCount[Math.floor(cellIndex / 7)] ?? 0;
+              // 이 칸을 실제로 지나는 띠의 최고 레인 깊이만큼만 위 여백을 둔다(띠 없는 칸은 0).
+              // 레인 번호가 절대 위치(top: lane×20)라 '개수'가 아니라 '최고 레인+1'이어야 한다:
+              // 레인0 띠가 이 칸을 안 지나가도 레인1 띠가 지나가면 그 아래까지 비워야 한다.
+              const cellLaneDepth = supportHere.reduce(
+                (max, s) => Math.max(max, (supportLanes.lanes.get(s.id) ?? 0) + 1),
+                0
+              );
 
               const dayClass = [
                 "studio-day",
@@ -6327,8 +6318,8 @@ export function StudioShell({
                   <div
                     className="studio-event-list"
                     style={{
-                      ...(weekSupCount > 0
-                        ? { paddingTop: Math.round((8 + weekSupCount * 20) * calZoom) }
+                      ...(cellLaneDepth > 0
+                        ? { paddingTop: Math.round((8 + cellLaneDepth * 20) * calZoom) }
                         : {}),
                       // (다른 날에서 들어오는 경우의 '자리 열기'는 아래 .drop-gap 스페이서가
                       //  실제 레이아웃으로 만든다 — paddingBottom+transform 조합은 칸을 못 늘려

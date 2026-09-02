@@ -5,13 +5,38 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-08-31
+Last Updated: 2026-09-02
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
 ---
 
 ## Current Objective
+
+- **업도움/기간 띠 여백 칸별 압축(2026-09-02)**: 띠 줄 수를 "주별 최대"로 세어 그 주 모든 칸의
+  일정 목록에 같은 paddingTop을 주던 것을, **각 칸을 실제로 지나는 띠의 최고 레인 깊이**로 전환
+  (시청자 `renderDayCell` cellLaneDepth · 편집실 동일). 띠 없는 칸 카드가 머리글 바로 아래로
+  붙어 달력 높이 압축(9월 주0 실측 203→186px). ⚠ '개수'가 아니라 '최고 레인+1'이어야 한다 —
+  레인 번호가 절대 위치(top: lane×20)라 레인1만 지나는 칸도 40px을 비워야 한다. 순서변경
+  드래그는 elementFromPoint+카드 rect 실측이라 칸별 패딩 차이에 자동 대응(별도 레이어 불필요).
+  보류: 레인 배정 자체는 여전히 월 전체 패킹(`assignSupportLanes`) — 주 단위 재패킹(옵션 B)은
+  효과 대비 변경이 커서 미착수.
+
+- **모바일 날짜 카드 폭 시청자=편집실 잠금(7b2f298, 2026-09-01)**: 며칠간 "폭이 안 맞다" 재신고의
+  진범은 `.agenda-flow` 그리드 암시적 컬럼의 min-content 바닥 — 카드 속 안 꺾이는 내용이 넓으면
+  카드가 컨테이너를 뚫었고, 두 화면은 내용(수정 버튼·VOD 칩)이 달라 뚫리는 양도 달랐다.
+  `minmax(0,1fr)`로 카드 폭=컨테이너 고정 + 세 숫자(패딩 14·레일 92·간격 10)를 globals.css
+  `--m-agenda-*` 공유 토큰으로 일원화(시청자 `.agenda-mode`/`.agenda-legend-rail`/`.agenda-header` ·
+  편집실 `.studio-mobile`/`.m-topstick`/`.agenda-rail`). 시청자 콘솔에 빌드 해시 스탬프 추가
+  (포스터에 빌드 UI가 없어 '옛 빌드 탭' 판별 불가였음). 360/412/700 실측 완전 동일.
+  후속 1(8d9996c): 옛 빌드로 떠 있는 시청자 탭 자동 새로고침 — /api/soop-live 응답에 서버
+  빌드 커밋 동봉, 시청자 페이지가 불일치 감지 시 '탭 숨김 순간에만' reload(루프 가드
+  sessionStorage, 편집실·미리보기 제외). 이 코드 이전에 열린 탭은 자가 치유 불가.
+  후속 2(1849c1c, **최종 진범**): 재신고의 화면은 실제 시청자가 아니라 owner/developer의
+  '시청자 미리보기'였다 — 미리보기는 아바타 슬롯 때문에 poster-page에 avatar-scene이 붙고,
+  ≤1099px scene 끔 복원 규칙(패딩 22, 특이도 0,3,0)이 .agenda-mode의 14(0,2,0)를 눌러
+  미리보기만 좌우 8px 넓었다(카드 214 vs 230 @360). 같은 미디어 블록에서 agenda-mode 재선언
+  으로 수정. 실제(/)·미리보기 360/412 실측 완전 동일. 익명 화면은 처음부터 정상이었다.
 
 - **숲 VOD 아카이브(PLAN-20260831-001) — Phase 1 완료, Phase 2 대기(2026-08-31)**:
   Phase 1 출고 — `vod_archive`(0068, anon SELECT 허용·service_role grant) + 수집기

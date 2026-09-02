@@ -18,6 +18,7 @@ const eslintConfig = [
       "coverage/**",
       "playwright-report/**",
       "test-results/**",
+      ".scratch-pw/**",
       "next-env.d.ts"
     ]
   },
