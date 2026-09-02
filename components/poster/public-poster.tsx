@@ -2596,7 +2596,10 @@ export function PublicPoster({
             // 레인 스텝 18 = 띠 높이 17 + 틈 1(2026-09-02 사용자 신고 "띠 사이 간격 과함").
             // 편집실은 확대 배율이 스텝(20×zoom)엔 곱해지고 높이(17)엔 안 곱해져 배율에 따라
             // 틈이 변하지만, 시청자는 항상 이 고정 틈이다 — SUPPORT_LANE_STEP과 동기.
-            top: `calc(var(--day-head-h, 27px) - 1px + ${lane * SUPPORT_LANE_STEP}px)`,
+            // ×--cal-zoom: 띠 높이·글자도 확대에 동참(public-poster.css) — 스텝만 고정이면 겹친다.
+            top: `calc(var(--day-head-h, 27px) - 1px + ${
+              lane * SUPPORT_LANE_STEP
+            }px * var(--cal-zoom, 1))`,
             // 광택 sweep 지연용 요일 인덱스 — 조각들이 순서대로 반짝여 빛줄기 하나가
             // 띠 전체를 훑는 것처럼 이어진다(CSS .support-bar.is-clickable 참고).
             ["--sb-col" as string]: cell.weekday,
@@ -2713,7 +2716,13 @@ export function PublicPoster({
           className="day-events"
           style={
             cellLaneDepth > 0
-              ? { paddingTop: 8 + cellLaneDepth * SUPPORT_LANE_STEP }
+              ? {
+                  // ×--cal-zoom: 띠 높이·스텝이 확대에 동참하므로 비우는 양도 같이 커져야
+                  // 카드가 띠를 덮지 않는다(고정 8px 여유는 다른 목록 패딩처럼 배율 제외).
+                  paddingTop: `calc(8px + ${
+                    cellLaneDepth * SUPPORT_LANE_STEP
+                  }px * var(--cal-zoom, 1))`
+                }
               : undefined
           }
         >

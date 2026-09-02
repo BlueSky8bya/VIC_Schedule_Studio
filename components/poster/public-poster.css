@@ -4088,6 +4088,20 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 .public-day .support-bar {
   z-index: 6;
 }
+/* 확대(--cal-zoom) 동참 — 날짜(17px)·카드 제목(14px)은 배율을 받는데 띠는 높이 17px·글자
+   --text-micro 고정이라 125/150%에서 띠만 안 컸다(2026-09-02 사용자 신고). 높이·글자를 함께
+   키운다. 레인 스텝·일정 목록 paddingTop은 TSX(SUPPORT_LANE_STEP)에서 같은 배율을 곱한다 —
+   셋 중 하나만 빠지면 띠끼리 겹치거나 카드가 띠를 덮는다. */
+.public-day .support-bar {
+  height: calc(17px * var(--cal-zoom, 1));
+}
+.public-day .support-bar span,
+.public-day .support-bar .sb-cta {
+  font-size: calc(var(--text-micro) * var(--cal-zoom, 1));
+}
+.public-day .support-bar.sb-solo .sb-go {
+  font-size: calc(var(--text-caption) * var(--cal-zoom, 1));
+}
 .public-day .support-bar.sb-head {
   z-index: 7;
 }
