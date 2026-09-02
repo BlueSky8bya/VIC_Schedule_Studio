@@ -142,6 +142,10 @@ type PublicPosterProps = {
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
+// 업도움/기간 안내 띠의 레인 세로 스텝(px) — 띠 높이 17(globals.css .support-bar) + 틈 1.
+// 띠 top과 일정 목록 paddingTop이 함께 쓴다(어긋나면 카드가 띠를 덮는다).
+const SUPPORT_LANE_STEP = 18;
+
 // 관심 단계 표식(2026-08-27) — 카드 '테두리'에 얹는 링(+1위는 👑 모서리 배지). 예전 불꽃 알약은
 // 카드 바닥에 한 줄(≈18px)을 먹어 행마다 쌓이면 달력 비율을 무너뜨렸다(사용자 지적). 링·배지는
 // absolute라 높이 0 — 내용은 그대로. 단계 라벨은 role=img aria-label·title로 남긴다.
@@ -2589,7 +2593,10 @@ export function PublicPoster({
           const bandStyle = {
             // 머리글 높이(--day-head-h)에서 파생 — 확대해도 날짜와 겹치지 않는다.
             // -1px은 머리글 밑선에 살짝 걸쳐 띠가 떠 보이지 않게 하는 기존 여백.
-            top: `calc(var(--day-head-h, 27px) - 1px + ${lane * 20}px)`,
+            // 레인 스텝 18 = 띠 높이 17 + 틈 1(2026-09-02 사용자 신고 "띠 사이 간격 과함").
+            // 편집실은 확대 배율이 스텝(20×zoom)엔 곱해지고 높이(17)엔 안 곱해져 배율에 따라
+            // 틈이 변하지만, 시청자는 항상 이 고정 틈이다 — SUPPORT_LANE_STEP과 동기.
+            top: `calc(var(--day-head-h, 27px) - 1px + ${lane * SUPPORT_LANE_STEP}px)`,
             // 광택 sweep 지연용 요일 인덱스 — 조각들이 순서대로 반짝여 빛줄기 하나가
             // 띠 전체를 훑는 것처럼 이어진다(CSS .support-bar.is-clickable 참고).
             ["--sb-col" as string]: cell.weekday,
@@ -2704,7 +2711,11 @@ export function PublicPoster({
         </div>
         <div
           className="day-events"
-          style={cellLaneDepth > 0 ? { paddingTop: 8 + cellLaneDepth * 20 } : undefined}
+          style={
+            cellLaneDepth > 0
+              ? { paddingTop: 8 + cellLaneDepth * SUPPORT_LANE_STEP }
+              : undefined
+          }
         >
           {events.map((rawEvent) => {
             // 서버가 '이제 없는 일정'이라고 확인해 준 떡밥(삭제/비공개 전환)은 그리지 않는다 —
