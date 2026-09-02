@@ -36,6 +36,9 @@ export function VodChapters({
   const [timeline, setTimeline] = useState<PublicVodTimeline | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
+  // 마지막으로 점프한 챕터(초) — 유튜브 활성 챕터처럼 '지금 어디쯤인지'를 목록이 기억한다.
+  // 인라인 점프(onJump)에서만 의미 있다(새 탭 이동은 목록을 떠나므로 표시 무의미).
+  const [activeSec, setActiveSec] = useState<number | null>(null);
 
   // 펼친 순간에만 본문을 받아온다(자동 펼침 포함) — 접힌 칩마다 미리 받으면 낭비.
   // ⚠ loading을 의존성/가드에 넣지 않는다 — setLoading(true)가 이 effect를 재실행시키면
@@ -127,7 +130,8 @@ export function VodChapters({
                 {g.section ? <div className="vch-sec">{g.section}</div> : null}
                 {g.items.map((e) => (
                   <a
-                    className="vch-item"
+                    aria-current={activeSec === e.sec ? "true" : undefined}
+                    className={`vch-item${activeSec === e.sec ? " is-active" : ""}`}
                     data-act="vod-chapter-jump"
                     href={`https://vod.sooplive.co.kr/player/${titleNo}?change_second=${e.sec}`}
                     key={`${e.sec}-${e.idx}`}
@@ -135,6 +139,7 @@ export function VodChapters({
                       hapticTick();
                       if (onJump) {
                         ev.preventDefault();
+                        setActiveSec(e.sec);
                         onJump(e.sec);
                       }
                     }}

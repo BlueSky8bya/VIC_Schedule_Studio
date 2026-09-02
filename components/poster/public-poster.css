@@ -1015,19 +1015,48 @@ html[data-reduce-motion] .day-vod-modal {
 .dvm-vod {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
+}
+/* ── 대개편 2차(2026-09-02, 유튜브/애플TV 벤치마킹): 좌 영상+제목 · 우 챕터 세로 레일 ──
+   16:9 미리보기가 창 전폭을 먹고 챕터가 바닥 띠로 밀리던 비율을 뒤집는다 — 챕터는 오른쪽
+   레일에서 세로 한 열로 흐르고(한눈에 스캔), 영상은 좌측에서 폭 기준 16:9라 잘리지 않는다.
+   마크업 무변경: 기존 세 자식(thumb/title/chapters)을 grid-area로만 재배치.
+   챕터가 없는 방송(:has 불일치)은 위 flex 세로 배치가 그대로 남는다. */
+.dvm-vod:has(.vod-chapters) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "thumb rail"
+    "title rail";
+  gap: 10px 18px;
+  align-items: start;
+}
+.dvm-vod:has(.vod-chapters) .dvm-thumb { grid-area: thumb; }
+.dvm-vod:has(.vod-chapters) .dvm-title { grid-area: title; align-self: start; }
+.dvm-vod:has(.vod-chapters) .vod-chapters {
+  grid-area: rail;
+  align-self: stretch;
+  /* 높이 0 + min-height 100% — 레일 내용이 행 크기 계산에 못 끼어들게(끼면 fr이 내용만큼
+     자라 창이 세로로 쭉 늘어남, 2026-09-02 실측). 트랙은 좌열(영상+제목)이 정하고, 레일은
+     확정된 셀 높이로 스트레치된 뒤 안에서만 스크롤한다 = 유튜브 '패널 높이=플레이어' 문법. */
+  height: 0;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 /* 미리보기 — 16:9 스냅샷 + 중앙 재생 오브 + 우하단 길이 배지. 클릭 = 처음부터 재생. */
 .dvm-thumb {
   position: relative;
   display: block;
   aspect-ratio: 16 / 9;
-  /* 창이 커진 뒤(1040px) 낮은 노트북에서 16:9 전체 높이(~570px)가 챕터를 밀어내지 않게 캡 —
-     캡에 걸리면 상자만 납작해지고 영상은 플레이어가 레터박스로 가운데 그린다(아래 배경 #000). */
-  max-height: 56vh;
-  border-radius: var(--r-md, 12px);
+  /* (예전 max-height: 56vh 캡 삭제 — 2026-09-02 사용자 신고 "썸네일 위아래 잘림": 캡이
+     상자를 납작하게 눌러 cover 이미지가 상하 크롭됐다. 2패널에선 좌열 폭이 높이를 정하므로
+     캡 없이도 창을 넘지 않는다. 아주 낮은 창은 아래 46vh 안전 캡 + contain이 지킨다.) */
+  max-height: 62vh;
+  border-radius: 14px;
   overflow: hidden;
-  background: linear-gradient(135deg, #e8edf8, #dde5f4);
+  background: #10151f; /* 캡·비율 차로 생기는 여백이 플레이어 검정과 이어진다 */
   transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-1) var(--ease);
 }
 .dvm-thumb:hover {
@@ -1038,7 +1067,9 @@ html[data-reduce-motion] .day-vod-modal {
 .dvm-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* cover → contain(2026-09-02): 상자가 어떤 이유로든 16:9에서 벗어나도 이미지를 절대
+     자르지 않는다 — 남는 띠는 위 어두운 배경이 플레이어 레터박스처럼 채운다. */
+  object-fit: contain;
   display: block;
 }
 /* 인라인 플레이어 상태 — 같은 자리에 임베드가 앉는다(호버 리프트는 끔: 재생 중 화면이 들썩이면 소음). */
@@ -1061,7 +1092,7 @@ html[data-reduce-motion] .day-vod-modal {
   inset: 0;
   display: block;
   pointer-events: none;
-  background: linear-gradient(135deg, #e8edf8, #dde5f4);
+  background: #10151f; /* 밝은 그라데이션 → 어두운 단색: contain 레터박스가 플레이어처럼 보이게 */
   transition: opacity 0.5s var(--ease);
 }
 .dvm-cover.is-gone { opacity: 0; }
@@ -1111,11 +1142,14 @@ html[data-reduce-motion] .day-vod-modal {
 }
 .dvm-title {
   color: #1d1d29;
-  font-size: var(--text-ui);
+  /* 진짜 '제목' 크기(2026-09-02 사용자 신고 "제목인지 아닌지 구분 안 감") — 창에서 유일하게
+     title급을 쓰는 글자. 날짜(13)·챕터 헤더(13.5)·항목(13.5)과 두 급 차이로 위계가 선다. */
+  font-size: var(--text-title);
   font-weight: 800;
-  letter-spacing: -0.01em; /* 애플식 타이틀 조임 — 큰 굵은 글자는 살짝 좁혀야 단정하다 */
-  line-height: 1.35;
+  letter-spacing: -0.015em; /* 애플식 타이틀 조임 — 큰 굵은 글자는 살짝 좁혀야 단정하다 */
+  line-height: 1.3;
   text-decoration: none;
+  transition: color var(--dur-1) var(--ease);
 }
 .dvm-title:hover { color: #3564e0; }
 
@@ -1196,23 +1230,22 @@ html[data-reduce-motion] .day-vod-modal {
 }
 /* 헤더 없는 이어짐 조각(거대 그룹 분절)의 첫 항목이 카드 위 라운드에 닿게 여백 보정 없음 —
    항목 자체 패딩으로 충분하다. */
-/* 날짜 창에선 세로 스크롤 긴 줄 대신 **다열 신문식**(사용자 피드백) — 그룹(코너)이 배치 단위,
-   헤더가 열 끝에 홀로 남지 않게 그룹째 내려간다. 창 본문(.dvm-body)이 스크롤을 맡는다. */
+/* 날짜 창(2026-09-02 대개편 2차) — 신문식 다열을 버리고 **오른쪽 레일 세로 한 열**:
+   시선이 왕복 없이 위→아래 한 방향으로 흐른다(유튜브 챕터 패널 문법). 스크롤은
+   .vch-scroll(레일 내부)이 맡고, 목록은 자연 높이로 흐른다. */
 .dvm-vod .vch-list {
-  display: block;
   max-height: none;
   overflow: visible;
-  /* 고정 2열 → 열 최소폭 기준 자동(창 1040px에선 3열) — 짧은 챕터 라벨이 넓은 열에서
-     휑하게 남던 것을 밀도로 회수. 좁은 화면에선 자연히 2열/1열로 줄어든다. */
-  columns: 300px;
-  column-gap: 10px;
-  padding: 10px;
+  padding: 8px;
 }
-.dvm-vod .vch-group {
-  display: block;
-  break-inside: avoid;
-  margin-bottom: 10px;
+/* 레일 머리 — '챕터 N개'가 접기 링크가 아니라 패널 제목처럼 읽히게(항목과 같은 급의
+   진한 글자 + 크레딧 보조). 접기 기능 자체는 그대로 산다(다중 방송 날 유용). */
+.dvm-vod .vch-toggle {
+  color: #1d1d29;
+  font-weight: 800;
+  padding: 2px 4px 6px;
 }
+.dvm-vod .vch-caret { color: #b9bdcc; }
 .vch-item {
   display: flex;
   align-items: baseline;
@@ -1226,7 +1259,14 @@ html[data-reduce-motion] .day-vod-modal {
   border-top: 1px solid rgb(60 60 90 / 6%);
 }
 .vch-item:hover { background: #f2f5fb; }
+.vch-item:hover .vch-t { color: #1d4ed8; }
 .vch-item:active { transform: scale(0.995); background: #e9eef9; }
+/* 마지막으로 점프한 챕터 — 유튜브 활성 챕터 문법: 지금 어디를 듣고 있는지 목록이 기억한다. */
+.vch-item.is-active {
+  background: #e8efff;
+}
+.vch-item.is-active .vch-t { color: #1d4ed8; }
+.vch-item.is-active .vch-label { font-weight: 800; color: #1d1d29; }
 /* 카드 라운드를 항목 호버가 뚫지 않게 — 첫/끝 항목만 모서리를 물려받는다. */
 .vch-item:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
 .vch-item:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
@@ -1250,43 +1290,40 @@ html[data-reduce-motion] .day-vod-modal {
 }
 /* (.vch-span 구간 길이 표기 제거 — 2026-09-01 사용자 결정) */
 
-/* ── 날짜 창(단일 방송): 미리보기 고정 + 타임라인 전용 스크롤 ──
-   "의식하는 대로" 굴러가게: 챕터 위 휠 = 챕터만(overscroll contain이 경계에서 체이닝 차단),
-   미리보기 위 휠 = 아무것도 안 움직임(창 본문이 안 흐르니 플레이어가 항상 보인다). */
+/* ── 레일 스크롤(단일·다중 공통, 2026-09-02 대개편 2차) ──
+   grid 3행(thumb/title/fr)에서 레일 셀 높이 = 좌열 높이(다중 날) 또는 창 남은 높이(단일 날,
+   아래 flex:1) — 레일 내용이 그보다 길면 .vch-scroll만 흐른다. 챕터 위 휠 = 챕터만
+   (overscroll contain), 미리보기 위 휠 = 정지. 예전 다중 날 38vh 캡은 grid가 좌열 높이로
+   자연 캡을 만들어 불필요해졌다. */
+/* 단일 방송: 창 높이를 **좌열(영상+제목)이 정하고** 레일은 그 높이 안에서 스크롤 —
+   유튜브 챕터 패널 = 플레이어 높이 문법. 예전 flex:1 스트레치는 좌열 아래를 텅 비웠다
+   (2026-09-02 실측). grid 3행의 fr 필러가 0으로 접혀 레일 셀 = 좌열 높이가 된다. */
 .dvm-body[data-single] {
   overflow: hidden;
-  flex: 1 1 auto; /* 창 높이를 다 써서 남는 공간 = 챕터 스크롤 영역 */
 }
 .dvm-body[data-single] .dvm-vod {
   min-height: 0;
-  flex: 1 1 auto;
 }
-/* 미리보기는 절대 안 짜부라진다 — flex 압축을 허용하면 16:9가 띠처럼 잘렸다(2026-09-01 실측
-   신고). 챕터가 남는 높이를 갖고, 화면이 아주 낮으면 챕터 쪽이 짧아지는 게 맞는 우선순위. */
-.dvm-body[data-single] .dvm-thumb,
-.dvm-body[data-single] .dvm-title {
-  flex: none;
-}
-.dvm-body[data-single] .vod-chapters {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-.dvm-body[data-single] .vch-scroll {
+.dvm-vod .vch-scroll {
   min-height: 0;
   flex: 1 1 auto;
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: var(--r-md, 12px);
 }
-/* 다중 VOD 날(예: 하루 2방송) — 창 전체 스크롤(방송 사이 이동)과 **타임라인 자체 스크롤**이
-   공존해야 한다(2026-09-01 사용자 지적: 첫 방송 챕터가 통째로 펼쳐져 두 번째 방송까지
-   한참 내려가야 했다). 각 챕터 목록을 캡 + 자체 스크롤로. */
-.dvm-body:not([data-single]) .vch-scroll {
-  max-height: clamp(300px, 38vh, 460px); /* 창이 커진 만큼 캡도 화면 높이에 비례해 여유 있게 */
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  border-radius: var(--r-md, 12px);
+/* 좁은 창(2패널이 안 서는 폭) — 세로 스택으로 복귀, 챕터는 자체 캡 스크롤. */
+@media (max-width: 899px) {
+  .dvm-vod:has(.vod-chapters) {
+    display: flex;
+    flex-direction: column;
+  }
+  .dvm-body[data-single] {
+    overflow-y: auto;
+  }
+  .dvm-vod .vch-scroll {
+    flex: none;
+    max-height: clamp(260px, 40vh, 420px);
+  }
 }
 @keyframes day-vod-in {
   from {
@@ -1298,9 +1335,12 @@ html[data-reduce-motion] .day-vod-pop {
   animation: none;
 }
 .dvp-date {
-  font-size: var(--text-ui);
-  font-weight: 900;
-  color: #3f3a52;
+  /* 날짜는 '어느 날의 창인지' 알려주는 보조 라벨 — 제목(18px)에게 주인공을 넘기고 한 급
+     내린다(2026-09-02 위계 재정립). */
+  font-size: var(--text-body);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #6e6e7c;
 }
 .dvp-date.red {
   color: #dc2626;
