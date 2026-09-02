@@ -1982,14 +1982,20 @@ export function PublicPoster({
       setPosterScale((prev) => (Math.abs(prev - next) < 0.0005 ? prev : next));
       setPosterNaturalH((prev) => (Math.abs(prev - natH) < 0.5 ? prev : natH));
       // 아래 채움 — 포스터(natH×배율)가 화면 세로보다 짧으면 부족분(레이아웃 px)만큼 달력을
-      // 키운다. natH에는 직전 채움이 이미 포함돼 있어 '이전 값 + 부족분'이 고정점으로 수렴한다
-      // (채움 반영 → 스케일러 높이 변화 → RO 재측정 경로). 배율은 폭 기준이라 피드백 없음.
-      // 포스터가 화면보다 긴 달은 부족분이 음수 → 0으로 떨어져 지금과 동일(세로 스크롤).
+      // 키운다. 목표는 '지금 area 실높이 + 부족분'(절대값): 일정 많은 달에 갔다 오면 채움값이
+      // 내용 높이보다 작아 min-height가 무효가 되는데, 그 상태는 크기 변화가 없어 RO 재측정도
+      // 안 울린다 — 예전 '이전 값 + 부족분' 증분식이 거기서 수렴을 멈췄다(2026-09-02 실측:
+      // 7월에서 756px에 고착, 창 바닥까지 123px 미달). 절대값은 한 번에 목표에 도달하고,
+      // min-height가 무효(내용이 더 큼)면 다음 목표도 그대로라 고착이 없다. 배율은 폭 기준이라
+      // 피드백 없음. 포스터가 화면보다 긴 달은 부족분이 음수 → 내용 높이 밑으로 떨어져 no-op
+      // (기존 세로 스크롤 동작).
       const stageTopDoc = stage.getBoundingClientRect().top + window.scrollY;
       const avail = window.innerHeight - stageTopDoc - POSTER_BOTTOM_GAP;
       const deficitLayout = (avail - natH * next) / next;
+      const areaEl = scaler.querySelector<HTMLElement>(".public-calendar-area");
+      const areaH = areaEl?.offsetHeight ?? 0;
       setCalFillMinH((prev) => {
-        const target = Math.max(0, Math.round(prev + deficitLayout));
+        const target = Math.max(0, Math.round(areaH + deficitLayout));
         return Math.abs(target - prev) <= 1 ? prev : target;
       });
     };
