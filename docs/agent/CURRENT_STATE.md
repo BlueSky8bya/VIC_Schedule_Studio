@@ -47,6 +47,13 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   썸네일 크롭 수리: max-height 56vh 캡이 진범(상자를 눌러 cover가 상하 크롭) → 캡 완화+
   contain+어두운 배경(레터박스가 플레이어처럼). 날짜는 13.5px 회색 보조로 강등. 활성 챕터
   하이라이트 추가(vod-chapters.tsx activeSec, 인라인 점프 시만). <900px는 세로 스택 폴백.
+  후속 2(2026-09-03, 챕터 = 즉시 재생): 재생 전 챕터 클릭이 '시간만 이동'이던 원인 — 플레이어는
+  iframe 수명당 **첫 Pload에서만 autoPlay를 존중**, 2차 Pload/pre-media Pplay·PseekTo는 전부
+  무시(음소거 변형·URL 파라미터까지 실측 무반응). 수리 = iframe 재마운트(dayVodNonce key) +
+  pending → 첫 Pload{autoPlay:true}; 차단 브라우저는 PonReady 3초 감시 → mutePlay:true 재마운트
+  (항상 재생됨, 실측) → Punmute 시도(origin 잠금이라 무시돼도 무해). 허용/차단 프로필 양쪽
+  Playwright 실측 통과. 상세는 메모리 soop-embed-iframe-api.
+
   후속(2026-09-03): ① 창 1040→1280·레일 420, 역할별 타입 계단(제목 20 > 날짜·레일머리 15 >
   코너헤더·항목 14 > 시각 13 > 크레딧 11), 여백 24 정렬. ② 다중 방송 날 — 방송마다 흰 카드
   (영상+제목+자기 레일 한 덩어리)로 묶고 챕터 기본 펼침(defaultOpen 항상 true): 접힌 토글만

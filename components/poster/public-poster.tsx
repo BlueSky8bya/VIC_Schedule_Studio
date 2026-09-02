@@ -202,12 +202,17 @@ function detailEdgePoint(
 // autoPlay:false = 초기화만(지정 포스터+▶ 대기 — 실측: 이 상태의 ▶ 클릭은 엄격 차단 브라우저에서도
 // 소리 켠 재생). autoPlay:true + mutePlay:false = 음소거로 시동 걸고 스스로 소리를 켜는 공식 경로.
 // (채팅·추천·광고성 부가 UI는 전부 끔 — 미리보기 띠는 영상만.)
-function buildDayVodPload(titleNo: number, sec: number, autoPlay: boolean): Record<string, unknown> {
+function buildDayVodPload(
+  titleNo: number,
+  sec: number,
+  autoPlay: boolean,
+  mutePlay = false
+): Record<string, unknown> {
   return {
     cmd: "Pload",
     id: titleNo,
     autoPlay,
-    mutePlay: false,
+    mutePlay,
     showChat: false,
     isViewCnt: true,
     isRecommendShow: false,
@@ -1118,18 +1123,32 @@ export function PublicPoster({
   // 재생이 실제로 시작된 방송들 — 이때에야 스냅샷 커버를 걷는다. 그 전까지는 토리님이 지정한
   // 썸네일이 계속 보인다(클릭은 통과라 1클릭 재생은 그대로 — 2026-09-01 사용자 절충).
   const [dayVodLive, setDayVodLive] = useState<ReadonlySet<number>>(new Set());
+  // 재생 전 챕터 점프용 iframe 재마운트 카운터(2026-09-03) — 플레이어는 '첫 Pload'에서만
+  // autoPlay를 존중하고, 이미 초기화된 뒤의 2차 Pload·Pplay·PseekTo는 전부 무시한다(실측:
+  // 음소거 Pload·Punmute·URL autoPlay 파라미터까지 무반응). 그래서 재생 전 점프는 iframe을
+  // 새로 띄워 pending → 첫 Pload{autoPlay:true, startVideoSeconds}로 내보내는 게 유일 경로.
+  const [dayVodNonce, setDayVodNonce] = useState<Record<number, number>>({});
   const dayVodApisRef = useRef(new Map<number, (msg: Record<string, unknown>) => void>());
   const dayVodAliveRef = useRef(new Set<number>());
   const dayVodPausedRef = useRef(new Set<number>());
   const dayVodPendingRef = useRef(new Map<number, number>());
+  // 소리 켠 자동재생이 차단된 브라우저(MEI 낮은 크롬 등)용 2단 폴백 — 감시 타이머와
+  // '이번 재마운트는 음소거 시동' 표시. 음소거 자동재생은 정책상 항상 허용이라 반드시 굴러가고,
+  // 시작되면 Punmute를 한 번 시도한다(거부돼도 음소거 재생은 유지 — 플레이어 볼륨 탭으로 복구).
+  const dayVodRetryTimersRef = useRef(new Map<number, number>());
+  const dayVodMutedRef = useRef(new Set<number>());
   useEffect(() => {
     // 창이 닫히거나 다른 날짜로 바뀌면 플레이어 상태를 전부 비운다.
     setDayVodJump(null);
     setDayVodLive(new Set());
+    setDayVodNonce({});
     dayVodApisRef.current.clear();
     dayVodAliveRef.current.clear();
     dayVodPausedRef.current.clear();
     dayVodPendingRef.current.clear();
+    for (const t of dayVodRetryTimersRef.current.values()) window.clearTimeout(t);
+    dayVodRetryTimersRef.current.clear();
+    dayVodMutedRef.current.clear();
   }, [dayVodPop]);
   useEffect(() => {
     if (!dayVodPop) return;
@@ -1155,10 +1174,37 @@ export function PublicPoster({
         // 로딩 중에 챕터를 먼저 눌렀다면 그 지점부터 재생 시도, 아니면 초기화만(자동재생 금지).
         const pending = dayVodPendingRef.current.get(titleNo);
         dayVodPendingRef.current.delete(titleNo);
-        post(buildDayVodPload(titleNo, pending ?? 0, pending !== undefined));
+        const muted = dayVodMutedRef.current.has(titleNo);
+        post(buildDayVodPload(titleNo, pending ?? 0, pending !== undefined, muted));
+        // 소리 켠 재생 시도(1차)가 브라우저 자동재생 정책에 막히면 아무 미디어 이벤트도 안 온다
+        // (실측: 플레이어가 조용히 정지 유지). 3초 안에 반응이 없으면 음소거 시동으로 한 번 더 —
+        // 음소거 자동재생은 항상 허용이라 이번엔 반드시 굴러간다(아래 PupdateMediaEvent에서
+        // Punmute 시도). 이미 음소거 재시도였다면 더 물러날 곳이 없으니 중단.
+        if (pending !== undefined && !muted) {
+          const old = dayVodRetryTimersRef.current.get(titleNo);
+          if (old) window.clearTimeout(old);
+          dayVodRetryTimersRef.current.set(
+            titleNo,
+            window.setTimeout(() => {
+              dayVodRetryTimersRef.current.delete(titleNo);
+              if (dayVodAliveRef.current.has(titleNo)) return; // 이미 재생 중(성공/수동)
+              dayVodMutedRef.current.add(titleNo);
+              dayVodPendingRef.current.set(titleNo, pending);
+              dayVodApisRef.current.delete(titleNo);
+              setDayVodNonce((prev) => ({ ...prev, [titleNo]: (prev[titleNo] ?? 0) + 1 }));
+            }, 3_000)
+          );
+        }
       } else if (data.cmd === "PupdateMediaEvent") {
         // buffer/timeUpdate/play 무엇이든 = 미디어 엔진이 굴러갔다 → 이후 점프는 PseekTo로,
         // 지정 썸네일 커버도 이때 걷는다. (재생 전엔 아무 이벤트도 오지 않는다 — 실측.)
+        // 음소거 시동으로 굴러가기 시작했다면 소리 복구를 한 번 시도 — 브라우저가 거부해도
+        // 음소거 재생은 유지되고, 플레이어 안 볼륨 버튼(프레임 내 제스처)으로 언제든 켤 수 있다.
+        if (dayVodMutedRef.current.has(titleNo) && !dayVodAliveRef.current.has(titleNo)) {
+          dayVodMutedRef.current.delete(titleNo);
+          const unmute = dayVodApisRef.current.get(titleNo);
+          if (unmute) window.setTimeout(() => unmute({ cmd: "Punmute" }), 600);
+        }
         dayVodAliveRef.current.add(titleNo);
         setDayVodLive((prev) => {
           if (prev.has(titleNo)) return prev;
@@ -1192,7 +1238,17 @@ export function PublicPoster({
         window.setTimeout(() => post({ cmd: "Pplay" }), 1_200);
       }
     } else {
-      post(buildDayVodPload(titleNo, sec, true));
+      // 재생 전(미디어 안 굴러감): 이미 초기화된 플레이어는 2차 Pload의 autoPlay를 무시한다
+      // (위치만 삼키고 정지 유지 — 2026-09-03 사용자 신고 "시간만 이동"). iframe을 새로
+      // 띄워서 pending → PonReady → '첫 Pload{autoPlay:true}'로 나가게 한다(그 경로만 재생됨).
+      // 새 점프는 항상 소리 켠 1차 시도부터(직전 음소거 표시·감시 타이머는 청소).
+      const oldTimer = dayVodRetryTimersRef.current.get(titleNo);
+      if (oldTimer) window.clearTimeout(oldTimer);
+      dayVodRetryTimersRef.current.delete(titleNo);
+      dayVodMutedRef.current.delete(titleNo);
+      dayVodApisRef.current.delete(titleNo);
+      dayVodPendingRef.current.set(titleNo, sec);
+      setDayVodNonce((prev) => ({ ...prev, [titleNo]: (prev[titleNo] ?? 0) + 1 }));
     }
   };
   useEffect(() => {
@@ -3802,6 +3858,9 @@ export function PublicPoster({
                           <div className="dvm-thumb is-playing">
                             <iframe
                               allow="autoplay; fullscreen; encrypted-media"
+                              /* nonce가 오르면 재마운트 — 재생 전 챕터 점프의 유일 재생 경로
+                                 (pending → 첫 Pload{autoPlay:true}, dayVodNonce 주석 참조). */
+                              key={`${vod.titleNo}-${dayVodNonce[vod.titleNo] ?? 0}`}
                               src={`https://vod.sooplive.co.kr/player/${vod.titleNo}/embed?fromApi=1`}
                               title={label}
                             />
