@@ -953,7 +953,9 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: rgb(15 23 42 / 40%);
+  background: rgb(15 23 42 / 34%);
+  /* 애플식 유리 딤(2026-09-02 리뉴얼) — 뒤 달력이 흐릿하게 비쳐 창이 '위에 떠 있는' 재질감. */
+  backdrop-filter: blur(7px) saturate(1.15);
   animation: agenda-detail-fade var(--dur-2) var(--ease-enter, ease-out) both;
 }
 .day-vod-modal {
@@ -963,10 +965,10 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   max-height: min(92vh, 1000px);
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--line, #ece9f5);
-  border-radius: var(--r-lg, 16px);
-  background: #fff;
-  box-shadow: 0 22px 48px rgb(30 40 80 / 30%);
+  border: 1px solid rgb(255 255 255 / 65%);
+  border-radius: 20px;
+  background: #fbfbfd; /* 애플 오프화이트 — 안의 흰 카드가 살짝 떠 보인다 */
+  box-shadow: 0 24px 60px rgb(20 25 60 / 28%);
   overflow: hidden;
   animation: day-vod-in var(--dur-2) var(--ease-enter, ease-out) both;
 }
@@ -980,7 +982,7 @@ html[data-reduce-motion] .day-vod-modal {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 12px 8px 16px;
+  padding: 14px 14px 8px 20px; /* 리뉴얼 — 애플식 넉넉한 좌측 여백(본문 20과 정렬) */
 }
 .dvm-close {
   width: 32px;
@@ -1008,7 +1010,7 @@ html[data-reduce-motion] .day-vod-modal {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 0 16px 16px;
+  padding: 0 20px 20px; /* 리뉴얼 — 헤더 좌측 여백과 정렬 */
 }
 .dvm-vod {
   display: flex;
@@ -1108,9 +1110,10 @@ html[data-reduce-motion] .day-vod-modal {
   font-variant-numeric: tabular-nums;
 }
 .dvm-title {
-  color: #3f3a52;
+  color: #1d1d29;
   font-size: var(--text-ui);
   font-weight: 800;
+  letter-spacing: -0.01em; /* 애플식 타이틀 조임 — 큰 굵은 글자는 살짝 좁혀야 단정하다 */
   line-height: 1.35;
   text-decoration: none;
 }
@@ -1126,13 +1129,14 @@ html[data-reduce-motion] .day-vod-modal {
 .vch-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   border: 0;
   background: transparent;
-  padding: 3px 4px;
+  padding: 4px;
   font-family: inherit;
-  font-size: var(--text-caption);
-  font-weight: 800;
+  /* 리뉴얼(2026-09-02): 컨트롤은 --text-body — 예전 caption(11px)은 제목·챕터와 급이 안 맞았다 */
+  font-size: var(--text-body);
+  font-weight: 700;
   color: #3564e0;
   cursor: pointer;
   transition: opacity var(--dur-1) var(--ease);
@@ -1140,50 +1144,59 @@ html[data-reduce-motion] .day-vod-modal {
 .vch-toggle:hover { opacity: 0.75; }
 .vch-toggle:active { transform: scale(0.97); }
 .vch-caret {
-  width: 9px;
-  font-size: 9px;
+  width: 10px;
+  font-size: 10px;
   color: #93a8dd;
 }
 .vch-by {
-  margin-left: 3px;
+  margin-left: 4px;
   font-style: normal;
-  font-size: var(--text-micro);
-  font-weight: 700;
-  color: #a3aec9;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: #9a9aa8;
 }
 .vch-note {
   margin: 2px 4px 4px;
   font-size: var(--text-caption);
   color: #a3aec9;
 }
+/* ── 챕터 목록 리뉴얼(2026-09-02, 애플 grouped-list 문법) ──
+   예전엔 코너 헤더(10.5px 옅은 회청)가 항목(12.5px)보다 되레 약해 위계가 뒤집혔고, 전부
+   같은 바탕이라 코너 경계가 안 보였다(사용자 신고). 이제 코너 = 흰 카드 하나: 진한 굵은
+   헤더 + 헤어라인 + 항목들. 카드끼리는 연회색 바탕 위에 떠서 경계가 글자 없이도 잡힌다. */
 .vch-list {
   width: 100%;
   margin: 2px 0 4px;
-  padding: 5px 6px;
+  padding: 8px;
   max-height: 250px;
   overflow-y: auto;
   overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 8px;
   border-radius: var(--r-md, 12px);
-  background: #f6f9ff;
+  background: #f2f3f7; /* 애플 grouped 배경(연회색) — 흰 카드가 뜬다 */
 }
-/* 코너 그룹 — 모바일(기본)은 세로로 그냥 쌓인다. */
+/* 코너 그룹 = 흰 카드(배치·인지 단위). */
 .vch-group {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(20 25 60 / 5%);
 }
 .vch-sec {
-  margin: 7px 4px 2px;
-  font-size: var(--text-micro);
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  color: #7c8db8;
+  margin: 0;
+  padding: 8px 12px 7px;
+  font-size: var(--text-body);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #1d1d29;
+  border-bottom: 1px solid rgb(60 60 90 / 8%); /* 헤더 밑 헤어라인 */
 }
-.vch-group:first-child .vch-sec { margin-top: 1px; }
-/* 날짜 창에선 세로 스크롤 긴 줄 대신 **2열 신문식**(사용자 피드백) — 그룹(코너)이 배치 단위,
+/* 헤더 없는 이어짐 조각(거대 그룹 분절)의 첫 항목이 카드 위 라운드에 닿게 여백 보정 없음 —
+   항목 자체 패딩으로 충분하다. */
+/* 날짜 창에선 세로 스크롤 긴 줄 대신 **다열 신문식**(사용자 피드백) — 그룹(코너)이 배치 단위,
    헤더가 열 끝에 홀로 남지 않게 그룹째 내려간다. 창 본문(.dvm-body)이 스크롤을 맡는다. */
 .dvm-vod .vch-list {
   display: block;
@@ -1192,31 +1205,36 @@ html[data-reduce-motion] .day-vod-modal {
   /* 고정 2열 → 열 최소폭 기준 자동(창 1040px에선 3열) — 짧은 챕터 라벨이 넓은 열에서
      휑하게 남던 것을 밀도로 회수. 좁은 화면에선 자연히 2열/1열로 줄어든다. */
   columns: 300px;
-  column-gap: 12px;
-  padding: 8px 10px;
+  column-gap: 10px;
+  padding: 10px;
 }
 .dvm-vod .vch-group {
   display: block;
   break-inside: avoid;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
-.dvm-vod .vch-item { padding: 4px 8px; }
 .vch-item {
   display: flex;
   align-items: baseline;
-  gap: 7px;
-  padding: 4px 6px;
-  border-radius: var(--r-sm, 8px);
+  gap: 10px;
+  padding: 7px 12px;
   text-decoration: none;
   transition: background-color var(--dur-1) var(--ease);
 }
-.vch-item:hover { background: #e9f0fe; }
-.vch-item:active { transform: scale(0.99); }
+/* 항목 사이 헤어라인 — iOS 리스트처럼 시각(왼쪽 열)만큼 들여 시작해 덜 시끄럽다. */
+.vch-item + .vch-item {
+  border-top: 1px solid rgb(60 60 90 / 6%);
+}
+.vch-item:hover { background: #f2f5fb; }
+.vch-item:active { transform: scale(0.995); background: #e9eef9; }
+/* 카드 라운드를 항목 호버가 뚫지 않게 — 첫/끝 항목만 모서리를 물려받는다. */
+.vch-item:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
+.vch-item:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
 .vch-t {
   flex: none;
-  min-width: 40px;
-  font-size: var(--text-caption);
-  font-weight: 800;
+  min-width: 48px;
+  font-size: var(--text-label);
+  font-weight: 700;
   color: #3564e0;
   font-variant-numeric: tabular-nums;
 }
@@ -1226,9 +1244,9 @@ html[data-reduce-motion] .day-vod-modal {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--text-label);
+  font-size: var(--text-body);
   font-weight: 600;
-  color: #3f3a52;
+  color: #33333f;
 }
 /* (.vch-span 구간 길이 표기 제거 — 2026-09-01 사용자 결정) */
 
