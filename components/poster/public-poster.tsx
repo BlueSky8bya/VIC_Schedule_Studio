@@ -3554,16 +3554,22 @@ export function PublicPoster({
 
   // 시청자 달력 글자 확대(편집실 A안과 같은 문법) — 달력 위 Ctrl+휠로 100/125/150% 단계.
   // 글자(칸 내용)만 커지고 표면은 세로로 자란다(배율은 폭 기준이라 그대로 = 진짜 확대).
+  //
+  // ⚠ callback ref로 리스너를 단다(2026-09-02 회귀 수리): 달력 표면은 월 이동마다
+  // key(surface-년-월)로 **리마운트**되는데, 예전 useEffect(deps [showAgenda])는 재실행되지
+  // 않아 리스너가 떨어져 나간 옛 DOM에 남았다 — 월을 한 번이라도 넘기면 Ctrl+휠이 브라우저
+  // 줌으로 새던 원인. callback ref는 요소가 갈릴 때마다 불려 항상 산 노드에 붙는다.
   const [posterZoom, setPosterZoom] = useState(1);
-  const posterCalRef = useRef<HTMLElement | null>(null);
   const posterZoomStepperRef = useRef(createWheelStepper());
-  useEffect(() => {
-    if (showAgenda) return;
-    const el = posterCalRef.current;
+  const posterCalWheelCleanupRef = useRef<(() => void) | null>(null);
+  const posterCalRef = useCallback((el: HTMLElement | null) => {
+    posterCalWheelCleanupRef.current?.();
+    posterCalWheelCleanupRef.current = null;
     if (!el) return;
     const onWheel = (e: WheelEvent) => {
       if (!e.ctrlKey) return;
       // 달력 위 Ctrl+휠은 항상 브라우저 줌 대신 달력 확대 — 일부만 새면 화면이 뒤죽박죽.
+      // 이미 최대/최소 단계라도 preventDefault는 유지한다(브라우저 줌이 끼어들면 안 된다).
       e.preventDefault();
       const dir = posterZoomStepperRef.current.feed(
         normalizeWheelDelta(e.deltaY, e.deltaMode),
@@ -3574,8 +3580,8 @@ export function PublicPoster({
       setPosterZoom((z) => stepCalZoom(z, dir));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, [showAgenda]);
+    posterCalWheelCleanupRef.current = () => el.removeEventListener("wheel", onWheel);
+  }, []);
 
   // 레일 정보 카드 — 평소엔 표면 안 오른쪽 레일에, 아바타 scene에선 아바타 자리 좌상단으로
   // 옮겨 뜬다. 한 JSX를 두 자리에서 재사용해 마크업이 안 어긋나게 한다.

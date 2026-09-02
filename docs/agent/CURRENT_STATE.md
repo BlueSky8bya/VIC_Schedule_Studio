@@ -34,6 +34,11 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   스티커 렌더는 완전 소멸(주석만 남음)이라 기하 리스크 없음. 창 세로만 변하는 리사이즈용
   window resize 리스너 추가. 실측: 1600×1200 채움(행 132→162.7, stage 바닥=창-14) ·
   1600×700 채움 0.
+  후속 4(2026-09-02): 시청자 Ctrl+휠 확대가 **월을 한 번이라도 넘기면 죽던 회귀** 수리 —
+  표면이 key(surface-년-월)로 리마운트되는데 휠 리스너 useEffect(deps [showAgenda])가 재실행
+  안 돼 떨어져 나간 옛 DOM에 남았다(preventDefault도 안 걸려 브라우저 줌으로 샘). callback
+  ref로 전환해 요소가 갈릴 때마다 산 노드에 재부착. '높이 꽉 찬 달력이라 확대 거부' 같은
+  조건은 원래 없음(최대 단계여도 preventDefault 유지). 월 이동 후 1↔1.25↔1.5 실측 정상.
 
 - **모바일 날짜 카드 폭 시청자=편집실 잠금(7b2f298, 2026-09-01)**: 며칠간 "폭이 안 맞다" 재신고의
   진범은 `.agenda-flow` 그리드 암시적 컬럼의 min-content 바닥 — 카드 속 안 꺾이는 내용이 넓으면
