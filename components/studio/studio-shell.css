@@ -1134,6 +1134,17 @@ html[data-reduce-motion] .act-skeleton span { animation: none; }
 .act-visits > .act-visit {
   flex: none;
 }
+/* 데스크톱 2단(방문 상세)에서 타임라인 카드는 옆 카드(적게 쓰인 기능)와 **같은 높이**여야
+   한다(사용자 지적 — 한쪽만 짧으면 아래가 비어 보임). 목록을 basis 0으로 두면 자기 내용이
+   행 높이 계산에 못 끼고(방문 많은 날 카드 폭주 방지), 남는 카드 높이를 그대로 채운 뒤
+   넘침만 스크롤한다. 바닥 220px = 옆 카드가 접혀 있어도 목록이 읽히는 최소. */
+@media (min-width: 1000px) {
+  .vcard > .act-visits {
+    flex: 1 1 0;
+    min-height: 220px;
+    max-height: none;
+  }
+}
 /* 방문 = 테두리 없는 카드. 배경 톤만으로 묶는다(선이 많으면 시끄럽다). */
 .act-visit {
   border-radius: var(--r-md);
