@@ -39,6 +39,10 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   안 돼 떨어져 나간 옛 DOM에 남았다(preventDefault도 안 걸려 브라우저 줌으로 샘). callback
   ref로 전환해 요소가 갈릴 때마다 산 노드에 재부착. '높이 꽉 찬 달력이라 확대 거부' 같은
   조건은 원래 없음(최대 단계여도 preventDefault 유지). 월 이동 후 1↔1.25↔1.5 실측 정상.
+- **이용기록 목록 세로 상한(2026-09-03)**: 행동 타임라인 `.act-visits` · 적게 쓰인 기능
+  `.usage-list`에 `max-height: clamp(320px, 44vh, 460px)` + 내부 스크롤(overscroll contain) —
+  방문·항목이 많아도 카드가 그 선 이상 안 자란다(사용자 요청). 접기 토글·15개 컷은 기존 그대로.
+
 - **다시보기 창 대개편 2차(2026-09-03, 유튜브 2패널)**: 16:9 미리보기가 창 전폭을 먹고 챕터가
   바닥 스크롤 띠로 밀리던 비율을 뒤집음 — 좌 영상+제목(18px, 유일한 title급) · 우 챕터 세로
   한 열 레일(380px). 마크업 무변경, `.dvm-vod:has(.vod-chapters)` grid-areas 재배치. 핵심 트릭:
