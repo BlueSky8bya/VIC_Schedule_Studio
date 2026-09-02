@@ -146,6 +146,10 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 // 띠 top과 일정 목록 paddingTop이 함께 쓴다(어긋나면 카드가 띠를 덮는다).
 const SUPPORT_LANE_STEP = 18;
 
+// 아래 채움 계산에서 포스터 바닥과 창 바닥 사이에 남겨 두는 숨구멍(px, 화면 기준) —
+// 아바타 씬 사이드 레일의 bottom 14와 같은 값이라 크롬들과 끝선이 맞는다.
+const POSTER_BOTTOM_GAP = 14;
+
 // 관심 단계 표식(2026-08-27) — 카드 '테두리'에 얹는 링(+1위는 👑 모서리 배지). 예전 불꽃 알약은
 // 카드 바닥에 한 줄(≈18px)을 먹어 행마다 쌓이면 달력 비율을 무너뜨렸다(사용자 지적). 링·배지는
 // absolute라 높이 0 — 내용은 그대로. 단계 라벨은 role=img aria-label·title로 남긴다.
@@ -1943,6 +1947,10 @@ export function PublicPoster({
   const [posterScale, setPosterScale] = useState(1);
   // 표면(달력)이 일정 양에 따라 세로로 자라므로, 축소 전 '자연 높이'를 재서 stage 높이/배율 계산에 쓴다.
   const [posterNaturalH, setPosterNaturalH] = useState(POSTER_DESIGN_H);
+  // 아래 채움(2026-09-02 사용자 요청): 일정이 적어 포스터가 화면 세로보다 짧을 때 남는 높이를
+  // 달력 행에 나눠 줘 바닥까지 맞춘다. 값은 축소 전(레이아웃) px — .public-calendar-area의
+  // min-height가 되고, 그리드(flex:1)의 auto 행들이 균등 스트레치로 나눠 갖는다.
+  const [calFillMinH, setCalFillMinH] = useState(0);
   // (아바타 scene '높이 fit'은 2026-08-27 당일 철회 — 8월처럼 6주·고밀도 달에서 배율이 0.6까지
   //  떨어져 방송 화면 글씨가 너무 작아졌다. scene도 평소처럼 '폭 기준' fit만 한다.)
   useEffect(() => {
@@ -1973,6 +1981,17 @@ export function PublicPoster({
       // 그때마다 포스터 트리 전체(달력 42칸)를 다시 그릴 이유가 없다.
       setPosterScale((prev) => (Math.abs(prev - next) < 0.0005 ? prev : next));
       setPosterNaturalH((prev) => (Math.abs(prev - natH) < 0.5 ? prev : natH));
+      // 아래 채움 — 포스터(natH×배율)가 화면 세로보다 짧으면 부족분(레이아웃 px)만큼 달력을
+      // 키운다. natH에는 직전 채움이 이미 포함돼 있어 '이전 값 + 부족분'이 고정점으로 수렴한다
+      // (채움 반영 → 스케일러 높이 변화 → RO 재측정 경로). 배율은 폭 기준이라 피드백 없음.
+      // 포스터가 화면보다 긴 달은 부족분이 음수 → 0으로 떨어져 지금과 동일(세로 스크롤).
+      const stageTopDoc = stage.getBoundingClientRect().top + window.scrollY;
+      const avail = window.innerHeight - stageTopDoc - POSTER_BOTTOM_GAP;
+      const deficitLayout = (avail - natH * next) / next;
+      setCalFillMinH((prev) => {
+        const target = Math.max(0, Math.round(prev + deficitLayout));
+        return Math.abs(target - prev) <= 1 ? prev : target;
+      });
     };
     measure();
     // 창 크기 조절 중엔 콜백이 프레임보다 자주 올 수 있다. 프레임당 한 번으로 모아서 잰다
@@ -1990,10 +2009,13 @@ export function PublicPoster({
     const ro = new ResizeObserver(onResize);
     ro.observe(scaler); // 달 변경 등으로 자연 높이가 바뀌면 stage 높이 갱신
     ro.observe(stage); // 뷰포트 폭 변하면 배율 갱신
+    // 창 '세로'만 변하면 RO가 안 울린다(폭 기준 배율은 불변) — 아래 채움 재계산용.
+    window.addEventListener("resize", onResize);
     return () => {
       if (raf) {
         window.cancelAnimationFrame(raf);
       }
+      window.removeEventListener("resize", onResize);
       ro.disconnect();
     };
   }, [showAgenda, avatarSlot]);
@@ -2718,8 +2740,10 @@ export function PublicPoster({
             cellLaneDepth > 0
               ? {
                   // ×--cal-zoom: 띠 높이·스텝이 확대에 동참하므로 비우는 양도 같이 커져야
-                  // 카드가 띠를 덮지 않는다(고정 8px 여유는 다른 목록 패딩처럼 배율 제외).
-                  paddingTop: `calc(8px + ${
+                  // 카드가 띠를 덮지 않는다(고정 여유는 다른 목록 패딩처럼 배율 제외).
+                  // 고정 여유 2px = 띠→첫 카드 최종 간격 약 4px(카드끼리 gap 3px과 한 식구).
+                  // 8px이던 시절 띠 아래가 ~10px 떠 보였다(2026-09-02 사용자 신고 2회).
+                  paddingTop: `calc(2px + ${
                     cellLaneDepth * SUPPORT_LANE_STEP
                   }px * var(--cal-zoom, 1))`
                 }
@@ -4530,7 +4554,13 @@ export function PublicPoster({
           <section
             className="public-calendar-area"
             ref={posterCalRef}
-            style={{ "--cal-zoom": posterZoom } as CSSProperties}
+            style={
+              {
+                "--cal-zoom": posterZoom,
+                // 아래 채움 — 화면 세로가 남으면 달력 행들이 나눠 갖는다(위 measure 참조).
+                minHeight: calFillMinH > 0 ? calFillMinH : undefined
+              } as CSSProperties
+            }
           >
             <div className="weekday-row" aria-hidden="true">
               {WEEKDAYS.map((weekday, index) => (
