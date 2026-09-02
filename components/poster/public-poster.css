@@ -961,7 +961,8 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
 .day-vod-modal {
   /* 더 넓은 창(2026-09-01 사용자 피드백 2차) — 미리보기가 주인공. 낮은 화면에선 미리보기가
      max-height(아래 .dvm-thumb)로 잡히고 플레이어가 알아서 레터박스를 그린다. */
-  width: min(1040px, 100%);
+  /* 2패널 확정 후 확대(2026-09-03 사용자 요청) — 영상·레일이 함께 커진다. */
+  width: min(1280px, 100%);
   max-height: min(92vh, 1000px);
   display: flex;
   flex-direction: column;
@@ -982,7 +983,7 @@ html[data-reduce-motion] .day-vod-modal {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 14px 14px 8px 20px; /* 리뉴얼 — 애플식 넉넉한 좌측 여백(본문 20과 정렬) */
+  padding: 16px 16px 10px 24px; /* 창 1280 확대에 맞춘 여백(본문 24와 정렬) */
 }
 .dvm-close {
   width: 32px;
@@ -1010,12 +1011,28 @@ html[data-reduce-motion] .day-vod-modal {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  padding: 0 20px 20px; /* 리뉴얼 — 헤더 좌측 여백과 정렬 */
+  padding: 0 24px 24px; /* 헤더 좌측 여백과 정렬(창 1280) */
 }
 .dvm-vod {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+/* 다중 방송 날(2026-09-03) — 방송마다 흰 카드로 묶어 '이 영상의 타임라인'이 한 덩어리로
+   읽히게 한다(접힌 토글이 허공에 떠 소속이 안 보이던 문제의 짝 처방 — 기본 펼침은 TSX).
+   단일 방송 날은 창 전체가 이미 그 방송의 카드라 표면 장식을 더하지 않는다. */
+.dvm-body:not([data-single]) .dvm-vod {
+  padding: 16px;
+  border: 1px solid rgb(60 60 90 / 7%);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(20 25 60 / 5%);
+}
+/* 카드(흰 바탕) 안에서는 레일 목록의 연회색 바탕이 그대로 카드와 구분돼 좋다 — 단,
+   코너 카드는 흰-on-흰이 되므로 얇은 테두리로 경계를 살린다. */
+.dvm-body:not([data-single]) .vch-group {
+  border: 1px solid rgb(60 60 90 / 7%);
+  box-shadow: none;
 }
 /* ── 대개편 2차(2026-09-02, 유튜브/애플TV 벤치마킹): 좌 영상+제목 · 우 챕터 세로 레일 ──
    16:9 미리보기가 창 전폭을 먹고 챕터가 바닥 띠로 밀리던 비율을 뒤집는다 — 챕터는 오른쪽
@@ -1024,12 +1041,12 @@ html[data-reduce-motion] .day-vod-modal {
    챕터가 없는 방송(:has 불일치)은 위 flex 세로 배치가 그대로 남는다. */
 .dvm-vod:has(.vod-chapters) {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: minmax(0, 1fr) 420px;
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     "thumb rail"
     "title rail";
-  gap: 10px 18px;
+  gap: 12px 20px;
   align-items: start;
 }
 .dvm-vod:has(.vod-chapters) .dvm-thumb { grid-area: thumb; }
@@ -1142,9 +1159,9 @@ html[data-reduce-motion] .day-vod-modal {
 }
 .dvm-title {
   color: #1d1d29;
-  /* 진짜 '제목' 크기(2026-09-02 사용자 신고 "제목인지 아닌지 구분 안 감") — 창에서 유일하게
-     title급을 쓰는 글자. 날짜(13)·챕터 헤더(13.5)·항목(13.5)과 두 급 차이로 위계가 선다. */
-  font-size: var(--text-title);
+  /* 창에서 유일한 최상급 — 스케일 계단(20>15>14>13>11)의 꼭대기. 창이 1280으로 커진 만큼
+     title 토큰(18)보다 한 뼘 더(2026-09-03). */
+  font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.015em; /* 애플식 타이틀 조임 — 큰 굵은 글자는 살짝 좁혀야 단정하다 */
   line-height: 1.3;
@@ -1221,8 +1238,8 @@ html[data-reduce-motion] .day-vod-modal {
 }
 .vch-sec {
   margin: 0;
-  padding: 8px 12px 7px;
-  font-size: var(--text-body);
+  padding: 9px 14px 8px;
+  font-size: 14px; /* 스케일 계단: 항목과 같은 14지만 굵기·색으로 헤더가 서열 위 */
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #1d1d29;
@@ -1238,19 +1255,20 @@ html[data-reduce-motion] .day-vod-modal {
   overflow: visible;
   padding: 8px;
 }
-/* 레일 머리 — '챕터 N개'가 접기 링크가 아니라 패널 제목처럼 읽히게(항목과 같은 급의
-   진한 글자 + 크레딧 보조). 접기 기능 자체는 그대로 산다(다중 방송 날 유용). */
+/* 레일 머리 — '챕터 N개'가 접기 링크가 아니라 패널 제목처럼 읽히게(날짜와 같은 15px 급 +
+   크레딧 보조). 접기 기능 자체는 그대로 산다(다중 방송 날 유용). */
 .dvm-vod .vch-toggle {
   color: #1d1d29;
+  font-size: var(--text-ui);
   font-weight: 800;
-  padding: 2px 4px 6px;
+  padding: 2px 4px 7px;
 }
 .dvm-vod .vch-caret { color: #b9bdcc; }
 .vch-item {
   display: flex;
   align-items: baseline;
-  gap: 10px;
-  padding: 7px 12px;
+  gap: 11px;
+  padding: 8px 14px;
   text-decoration: none;
   transition: background-color var(--dur-1) var(--ease);
 }
@@ -1272,8 +1290,8 @@ html[data-reduce-motion] .day-vod-modal {
 .vch-item:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
 .vch-t {
   flex: none;
-  min-width: 48px;
-  font-size: var(--text-label);
+  min-width: 54px;
+  font-size: 13px;
   font-weight: 700;
   color: #3564e0;
   font-variant-numeric: tabular-nums;
@@ -1284,7 +1302,7 @@ html[data-reduce-motion] .day-vod-modal {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: var(--text-body);
+  font-size: 14px;
   font-weight: 600;
   color: #33333f;
 }
@@ -1335,12 +1353,13 @@ html[data-reduce-motion] .day-vod-pop {
   animation: none;
 }
 .dvp-date {
-  /* 날짜는 '어느 날의 창인지' 알려주는 보조 라벨 — 제목(18px)에게 주인공을 넘기고 한 급
-     내린다(2026-09-02 위계 재정립). */
-  font-size: var(--text-body);
+  /* 역할별 타입 스케일(2026-09-03 재조정, ≈1.2 비율 계단): 제목 20 > 날짜·레일머리 15 >
+     코너 헤더·항목 14 > 시각 13 > 크레딧 11. 날짜는 창의 '문패' — 보조지만 작아선 안 된다
+     (13.5는 챕터 항목과 구분이 안 갔다, 사용자 신고). */
+  font-size: var(--text-ui);
   font-weight: 800;
-  letter-spacing: 0.01em;
-  color: #6e6e7c;
+  letter-spacing: 0.005em;
+  color: #4b4b58;
 }
 .dvp-date.red {
   color: #dc2626;

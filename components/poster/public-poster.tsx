@@ -3852,7 +3852,10 @@ export function PublicPoster({
                           </a>
                           <VodChapters
                             chapters={vod.chapters ?? 0}
-                            defaultOpen={arr.length === 1}
+                            /* 다중 방송 날도 기본 펼침(2026-09-03) — 접힌 토글만 레일 자리에
+                               떠 '어느 영상의 타임라인인지' 소속이 안 읽혔다. 2패널에선 각
+                               방송 블록이 자기 높이 안에 레일을 가두므로 다 펼쳐도 안 길다. */
+                            defaultOpen
                             durationMs={vod.durationMs}
                             onJump={(sec) => jumpDayVod(vod.titleNo, sec)}
                             slug={schedule.calendar.slug}
