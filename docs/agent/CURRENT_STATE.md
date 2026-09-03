@@ -202,6 +202,12 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   백필 스크립트 복제본 동일, prod vod_timeline 90행 제자리 교정 완료(잔여 0).
   **남은 것**: 팬 닉 표기 동의(토리님 경유 권장), B안(순간 검색 — 파싱 데이터 재사용, UI만),
   '1년 전 오늘' 아이디어.
+- **비주얼 기준선 갱신(2026-09-03)**: `npm run test:visual -- --update-snapshots` 79 통과. 바뀐
+  기준선 4개 = 포스터 geometry txt·viewer-surface PNG(09-02 '시청자 아래 채움'으로 표면 872→1482,
+  갱신이 밀려 있던 것) + 편집실 owner/manager PNG(차분 모드 기본 ON). `playwright.visual.config.ts`
+  storageState에 `vic.gfx=full`도 심음 — 헤드리스에서 그래픽 판정이 lite로 튀면 눈 편한 테마가
+  필터→팔레트로 바뀌어 스냅샷이 흔들린다. `studio-editor.spec.ts:173`(끌면서 저장 경합)은 1회
+  실패 후 `--repeat-each 2` 14/14 통과 — 타이밍 플레이키, 회귀 아님.
 - **프레임 끊김 수리(2026-09-03, 사용자: "다른 PC에서 동작 줄이기 꺼도 툭툭 끊김")**: Playwright
   rAF 간격·롱태스크 실측(CPU 4배 스로틀 + `--disable-gpu`=약한 GPU 흉내). 원인 둘. ① **띠 그룹
   호버 React 상태**(`hoverSupportId`) — 띠 위를 지날 때마다 포스터/편집실 전체 리렌더, 진입/이탈
@@ -219,8 +225,10 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   `docs/ux/saju-redesign-direction.md`(사용 데이터 기반, 코덱스 `계획서.md`는 근거·가드레일 — 둘 다
   미커밋·로컬; 원국 정보는 저장소에 싣지 않는다). CLAUDE.md 철학에 "Owner-fit palette rule" 추가.
   ① `html[data-studio-calm]`(기본 ON, `vic.studioCalm`, 역할 배지 팝오버 스위치, 페인트-전 스크립트):
-  저장 버튼 노랑→물빛(`--studio-action` #1e5aa8, 눈 편한 필터 후 #2e568a, 흰 글자 7.2:1) + 저장 물결
-  링(버튼 안 `Ctrl+S` kbd는 길어져 잘려서 철회 — 사용자 지시) · 달 이동 셰브런 물빛 · 좌측 필터 패널 은백 카드 · 달력 칸 반 단계 냉각
+  저장 버튼 노랑→물빛 — 처음엔 진한 채움(#1e5aa8·흰 글자)이었으나 팝오버의 파스텔 칩들 사이에서
+  혼자 무겁다는 사용자 지적으로 **파스텔 틴트 면(`--studio-action-tint`)+진한 물빛 글자
+  (`--studio-action-text` #1c4f8c, 대비 6.6:1)+부드러운 테두리**로(옵션 칩 문법); 물결 링·셰브런은
+  진한 물빛 유지(버튼 안 `Ctrl+S` kbd는 길어져 잘려서 철회 — 사용자 지시) · 달 이동 셰브런 물빛 · 좌측 필터 패널 은백 카드 · 달력 칸 반 단계 냉각
   (오늘·바깥달·편집중·드롭·휴식 칸 제외) · 관리 칩 3개 고스트(위치·노출은 유지 — 드롭다운 접기 철회
   결정 존중) · 제목 ✨ 정지. 규칙은 studio-shell.css 파일 끝 블록, 토큰은 globals :root `--studio-*`.
   ② 휴식 넛지(.rest-nudge): 편집실 활동 50분(포인터·키·휠, 5분 무입력이면 정지, sessionStorage로

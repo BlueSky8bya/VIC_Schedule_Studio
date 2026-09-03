@@ -30,7 +30,12 @@ export default defineConfig({
       origins: [
         {
           origin: "http://127.0.0.1:3100",
-          localStorage: [{ name: SETTINGS_EPOCH_KEY, value: SETTINGS_EPOCH }]
+          localStorage: [
+            { name: SETTINGS_EPOCH_KEY, value: SETTINGS_EPOCH },
+            // 그래픽 여력 판정(lib/ui/gfx.ts)을 미리 'full'로 못 박는다 — 헤드리스에서 판정이 lite로
+            // 튀면 눈 편한 테마가 필터→토큰 팔레트로 바뀌어 스냅샷이 실행마다 달라진다.
+            { name: "vic.gfx", value: JSON.stringify({ mode: "full", at: Date.now() }) }
+          ]
         }
       ]
     }

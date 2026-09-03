@@ -12426,21 +12426,28 @@ html[data-reduce-motion] .event-drag-ghost {
    콘텐츠(일정 카드·태그·의미색 8종·오늘 골드)는 그대로. 기본 ON, 역할 배지 팝오버에서 끔.
    토큰은 globals.css :root(--studio-action/--studio-silver/--studio-cell-calm). 파일 끝에 두어
    위 규칙들을 덮는다(소스 순서). 시청자 포스터(.public-*)엔 어떤 규칙도 걸지 않는다. */
-/* ① 저장 = 물빛(주 행동 하나). 노랑(오늘 골드와 같은 색·배경 대비 1.4:1)에서 딥블루로. */
+/* ① 저장 = 물빛(주 행동 하나). 노랑(오늘 골드와 같은 색·배경 대비 1.4:1)에서 물빛으로.
+   진한 채움(#1e5aa8, 흰 글자)은 팝오버의 파스텔 칩들 사이에서 혼자 무거웠다(2026-09-03 사용자)
+   → 같은 색상의 **파스텔 틴트 면 + 진한 물빛 글자 + 부드러운 테두리**(옵션 칩 문법). 저장 물결
+   링·셰브런은 진한 물빛 그대로라 '주 행동' 신호는 유지. */
 html[data-studio-calm] .button.primary.editor-save {
   position: relative;
-  background: linear-gradient(180deg, #2a6bbf, var(--studio-action));
-  color: var(--studio-action-ink);
-  box-shadow: 0 6px 16px -8px rgb(var(--studio-action-rgb) / 55%);
+  background: linear-gradient(180deg, var(--studio-action-tint-hi), var(--studio-action-tint));
+  color: var(--studio-action-text);
+  border-color: var(--studio-action-line);
+  box-shadow: 0 3px 10px -6px rgb(var(--studio-action-rgb) / 35%);
   transition:
     background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease),
     box-shadow var(--dur-2) var(--ease),
     transform var(--dur-1) var(--ease);
 }
 html[data-studio-calm] .button.primary.editor-save:hover:not(:disabled) {
-  background: linear-gradient(180deg, var(--studio-action), var(--studio-action-strong));
-  color: var(--studio-action-ink);
-  box-shadow: 0 8px 20px -8px rgb(var(--studio-action-rgb) / 65%);
+  background: linear-gradient(180deg, var(--studio-action-tint), var(--studio-action-tint-hover));
+  color: var(--studio-action-text-hover);
+  border-color: #a4c0e2;
+  box-shadow: 0 5px 14px -6px rgb(var(--studio-action-rgb) / 45%);
 }
 html[data-studio-calm] .button.primary.editor-save:active:not(:disabled) {
   transform: scale(0.97);

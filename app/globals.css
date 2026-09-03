@@ -78,6 +78,14 @@
   --studio-action-strong: #17497f;
   --studio-action-ink: #ffffff;
   --studio-action-rgb: 30 90 168;
+  /* 저장 버튼용 파스텔 물빛(2026-09-03 사용자: 진한 파랑이 팝오버 주변과 안 어울림) — 옵션 칩과
+     같은 문법: 옅은 틴트 면 + 진한 물빛 글자 + 부드러운 테두리. 글자 대비 6.6:1(필터 후 6.8). */
+  --studio-action-tint: #dbe8f7;
+  --studio-action-tint-hi: #edf4fc;
+  --studio-action-tint-hover: #cfe0f4;
+  --studio-action-text: #1c4f8c;
+  --studio-action-text-hover: #163f73;
+  --studio-action-line: #b9cfe9;
   --studio-silver: #f3f5f7;
   --studio-silver-line: #d7dde5;
   --studio-cell-calm: #eef2f6;
@@ -1178,6 +1186,12 @@ html[data-eye-comfort="lite"] {
   --studio-action: #2e568a;
   --studio-action-strong: #244669;
   --studio-action-rgb: 46 86 138;
+  --studio-action-tint: #dde3e7;
+  --studio-action-tint-hi: #edefee;
+  --studio-action-tint-hover: #d2dbe3;
+  --studio-action-text: #294c74;
+  --studio-action-text-hover: #213c5f;
+  --studio-action-line: #becad7;
   --studio-silver: #f2f0eb;
   --studio-silver-line: #d7d8d8;
   --studio-cell-calm: #eeede9;
