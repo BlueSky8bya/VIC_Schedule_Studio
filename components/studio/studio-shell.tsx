@@ -29,6 +29,7 @@ import {
   X
 } from "lucide-react";
 import Link from "next/link";
+import { WaterTide } from "@/components/shared/water-tide";
 import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
@@ -184,28 +185,6 @@ import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 
 // 모달 콘텐츠는 '열 때만' 로드해 편집실 첫 로딩을 가볍게(특히 인사이트 차트는 1600줄+). 전부 클라
 // 전용 모달(사용자 동작으로 열림)이라 ssr:false. 닫혀 있는 동안엔 번들·실행에 들어가지 않는다.
-// ── 물결 레이어 경로(2026-09-03) — 사인파를 3차 베지에로 근사해 폭 TIDE_W에 담는다. SVG 폭이 화면의
-// 200%이고 translateX(-50%)로 반복하므로 전체 폭의 주기 수는 **짝수**여야 이음새가 없다.
-// 채움(수)은 닫힌 면, 은선(금)은 stroke만 — 같은 파형이 다른 속도로 흘러 마루가 반짝인다.
-const TIDE_W = 2400;
-const TIDE_H = 200;
-function tidePath(amp: number, mid: number, periods: number, closed: boolean): string {
-  const half = TIDE_W / (periods * 2);
-  let d = `M0 ${mid - amp}`;
-  let x = 0;
-  for (let i = 0; i < periods * 2; i++) {
-    const from = i % 2 === 0 ? mid - amp : mid + amp;
-    const to = i % 2 === 0 ? mid + amp : mid - amp;
-    d += ` C${(x + half * 0.3642).toFixed(1)} ${from} ${(x + half * 0.6358).toFixed(1)} ${to} ${(x + half).toFixed(1)} ${to}`;
-    x += half;
-  }
-  return closed ? `${d} V${TIDE_H} H0 Z` : d;
-}
-const TIDE_FILL_1 = tidePath(22, 78, 4, true);
-const TIDE_FILL_2 = tidePath(16, 112, 6, true);
-const TIDE_FILL_3 = tidePath(10, 56, 8, true); // 먼 물·하늘물(짧은 파장, 낮은 진폭)
-const TIDE_LINE = tidePath(22, 78, 4, false);
-
 const InsightsDashboard = dynamic(
   () => import("@/components/developer/insights-dashboard").then((m) => m.InsightsDashboard),
   { ssr: false }
@@ -6114,40 +6093,10 @@ export function StudioShell({
         renderMobile()
       ) : (
         <>
-      {/* 물결 레이어(2026-09-03) — 차분한 편집실 + 생동감 있는 동작 + 여력 있는 기기(data-gfx≠lite)에서만
-          CSS가 보인다(studio-calm-layer.css .studio-tide). 물빛 스웰(수) 둘 + 물결 채움 둘 + 은선(금) 하나가
-          아주 천천히 흐른다. 전부 transform/opacity(합성기) — 무한 애니 규칙. 시청자 화면엔 없다. */}
-      <div className="studio-tide" aria-hidden="true">
-        <div className="tide-swell tide-swell-a" />
-        <div className="tide-swell tide-swell-b" />
-        <div className="tide-swell tide-swell-c" />
-        {/* 북쪽 하늘물 — 유리 상단바 뒤로 비치는 뒤집힌 얕은 물결(반대 방향, 아주 옅게). */}
-        <div className="tide-sky">
-          <svg className="tide-wave tide-sky-fill" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
-            <path d={TIDE_FILL_3} />
-          </svg>
-        </div>
-        {/* 바다 — 먼 물(3) · 중간(2) · 가까운(1) 세 겹 + 은선(글로우 밑받침 위에 날카로운 선) + 빛살 둘. */}
-        <div className="tide-sea">
-          <svg className="tide-wave tide-fill-3" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
-            <path d={TIDE_FILL_3} />
-          </svg>
-          <svg className="tide-wave tide-fill-2" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
-            <path d={TIDE_FILL_2} />
-          </svg>
-          <svg className="tide-wave tide-fill-1" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
-            <path d={TIDE_FILL_1} />
-          </svg>
-          <svg className="tide-wave tide-line-glow" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
-            <path d={TIDE_LINE} vectorEffect="non-scaling-stroke" />
-          </svg>
-          <svg className="tide-wave tide-line" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
-            <path d={TIDE_LINE} vectorEffect="non-scaling-stroke" />
-          </svg>
-          <div className="tide-ray tide-ray-a" />
-          <div className="tide-ray tide-ray-b" />
-        </div>
-      </div>
+      {/* 물결 레이어(ADR-0016, components/shared/water-tide.tsx 공용 — 시청자 화면도 같은 컴포넌트).
+          제 배경이 없는 완전 투명 컨테이너라 body의 아이보리(--paper) 위에 옅은 결만 얹는다("모래 위
+          얕은 물결"). 보이는 조건은 app/metal-water.css `.gs-tide`가 판단. */}
+      <WaterTide />
       <header className="studio-topbar">
         {/* 왼쪽 칸: 큰 제목 + 그 옆에 배포 버전 배지(헤더 세로 중앙, 클릭=버전 복사). */}
         <div className="studio-left">

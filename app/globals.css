@@ -334,6 +334,11 @@
   outline-offset: 2px;
 }
 
+/* html 자체에도 같은 톤(--paper) — 트랙패드 오버스크롤 바운스나 스크롤 트랙 여백에서 body 밖(캔버스)이
+   드러날 때도 이음새 없이 같은 아이보리(2026-09-03, ADR-0016 4차: "스크롤 자리 배경 불일치" 실측). */
+html {
+  background: var(--paper);
+}
 body {
   margin: 0;
   background: var(--paper);

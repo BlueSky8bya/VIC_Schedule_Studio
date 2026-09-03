@@ -28,6 +28,7 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { logActivity } from "@/lib/activity/client";
+import { WaterTide } from "@/components/shared/water-tide";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 import { setBandHover } from "@/lib/ui/band-hover";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
@@ -4157,6 +4158,9 @@ export function PublicPoster({
       }`}
       data-poster-theme={effectivePosterTheme}
     >
+      {/* 물결 레이어(ADR-0016, components/shared/water-tide.tsx — 편집실과 같은 컴포넌트). 표면
+          (data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
+      <WaterTide />
       {/* (라이브 카드는 우측 레일 안 — 정보 카드와 태그 필터 사이 — 로 이사(2026-07-31).
           모바일 아젠다는 하단 '오늘'→LIVE 버튼이 담당해 별도 플로팅 없음.) */}
       {/* 하트 승급 순간 — 화면 밖(fixed)이라 캡쳐 PNG엔 안 들어간다. */}
