@@ -1127,7 +1127,9 @@ html[data-reduce-motion] .title-spark,
 html[data-reduce-motion] .studio-poster-title span,
 html[data-reduce-motion] .flame,
 html[data-reduce-motion] .public-day.today,
+html[data-reduce-motion] .public-day.today::before,
 html[data-reduce-motion] .agenda-day.today .agenda-when strong,
+html[data-reduce-motion] .agenda-day.today .agenda-when strong::after,
 html[data-reduce-motion] .auth-brand,
 html[data-reduce-motion] .auth-brand-spark {
   animation: none !important;
@@ -1139,14 +1141,60 @@ html[data-reduce-motion] .auth-brand-spark {
    더 내려 눈부심을 줄인다. 글자 대비는 유지(legibility). filter를 'html'에만 걸어 fixed/sticky의
    컨테이닝 블록을 깨지 않는다(html=뷰포트라 위치 변동 없음). 캡쳐(포스터 PNG)는 Playwright가
    별도 컨텍스트라 영향 없음. prefers-contrast: more면 따뜻함을 줄여 대비 우선. */
-html[data-eye-comfort] {
+/* 값 "1" = 루트 filter(GPU 있는 기기). 값 "lite" = 아래 토큰 팔레트(약한 기기 — lib/ui/gfx.ts가
+   기기당 한 번 rAF로 재서 정한다). 실측(소프트웨어 렌더): 필터가 idle 79→45fps를 깎았고 paint
+   애니를 다 꺼도 45였다 — 필터 자체가 매 프레임 전 화면을 다시 합성하기 때문. */
+html[data-eye-comfort="1"] {
   filter: saturate(0.8) brightness(0.96) sepia(0.1);
 }
 /* 고대비 선호 사용자에겐 sepia(청색광 감소)를 줄여 또렷함을 우선한다. */
 @media (prefers-contrast: more) {
-  html[data-eye-comfort] {
+  html[data-eye-comfort="1"] {
     filter: saturate(0.88) brightness(0.97) sepia(0.04);
   }
+}
+/* 라이트 팔레트 — 위 필터(saturate .8 · brightness .96 · sepia .1)를 토큰에 미리 통과시킨 값.
+   비용 0. 하드코딩된 색(태그 색·소형 액센트)은 원색 그대로라 필터판보다 살짝 쨍하지만, 큰 면
+   (종이·표면·선·잉크·편집실 바탕)이 같은 크림 톤이라 인상은 같다. */
+html[data-eye-comfort="lite"] {
+  --ink: #1e232d;
+  --ink-soft: #3d414c;
+  --muted: #6d7179;
+  --line: #e7dcc6;
+  --line-soft: #f0e7d5;
+  --paper: #f4ead6;
+  --surface: #fdf8ec;
+  --surface-2: #f9f1e1;
+  --accent: #edc45f;
+  --accent-strong: #997426;
+  --accent-soft: #fbf2d5;
+  --on-accent: #43340e;
+  --green: #53a870;
+  --green-soft: #ecf8e9;
+  --coral: #d17363;
+  --violet: #573bba;
+  --violet-rgb: 87 59 186;
+  --violet-soft: #f1eaf0;
+  --studio-action: #2e568a;
+  --studio-action-strong: #244669;
+  --studio-action-rgb: 46 86 138;
+  --studio-silver: #f2f0eb;
+  --studio-silver-line: #d7d8d8;
+  --studio-cell-calm: #eeede9;
+}
+html[data-eye-comfort="lite"] .studio-shell {
+  background:
+    radial-gradient(120% 55% at 12% -6%, #faebeb 0%, transparent 46%),
+    radial-gradient(120% 55% at 88% -6%, #ebecef 0%, transparent 46%),
+    linear-gradient(180deg, #fcf5f1 0%, #f4f2f1 100%);
+  color: #2b2737;
+}
+html[data-eye-comfort="lite"] .studio-actionbar {
+  background: #f8f2f2;
+  border-bottom-color: #eae5e7;
+}
+html[data-eye-comfort="lite"] .public-event {
+  background: #f2efea;
 }
 
 /* ── 네트워크 상태 표시(오프라인 배지 / 온라인 복귀 토스트) ──────────────────

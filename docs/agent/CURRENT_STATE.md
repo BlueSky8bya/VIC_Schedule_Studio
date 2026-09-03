@@ -202,6 +202,19 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   백필 스크립트 복제본 동일, prod vod_timeline 90행 제자리 교정 완료(잔여 0).
   **남은 것**: 팬 닉 표기 동의(토리님 경유 권장), B안(순간 검색 — 파싱 데이터 재사용, UI만),
   '1년 전 오늘' 아이디어.
+- **프레임 끊김 수리(2026-09-03, 사용자: "다른 PC에서 동작 줄이기 꺼도 툭툭 끊김")**: Playwright
+  rAF 간격·롱태스크 실측(CPU 4배 스로틀 + `--disable-gpu`=약한 GPU 흉내). 원인 둘. ① **띠 그룹
+  호버 React 상태**(`hoverSupportId`) — 띠 위를 지날 때마다 포스터/편집실 전체 리렌더, 진입/이탈
+  8회에 롱태스크 15개(≈180ms@4배). 수리 = DOM 클래스 토글(`lib/ui/band-hover.ts`, 포스터 띠에
+  `data-supportid` 추가) → 롱태스크 0, 상호작용 롱태스크 11→1. ② **눈 편한 테마의 루트 CSS filter**
+  — 소프트웨어 렌더에서 idle 79→45fps(paint 애니 다 꺼도 45; GPU 기기는 차이 0). 수리 =
+  `html[data-eye-comfort="1"]`(필터) / `"lite"`(필터 결과를 미리 계산한 토큰 팔레트, globals
+  `:root` 토큰 + 편집실 바탕·액션바·기본 카드색) 이원화, `lib/ui/gfx.ts`가 기기당 30일 1회 rAF
+  표본(로드+3초, 1.5초×2, 둘 다 나쁘면 = 20ms 초과 8%↑ 또는 평균 19ms↑; 코어≤2면 즉시)으로
+  `vic.gfx` 판정, `<GfxProbe/>`(layout) + 페인트-전 스크립트가 값 적용. 실측 no-gpu idle: 필터 49
+  → lite 86fps. ③ 덤: 오늘 맥동(아젠다 동그라미)·오늘 숨쉬기(달력 칸)의 box-shadow 키프레임을
+  ::after/::before 링의 opacity/transform으로(합성기). 띠 광택(sb-sheen)은 sb-head가 overflow
+  허용이라 배경 방식 유지(면적 작음). reduce-motion 규칙에 새 pseudo 추가.
 - **차분한 편집실 + 휴식 넛지 + 편집 카드 계측(2026-09-03, 오행 레이어 1차 스프린트)**: 방향서
   `docs/ux/saju-redesign-direction.md`(사용 데이터 기반, 코덱스 `계획서.md`는 근거·가드레일 — 둘 다
   미커밋·로컬; 원국 정보는 저장소에 싣지 않는다). CLAUDE.md 철학에 "Owner-fit palette rule" 추가.

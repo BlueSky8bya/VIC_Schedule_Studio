@@ -22,6 +22,7 @@ import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { GfxProbe } from "@/components/ui/gfx-probe";
 
 // #7: 텍스트 스티커 글꼴 선택지(한글 지원). next/font로 로드해 CSS 변수로 노출한다.
 // preload:false + subsets 미지정 → 전체 글리프(한글 포함) 로드, 경고 없이.
@@ -110,7 +111,10 @@ export default function RootLayout({
               ",K=" +
               JSON.stringify(SETTINGS_EPOCH_KEY) +
               ";if(s.getItem(K)!==E){s.removeItem('vic.reduceMotion');s.removeItem('vic.eyeComfort');s.setItem(K,E)}" +
-              "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort','1');if(s.getItem('vic.studioCalm')!=='off')d.setAttribute('data-studio-calm','1')}catch(e){}"
+              "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');" +
+              // 눈 편한 테마 값: 약한 기기 판정(vic.gfx=lite, 30일)이면 필터 대신 토큰 팔레트('lite') — lib/ui/gfx.ts
+              "var g=false;try{var r=JSON.parse(s.getItem('vic.gfx')||'null');g=!!r&&r.mode==='lite'&&Date.now()-r.at<2592000000}catch(e){}" +
+              "if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',g?'lite':'1');if(s.getItem('vic.studioCalm')!=='off')d.setAttribute('data-studio-calm','1')}catch(e){}"
           }}
         />
         {children}
@@ -127,6 +131,8 @@ export default function RootLayout({
         </Suspense>
         {/* 오프라인/온라인 상태 인앱 표시(배지+복귀 토스트) — export surface 바깥(body 직속)이라 캡쳐 무영향. */}
         <OfflineIndicator />
+        {/* 그래픽 여력 판정(눈 편한 테마 필터 vs 라이트 팔레트) — 렌더 없음, 기기당 30일 1회. */}
+        <GfxProbe />
         {/* 배포 확인용 커밋 해시는 개발자 화면(편집실 액션바 중앙)에만 표시한다(studio-shell). */}
         {/* Vercel Web Analytics — 방문자/페이지뷰 집계(쿠키리스, 개인정보 친화). */}
         <Analytics />

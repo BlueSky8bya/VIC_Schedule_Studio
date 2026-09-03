@@ -29,6 +29,7 @@ import {
 import dynamic from "next/dynamic";
 import { logActivity } from "@/lib/activity/client";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
+import { setBandHover } from "@/lib/ui/band-hover";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
 const PublicInsights = dynamic(
   () => import("@/components/poster/public-insights").then((m) => m.PublicInsights),
@@ -2191,8 +2192,8 @@ export function PublicPoster({
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
   const interactive = true;
   // 업도움 띠 그룹 호버 — 띠는 칸마다 별도 조각이라 CSS :hover만으로는 한 조각만 밝아져
-  // 마디가 다시 보인다. 같은 일정의 모든 조각이 함께 반응하게 호버 중인 띠 id를 들고 있는다.
-  const [hoverSupportId, setHoverSupportId] = useState<string | null>(null);
+  // 마디가 다시 보인다. 같은 일정의 모든 조각을 DOM 클래스 토글로 함께 밝힌다(lib/ui/band-hover).
+  // (React 상태였을 땐 띠 위를 지날 때마다 포스터 전체 리렌더 ≈180ms 롱태스크 — 2026-09-03 실측.)
   // 하트(관심)는 로그인 시청자만 — 익명 시청자에겐 ♥ 토글/모아보기를 숨긴다(서버 1인1하트 불가).
   // 색상 필터 등 다른 상호작용은 익명에게도 그대로 둔다.
   // 하트 가능 = 상호작용 화면이고 하트 액션이 연결돼 있으면(로그인이든 비로그인이든). 비로그인도
@@ -3012,9 +3013,7 @@ export function PublicPoster({
           const period = s.supportKind === "period";
           const bandClass = `support-bar${isDimmedByFilter(s) ? " dimmed" : ""}${
             bandClickable ? " is-clickable" : ""
-          }${showLabel ? " sb-head" : ""}${solo ? " sb-solo" : ""}${period ? " sb-period" : ""}${
-            hoverSupportId === s.id ? " is-hover" : ""
-          }`;
+          }${showLabel ? " sb-head" : ""}${solo ? " sb-solo" : ""}${period ? " sb-period" : ""}`;
           const bandStyle = {
             // 머리글 높이(--day-head-h)에서 파생 — 확대해도 날짜와 겹치지 않는다.
             // -1px은 머리글 밑선에 살짝 걸쳐 띠가 떠 보이지 않게 하는 기존 여백.
@@ -3038,8 +3037,10 @@ export function PublicPoster({
           };
           const bandHover = bandClickable
             ? {
-                onMouseEnter: () => setHoverSupportId(s.id),
-                onMouseLeave: () => setHoverSupportId((cur) => (cur === s.id ? null : cur))
+                onMouseEnter: (e: ReactMouseEvent<HTMLElement>) =>
+                  setBandHover(e.currentTarget.closest(".public-poster"), s.id, true),
+                onMouseLeave: (e: ReactMouseEvent<HTMLElement>) =>
+                  setBandHover(e.currentTarget.closest(".public-poster"), s.id, false)
               }
             : {};
           const bandInner = showLabel ? (
@@ -3067,6 +3068,7 @@ export function PublicPoster({
               <a
                 aria-label={`${s.publicTitle} ${period ? "관련 링크 열기" : "도와주러 가기"}(새 탭)`}
                 className={bandClass}
+              data-supportid={s.id}
                 href={s.supportUrl}
                 key={s.id}
                 onClick={(e) => {
@@ -3088,6 +3090,7 @@ export function PublicPoster({
               // 필터를 켜면 일정 카드만 흐려지고 업 도움 끈은 쨍하게 남아, 안 고른 기간이 오히려
               // 제일 눈에 띄었다 → 끈도 같이 물러난다(같은 isDimmedByFilter 판정을 쓴다).
               className={bandClass}
+              data-supportid={s.id}
               key={s.id}
               style={bandStyle}
               title={s.publicTitle} /* 좁은 칸에서 말줄임된 제목의 전문(호버 툴팁) */

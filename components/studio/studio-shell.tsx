@@ -156,6 +156,7 @@ import {
   setHapticsEnabled
 } from "@/lib/ui/haptics";
 import { logActivity, logSettled } from "@/lib/activity/client";
+import { setBandHover } from "@/lib/ui/band-hover";
 import { useSectionActivity } from "@/lib/activity/use-section";
 import {
   eyeComfortEnabled,
@@ -412,7 +413,7 @@ export function StudioShell({
   const [teaserGateShake, setTeaserGateShake] = useState(false);
   // 업도움 띠 그룹 호버 — 띠는 칸마다 별도 조각이라 :hover만으론 한 조각만 밝아진다.
   // 같은 일정의 모든 조각이 한 블록처럼 함께 반응하게 호버 중인 띠 id를 들고 있는다.
-  const [hoverSupportId, setHoverSupportId] = useState<string | null>(null);
+  // (띠 그룹 호버 상태 hoverSupportId는 2026-09-03 DOM 토글로 대체 — lib/ui/band-hover.)
   // 공개 범위 + 옵션(미정·업도움·떡밥) 묶음은 기본으로 접혀 있다 — 대부분의 일정이 '모두 공개 +
   // 옵션 없음'이라 매번 펼칠 이유가 없다. 접힌 상태에서도 헤더 요약으로 현재 값이 보인다.
   const [scopeFoldOpen, setScopeFoldOpen] = useState(false);
@@ -6427,15 +6428,15 @@ export function StudioShell({
                         className={`support-bar${isDimmedByFilter(s) ? " filter-dim" : ""}${
                           showLabel ? " sb-head" : ""
                         }${solo ? " sb-solo" : ""}${s.supportKind === "period" ? " sb-period" : ""}${
-                          hoverSupportId === s.id ? " is-hover" : ""
-                        }${editorVisible && selectedEventId === s.id ? " is-editing" : ""}`}
+                          editorVisible && selectedEventId === s.id ? " is-editing" : ""
+                        }`}
                         data-supportid={s.id}
                         key={s.id}
                         title={s.publicTitle} /* 말줄임된 제목의 전문(호버 툴팁) */
-                        onMouseEnter={() => setHoverSupportId(s.id)}
-                        onMouseLeave={() =>
-                          setHoverSupportId((cur) => (cur === s.id ? null : cur))
-                        }
+                        /* 그룹 호버는 DOM 클래스 토글(lib/ui/band-hover) — React 상태였을 땐 띠 위를
+                           지날 때마다 편집실 전체 리렌더(≈180ms 롱태스크, 2026-09-03 실측). */
+                        onMouseEnter={(e) => setBandHover(e.currentTarget.closest(".studio-shell"), s.id, true)}
+                        onMouseLeave={(e) => setBandHover(e.currentTarget.closest(".studio-shell"), s.id, false)}
                         onClick={(e) => {
                           e.stopPropagation();
                           // 매니저는 업 도움 설정 수정 시트를 띄운다(전체 편집 불가). 작업자는 읽기 전용.

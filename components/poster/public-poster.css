@@ -703,12 +703,23 @@ html[data-reduce-motion] .mb-live-dot {
   border-radius: var(--r-pill);
   background: var(--accent);
   color: var(--on-accent);
-  /* 오늘 날짜 동그라미가 은은히 숨쉰다 — 한눈에 "오늘"이 보이게(상시 생기). */
+  position: relative;
+}
+/* 오늘 날짜 동그라미가 은은히 숨쉰다 — 한눈에 "오늘"이 보이게(상시 생기). box-shadow 키프레임은
+   매 프레임 repaint라(2026-09-03 성능) 링을 ::after로 떼어 opacity/transform만 움직인다(합성기). */
+.agenda-day.today .agenda-when strong::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: inherit;
+  border: 5px solid rgb(245 184 27 / 26%);
+  pointer-events: none;
+  opacity: 0;
   animation: today-pulse 2.8s ease-in-out infinite;
 }
 @keyframes today-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(245 184 27 / 0%); }
-  50% { box-shadow: 0 0 0 5px rgb(245 184 27 / 26%); }
+  0%, 100% { opacity: 0; transform: scale(0.82); }
+  50% { opacity: 1; transform: scale(1); }
 }
 /* 한 날 안의 개별 일정: [색막대] [내용+하트] */
 .agenda-day-list {
@@ -4703,11 +4714,23 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
   border-radius: inherit;
   pointer-events: none;
   box-shadow: inset 0 0 0 3px #f4b740;
+}
+/* 바깥 4px 숨쉬기 링 — 예전엔 ::after의 box-shadow 키프레임이라 칸 전체가 매 프레임 repaint됐다
+   (2026-09-03 성능). ::before 링의 opacity만 움직여 합성기에서 끝낸다. */
+.public-day.today::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: 4;
+  border-radius: inherit;
+  pointer-events: none;
+  border: 4px solid rgb(244 183 64 / 28%);
+  opacity: 0;
   animation: today-breathe 3.2s ease-in-out infinite;
 }
 @keyframes today-breathe {
-  0%, 100% { box-shadow: inset 0 0 0 3px #f4b740; }
-  50% { box-shadow: inset 0 0 0 3px #f4b740, 0 0 0 4px rgb(244 183 64 / 28%); }
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
 }
 
 .day-events {

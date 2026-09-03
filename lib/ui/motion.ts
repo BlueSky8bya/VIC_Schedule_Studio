@@ -21,6 +21,8 @@
 export const SETTINGS_EPOCH = "2026-09-03";
 export const SETTINGS_EPOCH_KEY = "vic.settingsEpoch";
 
+import { eyeComfortAttrValue } from "@/lib/ui/gfx";
+
 const REDUCE_MOTION_KEY = "vic.reduceMotion"; // localStorage: "on"/"off"/미설정(=off)
 
 export function reduceMotionEnabled(): boolean {
@@ -70,7 +72,8 @@ export function setEyeComfort(on: boolean): void {
   }
   try {
     const root = document.documentElement;
-    if (on) root.setAttribute("data-eye-comfort", "1");
+    // 값 "1" = 루트 filter, "lite" = 토큰 팔레트(약한 기기 판정, lib/ui/gfx.ts).
+    if (on) root.setAttribute("data-eye-comfort", eyeComfortAttrValue());
     else root.removeAttribute("data-eye-comfort");
   } catch {
     /* no-op */
