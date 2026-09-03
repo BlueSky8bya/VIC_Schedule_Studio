@@ -57,6 +57,18 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   pending → 첫 Pload{autoPlay:true}; 차단 브라우저는 PonReady 3초 감시 → mutePlay:true 재마운트
   (항상 재생됨, 실측) → Punmute 시도(origin 잠금이라 무시돼도 무해). 허용/차단 프로필 양쪽
   Playwright 실측 통과. 상세는 메모리 soop-embed-iframe-api.
+  후속 3(2026-09-03, 점프 지연 최소화 — 사용자 "체감 3초"): 실측 차단 프로필 3.7초(소리 시도
+  무응답 → 3초 감시 → 리마운트 로드). 수리 = ① **슬롯 a/b 2중 iframe**(dayVodSlots): 주(보임)
+  + 숨긴 순정 대기(PonReady만, Pload 안 보냄). 재생 전 점프는 대기에 첫 Pload{autoPlay:true}를
+  쏘고 그 자리에서 승격, 물러난 주는 gen++로 리로드 → 새 대기. 메시지는 e.source↔iframe 대조로
+  슬롯 식별. ⚠ DOM 순서 a,b 고정(키드 재배치 = iframe 리로드), 보이기만 CSS(.is-standby
+  visibility:hidden). ② **차단 기억**(localStorage `vic.vod.soundAutoplayBlocked`, 3일 TTL):
+  감시창에 걸리면 기억 → 다음 점프부터 곧장 음소거 시동(+Punmute); 소리 시도가 실제로 굴러가면
+  즉시 해제(자가 교정). ③ 감시창 3초→1.5초(대기가 데워져 있어 Pload→첫 이벤트 ≈0.1초).
+  실측(클릭→첫 미디어 이벤트): 허용 464→247ms · 차단 첫 클릭 3723→1598ms · 차단 이후 114ms.
+  ④ 창이 떠 있는 동안 ←/→ = **영상 10초 탐색**(마지막 점프/재생 방송, timeUpdate currentTime
+  기준, 120ms 속도 제한), 월 이동 핸들러는 dayVodOpenRef로 원천 차단(사용자: 프레임 밖 포커스
+  에서 키 넘기다 달이 바뀌어 끊김). 실측: 재생 전/중 월 불변, 닫은 뒤 정상 이동.
 
   후속(2026-09-03): ① 창 1040→1280·레일 420, 역할별 타입 계단(제목 20 > 날짜·레일머리 15 >
   코너헤더·항목 14 > 시각 13 > 크레딧 11), 여백 24 정렬. ② 다중 방송 날 — 방송마다 흰 카드
@@ -143,8 +155,9 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   색이라 기간 안내를 고르면 팝오버 점선·리더 라인이 구분되지 않았다(사용자 신고). 편집 대상 색
   규율 = 신규 초록 · 일정 보라 · 업 도움 장미 · 기간 안내 하늘 · 떡밥 보라 링 · 미정 주황.
   같은 커밋: 삭제 버튼이 폼의 현재 종류를 따라 '이 기간 안내 삭제'+하늘색(`.support-delete
-  [data-kind]`), 팝오버 `.is-period`(점선·그립·리더 라인)도 **폼 현재값** 기준(종류 칩을 바꾸면
-  폼 테마와 함께 즉시 갈아입음) — 달력 위 띠 `.sb-period.is-editing`만 저장값 기준.
+  [data-kind]`), 팝오버 `.is-period`(점선·그립·리더 라인·상단 액센트 border-top)도 **폼 현재값**
+  기준(종류 칩을 바꾸면 폼 테마와 함께 즉시 갈아입음) — 달력 위 띠 `.sb-period.is-editing`만
+  저장값 기준. 상단 액센트는 `.is-support`(장미)/`.is-period`(하늘)가 `.is-edit`(보라)를 덮는다.
   마비노기 알파테스트(9/3~6)를 period로 실전환. 같은 커밋: 띠 라벨이 주 안에서 1칸뿐이면
   (일요일 종료 등) sb-solo 압축 — 남의 칸 위로 튀던 오버플로 수정(시청자+편집실).
 - **'적게 쓰인 기능' 카드에서 철수 기능 갈라내기(2026-08-31, 사용자 지시)**: 이 카드는 "없앨 후보"를

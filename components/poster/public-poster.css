@@ -1102,6 +1102,15 @@ html[data-reduce-motion] .day-vod-modal {
   border: 0;
   display: block;
 }
+/* 대기(standby) 슬롯 — 순정 플레이어를 숨겨 미리 데워 둔다(로드만, 재생 없음). 레이아웃 밖
+   (absolute)이라 주 플레이어 크기에 영향 없음. display:none이 아니라 visibility — 플레이어가
+   display:none에서 초기화를 미룰 수 있어 안전하게(로드·PonReady는 그대로 온다). */
+.dvm-thumb.is-playing iframe.is-standby {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
 /* 로딩 커버 — 지정 스냅샷+▶+길이 배지를 플레이어가 준비될 때까지 덮는다. 클릭은 통과
    (pointer-events: none) — 준비 전 클릭도 iframe에 닿아 손해가 없고, 준비되면 부드럽게 걷힌다. */
 .dvm-cover {
