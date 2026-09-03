@@ -6020,33 +6020,9 @@ export function StudioShell({
           {avatarSceneOn ? studioToolsPanel : null}
           <div className="avatar-slot">
             <div className="avatar-dock-inner">
-              {/* 좌/우 세그먼트는 조작 대상(아바타 자리) 안에 — 옛 액션바 가운데 열에서 이사(HCI 근접성).
-                  방향은 아이콘(ArrowLeft/RightToLine, 2026-09-01 피드백), 뜻은 aria-label. */}
-              <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
-                <button
-                  type="button"
-                  className={avatarSide === "left" ? "on" : ""}
-                  aria-label="아바타 왼쪽에 두기"
-                  aria-pressed={avatarSide === "left"}
-                  onClick={() => pickAvatarSide("left")}
-                  data-act="avatar-ctl-toggle"
-                >
-                  <ArrowLeftToLine aria-hidden="true" size={18} strokeWidth={2.4} />
-                </button>
-                <span aria-hidden="true" className="avatar-ctl-label">
-                  아바타 자리
-                </span>
-                <button
-                  type="button"
-                  className={avatarSide === "right" ? "on" : ""}
-                  aria-label="아바타 오른쪽에 두기"
-                  aria-pressed={avatarSide === "right"}
-                  onClick={() => pickAvatarSide("right")}
-                  data-act="avatar-ctl-toggle"
-                >
-                  <ArrowRightToLine aria-hidden="true" size={18} strokeWidth={2.4} />
-                </button>
-              </div>
+              {/* 좌/우 세그먼트는 하단 중앙 플로팅 행(bottom-float-row)에 — 박스 안에 두면 rail과 함께
+                  반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼(2026-09-03 사용자). */}
+              <span className="avatar-slot-hint">아바타 자리</span>
             </div>
           </div>
         </aside>
@@ -6243,10 +6219,40 @@ export function StudioShell({
         </div>
       </header>
 
-      {/* 하단 중앙 플로팅 행 — 확대 배율 컨트롤(필요할 때만). (비공개 경고 알약은 2026-08-27 철수.) */}
-      {zoomCollapse ? (
+      {/* 하단 중앙 플로팅 행 — 아바타 좌/우 세그먼트(항상, 관리자·개발자) + 확대 배율 컨트롤(필요할 때만).
+          아바타 세그먼트가 여기 사는 이유(2026-09-03 사용자): rail 안에 두면 rail이 반대편으로 옮겨갈 때
+          버튼도 같이 가서 되돌리려면 화면 폭만큼 마우스를 왕복해야 했다. 화면 중앙 고정 = 어느 쪽에서든
+          같은 거리(Fitts). 남쪽이라 색은 은백 고스트(뜨거운 강조 없음). (비공개 경고 알약은 2026-08-27 철수.) */}
+      {avatarEditor || zoomCollapse ? (
         <div className="bottom-float-row">
-          <div className="cal-zoom-float">{renderCalZoomCtl()}</div>
+          {avatarEditor ? (
+            <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
+              <button
+                type="button"
+                className={avatarSide === "left" ? "on" : ""}
+                aria-label="아바타 왼쪽에 두기"
+                aria-pressed={avatarSide === "left"}
+                onClick={() => pickAvatarSide("left")}
+                data-act="avatar-ctl-toggle"
+              >
+                <ArrowLeftToLine aria-hidden="true" size={18} strokeWidth={2.4} />
+              </button>
+              <span aria-hidden="true" className="avatar-ctl-label">
+                아바타 자리
+              </span>
+              <button
+                type="button"
+                className={avatarSide === "right" ? "on" : ""}
+                aria-label="아바타 오른쪽에 두기"
+                aria-pressed={avatarSide === "right"}
+                onClick={() => pickAvatarSide("right")}
+                data-act="avatar-ctl-toggle"
+              >
+                <ArrowRightToLine aria-hidden="true" size={18} strokeWidth={2.4} />
+              </button>
+            </div>
+          ) : null}
+          {zoomCollapse ? <div className="cal-zoom-float">{renderCalZoomCtl()}</div> : null}
         </div>
       ) : null}
 

@@ -48,7 +48,9 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
 - **Chrome placement (배치 대개편, 2026-09-03).** Studio web chrome is ONE north row: title · month nav ·
   save state · viewer preview · role badge · logout. Cold tools (태그 편집 · 멤버 관리 · 월별 인사이트 ·
   단축키) live in the **west rail tools card** under the tag filter (`.studio-tools`); the avatar
-  left/right control sits inside the avatar slot. Do not reintroduce a second full-width action row —
+  left/right control is a **fixed bottom-center pill** (`.bottom-float-row`) — never inside the rail,
+  because the rail moves to the other side and the control would travel with it (owner feedback
+  2026-09-03). Do not reintroduce a second full-width action row —
   the calendar (hot zone) owns that height. The rail's vertical budget is filter | tools | avatar 58%.
 - **Tide layer.** `.studio-tide` (water swells + one sharp silver line, `studio-calm-layer.css`) shows
   only with calm ON ∧ 생동감 있는 동작 ON ∧ `data-gfx≠lite` ∧ web width. It is the only ambient

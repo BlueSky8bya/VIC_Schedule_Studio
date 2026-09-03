@@ -4196,10 +4196,11 @@ html[data-reduce-motion] .perf-windows button.active {
   letter-spacing: 0.02em;
   user-select: none;
 }
-/* 세그먼트 [왼쪽 · 아바타 자리 · 오른쪽] — 2026-09-03 배치 대개편으로 액션바 가운데 열에서 **아바타 자리
-   박스 안(.avatar-dock-inner 하단)**으로. 조작 대상 옆에 조작 도구(HCI 근접성). 라벨이 가운데, 방향 버튼이
-   양옆이라 '어느 쪽'인지가 라벨 기준으로 읽힌다. 항상 켜짐(끄기 없음). 슬롯 박스는 pointer-events:none이라
-   세그먼트만 다시 켠다. */
+/* 세그먼트 [왼쪽 · 아바타 자리 · 오른쪽] — 2026-09-03 배치 대개편으로 액션바 가운데 열에서 **하단 중앙
+   플로팅 행(.bottom-float-row)**으로(플로팅 모습은 studio-calm-layer.css). 잠깐 아바타 자리 박스 안에 뒀다가
+   철회 — rail과 함께 반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼(사용자 지적). 화면 중앙 고정 =
+   어느 쪽 rail에서든 같은 거리. 라벨이 가운데, 방향 버튼이 양옆이라 '어느 쪽'인지가 라벨 기준으로 읽힌다.
+   항상 켜짐(끄기 없음). */
 .studio-avatar-ctl {
   pointer-events: auto;
   display: inline-flex;

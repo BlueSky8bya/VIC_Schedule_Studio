@@ -129,9 +129,32 @@ html[data-studio-calm] .stool-kbd.open {
   border-color: var(--studio-action-line);
   color: var(--studio-action-text);
 }
-/* 아바타 좌/우 세그먼트(아바타 자리 박스 안) — 차분 모드에선 은백 트랙 + 물빛 선택. */
-html[data-studio-calm] .studio-avatar-ctl {
-  background: var(--studio-silver);
+/* 아바타 좌/우 세그먼트 — 하단 중앙 플로팅 행(.bottom-float-row)에 산다. rail 안에 두면 rail과 함께
+   반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼이었다(2026-09-03 사용자). 화면 중앙 고정 =
+   어느 쪽 rail에서든 같은 거리. 확대 배율 플로팅(.cal-zoom-ctl)과 같은 유리 알약 문법, 남쪽이라 조용히. */
+.bottom-float-row .studio-avatar-ctl {
+  pointer-events: auto;
+  border: 1.5px solid rgb(124 108 240 / 30%);
+  background: rgb(255 253 250 / 78%);
+  -webkit-backdrop-filter: blur(10px) saturate(1.2);
+  backdrop-filter: blur(10px) saturate(1.2);
+  box-shadow:
+    0 10px 30px rgb(80 70 130 / 18%),
+    inset 0 0 0 1px rgb(255 255 255 / 55%);
+  transition: box-shadow var(--dur-1) var(--ease);
+}
+.bottom-float-row .studio-avatar-ctl:hover {
+  box-shadow:
+    0 14px 36px rgb(80 70 130 / 24%),
+    inset 0 0 0 1px rgb(255 255 255 / 55%);
+}
+/* 차분 모드: 은백 유리 + 물빛 선택. */
+html[data-studio-calm] .bottom-float-row .studio-avatar-ctl {
+  border-color: var(--studio-silver-line);
+  background: rgb(243 245 247 / 82%);
+  box-shadow:
+    0 10px 30px rgb(40 50 70 / 14%),
+    inset 0 0 0 1px rgb(255 255 255 / 60%);
 }
 html[data-studio-calm] .studio-avatar-ctl button.on {
   color: var(--studio-action-text);

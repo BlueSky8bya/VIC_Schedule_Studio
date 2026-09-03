@@ -17,7 +17,9 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   ① 웹 크롬 두 행 → 한 행. 옛 액션바(관리 3종·아바타 좌/우·단축키·역할 배지·로그아웃)가 사라지고
   달력이 그 높이(≈50px)를 얻는다. 역할 배지·로그아웃은 헤더 북동 모서리(`.studio-role-tools`),
   관리 3종+단축키는 **서쪽 rail 도구 카드**(`.studio-tools` 타일, 아바타 scene이면 [필터|도구|아바타 자리],
-  아니면 `.studio-left-panel` 필터 아래), 아바타 좌/우 세그먼트는 **아바타 자리 박스 안**. 아바타 자리
+  아니면 `.studio-left-panel` 필터 아래), 아바타 좌/우 세그먼트는 **하단 중앙 플로팅 행**(`.bottom-float-row`,
+  확대 배율 컨트롤과 같은 줄 — 처음엔 아바타 자리 박스 안에 뒀다가 "rail과 같이 옮겨가 마우스 왕복이
+  화면 폭만큼"이라는 사용자 지적으로 화면 중앙 고정으로 철회). 아바타 자리
   flex 63→58%(길어진 rail에서 옛 절대 높이 유지). 실측: 1720×1000(zoom .9) 필터 잘림 0, 1600×1000
   51px(옛 배치 44px과 동급). data-act 키 불변. 2026-08 "드롭다운 접기 철회"는 접지 않는 타일로 존중.
   ② `.studio-tide`(components/studio/studio-calm-layer.css) — fixed z:-1 배경(셸 배경 투명): 물빛 스웰 2 +
