@@ -102,6 +102,29 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   참조하는 항상-false 스텁이라 유지). 순서: 코드 push → 0074 적용(옛 코드도 조회 실패를 삼켜 안 깨짐). 공개 API DTO
   무변화. 검증: tsc·lint(기존 경고 2)·vitest 522·build exit 0·비주얼 79·Playwright(편집실·모바일 DOM "매니저" 0, 도구
   타일 [태그 편집·인사이트·단축키·설정], 개발자 미리보기 3개, 역할 팝오버에 '멤버' 없음).
+  ㉑ **계절 장면 캔버스 + gfx v3 + 세대 재시딩 + 차분 토글 제거(2026-09-04 사용자 6건, ADR-0017 개정 2, PLAN-20260904-002)**:
+  ① 계절 배경 OFF = **전부** 내려감(물결도 여름의 것 — `html[data-ambient="off"]`가 `.gs-tide`·`.gs-season` 둘 다 숨김,
+  `data-off-season` 폐기, `<AmbientLayer>`는 여름이면 `<WaterTide>` 아니면 `<SeasonCanvas>`). ② 봄/가을/겨울 = 전체 화면
+  `<canvas>` 장면(`components/shared/ambient/scene-engine.ts` + `scenes/{util,autumn,winter,spring}.ts`, 동적 import) —
+  전부 여름 물결과 같은 **위에서 내려다보는 시점**: 가을 = 낙엽 60~130장(채도 낮춘 갈색·와인) 원 충돌·바닥 마찰·돌풍
+  (8~18초마다 한 줄기, 잎 뒤집힘)·포인터 바람(속도 비례)·바탕에서 잎 집어 끌기(들리면 그림자 커짐, 놓으면 손 속도로
+  미끄러짐); 겨울 = 소복한 눈밭(둔덕·반짝이) + 걸어간 발자국 2~3줄 + 내려앉는 눈(점이 커지며 스며듦) + 바탕 클릭 →
+  발자국 한 쌍 + 눈가루(46초 뒤 사라짐); 봄 = 풀밭(풀포기·클로버·데이지·꽃잎) + 빛 얼룩 + 나비 3마리(그림자가 높이 따라
+  멀어짐, 포인터 130px 안이면 도망, 클릭 → 꽃잎 16개 폭발 + 한 바퀴). 스프라이트·바탕은 한 번 굽고 매 프레임
+  drawImage만, 탭 숨김·CSS 숨김·스위치 OFF면 루프 정지, 자체 조절기(120프레임 중 34ms 초과 20%↑ → q 한 단계 ↓, q0 =
+  30fps), 검증 훅 `window.__vicAmbient`. '바탕'(집기·도장) = 버튼·칸·팝오버·rail이 아닌 곳(`isBackgroundTarget`); 나비는
+  어디서든. ③ gfx v3(`lib/ui/gfx.ts`): full/lite/**soft** — soft = WebGL 렌더러 SwiftShader/llvmpipe/software 또는 코어
+  ≤2 → 배경 OFF + 눈 편한 토큰 팔레트; lite = 나쁜 rAF 표본 **2회 방문 연속**(7일) → 물결 caustic 1겹·너울 정지, 캔버스 q1
+  (입자 절반·DPR 1) — **보이게 유지**, 필터 유지; 설정 "배경 효과"(`vic.gfxPref` auto/max/lite)가 판정을 덮음; 자동 강등
+  → `vic:gfx-auto` 이벤트 → 편집실 토스트. 옛 v2 기록은 전부 재측정. ⚠ 헤드리스 Chromium은 WebGL=SwiftShader라 즉시
+  soft → 비주얼 config에 `vic.gfxPref=max` + v3 full 시드. ④ 토리님 "물결이 몇 초 뒤 사라짐" = v2 lite 판정(로드 3초 뒤
+  1.5초×2), "눈 편한 테마 OFF처럼 보임" = 같은 판정이 필터→토큰 팔레트로 바꾼 것(태그·카드 원색 그대로; 스위치는 ON).
+  ⑤ 설정 세대 `2026-09-04`: 생동감·눈 편한·차분·계절 네 키 지워 기본 ON 재시딩. ⑥ **차분한 편집실 토글 제거**(사용자:
+  "끄면 살짝 어두워질 뿐 뭐가 차분한지 모르겠다") — 항상 ON(페인트-전 스크립트가 무조건 붙임, CSS 불변, 설정 목록에서
+  줄 삭제). 실측(.scratch-pw/verify-ambient2.mjs, dev+fixture): 4계절 편집실·시청자 마운트(여름 물결만·나머지 캔버스만),
+  잎 집기 목표 1px 오차·바람 쓸기 8장 중 5장 이동, 나비 클릭 반짝이 16·도망, 바탕 클릭 발자국 2·눈가루 10(칸 클릭은 0),
+  스위치 OFF 여름·가을 전부 none, 생동감 OFF·soft → 루프 정지, lite → q1 65장/caustic-b none, pref max > soft, v2 기록
+  무시, 세대 재시딩 4키 null·스위치 3개 ON, 셀렉트 가볍게 → data-gfx=lite 즉시.
   ⑳ **크롬 압축 매뉴얼(2026-09-04 사용자: "창 비율을 억지로 망가뜨려도 대응" + "팝오버와 아바타 알약 겹침이 세다")**
   — `docs/ux/chrome-compaction-manual.md`, CSS studio-calm-layer.css ⑤. ① 가로: JS 실측 단계 `chromeTier`
   (`.studio-shell[data-chrome="1|2|3"]`) — 임계 폭을 외우지 않고 헤더 한 줄이 넘치지 않는 첫 단계에서 멈춤(넘침 =

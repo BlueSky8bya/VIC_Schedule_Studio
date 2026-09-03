@@ -1,30 +1,25 @@
-/* ══ 앰비언트 계절 레이어(2026-09-04, ADR-0017) — components/shared/ambient/* ═══════════════════════
-   물결(.gs-tide, app/metal-water.css)은 상수, 여기는 그 위의 계절 강세. 게이트 = 물결과 같은 조건 + 계절 배경
-   스위치(`html[data-ambient="off"]`면 숨김 — 물결만 남는다). 규칙(frame-jank 메모리): 무한 애니는 transform/
-   opacity만, scale·blur·mix-blend 금지, 어두운 얼룩 금지, html에 background 금지, 표면(data-export-surface) 밖. */
+/* ══ 앰비언트 계절 레이어(2026-09-04, ADR-0017 개정 2) — components/shared/ambient/* ═══════════════════
+   여름 = 물결(.gs-tide, app/metal-water.css), 봄·가을·겨울 = 전체 화면 캔버스 장면(.gs-season, season-canvas.tsx +
+   scene-engine.ts). 게이트는 물결과 같다: 생동감 있는 동작 ON ∧ gfx≠soft ∧ **계절 배경 스위치 ON** ∧ 웹(≥641px).
+   스위치 OFF(`html[data-ambient="off"]`)면 물결까지 전부 내려간다(물결은 여름의 것). gfx=lite는 엔진이 입자를
+   줄여서 대응하고(속성을 지켜본다) 여기선 숨기지 않는다. 규칙(frame-jank 메모리): html에 background 금지, 표면
+   (data-export-surface) 밖, 어두운 얼룩 금지. */
 
 .gs-season {
   display: none;
 }
 @media (min-width: 641px) {
-  html:not([data-reduce-motion]):not([data-gfx="lite"]):not([data-ambient="off"]) .gs-season {
+  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-ambient="off"]) .gs-season {
     display: block;
   }
-}
-/* 물결은 여름의 전유물(2026-09-04 사용자) — 계절 배경 스위치 ON이면 여름 아닌 달의 물결을 숨긴다(스위치
-   OFF = 사철 물결). ambient-layer.tsx가 여름 아닐 때 data-off-season을 단다. 게이트 규칙(metal-water.css)과
-   특이도가 같아 순서에 기대지 않도록 !important — 이 파일의 유일한 !important, 하드 게이트다. */
-html:not([data-ambient="off"]) .gs-tide[data-off-season] {
-  display: none !important;
 }
 .gs-season {
   position: fixed;
   inset: 0;
   z-index: -1;
-  overflow: hidden;
   pointer-events: none;
   contain: strict;
-  /* 달을 넘겨 계절이 바뀌면 새 레이어가 스르르 — opacity만(합성기). */
+  /* 달을 넘겨 계절이 바뀌면 새 장면이 스르르 — opacity만(합성기). */
   animation: gs-season-in 0.9s ease-out both;
 }
 @keyframes gs-season-in {
@@ -33,177 +28,5 @@ html:not([data-ambient="off"]) .gs-tide[data-off-season] {
   }
   to {
     opacity: 1;
-  }
-}
-
-/* ── 가을: 물 위의 낙엽 + 은빛 서리 안개 ─────────────────────────────────────── */
-.gs-mist {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 34vh;
-  background: linear-gradient(180deg, rgb(234 238 242 / 46%) 0%, rgb(234 238 242 / 18%) 46%, rgb(234 238 242 / 0%) 100%);
-}
-.gs-leaf {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: var(--s);
-  height: var(--s);
-  opacity: 0.8; /* 1차 .62는 반투명 칸·눈 편한 필터 뒤에서 안 보였다 */
-  will-change: transform;
-  animation: gs-leaf-drift var(--t) ease-in-out var(--d) infinite alternate;
-}
-.gs-leaf svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: visible;
-  transform: rotate(var(--a));
-  animation: gs-leaf-spin var(--r) ease-in-out var(--d) infinite alternate;
-}
-@keyframes gs-leaf-drift {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(var(--dx), var(--dy));
-  }
-}
-@keyframes gs-leaf-spin {
-  from {
-    transform: rotate(var(--a));
-  }
-  to {
-    transform: rotate(calc(var(--a) + 24deg));
-  }
-}
-
-/* ── 겨울: 눈 + 서리 광택 + 찬 필름 ────────────────────────────────────────────── */
-/* 서리·찬 필름 — 순백은 아이보리 위에서 안 보인다(1차 실측): 얼음빛(연청)을 섞어야 읽힌다. */
-.gs-frost {
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(60vw 34vh at 0% 0%, rgb(214 228 244 / 62%), rgb(214 228 244 / 0%) 70%),
-    radial-gradient(60vw 34vh at 100% 0%, rgb(214 228 244 / 56%), rgb(214 228 244 / 0%) 70%),
-    linear-gradient(180deg, rgb(198 212 230 / 24%) 0%, rgb(198 212 230 / 0%) 60%);
-}
-/* 소복한 눈 둔덕(SVG, season-winter.tsx) — 화면 아래 띠, 언덕 윤곽 + 얼음빛 헤어라인(金). 정적. */
-.gs-snowbank {
-  position: absolute;
-  inset: auto 0 0 0;
-  width: 100%;
-  height: 14vh;
-  display: block;
-}
-.gs-flake {
-  position: absolute;
-  top: -2vh;
-  left: var(--x);
-  width: var(--s);
-  height: var(--s);
-  will-change: transform;
-  animation: gs-snow-fall var(--t) linear var(--d) infinite;
-}
-.gs-flake > b {
-  display: block;
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background: #f7fbff;
-  opacity: var(--o);
-  /* 얼음빛 링 + 흰 후광 — 아이보리 위에서 흰 점이 읽히게 하는 유일한 방법(실측). */
-  box-shadow:
-    0 0 0 1px rgb(150 180 212 / 55%),
-    0 0 8px rgb(255 255 255 / 95%);
-  animation: gs-snow-sway calc(var(--t) / 4) ease-in-out var(--d) infinite alternate;
-}
-@keyframes gs-snow-fall {
-  from {
-    transform: translateY(0);
-  }
-  to {
-    transform: translateY(106vh);
-  }
-}
-@keyframes gs-snow-sway {
-  from {
-    transform: translateX(calc(var(--sw) * -1));
-  }
-  to {
-    transform: translateX(var(--sw));
-  }
-}
-
-/* ── 봄: 초목 그림자 얼룩 + 풀빛 필름 + 이슬 ────────────────────────────────────── */
-.gs-dapple {
-  position: absolute;
-  width: 62vw;
-  height: 62vh;
-  border-radius: 50%;
-  will-change: transform;
-}
-.gs-dapple-a {
-  left: -14vw;
-  top: -10vh;
-  background: radial-gradient(closest-side, rgb(120 168 96 / 12%), rgb(120 168 96 / 0%));
-  animation: gs-dapple-a 64s ease-in-out infinite alternate;
-}
-.gs-dapple-b {
-  right: -18vw;
-  top: 26vh;
-  background: radial-gradient(closest-side, rgb(96 150 110 / 10%), rgb(96 150 110 / 0%));
-  animation: gs-dapple-b 78s ease-in-out -20s infinite alternate;
-}
-.gs-dapple-c {
-  left: 28vw;
-  bottom: -30vh;
-  background: radial-gradient(closest-side, rgb(150 190 110 / 9%), rgb(150 190 110 / 0%));
-  animation: gs-dapple-a 70s ease-in-out -40s infinite alternate;
-}
-@keyframes gs-dapple-a {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(9vw, 6vh);
-  }
-}
-@keyframes gs-dapple-b {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(-8vw, -7vh);
-  }
-}
-.gs-grass {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 30vh;
-  background: linear-gradient(0deg, rgb(150 196 120 / 14%) 0%, rgb(150 196 120 / 0%) 100%);
-}
-/* 나무 그늘 — 가을 잎과 같은 드리프트·회전 keyframes, 훨씬 크고 옅게(청록 그림자). */
-.gs-shade {
-  opacity: 0.14;
-}
-.gs-dew {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 8px rgb(255 255 255 / 80%);
-  opacity: 0.35;
-  animation: gs-dew-breathe 7s ease-in-out var(--d) infinite alternate;
-}
-@keyframes gs-dew-breathe {
-  from {
-    opacity: 0.25;
-  }
-  to {
-    opacity: 0.8;
   }
 }

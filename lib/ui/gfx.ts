@@ -1,63 +1,141 @@
-// 그래픽 여력 판정(2026-09-03) — 눈 편한 테마의 루트 CSS filter가 약한 기기에서 프레임을 깎는다.
-// 실측(소프트웨어 렌더 = GPU 가속 없는 PC 흉내): idle 79fps → 필터 켜면 45fps(20ms 초과 프레임 33%).
-// GPU가 있는 기기에선 차이 0. 그래서 기기별로 한 번 재서 '라이트'면 필터 대신 **토큰 팔레트**
-// (globals.css `html[data-eye-comfort="lite"]`, 필터 결과를 미리 계산한 색)로 같은 인상을 낸다.
+// 그래픽 여력 판정 v3(2026-09-04) — 배경 효과(물결·계절 캔버스)와 눈 편한 테마의 루트 filter를 기기에 맞춘다.
 //
-// 판정 = 페이지가 자리잡은 뒤(로드+3초) 1.5초씩 두 번 rAF 간격을 재서, 두 번 다 '나쁜 표본'이면
-// lite(한 번만 나쁘면 로딩 잔여 작업일 수 있어 무시). 나쁜 표본 = 20ms 초과 프레임 8% 이상 또는
-// 평균 간격 19ms 이상(실측: GPU 기기 0~0.4% · 소프트웨어 렌더 16%/49fps — 사이가 넓다).
-// 코어 2개 이하면 재지 않고 lite.
-// 결과는 30일 기억(vic.gfx) — 매번 재면 첫 3초가 흔들린다. 30일 뒤 다시 잰다(기기 교체·드라이버).
-// 눈 편한 테마가 꺼져 있거나 이미 lite면 재지 않는다(측정 대상이 없다).
+// v2까지의 문제(토리님 실사고, 2026-09-04): 로드 3초 뒤 rAF 간격 1.5초×2가 나쁘면 'lite'로 박고 물결을 통째로
+// 숨겼다(→ "물결이 잠깐 떴다가 몇 초 뒤 사라짐") + 눈 편한 테마를 토큰 팔레트로 바꿨다(→ 태그·카드 원색이 그대로라
+// "눈 편한 테마가 OFF"처럼 보임). 스트리밍 PC는 OBS 인코딩·게임 부하로 프레임이 흔들려 GPU가 멀쩡해도 오판했다.
+//
+// v3 = 세 단계 + 사용자 우선순위 + 2회 판정:
+//   full — 전부. lite — 프레임이 나쁜 기기: 물결 1겹(caustic-b·너울 b 숨김), 캔버스 입자 절반·DPR 1 — **보이게 유지**,
+//          루트 filter는 그대로(GPU가 있으면 filter 비용은 0에 가깝다). soft — 소프트웨어 렌더(WebGL 렌더러가
+//          SwiftShader/llvmpipe/software) 또는 코어 ≤2: 배경 효과 OFF + 눈 편한 테마 토큰 팔레트(filter가 진짜 비싼 곳).
+//   판정: soft는 즉시. lite는 rAF 표본이 나쁜 방문이 **두 번 연속**(7일 안)일 때만 — 한 번은 OBS·로딩 잔여 작업일 수 있다.
+//   사용자 우선순위 `vic.gfxPref`(auto/max/lite, 설정 "배경 효과")가 있으면 판정을 덮어쓴다. 자동으로 내려가면
+//   `vic:gfx-auto` 이벤트로 알린다(편집실이 토스트로 "설정에서 바꿀 수 있어요"를 띄운다).
+// 결과는 30일 기억(vic.gfx, v3 — 옛 세대 기록은 lite/full 모두 다시 잰다). 페인트 전 적용은 app/layout.tsx 스크립트.
+export type GfxMode = "full" | "lite" | "soft";
+export type GfxPref = "auto" | "max" | "lite";
+
 const GFX_KEY = "vic.gfx";
+const GFX_PREF_KEY = "vic.gfxPref";
+const STRIKE_KEY = "vic.gfxStrike";
 const GFX_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const STRIKE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const SAMPLE_MS = 1_500;
 const BAD_FRAME_MS = 20;
 const BAD_RATIO = 0.08;
 const BAD_MEAN_MS = 19;
+const GFX_PROBE_VERSION = 3;
 
-// v: 판정 기준이 바뀌면 올린다 — 옛 세대 기록은 만료로 본다(다시 잰다). v2(2026-09-03): 편집실 물결
-// 레이어가 생겨 'full' 판정이 물결 비용을 못 본 채 30일 남는 걸 막는다(소프트웨어 렌더 실측 86→47fps).
-const GFX_PROBE_VERSION = 2;
-type GfxRecord = { mode: "lite" | "full"; at: number; v?: number };
+type GfxRecord = { mode: GfxMode; at: number; v: number };
 
 function readRecord(): GfxRecord | null {
   try {
     const raw = window.localStorage.getItem(GFX_KEY);
     if (!raw) return null;
     const rec = JSON.parse(raw) as Partial<GfxRecord>;
-    if ((rec.mode !== "lite" && rec.mode !== "full") || typeof rec.at !== "number") return null;
-    if (Date.now() - rec.at > GFX_TTL_MS) return null;
-    // 옛 세대 'full'은 다시 잰다. 옛 'lite'는 그대로 믿는다(안전한 쪽 — 페인트-전 스크립트도 v를 안 본다).
-    if (rec.mode === "full" && rec.v !== GFX_PROBE_VERSION) return null;
+    if (rec.mode !== "lite" && rec.mode !== "full" && rec.mode !== "soft") return null;
+    if (typeof rec.at !== "number" || Date.now() - rec.at > GFX_TTL_MS) return null;
+    if (rec.v !== GFX_PROBE_VERSION) return null; // 옛 세대(v2 lite 포함)는 다시 잰다
     return { mode: rec.mode, at: rec.at, v: rec.v };
   } catch {
     return null;
   }
 }
 
-export function gfxLite(): boolean {
-  if (typeof window === "undefined") return false;
-  return readRecord()?.mode === "lite";
-}
-
-/** 눈 편한 테마 속성값 — 필터("1") 또는 토큰 팔레트("lite"). */
-export function eyeComfortAttrValue(): "1" | "lite" {
-  return gfxLite() ? "lite" : "1";
-}
-
-function remember(mode: GfxRecord["mode"]): void {
+function remember(mode: GfxMode): void {
   try {
-    window.localStorage.setItem(
-      GFX_KEY,
-      JSON.stringify({ mode, at: Date.now(), v: GFX_PROBE_VERSION } satisfies GfxRecord)
-    );
+    window.localStorage.setItem(GFX_KEY, JSON.stringify({ mode, at: Date.now(), v: GFX_PROBE_VERSION } satisfies GfxRecord));
   } catch {
     /* 저장소 불가 — 이번 세션만 */
   }
-  // <html data-gfx="lite"> — 눈 편한 테마와 무관하게 '약한 기기' 자체를 알리는 표식(2026-09-03).
-  // 물결·계절 레이어(.gs-tide/.gs-season, 공용)가 이 표식이 있으면 렌더를 접는다. 페인트 전 적용은 app/layout.tsx.
-  if (mode === "lite") document.documentElement.setAttribute("data-gfx", "lite");
+}
+
+/** 설정 "배경 효과" — auto(기기 판정) / max(항상 최대) / lite(가볍게). */
+export function gfxPref(): GfxPref {
+  if (typeof window === "undefined") return "auto";
+  try {
+    const v = window.localStorage.getItem(GFX_PREF_KEY);
+    return v === "max" || v === "lite" ? v : "auto";
+  } catch {
+    return "auto";
+  }
+}
+
+/** 기기 판정 결과만(우선순위 무시) — 설정 화면의 "자동(…판정)" 표시용. */
+export function gfxAutoMode(): GfxMode {
+  if (typeof window === "undefined") return "full";
+  return readRecord()?.mode ?? "full";
+}
+
+/** 지금 적용할 단계 — 사용자 우선순위 > 기기 판정 > full. */
+export function gfxMode(): GfxMode {
+  if (typeof window === "undefined") return "full";
+  const pref = gfxPref();
+  if (pref === "max") return "full";
+  if (pref === "lite") return "lite";
+  return readRecord()?.mode ?? "full";
+}
+
+/** 눈 편한 테마 속성값 — 루트 filter("1") 또는 토큰 팔레트("lite", 소프트웨어 렌더에서만). */
+export function eyeComfortAttrValue(): "1" | "lite" {
+  return gfxMode() === "soft" ? "lite" : "1";
+}
+
+/** <html data-gfx> + 눈 편한 속성값을 지금 단계로 맞춘다(설정 변경·판정 직후). 배경 레이어는 CSS·엔진이 속성을 지켜본다. */
+export function applyGfxMode(mode: GfxMode = gfxMode()): void {
+  try {
+    const root = document.documentElement;
+    if (mode === "full") root.removeAttribute("data-gfx");
+    else root.setAttribute("data-gfx", mode);
+    if (root.hasAttribute("data-eye-comfort")) root.setAttribute("data-eye-comfort", mode === "soft" ? "lite" : "1");
+  } catch {
+    /* no-op */
+  }
+}
+
+export function setGfxPref(pref: GfxPref): void {
+  try {
+    if (pref === "auto") window.localStorage.removeItem(GFX_PREF_KEY);
+    else window.localStorage.setItem(GFX_PREF_KEY, pref);
+  } catch {
+    /* 무시 */
+  }
+  applyGfxMode();
+}
+
+/** 소프트웨어 렌더인가 — WebGL 렌더러 문자열(SwiftShader·llvmpipe·software·Basic Render). 컨텍스트는 바로 놓는다. */
+function softwareRenderer(): boolean {
+  try {
+    const c = document.createElement("canvas");
+    const gl = (c.getContext("webgl") || c.getContext("experimental-webgl")) as WebGLRenderingContext | null;
+    if (!gl) return false; // WebGL 자체가 꺼진 환경은 알 수 없다 — 벌주지 않는다
+    const ext = gl.getExtension("WEBGL_debug_renderer_info");
+    const renderer = String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+    gl.getExtension("WEBGL_lose_context")?.loseContext();
+    return /swiftshader|llvmpipe|softpipe|software|basic render|mesa offscreen/i.test(renderer);
+  } catch {
+    return false;
+  }
+}
+
+function readStrike(): number {
+  try {
+    const raw = window.localStorage.getItem(STRIKE_KEY);
+    if (!raw) return 0;
+    const rec = JSON.parse(raw) as { n?: number; at?: number };
+    if (typeof rec.at !== "number" || Date.now() - rec.at > STRIKE_TTL_MS) return 0;
+    return typeof rec.n === "number" ? rec.n : 0;
+  } catch {
+    return 0;
+  }
+}
+function writeStrike(n: number): void {
+  try {
+    if (n <= 0) window.localStorage.removeItem(STRIKE_KEY);
+    else window.localStorage.setItem(STRIKE_KEY, JSON.stringify({ n, at: Date.now() }));
+  } catch {
+    /* 무시 */
+  }
 }
 
 function sampleFrames(ms: number): Promise<number[]> {
@@ -85,37 +163,59 @@ function isBadSample(gaps: number[]): boolean {
 
 const wait = (ms: number) => new Promise((r) => window.setTimeout(r, ms));
 
-/** 한 번만 부른다(레이아웃의 GfxProbe). 판정이 lite로 바뀌면 그 자리에서 속성값을 갈아 끼운다. */
+function notify(mode: GfxMode): void {
+  try {
+    window.dispatchEvent(new CustomEvent("vic:gfx-auto", { detail: { mode } }));
+  } catch {
+    /* no-op */
+  }
+}
+
+/** 한 번만 부른다(레이아웃의 GfxProbe). */
 export async function probeGfx(): Promise<void> {
   if (typeof window === "undefined") return;
-  if (readRecord()) return; // 30일 안에 이미 판정
-  const root = document.documentElement;
-  // 잴 대상이 있을 때만: 루트 filter(눈 편한 "1") 또는 물결 레이어(.gs-tide가 보이는 중 — 2026-09-03,
-  // 공용 컴포넌트로 이름이 .studio-tide→.gs-tide로 바뀐 걸 2026-09-04 반영). 둘 다 없으면 이 기기에서
-  // 비용을 내는 게 없으니 재지 않는다.
-  const filterOn = root.getAttribute("data-eye-comfort") === "1";
-  const tideEl = document.querySelector(".gs-tide");
-  const tideOn = !!tideEl && getComputedStyle(tideEl).display !== "none";
-  if (!filterOn && !tideOn) return;
-  const markLite = () => {
-    remember("lite"); // data-gfx="lite"도 여기서 붙는다 → 물결 레이어는 CSS가 즉시 접는다
-    if (root.getAttribute("data-eye-comfort") === "1") root.setAttribute("data-eye-comfort", "lite");
-  };
-  if (typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 2) {
-    markLite();
+  if (gfxPref() !== "auto") {
+    applyGfxMode();
     return;
   }
+  const rec = readRecord();
+  if (rec) {
+    applyGfxMode(rec.mode);
+    return;
+  }
+  if (softwareRenderer() || (typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 2)) {
+    remember("soft");
+    applyGfxMode("soft");
+    notify("soft");
+    return;
+  }
+  // 잴 대상이 있을 때만(루트 filter 또는 보이는 배경 레이어). 둘 다 없으면 이 기기에서 비용을 내는 게 없다.
+  const root = document.documentElement;
+  const filterOn = root.getAttribute("data-eye-comfort") === "1";
+  const layer = document.querySelector(".gs-tide, .gs-season");
+  const layerOn = !!layer && getComputedStyle(layer).display !== "none";
+  if (!filterOn && !layerOn) return;
   await wait(3_000);
-  if (document.hidden) return; // 숨은 탭은 rAF가 안 돌아 잴 수 없다 — 다음 방문에
+  if (document.hidden) return;
   if (!isBadSample(await sampleFrames(SAMPLE_MS))) {
     remember("full");
+    writeStrike(0);
     return;
   }
   await wait(1_000);
   if (document.hidden) return;
   if (!isBadSample(await sampleFrames(SAMPLE_MS))) {
     remember("full");
+    writeStrike(0);
     return;
   }
-  markLite();
+  // 나쁨 — 이번 방문이 두 번째 연속이면 lite(보이게 유지하되 가볍게), 아니면 기록만 하고 다음 방문에 다시 잰다.
+  if (readStrike() >= 1) {
+    remember("lite");
+    writeStrike(0);
+    applyGfxMode("lite");
+    notify("lite");
+  } else {
+    writeStrike(1);
+  }
 }

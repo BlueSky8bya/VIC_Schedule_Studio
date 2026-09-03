@@ -31,6 +31,7 @@ import Link from "next/link";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
+import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
 import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
@@ -172,9 +173,7 @@ import {
   reduceMotionEnabled,
   setAmbient,
   setEyeComfort,
-  setReduceMotion,
-  setStudioCalm,
-  studioCalmEnabled
+  setReduceMotion
 } from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
@@ -923,18 +922,33 @@ export function StudioShell({
     setEyeComfortState(next);
     hapticTick();
   };
-  // 차분한 편집실(2026-09-03) — 기본 ON. 서버 렌더는 true로 시작해 페인트-전 스크립트와 일치.
-  const [studioCalm, setStudioCalmState] = useState(true);
+  // (차분한 편집실 스위치는 2026-09-04 제거 — 항상 ON, html[data-studio-calm]은 페인트-전 스크립트가 늘 붙인다.)
+  // 계절 배경(2026-09-04, ADR-0017) — 기본 ON. 서버 렌더 true = 페인트-전 스크립트(속성 없음)와 일치.
+  // 배경 효과 품질(2026-09-04, lib/ui/gfx.ts v3) — 자동/항상 최대/가볍게 + 자동 판정 결과. 판정이 스스로 내려가면
+  // (vic:gfx-auto) 토스트로 알려 설정에서 되돌릴 수 있게 한다(토리님 PC: 물결이 몇 초 뒤 사라졌는데 이유를 몰랐다).
+  const [gfxPrefState, setGfxPrefState] = useState<GfxPref>("auto");
+  const [gfxAuto, setGfxAuto] = useState<GfxMode>("full");
   useEffect(() => {
-    setStudioCalmState(studioCalmEnabled());
+    setGfxPrefState(gfxPref());
+    setGfxAuto(gfxAutoMode());
+    const onAuto = (e: Event) => {
+      const mode = (e as CustomEvent<{ mode?: GfxMode }>).detail?.mode;
+      if (!mode) return;
+      setGfxAuto(mode);
+      flashToast(
+        mode === "soft"
+          ? "이 기기는 그래픽 가속이 없어 배경 효과를 껐어요 · 설정 › 배경 효과에서 바꿀 수 있어요"
+          : "화면이 버벅여 배경 효과를 가볍게 했어요 · 설정 › 배경 효과에서 바꿀 수 있어요"
+      );
+    };
+    window.addEventListener("vic:gfx-auto", onAuto);
+    return () => window.removeEventListener("vic:gfx-auto", onAuto);
   }, []);
-  const toggleStudioCalm = () => {
-    const next = !studioCalm;
-    setStudioCalm(next);
-    setStudioCalmState(next);
+  const changeGfxPref = (pref: GfxPref) => {
+    setGfxPref(pref); // localStorage + <html data-gfx> 즉시(배경 레이어는 속성을 지켜본다)
+    setGfxPrefState(pref);
     hapticTick();
   };
-  // 계절 배경(2026-09-04, ADR-0017) — 기본 ON. 서버 렌더 true = 페인트-전 스크립트(속성 없음)와 일치.
   const [ambientOn, setAmbientState] = useState(true);
   useEffect(() => {
     setAmbientState(ambientEnabled());
@@ -1134,13 +1148,14 @@ export function StudioShell({
         onToggleEyeComfort={toggleEyeComfort}
         onToggleHaptics={toggleHaptics}
         onToggleReduceMotion={toggleReduceMotion}
-        onToggleStudioCalm={toggleStudioCalm}
         ambientOn={ambientOn}
         onToggleAmbient={toggleAmbient}
+        gfxPref={gfxPrefState}
+        gfxAuto={gfxAuto}
+        onChangeGfxPref={changeGfxPref}
         posterTheme={actor.role === "owner" ? posterThemeLocal : null}
         posterThemeSaving={posterThemeSaving}
         reduceMotion={reduceMotion}
-        studioCalm={studioCalm}
       />
     );
   }

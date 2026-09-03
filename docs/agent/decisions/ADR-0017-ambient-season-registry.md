@@ -5,9 +5,19 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 
 > **개정 2026-09-04(사용자 재정의, 결정 2·3 대체)**: ① 계절은 오늘 날짜가 아니라 **보고 있는 달력의 달**이 정한다
 > — 12~2월 겨울 · 3~5월 봄 · 6~8월 여름 · 9~11월 가을(달을 넘기면 즉시 바뀐다). ② **물결은 여름의 전유물** — 봄·
-> 가을·겨울은 물 없이 그 계절의 소품만(가을 = 낙엽, 겨울 = 눈, 봄 = 초목). ③ 계절 배경 스위치 OFF = 계절 소품
-> 없이 사철 물결(계절 도입 전 모습). 특정일(3단계)은 실제 날짜(KST)로 판정한다. 아래 본문의 "절기·물결 상수"
+> 가을·겨울은 물 없이 그 계절의 소품만(가을 = 낙엽, 겨울 = 눈, 봄 = 초목). ③ ~~계절 배경 스위치 OFF = 계절 소품
+> 없이 사철 물결~~(개정 2로 대체). 특정일(3단계)은 실제 날짜(KST)로 판정한다. 아래 본문의 "절기·물결 상수"
 > 문장은 이 개정으로 대체됐다.
+>
+> **개정 2, 2026-09-04(같은 날, 사용자)**: ① **계절 배경 스위치 OFF = 전부 내려간다** — 물결은 여름의 것이라 OFF에서
+> 사철 물결로 남지 않는다(`html[data-ambient="off"]`가 `.gs-tide`·`.gs-season` 둘 다 숨긴다). ② 봄·가을·겨울은 CSS
+> 소품이 아니라 **상호작용 캔버스 장면**(`season-canvas.tsx` + `scene-engine.ts` + `scenes/*`), 전부 여름 물결과 같은
+> **위에서 내려다보는 시점**: 겨울 = 소복한 눈밭·걸어간 발자국·내려앉는 눈·바탕 클릭 → 발자국+눈가루, 가을 = 낙엽
+> 물리(원 충돌·바닥 마찰·돌풍·포인터 바람·집어 끌기), 봄 = 풀밭·클로버·데이지·나비(그림자·포인터 회피·클릭 → 꽃잎
+> 폭발). 애플 결·귀엽게, 오행 보정 색 그대로. 스프라이트·바탕은 한 번 굽고 매 프레임 drawImage만, 장면 코드는 동적
+> import, 탭 숨김·스위치 OFF면 루프 정지, 자체 조절기(늦은 프레임 20%↑ → 입자 단계 ↓). ③ gfx 판정 v3(lib/ui/gfx.ts):
+> full/lite/soft — lite는 **보이게 유지**(물결 1겹·입자 절반), soft(소프트웨어 렌더·코어 ≤2)만 배경 OFF+눈 편한 팔레트,
+> 설정 "배경 효과"(자동/항상 최대/가볍게)가 판정을 덮어쓴다. ④ 설정 세대 2026-09-04: 스위치 4종 기본 ON 재시딩.
 - 관련: ADR-0016(금생수 — 물결 레이어), `components/shared/ambient/*`, `app/ambient.css`, `lib/ui/motion.ts`
   (`vic.ambient`), `docs/ux/seasonal-ambient-plan.md`(설계안), CLAUDE.md "Owner-fit palette rule"
 - Supersedes(예정, 4단계): 포스터 테마 7종(`calendars.poster_theme` = sakura/summer/autumn/winter/sunset/mint/dot/
@@ -48,6 +58,7 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 
 - 새 파일: `components/shared/ambient/{registry.ts,ambient-layer.tsx,season-autumn.tsx,season-winter.tsx,
   season-spring.tsx}`, `app/ambient.css`. 물결(`water-tide.tsx`, `metal-water.css`)은 그대로.
+  (개정 2에서 `season-*.tsx`는 `season-canvas.tsx` + `scene-engine.ts` + `scenes/{util,autumn,winter,spring}.ts`로 대체.)
 - 되돌리기: `<AmbientLayer />`를 `<WaterTide />`로 바꾸고 ambient.css import 제거 — 물결만 남는다.
 
 ## 다음(이 ADR 범위 밖)

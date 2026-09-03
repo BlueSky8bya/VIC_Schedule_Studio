@@ -33,15 +33,25 @@
    방향으로 흐르며(24·31초 alternate) 살짝 기울고(skewX ±1.4°) 밝기가 숨쉰다(opacity, 6.5·8.5초). 필터는
    내용이 불변인 레이어라 첫 래스터 한 번(will-change), 매 프레임은 transform/opacity만 — 무한 애니 규칙.
    ⚠ scale 키프레임·blur 필터·mix-blend-mode 금지 — 재래스터/합성 비용으로 프레임을 깎았다(실측: 드래그
-   스프링 회귀). 보이는 조건: **생동감 있는 동작 ON** · 여력 있는 기기(data-gfx≠lite) · 웹(≥641px) — 차분한 편집실 스위치와는
-   무관(2026-09-04 사용자: 두 토글에 겹쳐 걸려 있어 헷갈렸다 → 움직임이니 동작 스위치 하나에만). */
+   스프링 회귀). 보이는 조건: **생동감 있는 동작 ON** · gfx≠soft(소프트웨어 렌더가 아님) · **계절 배경 스위치 ON**
+   (ADR-0017 개정 2: 물결은 여름의 배경이라 스위치 OFF면 같이 내려간다) · 웹(≥641px) — 차분한 편집실 스위치와는
+   무관(2026-09-04 사용자: 두 토글에 겹쳐 걸려 있어 헷갈렸다 → 움직임이니 동작 스위치 하나에만).
+   gfx=lite(프레임이 나쁜 기기, lib/ui/gfx.ts v3)는 숨기지 않고 **가볍게**: caustic 한 겹만, 너울·햇살 정지(아래). */
 .gs-tide {
   display: none;
 }
 @media (min-width: 641px) {
-  html:not([data-reduce-motion]):not([data-gfx="lite"]) .gs-tide {
+  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-ambient="off"]) .gs-tide {
     display: block;
   }
+}
+html[data-gfx="lite"] .gs-tide-caustic-b,
+html[data-gfx="lite"] .gs-tide-swell-b {
+  display: none;
+}
+html[data-gfx="lite"] .gs-tide-swell-a,
+html[data-gfx="lite"] .gs-tide-light {
+  animation: none;
 }
 .gs-tide {
   position: fixed;

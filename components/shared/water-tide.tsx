@@ -1,15 +1,14 @@
-// 물결 레이어(2026-09-03, ADR-0016 금생수) — 편집실·시청자 화면 공용. "위에서 내려다본 모래사장 위의
-// 얕은 물"을 애플 결로: 기하 무늬 없이, 얇은 물 필름 위에 **caustic(햇빛이 물결에 굴절돼 바닥에 만드는
-// 가늘고 밝은 빛 그물)** 두 겹이 반대 방향으로 흐르며 살짝 기울고(skew) 밝기가 숨쉰다(opacity). 노이즈
-// 필드의 한 높이 등고선만 가늘게 뽑으면 닫힌 셀 모양의 선 그물이 된다(수영장 바닥 무늬와 같은 원리).
-// 필터(feTurbulence 등)는 내용이 불변인 레이어라 **첫 래스터 한 번**, 이후엔 transform/opacity만 —
+// 물결 레이어(2026-09-03, ADR-0016 금생수) — 편집실·시청자 화면 공용, **여름의 배경**(ADR-0017 개정 2: 달력 달이
+// 6~8월일 때만 마운트된다). "위에서 내려다본 모래사장 위의 얕은 물"을 애플 결로: 기하 무늬 없이, 얇은 물 필름 위에
+// **caustic(햇빛이 물결에 굴절돼 바닥에 만드는 가늘고 밝은 빛 그물)** 두 겹이 반대 방향으로 흐르며 살짝 기울고(skew)
+// 밝기가 숨쉰다(opacity). 노이즈 필드의 한 높이 등고선만 가늘게 뽑으면 닫힌 셀 모양의 선 그물이 된다(수영장 바닥
+// 무늬와 같은 원리). 필터(feTurbulence 등)는 내용이 불변인 레이어라 **첫 래스터 한 번**, 이후엔 transform/opacity만 —
 // 합성기만 일한다. 자기 배경은 반투명 필름뿐이라 모래(아이보리)가 그대로 비친다.
-// 보이는 조건은 CSS가 판단(app/metal-water.css `.gs-tide`) — 생동감 있는 동작 ON · 여력 있는 기기
-// (data-gfx≠lite) · 웹(≥641px). 계절 레이어(ADR-0017)에선 **여름의 전유물**: 다른 계절엔 `offSeason`으로
-// `data-off-season`이 붙고, 계절 배경 스위치가 ON이면 app/ambient.css가 숨긴다(OFF면 사철 물결).
-export function WaterTide({ offSeason = false }: { offSeason?: boolean } = {}) {
+// 보이는 조건은 CSS가 판단(app/metal-water.css `.gs-tide`) — 생동감 있는 동작 ON · gfx≠soft · 계절 배경 스위치 ON ·
+// 웹(≥641px). gfx=lite면 caustic 한 겹·너울 정지(같은 파일)로 가볍게 **보이게 유지**한다.
+export function WaterTide() {
   return (
-    <div className="gs-tide" aria-hidden="true" data-off-season={offSeason ? "" : undefined}>
+    <div className="gs-tide" aria-hidden="true">
       <svg className="gs-tide-defs" width="0" height="0" focusable="false">
         <defs>
           {/* caustic — 프랙탈 노이즈 → 밝기를 알파로 → 좁은 띠(테이블)만 남겨 등고선 = 셀 그물 → 살짝 번짐 →

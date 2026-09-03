@@ -54,13 +54,15 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
 - These rules sit *below* HCI/accessibility (WCAG AA after the eye-comfort filter), the 8 fixed
   semantic colors (업 도움 rose · 기간 안내 cyan · 일정 편집 violet · 신규 green · 오늘 gold ·
   미정 orange · 떡밥 violet ring · 다시보기 forest blue), and the public/private boundary.
-- Implemented as the reversible `html[data-studio-calm]` theme (default ON, toggle in the role badge
-  popover). New owner-screen UI should read its colors from `--studio-*` tokens under that attribute.
+- Implemented as the `html[data-studio-calm]` theme — **always ON since 2026-09-04** (the owner found the
+  toggle meaningless: "off just looks slightly darker"; the switch was removed, the pre-paint script always
+  sets the attribute, CSS unchanged). New owner-screen UI should read its colors from `--studio-*` tokens
+  under that attribute.
 - **Chrome placement (배치 대개편, 2026-09-03).** Studio web chrome is ONE north row: title · month nav ·
   save state · role badge · viewer preview · logout (owner-specified order). Cold tools (태그 편집 · 인사이트 ·
   단축키 · **설정**) live in the **west rail tools card** under the tag filter (`.studio-tools`). **설정 (gear) is
-  the single settings hub** (2026-09-04): every switch/preference (생동감 있는 동작 · 눈 편한 테마 · 차분한 편집실 ·
-  계절 배경 · 포스터 테마, and anything new) goes into `components/studio/studio-settings.tsx`
+  the single settings hub** (2026-09-04): every switch/preference (생동감 있는 동작 · 눈 편한 테마 · 계절 배경 ·
+  배경 효과 · 포스터 테마, and anything new; 차분한 편집실 was removed the same day — always ON) goes into `components/studio/studio-settings.tsx`
   (`StudioSettingsList`) — never back into the role badge popover on web (mobile reuses the same list inside
   the role badge because it has no tools card). It opens as a **modal window** (`modal === "settings"`, same
   infra as 태그 편집/인사이트: history slot, focus trap, scroll lock, backdrop/Esc close) — owner said no
@@ -72,18 +74,32 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
 - **Ambient registry (ADR-0017, 2026-09-04, revised same day).** Studio and viewer mount ONE
   `<AmbientLayer month={view.month} />` (`components/shared/ambient/`). The season follows the **calendar
   month being viewed**, not today: 12–2 winter · 3–5 spring · 6–8 summer · 9–11 autumn (flip a month, the
-  background flips). **The water tide belongs to summer only**; spring = 초목 shadows(木) + dew, autumn =
-  desaturated brown/wine leaves + silver mist(金) (never red/orange/yellow), winter = snow + frost + snowbank —
-  each without water. Switch "계절 배경" (`vic.ambient`, default ON): OFF = no season props, year-round tide
-  (the pre-season look). Special days go into `SPECIAL_DAYS` in `registry.ts` (real KST date, priority over
-  season). Same performance rules as the tide (transform/opacity only, no filter/blur/scale animation, no dark
-  blobs). Never mount `<WaterTide />` directly again; never add a second background system (the old
-  `data-poster-theme` 7-pack coexists for now and is slated to be superseded).
+  background flips). **The water tide belongs to summer only.** Spring/autumn/winter are **interactive canvas
+  scenes** (revision 2, same day: `season-canvas.tsx` + `scene-engine.ts` + `scenes/*`), all in the same
+  **top-down view** as the tide: winter = snow field + walked footprints + landing flakes, click the ground →
+  footprints + snow puff; autumn = abundant desaturated brown/wine leaves (never red/orange/yellow) with physics
+  (collisions, ground friction, gusts, pointer wind, grab-and-drag); spring = lawn + clover/daisies + butterflies
+  (shadow, flee from pointer, click → petal burst). Apple-feel, cute, 오행 palette kept. Switch "계절 배경"
+  (`vic.ambient`, default ON): **OFF = everything down, tide included** (the tide is summer's, never a fallback).
+  Special days go into `SPECIAL_DAYS` in `registry.ts` (real KST date, priority over season). Engine rules:
+  sprites/ground baked once, per-frame drawImage only, dynamic import, loop stops when hidden/off, self-governor
+  (late frames > 20% → fewer particles); tide rules unchanged (transform/opacity only, no filter/blur/scale
+  animation, no dark blobs). Never mount `<WaterTide />` directly again; never add a second background system
+  (the old `data-poster-theme` 7-pack coexists for now and is slated to be superseded).
+- **Graphics tiers (`lib/ui/gfx.ts` v3, 2026-09-04).** `data-gfx` is `full` (absent) · `lite` · `soft`. `soft` =
+  software rendering (WebGL renderer SwiftShader/llvmpipe/software) or ≤2 cores → ambient off + eye-comfort token
+  palette. `lite` = bad frame samples on **two consecutive visits** → ambient stays **visible but cheaper** (tide
+  one caustic layer, canvas particles halved), root filter kept. Never hide the ambient on a single bad sample
+  (streaming PCs jitter under OBS load — Tori's "tide vanished after a few seconds" was exactly that). Settings
+  "배경 효과" (`vic.gfxPref` auto/max/lite) overrides the judgement; an automatic demotion fires `vic:gfx-auto`
+  and the studio toasts it. Settings epoch `2026-09-04` reseeds the four switches (motion · eye-comfort · calm ·
+  ambient) to ON once; only values touched afterwards persist.
 - **Tide layer.** `.gs-tide` (`components/shared/water-tide.tsx`, shared by studio and viewer poster;
   CSS in `app/metal-water.css`) — shallow-water caustics seen from above: thin bright cell network from
   an SVG noise contour, drifting/skewing/breathing via transform+opacity only (filters rasterize once;
   never animate scale, never blur/blend the layers — both cost frames). Shows only with 생동감 있는 동작
-  ON ∧ `data-gfx≠lite` ∧ web width; the 차분한 편집실 switch controls the palette only, not the water.
+  ON ∧ `data-gfx≠soft` ∧ 계절 배경 ON ∧ web width (`data-gfx="lite"` keeps it visible with one caustic layer);
+  the calm palette is unrelated to the water.
   The studio instance is brighter than the viewer's (`.studio-shell .gs-tide*` overrides). It is the
   only ambient animation; add nothing louder. Never give `html` a background — it stops body's canvas
   propagation and paints over negative-z layers.

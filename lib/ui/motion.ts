@@ -18,7 +18,9 @@
 // 적용 지점 = app/layout.tsx 페인트-전 스크립트(설정을 읽기 **전에** 실행돼야 한다).
 // 비주얼 테스트는 playwright.visual.config.ts의 storageState로 현재 세대를 미리 심어 둔다
 // (안 그러면 테스트가 켜 둔 '동작 줄이기'가 첫 로드에서 지워진다).
-export const SETTINGS_EPOCH = "2026-09-03";
+// 2026-09-04 세대(관리자 결정): 생동감 있는 동작·눈 편한 테마·차분한 편집실·계절 배경 **네 키 전부** 지워 기본 ON으로.
+// 그 뒤 만진 값만 남는다. (기기 판정 vic.gfx는 세대가 아니라 판정 버전(lib/ui/gfx.ts v3)으로 다시 잰다.)
+export const SETTINGS_EPOCH = "2026-09-04";
 export const SETTINGS_EPOCH_KEY = "vic.settingsEpoch";
 
 import { eyeComfortAttrValue } from "@/lib/ui/gfx";
@@ -87,30 +89,11 @@ export function setEyeComfort(on: boolean): void {
 // 제목 ✨ 반짝임 정지. CSS는 studio-shell.css의 `html[data-studio-calm]` 블록에만 산다 —
 // 시청자 포스터(.public-*)는 이 속성을 안 본다. 기본 ON(소유자 결정, 2026-09-03) — 'off'만 끈다.
 // 페인트 전 적용은 app/layout.tsx 스크립트(눈 편한 테마와 같은 줄).
-const STUDIO_CALM_KEY = "vic.studioCalm"; // localStorage: 미설정이면 기본 ON, "off"만 끔
-
+// 2026-09-04 사용자: "끄면 색감이 살짝 어두워질 뿐 뭐가 차분한지 모르겠다 — ON을 기본으로 하고 토글은 지워도 된다"
+// → 스위치 제거, **항상 ON**. 페인트-전 스크립트가 `data-studio-calm`을 무조건 붙이고(옛 vic.studioCalm 키는 세대
+// 재시딩 때 지운다), CSS(`html[data-studio-calm]`)는 그대로 — 되돌리려면 이 함수와 스크립트 조건만 살리면 된다.
 export function studioCalmEnabled(): boolean {
-  if (typeof window === "undefined") return true;
-  try {
-    return window.localStorage.getItem(STUDIO_CALM_KEY) !== "off";
-  } catch {
-    return true;
-  }
-}
-
-export function setStudioCalm(on: boolean): void {
-  try {
-    window.localStorage.setItem(STUDIO_CALM_KEY, on ? "on" : "off");
-  } catch {
-    /* 무시 */
-  }
-  try {
-    const root = document.documentElement;
-    if (on) root.setAttribute("data-studio-calm", "1");
-    else root.removeAttribute("data-studio-calm");
-  } catch {
-    /* no-op */
-  }
+  return true;
 }
 
 // ── 계절 배경(2026-09-04, ADR-0017) — 물결 위의 계절 레이어(components/shared/ambient) ON/OFF ──

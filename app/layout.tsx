@@ -105,8 +105,8 @@ export default function RootLayout({
             깜빡 떴다 사라지지 않는다(FOUC 방지). 기본 OFF: 인앱에서 'on'을 고른 경우에만 켠다
             (2026-08-27 — OS prefers-reduced-motion 시딩(P1-MOTION-1) 철회, 사용자 결정).
             눈 편한 테마는 기본 ON('off'를 고른 경우에만 끔).
-            설정 세대(SETTINGS_EPOCH, lib/ui/motion.ts): 저장된 세대가 다르면 두 키를 지워
-            기본값(OFF/ON)으로 한 번 되돌리고 세대를 기록 — 읽기 전에 먼저 돈다. */}
+            설정 세대(SETTINGS_EPOCH, lib/ui/motion.ts): 저장된 세대가 다르면 스위치 네 키(생동감·눈 편한·차분·
+            계절)를 지워 기본값(전부 ON)으로 한 번 되돌리고 세대를 기록 — 읽기 전에 먼저 돈다(2026-09-04 세대). */}
         <script
           dangerouslySetInnerHTML={{
             __html:
@@ -114,12 +114,13 @@ export default function RootLayout({
               JSON.stringify(SETTINGS_EPOCH) +
               ",K=" +
               JSON.stringify(SETTINGS_EPOCH_KEY) +
-              ";if(s.getItem(K)!==E){s.removeItem('vic.reduceMotion');s.removeItem('vic.eyeComfort');s.setItem(K,E)}" +
+              ";if(s.getItem(K)!==E){s.removeItem('vic.reduceMotion');s.removeItem('vic.eyeComfort');s.removeItem('vic.studioCalm');s.removeItem('vic.ambient');s.setItem(K,E)}" +
               "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');" +
-              // 눈 편한 테마 값: 약한 기기 판정(vic.gfx=lite, 30일)이면 필터 대신 토큰 팔레트('lite') — lib/ui/gfx.ts
-              "var g=false;try{var r=JSON.parse(s.getItem('vic.gfx')||'null');g=!!r&&r.mode==='lite'&&Date.now()-r.at<2592000000}catch(e){}" +
-              "if(g)d.setAttribute('data-gfx','lite');if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',g?'lite':'1');if(s.getItem('vic.studioCalm')!=='off')d.setAttribute('data-studio-calm','1');" +
-              // 계절 배경(vic.ambient, ADR-0017): 'off'일 때만 표식 — 계절 레이어만 접히고 물결은 그대로.
+              // 배경 효과 단계(lib/ui/gfx.ts v3): 사용자 우선순위(vic.gfxPref: max/lite) > 기기 판정(vic.gfx v3, 30일: lite/soft).
+              // soft(소프트웨어 렌더)에서만 눈 편한 테마를 필터 대신 토큰 팔레트('lite')로.
+              "var gm='full',pf=s.getItem('vic.gfxPref');if(pf==='max'){gm='full'}else if(pf==='lite'){gm='lite'}else{try{var r=JSON.parse(s.getItem('vic.gfx')||'null');if(r&&r.v===3&&(r.mode==='lite'||r.mode==='soft')&&Date.now()-r.at<2592000000)gm=r.mode}catch(e){}}" +
+              "if(gm!=='full')d.setAttribute('data-gfx',gm);if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',gm==='soft'?'lite':'1');d.setAttribute('data-studio-calm','1');" +
+              // 계절 배경(vic.ambient, ADR-0017 개정 2): 'off'면 물결·계절 장면 전부 숨김 표식.
               "if(s.getItem('vic.ambient')==='off')d.setAttribute('data-ambient','off')}catch(e){}"
           }}
         />

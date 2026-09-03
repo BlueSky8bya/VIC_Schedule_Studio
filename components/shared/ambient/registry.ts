@@ -2,14 +2,15 @@
 //
 // 개념(2026-09-04 사용자 재정의): **계절은 보고 있는 달력의 달**이 정한다(오늘 날짜가 아니라 — 12월 달력을
 // 넘기면 바로 겨울). 12~2월 겨울 · 3~5월 봄 · 6~8월 여름 · 9~11월 가을. **물결은 여름의 전유물**: 다른 계절은
-// 물 없이 그 계절의 소품만(가을 = 낙엽, 겨울 = 눈, 봄 = 초목). 계절 배경 스위치 OFF면 계절 소품 없이
-// 사철 물결(계절 도입 전 모습).
+// 물 없이 그 계절 장면만(가을 = 낙엽 물리, 겨울 = 눈밭·발자국, 봄 = 풀밭·나비 — 전부 위에서 내려다보는 시점,
+// season-canvas.tsx). 계절 배경 스위치 OFF면 **전부** 내려간다(개정 2, 2026-09-04: 물결도 여름의 것이라 OFF에 남지
+// 않는다).
 // 오행 보정(docs/ux/seasonal-ambient-plan.md §3): 봄은 햇빛(火) 대신 초목(木)·이슬(水), 가을은 붉·주황·노랑
 // 낙엽(火·조토 증폭) 대신 채도 낮춘 갈색·와인 잎 + 은빛 서리(金), 겨울은 눈(水의 결정 = 흰 金).
 //
-// 표시 게이트는 CSS(app/ambient.css): 생동감 있는 동작 ON ∧ data-gfx≠lite ∧ ≥641px ∧ 계절 배경 스위치
-// (`html[data-ambient="off"]`, lib/ui/motion.ts). 특정일(성탄·할로윈·24절기)은 `SPECIAL_DAYS`에 추가한다 —
-// 계절보다 우선(3단계, 아직 비어 있음 — 특정일은 실제 날짜(KST)로 판정할 것).
+// 표시 게이트는 CSS(app/ambient.css · app/metal-water.css): 생동감 있는 동작 ON ∧ data-gfx≠soft ∧ ≥641px ∧ 계절 배경
+// 스위치(`html[data-ambient="off"]`, lib/ui/motion.ts). gfx=lite는 엔진이 입자를 줄인다(lib/ui/gfx.ts v3). 특정일
+// (성탄·할로윈·24절기)은 `SPECIAL_DAYS`에 추가한다 — 계절보다 우선(3단계, 아직 비어 있음 — 실제 날짜(KST)로 판정).
 
 export type SeasonKey = "spring" | "summer" | "autumn" | "winter";
 export const SEASON_KEYS: readonly SeasonKey[] = ["spring", "summer", "autumn", "winter"];

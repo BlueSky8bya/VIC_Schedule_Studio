@@ -32,9 +32,11 @@ export default defineConfig({
           origin: "http://127.0.0.1:3100",
           localStorage: [
             { name: SETTINGS_EPOCH_KEY, value: SETTINGS_EPOCH },
-            // 그래픽 여력 판정(lib/ui/gfx.ts)을 미리 'full'로 못 박는다 — 헤드리스에서 판정이 lite로
-            // 튀면 눈 편한 테마가 필터→토큰 팔레트로 바뀌어 스냅샷이 실행마다 달라진다.
-            { name: "vic.gfx", value: JSON.stringify({ mode: "full", at: Date.now() }) }
+            // 그래픽 여력 판정(lib/ui/gfx.ts v3)을 미리 'full'로 못 박고 우선순위도 '항상 최대'로 — 헤드리스
+            // Chromium은 WebGL이 SwiftShader라 v3 판정이 즉시 'soft'(배경 OFF + 토큰 팔레트)로 떨어져 스냅샷이
+            // 실제 GPU 기기와 달라진다.
+            { name: "vic.gfx", value: JSON.stringify({ mode: "full", at: Date.now(), v: 3 }) },
+            { name: "vic.gfxPref", value: "max" }
           ]
         }
       ]
