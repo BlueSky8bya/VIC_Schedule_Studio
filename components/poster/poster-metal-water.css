@@ -1,0 +1,74 @@
+/* ══ 금생수(金生水) 스킨 — 시청자 화면(= 편집실 미리보기, 2026-09-03, ADR-0016) ═══════════════
+   편집실과 같은 뉘앙스를 시청자 화면 기본 모습(테마 none)에 준다. 토큰은 app/metal-water.css.
+   물(품는 것): 페이지 바탕·포스터 표면·달력 칸·요일 머리·레일 정보 카드. 은은한 물빛, 큰 라운드, 안쪽 빛.
+   금(일): 일정 카드 테두리(태그색 위 헤어라인+윗면 광택)·띠(공용 규칙)·버튼. 날카롭게.
+   불변: 표면 폭 1840·칸 높이·띠 17px·레인(export 기하), 의미색 8종, 태그색, 하트 링, 오늘 골드, 미정 주황.
+   mist(물빛) 테마 규칙은 [data-poster-theme] 특이도가 높아 그대로 이긴다(더 짙은 물). */
+/* 눈 편한 필터(sepia .1·saturate .8)가 아주 옅은 물빛을 베이지로 눌러 버린다(실측) — 편집실 물결 바탕과
+   같은 깊이(#e7f0fb 계열)로 잡아야 필터 뒤에서도 '물'로 읽힌다. */
+.poster-page {
+  background:
+    radial-gradient(120% 70% at 50% -12%, rgb(255 255 255 / 85%) 0%, transparent 55%),
+    linear-gradient(180deg, #e6eef9 0%, #d7e3f2 100%);
+}
+/* ⚠ 표면엔 border를 주지 않는다 — border-box라 안쪽 폭·높이가 2px 줄어 칸 높이 234→233으로 기하 게이트
+   (geometry.spec)가 깨졌다(실측). 금 헤어라인은 box-shadow 링으로(레이아웃 0). */
+.poster-surface {
+  background: linear-gradient(180deg, #fafcfe 0%, #eaf1f9 100%);
+  box-shadow:
+    0 0 0 1px var(--gs-metal-line),
+    var(--gs-water-glow),
+    var(--shadow-2);
+}
+.weekday-row {
+  border-color: var(--gs-water-line);
+  background: linear-gradient(180deg, #ecf3fb, #dde8f4);
+}
+.public-day {
+  border-right-color: #d9e2ee;
+  border-bottom-color: #d9e2ee;
+  background: #f4f8fc;
+}
+.public-day.outside {
+  background: #e3eaf3;
+}
+/* 태그 필터·인기도 레일 카드 — 물빛 유리 + 금 헤어라인(LIVE 카드는 장미 테두리 = 방송 신호라 그대로). */
+.public-legend-vertical {
+  border-color: var(--gs-metal-line);
+  background: var(--gs-water-glass);
+  box-shadow: var(--gs-water-glow);
+}
+@media (hover: hover) {
+  .public-day:not(.outside):hover {
+    background: #f1f6fc;
+  }
+}
+/* 레일 정보 카드(보는 달 · 데뷔 D+) — 물빛 카드 + 금 헤어라인. 골드 D+ 글자는 그대로(브랜드 골드). */
+.rail-info-card {
+  border-color: var(--gs-metal-line);
+  background: linear-gradient(180deg, #fdfeff 0%, #f6f9fd 45%, #edf3fa 100%);
+  box-shadow: var(--gs-water-glow);
+}
+/* 일정 카드 — 태그색은 그대로, 테두리만 금: 헤어라인 + 윗면 광택 한 줄. */
+.public-event {
+  border-color: rgb(38 50 66 / 12%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 45%),
+    0 0 0 1px rgb(38 50 66 / 4%);
+}
+/* 버튼(달 이동·필터·내 관심 등 .button 계열) — 금 광택 면 + 은선. 1차(.primary)·위험(.danger)은 제 색. */
+.poster-page .button:not(.primary):not(.danger) {
+  border-color: var(--gs-metal-line);
+  border-radius: var(--gs-metal-radius);
+  background: var(--gs-metal-sheen);
+  color: var(--gs-metal-ink);
+  box-shadow: var(--gs-metal-edge);
+}
+.poster-page .button:not(.primary):not(.danger):hover:not(:disabled) {
+  border-color: var(--gs-metal-line-strong);
+  background: #fff;
+  color: var(--gs-metal-ink);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 3px 8px -2px rgb(38 50 66 / 18%);
+}

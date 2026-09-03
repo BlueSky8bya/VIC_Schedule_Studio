@@ -97,6 +97,8 @@ import { createWheelStepper, normalizeWheelDelta, stepCalZoom } from "@/lib/ui/c
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
 // 곳(공개 /, 꾸미기, 스튜디오 시청자 미리보기)에서만 실린다.
 import "./public-poster.css";
+// 금생수 스킨(시청자 화면 = 편집실과 같은 뉘앙스, ADR-0016) — 기본 CSS 뒤에 와서 색·질감만 덮는다.
+import "./poster-metal-water.css";
 
 // (일정표 캡쳐(클립보드/PNG 다운로드) 기능 삭제 — 2026-07-31 사용자 결정: 토리님이 안 씀.
 //  PosterExportActions 컴포넌트·html2canvas 경로 제거. 필요해지면 git 이력에 구현이 있다.)

@@ -28,10 +28,17 @@ The owner's personal-fit analysis (details: `docs/ux/saju-redesign-direction.md`
 and the natal chart are **local-only, never committed or shown in any UI/API**) yields one standing
 design rule for owner-facing surfaces (studio first, poster only as brand tone):
 
-- **Water and metal frame; warm content inside.** Structure (primary action, top chrome, left
-  panel, borders, focus) leans to *water* (deep blue `--studio-action`) and *metal* (silver
-  `--studio-silver`); content (cards, tags, today) stays warm cream. Never amplify red/orange/yellow
-  as new accents on owner screens.
+- **금생수 (metal → water), ADR-0016 (2026-09-03).** *Work* elements — edit popover, 업 도움/기간 안내
+  bands, buttons, tiles, chips, event-card edges — are **metal (金)**: hairline `--gs-metal-line`, one
+  top sheen line, small radius `--gs-metal-radius`, slate ink `--gs-metal-ink`, engraved band text.
+  *Containers* — page ground, poster surface, calendar cells, weekday header, panels, top chrome — are
+  **water (水)**: `--gs-water-glass`, large radius `--gs-water-radius`, low-contrast `--gs-water-line`,
+  inner glow. Metal begets water: every water container has a metal hairline edge; a metal element may
+  hold water inside (저장 = silver frame, water-tinted face). Tokens in `app/metal-water.css`; studio
+  rules under `html[data-studio-calm]` (studio-calm-layer.css ④), viewer rules in
+  `poster-metal-water.css` (default look, also the studio preview/export). Tag colours, the 8 semantic
+  colours, hearts and all geometry stay untouched. Never amplify red/orange/yellow as new accents on
+  owner screens.
 - **Direction → screen.** North = top (month nav, header) = water; West = left (filter panel) =
   silver; Center = calendar body = warm; South = bottom, East = right: no new hot accents there.
 - **One primary action per context, water-colored: 저장.** Calendar cells and cards are

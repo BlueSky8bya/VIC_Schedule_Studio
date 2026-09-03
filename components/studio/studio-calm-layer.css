@@ -135,23 +135,43 @@ html[data-studio-calm] .stool-kbd.open {
 .bottom-float-row .studio-avatar-ctl {
   pointer-events: auto;
   border: 1.5px solid rgb(124 108 240 / 30%);
-  background: rgb(255 253 250 / 78%);
+  /* 쉼 상태 = 반투명·블러 없음(2026-09-03 사용자: 달력 마지막 줄 일정과 겹치면 불편). 블러는 밑 글자를
+     뭉개니 빼고, 면을 옅게 해 밑 일정이 그대로 읽힌다. 포인터가 오면 불투명·블러로 또렷해진다.
+     + .studio-workspace 아래 여백(72px)이 스크롤 끝에서 마지막 줄을 알약 위로 올려 준다. */
+  background: rgb(255 253 250 / 55%);
+  opacity: 0.62;
+  box-shadow:
+    0 6px 18px rgb(80 70 130 / 12%),
+    inset 0 0 0 1px rgb(255 255 255 / 55%);
+  transition:
+    opacity var(--dur-2) var(--ease),
+    background var(--dur-2) var(--ease),
+    box-shadow var(--dur-1) var(--ease);
+}
+.bottom-float-row .studio-avatar-ctl:hover,
+.bottom-float-row .studio-avatar-ctl:focus-within {
+  opacity: 1;
+  background: rgb(255 253 250 / 92%);
   -webkit-backdrop-filter: blur(10px) saturate(1.2);
   backdrop-filter: blur(10px) saturate(1.2);
-  box-shadow:
-    0 10px 30px rgb(80 70 130 / 18%),
-    inset 0 0 0 1px rgb(255 255 255 / 55%);
-  transition: box-shadow var(--dur-1) var(--ease);
-}
-.bottom-float-row .studio-avatar-ctl:hover {
   box-shadow:
     0 14px 36px rgb(80 70 130 / 24%),
     inset 0 0 0 1px rgb(255 255 255 / 55%);
 }
+html[data-reduce-motion] .bottom-float-row .studio-avatar-ctl {
+  transition: none;
+}
 /* 차분 모드: 은백 유리 + 물빛 선택. */
 html[data-studio-calm] .bottom-float-row .studio-avatar-ctl {
   border-color: var(--studio-silver-line);
-  background: rgb(243 245 247 / 82%);
+  background: rgb(243 245 247 / 58%);
+  box-shadow:
+    0 6px 18px rgb(40 50 70 / 10%),
+    inset 0 0 0 1px rgb(255 255 255 / 60%);
+}
+html[data-studio-calm] .bottom-float-row .studio-avatar-ctl:hover,
+html[data-studio-calm] .bottom-float-row .studio-avatar-ctl:focus-within {
+  background: rgb(243 245 247 / 92%);
   box-shadow:
     0 10px 30px rgb(40 50 70 / 14%),
     inset 0 0 0 1px rgb(255 255 255 / 60%);
@@ -300,4 +320,146 @@ html[data-studio-calm] .studio-topbar {
   100% {
     background-position-x: calc(100% + 220px);
   }
+}
+
+/* ── ④ 금생수(金生水) 스킨 — 편집실(ADR-0016, 토큰은 app/metal-water.css) ─────────────
+   물(컨테이너: 상단바·요일 머리·달력 칸·좌측 카드·도구 카드·아바타 자리·힌트 바·역할 팝오버)은 은은한 물빛
+   유리로 품고, 금(일: 편집 팝오버·읽기 카드·버튼·타일·칩·카드 테두리·달 이동 링)은 헤어라인·윗면 광택·작은
+   라운드로 날카롭게. 차분 모드 아래라 스위치 하나로 전부 되돌아간다. 선택자에 .studio-shell을 끼워
+   studio-shell.css의 같은 이름 차분 규칙보다 특이도를 한 단계 올린다(파일 순서에 안 기댄다). */
+/* 물 */
+html[data-studio-calm] .studio-shell .studio-topbar {
+  background: var(--gs-water-glass);
+  border-bottom-color: var(--gs-metal-line);
+}
+html[data-studio-calm] .studio-shell .studio-weekdays {
+  border-color: var(--gs-water-line);
+  border-radius: 18px;
+  background: linear-gradient(180deg, #f3f8fd, #e7eff9);
+  box-shadow: var(--gs-water-glow);
+}
+html[data-studio-calm] .studio-shell .studio-weekdays span {
+  color: #5d6f88;
+}
+html[data-studio-calm] .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
+  background: var(--gs-water-face);
+  border-color: rgb(30 90 168 / 10%);
+}
+html[data-studio-calm] .studio-shell .studio-day.past:not(.today):not(.outside) {
+  background: var(--gs-water-face-deep);
+}
+html[data-studio-calm] .studio-shell .studio-day.outside {
+  border-color: rgb(30 90 168 / 8%);
+}
+html[data-studio-calm] .studio-shell .studio-left-panel > section:first-child,
+html[data-studio-calm] .studio-shell .avatar-rail-filter,
+html[data-studio-calm] .studio-shell .studio-tools {
+  border-color: var(--gs-metal-line);
+  border-radius: var(--gs-water-radius);
+  background: var(--gs-water-glass);
+  box-shadow: var(--gs-water-glow);
+}
+html[data-studio-calm] .studio-shell .studio-left-panel .studio-tools {
+  border-radius: 16px;
+}
+html[data-studio-calm] .studio-shell .avatar-dock-inner {
+  border-color: rgb(30 90 168 / 22%);
+  border-radius: var(--gs-water-radius);
+  background: rgb(241 246 252 / 45%);
+}
+html[data-studio-calm] .studio-shell .kbd-hints {
+  border-color: var(--gs-metal-line);
+  background: var(--gs-water-glass);
+}
+html[data-studio-calm] .role-help-pop {
+  border-color: var(--gs-metal-line);
+  background: #f7fafd;
+}
+/* 금 */
+html[data-studio-calm] .studio-shell .event-editor-panel form,
+html[data-studio-calm] .studio-shell .event-editor-panel .event-detail-readonly {
+  border: 1px solid var(--gs-metal-line-strong);
+  border-radius: 14px;
+  background: var(--gs-metal-face);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 95%),
+    0 0 0 1px rgb(255 255 255 / 60%),
+    0 14px 34px -16px rgb(38 50 66 / 45%);
+}
+html[data-studio-calm] .studio-shell .event-editor-panel .editor-grab {
+  background: var(--gs-metal-sheen);
+  border-bottom: 1px solid var(--gs-metal-line);
+  border-radius: 13px 13px 0 0;
+}
+html[data-studio-calm] .studio-shell .event-editor-panel .editor-grab span {
+  background: var(--gs-metal-line-strong);
+}
+html[data-studio-calm] .studio-shell .button:not(.primary):not(.danger) {
+  border-color: var(--gs-metal-line);
+  border-radius: var(--gs-metal-radius);
+  background: var(--gs-metal-sheen);
+  color: var(--gs-metal-ink);
+  box-shadow: var(--gs-metal-edge);
+}
+html[data-studio-calm] .studio-shell .button:not(.primary):not(.danger):hover:not(:disabled) {
+  border-color: var(--gs-metal-line-strong);
+  background: #fff;
+  color: var(--gs-metal-ink);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 3px 8px -2px rgb(38 50 66 / 18%);
+}
+/* 저장 = 금 틀 안의 물(금생수의 한 점) — 파스텔 물빛 면은 그대로, 테두리만 은선. */
+html[data-studio-calm] .studio-shell .button.primary.editor-save {
+  border-color: var(--gs-metal-line-strong);
+  border-radius: var(--gs-metal-radius);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 85%),
+    0 2px 6px -2px rgb(var(--studio-action-rgb) / 35%);
+}
+html[data-studio-calm] .studio-shell .stool {
+  border-radius: var(--gs-metal-radius);
+}
+html[data-studio-calm] .studio-shell .stool:hover:not(:disabled) {
+  border-color: var(--gs-metal-line);
+  background: var(--gs-metal-sheen);
+  box-shadow: inset 0 1px 0 #fff;
+}
+html[data-studio-calm] .studio-shell .month-nav-btn {
+  border: 1px solid var(--gs-metal-line);
+  background: var(--gs-metal-sheen);
+  box-shadow: inset 0 1px 0 #fff;
+}
+html[data-studio-calm] .studio-shell .month-nav-btn:hover {
+  border-color: var(--studio-action);
+  background: #fff;
+}
+html[data-studio-calm] .studio-shell .tp-chip {
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
+}
+html[data-studio-calm] .studio-shell .studio-event-pill {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 50%),
+    0 0 0 1px rgb(38 50 66 / 5%);
+}
+html[data-studio-calm] .bottom-float-row .studio-avatar-ctl {
+  border-color: var(--gs-metal-line-strong);
+}
+html[data-studio-calm] .studio-shell .studio-avatar-ctl button.on {
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 1px 4px rgb(38 50 66 / 16%);
+}
+/* 금 틀 안의 물 — 팝오버 안 입력 칸·옵션 줄·태그 묶음은 크림 대신 옅은 물빛(금생수). 테두리는 은선. */
+html[data-studio-calm] .studio-shell .event-editor-panel form textarea,
+html[data-studio-calm] .studio-shell .event-editor-panel form input:not([type="checkbox"]):not([type="radio"]),
+html[data-studio-calm] .studio-shell .event-editor-panel form select,
+html[data-studio-calm] .studio-shell .event-editor-panel .fold-head,
+html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
+  border-color: var(--gs-metal-line);
+  background: #f4f8fc;
+}
+html[data-studio-calm] .studio-shell .event-editor-panel form textarea:focus,
+html[data-studio-calm] .studio-shell .event-editor-panel form input:focus {
+  background: #fff;
 }

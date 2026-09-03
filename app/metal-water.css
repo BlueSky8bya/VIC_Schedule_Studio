@@ -1,0 +1,41 @@
+/* ══ 금생수(金生水) 스킨 — 공용 토큰 + 양쪽 화면 공통 규칙(2026-09-03, ADR-0016) ═══════════
+   토리(소유자)의 오행 결론(수 용신·금 희신 — 원국 자체는 어디에도 싣지 않는다)을 형태 언어로 옮긴다.
+   • 일(work) = 금(金): 편집 팝오버·업 도움/기간 안내 띠·버튼·타일·칩·카드 테두리. 날카롭고 깔끔하게 —
+     헤어라인·윗면 광택 한 줄·작은 라운드·새김 글자(text-shadow).
+   • 감싸는 것 = 수(水): 페이지 바탕·달력 표면·칸·요일 머리·패널 카드·상단바. 은은한 물빛 유리로 품는다 —
+     큰 라운드·낮은 대비·안쪽 빛.
+   • 금생수: 모든 물 컨테이너의 가장자리는 금 헤어라인이고, 금 요소의 안쪽엔 물빛이 담길 수 있다(저장 버튼).
+   불변: 의미색 8종(업 도움 장미·기간 안내 하늘·편집 보라·신규 초록·오늘 골드·미정 주황·떡밥 링·다시보기
+   숲 파랑), 태그색, 기하(표면 1840·칸 높이·띠 17px·레인). 색·그림자·라운드·질감만 만진다.
+   적용 파일: 편집실 = components/studio/studio-calm-layer.css ④(차분 모드 아래, 스위치로 되돌림),
+   시청자 = components/poster/poster-metal-water.css(기본 모습). 여기는 토큰 + 양쪽이 같이 쓰는 띠 규칙. */
+:root {
+  --gs-metal-line: #c9d3dd;
+  --gs-metal-line-strong: #aeb9c7;
+  --gs-metal-ink: #263242;
+  --gs-metal-face: #fbfcfe;
+  --gs-metal-sheen: linear-gradient(180deg, #ffffff 0%, #f6f8fb 48%, #e9eef4 100%);
+  --gs-metal-edge: inset 0 1px 0 rgb(255 255 255 / 90%), 0 1px 2px rgb(38 50 66 / 8%);
+  --gs-metal-radius: 10px;
+  --gs-water-page: linear-gradient(180deg, #f6f9fd 0%, #eaf1f9 100%);
+  --gs-water-face: #f1f6fc;
+  --gs-water-face-deep: #e6eef8;
+  --gs-water-glass: rgb(241 246 252 / 84%);
+  --gs-water-line: rgb(30 90 168 / 12%);
+  --gs-water-glow:
+    inset 0 1px 0 rgb(255 255 255 / 85%),
+    0 12px 32px -20px rgb(30 90 168 / 30%);
+  --gs-water-radius: 22px;
+}
+
+/* 띠(업 도움 장미 · 기간 안내 하늘) — 색은 의미색 그대로, 질감만 금: 윗면 광택 한 줄 + 아랫면 어두운
+   헤어라인(새김) + 글자 흰 밑그림자(각인). inset만 써서 17px 높이·레인 기하는 그대로. 편집실·시청자 공통.
+   호버/편집 중 상태는 각 화면 규칙이 box-shadow를 덮어쓴다(그 순간엔 그쪽 신호가 우선). */
+.support-bar {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 75%),
+    inset 0 -1px 0 rgb(40 20 40 / 12%);
+}
+.support-bar span {
+  text-shadow: 0 1px 0 rgb(255 255 255 / 45%);
+}

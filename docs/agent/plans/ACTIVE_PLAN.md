@@ -25,6 +25,12 @@ Created / Updated: 2026-09-03
    차분 OFF·모바일엔 렌더/표시 안 함.
 3. **설정 스위치 극성** — "동작 줄이기(기본 OFF)" → "생동감 있는 동작(기본 ON)". 저장 키(`vic.reduceMotion`)·
    `html[data-reduce-motion]` 의미는 불변(라벨·체크 방향만 반전). 세대(epoch) 로직 무관.
+4. **금생수(金生水) 스킨(ADR-0016, 사용자 2차 지시)** — 일(팝오버·띠·버튼·타일·칩·카드 테두리·달 이동 링) = 금,
+   품는 것(바탕·표면·칸·요일·패널·상단바·힌트·역할 팝오버) = 수. 토큰 `--gs-*`(app/metal-water.css) + 편집실
+   studio-calm-layer.css ④(차분 아래) + 시청자 poster-metal-water.css(기본, 미리보기·export 포함). 의미색·태그색·
+   기하 불변. 비주얼 기준선은 색 변화라 전수 갱신(치수 스펙은 그대로 통과해야 한다).
+5. **아바타 알약 겹침(사용자 3차 지시)** — 쉼 상태 반투명(.62)·블러 없음, 호버/포커스 불투명, workspace 아래
+   72px 여백(스크롤 끝 겹침 0).
 
 ## 검증 계획
 - Playwright(3111): owner(아바타 rail 좌/우)·manager(rail 없음)·developer 스크린샷; 차분 OFF·동작 줄이기 ON·gfx lite에서

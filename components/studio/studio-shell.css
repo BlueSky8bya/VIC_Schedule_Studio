@@ -4018,7 +4018,9 @@ html[data-reduce-motion] .perf-windows button.active {
      '선택한 날짜 칸 옆'에 뜨는 앵커 팝오버(absolute) — 달력이 열림/닫힘에 reflow하지 않는다. */
   grid-template-columns: 188px minmax(0, 1fr);
   gap: 0;
-  padding: 18px;
+  /* 아래 72px = 하단 중앙 플로팅 알약(아바타 좌/우, 42px + 여유)의 자리 — 스크롤 끝에서 달력 마지막 줄이
+     알약 밑으로 들어가지 않는다(2026-09-03 사용자: 겹치면 불편). 좌우·위는 그대로 18. */
+  padding: 18px 18px 72px;
   /* 팝오버(absolute) 좌표 기준. */
   position: relative;
   /* 팝오버를 가장자리 밖으로 끌 때 문서 높이/폭이 늘어나지 않게 — absolute 패널이 아래로
