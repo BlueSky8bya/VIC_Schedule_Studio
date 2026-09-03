@@ -84,7 +84,8 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   window blur 후 activeElement가 창 안 iframe이면 되찾기(직전 400ms 안 Tab keydown이면 키보드
   진입으로 보고 안 되찾음 — 교차 출처 iframe엔 :hover가 안 붙어 hover 판별 불가, 실측).
   Space = 재생/일시정지(Pplay/Ppause, 포커스가 버튼·링크 위면 제외). 실측: iframe 클릭 후
-  activeElement=창, Space 토글에 pause 이벤트, Esc로 닫힘. ② 커버 썸네일 흐림 — 숲 SnapshotLoad
+  activeElement=창, Space 토글에 pause 이벤트, Esc로 닫힘. 재생 전(창에 막 들어옴) Space = ▶
+  (마지막 점프/재생 방송, 없으면 그 날 첫 방송 0초 — 대기 슬롯 승격 경로, 사용자 신고 후속). ② 커버 썸네일 흐림 — 숲 SnapshotLoad
   는 `_r`(640×360)·`_l`(480×270)뿐, column/접미사 변형 전부 ≤640(실측). 1230px 커버에서 1.9배
   확대가 원인. SVG feConvolveMatrix 언샤프(합 1)로 가장자리만 보정(`#vod-cover-sharpen`, TSX
   인라인 defs). 원본 해상도 한계는 그대로.

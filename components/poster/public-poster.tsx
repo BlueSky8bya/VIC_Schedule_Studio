@@ -1466,15 +1466,23 @@ export function PublicPoster({
       const tag = target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
       // Space = 재생/일시정지(포커스가 창 컨테이너에 있을 때 — 버튼 위면 그 버튼의 몫).
+      // 아직 아무것도 재생 전이면(창에 막 들어옴) Space = ▶ — 마지막 점프/재생 방송, 없으면
+      // 그 날 첫 방송을 처음부터(재생 전 경로 = 챕터 점프와 같은 대기 슬롯 승격).
       if (e.key === " " && tag !== "BUTTON" && tag !== "A") {
         e.preventDefault();
-        const titleNo = dayVodFocusRef.current;
-        if (titleNo === null || !dayVodAliveRef.current.has(titleNo)) return;
+        const titleNo =
+          dayVodFocusRef.current ?? (vodsByDate.get(dayVodPop.dateKey) ?? [])[0]?.titleNo ?? null;
+        if (titleNo === null) return;
+        hapticTick();
+        if (!dayVodAliveRef.current.has(titleNo)) {
+          dayVodFocusRef.current = titleNo;
+          promoteDayVodStandby(titleNo, 0, isVodSoundAutoplayBlocked());
+          return;
+        }
         const post = dayVodApisRef.current.get(
           dayVodSlotKey(titleNo, dayVodActiveRef.current.get(titleNo) ?? "a")
         );
         if (!post) return;
-        hapticTick();
         post({ cmd: dayVodPausedRef.current.has(titleNo) ? "Pplay" : "Ppause" });
         return;
       }
@@ -1502,7 +1510,7 @@ export function PublicPoster({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dayVodPop, vodsByDate]);
+  }, [dayVodPop, vodsByDate, promoteDayVodStandby]);
   // 창이 열려 있는 동안 바깥 달력 스크롤 잠금 — 창 안 목록을 굴리다 끝에 닿으면 달력이
   // 따라 흐르던 문제(사용자 지적). CSS overscroll-behavior와 이중 방어.
   useEffect(() => {
