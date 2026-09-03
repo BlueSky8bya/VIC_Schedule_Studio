@@ -86,8 +86,24 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   Space = 재생/일시정지(Pplay/Ppause, 포커스가 버튼·링크 위면 제외). 실측: iframe 클릭 후
   activeElement=창, Space 토글에 pause 이벤트, Esc로 닫힘. 재생 전(창에 막 들어옴) Space = ▶
   (마지막 점프/재생 방송, 없으면 그 날 첫 방송 0초 — 대기 슬롯 승격 경로, 사용자 신고 후속).
-  후속 6(2026-09-03, M 음소거 + 체감 지연): 번들 실측으로 `Pmute/Punmute/Pvolume`은 숲 내부
-  origin 전용 확정. 대체 원시 동작(메모리 soop-embed-iframe-api 참조): **Pplay = 소리 켜기**
+  **후속 7(2026-09-03, 후속 6의 M·자동 unmute·인계 철회)**: 사용자 신고 "Space·M·챕터 연타에
+  고장" + "Space로 재생 중 혼자 멈춤". 원인 = 재생 중 Pplay(시작 직후 0초 정지 리셋, 재생 중 위치
+  튐)에 기댄 unmute 경로가 플레이어 상태에 민감 + 연타 시 승격·인계·타이머 겹침. 결정: 믿을 수
+  있는 원시 동작(새 iframe 첫 Pload 자동재생 · PseekTo · Ppause · 정지 중 Pplay 제자리 재개)만
+  남김. M 단축키·음소거 의도·인계 승격·unmuteDayVod 전부 제거(소리 켜기/끄기 = 플레이어 볼륨
+  버튼). 차단 브라우저 음소거 폴백은 음소거 그대로(자동 unmute 없음). Space = 낙관적 정지 상태
+  갱신 + 250ms 연타 억제 + 시동 중(첫 Pload 뒤 미디어 이벤트 전, 6초 상한) 무시. 챕터 연타는
+  승격 연쇄가 마지막 pending으로 수렴(리로드로 앞선 것 소멸). **제어 명령 금지창 2개**(VOD_SETTLE_MS
+  800): ① 자리잡기 전(첫 timeUpdate+0.8초) — Space·방향키 무시, 챕터 클릭은 PseekTo 대신 재시동
+  (실측: 시작 0.3초 뒤 Ppause → 0초 정지 후 무반응). ② seek 뒤 0.8초 — Space만 무시(실측: seek+
+  재개 100ms 뒤 Ppause → 이후 Pplay 무반응; seek끼리 연타는 안전). 정지 중 챕터의 Pplay는 지연
+  타이머 없이 seek 직후 즉시(타이머가 다음 seek와 뒤섞이던 것). 소리 시도 감시는 '실제 굴러감'
+  (timeUpdate)으로 성공 판정 — buffer만 오고 안 굴러가는 경우(허용 프로필도 간헐) 정지에 갇히던 것;
+  '차단 기억'은 아무 이벤트도 없었을 때만(진짜 차단 서명). 실측(허용 2회·차단 1회 전부 통과):
+  재생 전 Space×6, 챕터×5 연타(마지막으로 수렴), Space×7 연타 후 재개, 정지→챕터→Space→Space
+  섞기, 10초 방치 멈춤 없음.
+  후속 6(2026-09-03, M 음소거 + 체감 지연 — **M·unmute·인계는 후속 7에서 철회, 원시 동작 실측
+  기록으로만 유효**): 번들 실측으로 `Pmute/Punmute/Pvolume`은 숲 내부 origin 전용 확정. 대체 원시 동작(메모리 soop-embed-iframe-api 참조): **Pplay = 소리 켜기**
   (음소거로 굴러가는 플레이어에 Pplay → muted:false, 차단 프로필도; 굴러간 뒤 ≥0.9초 필요,
   위치 튐 → 0.5초 뒤 PseekTo 복구) · 음소거 켜기는 새 iframe 첫 Pload{mutePlay:true}뿐.
   구현: ① M = 음소거 의도 토글(dayVodMuteIntentRef). 켜기 = **인계 승격**(옛 슬롯 Ppause로
