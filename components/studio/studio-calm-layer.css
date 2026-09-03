@@ -218,7 +218,7 @@ html[data-studio-calm] .studio-shell .studio-day:not(.today):not(.outside):not(.
   border-color: #efe6d3;
 }
 html[data-studio-calm] .studio-shell .studio-day.past:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
-  background: #fbf6ea;
+  background: #fffefb; /* 지난 날 구분 없음 — 시청자 화면과 동일 */
 }
 html[data-studio-calm] .studio-shell .studio-day.outside {
   background: #f1e9d8;
@@ -264,25 +264,42 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
    오늘(골드)·편집 중·드롭 대상·휴식 칸은 제 색을 지킨다(불투명). 일정 카드·팝오버(일 = 금)는 불투명 —
    물 위에 놓인 물건. 조건 밖(동작 줄이기·약한 기기·모바일)에선 위 불투명 크림 그대로. */
 @media (min-width: 641px) {
+  /* 칸은 시청자 화면과 같은 크림이 지배(알파 74~84%) — 물결은 "햇살에 산란돼 아주 살짝" 비치는 정도.
+     지난 날도 같은 크림(시청자 화면엔 지난 날 구분이 없다 — 사용자: "시청자 화면처럼"). */
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
-    background: rgb(255 254 251 / 54%);
+    background: rgb(255 254 251 / 76%);
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-day.past:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
-    background: rgb(251 246 234 / 54%);
-  }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-day.outside {
-    background: rgb(241 233 216 / 50%);
-  }
+  /* 다른 달 칸은 불투명 그대로 — 반투명이면 물빛이 섞여 회색 블록으로 읽혔다(시청자 화면의 따뜻한 탄색과 어긋남). */
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-weekdays {
-    background: rgb(251 247 238 / 72%);
+    background: rgb(251 247 238 / 86%);
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-left-panel > section:first-child,
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .avatar-rail-filter,
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-tools {
-    background: rgb(255 253 246 / 76%);
+    background: rgb(255 253 246 / 84%);
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .kbd-hints {
-    background: rgb(255 253 246 / 64%);
+    background: rgb(255 253 246 / 72%);
+  }
+  /* 편집실 물결은 시청자 화면보다 세게(사용자: "있는지 없는지 모르겠다") — 공용 레이어의 편집실 안 인스턴스만
+     덩어리·caustic 불투명도를 올린다. 시청자 화면(조화 좋다고 한 쪽)은 공용 기본값 그대로. */
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide {
+    background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 8%) 0%, rgb(var(--gs-sea-rgb) / 14%) 100%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-shade {
+    background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 38%) 0%, rgb(var(--gs-sea-rgb) / 19%) 45%, rgb(var(--gs-sea-rgb) / 0%) 100%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-shade-3 {
+    background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 24%) 0%, rgb(var(--gs-sea-rgb) / 12%) 45%, rgb(var(--gs-sea-rgb) / 0%) 100%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-light {
+    background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 64%) 0%, rgb(var(--gs-sun-rgb) / 30%) 45%, rgb(var(--gs-sun-rgb) / 0%) 100%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-caustic-a {
+    opacity: 1;
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-caustic-b {
+    opacity: 0.8;
   }
 }
 

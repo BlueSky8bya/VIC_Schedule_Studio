@@ -23,7 +23,7 @@
     0 1px 2px rgb(60 50 30 / 8%);
   --gs-metal-radius: 10px;
   /* 물 — 얕은 물의 청록(모래 위에 얹히면 젖은 모래색). 빛 — 햇살의 따뜻한 흰빛. */
-  --gs-sea-rgb: 40 118 162;
+  --gs-sea-rgb: 56 128 190;
   --gs-sun-rgb: 255 246 224;
 }
 
@@ -49,7 +49,7 @@
   pointer-events: none;
   contain: strict;
   /* 물 필름 — 반투명. 아래로 갈수록 살짝 깊다. 모래(body 아이보리)가 그대로 비친다. */
-  background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 5%) 0%, rgb(var(--gs-sea-rgb) / 9%) 100%);
+  background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 3%) 0%, rgb(var(--gs-sea-rgb) / 6%) 100%);
 }
 .gs-tide-defs {
   position: absolute;
