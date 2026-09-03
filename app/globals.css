@@ -1063,18 +1063,22 @@ html[data-reduce-motion] .support-bar.sb-solo.is-clickable.is-hover .sb-go {
 
 /* ── 단순 기간 안내(sb-period) ─────────────────────────────────────────────
    도와주러 갈 필요 없는 정보성 기간(예: 알파테스트 일정 — 2026-09-01 사용자 요청).
-   같은 리본 문법에 채도만 낮춘 라벤더 — 장미(업 도움)와 한눈에 구분되면서 형제로 읽힌다.
-   편집실·시청자 공통(단일 출처). */
+   같은 리본 문법에 **하늘색(시안)** — 장미(업 도움)와 한눈에 구분되면서 형제로 읽힌다.
+   (2026-09-03 라벤더→하늘색: 편집실에서 '일정 편집 = 보라 점선'과 같은 색이라 기간 안내를
+   고르면 무엇을 편집 중인지 색으로 안 갈렸다. 편집 대상 색 규율: 신규=초록 · 일정=보라 ·
+   업 도움=장미 · 기간 안내=하늘 · 떡밥=보라 링 · 미정=주황 · 오늘=골드 · 다시보기=숲파랑.)
+   편집실·시청자 공통(단일 출처) — 편집실 폼 테마(.support-fields[data-kind="period"])·
+   칩·팝오버 점선·리더 라인·삭제 버튼도 같은 잉크(#155e75)/중간(#0e93b4)을 쓴다. */
 .support-bar.sb-period {
-  background: linear-gradient(180deg, #e3defc, #cfc5f7);
-  color: #5b21b6;
+  background: linear-gradient(180deg, #dcf3fa, #b9e5f3);
+  color: #155e75;
 }
 .support-bar.sb-period.sb-solo .sb-go {
-  color: rgb(91 33 182 / 78%);
+  color: rgb(21 94 117 / 78%);
 }
 .support-bar.sb-period .sb-cta {
-  color: rgb(91 33 182 / 78%);
-  border-bottom-color: rgb(91 33 182 / 45%);
+  color: rgb(21 94 117 / 78%);
+  border-bottom-color: rgb(21 94 117 / 45%);
 }
 
 /* ── 태그 색 무늬(패턴) — 제거됨(2026-07-18) ──────────────────────────────

@@ -304,7 +304,7 @@ const ACT: Record<string, TargetLabel> = {
   "support-sheet-cancel": { name: "업 도움 수정 취소", area: "편집실" },
   "support-sheet-save": { name: "업 도움 수정 저장", area: "편집실" },
   "support-edit-open": { name: "업 도움 기간/링크 수정 열기", area: "편집실" },
-  "delete-support": { name: "업 도움 삭제", area: "편집실" },
+  "delete-support": { name: "업 도움 삭제", area: "편집실", hint: "기간 안내 삭제 포함" },
   "google-login": { name: "Google로 로그인", area: "공통" },
   "open-in-chrome": { name: "Chrome으로 열기", area: "공통", hint: "앱 내 브라우저 안내" },
   "copy-app-link": { name: "링크 복사", area: "공통", hint: "앱 내 브라우저 안내" },

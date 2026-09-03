@@ -863,10 +863,10 @@ html[data-reduce-motion] .mb-live-dot {
   background: #e9f0fe;
   color: #2455c9;
 }
-/* 기간 안내(support_kind period) '자세히 보기' — 라벤더 띠와 같은 색 언어(정형화). */
+/* 기간 안내(support_kind period) '자세히 보기' — 하늘색 띠와 같은 색 언어(정형화, globals .sb-period). */
 .agenda-link.period {
-  background: #efeafd;
-  color: #5b21b6;
+  background: #e3f5fb;
+  color: #155e75;
 }
 /* 라벨 = VOD 제목 — 넘치면 …로 자른다(전체 제목은 title 툴팁). 아이콘·길이는 고정 폭,
    제목만 줄어든다(min-width:0이 없으면 flex 자식이 안 줄어 칩이 터진다). */
@@ -2324,27 +2324,27 @@ body.cell-range-dragging {
   color: #9f1239;
   transform: translateX(2px);
 }
-/* 기간 안내(sb-period) 클릭형 — 장미 대신 라벤더로 같은 광택 문법(색만 다른 형제). */
+/* 기간 안내(sb-period) 클릭형 — 장미 대신 하늘색으로 같은 광택 문법(색만 다른 형제, globals .sb-period). */
 .support-bar.sb-period.is-clickable {
   background-image:
     linear-gradient(115deg, transparent 38%, rgb(255 255 255 / 55%) 50%, transparent 62%),
-    linear-gradient(180deg, #e3defc, #cfc5f7);
+    linear-gradient(180deg, #dcf3fa, #b9e5f3);
 }
 .support-bar.sb-period.is-clickable.is-hover {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 60%),
-    inset 0 -2px 0 rgb(91 33 182 / 18%);
+    inset 0 -2px 0 rgb(21 94 117 / 18%);
 }
 .support-bar.sb-period.sb-solo.is-clickable.is-hover {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 60%),
-    0 3px 10px rgb(91 33 182 / 24%);
+    0 3px 10px rgb(21 94 117 / 24%);
 }
 .support-bar.sb-period.is-clickable:focus-visible {
-  outline-color: #5b21b6;
+  outline-color: #155e75;
 }
 .support-bar.sb-period.is-clickable.is-hover .sb-cta {
-  color: #5b21b6;
+  color: #155e75;
 }
 html[data-reduce-motion] .support-bar.is-clickable,
 html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
@@ -6178,10 +6178,10 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   background: linear-gradient(135deg, #5d8bf4, #3564e0);
   box-shadow: 0 6px 16px rgb(53 100 224 / 26%);
 }
-/* 기간 안내 '자세히 보기' — 라벤더 그라데이션(띠와 같은 색 언어). */
+/* 기간 안내 '자세히 보기' — 하늘색 그라데이션(띠와 같은 색 언어). */
 .agenda-detail-backdrop.is-pop .agenda-link.period {
-  background: linear-gradient(135deg, #9d7bf0, #7c5cd6);
-  box-shadow: 0 6px 16px rgb(124 92 214 / 26%);
+  background: linear-gradient(135deg, #3ec2e2, #0e93b4);
+  box-shadow: 0 6px 16px rgb(14 147 180 / 26%);
 }
 .agenda-detail-backdrop.is-pop .agenda-link.vod .agenda-vod-dur {
   color: #dbe6ff;

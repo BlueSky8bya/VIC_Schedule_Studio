@@ -1937,7 +1937,8 @@ html[data-reduce-motion] .perf-spin {
   --ac: #e08407;
 }
 /* 달력 띠 종류(2026-09-01 대개편) — 칩 두 개가 곧 스위치: 켜진 칩 다시 누르면 끔.
-   마스터 토글·하위 라디오·들여쓰기 없이 한 줄. 업 도움 = 장미, 기간 안내 = 보라. */
+   마스터 토글·하위 라디오·들여쓰기 없이 한 줄. 업 도움 = 장미, 기간 안내 = 하늘색
+   (2026-09-03 보라→하늘: '일정 편집 보라 점선'과 겹쳐 무엇을 편집 중인지 안 갈렸다). */
 .band-kind-row {
   display: grid;
   /* ⚠ 1fr의 최소값은 auto(내용 최소폭) — 칩 min-content×2가 카드 폭을 뚫고 오른쪽 칩이
@@ -1965,7 +1966,7 @@ html[data-reduce-motion] .perf-spin {
   --ac: #e23b54; /* 업 도움 띠(장미)와 통일 */
 }
 .opt-chip.band-kind.period {
-  --ac: #7c5cd6; /* 기간 안내 띠(라벤더)와 통일 */
+  --ac: #0e93b4; /* 기간 안내 띠(하늘색, globals .sb-period)와 통일 */
 }
 .opt-chip:hover:not(:disabled):not(.on) {
   border-color: color-mix(in srgb, var(--ac) 50%, var(--line, #e7e3f2));
@@ -4478,6 +4479,13 @@ html[data-reduce-motion] .editor-anchor-link {
 .editor-anchor-link.is-support circle {
   fill: #e11d48;
 }
+/* 기간 안내 편집 = 하늘색 라인/도트(띠·폼 테마와 같은 잉크). is-support 뒤에 두어 덮는다. */
+.editor-anchor-link.is-period line {
+  stroke: rgb(14 147 180 / 55%);
+}
+.editor-anchor-link.is-period circle {
+  fill: #0e93b4;
+}
 @keyframes anchor-link-flow {
   to {
     stroke-dashoffset: -8;
@@ -4538,6 +4546,17 @@ html[data-reduce-motion] .editor-anchor-link line {
 }
 .event-editor-panel.is-support .editor-grab span {
   background: rgb(225 29 72 / 30%);
+}
+/* 기간 안내 편집 카드 — 점선 아웃라인·그립을 하늘색으로(폼 안 .support-fields 테마와 한 몸).
+   종류 칩을 바꾸면 폼 테마와 함께 즉시 갈아입는다(저장값이 아니라 현재 폼 기준). */
+.studio-workspace .event-editor-panel.is-period form {
+  outline-color: rgb(14 147 180 / 40%);
+}
+.event-editor-panel.is-period .editor-grab {
+  background: rgb(14 147 180 / 8%);
+}
+.event-editor-panel.is-period .editor-grab span {
+  background: rgb(14 147 180 / 30%);
 }
 /* 팝오버 세로 압축(사용자 요청) — 데스크톱 포인터 전용 카드라 44px 풀 히트 없이도 조작
    가능. 여백·칩 높이를 한 단계씩 줄여 스크롤 없이 더 많은 내용이 한눈에 들어오게. */
@@ -5257,6 +5276,11 @@ html[data-reduce-motion] .editor-anchor-link line {
   border-bottom: 2px dashed #e11d48;
   border-left: 0;
   border-right: 0;
+}
+/* 기간 안내 띠 편집 중 — 같은 문법, 하늘색(저장된 종류 기준: 달력 위 띠 자체가 저장값). */
+.studio-day .support-bar.sb-period.is-editing {
+  border-top-color: #0e93b4;
+  border-bottom-color: #0e93b4;
 }
 
 .studio-day .support-bar.is-hover {
@@ -7424,6 +7448,27 @@ html[data-reduce-motion] .delete-snack {
   border-color: #fecaca;
   color: #b42318;
 }
+/* 띠 삭제 버튼 — 빨강 위험색 대신 **그 띠의 색**을 입는다(2026-09-03 사용자: 기간 안내를 고르고
+   있을 땐 '이 기간 안내 삭제'가 기간 안내 색으로). 라벨·색 모두 현재 폼의 종류(data-kind)를 따라
+   폼 테마(.support-fields)와 한 몸으로 갈아입는다. 업 도움=장미 · 기간 안내=하늘색. */
+.button.danger.support-delete {
+  border-color: #f4c4cc;
+  background: #fff8f9;
+  color: #9f1239;
+}
+.button.danger.support-delete:hover:not(:disabled) {
+  border-color: #e9a3b1;
+  background: #ffe4e8;
+}
+.button.danger.support-delete[data-kind="period"] {
+  border-color: #bfe3ef;
+  background: #f3fbfd;
+  color: #155e75;
+}
+.button.danger.support-delete[data-kind="period"]:hover:not(:disabled) {
+  border-color: #8fd0e6;
+  background: #e0f4fa;
+}
 
 button:disabled,
 input:disabled,
@@ -9556,21 +9601,22 @@ html[data-reduce-motion] .modal-close:active {
   --sd-track-b: #ffe7ec;
   --sd-thumb-shadow: rgb(159 18 57 / 30%);
 }
-/* 기간 안내(보라) — 시청자 라벤더 띠(.sb-period)와 같은 계열. */
+/* 기간 안내(하늘색) — 시청자 띠(globals .sb-period)와 같은 계열. 2026-09-03 보라→하늘:
+   일정 편집 보라 점선과 같은 색이라 팝오버·리더 라인이 구분되지 않았다. */
 .support-fields[data-kind="period"] {
-  --sd-card: #f8f6fe;
-  --sd-border: #ded4f6;
-  --sd-ink: #5b21b6;
-  --sd-mid: #7c5cd6;
-  --sd-strong: #8b6ce8;
-  --sd-hover: #ece7fb;
-  --sd-soft: #f3effd;
-  --sd-stripe: rgb(139 108 232 / 26%);
-  --sd-glow: rgb(139 108 232 / 18%);
-  --sd-glow-soft: rgb(139 108 232 / 9%);
-  --sd-track-a: #f8f6fe;
-  --sd-track-b: #eae3fa;
-  --sd-thumb-shadow: rgb(76 29 149 / 30%);
+  --sd-card: #f3fbfd;
+  --sd-border: #bfe3ef;
+  --sd-ink: #155e75;
+  --sd-mid: #0e93b4;
+  --sd-strong: #2ab7d8;
+  --sd-hover: #e0f4fa;
+  --sd-soft: #ecf8fc;
+  --sd-stripe: rgb(42 183 216 / 26%);
+  --sd-glow: rgb(42 183 216 / 18%);
+  --sd-glow-soft: rgb(42 183 216 / 9%);
+  --sd-track-a: #f3fbfd;
+  --sd-track-b: #dcf1f8;
+  --sd-thumb-shadow: rgb(21 94 117 / 30%);
 }
 /* 업 도움 링크: 라벨 위 / 전체 폭 입력칸 아래로 깔끔하게 쌓는다. */
 .support-link-field {

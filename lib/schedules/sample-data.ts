@@ -31,6 +31,24 @@ export const sampleStudioSchedule: StudioSchedule = {
       sortOrder: 1
     },
     {
+      // 기간 안내 띠 샘플(fixture 회귀용, 2026-09-03) — 편집실 팝오버·리더 라인·삭제 버튼의
+      // 하늘색 테마와 '이 기간 안내 삭제' 라벨을 브라우저에서 실측하려면 저장된 period 띠가 필요.
+      id: "sup-period-001",
+      startsAt: "2026-06-08T00:00:00+09:00",
+      endDateKey: "2026-06-11",
+      isSupport: true,
+      supportKind: "period",
+      supportUrl: "https://example.com/alpha-test",
+      isAllDay: true,
+      publicTitle: "샘플 알파테스트 기간",
+      status: "scheduled",
+      visibilityScope: "public",
+      category: "stream",
+      tagIds: [],
+      primaryTagIds: [],
+      sortOrder: 0
+    },
+    {
       id: "evt-002",
       startsAt: "2026-06-04T20:00:00+09:00",
       endsAt: "2026-06-04T23:00:00+09:00",

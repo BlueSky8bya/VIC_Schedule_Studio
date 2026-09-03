@@ -1102,6 +1102,7 @@ export function StudioShell({
       (teaserUnlockedId === null || canonId(teaserUnlockedId) !== canonId(selectedLiveEvent.id))
   );
   // 업 도움을 편집 중이면 팝오버의 점선·리더 라인을 띠와 같은 장미색으로(보라=일반 일정).
+  // (기간 안내=하늘색은 form 선언 뒤의 selectedIsPeriod.)
   const selectedIsSupport = Boolean(selectedLiveEvent?.isSupport);
   const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
   // (띠 줄 수 "주별" 계산은 칸별 계산으로 대체 — 2026-09-02, 시청자 포스터와 동일 규칙.
@@ -1179,6 +1180,10 @@ export function StudioShell({
     [selectedEventId, visibleEvents]
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
+  // 기간 안내를 편집 중이면 팝오버 점선·리더 라인·그립을 하늘색으로 — 폼의 **현재** 종류를
+  // 따른다(종류 칩을 바꾸면 폼 테마(.support-fields[data-kind])와 함께 즉시 갈아입어야 색이
+  // 한 몸으로 읽힌다). 달력 위 띠 자체(.sb-period.is-editing)는 저장값 기준.
+  const selectedIsPeriod = selectedIsSupport && form.supportKind === "period";
   // 데스크톱 제목칸을 내용량에 맞춰 자동으로 키운다 — 긴 제목의 일정을 열면 두 줄 남짓 높이에
   // 갇혀 스크롤로만 보이던 문제 제거. 값이 바뀔 때마다(타이핑·다른 일정 선택 모두) 맞춘다.
   useLayoutEffect(() => {
@@ -6713,7 +6718,7 @@ export function StudioShell({
                   aria-hidden="true"
                   className={`editor-anchor-link ${selectedEventId ? "is-edit" : "is-new"}${
                     selectedIsSupport ? " is-support" : ""
-                  }`}
+                  }${selectedIsPeriod ? " is-period" : ""}`}
                   key={`link-${editorKey}`}
                 >
                   {covered ? null : (
@@ -6737,7 +6742,7 @@ export function StudioShell({
         <aside
           className={`event-editor-panel ${selectedEventId ? "is-edit" : "is-new"}${
             selectedIsSupport ? " is-support" : ""
-          }${
+          }${selectedIsPeriod ? " is-period" : ""}${
             panelSaved ? " panel-saved" : ""
           }${editorPopDragging ? " pop-dragging" : ""}${editorPopSnapback ? " pop-snapback" : ""}${
             teaserGateActive ? " is-gated" : ""
@@ -6960,13 +6965,17 @@ export function StudioShell({
             {selectedEventId &&
             canEdit &&
             events.find((e) => e.id === selectedEventId)?.isSupport ? (
+              // 라벨·색은 현재 폼의 종류를 따른다 — 기간 안내를 고르고 있으면 '이 기간 안내 삭제'
+              // + 하늘색(폼 테마와 한 몸). 삭제 대상은 어느 쪽이든 같은 일정 한 건.
               <button
-                className="button danger"
+                className="button danger support-delete"
                 data-act="delete-support"
+                data-kind={form.supportKind}
                 onClick={() => deleteEvent(selectedEventId)}
                 type="button"
               >
-                <Trash2 aria-hidden="true" size={15} />이 업 도움 삭제
+                <Trash2 aria-hidden="true" size={15} />이{" "}
+                {form.supportKind === "period" ? "기간 안내" : "업 도움"} 삭제
               </button>
             ) : null}
 
