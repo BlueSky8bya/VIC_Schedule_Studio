@@ -7015,10 +7015,6 @@ export function StudioShell({
                   type="submit"
                 >
                   저장
-                  {/* 키보드 사용자(단축키 안내 30일 8회)에게 저장 단축키를 버튼 자리에서 — 웹만(모바일은 CSS로 숨김). */}
-                  <kbd aria-hidden="true" className="editor-save-kbd">
-                    Ctrl+S
-                  </kbd>
                 </button>
               </div>
             </div>

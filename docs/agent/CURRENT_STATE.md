@@ -207,7 +207,7 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   미커밋·로컬; 원국 정보는 저장소에 싣지 않는다). CLAUDE.md 철학에 "Owner-fit palette rule" 추가.
   ① `html[data-studio-calm]`(기본 ON, `vic.studioCalm`, 역할 배지 팝오버 스위치, 페인트-전 스크립트):
   저장 버튼 노랑→물빛(`--studio-action` #1e5aa8, 눈 편한 필터 후 #2e568a, 흰 글자 7.2:1) + 저장 물결
-  링 + `Ctrl+S` kbd(웹만) · 달 이동 셰브런 물빛 · 좌측 필터 패널 은백 카드 · 달력 칸 반 단계 냉각
+  링(버튼 안 `Ctrl+S` kbd는 길어져 잘려서 철회 — 사용자 지시) · 달 이동 셰브런 물빛 · 좌측 필터 패널 은백 카드 · 달력 칸 반 단계 냉각
   (오늘·바깥달·편집중·드롭·휴식 칸 제외) · 관리 칩 3개 고스트(위치·노출은 유지 — 드롭다운 접기 철회
   결정 존중) · 제목 ✨ 정지. 규칙은 studio-shell.css 파일 끝 블록, 토큰은 globals :root `--studio-*`.
   ② 휴식 넛지(.rest-nudge): 편집실 활동 50분(포인터·키·휠, 5분 무입력이면 정지, sessionStorage로

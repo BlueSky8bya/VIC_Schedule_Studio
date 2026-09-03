@@ -12484,24 +12484,6 @@ html[data-studio-calm] .event-editor-panel.panel-saved::after {
     background: rgb(var(--studio-action-rgb) / 0%);
   }
 }
-/* 저장 단축키 힌트(웹만) — 버튼 글자 옆 작은 kbd. 모바일(≤640)은 숨겨 버튼 폭을 지킨다. */
-.editor-save-kbd {
-  display: none;
-  margin-left: 8px;
-  padding: 1px 6px;
-  border: 1px solid rgb(255 255 255 / 45%);
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 10.5px;
-  font-weight: 800;
-  letter-spacing: 0.01em;
-  opacity: 0.85;
-}
-@media (min-width: 641px) {
-  html[data-studio-calm] .editor-save-kbd {
-    display: inline-block;
-  }
-}
 /* ② 북쪽(상단) 달 이동 = 물빛 셰브런. 호버 링도 같은 색. */
 html[data-studio-calm] .month-nav-btn {
   color: var(--studio-action);
