@@ -25,7 +25,6 @@ import {
   Settings,
   Tags,
   Trash2,
-  Waves,
   X
 } from "lucide-react";
 import Link from "next/link";
@@ -987,80 +986,8 @@ export function StudioShell({
     hapticTick();
     router.refresh();
   };
-  // 휴식 넛지(2026-09-03, docs/ux/saju-redesign-direction.md) — 편집실에서 **활동 시간** 50분이
-  // 쌓이면 오른쪽 아래에 조용한 물빛 카드. 강요 없음: 소리·모달·포커스 이동 없음, 30초 뒤 스스로
-  // 사라지고(=조금만 더) 15분 뒤 다시 잰다. '쉬고 올게요'는 카운터를 0으로. 활동 = 포인터·키·휠
-  // (5분 무입력이면 시계가 멈춘다 — 켜 두고 자리 비운 시간은 안 센다). 소유자·개발자만(시청자
-  // 미리보기 위에도 fixed로 보인다 — 미리보기 중에도 편집실에 있는 셈이라).
-  const REST_NUDGE_AFTER_MS = 50 * 60_000;
-  const REST_NUDGE_SNOOZE_MS = 15 * 60_000;
-  const restNudgeEligible = actor.role === "owner" || actor.role === "developer";
-  const [restNudge, setRestNudge] = useState(false);
-  const restActiveMsRef = useRef(0);
-  const restLastInputRef = useRef(0);
-  const restAutoHideRef = useRef(0);
-  const restShownRef = useRef(false); // 지금 떠 있는지(틱마다 다시 띄우지 않게)
-  useEffect(() => {
-    if (!restNudgeEligible) return;
-    // 같은 탭 새로고침엔 누적을 잇는다(sessionStorage) — 리로드 한 번으로 시계가 0이 되면 의미 없다.
-    try {
-      const raw = window.sessionStorage.getItem("vic.restNudge");
-      if (raw) {
-        const saved = JSON.parse(raw) as { activeMs?: number; at?: number };
-        if (typeof saved.activeMs === "number" && typeof saved.at === "number" && Date.now() - saved.at < 30 * 60_000) {
-          restActiveMsRef.current = saved.activeMs;
-        }
-      }
-    } catch {
-      /* 저장소 불가 — 메모리만 */
-    }
-    restLastInputRef.current = Date.now();
-    const onInput = () => {
-      restLastInputRef.current = Date.now();
-    };
-    window.addEventListener("pointerdown", onInput, { passive: true });
-    window.addEventListener("keydown", onInput, { passive: true });
-    window.addEventListener("wheel", onInput, { passive: true });
-    const tick = window.setInterval(() => {
-      const now = Date.now();
-      if (now - restLastInputRef.current > 5 * 60_000) return; // 자리 비움 — 시계 정지
-      restActiveMsRef.current += 30_000;
-      try {
-        window.sessionStorage.setItem("vic.restNudge", JSON.stringify({ activeMs: restActiveMsRef.current, at: now }));
-      } catch {
-        /* 무시 */
-      }
-      if (restActiveMsRef.current >= REST_NUDGE_AFTER_MS && !restShownRef.current) {
-        // 로그는 updater 밖에서(updater 안 부수효과는 StrictMode에서 두 번 실행돼 이중 기록됐다).
-        restShownRef.current = true;
-        logActivity("section.enter", { target: "rest-nudge" });
-        setRestNudge(true);
-      }
-    }, 30_000);
-    return () => {
-      window.clearInterval(tick);
-      window.removeEventListener("pointerdown", onInput);
-      window.removeEventListener("keydown", onInput);
-      window.removeEventListener("wheel", onInput);
-    };
-  }, [restNudgeEligible, REST_NUDGE_AFTER_MS]);
-  const dismissRestNudge = (how: "ok" | "later") => {
-    setRestNudge(false);
-    restShownRef.current = false;
-    // '쉬고 올게요' = 시계 0 · '조금만 더'(자동 사라짐 포함) = 15분 뒤 다시.
-    restActiveMsRef.current = how === "ok" ? 0 : Math.max(0, REST_NUDGE_AFTER_MS - REST_NUDGE_SNOOZE_MS);
-    try {
-      window.sessionStorage.setItem("vic.restNudge", JSON.stringify({ activeMs: restActiveMsRef.current, at: Date.now() }));
-    } catch {
-      /* 무시 */
-    }
-  };
-  useEffect(() => {
-    if (!restNudge) return;
-    restAutoHideRef.current = window.setTimeout(() => dismissRestNudge("later"), 30_000);
-    return () => window.clearTimeout(restAutoHideRef.current);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [restNudge]);
+  // (휴식 넛지 — 2026-09-03 도입, 2026-09-04 철수: 관리자가 안 쓸 기능이라 사용자 결정. 코드는 git 이력,
+  //  옛 행동 기록의 라벨(rest-nudge*)만 사전에 남긴다.)
   const canReadPrivate =
     canReadPrivateLayer(effectiveRole, hasUnlockSession) && showPrivate;
 
@@ -6138,38 +6065,6 @@ export function StudioShell({
         <div className="copy-toast" role="status" aria-live="polite">
           {copyToast}
         </div>
-      ) : null}
-      {/* 휴식 넛지 — 50분 활동 뒤 조용히(위 restNudge 주석). 시청자 화면엔 없다(편집실 전용). */}
-      {restNudge ? (
-        <aside aria-label="휴식 권유" className="rest-nudge" role="status">
-          <p className="rest-nudge-title">
-            <Waves aria-hidden="true" size={16} strokeWidth={2.4} />
-            50분째 편집 중이에요
-          </p>
-          {/* 문구(2026-09-04 사용자: "물 한 잔, 잠깐 창밖 어때요? … 있을게요"는 생성문 티) — 짧고 구어로. */}
-          <p className="rest-nudge-body">일어나서 기지개 한 번. 달력은 안 도망가요.</p>
-          <div className="rest-nudge-actions">
-            <button
-              className="button rest-ok"
-              data-act="rest-nudge-ok"
-              onClick={() => {
-                hapticTick();
-                dismissRestNudge("ok");
-              }}
-              type="button"
-            >
-              쉬고 올게요
-            </button>
-            <button
-              className="button"
-              data-act="rest-nudge-later"
-              onClick={() => dismissRestNudge("later")}
-              type="button"
-            >
-              조금만 더
-            </button>
-          </div>
-        </aside>
       ) : null}
       {/* P0-DATA-1: 삭제 스낵바 — 8초 동안 그 자리에서 실행 취소(터치 포함, Ctrl+Z와 같은 복구). */}
       {deleteSnack ? (

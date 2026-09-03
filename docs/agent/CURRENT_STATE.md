@@ -76,6 +76,9 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   같은 코너 연속만 묶음; 같은 이름이 나중에 다시 나오면 별개 카드가 정상). 머리 "챕터 139개" → **"타임라인 N개"**,
   본문을 받으면 앞에 "챕터 K개 · "(K = [코너] 헤더 카드 수; 번들 `chapters`는 항목 수). 실측(8/31 63항목):
   카드 [무헤더 2·풀트소통뱅 24·챌린지풀트뱅 18·풀트노래뱅 19], sticky 헤더가 24개 끝까지 delta 0.
+  ⑰ **휴식 넛지 철수(2026-09-04 사용자: "별로 사용 안 하실 것 같아")** — 2026-09-03 도입한 50분 휴식 카드(.rest-nudge,
+  sessionStorage `vic.restNudge`, 활동 시계, 30초 자동 사라짐)를 코드·CSS에서 제거. 행동 기록 라벨(rest-nudge*)은
+  옛 기록용으로 사전에만 남김("철수" 힌트). 복원은 git 이력(커밋 58429f1 이전 studio-shell.tsx 990~1063행·JSX·CSS 꼬리).
   ⑯ **앰비언트 계절 레이어(2026-09-04 사용자 "시작", ADR-0017, PLAN-20260904-001 1·2단계)**: 레지스트리
   `components/shared/ambient/registry.ts`(KST 절기 계절: 입춘 2/4·입하 5/5·입추 8/7·입동 11/7, `SPECIAL_DAYS` 비어
   있음) + `<AmbientLayer />`(물결 상수 + 계절 강세) — 편집실·시청자 fixture·`/` 전부 이걸로(옛 `<WaterTide />` 직접

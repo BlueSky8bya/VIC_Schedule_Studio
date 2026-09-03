@@ -103,7 +103,7 @@ const SECTION: Record<string, TargetLabel> = {
   // 편집 카드 여닫기(2026-09-03 계측) — leave의 dur_ms=체류, meta.typed=입력 여부, meta.how=닫은 방법
   // (save/esc/outside/cell/collapse/other). "칸 361 vs 저장 176"이 둘러보기인지 포기인지 가르기 위함.
   editor: { name: "편집 카드", area: "편집실", hint: "날짜 칸·일정 카드를 눌러 연 편집 팝오버" },
-  "rest-nudge": { name: "휴식 넛지", area: "편집실", hint: "50분 활동 뒤 '기지개 한 번' 카드가 뜬 횟수" },
+  "rest-nudge": { name: "휴식 넛지", area: "편집실", hint: "옛 기록(2026-09-03~04에만 있던 50분 휴식 카드, 철수)" },
   // 꾸미기는 라우트로 잡히므로 섹션 계측을 뺐다 — 옛 기록만 남는다.
   decorate: { name: "꾸미기", area: "꾸미기", hint: "옛 기록(지금은 화면 진입으로 셈)" }
 };
@@ -312,8 +312,8 @@ const ACT: Record<string, TargetLabel> = {
   "delete-support": { name: "업 도움 삭제", area: "편집실", hint: "기간 안내 삭제 포함" },
   "studio-calm-toggle": { name: "차분한 편집실 켜기/끄기", area: "편집실", hint: "역할 배지 팝오버 설정" },
   "poster-theme-select": { name: "포스터 테마 고르기", area: "편집실", hint: "역할 배지 팝오버 · 관리자만" },
-  "rest-nudge-ok": { name: "휴식 넛지 — 쉬고 올게요", area: "편집실" },
-  "rest-nudge-later": { name: "휴식 넛지 — 조금만 더", area: "편집실", hint: "15분 뒤 다시" },
+  "rest-nudge-ok": { name: "휴식 넛지 — 쉬고 올게요", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
+  "rest-nudge-later": { name: "휴식 넛지 — 조금만 더", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
   "google-login": { name: "Google로 로그인", area: "공통" },
   "open-in-chrome": { name: "Chrome으로 열기", area: "공통", hint: "앱 내 브라우저 안내" },
   "copy-app-link": { name: "링크 복사", area: "공통", hint: "앱 내 브라우저 안내" },
