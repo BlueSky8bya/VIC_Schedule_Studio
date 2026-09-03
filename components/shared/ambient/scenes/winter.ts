@@ -178,8 +178,8 @@ export function createWinter(seed: number): Scene {
     },
     step(f) {
       const { dt, t, p } = f;
-      // ① 걷는 사람
-      if (!walker.active && t > nextWalker && f.q >= 1) startWalker(t);
+      // ① 걷는 사람 — 가볍게(q<2)면 없음(자국·눈가루 비용 절약). 눈 내려앉기만 남는다.
+      if (!walker.active && t > nextWalker && f.q >= 2) startWalker(t);
       if (walker.active && t >= walker.next) {
         walker.dir += (rand() - 0.5) * 0.24;
         const side = walker.left ? -8 : 8;
@@ -224,8 +224,8 @@ export function createWinter(seed: number): Scene {
         rings[i].life -= dt / 0.7;
         if (rings[i].life <= 0) rings.splice(i, 1);
       }
-      // ③ 포인터 눈가루 — 빠를수록 많이, 손 방향으로.
-      if (p.inside && p.moved && p.speed > 220) {
+      // ③ 포인터 눈가루 — 빠를수록 많이, 손 방향으로. 가볍게(q<2)면 없음.
+      if (p.inside && p.moved && p.speed > 220 && f.q >= 2) {
         const n = f.q >= 2 ? 3 : 1;
         const cap = f.q >= 2 ? 160 : 60;
         for (let i = 0; i < n && dust.length < cap; i++) {
@@ -306,7 +306,7 @@ export function createWinter(seed: number): Scene {
       }
     },
     pointerDown(f, onBackground) {
-      if (!onBackground) return false;
+      if (!onBackground || f.q < 2) return false;
       const a = rand() * TAU;
       const px = Math.cos(a + Math.PI / 2) * 10;
       const py = Math.sin(a + Math.PI / 2) * 10;

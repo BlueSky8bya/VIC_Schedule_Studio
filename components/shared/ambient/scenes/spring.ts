@@ -123,7 +123,7 @@ export function createSpring(seed: number): Scene {
   }
 
   function flyCount(f: Frame) {
-    return f.q >= 2 ? 3 : 2;
+    return f.q >= 2 ? 3 : 1; // 가볍게: 나비 한 마리, 포인터엔 반응 안 함(2026-09-04 사용자 정의)
   }
   function newFly(): Fly {
     return {
@@ -240,8 +240,8 @@ export function createSpring(seed: number): Scene {
       const { dt, t, p } = f;
       for (let i = 0; i < flies.length; i++) {
         const b = flies[i];
-        // 포인터 회피 — 가까우면 반대쪽으로 도망(속도 2.6배, 날갯짓 빨라짐, 앉아 있어도 날아오른다).
-        if (p.inside) {
+        // 포인터 회피 — 가까우면 반대쪽으로 도망(속도 2.6배, 날갯짓 빨라짐, 앉아 있어도 날아오른다). 가볍게(q<2)면 없음.
+        if (p.inside && f.q >= 2) {
           const dx = b.x - p.x;
           const dy = b.y - p.y;
           const d = Math.hypot(dx, dy);
@@ -437,6 +437,7 @@ export function createSpring(seed: number): Scene {
       }
     },
     pointerDown(f) {
+      if (f.q < 2) return false; // 가볍게: 포인터 무반응
       for (const b of flies) {
         if (Math.hypot(b.x - f.p.x, b.y - f.p.y) < 30 * b.k + 8) {
           burst(b.x, b.y, b.col, f.q);

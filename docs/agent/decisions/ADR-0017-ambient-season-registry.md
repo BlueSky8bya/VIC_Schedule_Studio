@@ -20,6 +20,9 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > 설정 "배경 효과"(자동/항상 최대/가볍게/**끄기** — 끄기는 배경만, 필터 유지)가 판정을 덮어쓴다. ④ 설정 세대 2026-09-04:
 > 스위치 4종 기본 ON 재시딩. ⑤ 같은 날 2차: 여름도 캔버스 한 장(마우스 잔물결) — 사계절 전부 마우스에 반응(회피·바람·
 > 눈가루·잔물결), 낙엽 수종 7, 나비·발자국 리디자인(착지·걷는 사람), 캔버스는 zoom 보정(offsetWidth·포인터÷zoom).
+> ⑥ 3차: 여름 마우스 = V자 항적(클릭만 원형 고리), '가볍게'는 장면별 경량 정의(계절 구분은 반드시 남긴다 — 옛
+> `:not([data-gfx="lite"])` 투명 게이트가 lite를 단색 배경으로 만들던 버그 수정), 계절 스위치 OFF ⇔ 배경 효과 끄기 잠금,
+> 배경 감상 모드(`html[data-showcase]`), 설정 드롭다운은 커스텀 `RhhSelect`.
 - 관련: ADR-0016(금생수 — 물결 레이어), `components/shared/ambient/*`, `app/ambient.css`, `lib/ui/motion.ts`
   (`vic.ambient`), `docs/ux/seasonal-ambient-plan.md`(설계안), CLAUDE.md "Owner-fit palette rule"
 - Supersedes(예정, 4단계): 포스터 테마 7종(`calendars.poster_theme` = sakura/summer/autumn/winter/sunset/mint/dot/

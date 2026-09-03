@@ -944,21 +944,54 @@ export function StudioShell({
     window.addEventListener("vic:gfx-auto", onAuto);
     return () => window.removeEventListener("vic:gfx-auto", onAuto);
   }, []);
-  const changeGfxPref = (pref: GfxPref) => {
-    setGfxPref(pref); // localStorage + <html data-gfx> 즉시(배경 레이어는 속성을 지켜본다)
-    setGfxPrefState(pref);
-    hapticTick();
-  };
   const [ambientOn, setAmbientState] = useState(true);
   useEffect(() => {
     setAmbientState(ambientEnabled());
   }, []);
+  // 잠금(2026-09-04 사용자): 계절 배경 OFF ⇔ 배경 효과 '끄기'. 스위치를 끄면 셀렉트는 '끄기'로 잠기고, 다시 켜면
+  // '끄기'였던 우선순위는 '자동'으로 풀린다. 셀렉트에서 '끄기'를 고르면 스위치도 함께 꺼진다 — 두 컨트롤이 한 상태.
   const toggleAmbient = () => {
     const next = !ambientOn;
     setAmbient(next);
     setAmbientState(next);
+    if (next && gfxPrefState === "off") {
+      setGfxPref("auto");
+      setGfxPrefState("auto");
+    }
     hapticTick();
   };
+  const changeGfxPref = (pref: GfxPref) => {
+    setGfxPref(pref); // localStorage + <html data-gfx> 즉시(배경 레이어는 속성을 지켜본다)
+    setGfxPrefState(pref);
+    if (pref === "off" && ambientOn) {
+      setAmbient(false);
+      setAmbientState(false);
+    }
+    hapticTick();
+  };
+  // 배경 감상 모드(2026-09-04 사용자: "달력·태그 필터·아바타 자리 다 숨기고 계절 배경을 온전히") — html[data-showcase]가
+  // 셸 자식(배경 레이어·나가기 알약 빼고)을 전부 투명·클릭 통과로 만든다(studio-shell.css). 화면 전체가 '바탕'이 되니
+  // 잎 집기·발자국·잔물결이 어디서든 된다. Esc 또는 상단 알약으로 복귀. 설정 모달에서 들어가므로 모달은 먼저 닫는다.
+  const [showcase, setShowcase] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!showcase) {
+      root.removeAttribute("data-showcase");
+      return;
+    }
+    root.setAttribute("data-showcase", "1");
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        setShowcase(false);
+      }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      root.removeAttribute("data-showcase");
+    };
+  }, [showcase]);
   // 포스터 테마(2026-09-03, 물빛 테마와 함께 입구 복원) — 소유자만, 서버(updatePosterThemeAction)도
   // owner 검사. 낙관적으로 먼저 바꿔 보이고(미리보기 즉시), 실패면 되돌린다. 성공 후 router.refresh로
   // 서버 스냅샷(시청자 미리보기)까지 동기화.
@@ -1161,6 +1194,15 @@ export function StudioShell({
         gfxPref={gfxPrefState}
         gfxAuto={gfxAuto}
         onChangeGfxPref={changeGfxPref}
+        onShowcase={
+          isNarrow
+            ? undefined
+            : () => {
+                requestCloseModal(); // 모달 인프라(history 슬롯·포커스 트랩)를 정식으로 되돌린다
+                setShowcase(true);
+                hapticTick();
+              }
+        }
         posterTheme={actor.role === "owner" ? posterThemeLocal : null}
         posterThemeSaving={posterThemeSaving}
         reduceMotion={reduceMotion}
@@ -6044,6 +6086,19 @@ export function StudioShell({
           ) : null}
           {zoomCollapse ? <div className="cal-zoom-float">{renderCalZoomCtl()}</div> : null}
         </div>
+      ) : null}
+
+      {showcase ? (
+        <button
+          className="showcase-exit"
+          data-act="ambient-showcase-exit"
+          onClick={() => setShowcase(false)}
+          title="배경 감상 모드 나가기 (Esc)"
+          type="button"
+        >
+          <Eye aria-hidden="true" size={14} />
+          배경 감상 중 · Esc 또는 여기를 눌러 돌아가기
+        </button>
       ) : null}
 
       {/* #9 키보드 단축키 안내바 — canEdit(소유자). 토글은 위 액션바의 버전 박스 안에 있고, 기본은

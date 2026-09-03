@@ -96,7 +96,17 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   one caustic layer, canvas particles halved), root filter kept. Never hide the ambient on a single bad sample
   (streaming PCs jitter under OBS load — Tori's "tide vanished after a few seconds" was exactly that). Settings
   "배경 효과" (`vic.gfxPref` auto/max/lite/off — `off` hides the ambient only and keeps the eye-comfort filter)
-  overrides the judgement; an automatic demotion fires `vic:gfx-auto` and the studio toasts it. Settings epoch `2026-09-04` reseeds the four switches (motion · eye-comfort · calm ·
+  overrides the judgement; an automatic demotion fires `vic:gfx-auto` and the studio toasts it. **`lite` must keep
+  every season recognizable** — it only trims cost per scene (summer: one caustic layer, static swells, half the wake,
+  click ring ×1 · spring: one butterfly, no pointer reaction · autumn: 30–60 leaves, weak/rare gusts · winter: fewer
+  flakes, no walker/dust); a `lite` that shows a plain background is a bug (2026-09-04: stale `:not([data-gfx="lite"])`
+  gates made the shell opaque — every transparency/translucency gate must use `soft`/`off`/`data-ambient="off"`, never
+  `lite`). The 계절 배경 switch and 배경 효과 are one state: switch OFF locks the select to 끄기, picking 끄기 turns the
+  switch OFF, switching back ON returns the select to 자동. "배경 감상" (settings → 전체 화면으로 보기) sets
+  `html[data-showcase]` to hide all chrome and let the whole screen act as background; Esc or the top pill exits.
+- **Settings dropdowns are the custom `RhhSelect`** (`components/studio/rhh-select.tsx`: trigger + body-portal
+  listbox in the metal skin, keyboard-navigable) — never a native `<select>` in the settings list (its popup cannot be
+  styled). Settings epoch `2026-09-04` reseeds the four switches (motion · eye-comfort · calm ·
   ambient) to ON once; only values touched afterwards persist.
 - **Tide layer.** `.gs-tide` (`components/shared/water-tide.tsx`, shared by studio and viewer poster;
   CSS in `app/metal-water.css`) — shallow-water caustics seen from above: thin bright cell network from

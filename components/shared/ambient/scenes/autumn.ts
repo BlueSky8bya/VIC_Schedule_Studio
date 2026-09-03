@@ -7,7 +7,7 @@
 // 스프라이트(잎·그림자)는 한 번 굽고 매 프레임 drawImage만 — 필터/blur 없음.
 
 import type { Frame, Scene } from "../scene-engine";
-import { clamp, leafPath, makeCanvas, pineNeedles, rng, TAU } from "./util";
+import { clamp, leafPath, leafVeins, makeCanvas, pineNeedles, rng, softBlob, TAU } from "./util";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -71,43 +71,40 @@ export function createAutumn(seed: number): Scene {
           leafPath(g, R0, sp.shape);
           g.fillStyle = col;
           g.fill();
-          // 윗면 광택(왼쪽 위 밝게) + 가장자리 그늘
-          const hl = g.createLinearGradient(-R0, -R0, R0, R0);
-          hl.addColorStop(0, "rgb(255 245 230 / 0.28)");
-          hl.addColorStop(0.55, "rgb(255 245 230 / 0)");
-          hl.addColorStop(1, "rgb(40 28 20 / 0.16)");
-          g.fillStyle = hl;
-          g.fill();
-          // 잎맥 — 수종별로 다르게(은행은 부채살, 단풍은 갈래마다 한 줄, 나머지는 중심맥+곁맥)
-          g.strokeStyle = "rgb(255 245 230 / 0.36)";
-          g.lineWidth = 1;
-          g.lineCap = "round";
-          g.beginPath();
-          if (sp.shape === 4) {
-            for (let k = -3; k <= 3; k++) {
-              const a = (-90 + k * 17) * (Math.PI / 180);
-              g.moveTo(0, R0 * 0.42);
-              g.lineTo(Math.cos(a) * R0 * 1.0, R0 * 0.42 + Math.sin(a) * R0 * 1.0);
-            }
-          } else if (sp.shape === 3) {
-            for (const [x, y] of [[0, -0.95], [0.6, -0.7], [0.95, -0.1], [0.58, 0.58], [-0.58, 0.58], [-0.95, -0.1], [-0.6, -0.7]]) {
-              g.moveTo(0, R0 * 0.3);
-              g.lineTo(x * R0, y * R0);
-            }
-          } else {
-            g.moveTo(0, -R0 * 0.82);
-            g.lineTo(0, R0 * 0.86);
-            for (let k = -2; k <= 2; k++) {
-              const y = k * R0 * 0.3;
-              g.moveTo(0, y);
-              g.lineTo(R0 * 0.36, y - R0 * 0.22);
-              g.moveTo(0, y + R0 * 0.14);
-              g.lineTo(-R0 * 0.36, y - R0 * 0.08);
-            }
-          }
-          g.stroke();
+          // 잎 안쪽만(clip): 밑동→끝 명도 변화 + 얼룩(마른 반점) + 왼쪽 위 광택. 실물 낙엽의 얼룩덜룩함.
+          g.save();
           leafPath(g, R0, sp.shape);
-          g.strokeStyle = "rgb(60 40 30 / 0.24)";
+          g.clip();
+          const lg = g.createLinearGradient(0, R0, 0, -R0);
+          lg.addColorStop(0, "rgb(30 18 12 / 0.2)");
+          lg.addColorStop(0.5, "rgb(30 18 12 / 0)");
+          lg.addColorStop(1, "rgb(255 240 210 / 0.14)");
+          g.fillStyle = lg;
+          g.fillRect(-SPR / 2, -SPR / 2, SPR, SPR);
+          const spots = 2 + Math.floor(rand() * 3);
+          for (let k = 0; k < spots; k++) {
+            softBlob(g, (rand() - 0.5) * R0 * 1.2, (rand() - 0.5) * R0 * 1.4, R0 * (0.18 + rand() * 0.22), "60 36 24", 0.2);
+          }
+          if (rand() < 0.5) softBlob(g, (rand() - 0.5) * R0, (rand() - 0.5) * R0, R0 * 0.25, "255 235 200", 0.18);
+          const hl = g.createLinearGradient(-R0, -R0, R0, R0);
+          hl.addColorStop(0, "rgb(255 245 230 / 0.22)");
+          hl.addColorStop(0.55, "rgb(255 245 230 / 0)");
+          hl.addColorStop(1, "rgb(40 28 20 / 0.14)");
+          g.fillStyle = hl;
+          g.fillRect(-SPR / 2, -SPR / 2, SPR, SPR);
+          g.restore();
+          // 잎맥 — 중심맥 + 휘어 오르는 곁맥(단풍은 갈래마다, 은행은 부채살). 밝은 맥 위에 가는 그늘 맥.
+          g.lineCap = "round";
+          g.strokeStyle = "rgb(255 245 225 / 0.4)";
+          g.lineWidth = 1.1;
+          leafVeins(g, R0, sp.shape);
+          g.strokeStyle = "rgb(50 30 20 / 0.16)";
+          g.lineWidth = 0.5;
+          g.translate(0.6, 0.6);
+          leafVeins(g, R0, sp.shape);
+          g.translate(-0.6, -0.6);
+          leafPath(g, R0, sp.shape);
+          g.strokeStyle = "rgb(60 40 30 / 0.3)";
           g.lineWidth = 0.9;
           g.stroke();
           // 잎자루
@@ -164,8 +161,9 @@ export function createAutumn(seed: number): Scene {
   function targetCount(f: Frame) {
     const area = f.w * f.h;
     if (f.q >= 2) return Math.round(clamp(area / 9000, 90, 220)); // "풍성하게" — 1600×900 160장, 큰 화면 220장
-    if (f.q === 1) return Math.round(clamp(area / 18000, 50, 110));
-    return 40; // 최소 단계도 눈에 띄게 남긴다(사용자: '가볍게'가 '끄기'처럼 보였다)
+    // 가볍게(q1): 잎은 최소한, 바람도 약하게 — 계절은 구분되고 CPU는 아낀다(2026-09-04 사용자 정의).
+    if (f.q === 1) return Math.round(clamp(area / 30000, 30, 60));
+    return 24;
   }
 
   return {
@@ -184,10 +182,12 @@ export function createAutumn(seed: number): Scene {
     },
     step(f) {
       const { dt, t, p } = f;
+      const lite = f.q < 2; // 가볍게: 돌풍 드물고 약하게, 포인터 바람도 약하게
+      const gk = lite ? 0.4 : 1;
       if (!gust && t > nextGust) gust = { t0: t, dur: 3 + rand() * 1.8, dir: rand() < 0.5 ? -1 : 1, y: rand() * h };
       if (gust && t - gust.t0 > gust.dur) {
         gust = null;
-        nextGust = t + 7 + rand() * 9;
+        nextGust = t + (lite ? 14 + rand() * 12 : 7 + rand() * 9);
       }
       const front = gust ? (gust.dir > 0 ? -240 + ((t - gust.t0) / gust.dur) * (w + 480) : w + 240 - ((t - gust.t0) / gust.dur) * (w + 480)) : 0;
       const pushy = p.inside && p.speed > 30;
@@ -215,7 +215,7 @@ export function createAutumn(seed: number): Scene {
           const d = (l.x - front) / 240;
           const e = Math.exp(-d * d) * (1 - clamp(Math.abs(l.y - gust.y) / (h * 1.3), 0, 0.85));
           if (e > 0.02) {
-            const G = 560 * e;
+            const G = 560 * e * gk;
             fx += G * gust.dir;
             fy += G * 0.22 * Math.sin(l.x * 0.02 + l.y * 0.013);
             l.va += e * (rand() - 0.5) * 9;
@@ -227,10 +227,10 @@ export function createAutumn(seed: number): Scene {
           const dx = l.x - p.x;
           const dy = l.y - p.y;
           const d = Math.hypot(dx, dy);
-          const R = 170 + l.s * 0.6;
+          const R = (lite ? 120 : 170) + l.s * 0.6;
           if (d < R && d > 0.001) {
             // 바람에 날리듯: 포인터에서 멀어지는 힘 + 포인터 진행 방향 + 살짝 도는 소용돌이 성분.
-            const k = 1 - d / R;
+            const k = (1 - d / R) * gk;
             const sp = clamp(p.speed, 0, 2600);
             const push = k * sp * 1.05;
             const nx = dx / d;
