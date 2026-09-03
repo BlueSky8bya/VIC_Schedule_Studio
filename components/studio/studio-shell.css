@@ -4373,6 +4373,14 @@ html[data-reduce-motion] .event-editor-panel {
 .event-editor-panel.is-edit form {
   border-top: 3px solid rgb(139 92 246 / 55%);
 }
+/* 상단 액센트 라인도 편집 대상 색 규율을 따른다(2026-09-03 사용자: 띠 편집 중 모서리가 보라로
+   남았다) — 업 도움 장미 · 기간 안내 하늘. is-edit 뒤에 두어 덮는다. */
+.event-editor-panel.is-support form {
+  border-top-color: rgb(225 29 72 / 55%);
+}
+.event-editor-panel.is-period form {
+  border-top-color: rgb(14 147 180 / 55%);
+}
 /* 이동 손잡이 스트립 — 카드 상단 전폭(음수 마진으로 카드 가장자리까지), 모드 색 옅은 틴트 +
    중앙 그립 필. 상단 액센트 라인 바로 아래 붙어 '색 띠 = 잡는 곳'으로 읽힌다. */
 .editor-grab {
