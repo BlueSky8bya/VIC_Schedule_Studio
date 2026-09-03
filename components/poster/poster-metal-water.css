@@ -1,74 +1,114 @@
-/* ══ 금생수(金生水) 스킨 — 시청자 화면(= 편집실 미리보기, 2026-09-03, ADR-0016) ═══════════════
-   편집실과 같은 뉘앙스를 시청자 화면 기본 모습(테마 none)에 준다. 토큰은 app/metal-water.css.
-   물(품는 것): 페이지 바탕·포스터 표면·달력 칸·요일 머리·레일 정보 카드. 은은한 물빛, 큰 라운드, 안쪽 빛.
-   금(일): 일정 카드 테두리(태그색 위 헤어라인+윗면 광택)·띠(공용 규칙)·버튼. 날카롭게.
-   불변: 표면 폭 1840·칸 높이·띠 17px·레인(export 기하), 의미색 8종, 태그색, 하트 링, 오늘 골드, 미정 주황.
-   mist(물빛) 테마 규칙은 [data-poster-theme] 특이도가 높아 그대로 이긴다(더 짙은 물). */
-/* 눈 편한 필터(sepia .1·saturate .8)가 아주 옅은 물빛을 베이지로 눌러 버린다(실측) — 편집실 물결 바탕과
-   같은 깊이(#e7f0fb 계열)로 잡아야 필터 뒤에서도 '물'로 읽힌다. */
+/* ══ 금생수(金生水) 스킨 — 시청자 화면(= 편집실 미리보기·export, 2026-09-03, ADR-0016) ═══════════════
+   편집실과 같은 언어를 시청자 화면 기본 모습(테마 none)에 준다. 토큰은 app/metal-water.css.
+   물(품는 것): 페이지 바탕·포스터 표면·달력 칸·요일 머리·레일 카드·모바일 아젠다 머리/범례. 눈 편한 필터 뒤에서도
+   물로 읽히는 깊이(b−r ≥ 25). 금(일): 일정 카드 에나멜(공용)·띠(공용)·버튼(브러시드)·아젠다 카드 테두리.
+   불변: 표면 폭 1840·칸 높이·띠 17px·레인(export 기하) — 표면엔 border 금지(box-shadow 링만), 의미색 8종·태그색·
+   하트 링·오늘 골드·미정 주황. mist(물빛) 테마 규칙은 [data-poster-theme] 특이도가 높아 그대로 이긴다. */
 .poster-page {
   background:
-    radial-gradient(120% 70% at 50% -12%, rgb(255 255 255 / 85%) 0%, transparent 55%),
-    linear-gradient(180deg, #e6eef9 0%, #d7e3f2 100%);
+    radial-gradient(120% 70% at 50% -12%, rgb(255 255 255 / 70%) 0%, transparent 55%),
+    var(--gs-water-page);
 }
-/* ⚠ 표면엔 border를 주지 않는다 — border-box라 안쪽 폭·높이가 2px 줄어 칸 높이 234→233으로 기하 게이트
-   (geometry.spec)가 깨졌다(실측). 금 헤어라인은 box-shadow 링으로(레이아웃 0). */
+/* ⚠ 표면엔 border를 주지 않는다 — border-box라 칸 높이 234→233으로 기하 게이트가 깨졌다(실측). 링은 box-shadow. */
 .poster-surface {
-  background: linear-gradient(180deg, #fafcfe 0%, #eaf1f9 100%);
+  background: linear-gradient(180deg, #f3f7fc 0%, #dfe9f5 100%);
   box-shadow:
-    0 0 0 1px var(--gs-metal-line),
     var(--gs-water-glow),
     var(--shadow-2);
 }
 .weekday-row {
   border-color: var(--gs-water-line);
-  background: linear-gradient(180deg, #ecf3fb, #dde8f4);
+  background: linear-gradient(180deg, #d8e4f3, #c3d4ea);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%);
 }
 .public-day {
-  border-right-color: #d9e2ee;
-  border-bottom-color: #d9e2ee;
-  background: #f4f8fc;
+  border-right-color: #c9d7e7;
+  border-bottom-color: #c9d7e7;
+  background: #e9f0f8;
 }
 .public-day.outside {
-  background: #e3eaf3;
-}
-/* 태그 필터·인기도 레일 카드 — 물빛 유리 + 금 헤어라인(LIVE 카드는 장미 테두리 = 방송 신호라 그대로). */
-.public-legend-vertical {
-  border-color: var(--gs-metal-line);
-  background: var(--gs-water-glass);
-  box-shadow: var(--gs-water-glow);
+  background: #d7e1ee;
 }
 @media (hover: hover) {
   .public-day:not(.outside):hover {
-    background: #f1f6fc;
+    background: #dfe9f5;
   }
 }
-/* 레일 정보 카드(보는 달 · 데뷔 D+) — 물빛 카드 + 금 헤어라인. 골드 D+ 글자는 그대로(브랜드 골드). */
-.rail-info-card {
-  border-color: var(--gs-metal-line);
-  background: linear-gradient(180deg, #fdfeff 0%, #f6f9fd 45%, #edf3fa 100%);
+/* 레일 카드(보는 달·D+ / 태그 필터·인기도) — 물빛 유리 + 금 헤어라인 링. 골드 D+ 글자·LIVE 장미 테두리는 그대로. */
+.rail-info-card,
+.public-legend-vertical {
+  border-color: transparent;
+  background: var(--gs-water-glass);
   box-shadow: var(--gs-water-glow);
 }
-/* 일정 카드 — 태그색은 그대로, 테두리만 금: 헤어라인 + 윗면 광택 한 줄. */
-.public-event {
-  border-color: rgb(38 50 66 / 12%);
-  box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 45%),
-    0 0 0 1px rgb(38 50 66 / 4%);
-}
-/* 버튼(달 이동·필터·내 관심 등 .button 계열) — 금 광택 면 + 은선. 1차(.primary)·위험(.danger)은 제 색. */
+/* 버튼(달 이동·이 달 기록·내 관심 등 .button 계열) — 브러시드 금속 + 은선. 1차(.primary)·위험(.danger)은 제 색. */
 .poster-page .button:not(.primary):not(.danger) {
-  border-color: var(--gs-metal-line);
+  border-color: var(--gs-metal-line-strong);
   border-radius: var(--gs-metal-radius);
   background: var(--gs-metal-sheen);
   color: var(--gs-metal-ink);
   box-shadow: var(--gs-metal-edge);
 }
 .poster-page .button:not(.primary):not(.danger):hover:not(:disabled) {
-  border-color: var(--gs-metal-line-strong);
-  background: #fff;
+  border-color: #7f95ac;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f8fb 48%, #e7edf3 52%, #f0f4f8 100%);
   color: var(--gs-metal-ink);
   box-shadow:
     inset 0 1px 0 #fff,
-    0 3px 8px -2px rgb(38 50 66 / 18%);
+    inset 0 -1px 0 rgb(38 50 66 / 8%),
+    0 4px 10px -3px rgb(38 50 66 / 22%);
+}
+
+/* 상단 크롬 '📊 이 달 기록' 유리 알약 → 브러시드 금속 알약(은선·광택·슬레이트 글자). */
+.poster-page .insights-open {
+  border-color: var(--gs-metal-line-strong);
+  background: var(--gs-metal-sheen);
+  color: var(--gs-metal-ink);
+  box-shadow: var(--gs-metal-edge);
+}
+.poster-page .insights-open:hover {
+  border-color: #7f95ac;
+  background: linear-gradient(180deg, #ffffff 0%, #f6f8fb 48%, #e7edf3 52%, #f0f4f8 100%);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 4px 10px -3px rgb(38 50 66 / 22%);
+}
+/* 달 이동 스텝(.mb-step — 데스크톱 양쪽 모서리 원형·모바일 월 바 공용) → 은화(방사 광택 + 은선). 아이콘 물빛. */
+.poster-page .agenda-monthbar .mb-step {
+  border: 1px solid var(--gs-metal-line-strong);
+  background: radial-gradient(circle at 50% 28%, #ffffff 0%, #eef2f6 55%, #d6dfe8 100%);
+  color: var(--studio-action, #1e5aa8);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    inset 0 -1px 0 rgb(38 50 66 / 10%),
+    0 2px 5px -1px rgb(38 50 66 / 22%);
+}
+
+/* ── 모바일 아젠다(≤640px) — 같은 언어: 머리·범례는 물, 일정 카드는 금 테두리. 레이아웃 0. */
+.agenda-header {
+  background: linear-gradient(180deg, #e6eef8 72%, #dbe6f3);
+  border-bottom-color: var(--gs-metal-line);
+}
+.agenda-legend,
+.agenda-monthbar,
+.agenda-tier-help,
+.mb-center {
+  background: var(--gs-water-glass);
+}
+.agenda-legend {
+  border-color: var(--gs-metal-line);
+}
+/* 날짜 카드(.agenda-day) = 금: 크림 면 → 금속 면(거의 흰) + 은선 + 윗 광택 + 짧은 그림자. 태그 세로 바·글자 불변. */
+.agenda-day {
+  background: linear-gradient(180deg, #ffffff 0%, #f3f6fa 100%);
+  border-color: var(--gs-metal-line);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 95%),
+    inset 0 -1px 0 rgb(38 50 66 / 8%),
+    0 1px 2px rgb(38 50 66 / 14%);
+}
+/* 빈 날 묶음(펼치기) = 물 위 반투명. */
+.agenda-gap {
+  border-color: rgb(30 90 168 / 24%);
+  background: rgb(232 240 249 / 60%);
 }

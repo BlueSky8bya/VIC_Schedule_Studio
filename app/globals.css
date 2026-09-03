@@ -1153,7 +1153,10 @@ html[data-reduce-motion] .auth-brand-spark {
    기기당 한 번 rAF로 재서 정한다). 실측(소프트웨어 렌더): 필터가 idle 79→45fps를 깎았고 paint
    애니를 다 꺼도 45였다 — 필터 자체가 매 프레임 전 화면을 다시 합성하기 때문. */
 html[data-eye-comfort="1"] {
-  filter: saturate(0.8) brightness(0.96) sepia(0.1);
+  /* sepia .1 → .03(2026-09-03, ADR-0016 금생수): sepia는 옅은 파랑을 중성 회백으로 눌러 물빛 컨테이너가
+     "차이를 못 느끼겠다"(실측: 칸 #e8f0f9 → 233,235,235). 눈 편함의 몫(채도·눈부심 ↓)은 saturate·brightness가
+     이미 담당하므로 따뜻함만 살짝 남긴다. lite 팔레트(약한 기기)는 옛 필터 기준 색이라 그대로. */
+  filter: saturate(0.85) brightness(0.96) sepia(0.03);
 }
 /* 고대비 선호 사용자에겐 sepia(청색광 감소)를 줄여 또렷함을 우선한다. */
 @media (prefers-contrast: more) {
