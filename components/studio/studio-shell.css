@@ -829,45 +829,17 @@ html[data-showcase] .studio-shell.avatar-scene .avatar-rail {
   pointer-events: none;
   transition: opacity 0.6s var(--ease);
 }
-.showcase-exit {
-  position: fixed;
+/* (.showcase-exit / .showcase-btn 공용 스타일은 app/ambient.css — 시청자 화면도 같은 알약을 쓴다.) */
+/* 편집실 아바타 자리의 감상 버튼 — 슬롯은 pointer-events:none이라 버튼만 되살린다. 빈 자리 위쪽 중앙. */
+.avatar-rail .avatar-dock-inner {
+  position: relative;
+}
+.avatar-rail .slot-showcase {
+  position: absolute;
   top: 14px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 70;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border: 1px solid var(--gs-metal-line-strong, #c9d2dc);
-  border-radius: var(--r-pill);
-  background: rgb(255 253 249 / 72%);
-  color: var(--ink-soft, #3d414c);
-  font: inherit;
-  font-size: var(--text-label);
-  font-weight: 700;
-  box-shadow: 0 6px 18px rgb(60 50 90 / 14%);
-  cursor: pointer;
-  opacity: 0.55;
-  transition: opacity var(--dur-2) var(--ease);
-  animation: showcase-exit-in 0.5s var(--ease) both;
-}
-.showcase-exit:hover,
-.showcase-exit:focus-visible {
-  opacity: 1;
-}
-@keyframes showcase-exit-in {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -8px);
-  }
-  to {
-    opacity: 0.55;
-    transform: translate(-50%, 0);
-  }
-}
-html[data-reduce-motion] .showcase-exit {
-  animation: none;
+  pointer-events: auto;
 }
 /* 설정 줄의 작은 링크 버튼(멤버 관리 '열기', 2026-09-04) — 스위치 줄과 같은 높이의 조용한 칩. */
 .rhh-link {

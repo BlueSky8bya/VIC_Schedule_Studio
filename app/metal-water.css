@@ -53,6 +53,10 @@ html[data-gfx="lite"] .gs-tide-swell-a,
 html[data-gfx="lite"] .gs-tide-light {
   animation: none;
 }
+/* 일시정지(lib/ui/ambient-pause.ts) — VOD 창·모달 백드롭 blur 중엔 물결 애니를 멈춘다(paused: 재시작 없이 그 자리). */
+html[data-ambient-pause] .gs-tide * {
+  animation-play-state: paused;
+}
 .gs-tide {
   position: fixed;
   inset: 0;

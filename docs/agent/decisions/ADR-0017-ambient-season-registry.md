@@ -22,7 +22,10 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > 눈가루·잔물결), 낙엽 수종 7, 나비·발자국 리디자인(착지·걷는 사람), 캔버스는 zoom 보정(offsetWidth·포인터÷zoom).
 > ⑥ 3차: 여름 마우스 = V자 항적(클릭만 원형 고리), '가볍게'는 장면별 경량 정의(계절 구분은 반드시 남긴다 — 옛
 > `:not([data-gfx="lite"])` 투명 게이트가 lite를 단색 배경으로 만들던 버그 수정), 계절 스위치 OFF ⇔ 배경 효과 끄기 잠금,
-> 배경 감상 모드(`html[data-showcase]`), 설정 드롭다운은 커스텀 `RhhSelect`.
+> 배경 감상 모드(`html[data-showcase]`), 설정 드롭다운은 커스텀 `RhhSelect`. ⑦ 4차: **무거운 미디어 중 일시정지**
+> (`lib/ui/ambient-pause.ts` — VOD 창·시트·모달이 떠 있으면 캔버스 루프·물결 애니 정지; VOD 끊김의 구조적 원인),
+> 여름 항적은 경로 기반 연속 V자, 봄 클릭 = 풀 밟힘, 감상 진입 버튼은 편집실 아바타 자리·시청자 레일에(공용 showcase.tsx),
+> 미리보기 래퍼도 배경 게이트에서 투명.
 - 관련: ADR-0016(금생수 — 물결 레이어), `components/shared/ambient/*`, `app/ambient.css`, `lib/ui/motion.ts`
   (`vic.ambient`), `docs/ux/seasonal-ambient-plan.md`(설계안), CLAUDE.md "Owner-fit palette rule"
 - Supersedes(예정, 4단계): 포스터 테마 7종(`calendars.poster_theme` = sakura/summer/autumn/winter/sunset/mint/dot/

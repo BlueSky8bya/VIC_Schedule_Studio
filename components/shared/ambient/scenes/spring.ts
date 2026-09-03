@@ -37,6 +37,9 @@ type Fly = {
   w1: number; // 개체별 요동 위상
 };
 type Spark = { x: number; y: number; vx: number; vy: number; life: number; r: number; col: string; a: number; va: number; star: boolean };
+// 풀 밟힘(2026-09-04 사용자: "잔디 클릭하면 주변 잔디가 밟히든 흔들리든") — 누른 자리 둘레의 풀잎이 바깥으로 눕혔다
+// 되살아나고(sin 곡선), 발자국 그늘이 잠깐 남고, 꽃가루가 흩날린다.
+type Press = { x: number; y: number; life: number; r: number; blades: { a: number; r0: number; len: number; w: number; col: string }[] };
 
 export function createSpring(seed: number): Scene {
   const rand = rng(seed);
@@ -48,9 +51,34 @@ export function createSpring(seed: number): Scene {
   const daisies: [number, number][] = [];
   const flies: Fly[] = [];
   const sparks: Spark[] = [];
+  const presses: Press[] = [];
   let w = 0;
   let h = 0;
   let fleeCount = 0;
+  let pressCount = 0;
+
+  function press(x: number, y: number, q: number) {
+    const n = q >= 2 ? 18 : 9;
+    const blades: Press["blades"] = [];
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + (rand() - 0.5) * 0.4;
+      blades.push({
+        a,
+        r0: 8 + rand() * 20,
+        len: 9 + rand() * 9,
+        w: 1.2 + rand() * 1,
+        col: rand() < 0.5 ? "112 168 104" : "140 190 118"
+      });
+    }
+    presses.push({ x, y, life: 1, r: 26 + rand() * 10, blades });
+    pressCount++;
+    const pollen = q >= 2 ? 7 : 3;
+    for (let i = 0; i < pollen; i++) {
+      const b = rand() * TAU;
+      const sp = 40 + rand() * 90;
+      sparks.push({ x, y, vx: Math.cos(b) * sp, vy: Math.sin(b) * sp - 30, life: 1, r: 1.4 + rand() * 1.6, col: "#fff3b0", a: 0, va: 0, star: false });
+    }
+  }
 
   function bakeGround(dpr: number) {
     const { c, g } = makeCanvas(w * dpr, h * dpr);
@@ -332,6 +360,10 @@ export function createSpring(seed: number): Scene {
         if (b.y < -30) b.y = h + 20;
         else if (b.y > h + 30) b.y = -20;
       }
+      for (let i = presses.length - 1; i >= 0; i--) {
+        presses[i].life -= dt / 1.1;
+        if (presses[i].life <= 0) presses.splice(i, 1);
+      }
       for (let i = sparks.length - 1; i >= 0; i--) {
         const s = sparks[i];
         s.life -= dt / 0.95;
@@ -348,6 +380,33 @@ export function createSpring(seed: number): Scene {
       if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
       softBlob(g, f.w * (0.3 + 0.2 * Math.sin(t * 0.09)), f.h * (0.4 + 0.25 * Math.cos(t * 0.07)), f.w * 0.28, "255 255 236", 0.16);
       softBlob(g, f.w * (0.7 + 0.18 * Math.cos(t * 0.06 + 2)), f.h * (0.6 + 0.2 * Math.sin(t * 0.08 + 1)), f.w * 0.24, "255 255 236", 0.13);
+      // 풀 밟힘 — 발자국 그늘 + 바깥으로 누웠다 일어서는 풀잎(진행 p: 0→1, 눕는 정도 sin(πp)).
+      for (const pr of presses) {
+        const p = 1 - pr.life;
+        const bend = Math.sin(Math.PI * Math.min(1, p * 1.15));
+        g.fillStyle = `rgb(60 96 60 / ${0.14 * pr.life})`;
+        g.beginPath();
+        g.ellipse(pr.x, pr.y, pr.r * 0.55, pr.r * 0.4, 0, 0, TAU);
+        g.fill();
+        g.lineCap = "round";
+        for (const bl of pr.blades) {
+          const bx = pr.x + Math.cos(bl.a) * bl.r0;
+          const by = pr.y + Math.sin(bl.a) * bl.r0;
+          // 서 있을 땐 위(-y)로, 밟히면 중심 반대쪽으로 눕는다.
+          const ux = Math.cos(bl.a);
+          const uy = Math.sin(bl.a);
+          const tipx = bx + (ux * bend * 0.9) * bl.len;
+          const tipy = by + (-1 * (1 - bend * 0.7) + uy * bend * 0.9) * bl.len;
+          const cx = bx + (ux * bend * 0.5) * bl.len * 0.5;
+          const cy = by - (1 - bend * 0.5) * bl.len * 0.55;
+          g.strokeStyle = `rgb(${bl.col} / ${0.75 * Math.min(1, pr.life * 2)})`;
+          g.lineWidth = bl.w;
+          g.beginPath();
+          g.moveTo(bx, by);
+          g.quadraticCurveTo(cx, cy, tipx, tipy);
+          g.stroke();
+        }
+      }
       for (const s of sparks) {
         g.save();
         g.globalAlpha = Math.max(0, s.life);
@@ -436,7 +495,7 @@ export function createSpring(seed: number): Scene {
         g.restore();
       }
     },
-    pointerDown(f) {
+    pointerDown(f, onBackground) {
       if (f.q < 2) return false; // 가볍게: 포인터 무반응
       for (const b of flies) {
         if (Math.hypot(b.x - f.p.x, b.y - f.p.y) < 30 * b.k + 8) {
@@ -451,13 +510,18 @@ export function createSpring(seed: number): Scene {
           return true;
         }
       }
-      return false;
+      // 나비를 안 맞혔으면 풀을 밟는다(바탕 위에서만 — 칸·버튼 위 클릭은 그쪽 일).
+      if (!onBackground) return false;
+      press(f.p.x, f.p.y, f.q);
+      return true;
     },
     debug() {
       return {
         flies: flies.map((b) => [Math.round(b.x), Math.round(b.y), b.flee > 0 ? 1 : 0, b.state]),
         sparks: sparks.length,
         fled: fleeCount,
+        presses: presses.length,
+        pressed: pressCount,
         daisies: daisies.length
       };
     }

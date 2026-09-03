@@ -29,7 +29,9 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
-import type { SeasonKey } from "@/components/shared/ambient/registry";
+import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registry";
+import { enterShowcase, ShowcaseButton, ShowcaseExit } from "@/components/shared/ambient/showcase";
+import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
 import { useRouter } from "next/navigation";
@@ -969,29 +971,11 @@ export function StudioShell({
     }
     hapticTick();
   };
-  // 배경 감상 모드(2026-09-04 사용자: "달력·태그 필터·아바타 자리 다 숨기고 계절 배경을 온전히") — html[data-showcase]가
-  // 셸 자식(배경 레이어·나가기 알약 빼고)을 전부 투명·클릭 통과로 만든다(studio-shell.css). 화면 전체가 '바탕'이 되니
-  // 잎 집기·발자국·잔물결이 어디서든 된다. Esc 또는 상단 알약으로 복귀. 설정 모달에서 들어가므로 모달은 먼저 닫는다.
-  const [showcase, setShowcase] = useState(false);
-  useEffect(() => {
-    const root = document.documentElement;
-    if (!showcase) {
-      root.removeAttribute("data-showcase");
-      return;
-    }
-    root.setAttribute("data-showcase", "1");
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.stopPropagation();
-        setShowcase(false);
-      }
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => {
-      window.removeEventListener("keydown", onKey, true);
-      root.removeAttribute("data-showcase");
-    };
-  }, [showcase]);
+  // 배경 감상 모드는 공용(components/shared/ambient/showcase.tsx: enterShowcase/<ShowcaseExit/>/<ShowcaseButton/>) —
+  // 진입은 아바타 자리의 큰 버튼 + 설정 줄, 나가기는 Esc/상단 알약(body 포털). 무거운 모달(태그·인사이트·이용 기록)이
+  // 떠 있는 동안은 배경을 일시정지한다(blur 백드롭이 매 프레임 다시 흐려지는 비용 — lib/ui/ambient-pause.ts).
+  useAmbientPause(modal !== null && modal !== "settings", "studio-modal");
+  const ambientSeason = pickAmbient(view.month, ambientForce ?? null).season;
   // 포스터 테마(2026-09-03, 물빛 테마와 함께 입구 복원) — 소유자만, 서버(updatePosterThemeAction)도
   // owner 검사. 낙관적으로 먼저 바꿔 보이고(미리보기 즉시), 실패면 되돌린다. 성공 후 router.refresh로
   // 서버 스냅샷(시청자 미리보기)까지 동기화.
@@ -1199,7 +1183,7 @@ export function StudioShell({
             ? undefined
             : () => {
                 requestCloseModal(); // 모달 인프라(history 슬롯·포커스 트랩)를 정식으로 되돌린다
-                setShowcase(true);
+                enterShowcase();
                 hapticTick();
               }
         }
@@ -5702,20 +5686,30 @@ export function StudioShell({
     // 편집실/꾸미기 이동 버튼 — 웹은 포스터 위 오버레이로, 모바일은 포스터 제목 헤더 안으로 주입한다.
     const previewNav = (
       <>
-        <button className="button" data-act="back-to-studio" onClick={() => setViewerMode(false)} type="button">
+        <button
+          aria-label="편집실로 가기"
+          className="button"
+          data-act="back-to-studio"
+          onClick={() => setViewerMode(false)}
+          title="편집실로 가기"
+          type="button"
+        >
           <ChevronLeft aria-hidden="true" size={16} />
-          {isNarrow ? "편집실" : "편집실로 가기"}
+          <span className="lbl">{isNarrow ? "편집실" : "편집실로 가기"}</span>
         </button>
         {/* 일정 그림판(B안) — owner/developer 전용, PC 전용. 공개 스냅샷만 쓰는 안전한
             미리보기 컨텍스트에서만 연다. 실제 공개 페이지·export surface엔 이 버튼이 없다. */}
         {(canEdit || isDeveloper) && !isNarrow ? (
           <button
+            aria-label="일정 그림판"
             className="button"
             data-act="open-drawing-board"
             onClick={(e) => openBroadcastPanel(e.currentTarget)}
+            title="일정 그림판"
             type="button"
           >
-            🖊️ 일정 그림판
+            <span aria-hidden="true">🖊️</span>
+            <span className="lbl">일정 그림판</span>
           </button>
         ) : null}
       </>
@@ -5885,6 +5879,9 @@ export function StudioShell({
           {avatarSceneOn ? studioToolsPanel : null}
           <div className="avatar-slot">
             <div className="avatar-dock-inner">
+              {/* 배경 감상 진입(2026-09-04 사용자: "누가 봐도 한 번 눌러보고 싶게, 설정 밖에") — 빈 아바타 자리 위쪽의
+                  큰 계절 버튼. 슬롯은 pointer-events:none이라 버튼만 되살린다(CSS .slot-showcase). */}
+              <ShowcaseButton className="slot-showcase" season={ambientSeason} />
               {/* 좌/우 세그먼트는 하단 중앙 플로팅 행(bottom-float-row)에 — 박스 안에 두면 rail과 함께
                   반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼(2026-09-03 사용자). */}
               <span className="avatar-slot-hint">아바타 자리</span>
@@ -6088,18 +6085,7 @@ export function StudioShell({
         </div>
       ) : null}
 
-      {showcase ? (
-        <button
-          className="showcase-exit"
-          data-act="ambient-showcase-exit"
-          onClick={() => setShowcase(false)}
-          title="배경 감상 모드 나가기 (Esc)"
-          type="button"
-        >
-          <Eye aria-hidden="true" size={14} />
-          배경 감상 중 · Esc 또는 여기를 눌러 돌아가기
-        </button>
-      ) : null}
+      <ShowcaseExit />
 
       {/* #9 키보드 단축키 안내바 — canEdit(소유자). 토글은 위 액션바의 버전 박스 안에 있고, 기본은
           접혀 있어 이 바가 안 나온다 → 액션바 바로 아래로 달력이 온다(높이 최적화). 펼치면 여기 뜬다. */}

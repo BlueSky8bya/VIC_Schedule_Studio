@@ -29,6 +29,9 @@ import {
 import dynamic from "next/dynamic";
 import { logActivity } from "@/lib/activity/client";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
+import { pickAmbient } from "@/components/shared/ambient/registry";
+import { ShowcaseButton, ShowcaseExit } from "@/components/shared/ambient/showcase";
+import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 import { setBandHover } from "@/lib/ui/band-hover";
@@ -2316,8 +2319,10 @@ export function PublicPoster({
     if (!el) return;
     let raf = 0;
     let cur = 0;
-    const tick = () => {
-      raf = requestAnimationFrame(tick);
+    // 2026-09-04: 매 프레임 rAF 루프(초당 60번 레이아웃 읽기)를 스크롤·리사이즈·레일 크기 변화 때만 도는 이벤트로
+    // — VOD 창이 뜬 채로 오래 두면 이런 상시 루프가 영상 디코딩과 경쟁해 재생이 끊겼다(구조적 절약).
+    const update = () => {
+      raf = 0;
       const parent = el.parentElement; // .public-right
       if (!parent || !el.offsetWidth) return;
       const rect = el.getBoundingClientRect();
@@ -2334,12 +2339,74 @@ export function PublicPoster({
         el.style.transform = next > 0 ? `translateY(${next}px)` : "";
       }
     };
-    raf = requestAnimationFrame(tick);
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(update);
+    };
+    schedule();
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    const ro = new ResizeObserver(schedule);
+    if (el.parentElement) ro.observe(el.parentElement);
+    ro.observe(el);
     return () => {
-      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule);
+      ro.disconnect();
+      if (raf) cancelAnimationFrame(raf);
       el.style.transform = "";
     };
   }, [showAgenda]);
+
+  // 배경 일시정지(lib/ui/ambient-pause.ts) — VOD 다시보기 창(숲 플레이어 iframe)·'이 달 기록' 시트가 떠 있는 동안
+  // 계절 캔버스·물결을 멈춘다. 관리자 실사고(2026-09-04): 창을 띄운 채 두면 영상이 뚝뚝 끊기고 시킹이 한참 걸렸다 —
+  // 전체 화면 캔버스 60fps + 창의 blur 백드롭 재합성 + 숲 플레이어 디코딩이 GPU를 나눠 쓴 탓.
+  useAmbientPause(dayVodPop !== null || insightsOpen, "poster-window");
+
+  // 상단 크롬 압축 단계(2026-09-04 사용자: 시청자 화면도 창을 좁히면 버튼이 겹친다) — 편집실 chromeTier와 같은 실측 방식.
+  // 헤더(.public-calendar-header)가 넘치거나 가운데 묶음이 좌상단 아바타 토글·우상단 미리보기 버튼과 겹치면 단계를
+  // 올린다: 1 = 라벨 숨김(아이콘만) · 2 = 제목 ✨ 숨김 · 3 = 제목 축소. html[data-pchrome]에 기록(오버레이는 포스터
+  // 밖에 있어 루트에 둔다). CSS: public-poster.css '크롬 압축'.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (showAgenda) {
+      root.removeAttribute("data-pchrome");
+      return;
+    }
+    let cancelled = false;
+    const overflows = () => {
+      const header = document.querySelector<HTMLElement>(".public-calendar-header");
+      if (!header) return false;
+      if (header.scrollWidth > header.clientWidth + 1) return true;
+      const mid = header.querySelector(".poster-interest")?.getBoundingClientRect();
+      if (!mid) return false;
+      const gap = 10;
+      for (const sel of [".public-calendar-header .viewer-actions", ".viewer-preview-actions"]) {
+        const r = document.querySelector(sel)?.getBoundingClientRect();
+        if (r && r.width > 0 && r.left < mid.right + gap && r.right > mid.left) return true;
+      }
+      const left = document.querySelector(".avatar-ctl-preview")?.getBoundingClientRect();
+      if (left && left.width > 0 && left.right > mid.left - gap && left.left < mid.right) return true;
+      return false;
+    };
+    const measure = () => {
+      if (cancelled) return;
+      let tier = 0;
+      for (;;) {
+        if (tier === 0) root.removeAttribute("data-pchrome");
+        else root.setAttribute("data-pchrome", String(tier));
+        if (!overflows() || tier >= 3) break;
+        tier += 1;
+      }
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    document.fonts?.ready.then(measure);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("resize", measure);
+      root.removeAttribute("data-pchrome");
+    };
+  }, [showAgenda, avatarOn, interactive, canHeart, accountSwitch, anonymous]);
 
   const posterStageRef = useRef<HTMLDivElement | null>(null);
   const posterFitRef = useRef<HTMLDivElement | null>(null);
@@ -4165,6 +4232,7 @@ export function PublicPoster({
       {/* 앰비언트 배경(ADR-0016 물결 + ADR-0017 계절, components/shared/ambient — 편집실과 같은
           컴포넌트). 표면(data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
       <AmbientLayer force={ambientForce} month={view.month} />
+      <ShowcaseExit />
       {/* (라이브 카드는 우측 레일 안 — 정보 카드와 태그 필터 사이 — 로 이사(2026-07-31).
           모바일 아젠다는 하단 '오늘'→LIVE 버튼이 담당해 별도 플로팅 없음.) */}
       {/* 하트 승급 순간 — 화면 밖(fixed)이라 캡쳐 PNG엔 안 들어간다. */}
@@ -4784,10 +4852,13 @@ export function PublicPoster({
           <button
             type="button"
             className={`avatar-ctl-toggle ${avatarOn ? "on" : ""}`}
+            aria-label={`아바타 자리 ${avatarOn ? "끄기" : "켜기"}`}
             aria-pressed={avatarOn}
             onClick={toggleAvatarOn}
+            title={`아바타 자리 ${avatarOn ? "끄기" : "켜기"}`}
            data-act="avatar-ctl-toggle">
-            🎙️ 아바타 자리 {avatarOn ? "끄기" : "켜기"}
+            <span aria-hidden="true">🎙️</span>
+            <span className="lbl">아바타 자리 {avatarOn ? "끄기" : "켜기"}</span>
           </button>
           {avatarOn ? (
             <div className="avatar-ctl-side" role="group" aria-label="아바타 위치">
@@ -4980,7 +5051,8 @@ export function PublicPoster({
                   title="이 달 방송·일정 기록 보기"
                   type="button"
                 >
-                  📊 이 달 기록
+                  <span aria-hidden="true">📊</span>
+                  <span className="lbl">이 달 기록</span>
                 </button>
               </div>
             ) : null}
@@ -4999,8 +5071,15 @@ export function PublicPoster({
                   {!anonymous && accountEmail ? (
                     <PlainEmail className="account-email" title={accountEmail} value={accountEmail} />
                   ) : null}
-                  <button className="button" data-act={anonymous ? "login" : "logout"} type="submit">
-                    {anonymous ? "로그인" : "로그아웃"}
+                  <button
+                    aria-label={anonymous ? "로그인" : "로그아웃"}
+                    className="button"
+                    data-act={anonymous ? "login" : "logout"}
+                    title={anonymous ? "로그인" : "로그아웃"}
+                    type="submit"
+                  >
+                    {anonymous ? <LogIn aria-hidden="true" size={16} /> : <LogOut aria-hidden="true" size={16} />}
+                    <span className="lbl">{anonymous ? "로그인" : "로그아웃"}</span>
                   </button>
                 </form>
               ) : null}
@@ -5085,6 +5164,8 @@ export function PublicPoster({
             ) : null}
 
             {renderLegendFilter(true)}
+            {/* 배경 감상 진입(2026-09-04) — 레일 맨 아래, 태그 필터 밑의 조용한 계절 버튼(시청자·비로그인 모두). */}
+            {interactive ? <ShowcaseButton className="rail-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
           </aside>
         </section>
         </div>
@@ -5102,6 +5183,8 @@ export function PublicPoster({
               </div>
             ) : null}
             <div className="avatar-dock-inner">
+              {/* 아바타 scene에선 감상 버튼이 아바타 자리 위쪽으로(레일이 접히므로). */}
+              {avatarOn && interactive ? <ShowcaseButton className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
               <span className="avatar-slot-hint">아바타 자리</span>
             </div>
           </aside>

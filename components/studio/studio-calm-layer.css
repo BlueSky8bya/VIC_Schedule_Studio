@@ -527,3 +527,131 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
     padding-bottom: 56px;
   }
 }
+
+/* ── ⑦ 계정 묶음(2026-09-04 사용자: "높이·길이 제각각이라 불편") — 도구 카드(.studio-tools)와 같은 문법: 카드 하나 안에
+   같은 높이(36px)의 조용한 칸들 [저장 상태 | 역할 ? | 미리보기 | 로그아웃]. 상태·역할 색은 글자·점에만(면은 비운다). */
+.studio-role-tools {
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid #ece9f5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
+  align-items: stretch;
+}
+html[data-studio-calm] .studio-role-tools {
+  background: var(--studio-silver);
+  border-color: var(--studio-silver-line);
+}
+.studio-role-tools .studio-meta-capsule {
+  align-self: stretch;
+  margin: 0;
+}
+.studio-role-tools .studio-meta-capsule .save-status,
+.studio-role-tools .actor-badge,
+.studio-role-tools .actor-badge.owner,
+.studio-role-tools .actor-badge.developer,
+.studio-role-tools .io-preview,
+.studio-role-tools .io-logout,
+.studio-role-tools .preview-dd-trigger {
+  box-sizing: border-box;
+  height: 36px;
+  min-height: 36px;
+  max-width: none;
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+  color: #5b5674;
+  font-size: var(--text-caption);
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.studio-role-tools .studio-meta-capsule .save-status {
+  gap: 8px;
+  justify-content: center;
+}
+.studio-role-tools .studio-meta-capsule .save-status em {
+  min-width: 0;
+}
+/* 상태 색은 점만(면 채움 제거). */
+.studio-role-tools .save-status.saving,
+.studio-role-tools .save-status.saved,
+.studio-role-tools .save-status.failed {
+  background: transparent;
+  border-color: transparent;
+}
+.studio-role-tools .save-status.saved .ss-dot {
+  box-shadow: 0 0 0 3px rgb(83 168 112 / 18%);
+}
+/* 역할 색은 글자·? 테두리에만(도구 카드의 기능별 색조와 같은 규칙). */
+.studio-role-tools .actor-badge.owner {
+  color: #0b7a68;
+}
+.studio-role-tools .actor-badge.developer {
+  color: #4f3fbf;
+}
+.studio-role-tools .actor-badge strong {
+  font-size: var(--text-caption);
+}
+.studio-role-tools .role-help-q {
+  width: 18px;
+  height: 18px;
+  opacity: 0.75;
+}
+.studio-role-tools .actor-badge:hover,
+.studio-role-tools .io-preview:hover:not(:disabled),
+.studio-role-tools .io-logout:hover:not(:disabled),
+.studio-role-tools .preview-dd-trigger:hover:not(:disabled) {
+  background: #f4f2fb;
+  border-color: #e6e1f4;
+  color: var(--ink);
+  filter: none;
+}
+.studio-role-tools .actor-badge:active,
+.studio-role-tools .io-preview:active,
+.studio-role-tools .io-logout:active,
+.studio-role-tools .preview-dd-trigger:active {
+  transform: scale(0.96);
+}
+html[data-studio-calm] .studio-role-tools .studio-meta-capsule .save-status,
+html[data-studio-calm] .studio-role-tools .io-preview,
+html[data-studio-calm] .studio-role-tools .io-logout,
+html[data-studio-calm] .studio-role-tools .preview-dd-trigger {
+  color: var(--ink-soft);
+}
+html[data-studio-calm] .studio-role-tools .actor-badge:hover,
+html[data-studio-calm] .studio-role-tools .io-preview:hover:not(:disabled),
+html[data-studio-calm] .studio-role-tools .io-logout:hover:not(:disabled),
+html[data-studio-calm] .studio-role-tools .preview-dd-trigger:hover:not(:disabled) {
+  background: #fff;
+  border-color: #c3ccd6;
+}
+/* 압축 단계(⑤)에서 라벨이 접히면 칸도 좁아진다 — 정사각에 가깝게. */
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-preview,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-logout,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-trigger,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .actor-badge {
+  padding: 0 10px;
+}
+.studio-shell[data-chrome="3"] .studio-role-tools .studio-meta-capsule .save-status {
+  width: 36px;
+  padding: 0;
+  border-radius: 10px;
+}
+
+/* 시청자 화면 미리보기(.viewer-fullscreen) — 배경이 보이는 조건에선 투명(시청자 화면과 같은 규칙, 2026-09-04
+   사용자: "미리보기에는 배경이 하나도 안 깔린다"). 조건 밖에선 원래 정적 배경. */
+@media (min-width: 641px) {
+  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-fullscreen {
+    background: transparent;
+  }
+}

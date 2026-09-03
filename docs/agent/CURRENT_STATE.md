@@ -102,6 +102,29 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   참조하는 항상-false 스텁이라 유지). 순서: 코드 push → 0074 적용(옛 코드도 조회 실패를 삼켜 안 깨짐). 공개 API DTO
   무변화. 검증: tsc·lint(기존 경고 2)·vitest 522·build exit 0·비주얼 79·Playwright(편집실·모바일 DOM "매니저" 0, 도구
   타일 [태그 편집·인사이트·단축키·설정], 개발자 미리보기 3개, 역할 팝오버에 '멤버' 없음).
+  ㉔ **VOD 끊김·크롬 정형화·감상 진입·항적 4차(2026-09-04 새벽, 사용자 8건)**: ① **VOD 재생 끊김의 구조적 원인** — 다시보기
+  창(숲 플레이어 iframe) 뒤에서 전체 화면 계절 캔버스가 60fps로 계속 그려지고, 창·모달의 `backdrop-filter: blur`가 매
+  프레임 다시 흐려지며(뒤가 바뀌므로), 시청자 레일의 `legendFollow` rAF 루프(매 프레임 레이아웃 읽기)까지 돌아 영상
+  디코딩과 GPU/메인 스레드를 나눠 썼다(다른 탭의 숲 플레이어·긴 세션은 가중 요인일 뿐 우리 몫이 아니다). 조치:
+  `lib/ui/ambient-pause.ts`(참조 계수 `html[data-ambient-pause]`) — 시청자 VOD 창(`dayVodPop`)·이 달 기록 시트·편집실
+  모달(설정 제외)이 떠 있는 동안 엔진 루프 정지(마지막 프레임 유지) + 물결 `animation-play-state: paused`; legendFollow는
+  스크롤·리사이즈·RO 이벤트 기반으로. 실측: 시트/모달 열림 → pause true·running false, 닫으면 복귀. ② **편집실 계정
+  묶음**(calm-layer ⑦): [저장 상태 | 관리자 ? | 보여주기 | 로그아웃]을 도구 카드 문법의 한 카드·36px 균일 칸으로(실측
+  높이 [36,36,36,36]), 상태·역할 색은 점·글자만. ③ **시청자 크롬 정형화**(public-poster.css '상단 크롬 정형화'):
+  [로그인/로그아웃(+이메일)]·[편집실로 가기 | 일정 그림판]·[🎙️ 아바타 자리 | 왼쪽 오른쪽]을 같은 카드·36px 칸으로,
+  가운데 [♥ 내 관심 | 제목 | 📊 이 달 기록]은 44px 알약 한 높이. **압축 단계** `html[data-pchrome]`(public-poster.tsx
+  실측: 헤더 넘침 또는 가운데 묶음이 좌상단 토글·우상단 미리보기 묶음과 겹치면 ↑) — 1 라벨 숨김(아이콘·이모지·하트만)
+  · 2 제목 ✨ 숨김 · 3 제목 24px. 실측 미리보기 스윕 1600→1000: 1200에서 1단계, 겹침·넘침 0. ④ **감상 진입 버튼 노출**
+  (`components/shared/ambient/showcase.tsx` 공용: `enterShowcase`·`<ShowcaseButton season>`·`<ShowcaseExit/>` body 포털,
+  `html[data-showcase]` 모듈 전역): 편집실 = 아바타 자리 위쪽 중앙의 계절 유리 알약("가을 감상하기", 숨쉬는 글로우),
+  시청자 = 레일 맨 아래(태그 필터 밑) 같은 알약, 아바타 scene이면 아바타 자리 위. 설정 줄도 같은 함수. 시청자 감상 CSS는
+  `app/ambient.css`(`.poster-page > :not(배경)` 투명, 미리보기 오버레이·아바타 토글 포함). ⑤ **미리보기에 배경 미적용**
+  원인 = `.viewer-fullscreen { background: #fffdf8 }` 불투명 래퍼 → 배경 게이트 조건에서 투명(calm-layer). ⑥ 여름 항적
+  = **경로 기반 연속 V자**(입자 폐기): 길의 각 점에서 진행 직각으로 나이^0.85에 비례해 벌어진 점들을 이은 두 팔(글로우+
+  심), 두 팔 사이 가로 마루(5점마다 뒤로 볼록), 길 위 거품 띠, 기억 3.2초(가볍게 1.6초·팔만). 클릭 = 묵직한 고리 셋 2초.
+  ⑦ 봄 클릭 = **풀 밟힘**: 둘레 풀잎 18가닥이 바깥으로 누웠다 일어서고(sin), 발자국 그늘, 꽃가루 7. ⑧ 미리보기 nav
+  버튼·로그인/로그아웃·아바타 토글에 아이콘 + `.lbl`. 실측(verify-ambient5.mjs): 항적 경로 55점, 풀 밟힘 1·꽃가루 7,
+  감상 버튼 편집실/시청자 각 1·감상 모드 rail/표면 opacity 0, 미리보기 래퍼 투명·캔버스 block.
   ㉓ **계절 장면 3차(2026-09-04 심야, 사용자 5건)**: ① **"가볍게 = 단색 배경" 원인** = `studio-calm-layer.css`·`poster-metal-water.css`에
   남은 v2 시절 `:not([data-gfx="lite"])` 게이트 — lite면 셸/포스터 페이지가 투명해지지 않아(불투명 크림) z:-1 배경을 통째로
   덮었다(끄기와 차이 없던 이유). 전부 `:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"])`로 치환.

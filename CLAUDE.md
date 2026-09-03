@@ -102,8 +102,17 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   flakes, no walker/dust); a `lite` that shows a plain background is a bug (2026-09-04: stale `:not([data-gfx="lite"])`
   gates made the shell opaque — every transparency/translucency gate must use `soft`/`off`/`data-ambient="off"`, never
   `lite`). The 계절 배경 switch and 배경 효과 are one state: switch OFF locks the select to 끄기, picking 끄기 turns the
-  switch OFF, switching back ON returns the select to 자동. "배경 감상" (settings → 전체 화면으로 보기) sets
-  `html[data-showcase]` to hide all chrome and let the whole screen act as background; Esc or the top pill exits.
+  switch OFF, switching back ON returns the select to 자동. "배경 감상" (`components/shared/ambient/showcase.tsx`,
+  entry buttons in the studio avatar slot and the viewer rail, plus the settings row) sets `html[data-showcase]` to
+  hide all chrome and let the whole screen act as background; Esc or the top pill exits.
+- **Ambient pauses behind heavy media** (`lib/ui/ambient-pause.ts`, `html[data-ambient-pause]`): the VOD window, the
+  viewer insights sheet and studio modals (except settings) hold the pause; the canvas loop stops on its last frame and
+  the tide's animations pause. Never leave a full-screen animated layer running under a `backdrop-filter` or an iframe
+  player (2026-09-04: VOD playback stuttered). No always-on rAF loops in the poster — drive follow/measure logic by
+  scroll/resize/ResizeObserver events.
+- **Viewer chrome groups and tiers**: header buttons live in uniform 36px segmented cards (login/logout, preview nav,
+  avatar toggle) and the center trio is one 44px height; `html[data-pchrome="1|2|3"]` (measured in
+  `public-poster.tsx`) folds labels → sparkles → title size when the header overflows or overlaps the overlays.
 - **Settings dropdowns are the custom `RhhSelect`** (`components/studio/rhh-select.tsx`: trigger + body-portal
   listbox in the metal skin, keyboard-navigable) — never a native `<select>` in the settings list (its popup cannot be
   styled). Settings epoch `2026-09-04` reseeds the four switches (motion · eye-comfort · calm ·

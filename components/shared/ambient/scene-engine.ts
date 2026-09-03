@@ -75,6 +75,8 @@ function readQuality(): Quality {
 }
 const readReduced = () => document.documentElement.hasAttribute("data-reduce-motion");
 const readOff = () => document.documentElement.getAttribute("data-ambient") === "off";
+// 일시정지(lib/ui/ambient-pause.ts): VOD 창·모달 백드롭 등 무거운 미디어 중엔 마지막 프레임을 둔 채 루프만 멈춘다.
+const readPaused = () => document.documentElement.hasAttribute("data-ambient-pause");
 
 export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): () => void {
   const g = canvas.getContext("2d", { alpha: true });
@@ -194,9 +196,10 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
     const hiddenByCss = getComputedStyle(canvas).display === "none";
     // 숨겨졌다 다시 보이면(display none → block) 크기가 0에서 돌아온다 — 다시 잰다.
     if (!hiddenByCss && (canvas.offsetWidth !== w || canvas.offsetHeight !== h)) resize();
-    if (frame.reduced || off || document.hidden || hiddenByCss) {
+    const paused = readPaused();
+    if (frame.reduced || off || document.hidden || hiddenByCss || paused) {
       stop();
-      if (frame.reduced && !off && !hiddenByCss) drawOnce(); // 정지 화면 한 장
+      if (frame.reduced && !off && !hiddenByCss) drawOnce(); // 정지 화면 한 장(일시정지는 마지막 프레임 그대로)
     } else start();
   };
   const onResize = () => {
@@ -227,9 +230,16 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
     p.down = true;
     p.inside = true;
     if (!running) return;
-    if (scene.pointerDown?.(frame, isBackgroundTarget(e.target))) dbg.consumed += 1;
+    if (scene.pointerDown?.(frame, isBackgroundTarget(e.target))) {
+      dbg.consumed += 1;
+      // 장면이 눌림을 가져갔다(잎 집기·발자국·잔물결) — 브라우저의 텍스트 선택·드래그 시작을 막는다(2026-09-04 사용자:
+      // "낙엽 끌면 바깥 글자가 드래그된다"). 끄는 동안 html[data-ambient-grab]로 user-select도 끈다(app/ambient.css).
+      e.preventDefault();
+      document.documentElement.setAttribute("data-ambient-grab", "1");
+    }
   };
   const onUp = () => {
+    document.documentElement.removeAttribute("data-ambient-grab");
     if (!p.down) return;
     p.down = false;
     scene.pointerUp?.(frame);
@@ -245,16 +255,20 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
   sync();
   window.addEventListener("resize", onResize);
   window.addEventListener("pointermove", onMove, { passive: true });
-  window.addEventListener("pointerdown", onDown, { capture: true, passive: true });
+  window.addEventListener("pointerdown", onDown, { capture: true }); // passive 아님 — 소비하면 preventDefault
   window.addEventListener("pointerup", onUp, { passive: true });
   window.addEventListener("pointercancel", onUp, { passive: true });
   document.addEventListener("pointerleave", onLeave);
   document.addEventListener("visibilitychange", sync);
   const mo = new MutationObserver(sync);
-  mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-reduce-motion", "data-gfx", "data-ambient"] });
+  mo.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ["data-reduce-motion", "data-gfx", "data-ambient", "data-ambient-pause"]
+  });
 
   return () => {
     stop();
+    document.documentElement.removeAttribute("data-ambient-grab");
     if (window.__vicAmbient === dbg) delete window.__vicAmbient;
     mo.disconnect();
     window.removeEventListener("resize", onResize);

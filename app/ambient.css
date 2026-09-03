@@ -33,3 +33,151 @@
     opacity: 1;
   }
 }
+
+/* 장면이 포인터를 잡고 끄는 동안(잎 집기 등, scene-engine onDown) — 페이지 글자가 같이 드래그 선택되지 않게. */
+html[data-ambient-grab],
+html[data-ambient-grab] * {
+  user-select: none;
+  -webkit-user-select: none;
+}
+html[data-ambient-grab] {
+  cursor: grabbing;
+}
+
+/* ── 배경 감상 모드(components/shared/ambient/showcase.tsx, 2026-09-04) — 편집실·시청자 공용 ──────────────────
+   진입 버튼(.showcase-btn): 유리 알약 + 계절 색 테두리 + 뒤에서 천천히 숨쉬는 빛(::glow) — "한 번 눌러보고 싶게".
+   나가기 알약(.showcase-exit): 상단 중앙, 쉼 상태 반투명, 호버에 또렷. 둘 다 transform/opacity만 움직인다. */
+.showcase-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px 9px 14px;
+  border: 1.5px solid var(--showcase-line, rgb(120 110 160 / 35%));
+  border-radius: 999px;
+  background: rgb(255 253 249 / 78%);
+  color: var(--ink-soft, #3d414c);
+  font: inherit;
+  font-size: var(--text-label, 13px);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow:
+    0 6px 18px rgb(60 50 90 / 14%),
+    inset 0 1px 0 rgb(255 255 255 / 80%);
+  isolation: isolate;
+  transition:
+    transform var(--dur-2, 0.2s) var(--spring-bouncy, var(--ease)),
+    box-shadow var(--dur-2, 0.2s) var(--ease),
+    border-color var(--dur-2, 0.2s) var(--ease);
+}
+.showcase-btn:hover {
+  transform: translateY(-1px) scale(1.03);
+  box-shadow:
+    0 12px 28px rgb(60 50 90 / 20%),
+    inset 0 1px 0 rgb(255 255 255 / 80%);
+}
+.showcase-btn:active {
+  transform: scale(0.96);
+}
+.showcase-btn:focus-visible {
+  outline: 2px solid var(--selection-border, #b7a8ef);
+  outline-offset: 3px;
+}
+.showcase-btn svg {
+  color: var(--showcase-ink, #6b5b8a);
+}
+/* 뒤에서 숨쉬는 빛 — 계절 색, opacity/transform만. */
+.showcase-btn-glow {
+  position: absolute;
+  inset: -6px;
+  z-index: -1;
+  border-radius: 999px;
+  background: radial-gradient(closest-side, var(--showcase-glow, rgb(180 160 240 / 45%)), transparent 72%);
+  opacity: 0.6;
+  animation: showcase-glow 3.2s ease-in-out infinite;
+}
+@keyframes showcase-glow {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.06);
+  }
+}
+html[data-reduce-motion] .showcase-btn-glow {
+  animation: none;
+}
+.showcase-btn-spring {
+  --showcase-line: rgb(150 190 118 / 55%);
+  --showcase-glow: rgb(170 214 140 / 55%);
+  --showcase-ink: #4d7a48;
+}
+.showcase-btn-summer {
+  --showcase-line: rgb(120 175 215 / 55%);
+  --showcase-glow: rgb(150 200 235 / 55%);
+  --showcase-ink: #2f6a93;
+}
+.showcase-btn-autumn {
+  --showcase-line: rgb(190 130 90 / 50%);
+  --showcase-glow: rgb(220 170 110 / 50%);
+  --showcase-ink: #8c5a3a;
+}
+.showcase-btn-winter {
+  --showcase-line: rgb(150 180 212 / 60%);
+  --showcase-glow: rgb(200 222 245 / 70%);
+  --showcase-ink: #4d6f93;
+}
+.showcase-exit {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid rgb(180 190 205 / 80%);
+  border-radius: 999px;
+  background: rgb(255 253 249 / 72%);
+  color: var(--ink-soft, #3d414c);
+  font: inherit;
+  font-size: var(--text-label, 13px);
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgb(60 50 90 / 14%);
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity var(--dur-2, 0.2s) var(--ease);
+  animation: showcase-exit-in 0.5s var(--ease) both;
+}
+.showcase-exit:hover,
+.showcase-exit:focus-visible {
+  opacity: 1;
+}
+@keyframes showcase-exit-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+  to {
+    opacity: 0.55;
+    transform: translate(-50%, 0);
+  }
+}
+html[data-reduce-motion] .showcase-exit {
+  animation: none;
+}
+/* 시청자 화면(단독·편집실 미리보기) — 포스터 루트의 자식 중 배경 레이어만 남긴다. 좌상단 아바타 토글·우상단 미리보기
+   오버레이·로딩 배지도 함께. (편집실 셸 규칙은 studio-shell.css.) */
+html[data-showcase] .poster-page > :not(.gs-tide):not(.gs-season),
+html[data-showcase] .viewer-preview-overlay,
+html[data-showcase] .private-loading {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.6s var(--ease);
+}
