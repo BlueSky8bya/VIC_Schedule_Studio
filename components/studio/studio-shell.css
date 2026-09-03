@@ -8513,6 +8513,26 @@ html[data-reduce-motion] .modal-close:active {
   display: inline-flex;
   gap: 10px;
 }
+/* 미리보기 이동 카드 = 포스터 레일 폭(2026-09-04 사용자: 편집실 계정 카드와 같은 지적 — 레일의 정해진 너비와 따로 논다).
+   studio-shell.tsx가 오버레이·레일(.public-right)을 같은 좌표계에서 재서 카드에 --pv-w / --pv-mr(레이아웃 px, zoom 보정)을
+   두면 카드가 그 폭·오른쪽 끝에 맞춰 앉고, 안은 등분(.studio-role-tools와 같은 grid). 레일이 접힌 아바타 scene에선 변수가
+   없어 기본 폭. 카드 면·36px 칸은 public-poster.css '상단 크롬 정형화' 규칙 그대로. */
+@media (min-width: 861px) {
+  .viewer-preview-overlay .viewer-preview-actions {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    box-sizing: border-box;
+    width: var(--pv-w, 252px);
+    margin-right: var(--pv-mr, 0px);
+  }
+  .viewer-preview-overlay .viewer-preview-actions .button {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    overflow: hidden;
+  }
+}
 @media (max-width: 999px) {
   /* 모바일은 오버레이를 쓰지 않고 포스터 제목 헤더 안에 주입한다(.agenda-preview-*).
      거기 안내 텍스트(.viewer-preview-note 재사용)는 좁은 폭에 맞춰 더 작게. */

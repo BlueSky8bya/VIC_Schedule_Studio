@@ -145,7 +145,10 @@ export function StudioSettingsList({
           lockedLabel="끄기"
           onChange={onChangeGfxPref}
           options={[
-            { value: "auto", label: gfxAuto === "soft" ? "자동 (이 기기: 끔)" : gfxAuto === "lite" ? "자동 (이 기기: 가볍게)" : "자동" },
+            {
+              value: "auto",
+              label: gfxAuto === "soft" ? "자동 (이 기기: 끔)" : gfxAuto === "lite" ? "자동 (이 기기: 가볍게)" : "자동 (여력 따라 조절)"
+            },
             { value: "max", label: "항상 최대" },
             { value: "lite", label: "가볍게" },
             { value: "off", label: "끄기" }

@@ -71,6 +71,12 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   because the rail moves to the other side and the control would travel with it (owner feedback
   2026-09-03). Do not reintroduce a second full-width action row —
   the calendar (hot zone) owns that height. The rail's vertical budget is filter | tools | avatar 58%.
+  **The account card is rail-width** (2026-09-04): `.studio-role-tools` is a grid card fixed to `--rail-w` (20vw−16),
+  columns `auto auto 1fr auto` (save/role/logout content-fixed and state-stable, the preview action takes the rest; save
+  time lives in the tooltip only; short label "시청자 화면"), right edge on the rail when the rail is right; the preview nav
+  card matches the poster rail via `--pv-w/--pv-mr` measured in `studio-shell.tsx`. Under the ambient gate the studio
+  topbar is **transparent** (no fill/border/blur — calm-layer ⑧): title, month label and cards float on the season like the
+  viewer.
 - **Ambient registry (ADR-0017, 2026-09-04, revised same day).** Studio and viewer mount ONE
   `<AmbientLayer month={view.month} />` (`components/shared/ambient/`). The season follows the **calendar
   month being viewed**, not today: 12–2 winter · 3–5 spring · 6–8 summer · 9–11 autumn (flip a month, the
@@ -90,6 +96,19 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   studio shell is zoomed ≥1700px); tide rules unchanged (transform/opacity only, no filter/blur/scale animation,
   no dark blobs). Never mount `<WaterTide />` directly again; never add a second background system
   (the old `data-poster-theme` 7-pack coexists for now and is slated to be superseded).
+- **Ambient quality = continuous load + LOD + assets (2026-09-04, ADR-0017 ⑧).** `data-gfx` only sets a band; the engine
+  keeps a **continuous `load` (0–1)** it raises (+0.06) or lowers (−0.15) every 90 frames from measured frame gaps, and every
+  scene reads `f.load` each frame to scale counts/props/effects **gradually** (leaves fall in from the sky to grow, fade out
+  farthest-from-pointer to shrink; flakes finish their cycle; butterflies fly in/out at the edges). "배경 효과" 자동 = adaptive,
+  항상 최대 = 1, 가볍게 = 0.3 fixed (`vic:gfx-pref` event re-bands). **LOD rule:** anything soft is drawn at low resolution —
+  the summer wake is stamped/stroked on a 0.35–0.5× offscreen canvas and upscaled (foam stamps aging wider/fainter, Kelvin
+  arms, crests, rings), canvas DPR follows load (1.5 ≥0.6, 1 ≤0.4), prints/props are baked sprites. **Props are files**:
+  `public/ambient/*.svg` (duck · swim ring · acorn · ladybug) loaded once by `components/shared/ambient/assets.ts` — swap the
+  file, not the code (top-down, forward = up; palette rule still applies: butter-yellow duck, mint/white ring, no red stripes).
+  **Per-season random events**: summer = rubber duck always afloat + an occasional swim ring drifting through (both grab/throw,
+  leave their own wake); winter = animal visitors (cat · bird · rabbit gaits) besides the human walker; autumn = acorn drops
+  (bounce, roll, shove leaves, max 6, grabbable); spring = ladybugs (crawl, flee, click → fly off) + petal breezes. Showcase
+  swallows every key except Esc (←/→ used to flip the month and thus the season).
 - **Graphics tiers (`lib/ui/gfx.ts` v3, 2026-09-04).** `data-gfx` is `full` (absent) · `lite` · `soft`. `soft` =
   software rendering (WebGL renderer SwiftShader/llvmpipe/software) or ≤2 cores → ambient off + eye-comfort token
   palette. `lite` = bad frame samples on **two consecutive visits** → ambient stays **visible but cheaper** (tide

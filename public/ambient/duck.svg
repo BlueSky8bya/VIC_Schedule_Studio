@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72">
+  <!-- 장난감 오리, 위에서 본 모습(앞 = 위). 팔레트: 버터 옐로(채도 낮춤)·살구 부리 — 편집실 오행 규칙(쨍한 노랑 금지). -->
+  <defs>
+    <radialGradient id="b" cx="42%" cy="38%" r="70%"><stop offset="0" stop-color="#f8e3a0"/><stop offset=".65" stop-color="#efcf78"/><stop offset="1" stop-color="#d6ad55"/></radialGradient>
+    <radialGradient id="h" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#fbe8ac"/><stop offset=".7" stop-color="#f0d17e"/><stop offset="1" stop-color="#dcb560"/></radialGradient>
+  </defs>
+  <path d="M32 22 C46 22 52 34 52 48 C52 62 42 68 32 68 C22 68 12 62 12 48 C12 34 18 22 32 22Z" fill="url(#b)" stroke="#c99f4d" stroke-width="1.2"/>
+  <path d="M28 66 L32 71 L36 66" fill="#e9c86f" stroke="#c99f4d" stroke-width="1"/>
+  <path d="M16 44 C18 36 22 32 26 30 C24 40 22 50 20 58 C18 54 16 50 16 44Z" fill="#dcb85e" opacity=".75"/>
+  <path d="M48 44 C46 36 42 32 38 30 C40 40 42 50 44 58 C46 54 48 50 48 44Z" fill="#dcb85e" opacity=".75"/>
+  <ellipse cx="32" cy="42" rx="9" ry="12" fill="#fff" opacity=".18"/>
+  <circle cx="32" cy="20" r="14" fill="url(#h)" stroke="#c99f4d" stroke-width="1.2"/>
+  <path d="M25 10 C27 3 37 3 39 10 C37 12.5 27 12.5 25 10Z" fill="#e0a672" stroke="#c48a57" stroke-width="1"/>
+  <path d="M27 9.5 C30 11 34 11 37 9.5" fill="none" stroke="#c48a57" stroke-width=".8"/>
+  <circle cx="24.5" cy="16" r="2.4" fill="#3a3340"/><circle cx="39.5" cy="16" r="2.4" fill="#3a3340"/>
+  <circle cx="25.3" cy="15.2" r=".8" fill="#fff"/><circle cx="40.3" cy="15.2" r=".8" fill="#fff"/>
+  <ellipse cx="27" cy="14" rx="4" ry="2.4" fill="#fff" opacity=".35" transform="rotate(-25 27 14)"/>
+</svg>

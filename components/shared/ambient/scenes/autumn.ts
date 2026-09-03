@@ -1,13 +1,18 @@
-// 가을 — "낙엽이 소복한 땅을 위에서 내려다본다". 여러 수종의 잎(둥근 잎·느릅·버들·**단풍·은행·참나무·솔잎**) 90~220장이
-// 바닥에 흩어져 있고, 이따금 바람이 한 줄기 지나가며(gust) 잎들이 밀리고 뒤집힌다. 포인터가 지나가면 그 주변 잎이
-// 바람에 날리듯 밀리고(속도 비례, 소용돌이 성분), 바탕 위에서 잎을 누르면 집어서 끌 수 있다(집은 잎은 떠서 그림자가
-// 커지고, 놓으면 손 속도로 미끄러진다). 잎끼리는 원 충돌로 서로 밀어낸다.
+// 가을 — "낙엽이 소복한 땅을 위에서 내려다본다". 여러 수종의 잎(둥근 잎·느릅·버들·단풍·은행·참나무·솔잎)이 바닥에
+// 흩어져 있고, 이따금 바람이 한 줄기 지나가며(gust) 잎들이 밀리고 뒤집힌다. 포인터가 지나가면 그 주변 잎이 바람에
+// 날리듯 밀리고(속도 비례, 소용돌이 성분), 바탕 위에서 잎을 누르면 집어서 끌 수 있다(집은 잎은 떠서 그림자가 커지고,
+// 놓으면 손 속도로 미끄러진다). 잎끼리는 원 충돌로 서로 밀어낸다.
+// 랜덤 이벤트(2026-09-04 사용자): **도토리**(public/ambient/acorn.svg)가 이따금 하늘에서 떨어진다 — 위에서 보는 시점이라
+// 크고 흐린 그림자와 함께 커졌다가(카메라 가까이서 출발) 바닥에 통 떨어져 튀고 구르며 근처 잎을 밀친다. 떨어진 도토리는
+// 잎처럼 집어 던질 수 있다(최대 6개, 넘치면 오래된 것이 스르르 사라진다).
+// 여력(f.load): 잎 수 26~220장(×화면 면적)이 **점진적으로** 오르내린다 — 늘어날 땐 잎이 하늘에서 하나씩 떨어져 쌓이고,
+// 줄어들 땐 포인터에서 먼 잎부터 옅어져 사라진다(툭 사라지지 않는다). 돌풍 빈도·세기, 도토리 이벤트도 여력에 따른다.
 // 색은 채도를 낮춘 가을색 — 단풍은 와인·벽돌, 은행은 머스터드, 참나무·솔잎은 갈색·올리브(붉·주황·노랑을 쨍하게
-// 올리지 않는다 — CLAUDE.md Owner-fit palette; 사용자가 2026-09-04 수종 다양화를 요청해 종류만 늘렸다).
-// 스프라이트(잎·그림자)는 한 번 굽고 매 프레임 drawImage만 — 필터/blur 없음.
+// 올리지 않는다 — CLAUDE.md Owner-fit palette). 스프라이트(잎·그림자)는 한 번 굽고 매 프레임 drawImage만.
 
 import type { Frame, Scene } from "../scene-engine";
-import { clamp, leafPath, leafVeins, makeCanvas, pineNeedles, rng, softBlob, TAU } from "./util";
+import { ASSET, loadSprite, type Sprite } from "../assets";
+import { clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU } from "./util";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -19,8 +24,10 @@ const SPECIES: Species[] = [
   { shape: 5, colors: ["#8b6a3f", "#a17a4a", "#7a5a38"], size: [40, 70], weight: 2.5 }, // 참나무(갈색)
   { shape: 6, colors: ["#6b6a3c", "#7a6a3a", "#5f6a40"], size: [26, 40], weight: 2, needle: true } // 솔잎
 ];
+const ACORN = SPECIES.length; // 수종 인덱스 — 에셋 스프라이트, 무작위로는 안 생긴다(이벤트로만)
 const SPR = 84; // 스프라이트 한 변(px) — 잎 반지름 30 + 여백(단풍 갈래·솔잎 길이)
 const R0 = 30;
+const ACORN_MAX = 6;
 
 type Leaf = {
   x: number;
@@ -30,11 +37,15 @@ type Leaf = {
   a: number;
   va: number;
   s: number;
-  sp: number; // 수종
+  sp: number; // 수종(ACORN = 도토리)
   col: number;
   lift: number;
   flip: number;
   flipV: number;
+  fall: number; // 1 → 0 떨어지는 중(하늘에서)
+  ph: number;
+  fade: number; // 0 정상, >0 사라지는 중(1에서 제거)
+  born: number;
 };
 
 type Gust = { t0: number; dur: number; dir: number; y: number } | null;
@@ -44,14 +55,21 @@ export function createAutumn(seed: number): Scene {
   const leaves: Leaf[] = [];
   let sprites: HTMLCanvasElement[][] = [];
   let shadows: HTMLCanvasElement[] = [];
+  let acornSpr: Sprite | null = null;
+  let acornShadow: HTMLCanvasElement | null = null;
   let grabbed = -1;
   let gox = 0;
   let goy = 0;
   let gust: Gust = null;
   let nextGust = 4 + rand() * 5;
+  let nextSpawn = 0;
+  let nextTrim = 0;
+  let nextAcorn = 7 + rand() * 6;
+  let acornsDropped = 0;
   let w = 0;
   let h = 0;
   let windCount = 0; // 검증용 — 포인터 바람에 밀린 잎 누적
+  let filled = false;
 
   function bake() {
     if (sprites.length) return;
@@ -128,6 +146,8 @@ export function createAutumn(seed: number): Scene {
       }
       shadows.push(c);
     }
+    acornShadow = shadowSprite(44, 52, "43 35 32", 0.9);
+    void loadSprite(ASSET.acorn, 40, 52).then((s) => (acornSpr = s)).catch(() => {});
   }
 
   const totalWeight = SPECIES.reduce((a, s) => a + s.weight, 0);
@@ -139,7 +159,7 @@ export function createAutumn(seed: number): Scene {
     }
     return 0;
   }
-  function spawn(): Leaf {
+  function spawn(t: number, falling = false): Leaf {
     const sp = pickSpecies();
     const [lo, hi] = SPECIES[sp].size;
     return {
@@ -154,17 +174,69 @@ export function createAutumn(seed: number): Scene {
       col: Math.floor(rand() * SPECIES[sp].colors.length),
       lift: 0,
       flip: 0,
-      flipV: 0
+      flipV: 0,
+      fall: falling ? 1 : 0,
+      ph: rand() * TAU,
+      fade: 0,
+      born: t
     };
+  }
+  function dropAcorn(t: number) {
+    leaves.push({
+      x: w * (0.1 + rand() * 0.8),
+      y: h * (0.1 + rand() * 0.8),
+      vx: 0,
+      vy: 0,
+      a: rand() * TAU,
+      va: 0,
+      s: 18 + rand() * 6,
+      sp: ACORN,
+      col: 0,
+      lift: 0,
+      flip: 0,
+      flipV: 0,
+      fall: 1,
+      ph: rand() * TAU,
+      fade: 0,
+      born: t
+    });
+    acornsDropped++;
+    const acorns = leaves.filter((l) => l.sp === ACORN && l.fade === 0);
+    if (acorns.length > ACORN_MAX) acorns.sort((a, b) => a.born - b.born)[0].fade = 0.001;
+  }
+  // 떨어져 닿는 순간 — 튀어 오르고(lift) 구르며 근처 잎을 밀친다.
+  function land(l: Leaf) {
+    if (l.sp === ACORN) {
+      const a = rand() * TAU;
+      const sp = 70 + rand() * 90;
+      l.vx = Math.cos(a) * sp;
+      l.vy = Math.sin(a) * sp;
+      l.va = (rand() - 0.5) * 8;
+      l.lift = 0.6;
+      for (const o of leaves) {
+        if (o === l) continue;
+        const dx = o.x - l.x;
+        const dy = o.y - l.y;
+        const d = Math.hypot(dx, dy);
+        if (d < 46 && d > 0.01) {
+          const k = (1 - d / 46) * 120;
+          o.vx += (dx / d) * k;
+          o.vy += (dy / d) * k;
+          o.va += (rand() - 0.5) * 3;
+          if (o.lift < 0.3) o.lift = 0.3;
+        }
+      }
+    } else {
+      l.vx = (rand() - 0.5) * 30;
+      l.vy = (rand() - 0.5) * 30;
+    }
   }
 
   function targetCount(f: Frame) {
-    const area = f.w * f.h;
-    if (f.q >= 2) return Math.round(clamp(area / 9000, 90, 220)); // "풍성하게" — 1600×900 160장, 큰 화면 220장
-    // 가볍게(q1): 잎은 최소한, 바람도 약하게 — 계절은 구분되고 CPU는 아낀다(2026-09-04 사용자 정의).
-    if (f.q === 1) return Math.round(clamp(area / 30000, 30, 60));
-    return 24;
+    const areaK = clamp((f.w * f.h) / 1_440_000, 0.55, 1.5);
+    return Math.round(lerp(26, 220, f.load) * areaK);
   }
+  const liveLeaves = () => leaves.reduce((n, l) => n + (l.sp !== ACORN && l.fade === 0 ? 1 : 0), 0);
 
   return {
     resize(f) {
@@ -172,8 +244,10 @@ export function createAutumn(seed: number): Scene {
       h = f.h;
       bake();
       const n = targetCount(f);
-      while (leaves.length < n) leaves.push(spawn());
-      if (leaves.length > n) leaves.length = n;
+      if (!filled) {
+        while (leaves.length < n) leaves.push(spawn(f.t));
+        filled = true;
+      }
       if (grabbed >= leaves.length) grabbed = -1;
       for (const l of leaves) {
         if (l.x > w + l.s) l.x = rand() * w;
@@ -181,20 +255,67 @@ export function createAutumn(seed: number): Scene {
       }
     },
     step(f) {
-      const { dt, t, p } = f;
-      const lite = f.q < 2; // 가볍게: 돌풍 드물고 약하게, 포인터 바람도 약하게
-      const gk = lite ? 0.4 : 1;
+      const { dt, t, p, load } = f;
+      // 여력에 따른 점진 조절 — 모자라면 0.12초마다 한 장 떨어지고, 남으면 0.35초마다 한 장(포인터에서 먼 것)이 옅어진다.
+      const target = targetCount(f);
+      const live = liveLeaves();
+      if (live < target && t > nextSpawn) {
+        leaves.push(spawn(t, true));
+        nextSpawn = t + 0.12;
+      } else if (live > target + 3 && t > nextTrim) {
+        let far = -1;
+        let fd = -1;
+        for (let i = 0; i < leaves.length; i++) {
+          const l = leaves[i];
+          if (l.sp === ACORN || l.fade > 0 || i === grabbed || l.fall > 0) continue;
+          const d = p.inside ? Math.hypot(l.x - p.x, l.y - p.y) : rand() * 1000;
+          if (d > fd) {
+            fd = d;
+            far = i;
+          }
+        }
+        if (far >= 0) leaves[far].fade = 0.001;
+        // 남는 잎이 많을수록 빠르게(200장 → 60장이 15초 안에), 몇 장이면 천천히.
+        nextTrim = t + clamp((0.35 * 30) / (live - target), 0.07, 0.35);
+      }
+      // 도토리 이벤트 — 여력 0.4부터, 15~40초 간격.
+      if (load >= 0.4 && t > nextAcorn) {
+        dropAcorn(t);
+        nextAcorn = t + 15 + rand() * 25;
+      }
+      const gk = lerp(0.35, 1, load); // 돌풍 세기 — 여력이 적으면 약하게
       if (!gust && t > nextGust) gust = { t0: t, dur: 3 + rand() * 1.8, dir: rand() < 0.5 ? -1 : 1, y: rand() * h };
       if (gust && t - gust.t0 > gust.dur) {
         gust = null;
-        nextGust = t + (lite ? 14 + rand() * 12 : 7 + rand() * 9);
+        nextGust = t + lerp(22, 7, load) + rand() * lerp(14, 9, load);
       }
       const front = gust ? (gust.dir > 0 ? -240 + ((t - gust.t0) / gust.dur) * (w + 480) : w + 240 - ((t - gust.t0) / gust.dur) * (w + 480)) : 0;
       const pushy = p.inside && p.speed > 30;
       const groundFr = Math.pow(0.02, dt);
+      const acornFr = Math.pow(0.1, dt);
       const spinFr = Math.pow(0.04, dt);
-      for (let i = 0; i < leaves.length; i++) {
+      for (let i = leaves.length - 1; i >= 0; i--) {
         const l = leaves[i];
+        if (l.fade > 0) {
+          l.fade += dt / 0.7;
+          if (l.fade >= 1) {
+            leaves.splice(i, 1);
+            if (grabbed === i) grabbed = -1;
+            else if (grabbed > i) grabbed--;
+            continue;
+          }
+        }
+        if (l.fall > 0) {
+          // 하늘에서 떨어지는 중 — 잎은 1.3초 흔들리며, 도토리는 0.9초 곧장.
+          const dur = l.sp === ACORN ? 0.9 : 1.3;
+          l.fall = Math.max(0, l.fall - dt / dur);
+          if (l.sp !== ACORN) {
+            l.x += Math.sin(t * 3.1 + l.ph) * 34 * dt;
+            l.a += Math.sin(t * 2.2 + l.ph) * 1.6 * dt;
+          } else l.a += 3 * dt;
+          if (l.fall === 0) land(l);
+          continue;
+        }
         if (i === grabbed) {
           gox *= 0.88;
           goy *= 0.88;
@@ -209,28 +330,31 @@ export function createAutumn(seed: number): Scene {
           l.lift = 1;
           continue;
         }
-        let fx = 4 * Math.sin(l.y * 0.011 + t * 0.5);
-        let fy = 3 * Math.cos(l.x * 0.009 + t * 0.37);
+        const acorn = l.sp === ACORN;
+        let fx = acorn ? 0 : 4 * Math.sin(l.y * 0.011 + t * 0.5);
+        let fy = acorn ? 0 : 3 * Math.cos(l.x * 0.009 + t * 0.37);
         if (gust) {
           const d = (l.x - front) / 240;
           const e = Math.exp(-d * d) * (1 - clamp(Math.abs(l.y - gust.y) / (h * 1.3), 0, 0.85));
           if (e > 0.02) {
-            const G = 560 * e * gk;
+            const G = (acorn ? 90 : 560) * e * gk;
             fx += G * gust.dir;
             fy += G * 0.22 * Math.sin(l.x * 0.02 + l.y * 0.013);
-            l.va += e * (rand() - 0.5) * 9;
-            if (l.lift < e * 0.55) l.lift = e * 0.55;
-            if (e > 0.4 && l.flipV === 0 && rand() < 0.03) l.flipV = 5 + rand() * 3;
+            if (!acorn) {
+              l.va += e * (rand() - 0.5) * 9;
+              if (l.lift < e * 0.55) l.lift = e * 0.55;
+              if (e > 0.4 && l.flipV === 0 && rand() < 0.03) l.flipV = 5 + rand() * 3;
+            }
           }
         }
         if (pushy) {
           const dx = l.x - p.x;
           const dy = l.y - p.y;
           const d = Math.hypot(dx, dy);
-          const R = (lite ? 120 : 170) + l.s * 0.6;
+          const R = lerp(110, 170, load) + l.s * 0.6;
           if (d < R && d > 0.001) {
             // 바람에 날리듯: 포인터에서 멀어지는 힘 + 포인터 진행 방향 + 살짝 도는 소용돌이 성분.
-            const k = (1 - d / R) * gk;
+            const k = (1 - d / R) * gk * (acorn ? 0.25 : 1);
             const sp = clamp(p.speed, 0, 2600);
             const push = k * sp * 1.05;
             const nx = dx / d;
@@ -238,19 +362,22 @@ export function createAutumn(seed: number): Scene {
             fx += nx * push + p.vx * 0.45 * k - ny * sp * 0.18 * k;
             fy += ny * push + p.vy * 0.45 * k + nx * sp * 0.18 * k;
             l.va += k * (rand() - 0.5) * 18;
-            if (l.lift < k * 0.8) l.lift = k * 0.8;
-            if (k > 0.5 && l.flipV === 0 && rand() < 0.1) l.flipV = 6 + rand() * 3;
+            if (!acorn) {
+              if (l.lift < k * 0.8) l.lift = k * 0.8;
+              if (k > 0.5 && l.flipV === 0 && rand() < 0.1) l.flipV = 6 + rand() * 3;
+            }
             if (k > 0.3) windCount++;
           }
         }
         l.vx += fx * dt;
         l.vy += fy * dt;
-        l.vx *= groundFr;
-        l.vy *= groundFr;
+        const fr = acorn ? acornFr : groundFr;
+        l.vx *= fr;
+        l.vy *= fr;
         l.va *= spinFr;
         l.x += l.vx * dt;
         l.y += l.vy * dt;
-        l.a += l.va * dt;
+        l.a += l.va * dt + (acorn ? Math.hypot(l.vx, l.vy) * 0.02 * dt : 0);
         const m = l.s;
         if (l.x < -m) l.x += w + 2 * m;
         else if (l.x > w + m) l.x -= w + 2 * m;
@@ -258,7 +385,7 @@ export function createAutumn(seed: number): Scene {
         else if (l.y > h + m) l.y -= h + 2 * m;
       }
       for (const l of leaves) {
-        if (l.lift > 0) l.lift = Math.max(0, l.lift - dt * 1.6);
+        if (l.lift > 0 && l.fall === 0) l.lift = Math.max(0, l.lift - dt * 1.6);
         if (l.flipV > 0) {
           l.flip += l.flipV * dt;
           if (l.flip >= Math.PI) {
@@ -270,9 +397,11 @@ export function createAutumn(seed: number): Scene {
       if (f.q > 0) {
         for (let i = 0; i < leaves.length; i++) {
           const a = leaves[i];
+          if (a.fall > 0) continue;
           const ra = a.s * 0.32;
           for (let j = i + 1; j < leaves.length; j++) {
             const b = leaves[j];
+            if (b.fall > 0) continue;
             const dx = b.x - a.x;
             if (dx > 80 || dx < -80) continue;
             const dy = b.y - a.y;
@@ -320,25 +449,44 @@ export function createAutumn(seed: number): Scene {
       g.fillStyle = mist;
       g.fillRect(0, 0, f.w, f.h * 0.34);
       const drawLeaf = (l: Leaf, shadow: boolean) => {
-        const k = (l.s / SPR) * 1.4 * (1 + l.lift * 0.12);
+        const acorn = l.sp === ACORN;
+        if (acorn && (!acornSpr || !acornShadow)) return;
+        // 떨어지는 중: 카메라 가까이서 출발(크고 흐리게) → 바닥(제 크기). 그림자는 멀리서 다가온다.
+        const up = l.fall > 0 ? Math.pow(l.fall, 0.8) : l.lift;
+        const k = (acorn ? l.s / 40 : (l.s / SPR) * 1.4) * (1 + up * (l.fall > 0 ? 1.4 : 0.12));
         const sx = l.flipV > 0 ? Math.cos(l.flip) : 1;
+        const alpha = 1 - l.fade;
         g.save();
         if (shadow) {
-          g.globalAlpha = 0.16 + l.lift * 0.12;
-          g.translate(l.x + 2.5 + l.lift * 8, l.y + 3.5 + l.lift * 10);
+          g.globalAlpha = (l.fall > 0 ? 0.08 + 0.1 * (1 - l.fall) : 0.16 + up * 0.12) * alpha;
+          g.translate(l.x + 2.5 + up * (l.fall > 0 ? 34 : 8), l.y + 3.5 + up * (l.fall > 0 ? 40 : 10));
         } else {
+          g.globalAlpha = (l.fall > 0 ? 0.55 + 0.45 * (1 - l.fall) : 1) * alpha;
           g.translate(l.x, l.y);
         }
         g.rotate(l.a);
-        g.scale(k * sx, k);
-        g.drawImage(shadow ? shadows[l.sp] : sprites[l.sp][l.col], -SPR / 2, -SPR / 2);
+        if (acorn) {
+          g.scale(k, k);
+          if (shadow) g.drawImage(acornShadow!, -22, -26);
+          else g.drawImage(acornSpr!.c, -20, -26, 40, 52);
+        } else {
+          g.scale(k * sx, k);
+          g.drawImage(shadow ? shadows[l.sp] : sprites[l.sp][l.col], -SPR / 2, -SPR / 2);
+        }
         g.restore();
       };
-      for (let i = 0; i < leaves.length; i++) if (i !== grabbed) drawLeaf(leaves[i], true);
-      for (let i = 0; i < leaves.length; i++) if (i !== grabbed) drawLeaf(leaves[i], false);
+      for (let i = 0; i < leaves.length; i++) if (i !== grabbed && leaves[i].fall === 0) drawLeaf(leaves[i], true);
+      for (let i = 0; i < leaves.length; i++) if (i !== grabbed && leaves[i].fall === 0) drawLeaf(leaves[i], false);
       if (grabbed >= 0 && grabbed < leaves.length) {
         drawLeaf(leaves[grabbed], true);
         drawLeaf(leaves[grabbed], false);
+      }
+      // 떨어지는 것은 맨 위(카메라에 가깝다).
+      for (const l of leaves) {
+        if (l.fall > 0) {
+          drawLeaf(l, true);
+          drawLeaf(l, false);
+        }
       }
     },
     pointerDown(f, onBackground) {
@@ -347,8 +495,9 @@ export function createAutumn(seed: number): Scene {
       let bd = Infinity;
       for (let i = 0; i < leaves.length; i++) {
         const l = leaves[i];
+        if (l.fall > 0 || l.fade > 0) continue;
         const d = Math.hypot(l.x - f.p.x, l.y - f.p.y);
-        if (d < l.s * 0.55 && d < bd) {
+        if (d < Math.max(14, l.s * 0.55) && d < bd) {
           bd = d;
           best = i;
         }
@@ -367,13 +516,19 @@ export function createAutumn(seed: number): Scene {
         l.vx = f.p.vx * 0.7;
         l.vy = f.p.vy * 0.7;
         l.va += (rand() - 0.5) * 6;
-        if (Math.hypot(l.vx, l.vy) > 500 && l.flipV === 0) l.flipV = 7;
+        if (l.sp !== ACORN && Math.hypot(l.vx, l.vy) > 500 && l.flipV === 0) l.flipV = 7;
       }
       grabbed = -1;
     },
     debug() {
       return {
         leaves: leaves.length,
+        live: liveLeaves(),
+        falling: leaves.filter((l) => l.fall > 0).length,
+        fading: leaves.filter((l) => l.fade > 0).length,
+        acorns: leaves.filter((l) => l.sp === ACORN).length,
+        acornsDropped,
+        acornSprite: !!acornSpr,
         grabbed,
         gust: !!gust,
         wind: windCount,

@@ -65,7 +65,11 @@ export function ShowcaseExit() {
       if (e.key === "Escape") {
         e.stopPropagation();
         exitShowcase();
+        return;
       }
+      // 감상 중엔 다른 단축키를 전부 삼킨다 — ←/→ 달 이동이 계절(배경)을 바꿔 감상이 깨졌다(2026-09-04 사용자). 브라우저
+      // 기본 동작(새로고침·탭 이동)은 막지 않는다(stopPropagation만).
+      e.stopPropagation();
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);

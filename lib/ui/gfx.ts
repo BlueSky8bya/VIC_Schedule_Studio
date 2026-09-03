@@ -103,6 +103,12 @@ export function setGfxPref(pref: GfxPref): void {
     /* 무시 */
   }
   applyGfxMode();
+  // 장면 엔진(scene-engine.ts)이 여력 띠를 다시 잡게 — max/lite는 data-gfx가 안 바뀌어도 고정값이 달라진다.
+  try {
+    window.dispatchEvent(new CustomEvent("vic:gfx-pref", { detail: { pref } }));
+  } catch {
+    /* no-op */
+  }
 }
 
 /** 소프트웨어 렌더인가 — WebGL 렌더러 문자열(SwiftShader·llvmpipe·software·Basic Render). 컨텍스트는 바로 놓는다. */

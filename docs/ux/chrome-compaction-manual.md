@@ -72,3 +72,18 @@ rail = [태그 필터 | 도구 카드 | 아바타 자리] flex-column, 높이 = 
 `.scratch-pw/verify-compaction.mjs`(dev/prod 서버 + `VISUAL_TEST_FIXTURE=1`): ① 폭 스윕 1600→1000(owner·developer)
 넘침·겹침·두 줄 0 + 단계 전이 ② 높이 스윕 900→380(1147 폭) 필터 제목 보임·≥132·rail 넘침 0 ③ 팝오버 열기 →
 알약 side 이동·교차 0, workspace 강제 500px → fade + `elementFromPoint`가 팝오버, 닫기 → 원위치.
+
+## 계정 카드·미리보기 카드는 rail 폭(2026-09-04 사용자: "정해진 너비와 따로 논다")
+
+- 편집실 계정 카드(`.studio-role-tools`)는 **rail 폭(`--rail-w` = 20vw−16)으로 고정**. 칸은 `auto auto minmax(0,1fr) auto`
+  — 저장·역할·로그아웃은 내용 폭(저장 라벨 `min-width` 고정, 관리자/개발자 같은 글자 수라 상태·역할이 바뀌어도 같은 폭),
+  주 동작인 미리보기 칸이 남는 폭을 받는다(등분 1fr×4는 1920·zoom .9의 rail 368px에서 "시청자 화면"조차 못 담아 아이콘만
+  남았다 — 실측 칸 80 vs 필요 103). 저장 시각은 툴팁(title)로만. 짧은 라벨(1단계)은 "시청자 화면". 2단계부터는 라벨이
+  전부 기호라 저장 칸만 내용 폭, 나머지 셋은 등분(`auto 1fr 1fr 1fr`). 카드 안 gap은 단계와 무관하게 4(⑤의 gap 8은
+  고정 폭 카드에서 칸을 잡아먹는다). rail이 오른쪽이면 오른쪽 끝을 rail(8px)에 맞춘다.
+- 칸보다 긴 라벨은 칸 안에서 넘친다(`overflow: hidden`) — `chromeTier`의 `overflows()`가 칸 `scrollWidth > clientWidth`도
+  넘침으로 쳐서 단계를 올린다. 새 칸을 넣으면 그 선택자를 `overflows()` 목록에도 넣는다.
+- 미리보기 이동 카드(`.viewer-preview-actions`)는 포스터 레일(`.public-right`) 실측에 맞춰 같은 폭·같은 오른쪽 끝 —
+  studio-shell.tsx가 오버레이와 레일을 같은 좌표계에서 재서 카드에 `--pv-w`/`--pv-mr`(레이아웃 px, zoom 보정)을 둔다
+  (ResizeObserver + 래퍼 class 변화). 레일이 접힌 아바타 scene에선 기본 폭.
+- 배경이 보이는 조건에선 상단바 자체가 투명(면·선·blur 없음, studio-calm-layer.css ⑧) — 제목·달 라벨·카드가 배경 위의 조각.

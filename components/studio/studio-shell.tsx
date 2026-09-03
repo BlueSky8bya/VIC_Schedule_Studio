@@ -1052,7 +1052,7 @@ export function StudioShell({
           : "시청자 화면 미리보기"
       : "미리보기";
     // 압축 1단계(studio-calm-layer.css ⑤)에선 짧은 라벨, 2단계부턴 눈 아이콘만 — 관리자의 보여주기 버튼과 같은 문법.
-    const triggerShort = previewing ? (previewRole === "owner" ? "보여주기" : "미리보기") : "미리보기";
+    const triggerShort = previewing ? (previewRole === "owner" ? "시청자 화면" : "미리보기") : "미리보기";
     return (
       <div className="preview-dd">
         <button
@@ -2141,6 +2141,13 @@ export function StudioShell({
       const r = bar.querySelector(".studio-role-tools")?.getBoundingClientRect();
       if (l && m && m.left < l.right + 4) return true;
       if (m && r && r.left < m.right + 4) return true;
+      // 계정 카드는 rail 폭으로 고정·등분(studio-calm-layer.css ⑦) — 칸보다 긴 라벨은 칸 안에서 넘친다(overflow hidden이라
+      // 보이진 않지만 scrollWidth로 드러난다). 그것도 '넘침'으로 쳐서 단계를 올린다.
+      for (const cell of bar.querySelectorAll<HTMLElement>(
+        ".studio-role-tools .save-status, .studio-role-tools .actor-badge, .studio-role-tools .io-preview, .studio-role-tools .io-logout, .studio-role-tools .preview-dd-trigger, .studio-role-tools > .button"
+      )) {
+        if (cell.scrollWidth > cell.clientWidth + 1) return true;
+      }
       return false;
     };
     const measure = () => {
@@ -2168,6 +2175,75 @@ export function StudioShell({
     };
     // 헤더 내용이 바뀌는 조건들(역할·미리보기·로그인 상태)에서 다시 잰다.
   }, [isNarrow, isDeveloper, previewRole, actor.isAuthenticated, isEffectivelyOwner]);
+  // 미리보기 이동 카드(.viewer-preview-actions) = 포스터 레일(.public-right) 폭·오른쪽 끝(2026-09-04 사용자: 편집실 계정 카드와
+  // 같은 지적). 오버레이와 레일이 같은 문서에 있으니 여기서 둘 다 재서 카드에 --pv-w/--pv-mr(레이아웃 px = rect ÷ zoom)을
+  // 준다(studio-shell.css). 레일이 접힌 아바타 scene에선 변수를 지워 기본 폭. 레일 폭이 바뀌는 순간(포스터 배율·아바타 토글)은
+  // ResizeObserver(레일·오버레이) + 래퍼 class 변화로 잡는다.
+  useEffect(() => {
+    if (!viewerMode || isNarrow) return;
+    let raf = 0;
+    let ro: ResizeObserver | null = null;
+    let mo: MutationObserver | null = null;
+    let observedRail: Element | null = null;
+    let observedStage: Element | null = null;
+    const fit = () => {
+      raf = 0;
+      const overlay = document.querySelector<HTMLElement>(".viewer-preview-overlay");
+      const card = overlay?.querySelector<HTMLElement>(".viewer-preview-actions");
+      const rail = document.querySelector<HTMLElement>(".viewer-fullscreen .poster-surface .public-right");
+      if (!overlay || !card) return;
+      if (ro && rail && rail !== observedRail) {
+        if (observedRail) ro.unobserve(observedRail);
+        ro.observe(rail);
+        observedRail = rail;
+      }
+      // 포스터 배율이 바뀌면 stage 높이(자연 높이 × 배율)가 바뀐다 — 레일 rect는 transform이라 RO가 못 보므로 stage를 본다.
+      const stage = document.querySelector<HTMLElement>(".viewer-fullscreen .poster-stage");
+      if (ro && stage && stage !== observedStage) {
+        if (observedStage) ro.unobserve(observedStage);
+        ro.observe(stage);
+        observedStage = stage;
+      }
+      const rr = rail?.getBoundingClientRect();
+      if (!rail || !rr || rr.width < 60) {
+        card.style.removeProperty("--pv-w");
+        card.style.removeProperty("--pv-mr");
+        return;
+      }
+      const or = overlay.getBoundingClientRect();
+      const zoom = overlay.offsetWidth > 0 ? or.width / overlay.offsetWidth : 1;
+      const padR = parseFloat(getComputedStyle(overlay).paddingRight) || 0;
+      card.style.setProperty("--pv-w", `${Math.round(rr.width / zoom)}px`);
+      card.style.setProperty("--pv-mr", `${Math.round((or.right - rr.right) / zoom - padR)}px`);
+    };
+    const timers: number[] = [];
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(fit);
+      // 배율·아바타 전환은 transition(포스터 scaler transform·stage margin 0.55s) 중이라 첫 실측이 중간값이다 — 끝난 뒤 두 번 더.
+      for (const id of timers) window.clearTimeout(id);
+      timers.length = 0;
+      timers.push(window.setTimeout(fit, 400), window.setTimeout(fit, 900));
+    };
+    ro = new ResizeObserver(schedule);
+    const overlay = document.querySelector<HTMLElement>(".viewer-preview-overlay");
+    if (overlay) ro.observe(overlay);
+    const wrap = document.querySelector<HTMLElement>(".viewer-fullscreen");
+    if (wrap) {
+      mo = new MutationObserver(schedule);
+      mo.observe(wrap, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] });
+      wrap.addEventListener("transitionend", schedule);
+    }
+    window.addEventListener("resize", schedule);
+    schedule();
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      for (const id of timers) window.clearTimeout(id);
+      ro?.disconnect();
+      mo?.disconnect();
+      wrap?.removeEventListener("transitionend", schedule);
+      window.removeEventListener("resize", schedule);
+    };
+  }, [viewerMode, isNarrow]);
   // 자동 배치 좌표 + 등장 원점(ox/oy = 앵커가 팝오버 로컬에서 향하는 지점) — 스케일-인이
   // '클릭한 칸/일정에서부터 자라나듯' 보이게 transform-origin으로 쓴다.
   const [editorPopPos, setEditorPopPos] = useState<{
@@ -6022,7 +6098,8 @@ export function StudioShell({
               {/* '보여주기'는 관리자(owner)만 — 그 외 역할 미리보기는 '미리보기'. ≤1560px·압축 1단계에선 짧은 라벨,
                   2단계부턴 눈 아이콘만(aria-label/title이 이름을 지킨다) — studio-calm-layer.css ⑤. */}
               <span className="lbl-long">{isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}</span>
-              <span className="lbl-short">{isEffectivelyOwner ? "보여주기" : "미리보기"}</span>
+              {/* 짧은 라벨은 "시청자 화면"(2026-09-04 사용자의 모바일 카피 규칙과 동일 — 가장 짧게 통하는 이름). */}
+              <span className="lbl-short">{isEffectivelyOwner ? "시청자 화면" : "미리보기"}</span>
             </button>
           )}
           {actor.isAuthenticated ? (

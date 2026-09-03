@@ -6770,7 +6770,7 @@ html[data-reduce-motion] .agenda-detail-close:active {
   display: inline-flex;
   align-items: stretch;
   gap: 4px;
-  padding: 4px;
+  padding: 3px; /* 36 + 3·2 + 테두리 2 = 44 — 가운데 알약(44)과 같은 높이 */
   border: 1px solid var(--line, #ece9f5);
   border-radius: 16px;
   background: rgb(255 253 249 / 84%);
@@ -6895,4 +6895,25 @@ html[data-pchrome="3"] .poster-chrome-title {
   left: 50%;
   transform: translateX(-50%);
   pointer-events: auto;
+}
+/* 계정 카드 안의 버튼은 카드가 테두리·면을 쥔다 — `.poster-readonly .viewer-actions .button`(유리 면, 특이도 3)이 위의 카드 칸
+   규칙(특이도 2)을 이겨 버튼에 면·테두리가 한 번 더 그려졌다(2026-09-04 사용자 사진 4: 로그인 버튼 하나가 2중 상자). */
+.public-calendar-header .viewer-actions .account-form .button,
+.poster-readonly .public-calendar-header .viewer-actions .account-form .button {
+  height: 36px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 12px;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  font-size: var(--text-caption);
+  font-weight: 800;
+}
+.public-calendar-header .viewer-actions .account-form .button:hover,
+.poster-readonly .public-calendar-header .viewer-actions .account-form .button:hover {
+  background: #f4f2fb;
+  border-color: #e6e1f4;
 }
