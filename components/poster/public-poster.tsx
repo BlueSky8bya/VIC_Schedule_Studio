@@ -28,7 +28,8 @@ import {
 } from "react";
 import dynamic from "next/dynamic";
 import { logActivity } from "@/lib/activity/client";
-import { WaterTide } from "@/components/shared/water-tide";
+import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
+import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
 import { setBandHover } from "@/lib/ui/band-hover";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
@@ -142,6 +143,8 @@ type PublicPosterProps = {
   // 그리지 않는다(OBS 브라우저 소스는 로그인이 없으므로 URL만으로 scene이 나와야 한다). 공개 데이터만
   // 그리는 레이아웃 옵션 — 권한과 무관, 비공개 데이터는 애초에 이 컴포넌트에 없다.
   avatarFixed?: "left" | "right";
+  // 계절 배경 강제(fixture/검증 전용, ADR-0017) — 실제 `/`는 넘기지 않는다(오늘 KST 절기로 판정).
+  ambientForce?: SeasonKey | null;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -823,6 +826,7 @@ export function PublicPoster({
   avatarOn: avatarOnProp,
   avatarSide: avatarSideProp,
   avatarFixed,
+  ambientForce,
   onAvatarToggle,
   onAvatarSide
 }: PublicPosterProps) {
@@ -4158,9 +4162,9 @@ export function PublicPoster({
       }`}
       data-poster-theme={effectivePosterTheme}
     >
-      {/* 물결 레이어(ADR-0016, components/shared/water-tide.tsx — 편집실과 같은 컴포넌트). 표면
-          (data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
-      <WaterTide />
+      {/* 앰비언트 배경(ADR-0016 물결 + ADR-0017 계절, components/shared/ambient — 편집실과 같은
+          컴포넌트). 표면(data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
+      <AmbientLayer force={ambientForce} />
       {/* (라이브 카드는 우측 레일 안 — 정보 카드와 태그 필터 사이 — 로 이사(2026-07-31).
           모바일 아젠다는 하단 '오늘'→LIVE 버튼이 담당해 별도 플로팅 없음.) */}
       {/* 하트 승급 순간 — 화면 밖(fixed)이라 캡쳐 PNG엔 안 들어간다. */}

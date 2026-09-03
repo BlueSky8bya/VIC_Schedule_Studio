@@ -6,7 +6,7 @@
 // data-act 키는 예전 그대로(인사이트 집계 연속). 멤버 관리는 도구 카드 타일에서 내려와 여기 맨 아래의
 // 조용한 입구(관리자만) — 토리님이 안 쓰는 기능이라 타일 자리를 설정에 내줬다(사용자 결정).
 
-import { Eye, Palette, Sparkles, Users, Vibrate, Waves } from "lucide-react";
+import { Eye, Leaf, Palette, Sparkles, Users, Vibrate, Waves } from "lucide-react";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 
 export type StudioSettingsProps = {
@@ -20,6 +20,9 @@ export type StudioSettingsProps = {
   // 차분한 편집실(2026-09-03) — 팔레트만(물결은 '생동감 있는 동작'이 단독으로 맡는다). 기본 ON.
   studioCalm: boolean;
   onToggleStudioCalm: () => void;
+  // 계절 배경(2026-09-04, ADR-0017) — 물결 위 가을 낙엽·겨울 눈·봄 초목. 기본 ON. OFF면 물결만.
+  ambientOn: boolean;
+  onToggleAmbient: () => void;
   // 포스터 테마(시청자 화면 배경, calendars.poster_theme) — 소유자만(서버도 owner 검사). null이면 안 그림.
   posterTheme: PosterThemeKey | null;
   onChangePosterTheme: (theme: PosterThemeKey) => void;
@@ -38,6 +41,8 @@ export function StudioSettingsList({
   onToggleEyeComfort,
   studioCalm,
   onToggleStudioCalm,
+  ambientOn,
+  onToggleAmbient,
   posterTheme,
   onChangePosterTheme,
   posterThemeSaving,
@@ -116,6 +121,24 @@ export function StudioSettingsList({
           role="switch"
           type="button"
           data-act="studio-calm-toggle"
+        >
+          <span className="rhh-knob" aria-hidden="true" />
+        </button>
+      </div>
+      {/* 계절 배경 — 물결은 그대로 두고 그 위의 계절 소품(낙엽·눈·초목)만 켜고 끈다. 절기 기준 자동. */}
+      <div className="role-help-haptics">
+        <span className="rhh-label">
+          <Leaf aria-hidden="true" size={14} />
+          계절 배경
+        </span>
+        <button
+          aria-checked={ambientOn}
+          aria-label="계절 배경 켜기/끄기"
+          className={`rhh-switch ${ambientOn ? "on" : ""}`}
+          onClick={onToggleAmbient}
+          role="switch"
+          type="button"
+          data-act="계절 배경 켜기/끄기"
         >
           <span className="rhh-knob" aria-hidden="true" />
         </button>

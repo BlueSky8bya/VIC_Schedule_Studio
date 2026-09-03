@@ -16,6 +16,8 @@ import {
 import "./globals.css";
 // 금생수 스킨 토큰 + 띠 공용 질감(ADR-0016) — globals 뒤에 와야 :root 토큰이 덮인다.
 import "./metal-water.css";
+// 계절 레이어(ADR-0017) — 물결 위 가을 낙엽·겨울 눈·봄 초목. 게이트·규칙은 파일 머리.
+import "./ambient.css";
 // 포스터/스튜디오 CSS는 각 컴포넌트가 직접 import한다(아래). 루트에서 전역으로 싣지 않음으로써
 // 공개 포스터만 보는 비로그인 시청자가 스튜디오 CSS(220KB)를 렌더 차단으로 받지 않게 한다.
 import { PresenceBeacon } from "@/components/presence/presence-beacon";
@@ -116,7 +118,9 @@ export default function RootLayout({
               "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');" +
               // 눈 편한 테마 값: 약한 기기 판정(vic.gfx=lite, 30일)이면 필터 대신 토큰 팔레트('lite') — lib/ui/gfx.ts
               "var g=false;try{var r=JSON.parse(s.getItem('vic.gfx')||'null');g=!!r&&r.mode==='lite'&&Date.now()-r.at<2592000000}catch(e){}" +
-              "if(g)d.setAttribute('data-gfx','lite');if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',g?'lite':'1');if(s.getItem('vic.studioCalm')!=='off')d.setAttribute('data-studio-calm','1')}catch(e){}"
+              "if(g)d.setAttribute('data-gfx','lite');if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',g?'lite':'1');if(s.getItem('vic.studioCalm')!=='off')d.setAttribute('data-studio-calm','1');" +
+              // 계절 배경(vic.ambient, ADR-0017): 'off'일 때만 표식 — 계절 레이어만 접히고 물결은 그대로.
+              "if(s.getItem('vic.ambient')==='off')d.setAttribute('data-ambient','off')}catch(e){}"
           }}
         />
         {children}

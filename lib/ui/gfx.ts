@@ -56,7 +56,7 @@ function remember(mode: GfxRecord["mode"]): void {
     /* 저장소 불가 — 이번 세션만 */
   }
   // <html data-gfx="lite"> — 눈 편한 테마와 무관하게 '약한 기기' 자체를 알리는 표식(2026-09-03).
-  // 편집실 물결 레이어(.studio-tide)가 이 표식이 있으면 렌더를 접는다. 페인트 전 적용은 app/layout.tsx.
+  // 물결·계절 레이어(.gs-tide/.gs-season, 공용)가 이 표식이 있으면 렌더를 접는다. 페인트 전 적용은 app/layout.tsx.
   if (mode === "lite") document.documentElement.setAttribute("data-gfx", "lite");
 }
 
@@ -90,10 +90,11 @@ export async function probeGfx(): Promise<void> {
   if (typeof window === "undefined") return;
   if (readRecord()) return; // 30일 안에 이미 판정
   const root = document.documentElement;
-  // 잴 대상이 있을 때만: 루트 filter(눈 편한 "1") 또는 편집실 물결 레이어(.studio-tide가 보이는 중,
-  // 2026-09-03). 둘 다 없으면 이 기기에서 비용을 내는 게 없으니 재지 않는다.
+  // 잴 대상이 있을 때만: 루트 filter(눈 편한 "1") 또는 물결 레이어(.gs-tide가 보이는 중 — 2026-09-03,
+  // 공용 컴포넌트로 이름이 .studio-tide→.gs-tide로 바뀐 걸 2026-09-04 반영). 둘 다 없으면 이 기기에서
+  // 비용을 내는 게 없으니 재지 않는다.
   const filterOn = root.getAttribute("data-eye-comfort") === "1";
-  const tideEl = document.querySelector(".studio-tide");
+  const tideEl = document.querySelector(".gs-tide");
   const tideOn = !!tideEl && getComputedStyle(tideEl).display !== "none";
   if (!filterOn && !tideOn) return;
   const markLite = () => {

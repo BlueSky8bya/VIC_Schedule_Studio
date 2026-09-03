@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { PublicPoster } from "@/components/poster/public-poster";
+import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 
 // 비주얼 회귀 테스트 전용 fixture 페이지 — 고정된 공개 샘플 데이터로 포스터를 렌더한다.
@@ -11,7 +12,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string }>;
+  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -59,8 +60,11 @@ export default async function VisualPosterFixture({
         events: schedule.events.map((e, i) => ({ ...e, heartCount: [6, 24, 40, 45, 0][i % 5] }))
       }
     : schedule;
+  // ambient=spring|summer|autumn|winter → 계절 레이어 강제(ADR-0017 검증용). 없으면 오늘(KST) 절기.
+  const ambient = isSeasonKey(sp?.ambient) ? sp.ambient : undefined;
   return (
     <PublicPoster
+      ambientForce={ambient}
       anonymous
       accountSwitch={false}
       avatarFixed={fixed}

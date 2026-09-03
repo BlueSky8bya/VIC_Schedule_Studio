@@ -30,7 +30,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { WaterTide } from "@/components/shared/water-tide";
+import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
+import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { useRouter } from "next/navigation";
 import {
@@ -168,8 +169,10 @@ import { logActivity, logSettled } from "@/lib/activity/client";
 import { setBandHover } from "@/lib/ui/band-hover";
 import { useSectionActivity } from "@/lib/activity/use-section";
 import {
+  ambientEnabled,
   eyeComfortEnabled,
   reduceMotionEnabled,
+  setAmbient,
   setEyeComfort,
   setReduceMotion,
   setStudioCalm,
@@ -229,6 +232,8 @@ type StudioShellProps = {
   initialNarrow?: boolean;
   // P2-ROUTE-1: /studio?panel= 딥링크로 열 관리 모달(권한 없으면 조용히 무시).
   initialPanel?: "tags" | "members";
+  // 계절 배경 강제(fixture/검증 전용, ADR-0017) — 실제 /studio는 넘기지 않는다(오늘 KST 절기로 판정).
+  ambientForce?: SeasonKey | null;
 };
 
 
@@ -275,7 +280,8 @@ export function StudioShell({
   initialView,
   initialViewerMode = false,
   initialNarrow = false,
-  initialPanel
+  initialPanel,
+  ambientForce
 }: StudioShellProps) {
   const today = getTodayKst();
   const router = useRouter();
@@ -946,6 +952,17 @@ export function StudioShell({
     setStudioCalmState(next);
     hapticTick();
   };
+  // 계절 배경(2026-09-04, ADR-0017) — 기본 ON. 서버 렌더 true = 페인트-전 스크립트(속성 없음)와 일치.
+  const [ambientOn, setAmbientState] = useState(true);
+  useEffect(() => {
+    setAmbientState(ambientEnabled());
+  }, []);
+  const toggleAmbient = () => {
+    const next = !ambientOn;
+    setAmbient(next);
+    setAmbientState(next);
+    hapticTick();
+  };
   // 포스터 테마(2026-09-03, 물빛 테마와 함께 입구 복원) — 소유자만, 서버(updatePosterThemeAction)도
   // owner 검사. 낙관적으로 먼저 바꿔 보이고(미리보기 즉시), 실패면 되돌린다. 성공 후 router.refresh로
   // 서버 스냅샷(시청자 미리보기)까지 동기화.
@@ -1270,6 +1287,8 @@ export function StudioShell({
         onToggleHaptics={toggleHaptics}
         onToggleReduceMotion={toggleReduceMotion}
         onToggleStudioCalm={toggleStudioCalm}
+        ambientOn={ambientOn}
+        onToggleAmbient={toggleAmbient}
         posterTheme={actor.role === "owner" ? posterThemeLocal : null}
         posterThemeSaving={posterThemeSaving}
         reduceMotion={reduceMotion}
@@ -6202,10 +6221,11 @@ export function StudioShell({
         renderMobile()
       ) : (
         <>
-      {/* 물결 레이어(ADR-0016, components/shared/water-tide.tsx 공용 — 시청자 화면도 같은 컴포넌트).
-          제 배경이 없는 완전 투명 컨테이너라 body의 아이보리(--paper) 위에 옅은 결만 얹는다("모래 위
-          얕은 물결"). 보이는 조건은 app/metal-water.css `.gs-tide`가 판단. */}
-      <WaterTide />
+      {/* 앰비언트 배경(ADR-0016 물결 + ADR-0017 계절, components/shared/ambient — 시청자 화면도 같은
+          컴포넌트). 물결은 제 배경이 없는 완전 투명 컨테이너라 body의 아이보리(--paper) 위에 옅은 결만
+          얹고("모래 위 얕은 물결"), 오늘(KST) 계절 레이어가 그 위에. 보이는 조건은 CSS가 판단
+          (app/metal-water.css `.gs-tide`, app/ambient.css `.gs-season`). */}
+      <AmbientLayer force={ambientForce} />
       <header className="studio-topbar">
         {/* 왼쪽 칸: 큰 제목 + 그 옆에 배포 버전 배지(헤더 세로 중앙, 클릭=버전 복사). */}
         <div className="studio-left">

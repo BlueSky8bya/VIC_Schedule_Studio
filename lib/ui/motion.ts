@@ -112,3 +112,33 @@ export function setStudioCalm(on: boolean): void {
     /* no-op */
   }
 }
+
+// ── 계절 배경(2026-09-04, ADR-0017) — 물결 위의 계절 레이어(components/shared/ambient) ON/OFF ──
+// 기본 ON('off'만 끔). OFF면 `<html data-ambient="off">`가 붙어 app/ambient.css가 계절 레이어만 숨긴다 —
+// 물결(.gs-tide)은 이 스위치와 무관하게 '생동감 있는 동작'이 단독으로 쥔다(사철 상수). 페인트 전 적용은
+// app/layout.tsx 스크립트(같은 줄). 시청자 화면엔 설정 UI가 없어 늘 ON(기기 저장값이 있으면 그것).
+const AMBIENT_KEY = "vic.ambient"; // localStorage: 미설정이면 기본 ON, "off"만 끔
+
+export function ambientEnabled(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return window.localStorage.getItem(AMBIENT_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+export function setAmbient(on: boolean): void {
+  try {
+    window.localStorage.setItem(AMBIENT_KEY, on ? "on" : "off");
+  } catch {
+    /* 무시 */
+  }
+  try {
+    const root = document.documentElement;
+    if (on) root.removeAttribute("data-ambient");
+    else root.setAttribute("data-ambient", "off");
+  } catch {
+    /* no-op */
+  }
+}

@@ -7,6 +7,7 @@ import "@/components/studio/studio-shell.css";
 import "@/components/studio/broadcast-panel.css";
 import "@/components/poster/public-poster.css";
 import { StudioShell } from "@/components/studio/studio-shell";
+import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 
 // 비주얼/E2E 테스트 전용 fixture — 고정 샘플 데이터로 편집실 셸을 렌더한다(인증·DB 없이).
@@ -17,7 +18,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -31,8 +32,11 @@ export default async function VisualStudioFixture({
       : "owner";
   const panel =
     sp?.panel === "tags" || sp?.panel === "members" ? sp.panel : undefined;
+  // ambient=spring|summer|autumn|winter → 계절 레이어 강제(ADR-0017 검증용). 없으면 오늘(KST) 절기.
+  const ambient = isSeasonKey(sp?.ambient) ? sp.ambient : undefined;
   return (
     <StudioShell
+      ambientForce={ambient}
       actor={{
         email: "fixture-owner@example.com",
         isAuthenticated: true,

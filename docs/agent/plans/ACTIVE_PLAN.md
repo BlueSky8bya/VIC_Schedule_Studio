@@ -1,5 +1,30 @@
 # Active ExecPlan
 
+Plan ID: PLAN-20260904-001
+Status: Phase 1·2 Completed (2026-09-04) / Phase 3·4 Proposed
+Task Risk: L2 (구조적 — 배경 시스템을 레지스트리 하나로; 편집실·시청자 공용 마운트 교체; 새 설정 스위치)
+Created / Updated: 2026-09-04
+
+## Objective (사용자: "계절별 배경(물결=여름)+ON/OFF, 특정일 배경, 따로 관리하는 루트, 사주 원리 보정 — 시작")
+
+1. **레지스트리**(`components/shared/ambient/registry.ts`) — KST 절기 계절 판정 + `SPECIAL_DAYS`(3단계) + `pickAmbient`.
+   `<AmbientLayer />`가 물결(상수) + 계절 레이어(강세) 마운트, 편집실·시청자 공용(옛 `<WaterTide />` 직접 마운트 대체).
+2. **레이어**: 봄 초목 그림자 얼룩·풀빛 필름·이슬(木·水), 여름 = 물결만, 가을 물 위 낙엽 8장(채도 낮춘 갈색·와인) +
+   은빛 서리 안개(金), 겨울 눈 26송이 + 서리 광택 + 찬 필름(水·金). 전부 transform/opacity, fixed z:-1, 표면 밖.
+3. **스위치 "계절 배경"**(`vic.ambient`, 기본 ON, 설정 톱니 목록) → `html[data-ambient="off"]`면 계절만 숨김.
+4. 3단계 특정일(성탄 눈+숨은 요소 → 할로윈 보랏빛 안개 → 24절기 표), 4단계 포스터 테마 셀렉트 `auto/none` 축소 + 옛 7종 CSS 철거.
+
+## 검증
+- fixture `?ambient=spring|summer|autumn|winter` 편집실·시청자 스크린샷 + 게이트(계절 OFF → 물결만, 생동감 OFF → 둘 다
+  숨김, 모바일 숨김) + 스위치 저장/즉시 반영 + 헤드리스 드래그 스펙(비용 게이트) + tsc/lint/vitest/build/비주얼.
+
+## 롤백
+- `<AmbientLayer />` → `<WaterTide />`, `app/ambient.css` import 제거. 저장 키 `vic.ambient`는 무해.
+
+---
+
+# (보관) 이전 계획
+
 Plan ID: PLAN-20260903-002
 Status: Completed (2026-09-03 — 실측: GPU 60fps 0드롭, 소프트웨어 렌더 물결 ON 47fps/게이트 OFF 100fps →
 gfx 판정 v2로 접음; 필터 잘림 1720×1000 0px · 1600×1000 51px(옛 44px 동급); 3역할·3게이트 스크립트 통과)

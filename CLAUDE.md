@@ -68,6 +68,16 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   because the rail moves to the other side and the control would travel with it (owner feedback
   2026-09-03). Do not reintroduce a second full-width action row —
   the calendar (hot zone) owns that height. The rail's vertical budget is filter | tools | avatar 58%.
+- **Ambient registry (ADR-0017, 2026-09-04).** Studio and viewer mount ONE `<AmbientLayer />`
+  (`components/shared/ambient/`): the water tide is the year-round constant (owner's 용신 = 水), and the
+  registry picks today's (KST, 절기-based: 입춘 2/4 · 입하 5/5 · 입추 8/7 · 입동 11/7) season accent on top —
+  spring 초목 shadows(木), summer nothing extra, autumn desaturated brown/wine leaves floating on the water +
+  silver mist(金) (never red/orange/yellow leaves), winter snow + frost sheen. Switch "계절 배경"
+  (`vic.ambient`, default ON) hides only the accent (`html[data-ambient="off"]`); the tide still follows
+  생동감 있는 동작 alone. Special days go into `SPECIAL_DAYS` in `registry.ts` (priority over season). Same
+  performance rules as the tide (transform/opacity only, no filter/blur/scale animation, no dark blobs).
+  Never mount `<WaterTide />` directly again; never add a second background system (the old
+  `data-poster-theme` 7-pack coexists for now and is slated to be superseded).
 - **Tide layer.** `.gs-tide` (`components/shared/water-tide.tsx`, shared by studio and viewer poster;
   CSS in `app/metal-water.css`) — shallow-water caustics seen from above: thin bright cell network from
   an SVG noise contour, drifting/skewing/breathing via transform+opacity only (filters rasterize once;
