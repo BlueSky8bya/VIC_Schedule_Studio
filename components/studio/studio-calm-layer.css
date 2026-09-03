@@ -208,6 +208,33 @@ html[data-studio-calm] .studio-topbar {
   }
 }
 
+/* 물결이 모래 위로 비치게 — 물결이 보이는 상태에선 달력 칸·요일 머리·좌측 카드·도구 카드를 **반투명**으로.
+   색은 각자의 원래 색(크림·은백·파스텔) 그대로, 알파만 낮춘다 → 위에서 내려다본 얕은 물처럼 칸 밑으로
+   잔물결·윤슬이 지나간다. 오늘(골드)·편집 중·드롭 대상·휴식 칸은 제 색을 지킨다(불투명). 일정 카드·
+   팝오버(일 = 금)는 불투명 — 물 위에 놓인 물건. 조건 밖(동작 줄이기·약한 기기·모바일)에선 원래 불투명. */
+@media (min-width: 641px) {
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
+    background: rgb(255 253 246 / 56%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-day.past:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
+    background: rgb(244 238 226 / 56%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-day.outside {
+    background: rgb(242 240 248 / 46%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-weekdays {
+    background: linear-gradient(180deg, rgb(253 241 251 / 70%), rgb(238 243 255 / 70%));
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-left-panel > section:first-child,
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .avatar-rail-filter,
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-tools {
+    background: rgb(243 245 247 / 74%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .kbd-hints {
+    background: rgb(255 255 255 / 60%);
+  }
+}
+
 /* ── ④ 금생수(金生水) 스킨 — 편집실(ADR-0016, 토큰은 app/metal-water.css) ─────────────────────────
    4차(사용자: "광택 너무 강함 · 색 파편화 · 배경 아이보리로") — 바탕(상단바·요일 머리·달력 칸·좌측
    카드·도구 카드·아바타 자리·힌트 바·역할 팝오버)은 **여기서 색을 건드리지 않는다** — 각 요소의 원래

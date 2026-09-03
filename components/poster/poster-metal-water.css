@@ -18,6 +18,29 @@
   }
 }
 
+/* 물결이 모래 위로 비치게 — 물결이 보이는 상태에선 표면·달력 칸·요일 머리·레일 카드를 **반투명**으로(색은
+   원래 크림 그대로, 알파만). 오늘(골드) 칸·일정 카드·띠·하트는 불투명(물 위의 물건). 공식 PNG 내보내기는
+   철수(ADR-0015)됐고, 비주얼 테스트는 동작 줄이기 ON(물결 숨김 → 불투명)이라 결정성 그대로. 조건 밖
+   (동작 줄이기·약한 기기·모바일)에선 원래 불투명. */
+@media (min-width: 641px) {
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .poster-surface {
+    background: linear-gradient(180deg, rgb(255 253 246 / 56%), rgb(253 246 228 / 56%));
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .public-day:not(.today) {
+    background: rgb(255 254 251 / 46%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .public-day.outside {
+    background: rgb(241 233 216 / 52%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .weekday-row {
+    background: rgb(251 247 238 / 70%);
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .rail-info-card,
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .public-legend-vertical {
+    background: rgb(255 253 246 / 76%);
+  }
+}
+
 /* 버튼(.button 계열)·'이 달 기록' 칩 — 아주 은은한 은 광택 + 헤어라인. 1차(.primary)·위험(.danger)은 제 색. */
 .poster-page .button:not(.primary):not(.danger),
 .poster-page .insights-open {

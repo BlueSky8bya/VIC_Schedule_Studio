@@ -1,14 +1,14 @@
 /* ══ 금생수(金生水) 스킨 — 공용 토큰 + 물결 레이어 + 양쪽 화면 공통 규칙(2026-09-03, ADR-0016) ═══════════
    토리(소유자)의 오행 결론(수 용신·금 희신 — 원국 자체는 어디에도 싣지 않는다)을 형태 언어로 옮긴다.
-   4차 개정(사용자: "광택 너무 강함 · 색 단조로움/파편화 · 배경은 원래 좋아하던 아이보리여야, 대신 물결
-   느낌은 남겨줘 — 모래사장 위로 얕은 물결이 일렁이는 느낌"):
-   • **바탕은 아이보리(--paper/--surface)로 되돌린다.** 편집실·시청자 화면의 페이지·표면·달력 칸·요일 머리·
-     패널은 모두 원래의 따뜻한 크림 톤(칸·패널 배경색은 각 화면의 studio-shell.css/public-poster.css 기본
-     규칙을 그대로 쓴다 — 여기서 덮어쓰지 않는다). 파란/보라/옥빛 같은 네 갈래 물색 베이스 시스템은 폐기.
-   • **'물'은 이제 오직 물결 레이어(.gs-tide)로만 표현한다** — 제 배경이 없는 완전 투명 컨테이너가 body의
-     아이보리 위에 옅은 물빛 결 + 따뜻한 윤슬(금빛 반짝임)만 얹는다("모래 위 얕은 물결"). 편집실·시청자
-     화면 공용 컴포넌트(components/shared/water-tide.tsx).
-   • **'금'은 일(work) 요소에 한해 아주 은은한 은 광택**(두 톤 꺾임·강한 흰 줄 없이) + 헤어라인만.
+   4차 개정(사용자: "광택 너무 강함 · 색 파편화 · 배경은 원래 좋아하던 아이보리여야, 대신 **위에서
+   내려다본 모래사장 위의 얕은 물결**이 일렁이는 느낌을 배경에"):
+   • **바탕은 아이보리(--paper/--surface).** 페이지·표면·달력 칸·요일 머리·패널의 색은 각 화면의 기본
+     규칙 그대로(여기서 덮지 않는다). 파란/보라/옥빛 네 갈래 물색 베이스 시스템은 폐기.
+   • **'물'은 물결 레이어(.gs-tide) 하나** — 얇은 반투명 물 필름 + 잔물결 그림자 띠 셋 + 윤슬(햇살이 물에
+     굴절돼 생기는 빛 그물) 선 셋 + 큰 스웰(물·햇살 얼룩). 편집실·시청자 공용 컴포넌트(components/shared/
+     water-tide.tsx). 물결이 보이는 상태에선 달력 칸·패널을 반투명으로 해 물결이 모래 위로 비친다(각
+     화면 파일). 불투명 배경은 어디에도 없다 → 어떤 상태든 이음새 없음.
+   • **'금'은 일(work) 요소에 한해 아주 은은한 은 광택** + 헤어라인만.
    불변: 의미색 8종, 태그색, 기하(표면 1840·칸 높이·띠 17px·레인). 색·그림자·라운드·질감만(레이아웃 0). */
 :root {
   --gs-metal-line: #c7cfd8;
@@ -22,12 +22,17 @@
     inset 0 1px 0 rgb(255 255 255 / 55%),
     0 1px 2px rgb(38 50 66 / 8%);
   --gs-metal-radius: 10px;
+  /* 물 — 얕은 물의 청록(모래 위에 얹히면 젖은 모래색이 된다)과 윤슬의 따뜻한 흰빛. */
+  --gs-sea-rgb: 40 118 162;
+  --gs-sun-rgb: 214 176 108;
+  --gs-glint: 255 246 222;
 }
 
-/* ── 물결 레이어(.gs-tide) — 편집실·시청자 공용, components/shared/water-tide.tsx가 렌더한다. ──────
-   제 배경 없음(완전 투명) — body의 아이보리 위에 옅은 물빛 스웰 둘 + 따뜻한 윤슬(햇살) 스웰 하나 +
-   물결 채움 셋 + 은선(윤슬) 하나가 아주 느리게(26~84초) 흐른다. 보이는 조건: 차분 ON · 생동감 있는
-   동작 ON · 여력 있는 기기(data-gfx≠lite) · 웹(≥641px). 전부 transform/opacity(합성기). */
+/* ── 물결 레이어(.gs-tide) — components/shared/water-tide.tsx가 렌더한다. ─────────────────────────
+   위에서 내려다본 얕은 물: 화면 전체에 얇은 필름(6→11%) + 띠(잔물결 그림자, 청록 5~7%) 셋이 서로 다른
+   속도·방향으로 흐르고, 그 위로 윤슬 선(따뜻한 흰빛, 1.5px + 글로우) 셋이 반짝이며 지나간다. 큰 스웰 셋은
+   물 얼룩(청록·파랑)과 햇살 얼룩(금빛). 너울은 전체가 천천히(11초) 숨쉰다. 보이는 조건: 차분 ON · 생동감
+   있는 동작 ON · 여력 있는 기기(data-gfx≠lite) · 웹(≥641px). 전부 transform/opacity(합성기). */
 .gs-tide {
   display: none;
 }
@@ -43,102 +48,142 @@
   overflow: hidden;
   pointer-events: none;
   contain: strict;
-  /* 배경 없음 — body/포스터 페이지의 아이보리가 그대로 바탕. */
+  /* 물 필름 — 반투명. 아래로 갈수록 살짝 깊다. 모래(body 아이보리)가 그대로 비친다. */
+  background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 6%) 0%, rgb(var(--gs-sea-rgb) / 11%) 100%);
 }
 .gs-tide-swell {
   position: absolute;
   border-radius: 50%;
   will-change: transform;
 }
-/* 스웰 셋: a·b = 옅은 물빛(파랑), c = 따뜻한 윤슬(햇살이 물 위에 비치는 금빛) — 물·금 두 결이
-   함께 떠도는 느낌. 강한 4색 대신 이 둘의 대비만으로 다채로움을 낸다. */
 .gs-tide-swell-a {
   left: -14%;
   top: -18%;
   width: 64%;
-  height: 52%;
-  background: radial-gradient(closest-side, rgb(30 90 168 / 5%), rgb(30 90 168 / 0%));
+  height: 56%;
+  background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 11%), rgb(var(--gs-sea-rgb) / 0%));
   animation: gs-tide-drift-a 38s ease-in-out infinite alternate;
 }
 .gs-tide-swell-b {
   right: -16%;
-  bottom: -8%;
-  width: 56%;
-  height: 48%;
-  background: radial-gradient(closest-side, rgb(32 130 156 / 4%), rgb(32 130 156 / 0%));
+  bottom: -10%;
+  width: 58%;
+  height: 52%;
+  background: radial-gradient(closest-side, rgb(30 90 168 / 9%), rgb(30 90 168 / 0%));
   animation: gs-tide-drift-b 52s ease-in-out infinite alternate;
 }
+/* 햇살 얼룩 — 물 위에 비치는 따뜻한 빛 덩어리, 가운데서 크게 숨쉰다. */
 .gs-tide-swell-c {
-  left: 22%;
-  top: 18%;
-  width: 56%;
-  height: 60%;
-  background: radial-gradient(closest-side, rgb(214 176 108 / 6%), rgb(214 176 108 / 0%));
+  left: 20%;
+  top: 14%;
+  width: 60%;
+  height: 64%;
+  background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 12%), rgb(var(--gs-sun-rgb) / 0%));
   animation: gs-tide-drift-c 64s ease-in-out infinite alternate;
 }
 @keyframes gs-tide-drift-a {
   to {
-    transform: translate3d(7%, 5%, 0);
+    transform: translate3d(8%, 6%, 0);
   }
 }
 @keyframes gs-tide-drift-b {
   to {
-    transform: translate3d(-6%, -6%, 0);
+    transform: translate3d(-7%, -7%, 0);
   }
 }
 @keyframes gs-tide-drift-c {
   to {
-    transform: translate3d(-5%, 6%, 0) scale(1.08);
+    transform: translate3d(-6%, 7%, 0) scale(1.1);
   }
 }
-/* 하늘물 — 상단 14%, 세로 뒤집어 마루가 아래를 향하고 반대 방향으로 아주 옅게 흐른다. */
-.gs-tide-sky {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 14%;
-  transform: scaleY(-1);
-  will-change: transform;
-}
-.gs-tide-sky-fill {
-  animation-duration: 70s;
-  animation-direction: reverse;
-}
-.gs-tide-sky-fill path {
-  fill: rgb(214 176 108 / 3%);
-}
-/* 바다 — 아래 34%. 너울은 바다 전체에, 흐름은 파형마다 다른 속도로. */
+/* 물 — 화면 전체. 너울(위아래 14px)은 전체가, 흐름은 결마다 다른 속도·방향. */
 .gs-tide-sea {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 34%;
+  inset: 0;
   overflow: hidden;
   will-change: transform;
-  animation: gs-tide-bob 9s ease-in-out infinite alternate;
+  animation: gs-tide-bob 11s ease-in-out infinite alternate;
 }
 @keyframes gs-tide-bob {
   to {
-    transform: translate3d(0, 8px, 0);
+    transform: translate3d(0, 14px, 0);
   }
 }
-/* 빛살 — 물 위를 비스듬히 지나는 옅은 흰 광선 둘. */
+.gs-tide-wave {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 200%;
+  height: 100%;
+  display: block;
+  will-change: transform;
+  animation: gs-tide-flow 52s linear infinite;
+}
+@keyframes gs-tide-flow {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+/* 잔물결 그림자 띠 — 청록, 세 높이·세 속도. 가운데 띠는 반대 방향(물이 서로 엇갈린다). */
+.gs-tide-band-1 path {
+  fill: rgb(var(--gs-sea-rgb) / 7%);
+}
+.gs-tide-band-2 {
+  animation-duration: 68s;
+  animation-direction: reverse;
+}
+.gs-tide-band-2 path {
+  fill: rgb(var(--gs-sea-rgb) / 6%);
+}
+.gs-tide-band-3 {
+  animation-duration: 90s;
+}
+.gs-tide-band-3 path {
+  fill: rgb(var(--gs-sea-rgb) / 5%);
+}
+/* 윤슬 — 따뜻한 흰빛 선(1.5px) + 그 밑 넓은 글로우. 띠보다 살짝 빠르게 흘러 빛이 물결을 타고 미끄러진다. */
+.gs-tide-line path,
+.gs-tide-glow path {
+  fill: none;
+  stroke-linecap: round;
+  shape-rendering: geometricPrecision;
+}
+.gs-tide-line path {
+  stroke: rgb(var(--gs-glint) / 78%);
+  stroke-width: 1.5px;
+}
+.gs-tide-glow path {
+  stroke: rgb(var(--gs-glint) / 22%);
+  stroke-width: 8px;
+}
+.gs-tide-line-1,
+.gs-tide-glow-1 {
+  animation-duration: 40s;
+}
+.gs-tide-line-2,
+.gs-tide-glow-2 {
+  animation-duration: 58s;
+  animation-direction: reverse;
+}
+.gs-tide-line-3,
+.gs-tide-glow-3 {
+  animation-duration: 76s;
+}
+/* 빛살 — 물 위를 비스듬히 지나는 흰 광선 둘. */
 .gs-tide-ray {
   position: absolute;
-  bottom: -10%;
+  top: -10%;
   width: 16%;
   height: 120%;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 22%) 50%, transparent);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 30%) 50%, transparent);
   will-change: transform;
-  animation: gs-tide-ray 26s ease-in-out infinite alternate;
+  animation: gs-tide-ray 30s ease-in-out infinite alternate;
 }
 .gs-tide-ray-b {
   width: 11%;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 15%) 50%, transparent);
-  animation-duration: 38s;
-  animation-delay: -14s;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 20%) 50%, transparent);
+  animation-duration: 44s;
+  animation-delay: -16s;
 }
 @keyframes gs-tide-ray {
   from {
@@ -147,55 +192,6 @@
   to {
     transform: translate3d(560%, 0, 0) skewX(-18deg);
   }
-}
-.gs-tide-wave {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 200%;
-  height: 100%;
-  display: block;
-  will-change: transform;
-  animation: gs-tide-flow 48s linear infinite;
-}
-@keyframes gs-tide-flow {
-  to {
-    transform: translate3d(-50%, 0, 0);
-  }
-}
-.gs-tide-fill-1 path {
-  fill: rgb(30 90 168 / 5%);
-}
-.gs-tide-fill-2 {
-  animation-duration: 62s;
-}
-.gs-tide-fill-2 path {
-  fill: rgb(32 130 156 / 3.5%);
-}
-.gs-tide-fill-3 {
-  animation-duration: 84s;
-}
-.gs-tide-fill-3 path {
-  fill: rgb(214 176 108 / 2.5%);
-}
-/* 은선(윤슬) — 물결 위 반짝이는 금빛 하이라이트. 채움보다 살짝 빠르게 흘러 마루가 반짝인다. */
-.gs-tide-line,
-.gs-tide-line-glow {
-  animation-duration: 40s;
-}
-.gs-tide-line path,
-.gs-tide-line-glow path {
-  fill: none;
-  stroke-linecap: round;
-  shape-rendering: geometricPrecision;
-}
-.gs-tide-line path {
-  stroke: rgb(206 176 122 / 45%);
-  stroke-width: 1.25px;
-}
-.gs-tide-line-glow path {
-  stroke: rgb(214 190 150 / 12%);
-  stroke-width: 6px;
 }
 
 /* 띠(업 도움 장미 · 기간 안내 하늘) — 색은 의미색 그대로, 질감만 금: 아주 은은한 윗면 광택 오버레이
