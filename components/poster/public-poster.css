@@ -1176,6 +1176,41 @@ html[data-reduce-motion] .day-vod-modal {
 .dvm-cover img {
   filter: url(#vod-cover-sharpen);
 }
+/* 키 토글 피드백 토스트(🔇 음소거 / 🔊 소리 켬) — 영상 왼쪽 아래, 떠올랐다 사라진다. */
+.dvm-notice {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  z-index: 2;
+  pointer-events: none;
+  padding: 7px 12px;
+  border-radius: var(--r-pill, 999px);
+  background: rgb(15 23 42 / 72%);
+  color: #fff;
+  font-size: var(--text-body);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  backdrop-filter: blur(6px);
+  animation: dvm-notice-in 1.4s var(--ease) both;
+}
+@keyframes dvm-notice-in {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  12%,
+  78% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+html[data-reduce-motion] .dvm-notice {
+  animation: none;
+}
 .dvm-ext {
   position: absolute;
   top: 8px;
@@ -1372,6 +1407,42 @@ html[data-reduce-motion] .day-vod-modal {
 }
 .vch-item.is-active .vch-t { color: #1d4ed8; }
 .vch-item.is-active .vch-label { font-weight: 800; color: #1d1d29; }
+/* 잘린 라벨 전문 툴팁 — 항목 안 absolute(항목 바로 아래, 레일 바닥 근처면 위), 항목 폭 안에서
+   줄바꿈. z-index 5 = sticky 코너 헤더(1)·다음 항목들 위. 레일 overflow는 위/아래 끝에서만 자르는데
+   그 경우는 .is-above로 뒤집는다. */
+.vch-tip {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: calc(100% + 4px);
+  z-index: 5;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgb(29 29 41 / 94%);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  box-shadow: 0 8px 24px rgb(20 25 60 / 22%);
+  pointer-events: none;
+  animation: vch-tip-in 0.16s var(--ease) both;
+}
+.vch-tip.is-above {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+@keyframes vch-tip-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+html[data-reduce-motion] .vch-tip {
+  animation: none;
+}
 .vch-item.is-past .vch-t { color: #9aa6c7; }
 .vch-item.is-past .vch-label { color: #8a8a99; font-weight: 500; }
 .vch-item.is-past:hover .vch-t { color: #1d4ed8; }

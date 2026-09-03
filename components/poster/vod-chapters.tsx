@@ -46,6 +46,26 @@ export function VodChapters({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const hoverRef = useRef(false); // 레일 위에 마우스가 있으면 자동 추적 스크롤을 멈춘다(읽는 중)
   const followRef = useRef(false); // 이번 activeIdx 변경이 재생 추적에서 왔는지(→ 자동 스크롤)
+  // 잘린 라벨 전문 툴팁(2026-09-03 사용자 요청) — 말줄임된 항목에만, 120ms 뒤 그 항목 안에 absolute로
+  // (아래쪽, 레일 바닥에 닿으면 위쪽). fixed는 창의 등장 애니메이션이 남긴 transform 때문에 기준이
+  // 창 박스가 돼 좌표가 어긋났다(실측). 항목 안이면 레일 스크롤과 함께 움직이고 z-index만 챙기면 된다.
+  const [tip, setTip] = useState<{ idx: number; text: string; above: boolean } | null>(null);
+  const tipTimerRef = useRef(0);
+  const showTip = (el: HTMLElement, text: string, idx: number) => {
+    const label = el.querySelector<HTMLElement>(".vch-label");
+    if (!label || label.scrollWidth <= label.clientWidth + 1) return; // 안 잘렸으면 툴팁 없음
+    window.clearTimeout(tipTimerRef.current);
+    tipTimerRef.current = window.setTimeout(() => {
+      const r = el.getBoundingClientRect();
+      const rail = scrollRef.current?.getBoundingClientRect();
+      setTip({ idx, text, above: rail !== undefined && r.bottom + 76 > rail.bottom });
+    }, 120);
+  };
+  const hideTip = () => {
+    window.clearTimeout(tipTimerRef.current);
+    setTip(null);
+  };
+  useEffect(() => () => window.clearTimeout(tipTimerRef.current), []);
 
   // 재생 위치 → 현재 챕터. 시각이 현재보다 작거나 같은 항목 중 가장 늦은 것(정렬 가정 없이
   // 선형 — 항목 ≤100개, 초당 4회라 무시할 비용). idx가 바뀔 때만 setState → 레일만 다시 그림.
@@ -167,7 +187,9 @@ export function VodChapters({
           }}
           onPointerLeave={() => {
             hoverRef.current = false;
+            hideTip();
           }}
+          onScroll={hideTip}
           ref={scrollRef}
         >
           <div className="vch-list">
@@ -184,6 +206,10 @@ export function VodChapters({
                     data-idx={e.idx}
                     href={`https://vod.sooplive.co.kr/player/${titleNo}?change_second=${e.sec}`}
                     key={`${e.sec}-${e.idx}`}
+                    onBlur={hideTip}
+                    onFocus={(ev) => showTip(ev.currentTarget, e.label, e.idx)}
+                    onMouseEnter={(ev) => showTip(ev.currentTarget, e.label, e.idx)}
+                    onMouseLeave={hideTip}
                     onClick={(ev) => {
                       hapticTick();
                       if (onJump) {
@@ -198,6 +224,11 @@ export function VodChapters({
                   >
                     <time className="vch-t">{hhmmss(e.sec)}</time>
                     <span className="vch-label">{e.label}</span>
+                    {tip?.idx === e.idx ? (
+                      <span className={`vch-tip${tip.above ? " is-above" : ""}`} role="tooltip">
+                        {tip.text}
+                      </span>
+                    ) : null}
                   </a>
                 ))}
               </section>

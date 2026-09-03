@@ -235,6 +235,11 @@ const VOD_SOUND_BLOCKED_TTL_MS = 3 * 24 * 60 * 60 * 1000;
 const VOD_SOUND_WATCHDOG_MS = 1_500;
 // 창이 떠 있는 동안 ←/→ 한 번의 탐색 폭(초).
 const VOD_KEY_SEEK_SEC = 10;
+// 소리 켜기(Pplay)는 플레이어가 굴러가기 시작한 뒤(첫 timeUpdate) 이만큼 지나야 안전 — 더 이르면
+// 0초 정지로 리셋되고 명령을 안 받는다(실측: 0.4초 리셋 · 2초 OK). Pplay는 위치를 로드 지점/0으로
+// 되돌리므로 0.5초 뒤 PseekTo(직전 초)로 복구한다(실측 양 프로필 OK — 0.9초도 OK, 1.0초로 여유).
+const VOD_UNMUTE_SAFE_MS = 1_500;
+const VOD_UNMUTE_SEEK_BACK_MS = 500;
 // 슬롯 식별자(`${titleNo}:${slot}`) — 같은 방송의 주/대기 iframe을 가르는 키(모듈 함수: 훅 deps 밖).
 function dayVodSlotKey(titleNo: number, slot: "a" | "b"): string {
   return `${titleNo}:${slot}`;
@@ -1211,6 +1216,57 @@ export function PublicPoster({
   }, []);
   const dayVodFocusRef = useRef<number | null>(null); // 키보드가 조종할 방송(마지막 점프/재생)
   const dayVodKeySeekAtRef = useRef(0); // ←/→ 연타 속도 제한
+  // 사용자 음소거 의도(M 키, 방송별) — 2026-09-03. 숲 API의 Pmute/Punmute/Pvolume은 숲 내부
+  // origin에서만 처리돼(번들 실측) 우리 쪽에선 무시된다. 대신 실측으로 찾은 두 원시 동작:
+  //  · 음소거 = 대기 슬롯을 mutePlay:true 첫 Pload로 승격(현재 초부터, 음소거 자동재생은 항상 허용)
+  //  · 해제 = **Pplay** — 음소거로 굴러가는 플레이어에 Pplay를 보내면 muted=false로 이어 재생
+  //    (차단 프로필에서도 소리 켜짐, ≈2초 되감김만). 그래서 Space 재개·정지 중 챕터 점프의 Pplay는
+  //    음소거 의도가 있으면 소리를 켜버리므로, 그땐 Pplay 대신 음소거 승격으로 재개한다.
+  const dayVodMuteIntentRef = useRef(new Set<number>());
+  const dayVodRollingAtRef = useRef(new Map<number, number>()); // 현재 슬롯이 실제로 굴러가기 시작한 시각
+  const dayVodUnmuteTimersRef = useRef(new Map<number, number>());
+  // 인계 승격(handover, 2026-09-03 "체감 지연 0"): 화면에 뭔가 보이는 상태(재생/정지 중)에서 음소거로
+  // 다시 시동할 때, 옛 슬롯을 즉시 리로드하면 새 슬롯이 굴러갈 때까지 ≈1초 검은 화면이 난다. 대신
+  // 옛 슬롯은 Ppause로 소리만 즉시 끊고 화면에 남기고(프레임 정지), 새 슬롯은 숨은 채 음소거로
+  // 시동한 뒤 **첫 timeUpdate에서** 보이기를 교체·옛 슬롯 리로드. 소리는 즉시, 화면은 끊김 없이.
+  const dayVodHandoverRef = useRef(new Map<number, { newSlot: VodSlot; oldKey: string }>());
+  // 소리 켜기 — 굴러간 지 VOD_UNMUTE_SAFE_MS가 지난 뒤 Pplay, 0.5초 뒤 직전 초로 PseekTo 복구.
+  // 아직 안 굴러가면 아무것도 안 한다(굴러가는 순간 메시지 핸들러가 다시 부른다). 도중에 M으로
+  // 음소거 의도가 생기면 취소.
+  const unmuteDayVod = useCallback((titleNo: number) => {
+    const rollingAt = dayVodRollingAtRef.current.get(titleNo);
+    if (rollingAt === undefined) return;
+    const key = dayVodSlotKey(titleNo, dayVodActiveRef.current.get(titleNo) ?? "a");
+    const post = dayVodApisRef.current.get(key);
+    if (!post) return;
+    const old = dayVodUnmuteTimersRef.current.get(titleNo);
+    if (old) window.clearTimeout(old);
+    const wait = Math.max(0, VOD_UNMUTE_SAFE_MS - (performance.now() - rollingAt));
+    dayVodUnmuteTimersRef.current.set(
+      titleNo,
+      window.setTimeout(() => {
+        dayVodUnmuteTimersRef.current.delete(titleNo);
+        if (dayVodMuteIntentRef.current.has(titleNo)) return;
+        if (dayVodApisRef.current.get(key) !== post) return; // 그새 슬롯이 바뀜
+        const cur = dayVodTimeRef.current.get(titleNo);
+        post({ cmd: "Pplay" });
+        window.setTimeout(() => {
+          if (dayVodMuteIntentRef.current.has(titleNo)) return;
+          if (dayVodApisRef.current.get(key) !== post || cur === undefined) return;
+          post({ cmd: "PseekTo", seconds: { time: cur, seekType: "timelink" } });
+          dayVodTimeRef.current.set(titleNo, cur);
+        }, VOD_UNMUTE_SEEK_BACK_MS);
+      }, wait)
+    );
+  }, []);
+  // 토글 피드백 토스트(영상 위, 1.4초) — 정적이면 눌렀는지 모른다.
+  const [dayVodNotice, setDayVodNotice] = useState<{ text: string; n: number } | null>(null);
+  const dayVodNoticeTimerRef = useRef(0);
+  const showDayVodNotice = (text: string) => {
+    window.clearTimeout(dayVodNoticeTimerRef.current);
+    setDayVodNotice((prev) => ({ text, n: (prev?.n ?? 0) + 1 }));
+    dayVodNoticeTimerRef.current = window.setTimeout(() => setDayVodNotice(null), 1_400);
+  };
   // 소리 켠 자동재생이 차단된 브라우저(MEI 낮은 크롬 등)용 2단 폴백 감시 타이머(방송별).
   // 음소거 자동재생은 정책상 항상 허용이라 반드시 굴러가고, 시작되면 Punmute를 한 번 시도한다
   // (거부돼도 음소거 재생은 유지 — 플레이어 볼륨 탭으로 복구). 차단이 확인되면 기억해 두어
@@ -1231,6 +1287,13 @@ export function PublicPoster({
     dayVodTimeRef.current.clear();
     dayVodTimeSubsRef.current.clear();
     dayVodFocusRef.current = null;
+    dayVodMuteIntentRef.current.clear();
+    dayVodRollingAtRef.current.clear();
+    dayVodHandoverRef.current.clear();
+    for (const t of dayVodUnmuteTimersRef.current.values()) window.clearTimeout(t);
+    dayVodUnmuteTimersRef.current.clear();
+    window.clearTimeout(dayVodNoticeTimerRef.current);
+    setDayVodNotice(null);
     for (const t of dayVodRetryTimersRef.current.values()) window.clearTimeout(t);
     dayVodRetryTimersRef.current.clear();
   }, [dayVodPop]);
@@ -1264,42 +1327,89 @@ export function PublicPoster({
     },
     []
   );
+  // 슬롯 교체 확정: 새 슬롯을 주로, 물러나는 슬롯은 gen++로 리로드(새 대기). 즉시 승격과 인계 확정이
+  // 공유한다. rollingAt은 '지금'으로 — 인계 중 옛 슬롯의 timeUpdate가 찍어 둔 값이면 소리 켜기
+  // 안전 지연이 반 토막 난다.
+  const commitDayVodSwap = useCallback((titleNo: number, newSlot: VodSlot) => {
+    const oldSlot: VodSlot = newSlot === "a" ? "b" : "a";
+    const oldKey = dayVodSlotKey(titleNo, oldSlot);
+    dayVodApisRef.current.delete(oldKey);
+    dayVodPendingRef.current.delete(oldKey);
+    dayVodMutedRef.current.delete(oldKey);
+    dayVodSoundTryRef.current.delete(oldKey);
+    dayVodPausedRef.current.delete(titleNo);
+    dayVodHandoverRef.current.delete(titleNo);
+    dayVodActiveRef.current.set(titleNo, newSlot);
+    setDayVodSlots((prev) => {
+      const cur = prev[titleNo] ?? { active: "a" as VodSlot, genA: 0, genB: 0 };
+      return {
+        ...prev,
+        [titleNo]: {
+          active: newSlot,
+          genA: oldSlot === "a" ? cur.genA + 1 : cur.genA,
+          genB: oldSlot === "b" ? cur.genB + 1 : cur.genB
+        }
+      };
+    });
+  }, []);
+  // 진행 중인 인계 취소 — 들어오던 슬롯을 리로드해 깨끗한 대기로 되돌린다(옛 슬롯은 그대로 주).
+  const cancelDayVodHandover = useCallback((titleNo: number) => {
+    const ho = dayVodHandoverRef.current.get(titleNo);
+    if (!ho) return;
+    dayVodHandoverRef.current.delete(titleNo);
+    const newKey = dayVodSlotKey(titleNo, ho.newSlot);
+    dayVodApisRef.current.delete(newKey);
+    dayVodPendingRef.current.delete(newKey);
+    dayVodMutedRef.current.delete(newKey);
+    dayVodSoundTryRef.current.delete(newKey);
+    setDayVodSlots((prev) => {
+      const cur = prev[titleNo] ?? { active: "a" as VodSlot, genA: 0, genB: 0 };
+      return {
+        ...prev,
+        [titleNo]: {
+          ...cur,
+          genA: ho.newSlot === "a" ? cur.genA + 1 : cur.genA,
+          genB: ho.newSlot === "b" ? cur.genB + 1 : cur.genB
+        }
+      };
+    });
+  }, []);
   const promoteDayVodStandby = useCallback(
-    (titleNo: number, sec: number, muted: boolean) => {
+    (titleNo: number, sec: number, muted: boolean, handover = false) => {
+      cancelDayVodHandover(titleNo);
       const active = dayVodActiveRef.current.get(titleNo) ?? "a";
       const standby: VodSlot = active === "a" ? "b" : "a";
       const oldKey = dayVodSlotKey(titleNo, active);
       const newKey = dayVodSlotKey(titleNo, standby);
-      // 물러나는 주 슬롯의 흔적 청소 — gen이 올라 리로드되면 새 대기(순정)가 된다.
       const oldTimer = dayVodRetryTimersRef.current.get(titleNo);
       if (oldTimer) window.clearTimeout(oldTimer);
       dayVodRetryTimersRef.current.delete(titleNo);
-      dayVodApisRef.current.delete(oldKey);
-      dayVodPendingRef.current.delete(oldKey);
-      dayVodMutedRef.current.delete(oldKey);
-      dayVodSoundTryRef.current.delete(oldKey);
-      dayVodAliveRef.current.delete(titleNo);
-      dayVodPausedRef.current.delete(titleNo);
-      // 승격 — 대기 슬롯이 이미 준비됐으면 즉시 첫 Pload, 아직 로딩 중이면 PonReady에서 이어간다.
-      dayVodActiveRef.current.set(titleNo, standby);
+      dayVodRollingAtRef.current.delete(titleNo);
+      const oldUnmute = dayVodUnmuteTimersRef.current.get(titleNo);
+      if (oldUnmute) window.clearTimeout(oldUnmute);
+      dayVodUnmuteTimersRef.current.delete(titleNo);
       if (muted) dayVodMutedRef.current.add(newKey);
       else dayVodMutedRef.current.delete(newKey);
       const post = dayVodApisRef.current.get(newKey);
+      // 인계(음소거 전용): 옛 슬롯은 정지시켜 소리만 끊고 화면에 남긴다. 교체는 새 슬롯의 첫
+      // timeUpdate에서(메시지 핸들러 → commitDayVodSwap). 옛 슬롯이 안 굴러갔으면 인계할 화면이
+      // 없으니 즉시 승격으로.
+      if (handover && muted && dayVodAliveRef.current.has(titleNo)) {
+        const oldPost = dayVodApisRef.current.get(oldKey);
+        if (oldPost && !dayVodPausedRef.current.has(titleNo)) oldPost({ cmd: "Ppause" });
+        dayVodHandoverRef.current.set(titleNo, { newSlot: standby, oldKey });
+        if (post) startDayVodAutoPlay(titleNo, newKey, post, sec, true);
+        else dayVodPendingRef.current.set(newKey, sec);
+        return;
+      }
+      // 즉시 승격 — 물러나는 주 슬롯은 곧바로 리로드(새 대기). 대기 슬롯이 이미 준비됐으면 즉시
+      // 첫 Pload, 아직 로딩 중이면 PonReady에서 이어간다.
+      dayVodAliveRef.current.delete(titleNo);
+      commitDayVodSwap(titleNo, standby);
       if (post) startDayVodAutoPlay(titleNo, newKey, post, sec, muted);
       else dayVodPendingRef.current.set(newKey, sec);
-      setDayVodSlots((prev) => {
-        const cur = prev[titleNo] ?? { active: "a" as VodSlot, genA: 0, genB: 0 };
-        return {
-          ...prev,
-          [titleNo]: {
-            active: standby,
-            genA: active === "a" ? cur.genA + 1 : cur.genA,
-            genB: active === "b" ? cur.genB + 1 : cur.genB
-          }
-        };
-      });
     },
-    [startDayVodAutoPlay]
+    [startDayVodAutoPlay, commitDayVodSwap, cancelDayVodHandover]
   );
   // 감시 타이머(위)가 승격 함수를 부르는데 선언 순서상 아래에 있어 ref로 잇는다.
   const promoteDayVodStandbyRef = useRef(promoteDayVodStandby);
@@ -1329,6 +1439,8 @@ export function PublicPoster({
       if (!key) return;
       const slot: VodSlot = key.endsWith(":b") ? "b" : "a";
       const isActive = (dayVodActiveRef.current.get(titleNo) ?? "a") === slot;
+      const handover = dayVodHandoverRef.current.get(titleNo);
+      const isIncoming = handover !== undefined && handover.newSlot === slot;
       if (data.cmd === "PonReady") {
         const player = e.source as Window;
         const origin = e.origin;
@@ -1340,20 +1452,25 @@ export function PublicPoster({
           }
         };
         dayVodApisRef.current.set(key, post);
-        // 대기 슬롯은 순정으로 둔다 — '첫 Pload'를 점프 순간까지 아껴야 autoPlay가 먹는다.
-        if (!isActive) return;
-        // 주 슬롯: 로딩 중에 챕터를 먼저 눌렀다면 그 지점부터 재생 시도, 아니면 초기화만
-        // (자동재생 금지 — 지정 포스터+▶ 상태. 이 ▶ 클릭은 프레임 안 제스처라 어떤 브라우저에서도
-        // 소리 켠 재생이 된다).
+        // 로딩 중에 점프/시동이 예약돼 있었으면(주 또는 인계 슬롯) 그 지점부터 재생 시도.
         const pending = dayVodPendingRef.current.get(key);
-        dayVodPendingRef.current.delete(key);
-        if (pending === undefined) {
-          post(buildDayVodPload(titleNo, 0, false));
+        if (pending !== undefined) {
+          dayVodPendingRef.current.delete(key);
+          startDayVodAutoPlay(titleNo, key, post, pending, dayVodMutedRef.current.has(key));
           return;
         }
-        startDayVodAutoPlay(titleNo, key, post, pending, dayVodMutedRef.current.has(key));
+        // 대기 슬롯은 순정으로 둔다 — '첫 Pload'를 점프 순간까지 아껴야 autoPlay가 먹는다.
+        if (!isActive) return;
+        // 주 슬롯: 초기화만(자동재생 금지 — 지정 포스터+▶ 상태. 이 ▶ 클릭은 프레임 안 제스처라
+        // 어떤 브라우저에서도 소리 켠 재생이 된다).
+        post(buildDayVodPload(titleNo, 0, false));
       } else if (data.cmd === "PupdateMediaEvent") {
-        if (!isActive) return; // 물러난 슬롯의 잔여 이벤트
+        if (isIncoming) {
+          // 인계 중인 새 슬롯 — 실제로 굴러간 순간(첫 timeUpdate)에 교체 확정, 그 전 이벤트는 무시.
+          if (data.event?.type !== "timeUpdate") return;
+          commitDayVodSwap(titleNo, slot);
+          dayVodRollingAtRef.current.set(titleNo, performance.now());
+        } else if (!isActive) return; // 물러난 슬롯의 잔여 이벤트
         // buffer/timeUpdate/play 무엇이든 = 미디어 엔진이 굴러갔다 → 이후 점프는 PseekTo로,
         // 지정 썸네일 커버도 이때 걷는다. (재생 전엔 아무 이벤트도 오지 않는다 — 실측.)
         if (dayVodSoundTryRef.current.has(key)) {
@@ -1366,12 +1483,22 @@ export function PublicPoster({
             dayVodRetryTimersRef.current.delete(titleNo);
           }
         }
-        // 음소거 시동으로 굴러가기 시작했다면 소리 복구를 한 번 시도 — 브라우저가 거부해도
-        // 음소거 재생은 유지되고, 플레이어 안 볼륨 버튼(프레임 내 제스처)으로 언제든 켤 수 있다.
-        if (dayVodMutedRef.current.has(key) && !dayVodAliveRef.current.has(titleNo)) {
-          dayVodMutedRef.current.delete(key);
-          const unmute = dayVodApisRef.current.get(key);
-          if (unmute) window.setTimeout(() => unmute({ cmd: "Punmute" }), 600);
+        // 음소거 시동으로 굴러가기 시작했다면 소리를 켠다 — **Pplay**(2026-09-03 실측: 음소거로
+        // 굴러가는 플레이어에 Pplay = muted:false로 이어 재생, 차단 프로필에서도). 예전 Punmute는
+        // origin 잠금이라 무시됐다. 사용자가 M으로 음소거를 원한 시동이면 켜지 않는다.
+        // 실제로 굴러간 신호(play/timeUpdate)에서 시각을 찍고(unmuteDayVod의 안전 지연 기준),
+        // 음소거 시동이었으면 소리 켜기를 예약한다(M 음소거 의도면 건너뜀).
+        // ⚠ 기준은 timeUpdate만 — play 이벤트가 timeUpdate보다 먼저 올 때가 있어 그걸 기준으로
+        // 재면 안전 지연이 실제론 반 토막 나 리셋 경계에 걸렸다(실측 간헐 실패).
+        const evType0 = data.event?.type;
+        if (evType0 === "timeUpdate") {
+          if (!dayVodRollingAtRef.current.has(titleNo)) {
+            dayVodRollingAtRef.current.set(titleNo, performance.now());
+          }
+          if (dayVodMutedRef.current.has(key)) {
+            dayVodMutedRef.current.delete(key);
+            if (!dayVodMuteIntentRef.current.has(titleNo)) unmuteDayVod(titleNo);
+          }
         }
         dayVodAliveRef.current.add(titleNo);
         setDayVodLive((prev) => {
@@ -1398,26 +1525,43 @@ export function PublicPoster({
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
-  }, [dayVodPop, startDayVodAutoPlay]);
+  }, [dayVodPop, startDayVodAutoPlay, unmuteDayVod, commitDayVodSwap]);
   // 챕터 클릭의 단일 진입점 — 재생 중이면 postMessage로만 움직인다(리로드 없음 = 광고 재시작
   // 없음, 소리 상태 유지). 재생 전이면 대기 슬롯 승격(위 주석).
   const jumpDayVod = (titleNo: number, sec: number) => {
     setDayVodJump({ titleNo, sec }); // ↗ 새 탭 링크의 초 표기 동기화
     dayVodFocusRef.current = titleNo;
+    // 챕터 링크(<a>)에 남은 포커스를 창으로 되돌린다 — 안 그러면 다음 Space/M이 링크에 먹혀 죽는다
+    // (실측: 챕터 클릭 직후 Space 무반응).
+    dayVodModalRef.current?.focus({ preventScroll: true });
     const activeKey = dayVodSlotKey(titleNo, dayVodActiveRef.current.get(titleNo) ?? "a");
     const post = dayVodApisRef.current.get(activeKey);
     if (post && dayVodAliveRef.current.has(titleNo)) {
+      // 인계 중이면 취소(들어오던 슬롯 리로드) — 옛 슬롯(정지 상태)이 그대로 주.
+      cancelDayVodHandover(titleNo);
+      // 정지 중 + 음소거 의도: Pplay 재개는 소리를 켜버리므로 음소거 인계로 그 초부터 재개
+      // (정지 프레임이 보이는 채 새 슬롯이 굴러가면 교체).
+      if (dayVodPausedRef.current.has(titleNo) && dayVodMuteIntentRef.current.has(titleNo)) {
+        promoteDayVodStandby(titleNo, sec, true, true);
+        return;
+      }
       post({ cmd: "PseekTo", seconds: { time: sec, seekType: "timelink" } });
       notifyDayVodTime(titleNo, sec);
-      // ⚠ Pplay를 seek 직후 연달아 보내면 진행 중인 시킹이 끊겨 0초로 리셋된다(실측 재현).
-      // 재생 중엔 seek만으로 이어지므로 불필요하고, 정지 중일 때만 시킹이 자리잡은 뒤 재개한다.
+      // 정지 중이면 시킹 뒤 재개. (2026-09-01엔 seek 직후 Pplay가 0초로 리셋된다고 1.2초를 뒀으나
+      // 2026-09-03 플레이어 3.1.224 실측 gap 0~900ms 전부 정상 재개(104ms) — 사용자 체감 지연
+      // 요청으로 120ms만 둔다. 당시 리셋은 seconds를 숫자로 보내던 버그와 겹친 것으로 본다.)
       if (dayVodPausedRef.current.has(titleNo)) {
-        window.setTimeout(() => post({ cmd: "Pplay" }), 1_200);
+        window.setTimeout(() => post({ cmd: "Pplay" }), 120);
       }
       return;
     }
-    // 재생 전(미디어 안 굴러감): 차단이 기억돼 있으면 곧장 음소거 시동, 아니면 소리 켠 1차 시도.
-    promoteDayVodStandby(titleNo, sec, isVodSoundAutoplayBlocked());
+    // 재생 전(미디어 안 굴러감): 음소거 의도나 차단 기억이 있으면 곧장 음소거 시동, 아니면 소리 켠
+    // 1차 시도(차단 폴백은 굴러간 뒤 Pplay로 소리를 켠다 — 메시지 핸들러).
+    promoteDayVodStandby(
+      titleNo,
+      sec,
+      dayVodMuteIntentRef.current.has(titleNo) || isVodSoundAutoplayBlocked()
+    );
   };
   // 창 = 키 입력의 집(2026-09-03 사용자: "재생 중엔 Esc가 안 먹는다"). 플레이어를 마우스로
   // 누르면 포커스가 교차 출처 iframe 안으로 들어가 keydown이 우리 창에 전혀 안 온다. 창이 열릴
@@ -1465,25 +1609,75 @@ export function PublicPoster({
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
-      // Space = 재생/일시정지(포커스가 창 컨테이너에 있을 때 — 버튼 위면 그 버튼의 몫).
+      // Space = 재생/일시정지(버튼 위면 그 버튼의 몫 — 링크(<a>)는 Space로 활성되지 않으므로 가로챈다).
       // 아직 아무것도 재생 전이면(창에 막 들어옴) Space = ▶ — 마지막 점프/재생 방송, 없으면
       // 그 날 첫 방송을 처음부터(재생 전 경로 = 챕터 점프와 같은 대기 슬롯 승격).
-      if (e.key === " " && tag !== "BUTTON" && tag !== "A") {
+      if (e.key === " " && tag !== "BUTTON") {
         e.preventDefault();
         const titleNo =
           dayVodFocusRef.current ?? (vodsByDate.get(dayVodPop.dateKey) ?? [])[0]?.titleNo ?? null;
         if (titleNo === null) return;
+        if (dayVodHandoverRef.current.has(titleNo)) return; // 인계 교체 중(≤1초) — 잠깐 무시
         hapticTick();
+        const muteIntent = dayVodMuteIntentRef.current.has(titleNo);
         if (!dayVodAliveRef.current.has(titleNo)) {
           dayVodFocusRef.current = titleNo;
-          promoteDayVodStandby(titleNo, 0, isVodSoundAutoplayBlocked());
+          promoteDayVodStandby(titleNo, 0, muteIntent || isVodSoundAutoplayBlocked());
           return;
         }
         const post = dayVodApisRef.current.get(
           dayVodSlotKey(titleNo, dayVodActiveRef.current.get(titleNo) ?? "a")
         );
         if (!post) return;
-        post({ cmd: dayVodPausedRef.current.has(titleNo) ? "Pplay" : "Ppause" });
+        if (dayVodPausedRef.current.has(titleNo)) {
+          showDayVodNotice("▶ 재생");
+          // 재개 — 음소거 의도면 Pplay(소리 켜짐) 대신 현재 초에서 음소거 인계(정지 프레임 유지).
+          if (muteIntent) {
+            promoteDayVodStandby(titleNo, dayVodTimeRef.current.get(titleNo) ?? 0, true, true);
+          } else {
+            post({ cmd: "Pplay" });
+          }
+        } else {
+          showDayVodNotice("⏸ 일시정지");
+          post({ cmd: "Ppause" });
+        }
+        return;
+      }
+      // M = 음소거 토글(dayVodMuteIntentRef 주석). 한글 자판(ㅡ)도 같은 물리 키라 e.code로 본다.
+      if (e.code === "KeyM" && tag !== "INPUT") {
+        e.preventDefault();
+        const titleNo =
+          dayVodFocusRef.current ?? (vodsByDate.get(dayVodPop.dateKey) ?? [])[0]?.titleNo ?? null;
+        if (titleNo === null) return;
+        hapticTick();
+        const intent = dayVodMuteIntentRef.current;
+        if (intent.has(titleNo)) {
+          intent.delete(titleNo);
+          showDayVodNotice("🔊 소리 켬");
+          if (dayVodHandoverRef.current.has(titleNo)) {
+            // 음소거 인계가 아직 교체 전(옛 슬롯이 정지된 채 보임) — 인계를 취소하고 옛 슬롯을
+            // 제자리에서 재개하면 그게 곧 소리 켜기(즉시, 되감김 없음).
+            cancelDayVodHandover(titleNo);
+            dayVodApisRef.current
+              .get(dayVodSlotKey(titleNo, dayVodActiveRef.current.get(titleNo) ?? "a"))
+              ?.({ cmd: "Pplay" });
+            return;
+          }
+          // 재생 중이면 안전 시점에 Pplay+복구 — 정지 중이면 다음 재개(Pplay)가 제자리에서 켠다.
+          // 아직 안 굴러가면(음소거 승격 직후) 굴러가는 순간 메시지 핸들러가 켠다.
+          if (dayVodAliveRef.current.has(titleNo) && !dayVodPausedRef.current.has(titleNo)) {
+            unmuteDayVod(titleNo);
+          }
+          return;
+        }
+        intent.add(titleNo);
+        showDayVodNotice("🔇 음소거");
+        // 재생 중이면 현재 초에서 음소거 인계(소리 즉시 끊김, 프레임 유지, 새 슬롯이 굴러가면 교체).
+        // 재생 전/정지 중이면 의도만 기억 — 다음 시작·재개가 음소거로 나간다.
+        if (dayVodAliveRef.current.has(titleNo) && !dayVodPausedRef.current.has(titleNo)) {
+          dayVodFocusRef.current = titleNo;
+          promoteDayVodStandby(titleNo, dayVodTimeRef.current.get(titleNo) ?? 0, true, true);
+        }
         return;
       }
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
@@ -1510,7 +1704,7 @@ export function PublicPoster({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [dayVodPop, vodsByDate, promoteDayVodStandby]);
+  }, [dayVodPop, vodsByDate, promoteDayVodStandby, unmuteDayVod, cancelDayVodHandover]);
   // 창이 열려 있는 동안 바깥 달력 스크롤 잠금 — 창 안 목록을 굴리다 끝에 닿으면 달력이
   // 따라 흐르던 문제(사용자 지적). CSS overscroll-behavior와 이중 방어.
   useEffect(() => {
@@ -4116,6 +4310,7 @@ export function PublicPoster({
                       <kbd>←</kbd>
                       <kbd>→</kbd> 10초<i>·</i>
                       <kbd>Space</kbd> 재생/정지<i>·</i>
+                      <kbd>M</kbd> 음소거<i>·</i>
                       <kbd>Esc</kbd> 닫기
                     </span>
                     <button
@@ -4182,6 +4377,12 @@ export function PublicPoster({
                                 <em className="dvm-dur">{formatVodDuration(vod.durationMs)}</em>
                               ) : null}
                             </span>
+                            {/* 키 토글 피드백(🔇/🔊) — 마지막으로 다룬 방송 위에만, 1.4초 뒤 사라짐. */}
+                            {dayVodNotice && dayVodFocusRef.current === vod.titleNo ? (
+                              <span aria-live="polite" className="dvm-notice" key={dayVodNotice.n} role="status">
+                                {dayVodNotice.text}
+                              </span>
+                            ) : null}
                             <a
                               aria-label="숲에서 크게 보기"
                               className="dvm-ext"

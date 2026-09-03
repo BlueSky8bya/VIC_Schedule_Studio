@@ -85,7 +85,25 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   진입으로 보고 안 되찾음 — 교차 출처 iframe엔 :hover가 안 붙어 hover 판별 불가, 실측).
   Space = 재생/일시정지(Pplay/Ppause, 포커스가 버튼·링크 위면 제외). 실측: iframe 클릭 후
   activeElement=창, Space 토글에 pause 이벤트, Esc로 닫힘. 재생 전(창에 막 들어옴) Space = ▶
-  (마지막 점프/재생 방송, 없으면 그 날 첫 방송 0초 — 대기 슬롯 승격 경로, 사용자 신고 후속). ② 커버 썸네일 흐림 — 숲 SnapshotLoad
+  (마지막 점프/재생 방송, 없으면 그 날 첫 방송 0초 — 대기 슬롯 승격 경로, 사용자 신고 후속).
+  후속 6(2026-09-03, M 음소거 + 체감 지연): 번들 실측으로 `Pmute/Punmute/Pvolume`은 숲 내부
+  origin 전용 확정. 대체 원시 동작(메모리 soop-embed-iframe-api 참조): **Pplay = 소리 켜기**
+  (음소거로 굴러가는 플레이어에 Pplay → muted:false, 차단 프로필도; 굴러간 뒤 ≥0.9초 필요,
+  위치 튐 → 0.5초 뒤 PseekTo 복구) · 음소거 켜기는 새 iframe 첫 Pload{mutePlay:true}뿐.
+  구현: ① M = 음소거 의도 토글(dayVodMuteIntentRef). 켜기 = **인계 승격**(옛 슬롯 Ppause로
+  소리만 즉시 끊고 프레임 유지, 새 슬롯 숨은 채 음소거 시동 → 첫 timeUpdate에 교체
+  commitDayVodSwap, 검은 화면 없음). 끄기 = unmuteDayVod(안전 시점 1.5초 뒤 Pplay + 0.5초 뒤
+  PseekTo 복구); 인계 교체 전이면 인계 취소 + 옛 슬롯 Pplay(즉시). ② 차단 브라우저 음소거
+  폴백도 unmuteDayVod로 **자동 소리 켬**(예전 Punmute는 무시됐음). rollingAt은 timeUpdate만
+  기준(play 이벤트가 먼저 오면 안전 지연 반토막 → 간헐 리셋 실측). ③ 정지 중 챕터 클릭
+  seek→Pplay 간격 1.2초→0.12초(gap 0~900ms 전부 정상 재개 실측). ④ Space 재개가 음소거
+  의도면 Pplay 대신 음소거 인계. ⑤ 토글 피드백 토스트(🔇/🔊/⏸/▶, 1.4초). 인계 중 Space는 무시,
+  챕터 클릭은 인계 취소 후 진행. ⑥ 챕터 클릭 뒤 포커스가 링크에 남아 Space가 죽던 것 — 점프 시
+  창으로 포커스 복귀 + Space는 BUTTON 위에서만 양보. ⑦ 잘린 챕터 라벨 호버 툴팁(.vch-tip,
+  fixed, 120ms, 잘린 항목만·레일 스크롤에 닫힘). 종합 실측(양 프로필): Space 정지/재개 ≈50ms ·
+  정지 중 챕터 → 재개 ≈50ms · M 음소거 소리 끊김 ≈50ms, 화면 교체 0.75~0.8초 검은 틈 없음 ·
+  M 해제 ≈0.46초 · 연타 취소 ≈60ms · 재생 전 챕터: 허용 0.96초(영상=소리), 차단 첫 클릭
+  영상 2.2초/소리 4.1초(이후 클릭 ≈1초/2.5초 — 안전 지연 1.5초는 리셋 방지용, 더 못 줄임). ② 커버 썸네일 흐림 — 숲 SnapshotLoad
   는 `_r`(640×360)·`_l`(480×270)뿐, column/접미사 변형 전부 ≤640(실측). 1230px 커버에서 1.9배
   확대가 원인. SVG feConvolveMatrix 언샤프(합 1)로 가장자리만 보정(`#vod-cover-sharpen`, TSX
   인라인 defs). 원본 해상도 한계는 그대로.
