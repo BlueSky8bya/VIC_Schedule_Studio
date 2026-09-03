@@ -35,7 +35,8 @@
 **① 물빛 저장** — 하루 6번 누르는 그 버튼이 노랑에서 깊은 물색으로.
 - 무드: "불 위에 물 한 바가지". 저장 = 식히고 갈무리하는 동작.
 - before→after: 팝오버 우상단 노란 알약 → 딥블루 알약(흰 글자, 굵기 900 유지) + 누를 때 물결 링 한 번(0.4초,
-  `html[data-reduce-motion]`이면 생략) + 버튼 안에 `Ctrl+S` kbd 힌트(키보드 사용자).
+  `html[data-reduce-motion]`이면 생략). (버튼 안 `Ctrl+S` kbd는 출고 후 폭이 늘어 잘려 철회 — 단축키는 기존
+  '단축키 안내'가 담당.)
 - 토큰(필터 전 → 눈 편한 테마 ON 렌더값): `--studio-action` #1e5aa8 → #2e568a(흰 글자 7.2:1, 배경 대비 6.3:1),
   hover `--studio-action-strong` #17497f → #244669, 눌림 물결 `rgb(30 90 168 / 25%)`.
 - 근거: 사주 = 수 용신을 유일한 주 행동에(계획서 3a 조건부 채택, 신뢰도 중간). HCI = 지금 CTA는 비텍스트 대비
@@ -78,7 +79,7 @@
 
 **F-1 물빛 저장 + 북쪽 셰브런** — `app/globals.css :root`에 `--studio-action / --studio-action-strong /
 --studio-action-ink(#fff)` 추가; `components/studio/studio-shell.css`에서 `.editor-save`와 `.month-nav-btn`
-색만 override(레이아웃 불변); `studio-shell.tsx` 저장 버튼에 `<kbd>Ctrl+S</kbd>`; 눌림 물결은 `::after` 링
+색만 override(레이아웃 불변); 눌림 물결은 `::after` 링
 애니메이션 + `html[data-reduce-motion]` 예외. 검증: `/visual-fixture/studio` 스크린샷(눈 편한 ON/OFF), 필터 후
 대비 계산(스크립트 `eyecomfort.mjs` 방식), 다시보기 숲 파랑과 나란히 놓고 구분 확인.
 
