@@ -28,11 +28,12 @@
 }
 
 /* ── 물결 레이어(.gs-tide) — components/shared/water-tide.tsx가 렌더한다. ─────────────────────────
-   애플 결: 기하 무늬 없음. 얇은 물 필름(청록 5→9%) 위로 (1) 물그림자 덩어리 셋(청록, blur 70px) (2) 빛 얼룩
-   둘(따뜻한 흰빛, blur 60px) (3) caustic 두 겹(노이즈 등고선 빛 그물, 따뜻한 흰빛, 22~28%)이 40~110초로
-   아주 느리게, 서로 다른 방향으로 떠다닌다. blur·filter는 내용이 안 변하는 레이어에 한 번만 래스터되고
-   (will-change: transform), 매 프레임은 transform/opacity만 — 무한 애니 규칙(frame-jank 실측 원칙).
-   보이는 조건: 차분 ON · 생동감 있는 동작 ON · 여력 있는 기기(data-gfx≠lite) · 웹(≥641px). */
+   애플 결: 기하 무늬 없음, 어두운 얼룩 없음(곰팡이처럼 읽혔다). 얇은 물 필름(파랑 4→8%) 위로 (1) 아주 옅은
+   너울 덩어리 둘 + 햇살 얼룩 하나 (2) caustic 두 겹 — 노이즈 등고선을 가늘게 뽑은 밝은 셀 그물이 반대
+   방향으로 흐르며(24·31초 alternate) 살짝 기울고(skewX ±1.4°) 밝기가 숨쉰다(opacity, 6.5·8.5초). 필터는
+   내용이 불변인 레이어라 첫 래스터 한 번(will-change), 매 프레임은 transform/opacity만 — 무한 애니 규칙.
+   ⚠ scale 키프레임·blur 필터·mix-blend-mode 금지 — 재래스터/합성 비용으로 프레임을 깎았다(실측: 드래그
+   스프링 회귀). 보이는 조건: 차분 ON · 생동감 있는 동작 ON · 여력 있는 기기(data-gfx≠lite) · 웹(≥641px). */
 .gs-tide {
   display: none;
 }
@@ -49,119 +50,130 @@
   pointer-events: none;
   contain: strict;
   /* 물 필름 — 반투명. 아래로 갈수록 살짝 깊다. 모래(body 아이보리)가 그대로 비친다. */
-  background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 3%) 0%, rgb(var(--gs-sea-rgb) / 6%) 100%);
+  background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 4%) 0%, rgb(var(--gs-sea-rgb) / 8%) 100%);
 }
 .gs-tide-defs {
   position: absolute;
   width: 0;
   height: 0;
 }
-/* 물그림자 — 청록 덩어리. 크게, 흐리게, 느리게. */
-.gs-tide-shade,
+/* 너울 — 아주 옅은 물빛 덩어리(깊이감). 크게, 부드럽게(radial 자체가 부드러워 blur 불필요), 느리게. */
+.gs-tide-swell,
 .gs-tide-light {
   position: absolute;
   border-radius: 50%;
   will-change: transform;
 }
-.gs-tide-shade {
-  /* blur 필터 없음 — 헤드리스/약한 기기에서 blur(70px) 큰 덩어리가 프레임을 깎았다(드래그 스프링 실측).
-     radial-gradient 자체가 이미 부드러워 blur는 불필요하다. */
-  background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 18%) 0%, rgb(var(--gs-sea-rgb) / 9%) 45%, rgb(var(--gs-sea-rgb) / 0%) 100%);
+.gs-tide-swell {
+  background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 12%) 0%, rgb(var(--gs-sea-rgb) / 5%) 50%, rgb(var(--gs-sea-rgb) / 0%) 100%);
 }
-.gs-tide-shade-1 {
-  left: -12%;
-  top: -14%;
-  width: 62%;
-  height: 58%;
-  animation: gs-drift-1 46s ease-in-out infinite alternate;
+.gs-tide-swell-a {
+  left: -20%;
+  top: -22%;
+  width: 78%;
+  height: 72%;
+  animation: gs-drift-1 44s ease-in-out infinite alternate;
 }
-.gs-tide-shade-2 {
-  right: -14%;
-  bottom: -12%;
-  width: 60%;
-  height: 56%;
-  animation: gs-drift-2 62s ease-in-out infinite alternate;
+.gs-tide-swell-b {
+  right: -22%;
+  bottom: -20%;
+  width: 76%;
+  height: 70%;
+  animation: gs-drift-2 58s ease-in-out infinite alternate;
 }
-.gs-tide-shade-3 {
-  left: 30%;
-  top: 30%;
-  width: 46%;
-  height: 48%;
-  background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 11%) 0%, rgb(var(--gs-sea-rgb) / 5%) 45%, rgb(var(--gs-sea-rgb) / 0%) 100%);
-  animation: gs-drift-3 84s ease-in-out infinite alternate;
-}
-/* 빛 얼룩 — 햇살이 물을 지나 모래에 닿는 따뜻한 밝음. */
+/* 햇살 얼룩 — 물을 지나 모래에 닿는 따뜻한 밝음. */
 .gs-tide-light {
-  background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 38%) 0%, rgb(var(--gs-sun-rgb) / 18%) 45%, rgb(var(--gs-sun-rgb) / 0%) 100%);
-}
-.gs-tide-light-1 {
-  left: 18%;
-  top: 4%;
-  width: 52%;
-  height: 50%;
-  animation: gs-drift-4 70s ease-in-out infinite alternate;
-}
-.gs-tide-light-2 {
-  right: 6%;
-  bottom: 2%;
-  width: 40%;
-  height: 44%;
-  animation: gs-drift-5 96s ease-in-out infinite alternate;
+  left: 16%;
+  top: 6%;
+  width: 60%;
+  height: 58%;
+  background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 40%) 0%, rgb(var(--gs-sun-rgb) / 18%) 50%, rgb(var(--gs-sun-rgb) / 0%) 100%);
+  animation: gs-drift-3 66s ease-in-out infinite alternate;
 }
 @keyframes gs-drift-1 {
   to {
-    transform: translate3d(9%, 7%, 0);
+    transform: translate3d(10%, 8%, 0);
   }
 }
 @keyframes gs-drift-2 {
   to {
-    transform: translate3d(-8%, -6%, 0);
+    transform: translate3d(-9%, -8%, 0);
   }
 }
 @keyframes gs-drift-3 {
   to {
-    transform: translate3d(-10%, 8%, 0);
+    transform: translate3d(-8%, 9%, 0);
   }
 }
-@keyframes gs-drift-4 {
-  to {
-    transform: translate3d(7%, 10%, 0);
-  }
-}
-@keyframes gs-drift-5 {
-  to {
-    transform: translate3d(-9%, -7%, 0);
-  }
-}
-/* caustic — 화면보다 12% 크게 깔고(-6% 오프셋) 그 안에서만 떠다녀 가장자리가 비지 않는다. 내용은 불변
-   (노이즈 필터는 첫 래스터 한 번), 이후 transform만. */
+/* caustic — 화면보다 24% 크게 깔고(-12% 오프셋) 그 안에서 흐른다. 흐름(translate+skew)과 숨쉼(opacity)은
+   서로 다른 애니메이션이라 한 요소에 같이 건다. b는 처음부터 살짝 기울여(rotate) a와 셀이 어긋난다. */
 .gs-tide-caustic {
   position: absolute;
-  left: -3%;
-  top: -3%;
-  width: 106%;
-  height: 106%;
+  left: -12%;
+  top: -12%;
+  width: 124%;
+  height: 124%;
   display: block;
-  will-change: transform;
-  /* 블렌드 모드 없음 — mix-blend는 합성 비용이 커 헤드리스/약한 기기에서 프레임을 깎았다(실측). 따뜻한
-     흰빛을 낮은 불투명도로 그냥 얹는다. */
+  will-change: transform, opacity;
 }
 .gs-tide-caustic-a {
-  opacity: 0.5;
-  animation: gs-caustic-a 88s ease-in-out infinite alternate;
+  animation:
+    gs-caustic-a 24s ease-in-out infinite alternate,
+    gs-caustic-breathe-a 6.5s ease-in-out infinite alternate;
 }
 .gs-tide-caustic-b {
-  opacity: 0.38;
-  animation: gs-caustic-b 112s ease-in-out infinite alternate;
+  animation:
+    gs-caustic-b 31s ease-in-out infinite alternate,
+    gs-caustic-breathe-b 8.5s ease-in-out infinite alternate;
+  animation-delay: -9s, -3s;
 }
 @keyframes gs-caustic-a {
+  from {
+    transform: translate3d(-4%, -3%, 0) skewX(-1.4deg);
+  }
   to {
-    transform: translate3d(2.5%, -2%, 0);
+    transform: translate3d(4%, 3%, 0) skewX(1.4deg);
   }
 }
 @keyframes gs-caustic-b {
+  from {
+    transform: translate3d(3.5%, -3.5%, 0) rotate(14deg) skewY(1.2deg);
+  }
   to {
-    transform: translate3d(-2%, 2.5%, 0) rotate(0.8deg);
+    transform: translate3d(-3.5%, 3.5%, 0) rotate(14deg) skewY(-1.2deg);
+  }
+}
+@keyframes gs-caustic-breathe-a {
+  from {
+    opacity: 0.42;
+  }
+  to {
+    opacity: 0.82;
+  }
+}
+@keyframes gs-caustic-breathe-b {
+  from {
+    opacity: 0.28;
+  }
+  to {
+    opacity: 0.66;
+  }
+}
+/* 편집실용 더 밝은 숨쉼(studio-calm-layer.css가 animation-name으로 골라 쓴다). */
+@keyframes gs-caustic-breathe-a-strong {
+  from {
+    opacity: 0.6;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes gs-caustic-breathe-b-strong {
+  from {
+    opacity: 0.45;
+  }
+  to {
+    opacity: 0.85;
   }
 }
 

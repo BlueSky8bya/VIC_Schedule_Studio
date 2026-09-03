@@ -282,24 +282,22 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
     background: rgb(255 253 246 / 72%);
   }
   /* 편집실 물결은 시청자 화면보다 세게(사용자: "있는지 없는지 모르겠다") — 공용 레이어의 편집실 안 인스턴스만
-     덩어리·caustic 불투명도를 올린다. 시청자 화면(조화 좋다고 한 쪽)은 공용 기본값 그대로. */
+     필름·너울·햇살을 올린다. caustic 밝기는 숨쉼(opacity) 애니가 쥐고 있어 여기서 안 건드린다.
+     시청자 화면(조화 좋다고 한 쪽)은 공용 기본값 그대로. */
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide {
-    background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 8%) 0%, rgb(var(--gs-sea-rgb) / 14%) 100%);
+    background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 7%) 0%, rgb(var(--gs-sea-rgb) / 12%) 100%);
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-shade {
-    background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 38%) 0%, rgb(var(--gs-sea-rgb) / 19%) 45%, rgb(var(--gs-sea-rgb) / 0%) 100%);
-  }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-shade-3 {
-    background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 24%) 0%, rgb(var(--gs-sea-rgb) / 12%) 45%, rgb(var(--gs-sea-rgb) / 0%) 100%);
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-swell {
+    background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 18%) 0%, rgb(var(--gs-sea-rgb) / 8%) 50%, rgb(var(--gs-sea-rgb) / 0%) 100%);
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-light {
-    background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 64%) 0%, rgb(var(--gs-sun-rgb) / 30%) 45%, rgb(var(--gs-sun-rgb) / 0%) 100%);
+    background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 56%) 0%, rgb(var(--gs-sun-rgb) / 26%) 50%, rgb(var(--gs-sun-rgb) / 0%) 100%);
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-caustic-a {
-    opacity: 1;
+    animation-name: gs-caustic-a, gs-caustic-breathe-a-strong;
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-caustic-b {
-    opacity: 0.8;
+    animation-name: gs-caustic-b, gs-caustic-breathe-b-strong;
   }
 }
 
