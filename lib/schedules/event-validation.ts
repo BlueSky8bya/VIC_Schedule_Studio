@@ -28,18 +28,18 @@ export function validateDateKey(key: string | undefined | null, label: string): 
  */
 export function validateSupportUrl(url: string | undefined | null): Validation {
   const trimmed = url?.trim();
-  if (!trimmed) return { ok: true }; // 링크 없음 = 허용(기간만 있는 업 도움)
+  if (!trimmed) return { ok: true }; // 링크 없음 = 허용(기간만 있는 업 도움·링크 없는 기간 안내)
   if (trimmed.length > 2048) {
-    return { ok: false, error: "업 도움 링크가 너무 깁니다." };
+    return { ok: false, error: "링크가 너무 깁니다." };
   }
   let parsed: URL;
   try {
     parsed = new URL(trimmed);
   } catch {
-    return { ok: false, error: "업 도움 링크가 올바른 주소가 아닙니다." };
+    return { ok: false, error: "링크가 올바른 주소가 아닙니다." };
   }
   if (parsed.protocol !== "https:") {
-    return { ok: false, error: "업 도움 링크는 https 주소만 쓸 수 있습니다." };
+    return { ok: false, error: "링크는 https 주소만 쓸 수 있습니다." };
   }
   return { ok: true };
 }

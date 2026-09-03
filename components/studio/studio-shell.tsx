@@ -5440,7 +5440,7 @@ export function StudioShell({
             onChange={(event) =>
               setForm((current) => ({ ...current, supportUrl: event.target.value }))
             }
-            placeholder="숲 게시글 URL 붙여넣기"
+            placeholder={form.supportKind === "period" ? "관련 URL 붙여넣기 (https)" : "숲 게시글 URL 붙여넣기"}
             type="url"
             value={form.supportUrl}
           />

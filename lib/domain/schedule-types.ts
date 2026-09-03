@@ -59,7 +59,7 @@ export type PublicScheduleEvent = {
   // 띠의 종류(2026-09-01): 'up'(기본) = 숲에서 업 눌러 도와주는 기간(CTA '도와주러 가기'),
   // 'period' = 단순 기간 안내(알파테스트 등 — 도와주러 갈 필요 없음, CTA 없음, 링크는 선택).
   supportKind?: "up" | "period";
-  supportUrl?: string; // 업 도움 링크(숲 게시글) — period 종류에선 선택 참고 링크
+  supportUrl?: string; // 업 도움 링크(숲 게시글) 또는 기간 안내의 관련 URL(선택) — https만, 없으면 띠는 링크 없이 상세만
   isAllDay: boolean;
   publicTitle: string;
   publicDescription?: string;
