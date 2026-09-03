@@ -1419,6 +1419,38 @@ export function PublicPoster({
     // 재생 전(미디어 안 굴러감): 차단이 기억돼 있으면 곧장 음소거 시동, 아니면 소리 켠 1차 시도.
     promoteDayVodStandby(titleNo, sec, isVodSoundAutoplayBlocked());
   };
+  // 창 = 키 입력의 집(2026-09-03 사용자: "재생 중엔 Esc가 안 먹는다"). 플레이어를 마우스로
+  // 누르면 포커스가 교차 출처 iframe 안으로 들어가 keydown이 우리 창에 전혀 안 온다. 창이 열릴
+  // 때 창 컨테이너(tabIndex -1)에 포커스를 두고, 포커스가 iframe으로 새면(window blur →
+  // activeElement가 창 안 iframe) **마우스로 들어간 경우만** 되찾는다 — Tab으로 들어간 키보드
+  // 사용자는 플레이어 자체 컨트롤을 쓰게 둔다. 판별 = 직전 400ms 안에 우리 문서에서 Tab keydown이
+  // 있었나(교차 출처 iframe엔 :hover가 안 붙어 hover 판별은 불가 — 실측). 재생·마우스 조작은
+  // 포커스와 무관해 되찾아도 영향 없음.
+  const dayVodModalRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!dayVodPop) return;
+    dayVodModalRef.current?.focus({ preventScroll: true });
+    let lastTabAt = 0;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Tab") lastTabAt = performance.now();
+    };
+    const onBlur = () => {
+      const byKeyboard = performance.now() - lastTabAt < 400;
+      window.setTimeout(() => {
+        const ae = document.activeElement;
+        const modal = dayVodModalRef.current;
+        if (!modal || !(ae instanceof HTMLIFrameElement) || !modal.contains(ae)) return;
+        if (byKeyboard) return;
+        modal.focus({ preventScroll: true });
+      }, 0);
+    };
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("blur", onBlur);
+    return () => {
+      window.removeEventListener("keydown", onKey, true);
+      window.removeEventListener("blur", onBlur);
+    };
+  }, [dayVodPop]);
   useEffect(() => {
     if (!dayVodPop) return;
     const durations = new Map(
@@ -1429,11 +1461,24 @@ export function PublicPoster({
         setDayVodPop(null);
         return;
       }
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      // Space = 재생/일시정지(포커스가 창 컨테이너에 있을 때 — 버튼 위면 그 버튼의 몫).
+      if (e.key === " " && tag !== "BUTTON" && tag !== "A") {
+        e.preventDefault();
+        const titleNo = dayVodFocusRef.current;
+        if (titleNo === null || !dayVodAliveRef.current.has(titleNo)) return;
+        const post = dayVodApisRef.current.get(
+          dayVodSlotKey(titleNo, dayVodActiveRef.current.get(titleNo) ?? "a")
+        );
+        if (!post) return;
+        hapticTick();
+        post({ cmd: dayVodPausedRef.current.has(titleNo) ? "Pplay" : "Ppause" });
+        return;
+      }
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       // 창이 떠 있는 동안 ←/→는 **영상 탐색**이다(2026-09-03 사용자: 챕터를 누른 뒤엔 포커스가
       // 프레임 밖이라 ←/→가 달력 월 이동으로 새어 보던 영상이 끊겼다). 월 이동 핸들러는
       // dayVodOpenRef로 원천 차단하고, 여기서는 마지막으로 점프/재생한 방송을 10초씩 옮긴다.
@@ -4030,7 +4075,29 @@ export function PublicPoster({
                 }}
                 role="presentation"
               >
-                <div aria-label="다시보기" aria-modal="true" className="day-vod-modal" role="dialog">
+                <div
+                  aria-label="다시보기"
+                  aria-modal="true"
+                  className="day-vod-modal"
+                  ref={dayVodModalRef}
+                  role="dialog"
+                  /* 창 자체가 키 입력의 집(tabIndex -1): 열릴 때·플레이어를 마우스로 누른 뒤에도
+                     포커스를 여기로 되찾아 Esc·←/→·Space가 계속 먹는다(dayVodModalRef 주석). */
+                  tabIndex={-1}
+                >
+                  {/* 커버 썸네일 선명화 필터(2026-09-03) — 숲 스냅샷은 모든 변형이 640×360뿐이라
+                      1230px 커버에서 1.9배 확대돼 흐리다(사용자 신고). 더 큰 원본이 없으니
+                      완만한 언샤프(3×3 컨볼루션, 합 1)로 가장자리 대비만 되살린다. 재생이
+                      시작되면 커버가 걷히므로 영상엔 영향 없음. */}
+                  <svg aria-hidden="true" className="dvm-filter-defs" height="0" width="0">
+                    <filter id="vod-cover-sharpen">
+                      <feConvolveMatrix
+                        kernelMatrix="0 -0.45 0 -0.45 2.8 -0.45 0 -0.45 0"
+                        order="3"
+                        preserveAlpha="true"
+                      />
+                    </filter>
+                  </svg>
                   <div className="dvm-head">
                     <b className={`dvp-date${tone}`}>
                       {Number(dayVodPop.dateKey.slice(0, 4))}.{formatShortDate(dayVodPop.dateKey)} (
@@ -4040,11 +4107,11 @@ export function PublicPoster({
                     <span aria-hidden="true" className="dvm-keys">
                       <kbd>←</kbd>
                       <kbd>→</kbd> 10초<i>·</i>
+                      <kbd>Space</kbd> 재생/정지<i>·</i>
                       <kbd>Esc</kbd> 닫기
                     </span>
                     <button
                       aria-label="닫기"
-                      autoFocus
                       className="dvm-close"
                       data-act="닫기"
                       onClick={() => {

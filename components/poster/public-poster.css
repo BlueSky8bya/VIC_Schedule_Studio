@@ -980,6 +980,11 @@ html[data-reduce-motion] .day-vod-backdrop,
 html[data-reduce-motion] .day-vod-modal {
   animation: none;
 }
+/* 창 컨테이너가 키 입력의 집(tabIndex -1, 프로그램 포커스) — 창 자체 테두리가 이미 경계라
+   포커스 링은 그리지 않는다(키보드 Tab은 안의 버튼·링크로 이동해 각자 링을 가진다). */
+.day-vod-modal:focus {
+  outline: none;
+}
 .dvm-head {
   flex: none;
   display: flex;
@@ -1160,6 +1165,17 @@ html[data-reduce-motion] .day-vod-modal {
   transition: opacity 0.5s var(--ease);
 }
 .dvm-cover.is-gone { opacity: 0; }
+/* 커버 썸네일 선명화 — 640×360 스냅샷의 1.9배 확대 흐림을 완만한 언샤프(TSX의 SVG 필터)로
+   보정. 필터 정의 svg는 크기 0·흐름 밖. */
+.dvm-filter-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.dvm-cover img {
+  filter: url(#vod-cover-sharpen);
+}
 .dvm-ext {
   position: absolute;
   top: 8px;

@@ -79,6 +79,15 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   반영. ③ 코너 헤더 sticky(카드 안에서만), 시각 13→14·라벨/헤더 14→15, 얇은 스크롤바.
   ④ 머리에 키 힌트 `← → 10초 · Esc 닫기`. 실측: 점프#3 → active 3/past 3, 레일 scrollTop 0으로
   되돌린 뒤 →키로 챕터 60→61 넘기면 양 뷰포트에서 visible=true.
+  후속 5(2026-09-03): ① **재생 중 Esc 안 먹던 것** — 플레이어를 마우스로 누르면 포커스가 교차
+  출처 iframe으로 들어가 keydown이 우리 창에 안 온다. 창 컨테이너 tabIndex −1 + 열 때 포커스,
+  window blur 후 activeElement가 창 안 iframe이면 되찾기(직전 400ms 안 Tab keydown이면 키보드
+  진입으로 보고 안 되찾음 — 교차 출처 iframe엔 :hover가 안 붙어 hover 판별 불가, 실측).
+  Space = 재생/일시정지(Pplay/Ppause, 포커스가 버튼·링크 위면 제외). 실측: iframe 클릭 후
+  activeElement=창, Space 토글에 pause 이벤트, Esc로 닫힘. ② 커버 썸네일 흐림 — 숲 SnapshotLoad
+  는 `_r`(640×360)·`_l`(480×270)뿐, column/접미사 변형 전부 ≤640(실측). 1230px 커버에서 1.9배
+  확대가 원인. SVG feConvolveMatrix 언샤프(합 1)로 가장자리만 보정(`#vod-cover-sharpen`, TSX
+  인라인 defs). 원본 해상도 한계는 그대로.
 
   후속(2026-09-03): ① 창 1040→1280·레일 420, 역할별 타입 계단(제목 20 > 날짜·레일머리 15 >
   코너헤더·항목 14 > 시각 13 > 크레딧 11), 여백 24 정렬. ② 다중 방송 날 — 방송마다 흰 카드
