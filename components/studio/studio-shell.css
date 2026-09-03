@@ -8267,6 +8267,36 @@ html[data-reduce-motion] .modal-close:active {
 .modal-card-wide {
   max-width: 720px;
 }
+/* 설정 모달(2026-09-04) — 좁은 카드(스위치 목록). 줄은 역할 팝오버의 .role-help-haptics 규격을 그대로 쓰되
+   창이라 여백·글자를 한 단계 키운다. */
+.modal-card-settings {
+  max-width: 440px;
+}
+.settings-modal-body {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 22px 18px;
+}
+.settings-modal-body .role-help-haptics {
+  margin-top: 0;
+  padding: 12px 0;
+  gap: 16px;
+}
+.settings-modal-body .role-help-haptics:first-child {
+  border-top: 0;
+}
+.settings-modal-body .rhh-label {
+  font-size: var(--text-ui);
+  font-weight: 800;
+}
+.settings-modal-body .rhh-label svg {
+  width: 16px;
+  height: 16px;
+}
+.settings-modal-body .rhh-select {
+  max-width: 160px;
+  min-height: 32px;
+}
 
 /* 시청자 화면 전체보기: 스튜디오 대신 공개 화면만 꽉 채워 보여준다. */
 .viewer-fullscreen {

@@ -55,7 +55,7 @@ export default async function HomePage() {
     );
   }
 
-  // 시청자가 아닌 모든 인증 사용자(owner/developer/manager/worker)는 스튜디오(/studio)로 보낸다.
+  // 시청자가 아닌 모든 인증 사용자(owner/developer)는 스튜디오(/studio)로 보낸다.
   // /studio가 동일한 StudioShell을 같은 쿠키 복원으로 렌더한다(렌더 결과 동일, URL만 명확히 분리).
   // 이로써 공개 `/` 페이지는 StudioShell을 모듈 그래프에서 참조하지 않아, 비로그인/시청자가
   // 스튜디오 JS·CSS(220KB) 청크를 받지 않는다(LCP·FCP 개선의 핵심).

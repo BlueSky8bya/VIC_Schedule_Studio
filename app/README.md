@@ -10,7 +10,6 @@
 | `(studio)/studio/(home)` | 스튜디오 홈 |
 | `(studio)/studio/calendar/[year]/[month]` | 편집실 달력(북마크/콜드진입용 — 런타임 월이동 아님) |
 | `(studio)/studio/tags` | 태그 관리 |
-| `(studio)/studio/trusted-members` | 신뢰 멤버(매니저) 관리 |
 
 `(studio)` 레이아웃에 접근 가드(viewer→`/`). 가드 검증은 브라우저로(loading.tsx 스트리밍 함정).
 

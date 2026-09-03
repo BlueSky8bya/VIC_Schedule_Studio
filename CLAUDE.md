@@ -17,7 +17,7 @@ uniform. A cold "admin-panel" feel is a regression.
 - **User–system bond:** warm, trustworthy, role-aware — not a cold admin panel.
 - **Playful motion:** schedule planning and the poster feel cute, alive, and fun without
   hurting clarity or accessibility.
-- **Role-specific flow:** owner / manager / developer / viewer each feel they are in the
+- **Role-specific flow:** owner / developer / viewer each feel they are in the
   right place with the right tools.
 
 (Concrete forms — design unity, no wasted space, platform-tailored, HCI — are in **Design rules**.)
@@ -60,23 +60,24 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   save state · role badge · viewer preview · logout (owner-specified order). Cold tools (태그 편집 · 인사이트 ·
   단축키 · **설정**) live in the **west rail tools card** under the tag filter (`.studio-tools`). **설정 (gear) is
   the single settings hub** (2026-09-04): every switch/preference (생동감 있는 동작 · 눈 편한 테마 · 차분한 편집실 ·
-  포스터 테마 · 멤버 관리 entry, and anything new such as seasonal backgrounds) goes into
-  `components/studio/studio-settings.tsx` (`StudioSettingsList`) — never back into the role badge popover on web
-  (mobile reuses the same list inside the role badge because it has no tools card). 멤버 관리 lost its tile (owner
-  never uses it) and lives only as a quiet "열기" row at the bottom of settings. The avatar
+  계절 배경 · 포스터 테마, and anything new) goes into `components/studio/studio-settings.tsx`
+  (`StudioSettingsList`) — never back into the role badge popover on web (mobile reuses the same list inside
+  the role badge because it has no tools card). It opens as a **modal window** (`modal === "settings"`, same
+  infra as 태그 편집/인사이트: history slot, focus trap, scroll lock, backdrop/Esc close) — owner said no
+  popovers for it. The avatar
   left/right control is a **fixed bottom-center pill** (`.bottom-float-row`) — never inside the rail,
   because the rail moves to the other side and the control would travel with it (owner feedback
   2026-09-03). Do not reintroduce a second full-width action row —
   the calendar (hot zone) owns that height. The rail's vertical budget is filter | tools | avatar 58%.
-- **Ambient registry (ADR-0017, 2026-09-04).** Studio and viewer mount ONE `<AmbientLayer />`
-  (`components/shared/ambient/`): the water tide is the year-round constant (owner's 용신 = 水), and the
-  registry picks today's (KST, 절기-based: 입춘 2/4 · 입하 5/5 · 입추 8/7 · 입동 11/7) season accent on top —
-  spring 초목 shadows(木), summer nothing extra, autumn desaturated brown/wine leaves floating on the water +
-  silver mist(金) (never red/orange/yellow leaves), winter snow + frost sheen. Switch "계절 배경"
-  (`vic.ambient`, default ON) hides only the accent (`html[data-ambient="off"]`); the tide still follows
-  생동감 있는 동작 alone. Special days go into `SPECIAL_DAYS` in `registry.ts` (priority over season). Same
-  performance rules as the tide (transform/opacity only, no filter/blur/scale animation, no dark blobs).
-  Never mount `<WaterTide />` directly again; never add a second background system (the old
+- **Ambient registry (ADR-0017, 2026-09-04, revised same day).** Studio and viewer mount ONE
+  `<AmbientLayer month={view.month} />` (`components/shared/ambient/`). The season follows the **calendar
+  month being viewed**, not today: 12–2 winter · 3–5 spring · 6–8 summer · 9–11 autumn (flip a month, the
+  background flips). **The water tide belongs to summer only**; spring = 초목 shadows(木) + dew, autumn =
+  desaturated brown/wine leaves + silver mist(金) (never red/orange/yellow), winter = snow + frost + snowbank —
+  each without water. Switch "계절 배경" (`vic.ambient`, default ON): OFF = no season props, year-round tide
+  (the pre-season look). Special days go into `SPECIAL_DAYS` in `registry.ts` (real KST date, priority over
+  season). Same performance rules as the tide (transform/opacity only, no filter/blur/scale animation, no dark
+  blobs). Never mount `<WaterTide />` directly again; never add a second background system (the old
   `data-poster-theme` 7-pack coexists for now and is slated to be superseded).
 - **Tide layer.** `.gs-tide` (`components/shared/water-tide.tsx`, shared by studio and viewer poster;
   CSS in `app/metal-water.css`) — shallow-water caustics seen from above: thin bright cell network from
@@ -97,7 +98,7 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
 - **Tree** (each folder has a routing `README.md`): `app/` routes · `components/` UI ·
   `lib/` domain + data loaders/actions · `db/migrations/` SQL · `scripts/` ops · `docs/` topic tree.
 - **Routes:** `/` = public poster (anon allowed). `/onair` = broadcast preview (anon, avatar scene
-  fixed). `(studio)/studio/{calendar/[year]/[month],tags,trusted-members}` = studio (viewer→`/` guard).
+  fixed). `(studio)/studio/{calendar/[year]/[month],tags}` = studio (viewer→`/` guard).
   `api/public/[calendarSlug]/*` = the public boundary (public-loader only);
   `api/{studio-write,unlock-private-layer,presence,activity,soop-live,broadcast,cron,auth/*}`.
 - Studio month routes are bookmark/cold-entry only — no runtime route-based month nav.
@@ -119,10 +120,10 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
 
 - **Viewer** — public poster only (filters, hearts, support links, month nav). No private
   toggle, edit, or admin.
-- **Manager** — the only trusted-member role (worker retired 2026-08-27, ADR-0015). **No private
-  access at all** (public only). May edit support period/link (`canEditSupport`) and assign event
-  tags (`canEditEventTags`). Cannot edit schedule bodies, create/delete/recolor tags, manage
-  members/passcodes, or touch owner-only.
+- **(Manager — retired 2026-09-04, ADR-0018.** The trusted-member feature, `/studio/trusted-members`,
+  the `trusted_members` table and every manager-only UI are gone. Roles are exactly three: viewer,
+  owner, developer. Never reintroduce a helper role; `canEditSupport`/`canEditEventTags` now equal
+  `canEditSchedule`.)
 - **Owner** (UI label "관리자", role key `owner`) — full control; may use multiple owner Google accounts.
 - **Developer** — diagnostics (presence panel) + role preview (read-only, client-only, resets
   on refresh, never escalates real permissions).
@@ -132,7 +133,7 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
 `모두`(public) / `엠바고`(owner_private — **owner only, even developers can't read or create**;
 DB value stays `owner_private`, old `embargo` merged in) / `작업자`(work).
 **Read access** (private needs login + passcode): public → everyone; work →
-owner/developer; owner_private → owner only. Manager has zero private access. (Studio UI for
+owner/developer; owner_private → owner only. (Studio UI for
 private layers is retired — ADR-0014; the server model stays.)
 
 ## Invariants (high-frequency facts)
@@ -186,9 +187,9 @@ private layers is retired — ADR-0014; the server model stays.)
 - **Plan:** affected route/component, role/permission impact, public/private boundary, KST
   assumptions, per-role expected behavior.
 - **Build:** narrow; follow existing patterns; **keep server permission checks** (client gates
-  are never the only protection); don't make manager schedule-editable unless asked;
+  are never the only protection); never add a helper role (manager/worker retired);
   prefer role-specific screens over disabled owner controls.
-- **Evaluate:** no private leak · owner-only stays owner-only · manager ≠ owner · viewer clean ·
+- **Evaluate:** no private leak · owner-only stays owner-only · viewer clean ·
   `/onair` has no admin UI · **regression review** (create/drag/reorder/
   save-order, optimistic-vs-server-prop sync, gating scope, nearby layout/padding) · design
   unity · platform-tailored + motion + haptics · note verification.

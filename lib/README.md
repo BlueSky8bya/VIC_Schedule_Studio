@@ -13,7 +13,6 @@
 | `insights/` | 방문/체류 인사이트 집계 | |
 | `presence/` | 실시간 접속(presence ping) | |
 | `perf/` | 서버 성능 샘플 | |
-| `trusted-members/` | 신뢰 멤버(매니저만 — 작업자 역할은 2026-08-27 철수) | |
 | `domain/` | 공용 타입 | `schedule-types.ts` |
 | `ui/` | UI 유틸 | `breakpoints.ts`, `haptics.ts`, `motion.ts` 등 — 모두 단일 출처 |
 

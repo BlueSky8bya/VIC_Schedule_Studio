@@ -11,13 +11,29 @@
     display: block;
   }
 }
+/* 물결은 여름의 전유물(2026-09-04 사용자) — 계절 배경 스위치 ON이면 여름 아닌 달의 물결을 숨긴다(스위치
+   OFF = 사철 물결). ambient-layer.tsx가 여름 아닐 때 data-off-season을 단다. 게이트 규칙(metal-water.css)과
+   특이도가 같아 순서에 기대지 않도록 !important — 이 파일의 유일한 !important, 하드 게이트다. */
+html:not([data-ambient="off"]) .gs-tide[data-off-season] {
+  display: none !important;
+}
 .gs-season {
   position: fixed;
   inset: 0;
-  z-index: -1; /* 물결(.gs-tide, 같은 z:-1)보다 DOM 뒤 = 그 위에 그려진다 */
+  z-index: -1;
   overflow: hidden;
   pointer-events: none;
   contain: strict;
+  /* 달을 넘겨 계절이 바뀌면 새 레이어가 스르르 — opacity만(합성기). */
+  animation: gs-season-in 0.9s ease-out both;
+}
+@keyframes gs-season-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ── 가을: 물 위의 낙엽 + 은빛 서리 안개 ─────────────────────────────────────── */

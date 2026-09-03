@@ -1,7 +1,13 @@
 # ADR-0017 — 앰비언트 배경 레지스트리: 물결은 상수, 계절은 강세
 
-Status: Accepted
+Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 - Date: 2026-09-04
+
+> **개정 2026-09-04(사용자 재정의, 결정 2·3 대체)**: ① 계절은 오늘 날짜가 아니라 **보고 있는 달력의 달**이 정한다
+> — 12~2월 겨울 · 3~5월 봄 · 6~8월 여름 · 9~11월 가을(달을 넘기면 즉시 바뀐다). ② **물결은 여름의 전유물** — 봄·
+> 가을·겨울은 물 없이 그 계절의 소품만(가을 = 낙엽, 겨울 = 눈, 봄 = 초목). ③ 계절 배경 스위치 OFF = 계절 소품
+> 없이 사철 물결(계절 도입 전 모습). 특정일(3단계)은 실제 날짜(KST)로 판정한다. 아래 본문의 "절기·물결 상수"
+> 문장은 이 개정으로 대체됐다.
 - 관련: ADR-0016(금생수 — 물결 레이어), `components/shared/ambient/*`, `app/ambient.css`, `lib/ui/motion.ts`
   (`vic.ambient`), `docs/ux/seasonal-ambient-plan.md`(설계안), CLAUDE.md "Owner-fit palette rule"
 - Supersedes(예정, 4단계): 포스터 테마 7종(`calendars.poster_theme` = sakura/summer/autumn/winter/sunset/mint/dot/

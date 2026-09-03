@@ -125,14 +125,7 @@
   background: rgb(75 93 112 / 10%);
   border-color: rgb(75 93 112 / 28%);
 }
-/* 설정 팝오버 — body 포털 + fixed(좌표는 studio-shell.tsx settingsPopStyle이 카드 옆으로 실측 배치: 오른쪽에
-   자리가 있으면 동쪽, 없으면 서쪽). 어느 스태킹 컨텍스트에도 안 갇히고(rail·sticky 좌측 칸 모두) 잘리지 않는다.
-   재질·줄 규격은 .role-help-pop 공용, 폭만 고정. 모달 백드롭(z 50/60)보다는 아래, rail(z 6)·달력보다는 위. */
-.studio-settings-pop {
-  z-index: 45;
-  width: 272px;
-  max-width: none;
-}
+/* (설정 팝오버는 2026-09-04 같은 날 모달 창으로 바뀜 — .modal-card-settings, studio-shell.css.) */
 /* 차분 모드: 은백 카드 + 은회 글자, 호버에 흰 면. 단축키 펼침은 물빛 테두리. */
 html[data-studio-calm] .studio-tools {
   background: var(--studio-silver);

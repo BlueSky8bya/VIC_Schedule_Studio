@@ -1,13 +1,8 @@
 import type { BroadcastTag, MembershipRole } from "@/lib/domain/schedule-types";
 
 // 단계 배포 제어점: 이 역할들이 분류 v3(2계층 세부·modifier·신설 그룹)를 본다. 현재 전원 노출.
-// 다시 좁히려면 역할을 빼면 된다(순서: developer → owner → manager → viewer).
-export const TAXONOMY_V3_ROLES: MembershipRole[] = [
-  "developer",
-  "owner",
-  "manager",
-  "viewer"
-];
+// 다시 좁히려면 역할을 빼면 된다(순서: developer → owner → viewer).
+export const TAXONOMY_V3_ROLES: MembershipRole[] = ["developer", "owner", "viewer"];
 
 export function isTaxonomyV3(role: MembershipRole): boolean {
   return TAXONOMY_V3_ROLES.includes(role);

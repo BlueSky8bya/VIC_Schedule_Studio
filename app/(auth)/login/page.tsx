@@ -27,7 +27,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         <p className="eyebrow">VIC Studio</p>
         <h1>Google 로그인</h1>
         <p>
-          관리자와 trusted member 권한은 Google OAuth로 인증된 이메일에만
+          관리자·개발자 권한은 Google OAuth로 인증된 이메일에만
           부여됩니다. 이메일 주소를 아는 것만으로는 권한을 받을 수 없습니다.
         </p>
 

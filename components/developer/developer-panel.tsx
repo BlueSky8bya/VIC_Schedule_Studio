@@ -1,17 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, EyeOff, Monitor, ShieldCheck, Smartphone, UserCog, Users } from "lucide-react";
+import { Eye, EyeOff, Monitor, ShieldCheck, Smartphone, Users } from "lucide-react";
 import { subscribePresence, type PresenceCounts } from "@/lib/presence/presence-client";
 
 // 개발자 전용 "접속자 현황" — 지금 사이트에 접속한 사용자 수를 역할별 + 기기별로 보여준다.
 // 실시간(Supabase Presence)으로 갱신되며, 별도 새로고침 없이 들어오고 나갈 때 숫자가 바뀐다.
 // 라벨·색은 다른 인사이트 화면(ROLE_META, ROLE_TREND_META)과 같은 이름을 쓴다 — '비로그인'.
 // 아이콘은 시청자(눈)와 짝이 되게 눈-가림으로: 로그인만 안 했을 뿐 같은 시청자다.
-type RoleKey = "owner" | "manager" | "viewer" | "anon" | "developer";
+// (매니저 행은 역할 철수(2026-09-04, ADR-0018)로 제거 — 실시간 집계에 더는 안 나온다.)
+type RoleKey = "owner" | "viewer" | "anon" | "developer";
 const ROWS: { key: RoleKey; label: string; icon: typeof Users }[] = [
   { key: "owner", label: "관리자", icon: ShieldCheck },
-  { key: "manager", label: "매니저", icon: UserCog },
   { key: "viewer", label: "시청자", icon: Eye },
   { key: "anon", label: "비로그인", icon: EyeOff },
   { key: "developer", label: "개발자", icon: Users }

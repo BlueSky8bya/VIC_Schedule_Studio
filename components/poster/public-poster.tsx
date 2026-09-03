@@ -4164,7 +4164,7 @@ export function PublicPoster({
     >
       {/* 앰비언트 배경(ADR-0016 물결 + ADR-0017 계절, components/shared/ambient — 편집실과 같은
           컴포넌트). 표면(data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
-      <AmbientLayer force={ambientForce} />
+      <AmbientLayer force={ambientForce} month={view.month} />
       {/* (라이브 카드는 우측 레일 안 — 정보 카드와 태그 필터 사이 — 로 이사(2026-07-31).
           모바일 아젠다는 하단 '오늘'→LIVE 버튼이 담당해 별도 플로팅 없음.) */}
       {/* 하트 승급 순간 — 화면 밖(fixed)이라 캡쳐 PNG엔 안 들어간다. */}

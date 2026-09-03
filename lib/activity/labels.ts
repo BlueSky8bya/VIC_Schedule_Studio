@@ -78,7 +78,7 @@ const ROUTE: Record<string, TargetLabel> = {
   "/studio/decorate": { name: "꾸미기 화면", area: "꾸미기", hint: "스티커·배경을 꾸미는 화면" },
   "/studio/private-layer": { name: "비공개 설정 화면", area: "관리" },
   "/studio/tags": { name: "태그 관리 화면", area: "관리" },
-  "/studio/trusted-members": { name: "멤버 관리 화면", area: "관리" },
+  "/studio/trusted-members": { name: "멤버 관리 화면", area: "관리", hint: "옛 기록(기능 철수 2026-09-04)" },
   "/login": { name: "로그인 화면", area: "공통" },
   // 화면 검사용 고정 화면 — 실제 사용자 화면이 아니라 자동 검사(Playwright)가 여는 곳이다.
   // 사람 기록에 섞이면 "이 화면은 뭐지"가 되므로 그렇다고 이름에 적어 준다.
@@ -140,7 +140,7 @@ const ACT: Record<string, TargetLabel> = {
   // 역할 미리보기(개발자 전용, 보기만 바뀜)
   "role-preview-dev": { name: "역할 미리보기: 원래대로", area: "관리" },
   "role-preview-owner": { name: "역할 미리보기: 관리자", area: "관리" },
-  "role-preview-manager": { name: "역할 미리보기: 매니저", area: "관리" },
+  "role-preview-manager": { name: "역할 미리보기: 매니저", area: "관리", hint: "옛 기록(매니저 역할 철수 2026-09-04)" },
   "role-preview-worker": { name: "역할 미리보기: 작업자", area: "관리" },
   "role-preview-viewer": { name: "역할 미리보기: 시청자", area: "관리" },
   "role-preview-dual": { name: "역할 미리보기: 매니저+작업자", area: "관리" },

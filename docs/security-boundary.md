@@ -32,7 +32,6 @@ Forbidden public fields:
 | Role | Read public | Read private | Write events | Scope |
 | --- | --- | --- | --- | --- |
 | viewer | yes | no | no | n/a |
-| manager | yes | unlock required | no | one calendar |
 | owner | yes | unlock required | yes | own calendar |
 | developer | yes | unlock required | yes | all calendars |
 
@@ -45,13 +44,13 @@ and fix issues, but two boundaries still hold:
 - Reading embargo/work/owner_private rows still requires a valid unlock session.
   Developers enter the passcode like anyone else; this is not a passcode bypass.
 
-owner_private ("나만") events are OWNER-ONLY: not developers, not trusted members. RLS
+owner_private ("나만") events are OWNER-ONLY: not developers. RLS
 for owner_private uses `is_calendar_owner` (not `is_calendar_admin`), and only the owner
 sees the "나만" option / can create them.
 
 There is no anonymous/public page route. Everyone signs in with Google at root (`/`);
-a viewer is simply a signed-in account that is neither owner, developer, nor trusted
-member, and is routed to the public calendar. (Public API routes under
+a viewer is simply a signed-in account that is neither owner nor developer, and is
+routed to the public calendar. (Trusted members / the manager role were retired 2026-09-04, ADR-0018.) (Public API routes under
 `/api/public/[slug]` still return public-only data and stay private-free.)
 
 ## Authentication Resolution
@@ -63,9 +62,8 @@ Role resolution is server-side only.
 3. Elevated roles require a Supabase user whose provider or identity is `google`.
 4. If the verified Google email is in `platform_admins`, return developer (checked first, cross-calendar).
 5. Else if the verified Google email is in `OWNER_EMAIL` (a comma-separated list — a streamer may use more than one account), return owner.
-6. Otherwise query `trusted_members` by calendar slug and Google email with the service-role client.
-7. Active trusted members resolve to `manager` (the worker role was retired 2026-08-27, ADR-0015).
-8. Everyone else resolves to viewer.
+6. Everyone else resolves to viewer. (The `trusted_members` lookup and the manager role were retired
+   2026-09-04, ADR-0018; worker 2026-08-27, ADR-0015.)
 
 In the database, `is_developer()` reads `platform_admins`, and `is_calendar_admin()`
 = owner OR developer. `is_calendar_owner()` is true for `calendars.owner_id` (the

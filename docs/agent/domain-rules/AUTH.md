@@ -6,7 +6,7 @@
 근거: [ADR-0002](../decisions/ADR-0002-private-content-encryption.md) ·
 [ADR-0003](../decisions/ADR-0003-owner-dual-binding.md) · `docs/security-boundary.md`
 
-## 역할 (5)
+## 역할 (3 — worker 철수 2026-08-27 ADR-0015, manager 철수 2026-09-04 ADR-0018; 아래 두 행은 역사 기록)
 
 | 역할 | 할 수 있는 것 | 절대 못 하는 것 |
 |---|---|---|
@@ -16,11 +16,11 @@
 | owner(UI "관리자") | 전부 | — |
 | developer | 진단(프레즌스 패널), 역할 미리보기(읽기 전용) | 오너 전용(owner_private) 열람·생성, 공개 API로 비공개 열람 |
 
-겸직: `is_manager`/`is_worker` 둘 다 가능. **매니저면 실효 역할 = manager.**
+(겸직·trusted_members 판정은 철수 — actor는 OWNER_EMAIL → platform_admins → viewer 순으로만 푼다.)
 
 ## 절대 규칙
 
-1. **일정 생성/수정/삭제는 owner만.** 요청받지 않았으면 매니저·작업자에게 편집 권한을 주지 않는다.
+1. **일정 생성/수정/삭제는 owner만.** 보조 역할(매니저·작업자)은 철수했다 — 새 역할을 만들지 않는다.
 2. 클라이언트 게이트는 **유일한 방어선이 아니다** — 모든 서버 액션/라우트에서 권한을 다시 검사한다.
    새 API 라우트(`studio-write`/`sticker-write` op 포함)는 **새 권한면을 만들지 않는다**(액션 내부 검사 유지).
 3. 비공개 레이어 접근 = Google 로그인 + 유효한 패스코드 언락 세션. 언락은 만료된다.

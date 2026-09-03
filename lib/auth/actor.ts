@@ -5,21 +5,17 @@ import { isOwnerEmail, normalizeEmail } from "@/lib/auth/config";
 import { getCurrentSupabaseUser } from "@/lib/auth/server";
 import type { User } from "@supabase/supabase-js";
 
+// 역할 판정 결과. (신뢰 멤버/매니저 판정은 2026-09-04 ADR-0018로 철수 — trusted_members 조회 없음.)
 export type CurrentActor = {
   email: string | null;
   isAuthenticated: boolean;
   role: MembershipRole;
-  trustedRole: "manager" | null;
-  // 신뢰 멤버가 동시에 가질 수 있는 역할 플래그(표시용). role은 effective(매니저면 manager)지만,
-  // 한 계정이 매니저·작업자 둘 다일 수 있어 배지/팝오버에서 두 역할을 함께 보여주려고 둔다.
-  isManager?: boolean;
 };
 
 export const anonymousActor: CurrentActor = {
   email: null,
   isAuthenticated: false,
-  role: "viewer",
-  trustedRole: null
+  role: "viewer"
 };
 
 // 한 요청 안에서 페이지와 여러 로더가 각자 actor를 물어봐도 getUser·역할 조회를
@@ -27,6 +23,7 @@ export const anonymousActor: CurrentActor = {
 export const resolveCurrentActor = cache(_resolveCurrentActor);
 
 async function _resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor> {
+  void calendarSlug; // (캘린더별 신뢰 멤버 조회가 빠져 지금은 쓰지 않는다 — 호출부 시그니처 호환)
   const user = await getCurrentSupabaseUser();
   const email = normalizeEmail(user?.email);
 
@@ -38,8 +35,7 @@ async function _resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor>
     return {
       email,
       isAuthenticated: true,
-      role: "viewer",
-      trustedRole: null
+      role: "viewer"
     };
   }
 
@@ -50,8 +46,7 @@ async function _resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor>
     return {
       email,
       isAuthenticated: true,
-      role: "owner",
-      trustedRole: null
+      role: "owner"
     };
   }
 
@@ -60,26 +55,14 @@ async function _resolveCurrentActor(calendarSlug = "vic"): Promise<CurrentActor>
     return {
       email,
       isAuthenticated: true,
-      role: "developer",
-      trustedRole: null
-    };
-  }
-
-  if (await isTrustedManager(calendarSlug, email)) {
-    return {
-      email,
-      isAuthenticated: true,
-      role: "manager",
-      trustedRole: "manager",
-      isManager: true
+      role: "developer"
     };
   }
 
   return {
     email,
     isAuthenticated: true,
-    role: "viewer",
-    trustedRole: null
+    role: "viewer"
   };
 }
 
@@ -106,26 +89,6 @@ async function isPlatformDeveloper(email: string) {
     .from("platform_admins")
     .select("email")
     .eq("email", email)
-    .maybeSingle();
-
-  return !error && Boolean(data);
-}
-
-
-// 신뢰 멤버 = 매니저 한 종류(작업자 철수 2026-08-27). 활성 행이 있으면 매니저.
-async function isTrustedManager(calendarSlug: string, email: string): Promise<boolean> {
-  const supabase = createSupabaseAdminClient();
-
-  if (!supabase) {
-    return false;
-  }
-
-  const { data, error } = await supabase
-    .from("trusted_members")
-    .select("id, calendars!inner(slug)")
-    .eq("email", email)
-    .eq("is_active", true)
-    .eq("calendars.slug", calendarSlug)
     .maybeSingle();
 
   return !error && Boolean(data);

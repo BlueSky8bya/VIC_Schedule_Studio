@@ -4,6 +4,25 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-09-04
+
+### CHG-20260904-001 — MIGRATION — 신뢰 멤버(매니저) 기능 철수 (0074, ADR-0018)
+
+Problem: 관리자가 쓰지 않는 보조 역할(매니저)과 그 관리 화면·시트·테이블이 코드와 스키마에 남아 있었다
+(프로덕션 trusted_members 0행).
+Change: 역할 = developer·owner·viewer 셋. /studio/trusted-members·패널·액션·매니저 전용 시트 2종·모바일 접이·
+panel=members·역할 미리보기 매니저·인사이트 members/겸업 조회·활동 로그 신뢰 멤버 이메일 해석 삭제.
+0074: trusted_members drop(cascade)·enum trusted_role drop·is_active_trusted_member() drop. 옛 기록 판독용
+라벨 문자열은 유지. 공개 API DTO 변화 없음.
+Files: lib/{auth/actor.ts,permissions/roles.ts,domain/schedule-types.ts,insights/actions.ts,activity/query.ts,
+schedules/event-actions.ts,studio/editor-model.ts,tags/taxonomy.ts,presence/presence-client.ts},
+components/studio/{studio-shell.tsx,readonly-event-detail.tsx,studio-settings.tsx}, components/developer/developer-panel.tsx,
+app/(studio)/studio/(home)/page.tsx, app/visual-fixture/studio/page.tsx, db/migrations/0074_retire_trusted_members.sql,
+db/policies/0002_grants.sql, tests/{unit/roles.test.ts,visual/redesign-matrix.spec.ts,visual/mobile-overlays.spec.ts}
+Validation: 적용 전 실측 행 0·참조 정책 0·함수 1; tsc/lint(기존 경고만)/vitest/build exit 0; 비주얼 스위트;
+Playwright — 편집실·모바일 DOM에 "매니저" 문자열 0, 개발자 미리보기 옵션 3개.
+Rollback: 코드 revert + 0001·0022·0065 정의로 테이블/enum/함수 재생성(데이터 없음).
+
 ## v0.1.0 — 2026-08-31
 
 ### CHG-20260831-006 — FEATURE — 날짜 창 인라인 플레이어 + 스크롤 잠금 + 타임라인 고속 수집

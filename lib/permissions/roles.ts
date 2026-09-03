@@ -11,21 +11,20 @@ export function canEditSchedule(role: MembershipRole) {
 }
 
 // (canDecorate·canManageStickerAssets 삭제 — 달력 꾸미기·스티커 기능 철수, 2026-08-27 ADR-0015.)
+// (매니저 역할 철수 2026-09-04 ADR-0018 — 아래 두 자격은 이제 canEditSchedule과 같다. 호출부의
+//  '업 도움만/태그만' 분기가 남아 있어 함수는 유지한다.)
 
-// 업 도움(support) 이벤트의 기간/링크 편집. 매니저는 "방송 운영" 역할이라 업 도움 정보를 손볼 수 있다.
-// (일반 일정 자체의 생성/수정/삭제는 여전히 canEditSchedule = owner/developer 전용)
+// 업 도움(support) 이벤트의 기간/링크 편집 — 소유자·개발자.
 export function canEditSupport(role: MembershipRole) {
-  return role === "owner" || role === "developer" || role === "manager";
+  return role === "owner" || role === "developer";
 }
 
-// 일정별 태그 "할당" 편집(어떤 태그를 붙일지). 매니저는 방송 분류가 업무라 허용한다.
-// 태그 자체의 생성/삭제/색상 변경은 여전히 canEditSchedule = owner/developer 전용.
+// 일정별 태그 "할당" 편집(어떤 태그를 붙일지) — 소유자·개발자.
 export function canEditEventTags(role: MembershipRole) {
-  return role === "owner" || role === "developer" || role === "manager";
+  return role === "owner" || role === "developer";
 }
 
-// 비공개 레이어(잠금 해제·비밀번호 확인)를 쓸 수 있는 자격. 소유자·개발자만. 매니저는 비공개를 전혀
-// 보지 못한다(공개 일정만). (작업자 역할은 2026-08-27 철수 — ADR-0015.) 편집실의 비공개 보기 UI는
+// 비공개 레이어(잠금 해제·비밀번호 확인)를 쓸 수 있는 자격. 소유자·개발자만. 편집실의 비공개 보기 UI는
 // ADR-0014로 철수했고, 이 자격은 최초공개 게이트(verifyOnly)·비밀번호 변경에 쓰인다.
 export function canUsePrivateLayer(role: MembershipRole) {
   return role === "owner" || role === "developer";

@@ -12,11 +12,10 @@ export default async function StudioPage({
 }: {
   searchParams?: Promise<{ panel?: string }>;
 }) {
-  // P2-ROUTE-1: /studio?panel=tags|members 딥링크 — 레거시 /studio/tags·/studio/trusted-members
-  // 리다이렉트의 캐노니컬 도착지. 권한 게이트는 StudioShell이 검사한다(없으면 조용히 무시).
+  // P2-ROUTE-1: /studio?panel=tags 딥링크 — 레거시 /studio/tags 리다이렉트의 캐노니컬 도착지.
+  // 권한 게이트는 StudioShell이 검사한다(없으면 조용히 무시). (panel=members는 멤버 관리 철수로 제거.)
   const panelParam = (await searchParams)?.panel;
-  const initialPanel =
-    panelParam === "tags" || panelParam === "members" ? panelParam : undefined;
+  const initialPanel = panelParam === "tags" ? panelParam : undefined;
   const [actor, unlock] = await Promise.all([
     timed("page:/studio actor", () => resolveCurrentActor("vic")),
     timed("page:/studio unlock", () => getUnlockState("vic"))

@@ -89,15 +89,7 @@ test.describe("Apple redesign visual matrix", () => {
     await expect(page).toHaveScreenshot("studio-owner-web-light.png");
   });
 
-  test("manager Studio — native mobile light", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await prepareTheme(page, "light");
-    await page.goto("/visual-fixture/studio?role=manager");
-    await settle(page, ".studio-mobile");
-
-    await expect(page.locator(".studio-topbar")).toHaveCount(0);
-    await expect(page).toHaveScreenshot("studio-manager-mobile-light.png");
-  });
+  // (매니저 모바일 스냅샷은 역할 철수(2026-09-04, ADR-0018)로 삭제.)
 
   test("taxonomy overlay — developer eye-comfort", async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -115,11 +107,8 @@ test.describe("Apple redesign visual matrix", () => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await prepareTheme(page, "light");
 
-    await page.goto("/visual-fixture/studio?role=manager&panel=tags");
-    await settle(page, ".studio-shell");
-    await expect(page.locator(".modal-card-tags")).toHaveCount(0);
-
-    for (const role of ["owner", "developer", "manager"] as const) {
+    // (매니저의 panel=tags 차단 검사는 역할 철수로 제거 — fixture가 manager를 더는 받지 않는다.)
+    for (const role of ["owner", "developer"] as const) {
       await page.goto(`/visual-fixture/studio?role=${role}&viewer=1`);
       await settle(page, ".poster-page");
       const drawingButtons = page.getByRole("button", { name: "일정 그림판" });

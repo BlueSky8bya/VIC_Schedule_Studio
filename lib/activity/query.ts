@@ -160,11 +160,8 @@ export async function getActivityDayAction(
   }
 
   // 알려진 계정만 이메일로 푼다 — 모르는 계정은 끝까지 익명(#n).
+  // (신뢰 멤버 이메일 해석은 2026-09-04 멤버 관리 철수(ADR-0018)로 제거 — 옛 매니저 기록은 익명 #n.)
   const hashToEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
-  const { data: members } = await supabase.from("trusted_members").select("email");
-  for (const m of (members ?? []) as { email: string }[]) {
-    if (m.email) hashToEmail.set(accountHashOf(m.email), m.email);
-  }
   const anonTag = new Map<string, number>();
 
   // 방문 단위로 묶는다. **두 번에 나눠** 묶는 이유(2026-08-05 실측):

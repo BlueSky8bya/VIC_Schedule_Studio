@@ -4,11 +4,12 @@
 // 필드의 한 높이 등고선만 가늘게 뽑으면 닫힌 셀 모양의 선 그물이 된다(수영장 바닥 무늬와 같은 원리).
 // 필터(feTurbulence 등)는 내용이 불변인 레이어라 **첫 래스터 한 번**, 이후엔 transform/opacity만 —
 // 합성기만 일한다. 자기 배경은 반투명 필름뿐이라 모래(아이보리)가 그대로 비친다.
-// 보이는 조건은 CSS가 판단(app/metal-water.css `.gs-tide`) — 차분 ON · 생동감 있는 동작 ON · 여력 있는
-// 기기(data-gfx≠lite) · 웹(≥641px).
-export function WaterTide() {
+// 보이는 조건은 CSS가 판단(app/metal-water.css `.gs-tide`) — 생동감 있는 동작 ON · 여력 있는 기기
+// (data-gfx≠lite) · 웹(≥641px). 계절 레이어(ADR-0017)에선 **여름의 전유물**: 다른 계절엔 `offSeason`으로
+// `data-off-season`이 붙고, 계절 배경 스위치가 ON이면 app/ambient.css가 숨긴다(OFF면 사철 물결).
+export function WaterTide({ offSeason = false }: { offSeason?: boolean } = {}) {
   return (
-    <div className="gs-tide" aria-hidden="true">
+    <div className="gs-tide" aria-hidden="true" data-off-season={offSeason ? "" : undefined}>
       <svg className="gs-tide-defs" width="0" height="0" focusable="false">
         <defs>
           {/* caustic — 프랙탈 노이즈 → 밝기를 알파로 → 좁은 띠(테이블)만 남겨 등고선 = 셀 그물 → 살짝 번짐 →

@@ -18,8 +18,7 @@ export type PresenceCounts = {
   // 아니라 total에도 안 잡혀, 기기별 합계(비로그인 포함)와 역할별 합계가 서로 안 맞았다.
   anon: number;
   viewer: number;
-  worker: number;
-  manager: number;
+  // (worker·manager 역할 철수 — 2026-08-27 ADR-0015 / 2026-09-04 ADR-0018. 옛 키는 실시간 집계에서 뺐다.)
   owner: number;
   developer: number;
   total: number;
@@ -35,8 +34,6 @@ export type PresenceCounts = {
 const EMPTY: PresenceCounts = {
   anon: 0,
   viewer: 0,
-  worker: 0,
-  manager: 0,
   owner: 0,
   developer: 0,
   total: 0,

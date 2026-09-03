@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-09-03
+Last Updated: 2026-09-04
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -79,7 +79,31 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   ⑰ **휴식 넛지 철수(2026-09-04 사용자: "별로 사용 안 하실 것 같아")** — 2026-09-03 도입한 50분 휴식 카드(.rest-nudge,
   sessionStorage `vic.restNudge`, 활동 시계, 30초 자동 사라짐)를 코드·CSS에서 제거. 행동 기록 라벨(rest-nudge*)은
   옛 기록용으로 사전에만 남김("철수" 힌트). 복원은 git 이력(커밋 58429f1 이전 studio-shell.tsx 990~1063행·JSX·CSS 꼬리).
-  ⑯ **앰비언트 계절 레이어(2026-09-04 사용자 "시작", ADR-0017, PLAN-20260904-001 1·2단계)**: 레지스트리
+  ⑱ **설정 = 모달 창 · 계절 = 달력 달 · 물결 = 여름 전유(2026-09-04 사용자, ADR-0017 개정)**: ① 설정(톱니)이
+  팝오버 → **모달 창**(`modal === "settings"`, `.modal-card-settings` 폭 440, 태그 편집·인사이트와 같은 인프라: history
+  슬롯·포커스 트랩·스크롤 잠금·백드롭/Esc 닫힘). `.studio-settings-pop` CSS·settingsPopStyle 실측 배치 제거. 목록 =
+  생동감·눈 편한·차분·**계절 배경**·포스터 테마(모바일은 역할 배지 팝오버 슬롯 그대로). ② 계절은 오늘(KST 절기)이
+  아니라 **보고 있는 달력의 달**(`<AmbientLayer month={view.month} />`, `seasonOfMonth`: 12~2 겨울·3~5 봄·6~8 여름·
+  9~11 가을) — 달을 넘기면 즉시 바뀐다(useMemo, 새 레이어 CSS 페이드 .9s). ③ **물결은 여름만**: 여름 아닌 달엔
+  `.gs-tide[data-off-season]`을 달고 `html:not([data-ambient="off"])`일 때 숨김(app/ambient.css 유일 `!important`
+  하드 게이트). 계절 배경 스위치 OFF = 계절 소품 없이 사철 물결(도입 전 모습). 특정일(`SPECIAL_DAYS`)만 실제 KST 날짜.
+  실측(prod 빌드 + VISUAL_TEST_FIXTURE, .scratch-pw/verify-round3.mjs): 6·7·8월 물결 block/계절 absent, 9월 물결
+  none/가을 block, 12월 겨울, 이듬해 3월 봄, 스위치 OFF 9월 = 물결 block/계절 none, 시청자 fixture 같은 결과; 설정
+  모달을 열어도 달력 사각형·scrollWidth 불변, history +1, Esc·백드롭·뒤로가기 모두 닫히고 편집실 유지.
+  ⑲ **신뢰 멤버(매니저) 기능 철수(2026-09-04 사용자: "개발자·관리자·시청자만 딱 남긴다", ADR-0018, 0074)**: 역할 =
+  `developer | owner | viewer`. actor 판정의 `trusted_members` 조회·`trustedRole`·`isManager` 삭제,
+  `canEditSupport`/`canEditEventTags` = `canEditSchedule`(함수는 호출부 호환용으로 유지). 삭제: `/studio/trusted-members`·
+  `components/trusted-members/*`·`lib/trusted-members/actions.ts`·매니저 전용 시트 2종(업 도움·모바일 태그)·모바일
+  '매니저 관리' 접이·`panel=members`·모달 `members`·설정 '멤버 관리 열기'·역할 미리보기 '매니저 화면'·인사이트
+  members/겸업 조회·활동 로그 신뢰 멤버 이메일 해석·실시간 접속자 매니저 행·fixture `role=manager`·매니저 비주얼
+  기준선·고아가 된 `toggleEventTag`. 옛 기록 판독용 라벨 문자열(`role-preview-manager`·`/studio/trusted-members`·
+  ROLE_ORDER·SESSION_ROLE_LABEL·INTERNAL_ROLES)은 "옛 기록" 힌트로 유지. **0074**: `trusted_members` drop cascade·
+  enum `trusted_role`·`is_active_trusted_member()` drop(적용 전 실측 행 0·참조 정책 0; `is_active_worker()`는 정책이
+  참조하는 항상-false 스텁이라 유지). 순서: 코드 push → 0074 적용(옛 코드도 조회 실패를 삼켜 안 깨짐). 공개 API DTO
+  무변화. 검증: tsc·lint(기존 경고 2)·vitest 522·build exit 0·비주얼 79·Playwright(편집실·모바일 DOM "매니저" 0, 도구
+  타일 [태그 편집·인사이트·단축키·설정], 개발자 미리보기 3개, 역할 팝오버에 '멤버' 없음).
+  ⑯ **앰비언트 계절 레이어(2026-09-04 사용자 "시작", ADR-0017, PLAN-20260904-001 1·2단계; 같은 날 ⑱로 개정 —
+  절기·물결 상수 → 달력 달·물결 여름 전유)**: 레지스트리
   `components/shared/ambient/registry.ts`(KST 절기 계절: 입춘 2/4·입하 5/5·입추 8/7·입동 11/7, `SPECIAL_DAYS` 비어
   있음) + `<AmbientLayer />`(물결 상수 + 계절 강세) — 편집실·시청자 fixture·`/` 전부 이걸로(옛 `<WaterTide />` 직접
   마운트 없음). 봄 = 초목 그림자 잎 6(청록 .14)·연둣빛 얼룩 3·풀빛 필름·이슬 6, 여름 = 물결만, 가을 = 채도 낮춘

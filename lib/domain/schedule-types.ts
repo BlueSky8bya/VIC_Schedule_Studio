@@ -3,7 +3,10 @@ export const PRODUCT_TIMEZONE = "Asia/Seoul" as const;
 // "developer"는 플랫폼 레벨 슈퍼관리자(시스템 유지보수자)로, "owner"(스트리머)와 구분된다.
 // 개발자는 모든 캘린더를 읽고/편집할 수 있지만, 공개 API 출력은 동일하게 유지되고
 // 비공개 레이어 읽기에는 여전히 잠금해제 세션이 필요하다.
-export type MembershipRole = "developer" | "owner" | "manager" | "viewer"; // (worker 철수 2026-08-27, ADR-0015)
+// 역할 세 종류: 개발자·관리자(owner)·시청자. (worker 철수 2026-08-27 ADR-0015, manager(신뢰 멤버) 철수
+// 2026-09-04 ADR-0018 — 멤버 관리 기능 자체가 프로젝트에서 빠졌다. 옛 행동 기록의 "manager" 문자열은
+// 라벨 사전(lib/activity/labels.ts)이 판독용으로만 안다.)
+export type MembershipRole = "developer" | "owner" | "viewer";
 
 export type EventStatus = "draft" | "scheduled" | "live" | "done" | "cancelled";
 

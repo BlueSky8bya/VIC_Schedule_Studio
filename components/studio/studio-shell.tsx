@@ -28,7 +28,6 @@ import {
   X
 } from "lucide-react";
 import Link from "next/link";
-import { createPortal } from "react-dom";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
@@ -206,10 +205,6 @@ const DayVisitModal = dynamic(
   () => import("@/components/developer/day-visit-modal").then((m) => m.DayVisitModal),
   { ssr: false }
 );
-const TrustedMembersPanel = dynamic(
-  () => import("@/components/trusted-members/trusted-members-panel").then((m) => m.TrustedMembersPanel),
-  { ssr: false }
-);
 // 시청자 화면 미리보기는 '미리보기 켤 때만' 필요한데, PublicPoster(3800줄+)와 poster.css(59KB)가
 // 편집실 첫 로딩에 늘 실려 있었다. 동적 import로 빼서 편집실 초기 JS·CSS를 크게 줄인다. 미리보기를
 // 처음 켤 때 잠깐 포스터 스켈레톤(콘텐츠가 놓일 자리)을 보여준다 — ssr:false(사용자 동작으로 열림).
@@ -230,7 +225,7 @@ type StudioShellProps = {
   // 서버 UA 판정 휴대폰 여부 — 모바일 레이아웃을 처음부터 그려 깜빡임을 없앤다(클라가 보정).
   initialNarrow?: boolean;
   // P2-ROUTE-1: /studio?panel= 딥링크로 열 관리 모달(권한 없으면 조용히 무시).
-  initialPanel?: "tags" | "members";
+  initialPanel?: "tags";
   // 계절 배경 강제(fixture/검증 전용, ADR-0017) — 실제 /studio는 넘기지 않는다(오늘 KST 절기로 판정).
   ambientForce?: SeasonKey | null;
 };
@@ -306,11 +301,6 @@ export function StudioShell({
     flushPendingWrites,
     flashSavedChip
   } = useStudioWriteQueue(movePersistChainRef, writeDrainRef);
-  // 이벤트별 태그 토글 직렬화 — 빠르게 여러 번 눌러도 '마지막 의도'가 서버 진실이 되게(레이스로
-  // 옛 요청이 새 요청을 덮어쓰지 않게). desired=최신 의도, chain=직렬 큐, sent=중복 전송 방지(레퍼런스).
-  const tagDesiredRef = useRef<Map<string, string[]>>(new Map());
-  const tagWriteChainRef = useRef<Map<string, Promise<void>>>(new Map());
-  const tagSentRef = useRef<Map<string, string[]>>(new Map());
   // 첫 진입(스태거)와 달 이동(슬라이드)을 구분 — 실제로 달을 한 번 넘긴 뒤에만 슬라이드를 켠다.
   const didNavigateRef = useRef(false);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -406,7 +396,8 @@ export function StudioShell({
       setLoadingPrivate(false); // 세션 반영 확인 → "여는 중" 종료
     }
   }, [hasUnlockSession]);
-  const [modal, setModal] = useState<null | "tags" | "members" | "developer" | "dayVisit">(
+  // (members 모달은 멤버 관리 철수(2026-09-04)로 제거, settings 모달은 같은 날 도구 카드 톱니에서 열린다.)
+  const [modal, setModal] = useState<null | "tags" | "settings" | "developer" | "dayVisit">(
     null
   );
   // 빠른 휴방: 날짜 우클릭/롱프레스로 뜨는 미니 메뉴(화면 좌표 + 그 날 휴방 여부).
@@ -523,11 +514,7 @@ export function StudioShell({
   const dateScrubRef = useRef<{ x: number; end: string } | null>(null);
   // 스크럽(미는) 중인지 — 값 칩에 확대·발광 애니메이션을 줘서 "조정 중"을 한눈에 알린다.
   const [dateScrubbing, setDateScrubbing] = useState(false);
-  // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 전용 시트(웹·모바일 공용).
-  const [supportSheetId, setSupportSheetId] = useState<string | null>(null);
-  const [supportSaving, setSupportSaving] = useState(false);
-  // 모바일에서 매니저가 일정의 태그만 고치는 전용 시트(데스크톱 읽기전용 상세의 태그 편집과 동치).
-  const [tagSheetId, setTagSheetId] = useState<string | null>(null);
+  // (매니저 전용 '업 도움 수정'·'태그 수정' 시트는 역할 철수(2026-09-04, ADR-0018)로 제거.)
   // 즐거운 모션: 방금 저장·생성된 카드는 통통 착지하며 반짝(just-saved), 삭제되는 카드는
   // 톡 줄어들며 사라진다(deleting). 둘 다 "내가 누른 게 먹혔다"는 확신을 준다.
   const [justSavedId, setJustSavedId] = useState<string | null>(null);
@@ -547,7 +534,7 @@ export function StudioShell({
     return () => window.clearTimeout(t);
   }, []);
   // 모바일 하단 관리(태그·멤버) 펼침 상태.
-  const [mobileMgmt, setMobileMgmt] = useState<null | "tags" | "members">(null);
+  const [mobileMgmt, setMobileMgmt] = useState<null | "tags">(null);
   // 일정은 로컬 상태로 들고 낙관적으로 갱신한다 — 잇기·복붙·저장·삭제가 서버 왕복/새로고침을
   // 기다리지 않고 화면에 즉시 반영되게 해서 "하는 맛"을 살린다. 서버 데이터가 바뀌면 다시 맞춘다.
   const [events, setEvents] = useState(schedule.events);
@@ -851,15 +838,14 @@ export function StudioShell({
   // 인사이트: 개발자(실제, 미리보기 아님)는 전체(8패널·수치), 그 외 관리자·매니저·작업자(또는 그
   // 역할 미리보기)는 수치 없는 4패널(멤버 인사이트)을 본다. 시청자는 인사이트 없음.
   const isDevInsights = isDeveloper && !previewRole;
-  const canMemberInsights =
-    !isDevInsights &&
-    (effectiveRole === "owner" || effectiveRole === "manager");
+  const canMemberInsights = !isDevInsights && effectiveRole === "owner";
 
   const canEdit = canEditSchedule(effectiveRole);
-  // 매니저(방송 운영)는 업 도움 기간/링크 수정 가능.
+  // (canEditSupport·canEditEventTags는 매니저 철수 뒤 canEdit과 같다 — 호출부 분기 유지용.)
   const canEditSupportThing = canEditSupport(effectiveRole);
-  // 매니저는 일정별 태그 할당도 편집할 수 있다(태그 자체 생성/삭제는 여전히 관리자/개발자 전용).
   const canEditTagsThing = canEditEventTags(effectiveRole);
+  void canEditSupportThing;
+  void canEditTagsThing;
 
   // 단계 배포: v3 역할(현재 개발자만)은 분류 v3(세부·modifier·신설 그룹)를 그대로 본다. 그 외(관리자·
   // 매니저·작업자·시청자, 또는 개발자가 그 역할로 미리보기)는 레거시 뷰(세부 나누기 이전)로 본다.
@@ -870,7 +856,6 @@ export function StudioShell({
   // 조용히 무시(권한 오류 모달로 시청자를 놀래지 않는다). 첫 마운트 1회만.
   useEffect(() => {
     if (initialPanel === "tags" && canEdit && taxonomyV3) setModal("tags");
-    else if (initialPanel === "members" && canEdit) setModal("members");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const viewTags = useMemo(
@@ -898,8 +883,6 @@ export function StudioShell({
   };
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
   const [roleHelpOpen, setRoleHelpOpen] = useState(false);
-  // 설정(톱니) 팝오버(2026-09-04) — 서쪽 도구 카드. 스위치 4종·포스터 테마·멤버 관리 입구.
-  const [settingsOpen, setSettingsOpen] = useState(false);
   // 진동(햅틱) 설정 토글 — navigator.vibrate 지원 기기(안드로이드)에서만 노출. SSR 불일치 방지로
   // 마운트 후 지원 여부/현재값을 읽는다(기본 ON). 끄면 앱 전체 진동이 조용해진다(스위치보드 기준).
   const [hapticsSupported, setHapticsSupported] = useState(false);
@@ -1022,7 +1005,6 @@ export function StudioShell({
     const options: { value: MembershipRole | ""; label: string }[] = [
       { value: "", label: "개발자 화면" },
       { value: "owner", label: "관리자 화면" },
-      { value: "manager", label: "매니저 화면" },
       { value: "viewer", label: "시청자 화면" }
     ];
     // 미리보기 중엔 트리거를 "그 역할 화면에 실제로 있는 버튼"(= 비개발자의 시청자 화면 버튼)으로
@@ -1111,63 +1093,6 @@ export function StudioShell({
     };
   }, [roleHelpOpen]);
 
-  // 설정 팝오버 배치(2026-09-04) — body 포털 + fixed. 도구 카드는 두 자리에 산다: 아바타 rail(fixed)과
-  // 좌측 그리드 칸(.studio-left-panel — sticky + overflow-y:auto라 absolute 팝오버는 잘리고, 칸 폭 188px 안에
-  // 흐름으로 펼치면 줄이 두 줄로 꺾여 초라했다(실측)). 포털이면 어느 자리든 같은 팝오버가 카드 **옆**에
-  // 뜬다: 카드 오른쪽에 자리가 있으면 동쪽, 없으면(아바타 오른쪽 rail) 서쪽. 페인트 전(useLayoutEffect)에
-  // 실측 배치하므로 첫 프레임에 엉뚱한 자리가 안 보인다. 스크롤/리사이즈에 다시 잰다.
-  const settingsPopRef = useRef<HTMLDivElement | null>(null);
-  const [settingsPopStyle, setSettingsPopStyle] = useState<CSSProperties | null>(null);
-  useLayoutEffect(() => {
-    if (!settingsOpen) {
-      setSettingsPopStyle(null);
-      return;
-    }
-    const place = () => {
-      const card = document.querySelector<HTMLElement>(".studio-tools");
-      const pop = settingsPopRef.current;
-      if (!card || !pop) return;
-      const c = card.getBoundingClientRect();
-      const w = pop.offsetWidth || 272;
-      const h = pop.offsetHeight || 300;
-      const GAP = 12;
-      const left = c.right + GAP + w <= window.innerWidth - 8 ? c.right + GAP : Math.max(8, c.left - GAP - w);
-      const top = Math.max(8, Math.min(c.top - 4, window.innerHeight - h - 8));
-      setSettingsPopStyle((s) =>
-        s && s.left === Math.round(left) && s.top === Math.round(top)
-          ? s
-          : { position: "fixed", left: Math.round(left), top: Math.round(top), right: "auto" }
-      );
-    };
-    place();
-    window.addEventListener("resize", place);
-    window.addEventListener("scroll", place, true);
-    return () => {
-      window.removeEventListener("resize", place);
-      window.removeEventListener("scroll", place, true);
-    };
-  }, [settingsOpen]);
-
-  // 설정(톱니) 팝오버(2026-09-04): 톱니·팝오버 바깥을 누르거나 Esc로 닫는다. 같은 도구 카드의 다른
-  // 타일(태그 편집 등)을 누르면 바깥으로 쳐서 닫힌다.
-  useEffect(() => {
-    if (!settingsOpen) return;
-    const onPointerDown = (event: PointerEvent) => {
-      if (!(event.target as HTMLElement | null)?.closest(".stool-settings, .studio-settings-pop")) {
-        setSettingsOpen(false);
-      }
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSettingsOpen(false);
-    };
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [settingsOpen]);
-
   // 미리보기 드롭다운: 바깥을 누르거나 Esc로 닫는다.
   useEffect(() => {
     if (!previewMenuOpen) {
@@ -1200,16 +1125,6 @@ export function StudioShell({
         hapticsOn={hapticsOn}
         hapticsSupported={hapticsSupported}
         onChangePosterTheme={(theme) => void changePosterTheme(theme)}
-        onOpenMembers={
-          canEdit
-            ? () => {
-                if (blockedByPreview()) return;
-                setSettingsOpen(false);
-                setRoleHelpOpen(false);
-                setModal("members");
-              }
-            : undefined
-        }
         onToggleEyeComfort={toggleEyeComfort}
         onToggleHaptics={toggleHaptics}
         onToggleReduceMotion={toggleReduceMotion}
@@ -1513,12 +1428,8 @@ export function StudioShell({
   const overlayDepth = (mobileEditId !== null ? 1 : 0) + (modalIsStackable ? 1 : 0);
   // 스크롤 잠금엔 태그 수정·업 도움 시트·비번 팝업도 포함 — 시트를 잡고 끌면 뒤 배경이 스크롤돼
   // 아래가 뚫리던 문제를 막는다. (히스토리 스택(overlayDepth)은 기존대로.)
-  const overlayLocked =
-    overlayDepth > 0 || supportSheetId !== null || tagSheetId !== null || passcodeModal !== null;
-  // 매니저·작업자 전용 시트(태그 수정·업 도움)도 히스토리에 한 칸 쌓는다 — 안 쌓으면 모바일
-  // 뒤로가기가 시트를 닫는 대신 페이지를 떠나(로그인/계정 화면으로) 버린다. 오너의 편집 시트
-  // (mobileEditId)·개발자 모달과 동일하게 '뒤로가기=시트 닫기'로 통일.
-  const sheetDepth = (tagSheetId !== null ? 1 : 0) + (supportSheetId !== null ? 1 : 0);
+  const overlayLocked = overlayDepth > 0 || passcodeModal !== null;
+  // (매니저 전용 시트(태그 수정·업 도움)의 히스토리 칸은 역할 철수로 제거 — 2026-09-04.)
   // 비밀번호 팝업(passcodeModal)도 한 칸 쌓는다 — 안 쌓으면 모바일 뒤로가기가 팝업을 닫는 대신
   // 사이트를 종료해 버린다(비공개 일정 잠금해제 입력창에서 발생). 다른 모달 위에도 뜰 수 있어
   // 스택 '맨 위'로 친다.
@@ -1530,7 +1441,6 @@ export function StudioShell({
   // 유지한다. 안 쌓으면 뒤로가기가 미리보기를 닫는데 판서 상태(sent·단축키 가드)가 남는 버그.
   const stackDepth =
     overlayDepth +
-    sheetDepth +
     passcodeDepth +
     (viewerMode ? 1 : 0) +
     (teaserPickerOpen ? 1 : 0) +
@@ -1562,8 +1472,6 @@ export function StudioShell({
   // P1-DIALOG-1: 각 모달 카드에 Tab 포커스 가두기(순환)+초기 포커스. Esc·복원은 위 B2 효과.
   const mainModalTrapRef = useFocusTrap<HTMLDivElement>(modal !== null);
   const passcodeTrapRef = useFocusTrap<HTMLDivElement>(passcodeModal !== null);
-  const tagSheetTrapRef = useFocusTrap<HTMLDivElement>(tagSheetId !== null);
-  const supportSheetTrapRef = useFocusTrap<HTMLDivElement>(supportSheetId !== null);
   const modalOpenerRef = useRef<HTMLElement | null>(null);
   const prevModalRef = useRef<typeof modal>(null);
   useEffect(() => {
@@ -1655,12 +1563,6 @@ export function StudioShell({
         setPasscodeModal(null);
       } else if (modalIsStackable) {
         setModal(null);
-      } else if (tagSheetId !== null) {
-        // 매니저: 태그 수정 시트 → 닫고 편집실 기본 화면으로(계정 화면으로 안 빠짐).
-        setTagSheetId(null);
-      } else if (supportSheetId !== null) {
-        // 매니저·작업자: 업 도움 시트 닫기.
-        setSupportSheetId(null);
       } else if (mobileEditId !== null) {
         setMobileEditId(null);
         setSelectedEventId(null);
@@ -1677,8 +1579,6 @@ export function StudioShell({
     teaserPickerOpen,
     passcodeModal,
     modalIsStackable,
-    tagSheetId,
-    supportSheetId,
     mobileEditId,
     viewerMode
   ]);
@@ -3543,91 +3443,23 @@ export function StudioShell({
     }
   }
 
-  // #3: 매니저용 — 일정의 태그 할당을 토글한다(최대 2개). 낙관적 반영 후 실패 시 롤백.
-  // 태그를 강제하지 않는다: 모두 끄면 태그 0개(색 없는 흰 카드). '기타'는 인사이트 합성 버킷일 뿐.
+  // (매니저용 태그 토글 `toggleEventTag`와 그 직렬 큐 `queueTagWrite`는 매니저 시트 2종과 함께 철수 —
+  //  2026-09-04, ADR-0018. 관리자는 편집 폼 저장으로 태그를 바꾼다.)
 
-  // 이벤트 하나의 태그 저장을 직렬 큐에 태운다. 큐의 각 단계는 '그 시점의 최신 의도'(desired)를
-  // 보내므로, 빠른 연속 토글은 마지막 상태로 collapse되고 옛 요청이 새 요청을 덮어쓰지 못한다.
-  function queueTagWrite(rawEventId: string) {
-    // temp id와 실제 id를 한 큐로 — 저장 직후 id가 바뀌어도 '마지막 의도'가 같은 체인에서 이어진다.
-    const eventId = canonId(rawEventId);
-    const prev = tagWriteChainRef.current.get(eventId) ?? Promise.resolve();
-    const run = prev.then(async () => {
-      const desired = tagDesiredRef.current.get(eventId);
-      if (!desired) return;
-      if (tagSentRef.current.get(eventId) === desired) return; // 이미 같은 상태를 보냄(토글 없었음)
-      tagSentRef.current.set(eventId, desired);
-      // 새 카드(temp id)면 저장이 끝나 실제 id가 나올 때까지 기다렸다가 보낸다 — 예전엔 temp id를
-      // 그대로 보내 서버가 못 찾고, 화면엔 태그가 켜진 채 남았다(새로고침하면 사라짐).
-      const res = await enqueueWrite(async () => {
-        const realId = await resolveEventId(eventId);
-        if (!realId) return { ok: false, error: "일정 저장이 끝나지 않아 태그를 반영하지 못했어요." };
-        return postStudioWrite("tags", {
-          eventId: realId,
-          tagIds: desired,
-          primaryTagIds: desired
-        });
-      });
-      if (!res.ok) {
-        setActionError(res.error);
-        // 서버 실패 → 진실로 재동기화하고 의도 캐시 비운다(다음 토글은 서버 상태에서 출발).
-        tagDesiredRef.current.delete(eventId);
-        tagSentRef.current.delete(eventId);
-        requestServerResync();
-      } else {
-        hapticTick(); // ② 서버확인 톡(2단계 컨벤션 — 누름 톡은 피커 칩에서 이미 울림)
-      }
-    });
-    tagWriteChainRef.current.set(eventId, run.catch(() => {}));
-  }
-
-  function toggleEventTag(event: StudioScheduleEvent, tagId: string) {
-    if (blockedByPreview()) return;
-    const eid = canonId(event.id);
-    // 현재 의도(직렬 큐 기준)에서 출발 — 빠른 연속 토글에도 stale prop을 안 읽는다.
-    const cur = tagDesiredRef.current.get(eid) ?? event.tagIds;
-    const has = cur.includes(tagId);
-    const rawNext = has
-      ? cur.filter((id) => id !== tagId)
-      : cur.length >= maxEventTags
-        ? cur
-        : [...cur, tagId];
-    if (rawNext === cur) {
-      return; // 이미 최대 — 변화 없음
-    }
-    const nextTagIds = rawNext;
-    tagDesiredRef.current.set(eid, nextTagIds);
-    setActionError(null);
-    setEvents((prev) =>
-      prev.map((e) =>
-        canonId(e.id) === eid ? { ...e, tagIds: nextTagIds, primaryTagIds: nextTagIds } : e
-      )
-    );
-    queueTagWrite(eid);
-  }
-
-  // A1: 매니저·작업자용 읽기전용 일정 상세. owner 편집 폼을 회색으로 보여주는 대신,
-  // 제목·날짜·공개범위·태그·업 도움 링크만 깔끔히 보여준다. owner_private는 애초에 비-owner에게
-  // 로드되지 않는다. 매니저(canEditSupportThing)는 업 도움 이벤트에 한해 "업 도움 수정"을 쓸 수 있다.
-  // P2-ARCH-1 2단계: 읽기전용 상세는 ReadonlyEventDetail 컴포넌트로 분리(동작 0 변화).
+  // A1: 읽기전용 일정 상세(지금은 개발자의 시청자 화면 미리보기만 본다 — 매니저·작업자 철수). owner 편집
+  // 폼을 회색으로 보여주는 대신 제목·날짜·공개범위·태그·업 도움 링크만 깔끔히. owner_private는 애초에
+  // 비-owner에게 로드되지 않는다.
   function renderReadonlyDetail() {
     const selectedEvent = selectedEventId
       ? events.find((event) => event.id === selectedEventId) ?? null
       : null;
     return (
       <ReadonlyEventDetail
-        canEditSupportThing={canEditSupportThing}
-        canEditTagsThing={canEditTagsThing}
         legendTags={legendTags}
-        maxEventTags={maxEventTags}
         onClose={() => setEditorVisible(false)}
-        onOpenSupportSheet={openSupportSheet}
-        onToggleTag={toggleEventTag}
-        palette={palette}
         selectedDate={selectedDate}
         selectedEvent={selectedEvent}
         tagVisual={tagVisual}
-        viewTags={viewTags}
       />
     );
   }
@@ -4817,49 +4649,6 @@ export function StudioShell({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobileEditId]);
 
-  // 신뢰 멤버(매니저·작업자)가 기존 업 도움의 기간·링크만 고치는 시트 열기/닫기/저장.
-  function openSupportSheet(event: StudioScheduleEvent) {
-    // 팝업(시트)만 띄우면 충분 — 오른쪽 패널은 열지 않는다(showPanel=false).
-    selectEvent(event, false); // form에 이 업 도움의 기간·링크가 채워진다
-    setSupportSheetId(event.id);
-  }
-  function closeSupportSheet() {
-    setSupportSheetId(null);
-    setSelectedEventId(null);
-    setForm(createEmptyForm());
-  }
-  function saveSupportSettings() {
-    if (blockedByPreview()) return;
-    if (!supportSheetId) return;
-    const id = canonId(supportSheetId);
-    const endDateKey = form.endDateKey;
-    const supportUrl = form.supportUrl;
-    setActionError(null);
-    setSupportSaving(true);
-    setEvents((cur) =>
-      cur.map((e) =>
-        canonId(e.id) === id
-          ? { ...e, endDateKey: endDateKey || undefined, supportUrl: supportUrl || undefined }
-          : e
-      )
-    ); // 낙관적 반영
-    startTransition(async () => {
-      // 방금 만든 업 도움(temp id)이면 저장이 끝나 실제 id가 나올 때까지 기다렸다 보낸다.
-      const result = await enqueueWrite(async () => {
-        const realId = await resolveEventId(id);
-        if (!realId) return { ok: false, error: "일정 저장이 끝나지 않아 업 도움 설정을 반영하지 못했어요." };
-        return postStudioWrite("support", { eventId: realId, endDateKey, supportUrl });
-      });
-      setSupportSaving(false);
-      if (result.ok) {
-        closeSupportSheet();
-      } else {
-        setActionError(result.error);
-        requestServerResync(); // 낙관적 반영을 서버 진실로 되돌린다
-      }
-    });
-  }
-
   function renderMobile() {
     const monthCells = cells.filter((c) => c.inCurrentMonth);
     const filtering = tagFilters.length > 0;
@@ -5103,14 +4892,6 @@ export function StudioShell({
                                    data-act="m-support-edit">
                                     수정
                                   </button>
-                                ) : canEditSupportThing ? (
-                                  <button
-                                    className="m-support-edit"
-                                    onClick={() => openSupportSheet(event)}
-                                    type="button"
-                                   data-act="m-support-edit">
-                                    수정
-                                  </button>
                                 ) : null}
                               </div>
                             </div>
@@ -5210,16 +4991,6 @@ export function StudioShell({
                          data-act="agenda-event">
                           {inner}
                         </button>
-                      ) : canEditTagsThing ? (
-                        // 매니저: 일정을 누르면 태그만 고치는 시트가 열린다(데스크톱 상세의 태그 편집과 동치).
-                        <button
-                          className={`agenda-event m-event${dimCls}${tentCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(canonId(event.id)) ? " deleting" : ""}`}
-                          key={event.id}
-                          onClick={() => setTagSheetId(event.id)}
-                          type="button"
-                         data-act="agenda-event">
-                          {inner}
-                        </button>
                       ) : (
                         <div className={`agenda-event${dimCls}`} key={event.id}>
                           {inner}
@@ -5271,14 +5042,7 @@ export function StudioShell({
                 ) : null}
               </>
             ) : null}
-            <button
-              className="button m-io m-io-members"
-              onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "members" ? null : "members"))}
-              type="button"
-             data-act="m-io-members">
-              매니저 관리 {mobileMgmt === "members" ? "▲" : "▼"}
-            </button>
-            {mobileMgmt === "members" && !previewRole ? <TrustedMembersPanel /> : null}
+            {/* (매니저 관리 접이는 멤버 관리 철수(2026-09-04, ADR-0018)로 제거.) */}
           </section>
         ) : null}
 
@@ -5551,91 +5315,6 @@ export function StudioShell({
         <span className="opt-chip-ic" aria-hidden="true">🕗</span>
         <span className="opt-chip-label">아직 확정 아님</span>
       </button>
-    );
-  }
-
-  // 신뢰 멤버(매니저·작업자)용 "업 도움 수정" 시트 — 기간·링크만 고친다(토글·삭제 없음).
-  // 모바일 매니저용 태그 수정 시트 — 일정의 태그 할당(최대 2개)만 고친다. toggleEventTag가
-  // 낙관적 반영 + 서버 저장 + 미리보기 차단을 모두 처리한다.
-  function renderMobileTagSheet() {
-    const event = tagSheetId ? events.find((e) => canonId(e.id) === canonId(tagSheetId)) : null;
-    if (!event) {
-      return null;
-    }
-    return (
-      <div
-        className="modal-backdrop"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) setTagSheetId(null);
-        }}
-        role="presentation"
-      >
-        <div className="modal-card" aria-modal="true" role="dialog" ref={tagSheetTrapRef}>
-          <div className="modal-head">
-            <h2>
-              태그 수정{" "}
-              <b className="tp-count" title={`최대 ${maxEventTags}개까지 고를 수 있어요`}>
-                {event.tagIds.length}/{maxEventTags}
-              </b>
-            </h2>
-            <button aria-label="닫기" className="modal-close" onClick={() => setTagSheetId(null)} type="button" data-act="close-modal">
-              <X aria-hidden="true" size={18} />
-            </button>
-          </div>
-          <div className="passcode-box">
-            <p className="detail-value">{event.publicTitle || "(제목 없음)"}</p>
-            <div className="tag-picker">
-              <TagPicker
-                max={maxEventTags}
-                onToggle={(id) => toggleEventTag(event, id)}
-                palette={palette}
-                selectedIds={event.tagIds}
-                tags={viewTags}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  function renderSupportSheet() {
-    return (
-      <div
-        className="modal-backdrop"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) closeSupportSheet();
-        }}
-        role="presentation"
-      >
-        <div className="modal-card" aria-modal="true" role="dialog" ref={supportSheetTrapRef}>
-          <div className="modal-head">
-            <h2>🌱 업 도움 수정</h2>
-            <button aria-label="닫기" className="modal-close" onClick={closeSupportSheet} type="button" data-act="close-modal">
-              <X aria-hidden="true" size={18} />
-            </button>
-          </div>
-          <div className="passcode-box">
-            {actionError ? <div className="auth-warning">{actionError}</div> : null}
-            {renderSupportFields(true)}
-            <div className="passcode-actions">
-              <button className="button" data-act="support-sheet-cancel" onClick={closeSupportSheet} type="button">
-                취소
-              </button>
-              <button
-                className="button primary"
-                data-act="support-sheet-save"
-                disabled={supportSaving}
-                onClick={saveSupportSettings}
-                type="button"
-              >
-                <Save aria-hidden="true" size={15} />
-                {supportSaving ? "저장 중…" : "저장"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
     );
   }
 
@@ -6004,14 +5683,14 @@ export function StudioShell({
             <span>단축키</span>
           </button>
         ) : null}
+        {/* 설정 — 태그 편집·인사이트와 같은 모달 창(사용자 2026-09-04: 팝오버 금지). */}
         <button
-          aria-expanded={settingsOpen}
           aria-haspopup="dialog"
-          className={`stool stool-settings${settingsOpen ? " open" : ""}`}
+          className={`stool stool-settings${modal === "settings" ? " open" : ""}`}
           data-act="studio-settings"
           onClick={() => {
             hapticTick();
-            setSettingsOpen((v) => !v);
+            setModal("settings");
           }}
           type="button"
         >
@@ -6019,23 +5698,6 @@ export function StudioShell({
           <span>설정</span>
         </button>
       </div>
-      {/* 설정 팝오버 — body 포털 + fixed, 도구 카드 옆(위 settingsPopStyle 주석). 역할 팝오버와 같은 재질
-          (.role-help-pop) + 같은 줄 규격. 배치 전 첫 프레임은 숨김(visibility) — 페인트 전에 실측이 끝난다. */}
-      {settingsOpen && typeof document !== "undefined"
-        ? createPortal(
-            <div
-              aria-label="설정"
-              className="role-help-pop studio-settings-pop"
-              ref={settingsPopRef}
-              role="dialog"
-              style={settingsPopStyle ?? { position: "fixed", left: 0, top: 0, visibility: "hidden" }}
-            >
-              <strong className="role-help-title">설정</strong>
-              {renderSettingsList()}
-            </div>,
-            document.body
-          )
-        : null}
     </div>
   );
 
@@ -6120,7 +5782,7 @@ export function StudioShell({
           컴포넌트). 물결은 제 배경이 없는 완전 투명 컨테이너라 body의 아이보리(--paper) 위에 옅은 결만
           얹고("모래 위 얕은 물결"), 오늘(KST) 계절 레이어가 그 위에. 보이는 조건은 CSS가 판단
           (app/metal-water.css `.gs-tide`, app/ambient.css `.gs-season`). */}
-      <AmbientLayer force={ambientForce} />
+      <AmbientLayer force={ambientForce} month={view.month} />
       <header className="studio-topbar">
         {/* 왼쪽 칸: 큰 제목 + 그 옆에 배포 버전 배지(헤더 세로 중앙, 클릭=버전 복사). */}
         <div className="studio-left">
@@ -6507,12 +6169,7 @@ export function StudioShell({
                         onMouseLeave={(e) => setBandHover(e.currentTarget.closest(".studio-shell"), s.id, false)}
                         onClick={(e) => {
                           e.stopPropagation();
-                          // 매니저는 업 도움 설정 수정 시트를 띄운다(전체 편집 불가). 작업자는 읽기 전용.
-                          if (!canEdit && canEditSupportThing) {
-                            openSupportSheet(s);
-                          } else {
-                            selectEvent(s);
-                          }
+                          selectEvent(s);
                         }}
                         style={{
                           // 날짜 헤더가 --cal-zoom으로 커지므로 띠 시작 높이·레인 간격도 같이
@@ -7243,9 +6900,6 @@ export function StudioShell({
         </>
       )}
 
-      {supportSheetId !== null ? renderSupportSheet() : null}
-      {/* 모바일 매니저 태그 수정 시트 — 매니저(태그 편집 가능 + 일정 미편집)일 때만. */}
-      {tagSheetId !== null && canEditTagsThing && !canEdit ? renderMobileTagSheet() : null}
       {/* 빠른 휴방 미니 메뉴 — 날짜 우클릭/롱프레스로 뜸. 한 번 눌러 휴방 표시/해제. */}
       {restMenu ? (
         <div className="rest-menu" role="menu" style={{ left: restMenu.x, top: restMenu.y }}>
@@ -7279,7 +6933,7 @@ export function StudioShell({
           role="presentation"
         >
           <div
-            className={`modal-card modal-card-${modal} ${modal === "tags" || modal === "members" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
+            className={`modal-card modal-card-${modal} ${modal === "tags" || modal === "developer" || modal === "dayVisit" ? "modal-card-wide" : ""}`}
             aria-modal="true"
             role="dialog"
             ref={mainModalTrapRef}
@@ -7294,7 +6948,7 @@ export function StudioShell({
                         ? isDevInsights
                           ? "🛠 월별 인사이트"
                           : "📊 월별 인사이트"
-                        : "매니저 관리"}
+                        : "설정"}
               </h2>
               <button
                 aria-label="닫기"
@@ -7352,7 +7006,9 @@ export function StudioShell({
                 </div>
               </div>
             ) : null}
-            {modal === "members" ? <TrustedMembersPanel /> : null}
+            {/* 설정(2026-09-04 사용자: 팝오버 말고 태그 편집·인사이트처럼 **창**) — 같은 모달 인프라(히스토리
+                한 칸·포커스 가둠·스크롤 잠금·백드롭 눌러 닫기·Esc)를 그대로 탄다. 스위치는 설정 목록 한 벌. */}
+            {modal === "settings" ? <div className="settings-modal-body">{renderSettingsList()}</div> : null}
             {modal === "dayVisit" ? <DayVisitModal dateKey={selectedDate} /> : null}
             {modal === "developer" ? (
               isDevInsights ? (

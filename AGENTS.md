@@ -30,7 +30,7 @@ Builder must not:
 
 - expose private fields to public APIs
 - add client-only permission checks without server checks
-- make managers editable unless explicitly requested
+- reintroduce helper roles (manager/worker were retired — ADR-0015/0018)
 
 ## Security Reviewer
 
@@ -39,7 +39,7 @@ Use for RLS policies, API route permissions, private-layer unlock, and DTO sanit
 Security reviewer must verify:
 
 - viewer cannot access private data
-- trusted member cannot edit
+- only owner/developer can edit (no other elevated role exists)
 - passcode is not stored in plaintext
 - unlock session expires or invalidates correctly
 

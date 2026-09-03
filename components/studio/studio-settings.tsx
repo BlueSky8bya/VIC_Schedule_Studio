@@ -1,12 +1,12 @@
 "use client";
 
-// 설정 목록(2026-09-04) — 역할 배지 팝오버에 살던 스위치 4종(진동·생동감 있는 동작·눈 편한 테마·차분한
-// 편집실) + 포스터 테마 셀렉트를 한 컴포넌트로. 웹은 서쪽 도구 카드의 **설정(톱니) 팝오버**가, 모바일
-// (도구 카드 없음)은 역할 배지 팝오버가 이 목록을 그린다. 앞으로 생길 설정(계절 배경 등)은 여기에만 추가.
-// data-act 키는 예전 그대로(인사이트 집계 연속). 멤버 관리는 도구 카드 타일에서 내려와 여기 맨 아래의
-// 조용한 입구(관리자만) — 토리님이 안 쓰는 기능이라 타일 자리를 설정에 내줬다(사용자 결정).
+// 설정 목록(2026-09-04) — 역할 배지 팝오버에 살던 스위치(진동·생동감 있는 동작·눈 편한 테마·차분한
+// 편집실) + 계절 배경 + 포스터 테마 셀렉트를 한 컴포넌트로. 웹은 서쪽 도구 카드 톱니가 여는 **설정 모달**
+// (태그 편집·인사이트와 같은 창 인프라)이, 모바일(도구 카드 없음)은 역할 배지 팝오버가 이 목록을 그린다.
+// 앞으로 생길 설정은 여기에만 추가. data-act 키는 예전 그대로(인사이트 집계 연속).
+// (멤버 관리는 2026-09-04 기능 철수 — ADR-0018.)
 
-import { Eye, Leaf, Palette, Sparkles, Users, Vibrate, Waves } from "lucide-react";
+import { Eye, Leaf, Palette, Sparkles, Vibrate, Waves } from "lucide-react";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 
 export type StudioSettingsProps = {
@@ -27,8 +27,6 @@ export type StudioSettingsProps = {
   posterTheme: PosterThemeKey | null;
   onChangePosterTheme: (theme: PosterThemeKey) => void;
   posterThemeSaving: boolean;
-  // 멤버 관리 창 열기(관리자만) — 없으면 줄을 안 그린다.
-  onOpenMembers?: () => void;
 };
 
 export function StudioSettingsList({
@@ -45,8 +43,7 @@ export function StudioSettingsList({
   onToggleAmbient,
   posterTheme,
   onChangePosterTheme,
-  posterThemeSaving,
-  onOpenMembers
+  posterThemeSaving
 }: StudioSettingsProps) {
   return (
     <>
@@ -125,7 +122,7 @@ export function StudioSettingsList({
           <span className="rhh-knob" aria-hidden="true" />
         </button>
       </div>
-      {/* 계절 배경 — 물결은 그대로 두고 그 위의 계절 소품(낙엽·눈·초목)만 켜고 끈다. 절기 기준 자동. */}
+      {/* 계절 배경 — 보고 있는 달력 달의 계절 배경(여름 물결·가을 낙엽·겨울 눈·봄 초목). OFF면 사철 물결. */}
       <div className="role-help-haptics">
         <span className="rhh-label">
           <Leaf aria-hidden="true" size={14} />
@@ -166,18 +163,7 @@ export function StudioSettingsList({
           </select>
         </div>
       ) : null}
-      {/* 멤버 관리 — 도구 카드 타일에서 내려온 조용한 입구(관리자만). data-act는 옛 타일과 같은 키. */}
-      {onOpenMembers ? (
-        <div className="role-help-haptics">
-          <span className="rhh-label">
-            <Users aria-hidden="true" size={14} />
-            멤버 관리
-          </span>
-          <button className="rhh-link" data-act="manage-members" onClick={onOpenMembers} type="button">
-            열기
-          </button>
-        </div>
-      ) : null}
+      {/* (멤버 관리 입구는 기능 철수(2026-09-04, ADR-0018)로 제거.) */}
     </>
   );
 }

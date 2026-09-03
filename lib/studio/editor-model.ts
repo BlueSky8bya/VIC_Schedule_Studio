@@ -147,11 +147,10 @@ export const SUPPORT_DURATIONS = [
 export const ROLE_LABEL: Record<MembershipRole, string> = {
   owner: "관리자",
   developer: "개발자",
-  manager: "매니저",
   viewer: "시청자"
 };
 
-// 비-owner(매니저·작업자) 읽기전용 상세에서 쓰는 평이한 공개 범위 라벨.
+// 비-owner(개발자의 시청자 미리보기) 읽기전용 상세에서 쓰는 평이한 공개 범위 라벨.
 // "엠바고"(DB owner_private, 옛 '나만'·'엠바고' 통합)는 소유자 전용. work는 "작업자".
 export const VISIBILITY_LABEL: Record<EventVisibilityScope, string> = {
   public: "모두",
@@ -161,19 +160,15 @@ export const VISIBILITY_LABEL: Record<EventVisibilityScope, string> = {
 };
 
 // A3: 역할 배지의 "?"를 누르면 뜨는 한 줄 책임 + 할 수 있는 것/없는 것. 빈 버튼으로 권한을
-// 추론하게 두지 않고, 특히 매니저·작업자가 자기 역할을 바로 이해하게 한다.
+// 추론하게 두지 않는다. (매니저 철수 2026-09-04 ADR-0018 — '멤버' 항목도 뺐다.)
 export const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] }> = {
   owner: {
     summary: "일정 발행과 전체 관리를 맡아요.",
-    can: ["일정·태그·멤버·비밀번호 관리", "최초공개(떡밥) 일정 관리"]
+    can: ["일정·태그·비밀번호 관리", "최초공개(떡밥) 일정 관리"]
   },
   developer: {
     summary: "시스템을 유지보수해요.",
-    can: ["일정·태그·멤버 유지보수", "월별 인사이트·이용 기록"]
-  },
-  manager: {
-    summary: "방송 운영을 도와요.",
-    can: ["업 도움 기간·링크 수정", "이미 생성된 일정의 태그 수정"]
+    can: ["일정·태그 유지보수", "월별 인사이트·이용 기록"]
   },
   viewer: {
     summary: "공개 일정을 봐요.",

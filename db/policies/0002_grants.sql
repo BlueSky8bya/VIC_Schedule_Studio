@@ -26,7 +26,7 @@ grant insert, update, delete on
   public.broadcast_tags,
   public.color_palette,
   public.support_campaigns,
-  public.trusted_members,
+  -- (public.trusted_members — 0074에서 drop, 2026-09-04 ADR-0018)
   public.private_layer_settings
 to authenticated;
 

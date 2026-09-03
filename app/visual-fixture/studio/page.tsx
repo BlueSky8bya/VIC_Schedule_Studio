@@ -25,13 +25,9 @@ export default async function VisualStudioFixture({
   }
   const sp = await searchParams;
   const viewer = sp?.viewer === "1";
-  // 역할별 화면 회귀 검증용(매니저/작업자 읽기전용 상세 등). viewer는 (studio) 가드 대상이라 제외.
-  const role =
-    sp?.role === "manager" || sp?.role === "developer"
-      ? sp.role
-      : "owner";
-  const panel =
-    sp?.panel === "tags" || sp?.panel === "members" ? sp.panel : undefined;
+  // 역할별 화면 회귀 검증용(developer/owner — 매니저 철수 2026-09-04). viewer는 (studio) 가드 대상이라 제외.
+  const role = sp?.role === "developer" ? sp.role : "owner";
+  const panel = sp?.panel === "tags" ? sp.panel : undefined;
   // ambient=spring|summer|autumn|winter → 계절 레이어 강제(ADR-0017 검증용). 없으면 오늘(KST) 절기.
   const ambient = isSeasonKey(sp?.ambient) ? sp.ambient : undefined;
   return (
@@ -40,8 +36,7 @@ export default async function VisualStudioFixture({
       actor={{
         email: "fixture-owner@example.com",
         isAuthenticated: true,
-        role,
-        trustedRole: role === "manager" ? "manager" : null,
+        role
       }}
       hasUnlockSession={false}
       schedule={sampleStudioSchedule}

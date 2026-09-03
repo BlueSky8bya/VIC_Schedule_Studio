@@ -469,11 +469,8 @@ export async function updateEventTagsAction(
   if (!ev || ev.calendar_id !== calendar.id) {
     return { ok: false, error: "일정을 찾을 수 없습니다." };
   }
-  // P0-AUTH-1: 매니저는 비공개 접근이 0이므로 비공개 일정의 태그도 못 건드린다(ADR-0012).
-  // 존재 여부를 구분해 알려주지 않는다 — 비공개 일정의 존재 자체가 정보다.
-  if (actor.role === "manager" && ev.visibility_scope !== "public") {
-    return { ok: false, error: "일정을 찾을 수 없습니다." };
-  }
+  // (P0-AUTH-1의 매니저 비공개 차단 분기는 매니저 철수(2026-09-04, ADR-0018)로 제거 — 여기 도달하는
+  //  역할은 owner/developer뿐이고 그들의 비공개 가시성은 RLS·로더가 이미 가른다.)
   // P0-AUTH-1: payload 검증(개수/중복/대표 부분집합/이 캘린더의 활성 태그) — 조용한 slice 대신 거부.
   const tagCheck = await validateTagAssignment(admin, calendar.id, tagIds, primaryTagIds);
   if (!tagCheck.ok) return { ok: false, error: tagCheck.error };

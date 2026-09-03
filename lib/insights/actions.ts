@@ -91,8 +91,8 @@ export type InsightsData = {
     passcodeUpdatedAt: string | null;
     unlockDurationMinutes: number | null;
     activeUnlocks: { email: string; expiresAt: string }[];
-    members: { email: string; manager: boolean }[];
-    // 비공개를 열 수 있는 사람을 역할별로(매니저 제외 — 비공개 권한 없음). 활성 세션이면 expiresAt·userId가
+    // (members 목록은 멤버 관리 철수(2026-09-04, ADR-0018)로 제거.)
+    // 비공개를 열 수 있는 사람을 역할별로. 활성 세션이면 expiresAt·userId가
     // 채워지고(개별 만료용), 없으면 둘 다 null("세션 없음").
     access: {
       owners: AccessPerson[];
@@ -322,7 +322,7 @@ const SESSION_ROLE_LABEL: Record<string, string> = {
 function buildSessionLog(
   rows: SessionRow[],
   hashToOwnerEmail: Map<string, string>,
-  dualHashes: Set<string>
+  dualHashes: ReadonlySet<string>
 ): RecentSession[] {
   return [...rows]
     .sort((a, b) => sStart(b) - sStart(a))
@@ -347,23 +347,8 @@ function buildSessionLog(
       };
     });
 }
-// 매니저·작업자 겸업 멤버의 계정 해시(겸업 표식용). 세션 account_hash와 같은 해시 스킴(이메일 sha256).
-async function loadDualMemberHashes(
-  supabase: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
-  slug: string
-): Promise<Set<string>> {
-  const { data: cal } = await supabase.from("calendars").select("id").eq("slug", slug).maybeSingle();
-  if (!cal) return new Set();
-  const { data } = await supabase
-    .from("trusted_members")
-    .select("email, is_manager")
-    .eq("calendar_id", cal.id as string)
-    .eq("is_active", true);
-  const set = new Set<string>();
-  // (겸직(매니저+작업자) 판별은 작업자 철수(2026-08-27)로 항상 빈 집합 — 호출부 호환을 위해 함수는 유지.)
-  void data;
-  return set;
-}
+// (겸업 멤버 해시(loadDualMemberHashes)는 멤버 관리 철수(2026-09-04, ADR-0018)로 삭제 — 항상 빈 집합.)
+const NO_DUAL: ReadonlySet<string> = new Set<string>();
 function emptyVisitSlot(): VisitSlot {
   return {
     roles: Object.fromEntries(ROLE_ORDER.map((r) => [r, 0])),
@@ -631,7 +616,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   const todayKey = todayKstKey();
   const curYm = `${y}-${pad(m)}`;
 
-  const [eventsRangeRes, tagsRangeRes, nextRes, paletteRes, heartCountsRes, unlockRes, membersRes, passcodeRes] =
+  const [eventsRangeRes, tagsRangeRes, nextRes, paletteRes, heartCountsRes, unlockRes, passcodeRes] =
     await Promise.all([
       supabase
         .from("events")
@@ -664,11 +649,6 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         .eq("calendar_id", calendarId)
         .gt("expires_at", new Date().toISOString())
         .order("expires_at", { ascending: true }),
-      supabase
-        .from("trusted_members")
-        .select("email, is_manager, trusted_role")
-        .eq("calendar_id", calendarId)
-        .eq("is_active", true),
       supabase
         .from("private_layer_settings")
         .select("passcode_version, passcode_updated_at, unlock_duration_minutes")
@@ -818,13 +798,6 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   // 이메일 해석 — 계정 목록을 한 번 받아 채우고 필요한 것만 개별 조회(위 makeEmailResolver).
   const emailFor = makeEmailResolver(supabase!);
 
-  const members = (membersRes.data ?? []).map((mem) => {
-    const role = (mem as { trusted_role?: string }).trusted_role;
-    return {
-      email: (mem as { email: string }).email,
-      manager: Boolean((mem as { is_manager?: boolean }).is_manager ?? role === "manager")
-    };
-  });
   const unlockRows = (unlockRes.data ?? []) as { user_id: string; expires_at: string }[];
   // 활성 세션을 한 번만 이메일 해석 → activeUnlocks(목록)와 access(역할별 매핑)에서 함께 쓴다.
   const unlockResolved = await Promise.all(
@@ -886,7 +859,6 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         passcodeUpdatedAt: passcode?.passcode_updated_at ?? null,
         unlockDurationMinutes: passcode?.unlock_duration_minutes ?? null,
         activeUnlocks,
-        members,
         access
       },
       system: {
@@ -1503,7 +1475,7 @@ export async function getVisitTrendsAction(
 
   // 세션 로그(개발자 디버깅) — 전체 세션, 최근 순. owner만 이메일 매칭 라벨, 겸업자엔 '겸' 표식.
   const hashToOwnerEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
-  const dualHashes = await loadDualMemberHashes(supabase, SLUG);
+  const dualHashes = NO_DUAL;
   const recent = buildSessionLog(rows, hashToOwnerEmail, dualHashes);
 
   // 일별 세션 수(의미 세션, 전 역할) — 하루 단위 기록을 모은 월간 추이. 1..말일.
@@ -1694,7 +1666,7 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
     })
     .sort((a, b) => a.t - b.t);
   const ownerSeconds = ownerVisits.reduce((sum, v) => sum + v.seconds, 0);
-  const dualHashes = await loadDualMemberHashes(supabase, SLUG);
+  const dualHashes = NO_DUAL;
   const sessions = buildSessionLog(rows, hashToOwnerEmail, dualHashes); // 그날 전체 세션 로그(최근 순)
   const { viewer: summaryViewer, operator: summaryOperator, all: summaryAll } = summarizeSplit(rows);
   const operators = summaryOperator.visitors;
