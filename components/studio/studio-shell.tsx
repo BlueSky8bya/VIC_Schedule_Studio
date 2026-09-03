@@ -2,12 +2,15 @@
 
 // 인사이트 차트·타일 스타일(편집실·시청자 공용) — studio-shell.css에서 분리된 파일.
 import "@/components/studio/insights-charts.css";
+// 2026-09-03 배치 대개편 레이어(서쪽 도구 카드 · 물결 배경 · 차분 상단바) — studio-shell.css에서 분리.
+import "@/components/studio/studio-calm-layer.css";
 
 import dynamic from "next/dynamic";
 import {
   ArrowLeftToLine,
   ArrowRightToLine,
   CalendarCheck,
+  ChartColumn,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -19,7 +22,9 @@ import {
   Pencil,
   Plus,
   Save,
+  Tags,
   Trash2,
+  Users,
   Waves,
   X
 } from "lucide-react";
@@ -179,6 +184,27 @@ import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 
 // 모달 콘텐츠는 '열 때만' 로드해 편집실 첫 로딩을 가볍게(특히 인사이트 차트는 1600줄+). 전부 클라
 // 전용 모달(사용자 동작으로 열림)이라 ssr:false. 닫혀 있는 동안엔 번들·실행에 들어가지 않는다.
+// ── 물결 레이어 경로(2026-09-03) — 사인파를 3차 베지에로 근사해 폭 TIDE_W에 담는다. SVG 폭이 화면의
+// 200%이고 translateX(-50%)로 반복하므로 전체 폭의 주기 수는 **짝수**여야 이음새가 없다.
+// 채움(수)은 닫힌 면, 은선(금)은 stroke만 — 같은 파형이 다른 속도로 흘러 마루가 반짝인다.
+const TIDE_W = 2400;
+const TIDE_H = 200;
+function tidePath(amp: number, mid: number, periods: number, closed: boolean): string {
+  const half = TIDE_W / (periods * 2);
+  let d = `M0 ${mid - amp}`;
+  let x = 0;
+  for (let i = 0; i < periods * 2; i++) {
+    const from = i % 2 === 0 ? mid - amp : mid + amp;
+    const to = i % 2 === 0 ? mid + amp : mid - amp;
+    d += ` C${(x + half * 0.3642).toFixed(1)} ${from} ${(x + half * 0.6358).toFixed(1)} ${to} ${(x + half).toFixed(1)} ${to}`;
+    x += half;
+  }
+  return closed ? `${d} V${TIDE_H} H0 Z` : d;
+}
+const TIDE_FILL_1 = tidePath(22, 78, 4, true);
+const TIDE_FILL_2 = tidePath(16, 112, 6, true);
+const TIDE_LINE = tidePath(22, 78, 4, false);
+
 const InsightsDashboard = dynamic(
   () => import("@/components/developer/insights-dashboard").then((m) => m.InsightsDashboard),
   { ssr: false }
@@ -5907,6 +5933,78 @@ export function StudioShell({
     </section>
   );
 
+  // 도구 카드(2026-09-03 배치 대개편) — 옛 액션바(두 번째 크롬 행)의 관리 3종 + 단축키를 서쪽 rail로.
+  // 방위 규칙(CLAUDE.md Owner-fit palette rule): 서=금=도구. 30일 사용 0~2회(콜드 존)라 아이콘+짧은
+  // 라벨 타일이면 충분하고, 달력(핫 존)은 액션바 행 높이만큼 세로를 얻는다. 역할 분기는 옛 액션바와
+  // 동일, data-act 키도 동일(인사이트 집계 연속). 아바타 scene이면 rail [필터|도구|아바타 자리],
+  // 아니면 .studio-left-panel의 필터 아래. 2026-08의 '관리 3종 드롭다운 접기 철회'는 접지 않는 타일로 존중.
+  const showManageTools = canEdit || (isDeveloper && !previewRole);
+  const studioToolsPanel =
+    showManageTools || canMemberInsights ? (
+      <div className="studio-tools" role="group" aria-label="도구">
+        {showManageTools && canEdit && taxonomyV3 ? (
+          <button
+            className="stool stool-tags"
+            data-act="manage-tags"
+            onClick={() => (blockedByPreview() ? null : setModal("tags"))}
+            type="button"
+          >
+            <Tags aria-hidden="true" size={18} />
+            <span>태그 편집</span>
+          </button>
+        ) : null}
+        {showManageTools && canEdit ? (
+          <button
+            className="stool stool-members"
+            data-act="manage-members"
+            onClick={() => (blockedByPreview() ? null : setModal("members"))}
+            type="button"
+          >
+            <Users aria-hidden="true" size={18} />
+            <span>멤버 관리</span>
+          </button>
+        ) : null}
+        {showManageTools ? (
+          (isDeveloper && !previewRole) || canMemberInsights ? (
+            <button
+              className="stool stool-insights"
+              data-act="manage-insights"
+              onClick={() => setModal("developer")}
+              type="button"
+            >
+              <ChartColumn aria-hidden="true" size={18} />
+              <span>인사이트</span>
+            </button>
+          ) : null
+        ) : canMemberInsights ? (
+          <button
+            className="stool stool-insights"
+            data-act="io-insights"
+            onClick={() => setModal("developer")}
+            type="button"
+          >
+            <ChartColumn aria-hidden="true" size={18} />
+            <span>인사이트</span>
+          </button>
+        ) : null}
+        {canEdit ? (
+          <button
+            aria-expanded={kbdHintsOpen}
+            className={`stool stool-kbd${kbdHintsOpen ? " open" : ""}`}
+            data-act="kbd-hints-btn"
+            onClick={() => {
+              hapticTick();
+              setKbdHintsOpen((v) => !v);
+            }}
+            type="button"
+          >
+            <Keyboard aria-hidden="true" size={18} />
+            <span>단축키</span>
+          </button>
+        ) : null}
+      </div>
+    ) : null;
+
   return (
     <main
       className={`studio-shell${avatarSceneOn ? ` avatar-scene avatar-${avatarSide}` : ""}${
@@ -5918,9 +6016,37 @@ export function StudioShell({
       {avatarEditor ? (
         <aside className="avatar-rail" aria-label="아바타 자리 영역(관리자 전용)">
           {avatarSceneOn ? <div className="avatar-rail-filter">{studioFilterPanel}</div> : null}
+          {/* 서쪽 도구 카드 — 필터와 아바타 자리 사이(2026-09-03 배치 대개편). */}
+          {avatarSceneOn ? studioToolsPanel : null}
           <div className="avatar-slot">
             <div className="avatar-dock-inner">
-              <span className="avatar-slot-hint">아바타 자리</span>
+              {/* 좌/우 세그먼트는 조작 대상(아바타 자리) 안에 — 옛 액션바 가운데 열에서 이사(HCI 근접성).
+                  방향은 아이콘(ArrowLeft/RightToLine, 2026-09-01 피드백), 뜻은 aria-label. */}
+              <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
+                <button
+                  type="button"
+                  className={avatarSide === "left" ? "on" : ""}
+                  aria-label="아바타 왼쪽에 두기"
+                  aria-pressed={avatarSide === "left"}
+                  onClick={() => pickAvatarSide("left")}
+                  data-act="avatar-ctl-toggle"
+                >
+                  <ArrowLeftToLine aria-hidden="true" size={18} strokeWidth={2.4} />
+                </button>
+                <span aria-hidden="true" className="avatar-ctl-label">
+                  아바타 자리
+                </span>
+                <button
+                  type="button"
+                  className={avatarSide === "right" ? "on" : ""}
+                  aria-label="아바타 오른쪽에 두기"
+                  aria-pressed={avatarSide === "right"}
+                  onClick={() => pickAvatarSide("right")}
+                  data-act="avatar-ctl-toggle"
+                >
+                  <ArrowRightToLine aria-hidden="true" size={18} strokeWidth={2.4} />
+                </button>
+              </div>
             </div>
           </div>
         </aside>
@@ -6011,6 +6137,24 @@ export function StudioShell({
         renderMobile()
       ) : (
         <>
+      {/* 물결 레이어(2026-09-03) — 차분한 편집실 + 생동감 있는 동작 + 여력 있는 기기(data-gfx≠lite)에서만
+          CSS가 보인다(studio-calm-layer.css .studio-tide). 물빛 스웰(수) 둘 + 물결 채움 둘 + 은선(금) 하나가
+          아주 천천히 흐른다. 전부 transform/opacity(합성기) — 무한 애니 규칙. 시청자 화면엔 없다. */}
+      <div className="studio-tide" aria-hidden="true">
+        <div className="tide-swell tide-swell-a" />
+        <div className="tide-swell tide-swell-b" />
+        <div className="tide-sea">
+          <svg className="tide-wave tide-fill-2" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
+            <path d={TIDE_FILL_2} />
+          </svg>
+          <svg className="tide-wave tide-fill-1" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
+            <path d={TIDE_FILL_1} />
+          </svg>
+          <svg className="tide-wave tide-line" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
+            <path d={TIDE_LINE} vectorEffect="non-scaling-stroke" />
+          </svg>
+        </div>
+      </div>
       <header className="studio-topbar">
         {/* 왼쪽 칸: 큰 제목 + 그 옆에 배포 버전 배지(헤더 세로 중앙, 클릭=버전 복사). */}
         <div className="studio-left">
@@ -6071,140 +6215,33 @@ export function StudioShell({
           ) : (
             <button className="button io-accent io-preview" onClick={() => enterViewerMode()} type="button" data-act="io-preview">
               <Eye aria-hidden="true" size={16} />
-              {/* '보여주기'는 관리자(owner)만 — 매니저·작업자는 '미리보기'. */}
-              {isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}
+              {/* '보여주기'는 관리자(owner)만 — 매니저·작업자는 '미리보기'. ≤1560px에선 짧은 라벨만
+                  (헤더 한 줄 유지, studio-calm-layer.css .lbl-long/.lbl-short). */}
+              <span className="lbl-long">{isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}</span>
+              <span className="lbl-short">{isEffectivelyOwner ? "보여주기" : "미리보기"}</span>
             </button>
+          )}
+          {/* 계정 모서리(북동, 2026-09-03 배치 대개편): 역할 배지("?" 권한·설정 팝오버) + 로그아웃.
+              옛 액션바 행이 사라지며 여기로 — 관리 도구는 서쪽 rail 도구 카드(studioToolsPanel)로 갔다. */}
+          {renderRoleBadge()}
+          {actor.isAuthenticated ? (
+            <form action="/api/auth/logout" method="post">
+              <button
+                className="button io-accent io-logout"
+                onClick={() => startNav("로그아웃 중…")}
+                type="submit"
+                data-act="io-logout"
+              >
+                로그아웃
+              </button>
+            </form>
+          ) : (
+            <Link className="button" data-act="login" href="/login">
+              로그인
+            </Link>
           )}
         </div>
       </header>
-
-      {/* 상단 액션바: 역할(또는 미리보기 역할)에 맞는 작업 버튼만. 미리보기 컨트롤은 헤더에 있다.
-          (개발자 역할 표시는 헤더의 역할 배지로 충분 — 별도 세션 안내 줄은 두지 않는다.) */}
-      <div className="studio-actionbar">
-        <div className="studio-actionbar-tools">
-          {/* 왼쪽 묶음(그리드 1열) — 관리 3종(태그·멤버·인사이트)은 바로 노출(드롭다운 접기 철회,
-              사용자 요청). 매니저/작업자(또는 그 역할 미리보기)는 멤버판 인사이트 하나만 남는다. */}
-          <div className="studio-actionbar-left">
-            {canEdit || (isDeveloper && !previewRole) ? (
-              <div className="studio-manage-group" role="group" aria-label="관리">
-                {/* 단계 배포: 태그 '정의 편집' 진입은 v3 역할(현재 개발자)만. */}
-                {canEdit && taxonomyV3 ? (
-                  <button
-                    className="button io-accent io-tags"
-                    data-act="manage-tags"
-                    onClick={() => (blockedByPreview() ? null : setModal("tags"))}
-                    type="button"
-                  >
-                    태그 편집
-                  </button>
-                ) : null}
-                {canEdit ? (
-                  <button
-                    className="button io-accent io-members"
-                    data-act="manage-members"
-                    onClick={() => (blockedByPreview() ? null : setModal("members"))}
-                    type="button"
-                  >
-                    멤버 관리
-                  </button>
-                ) : null}
-                {isDeveloper && !previewRole ? (
-                  <button
-                    className="button io-accent io-insights"
-                    data-act="manage-insights"
-                    onClick={() => setModal("developer")}
-                    type="button"
-                  >
-                    월별 인사이트
-                  </button>
-                ) : canMemberInsights ? (
-                  <button
-                    className="button io-accent io-insights"
-                    data-act="manage-insights"
-                    onClick={() => setModal("developer")}
-                    type="button"
-                  >
-                    월별 인사이트
-                  </button>
-                ) : null}
-              </div>
-            ) : canMemberInsights ? (
-              <button className="button io-accent io-insights" onClick={() => setModal("developer")} type="button" data-act="io-insights">
-                월별 인사이트
-              </button>
-            ) : null}
-          </div>
-          {/* 아바타 자리 — 항상 켜짐(끄기 없음), 좌/우 위치만 고른다. 액션바 가운데 열에
-              [왼쪽 · 아바타 자리 · 오른쪽] 한 세그먼트로(라벨이 가운데, 방향 버튼이 양옆). */}
-          {avatarEditor ? (
-            <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
-              {/* 방향은 아이콘으로 — 텍스트 기호 <<<·>>>는 폭은 맞췄지만 "상어 아가미" 같다는
-                  피드백(2026-09-01). '이쪽 벽에 붙이기'를 그대로 그린 화살표+선 아이콘으로
-                  교체(양쪽 같은 폭 유지). 뜻은 aria-label이 담는다. */}
-              <button
-                type="button"
-                className={avatarSide === "left" ? "on" : ""}
-                aria-label="아바타 왼쪽에 두기"
-                aria-pressed={avatarSide === "left"}
-                onClick={() => pickAvatarSide("left")}
-                data-act="avatar-ctl-toggle"
-              >
-                <ArrowLeftToLine aria-hidden="true" size={18} strokeWidth={2.4} />
-              </button>
-              <span aria-hidden="true" className="avatar-ctl-label">
-                아바타 자리
-              </span>
-              <button
-                type="button"
-                className={avatarSide === "right" ? "on" : ""}
-                aria-label="아바타 오른쪽에 두기"
-                aria-pressed={avatarSide === "right"}
-                onClick={() => pickAvatarSide("right")}
-                data-act="avatar-ctl-toggle"
-              >
-                <ArrowRightToLine aria-hidden="true" size={18} strokeWidth={2.4} />
-              </button>
-            </div>
-          ) : null}
-          {/* 우측 묶음: 단축키 + 달력 꾸미기. (비공개 일정 보기 토글은 2026-08-27 철수.
-              저장 상태 칩은 헤더의 버전 캡슐 아래로 이사 — 사용자 지정 배치.) */}
-          <div className="studio-actionbar-right">
-            {canEdit ? (
-              <button
-                type="button"
-                className={`kbd-hints-btn${kbdHintsOpen ? " open" : ""}`}
-                aria-expanded={kbdHintsOpen}
-                onClick={() => {
-                  hapticTick();
-                  setKbdHintsOpen((v) => !v);
-                }}
-               data-act="kbd-hints-btn">
-                <Keyboard aria-hidden="true" size={13} />
-                단축키
-                <ChevronDown aria-hidden="true" size={13} />
-              </button>
-            ) : null}
-            {/* 역할 배지("?" 권한 팝오버) + 로그아웃 — 헤더 우상단에서 여기로(사용자 지정 배치:
-                단축키 · 역할 · 로그아웃 순). */}
-            {renderRoleBadge()}
-            {actor.isAuthenticated ? (
-              <form action="/api/auth/logout" method="post">
-                <button
-                  className="button io-accent io-logout"
-                  onClick={() => startNav("로그아웃 중…")}
-                  type="submit"
-                 data-act="io-logout">
-                  로그아웃
-                </button>
-              </form>
-            ) : (
-              <Link className="button" data-act="login" href="/login">
-                로그인
-              </Link>
-            )}
-          </div>
-        </div>
-      </div>
 
       {/* 하단 중앙 플로팅 행 — 확대 배율 컨트롤(필요할 때만). (비공개 경고 알약은 2026-08-27 철수.) */}
       {zoomCollapse ? (
@@ -6238,7 +6275,14 @@ export function StudioShell({
         ref={workspaceRef}
       >
         {/* 아바타 scene에선 색상필터가 우측 rail로 가므로 좌측 칸은 비운다(칸 폭도 0). */}
-        <aside className="studio-left-panel">{avatarSceneOn ? null : studioFilterPanel}</aside>
+        <aside className="studio-left-panel">
+          {avatarSceneOn ? null : (
+            <>
+              {studioFilterPanel}
+              {studioToolsPanel}
+            </>
+          )}
+        </aside>
 
         <section
           className="studio-calendar-panel"

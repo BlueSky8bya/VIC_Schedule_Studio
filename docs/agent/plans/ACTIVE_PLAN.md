@@ -1,5 +1,43 @@
 # Active ExecPlan
 
+Plan ID: PLAN-20260903-002
+Status: Completed (2026-09-03 — 실측: GPU 60fps 0드롭, 소프트웨어 렌더 물결 ON 47fps/게이트 OFF 100fps →
+gfx 판정 v2로 접음; 필터 잘림 1720×1000 0px · 1600×1000 51px(옛 44px 동급); 3역할·3게이트 스크립트 통과)
+Task Risk: L2 (구조적 — 편집실 웹 크롬 재배치: 액션바 행 소멸, 도구는 서쪽 rail, 계정은 북동 모서리;
+새 배경 애니 레이어; 설정 스위치 극성 뒤집기)
+Created / Updated: 2026-09-03
+
+## Objective (사용자: "휴식 넛지처럼 배치 대개편 + 물·금 물결 애니(애플 감성, 동작 줄이기면 OFF) + 동작 스위치 ON 기본")
+
+1. **배치 대개편(방위 규칙 + 30일 사용 데이터)** — 편집실 웹(≥641px)만. 모바일 크롬은 불변.
+   - 북(상단 한 줄): 제목 · ‹ 달 › · 저장 상태 · 시청자 화면 보여주기(개발자는 역할 미리보기) · 관리자 ? · 로그아웃.
+     **액션바 두 번째 행 소멸** → 달력이 그 높이(≈50px)를 얻는다(핫 존 = 칸·카드·저장).
+   - 서(좌측 rail = 금/도구): 태그 필터 카드 아래 **도구 카드**(태그 편집 · 멤버 관리 · 월별 인사이트 · 단축키
+     — 아이콘+짧은 라벨 타일, 30일 0~2회 콜드 존). 아바타 rail이면 [필터 | 도구 | 아바타 자리] 순, 아니면
+     `.studio-left-panel`에 같은 카드.
+   - 아바타 좌/우 세그먼트는 **아바타 자리 박스 안**(조작 대상 옆, HCI 근접성)으로.
+   - 2026-08의 "관리 3종 드롭다운 접기 철회"는 이 지시(대개편)로 대체 — 접지 않고 rail 타일로 상시 노출.
+2. **물결 레이어(`.studio-tide`)** — `html[data-studio-calm]` + 동작 줄이기 OFF + `data-gfx≠lite`일 때만.
+   fixed 배경(z:-1, 셸 배경 투명), 큰 물빛 스웰 2 + 물결 채움 2 + **은선(stroke, 금)** 1, 상단바 헤어라인 글린트.
+   전부 transform/opacity(합성기) — 무한 애니 규칙(frame-jank 메모리). 약한 기기(vic.gfx lite)·동작 줄이기·
+   차분 OFF·모바일엔 렌더/표시 안 함.
+3. **설정 스위치 극성** — "동작 줄이기(기본 OFF)" → "생동감 있는 동작(기본 ON)". 저장 키(`vic.reduceMotion`)·
+   `html[data-reduce-motion]` 의미는 불변(라벨·체크 방향만 반전). 세대(epoch) 로직 무관.
+
+## 검증 계획
+- Playwright(3111): owner(아바타 rail 좌/우)·manager(rail 없음)·developer 스크린샷; 차분 OFF·동작 줄이기 ON·gfx lite에서
+  `.studio-tide` display none; 팝오버 도크 top(`--dock-top`) 상단바 아래; 편집 팝오버 클램프 기준(getChromeBottomV) 정상.
+- perf-frames.mjs studio (gpu/nogpu): 물결 켜진 idle fps가 기존 대비 −5% 이내.
+- tsc · lint · vitest(라벨 사전 가드) · next build · 비주얼 기준선(studio-owner-web-light 등) 갱신.
+
+## 롤백
+- 커밋 단위 revert. 도구 타일은 `data-act` 키(manage-tags/-members/-insights/kbd-hints-btn/avatar-ctl-toggle) 불변 →
+  인사이트 집계 연속.
+
+---
+
+# (보관) 이전 계획 — VOD 아카이브
+
 Plan ID: PLAN-20260831-001
 Status: Phase 1 Completed (2026-08-31, CHG-20260831-001 — 백필 376건·칩 실측 완료) /
 Phase 2 Proposed (타임라인 활용 방식 사용자 결정 대기)

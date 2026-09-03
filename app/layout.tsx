@@ -114,7 +114,7 @@ export default function RootLayout({
               "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');" +
               // 눈 편한 테마 값: 약한 기기 판정(vic.gfx=lite, 30일)이면 필터 대신 토큰 팔레트('lite') — lib/ui/gfx.ts
               "var g=false;try{var r=JSON.parse(s.getItem('vic.gfx')||'null');g=!!r&&r.mode==='lite'&&Date.now()-r.at<2592000000}catch(e){}" +
-              "if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',g?'lite':'1');if(s.getItem('vic.studioCalm')!=='off')d.setAttribute('data-studio-calm','1')}catch(e){}"
+              "if(g)d.setAttribute('data-gfx','lite');if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',g?'lite':'1');if(s.getItem('vic.studioCalm')!=='off')d.setAttribute('data-studio-calm','1')}catch(e){}"
           }}
         />
         {children}

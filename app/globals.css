@@ -1203,10 +1203,6 @@ html[data-eye-comfort="lite"] .studio-shell {
     linear-gradient(180deg, #fcf5f1 0%, #f4f2f1 100%);
   color: #2b2737;
 }
-html[data-eye-comfort="lite"] .studio-actionbar {
-  background: #f8f2f2;
-  border-bottom-color: #eae5e7;
-}
 html[data-eye-comfort="lite"] .public-event {
   background: #f2efea;
 }

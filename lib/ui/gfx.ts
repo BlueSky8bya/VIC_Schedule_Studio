@@ -16,7 +16,10 @@ const BAD_FRAME_MS = 20;
 const BAD_RATIO = 0.08;
 const BAD_MEAN_MS = 19;
 
-type GfxRecord = { mode: "lite" | "full"; at: number };
+// v: 판정 기준이 바뀌면 올린다 — 옛 세대 기록은 만료로 본다(다시 잰다). v2(2026-09-03): 편집실 물결
+// 레이어가 생겨 'full' 판정이 물결 비용을 못 본 채 30일 남는 걸 막는다(소프트웨어 렌더 실측 86→47fps).
+const GFX_PROBE_VERSION = 2;
+type GfxRecord = { mode: "lite" | "full"; at: number; v?: number };
 
 function readRecord(): GfxRecord | null {
   try {
@@ -25,7 +28,9 @@ function readRecord(): GfxRecord | null {
     const rec = JSON.parse(raw) as Partial<GfxRecord>;
     if ((rec.mode !== "lite" && rec.mode !== "full") || typeof rec.at !== "number") return null;
     if (Date.now() - rec.at > GFX_TTL_MS) return null;
-    return { mode: rec.mode, at: rec.at };
+    // 옛 세대 'full'은 다시 잰다. 옛 'lite'는 그대로 믿는다(안전한 쪽 — 페인트-전 스크립트도 v를 안 본다).
+    if (rec.mode === "full" && rec.v !== GFX_PROBE_VERSION) return null;
+    return { mode: rec.mode, at: rec.at, v: rec.v };
   } catch {
     return null;
   }
@@ -43,10 +48,16 @@ export function eyeComfortAttrValue(): "1" | "lite" {
 
 function remember(mode: GfxRecord["mode"]): void {
   try {
-    window.localStorage.setItem(GFX_KEY, JSON.stringify({ mode, at: Date.now() } satisfies GfxRecord));
+    window.localStorage.setItem(
+      GFX_KEY,
+      JSON.stringify({ mode, at: Date.now(), v: GFX_PROBE_VERSION } satisfies GfxRecord)
+    );
   } catch {
     /* 저장소 불가 — 이번 세션만 */
   }
+  // <html data-gfx="lite"> — 눈 편한 테마와 무관하게 '약한 기기' 자체를 알리는 표식(2026-09-03).
+  // 편집실 물결 레이어(.studio-tide)가 이 표식이 있으면 렌더를 접는다. 페인트 전 적용은 app/layout.tsx.
+  if (mode === "lite") document.documentElement.setAttribute("data-gfx", "lite");
 }
 
 function sampleFrames(ms: number): Promise<number[]> {
@@ -79,10 +90,18 @@ export async function probeGfx(): Promise<void> {
   if (typeof window === "undefined") return;
   if (readRecord()) return; // 30일 안에 이미 판정
   const root = document.documentElement;
-  if (root.getAttribute("data-eye-comfort") !== "1") return; // 필터가 안 켜져 있으면 잴 것이 없다
+  // 잴 대상이 있을 때만: 루트 filter(눈 편한 "1") 또는 편집실 물결 레이어(.studio-tide가 보이는 중,
+  // 2026-09-03). 둘 다 없으면 이 기기에서 비용을 내는 게 없으니 재지 않는다.
+  const filterOn = root.getAttribute("data-eye-comfort") === "1";
+  const tideEl = document.querySelector(".studio-tide");
+  const tideOn = !!tideEl && getComputedStyle(tideEl).display !== "none";
+  if (!filterOn && !tideOn) return;
+  const markLite = () => {
+    remember("lite"); // data-gfx="lite"도 여기서 붙는다 → 물결 레이어는 CSS가 즉시 접는다
+    if (root.getAttribute("data-eye-comfort") === "1") root.setAttribute("data-eye-comfort", "lite");
+  };
   if (typeof navigator.hardwareConcurrency === "number" && navigator.hardwareConcurrency <= 2) {
-    remember("lite");
-    root.setAttribute("data-eye-comfort", "lite");
+    markLite();
     return;
   }
   await wait(3_000);
@@ -97,6 +116,5 @@ export async function probeGfx(): Promise<void> {
     remember("full");
     return;
   }
-  remember("lite");
-  if (root.getAttribute("data-eye-comfort") === "1") root.setAttribute("data-eye-comfort", "lite");
+  markLite();
 }

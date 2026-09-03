@@ -187,7 +187,8 @@ html {
   align-items: center;
   justify-content: center;
   gap: var(--space-2); /* 8 */
-  margin: 0 0 12px;
+  /* 액션바 행 소멸(2026-09-03) — 상단바 바로 아래에 뜨므로 위 여백 + workspace 좌우 패딩(18)과 정렬. */
+  margin: 12px 18px 0;
   padding: var(--space-2) var(--space-3); /* 8/12 */
   border: 1px solid var(--line, #ece9f5);
   border-radius: var(--r-lg);
@@ -341,7 +342,10 @@ html {
 .studio-role-tools {
   grid-column: 3;
   justify-self: end;
-  flex-wrap: wrap;
+  /* 한 줄 고정(2026-09-03): 역할 배지·로그아웃이 합류해 폭이 늘었다. 줄바꿈이면 헤더가 두 줄(≈120px)로
+     자라 액션바를 없앤 뜻이 사라진다. 1fr 열은 min-content까지 넓어지므로 좁은 창에선 달 라벨이 살짝
+     왼쪽으로 밀릴 뿐 겹치지 않는다. ≤1560px에선 미리보기 버튼 라벨을 짧게(studio-calm-layer.css). */
+  flex-wrap: nowrap;
   justify-content: flex-end;
 }
 
@@ -471,7 +475,7 @@ html {
 
 .studio-role-tools {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap; /* 한 줄 고정 — 위 .studio-role-tools 주석 */
   align-items: center;
   justify-content: flex-end;
   gap: 10px;
@@ -4134,7 +4138,10 @@ html[data-reduce-motion] .perf-windows button.active {
 }
 .avatar-rail .avatar-slot {
   display: flex;
-  flex: 0 0 63%;
+  /* 63% → 58%(2026-09-03 배치 대개편): 액션바 행이 사라져 rail이 ~63px 길어졌고 그 사이에 도구 카드가
+     들어왔다. 58%는 길어진 rail에서 옛 63%와 같은 절대 높이(1000px 창 기준 ≈530px) — 아바타 자리
+     크기는 그대로, 필터 카드(핫 존, 30일 82회)가 도구 카드만큼 잘리지 않게. */
+  flex: 0 0 58%;
   min-height: 0;
   box-sizing: border-box;
   pointer-events: none;
@@ -4189,9 +4196,12 @@ html[data-reduce-motion] .perf-windows button.active {
   letter-spacing: 0.02em;
   user-select: none;
 }
-/* 세그먼트 — 액션바 가운데 열(.studio-actionbar-tools 그리드 2열)에 [왼쪽 · 아바타 자리 · 오른쪽].
-   라벨이 가운데, 방향 버튼이 양옆이라 '어느 쪽'인지가 라벨 기준으로 읽힌다. 항상 켜짐(끄기 없음). */
+/* 세그먼트 [왼쪽 · 아바타 자리 · 오른쪽] — 2026-09-03 배치 대개편으로 액션바 가운데 열에서 **아바타 자리
+   박스 안(.avatar-dock-inner 하단)**으로. 조작 대상 옆에 조작 도구(HCI 근접성). 라벨이 가운데, 방향 버튼이
+   양옆이라 '어느 쪽'인지가 라벨 기준으로 읽힌다. 항상 켜짐(끄기 없음). 슬롯 박스는 pointer-events:none이라
+   세그먼트만 다시 켠다. */
 .studio-avatar-ctl {
+  pointer-events: auto;
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -4694,15 +4704,6 @@ html[data-reduce-motion] .editor-anchor-link line {
 }
 
 /* 상단 액션바: (개발자) 세션 안내 + 같은 줄에 관리/개발자/꾸미기 버튼. */
-.studio-actionbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  border-bottom: 1px solid #ece9f5;
-  background: #faf7ff;
-  padding: 9px 18px;
-}
 
 /* 헤더 미리보기 표시 칩(헤더에만 둔다 — 아래 화면이 미리보기 대상). */
 /* 미리보기 표시 칩 — 역할 배지("?") 왼쪽에 둔다(웹). 미리보기 중임을 또렷이. */
@@ -4768,44 +4769,6 @@ html[data-reduce-motion] .editor-anchor-link line {
   outline: 1px dashed rgba(154, 52, 18, 0.14);
   outline-offset: -1px;
   border-radius: var(--r-md);
-}
-.studio-actionbar-tools {
-  position: relative;
-  display: flex;
-  flex: 1 1 auto; /* 남는 폭을 채워, 관리 묶음=왼쪽 / 꾸미기=오른쪽 끝으로 가르게 한다. */
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  min-height: 44px;
-}
-/* 왼쪽 묶음(관리 3종 + 시즌 토글) — 그리드 1열. */
-.studio-actionbar-left {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-/* 웹: 3열 그리드(1fr · auto · 1fr) — 가운데 열(아바타 자리 세그먼트)이 남는 폭과 무관하게
-   액션바 정중앙에 놓인다. 열을 명시해 아바타 세그먼트가 없을 때도 좌/우 묶음이 제자리. */
-@media (min-width: 641px) {
-  .studio-actionbar-tools {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  }
-  .studio-actionbar-left {
-    grid-column: 1;
-    justify-self: start;
-  }
-  .studio-avatar-ctl {
-    grid-column: 2;
-    justify-self: center;
-  }
-  .studio-actionbar-right {
-    grid-column: 3;
-    justify-self: end;
-  }
 }
 /* 배포 버전(커밋) — 액션바 가운데(클릭 안 됨). 기본(비개발자)은 흐린 회색 텍스트,
    개발자(.dev)는 모바일 배지처럼 또렷한 보라 펄로 꾸민다. */
@@ -4910,9 +4873,6 @@ html[data-reduce-motion] .editor-anchor-link line {
   flex: none;
   opacity: 0.85;
 }
-.studio-actionbar .button {
-  min-height: 36px;
-}
 
 /* ── 액션바/헤더 버튼 색 포인트 (HCI 근거 · 은은한 틴트 칩) ──────────────────
    문제: 버튼이 전부 흰색 → 무채색 '관리패널/병원' 느낌, 어디를 눌러야 할지 안내 없음.
@@ -5013,35 +4973,9 @@ html[data-reduce-motion] .editor-anchor-link line {
   border-color: #e3d8c5;
   color: #5e564b;
 }
-/* 관리 묶음(태그·멤버·접속자) — owner/dev 운영 도구를 옅은 컨테이너로 한 덩어리로. */
-.studio-manage-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  /* A3 코너 동심(2026-08-27): 안쪽 버튼 r-control(12) + 세로 패딩 4 = 16 — 실측 Δ2 교정. */
-  border-radius: calc(var(--r-control) + var(--space-1));
-  background: rgba(120, 110, 160, 0.07);
-}
-/* 우측 묶음: 비공개 일정 보기(토글) + 달력 꾸미기를 액션바 오른쪽 끝으로 모은다. */
-.studio-actionbar-right {
-  display: inline-flex;
-  align-items: center; /* 저장 칩이 헤더로 이사 — 이제 버튼들끼리 세로 중앙 정렬 */
-  gap: 8px;
-  margin-left: auto;
-}
-/* 저장 칩 — '비공개 일정 보기' 왼쪽, 버튼 아래 끝선 정렬, 줄어들지 않게. */
-.studio-actionbar-right .save-status {
-  flex: 0 0 auto;
-  align-self: flex-end;
-}
-/* 액션바 오른쪽 묶음(단축키 · 역할 배지 · 로그아웃, 2026-08-27): 배지는 배치 7의 --control-hit(44px)를
-   물려받아 옆 로그아웃(36px)보다 컸다 — 액션바 버튼 높이(36px)로 통일. 배지 팝오버·헤더 미리보기 메뉴는
-   화면 오른쪽 끝 요소가 됐으므로 오른쪽 끝에 맞춰 왼쪽으로 펼친다(오른쪽 잘림 버그). */
-.studio-actionbar-right .actor-badge {
-  min-height: 36px;
-}
-.studio-actionbar-right .role-help-pop,
+/* 헤더 오른쪽 끝 요소(역할 배지 팝오버·미리보기 메뉴)는 오른쪽 끝에 맞춰 왼쪽으로 펼친다(잘림 방지).
+   역할 배지·로그아웃은 2026-09-03 배치 대개편으로 액션바에서 헤더 북동 모서리로. */
+.studio-role-tools .role-help-pop,
 .studio-role-tools .preview-dd-menu {
   left: auto;
   right: 0;
@@ -12538,18 +12472,8 @@ html[data-studio-calm] .studio-day:not(.today):not(.outside):not(.editing-new):n
 html[data-studio-calm] .studio-day.past:not(.today):not(.outside) {
   background: #eaeef3;
 }
-/* ⑤ 콜드 존(관리 칩 3개, 30일 0~2회) = 고스트. 위치·노출은 그대로(2026-08 사용자 결정: 드롭다운
-   접기 철회) — 채도만 물러난다. */
-html[data-studio-calm] .studio-actionbar .io-accent {
-  background: transparent;
-  border-color: var(--studio-silver-line);
-  color: var(--ink-soft);
-}
-html[data-studio-calm] .studio-actionbar .io-accent:hover:not(:disabled) {
-  background: var(--studio-silver);
-  border-color: #c3ccd6;
-  color: var(--ink);
-}
+/* ⑤ 콜드 존(관리 3종·단축키, 30일 0~2회) — 2026-09-03 배치 대개편으로 액션바 행 자체가 사라지고
+   서쪽 rail 도구 카드(.studio-tools)로 갔다. 차분 모드 색은 studio-calm-layer.css에. */
 /* ⑥ 제목 ✨ 반짝임 정지(편집실만 — 시청자 포스터의 시그니처는 그대로). */
 html[data-studio-calm] .studio-poster-title span {
   animation: none;

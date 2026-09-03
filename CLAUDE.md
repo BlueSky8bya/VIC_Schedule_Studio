@@ -45,6 +45,14 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   미정 orange · 떡밥 violet ring · 다시보기 forest blue), and the public/private boundary.
 - Implemented as the reversible `html[data-studio-calm]` theme (default ON, toggle in the role badge
   popover). New owner-screen UI should read its colors from `--studio-*` tokens under that attribute.
+- **Chrome placement (배치 대개편, 2026-09-03).** Studio web chrome is ONE north row: title · month nav ·
+  save state · viewer preview · role badge · logout. Cold tools (태그 편집 · 멤버 관리 · 월별 인사이트 ·
+  단축키) live in the **west rail tools card** under the tag filter (`.studio-tools`); the avatar
+  left/right control sits inside the avatar slot. Do not reintroduce a second full-width action row —
+  the calendar (hot zone) owns that height. The rail's vertical budget is filter | tools | avatar 58%.
+- **Tide layer.** `.studio-tide` (water swells + one sharp silver line, `studio-calm-layer.css`) shows
+  only with calm ON ∧ 생동감 있는 동작 ON ∧ `data-gfx≠lite` ∧ web width. It is the only ambient
+  animation on owner screens; add nothing louder.
 
 ## Stack & layout
 
@@ -120,10 +128,14 @@ private layers is retired — ADR-0014; the server model stays.)
 - **Motion & feedback by default:** `:active` scale, state transitions via `var(--ease)`,
   meaningful enter/exit; charts get centered+clamped hover value tooltips. Static = regression.
 - **Haptics:** `hapticTick()` on toggles/selectors/confirms (press→server-confirm = two ticks).
-- Respect reduced motion via `html[data-reduce-motion]`. The in-app toggle is the only
-  authority and defaults to OFF (OS `prefers-reduced-motion` seeding was withdrawn
-  2026-08-27); eye-comfort theme defaults to ON. Never gate motion on the OS media query
-  directly in CSS — always target `html[data-reduce-motion]`.
+- Respect reduced motion via `html[data-reduce-motion]`. The in-app switch is the only
+  authority. Since 2026-09-03 it is labeled **생동감 있는 동작** and defaults to ON (ON = attribute
+  absent = full motion; OFF sets the attribute — the old "동작 줄이기"). Storage key
+  `vic.reduceMotion` keeps its old meaning. OS `prefers-reduced-motion` seeding was withdrawn
+  2026-08-27; eye-comfort theme defaults to ON. Never gate motion on the OS media query
+  directly in CSS — always target `html[data-reduce-motion]`. Always-on ambient decoration
+  (the studio tide layer) must additionally hide under `html[data-gfx="lite"]` (weak-device
+  probe, `lib/ui/gfx.ts`) and use transform/opacity only.
 - **HCI:** minimize eye/pointer travel, keep related things close, preserve position across
   state changes (a loading skeleton sits where the real content will land).
 

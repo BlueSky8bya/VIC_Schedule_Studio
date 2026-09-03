@@ -5,7 +5,7 @@
 > 완료된 역사는 여기 쌓지 말고 git log와 `docs/decisions/`(ADR)로 보낸다.
 > 세션 시작 시 이 파일은 SessionStart 훅이 자동으로 읽어 넣는다(`.claude/settings.json`).
 
-Last Updated: 2026-09-02
+Last Updated: 2026-09-03
 Project Version: 0.1.0
 Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소 도입안)
 
@@ -13,6 +13,22 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
 
 ## Current Objective
 
+- **편집실 배치 대개편 + 물결 레이어 + 동작 스위치 극성(2026-09-03, PLAN-20260903-002)**:
+  ① 웹 크롬 두 행 → 한 행. 옛 액션바(관리 3종·아바타 좌/우·단축키·역할 배지·로그아웃)가 사라지고
+  달력이 그 높이(≈50px)를 얻는다. 역할 배지·로그아웃은 헤더 북동 모서리(`.studio-role-tools`),
+  관리 3종+단축키는 **서쪽 rail 도구 카드**(`.studio-tools` 타일, 아바타 scene이면 [필터|도구|아바타 자리],
+  아니면 `.studio-left-panel` 필터 아래), 아바타 좌/우 세그먼트는 **아바타 자리 박스 안**. 아바타 자리
+  flex 63→58%(길어진 rail에서 옛 절대 높이 유지). 실측: 1720×1000(zoom .9) 필터 잘림 0, 1600×1000
+  51px(옛 배치 44px과 동급). data-act 키 불변. 2026-08 "드롭다운 접기 철회"는 접지 않는 타일로 존중.
+  ② `.studio-tide`(components/studio/studio-calm-layer.css) — fixed z:-1 배경(셸 배경 투명): 물빛 스웰 2 +
+  물결 채움 2 + 은선 stroke 1 + 상단바 헤어라인 글린트. 보이는 조건 = 차분 ON ∧ 동작 줄이기 OFF ∧
+  `html[data-gfx]≠lite` ∧ ≥641px. 실측(perf-frames.mjs studio): GPU 60fps 0 드롭(켜도 같음);
+  소프트웨어 렌더는 켜면 86→47fps라 gfx 판정이 필수 — probeGfx가 이제 **필터 또는 물결이 보일 때**
+  재고, lite면 `data-gfx="lite"`(페인트-전 스크립트도 붙임)로 물결을 접는다. 판정 기록 v2(옛 full 재측정).
+  ③ 역할 배지 스위치 "동작 줄이기(기본 OFF)" → **"생동감 있는 동작(기본 ON)"** — 저장 키·속성 의미
+  불변, 표시 극성만 반전(설정 4개 전부 ON=기본). data-act는 한글이라 라벨 사전 자동.
+  검증: verify-layout.mjs(owner/manager/developer, 3 게이트, 팝오버 오른쪽 잘림 0, 힌트 바 상단바 아래
+  12px, 아바타 좌→우) · tsc · lint · vitest 521 · 비주얼 기준선 갱신.
 - **업도움/기간 띠 여백 칸별 압축(2026-09-02)**: 띠 줄 수를 "주별 최대"로 세어 그 주 모든 칸의
   일정 목록에 같은 paddingTop을 주던 것을, **각 칸을 실제로 지나는 띠의 최고 레인 깊이**로 전환
   (시청자 `renderDayCell` cellLaneDepth · 편집실 동일). 띠 없는 칸 카드가 머리글 바로 아래로

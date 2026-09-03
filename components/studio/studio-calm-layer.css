@@ -1,0 +1,280 @@
+/* ══ 편집실 배치 대개편 레이어(2026-09-03) ═══════════════════════════════════════
+   docs/agent/plans/ACTIVE_PLAN.md(PLAN-20260903-002) · docs/ux/saju-redesign-direction.md ·
+   CLAUDE.md "Owner-fit palette rule". 편집실 웹(≥641px) 전용 — 시청자 포스터(.public-*)엔 어떤 규칙도 없다.
+   ① 도구 카드(.studio-tools) — 옛 액션바(두 번째 크롬 행)의 관리 3종 + 단축키가 서쪽 rail(금=도구)로.
+   ② 물결 레이어(.studio-tide) — 차분한 편집실 + 생동감 있는 동작 + 여력 있는 기기(data-gfx≠lite)에서만.
+   ③ 차분 모드 상단바 — 은선 헤어라인 + 느린 글린트.
+   무한 애니는 transform/opacity만(루트 filter·box-shadow 키프레임은 프레임을 깎았다 — 2026-09-03 실측). */
+
+/* ── ① 도구 카드 ─────────────────────────────────────────────────────────────
+   콜드 존(30일 0~2회)이라 아이콘+짧은 라벨 타일이면 충분. rail 카드 문법(흰 카드·18 라운드·같은 그림자)을
+   그대로 물려받아 필터 카드와 한 식구로 보인다. 달력(핫 존)은 액션바 행 높이만큼 세로를 얻는다. */
+.studio-tools {
+  display: grid;
+  /* 타일 수(1~4)와 무관하게 한 줄 등분 — auto-fit 최소폭 방식은 1440px(rail 272px)에서 4번째 타일이
+     줄바꿈돼 카드가 두 줄로 자랐다(비주얼 기준선 실측). ≤1300px(rail ≤ 244px)에선 2×2. */
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  box-sizing: border-box;
+  border: 1px solid #ece9f5;
+  border-radius: 18px;
+  background: #fff;
+  padding: 6px;
+  box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
+}
+/* rail 세로 예산(필터 | 도구 | 아바타 58%)에서 카드는 ≈64px — 더 크면 필터(핫 존)가 잘린다. */
+.avatar-rail .studio-tools {
+  flex: 0 0 auto;
+}
+@media (max-width: 1300px) {
+  .avatar-rail .studio-tools {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+/* 아바타 scene이 아닐 때(매니저·좁은 창) — 좌측 그리드 칸(188px)의 필터 카드 아래, 그 카드와 같은 규격.
+   폭이 좁아 타일은 2열(1개면 전체 폭). */
+.studio-left-panel .studio-tools {
+  margin-top: 12px;
+  padding: 6px;
+  border-radius: var(--r-lg);
+  box-shadow: 0 2px 10px rgb(120 110 160 / 8%);
+  grid-auto-flow: row;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+}
+
+/* 헤더 계정 모서리 — 한 줄 유지. ≤1560px에선 미리보기 버튼 라벨을 짧게("보여주기"/"미리보기")
+   + 간격 8px. 1440px 실측: 긴 라벨이면 로그아웃이 둘째 줄로 떨어져 헤더가 ≈120px. */
+.studio-role-tools .io-preview .lbl-short {
+  display: none;
+}
+@media (max-width: 1560px) {
+  .studio-role-tools {
+    gap: 8px;
+  }
+  .studio-role-tools .io-preview .lbl-long {
+    display: none;
+  }
+  .studio-role-tools .io-preview .lbl-short {
+    display: inline;
+  }
+}
+.stool {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 4px;
+  min-height: 50px;
+  padding: 6px 4px 5px;
+  border: 1px solid transparent;
+  border-radius: var(--r-control);
+  background: transparent;
+  color: #5b5674;
+  font: inherit;
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    border-color var(--dur-1) var(--ease),
+    color var(--dur-1) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+.stool svg {
+  color: inherit;
+}
+.stool:hover:not(:disabled) {
+  background: #f4f2fb;
+  border-color: #e6e1f4;
+}
+.stool:active:not(:disabled) {
+  transform: scale(0.95);
+}
+/* 기능별 색조는 글자·아이콘에만(옛 틴트 칩의 색 코딩 유지, 면은 비워 조용히). */
+.stool-tags {
+  color: #4f3fbf;
+}
+.stool-members {
+  color: #0b7a68;
+}
+.stool-insights {
+  color: #1f6cba;
+}
+.stool-kbd {
+  color: #5b4bd0;
+}
+.stool-kbd.open {
+  background: rgb(124 108 240 / 12%);
+  border-color: rgb(124 108 240 / 32%);
+}
+/* 차분 모드: 은백 카드 + 은회 글자, 호버에 흰 면. 단축키 펼침은 물빛 테두리. */
+html[data-studio-calm] .studio-tools {
+  background: var(--studio-silver);
+  border-color: var(--studio-silver-line);
+}
+html[data-studio-calm] .stool {
+  color: var(--ink-soft);
+}
+html[data-studio-calm] .stool:hover:not(:disabled) {
+  background: #fff;
+  border-color: #c3ccd6;
+  color: var(--ink);
+}
+html[data-studio-calm] .stool-kbd.open {
+  background: #fff;
+  border-color: var(--studio-action-line);
+  color: var(--studio-action-text);
+}
+/* 아바타 좌/우 세그먼트(아바타 자리 박스 안) — 차분 모드에선 은백 트랙 + 물빛 선택. */
+html[data-studio-calm] .studio-avatar-ctl {
+  background: var(--studio-silver);
+}
+html[data-studio-calm] .studio-avatar-ctl button.on {
+  color: var(--studio-action-text);
+}
+html[data-studio-calm] .studio-avatar-ctl .avatar-ctl-label {
+  color: var(--ink-soft);
+  border-inline-color: var(--studio-silver-line);
+}
+
+/* ── ② 물결 레이어 ───────────────────────────────────────────────────────────
+   fixed 배경(z:-1) — 셸 배경을 투명하게 비우고 그 자리에 찬 바탕 + 물빛 스웰 둘(수) + 물결 채움 둘 +
+   은선(금) 하나. 애플 결: 아주 느리고(38~62초), 대비 낮고, 이징은 흐름=linear·너울=ease-in-out.
+   보이는 조건 셋을 CSS가 판단한다 — 차분 ON · 동작 줄이기 OFF · data-gfx≠lite(약한 기기). 모바일은 렌더 안 함.
+   눈 편한 테마의 루트 filter가 켜져 있으면 fixed의 기준이 html 상자가 되어 문서 전체를 덮는다(의도와 동일). */
+.studio-tide {
+  display: none;
+}
+@media (min-width: 641px) {
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-tide {
+    display: block;
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell {
+    background: transparent;
+  }
+}
+.studio-tide {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+  /* 셸의 핑크·라벤더 글로우를 물·은 톤으로 옮긴 찬 바탕(콘텐츠 카드는 그대로 따뜻하다). */
+  background:
+    radial-gradient(120% 55% at 12% -6%, #e7f0fb 0%, transparent 46%),
+    radial-gradient(120% 55% at 88% -6%, #edf1f8 0%, transparent 46%),
+    linear-gradient(180deg, #fbfcfe 0%, #f2f6fc 100%);
+}
+.tide-swell {
+  position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(var(--studio-action-rgb) / 9%), rgb(var(--studio-action-rgb) / 0%));
+  will-change: transform;
+}
+.tide-swell-a {
+  left: -14%;
+  top: -18%;
+  width: 64%;
+  height: 52%;
+  animation: tide-drift-a 38s ease-in-out infinite alternate;
+}
+.tide-swell-b {
+  right: -16%;
+  bottom: -8%;
+  width: 56%;
+  height: 48%;
+  animation: tide-drift-b 52s ease-in-out infinite alternate;
+}
+@keyframes tide-drift-a {
+  to {
+    transform: translate3d(7%, 5%, 0);
+  }
+}
+@keyframes tide-drift-b {
+  to {
+    transform: translate3d(-6%, -6%, 0);
+  }
+}
+/* 바다 — 아래 30%. 너울(위아래 8px)은 바다 전체에, 흐름은 파형마다 다른 속도로. */
+.tide-sea {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
+  will-change: transform;
+  animation: tide-bob 9s ease-in-out infinite alternate;
+}
+@keyframes tide-bob {
+  to {
+    transform: translate3d(0, 8px, 0);
+  }
+}
+.tide-wave {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 200%;
+  height: 100%;
+  display: block;
+  will-change: transform;
+  animation: tide-flow 48s linear infinite;
+}
+@keyframes tide-flow {
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+.tide-fill-1 path {
+  fill: rgb(var(--studio-action-rgb) / 7%);
+}
+.tide-fill-2 {
+  animation-duration: 62s;
+}
+.tide-fill-2 path {
+  fill: rgb(var(--studio-action-rgb) / 4%);
+}
+/* 은선(금) — 같은 파형이 채움보다 살짝 빠르게 흘러 마루가 반짝인다. 날카롭게: 1.25px, 배율 무관 굵기. */
+.tide-line {
+  animation-duration: 40s;
+}
+.tide-line path {
+  fill: none;
+  stroke: rgb(120 148 184 / 55%);
+  stroke-width: 1.25px;
+  stroke-linecap: round;
+  shape-rendering: geometricPrecision;
+}
+
+/* ── ③ 차분 모드 상단바(북=수) — 은선 헤어라인 + 18초에 한 번 지나가는 글린트(1px 띠라 비용 0에 가깝다). */
+html[data-studio-calm] .studio-topbar {
+  border-bottom-color: var(--studio-silver-line);
+}
+@media (min-width: 641px) {
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-topbar::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 95%) 50%, transparent) no-repeat;
+    background-size: 220px 1px;
+    animation: tide-glint 18s linear infinite;
+  }
+}
+@keyframes tide-glint {
+  0% {
+    background-position-x: -220px;
+  }
+  45%,
+  100% {
+    background-position-x: calc(100% + 220px);
+  }
+}

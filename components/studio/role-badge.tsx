@@ -104,20 +104,22 @@ export function RoleBadge({
               </button>
             </div>
           ) : null}
-          {/* 동작 줄이기 — 장식용 반복 모션을 끈다. 기기 무관 항상 노출. */}
+          {/* 생동감 있는 동작(2026-09-03 극성 반전, 사용자 결정) — ON(기본)=장식 모션·물결 켜짐,
+              OFF=옛 '동작 줄이기'. 저장 키(vic.reduceMotion)·html[data-reduce-motion]의 뜻은 그대로고
+              스위치 방향만 반대라, 설정 4개가 전부 'ON=기본값'으로 읽힌다. 기기 무관 항상 노출. */}
           <div className="role-help-haptics">
             <span className="rhh-label">
               <Sparkles aria-hidden="true" size={14} />
-              동작 줄이기
+              생동감 있는 동작
             </span>
             <button
-              aria-checked={reduceMotion}
-              aria-label="동작 줄이기 켜기/끄기"
-              className={`rhh-switch ${reduceMotion ? "on" : ""}`}
+              aria-checked={!reduceMotion}
+              aria-label="생동감 있는 동작 켜기/끄기"
+              className={`rhh-switch ${reduceMotion ? "" : "on"}`}
               onClick={onToggleReduceMotion}
               role="switch"
               type="button"
-             data-act="동작 줄이기 켜기/끄기">
+             data-act="생동감 있는 동작 켜기/끄기">
               <span className="rhh-knob" aria-hidden="true" />
             </button>
           </div>
