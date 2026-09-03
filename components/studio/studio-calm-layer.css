@@ -207,17 +207,24 @@ html[data-studio-calm] .studio-avatar-ctl .avatar-ctl-label {
   overflow: hidden;
   pointer-events: none;
   contain: strict;
-  /* 셸의 핑크·라벤더 글로우를 물·은 톤으로 옮긴 찬 바탕(콘텐츠 카드는 그대로 따뜻하다). */
+  /* 셸의 핑크·라벤더 글로우를 찬 계열로 옮긴 바탕(3차 "단조롭다": 연보라 글로우(좌) + 옥빛 글로우(우) + 파란 물). */
   background:
-    radial-gradient(120% 55% at 12% -6%, #e7f0fb 0%, transparent 46%),
-    radial-gradient(120% 55% at 88% -6%, #edf1f8 0%, transparent 46%),
-    linear-gradient(180deg, #fbfcfe 0%, #f2f6fc 100%);
+    radial-gradient(120% 55% at 12% -6%, #e6e3fa 0%, transparent 46%),
+    radial-gradient(120% 55% at 88% -6%, #dbf1f2 0%, transparent 46%),
+    linear-gradient(180deg, #f3f7fc 0%, #e4edf8 100%);
 }
 .tide-swell {
   position: absolute;
   border-radius: 50%;
   background: radial-gradient(closest-side, rgb(var(--studio-action-rgb) / 9%), rgb(var(--studio-action-rgb) / 0%));
   will-change: transform;
+}
+/* 스웰 셋의 색을 갈라 다채롭게: a = 연보라, b = 옥빛, c = 파랑(기본). */
+.tide-swell-a {
+  background: radial-gradient(closest-side, rgb(118 106 210 / 8%), rgb(118 106 210 / 0%));
+}
+.tide-swell-b {
+  background: radial-gradient(closest-side, rgb(32 156 168 / 7%), rgb(32 156 168 / 0%));
 }
 .tide-swell-a {
   left: -14%;
@@ -657,4 +664,71 @@ html[data-studio-calm] .bottom-float-row .studio-avatar-ctl {
 html[data-studio-calm] .bottom-float-row .studio-avatar-ctl:hover,
 html[data-studio-calm] .bottom-float-row .studio-avatar-ctl:focus-within {
   background: var(--gs-metal-sheen);
+}
+
+/* ── ④-3 조정(2026-09-03 사용자: "광택이 너무 강하다 · 색이 단조롭다 · 배경이 아이보리") ──────────────
+   광택: 두 톤 꺾임·강한 흰 줄을 걷고 은은하게(토큰이 바뀌어 버튼·타일·알약은 자동). 다채로움: 물을 네 갈래로 —
+   칸 = 파란 물, 요일 머리 = 남빛 물, 태그 필터 카드 = 옥빛 물, 도구 카드·아바타 자리 = 연보라 물. 아이보리:
+   다른 달 칸(#f2f0f8)과 물결이 꺼졌을 때의 셸 바탕(핑크·라벤더)을 찬 계열로. 나중 규칙이라 ④·④-2를 덮는다. */
+html[data-studio-calm] .studio-shell .studio-weekdays {
+  background: var(--gs-water-indigo);
+}
+html[data-studio-calm] .studio-shell .studio-left-panel > section:first-child,
+html[data-studio-calm] .studio-shell .avatar-rail-filter {
+  background: var(--gs-water-aqua);
+}
+html[data-studio-calm] .studio-shell .studio-tools {
+  background: var(--gs-water-lilac);
+}
+html[data-studio-calm] .studio-shell .avatar-dock-inner {
+  border-color: rgb(118 106 210 / 30%);
+  background: rgb(239 240 252 / 50%);
+}
+html[data-studio-calm] .studio-shell .studio-day.outside {
+  background: #d9e3ee;
+}
+/* 물결이 접힌 상태(생동감 OFF·약한 기기)의 셸 바탕 — 핑크·라벤더 대신 같은 찬 글로우. */
+html[data-studio-calm] .studio-shell {
+  background:
+    radial-gradient(120% 55% at 12% -6%, #e6e3fa 0%, transparent 46%),
+    radial-gradient(120% 55% at 88% -6%, #dbf1f2 0%, transparent 46%),
+    linear-gradient(180deg, #f3f7fc 0%, #e4edf8 100%);
+}
+@media (min-width: 641px) {
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell {
+    background: transparent; /* 물결 레이어가 바탕을 그린다 */
+  }
+}
+/* 금 광택 완화: 달 이동 단추·팝오버 면·칩·알약. */
+html[data-studio-calm] .studio-shell .month-nav-btn {
+  background: radial-gradient(circle at 50% 32%, #ffffff 0%, #f1f4f8 60%, #e3e9f0 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    0 2px 5px -1px rgb(38 50 66 / 18%);
+}
+html[data-studio-calm] .studio-shell .event-editor-panel form,
+html[data-studio-calm] .studio-shell .event-editor-panel .event-detail-readonly {
+  background: linear-gradient(180deg, #fbfbfe 0%, #f3f5fa 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    0 0 0 1px rgb(159 177 195 / 40%),
+    0 16px 36px -16px rgb(38 50 66 / 45%);
+}
+html[data-studio-calm] .studio-shell .tp-chip {
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 22%), rgb(255 255 255 / 0%) 60%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 45%),
+    inset 0 -1px 0 rgb(38 50 66 / 6%);
+}
+html[data-studio-calm] .studio-shell .stool:hover:not(:disabled),
+html[data-studio-calm] .studio-shell .button:not(.primary):not(.danger):hover:not(:disabled) {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f7fa 60%, #eaeff4 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    0 4px 10px -3px rgb(38 50 66 / 20%);
+}
+html[data-studio-calm] .bottom-float-row .studio-avatar-ctl {
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 35%), rgb(255 255 255 / 0%) 60%),
+    rgb(236 241 246 / 60%);
 }

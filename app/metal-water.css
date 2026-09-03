@@ -1,48 +1,49 @@
 /* ══ 금생수(金生水) 스킨 — 공용 토큰 + 양쪽 화면 공통 규칙(2026-09-03, ADR-0016) ═══════════
    토리(소유자)의 오행 결론(수 용신·금 희신 — 원국 자체는 어디에도 싣지 않는다)을 형태 언어로 옮긴다.
    • 일(work) = 금(金): 편집 팝오버·업 도움/기간 안내 띠·버튼·타일·칩·일정 카드. 날카롭고 깔끔하게 —
-     은선 테두리·브러시드 광택 면(위 밝고 중간에 한 번 꺾이는 두 톤)·작은 라운드·새김 글자.
-   • 감싸는 것 = 수(水): 페이지 바탕·달력 표면·칸·요일 머리·패널 카드·상단바. 은은한 물빛으로 품는다 —
-     큰 라운드·물빛 그라데이션·안쪽 빛.
+     은선 테두리·은은한 광택 면·작은 라운드·새김 글자. (3차: "광택이 너무 강하다" → 두 톤 꺾임 제거, 오버레이 절반.)
+   • 감싸는 것 = 수(水): 페이지 바탕·달력 표면·칸·요일 머리·패널 카드·상단바. 물빛 유리로 품는다 — 큰 라운드·
+     그라데이션·안쪽 빛. (3차: "너무 단조롭다" → 물의 색을 네 갈래로: 파란 물(칸)·남빛 물(요일 머리)·
+     옥빛 물(필터 카드·범례)·연보라 물(도구 카드·레일 정보). 모두 찬 계열이라 극(克)이 없고, 태그·의미색이 그 위에 선다.)
    • 금생수: 모든 물 컨테이너의 가장자리는 금 헤어라인이고, 금 요소의 안쪽엔 물빛이 담길 수 있다(저장 버튼).
-   ⚠ 값은 **눈 편한 필터(sepia .1·saturate .8·brightness .96) 뒤에서도 물로 읽히게** 잡는다 — 1차(옅은 값)는
-   필터가 중성으로 눌러 "바다 말고는 차이를 못 느낀다"(사용자). 물빛은 b−r ≥ 25 이상이어야 필터 뒤 ≥ 12.
-   불변: 의미색 8종(업 도움 장미·기간 안내 하늘·편집 보라·신규 초록·오늘 골드·미정 주황·떡밥 링·다시보기
-   숲 파랑), 태그색, 기하(표면 1840·칸 높이·띠 17px·레인). 색·그림자·라운드·질감만 만진다(레이아웃 0).
+   ⚠ 값은 눈 편한 필터(saturate .85·brightness .96·sepia .03) 뒤에서도 물로 읽히게 잡는다 — 물빛은 b−r ≥ 25.
+   불변: 의미색 8종, 태그색, 기하(표면 1840·칸 높이·띠 17px·레인). 색·그림자·라운드·질감만(레이아웃 0).
    적용 파일: 편집실 = components/studio/studio-calm-layer.css ④(차분 모드 아래, 스위치로 되돌림),
-   시청자 = components/poster/poster-metal-water.css(기본 모습). 여기는 토큰 + 양쪽이 같이 쓰는 띠·카드 규칙. */
+   시청자 = components/poster/poster-metal-water.css(기본 테마). 여기는 토큰 + 양쪽이 같이 쓰는 띠·카드 규칙. */
 :root {
-  --gs-metal-line: #b7c4d2;
-  --gs-metal-line-strong: #98abbf;
+  --gs-metal-line: #bcc8d5;
+  --gs-metal-line-strong: #9fb1c3;
   --gs-metal-ink: #243140;
   --gs-metal-face: #f7f9fc;
-  /* 브러시드 금속 — 위 흰 광택, 중간(48→52%)에서 한 번 꺾여 아래는 은회. 버튼·타일·손잡이 공용. */
-  --gs-metal-sheen: linear-gradient(180deg, #ffffff 0%, #f1f4f8 48%, #d8e1ea 52%, #e7edf3 100%);
+  /* 은은한 은 광택 — 위 밝고 아래로 갈수록 은회. 꺾임 없음(3차). */
+  --gs-metal-sheen: linear-gradient(180deg, #fbfcfd 0%, #f1f4f8 55%, #e6ebf1 100%);
   --gs-metal-edge:
-    inset 0 1px 0 rgb(255 255 255 / 95%),
-    inset 0 -1px 0 rgb(38 50 66 / 8%),
-    0 1px 2px rgb(38 50 66 / 12%);
+    inset 0 1px 0 rgb(255 255 255 / 60%),
+    0 1px 2px rgb(38 50 66 / 10%);
   --gs-metal-radius: 10px;
-  --gs-water-page: linear-gradient(180deg, #dfe9f5 0%, #c8d8ec 100%);
-  --gs-water-face: #e3ecf7;
+  /* 물 네 갈래 */
+  --gs-water-face: #e3ecf7; /* 파란 물 — 달력 칸 */
   --gs-water-face-deep: #d5e1ef;
-  --gs-water-glass: linear-gradient(180deg, rgb(240 246 252 / 92%), rgb(222 233 246 / 92%));
+  --gs-water-indigo: linear-gradient(180deg, #e1e5f5, #cfd6ee); /* 남빛 물 — 요일 머리 */
+  --gs-water-aqua: linear-gradient(180deg, rgb(236 247 248 / 92%), rgb(216 237 239 / 92%)); /* 옥빛 물 — 필터·범례 */
+  --gs-water-lilac: linear-gradient(180deg, rgb(239 240 252 / 92%), rgb(224 227 248 / 92%)); /* 연보라 물 — 도구·레일 정보 */
+  --gs-water-glass: linear-gradient(180deg, rgb(240 246 252 / 92%), rgb(222 233 246 / 92%)); /* 파란 물 유리 */
+  --gs-water-page: linear-gradient(180deg, #dfe9f5 0%, #c8d8ec 100%);
   --gs-water-line: rgb(30 90 168 / 16%);
   --gs-water-glow:
     0 0 0 1px var(--gs-metal-line),
-    inset 0 1px 0 rgb(255 255 255 / 90%),
-    0 14px 36px -20px rgb(30 90 168 / 35%);
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    0 14px 36px -20px rgb(30 90 168 / 30%);
   --gs-water-radius: 22px;
 }
 
-/* 띠(업 도움 장미 · 기간 안내 하늘) — 색은 의미색 그대로, 질감만 금(에나멜): 윗면 흰 광택이 중간에서 꺾이는
-   ::before 오버레이 + 은선 안테두리 + 아랫면 어두운 헤어라인 + 글자 각인. 전부 inset/오버레이라 17px 높이·
-   레인 기하는 그대로. 편집실·시청자 공통. 호버/편집 중 상태의 box-shadow는 각 화면 규칙이 덮는다. */
+/* 띠(업 도움 장미 · 기간 안내 하늘) — 색은 의미색 그대로, 질감만 금: 은은한 윗면 광택 오버레이(::before) +
+   아랫면 헤어라인 + 글자 각인. inset/오버레이라 17px 높이·레인 기하 그대로. 편집실·시청자 공통. */
 .support-bar {
   box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 40%),
-    inset 0 -1px 0 rgb(40 20 40 / 18%),
-    0 1px 1px rgb(38 50 66 / 12%);
+    inset 0 0 0 1px rgb(255 255 255 / 25%),
+    inset 0 -1px 0 rgb(40 20 40 / 14%),
+    0 1px 1px rgb(38 50 66 / 10%);
 }
 .support-bar::before {
   content: "";
@@ -50,28 +51,21 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 55%) 0%,
-    rgb(255 255 255 / 18%) 46%,
-    rgb(255 255 255 / 0%) 52%,
-    rgb(0 0 0 / 5%) 100%
-  );
+  background: linear-gradient(180deg, rgb(255 255 255 / 28%) 0%, rgb(255 255 255 / 6%) 55%, rgb(0 0 0 / 3%) 100%);
 }
 .support-bar span {
   position: relative;
   z-index: 1;
-  text-shadow: 0 1px 0 rgb(255 255 255 / 55%);
+  text-shadow: 0 1px 0 rgb(255 255 255 / 40%);
 }
 
 /* 일정 카드(편집실 .studio-event-pill · 시청자 .public-event) — 태그색은 inline backgroundColor 그대로, 그 위에
-   에나멜 광택(background-image)과 금 테두리(inset 하이라이트 + 아랫 헤어라인 + 짧은 그림자). 두 태그 혼합
-   카드는 inline background(그라데이션)가 이겨 광택 없이 테두리만 — 의도. 선택/드래그 링은 각 화면 규칙이 덮는다. */
+   은은한 윗면 광택과 금 테두리. 혼합 카드는 inline background가 이겨 테두리만. 선택/드래그 링은 각 화면 규칙이 덮는다. */
 .studio-event-pill,
 .public-event {
-  background-image: linear-gradient(180deg, rgb(255 255 255 / 38%) 0%, rgb(255 255 255 / 8%) 50%, rgb(255 255 255 / 0%) 100%);
+  background-image: linear-gradient(180deg, rgb(255 255 255 / 18%) 0%, rgb(255 255 255 / 0%) 60%);
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 80%),
-    inset 0 -1px 0 rgb(38 50 66 / 10%),
-    0 1px 2px rgb(38 50 66 / 14%);
+    inset 0 1px 0 rgb(255 255 255 / 45%),
+    inset 0 -1px 0 rgb(38 50 66 / 8%),
+    0 1px 2px rgb(38 50 66 / 12%);
 }
