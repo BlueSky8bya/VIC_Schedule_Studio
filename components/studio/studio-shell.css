@@ -12420,3 +12420,204 @@ html[data-reduce-motion] .event-drag-ghost {
     backdrop-filter: blur(14px) saturate(1.4);
   }
 }
+
+/* ══ 차분한 편집실(html[data-studio-calm], 2026-09-03) ═══════════════════════
+   docs/ux/saju-redesign-direction.md. 소유자가 매일 쓰는 화면의 **구조만** 물·은 톤으로 식힌다 —
+   콘텐츠(일정 카드·태그·의미색 8종·오늘 골드)는 그대로. 기본 ON, 역할 배지 팝오버에서 끔.
+   토큰은 globals.css :root(--studio-action/--studio-silver/--studio-cell-calm). 파일 끝에 두어
+   위 규칙들을 덮는다(소스 순서). 시청자 포스터(.public-*)엔 어떤 규칙도 걸지 않는다. */
+/* ① 저장 = 물빛(주 행동 하나). 노랑(오늘 골드와 같은 색·배경 대비 1.4:1)에서 딥블루로. */
+html[data-studio-calm] .button.primary.editor-save {
+  position: relative;
+  background: linear-gradient(180deg, #2a6bbf, var(--studio-action));
+  color: var(--studio-action-ink);
+  box-shadow: 0 6px 16px -8px rgb(var(--studio-action-rgb) / 55%);
+  transition:
+    background var(--dur-1) var(--ease),
+    box-shadow var(--dur-2) var(--ease),
+    transform var(--dur-1) var(--ease);
+}
+html[data-studio-calm] .button.primary.editor-save:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--studio-action), var(--studio-action-strong));
+  color: var(--studio-action-ink);
+  box-shadow: 0 8px 20px -8px rgb(var(--studio-action-rgb) / 65%);
+}
+html[data-studio-calm] .button.primary.editor-save:active:not(:disabled) {
+  transform: scale(0.97);
+}
+/* 저장 확정 물결 — 카드 반짝(.panel-saved)과 같은 순간, 버튼 밖으로 링 한 번(0.55초). */
+html[data-studio-calm] .event-editor-panel.panel-saved .editor-save::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: studio-save-ripple 0.55s var(--ease) both;
+}
+@keyframes studio-save-ripple {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--studio-action-rgb) / 45%);
+    opacity: 1;
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgb(var(--studio-action-rgb) / 0%);
+    opacity: 0;
+  }
+}
+html[data-reduce-motion] .event-editor-panel.panel-saved .editor-save::after {
+  animation: none;
+}
+html[data-studio-calm] .event-editor-panel.panel-saved::after {
+  animation-name: editor-panel-saved-calm;
+}
+@keyframes editor-panel-saved-calm {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--studio-action-rgb) / 0%);
+    background: rgb(var(--studio-action-rgb) / 9%);
+  }
+  35% {
+    box-shadow: 0 0 0 3px rgb(var(--studio-action-rgb) / 30%);
+    background: rgb(var(--studio-action-rgb) / 6%);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(var(--studio-action-rgb) / 0%);
+    background: rgb(var(--studio-action-rgb) / 0%);
+  }
+}
+/* 저장 단축키 힌트(웹만) — 버튼 글자 옆 작은 kbd. 모바일(≤640)은 숨겨 버튼 폭을 지킨다. */
+.editor-save-kbd {
+  display: none;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid rgb(255 255 255 / 45%);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  opacity: 0.85;
+}
+@media (min-width: 641px) {
+  html[data-studio-calm] .editor-save-kbd {
+    display: inline-block;
+  }
+}
+/* ② 북쪽(상단) 달 이동 = 물빛 셰브런. 호버 링도 같은 색. */
+html[data-studio-calm] .month-nav-btn {
+  color: var(--studio-action);
+}
+html[data-studio-calm] .month-nav-btn:hover {
+  border-color: var(--studio-action);
+  background: rgb(var(--studio-action-rgb) / 7%);
+}
+/* ③ 서쪽(좌측) 태그 필터 패널 = 은백 카드. 눈 편한 테마가 냉·온 차를 누르므로 헤어라인으로 세운다. */
+html[data-studio-calm] .studio-left-panel > section:first-child {
+  border: 1px solid var(--studio-silver-line);
+  border-radius: var(--r-card);
+  background: var(--studio-silver);
+  box-shadow: 0 1px 2px rgb(20 25 60 / 4%);
+}
+/* 아바타 자리(기본 켜짐)에선 필터가 좌측 도크(.avatar-rail-filter)에 산다 — 같은 은백 카드.
+   흰 카드+보랏빛 헤어라인 → 은백+은회 헤어라인, 라운드·그림자는 도크 문법 그대로. */
+html[data-studio-calm] .avatar-rail-filter {
+  background: var(--studio-silver);
+  border-color: var(--studio-silver-line);
+  box-shadow: 0 8px 24px rgb(40 50 70 / 10%);
+}
+/* ④ 중앙 달력 칸 = 반 단계 냉각(카드는 크림 그대로라 따뜻하게 떠 보인다). 오늘·바깥달·편집중·
+   드롭 대상·휴식 칸은 제 색을 지킨다. */
+html[data-studio-calm] .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
+  background: var(--studio-cell-calm);
+}
+html[data-studio-calm] .studio-day.past:not(.today):not(.outside) {
+  background: #eaeef3;
+}
+/* ⑤ 콜드 존(관리 칩 3개, 30일 0~2회) = 고스트. 위치·노출은 그대로(2026-08 사용자 결정: 드롭다운
+   접기 철회) — 채도만 물러난다. */
+html[data-studio-calm] .studio-actionbar .io-accent {
+  background: transparent;
+  border-color: var(--studio-silver-line);
+  color: var(--ink-soft);
+}
+html[data-studio-calm] .studio-actionbar .io-accent:hover:not(:disabled) {
+  background: var(--studio-silver);
+  border-color: #c3ccd6;
+  color: var(--ink);
+}
+/* ⑥ 제목 ✨ 반짝임 정지(편집실만 — 시청자 포스터의 시그니처는 그대로). */
+html[data-studio-calm] .studio-poster-title span {
+  animation: none;
+  opacity: 0.85;
+  transform: none;
+}
+
+/* ══ 휴식 넛지(.rest-nudge, 2026-09-03) ═══════════════════════════════════
+   50분 활동(입력·포인터·휠, 5분 무입력이면 멈춤) 뒤 오른쪽 아래에 조용히 뜨는 물빛 카드.
+   강요 없음: 소리·모달·포커스 이동 없음, 30초 뒤 스스로 사라짐(=조금만 더). 소유자·개발자만. */
+.rest-nudge {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 70;
+  display: grid;
+  gap: 10px;
+  width: min(320px, calc(100vw - 36px));
+  padding: 14px 16px;
+  border: 1px solid rgb(var(--studio-action-rgb) / 22%);
+  border-radius: var(--r-card);
+  background: linear-gradient(180deg, #f6fafe, #eaf2fb);
+  color: var(--ink);
+  box-shadow: 0 16px 40px -18px rgb(var(--studio-action-rgb) / 45%), 0 2px 8px rgb(20 25 60 / 8%);
+  animation: rest-nudge-in 0.5s var(--spring-bouncy, var(--ease)) both;
+}
+@keyframes rest-nudge-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+}
+html[data-reduce-motion] .rest-nudge {
+  animation: none;
+}
+.rest-nudge-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--text-ui);
+  font-weight: 900;
+  color: var(--studio-action-strong);
+}
+.rest-nudge-body {
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.rest-nudge-actions {
+  display: flex;
+  gap: 8px;
+}
+.rest-nudge-actions .button {
+  min-height: 36px;
+  flex: 1 1 0;
+  justify-content: center;
+  font-weight: 800;
+}
+.rest-nudge-actions .button.rest-ok {
+  border-color: transparent;
+  background: var(--studio-action);
+  color: var(--studio-action-ink);
+}
+.rest-nudge-actions .button.rest-ok:hover:not(:disabled) {
+  background: var(--studio-action-strong);
+  color: var(--studio-action-ink);
+}
+@media (max-width: 640px) {
+  .rest-nudge {
+    right: 12px;
+    left: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+  }
+}

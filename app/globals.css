@@ -68,6 +68,19 @@
   --status-warning-fill: var(--surface);
   --status-danger-fill: var(--surface);
   --focus-ring: var(--violet);
+  /* 차분한 편집실(2026-09-03, docs/ux/saju-redesign-direction.md) — 편집실 구조 전용 토큰.
+     이름은 기능 중심(action/silver/cell)으로 중립. 눈 편한 테마(saturate .8 · brightness .96 ·
+     sepia .1) 렌더값: action #1e5aa8→#2e568a(흰 글자 7.2:1, 종이 배경 6.3:1) · strong #17497f→
+     #244669 · silver #f3f5f7→#f2f0eb · cell #eef2f6→#eeede9. 냉·온 차가 눌리므로 은백 패널은
+     색만 믿지 말고 헤어라인(--studio-silver-line)으로 세운다. 의미색 8종(장미·하늘·보라·초록·
+     골드·주황·보라 링·숲파랑)과는 겹치지 않는다. */
+  --studio-action: #1e5aa8;
+  --studio-action-strong: #17497f;
+  --studio-action-ink: #ffffff;
+  --studio-action-rgb: 30 90 168;
+  --studio-silver: #f3f5f7;
+  --studio-silver-line: #d7dde5;
+  --studio-cell-calm: #eef2f6;
   --selection-fill: var(--violet-soft);
   --selection-overlay: var(--violet);
   --selection-overlay-opacity: 0.14;

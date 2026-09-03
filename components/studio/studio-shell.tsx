@@ -20,6 +20,7 @@ import {
   Plus,
   Save,
   Trash2,
+  Waves,
   X
 } from "lucide-react";
 import Link from "next/link";
@@ -154,9 +155,16 @@ import {
   hapticTick,
   setHapticsEnabled
 } from "@/lib/ui/haptics";
-import { logSettled } from "@/lib/activity/client";
+import { logActivity, logSettled } from "@/lib/activity/client";
 import { useSectionActivity } from "@/lib/activity/use-section";
-import { eyeComfortEnabled, reduceMotionEnabled, setEyeComfort, setReduceMotion } from "@/lib/ui/motion";
+import {
+  eyeComfortEnabled,
+  reduceMotionEnabled,
+  setEyeComfort,
+  setReduceMotion,
+  setStudioCalm,
+  studioCalmEnabled
+} from "@/lib/ui/motion";
 import { hasInnerOverlay } from "@/lib/ui/overlay-pop";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
@@ -712,6 +720,30 @@ export function StudioShell({
   // 새 일정/일정 수정 카드는 달력에서 날짜(또는 일정)를 "선택했을 때"만 보여준다.
   // 편집실 진입 시엔 카드를 띄우지 않고, 칸을 클릭하면 그제서야 나온다.
   const [editorVisible, setEditorVisible] = useState(false);
+  // 편집 카드 여닫기 계측(2026-09-03, docs/ux/saju-redesign-direction.md F-3) — 30일 로그에서
+  // 칸·카드 열기 606회 대 저장 176회. 둘러보기인지 포기인지 가르려면 체류·입력·닫은 방법이 필요.
+  // section.enter/leave(target "editor") + leave의 dur_ms·meta{typed, saved, how}. 개인정보 없음.
+  const editorOpenedAtRef = useRef(0);
+  const editorTypedRef = useRef(false);
+  const editorSavedRef = useRef(false);
+  const editorCloseHowRef = useRef<"esc" | "outside" | "cell" | "collapse" | "other">("other");
+  useEffect(() => {
+    if (editorVisible) {
+      editorOpenedAtRef.current = Date.now();
+      editorTypedRef.current = false;
+      editorSavedRef.current = false;
+      editorCloseHowRef.current = "other";
+      logActivity("section.enter", { target: "editor" });
+      return;
+    }
+    if (!editorOpenedAtRef.current) return;
+    logActivity("section.leave", {
+      target: "editor",
+      durMs: Date.now() - editorOpenedAtRef.current,
+      meta: { typed: editorTypedRef.current, saved: editorSavedRef.current, how: editorCloseHowRef.current }
+    });
+    editorOpenedAtRef.current = 0;
+  }, [editorVisible]);
   // 편집 카드/시트가 닫히면 떡밥 게이트 통과도 즉시 소멸 — 다음에 누르면 무조건 비번 재입력
   // (사용자 결정: 방송 중 오클릭 방지가 목적이라 '기억'이 있으면 안 된다).
   useEffect(() => {
@@ -891,6 +923,91 @@ export function StudioShell({
     setEyeComfortState(next);
     hapticTick();
   };
+  // 차분한 편집실(2026-09-03) — 기본 ON. 서버 렌더는 true로 시작해 페인트-전 스크립트와 일치.
+  const [studioCalm, setStudioCalmState] = useState(true);
+  useEffect(() => {
+    setStudioCalmState(studioCalmEnabled());
+  }, []);
+  const toggleStudioCalm = () => {
+    const next = !studioCalm;
+    setStudioCalm(next);
+    setStudioCalmState(next);
+    hapticTick();
+  };
+  // 휴식 넛지(2026-09-03, docs/ux/saju-redesign-direction.md) — 편집실에서 **활동 시간** 50분이
+  // 쌓이면 오른쪽 아래에 조용한 물빛 카드. 강요 없음: 소리·모달·포커스 이동 없음, 30초 뒤 스스로
+  // 사라지고(=조금만 더) 15분 뒤 다시 잰다. '쉬고 올게요'는 카운터를 0으로. 활동 = 포인터·키·휠
+  // (5분 무입력이면 시계가 멈춘다 — 켜 두고 자리 비운 시간은 안 센다). 소유자·개발자만(시청자
+  // 미리보기 위에도 fixed로 보인다 — 미리보기 중에도 편집실에 있는 셈이라).
+  const REST_NUDGE_AFTER_MS = 50 * 60_000;
+  const REST_NUDGE_SNOOZE_MS = 15 * 60_000;
+  const restNudgeEligible = actor.role === "owner" || actor.role === "developer";
+  const [restNudge, setRestNudge] = useState(false);
+  const restActiveMsRef = useRef(0);
+  const restLastInputRef = useRef(0);
+  const restAutoHideRef = useRef(0);
+  const restShownRef = useRef(false); // 지금 떠 있는지(틱마다 다시 띄우지 않게)
+  useEffect(() => {
+    if (!restNudgeEligible) return;
+    // 같은 탭 새로고침엔 누적을 잇는다(sessionStorage) — 리로드 한 번으로 시계가 0이 되면 의미 없다.
+    try {
+      const raw = window.sessionStorage.getItem("vic.restNudge");
+      if (raw) {
+        const saved = JSON.parse(raw) as { activeMs?: number; at?: number };
+        if (typeof saved.activeMs === "number" && typeof saved.at === "number" && Date.now() - saved.at < 30 * 60_000) {
+          restActiveMsRef.current = saved.activeMs;
+        }
+      }
+    } catch {
+      /* 저장소 불가 — 메모리만 */
+    }
+    restLastInputRef.current = Date.now();
+    const onInput = () => {
+      restLastInputRef.current = Date.now();
+    };
+    window.addEventListener("pointerdown", onInput, { passive: true });
+    window.addEventListener("keydown", onInput, { passive: true });
+    window.addEventListener("wheel", onInput, { passive: true });
+    const tick = window.setInterval(() => {
+      const now = Date.now();
+      if (now - restLastInputRef.current > 5 * 60_000) return; // 자리 비움 — 시계 정지
+      restActiveMsRef.current += 30_000;
+      try {
+        window.sessionStorage.setItem("vic.restNudge", JSON.stringify({ activeMs: restActiveMsRef.current, at: now }));
+      } catch {
+        /* 무시 */
+      }
+      if (restActiveMsRef.current >= REST_NUDGE_AFTER_MS && !restShownRef.current) {
+        // 로그는 updater 밖에서(updater 안 부수효과는 StrictMode에서 두 번 실행돼 이중 기록됐다).
+        restShownRef.current = true;
+        logActivity("section.enter", { target: "rest-nudge" });
+        setRestNudge(true);
+      }
+    }, 30_000);
+    return () => {
+      window.clearInterval(tick);
+      window.removeEventListener("pointerdown", onInput);
+      window.removeEventListener("keydown", onInput);
+      window.removeEventListener("wheel", onInput);
+    };
+  }, [restNudgeEligible, REST_NUDGE_AFTER_MS]);
+  const dismissRestNudge = (how: "ok" | "later") => {
+    setRestNudge(false);
+    restShownRef.current = false;
+    // '쉬고 올게요' = 시계 0 · '조금만 더'(자동 사라짐 포함) = 15분 뒤 다시.
+    restActiveMsRef.current = how === "ok" ? 0 : Math.max(0, REST_NUDGE_AFTER_MS - REST_NUDGE_SNOOZE_MS);
+    try {
+      window.sessionStorage.setItem("vic.restNudge", JSON.stringify({ activeMs: restActiveMsRef.current, at: Date.now() }));
+    } catch {
+      /* 무시 */
+    }
+  };
+  useEffect(() => {
+    if (!restNudge) return;
+    restAutoHideRef.current = window.setTimeout(() => dismissRestNudge("later"), 30_000);
+    return () => window.clearTimeout(restAutoHideRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restNudge]);
   const canReadPrivate =
     canReadPrivateLayer(effectiveRole, hasUnlockSession) && showPrivate;
 
@@ -1051,6 +1168,8 @@ export function StudioShell({
         onToggleHaptics={toggleHaptics}
         onToggleOpen={() => setRoleHelpOpen((value) => !value)}
         onToggleReduceMotion={toggleReduceMotion}
+        onToggleStudioCalm={toggleStudioCalm}
+        studioCalm={studioCalm}
         open={roleHelpOpen}
         previewing={previewRole !== null}
         reduceMotion={reduceMotion}
@@ -1162,6 +1281,7 @@ export function StudioShell({
       if (!isOutside(e.target as HTMLElement | null)) return; // 끝점도 밖일 때만.
       // 입력칸이 아직 편집 포커스면 닫지 않는다(선택 드래그 중 안전장치).
       if ((document.activeElement as HTMLElement | null)?.closest(".event-editor-panel")) return;
+      editorCloseHowRef.current = "outside";
       setEditorVisible(false);
     };
     const id = window.setTimeout(() => {
@@ -1649,6 +1769,7 @@ export function StudioShell({
   function selectDate(isoDate: string) {
     // 이미 그 날짜의 새 일정 카드가 열려 있는데 같은 날짜를 또 누르면 → 선택 해제(카드 닫기).
     if (editorVisible && selectedDate === isoDate && selectedEventId === null) {
+      editorCloseHowRef.current = "cell";
       setEditorVisible(false);
       return;
     }
@@ -3729,6 +3850,7 @@ export function StudioShell({
   function flashEditorPanel() {
     if (prefersReducedMotion() || !editorVisible) return;
     setPanelSaved(false);
+    editorSavedRef.current = true; // 여닫기 계측: 이 카드에서 저장이 한 번은 있었다
     // 연속 저장에도 매번 다시 재생되도록 다음 프레임에 켠다(같은 값 재설정은 애니 리트리거 안 됨).
     requestAnimationFrame(() => {
       setPanelSaved(true);
@@ -4395,6 +4517,7 @@ export function StudioShell({
       // Esc: 편집 패널 닫기 — 제목 입력 중에도(INPUT 가드보다 먼저) 먹힌다.
       if (e.key === "Escape" && editorVisible && !modal) {
         e.preventDefault();
+        editorCloseHowRef.current = "esc";
         setEditorVisible(false);
         return;
       }
@@ -5503,6 +5626,9 @@ export function StudioShell({
           ) : (
           <form
             className="me-form"
+            onInput={() => {
+              editorTypedRef.current = true; // 여닫기 계측: 이 카드에서 뭔가 입력했다
+            }}
             onSubmit={(e) => {
               saveEvent(e);
               setMobileEditId(null);
@@ -5774,6 +5900,37 @@ export function StudioShell({
         <div className="copy-toast" role="status" aria-live="polite">
           {copyToast}
         </div>
+      ) : null}
+      {/* 휴식 넛지 — 50분 활동 뒤 조용히(위 restNudge 주석). 시청자 화면엔 없다(편집실 전용). */}
+      {restNudge ? (
+        <aside aria-label="휴식 권유" className="rest-nudge" role="status">
+          <p className="rest-nudge-title">
+            <Waves aria-hidden="true" size={16} strokeWidth={2.4} />
+            50분째 편집 중이에요
+          </p>
+          <p className="rest-nudge-body">물 한 잔, 잠깐 창밖 어때요? 달력은 여기 그대로 있을게요.</p>
+          <div className="rest-nudge-actions">
+            <button
+              className="button rest-ok"
+              data-act="rest-nudge-ok"
+              onClick={() => {
+                hapticTick();
+                dismissRestNudge("ok");
+              }}
+              type="button"
+            >
+              쉬고 올게요
+            </button>
+            <button
+              className="button"
+              data-act="rest-nudge-later"
+              onClick={() => dismissRestNudge("later")}
+              type="button"
+            >
+              조금만 더
+            </button>
+          </div>
+        </aside>
       ) : null}
       {/* P0-DATA-1: 삭제 스낵바 — 8초 동안 그 자리에서 실행 취소(터치 포함, Ctrl+Z와 같은 복구). */}
       {deleteSnack ? (
@@ -6825,7 +6982,10 @@ export function StudioShell({
                   <button
                     aria-label="편집 카드 닫기"
                     className="editor-collapse"
-                    onClick={() => setEditorVisible(false)}
+                    onClick={() => {
+                      editorCloseHowRef.current = "collapse";
+                      setEditorVisible(false);
+                    }}
                     title="닫기"
                     type="button"
                    data-act="편집 카드 닫기">
@@ -6855,6 +7015,10 @@ export function StudioShell({
                   type="submit"
                 >
                   저장
+                  {/* 키보드 사용자(단축키 안내 30일 8회)에게 저장 단축키를 버튼 자리에서 — 웹만(모바일은 CSS로 숨김). */}
+                  <kbd aria-hidden="true" className="editor-save-kbd">
+                    Ctrl+S
+                  </kbd>
                 </button>
               </div>
             </div>

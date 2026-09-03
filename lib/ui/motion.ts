@@ -76,3 +76,36 @@ export function setEyeComfort(on: boolean): void {
     /* no-op */
   }
 }
+
+// ── 차분한 편집실(studio calm, 2026-09-03) ────────────────────────────────
+// 편집실 전용 테마 레이어 — 소유자가 매일 쓰는 화면을 '물·은' 톤으로 식힌다(docs/ux/
+// saju-redesign-direction.md). 콘텐츠(달력 카드·태그·의미색 8종)는 그대로 두고 **구조만**:
+// 저장·달 이동 = 물빛, 좌측 필터 패널 = 은백 카드, 달력 칸 = 반 단계 냉각, 관리 칩 = 고스트,
+// 제목 ✨ 반짝임 정지. CSS는 studio-shell.css의 `html[data-studio-calm]` 블록에만 산다 —
+// 시청자 포스터(.public-*)는 이 속성을 안 본다. 기본 ON(소유자 결정, 2026-09-03) — 'off'만 끈다.
+// 페인트 전 적용은 app/layout.tsx 스크립트(눈 편한 테마와 같은 줄).
+const STUDIO_CALM_KEY = "vic.studioCalm"; // localStorage: 미설정이면 기본 ON, "off"만 끔
+
+export function studioCalmEnabled(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    return window.localStorage.getItem(STUDIO_CALM_KEY) !== "off";
+  } catch {
+    return true;
+  }
+}
+
+export function setStudioCalm(on: boolean): void {
+  try {
+    window.localStorage.setItem(STUDIO_CALM_KEY, on ? "on" : "off");
+  } catch {
+    /* 무시 */
+  }
+  try {
+    const root = document.documentElement;
+    if (on) root.setAttribute("data-studio-calm", "1");
+    else root.removeAttribute("data-studio-calm");
+  } catch {
+    /* no-op */
+  }
+}

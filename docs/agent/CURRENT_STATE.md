@@ -202,6 +202,19 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   백필 스크립트 복제본 동일, prod vod_timeline 90행 제자리 교정 완료(잔여 0).
   **남은 것**: 팬 닉 표기 동의(토리님 경유 권장), B안(순간 검색 — 파싱 데이터 재사용, UI만),
   '1년 전 오늘' 아이디어.
+- **차분한 편집실 + 휴식 넛지 + 편집 카드 계측(2026-09-03, 오행 레이어 1차 스프린트)**: 방향서
+  `docs/ux/saju-redesign-direction.md`(사용 데이터 기반, 코덱스 `계획서.md`는 근거·가드레일 — 둘 다
+  미커밋·로컬; 원국 정보는 저장소에 싣지 않는다). CLAUDE.md 철학에 "Owner-fit palette rule" 추가.
+  ① `html[data-studio-calm]`(기본 ON, `vic.studioCalm`, 역할 배지 팝오버 스위치, 페인트-전 스크립트):
+  저장 버튼 노랑→물빛(`--studio-action` #1e5aa8, 눈 편한 필터 후 #2e568a, 흰 글자 7.2:1) + 저장 물결
+  링 + `Ctrl+S` kbd(웹만) · 달 이동 셰브런 물빛 · 좌측 필터 패널 은백 카드 · 달력 칸 반 단계 냉각
+  (오늘·바깥달·편집중·드롭·휴식 칸 제외) · 관리 칩 3개 고스트(위치·노출은 유지 — 드롭다운 접기 철회
+  결정 존중) · 제목 ✨ 정지. 규칙은 studio-shell.css 파일 끝 블록, 토큰은 globals :root `--studio-*`.
+  ② 휴식 넛지(.rest-nudge): 편집실 활동 50분(포인터·키·휠, 5분 무입력이면 정지, sessionStorage로
+  새로고침 이어짐) 뒤 우하단 물빛 카드, 30초 자동 사라짐(=조금만 더, 15분 뒤 재시도), '쉬고 올게요'=0.
+  소유자·개발자만, 시청자 화면 없음. ③ 편집 카드 여닫기 계측: section.enter/leave target `editor`,
+  leave에 dur_ms·meta{typed, saved, how: esc/outside/cell/collapse/other} — "칸 361 vs 저장 176"의
+  둘러보기/포기 판별용(2주 뒤 분석). 라벨 사전 등록(editor·rest-nudge·studio-calm-toggle·rest-nudge-*).
 - **설정 세대 1회 복원(2026-09-03, 관리자 결정)**: `lib/ui/motion.ts` `SETTINGS_EPOCH`("2026-09-03").
   layout.tsx 페인트-전 스크립트가 저장된 `vic.settingsEpoch`가 다르면 `vic.reduceMotion`·
   `vic.eyeComfort`를 지워(동작 줄이기 OFF·눈 편한 테마 ON) 세대를 기록 — 배포 후 첫 방문 1회만,

@@ -12,3 +12,7 @@ playwright-report/
 
 .vercel
 .env*
+
+# 개인정보(소유자 원국·생년) 포함 — 로컬 전용, 커밋 금지(2026-09-03)
+/계획서.md
+/docs/ux/saju-ui-notes.md

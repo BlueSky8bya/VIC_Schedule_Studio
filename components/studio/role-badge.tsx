@@ -3,7 +3,7 @@
 // P2-ARCH-1 2단계: 역할 배지 + 권한 팝오버(구 renderRoleBadge)를 studio-shell에서 분리
 // (동작·마크업·클래스 변화 0). 설정 토글(진동/동작 줄이기/눈 편한 테마)까지 포함.
 
-import { Eye, Sparkles, Vibrate } from "lucide-react";
+import { Eye, Sparkles, Vibrate, Waves } from "lucide-react";
 import { PlainEmail } from "@/components/ui/plain-email";
 import type { MembershipRole } from "@/lib/domain/schedule-types";
 
@@ -23,6 +23,9 @@ type Props = {
   onToggleReduceMotion: () => void;
   eyeComfort: boolean;
   onToggleEyeComfort: () => void;
+  // 차분한 편집실(2026-09-03) — 편집실 구조를 물·은 톤으로 식히는 테마(lib/ui/motion.ts). 기본 ON.
+  studioCalm: boolean;
+  onToggleStudioCalm: () => void;
 };
 
 export function RoleBadge({
@@ -38,7 +41,9 @@ export function RoleBadge({
   reduceMotion,
   onToggleReduceMotion,
   eyeComfort,
-  onToggleEyeComfort
+  onToggleEyeComfort,
+  studioCalm,
+  onToggleStudioCalm
 }: Props) {
   return (
     <div className="actor-badge-wrap">
@@ -122,6 +127,24 @@ export function RoleBadge({
               role="switch"
               type="button"
              data-act="눈 편한 테마 켜기/끄기">
+              <span className="rhh-knob" aria-hidden="true" />
+            </button>
+          </div>
+          {/* 차분한 편집실 — 저장·달 이동은 물빛, 필터 패널은 은백, 칸은 반 단계 냉각(콘텐츠 색은 그대로). */}
+          <div className="role-help-haptics">
+            <span className="rhh-label">
+              <Waves aria-hidden="true" size={14} />
+              차분한 편집실
+            </span>
+            <button
+              aria-checked={studioCalm}
+              aria-label="차분한 편집실 켜기/끄기"
+              className={`rhh-switch ${studioCalm ? "on" : ""}`}
+              onClick={onToggleStudioCalm}
+              role="switch"
+              type="button"
+              data-act="studio-calm-toggle"
+            >
               <span className="rhh-knob" aria-hidden="true" />
             </button>
           </div>

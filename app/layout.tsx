@@ -110,7 +110,7 @@ export default function RootLayout({
               ",K=" +
               JSON.stringify(SETTINGS_EPOCH_KEY) +
               ";if(s.getItem(K)!==E){s.removeItem('vic.reduceMotion');s.removeItem('vic.eyeComfort');s.setItem(K,E)}" +
-              "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort','1')}catch(e){}"
+              "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort','1');if(s.getItem('vic.studioCalm')!=='off')d.setAttribute('data-studio-calm','1')}catch(e){}"
           }}
         />
         {children}

@@ -22,6 +22,30 @@ uniform. A cold "admin-panel" feel is a regression.
 
 (Concrete forms — design unity, no wasted space, platform-tailored, HCI — are in **Design rules**.)
 
+### Owner-fit palette rule (오행 레이어, 2026-09-03)
+
+The owner's personal-fit analysis (details: `docs/ux/saju-redesign-direction.md`; the source notes
+and the natal chart are **local-only, never committed or shown in any UI/API**) yields one standing
+design rule for owner-facing surfaces (studio first, poster only as brand tone):
+
+- **Water and metal frame; warm content inside.** Structure (primary action, top chrome, left
+  panel, borders, focus) leans to *water* (deep blue `--studio-action`) and *metal* (silver
+  `--studio-silver`); content (cards, tags, today) stays warm cream. Never amplify red/orange/yellow
+  as new accents on owner screens.
+- **Direction → screen.** North = top (month nav, header) = water; West = left (filter panel) =
+  silver; Center = calendar body = warm; South = bottom, East = right: no new hot accents there.
+- **One primary action per context, water-colored: 저장.** Calendar cells and cards are
+  selection targets, not CTAs. Place by Fitts/thumb-zone first, then color.
+- **Never use clashing ("극") colors or awkward placement as deliberate stress.** Tension only
+  through the existing warning system for real errors/unsaved changes.
+- **Calm over noise, not dull.** Reduce decorative repetition in the studio (sparkle off in calm
+  mode) but keep playful, meaningful motion (save ripple, spring transitions).
+- These rules sit *below* HCI/accessibility (WCAG AA after the eye-comfort filter), the 8 fixed
+  semantic colors (업 도움 rose · 기간 안내 cyan · 일정 편집 violet · 신규 green · 오늘 gold ·
+  미정 orange · 떡밥 violet ring · 다시보기 forest blue), and the public/private boundary.
+- Implemented as the reversible `html[data-studio-calm]` theme (default ON, toggle in the role badge
+  popover). New owner-screen UI should read its colors from `--studio-*` tokens under that attribute.
+
 ## Stack & layout
 
 - **Stack:** Next.js 15 (App Router) + React 19 + TypeScript · Supabase (Postgres + RLS;
