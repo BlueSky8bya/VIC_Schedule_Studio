@@ -54,6 +54,16 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   이겨 테두리만), 팝오버 면 브러시드 + 새김 제목 + 물빛 입력 칸 ④ 시청자: 페이지·표면·칸·요일·레일 카드·'이 달
   기록' 칩(금속)·달 이동 스텝(은화)·모바일 아젠다(머리/범례/월 바 물, 날짜 카드 금, 빈 날 묶음 반투명 물).
   실측(필터 ON): 편집실 칸 (222,228,235)·페이지 (192,203,219), 시청자 칸 (227,232,236)·페이지 (197,208,222).
+  ⑪ **4차-c(사용자: "물결 무늬가 밋밋하고 구리다 — 애플식으로 세련되게" · "색 조화는 시청자 화면 쪽이 더
+  좋다")** — 사인파 줄무늬(클립아트 느낌) 전부 폐기. 애플 결로 재설계(components/shared/water-tide.tsx ·
+  app/metal-water.css `.gs-tide*`): 기하 무늬 없이 **크고 흐릿한 물그림자 덩어리 셋(청록, blur 70px) + 따뜻한
+  빛 얼룩 둘(blur 60px) + 유기적 caustic 두 겹**(SVG feTurbulence → luminanceToAlpha → feFuncA 등고선
+  테이블 → blur → 따뜻한 흰빛 composite; mix-blend overlay/soft-light) — 내용이 안 변하는 레이어라 필터는 첫
+  래스터 한 번, 이후 transform(translate·scale·1.2° rotate)만 40~112초 alternate. 화면보다 12% 크게 깔아
+  가장자리 안 빔. 편집실 팔레트를 **시청자 화면과 동일한 크림 팔레트**로(칸 #fffefb·지난 날 #fbf6ea·다른 달
+  #f1e9d8·선 #efe6d3·요일 #fbf7ee/#efe9dd·카드 #fffdf6/#ece2cd·상단바 크림 유리·팝오버 #fffdf8) — 은백·
+  파스텔 혼합 제거. 금 토큰도 따뜻한 은(샴페인 실버: 선 #d3d1cb·광택 #fff→#f5f3ee). 반투명 규칙(⑩)은 유지.
+  GPU 프레임 실측 별도 기록(perf-frames). 비주얼 테스트는 동작 줄이기 ON이라 물결 무영향.
   ⑩ **4차-b(사용자: "아이보리는 맞는데 '위에서 내려다본 모래사장 위 얕은 물결'이 안 보인다")** — 4차 직후
   물결이 사실상 안 보였던 원인 둘: ⓐ 4차에서 추가한 `html { background: --paper }`가 body 배경의 캔버스
   전파를 끊어 body가 자기 배경을 직접(블록 배경, 3단계) 그리게 됐고 그게 음수 z 레이어(.gs-tide, 2단계)를

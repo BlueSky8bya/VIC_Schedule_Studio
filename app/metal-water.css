@@ -1,38 +1,38 @@
 /* ══ 금생수(金生水) 스킨 — 공용 토큰 + 물결 레이어 + 양쪽 화면 공통 규칙(2026-09-03, ADR-0016) ═══════════
    토리(소유자)의 오행 결론(수 용신·금 희신 — 원국 자체는 어디에도 싣지 않는다)을 형태 언어로 옮긴다.
-   4차 개정(사용자: "광택 너무 강함 · 색 파편화 · 배경은 원래 좋아하던 아이보리여야, 대신 **위에서
-   내려다본 모래사장 위의 얕은 물결**이 일렁이는 느낌을 배경에"):
-   • **바탕은 아이보리(--paper/--surface).** 페이지·표면·달력 칸·요일 머리·패널의 색은 각 화면의 기본
-     규칙 그대로(여기서 덮지 않는다). 파란/보라/옥빛 네 갈래 물색 베이스 시스템은 폐기.
-   • **'물'은 물결 레이어(.gs-tide) 하나** — 얇은 반투명 물 필름 + 잔물결 그림자 띠 셋 + 윤슬(햇살이 물에
-     굴절돼 생기는 빛 그물) 선 셋 + 큰 스웰(물·햇살 얼룩). 편집실·시청자 공용 컴포넌트(components/shared/
-     water-tide.tsx). 물결이 보이는 상태에선 달력 칸·패널을 반투명으로 해 물결이 모래 위로 비친다(각
-     화면 파일). 불투명 배경은 어디에도 없다 → 어떤 상태든 이음새 없음.
-   • **'금'은 일(work) 요소에 한해 아주 은은한 은 광택** + 헤어라인만.
-   불변: 의미색 8종, 태그색, 기하(표면 1840·칸 높이·띠 17px·레인). 색·그림자·라운드·질감만(레이아웃 0). */
+   4차-c(사용자: "무늬가 밋밋하고 구리다 — 애플식으로 세련되게" · "색 조화는 시청자 화면 쪽이 더 좋다"):
+   • **바탕은 아이보리(--paper/--surface).** 편집실도 시청자 화면과 같은 따뜻한 크림 팔레트(칸 #fffefb ·
+     요일 머리 #fbf7ee · 카드 #fffdf6 · 선 #ece2cd)로 맞춘다(편집실 쪽 은백·파스텔 혼합은 조화가 떨어졌다).
+   • **'물'은 물결 레이어(.gs-tide) 하나** — 기하 무늬 없이 크고 흐릿한 물그림자·빛 얼룩 + 유기적인 caustic
+     (SVG 노이즈 필터, 한 번 래스터 후 transform으로만 흐름). 편집실·시청자 공용 컴포넌트(components/shared/
+     water-tide.tsx). 물결이 보이는 상태에선 칸·패널·표면을 반투명(알파만)으로 해 물결이 모래 위로 비친다.
+   • **'금'은 일(work) 요소에 한해 아주 은은한 따뜻한 은(샴페인 실버) 광택** + 헤어라인만.
+   불변: 의미색 8종, 태그색, 기하(표면 1840·칸 높이·띠 17px·레인). 색·그림자·라운드·질감만(레이아웃 0).
+   ⚠ html에 background를 주지 않는다 — body 배경의 캔버스 전파가 끊기면 body가 블록 배경(3단계)으로 그려져
+   음수 z 레이어(.gs-tide, 2단계)를 통째로 덮는다(실측). */
 :root {
-  --gs-metal-line: #c7cfd8;
-  --gs-metal-line-strong: #aab6c2;
-  --gs-metal-ink: #2c3745;
-  --gs-metal-face: #fbfcfd;
-  /* 은은한 은 광택 — 아주 옅게, 꺾임 없이 위→아래 한 방향. */
-  --gs-metal-sheen: linear-gradient(180deg, #ffffff 0%, #f5f7f9 100%);
-  --gs-metal-sheen-hover: linear-gradient(180deg, #ffffff 0%, #f0f3f6 100%);
+  --gs-metal-line: #d3d1cb;
+  --gs-metal-line-strong: #b9b6ae;
+  --gs-metal-ink: #3a3a44;
+  --gs-metal-face: #fdfcf9;
+  /* 따뜻한 은(샴페인 실버) 광택 — 아주 옅게, 꺾임 없이 위→아래 한 방향. 크림 바탕과 한 식구. */
+  --gs-metal-sheen: linear-gradient(180deg, #ffffff 0%, #f5f3ee 100%);
+  --gs-metal-sheen-hover: linear-gradient(180deg, #ffffff 0%, #f0eee8 100%);
   --gs-metal-edge:
-    inset 0 1px 0 rgb(255 255 255 / 55%),
-    0 1px 2px rgb(38 50 66 / 8%);
+    inset 0 1px 0 rgb(255 255 255 / 60%),
+    0 1px 2px rgb(60 50 30 / 8%);
   --gs-metal-radius: 10px;
-  /* 물 — 얕은 물의 청록(모래 위에 얹히면 젖은 모래색이 된다)과 윤슬의 따뜻한 흰빛. */
+  /* 물 — 얕은 물의 청록(모래 위에 얹히면 젖은 모래색). 빛 — 햇살의 따뜻한 흰빛. */
   --gs-sea-rgb: 40 118 162;
-  --gs-sun-rgb: 214 176 108;
-  --gs-glint: 255 246 222;
+  --gs-sun-rgb: 255 246 224;
 }
 
 /* ── 물결 레이어(.gs-tide) — components/shared/water-tide.tsx가 렌더한다. ─────────────────────────
-   위에서 내려다본 얕은 물: 화면 전체에 얇은 필름(6→11%) + 띠(잔물결 그림자, 청록 5~7%) 셋이 서로 다른
-   속도·방향으로 흐르고, 그 위로 윤슬 선(따뜻한 흰빛, 1.5px + 글로우) 셋이 반짝이며 지나간다. 큰 스웰 셋은
-   물 얼룩(청록·파랑)과 햇살 얼룩(금빛). 너울은 전체가 천천히(11초) 숨쉰다. 보이는 조건: 차분 ON · 생동감
-   있는 동작 ON · 여력 있는 기기(data-gfx≠lite) · 웹(≥641px). 전부 transform/opacity(합성기). */
+   애플 결: 기하 무늬 없음. 얇은 물 필름(청록 5→9%) 위로 (1) 물그림자 덩어리 셋(청록, blur 70px) (2) 빛 얼룩
+   둘(따뜻한 흰빛, blur 60px) (3) caustic 두 겹(노이즈 등고선 빛 그물, 따뜻한 흰빛, 22~28%)이 40~110초로
+   아주 느리게, 서로 다른 방향으로 떠다닌다. blur·filter는 내용이 안 변하는 레이어에 한 번만 래스터되고
+   (will-change: transform), 매 프레임은 transform/opacity만 — 무한 애니 규칙(frame-jank 실측 원칙).
+   보이는 조건: 차분 ON · 생동감 있는 동작 ON · 여력 있는 기기(data-gfx≠lite) · 웹(≥641px). */
 .gs-tide {
   display: none;
 }
@@ -49,148 +49,119 @@
   pointer-events: none;
   contain: strict;
   /* 물 필름 — 반투명. 아래로 갈수록 살짝 깊다. 모래(body 아이보리)가 그대로 비친다. */
-  background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 6%) 0%, rgb(var(--gs-sea-rgb) / 11%) 100%);
+  background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 5%) 0%, rgb(var(--gs-sea-rgb) / 9%) 100%);
 }
-.gs-tide-swell {
+.gs-tide-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+/* 물그림자 — 청록 덩어리. 크게, 흐리게, 느리게. */
+.gs-tide-shade,
+.gs-tide-light {
   position: absolute;
   border-radius: 50%;
   will-change: transform;
 }
-.gs-tide-swell-a {
-  left: -14%;
-  top: -18%;
-  width: 64%;
-  height: 56%;
-  background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 11%), rgb(var(--gs-sea-rgb) / 0%));
-  animation: gs-tide-drift-a 38s ease-in-out infinite alternate;
+.gs-tide-shade {
+  /* blur 필터 없음 — 헤드리스/약한 기기에서 blur(70px) 큰 덩어리가 프레임을 깎았다(드래그 스프링 실측).
+     radial-gradient 자체가 이미 부드러워 blur는 불필요하다. */
+  background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 18%) 0%, rgb(var(--gs-sea-rgb) / 9%) 45%, rgb(var(--gs-sea-rgb) / 0%) 100%);
 }
-.gs-tide-swell-b {
-  right: -16%;
-  bottom: -10%;
-  width: 58%;
-  height: 52%;
-  background: radial-gradient(closest-side, rgb(30 90 168 / 9%), rgb(30 90 168 / 0%));
-  animation: gs-tide-drift-b 52s ease-in-out infinite alternate;
+.gs-tide-shade-1 {
+  left: -12%;
+  top: -14%;
+  width: 62%;
+  height: 58%;
+  animation: gs-drift-1 46s ease-in-out infinite alternate;
 }
-/* 햇살 얼룩 — 물 위에 비치는 따뜻한 빛 덩어리, 가운데서 크게 숨쉰다. */
-.gs-tide-swell-c {
-  left: 20%;
-  top: 14%;
+.gs-tide-shade-2 {
+  right: -14%;
+  bottom: -12%;
   width: 60%;
-  height: 64%;
-  background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 12%), rgb(var(--gs-sun-rgb) / 0%));
-  animation: gs-tide-drift-c 64s ease-in-out infinite alternate;
+  height: 56%;
+  animation: gs-drift-2 62s ease-in-out infinite alternate;
 }
-@keyframes gs-tide-drift-a {
+.gs-tide-shade-3 {
+  left: 30%;
+  top: 30%;
+  width: 46%;
+  height: 48%;
+  background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 11%) 0%, rgb(var(--gs-sea-rgb) / 5%) 45%, rgb(var(--gs-sea-rgb) / 0%) 100%);
+  animation: gs-drift-3 84s ease-in-out infinite alternate;
+}
+/* 빛 얼룩 — 햇살이 물을 지나 모래에 닿는 따뜻한 밝음. */
+.gs-tide-light {
+  background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 38%) 0%, rgb(var(--gs-sun-rgb) / 18%) 45%, rgb(var(--gs-sun-rgb) / 0%) 100%);
+}
+.gs-tide-light-1 {
+  left: 18%;
+  top: 4%;
+  width: 52%;
+  height: 50%;
+  animation: gs-drift-4 70s ease-in-out infinite alternate;
+}
+.gs-tide-light-2 {
+  right: 6%;
+  bottom: 2%;
+  width: 40%;
+  height: 44%;
+  animation: gs-drift-5 96s ease-in-out infinite alternate;
+}
+@keyframes gs-drift-1 {
   to {
-    transform: translate3d(8%, 6%, 0);
+    transform: translate3d(9%, 7%, 0);
   }
 }
-@keyframes gs-tide-drift-b {
+@keyframes gs-drift-2 {
   to {
-    transform: translate3d(-7%, -7%, 0);
+    transform: translate3d(-8%, -6%, 0);
   }
 }
-@keyframes gs-tide-drift-c {
+@keyframes gs-drift-3 {
   to {
-    transform: translate3d(-6%, 7%, 0) scale(1.1);
+    transform: translate3d(-10%, 8%, 0);
   }
 }
-/* 물 — 화면 전체. 너울(위아래 14px)은 전체가, 흐름은 결마다 다른 속도·방향. */
-.gs-tide-sea {
+@keyframes gs-drift-4 {
+  to {
+    transform: translate3d(7%, 10%, 0);
+  }
+}
+@keyframes gs-drift-5 {
+  to {
+    transform: translate3d(-9%, -7%, 0);
+  }
+}
+/* caustic — 화면보다 12% 크게 깔고(-6% 오프셋) 그 안에서만 떠다녀 가장자리가 비지 않는다. 내용은 불변
+   (노이즈 필터는 첫 래스터 한 번), 이후 transform만. */
+.gs-tide-caustic {
   position: absolute;
-  inset: 0;
-  overflow: hidden;
-  will-change: transform;
-  animation: gs-tide-bob 11s ease-in-out infinite alternate;
-}
-@keyframes gs-tide-bob {
-  to {
-    transform: translate3d(0, 14px, 0);
-  }
-}
-.gs-tide-wave {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 200%;
-  height: 100%;
+  left: -3%;
+  top: -3%;
+  width: 106%;
+  height: 106%;
   display: block;
   will-change: transform;
-  animation: gs-tide-flow 52s linear infinite;
+  /* 블렌드 모드 없음 — mix-blend는 합성 비용이 커 헤드리스/약한 기기에서 프레임을 깎았다(실측). 따뜻한
+     흰빛을 낮은 불투명도로 그냥 얹는다. */
 }
-@keyframes gs-tide-flow {
+.gs-tide-caustic-a {
+  opacity: 0.5;
+  animation: gs-caustic-a 88s ease-in-out infinite alternate;
+}
+.gs-tide-caustic-b {
+  opacity: 0.38;
+  animation: gs-caustic-b 112s ease-in-out infinite alternate;
+}
+@keyframes gs-caustic-a {
   to {
-    transform: translate3d(-50%, 0, 0);
+    transform: translate3d(2.5%, -2%, 0);
   }
 }
-/* 잔물결 그림자 띠 — 청록, 세 높이·세 속도. 가운데 띠는 반대 방향(물이 서로 엇갈린다). */
-.gs-tide-band-1 path {
-  fill: rgb(var(--gs-sea-rgb) / 7%);
-}
-.gs-tide-band-2 {
-  animation-duration: 68s;
-  animation-direction: reverse;
-}
-.gs-tide-band-2 path {
-  fill: rgb(var(--gs-sea-rgb) / 6%);
-}
-.gs-tide-band-3 {
-  animation-duration: 90s;
-}
-.gs-tide-band-3 path {
-  fill: rgb(var(--gs-sea-rgb) / 5%);
-}
-/* 윤슬 — 따뜻한 흰빛 선(1.5px) + 그 밑 넓은 글로우. 띠보다 살짝 빠르게 흘러 빛이 물결을 타고 미끄러진다. */
-.gs-tide-line path,
-.gs-tide-glow path {
-  fill: none;
-  stroke-linecap: round;
-  shape-rendering: geometricPrecision;
-}
-.gs-tide-line path {
-  stroke: rgb(var(--gs-glint) / 78%);
-  stroke-width: 1.5px;
-}
-.gs-tide-glow path {
-  stroke: rgb(var(--gs-glint) / 22%);
-  stroke-width: 8px;
-}
-.gs-tide-line-1,
-.gs-tide-glow-1 {
-  animation-duration: 40s;
-}
-.gs-tide-line-2,
-.gs-tide-glow-2 {
-  animation-duration: 58s;
-  animation-direction: reverse;
-}
-.gs-tide-line-3,
-.gs-tide-glow-3 {
-  animation-duration: 76s;
-}
-/* 빛살 — 물 위를 비스듬히 지나는 흰 광선 둘. */
-.gs-tide-ray {
-  position: absolute;
-  top: -10%;
-  width: 16%;
-  height: 120%;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 30%) 50%, transparent);
-  will-change: transform;
-  animation: gs-tide-ray 30s ease-in-out infinite alternate;
-}
-.gs-tide-ray-b {
-  width: 11%;
-  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 20%) 50%, transparent);
-  animation-duration: 44s;
-  animation-delay: -16s;
-}
-@keyframes gs-tide-ray {
-  from {
-    transform: translate3d(-40%, 0, 0) skewX(-18deg);
-  }
+@keyframes gs-caustic-b {
   to {
-    transform: translate3d(560%, 0, 0) skewX(-18deg);
+    transform: translate3d(-2%, 2.5%, 0) rotate(0.8deg);
   }
 }
 

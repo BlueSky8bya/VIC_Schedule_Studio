@@ -208,30 +208,81 @@ html[data-studio-calm] .studio-topbar {
   }
 }
 
+/* 편집실 팔레트를 시청자 화면에 맞춘다(2026-09-03 사용자: "색 조화는 시청자 화면 쪽이 더 좋다") — 차분 모드의
+   은백 칸·은백 패널·파스텔 요일 머리 대신 시청자 화면의 따뜻한 크림 팔레트: 칸 #fffefb · 지난 날 #fbf6ea ·
+   다른 달 #f1e9d8 · 선 #efe6d3 · 요일 머리 #fbf7ee/#efe9dd · 카드 #fffdf6/#ece2cd · 상단바 크림 유리.
+   studio-shell.css의 원조 차분 규칙보다 특이도 한 단계 위(.studio-shell). 오늘(골드)·편집 중·드롭 대상·휴식
+   칸은 제 색. */
+html[data-studio-calm] .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
+  background: #fffefb;
+  border-color: #efe6d3;
+}
+html[data-studio-calm] .studio-shell .studio-day.past:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
+  background: #fbf6ea;
+}
+html[data-studio-calm] .studio-shell .studio-day.outside {
+  background: #f1e9d8;
+  border-color: #efe6d3;
+}
+html[data-studio-calm] .studio-shell .studio-weekdays {
+  border-color: #efe9dd;
+  background: #fbf7ee;
+  box-shadow: 0 2px 10px rgb(120 100 60 / 8%);
+}
+html[data-studio-calm] .studio-shell .studio-left-panel > section:first-child,
+html[data-studio-calm] .studio-shell .avatar-rail-filter,
+html[data-studio-calm] .studio-shell .studio-tools {
+  background: #fffdf6;
+  border-color: #ece2cd;
+  box-shadow: 0 8px 24px rgb(120 100 60 / 10%);
+}
+html[data-studio-calm] .studio-shell .studio-left-panel > section:first-child {
+  box-shadow: 0 2px 10px rgb(120 100 60 / 8%);
+}
+html[data-studio-calm] .studio-shell .studio-topbar {
+  background: rgb(255 253 246 / 88%);
+  border-bottom-color: #ece2cd;
+}
+html[data-studio-calm] .studio-shell .kbd-hints {
+  border-color: #ece2cd;
+  background: rgb(255 253 246 / 80%);
+}
+html[data-studio-calm] .studio-shell .event-editor-panel form,
+html[data-studio-calm] .studio-shell .event-editor-panel .event-detail-readonly,
+html[data-studio-calm] .role-help-pop {
+  background: #fffdf8;
+}
+html[data-studio-calm] .stool {
+  color: #6a6357;
+}
+html[data-studio-calm] .stool:hover:not(:disabled) {
+  border-color: #ddd5c4;
+}
+
 /* 물결이 모래 위로 비치게 — 물결이 보이는 상태에선 달력 칸·요일 머리·좌측 카드·도구 카드를 **반투명**으로.
-   색은 각자의 원래 색(크림·은백·파스텔) 그대로, 알파만 낮춘다 → 위에서 내려다본 얕은 물처럼 칸 밑으로
-   잔물결·윤슬이 지나간다. 오늘(골드)·편집 중·드롭 대상·휴식 칸은 제 색을 지킨다(불투명). 일정 카드·
-   팝오버(일 = 금)는 불투명 — 물 위에 놓인 물건. 조건 밖(동작 줄이기·약한 기기·모바일)에선 원래 불투명. */
+   색은 위 크림 그대로, 알파만 낮춘다 → 위에서 내려다본 얕은 물처럼 칸 밑으로 물그림자·빛이 지나간다.
+   오늘(골드)·편집 중·드롭 대상·휴식 칸은 제 색을 지킨다(불투명). 일정 카드·팝오버(일 = 금)는 불투명 —
+   물 위에 놓인 물건. 조건 밖(동작 줄이기·약한 기기·모바일)에선 위 불투명 크림 그대로. */
 @media (min-width: 641px) {
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
-    background: rgb(255 253 246 / 56%);
+    background: rgb(255 254 251 / 54%);
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-day.past:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
-    background: rgb(244 238 226 / 56%);
+    background: rgb(251 246 234 / 54%);
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-day.outside {
-    background: rgb(242 240 248 / 46%);
+    background: rgb(241 233 216 / 50%);
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-weekdays {
-    background: linear-gradient(180deg, rgb(253 241 251 / 70%), rgb(238 243 255 / 70%));
+    background: rgb(251 247 238 / 72%);
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-left-panel > section:first-child,
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .avatar-rail-filter,
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .studio-tools {
-    background: rgb(243 245 247 / 74%);
+    background: rgb(255 253 246 / 76%);
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .kbd-hints {
-    background: rgb(255 255 255 / 60%);
+    background: rgb(255 253 246 / 64%);
   }
 }
 
