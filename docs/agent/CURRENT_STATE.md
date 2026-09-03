@@ -186,6 +186,12 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   백필 스크립트 복제본 동일, prod vod_timeline 90행 제자리 교정 완료(잔여 0).
   **남은 것**: 팬 닉 표기 동의(토리님 경유 권장), B안(순간 검색 — 파싱 데이터 재사용, UI만),
   '1년 전 오늘' 아이디어.
+- **설정 세대 1회 복원(2026-09-03, 관리자 결정)**: `lib/ui/motion.ts` `SETTINGS_EPOCH`("2026-09-03").
+  layout.tsx 페인트-전 스크립트가 저장된 `vic.settingsEpoch`가 다르면 `vic.reduceMotion`·
+  `vic.eyeComfort`를 지워(동작 줄이기 OFF·눈 편한 테마 ON) 세대를 기록 — 배포 후 첫 방문 1회만,
+  이후는 사용자 값 유지. 이유: 초반에 실수로 동작 줄이기를 켜 두고 잊은 시청자. 다시 전체 복원이
+  필요하면 값만 올린다. 비주얼 테스트는 `playwright.visual.config.ts` storageState로 현재 세대를
+  미리 심음(안 심으면 테스트의 reduceMotion=on이 첫 로드에 지워짐).
 - **업 도움 띠 종류 support_kind(2026-09-01, `1306ede`, 0073)**: 'up'(기본, 도와주러 가기
   CTA) | 'period'(단순 기간 안내 — **하늘색**+📌, CTA는 링크 있을 때만 '자세히 보기', **만료돼도
   안 사라짐** — 정보성 기록). 편집 폼에 종류 라디오, 색 정의는 globals `.sb-period`(단일 출처).

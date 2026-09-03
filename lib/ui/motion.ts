@@ -10,6 +10,17 @@
 //
 // (P1-MOTION-1의 OS prefers-reduced-motion 시딩은 2026-08-27 철회 — 미설정=OFF.)
 
+// ── 설정 세대(epoch) — 배포 후 첫 방문 1회 기본값 복원(2026-09-03 관리자 결정) ──
+// 처음에 실수로 '동작 줄이기'를 켜 두고는 설정의 존재를 잊은 채 "이 사이트는 움직임이 없다"고
+// 아는 시청자가 있는 듯해서, 이 세대 값이 바뀐 배포를 처음 열 때 기기 저장값과 무관하게
+// 동작 줄이기 OFF · 눈 편한 테마 ON(둘 다 '미설정' 상태로 지움)으로 한 번 되돌리고 세대를 기록한다.
+// 그 뒤로는 사용자가 고른 값이 그대로 이어진다. 다시 한 번 전체 복원이 필요하면 값만 올린다.
+// 적용 지점 = app/layout.tsx 페인트-전 스크립트(설정을 읽기 **전에** 실행돼야 한다).
+// 비주얼 테스트는 playwright.visual.config.ts의 storageState로 현재 세대를 미리 심어 둔다
+// (안 그러면 테스트가 켜 둔 '동작 줄이기'가 첫 로드에서 지워진다).
+export const SETTINGS_EPOCH = "2026-09-03";
+export const SETTINGS_EPOCH_KEY = "vic.settingsEpoch";
+
 const REDUCE_MOTION_KEY = "vic.reduceMotion"; // localStorage: "on"/"off"/미설정(=off)
 
 export function reduceMotionEnabled(): boolean {

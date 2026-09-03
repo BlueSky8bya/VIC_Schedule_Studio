@@ -21,6 +21,7 @@ import { RouteBeacon } from "@/components/activity/route-beacon";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { resolveCurrentActor } from "@/lib/auth/actor";
+import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 
 // #7: 텍스트 스티커 글꼴 선택지(한글 지원). next/font로 로드해 CSS 변수로 노출한다.
 // preload:false + subsets 미지정 → 전체 글리프(한글 포함) 로드, 경고 없이.
@@ -98,11 +99,18 @@ export default function RootLayout({
         {/* '동작 줄이기' 설정을 페인트 전에 <html>에 반영 — 켜둔 사용자는 장식 애니메이션이
             깜빡 떴다 사라지지 않는다(FOUC 방지). 기본 OFF: 인앱에서 'on'을 고른 경우에만 켠다
             (2026-08-27 — OS prefers-reduced-motion 시딩(P1-MOTION-1) 철회, 사용자 결정).
-            눈 편한 테마는 기본 ON('off'를 고른 경우에만 끔). */}
+            눈 편한 테마는 기본 ON('off'를 고른 경우에만 끔).
+            설정 세대(SETTINGS_EPOCH, lib/ui/motion.ts): 저장된 세대가 다르면 두 키를 지워
+            기본값(OFF/ON)으로 한 번 되돌리고 세대를 기록 — 읽기 전에 먼저 돈다. */}
         <script
           dangerouslySetInnerHTML={{
             __html:
-              "try{var d=document.documentElement;var v=localStorage.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');if(localStorage.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort','1')}catch(e){}"
+              "try{var d=document.documentElement,s=localStorage,E=" +
+              JSON.stringify(SETTINGS_EPOCH) +
+              ",K=" +
+              JSON.stringify(SETTINGS_EPOCH_KEY) +
+              ";if(s.getItem(K)!==E){s.removeItem('vic.reduceMotion');s.removeItem('vic.eyeComfort');s.setItem(K,E)}" +
+              "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort','1')}catch(e){}"
           }}
         />
         {children}

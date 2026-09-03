@@ -1,4 +1,5 @@
 import { defineConfig, devices } from "@playwright/test";
+import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "./lib/ui/motion";
 
 // 비주얼 회귀 전용 설정(일반 e2e와 분리). 요구사항:
 //  · production build로 띄운다(dev 서버 아님 — 실제 배포와 같은 렌더).
@@ -21,7 +22,18 @@ export default defineConfig({
     baseURL: "http://127.0.0.1:3100",
     viewport: { width: 1440, height: 1200 },
     deviceScaleFactor: 1,
-    trace: "on-first-retry"
+    trace: "on-first-retry",
+    // 설정 세대를 미리 심는다 — 앱의 페인트-전 스크립트가 '세대 다름 → 기본값 복원'을 하면서
+    // 테스트가 켜 둔 '동작 줄이기'(결정성용)를 첫 로드에서 지워 버리지 않게(lib/ui/motion.ts).
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: "http://127.0.0.1:3100",
+          localStorage: [{ name: SETTINGS_EPOCH_KEY, value: SETTINGS_EPOCH }]
+        }
+      ]
+    }
   },
   webServer: {
     // 프로덕션 빌드 후 기동. fixture 플래그를 런타임에 켠다(실사용 경로엔 영향 없음).
