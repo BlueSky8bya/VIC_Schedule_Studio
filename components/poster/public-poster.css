@@ -961,9 +961,12 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
 .day-vod-modal {
   /* 더 넓은 창(2026-09-01 사용자 피드백 2차) — 미리보기가 주인공. 낮은 화면에선 미리보기가
      max-height(아래 .dvm-thumb)로 잡히고 플레이어가 알아서 레터박스를 그린다. */
-  /* 2패널 확정 후 확대(2026-09-03 사용자 요청) — 영상·레일이 함께 커진다. */
-  width: min(1280px, 100%);
-  max-height: min(92vh, 1000px);
+  /* 2패널 확정 후 확대(2026-09-03 사용자 요청) — 영상·레일이 함께 커진다.
+     3차(2026-09-03 "화면 비율 더 크게"): 1280→1720, 레일은 420 고정이라 늘어난 폭은 전부
+     영상 몫(1080p 실측 1230×692, 창 높이 ≈830 = 94vh 안). 세로는 94vh — 낮은 화면은
+     .dvm-thumb max-height가 영상을 캡(768 높이: 영상 814×458, 캡 안 걸림). */
+  width: min(1720px, 100%);
+  max-height: min(94vh, 1100px);
   display: flex;
   flex-direction: column;
   border: 1px solid rgb(255 255 255 / 65%);
@@ -984,6 +987,39 @@ html[data-reduce-motion] .day-vod-modal {
   justify-content: space-between;
   gap: 8px;
   padding: 16px 16px 10px 24px; /* 창 1280 확대에 맞춘 여백(본문 24와 정렬) */
+}
+/* 키보드 안내(2026-09-03) — 창이 떠 있는 동안 ←/→가 영상 탐색이 된 것을 알린다. 닫기 버튼
+   왼쪽에 아주 옅게: 발견 가능하되 문패(날짜)와 경쟁하지 않는다. */
+.dvm-keys {
+  margin-left: auto;
+  margin-right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--text-caption);
+  font-weight: 600;
+  color: #9a9aa8;
+  white-space: nowrap;
+}
+.dvm-keys kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 1px solid rgb(60 60 90 / 14%);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6f6a78;
+}
+.dvm-keys i {
+  font-style: normal;
+  margin: 0 4px;
+  color: #c9c9d4;
 }
 .dvm-close {
   width: 32px;
@@ -1070,7 +1106,9 @@ html[data-reduce-motion] .day-vod-modal {
   /* (예전 max-height: 56vh 캡 삭제 — 2026-09-02 사용자 신고 "썸네일 위아래 잘림": 캡이
      상자를 납작하게 눌러 cover 이미지가 상하 크롭됐다. 2패널에선 좌열 폭이 높이를 정하므로
      캡 없이도 창을 넘지 않는다. 아주 낮은 창은 아래 46vh 안전 캡 + contain이 지킨다.) */
-  max-height: 62vh;
+  /* 창 94vh(2026-09-03 확대) 안에서 머리(≈58)+제목(≈44)+여백(≈100)을 뺀 만큼까지 —
+     1080p에선 캡에 안 걸리고(1110×624), 768 높이 노트북만 캡(플레이어가 레터박스). */
+  max-height: calc(94vh - 205px);
   border-radius: 14px;
   overflow: hidden;
   background: #10151f; /* 캡·비율 차로 생기는 여백이 플레이어 검정과 이어진다 */
@@ -1247,12 +1285,20 @@ html[data-reduce-motion] .day-vod-modal {
 }
 .vch-sec {
   margin: 0;
-  padding: 9px 14px 8px;
-  font-size: 14px; /* 스케일 계단: 항목과 같은 14지만 굵기·색으로 헤더가 서열 위 */
+  padding: 10px 14px 9px;
+  font-size: 15px; /* 스케일 계단(2026-09-03 한 단계 ↑): 헤더 15 = 항목 15, 굵기·색으로 서열 위 */
   font-weight: 800;
   letter-spacing: -0.01em;
   color: #1d1d29;
   border-bottom: 1px solid rgb(60 60 90 / 8%); /* 헤더 밑 헤어라인 */
+  /* 코너 헤더 고정(2026-09-03, HCI): 긴 코너를 스크롤해도 '지금 어느 코너인지'가 레일 위에
+     남는다. sticky의 컨테이닝 블록 = 코너 카드라 카드 끝에서 자연히 밀려난다(iOS 섹션 문법). */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #fff;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
 }
 /* 헤더 없는 이어짐 조각(거대 그룹 분절)의 첫 항목이 카드 위 라운드에 닿게 여백 보정 없음 —
    항목 자체 패딩으로 충분하다. */
@@ -1274,12 +1320,15 @@ html[data-reduce-motion] .day-vod-modal {
 }
 .dvm-vod .vch-caret { color: #b9bdcc; }
 .vch-item {
+  position: relative; /* 현재 챕터 왼쪽 액센트 바(::before)의 기준 */
   display: flex;
   align-items: baseline;
-  gap: 11px;
-  padding: 8px 14px;
+  gap: 12px;
+  padding: 9px 14px;
   text-decoration: none;
-  transition: background-color var(--dur-1) var(--ease);
+  transition:
+    background-color var(--dur-1) var(--ease),
+    opacity var(--dur-2) var(--ease);
 }
 /* 항목 사이 헤어라인 — iOS 리스트처럼 시각(왼쪽 열)만큼 들여 시작해 덜 시끄럽다. */
 .vch-item + .vch-item {
@@ -1288,22 +1337,40 @@ html[data-reduce-motion] .day-vod-modal {
 .vch-item:hover { background: #f2f5fb; }
 .vch-item:hover .vch-t { color: #1d4ed8; }
 .vch-item:active { transform: scale(0.995); background: #e9eef9; }
-/* 마지막으로 점프한 챕터 — 유튜브 활성 챕터 문법: 지금 어디를 듣고 있는지 목록이 기억한다. */
+/* 지금 재생 중인 챕터(2026-09-03: 클릭뿐 아니라 **재생 위치를 따라 이동** — 유튜브 활성 챕터
+   문법 완성형): 파란 바탕 + 왼쪽 액센트 바 + ▶. 지나온 챕터(.is-past)는 시각·라벨을 흐려
+   '어디까지 봤는지'가 목록 위에 지형처럼 남는다. 재생 중이면 레일이 현재 챕터를 따라 스크롤
+   (마우스가 레일 위에 있을 땐 멈춤 — 읽는 중인 사용자와 싸우지 않는다). */
 .vch-item.is-active {
   background: #e8efff;
 }
+.vch-item.is-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #3564e0;
+}
 .vch-item.is-active .vch-t { color: #1d4ed8; }
 .vch-item.is-active .vch-label { font-weight: 800; color: #1d1d29; }
+.vch-item.is-past .vch-t { color: #9aa6c7; }
+.vch-item.is-past .vch-label { color: #8a8a99; font-weight: 500; }
+.vch-item.is-past:hover .vch-t { color: #1d4ed8; }
+.vch-item.is-past:hover .vch-label { color: #33333f; }
 /* 카드 라운드를 항목 호버가 뚫지 않게 — 첫/끝 항목만 모서리를 물려받는다. */
 .vch-item:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
 .vch-item:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
 .vch-t {
   flex: none;
-  min-width: 54px;
-  font-size: 13px;
+  min-width: 58px;
+  font-size: 14px; /* 13→14(2026-09-03 가독성 ↑) */
   font-weight: 700;
   color: #3564e0;
   font-variant-numeric: tabular-nums;
+  transition: color var(--dur-1) var(--ease);
 }
 .vch-label {
   flex: 1 1 auto;
@@ -1311,9 +1378,10 @@ html[data-reduce-motion] .day-vod-modal {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 14px;
+  font-size: 15px; /* 14→15(2026-09-03) — 창 1600에서 14는 레일이 성글어 보였다 */
   font-weight: 600;
   color: #33333f;
+  transition: color var(--dur-1) var(--ease);
 }
 /* (.vch-span 구간 길이 표기 제거 — 2026-09-01 사용자 결정) */
 
@@ -1337,6 +1405,10 @@ html[data-reduce-motion] .day-vod-modal {
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: var(--r-md, 12px);
+  /* 얇은 스크롤바(2026-09-03) — 윈도우 기본 굵은 바+화살표가 레일 오른쪽을 시끄럽게 했다. */
+  scrollbar-width: thin;
+  scrollbar-color: rgb(60 60 90 / 22%) transparent;
+  scroll-padding-block: 56px; /* 자동 추적 스크롤이 sticky 코너 헤더 밑에 항목을 숨기지 않게 */
 }
 /* 좁은 창(2패널이 안 서는 폭) — 세로 스택으로 복귀, 챕터는 자체 캡 스크롤. */
 @media (max-width: 899px) {

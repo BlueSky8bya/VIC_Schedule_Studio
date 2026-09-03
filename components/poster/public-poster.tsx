@@ -1187,6 +1187,28 @@ export function PublicPoster({
   const dayVodAliveRef = useRef(new Set<number>());
   const dayVodPausedRef = useRef(new Set<number>());
   const dayVodTimeRef = useRef(new Map<number, number>()); // 최근 timeUpdate currentTime(←/→ 상대 탐색)
+  // 재생 위치 구독(2026-09-03) — 챕터 레일이 현재 챕터를 따라가게 currentTime을 흘려준다.
+  // setState로 포스터 전체를 초당 4번 다시 그리지 않고, 레일만 자기 상태(현재 챕터 idx가
+  // 바뀔 때만)로 갱신하도록 콜백 구독 방식.
+  const dayVodTimeSubsRef = useRef(new Map<number, Set<(sec: number) => void>>());
+  const notifyDayVodTime = (titleNo: number, sec: number) => {
+    dayVodTimeRef.current.set(titleNo, sec);
+    const subs = dayVodTimeSubsRef.current.get(titleNo);
+    if (subs) for (const cb of subs) cb(sec);
+  };
+  const subscribeDayVodTime = useCallback((titleNo: number, cb: (sec: number) => void) => {
+    let subs = dayVodTimeSubsRef.current.get(titleNo);
+    if (!subs) {
+      subs = new Set();
+      dayVodTimeSubsRef.current.set(titleNo, subs);
+    }
+    subs.add(cb);
+    const known = dayVodTimeRef.current.get(titleNo);
+    if (known !== undefined) cb(known); // 늦게 구독해도 현재 위치부터
+    return () => {
+      subs.delete(cb);
+    };
+  }, []);
   const dayVodFocusRef = useRef<number | null>(null); // 키보드가 조종할 방송(마지막 점프/재생)
   const dayVodKeySeekAtRef = useRef(0); // ←/→ 연타 속도 제한
   // 소리 켠 자동재생이 차단된 브라우저(MEI 낮은 크롬 등)용 2단 폴백 감시 타이머(방송별).
@@ -1207,6 +1229,7 @@ export function PublicPoster({
     dayVodAliveRef.current.clear();
     dayVodPausedRef.current.clear();
     dayVodTimeRef.current.clear();
+    dayVodTimeSubsRef.current.clear();
     dayVodFocusRef.current = null;
     for (const t of dayVodRetryTimersRef.current.values()) window.clearTimeout(t);
     dayVodRetryTimersRef.current.clear();
@@ -1366,7 +1389,11 @@ export function PublicPoster({
           dayVodFocusRef.current = titleNo;
         }
         const cur = data.event?.currentTime;
-        if (typeof cur === "number" && Number.isFinite(cur)) dayVodTimeRef.current.set(titleNo, cur);
+        if (typeof cur === "number" && Number.isFinite(cur)) {
+          dayVodTimeRef.current.set(titleNo, cur);
+          const subs = dayVodTimeSubsRef.current.get(titleNo);
+          if (subs) for (const cb of subs) cb(cur);
+        }
       }
     };
     window.addEventListener("message", onMsg);
@@ -1381,7 +1408,7 @@ export function PublicPoster({
     const post = dayVodApisRef.current.get(activeKey);
     if (post && dayVodAliveRef.current.has(titleNo)) {
       post({ cmd: "PseekTo", seconds: { time: sec, seekType: "timelink" } });
-      dayVodTimeRef.current.set(titleNo, sec);
+      notifyDayVodTime(titleNo, sec);
       // ⚠ Pplay를 seek 직후 연달아 보내면 진행 중인 시킹이 끊겨 0초로 리셋된다(실측 재현).
       // 재생 중엔 seek만으로 이어지므로 불필요하고, 정지 중일 때만 시킹이 자리잡은 뒤 재개한다.
       if (dayVodPausedRef.current.has(titleNo)) {
@@ -1424,7 +1451,7 @@ export function PublicPoster({
       const cur = dayVodTimeRef.current.get(titleNo) ?? 0;
       const max = durations.get(titleNo) ?? Number.POSITIVE_INFINITY;
       const next = Math.min(Math.max(0, cur + (e.key === "ArrowLeft" ? -1 : 1) * VOD_KEY_SEEK_SEC), max);
-      dayVodTimeRef.current.set(titleNo, next); // 연타 시 timeUpdate가 오기 전에도 누적되게
+      notifyDayVodTime(titleNo, next); // 연타 시 timeUpdate가 오기 전에도 누적 + 레일 즉시 추적
       post({ cmd: "PseekTo", seconds: { time: next, seekType: "timelink" } });
       // (↗ 링크의 초 표기(dayVodJump)는 갱신하지 않는다 — 키 반복마다 포스터 전체가 다시 그려진다.)
     };
@@ -4009,6 +4036,12 @@ export function PublicPoster({
                       {Number(dayVodPop.dateKey.slice(0, 4))}.{formatShortDate(dayVodPop.dateKey)} (
                       {WEEKDAYS[wd]})
                     </b>
+                    {/* 키보드 안내 — 창이 떠 있는 동안 ←/→는 영상 10초 탐색(월 이동 아님). */}
+                    <span aria-hidden="true" className="dvm-keys">
+                      <kbd>←</kbd>
+                      <kbd>→</kbd> 10초<i>·</i>
+                      <kbd>Esc</kbd> 닫기
+                    </span>
                     <button
                       aria-label="닫기"
                       autoFocus
@@ -4111,6 +4144,7 @@ export function PublicPoster({
                             durationMs={vod.durationMs}
                             onJump={(sec) => jumpDayVod(vod.titleNo, sec)}
                             slug={schedule.calendar.slug}
+                            subscribeTime={(cb) => subscribeDayVodTime(vod.titleNo, cb)}
                             timelineBy={vod.timelineBy ?? ""}
                             titleNo={vod.titleNo}
                           />

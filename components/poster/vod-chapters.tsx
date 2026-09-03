@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PublicVodTimeline } from "@/lib/domain/schedule-types";
 import { hapticTick } from "@/lib/ui/haptics";
 
@@ -19,7 +19,8 @@ export function VodChapters({
   chapters,
   timelineBy,
   onJump,
-  defaultOpen
+  defaultOpen,
+  subscribeTime
 }: {
   slug: string;
   titleNo: number;
@@ -31,14 +32,50 @@ export function VodChapters({
   onJump?: (sec: number) => void;
   // true면 마운트하자마자 펼친다(날짜 창에서 방송이 하나뿐일 때 — 클릭 한 번 절약).
   defaultOpen?: boolean;
+  // 재생 위치 구독(2026-09-03) — 부모 인라인 플레이어의 currentTime(초)을 흘려준다. 있으면
+  // 현재 챕터가 재생을 **따라 이동**하고(지나온 챕터는 흐림), 레일이 그 항목을 따라 스크롤한다.
+  subscribeTime?: (cb: (sec: number) => void) => () => void;
 }) {
   const [open, setOpen] = useState(Boolean(defaultOpen) && chapters > 0);
   const [timeline, setTimeline] = useState<PublicVodTimeline | null>(null);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
-  // 마지막으로 점프한 챕터(초) — 유튜브 활성 챕터처럼 '지금 어디쯤인지'를 목록이 기억한다.
-  // 인라인 점프(onJump)에서만 의미 있다(새 탭 이동은 목록을 떠나므로 표시 무의미).
-  const [activeSec, setActiveSec] = useState<number | null>(null);
+  // 현재 챕터(entries 인덱스) — 클릭한 챕터 또는 재생 위치가 속한 챕터. 유튜브 활성 챕터처럼
+  // '지금 어디쯤인지'를 목록이 보여준다. 인라인 점프(onJump)에서만 의미 있다.
+  const [activeIdx, setActiveIdx] = useState<number | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const hoverRef = useRef(false); // 레일 위에 마우스가 있으면 자동 추적 스크롤을 멈춘다(읽는 중)
+  const followRef = useRef(false); // 이번 activeIdx 변경이 재생 추적에서 왔는지(→ 자동 스크롤)
+
+  // 재생 위치 → 현재 챕터. 시각이 현재보다 작거나 같은 항목 중 가장 늦은 것(정렬 가정 없이
+  // 선형 — 항목 ≤100개, 초당 4회라 무시할 비용). idx가 바뀔 때만 setState → 레일만 다시 그림.
+  const secs = useMemo(() => (timeline?.entries ?? []).map((e) => e.sec), [timeline]);
+  useEffect(() => {
+    if (!subscribeTime || !open || secs.length === 0) return;
+    return subscribeTime((sec) => {
+      let found = -1;
+      for (let i = 0; i < secs.length; i++) {
+        if (secs[i] <= sec && (found < 0 || secs[i] >= secs[found])) found = i;
+      }
+      const idx = found < 0 ? null : found;
+      setActiveIdx((prev) => {
+        if (prev === idx) return prev;
+        followRef.current = true;
+        return idx;
+      });
+    });
+  }, [subscribeTime, open, secs]);
+  // 재생 추적으로 현재 챕터가 바뀌면 레일이 따라간다 — 마우스가 레일 위면 멈춤(사용자 스크롤과
+  // 싸우지 않게). nearest + 스크롤러의 scroll-padding으로 sticky 코너 헤더 밑에 숨지 않는다.
+  useEffect(() => {
+    if (activeIdx === null || !followRef.current) return;
+    followRef.current = false;
+    if (hoverRef.current) return;
+    const el = scrollRef.current?.querySelector<HTMLElement>(`[data-idx="${activeIdx}"]`);
+    if (!el) return;
+    const reduce = document.documentElement.hasAttribute("data-reduce-motion");
+    el.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
+  }, [activeIdx]);
 
   // 펼친 순간에만 본문을 받아온다(자동 펼침 포함) — 접힌 칩마다 미리 받으면 낭비.
   // ⚠ loading을 의존성/가드에 넣지 않는다 — setLoading(true)가 이 effect를 재실행시키면
@@ -123,23 +160,36 @@ export function VodChapters({
       ) : (
         /* 스크롤 래퍼는 목록과 분리 — 날짜 창(단일 방송)에선 이 래퍼만 흐르고 미리보기는 고정.
            columns를 스크롤 요소에 직접 걸면 높이 제한이 열 개수를 불리므로(가로 넘침) 분리 필수. */
-        <div className="vch-scroll">
+        <div
+          className="vch-scroll"
+          onPointerEnter={() => {
+            hoverRef.current = true;
+          }}
+          onPointerLeave={() => {
+            hoverRef.current = false;
+          }}
+          ref={scrollRef}
+        >
           <div className="vch-list">
             {groups.map((g, gi) => (
               <section className="vch-group" key={gi}>
                 {g.section ? <div className="vch-sec">{g.section}</div> : null}
                 {g.items.map((e) => (
                   <a
-                    aria-current={activeSec === e.sec ? "true" : undefined}
-                    className={`vch-item${activeSec === e.sec ? " is-active" : ""}`}
+                    aria-current={activeIdx === e.idx ? "true" : undefined}
+                    className={`vch-item${activeIdx === e.idx ? " is-active" : ""}${
+                      activeIdx !== null && e.idx < activeIdx ? " is-past" : ""
+                    }`}
                     data-act="vod-chapter-jump"
+                    data-idx={e.idx}
                     href={`https://vod.sooplive.co.kr/player/${titleNo}?change_second=${e.sec}`}
                     key={`${e.sec}-${e.idx}`}
                     onClick={(ev) => {
                       hapticTick();
                       if (onJump) {
                         ev.preventDefault();
-                        setActiveSec(e.sec);
+                        followRef.current = false; // 클릭한 항목은 이미 보이는 자리 — 자동 스크롤 불필요
+                        setActiveIdx(e.idx);
                         onJump(e.sec);
                       }
                     }}

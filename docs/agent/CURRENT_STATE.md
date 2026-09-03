@@ -69,6 +69,16 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   ④ 창이 떠 있는 동안 ←/→ = **영상 10초 탐색**(마지막 점프/재생 방송, timeUpdate currentTime
   기준, 120ms 속도 제한), 월 이동 핸들러는 dayVodOpenRef로 원천 차단(사용자: 프레임 밖 포커스
   에서 키 넘기다 달이 바뀌어 끊김). 실측: 재생 전/중 월 불변, 닫은 뒤 정상 이동.
+  후속 4(2026-09-03, 가독성·HCI 3차): ① 창 1280→1720(레일 420 고정, 영상 1080p 실측 1230×692,
+  768 높이 814×458 — 둘 다 16:9 캡 안 걸림; .dvm-thumb max-height = 94vh−205). ② **현재 챕터
+  재생 추적** — 부모가 timeUpdate currentTime을 콜백 구독(subscribeDayVodTime, setState 아님:
+  포스터 전체 초당 4회 리렌더 회피)으로 흘리고, VodChapters가 '시각 ≤ 현재' 중 가장 늦은 항목을
+  activeIdx로(바뀔 때만 setState). 현재 = 파란 바탕+왼쪽 3px 바, 지나온 항목 .is-past 흐림.
+  챕터가 **바뀔 때만** 레일이 scrollIntoView(nearest, scroll-padding 56)로 따라가고 마우스가
+  레일 위면 멈춤(같은 챕터 안에선 안 끌고 감 — 의도). 클릭·챕터 점프·←/→ 탐색도 notify로 즉시
+  반영. ③ 코너 헤더 sticky(카드 안에서만), 시각 13→14·라벨/헤더 14→15, 얇은 스크롤바.
+  ④ 머리에 키 힌트 `← → 10초 · Esc 닫기`. 실측: 점프#3 → active 3/past 3, 레일 scrollTop 0으로
+  되돌린 뒤 →키로 챕터 60→61 넘기면 양 뷰포트에서 visible=true.
 
   후속(2026-09-03): ① 창 1040→1280·레일 420, 역할별 타입 계단(제목 20 > 날짜·레일머리 15 >
   코너헤더·항목 14 > 시각 13 > 크레딧 11), 여백 24 정렬. ② 다중 방송 날 — 방송마다 흰 카드
