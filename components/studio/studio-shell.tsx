@@ -1020,16 +1020,22 @@ export function StudioShell({
           ? "시청자 화면 보여주기"
           : "시청자 화면 미리보기"
       : "미리보기";
+    // 압축 1단계(studio-calm-layer.css ⑤)에선 짧은 라벨, 2단계부턴 눈 아이콘만 — 관리자의 보여주기 버튼과 같은 문법.
+    const triggerShort = previewing ? (previewRole === "owner" ? "보여주기" : "미리보기") : "미리보기";
     return (
       <div className="preview-dd">
         <button
           aria-expanded={previewMenuOpen}
           aria-haspopup="menu"
+          aria-label={triggerText}
           className={`button preview-dd-trigger${previewing ? " previewing" : ""}`}
           onClick={() => setPreviewMenuOpen((value) => !value)}
+          title={triggerText}
           type="button"
          data-act="preview-dd-trigger">
-          {triggerText}
+          <Eye aria-hidden="true" size={16} />
+          <span className="lbl-long">{triggerText}</span>
+          <span className="lbl-short">{triggerShort}</span>
           {previewing ? null : (
             <span aria-hidden="true" className="preview-dd-caret">
               ▾
@@ -2062,6 +2068,57 @@ export function StudioShell({
   // 그 칸 옆으로 미끄러져 이동. 모바일(isNarrow)은 기존 시트(m-edit-sheet) 그대로.
   const workspaceRef = useRef<HTMLElement | null>(null);
   const editorPanelRef = useRef<HTMLElement | null>(null);
+  const shellRef = useRef<HTMLElement | null>(null);
+  const bottomRowRef = useRef<HTMLDivElement | null>(null);
+  // 크롬 압축 단계(2026-09-04 사용자: "창 비율을 억지로 망가뜨려도 대응") — 0 정상 · 1 미리보기 라벨 짧게 ·
+  // 2 라벨→기호("?"·눈·나가기·"저장됨"만) · 3 저장 점만·버전 숨김·제목/달 축소. 단계별 CSS는 studio-calm-layer.css ⑤,
+  // 규칙 문서는 docs/ux/chrome-compaction-manual.md. 임계 폭을 외우지 않고 **실측**한다: 단계를 0부터 올려 보며
+  // 헤더 한 줄이 넘치지 않는 첫 단계에서 멈춘다(리사이즈 때만, 동기 레이아웃 최대 4회). 넘침 = topbar
+  // scrollWidth > clientWidth(계정 모서리는 nowrap이라 못 들어가면 오른쪽으로 샌다) 또는 제목·달·계정 세 칸이 서로
+  // 겹침(제목 칸은 min-width:0이라 1fr 열이 min-content 아래로 줄어 달 라벨 밑으로 파고들 수 있다).
+  const [chromeTier, setChromeTier] = useState(0);
+  useLayoutEffect(() => {
+    const shell = shellRef.current;
+    if (!shell) return;
+    if (isNarrow) {
+      shell.removeAttribute("data-chrome");
+      setChromeTier(0);
+      return;
+    }
+    const overflows = (bar: HTMLElement) => {
+      if (bar.scrollWidth > bar.clientWidth + 1) return true;
+      const l = bar.querySelector(".studio-left")?.getBoundingClientRect();
+      const m = bar.querySelector(".studio-month-label")?.getBoundingClientRect();
+      const r = bar.querySelector(".studio-role-tools")?.getBoundingClientRect();
+      if (l && m && m.left < l.right + 4) return true;
+      if (m && r && r.left < m.right + 4) return true;
+      return false;
+    };
+    const measure = () => {
+      const bar = shell.querySelector<HTMLElement>(".studio-topbar");
+      if (!bar) return;
+      let tier = 0;
+      for (;;) {
+        if (tier === 0) shell.removeAttribute("data-chrome");
+        else shell.setAttribute("data-chrome", String(tier));
+        if (!overflows(bar) || tier >= 3) break;
+        tier += 1;
+      }
+      setChromeTier(tier);
+    };
+    measure();
+    let cancelled = false;
+    // 웹폰트가 늦게 오면 글자 폭이 바뀐다 — 준비되면 한 번 더.
+    document.fonts?.ready.then(() => {
+      if (!cancelled) measure();
+    });
+    window.addEventListener("resize", measure);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("resize", measure);
+    };
+    // 헤더 내용이 바뀌는 조건들(역할·미리보기·로그인 상태)에서 다시 잰다.
+  }, [isNarrow, isDeveloper, previewRole, actor.isAuthenticated, isEffectivelyOwner]);
   // 자동 배치 좌표 + 등장 원점(ox/oy = 앵커가 팝오버 로컬에서 향하는 지점) — 스케일-인이
   // '클릭한 칸/일정에서부터 자라나듯' 보이게 transform-origin으로 쓴다.
   const [editorPopPos, setEditorPopPos] = useState<{
@@ -2424,6 +2481,7 @@ export function StudioShell({
     if (!editorVisible || isNarrow) return;
     const wsEl = workspaceRef.current;
     let raf = 0;
+    let rowSeen: HTMLDivElement | null = null; // 정리 때 원위치시킬 알약 행(틱에서 마지막으로 본 노드)
     const tick = () => {
       placeEditorPopover();
       // 일정이 없어 달력이 짧은 달 — workspace(overflow:clip)가 팝오버보다 낮으면 아랫부분이
@@ -2435,12 +2493,56 @@ export function StudioShell({
         const cur = parseFloat(wsEl.style.minHeight || "0") || 0;
         if (Math.abs(cur - need) > 1) wsEl.style.minHeight = `${need}px`;
       }
+      // 하단 플로팅 알약(아바타 좌/우·확대) ↔ 팝오버 겹침(2026-09-04 사용자: "겹침이 세서 잘 안 보인다").
+      // 알약의 **자연 위치**(화면 정중앙, left:50%)를 기준으로 겹침을 보고 — 이동 중인 실제 rect로 재면 스스로를
+      // 쫓아 흔들린다 — 겹치면 팝오버 **옆**(가까운 쪽, workspace 안)으로 비켜 선다(--bfr-shift, CSS 스프링).
+      // 양옆 다 자리가 없으면 data-dodge="fade"로 거의 지워 본문이 읽히게(호버에 복귀). 닫히면 원위치.
+      const row = bottomRowRef.current;
+      if (row) rowSeen = row;
+      if (row && panel && wsEl) {
+        const pr = panel.getBoundingClientRect();
+        const rr = row.getBoundingClientRect();
+        const zf = studioShellZoom();
+        const natL = document.documentElement.clientWidth / 2 - rr.width / 2;
+        const natR = natL + rr.width;
+        const GAP = 12;
+        const hit =
+          natL < pr.right + GAP && natR > pr.left - GAP && rr.top < pr.bottom + GAP && rr.bottom > pr.top - GAP;
+        let shift = 0;
+        let mode = "";
+        if (hit) {
+          const wr = wsEl.getBoundingClientRect();
+          const leftPos = pr.left - GAP - rr.width;
+          const rightPos = pr.right + GAP;
+          const canL = leftPos >= wr.left + 8;
+          const canR = rightPos + rr.width <= wr.right - 8;
+          if (canL && (!canR || natL - leftPos <= rightPos - natL)) {
+            shift = (leftPos - natL) / zf;
+            mode = "side";
+          } else if (canR) {
+            shift = (rightPos - natL) / zf;
+            mode = "side";
+          } else {
+            mode = "fade";
+          }
+        }
+        const curShift = parseFloat(row.style.getPropertyValue("--bfr-shift")) || 0;
+        if (Math.abs(shift - curShift) > 0.5) row.style.setProperty("--bfr-shift", `${Math.round(shift)}px`);
+        if ((row.dataset.dodge ?? "") !== mode) {
+          if (mode) row.dataset.dodge = mode;
+          else delete row.dataset.dodge;
+        }
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
       if (wsEl) wsEl.style.minHeight = "";
+      if (rowSeen) {
+        rowSeen.style.removeProperty("--bfr-shift");
+        delete rowSeen.dataset.dodge;
+      }
     };
   }, [editorVisible, isNarrow, placeEditorPopover]);
 
@@ -5706,6 +5808,8 @@ export function StudioShell({
       className={`studio-shell${avatarSceneOn ? ` avatar-scene avatar-${avatarSide}` : ""}${
         avatarReady ? "" : " avatar-no-anim"
       }`}
+      data-chrome={chromeTier || undefined}
+      ref={shellRef}
     >
       {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
           flex-column이라 둘이 절대 안 겹친다. scene일 때만 필터를 여기 담는다. */}
@@ -5844,10 +5948,17 @@ export function StudioShell({
           {isDeveloper ? (
             renderPreviewControl()
           ) : (
-            <button className="button io-accent io-preview" onClick={() => enterViewerMode()} type="button" data-act="io-preview">
+            <button
+              aria-label={isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}
+              className="button io-accent io-preview"
+              onClick={() => enterViewerMode()}
+              title={isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}
+              type="button"
+              data-act="io-preview"
+            >
               <Eye aria-hidden="true" size={16} />
-              {/* '보여주기'는 관리자(owner)만 — 매니저·작업자는 '미리보기'. ≤1560px에선 짧은 라벨만
-                  (헤더 한 줄 유지, studio-calm-layer.css .lbl-long/.lbl-short). */}
+              {/* '보여주기'는 관리자(owner)만 — 그 외 역할 미리보기는 '미리보기'. ≤1560px·압축 1단계에선 짧은 라벨,
+                  2단계부턴 눈 아이콘만(aria-label/title이 이름을 지킨다) — studio-calm-layer.css ⑤. */}
               <span className="lbl-long">{isEffectivelyOwner ? "시청자 화면 보여주기" : "시청자 화면 미리보기"}</span>
               <span className="lbl-short">{isEffectivelyOwner ? "보여주기" : "미리보기"}</span>
             </button>
@@ -5855,12 +5966,16 @@ export function StudioShell({
           {actor.isAuthenticated ? (
             <form action="/api/auth/logout" method="post">
               <button
+                aria-label="로그아웃"
                 className="button io-accent io-logout"
                 onClick={() => startNav("로그아웃 중…")}
+                title="로그아웃"
                 type="submit"
                 data-act="io-logout"
               >
-                로그아웃
+                {/* 압축 2단계부턴 아이콘만(studio-calm-layer.css ⑤). */}
+                <LogOut aria-hidden="true" size={16} />
+                <span className="lbl">로그아웃</span>
               </button>
             </form>
           ) : (
@@ -5876,7 +5991,7 @@ export function StudioShell({
           버튼도 같이 가서 되돌리려면 화면 폭만큼 마우스를 왕복해야 했다. 화면 중앙 고정 = 어느 쪽에서든
           같은 거리(Fitts). 남쪽이라 색은 은백 고스트(뜨거운 강조 없음). (비공개 경고 알약은 2026-08-27 철수.) */}
       {avatarEditor || zoomCollapse ? (
-        <div className="bottom-float-row">
+        <div className="bottom-float-row" ref={bottomRowRef}>
           {avatarEditor ? (
             <div className="studio-avatar-ctl" role="group" aria-label="아바타 자리 설정">
               <button

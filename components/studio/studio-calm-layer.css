@@ -50,19 +50,20 @@
   grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
 }
 
-/* 헤더 계정 모서리 — 한 줄 유지. ≤1560px에선 미리보기 버튼 라벨을 짧게("보여주기"/"미리보기")
-   + 간격 8px. 1440px 실측: 긴 라벨이면 로그아웃이 둘째 줄로 떨어져 헤더가 ≈120px. */
-.studio-role-tools .io-preview .lbl-short {
+/* 헤더 계정 모서리 — 한 줄 유지. ≤1560px에선 미리보기 버튼(관리자 .io-preview · 개발자 .preview-dd-trigger) 라벨을
+   짧게("보여주기"/"미리보기") + 간격 8px. 1440px 실측: 긴 라벨이면 로그아웃이 둘째 줄로 떨어져 헤더가 ≈120px.
+   (CSS 기본선 — JS 실측 단계 .studio-shell[data-chrome]가 그 위에서 더 접는다, 아래 ⑤.) */
+.studio-role-tools .lbl-short {
   display: none;
 }
 @media (max-width: 1560px) {
   .studio-role-tools {
     gap: 8px;
   }
-  .studio-role-tools .io-preview .lbl-long {
+  .studio-role-tools .lbl-long {
     display: none;
   }
-  .studio-role-tools .io-preview .lbl-short {
+  .studio-role-tools .lbl-short {
     display: inline;
   }
 }
@@ -386,4 +387,143 @@ html[data-studio-calm] .studio-shell .event-editor-panel form select,
 html[data-studio-calm] .studio-shell .event-editor-panel .fold-head,
 html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
   border-color: var(--gs-metal-line);
+}
+
+/* ── ⑤ 크롬 압축(2026-09-04 사용자: "창 비율을 억지로 망가뜨려도 대응") ─────────────────────────
+   docs/ux/chrome-compaction-manual.md. 원칙: 뜨거운 것(달력·저장 상태·달 이동)은 마지막까지, 차가운 것(라벨·버전·별·
+   아바타 자리)부터 접는다. 접혀도 title/aria-label은 남아 뜻이 안 사라진다.
+   가로 = JS 실측 단계(studio-shell.tsx chromeTier → .studio-shell[data-chrome="1|2|3"]): 헤더 한 줄이 넘치지 않는
+   가장 낮은 단계에서 멈춘다(임계 폭을 외우지 않는다 — 제목·역할·줌·글꼴이 달라도 맞다).
+     1 = 미리보기 라벨 짧게("보여주기") · 2 = 라벨→기호(관리자 배지 "?"만·눈·나가기 아이콘·"저장됨"만) ·
+     3 = 저장 상태 점만(색이 상태)·버전 배지 숨김·제목 축소·별 숨김·달 라벨 축소.
+   세로 = 뷰포트 높이 미디어(≤620 도구 타일 아이콘만·상단바 여백 축소, ≤470 아바타 자리 숨김) + rail 예산
+   (studio-shell.css: 필터 min-height 132 우선, 아바타 자리 flex-shrink 4가 먼저 내준다). */
+.studio-role-tools .button,
+.studio-role-tools .actor-badge,
+.studio-role-tools .preview-dd-trigger {
+  white-space: nowrap; /* 한 글자씩 줄바꿈("보여/주기")되는 대신 넘침으로 드러나 JS가 단계를 올린다 */
+}
+/* 1단계 */
+.studio-shell[data-chrome] .studio-role-tools {
+  gap: 8px;
+}
+.studio-shell[data-chrome] .studio-role-tools .lbl-long {
+  display: none;
+}
+.studio-shell[data-chrome] .studio-role-tools .lbl-short {
+  display: inline;
+}
+/* 2단계 */
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .actor-badge strong,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .lbl-short,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-logout .lbl,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-caret,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .save-status .ss-time {
+  display: none;
+}
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .actor-badge {
+  padding-inline: 9px;
+}
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .role-help-q {
+  margin-left: 0;
+}
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-preview,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-logout,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-trigger {
+  padding-inline: 10px;
+}
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .save-status,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .save-status em {
+  min-width: 0;
+}
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-meta-capsule {
+  margin-right: 0;
+}
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-topbar h1 {
+  font-size: 20px;
+}
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-poster-title {
+  gap: 8px;
+}
+/* 3단계 */
+.studio-shell[data-chrome="3"] .save-status em,
+.studio-shell[data-chrome="3"] .studio-left .studio-build-copy,
+.studio-shell[data-chrome="3"] .studio-poster-title span {
+  display: none;
+}
+.studio-shell[data-chrome="3"] .save-status {
+  width: 24px;
+  min-height: 24px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 50%;
+}
+.studio-shell[data-chrome="3"] .save-status .ss-dot {
+  width: 10px;
+  height: 10px;
+}
+.studio-shell[data-chrome="3"] .studio-meta-capsule {
+  align-self: center;
+}
+.studio-shell[data-chrome="3"] .studio-topbar {
+  gap: 8px;
+  padding-inline: 12px;
+}
+.studio-shell[data-chrome="3"] .studio-topbar h1 {
+  font-size: 17px;
+}
+.studio-shell[data-chrome="3"] .studio-month-label {
+  gap: 4px;
+}
+.studio-shell[data-chrome="3"] .studio-month-label strong {
+  font-size: 22px;
+}
+.studio-shell[data-chrome="3"] .month-nav-btn {
+  width: 34px;
+  height: 34px;
+}
+/* 세로 1단계(≤620px 창 — 1366×768 노트북(≈650)은 건드리지 않는다): 도구 타일 아이콘만(한 줄 4개), rail 간격 6,
+   상단바 위아래 여백 축소. 아이콘만이라 ≤1300px의 2×2 배치도 한 줄로 되돌린다. */
+@media (min-width: 641px) and (max-height: 620px) {
+  .studio-tools {
+    padding: 4px;
+  }
+  .studio-tools .stool {
+    min-height: 36px;
+    padding: 7px 4px;
+  }
+  .studio-tools .stool span {
+    display: none;
+  }
+  .avatar-rail .studio-tools {
+    grid-auto-flow: column;
+    grid-template-columns: none;
+  }
+  .studio-left-panel .studio-tools {
+    grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+  }
+  .studio-shell.avatar-scene .avatar-rail {
+    gap: 6px;
+  }
+  /* 낮은 창에선 아바타 자리 기준을 58→45%로 — 필터가 최소(132)만 받고 빈 자리가 절반을 쥐는 대신 칩 서너 줄이
+     보인다(1147×527 실측: 132 → 188px). 정상 높이(>620)는 58% 그대로. */
+  .avatar-rail .avatar-slot {
+    flex-basis: 45%;
+  }
+  .studio-topbar {
+    padding-block: 10px;
+  }
+}
+/* 세로 2단계(≤470px 창): 아바타 자리(빈 공간) 자체를 숨겨 필터가 rail을 다 쓴다. 상단바 최소 여백, 달력 아래
+   알약 여백도 줄인다. */
+@media (min-width: 641px) and (max-height: 470px) {
+  .avatar-rail .avatar-slot {
+    display: none;
+  }
+  .studio-topbar {
+    padding-block: 6px;
+  }
+  .studio-workspace {
+    padding-bottom: 56px;
+  }
 }

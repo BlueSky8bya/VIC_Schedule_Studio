@@ -172,6 +172,16 @@ private layers is retired — ADR-0014; the server model stays.)
   probe, `lib/ui/gfx.ts`) and use transform/opacity only.
 - **HCI:** minimize eye/pointer travel, keep related things close, preserve position across
   state changes (a loading skeleton sits where the real content will land).
+- **Cramped-window compaction (2026-09-04, `docs/ux/chrome-compaction-manual.md`).** The studio web chrome
+  must survive any forced window ratio: cold things fold first (labels → build tag → ✨ → avatar slot), hot things
+  (calendar, save state, month nav) last, and every folded label keeps `aria-label`/`title`. Width tiers are
+  **measured, never hardcoded** — `chromeTier` in `studio-shell.tsx` raises `.studio-shell[data-chrome="1|2|3"]`
+  until the one-row header stops overflowing (1 short preview label · 2 "?"-only badge, icon-only 보여주기/로그아웃,
+  no save time · 3 save dot only, build tag/✨ hidden, smaller title/month). Height: the tag-filter card keeps
+  ≥132px (title + two chip rows) and the empty avatar slot yields first (`flex-shrink 4`); ≤620px → icon-only
+  tool tiles, ≤470px → avatar slot hidden. Floating pills live in `.bottom-float-row`, which dodges an open
+  editor popover sideways (or goes under it, faded, when there is no room). New header/rail elements follow
+  the manual's checklist.
 
 ## Optimistic writes & gating
 

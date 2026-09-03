@@ -102,6 +102,21 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   참조하는 항상-false 스텁이라 유지). 순서: 코드 push → 0074 적용(옛 코드도 조회 실패를 삼켜 안 깨짐). 공개 API DTO
   무변화. 검증: tsc·lint(기존 경고 2)·vitest 522·build exit 0·비주얼 79·Playwright(편집실·모바일 DOM "매니저" 0, 도구
   타일 [태그 편집·인사이트·단축키·설정], 개발자 미리보기 3개, 역할 팝오버에 '멤버' 없음).
+  ⑳ **크롬 압축 매뉴얼(2026-09-04 사용자: "창 비율을 억지로 망가뜨려도 대응" + "팝오버와 아바타 알약 겹침이 세다")**
+  — `docs/ux/chrome-compaction-manual.md`, CSS studio-calm-layer.css ⑤. ① 가로: JS 실측 단계 `chromeTier`
+  (`.studio-shell[data-chrome="1|2|3"]`) — 임계 폭을 외우지 않고 헤더 한 줄이 넘치지 않는 첫 단계에서 멈춤(넘침 =
+  topbar scrollWidth 또는 제목·달·계정 세 칸 겹침; 계정 버튼 전부 nowrap). 1 미리보기 라벨 짧게 · 2 배지 "?"만·
+  보여주기/로그아웃/역할 미리보기 아이콘만(aria-label·title 유지)·저장 시각 숨김·제목 20px · 3 저장 점만(24px 원,
+  색이 상태)·버전 배지·별 숨김·제목 17·달 22·‹› 34. ② 세로: 필터 `flex: 1 1 132px; min-height 132`(제목+칩 두 줄),
+  아바타 자리 `flex: 0 4 58%`(빈 자리가 먼저 양보; 정상 창은 픽셀 동일), ≤620px 창 도구 타일 아이콘만·한 줄 4개·
+  rail 간격 6·상단바 여백 10·아바타 기준 45%, ≤470px 아바타 자리 숨김·여백 6. ③ 팝오버 ↔ `.bottom-float-row`:
+  rAF 틱에서 알약 **자연 위치**(화면 중앙) 기준 겹침 → 팝오버 옆(가까운 쪽, workspace 안)으로 `--bfr-shift` 스프링
+  이동, 자리 없으면 `data-dodge="fade"` = 행을 팝오버 아래(z 11)로 + opacity .14(클릭이 팝오버에 닿음), 닫으면
+  원위치. 실측(.scratch-pw/verify-compaction.mjs, dev+fixture): 폭 1600→1000 owner/developer 넘침·겹침·두 줄 0,
+  전이 1140/1120→2단계(3단계는 제목이 더 길거나 줌이 클 때만); 높이 900→380 필터 제목 항상 보임·≥132·rail 넘침
+  0(620: 타일 46px 4열·필터 238, 460: 아바타 0); 팝오버 열기 → 알약 −53px side·교차 0, 강제 500px workspace →
+  fade + elementFromPoint 팝오버, 닫기 → 초기화. 로그아웃 버튼에 LogOut 아이콘, 개발자 미리보기 트리거에 Eye 아이콘
+  +lbl-long/short 추가(관리자 버튼과 같은 문법).
   ⑯ **앰비언트 계절 레이어(2026-09-04 사용자 "시작", ADR-0017, PLAN-20260904-001 1·2단계; 같은 날 ⑱로 개정 —
   절기·물결 상수 → 달력 달·물결 여름 전유)**: 레지스트리
   `components/shared/ambient/registry.ts`(KST 절기 계절: 입춘 2/4·입하 5/5·입추 8/7·입동 11/7, `SPECIAL_DAYS` 비어
