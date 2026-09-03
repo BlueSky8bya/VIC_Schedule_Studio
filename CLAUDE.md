@@ -53,7 +53,7 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
 - Implemented as the reversible `html[data-studio-calm]` theme (default ON, toggle in the role badge
   popover). New owner-screen UI should read its colors from `--studio-*` tokens under that attribute.
 - **Chrome placement (배치 대개편, 2026-09-03).** Studio web chrome is ONE north row: title · month nav ·
-  save state · viewer preview · role badge · logout. Cold tools (태그 편집 · 멤버 관리 · 월별 인사이트 ·
+  save state · role badge · viewer preview · logout (owner-specified order). Cold tools (태그 편집 · 멤버 관리 · 월별 인사이트 ·
   단축키) live in the **west rail tools card** under the tag filter (`.studio-tools`); the avatar
   left/right control is a **fixed bottom-center pill** (`.bottom-float-row`) — never inside the rail,
   because the rail moves to the other side and the control would travel with it (owner feedback

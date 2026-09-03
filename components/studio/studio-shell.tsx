@@ -203,6 +203,7 @@ function tidePath(amp: number, mid: number, periods: number, closed: boolean): s
 }
 const TIDE_FILL_1 = tidePath(22, 78, 4, true);
 const TIDE_FILL_2 = tidePath(16, 112, 6, true);
+const TIDE_FILL_3 = tidePath(10, 56, 8, true); // 먼 물·하늘물(짧은 파장, 낮은 진폭)
 const TIDE_LINE = tidePath(22, 78, 4, false);
 
 const InsightsDashboard = dynamic(
@@ -6119,16 +6120,32 @@ export function StudioShell({
       <div className="studio-tide" aria-hidden="true">
         <div className="tide-swell tide-swell-a" />
         <div className="tide-swell tide-swell-b" />
+        <div className="tide-swell tide-swell-c" />
+        {/* 북쪽 하늘물 — 유리 상단바 뒤로 비치는 뒤집힌 얕은 물결(반대 방향, 아주 옅게). */}
+        <div className="tide-sky">
+          <svg className="tide-wave tide-sky-fill" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
+            <path d={TIDE_FILL_3} />
+          </svg>
+        </div>
+        {/* 바다 — 먼 물(3) · 중간(2) · 가까운(1) 세 겹 + 은선(글로우 밑받침 위에 날카로운 선) + 빛살 둘. */}
         <div className="tide-sea">
+          <svg className="tide-wave tide-fill-3" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
+            <path d={TIDE_FILL_3} />
+          </svg>
           <svg className="tide-wave tide-fill-2" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
             <path d={TIDE_FILL_2} />
           </svg>
           <svg className="tide-wave tide-fill-1" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
             <path d={TIDE_FILL_1} />
           </svg>
+          <svg className="tide-wave tide-line-glow" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
+            <path d={TIDE_LINE} vectorEffect="non-scaling-stroke" />
+          </svg>
           <svg className="tide-wave tide-line" preserveAspectRatio="none" viewBox={`0 0 ${TIDE_W} ${TIDE_H}`}>
             <path d={TIDE_LINE} vectorEffect="non-scaling-stroke" />
           </svg>
+          <div className="tide-ray tide-ray-a" />
+          <div className="tide-ray tide-ray-b" />
         </div>
       </div>
       <header className="studio-topbar">
@@ -6182,6 +6199,9 @@ export function StudioShell({
           {/* 배포 버전 배지는 왼쪽 데스크 라벨 아래로 이사 — 여기는 저장 상태 칩만.
               칩의 아래 끝선은 역할 배지 버튼의 아래 끝선과 맞춘다(.studio-meta-capsule). */}
           <div className="studio-meta-capsule">{renderSaveStatus()}</div>
+          {/* 계정 모서리(북동, 2026-09-03 배치 대개편): 역할 배지("?" 권한·설정 팝오버)는 미리보기 버튼 **왼쪽**
+              (사용자 지정 순서: 저장 상태 · 관리자 · 시청자 화면 보여주기 · 로그아웃). 관리 도구는 서쪽 rail. */}
+          {renderRoleBadge()}
           {/* 역할 배지·로그아웃은 액션바 오른쪽(단축키 옆)으로 이사(2026-08-27 사용자 지정 배치) —
               헤더는 저장 상태 + 미리보기만. */}
           {/* 미리보기 안내는 역할 배지("?") 설명 팝오버 안 작은 문구로 일원화(별도 플래그 제거). */}
@@ -6197,9 +6217,6 @@ export function StudioShell({
               <span className="lbl-short">{isEffectivelyOwner ? "보여주기" : "미리보기"}</span>
             </button>
           )}
-          {/* 계정 모서리(북동, 2026-09-03 배치 대개편): 역할 배지("?" 권한·설정 팝오버) + 로그아웃.
-              옛 액션바 행이 사라지며 여기로 — 관리 도구는 서쪽 rail 도구 카드(studioToolsPanel)로 갔다. */}
-          {renderRoleBadge()}
           {actor.isAuthenticated ? (
             <form action="/api/auth/logout" method="post">
               <button

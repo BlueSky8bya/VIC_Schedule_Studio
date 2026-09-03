@@ -243,15 +243,73 @@ html[data-studio-calm] .studio-avatar-ctl .avatar-ctl-label {
     transform: translate3d(-6%, -6%, 0);
   }
 }
-/* 바다 — 아래 30%. 너울(위아래 8px)은 바다 전체에, 흐름은 파형마다 다른 속도로. */
+/* 검이불누 화이불치(2026-09-03 사용자: "밑에서 잔잔하기만 하다") — 깊이 세 겹·은선 글로우·빛살·하늘물로
+   존재감을 올리되, 전부 느리고(26~70초) 대비는 낮게. 세 번째 스웰은 가운데서 아주 크게 숨쉰다. */
+.tide-swell-c {
+  left: 22%;
+  top: 18%;
+  width: 56%;
+  height: 60%;
+  background: radial-gradient(closest-side, rgb(var(--studio-action-rgb) / 6%), rgb(var(--studio-action-rgb) / 0%));
+  animation: tide-drift-c 64s ease-in-out infinite alternate;
+}
+@keyframes tide-drift-c {
+  to {
+    transform: translate3d(-5%, 6%, 0) scale(1.08);
+  }
+}
+/* 하늘물 — 상단 14%, 세로 뒤집어 마루가 아래를 향하고 반대 방향으로 아주 옅게 흐른다. 유리 상단바
+   (backdrop blur) 뒤로 번져 보이는 것이 목적. */
+.tide-sky {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 14%;
+  transform: scaleY(-1);
+  will-change: transform;
+}
+.tide-sky-fill {
+  animation-duration: 70s;
+  animation-direction: reverse;
+}
+.tide-sky-fill path {
+  fill: rgb(var(--studio-action-rgb) / 5%);
+}
+/* 바다 — 아래 36%. 너울(위아래 8px)은 바다 전체에, 흐름은 파형마다 다른 속도로. */
 .tide-sea {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
-  height: 30%;
+  height: 36%;
+  overflow: hidden;
   will-change: transform;
   animation: tide-bob 9s ease-in-out infinite alternate;
+}
+/* 빛살 — 물 위를 비스듬히 지나는 흰 광선 둘(아주 옅게, 26·38초). 화(華)의 몫, 치(侈)는 아니게 35%/25%. */
+.tide-ray {
+  position: absolute;
+  bottom: -10%;
+  width: 18%;
+  height: 120%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 35%) 50%, transparent);
+  will-change: transform;
+  animation: tide-ray 26s ease-in-out infinite alternate;
+}
+.tide-ray-b {
+  width: 12%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 25%) 50%, transparent);
+  animation-duration: 38s;
+  animation-delay: -14s;
+}
+@keyframes tide-ray {
+  from {
+    transform: translate3d(-40%, 0, 0) skewX(-18deg);
+  }
+  to {
+    transform: translate3d(560%, 0, 0) skewX(-18deg);
+  }
 }
 @keyframes tide-bob {
   to {
@@ -274,24 +332,40 @@ html[data-studio-calm] .studio-avatar-ctl .avatar-ctl-label {
   }
 }
 .tide-fill-1 path {
-  fill: rgb(var(--studio-action-rgb) / 7%);
+  fill: rgb(var(--studio-action-rgb) / 9%);
 }
 .tide-fill-2 {
   animation-duration: 62s;
 }
 .tide-fill-2 path {
-  fill: rgb(var(--studio-action-rgb) / 4%);
+  fill: rgb(var(--studio-action-rgb) / 6%);
 }
-/* 은선(금) — 같은 파형이 채움보다 살짝 빠르게 흘러 마루가 반짝인다. 날카롭게: 1.25px, 배율 무관 굵기. */
-.tide-line {
+/* 먼 물 — 짧은 파장, 가장 느리고 옅게(깊이감). */
+.tide-fill-3 {
+  animation-duration: 84s;
+}
+.tide-fill-3 path {
+  fill: rgb(var(--studio-action-rgb) / 3.5%);
+}
+/* 은선(금) — 같은 파형이 채움보다 살짝 빠르게 흘러 마루가 반짝인다. 날카롭게: 1.5px, 배율 무관 굵기.
+   밑에 같은 선을 굵고 옅게 한 번 더(글로우) — filter 없이 빛나 보이게(합성기 친화). */
+.tide-line,
+.tide-line-glow {
   animation-duration: 40s;
 }
-.tide-line path {
+.tide-line path,
+.tide-line-glow path {
   fill: none;
-  stroke: rgb(120 148 184 / 55%);
-  stroke-width: 1.25px;
   stroke-linecap: round;
   shape-rendering: geometricPrecision;
+}
+.tide-line path {
+  stroke: rgb(120 148 184 / 62%);
+  stroke-width: 1.5px;
+}
+.tide-line-glow path {
+  stroke: rgb(150 178 214 / 16%);
+  stroke-width: 7px;
 }
 
 /* ── ③ 차분 모드 상단바(북=수) — 은선 헤어라인 + 18초에 한 번 지나가는 글린트(1px 띠라 비용 0에 가깝다). */
@@ -376,9 +450,13 @@ html[data-studio-calm] .role-help-pop {
   background: #f7fafd;
 }
 /* 금 */
+/* ⚠ 팝오버의 **종류 색은 건드리지 않는다**(2026-09-03 사용자: "고유 색은 왜 없앴어") — 윗변 3px 액센트
+   (수정 보라 · 새 일정 초록 · 업 도움 장미 · 기간 안내 하늘)와 손잡이 스트립 틴트·그립 색은 studio-shell.css의
+   종류 규칙 그대로. 여기선 좌/우/아래 변만 은선, 면은 금, 광택(inset 하이라이트)만 얹는다. */
 html[data-studio-calm] .studio-shell .event-editor-panel form,
 html[data-studio-calm] .studio-shell .event-editor-panel .event-detail-readonly {
-  border: 1px solid var(--gs-metal-line-strong);
+  border-inline-color: var(--gs-metal-line-strong);
+  border-bottom-color: var(--gs-metal-line-strong);
   border-radius: 14px;
   background: var(--gs-metal-face);
   box-shadow:
@@ -386,13 +464,12 @@ html[data-studio-calm] .studio-shell .event-editor-panel .event-detail-readonly 
     0 0 0 1px rgb(255 255 255 / 60%),
     0 14px 34px -16px rgb(38 50 66 / 45%);
 }
+/* 손잡이 스트립 — 종류 틴트 배경 위에 금 광택(윗 흰 줄 + 아랫 어두운 헤어라인)만. 배경·그립 색은 종류 규칙. */
 html[data-studio-calm] .studio-shell .event-editor-panel .editor-grab {
-  background: var(--gs-metal-sheen);
-  border-bottom: 1px solid var(--gs-metal-line);
   border-radius: 13px 13px 0 0;
-}
-html[data-studio-calm] .studio-shell .event-editor-panel .editor-grab span {
-  background: var(--gs-metal-line-strong);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 70%),
+    inset 0 -1px 0 rgb(38 50 66 / 8%);
 }
 html[data-studio-calm] .studio-shell .button:not(.primary):not(.danger) {
   border-color: var(--gs-metal-line);
