@@ -13,7 +13,7 @@
    앉는 카드)는 건드리지 않는다 — 물결은 표면 '주위'에만, export 캡처(data-export-surface)는 표면만
    찍으므로 물결은 애초에 캡처에 안 들어간다(결정성 문제 없음). */
 @media (min-width: 641px) {
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .poster-page {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .poster-page {
     background: transparent;
   }
 }
@@ -23,20 +23,20 @@
    철수(ADR-0015)됐고, 비주얼 테스트는 동작 줄이기 ON(물결 숨김 → 불투명)이라 결정성 그대로. 조건 밖
    (동작 줄이기·약한 기기·모바일)에선 원래 불투명. */
 @media (min-width: 641px) {
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .poster-surface {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .poster-surface {
     background: linear-gradient(180deg, rgb(255 253 246 / 56%), rgb(253 246 228 / 56%));
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .public-day:not(.today) {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .public-day:not(.today) {
     background: rgb(255 254 251 / 46%);
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .public-day.outside {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .public-day.outside {
     background: rgb(241 233 216 / 52%);
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .weekday-row {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .weekday-row {
     background: rgb(251 247 238 / 70%);
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .rail-info-card,
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .public-legend-vertical {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .rail-info-card,
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .public-legend-vertical {
     background: rgb(255 253 246 / 76%);
   }
 }

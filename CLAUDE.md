@@ -59,9 +59,14 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   because the rail moves to the other side and the control would travel with it (owner feedback
   2026-09-03). Do not reintroduce a second full-width action row —
   the calendar (hot zone) owns that height. The rail's vertical budget is filter | tools | avatar 58%.
-- **Tide layer.** `.studio-tide` (water swells + one sharp silver line, `studio-calm-layer.css`) shows
-  only with calm ON ∧ 생동감 있는 동작 ON ∧ `data-gfx≠lite` ∧ web width. It is the only ambient
-  animation on owner screens; add nothing louder.
+- **Tide layer.** `.gs-tide` (`components/shared/water-tide.tsx`, shared by studio and viewer poster;
+  CSS in `app/metal-water.css`) — shallow-water caustics seen from above: thin bright cell network from
+  an SVG noise contour, drifting/skewing/breathing via transform+opacity only (filters rasterize once;
+  never animate scale, never blur/blend the layers — both cost frames). Shows only with 생동감 있는 동작
+  ON ∧ `data-gfx≠lite` ∧ web width; the 차분한 편집실 switch controls the palette only, not the water.
+  The studio instance is brighter than the viewer's (`.studio-shell .gs-tide*` overrides). It is the
+  only ambient animation; add nothing louder. Never give `html` a background — it stops body's canvas
+  propagation and paints over negative-z layers.
 
 ## Stack & layout
 

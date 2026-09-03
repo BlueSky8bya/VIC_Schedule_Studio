@@ -203,7 +203,7 @@ html[data-studio-calm] .studio-topbar {
    조건(위 .gs-tide 게이트와 동일)에서만 셸을 투명하게 비워 body의 아이보리(--paper) + 물결이 대신
    비친다. 조건이 안 맞으면(동작 줄이기·약한 기기·모바일) 셸의 원래 정적 배경이 그대로 남는다. */
 @media (min-width: 641px) {
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell {
     background: transparent;
   }
 }
@@ -284,19 +284,19 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
   /* 편집실 물결은 시청자 화면보다 세게(사용자: "있는지 없는지 모르겠다") — 공용 레이어의 편집실 안 인스턴스만
      필름·너울·햇살을 올린다. caustic 밝기는 숨쉼(opacity) 애니가 쥐고 있어 여기서 안 건드린다.
      시청자 화면(조화 좋다고 한 쪽)은 공용 기본값 그대로. */
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide {
     background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 7%) 0%, rgb(var(--gs-sea-rgb) / 12%) 100%);
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-swell {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-swell {
     background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 18%) 0%, rgb(var(--gs-sea-rgb) / 8%) 50%, rgb(var(--gs-sea-rgb) / 0%) 100%);
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-light {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-light {
     background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 56%) 0%, rgb(var(--gs-sun-rgb) / 26%) 50%, rgb(var(--gs-sun-rgb) / 0%) 100%);
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-caustic-a {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-caustic-a {
     animation-name: gs-caustic-a, gs-caustic-breathe-a-strong;
   }
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-caustic-b {
+  html:not([data-reduce-motion]):not([data-gfx="lite"]) .studio-shell .gs-tide-caustic-b {
     animation-name: gs-caustic-b, gs-caustic-breathe-b-strong;
   }
 }

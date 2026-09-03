@@ -4262,7 +4262,11 @@ html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-slot,
 html[data-reduce-motion] .studio-shell.avatar-scene .avatar-rail-filter {
   transition: none;
-  animation: none;
+  /* ⚠ animation: none이 아니라 duration 0 — 이름을 none으로 바꾸면 '생동감 있는 동작'을 다시 켤 때
+     animation-name이 none→rail-slide로 바뀌며 등장 애니가 **재시작**돼 rail(태그 필터·아바타 자리)이
+     한 번 더 미끄러져 들어왔다(2026-09-04 사용자: "토글 다시 켤 때 깜빡인다"). duration만 0이면 같은
+     애니가 즉시 끝 상태(fill both)에 머물고, 되돌려도 이미 끝난 애니라 다시 돌지 않는다. */
+  animation-duration: 0s;
   opacity: 1;
   transform: none;
 }

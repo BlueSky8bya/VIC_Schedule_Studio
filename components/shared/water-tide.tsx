@@ -14,22 +14,22 @@ export function WaterTide() {
           {/* caustic — 프랙탈 노이즈 → 밝기를 알파로 → 좁은 띠(테이블)만 남겨 등고선 = 셀 그물 → 살짝 번짐 →
               따뜻한 흰빛. a·b는 주파수·씨앗이 달라 겹치면 셀이 서로 어긋나 흔들려 보인다. */}
           <filter id="gs-caustic-a" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="0.016 0.019" numOctaves="3" seed="11" stitchTiles="stitch" result="noise" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.0095 0.0115" numOctaves="3" seed="11" stitchTiles="stitch" result="noise" />
             <feColorMatrix in="noise" type="luminanceToAlpha" result="lum" />
             <feComponentTransfer in="lum" result="ridge">
               <feFuncA type="table" tableValues="0 0 0 0 0 0 0 0.35 1 0.35 0 0 0 0 0 0 0" />
             </feComponentTransfer>
-            <feGaussianBlur in="ridge" stdDeviation="0.9" result="soft" />
+            <feGaussianBlur in="ridge" stdDeviation="1.3" result="soft" />
             <feFlood floodColor="#fffaf0" result="col" />
             <feComposite in="col" in2="soft" operator="in" />
           </filter>
           <filter id="gs-caustic-b" x="0" y="0" width="100%" height="100%" colorInterpolationFilters="sRGB">
-            <feTurbulence type="fractalNoise" baseFrequency="0.022 0.017" numOctaves="3" seed="29" stitchTiles="stitch" result="noise" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.013 0.0105" numOctaves="3" seed="29" stitchTiles="stitch" result="noise" />
             <feColorMatrix in="noise" type="luminanceToAlpha" result="lum" />
             <feComponentTransfer in="lum" result="ridge">
               <feFuncA type="table" tableValues="0 0 0 0 0 0 0 0 0.4 1 0.4 0 0 0 0 0 0" />
             </feComponentTransfer>
-            <feGaussianBlur in="ridge" stdDeviation="1.1" result="soft" />
+            <feGaussianBlur in="ridge" stdDeviation="1.5" result="soft" />
             <feFlood floodColor="#fff6e2" result="col" />
             <feComposite in="col" in2="soft" operator="in" />
           </filter>
