@@ -60,6 +60,7 @@ export function createSummer(seed: number): Scene {
   let shadow: HTMLCanvasElement | null = null;
   let duckSpr: Sprite | null = null;
   let ringSpr: Sprite | null = null;
+  let fishSpr: Sprite | null = null;
   let lastX = -9999;
   let lastY = -9999;
   let sx = -9999;
@@ -89,8 +90,9 @@ export function createSummer(seed: number): Scene {
     softBlob(g, STAMP_SPR / 2, STAMP_SPR / 2, STAMP_SPR * 0.3, "255 255 252", 0.8, 0);
     stampSpr = c;
     shadow = shadowSprite(96, 64, "30 60 90", 0.4);
-    void loadSprite(ASSET.duck, 54, 61).then((s) => (duckSpr = s)).catch(() => {});
+    void loadSprite(ASSET.duck, 56, 66).then((s) => (duckSpr = s)).catch(() => {});
     void loadSprite(ASSET.ring, 92, 92).then((s) => (ringSpr = s)).catch(() => {});
+    void loadSprite(ASSET.fish, 22, 42).then((s) => (fishSpr = s)).catch(() => {});
   }
   function ensureLo(f: Frame) {
     // 항적은 일부러 흐리게(0.28~0.36×) — 또렷한 가장자리가 어색함을 드러낸다(사용자 2026-09-04).
@@ -193,8 +195,8 @@ export function createSummer(seed: number): Scene {
       ensureLo(f);
       const ttl = lerp(1.5, 3.0, load);
       const gapPx = lerp(9, 4, load);
-      // ① 포인터 항적 — 길(팔·마루용 노드) + 거품 도장(길 위 몇 px마다).
-      if (p.inside && p.moved && p.speed > 40) {
+      // ① 포인터 항적 — 길(팔·마루용 노드) + 거품 도장(길 위 몇 px마다). 집중 모드(끌기 중)엔 쉰다 — 끌기 스프링에 프레임 양보.
+      if (!f.dim && p.inside && p.moved && p.speed > 40) {
         const sp = clamp(p.speed, 40, 2400);
         const sf = clamp((sp - 40) / 1400, 0.12, 1);
         const moved = Math.hypot(p.x - lastX, p.y - lastY);
@@ -431,27 +433,13 @@ export function createSummer(seed: number): Scene {
       L.setTransform(loS, 0, 0, loS, 0, 0);
       L.lineCap = "round";
       L.lineJoin = "round";
-      // 물고기 — 물 밑이라 흐릿한 청록 그림자(저해상 층): 몸통 타원 + 꼬리(sin으로 흔들림) + 등지느러미 점.
+      // 물고기 '깊이' — 저해상 층엔 몸 아래 물빛 그늘만(물 밑에 있다는 신호). 몸은 본 캔버스에 에셋으로.
       for (const q of fish) {
-        const wag = Math.sin(t * (q.flee > 0 ? 26 : 12) + q.ph) * 0.45;
         L.save();
         L.translate(q.x, q.y);
         L.rotate(q.hd);
         L.scale(q.k, q.k);
-        L.fillStyle = q.big ? "rgb(35 80 100 / 0.3)" : "rgb(40 95 115 / 0.36)";
-        L.beginPath();
-        L.ellipse(0, 0, 14, 5.5, 0, 0, TAU);
-        L.fill();
-        L.beginPath();
-        L.moveTo(-11, 0);
-        L.lineTo(-20, -6 + wag * 6);
-        L.lineTo(-20, 6 + wag * 6);
-        L.closePath();
-        L.fill();
-        L.fillStyle = "rgb(230 245 250 / 0.28)";
-        L.beginPath();
-        L.ellipse(3, -1.5, 5, 1.6, 0, 0, TAU);
-        L.fill();
+        softBlob(L, 2, 6, 22, "40 95 125", 0.26, 0);
         L.restore();
       }
       // 물방울 — 커지는 고리, 끝에 톡(작은 십자 튐).
@@ -485,7 +473,7 @@ export function createSummer(seed: number): Scene {
         const k = 1 - age / sttl;
         if (k <= 0) continue;
         const R = s.r * (1 + 1.9 * (1 - k));
-        L.globalAlpha = 0.62 * Math.pow(k, 1.3) * (0.4 + 0.6 * s.sf);
+        L.globalAlpha = 0.42 * Math.pow(k, 1.3) * (0.4 + 0.6 * s.sf);
         L.drawImage(stampSpr, s.x - R, s.y - R, R * 2, R * 2);
       }
       L.globalAlpha = 1;
@@ -509,10 +497,10 @@ export function createSummer(seed: number): Scene {
               const [x1, y1] = armPt(a1, s, age);
               const weight = 0.5 + 0.5 * a1.sf;
               if (pass === 0) {
-                L.strokeStyle = `rgb(150 195 228 / ${0.3 * k * weight})`;
+                L.strokeStyle = `rgb(150 195 228 / ${0.2 * k * weight})`;
                 L.lineWidth = 14 + 12 * (1 - k);
               } else {
-                L.strokeStyle = `rgb(255 255 250 / ${0.55 * Math.pow(k, 1.1) * weight})`;
+                L.strokeStyle = `rgb(255 255 250 / ${0.38 * Math.pow(k, 1.1) * weight})`;
                 L.lineWidth = 4 + 2 * (1 - k);
               }
               L.beginPath();
@@ -566,6 +554,29 @@ export function createSummer(seed: number): Scene {
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = "medium";
       g.drawImage(lo.c, 0, 0, f.w, f.h);
+      // 물고기(public/ambient/fish.svg) — 물 밑이라 반투명, 헤엄칠 때 꼬리 쪽이 좌우로 살랑(몸 뒤쪽을 잘게 기울여 그린다:
+      // 앞 절반은 그대로, 뒤 절반은 wag만큼 회전 — 스프라이트 두 조각).
+      if (fishSpr) {
+        for (const q of fish) {
+          const wag = Math.sin(t * (q.flee > 0 ? 22 : 9) + q.ph) * (q.flee > 0 ? 0.32 : 0.18);
+          const k = q.k;
+          const a = q.hd + Math.PI / 2;
+          g.save();
+          g.globalAlpha = q.big ? 0.5 : 0.66;
+          g.translate(q.x, q.y);
+          g.rotate(a + wag * 0.25);
+          g.scale(k, k);
+          const sw = fishSpr.w;
+          const sh = fishSpr.h;
+          // 앞 절반(머리~몸통)
+          g.drawImage(fishSpr.c, 0, 0, fishSpr.c.width, fishSpr.c.height * 0.55, -sw / 2, -sh / 2, sw, sh * 0.55);
+          // 뒤 절반(꼬리) — 몸통 중간을 축으로 wag만큼 더 돌린다.
+          g.translate(0, sh * 0.05);
+          g.rotate(wag);
+          g.drawImage(fishSpr.c, 0, fishSpr.c.height * 0.5, fishSpr.c.width, fishSpr.c.height * 0.5, -sw / 2, -sh * 0.05, sw, sh * 0.5);
+          g.restore();
+        }
+      }
       // 햇빛 반짝임 — 물결 위의 작은 별(숨쉬듯 밝아졌다 사라짐), 본 캔버스에 또렷하게.
       for (const gl of glints) {
         const a = Math.max(0, Math.sin(t * 1.4 + gl.ph));
@@ -674,6 +685,7 @@ export function createSummer(seed: number): Scene {
         sprites: { duck: !!duckSpr, ring: !!ringSpr },
         fish: fish.map((q) => [Math.round(q.x), Math.round(q.y), q.big ? 1 : 0, q.flee > 0 ? 1 : 0]),
         fishFled,
+        fishSprite: !!fishSpr,
         bubbles: bubbles.length,
         glints: glints.length
       };

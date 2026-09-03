@@ -59,7 +59,16 @@ export function ShowcaseButton({ season, className = "", compact = false }: { se
 
 /** 시청자 레일용: [계절 감상하기 | 배경 끄기/켜기] — 시청자는 설정 화면이 없어 계절 배경을 끌 길이 없었다(2026-09-04 사용자).
  *  같은 기기 저장값(vic.ambient)을 쓰므로 편집실 설정과 한 상태. 배경 OFF면 감상 버튼은 숨고(볼 게 없다) 켜기 토글만 남는다. */
-export function ViewerAmbientControl({ season, className = "" }: { season: SeasonKey; className?: string }) {
+export function ViewerAmbientControl({
+  season,
+  className = "",
+  onToggle
+}: {
+  season: SeasonKey;
+  className?: string;
+  /** 편집실: 설정의 스위치·배경 효과 잠금과 같은 경로로 바꾼다(기본은 setAmbient만). */
+  onToggle?: (next: boolean) => void;
+}) {
   const [on, setOn] = useState(true);
   useEffect(() => {
     const read = () => setOn(ambientEnabled());
@@ -77,7 +86,8 @@ export function ViewerAmbientControl({ season, className = "" }: { season: Seaso
         data-act="ambient-toggle-viewer"
         onClick={() => {
           const next = !on;
-          setAmbient(next);
+          if (onToggle) onToggle(next);
+          else setAmbient(next);
           setOn(next);
           if (!next) exitShowcase();
         }}

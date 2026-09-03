@@ -58,8 +58,10 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   toggle meaningless: "off just looks slightly darker"; the switch was removed, the pre-paint script always
   sets the attribute, CSS unchanged). New owner-screen UI should read its colors from `--studio-*` tokens
   under that attribute.
-- **Chrome placement (배치 대개편, 2026-09-03).** Studio web chrome is ONE north row: title · month nav ·
-  save state · role badge · viewer preview · logout (owner-specified order). Cold tools (태그 편집 · 인사이트 ·
+- **Chrome placement (배치 대개편, 2026-09-03).** Studio web chrome is ONE north row: build badge (the "✨ 빅토리 일정표 ✨"
+  title left the studio on 2026-09-04 — it lives on the viewer poster only) · month nav · save state · role badge · viewer
+  preview · logout (owner-specified order). Under the ambient gate the transparent topbar is `pointer-events: none` with
+  its three cells `auto`, so leaves under the old header area can be grabbed. Cold tools (태그 편집 · 인사이트 ·
   단축키 · **설정**) live in the **west rail tools card** under the tag filter (`.studio-tools`). **설정 (gear) is
   the single settings hub** (2026-09-04): every switch/preference (생동감 있는 동작 · 눈 편한 테마 · 계절 배경 ·
   배경 효과 · 포스터 테마, and anything new; 차분한 편집실 was removed the same day — always ON) goes into `components/studio/studio-settings.tsx`
@@ -131,7 +133,11 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   `html[data-showcase]` to hide all chrome and let the whole screen act as background; Esc or the top pill exits. The
   showcase button hides under the same gate as the ambient (계절 배경 OFF → gone). Viewers have no settings screen, so the
   viewer rail shows `[감상하기 | 배경 끄기]` (`ViewerAmbientControl`, same `vic.ambient` key); the toggle stays visible when
-  OFF as the only way back.
+  OFF as the only way back. The studio avatar slot carries the same `[감상하기 | 배경 끄기]` control wired through
+  `toggleAmbient` (one state with the settings switch and the 배경 효과 lock). **Focus dim:** while an event editor is open or
+  an event is being dragged the studio sets `html[data-ambient-dim]` and only the background layers drop to opacity .28
+  (never blur/filter, never text). `.gs-season`'s enter animation must keep `animation-fill-mode: backwards` — `both` pins
+  opacity 1 forever and defeats every cascade opacity (showcase, dim).
 - **Ambient pauses behind heavy media** (`lib/ui/ambient-pause.ts`, `html[data-ambient-pause]`): the VOD window, the
   viewer insights sheet and studio modals (except settings) hold the pause; the canvas loop stops on its last frame and
   the tide's animations pause. Never leave a full-screen animated layer running under a `backdrop-filter` or an iframe

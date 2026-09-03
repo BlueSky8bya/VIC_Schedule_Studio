@@ -30,7 +30,7 @@ import {
 import Link from "next/link";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
 import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registry";
-import { ShowcaseButton, ShowcaseExit } from "@/components/shared/ambient/showcase";
+import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
@@ -952,8 +952,8 @@ export function StudioShell({
   }, []);
   // 잠금(2026-09-04 사용자): 계절 배경 OFF ⇔ 배경 효과 '끄기'. 스위치를 끄면 셀렉트는 '끄기'로 잠기고, 다시 켜면
   // '끄기'였던 우선순위는 '자동'으로 풀린다. 셀렉트에서 '끄기'를 고르면 스위치도 함께 꺼진다 — 두 컨트롤이 한 상태.
-  const toggleAmbient = () => {
-    const next = !ambientOn;
+  const toggleAmbient = (force?: boolean) => {
+    const next = force ?? !ambientOn;
     setAmbient(next);
     setAmbientState(next);
     if (next && gfxPrefState === "off") {
@@ -1800,6 +1800,14 @@ export function StudioShell({
   // "유령(ghost)"이 손끝을 따라오고(웹·터치 공용), 가장자리에선 자동 스크롤된다.
   // (멀티데이 막대는 칸마다 쪼개 그려 드래그가 까다로워 제외 — 단일일 카드만 끌 수 있다.)
   const [dragEventId, setDragEventId] = useState<string | null>(null);
+  // 집중 모드(2026-09-04 사용자): 일정을 만지는 동안(편집 카드 열림·끌기) 계절 배경만 옅어진다 — 글자·달력은 그대로, 배경 레이어
+  // opacity만(app/ambient.css `html[data-ambient-dim]`). 끝나면 다시 살아난다.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (editorVisible || dragEventId !== null) root.setAttribute("data-ambient-dim", "1");
+    else root.removeAttribute("data-ambient-dim");
+    return () => root.removeAttribute("data-ambient-dim");
+  }, [editorVisible, dragEventId]);
   // 드래그 중 형제 카드 슬라이드 프리뷰(그림판 레이어 문법) 한 칸 크기 — 카드 높이+간격.
   const [dragChipH, setDragChipH] = useState(0);
   // 잇기(연결)를 '드래그'로만 하도록: 카드를 집으면 지금 이 카드와 이을 수 있는(연속+같은태그)
@@ -5950,7 +5958,9 @@ export function StudioShell({
             <div className="avatar-dock-inner">
               {/* 배경 감상 진입(2026-09-04 사용자: "누가 봐도 한 번 눌러보고 싶게, 설정 밖에") — 빈 아바타 자리 위쪽의
                   큰 계절 버튼. 슬롯은 pointer-events:none이라 버튼만 되살린다(CSS .slot-showcase). */}
-              <ShowcaseButton className="slot-showcase" season={ambientSeason} />
+              {/* [감상하기 | 배경 끄기] — 시청자 레일과 같은 묶음(2026-09-04 사용자: 설정 열지 않고 끄기). onToggle이 설정의
+                  스위치·배경 효과 잠금과 같은 경로(toggleAmbient)를 타서 설정 안 상태와 한 몸. */}
+              <ViewerAmbientControl className="slot-showcase" season={ambientSeason} onToggle={(next) => toggleAmbient(next)} />
               {/* 좌/우 세그먼트는 하단 중앙 플로팅 행(bottom-float-row)에 — 박스 안에 두면 rail과 함께
                   반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼(2026-09-03 사용자). */}
               {/* ("아바타 자리" 안내 글자는 2026-09-04 사용자 결정으로 제거 — 빈 자리 자체가 안내. aria-label은 aside에.) */}
@@ -6021,11 +6031,8 @@ export function StudioShell({
       <header className="studio-topbar">
         {/* 왼쪽 칸: 큰 제목 + 그 옆에 배포 버전 배지(헤더 세로 중앙, 클릭=버전 복사). */}
         <div className="studio-left">
-          <h1 className="studio-poster-title">
-            <span aria-hidden="true">✨️</span>
-            {schedule.calendar.title}
-            <span aria-hidden="true">✨️</span>
-          </h1>
+          {/* "✨ 빅토리 일정표 ✨" 제목은 시청자 화면(.poster-chrome-title)에만(2026-09-04 사용자) — 편집실 북서는 배포 버전 배지만
+              왼쪽 정렬. 문서 제목(document.title)은 그대로. */}
           <button
             aria-label={`배포 버전 ${buildSha} 복사`}
             className={`studio-build-tag studio-build-copy${isDevInsights ? " dev" : ""}`}

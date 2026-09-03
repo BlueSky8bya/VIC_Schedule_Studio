@@ -447,7 +447,6 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
 }
 /* 3단계 */
 .studio-shell[data-chrome="3"] .save-status em,
-.studio-shell[data-chrome="3"] .studio-left .studio-build-copy,
 .studio-shell[data-chrome="3"] .studio-poster-title span {
   display: none;
 }
@@ -767,6 +766,14 @@ html[data-studio-calm] .studio-role-tools .preview-dd-trigger:hover:not(:disable
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar::after {
     display: none;
+  }
+  /* 투명한 상단바는 빈 곳에서 포인터를 가로채지 않는다(2026-09-04 사용자: "옛 헤더 자리의 낙엽이 안 잡힌다") — 칸(제목·달·
+     계정 카드)만 포인터를 받는다. */
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar {
+    pointer-events: none;
+  }
+  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar > * {
+    pointer-events: auto;
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar h1,
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-month-label strong {

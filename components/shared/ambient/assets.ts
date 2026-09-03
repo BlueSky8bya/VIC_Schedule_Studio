@@ -11,7 +11,8 @@ export const ASSET = {
   acorn: "/ambient/acorn.svg",
   ladybug: "/ambient/ladybug.svg",
   rabbit: "/ambient/snow-rabbit.svg",
-  squirrel: "/ambient/squirrel.svg"
+  squirrel: "/ambient/squirrel.svg",
+  fish: "/ambient/fish.svg"
 } as const;
 
 export type Sprite = { c: HTMLCanvasElement; w: number; h: number }; // w/h = 그릴 때의 CSS px 크기

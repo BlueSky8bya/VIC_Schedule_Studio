@@ -22,8 +22,19 @@
   z-index: -1;
   pointer-events: none;
   contain: strict;
-  /* 달을 넘겨 계절이 바뀌면 새 장면이 스르르 — opacity만(합성기). */
-  animation: gs-season-in 0.9s ease-out both;
+  /* 달을 넘겨 계절이 바뀌면 새 장면이 스르르 — opacity만(합성기). fill은 backwards: both면 끝값(1)이 캐스케이드의 opacity
+     (집중 모드 옅어짐)를 영원히 덮는다. */
+  animation: gs-season-in 0.9s ease-out backwards;
+  transition: opacity 0.45s var(--ease, ease);
+}
+/* 집중 모드(2026-09-04 사용자): 일정 편집·끌기 중엔 배경 레이어만 옅어진다(글자·달력은 그대로). 필터·블러 없이 opacity만 —
+   움직이는 캔버스에 blur를 걸면 매 프레임 재합성이다. 편집실이 `html[data-ambient-dim]`을 켜고 끈다(studio-shell.tsx). */
+.gs-tide {
+  transition: opacity 0.45s var(--ease, ease);
+}
+html[data-ambient-dim] .gs-season,
+html[data-ambient-dim] .gs-tide {
+  opacity: 0.28;
 }
 @keyframes gs-season-in {
   from {

@@ -38,7 +38,11 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > 햇빛 반짝임·물방울, 겨울 **눈 토끼**(에셋; 튀어나와 두리번·콩콩·숨기, 포인터/클릭에 놀람)·눈보라 한 줄기, 가을 **바탕**
 > (흙 얼룩·시든 풀·잔가지·조약돌·버섯)·**다람쥐**(에셋; 도토리를 물고 달아남)·낙엽 회오리, 봄 **풀 흔들림**(풀포기 층을
 > 띠 12개 진행파로)·**민들레**(클릭 → 홀씨, 재생)·꿀벌. DPR은 마운트 때 고정(달 전환 2초 뒤 '재렌더'의 원인이던 런타임
-> DPR 전환 제거), 바탕은 크기별 결정적 난수. 항적은 더 옅고 흐리게(저해상 0.28~0.36×).
+> DPR 전환 제거), 바탕은 크기별 결정적 난수. 항적은 더 옅고 흐리게(저해상 0.28~0.36×). ⑩ 7차: **집중 모드**
+> `html[data-ambient-dim]`(편집·끌기 중 배경 레이어만 opacity .28), 투명 상단바 pointer-events none(옛 헤더 자리 잎 집기),
+> 물고기·오리 에셋 품질(fish.svg, duck.svg 재작업), 겨울 눈가루 재설계(흰 알갱이 모션 블러·가라앉음)와 발자국 쓸어 지우기,
+> 동물은 사라지지 않고 화면 밖으로 퇴장(토끼 flee·무당벌레·꿀벌), 봄 풀 흔들림은 꽃잎 앞머리 둘레만(타일 24×12), 편집실
+> 아바타 자리에도 `[감상하기 | 배경 끄기]`.
 - 관련: ADR-0016(금생수 — 물결 레이어), `components/shared/ambient/*`, `app/ambient.css`, `lib/ui/motion.ts`
   (`vic.ambient`), `docs/ux/seasonal-ambient-plan.md`(설계안), CLAUDE.md "Owner-fit palette rule"
 - Supersedes(예정, 4단계): 포스터 테마 7종(`calendars.poster_theme` = sakura/summer/autumn/winter/sunset/mint/dot/

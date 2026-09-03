@@ -6933,7 +6933,8 @@ html[data-pchrome="3"] .poster-chrome-title {
   text-overflow: ellipsis;
   text-align: center;
 }
-.public-calendar-header .viewer-actions .account-form .button:only-child {
+/* 로그인 버튼 하나뿐이면(이메일 없음 — hidden input이 형제라 :only-child는 안 맞는다) 카드를 꽉 채운다(사용자 사진: 오른쪽이 텅 빔). */
+.public-calendar-header .viewer-actions .account-form:not(:has(.account-email)) .button {
   flex: 1 1 auto;
   justify-content: center;
 }

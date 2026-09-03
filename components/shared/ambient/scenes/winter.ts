@@ -16,12 +16,13 @@ import { clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU } from "./uti
 type Flake = { x: number; y: number; life: number; dur: number; wait: number; r: number; rung: boolean };
 type Kind = "human" | "cat" | "bird" | "rabbit";
 type PrintKind = "sole" | "paw" | "bird" | "rHind" | "rFore";
-type Print = { x: number; y: number; a: number; kind: PrintKind; left: boolean; k: number; born: number };
+type Print = { x: number; y: number; a: number; kind: PrintKind; left: boolean; k: number; born: number; erase?: number };
+// 눈가루 — 흰 눈 알갱이(파란 테 없음), 속도 방향으로 길게 늘어져(모션 블러) 튀었다가 살짝 가라앉는다.
 type Dust = { x: number; y: number; vx: number; vy: number; life: number; r: number };
 type Ring = { x: number; y: number; life: number };
 type Twinkle = { x: number; y: number; ph: number; r: number };
 type Walker = { kind: Kind; x: number; y: number; dir: number; left: boolean; k: number; next: number; active: boolean; steps: number };
-type RabbitPhase = "emerge" | "sit" | "hop" | "rest" | "dive";
+type RabbitPhase = "emerge" | "sit" | "hop" | "rest" | "flee"; // flee = 화면 밖으로 빠르게 뛰어나감(사라지지 않는다)
 type Rabbit = { x: number; y: number; dir: number; phase: RabbitPhase; t0: number; hops: number; sx: number; sy: number; look: number; k: number };
 type Gust = { t0: number; dur: number; dir: number; y: number } | null;
 
@@ -36,6 +37,11 @@ export function createWinter(seed: number): Scene {
   const sprites = new Map<PrintKind, HTMLCanvasElement>();
   let rabbitSpr: Sprite | null = null;
   let shadow: HTMLCanvasElement | null = null;
+  let speck: HTMLCanvasElement | null = null;
+  let seeded = false;
+  let erased = 0;
+  let lastPX = -9999;
+  let lastPY = -9999;
   const flakes: Flake[] = [];
   const prints: Print[] = [];
   const dust: Dust[] = [];
@@ -145,6 +151,19 @@ export function createWinter(seed: number): Scene {
       sprites.set(kind, c);
     }
     shadow = shadowSprite(64, 64, "120 140 170", 0.45);
+    // 눈 알갱이 — 작은 원 다섯을 겹친 울퉁불퉁한 흰 조각(원형 점·파란 테 = 거품처럼 보였다).
+    {
+      const { c, g } = makeCanvas(24, 24);
+      g.translate(12, 12);
+      for (const [x, y, r] of [[0, 0, 5], [-3.2, -1.5, 3.2], [3, -2, 2.8], [1.5, 3, 3], [-2.5, 2.6, 2.4]] as const) {
+        softBlob(g, x, y, r + 2.5, "255 255 255", 0.55, 0);
+        g.fillStyle = "rgb(255 255 255 / 0.95)";
+        g.beginPath();
+        g.arc(x, y, r, 0, TAU);
+        g.fill();
+      }
+      speck = c;
+    }
     void loadSprite(ASSET.rabbit, 40, 55).then((s) => (rabbitSpr = s)).catch(() => {});
   }
   function drawPrint(g: CanvasRenderingContext2D, p: Print, alpha: number) {
@@ -266,14 +285,7 @@ export function createWinter(seed: number): Scene {
       g.arc(x, y, r, 0, TAU);
       g.fill();
     }
-    for (const kind of ["human", g0() < 0.5 ? "cat" : "rabbit"] as Kind[]) {
-      const [x, y, dir] = edgeStart(g0);
-      const wk = newWalker(kind, x, y, dir, 0, g0);
-      let guard = 0;
-      while (guard++ < 140 && wk.x > -40 && wk.x < w + 40 && wk.y > -40 && wk.y < h + 40) {
-        if (advance(wk, 0, (p) => drawPrint(g, p, 0.5), () => {}, g0) === "gone") break;
-      }
-    }
+    // (이미 지나간 자국은 바탕에 굽지 않는다 — 살아 있는 자국이어야 포인터로 지울 수 있다. resize에서 산 자국으로 심는다.)
     ground = c;
     gw = w;
     gh = h;
@@ -319,11 +331,23 @@ export function createWinter(seed: number): Scene {
     puff(x, y, 14, 130);
     rabbits++;
   }
-  function rabbitDive(t: number) {
-    if (!rabbit || rabbit.phase === "dive") return;
-    rabbit.phase = "dive";
-    rabbit.t0 = t;
-    puff(rabbit.x, rabbit.y, 12, 120);
+  // 놀라거나 다 놀았으면 가장 가까운 가장자리로 뛰어나간다 — 화면 밖에서 사라진다(순간이동 금지, 2026-09-04 사용자).
+  function rabbitFlee(t: number) {
+    if (!rabbit || rabbit.phase === "flee") return;
+    const r = rabbit;
+    const exits: [number, number][] = [
+      [-90, r.y],
+      [w + 90, r.y],
+      [r.x, -90],
+      [r.x, h + 90]
+    ];
+    exits.sort((a, b) => Math.hypot(a[0] - r.x, a[1] - r.y) - Math.hypot(b[0] - r.x, b[1] - r.y));
+    r.dir = Math.atan2(exits[0][1] - r.y, exits[0][0] - r.x);
+    r.phase = "flee";
+    r.t0 = t;
+    r.sx = r.x;
+    r.sy = r.y;
+    puff(r.x, r.y, 6, 90);
   }
 
   return {
@@ -331,6 +355,18 @@ export function createWinter(seed: number): Scene {
       w = f.w;
       h = f.h;
       if (!ground || gw !== w || gh !== h || gdpr !== f.dpr) bakeGround(f.dpr);
+      // 이미 지나간 자국 두 줄 — 산 자국으로(포인터로 지울 수 있게). 한 번만.
+      if (!seeded) {
+        seeded = true;
+        for (const kind of ["human", rand() < 0.5 ? "cat" : "rabbit"] as Kind[]) {
+          const [x, y, dir] = edgeStart();
+          const wk = newWalker(kind, x, y, dir, f.t - 30);
+          let guard = 0;
+          while (guard++ < 120 && wk.x > -40 && wk.x < w + 40 && wk.y > -40 && wk.y < h + 40) {
+            if (advance(wk, f.t - 30, (p) => prints.push(p), () => {}) === "gone") break;
+          }
+        }
+      }
       const n = flakeTarget(f);
       if (!flakes.length) while (flakes.length < n) flakes.push(newFlake());
       for (const s of flakes) {
@@ -359,8 +395,8 @@ export function createWinter(seed: number): Scene {
       if (rabbit) {
         const r = rabbit;
         const age = t - r.t0;
-        // 포인터가 다가오면 놀라 숨는다(뛰는 중엔 뛰다가).
-        if (p.inside && r.phase !== "dive" && r.phase !== "emerge" && Math.hypot(r.x - p.x, r.y - p.y) < 110) rabbitDive(t);
+        // 포인터가 다가오면 놀라 화면 밖으로 뛰어나간다(뛰는 중엔 뛰다가).
+        if (p.inside && r.phase !== "flee" && r.phase !== "emerge" && Math.hypot(r.x - p.x, r.y - p.y) < 110) rabbitFlee(t);
         if (r.phase === "emerge" && age > 0.55) {
           r.phase = "sit";
           r.t0 = t;
@@ -371,18 +407,34 @@ export function createWinter(seed: number): Scene {
           r.dir += (rand() - 0.5) * 1.2;
           r.sx = r.x;
           r.sy = r.y;
-        } else if (r.phase === "hop") {
-          const pgs = Math.min(1, age / 0.38);
-          r.x = r.sx + Math.cos(r.dir) * 46 * pgs;
-          r.y = r.sy + Math.sin(r.dir) * 46 * pgs;
+        } else if (r.phase === "hop" || r.phase === "flee") {
+          const fleeing = r.phase === "flee";
+          const dur = fleeing ? 0.24 : 0.38;
+          const dist = fleeing ? 64 : 46;
+          const pgs = Math.min(1, age / dur);
+          r.x = r.sx + Math.cos(r.dir) * dist * pgs;
+          r.y = r.sy + Math.sin(r.dir) * dist * pgs;
           if (pgs >= 1) {
             rabbitPrints(r.x, r.y, r.dir, t, 1.1);
-            puff(r.x, r.y, 3, 50);
-            r.hops--;
-            r.phase = r.hops > 0 ? "rest" : "dive";
-            r.t0 = t;
-            if (r.phase === "dive") puff(r.x, r.y, 12, 120);
-            if (r.x < 30 || r.x > w - 30 || r.y < 30 || r.y > h - 30) r.dir = Math.atan2(h / 2 - r.y, w / 2 - r.x);
+            puff(r.x, r.y, fleeing ? 4 : 3, 50);
+            if (fleeing) {
+              if (r.x < -70 || r.x > w + 70 || r.y < -70 || r.y > h + 70) {
+                rabbit = null;
+                nextRabbit = t + 25 + rand() * 40;
+              } else {
+                r.t0 = t;
+                r.sx = r.x;
+                r.sy = r.y;
+                r.dir += (rand() - 0.5) * 0.3;
+              }
+            } else {
+              r.hops--;
+              if (r.hops > 0) {
+                r.phase = "rest";
+                r.t0 = t;
+                if (r.x < 30 || r.x > w - 30 || r.y < 30 || r.y > h - 30) r.dir = Math.atan2(h / 2 - r.y, w / 2 - r.x);
+              } else rabbitFlee(t); // 다 놀았으면 뛰어서 나간다
+            }
           }
         } else if (r.phase === "rest" && age > 0.22 + rand() * 0.2) {
           r.phase = "hop";
@@ -390,9 +442,6 @@ export function createWinter(seed: number): Scene {
           r.dir += (rand() - 0.5) * 0.9;
           r.sx = r.x;
           r.sy = r.y;
-        } else if (r.phase === "dive" && age > 0.4) {
-          rabbit = null;
-          nextRabbit = t + 25 + rand() * 40;
         }
       }
       // ③ 눈보라 한 줄기 — 여력 0.6부터, 30~60초 간격, 3초. 앞머리를 따라 눈가루가 흩날린다.
@@ -456,23 +505,54 @@ export function createWinter(seed: number): Scene {
         rings[i].life -= dt / 0.7;
         if (rings[i].life <= 0) rings.splice(i, 1);
       }
-      // ⑤ 포인터 눈가루 — 빠를수록 많이, 손 방향으로. 여력 0.45부터.
+      // ⑤ 포인터 눈가루 — 빠를수록 많이, 손 방향으로 튀어 부채꼴로 흩어진다(모션 블러는 draw에서). 여력 0.45부터.
       if (p.inside && p.moved && p.speed > 220 && load >= 0.45) {
         const cap = Math.round(60 + 120 * load);
-        for (let i = 0; i < 3 && dust.length < cap; i++) {
-          const b = rand() * TAU;
-          const spread = 30 + rand() * 60;
-          dust.push({ x: p.x + (rand() - 0.5) * 10, y: p.y + (rand() - 0.5) * 10, vx: p.vx * 0.22 + Math.cos(b) * spread, vy: p.vy * 0.22 + Math.sin(b) * spread, life: 1, r: 1.4 + rand() * 2 });
+        const n = p.speed > 900 ? 4 : 3;
+        for (let i = 0; i < n && dust.length < cap; i++) {
+          const b = Math.atan2(p.vy, p.vx) + (rand() - 0.5) * 1.6; // 진행 방향 부채꼴
+          const sp = 60 + rand() * 160 + p.speed * 0.18;
+          dust.push({ x: p.x + (rand() - 0.5) * 8, y: p.y + (rand() - 0.5) * 8, vx: Math.cos(b) * sp, vy: Math.sin(b) * sp, life: 1, r: 1.1 + rand() * 1.5 });
           dustSpawned++;
         }
+        // 빠르게 훑고 지나가면 근처 발자국이 쓸려 지워진다(2026-09-04 사용자) — 이번 프레임에 포인터가 지나간 **선분** 둘레
+        // 44px 안의 자국이 한 번 훑을 때마다 절반쯤 지워진다(두세 번 왕복이면 사라짐). 지워지는 자국에선 눈이 조금 튄다.
+        if (p.speed > 320 && lastPX > -9000) {
+          const ax = lastPX;
+          const ay = lastPY;
+          const bx = p.x;
+          const by = p.y;
+          const abx = bx - ax;
+          const aby = by - ay;
+          const ab2 = abx * abx + aby * aby || 1;
+          for (let i = prints.length - 1; i >= 0; i--) {
+            const pr = prints[i];
+            const u = clamp(((pr.x - ax) * abx + (pr.y - ay) * aby) / ab2, 0, 1);
+            const d = Math.hypot(pr.x - (ax + abx * u), pr.y - (ay + aby * u));
+            if (d > 44) continue;
+            pr.erase = Math.min(1, (pr.erase ?? 0) + 0.5 * (1 - d / 44) + dt * 2);
+            if (dust.length < cap && rand() < 0.6) dust.push({ x: pr.x + (rand() - 0.5) * 8, y: pr.y + (rand() - 0.5) * 8, vx: p.vx * 0.25 + (rand() - 0.5) * 80, vy: p.vy * 0.25 + (rand() - 0.5) * 80, life: 0.8, r: 1.2 + rand() * 1.2 });
+            if (pr.erase >= 1) {
+              prints.splice(i, 1);
+              erased++;
+            }
+          }
+        }
+      }
+      if (p.inside) {
+        lastPX = p.x;
+        lastPY = p.y;
+      } else {
+        lastPX = -9999;
+        lastPY = -9999;
       }
       for (let i = dust.length - 1; i >= 0; i--) {
         const q = dust[i];
-        q.life -= dt / 0.75;
+        q.life -= dt / 0.85;
         q.x += q.vx * dt;
         q.y += q.vy * dt;
-        q.vx *= Math.pow(0.03, dt);
-        q.vy *= Math.pow(0.03, dt);
+        q.vx *= Math.pow(0.05, dt);
+        q.vy = q.vy * Math.pow(0.05, dt) + 26 * dt; // 살짝 가라앉는다
         if (q.life <= 0) dust.splice(i, 1);
       }
     },
@@ -491,7 +571,8 @@ export function createWinter(seed: number): Scene {
       }
       for (const p of prints) {
         const age = t - p.born;
-        const a = age > 70 ? Math.max(0, 1 - (age - 70) / 10) : 1;
+        const a = (age > 70 ? Math.max(0, 1 - (age - 70) / 10) : 1) * (1 - (p.erase ?? 0));
+        if (a <= 0.01) continue;
         drawPrint(g, p, 0.72 * a);
       }
       for (const r of rings) {
@@ -526,10 +607,8 @@ export function createWinter(seed: number): Scene {
           alpha = Math.min(1, pgs * 2);
         } else if (r.phase === "hop") {
           up = Math.sin(Math.PI * Math.min(1, age / 0.38));
-        } else if (r.phase === "dive") {
-          const pgs = Math.min(1, age / 0.4);
-          k *= 1 - pgs;
-          alpha = 1 - pgs;
+        } else if (r.phase === "flee") {
+          up = Math.sin(Math.PI * Math.min(1, age / 0.24)) * 1.2;
         }
         const ear = r.phase === "sit" ? Math.sin(t * 9) * 0.08 : 0;
         const look = r.phase === "sit" ? Math.sin(t * 1.7) * 0.25 : 0;
@@ -560,23 +639,27 @@ export function createWinter(seed: number): Scene {
         g.arc(s.x, s.y, r, 0, TAU);
         g.fill();
       }
-      for (const q of dust) {
-        const a = Math.max(0, q.life);
-        g.fillStyle = `rgb(150 180 212 / ${a * 0.5})`;
-        g.beginPath();
-        g.arc(q.x, q.y, q.r * (0.6 + (1 - q.life) * 0.6) + 0.8, 0, TAU);
-        g.fill();
-        g.fillStyle = `rgb(255 255 255 / ${a * 0.95})`;
-        g.beginPath();
-        g.arc(q.x, q.y, q.r * (0.6 + (1 - q.life) * 0.6), 0, TAU);
-        g.fill();
+      // 눈가루 — 흰 알갱이가 속도 방향으로 늘어져(모션 블러) 튀고, 느려지면 제 모양으로 가라앉는다.
+      if (speck) {
+        for (const q of dust) {
+          const a = Math.max(0, q.life);
+          const sp = Math.hypot(q.vx, q.vy);
+          const stretch = 1 + Math.min(5, sp * 0.012);
+          const r = q.r * (0.9 + (1 - q.life) * 0.5);
+          g.save();
+          g.globalAlpha = a * 0.92;
+          g.translate(q.x, q.y);
+          g.rotate(Math.atan2(q.vy, q.vx));
+          g.drawImage(speck, -r * stretch, -r, r * 2 * stretch, r * 2);
+          g.restore();
+        }
       }
     },
     pointerDown(f, onBackground) {
       if (f.load < 0.15) return false;
-      // 토끼를 누르면 놀라 숨는다(어디서든).
-      if (rabbit && rabbit.phase !== "dive" && Math.hypot(rabbit.x - f.p.x, rabbit.y - f.p.y) < 34) {
-        rabbitDive(f.t);
+      // 토끼를 누르면 놀라 뛰어나간다(어디서든).
+      if (rabbit && rabbit.phase !== "flee" && Math.hypot(rabbit.x - f.p.x, rabbit.y - f.p.y) < 34) {
+        rabbitFlee(f.t);
         return true;
       }
       if (!onBackground) return false;
@@ -600,6 +683,7 @@ export function createWinter(seed: number): Scene {
         kinds: prints.reduce<Record<string, number>>((m, p) => ((m[p.kind] = (m[p.kind] ?? 0) + 1), m), {}),
         rabbit: rabbit ? [Math.round(rabbit.x), Math.round(rabbit.y), rabbit.phase, rabbit.hops] : null,
         rabbits,
+        erased,
         rabbitSprite: !!rabbitSpr,
         gust: !!gust,
         gusts

@@ -1,18 +1,31 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 72">
-  <!-- 장난감 오리, 위에서 본 모습(앞 = 위). 팔레트: 버터 옐로(채도 낮춤)·살구 부리 — 편집실 오행 규칙(쨍한 노랑 금지). -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 76">
+  <!-- 장난감 오리, 위에서 본 모습(앞 = 위). 버터 옐로(채도 낮춤)·살구 부리 — 편집실 오행 규칙(쨍한 노랑 금지).
+       몸통 가장자리 음영, 접힌 날개 두 장(깃 줄), 머리 광택, 부리 콧구멍, 눈 하이라이트, 꼬리 깃 셋. -->
   <defs>
-    <radialGradient id="b" cx="42%" cy="38%" r="70%"><stop offset="0" stop-color="#f8e3a0"/><stop offset=".65" stop-color="#efcf78"/><stop offset="1" stop-color="#d6ad55"/></radialGradient>
-    <radialGradient id="h" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#fbe8ac"/><stop offset=".7" stop-color="#f0d17e"/><stop offset="1" stop-color="#dcb560"/></radialGradient>
+    <radialGradient id="b" cx="40%" cy="35%" r="72%"><stop offset="0" stop-color="#fbe9a9"/><stop offset=".55" stop-color="#f0d17c"/><stop offset="1" stop-color="#cfa54c"/></radialGradient>
+    <radialGradient id="h" cx="38%" cy="32%" r="70%"><stop offset="0" stop-color="#fdedb3"/><stop offset=".6" stop-color="#f1d382"/><stop offset="1" stop-color="#d4ad57"/></radialGradient>
+    <linearGradient id="w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e7c46a"/><stop offset="1" stop-color="#c9a04a"/></linearGradient>
   </defs>
-  <path d="M32 22 C46 22 52 34 52 48 C52 62 42 68 32 68 C22 68 12 62 12 48 C12 34 18 22 32 22Z" fill="url(#b)" stroke="#c99f4d" stroke-width="1.2"/>
-  <path d="M28 66 L32 71 L36 66" fill="#e9c86f" stroke="#c99f4d" stroke-width="1"/>
-  <path d="M16 44 C18 36 22 32 26 30 C24 40 22 50 20 58 C18 54 16 50 16 44Z" fill="#dcb85e" opacity=".75"/>
-  <path d="M48 44 C46 36 42 32 38 30 C40 40 42 50 44 58 C46 54 48 50 48 44Z" fill="#dcb85e" opacity=".75"/>
-  <ellipse cx="32" cy="42" rx="9" ry="12" fill="#fff" opacity=".18"/>
-  <circle cx="32" cy="20" r="14" fill="url(#h)" stroke="#c99f4d" stroke-width="1.2"/>
-  <path d="M25 10 C27 3 37 3 39 10 C37 12.5 27 12.5 25 10Z" fill="#e0a672" stroke="#c48a57" stroke-width="1"/>
-  <path d="M27 9.5 C30 11 34 11 37 9.5" fill="none" stroke="#c48a57" stroke-width=".8"/>
-  <circle cx="24.5" cy="16" r="2.4" fill="#3a3340"/><circle cx="39.5" cy="16" r="2.4" fill="#3a3340"/>
-  <circle cx="25.3" cy="15.2" r=".8" fill="#fff"/><circle cx="40.3" cy="15.2" r=".8" fill="#fff"/>
-  <ellipse cx="27" cy="14" rx="4" ry="2.4" fill="#fff" opacity=".35" transform="rotate(-25 27 14)"/>
+  <!-- 몸통(뒤가 넓은 달걀꼴) -->
+  <path d="M32 22 C47 22 53 35 53 49 C53 64 43 71 32 71 C21 71 11 64 11 49 C11 35 17 22 32 22Z" fill="url(#b)" stroke="#c49a48" stroke-width="1.2"/>
+  <!-- 꼬리 깃 셋 -->
+  <path d="M25 68 L28 76 L31 69 M31 69 L32 77 L33 69 M33 69 L36 76 L39 68" fill="#e6c46e" stroke="#c49a48" stroke-width="1" stroke-linejoin="round"/>
+  <!-- 접힌 날개(양쪽) + 깃 줄 -->
+  <path d="M15 42 C16 33 21 28 27 27 C26 38 24 50 21 62 C17 58 14 50 15 42Z" fill="url(#w)" stroke="#c49a48" stroke-width=".9"/>
+  <path d="M49 42 C48 33 43 28 37 27 C38 38 40 50 43 62 C47 58 50 50 49 42Z" fill="url(#w)" stroke="#c49a48" stroke-width=".9"/>
+  <path d="M19 40 C21 44 22 50 22 56 M17.5 46 C19.5 49 20.5 54 20.8 58 M45 40 C43 44 42 50 42 56 M46.5 46 C44.5 49 43.5 54 43.2 58" fill="none" stroke="#c49a48" stroke-width=".7" opacity=".7"/>
+  <!-- 등 광택 -->
+  <ellipse cx="32" cy="44" rx="6" ry="11" fill="#fff" opacity=".22"/>
+  <!-- 머리 -->
+  <circle cx="32" cy="20" r="14.5" fill="url(#h)" stroke="#c49a48" stroke-width="1.2"/>
+  <ellipse cx="26.5" cy="13.5" rx="4.5" ry="2.6" fill="#fff" opacity=".4" transform="rotate(-28 26.5 13.5)"/>
+  <!-- 부리(앞으로) + 콧구멍 -->
+  <path d="M24.5 10.5 C26 2.5 38 2.5 39.5 10.5 C37 13 27 13 24.5 10.5Z" fill="#e2a874" stroke="#c48a57" stroke-width="1"/>
+  <path d="M26.5 9.6 C30 11.4 34 11.4 37.5 9.6" fill="none" stroke="#c48a57" stroke-width=".8"/>
+  <ellipse cx="29.5" cy="6.8" rx="1" ry=".55" fill="#b8784a"/><ellipse cx="34.5" cy="6.8" rx="1" ry=".55" fill="#b8784a"/>
+  <!-- 눈(양쪽) -->
+  <circle cx="24.5" cy="16.5" r="2.5" fill="#3a3340"/><circle cx="39.5" cy="16.5" r="2.5" fill="#3a3340"/>
+  <circle cx="25.4" cy="15.6" r=".9" fill="#fff"/><circle cx="40.4" cy="15.6" r=".9" fill="#fff"/>
+  <!-- 볼 홍조(아주 옅게) -->
+  <ellipse cx="21" cy="21" rx="2.6" ry="1.5" fill="#e9b7a0" opacity=".45"/><ellipse cx="43" cy="21" rx="2.6" ry="1.5" fill="#e9b7a0" opacity=".45"/>
 </svg>

@@ -43,6 +43,8 @@ export type Frame = {
   reduced: boolean;
   /** 핫 존(달력 패널·포스터 표면)의 캔버스 좌표 — 소품(오리)이 그 위에서 서성이지 않게. 감상 모드·없으면 null. */
   hot: { x: number; y: number; w: number; h: number } | null;
+  /** 집중 모드(편집·끌기 중): 배경이 옅고 프레임이 절반 — 장면은 포인터 장난(항적 등)을 쉰다. */
+  dim: boolean;
 };
 
 export interface Scene {
@@ -97,6 +99,8 @@ const readReduced = () => document.documentElement.hasAttribute("data-reduce-mot
 const readOff = () => document.documentElement.getAttribute("data-ambient") === "off";
 // 일시정지(lib/ui/ambient-pause.ts): VOD 창·모달 백드롭 등 무거운 미디어 중엔 마지막 프레임을 둔 채 루프만 멈춘다.
 const readPaused = () => document.documentElement.hasAttribute("data-ambient-pause");
+// 집중 모드(편집·끌기 중, studio-shell.tsx): 배경이 옅어져 있으니 프레임도 절반만 그린다 — 끌기 스프링에 프레임을 양보한다.
+const readDim = () => document.documentElement.hasAttribute("data-ambient-dim");
 
 // 여력 띠 — [하한, 상한, 고정값|null]. 고정값이 있으면 조절기가 손대지 않는다.
 function loadBand(q: Quality): [number, number, number | null] {
@@ -119,7 +123,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
   let [floor, cap, fixed] = loadBand(q);
   let load = fixed ?? (q >= 2 ? 0.5 : (floor + cap) / 2);
   let forced: number | null = null;
-  const frame: Frame = { w: 0, h: 0, dpr: 1, t: 0, dt: 0, p, q, load, reduced: readReduced(), hot: null };
+  const frame: Frame = { w: 0, h: 0, dpr: 1, t: 0, dt: 0, p, q, load, reduced: readReduced(), hot: null, dim: readDim() };
   const scene = factory((Date.now() % 100000) + 7);
   const dbg: AmbientDebug = {
     season: canvas.dataset.season ?? "",
@@ -152,6 +156,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
   let last = 0;
   let running = false;
   let skip = false;
+  let dim = readDim();
   const gaps: number[] = [];
 
   const wantDpr = () => (q >= 2 && hiDpr ? Math.min(window.devicePixelRatio || 1, 1.5) : 1);
@@ -234,7 +239,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
       }
     }
     if (dt > 0.05) dt = 0.05;
-    if (q === 0) {
+    if (q === 0 || dim) {
       skip = !skip;
       if (skip) {
         raf = requestAnimationFrame(tick);
@@ -279,6 +284,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
     const nq = readQuality();
     frame.reduced = readReduced();
     const off = readOff();
+    dim = readDim();
+    frame.dim = dim;
     measureHot();
     if (nq !== q) {
       q = nq;
@@ -362,7 +369,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
   const mo = new MutationObserver(sync);
   mo.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ["data-reduce-motion", "data-gfx", "data-ambient", "data-ambient-pause", "data-showcase"]
+    attributeFilter: ["data-reduce-motion", "data-gfx", "data-ambient", "data-ambient-pause", "data-showcase", "data-ambient-dim"]
   });
 
   return () => {

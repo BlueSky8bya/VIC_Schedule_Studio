@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 44 84">
+  <!-- 열대어, 위에서 본 모습(앞 = 위). 방추형 몸통 + 가슴지느러미 한 쌍 + 등지느러미 능선 + 두 갈래 꼬리 + 가로 줄무늬.
+       색은 청록·슬레이트(물빛) — 붉·주황 금지. 물 밑이라 캔버스에서 반투명으로 그린다. -->
+  <defs>
+    <linearGradient id="b" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#3f8593"/><stop offset=".5" stop-color="#7fc0cb"/><stop offset="1" stop-color="#3f8593"/></linearGradient>
+    <linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4f97a4"/><stop offset="1" stop-color="#2f6673" stop-opacity=".85"/></linearGradient>
+  </defs>
+  <!-- 가슴지느러미 -->
+  <path d="M12 34 C4 36 1 42 3 48 C8 46 12 42 14 38Z" fill="#8ccad3" opacity=".8"/>
+  <path d="M32 34 C40 36 43 42 41 48 C36 46 32 42 30 38Z" fill="#8ccad3" opacity=".8"/>
+  <!-- 꼬리 -->
+  <path d="M22 60 C16 66 10 72 8 82 C14 79 18 74 22 71 C26 74 30 79 36 82 C34 72 28 66 22 60Z" fill="url(#t)"/>
+  <path d="M22 62 L14 78 M22 62 L30 78" fill="none" stroke="#e6f6f8" stroke-width=".8" opacity=".5"/>
+  <!-- 몸통 -->
+  <path d="M22 4 C31 8 35 22 34 38 C33 52 28 60 22 64 C16 60 11 52 10 38 C9 22 13 8 22 4Z" fill="url(#b)"/>
+  <!-- 가로 줄무늬 -->
+  <path d="M12 24 C18 27 26 27 32 24 L32.5 29 C26 32 18 32 11.5 29Z" fill="#2c5d69" opacity=".7"/>
+  <path d="M11 38 C18 41 26 41 33 38 L32.5 43 C26 46 18 46 11.5 43Z" fill="#2c5d69" opacity=".7"/>
+  <path d="M13 52 C18 54 26 54 31 52 L30 56 C26 58 18 58 14 56Z" fill="#2c5d69" opacity=".7"/>
+  <!-- 등 능선(등지느러미) -->
+  <path d="M22 12 L22 58" fill="none" stroke="#e8f7f9" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
+  <path d="M22 26 C24 30 24 44 22 50 C20 44 20 30 22 26Z" fill="#a9dde4" opacity=".55"/>
+  <!-- 눈 -->
+  <circle cx="17" cy="14" r="1.8" fill="#1f3a42"/><circle cx="27" cy="14" r="1.8" fill="#1f3a42"/>
+  <circle cx="17.6" cy="13.4" r=".6" fill="#fff"/><circle cx="27.6" cy="13.4" r=".6" fill="#fff"/>
+  <!-- 머리 하이라이트 -->
+  <ellipse cx="19" cy="9" rx="2.4" ry="1.4" fill="#fff" opacity=".35" transform="rotate(-20 19 9)"/>
+</svg>

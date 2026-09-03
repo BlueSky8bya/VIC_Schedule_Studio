@@ -756,7 +756,7 @@ export function createAutumn(seed: number): Scene {
         gust: !!gust,
         wind: windCount,
         species: SPECIES.map((_, i) => leaves.filter((l) => l.sp === i).length),
-        pos: leaves.slice(0, 8).map((l) => [Math.round(l.x), Math.round(l.y), Math.round(l.s)])
+        pos: leaves.map((l) => [Math.round(l.x), Math.round(l.y), Math.round(l.s)])
       };
     }
   };

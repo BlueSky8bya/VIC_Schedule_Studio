@@ -27,7 +27,10 @@ export const SWAY_IDLE = 0.32;
 /** 던져 버릴 때(화면 밖) 판정 — 회전이 없어졌으므로 **속도만** 본다. */
 export const FLING_SPEED = 1.35;
 
-/** 한 프레임 스프링 적분(semi-implicit Euler). dt는 초 단위, 큰 프레임 끊김은 잘라 안정성 확보. */
+/** 한 프레임 스프링 적분(semi-implicit Euler). dt는 초 단위.
+ *  프레임이 늦어도(느린 기기·헤드리스 20fps) **벽시계 시간을 지킨다** — 1/60초 이하 조각으로 나눠 적분(안정)하고, 총 0.1초까지만
+ *  따라잡는다(탭 정지 뒤 폭주 방지). 옛 구현은 프레임을 1/30초로 잘라 버려 느린 기기에서 스프링이 슬로모션으로 돌았다
+ *  (2026-09-04 실측: 19fps에서 손을 500ms 뒤따른 유령이 3px 뒤처져 있었다). */
 export function springStep(
   pos: number,
   vel: number,
@@ -36,10 +39,18 @@ export function springStep(
   damp: number,
   dt: number
 ): { pos: number; vel: number } {
-  const h = Math.min(Math.max(dt, 0), 1 / 30); // 30fps보다 긴 프레임은 잘라낸다(발산 방지)
-  const a = -stiff * (pos - target) - damp * vel;
-  const v = vel + a * h;
-  return { pos: pos + v * h, vel: v };
+  let remaining = Math.min(Math.max(dt, 0), 0.1);
+  let p = pos;
+  let v = vel;
+  if (remaining <= 0) return { pos: p, vel: v };
+  while (remaining > 0) {
+    const h = Math.min(remaining, 1 / 60);
+    const a = -stiff * (p - target) - damp * v;
+    v += a * h;
+    p += v * h;
+    remaining -= h;
+  }
+  return { pos: p, vel: v };
 }
 
 /**

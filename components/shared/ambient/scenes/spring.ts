@@ -19,7 +19,10 @@ const WINGS = [
   { a: "#fbe9b0", b: "#e2c874", rim: "#a68a3a", spot: "#ffffff", eye: "#6b5a26" },
   { a: "#bfe0ec", b: "#8ec3d8", rim: "#5a93ad", spot: "#f6fcff", eye: "#2f5b6e" }
 ];
-const STRIPS = 12;
+// 풀포기 층 타일(가로 24 × 세로 12) — 타일마다 옆으로 밀어 그린다. 흔들림은 **꽃잎 무리가 지나가는 x 앞머리 둘레**에서만
+// (2026-09-04 사용자: "전체가 흩어져 흔들리니 지진 난 것 같다") — 가로 띠는 x로 국소화가 안 돼 타일로 바꿨다.
+const COLS = 24;
+const ROWS = 12;
 
 type State = "fly" | "land" | "sit" | "leave";
 type Fly = {
@@ -78,6 +81,8 @@ export function createSpring(seed: number): Scene {
   let puffs = 0;
   let wind = 0; // 0~1 풀 흔들림 세기(꽃잎 바람 중 1로, 끝나면 서서히 0)
   let windDir = 1;
+  let front = -1000; // 꽃잎 무리의 x 앞머리(평균) — 풀은 이 둘레(±280px)에서만 눕는다
+  let bugsLeftScreen = 0;
   let w = 0;
   let h = 0;
   let fleeCount = 0;
@@ -512,14 +517,19 @@ export function createSpring(seed: number): Scene {
       for (let i = bugs.length - 1; i >= 0; i--) {
         const b = bugs[i];
         if (b.state === "off") {
-          b.off += dt / 0.8;
-          if (b.off >= 1) {
+          // 날아오름 — 사라지지 않고 날개를 편 채 화면 밖까지 날아간다(2026-09-04 사용자: "순간이동 금지").
+          b.off = Math.min(1, b.off + dt / 0.5);
+          b.x += Math.cos(b.hd) * 260 * dt;
+          b.y += Math.sin(b.hd) * 260 * dt;
+          b.ph += 40 * dt;
+          if (b.x < -30 || b.x > w + 30 || b.y < -30 || b.y > h + 30) {
+            bugsLeftScreen++;
             if (b.respawn === Infinity) bugs.splice(i, 1);
             else if (t > b.respawn) bugs[i] = newBug(t);
-          } else {
-            b.x += Math.cos(b.hd) * 180 * dt;
-            b.y += Math.sin(b.hd) * 180 * dt;
-            b.ph += 40 * dt;
+            else {
+              b.x = -9999; // 밖에서 기다린다
+              b.y = -9999;
+            }
           }
           continue;
         }
@@ -561,6 +571,16 @@ export function createSpring(seed: number): Scene {
       }
       const blowing = petals.length > 0;
       wind += ((blowing ? 1 : 0) - wind) * Math.min(1, dt * (blowing ? 1.2 : 0.5));
+      if (blowing) {
+        let sx = 0;
+        let n = 0;
+        for (const q of petals) {
+          if (t < q.born) continue;
+          sx += q.x;
+          n++;
+        }
+        if (n) front += ((sx / n) - front) * Math.min(1, dt * 3);
+      }
       for (let i = petals.length - 1; i >= 0; i--) {
         const q = petals[i];
         if (t < q.born) continue;
@@ -594,7 +614,14 @@ export function createSpring(seed: number): Scene {
       }
       // 꿀벌 — 여력 0.6부터 한 마리. 데이지 사이를 지그재그로, 도착하면 1~2초 맴돌고 다음 꽃으로. 포인터 90px 안이면 도망.
       if (load >= 0.6 && !bee && daisies.length) bee = newBee();
-      if (load < 0.5 && bee) bee = null;
+      if (load < 0.5 && bee && bee.flee <= 0) {
+        // 여력이 떨어지면 가장 가까운 가장자리로 날아 나간다(사라지지 않는다).
+        bee.flee = 99;
+        bee.hover = 0;
+        bee.tx = bee.x < w / 2 ? -60 : w + 60;
+        bee.ty = bee.y;
+      }
+      if (bee && bee.flee > 50 && (bee.x < -40 || bee.x > w + 40)) bee = null;
       if (bee) {
         const b = bee;
         if (p.inside && b.flee <= 0 && Math.hypot(b.x - p.x, b.y - p.y) < 90) {
@@ -603,7 +630,7 @@ export function createSpring(seed: number): Scene {
           b.ty = clamp(b.y + (b.y - p.y) * 4, 20, h - 20);
           b.hover = 0;
         }
-        if (b.flee > 0) b.flee -= dt;
+        if (b.flee > 0 && b.flee < 50) b.flee -= dt;
         const dx = b.tx - b.x;
         const dy = b.ty - b.y;
         const d = Math.hypot(dx, dy);
@@ -616,7 +643,7 @@ export function createSpring(seed: number): Scene {
             b.tx = nd[0];
             b.ty = nd[1];
           }
-        } else if (d < 8) {
+        } else if (d < 8 && b.flee < 50) {
           b.hover = 1 + rand() * 1.5;
         } else {
           const want = Math.atan2(dy, dx);
@@ -648,17 +675,23 @@ export function createSpring(seed: number): Scene {
     draw(g, f) {
       const { t, load } = f;
       if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
-      // 풀포기 층 — 가로 띠 12개, 띠마다 진행파. 바람(꽃잎) 중엔 크게, 평소엔 여력이 있을 때만 미세하게.
+      // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
+      // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.
       if (blades) {
-        const idle = load >= 0.5 ? 1.3 : 0;
-        const amp = idle + wind * 7;
-        if (amp > 0.2) {
-          const sh = f.h / STRIPS;
-          const bh = blades.height / STRIPS;
-          for (let i = 0; i < STRIPS; i++) {
-            const y = i * sh;
-            const dx = amp * Math.sin(t * (1.1 + wind * 1.9) - i * 0.55 * windDir) + wind * windDir * 3;
-            g.drawImage(blades, 0, i * bh, blades.width, bh, dx, y, f.w, sh + 0.5);
+        const idle = load >= 0.5 ? 0.8 : 0;
+        if (wind > 0.02 || idle > 0) {
+          const tw = f.w / COLS;
+          const th = f.h / ROWS;
+          const bw = blades.width / COLS;
+          const bh = blades.height / ROWS;
+          for (let i = 0; i < COLS; i++) {
+            const cx = (i + 0.5) * tw;
+            const near = wind > 0.02 ? Math.exp(-Math.pow((cx - front) / 280, 2)) * wind : 0;
+            const gustDx = near * (8 * Math.sin(t * 3.4 - i * 0.7 * windDir) + windDir * 5);
+            for (let j = 0; j < ROWS; j++) {
+              const dx = gustDx + idle * Math.sin(t * 0.9 + j * 0.8 + i * 0.4);
+              g.drawImage(blades, i * bw, j * bh, bw, bh, i * tw + dx, j * th, tw + 0.5, th + 0.5);
+            }
           }
         } else g.drawImage(blades, 0, 0, f.w, f.h);
       }
@@ -712,9 +745,10 @@ export function createSpring(seed: number): Scene {
       if (bugSpr) {
         for (const b of bugs) {
           const flying = b.state === "off";
-          const k = b.k * (flying ? 1 + b.off * 0.9 : 1);
+          if (b.x < -100) continue;
+          const k = b.k * (flying ? 1 + b.off * 0.35 : 1);
           g.save();
-          g.globalAlpha = flying ? 1 - b.off : 1;
+          g.globalAlpha = 1;
           if (shadow && !flying) {
             g.save();
             g.globalAlpha = 0.25;
@@ -939,6 +973,8 @@ export function createSpring(seed: number): Scene {
         petals: petals.length,
         breezes,
         wind: Math.round(wind * 100) / 100,
+        front: Math.round(front),
+        bugsLeftScreen,
         dandelions: dands.map((d) => [Math.round(d.x), Math.round(d.y), d.puffed > 0 ? 1 : 0]),
         seeds: seeds.length,
         puffs,
