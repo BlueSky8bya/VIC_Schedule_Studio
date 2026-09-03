@@ -30,7 +30,7 @@ import dynamic from "next/dynamic";
 import { logActivity } from "@/lib/activity/client";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
 import { pickAmbient } from "@/components/shared/ambient/registry";
-import { ShowcaseButton, ShowcaseExit } from "@/components/shared/ambient/showcase";
+import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { reduceMotionEnabled } from "@/lib/ui/motion"; // OS reduce-motion 무시, 앱 토글만 존중
@@ -2390,6 +2390,8 @@ export function PublicPoster({
     };
     const measure = () => {
       if (cancelled) return;
+      // 가운데 두 알약은 같은 폭(--mid-pill-w = 둘의 자연 폭 중 큰 값) — 단계를 재기 전에 자연 폭으로 되돌려 잰다.
+      root.style.removeProperty("--mid-pill-w");
       let tier = 0;
       for (;;) {
         if (tier === 0) root.removeAttribute("data-pchrome");
@@ -2397,6 +2399,9 @@ export function PublicPoster({
         if (!overflows() || tier >= 3) break;
         tier += 1;
       }
+      const it = document.querySelector<HTMLElement>(".public-calendar-header .interest-toggle");
+      const io = document.querySelector<HTMLElement>(".public-calendar-header .insights-open");
+      if (it && io) root.style.setProperty("--mid-pill-w", `${Math.max(it.offsetWidth, io.offsetWidth)}px`);
     };
     measure();
     window.addEventListener("resize", measure);
@@ -2405,8 +2410,53 @@ export function PublicPoster({
       cancelled = true;
       window.removeEventListener("resize", measure);
       root.removeAttribute("data-pchrome");
+      root.style.removeProperty("--mid-pill-w");
     };
   }, [showAgenda, avatarOn, interactive, canHeart, accountSwitch, anonymous]);
+
+  // 계정 카드(로그인/로그아웃+이메일) = 레일(.public-right) 폭·오른쪽 끝(2026-09-04 사용자 사진 1). 헤더와 레일을 같은
+  // 좌표계(화면 rect)에서 재고 헤더의 zoom(편집실 미리보기)으로 나눠 레이아웃 px로 — 카드에 --acct-w/--acct-mr.
+  // 레일이 접힌 아바타 scene에선 변수를 지워 자연 폭. 포스터 배율 전환(transition) 중 첫 실측은 중간값이라 뒤에 두 번 더.
+  useEffect(() => {
+    if (showAgenda) return;
+    let raf = 0;
+    const timers: number[] = [];
+    const fit = () => {
+      raf = 0;
+      const header = document.querySelector<HTMLElement>(".public-calendar-header");
+      const form = header?.querySelector<HTMLElement>(".viewer-actions .account-form");
+      const rail = document.querySelector<HTMLElement>(".poster-surface .public-right");
+      if (!header || !form) return;
+      const rr = rail?.getBoundingClientRect();
+      if (!rail || !rr || rr.width < 60) {
+        form.style.removeProperty("--acct-w");
+        form.style.removeProperty("--acct-mr");
+        return;
+      }
+      const hr = header.getBoundingClientRect();
+      const zoom = header.offsetWidth > 0 ? hr.width / header.offsetWidth : 1;
+      const padR = parseFloat(getComputedStyle(header).paddingRight) || 0;
+      form.style.setProperty("--acct-w", `${Math.round(rr.width / zoom)}px`);
+      form.style.setProperty("--acct-mr", `${Math.max(0, Math.round((hr.right - rr.right) / zoom - padR))}px`);
+    };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(fit);
+      for (const id of timers) window.clearTimeout(id);
+      timers.length = 0;
+      timers.push(window.setTimeout(fit, 400), window.setTimeout(fit, 900));
+    };
+    const ro = new ResizeObserver(schedule);
+    const stage = document.querySelector<HTMLElement>(".poster-stage");
+    if (stage) ro.observe(stage);
+    window.addEventListener("resize", schedule);
+    schedule();
+    return () => {
+      if (raf) cancelAnimationFrame(raf);
+      for (const id of timers) window.clearTimeout(id);
+      ro.disconnect();
+      window.removeEventListener("resize", schedule);
+    };
+  }, [showAgenda, avatarOn, interactive, accountSwitch, anonymous]);
 
   const posterStageRef = useRef<HTMLDivElement | null>(null);
   const posterFitRef = useRef<HTMLDivElement | null>(null);
@@ -5028,7 +5078,7 @@ export function PublicPoster({
                     <LiquidHeart ratio={interestRatio} />
                     <span className="it-text">
                       <strong>내 관심</strong>
-                      <em>♥ 누른 일정만 모아보기</em>
+                      {/* ("♥ 누른 일정만 모아보기" 부제는 2026-09-04 사용자 결정으로 제거 — 폭을 '이 달 기록'과 맞춘다. 설명은 title.) */}
                     </span>
                   </button>
                 ) : null}
@@ -5165,7 +5215,7 @@ export function PublicPoster({
 
             {renderLegendFilter(true)}
             {/* 배경 감상 진입(2026-09-04) — 레일 맨 아래, 태그 필터 밑의 조용한 계절 버튼(시청자·비로그인 모두). */}
-            {interactive ? <ShowcaseButton className="rail-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
+            {interactive ? <ViewerAmbientControl className="rail-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
           </aside>
         </section>
         </div>
@@ -5184,8 +5234,8 @@ export function PublicPoster({
             ) : null}
             <div className="avatar-dock-inner">
               {/* 아바타 scene에선 감상 버튼이 아바타 자리 위쪽으로(레일이 접히므로). */}
-              {avatarOn && interactive ? <ShowcaseButton className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
-              <span className="avatar-slot-hint">아바타 자리</span>
+              {avatarOn && interactive ? <ViewerAmbientControl className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
+              {/* ("아바타 자리" 안내 글자 제거 — 2026-09-04 사용자 결정, 편집실과 동일.) */}
             </div>
           </aside>
         ) : null}

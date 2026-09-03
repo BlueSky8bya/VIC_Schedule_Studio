@@ -6917,3 +6917,31 @@ html[data-pchrome="3"] .poster-chrome-title {
   background: #f4f2fb;
   border-color: #e6e1f4;
 }
+/* 계정 카드 = 레일 폭·같은 오른쪽 끝(2026-09-04 사용자 사진 1: "이메일 길이를 조절해 아래 '2026년 12월 D+339' 상자 너비와
+   맞추고 시작 열도 같게"). public-poster.tsx가 레일(.public-right)과 헤더를 같은 좌표계에서 재서 --acct-w/--acct-mr을
+   둔다. 이메일은 남는 폭 안에서 …로 줄고, 버튼 하나(로그인)면 카드를 채운다. */
+.public-calendar-header .viewer-actions .account-form {
+  box-sizing: border-box;
+  width: var(--acct-w, auto);
+  margin-right: var(--acct-mr, 0px);
+}
+.public-calendar-header .viewer-actions .account-form .account-email {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+.public-calendar-header .viewer-actions .account-form .button:only-child {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+/* 가운데 두 알약(내 관심 · 이 달 기록)은 같은 폭 — public-poster.tsx가 둘의 자연 폭 중 큰 값을 --mid-pill-w로 둔다
+   (2026-09-04 사용자 사진 2: 부제를 빼고 '이 달 기록'과 폭 통일). */
+.interest-toggle,
+.insights-open {
+  box-sizing: border-box;
+  width: var(--mid-pill-w, auto);
+  justify-content: center;
+}

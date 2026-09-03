@@ -4,6 +4,8 @@
 // (동작·마크업·클래스 변화 0). 설정 스위치는 2026-09-04 StudioSettingsList(studio-settings.tsx)로 분리 —
 // 웹은 서쪽 도구 카드의 설정(톱니) 팝오버가 그리고, 모바일(도구 카드 없음)만 `settings` 슬롯으로 여기 아래에
 // 이어 붙인다.
+// quiet(웹, 2026-09-04 사용자): "?" 버튼과 권한 팝오버를 없앤다 — 관리자·개발자 각각 계정 하나라 이메일을 확인할 일이
+// 없다. 배지는 역할 이름만 조용히 보여 주는 라벨(버튼 아님). 모바일은 설정 목록이 이 팝오버에 살아 그대로 둔다.
 
 import type { ReactNode } from "react";
 import { PlainEmail } from "@/components/ui/plain-email";
@@ -20,12 +22,23 @@ type Props = {
   onToggleOpen: () => void;
   // 설정 목록(모바일 전용 슬롯) — 웹은 도구 카드의 설정 팝오버로 옮겨 여기선 비운다.
   settings?: ReactNode;
+  // 웹 헤더: "?"·팝오버 없이 역할 라벨만.
+  quiet?: boolean;
 };
 
-export function RoleBadge({ role, email, roleDisplay, previewing, open, onToggleOpen, settings }: Props) {
+export function RoleBadge({ role, email, roleDisplay, previewing, open, onToggleOpen, settings, quiet = false }: Props) {
+  if (quiet) {
+    return (
+      <div className="actor-badge-wrap">
+        <span aria-label={`역할: ${roleDisplay.label}`} className={`actor-badge quiet ${role}`} title={roleDisplay.label}>
+          <strong>{roleDisplay.badgeLabel}</strong>
+        </span>
+      </div>
+    );
+  }
   return (
     <div className="actor-badge-wrap">
-      {/* 배지 전체가 토글 버튼 — "?"만이 아니라 역할 라벨 어디를 눌러도 설명이 뜬다(웹·모바일). */}
+      {/* 배지 전체가 토글 버튼 — "?"만이 아니라 역할 라벨 어디를 눌러도 설명이 뜬다(모바일). */}
       <button
         aria-expanded={open}
         aria-label="역할 권한 보기"

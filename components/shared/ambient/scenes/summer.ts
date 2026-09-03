@@ -17,6 +17,11 @@ type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: numb
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
 type Ring = { x: number; y: number; life: number; dur: number; maxR: number; a: number; w: number };
 type PropKind = "duck" | "ring";
+// 물 밑 물고기(2026-09-04 사용자: "아열대 물고기가 물 밑을 헤엄치듯 비친다") — 저해상 층에 흐릿한 청록 그림자로. 무리(3~6)가
+// 같은 목표를 향해 헤엄치고, 포인터가 다가오면 흩어져 달아난다. 여력 ≥.7이면 큰 놈 하나.
+type Fish = { x: number; y: number; hd: number; spd: number; k: number; ph: number; big: boolean; flee: number };
+type Bubble = { x: number; y: number; t0: number };
+type Glint = { x: number; y: number; ph: number; r: number };
 type Prop = {
   kind: PropKind;
   x: number;
@@ -63,6 +68,14 @@ export function createSummer(seed: number): Scene {
   let stamped = 0;
   let nextTube = 10;
   let tubes = 0;
+  const fish: Fish[] = [];
+  let schoolX = 0;
+  let schoolY = 0;
+  let schoolNext = 0;
+  let fishFled = 0;
+  const bubbles: Bubble[] = [];
+  let nextBubble = 4;
+  const glints: Glint[] = [];
   let w = 0;
   let h = 0;
 
@@ -70,16 +83,18 @@ export function createSummer(seed: number): Scene {
     if (stampSpr) return;
     // 거품 도장 — 바깥 물빛 무리 + 안쪽 흰 거품. 한 장으로 두 겹.
     const { c, g } = makeCanvas(STAMP_SPR, STAMP_SPR);
-    // 바탕(크림빛 caustic)이 밝아 흰 거품만으론 안 읽힌다 — 물빛 무리를 진하게 깔고 그 위에 흰 거품(실측 1920 스크린샷: 옅음).
-    softBlob(g, STAMP_SPR / 2, STAMP_SPR / 2, STAMP_SPR / 2, "105 160 210", 0.6, 0);
-    softBlob(g, STAMP_SPR / 2, STAMP_SPR / 2, STAMP_SPR * 0.3, "255 255 252", 0.98, 0);
+    // 거품 = 옅은 물빛 무리 + 흰 거품(2026-09-04 사용자: "너무 진해서 어색한 부분이 보인다 — 흐릿하게 글러듯"). 진한 파랑은
+    // 쓰지 않고, 흐림은 저해상 레이어 배율(ensureLo)로 낸다.
+    softBlob(g, STAMP_SPR / 2, STAMP_SPR / 2, STAMP_SPR / 2, "150 195 228", 0.34, 0);
+    softBlob(g, STAMP_SPR / 2, STAMP_SPR / 2, STAMP_SPR * 0.3, "255 255 252", 0.8, 0);
     stampSpr = c;
     shadow = shadowSprite(96, 64, "30 60 90", 0.4);
     void loadSprite(ASSET.duck, 54, 61).then((s) => (duckSpr = s)).catch(() => {});
     void loadSprite(ASSET.ring, 92, 92).then((s) => (ringSpr = s)).catch(() => {});
   }
   function ensureLo(f: Frame) {
-    const want = f.load >= 0.6 ? 0.5 : f.load >= 0.3 ? 0.42 : 0.35;
+    // 항적은 일부러 흐리게(0.28~0.36×) — 또렷한 가장자리가 어색함을 드러낸다(사용자 2026-09-04).
+    const want = f.load >= 0.6 ? 0.36 : f.load >= 0.3 ? 0.32 : 0.28;
     if (lo && Math.abs(want - loS) < 0.001 && loW === f.w && loH === f.h) return;
     loS = want;
     loW = f.w;
@@ -138,6 +153,10 @@ export function createSummer(seed: number): Scene {
     tubes++;
   }
   const radiusOf = (p: Prop) => (p.kind === "duck" ? 27 * p.k : 46);
+  const fishTarget = (load: number) => (load >= 0.4 ? Math.round(lerp(3, 6, clamp((load - 0.4) / 0.6, 0, 1))) : 0);
+  function newFish(big: boolean): Fish {
+    return { x: rand() * w, y: rand() * h, hd: rand() * TAU, spd: big ? 26 : 38 + rand() * 20, k: big ? 2.6 : 0.8 + rand() * 0.5, ph: rand() * TAU, big, flee: 0 };
+  }
 
   return {
     resize(f) {
@@ -312,6 +331,66 @@ export function createSummer(seed: number): Scene {
           q.nextRing = t + 2.2 + rand() * 2.4;
         }
       }
+      // ③ 물고기 무리 — 목표점(schoolX/Y)이 몇 초마다 옮겨지고 각자 흔들리며 따라간다. 포인터 120px 안이면 흩어져 달아난다.
+      const wantFish = fishTarget(load);
+      const smallFish = fish.filter((q) => !q.big).length;
+      if (smallFish < wantFish) fish.push(newFish(false));
+      else if (smallFish > wantFish) {
+        const i = fish.findIndex((q) => !q.big);
+        if (i >= 0) fish.splice(i, 1);
+      }
+      const wantBig = load >= 0.7;
+      const bigIdx = fish.findIndex((q) => q.big);
+      if (wantBig && bigIdx < 0) fish.push(newFish(true));
+      else if (!wantBig && bigIdx >= 0) fish.splice(bigIdx, 1);
+      if (fish.length) {
+        if (t > schoolNext) {
+          schoolX = w * (0.15 + rand() * 0.7);
+          schoolY = h * (0.15 + rand() * 0.7);
+          schoolNext = t + 6 + rand() * 8;
+        }
+        for (const q of fish) {
+          if (p.inside) {
+            const dx = q.x - p.x;
+            const dy = q.y - p.y;
+            const d = Math.hypot(dx, dy);
+            if (d < (q.big ? 160 : 120) && d > 0.01 && q.flee <= 0) {
+              q.flee = 1.4;
+              q.hd = Math.atan2(dy, dx) + (rand() - 0.5) * 0.8;
+              fishFled++;
+            }
+          }
+          if (q.flee > 0) q.flee -= dt;
+          else {
+            const tx = q.big ? schoolX + Math.cos(q.ph) * 120 : schoolX + Math.cos(q.ph + t * 0.3) * 60;
+            const ty = q.big ? schoolY + Math.sin(q.ph) * 120 : schoolY + Math.sin(q.ph + t * 0.27) * 60;
+            const want = Math.atan2(ty - q.y, tx - q.x);
+            let diff = want - q.hd;
+            while (diff > Math.PI) diff -= TAU;
+            while (diff < -Math.PI) diff += TAU;
+            q.hd += clamp(diff, -1.6 * dt, 1.6 * dt) + Math.sin(t * 2.1 + q.ph) * 0.5 * dt;
+          }
+          const sp = q.spd * (q.flee > 0 ? 3.2 : 1);
+          q.x += Math.cos(q.hd) * sp * dt;
+          q.y += Math.sin(q.hd) * sp * dt;
+          q.ph += dt * (q.flee > 0 ? 3 : 1);
+          const m = 60;
+          if (q.x < -m) q.x = w + m - 1;
+          else if (q.x > w + m) q.x = -m + 1;
+          if (q.y < -m) q.y = h + m - 1;
+          else if (q.y > h + m) q.y = -m + 1;
+        }
+      }
+      // ④ 물방울 — 여력 0.5부터 3~8초에 하나, 1.4초 동안 커졌다 톡 터진다.
+      if (load >= 0.5 && t > nextBubble) {
+        bubbles.push({ x: 40 + rand() * (w - 80), y: 40 + rand() * (h - 80), t0: t });
+        nextBubble = t + 3 + rand() * 5;
+      }
+      for (let i = bubbles.length - 1; i >= 0; i--) if (t - bubbles[i].t0 > 1.6) bubbles.splice(i, 1);
+      // ⑤ 햇빛 반짝임 — 여력 0.3부터 6~14개.
+      const wantGl = load >= 0.3 ? Math.round(lerp(6, 14, load)) : 0;
+      while (glints.length < wantGl) glints.push({ x: rand() * w, y: rand() * h, ph: rand() * TAU, r: 1.6 + rand() * 1.8 });
+      if (glints.length > wantGl) glints.length = wantGl;
       // 소품끼리 겹치지 않게(원 분리).
       for (let i = 0; i < props.length; i++) {
         for (let j = i + 1; j < props.length; j++) {
@@ -352,13 +431,61 @@ export function createSummer(seed: number): Scene {
       L.setTransform(loS, 0, 0, loS, 0, 0);
       L.lineCap = "round";
       L.lineJoin = "round";
+      // 물고기 — 물 밑이라 흐릿한 청록 그림자(저해상 층): 몸통 타원 + 꼬리(sin으로 흔들림) + 등지느러미 점.
+      for (const q of fish) {
+        const wag = Math.sin(t * (q.flee > 0 ? 26 : 12) + q.ph) * 0.45;
+        L.save();
+        L.translate(q.x, q.y);
+        L.rotate(q.hd);
+        L.scale(q.k, q.k);
+        L.fillStyle = q.big ? "rgb(35 80 100 / 0.3)" : "rgb(40 95 115 / 0.36)";
+        L.beginPath();
+        L.ellipse(0, 0, 14, 5.5, 0, 0, TAU);
+        L.fill();
+        L.beginPath();
+        L.moveTo(-11, 0);
+        L.lineTo(-20, -6 + wag * 6);
+        L.lineTo(-20, 6 + wag * 6);
+        L.closePath();
+        L.fill();
+        L.fillStyle = "rgb(230 245 250 / 0.28)";
+        L.beginPath();
+        L.ellipse(3, -1.5, 5, 1.6, 0, 0, TAU);
+        L.fill();
+        L.restore();
+      }
+      // 물방울 — 커지는 고리, 끝에 톡(작은 십자 튐).
+      for (const b of bubbles) {
+        const e = clamp((t - b.t0) / 1.4, 0, 1);
+        const r = 2 + 8 * e;
+        L.strokeStyle = `rgb(255 255 255 / ${0.55 * (1 - e * 0.5)})`;
+        L.lineWidth = 1.6;
+        L.beginPath();
+        L.arc(b.x, b.y, r, 0, TAU);
+        L.stroke();
+        L.strokeStyle = `rgb(150 195 228 / ${0.35 * (1 - e)})`;
+        L.beginPath();
+        L.arc(b.x, b.y, r + 2, 0, TAU);
+        L.stroke();
+        if (t - b.t0 > 1.4) {
+          const pe = (t - b.t0 - 1.4) / 0.2;
+          L.strokeStyle = `rgb(255 255 255 / ${0.7 * (1 - pe)})`;
+          for (let k = 0; k < 4; k++) {
+            const a = (k / 4) * TAU + 0.4;
+            L.beginPath();
+            L.moveTo(b.x + Math.cos(a) * (r + 2), b.y + Math.sin(a) * (r + 2));
+            L.lineTo(b.x + Math.cos(a) * (r + 6 + 8 * pe), b.y + Math.sin(a) * (r + 6 + 8 * pe));
+            L.stroke();
+          }
+        }
+      }
       // 거품 띠 — 나이 들수록 넓게 번지고 옅어진다(에너지가 흩어짐).
       for (const s of stamps) {
         const age = t - s.t0;
         const k = 1 - age / sttl;
         if (k <= 0) continue;
-        const R = s.r * (1 + 1.7 * (1 - k));
-        L.globalAlpha = 0.9 * Math.pow(k, 1.3) * (0.4 + 0.6 * s.sf);
+        const R = s.r * (1 + 1.9 * (1 - k));
+        L.globalAlpha = 0.62 * Math.pow(k, 1.3) * (0.4 + 0.6 * s.sf);
         L.drawImage(stampSpr, s.x - R, s.y - R, R * 2, R * 2);
       }
       L.globalAlpha = 1;
@@ -382,11 +509,11 @@ export function createSummer(seed: number): Scene {
               const [x1, y1] = armPt(a1, s, age);
               const weight = 0.5 + 0.5 * a1.sf;
               if (pass === 0) {
-                L.strokeStyle = `rgb(105 160 210 / ${0.5 * k * weight})`;
-                L.lineWidth = 12 + 10 * (1 - k);
+                L.strokeStyle = `rgb(150 195 228 / ${0.3 * k * weight})`;
+                L.lineWidth = 14 + 12 * (1 - k);
               } else {
-                L.strokeStyle = `rgb(255 255 250 / ${0.85 * Math.pow(k, 1.1) * weight})`;
-                L.lineWidth = 3.4 + 1.6 * (1 - k);
+                L.strokeStyle = `rgb(255 255 250 / ${0.55 * Math.pow(k, 1.1) * weight})`;
+                L.lineWidth = 4 + 2 * (1 - k);
               }
               L.beginPath();
               L.moveTo(x0, y0);
@@ -439,6 +566,28 @@ export function createSummer(seed: number): Scene {
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = "medium";
       g.drawImage(lo.c, 0, 0, f.w, f.h);
+      // 햇빛 반짝임 — 물결 위의 작은 별(숨쉬듯 밝아졌다 사라짐), 본 캔버스에 또렷하게.
+      for (const gl of glints) {
+        const a = Math.max(0, Math.sin(t * 1.4 + gl.ph));
+        if (a < 0.05) continue;
+        g.save();
+        g.translate(gl.x, gl.y);
+        g.rotate(gl.ph);
+        g.strokeStyle = `rgb(255 255 255 / ${a * 0.9})`;
+        g.lineWidth = 1.2;
+        g.beginPath();
+        for (let k = 0; k < 4; k++) {
+          const ang = (k / 4) * TAU;
+          g.moveTo(0, 0);
+          g.lineTo(Math.cos(ang) * gl.r * 2.2 * a, Math.sin(ang) * gl.r * 2.2 * a);
+        }
+        g.stroke();
+        g.fillStyle = `rgb(255 255 255 / ${a})`;
+        g.beginPath();
+        g.arc(0, 0, gl.r * 0.6, 0, TAU);
+        g.fill();
+        g.restore();
+      }
       // 뱃머리 — 빠르게 움직이는 포인터 앞의 밝은 물마루(본 캔버스, 또렷하게).
       const p = f.p;
       if (load >= 0.3 && p.inside && p.speed > 160) {
@@ -522,7 +671,11 @@ export function createSummer(seed: number): Scene {
         loScale: loS,
         props: props.map((q) => [q.kind, Math.round(q.x), Math.round(q.y), q.grab ? 1 : 0]),
         tubes,
-        sprites: { duck: !!duckSpr, ring: !!ringSpr }
+        sprites: { duck: !!duckSpr, ring: !!ringSpr },
+        fish: fish.map((q) => [Math.round(q.x), Math.round(q.y), q.big ? 1 : 0, q.flee > 0 ? 1 : 0]),
+        fishFled,
+        bubbles: bubbles.length,
+        glints: glints.length
       };
     }
   };

@@ -4,6 +4,7 @@ import {
   startVisitSession,
   touchVisitSession
 } from "@/lib/insights/actions";
+import { skipAnalyticsRequest } from "@/lib/analytics/guard";
 
 // 방문/체류 세션 비콘 창구 — 클라이언트가 keepalive fetch로 보낸다(나갈 때 end가 끝까지 전송되게).
 // start=진입(세션 생성, id 반환), touch=하트비트(last_seen 갱신), end=이탈(ended_at 확정).
@@ -12,6 +13,10 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   if (!body || typeof body.op !== "string") {
     return NextResponse.json({ ok: false }, { status: 400 });
+  }
+  // 로컬 호스트·헤드리스 브라우저의 방문은 기록하지 않는다(lib/analytics/guard.ts — 검증 트래픽 오염 방지, 서버 쪽 이중 장치).
+  if (skipAnalyticsRequest(request.headers)) {
+    return NextResponse.json({ ok: false, skipped: true });
   }
   const device = typeof body.device === "string" ? body.device : "desktop";
   const id = typeof body.id === "string" ? body.id : "";

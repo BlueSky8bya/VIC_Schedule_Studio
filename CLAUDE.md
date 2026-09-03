@@ -106,9 +106,14 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   `public/ambient/*.svg` (duck · swim ring · acorn · ladybug) loaded once by `components/shared/ambient/assets.ts` — swap the
   file, not the code (top-down, forward = up; palette rule still applies: butter-yellow duck, mint/white ring, no red stripes).
   **Per-season random events**: summer = rubber duck always afloat + an occasional swim ring drifting through (both grab/throw,
-  leave their own wake); winter = animal visitors (cat · bird · rabbit gaits) besides the human walker; autumn = acorn drops
-  (bounce, roll, shove leaves, max 6, grabbable); spring = ladybugs (crawl, flee, click → fly off) + petal breezes. Showcase
-  swallows every key except Esc (←/→ used to flip the month and thus the season).
+  leave their own wake), a school of fish shadows under the water (flee the pointer, one big one at high load), sun glints,
+  bubble pops; winter = animal visitors (cat · bird · rabbit gaits) besides the human walker, a **snow rabbit** that pops out,
+  looks around, hops (tracks) and dives back (startles from the pointer/click), a passing snow-dust gust; autumn = a baked
+  ground (earth patches, dry tufts, twigs, pebbles, mushrooms — muted), acorn drops (bounce, roll, shove leaves, max 6,
+  grabbable), a **squirrel** that runs in, sniffs and steals an acorn, a travelling leaf whirl; spring = the tuft layer sways
+  (12 strips, travelling wave) during petal breezes, ladybugs, **dandelions** (click → seeds float off, regrow later), a bee
+  visiting daisies. Canvas DPR is fixed per mount (a runtime DPR flip re-baked the ground = "re-render 2s after month change")
+  and ground bakes use a per-size deterministic rng. Showcase swallows every key except Esc.
 - **Graphics tiers (`lib/ui/gfx.ts` v3, 2026-09-04).** `data-gfx` is `full` (absent) · `lite` · `soft`. `soft` =
   software rendering (WebGL renderer SwiftShader/llvmpipe/software) or ≤2 cores → ambient off + eye-comfort token
   palette. `lite` = bad frame samples on **two consecutive visits** → ambient stays **visible but cheaper** (tide
@@ -122,8 +127,11 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   gates made the shell opaque — every transparency/translucency gate must use `soft`/`off`/`data-ambient="off"`, never
   `lite`). The 계절 배경 switch and 배경 효과 are one state: switch OFF locks the select to 끄기, picking 끄기 turns the
   switch OFF, switching back ON returns the select to 자동. "배경 감상" (`components/shared/ambient/showcase.tsx`,
-  entry buttons in the studio avatar slot and the viewer rail, plus the settings row) sets `html[data-showcase]` to
-  hide all chrome and let the whole screen act as background; Esc or the top pill exits.
+  entry buttons in the studio avatar slot and the viewer rail — **no settings row**, one entry per screen) sets
+  `html[data-showcase]` to hide all chrome and let the whole screen act as background; Esc or the top pill exits. The
+  showcase button hides under the same gate as the ambient (계절 배경 OFF → gone). Viewers have no settings screen, so the
+  viewer rail shows `[감상하기 | 배경 끄기]` (`ViewerAmbientControl`, same `vic.ambient` key); the toggle stays visible when
+  OFF as the only way back.
 - **Ambient pauses behind heavy media** (`lib/ui/ambient-pause.ts`, `html[data-ambient-pause]`): the VOD window, the
   viewer insights sheet and studio modals (except settings) hold the pause; the canvas loop stops on its last frame and
   the tide's animations pause. Never leave a full-screen animated layer running under a `backdrop-filter` or an iframe
@@ -270,6 +278,12 @@ private layers is retired — ADR-0014; the server model stays.)
 
 - Each change: TypeScript + lint + `next build` pass → recheck public/private boundary →
   commit & push to `main` (Vercel auto-deploys). Report the commit hash.
+- **Analytics never record automation or local traffic (2026-09-04).** `.env.local` points at the production Supabase, so
+  a local `next start` + Playwright run wrote 2,694 fake visit sessions (and presence/activity rows) in two days and
+  produced "4 concurrent at dawn". Every recording path (visit beacon, presence channel, activity batch, their API routes)
+  goes through `lib/analytics/guard.ts` (`navigator.webdriver` / localhost on the client, local Host / HeadlessChrome UA on
+  the server). A new stats path must use the same guard. Cleaning old polluted rows is destructive — backup + SQL live in
+  `.scratch-pw/` and run only after the owner approves.
 - Branch off `main` if not on it; commit/push only when asked or clearly expected.
 - DB schema = SQL in `db/migrations/*`, applied manually:
   `node scripts/apply-db.mjs db/migrations/<file>.sql` (idempotent, reads `.env.local`).

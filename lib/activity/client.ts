@@ -1,6 +1,7 @@
 "use client";
 
 import { foldDigits, isClientKind, type ClientKind } from "@/lib/activity/kinds";
+import { skipAnalyticsClient } from "@/lib/analytics/guard";
 
 // 클라 행동 기록(0062) — 열람·시선처럼 서버 왕복이 없어 지금까지 전혀 안 보이던 것들을 남긴다.
 //
@@ -48,6 +49,8 @@ function currentVisitKey(): string | null {
 
 function send(batch: Pending[], keepalive: boolean): void {
   if (batch.length === 0) return;
+  // 자동화 브라우저·로컬 호스트의 행동은 기록하지 않는다(lib/analytics/guard.ts).
+  if (skipAnalyticsClient()) return;
   // 방문 키는 **보낼 때** 다시 찍는다. 쌓을 때만 읽으면, 페이지가 열린 직후의 기록
   // (route.enter 등)이 비콘보다 먼저 나가 visit_key 없이 저장된다 → 같은 탭인데도 방문이
   // 둘로 갈려 "60분 방문에 항목 1건"이 됐다(2026-08-05 실측). flush는 최소 몇 초 뒤라

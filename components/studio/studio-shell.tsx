@@ -30,7 +30,7 @@ import {
 import Link from "next/link";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
 import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registry";
-import { enterShowcase, ShowcaseButton, ShowcaseExit } from "@/components/shared/ambient/showcase";
+import { ShowcaseButton, ShowcaseExit } from "@/components/shared/ambient/showcase";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
@@ -1178,15 +1178,6 @@ export function StudioShell({
         gfxPref={gfxPrefState}
         gfxAuto={gfxAuto}
         onChangeGfxPref={changeGfxPref}
-        onShowcase={
-          isNarrow
-            ? undefined
-            : () => {
-                requestCloseModal(); // 모달 인프라(history 슬롯·포커스 트랩)를 정식으로 되돌린다
-                enterShowcase();
-                hapticTick();
-              }
-        }
         posterTheme={actor.role === "owner" ? posterThemeLocal : null}
         posterThemeSaving={posterThemeSaving}
         reduceMotion={reduceMotion}
@@ -1205,6 +1196,8 @@ export function StudioShell({
         onToggleOpen={() => setRoleHelpOpen((value) => !value)}
         open={roleHelpOpen}
         previewing={previewRole !== null}
+        // 웹(설정 슬롯 없음)은 "?"·팝오버 없이 라벨만(2026-09-04 사용자) — 모바일은 설정 목록이 여기 살아 그대로.
+        quiet={!withSettings}
         role={actor.role}
         roleDisplay={roleDisplay}
         settings={withSettings ? renderSettingsList() : undefined}
@@ -5960,7 +5953,7 @@ export function StudioShell({
               <ShowcaseButton className="slot-showcase" season={ambientSeason} />
               {/* 좌/우 세그먼트는 하단 중앙 플로팅 행(bottom-float-row)에 — 박스 안에 두면 rail과 함께
                   반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼(2026-09-03 사용자). */}
-              <span className="avatar-slot-hint">아바타 자리</span>
+              {/* ("아바타 자리" 안내 글자는 2026-09-04 사용자 결정으로 제거 — 빈 자리 자체가 안내. aria-label은 aside에.) */}
             </div>
           </div>
         </aside>

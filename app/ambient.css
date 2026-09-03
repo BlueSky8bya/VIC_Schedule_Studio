@@ -172,6 +172,65 @@ html[data-reduce-motion] .showcase-btn-glow {
 html[data-reduce-motion] .showcase-exit {
   animation: none;
 }
+/* 감상 버튼은 배경이 보일 때만(2026-09-04 사용자: "계절 배경을 끄면 감상하기 버튼도 사라져야지") — .gs-season 게이트와 동일. */
+.showcase-btn {
+  display: none;
+}
+@media (min-width: 641px) {
+  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .showcase-btn {
+    display: inline-flex;
+  }
+}
+/* 시청자 레일의 [감상하기 | 배경 끄기] 묶음 — 시청자는 설정 화면이 없어 여기서 끈다. 끄기 토글은 배경 OFF에도 남는다(다시 켜는
+   유일한 손잡이). 모바일은 배경 자체가 없으니 통째로 숨긴다. */
+.viewer-ambient-ctl {
+  display: none;
+  align-items: center;
+  gap: 6px;
+}
+@media (min-width: 641px) {
+  .viewer-ambient-ctl {
+    display: inline-flex;
+  }
+}
+.ambient-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid rgb(180 190 205 / 80%);
+  border-radius: 999px;
+  background: rgb(255 253 249 / 78%);
+  color: var(--ink-soft, #3d414c);
+  font: inherit;
+  font-size: var(--text-label, 13px);
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgb(60 50 90 / 10%);
+  transition:
+    transform var(--dur-1, 0.15s) var(--ease),
+    background var(--dur-1, 0.15s) var(--ease),
+    border-color var(--dur-1, 0.15s) var(--ease);
+}
+.ambient-toggle:hover {
+  background: #fff;
+  border-color: #c3ccd6;
+}
+.ambient-toggle:active {
+  transform: scale(0.96);
+}
+.ambient-toggle.on svg {
+  color: #4d7a48;
+}
+.ambient-toggle:not(.on) {
+  border-style: dashed;
+}
+html[data-showcase] .ambient-toggle {
+  display: none;
+}
+
 /* 시청자 화면(단독·편집실 미리보기) — 포스터 루트의 자식 중 배경 레이어만 남긴다. 좌상단 아바타 토글·우상단 미리보기
    오버레이·로딩 배지도 함께. (편집실 셸 규칙은 studio-shell.css.) */
 html[data-showcase] .poster-page > :not(.gs-tide):not(.gs-season),

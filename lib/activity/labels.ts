@@ -315,6 +315,7 @@ const ACT: Record<string, TargetLabel> = {
   "gfx-pref-select": { name: "배경 효과 품질 고르기", area: "편집실", hint: "설정 모달 — 자동/항상 최대/가볍게/끄기(lib/ui/gfx.ts v3)" },
   "ambient-showcase": { name: "배경 감상 모드 켜기", area: "편집실", hint: "설정 모달 — 달력·필터·아바타 자리를 숨기고 계절 배경만(Esc/알약으로 복귀)" },
   "ambient-showcase-exit": { name: "배경 감상 모드 나가기", area: "편집실", hint: "감상 모드 상단 알약" },
+  "ambient-toggle-viewer": { name: "계절 배경 켜기/끄기(시청자)", area: "시청자", hint: "레일 감상하기 옆 토글 — 기기 저장값(vic.ambient), 편집실 설정과 한 상태" },
   "rest-nudge-ok": { name: "휴식 넛지 — 쉬고 올게요", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
   "rest-nudge-later": { name: "휴식 넛지 — 조금만 더", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
   "google-login": { name: "Google로 로그인", area: "공통" },

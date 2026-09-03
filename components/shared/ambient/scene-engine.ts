@@ -139,7 +139,9 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
   let w = 0;
   let h = 0;
   let dpr = 1;
-  let hiDpr = load >= 0.6;
+  // DPR은 마운트 때 한 번 정하고 바꾸지 않는다(2026-09-04 사용자: "달 바꾸면 배경이 한 번 그려지고 2초 뒤 다시 그려진다" —
+  // 여력이 0.5→0.62로 오르며 DPR 1→1.5로 바뀌어 바탕을 다시 구운 것이 그 '재렌더'였다). LOD는 저해상 레이어·입자 수로만.
+  const hiDpr = q >= 2;
   // CSS zoom 보정(편집실 ≥1700px은 .studio-shell zoom .9/.8): 캔버스 크기는 레이아웃 px(offsetWidth = 뷰포트/zoom)로
   // 잡고, 포인터의 화면 px는 zoom으로 나눠 캔버스 좌표로 옮긴다. 옛 innerWidth px는 줌 안에서 80%로 그려져 오른쪽·
   // 아래가 비었다(2026-09-04 사용자 스크린샷).
@@ -160,14 +162,21 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
       dbg.hot = null;
       return;
     }
-    const el = document.querySelector(".studio-calendar-panel, .poster-surface");
-    if (!el) {
-      frame.hot = null;
-      dbg.hot = null;
-      return;
-    }
-    const r = el.getBoundingClientRect();
-    frame.hot = r.width > 0 ? { x: (r.left - rectL) / zoomF, y: (r.top - rectT) / zoomF, w: r.width / zoomF, h: r.height / zoomF } : null;
+    // 달력 패널 + rail/왼쪽 패널(편집실) 또는 포스터 표면(시청자)의 합집합 상자 — 소품이 그 안에서 태어나거나 서성이지 않게.
+    const els = document.querySelectorAll(".studio-calendar-panel, .avatar-rail, .studio-left-panel, .poster-surface");
+    let l = Infinity;
+    let tp = Infinity;
+    let rgt = -Infinity;
+    let btm = -Infinity;
+    els.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) return;
+      l = Math.min(l, r.left);
+      tp = Math.min(tp, r.top);
+      rgt = Math.max(rgt, r.right);
+      btm = Math.max(btm, r.bottom);
+    });
+    frame.hot = Number.isFinite(l) ? { x: (l - rectL) / zoomF, y: (tp - rectT) / zoomF, w: (rgt - l) / zoomF, h: (btm - tp) / zoomF } : null;
     dbg.hot = frame.hot;
   };
   const drawOnce = () => {
@@ -194,16 +203,11 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
     scene.resize(frame);
     if (!running) drawOnce();
   };
-  // 여력을 프레임에 반영 + DPR 단계(히스테리시스 0.4/0.6) — 단계가 바뀌면 캔버스만 다시 잡는다(바탕은 장면이 dpr로 판단).
+  // 여력을 프레임에 반영. (DPR은 고정 — 위 주석.)
   const applyLoad = () => {
     const v = forced ?? load;
     frame.load = v;
     dbg.load = v;
-    const nextHi = hiDpr ? v > 0.4 : v >= 0.6;
-    if (nextHi !== hiDpr) {
-      hiDpr = nextHi;
-      if (wantDpr() !== dpr) resize();
-    }
   };
   const tick = (now: number) => {
     raf = 0;

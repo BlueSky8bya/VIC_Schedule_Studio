@@ -239,8 +239,7 @@ function isAudience(role: string): boolean {
 }
 // R1: 이 시간 미만 체류는 '스쳐감'으로 보고 방문 수에서 제외(실수 진입·즉시 이탈). 동접/세션 목록엔 남긴다.
 const MIN_MEANINGFUL_VISIT_MS = 3000;
-// 바운스: 의미 방문이지만 이 시간 미만(와서 거의 바로 나감).
-const BOUNCE_MAX_MS = 10000;
+// (바운스(<10초 비율) 지표는 2026-09-04 사용자 결정으로 철수 — "별 의미 없어 보임". 재도입 금지.)
 function isMeaningful(r: SessionRow): boolean {
   return durMs(r) >= MIN_MEANINGFUL_VISIT_MS;
 }
@@ -254,7 +253,6 @@ export type VisitSummary = {
   visitors: number; // 의미 방문 순방문자((날짜|계정) 고유)
   sessions: number; // 의미 세션 수(재진입 포함)
   glances: number; // 스쳐감(<3초) 세션 수
-  bounceRate: number; // 의미 방문 중 <10초 비율(0~1)
   avgSeconds: number; // 의미 세션 평균 체류(초)
   totalSeconds: number; // 의미 세션 총 체류(초)
   peakConcurrent: number; // 범위 내 최고 동시 세션 수
@@ -264,10 +262,8 @@ function summarize(rows: SessionRow[]): VisitSummary {
   const visitors = new Set(meaningful.map((r) => `${r.day}|${sAcct(r)}`)).size;
   const sessions = meaningful.length;
   const glances = rows.length - sessions;
-  const bounce = meaningful.filter((r) => durMs(r) < BOUNCE_MAX_MS).length;
   const totalSeconds = Math.round(meaningful.reduce((s, r) => s + durMs(r), 0) / 1000);
   const avgSeconds = sessions > 0 ? Math.round(totalSeconds / sessions) : 0;
-  const bounceRate = sessions > 0 ? bounce / sessions : 0;
   // 최고 동접 — 방문 span이 아니라 '실제 가시 구간'을 스윕한다(span에는 자리비움이 섞인다).
   const ev: { t: number; d: number }[] = [];
   for (const r of meaningful) {
@@ -283,14 +279,13 @@ function summarize(rows: SessionRow[]): VisitSummary {
     cnt += e.d;
     if (cnt > peak) peak = cnt;
   }
-  return { visitors, sessions, glances, bounceRate, avgSeconds, totalSeconds, peakConcurrent: peak };
+  return { visitors, sessions, glances, avgSeconds, totalSeconds, peakConcurrent: peak };
 }
 function emptySummary(): VisitSummary {
   return {
     visitors: 0,
     sessions: 0,
     glances: 0,
-    bounceRate: 0,
     avgSeconds: 0,
     totalSeconds: 0,
     peakConcurrent: 0
@@ -1496,17 +1491,12 @@ export async function getVisitTrendsAction(
       : 0;
   const health = { todaySessions, openRate, avgStaySec };
 
-  // R6: 한 문장 자동 인사이트(시청자 기준). 최고 시간대·평균 체류·바운스·새/재방문에서 1~3개.
+  // R6: 한 문장 자동 인사이트(시청자 기준). 최고 시간대·평균 체류·새/재방문에서 1~2개(바운스 문장은 철수).
   const insights: string[] = [];
   const peakHour = viewer.hours.reduce((mx, h, i) => (h.total > viewer.hours[mx].total ? i : mx), 0);
   if (summaryViewer.visitors > 0) {
     if (viewer.hours[peakHour].total > 0) {
       insights.push(`시청자는 주로 ${peakHour}시에 방문했고, 평균 체류는 ${fmtDurSec(summaryViewer.avgSeconds)}예요.`);
-    }
-    if (summaryViewer.bounceRate >= 0.4) {
-      insights.push(
-        `바운스(10초 미만)가 ${Math.round(summaryViewer.bounceRate * 100)}%라, 방문 수보다 체류 품질을 같이 봐야 해요.`
-      );
     }
     if (newVisitors + returningVisitors > 0) {
       insights.push(`이 달 새 시청자 ${newVisitors}명 · 재방문 ${returningVisitors}명이에요.`);

@@ -263,10 +263,7 @@ export function VisitSummaryBlock({
           <b>{s.glances}</b>
           <span>스쳐감</span>
         </li>
-        <li>
-          <b>{Math.round(s.bounceRate * 100)}%</b>
-          <span>바운스</span>
-        </li>
+        {/* (바운스 % 칸은 2026-09-04 사용자 결정으로 철수 — 의미 없음.) */}
         <li>
           <b>{fmtDur(s.avgSeconds)}</b>
           <span>평균체류</span>

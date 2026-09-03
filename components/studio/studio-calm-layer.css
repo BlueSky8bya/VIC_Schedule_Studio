@@ -647,7 +647,7 @@ html[data-studio-calm] .studio-role-tools {
   background: transparent;
   box-shadow: none;
   color: #5b5674;
-  font-size: var(--text-caption);
+  font-size: var(--text-label); /* 2026-09-04 사용자: "?"를 빼며 글자를 조금 키운다(11 → 12.5px) */
   font-weight: 800;
   line-height: 1;
   white-space: nowrap;
@@ -682,7 +682,21 @@ html[data-studio-calm] .studio-role-tools {
   color: #4f3fbf;
 }
 .studio-role-tools .actor-badge strong {
-  font-size: var(--text-caption);
+  font-size: var(--text-label);
+}
+/* 웹 배지는 라벨(quiet) — 버튼이 아니니 손 모양·호버 면 없음. "?"가 없으니 압축 2·3단계에서도 역할 글자를 지운다(⑤의
+   `strong` 숨김은 "?"만 남기던 규칙 — quiet엔 남길 기호가 없어 칸이 비었다). */
+.studio-role-tools .actor-badge.quiet {
+  cursor: default;
+  pointer-events: none;
+}
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .actor-badge.quiet strong {
+  display: inline;
+}
+/* 1440(rail 272)에서 1fr 칸이 55px — "관리자"(39px)가 들어가려면 여백을 줄여야 3단계(저장 점만)로 안 밀린다(비주얼 스펙은
+   1440에서 '저장됨' 글자를 기대한다). */
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .actor-badge.quiet {
+  padding: 0 5px;
 }
 .studio-role-tools .role-help-q {
   width: 18px;

@@ -6,10 +6,11 @@
 // 상태는 모듈 전역(속성 하나) — 어느 화면의 버튼이든 같은 스위치. 나가기 = Esc 또는 상단 알약(body 포털이라 숨김
 // 규칙에 안 걸린다). 버튼은 계절 아이콘으로 "지금 계절을 보러 가자"를 말한다.
 
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { Eye, Flower2, Leaf, Snowflake, Waves } from "lucide-react";
+import { Eye, Flower2, Leaf, Power, Snowflake, Waves } from "lucide-react";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
+import { ambientEnabled, setAmbient } from "@/lib/ui/motion";
 
 let active = false;
 const listeners = new Set<() => void>();
@@ -53,6 +54,40 @@ export function ShowcaseButton({ season, className = "", compact = false }: { se
       <Icon aria-hidden="true" size={compact ? 16 : 18} />
       <span className="showcase-btn-label">{compact ? "감상" : `${WORD[season]} 감상하기`}</span>
     </button>
+  );
+}
+
+/** 시청자 레일용: [계절 감상하기 | 배경 끄기/켜기] — 시청자는 설정 화면이 없어 계절 배경을 끌 길이 없었다(2026-09-04 사용자).
+ *  같은 기기 저장값(vic.ambient)을 쓰므로 편집실 설정과 한 상태. 배경 OFF면 감상 버튼은 숨고(볼 게 없다) 켜기 토글만 남는다. */
+export function ViewerAmbientControl({ season, className = "" }: { season: SeasonKey; className?: string }) {
+  const [on, setOn] = useState(true);
+  useEffect(() => {
+    const read = () => setOn(ambientEnabled());
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-ambient"] });
+    return () => mo.disconnect();
+  }, []);
+  return (
+    <div className={`viewer-ambient-ctl ${className}`.trim()} role="group" aria-label="계절 배경">
+      {on ? <ShowcaseButton season={season} /> : null}
+      <button
+        aria-pressed={on}
+        className={`ambient-toggle${on ? " on" : ""}`}
+        data-act="ambient-toggle-viewer"
+        onClick={() => {
+          const next = !on;
+          setAmbient(next);
+          setOn(next);
+          if (!next) exitShowcase();
+        }}
+        title={on ? "계절 배경 끄기" : "계절 배경 켜기"}
+        type="button"
+      >
+        <Power aria-hidden="true" size={15} />
+        <span className="lbl">{on ? "배경 끄기" : "계절 배경 켜기"}</span>
+      </button>
+    </div>
   );
 }
 

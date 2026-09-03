@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import type { MembershipRole } from "@/lib/domain/schedule-types";
 import { detectDevice, startPresence } from "@/lib/presence/presence-client";
 import { isContentReady, onContentReady } from "@/lib/presence/content-ready";
+import { skipAnalyticsClient } from "@/lib/analytics/guard";
 
 // 모든 로그인 사용자 화면에 1개 깔리는 보이지 않는 컴포넌트.
 // 1) 실시간 프레즌스에 자기 역할만 등록(개발자 창의 실시간 패널 합산용).
@@ -63,6 +64,8 @@ function deviceAnonId(): string {
 
 export function PresenceBeacon({ role }: { role: MembershipRole | "anon" }) {
   useEffect(() => {
+    // 자동화 브라우저·로컬 호스트는 기록하지 않는다(lib/analytics/guard.ts — 2026-09-04 검증 트래픽이 운영 통계를 오염).
+    if (skipAnalyticsClient()) return;
     startPresence(role);
 
     const device = detectDevice();

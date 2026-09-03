@@ -6,7 +6,7 @@
 // 앞으로 생길 설정은 여기에만 추가. data-act 키는 예전 그대로(인사이트 집계 연속).
 // (멤버 관리는 2026-09-04 기능 철수 — ADR-0018.)
 
-import { Eye, Gauge, Leaf, Maximize2, Palette, Sparkles, Vibrate } from "lucide-react";
+import { Eye, Gauge, Leaf, Palette, Sparkles, Vibrate } from "lucide-react";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import { RhhSelect } from "@/components/studio/rhh-select";
@@ -28,7 +28,6 @@ export type StudioSettingsProps = {
   gfxAuto: GfxMode;
   onChangeGfxPref: (pref: GfxPref) => void;
   // 배경 감상 모드(웹 편집실만 — 모바일은 배경이 없어 넘기지 않는다). 있으면 줄을 그린다.
-  onShowcase?: () => void;
   // 포스터 테마(시청자 화면 배경, calendars.poster_theme) — 소유자만(서버도 owner 검사). null이면 안 그림.
   posterTheme: PosterThemeKey | null;
   onChangePosterTheme: (theme: PosterThemeKey) => void;
@@ -46,9 +45,7 @@ export function StudioSettingsList({
   ambientOn,
   onToggleAmbient,
   gfxPref,
-  gfxAuto,
   onChangeGfxPref,
-  onShowcase,
   posterTheme,
   onChangePosterTheme,
   posterThemeSaving
@@ -145,10 +142,8 @@ export function StudioSettingsList({
           lockedLabel="끄기"
           onChange={onChangeGfxPref}
           options={[
-            {
-              value: "auto",
-              label: gfxAuto === "soft" ? "자동 (이 기기: 끔)" : gfxAuto === "lite" ? "자동 (이 기기: 가볍게)" : "자동 (여력 따라 조절)"
-            },
+            // 라벨은 짧게 "자동 조절"(2026-09-04 사용자: 주저리 설명 금지). 기기 판정 결과는 title로만.
+            { value: "auto", label: "자동 조절" },
             { value: "max", label: "항상 최대" },
             { value: "lite", label: "가볍게" },
             { value: "off", label: "끄기" }
@@ -156,18 +151,7 @@ export function StudioSettingsList({
           value={gfxPref}
         />
       </div>
-      {/* 배경 감상 — 달력·필터·아바타 자리를 다 숨기고 계절 배경만(Esc/알약으로 복귀). 계절 배경 OFF면 볼 게 없어 잠금. */}
-      {onShowcase ? (
-        <div className="role-help-haptics">
-          <span className="rhh-label">
-            <Maximize2 aria-hidden="true" size={14} />
-            배경 감상
-          </span>
-          <button className="rhh-link" data-act="ambient-showcase" disabled={!ambientOn} onClick={onShowcase} type="button">
-            전체 화면으로 보기
-          </button>
-        </div>
-      ) : null}
+      {/* (배경 감상 줄은 2026-09-04 사용자 결정으로 제거 — 아바타 자리·시청자 레일의 "감상하기" 버튼 하나만 둔다. 중복 금지.) */}
       {/* 포스터 테마 — 시청자 화면 배경(서버 저장, 소유자만). 스위치 줄과 같은 규격의 셀렉트. */}
       {posterTheme !== null ? (
         <div className="role-help-haptics">
