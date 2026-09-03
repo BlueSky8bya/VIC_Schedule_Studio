@@ -42,7 +42,11 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > `html[data-ambient-dim]`(편집·끌기 중 배경 레이어만 opacity .28), 투명 상단바 pointer-events none(옛 헤더 자리 잎 집기),
 > 물고기·오리 에셋 품질(fish.svg, duck.svg 재작업), 겨울 눈가루 재설계(흰 알갱이 모션 블러·가라앉음)와 발자국 쓸어 지우기,
 > 동물은 사라지지 않고 화면 밖으로 퇴장(토끼 flee·무당벌레·꿀벌), 봄 풀 흔들림은 꽃잎 앞머리 둘레만(타일 24×12), 편집실
-> 아바타 자리에도 `[감상하기 | 배경 끄기]`.
+> 아바타 자리에도 `[감상하기 | 배경 끄기]`. ⑪ 8차(장인 항목): 다람쥐 SVG 재작업 + 도토리 즉시 물기·돌아서 퇴장, 물고기 3색
+> 변종·개체 속도·질주, 토끼 눈 파기, 꿀벌 클릭 도망, 항적 한 번 더 옅게. **원칙**: 소품은 순간이동·순간 회전·바닥에서 녹아
+> 사라지기 금지 — 집으면 즉시 손/입으로, 떠나면 몸을 돌려 화면 밖으로. ⑫ 9차(사용자: "동물은 손그림 금지, 웹 에셋을 써라"):
+> 모든 동물·물고기는 Google Noto Emoji SVG(`public/ambient/noto/`, Apache-2.0, NOTICE) — 옆모습은 `drawFacing`, 위에서 본 것은
+> `drawSprite`. 계절 배경은 세 상태(켜짐·흐리게·끔) — 흐리게는 레이어 opacity .28 + 엔진 절반 프레임.
 - 관련: ADR-0016(금생수 — 물결 레이어), `components/shared/ambient/*`, `app/ambient.css`, `lib/ui/motion.ts`
   (`vic.ambient`), `docs/ux/seasonal-ambient-plan.md`(설계안), CLAUDE.md "Owner-fit palette rule"
 - Supersedes(예정, 4단계): 포스터 테마 7종(`calendars.poster_theme` = sakura/summer/autumn/winter/sunset/mint/dot/

@@ -33,7 +33,10 @@
   transition: opacity 0.45s var(--ease, ease);
 }
 html[data-ambient-dim] .gs-season,
-html[data-ambient-dim] .gs-tide {
+html[data-ambient-dim] .gs-tide,
+/* 설정 '흐리게'(vic.ambient = dim) — 늘 옅게. 감상 모드에선 잠시 걷어 온전히 본다. */
+html[data-ambient="dim"]:not([data-showcase]) .gs-season,
+html[data-ambient="dim"]:not([data-showcase]) .gs-tide {
   opacity: 0.28;
 }
 @keyframes gs-season-in {
@@ -232,10 +235,13 @@ html[data-reduce-motion] .showcase-exit {
 .ambient-toggle:active {
   transform: scale(0.96);
 }
-.ambient-toggle.on svg {
+.ambient-toggle.mode-on svg {
   color: #4d7a48;
 }
-.ambient-toggle:not(.on) {
+.ambient-toggle.mode-dim svg {
+  color: #6b5b8a;
+}
+.ambient-toggle.mode-off {
   border-style: dashed;
 }
 html[data-showcase] .ambient-toggle {

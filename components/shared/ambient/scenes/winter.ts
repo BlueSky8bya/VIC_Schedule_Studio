@@ -10,7 +10,7 @@
 // 빈도·눈가루·고리·이벤트를 점진 조절(툭 사라지지 않게 — 눈송이는 제 수명을 마치고 빠진다).
 
 import type { Frame, Scene } from "../scene-engine";
-import { ASSET, drawSprite, loadSprite, type Sprite } from "../assets";
+import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
 import { clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU } from "./util";
 
 type Flake = { x: number; y: number; life: number; dur: number; wait: number; r: number; rung: boolean };
@@ -23,7 +23,7 @@ type Ring = { x: number; y: number; life: number };
 type Twinkle = { x: number; y: number; ph: number; r: number };
 type Walker = { kind: Kind; x: number; y: number; dir: number; left: boolean; k: number; next: number; active: boolean; steps: number };
 type RabbitPhase = "emerge" | "sit" | "hop" | "rest" | "flee"; // flee = 화면 밖으로 빠르게 뛰어나감(사라지지 않는다)
-type Rabbit = { x: number; y: number; dir: number; phase: RabbitPhase; t0: number; hops: number; sx: number; sy: number; look: number; k: number };
+type Rabbit = { x: number; y: number; dir: number; phase: RabbitPhase; t0: number; hops: number; sx: number; sy: number; look: number; k: number; nextDig: number; digT: number };
 type Gust = { t0: number; dur: number; dir: number; y: number } | null;
 
 const SPR: Record<PrintKind, number> = { sole: 36, paw: 20, bird: 18, rHind: 20, rFore: 14 };
@@ -164,7 +164,7 @@ export function createWinter(seed: number): Scene {
       }
       speck = c;
     }
-    void loadSprite(ASSET.rabbit, 40, 55).then((s) => (rabbitSpr = s)).catch(() => {});
+    void loadSprite(ASSET.rabbit, 54, 54).then((s) => (rabbitSpr = s)).catch(() => {});
   }
   function drawPrint(g: CanvasRenderingContext2D, p: Print, alpha: number) {
     const spr = sprites.get(p.kind);
@@ -327,7 +327,7 @@ export function createWinter(seed: number): Scene {
         y = best[1] + 35 + rand() * (best[3] - 70);
       }
     }
-    rabbit = { x, y, dir: rand() * TAU, phase: "emerge", t0: t, hops: 3 + Math.floor(rand() * 4), sx: x, sy: y, look: 0, k: 0.9 + rand() * 0.2 };
+    rabbit = { x, y, dir: rand() * TAU, phase: "emerge", t0: t, hops: 3 + Math.floor(rand() * 4), sx: x, sy: y, look: 0, k: 0.9 + rand() * 0.2, nextDig: t + 1.2, digT: -9 };
     puff(x, y, 14, 130);
     rabbits++;
   }
@@ -407,6 +407,13 @@ export function createWinter(seed: number): Scene {
           r.dir += (rand() - 0.5) * 1.2;
           r.sx = r.x;
           r.sy = r.y;
+        } else if (r.phase === "sit" && t > r.nextDig) {
+          // 앉아서 앞발로 눈을 파헤친다 — 앞발 쪽에서 눈가루가 조금씩 튀고 몸이 앞뒤로 까딱.
+          r.digT = t;
+          r.nextDig = t + 0.9 + rand() * 1.3;
+          const fx = r.x + Math.cos(r.dir) * 18;
+          const fy = r.y + Math.sin(r.dir) * 18;
+          for (let i = 0; i < 5; i++) dust.push({ x: fx + (rand() - 0.5) * 8, y: fy + (rand() - 0.5) * 8, vx: Math.cos(r.dir + (rand() - 0.5) * 1.2) * (40 + rand() * 60), vy: Math.sin(r.dir + (rand() - 0.5) * 1.2) * (40 + rand() * 60), life: 0.9, r: 1.2 + rand() * 1.4 });
         } else if (r.phase === "hop" || r.phase === "flee") {
           const fleeing = r.phase === "flee";
           const dur = fleeing ? 0.24 : 0.38;
@@ -612,6 +619,9 @@ export function createWinter(seed: number): Scene {
         }
         const ear = r.phase === "sit" ? Math.sin(t * 9) * 0.08 : 0;
         const look = r.phase === "sit" ? Math.sin(t * 1.7) * 0.25 : 0;
+        const digging = r.phase === "sit" && t - r.digT < 0.35;
+        const dig = digging ? Math.sin((t - r.digT) * 36) * 0.06 : 0; // 파헤치는 동안 몸이 잘게 까딱
+        if (digging) k *= 1 + Math.abs(dig) * 0.5;
         if (shadow && alpha > 0) {
           g.save();
           g.globalAlpha = 0.35 * alpha * (1 - 0.5 * up);
@@ -622,7 +632,7 @@ export function createWinter(seed: number): Scene {
         }
         g.save();
         g.globalAlpha = alpha;
-        drawSprite(g, rabbitSpr, r.x, r.y - 10 * up, r.dir + Math.PI / 2 + ear + look, k * (1 + 0.22 * up));
+        drawFacing(g, rabbitSpr, r.x + Math.cos(r.dir) * dig * 30, r.y - 10 * up + Math.sin(r.dir) * dig * 30, r.dir, k * (1 + 0.22 * up), ear + look * 0.4);
         g.restore();
       }
       for (const s of flakes) {

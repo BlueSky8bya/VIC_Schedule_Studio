@@ -10,7 +10,7 @@
 // 회오리(≥.6)도 여력을 따른다. 색은 채도를 낮춘 가을색(붉·주황·노랑을 쨍하게 올리지 않는다 — CLAUDE.md Owner-fit palette).
 
 import type { Frame, Scene } from "../scene-engine";
-import { ASSET, drawSprite, loadSprite, type Sprite } from "../assets";
+import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
 import { clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU } from "./util";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
@@ -47,7 +47,9 @@ type Leaf = {
   born: number;
 };
 type Gust = { t0: number; dur: number; dir: number; y: number } | null;
-type SqPhase = "run" | "sniff" | "leave";
+// run 달려옴 → sniff 킁킁(1.2s) → grab 도토리를 집어 물고 한 번 통통(0.45s, 도토리는 그 순간 입으로 옮겨진다) → leave 몸을 돌려
+// 화면 밖으로. 방향은 5rad/s로 돌고, 많이 틀어야 하면 제자리에서 먼저 돈 뒤 달린다(휙 순간 회전 금지).
+type SqPhase = "run" | "sniff" | "grab" | "leave";
 type Squirrel = { x: number; y: number; dir: number; phase: SqPhase; tx: number; ty: number; t0: number; target: number; carry: boolean; ph: number };
 type Whirl = { x: number; y: number; vx: number; vy: number; t0: number; dur: number } | null;
 
@@ -158,9 +160,9 @@ export function createAutumn(seed: number): Scene {
       shadows.push(c);
     }
     acornShadow = shadowSprite(44, 52, "43 35 32", 0.9);
-    sqShadow = shadowSprite(52, 70, "43 35 32", 0.6);
+    sqShadow = shadowSprite(56, 44, "43 35 32", 0.6);
     void loadSprite(ASSET.acorn, 40, 52).then((s) => (acornSpr = s)).catch(() => {});
-    void loadSprite(ASSET.squirrel, 44, 68).then((s) => (squirrelSpr = s)).catch(() => {});
+    void loadSprite(ASSET.chipmunk, 52, 52).then((s) => (squirrelSpr = s)).catch(() => {});
   }
   // 가을 바탕 — 크기별 결정적. 마른 흙 얼룩 + 시든 풀 + 잔가지 + 조약돌 + 버섯.
   function bakeGround(dpr: number) {
@@ -401,17 +403,26 @@ export function createAutumn(seed: number): Scene {
         if (s.phase === "sniff") {
           if (t - s.t0 > 1.2) {
             if (s.target >= 0 && s.target < leaves.length && leaves[s.target].sp === ACORN && leaves[s.target].fade === 0) {
-              leaves[s.target].fade = 0.001;
+              // 도토리는 **지금** 입으로 옮겨진다(바닥에서 즉시 사라지고 다람쥐 앞에 그려진다) — 옛 구현은 0.7초 흐려지며
+              // 남아 "안 가져갔는데 도토리가 녹는다"로 보였다.
+              leaves.splice(s.target, 1);
+              if (grabbed === s.target) grabbed = -1;
+              else if (grabbed > s.target) grabbed--;
+              s.target = -1;
               s.carry = true;
               stolen++;
-            }
-            squirrelLeave(t);
+              s.phase = "grab";
+              s.t0 = t;
+            } else squirrelLeave(t);
           }
+        } else if (s.phase === "grab") {
+          s.ph += dt * 26; // 물고 한 번 통통
+          if (t - s.t0 > 0.45) squirrelLeave(t);
         } else {
           const dx = s.tx - s.x;
           const dy = s.ty - s.y;
           const d = Math.hypot(dx, dy);
-          const sp = s.phase === "leave" ? 320 : 250;
+          const sp = s.phase === "leave" ? 300 : 250;
           if (d < 6) {
             if (s.phase === "run") {
               s.phase = "sniff";
@@ -425,12 +436,15 @@ export function createAutumn(seed: number): Scene {
             let diff = want - s.dir;
             while (diff > Math.PI) diff -= TAU;
             while (diff < -Math.PI) diff += TAU;
-            s.dir += clamp(diff, -9 * dt, 9 * dt);
-            const step = Math.min(d, sp * dt);
-            s.x += Math.cos(s.dir) * step;
-            s.y += Math.sin(s.dir) * step;
-            s.ph += dt * 22;
-            shove(s.x, s.y, 44, 60 * dt * 60);
+            s.dir += clamp(diff, -5 * dt, 5 * dt);
+            // 몸이 목표 쪽을 향할 때까지는 제자리에서 돈다(휙 순간 회전 대신 돌아서는 동작).
+            if (Math.abs(diff) < 0.7) {
+              const step = Math.min(d, sp * dt);
+              s.x += Math.cos(s.dir) * step;
+              s.y += Math.sin(s.dir) * step;
+              s.ph += dt * 22;
+              shove(s.x, s.y, 44, 60 * dt * 60);
+            } else s.ph += dt * 8;
           }
         }
       }
@@ -673,23 +687,23 @@ export function createAutumn(seed: number): Scene {
       // 다람쥐 — 달릴 땐 몸이 위아래로 통통, 물고 갈 땐 머리 앞에 도토리.
       if (squirrel && squirrelSpr) {
         const s = squirrel;
-        const running = s.phase !== "sniff";
-        const bounce = running ? Math.abs(Math.sin(s.ph)) : 0;
+        const running = s.phase === "run" || s.phase === "leave";
+        const bounce = running ? Math.abs(Math.sin(s.ph)) : s.phase === "grab" ? Math.abs(Math.sin(s.ph)) * 1.3 : 0;
         const wig = s.phase === "sniff" ? Math.sin(f.t * 12) * 0.12 : 0;
         if (sqShadow) {
           g.save();
           g.globalAlpha = 0.3;
-          g.translate(s.x + 4 + 6 * bounce, s.y + 6 + 8 * bounce);
-          g.rotate(s.dir + Math.PI / 2);
-          g.drawImage(sqShadow, -26, -35, 52, 70);
+          g.translate(s.x + 4 + 6 * bounce, s.y + 10 + 8 * bounce);
+          g.drawImage(sqShadow, -28, -22, 56, 44);
           g.restore();
         }
-        drawSprite(g, squirrelSpr, s.x, s.y - 6 * bounce, s.dir + Math.PI / 2 + wig, 1 + 0.1 * bounce);
+        drawFacing(g, squirrelSpr, s.x, s.y - 6 * bounce, s.dir, 1 + 0.1 * bounce, wig);
         if (s.carry && acornSpr) {
+          // 입에 문 도토리 — 코 끝(앞 22px)에, 몸과 같은 각도로.
           g.save();
-          g.translate(s.x + Math.cos(s.dir) * 30, s.y + Math.sin(s.dir) * 30 - 6 * bounce);
+          g.translate(s.x + Math.cos(s.dir) * 22, s.y + Math.sin(s.dir) * 22 - 6 * bounce);
           g.rotate(s.dir + Math.PI / 2);
-          g.drawImage(acornSpr.c, -9, -12, 18, 24);
+          g.drawImage(acornSpr.c, -7, -9, 14, 18);
           g.restore();
         }
       }

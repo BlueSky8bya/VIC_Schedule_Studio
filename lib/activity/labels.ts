@@ -66,7 +66,22 @@ const RETIRED_TARGETS = new Set([
   "scope-opt",
   // 작업자 역할 — ADR-0015
   "role-preview-worker",
-  "role-preview-dual"
+  "role-preview-dual",
+  // 매니저·멤버 관리 — ADR-0018(2026-09-04)
+  "role-preview-manager",
+  "manage-members",
+  "mobile-open-members",
+  "m-io-members",
+  "modal:members",
+  "member-role-toggle",
+  "member-add",
+  // 2026-09-04 철수: 휴식 넛지 · 차분한 편집실 토글 · 인사이트 새로고침 버튼 · 세션 로그 역할 칩
+  "rest-nudge",
+  "rest-nudge-ok",
+  "rest-nudge-later",
+  "studio-calm-toggle",
+  "insights-refresh",
+  "vlog-chip"
 ]);
 const RETIRED_ROUTES = new Set(["/studio/decorate", "/studio/private-layer"]);
 const RETIRED_SECTIONS = new Set(["decorate"]);
@@ -313,9 +328,10 @@ const ACT: Record<string, TargetLabel> = {
   "studio-calm-toggle": { name: "차분한 편집실 켜기/끄기", area: "편집실", hint: "옛 기록(토글 제거 2026-09-04 — 항상 ON)" },
   "poster-theme-select": { name: "포스터 테마 고르기", area: "편집실", hint: "설정 모달 · 관리자만" },
   "gfx-pref-select": { name: "배경 효과 품질 고르기", area: "편집실", hint: "설정 모달 — 자동/항상 최대/가볍게/끄기(lib/ui/gfx.ts v3)" },
-  "ambient-showcase": { name: "배경 감상 모드 켜기", area: "편집실", hint: "설정 모달 — 달력·필터·아바타 자리를 숨기고 계절 배경만(Esc/알약으로 복귀)" },
+  "ambient-showcase": { name: "배경 감상 모드 켜기", area: "편집실", hint: "아바타 자리·시청자 레일의 '○○ 감상하기' 버튼 — 달력·필터를 숨기고 계절 배경만(Esc/알약으로 복귀). 설정 줄은 2026-09-04 제거" },
   "ambient-showcase-exit": { name: "배경 감상 모드 나가기", area: "편집실", hint: "감상 모드 상단 알약" },
-  "ambient-toggle-viewer": { name: "계절 배경 켜기/끄기(시청자)", area: "시청자", hint: "레일 감상하기 옆 토글 — 기기 저장값(vic.ambient), 편집실 설정과 한 상태" },
+  "ambient-toggle-viewer": { name: "계절 배경 켜짐→흐리게→끔 돌리기", area: "시청자 화면", hint: "레일·아바타 자리 감상하기 옆 버튼(다음 동작이 라벨) — 기기 저장값(vic.ambient), 편집실 설정과 한 상태" },
+  "ambient-mode-select": { name: "계절 배경 상태 고르기", area: "편집실", hint: "설정 모달 — 켜기/흐리게/끄기(2026-09-04, 옛 스위치 '계절 배경 켜기/끄기' 대체)" },
   "rest-nudge-ok": { name: "휴식 넛지 — 쉬고 올게요", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
   "rest-nudge-later": { name: "휴식 넛지 — 조금만 더", area: "편집실", hint: "옛 기록(기능 철수 2026-09-04)" },
   "google-login": { name: "Google로 로그인", area: "공통" },
@@ -444,7 +460,8 @@ export function describeTarget(kind: string, target: string): TargetLabel {
 // **비로그인(anon)을 시청자로 합치지 않는다.** 합쳤더니 "편집실에 시청자 1"처럼 설명 안 되는
 // 줄이 생겼다(실측). 편집실은 시청자가 못 들어가는데 왜? — 로그아웃 직후 남아 있던 배치가
 // 세션 없이 올라가 anon으로 기록된 것이었다. 둘을 갈라두면 그 자리에서 읽힌다.
-export const ROLE_ORDER = ["owner", "manager", "worker", "developer", "viewer", "anon"] as const;
+// (매니저·작업자는 철수 — 옛 기록의 이름은 ROLE_NAME에 남기고 순서/필터에서는 뺀다.)
+export const ROLE_ORDER = ["owner", "developer", "viewer", "anon"] as const;
 export const ROLE_NAME: Record<string, string> = {
   owner: "관리자",
   manager: "매니저",
@@ -467,7 +484,7 @@ export function usageRoleCount(roles: Record<string, number>, role: string): num
 /** 사용량 화면의 역할 목록 — '비로그인'은 시청자에 합쳐 두 줄로 갈리지 않게 한다.
  *  '작업자'는 뺐다(역할 자체가 철수 — ADR-0015): 고를 수 없는 역할의 필터는 죽은 칩이다.
  *  옛 기록의 작업자 횟수는 내역 줄(usageRoleBreakdown)에 '작업자 N'으로 계속 나온다. */
-export const USAGE_ROLE_ORDER = ["owner", "manager", "developer", "viewer"] as const;
+export const USAGE_ROLE_ORDER = ["owner", "developer", "viewer"] as const;
 
 /**
  * 사용량 화면 전용 역할 내역 — 비로그인을 시청자에 합쳐 "시청자 9"처럼 한 덩어리로 보여준다.
@@ -498,9 +515,9 @@ export function roleBreakdown(roles: Record<string, number>): string {
   const parts = ROLE_ORDER.filter((r) => (roles[r] ?? 0) > 0).map(
     (r) => `${ROLE_NAME[r]} ${roles[r]}`
   );
-  // 사전에 없는 역할이 생겨도 버리지 않는다(지어내지 않는 원칙과 같다).
+  // 순서에서 뺀 옛 역할(매니저·작업자)은 사람 말로 뒤에 붙이고, 사전에 없는 역할이 생겨도 버리지 않는다(지어내지 않는 원칙).
   for (const [k, v] of Object.entries(roles)) {
-    if (!ROLE_ORDER.includes(k as (typeof ROLE_ORDER)[number]) && v > 0) parts.push(`${k} ${v}`);
+    if (!ROLE_ORDER.includes(k as (typeof ROLE_ORDER)[number]) && v > 0) parts.push(`${ROLE_NAME[k] ?? k} ${v}`);
   }
   return parts.join(" · ") || "기록 없음";
 }

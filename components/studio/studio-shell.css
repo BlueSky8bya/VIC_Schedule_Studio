@@ -666,6 +666,12 @@ html {
   opacity: 0.75;
 }
 /* 진동 켜기/끄기 — 권한 목록 아래 작은 설정 한 줄(진동 지원 기기에서만). iOS풍 스위치, 앱 톤. */
+/* 모바일(≤640)엔 계절 배경이 없다 — 계절 배경·배경 효과 줄은 숨긴다(2026-09-04 사용자: 모바일 설정 정리). */
+@media (max-width: 640px) {
+  .role-help-haptics.rhh-ambient {
+    display: none;
+  }
+}
 .role-help-haptics {
   display: flex;
   align-items: center;

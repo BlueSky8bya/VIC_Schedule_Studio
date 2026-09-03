@@ -102,26 +102,41 @@ export function studioCalmEnabled(): boolean {
 // app/layout.tsx 스크립트(같은 줄). 시청자 화면엔 설정 UI가 없어 늘 ON(기기 저장값이 있으면 그것).
 const AMBIENT_KEY = "vic.ambient"; // localStorage: 미설정이면 기본 ON, "off"만 끔
 
-export function ambientEnabled(): boolean {
-  if (typeof window === "undefined") return true;
+// 세 상태(2026-09-04 사용자: "흐려진 배경만 원하는 사람도 있을 것"): on 켜짐 · dim 흐리게(배경 레이어 opacity .28 + 엔진 절반
+// 프레임 — 편집 집중 모드와 같은 모습이 늘) · off 끔. 저장값 "on"/"dim"/"off"(미설정 = on). 속성: dim → `data-ambient="dim"`,
+// off → `data-ambient="off"`, on → 없음. 감상 모드(html[data-showcase])에선 흐림을 잠시 걷는다(app/ambient.css).
+export type AmbientMode = "on" | "dim" | "off";
+
+export function ambientMode(): AmbientMode {
+  if (typeof window === "undefined") return "on";
   try {
-    return window.localStorage.getItem(AMBIENT_KEY) !== "off";
+    const v = window.localStorage.getItem(AMBIENT_KEY);
+    return v === "off" || v === "dim" ? v : "on";
   } catch {
-    return true;
+    return "on";
   }
 }
 
-export function setAmbient(on: boolean): void {
+export function setAmbientMode(mode: AmbientMode): void {
   try {
-    window.localStorage.setItem(AMBIENT_KEY, on ? "on" : "off");
+    window.localStorage.setItem(AMBIENT_KEY, mode);
   } catch {
     /* 무시 */
   }
   try {
     const root = document.documentElement;
-    if (on) root.removeAttribute("data-ambient");
-    else root.setAttribute("data-ambient", "off");
+    if (mode === "on") root.removeAttribute("data-ambient");
+    else root.setAttribute("data-ambient", mode);
   } catch {
     /* no-op */
   }
+}
+
+/** 켜짐/흐리게 = true, 끔 = false(옛 호출부 호환). */
+export function ambientEnabled(): boolean {
+  return ambientMode() !== "off";
+}
+
+export function setAmbient(on: boolean): void {
+  setAmbientMode(on ? "on" : "off");
 }

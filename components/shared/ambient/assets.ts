@@ -5,14 +5,21 @@
 
 import { makeCanvas } from "./scenes/util";
 
+// 동물·물고기는 직접 그리지 않는다(2026-09-04 사용자: 손그림 금지) — Google Noto Emoji 아트워크(Apache-2.0, public/ambient/
+// noto/NOTICE.txt)를 그대로 쓴다. 옆모습(왼쪽을 본다)은 drawFacing으로 진행 방향에 맞춰 뒤집고 기울인다; 무당벌레·나비처럼
+// 위에서 본 것은 drawSprite(앞 = 위). 튜브·도토리만 우리 SVG.
 export const ASSET = {
-  duck: "/ambient/duck.svg",
   ring: "/ambient/swim-ring.svg",
   acorn: "/ambient/acorn.svg",
-  ladybug: "/ambient/ladybug.svg",
-  rabbit: "/ambient/snow-rabbit.svg",
-  squirrel: "/ambient/squirrel.svg",
-  fish: "/ambient/fish.svg"
+  rabbit: "/ambient/noto/emoji_u1f407.svg",
+  chipmunk: "/ambient/noto/emoji_u1f43f.svg",
+  fishTropical: "/ambient/noto/emoji_u1f420.svg",
+  fish: "/ambient/noto/emoji_u1f41f.svg",
+  blowfish: "/ambient/noto/emoji_u1f421.svg",
+  duck: "/ambient/noto/emoji_u1f986.svg",
+  ladybug: "/ambient/noto/emoji_u1f41e.svg",
+  bee: "/ambient/noto/emoji_u1f41d.svg",
+  butterfly: "/ambient/noto/emoji_u1f98b.svg"
 } as const;
 
 export type Sprite = { c: HTMLCanvasElement; w: number; h: number }; // w/h = 그릴 때의 CSS px 크기
@@ -40,6 +47,21 @@ export async function loadSprite(url: string, w: number, h: number, scale = 2): 
   const { c, g } = makeCanvas(w * scale, h * scale);
   g.drawImage(im, 0, 0, c.width, c.height);
   return { c, w, h };
+}
+
+/** 옆모습(왼쪽을 보는) 스프라이트를 진행 방향 hd(라디안, 화면 좌표)에 맞춰 그린다 — 오른쪽으로 가면 좌우로 뒤집고, 위아래
+ *  성분만큼 코를 기울인다(180° 회전이면 배가 위로 뒤집힌다). extra = 귀 쫑긋·꼬리질 같은 작은 추가 회전. */
+export function drawFacing(g: CanvasRenderingContext2D, s: Sprite, x: number, y: number, hd: number, k = 1, extra = 0) {
+  const cx = Math.cos(hd);
+  const sy = Math.sin(hd);
+  const flip = cx >= 0;
+  const rot = flip ? Math.atan2(sy, cx) : Math.atan2(-sy, -cx);
+  g.save();
+  g.translate(x, y);
+  g.rotate(rot + extra);
+  g.scale(flip ? -k : k, k);
+  g.drawImage(s.c, -s.w / 2, -s.h / 2, s.w, s.h);
+  g.restore();
 }
 
 /** 스프라이트를 (x,y) 중심·회전 a·배율 k로 그린다(alpha는 호출 쪽 globalAlpha). */

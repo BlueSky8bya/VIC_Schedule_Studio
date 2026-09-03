@@ -79,8 +79,9 @@ describe("역할별 분해 — 뭉치지 않는다", () => {
     // 비로그인은 시청자와 가른다 — 합치면 "편집실에 시청자"처럼 설명 안 되는 줄이 생긴다.
     expect(roleBreakdown({ developer: 1, anon: 2 })).toBe("개발자 1 · 비로그인 2");
   });
-  it("0인 역할은 빼고, 순서는 관리자→매니저→작업자→개발자→시청자", () => {
-    expect(roleBreakdown({ viewer: 2, manager: 1 })).toBe("매니저 1 · 시청자 2");
+  it("0인 역할은 빼고, 순서는 관리자→개발자→시청자→비로그인 — 철수한 역할(매니저·작업자)은 사람 말로 뒤에 붙는다", () => {
+    expect(roleBreakdown({ viewer: 2, manager: 1 })).toBe("시청자 2 · 매니저 1");
+    expect(roleBreakdown({ owner: 1, worker: 3, viewer: 2 })).toBe("관리자 1 · 시청자 2 · 작업자 3");
   });
   it("모르는 역할이 생겨도 버리지 않는다(지어내지 않는 원칙과 같다)", () => {
     expect(roleBreakdown({ ghost: 4 })).toBe("ghost 4");

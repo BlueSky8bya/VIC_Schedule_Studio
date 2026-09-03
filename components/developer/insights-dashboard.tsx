@@ -9,7 +9,6 @@ import {
   LineChart,
   Lock,
   Radio,
-  RotateCw,
   TrendingUp,
   Trophy
 } from "lucide-react";
@@ -51,14 +50,14 @@ import { hapticTick } from "@/lib/ui/haptics";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
 // META·헬퍼는 일별 방문 모달(DayVisitModal)에서도 그대로 재사용 → 색/표기 단일 출처(드리프트 방지).
+// (작업자·매니저는 2026-09-04 ADR-0018로 철수 — 범례·필터에서 뺀다. 옛 세션 행의 배지 색만 LEGACY_ROLE_COLOR로 남긴다.)
 export const ROLE_META: { key: string; label: string; color: string }[] = [
   { key: "anon", label: "비로그인", color: "#c2c7d2" },
   { key: "viewer", label: "시청자", color: "#9aa0ab" },
-  { key: "worker", label: "작업자", color: "#f59e0b" },
-  { key: "manager", label: "매니저", color: "#7c6cf0" },
   { key: "owner", label: "관리자", color: "#34d399" },
   { key: "developer", label: "개발자", color: "#60a5fa" }
 ];
+export const LEGACY_ROLE_COLOR: Record<string, string> = { worker: "#f59e0b", manager: "#7c6cf0" };
 export const DEVICE_META: { key: string; label: string; color: string }[] = [
   { key: "desktop", label: "웹", color: "#6b8cef" },
   { key: "android", label: "안드로이드", color: "#3ddc84" },
@@ -83,19 +82,6 @@ const PANELS = [
 ] as const;
 // 탭/패널 격자 열 수 — CSS의 .insights-tabs(repeat(4,1fr))와 방향키·스와이프 행 이동에 함께 쓴다.
 const GRID_COLS = 4;
-
-// 패널별 새로고침이 다시 부를 데이터 소스(이 칸만 즉시 갱신). 실시간 패널(live)은 자체 실시간
-// 구독(DeveloperPanel)이라 수동 새로고침 대상이 아님 → null이면 버튼을 숨긴다.
-const PANEL_SOURCE: Record<string, "data" | "trend" | "visits" | null> = {
-  content: "data",
-  engagement: "data",
-  trend: "trend",
-  highlight: "data",
-  live: null,
-  visits: "visits",
-  security: "data",
-  system: "data"
-};
 
 function kst(iso: string | null): Date | null {
   if (!iso) return null;
@@ -158,7 +144,7 @@ export const fmtDur = (seconds: number) => {
 };
 // 세션 로그 역할 배지 색 — 역할별 단일 출처(ROLE_META)에서. (일별 모달과 공유)
 export const roleColor = (key: string) =>
-  ROLE_META.find((m) => m.key === key)?.color ?? "#9aa0ab";
+  ROLE_META.find((m) => m.key === key)?.color ?? LEGACY_ROLE_COLOR[key] ?? "#9aa0ab";
 export const deviceColor = (key: string) =>
   DEVICE_META.find((m) => m.key === key)?.color ?? "#9aa0ab";
 export const deviceLabel = (key: string) =>
@@ -368,7 +354,7 @@ export function InsightsDashboard({
   const [vtHourHover, setVtHourHover] = useState<OccHover | null>(null); // 시간대 점유(체류) 분해 툴팁
   const [ownerTip, setOwnerTip] = useState<{ x: number; top: number; text: string } | null>(null); // 관리자 세션 띠 툴팁
   const [dsessTip, setDsessTip] = useState<{ x: number; day: number; n: number } | null>(null); // 일별 세션 막대 호버
-  const [logRole, setLogRole] = useState<string | null>(null); // 세션 로그 역할 필터(null=전체)
+  const logRole: string | null = null; // 세션 로그 역할 필터 — 칩 제거(2026-09-04), 늘 전체
   const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
@@ -376,9 +362,6 @@ export function InsightsDashboard({
   const [perf, setPerf] = useState<PerfStatRow[] | null>(null);
   const [perfHours, setPerfHours] = useState(24);
   const [perfLoading, setPerfLoading] = useState(false); // 시간창 전환 후 다시 불러오는 중(클릭 피드백)
-  const [refreshing, setRefreshing] = useState(false); // 지금 보는 칸만 수동 새로고침 중
-  const [refreshed, setRefreshed] = useState(false); // 방금 갱신 완료 — '갱신됨' 칩 잠깐 표시
-  const refreshedTimer = useRef<number | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -451,44 +434,7 @@ export function InsightsDashboard({
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
 
   // 지금 보고 있는 칸만 그 칸의 데이터 소스를 다시 불러 즉시 갱신(전체 모달 재로드 아님).
-  // 햅틱은 두 박자: 누를 때 1번, 서버 응답 도착하면 1번 더(왕복 체감). 아이콘은 도는 동안 회전.
-  const activeSource = PANEL_SOURCE[PANELS[index]?.key] ?? null;
-  async function refreshPanel() {
-    if (!activeSource || refreshing) return;
-    hapticTick();
-    setRefreshing(true);
-    setRefreshed(false);
-    if (refreshedTimer.current) window.clearTimeout(refreshedTimer.current);
-    // 응답이 너무 빨라도 도는 게 눈에 보이게 최소 회전시간(550ms)을 보장한다.
-    const minSpin = new Promise<void>((res) => window.setTimeout(res, 550));
-    const work = (async () => {
-      if (activeSource === "visits") {
-        const r = await getVisitTrendsAction(year, month);
-        if (r.ok) setVisits(r.data);
-      } else if (activeSource === "trend") {
-        const r = await getTrendAction(year, month);
-        if (r.ok) setTrend(r.data);
-      } else {
-        const r = await getInsightsAction(year, month);
-        if (r.ok) setData(r.data);
-        else setError(r.error);
-      }
-    })();
-    try {
-      await Promise.all([work, minSpin]);
-      hapticTick(); // 응답 도착 — 두 번째 박자
-      setRefreshed(true); // '갱신됨' 칩 + 버튼 완료 펄스
-      refreshedTimer.current = window.setTimeout(() => setRefreshed(false), 1400);
-    } finally {
-      setRefreshing(false);
-    }
-  }
-  useEffect(
-    () => () => {
-      if (refreshedTimer.current) window.clearTimeout(refreshedTimer.current);
-    },
-    []
-  );
+  // (패널별 수동 새로고침(refreshPanel)은 2026-09-04 제거 — 방문 칸은 20초 자동 갱신.)
 
   // 특정 한 사람의 비공개 잠금만 즉시 만료(초기화) → 성공하면 보안 데이터를 다시 불러온다.
   // (확인 대화/버튼 비활성은 SecurityPanel이 담당.)
@@ -1082,46 +1028,7 @@ export function InsightsDashboard({
             : null}
           <details className="vrecent" open>
             <summary>세션 {visits.recent.length}건 <span className="vcrit">20초마다 갱신</span></summary>
-            {/* 역할 필터 칩 — 모든 역할(ROLE_META) 항상 노출. 세션 0인 역할은 흐리게(있는지 한눈에),
-                칩 끝에 건수. 클릭 시 그 역할만(다시 누르면 전체). */}
-            {visits.recent.length > 0
-              ? (() => {
-                  const countByRole = (key: string) =>
-                    visits.recent.filter((r) => r.role === key).length;
-                  return (
-                    <div className="vlog-filter" role="group" aria-label="역할 필터">
-                      <button
-                        className={`vlog-chip${logRole === null ? " on" : ""}`}
-                        onClick={() => {
-                          hapticTick();
-                          setLogRole(null);
-                        }}
-                        type="button"
-                       data-act="vlog-chip">
-                        전체 <b>{visits.recent.length}</b>
-                      </button>
-                      {ROLE_META.map((m) => {
-                        const c = countByRole(m.key);
-                        return (
-                          <button
-                            className={`vlog-chip${logRole === m.key ? " on" : ""}${c === 0 ? " zero" : ""}`}
-                            data-role={m.key}
-                            key={m.key}
-                            onClick={() => {
-                              hapticTick();
-                              setLogRole((cur) => (cur === m.key ? null : m.key));
-                            }}
-                            style={{ "--rc": m.color } as CSSProperties}
-                            type="button"
-                           data-act="vlog-chip">
-                            {m.label} <b>{c}</b>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  );
-                })()
-              : null}
+            {/* (역할 필터 칩은 2026-09-04 사용자 결정으로 제거 — 역할은 각 줄의 배지로 충분, 위 운영진/시청자 토글이 큰 갈래.) */}
             {/* 머문/스쳐감 필터 — 스쳐감(<3초)과 실제 머문 세션 구분. */}
             {visits.recent.length > 0
               ? (() => {
@@ -1371,25 +1278,7 @@ export function InsightsDashboard({
     <div className="insights">
       <div className="insights-head">
         <p className="insights-month">{month}월 인사이트</p>
-        {activeSource ? (
-          <div className="insights-refresh-wrap">
-            <span aria-live="polite" className="insights-refreshed" data-on={refreshed ? "" : undefined}>
-              ✓ 갱신됨
-            </span>
-            <button
-              aria-label={`${PANELS[index]?.label} 새로고침`}
-              className="insights-refresh"
-              data-done={refreshed ? "" : undefined}
-              data-spin={refreshing ? "" : undefined}
-              disabled={refreshing}
-              onClick={refreshPanel}
-              title={`${PANELS[index]?.label} 새로고침`}
-              type="button"
-             data-act="insights-refresh">
-              <RotateCw aria-hidden="true" size={15} />
-            </button>
-          </div>
-        ) : null}
+        {/* (수동 새로고침 버튼은 2026-09-04 사용자 결정으로 제거 — 방문 칸은 20초 자동 갱신, 나머지는 열 때 최신.) */}
       </div>
       <div className="insights-tabs" role="tablist" aria-label="인사이트 영역">
         {PANELS.map((p, i) => (
@@ -1409,17 +1298,10 @@ export function InsightsDashboard({
 
       <div
         className="insights-viewport"
-        data-refreshing={refreshing ? "" : undefined}
         onPointerCancel={() => (swipeStart.current = null)}
         onPointerDown={onSwipeStart}
         onPointerUp={onSwipeEnd}
       >
-        {refreshing ? (
-          <div className="insights-veil" aria-hidden="true">
-            <RotateCw className="insights-veil-icon" size={22} />
-            <span>불러오는 중…</span>
-          </div>
-        ) : null}
         <div
           className="insights-track"
           data-active={index}

@@ -102,6 +102,28 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   참조하는 항상-false 스텁이라 유지). 순서: 코드 push → 0074 적용(옛 코드도 조회 실패를 삼켜 안 깨짐). 공개 API DTO
   무변화. 검증: tsc·lint(기존 경고 2)·vitest 522·build exit 0·비주얼 79·Playwright(편집실·모바일 DOM "매니저" 0, 도구
   타일 [태그 편집·인사이트·단축키·설정], 개발자 미리보기 3개, 역할 팝오버에 '멤버' 없음).
+  ㉘ **장인 항목 9차(2026-09-04 낮, 사용자 5건)**: ① 다람쥐 SVG 재작업(얼굴이 정수리에 있던 그림 → 앞이 좁은 머리에 귀·눈은
+  옆, 코는 앞 끝, 등줄기, 등 위로 말린 꼬리 털 결). 도토리는 sniff 끝에 **즉시** 입으로(바닥에서 splice, 옛 0.7초 흐려짐 제거)
+  → grab 0.45초 통통 → 5rad/s로 돌아선 뒤(|diff|<0.7까지 제자리 회전) 달려 나감. ② 물고기 변종 3색(청록·슬레이트·올리브,
+  source-atop 색 덮기), 개체별 속도 30~70, 꼬리질 박자 맥동, 무리 방향 전환 때 몇 마리 질주(dart). 토끼는 앉아서 앞발로 눈을
+  파헤침(digT·눈가루), 꿀벌 클릭 → 멀리 도망. ③ 여름 항적 한 번 더 옅게(도장 .3·팔 .14/.28). ④ 로그인 카드: 이메일 없으면 글자
+  폭 그대로 + 오른쪽 끝만 레일(`:has(.account-email)`에만 폭). ⑤ 인사이트/이용 기록: 수동 새로고침 버튼·베일 제거(일별 창은
+  30초 자동 갱신), 세션 로그 역할 칩 제거, ROLE_META에서 작업자·매니저 제거(옛 행 색은 LEGACY_ROLE_COLOR), 행동 사전
+  RETIRED에 매니저·멤버·휴식 넛지·차분 토글·새로고침·역할 칩 추가, ROLE_ORDER/USAGE_ROLE_ORDER에서 매니저·작업자 제거.
+  ⑥ 모바일 설정: 계절 배경·배경 효과 줄 숨김(`.rhh-ambient`, ≤640). ⑦ **"창이 넓은데도 계정 카드가 아이콘만"** 원인 = 단계를
+  resize·역할 변경 때만 재서, 세로 스크롤바 생김/사라짐·rail 슬라이드·"저장 중…"(4.3em > min 3.9em)으로 잠깐 넘친 순간의
+  단계가 굳었다 → 상단바·카드 ResizeObserver + saveState 의존 + 저장 라벨 min-width 4.4em(+ inline-block — inline엔 min-width가
+  안 먹어 34px 그대로였다). ⑧ 투명 상단바는 sticky를 풀어(`position: relative`) 스크롤에 따라 내려오지 않는다(달 라벨·‹ ›·
+  배지가 달력 위에 겹치던 것). ⑨ **계절 배경 세 상태** `vic.ambient` = on/dim/off(`lib/ui/motion.ts` ambientMode/
+  setAmbientMode, 옛 ambientEnabled/setAmbient는 호환 래퍼): dim = 배경 레이어 opacity .28 + 엔진 절반 프레임(집중 모드와 같은
+  모습이 늘, 감상 모드에선 잠시 걷음). 설정 '계절 배경'은 스위치 → RhhSelect(켜기/흐리게/끄기, `ambient-mode-select`), 아바타
+  자리·시청자 레일 버튼은 켜짐→흐리게→끔 순환(라벨 = 다음 동작). 편집실은 `data-ambient` 속성 변화를 지켜보며 상태·배경 효과
+  잠금을 맞춘다(시청자 미리보기 레일에서 바꿔도 설정과 한 몸). 페인트-전 스크립트도 dim을 붙인다. ⑩ **동물은 손그림 금지 →
+  Google Noto Emoji 에셋**(사용자: "실력도 안 되면서 만들지 말고 웹에서 찾아 써") — `public/ambient/noto/emoji_u*.svg`
+  (Apache-2.0 아트워크, NOTICE.txt): 🐇 토끼·🐿️ 다람쥐·🐠🐟🐡 물고기 셋·🦆 오리·🐞 무당벌레·🐝 꿀벌(+🦋·🌰 예비). 옆모습
+  스프라이트는 `drawFacing`(진행 방향 오른쪽이면 좌우 뒤집고 위아래 성분만큼 코를 기울임 — 180° 회전이면 배가 뒤집힌다),
+  위에서 본 것(무당벌레)은 `drawSprite`. 내 SVG(duck·fish·ladybug·snow-rabbit·squirrel)는 삭제, 튜브·도토리만 남김. 실측:
+  verify-ambient9.mjs, probe-round9b.mjs, probe-animals.mjs.
   ㉗ **집중 모드·헤더 정리·장면 품질 8차(2026-09-04 오전, 사용자 9건)**: ① **집중 모드** `html[data-ambient-dim]` — 편집 카드
   열림·일정 끌기 중엔 배경 레이어(.gs-season/.gs-tide)만 opacity .28(필터·블러 없음). `.gs-season` 등장 애니 fill을 both→
   backwards로(both면 끝값 1이 캐스케이드 opacity를 영원히 덮는다 — 감상 모드 rail과 같은 함정). ② 편집실 헤더 "✨ 빅토리

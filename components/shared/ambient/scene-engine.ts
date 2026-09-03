@@ -99,8 +99,13 @@ const readReduced = () => document.documentElement.hasAttribute("data-reduce-mot
 const readOff = () => document.documentElement.getAttribute("data-ambient") === "off";
 // 일시정지(lib/ui/ambient-pause.ts): VOD 창·모달 백드롭 등 무거운 미디어 중엔 마지막 프레임을 둔 채 루프만 멈춘다.
 const readPaused = () => document.documentElement.hasAttribute("data-ambient-pause");
-// 집중 모드(편집·끌기 중, studio-shell.tsx): 배경이 옅어져 있으니 프레임도 절반만 그린다 — 끌기 스프링에 프레임을 양보한다.
-const readDim = () => document.documentElement.hasAttribute("data-ambient-dim");
+// 집중 모드(편집·끌기 중, studio-shell.tsx) 또는 설정 '흐리게'(data-ambient="dim", 감상 모드 제외): 배경이 옅어져 있으니 프레임도
+// 절반만 그린다 — 끌기 스프링·본문에 프레임을 양보한다.
+const readDim = () => {
+  const root = document.documentElement;
+  if (root.hasAttribute("data-ambient-dim")) return true;
+  return root.getAttribute("data-ambient") === "dim" && !root.hasAttribute("data-showcase");
+};
 
 // 여력 띠 — [하한, 상한, 고정값|null]. 고정값이 있으면 조절기가 손대지 않는다.
 function loadBand(q: Quality): [number, number, number | null] {

@@ -104,9 +104,12 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   farthest-from-pointer to shrink; flakes finish their cycle; butterflies fly in/out at the edges). "배경 효과" 자동 = adaptive,
   항상 최대 = 1, 가볍게 = 0.3 fixed (`vic:gfx-pref` event re-bands). **LOD rule:** anything soft is drawn at low resolution —
   the summer wake is stamped/stroked on a 0.35–0.5× offscreen canvas and upscaled (foam stamps aging wider/fainter, Kelvin
-  arms, crests, rings), canvas DPR follows load (1.5 ≥0.6, 1 ≤0.4), prints/props are baked sprites. **Props are files**:
-  `public/ambient/*.svg` (duck · swim ring · acorn · ladybug) loaded once by `components/shared/ambient/assets.ts` — swap the
-  file, not the code (top-down, forward = up; palette rule still applies: butter-yellow duck, mint/white ring, no red stripes).
+  arms, crests, rings), canvas DPR is fixed per mount, prints/props are baked sprites. **Animals are never hand-drawn
+  (owner rule 2026-09-04)**: every creature is a Google Noto Emoji SVG in `public/ambient/noto/` (Apache-2.0 artwork,
+  `NOTICE.txt`) loaded once by `components/shared/ambient/assets.ts` — 🐇 🐿️ 🐠🐟🐡 🦆 🐞 🐝; side-view sprites are drawn with
+  `drawFacing` (flip when heading right, pitch by the vertical component — a 180° rotation would show the belly), top-view
+  ones (ladybug) with `drawSprite` (forward = up). Only the swim ring and acorn are our own SVGs. Want a new creature?
+  Download an asset (Noto/Twemoji/CC0), never draw one.
   **Per-season random events**: summer = rubber duck always afloat + an occasional swim ring drifting through (both grab/throw,
   leave their own wake), a school of fish shadows under the water (flee the pointer, one big one at high load), sun glints,
   bubble pops; winter = animal visitors (cat · bird · rabbit gaits) besides the human walker, a **snow rabbit** that pops out,
@@ -133,8 +136,12 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   `html[data-showcase]` to hide all chrome and let the whole screen act as background; Esc or the top pill exits. The
   showcase button hides under the same gate as the ambient (계절 배경 OFF → gone). Viewers have no settings screen, so the
   viewer rail shows `[감상하기 | 배경 끄기]` (`ViewerAmbientControl`, same `vic.ambient` key); the toggle stays visible when
-  OFF as the only way back. The studio avatar slot carries the same `[감상하기 | 배경 끄기]` control wired through
-  `toggleAmbient` (one state with the settings switch and the 배경 효과 lock). **Focus dim:** while an event editor is open or
+  OFF as the only way back. **Three ambient states (2026-09-04):** `vic.ambient` = `on` · `dim` · `off`
+  (`ambientMode`/`setAmbientMode` in `lib/ui/motion.ts`; `dim` = background layers at opacity .28 + engine at half rate,
+  lifted while showcasing). The settings row is a `RhhSelect` (켜기/흐리게/끄기); the rail / avatar-slot button cycles
+  on → dim → off → on with the **next action** as its label (배경 흐리게 → 배경 끄기 → 배경 켜기). The studio watches
+  `data-ambient` and keeps its settings state + the 배경 효과 lock in sync, so the viewer-preview rail button counts too.
+  Under the ambient gate the transparent topbar is not sticky (it scrolls away instead of overlapping cells). **Focus dim:** while an event editor is open or
   an event is being dragged the studio sets `html[data-ambient-dim]` and only the background layers drop to opacity .28
   (never blur/filter, never text). `.gs-season`'s enter animation must keep `animation-fill-mode: backwards` — `both` pins
   opacity 1 forever and defeats every cascade opacity (showcase, dim).

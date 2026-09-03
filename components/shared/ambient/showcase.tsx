@@ -8,9 +8,9 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { Eye, Flower2, Leaf, Power, Snowflake, Waves } from "lucide-react";
+import { Eye, EyeOff, Flower2, Leaf, Power, Snowflake, Sparkles, Waves } from "lucide-react";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
-import { ambientEnabled, setAmbient } from "@/lib/ui/motion";
+import { type AmbientMode, ambientMode, setAmbientMode } from "@/lib/ui/motion";
 
 let active = false;
 const listeners = new Set<() => void>();
@@ -57,45 +57,50 @@ export function ShowcaseButton({ season, className = "", compact = false }: { se
   );
 }
 
-/** 시청자 레일용: [계절 감상하기 | 배경 끄기/켜기] — 시청자는 설정 화면이 없어 계절 배경을 끌 길이 없었다(2026-09-04 사용자).
- *  같은 기기 저장값(vic.ambient)을 쓰므로 편집실 설정과 한 상태. 배경 OFF면 감상 버튼은 숨고(볼 게 없다) 켜기 토글만 남는다. */
+/** 레일·아바타 자리용: [계절 감상하기 | 배경 상태 버튼] — 시청자는 설정 화면이 없어 여기서 바꾼다(2026-09-04 사용자).
+ *  버튼 하나가 켜짐 → 흐리게 → 끔 → 켜짐을 돈다. 라벨은 **다음 동작**("배경 흐리게" → "배경 끄기" → "배경 켜기"). 같은 기기
+ *  저장값(vic.ambient)이라 편집실 설정과 한 상태(편집실은 속성 변화를 지켜보며 설정·배경 효과 잠금을 맞춘다). 배경 OFF면
+ *  감상 버튼은 숨고(볼 게 없다) 이 버튼만 남는다. */
+const NEXT: Record<AmbientMode, AmbientMode> = { on: "dim", dim: "off", off: "on" };
 export function ViewerAmbientControl({
   season,
   className = "",
-  onToggle
+  onChange
 }: {
   season: SeasonKey;
   className?: string;
-  /** 편집실: 설정의 스위치·배경 효과 잠금과 같은 경로로 바꾼다(기본은 setAmbient만). */
-  onToggle?: (next: boolean) => void;
+  /** 바꾼 뒤 알림(편집실은 설정 상태·배경 효과 잠금을 맞춘다). 저장·속성은 여기서 이미 처리한다. */
+  onChange?: (mode: AmbientMode) => void;
 }) {
-  const [on, setOn] = useState(true);
+  const [mode, setMode] = useState<AmbientMode>("on");
   useEffect(() => {
-    const read = () => setOn(ambientEnabled());
+    const read = () => setMode(ambientMode());
     read();
     const mo = new MutationObserver(read);
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-ambient"] });
     return () => mo.disconnect();
   }, []);
+  const next = NEXT[mode];
+  const label = next === "dim" ? "배경 흐리게" : next === "off" ? "배경 끄기" : "배경 켜기";
+  const Icon = next === "dim" ? EyeOff : next === "off" ? Power : Sparkles;
   return (
     <div className={`viewer-ambient-ctl ${className}`.trim()} role="group" aria-label="계절 배경">
-      {on ? <ShowcaseButton season={season} /> : null}
+      {mode !== "off" ? <ShowcaseButton season={season} /> : null}
       <button
-        aria-pressed={on}
-        className={`ambient-toggle${on ? " on" : ""}`}
+        className={`ambient-toggle mode-${mode}`}
         data-act="ambient-toggle-viewer"
+        data-mode={mode}
         onClick={() => {
-          const next = !on;
-          if (onToggle) onToggle(next);
-          else setAmbient(next);
-          setOn(next);
-          if (!next) exitShowcase();
+          setAmbientMode(next);
+          setMode(next);
+          if (next === "off") exitShowcase();
+          onChange?.(next);
         }}
-        title={on ? "계절 배경 끄기" : "계절 배경 켜기"}
+        title={`지금: ${mode === "on" ? "켜짐" : mode === "dim" ? "흐리게" : "끔"} · 누르면 ${label}`}
         type="button"
       >
-        <Power aria-hidden="true" size={15} />
-        <span className="lbl">{on ? "배경 끄기" : "계절 배경 켜기"}</span>
+        <Icon aria-hidden="true" size={15} />
+        <span className="lbl">{label}</span>
       </button>
     </div>
   );

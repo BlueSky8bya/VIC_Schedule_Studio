@@ -10,7 +10,7 @@
 // 색은 木(초목)·水(이슬) — 쨍한 햇빛·붉은 꽃은 쓰지 않는다(CLAUDE.md Owner-fit palette).
 
 import type { Frame, Scene } from "../scene-engine";
-import { ASSET, drawSprite, loadSprite, type Sprite } from "../assets";
+import { ASSET, drawFacing, drawSprite, loadSprite, type Sprite } from "../assets";
 import { clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU } from "./util";
 
 const WINGS = [
@@ -66,6 +66,7 @@ export function createSpring(seed: number): Scene {
   let dandSpr: HTMLCanvasElement | null = null;
   let seedSpr: HTMLCanvasElement | null = null;
   let bugSpr: Sprite | null = null;
+  let beeSpr: Sprite | null = null;
   const daisies: [number, number][] = [];
   const flies: Fly[] = [];
   const sparks: Spark[] = [];
@@ -251,7 +252,8 @@ export function createSpring(seed: number): Scene {
       g.fill();
       seedSpr = c;
     }
-    void loadSprite(ASSET.ladybug, 14, 16).then((s) => (bugSpr = s)).catch(() => {});
+    void loadSprite(ASSET.ladybug, 20, 20).then((s) => (bugSpr = s)).catch(() => {});
+    void loadSprite(ASSET.bee, 24, 24).then((s) => (beeSpr = s)).catch(() => {});
   }
 
   const flyTarget = (f: Frame) => clamp(1 + Math.round(f.load * 2.4), 1, 3);
@@ -823,41 +825,17 @@ export function createSpring(seed: number): Scene {
         }
         g.restore();
       }
-      // 꿀벌 — 작은 몸(머스터드·짙은 줄무늬) + 빠르게 떨리는 날개(반투명 타원 둘), 그림자 조금.
-      if (bee) {
+      // 꿀벌(Noto Emoji 🐝, 옆모습) — 진행 방향으로 뒤집어 그리고 붕붕 떨림, 그림자 조금.
+      if (bee && beeSpr) {
         const b = bee;
-        g.save();
         if (shadow) {
           g.save();
           g.globalAlpha = 0.22;
-          g.translate(b.x + 5, b.y + 7);
-          g.rotate(b.hd + Math.PI / 2);
-          g.drawImage(shadow, -9, -7, 18, 14);
+          g.translate(b.x + 5, b.y + 9);
+          g.drawImage(shadow, -10, -6, 20, 12);
           g.restore();
         }
-        g.translate(b.x, b.y);
-        g.rotate(b.hd + Math.PI / 2);
-        const flap = Math.abs(Math.sin(t * 70 + b.ph));
-        g.fillStyle = "rgb(255 255 255 / 0.55)";
-        for (const s of [-1, 1]) {
-          g.beginPath();
-          g.ellipse(s * 5.5, -1.5, 5 * (0.4 + 0.6 * flap), 2.6, s * 0.35, 0, TAU);
-          g.fill();
-        }
-        g.fillStyle = "#d9b45a";
-        g.beginPath();
-        g.ellipse(0, 1, 4, 6, 0, 0, TAU);
-        g.fill();
-        g.fillStyle = "#3a3340";
-        for (const y of [-1.5, 2, 5]) {
-          g.beginPath();
-          g.ellipse(0, y, 3.6, 1.1, 0, 0, TAU);
-          g.fill();
-        }
-        g.beginPath();
-        g.arc(0, -5.5, 2.4, 0, TAU);
-        g.fill();
-        g.restore();
+        drawFacing(g, beeSpr, b.x, b.y + Math.sin(t * 40 + b.ph) * 0.8, b.hd, 1, Math.sin(t * 13 + b.ph) * 0.08);
       }
       for (const b of flies) {
         const sitting = b.state === "sit";
@@ -938,6 +916,14 @@ export function createSpring(seed: number): Scene {
           return true;
         }
       }
+      // 꿀벌을 누르면 놀라서 붕 하고 멀리 달아난다.
+      if (bee && bee.flee <= 0 && Math.hypot(bee.x - f.p.x, bee.y - f.p.y) < 18) {
+        bee.flee = 1.4;
+        bee.hover = 0;
+        bee.tx = clamp(bee.x + (rand() - 0.5) * 700, 20, w - 20);
+        bee.ty = clamp(bee.y + (rand() - 0.5) * 500, 20, h - 20);
+        return true;
+      }
       for (const b of bugs) {
         if (b.state !== "off" && Math.hypot(b.x - f.p.x, b.y - f.p.y) < 18) {
           b.state = "off";
@@ -970,6 +956,7 @@ export function createSpring(seed: number): Scene {
         bugs: bugs.map((b) => [Math.round(b.x), Math.round(b.y), b.state]),
         bugsFled,
         bugSprite: !!bugSpr,
+        beeSprite: !!beeSpr,
         petals: petals.length,
         breezes,
         wind: Math.round(wind * 100) / 100,

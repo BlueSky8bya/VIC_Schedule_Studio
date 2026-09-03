@@ -170,10 +170,11 @@ import { logActivity, logSettled } from "@/lib/activity/client";
 import { setBandHover } from "@/lib/ui/band-hover";
 import { useSectionActivity } from "@/lib/activity/use-section";
 import {
-  ambientEnabled,
+  type AmbientMode,
+  ambientMode,
   eyeComfortEnabled,
   reduceMotionEnabled,
-  setAmbient,
+  setAmbientMode,
   setEyeComfort,
   setReduceMotion
 } from "@/lib/ui/motion";
@@ -946,17 +947,22 @@ export function StudioShell({
     window.addEventListener("vic:gfx-auto", onAuto);
     return () => window.removeEventListener("vic:gfx-auto", onAuto);
   }, []);
-  const [ambientOn, setAmbientState] = useState(true);
+  // 계절 배경 세 상태(켜짐·흐리게·끔, 2026-09-04). 상태의 진실은 <html data-ambient>(lib/ui/motion.ts) — 설정 셀렉트, 아바타
+  // 자리·시청자 미리보기 레일의 순환 버튼, 페인트-전 스크립트가 전부 그 속성을 쓰므로 여기선 속성 변화를 지켜보며 따라간다.
+  const [ambientModeState, setAmbientModeState] = useState<AmbientMode>("on");
   useEffect(() => {
-    setAmbientState(ambientEnabled());
+    const read = () => setAmbientModeState(ambientMode());
+    read();
+    const mo = new MutationObserver(read);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-ambient"] });
+    return () => mo.disconnect();
   }, []);
-  // 잠금(2026-09-04 사용자): 계절 배경 OFF ⇔ 배경 효과 '끄기'. 스위치를 끄면 셀렉트는 '끄기'로 잠기고, 다시 켜면
-  // '끄기'였던 우선순위는 '자동'으로 풀린다. 셀렉트에서 '끄기'를 고르면 스위치도 함께 꺼진다 — 두 컨트롤이 한 상태.
-  const toggleAmbient = (force?: boolean) => {
-    const next = force ?? !ambientOn;
-    setAmbient(next);
-    setAmbientState(next);
-    if (next && gfxPrefState === "off") {
+  // 잠금(2026-09-04 사용자): 계절 배경 끔 ⇔ 배경 효과 '끄기'. 끄면 셀렉트는 '끄기'로 잠기고, 켜짐/흐리게로 돌아오면 '끄기'였던
+  // 우선순위는 '자동'으로 풀린다. 셀렉트에서 '끄기'를 고르면 배경도 함께 꺼진다 — 두 컨트롤이 한 상태.
+  const changeAmbientMode = (mode: AmbientMode) => {
+    if (ambientMode() !== mode) setAmbientMode(mode);
+    setAmbientModeState(mode);
+    if (mode !== "off" && gfxPrefState === "off") {
       setGfxPref("auto");
       setGfxPrefState("auto");
     }
@@ -965,9 +971,9 @@ export function StudioShell({
   const changeGfxPref = (pref: GfxPref) => {
     setGfxPref(pref); // localStorage + <html data-gfx> 즉시(배경 레이어는 속성을 지켜본다)
     setGfxPrefState(pref);
-    if (pref === "off" && ambientOn) {
-      setAmbient(false);
-      setAmbientState(false);
+    if (pref === "off" && ambientModeState !== "off") {
+      setAmbientMode("off");
+      setAmbientModeState("off");
     }
     hapticTick();
   };
@@ -1173,8 +1179,8 @@ export function StudioShell({
         onToggleEyeComfort={toggleEyeComfort}
         onToggleHaptics={toggleHaptics}
         onToggleReduceMotion={toggleReduceMotion}
-        ambientOn={ambientOn}
-        onToggleAmbient={toggleAmbient}
+        ambientMode={ambientModeState}
+        onChangeAmbientMode={changeAmbientMode}
         gfxPref={gfxPrefState}
         gfxAuto={gfxAuto}
         onChangeGfxPref={changeGfxPref}
@@ -2165,17 +2171,34 @@ export function StudioShell({
     };
     measure();
     let cancelled = false;
+    let raf = 0;
+    const schedule = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => {
+        raf = 0;
+        if (!cancelled) measure();
+      });
+    };
     // 웹폰트가 늦게 오면 글자 폭이 바뀐다 — 준비되면 한 번 더.
     document.fonts?.ready.then(() => {
       if (!cancelled) measure();
     });
-    window.addEventListener("resize", measure);
+    window.addEventListener("resize", schedule);
+    // 창 크기 이벤트 없이도 상단바 폭은 바뀐다(세로 스크롤바 생김/사라짐, rail 열림·닫힘 슬라이드, 웹폰트 교체) — 그때 잰 단계가
+    // 그대로 굳어 "창이 넓은데도 아이콘만"이 됐다(2026-09-04 사용자). 상단바·계정 카드 자체를 지켜보며 다시 잰다.
+    const ro = new ResizeObserver(schedule);
+    const bar = shell.querySelector<HTMLElement>(".studio-topbar");
+    if (bar) ro.observe(bar);
+    const card = shell.querySelector<HTMLElement>(".studio-role-tools");
+    if (card) ro.observe(card);
     return () => {
       cancelled = true;
-      window.removeEventListener("resize", measure);
+      if (raf) cancelAnimationFrame(raf);
+      ro.disconnect();
+      window.removeEventListener("resize", schedule);
     };
-    // 헤더 내용이 바뀌는 조건들(역할·미리보기·로그인 상태)에서 다시 잰다.
-  }, [isNarrow, isDeveloper, previewRole, actor.isAuthenticated, isEffectivelyOwner]);
+    // 헤더 내용이 바뀌는 조건들(역할·미리보기·로그인 상태·저장 상태 글자)에서 다시 잰다.
+  }, [isNarrow, isDeveloper, previewRole, actor.isAuthenticated, isEffectivelyOwner, saveState]);
   // 미리보기 이동 카드(.viewer-preview-actions) = 포스터 레일(.public-right) 폭·오른쪽 끝(2026-09-04 사용자: 편집실 계정 카드와
   // 같은 지적). 오버레이와 레일이 같은 문서에 있으니 여기서 둘 다 재서 카드에 --pv-w/--pv-mr(레이아웃 px = rect ÷ zoom)을
   // 준다(studio-shell.css). 레일이 접힌 아바타 scene에선 변수를 지워 기본 폭. 레일 폭이 바뀌는 순간(포스터 배율·아바타 토글)은
@@ -5958,9 +5981,9 @@ export function StudioShell({
             <div className="avatar-dock-inner">
               {/* 배경 감상 진입(2026-09-04 사용자: "누가 봐도 한 번 눌러보고 싶게, 설정 밖에") — 빈 아바타 자리 위쪽의
                   큰 계절 버튼. 슬롯은 pointer-events:none이라 버튼만 되살린다(CSS .slot-showcase). */}
-              {/* [감상하기 | 배경 끄기] — 시청자 레일과 같은 묶음(2026-09-04 사용자: 설정 열지 않고 끄기). onToggle이 설정의
-                  스위치·배경 효과 잠금과 같은 경로(toggleAmbient)를 타서 설정 안 상태와 한 몸. */}
-              <ViewerAmbientControl className="slot-showcase" season={ambientSeason} onToggle={(next) => toggleAmbient(next)} />
+              {/* [감상하기 | 배경 흐리게/끄기/켜기] — 시청자 레일과 같은 묶음(2026-09-04 사용자: 설정 열지 않고 바꾸기). onChange가
+                  설정의 셀렉트·배경 효과 잠금과 같은 경로(changeAmbientMode)를 타서 설정 안 상태와 한 몸. */}
+              <ViewerAmbientControl className="slot-showcase" season={ambientSeason} onChange={changeAmbientMode} />
               {/* 좌/우 세그먼트는 하단 중앙 플로팅 행(bottom-float-row)에 — 박스 안에 두면 rail과 함께
                   반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼(2026-09-03 사용자). */}
               {/* ("아바타 자리" 안내 글자는 2026-09-04 사용자 결정으로 제거 — 빈 자리 자체가 안내. aria-label은 aside에.) */}

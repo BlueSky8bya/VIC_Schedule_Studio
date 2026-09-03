@@ -1,11 +1,9 @@
 "use client";
 
-import { RotateCw } from "lucide-react";
 import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
   useEffect,
-  useRef,
   useState
 } from "react";
 import {
@@ -36,19 +34,15 @@ type OccTip = { x: number; avg: number; peak: number; rows: { color: string; lab
 export function DayVisitModal({ dateKey }: { dateKey: string }) {
   const [data, setData] = useState<DayVisitDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false); // 수동 새로고침 — 내용은 유지하고 위에 베일
-  const [refreshed, setRefreshed] = useState(false); // 갱신 완료 펄스
-  const refreshedTimer = useRef<number | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [dim, setDim] = useState<"role" | "device">("role");
   const [scope, setScope] = useState<VisitScope>(DEFAULT_VISIT_SCOPE); // 운영진/시청자/전체 — 분해·동접 즉시 전환
-  const [logRole, setLogRole] = useState<string | null>(null); // 세션 로그 역할 필터(null=전체)
+  const logRole: string | null = null; // 세션 로그 역할 필터 — 칩 제거(2026-09-04), 늘 전체
   const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
   const [occTip, setOccTip] = useState<OccTip | null>(null);
   const [ownTip, setOwnTip] = useState<{ x: number; top: number; text: string } | null>(null);
-  // 새로고침 신호 — 예전엔 이 버튼이 '방문 통계'만 다시 받고 행동 타임라인·사용량은 그대로였다.
-  // 창을 열어둔 채 시간이 지나면 그 두 카드가 굳어, 그 뒤에 생긴 방문(관리자 접속 등)이
-  // 영영 안 보였다(실측: 15:29에 연 창에 15:40 관리자 방문이 안 뜸).
+  // 갱신 신호 — 창을 열어둔 채 시간이 지나면 방문 통계·행동 타임라인·사용량이 굳어 그 뒤 방문이 안 보였다
+  // (실측: 15:29에 연 창에 15:40 관리자 방문이 안 뜸). 수동 버튼 대신 30초마다 조용히 다시 받는다(내용은 제자리에서 바뀐다).
   const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
@@ -69,36 +63,16 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
     };
   }, [dateKey]);
 
-  useEffect(
-    () => () => {
-      if (refreshedTimer.current) window.clearTimeout(refreshedTimer.current);
-    },
-    []
-  );
-
-  // 이 날 상세만 다시 불러 즉시 갱신 — 내용은 그대로 두고 위에 흐림+로딩 베일을 띄워 다시 로딩되는 티.
-  // 햅틱 두 박자(누름+응답). 응답이 빨라도 베일이 보이게 최소 550ms.
-  async function refresh() {
-    if (refreshing) return;
-    hapticTick();
-    setRefreshing(true);
-    setRefreshed(false);
-    if (refreshedTimer.current) window.clearTimeout(refreshedTimer.current);
-    setReloadKey((k) => k + 1); // 자식 카드(타임라인·사용량)도 함께 다시 받는다
-    const minSpin = new Promise<void>((res) => window.setTimeout(res, 550));
-    const work = getDayVisitDetailAction(dateKey).then((r) => {
-      if (r.ok) setData(r.data);
-      else setErr(r.error);
-    });
-    try {
-      await Promise.all([work, minSpin]);
-      hapticTick();
-      setRefreshed(true);
-      refreshedTimer.current = window.setTimeout(() => setRefreshed(false), 1400);
-    } finally {
-      setRefreshing(false);
-    }
-  }
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      if (document.hidden) return;
+      setReloadKey((k) => k + 1);
+      getDayVisitDetailAction(dateKey).then((r) => {
+        if (r.ok) setData(r.data);
+      });
+    }, 30000);
+    return () => window.clearInterval(id);
+  }, [dateKey]);
 
   if (loading) {
     return (
@@ -166,27 +140,8 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
   return (
     // 웹: 2×2 카드 그리드(.dayvisit→grid) — 요약 풀폭, 아래 4카드 좌우 배치로 가로폭을 채운다.
     // 모바일: 같은 마크업이 한 줄 세로 스택(컴팩트, 테두리 없음).
-    <div className="dayvisit-wrap" data-refreshing={refreshing ? "" : undefined}>
-      <div className="dayvisit-head">
-        <button
-          aria-label="이 날 방문 상세 새로고침"
-          className="insights-refresh"
-          data-done={refreshed ? "" : undefined}
-          data-spin={refreshing ? "" : undefined}
-          disabled={refreshing}
-          onClick={refresh}
-          title="이 날 방문 상세 새로고침"
-          type="button"
-         data-act="이 날 방문 상세 새로고침">
-          <RotateCw aria-hidden="true" size={15} />
-        </button>
-      </div>
-      {refreshing ? (
-        <div className="insights-veil" aria-hidden="true">
-          <RotateCw className="insights-veil-icon" size={22} />
-          <span>불러오는 중…</span>
-        </div>
-      ) : null}
+    <div className="dayvisit-wrap">
+      {/* (수동 새로고침 버튼·베일은 2026-09-04 사용자 결정으로 제거 — 대신 30초마다 조용히 다시 받는다.) */}
       <div className="dayvisit">
         {/* 방문 품질 요약(의미 방문 컷·시청자/운영진 토글·KPI·최고동접) — 그날 기준. 풀폭 */}
       <VisitSummaryBlock
@@ -450,37 +405,7 @@ export function DayVisitModal({ dateKey }: { dateKey: string }) {
         {data.sessions.length > 0 ? (
           <details className="vrecent" open>
             <summary>세션 {data.sessions.length}건</summary>
-            {/* 역할 필터 — 전 역할(ROLE_META) 상시 노출 + 건수, 0건은 흐리게. 월별과 동일. */}
-            <div className="vlog-filter" role="group" aria-label="역할 필터">
-              <button
-                className={`vlog-chip${logRole === null ? " on" : ""}`}
-                onClick={() => {
-                  hapticTick();
-                  setLogRole(null);
-                }}
-                type="button"
-               data-act="vlog-chip">
-                전체 <b>{data.sessions.length}</b>
-              </button>
-              {ROLE_META.map((m) => {
-                const c = data.sessions.filter((r) => r.role === m.key).length;
-                return (
-                  <button
-                    className={`vlog-chip${logRole === m.key ? " on" : ""}${c === 0 ? " zero" : ""}`}
-                    data-role={m.key}
-                    key={m.key}
-                    onClick={() => {
-                      hapticTick();
-                      setLogRole((cur) => (cur === m.key ? null : m.key));
-                    }}
-                    style={{ "--rc": m.color } as CSSProperties}
-                    type="button"
-                   data-act="vlog-chip">
-                    {m.label} <b>{c}</b>
-                  </button>
-                );
-              })}
-            </div>
+            {/* (역할 필터 칩은 2026-09-04 사용자 결정으로 제거 — 줄마다 역할 배지가 있다.) */}
             {/* 머문/스쳐감 필터 — 월별과 동일. */}
             {(() => {
               const stayN = data.sessions.filter((r) => r.meaningful).length;

@@ -604,16 +604,32 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
   .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-logout,
   .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-trigger,
   .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .actor-badge {
-    padding: 0 8px;
+    padding: 0 6px; /* 저장 라벨 폭을 4.4em으로 고정하며 1fr 칸이 1px 모자라 2단계로 밀렸다(1920 실측) — 칸 여백 8→6 */
   }
   /* 개발자 미리보기 드롭다운(눈 + "미리보기" + ▾)은 1920·zoom .9의 1fr 칸(89px)보다 3px 길어 2단계로 밀렸다 — 안쪽 간격 4. */
   .studio-role-tools .preview-dd-trigger {
     gap: 4px;
   }
-  /* 저장 라벨 폭 고정(저장됨/저장 중…/저장 실패가 칸 폭을 흔들지 않게). */
+  /* 저장 라벨 폭 고정 — "저장 중…"(4.3em)까지 담아야 저장 중에 칸이 넓어져 미리보기 칸을 밀어내지 않는다(그 순간 잰 단계가 굳어
+     "창이 넓은데도 아이콘만"의 한 원인, 2026-09-04). */
   .studio-role-tools .studio-meta-capsule .save-status em {
-    min-width: 3.9em;
+    display: inline-block; /* inline엔 min-width가 안 먹는다(실측: 34px로 그대로) */
+    min-width: 4em;
     text-align: center;
+  }
+  /* 칸 여백은 여기서 확정(특이도 4 — 위 `.actor-badge.owner`·`.studio-meta-capsule .save-status`(특이도 3)와 studio-shell.css의
+     .button 규칙을 이긴다). 실측(1920·zoom .9, rail 368): 여백 12면 미리보기 칸이 3px 모자라 2단계로 밀렸다 → 8. */
+  html[data-studio-calm] .studio-shell .studio-role-tools .save-status,
+  html[data-studio-calm] .studio-shell .studio-role-tools .actor-badge,
+  html[data-studio-calm] .studio-shell .studio-role-tools .io-preview,
+  html[data-studio-calm] .studio-shell .studio-role-tools .io-logout,
+  html[data-studio-calm] .studio-shell .studio-role-tools .preview-dd-trigger,
+  html[data-studio-calm] .studio-shell .studio-role-tools > .button {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  html[data-studio-calm] .studio-shell .studio-role-tools .save-status {
+    gap: 6px;
   }
   .studio-shell[data-chrome="3"] .studio-role-tools .studio-meta-capsule .save-status {
     width: 100%;
@@ -661,7 +677,10 @@ html[data-studio-calm] .studio-role-tools {
   justify-content: center;
 }
 .studio-role-tools .studio-meta-capsule .save-status em {
-  min-width: 0;
+  /* 폭 고정(4.0em — "저장 중…" 실측 48px를 담는 최소; 4.4em은 1920에서 미리보기 칸을 6px 밀어 2단계로 보냈다). */
+  min-width: 4em;
+  display: inline-block;
+  text-align: center;
 }
 /* 상태 색은 점만(면 채움 제거). */
 .studio-role-tools .save-status.saving,
@@ -763,6 +782,9 @@ html[data-studio-calm] .studio-role-tools .preview-dd-trigger:hover:not(:disable
     box-shadow: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+    /* 투명한 상단바가 sticky로 따라 내려오면 달 라벨·‹ ›·배지가 달력 칸 위에 겹친다(2026-09-04 사용자 사진) — 배경 위에선
+       페이지와 함께 흘러간다. */
+    position: relative;
   }
   html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar::after {
     display: none;
