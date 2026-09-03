@@ -22,14 +22,16 @@ import {
   Pencil,
   Plus,
   Save,
+  Settings,
   Tags,
   Trash2,
-  Users,
   Waves,
   X
 } from "lucide-react";
 import Link from "next/link";
+import { createPortal } from "react-dom";
 import { WaterTide } from "@/components/shared/water-tide";
+import { StudioSettingsList } from "@/components/studio/studio-settings";
 import { useRouter } from "next/navigation";
 import {
   type CSSProperties,
@@ -891,6 +893,8 @@ export function StudioShell({
   };
   // A3: 역할 배지 "?" 도움말 팝오버 열림 상태.
   const [roleHelpOpen, setRoleHelpOpen] = useState(false);
+  // 설정(톱니) 팝오버(2026-09-04) — 서쪽 도구 카드. 스위치 4종·포스터 테마·멤버 관리 입구.
+  const [settingsOpen, setSettingsOpen] = useState(false);
   // 진동(햅틱) 설정 토글 — navigator.vibrate 지원 기기(안드로이드)에서만 노출. SSR 불일치 방지로
   // 마운트 후 지원 여부/현재값을 읽는다(기본 ON). 끄면 앱 전체 진동이 조용해진다(스위치보드 기준).
   const [hapticsSupported, setHapticsSupported] = useState(false);
@@ -1163,6 +1167,63 @@ export function StudioShell({
     };
   }, [roleHelpOpen]);
 
+  // 설정 팝오버 배치(2026-09-04) — body 포털 + fixed. 도구 카드는 두 자리에 산다: 아바타 rail(fixed)과
+  // 좌측 그리드 칸(.studio-left-panel — sticky + overflow-y:auto라 absolute 팝오버는 잘리고, 칸 폭 188px 안에
+  // 흐름으로 펼치면 줄이 두 줄로 꺾여 초라했다(실측)). 포털이면 어느 자리든 같은 팝오버가 카드 **옆**에
+  // 뜬다: 카드 오른쪽에 자리가 있으면 동쪽, 없으면(아바타 오른쪽 rail) 서쪽. 페인트 전(useLayoutEffect)에
+  // 실측 배치하므로 첫 프레임에 엉뚱한 자리가 안 보인다. 스크롤/리사이즈에 다시 잰다.
+  const settingsPopRef = useRef<HTMLDivElement | null>(null);
+  const [settingsPopStyle, setSettingsPopStyle] = useState<CSSProperties | null>(null);
+  useLayoutEffect(() => {
+    if (!settingsOpen) {
+      setSettingsPopStyle(null);
+      return;
+    }
+    const place = () => {
+      const card = document.querySelector<HTMLElement>(".studio-tools");
+      const pop = settingsPopRef.current;
+      if (!card || !pop) return;
+      const c = card.getBoundingClientRect();
+      const w = pop.offsetWidth || 272;
+      const h = pop.offsetHeight || 300;
+      const GAP = 12;
+      const left = c.right + GAP + w <= window.innerWidth - 8 ? c.right + GAP : Math.max(8, c.left - GAP - w);
+      const top = Math.max(8, Math.min(c.top - 4, window.innerHeight - h - 8));
+      setSettingsPopStyle((s) =>
+        s && s.left === Math.round(left) && s.top === Math.round(top)
+          ? s
+          : { position: "fixed", left: Math.round(left), top: Math.round(top), right: "auto" }
+      );
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [settingsOpen]);
+
+  // 설정(톱니) 팝오버(2026-09-04): 톱니·팝오버 바깥을 누르거나 Esc로 닫는다. 같은 도구 카드의 다른
+  // 타일(태그 편집 등)을 누르면 바깥으로 쳐서 닫힌다.
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!(event.target as HTMLElement | null)?.closest(".stool-settings, .studio-settings-pop")) {
+        setSettingsOpen(false);
+      }
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSettingsOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [settingsOpen]);
+
   // 미리보기 드롭다운: 바깥을 누르거나 Esc로 닫는다.
   useEffect(() => {
     if (!previewMenuOpen) {
@@ -1186,30 +1247,51 @@ export function StudioShell({
     };
   }, [previewMenuOpen]);
 
-  // A3: 역할 배지 + "?" 도움말 팝오버. 이메일은 배지에 인라인으로 두지 않고(폭 절약·깔끔)
-  // 팝오버 안 역할 라벨 아래에 보여준다.
-  // P2-ARCH-1 2단계: 역할 배지+권한 팝오버는 RoleBadge 컴포넌트로 분리(동작 0 변화).
-  function renderRoleBadge() {
+  // 설정 목록(2026-09-04) — 스위치 4종 + 포스터 테마 + 멤버 관리 입구. 웹은 도구 카드의 설정(톱니) 팝오버,
+  // 모바일은 역할 배지 팝오버 아래에 같은 목록(도구 카드가 없어서). 한 컴포넌트, 두 자리.
+  function renderSettingsList() {
     return (
-      <RoleBadge
-        email={actor.email}
+      <StudioSettingsList
         eyeComfort={eyeComfort}
         hapticsOn={hapticsOn}
         hapticsSupported={hapticsSupported}
+        onChangePosterTheme={(theme) => void changePosterTheme(theme)}
+        onOpenMembers={
+          canEdit
+            ? () => {
+                if (blockedByPreview()) return;
+                setSettingsOpen(false);
+                setRoleHelpOpen(false);
+                setModal("members");
+              }
+            : undefined
+        }
         onToggleEyeComfort={toggleEyeComfort}
         onToggleHaptics={toggleHaptics}
-        onToggleOpen={() => setRoleHelpOpen((value) => !value)}
         onToggleReduceMotion={toggleReduceMotion}
         onToggleStudioCalm={toggleStudioCalm}
-        studioCalm={studioCalm}
         posterTheme={actor.role === "owner" ? posterThemeLocal : null}
-        onChangePosterTheme={(theme) => void changePosterTheme(theme)}
         posterThemeSaving={posterThemeSaving}
+        reduceMotion={reduceMotion}
+        studioCalm={studioCalm}
+      />
+    );
+  }
+
+  // A3: 역할 배지 + "?" 도움말 팝오버. 이메일은 배지에 인라인으로 두지 않고(폭 절약·깔끔)
+  // 팝오버 안 역할 라벨 아래에 보여준다.
+  // P2-ARCH-1 2단계: 역할 배지+권한 팝오버는 RoleBadge 컴포넌트로 분리(동작 0 변화).
+  // withSettings: 모바일(도구 카드 없음)만 true — 웹의 설정은 서쪽 도구 카드 톱니(2026-09-04).
+  function renderRoleBadge(withSettings: boolean) {
+    return (
+      <RoleBadge
+        email={actor.email}
+        onToggleOpen={() => setRoleHelpOpen((value) => !value)}
         open={roleHelpOpen}
         previewing={previewRole !== null}
-        reduceMotion={reduceMotion}
         role={actor.role}
         roleDisplay={roleDisplay}
+        settings={withSettings ? renderSettingsList() : undefined}
       />
     );
   }
@@ -2129,8 +2211,8 @@ export function StudioShell({
   }, [calZoom, view.year, view.month, editorVisible, selectedEventId, viewerMode, cancelPeekClose]);
 
   // ── 편집 카드 = 앵커 팝오버(데스크탑) — 오른쪽 고정 패널 대신 '선택한 날짜 칸 옆'에 뜬다.
-  // 좌표는 .studio-workspace(position:relative) 기준 absolute. 칸 오른쪽에 자리가 없으면 왼쪽으로
-  // 뒤집고(flip), 뷰포트 아래로 넘치면 위로 당긴다. 다른 날짜를 고르면 닫히지 않고 CSS transition으로
+  // 좌표는 .studio-workspace(position:relative) 기준 absolute. 칸 **왼쪽**이 기본(다음 날 칸을 안 가리게),
+  // 자리가 없으면 오른쪽으로 뒤집고(flip), 뷰포트 아래로 넘치면 위로 당긴다. 다른 날짜를 고르면 닫히지 않고 CSS transition으로
   // 그 칸 옆으로 미끄러져 이동. 모바일(isNarrow)은 기존 시트(m-edit-sheet) 그대로.
   const workspaceRef = useRef<HTMLElement | null>(null);
   const editorPanelRef = useRef<HTMLElement | null>(null);
@@ -2316,9 +2398,11 @@ export function StudioShell({
     const GAP = 12;
     const PAD = 8;
     const wsW = ws.clientWidth; // 로컬 px
-    // 가로: 칸 오른쪽 우선, 안 들어가면 왼쪽으로 flip. 그래도 안 되면 안쪽으로 클램프.
-    let left = cellL + cellW + GAP;
-    if (left + popW > wsW - PAD) left = cellL - popW - GAP;
+    // 가로: **칸 왼쪽 우선**(2026-09-04 사용자, HCI) — 일정은 보통 날짜순으로 고치는데 오른쪽에 뜨면
+    // 바로 다음 날 칸을 가려 팝오버를 치우는 클릭이 매번 한 번 더 들었다. 왼쪽은 이미 손본 날이라
+    // 가려도 된다. 왼쪽에 자리가 없으면(일·월요일 칸) 오른쪽으로 flip, 그래도 안 되면 안쪽으로 클램프.
+    let left = cellL - popW - GAP;
+    if (left < PAD) left = cellL + cellW + GAP;
     left = Math.max(PAD, Math.min(left, wsW - popW - PAD));
     // 세로: 칸 상단 정렬이 기본. 뷰포트(고정 상단바 아래~바닥) 안에 다 보이게 당기고,
     // workspace 밖으로도 안 나가게 마지막으로 클램프. (뷰포트 값도 로컬로 변환)
@@ -4910,8 +4994,8 @@ export function StudioShell({
           >
             {/* 오른쪽 레일: (위) 인사이트 진입 버튼 + (아래) 색상 필터 — 같은 92px 폭으로 세로로 쌓는다(편집실). */}
             <div className="agenda-rail">
-              {/* 역할 배지(시각 정보)는 색상 필터 위에. */}
-              {renderRoleBadge()}
+              {/* 역할 배지(시각 정보)는 색상 필터 위에. 모바일은 도구 카드가 없어 설정 목록도 이 팝오버에. */}
+              {renderRoleBadge(true)}
             <aside className="agenda-legend agenda-legend-studio" aria-label="태그 필터">
               <strong>태그 필터</strong>
               {(() => {
@@ -5918,9 +6002,12 @@ export function StudioShell({
   // 라벨 타일이면 충분하고, 달력(핫 존)은 액션바 행 높이만큼 세로를 얻는다. 역할 분기는 옛 액션바와
   // 동일, data-act 키도 동일(인사이트 집계 연속). 아바타 scene이면 rail [필터|도구|아바타 자리],
   // 아니면 .studio-left-panel의 필터 아래. 2026-08의 '관리 3종 드롭다운 접기 철회'는 접지 않는 타일로 존중.
+  // 2026-09-04: '멤버 관리' 타일은 빠지고(토리님이 안 쓰는 기능 — 설정 팝오버 맨 아래의 조용한 입구로 강등)
+  // 그 자리에 **설정(톱니)** — 스위치 4종·포스터 테마 등 앞으로 생길 설정 전부의 단일 입구. 설정은 역할과
+  // 무관하게 편집실의 모두에게 있으므로 카드는 항상 그린다(다른 타일은 역할 분기 그대로).
   const showManageTools = canEdit || (isDeveloper && !previewRole);
-  const studioToolsPanel =
-    showManageTools || canMemberInsights ? (
+  const studioToolsPanel = (
+    <div className="studio-tools-wrap">
       <div className="studio-tools" role="group" aria-label="도구">
         {showManageTools && canEdit && taxonomyV3 ? (
           <button
@@ -5931,17 +6018,6 @@ export function StudioShell({
           >
             <Tags aria-hidden="true" size={18} />
             <span>태그 편집</span>
-          </button>
-        ) : null}
-        {showManageTools && canEdit ? (
-          <button
-            className="stool stool-members"
-            data-act="manage-members"
-            onClick={() => (blockedByPreview() ? null : setModal("members"))}
-            type="button"
-          >
-            <Users aria-hidden="true" size={18} />
-            <span>멤버 관리</span>
           </button>
         ) : null}
         {showManageTools ? (
@@ -5982,8 +6058,40 @@ export function StudioShell({
             <span>단축키</span>
           </button>
         ) : null}
+        <button
+          aria-expanded={settingsOpen}
+          aria-haspopup="dialog"
+          className={`stool stool-settings${settingsOpen ? " open" : ""}`}
+          data-act="studio-settings"
+          onClick={() => {
+            hapticTick();
+            setSettingsOpen((v) => !v);
+          }}
+          type="button"
+        >
+          <Settings aria-hidden="true" size={18} />
+          <span>설정</span>
+        </button>
       </div>
-    ) : null;
+      {/* 설정 팝오버 — body 포털 + fixed, 도구 카드 옆(위 settingsPopStyle 주석). 역할 팝오버와 같은 재질
+          (.role-help-pop) + 같은 줄 규격. 배치 전 첫 프레임은 숨김(visibility) — 페인트 전에 실측이 끝난다. */}
+      {settingsOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              aria-label="설정"
+              className="role-help-pop studio-settings-pop"
+              ref={settingsPopRef}
+              role="dialog"
+              style={settingsPopStyle ?? { position: "fixed", left: 0, top: 0, visibility: "hidden" }}
+            >
+              <strong className="role-help-title">설정</strong>
+              {renderSettingsList()}
+            </div>,
+            document.body
+          )
+        : null}
+    </div>
+  );
 
   return (
     <main
@@ -6019,7 +6127,8 @@ export function StudioShell({
             <Waves aria-hidden="true" size={16} strokeWidth={2.4} />
             50분째 편집 중이에요
           </p>
-          <p className="rest-nudge-body">물 한 잔, 잠깐 창밖 어때요? 달력은 여기 그대로 있을게요.</p>
+          {/* 문구(2026-09-04 사용자: "물 한 잔, 잠깐 창밖 어때요? … 있을게요"는 생성문 티) — 짧고 구어로. */}
+          <p className="rest-nudge-body">일어나서 기지개 한 번. 달력은 안 도망가요.</p>
           <div className="rest-nudge-actions">
             <button
               className="button rest-ok"
@@ -6148,9 +6257,9 @@ export function StudioShell({
           {/* 배포 버전 배지는 왼쪽 데스크 라벨 아래로 이사 — 여기는 저장 상태 칩만.
               칩의 아래 끝선은 역할 배지 버튼의 아래 끝선과 맞춘다(.studio-meta-capsule). */}
           <div className="studio-meta-capsule">{renderSaveStatus()}</div>
-          {/* 계정 모서리(북동, 2026-09-03 배치 대개편): 역할 배지("?" 권한·설정 팝오버)는 미리보기 버튼 **왼쪽**
-              (사용자 지정 순서: 저장 상태 · 관리자 · 시청자 화면 보여주기 · 로그아웃). 관리 도구는 서쪽 rail. */}
-          {renderRoleBadge()}
+          {/* 계정 모서리(북동, 2026-09-03 배치 대개편): 역할 배지("?" 권한 팝오버)는 미리보기 버튼 **왼쪽**
+              (사용자 지정 순서: 저장 상태 · 관리자 · 시청자 화면 보여주기 · 로그아웃). 관리 도구·설정은 서쪽 rail. */}
+          {renderRoleBadge(false)}
           {/* 역할 배지·로그아웃은 액션바 오른쪽(단축키 옆)으로 이사(2026-08-27 사용자 지정 배치) —
               헤더는 저장 상태 + 미리보기만. */}
           {/* 미리보기 안내는 역할 배지("?") 설명 팝오버 안 작은 문구로 일원화(별도 플래그 제거). */}

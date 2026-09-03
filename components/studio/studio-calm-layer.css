@@ -25,8 +25,12 @@
   padding: 6px;
   box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
 }
+/* 카드 상자(.studio-tools-wrap, 2026-09-04) — rail flex 항목 단위(팝오버 자체는 body 포털). */
+.studio-tools-wrap {
+  position: relative;
+}
 /* rail 세로 예산(필터 | 도구 | 아바타 58%)에서 카드는 ≈64px — 더 크면 필터(핫 존)가 잘린다. */
-.avatar-rail .studio-tools {
+.avatar-rail .studio-tools-wrap {
   flex: 0 0 auto;
 }
 @media (max-width: 1300px) {
@@ -113,6 +117,22 @@
   background: rgb(124 108 240 / 12%);
   border-color: rgb(124 108 240 / 32%);
 }
+/* 설정(톱니, 2026-09-04) — 멤버 관리 타일 자리. 슬레이트(금 잉크) 톤, 펼치면 물빛 테두리(단축키와 같은 문법). */
+.stool-settings {
+  color: #4b5d70;
+}
+.stool-settings.open {
+  background: rgb(75 93 112 / 10%);
+  border-color: rgb(75 93 112 / 28%);
+}
+/* 설정 팝오버 — body 포털 + fixed(좌표는 studio-shell.tsx settingsPopStyle이 카드 옆으로 실측 배치: 오른쪽에
+   자리가 있으면 동쪽, 없으면 서쪽). 어느 스태킹 컨텍스트에도 안 갇히고(rail·sticky 좌측 칸 모두) 잘리지 않는다.
+   재질·줄 규격은 .role-help-pop 공용, 폭만 고정. 모달 백드롭(z 50/60)보다는 아래, rail(z 6)·달력보다는 위. */
+.studio-settings-pop {
+  z-index: 45;
+  width: 272px;
+  max-width: none;
+}
 /* 차분 모드: 은백 카드 + 은회 글자, 호버에 흰 면. 단축키 펼침은 물빛 테두리. */
 html[data-studio-calm] .studio-tools {
   background: var(--studio-silver);
@@ -126,7 +146,8 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
   border-color: #c3ccd6;
   color: var(--ink);
 }
-html[data-studio-calm] .stool-kbd.open {
+html[data-studio-calm] .stool-kbd.open,
+html[data-studio-calm] .stool-settings.open {
   background: #fff;
   border-color: var(--studio-action-line);
   color: var(--studio-action-text);

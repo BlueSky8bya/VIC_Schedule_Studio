@@ -156,8 +156,9 @@ export type PublicVodEntry = {
   titleNo: number;
   title: string;
   durationMs: number;
-  // 팬 타임라인(0071) 요약 — 챕터 개수·작성자 닉(크레딧). 본문(entries)은 무거워서 번들에 안 싣고
-  // 챕터를 펼칠 때 /api/public/[slug]/vod-timeline에서 따로 받는다.
+  // 팬 타임라인(0071) 요약 — **타임라인 항목 개수**(화면 표기 "타임라인 N개"; 챕터=[코너] 헤더 수는
+  // 본문을 받아야 안다)·작성자 닉(크레딧). 본문(entries)은 무거워서 번들에 안 싣고 펼칠 때
+  // /api/public/[slug]/vod-timeline에서 따로 받는다. 필드명은 0071 당시 이름 그대로(값 의미만 주석으로).
   chapters?: number;
   timelineBy?: string;
   // 대표 썸네일 쿼리(0072) — SnapshotLoad의 쿼리 문자열 전체(rowKey=...&column=...&t=...).

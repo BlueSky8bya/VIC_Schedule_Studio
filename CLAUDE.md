@@ -43,6 +43,10 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   silver; Center = calendar body = warm; South = bottom, East = right: no new hot accents there.
 - **One primary action per context, water-colored: 저장.** Calendar cells and cards are
   selection targets, not CTAs. Place by Fitts/thumb-zone first, then color.
+- **Editor popover opens to the LEFT of the selected cell** (2026-09-04, owner HCI feedback): schedules are
+  edited in date order, and a right-side popover covered the next day's cell, costing an extra dismiss click
+  every time. Flip to the right only when the left has no room (Sunday/Monday cells). Keep this in
+  `placeEditorPopover` (`components/studio/studio-shell.tsx`).
 - **Never use clashing ("극") colors or awkward placement as deliberate stress.** Tension only
   through the existing warning system for real errors/unsaved changes.
 - **Calm over noise, not dull.** Reduce decorative repetition in the studio (sparkle off in calm
@@ -53,8 +57,13 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
 - Implemented as the reversible `html[data-studio-calm]` theme (default ON, toggle in the role badge
   popover). New owner-screen UI should read its colors from `--studio-*` tokens under that attribute.
 - **Chrome placement (배치 대개편, 2026-09-03).** Studio web chrome is ONE north row: title · month nav ·
-  save state · role badge · viewer preview · logout (owner-specified order). Cold tools (태그 편집 · 멤버 관리 · 월별 인사이트 ·
-  단축키) live in the **west rail tools card** under the tag filter (`.studio-tools`); the avatar
+  save state · role badge · viewer preview · logout (owner-specified order). Cold tools (태그 편집 · 인사이트 ·
+  단축키 · **설정**) live in the **west rail tools card** under the tag filter (`.studio-tools`). **설정 (gear) is
+  the single settings hub** (2026-09-04): every switch/preference (생동감 있는 동작 · 눈 편한 테마 · 차분한 편집실 ·
+  포스터 테마 · 멤버 관리 entry, and anything new such as seasonal backgrounds) goes into
+  `components/studio/studio-settings.tsx` (`StudioSettingsList`) — never back into the role badge popover on web
+  (mobile reuses the same list inside the role badge because it has no tools card). 멤버 관리 lost its tile (owner
+  never uses it) and lives only as a quiet "열기" row at the bottom of settings. The avatar
   left/right control is a **fixed bottom-center pill** (`.bottom-float-row`) — never inside the rail,
   because the rail moves to the other side and the control would travel with it (owner feedback
   2026-09-03). Do not reintroduce a second full-width action row —

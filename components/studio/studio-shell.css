@@ -703,6 +703,31 @@ html {
 .rhh-select:disabled {
   opacity: 0.6;
 }
+/* 설정 줄의 작은 링크 버튼(멤버 관리 '열기', 2026-09-04) — 스위치 줄과 같은 높이의 조용한 칩. */
+.rhh-link {
+  flex: none;
+  min-height: 28px;
+  padding: 2px 12px;
+  border: 1px solid var(--line, #e6e2f0);
+  border-radius: var(--r-pill);
+  background: var(--surface, #fff);
+  color: var(--ink-soft, #4a4466);
+  font: inherit;
+  font-size: var(--text-body);
+  font-weight: 800;
+  cursor: pointer;
+  transition:
+    background 0.16s var(--ease, ease),
+    border-color 0.16s var(--ease, ease),
+    transform 0.12s var(--ease, ease);
+}
+.rhh-link:hover {
+  background: var(--selection-fill, #f2effb);
+  border-color: var(--selection-border, #d9d2f0);
+}
+.rhh-link:active {
+  transform: scale(0.95);
+}
 .rhh-switch {
   position: relative;
   flex: none;
@@ -4314,8 +4339,8 @@ html[data-reduce-motion] .event-editor-panel.panel-saved::after {
   margin-right: 18px; /* 색상 필터와 달력 사이 간격(gap:0 대체) */
 }
 /* 편집 카드 = 앵커 팝오버 — 그리드 칸이 아니라 workspace 기준 absolute로 '선택한 날짜 칸 옆'에
-   뜬다. 좌표(top/left)는 JS(placeEditorPopover)가 실측 배치(오른쪽 우선, 부족하면 왼쪽 flip,
-   뷰포트 아래 넘침은 위로 클램프). 다른 날짜를 고르면 top/left transition으로 미끄러져 이동. */
+   뜬다. 좌표(top/left)는 JS(placeEditorPopover)가 실측 배치(왼쪽 우선 — 다음 날 칸을 안 가리게,
+   부족하면 오른쪽 flip, 뷰포트 아래 넘침은 위로 클램프). 다른 날짜를 고르면 top/left transition으로 미끄러져 이동. */
 .event-editor-panel {
   position: absolute;
   top: 0;

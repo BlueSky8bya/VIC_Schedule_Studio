@@ -97,13 +97,13 @@ const ROUTE: Record<string, TargetLabel> = {
 const SECTION: Record<string, TargetLabel> = {
   "broadcast-panel": { name: "일정 그림판", area: "편집실", hint: "전체화면 판서 도구를 켜둔 시간" },
   "modal:tags": { name: "태그 편집 창", area: "관리", hint: "관리 ▾ → 태그 편집" },
-  "modal:members": { name: "멤버 관리 창", area: "관리", hint: "관리 ▾ → 멤버 관리" },
+  "modal:members": { name: "멤버 관리 창", area: "관리", hint: "도구 카드 설정(톱니) → 멤버 관리 '열기'" },
   "modal:developer": { name: "월별 인사이트 창", area: "관리", hint: "관리 ▾ → 월별 인사이트" },
   "modal:dayVisit": { name: "이용 기록 창", area: "관리", hint: "지금 보고 있는 이 창" },
   // 편집 카드 여닫기(2026-09-03 계측) — leave의 dur_ms=체류, meta.typed=입력 여부, meta.how=닫은 방법
   // (save/esc/outside/cell/collapse/other). "칸 361 vs 저장 176"이 둘러보기인지 포기인지 가르기 위함.
   editor: { name: "편집 카드", area: "편집실", hint: "날짜 칸·일정 카드를 눌러 연 편집 팝오버" },
-  "rest-nudge": { name: "휴식 넛지", area: "편집실", hint: "50분 활동 뒤 '물 한 잔' 카드가 뜬 횟수" },
+  "rest-nudge": { name: "휴식 넛지", area: "편집실", hint: "50분 활동 뒤 '기지개 한 번' 카드가 뜬 횟수" },
   // 꾸미기는 라우트로 잡히므로 섹션 계측을 뺐다 — 옛 기록만 남는다.
   decorate: { name: "꾸미기", area: "꾸미기", hint: "옛 기록(지금은 화면 진입으로 셈)" }
 };
@@ -126,7 +126,8 @@ const ACT: Record<string, TargetLabel> = {
   // 관리 묶음(액션바 왼쪽, 바로 노출). manage-menu/manage-dd-trigger는 옛 드롭다운 기록용.
   "manage-menu": { name: "관리 ▾ 메뉴 열기", area: "관리" },
   "manage-tags": { name: "태그 편집", area: "관리" },
-  "manage-members": { name: "멤버 관리", area: "관리" },
+  "manage-members": { name: "멤버 관리", area: "관리", hint: "2026-09-04부터 설정(톱니) 팝오버 맨 아래 '열기'" },
+  "studio-settings": { name: "설정 열기", area: "편집실", hint: "서쪽 도구 카드의 톱니(스위치·포스터 테마)" },
   "manage-insights": { name: "월별 인사이트", area: "관리" },
   "mda-keep": { name: "태그 변경 계속 편집", area: "관리" },
   "mda-discard": { name: "태그 변경 버리고 닫기", area: "관리" },

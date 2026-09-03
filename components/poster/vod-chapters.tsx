@@ -122,26 +122,24 @@ export function VodChapters({
     };
   }, [open, timeline, failed, slug, titleNo]);
 
-  // 코너(section) 단위 그룹 — 날짜 창에선 이 그룹이 2열 신문식 배치의 단위가 된다
-  // (헤더와 항목이 열 경계에서 찢어지지 않게). 코너 없는 옛 타임라인은 한 덩어리.
+  // 챕터([코너] 헤더) 단위 그룹 = 카드 하나. 시간순으로 같은 코너가 이어지는 동안 한 카드(코너가 나중에
+  // 다시 나오면 그건 다른 시간대의 별개 카드 — 시간순이 우선). 코너 없는 옛 타임라인은 한 덩어리.
+  // ⚠ 예전엔 2열 신문식 배치(2026-09-02 폐기) 때문에 8개 단위로 카드를 쪼갰는데, 그 잔재가 "같은 챕터인데
+  // 박스가 나뉘고, sticky 헤더가 8개 뒤에서 멈추는" 현상의 원인이었다(2026-09-04 사용자 신고). sticky의
+  // 컨테이닝 블록 = 카드이므로 카드를 안 쪼개야 헤더가 그 챕터 끝까지 따라온다.
   const groups = useMemo(() => {
     const list = timeline?.entries ?? [];
-    const raw: { section: string | null; items: { sec: number; label: string; idx: number }[] }[] = [];
+    const out: { section: string | null; items: { sec: number; label: string; idx: number }[] }[] = [];
     list.forEach((e, idx) => {
-      const last = raw[raw.length - 1];
+      const last = out[out.length - 1];
       if (last && last.section === e.section) last.items.push({ sec: e.sec, label: e.label, idx });
-      else raw.push({ section: e.section, items: [{ sec: e.sec, label: e.label, idx }] });
+      else out.push({ section: e.section, items: [{ sec: e.sec, label: e.label, idx }] });
     });
-    // 그룹이 열 배치 단위(break-inside: avoid)라, 거대한 그룹(코너 없는 옛 타임라인)이 통짜면
-    // 2열이 1열로 퇴화한다 — 8개 단위로 분절(헤더는 첫 조각만, 이후 조각은 이어지는 무헤더).
-    const out: typeof raw = [];
-    for (const g of raw) {
-      for (let i = 0; i < g.items.length; i += 8) {
-        out.push({ section: i === 0 ? g.section : null, items: g.items.slice(i, i + 8) });
-      }
-    }
     return out;
   }, [timeline]);
+  // 챕터 수 = 코너 헤더가 있는 카드 수(본문을 받은 뒤에만 안다). 번들의 `chapters`는 **타임라인 항목 수**다 —
+  // 머리에 "챕터 139개"로 적혀 있어 챕터(코너)와 타임라인(항목)이 뒤바뀌어 읽혔다(2026-09-04 사용자).
+  const sectionCount = useMemo(() => groups.filter((g) => g.section).length, [groups]);
 
   if (chapters <= 0) return null;
 
@@ -170,8 +168,10 @@ export function VodChapters({
         type="button"
       >
         <span aria-hidden="true" className="vch-caret">{open ? "▾" : "▸"}</span>
-        챕터 {chapters}개
-        {timelineBy ? <em className="vch-by">타임라인 ({timelineBy}님 감사합니다)</em> : null}
+        {/* 항목 수는 번들이 알고, 챕터(코너) 수는 펼쳐 본문을 받은 뒤 앞에 붙는다. */}
+        {open && timeline && sectionCount > 0 ? `챕터 ${sectionCount}개 · ` : ""}
+        타임라인 {chapters}개
+        {timelineBy ? <em className="vch-by">({timelineBy}님 감사합니다)</em> : null}
       </button>
       {!open ? null : loading ? (
         <p className="vch-note">불러오는 중…</p>
