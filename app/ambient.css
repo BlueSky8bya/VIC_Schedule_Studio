@@ -9,13 +9,16 @@
   display: none;
 }
 @media (min-width: 641px) {
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-ambient="off"]) .gs-season {
+  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .gs-season {
     display: block;
   }
 }
 .gs-season {
   position: fixed;
   inset: 0;
+  /* canvas는 대체 요소라 inset만으론 안 늘어난다 — 100%(= 뷰포트/zoom 레이아웃 px). 엔진은 offsetWidth로 크기를 잰다. */
+  width: 100%;
+  height: 100%;
   z-index: -1;
   pointer-events: none;
   contain: strict;

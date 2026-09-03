@@ -71,7 +71,7 @@ export function isBackgroundTarget(t: EventTarget | null): boolean {
 
 function readQuality(): Quality {
   const g = document.documentElement.getAttribute("data-gfx");
-  return g === "soft" ? 0 : g === "lite" ? 1 : 2;
+  return g === "soft" || g === "off" ? 0 : g === "lite" ? 1 : 2;
 }
 const readReduced = () => document.documentElement.hasAttribute("data-reduce-motion");
 const readOff = () => document.documentElement.getAttribute("data-ambient") === "off";
@@ -95,6 +95,12 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
   let w = 0;
   let h = 0;
   let dpr = 1;
+  // CSS zoom 보정(편집실 ≥1700px은 .studio-shell zoom .9/.8): 캔버스 크기는 레이아웃 px(offsetWidth = 뷰포트/zoom)로
+  // 잡고, 포인터의 화면 px는 zoom으로 나눠 캔버스 좌표로 옮긴다. 옛 innerWidth px는 줌 안에서 80%로 그려져 오른쪽·
+  // 아래가 비었다(2026-09-04 사용자 스크린샷).
+  let zoomF = 1;
+  let rectL = 0;
+  let rectT = 0;
   let raf = 0;
   let last = 0;
   let running = false;
@@ -107,13 +113,16 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
     scene.draw(g, frame);
   };
   const resize = () => {
-    w = window.innerWidth;
-    h = window.innerHeight;
+    const rect = canvas.getBoundingClientRect();
+    w = canvas.offsetWidth || window.innerWidth;
+    h = canvas.offsetHeight || window.innerHeight;
+    zoomF = rect.width > 0 && w > 0 ? rect.width / w : 1;
+    if (!Number.isFinite(zoomF) || zoomF <= 0) zoomF = 1;
+    rectL = rect.left;
+    rectT = rect.top;
     dpr = q >= 2 ? Math.min(window.devicePixelRatio || 1, 1.5) : 1;
     canvas.width = Math.max(1, Math.round(w * dpr));
     canvas.height = Math.max(1, Math.round(h * dpr));
-    canvas.style.width = `${w}px`;
-    canvas.style.height = `${h}px`;
     frame.w = w;
     frame.h = h;
     frame.dpr = dpr;
@@ -181,8 +190,10 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
       q = nq;
       resize();
     }
-    // CSS가 숨긴 상태(gfx=soft·모바일 폭·스위치 OFF·생동감 OFF)면 루프를 돌리지 않는다 — 안 보이는 그림에 CPU를 안 쓴다.
+    // CSS가 숨긴 상태(gfx=soft/off·모바일 폭·스위치 OFF·생동감 OFF)면 루프를 돌리지 않는다 — 안 보이는 그림에 CPU를 안 쓴다.
     const hiddenByCss = getComputedStyle(canvas).display === "none";
+    // 숨겨졌다 다시 보이면(display none → block) 크기가 0에서 돌아온다 — 다시 잰다.
+    if (!hiddenByCss && (canvas.offsetWidth !== w || canvas.offsetHeight !== h)) resize();
     if (frame.reduced || off || document.hidden || hiddenByCss) {
       stop();
       if (frame.reduced && !off && !hiddenByCss) drawOnce(); // 정지 화면 한 장
@@ -193,16 +204,18 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
     sync();
   };
 
+  const toCanvas = (e: PointerEvent): [number, number] => [(e.clientX - rectL) / zoomF, (e.clientY - rectT) / zoomF];
   const onMove = (e: PointerEvent) => {
     const dts = Math.max(4, e.timeStamp - p.ts) / 1000;
+    const [cx, cy] = toCanvas(e);
     if (p.inside) {
-      const ivx = Math.max(-4000, Math.min(4000, (e.clientX - p.x) / dts));
-      const ivy = Math.max(-4000, Math.min(4000, (e.clientY - p.y) / dts));
+      const ivx = Math.max(-4000, Math.min(4000, (cx - p.x) / dts));
+      const ivy = Math.max(-4000, Math.min(4000, (cy - p.y) / dts));
       p.vx = p.vx * 0.45 + ivx * 0.55;
       p.vy = p.vy * 0.45 + ivy * 0.55;
     }
-    p.x = e.clientX;
-    p.y = e.clientY;
+    p.x = cx;
+    p.y = cy;
     p.ts = e.timeStamp;
     p.inside = true;
     p.moved = true;
@@ -210,8 +223,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
   };
   const onDown = (e: PointerEvent) => {
     if (e.button !== 0) return;
-    p.x = e.clientX;
-    p.y = e.clientY;
+    [p.x, p.y] = toCanvas(e);
     p.down = true;
     p.inside = true;
     if (!running) return;

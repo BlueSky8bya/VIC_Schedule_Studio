@@ -81,18 +81,22 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   (collisions, ground friction, gusts, pointer wind, grab-and-drag); spring = lawn + clover/daisies + butterflies
   (shadow, flee from pointer, click → petal burst). Apple-feel, cute, 오행 palette kept. Switch "계절 배경"
   (`vic.ambient`, default ON): **OFF = everything down, tide included** (the tide is summer's, never a fallback).
-  Special days go into `SPECIAL_DAYS` in `registry.ts` (real KST date, priority over season). Engine rules:
-  sprites/ground baked once, per-frame drawImage only, dynamic import, loop stops when hidden/off, self-governor
-  (late frames > 20% → fewer particles); tide rules unchanged (transform/opacity only, no filter/blur/scale
-  animation, no dark blobs). Never mount `<WaterTide />` directly again; never add a second background system
+  Every season answers the mouse: summer ripples (a canvas over the tide), spring butterflies flee and later land
+  on daisies, autumn leaves blow (7 species: round · elm · willow · maple · ginkgo · oak · pine needles, muted
+  colors), winter kicks up snow dust while an invisible walker keeps leaving boot prints. Special days go into
+  `SPECIAL_DAYS` in `registry.ts` (real KST date, priority over season). Engine rules: sprites/ground baked once,
+  per-frame drawImage only, dynamic import, loop stops when hidden/off, self-governor (late frames > 20% → fewer
+  particles, never below a visible floor), **zoom-aware sizing** (canvas = `offsetWidth`, pointer ÷ zoom — the
+  studio shell is zoomed ≥1700px); tide rules unchanged (transform/opacity only, no filter/blur/scale animation,
+  no dark blobs). Never mount `<WaterTide />` directly again; never add a second background system
   (the old `data-poster-theme` 7-pack coexists for now and is slated to be superseded).
 - **Graphics tiers (`lib/ui/gfx.ts` v3, 2026-09-04).** `data-gfx` is `full` (absent) · `lite` · `soft`. `soft` =
   software rendering (WebGL renderer SwiftShader/llvmpipe/software) or ≤2 cores → ambient off + eye-comfort token
   palette. `lite` = bad frame samples on **two consecutive visits** → ambient stays **visible but cheaper** (tide
   one caustic layer, canvas particles halved), root filter kept. Never hide the ambient on a single bad sample
   (streaming PCs jitter under OBS load — Tori's "tide vanished after a few seconds" was exactly that). Settings
-  "배경 효과" (`vic.gfxPref` auto/max/lite) overrides the judgement; an automatic demotion fires `vic:gfx-auto`
-  and the studio toasts it. Settings epoch `2026-09-04` reseeds the four switches (motion · eye-comfort · calm ·
+  "배경 효과" (`vic.gfxPref` auto/max/lite/off — `off` hides the ambient only and keeps the eye-comfort filter)
+  overrides the judgement; an automatic demotion fires `vic:gfx-auto` and the studio toasts it. Settings epoch `2026-09-04` reseeds the four switches (motion · eye-comfort · calm ·
   ambient) to ON once; only values touched afterwards persist.
 - **Tide layer.** `.gs-tide` (`components/shared/water-tide.tsx`, shared by studio and viewer poster;
   CSS in `app/metal-water.css`) — shallow-water caustics seen from above: thin bright cell network from
@@ -171,6 +175,10 @@ private layers is retired — ADR-0014; the server model stays.)
   overflow width. Same DOM merely scaled = defect.
 - **Typography:** web large/legible, mobile small (never overflow). Tune base small, bump up in
   `@media (min-width: 641px)`.
+- **Mobile copy is the shortest working label** (2026-09-04 owner rule): "시청자 화면" not "시청자 화면
+  보여주기", "미리보기" not "역할 미리보기 ▾". A long/short label pair (`.lbl-long`/`.lbl-short`) must be
+  hidden by a base CSS rule so both never render at once — on mobile render a single short `.lbl` instead
+  (the "미리보기 미리보기" defect came from the pair leaking outside `.studio-role-tools`).
 - **Design unity:** symmetric L/R padding, reused tokens/components, shared motion vocabulary.
   One-off styles, imbalance, or ragged sibling heights = defect; new UI must look native.
 - **Fill empty space by content** (scale value/icon up, redistribute) — don't stretch an

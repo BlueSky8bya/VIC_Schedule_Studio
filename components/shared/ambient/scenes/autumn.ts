@@ -1,29 +1,39 @@
-// 가을 — "낙엽이 소복한 땅을 위에서 내려다본다". 잎 40~90장이 바닥에 흩어져 있고, 이따금 바람이 한 줄기
-// 지나가며(gust) 잎들이 밀리고 뒤집힌다. 포인터가 빠르게 지나가면 그 주변 잎이 바람 맞은 듯 밀리고, 바탕
-// 위에서 잎을 누르면 집어서 끌 수 있다(집은 잎은 떠서 그림자가 커지고, 놓으면 손 속도로 미끄러진다). 잎끼리는
-// 원 충돌로 서로 밀어낸다. 색은 채도 낮춘 갈색·와인·올리브(붉·주황·노랑 금지 — CLAUDE.md Owner-fit palette).
+// 가을 — "낙엽이 소복한 땅을 위에서 내려다본다". 여러 수종의 잎(둥근 잎·느릅·버들·**단풍·은행·참나무·솔잎**) 90~220장이
+// 바닥에 흩어져 있고, 이따금 바람이 한 줄기 지나가며(gust) 잎들이 밀리고 뒤집힌다. 포인터가 지나가면 그 주변 잎이
+// 바람에 날리듯 밀리고(속도 비례, 소용돌이 성분), 바탕 위에서 잎을 누르면 집어서 끌 수 있다(집은 잎은 떠서 그림자가
+// 커지고, 놓으면 손 속도로 미끄러진다). 잎끼리는 원 충돌로 서로 밀어낸다.
+// 색은 채도를 낮춘 가을색 — 단풍은 와인·벽돌, 은행은 머스터드, 참나무·솔잎은 갈색·올리브(붉·주황·노랑을 쨍하게
+// 올리지 않는다 — CLAUDE.md Owner-fit palette; 사용자가 2026-09-04 수종 다양화를 요청해 종류만 늘렸다).
 // 스프라이트(잎·그림자)는 한 번 굽고 매 프레임 drawImage만 — 필터/blur 없음.
 
 import type { Frame, Scene } from "../scene-engine";
-import { clamp, leafPath, makeCanvas, rng, TAU } from "./util";
+import { clamp, leafPath, makeCanvas, pineNeedles, rng, TAU } from "./util";
 
-const COLORS = ["#a8744f", "#8f5a48", "#b08a55", "#7d4b4f", "#9c6a4a", "#8a7a5a", "#a06a52", "#8b5f4a", "#9a8a5c", "#6f5646"];
-const SHAPES = 3;
-const SPR = 76; // 스프라이트 한 변(px), 잎 반지름 28 + 여백
-const R0 = 28;
+type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
+const SPECIES: Species[] = [
+  { shape: 0, colors: ["#a8744f", "#8f5a48", "#9c6a4a", "#8b5f4a"], size: [34, 60], weight: 3 }, // 둥근 잎(느티·벚)
+  { shape: 1, colors: ["#b08a55", "#9a8a5c", "#8a7a5a"], size: [30, 52], weight: 2 }, // 느릅·자작(황갈)
+  { shape: 2, colors: ["#9c8a4e", "#7f7a45", "#a08a50"], size: [34, 62], weight: 1.5 }, // 버들(올리브)
+  { shape: 3, colors: ["#9a4a4a", "#a6574a", "#8c3e48", "#b06a52"], size: [44, 76], weight: 3.5 }, // 단풍(와인·벽돌)
+  { shape: 4, colors: ["#c9a84c", "#b8973f", "#d3b55e"], size: [36, 60], weight: 3 }, // 은행(머스터드)
+  { shape: 5, colors: ["#8b6a3f", "#a17a4a", "#7a5a38"], size: [40, 70], weight: 2.5 }, // 참나무(갈색)
+  { shape: 6, colors: ["#6b6a3c", "#7a6a3a", "#5f6a40"], size: [26, 40], weight: 2, needle: true } // 솔잎
+];
+const SPR = 84; // 스프라이트 한 변(px) — 잎 반지름 30 + 여백(단풍 갈래·솔잎 길이)
+const R0 = 30;
 
 type Leaf = {
   x: number;
   y: number;
   vx: number;
   vy: number;
-  a: number; // 회전(rad)
+  a: number;
   va: number;
-  s: number; // 지름(px)
+  s: number;
+  sp: number; // 수종
   col: number;
-  shape: number;
-  lift: number; // 0 바닥 ~ 1 들림(그림자 오프셋·크기)
-  flip: number; // 뒤집힘 위상(0~π)
+  lift: number;
+  flip: number;
   flipV: number;
 };
 
@@ -38,62 +48,103 @@ export function createAutumn(seed: number): Scene {
   let gox = 0;
   let goy = 0;
   let gust: Gust = null;
-  let nextGust = 5 + rand() * 5;
+  let nextGust = 4 + rand() * 5;
   let w = 0;
   let h = 0;
+  let windCount = 0; // 검증용 — 포인터 바람에 밀린 잎 누적
 
   function bake() {
     if (sprites.length) return;
     sprites = [];
     shadows = [];
-    for (let sh = 0; sh < SHAPES; sh++) {
+    for (const sp of SPECIES) {
       const row: HTMLCanvasElement[] = [];
-      for (const col of COLORS) {
+      for (const col of sp.colors) {
         const { c, g } = makeCanvas(SPR, SPR);
         g.translate(SPR / 2, SPR / 2);
-        leafPath(g, R0, sh);
-        g.fillStyle = col;
-        g.fill();
-        // 윗면 광택 — 왼쪽 위가 살짝 밝다(입체감, 필터 없이).
-        const hl = g.createLinearGradient(-R0, -R0, R0, R0);
-        hl.addColorStop(0, "rgb(255 245 230 / 0.26)");
-        hl.addColorStop(0.55, "rgb(255 245 230 / 0)");
-        hl.addColorStop(1, "rgb(40 28 20 / 0.14)");
-        g.fillStyle = hl;
-        g.fill();
-        // 잎맥
-        g.strokeStyle = "rgb(255 245 230 / 0.38)";
-        g.lineWidth = 1.1;
-        g.lineCap = "round";
-        g.beginPath();
-        g.moveTo(0, -R0 * 0.82);
-        g.lineTo(0, R0 * 0.86);
-        for (let k = -2; k <= 2; k++) {
-          const y = k * R0 * 0.3;
-          g.moveTo(0, y);
-          g.lineTo(R0 * 0.34, y - R0 * 0.22);
-          g.moveTo(0, y + R0 * 0.14);
-          g.lineTo(-R0 * 0.34, y - R0 * 0.08);
+        if (sp.needle) {
+          pineNeedles(g, R0 * 0.55, col, 2.1);
+          g.strokeStyle = "rgb(255 245 230 / 0.25)";
+          g.lineWidth = 0.8;
+          g.stroke();
+        } else {
+          leafPath(g, R0, sp.shape);
+          g.fillStyle = col;
+          g.fill();
+          // 윗면 광택(왼쪽 위 밝게) + 가장자리 그늘
+          const hl = g.createLinearGradient(-R0, -R0, R0, R0);
+          hl.addColorStop(0, "rgb(255 245 230 / 0.28)");
+          hl.addColorStop(0.55, "rgb(255 245 230 / 0)");
+          hl.addColorStop(1, "rgb(40 28 20 / 0.16)");
+          g.fillStyle = hl;
+          g.fill();
+          // 잎맥 — 수종별로 다르게(은행은 부채살, 단풍은 갈래마다 한 줄, 나머지는 중심맥+곁맥)
+          g.strokeStyle = "rgb(255 245 230 / 0.36)";
+          g.lineWidth = 1;
+          g.lineCap = "round";
+          g.beginPath();
+          if (sp.shape === 4) {
+            for (let k = -3; k <= 3; k++) {
+              const a = (-90 + k * 17) * (Math.PI / 180);
+              g.moveTo(0, R0 * 0.42);
+              g.lineTo(Math.cos(a) * R0 * 1.0, R0 * 0.42 + Math.sin(a) * R0 * 1.0);
+            }
+          } else if (sp.shape === 3) {
+            for (const [x, y] of [[0, -0.95], [0.6, -0.7], [0.95, -0.1], [0.58, 0.58], [-0.58, 0.58], [-0.95, -0.1], [-0.6, -0.7]]) {
+              g.moveTo(0, R0 * 0.3);
+              g.lineTo(x * R0, y * R0);
+            }
+          } else {
+            g.moveTo(0, -R0 * 0.82);
+            g.lineTo(0, R0 * 0.86);
+            for (let k = -2; k <= 2; k++) {
+              const y = k * R0 * 0.3;
+              g.moveTo(0, y);
+              g.lineTo(R0 * 0.36, y - R0 * 0.22);
+              g.moveTo(0, y + R0 * 0.14);
+              g.lineTo(-R0 * 0.36, y - R0 * 0.08);
+            }
+          }
+          g.stroke();
+          leafPath(g, R0, sp.shape);
+          g.strokeStyle = "rgb(60 40 30 / 0.24)";
+          g.lineWidth = 0.9;
+          g.stroke();
+          // 잎자루
+          g.strokeStyle = "rgb(70 50 36 / 0.55)";
+          g.lineWidth = 1.4;
+          g.beginPath();
+          g.moveTo(0, R0 * 0.88);
+          g.lineTo(sp.shape === 4 ? 0 : R0 * 0.06, R0 * 1.22);
+          g.stroke();
         }
-        g.stroke();
-        // 잎 가장자리 헤어라인
-        leafPath(g, R0, sh);
-        g.strokeStyle = "rgb(60 40 30 / 0.22)";
-        g.lineWidth = 0.9;
-        g.stroke();
         row.push(c);
       }
       sprites.push(row);
       const { c, g } = makeCanvas(SPR, SPR);
       g.translate(SPR / 2, SPR / 2);
-      leafPath(g, R0 * 1.04, sh);
-      g.fillStyle = "#2b2320";
-      g.fill();
+      if (sp.needle) pineNeedles(g, R0 * 0.55, "#2b2320", 2.6);
+      else {
+        leafPath(g, R0 * 1.04, sp.shape);
+        g.fillStyle = "#2b2320";
+        g.fill();
+      }
       shadows.push(c);
     }
   }
 
+  const totalWeight = SPECIES.reduce((a, s) => a + s.weight, 0);
+  function pickSpecies(): number {
+    let r = rand() * totalWeight;
+    for (let i = 0; i < SPECIES.length; i++) {
+      r -= SPECIES[i].weight;
+      if (r <= 0) return i;
+    }
+    return 0;
+  }
   function spawn(): Leaf {
+    const sp = pickSpecies();
+    const [lo, hi] = SPECIES[sp].size;
     return {
       x: rand() * w,
       y: rand() * h,
@@ -101,9 +152,9 @@ export function createAutumn(seed: number): Scene {
       vy: 0,
       a: rand() * TAU,
       va: 0,
-      s: 36 + rand() * 38,
-      col: Math.floor(rand() * COLORS.length),
-      shape: Math.floor(rand() * SHAPES),
+      s: lo + rand() * (hi - lo),
+      sp,
+      col: Math.floor(rand() * SPECIES[sp].colors.length),
       lift: 0,
       flip: 0,
       flipV: 0
@@ -112,10 +163,9 @@ export function createAutumn(seed: number): Scene {
 
   function targetCount(f: Frame) {
     const area = f.w * f.h;
-    // "풍성하게"(사용자) — 1600×900에서 120장, 1920×1080 130장(상한). 90장은 달력 밑에 깔려 여백에만 듬성했다.
-    if (f.q >= 2) return Math.round(clamp(area / 12000, 60, 130));
-    if (f.q === 1) return Math.round(clamp(area / 24000, 30, 65));
-    return 20;
+    if (f.q >= 2) return Math.round(clamp(area / 9000, 90, 220)); // "풍성하게" — 1600×900 160장, 큰 화면 220장
+    if (f.q === 1) return Math.round(clamp(area / 18000, 50, 110));
+    return 40; // 최소 단계도 눈에 띄게 남긴다(사용자: '가볍게'가 '끄기'처럼 보였다)
   }
 
   return {
@@ -137,11 +187,11 @@ export function createAutumn(seed: number): Scene {
       if (!gust && t > nextGust) gust = { t0: t, dur: 3 + rand() * 1.8, dir: rand() < 0.5 ? -1 : 1, y: rand() * h };
       if (gust && t - gust.t0 > gust.dur) {
         gust = null;
-        nextGust = t + 8 + rand() * 10;
+        nextGust = t + 7 + rand() * 9;
       }
       const front = gust ? (gust.dir > 0 ? -240 + ((t - gust.t0) / gust.dur) * (w + 480) : w + 240 - ((t - gust.t0) / gust.dur) * (w + 480)) : 0;
-      const pushy = p.inside && p.speed > 40;
-      const groundFr = Math.pow(0.02, dt); // 바닥 마찰 — 1초 안에 거의 멈춘다
+      const pushy = p.inside && p.speed > 30;
+      const groundFr = Math.pow(0.02, dt);
       const spinFr = Math.pow(0.04, dt);
       for (let i = 0; i < leaves.length; i++) {
         const l = leaves[i];
@@ -155,11 +205,10 @@ export function createAutumn(seed: number): Scene {
           l.x += l.vx * dt;
           l.y += l.vy * dt;
           l.va *= 0.9;
-          l.a += l.va * dt + (l.vx * 0.0006 + l.vy * 0.0004) * dt * 60 * 0.05;
+          l.a += l.va * dt + (l.vx * 0.0006 + l.vy * 0.0004) * dt * 3;
           l.lift = 1;
           continue;
         }
-        // 잔잔한 들바람(느린 요동)
         let fx = 4 * Math.sin(l.y * 0.011 + t * 0.5);
         let fy = 3 * Math.cos(l.x * 0.009 + t * 0.37);
         if (gust) {
@@ -178,15 +227,20 @@ export function createAutumn(seed: number): Scene {
           const dx = l.x - p.x;
           const dy = l.y - p.y;
           const d = Math.hypot(dx, dy);
-          const R = 150 + l.s * 0.6;
+          const R = 170 + l.s * 0.6;
           if (d < R && d > 0.001) {
+            // 바람에 날리듯: 포인터에서 멀어지는 힘 + 포인터 진행 방향 + 살짝 도는 소용돌이 성분.
             const k = 1 - d / R;
-            const push = k * clamp(p.speed, 0, 2400) * 0.95;
-            fx += (dx / d) * push + p.vx * 0.4 * k;
-            fy += (dy / d) * push + p.vy * 0.4 * k;
-            l.va += k * (rand() - 0.5) * 16;
-            if (l.lift < k * 0.75) l.lift = k * 0.75;
-            if (k > 0.55 && l.flipV === 0 && rand() < 0.08) l.flipV = 6 + rand() * 3;
+            const sp = clamp(p.speed, 0, 2600);
+            const push = k * sp * 1.05;
+            const nx = dx / d;
+            const ny = dy / d;
+            fx += nx * push + p.vx * 0.45 * k - ny * sp * 0.18 * k;
+            fy += ny * push + p.vy * 0.45 * k + nx * sp * 0.18 * k;
+            l.va += k * (rand() - 0.5) * 18;
+            if (l.lift < k * 0.8) l.lift = k * 0.8;
+            if (k > 0.5 && l.flipV === 0 && rand() < 0.1) l.flipV = 6 + rand() * 3;
+            if (k > 0.3) windCount++;
           }
         }
         l.vx += fx * dt;
@@ -197,7 +251,6 @@ export function createAutumn(seed: number): Scene {
         l.x += l.vx * dt;
         l.y += l.vy * dt;
         l.a += l.va * dt;
-        // 화면 밖으로 밀리면 반대편에서 들어온다(밀도 유지).
         const m = l.s;
         if (l.x < -m) l.x += w + 2 * m;
         else if (l.x > w + m) l.x -= w + 2 * m;
@@ -214,18 +267,17 @@ export function createAutumn(seed: number): Scene {
           }
         }
       }
-      // 원 충돌 — 서로 밀어내고 속도를 조금 나눈다(집은 잎이 이웃을 밀어낸다).
       if (f.q > 0) {
         for (let i = 0; i < leaves.length; i++) {
           const a = leaves[i];
-          const ra = a.s * 0.34;
+          const ra = a.s * 0.32;
           for (let j = i + 1; j < leaves.length; j++) {
             const b = leaves[j];
             const dx = b.x - a.x;
             if (dx > 80 || dx < -80) continue;
             const dy = b.y - a.y;
             if (dy > 80 || dy < -80) continue;
-            const min = ra + b.s * 0.34;
+            const min = ra + b.s * 0.32;
             const d2 = dx * dx + dy * dy;
             if (d2 >= min * min || d2 < 0.0001) continue;
             const d = Math.sqrt(d2);
@@ -261,7 +313,6 @@ export function createAutumn(seed: number): Scene {
       }
     },
     draw(g, f) {
-      // 은빛 서리 안개(金) — 위쪽 띠, 매 프레임 그라데이션 한 장(싸다).
       const mist = g.createLinearGradient(0, 0, 0, f.h * 0.34);
       mist.addColorStop(0, "rgb(234 238 242 / 0.42)");
       mist.addColorStop(0.5, "rgb(234 238 242 / 0.16)");
@@ -269,7 +320,7 @@ export function createAutumn(seed: number): Scene {
       g.fillStyle = mist;
       g.fillRect(0, 0, f.w, f.h * 0.34);
       const drawLeaf = (l: Leaf, shadow: boolean) => {
-        const k = (l.s / SPR) * (1 + l.lift * 0.12);
+        const k = (l.s / SPR) * 1.4 * (1 + l.lift * 0.12);
         const sx = l.flipV > 0 ? Math.cos(l.flip) : 1;
         g.save();
         if (shadow) {
@@ -280,7 +331,7 @@ export function createAutumn(seed: number): Scene {
         }
         g.rotate(l.a);
         g.scale(k * sx, k);
-        g.drawImage(shadow ? shadows[l.shape] : sprites[l.shape][l.col], -SPR / 2, -SPR / 2);
+        g.drawImage(shadow ? shadows[l.sp] : sprites[l.sp][l.col], -SPR / 2, -SPR / 2);
         g.restore();
       };
       for (let i = 0; i < leaves.length; i++) if (i !== grabbed) drawLeaf(leaves[i], true);
@@ -325,6 +376,8 @@ export function createAutumn(seed: number): Scene {
         leaves: leaves.length,
         grabbed,
         gust: !!gust,
+        wind: windCount,
+        species: SPECIES.map((_, i) => leaves.filter((l) => l.sp === i).length),
         pos: leaves.slice(0, 8).map((l) => [Math.round(l.x), Math.round(l.y), Math.round(l.s)])
       };
     }

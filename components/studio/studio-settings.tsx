@@ -144,6 +144,7 @@ export function StudioSettingsList({
           <option value="auto">{gfxAuto === "soft" ? "자동 (이 기기: 끔)" : gfxAuto === "lite" ? "자동 (이 기기: 가볍게)" : "자동"}</option>
           <option value="max">항상 최대</option>
           <option value="lite">가볍게</option>
+          <option value="off">끄기</option>
         </select>
       </div>
       {/* 포스터 테마 — 시청자 화면 배경(서버 저장, 소유자만). 스위치 줄과 같은 규격의 셀렉트. */}

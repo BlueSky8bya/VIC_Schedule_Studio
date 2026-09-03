@@ -12,8 +12,9 @@
 //   사용자 우선순위 `vic.gfxPref`(auto/max/lite, 설정 "배경 효과")가 있으면 판정을 덮어쓴다. 자동으로 내려가면
 //   `vic:gfx-auto` 이벤트로 알린다(편집실이 토스트로 "설정에서 바꿀 수 있어요"를 띄운다).
 // 결과는 30일 기억(vic.gfx, v3 — 옛 세대 기록은 lite/full 모두 다시 잰다). 페인트 전 적용은 app/layout.tsx 스크립트.
-export type GfxMode = "full" | "lite" | "soft";
-export type GfxPref = "auto" | "max" | "lite";
+// off(2026-09-04 사용자: "가볍게가 아니라 끄기 아니야?") = 배경 효과만 끈다 — soft와 달리 눈 편한 테마 필터는 그대로.
+export type GfxMode = "full" | "lite" | "soft" | "off";
+export type GfxPref = "auto" | "max" | "lite" | "off";
 
 const GFX_KEY = "vic.gfx";
 const GFX_PREF_KEY = "vic.gfxPref";
@@ -33,7 +34,7 @@ function readRecord(): GfxRecord | null {
     const raw = window.localStorage.getItem(GFX_KEY);
     if (!raw) return null;
     const rec = JSON.parse(raw) as Partial<GfxRecord>;
-    if (rec.mode !== "lite" && rec.mode !== "full" && rec.mode !== "soft") return null;
+    if (rec.mode !== "lite" && rec.mode !== "full" && rec.mode !== "soft") return null; // 기기 판정엔 off가 없다
     if (typeof rec.at !== "number" || Date.now() - rec.at > GFX_TTL_MS) return null;
     if (rec.v !== GFX_PROBE_VERSION) return null; // 옛 세대(v2 lite 포함)는 다시 잰다
     return { mode: rec.mode, at: rec.at, v: rec.v };
@@ -55,7 +56,7 @@ export function gfxPref(): GfxPref {
   if (typeof window === "undefined") return "auto";
   try {
     const v = window.localStorage.getItem(GFX_PREF_KEY);
-    return v === "max" || v === "lite" ? v : "auto";
+    return v === "max" || v === "lite" || v === "off" ? v : "auto";
   } catch {
     return "auto";
   }
@@ -73,6 +74,7 @@ export function gfxMode(): GfxMode {
   const pref = gfxPref();
   if (pref === "max") return "full";
   if (pref === "lite") return "lite";
+  if (pref === "off") return "off";
   return readRecord()?.mode ?? "full";
 }
 

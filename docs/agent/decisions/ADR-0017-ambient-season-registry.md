@@ -17,7 +17,9 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > 폭발). 애플 결·귀엽게, 오행 보정 색 그대로. 스프라이트·바탕은 한 번 굽고 매 프레임 drawImage만, 장면 코드는 동적
 > import, 탭 숨김·스위치 OFF면 루프 정지, 자체 조절기(늦은 프레임 20%↑ → 입자 단계 ↓). ③ gfx 판정 v3(lib/ui/gfx.ts):
 > full/lite/soft — lite는 **보이게 유지**(물결 1겹·입자 절반), soft(소프트웨어 렌더·코어 ≤2)만 배경 OFF+눈 편한 팔레트,
-> 설정 "배경 효과"(자동/항상 최대/가볍게)가 판정을 덮어쓴다. ④ 설정 세대 2026-09-04: 스위치 4종 기본 ON 재시딩.
+> 설정 "배경 효과"(자동/항상 최대/가볍게/**끄기** — 끄기는 배경만, 필터 유지)가 판정을 덮어쓴다. ④ 설정 세대 2026-09-04:
+> 스위치 4종 기본 ON 재시딩. ⑤ 같은 날 2차: 여름도 캔버스 한 장(마우스 잔물결) — 사계절 전부 마우스에 반응(회피·바람·
+> 눈가루·잔물결), 낙엽 수종 7, 나비·발자국 리디자인(착지·걷는 사람), 캔버스는 zoom 보정(offsetWidth·포인터÷zoom).
 - 관련: ADR-0016(금생수 — 물결 레이어), `components/shared/ambient/*`, `app/ambient.css`, `lib/ui/motion.ts`
   (`vic.ambient`), `docs/ux/seasonal-ambient-plan.md`(설계안), CLAUDE.md "Owner-fit palette rule"
 - Supersedes(예정, 4단계): 포스터 테마 7종(`calendars.poster_theme` = sakura/summer/autumn/winter/sunset/mint/dot/

@@ -1048,8 +1048,16 @@ export function StudioShell({
           type="button"
          data-act="preview-dd-trigger">
           <Eye aria-hidden="true" size={16} />
-          <span className="lbl-long">{triggerText}</span>
-          <span className="lbl-short">{triggerShort}</span>
+          {/* 모바일은 짧은 라벨 하나만("시청자 화면"/"미리보기") — 웹의 긴/짧은 쌍을 그대로 두면 숨기는 CSS가
+              .studio-role-tools 안에만 있어 "미리보기 미리보기"로 겹쳐 보였다(2026-09-04 사용자). */}
+          {isNarrow ? (
+            <span className="lbl">{triggerText}</span>
+          ) : (
+            <>
+              <span className="lbl-long">{triggerText}</span>
+              <span className="lbl-short">{triggerShort}</span>
+            </>
+          )}
           {previewing ? null : (
             <span aria-hidden="true" className="preview-dd-caret">
               ▾

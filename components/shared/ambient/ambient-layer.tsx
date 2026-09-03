@@ -13,6 +13,14 @@ import { SeasonCanvas } from "@/components/shared/ambient/season-canvas";
 
 export function AmbientLayer({ month, force }: { month: number; force?: SeasonKey | null }) {
   const pick = useMemo(() => pickAmbient(month, force ?? null), [month, force]);
-  if (pick.season === "summer") return <WaterTide key="summer" />;
+  if (pick.season === "summer") {
+    // 여름 = CSS 물결 + 그 위의 마우스 잔물결 캔버스(DOM 뒤에 있어 같은 z:-1에서 물결 위에 그려진다).
+    return (
+      <>
+        <WaterTide key="summer" />
+        <SeasonCanvas key="summer-ripple" season="summer" />
+      </>
+    );
+  }
   return <SeasonCanvas key={pick.season} season={pick.season} />;
 }

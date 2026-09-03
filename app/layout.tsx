@@ -118,7 +118,7 @@ export default function RootLayout({
               "var v=s.getItem('vic.reduceMotion');if(v==='on')d.setAttribute('data-reduce-motion','1');" +
               // 배경 효과 단계(lib/ui/gfx.ts v3): 사용자 우선순위(vic.gfxPref: max/lite) > 기기 판정(vic.gfx v3, 30일: lite/soft).
               // soft(소프트웨어 렌더)에서만 눈 편한 테마를 필터 대신 토큰 팔레트('lite')로.
-              "var gm='full',pf=s.getItem('vic.gfxPref');if(pf==='max'){gm='full'}else if(pf==='lite'){gm='lite'}else{try{var r=JSON.parse(s.getItem('vic.gfx')||'null');if(r&&r.v===3&&(r.mode==='lite'||r.mode==='soft')&&Date.now()-r.at<2592000000)gm=r.mode}catch(e){}}" +
+              "var gm='full',pf=s.getItem('vic.gfxPref');if(pf==='max'){gm='full'}else if(pf==='lite'||pf==='off'){gm=pf}else{try{var r=JSON.parse(s.getItem('vic.gfx')||'null');if(r&&r.v===3&&(r.mode==='lite'||r.mode==='soft')&&Date.now()-r.at<2592000000)gm=r.mode}catch(e){}}" +
               "if(gm!=='full')d.setAttribute('data-gfx',gm);if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',gm==='soft'?'lite':'1');d.setAttribute('data-studio-calm','1');" +
               // 계절 배경(vic.ambient, ADR-0017 개정 2): 'off'면 물결·계절 장면 전부 숨김 표식.
               "if(s.getItem('vic.ambient')==='off')d.setAttribute('data-ambient','off')}catch(e){}"
