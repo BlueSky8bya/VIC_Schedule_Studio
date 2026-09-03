@@ -9,6 +9,7 @@ import {
   type SaveEventInput
 } from "@/lib/schedules/event-actions";
 import { linkChainAction, unlinkPairAction } from "@/lib/schedules/link-actions";
+import { updatePosterThemeAction } from "@/lib/schedules/calendar-actions";
 
 // 편집실의 '중대한 쓰기'(일정 저장/삭제/이동/태그/업도움/잇기)를 keepalive fetch로 받는 단일 창구.
 // 클라이언트가 keepalive: true 로 보내면 브라우저가 페이지를 떠나거나(달 이동·창 전환·닫기·새로고침)
@@ -57,6 +58,9 @@ export async function POST(request: Request) {
         return json(await linkChainAction((p.orderedIds ?? []) as string[]));
       case "unlinkPair":
         return json(await unlinkPairAction(String(p.earlierId)));
+      case "posterTheme":
+        // 포스터 테마(시청자 배경) — 소유자만(액션 안에서 검사). 2026-09-03 물빛 테마와 함께 입구 복원.
+        return json(await updatePosterThemeAction(String(p.theme)));
       default:
         return NextResponse.json({ ok: false, error: "알 수 없는 작업입니다." }, { status: 400 });
     }

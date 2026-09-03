@@ -202,6 +202,13 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   백필 스크립트 복제본 동일, prod vod_timeline 90행 제자리 교정 완료(잔여 0).
   **남은 것**: 팬 닉 표기 동의(토리님 경유 권장), B안(순간 검색 — 파싱 데이터 재사용, UI만),
   '1년 전 오늘' 아이디어.
+- **물빛 포스터 테마 + 테마 입구 복원(2026-09-03, 오행 레이어 P2)**: `POSTER_THEMES`에 `mist`(물빛 —
+  안개·은백 종이+옅은 물빛 그라데이션+잔물결 선, 밝기 규칙 유지·의미색 불변, 🫧/🌊 코너). 특별한
+  날 빵빠레는 이 테마에서 쿨톤 색종이(🫧✨🌊) — 별도 설정 없이 테마에 묶음. 꾸미기 철수(ADR-0015)
+  뒤 사라졌던 테마 선택 입구를 **역할 배지 팝오버의 '포스터 테마' 셀렉트**(소유자만 표시)로 복원:
+  `studio-write op:"posterTheme"` → `lib/schedules/calendar-actions.ts` `updatePosterThemeAction`
+  (서버 owner 검사·키 검증·revalidate 3줄·theme.change 기록). 낙관적 반영 후 router.refresh.
+  실측: 셀렉트 owner만(manager 0), 비로그인 API 403.
 - **비주얼 기준선 갱신(2026-09-03)**: `npm run test:visual -- --update-snapshots` 79 통과. 바뀐
   기준선 4개 = 포스터 geometry txt·viewer-surface PNG(09-02 '시청자 아래 채움'으로 표면 872→1482,
   갱신이 밀려 있던 것) + 편집실 owner/manager PNG(차분 모드 기본 ON). `playwright.visual.config.ts`

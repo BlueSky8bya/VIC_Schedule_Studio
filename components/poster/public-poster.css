@@ -5300,6 +5300,29 @@ button.agenda-mark.celebratable:active { transform: scale(0.92); }
 .poster-surface[data-poster-theme="confetti"]::after {
   content: "🎊";
 }
+/* 물빛(mist, 2026-09-03 오행 레이어 P2) — 안개 낀 물가: 은백에 아주 옅은 물빛 그라데이션 + 잔물결
+   선. 다른 테마와 같은 규칙(밝게 유지 → 글자·카드 대비 불변). 카드·태그·띠·하트 색은 안 건드린다. */
+/* 틴트는 일부러 한 단계 진하게 — 눈 편한 테마(saturate .8·sepia .1, 기본 ON)가 옅은 파랑을 중성
+   크림으로 눌러 버린다(실측: #f4f8fc → #f3f3ef). #dbe9fa는 필터 뒤에도 #dde4ea(b−r 13)로 물빛이 남는다. */
+.poster-page[data-poster-theme="mist"] {
+  background: linear-gradient(180deg, #e3eefb, #d3e4fa);
+}
+.poster-surface[data-poster-theme="mist"] {
+  background:
+    repeating-linear-gradient(
+      180deg,
+      transparent 0 34px,
+      rgb(30 90 168 / 6%) 34px 35px
+    ),
+    radial-gradient(120% 60% at 50% -10%, rgb(255 255 255 / 85%) 0%, transparent 60%),
+    linear-gradient(160deg, #eef5fd 0%, #dbe9fa 55%, #e3eefb 100%);
+}
+.poster-surface[data-poster-theme="mist"]::before {
+  content: "🫧";
+}
+.poster-surface[data-poster-theme="mist"]::after {
+  content: "🌊";
+}
 
 /* (.campaign-band 업 도움 밴드 · .week-grid 주 보기 제거 — 참조 0) */
 

@@ -2536,10 +2536,21 @@ export function PublicPoster({
     const big = mood === "win";
     const console_ = mood === "console";
     const n = big ? 30 : console_ ? 12 : 16;
+    // 물빛 테마(mist)에선 쿨톤 색종이 — 물결·별빛·은(2026-09-03 오행 레이어 P2 '연출 옵션'은 별도
+    // 설정 대신 테마에 묶는다: 설정 하나로 배경과 연출이 같은 결).
+    const cool = effectivePosterTheme === "mist";
     const palette = console_
       ? ["#94a3b8", "#a5b4fc", "#cbd5e1", "#bae6fd", "#ddd6fe"] // 차분한 회청색
-      : ["#f472b6", "#fbbf24", "#34d399", "#60a5fa", "#a78bfa", "#f87171", "#ffffff"];
-    const cheer = big ? ["🎉", "✨", "🎊", "⚽", "🏆"] : console_ ? ["💪", "🙏", "🥲", "❤️"] : ["✨", "🎉"];
+      : cool
+        ? ["#7fb3f5", "#bfe3f4", "#e2ecf7", "#9cc7ff", "#dbeafe", "#ffffff", "#c7d7ea"]
+        : ["#f472b6", "#fbbf24", "#34d399", "#60a5fa", "#a78bfa", "#f87171", "#ffffff"];
+    const cheer = big
+      ? ["🎉", "✨", "🎊", "⚽", "🏆"]
+      : console_
+        ? ["💪", "🙏", "🥲", "❤️"]
+        : cool
+          ? ["🫧", "✨", "🌊"]
+          : ["✨", "🎉"];
     const bits: BurstBit[] = Array.from({ length: n }, (_, i) => {
       const ang = (Math.PI * 2 * i) / n + Math.random() * 0.5; // 고르게 퍼지되 약간 흩뜨림
       const reach = (big ? 78 : console_ ? 30 : 48) + Math.random() * (big ? 96 : console_ ? 36 : 56);

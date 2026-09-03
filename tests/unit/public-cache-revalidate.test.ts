@@ -246,9 +246,20 @@ describe("쓰기 라우트(/api/studio-write) → 캐시 무효화", () => {
     const path = await import("node:path");
     const src = fs.readFileSync(path.join(process.cwd(), "app/api/studio-write/route.ts"), "utf8");
     const ops = [...src.matchAll(/case "([a-zA-Z]+)":/g)].map((m) => m[1]).sort();
-    // linkChain/unlinkPair는 링크 액션(별도 파일)에서 무효화한다 — 여기 표에는 없다.
+    // linkChain/unlinkPair는 링크 액션(별도 파일)에서, posterTheme은 calendar-actions.ts에서
+    // 무효화한다 — 여기 표에는 없다(위 'lib/schedules 전수' 검사가 그 파일들의 무효화를 잡는다).
     expect(ops).toEqual(
-      ["delete", "linkChain", "reorder", "restore", "save", "support", "tags", "unlinkPair"].sort()
+      [
+        "delete",
+        "linkChain",
+        "posterTheme",
+        "reorder",
+        "restore",
+        "save",
+        "support",
+        "tags",
+        "unlinkPair"
+      ].sort()
     );
   });
 });

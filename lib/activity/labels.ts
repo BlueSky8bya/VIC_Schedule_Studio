@@ -310,6 +310,7 @@ const ACT: Record<string, TargetLabel> = {
   "support-edit-open": { name: "업 도움 기간/링크 수정 열기", area: "편집실" },
   "delete-support": { name: "업 도움 삭제", area: "편집실", hint: "기간 안내 삭제 포함" },
   "studio-calm-toggle": { name: "차분한 편집실 켜기/끄기", area: "편집실", hint: "역할 배지 팝오버 설정" },
+  "poster-theme-select": { name: "포스터 테마 고르기", area: "편집실", hint: "역할 배지 팝오버 · 관리자만" },
   "rest-nudge-ok": { name: "휴식 넛지 — 쉬고 올게요", area: "편집실" },
   "rest-nudge-later": { name: "휴식 넛지 — 조금만 더", area: "편집실", hint: "15분 뒤 다시" },
   "google-login": { name: "Google로 로그인", area: "공통" },

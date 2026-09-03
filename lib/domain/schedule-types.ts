@@ -117,7 +117,10 @@ export const POSTER_THEMES = [
   { key: "mint", label: "민트" },
   { key: "dot", label: "도트" },
   { key: "starry", label: "별밤" },
-  { key: "confetti", label: "꽃가루" }
+  { key: "confetti", label: "꽃가루" },
+  // 물빛(2026-09-03, 오행 레이어 P2): 안개·은백 종이 + 물빛 크롬. 밝기·대비 규칙은 그대로(밝게 유지),
+  // 색만 바뀐다 — 카드·태그·띠·하트 등 의미색은 손대지 않는다. 특별한 날 빵빠레도 이 테마에선 쿨톤.
+  { key: "mist", label: "물빛" }
 ] as const;
 export type PosterThemeKey = (typeof POSTER_THEMES)[number]["key"];
 export function isPosterThemeKey(value: string): value is PosterThemeKey {

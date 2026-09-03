@@ -46,6 +46,7 @@ import type {
   ColorPaletteEntry,
   EventVisibilityScope,
   MembershipRole,
+  PosterThemeKey,
   PublicSchedule,
   StudioSchedule,
   StudioScheduleEvent,
@@ -935,6 +936,30 @@ export function StudioShell({
     setStudioCalmState(next);
     hapticTick();
   };
+  // 포스터 테마(2026-09-03, 물빛 테마와 함께 입구 복원) — 소유자만, 서버(updatePosterThemeAction)도
+  // owner 검사. 낙관적으로 먼저 바꿔 보이고(미리보기 즉시), 실패면 되돌린다. 성공 후 router.refresh로
+  // 서버 스냅샷(시청자 미리보기)까지 동기화.
+  const [posterThemeLocal, setPosterThemeLocal] = useState<PosterThemeKey>(schedule.calendar.posterTheme);
+  useEffect(() => {
+    setPosterThemeLocal(schedule.calendar.posterTheme);
+  }, [schedule.calendar.posterTheme]);
+  const [posterThemeSaving, setPosterThemeSaving] = useState(false);
+  const changePosterTheme = async (theme: PosterThemeKey) => {
+    if (actor.role !== "owner" || posterThemeSaving) return;
+    const prev = posterThemeLocal;
+    setPosterThemeLocal(theme);
+    setPosterThemeSaving(true);
+    hapticTick();
+    const result = await studioWrite("posterTheme", { theme });
+    setPosterThemeSaving(false);
+    if (!result.ok) {
+      setPosterThemeLocal(prev);
+      setActionError(result.error ?? "포스터 테마를 저장하지 못했어요.");
+      return;
+    }
+    hapticTick();
+    router.refresh();
+  };
   // 휴식 넛지(2026-09-03, docs/ux/saju-redesign-direction.md) — 편집실에서 **활동 시간** 50분이
   // 쌓이면 오른쪽 아래에 조용한 물빛 카드. 강요 없음: 소리·모달·포커스 이동 없음, 30초 뒤 스스로
   // 사라지고(=조금만 더) 15분 뒤 다시 잰다. '쉬고 올게요'는 카운터를 0으로. 활동 = 포인터·키·휠
@@ -1171,6 +1196,9 @@ export function StudioShell({
         onToggleReduceMotion={toggleReduceMotion}
         onToggleStudioCalm={toggleStudioCalm}
         studioCalm={studioCalm}
+        posterTheme={actor.role === "owner" ? posterThemeLocal : null}
+        onChangePosterTheme={(theme) => void changePosterTheme(theme)}
+        posterThemeSaving={posterThemeSaving}
         open={roleHelpOpen}
         previewing={previewRole !== null}
         reduceMotion={reduceMotion}

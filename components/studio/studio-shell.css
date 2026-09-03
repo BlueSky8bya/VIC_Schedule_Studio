@@ -682,6 +682,23 @@ html {
 .rhh-label svg {
   color: var(--accent, #6b5bd6);
 }
+/* 포스터 테마 셀렉트 — 스위치 줄과 같은 높이·오른쪽 정렬(2026-09-03). */
+.rhh-select {
+  flex: none;
+  max-width: 128px;
+  min-height: 28px;
+  padding: 2px 8px;
+  border: 1px solid var(--line, #e6e2f0);
+  border-radius: var(--r-md);
+  background: var(--surface, #fff);
+  color: var(--ink, #2c2740);
+  font: inherit;
+  font-size: var(--text-body);
+  font-weight: 700;
+}
+.rhh-select:disabled {
+  opacity: 0.6;
+}
 .rhh-switch {
   position: relative;
   flex: none;

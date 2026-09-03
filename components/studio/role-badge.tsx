@@ -3,9 +3,9 @@
 // P2-ARCH-1 2단계: 역할 배지 + 권한 팝오버(구 renderRoleBadge)를 studio-shell에서 분리
 // (동작·마크업·클래스 변화 0). 설정 토글(진동/동작 줄이기/눈 편한 테마)까지 포함.
 
-import { Eye, Sparkles, Vibrate, Waves } from "lucide-react";
+import { Eye, Palette, Sparkles, Vibrate, Waves } from "lucide-react";
 import { PlainEmail } from "@/components/ui/plain-email";
-import type { MembershipRole } from "@/lib/domain/schedule-types";
+import { POSTER_THEMES, type MembershipRole, type PosterThemeKey } from "@/lib/domain/schedule-types";
 
 type RoleDisplay = { badgeLabel: string; label: string; summary: string; can: string[] };
 
@@ -26,6 +26,11 @@ type Props = {
   // 차분한 편집실(2026-09-03) — 편집실 구조를 물·은 톤으로 식히는 테마(lib/ui/motion.ts). 기본 ON.
   studioCalm: boolean;
   onToggleStudioCalm: () => void;
+  // 포스터 테마(시청자 화면 배경, calendars.poster_theme) — 소유자만 고른다(서버도 owner 검사).
+  // null이면 선택 UI를 안 그린다(비소유자). 꾸미기 화면 철수(ADR-0015) 뒤 남은 유일한 테마 입구.
+  posterTheme: PosterThemeKey | null;
+  onChangePosterTheme: (theme: PosterThemeKey) => void;
+  posterThemeSaving: boolean;
 };
 
 export function RoleBadge({
@@ -43,7 +48,10 @@ export function RoleBadge({
   eyeComfort,
   onToggleEyeComfort,
   studioCalm,
-  onToggleStudioCalm
+  onToggleStudioCalm,
+  posterTheme,
+  onChangePosterTheme,
+  posterThemeSaving
 }: Props) {
   return (
     <div className="actor-badge-wrap">
@@ -148,6 +156,29 @@ export function RoleBadge({
               <span className="rhh-knob" aria-hidden="true" />
             </button>
           </div>
+          {/* 포스터 테마 — 시청자 화면 배경(서버 저장, 소유자만). 스위치 줄과 같은 규격의 셀렉트. */}
+          {posterTheme !== null ? (
+            <div className="role-help-haptics">
+              <span className="rhh-label">
+                <Palette aria-hidden="true" size={14} />
+                포스터 테마
+              </span>
+              <select
+                aria-label="포스터 테마 고르기"
+                className="rhh-select"
+                data-act="poster-theme-select"
+                disabled={posterThemeSaving}
+                onChange={(e) => onChangePosterTheme(e.target.value as PosterThemeKey)}
+                value={posterTheme}
+              >
+                {POSTER_THEMES.map((t) => (
+                  <option key={t.key} value={t.key}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
         </div>
       ) : null}
     </div>
