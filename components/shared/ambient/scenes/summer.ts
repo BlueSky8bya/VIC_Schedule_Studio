@@ -55,7 +55,8 @@ type Fish = {
   bold: number;
   side: number;
   nextGulp: number;
-  wag: number;
+  wagAmp: number; // 꼬리 파형 진폭(꼬리 끝 변위, 스프라이트 px)
+  wagPh: number; // 꼬리 파형 위상
   leave: boolean; // 여력이 줄어 가장자리로 나가는 중(화면 밖에서 제거)
   grp: 0 | 1; // 무리 — 두 무리가 다른 목표를 따라 흩어진다(많을 때 한 덩어리로 뭉치지 않게)
 };
@@ -94,11 +95,16 @@ type Prop = {
   nextTick: number;
   crumb: Crumb | null;
 };
-type FishParts = { body: HTMLCanvasElement; tail: HTMLCanvasElement; jx: number };
+// 부드럽게 흐린 실루엣 한 장 — 그릴 때 머리→꼬리 방향의 얇은 조각 14개로 잘라 진행파만큼 위아래로 **밀어**(회전 없음) 몸이
+// 물결친다. 2026-09-04 사용자: "절반 딱 잘려 궁뎅이만 움직이는 게 매직아이처럼 눈이 피로하다" — 두 조각 경첩은 관절에 줄이
+// 남고(반투명 겹침), 띠 회전 체인도 바깥쪽에 실금이 벌어졌다 → 평행 이동 조각은 틈도 겹침도 없다. 스크래치에 불투명 합성 뒤
+// 저해상 층에 한 번에 옅게.
+type FishParts = { img: HTMLCanvasElement };
 
 const STAMP_SPR = 96;
-const FISH_SPR = 80; // 그림자 스프라이트 한 변(CSS px). k 0.45~0.7 → 36~56px, 큰 놈 1.05~1.2
-const JOINT = 0.56; // 머리(왼쪽 끝 = 0)에서 꼬리 관절까지의 비율
+const FISH_SPR = 80; // 그림자 스프라이트 한 변(CSS px). k 0.5~0.8 → 40~64px, 큰 놈 1.15~1.35
+const FISH_SLICES = 32; // 조각 사이 단차 < 1px — 14개는 옆선에 톱니가 보였다(실측)
+const FISH_WAVE_K = 2.4; // 몸 길이당 파수(rad) — 꼬리로 갈수록 위상이 늦다(파도가 뒤로 흘러간다)
 
 export function createSummer(seed: number): Scene {
   const rand = rng(seed);
@@ -170,15 +176,30 @@ export function createSummer(seed: number): Scene {
     return c;
   }
   function splitFish(s: Sprite): FishParts {
-    const soft = soften(s);
-    const W = soft.width;
-    const H = soft.height;
-    const jp = Math.round(W * JOINT);
-    const body = makeCanvas(W, H);
-    body.g.drawImage(soft, 0, 0, jp + 1, H, 0, 0, jp + 1, H);
-    const tail = makeCanvas(W, H);
-    tail.g.drawImage(soft, jp - 1, 0, W - jp + 1, H, jp - 1, 0, W - jp + 1, H);
-    return { body: body.c, tail: tail.c, jx: (JOINT - 0.5) * FISH_SPR };
+    return { img: soften(s) };
+  }
+  // 물고기 한 마리를 **불투명하게** 합성하는 스크래치(CSS px, 여백 포함) — 저해상 층엔 이걸 한 번에 옅게 찍는다.
+  // 조각 i(머리 0 → 꼬리 1)의 위아래 변위 = 진폭 × u² × sin(위상 − u·파수): 머리는 거의 가만, 꼬리로 갈수록 크게, 파도는 뒤로.
+  const FS = FISH_SPR * 2;
+  let fishScratch: { c: HTMLCanvasElement; g: CanvasRenderingContext2D } | null = null;
+  function composeFish(parts: FishParts, amp: number, phase: number): HTMLCanvasElement {
+    if (!fishScratch) fishScratch = makeCanvas(FS, FS);
+    const g = fishScratch.g;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, FS, FS);
+    const W = parts.img.width;
+    const H = parts.img.height;
+    const sw = W / FISH_SLICES; // 원본(캔버스 px) 조각 폭
+    const dw = FISH_SPR / FISH_SLICES; // 그릴 조각 폭(CSS px)
+    const x0 = FS / 2 - FISH_SPR / 2;
+    const y0 = FS / 2 - FISH_SPR / 2;
+    for (let i = 0; i < FISH_SLICES; i++) {
+      const u = (i + 0.5) / FISH_SLICES;
+      const dy = amp * u * u * Math.sin(phase - u * FISH_WAVE_K);
+      // 조각을 0.6px 넓게 그려 이웃과 살짝 겹친다(빈 실선 방지) — 불투명 합성이라 겹침이 짙어지지 않는다.
+      g.drawImage(parts.img, i * sw, 0, sw + 1, H, x0 + i * dw, y0 + dy, dw + 0.6, FISH_SPR);
+    }
+    return fishScratch.c;
   }
   function bake() {
     if (stampSpr) return;
@@ -302,7 +323,8 @@ export function createSummer(seed: number): Scene {
       bold: big ? 1.7 : 0.8 + rand() * 0.5, // 대담함 — 클수록 늦게, 가까이서 튄다
       side: rand() < 0.5 ? 1 : -1,
       nextGulp: 0,
-      wag: 0,
+      wagAmp: 7,
+      wagPh: 0,
       leave: false,
       grp: rand() < 0.5 ? 0 : 1
     };
@@ -412,7 +434,7 @@ export function createSummer(seed: number): Scene {
         }
       }
       while (path.length && t - path[0].t0 > ttl) path.shift();
-      const sttl = ttl * 1.15;
+      const sttl = ttl * 0.9; // 거품 띠도 조금 짧게(2026-09-04 사용자: 항적이 너무 오래 남는다)
       while (stamps.length && t - stamps[0].t0 > sttl) stamps.shift();
       for (let i = rings.length - 1; i >= 0; i--) {
         const r = rings[i];
@@ -834,7 +856,9 @@ export function createSummer(seed: number): Scene {
           q.y += Math.sin(q.hd) * q.spd * dt;
           q.ph += dt * (q.flee > 0 ? 3 : 1);
           q.depth += (q.depthT - q.depth) * Math.min(1, dt * (q.flee > 0 ? 4 : 1.2));
-          q.wag = Math.sin(t * freq + q.ph) * (q.flee > 0 ? 0.42 : 0.18 + 0.12 * clamp(q.spd / (q.cruise * 2), 0, 1));
+          // 꼬리 파형 — 진폭(꼬리 끝 변위, 스프라이트 px)과 위상. 그리기(composeFish)가 조각마다 위상을 늦춰 파도가 뒤로 흘러가게 한다.
+          q.wagAmp = q.flee > 0 ? 16 : 7 + 5 * clamp(q.spd / (q.cruise * 2), 0, 1);
+          q.wagPh = t * freq + q.ph;
           if (!q.leave) {
             const m = 60;
             if (q.x < -m) q.x = w + m - 1;
@@ -887,27 +911,26 @@ export function createSummer(seed: number): Scene {
       const { t, load } = f;
       if (!lo || !stampSpr) return;
       const ttl = lerp(1.5, 3.0, load);
-      const sttl = ttl * 1.15;
+      const sttl = ttl * 0.9; // 거품 띠도 조금 짧게(2026-09-04 사용자: 항적이 너무 오래 남는다)
       const L = lo.g;
       L.setTransform(1, 0, 0, 1, 0, 0);
       L.clearRect(0, 0, lo.c.width, lo.c.height);
       L.setTransform(loS, 0, 0, loS, 0, 0);
       L.lineCap = "round";
       L.lineJoin = "round";
-      // 물고기 그림자(동물의 숲) — 저해상 층이라 절로 흐릿하다. 수면에 가까울수록(depth) 크고 짙게, 꼬리는 관절에서 젓는다.
+      // 물고기 그림자(동물의 숲) — 저해상 층이라 절로 흐릿하다. 수면에 가까울수록(depth) 크고 짙게. 몸은 네 띠 체인으로 휘어
+      // 스크래치에 불투명 합성한 뒤 **한 번에** 옅게 찍는다(겹침이 짙어지는 관절 줄 없음).
       for (const q of fish) {
         const parts = fishParts[q.shape];
         if (!parts) continue;
         const size = q.k * (0.86 + 0.28 * q.depth);
+        const body = composeFish(parts, q.wagAmp, q.wagPh);
         L.save();
         L.globalAlpha = 0.18 + 0.3 * q.depth;
         L.translate(q.x, q.y);
         L.rotate(q.hd + Math.PI); // 실루엣의 머리 = 왼쪽(−x)
         L.scale(size, size);
-        L.drawImage(parts.body, -FISH_SPR / 2, -FISH_SPR / 2, FISH_SPR, FISH_SPR);
-        L.translate(parts.jx, 0);
-        L.rotate(q.wag);
-        L.drawImage(parts.tail, -FISH_SPR / 2 - parts.jx, -FISH_SPR / 2, FISH_SPR, FISH_SPR);
+        L.drawImage(body, -FS / 2, -FS / 2, FS, FS);
         L.restore();
       }
       // 물방울 — 커지는 고리, 끝에 톡(작은 십자 튐).
@@ -941,15 +964,17 @@ export function createSummer(seed: number): Scene {
         const k = 1 - age / sttl;
         if (k <= 0) continue;
         const R = s.r * (1 + 1.9 * (1 - k));
-        L.globalAlpha = 0.3 * Math.pow(k, 1.3) * (0.4 + 0.6 * s.sf);
+        L.globalAlpha = 0.3 * Math.pow(k, 1.7) * (0.4 + 0.6 * s.sf);
         L.drawImage(stampSpr, s.x - R, s.y - R, R * 2, R * 2);
       }
       L.globalAlpha = 1;
       if (path.length > 1) {
         // 각 점의 벌어진 정도 d = (옆으로 퍼지는 속도 ≈ 0.34×진행속도 상당) × 나이. 나이 0.85승 — 처음 빠르게 벌어지고
-        // 뒤로 갈수록 느려진다.
+        // 뒤로 갈수록 느려진다. **팔은 짧게 산다**(2026-09-04 사용자: "선이 너무 멀리까지 퍼져 어색") — 거품 띠의 절반 수명에
+        // 가파르게(2.4승) 옅어지고, 벌어짐도 70~130px에서 멈춘다. 오래 남는 건 거품 띠뿐.
+        const armTtl = ttl * 0.5;
         const armPt = (n: Node, s: number, age: number): [number, number] => {
-          const d = (36 + 150 * n.sf) * Math.pow(age, 0.85) + 4;
+          const d = Math.min((36 + 150 * n.sf) * Math.pow(age, 0.85) + 4, 70 + 60 * n.sf);
           return [n.x + n.nx * s * d, n.y + n.ny * s * d];
         };
         const passes = load >= 0.3 ? [0, 1] : [1];
@@ -959,16 +984,17 @@ export function createSummer(seed: number): Scene {
               const a0 = path[i - 1];
               const a1 = path[i];
               const age = t - a1.t0;
-              const k = 1 - age / ttl;
+              const k = 1 - age / armTtl;
               if (k <= 0) continue;
+              const fade = Math.pow(k, 2.4);
               const [x0, y0] = armPt(a0, s, t - a0.t0);
               const [x1, y1] = armPt(a1, s, age);
               const weight = 0.5 + 0.5 * a1.sf;
               if (pass === 0) {
-                L.strokeStyle = `rgb(150 195 228 / ${0.14 * k * weight})`;
+                L.strokeStyle = `rgb(150 195 228 / ${0.12 * fade * weight})`;
                 L.lineWidth = 14 + 12 * (1 - k);
               } else {
-                L.strokeStyle = `rgb(255 255 250 / ${0.28 * Math.pow(k, 1.1) * weight})`;
+                L.strokeStyle = `rgb(255 255 250 / ${0.26 * fade * weight})`;
                 L.lineWidth = 4 + 2 * (1 - k);
               }
               L.beginPath();
@@ -978,12 +1004,12 @@ export function createSummer(seed: number): Scene {
             }
           }
         }
-        // 가로 마루 — 몇 점마다 두 팔 사이를 뒤로 볼록하게(항적 안쪽의 층층 물결). 여력이 있을 때만.
+        // 가로 마루 — 몇 점마다 두 팔 사이를 뒤로 볼록하게(항적 안쪽의 층층 물결). 여력이 있을 때만. 팔과 같이 짧게.
         if (load >= 0.55) {
           for (let i = 2; i < path.length; i += 4) {
             const n = path[i];
             const age = t - n.t0;
-            const k = 1 - age / ttl;
+            const k = Math.pow(Math.max(0, 1 - age / armTtl), 2);
             if (k <= 0.05) continue;
             const [lx, ly] = armPt(n, -1, age);
             const [rx, ry] = armPt(n, 1, age);
