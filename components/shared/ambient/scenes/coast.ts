@@ -28,10 +28,11 @@ const PAD = 140;
 // 뭍 바탕은 계절을 탄다 — 옛 코드는 mode만 봐서 네 계절의 해안이 한 장이었다.
 const LAND_COLORS: Record<CoastMode, Record<SeasonKey, [string, string]>> = {
   tidal: {
-    spring: ["#a3a08c", "#8c8a78"],
-    summer: ["#ab9d82", "#948868"],
-    autumn: ["#9a9584", "#827f70"],
-    winter: ["#b4bcbe", "#9aa3a6"]
+    // 실제 한국 갯벌은 물막이 하늘을 비춰 **은회색~회녹색**이다(초콜릿 갈색이 가장 흔한 오류, 2026-09-04 조사).
+    spring: ["#9aa0a2", "#7b8184"],
+    summer: ["#8e8f91", "#6f7275"],
+    autumn: ["#8c9391", "#6c7476"],
+    winter: ["#a8aeb1", "#878e91"]
   },
   sandy: {
     spring: ["#e2ddc6", "#d2cdb2"],
@@ -95,68 +96,143 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
     g.fillStyle = grad;
     g.fillRect(0, 0, w, H);
     if (mode === "tidal") {
-      // 물골 — 등고선을 따라 가로로 흐르던 옛 리본은 "물이 옆으로 영원히 흐른다"였다. 관찰자 쪽(아래)에서
-      // 물가(위)로 굽이쳐 올라가 바다로 빠진다. 폭은 가까울수록 넓다.
-      const channel = (x0: number, y1: number, wob: number, amp: number, scale: number, ph: number) => {
-        // 바다 쪽(위)으로 갈수록 소실점(화면 중앙)으로 모인다 — 평행 세로 줄무늬면 원근이 없다(검토 3차).
-        const pts: [number, number][] = [];
-        for (let sN = 0; sN <= 1.0001; sN += 0.04) {
-          const y = y1 + (58 - y1) * sN;
-          const cxv = x0 + (w * 0.5 - x0) * (sN * sN * 0.85);
-          pts.push([cxv + Math.sin(y * wob + ph) * amp * (1 - sN * 0.6) + Math.sin(y * wob * 2.7 + ph * 1.7) * amp * 0.4 * (1 - sN * 0.6), y]);
+      // 물막이 하늘을 비춘다 — 갯벌이 갈색이 아니라 은빛으로 보이는 이유(물가 쪽이 가장 밝다).
+      {
+        const mg = g.createLinearGradient(0, 58, 0, VIS * 0.9);
+        mg.addColorStop(0, "rgb(206 216 222 / 0.5)");
+        mg.addColorStop(0.45, "rgb(196 206 214 / 0.22)");
+        mg.addColorStop(1, "rgb(190 200 208 / 0)");
+        g.fillStyle = mg;
+        g.fillRect(0, 58, w, VIS);
+        for (let i = 0; i < 14; i++) softBlob(g, r() * w, 70 + r() * (VIS - 110), 60 + r() * 150, "212 222 228", 0.16, 0, GROUND_SQUASH);
+      }
+      // 갯골(2026-09-04, 실제 갯벌 조사 반영) — 물골은 **배수망**이다: 바다 쪽이 하구라 **바다로 갈수록 넓어진다**
+      // (Strahler 차수가 오를수록 폭·길이 증가; 한국 갯벌 본류 200~900m, 잔가지 2~30m). 여기서는 화면 위가 바다이므로
+      // 세계 폭은 바다 쪽으로 커지고, 원근 축소(landK)를 곱해도 화면에서 바다 끝이 3~4배 넓게 남는다.
+      // 가지치기 비율 ≈ 3.5, 차수 3~4단이면 충분. 굽이는 작은 가지일수록 심하다(사행도 1.0 → 1.42).
+      const chanPts: { x: number; y: number; hw: number }[][] = [];
+      /** 물골 하나 — (sx,sy) 육지 끝에서 (ex,ey) 바다/합류점까지. 굽이는 양 끝에서 0으로 죽어 합류가 확실하다. */
+      const chan = (sx: number, sy: number, ex: number, ey: number, order: number, ph: number) => {
+        const pts: { x: number; y: number; hw: number }[] = [];
+        const n2 = 24;
+        const dx = ex - sx;
+        const dy = ey - sy;
+        const len = Math.hypot(dx, dy) || 1;
+        const nx = -dy / len;
+        const ny = dx / len;
+        const amp = order === 3 ? 26 : order === 2 ? 18 : 11; // 작은 가지일수록 사행이 심하다(1.0 → 1.42)
+        const waves = order === 3 ? 1.5 : order === 2 ? 2.4 : 3.2;
+        for (let k2 = 0; k2 <= n2; k2++) {
+          const t2 = k2 / n2; // 0 = 육지, 1 = 바다·합류점
+          const taper = Math.sin(Math.PI * t2); // 양 끝 0
+          const wob = Math.sin(t2 * Math.PI * waves + ph) * amp * taper;
+          const x = sx + dx * t2 + nx * wob;
+          const y = sy + dy * t2 + ny * wob;
+          // 세계 폭은 바다 쪽으로 3~4배(실제 배수망), 화면 폭 = 세계 폭 × 원근.
+          const world = order === 3 ? 14 + 70 * t2 * t2 : order === 2 ? 8 + 26 * t2 * t2 : 4 + 11 * t2 * t2;
+          pts.push({ x, y, hw: Math.max(0.6, world * landK(y)) });
         }
-        // 물골은 **채워진 테이퍼 다각형** — 획을 여러 겹 겹치면 폭이 일정한 "선로"가 되고 끝이 뭉툭하게 잘린다(검토 5차).
-        const halfAt = (j: number) => {
-          const t = 1 - j / (pts.length - 1); // 1(가까움) → 0(바다)
-          const sN2 = j / (pts.length - 1);
-          const fade = sN2 > 0.82 ? Math.max(0, (1 - sN2) / 0.18) : 1;
-          return ((3 + 15 * t * t) * scale + 1) * fade;
-        };
-        const poly = (kw: number, col: string) => {
-          g.beginPath();
-          for (let j = 0; j < pts.length; j++) {
-            const a2 = pts[Math.max(0, j - 1)];
-            const b2 = pts[Math.min(pts.length - 1, j + 1)];
-            const len = Math.hypot(b2[0] - a2[0], b2[1] - a2[1]) || 1;
-            const nx = -(b2[1] - a2[1]) / len;
-            const ny = (b2[0] - a2[0]) / len;
-            const hw = halfAt(j) * kw;
-            if (j === 0) g.moveTo(pts[j][0] + nx * hw, pts[j][1] + ny * hw);
-            else g.lineTo(pts[j][0] + nx * hw, pts[j][1] + ny * hw);
+        chanPts.push(pts);
+        return pts;
+      };
+      // 본류 둘 — 화면 아래(육지) 밖에서 물가까지. 각 본류에 지류 셋, 지류마다 잔가지 둘(가지치기 ≈ 3.5, 3단).
+      for (let i = 0; i < 2; i++) {
+        const bx = w * (0.3 + 0.4 * i) + (r() - 0.5) * w * 0.08;
+        const main = chan(bx + (r() - 0.5) * 70, VIS + 50, bx + (r() - 0.5) * 40, 54, 3, i * 2.1);
+        for (let b2 = 0; b2 < 3; b2++) {
+          const at = Math.round(main.length * (0.22 + 0.24 * b2 + r() * 0.08));
+          const node = main[Math.min(main.length - 1, at)];
+          if (!node) continue;
+          const side = b2 % 2 === 0 ? -1 : 1;
+          const run = 90 + r() * 90;
+          const sub = chan(node.x + side * run, node.y + run * 0.85, node.x, node.y, 2, i + b2);
+          for (let c2 = 0; c2 < 2; c2++) {
+            const at2 = Math.round(sub.length * (0.3 + 0.3 * c2 + r() * 0.1));
+            const n3 = sub[Math.min(sub.length - 1, at2)];
+            if (!n3) continue;
+            const s3 = c2 % 2 === 0 ? -1 : 1;
+            const run2 = 46 + r() * 44;
+            chan(n3.x + s3 * run2, n3.y + run2 * 0.8, n3.x, n3.y, 1, b2 + c2 * 1.3);
           }
-          for (let j = pts.length - 1; j >= 0; j--) {
-            const a2 = pts[Math.max(0, j - 1)];
-            const b2 = pts[Math.min(pts.length - 1, j + 1)];
-            const len = Math.hypot(b2[0] - a2[0], b2[1] - a2[1]) || 1;
-            const nx = -(b2[1] - a2[1]) / len;
-            const ny = (b2[0] - a2[0]) / len;
-            const hw = halfAt(j) * kw;
-            g.lineTo(pts[j][0] - nx * hw, pts[j][1] - ny * hw);
+        }
+      }
+      const drawChan = (kw: number, col: string) => {
+        for (const pts of chanPts) {
+          if (pts.length < 2) continue;
+          g.beginPath();
+          for (let jj = 0; jj < pts.length; jj++) {
+            const a2 = pts[Math.max(0, jj - 1)];
+            const b2 = pts[Math.min(pts.length - 1, jj + 1)];
+            const len = Math.hypot(b2.x - a2.x, b2.y - a2.y) || 1;
+            const nx = -(b2.y - a2.y) / len;
+            const ny = (b2.x - a2.x) / len;
+            const hw = pts[jj].hw * kw;
+            if (jj === 0) g.moveTo(pts[jj].x + nx * hw, pts[jj].y + ny * hw);
+            else g.lineTo(pts[jj].x + nx * hw, pts[jj].y + ny * hw);
+          }
+          for (let jj = pts.length - 1; jj >= 0; jj--) {
+            const a2 = pts[Math.max(0, jj - 1)];
+            const b2 = pts[Math.min(pts.length - 1, jj + 1)];
+            const len = Math.hypot(b2.x - a2.x, b2.y - a2.y) || 1;
+            const nx = -(b2.y - a2.y) / len;
+            const ny = (b2.x - a2.x) / len;
+            const hw = pts[jj].hw * kw;
+            g.lineTo(pts[jj].x - nx * hw, pts[jj].y - ny * hw);
           }
           g.closePath();
           g.fillStyle = col;
           g.fill();
-        };
-        poly(1.5, "rgb(104 96 82 / 0.3)");
-        poly(1, "rgb(126 146 158 / 0.45)");
-        poly(0.28, "rgb(210 226 234 / 0.16)");
+        }
       };
-      for (let i = 0; i < 2; i++) {
-        const x0 = w * (0.28 + 0.42 * i) + (r() - 0.5) * w * 0.12;
-        channel(x0, VIS + 60 + r() * 40, 0.005 + r() * 0.006, 20 + r() * 30, 1, i * 2.1);
-        // 지류 둘 — 본류로 합쳐지듯 옆에서 들어온다(가늘게).
-        for (let k = 0; k < 1; k++) channel(x0 + (k ? 1 : -1) * (50 + r() * 80), VIS * (0.78 + r() * 0.24), 0.009 + r() * 0.008, 10 + r() * 16, 0.45, i + k);
+      // 젖은 뻘 둔치 → 물(하늘을 비춘다) → 안쪽 가장자리 반짝. 굽이 바깥이 공격사면이라 조금 더 넓게 잡는다.
+      drawChan(1.55, "rgb(104 96 82 / 0.32)");
+      drawChan(1, "rgb(126 146 158 / 0.5)");
+      drawChan(0.3, "rgb(210 226 234 / 0.16)");
+      // 갈라진 뻘(펄) — 순수 펄에는 잔물결이 아니라 **건열 다각형**(장축 평균 37cm). 위(바다) 쪽 모래질엔 없다.
+      {
+        const cell = 30;
+        g.strokeStyle = "rgb(120 110 92 / 0.1)";
+        g.lineWidth = 1;
+        for (let gy2 = VIS * 0.5; gy2 < VIS - 10; gy2 += cell) {
+          for (let gx = 0; gx < w; gx += cell) {
+            if (r() < 0.42) continue; // 띄엄띄엄 — 다 이으면 격자무늬가 된다
+            const jx = (r() - 0.5) * cell * 0.9;
+            const jy = (r() - 0.5) * cell * 0.9;
+            g.beginPath();
+            g.moveTo(gx + jx, gy2 + jy);
+            g.lineTo(gx + cell + (r() - 0.5) * cell * 0.5, gy2 + (r() - 0.5) * cell * 0.5);
+            g.moveTo(gx + jx, gy2 + jy);
+            g.lineTo(gx + (r() - 0.5) * cell * 0.5, gy2 + cell + (r() - 0.5) * cell * 0.5);
+            g.stroke();
+          }
+        }
       }
-      // 게 구멍 — 아래(가까움)로 갈수록 크고, 수는 옛것의 절반(점 노이즈가 됐다).
-      for (let i = 0; i < Math.round(w / 22); i++) {
-        const x = r() * w;
-        const y = 50 + r() * (VIS - 70);
-        const k = landK(y) * (0.85 + r() * 0.35);
-        g.fillStyle = "rgb(72 66 58 / 0.35)";
-        g.beginPath();
-        g.ellipse(x, y, 2.6 * k, 1.7 * k, 0, 0, TAU);
-        g.fill();
-        softBlob(g, x + 3 * k, y - 2 * k, 7 * k, "230 225 210", 0.22, 0);
+      // 게 구멍 — 실제 갯벌은 **20~80개/m²이지만 지면의 7% 미만**이고, 균일하지 않다: 물골 둔치와 펄이 많은 곳에
+      // 몰린다(조사: 쏙 밭 856개/m², 칠게 62개/m², 구멍 지름 6~34mm). 무리 지어 찍고, 위쪽 모래질엔 거의 없다.
+      {
+        const holeSpots: [number, number][] = [];
+        for (const pts of chanPts) {
+          for (let jj = 2; jj < pts.length; jj += 2) {
+            const n = pts[jj];
+            for (let s2 = 0; s2 < 6; s2++) {
+              const side = s2 % 2 === 0 ? -1 : 1;
+              holeSpots.push([n.x + side * (n.hw + 4 + r() * 46), n.y + (r() - 0.5) * 22]);
+            }
+          }
+        }
+        for (let i = 0; i < 26; i++) holeSpots.push([r() * w, VIS * (0.45 + r() * 0.5)]);
+        for (const [hx, hy] of holeSpots) {
+          if (hy < VIS * 0.3 || hy > VIS - 6) continue; // 위(모래질)·화면 밖 제외
+          const k = landK(hy) * (0.85 + r() * 0.4);
+          g.fillStyle = "rgb(72 66 58 / 0.32)";
+          g.beginPath();
+          g.ellipse(hx, hy, 2.2 * k, 1.4 * k, 0, 0, TAU);
+          g.fill();
+          // 파낸 흙 부스러기 — 구멍 둘레에 부챗살로(실제 갯벌의 표지).
+          for (let d = 0; d < 3; d++) {
+            softBlob(g, hx + (r() - 0.5) * 9 * k, hy + (r() - 0.5) * 5 * k, 4 * k, "214 206 186", 0.2, 0, GROUND_SQUASH);
+          }
+        }
       }
       // 갯벌 살림 — 조약돌·작은 바위·해조 무리·조개껍데기. 없으면 뻘은 통짜 갈색 판이다(검토 4차).
       for (let i = 0; i < 46; i++) {
@@ -316,6 +392,38 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 따개비·자갈 — 바위 사이 빈 회색 판을 메운다.
       for (let i = 0; i < 70; i++) {
         drawProp(g, art, "pebble", r() * w, 60 + r() * (VIS - 90), { k: 0.8 + r() * 0.8, r: r(), sy: GROUND_SQUASH, rot: r() * TAU });
+      }
+    }
+    // 표착선 — 만조선 바로 아래 3~5m 폭의 **끊이지 않는 띠**(실제 100m에 500점). 해조(겨울·봄 괭생이모자반),
+    // 조개껍데기, 잔가지·유목. 세 해안 공통이라 여기서 한 번에 그린다.
+    {
+      const band = 26 + r() * 14;
+      const wrackTop = 62;
+      const n2 = Math.round(w / 7);
+      for (let i = 0; i < n2; i++) {
+        const x = r() * w;
+        const y = wrackTop + Math.pow(r(), 0.7) * band;
+        const k = landK(y) * (0.8 + r() * 0.5);
+        const pick = r();
+        if (pick < 0.42) {
+          const heavy = season === "winter" || season === "spring";
+          softBlob(g, x, y, (5 + r() * 9) * k * (heavy ? 1.25 : 1), r() < 0.5 ? "108 92 62" : "86 78 56", heavy ? 0.34 : 0.24, 0, GROUND_SQUASH);
+        } else if (pick < 0.72) {
+          g.fillStyle = "rgb(240 234 220 / 0.9)";
+          g.beginPath();
+          g.ellipse(x, y, 2.6 * k, 1.7 * k, r() * TAU, 0, TAU);
+          g.fill();
+        } else if (pick < 0.9) {
+          g.strokeStyle = "rgb(126 108 78 / 0.55)";
+          g.lineWidth = 1.1 * k;
+          const a2 = (r() - 0.5) * 1.2;
+          g.beginPath();
+          g.moveTo(x, y);
+          g.lineTo(x + Math.cos(a2) * 12 * k, y + Math.sin(a2) * 4 * k);
+          g.stroke();
+        } else {
+          softBlob(g, x, y, 4 * k, "246 242 232", 0.4, 0, GROUND_SQUASH);
+        }
       }
     }
     // 겨울 — 뭍 위쪽(물가에서 먼 곳)에 눈이 얹히고 물가로 갈수록 얇아진다. 이 띠가 눈→젖은 뭍 전이다.
