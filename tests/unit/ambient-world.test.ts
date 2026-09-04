@@ -4,6 +4,21 @@ import { weatherAt } from "@/components/shared/ambient/world/weather";
 import { CHRONICLE_EPOCH, TREE_CAP, TREE_LIFESPAN, chronicle, chronicleDay, cycleOf, debutHeightCm } from "@/components/shared/ambient/world/chronicle";
 import { SpawnDirector, type SpawnCtx } from "@/components/shared/ambient/world/rarity";
 import { hashSeed } from "@/components/shared/ambient/world/seed";
+import { visibleTraces, WORLD_FLAGS } from "@/components/shared/ambient/world/flags";
+
+describe("world/flags — 나무 계열 스위치(2026-09-04 소유자: 일단 빼 두자)", () => {
+  it("스위치가 꺼져 있으면 저장소·싹·묘목·나무·데뷔 나무는 화면 흔적에서 빠지고 두더지·눈사람·연잎은 남는다", () => {
+    expect(WORLD_FLAGS.treeChain).toBe(false);
+    const all = [...chronicle("vic", 2026, 5, 31), ...chronicle("vic", 2026, 8, 31), ...chronicle("vic", 2026, 1, 10)];
+    const kinds = new Set(all.map((t) => t.kind));
+    expect(kinds.has("debut")).toBe(true);
+    const shown = visibleTraces(all);
+    for (const t of shown) expect(["molehill", "snowman", "lilypad"]).toContain(t.kind);
+    expect(shown.some((t) => t.kind === "molehill")).toBe(true);
+    expect(shown.some((t) => t.kind === "lilypad")).toBe(true);
+    expect(shown.some((t) => t.kind === "snowman")).toBe(true);
+  });
+});
 
 describe("world/time — 여섯 띠", () => {
   it("여름 5시 반은 새벽, 13시는 점심, 19시는 노을, 21시는 저녁, 1시는 밤", () => {

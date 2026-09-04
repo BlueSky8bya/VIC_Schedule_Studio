@@ -20,6 +20,7 @@ import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { kstHour, worldTime, worldTimeOfBand, type DayBand, type WorldTime } from "@/components/shared/ambient/world/time";
 import { weatherAt, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
 import { chronicle, chronicleDay, type Trace } from "@/components/shared/ambient/world/chronicle";
+import { visibleTraces } from "@/components/shared/ambient/world/flags";
 import { drawDepthHaze } from "@/components/shared/ambient/world/view";
 
 export type Quality = 0 | 1 | 2;
@@ -96,7 +97,7 @@ type AmbientDebug = {
   forceLoad: (v: number | null) => void;
   hot: Frame["hot"];
   /** 세계 상태(띠·날씨·날·흔적 수) */
-  world: () => { band: string; hour: number; weather: string; prev: string; date: string; traces: Record<string, number> };
+  world: () => { band: string; hour: number; weather: string; prev: string; date: string; traces: Record<string, number>; chronicle: Record<string, number> };
   /** 검증용 강제(시각·날씨·날) — null이면 실제로 복귀 */
   forceWorld: (f: WorldCtx["force"] | null) => void;
 };
@@ -189,9 +190,12 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     const key = `${world.slug}:${world.year}-${world.month}-${d}`;
     if (key !== traceKey) {
       traceKey = key;
-      frame.traces = chronicle(world.slug, world.year, world.month, d);
+      // 연대기 전체는 chronicleAll(디버그·검증용), 화면에는 스위치(flags.ts — 나무 계열은 2026-09-04 잠시 내림)를 통과한 것만.
+      chronicleAll = chronicle(world.slug, world.year, world.month, d);
+      frame.traces = visibleTraces(chronicleAll);
     }
   };
+  let chronicleAll: Trace[] = [];
   refreshWorld();
   const scene = factory((Date.now() % 100000) + 7);
   const dbg: AmbientDebug = {
@@ -213,7 +217,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       weather: frame.weather.now,
       prev: frame.weather.prev,
       date: `${frame.date.y}-${frame.date.m}-${frame.date.d}`,
-      traces: frame.traces.reduce<Record<string, number>>((m, t) => ((m[t.kind] = (m[t.kind] ?? 0) + 1), m), {})
+      traces: frame.traces.reduce<Record<string, number>>((m, t) => ((m[t.kind] = (m[t.kind] ?? 0) + 1), m), {}),
+      chronicle: chronicleAll.reduce<Record<string, number>>((m, t) => ((m[t.kind] = (m[t.kind] ?? 0) + 1), m), {})
     }),
     forceWorld: (f) => {
       worldForce = f;
