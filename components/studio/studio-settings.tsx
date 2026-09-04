@@ -12,6 +12,16 @@ import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import type { AmbientMode } from "@/lib/ui/motion";
 import { RhhSelect } from "@/components/studio/rhh-select";
 import { AmbientModeSegment } from "@/components/shared/ambient/showcase";
+import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
+import type { DayBand } from "@/components/shared/ambient/world/time";
+import type { Weather } from "@/components/shared/ambient/world/weather";
+import { Clock3 } from "lucide-react";
+
+/** 개발자 세계 시간 여행(2026-09-04 소유자: "개발자는 시간대에 영향받지 않고 마음대로 왔다갔다 오류 확인") — 세션 한정, 저장 안 함. */
+export type DevWorldForce = NonNullable<WorldCtx["force"]>;
+type BandOpt = "real" | DayBand;
+type WeatherOpt = "real" | Weather;
+type DayOpt = "real" | "1" | "5" | "10" | "15" | "20" | "25" | "28";
 
 export type StudioSettingsProps = {
   hapticsSupported: boolean;
@@ -34,6 +44,8 @@ export type StudioSettingsProps = {
   posterTheme: PosterThemeKey | null;
   onChangePosterTheme: (theme: PosterThemeKey) => void;
   posterThemeSaving: boolean;
+  // 개발자 세계 시간 여행 — 개발자 계정(실제 역할)일 때만 넘긴다. null이면 줄을 그리지 않는다(관리자·시청자).
+  devWorld?: { force: DevWorldForce; onChange: (force: DevWorldForce) => void } | null;
 };
 
 export function StudioSettingsList({
@@ -50,7 +62,8 @@ export function StudioSettingsList({
   onChangeGfxPref,
   posterTheme,
   onChangePosterTheme,
-  posterThemeSaving
+  posterThemeSaving,
+  devWorld = null
 }: StudioSettingsProps) {
   return (
     <>
@@ -164,6 +177,76 @@ export function StudioSettingsList({
         </div>
       ) : null}
       {/* (멤버 관리 입구는 기능 철수(2026-09-04, ADR-0018)로 제거.) */}
+      {/* 개발자 세계 시간 여행(PLAN-20260904-003) — 띠·날씨·날을 실제와 무관하게 강제해 연대기·빛 톤·날씨 훅을 검사한다. 개발자 계정만,
+          세션 한정(저장 안 함), 관리자·시청자엔 줄 자체가 없다. 연·달은 달력 이동으로 오간다. */}
+      {devWorld ? (
+        <>
+          <div className="role-help-haptics rhh-ambient rhh-dev">
+            <span className="rhh-label">
+              <Clock3 aria-hidden="true" size={14} />
+              세계 시간대 <em className="rhh-dev-tag">개발자</em>
+            </span>
+            <RhhSelect<BandOpt>
+              ariaLabel="세계 시간대 강제(개발자)"
+              dataAct="dev-world-band"
+              onChange={(v) => devWorld.onChange({ ...devWorld.force, band: v === "real" ? undefined : v })}
+              options={[
+                { value: "real", label: "실제" },
+                { value: "dawn", label: "새벽" },
+                { value: "morning", label: "아침" },
+                { value: "noon", label: "점심" },
+                { value: "dusk", label: "노을" },
+                { value: "evening", label: "저녁" },
+                { value: "night", label: "밤" }
+              ]}
+              value={devWorld.force.band ?? "real"}
+            />
+          </div>
+          <div className="role-help-haptics rhh-ambient rhh-dev">
+            <span className="rhh-label">
+              <Clock3 aria-hidden="true" size={14} />
+              세계 날씨 <em className="rhh-dev-tag">개발자</em>
+            </span>
+            <RhhSelect<WeatherOpt>
+              ariaLabel="세계 날씨 강제(개발자)"
+              dataAct="dev-world-weather"
+              onChange={(v) => devWorld.onChange({ ...devWorld.force, weather: v === "real" ? undefined : v })}
+              options={[
+                { value: "real", label: "실제(날짜 시드)" },
+                { value: "clear", label: "맑음" },
+                { value: "cloud", label: "흐림" },
+                { value: "rain", label: "비" },
+                { value: "snow", label: "눈" },
+                { value: "fog", label: "안개" },
+                { value: "wind", label: "바람" }
+              ]}
+              value={devWorld.force.weather ?? "real"}
+            />
+          </div>
+          <div className="role-help-haptics rhh-ambient rhh-dev">
+            <span className="rhh-label">
+              <Clock3 aria-hidden="true" size={14} />
+              세계 날 <em className="rhh-dev-tag">개발자</em>
+            </span>
+            <RhhSelect<DayOpt>
+              ariaLabel="세계 날 강제(개발자)"
+              dataAct="dev-world-day"
+              onChange={(v) => devWorld.onChange({ ...devWorld.force, day: v === "real" ? undefined : Number(v) })}
+              options={[
+                { value: "real", label: "실제(오늘/말일/1일)" },
+                { value: "1", label: "1일" },
+                { value: "5", label: "5일" },
+                { value: "10", label: "10일" },
+                { value: "15", label: "15일" },
+                { value: "20", label: "20일" },
+                { value: "25", label: "25일" },
+                { value: "28", label: "28일" }
+              ]}
+              value={devWorld.force.day !== undefined ? (String(devWorld.force.day) as DayOpt) : "real"}
+            />
+          </div>
+        </>
+      ) : null}
     </>
   );
 }

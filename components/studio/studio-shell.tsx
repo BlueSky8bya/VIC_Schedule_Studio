@@ -33,7 +33,7 @@ import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
-import { StudioSettingsList } from "@/components/studio/studio-settings";
+import { StudioSettingsList, type DevWorldForce } from "@/components/studio/studio-settings";
 import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
 import { useRouter } from "next/navigation";
 import {
@@ -953,6 +953,10 @@ export function StudioShell({
   }, []);
   // 계절 배경 세 상태(켜짐·흐리게·끔, 2026-09-04). 상태의 진실은 <html data-ambient>(lib/ui/motion.ts) — 설정 셀렉트, 아바타
   // 자리·시청자 미리보기 레일의 순환 버튼, 페인트-전 스크립트가 전부 그 속성을 쓰므로 여기선 속성 변화를 지켜보며 따라간다.
+  // 개발자 세계 시간 여행(2026-09-04 소유자): 개발자 계정만 띠·날씨·날을 강제해 연대기·빛 톤·날씨 훅을 검사한다 — 세션 한정, 저장 없음,
+  // 관리자·시청자는 실제 시간만. fixture 강제(ambientWorldForce)가 있으면 그것이 우선.
+  const [devWorld, setDevWorld] = useState<DevWorldForce>({});
+  const worldForce = ambientWorldForce ?? (isDeveloper && (devWorld.band || devWorld.weather || devWorld.day !== undefined) ? devWorld : undefined);
   const [ambientModeState, setAmbientModeState] = useState<AmbientMode>("on");
   useEffect(() => {
     const read = () => setAmbientModeState(ambientMode());
@@ -1191,6 +1195,7 @@ export function StudioShell({
         posterTheme={actor.role === "owner" ? posterThemeLocal : null}
         posterThemeSaving={posterThemeSaving}
         reduceMotion={reduceMotion}
+        devWorld={isDeveloper ? { force: devWorld, onChange: setDevWorld } : null}
       />
     );
   }
@@ -5861,6 +5866,7 @@ export function StudioShell({
           // 하트 세션 델타의 소유자 — 같은 브라우저 탭에서 개발자→관리자처럼 계정을 바꿔 미리보기를
           // 열면 이전 계정의 낙관적 하트가 섞이지 않게 계정별로 나눈다(accountSwitch가 아니라 표시 없음).
           accountEmail={actor.email}
+          ambientWorldForce={worldForce}
           avatarSlot={avatarRoleOk}
           initialMonth={view.month}
           initialNarrow={isNarrow}
@@ -6071,7 +6077,7 @@ export function StudioShell({
           컴포넌트). 물결은 제 배경이 없는 완전 투명 컨테이너라 body의 아이보리(--paper) 위에 옅은 결만
           얹고("모래 위 얕은 물결"), 오늘(KST) 계절 레이어가 그 위에. 보이는 조건은 CSS가 판단
           (app/metal-water.css `.gs-tide`, app/ambient.css `.gs-season`). */}
-      <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} />
+      <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={worldForce} year={view.year} />
       <header className="studio-topbar">
         {/* 왼쪽 칸: 큰 제목 + 그 옆에 배포 버전 배지(헤더 세로 중앙, 클릭=버전 복사). */}
         <div className="studio-left">

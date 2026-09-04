@@ -55,3 +55,10 @@ export function worldTime(season: SeasonKey, hour: number = kstHour()): WorldTim
   const band = bandOf(hour, season);
   return { hour, band, night: band === "night" || band === "evening", tint: LIGHT[band] };
 }
+
+/** 띠를 직접 강제(개발자 시간 여행) — 시각은 그 띠의 대표 시각으로 맞춘다. */
+export function worldTimeOfBand(season: SeasonKey, band: DayBand): WorldTime {
+  const { rise, set } = SUN[season];
+  const hour = band === "dawn" ? rise - 0.5 : band === "morning" ? 9 : band === "noon" ? 13 : band === "dusk" ? set - 0.5 : band === "evening" ? set + 1.5 : 1;
+  return { hour, band, night: band === "night" || band === "evening", tint: LIGHT[band] };
+}

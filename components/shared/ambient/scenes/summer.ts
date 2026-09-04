@@ -26,7 +26,7 @@
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawSprite, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
-import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
+import { bakeShore, bakeTraces, drawTraces, SHORE_V, type TraceBakes } from "../world/traces-draw";
 
 type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: number }; // n = 진행 직각 단위벡터
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
@@ -119,7 +119,9 @@ export function createSummer(seed: number): Scene {
   let loH = 0;
   let stampSpr: HTMLCanvasElement | null = null;
   let shadow: HTMLCanvasElement | null = null;
-  let traces: TraceBakes | null = null; // 연대기(연잎) 렌더 스프라이트
+  let traces: TraceBakes | null = null; // 연대기(연잎·기슭의 데뷔 나무) 렌더 스프라이트
+  let shore: HTMLCanvasElement | null = null; // 위 띠의 기슭(뭍) — 땅 흔적이 물 위에 떠 보이지 않게
+  let shoreW = 0;
   let rainRings = 0;
   let duckSpr: Sprite | null = null;
   let duckSub: Sprite | null = null; // 물속 부분용 — 물빛으로 물든 사본(수면선 아래를 이걸로 그린다)
@@ -291,6 +293,9 @@ export function createSummer(seed: number): Scene {
     tubes++;
   }
   const radiusOf = (p: Prop) => (p.kind === "duck" ? 27 * p.k : 46);
+  // 물가 선(캔버스 px) — 위 띠는 뭍(기슭)이라 물고기·오리·빗방울·글린트는 이 아래에서만.
+  const shoreY = () => h * SHORE_V + 6;
+  const waterY = (r: number) => shoreY() + r * (h - shoreY());
   // 물고기 수 = 여력에 비례(2026-09-04 사용자: "컴퓨터 능력에 따라 늘리거나 줄여라") × 화면 넓이. 가볍게(load .3)도 4마리쯤은
   // 보인다(lite는 계절이 알아보여야 한다). 큰 놈은 .6부터 하나, .9부터 둘. 늘 땐 가장자리에서 헤엄쳐 들어오고 줄 땐 가장자리로
   // 나간다(순간 등장·소멸 금지 — 소품 원칙).
@@ -304,14 +309,15 @@ export function createSummer(seed: number): Scene {
   function newFish(big: boolean): Fish {
     const cruise = big ? 16 + rand() * 8 : 26 + rand() * 30; // 개체마다 다른 걸음 — 큰 놈은 느긋하게
     // 가장자리 밖에서 안쪽을 향해 들어온다.
-    const e = Math.floor(rand() * 4);
+    // 위쪽은 기슭이라 왼·오른·아래 가장자리에서만 들어온다.
+    const e = Math.floor(rand() * 3);
     const m = 70;
     const x = e === 0 ? -m : e === 1 ? w + m : rand() * w;
-    const y = e === 2 ? -m : e === 3 ? h + m : rand() * h;
+    const y = e === 2 ? h + m : waterY(rand());
     return {
       x,
       y,
-      hd: Math.atan2(h * (0.2 + rand() * 0.6) - y, w * (0.2 + rand() * 0.6) - x),
+      hd: Math.atan2(waterY(0.2 + rand() * 0.6) - y, w * (0.2 + rand() * 0.6) - x),
       spd: cruise,
       cruise,
       k: big ? 1.15 + rand() * 0.2 : 0.5 + rand() * 0.3,
@@ -382,6 +388,10 @@ export function createSummer(seed: number): Scene {
       h = f.h;
       bake();
       ensureLo(f);
+      if (!shore || shoreW !== w) {
+        shore = bakeShore(w, h);
+        shoreW = w;
+      }
       if (!props.some((p) => p.kind === "duck")) {
         const d = newProp("duck", f.t);
         d.x = w * (0.3 + rand() * 0.4);
@@ -450,7 +460,7 @@ export function createSummer(seed: number): Scene {
       }
       // 비(날짜 시드 날씨) — 수면 곳곳에 작은 빗방울 고리. 여력에 따라 초당 4~14개. 물고기는 비 오면 수면으로 올라온다(아래).
       if (f.weather.now === "rain" && load >= 0.2 && rings.length < 160 && rand() < dt * lerp(4, 14, load)) {
-        ring(rand() * w, rand() * h, 8 + rand() * 12, 0.28, 0, 0.9 + rand() * 0.5, 0.9);
+        ring(rand() * w, waterY(rand()), 8 + rand() * 12, 0.28, 0, 0.9 + rand() * 0.5, 0.9);
         rainRings++;
       }
       // 먹이(누른 자리) — 12초 또는 다 먹히면 사라진다.
@@ -604,6 +614,8 @@ export function createSummer(seed: number): Scene {
               }
               if (t > q.until) duckSet(q, "drift", 3 + rand() * 3, t);
             }
+            // 기슭(위 띠)엔 오르지 않는다 — 물가 선 아래로 살살 밀려난다.
+            if (q.y < shoreY() + 26) q.dvy += 46;
             // 핫 존(달력·포스터 표면) 위에선 집을 수 없고 칸을 가리니 — 가장 가까운 가장자리 밖으로 살살 밀려난다.
             const hot = f.hot;
             if (hot) {
@@ -876,20 +888,24 @@ export function createSummer(seed: number): Scene {
             const m = 60;
             if (q.x < -m) q.x = w + m - 1;
             else if (q.x > w + m) q.x = -m + 1;
-            if (q.y < -m) q.y = h + m - 1;
-            else if (q.y > h + m) q.y = -m + 1;
+            // 위쪽은 기슭(뭍) — 물가 선에서 튕겨 돌아온다(모래 위 그림자 금지). 아래로 나가면 물가 바로 아래로 돌아온다.
+            const sy = shoreY() + 8;
+            if (q.y < sy) {
+              q.y = sy;
+              if (Math.sin(q.hd) < 0) q.hd = -q.hd;
+            } else if (q.y > h + m) q.y = sy + 1;
           }
         }
       }
       // ④ 물방울 — 여력 0.5부터 3~8초에 하나, 1.4초 동안 커졌다 톡 터진다.
       if (load >= 0.5 && t > nextBubble) {
-        bubbles.push({ x: 40 + rand() * (w - 80), y: 40 + rand() * (h - 80), t0: t });
+        bubbles.push({ x: 40 + rand() * (w - 80), y: waterY(0.05 + rand() * 0.9), t0: t });
         nextBubble = t + 3 + rand() * 5;
       }
       for (let i = bubbles.length - 1; i >= 0; i--) if (t - bubbles[i].t0 > 1.6) bubbles.splice(i, 1);
-      // ⑤ 햇빛 반짝임 — 여력 0.3부터 6~14개.
+      // ⑤ 햇빛 반짝임 — 여력 0.3부터 6~14개(물 위에만).
       const wantGl = load >= 0.3 ? Math.round(lerp(6, 14, load)) : 0;
-      while (glints.length < wantGl) glints.push({ x: rand() * w, y: rand() * h, ph: rand() * TAU, r: 1.6 + rand() * 1.8 });
+      while (glints.length < wantGl) glints.push({ x: rand() * w, y: waterY(rand()), ph: rand() * TAU, r: 1.6 + rand() * 1.8 });
       if (glints.length > wantGl) glints.length = wantGl;
       // 소품끼리 겹치지 않게(원 분리).
       for (let i = 0; i < props.length; i++) {
@@ -1061,8 +1077,9 @@ export function createSummer(seed: number): Scene {
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = "medium";
       g.drawImage(lo.c, 0, 0, f.w, f.h);
-      // 연대기 — 연잎 군락(6→8월 넓어진다). 물 위 소품이라 항적 위, 생물 아래.
-      if (traces) drawTraces(g, f, "summer", traces);
+      // 기슭(위 띠의 뭍) + 연대기 — 연잎 군락(6→8월 넓어진다)은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
+      if (shore) g.drawImage(shore, 0, 0);
+      if (traces) drawTraces(g, f, "summer", traces, { landOnShore: true });
       // 햇빛 반짝임 — 물결 위의 작은 별(숨쉬듯 밝아졌다 사라짐), 본 캔버스에 또렷하게.
       for (const gl of glints) {
         const a = Math.max(0, Math.sin(t * 1.4 + gl.ph));

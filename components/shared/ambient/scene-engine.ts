@@ -17,7 +17,7 @@
 
 import { gfxPref } from "@/lib/ui/gfx";
 import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
-import { kstHour, worldTime, type WorldTime } from "@/components/shared/ambient/world/time";
+import { kstHour, worldTime, worldTimeOfBand, type DayBand, type WorldTime } from "@/components/shared/ambient/world/time";
 import { weatherAt, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
 import { chronicle, chronicleDay, type Trace } from "@/components/shared/ambient/world/chronicle";
 
@@ -29,7 +29,8 @@ export type WorldCtx = {
   season: SeasonKey;
   year: number;
   month: number;
-  force?: { hour?: number; weather?: Weather; day?: number };
+  /** 검증·개발자 시간 여행용 강제값 — band가 있으면 hour보다 우선. */
+  force?: { hour?: number; band?: DayBand; weather?: Weather; day?: number };
 };
 
 export type Pointer = {
@@ -178,9 +179,9 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   const refreshWorld = () => {
     const today = kstToday();
     const d = worldForce?.day ?? chronicleDay(world.year, world.month, today);
-    const hour = worldForce?.hour ?? kstHour();
     frame.date = { y: world.year, m: world.month, d };
-    frame.time = worldTime(world.season, hour);
+    frame.time = worldForce?.band ? worldTimeOfBand(world.season, worldForce.band) : worldTime(world.season, worldForce?.hour ?? kstHour());
+    const hour = frame.time.hour;
     frame.weather = worldForce?.weather
       ? { now: worldForce.weather, prev: worldForce.weather, segment: hour < 13 ? 0 : 1 }
       : weatherAt(world.slug, world.season, world.year, world.month, d, hour);

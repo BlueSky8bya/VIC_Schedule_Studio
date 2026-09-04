@@ -29,6 +29,7 @@ import {
 import dynamic from "next/dynamic";
 import { logActivity } from "@/lib/activity/client";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
+import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import { pickAmbient } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
@@ -148,6 +149,8 @@ type PublicPosterProps = {
   avatarFixed?: "left" | "right";
   // 계절 배경 강제(fixture/검증 전용, ADR-0017) — 실제 `/`는 넘기지 않는다(오늘 KST 절기로 판정).
   ambientForce?: SeasonKey | null;
+  // 세계 강제(편집실 미리보기 — 개발자 시간 여행이 미리보기에도 이어지게). 실제 `/`는 넘기지 않는다.
+  ambientWorldForce?: WorldCtx["force"];
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -830,6 +833,7 @@ export function PublicPoster({
   avatarSide: avatarSideProp,
   avatarFixed,
   ambientForce,
+  ambientWorldForce,
   onAvatarToggle,
   onAvatarSide
 }: PublicPosterProps) {
@@ -4284,7 +4288,7 @@ export function PublicPoster({
     >
       {/* 앰비언트 배경(ADR-0016 물결 + ADR-0017 계절, components/shared/ambient — 편집실과 같은
           컴포넌트). 표면(data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
-      <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} year={view.year} />
+      <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} />
       <ShowcaseExit />
       {/* (라이브 카드는 우측 레일 안 — 정보 카드와 태그 필터 사이 — 로 이사(2026-07-31).
           모바일 아젠다는 하단 '오늘'→LIVE 버튼이 담당해 별도 플로팅 없음.) */}

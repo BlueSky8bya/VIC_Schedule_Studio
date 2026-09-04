@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { bandOf, worldTime } from "@/components/shared/ambient/world/time";
 import { weatherAt } from "@/components/shared/ambient/world/weather";
-import { CHRONICLE_EPOCH, TREE_CAP, TREE_LIFESPAN, chronicle, chronicleDay, cycleOf } from "@/components/shared/ambient/world/chronicle";
+import { CHRONICLE_EPOCH, TREE_CAP, TREE_LIFESPAN, chronicle, chronicleDay, cycleOf, debutHeightCm } from "@/components/shared/ambient/world/chronicle";
 import { SpawnDirector, type SpawnCtx } from "@/components/shared/ambient/world/rarity";
 import { hashSeed } from "@/components/shared/ambient/world/seed";
 
@@ -91,16 +91,42 @@ describe("world/chronicle — 도토리 하나의 연대기", () => {
     const young = chronicle("vic", 2036, 10, 1).filter((t) => t.kind === "tree" && t.stage <= 2);
     const later = chronicle("vic", 2039, 10, 1).filter((t) => t.kind === "tree");
     for (const t of young) expect(later.some((f) => f.id === t.id)).toBe(true);
-    // 2025년에 선 나무(2024 주기)는 2032년 가을엔 떠났다.
-    const first = chronicle("vic", 2025, 10, 1).filter((t) => t.kind === "tree");
+    // 첫 도토리 나무(2025 주기)는 2026 가을에 서고 2033 가을엔 떠났다.
+    const first = chronicle("vic", 2026, 10, 1).filter((t) => t.kind === "tree");
     expect(first.length).toBeGreaterThan(0);
-    const gone = chronicle("vic", 2025 + TREE_LIFESPAN + 1, 10, 1).filter((t) => t.kind === "tree");
+    const gone = chronicle("vic", 2026 + TREE_LIFESPAN + 1, 10, 1).filter((t) => t.kind === "tree");
     for (const t of first) expect(gone.some((f) => f.id === t.id)).toBe(false);
     // 떠난 자리만큼 새 싹이 난다 — 2040년까지 누적 나무 id가 상한보다 많다.
     const ids = new Set<string>();
-    for (let y = 2025; y <= 2040; y++) for (const t of chronicle("vic", y, 10, 1)) if (t.kind === "tree") ids.add(t.id);
+    for (let y = 2026; y <= 2040; y++) for (const t of chronicle("vic", y, 10, 1)) if (t.kind === "tree") ids.add(t.id);
     expect(ids.size).toBeGreaterThan(TREE_CAP);
+    // 데뷔 전엔 도토리 나무가 없다(첫 가을 = 2025).
     expect(chronicle("vic", CHRONICLE_EPOCH, 10, 1).filter((t) => t.kind === "tree").length).toBe(0);
+  });
+  it("세계는 2023년 5월에 생긴다 — 그 전엔 흔적이 없고, 그 달부터 데뷔 나무의 씨앗(흙더미)이 있다", () => {
+    expect(chronicle("vic", 2023, 4, 30)).toEqual([]);
+    const seed = chronicle("vic", 2023, 5, 1).find((t) => t.kind === "debut");
+    expect(seed?.stage).toBe(0);
+    expect(chronicle("vic", 2025, 9, 30).find((t) => t.kind === "debut")?.stage).toBe(0);
+  });
+  it("데뷔 나무 — 2025-10-01 싹(4cm), 그 해 겨울 14cm, 2026-09-04 ≈ 45cm, 겨울엔 자라지 않고, 해마다 커져 20m에서 멈춘다", () => {
+    expect(debutHeightCm(2025, 10, 1)).toBe(4);
+    expect(debutHeightCm(2025, 12, 30)).toBe(14);
+    const now = debutHeightCm(2026, 9, 4);
+    expect(now).toBeGreaterThanOrEqual(38);
+    expect(now).toBeLessThanOrEqual(50);
+    expect(debutHeightCm(2026, 12, 1)).toBe(debutHeightCm(2027, 3, 1)); // 겨울 정지
+    let prev = 0;
+    for (let y = 2025; y <= 2060; y++) {
+      for (const m of [1, 4, 7, 10]) {
+        const h = debutHeightCm(y, m, 15);
+        expect(h).toBeGreaterThanOrEqual(prev);
+        prev = h;
+      }
+    }
+    expect(debutHeightCm(2030, 10, 1)).toBeGreaterThan(280);
+    expect(debutHeightCm(2090, 10, 1)).toBe(2000);
+    expect(chronicle("vic", 2026, 9, 4).find((t) => t.kind === "debut")?.stage).toBe(now);
   });
   it("눈사람은 12월 20일 공 하나, 27일 완성, 2월 25일 사라진다; 연잎은 6→8월 늘어난다", () => {
     const st = (y: number, m: number, d: number) => chronicle("vic", y, m, d).find((t) => t.kind === "snowman")?.stage ?? 0;
@@ -119,7 +145,7 @@ describe("world/chronicle — 도토리 하나의 연대기", () => {
         for (const t of chronicle("vic", y, m, 20)) {
           const inBand = t.v <= 0.1 || t.v >= 0.9 || t.u <= 0.1 || t.u >= 0.9;
           expect(inBand).toBe(true);
-          if (t.kind === "tree" || t.kind === "cache" || t.kind === "sprout" || t.kind === "sapling") expect(t.v).toBeLessThanOrEqual(0.1);
+          if (t.kind === "tree" || t.kind === "cache" || t.kind === "sprout" || t.kind === "sapling" || t.kind === "debut") expect(t.v).toBeLessThanOrEqual(0.1);
         }
       }
     }

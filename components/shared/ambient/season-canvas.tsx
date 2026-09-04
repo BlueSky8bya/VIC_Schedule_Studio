@@ -20,10 +20,12 @@ export function SeasonCanvas({ season, slug, year, month, force }: { season: Sea
   const ref = useRef<HTMLCanvasElement | null>(null);
   // 강제값은 검증용(fixture) — 객체 정체성이 아니라 값으로 비교해 불필요한 재마운트를 막는다.
   const forceKey = force ? JSON.stringify(force) : "";
+  const forceRef = useRef(forceKey);
+  forceRef.current = forceKey;
   useEffect(() => {
     let alive = true;
     let dispose: (() => void) | null = null;
-    const parsed = forceKey ? (JSON.parse(forceKey) as WorldCtx["force"]) : undefined;
+    const parsed = forceRef.current ? (JSON.parse(forceRef.current) as WorldCtx["force"]) : undefined;
     void LOADERS[season]().then((factory) => {
       if (!alive || !ref.current) return;
       dispose = mountScene(ref.current, factory, { slug, season, year, month, force: parsed });
@@ -32,6 +34,11 @@ export function SeasonCanvas({ season, slug, year, month, force }: { season: Sea
       alive = false;
       dispose?.();
     };
-  }, [season, slug, year, month, forceKey]);
+  }, [season, slug, year, month]);
+  // 강제값이 바뀌면 장면을 다시 만들지 않고 엔진에 바로 넣는다(개발자 시간 여행 — 바탕을 다시 굽지 않는다).
+  useEffect(() => {
+    const parsed = forceKey ? (JSON.parse(forceKey) as WorldCtx["force"]) : null;
+    window.__vicAmbient?.forceWorld(parsed);
+  }, [forceKey]);
   return <canvas aria-hidden="true" className={`gs-season gs-season-${season}`} data-season={season} ref={ref} />;
 }

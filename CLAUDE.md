@@ -144,10 +144,15 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   day: today / last day of a past month / 1st of a future month), `time` (six KST bands — 새벽·아침·점심·노을·저녁·밤 by seasonal
   sunrise/sunset — with a light tint the engine paints over the scene: none by day, grey-violet dusk, blue-grey evening/night, never
   orange), `weather` (deterministic per calendar slug + date + am/pm segment from a seeded rng, seasonal tables; no real weather API —
-  owner decision), and `traces` from `chronicle(slug, y, m, d)`: a pure deterministic function that replays the world from 2024 —
-  autumn acorn caches → visible again at the Feb 15 thaw → spring sprouts (60%) → summer saplings → autumn trees (age, cap 6, top
-  hedgerow band) · molehills → summer grass patches · snowman built Dec 20→27, melting Feb 15→25 · lily pads 3→12. Everyone sees the
-  same world (no DB); a viewer's own marks stay in localStorage. Rarity uses `SpawnDirector` (5 tiers, concurrency caps, cooldowns,
+  owner decision), and `traces` from `chronicle(slug, y, m, d)`: a pure deterministic function that replays the world from its birth
+  **2023-05 (Tori's first appearance)** — the **debut tree**: one acorn buried 2023-05 (mound), sprouting **2025-10-01 (streamer debut)**
+  and growing at a real oak's pace from then on (4→14 cm the first autumn, then only in the Apr–Sep growing season: ≈45 cm after a
+  year, ≈3 m at 5, ≈11 m at 20, cap 20 m; 🌱 <15 cm, 🌿 <80 cm, then a canopy of radius ≈ height/12, bare in winter; fixed spot
+  u .78 v .062; past months show its height then, future months its projected height) · the acorn cycle from autumn 2025: caches →
+  visible again at the Feb 15 thaw → spring sprouts (60%) → summer saplings → autumn trees (age, cap 6, lifespan 6, top hedgerow band)
+  · molehills → summer grass patches · snowman built Dec 20→27, melting Feb 15→25 · lily pads 3→12. Everyone sees the same world (no
+  DB); a viewer's own marks stay in localStorage. **Only the developer account** can force band/weather/day (settings modal rows
+  "세계 시간대·날씨·날(개발자)", session-only, carried into the viewer preview); owner and viewers always see real time. Rarity uses `SpawnDirector` (5 tiers, concurrency caps, cooldowns,
   pity timer, one legendary per session, never two rare events at once; legendaries are pure probability). Species live in
   `species.ts` (8 live + 20 priority). `traces-draw.ts` renders traces (plants/props may be ours; animals never). Fixture:
   `?y=&m=&day=&hour=&weather=`; debug `__vicAmbient.world()` / `forceWorld()`.

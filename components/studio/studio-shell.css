@@ -8481,6 +8481,18 @@ html[data-reduce-motion] .modal-close:active {
   max-width: 160px;
   min-height: 32px;
 }
+/* 개발자 세계 시간 여행 줄 — 라벨 옆 작은 각인 태그로 '개발자 전용'을 밝힌다(관리자·시청자엔 줄 자체가 없다). */
+.rhh-dev-tag {
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--gs-metal-line, var(--line, #e6e2f0));
+  border-radius: var(--gs-metal-radius, 6px);
+  font-size: var(--text-caption);
+  font-style: normal;
+  font-weight: 700;
+  color: var(--ink-soft, #4a4466);
+  opacity: 0.8;
+}
 
 /* 시청자 화면 전체보기: 스튜디오 대신 공개 화면만 꽉 채워 보여준다. */
 .viewer-fullscreen {
