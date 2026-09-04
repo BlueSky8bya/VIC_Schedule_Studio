@@ -124,6 +124,8 @@ export function createAutumn(seed: number): Scene {
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(먼 언덕·작은 나무 줄) — 크기별 한 번
   // 땅의 위 끝(지평선) — 잎·소품·다람쥐·돌풍은 이 아래에서만 산다(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 떠다닌다").
   const gy = () => horizonY(h);
+  /** 작은 식물의 추가 원근 테이퍼 — 0.3(지평선) → 1.0(발치). depthScale(0.6~1.0)만으로는 지평선의 풀이 근경의 0.75배로 남는다. */
+  const smallK = (y: number) => 0.3 + 0.7 * Math.min(1, Math.max(0, (y - gy()) / Math.max(1, h - gy())));
   const groundY = (r: number) => gy() + r * (h - gy());
   let grabbed = -1;
   let gox = 0;
@@ -253,8 +255,9 @@ export function createAutumn(seed: number): Scene {
     g.scale(dpr, dpr);
     // 흙 바탕 — 이게 없어 지금까지 "가을 땅"이 페이지의 흰색이었고, 낙엽·잔가지가 흰 종이 위의 점으로 보였다.
     const bg = g.createLinearGradient(0, gy(), 0, h);
-    bg.addColorStop(0, "#d3c7a8");
-    bg.addColorStop(1, "#85795a");
+    // 근경을 확실히 낮춘다(옛 #85795a는 원경 #d3c7a8과 명도 폭이 좁아 화면 전체가 단일 카키였다).
+    bg.addColorStop(0, "#cdc09f");
+    bg.addColorStop(1, "#5b5340");
     g.fillStyle = bg;
     g.fillRect(0, 0, w, h);
     const patches = Math.round((w * h) / 42000);
@@ -286,13 +289,13 @@ export function createAutumn(seed: number): Scene {
       const spread = 26 + g0() * 54;
       const x = clumpX + (g0() - 0.5) * spread * 2;
       const y = clumpY + (g0() - 0.5) * spread;
-      drawProp(g, groundArt, "grass-dry", x, y, { k: (0.55 + g0() * 1.0) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.75 + g0() * 0.25 });
+      drawProp(g, groundArt, "grass-dry", x, y, { k: (0.55 + g0() * 1.0) * depthScale(y, h) * smallK(y), r: g0(), flip: g0() < 0.5, alpha: 0.75 + g0() * 0.25 });
     }
     const twigs = Math.round((w * h) / 80000);
     for (let i = 0; i < twigs; i++) {
       const x = g0() * w;
       const y = groundY(g0());
-      drawProp(g, groundArt, "twig", x, y, { k: (0.8 + g0() * 0.8) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
+      drawProp(g, groundArt, "twig", x, y, { k: (0.8 + g0() * 0.8) * depthScale(y, h) * smallK(y), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
     const pebbles = Math.round((w * h) / 130000);
     for (let i = 0; i < pebbles; i++) {
@@ -325,7 +328,7 @@ export function createAutumn(seed: number): Scene {
         const n2 = 2 + Math.floor(g0() * 3);
         for (let i = 0; i < n2; i++) {
           const y = groundY(0.02 + g0() * 0.16);
-          spots.push({ x: cx2 + (g0() - 0.5) * w * 0.16, y, k: (0.55 + g0() * 0.55) * depthScale(y, h) });
+          spots.push({ x: cx2 + (g0() - 0.5) * w * 0.16, y, k: (0.85 + g0() * 0.6) * depthScale(y, h) });
         }
       }
       // 코앞 한 그루 — 화면 아래에서 잘린다(가까움의 신호).
@@ -336,7 +339,7 @@ export function createAutumn(seed: number): Scene {
         drawProp(g, groundArt, g0() < 0.25 ? "tree-pine-autumn" : "tree-oak-autumn", t2.x, t2.y, { k: t2.k, r: g0(), flip: g0() < 0.5 });
         // 발치의 낙엽 더미 — 여기가 낙엽의 출처다.
         for (let q = 0; q < 5; q++) {
-          softBlob(g, t2.x + (g0() - 0.5) * 130 * t2.k, t2.y + (g0() * 0.6) * 60 * t2.k, (26 + g0() * 40) * t2.k, g0() < 0.5 ? "122 92 60" : "110 76 66", 0.2, 0, GROUND_SQUASH);
+          softBlob(g, t2.x + (g0() - 0.5) * 170 * t2.k, t2.y + (g0() * 0.7) * 80 * t2.k, (40 + g0() * 70) * t2.k, g0() < 0.5 ? "94 70 44" : "84 56 50", 0.3, 0, GROUND_SQUASH);
         }
       }
     }

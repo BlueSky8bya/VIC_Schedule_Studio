@@ -248,14 +248,25 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       drawProp(g, groundArt, "clover", x, y, { k: (0.8 + g0() * 0.5) * depthScale(y, h) * smallK(y), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
     daisies.length = 0;
-    const nd = Math.round((w * h) / (summer ? 200000 : 80000)); // 여름 초원은 꽃이 드물다
+    const nd = Math.round((w * h) / (summer ? 200000 : 46000)); // 여름 초원은 꽃이 드물다
+    // 꽃은 **군락**으로 핀다 — 화면 전체에 균일 간격으로 흩뿌리면 종이 조각(콘페티)으로 읽힌다(사이클3 미관 #5).
+    let fcx = 0;
+    let fcy = 0;
+    let fleft = 0;
     const flowerK = SIZE.flower / 18;
     for (let i = 0; i < nd; i++) {
-      const x = g0() * w;
-      const y = groundY(g0());
+      if (fleft <= 0) {
+        fcx = g0() * w;
+        fcy = groundY(0.08 + g0() * 0.9);
+        fleft = 2 + Math.floor(g0() * 6);
+      }
+      fleft--;
+      const spread = 30 + g0() * 70;
+      const x = Math.max(6, Math.min(w - 6, fcx + (g0() - 0.5) * spread * 2));
+      const y = Math.max(gy() + 6, Math.min(h - 6, fcy + (g0() - 0.5) * spread * 1.2));
       daisies.push([x, y]);
       // 데이지의 (x,y) = 꽃 얼굴(벌·나비가 앉는 자리) — 서 있는 그림은 발을 그 아래에 둔다.
-      const k = (0.9 + g0() * 0.3) * flowerK * depthScale(y, h);
+      const k = (0.9 + g0() * 0.3) * flowerK * depthScale(y, h) * smallK(y);
       drawProp(g, groundArt, "daisy", x, y + 8 * k, { k, r: g0(), flip: g0() < 0.5 });
     }
     const nPetals = Math.round((w * h) / 120000);
@@ -266,6 +277,18 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       g.fill();
     }
     // 있을 때만 놓이는 큰 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
+    // 중경 앵커 — 관목이 하나씩 흩어져 있으면 배치가 아니라 좌표 난수로 보인다(사이클3 미관 #5). 한 무리로 묶는다.
+    {
+      const cx3 = w * (0.18 + g0() * 0.64);
+      const cy3 = groundY(0.4 + g0() * 0.34);
+      for (let i = 0; i < 4; i++) {
+        const x = cx3 + (g0() - 0.5) * 190;
+        const y = cy3 + (g0() - 0.5) * 90;
+        const k = (0.9 + g0() * 0.8) * depthScale(y, h);
+        softBlob(g, x + 5 * k, y - 2, 20 * k, "70 86 58", 0.16, 0, GROUND_SQUASH * 0.5);
+        drawProp(g, groundArt, summer ? "shrub-summer" : "shrub-spring", x, y, { k, r: g0(), flip: g0() < 0.5 });
+      }
+    }
     scatterProps(g, groundArt, w, h, g0, [
       { id: summer ? "shrub-summer" : "shrub-spring", n: 3 },
       { id: "rock", n: 2 },

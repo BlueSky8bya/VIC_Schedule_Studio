@@ -365,20 +365,28 @@ export function createWinter(seed: number): Scene {
       const ridge = (x: number) => y0 + Math.sin(x * 0.0035 + i * 1.7) * amp + Math.sin(x * 0.011 + i) * amp * 0.4;
       // 구간 양 끝에서 사라지는 마스크(끊긴 자리가 보이지 않게).
       const span = (x: number) => Math.max(0, Math.min(1, Math.min(x - x0, x1 - x) / (w * 0.14)));
-      for (let x = Math.max(-20, x0); x <= Math.min(w + 20, x1); x += 12) {
-        const a = span(x) * str;
-        if (a <= 0.02) continue;
-        const yy = ridge(x);
-        const sg = g.createLinearGradient(0, yy - 22, 0, yy + 54);
-        sg.addColorStop(0, `rgb(255 255 255 / ${0.7 * a})`);
-        sg.addColorStop(0.35, `rgb(255 255 255 / ${0.2 * a})`);
-        sg.addColorStop(1, "rgb(255 255 255 / 0)");
+      // 세로 사각형을 잇대어 칠하면 **빗살**이 된다(사이클3 경계 #7) → 위·아래가 굽이치는 폴리곤 두 겹.
+      const xa = Math.max(-20, x0);
+      const xb = Math.min(w + 20, x1);
+      const band = (dTop: number, dBot: number, rgb: string, a0: number) => {
+        const mid = ridge((xa + xb) / 2);
+        const sg = g.createLinearGradient(0, mid + dTop, 0, mid + dBot);
+        sg.addColorStop(0, `rgb(${rgb} / ${a0 * str})`);
+        sg.addColorStop(1, `rgb(${rgb} / 0)`);
         g.fillStyle = sg;
-        g.fillRect(x, yy - 22, 13, 78);
-        // 그늘 입술 — 이랑 아래쪽(바람 그늘).
-        g.fillStyle = `rgb(168 190 214 / ${0.14 * a})`;
-        g.fillRect(x, yy + 2, 13, 7);
-      }
+        g.beginPath();
+        // 두께를 양 끝에서 0으로 좁혀 끝이 보이지 않게 한다(합성 마스크를 쓰면 바탕 캔버스가 지워진다).
+        for (let x = xa; x <= xb; x += 12) {
+          const y = ridge(x) + dTop * span(x);
+          if (x === xa) g.moveTo(x, y);
+          else g.lineTo(x, y);
+        }
+        for (let x = xb; x >= xa; x -= 12) g.lineTo(x, ridge(x) + dBot * span(x));
+        g.closePath();
+        g.fill();
+      };
+      band(-22, 40, "255 255 255", 0.62);
+      band(2, 12, "168 190 214", 0.16);
       // 끊어진 호 — 전폭 1.5px 선은 눈밭에 "팽팽한 철선"으로 보였다(검토 2차).
       g.strokeStyle = `rgb(176 196 218 / ${0.26 * str})`;
       g.lineWidth = 1;

@@ -43,7 +43,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
   let gdpr = 0;
   let av = -1;
   const art = new ArtSet(
-    ["tree-oak-spring", "tree-oak-summer", "tree-oak-autumn", "tree-oak-winter", "tree-pine", "tree-pine-autumn", "tree-pine-winter", "rock", "stump", "log", "mushroom", "grass-dry", "grass-tuft", "grass-tall", "daisy", "shrub-spring", "shrub-summer", "shrub-autumn", "shrub-winter"],
+    ["tree-oak-spring", "tree-oak-summer", "tree-oak-autumn", "tree-oak-winter", "tree-pine", "tree-pine-autumn", "tree-pine-winter", "rock", "stump", "log", "mushroom", "grass-dry", "grass-tuft", "grass-tall", "snow-pile", "daisy", "shrub-spring", "shrub-summer", "shrub-autumn", "shrub-winter"],
     { scaleOf: { "tree-oak-spring": 3, "tree-oak-summer": 3, "tree-oak-autumn": 3, "tree-oak-winter": 3, "tree-pine": 3, "tree-pine-winter": 3 } }
   );
   const trees: { x: number; y: number; R: number; pine?: boolean }[] = [];
@@ -209,6 +209,14 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           if (!pen) { g.moveTo(x, ridge(x)); pen = true; } else g.lineTo(x, ridge(x));
         }
         g.stroke();
+      }
+      if (season === "winter") {
+        // 겨울 언덕은 "색만 식힌 가을"이었다(사이클3 현실성 #5) — 능선 바람 그늘에 눈이 쌓인다.
+        for (let i = 0; i < 26; i++) {
+          const y = groundY(0.14 + g0() * 0.84);
+          softBlob(g, g0() * w, y, (36 + g0() * 90) * depthScale(y, h), "252 255 255", 0.34 + g0() * 0.3, 0, GROUND_SQUASH);
+        }
+        scatterProps(g, art, w, h, g0, [{ id: "snow-pile", n: 6, band: "any" }]);
       }
       const tufts = Math.round((w * h) / (season === "winter" ? 6400 : 3400));
       clumpLeft = 0;
@@ -393,7 +401,11 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           if (i2 > 3 && Math.abs(Math.cos(phase)) < 0.16) bends.push({ i: i2, side: Math.sin(phase) > 0 ? 1 : -1 });
         }
       }
-      const halfAt = (i2: number) => chW(Math.min(1, i2 / nS)) / 2;
+      // 상류 끝 세 점은 폭을 0으로 좁힌다 — 안 그러면 지평선 아래에서 둥근 마개로 뚝 끝난다(사이클3 현실성 #3).
+      const halfAt = (i2: number) => (chW(Math.min(1, i2 / nS)) / 2) * Math.min(1, i2 / 4);
+      // 물길을 자리 점유 필드에 **가장 먼저** 등록 — 안 그러면 그 뒤에 놓이는 바위·관목·나무가 물 위에 선다
+      // (사이클3 경계 #6). 점을 건너뛰면 그 틈에 소품이 앉으므로 모든 점, 자갈 둔치까지 덮는 넓은 반경.
+      for (let i2 = 0; i2 < stream.length; i2++) claimSpot(stream[i2].x, stream[i2].y, halfAt(i2) * 2.4);
       const normalAt = (i2: number): [number, number] => {
         const a = stream[Math.max(0, i2 - 1)];
         const b = stream[Math.min(stream.length - 1, i2 + 1)];
@@ -449,28 +461,6 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           if (sd < 0) g.fillRect(0, y, Math.max(0, rx), 6);
           else g.fillRect(rx, y, Math.max(0, w - rx), 6);
         }
-        // 벽면의 가로 결(단구·층리) — 매끈한 면은 "가장자리 비네팅"으로 읽힌다. 결이 있어야 사면이 된다.
-        g.save();
-        g.lineWidth = 1;
-        for (let k3 = 0; k3 < 7; k3++) {
-          const tt = 0.18 + k3 * 0.12;
-          const a3 = Math.min(1, tt / 0.22) * 0.1;
-          g.strokeStyle = `rgb(${RIDGE[season]} / ${a3})`;
-          g.beginPath();
-          for (let x = 0; x <= w; x += 14) {
-            const t2 = Math.min(1, tt + Math.sin(x * 0.006 + k3) * 0.02);
-            const rx2 = ridge(t2);
-            const yy = groundY(t2 * 1.06);
-            const inside = sd < 0 ? x < rx2 : x > rx2;
-            if (!inside) continue;
-            const dxr = sd < 0 ? (rx2 - x) / Math.max(1, rx2) : (x - rx2) / Math.max(1, w - rx2);
-            if (dxr > 0.75) continue;
-            if (x === 0 || x === 14) g.moveTo(x, yy + dxr * 26);
-            else g.lineTo(x, yy + dxr * 26);
-          }
-          g.stroke();
-        }
-        g.restore();
         // 능선 — 가린다는 신호 한 줄(아주 옅게, 지평선 쪽은 사라진다).
         g.save();
         g.lineWidth = 1;
@@ -579,13 +569,13 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           for (let row = -1; row <= 1; row++) {
             const ii = Math.min(stream.length - 1, Math.max(0, iA + row * 2));
             const [nx, ny] = normalAt(ii);
-            g.strokeStyle = `rgb(238 243 242 / ${0.5 - 0.12 * Math.abs(row)})`;
-            g.lineWidth = 2.4 + g0() * 2.4;
+            g.strokeStyle = `rgb(238 243 242 / ${(0.34 + g0() * 0.3) - 0.12 * Math.abs(row)})`;
+            g.lineWidth = 1.4 + g0() * 3.4;
             g.lineCap = "round";
             let pen = false;
             g.beginPath();
             for (let m = -10; m <= 10; m++) {
-              if (g0() < 0.3) { pen = false; continue; }
+              if (g0() < 0.46) { pen = false; continue; }
               const px = stream[ii].x + nx * (m / 10) * hw * 0.95 + (g0() - 0.5) * 4;
               const py = stream[ii].y + ny * (m / 10) * hw * 0.95 + (g0() - 0.5) * 3;
               if (!pen) { g.moveTo(px, py); pen = true; } else g.lineTo(px, py);
@@ -609,14 +599,37 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         g.restore();
       } else {
         // 눈 두둑 — 양안을 따라 끊어진 흰 덩이(굵기가 들쭉날쭉해야 '쌓인 눈'으로 읽힌다).
-        for (let i2 = 2; i2 < stream.length - 1; i2 += 2) {
-          const [nx, ny] = normalAt(i2);
-          const hw = halfAt(i2);
-          for (const sd of [-1, 1]) {
-            if (g0() < 0.22) continue;
-            const px = stream[i2].x + nx * sd * hw * (1.02 + g0() * 0.18);
-            const py = stream[i2].y + ny * sd * hw * (1.02 + g0() * 0.18);
-            softBlob(g, px, py, hw * (0.3 + g0() * 0.34), "250 253 255", 0.55 + g0() * 0.3, 0, GROUND_SQUASH);
+        // 결빙 가장자리는 **불투명하고 경계가 뚜렷한 얼음 선반**이다 — 부드러운 블롭을 이어 붙이면 강이
+        // 스스로 발광하는 흰 후광이 된다(사이클3 현실성 #6). 몇 군데에만, 다각형으로.
+        for (const sd of [-1, 1]) {
+          let i2 = 3 + Math.floor(g0() * 5);
+          while (i2 < stream.length - 5) {
+            const len = 4 + Math.floor(g0() * 6);
+            g.fillStyle = "rgb(248 252 255 / 0.9)";
+            g.beginPath();
+            for (let k3 = 0; k3 <= len; k3++) {
+              const ii = Math.min(stream.length - 1, i2 + k3);
+              const [nx, ny] = normalAt(ii);
+              const hw = halfAt(ii);
+              const t3 = Math.sin((k3 / len) * Math.PI);
+              const o = hw * (1.0 + 0.02);
+              const x = stream[ii].x + nx * sd * o;
+              const y = stream[ii].y + ny * sd * o;
+              if (k3 === 0) g.moveTo(x, y);
+              else g.lineTo(x, y);
+              void t3;
+            }
+            for (let k3 = len; k3 >= 0; k3--) {
+              const ii = Math.min(stream.length - 1, i2 + k3);
+              const [nx, ny] = normalAt(ii);
+              const hw = halfAt(ii);
+              const t3 = Math.sin((k3 / len) * Math.PI);
+              const o = hw * (1.0 - 0.1 - 0.5 * t3);
+              g.lineTo(stream[ii].x + nx * sd * o, stream[ii].y + ny * sd * o);
+            }
+            g.closePath();
+            g.fill();
+            i2 += len + 4 + Math.floor(g0() * 8);
           }
         }
         // 부분 결빙 — 얼음이 깨져 검은 물이 드러난 구멍 둘(얼음이 '면'이라는 신호).
@@ -700,22 +713,20 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         if (near) continue;
         tuftAt(g, x, y, (0.55 + g0() * 1.0) * depthScale(y, h) * smallK(y), g0(), g0() < 0.5, 0.85);
       }
-      // 물길을 자리 점유 필드에 먼저 등록 — 안 그러면 관목·바위·나무가 물 위에 선다. 점을 건너뛰면 사이가
-      // 뚫려 그 틈에 소품이 앉았다(검토 라운드2 #13) → 모든 점, 자갈 둔치까지 덮는 넓은 반경.
-      for (let i2 = 0; i2 < stream.length; i2++) claimSpot(stream[i2].x, stream[i2].y, halfAt(i2) * 2.4);
       scatterProps(g, art, w, h, g0, [{ id: "rock", n: 5, band: "any" }, { id: `shrub-${season}`, n: 5, band: "any" }]);
       // ⑪ 상류 끝을 안개에 녹인다 — 물길이 지평선 바로 아래에서 딱 끝나면 "잘린 리본"이 된다.
       {
         const HZC: Record<SeasonKey, string> = { spring: "232 240 226", summer: "226 236 222", autumn: "228 224 214", winter: "240 243 247" };
-        const veil = g.createLinearGradient(0, gy(), 0, groundY(0.2));
-        veil.addColorStop(0, `rgb(${HZC[season]} / 0.92)`);
-        veil.addColorStop(0.45, `rgb(${HZC[season]} / 0.4)`);
+        const veil = g.createLinearGradient(0, gy(), 0, groundY(0.3));
+        veil.addColorStop(0, `rgb(${HZC[season]} / 1)`);
+        veil.addColorStop(0.3, `rgb(${HZC[season]} / 0.8)`);
+        veil.addColorStop(0.62, `rgb(${HZC[season]} / 0.34)`);
         veil.addColorStop(1, `rgb(${HZC[season]} / 0)`);
         g.fillStyle = veil;
-        g.fillRect(0, gy(), w, groundY(0.2) - gy());
+        g.fillRect(0, gy(), w, groundY(0.3) - gy());
       }
       foam.length = 0;
-      for (let i2 = 0; i2 < 26; i2++) foam.push({ u: g0(), lane: (g0() - 0.5) * 0.6, sp: 0.06 + g0() * 0.05 });
+      for (let i2 = 0; i2 < 16; i2++) foam.push({ u: g0(), lane: (g0() - 0.5) * 0.9, sp: 0.04 + g0() * 0.09 });
     } else {
       // 산 — 바위·눈 얼룩(겨울·봄엔 눈이 남는다), 위 띠는 봉우리(지평선 굽기가 크게).
       // 봉우리는 **별도 캔버스**에 굽는다 — 바탕에 구우면 그 위에 지평선 띠(먼 언덕·나무 점)가 덮여
@@ -807,11 +818,13 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         g.restore();
       };
       // 먼 것은 **밝고 옅다**(대기 원근). 옛 값은 앞 땅보다 어두워 "먹구름 벽"으로 읽혔다(검토 4차).
+      // 먼 것은 **더 밝고 대비가 낮다** — 옛 값은 근경(눈밭·마른 풀)보다 어두워 "뒤에 세운 벽"으로 읽혔다
+      // (사이클3 현실성 #2: 대기 원근 역전).
       const PEAK: Record<SeasonKey, [string, string]> = {
-        spring: ["#c3ccce", "#a8b3b6"],
-        summer: ["#b4c0b8", "#8fa0a6"],
-        autumn: ["#c7c0b2", "#a89f92"],
-        winter: ["#dde5ec", "#c2ccd6"]
+        spring: ["#d5dcdd", "#bfc8ca"],
+        summer: ["#c8d2ca", "#a9b6ba"],
+        autumn: ["#d6d0c4", "#bcb4a8"],
+        winter: ["#eaf0f6", "#d6dee6"]
       };
       // 봄 산이 겨울 산보다 하얗던 것(검토 라운드2 현실성 #6) — 봄은 **꼭대기 만년설만**, 지면 눈 얼룩은 없다.
       const snowy = season === "winter";
@@ -864,7 +877,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       scatterProps(g, art, w, h, g0, [{ id: "rock", n: 10, band: "any", minV: 0.3 }, { id: "grass-dry", n: 34, band: "any", minV: 0.34 }]);
       // 고지의 노출암·너덜 — 지평선 바로 아래가 통째로 빈 안개였다(검토 라운드2 현실성 #5).
       for (let i = 0; i < 16; i++) {
-        const y = groundY(0.04 + g0() * 0.26);
+        const y = groundY(0.34 + g0() * 0.16); // 능선 실루엣 아래로 — 위에 두면 하늘에 자갈이 뜬다
         const k = (0.35 + g0() * 0.3) * depthScale(y, h);
         const x = g0() * w;
         if (!claimSpot(x, y, 16 * k)) continue;
@@ -928,14 +941,14 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     if (kind === "forest") {
       // 뒷줄은 **무리**로 — 등간격 일렬은 자연림이 아니라 방풍림 열로 읽힌다(검토 라운드2 경계 #9 · 미관 #13).
       {
-        const clumps = 3 + Math.round(w / 640);
+        const clumps = 5 + Math.round(w / 420); // 원경에서 수관이 닫혀야 "숲"이다(옛 3~5는 가로수 열)
         for (let c2 = 0; c2 < clumps; c2++) {
           const cx3 = w * ((c2 + 0.5) / clumps) + (g0() - 0.5) * w * 0.16;
-          const n2 = 3 + Math.floor(g0() * 3);
+          const n2 = 4 + Math.floor(g0() * 4);
           for (let i = 0; i < n2; i++) {
             trees.push({
-              x: cx3 + (g0() - 0.5) * w * 0.14,
-              y: groundY(0.03 + g0() * 0.16),
+              x: cx3 + (g0() - 0.5) * w * 0.16,
+              y: groundY(0.02 + g0() * 0.2),
               R: Math.round((SIZE.treeCrownW / 2) * (0.55 + g0() * 0.62)),
               pine: pineMix()
             });
@@ -945,9 +958,18 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       for (const side of [0.06, 0.94]) for (let i = 0; i < 3; i++) trees.push({ x: w * side + (g0() - 0.5) * 50, y: groundY(0.3 + i * 0.22 + g0() * 0.1), R: Math.round(SIZE.treeCrownW / 2 * (0.8 + g0() * 0.3)), pine: pineMix() });
       // 중간 깊이 — 앞줄과 뒷줄 사이가 텅 비어 "울타리 친 마당"으로 읽혔다. 빈터는 가운데(u 0.36~0.64)만 비운다.
       // 혼효림의 수관 틈은 30~40%라 참나무 순림보다 성기다(8 → 6).
-      for (let i = 0; i < 6; i++) {
-        const u = g0() < 0.5 ? 0.05 + g0() * 0.3 : 0.65 + g0() * 0.3;
+      for (let i = 0; i < 10; i++) {
+        const u = g0() < 0.5 ? 0.03 + g0() * 0.34 : 0.63 + g0() * 0.34;
         trees.push({ x: w * u, y: groundY(0.26 + g0() * 0.62), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.4)), pine: pineMix() });
+      }
+      // 빈터 **둘레**를 두르는 중간 나무들 — 한가운데만 비고 그 밖은 채워야 "빈터"로 읽힌다(지금은 통째로 잔디밭).
+      for (let i = 0; i < 8; i++) {
+        const a2 = (i / 8) * TAU + g0() * 0.3;
+        const rr2 = 0.31 + g0() * 0.08;
+        const u = 0.5 + Math.cos(a2) * rr2;
+        const v = 0.56 + Math.sin(a2) * rr2 * 0.72;
+        if (v < 0.18) continue;
+        trees.push({ x: w * u, y: groundY(v), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.45)), pine: pineMix() });
       }
       // 가운데도 **가까운 쪽**엔 나무가 선다 — 안 그러면 한가운데가 밝은 도넛 구멍이 된다(검토 4차).
       for (let i = 0; i < 3; i++) trees.push({ x: w * (0.38 + g0() * 0.24), y: groundY(0.82 + g0() * 0.18), R: Math.round((SIZE.treeCrownW / 2) * (1.05 + g0() * 0.25)), pine: pineMix() });

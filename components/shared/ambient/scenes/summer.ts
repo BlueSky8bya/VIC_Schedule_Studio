@@ -137,6 +137,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   let stampSpr: HTMLCanvasElement | null = null;
   let shadow: HTMLCanvasElement | null = null;
   let traces: TraceBakes | null = null; // 연대기(연잎·기슭의 데뷔 나무) 렌더 스프라이트
+  let midWater: HTMLCanvasElement | null = null; // 열린 물의 앵커(뜬 통나무·바위·연잎 군락 — 사이클3 미관 #1)
   let nearBank: HTMLCanvasElement | null = null; // 화면 **아래**의 가까운 기슭(2026-09-04 검토 라운드2)
   let nearW = 0;
   let shore: HTMLCanvasElement | null = null; // 위 띠의 기슭(뭍) — 땅 흔적이 물 위에 떠 보이지 않게
@@ -451,6 +452,69 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           stand("rock", 3, 0.7);
           stand(`shrub-${season}`, 3, 0.75);
         }
+      }
+      // ── 열린 물의 앵커(사이클3 미관 #1: "화면 42%가 빈 물, 초점은 오리 한 마리") — 물 위에 중간 값의 덩어리가
+      //    두셋은 있어야 3단 줄무늬를 벗어난다. 기슭 반영 → 물풀 섬 → 반쯤 잠긴 바위 → 뜬 통나무 순.
+      if (!midWater || nearW !== w) {
+        const MH = Math.max(1, Math.round(waterBottom() - shoreY()));
+        const mw = makeCanvas(w, MH);
+        const mg2 = mw.g;
+        const r2 = rng(431 + w + SEASON_SEED[season]);
+        // 기슭 반영 — 물가 바로 아래에 뒤집힌 뭍 색이 옅게 번진다(수면이 하늘만 비추면 판때기가 된다).
+        const rf = mg2.createLinearGradient(0, 0, 0, MH * 0.22);
+        rf.addColorStop(0, season === "winter" ? "rgb(198 210 224 / 0.4)" : "rgb(120 148 104 / 0.34)");
+        rf.addColorStop(1, "rgb(120 148 104 / 0)");
+        mg2.fillStyle = rf;
+        mg2.fillRect(0, 0, w, MH * 0.22);
+        if (season !== "winter") {
+          // 물풀 섬 둘 — 얕은 자리에 모인 수초 덩이(연잎 군락과 다른 결).
+          for (let c2 = 0; c2 < 2; c2++) {
+            const cx3 = w * (0.16 + r2() * 0.7);
+            const cy3 = MH * (0.16 + r2() * 0.5);
+            softBlob(mg2, cx3, cy3, 50 + r2() * 60, "88 122 84", 0.3, 0, GROUND_SQUASH);
+            for (let i = 0; i < 22; i++) {
+              const a2 = r2() * TAU;
+              const d = Math.pow(r2(), 0.6) * (46 + r2() * 40);
+              const x = cx3 + Math.cos(a2) * d;
+              const y = cy3 + Math.sin(a2) * d * GROUND_SQUASH;
+              mg2.strokeStyle = `rgb(${r2() < 0.5 ? "104 140 92" : "78 112 76"} / ${0.4 + r2() * 0.4})`;
+              mg2.lineWidth = 1.2;
+              mg2.beginPath();
+              mg2.moveTo(x, y);
+              mg2.lineTo(x + (r2() - 0.5) * 7, y - 8 - r2() * 12);
+              mg2.stroke();
+            }
+          }
+        }
+        // 반쯤 잠긴 바위 셋 — 수면선을 걸치고 앉는다(물에 박혔다는 신호).
+        for (let i = 0; i < 3; i++) {
+          const x = w * (0.1 + r2() * 0.8);
+          const y = MH * (0.22 + r2() * 0.6);
+          const k = 0.9 + r2() * 0.9;
+          mg2.save();
+          mg2.beginPath();
+          mg2.rect(x - 60 * k, y - 90 * k, 120 * k, 90 * k);
+          mg2.clip();
+          drawProp(mg2, shoreArt, "rock", x, y + 8 * k, { k, r: r2(), flip: r2() < 0.5 });
+          mg2.restore();
+          mg2.strokeStyle = season === "winter" ? "rgb(236 244 250 / 0.6)" : "rgb(255 255 255 / 0.5)";
+          mg2.lineWidth = 1.4;
+          mg2.beginPath();
+          mg2.ellipse(x, y, 17 * k, 5 * k, 0, 0, TAU);
+          mg2.stroke();
+        }
+        // 뜬 통나무 하나 — 화면의 초점.
+        {
+          const x = w * (0.28 + r2() * 0.44);
+          const y = MH * (0.42 + r2() * 0.34);
+          drawProp(mg2, shoreArt, "log", x, y, { k: 1.5, r: r2(), flip: r2() < 0.5 });
+          mg2.strokeStyle = "rgb(255 255 255 / 0.45)";
+          mg2.lineWidth = 1.6;
+          mg2.beginPath();
+          mg2.ellipse(x, y + 2, 44, 8, 0, 0, TAU);
+          mg2.stroke();
+        }
+        midWater = mw.c;
       }
       // ── 가까운 기슭(2026-09-04 검토 라운드2: "물이 화면의 65~70%인 빈 판", "汀線이 자로 그은 직선",
       //    "수심 그라데이션 없는 수직벽 수조"). 연못을 **양쪽 기슭 사이**에 두면 근경이 생기고 깊이가 3단이 된다:
@@ -1315,6 +1379,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       // 기슭(지평선 아래 띠의 뭍) + 연대기 — 연잎 군락은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
       if (shore) g.drawImage(shore, 0, horizonY(f.h));
       if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true });
+      // 열린 물의 앵커 — 기슭 바로 아래(생물은 이 위를 지나간다).
+      if (midWater) g.drawImage(midWater, 0, shoreY(), f.w, midWater.height);
       // 햇빛 반짝임 — 공용 drawGlints(가로 렌즈). 옛 4획 십자는 화면에서 × · + 글리프로 읽혔다(검토 3차).
       // 포인터 물결 — 물 구역(물가 선 아래)만. 얼음판에는 그리지 않는다.
       if (!winter) {

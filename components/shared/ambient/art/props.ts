@@ -257,20 +257,26 @@ const PAINT: Record<string, Painter> = {
   stump: (g, W, H) => {
     const x = W / 2;
     const b = H - 1;
-    const rw = W * 0.38;
-    flatBody(g, "#7d6446", "#54402c", () => {
+    const rw = W * 0.42;
+    const topY = b - H * 0.5; // 옆면을 낮게(0.62는 가늘고 길어 "덩어리"로 뭉갰다, 검토 라운드2 사이클3)
+    flatBody(g, "#6f5a3e", "#463522", () => {
       g.beginPath();
-      g.moveTo(x - rw, b - H * 0.62);
-      g.lineTo(x - rw * 0.94, b - 3);
-      g.quadraticCurveTo(x, b + 2, x + rw * 0.94, b - 3);
-      g.lineTo(x + rw, b - H * 0.62);
+      g.moveTo(x - rw, topY);
+      g.lineTo(x - rw, b - 3);
+      g.quadraticCurveTo(x, b + 3, x + rw, b - 3);
+      g.lineTo(x + rw, topY);
       g.closePath();
     });
-    // 나이테 — 위 타원 두 겹.
-    g.fillStyle = "#a98a63";
+    // 나이테 — 넓은 윗면 타원(밝게) + 굵은 테 두 줄. 원통이라는 신호는 이 대비 하나다.
+    g.fillStyle = "#c2a172";
     g.beginPath();
-    g.ellipse(x, b - H * 0.62, rw, rw * 0.42, 0, 0, TAU);
+    g.ellipse(x, topY, rw, rw * 0.44, 0, 0, TAU);
     g.fill();
+    g.strokeStyle = "#463522";
+    g.lineWidth = 1;
+    g.beginPath();
+    g.ellipse(x, topY, rw, rw * 0.44, 0, 0, TAU);
+    g.stroke();
     dither(g, x - rw, b - H * 0.62, rw * 2, H * 0.6, "#54402c", 24, 77, () => {
       g.beginPath();
       g.moveTo(x - rw, b - H * 0.62);
@@ -280,10 +286,10 @@ const PAINT: Record<string, Painter> = {
       g.closePath();
     });
     g.strokeStyle = "#8a6c4a";
-    g.lineWidth = 1.2;
+    g.lineWidth = 1.4;
     for (const k of [0.66, 0.34]) {
       g.beginPath();
-      g.ellipse(x, b - H * 0.62, rw * k, rw * 0.42 * k, 0, 0, TAU);
+      g.ellipse(x, topY, rw * k, rw * 0.44 * k, 0, 0, TAU);
       g.stroke();
     }
   },
@@ -470,9 +476,9 @@ function pine(g: CanvasRenderingContext2D, W: number, H: number, r: () => number
   const b = H - 1;
   const cx = W / 2;
   const line = snowy ? "#16241c" : tone === "muted" ? "#1e2a1c" : "#18291d";
-  const dark = snowy ? "#26382a" : tone === "muted" ? "#2e3a26" : "#2a4830";
-  const mid = snowy ? "#35492f" : tone === "muted" ? "#415134" : "#3b6240";
-  const light = snowy ? "#4a6440" : tone === "muted" ? "#5a6a43" : "#57855a";
+  const dark = snowy ? "#1f2e22" : tone === "muted" ? "#26301f" : "#1f3a27";
+  const mid = snowy ? "#2f4229" : tone === "muted" ? "#3a4a2e" : "#33573a";
+  const light = snowy ? "#3f5636" : tone === "muted" ? "#4b5a39" : "#457049";
   // 줄기 — 짧고 굵은 회갈색(밝은 땅 위의 붉은 줄기는 가장 시끄럽다). 맨 아래 단이 윗부분을 덮는다.
   const tw = Math.max(3, Math.round(W * 0.13));
   const th = Math.round(H * 0.14);
@@ -516,10 +522,10 @@ function pine(g: CanvasRenderingContext2D, W: number, H: number, r: () => number
     // 밝은 면(왼쪽 위) · 그늘 면(오른쪽 아래) — 잎 덩이가 면으로 갈려야 픽셀 참나무와 화풍이 맞는다.
     g.fillStyle = light;
     g.beginPath();
-    g.moveTo(cx, apexY - 2);
-    g.lineTo(cx - tr.hw * 1.4, tr.base + 4);
-    g.lineTo(cx - tr.hw * 0.12, tr.base + 4);
-    g.lineTo(cx + tr.hw * 0.04, apexY - 2);
+    g.moveTo(cx - tr.hw * 0.04, apexY - 2);
+    g.lineTo(cx - tr.hw * 1.4, tr.base * 0.42 + apexY * 0.58);
+    g.lineTo(cx - tr.hw * 0.62, tr.base + 4);
+    g.lineTo(cx - tr.hw * 0.06, tr.base + 4);
     g.closePath();
     g.fill();
     g.fillStyle = dark;
@@ -530,18 +536,36 @@ function pine(g: CanvasRenderingContext2D, W: number, H: number, r: () => number
     g.closePath();
     g.fill();
     if (snowy) {
-      // 눈은 가지 **윗면에만** 얇게(통짜로 덮으면 눈사람이 된다).
+      // 눈은 가지 **윗면**에 얹힌다 — 가로 막대로 그으면 케이크 층 줄무늬가 된다(2026-09-04 자체 검토 cc3).
+      // 가지의 경사를 따라 기운 쐐기로, 좌우 각각.
       g.fillStyle = "#eef4fa";
       for (let k = 1; k <= 4; k++) {
         const t = k / 4;
-        const yTop = apexY + tr.hh * t - tr.hh * 0.06;
-        g.fillRect(cx - tr.hw * t * 0.92, yTop - 2, tr.hw * t * 1.84, 2.4);
+        const yTip = apexY + tr.hh * t - tr.hh * 0.06;
+        const yIn = apexY + tr.hh * (t - 0.25) * 0.94;
+        for (const sd of [-1, 1]) {
+          g.beginPath();
+          g.moveTo(cx + sd * tr.hw * t * 0.96, yTip);
+          g.lineTo(cx + sd * tr.hw * (t - 0.22) * 0.5, yIn);
+          g.lineTo(cx + sd * tr.hw * (t - 0.22) * 0.5, yIn + 2.6);
+          g.lineTo(cx + sd * tr.hw * t * 0.96, yTip + 2.8);
+          g.closePath();
+          g.fill();
+        }
       }
     }
-    // 밑단 그늘 입술 — 아래 단과 층이 갈린다.
+    // 밑단 그늘 — 아래 단과 층이 갈린다. 전폭 막대는 케이크 층 선이 되므로 가지 밑선을 따라 짧게.
     g.fillStyle = line;
-    g.globalAlpha = 0.32;
-    g.fillRect(cx - tr.hw, tr.base - 2, tr.hw * 2, 3);
+    g.globalAlpha = 0.3;
+    for (const sd of [-1, 1]) {
+      g.beginPath();
+      g.moveTo(cx + sd * tr.hw, tr.base - 3);
+      g.lineTo(cx + sd * tr.hw * 0.42, tr.base - 1);
+      g.lineTo(cx + sd * tr.hw * 0.42, tr.base + 1);
+      g.lineTo(cx + sd * tr.hw, tr.base);
+      g.closePath();
+      g.fill();
+    }
     g.globalAlpha = 1;
     dither(g, cx - tr.hw, apexY, tr.hw * 2, tr.hh, line, 30, 71 + Math.round(tr.hw));
     g.restore();
@@ -863,6 +887,9 @@ export function drawProp(
     if (c && slot) {
       const [W, H] = slot.px;
       g.save();
+      // 축소해 그릴 때도 **보간을 끈다** — 켜져 있으면 굵은 점이 평균화돼 매끈한 벡터가 되고, 같은 소품이
+      // 가까울 땐 픽셀·멀 땐 벡터로 보인다(검토 라운드2 사이클3 미관 #4).
+      g.imageSmoothingEnabled = false;
       g.translate(x, y);
       if (sy !== 1) g.scale(1, sy);
       if (opts.rot) g.rotate(opts.rot);

@@ -230,15 +230,17 @@ export const SHORE_V = 0.21;
  *  옛 물가는 화면 폭 1400 내내 두께 일정한 수평 띠라 "수직벽 수조"로 읽혔다(검토 라운드2, 세 명 모두). */
 export function shoreWave(x: number, w: number): number {
   const u = x / Math.max(1, w);
-  return Math.sin(u * 5.1 + 0.6) * 21 + Math.sin(u * 11.3 + 2.2) * 9 + Math.sin(u * 2.3 - 0.9) * 13;
+  // 큰 만 하나(±34) + 중간 굴곡 + 잔물결 — 물의 덩어리가 비대칭으로 잘려야 "못"으로 읽힌다.
+  return Math.sin(u * 1.7 + 0.35) * 34 + Math.sin(u * 5.1 + 0.6) * 19 + Math.sin(u * 11.3 + 2.2) * 8;
 }
 /** 기슭 띠 — 지평선(hz)에서 시작해 h*SHORE_V까지. 좌우 가장자리는 아래로 내려와 연못을 감싼다(만곡). */
 export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): HTMLCanvasElement {
   const hz = horizonY(h);
   const H = Math.round(h * SHORE_V - hz) + 24 + 52 + 56; // 만곡(44px) + 만·곶(±43px)까지 담을 여유
+  // edge는 H를 따라가면 안 된다 — 여유분(+56)만큼 물가가 내려가 캔버스 **바닥에서 잘렸다**(사이클3 경계 #3).
   const { c, g } = makeCanvas(Math.max(1, w), H);
   const r = rng(77 + w);
-  const edge = H - 24;
+  const edge = H - 24 - 56;
   const grad = g.createLinearGradient(0, 0, 0, H);
   // 기슭도 계절을 탄다 — 얼어붙은 연못 옆에 초록 잔디가 있으면 세계가 깨진다(2026-09-04 검토 2차).
   const SH: Record<SeasonKey, [string, string, string]> = {
