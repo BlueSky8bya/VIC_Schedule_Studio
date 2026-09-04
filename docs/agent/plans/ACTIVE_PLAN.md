@@ -1,5 +1,9 @@
 # Active ExecPlan
 
+> **Proposed(다음 큰 공사)**: [PLAN-20260904-003 — 계절 연대기(Chronicle)](PLAN-20260904-003-ambient-chronicle.md) — 생물 10배·
+> 동물의 숲식 희귀도·달력 시간을 잇는 연대기(도토리 → 싹 → 나무·눈사람)·층 무대(잡초·관목·나무·대기 원근)·에이전트 프레임워크.
+> 조사 완료(2026-09-04), 소유자 결정 7건(§7) 대기. 착수 시 이 파일의 Active로 승격.
+
 Plan ID: PLAN-20260904-002
 Status: Completed (2026-09-04 — 실측은 CURRENT_STATE ㉑; 같은 날 추가 결정: 차분한 편집실 토글 제거·항상 ON)
 Task Risk: L2 (구조적 — 계절 레이어를 CSS DOM에서 상호작용 캔버스 엔진으로 교체; gfx 판정 v3(3단계·WebGL 소프트웨어

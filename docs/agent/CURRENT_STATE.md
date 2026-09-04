@@ -108,6 +108,10 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   채널 경로. 등록 입구 = `node scripts/add-guest-vods.mjs YYMMDD=URL …`(SOOP VOD 조회 API `station/video/a/view` —
   제목·호스트·길이·방송 시각·썸네일). 공개 DTO `PublicVodEntry.host`(호스트 닉) → 모바일 칩 '합방' 배지, PC 창 "합방 · ○○
   방송국" 배지(금 문법 칩). 다음 합방 링크도 같은 스크립트로.
+  ㉜ **계절 연대기 계획(2026-09-04 밤, Proposed)**: `docs/agent/plans/PLAN-20260904-003-ambient-chronicle.md` — 소유자 방향("생물
+  10배·실제 희귀도·달력 시간을 잇는 연대기·미술적 층 무대·장인정신 상호작용 4축")을 조사(동물의 숲 스폰 풀·대기 원근·12원칙·
+  steering/utility·종별 생태 문헌 20종)로 뒷받침한 로드맵(Phase A 기반 → B 봄·가을+연대기 → C 여름 → D 겨울 → E 선택). 소유자
+  결정 7건(§7) 대기 — 착수 전엔 코드 변경 없음.
   ㉛ **여름 후속(2026-09-04 저녁, 사용자 2건)**: 물고기 수 = 여력 비례 2~14 × 화면 넓이(+ 큰 놈 .6부터 1, .9부터 2), 0.5초에 한 마리씩
   가장자리로 드나든다(순간 등장·소멸 없음, `leave`), 두 무리(grp)가 다른 목표를 따르고 간격 34+14k로 뭉치지 않는다. 오리는
   **수면선**(waterY) 아래를 물빛 사본(duckSub, source-atop 틴트)으로 옅게 그려 발·아랫배가 물속 — 자맥질은 코를 60° 아래로(회전
