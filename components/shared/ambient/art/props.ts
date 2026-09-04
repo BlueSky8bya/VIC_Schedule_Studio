@@ -453,91 +453,98 @@ const PAINT: Record<string, Painter> = {
       g.restore();
     }
   },
-  "tree-pine": (g, W, H, r) => pine(g, W, H, r, false),
-  "tree-pine-winter": (g, W, H, r) => pine(g, W, H, r, true)
+  "tree-pine": (g, W, H, r) => pine(g, W, H, r, "green"),
+  "tree-pine-autumn": (g, W, H, r) => pine(g, W, H, r, "muted"),
+  "tree-pine-winter": (g, W, H, r) => pine(g, W, H, r, "snow")
 };
 
 /** 침엽수(소나무·곰솔) 대체물 — 동물의 숲 카메라(3/4)에서 본 톱니 원뿔 3단 + 짧고 굵은 줄기.
  *  참나무(둥근 잎 덩이)와 실루엣이 확실히 갈려야 "혼효림"으로 읽힌다. 밝은 땅(눈·모래) 위에서 붉은 줄기는
  *  가장 시끄러운 요소라 회갈색 고정(2026-09-04 소유자 규칙). */
-function pine(g: CanvasRenderingContext2D, W: number, H: number, r: () => number, snowy: boolean) {
+function pine(g: CanvasRenderingContext2D, W: number, H: number, r: () => number, tone: "green" | "muted" | "snow") {
+  // 침엽수 대체물 — 동물의 숲 카메라(3/4)에서 본 톱니 원뿔 3단 + 짧고 굵은 줄기.
+  // 1차 판(2026-09-04)은 단(段)마다 path에 moveTo를 두 번 써 **좌·우 반쪽이 별개 서브패스**가 됐고,
+  // 그 탓에 clip이 한쪽만 잡아 밝은 면이 나무 옆에 **선 채로 복제된 초록 삼각형**으로 새어 나왔다
+  // (검토 라운드2 현실성 #2). 이번 판은 단마다 **한 번의 연속 경로**(꼭대기 → 오른쪽 톱니 → 밑변 → 왼쪽 톱니 → 꼭대기)만 쓴다.
+  const snowy = tone === "snow";
   const b = H - 1;
   const cx = W / 2;
-  const line = snowy ? "#16241c" : "#18291d";
-  const dark = snowy ? "#26382a" : "#2a4830";
-  const mid = snowy ? "#35492f" : "#3b6240";
-  const light = snowy ? "#4a6440" : "#57855a";
-  // 줄기 — 짧고 굵은 회갈색(밝은 땅 위의 붉은 줄기는 가장 시끄럽다, 2026-09-04 소유자 규칙).
-  const tw = Math.max(3, Math.round(W * 0.12));
-  const th = Math.round(H * 0.16);
+  const line = snowy ? "#16241c" : tone === "muted" ? "#1e2a1c" : "#18291d";
+  const dark = snowy ? "#26382a" : tone === "muted" ? "#2e3a26" : "#2a4830";
+  const mid = snowy ? "#35492f" : tone === "muted" ? "#415134" : "#3b6240";
+  const light = snowy ? "#4a6440" : tone === "muted" ? "#5a6a43" : "#57855a";
+  // 줄기 — 짧고 굵은 회갈색(밝은 땅 위의 붉은 줄기는 가장 시끄럽다). 맨 아래 단이 윗부분을 덮는다.
+  const tw = Math.max(3, Math.round(W * 0.13));
+  const th = Math.round(H * 0.14);
   g.fillStyle = "#5c4e3e";
   g.fillRect(Math.round(cx - tw / 2), b - th, tw, th);
-  g.fillStyle = "#75654f";
-  g.fillRect(Math.round(cx - tw / 2), b - th, Math.max(1, Math.round(tw * 0.38)), th);
-  g.strokeStyle = "#3a3025";
-  g.lineWidth = 1;
-  g.strokeRect(Math.round(cx - tw / 2) + 0.5, b - th + 0.5, tw - 1, th);
-  // 원뿔 3단. **위 단부터** 그린다 — 아래 단이 나중에 덮어야 층이 겹쳐 보인다(반대로 그리면 세 단이
-  // 한 덩어리 삼각형으로 뭉쳐 매끈한 실루엣이 된다, 2026-09-04 1차 검토).
+  g.fillStyle = "#76664f";
+  g.fillRect(Math.round(cx - tw / 2), b - th, Math.max(1, Math.round(tw * 0.36)), th);
+
+  // 아래 단이 위 단을 덮어야 층이 겹쳐 보인다 → **위 단부터** 그린다.
   const tiers = [
-    { base: b - H * 0.6, hw: W * 0.26, hh: H * 0.34 },
-    { base: b - H * 0.34, hw: W * 0.38, hh: H * 0.33 },
-    { base: b - H * 0.09, hw: W * 0.48, hh: H * 0.36 }
+    { base: b - H * 0.58, hw: W * 0.27, hh: H * 0.34 },
+    { base: b - H * 0.33, hw: W * 0.38, hh: H * 0.32 },
+    { base: b - H * 0.07, hw: W * 0.48, hh: H * 0.35 }
   ];
   for (const tr of tiers) {
-    // 가지 끝 톱니 — 꼭대기에서 밑단까지 네 번 튀어나온다.
+    const apexY = tr.base - tr.hh;
+    // 한 번의 연속 경로. k = 0(꼭대기) → 1(밑단)로 내려가며 가지 끝이 네 번 튀어나온다.
     const path = () => {
       g.beginPath();
-      g.moveTo(cx, tr.base - tr.hh);
-      for (const sd of [1, -1]) {
-        if (sd < 0) g.lineTo(cx, tr.base - tr.hh);
-        for (let k = 1; k <= 4; k++) {
-          const t = k / 4;
-          const jag = 0.7 + 0.3 * (k % 2);
-          g.lineTo(cx + sd * tr.hw * t * jag, tr.base - tr.hh * (1 - t) - tr.hh * 0.06);
-          g.lineTo(cx + sd * tr.hw * t, tr.base - tr.hh * (1 - t) * 0.84);
-        }
-        g.lineTo(cx + sd * tr.hw * 0.45, tr.base);
+      g.moveTo(cx, apexY);
+      for (let k = 1; k <= 4; k++) {
+        const t = k / 4;
+        const jag = 0.72 + 0.28 * (k % 2);
+        g.lineTo(cx + tr.hw * t * jag, apexY + tr.hh * t - tr.hh * 0.06);
+        g.lineTo(cx + tr.hw * t, apexY + tr.hh * t * 0.94);
+      }
+      g.lineTo(cx + tr.hw * 0.42, tr.base);
+      g.lineTo(cx - tr.hw * 0.42, tr.base);
+      for (let k = 4; k >= 1; k--) {
+        const t = k / 4;
+        const jag = 0.72 + 0.28 * (k % 2);
+        g.lineTo(cx - tr.hw * t, apexY + tr.hh * t * 0.94);
+        g.lineTo(cx - tr.hw * t * jag, apexY + tr.hh * t - tr.hh * 0.06);
       }
       g.closePath();
     };
     flatBody(g, mid, line, path, tr.base);
-    // 왼쪽 위 = 밝은 면, 오른쪽 아래 = 그늘 면. 잎 덩이가 **면**으로 갈려야 픽셀 참나무와 같은 화풍이 된다.
     g.save();
     path();
     g.clip();
+    // 밝은 면(왼쪽 위) · 그늘 면(오른쪽 아래) — 잎 덩이가 면으로 갈려야 픽셀 참나무와 화풍이 맞는다.
     g.fillStyle = light;
     g.beginPath();
-    g.moveTo(cx, tr.base - tr.hh * 1.1);
-    g.lineTo(cx - tr.hw * 1.2, tr.base - tr.hh * 0.1);
-    g.lineTo(cx - tr.hw * 0.1, tr.base + 2);
-    g.lineTo(cx + tr.hw * 0.05, tr.base - tr.hh * 1.1);
+    g.moveTo(cx, apexY - 2);
+    g.lineTo(cx - tr.hw * 1.4, tr.base + 4);
+    g.lineTo(cx - tr.hw * 0.12, tr.base + 4);
+    g.lineTo(cx + tr.hw * 0.04, apexY - 2);
     g.closePath();
     g.fill();
     g.fillStyle = dark;
     g.beginPath();
-    g.moveTo(cx + tr.hw * 0.34, tr.base - tr.hh * 0.9);
-    g.lineTo(cx + tr.hw * 1.3, tr.base - tr.hh * 0.05);
-    g.lineTo(cx + tr.hw * 1.3, tr.base + 3);
-    g.lineTo(cx + tr.hw * 0.2, tr.base + 3);
+    g.moveTo(cx + tr.hw * 0.3, apexY + tr.hh * 0.1);
+    g.lineTo(cx + tr.hw * 1.5, tr.base + 4);
+    g.lineTo(cx + tr.hw * 0.16, tr.base + 4);
     g.closePath();
     g.fill();
-    // 밑단 그늘 입술 — 다음(아래) 단과 층이 갈린다.
-    g.fillStyle = line;
-    g.globalAlpha = 0.35;
-    g.fillRect(cx - tr.hw * 1.3, tr.base - 2, tr.hw * 2.6, 3);
-    g.globalAlpha = 1;
     if (snowy) {
       // 눈은 가지 **윗면에만** 얇게(통짜로 덮으면 눈사람이 된다).
       g.fillStyle = "#eef4fa";
       for (let k = 1; k <= 4; k++) {
         const t = k / 4;
-        const yTop = tr.base - tr.hh * (1 - t) - tr.hh * 0.06;
-        g.fillRect(cx - tr.hw * t * 0.9, yTop - 2, tr.hw * t * 1.8, 2.6);
+        const yTop = apexY + tr.hh * t - tr.hh * 0.06;
+        g.fillRect(cx - tr.hw * t * 0.92, yTop - 2, tr.hw * t * 1.84, 2.4);
       }
     }
+    // 밑단 그늘 입술 — 아래 단과 층이 갈린다.
+    g.fillStyle = line;
+    g.globalAlpha = 0.32;
+    g.fillRect(cx - tr.hw, tr.base - 2, tr.hw * 2, 3);
+    g.globalAlpha = 1;
+    dither(g, cx - tr.hw, apexY, tr.hw * 2, tr.hh, line, 30, 71 + Math.round(tr.hw));
     g.restore();
-    dither(g, cx - tr.hw, tr.base - tr.hh, tr.hw * 2, tr.hh, line, 34, 71 + Math.round(tr.hw), path);
   }
   void r;
 }
@@ -759,9 +766,15 @@ export function fallbackSprite(id: string, variant = 0): HTMLCanvasElement | nul
     return null;
   }
   const [W, H] = slot.px;
-  // 자리 해상도(64~96px급)로 그린 뒤 **보간 없이** 확대 = 굵은 점. 매끈한 안티에일리어싱 도형은
-  // 옆의 픽셀 아트 참나무와 화풍이 어긋나 "클립아트"로 읽혔다(2026-09-04 검토 2차).
-  const { c: small, g: sg } = makeCanvas(W, H);
+  // **논리 해상도 상한 DOT_MAX** — 자리 상자가 크면(소나무 92×168) 그 해상도로 그린 도형은 매끈한 벡터가 되어
+  // 옆의 픽셀 아트 참나무와 화풍이 갈린다(검토 라운드2 미관 #2: "침엽수 = 매끈한 벡터, 활엽수 = 청키 픽셀").
+  // 긴 변을 64~72px로 눌러 그린 뒤 **보간 없이** 확대해야 굵은 점이 된다(CLAUDE.md: 64~96px 논리 해상도).
+  const DOT_MAX = 72;
+  const f = Math.min(1, DOT_MAX / Math.max(W, H));
+  const lw = Math.max(8, Math.round(W * f));
+  const lh = Math.max(8, Math.round(H * f));
+  const { c: small, g: sg } = makeCanvas(lw, lh);
+  sg.scale(lw / W, lh / H);
   paint(sg, W, H, rng(1000 + id.length * 31 + variant * 97), variant);
   const { c, g } = makeCanvas(W * SCALE, H * SCALE);
   g.imageSmoothingEnabled = false;

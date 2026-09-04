@@ -248,12 +248,29 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
     winter: ["#e6ecf2", "#d6dfe8", "#cdd6de"]
   };
   const [s0, s1, s2] = SH[season];
+  // 물가 곡선(뭍의 아래 경계) — 칠하기 전에 먼저 정의하고, **모든 뭍 칠을 이 곡선 위로 클립**한다.
+  // 옛 코드는 전폭 사각형을 칠한 뒤 아래 12%만 페이드시켜, 그 페이드 끝이 화면을 가로지르는 직선으로 남았다.
+  const bay0 = (x: number) => {
+    const t = Math.min(1, Math.min(x, w - x) / (w * 0.3));
+    return (1 - t) * (1 - t) * 44;
+  };
+  const landEdge = (x: number) => edge + bay0(x) + shoreWave(x, w) + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5;
+  const landPath = () => {
+    g.beginPath();
+    g.moveTo(-8, -8);
+    for (let x = 0; x <= w; x += 8) g.lineTo(x, landEdge(x));
+    g.lineTo(w + 8, -8);
+    g.closePath();
+  };
+  g.save();
+  landPath();
+  g.clip();
   // 위 가장자리는 안개 띠 속으로 스며든다 — 불투명하게 시작하면 지평선에 전폭 직선 자국이 남는다(검토 2차).
   grad.addColorStop(0, `${s0}00`);
   grad.addColorStop(0.22, s0);
   grad.addColorStop(0.62, s1);
   grad.addColorStop(0.88, s2);
-  grad.addColorStop(1, `${s2}00`);
+  grad.addColorStop(1, s2);
   g.fillStyle = grad;
   g.fillRect(0, 0, w, H);
   // 좌우 만곡 부분의 뭍을 채운다(그라데이션은 가로로 균일하므로 아래쪽에 한 겹 더).
@@ -269,17 +286,13 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   g.moveTo(0, -8);
   for (let x = 0; x <= w + 12; x += 12) {
     const xx = Math.min(x, w);
-    g.lineTo(xx, edge + ((t) => (1 - t) * (1 - t) * 44)(Math.min(1, Math.min(xx, w - xx) / (w * 0.3))) + shoreWave(xx, w));
+    g.lineTo(xx, landEdge(xx));
   }
   g.lineTo(w, -8);
   g.closePath();
   g.fill();
   // 물가 선 — 좌우 끝이 아래로 내려와(코사인 낙차) 연못을 두르는 만곡이 된다.
-  const bay = (x: number) => {
-    const t = Math.min(1, Math.min(x, w - x) / (w * 0.3));
-    return (1 - t) * (1 - t) * 44;
-  };
-  const shoreLine = (x: number) => edge + bay(x) + shoreWave(x, w) + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5;
+  const shoreLine = landEdge;
   g.beginPath();
   for (let x = 0; x <= w + 12; x += 12) {
     const y = shoreLine(Math.min(x, w));
@@ -321,6 +334,7 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
     g.ellipse(x, y, rr * 1.3, rr * 0.9, r() * TAU, 0, TAU);
     g.fill();
   }
+  g.restore();
   return c;
 }
 

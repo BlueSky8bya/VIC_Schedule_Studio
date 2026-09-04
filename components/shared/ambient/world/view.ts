@@ -64,11 +64,12 @@ export function moveScale(y: number, h: number): number {
   return d * d * d;
 }
 
-/** 거리 흐림 — 지평선에서 0.55, 아래에서 1(개별 소품의 알파에 곱할 때). 화면 전체의 안개는 drawDepthHaze가 맡는다. */
+/** 거리 흐림 — 지평선에서 0.78, 아래에서 1(개별 소품의 알파에 곱할 때). 화면 전체의 안개는 drawDepthHaze가 맡는다.
+ *  옛 0.55는 먼 나무 **너머로 뒤 나무가 비쳐** 앞뒤 관계가 사라졌다(검토 라운드2 경계 #5: "유령처럼 보인다"). */
 export function depthFade(y: number, h: number): number {
   const hz = horizonY(h);
   const t = Math.max(0, Math.min(1, (y - hz) / Math.max(1, h * HAZE_END_V - hz)));
-  return 0.55 + 0.45 * t;
+  return 0.78 + 0.22 * t;
 }
 
 const hazeCache = new Map<string, CanvasGradient>();

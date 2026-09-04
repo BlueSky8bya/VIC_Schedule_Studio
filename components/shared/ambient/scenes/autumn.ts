@@ -117,7 +117,9 @@ export function createAutumn(seed: number): Scene {
   let gh = 0;
   let gdpr = 0;
   // 바탕 소품 아트(버섯·잔가지·조약돌·마른 풀 + 있으면 관목·바위·그루터기·통나무) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
-  const groundArt = new ArtSet(["mushroom", "twig", "pebble", "grass-dry", "shrub-autumn", "rock", "stump", "log"]);
+  const groundArt = new ArtSet(["mushroom", "twig", "pebble", "grass-dry", "shrub-autumn", "rock", "stump", "log", "tree-oak-autumn", "tree-pine-autumn"], {
+    scaleOf: { "tree-oak-autumn": 3, "tree-pine-autumn": 3 }
+  });
   let gav = -1;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(먼 언덕·작은 나무 줄) — 크기별 한 번
   // 땅의 위 끝(지평선) — 잎·소품·다람쥐·돌풍은 이 아래에서만 산다(지평선 띠는 먼 곳: 소유자 2026-09-04 "언덕에 겹쳐서 떠다닌다").
@@ -313,6 +315,31 @@ export function createAutumn(seed: number): Scene {
       { id: "stump", n: 1 },
       { id: "log", n: 1 }
     ]);
+    // 낙엽·잔가지·도토리가 쌓이려면 **떨어뜨릴 나무**가 있어야 한다 — 무입목 초지에 활엽 낙엽 융단은
+    // 있을 수 없다(검토 라운드2 현실성 #13). 화면 위·좌우 가장자리에 참나무 무리를 두르고, 낙엽 더미도
+    // 그 발치에 모인다(균등 산포 = confetti, 미관 #11).
+    {
+      const spots: { x: number; y: number; k: number }[] = [];
+      for (let c2 = 0; c2 < 3; c2++) {
+        const cx2 = w * (0.12 + 0.38 * c2 + (g0() - 0.5) * 0.14);
+        const n2 = 2 + Math.floor(g0() * 3);
+        for (let i = 0; i < n2; i++) {
+          const y = groundY(0.02 + g0() * 0.16);
+          spots.push({ x: cx2 + (g0() - 0.5) * w * 0.16, y, k: (0.55 + g0() * 0.55) * depthScale(y, h) });
+        }
+      }
+      // 코앞 한 그루 — 화면 아래에서 잘린다(가까움의 신호).
+      spots.push({ x: w * (0.05 + g0() * 0.12), y: groundY(1.02), k: 1.15 + g0() * 0.2 });
+      spots.sort((a2, b2) => a2.y - b2.y);
+      for (const t2 of spots) {
+        softBlob(g, t2.x + 6, t2.y - 3, 60 * t2.k, "70 58 46", 0.14, 0, GROUND_SQUASH * 0.5);
+        drawProp(g, groundArt, g0() < 0.25 ? "tree-pine-autumn" : "tree-oak-autumn", t2.x, t2.y, { k: t2.k, r: g0(), flip: g0() < 0.5 });
+        // 발치의 낙엽 더미 — 여기가 낙엽의 출처다.
+        for (let q = 0; q < 5; q++) {
+          softBlob(g, t2.x + (g0() - 0.5) * 130 * t2.k, t2.y + (g0() * 0.6) * 60 * t2.k, (26 + g0() * 40) * t2.k, g0() < 0.5 ? "122 92 60" : "110 76 66", 0.2, 0, GROUND_SQUASH);
+        }
+      }
+    }
     ground = c;
     horizon = bakeHorizon("autumn", w, h, 1);
     gw = w;

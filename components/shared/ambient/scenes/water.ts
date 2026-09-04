@@ -161,7 +161,8 @@ export function drawWaves(g: CanvasRenderingContext2D, t: number, w: number, o: 
       seg = [];
     };
     for (let x = -10; x <= w + 10; x += 14) {
-      const gate = Math.sin(x * 0.0043 + i * 2.3 + t * 0.07) + 0.42 * Math.sin(x * 0.0131 - i * 1.1);
+      // 주기 ≈ 660px — 화면 폭(1400)에 최소 두 번은 끊긴다. 옛 0.0043은 주기가 화면 폭과 비슷해 한 줄이 통째로 살아남았다.
+      const gate = Math.sin(x * 0.0095 + i * 2.3 + t * 0.07) + 0.42 * Math.sin(x * 0.0231 - i * 1.1);
       if (gate < -0.22) {
         flush();
         continue;

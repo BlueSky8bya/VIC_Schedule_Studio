@@ -26,7 +26,10 @@ describe("world/view — 3/4 시점 카메라", () => {
   });
 
   it("거리 흐림: 먼 것이 더 옅고, 가까운 것은 1", () => {
-    expect(depthFade(horizonY(H), H)).toBeLessThan(0.6);
+    // 0.55 → 0.78(2026-09-04 검토 라운드2 경계 #5): 먼 나무 너머로 뒤 나무가 비쳐 앞뒤 관계가 사라졌다.
+    // 거리감은 엔진의 안개 한 겹(drawDepthHaze)이 맡고, 개별 알파는 살짝만 내린다.
+    expect(depthFade(horizonY(H), H)).toBeLessThan(0.85);
+    expect(depthFade(horizonY(H), H)).toBeGreaterThan(0.7);
     expect(depthFade(H, H)).toBeCloseTo(1, 2);
   });
 

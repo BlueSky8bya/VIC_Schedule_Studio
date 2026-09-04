@@ -354,28 +354,38 @@ export function createWinter(seed: number): Scene {
       g.fill();
     }
     // 바람에 쌓인 눈 이랑 — 밝은 능선과 청회색 그늘 한 쌍. 옛 화면은 흰 종이에 점 몇 개라 "빈 판"이었다.
-    for (let i = 0; i < 5; i++) {
-      const y0 = groundY(0.12 + i * 0.19 + g0() * 0.05);
-      const amp = 10 + g0() * 16;
+    // 이랑은 **전폭 등간격이 아니다** — 5겹을 균일한 세로 간격으로 화면 끝까지 깔았더니 지형이 아니라
+    // 등고선 지도로 읽혔다(검토 라운드2 경계 #11). 자리·길이·진폭·세기를 흩고, 각 이랑은 제 구간에서만 산다.
+    for (let i = 0; i < 4; i++) {
+      const y0 = groundY(0.1 + g0() * 0.82);
+      const amp = 8 + g0() * 26;
+      const x0 = -w * 0.12 + g0() * w * 0.5;
+      const x1 = x0 + w * (0.32 + g0() * 0.6);
+      const str = 0.4 + g0() * 0.45;
       const ridge = (x: number) => y0 + Math.sin(x * 0.0035 + i * 1.7) * amp + Math.sin(x * 0.011 + i) * amp * 0.4;
-      const sg = g.createLinearGradient(0, y0 - 26, 0, y0 + 60);
-      sg.addColorStop(0, "rgb(255 255 255 / 0.7)");
-      sg.addColorStop(0.35, "rgb(255 255 255 / 0.2)");
-      sg.addColorStop(1, "rgb(255 255 255 / 0)");
-      g.fillStyle = sg;
-      g.beginPath();
-      g.moveTo(0, h);
-      for (let x = 0; x <= w; x += 18) g.lineTo(x, ridge(x));
-      g.lineTo(w, h);
-      g.closePath();
-      g.fill();
+      // 구간 양 끝에서 사라지는 마스크(끊긴 자리가 보이지 않게).
+      const span = (x: number) => Math.max(0, Math.min(1, Math.min(x - x0, x1 - x) / (w * 0.14)));
+      for (let x = Math.max(-20, x0); x <= Math.min(w + 20, x1); x += 12) {
+        const a = span(x) * str;
+        if (a <= 0.02) continue;
+        const yy = ridge(x);
+        const sg = g.createLinearGradient(0, yy - 22, 0, yy + 54);
+        sg.addColorStop(0, `rgb(255 255 255 / ${0.7 * a})`);
+        sg.addColorStop(0.35, `rgb(255 255 255 / ${0.2 * a})`);
+        sg.addColorStop(1, "rgb(255 255 255 / 0)");
+        g.fillStyle = sg;
+        g.fillRect(x, yy - 22, 13, 78);
+        // 그늘 입술 — 이랑 아래쪽(바람 그늘).
+        g.fillStyle = `rgb(168 190 214 / ${0.14 * a})`;
+        g.fillRect(x, yy + 2, 13, 7);
+      }
       // 끊어진 호 — 전폭 1.5px 선은 눈밭에 "팽팽한 철선"으로 보였다(검토 2차).
-      g.strokeStyle = "rgb(176 196 218 / 0.26)";
+      g.strokeStyle = `rgb(176 196 218 / ${0.26 * str})`;
       g.lineWidth = 1;
       let pen = false;
       g.beginPath();
-      for (let x = 0; x <= w; x += 16) {
-        if (Math.sin(x * 0.0045 + i * 1.9) <= -0.15) { pen = false; continue; }
+      for (let x = Math.max(0, x0); x <= Math.min(w, x1); x += 16) {
+        if (Math.sin(x * 0.0045 + i * 1.9) <= -0.15 || span(x) < 0.3) { pen = false; continue; }
         if (!pen) { g.moveTo(x, ridge(x) + 3); pen = true; } else g.lineTo(x, ridge(x) + 3);
       }
       g.stroke();
@@ -413,6 +423,31 @@ export function createWinter(seed: number): Scene {
       g.restore();
     }
     // 있을 때만 놓이는 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
+    // 중간 명도 덩어리 — 흰 판 위에 앵커가 하나도 없어 44장 중 최저 대비였다(검토 라운드2 미관 #9).
+    // 바위 노두 두 곳 + 마른 관목 무리를 눈 위에 세운다(눈모자는 소품이 스스로 쓴다).
+    {
+      for (let c2 = 0; c2 < 2; c2++) {
+        const cx2 = w * (0.16 + 0.52 * c2 + (g0() - 0.5) * 0.16);
+        const cy2 = groundY(0.5 + g0() * 0.4);
+        for (let i = 0; i < 4; i++) {
+          const x = cx2 + (g0() - 0.5) * 150;
+          const y = cy2 + (g0() - 0.5) * 70;
+          const k = (0.8 + g0() * 1.1) * depthScale(y, h);
+          softBlob(g, x + 4 * k, y - 1, 16 * k, "132 152 176", 0.22, 0, GROUND_SQUASH * 0.5);
+          drawProp(g, groundArt, "rock", x, y, { k, r: g0(), flip: g0() < 0.5 });
+          // 바위 윗면의 눈
+          g.fillStyle = "rgb(250 253 255 / 0.85)";
+          g.beginPath();
+          g.ellipse(x, y - 15 * k, 13 * k, 4.5 * k, 0, Math.PI, TAU);
+          g.fill();
+        }
+        for (let i = 0; i < 3; i++) {
+          const x = cx2 + (g0() - 0.5) * 220;
+          const y = cy2 + (g0() - 0.5) * 100;
+          drawProp(g, groundArt, "shrub-winter", x, y, { k: (0.8 + g0() * 0.6) * depthScale(y, h), r: g0(), flip: g0() < 0.5 });
+        }
+      }
+    }
     scatterProps(g, groundArt, w, h, g0, [
       { id: "snow-pile", n: 7 },
       { id: "shrub-winter", n: 4 },

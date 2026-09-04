@@ -67,12 +67,24 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
   }
   const glintTarget = (load: number) => (deep ? 0 : Math.round(lerp(6, 26, load)));
   const shadowTarget = (load: number) => (deep ? Math.round(lerp(3, 8, load)) : Math.round(lerp(6, 20, load)));
+  // 무리의 중심 두 곳 — 바다 물고기는 흩어져 다니지 않는다. 균등 산포는 "크기 위계 없는 스프라이트 뿌리기"로
+  // 읽혔다(검토 라운드2 미관 #10).
+  const schools = [
+    { x: 0.28, y: 0.42 },
+    { x: 0.72, y: 0.68 }
+  ];
   function newShadow(): Shadow {
-    const y = top() + 40 + Math.pow(rand(), 0.6) * (h - top() - 80);
-    // 크기는 축척표의 세 등급에서 고른다 — 전부 같은 크기면 바다에 깊이가 없다.
+    // 8할은 두 무리 중 하나에 붙고, 2할은 홀로 다니는 큰 놈.
+    const solo = rand() < 0.2;
+    const sc = schools[rand() < 0.5 ? 0 : 1];
+    const y = solo
+      ? top() + 40 + Math.pow(rand(), 0.6) * (h - top() - 80)
+      : Math.max(top() + 30, Math.min(h - 30, top() + sc.y * (h - top()) + (rand() - 0.5) * (h - top()) * 0.34));
+    const x = solo ? rand() * w : Math.max(-40, Math.min(w + 40, sc.x * w + (rand() - 0.5) * w * 0.42));
+    // 크기 등급 — 무리는 작은 놈, 홀로는 큰 놈(깊이와 위계가 같이 읽힌다).
     const cls = rand();
-    const px = deep ? (cls < 0.5 ? SIZE.fishMid : SIZE.fishBig) : cls < 0.55 ? SIZE.fishSmall : cls < 0.9 ? SIZE.fishMid : SIZE.fishBig;
-    return { x: rand() * w, y, hd: rand() < 0.5 ? 0 : Math.PI, spd: deep ? 8 + rand() * 6 : 22 + rand() * 18, k: px / 46, ph: rand() * TAU };
+    const px = solo ? SIZE.fishBig * (1.1 + rand() * 0.4) : deep ? (cls < 0.5 ? SIZE.fishSmall : SIZE.fishMid) : cls < 0.7 ? SIZE.fishSmall : SIZE.fishMid;
+    return { x, y, hd: rand() < 0.5 ? 0 : Math.PI, spd: deep ? 8 + rand() * 6 : 22 + rand() * 18, k: px / 46, ph: rand() * TAU };
   }
 
   return {

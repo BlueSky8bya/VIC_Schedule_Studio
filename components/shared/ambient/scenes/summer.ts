@@ -466,7 +466,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           spring: ["#9fb783", "#7d9668"],
           summer: ["#8fae76", "#66875a"],
           autumn: ["#ab9a72", "#867757"],
-          winter: ["#dde6ee", "#c2ccd6"]
+          // 얼음(#f0f6fc대)과 **명도가 갈려야** 물/뭍이 구분된다 — 옛 값은 얼음과 같아 바위·통나무가 얼음 위에 놓인 듯했다.
+          winter: ["#cfd8e2", "#a9b5c2"]
         };
         const [nb0, nb1] = NB[season];
         // 얕은 물 — 기슭 바로 앞은 바닥이 비쳐 밝고 탁하다(연안대). 이게 없으면 물이 수직벽이 된다.
@@ -499,16 +500,28 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         ng.lineTo(w, NH);
         ng.closePath();
         ng.clip();
-        for (let x = 0; x <= w; x += 8) softBlob(ng, x, top(x) + 7, 16, season === "winter" ? "150 168 186" : "92 106 74", 0.16, 0, GROUND_SQUASH);
+        for (let x = 0; x <= w; x += 8) softBlob(ng, x, top(x) + 7, 16, season === "winter" ? "108 126 148" : "92 106 74", 0.26, 0, GROUND_SQUASH);
         ng.restore();
-        ng.strokeStyle = season === "winter" ? "rgb(240 248 255 / 0.8)" : "rgb(255 255 250 / 0.75)";
-        ng.lineWidth = 2;
-        ng.beginPath();
-        for (let x = 0; x <= w; x += 8) {
-          if (x === 0) ng.moveTo(x, top(x));
-          else ng.lineTo(x, top(x));
+        // 물가 선은 **끊어져야** 한다 — 전폭 2px 흰 실선은 자연 물가가 아니라 그어 놓은 스트로크로 읽힌다
+        // (검토 라운드2 경계 #9). 잔물결이 닿는 자리에만 남는다.
+        ng.lineCap = "round";
+        {
+          let pen = false;
+          ng.beginPath();
+          for (let x = 0; x <= w; x += 8) {
+            if (Math.sin(x * 0.011 + 1.3) + 0.5 * Math.sin(x * 0.027) < -0.25) {
+              pen = false;
+              continue;
+            }
+            if (!pen) {
+              ng.moveTo(x, top(x));
+              pen = true;
+            } else ng.lineTo(x, top(x));
+          }
+          ng.strokeStyle = season === "winter" ? "rgb(240 248 255 / 0.7)" : "rgb(255 255 250 / 0.65)";
+          ng.lineWidth = 1.8;
+          ng.stroke();
         }
-        ng.stroke();
         // 근경 뭍의 결 — 평평한 초록 판이 되지 않게 얼룩과 짧은 풀획.
         for (let i = 0; i < 40; i++) {
           const x = r1() * w;
@@ -551,7 +564,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           const x = r1() * w;
           const y = top(x) + NH * (0.18 + r1() * 0.6);
           const k = 1.4 + r1() * 1.1;
-          softBlob(ng, x + 4 * k, y - 2, 24 * k, season === "winter" ? "150 168 186" : "70 78 58", 0.16, 0, GROUND_SQUASH * 0.5);
+          softBlob(ng, x + 3 * k, y - 1, 13 * k, season === "winter" ? "150 168 186" : "70 78 58", 0.2, 0, GROUND_SQUASH * 0.45);
           drawProp(ng, shoreArt, "rock", x, y, { k, r: r1(), flip: r1() < 0.5 });
         }
         {
@@ -1259,32 +1272,41 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         g.fillStyle = ig;
         g.fillRect(0, iy, f.w, f.h - iy);
         // 균열 — 같은 각도의 평행선은 "그어 놓은 빗금"이다. 결정적 rng로 방향을 흩고 가지를 친다.
-        g.strokeStyle = "rgb(255 255 255 / 0.7)";
-        g.lineWidth = 1.2;
+        // 굵기 일정한 선이 허공에서 뚝 끝나면 "남은 스트로크"로 읽힌다(검토 라운드2 경계 #12) →
+        // 진행할수록 가늘어지고 옅어져 **0으로 사라진다**. 가지도 더 가늘게.
+        g.lineCap = "round";
         const cr = rng(seed * 17 + 5);
-        g.beginPath();
         for (let i = 0; i < 7; i++) {
           let x0 = cr() * f.w;
           let y0 = iy + 30 + cr() * (f.h - iy - 60);
           let ang = cr() * TAU;
-          for (let k = 0; k < 4; k++) {
+          const segs = 5;
+          for (let k = 0; k < segs; k++) {
+            const fade = 1 - k / segs;
             const len = 40 + cr() * 90;
             const x1 = x0 + Math.cos(ang) * len;
             const y1 = y0 + Math.sin(ang) * len * GROUND_SQUASH;
+            g.strokeStyle = `rgb(255 255 255 / ${0.72 * fade})`;
+            g.lineWidth = 0.35 + 1.15 * fade;
+            g.beginPath();
             g.moveTo(x0, y0);
             g.lineTo(x1, y1);
+            g.stroke();
             if (cr() < 0.45) {
               const bl = 24 + cr() * 40;
               const ba = ang + (cr() - 0.5) * 1.6;
+              g.strokeStyle = `rgb(255 255 255 / ${0.4 * fade})`;
+              g.lineWidth = 0.3 + 0.6 * fade;
+              g.beginPath();
               g.moveTo(x1, y1);
               g.lineTo(x1 + Math.cos(ba) * bl, y1 + Math.sin(ba) * bl * GROUND_SQUASH);
+              g.stroke();
             }
             x0 = x1;
             y0 = y1;
             ang += (cr() - 0.5) * 1.1;
           }
         }
-        g.stroke();
       }
       // 3/4 시점의 지평선 띠 — 먼 것이 안개에 잠긴다. **기슭보다 먼저** 그린다(옛 순서는 안개가 기슭을 덮어
       // 물가가 이중선으로 보였다, 2026-09-04 검토 1차).
