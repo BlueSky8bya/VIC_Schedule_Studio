@@ -180,6 +180,7 @@ function ShowcaseNav() {
   const [bounce, setBounce] = useState<Dir | null>(null);
   const pillTimer = useRef<number | null>(null);
   const bounceTimer = useRef<number | null>(null);
+  const moveTimer = useRef<number | null>(null);
   const swipe = useRef<{ x: number; y: number; t: number } | null>(null);
 
   useEffect(() => {
@@ -213,6 +214,16 @@ function ShowcaseNav() {
       if (pillTimer.current) window.clearTimeout(pillTimer.current);
       pillTimer.current = window.setTimeout(() => setPill(null), 1200);
     };
+    // 떠나는 순간 방향을 문서에 적는다 — 그 쪽 쉐브론이 밀려나며 빛나고, 화면 가장자리에 진행 방향 빛이 스친다.
+    const onDepart = (e: Event) => {
+      const d = (e as CustomEvent<{ dx: number; dy: number; dur: number }>).detail;
+      const dir: Dir = d.dx !== 0 ? (d.dx > 0 ? "right" : "left") : d.dy > 0 ? "down" : "up";
+      const root = document.documentElement;
+      root.setAttribute("data-biome-move", dir);
+      if (moveTimer.current) window.clearTimeout(moveTimer.current);
+      moveTimer.current = window.setTimeout(() => root.removeAttribute("data-biome-move"), Math.max(240, d.dur * 1000));
+    };
+    window.addEventListener("vic:biome-depart", onDepart);
     window.addEventListener("vic:biome", onArrive);
     window.addEventListener("vic:biome-bounce", onBounce);
     // 스와이프(터치·펜) — 60px 이상 한 방향.
@@ -235,6 +246,9 @@ function ShowcaseNav() {
     window.addEventListener("pointerup", onUp, { passive: true });
     return () => {
       window.clearInterval(iv);
+      window.removeEventListener("vic:biome-depart", onDepart);
+      document.documentElement.removeAttribute("data-biome-move");
+      if (moveTimer.current) window.clearTimeout(moveTimer.current);
       window.removeEventListener("vic:biome", onArrive);
       window.removeEventListener("vic:biome-bounce", onBounce);
       window.removeEventListener("pointerdown", onDown);
@@ -265,31 +279,43 @@ function ShowcaseNav() {
       {chev("down", ChevronDown)}
       {chev("left", ChevronLeft)}
       {chev("right", ChevronRight)}
+      {/* 지도 — 현재 자리를 링으로 강조하고, 카드 머리에 지금 있는 곳 이름을 적는다(2026-09-04 소유자:
+          "현재 위치 테두리 하이라이트", "애플 형식으로 감성 있게"). 안 가 본 칸은 옅고 이름이 없다. */}
       <nav aria-label="바이옴 지도" className="biome-map" data-biome={biome}>
-        {BIOME_ROWS.map((row, i) => (
-          <div className={`biome-map-row${row.length === 1 ? " wide" : ""}`} key={i}>
-            {row.map((k) => {
-              const def = BIOMES[k];
-              const on = k === biome;
-              const seen = visited.includes(k);
-              return (
-                <button
-                  aria-current={on ? "location" : undefined}
-                  aria-label={def.nameKo}
-                  className={`biome-dot${on ? " on" : ""}${seen ? " seen" : ""} biome-dot-${k}`}
-                  data-act="biome-map-pick"
-                  data-biome={k}
-                  key={k}
-                  onClick={() => goTo(k)}
-                  title={`${def.nameKo} — ${def.blurb}`}
-                  type="button"
-                >
-                  <span className="biome-dot-name">{def.nameKo}</span>
-                </button>
-              );
-            })}
-          </div>
-        ))}
+        <div className="biome-map-head">
+          <span className="biome-map-here" style={{ background: BIOMES[biome].land ? "var(--map-land)" : "var(--map-water)" }} />
+          <span className="biome-map-title">{BIOMES[biome].nameKo}</span>
+          <span className="biome-map-count">
+            {visited.length}<i>/{Object.keys(BIOMES).length}</i>
+          </span>
+        </div>
+        <div className="biome-map-grid">
+          {BIOME_ROWS.map((row, i) => (
+            <div className={`biome-map-row${row.length === 1 ? " wide" : ""}`} key={i}>
+              {row.map((k) => {
+                const def = BIOMES[k];
+                const on = k === biome;
+                const seen = visited.includes(k);
+                const near = (Object.keys(exits) as Dir[]).some((d) => exits[d] === k);
+                return (
+                  <button
+                    aria-current={on ? "location" : undefined}
+                    aria-label={def.nameKo}
+                    className={`biome-dot${on ? " on" : ""}${seen ? " seen" : ""}${near ? " near" : ""} biome-dot-${k}`}
+                    data-act="biome-map-pick"
+                    data-biome={k}
+                    key={k}
+                    onClick={() => goTo(k)}
+                    title={seen ? `${def.nameKo} — ${def.blurb}` : def.nameKo}
+                    type="button"
+                  >
+                    <span className="biome-dot-name">{def.nameKo}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </nav>
       {pill ? (
         <div className="biome-pill" key={pill.key} role="status">
@@ -332,9 +358,11 @@ export function ShowcaseExit() {
   if (!on || typeof document === "undefined") return null;
   return createPortal(
     <>
+      {/* 안내는 짧게 — 긴 설명은 감상을 방해한다(2026-09-04 소유자). 이동은 쉐브론·미니맵이 스스로 말한다. */}
       <button className="showcase-exit" data-act="ambient-showcase-exit" onClick={() => exitShowcase()} title="배경 감상 모드 나가기 (Esc)" type="button">
         <Eye aria-hidden="true" size={14} />
-        배경 감상 중 · 방향키로 둘러보기 · Esc로 돌아가기
+        <span className="showcase-exit-key">Esc</span>
+        나가기
       </button>
       <ShowcaseNav />
     </>,

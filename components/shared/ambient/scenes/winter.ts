@@ -20,7 +20,7 @@ import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, t
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import type { Weather } from "../world/weather";
 import { ArtSet } from "../art/load";
-import { drawProp, scatterProps } from "../art/props";
+import { drawProp, resetPropField, scatterProps } from "../art/props";
 import { PRINT_K, SIZE } from "../world/scale";
 import { bakeHorizon, depthScale, GROUND_SQUASH, horizonY } from "../world/view";
 
@@ -296,9 +296,10 @@ export function createWinter(seed: number): Scene {
     return "walk";
   }
   function edgeStart(r: () => number = rand): [number, number, number] {
-    const edge = Math.floor(r() * 4);
+    // 좌·우·아래 셋뿐 — 위로 드나들면 지평선 위 하늘에서 나타난다(2026-09-04 소유자).
+    const edge = Math.floor(r() * 3);
     const x = edge === 0 ? -14 : edge === 1 ? w + 14 : r() * w;
-    const y = edge === 2 ? gy() - 14 : edge === 3 ? h + 14 : groundY(r());
+    const y = edge === 2 ? h + 14 : groundY(r());
     const dir = Math.atan2(groundY(0.3 + r() * 0.4) - y, w * (0.3 + r() * 0.4) - x) + (r() - 0.5) * 0.8;
     return [x, y, dir];
   }
@@ -322,6 +323,7 @@ export function createWinter(seed: number): Scene {
   function bakeGround(dpr: number) {
     bakeSprites();
     const g0 = rng((seed * 7 + 13) >>> 0);
+    resetPropField();
     const { c, g } = makeCanvas(w * dpr, h * dpr);
     g.scale(dpr, dpr);
     const base = g.createLinearGradient(0, 0, 0, h);

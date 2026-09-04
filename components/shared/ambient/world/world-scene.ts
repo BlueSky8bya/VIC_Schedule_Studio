@@ -165,6 +165,33 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow"): Sc
         const oy = -trans.dy * p * f.h;
         const from = scenes.get(trans.from);
         const to = scenes.get(trans.to);
+        // 이동 방향 앞머리의 옅은 빛 띠 + 뒤쪽의 옅은 그늘 — "지금 그쪽으로 가고 있다"를 몸으로 알려 준다.
+        const sweep = (gg: CanvasRenderingContext2D, ff: Frame, prog: number) => {
+          if (!trans) return;
+          const punch = Math.sin(Math.PI * Math.min(1, prog / 0.85)); // 가운데서 가장 세다
+          if (punch < 0.02) return;
+          const horiz = trans.dx !== 0;
+          const sgn = horiz ? trans.dx : trans.dy;
+          const span = (horiz ? ff.w : ff.h) * 0.34;
+          const lead = horiz ? (sgn > 0 ? ff.w : 0) : sgn > 0 ? ff.h : 0;
+          const gd = horiz
+            ? gg.createLinearGradient(lead - sgn * span, 0, lead, 0)
+            : gg.createLinearGradient(0, lead - sgn * span, 0, lead);
+          gd.addColorStop(0, "rgb(255 255 255 / 0)");
+          gd.addColorStop(1, `rgb(255 255 255 / ${0.16 * punch})`);
+          gg.save();
+          gg.fillStyle = gd;
+          gg.fillRect(0, 0, ff.w, ff.h);
+          const tail = horiz ? (sgn > 0 ? 0 : ff.w) : sgn > 0 ? 0 : ff.h;
+          const gd2 = horiz
+            ? gg.createLinearGradient(tail, 0, tail + sgn * span * 0.8, 0)
+            : gg.createLinearGradient(0, tail, 0, tail + sgn * span * 0.8);
+          gd2.addColorStop(0, `rgb(40 52 70 / ${0.1 * punch})`);
+          gd2.addColorStop(1, "rgb(40 52 70 / 0)");
+          gg.fillStyle = gd2;
+          gg.fillRect(0, 0, ff.w, ff.h);
+          gg.restore();
+        };
         const draw = (entry: Loaded | undefined, tx: number, ty: number) => {
           if (!entry) return;
           g.save();
@@ -178,18 +205,22 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow"): Sc
         if (trans.dy !== 0) {
           // 세로 이동은 "가까운 땅 ↔ 먼 하늘"이 맞붙어 620ms 동안 어두운 모서리와 옅은 지평선이 붙어 미끄러진다.
           // 가로는 좌우 가장자리가 서로 닮아 그대로 밀어도 되지만, 세로는 겹쳐 넘긴다(crossfade, 2026-09-04 검토 3차).
+          // 다만 **움직임은 남긴다** — 순수 crossfade는 "넘어가는 중"이 안 느껴진다(2026-09-04 소유자) → 22%만 민다.
+          const slide = f.h * 0.22;
           g.save();
           g.globalAlpha *= 1 - p;
-          draw(from, 0, 0);
+          draw(from, 0, -trans.dy * p * slide);
           g.restore();
           g.save();
           g.globalAlpha *= p;
-          draw(to, 0, 0);
+          draw(to, 0, trans.dy * (1 - p) * slide);
           g.restore();
+          sweep(g, f, p);
           return;
         }
         draw(from, ox, oy);
         draw(to, ox + trans.dx * f.w, oy + trans.dy * f.h);
+        sweep(g, f, p);
       },
       pointerDown(f, onBackground) {
         if (trans) return false;

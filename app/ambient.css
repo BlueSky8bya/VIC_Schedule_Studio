@@ -188,6 +188,15 @@ html[data-reduce-motion] .showcase-btn-glow {
 html[data-reduce-motion] .showcase-exit {
   animation: none;
 }
+.showcase-exit-key {
+  padding: 1px 6px;
+  border: 1px solid rgb(150 160 178 / 55%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 55%);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
 /* ── 바이옴 내비(PLAN-20260904-004 §5, showcase.tsx ShowcaseNav) — 감상 중에만 body 포털로. 가장자리 쉐브론 4 · 미니맵(3×3 + 2) ·
    도착 알약. 유리 알약 문법(나가기 알약과 같은 선·바탕), transform/opacity만 움직인다. 이웃이 없는 방향의 쉐브론은 아주 옅다. */
 .biome-chev {
@@ -232,69 +241,145 @@ html[data-reduce-motion] .showcase-exit {
   40% { transform: translate(var(--bx, 0), var(--by, 0)); }
   100% { transform: translate(0, 0); }
 }
+/* 이동 중 — 가는 방향 쉐브론이 그쪽으로 밀리며 또렷해지고, 화면 가장자리에 진행 방향 빛이 스친다.
+   "지금 그쪽으로 가고 있다"를 몸으로 알려 준다(2026-09-04 소유자). */
+html[data-biome-move="up"] .biome-chev-up,
+html[data-biome-move="down"] .biome-chev-down,
+html[data-biome-move="left"] .biome-chev-left,
+html[data-biome-move="right"] .biome-chev-right {
+  opacity: 1;
+  animation: biome-go 0.62s var(--ease) both;
+}
+@keyframes biome-go {
+  0% { transform: translate(0, 0) scale(1); }
+  30% { transform: translate(var(--gx, 0), var(--gy, 0)) scale(1.16); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+html[data-biome-move="up"] .biome-chev-up { --gy: -14px; }
+html[data-biome-move="down"] .biome-chev-down { --gy: 14px; }
+html[data-biome-move="left"] .biome-chev-left { --gx: -14px; }
+html[data-biome-move="right"] .biome-chev-right { --gx: 14px; }
+html[data-biome-move] .biome-map { opacity: 1; }
+html[data-reduce-motion] .biome-chev { animation: none !important; }
 .biome-chev-up.bounce { --by: -8px; }
 .biome-chev-down.bounce { --by: 8px; }
 .biome-chev-left.bounce { --bx: -8px; }
 .biome-chev-right.bounce { --bx: 8px; }
+/* 지도(미니맵) — 애플식 유리 카드: 머리줄에 지금 있는 곳 + 진행(본 화면 수), 아래 3×3 + 바다 두 줄.
+   현재 칸은 링 + 은은한 숨쉬기, 이웃 칸은 살짝 밝다, 안 가 본 칸은 옅다. transform/opacity만 움직인다. */
 .biome-map {
+  --map-land: rgb(150 186 138 / 85%);
+  --map-water: rgb(126 174 208 / 85%);
   position: fixed;
   right: 18px;
   bottom: 18px;
   z-index: 70;
   display: grid;
-  gap: 4px;
-  padding: 8px;
-  border: 1px solid rgb(180 190 205 / 80%);
-  border-radius: 14px;
-  background: rgb(255 253 249 / 66%);
-  box-shadow: 0 6px 18px rgb(60 50 90 / 12%);
-  opacity: 0.55;
-  transition: opacity var(--dur-2, 0.2s) var(--ease);
+  gap: 8px;
+  padding: 10px 11px 11px;
+  border: 1px solid rgb(255 255 255 / 55%);
+  border-radius: 18px;
+  /* 나무·바위가 비쳐 지도가 안 읽히면 안 된다 — 거의 불투명하게. */
+  background: linear-gradient(180deg, rgb(255 253 249 / 95%), rgb(244 247 252 / 92%));
+  box-shadow: 0 10px 30px rgb(40 48 70 / 16%), inset 0 1px 0 rgb(255 255 255 / 75%);
+  /* 카드 자체를 반투명하게 하면(옛 0.7) 배경 알파를 아무리 올려도 나무가 비쳐 지도가 안 읽힌다. */
+  opacity: 0.94;
+  transition: opacity var(--dur-2, 0.2s) var(--ease), transform 0.24s var(--ease-spring, var(--ease));
 }
 .biome-map:hover,
 .biome-map:focus-within {
   opacity: 1;
+  transform: translateY(-2px);
+}
+.biome-map-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 2px 7px;
+  border-bottom: 1px solid rgb(120 134 160 / 16%);
+}
+.biome-map-here {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 55%);
+}
+.biome-map-title {
+  color: var(--ink, #2f333d);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.biome-map-count {
+  margin-left: auto;
+  color: var(--ink-soft, #6b7183);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.biome-map-count i {
+  font-style: normal;
+  opacity: 0.55;
+}
+.biome-map-grid {
+  display: grid;
+  gap: 5px;
 }
 .biome-map-row {
   display: grid;
-  grid-template-columns: repeat(3, 26px);
-  gap: 4px;
+  grid-template-columns: repeat(3, 30px);
+  gap: 5px;
 }
 .biome-map-row.wide {
   grid-template-columns: 1fr;
 }
 .biome-dot {
   position: relative;
-  height: 20px;
+  height: 22px;
   padding: 0;
-  border: 1.5px solid rgb(120 130 150 / 45%);
-  border-radius: 6px;
-  background: rgb(255 255 255 / 40%);
+  border: 1px solid rgb(120 130 150 / 30%);
+  border-radius: 7px;
+  background: rgb(255 255 255 / 34%);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 60%);
   cursor: pointer;
-  transition: transform 0.16s var(--ease), background 0.16s var(--ease), border-color 0.16s var(--ease);
+  opacity: 0.42;
+  transition: transform 0.18s var(--ease-spring, var(--ease)), opacity 0.18s var(--ease), box-shadow 0.18s var(--ease);
 }
-.biome-dot:hover { transform: scale(1.08); }
+.biome-dot:hover { transform: translateY(-1px) scale(1.06); opacity: 1; }
 .biome-dot:active { transform: scale(0.94); }
-.biome-dot.seen { border-color: rgb(80 100 130 / 70%); }
-.biome-dot.on { background: rgb(var(--gs-sea-rgb, 56 128 190) / 0.75); border-color: rgb(var(--gs-sea-rgb, 56 128 190) / 0.9); }
+.biome-dot.seen { opacity: 0.95; border-color: rgb(90 106 132 / 46%); }
+.biome-dot:not(.seen) { border-style: dashed; }
+.biome-dot.near { opacity: 0.78; }
+/* 현재 자리 — 테두리 링(소유자 요청) + 아주 느린 숨쉬기. 색은 바이옴 고유색 그대로 둔다. */
+.biome-dot.on {
+  opacity: 1;
+  border-color: rgb(255 255 255 / 90%);
+  box-shadow: 0 0 0 2.5px rgb(var(--gs-sea-rgb, 56 128 190) / 0.85), 0 4px 12px rgb(40 60 90 / 22%);
+  animation: biome-here 2.6s var(--ease) infinite;
+}
+@keyframes biome-here {
+  0%, 100% { box-shadow: 0 0 0 2.5px rgb(var(--gs-sea-rgb, 56 128 190) / 0.85), 0 4px 12px rgb(40 60 90 / 22%); }
+  50% { box-shadow: 0 0 0 4px rgb(var(--gs-sea-rgb, 56 128 190) / 0.42), 0 4px 12px rgb(40 60 90 / 22%); }
+}
+html[data-reduce-motion] .biome-dot.on { animation: none; }
 .biome-dot-name {
   position: absolute;
   left: 50%;
-  bottom: calc(100% + 6px);
-  transform: translateX(-50%);
-  padding: 2px 7px;
-  border-radius: 6px;
-  background: rgb(40 44 54 / 88%);
+  bottom: calc(100% + 7px);
+  transform: translateX(-50%) translateY(3px);
+  padding: 3px 8px;
+  border-radius: 8px;
+  background: rgb(38 42 52 / 92%);
   color: #fff;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.16s var(--ease);
+  transition: opacity 0.16s var(--ease), transform 0.16s var(--ease);
 }
 .biome-dot:hover .biome-dot-name,
-.biome-dot:focus-visible .biome-dot-name { opacity: 1; }
+.biome-dot:focus-visible .biome-dot-name { opacity: 1; transform: translateX(-50%) translateY(0); }
 .biome-dot-meadow { background: rgb(156 196 140 / 60%); }
 .biome-dot-pond, .biome-dot-valley { background: rgb(143 190 220 / 55%); }
 .biome-dot-forest, .biome-dot-mountain { background: rgb(95 143 98 / 55%); }

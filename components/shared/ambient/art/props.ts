@@ -14,6 +14,23 @@ let shadowRGB = "60 66 58";
 export const setPropShadow = (rgb: string) => {
   shadowRGB = rgb;
 };
+
+// 자리 점유 — 큰 소품끼리 겹쳐 놓이면 "바위가 그루터기를 뚫고 나온" 그림이 된다(2026-09-04 소유자).
+// 장면의 bake() 시작에서 resetPropField(), 놓기 전에 claimSpot()으로 자리를 잡는다. 결정적 rng 순서는 호출 쪽 책임.
+let propField: { x: number; y: number; r: number }[] = [];
+export const resetPropField = () => {
+  propField = [];
+};
+/** 반경 r인 자리를 (x,y)에 잡는다. 이미 찬 자리면 false — 호출 쪽이 다른 후보로 다시 시도한다. */
+export function claimSpot(x: number, y: number, r: number): boolean {
+  for (const o of propField) {
+    const dx = x - o.x;
+    const dy = (y - o.y) / 0.7; // 3/4 시점: 세로로 눌린 발자국 기준
+    if (dx * dx + dy * dy < (r + o.r) * (r + o.r) * 0.62) return false;
+  }
+  propField.push({ x, y, r });
+  return true;
+}
 const SCALE = 2;
 
 type Painter = (g: CanvasRenderingContext2D, W: number, H: number, r: () => number, variant: number) => void;
@@ -516,9 +533,9 @@ function shrub(g: CanvasRenderingContext2D, W: number, H: number, r: () => numbe
   // 잎 자국 몇 개 + 짧은 밑동. 픽셀 격자에서 구워지므로 곡선은 거칠어도 된다.
   const b = H - 1;
   const cx = W / 2;
-  const rw = W * 0.46;
-  const rh = H * 0.72;
-  const n = 11;
+  const rw = W * 0.47;
+  const rh = H * 0.8; // 0.72는 납작한 덩어리, 0.98은 세로 말뚝 — 그 사이(2026-09-04 소유자)
+  const n = 13;
   const pts: [number, number][] = [];
   for (let i = 0; i <= n; i++) {
     const a = Math.PI + (i / n) * Math.PI; // 왼쪽 밑동 → 위 → 오른쪽 밑동
@@ -637,6 +654,8 @@ export function scatterProps(
       // 아트가 있으면 아트, 없으면 대체물이 있는 자리만(대체물조차 없으면 건너뛴다 — rng 소비는 위에서 이미 같다).
       if (!(art && art.has(it.id)) && !fallbackSprite(it.id, 0)) continue;
       const slot = artSlot(it.id);
+      // 겹침 방지 — 찬 자리면 이 개체는 거른다(같은 rng 소비를 유지하려고 재추첨은 하지 않는다).
+      if (!claimSpot(x, y, ((slot?.px[0] ?? 32) * k) / 2)) continue;
       if (slot?.view === "stand" && it.id !== "rock") softBlob(g, x + 2, y - 2, slot.px[0] * 0.45 * k, shadowRGB, 0.14, 0);
       drawProp(g, art, it.id, x, y, { k, r: v, flip });
     }

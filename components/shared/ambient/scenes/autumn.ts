@@ -15,7 +15,7 @@ import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
-import { drawProp, scatterProps } from "../art/props";
+import { drawProp, resetPropField, scatterProps } from "../art/props";
 import { LEAF_K, SIZE } from "../world/scale";
 import { bakeHorizon, depthScale, flatXform, GROUND_SQUASH, horizonY } from "../world/view";
 
@@ -246,6 +246,7 @@ export function createAutumn(seed: number): Scene {
   // 가을 바탕 — 크기별 결정적. 마른 흙 얼룩 + 시든 풀 + 잔가지 + 조약돌 + 버섯.
   function bakeGround(dpr: number) {
     const g0 = rng((seed * 7 + 13) >>> 0);
+    resetPropField();
     const { c, g } = makeCanvas(w * dpr, h * dpr);
     g.scale(dpr, dpr);
     // 흙 바탕 — 이게 없어 지금까지 "가을 땅"이 페이지의 흰색이었고, 낙엽·잔가지가 흰 종이 위의 점으로 보였다.
@@ -447,9 +448,10 @@ export function createAutumn(seed: number): Scene {
     specks.push({ x: s.x + Math.cos(s.dir) * 14, y: s.y + Math.sin(s.dir) * 14, vx: Math.cos(back) * v, vy: Math.sin(back) * v, life: 1 });
   }
   function startSquirrel(t: number) {
-    const e = Math.floor(rand() * 4);
+    // 가장자리는 좌·우·아래 셋뿐 — 위로 드나들면 지평선을 넘어 "언덕 위 하늘로 사라진다"(2026-09-04 소유자).
+    const e = Math.floor(rand() * 3);
     const x = e === 0 ? -40 : e === 1 ? w + 40 : rand() * w;
-    const y = e === 2 ? gy() - 40 : e === 3 ? h + 40 : groundY(rand());
+    const y = e === 2 ? h + 40 : groundY(rand());
     const target = nearestAcorn(x, y);
     let phase: SqPhase = "run";
     let tx = w * (0.2 + rand() * 0.6);
@@ -491,10 +493,10 @@ export function createAutumn(seed: number): Scene {
   function squirrelLeave(t: number, zigzag = false) {
     if (!squirrel) return;
     const s = squirrel;
+    // 출구도 좌·우·아래만(위 = 하늘). 땅짐승은 지평선 너머로 걸어 나가지 않는다.
     const exits: [number, number][] = [
       [-60, s.y],
       [w + 60, s.y],
-      [s.x, -60],
       [s.x, h + 60]
     ];
     exits.sort((a, b) => Math.hypot(a[0] - s.x, a[1] - s.y) - Math.hypot(b[0] - s.x, b[1] - s.y));

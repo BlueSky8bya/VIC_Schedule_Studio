@@ -28,7 +28,7 @@ import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, drawSprite, loadSprite, type Sprite } from "../assets";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
-import { drawProp, scatterProps } from "../art/props";
+import { drawProp, resetPropField, scatterProps } from "../art/props";
 import { SIZE } from "../world/scale";
 import { bakeHorizon, depthScale, GROUND_SQUASH, horizonY } from "../world/view";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
@@ -184,7 +184,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
 
   // 바탕은 크기별로 같은 그림(리사이즈 때 다시 구워도 배치가 안 바뀐다 — 별도 결정적 난수).
   function bakeGround(dpr: number) {
-    const g0 = rng((seed * 7 + 13) >>> 0);
+    const g0 = rng((seed * 7 + 13 + (summer ? 977 : 0)) >>> 0);
+    resetPropField();
     const { c, g } = makeCanvas(w * dpr, h * dpr);
     g.scale(dpr, dpr);
     // 불투명 잔디 바탕 — 반투명이면 페이지의 흰색이 비쳐 "물 빠진 연둣빛 벽지"가 된다(2026-09-04 검토 2차).

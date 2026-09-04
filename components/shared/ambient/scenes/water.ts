@@ -56,7 +56,7 @@ export function bakeWater(w: number, h: number, top: number, dpr: number, pal: W
       const y = top + t * (h - top);
       const x = r() * w;
       const rad = (16 + t * 44 + r() * 20) * (0.7 + r() * 0.6);
-      const a = (0.03 + 0.08 * t) * (0.6 + r() * 0.7);
+      const a = (0.02 + 0.055 * t) * (0.6 + r() * 0.7); // 물결무늬는 전반적으로 더 옅게(2026-09-04 소유자)
       const rg = g.createRadialGradient(x, y, 1, x, y, rad);
       rg.addColorStop(0, `rgb(${pal.web} / ${a})`);
       rg.addColorStop(0.55, `rgb(${pal.web} / ${a * 0.55})`);
@@ -81,7 +81,7 @@ export function bakeWater(w: number, h: number, top: number, dpr: number, pal: W
     const near = 0.3 + 0.7 * p0;
     const bg2 = g.createLinearGradient(0, y - bh * 0.5, 0, y + bh * 0.5);
     bg2.addColorStop(0, `rgb(${pal.web} / 0)`);
-    bg2.addColorStop(0.5, `rgb(${pal.web} / ${0.05 + 0.07 * near})`);
+    bg2.addColorStop(0.5, `rgb(${pal.web} / ${0.035 + 0.05 * near})`);
     bg2.addColorStop(1, `rgb(${pal.web} / 0)`);
     g.fillStyle = bg2;
     g.beginPath();
@@ -100,7 +100,7 @@ export function bakeWater(w: number, h: number, top: number, dpr: number, pal: W
     for (let i = 0; i < Math.round(rw * rh / 90); i++) {
       const y2 = Math.pow(r2(), 0.7) * rh;
       const len = 2 + (y2 / rh) * 9;
-      rg.fillStyle = `rgb(${pal.web} / ${0.05 + 0.1 * (y2 / rh)})`;
+      rg.fillStyle = `rgb(${pal.web} / ${0.035 + 0.07 * (y2 / rh)})`;
       rg.fillRect(r2() * rw, y2, len, 1);
     }
     g.save();
@@ -171,4 +171,70 @@ export function drawGlints(g: CanvasRenderingContext2D, t: number, glints: { x: 
     g.fill();
     g.restore();
   }
+}
+
+/** 포인터 항적(바다·해안용) — 민물(연못)의 제트스키 항적을 가볍게 옮긴 것. 마디마다 퍼지는 눌린 고리 +
+ *  아주 짧은 V자 팔. 소유자 2026-09-04: "V자는 아주 짧게 가고 더 빨리 흩어지며 연하게". */
+export type Trail = { pts: { x: number; y: number; nx: number; ny: number; t0: number; sf: number }[]; lx: number; ly: number };
+export const newTrail = (): Trail => ({ pts: [], lx: -1e9, ly: -1e9 });
+
+/** 포인터가 물 위(top~bottom)에 있으면 14px마다 마디를 남긴다. 수명 지난 마디는 버린다. */
+export function stepTrail(tr: Trail, p: { x: number; y: number; inside: boolean; speed: number }, t: number, top: number, bottom: number) {
+  const TTL = 1.1;
+  while (tr.pts.length && t - tr.pts[0].t0 > TTL) tr.pts.shift();
+  if (!p.inside || p.y < top + 6 || p.y > bottom) return;
+  const dx = p.x - tr.lx;
+  const dy = p.y - tr.ly;
+  const d = Math.hypot(dx, dy);
+  if (d < 14) return;
+  tr.lx = p.x;
+  tr.ly = p.y;
+  const nx = -dy / d;
+  const ny = dx / d;
+  tr.pts.push({ x: p.x, y: p.y, nx, ny, t0: t, sf: Math.min(1, p.speed / 900) });
+  if (tr.pts.length > 60) tr.pts.shift();
+}
+
+/** 팔은 0.3초 만에 흩어지고 고리는 1.1초 — 둘 다 아주 옅게. squash = 3/4 시점의 바닥 눌림. */
+export function drawTrail(g: CanvasRenderingContext2D, tr: Trail, t: number, squash: number, foam: string) {
+  if (tr.pts.length < 2) return;
+  g.save();
+  g.lineCap = "round";
+  g.lineJoin = "round";
+  const ARM = 0.34;
+  const armPt = (n: Trail["pts"][number], sd: number, age: number): [number, number] => {
+    const d = Math.min((22 + 60 * n.sf) * Math.pow(age, 0.8) + 3, 26 + 22 * n.sf);
+    return [n.x + n.nx * sd * d, n.y + n.ny * sd * d * squash];
+  };
+  for (const sd of [-1, 1]) {
+    for (let i = 1; i < tr.pts.length; i++) {
+      const a0 = tr.pts[i - 1];
+      const a1 = tr.pts[i];
+      const age = t - a1.t0;
+      const k = 1 - age / ARM;
+      if (k <= 0) continue;
+      const fade = Math.pow(k, 2.6);
+      g.strokeStyle = `rgb(${foam} / ${0.13 * fade * (0.5 + 0.5 * a1.sf)})`;
+      g.lineWidth = 2.2 + 1.6 * (1 - k);
+      const [x0, y0] = armPt(a0, sd, t - a0.t0);
+      const [x1, y1] = armPt(a1, sd, age);
+      g.beginPath();
+      g.moveTo(x0, y0);
+      g.lineTo(x1, y1);
+      g.stroke();
+    }
+  }
+  // 퍼지는 고리 — 마디마다 하나, 커지며 옅어진다.
+  for (const n of tr.pts) {
+    const age = t - n.t0;
+    const k = 1 - age / 1.1;
+    if (k <= 0) continue;
+    const rr = 4 + 26 * (1 - k);
+    g.strokeStyle = `rgb(${foam} / ${0.16 * Math.pow(k, 1.8) * (0.4 + 0.6 * n.sf)})`;
+    g.lineWidth = 1.2;
+    g.beginPath();
+    g.ellipse(n.x, n.y, rr, rr * squash, 0, 0, TAU);
+    g.stroke();
+  }
+  g.restore();
 }

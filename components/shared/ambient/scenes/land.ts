@@ -9,12 +9,16 @@ import type { Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet, drawArt } from "../art/load";
-import { drawProp, scatterProps, setPropShadow } from "../art/props";
+import { claimSpot, drawProp, resetPropField, scatterProps, setPropShadow } from "../art/props";
 import { SIZE } from "../world/scale";
 import { bakeHorizon, depthFade, depthScale, horizonY, GROUND_SQUASH } from "../world/view";
 import { canopyTreeSprite, bareTreeSprite } from "../world/traces-draw";
 
 export type LandKind = "forest" | "hill" | "valley" | "mountain";
+
+// 계절마다 소품·나무 자리를 다르게 — 같은 시드면 네 계절이 "색만 바꾼 한 장"이 된다(2026-09-04 소유자).
+const SEASON_SEED: Record<SeasonKey, number> = { spring: 0, summer: 977, autumn: 1861, winter: 2749 };
+
 
 // 땅 그라데이션 — 위(멀다)는 밝고 아래(가깝다)는 확실히 짙게(≈45 L 폭). 폭이 좁으면 원근을 안개가 혼자 지고
 // 열 바이옴이 "같은 뿌연 판"이 된다(2026-09-04 검토 5차: 숲만 σ 30+, 나머지는 9~16).
@@ -112,7 +116,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
 
   function bake(dpr: number) {
     setPropShadow(shColor);
-    const g0 = rng((seed * 7 + 13) >>> 0);
+    resetPropField();
+    const g0 = rng((seed * 7 + 13 + SEASON_SEED[season]) >>> 0);
     const c = document.createElement("canvas");
     c.width = Math.max(1, Math.ceil(w * dpr));
     c.height = Math.max(1, Math.ceil(h * dpr));
@@ -264,16 +269,16 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       const WALL: Record<SeasonKey, string> = { spring: "72 88 66", summer: "72 88 66", autumn: "96 84 60", winter: "124 138 154" };
       const wc = WALL[season];
       const vg = g.createLinearGradient(0, 0, w, 0);
-      vg.addColorStop(0, `rgb(${wc} / 0.18)`);
-      vg.addColorStop(0.3, `rgb(${wc} / 0.04)`);
+      vg.addColorStop(0, `rgb(${wc} / 0.3)`);
+      vg.addColorStop(0.26, `rgb(${wc} / 0.04)`);
       vg.addColorStop(0.5, `rgb(${wc} / 0)`);
-      vg.addColorStop(0.7, `rgb(${wc} / 0.04)`);
-      vg.addColorStop(1, `rgb(${wc} / 0.18)`);
+      vg.addColorStop(0.74, `rgb(${wc} / 0.04)`);
+      vg.addColorStop(1, `rgb(${wc} / 0.3)`);
       g.fillStyle = vg;
       g.fillRect(0, gy(), w, h - gy());
       // 위(멀다)로 갈수록 사면이 좁혀 든다 — 지평선 쪽에 한 겹 더.
       const vg2 = g.createLinearGradient(0, gy(), 0, groundY(0.55));
-      vg2.addColorStop(0, `rgb(${wc} / 0.14)`);
+      vg2.addColorStop(0, `rgb(${wc} / 0.2)`);
       vg2.addColorStop(1, `rgb(${wc} / 0)`);
       g.fillStyle = vg2;
       g.fillRect(0, gy(), w, groundY(0.55) - gy());
@@ -283,7 +288,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         const p = i / 24;
         stream.push({ x: w * (0.25 + 0.45 * p) + Math.sin(p * 9 + 1) * w * 0.08, y: groundY(0.001 + 1.06 * p) });
       }
-      const streamW = (p: number) => 5 + 46 * p * p;
+      // 물길 폭 — 나중에 계곡 물고기·수달이 살 자리라 넉넉히(2026-09-04 소유자: "너무 좁다").
+      const streamW = (p: number) => 14 + 104 * p * p;
       // 풀포기 먼저 — 옛 순서는 시내 **위**에 풀이 자라 있었다. 물길 폭 안쪽은 비운다.
       const nearStream = (x: number, y: number) => {
         for (let i = 0; i < stream.length - 1; i++) {
@@ -313,7 +319,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       }
       // 자갈 둔치 → 물 → 물빛 하이라이트. 획을 24개로 쪼개 그리면 굽이마다 바깥쪽에 톱니가 남는다(검토 2차) →
       // 각 층을 **채워진 리본 하나**로: 왼쪽 가장자리를 따라 내려가고 오른쪽 가장자리를 거슬러 올라와 닫는다.
-      const ribbon = (kw: number, col: string) => {
+      const ribbonPath = (kw: number) => {
         g.beginPath();
         for (let i = 0; i < stream.length; i++) {
           const p = i / 24;
@@ -339,6 +345,9 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           g.lineTo(stream[i].x - nx * hw, stream[i].y - ny * hw);
         }
         g.closePath();
+      };
+      const ribbon = (kw: number, col: string) => {
+        ribbonPath(kw);
         g.fillStyle = col;
         g.fill();
       };
@@ -354,18 +363,33 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       ribbon(1, wm);
       ribbon(0.42, wl);
       // 물가 바위 — 시내를 따라 양옆에(계곡 = "바위 사이 시내"인데 바위가 아무 데나 있으면 그냥 초원이다).
+      // 일부러 물가에 **걸치게** 놓고, 아래에서 물을 한 겹 더 덮어 잠긴 부분이 물빛으로 보이게 한다.
       for (let i = 2; i < stream.length - 1; i += 2) {
         const s = stream[i];
         const p = i / 24;
-        const halfW = (streamW(p) * 1.45) / 2; // 자갈 둔치 바깥(옛 선형 폭이라 바위가 물 위에 섰다, 검토 3차)
+        const halfW = (streamW(p) * 1.45) / 2;
         for (const sd of [-1, 1]) {
           if (g0() < 0.35) continue;
-          const x = s.x + sd * (halfW + 8 + g0() * 26);
+          const x = s.x + sd * (halfW + g0() * 30 - 6);
+          const y = s.y + (g0() - 0.5) * 10;
           const k = (0.7 + p * 0.8 + g0() * 0.4) * depthScale(s.y, h);
+          if (!claimSpot(x, y, 20 * k)) continue;
           shadow(g, x + 2, s.y - 1, 34 * k, 0.16);
-          drawProp(g, art, "rock", x, s.y + (g0() - 0.5) * 10, { k, r: g0(), flip: sd < 0 });
+          drawProp(g, art, "rock", x, y, { k, r: g0(), flip: sd < 0 });
         }
       }
+      // 물 한 겹 더 — 물길 안에 들어온 바위·풀은 잠긴 것처럼 물빛에 잠긴다(상식: 물과 닿은 곳은 물속이다, 2026-09-04 소유자).
+      g.save();
+      ribbonPath(1);
+      g.clip();
+      g.fillStyle = season === "winter" ? "rgb(224 234 242 / 0.55)" : "rgb(150 190 214 / 0.5)";
+      g.fillRect(0, gy(), w, h - gy());
+      // 잠긴 가장자리의 굴절 — 수면 선에 옅은 흰 테.
+      g.strokeStyle = "rgb(240 250 255 / 0.35)";
+      g.lineWidth = 1.4;
+      ribbonPath(1);
+      g.stroke();
+      g.restore();
       scatterProps(g, art, w, h, g0, [{ id: "rock", n: 5, band: "any" }, { id: `shrub-${season}`, n: 3, band: "any" }]);
       foam.length = 0;
       for (let i = 0; i < 26; i++) foam.push({ u: g0(), lane: (g0() - 0.5) * 0.6, sp: 0.06 + g0() * 0.05 });

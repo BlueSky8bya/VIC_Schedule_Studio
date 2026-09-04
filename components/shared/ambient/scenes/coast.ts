@@ -11,11 +11,15 @@ import type { Frame, Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { ArtSet } from "../art/load";
-import { drawProp } from "../art/props";
+import { drawProp, resetPropField } from "../art/props";
 import { horizonY, depthScale, GROUND_SQUASH, bakeHorizon } from "../world/view";
-import { bakeWater, drawGlints, drawWaves, waterPalette } from "./water";
+import { bakeWater, drawGlints, drawTrail, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
 
 export type CoastMode = "tidal" | "sandy" | "rocky";
+
+// 계절마다 다른 배치(2026-09-04 소유자) — 같은 시드면 네 계절이 색만 다른 한 장이다.
+const SEASON_SEED: Record<SeasonKey, number> = { spring: 0, summer: 977, autumn: 1861, winter: 2749 };
+
 
 const LAND_V = 0.64; // 물가 선(정규화) — 그 아래가 뭍
 // 뭍 캔버스 여분 — 물가 선이 조석·숨·만곡으로 최대 ±(0.06h + 34)px 움직인다. 정적 shoreY()로 높이를 잡으면
@@ -57,6 +61,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
   let gdpr = 0;
   const glints: { x: number; y: number; ph: number; r: number }[] = [];
   const spray: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
+  const trail = newTrail();
   const art = new ArtSet(["rock", "log", "reed", "pebble", "shell-clam", "starfish", "driftwood"]);
   let av = -1;
   const pal = waterPalette(season);
@@ -77,7 +82,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
     lc.height = Math.max(1, Math.ceil((h - shoreY() + 60 + PAD) * dpr));
     const g = lc.getContext("2d")!;
     g.scale(dpr, dpr);
-    const r = rng(seed * 7 + 3);
+    const r = rng(seed * 7 + 3 + SEASON_SEED[season]);
+    resetPropField();
     const H = h - shoreY() + 60 + PAD;
     const VIS = H - PAD;
     // 뭍 띠 안의 원근 — 전역 depthScale은 이 좁은 띠에서 0.85~1.0밖에 안 움직여 원근이 안 읽힌다(검토 4차).
@@ -350,6 +356,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
     },
     step(f) {
       const { dt, load } = f;
+      // 포인터 물결 — 물가 선 위쪽(바다)에서만.
+      stepTrail(trail, f.p, f.t, top(), shoreY() - 34);
       if (av !== art.version) bake(f.dpr);
       const gt = Math.round(lerp(4, 16, load));
       while (glints.length < gt) glints.push({ x: rand() * w, y: top() + 20 + rand() * (shoreY() - top() - 40), ph: rand() * TAU, r: 1.2 + rand() * 1.4 });
@@ -377,7 +385,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       const sy = shoreY() - tide(f) * f.h * 0.02 - Math.sin(t * 0.5) * 3;
       // 파도 — 수평선에서 물가까지, 마지막 선은 물가에서 거품이 된다.
       // 파도는 물가 곡선의 가장 높은 지점보다 위에서 끝난다(곡선이 파도 선을 덮어 잘라내지 않게).
-      drawWaves(g, t, f.w, { top: top(), bottom: sy - 30, bands: 4, speed: 0.05, amp: 12, alpha: 0.22, foam: pal.foam, shore: true });
+      drawWaves(g, t, f.w, { top: top(), bottom: sy - 30, bands: 4, speed: 0.05, amp: 12, alpha: 0.15, foam: pal.foam, shore: true });
+      drawTrail(g, trail, t, GROUND_SQUASH, pal.foam);
       drawGlints(g, t, glints);
       // 뭍 — 물가 선 아래. 젖은 띠(어두운 반투명)가 물가 위로 살짝.
       if (land) {

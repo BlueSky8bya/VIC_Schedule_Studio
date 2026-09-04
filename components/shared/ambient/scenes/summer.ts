@@ -116,6 +116,9 @@ const FISH_WAVE_K = 2.4; // 몸 길이당 파수(rad) — 꼬리로 갈수록 �
 
 /** 민물(연못) 바이옴 — 옛 "여름 물 장면"이 PLAN-004에서 연못이 됐다. season으로 옷을 갈아입는다: 겨울 = 얼음(오리 없음·물고기 느림), 봄·가을 =
  *  연잎 없음(연대기가 6~8월에만 준다). 물 바탕은 이제 캔버스가 굽는다(CSS 물결 층은 더 마운트하지 않는다 — 여름 기본 화면이 초원이라). */
+// 계절마다 다른 배치(season.length는 넷 다 6이라 변주가 없었다).
+const SEASON_SEED: Record<SeasonKey, number> = { spring: 0, summer: 977, autumn: 1861, winter: 2749 };
+
 export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): Scene {
   const rand = rng(seed);
   const season: SeasonKey = opts.season ?? "summer";
@@ -430,7 +433,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         // 기슭 소품(아트가 있을 때만) — 물가 선 위쪽 띠에 결정적으로: 갈대 무리·통나무·바위·관목.
         const sg = shore.getContext("2d");
         if (sg) {
-          const r0 = rng(91 + w + season.length * 977); // 계절마다 다른 배치 — 넷이 같은 그림이면 계절이 안 읽힌다
+          const r0 = rng(91 + w + SEASON_SEED[season]); // 계절마다 다른 배치 — 넷이 같은 그림이면 계절이 안 읽힌다
           const edge = shore.height - 24;
           // 아트가 없으면 대체물로 — 옛 코드는 아트 전용이라 기슭이 늘 맨땅이었다(검토 4차).
           const stand = (id: string, n: number, k: number, rr?: number) => {
@@ -472,7 +475,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       lastLoad = load;
       lastTraces = f.traces.filter((tr) => tr.kind === "lilypad").length;
       ensureLo(f);
-      const ttl = lerp(1.5, 3.0, load);
+      const ttl = lerp(1.0, 1.9, load); // 항적 수명 — 더 빨리 흩어지게(2026-09-04 소유자)
       const gapPx = lerp(9, 4, load);
       // ① 포인터 항적 — 길(팔·마루용 노드) + 거품 도장(길 위 몇 px마다). 집중 모드(끌기 중)엔 쉰다 — 끌기 스프링에 프레임 양보.
       if (!f.dim && p.inside && p.moved && p.speed > 40) {
@@ -997,7 +1000,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
     draw(g, f) {
       const { t, load } = f;
       if (!lo || !stampSpr) return;
-      const ttl = lerp(1.5, 3.0, load);
+      const ttl = lerp(1.0, 1.9, load); // 항적 수명 — 더 빨리 흩어지게(2026-09-04 소유자)
       const sttl = ttl * 0.9; // 거품 띠도 조금 짧게(2026-09-04 사용자: 항적이 너무 오래 남는다)
       const L = lo.g;
       L.setTransform(1, 0, 0, 1, 0, 0);
@@ -1052,7 +1055,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         const k = 1 - age / sttl;
         if (k <= 0) continue;
         const R = s.r * (1 + 1.9 * (1 - k));
-        L.globalAlpha = 0.3 * Math.pow(k, 1.7) * (0.4 + 0.6 * s.sf);
+        L.globalAlpha = 0.19 * Math.pow(k, 1.7) * (0.4 + 0.6 * s.sf);
         L.drawImage(stampSpr, s.x - R, s.y - R, R * 2, R * 2);
       }
       L.globalAlpha = 1;
@@ -1060,9 +1063,9 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         // 각 점의 벌어진 정도 d = (옆으로 퍼지는 속도 ≈ 0.34×진행속도 상당) × 나이. 나이 0.85승 — 처음 빠르게 벌어지고
         // 뒤로 갈수록 느려진다. **팔은 짧게 산다**(2026-09-04 사용자: "선이 너무 멀리까지 퍼져 어색") — 거품 띠의 절반 수명에
         // 가파르게(2.4승) 옅어지고, 벌어짐도 70~130px에서 멈춘다. 오래 남는 건 거품 띠뿐.
-        const armTtl = ttl * 0.5;
+        const armTtl = ttl * 0.28; // V자 팔은 아주 짧게
         const armPt = (n: Node, s: number, age: number): [number, number] => {
-          const d = Math.min((36 + 150 * n.sf) * Math.pow(age, 0.85) + 4, 70 + 60 * n.sf);
+          const d = Math.min((30 + 110 * n.sf) * Math.pow(age, 0.8) + 3, 42 + 34 * n.sf);
           return [n.x + n.nx * s * d, n.y + n.ny * s * d];
         };
         const passes = load >= 0.3 ? [0, 1] : [1];
@@ -1079,10 +1082,10 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
               const [x1, y1] = armPt(a1, s, age);
               const weight = 0.5 + 0.5 * a1.sf;
               if (pass === 0) {
-                L.strokeStyle = `rgb(150 195 228 / ${0.12 * fade * weight})`;
+                L.strokeStyle = `rgb(150 195 228 / ${0.07 * fade * weight})`;
                 L.lineWidth = 14 + 12 * (1 - k);
               } else {
-                L.strokeStyle = `rgb(255 255 250 / ${0.26 * fade * weight})`;
+                L.strokeStyle = `rgb(255 255 250 / ${0.14 * fade * weight})`;
                 L.lineWidth = 4 + 2 * (1 - k);
               }
               L.beginPath();
@@ -1106,7 +1109,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             const by = back.y - n.y;
             const bl = Math.hypot(bx, by) || 1;
             const bulge = (14 + 40 * n.sf) * Math.pow(age, 0.6);
-            L.strokeStyle = `rgb(255 255 250 / ${0.22 * k * (0.5 + 0.5 * n.sf)})`;
+            L.strokeStyle = `rgb(255 255 250 / ${0.12 * k * (0.5 + 0.5 * n.sf)})`;
             L.lineWidth = 2.2;
             L.beginPath();
             L.moveTo(lx, ly);

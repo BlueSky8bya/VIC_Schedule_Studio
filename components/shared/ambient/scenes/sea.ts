@@ -9,7 +9,7 @@ import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { SIZE } from "../world/scale";
 import { horizonY, GROUND_SQUASH, bakeHorizon, ySort } from "../world/view";
 import { ASSET, loadSprite, type Sprite } from "../assets";
-import { bakeWater, drawGlints, drawWaves, waterPalette } from "./water";
+import { bakeWater, drawGlints, drawTrail, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
 
 type Shadow = { x: number; y: number; hd: number; spd: number; k: number; ph: number };
 
@@ -27,6 +27,7 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
   const glints: { x: number; y: number; ph: number; r: number }[] = [];
   const shadows: Shadow[] = [];
   let stars: { x: number; y: number; r: number; ph: number }[] = [];
+  const trail = newTrail();
   // 물고기 = **물 밑 실루엣**(연못과 같은 PD top-view 도안). 옛 코드의 타원 두 개는 "얼룩"으로 읽혔다(검토 2차).
   const FISH_SPR = 80;
   const fishSpr: (Sprite | null)[] = [null, null];
@@ -37,8 +38,9 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
 
   function bake(dpr: number) {
     // 바다는 바닥이 안 보인다 — caustic 없음(얕은 물 문법을 그대로 쓰면 "물 위의 낙서"가 된다).
-    const skyLo = deep ? "#c9d6e2" : "#eef5fa";
-    water = bakeWater(w, h, top(), dpr, pal, seed, false, skyLo);
+    // 깊은 바다는 **물속**이라 위쪽에도 물이 차 있어야 한다(top=0). 옛 코드는 수평선 위가 비어 페이지 크림색이 비쳤다.
+    const skyLo = deep ? undefined : "#eef5fa";
+    water = bakeWater(w, h, deep ? 0 : top(), dpr, pal, seed, false, skyLo);
     // 하늘 한 줄 — 수평선 위 12%: 옅은 하늘빛(밤·노을 톤은 엔진 tint가 얹는다). 깊은 바다는 더 어둑한 하늘.
     const { c, g } = (() => {
       const cv = document.createElement("canvas");
@@ -81,6 +83,8 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
     },
     step(f) {
       const { dt, load, t } = f;
+      // 포인터 물결 — 민물과 같은 문법(2026-09-04 소유자: "바다들도 민물에서 그러는 것처럼").
+      stepTrail(trail, f.p, t, top(), f.h);
       const gt = glintTarget(load);
       while (glints.length < gt) glints.push({ x: rand() * w, y: top() + 20 + rand() * (h - top() - 40), ph: rand() * TAU, r: 1.4 + rand() * 1.6 });
       if (glints.length > gt) glints.length = gt;
@@ -121,7 +125,7 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
       // 너울(큰 것 2겹) — 옅은 밝은 띠가 천천히 내려온다.
       if (!deep) drawWaves(g, t, f.w, { top: top(), bottom: f.h, bands: 3, speed: 0.045, amp: 16, alpha: 0.22, foam: pal.foam });
       // 거품 선(잔물결) — 조금 빠르고 가늘게.
-      if (!deep) drawWaves(g, t * 1.6, f.w, { top: top(), bottom: f.h, bands: 5, speed: 0.06, amp: 6, alpha: 0.16, foam: pal.foam });
+      if (!deep) drawWaves(g, t * 1.6, f.w, { top: top(), bottom: f.h, bands: 5, speed: 0.06, amp: 6, alpha: 0.1, foam: pal.foam });
       // (깊은 바다엔 수면 문법을 그리지 않는다 — 물속인데 파도가 가로지르면 카메라가 둘이다.)
       // 물고기 떼 그림자 — 실루엣을 눌러서(3/4 시점) 찍는다. 멀수록 작고 옅게.
       if (!fishAsked) {
@@ -156,34 +160,9 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
         }
         g.restore();
       }
+      drawTrail(g, trail, t, GROUND_SQUASH, pal.foam);
       drawGlints(g, t, glints);
       if (deep) {
-        // 광선 줄기 — 수면에서 내려오는 옅은 빛 두 줄기(어두운 판을 깨는 구조).
-        // 가장자리는 **가로 그라데이션**으로 풀어야 한다 — 곧은 모서리면 "반투명 종이 쐐기"가 된다(검토 5차).
-        for (const [ux, wd] of [[0.28, 150], [0.66, 110]] as const) {
-          const cx4 = f.w * ux;
-          const lgx = g.createLinearGradient(cx4 - wd, 0, cx4 + wd, 0);
-          lgx.addColorStop(0, "rgb(226 240 248 / 0)");
-          lgx.addColorStop(0.5, "rgb(226 240 248 / 0.1)");
-          lgx.addColorStop(1, "rgb(226 240 248 / 0)");
-          const vg3 = g.createLinearGradient(0, 0, 0, f.h * 0.85);
-          vg3.addColorStop(0, "rgb(255 255 255 / 1)");
-          vg3.addColorStop(1, "rgb(255 255 255 / 0)");
-          g.save();
-          g.beginPath();
-          g.moveTo(cx4 - wd * 0.25, 0);
-          g.lineTo(cx4 + wd * 0.25, 0);
-          g.lineTo(cx4 + wd, f.h * 0.85);
-          g.lineTo(cx4 - wd, f.h * 0.85);
-          g.closePath();
-          g.clip();
-          g.fillStyle = lgx;
-          g.fillRect(cx4 - wd, 0, wd * 2, f.h * 0.85);
-          g.globalCompositeOperation = "destination-in";
-          g.fillStyle = vg3;
-          g.fillRect(cx4 - wd, 0, wd * 2, f.h * 0.85);
-          g.restore();
-        }
         // 바다눈 — 천천히 내려오는 흰 알갱이(깊은 바다의 유일한 질감).
         const nSnow = Math.round(lerp(120, 360, f.load));
         const rs = rng(seed * 3 + 7);
