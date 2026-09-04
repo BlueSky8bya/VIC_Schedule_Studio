@@ -97,23 +97,24 @@ export function studioCalmEnabled(): boolean {
 }
 
 // ── 계절 배경(2026-09-04, ADR-0017) — 물결 위의 계절 레이어(components/shared/ambient) ON/OFF ──
-// 기본 ON('off'만 끔). OFF면 `<html data-ambient="off">`가 붙어 app/ambient.css가 계절 레이어만 숨긴다 —
+// **기본 OFF(2026-09-04 소유자)** — 처음 오는 사람은 조용한 화면에서 시작하고, 켜기/흐리게/끄기 중 고른 값이
+// 기기에 남아(localStorage vic.ambient) 다음 방문에 그대로 복원된다. OFF면 `<html data-ambient="off">`가 붙어 계절 레이어만 숨긴다 —
 // 물결(.gs-tide)은 이 스위치와 무관하게 '생동감 있는 동작'이 단독으로 쥔다(사철 상수). 페인트 전 적용은
 // app/layout.tsx 스크립트(같은 줄). 시청자 화면엔 설정 UI가 없어 늘 ON(기기 저장값이 있으면 그것).
-const AMBIENT_KEY = "vic.ambient"; // localStorage: 미설정이면 기본 ON, "off"만 끔
+const AMBIENT_KEY = "vic.ambient"; // localStorage: 미설정이면 기본 OFF. 값은 "on" | "dim" | "off"
 
 // 세 상태(2026-09-04 사용자: "흐려진 배경만 원하는 사람도 있을 것"): on 켜짐 · dim 흐리게(배경 레이어 opacity .28 + 엔진 절반
-// 프레임 — 편집 집중 모드와 같은 모습이 늘) · off 끔. 저장값 "on"/"dim"/"off"(미설정 = on). 속성: dim → `data-ambient="dim"`,
+// 프레임 — 편집 집중 모드와 같은 모습이 늘) · off 끔. 저장값 "on"/"dim"/"off"(미설정 = off). 속성: dim → `data-ambient="dim"`,
 // off → `data-ambient="off"`, on → 없음. 감상 모드(html[data-showcase])에선 흐림을 잠시 걷는다(app/ambient.css).
 export type AmbientMode = "on" | "dim" | "off";
 
 export function ambientMode(): AmbientMode {
-  if (typeof window === "undefined") return "on";
+  if (typeof window === "undefined") return "off";
   try {
     const v = window.localStorage.getItem(AMBIENT_KEY);
-    return v === "off" || v === "dim" ? v : "on";
+    return v === "on" || v === "dim" ? v : "off"; // 미설정·이상값 = 끔
   } catch {
-    return "on";
+    return "off";
   }
 }
 

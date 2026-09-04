@@ -43,7 +43,6 @@ export function useShowcase(): boolean {
 
 const ICON: Record<SeasonKey, typeof Leaf> = { spring: Flower2, summer: Waves, autumn: Leaf, winter: Snowflake };
 const WORD: Record<SeasonKey, string> = { spring: "봄", summer: "여름", autumn: "가을", winter: "겨울" };
-const BAND_KO: Record<string, string> = { dawn: "새벽", morning: "아침", noon: "점심", dusk: "노을", evening: "저녁", night: "밤" };
 
 /** 진입 버튼 — 계절 아이콘 + "가을 감상하기". className으로 자리별 모양(편집실 아바타 자리 · 시청자 레일). */
 export function ShowcaseButton({ season, className = "", compact = false }: { season: SeasonKey; className?: string; compact?: boolean }) {
@@ -125,7 +124,7 @@ export function ViewerAmbientControl({
   /** 바꾼 뒤 알림(편집실은 설정 상태·배경 효과 잠금을 맞춘다). 저장·속성은 여기서 이미 처리한다. */
   onChange?: (mode: AmbientMode) => void;
 }) {
-  const [mode, setMode] = useState<AmbientMode>("on");
+  const [mode, setMode] = useState<AmbientMode>("off"); // 기본 OFF — 첫 프레임에 감상 버튼이 번쩍이지 않게
   useEffect(() => {
     const read = () => setMode(ambientMode());
     read();
@@ -135,7 +134,8 @@ export function ViewerAmbientControl({
   }, []);
   return (
     <div className={`viewer-ambient-ctl ${className}`.trim()} role="group" aria-label="계절 배경">
-      {mode !== "off" ? <ShowcaseButton season={season} /> : null}
+      {/* 순서: 상태 세그먼트 **위**, 감상하기 **아래**(2026-09-04 소유자, HCI) — 상태를 바꾼 손이
+          바로 아래 감상하기로 이어지도록. 반대 순서면 토글 ↔ 감상 사이를 마우스가 왕복한다. */}
       <AmbientModeSegment
         dataAct="ambient-toggle-viewer"
         mode={mode}
@@ -146,6 +146,7 @@ export function ViewerAmbientControl({
           onChange?.(next);
         }}
       />
+      {mode !== "off" ? <ShowcaseButton season={season} /> : null}
     </div>
   );
 }
@@ -199,10 +200,11 @@ function ShowcaseNav() {
       sync();
       if (d.snap) return;
       hapticTick();
-      const def = BIOMES[d.biome];
-      setPill({ text: `${def.nameKo} · ${WORD[d.season]} · ${BAND_KO[d.band] ?? d.band}`, sub: d.first ? def.blurb : undefined, key: Date.now() });
+      // 도착 알약은 **바이옴 이름만**(2026-09-04 소유자). 계절·시간대는 화면이 이미 말하고,
+      // 어떤 동식물이 사는지는 도감에서 직접 만나 채우는 재미라 미리 알려 주지 않는다.
+      setPill({ text: BIOMES[d.biome].nameKo, key: Date.now() });
       if (pillTimer.current) window.clearTimeout(pillTimer.current);
-      pillTimer.current = window.setTimeout(() => setPill(null), d.first ? 2600 : 1600);
+      pillTimer.current = window.setTimeout(() => setPill(null), 1400);
     };
     const onBounce = (e: Event) => {
       const d = (e as CustomEvent<{ dir: string }>).detail;
@@ -306,7 +308,7 @@ function ShowcaseNav() {
                     data-biome={k}
                     key={k}
                     onClick={() => goTo(k)}
-                    title={seen ? `${def.nameKo} — ${def.blurb}` : def.nameKo}
+                    title={def.nameKo}
                     type="button"
                   >
                     <span className="biome-dot-name">{def.nameKo}</span>

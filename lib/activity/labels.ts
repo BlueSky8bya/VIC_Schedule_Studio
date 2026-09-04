@@ -330,7 +330,7 @@ const ACT: Record<string, TargetLabel> = {
   "gfx-pref-select": { name: "배경 효과 품질 고르기", area: "편집실", hint: "설정 모달 — 자동/항상 최대/가볍게/끄기(lib/ui/gfx.ts v3)" },
   "ambient-showcase": { name: "배경 감상 모드 켜기", area: "편집실", hint: "아바타 자리·시청자 레일의 '○○ 감상하기' 버튼 — 달력·필터를 숨기고 계절 배경만(Esc/알약으로 복귀). 설정 줄은 2026-09-04 제거" },
   "ambient-showcase-exit": { name: "배경 감상 모드 나가기", area: "편집실", hint: "감상 모드 상단 알약" },
-  "ambient-toggle-viewer": { name: "계절 배경 상태 고르기(레일)", area: "시청자 화면", hint: "레일·아바타 자리 감상하기 옆 세그먼트 [켜기|흐리게|끄기](2026-09-04, 순환 버튼 대체) — 기기 저장값(vic.ambient), 편집실 설정과 한 상태" },
+  "ambient-toggle-viewer": { name: "계절 배경 상태 고르기(레일)", area: "시청자 화면", hint: "레일·아바타 자리 감상하기 옆 세그먼트 [켜기|흐리게|끄기](2026-09-04, 순환 버튼 대체) — 기기 저장값(vic.ambient, 기본 끄기), 편집실 설정과 한 상태" },
   "ambient-mode-select": { name: "계절 배경 상태 고르기", area: "편집실", hint: "설정 모달 세그먼트 [켜기|흐리게|끄기](2026-09-04, 셀렉트 → 세그먼트; 옛 스위치 '계절 배경 켜기/끄기' 대체)" },
   "dev-world-band": { name: "세계 시간대 강제(개발자)", area: "편집실", hint: "설정 모달 '세계 시간(개발자)' — 새벽~밤 띠를 실제 시각과 무관하게(연대기 검증, 개발자 계정만·세션 한정)" },
   "dev-world-weather": { name: "세계 날씨 강제(개발자)", area: "편집실", hint: "설정 모달 '세계 시간(개발자)' — 맑음/흐림/비/눈/안개/바람(개발자 계정만·세션 한정)" },

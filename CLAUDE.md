@@ -99,7 +99,8 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   footprints + snow puff; autumn = abundant desaturated brown/wine leaves (never red/orange/yellow) with physics
   (collisions, ground friction, gusts, pointer wind, grab-and-drag); spring = lawn + clover/daisies + butterflies
   (shadow, flee from pointer, click → petal burst). Apple-feel, cute, 오행 palette kept. Switch "계절 배경"
-  (`vic.ambient`, default ON): **OFF = everything down, tide included** (the tide is summer's, never a fallback).
+  (`vic.ambient`, **default OFF since 2026-09-04** — a first visit starts quiet; the chosen state persists per device
+  and is restored before paint by the layout script): **OFF = everything down, tide included** (the tide is summer's, never a fallback).
   Every season answers the mouse: summer ripples (a canvas over the tide), spring butterflies flee and later land
   on daisies, autumn leaves blow (7 species: round · elm · willow · maple · ginkgo · oak · pine needles, muted
   colors), winter kicks up snow dust while an invisible walker keeps leaving boot prints. Special days go into

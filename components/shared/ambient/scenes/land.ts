@@ -286,10 +286,10 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       stream.length = 0;
       for (let i = 0; i <= 24; i++) {
         const p = i / 24;
-        stream.push({ x: w * (0.25 + 0.45 * p) + Math.sin(p * 9 + 1) * w * 0.08, y: groundY(0.001 + 1.06 * p) });
+        stream.push({ x: w * (0.28 + 0.4 * p) + Math.sin(p * 9 + 1) * w * 0.1, y: groundY(0.001 + 1.06 * p) });
       }
       // 물길 폭 — 나중에 계곡 물고기·수달이 살 자리라 넉넉히(2026-09-04 소유자: "너무 좁다").
-      const streamW = (p: number) => 14 + 104 * p * p;
+      const streamW = (p: number) => 26 + 210 * p * p; // 발치에서 화면 폭의 1/6 — 물고기·수달이 살 만큼(2026-09-04 소유자)
       // 풀포기 먼저 — 옛 순서는 시내 **위**에 풀이 자라 있었다. 물길 폭 안쪽은 비운다.
       const nearStream = (x: number, y: number) => {
         for (let i = 0; i < stream.length - 1; i++) {

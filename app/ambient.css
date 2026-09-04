@@ -438,8 +438,9 @@ html[data-reduce-motion] .biome-chev.bounce { animation: none; }
 /* 시청자 레일·아바타 자리의 [감상하기 | 켜기·흐리게·끄기] 묶음 — 시청자는 설정 화면이 없어 여기서 바꾼다. 세그먼트는 배경 OFF에도
    남는다(다시 켜는 유일한 손잡이). 좁은 레일에선 두 줄로 접힌다(wrap). 모바일은 배경 자체가 없으니 통째로 숨긴다. */
 .viewer-ambient-ctl {
+  /* 세로 한 줄: 상태 세그먼트 위, 감상하기 아래(2026-09-04 소유자, HCI — 토글을 누른 손이 바로 아래로 이어진다). */
   display: none;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 6px;
