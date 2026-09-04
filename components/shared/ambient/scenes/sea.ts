@@ -189,11 +189,13 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
           g.scale(1, GROUND_SQUASH);
           g.rotate(ph);
           if (season === "autumn") {
-            // 떠내려온 마른 잎 — 탁한 갈색(선명한 주황·빨강 금지).
-            g.fillStyle = `rgb(122 96 66 / ${0.32 + 0.18 * k})`;
-            g.beginPath();
-            g.ellipse(0, 0, 5.5 * k, 2.4 * k, 0, 0, TAU);
-            g.fill();
+            // 원양에 낙엽은 뜨지 않는다(사이클5 현실성 #10) — 떠다니는 **해조 조각**(모자반 뭉치)으로.
+            g.fillStyle = `rgb(96 92 62 / ${0.26 + 0.16 * k})`;
+            for (let q = 0; q < 3; q++) {
+              g.beginPath();
+              g.ellipse((q - 1) * 4 * k, (q % 2) * 2 * k, 3.4 * k, 1.6 * k, q * 0.7, 0, TAU);
+              g.fill();
+            }
           } else if (season === "winter") {
             // 성에 조각 — 각진 흰 판.
             g.fillStyle = `rgb(240 248 255 / ${0.4 + 0.24 * k})`;
@@ -265,20 +267,25 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
       drawGlints(g, t, glints);
       if (deep) {
         // 수면 빛줄기 — 위쪽 1/3에 비스듬히 내려오는 옅은 빛기둥 넷. "위가 수면"이라는 유일한 단서다.
+        // 빛기둥은 좌우 모서리가 **없어야** 한다 — 수직 직선 경계는 "반투명 사각형"으로 읽힌다(사이클5 경계 #8).
+        // 폭이 다른 세 겹을 겹쳐 가장자리를 흩고, 위·아래 모두 0으로 사라진다.
         for (let i = 0; i < 4; i++) {
           const x0 = f.w * (0.1 + 0.24 * i) + Math.sin(t * 0.16 + i) * 30;
           const wtop = 26 + 14 * Math.sin(t * 0.21 + i * 2);
-          const lg = g.createLinearGradient(0, 0, 0, f.h * 0.5);
-          lg.addColorStop(0, "rgb(214 236 246 / 0.16)");
-          lg.addColorStop(1, "rgb(214 236 246 / 0)");
-          g.fillStyle = lg;
-          g.beginPath();
-          g.moveTo(x0 - wtop / 2, 0);
-          g.lineTo(x0 + wtop / 2, 0);
-          g.lineTo(x0 + wtop * 1.6, f.h * 0.5);
-          g.lineTo(x0 + wtop * 0.5, f.h * 0.5);
-          g.closePath();
-          g.fill();
+          for (const [ww, aa] of [[2.2, 0.05], [1.4, 0.07], [0.7, 0.09]] as const) {
+            const lg = g.createLinearGradient(0, 0, 0, f.h * 0.56);
+            lg.addColorStop(0, `rgb(214 236 246 / 0)`);
+            lg.addColorStop(0.16, `rgb(214 236 246 / ${aa})`);
+            lg.addColorStop(1, "rgb(214 236 246 / 0)");
+            g.fillStyle = lg;
+            g.beginPath();
+            g.moveTo(x0 - (wtop * ww) / 2, -10);
+            g.lineTo(x0 + (wtop * ww) / 2, -10);
+            g.lineTo(x0 + wtop * ww * 1.5, f.h * 0.56);
+            g.lineTo(x0 + wtop * ww * 0.4, f.h * 0.56);
+            g.closePath();
+            g.fill();
+          }
         }
         // 바다눈 — 천천히 내려오는 흰 알갱이(깊은 바다의 유일한 질감).
         const nSnow = Math.round(lerp(120, 360, f.load));
@@ -293,7 +300,7 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
       }
       // 큰 그림자 하나 — 화면을 가로지르는 거대한 무언가(깊은 바다의 크기를 말하는 유일한 장치).
       if (deep) {
-        const gx = ((t * 7) % (f.w + 900)) - 450;
+        const gx = ((t * 7) % (f.w + 1800)) - 900;
         const gy2 = top() + (f.h - top()) * 0.62;
         g.save();
         g.globalAlpha = 0.14;

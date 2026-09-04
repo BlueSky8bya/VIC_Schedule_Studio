@@ -371,7 +371,9 @@ export function createWinter(seed: number): Scene {
       const band = (dTop: number, dBot: number, rgb: string, a0: number) => {
         const mid = ridge((xa + xb) / 2);
         const sg = g.createLinearGradient(0, mid + dTop, 0, mid + dBot);
-        sg.addColorStop(0, `rgb(${rgb} / ${a0 * str})`);
+        // 윗변에서 곧장 불투명하면 "잘린 종이 판"이 된다(사이클5 경계 #5) — 위에서도 0으로 시작한다.
+        sg.addColorStop(0, `rgb(${rgb} / 0)`);
+        sg.addColorStop(0.3, `rgb(${rgb} / ${a0 * str})`);
         sg.addColorStop(1, `rgb(${rgb} / 0)`);
         g.fillStyle = sg;
         g.beginPath();

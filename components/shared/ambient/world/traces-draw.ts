@@ -269,11 +269,13 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   g.clip();
   // 위 가장자리는 안개 띠 속으로 스며든다 — 불투명하게 시작하면 지평선에 전폭 직선 자국이 남는다(검토 2차).
   // 정지점을 부드럽게 — 0.22에서 불투명으로 튀면 그 자리가 전폭 수평 색 계단으로 보인다(사이클4 경계 #2).
+  // 램프를 캔버스의 절반에 걸쳐 편다 — 0.4에서 불투명이 되면 그 자리가 전폭 수평 단차로 보인다
+  // (사이클5 경계 #2: "y≈185에서 x=0→1400 완전 직선으로 색이 끊긴다").
   grad.addColorStop(0, `${s0}00`);
-  grad.addColorStop(0.12, `${s0}66`);
-  grad.addColorStop(0.4, s0);
-  grad.addColorStop(0.7, s1);
-  grad.addColorStop(0.92, s2);
+  grad.addColorStop(0.18, `${s0}3a`);
+  grad.addColorStop(0.38, `${s0}8c`);
+  grad.addColorStop(0.6, s0);
+  grad.addColorStop(0.82, s1);
   grad.addColorStop(1, s2);
   g.fillStyle = grad;
   g.fillRect(0, 0, w, H);

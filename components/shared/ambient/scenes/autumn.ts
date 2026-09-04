@@ -262,13 +262,14 @@ export function createAutumn(seed: number): Scene {
     g.fillRect(0, 0, w, h);
     const patches = Math.round((w * h) / 42000);
     // 따뜻한 흙 + **차가운 두 톤**(회녹·회청) — 한 색만 있으면 "흙먼지 폭풍"이 된다(검토 4차).
-    const PATCH = ["158 142 100", "132 108 74", "172 156 114", "118 96 76", "118 126 114", "104 112 118"];
+    // 카키 한 톤이면 "진흙 판"이다(사이클5 미관 #2) — 올리브(어두움) · 와인(중간) · 마른 풀(밝음) 3단.
+    const PATCH = ["176 162 116", "96 88 56", "110 74 70", "150 132 92", "82 90 72", "128 132 118"];
     for (let i = 0; i < patches; i++) {
       const pi = Math.floor(g0() * PATCH.length);
       const cool = pi >= 4; // 차가운 두 톤은 작고 옅게 — 크게 깔면 "때 묻은 얼룩"이 된다(검토 5차)
       const py2 = groundY(g0());
       const pk2 = depthScale(py2, h) * depthScale(py2, h);
-      softBlob(g, g0() * w, py2, (cool ? 70 + g0() * 90 : 110 + g0() * 240) * pk2, PATCH[pi], cool ? 0.07 : 0.13, 0, GROUND_SQUASH);
+      softBlob(g, g0() * w, py2, (cool ? 70 + g0() * 90 : 110 + g0() * 240) * pk2, PATCH[pi], cool ? 0.1 : 0.2, 0, GROUND_SQUASH);
     }
     // 이끼·마른 잔디 얼룩 — 흙 한 톤짜리 사막이 되지 않게 초록빛 기운을 남긴다.
     for (let i = 0; i < Math.round((w * h) / 120000); i++) softBlob(g, g0() * w, groundY(0.2 + g0() * 0.8), 60 + g0() * 60, "116 128 88", 0.09, 0, GROUND_SQUASH);
@@ -342,7 +343,8 @@ export function createAutumn(seed: number): Scene {
         drawProp(g, groundArt, g0() < 0.25 ? "tree-pine-autumn" : "tree-oak-autumn", t2.x, t2.y, { k: t2.k, r: g0(), flip: g0() < 0.5 });
         // 발치의 낙엽 더미 — 여기가 낙엽의 출처다.
         for (let q = 0; q < 5; q++) {
-          softBlob(g, t2.x + (g0() - 0.5) * 170 * t2.k, t2.y + (g0() * 0.7) * 80 * t2.k, (40 + g0() * 70) * t2.k, g0() < 0.5 ? "94 70 44" : "84 56 50", 0.3, 0, GROUND_SQUASH);
+          // 반경 110*k(폭 320px)는 수관의 2~3배짜리 검은 얼룩이었다 — 작고 옅게, 수관 아래에만.
+          softBlob(g, t2.x + (g0() - 0.5) * 90 * t2.k, t2.y + (g0() * 0.6) * 40 * t2.k, (18 + g0() * 26) * t2.k, g0() < 0.5 ? "112 88 58" : "104 74 66", 0.2, 0, GROUND_SQUASH);
         }
       }
     }

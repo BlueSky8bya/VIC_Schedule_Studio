@@ -228,8 +228,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     const bg = g.createLinearGradient(0, gy(), 0, h);
     // 봄 = 화사한 새 잔디(밝고 노란 기), 여름 = 무성한 짙은 풀(어둡고 청록 기). 두 계절이 같은 그림으로
     // 읽히던 원인이 여기였다 — 명도 폭도 여름을 더 넓게 잡아 깊이가 살게(2026-09-04 소유자).
-    bg.addColorStop(0, summer ? "#a8cd8c" : "#dcefc4");
-    bg.addColorStop(1, summer ? "#4d7647" : "#8fb573");
+    bg.addColorStop(0, summer ? "#a8cd8c" : "#e0f2c8");
+    bg.addColorStop(1, summer ? "#4d7647" : "#79a05e");
     g.fillStyle = bg;
     g.fillRect(0, 0, w, h);
     const patches = Math.round((w * h) / 46000);
@@ -301,7 +301,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     b.g.scale(dpr, dpr);
     // 풀포기 — 완전 무작위로 뿌리면 "균일한 벽지"가 된다(검토 2·3차). 절반은 무리(clump)로 모아 심고
     // 크기를 크게 흩는다: 뭉친 곳과 트인 곳이 생겨야 들판으로 읽힌다.
-    const tufts = Math.round((w * h) / (summer ? 780 : 1700)); // 여름 = 맨땅이 안 보이는 풀숲, 봄 = 성긴 새 잔디
+    const tufts = Math.round((w * h) / (summer ? 780 : 1050)); // 봄도 밀도가 있어야 "빈 초록 판"을 벗어난다 // 여름 = 맨땅이 안 보이는 풀숲, 봄 = 성긴 새 잔디
     let cx = 0;
     let cy = 0;
     let left = 0;
@@ -413,9 +413,9 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     // 축척(PLAN-004 §2): 무당벌레 12 · 꿀벌 14(옛 20 · 24).
     // 여름 초원의 딱정벌레는 무당벌레와 **같은 기계**(걷기·멈춤·죽은 척)에 그림만 다르다 — 딱정벌레류의 의사(擬死)는
     // 실제로 널리 알려진 방어행동이라 행동을 바꿀 이유가 없다.
-    void loadSprite(summer ? ASSET.beetle : ASSET.ladybug, SIZE.ladybug + (summer ? 3 : 0), SIZE.ladybug + (summer ? 3 : 0)).then((s) => (bugSpr = s)).catch(() => {});
-    if (summer) void loadSprite(ASSET.hopper, SIZE.hopper, SIZE.hopper).then((s) => (hopSpr = s)).catch(() => {});
-    void loadSprite(ASSET.bee, SIZE.bee, SIZE.bee).then((s) => (beeSpr = s)).catch(() => {});
+    void loadSprite(summer ? ASSET.beetle : ASSET.ladybug, SIZE.ladybug + (summer ? 3 : 0), SIZE.ladybug + (summer ? 3 : 0), 2, undefined, 0.3).then((s) => (bugSpr = s)).catch(() => {});
+    if (summer) void loadSprite(ASSET.hopper, SIZE.hopper, SIZE.hopper, 2, undefined, 0.25).then((s) => (hopSpr = s)).catch(() => {});
+    void loadSprite(ASSET.bee, SIZE.bee, SIZE.bee, 2, undefined, 0.3).then((s) => (beeSpr = s)).catch(() => {});
   }
 
   // 나비는 봄 초원의 주인공(1~3), 여름엔 한둘로 물러나고 그 자리를 메뚜기·딱정벌레가 채운다.

@@ -133,7 +133,9 @@ export function drawWaves(g: CanvasRenderingContext2D, t: number, w: number, o: 
   for (let i = 0; i < o.bands; i++) {
     // 각 선의 위상: 0(수평선) → 1(물가/아래). 원근: 위치 = top + H · p^1.7
     const p = ((t * o.speed + i / o.bands) % 1 + 1) % 1;
-    const y0 = o.top + H * Math.pow(p, 1.7);
+    // 지수 1.7 → 2.4: 3/4 부감에서 같은 파장의 마루는 지평선 쪽으로 훨씬 급하게 몰려야 한다
+    // (사이클5 현실성 #10: "가로 리본을 등간격으로 깐 것으로 읽힌다").
+    const y0 = o.top + H * Math.pow(p, 2.4);
     const near = Math.pow(p, 1.2);
     const a = o.alpha * (0.25 + 0.75 * near) * (p > 0.92 ? (1 - p) / 0.08 : 1);
     if (a < 0.01) continue;
