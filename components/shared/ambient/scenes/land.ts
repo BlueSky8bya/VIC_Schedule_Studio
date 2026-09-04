@@ -284,12 +284,17 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       g.fillRect(0, gy(), w, groundY(0.55) - gy());
       // 시내 — 발원은 화면 밖(지평선 위)에서 시작해 둥근 마개가 안 보이게, 폭은 p²로 벌어진다.
       stream.length = 0;
-      for (let i = 0; i <= 24; i++) {
-        const p = i / 24;
-        stream.push({ x: w * (0.28 + 0.4 * p) + Math.sin(p * 9 + 1) * w * 0.1, y: groundY(0.001 + 1.06 * p) });
+      // 폭이 넓어진 만큼 굽이는 완만하게 — 급한 굽이에서 좌우 가장자리가 교차해 삼각형 파편이 생긴다.
+      // 화면 **한참 아래**까지 이어 붙인다(1.42) — 끝을 화면 안에서 닫으면 폭이 최대인 지점이라
+      // 뾰족한 삼각 꼬리가 남는다(2026-09-04 소유자 스크린샷). 끝으로 갈수록 굽이는 잦아든다(직진).
+      for (let i = 0; i <= 30; i++) {
+        const p = (i / 30) * 1.42;
+        const damp = Math.max(0, 1 - Math.max(0, p - 0.9) / 0.52);
+        stream.push({ x: w * (0.3 + 0.3 * Math.min(p, 1)) + Math.sin(p * 4.2 + 1) * w * 0.075 * damp, y: groundY(0.001 + 1.0 * p) });
       }
       // 물길 폭 — 나중에 계곡 물고기·수달이 살 자리라 넉넉히(2026-09-04 소유자: "너무 좁다").
-      const streamW = (p: number) => 26 + 210 * p * p; // 발치에서 화면 폭의 1/6 — 물고기·수달이 살 만큼(2026-09-04 소유자)
+      // 발치에서 화면 폭의 40% — 소유자 요청으로 2.5배 더(물고기·수달이 살 만큼 넉넉히, 2026-09-04).
+      const streamW = (p: number) => 66 + 520 * p * p;
       // 풀포기 먼저 — 옛 순서는 시내 **위**에 풀이 자라 있었다. 물길 폭 안쪽은 비운다.
       const nearStream = (x: number, y: number) => {
         for (let i = 0; i < stream.length - 1; i++) {
@@ -319,29 +324,47 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       }
       // 자갈 둔치 → 물 → 물빛 하이라이트. 획을 24개로 쪼개 그리면 굽이마다 바깥쪽에 톱니가 남는다(검토 2차) →
       // 각 층을 **채워진 리본 하나**로: 왼쪽 가장자리를 따라 내려가고 오른쪽 가장자리를 거슬러 올라와 닫는다.
+      // 리본은 한 덩이 폴리곤(왼쪽 가장자리 → 오른쪽 가장자리 역주행). 마디마다 사각형을 쌓으면 채우기는
+      // 되지만 **윤곽선을 그릴 때** 이음매가 전부 드러난다(2026-09-04 실측). 대신 급한 굽이에서 좌우 오프셋이
+      // 교차하지 않도록 폭을 곡률로 제한한다.
+      const halfAt = (i: number) => {
+        const hw = Math.max(0.6, streamW(Math.min(1, i / 24)) / 2);
+        const a = stream[Math.max(0, i - 1)];
+        const b = stream[Math.min(stream.length - 1, i + 1)];
+        const c0 = stream[i];
+        // 굽이 반지름 근사 — 세 점이 이루는 각이 급할수록 폭을 줄인다(오프셋 자기교차 방지).
+        const v1x = c0.x - a.x;
+        const v1y = c0.y - a.y;
+        const v2x = b.x - c0.x;
+        const v2y = b.y - c0.y;
+        const l1 = Math.hypot(v1x, v1y) || 1;
+        const l2 = Math.hypot(v2x, v2y) || 1;
+        const cos = (v1x * v2x + v1y * v2y) / (l1 * l2);
+        const bend = Math.acos(Math.max(-1, Math.min(1, cos))); // 0(직진) ~ π
+        const lim = (Math.min(l1, l2) * 0.9) / Math.max(0.12, Math.tan(bend / 2));
+        return Math.min(hw, Math.max(6, lim));
+      };
       const ribbonPath = (kw: number) => {
         g.beginPath();
         for (let i = 0; i < stream.length; i++) {
-          const p = i / 24;
-          const hw = Math.max(0.6, (streamW(p) * kw) / 2);
           const a = stream[Math.max(0, i - 1)];
           const b = stream[Math.min(stream.length - 1, i + 1)];
           const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
           const nx = -(b.y - a.y) / len;
           const ny = (b.x - a.x) / len;
+          const hw = halfAt(i) * kw;
           const px = stream[i].x + nx * hw;
           const py = stream[i].y + ny * hw;
           if (i === 0) g.moveTo(px, py);
           else g.lineTo(px, py);
         }
         for (let i = stream.length - 1; i >= 0; i--) {
-          const p = i / 24;
-          const hw = Math.max(0.6, (streamW(p) * kw) / 2);
           const a = stream[Math.max(0, i - 1)];
           const b = stream[Math.min(stream.length - 1, i + 1)];
           const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
           const nx = -(b.y - a.y) / len;
           const ny = (b.x - a.x) / len;
+          const hw = halfAt(i) * kw;
           g.lineTo(stream[i].x - nx * hw, stream[i].y - ny * hw);
         }
         g.closePath();
@@ -359,15 +382,15 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         winter: ["rgb(196 206 214 / 0.5)", "rgb(224 234 242 / 0.94)", "rgb(248 252 255 / 0.6)"]
       };
       const [wb, wm, wl] = WATER[season];
-      ribbon(1.45, wb);
+      ribbon(1.16, wb);
       ribbon(1, wm);
       ribbon(0.42, wl);
       // 물가 바위 — 시내를 따라 양옆에(계곡 = "바위 사이 시내"인데 바위가 아무 데나 있으면 그냥 초원이다).
       // 일부러 물가에 **걸치게** 놓고, 아래에서 물을 한 겹 더 덮어 잠긴 부분이 물빛으로 보이게 한다.
       for (let i = 2; i < stream.length - 1; i += 2) {
         const s = stream[i];
-        const p = i / 24;
-        const halfW = (streamW(p) * 1.45) / 2;
+        const p = Math.min(1, i / 24);
+        const halfW = halfAt(i) * 1.16;
         for (const sd of [-1, 1]) {
           if (g0() < 0.35) continue;
           const x = s.x + sd * (halfW + g0() * 30 - 6);

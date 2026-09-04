@@ -1324,6 +1324,9 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           return true;
         }
       }
+      // 뭍(물가 선 위)이나 얼음판을 눌렀을 때는 **파동이 아예 생기지 않는다** — 땅을 눌렀는데 물가에
+      // 파동이 일렁이면 안 된다(2026-09-04 소유자). 클립으로 가리는 게 아니라 만들지 않는다.
+      if (winter || y < shoreY() + 4) return onBackground;
       // 누르면 묵직한 원형 잔물결 — 바탕이 아니어도(칸 위) 물은 튄다: 장난감이라 방해가 아니다.
       if (f.load < 0.3) ring(x, y, 130, 0.5, 0, 1.8, 2.4);
       else {

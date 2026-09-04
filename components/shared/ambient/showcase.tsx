@@ -117,10 +117,14 @@ export function AmbientModeSegment({
 export function ViewerAmbientControl({
   season,
   className = "",
+  showcase = false,
   onChange
 }: {
   season: SeasonKey;
   className?: string;
+  /** 감상 진입 버튼을 보일지. **개발자만 true**(2026-09-04 소유자: 세계가 다 만들어지기 전엔 관리자·시청자에게
+   *  배경으로만 보이게 하고 감상 모드는 감춘다). 다 만들면 한꺼번에 열어 보여 준다. */
+  showcase?: boolean;
   /** 바꾼 뒤 알림(편집실은 설정 상태·배경 효과 잠금을 맞춘다). 저장·속성은 여기서 이미 처리한다. */
   onChange?: (mode: AmbientMode) => void;
 }) {
@@ -146,7 +150,7 @@ export function ViewerAmbientControl({
           onChange?.(next);
         }}
       />
-      {mode !== "off" ? <ShowcaseButton season={season} /> : null}
+      {showcase && mode !== "off" ? <ShowcaseButton season={season} /> : null}
     </div>
   );
 }
@@ -173,6 +177,28 @@ function goTo(target: BiomeKey | Dir): boolean {
 
 /** 바이옴 내비(감상 중에만, body 포털) — 가장자리 쉐브론 4 · 미니맵(3×3 + 아래 2) · 도착 알약. 입력은 ShowcaseExit의 키 핸들러와 여기의
  *  스와이프가 goTo로 넣는다. 상태의 진실은 엔진(__vicAmbient.biome/exits) + vic:biome 이벤트. */
+// 가 본 곳 — 기기에 남긴다(localStorage). 도감이 서버로 오기 전까지의 임시 자리(P2에서 계정 기록으로 승격).
+const SEEN_KEY = "vic.biomeSeen";
+function readSeen(): BiomeKey[] {
+  const base: BiomeKey[] = ["meadow"];
+  try {
+    const raw = JSON.parse(window.localStorage.getItem(SEEN_KEY) || "[]") as unknown;
+    if (!Array.isArray(raw)) return base;
+    const ks = raw.filter((k): k is BiomeKey => typeof k === "string" && k in BIOMES);
+    return ks.includes("meadow") ? ks : [...base, ...ks];
+  } catch {
+    return base;
+  }
+}
+function saveSeen(list: BiomeKey[]): BiomeKey[] {
+  try {
+    window.localStorage.setItem(SEEN_KEY, JSON.stringify(list));
+  } catch {
+    /* 무시 */
+  }
+  return list;
+}
+
 // 지도 칸에 적는 짧은 이름 — 62px 칸에 들어가야 한다(긴 이름은 머리줄이 맡는다).
 const SHORT: Record<BiomeKey, string> = {
   valley: "계곡",
@@ -191,7 +217,8 @@ const SHORT: Record<BiomeKey, string> = {
 function ShowcaseNav() {
   const [biome, setBiome] = useState<BiomeKey>("meadow");
   const [exits, setExits] = useState<Record<Dir, BiomeKey | null>>({ up: null, down: null, left: null, right: null });
-  const [visited, setVisited] = useState<BiomeKey[]>(["meadow"]);
+  // 가 본 곳은 **기기에 남는다**(감상에서 나갔다 들어오면 다 처음으로 돌아가던 문제, 2026-09-04 소유자).
+  const [visited, setVisited] = useState<BiomeKey[]>(() => readSeen());
   const [pill, setPill] = useState<{ text: string; sub?: string; key: number } | null>(null);
   const [bounce, setBounce] = useState<Dir | null>(null);
   const pillTimer = useRef<number | null>(null);
@@ -211,7 +238,7 @@ function ShowcaseNav() {
     const onArrive = (e: Event) => {
       const d = (e as CustomEvent<{ biome: BiomeKey; first: boolean; season: SeasonKey; band: string; snap?: boolean }>).detail;
       setBiome(d.biome);
-      setVisited((v) => (v.includes(d.biome) ? v : [...v, d.biome]));
+      setVisited((v) => (v.includes(d.biome) ? v : saveSeen([...v, d.biome])));
       sync();
       if (d.snap) return;
       hapticTick();
@@ -314,7 +341,7 @@ function ShowcaseNav() {
           const firstSea = sea && BIOME_ROWS.findIndex((r) => r.length === 1) === i;
           return (
             <div key={i}>
-              {i === 0 ? <p className="biome-map-cap">뭍</p> : null}
+              {i === 0 ? <p className="biome-map-cap">육지</p> : null}
               {firstSea ? <p className="biome-map-cap sea">바다</p> : null}
               <div className={`biome-map-row${sea ? " wide" : ""}`}>
                 {row.map((k) => {
@@ -334,7 +361,7 @@ function ShowcaseNav() {
                       title={seen ? def.nameKo : "아직 못 가 본 곳"}
                       type="button"
                     >
-                      <span className="biome-dot-name">{seen ? SHORT[k] : "?"}</span>
+                      <span className="biome-dot-name">{seen ? SHORT[k] : ""}</span>
                     </button>
                   );
                 })}

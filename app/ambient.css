@@ -356,6 +356,7 @@ html[data-reduce-motion] .biome-chev { animation: none !important; }
 }
 /* 칸 — 빈 색 블록이 아니라 이름표. 바탕은 그 바이옴의 색, 글자는 그 위에 또렷하게. */
 .biome-dot {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -376,10 +377,24 @@ html[data-reduce-motion] .biome-chev { animation: none !important; }
   letter-spacing: -0.02em;
   white-space: nowrap;
 }
+/* 미탐사 구역 — 물음표를 쓰지 않는다(퀴즈판처럼 보이고, 흰 배경이라 지도 같지 않았다). 지형색을 그대로 두되
+   옅게 깔고 그 위에 사선 무늬 한 겹 = "아직 안 가 본 땅". 이름만 없다. */
 .biome-dot:not(.seen) {
-  border-style: dashed;
-  background: rgb(255 255 255 / 26%);
+  border-color: rgb(120 134 160 / 20%);
+  opacity: 0.5;
 }
+.biome-dot:not(.seen)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgb(120 134 160 / 16%) 0 2px,
+    rgb(120 134 160 / 0) 2px 6px
+  );
+}
+.biome-dot:not(.seen):hover { opacity: 0.75; }
 .biome-dot.seen .biome-dot-name { color: rgb(46 52 66 / 88%); }
 .biome-dot.near { border-color: rgb(90 110 140 / 46%); }
 /* 현재 자리 — 링(소유자 요청) + 굵은 이름 + 아주 느린 숨쉬기. */

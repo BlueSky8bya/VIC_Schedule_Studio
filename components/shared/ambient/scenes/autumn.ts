@@ -334,7 +334,7 @@ export function createAutumn(seed: number): Scene {
     const sp = pickSpecies();
     const [lo, hi] = SPECIES[sp].size;
     // 축척(PLAN-004 §2): 낙엽은 나무의 1/12 — 옛 30~76을 LEAF_K(≈.36)로 줄인다(물리 반지름·집기 판정도 s에 비례하므로 같이 줄어든다).
-    return { x: rand() * w, y: groundY(rand()), vx: 0, vy: 0, a: rand() * TAU, va: 0, s: (lo + rand() * (hi - lo)) * LEAF_K, sp, col: Math.floor(rand() * SPECIES[sp].colors.length), lift: 0, flip: 0, flipV: 0, fall: falling ? 1 : 0, ph: rand() * TAU, fade: 0, born: t };
+    return { x: rand() * w, y: groundY(0.12 + rand() * 0.86), vx: 0, vy: 0, a: rand() * TAU, va: 0, s: (lo + rand() * (hi - lo)) * LEAF_K, sp, col: Math.floor(rand() * SPECIES[sp].colors.length), lift: 0, flip: 0, flipV: 0, fall: falling ? 1 : 0, ph: rand() * TAU, fade: 0, born: t };
   }
   /** 도토리는 최대 6 — 넘치면 가장 오래된 것이 옅어진다. */
   function capAcorns() {
@@ -346,7 +346,8 @@ export function createAutumn(seed: number): Scene {
     capAcorns();
   }
   function dropAcorn(t: number) {
-    pushAcorn(w * (0.1 + rand() * 0.8), groundY(0.1 + rand() * 0.8), 1, t);
+    // 먼 띠(v < 0.3)엔 떨어뜨리지 않는다 — 안개 속 지평선 부근이라 "공중에 있는" 것으로 보인다.
+    pushAcorn(w * (0.1 + rand() * 0.8), groundY(0.32 + rand() * 0.58), 1, t);
     acornsDropped++;
   }
   // leavesOnly = 다람쥐의 발놀림: 잎만 헤치고 도토리는 건드리지 않는다 — 제 목표 도토리를 앞으로 차 보내며 화면 끝까지
@@ -639,7 +640,8 @@ export function createAutumn(seed: number): Scene {
         } else if (s.phase === "bury") {
           // 묻기(즉시) — 도토리를 앞발 자리에 놓고 흙더미를 남긴다. 저장소는 최대 8, 오래된 것부터 잊는다.
           s.carry = false;
-          caches.push({ x: s.x + Math.cos(s.dir) * 12, y: s.y + Math.sin(s.dir) * 12, t });
+          // 흙더미는 땅 위에만 — 지평선 부근이면 안개에 떠 보인다. 아래로 끌어당긴다.
+          caches.push({ x: s.x + Math.cos(s.dir) * 12, y: Math.max(groundY(0.3), s.y + Math.sin(s.dir) * 12), t });
           while (caches.length > CACHE_MAX) caches.shift();
           s.phase = "pat";
           s.t0 = t;
@@ -959,7 +961,7 @@ export function createAutumn(seed: number): Scene {
       if (moundSpr && caches.length) {
         for (const c of caches) {
           g.save();
-          g.globalAlpha = clamp((f.t - c.t) / 0.6, 0, 1);
+          g.globalAlpha = clamp((f.t - c.t) / 0.6, 0, 1) * depthFade(c.y, f.h);
           flatXform(g, c.x, c.y, depthScale(c.y, f.h));
           g.drawImage(moundSpr, -11, -7);
           g.restore();
@@ -974,7 +976,8 @@ export function createAutumn(seed: number): Scene {
         const k = (acorn ? l.s / 40 : (l.s / SPR) * 1.4) * (1 + up * (l.fall > 0 ? 1.4 : 0.12)) * ds;
         const sq = l.fall > 0 || l.lift > 0.5 ? 1 : GROUND_SQUASH;
         const sx = l.flipV > 0 ? Math.cos(l.flip) : 1;
-        const alpha = 1 - l.fade;
+        // 거리 흐림 — 다람쥐만 옅어지고 도토리·낙엽은 그대로면 괴리가 생긴다(2026-09-04 소유자).
+        const alpha = (1 - l.fade) * depthFade(l.y, f.h);
         g.save();
         if (shadow) {
           g.globalAlpha = (l.fall > 0 ? 0.08 + 0.1 * (1 - l.fall) : 0.16 + up * 0.12) * alpha;
