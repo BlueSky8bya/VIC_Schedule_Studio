@@ -32,6 +32,8 @@ import { artSlot } from "../art/manifest";
 import { drawProp } from "../art/props";
 import { SIZE } from "../world/scale";
 import { bakeHorizon, depthScale, GROUND_SQUASH } from "../world/view";
+import type { SeasonKey } from "../registry";
+import { bakeWater, waterPalette } from "./water";
 
 type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: number }; // n = 진행 직각 단위벡터
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
@@ -112,8 +114,14 @@ const FISH_SPR = 80; // 그림자 스프라이트 한 변(CSS px). k 0.5~0.8 →
 const FISH_SLICES = 32; // 조각 사이 단차 < 1px — 14개는 옆선에 톱니가 보였다(실측)
 const FISH_WAVE_K = 2.4; // 몸 길이당 파수(rad) — 꼬리로 갈수록 위상이 늦다(파도가 뒤로 흘러간다)
 
-export function createSummer(seed: number): Scene {
+/** 민물(연못) 바이옴 — 옛 "여름 물 장면"이 PLAN-004에서 연못이 됐다. season으로 옷을 갈아입는다: 겨울 = 얼음(오리 없음·물고기 느림), 봄·가을 =
+ *  연잎 없음(연대기가 6~8월에만 준다). 물 바탕은 이제 캔버스가 굽는다(CSS 물결 층은 더 마운트하지 않는다 — 여름 기본 화면이 초원이라). */
+export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): Scene {
   const rand = rng(seed);
+  const season: SeasonKey = opts.season ?? "summer";
+  const winter = season === "winter";
+  let waterBase: HTMLCanvasElement | null = null;
+  let waterKey = "";
   const path: Node[] = [];
   const stamps: Stamp[] = [];
   const rings: Ring[] = [];
@@ -328,7 +336,7 @@ export function createSummer(seed: number): Scene {
   let lastTraces = 0; // 디버그 — 마지막 프레임의 연잎 수
   const f0Traces = () => lastTraces;
   function newFish(big: boolean): Fish {
-    const cruise = big ? 16 + rand() * 8 : 26 + rand() * 30; // 개체마다 다른 걸음 — 큰 놈은 느긋하게
+    const cruise = (big ? 16 + rand() * 8 : 26 + rand() * 30) * (winter ? 0.4 : 1); // 개체마다 다른 걸음 — 큰 놈은 느긋하게, 얼음 밑은 느리게
     // 가장자리 밖에서 안쪽을 향해 들어온다.
     // 위쪽은 기슭이라 왼·오른·아래 가장자리에서만 들어온다.
     const e = Math.floor(rand() * 3);
@@ -409,6 +417,12 @@ export function createSummer(seed: number): Scene {
       h = f.h;
       bake();
       ensureLo(f);
+      // 물 바탕(계절 물빛 + caustic 그물) — 물가 선부터 아래. 크기·계절별 한 번.
+      const wk = `${w}x${h}@${f.dpr}`;
+      if (!waterBase || waterKey !== wk) {
+        waterBase = bakeWater(w, h, shoreY() - 6, f.dpr, waterPalette(season), seed);
+        waterKey = wk;
+      }
       if (!shore || shoreW !== w || shoreArtV !== shoreArt.version) {
         shore = bakeShore(w, h);
         shoreW = w;
@@ -428,7 +442,7 @@ export function createSummer(seed: number): Scene {
           stand("shrub-summer", 2, 0.75);
         }
       }
-      if (!props.some((p) => p.kind === "duck")) {
+      if (!winter && !props.some((p) => p.kind === "duck")) {
         const d = newProp("duck", f.t);
         d.x = w * (0.3 + rand() * 0.4);
         d.y = waterY(0.3 + rand() * 0.4);
@@ -1118,15 +1132,35 @@ export function createSummer(seed: number): Scene {
         L.ellipse(r.x, r.y, rad, rad * GROUND_SQUASH, 0, 0, TAU);
         L.stroke();
       }
+      if (waterBase) g.drawImage(waterBase, 0, 0, f.w, f.h);
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = "medium";
       g.drawImage(lo.c, 0, 0, f.w, f.h);
+      if (winter) {
+        // 얼음 — 물 위에 젖빛 판 한 겹(가장자리가 더 희다) + 실금 몇 줄. 물고기 그림자는 그 밑에서 느리게 지나간다.
+        const iy = shoreY();
+        const ig = g.createLinearGradient(0, iy, 0, f.h);
+        ig.addColorStop(0, "rgb(240 246 252 / 0.72)");
+        ig.addColorStop(1, "rgb(226 236 246 / 0.6)");
+        g.fillStyle = ig;
+        g.fillRect(0, iy, f.w, f.h - iy);
+        g.strokeStyle = "rgb(255 255 255 / 0.55)";
+        g.lineWidth = 1;
+        g.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const x0 = f.w * (0.1 + i * 0.2);
+          g.moveTo(x0, iy + 40 + i * 30);
+          g.lineTo(x0 + 90, iy + 120 + i * 40);
+          g.lineTo(x0 + 150, iy + 130 + i * 55);
+        }
+        g.stroke();
+      }
       // 기슭(위 띠의 뭍) + 연대기 — 연잎 군락(6→8월 넓어진다)은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
       if (shore) g.drawImage(shore, 0, 0);
       // 3/4 시점의 지평선 띠 — 먼 기슭이 안개에 잠긴다(P1에서 연못·해안 바이옴으로 갈라진다).
-      if (!horizon || horizon.width !== Math.ceil(f.w)) horizon = bakeHorizon("summer", f.w, f.h, 1);
+      if (!horizon || horizon.width !== Math.ceil(f.w)) horizon = bakeHorizon(season, f.w, f.h, 1);
       g.drawImage(horizon, 0, 0, f.w, horizon.height);
-      if (traces) drawTraces(g, f, "summer", traces, { landOnShore: true });
+      if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true });
       // 햇빛 반짝임 — 물결 위의 작은 별(숨쉬듯 밝아졌다 사라짐), 본 캔버스에 또렷하게.
       for (const gl of glints) {
         const a = Math.max(0, Math.sin(t * 1.4 + gl.ph));

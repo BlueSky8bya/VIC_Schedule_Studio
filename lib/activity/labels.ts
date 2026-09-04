@@ -336,6 +336,8 @@ const ACT: Record<string, TargetLabel> = {
   "dev-world-weather": { name: "세계 날씨 강제(개발자)", area: "편집실", hint: "설정 모달 '세계 시간(개발자)' — 맑음/흐림/비/눈/안개/바람(개발자 계정만·세션 한정)" },
   "dev-world-day": { name: "세계 날 강제(개발자)", area: "편집실", hint: "설정 모달 '세계 시간(개발자)' — 보고 있는 달의 날(연대기 진행 확인; 개발자 계정만·세션 한정)" },
   "dev-art-board-open": { name: "배경 아트 보드 열기(개발자)", area: "편집실", hint: "설정 모달 → /studio/ambient-art — 계절 배경 그림 자리·코덱스 프롬프트 관리(2026-09-04)" },
+  "biome-move": { name: "바이옴 이동(쉐브론)", area: "공통", hint: "감상 모드 가장자리 쉐브론(PLAN-20260904-004) — 방향키·WASD·스와이프와 같은 이동. data-dir = up/down/left/right" },
+  "biome-map-pick": { name: "바이옴 미니맵 선택", area: "공통", hint: "감상 모드 미니맵 점(열한 화면) — data-biome = 목적지" },
   "art-prompt-copy-1": { name: "아트 보드 — 1차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 나무·초목·지형·물 자리의 코덱스 마스터 프롬프트" },
   "art-prompt-copy-2": { name: "아트 보드 — 2차 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자) — 생물 자리" },
   "art-prompt-copy-all": { name: "아트 보드 — 전체 프롬프트 복사", area: "편집실", hint: "/studio/ambient-art(개발자)" },

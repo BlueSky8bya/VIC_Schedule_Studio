@@ -131,7 +131,17 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   (`drawDepthHaze`, 지평선 α.34 → 58% 높이 0, 계절 안개색) 한 겹 — 잔디·물·발자국·생물이 멀수록 옅어진다.
   **나무 계열 잠시 내림(소유자, 같은 밤)**: `world/flags.ts` `WORLD_FLAGS.treeChain = false` → 저장소·싹·묘목·나무·데뷔 나무 흔적은
   `visibleTraces()`에서 빠진다(두더지·눈사람·연잎은 남음; 계산·렌더·테스트·아트 그대로; 디버그 `world().chronicle`은 전체 수). 기록:
-  `docs/ux/ambient-debut-tree-archive.md`. P1에서 초원 자리가 정해지면 한 줄로 다시 켠다. **다음 = P1 세계·카메라.**
+  `docs/ux/ambient-debut-tree-archive.md`. P1에서 초원 자리가 정해지면 한 줄로 다시 켠다.
+  **P1 세계·카메라 출고(같은 밤, PLAN-004 §5·§6)**: `world/biomes.ts`(열한 칸 지도·오행 방위·바다 줄 x 접힘·`neighbor/screenDelta`),
+  `world/world-scene.ts`(엔진에 Scene으로 끼워지는 세계: 바이옴 장면 lazy 생성·캐시, 활성만 step, 이동 620ms ease-out-quint 동안 둘을
+  translate로 draw, 감상 밖이면 초원 스냅, `vic:biome`/`vic:biome-bounce` 이벤트), `scenes/biome-loaders.ts`(바이옴×계절 → 동적 import),
+  엔진 `__vicAmbient.goTo/biome/exits/redraw` + `WorldCtx.force.biome`, `showcase.tsx` ShowcaseNav(방향키·WASD·스와이프·가장자리 쉐브론·
+  미니맵 3×3+2·도착 알약 "민물 · 봄 · 노을"+첫 방문 설명·튕김 "여긴 아직 없어요"), `app/ambient.css` 내비 스타일. **AmbientLayer는 CSS
+  물결(.gs-tide)을 더 마운트하지 않는다** — 사철 기본 = 초원(여름 초원 = 봄 장면 여름 변주: 짙은 초록·꽃 드묾·꽃잎 바람 없음), 물은
+  연못(`summer.ts` → 계절 파라미터: 캔버스 물 바탕 `scenes/water.ts`, 겨울 얼음·오리 없음·물고기 .4배)·해안 셋(`coast.ts`)·먼바다/깊은
+  바다(`sea.ts`)·육지 넷(`land.ts`)이 그린다. 연잎은 연못만(`drawTraces water`). fixture `?biome=`. 실측 `probe-biomes.mjs` 4계절 × 23항목
+  전부 통과(달력 뒤 이동 불가·감상 시작 초원·순회·튕김·해안 복귀·미니맵 점프·WASD·Esc 스냅·에러 0), probe-art-board·probe-ground 통과.
+  **다음 = P2 생물·도감(에이전트 + habitat, 바다·해안·계곡·산 신규 종, discovery).**
   ㉝ **계절 배경 아트 파이프라인 + 아트 보드(2026-09-04 밤, ADR-0017 ⑮)**: 소유자 "나무·초목을 기본 도형 몇 개 붙이면 어떻게 하냐
   (겨울 나무 = 말미잘, 봄 초목 = 껌딱지, 가을 흙더미 = 정체불명, 여름 연잎 = 겹침) — 동물의 숲처럼 이어서 디자인, 한 라우트에서 관리".
   `components/shared/ambient/art/`: `manifest.ts`(자리 65 = 1차 초목·지형 36 + 2차 생물 29(종 레지스트리 파생); 자리마다 id·계절·

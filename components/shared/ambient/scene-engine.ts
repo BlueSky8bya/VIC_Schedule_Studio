@@ -22,6 +22,7 @@ import { weatherAt, type DayWeather, type Weather } from "@/components/shared/am
 import { chronicle, chronicleDay, type Trace } from "@/components/shared/ambient/world/chronicle";
 import { visibleTraces } from "@/components/shared/ambient/world/flags";
 import { drawDepthHaze } from "@/components/shared/ambient/world/view";
+import type { BiomeKey, Dir } from "@/components/shared/ambient/world/biomes";
 
 export type Quality = 0 | 1 | 2;
 
@@ -31,8 +32,8 @@ export type WorldCtx = {
   season: SeasonKey;
   year: number;
   month: number;
-  /** 검증·개발자 시간 여행용 강제값 — band가 있으면 hour보다 우선. */
-  force?: { hour?: number; band?: DayBand; weather?: Weather; day?: number };
+  /** 검증·개발자 시간 여행용 강제값 — band가 있으면 hour보다 우선. biome = 시작 바이옴(fixture). */
+  force?: { hour?: number; band?: DayBand; weather?: Weather; day?: number; biome?: BiomeKey };
 };
 
 export type Pointer = {
@@ -82,6 +83,8 @@ export interface Scene {
   pointerUp?(f: Frame): void;
   /** 검증·디버그용 상태(window.__vicAmbient.scene) — 입자 위치 몇 개, 카운터. */
   debug?(): Record<string, unknown>;
+  /** 세계 장면(world-scene.ts)만 — 바이옴 이동. React 내비(showcase.tsx)가 __vicAmbient.goTo로 부른다. */
+  nav?: { go(target: BiomeKey | Dir): boolean; at(): BiomeKey; moving(): boolean; exits(): Record<Dir, BiomeKey | null> };
 }
 
 // 검증 훅 — Playwright가 장면 상태(입자 위치·소비된 클릭 수·품질·프레임·여력)를 읽는다. forceLoad로 여력을 고정해
@@ -100,6 +103,12 @@ type AmbientDebug = {
   world: () => { band: string; hour: number; weather: string; prev: string; date: string; traces: Record<string, number>; chronicle: Record<string, number> };
   /** 검증용 강제(시각·날씨·날) — null이면 실제로 복귀 */
   forceWorld: (f: WorldCtx["force"] | null) => void;
+  /** 바이옴 이동(감상 모드에서만 초원 밖으로) — 방향 또는 키. 세계 장면이 아니면 false. */
+  goTo: (target: BiomeKey | Dir) => boolean;
+  biome: () => BiomeKey;
+  exits: () => Record<Dir, BiomeKey | null>;
+  /** 정지 화면(생동감 OFF) 상태에서 한 장 다시 그린다 — 이동 직후 등. */
+  redraw: () => void;
 };
 declare global {
   interface Window {
@@ -225,7 +234,15 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
       traceKey = "";
       refreshWorld();
       if (!running) drawOnce();
-    }
+    },
+    goTo: (target) => {
+      const ok = scene.nav?.go(target) ?? false;
+      if (ok && !running) drawOnce();
+      return ok;
+    },
+    biome: () => scene.nav?.at() ?? "meadow",
+    exits: () => scene.nav?.exits() ?? { up: null, down: null, left: null, right: null },
+    redraw: () => drawOnce()
   };
   window.__vicAmbient = dbg;
   let w = 0;

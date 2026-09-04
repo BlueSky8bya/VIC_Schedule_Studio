@@ -8,6 +8,7 @@ import "@/components/studio/broadcast-panel.css";
 import "@/components/poster/public-poster.css";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { isSeasonKey } from "@/components/shared/ambient/registry";
+import { isBiomeKey } from "@/components/shared/ambient/world/biomes";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 
 // 비주얼/E2E 테스트 전용 fixture — 고정 샘플 데이터로 편집실 셸을 렌더한다(인증·DB 없이).
@@ -18,7 +19,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; day?: string; y?: string; m?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; day?: string; y?: string; m?: string; biome?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -35,7 +36,9 @@ export default async function VisualStudioFixture({
   const weatherKeys = ["clear", "cloud", "rain", "snow", "fog", "wind"] as const;
   const weather = weatherKeys.find((k) => k === sp?.weather);
   const day = sp?.day !== undefined && Number.isFinite(Number(sp.day)) ? Number(sp.day) : undefined;
-  const worldForce = hour !== undefined || weather || day !== undefined ? { hour, weather, day } : undefined;
+  // biome=pond → 시작 바이옴(PLAN-004 검증 — 감상 모드에서 방향키 없이 바로 그 화면).
+  const biome = isBiomeKey(sp?.biome) ? sp.biome : undefined;
+  const worldForce = hour !== undefined || weather || day !== undefined || biome ? { hour, weather, day, biome } : undefined;
   // y=2025&m=11 → 보는 달 강제(연대기: 계절은 달에서 나오고 흔적은 해·달·날에서 나온다). 기본 2026-06.
   const y = sp?.y !== undefined && /^\d{4}$/.test(sp.y) ? Number(sp.y) : 2026;
   const m = sp?.m !== undefined && /^\d{1,2}$/.test(sp.m) && Number(sp.m) >= 1 && Number(sp.m) <= 12 ? Number(sp.m) : 6;

@@ -79,10 +79,21 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   card matches the poster rail via `--pv-w/--pv-mr` measured in `studio-shell.tsx`. Under the ambient gate the studio
   topbar is **transparent** (no fill/border/blur — calm-layer ⑧): title, month label and cards float on the season like the
   viewer.
+- **Biome world (PLAN-20260904-004 P1, 2026-09-04 night; ADR-0017 ⑯).** The background is one small world: the calendar view and the
+  first showcase screen are always the **meadow** (`scenes/meadow` = spring/autumn/winter scenes + the summer variant of spring), and in
+  showcase mode the arrow keys / WASD / swipe / edge chevrons / minimap pan a camera across **eleven screens** (`world/biomes.ts`:
+  valley·pond·mountain / hill·★meadow·forest / tidal·sandy·rocky + open sea·deep sea, directions = the 오행 compass, the two sea rows fold
+  x so any coast leads to the same sea). `world/world-scene.ts` is a `Scene` the engine runs like any other: biome scenes are created
+  lazily (`scenes/biome-loaders.ts`, dynamic import), only the active one steps, a pan draws two translated scenes for 620 ms
+  (ease-out-quint, no overshoot), leaving showcase snaps back to the meadow, arrivals fire `vic:biome` (pill + minimap in
+  `showcase.tsx` ShowcaseNav). **Water lives in its biomes** — `AmbientLayer` no longer mounts the CSS tide (`water-tide.tsx` is retired);
+  pond (`summer.ts` with a season param: canvas water base from `scenes/water.ts`, winter ice), the three coasts (`coast.ts`) and the seas
+  (`sea.ts`) draw their own water; lily pads only render where `drawTraces` gets `water: true`. Land biomes are thin plates (`land.ts`)
+  until P2 agents and P3 art. Fixture: `?biome=pond`. Debug: `__vicAmbient.goTo/biome/exits`.
 - **Ambient registry (ADR-0017, 2026-09-04, revised same day).** Studio and viewer mount ONE
   `<AmbientLayer month={view.month} />` (`components/shared/ambient/`). The season follows the **calendar
   month being viewed**, not today: 12–2 winter · 3–5 spring · 6–8 summer · 9–11 autumn (flip a month, the
-  background flips). **The water tide belongs to summer only.** Spring/autumn/winter are **interactive canvas
+  background flips). **(The water tide was summer's default until the biome world — see the bullet above.)** Spring/autumn/winter are **interactive canvas
   scenes** (revision 2, same day: `season-canvas.tsx` + `scene-engine.ts` + `scenes/*`), all in the same
   **top-down view** as the tide: winter = snow field + walked footprints + landing flakes, click the ground →
   footprints + snow puff; autumn = abundant desaturated brown/wine leaves (never red/orange/yellow) with physics

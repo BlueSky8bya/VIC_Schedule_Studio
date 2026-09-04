@@ -186,6 +186,159 @@ html[data-reduce-motion] .showcase-btn-glow {
 html[data-reduce-motion] .showcase-exit {
   animation: none;
 }
+/* ── 바이옴 내비(PLAN-20260904-004 §5, showcase.tsx ShowcaseNav) — 감상 중에만 body 포털로. 가장자리 쉐브론 4 · 미니맵(3×3 + 2) ·
+   도착 알약. 유리 알약 문법(나가기 알약과 같은 선·바탕), transform/opacity만 움직인다. 이웃이 없는 방향의 쉐브론은 아주 옅다. */
+.biome-chev {
+  position: fixed;
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgb(180 190 205 / 80%);
+  border-radius: 999px;
+  background: rgb(255 253 249 / 62%);
+  color: var(--ink-soft, #3d414c);
+  box-shadow: 0 6px 18px rgb(60 50 90 / 12%);
+  cursor: pointer;
+  opacity: 0.38;
+  transition: opacity var(--dur-2, 0.2s) var(--ease), transform 0.22s var(--ease-spring, var(--ease));
+}
+.biome-chev:hover,
+.biome-chev:focus-visible {
+  opacity: 1;
+  transform: scale(1.06);
+}
+.biome-chev:active {
+  transform: scale(0.94);
+}
+.biome-chev.none {
+  opacity: 0.12;
+  cursor: default;
+}
+.biome-chev.bounce {
+  animation: biome-bounce 0.26s var(--ease) both;
+}
+.biome-chev-up { top: 60px; left: 50%; margin-left: -22px; }
+.biome-chev-down { bottom: 18px; left: 50%; margin-left: -22px; }
+.biome-chev-left { left: 16px; top: 50%; margin-top: -22px; }
+.biome-chev-right { right: 16px; top: 50%; margin-top: -22px; }
+@keyframes biome-bounce {
+  0% { transform: translate(0, 0); }
+  40% { transform: translate(var(--bx, 0), var(--by, 0)); }
+  100% { transform: translate(0, 0); }
+}
+.biome-chev-up.bounce { --by: -8px; }
+.biome-chev-down.bounce { --by: 8px; }
+.biome-chev-left.bounce { --bx: -8px; }
+.biome-chev-right.bounce { --bx: 8px; }
+.biome-map {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 70;
+  display: grid;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid rgb(180 190 205 / 80%);
+  border-radius: 14px;
+  background: rgb(255 253 249 / 66%);
+  box-shadow: 0 6px 18px rgb(60 50 90 / 12%);
+  opacity: 0.55;
+  transition: opacity var(--dur-2, 0.2s) var(--ease);
+}
+.biome-map:hover,
+.biome-map:focus-within {
+  opacity: 1;
+}
+.biome-map-row {
+  display: grid;
+  grid-template-columns: repeat(3, 26px);
+  gap: 4px;
+}
+.biome-map-row.wide {
+  grid-template-columns: 1fr;
+}
+.biome-dot {
+  position: relative;
+  height: 20px;
+  padding: 0;
+  border: 1.5px solid rgb(120 130 150 / 45%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 40%);
+  cursor: pointer;
+  transition: transform 0.16s var(--ease), background 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+.biome-dot:hover { transform: scale(1.08); }
+.biome-dot:active { transform: scale(0.94); }
+.biome-dot.seen { border-color: rgb(80 100 130 / 70%); }
+.biome-dot.on { background: rgb(var(--gs-sea-rgb, 56 128 190) / 0.75); border-color: rgb(var(--gs-sea-rgb, 56 128 190) / 0.9); }
+.biome-dot-name {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 6px);
+  transform: translateX(-50%);
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgb(40 44 54 / 88%);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s var(--ease);
+}
+.biome-dot:hover .biome-dot-name,
+.biome-dot:focus-visible .biome-dot-name { opacity: 1; }
+.biome-dot-meadow { background: rgb(156 196 140 / 60%); }
+.biome-dot-pond, .biome-dot-valley { background: rgb(143 190 220 / 55%); }
+.biome-dot-forest, .biome-dot-mountain { background: rgb(95 143 98 / 55%); }
+.biome-dot-hill { background: rgb(201 195 166 / 65%); }
+.biome-dot-tidal { background: rgb(185 171 142 / 65%); }
+.biome-dot-sandy { background: rgb(226 215 182 / 75%); }
+.biome-dot-rocky { background: rgb(143 148 152 / 60%); }
+.biome-dot-sea { background: rgb(127 176 204 / 65%); }
+.biome-dot-deep { background: rgb(43 74 106 / 65%); }
+.biome-pill {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  z-index: 71;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  max-width: min(520px, 90vw);
+  padding: 8px 16px;
+  border: 1px solid rgb(180 190 205 / 80%);
+  border-radius: 16px;
+  background: rgb(255 253 249 / 86%);
+  color: var(--ink-soft, #3d414c);
+  box-shadow: 0 6px 18px rgb(60 50 90 / 14%);
+  font-size: var(--text-label, 13px);
+  font-weight: 800;
+  text-align: center;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: biome-pill-in 0.36s var(--ease-enter, var(--ease)) both;
+}
+.biome-pill-sub {
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+@keyframes biome-pill-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+html[data-reduce-motion] .biome-pill,
+html[data-reduce-motion] .biome-chev.bounce { animation: none; }
+@media (max-width: 640px) {
+  .biome-chev, .biome-map, .biome-pill { display: none; }
+}
+
 /* 감상 버튼은 배경이 보일 때만(2026-09-04 사용자: "계절 배경을 끄면 감상하기 버튼도 사라져야지") — .gs-season 게이트와 동일. */
 .showcase-btn {
   display: none;

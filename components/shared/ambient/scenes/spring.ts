@@ -112,8 +112,10 @@ function sunAt(t: number, w: number, h: number): [number, number][] {
   ];
 }
 
-export function createSpring(seed: number): Scene {
+/** 초원 — 봄(기본) 또는 **여름 변주**(PLAN-004: 사철 기본 화면 = 초원; 여름 초원 = 짙은 초록·꽃 적게·꽃잎 바람 없음, 물은 연못 바이옴으로). */
+export function createSpring(seed: number, variant: "spring" | "summer" = "spring"): Scene {
   const rand = rng(seed);
+  const summer = variant === "summer";
   let ground: HTMLCanvasElement | null = null;
   let blades: HTMLCanvasElement | null = null;
   let gw = 0;
@@ -185,11 +187,11 @@ export function createSpring(seed: number): Scene {
     const g0 = rng((seed * 7 + 13) >>> 0);
     const { c, g } = makeCanvas(w * dpr, h * dpr);
     g.scale(dpr, dpr);
-    g.fillStyle = "rgb(214 232 200 / 0.42)";
+    g.fillStyle = summer ? "rgb(178 212 160 / 0.6)" : "rgb(214 232 200 / 0.42)";
     g.fillRect(0, 0, w, h);
     const patches = Math.round((w * h) / 70000);
     for (let i = 0; i < patches; i++) {
-      softBlob(g, g0() * w, g0() * h, 120 + g0() * 260, g0() < 0.5 ? "150 196 120" : "232 244 214", 0.16);
+      softBlob(g, g0() * w, g0() * h, 120 + g0() * 260, g0() < 0.5 ? (summer ? "110 165 95" : "150 196 120") : summer ? "205 228 180" : "232 244 214", 0.16);
     }
     // 소품은 전부 drawProp(art/props.ts) — 아트 파일이 있으면 그 그림, 없으면 대체물(옛 도형). 자리는 결정적(같은 g0 순서).
     // 3/4 시점: 클로버(납작)는 세로로 눌리고, 데이지·풀포기(서 있음)는 위(멀다)에서 작다. 꽃은 축척표대로 과장(SIZE.flower 26).
@@ -200,7 +202,7 @@ export function createSpring(seed: number): Scene {
       drawProp(g, groundArt, "clover", x, y, { k: (0.8 + g0() * 0.5) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
     daisies.length = 0;
-    const nd = Math.round((w * h) / 80000);
+    const nd = Math.round((w * h) / (summer ? 200000 : 80000)); // 여름 초원은 꽃이 드물다
     const flowerK = SIZE.flower / 18;
     for (let i = 0; i < nd; i++) {
       const x = g0() * w;
@@ -235,7 +237,7 @@ export function createSpring(seed: number): Scene {
       drawProp(b.g, groundArt, "grass-tuft", x, y, { k: (0.7 + g0() * 0.6) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.9 });
     }
     blades = b.c;
-    horizon = bakeHorizon("spring", w, h, 1);
+    horizon = bakeHorizon(variant, w, h, 1);
     // 민들레 자리(4~7) — 데이지에서 떨어진 곳.
     dands.length = 0;
     const ndd = clamp(Math.round((w * h) / 260000), 4, 7);
@@ -845,7 +847,7 @@ export function createSpring(seed: number): Scene {
         }
       }
       // 꽃잎 바람 — 여력 0.55부터, 20~45초 간격. 부는 동안 풀이 같이 흔들린다(wind → 1).
-      if (load >= 0.55 && t > nextBreeze) {
+      if (!summer && load >= 0.55 && t > nextBreeze) {
         breeze(t, load);
         nextBreeze = t + (20 + rand() * 25) * (f.weather.now === "wind" ? 0.4 : 1); // 바람 부는 날은 꽃잎 바람이 잦다
       }
