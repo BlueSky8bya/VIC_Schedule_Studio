@@ -278,7 +278,7 @@ const loadPublicScheduleData = unstable_cache(
         // 안 되므로 칩을 내보내지 않는다(0069, 2026-08-31 사용자 결정). 미상(0)도 제외.
         supabase
           .from("vod_archive")
-          .select("title_no, broadcast_day, title, duration_ms, thumb")
+          .select("title_no, broadcast_day, title, duration_ms, thumb, guest, host_nick")
           .eq("auth_no", 101)
           .order("broadcast_day", { ascending: false })
           .limit(1000),
@@ -328,8 +328,10 @@ const loadPublicScheduleData = unstable_cache(
             (t) => [Number(t.title_no), t]
           )
         );
-        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string }[] | null) ?? [])
+        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string; guest?: boolean; host_nick?: string }[] | null) ?? [])
           .map((row) => {
+            // 합방 게스트 출연분(0075)만 호스트 닉을 싣는다(공개 닉).
+            const host = row.guest === true && typeof row.host_nick === "string" && row.host_nick.trim() ? row.host_nick.trim() : undefined;
             const tl = tlByNo.get(Number(row.title_no));
             // 썸네일은 쿼리 문자열만(접두 반복 전송 안 함). column·t까지 보존해야 스트리머가
             // 지정한 썸네일 지점이 나온다 — rowKey만 남기면 0초 컷(2026-09-01 실측 수정).
@@ -340,6 +342,7 @@ const loadPublicScheduleData = unstable_cache(
             return {
               dateKey: String(row.broadcast_day).slice(0, 10),
               titleNo: Number(row.title_no),
+              ...(host ? { host } : {}),
               title: typeof row.title === "string" ? row.title : "",
               durationMs: Number(row.duration_ms) || 0,
               chapters: tl ? Number(tl.entry_count) || 0 : 0,

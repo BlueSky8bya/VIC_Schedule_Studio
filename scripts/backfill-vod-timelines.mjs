@@ -73,22 +73,23 @@ function parseTimeline(text) {
 
 const vods = [];
 for (let off = 0; ; off += 500) {
-  const r = await fetch(`${U}/rest/v1/vod_archive?select=title_no&order=reg_date.desc&limit=500&offset=${off}`, {
+  const r = await fetch(`${U}/rest/v1/vod_archive?select=title_no,host_id&order=reg_date.desc&limit=500&offset=${off}`, {
     headers: H
   }).then((x) => x.json());
-  vods.push(...r.map((v) => Number(v.title_no)));
+  // 합방 게스트 출연분(0075)은 댓글이 호스트 채널에 있다.
+  vods.push(...r.map((v) => ({ titleNo: Number(v.title_no), host: v.host_id || BJ })));
   if (r.length < 500) break;
 }
 console.log("대상 VOD:", vods.length);
 
 let withTl = 0;
 let done = 0;
-for (const titleNo of vods) {
+for (const { titleNo, host } of vods) {
   const comments = [];
   for (let page = 1; page <= 2; page += 1) {
     try {
       const j = await fetch(
-        `https://chapi.sooplive.co.kr/api/${BJ}/title/${titleNo}/comment?page=${page}&per_page=30`,
+        `https://chapi.sooplive.co.kr/api/${host}/title/${titleNo}/comment?page=${page}&per_page=30`,
         { headers: { "User-Agent": "Mozilla/5.0" } }
       ).then((x) => x.json());
       comments.push(...(j.data ?? []));

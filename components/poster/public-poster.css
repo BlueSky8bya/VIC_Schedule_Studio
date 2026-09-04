@@ -908,6 +908,20 @@ html[data-reduce-motion] .mb-live-dot {
   flex: 1 1 auto; /* 제목이 남는 폭을 다 쓰고, 길이 배지는 오른쪽 끝으로 */
   text-align: left;
 }
+/* 합방 게스트 출연분(0075) — 칩 앞의 작은 각인 배지(모바일은 '합방' 두 글자, 호스트는 툴팁). 금(金) 문법: 헤어라인·작은 라운드. */
+.agenda-vod-host {
+  flex: none;
+  padding: 0 5px;
+  border: 1px solid var(--gs-metal-line, rgb(150 165 185 / 60%));
+  border-radius: var(--gs-metal-radius, 6px);
+  background: rgb(255 255 255 / 55%);
+  color: var(--gs-metal-ink, #3d4a5c);
+  font-size: var(--text-caption);
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+}
 
 /* ── 날짜 칸 다시보기 팝오버(PC) — 칸 배경 클릭 진입. 일정 카드 없는 날(2024~25)의
    유일한 다시보기 통로. 포스터 캡쳐 불침범: 힌트는 hover에만, 팝오버는 클릭 후에만. ── */
@@ -1278,6 +1292,28 @@ html[data-reduce-motion] .dvm-notice {
   transition: color var(--dur-1) var(--ease);
 }
 .dvm-title:hover { color: #3564e0; }
+/* 합방 게스트 출연분(0075) — 제목 위 한 줄 배지 "합방 · ○○ 방송국": 다른 채널의 플레이어가 뜬다는 안내. 금 문법의 작은 칩. */
+.dvm-host {
+  align-self: start;
+  justify-self: start; /* 챕터 그리드의 자동 칸에 놓여도 칩 폭만(가로로 늘어나지 않게) */
+  width: max-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+  padding: 2px 8px;
+  border: 1px solid var(--gs-metal-line, rgb(150 165 185 / 60%));
+  border-radius: var(--gs-metal-radius, 6px);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 70%), rgb(255 255 255 / 0%) 55%),
+    rgb(244 247 251 / 90%);
+  color: var(--gs-metal-ink, #3d4a5c);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  line-height: 1.5;
+  white-space: nowrap;
+}
 
 /* ── 다시보기 챕터(팬 타임라인, 0071) — PC 날짜 창 전용 ──
    코너 헤더가 그룹 앵커, 항목 탭 = 그 시각 점프. (모바일 아젠다의 챕터 접이는

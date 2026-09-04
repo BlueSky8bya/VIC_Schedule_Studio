@@ -1156,6 +1156,7 @@ export function PublicPoster({
         chapters?: number;
         timelineBy?: string;
         thumbQuery?: string;
+        host?: string; // 합방 게스트 출연분(0075) — 호스트 닉. 칩·창에 "합방 · ○○" 배지
       }[]
     >();
     for (const v of schedule.vods ?? []) {
@@ -4070,9 +4071,11 @@ export function PublicPoster({
                           onClick={() => hapticTick()}
                           rel="noopener noreferrer"
                           target="_blank"
-                          title={vod.title || undefined}
+                          title={vod.host ? `합방 · ${vod.host} 방송국${vod.title ? ` — ${vod.title}` : ""}` : vod.title || undefined}
                         >
                           <Play aria-hidden="true" size={13} strokeWidth={2.6} />
+                          {/* 합방 게스트 출연분(0075) — 다른 채널임을 짧게(모바일은 '합방'만, 호스트는 툴팁). */}
+                          {vod.host ? <em className="agenda-vod-host">합방</em> : null}
                           {/* 라벨 = VOD 제목(넘치면 …). 제목이 비어 있을 때만 '다시보기 N' 폴백. */}
                           <span className="agenda-vod-title">
                             {vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`}
@@ -4431,6 +4434,12 @@ export function PublicPoster({
                               <ExternalLink aria-hidden="true" size={13} strokeWidth={2.6} />
                             </a>
                           </div>
+                          {/* 합방 게스트 출연분(0075) — 다른 스트리머 방송국의 다시보기임을 밝히는 칩(챕터 그리드에선 제목 아래 자동 칸). */}
+                          {vod.host ? (
+                            <span className="dvm-host" title={`${vod.host} 방송국의 다시보기 — 토리님 출연분`}>
+                              합방 · {vod.host} 방송국
+                            </span>
+                          ) : null}
                           <a
                             className="dvm-title"
                             data-act="vod-replay"

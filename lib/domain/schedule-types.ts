@@ -169,6 +169,9 @@ export type PublicVodEntry = {
   // URL) — rowKey만 남기면 0초/대기화면 컷으로 퇴화한다. URL 공통 접두는 클라가 조립:
   // https://videoimg.sooplive.com/php/SnapshotLoad.php?{thumbQuery}
   thumbQuery?: string;
+  // 합방 게스트 출연분(0075) — 다른 스트리머 방송국의 VOD면 호스트 닉("비밀소녀♥"). 토리님 본방은 없음.
+  // 화면은 "합방 · ○○" 배지로 다른 채널임을 알린다(숲에서 누구나 보는 공개 닉).
+  host?: string;
 };
 
 // 팬 타임라인 본문(챕터 목록) — 시각(초)·라벨·팬이 적은 코너 헤더.

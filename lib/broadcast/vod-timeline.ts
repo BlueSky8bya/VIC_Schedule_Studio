@@ -98,13 +98,14 @@ export function pickTimelineComment(
   return best;
 }
 
-async function fetchComments(titleNo: number): Promise<CommentItem[]> {
+// hostId = 댓글이 달린 채널 — 토리님 본방은 BJ_ID, 합방 게스트 출연분(0075)은 호스트 스트리머 id.
+async function fetchComments(titleNo: number, hostId: string = BJ_ID): Promise<CommentItem[]> {
   const out: CommentItem[] = [];
   // 타임라인은 보통 1페이지에 있다 — 2페이지까지만 본다(댓글이 많은 VOD 대비).
   for (let page = 1; page <= 2; page += 1) {
     try {
       const res = await fetch(
-        `https://chapi.sooplive.co.kr/api/${BJ_ID}/title/${titleNo}/comment?page=${page}&per_page=30`,
+        `https://chapi.sooplive.co.kr/api/${hostId}/title/${titleNo}/comment?page=${page}&per_page=30`,
         { headers: { "User-Agent": "Mozilla/5.0" }, cache: "no-store", signal: AbortSignal.timeout(8000) }
       );
       if (!res.ok) break;
@@ -126,8 +127,14 @@ export async function syncVodTimelines(titleNos: number[]): Promise<{ ok: boolea
   const supabase = createSupabaseAdminClient();
   if (!supabase || titleNos.length === 0) return { ok: false, saved: 0 };
   let saved = 0;
+  // 게스트 출연분(0075)은 호스트 채널 경로로 — host_id를 한 번에 읽는다.
+  const hostRes = await supabase.from("vod_archive").select("title_no, host_id").in("title_no", titleNos);
+  const hostOf = new Map<number, string>();
+  for (const r of ((hostRes.data as { title_no: number; host_id: string | null }[] | null) ?? [])) {
+    if (typeof r.host_id === "string" && r.host_id) hostOf.set(Number(r.title_no), r.host_id);
+  }
   for (const titleNo of titleNos) {
-    const comments = await fetchComments(titleNo);
+    const comments = await fetchComments(titleNo, hostOf.get(titleNo) ?? BJ_ID);
     const best = pickTimelineComment(comments);
     const { error } = await supabase.from("vod_timeline").upsert(
       {

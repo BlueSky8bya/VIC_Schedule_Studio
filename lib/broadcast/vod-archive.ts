@@ -206,9 +206,11 @@ export async function syncVodArchive(pages = 1): Promise<{ ok: boolean; upserted
     // 30분 체인은 '직전 방송'을 알아야 한다. 새로 받은 묶음에 직전 방송이 없을 수 있으므로
     // (증분 1페이지 경계), 저장돼 있는 최근 행을 합쳐서 함께 체인한다. 저장 행도 다시 upsert
     // 된다 — 같은 알고리즘이라 결과는 멱등이고, 경계에서 어긋난 날짜가 있으면 이때 교정된다.
+    // 게스트 출연분(0075, 다른 채널)은 체인·재upsert 대상이 아니다.
     const recent = await supabase
       .from("vod_archive")
       .select("title_no, bno, broadcast_day, title, duration_ms, reg_date, comment_cnt, like_cnt, read_cnt, auth_no, thumb")
+      .eq("guest", false)
       .order("reg_date", { ascending: false, nullsFirst: false })
       .limit(40);
     const fetchedIds = new Set(rows.map((r) => r.titleNo));
@@ -314,7 +316,8 @@ export async function syncVodArchiveDeep(): Promise<{ ok: boolean; total: number
     let deleted = 0;
     if (complete) {
       const ids = new Set(all.map((r) => r.titleNo));
-      const dbRows = await supabase.from("vod_archive").select("title_no");
+      // 게스트 출연분(0075)은 토리님 목록에 없는 게 당연 — 삭제 동기화에서 뺀다.
+      const dbRows = await supabase.from("vod_archive").select("title_no").eq("guest", false);
       const gone = (((dbRows.data as { title_no: number }[] | null) ?? []))
         .map((r) => Number(r.title_no))
         .filter((no) => !ids.has(no));

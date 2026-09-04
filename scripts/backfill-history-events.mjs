@@ -137,7 +137,7 @@ function tagsForTitle(title) {
 }
 
 const vods = await all(
-  `vod_archive?select=title_no,broadcast_day,title,duration_ms,reg_date&broadcast_day=lte.${CUTOFF}&order=reg_date.asc`
+  `vod_archive?select=title_no,broadcast_day,title,duration_ms,reg_date&guest=eq.false&broadcast_day=lte.${CUTOFF}&order=reg_date.asc`
 );
 const events = await all(
   `events?select=date_key&calendar_id=eq.${calendarId}&date_key=lte.${CUTOFF}&deleted_at=is.null&order=date_key.asc`

@@ -6,6 +6,23 @@
 
 ## v0.1.0 — 2026-09-04
 
+### CHG-20260904-002 — MIGRATION + PUBLIC DTO — 합방(게스트) 다시보기 (0075)
+
+Problem: 토리님이 다른 스트리머 방송국에 출연한 합방 VOD(모캡 합방 5건)는 수집기(토리님 chapi 목록)에 안 잡혀
+시청자 화면 날짜 칩·다시보기 창에서 볼 수 없었다.
+Change: 0075 — vod_archive에 guest(boolean)·host_id·host_nick 추가, 방송 통계 RPC 둘(0070)은 guest=false만 집계.
+수집기·타임라인·인사이트·백필 스크립트는 guest 행을 체인·삭제 동기화·방송시간에서 제외하고, 타임라인 댓글 API는
+host_id 채널 경로를 쓴다. 등록 입구 = `scripts/add-guest-vods.mjs YYMMDD=URL …`(SOOP VOD 조회 API로 메타 + 호스트
+채널 댓글 타임라인 수집, 멱등 upsert). 공개 DTO PublicVodEntry에 `host?`(호스트 공개 닉, 게스트 행만) 추가 → 칩 '합방'
+배지·창 "합방 · ○○ 방송국" 배지. 플레이어 URL은 title_no 그대로(전 채널 공통).
+Files: db/migrations/0075_vod_archive_guest.sql, lib/broadcast/{vod-archive.ts,vod-timeline.ts}, lib/schedules/public-loader.ts,
+lib/domain/schedule-types.ts, lib/insights/actions.ts, components/poster/{public-poster.tsx,public-poster.css},
+scripts/{add-guest-vods.mjs,backfill-vod-timelines.mjs,backfill-history-events.mjs}
+Validation: apply-db 0075 exit 0; add-guest-vods 5건(251221·260221·260602·260624·260828) upsert + 타임라인; 공개 API
+`vods`에 host 5건; tsc/lint/build; 비주얼 스위트.
+Rollback: 코드 revert + `delete from vod_archive where guest` + `alter table vod_archive drop column guest, host_id, host_nick`
++ 0070 함수 재적용.
+
 ### CHG-20260904-001 — MIGRATION — 신뢰 멤버(매니저) 기능 철수 (0074, ADR-0018)
 
 Problem: 관리자가 쓰지 않는 보조 역할(매니저)과 그 관리 화면·시트·테이블이 코드와 스키마에 남아 있었다

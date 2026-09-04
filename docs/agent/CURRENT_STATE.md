@@ -102,6 +102,12 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   참조하는 항상-false 스텁이라 유지). 순서: 코드 push → 0074 적용(옛 코드도 조회 실패를 삼켜 안 깨짐). 공개 API DTO
   무변화. 검증: tsc·lint(기존 경고 2)·vitest 522·build exit 0·비주얼 79·Playwright(편집실·모바일 DOM "매니저" 0, 도구
   타일 [태그 편집·인사이트·단축키·설정], 개발자 미리보기 3개, 역할 팝오버에 '멤버' 없음).
+  ㉚ **합방(게스트) 다시보기(2026-09-04 저녁, 0075, CHG-20260904-002)**: 토리님이 다른 스트리머 방송국에 출연한 모캡 합방 VOD
+  5건(251221 비밀소녀♥ · 260221 nnininin · 260602 deathhammer · 260624 sirianrain · 260828 비밀소녀♥)을 날짜 칩·다시보기 창에서
+  본다. vod_archive에 guest/host_id/host_nick, 방송 통계 RPC·인사이트·체인·삭제 동기화는 guest 제외, 타임라인 댓글은 host_id
+  채널 경로. 등록 입구 = `node scripts/add-guest-vods.mjs YYMMDD=URL …`(SOOP VOD 조회 API `station/video/a/view` —
+  제목·호스트·길이·방송 시각·썸네일). 공개 DTO `PublicVodEntry.host`(호스트 닉) → 모바일 칩 '합방' 배지, PC 창 "합방 · ○○
+  방송국" 배지(금 문법 칩). 다음 합방 링크도 같은 스크립트로.
   ㉙ **시점·지능 10차(2026-09-04 오후, 사용자 4건)**: ① **단계 3 굳음 근본 원인** — 시청자 미리보기는 셸(`<main>`)을 통째로
   언마운트했다 다시 그린다. 떨어져 나가는 순간 ResizeObserver가 0×0으로 한 번 더 울려 measure가 돌았고, 0 크기 rect는 모든 단계에서
   "겹침"으로 읽혀 3단계까지 올라간 값이 state에 굳었다; 돌아온 새 셸은 관찰 대상이 아니라 다시 재지 않았다 → `measurable()`(연결됨 ∧
