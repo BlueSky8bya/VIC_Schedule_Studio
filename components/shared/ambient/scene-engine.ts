@@ -20,6 +20,7 @@ import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { kstHour, worldTime, worldTimeOfBand, type DayBand, type WorldTime } from "@/components/shared/ambient/world/time";
 import { weatherAt, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
 import { chronicle, chronicleDay, type Trace } from "@/components/shared/ambient/world/chronicle";
+import { drawDepthHaze } from "@/components/shared/ambient/world/view";
 
 export type Quality = 0 | 1 | 2;
 
@@ -270,6 +271,8 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);
     scene.draw(g, frame);
+    // 대기 원근(3/4 시점, PLAN-004 §2.5) — 지평선 쪽이 옅어지는 안개 한 겹: 잔디·물·발자국·생물이 멀수록 흐려진다.
+    drawDepthHaze(g, world.season, w, h);
     // 빛 톤(하루 여섯 띠) — 장면 위에 옅은 색 한 겹(새벽 회청·노을 회자·저녁·밤 청회). 낮은 없음. 캔버스는 DOM 뒤라 글자엔 안 닿는다.
     const tint = frame.time.tint;
     if (tint.alpha > 0) {

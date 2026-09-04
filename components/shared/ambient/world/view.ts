@@ -11,7 +11,11 @@ import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scen
 
 export const GROUND_SQUASH = 0.7;
 export const HORIZON_V = 0.12;
-export const DEPTH_FAR = 0.8;
+// 지평선에서의 배율 — 0.8은 소유자 실측에서 "원근이 약하다"(2026-09-04) → 0.6(먼 나무 ≈ 가까운 나무의 6할).
+export const DEPTH_FAR = 0.6;
+// 대기 원근 안개 — 지평선에서 이 알파, 화면 HAZE_END_V까지 0으로. 잔디·물·발자국·생물 전부 멀수록 옅어진다(엔진이 장면 위에 한 겹).
+export const HAZE_ALPHA = 0.34;
+export const HAZE_END_V = 0.58;
 
 export const horizonY = (h: number) => h * HORIZON_V;
 
@@ -48,6 +52,34 @@ export function footShadow(g: CanvasRenderingContext2D, x: number, y: number, w:
   g.beginPath();
   g.ellipse(x, y, w / 2, (w / 2) * 0.35, 0, 0, TAU);
   g.fill();
+  g.restore();
+}
+
+/** 거리 흐림 — 지평선에서 0.55, 아래에서 1(개별 소품의 알파에 곱할 때). 화면 전체의 안개는 drawDepthHaze가 맡는다. */
+export function depthFade(y: number, h: number): number {
+  const hz = horizonY(h);
+  const t = Math.max(0, Math.min(1, (y - hz) / Math.max(1, h * HAZE_END_V - hz)));
+  return 0.55 + 0.45 * t;
+}
+
+const hazeCache = new Map<string, CanvasGradient>();
+/** 대기 원근 안개 한 겹 — 장면을 다 그린 뒤, 빛 톤 전에. 지평선에서 짙고 화면 58%에서 사라진다(계절 안개색). 그라데이션은 크기·계절별 캐시. */
+export function drawDepthHaze(g: CanvasRenderingContext2D, season: SeasonKey, w: number, h: number) {
+  const key = `${season}:${w}:${h}`;
+  let grad = hazeCache.get(key);
+  if (!grad) {
+    const hz = horizonY(h);
+    grad = g.createLinearGradient(0, hz, 0, h * HAZE_END_V);
+    const c = HZ_COLORS[season].haze;
+    grad.addColorStop(0, `rgb(${c} / ${HAZE_ALPHA})`);
+    grad.addColorStop(0.45, `rgb(${c} / ${HAZE_ALPHA * 0.42})`);
+    grad.addColorStop(1, `rgb(${c} / 0)`);
+    hazeCache.set(key, grad);
+    if (hazeCache.size > 12) hazeCache.delete(hazeCache.keys().next().value as string);
+  }
+  g.save();
+  g.fillStyle = grad;
+  g.fillRect(0, horizonY(h) - 1, w, h * HAZE_END_V - horizonY(h) + 2);
   g.restore();
 }
 

@@ -295,12 +295,13 @@ export function createSummer(seed: number): Scene {
   // 튜브 — 가장자리 밖에서 천천히 들어와 가로질러 나간다("가끔 밀려온다").
   function spawnTube(t: number) {
     const p = newProp("ring", t);
-    const edge = Math.floor(rand() * 4);
+    // 왼쪽·오른쪽·아래에서만 밀려온다 — 위는 기슭·지평선(뭍)이라 튜브가 언덕 위 공중에 떠 보였다(소유자 2026-09-04).
+    const edge = Math.floor(rand() * 3);
     const m = 80;
     p.x = edge === 0 ? -m : edge === 1 ? w + m : w * (0.2 + rand() * 0.6);
-    p.y = edge === 2 ? -m : edge === 3 ? h + m : h * (0.2 + rand() * 0.6);
+    p.y = edge === 2 ? h + m : waterY(0.1 + rand() * 0.7);
     const tx = w * (0.25 + rand() * 0.5);
-    const ty = h * (0.25 + rand() * 0.5);
+    const ty = waterY(0.2 + rand() * 0.6);
     const d = Math.hypot(tx - p.x, ty - p.y) || 1;
     const sp = 22 + rand() * 14;
     p.dvx = ((tx - p.x) / d) * sp;
@@ -700,6 +701,13 @@ export function createSummer(seed: number): Scene {
           } else {
             const inside = q.x > -60 && q.x < w + 60 && q.y > -60 && q.y < h + 60;
             if (inside) q.entered = true;
+            // 튜브도 물 위에만 — 물가 선 위로 밀리면(던지기·흐름) 물가에서 튕겨 내려온다.
+            const wy = shoreY() + 40;
+            if (q.y < wy) {
+              q.y = wy;
+              q.vy = Math.abs(q.vy) + 6;
+              q.dvy = Math.abs(q.dvy);
+            }
             const gone = q.x < -110 || q.x > w + 110 || q.y < -110 || q.y > h + 110;
             if ((q.entered && gone) || t - q.born > 150) {
               props.splice(i, 1);
