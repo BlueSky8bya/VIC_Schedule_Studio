@@ -56,6 +56,8 @@ type Fish = {
   side: number;
   nextGulp: number;
   wag: number;
+  leave: boolean; // 여력이 줄어 가장자리로 나가는 중(화면 밖에서 제거)
+  grp: 0 | 1; // 무리 — 두 무리가 다른 목표를 따라 흩어진다(많을 때 한 덩어리로 뭉치지 않게)
 };
 type Crumb = { x: number; y: number; t0: number; food: number };
 type Drop = { x: number; y: number; vx: number; vy: number; life: number };
@@ -111,6 +113,7 @@ export function createSummer(seed: number): Scene {
   let stampSpr: HTMLCanvasElement | null = null;
   let shadow: HTMLCanvasElement | null = null;
   let duckSpr: Sprite | null = null;
+  let duckSub: Sprite | null = null; // 물속 부분용 — 물빛으로 물든 사본(수면선 아래를 이걸로 그린다)
   let ringSpr: Sprite | null = null;
   const fishParts: (FishParts | null)[] = [null, null];
   let lastX = -9999;
@@ -126,6 +129,8 @@ export function createSummer(seed: number): Scene {
   const drops: Drop[] = [];
   let schoolX = 0;
   let schoolY = 0;
+  let school2X = 0;
+  let school2Y = 0;
   let schoolNext = 0;
   let startles = 0;
   let contagions = 0;
@@ -185,6 +190,7 @@ export function createSummer(seed: number): Scene {
     stampSpr = c;
     shadow = shadowSprite(96, 64, "30 60 90", 0.4);
     void loadSprite(ASSET.duck, 56, 56).then((s) => (duckSpr = s)).catch(() => {});
+    void loadSprite(ASSET.duck, 56, 56, 2, "rgb(150 190 222 / 0.78)").then((s) => (duckSub = s)).catch(() => {});
     void loadSprite(ASSET.ring, 92, 92).then((s) => (ringSpr = s)).catch(() => {});
     const tint = "rgb(28 58 88)";
     void loadSprite(ASSET.fishShadowSlim, FISH_SPR, FISH_SPR, 2, tint).then((s) => (fishParts[0] = splitFish(s))).catch(() => {});
@@ -260,16 +266,28 @@ export function createSummer(seed: number): Scene {
     tubes++;
   }
   const radiusOf = (p: Prop) => (p.kind === "duck" ? 27 * p.k : 46);
-  const fishTarget = (load: number) => (load >= 0.4 ? Math.round(lerp(3, 6, clamp((load - 0.4) / 0.6, 0, 1))) : 0);
+  // 물고기 수 = 여력에 비례(2026-09-04 사용자: "컴퓨터 능력에 따라 늘리거나 줄여라") × 화면 넓이. 가볍게(load .3)도 4마리쯤은
+  // 보인다(lite는 계절이 알아보여야 한다). 큰 놈은 .6부터 하나, .9부터 둘. 늘 땐 가장자리에서 헤엄쳐 들어오고 줄 땐 가장자리로
+  // 나간다(순간 등장·소멸 금지 — 소품 원칙).
+  const areaK = () => clamp((w * h) / 1_440_000, 0.6, 1.5);
+  const fishTarget = (load: number) => (load < 0.12 ? 0 : Math.round(lerp(2, 14, clamp((load - 0.12) / 0.88, 0, 1)) * areaK()));
+  const bigTarget = (load: number) => (load >= 0.9 ? 2 : load >= 0.6 ? 1 : 0);
+  let nextFishChange = 0;
+  let lastLoad = 0.5;
   function newFish(big: boolean): Fish {
     const cruise = big ? 16 + rand() * 8 : 26 + rand() * 30; // 개체마다 다른 걸음 — 큰 놈은 느긋하게
+    // 가장자리 밖에서 안쪽을 향해 들어온다.
+    const e = Math.floor(rand() * 4);
+    const m = 70;
+    const x = e === 0 ? -m : e === 1 ? w + m : rand() * w;
+    const y = e === 2 ? -m : e === 3 ? h + m : rand() * h;
     return {
-      x: rand() * w,
-      y: rand() * h,
-      hd: rand() * TAU,
+      x,
+      y,
+      hd: Math.atan2(h * (0.2 + rand() * 0.6) - y, w * (0.2 + rand() * 0.6) - x),
       spd: cruise,
       cruise,
-      k: big ? 1.05 + rand() * 0.15 : 0.45 + rand() * 0.25,
+      k: big ? 1.15 + rand() * 0.2 : 0.5 + rand() * 0.3,
       shape: big ? 0 : rand() < 0.65 ? 0 : 1,
       big,
       ph: rand() * TAU,
@@ -284,8 +302,24 @@ export function createSummer(seed: number): Scene {
       bold: big ? 1.7 : 0.8 + rand() * 0.5, // 대담함 — 클수록 늦게, 가까이서 튄다
       side: rand() < 0.5 ? 1 : -1,
       nextGulp: 0,
-      wag: 0
+      wag: 0,
+      leave: false,
+      grp: rand() < 0.5 ? 0 : 1
     };
+  }
+  // 나갈 놈 고르기 — 포인터에서 가장 먼 놈이 가장 가까운 가장자리로 헤엄쳐 나간다.
+  function fishLeave(big: boolean, p: Frame["p"]) {
+    let pick: Fish | null = null;
+    let fd = -1;
+    for (const q of fish) {
+      if (q.big !== big || q.leave) continue;
+      const d = p.inside ? Math.hypot(q.x - p.x, q.y - p.y) : rand() * 1000;
+      if (d > fd) {
+        fd = d;
+        pick = q;
+      }
+    }
+    if (pick) pick.leave = true;
   }
   // C-start — 자극 반대쪽으로 순간 가속(가끔 옆으로 튀는 protean), 깊이 숨는다.
   function startle(q: Fish, fromX: number, fromY: number, strong: boolean) {
@@ -346,6 +380,7 @@ export function createSummer(seed: number): Scene {
     },
     step(f) {
       const { dt, p, t, load } = f;
+      lastLoad = load;
       ensureLo(f);
       const ttl = lerp(1.5, 3.0, load);
       const gapPx = lerp(9, 4, load);
@@ -508,9 +543,9 @@ export function createSummer(seed: number): Scene {
                 q.nextCurious = t + 14;
               }
             } else if (state === "dabble") {
-              // 자맥질 — 머리를 물속에 박고(엉덩이만 남는다) 머리 쪽에서 고리가 번진다.
+              // 자맥질 — 머리를 물속에 박고(엉덩이만 남는다) 머리 쪽(face 방향)에서 고리가 번진다.
               if (t > q.nextTick) {
-                ring(q.x + q.face * -1 * 16 * q.k, q.y + 2, 26, 0.3, 0, 1.4, 1.2);
+                ring(q.x + q.face * 14 * q.k, q.y + 4, 26, 0.3, 0, 1.4, 1.2);
                 if (q.crumb) q.crumb.food -= 0.12;
                 q.nextTick = t + 0.5 + rand() * 0.3;
               }
@@ -523,8 +558,8 @@ export function createSummer(seed: number): Scene {
             } else if (state === "bathe") {
               // 목욕 — 머리를 담갔다 들며 물방울이 튄다.
               if (t > q.nextTick) {
-                ring(q.x + q.face * -1 * 14 * q.k, q.y, 22, 0.35, 0, 1.0, 1.4);
-                splash(q.x + q.face * -1 * 10, q.y - 6, 5);
+                ring(q.x + q.face * 14 * q.k, q.y + 6, 22, 0.35, 0, 1.0, 1.4);
+                splash(q.x + q.face * 10, q.y, 5);
                 q.nextTick = t + 0.28;
               }
               if (t > q.until) duckSet(q, "shake", 0.55, t);
@@ -616,22 +651,40 @@ export function createSummer(seed: number): Scene {
           q.nextRing = t + 2.2 + rand() * 2.4;
         }
       }
-      // ③ 물고기 — 수는 여력으로(3~6 + 큰 놈), 무리 목표가 몇 초마다 옮겨진다.
-      const wantFish = fishTarget(load);
-      const smallFish = fish.filter((q) => !q.big).length;
-      if (smallFish < wantFish) fish.push(newFish(false));
-      else if (smallFish > wantFish) {
-        const i = fish.findIndex((q) => !q.big);
-        if (i >= 0) fish.splice(i, 1);
+      // ③ 물고기 — 수는 여력으로(2~14 × 넓이 + 큰 놈 0~2), 0.5초에 한 마리씩 가장자리로 드나든다. 무리 목표가 몇 초마다 옮겨진다.
+      if (t > nextFishChange) {
+        const wantSmall = fishTarget(load);
+        const wantBig = bigTarget(load);
+        const small = fish.filter((q) => !q.big && !q.leave).length;
+        const big = fish.filter((q) => q.big && !q.leave).length;
+        let changed = false;
+        if (small < wantSmall) {
+          fish.push(newFish(false));
+          changed = true;
+        } else if (small > wantSmall) {
+          fishLeave(false, p);
+          changed = true;
+        }
+        if (big < wantBig) {
+          fish.push(newFish(true));
+          changed = true;
+        } else if (big > wantBig) {
+          fishLeave(true, p);
+          changed = true;
+        }
+        nextFishChange = t + (changed ? 0.5 : 0.2);
       }
-      const wantBig = load >= 0.7;
-      const bigIdx = fish.findIndex((q) => q.big);
-      if (wantBig && bigIdx < 0) fish.push(newFish(true));
-      else if (!wantBig && bigIdx >= 0) fish.splice(bigIdx, 1);
+      for (let i = fish.length - 1; i >= 0; i--) {
+        const q = fish[i];
+        if (q.leave && (q.x < -90 || q.x > w + 90 || q.y < -90 || q.y > h + 90)) fish.splice(i, 1);
+      }
       if (fish.length) {
         if (t > schoolNext) {
           schoolX = w * (0.15 + rand() * 0.7);
           schoolY = h * (0.15 + rand() * 0.7);
+          // 둘째 무리 목표는 첫째에서 화면 너비의 1/4 이상 떨어진 곳.
+          school2X = clamp(schoolX + (rand() < 0.5 ? -1 : 1) * w * (0.25 + rand() * 0.3), w * 0.1, w * 0.9);
+          school2Y = h * (0.15 + rand() * 0.7);
           schoolNext = t + 6 + rand() * 8;
         }
         const justStartled: Fish[] = [];
@@ -688,6 +741,17 @@ export function createSummer(seed: number): Scene {
             q.avoidT -= dt;
             q.hd += clamp(angleDiff(q.avoid, q.hd), -2.5 * dt, 2.5 * dt);
             q.depthT = 0.3;
+          } else if (q.leave) {
+            // 가장 가까운 가장자리로 헤엄쳐 나간다(여력이 줄었다).
+            const exits: [number, number][] = [
+              [-100, q.y],
+              [w + 100, q.y],
+              [q.x, -100],
+              [q.x, h + 100]
+            ];
+            exits.sort((a, b) => Math.hypot(a[0] - q.x, a[1] - q.y) - Math.hypot(b[0] - q.x, b[1] - q.y));
+            q.hd += clamp(angleDiff(Math.atan2(exits[0][1] - q.y, exits[0][0] - q.x), q.hd), -2 * dt, 2 * dt);
+            q.depthT = 0.3;
           } else if (crumb) {
             const dx = crumb.x - q.x;
             const dy = crumb.y - q.y;
@@ -715,9 +779,11 @@ export function createSummer(seed: number): Scene {
             q.hd += clamp(angleDiff(Math.atan2(ty - q.y, tx - q.x), q.hd), -1.2 * dt, 1.2 * dt) + Math.sin(t * 1.3 + q.ph) * 0.3 * dt;
             q.depthT = 0.4 + 0.15 * Math.sin(t * 0.25 + q.ph);
           } else {
-            // 무리(boids): 목표 + 정렬 + 응집 + 분리.
-            const tx = schoolX + Math.cos(q.ph + t * 0.3) * 60;
-            const ty = schoolY + Math.sin(q.ph + t * 0.27) * 60;
+            // 무리(boids): 목표 + 정렬 + 응집 + 분리. 두 무리(grp)가 다른 목표를 따르고, 같은 무리끼리만 정렬·응집한다.
+            const gx = q.grp === 0 ? schoolX : school2X;
+            const gy = q.grp === 0 ? schoolY : school2Y;
+            const tx = gx + Math.cos(q.ph + t * 0.3) * 90;
+            const ty = gy + Math.sin(q.ph + t * 0.27) * 90;
             let dx = tx - q.x;
             let dy = ty - q.y;
             const dl = Math.hypot(dx, dy) || 1;
@@ -730,46 +796,52 @@ export function createSummer(seed: number): Scene {
             let n = 0;
             let sepx = 0;
             let sepy = 0;
+            const sepR = 34 + 14 * q.k; // 몸집만큼 간격 — 뭉쳐 한 덩어리 그림자가 되지 않게
             for (const o of fish) {
               if (o === q || o.big) continue;
               const ox = o.x - q.x;
               const oy = o.y - q.y;
               const d = Math.hypot(ox, oy);
               if (d > 110 || d < 0.01) continue;
+              if (d < sepR) {
+                sepx -= (ox / d) * (1 - d / sepR);
+                sepy -= (oy / d) * (1 - d / sepR);
+              }
+              if (o.grp !== q.grp) continue;
               n++;
               ax += Math.cos(o.hd);
               ay += Math.sin(o.hd);
               cx += ox;
               cy += oy;
-              if (d < 30) {
-                sepx -= (ox / d) * (1 - d / 30);
-                sepy -= (oy / d) * (1 - d / 30);
-              }
             }
             let vx = dx;
             let vy = dy;
             if (n) {
               const cl = Math.hypot(cx, cy) || 1;
-              vx += 0.8 * (ax / n) + 0.5 * (cx / cl) + 1.6 * sepx;
-              vy += 0.8 * (ay / n) + 0.5 * (cy / cl) + 1.6 * sepy;
+              vx += 0.8 * (ax / n) + 0.35 * (cx / cl);
+              vy += 0.8 * (ay / n) + 0.35 * (cy / cl);
             }
+            vx += 1.8 * sepx;
+            vy += 1.8 * sepy;
             q.hd += clamp(angleDiff(Math.atan2(vy, vx), q.hd), -1.8 * dt, 1.8 * dt) + Math.sin(t * 2.1 + q.ph) * 0.5 * dt;
             q.depthT = 0.45 + 0.15 * Math.sin(t * 0.3 + q.ph);
           }
           // 헤엄은 꼬리질 박자에 맞춰 밀렸다 미끄러진다(등속 아님). 튈 땐 순간 4.5배에서 1초 안에 잦아든다.
           const pulse = 0.75 + 0.5 * Math.max(0, Math.sin(t * freq + q.ph));
-          const want = q.cruise * (q.flee > 0 ? 1 + 3.5 * q.burst : crumb ? 1.35 : 1) * pulse;
+          const want = q.cruise * (q.flee > 0 ? 1 + 3.5 * q.burst : crumb ? 1.35 : q.leave ? 1.3 : 1) * pulse;
           q.spd += (want - q.spd) * Math.min(1, dt * (q.flee > 0 ? 3 : 8));
           q.x += Math.cos(q.hd) * q.spd * dt;
           q.y += Math.sin(q.hd) * q.spd * dt;
           q.ph += dt * (q.flee > 0 ? 3 : 1);
           q.depth += (q.depthT - q.depth) * Math.min(1, dt * (q.flee > 0 ? 4 : 1.2));
           q.wag = Math.sin(t * freq + q.ph) * (q.flee > 0 ? 0.42 : 0.18 + 0.12 * clamp(q.spd / (q.cruise * 2), 0, 1));
-          const m = 60;
-          if (q.x < -m) q.x = w + m - 1;
-          else if (q.x > w + m) q.x = -m + 1;
-          if (q.y < -m) q.y = h + m - 1;
-          else if (q.y > h + m) q.y = -m + 1;
+          if (!q.leave) {
+            const m = 60;
+            if (q.x < -m) q.x = w + m - 1;
+            else if (q.x > w + m) q.x = -m + 1;
+            if (q.y < -m) q.y = h + m - 1;
+            else if (q.y > h + m) q.y = -m + 1;
+          }
         }
       }
       // ④ 물방울 — 여력 0.5부터 3~8초에 하나, 1.4초 동안 커졌다 톡 터진다.
@@ -991,46 +1063,87 @@ export function createSummer(seed: number): Scene {
         const bob = Math.sin(q.ph) * 0.03;
         const size = q.k * (1 + bob + 0.1 * q.lift);
         if (shadow) {
+          // 그림자는 바로 아래(물 위 소품은 그림자가 발밑에 있다 — 옆으로 멀리 떨어진 그림자가 "공중부양"으로 읽혔다,
+          // 2026-09-04 사용자). 들어 올리면(끌기) 그제야 멀어진다.
           g.save();
-          g.globalAlpha = 0.28 + 0.12 * q.lift;
-          g.translate(q.x + 4 + 10 * q.lift, q.y + 6 + 12 * q.lift);
+          g.globalAlpha = (q.kind === "duck" ? 0.16 : 0.26) + 0.14 * q.lift;
+          g.translate(q.x + 1 + 9 * q.lift, q.y + (q.kind === "duck" ? 9 : 5) + 12 * q.lift);
           if (q.kind === "ring") g.rotate(q.a);
-          const sw = q.kind === "duck" ? 62 : 100;
-          const sh = q.kind === "duck" ? 40 : 100;
+          const sw = q.kind === "duck" ? 52 : 100;
+          const sh = q.kind === "duck" ? 26 : 100;
           g.drawImage(shadow, (-sw / 2) * size, (-sh / 2) * size, sw * size, sh * size);
           g.restore();
         }
         if (q.kind === "duck") {
-          // 세워 그린다(좌우만 뒤집음). 자맥질 = 납작하게 눌리며 앞으로 기울고, 목욕·털기 = 잔떨림, 놀람 = 퍼덕(크기 맥동),
-          // 깃 다듬기 = 좌우로 갸웃.
+          // 세워 그린다(좌우만 뒤집음). 물에 **잠긴 채**(2026-09-04 사용자: "공중부양 같다"): 수면선(waterY) 아래는 물빛으로 물든
+          // 사본(duckSub)을 옅게 — 헤엄칠 땐 발·아랫배가 물속, 자맥질(tip-up)은 코를 물에 박고 몸 대부분이 잠겨 엉덩이만 남는다.
+          // 목욕 = 머리를 담갔다 들며 잠긴 깊이가 오르내림, 털기·놀람(퍼덕)은 몸이 물 위로 솟는다. 들어 올리면 전부 물 밖.
+          // 기울기 부호: 회전은 세계 좌표 — face(+1 = 오른쪽을 봄)와 같은 부호가 **코를 내린다**.
           const s = q.state;
           let sxk = 1;
           let syk = 1;
           let tilt = Math.sin(q.ph * 0.7) * 0.05;
           let dy = 0;
+          let wl = 9 * q.k; // 수면선 = 몸통 중심 아래 (발 + 아랫배 잠김)
           if (s === "dabble") {
             const e = clamp((t - (q.until - 3)) * 2, 0, 1);
-            syk = 1 - 0.28 * e;
-            sxk = 1 + 0.05 * e;
-            tilt += q.face * -0.35 * e;
-            dy = 6 * e;
+            tilt += q.face * 1.05 * e; // 코를 60° 아래로
+            dy = 5 * e;
+            wl = lerp(9 * q.k, -10 * q.k, e); // 몸 대부분이 물속, 엉덩이만 수면 위
           } else if (s === "shake") {
             sxk = 1 + 0.07 * Math.sin(t * 46);
             syk = 1 - 0.07 * Math.sin(t * 46);
+            wl = 13 * q.k;
           } else if (s === "bathe") {
-            tilt += q.face * -0.18 * Math.abs(Math.sin(t * 5));
-            dy = 3 * Math.abs(Math.sin(t * 5));
+            const dip = Math.abs(Math.sin(t * 5));
+            tilt += q.face * 0.3 * dip;
+            dy = 3 * dip;
+            wl = 9 * q.k - 7 * dip;
           } else if (s === "preen") tilt += Math.sin(t * 6) * 0.1;
           else if (s === "alarm") {
             const fl = Math.abs(Math.sin(t * 24));
             sxk = 1 + 0.14 * fl;
             syk = 1 + 0.1 * fl;
+            wl = 14 * q.k; // 퍼덕이며 몸을 세운다
           } else if (s === "wait") tilt += Math.sin(t * 2.2) * 0.06;
+          wl += 40 * q.lift; // 들어 올리면 물 밖
+          const waterY = q.y + dy + wl;
+          const drawDuck = (sp: Sprite) => {
+            g.save();
+            g.translate(q.x, q.y + dy);
+            g.scale(sxk, syk);
+            drawSprite(g, sp, 0, 0, tilt, size, q.face > 0);
+            g.restore();
+          };
+          // 수면 위 — 수면선까지만.
           g.save();
-          g.translate(q.x, q.y + dy);
-          g.scale(sxk, syk);
-          drawSprite(g, spr, 0, 0, tilt, size, q.face > 0);
+          g.beginPath();
+          g.rect(q.x - 90, q.y - 100, 180, Math.max(0, waterY - (q.y - 100)));
+          g.clip();
+          drawDuck(spr);
           g.restore();
+          // 수면 아래 — 물빛 사본을 옅게(굴절·탁함).
+          if (duckSub) {
+            g.save();
+            g.beginPath();
+            g.rect(q.x - 90, waterY, 180, 140);
+            g.clip();
+            g.globalAlpha = 0.55;
+            drawDuck(duckSub);
+            g.restore();
+          }
+          // 수면선 — 잠긴 자리 둘레의 옅은 흰 타원(물에 '박혀' 있다는 신호). 들어 올리면 사라진다.
+          if (q.lift < 0.5) {
+            const rw = (s === "dabble" ? 20 : 24) * q.k * size;
+            g.save();
+            g.globalAlpha = (1 - q.lift * 2) * 0.55;
+            g.strokeStyle = "rgb(255 255 255)";
+            g.lineWidth = 1.2;
+            g.beginPath();
+            g.ellipse(q.x, waterY, rw, rw * 0.22, 0, 0, TAU);
+            g.stroke();
+            g.restore();
+          }
         } else drawSprite(g, spr, q.x, q.y, q.a + Math.sin(q.ph * 0.7) * 0.05, size);
       }
       // 물방울(목욕·털기·놀람) — 흰 점, 튀었다 떨어진다.
@@ -1110,8 +1223,10 @@ export function createSummer(seed: number): Scene {
         loScale: loS,
         props: props.map((q) => [q.kind, Math.round(q.x), Math.round(q.y), q.grab ? 1 : 0]),
         tubes,
-        sprites: { duck: !!duckSpr, ring: !!ringSpr },
+        sprites: { duck: !!duckSpr, duckSub: !!duckSub, ring: !!ringSpr },
         fish: fish.map((q) => [Math.round(q.x), Math.round(q.y), q.big ? 1 : 0, q.flee > 0 ? 1 : 0]),
+        fishTarget: fishTarget(lastLoad) + bigTarget(lastLoad),
+        fishLeaving: fish.filter((q) => q.leave).length,
         fishShapes: fish.map((q) => q.shape),
         fishSpds: fish.map((q) => Math.round(q.cruise)),
         fishDepth: fish.map((q) => Math.round(q.depth * 100) / 100),

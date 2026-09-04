@@ -125,7 +125,11 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   split into body + tail at a joint so the tail wags, drawn on the low-res wake layer, larger/darker the nearer the surface
   (`depth`). Never draw a side-view fish flat on the water again. **No open-licensed top-view duck exists** (openclipart 0 hits,
   OpenGameArt, Wikimedia, itch checked) — the Noto duck is drawn **upright, flip-only** (a 3/4-view prop, never rotated by
-  heading) with a mallard ethogram (drift · paddle · dabble tip-up · preen · bathe · shake · curious approach · alarm).
+  heading) with a mallard ethogram (drift · paddle · dabble tip-up · preen · bathe · shake · curious approach · alarm), and it
+  **sits in the water**: below a per-state waterline the sprite is drawn from a water-tinted copy at low alpha (feet/belly
+  submerged while swimming, most of the body under during tip-up, rising when alarmed/shaking, fully out when lifted), with a
+  thin waterline ellipse and the shadow directly beneath (an offset shadow read as "hovering"). Fish count follows capacity
+  (2–14 × area, big ones from load .6/.9) and always enters/leaves via the edges in two loose schools.
   Every creature perceives the pointer through `threat()` in `scenes/util.ts` (distance + approach rate + loom = rate/d):
   slow approach is tolerated, a lunge triggers escape early (flight-initiation distance grows with speed). Fish: C-start burst
   + protean side-dodge, startle contagion within 90px, hovering shadow → sidle away, splash (click) = feeding cue after 1 s
