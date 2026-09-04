@@ -21,6 +21,8 @@ import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import type { Weather } from "../world/weather";
 import { ArtSet } from "../art/load";
 import { scatterProps } from "../art/props";
+import { PRINT_K, SIZE } from "../world/scale";
+import { bakeHorizon, depthScale, GROUND_SQUASH } from "../world/view";
 
 // 날씨(날짜 시드)별 눈송이 배수 — 눈 오는 날은 촘촘히, 맑은 날은 가끔 한 송이.
 const WEATHER_FLAKES: Record<Weather, number> = { snow: 1.8, cloud: 0.8, clear: 0.35, fog: 0.6, wind: 1.2, rain: 0.5 };
@@ -61,7 +63,9 @@ type Rabbit = {
 type Threat = ReturnType<typeof threat>;
 type Gust = { t0: number; dur: number; dir: number; y: number } | null;
 
-const SPR: Record<PrintKind, number> = { sole: 36, paw: 20, bird: 18, rHind: 20, rFore: 14 };
+// 축척(PLAN-004 §2): 발자국은 절반 — 장화 36 → 18(범인 2). 보폭도 같은 비율(STRIDE_K).
+const SPR: Record<PrintKind, number> = { sole: 36 * PRINT_K, paw: 20 * PRINT_K, bird: 18 * PRINT_K, rHind: 20 * PRINT_K, rFore: 14 * PRINT_K };
+const STRIDE_K = 0.6;
 
 export function createWinter(seed: number): Scene {
   const rand = rng(seed);
@@ -72,6 +76,7 @@ export function createWinter(seed: number): Scene {
   // 바탕 소품 아트(있으면 눈 무더기·관목·바위·마른 풀·잔가지가 눈밭에 놓인다) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
   const groundArt = new ArtSet(["snow-pile", "shrub-winter", "rock", "grass-dry", "twig"]);
   let gav = -1;
+  let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(흰 언덕·나목 줄)
   const sprites = new Map<PrintKind, HTMLCanvasElement>();
   let rabbitSpr: Sprite | null = null;
   let shadow: HTMLCanvasElement | null = null;
@@ -210,16 +215,18 @@ export function createWinter(seed: number): Scene {
       }
       speck = c;
     }
-    void loadSprite(ASSET.rabbit, 54, 54).then((s) => (rabbitSpr = s)).catch(() => {});
+    void loadSprite(ASSET.rabbit, SIZE.rabbit, SIZE.rabbit).then((s) => (rabbitSpr = s)).catch(() => {}); // 축척: 54 → 40
   }
   function drawPrint(g: CanvasRenderingContext2D, p: Print, alpha: number) {
     const spr = sprites.get(p.kind);
     if (!spr) return;
     const s = SPR[p.kind];
+    const k = p.k * depthScale(p.y, gh || 1); // 3/4 시점: 먼 자국은 작고, 바닥에 찍힌 것이라 세로로 눌린다
     g.save();
     g.translate(p.x, p.y);
+    g.scale(1, GROUND_SQUASH);
     g.rotate(p.a + (p.kind === "sole" ? (p.left ? -0.08 : 0.08) : 0));
-    g.scale(p.left ? -p.k : p.k, p.k);
+    g.scale(p.left ? -k : k, k);
     g.globalAlpha = alpha;
     g.drawImage(spr, -s / 2, -s / 2, s, s);
     g.restore();
@@ -236,28 +243,29 @@ export function createWinter(seed: number): Scene {
     const fx = Math.cos(wk.dir);
     const fy = Math.sin(wk.dir);
     const a = wk.dir + Math.PI / 2;
+    const sk = wk.k * STRIDE_K; // 보폭·좌우 폭은 자국과 같은 축척으로
     if (wk.kind === "human") {
       wk.dir += (r() - 0.5) * 0.24;
-      const side = (wk.left ? -8 : 8) * wk.k;
+      const side = (wk.left ? -8 : 8) * sk;
       emit({ x: wk.x + px * side, y: wk.y + py * side, a, kind: "sole", left: wk.left, k: wk.k, born: t });
       puffAt(wk.x + px * side, wk.y + py * side);
-      wk.x += fx * 30 * wk.k;
-      wk.y += fy * 30 * wk.k;
+      wk.x += fx * 30 * sk;
+      wk.y += fy * 30 * sk;
       wk.left = !wk.left;
       wk.next = t + 0.38 + r() * 0.1;
     } else if (wk.kind === "cat") {
       wk.dir += (r() - 0.5) * 0.34;
-      const side = (wk.left ? -3 : 3) * wk.k;
+      const side = (wk.left ? -3 : 3) * sk;
       emit({ x: wk.x + px * side, y: wk.y + py * side, a, kind: "paw", left: wk.left, k: wk.k, born: t });
-      wk.x += fx * 13 * wk.k;
-      wk.y += fy * 13 * wk.k;
+      wk.x += fx * 13 * sk;
+      wk.y += fy * 13 * sk;
       wk.left = !wk.left;
       wk.next = t + 0.2 + (r() < 0.05 ? 0.8 + r() * 1.4 : 0);
     } else if (wk.kind === "bird") {
       wk.dir += (r() - 0.5) * 0.6;
-      for (const s of [-1, 1]) emit({ x: wk.x + px * s * 4 * wk.k, y: wk.y + py * s * 4 * wk.k, a, kind: "bird", left: false, k: wk.k, born: t });
-      wk.x += fx * 15 * wk.k;
-      wk.y += fy * 15 * wk.k;
+      for (const s of [-1, 1]) emit({ x: wk.x + px * s * 4 * sk, y: wk.y + py * s * 4 * sk, a, kind: "bird", left: false, k: wk.k, born: t });
+      wk.x += fx * 15 * sk;
+      wk.y += fy * 15 * sk;
       wk.next = t + 0.36 + r() * 0.22;
       if (wk.steps > 6 && r() < 0.025) {
         puffAt(wk.x, wk.y);
@@ -265,12 +273,12 @@ export function createWinter(seed: number): Scene {
       }
     } else {
       wk.dir += (r() - 0.5) * 0.3;
-      for (const s of [-1, 1]) emit({ x: wk.x + px * s * 6 * wk.k, y: wk.y + py * s * 6 * wk.k, a, kind: "rHind", left: false, k: wk.k, born: t });
-      emit({ x: wk.x - fx * 11 * wk.k + px * 2, y: wk.y - fy * 11 * wk.k + py * 2, a, kind: "rFore", left: false, k: wk.k, born: t });
-      emit({ x: wk.x - fx * 18 * wk.k - px * 2, y: wk.y - fy * 18 * wk.k - py * 2, a, kind: "rFore", left: false, k: wk.k, born: t });
+      for (const s of [-1, 1]) emit({ x: wk.x + px * s * 6 * sk, y: wk.y + py * s * 6 * sk, a, kind: "rHind", left: false, k: wk.k, born: t });
+      emit({ x: wk.x - fx * 11 * sk + px * 2, y: wk.y - fy * 11 * sk + py * 2, a, kind: "rFore", left: false, k: wk.k, born: t });
+      emit({ x: wk.x - fx * 18 * sk - px * 2, y: wk.y - fy * 18 * sk - py * 2, a, kind: "rFore", left: false, k: wk.k, born: t });
       puffAt(wk.x, wk.y);
-      wk.x += fx * 42 * wk.k;
-      wk.y += fy * 42 * wk.k;
+      wk.x += fx * 42 * sk;
+      wk.y += fy * 42 * sk;
       wk.next = t + 0.48 + r() * 0.12;
     }
     wk.steps++;
@@ -294,9 +302,10 @@ export function createWinter(seed: number): Scene {
     const fx = Math.cos(dir);
     const fy = Math.sin(dir);
     const a = dir + Math.PI / 2;
-    for (const s of [-1, 1]) prints.push({ x: x + px * s * 6 * k, y: y + py * s * 6 * k, a, kind: "rHind", left: false, k, born: t });
-    prints.push({ x: x - fx * 11 * k + px * 2, y: y - fy * 11 * k + py * 2, a, kind: "rFore", left: false, k, born: t });
-    prints.push({ x: x - fx * 18 * k - px * 2, y: y - fy * 18 * k - py * 2, a, kind: "rFore", left: false, k, born: t });
+    const sk = k * STRIDE_K;
+    for (const s of [-1, 1]) prints.push({ x: x + px * s * 6 * sk, y: y + py * s * 6 * sk, a, kind: "rHind", left: false, k, born: t });
+    prints.push({ x: x - fx * 11 * sk + px * 2, y: y - fy * 11 * sk + py * 2, a, kind: "rFore", left: false, k, born: t });
+    prints.push({ x: x - fx * 18 * sk - px * 2, y: y - fy * 18 * sk - py * 2, a, kind: "rFore", left: false, k, born: t });
   }
 
   function bakeGround(dpr: number) {
@@ -341,6 +350,7 @@ export function createWinter(seed: number): Scene {
     ]);
     // (이미 지나간 자국은 바탕에 굽지 않는다 — 살아 있는 자국이어야 포인터로 지울 수 있다. resize에서 산 자국으로 심는다.)
     ground = c;
+    horizon = bakeHorizon("winter", w, h, 1);
     gw = w;
     gh = h;
     gdpr = dpr;
@@ -744,6 +754,8 @@ export function createWinter(seed: number): Scene {
     },
     draw(g, f) {
       if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
+      // 3/4 시점의 지평선 띠(위 12%) — 흰 언덕·나목 줄·안개.
+      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       const t = f.t;
       for (const k of twinkles) {
         const a = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(t * 1.3 + k.ph));
@@ -768,7 +780,7 @@ export function createWinter(seed: number): Scene {
         g.strokeStyle = `rgb(255 255 255 / ${r.life * 0.35})`;
         g.lineWidth = 1;
         g.beginPath();
-        g.arc(r.x, r.y, 3 + e * 9, 0, TAU);
+        g.ellipse(r.x, r.y, 3 + e * 9, (3 + e * 9) * GROUND_SQUASH, 0, 0, TAU); // 바닥의 고리 — 3/4 시점이라 타원
         g.stroke();
       }
       // 눈보라 앞머리 — 옅은 흰 띠(부드러운 얼룩을 가로로 늘려).
@@ -820,10 +832,12 @@ export function createWinter(seed: number): Scene {
         const digging = r.phase === "sit" && t - r.digT < 0.35;
         const dig = digging ? Math.sin((t - r.digT) * 36) * 0.06 : 0; // 파헤치는 동안 몸이 잘게 까딱
         if (digging) k *= 1 + Math.abs(dig) * 0.5;
+        k *= depthScale(r.y, f.h); // 3/4 시점: 먼 토끼는 작다
         if (shadow && alpha > 0) {
           g.save();
           g.globalAlpha = 0.35 * alpha * (1 - 0.5 * up);
           g.translate(r.x + 4 + 10 * up, r.y + 6 + 14 * up);
+          g.scale(1, GROUND_SQUASH);
           g.rotate(r.dir + Math.PI / 2);
           g.drawImage(shadow, -22 * k, -28 * k, 44 * k, 56 * k);
           g.restore();

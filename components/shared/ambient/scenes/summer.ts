@@ -30,6 +30,8 @@ import { bakeShore, bakeTraces, drawTraces, SHORE_V, type TraceBakes } from "../
 import { ArtSet, artFile } from "../art/load";
 import { artSlot } from "../art/manifest";
 import { drawProp } from "../art/props";
+import { SIZE } from "../world/scale";
+import { bakeHorizon, depthScale, GROUND_SQUASH } from "../world/view";
 
 type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: number }; // n = 진행 직각 단위벡터
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
@@ -128,6 +130,7 @@ export function createSummer(seed: number): Scene {
   // 기슭 소품 아트(갈대·통나무·바위·관목 — 있을 때만 기슭에 선다)와 오리 아트(있으면 Noto 오리 대신).
   const shoreArt = new ArtSet(["reed", "log", "rock", "shrub-summer"]);
   let shoreArtV = -1;
+  let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(먼 기슭 안개)
   let rainRings = 0;
   let duckSpr: Sprite | null = null;
   let duckSub: Sprite | null = null; // 물속 부분용 — 물빛으로 물든 사본(수면선 아래를 이걸로 그린다)
@@ -337,7 +340,7 @@ export function createSummer(seed: number): Scene {
       hd: Math.atan2(waterY(0.2 + rand() * 0.6) - y, w * (0.2 + rand() * 0.6) - x),
       spd: cruise,
       cruise,
-      k: big ? 1.15 + rand() * 0.2 : 0.5 + rand() * 0.3,
+      k: big ? 0.9 + rand() * 0.2 : 0.35 + rand() * 0.2, // 축척(PLAN-004 §2): 소 28~44 · 대 72~88(옛 40~64 · 92~108)
       shape: big ? 0 : rand() < 0.65 ? 0 : 1,
       big,
       ph: rand() * TAU,
@@ -984,11 +987,12 @@ export function createSummer(seed: number): Scene {
       for (const q of fish) {
         const parts = fishParts[q.shape];
         if (!parts) continue;
-        const size = q.k * (0.86 + 0.28 * q.depth);
+        const size = q.k * (0.86 + 0.28 * q.depth) * depthScale(q.y, f.h);
         const body = composeFish(parts, q.wagAmp, q.wagPh);
         L.save();
         L.globalAlpha = 0.18 + 0.3 * q.depth;
         L.translate(q.x, q.y);
+        L.scale(1, GROUND_SQUASH); // 3/4 시점: 수면 아래 그림자는 세로로 눌린다(회전 전에, 화면 세로로)
         L.rotate(q.hd + Math.PI); // 실루엣의 머리 = 왼쪽(−x)
         L.scale(size, size);
         L.drawImage(body, -FS / 2, -FS / 2, FS, FS);
@@ -1098,12 +1102,12 @@ export function createSummer(seed: number): Scene {
         L.lineWidth = lw * 2.6;
         L.strokeStyle = `rgb(120 175 215 / ${a * 0.4})`;
         L.beginPath();
-        L.arc(r.x, r.y, rad, 0, TAU);
+        L.ellipse(r.x, r.y, rad, rad * GROUND_SQUASH, 0, 0, TAU); // 수면의 고리 — 3/4 시점이라 타원
         L.stroke();
         L.lineWidth = lw;
         L.strokeStyle = `rgb(255 255 250 / ${a})`;
         L.beginPath();
-        L.arc(r.x, r.y, rad, 0, TAU);
+        L.ellipse(r.x, r.y, rad, rad * GROUND_SQUASH, 0, 0, TAU);
         L.stroke();
       }
       g.imageSmoothingEnabled = true;
@@ -1111,6 +1115,9 @@ export function createSummer(seed: number): Scene {
       g.drawImage(lo.c, 0, 0, f.w, f.h);
       // 기슭(위 띠의 뭍) + 연대기 — 연잎 군락(6→8월 넓어진다)은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
       if (shore) g.drawImage(shore, 0, 0);
+      // 3/4 시점의 지평선 띠 — 먼 기슭이 안개에 잠긴다(P1에서 연못·해안 바이옴으로 갈라진다).
+      if (!horizon || horizon.width !== Math.ceil(f.w)) horizon = bakeHorizon("summer", f.w, f.h, 1);
+      g.drawImage(horizon, 0, 0, f.w, horizon.height);
       if (traces) drawTraces(g, f, "summer", traces, { landOnShore: true });
       // 햇빛 반짝임 — 물결 위의 작은 별(숨쉬듯 밝아졌다 사라짐), 본 캔버스에 또렷하게.
       for (const gl of glints) {
@@ -1151,7 +1158,8 @@ export function createSummer(seed: number): Scene {
         const spr = q.kind === "duck" ? duckSpr : ringSpr;
         if (!spr) continue;
         const bob = Math.sin(q.ph) * 0.03;
-        const size = q.k * (1 + bob + 0.1 * q.lift);
+        // 축척(오리 56 → 44, 튜브 92 → 64) × 3/4 시점 거리 축소.
+        const size = q.k * (1 + bob + 0.1 * q.lift) * (q.kind === "duck" ? SIZE.duck / 56 : SIZE.swimRing / 92) * depthScale(q.y, f.h);
         if (shadow) {
           // 그림자는 바로 아래(물 위 소품은 그림자가 발밑에 있다 — 옆으로 멀리 떨어진 그림자가 "공중부양"으로 읽혔다,
           // 2026-09-04 사용자). 들어 올리면(끌기) 그제야 멀어진다.

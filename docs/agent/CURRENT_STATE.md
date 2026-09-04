@@ -118,7 +118,13 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   비스듬히(거리감)** ① 사철 기본 = 초원 ② 모서리 확장 긍정 → 계곡(北西)·산(北東)·갯벌(南西)·암석해안(南東) ③ 입력 전부 ④ 시청자도 감상 +
   **만난 동물 수집 → 도감**. 결과: 지도 = 3×3 + 남쪽 2 = **열한 화면**, §2.5 3/4 카메라 규칙(바닥 눌림 .7 · 거리 축소 .80→1.00(0.05 양자화) ·
   y-sort · 지평선 띠 12% · 착지점 고정 낙하 · 물은 수평선에서), §5 도감 스펙(3초 만남·클릭 관찰·로그인만 서버 `discoveries`·바이옴 탭·실루엣→픽셀),
-  §6에 `world/view.ts`·`coast.ts`(tidal·sandy·rocky)·`sea.ts`(open·deep)·`discovery.ts`. **다음 = P0 축척 + 시점(1일) → 네 계절 스크린샷.**
+  §6에 `world/view.ts`·`coast.ts`(tidal·sandy·rocky)·`sea.ts`(open·deep)·`discovery.ts`.
+  **P0 출고(같은 밤)**: `world/scale.ts`(SIZE 표·LEAF_K .36·PRINT_K .5) + `world/view.ts`(GROUND_SQUASH .7 · depthScale .80→1 ·
+  HORIZON_V .12 · bakeHorizon · toScreen · flatXform · footShadow · ySort). 네 장면: 낙엽 30~76 → ×.36(실측 평균 18), 발자국 절반 +
+  보폭 ×.6, 나무 반지름 40~72(성목 폭 128)·데뷔 상한 96, 꽃 ×1.4, 오리 44·토끼 40·다람쥐 36·나비 18·벌 14·무당벌레 12·물고기 28~88,
+  납작한 것 세로 눌림(발자국·클로버·연잎·물고기 그림자·파문·낙엽·발밑 그림자), 서 있는 것 거리 축소, 지평선 띠(안개 + 언덕 두 겹이
+  땅으로 녹아듦 + 옅은 나무 줄), 연대기 흔적은 toScreen + y-sort. drawProp/drawArt에 `sy`. 실측: 네 계절 에러 0, 나무:잎 ≈ 8:1.
+  여름은 아직 물 장면 + 기슭(P1에서 초원/연못/해안으로 갈라진다). **다음 = P1 세계·카메라.**
   ㉝ **계절 배경 아트 파이프라인 + 아트 보드(2026-09-04 밤, ADR-0017 ⑮)**: 소유자 "나무·초목을 기본 도형 몇 개 붙이면 어떻게 하냐
   (겨울 나무 = 말미잘, 봄 초목 = 껌딱지, 가을 흙더미 = 정체불명, 여름 연잎 = 겹침) — 동물의 숲처럼 이어서 디자인, 한 라우트에서 관리".
   `components/shared/ambient/art/`: `manifest.ts`(자리 65 = 1차 초목·지형 36 + 2차 생물 29(종 레지스트리 파생); 자리마다 id·계절·

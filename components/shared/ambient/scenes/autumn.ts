@@ -16,6 +16,8 @@ import { angleDiff, clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, r
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
 import { drawProp, scatterProps } from "../art/props";
+import { LEAF_K, SIZE } from "../world/scale";
+import { bakeHorizon, depthScale, flatXform, GROUND_SQUASH } from "../world/view";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -117,6 +119,7 @@ export function createAutumn(seed: number): Scene {
   // 바탕 소품 아트(버섯·잔가지·조약돌·마른 풀 + 있으면 관목·바위·그루터기·통나무) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
   const groundArt = new ArtSet(["mushroom", "twig", "pebble", "grass-dry", "shrub-autumn", "rock", "stump", "log"]);
   let gav = -1;
+  let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠(먼 언덕·작은 나무 줄) — 크기별 한 번
   let grabbed = -1;
   let gox = 0;
   let goy = 0;
@@ -247,17 +250,30 @@ export function createAutumn(seed: number): Scene {
       softBlob(g, g0() * w, g0() * h, 110 + g0() * 240, g0() < 0.5 ? "150 135 95" : "125 100 70", 0.075);
     }
     // 소품은 전부 drawProp(art/props.ts) — 아트 파일이 있으면 그 그림, 없으면 대체물(옛 도형). 자리는 결정적.
+    // 3/4 시점: 서 있는 것은 위(멀다)에서 작게(depthScale), 납작한 것(잔가지·조약돌)은 세로로 눌린다(GROUND_SQUASH).
     const tufts = Math.round((w * h) / 2600);
-    for (let i = 0; i < tufts; i++) drawProp(g, groundArt, "grass-dry", g0() * w, g0() * h, { k: 0.7 + g0() * 0.6, r: g0(), flip: g0() < 0.5, alpha: 0.85 });
+    for (let i = 0; i < tufts; i++) {
+      const x = g0() * w;
+      const y = g0() * h;
+      drawProp(g, groundArt, "grass-dry", x, y, { k: (0.7 + g0() * 0.6) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.85 });
+    }
     const twigs = Math.round((w * h) / 40000);
-    for (let i = 0; i < twigs; i++) drawProp(g, groundArt, "twig", g0() * w, g0() * h, { k: 0.8 + g0() * 0.8, rot: g0() * TAU, r: g0() });
+    for (let i = 0; i < twigs; i++) {
+      const x = g0() * w;
+      const y = g0() * h;
+      drawProp(g, groundArt, "twig", x, y, { k: (0.8 + g0() * 0.8) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
+    }
     const pebbles = Math.round((w * h) / 70000);
-    for (let i = 0; i < pebbles; i++) drawProp(g, groundArt, "pebble", g0() * w, g0() * h, { k: 0.7 + g0() * 0.9, rot: g0() * TAU, r: g0() });
+    for (let i = 0; i < pebbles; i++) {
+      const x = g0() * w;
+      const y = g0() * h;
+      drawProp(g, groundArt, "pebble", x, y, { k: (0.7 + g0() * 0.9) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
+    }
     const shrooms = clamp(Math.round((w * h) / 300000), 3, 7);
     for (let i = 0; i < shrooms; i++) {
       const x = 30 + g0() * (w - 60);
       const y = 30 + g0() * (h - 60);
-      const k = 0.8 + g0() * 0.6;
+      const k = (0.8 + g0() * 0.6) * depthScale(y, h);
       softBlob(g, x + 3, y - 4, 12 * k, "43 35 32", 0.22);
       drawProp(g, groundArt, "mushroom", x, y + 8 * k, { k, r: g0() });
     }
@@ -269,6 +285,7 @@ export function createAutumn(seed: number): Scene {
       { id: "log", n: 1 }
     ]);
     ground = c;
+    horizon = bakeHorizon("autumn", w, h, 1);
     gw = w;
     gh = h;
     gdpr = dpr;
@@ -287,7 +304,8 @@ export function createAutumn(seed: number): Scene {
   function spawn(t: number, falling = false): Leaf {
     const sp = pickSpecies();
     const [lo, hi] = SPECIES[sp].size;
-    return { x: rand() * w, y: rand() * h, vx: 0, vy: 0, a: rand() * TAU, va: 0, s: lo + rand() * (hi - lo), sp, col: Math.floor(rand() * SPECIES[sp].colors.length), lift: 0, flip: 0, flipV: 0, fall: falling ? 1 : 0, ph: rand() * TAU, fade: 0, born: t };
+    // 축척(PLAN-004 §2): 낙엽은 나무의 1/12 — 옛 30~76을 LEAF_K(≈.36)로 줄인다(물리 반지름·집기 판정도 s에 비례하므로 같이 줄어든다).
+    return { x: rand() * w, y: rand() * h, vx: 0, vy: 0, a: rand() * TAU, va: 0, s: (lo + rand() * (hi - lo)) * LEAF_K, sp, col: Math.floor(rand() * SPECIES[sp].colors.length), lift: 0, flip: 0, flipV: 0, fall: falling ? 1 : 0, ph: rand() * TAU, fade: 0, born: t };
   }
   /** 도토리는 최대 6 — 넘치면 가장 오래된 것이 옅어진다. */
   function capAcorns() {
@@ -295,7 +313,7 @@ export function createAutumn(seed: number): Scene {
     if (acorns.length > ACORN_MAX) acorns.sort((a, b) => a.born - b.born)[0].fade = 0.001;
   }
   function pushAcorn(x: number, y: number, fall: number, t: number) {
-    leaves.push({ x, y, vx: 0, vy: 0, a: rand() * TAU, va: 0, s: 18 + rand() * 6, sp: ACORN, col: 0, lift: 0, flip: 0, flipV: 0, fall, ph: rand() * TAU, fade: 0, born: t });
+    leaves.push({ x, y, vx: 0, vy: 0, a: rand() * TAU, va: 0, s: SIZE.acorn * (0.75 + rand() * 0.35), sp: ACORN, col: 0, lift: 0, flip: 0, flipV: 0, fall, ph: rand() * TAU, fade: 0, born: t });
     capAcorns();
   }
   function dropAcorn(t: number) {
@@ -890,6 +908,8 @@ export function createAutumn(seed: number): Scene {
     },
     draw(g, f) {
       if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
+      // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개. 바탕 위, 모든 것 아래.
+      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 서리 안개 — 안개 낀 날(11월에 잦다)은 더 깊이 내려온다.
       const fogK = f.weather.now === "fog" ? 1.7 : 1;
       const mistH = f.h * 0.34 * (f.weather.now === "fog" ? 1.6 : 1);
@@ -904,16 +924,21 @@ export function createAutumn(seed: number): Scene {
       // 흙더미 — 바탕 위, 잎 **아래**(잎이 덮을 수 있다 — 찾는 게 놀이). 묻은 직후 0.6초에 걸쳐 드러난다.
       if (moundSpr && caches.length) {
         for (const c of caches) {
+          g.save();
           g.globalAlpha = clamp((f.t - c.t) / 0.6, 0, 1);
-          g.drawImage(moundSpr, c.x - 11, c.y - 7);
+          flatXform(g, c.x, c.y, depthScale(c.y, f.h));
+          g.drawImage(moundSpr, -11, -7);
+          g.restore();
         }
-        g.globalAlpha = 1;
       }
       const drawLeaf = (l: Leaf, shadow: boolean) => {
         const acorn = l.sp === ACORN;
         if (acorn && (!acornSpr || !acornShadow)) return;
         const up = l.fall > 0 ? Math.pow(l.fall, 0.8) : l.lift;
-        const k = (acorn ? l.s / 40 : (l.s / SPR) * 1.4) * (1 + up * (l.fall > 0 ? 1.4 : 0.12));
+        // 3/4 시점: 위(멀다)는 작게, 바닥에 누운 잎은 세로로 눌린다(떨어지는 중·들린 잎은 안 눌림).
+        const ds = depthScale(l.y, f.h);
+        const k = (acorn ? l.s / 40 : (l.s / SPR) * 1.4) * (1 + up * (l.fall > 0 ? 1.4 : 0.12)) * ds;
+        const sq = l.fall > 0 || l.lift > 0.5 ? 1 : GROUND_SQUASH;
         const sx = l.flipV > 0 ? Math.cos(l.flip) : 1;
         const alpha = 1 - l.fade;
         g.save();
@@ -924,6 +949,7 @@ export function createAutumn(seed: number): Scene {
           g.globalAlpha = (l.fall > 0 ? 0.55 + 0.45 * (1 - l.fall) : 1) * alpha;
           g.translate(l.x, l.y);
         }
+        g.scale(1, sq);
         g.rotate(l.a);
         if (acorn) {
           g.scale(k, k);
@@ -965,14 +991,15 @@ export function createAutumn(seed: number): Scene {
                 : s.phase === "pause"
                   ? Math.sin(f.t * 20) * 0.2
                   : 0;
+        const sds = depthScale(s.y, f.h) * (SIZE.chipmunk / 52); // 3/4 시점 거리 축소 × 축척(52 → 36)
         if (sqShadow) {
           g.save();
           g.globalAlpha = 0.3;
-          g.translate(s.x + 4 + 6 * bounce, s.y + 10 + 8 * bounce);
-          g.drawImage(sqShadow, -28, -22, 56, 44);
+          g.translate(s.x + 4 + 6 * bounce, s.y + 10 * sds + 8 * bounce);
+          g.drawImage(sqShadow, -28 * sds, -22 * sds * GROUND_SQUASH, 56 * sds, 44 * sds * GROUND_SQUASH);
           g.restore();
         }
-        drawFacing(g, squirrelSpr, s.x, s.y - 6 * bounce, s.dir, 1 + 0.1 * bounce, wig);
+        drawFacing(g, squirrelSpr, s.x, s.y - 6 * bounce, s.dir, (1 + 0.1 * bounce) * sds, wig);
         if (s.carry && acornSpr) {
           // 입에 문 도토리 — 코 끝(앞 22px)에, 몸과 같은 각도로.
           g.save();

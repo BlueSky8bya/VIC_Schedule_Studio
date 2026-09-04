@@ -155,10 +155,10 @@ export type PresentArt = Record<string, ArtFileInfo[]>;
 export const SEASON_KO: Record<SeasonKey, string> = { spring: "봄", summer: "여름", autumn: "가을", winter: "겨울" };
 export const VIEW_KO: Record<ArtView, string> = {
   stand: "서 있는 것 — 동물의 숲 카메라(높은 앵글 약 60°에서 내려다본 3/4 정면, 위·아래가 모두 보인다). 바닥 그림자는 그리지 않는다(엔진이 그린다).",
-  flat: "땅·물 위에 납작 놓인 것 — 정확히 위에서 본 모습(top-down). 앞 = 위. 바닥 그림자 없음.",
+  flat: "땅·물 위에 납작 놓인 것 — 위에서 비스듬히(3/4 카메라) 내려다본 모습: 세로가 살짝 눌린 타원 느낌(엔진이 0.7배로 한 번 더 누른다). 앞 = 위. 바닥 그림자 없음.",
   shadow: "물속·하늘 그림자 — 정확히 위에서 본 단색 실루엣(진남색 #1c3a58 한 색, 안쪽 무늬 없음). 머리 = 왼쪽."
 };
-export const VIEW_SHORT: Record<ArtView, string> = { stand: "서 있음(3/4)", flat: "위에서(납작)", shadow: "실루엣" };
+export const VIEW_SHORT: Record<ArtView, string> = { stand: "서 있음(3/4)", flat: "납작(3/4·눌림)", shadow: "실루엣" };
 export const NOW_KO: Record<ArtNow, string> = { procedural: "코드 도형", emoji: "Noto 이모지", silhouette: "PD 실루엣", svg: "우리 SVG", none: "아직 없음" };
 export const CATEGORY_KO: Record<ArtCategory, string> = { tree: "나무", plant: "풀·꽃", ground: "지형", water: "물", prop: "소품", fish: "물고기·그림자", bug: "곤충", animal: "동물" };
 

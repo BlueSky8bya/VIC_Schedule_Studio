@@ -116,10 +116,12 @@ export class ArtSet {
   }
 }
 
-/** 앵커 기준으로 그린다 — stand는 (x,y)가 바닥 접점, flat은 가운데. k = 배율(1 = 자리 크기), rot = 회전(라디안). */
-export function drawArt(g: CanvasRenderingContext2D, s: ArtSprite, x: number, y: number, k = 1, rot = 0, flipX = false) {
+/** 앵커 기준으로 그린다 — stand는 (x,y)가 바닥 접점, flat은 가운데. k = 배율(1 = 자리 크기), rot = 회전(라디안),
+ *  sy = 세로 추가 배율(3/4 시점의 바닥 눌림 — 회전 **전에** 화면 세로로 누른다). */
+export function drawArt(g: CanvasRenderingContext2D, s: ArtSprite, x: number, y: number, k = 1, rot = 0, flipX = false, sy = 1) {
   g.save();
   g.translate(x, y);
+  if (sy !== 1) g.scale(1, sy);
   if (rot) g.rotate(rot);
   g.scale(flipX ? -k : k, k);
   g.drawImage(s.c, -s.w * s.ax, -s.h * s.ay, s.w, s.h);

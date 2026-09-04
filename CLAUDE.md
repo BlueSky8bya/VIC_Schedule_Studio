@@ -162,6 +162,14 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   with `npm run art:normalize` (alpha-trim + fit to 4× the slot's screen px, 128–512 — trees 512, props 128–256; the board flags
   heavy files). A trunk standing on a bright ground (snow, sand) is grey-brown, never red-brown — a red trunk was the loudest thing
   on the snow field; `scripts/ambient-art-desaturate.mjs` fixes delivered art in place. Fixture for probes: `/visual-fixture/ambient-art`.
+- **3/4 camera + toy scale (PLAN-20260904-004 P0, 2026-09-04 night; owner: "leaves as big as trees", "I want distance").**
+  `world/scale.ts` is the size table (TILE 64, biggest : smallest ≤ 12 — leaves 12–18, boot prints 18, oak crown 128, debut cap
+  192, flowers deliberately 24–28); `world/view.ts` is the camera: `GROUND_SQUASH` .7 for anything lying on the ground/water
+  (prints, clover, lily pads, fish shadows, ripple rings — ellipses, applied before rotation), `depthScale(y,h)` .80→1.00 top→bottom
+  in .05 steps for everything standing or alive, `HORIZON_V` .12 = the far band (`bakeHorizon`: haze + two hills fading into the
+  ground + a sparse silhouette tree line), `toScreen(u,v)` puts normalized world coords below the horizon, y-sort in `drawTraces`.
+  New scene code reads sizes from `SIZE` and draws through these helpers — no hardcoded px, no un-squashed ground marks. The
+  remaining biome world (11 screens, camera pan, pond/sea split of summer.ts, agents, 도감) is P1–P3 of the plan.
 - **World services (PLAN-20260904-003 Phase A, `components/shared/ambient/world/`).** The scene `Frame` carries `date` (viewed month's
   day: today / last day of a past month / 1st of a future month), `time` (six KST bands — 새벽·아침·점심·노을·저녁·밤 by seasonal
   sunrise/sunset — with a light tint the engine paints over the scene: none by day, grey-violet dusk, blue-grey evening/night, never

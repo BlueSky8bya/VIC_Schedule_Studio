@@ -343,10 +343,11 @@ export function drawProp(
   id: string,
   x: number,
   y: number,
-  opts: { k?: number; rot?: number; r?: number; alpha?: number; flip?: boolean } = {}
+  opts: { k?: number; rot?: number; r?: number; alpha?: number; flip?: boolean; sy?: number } = {}
 ): boolean {
   const k = opts.k ?? 1;
   const r = opts.r ?? 0;
+  const sy = opts.sy ?? 1; // 3/4 시점 바닥 눌림(납작한 것) — 회전 전에 화면 세로로
   const a: ArtSprite | null = art ? art.pick(id, r) : null;
   if (opts.alpha !== undefined) {
     g.save();
@@ -354,7 +355,7 @@ export function drawProp(
   }
   let drew = false;
   if (a) {
-    drawArt(g, a, x, y, k, opts.rot ?? 0, opts.flip);
+    drawArt(g, a, x, y, k, opts.rot ?? 0, opts.flip, sy);
     drew = true;
   } else {
     const slot = artSlot(id);
@@ -364,6 +365,7 @@ export function drawProp(
       const [W, H] = slot.px;
       g.save();
       g.translate(x, y);
+      if (sy !== 1) g.scale(1, sy);
       if (opts.rot) g.rotate(opts.rot);
       g.scale(opts.flip ? -k : k, k);
       g.drawImage(c, -W / 2, slot.view === "stand" ? -H : -H / 2, W, H);

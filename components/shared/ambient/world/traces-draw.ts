@@ -3,7 +3,9 @@
 //  · 저장소(cache) = 흙더미 · 싹(sprout) · 묘목(sapling) · 나무(tree) · 두더지 흙더미(molehill, 여름엔 풀 얼룩) · 눈사람(snowman) · 연잎(lilypad).
 //  · **아트 우선(2026-09-04, art/manifest.ts)**: `public/ambient/art/<id>.png`가 있으면 그 그림(나무 = 동물의 숲 카메라로 세운 그림,
 //    발밑 그림자는 여기서), 없으면 옛 대체물(코드 도형·Noto 이모지). 소품은 `drawProp`(art/props.ts)로 한 API.
-// 좌표는 정규화(u,v) → 캔버스 px. 핫 존(달력) 안에 떨어지면 그리지 않는다(어차피 가려진다; 캔버스 비용도 아낀다).
+//  · **3/4 시점(PLAN-004 §2.5)**: 좌표는 정규화(u,v) → `toScreen`(지평선 아래 땅), 크기는 `depthScale`(위 = 멀다 = 작다), 납작한 것
+//    (흙더미·풀 얼룩·연잎)은 `GROUND_SQUASH`로 세로 눌림. 축척은 `scale.ts`(참나무 성목 수관 폭 128, 데뷔 상한 192).
+// 핫 존(달력) 안에 떨어지면 그리지 않는다(어차피 가려진다; 캔버스 비용도 아낀다).
 
 import type { Frame } from "@/components/shared/ambient/scene-engine";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
@@ -11,6 +13,8 @@ import { ASSET, loadSprite, type Sprite } from "@/components/shared/ambient/asse
 import { ArtSet, drawArt } from "@/components/shared/ambient/art/load";
 import { drawProp } from "@/components/shared/ambient/art/props";
 import { makeCanvas, rng, shadowSprite, TAU } from "@/components/shared/ambient/scenes/util";
+import { SIZE } from "./scale";
+import { depthScale, GROUND_SQUASH, toScreen } from "./view";
 
 export type TraceBakes = {
   shadow: HTMLCanvasElement;
@@ -63,8 +67,12 @@ export function bakeTraces(): TraceBakes {
   return bakes;
 }
 
+// 수관 반지름 — 나이 1 = 40, 5년째부터 성목 SIZE.treeCrownW/2(64) · 데뷔 나무는 키(cm)/12, 상한 SIZE.debutCrownW/2(96).
+const MATURE_R = SIZE.treeCrownW / 2;
+const treeRadius = (age: number) => Math.round(MATURE_R - 24 + Math.min(5, age) * 4.8);
+const debutRadius = (hcm: number) => Math.round(Math.min(SIZE.debutCrownW / 2, 14 + hcm / 12) / 4) * 4;
+
 // 캐노피(대체물) — 위에서 본 나무: 둥근 잎 뭉치 여러 개(반지름 R만큼 큼), 안쪽이 어둡고 바깥이 밝다. 결정적(R·계절별 한 장).
-const treeRadius = (age: number) => 26 + Math.min(5, age) * 8;
 export function canopyTreeSprite(season: SeasonKey, R: number): HTMLCanvasElement {
   const S = R * 2 + 12;
   const { c, g } = makeCanvas(S, S);
@@ -140,8 +148,8 @@ export function bareTreeSprite(R: number): HTMLCanvasElement {
   return c;
 }
 
-// 나무 한 그루(수관 반지름 R, (x,y) = 수관 중심 자리) — 아트가 있으면 동물의 숲 카메라로 세운 그림(발은 y + 0.9R, 수관 폭 ≈ 2R,
-// 발밑 타원 그림자 + 해 방향), 없으면 대체물(겨울 = 헐벗은 가지, 그 외 = 계절색 캐노피).
+// 나무 한 그루(수관 반지름 R — 이미 거리 축소가 곱해진 값, (x,y) = 수관 중심 자리) — 아트가 있으면 동물의 숲 카메라로 세운 그림(발은
+// y + 0.9R, 수관 폭 ≈ 2R, 발밑 타원 그림자 + 해 방향), 없으면 대체물(겨울 = 헐벗은 가지, 그 외 = 계절색 캐노피).
 function drawTree(g: CanvasRenderingContext2D, f: Frame, season: SeasonKey, b: TraceBakes, x: number, y: number, R: number) {
   const h = f.time.hour;
   const dx = h < 12 ? -10 - Math.max(0, 11 - h) * 2 : 10 + Math.max(0, h - 13) * 2;
@@ -185,7 +193,7 @@ function drawTree(g: CanvasRenderingContext2D, f: Frame, season: SeasonKey, b: T
   g.drawImage(s, x - s.width / 2, y - s.height / 2);
 }
 
-// 싹·묘목 — 아트가 있으면 그것(바닥 접점 = y + 4), 없으면 Noto 이모지(옛 자리 그대로).
+// 싹·묘목 — 아트가 있으면 그것(바닥 접점 = y + 4), 없으면 Noto 이모지(옛 자리 그대로). k에는 거리 축소가 이미 곱해져 있다.
 function drawSprout(g: CanvasRenderingContext2D, b: TraceBakes, x: number, y: number, k: number) {
   g.save();
   g.globalAlpha = 0.28;
@@ -213,7 +221,8 @@ function drawSapling(g: CanvasRenderingContext2D, season: SeasonKey, b: TraceBak
 }
 
 // 여름 물가 — 물 장면의 위 띠는 **뭍**이다(계획서 §3.2 "물가": 갈대·통나무가 서는 가장자리). 땅의 흔적(데뷔 나무·나무·싹·흙더미)이
-// 물 위에 떠 보이지 않게 모래·풀이 섞인 부드러운 기슭 띠를 한 번 굽고, 그 위에만 땅 흔적을 그린다.
+// 물 위에 떠 보이지 않게 모래·풀이 섞인 부드러운 기슭 띠를 한 번 굽고, 그 위에만 땅 흔적을 그린다. (PLAN-004 P1에서 연못·해안
+// 바이옴으로 이사한다 — 초원 여름은 물 없음.)
 export const SHORE_V = 0.115; // 기슭 띠의 아래 끝(정규화 세로)
 export function bakeShore(w: number, h: number): HTMLCanvasElement {
   const H = Math.round(h * SHORE_V) + 24;
@@ -271,65 +280,67 @@ const LAND_KINDS = new Set(["cache", "sprout", "sapling", "tree", "molehill", "s
 const hash01 = (a: number, b: number) => (((Math.sin(a * 12.9898 + b * 78.233) * 43758.5453) % 1) + 1) % 1;
 
 /** 흔적을 그린다 — 바탕 뒤·생물 앞. hideCaches = 장면이 저장소를 제 흙더미 시스템으로 그릴 때(가을) 중복을 피한다.
- *  landOnShore = 물 장면(여름): 땅의 흔적은 기슭 띠(v ≤ SHORE_V) 안에 있는 것만 그린다. */
+ *  landOnShore = 물 장면(여름): 땅의 흔적은 기슭 띠(v ≤ SHORE_V) 안에 있는 것만 그린다. 먼 것(위)부터 그린다(y-sort). */
 export function drawTraces(g: CanvasRenderingContext2D, f: Frame, season: SeasonKey, b: TraceBakes, opts: { hideCaches?: boolean; landOnShore?: boolean } = {}) {
   const hot = f.hot;
   const inHot = (x: number, y: number) => !!hot && x >= hot.x - 10 && x <= hot.x + hot.w + 10 && y >= hot.y - 10 && y <= hot.y + hot.h + 10;
-  for (const t of f.traces) {
-    const x = t.u * f.w;
-    const y = t.v * f.h;
+  const items = f.traces
+    .map((t) => {
+      const [x, y] = opts.landOnShore && LAND_KINDS.has(t.kind) ? [t.u * f.w, t.v * f.h] : toScreen(t.u, t.v, f.w, f.h);
+      return { t, x, y };
+    })
+    .sort((a, c) => a.y - c.y);
+  for (const { t, x, y } of items) {
     if (inHot(x, y)) continue;
     if (opts.landOnShore && LAND_KINDS.has(t.kind) && t.v > SHORE_V) continue;
+    const ds = depthScale(y, f.h);
     switch (t.kind) {
       case "cache":
         if (opts.hideCaches) break;
-        drawProp(g, b.art, "soil-mound", x, y, { alpha: t.stage === 1 ? 0.7 : 0.55 });
+        drawProp(g, b.art, "soil-mound", x, y, { alpha: t.stage === 1 ? 0.7 : 0.55, k: ds, sy: GROUND_SQUASH });
         break;
       case "molehill":
-        if (t.stage === 1) drawProp(g, b.art, "grass-patch", x, y);
-        else drawProp(g, b.art, "molehill", x, y + 8);
+        if (t.stage === 1) drawProp(g, b.art, "grass-patch", x, y, { k: ds, sy: GROUND_SQUASH });
+        else drawProp(g, b.art, "molehill", x, y + 8 * ds, { k: ds });
         break;
       case "sprout":
-        drawSprout(g, b, x, y, 0.6 + 0.5 * t.stage);
+        drawSprout(g, b, x, y, (0.6 + 0.5 * t.stage) * ds);
         break;
       case "sapling":
-        drawSapling(g, season, b, x, y, 0.7 + 0.5 * t.stage);
+        drawSapling(g, season, b, x, y, (0.7 + 0.5 * t.stage) * ds);
         break;
       case "tree":
-        drawTree(g, f, season, b, x, y, treeRadius(t.stage));
+        drawTree(g, f, season, b, x, y, Math.round((treeRadius(t.stage) * ds) / 4) * 4);
         break;
       case "debut": {
         // 데뷔 나무 — 2023-05 씨앗(흙더미) → 2025-10-01 싹 → 실제 키(cm)로 자란다: 15cm까지 싹, 80cm까지 어린 나무,
-        // 그 뒤는 키에 비례하는 수관(반지름 ≈ 키의 1/12, 상한 84px). 겨울엔 헐벗은 가지.
+        // 그 뒤는 키에 비례하는 수관(반지름 ≈ 키의 1/12, 상한 SIZE.debutCrownW/2). 겨울엔 헐벗은 가지.
         const hcm = t.stage;
-        if (hcm <= 0) drawProp(g, b.art, "soil-mound", x, y, { alpha: 0.6 });
-        else if (hcm < 15) drawSprout(g, b, x, y, 0.6 + (hcm / 15) * 0.5);
-        else if (hcm < 80) drawSapling(g, season, b, x, y, 0.8 + ((hcm - 15) / 65) * 0.9);
-        else {
-          const R = Math.round(Math.min(84, 14 + hcm / 12) / 4) * 4;
-          drawTree(g, f, season, b, x, y, R);
-        }
+        if (hcm <= 0) drawProp(g, b.art, "soil-mound", x, y, { alpha: 0.6, k: ds, sy: GROUND_SQUASH });
+        else if (hcm < 15) drawSprout(g, b, x, y, (0.6 + (hcm / 15) * 0.5) * ds);
+        else if (hcm < 80) drawSapling(g, season, b, x, y, (0.8 + ((hcm - 15) / 65) * 0.9) * ds);
+        else drawTree(g, f, season, b, x, y, Math.round((debutRadius(hcm) * ds) / 4) * 4);
         break;
       }
       case "snowman": {
         g.save();
         g.globalAlpha = 0.25;
         g.translate(x + 2, y + 3);
-        g.drawImage(b.shadow, -22, -9, 44, 18);
+        g.drawImage(b.shadow, -22 * ds, -9 * ds, 44 * ds, 18 * ds);
         g.restore();
-        drawProp(g, b.art, `snowman-${Math.max(1, Math.min(3, t.stage))}`, x, y + 8);
+        drawProp(g, b.art, `snowman-${Math.max(1, Math.min(3, t.stage))}`, x, y + 8 * ds, { k: ds });
         break;
       }
       case "lilypad": {
-        // 연잎 — 아트(변형 3)나 대체물(두께 있는 잎); 물그늘은 살짝 오른쪽 아래(잎이 물 위에 '떠 있다'). 연꽃 아트가 있으면 3할의 잎에 한 송이.
-        const k = t.stage;
+        // 연잎 — 아트(변형 3)나 대체물(두께 있는 잎), 3/4 시점이라 세로로 눌린다; 물그늘은 살짝 오른쪽 아래. 연꽃 아트가 있으면 3할의 잎에 한 송이.
+        const k = t.stage * (SIZE.lilypad / 56) * ds;
         const v = hash01(t.u, t.v);
         g.save();
         g.globalAlpha = 0.26;
         g.translate(x + 2, y + 3);
-        g.drawImage(b.shadow, -30 * k, -30 * k, 60 * k, 60 * k);
+        g.drawImage(b.shadow, -30 * k, -30 * k * GROUND_SQUASH, 60 * k, 60 * k * GROUND_SQUASH);
         g.restore();
-        drawProp(g, b.art, "lilypad", x, y, { k, rot: (t.u * 7 + t.v * 5) % TAU, r: v });
+        drawProp(g, b.art, "lilypad", x, y, { k, rot: (t.u * 7 + t.v * 5) % TAU, r: v, sy: GROUND_SQUASH });
         if (v < 0.3 && b.art.has("lotus")) drawProp(g, b.art, "lotus", x + 4 * k, y + 2 * k, { k: 0.8 + 0.3 * k });
         break;
       }

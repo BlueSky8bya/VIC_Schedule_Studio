@@ -29,6 +29,8 @@ import { ASSET, drawFacing, drawSprite, loadSprite, type Sprite } from "../asset
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
 import { drawProp, scatterProps } from "../art/props";
+import { SIZE } from "../world/scale";
+import { bakeHorizon, depthScale, GROUND_SQUASH } from "../world/view";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 const WINGS = [
@@ -120,6 +122,7 @@ export function createSpring(seed: number): Scene {
   // 바탕 소품 아트(클로버·데이지·풀포기·민들레 + 있으면 관목·바위·그루터기·민들레 꽃) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
   const groundArt = new ArtSet(["clover", "daisy", "grass-tuft", "dandelion-puff", "dandelion-flower", "shrub-spring", "rock", "stump"]);
   let gav = -1;
+  let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠
   let shadow: HTMLCanvasElement | null = null;
   let traceBakes: TraceBakes | null = null; // 연대기(지난 가을 저장소의 싹·나무·두더지 흙더미) 렌더
   let petalSpr: HTMLCanvasElement | null = null;
@@ -164,7 +167,7 @@ export function createSpring(seed: number): Scene {
       const a = (i / n) * TAU + (rand() - 0.5) * 0.4;
       bl.push({ a, r0: 8 + rand() * 20, len: 9 + rand() * 9, w: 1.2 + rand() * 1, col: rand() < 0.5 ? "112 168 104" : "140 190 118" });
     }
-    presses.push({ x, y, life: 1, r: 26 + rand() * 10, blades: bl });
+    presses.push({ x, y, life: 1, r: (18 + rand() * 8) * depthScale(y, h), blades: bl });
     pressCount++;
     const pollen = load >= 0.5 ? 7 : 3;
     for (let i = 0; i < pollen; i++) {
@@ -186,16 +189,23 @@ export function createSpring(seed: number): Scene {
       softBlob(g, g0() * w, g0() * h, 120 + g0() * 260, g0() < 0.5 ? "150 196 120" : "232 244 214", 0.16);
     }
     // 소품은 전부 drawProp(art/props.ts) — 아트 파일이 있으면 그 그림, 없으면 대체물(옛 도형). 자리는 결정적(같은 g0 순서).
+    // 3/4 시점: 클로버(납작)는 세로로 눌리고, 데이지·풀포기(서 있음)는 위(멀다)에서 작다. 꽃은 축척표대로 과장(SIZE.flower 26).
     const clovers = Math.round((w * h) / 60000);
-    for (let i = 0; i < clovers; i++) drawProp(g, groundArt, "clover", g0() * w, g0() * h, { k: 0.8 + g0() * 0.5, rot: g0() * TAU, r: g0() });
+    for (let i = 0; i < clovers; i++) {
+      const x = g0() * w;
+      const y = g0() * h;
+      drawProp(g, groundArt, "clover", x, y, { k: (0.8 + g0() * 0.5) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
+    }
     daisies.length = 0;
     const nd = Math.round((w * h) / 80000);
+    const flowerK = SIZE.flower / 18;
     for (let i = 0; i < nd; i++) {
       const x = g0() * w;
       const y = g0() * h;
       daisies.push([x, y]);
-      // 데이지의 (x,y) = 꽃 얼굴(벌·나비가 앉는 자리) — 서 있는 그림은 발을 그 아래 8px에 둔다.
-      drawProp(g, groundArt, "daisy", x, y + 8, { k: 0.9 + g0() * 0.3, r: g0(), flip: g0() < 0.5 });
+      // 데이지의 (x,y) = 꽃 얼굴(벌·나비가 앉는 자리) — 서 있는 그림은 발을 그 아래에 둔다.
+      const k = (0.9 + g0() * 0.3) * flowerK * depthScale(y, h);
+      drawProp(g, groundArt, "daisy", x, y + 8 * k, { k, r: g0(), flip: g0() < 0.5 });
     }
     const nPetals = Math.round((w * h) / 120000);
     for (let i = 0; i < nPetals; i++) {
@@ -216,8 +226,13 @@ export function createSpring(seed: number): Scene {
     const b = makeCanvas(w * dpr, h * dpr);
     b.g.scale(dpr, dpr);
     const tufts = Math.round((w * h) / 1500);
-    for (let i = 0; i < tufts; i++) drawProp(b.g, groundArt, "grass-tuft", g0() * w, g0() * h, { k: 0.7 + g0() * 0.6, r: g0(), flip: g0() < 0.5, alpha: 0.9 });
+    for (let i = 0; i < tufts; i++) {
+      const x = g0() * w;
+      const y = g0() * h;
+      drawProp(b.g, groundArt, "grass-tuft", x, y, { k: (0.7 + g0() * 0.6) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.9 });
+    }
     blades = b.c;
+    horizon = bakeHorizon("spring", w, h, 1);
     // 민들레 자리(4~7) — 데이지에서 떨어진 곳.
     dands.length = 0;
     const ndd = clamp(Math.round((w * h) / 260000), 4, 7);
@@ -295,8 +310,9 @@ export function createSpring(seed: number): Scene {
       g.fill();
       seedSpr = c;
     }
-    void loadSprite(ASSET.ladybug, 20, 20).then((s) => (bugSpr = s)).catch(() => {});
-    void loadSprite(ASSET.bee, 24, 24).then((s) => (beeSpr = s)).catch(() => {});
+    // 축척(PLAN-004 §2): 무당벌레 12 · 꿀벌 14(옛 20 · 24).
+    void loadSprite(ASSET.ladybug, SIZE.ladybug, SIZE.ladybug).then((s) => (bugSpr = s)).catch(() => {});
+    void loadSprite(ASSET.bee, SIZE.bee, SIZE.bee).then((s) => (beeSpr = s)).catch(() => {});
   }
 
   const flyTarget = (f: Frame) => clamp(1 + Math.round(f.load * 2.4), 1, 3);
@@ -314,7 +330,7 @@ export function createSpring(seed: number): Scene {
       col: Math.floor(rand() * WINGS.length),
       flee: 0,
       loop: 0,
-      k: 0.62 + rand() * 0.3,
+      k: (0.62 + rand() * 0.3) * (SIZE.butterfly / 22), // 축척: 나비 ≈ 18px(옛 ≈ 22)
       bank: 0,
       state: "fly",
       sit: 0,
@@ -973,6 +989,8 @@ export function createSpring(seed: number): Scene {
     draw(g, f) {
       const { t, load } = f;
       if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
+      // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개.
+      if (horizon) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
       // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.
       if (blades) {
@@ -1005,7 +1023,7 @@ export function createSpring(seed: number): Scene {
           if (d.puffed > 0) continue;
           const age = t - d.born;
           const pop = age < 0.6 ? 1 + 0.35 * Math.sin((age / 0.6) * Math.PI) : 1;
-          const k = d.k * Math.min(1, age / 0.25) * pop;
+          const k = d.k * Math.min(1, age / 0.25) * pop * depthScale(d.y, f.h) * (SIZE.flower / 20);
           if (groundArt.has("dandelion-puff")) {
             // 아트 — 홀씨 머리 중심이 (d.x, d.y)에 오게(홀씨는 거기서 날아간다), 발은 그 아래.
             drawProp(g, groundArt, "dandelion-puff", d.x, d.y + 16 * k, { k: k * 1.25 });
@@ -1056,13 +1074,14 @@ export function createSpring(seed: number): Scene {
           if (b.x < -100) continue;
           // 죽은 척은 0.25s에 걸쳐 움츠린다(×0.88) — 걷는 흔들림 없음.
           const tuck = dead ? 0.88 + 0.12 * Math.max(0, 1 - (t - b.deadAt) / 0.25) : 1;
-          const k = b.k * (flying ? 1 + b.off * 0.35 : tuck);
+          const k = b.k * (flying ? 1 + b.off * 0.35 : tuck) * depthScale(b.y, f.h);
           g.save();
           g.globalAlpha = 1;
           if (shadow && !flying) {
             g.save();
             g.globalAlpha = 0.25;
             g.translate(b.x + 2, b.y + 3);
+            g.scale(1, GROUND_SQUASH);
             g.rotate(b.hd + Math.PI / 2);
             g.drawImage(shadow, -12 * k, -9 * k, 24 * k, 18 * k);
             g.restore();
@@ -1106,7 +1125,8 @@ export function createSpring(seed: number): Scene {
           g.globalAlpha = a * 0.9;
           g.translate(q.x, q.y);
           g.rotate(q.a);
-          g.scale(q.k, q.k * (0.55 + 0.45 * Math.abs(Math.cos(t * 2.1 + q.ph))));
+          const pk = q.k * 0.55 * depthScale(q.y, f.h); // 축척: 꽃잎 ≈ 6~10px
+          g.scale(pk, pk * (0.55 + 0.45 * Math.abs(Math.cos(t * 2.1 + q.ph))));
           g.drawImage(petalSpr, -14, -14);
           g.restore();
         }
@@ -1146,7 +1166,7 @@ export function createSpring(seed: number): Scene {
           g.restore();
         }
         const bob = feeding ? Math.sin(t * 6 + b.ph) * 0.5 : Math.sin(t * 40 + b.ph) * 0.8 * buzz;
-        drawFacing(g, beeSpr, b.x, b.y + bob, b.hd, 1, Math.sin(t * 13 + b.ph) * 0.08 * buzz);
+        drawFacing(g, beeSpr, b.x, b.y + bob, b.hd, depthScale(b.y, f.h), Math.sin(t * 13 + b.ph) * 0.08 * buzz);
       }
       for (const b of flies) {
         const grounded = b.state === "sit" || b.state === "bask";
@@ -1154,10 +1174,11 @@ export function createSpring(seed: number): Scene {
         const raw = Math.abs(Math.cos(b.ph));
         // 일광욕은 활짝 편 채 0.9~1.0 숨쉬기, 데이지 위는 천천히 여닫기, 날 때는 팔랑.
         const flap = b.state === "bask" ? 0.95 + 0.05 * Math.sin(b.ph) : b.state === "sit" ? 0.35 + 0.65 * raw : 0.14 + 0.86 * Math.pow(raw, 0.8);
-        const size = b.k * (1 + 0.08 * hgt);
+        const size = b.k * (1 + 0.08 * hgt) * depthScale(b.y, f.h);
         if (shadow) {
           g.save();
           g.translate(b.x + 5 + 10 * hgt, b.y + 7 + 13 * hgt);
+          g.scale(1, GROUND_SQUASH);
           g.rotate(b.hd + Math.PI / 2);
           g.scale(flap * size * 1.35 * (1 + 0.25 * hgt), size * 1.2 * (1 + 0.25 * hgt));
           g.globalAlpha = 0.32 * (1 - 0.5 * hgt);
