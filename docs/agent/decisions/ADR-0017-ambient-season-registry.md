@@ -56,7 +56,10 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > 경계→발 구르기→지그재그 도주·얼음·빙키·손님도 포식자; 다람쥐 분산 저장·**속임수 묻기(관찰자 있으면)**·경계 멈춤·기억 회수·
 > 흙더미 클릭 파내기; 봄 나비 loom 도주·나선 추격·일광욕, 무당벌레 죽은 척, 꿀벌 트랩라인·맴돌기·먹기·귀가·스왓 후 맴돌기.
 > 배경 상태 컨트롤은 `AmbientModeSegment` [켜기|흐리게|끄기] 하나(레일·아바타 자리·설정 줄 공용). 새 행동은 실제 동물 생태를
-> 주석에 인용하고 debug() 카운터를 노출한다.
+> 주석에 인용하고 debug() 카운터를 노출한다. ⑭ 연대기 Phase A(PLAN-20260904-003, 소유자 결정 7건 확정): 세계 서비스
+> `ambient/world/*` — 하루 여섯 띠(빛 톤 한 겹), 날짜 시드 날씨(실제 API 없음), 결정적 연대기 `chronicle(slug,y,m,d)`(도토리 →
+> 싹 → 묘목 → 나무·눈사람·흙더미·연잎, 좌표는 달력 밖 띠), 희귀도 감독(5등급·자비 타이머·전설 순수 확률·세션 1회), 종 레지스트리.
+> 세계는 DB 없이 누구에게나 같고, 개인 흔적만 로컬. 도감은 로그인 사용자만(Phase B, 서버 테이블).
 - 관련: ADR-0016(금생수 — 물결 레이어), `components/shared/ambient/*`, `app/ambient.css`, `lib/ui/motion.ts`
   (`vic.ambient`), `docs/ux/seasonal-ambient-plan.md`(설계안), CLAUDE.md "Owner-fit palette rule"
 - Supersedes(예정, 4단계): 포스터 테마 7종(`calendars.poster_theme` = sakura/summer/autumn/winter/sunset/mint/dot/

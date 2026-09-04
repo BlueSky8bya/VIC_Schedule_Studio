@@ -108,10 +108,18 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   채널 경로. 등록 입구 = `node scripts/add-guest-vods.mjs YYMMDD=URL …`(SOOP VOD 조회 API `station/video/a/view` —
   제목·호스트·길이·방송 시각·썸네일). 공개 DTO `PublicVodEntry.host`(호스트 닉) → 모바일 칩 '합방' 배지, PC 창 "합방 · ○○
   방송국" 배지(금 문법 칩). 다음 합방 링크도 같은 스크립트로.
-  ㉜ **계절 연대기 계획(2026-09-04 밤, Proposed)**: `docs/agent/plans/PLAN-20260904-003-ambient-chronicle.md` — 소유자 방향("생물
-  10배·실제 희귀도·달력 시간을 잇는 연대기·미술적 층 무대·장인정신 상호작용 4축")을 조사(동물의 숲 스폰 풀·대기 원근·12원칙·
-  steering/utility·종별 생태 문헌 20종)로 뒷받침한 로드맵(Phase A 기반 → B 봄·가을+연대기 → C 여름 → D 겨울 → E 선택). 소유자
-  결정 7건(§7) 대기 — 착수 전엔 코드 변경 없음.
+  ㉜ **계절 연대기(PLAN-20260904-003) — 결정 확정 + Phase A 출고(2026-09-04 밤)**: 소유자 결정 7건(여섯 띠 · 전설 순수 확률 ·
+  도감은 로그인만 · 공유 없음 · 날씨 랜덤(날짜 시드) · 우선 20종 · 채도 균형). Phase A = `components/shared/ambient/world/`:
+  `seed.ts`(FNV-1a → mulberry32), `time.ts`(계절별 일출·일몰로 새벽·아침·점심·노을·저녁·밤 + 빛 톤: 낮 없음·노을 회자·밤 청회),
+  `weather.ts`(slug·날짜·오전/오후 마디 시드, 계절 확률표, 직전 마디), `chronicle.ts`(순수 함수 chronicle(slug,y,m,d): 가을 저장소 →
+  2월 15일 해빙에 드러남 → 봄 싹(살아남은 60%) → 여름 묘목 → 가을 나무(나이·상한 6, 위 헤지로우 띠) · 두더지 흙더미 → 여름 풀 얼룩 ·
+  눈사람 12/20 공 1→23일 2→27일 3, 2월 15일부터 녹음 · 연잎 6월 3장→8월 12장; chronicleDay = 현재 달 오늘/과거 말일/미래 1일),
+  `rarity.ts`(5등급 가중치·동시 상한·쿨다운·자비 타이머·사건 겹침 금지·전설 세션 1회 SpawnDirector), `species.ts`(살아 있는 8 + 우선
+  20), `traces-draw.ts`(흙더미·싹 🌱·묘목 🌿·캐노피(계절색, 해 방향 그림자)·헐벗은 나무·눈사람·연잎). 엔진 Frame에 `date·time·
+  weather·traces`, 5초마다 갱신, 빛 톤 한 겹, `__vicAmbient.world()/forceWorld()`. AmbientLayer에 `year·slug·worldForce`, fixture
+  `?y=&m=&day=&hour=&weather=`. 장면 훅: 여름 비 = 빗방울 고리 + 물고기 부상, 겨울 눈송이 = 날씨 배수(눈 1.8·맑음 .35), 가을 바람 =
+  돌풍 2배·안개 = 서리 안개 깊게, 봄 바람 = 꽃잎 바람 잦음; 네 장면 모두 연대기 흔적 렌더. Vitest 19(ambient-world). 다음: Phase B
+  (층 무대·봄/가을 12종·도감 데이터 경로).
   ㉛ **여름 후속(2026-09-04 저녁, 사용자 2건)**: 물고기 수 = 여력 비례 2~14 × 화면 넓이(+ 큰 놈 .6부터 1, .9부터 2), 0.5초에 한 마리씩
   가장자리로 드나든다(순간 등장·소멸 없음, `leave`), 두 무리(grp)가 다른 목표를 따르고 간격 34+14k로 뭉치지 않는다. 오리는
   **수면선**(waterY) 아래를 물빛 사본(duckSub, source-atop 틴트)으로 옅게 그려 발·아랫배가 물속 — 자맥질은 코를 60° 아래로(회전

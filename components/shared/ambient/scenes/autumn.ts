@@ -13,6 +13,7 @@
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU, threat } from "./util";
+import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -103,6 +104,7 @@ export function createAutumn(seed: number): Scene {
   let shadows: HTMLCanvasElement[] = [];
   let acornSpr: Sprite | null = null;
   let acornShadow: HTMLCanvasElement | null = null;
+  let traceBakes: TraceBakes | null = null; // 연대기(지난 해 나무·이번 가을 결정적 저장소) 렌더
   let squirrelSpr: Sprite | null = null;
   let sqShadow: HTMLCanvasElement | null = null;
   let moundSpr: HTMLCanvasElement | null = null;
@@ -209,6 +211,7 @@ export function createAutumn(seed: number): Scene {
       shadows.push(c);
     }
     acornShadow = shadowSprite(44, 52, "43 35 32", 0.9);
+    traceBakes = bakeTraces();
     sqShadow = shadowSprite(56, 44, "43 35 32", 0.6);
     // 흙더미(묻은 자리) — 22×14 타원, 가운데 어둡고 테는 밝은 갈색, 알파 최대 .55. 우리 소품(동물이 아니다)이라 한 번 굽는다.
     {
@@ -768,7 +771,8 @@ export function createAutumn(seed: number): Scene {
       if (!gust && t > nextGust) gust = { t0: t, dur: 3 + rand() * 1.8, dir: rand() < 0.5 ? -1 : 1, y: rand() * h };
       if (gust && t - gust.t0 > gust.dur) {
         gust = null;
-        nextGust = t + lerp(22, 7, load) + rand() * lerp(14, 9, load);
+        // 바람 부는 날(날짜 시드 날씨)엔 돌풍이 두 배 잦다.
+        nextGust = t + (lerp(22, 7, load) + rand() * lerp(14, 9, load)) * (f.weather.now === "wind" ? 0.45 : 1);
       }
       const front = gust ? (gust.dir > 0 ? -240 + ((t - gust.t0) / gust.dur) * (w + 480) : w + 240 - ((t - gust.t0) / gust.dur) * (w + 480)) : 0;
       const pushy = p.inside && p.speed > 30;
@@ -941,12 +945,17 @@ export function createAutumn(seed: number): Scene {
     },
     draw(g, f) {
       if (ground) g.drawImage(ground, 0, 0, f.w, f.h);
-      const mist = g.createLinearGradient(0, 0, 0, f.h * 0.34);
-      mist.addColorStop(0, "rgb(234 238 242 / 0.42)");
-      mist.addColorStop(0.5, "rgb(234 238 242 / 0.16)");
+      // 서리 안개 — 안개 낀 날(11월에 잦다)은 더 깊이 내려온다.
+      const fogK = f.weather.now === "fog" ? 1.7 : 1;
+      const mistH = f.h * 0.34 * (f.weather.now === "fog" ? 1.6 : 1);
+      const mist = g.createLinearGradient(0, 0, 0, mistH);
+      mist.addColorStop(0, `rgb(234 238 242 / ${Math.min(0.7, 0.42 * fogK)})`);
+      mist.addColorStop(0.5, `rgb(234 238 242 / ${Math.min(0.4, 0.16 * fogK)})`);
       mist.addColorStop(1, "rgb(234 238 242 / 0)");
       g.fillStyle = mist;
-      g.fillRect(0, 0, f.w, f.h * 0.34);
+      g.fillRect(0, 0, f.w, mistH);
+      // 연대기 — 지난 해들의 나무(위 헤지로우), 이번 가을의 결정적 저장소 흙더미(살아 있는 다람쥐의 저장소와 별개).
+      if (traceBakes) drawTraces(g, f, "autumn", traceBakes);
       // 흙더미 — 바탕 위, 잎 **아래**(잎이 덮을 수 있다 — 찾는 게 놀이). 묻은 직후 0.6초에 걸쳐 드러난다.
       if (moundSpr && caches.length) {
         for (const c of caches) {

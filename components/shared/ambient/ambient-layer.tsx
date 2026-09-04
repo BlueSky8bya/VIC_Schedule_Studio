@@ -10,17 +10,32 @@ import { useMemo } from "react";
 import { WaterTide } from "@/components/shared/water-tide";
 import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registry";
 import { SeasonCanvas } from "@/components/shared/ambient/season-canvas";
+import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 
-export function AmbientLayer({ month, force }: { month: number; force?: SeasonKey | null }) {
+// year·slug(Phase A, 연대기): 세계는 "어느 달력의 어느 해·달"로 결정된다 — 지난 가을의 도토리가 이 봄의 싹이 되려면 해가 필요하다.
+// worldForce는 fixture 전용(시각·날씨·날 강제) — 실제 화면은 넘기지 않는다.
+export function AmbientLayer({
+  month,
+  year,
+  slug = "vic",
+  force,
+  worldForce
+}: {
+  month: number;
+  year: number;
+  slug?: string;
+  force?: SeasonKey | null;
+  worldForce?: WorldCtx["force"];
+}) {
   const pick = useMemo(() => pickAmbient(month, force ?? null), [month, force]);
   if (pick.season === "summer") {
     // 여름 = CSS 물결 + 그 위의 마우스 잔물결 캔버스(DOM 뒤에 있어 같은 z:-1에서 물결 위에 그려진다).
     return (
       <>
         <WaterTide key="summer" />
-        <SeasonCanvas key="summer-ripple" season="summer" />
+        <SeasonCanvas key="summer-ripple" season="summer" slug={slug} year={year} month={month} force={worldForce} />
       </>
     );
   }
-  return <SeasonCanvas key={pick.season} season={pick.season} />;
+  return <SeasonCanvas key={pick.season} season={pick.season} slug={slug} year={year} month={month} force={worldForce} />;
 }

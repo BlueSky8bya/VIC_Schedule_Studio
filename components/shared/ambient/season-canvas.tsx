@@ -6,7 +6,7 @@
 // 계절 스위치)을 지켜보며 루프를 멈춘다.
 
 import { useEffect, useRef } from "react";
-import { mountScene, type SceneFactory } from "@/components/shared/ambient/scene-engine";
+import { mountScene, type SceneFactory, type WorldCtx } from "@/components/shared/ambient/scene-engine";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 
 const LOADERS: Record<SeasonKey, () => Promise<SceneFactory>> = {
@@ -16,19 +16,22 @@ const LOADERS: Record<SeasonKey, () => Promise<SceneFactory>> = {
   winter: () => import("@/components/shared/ambient/scenes/winter").then((m) => m.createWinter)
 };
 
-export function SeasonCanvas({ season }: { season: SeasonKey }) {
+export function SeasonCanvas({ season, slug, year, month, force }: { season: SeasonKey; slug: string; year: number; month: number; force?: WorldCtx["force"] }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
+  // 강제값은 검증용(fixture) — 객체 정체성이 아니라 값으로 비교해 불필요한 재마운트를 막는다.
+  const forceKey = force ? JSON.stringify(force) : "";
   useEffect(() => {
     let alive = true;
     let dispose: (() => void) | null = null;
+    const parsed = forceKey ? (JSON.parse(forceKey) as WorldCtx["force"]) : undefined;
     void LOADERS[season]().then((factory) => {
       if (!alive || !ref.current) return;
-      dispose = mountScene(ref.current, factory);
+      dispose = mountScene(ref.current, factory, { slug, season, year, month, force: parsed });
     });
     return () => {
       alive = false;
       dispose?.();
     };
-  }, [season]);
+  }, [season, slug, year, month, forceKey]);
   return <canvas aria-hidden="true" className={`gs-season gs-season-${season}`} data-season={season} ref={ref} />;
 }

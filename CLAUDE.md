@@ -140,6 +140,17 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   spiral-chase each other, bask with open wings in the sun patches; ladybug plays dead (thanatosis) before flying off; bee
   traplines the nearest unvisited daisies, hovers before landing, feeds, goes home after a bout, circles the pointer when
   swatted. New behavior must cite the animal's real ethology in a comment and expose counters in `debug()`.
+- **World services (PLAN-20260904-003 Phase A, `components/shared/ambient/world/`).** The scene `Frame` carries `date` (viewed month's
+  day: today / last day of a past month / 1st of a future month), `time` (six KST bands — 새벽·아침·점심·노을·저녁·밤 by seasonal
+  sunrise/sunset — with a light tint the engine paints over the scene: none by day, grey-violet dusk, blue-grey evening/night, never
+  orange), `weather` (deterministic per calendar slug + date + am/pm segment from a seeded rng, seasonal tables; no real weather API —
+  owner decision), and `traces` from `chronicle(slug, y, m, d)`: a pure deterministic function that replays the world from 2024 —
+  autumn acorn caches → visible again at the Feb 15 thaw → spring sprouts (60%) → summer saplings → autumn trees (age, cap 6, top
+  hedgerow band) · molehills → summer grass patches · snowman built Dec 20→27, melting Feb 15→25 · lily pads 3→12. Everyone sees the
+  same world (no DB); a viewer's own marks stay in localStorage. Rarity uses `SpawnDirector` (5 tiers, concurrency caps, cooldowns,
+  pity timer, one legendary per session, never two rare events at once; legendaries are pure probability). Species live in
+  `species.ts` (8 live + 20 priority). `traces-draw.ts` renders traces (plants/props may be ours; animals never). Fixture:
+  `?y=&m=&day=&hour=&weather=`; debug `__vicAmbient.world()` / `forceWorld()`.
 - **Graphics tiers (`lib/ui/gfx.ts` v3, 2026-09-04).** `data-gfx` is `full` (absent) · `lite` · `soft`. `soft` =
   software rendering (WebGL renderer SwiftShader/llvmpipe/software) or ≤2 cores → ambient off + eye-comfort token
   palette. `lite` = bad frame samples on **two consecutive visits** → ambient stays **visible but cheaper** (tide

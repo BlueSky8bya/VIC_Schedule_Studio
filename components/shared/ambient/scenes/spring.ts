@@ -26,6 +26,7 @@
 
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, drawSprite, loadSprite, type Sprite } from "../assets";
+import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 const WINGS = [
@@ -115,6 +116,7 @@ export function createSpring(seed: number): Scene {
   let gh = 0;
   let gdpr = 0;
   let shadow: HTMLCanvasElement | null = null;
+  let traceBakes: TraceBakes | null = null; // 연대기(지난 가을 저장소의 싹·나무·두더지 흙더미) 렌더
   let petalSpr: HTMLCanvasElement | null = null;
   let dandSpr: HTMLCanvasElement | null = null;
   let seedSpr: HTMLCanvasElement | null = null;
@@ -251,6 +253,7 @@ export function createSpring(seed: number): Scene {
   function bakeSprites() {
     if (petalSpr) return;
     shadow = shadowSprite(64, 44, "40 60 40", 0.55);
+    traceBakes = bakeTraces();
     {
       const { c, g } = makeCanvas(28, 28);
       g.translate(14, 14);
@@ -846,7 +849,7 @@ export function createSpring(seed: number): Scene {
       // 꽃잎 바람 — 여력 0.55부터, 20~45초 간격. 부는 동안 풀이 같이 흔들린다(wind → 1).
       if (load >= 0.55 && t > nextBreeze) {
         breeze(t, load);
-        nextBreeze = t + 20 + rand() * 25;
+        nextBreeze = t + (20 + rand() * 25) * (f.weather.now === "wind" ? 0.4 : 1); // 바람 부는 날은 꽃잎 바람이 잦다
       }
       const blowing = petals.length > 0;
       wind += ((blowing ? 1 : 0) - wind) * Math.min(1, dt * (blowing ? 1.2 : 0.5));
@@ -1011,6 +1014,8 @@ export function createSpring(seed: number): Scene {
           }
         } else g.drawImage(blades, 0, 0, f.w, f.h);
       }
+      // 연대기 — 지난 가을 저장소에서 난 싹(3~5월 점점 자람), 지난 해들의 나무(위 헤지로우), 두더지 흙더미. 풀 위·생물 아래.
+      if (traceBakes) drawTraces(g, f, "spring", traceBakes);
       // 양지 — 빛 얼룩 둘(sunAt: 나비 일광욕 판단과 같은 자리).
       const suns = sunAt(t, f.w, f.h);
       softBlob(g, suns[0][0], suns[0][1], f.w * 0.28, "255 255 236", 0.16);

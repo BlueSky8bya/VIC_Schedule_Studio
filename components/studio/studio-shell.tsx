@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
+import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
@@ -230,6 +231,8 @@ type StudioShellProps = {
   initialPanel?: "tags";
   // 계절 배경 강제(fixture/검증 전용, ADR-0017) — 실제 /studio는 넘기지 않는다(오늘 KST 절기로 판정).
   ambientForce?: SeasonKey | null;
+  // 세계 강제(fixture 전용, Phase A 연대기) — 시각·날씨·날. 실제 화면은 넘기지 않는다.
+  ambientWorldForce?: WorldCtx["force"];
 };
 
 
@@ -277,7 +280,8 @@ export function StudioShell({
   initialViewerMode = false,
   initialNarrow = false,
   initialPanel,
-  ambientForce
+  ambientForce,
+  ambientWorldForce
 }: StudioShellProps) {
   const today = getTodayKst();
   const router = useRouter();
@@ -6067,7 +6071,7 @@ export function StudioShell({
           컴포넌트). 물결은 제 배경이 없는 완전 투명 컨테이너라 body의 아이보리(--paper) 위에 옅은 결만
           얹고("모래 위 얕은 물결"), 오늘(KST) 계절 레이어가 그 위에. 보이는 조건은 CSS가 판단
           (app/metal-water.css `.gs-tide`, app/ambient.css `.gs-season`). */}
-      <AmbientLayer force={ambientForce} month={view.month} />
+      <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} />
       <header className="studio-topbar">
         {/* 왼쪽 칸: 큰 제목 + 그 옆에 배포 버전 배지(헤더 세로 중앙, 클릭=버전 복사). */}
         <div className="studio-left">

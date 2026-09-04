@@ -20,7 +20,10 @@ export const ASSET = {
   duck: "/ambient/noto/emoji_u1f986.svg",
   ladybug: "/ambient/noto/emoji_u1f41e.svg",
   bee: "/ambient/noto/emoji_u1f41d.svg",
-  butterfly: "/ambient/noto/emoji_u1f98b.svg"
+  butterfly: "/ambient/noto/emoji_u1f98b.svg",
+  // 연대기(Phase A) — 도토리에서 난 싹·묘목(식물, Noto).
+  sprout: "/ambient/noto/emoji_u1f331.svg",
+  herb: "/ambient/noto/emoji_u1f33f.svg"
 } as const;
 
 export type Sprite = { c: HTMLCanvasElement; w: number; h: number }; // w/h = 그릴 때의 CSS px 크기

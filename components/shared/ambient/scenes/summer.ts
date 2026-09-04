@@ -26,6 +26,7 @@
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawSprite, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
+import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 
 type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: number }; // n = 진행 직각 단위벡터
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
@@ -118,6 +119,8 @@ export function createSummer(seed: number): Scene {
   let loH = 0;
   let stampSpr: HTMLCanvasElement | null = null;
   let shadow: HTMLCanvasElement | null = null;
+  let traces: TraceBakes | null = null; // 연대기(연잎) 렌더 스프라이트
+  let rainRings = 0;
   let duckSpr: Sprite | null = null;
   let duckSub: Sprite | null = null; // 물속 부분용 — 물빛으로 물든 사본(수면선 아래를 이걸로 그린다)
   let ringSpr: Sprite | null = null;
@@ -210,6 +213,7 @@ export function createSummer(seed: number): Scene {
     softBlob(g, STAMP_SPR / 2, STAMP_SPR / 2, STAMP_SPR * 0.3, "255 255 252", 0.7, 0);
     stampSpr = c;
     shadow = shadowSprite(96, 64, "30 60 90", 0.4);
+    traces = bakeTraces();
     void loadSprite(ASSET.duck, 56, 56).then((s) => (duckSpr = s)).catch(() => {});
     void loadSprite(ASSET.duck, 56, 56, 2, "rgb(150 190 222 / 0.78)").then((s) => (duckSub = s)).catch(() => {});
     void loadSprite(ASSET.ring, 92, 92).then((s) => (ringSpr = s)).catch(() => {});
@@ -295,6 +299,8 @@ export function createSummer(seed: number): Scene {
   const bigTarget = (load: number) => (load >= 0.9 ? 2 : load >= 0.6 ? 1 : 0);
   let nextFishChange = 0;
   let lastLoad = 0.5;
+  let lastTraces = 0; // 디버그 — 마지막 프레임의 연잎 수
+  const f0Traces = () => lastTraces;
   function newFish(big: boolean): Fish {
     const cruise = big ? 16 + rand() * 8 : 26 + rand() * 30; // 개체마다 다른 걸음 — 큰 놈은 느긋하게
     // 가장자리 밖에서 안쪽을 향해 들어온다.
@@ -403,6 +409,7 @@ export function createSummer(seed: number): Scene {
     step(f) {
       const { dt, p, t, load } = f;
       lastLoad = load;
+      lastTraces = f.traces.filter((tr) => tr.kind === "lilypad").length;
       ensureLo(f);
       const ttl = lerp(1.5, 3.0, load);
       const gapPx = lerp(9, 4, load);
@@ -440,6 +447,11 @@ export function createSummer(seed: number): Scene {
         const r = rings[i];
         r.life += dt / r.dur;
         if (r.life >= 1) rings.splice(i, 1);
+      }
+      // 비(날짜 시드 날씨) — 수면 곳곳에 작은 빗방울 고리. 여력에 따라 초당 4~14개. 물고기는 비 오면 수면으로 올라온다(아래).
+      if (f.weather.now === "rain" && load >= 0.2 && rings.length < 160 && rand() < dt * lerp(4, 14, load)) {
+        ring(rand() * w, rand() * h, 8 + rand() * 12, 0.28, 0, 0.9 + rand() * 0.5, 0.9);
+        rainRings++;
       }
       // 먹이(누른 자리) — 12초 또는 다 먹히면 사라진다.
       for (let i = crumbs.length - 1; i >= 0; i--) {
@@ -846,7 +858,8 @@ export function createSummer(seed: number): Scene {
             vx += 1.8 * sepx;
             vy += 1.8 * sepy;
             q.hd += clamp(angleDiff(Math.atan2(vy, vx), q.hd), -1.8 * dt, 1.8 * dt) + Math.sin(t * 2.1 + q.ph) * 0.5 * dt;
-            q.depthT = 0.45 + 0.15 * Math.sin(t * 0.3 + q.ph);
+            // 비가 오면 수면 가까이 올라온다(빗방울에 떨어지는 먹이·산소) — 그림자가 크고 짙어진다.
+            q.depthT = 0.45 + 0.15 * Math.sin(t * 0.3 + q.ph) + (f.weather.now === "rain" ? 0.3 : 0);
           }
           // 헤엄은 꼬리질 박자에 맞춰 밀렸다 미끄러진다(등속 아님). 튈 땐 순간 4.5배에서 1초 안에 잦아든다.
           const pulse = 0.75 + 0.5 * Math.max(0, Math.sin(t * freq + q.ph));
@@ -1048,6 +1061,8 @@ export function createSummer(seed: number): Scene {
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = "medium";
       g.drawImage(lo.c, 0, 0, f.w, f.h);
+      // 연대기 — 연잎 군락(6→8월 넓어진다). 물 위 소품이라 항적 위, 생물 아래.
+      if (traces) drawTraces(g, f, "summer", traces);
       // 햇빛 반짝임 — 물결 위의 작은 별(숨쉬듯 밝아졌다 사라짐), 본 캔버스에 또렷하게.
       for (const gl of glints) {
         const a = Math.max(0, Math.sin(t * 1.4 + gl.ph));
@@ -1263,6 +1278,8 @@ export function createSummer(seed: number): Scene {
         avoids,
         gulps,
         crumbs: crumbs.length,
+        rainRings,
+        lilypads: f0Traces(),
         fishShadow: fishParts.every((s) => !!s),
         duck: duck ? { state: duck.state, face: duck.face, x: Math.round(duck.x), y: Math.round(duck.y) } : null,
         duckStates: { ...duckStates },

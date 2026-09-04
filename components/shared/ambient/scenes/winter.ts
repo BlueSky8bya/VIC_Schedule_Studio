@@ -17,6 +17,11 @@
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
+import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
+import type { Weather } from "../world/weather";
+
+// 날씨(날짜 시드)별 눈송이 배수 — 눈 오는 날은 촘촘히, 맑은 날은 가끔 한 송이.
+const WEATHER_FLAKES: Record<Weather, number> = { snow: 1.8, cloud: 0.8, clear: 0.35, fog: 0.6, wind: 1.2, rain: 0.5 };
 
 type Flake = { x: number; y: number; life: number; dur: number; wait: number; r: number; rung: boolean };
 type Kind = "human" | "cat" | "bird" | "rabbit";
@@ -65,6 +70,7 @@ export function createWinter(seed: number): Scene {
   const sprites = new Map<PrintKind, HTMLCanvasElement>();
   let rabbitSpr: Sprite | null = null;
   let shadow: HTMLCanvasElement | null = null;
+  let traceBakes: TraceBakes | null = null; // 연대기(눈사람·헐벗은 나무·해빙 뒤 저장소) 렌더
   let speck: HTMLCanvasElement | null = null;
   let seeded = false;
   let erased = 0;
@@ -185,6 +191,7 @@ export function createWinter(seed: number): Scene {
       sprites.set(kind, c);
     }
     shadow = shadowSprite(64, 64, "120 140 170", 0.45);
+    traceBakes = bakeTraces();
     // 눈 알갱이 — 작은 원 다섯을 겹친 울퉁불퉁한 흰 조각(원형 점·파란 테 = 거품처럼 보였다).
     {
       const { c, g } = makeCanvas(24, 24);
@@ -327,7 +334,7 @@ export function createWinter(seed: number): Scene {
   }
 
   const areaK = () => clamp((w * h) / 1_440_000, 0.6, 1.6);
-  const flakeTarget = (f: Frame) => Math.round(lerp(8, 70, f.load) * areaK());
+  const flakeTarget = (f: Frame) => Math.round(lerp(8, 70, f.load) * areaK() * WEATHER_FLAKES[f.weather.now]);
   function newFlake(): Flake {
     return { x: rand() * w, y: rand() * h, life: 0, dur: 1.8 + rand() * 1.6, wait: rand() * 3, r: 2.2 + rand() * 2, rung: false };
   }
@@ -740,6 +747,8 @@ export function createWinter(seed: number): Scene {
         if (a <= 0.01) continue;
         drawPrint(g, p, 0.72 * a);
       }
+      // 연대기 — 눈사람(12/20부터 손님이 굴려 세움 → 2월 녹음), 헐벗은 나무, 2월 15일 해빙 뒤 드러나는 가을 저장소.
+      if (traceBakes) drawTraces(g, f, "winter", traceBakes);
       for (const r of rings) {
         const e = 1 - r.life;
         g.strokeStyle = `rgb(255 255 255 / ${r.life * 0.35})`;

@@ -16,8 +16,21 @@
 // (버튼·칸·팝오버가 아닌 곳)에서만 '집기/도장', 단 나비처럼 장면이 직접 맞힌 건 어디서든 반응한다.
 
 import { gfxPref } from "@/lib/ui/gfx";
+import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
+import { kstHour, worldTime, type WorldTime } from "@/components/shared/ambient/world/time";
+import { weatherAt, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
+import { chronicle, chronicleDay, type Trace } from "@/components/shared/ambient/world/chronicle";
 
 export type Quality = 0 | 1 | 2;
+
+/** 세계 문맥(Phase A) — 어느 달력의 어느 달을 보는가 + 검증용 강제값(시각·날씨·날). */
+export type WorldCtx = {
+  slug: string;
+  season: SeasonKey;
+  year: number;
+  month: number;
+  force?: { hour?: number; weather?: Weather; day?: number };
+};
 
 export type Pointer = {
   x: number;
@@ -45,6 +58,15 @@ export type Frame = {
   hot: { x: number; y: number; w: number; h: number } | null;
   /** 집중 모드(편집·끌기 중): 배경이 옅고 프레임이 절반 — 장면은 포인터 장난(항적 등)을 쉰다. */
   dim: boolean;
+  // ── 세계(Phase A, PLAN-20260904-003) ──
+  /** 보고 있는 달의 날(현재 달 = 오늘, 과거 달 = 말일, 미래 달 = 1일). */
+  date: { y: number; m: number; d: number };
+  /** 하루 여섯 띠 + 빛 톤(KST). */
+  time: WorldTime;
+  /** 날짜 시드 날씨(오전/오후 마디, 직전 마디). */
+  weather: DayWeather;
+  /** 연대기 흔적(저장소·싹·나무·흙더미·눈사람·연잎), 정규화 좌표. */
+  traces: Trace[];
 };
 
 export interface Scene {
@@ -71,6 +93,10 @@ type AmbientDebug = {
   scene: () => Record<string, unknown>;
   forceLoad: (v: number | null) => void;
   hot: Frame["hot"];
+  /** 세계 상태(띠·날씨·날·흔적 수) */
+  world: () => { band: string; hour: number; weather: string; prev: string; date: string; traces: Record<string, number> };
+  /** 검증용 강제(시각·날씨·날) — null이면 실제로 복귀 */
+  forceWorld: (f: WorldCtx["force"] | null) => void;
 };
 declare global {
   interface Window {
@@ -120,7 +146,7 @@ const EVAL_FRAMES = 90;
 const LOAD_UP = 0.06;
 const LOAD_DOWN = 0.15;
 
-export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): () => void {
+export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, world: WorldCtx): () => void {
   const g = canvas.getContext("2d", { alpha: true });
   if (!g) return () => {};
   const p: Pointer = { x: -9999, y: -9999, vx: 0, vy: 0, speed: 0, down: false, inside: false, moved: false, ts: 0 };
@@ -128,7 +154,43 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
   let [floor, cap, fixed] = loadBand(q);
   let load = fixed ?? (q >= 2 ? 0.5 : (floor + cap) / 2);
   let forced: number | null = null;
-  const frame: Frame = { w: 0, h: 0, dpr: 1, t: 0, dt: 0, p, q, load, reduced: readReduced(), hot: null, dim: readDim() };
+  // 세계 — 날·띠·날씨·흔적. 5초마다(300프레임) 다시 잰다(자정·띠 경계·마디 경계). 흔적은 날이 바뀔 때만 다시 조립.
+  let worldForce: WorldCtx["force"] | null = world.force ?? null;
+  let traceKey = "";
+  const initialTime = worldTime(world.season, 12);
+  const frame: Frame = {
+    w: 0,
+    h: 0,
+    dpr: 1,
+    t: 0,
+    dt: 0,
+    p,
+    q,
+    load,
+    reduced: readReduced(),
+    hot: null,
+    dim: readDim(),
+    date: { y: world.year, m: world.month, d: 1 },
+    time: initialTime,
+    weather: { now: "clear", prev: "clear", segment: 0 },
+    traces: []
+  };
+  const refreshWorld = () => {
+    const today = kstToday();
+    const d = worldForce?.day ?? chronicleDay(world.year, world.month, today);
+    const hour = worldForce?.hour ?? kstHour();
+    frame.date = { y: world.year, m: world.month, d };
+    frame.time = worldTime(world.season, hour);
+    frame.weather = worldForce?.weather
+      ? { now: worldForce.weather, prev: worldForce.weather, segment: hour < 13 ? 0 : 1 }
+      : weatherAt(world.slug, world.season, world.year, world.month, d, hour);
+    const key = `${world.slug}:${world.year}-${world.month}-${d}`;
+    if (key !== traceKey) {
+      traceKey = key;
+      frame.traces = chronicle(world.slug, world.year, world.month, d);
+    }
+  };
+  refreshWorld();
   const scene = factory((Date.now() % 100000) + 7);
   const dbg: AmbientDebug = {
     season: canvas.dataset.season ?? "",
@@ -142,7 +204,21 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
       forced = v === null ? null : Math.max(0, Math.min(1, v));
       applyLoad();
     },
-    hot: null
+    hot: null,
+    world: () => ({
+      band: frame.time.band,
+      hour: Math.round(frame.time.hour * 100) / 100,
+      weather: frame.weather.now,
+      prev: frame.weather.prev,
+      date: `${frame.date.y}-${frame.date.m}-${frame.date.d}`,
+      traces: frame.traces.reduce<Record<string, number>>((m, t) => ((m[t.kind] = (m[t.kind] ?? 0) + 1), m), {})
+    }),
+    forceWorld: (f) => {
+      worldForce = f;
+      traceKey = "";
+      refreshWorld();
+      if (!running) drawOnce();
+    }
   };
   window.__vicAmbient = dbg;
   let w = 0;
@@ -193,6 +269,12 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);
     scene.draw(g, frame);
+    // 빛 톤(하루 여섯 띠) — 장면 위에 옅은 색 한 겹(새벽 회청·노을 회자·저녁·밤 청회). 낮은 없음. 캔버스는 DOM 뒤라 글자엔 안 닿는다.
+    const tint = frame.time.tint;
+    if (tint.alpha > 0) {
+      g.fillStyle = `rgb(${tint.rgb} / ${tint.alpha})`;
+      g.fillRect(0, 0, w, h);
+    }
   };
   const resize = () => {
     const rect = canvas.getBoundingClientRect();
@@ -255,6 +337,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory): ()
     frame.t += dt;
     frame.dt = dt;
     if (dbg.frames % 120 === 60) measureHot(); // 달력이 스크롤·리플로우로 움직여도 2초 안에 따라간다
+    if (dbg.frames % 300 === 150) refreshWorld(); // 띠·마디·자정 경계를 5초 안에 따라간다
     scene.step(frame);
     drawOnce();
     dbg.frames += 1;
