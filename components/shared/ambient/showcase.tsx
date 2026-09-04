@@ -8,7 +8,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { Eye, EyeOff, Flower2, Leaf, Power, Snowflake, Sparkles, Waves } from "lucide-react";
+import { Eye, Flower2, Haze, Leaf, Power, Snowflake, Sparkles, Waves } from "lucide-react";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { type AmbientMode, ambientMode, setAmbientMode } from "@/lib/ui/motion";
 
@@ -57,11 +57,57 @@ export function ShowcaseButton({ season, className = "", compact = false }: { se
   );
 }
 
-/** 레일·아바타 자리용: [계절 감상하기 | 배경 상태 버튼] — 시청자는 설정 화면이 없어 여기서 바꾼다(2026-09-04 사용자).
- *  버튼 하나가 켜짐 → 흐리게 → 끔 → 켜짐을 돈다. 라벨은 **다음 동작**("배경 흐리게" → "배경 끄기" → "배경 켜기"). 같은 기기
+/** 배경 세 상태 세그먼트 [켜기 | 흐리게 | 끄기] — 2026-09-04 사용자: "흐리게에서 바로 켜기, 켜기에서 바로 끄기가 되게, 버튼 셋으로
+ *  말끔히". 순환 버튼(다음 동작이 라벨) 대신 **상태 셋이 늘 다 보이고 지금 상태가 채워진** 라디오 묶음. 시청자 레일·편집실
+ *  아바타 자리(유리 알약)와 편집실 설정 줄(금 문법, .metal)이 같은 컴포넌트를 쓴다 — 상태의 진실은 <html data-ambient>. */
+const MODES: { value: AmbientMode; label: string; word: string; Icon: typeof Leaf }[] = [
+  { value: "on", label: "켜기", word: "켜짐", Icon: Sparkles },
+  { value: "dim", label: "흐리게", word: "흐리게", Icon: Haze },
+  { value: "off", label: "끄기", word: "끔", Icon: Power }
+];
+export function AmbientModeSegment({
+  mode,
+  onChange,
+  dataAct,
+  className = "",
+  ariaLabel = "계절 배경 상태"
+}: {
+  mode: AmbientMode;
+  onChange: (mode: AmbientMode) => void;
+  dataAct: string;
+  className?: string;
+  ariaLabel?: string;
+}) {
+  return (
+    <div aria-label={ariaLabel} className={`ambient-seg ${className}`.trim()} role="radiogroup">
+      {MODES.map(({ value, label, word, Icon }) => {
+        const on = value === mode;
+        return (
+          <button
+            aria-checked={on}
+            className={`ambient-seg-btn mode-${value}${on ? " on" : ""}`}
+            data-act={dataAct}
+            data-mode={value}
+            key={value}
+            onClick={() => {
+              if (!on) onChange(value);
+            }}
+            role="radio"
+            title={on ? `지금 ${word}` : `계절 배경 ${label}`}
+            type="button"
+          >
+            <Icon aria-hidden="true" size={13} />
+            <span className="lbl">{label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** 레일·아바타 자리용: [계절 감상하기 | 켜기·흐리게·끄기] — 시청자는 설정 화면이 없어 여기서 바꾼다(2026-09-04 사용자). 같은 기기
  *  저장값(vic.ambient)이라 편집실 설정과 한 상태(편집실은 속성 변화를 지켜보며 설정·배경 효과 잠금을 맞춘다). 배경 OFF면
- *  감상 버튼은 숨고(볼 게 없다) 이 버튼만 남는다. */
-const NEXT: Record<AmbientMode, AmbientMode> = { on: "dim", dim: "off", off: "on" };
+ *  감상 버튼은 숨고(볼 게 없다) 세그먼트만 남는다(다시 켜는 손잡이). */
 export function ViewerAmbientControl({
   season,
   className = "",
@@ -80,28 +126,19 @@ export function ViewerAmbientControl({
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-ambient"] });
     return () => mo.disconnect();
   }, []);
-  const next = NEXT[mode];
-  const label = next === "dim" ? "배경 흐리게" : next === "off" ? "배경 끄기" : "배경 켜기";
-  const Icon = next === "dim" ? EyeOff : next === "off" ? Power : Sparkles;
   return (
     <div className={`viewer-ambient-ctl ${className}`.trim()} role="group" aria-label="계절 배경">
       {mode !== "off" ? <ShowcaseButton season={season} /> : null}
-      <button
-        className={`ambient-toggle mode-${mode}`}
-        data-act="ambient-toggle-viewer"
-        data-mode={mode}
-        onClick={() => {
+      <AmbientModeSegment
+        dataAct="ambient-toggle-viewer"
+        mode={mode}
+        onChange={(next) => {
           setAmbientMode(next);
           setMode(next);
           if (next === "off") exitShowcase();
           onChange?.(next);
         }}
-        title={`지금: ${mode === "on" ? "켜짐" : mode === "dim" ? "흐리게" : "끔"} · 누르면 ${label}`}
-        type="button"
-      >
-        <Icon aria-hidden="true" size={15} />
-        <span className="lbl">{label}</span>
-      </button>
+      />
     </div>
   );
 }

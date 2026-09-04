@@ -13,9 +13,10 @@ export const ASSET = {
   acorn: "/ambient/acorn.svg",
   rabbit: "/ambient/noto/emoji_u1f407.svg",
   chipmunk: "/ambient/noto/emoji_u1f43f.svg",
-  fishTropical: "/ambient/noto/emoji_u1f420.svg",
-  fish: "/ambient/noto/emoji_u1f41f.svg",
-  blowfish: "/ambient/noto/emoji_u1f421.svg",
+  // 물고기는 **위에서 본** 실루엣(퍼블릭 도메인 top-view 도안에서 구운 PNG, public/ambient/NOTICE.txt) — 물 밑 그림자로만 그린다
+  // (2026-09-04 사용자: "위에서 내려다보는데 옆모습 물고기가 누워 다니니 어색" → 동물의 숲식 그림자). 머리 = 왼쪽.
+  fishShadowSlim: "/ambient/fish-shadow-slim.png",
+  fishShadowFantail: "/ambient/fish-shadow-fantail.png",
   duck: "/ambient/noto/emoji_u1f986.svg",
   ladybug: "/ambient/noto/emoji_u1f41e.svg",
   bee: "/ambient/noto/emoji_u1f41d.svg",
@@ -41,11 +42,18 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
   return p;
 }
 
-/** 에셋을 (w×h CSS px) × scale 해상도의 스프라이트로 굽는다. scale은 DPR(최대 2) — 회전·확대해도 또렷하다. */
-export async function loadSprite(url: string, w: number, h: number, scale = 2): Promise<Sprite> {
+/** 에셋을 (w×h CSS px) × scale 해상도의 스프라이트로 굽는다. scale은 DPR(최대 2) — 회전·확대해도 또렷하다.
+ *  tint를 주면 불투명 부분을 그 색으로 물들인다(실루엣 → 물빛 그림자). */
+export async function loadSprite(url: string, w: number, h: number, scale = 2, tint?: string): Promise<Sprite> {
   const im = await loadImage(url);
   const { c, g } = makeCanvas(w * scale, h * scale);
   g.drawImage(im, 0, 0, c.width, c.height);
+  if (tint) {
+    g.globalCompositeOperation = "source-atop";
+    g.fillStyle = tint;
+    g.fillRect(0, 0, c.width, c.height);
+    g.globalCompositeOperation = "source-over";
+  }
   return { c, w, h };
 }
 

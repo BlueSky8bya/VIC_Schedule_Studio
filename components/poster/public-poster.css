@@ -6895,6 +6895,8 @@ html[data-pchrome="3"] .poster-chrome-title {
   left: 50%;
   transform: translateX(-50%);
   pointer-events: auto;
+  width: max-content;
+  max-width: calc(100% - 12px);
 }
 /* 계정 카드 안의 버튼은 카드가 테두리·면을 쥔다 — `.poster-readonly .viewer-actions .button`(유리 면, 특이도 3)이 위의 카드 칸
    규칙(특이도 2)을 이겨 버튼에 면·테두리가 한 번 더 그려졌다(2026-09-04 사용자 사진 4: 로그인 버튼 하나가 2중 상자). */

@@ -46,7 +46,17 @@ Status: Accepted (같은 날 개정 — 아래 "개정 2026-09-04" 참조)
 > 변종·개체 속도·질주, 토끼 눈 파기, 꿀벌 클릭 도망, 항적 한 번 더 옅게. **원칙**: 소품은 순간이동·순간 회전·바닥에서 녹아
 > 사라지기 금지 — 집으면 즉시 손/입으로, 떠나면 몸을 돌려 화면 밖으로. ⑫ 9차(사용자: "동물은 손그림 금지, 웹 에셋을 써라"):
 > 모든 동물·물고기는 Google Noto Emoji SVG(`public/ambient/noto/`, Apache-2.0, NOTICE) — 옆모습은 `drawFacing`, 위에서 본 것은
-> `drawSprite`. 계절 배경은 세 상태(켜짐·흐리게·끔) — 흐리게는 레이어 opacity .28 + 엔진 절반 프레임.
+> `drawSprite`. 계절 배경은 세 상태(켜짐·흐리게·끔) — 흐리게는 레이어 opacity .28 + 엔진 절반 프레임. ⑬ 10차(사용자: "위에서
+> 보는데 물고기·오리가 누워 다닌다", "생물마다 실제 행동을 연구해서 지능을 넣어라", "배경 세 상태를 버튼 셋으로"): **시점이 법** —
+> 물고기는 물 밑 **그림자**(동물의 숲): 퍼블릭 도메인 top-view 도안(날씬 잉어형·부채꼬리 금붕어, `public/ambient/NOTICE.txt`)을
+> `.scratch-pw/bake-silhouette.mjs`로 실루엣 PNG로 구워 몸통/꼬리를 관절에서 나눠 젓고, 저해상 항적 층에 depth(수면 가까울수록
+> 크고 짙게)로 찍는다(Noto 옆모습 물고기 셋 삭제). 오리는 top-view 에셋이 공개 라이선스로 어디에도 없어 **세워서 좌우만 뒤집어**
+> 그린다 + 청둥오리 에토그램(둥둥·노 젓기·자맥질·깃 다듬기·목욕·털기·호기심 접근·놀람 퍼덕). **생물 지능** = `scenes/util.ts
+> threat()`(거리·접근 속도·loom): 물고기 C-start·protean 옆 튐·놀람 전염·먹이 신호(물보라 1초 뒤 모여 뻐끔)·boids; 토끼
+> 경계→발 구르기→지그재그 도주·얼음·빙키·손님도 포식자; 다람쥐 분산 저장·**속임수 묻기(관찰자 있으면)**·경계 멈춤·기억 회수·
+> 흙더미 클릭 파내기; 봄 나비 loom 도주·나선 추격·일광욕, 무당벌레 죽은 척, 꿀벌 트랩라인·맴돌기·먹기·귀가·스왓 후 맴돌기.
+> 배경 상태 컨트롤은 `AmbientModeSegment` [켜기|흐리게|끄기] 하나(레일·아바타 자리·설정 줄 공용). 새 행동은 실제 동물 생태를
+> 주석에 인용하고 debug() 카운터를 노출한다.
 - 관련: ADR-0016(금생수 — 물결 레이어), `components/shared/ambient/*`, `app/ambient.css`, `lib/ui/motion.ts`
   (`vic.ambient`), `docs/ux/seasonal-ambient-plan.md`(설계안), CLAUDE.md "Owner-fit palette rule"
 - Supersedes(예정, 4단계): 포스터 테마 7종(`calendars.poster_theme` = sakura/summer/autumn/winter/sunset/mint/dot/

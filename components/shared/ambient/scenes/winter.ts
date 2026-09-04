@@ -4,14 +4,19 @@
 // ② 눈송이가 내려앉는다(위에서 보는 시점이라 점이 커지며 나타났다가 바닥에 스며들고, 닿는 순간 옅은 고리가 번진다).
 // ③ 포인터가 빠르게 지나가면 **눈가루가 흩날린다**. ④ 바탕을 누르면 그 자리에 발자국 한 쌍 + 눈가루.
 // 랜덤 이벤트(2026-09-04 사용자): **눈 토끼**(public/ambient/snow-rabbit.svg) — 눈 속에서 톡 튀어나와(눈가루·통통 커짐)
-// 두리번거리며 귀를 쫑긋대다가 몇 번 콩콩 뛰고(뛴 자리에 토끼 자국) 다시 눈 속으로 사라진다. 포인터가 다가오거나 누르면
-// 놀라서 바로 숨는다. **눈보라 한 줄기** — 흰 눈가루 띠가 화면을 훑고 지나간다.
+// 두리번거리며 귀를 쫑긋대다가 몇 번 콩콩 뛰고(뛴 자리에 토끼 자국) 눈을 파헤치다가, 다 놀면 화면 밖으로 뛰어나간다.
+// 토끼의 지능(2026-09-04 사용자 "진짜 동물처럼", 행동 연구 기반): 위협(포인터·보이지 않는 손님)을 **접근 속도**로 판단한다 —
+// 도주 개시 거리(FID, Ydenberg & Dill 1986)는 천천히 오면 좁고 덤벼들면 넓다. 갑자기 덮쳐오면 **얼음(freeze)** — 잠깐 굳어
+// 판단한 뒤 도주. 위협이 근처에 머물면 **경계(alert)** — 꼿꼿이 앉아 귀를 세우고 위협을 향해 몸을 돌리며, 오래 머물면
+// **발 구르기(thump)**로 경고(뒷발 뒤로 눈가루), 두 번 굴러도 안 가면 도주. 도주는 **지그재그(protean escape)** — 뜀마다
+// 방향을 꺾고 가끔 급선회, 그래도 늘 눈에 보이게 화면 밖까지 달린다(순간이동 금지). 안전하고 한가하면 **빙키(binky)** —
+// 제자리에서 높이 뛰며 몸을 비트는 기쁨의 점프. **눈보라 한 줄기** — 흰 눈가루 띠가 화면을 훑고 지나간다.
 // LOD: 자국은 종류별 스프라이트 한 장씩(경로 채우기 ×200/프레임 → drawImage), 여력(f.load)에 따라 눈송이 수·손님
 // 빈도·눈가루·고리·이벤트를 점진 조절(툭 사라지지 않게 — 눈송이는 제 수명을 마치고 빠진다).
 
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
-import { clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU } from "./util";
+import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 type Flake = { x: number; y: number; life: number; dur: number; wait: number; r: number; rung: boolean };
 type Kind = "human" | "cat" | "bird" | "rabbit";
@@ -22,8 +27,31 @@ type Dust = { x: number; y: number; vx: number; vy: number; life: number; r: num
 type Ring = { x: number; y: number; life: number };
 type Twinkle = { x: number; y: number; ph: number; r: number };
 type Walker = { kind: Kind; x: number; y: number; dir: number; left: boolean; k: number; next: number; active: boolean; steps: number };
-type RabbitPhase = "emerge" | "sit" | "hop" | "rest" | "flee"; // flee = 화면 밖으로 빠르게 뛰어나감(사라지지 않는다)
-type Rabbit = { x: number; y: number; dir: number; phase: RabbitPhase; t0: number; hops: number; sx: number; sy: number; look: number; k: number; nextDig: number; digT: number };
+// 토끼 상태: emerge → sit ⇄ hop/rest(놀이·파헤치기) → flee(화면 밖으로 지그재그 도주 — 사라지지 않는다).
+// 위협 반응(행동 연구 기반): alert = 경계(꼿꼿이 앉아 위협을 향함, 머물면 발 구르기) · freeze = 얼음(덮쳐올 때 잠깐 정지 후 도주) ·
+// binky = 빙키(안전할 때 기쁨의 점프, 끝나면 sit).
+type RabbitPhase = "emerge" | "sit" | "hop" | "rest" | "alert" | "freeze" | "binky" | "flee";
+type Rabbit = {
+  x: number;
+  y: number;
+  dir: number;
+  phase: RabbitPhase;
+  t0: number;
+  hops: number;
+  sx: number;
+  sy: number;
+  look: number;
+  k: number;
+  nextDig: number;
+  digT: number;
+  exit: number; // 도주 출구 방향 — 지그재그는 이 축을 중심으로 꺾는다
+  zig: number; // 지그재그 부호(±1) — 뜀마다 뒤집힌다
+  dist: number; // 이번 도주 뜀의 거리(64~72)
+  thumpT: number; // 마지막 발 구르기 시각(그리기의 웅크림)
+  thumpN: number; // 이번 경계에서 구른 횟수 — 둘이면 도주
+  freezeDur: number; // 얼음 지속(0.25~0.5초)
+};
+type Threat = ReturnType<typeof threat>;
 type Gust = { t0: number; dur: number; dir: number; y: number } | null;
 
 const SPR: Record<PrintKind, number> = { sole: 36, paw: 20, bird: 18, rHind: 20, rFore: 14 };
@@ -51,6 +79,12 @@ export function createWinter(seed: number): Scene {
   let rabbit: Rabbit | null = null;
   let nextRabbit = 12 + rand() * 10;
   let rabbits = 0;
+  // 토끼 행동 카운터(검증·디버그) — 경계·발 구르기·얼음·빙키·지그재그 꺾임.
+  let alerts = 0;
+  let thumps = 0;
+  let freezes = 0;
+  let binkies = 0;
+  let zigzags = 0;
   let gust: Gust = null;
   let nextGust = 30 + rand() * 30;
   let gusts = 0;
@@ -327,11 +361,76 @@ export function createWinter(seed: number): Scene {
         y = best[1] + 35 + rand() * (best[3] - 70);
       }
     }
-    rabbit = { x, y, dir: rand() * TAU, phase: "emerge", t0: t, hops: 3 + Math.floor(rand() * 4), sx: x, sy: y, look: 0, k: 0.9 + rand() * 0.2, nextDig: t + 1.2, digT: -9 };
+    rabbit = {
+      x,
+      y,
+      dir: rand() * TAU,
+      phase: "emerge",
+      t0: t,
+      hops: 3 + Math.floor(rand() * 4),
+      sx: x,
+      sy: y,
+      look: 0,
+      k: 0.9 + rand() * 0.2,
+      nextDig: t + 1.2,
+      digT: -9,
+      exit: 0,
+      zig: 1,
+      dist: 64,
+      thumpT: -9,
+      thumpN: 0,
+      freezeDur: 0.3
+    };
     puff(x, y, 14, 130);
     rabbits++;
   }
+  // 도주 개시 거리(FID) — 고정 반경이 아니라 접근 방식으로 정한다(Ydenberg & Dill 1986: 접근 속도가 빠를수록 멀리서 튄다).
+  // 덮쳐오면(loom > 4) 320px에서 바로, 빠르게 오면(250px/s↑) 200px, 천천히·가만히 있으면(60px/s↓) 70px까지 참는다, 기본 110px.
+  function fid(th: Threat): number {
+    if (th.loom > 4) return 320;
+    if (th.rate > 250) return 200;
+    if (th.rate < 60) return 70;
+    return 110;
+  }
+  // 경계(alert) — 제자리에 꼿꼿이 앉아 위협을 향한다. 발 구르기 횟수는 경계마다 새로 센다.
+  function enterAlert(r: Rabbit, t: number) {
+    r.phase = "alert";
+    r.t0 = t;
+    r.thumpN = 0;
+    r.thumpT = -9;
+    alerts++;
+  }
+  // 발 구르기(thump) — 뒷발로 눈을 쿵 찍는 경고 신호. 몸이 잠깐 웅크리고(그리기) 뒷발 뒤로 눈가루가 튄다.
+  function thump(r: Rabbit, t: number) {
+    r.thumpT = t;
+    r.thumpN++;
+    thumps++;
+    puff(r.x - Math.cos(r.dir) * 14, r.y - Math.sin(r.dir) * 14, 4, 70);
+  }
+  // 지그재그 도주(protean escape) — 출구 축을 중심으로 뜀마다 ±35~50°를 번갈아 꺾고, 15%는 ~90° 급선회. 예측 불가한 경로가
+  // 포식자의 추격을 따돌린다. first가 아니면 부호가 뒤집힌다(zigzags++).
+  function zigHop(r: Rabbit, first: boolean) {
+    if (!first) {
+      r.zig = -r.zig;
+      zigzags++;
+    }
+    const cut = rand() < 0.15;
+    const ang = cut ? (Math.PI / 2) * (0.9 + rand() * 0.2) : ((35 + rand() * 15) * Math.PI) / 180;
+    r.dir = r.exit + r.zig * ang;
+    r.dist = 64 + rand() * 8;
+  }
+  // 빙키(binky) — 안전하고(포인터 320px 밖·손님 멀리) 여력이 있을 때 8%로 제자리 높이뛰기+몸 비틀기. 들어갔으면 true.
+  function tryBinky(r: Rabbit, t: number, th: Threat, wd: number, load: number): boolean {
+    if (load < 0.6 || th.d < 320 || wd < 140 || rand() >= 0.08) return false;
+    r.phase = "binky";
+    r.t0 = t;
+    r.sx = r.x;
+    r.sy = r.y;
+    binkies++;
+    return true;
+  }
   // 놀라거나 다 놀았으면 가장 가까운 가장자리로 뛰어나간다 — 화면 밖에서 사라진다(순간이동 금지, 2026-09-04 사용자).
+  // 출구 방향은 exit에 두고 실제 뜀은 지그재그(zigHop).
   function rabbitFlee(t: number) {
     if (!rabbit || rabbit.phase === "flee") return;
     const r = rabbit;
@@ -342,7 +441,9 @@ export function createWinter(seed: number): Scene {
       [r.x, h + 90]
     ];
     exits.sort((a, b) => Math.hypot(a[0] - r.x, a[1] - r.y) - Math.hypot(b[0] - r.x, b[1] - r.y));
-    r.dir = Math.atan2(exits[0][1] - r.y, exits[0][0] - r.x);
+    r.exit = Math.atan2(exits[0][1] - r.y, exits[0][0] - r.x);
+    r.zig = rand() < 0.5 ? -1 : 1;
+    zigHop(r, true);
     r.phase = "flee";
     r.t0 = t;
     r.sx = r.x;
@@ -394,19 +495,69 @@ export function createWinter(seed: number): Scene {
       if (!rabbit && load >= 0.45 && t > nextRabbit) startRabbit(t, f.hot);
       if (rabbit) {
         const r = rabbit;
-        const age = t - r.t0;
-        // 포인터가 다가오면 놀라 화면 밖으로 뛰어나간다(뛰는 중엔 뛰다가).
-        if (p.inside && r.phase !== "flee" && r.phase !== "emerge" && Math.hypot(r.x - p.x, r.y - p.y) < 110) rabbitFlee(t);
+        // 위협 지각 — 포인터는 접근 속도·looming으로(threat), 보이지 않는 손님(사람·고양이·새)도 포식자다(거리 wd).
+        const th = threat(p, r.x, r.y);
+        const wd = walker.active ? Math.hypot(walker.x - r.x, walker.y - r.y) : Infinity;
+        const calm = r.phase === "sit" || r.phase === "rest";
+        // 나오는 중·얼음·도주 중엔 새 판단 없음(얼음은 제 시간을 채우고 도주, 도주는 끝까지 달린다).
+        if (r.phase !== "emerge" && r.phase !== "freeze" && r.phase !== "flee") {
+          if (calm && th.loom > 2.5 && th.d < 260) {
+            // 얼음(freeze) — 미처 경계하기 전에 덮쳐오면 먼저 굳는다(crypsis: 움직임을 지워 판단할 시간을 번다), 곧 도주.
+            r.phase = "freeze";
+            r.t0 = t;
+            r.freezeDur = 0.25 + rand() * 0.25;
+            freezes++;
+          } else if (th.d < fid(th) || wd < 60) {
+            // FID 안이면 도주(뛰는 중·빙키 중이면 그 자리에서). 손님이 코앞(60px)이어도.
+            rabbitFlee(t);
+          } else if (calm && (th.d < 240 || wd < 140)) {
+            // 경계(alert) — 아직 FID 밖이지만 가까이 있다: 멈추고 꼿꼿이 앉아 위협을 향한다.
+            enterAlert(r, t);
+          }
+        }
+        const age = t - r.t0; // 위 전이로 t0가 바뀌었을 수 있다 — 전이 뒤에 잰다
         if (r.phase === "emerge" && age > 0.55) {
           r.phase = "sit";
           r.t0 = t;
           r.look = 2 + rand() * 2.5;
+        } else if (r.phase === "freeze") {
+          if (age > r.freezeDur) rabbitFlee(t);
+        } else if (r.phase === "alert") {
+          // 위협의 자리 — 포인터(300px 안) 우선, 아니면 손님(200px 안, 들어올 땐 140: 경계에서 왔다 갔다 않게 히스테리시스).
+          const near: [number, number] | null = th.d < 300 ? [p.x, p.y] : wd < 200 ? [walker.x, walker.y] : null;
+          if (!near) {
+            // 물러갔다 — 다시 앉아 두리번(look 타이머·파헤치기 타이머 새로).
+            r.phase = "sit";
+            r.t0 = t;
+            r.look = 2 + rand() * 2.5;
+            r.nextDig = t + 1.2;
+            r.thumpN = 0;
+          } else {
+            // 위협 쪽으로 몸을 돌린다(≤3 rad/s — 홱 돌지 않고 눈으로 좇듯).
+            const want = Math.atan2(near[1] - r.y, near[0] - r.x);
+            r.dir += clamp(angleDiff(want, r.dir), -3 * dt, 3 * dt);
+            // 발 구르기(thump): 1.2초 넘게 머물면 한 번, 1.5초 뒤에도 있으면 한 번 더, 그래도 있으면 "충분히 참았다" — 도주.
+            if (r.thumpN === 0 && age > 1.2) thump(r, t);
+            else if (r.thumpN === 1 && t - r.thumpT > 1.5) thump(r, t);
+            else if (r.thumpN >= 2 && t - r.thumpT > 0.15) rabbitFlee(t);
+          }
+        } else if (r.phase === "binky") {
+          // 빙키 — 0.42초 제자리 높이뛰기(그리기에서 1.6배 높이·몸 비틀기). 착지에 눈가루, 다시 앉는다.
+          if (age >= 0.42) {
+            puff(r.x, r.y, 5, 70);
+            r.phase = "sit";
+            r.t0 = t;
+            r.look = 1 + rand() * 1.5;
+            r.nextDig = t + 0.8;
+          }
         } else if (r.phase === "sit" && age > r.look) {
-          r.phase = "hop";
-          r.t0 = t;
-          r.dir += (rand() - 0.5) * 1.2;
-          r.sx = r.x;
-          r.sy = r.y;
+          if (!tryBinky(r, t, th, wd, load)) {
+            r.phase = "hop";
+            r.t0 = t;
+            r.dir += (rand() - 0.5) * 1.2;
+            r.sx = r.x;
+            r.sy = r.y;
+          }
         } else if (r.phase === "sit" && t > r.nextDig) {
           // 앉아서 앞발로 눈을 파헤친다 — 앞발 쪽에서 눈가루가 조금씩 튀고 몸이 앞뒤로 까딱.
           r.digT = t;
@@ -416,8 +567,8 @@ export function createWinter(seed: number): Scene {
           for (let i = 0; i < 5; i++) dust.push({ x: fx + (rand() - 0.5) * 8, y: fy + (rand() - 0.5) * 8, vx: Math.cos(r.dir + (rand() - 0.5) * 1.2) * (40 + rand() * 60), vy: Math.sin(r.dir + (rand() - 0.5) * 1.2) * (40 + rand() * 60), life: 0.9, r: 1.2 + rand() * 1.4 });
         } else if (r.phase === "hop" || r.phase === "flee") {
           const fleeing = r.phase === "flee";
-          const dur = fleeing ? 0.24 : 0.38;
-          const dist = fleeing ? 64 : 46;
+          const dur = fleeing ? 0.22 : 0.38;
+          const dist = fleeing ? r.dist : 46;
           const pgs = Math.min(1, age / dur);
           r.x = r.sx + Math.cos(r.dir) * dist * pgs;
           r.y = r.sy + Math.sin(r.dir) * dist * pgs;
@@ -429,26 +580,33 @@ export function createWinter(seed: number): Scene {
                 rabbit = null;
                 nextRabbit = t + 25 + rand() * 40;
               } else {
+                // 다음 뜀 — 지그재그로 꺾는다(출구 축은 그대로, 부호 뒤집기).
                 r.t0 = t;
                 r.sx = r.x;
                 r.sy = r.y;
-                r.dir += (rand() - 0.5) * 0.3;
+                zigHop(r, false);
               }
             } else {
               r.hops--;
               if (r.hops > 0) {
-                r.phase = "rest";
-                r.t0 = t;
-                if (r.x < 30 || r.x > w - 30 || r.y < 30 || r.y > h - 30) r.dir = Math.atan2(h / 2 - r.y, w / 2 - r.x);
+                if (th.d < 240 || wd < 140) {
+                  enterAlert(r, t); // 뜀 사이에 위협이 가까우면 쉬는 대신 경계
+                } else {
+                  r.phase = "rest";
+                  r.t0 = t;
+                  if (r.x < 30 || r.x > w - 30 || r.y < 30 || r.y > h - 30) r.dir = Math.atan2(h / 2 - r.y, w / 2 - r.x);
+                }
               } else rabbitFlee(t); // 다 놀았으면 뛰어서 나간다
             }
           }
         } else if (r.phase === "rest" && age > 0.22 + rand() * 0.2) {
-          r.phase = "hop";
-          r.t0 = t;
-          r.dir += (rand() - 0.5) * 0.9;
-          r.sx = r.x;
-          r.sy = r.y;
+          if (!tryBinky(r, t, th, wd, load)) {
+            r.phase = "hop";
+            r.t0 = t;
+            r.dir += (rand() - 0.5) * 0.9;
+            r.sx = r.x;
+            r.sy = r.y;
+          }
         }
       }
       // ③ 눈보라 한 줄기 — 여력 0.6부터, 30~60초 간격, 3초. 앞머리를 따라 눈가루가 흩날린다.
@@ -601,12 +759,17 @@ export function createWinter(seed: number): Scene {
         g.restore();
       }
       // 눈 토끼 — 나올 땐 통통(오버슈트), 뛸 땐 위로 떠올라 커지고 그림자가 멀어진다, 앉아선 귀가 쫑긋.
+      // 경계·얼음은 꼿꼿이(세로 1.08배, 귀 고정), 발 구르기는 잠깐 웅크림(납작), 빙키는 높이 뛰며 몸 비틀기.
+      // 전부 save/translate/scale로 스프라이트(Noto)를 변형할 뿐 — 손으로 그리는 동물은 없다(사용자 규칙).
       if (rabbit && rabbitSpr) {
         const r = rabbit;
         const age = t - r.t0;
         let k = r.k;
         let up = 0;
         let alpha = 1;
+        let bx = 1; // 몸 가로 배율(웅크림)
+        let by = 1; // 몸 세로 배율(꼿꼿이·웅크림)
+        let twist = 0; // 빙키 몸 비틀기(추가 회전)
         if (r.phase === "emerge") {
           const pgs = Math.min(1, age / 0.55);
           k *= 1 + 0.35 * Math.sin(Math.PI * pgs) * (1 - pgs) + pgs * 0 + (pgs < 1 ? 0 : 0);
@@ -615,9 +778,21 @@ export function createWinter(seed: number): Scene {
         } else if (r.phase === "hop") {
           up = Math.sin(Math.PI * Math.min(1, age / 0.38));
         } else if (r.phase === "flee") {
-          up = Math.sin(Math.PI * Math.min(1, age / 0.24)) * 1.2;
+          up = Math.sin(Math.PI * Math.min(1, age / 0.22)) * 1.2;
+        } else if (r.phase === "binky") {
+          const pgs = Math.min(1, age / 0.42);
+          up = Math.sin(Math.PI * pgs) * 1.6;
+          twist = Math.sin(pgs * Math.PI) * 0.7;
+        } else if (r.phase === "alert" || r.phase === "freeze") {
+          by = 1.08; // 뒷다리로 곧추 앉아 살핀다 — 위에서 보면 살짝 길어 보인다
+          const since = t - r.thumpT;
+          if (r.phase === "alert" && since < 0.15) {
+            const s = Math.sin((Math.PI * since) / 0.15); // 발 구르기 — 아래로 쿵(납작·넓게) 하고 되돌아온다
+            by = 1.08 - 0.2 * s;
+            bx = 1 + 0.07 * s;
+          }
         }
-        const ear = r.phase === "sit" ? Math.sin(t * 9) * 0.08 : 0;
+        const ear = r.phase === "sit" ? Math.sin(t * 9) * 0.08 : 0; // 경계·얼음은 귀를 세운 채 고정
         const look = r.phase === "sit" ? Math.sin(t * 1.7) * 0.25 : 0;
         const digging = r.phase === "sit" && t - r.digT < 0.35;
         const dig = digging ? Math.sin((t - r.digT) * 36) * 0.06 : 0; // 파헤치는 동안 몸이 잘게 까딱
@@ -632,7 +807,13 @@ export function createWinter(seed: number): Scene {
         }
         g.save();
         g.globalAlpha = alpha;
-        drawFacing(g, rabbitSpr, r.x + Math.cos(r.dir) * dig * 30, r.y - 10 * up + Math.sin(r.dir) * dig * 30, r.dir, k * (1 + 0.22 * up), ear + look * 0.4);
+        if (bx !== 1 || by !== 1) {
+          // 토끼 자리를 중심으로 몸만 늘이고 줄인다(자리는 그대로).
+          g.translate(r.x, r.y);
+          g.scale(bx, by);
+          g.translate(-r.x, -r.y);
+        }
+        drawFacing(g, rabbitSpr, r.x + Math.cos(r.dir) * dig * 30, r.y - 10 * up + Math.sin(r.dir) * dig * 30, r.dir, k * (1 + 0.22 * up), ear + look * 0.4 + twist);
         g.restore();
       }
       for (const s of flakes) {
@@ -693,6 +874,12 @@ export function createWinter(seed: number): Scene {
         kinds: prints.reduce<Record<string, number>>((m, p) => ((m[p.kind] = (m[p.kind] ?? 0) + 1), m), {}),
         rabbit: rabbit ? [Math.round(rabbit.x), Math.round(rabbit.y), rabbit.phase, rabbit.hops] : null,
         rabbits,
+        rabbitPhase: rabbit ? rabbit.phase : null,
+        alerts,
+        thumps,
+        freezes,
+        binkies,
+        zigzags,
         erased,
         rabbitSprite: !!rabbitSpr,
         gust: !!gust,

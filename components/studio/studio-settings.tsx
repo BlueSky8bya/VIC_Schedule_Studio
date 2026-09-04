@@ -11,6 +11,7 @@ import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types"
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import type { AmbientMode } from "@/lib/ui/motion";
 import { RhhSelect } from "@/components/studio/rhh-select";
+import { AmbientModeSegment } from "@/components/shared/ambient/showcase";
 
 export type StudioSettingsProps = {
   hapticsSupported: boolean;
@@ -112,23 +113,14 @@ export function StudioSettingsList({
       </div>
       {/* (차분한 편집실 스위치 제거 — 2026-09-04, 항상 ON. html[data-studio-calm]은 페인트-전 스크립트가 늘 붙인다.) */}
       {/* 계절 배경 — 보고 있는 달력 달의 계절 배경(여름 물결·가을 낙엽·겨울 눈밭·봄 풀밭). OFF면 전부 없음(개정 2).
-          모바일(≤640)엔 배경 자체가 없어 이 줄과 '배경 효과' 줄을 숨긴다(.rhh-ambient, 2026-09-04 사용자). */}
+          세 상태가 늘 다 보이는 세그먼트 [켜기|흐리게|끄기](2026-09-04 사용자: 셀렉트는 '흐리게'가 있는지 안 보였다) — 레일·아바타
+          자리의 묶음과 같은 컴포넌트. 모바일(≤640)엔 배경 자체가 없어 이 줄과 '배경 효과' 줄을 숨긴다(.rhh-ambient). */}
       <div className="role-help-haptics rhh-ambient">
         <span className="rhh-label">
           <Leaf aria-hidden="true" size={14} />
           계절 배경
         </span>
-        <RhhSelect<AmbientMode>
-          ariaLabel="계절 배경 상태 고르기"
-          dataAct="ambient-mode-select"
-          onChange={onChangeAmbientMode}
-          options={[
-            { value: "on", label: "켜기" },
-            { value: "dim", label: "흐리게" },
-            { value: "off", label: "끄기" }
-          ]}
-          value={ambientMode}
-        />
+        <AmbientModeSegment ariaLabel="계절 배경 상태 고르기" className="metal" dataAct="ambient-mode-select" mode={ambientMode} onChange={onChangeAmbientMode} />
       </div>
       {/* 배경 효과 품질(gfx v3) — 기기 판정이 '가볍게/끔'으로 떨어진 PC(토리님)에서 사용자가 직접 되돌리는 손잡이.
           자동 옵션 라벨에 판정 결과를 괄호로 보여 준다. 계절 배경이 OFF면 '끄기'로 잠긴다(두 컨트롤이 한 상태). */}

@@ -1,17 +1,32 @@
 // 봄 — "풀밭을 위에서 내려다본다". 바탕(연둣빛 필름 + 클로버·작은 데이지·꽃잎 몇)은 한 번 굽고, **풀포기 층은 따로 구워**
 // 바람에 흔들린다(2026-09-04 사용자: "꽃잎이 휘날릴 때 잔디도 같이") — 가로 띠 12개로 잘라 띠마다 진행파(sin)만큼 옆으로
 // 밀어 그린다(drawImage 12번, 필터 없음). 꽃잎 바람이 불면 크게, 평소엔 여력이 있을 때 미세하게 숨쉰다.
-// 빛 얼룩 둘이 느리게 지나가며 풀이 반짝인다. 나비가 그림자를 끌며 날아다니고(높이에 따라 그림자가 멀어지고 옅어진다),
+// 빛 얼룩(양지) 둘이 느리게 지나가며 풀이 반짝인다. 나비가 그림자를 끌며 날아다니고(높이에 따라 그림자가 멀어지고 옅어진다),
 // 방향을 틀 때 몸이 기울어(bank) 한쪽 날개가 좁아 보인다. 가끔 데이지에 내려앉아 천천히 날개를 여닫다가 다시 난다.
-// 포인터가 다가가면 팔랑거리며 달아나고, 누르면 꽃잎·반짝이가 터지며 한 바퀴 돌아 날아간다. 바탕을 누르면 풀이 밟힌다.
-// 소품·이벤트: **무당벌레**(에셋; 기어다님·회피·클릭에 날아오름), **꽃잎 바람**, **민들레**(누르면 홀씨가 흩어져 떠오르고
-// 한참 뒤 다시 핀다 — 미니게임), **꿀벌**(데이지 사이를 지그재그로 오가며 잠깐 머문다, 포인터를 피한다).
+// 누르면 꽃잎·반짝이가 터지며 한 바퀴 돌아 날아간다. 바탕을 누르면 풀이 밟힌다.
+// 소품·이벤트: **무당벌레**(에셋; 기어다님·클릭에 날아오름), **꽃잎 바람**, **민들레**(누르면 홀씨가 흩어져 떠오르고
+// 한참 뒤 다시 핀다 — 미니게임), **꿀벌**(에셋; 데이지 사이를 오가며 잠깐 머문다).
 // 여력(f.load): 나비 1~3(가장자리 출입), 무당벌레 0~2, 민들레(≥.4), 꿀벌(≥.6), 꽃잎 바람(≥.55), 풀 숨쉬기(≥.5).
 // 색은 木(초목)·水(이슬) — 쨍한 햇빛·붉은 꽃은 쓰지 않는다(CLAUDE.md Owner-fit palette).
+//
+// 생물 지능(2026-09-04 사용자: "실제 동물이 사용자에게 반응하듯, 행동 연구 기반으로"). 위협은 고정 반경이 아니라 util.threat()
+// (거리 d · 접근 속도 rate · looming) — 천천히 오면 참고, 휙 덤비면 멀리서 튄다.
+//  · 나비 — 맛있는(palatable) 나비의 불규칙 비행: 60px 안이거나, 빠른 접근(rate>200)은 160px, 덮쳐옴(loom>3)은 220px에서
+//    도망; 느린 접근(rate<50)은 60px까지 참는다. 도망칠 땐 급히 솟아 그림자가 멀어진다. 둘이 나는 중에 60px 안에서 마주치면
+//    (전역 쿨다운 8s) 30%로 **나선 추격**(수컷 순찰·spiral chase, 1.4s, 반지름 20→60, 높이 최고) 뒤 흩어진다. 양지(빛 얼룩)
+//    120px 안을 지나면(마리당 쿨다운 10s) 25%로 땅에 내려앉아 날개를 활짝 펴고 **일광욕**(basking, 2.5~4s, 0.9~1.0 숨쉬기)
+//    — 위협이 오면 즉시 날아오른다.
+//  · 무당벌레 — 교란에 **죽은 척**(thanatosis): 위협(70px 안 rate>40, 또는 loom>2 110px 안)이면 멈추고 움츠려(×0.88) 1.5~3s
+//    죽은 척; 그동안 포인터가 30px 안까지 오거나 누르면 날아간다. 시간이 지나 포인터가 멀면(90px+) 새 방향으로 걷고, 아직
+//    가까우면 더 버틴다(총 6s까지, 그 뒤 날아감). 걷다 닿이면(22px) 0.6s 종종걸음 뒤 죽은 척.
+//  · 꿀벌 — 꽃 일관성·**트랩라인**(trapline) 채집: 가까운 6송이 중 45s 안에 안 간 가장 가까운 꽃으로 짧게 옮겨 다닌다(무작위
+//    없음). 꽃 위 0.4s **맴돌기**(반지름 6, 붕붕) → 1~2s 먹기(작게 까딱) → 다음 꽃. 7~10송이면 가장 가까운 가장자리로
+//    귀소(home, bee=null) 하고 20~40s 뒤 새 벌이 온다. 위협: 40px 안 · 빠른 접근 120px · 덮쳐옴 160px. 손으로 치면(클릭)
+//    1.2s 포인터 둘레(반지름 40)를 성나서 맴돌다(angry) 달아난다.
 
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, drawSprite, loadSprite, type Sprite } from "../assets";
-import { clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU } from "./util";
+import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 const WINGS = [
   { a: "#c9b9ee", b: "#a08fd8", rim: "#6f5db3", spot: "#ffffff", eye: "#4a3f7a" },
@@ -23,8 +38,13 @@ const WINGS = [
 // (2026-09-04 사용자: "전체가 흩어져 흔들리니 지진 난 것 같다") — 가로 띠는 x로 국소화가 안 돼 타일로 바꿨다.
 const COLS = 24;
 const ROWS = 12;
+// 행동 상수 — 나선 추격 길이·전역 쿨다운, 일광욕 쿨다운(마리당), 꿀벌이 같은 꽃을 다시 찾지 않는 시간.
+const CHASE_DUR = 1.4;
+const CHASE_COOLDOWN = 8;
+const BASK_COOLDOWN = 10;
+const VISIT_MEMORY = 45;
 
-type State = "fly" | "land" | "sit" | "leave";
+type State = "fly" | "land" | "sit" | "leave" | "chase" | "bask";
 type Fly = {
   x: number;
   y: number;
@@ -44,15 +64,48 @@ type Fly = {
   sit: number;
   nextLand: number;
   w1: number;
+  // 나선 추격 — 둘이 공유하는 중심(cx,cy), 내 각(ca), 회전 방향(cdir), 남은 시간(chase), 상대(mate).
+  cx: number;
+  cy: number;
+  ca: number;
+  cdir: number;
+  chase: number;
+  mate: Fly | null;
+  // 일광욕 — land 목표가 양지인가(sun), 다음 일광욕 가능 시각(nextBask).
+  sun: boolean;
+  nextBask: number;
 };
 type Spark = { x: number; y: number; vx: number; vy: number; life: number; r: number; col: string; a: number; va: number; star: boolean };
 type Press = { x: number; y: number; life: number; r: number; blades: { a: number; r0: number; len: number; w: number; col: string }[] };
-type BugState = "walk" | "pause" | "flee" | "off";
-type Bug = { x: number; y: number; hd: number; spd: number; state: BugState; until: number; k: number; ph: number; off: number; respawn: number };
+type BugState = "walk" | "pause" | "flee" | "dead" | "off";
+type Bug = { x: number; y: number; hd: number; spd: number; state: BugState; until: number; k: number; ph: number; off: number; respawn: number; deadAt: number };
 type Petal = { x: number; y: number; vx: number; ph: number; a: number; va: number; born: number; dur: number; k: number };
 type Dandelion = { x: number; y: number; k: number; puffed: number; regrow: number; born: number }; // puffed = 홀씨 날린 시각(0 = 핀 상태)
 type Seed = { x: number; y: number; vx: number; vy: number; ph: number; born: number; dur: number };
-type Bee = { x: number; y: number; hd: number; tx: number; ty: number; hover: number; next: number; ph: number; flee: number };
+type BeeState = "fly" | "hover" | "feed" | "flee" | "angry" | "home";
+type Bee = {
+  x: number;
+  y: number;
+  hd: number;
+  tx: number;
+  ty: number;
+  state: BeeState;
+  timer: number; // 현재 상태의 남은 시간(hover·feed·flee·angry)
+  ph: number;
+  ang: number; // 맴돌기 각(hover 꽃 둘레 · angry 포인터 둘레)
+  target: number; // 데이지 인덱스(-1 = 없음)
+  visits: number; // 이번 채집 나들이에서 먹은 꽃 수
+  quota: number; // 7~10송이면 귀소
+  visited: Map<number, number>; // 데이지 인덱스 → 먹은 시각(45s 동안 다시 안 감)
+};
+
+/** 빛 얼룩(양지) 둘의 위치 — draw(그리기)와 step(나비 일광욕 판단)이 같은 식을 쓴다. */
+function sunAt(t: number, w: number, h: number): [number, number][] {
+  return [
+    [w * (0.3 + 0.2 * Math.sin(t * 0.09)), h * (0.4 + 0.25 * Math.cos(t * 0.07))],
+    [w * (0.7 + 0.18 * Math.cos(t * 0.06 + 2)), h * (0.6 + 0.2 * Math.sin(t * 0.08 + 1))]
+  ];
+}
 
 export function createSpring(seed: number): Scene {
   const rand = rng(seed);
@@ -76,6 +129,7 @@ export function createSpring(seed: number): Scene {
   const dands: Dandelion[] = [];
   const seeds: Seed[] = [];
   let bee: Bee | null = null;
+  let nextBee = 0; // 귀소한 벌 대신 새 벌이 오는 시각
   let nextBreeze = 9;
   let breezes = 0;
   let bugsFled = 0;
@@ -88,6 +142,13 @@ export function createSpring(seed: number): Scene {
   let h = 0;
   let fleeCount = 0;
   let pressCount = 0;
+  // 행동 카운터(검증용) — 나선 추격·일광욕·죽은 척·꿀벌 방문·손찌검.
+  let chases = 0;
+  let basks = 0;
+  let plays = 0;
+  let beeVisits = 0;
+  let swats = 0;
+  let nextChase = 0;
 
   function press(x: number, y: number, load: number) {
     const n = load >= 0.5 ? 18 : 9;
@@ -276,7 +337,15 @@ export function createSpring(seed: number): Scene {
       state: "fly",
       sit: 0,
       nextLand: t + 4 + rand() * 8,
-      w1: rand() * TAU
+      w1: rand() * TAU,
+      cx: 0,
+      cy: 0,
+      ca: 0,
+      cdir: 1,
+      chase: 0,
+      mate: null,
+      sun: false,
+      nextBask: t + 5 + rand() * 10
     };
     if (fromEdge) {
       const e = Math.floor(rand() * 4);
@@ -288,6 +357,57 @@ export function createSpring(seed: number): Scene {
       b.next = t + 3;
     }
     return b;
+  }
+  // 도망칠 때 급히 솟는다 — 지금 높이(sin bob)는 그대로 두고 위상만 '올라가는 쪽'으로 돌려, 도망 중엔 최고점(π/2)까지 오른다.
+  function climb(b: Fly) {
+    let ph = ((((b.bob + Math.PI / 2) % TAU) + TAU) % TAU) - Math.PI / 2; // [-π/2, 3π/2)
+    if (ph > Math.PI / 2) ph = Math.PI - ph; // 내려가던 중이면 같은 높이의 올라가는 위상으로
+    b.bob = ph;
+  }
+  // 나선 추격 시작 — 둘의 중점을 공유하고 서로 반대편(각 차 π)에서 같은 방향으로 돈다.
+  function startChase(a: Fly, c: Fly, t: number) {
+    const mx = (a.x + c.x) / 2;
+    const my = (a.y + c.y) / 2;
+    const dir = rand() < 0.5 ? 1 : -1;
+    const a0 = Math.atan2(a.y - my, a.x - mx);
+    for (const b of [a, c]) {
+      b.state = "chase";
+      b.chase = CHASE_DUR;
+      b.cx = mx;
+      b.cy = my;
+      b.ca = b === a ? a0 : a0 + Math.PI;
+      b.cdir = dir;
+      b.mate = b === a ? c : a;
+      b.sun = false;
+      b.next = t + CHASE_DUR + 1;
+    }
+    chases++;
+  }
+  // 추격 끝(시간 종료·위협·퇴장) — 둘 다 새 목표로 흩어진다. 떠나는 중(leave)인 쪽은 상태를 건드리지 않는다.
+  function endChase(b: Fly, t: number) {
+    const m = b.mate;
+    for (const x of m ? [b, m] : [b]) {
+      if (x.state === "chase") x.state = "fly";
+      x.chase = 0;
+      x.mate = null;
+      x.tx = 40 + rand() * (w - 80);
+      x.ty = 40 + rand() * (h - 80);
+      x.next = t + 2.5 + rand() * 4;
+      x.nextLand = Math.max(x.nextLand, t + 6 + rand() * 6);
+    }
+  }
+  // 나는 중(도망·회전 아님)인 두 마리가 60px 안에서 마주친 쌍 — 없으면 null.
+  function meetingPair(): [Fly, Fly] | null {
+    for (let i = 0; i < flies.length; i++) {
+      const a = flies[i];
+      if (a.state !== "fly" || a.flee > 0 || a.loop > 0) continue;
+      for (let j = i + 1; j < flies.length; j++) {
+        const c = flies[j];
+        if (c.state !== "fly" || c.flee > 0 || c.loop > 0) continue;
+        if (Math.hypot(a.x - c.x, a.y - c.y) <= 60) return [a, c];
+      }
+    }
+    return null;
   }
   function burst(x: number, y: number, col: number, load: number) {
     const c = WINGS[col];
@@ -303,7 +423,21 @@ export function createSpring(seed: number): Scene {
     const e = Math.floor(rand() * 4);
     const x = e === 0 ? -12 : e === 1 ? w + 12 : rand() * w;
     const y = e === 2 ? -12 : e === 3 ? h + 12 : rand() * h;
-    return { x, y, hd: Math.atan2(h / 2 - y, w / 2 - x) + (rand() - 0.5), spd: 18 + rand() * 14, state: "walk", until: t + 3 + rand() * 4, k: 0.9 + rand() * 0.25, ph: rand() * TAU, off: 0, respawn: 0 };
+    return { x, y, hd: Math.atan2(h / 2 - y, w / 2 - x) + (rand() - 0.5), spd: 18 + rand() * 14, state: "walk", until: t + 3 + rand() * 4, k: 0.9 + rand() * 0.25, ph: rand() * TAU, off: 0, respawn: 0, deadAt: 0 };
+  }
+  // 죽은 척(thanatosis) — 그 자리에서 멈추고 움츠린다. 1.5~3s 뒤 포인터가 멀면 다시 걷는다.
+  function playDead(b: Bug, t: number) {
+    b.state = "dead";
+    b.deadAt = t;
+    b.until = t + 1.5 + rand() * 1.5;
+    plays++;
+  }
+  // 날아오름 — 날개를 편 채 화면 밖까지(off 상태가 그린다), 6~10s 뒤 가장자리에서 새로 들어온다.
+  function takeOff(b: Bug, t: number, hd: number) {
+    b.state = "off";
+    b.off = 0;
+    b.hd = hd;
+    b.respawn = t + 6 + rand() * 4;
   }
   function breeze(t: number, load: number) {
     windDir = rand() < 0.5 ? 1 : -1;
@@ -324,9 +458,67 @@ export function createSpring(seed: number): Scene {
       seeds.push({ x: d.x + (rand() - 0.5) * 8, y: d.y + (rand() - 0.5) * 8, vx: Math.cos(a) * sp + 22, vy: Math.sin(a) * sp - 10, ph: rand() * TAU, born: t, dur: 5 + rand() * 4 });
     }
   }
-  function newBee(): Bee {
-    const d = daisies[Math.floor(rand() * daisies.length)] ?? [w / 2, h / 2];
-    return { x: -20, y: rand() * h, hd: 0, tx: d[0], ty: d[1], hover: 0, next: 0, ph: rand() * TAU, flee: 0 };
+  // 트랩라인 — 가까운 6송이 중 45s 안에 안 간 가장 가까운 꽃. 전부 다녀왔으면 가장 오래전에 간 꽃. 지금 앉은 꽃은 제외.
+  function pickFlower(b: Bee, t: number) {
+    if (!daisies.length) {
+      goHome(b);
+      return;
+    }
+    const near = daisies
+      .map((d, i) => [Math.hypot(d[0] - b.x, d[1] - b.y), i] as [number, number])
+      .sort((u, v) => u[0] - v[0])
+      .slice(0, 6);
+    let pick = -1;
+    let oldest = Infinity;
+    for (const [, i] of near) {
+      if (i === b.target) continue;
+      const v = b.visited.get(i);
+      if (v === undefined || t - v > VISIT_MEMORY) {
+        pick = i;
+        break;
+      }
+      if (v < oldest) {
+        oldest = v;
+        pick = i;
+      }
+    }
+    if (pick < 0) pick = near[0]?.[1] ?? 0;
+    b.target = pick;
+    b.tx = daisies[pick][0];
+    b.ty = daisies[pick][1];
+    b.state = "fly";
+  }
+  function newBee(t: number): Bee {
+    const left = rand() < 0.5;
+    const b: Bee = { x: left ? -20 : w + 20, y: rand() * h, hd: left ? 0 : Math.PI, tx: 0, ty: 0, state: "fly", timer: 0, ph: rand() * TAU, ang: 0, target: -1, visits: 0, quota: 7 + Math.floor(rand() * 4), visited: new Map() };
+    pickFlower(b, t);
+    return b;
+  }
+  // 귀소 — 가장 가까운 가장자리로 날아 나간다(사라지지 않는다). 밖에 닿으면 bee = null.
+  function goHome(b: Bee) {
+    const exits: [number, number][] = [[-60, b.y], [w + 60, b.y], [b.x, -60], [b.x, h + 60]];
+    let best = exits[0];
+    let bd = Infinity;
+    for (const q of exits) {
+      const d = Math.hypot(q[0] - b.x, q[1] - b.y);
+      if (d < bd) {
+        bd = d;
+        best = q;
+      }
+    }
+    b.tx = best[0];
+    b.ty = best[1];
+    b.state = "home";
+  }
+  // 도망 — 포인터 반대쪽 280px로 1s. 끝나면 트랩라인을 이어간다.
+  function beeFlee(b: Bee, px: number, py: number) {
+    const dx = b.x - px;
+    const dy = b.y - py;
+    const d = Math.hypot(dx, dy) || 1;
+    b.tx = clamp(b.x + (dx / d) * 280 + (rand() - 0.5) * 120, 20, w - 20);
+    b.ty = clamp(b.y + (dy / d) * 280 + (rand() - 0.5) * 120, 20, h - 20);
+    b.state = "flee";
+    b.timer = 1;
   }
 
   // 날개 한 쪽(오른쪽 기준; 왼쪽은 scale(-1,1)). 몸 축 = -y(앞). 단위는 k=1일 때 px.
@@ -403,6 +595,7 @@ export function createSpring(seed: number): Scene {
       else if (staying > want) {
         const b = flies.find((x) => x.state !== "leave");
         if (b) {
+          if (b.state === "chase") endChase(b, t);
           b.state = "leave";
           b.tx = b.x < w / 2 ? -80 : w + 80;
           b.ty = clamp(b.y + (rand() - 0.5) * 300, -80, h + 80);
@@ -414,35 +607,64 @@ export function createSpring(seed: number): Scene {
           flies.splice(i, 1);
           continue;
         }
+        // 위협 지각 — 60px 안이면 무조건, 빠른 접근(rate>200)은 160px, 덮쳐옴(loom>3)은 220px에서 도망. 느리게 오면 60px까지 참는다.
         if (p.inside && load >= 0.35 && b.state !== "leave") {
-          const dx = b.x - p.x;
-          const dy = b.y - p.y;
-          const d = Math.hypot(dx, dy);
-          if (d < 140 && d > 0.001) {
-            b.tx = clamp(b.x + (dx / d) * 340 + (rand() - 0.5) * 80, 30, w - 30);
-            b.ty = clamp(b.y + (dy / d) * 340 + (rand() - 0.5) * 80, 30, h - 30);
-            if (b.flee <= 0) fleeCount++;
+          const th = threat(p, b.x, b.y);
+          if (th.d < 60 || (th.rate > 200 && th.d < 160) || (th.loom > 3 && th.d < 220)) {
+            if (b.state === "chase") endChase(b, t);
+            const ux = (b.x - p.x) / th.d;
+            const uy = (b.y - p.y) / th.d;
+            b.tx = clamp(b.x + ux * 340 + (rand() - 0.5) * 80, 30, w - 30);
+            b.ty = clamp(b.y + uy * 340 + (rand() - 0.5) * 80, 30, h - 30);
+            if (b.flee <= 0) {
+              fleeCount++;
+              climb(b);
+            }
             b.flee = 1.2;
             b.next = t + 1.5;
             if (b.state !== "fly") {
+              // 앉아 있던(일광욕·데이지) 것도 즉시 날아오른다.
               b.state = "fly";
+              b.sun = false;
               b.nextLand = t + 10 + rand() * 10;
             }
           }
         }
         const fleeing = b.flee > 0;
         if (fleeing) b.flee -= dt;
-        if (b.state === "sit") {
+        if (b.state === "chase") {
+          // 나선 추격 — 공유 중심 둘레를 같은 방향으로, 반지름 20→60으로 벌어지며 돈다. 머리는 접선(살짝 바깥), 높이 최고.
+          b.chase -= dt;
+          const prog = 1 - clamp(b.chase / CHASE_DUR, 0, 1);
+          const r = lerp(20, 60, prog);
+          b.ca += b.cdir * 4.4 * dt;
+          const nx = b.cx + Math.cos(b.ca) * r;
+          const ny = b.cy + Math.sin(b.ca) * r;
+          const k = Math.min(1, dt * 10);
+          b.x += (nx - b.x) * k;
+          b.y += (ny - b.y) * k;
+          b.hd = b.ca + b.cdir * (Math.PI / 2 - 0.2);
+          b.bank += (0.5 * b.cdir - b.bank) * Math.min(1, dt * 6);
+          b.ph += 30 * dt;
+          b.bob = Math.PI / 2;
+          if (b.chase <= 0) endChase(b, t);
+          continue;
+        }
+        if (b.state === "sit" || b.state === "bask") {
+          // 앉음 — 데이지 위에선 천천히 여닫고, 일광욕은 활짝 편 채 0.9~1.0 사이로 숨쉰다(draw가 flap으로 읽는다).
+          const basking = b.state === "bask";
           b.sit -= dt;
-          b.ph += 3.2 * dt;
+          b.ph += (basking ? 1.2 : 3.2) * dt;
           b.bob = -Math.PI / 2;
           b.bank *= 0.9;
           if (b.sit <= 0) {
             b.state = "fly";
+            b.sun = false;
             b.tx = 40 + rand() * (w - 80);
             b.ty = 40 + rand() * (h - 80);
             b.next = t + 3 + rand() * 3;
-            b.nextLand = t + 12 + rand() * 14;
+            b.nextLand = t + (basking ? 6 + rand() * 8 : 12 + rand() * 14);
+            if (basking) b.nextBask = t + BASK_COOLDOWN + rand() * 10;
             b.bob = -Math.PI / 2 + 0.2;
           }
           continue;
@@ -459,9 +681,25 @@ export function createSpring(seed: number): Scene {
           }
           if (best >= 0 && bd < 700) {
             b.state = "land";
+            b.sun = false;
             b.tx = daisies[best][0];
             b.ty = daisies[best][1];
           } else b.nextLand = t + 8;
+        }
+        // 일광욕 — 양지(빛 얼룩) 120px 안을 지나면 25%로 그 근처 땅(데이지 아님)에 내려앉는다. 판단은 마리당 10s에 한 번.
+        if (b.state === "fly" && t > b.nextBask && !fleeing && b.loop <= 0 && load >= 0.2) {
+          for (const [sx, sy] of sunAt(t, w, h)) {
+            if (Math.hypot(sx - b.x, sy - b.y) < 120) {
+              b.nextBask = t + BASK_COOLDOWN;
+              if (rand() < 0.25) {
+                b.state = "land";
+                b.sun = true;
+                b.tx = clamp(sx + (rand() - 0.5) * 60, 30, w - 30);
+                b.ty = clamp(sy + (rand() - 0.5) * 60, 30, h - 30);
+              }
+              break;
+            }
+          }
         }
         if (t > b.next && b.state === "fly") {
           b.tx = 40 + rand() * (w - 80);
@@ -474,10 +712,7 @@ export function createSpring(seed: number): Scene {
           b.hd += (TAU / 0.65) * dt;
           b.bank = 0.6;
         } else {
-          const wantA = Math.atan2(b.ty - b.y, b.tx - b.x);
-          let diff = wantA - b.hd;
-          while (diff > Math.PI) diff -= TAU;
-          while (diff < -Math.PI) diff += TAU;
+          const diff = angleDiff(Math.atan2(b.ty - b.y, b.tx - b.x), b.hd);
           const turn = (fleeing ? 7 : b.state === "land" ? 3.4 : 2.6) * dt;
           const steer = clamp(diff, -turn, turn);
           const wobble = (Math.sin(t * 5.1 + b.w1) * 0.9 + Math.sin(t * 2.3 + b.w1 * 2) * 0.5) * dt;
@@ -491,12 +726,21 @@ export function createSpring(seed: number): Scene {
         b.x += Math.cos(b.hd) * sp * dt;
         b.y += Math.sin(b.hd) * sp * dt;
         b.ph += (fleeing ? 44 : b.state === "land" ? 26 : 20) * dt;
-        b.bob += (fleeing ? 3.8 : 1.9) * dt;
+        // 도망 중엔 최고점까지 솟아 그 높이를 유지한다(그림자가 멀어짐); 평소엔 위아래로 너울거린다.
+        if (fleeing) b.bob = Math.min(b.bob + 3.8 * dt, Math.PI / 2);
+        else b.bob += 1.9 * dt;
         if (b.state === "land" && dist < 6) {
-          b.state = "sit";
-          b.sit = 2 + rand() * 2.5;
           b.x = b.tx;
           b.y = b.ty;
+          if (b.sun) {
+            b.state = "bask";
+            b.sit = 2.5 + rand() * 1.5;
+            b.ph = rand() * TAU;
+            basks++;
+          } else {
+            b.state = "sit";
+            b.sit = 2 + rand() * 2.5;
+          }
         }
         if (b.state !== "leave") {
           if (b.x < -30) b.x = w + 20;
@@ -505,7 +749,15 @@ export function createSpring(seed: number): Scene {
           else if (b.y > h + 30) b.y = -20;
         }
       }
-      // 무당벌레 — 수는 여력으로(0~2). 걷기 ↔ 멈춤, 포인터 70px 안이면 종종걸음으로 반대쪽.
+      // 나선 추격 — 나는 중인 둘이 60px 안에서 마주치면(전역 쿨다운 8s) 30%로 서로 감아 돈다. 실패해도 쿨다운은 소모(스쳐 지남).
+      if (t > nextChase && load >= 0.35) {
+        const pair = meetingPair();
+        if (pair) {
+          nextChase = t + CHASE_COOLDOWN;
+          if (rand() < 0.3) startChase(pair[0], pair[1], t);
+        }
+      }
+      // 무당벌레 — 수는 여력으로(0~2). 걷기 ↔ 멈춤. 위협엔 죽은 척(thanatosis), 닿이면 종종걸음, 들키면 날아오름.
       const bt = bugTarget(load);
       while (bugs.length < bt) bugs.push(newBug(t));
       if (bugs.length > bt) {
@@ -535,18 +787,43 @@ export function createSpring(seed: number): Scene {
           }
           continue;
         }
-        if (p.inside && load >= 0.35 && b.state !== "flee") {
-          const dx = b.x - p.x;
-          const dy = b.y - p.y;
-          const d = Math.hypot(dx, dy);
-          if (d < 70 && d > 0.001) {
+        const th = threat(p, b.x, b.y);
+        const aware = p.inside && load >= 0.35;
+        const away = () => Math.atan2(b.y - p.y, b.x - p.x) + (rand() - 0.5) * 0.8;
+        if (b.state === "dead") {
+          // 죽은 척 — 꼼짝 않는다. 포인터가 30px 안까지 오면(들킴, 움츠린 뒤 0.3s부터) 날아가고, 시간이 지나 포인터가
+          // 멀면(90px+) 새 방향으로 걷는다. 아직 가까우면 더 버틴다(총 6s까지), 그래도 안 가면 날아간다.
+          if (aware && th.d < 30 && t - b.deadAt > 0.3) {
+            takeOff(b, t, away());
+            continue;
+          }
+          if (t > b.until) {
+            if (!aware || th.d > 90) {
+              b.state = "walk";
+              b.hd = rand() * TAU;
+              b.until = t + 2.5 + rand() * 4;
+            } else if (t - b.deadAt < 6) b.until = Math.min(b.deadAt + 6, t + 1 + rand() * 1.5);
+            else takeOff(b, t, away());
+          }
+          continue;
+        }
+        if (aware && b.state !== "flee") {
+          if (th.d < 22) {
+            // 걷다 닿였다 — 0.6s 종종걸음으로 반대쪽, 그러고 죽은 척.
             b.state = "flee";
-            b.hd = Math.atan2(dy, dx) + (rand() - 0.5) * 0.6;
-            b.until = t + 1.1;
+            b.hd = away();
+            b.until = t + 0.6;
             bugsFled++;
+          } else if ((th.d < 70 && th.rate > 40) || (th.loom > 2 && th.d < 110)) {
+            playDead(b, t);
+            continue;
           }
         }
         if (t > b.until) {
+          if (b.state === "flee") {
+            playDead(b, t);
+            continue;
+          }
           if (b.state === "walk") {
             b.state = "pause";
             b.until = t + 0.8 + rand() * 2;
@@ -614,50 +891,87 @@ export function createSpring(seed: number): Scene {
         s.vx *= Math.pow(0.6, dt);
         s.vy = s.vy * Math.pow(0.6, dt) - 6 * dt;
       }
-      // 꿀벌 — 여력 0.6부터 한 마리. 데이지 사이를 지그재그로, 도착하면 1~2초 맴돌고 다음 꽃으로. 포인터 90px 안이면 도망.
-      if (load >= 0.6 && !bee && daisies.length) bee = newBee();
-      if (load < 0.5 && bee && bee.flee <= 0) {
+      // 꿀벌 — 여력 0.6부터 한 마리(귀소 뒤엔 nextBee까지 기다린다). 트랩라인: fly → hover(0.4s) → feed(1~2s) → 다음 꽃,
+      // 7~10송이면 home. 위협은 threat(), 손찌검(클릭)은 angry.
+      if (load >= 0.6 && !bee && t > nextBee && daisies.length) bee = newBee(t);
+      if (bee && load < 0.5 && bee.state !== "home") {
         // 여력이 떨어지면 가장 가까운 가장자리로 날아 나간다(사라지지 않는다).
-        bee.flee = 99;
-        bee.hover = 0;
-        bee.tx = bee.x < w / 2 ? -60 : w + 60;
-        bee.ty = bee.y;
+        goHome(bee);
+        nextBee = t + 8 + rand() * 8;
       }
-      if (bee && bee.flee > 50 && (bee.x < -40 || bee.x > w + 40)) bee = null;
       if (bee) {
         const b = bee;
-        if (p.inside && b.flee <= 0 && Math.hypot(b.x - p.x, b.y - p.y) < 90) {
-          b.flee = 1;
-          b.tx = clamp(b.x + (b.x - p.x) * 4, 20, w - 20);
-          b.ty = clamp(b.y + (b.y - p.y) * 4, 20, h - 20);
-          b.hover = 0;
-        }
-        if (b.flee > 0 && b.flee < 50) b.flee -= dt;
-        const dx = b.tx - b.x;
-        const dy = b.ty - b.y;
-        const d = Math.hypot(dx, dy);
-        if (b.hover > 0) {
-          b.hover -= dt;
-          b.x += Math.sin(t * 9 + b.ph) * 14 * dt;
-          b.y += Math.cos(t * 7 + b.ph) * 10 * dt;
-          if (b.hover <= 0) {
-            const nd = daisies[Math.floor(rand() * daisies.length)];
-            b.tx = nd[0];
-            b.ty = nd[1];
-          }
-        } else if (d < 8 && b.flee < 50) {
-          b.hover = 1 + rand() * 1.5;
-        } else {
-          const want = Math.atan2(dy, dx);
-          let diff = want - b.hd;
-          while (diff > Math.PI) diff -= TAU;
-          while (diff < -Math.PI) diff += TAU;
-          b.hd += clamp(diff, -6 * dt, 6 * dt) + Math.sin(t * 13 + b.ph) * 1.6 * dt;
-          const sp = b.flee > 0 ? 260 : 110;
-          b.x += Math.cos(b.hd) * sp * dt;
-          b.y += Math.sin(b.hd) * sp * dt;
-        }
         b.ph += dt;
+        if (p.inside && (b.state === "fly" || b.state === "hover" || b.state === "feed")) {
+          const th = threat(p, b.x, b.y);
+          if (th.d < 40 || (th.rate > 200 && th.d < 120) || (th.loom > 3 && th.d < 160)) beeFlee(b, p.x, p.y);
+        }
+        if (b.state === "angry") {
+          // 맴돌기 — 포인터를 따라다니며 반지름 40으로 1.2s 돈다(머리는 접선), 끝나면 달아난다.
+          b.timer -= dt;
+          b.ang += 9 * dt;
+          const hx = p.x + Math.cos(b.ang) * 40;
+          const hy = p.y + Math.sin(b.ang) * 40;
+          const k = Math.min(1, dt * 12);
+          b.x += (hx - b.x) * k;
+          b.y += (hy - b.y) * k;
+          b.hd = b.ang + Math.PI / 2;
+          if (b.timer <= 0) beeFlee(b, p.x, p.y);
+        } else if (b.state === "hover") {
+          // 착지 전 맴돌기 — 꽃 위 반지름 6의 작은 원, 0.4s.
+          b.timer -= dt;
+          b.ang += 14 * dt;
+          const hx = b.tx + Math.cos(b.ang) * 6;
+          const hy = b.ty - 4 + Math.sin(b.ang) * 6;
+          const k = Math.min(1, dt * 14);
+          b.x += (hx - b.x) * k;
+          b.y += (hy - b.y) * k;
+          if (b.timer <= 0) {
+            b.state = "feed";
+            b.timer = 1 + rand();
+            b.visited.set(b.target, t);
+            b.visits++;
+            beeVisits++;
+          }
+        } else if (b.state === "feed") {
+          // 먹기 — 꽃 한가운데 붙어 1~2s(draw가 작게 까딱인다). 할당량을 채웠으면 귀소, 아니면 다음 꽃.
+          b.timer -= dt;
+          const k = Math.min(1, dt * 10);
+          b.x += (b.tx - b.x) * k;
+          b.y += (b.ty - 2 - b.y) * k;
+          if (b.timer <= 0) {
+            if (b.visits >= b.quota) {
+              goHome(b);
+              nextBee = t + 20 + rand() * 20;
+            } else pickFlower(b, t);
+          }
+        } else {
+          // fly · flee · home — 목표를 향해 지그재그.
+          let dx = b.tx - b.x;
+          let dy = b.ty - b.y;
+          let d = Math.hypot(dx, dy);
+          if (b.state === "flee") {
+            b.timer -= dt;
+            if (b.timer <= 0 || d < 8) {
+              pickFlower(b, t);
+              dx = b.tx - b.x;
+              dy = b.ty - b.y;
+              d = Math.hypot(dx, dy);
+            }
+          }
+          if (b.state === "fly" && d < 8) {
+            b.state = "hover";
+            b.timer = 0.4;
+            b.ang = Math.atan2(b.y - b.ty, b.x - b.tx);
+          } else if (b.state === "home" && (b.x < -40 || b.x > w + 40 || b.y < -40 || b.y > h + 40)) {
+            bee = null;
+          } else {
+            b.hd += clamp(angleDiff(Math.atan2(dy, dx), b.hd), -6 * dt, 6 * dt) + Math.sin(t * 13 + b.ph) * 1.6 * dt;
+            const sp = b.state === "flee" ? 260 : b.state === "home" ? 150 : 110;
+            b.x += Math.cos(b.hd) * sp * dt;
+            b.y += Math.sin(b.hd) * sp * dt;
+          }
+        }
       }
       for (let i = presses.length - 1; i >= 0; i--) {
         presses[i].life -= dt / 1.1;
@@ -697,8 +1011,10 @@ export function createSpring(seed: number): Scene {
           }
         } else g.drawImage(blades, 0, 0, f.w, f.h);
       }
-      softBlob(g, f.w * (0.3 + 0.2 * Math.sin(t * 0.09)), f.h * (0.4 + 0.25 * Math.cos(t * 0.07)), f.w * 0.28, "255 255 236", 0.16);
-      softBlob(g, f.w * (0.7 + 0.18 * Math.cos(t * 0.06 + 2)), f.h * (0.6 + 0.2 * Math.sin(t * 0.08 + 1)), f.w * 0.24, "255 255 236", 0.13);
+      // 양지 — 빛 얼룩 둘(sunAt: 나비 일광욕 판단과 같은 자리).
+      const suns = sunAt(t, f.w, f.h);
+      softBlob(g, suns[0][0], suns[0][1], f.w * 0.28, "255 255 236", 0.16);
+      softBlob(g, suns[1][0], suns[1][1], f.w * 0.24, "255 255 236", 0.13);
       // 민들레(여력 0.4부터) — 핀 것만. 다시 필 땐 통통(오버슈트) 커진다.
       if (dandSpr && load >= 0.4) {
         for (const d of dands) {
@@ -747,8 +1063,11 @@ export function createSpring(seed: number): Scene {
       if (bugSpr) {
         for (const b of bugs) {
           const flying = b.state === "off";
+          const dead = b.state === "dead";
           if (b.x < -100) continue;
-          const k = b.k * (flying ? 1 + b.off * 0.35 : 1);
+          // 죽은 척은 0.25s에 걸쳐 움츠린다(×0.88) — 걷는 흔들림 없음.
+          const tuck = dead ? 0.88 + 0.12 * Math.max(0, 1 - (t - b.deadAt) / 0.25) : 1;
+          const k = b.k * (flying ? 1 + b.off * 0.35 : tuck);
           g.save();
           g.globalAlpha = 1;
           if (shadow && !flying) {
@@ -756,7 +1075,7 @@ export function createSpring(seed: number): Scene {
             g.globalAlpha = 0.25;
             g.translate(b.x + 2, b.y + 3);
             g.rotate(b.hd + Math.PI / 2);
-            g.drawImage(shadow, -12 * b.k, -9 * b.k, 24 * b.k, 18 * b.k);
+            g.drawImage(shadow, -12 * k, -9 * k, 24 * k, 18 * k);
             g.restore();
           }
           if (flying) {
@@ -771,7 +1090,7 @@ export function createSpring(seed: number): Scene {
             }
             g.restore();
           }
-          const wob = b.state === "pause" || flying ? 0 : Math.sin(b.ph) * 0.12;
+          const wob = b.state === "pause" || dead || flying ? 0 : Math.sin(b.ph) * 0.12;
           drawSprite(g, bugSpr, b.x, b.y, b.hd + Math.PI / 2 + wob, k);
           g.restore();
         }
@@ -825,23 +1144,27 @@ export function createSpring(seed: number): Scene {
         }
         g.restore();
       }
-      // 꿀벌(Noto Emoji 🐝, 옆모습) — 진행 방향으로 뒤집어 그리고 붕붕 떨림, 그림자 조금.
+      // 꿀벌(Noto Emoji 🐝, 옆모습) — 진행 방향으로 뒤집어 그리고 붕붕 떨림, 그림자 조금. 맴돌기·성남은 떨림이 크고, 먹을 땐 작게 까딱.
       if (bee && beeSpr) {
         const b = bee;
+        const feeding = b.state === "feed";
+        const buzz = feeding ? 0.25 : b.state === "hover" || b.state === "angry" ? 1.6 : 1;
         if (shadow) {
           g.save();
-          g.globalAlpha = 0.22;
-          g.translate(b.x + 5, b.y + 9);
+          g.globalAlpha = feeding ? 0.3 : 0.22;
+          g.translate(b.x + 5, b.y + (feeding ? 5 : b.state === "hover" ? 12 : 9));
           g.drawImage(shadow, -10, -6, 20, 12);
           g.restore();
         }
-        drawFacing(g, beeSpr, b.x, b.y + Math.sin(t * 40 + b.ph) * 0.8, b.hd, 1, Math.sin(t * 13 + b.ph) * 0.08);
+        const bob = feeding ? Math.sin(t * 6 + b.ph) * 0.5 : Math.sin(t * 40 + b.ph) * 0.8 * buzz;
+        drawFacing(g, beeSpr, b.x, b.y + bob, b.hd, 1, Math.sin(t * 13 + b.ph) * 0.08 * buzz);
       }
       for (const b of flies) {
-        const sitting = b.state === "sit";
-        const hgt = sitting ? 0 : 0.5 + 0.5 * Math.sin(b.bob);
+        const grounded = b.state === "sit" || b.state === "bask";
+        const hgt = grounded ? 0 : 0.5 + 0.5 * Math.sin(b.bob);
         const raw = Math.abs(Math.cos(b.ph));
-        const flap = sitting ? 0.35 + 0.65 * raw : 0.14 + 0.86 * Math.pow(raw, 0.8);
+        // 일광욕은 활짝 편 채 0.9~1.0 숨쉬기, 데이지 위는 천천히 여닫기, 날 때는 팔랑.
+        const flap = b.state === "bask" ? 0.95 + 0.05 * Math.sin(b.ph) : b.state === "sit" ? 0.35 + 0.65 * raw : 0.14 + 0.86 * Math.pow(raw, 0.8);
         const size = b.k * (1 + 0.08 * hgt);
         if (shadow) {
           g.save();
@@ -905,10 +1228,13 @@ export function createSpring(seed: number): Scene {
       if (f.load < 0.15) return false;
       for (const b of flies) {
         if (Math.hypot(b.x - f.p.x, b.y - f.p.y) < 30 * b.k + 8) {
+          if (b.state === "chase") endChase(b, f.t);
           burst(b.x, b.y, b.col, f.load);
           b.loop = 0.65;
+          if (b.flee <= 0) climb(b);
           b.flee = 1.6;
           b.state = "fly";
+          b.sun = false;
           b.nextLand = f.t + 12;
           b.tx = clamp(b.x + (rand() - 0.5) * 600, 30, w - 30);
           b.ty = clamp(b.y + (rand() - 0.5) * 600, 30, h - 30);
@@ -916,19 +1242,18 @@ export function createSpring(seed: number): Scene {
           return true;
         }
       }
-      // 꿀벌을 누르면 놀라서 붕 하고 멀리 달아난다.
-      if (bee && bee.flee <= 0 && Math.hypot(bee.x - f.p.x, bee.y - f.p.y) < 18) {
-        bee.flee = 1.4;
-        bee.hover = 0;
-        bee.tx = clamp(bee.x + (rand() - 0.5) * 700, 20, w - 20);
-        bee.ty = clamp(bee.y + (rand() - 0.5) * 500, 20, h - 20);
+      // 꿀벌을 손으로 치면(클릭) 성나서 포인터 둘레를 1.2s 맴돌다 달아난다.
+      if (bee && bee.state !== "home" && bee.state !== "angry" && Math.hypot(bee.x - f.p.x, bee.y - f.p.y) < 18) {
+        bee.state = "angry";
+        bee.timer = 1.2;
+        bee.ang = Math.atan2(bee.y - f.p.y, bee.x - f.p.x);
+        swats++;
         return true;
       }
+      // 무당벌레를 누르면(죽은 척 중이어도) 날아오른다.
       for (const b of bugs) {
         if (b.state !== "off" && Math.hypot(b.x - f.p.x, b.y - f.p.y) < 18) {
-          b.state = "off";
-          b.off = 0;
-          b.respawn = f.t + 6 + rand() * 4;
+          takeOff(b, f.t, Math.atan2(b.y - f.p.y, b.x - f.p.x) + (rand() - 0.5) * 0.8);
           return true;
         }
       }
@@ -965,7 +1290,13 @@ export function createSpring(seed: number): Scene {
         dandelions: dands.map((d) => [Math.round(d.x), Math.round(d.y), d.puffed > 0 ? 1 : 0]),
         seeds: seeds.length,
         puffs,
-        bee: bee ? [Math.round(bee.x), Math.round(bee.y), bee.hover > 0 ? "hover" : "fly"] : null
+        bee: bee ? [Math.round(bee.x), Math.round(bee.y), bee.state] : null,
+        beeState: bee ? bee.state : null,
+        chases,
+        basks,
+        plays,
+        beeVisits,
+        swats
       };
     }
   };

@@ -1,0 +1,10 @@
+Ambient scene assets — sources and licenses
+
+fish-shadow-slim.png    — silhouette baked from "Ugly fish top view" (OpenClipart / freesvg.org #19595), Public Domain (CC0).
+                          https://freesvg.org/ugly-fish-top-view-vector-illustration
+fish-shadow-fantail.png — silhouette baked from "Top View of a Goldfish" (OpenClipart #353585), Public Domain (CC0).
+                          https://openclipart.org/detail/353585/top-view-of-a-goldfish
+                          Both are top-down (dorsal) drawings; only the filled outline is kept (.scratch-pw/bake-silhouette.mjs)
+                          and drawn as blurred under-water shadows, Animal-Crossing style.
+swim-ring.svg, acorn.svg — original artwork of this project (inanimate props only; animals are never drawn by hand).
+noto/                   — Google Noto Emoji artwork, Apache-2.0 (see noto/NOTICE.txt).

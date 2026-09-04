@@ -119,6 +119,23 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   (12 strips, travelling wave) during petal breezes, ladybugs, **dandelions** (click → seeds float off, regrow later), a bee
   visiting daisies. Canvas DPR is fixed per mount (a runtime DPR flip re-baked the ground = "re-render 2s after month change")
   and ground bakes use a per-size deterministic rng. Showcase swallows every key except Esc.
+- **Top-down view is law; creatures have research-based minds (2026-09-04, ADR-0017 ⑬).** The scenes are seen from above, so
+  **fish are under-water shadows** (Animal Crossing style): silhouettes baked from public-domain *top-view* drawings
+  (`public/ambient/fish-shadow-*.png`, sources in `public/ambient/NOTICE.txt`, baker `.scratch-pw/bake-silhouette.mjs`),
+  split into body + tail at a joint so the tail wags, drawn on the low-res wake layer, larger/darker the nearer the surface
+  (`depth`). Never draw a side-view fish flat on the water again. **No open-licensed top-view duck exists** (openclipart 0 hits,
+  OpenGameArt, Wikimedia, itch checked) — the Noto duck is drawn **upright, flip-only** (a 3/4-view prop, never rotated by
+  heading) with a mallard ethogram (drift · paddle · dabble tip-up · preen · bathe · shake · curious approach · alarm).
+  Every creature perceives the pointer through `threat()` in `scenes/util.ts` (distance + approach rate + loom = rate/d):
+  slow approach is tolerated, a lunge triggers escape early (flight-initiation distance grows with speed). Fish: C-start burst
+  + protean side-dodge, startle contagion within 90px, hovering shadow → sidle away, splash (click) = feeding cue after 1 s
+  (curious fish circle and gulp with rings) but startles fish within 140px, boids schooling, bold slow big one. Rabbit:
+  alert (upright, faces threat) → foot thumps → zigzag flee, freeze-then-flee on a lunge, binky when safe, the invisible walker
+  is a predator too. Squirrel: scatter-hoards (dig · bury · pat · look), **deceptive fake burial when watched**, vigilance
+  pauses, zigzag flee, cache retrieval from memory; clicking a mound digs the acorn back up. Spring: butterflies loom-flee,
+  spiral-chase each other, bask with open wings in the sun patches; ladybug plays dead (thanatosis) before flying off; bee
+  traplines the nearest unvisited daisies, hovers before landing, feeds, goes home after a bout, circles the pointer when
+  swatted. New behavior must cite the animal's real ethology in a comment and expose counters in `debug()`.
 - **Graphics tiers (`lib/ui/gfx.ts` v3, 2026-09-04).** `data-gfx` is `full` (absent) · `lite` · `soft`. `soft` =
   software rendering (WebGL renderer SwiftShader/llvmpipe/software) or ≤2 cores → ambient off + eye-comfort token
   palette. `lite` = bad frame samples on **two consecutive visits** → ambient stays **visible but cheaper** (tide
@@ -138,9 +155,11 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   viewer rail shows `[감상하기 | 배경 끄기]` (`ViewerAmbientControl`, same `vic.ambient` key); the toggle stays visible when
   OFF as the only way back. **Three ambient states (2026-09-04):** `vic.ambient` = `on` · `dim` · `off`
   (`ambientMode`/`setAmbientMode` in `lib/ui/motion.ts`; `dim` = background layers at opacity .28 + engine at half rate,
-  lifted while showcasing). The settings row is a `RhhSelect` (켜기/흐리게/끄기); the rail / avatar-slot button cycles
-  on → dim → off → on with the **next action** as its label (배경 흐리게 → 배경 끄기 → 배경 켜기). The studio watches
-  `data-ambient` and keeps its settings state + the 배경 효과 lock in sync, so the viewer-preview rail button counts too.
+  lifted while showcasing). The control is ONE component everywhere — `AmbientModeSegment` in `showcase.tsx`, a three-button
+  radio segment `[켜기 | 흐리게 | 끄기]` (current state filled; any state reachable in one click — the owner rejected the
+  cycling "next action" button, 2026-09-04): glass pill in the viewer rail / studio avatar slot (`ViewerAmbientControl`),
+  metal skin (`.metal`) in the settings modal row. The studio watches `data-ambient` and keeps its settings state + the 배경
+  효과 lock in sync, so the viewer-preview rail segment counts too.
   Under the ambient gate the transparent topbar is not sticky (it scrolls away instead of overlapping cells). **Focus dim:** while an event editor is open or
   an event is being dragged the studio sets `html[data-ambient-dim]` and only the background layers drop to opacity .28
   (never blur/filter, never text). `.gs-season`'s enter animation must keep `animation-fill-mode: backwards` — `both` pins
@@ -260,7 +279,10 @@ private layers is retired — ADR-0014; the server model stays.)
   (calendar, save state, month nav) last, and every folded label keeps `aria-label`/`title`. Width tiers are
   **measured, never hardcoded** — `chromeTier` in `studio-shell.tsx` raises `.studio-shell[data-chrome="1|2|3"]`
   until the one-row header stops overflowing (1 short preview label · 2 "?"-only badge, icon-only 보여주기/로그아웃,
-  no save time · 3 save dot only, build tag/✨ hidden, smaller title/month). Height: the tag-filter card keeps
+  no save time · 3 save dot only, build tag/✨ hidden, smaller title/month). The measurement only ever runs on a laid-out
+  topbar (`isConnected && clientWidth > 0`) and re-binds on shell remount via a callback ref (`shellEl` state): the viewer
+  preview unmounts the whole shell, the ResizeObserver fired once with 0×0 rects (every tier "overlapped"), tier 3 froze and
+  the remounted shell was never observed (2026-09-04 owner screenshot). Never measure a detached element. Height: the tag-filter card keeps
   ≥132px (title + two chip rows) and the empty avatar slot yields first (`flex-shrink 4`); ≤620px → icon-only
   tool tiles, ≤470px → avatar slot hidden. Floating pills live in `.bottom-float-row`, which dodges an open
   editor popover sideways (or goes under it, faded, when there is no room). New header/rail elements follow

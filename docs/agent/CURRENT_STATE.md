@@ -102,6 +102,23 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   참조하는 항상-false 스텁이라 유지). 순서: 코드 push → 0074 적용(옛 코드도 조회 실패를 삼켜 안 깨짐). 공개 API DTO
   무변화. 검증: tsc·lint(기존 경고 2)·vitest 522·build exit 0·비주얼 79·Playwright(편집실·모바일 DOM "매니저" 0, 도구
   타일 [태그 편집·인사이트·단축키·설정], 개발자 미리보기 3개, 역할 팝오버에 '멤버' 없음).
+  ㉙ **시점·지능 10차(2026-09-04 오후, 사용자 4건)**: ① **단계 3 굳음 근본 원인** — 시청자 미리보기는 셸(`<main>`)을 통째로
+  언마운트했다 다시 그린다. 떨어져 나가는 순간 ResizeObserver가 0×0으로 한 번 더 울려 measure가 돌았고, 0 크기 rect는 모든 단계에서
+  "겹침"으로 읽혀 3단계까지 올라간 값이 state에 굳었다; 돌아온 새 셸은 관찰 대상이 아니라 다시 재지 않았다 → `measurable()`(연결됨 ∧
+  clientWidth>0)이 아니면 절대 재지 않고, 셸은 콜백 ref(`shellEl` state)로 잡아 remount마다 effect가 다시 붙는다(+ 셸 RO·
+  visibilitychange·pageshow). ② **배경 세 상태 세그먼트** `AmbientModeSegment`(showcase.tsx) [켜기|흐리게|끄기] — 순환 버튼 폐기,
+  어느 상태든 한 번에; 레일·아바타 자리(유리 알약)와 설정 줄(`.metal`)이 같은 컴포넌트, data-act는 그대로(ambient-toggle-viewer /
+  ambient-mode-select). ③ **물고기 = 물 밑 그림자**(동물의 숲): 퍼블릭 도메인 top-view 도안 둘(날씬 잉어형·부채꼬리 금붕어)을
+  `.scratch-pw/bake-silhouette.mjs`로 실루엣 PNG로 구워(`public/ambient/fish-shadow-*.png`, NOTICE.txt) 몸통/꼬리를 관절에서 나눠
+  꼬리를 젓고, 저해상 항적 층에 depth(수면 가까울수록 크고 짙게)로 찍는다. Noto 옆모습 물고기 셋 삭제. **오리는 세워 그린다**(좌우만
+  뒤집음 — top-view 오리 에셋은 openclipart 0건·OGA·Commons·itch 어디에도 공개 라이선스로 없었다) + 청둥오리 에토그램(둥둥·노 젓기·
+  자맥질 tip-up·깃 다듬기·목욕+물방울·털기·호기심 접근·놀람 퍼덕). ④ **생물 지능**(`scenes/util.ts threat()` = 거리·접근 속도·loom):
+  물고기 C-start(순간 4.5배·protean 옆 튐·깊이 숨음)·놀람 전염 90px·머리 위 그림자엔 슬금슬금·물보라 = 1초 뒤 먹이 신호(맴돌며 뻐끔
+  고리, 140px 안은 놀람)·boids; 토끼 경계(꼿꼿이·위협 향함)→발 구르기 2회→지그재그 도주, 덮치면 얼음→도주, 안전하면 빙키, 보이지 않는
+  손님도 포식자; 다람쥐 분산 저장(dig·bury·pat·look, 흙더미 sprite)·**보고 있으면 속임수 묻기**·경계 멈춤·지그재그 도주·기억 회수,
+  흙더미 클릭 → 도토리 파내기; 봄 나비 loom 도주·나선 추격·햇빛 자리 일광욕, 무당벌레 죽은 척(thanatosis), 꿀벌 트랩라인(가까운
+  미방문 데이지)·착지 전 맴돌기·먹기·귀가·스왓 후 맴돌기. 각 장면 debug()에 카운터(startles·contagions·gulps·alarms·thumps·
+  freezes·binkies·zigzags·caches·fakes·dugUp·retrieved·chases·basks·plays·beeVisits·swats).
   ㉘ **장인 항목 9차(2026-09-04 낮, 사용자 5건)**: ① 다람쥐 SVG 재작업(얼굴이 정수리에 있던 그림 → 앞이 좁은 머리에 귀·눈은
   옆, 코는 앞 끝, 등줄기, 등 위로 말린 꼬리 털 결). 도토리는 sniff 끝에 **즉시** 입으로(바닥에서 splice, 옛 0.7초 흐려짐 제거)
   → grab 0.45초 통통 → 5rad/s로 돌아선 뒤(|diff|<0.7까지 제자리 회전) 달려 나감. ② 물고기 변종 3색(청록·슬레이트·올리브,

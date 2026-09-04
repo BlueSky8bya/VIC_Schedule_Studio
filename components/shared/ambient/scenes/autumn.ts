@@ -4,14 +4,15 @@
 // 밀리고 뒤집힌다. 포인터가 지나가면 그 주변 잎이 바람에 날리듯 밀리고, 바탕 위에서 잎을 누르면 집어서 끌 수 있다.
 // 잎끼리는 원 충돌로 서로 밀어낸다.
 // 랜덤 이벤트: **도토리**(에셋)가 하늘에서 떨어져 튀고 구르며 잎을 밀친다(집어 던지기, 최대 6). **다람쥐**(에셋) — 가장자리에서
-// 달려 들어와 킁킁대다 도토리가 있으면 물고 달아난다(없으면 한 번 두리번거리고 지나간다; 누르면 바로 도망). **회오리** —
-// 작은 낙엽 회오리가 화면을 가로지르며 잎들을 빙글 띄운다.
+// 달려 들어와 킁킁대다 도토리가 있으면 물고 **땅에 묻는다**(2026-09-04 사용자: "동물마다 실제 행동 연구대로 반응하게" —
+// 동부회색다람쥐의 분산 저장·속임수 묻기·경계·지그재그 도망·회수, 아래 SqPhase 주석). 묻은 자리엔 흙더미가 남고 잎에 덮이기도
+// 한다 — 흙더미를 누르면 도토리가 튀어나온다(찾기 놀이). **회오리** — 작은 낙엽 회오리가 화면을 가로지르며 잎들을 빙글 띄운다.
 // 여력(f.load): 잎 26~220장(×면적)이 점진적으로(늘 땐 떨어지고 줄 땐 옅어져) 오르내리고, 돌풍·도토리(≥.4)·다람쥐(≥.5)·
 // 회오리(≥.6)도 여력을 따른다. 색은 채도를 낮춘 가을색(붉·주황·노랑을 쨍하게 올리지 않는다 — CLAUDE.md Owner-fit palette).
 
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
-import { clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU } from "./util";
+import { angleDiff, clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -27,6 +28,7 @@ const ACORN = SPECIES.length;
 const SPR = 84;
 const R0 = 30;
 const ACORN_MAX = 6;
+const CACHE_MAX = 8;
 
 type Leaf = {
   x: number;
@@ -47,21 +49,63 @@ type Leaf = {
   born: number;
 };
 type Gust = { t0: number; dur: number; dir: number; y: number } | null;
-// run 달려옴 → sniff 킁킁(1.2s) → grab 도토리를 집어 물고 한 번 통통(0.45s, 도토리는 그 순간 입으로 옮겨진다) → leave 몸을 돌려
-// 화면 밖으로. 방향은 5rad/s로 돌고, 많이 틀어야 하면 제자리에서 먼저 돈 뒤 달린다(휙 순간 회전 금지).
-type SqPhase = "run" | "sniff" | "grab" | "leave";
-type Squirrel = { x: number; y: number; dir: number; phase: SqPhase; tx: number; ty: number; t0: number; target: number; carry: boolean; ph: number };
+// 다람쥐 상태 기계(2026-09-04, 동부회색다람쥐 Sciurus carolinensis 행동 연구 기반):
+//  run 달려옴 → sniff 킁킁(1.2s) → grab 도토리를 집어 물고 한 번 통통(0.45s, 도토리는 그 순간 입으로 옮겨진다)
+//  → **분산 저장(scatter hoarding)** — 한 번에 하나만 물고 cache 자리(다른 저장소와 180px↑, 포인터와 220px↑, 가장자리 40px
+//    안쪽, 핫 존 밖; 후보 12개 안에 없으면 그냥 물고 나간다)로 달려가 dig(0.7s: 앞발로 파며 흙알갱이가 뒤로 튄다) → bury(즉시:
+//    도토리를 놓고 흙더미) → pat(0.35s: 다지기, 통통) → look(0.6s: 경계, 고개 ±0.3rad) → 땅에 도토리가 더 있고 이번 방문에
+//    3개 미만이면 다시 run, 아니면 leave.
+//  → **속임수 묻기(deceptive caching, Steele et al. 2008)** — 파려는 순간 누가 보고 있으면(포인터 260px 안) 파고 다지는
+//    시늉만 하고 도토리는 입에 문 채 다른 자리로 간다(도토리당 최대 2번, 그다음은 진짜로 묻는다).
+//  → **경계(vigilance)** — 달리는 중(run·cache·retrieve) 2~4초마다 20%로 0.3~0.6s 얼어붙어 꼬리를 떤다(pause); 그때 포인터가
+//    200px 안이면 도망.
+//  → **얼음→도망(freeze-then-flee)** — 도망 개시 거리는 고정 반경이 아니라 접근 속도로(util.threat): 천천히 오면(rate<60)
+//    70px까지 두고, 90px 안·220px 안에서 220px/s↑·300px 안에서 loom 3.5↑면 튄다. 도망은 **지그재그**(출구 방향에 수직
+//    ±60px 경유점 둘, 번갈아) — 물고 있던 도토리는 그대로 물고 간다. 누르면(30px) 바로 도망.
+//  → **회수(cache retrieval)** — 땅에 도토리가 없고 묻은 자리가 있으면 50%로 기억을 따라(retrieve) 가서 파낸다(dig) → 물고
+//    leave, 30%는 다른 자리에 다시 묻는다. 그 사이 사용자가 파 간 자리면 빈손으로 간다.
+//  방향은 5rad/s로 돌고, 많이 틀어야 하면 제자리에서 먼저 돈 뒤 달린다(휙 순간 회전 금지). 화면 밖으로 눈에 보이게 나간다.
+type SqPhase = "run" | "sniff" | "grab" | "cache" | "dig" | "bury" | "pat" | "look" | "pause" | "retrieve" | "leave";
+type DigKind = "cache" | "fake" | "retrieve";
+type Squirrel = {
+  x: number;
+  y: number;
+  dir: number;
+  phase: SqPhase;
+  tx: number;
+  ty: number;
+  t0: number;
+  target: number;
+  carry: boolean;
+  ph: number;
+  dig: DigKind; // 지금 파는 이유
+  fakes: number; // 이 도토리로 한 속임수 묻기 횟수(≤2)
+  taken: number; // 이번 방문에 가져간 도토리 수(≤3)
+  nextPause: number; // 다음 경계 판정 시각
+  pauseDur: number;
+  prev: SqPhase; // pause에서 돌아갈 단계
+  wps: [number, number][]; // leave 경유점(지그재그면 셋, 아니면 출구 하나)
+  specksLeft: number; // dig 중 아직 튀길 흙알갱이 수
+  nextSpeck: number;
+};
+/** 묻은 자리(기억) — 흙더미로 그려지고 잎에 덮일 수 있다. 최대 8, 넘치면 가장 오래된 것부터 잊는다. */
+type Cache = { x: number; y: number; t: number };
+/** 파낼 때 앞발 뒤로 튀는 흙알갱이. */
+type Speck = { x: number; y: number; vx: number; vy: number; life: number };
 type Whirl = { x: number; y: number; vx: number; vy: number; t0: number; dur: number } | null;
 
 export function createAutumn(seed: number): Scene {
   const rand = rng(seed);
   const leaves: Leaf[] = [];
+  const caches: Cache[] = [];
+  const specks: Speck[] = [];
   let sprites: HTMLCanvasElement[][] = [];
   let shadows: HTMLCanvasElement[] = [];
   let acornSpr: Sprite | null = null;
   let acornShadow: HTMLCanvasElement | null = null;
   let squirrelSpr: Sprite | null = null;
   let sqShadow: HTMLCanvasElement | null = null;
+  let moundSpr: HTMLCanvasElement | null = null;
   let ground: HTMLCanvasElement | null = null;
   let gw = 0;
   let gh = 0;
@@ -79,6 +123,11 @@ export function createAutumn(seed: number): Scene {
   let nextSquirrel = 16 + rand() * 8;
   let squirrels = 0;
   let stolen = 0;
+  let fakes = 0;
+  let dugUp = 0;
+  let retrieved = 0;
+  let flees = 0;
+  let pauses = 0;
   let whirl: Whirl = null;
   let nextWhirl = 24 + rand() * 20;
   let whirls = 0;
@@ -161,6 +210,22 @@ export function createAutumn(seed: number): Scene {
     }
     acornShadow = shadowSprite(44, 52, "43 35 32", 0.9);
     sqShadow = shadowSprite(56, 44, "43 35 32", 0.6);
+    // 흙더미(묻은 자리) — 22×14 타원, 가운데 어둡고 테는 밝은 갈색, 알파 최대 .55. 우리 소품(동물이 아니다)이라 한 번 굽는다.
+    {
+      const { c, g } = makeCanvas(22, 14);
+      g.translate(11, 7);
+      g.scale(1, 14 / 22);
+      const rg = g.createRadialGradient(0, 0, 0, 0, 0, 11);
+      rg.addColorStop(0, "rgb(88 66 46 / 0.55)");
+      rg.addColorStop(0.55, "rgb(120 95 70 / 0.5)");
+      rg.addColorStop(0.82, "rgb(152 128 98 / 0.4)");
+      rg.addColorStop(1, "rgb(152 128 98 / 0)");
+      g.fillStyle = rg;
+      g.beginPath();
+      g.arc(0, 0, 11, 0, TAU);
+      g.fill();
+      moundSpr = c;
+    }
     void loadSprite(ASSET.acorn, 40, 52).then((s) => (acornSpr = s)).catch(() => {});
     void loadSprite(ASSET.chipmunk, 52, 52).then((s) => (squirrelSpr = s)).catch(() => {});
   }
@@ -276,14 +341,24 @@ export function createAutumn(seed: number): Scene {
     const [lo, hi] = SPECIES[sp].size;
     return { x: rand() * w, y: rand() * h, vx: 0, vy: 0, a: rand() * TAU, va: 0, s: lo + rand() * (hi - lo), sp, col: Math.floor(rand() * SPECIES[sp].colors.length), lift: 0, flip: 0, flipV: 0, fall: falling ? 1 : 0, ph: rand() * TAU, fade: 0, born: t };
   }
-  function dropAcorn(t: number) {
-    leaves.push({ x: w * (0.1 + rand() * 0.8), y: h * (0.1 + rand() * 0.8), vx: 0, vy: 0, a: rand() * TAU, va: 0, s: 18 + rand() * 6, sp: ACORN, col: 0, lift: 0, flip: 0, flipV: 0, fall: 1, ph: rand() * TAU, fade: 0, born: t });
-    acornsDropped++;
+  /** 도토리는 최대 6 — 넘치면 가장 오래된 것이 옅어진다. */
+  function capAcorns() {
     const acorns = leaves.filter((l) => l.sp === ACORN && l.fade === 0);
     if (acorns.length > ACORN_MAX) acorns.sort((a, b) => a.born - b.born)[0].fade = 0.001;
   }
-  function shove(x: number, y: number, R: number, F: number) {
+  function pushAcorn(x: number, y: number, fall: number, t: number) {
+    leaves.push({ x, y, vx: 0, vy: 0, a: rand() * TAU, va: 0, s: 18 + rand() * 6, sp: ACORN, col: 0, lift: 0, flip: 0, flipV: 0, fall, ph: rand() * TAU, fade: 0, born: t });
+    capAcorns();
+  }
+  function dropAcorn(t: number) {
+    pushAcorn(w * (0.1 + rand() * 0.8), h * (0.1 + rand() * 0.8), 1, t);
+    acornsDropped++;
+  }
+  // leavesOnly = 다람쥐의 발놀림: 잎만 헤치고 도토리는 건드리지 않는다 — 제 목표 도토리를 앞으로 차 보내며 화면 끝까지
+  // 쫓아다니는 무한 추격이 있었다(2026-09-04 실측: 90초 동안 run만).
+  function shove(x: number, y: number, R: number, F: number, leavesOnly = false) {
     for (const o of leaves) {
+      if (leavesOnly && o.sp === ACORN) continue;
       const dx = o.x - x;
       const dy = o.y - y;
       const d = Math.hypot(dx, dy);
@@ -310,11 +385,9 @@ export function createAutumn(seed: number): Scene {
       l.vy = (rand() - 0.5) * 30;
     }
   }
-  function startSquirrel(t: number) {
-    const e = Math.floor(rand() * 4);
-    const x = e === 0 ? -40 : e === 1 ? w + 40 : rand() * w;
-    const y = e === 2 ? -40 : e === 3 ? h + 40 : rand() * h;
-    let target = -1;
+  /** 땅에 놓인(떨어지는 중·옅어지는 중이 아닌) 가장 가까운 도토리 인덱스, 없으면 -1. */
+  function nearestAcorn(x: number, y: number): number {
+    let best = -1;
     let bd = Infinity;
     for (let i = 0; i < leaves.length; i++) {
       const l = leaves[i];
@@ -322,15 +395,106 @@ export function createAutumn(seed: number): Scene {
       const d = Math.hypot(l.x - x, l.y - y);
       if (d < bd) {
         bd = d;
-        target = i;
+        best = i;
       }
     }
-    const tx = target >= 0 ? leaves[target].x : w * (0.2 + rand() * 0.6);
-    const ty = target >= 0 ? leaves[target].y : h * (0.2 + rand() * 0.6);
-    squirrel = { x, y, dir: Math.atan2(ty - y, tx - x), phase: "run", tx, ty, t0: t, target, carry: false, ph: rand() * TAU };
+    return best;
+  }
+  /** r 안의 가장 가까운 묻은 자리 인덱스, 없으면 -1. */
+  function nearestCache(x: number, y: number, r: number): number {
+    let best = -1;
+    let bd = r;
+    for (let i = 0; i < caches.length; i++) {
+      const d = Math.hypot(caches[i].x - x, caches[i].y - y);
+      if (d < bd) {
+        bd = d;
+        best = i;
+      }
+    }
+    return best;
+  }
+  const inHot = (f: Frame, x: number, y: number) => !!f.hot && x >= f.hot.x && x <= f.hot.x + f.hot.w && y >= f.hot.y && y <= f.hot.y + f.hot.h;
+  /** 분산 저장 자리 — 다른 저장소와 180px↑, 포인터와 220px↑, 가장자리 40px 안쪽, 핫 존 밖. 후보 12개, 없으면 null. */
+  function pickCacheSpot(f: Frame): [number, number] | null {
+    if (w < 120 || h < 120) return null;
+    for (let k = 0; k < 12; k++) {
+      const x = 40 + rand() * (w - 80);
+      const y = 40 + rand() * (h - 80);
+      if (inHot(f, x, y)) continue;
+      if (f.p.inside && Math.hypot(x - f.p.x, y - f.p.y) < 220) continue;
+      if (caches.some((c) => Math.hypot(c.x - x, c.y - y) < 180)) continue;
+      return [x, y];
+    }
+    return null;
+  }
+  /** 묻으러 간다 — 자리가 없으면 false(호출 쪽이 leave). */
+  function goCache(f: Frame, t: number): boolean {
+    if (!squirrel) return false;
+    const spot = pickCacheSpot(f);
+    if (!spot) return false;
+    squirrel.tx = spot[0];
+    squirrel.ty = spot[1];
+    squirrel.phase = "cache";
+    squirrel.t0 = t;
+    return true;
+  }
+  function beginDig(t: number, kind: DigKind) {
+    if (!squirrel) return;
+    squirrel.dig = kind;
+    squirrel.phase = "dig";
+    squirrel.t0 = t;
+    squirrel.specksLeft = 6 + Math.floor(rand() * 5);
+    squirrel.nextSpeck = t + 0.05;
+  }
+  /** 흙알갱이 — 앞발(코 앞 14px)에서 몸 뒤쪽으로 튄다. */
+  function spawnSpeck(s: Squirrel) {
+    const back = s.dir + Math.PI + (rand() - 0.5) * 0.9;
+    const v = 90 + rand() * 110;
+    specks.push({ x: s.x + Math.cos(s.dir) * 14, y: s.y + Math.sin(s.dir) * 14, vx: Math.cos(back) * v, vy: Math.sin(back) * v, life: 1 });
+  }
+  function startSquirrel(t: number) {
+    const e = Math.floor(rand() * 4);
+    const x = e === 0 ? -40 : e === 1 ? w + 40 : rand() * w;
+    const y = e === 2 ? -40 : e === 3 ? h + 40 : rand() * h;
+    const target = nearestAcorn(x, y);
+    let phase: SqPhase = "run";
+    let tx = w * (0.2 + rand() * 0.6);
+    let ty = h * (0.2 + rand() * 0.6);
+    if (target >= 0) {
+      tx = leaves[target].x;
+      ty = leaves[target].y;
+    } else if (caches.length && rand() < 0.5) {
+      // 회수 — 땅에 도토리가 없으면 절반은 기억 속 저장소로 간다.
+      const c = caches[Math.floor(rand() * caches.length)];
+      tx = c.x;
+      ty = c.y;
+      phase = "retrieve";
+    }
+    squirrel = {
+      x,
+      y,
+      dir: Math.atan2(ty - y, tx - x),
+      phase,
+      tx,
+      ty,
+      t0: t,
+      target,
+      carry: false,
+      ph: rand() * TAU,
+      dig: "cache",
+      fakes: 0,
+      taken: 0,
+      nextPause: t + 2 + rand() * 2,
+      pauseDur: 0,
+      prev: phase,
+      wps: [],
+      specksLeft: 0,
+      nextSpeck: 0
+    };
     squirrels++;
   }
-  function squirrelLeave(t: number) {
+  /** 가장 가까운 출구로 나간다. zigzag = 도망: 출구 방향에 수직으로 ±60px 어긋난 경유점 둘(1/3·2/3 지점, 번갈아)을 거친다. */
+  function squirrelLeave(t: number, zigzag = false) {
     if (!squirrel) return;
     const s = squirrel;
     const exits: [number, number][] = [
@@ -340,10 +504,28 @@ export function createAutumn(seed: number): Scene {
       [s.x, h + 60]
     ];
     exits.sort((a, b) => Math.hypot(a[0] - s.x, a[1] - s.y) - Math.hypot(b[0] - s.x, b[1] - s.y));
-    s.tx = exits[0][0];
-    s.ty = exits[0][1];
+    const [ex, ey] = exits[0];
+    s.wps = [];
+    if (zigzag) {
+      const dx = ex - s.x;
+      const dy = ey - s.y;
+      const d = Math.hypot(dx, dy) || 1;
+      const nx = -dy / d;
+      const ny = dx / d;
+      const side = rand() < 0.5 ? 1 : -1;
+      s.wps.push([s.x + dx / 3 + nx * 60 * side, s.y + dy / 3 + ny * 60 * side]);
+      s.wps.push([s.x + (dx * 2) / 3 - nx * 60 * side, s.y + (dy * 2) / 3 - ny * 60 * side]);
+    }
+    s.wps.push([ex, ey]);
+    [s.tx, s.ty] = s.wps.shift()!;
     s.phase = "leave";
     s.t0 = t;
+  }
+  /** 도망 — 지그재그로 나간다(물고 있던 도토리는 그대로). 이미 나가는 중이면 무시. */
+  function squirrelFlee(t: number) {
+    if (!squirrel || squirrel.phase === "leave") return;
+    flees++;
+    squirrelLeave(t, true);
   }
 
   function targetCount(f: Frame) {
@@ -368,6 +550,8 @@ export function createAutumn(seed: number): Scene {
         if (l.x > w + l.s) l.x = rand() * w;
         if (l.y > h + l.s) l.y = rand() * h;
       }
+      // 화면 밖으로 밀려난 저장소는 잊는다(찾을 수 없는 흙더미를 남기지 않는다).
+      for (let i = caches.length - 1; i >= 0; i--) if (caches[i].x > w || caches[i].y > h) caches.splice(i, 1);
     },
     step(f) {
       const { dt, t, p, load } = f;
@@ -399,7 +583,13 @@ export function createAutumn(seed: number): Scene {
       if (!squirrel && load >= 0.5 && t > nextSquirrel) startSquirrel(t);
       if (squirrel) {
         const s = squirrel;
-        if (p.inside && s.phase !== "leave" && Math.hypot(s.x - p.x, s.y - p.y) < 100) squirrelLeave(t);
+        // 위협 지각 — 도망 개시 거리는 접근 속도에 따라 늘어난다(util.threat): 가만히·천천히(rate<60) 오면 70px까지 두고, 90px
+        // 안이면 무조건, 220px 안에서 220px/s↑로 오거나 300px 안에서 loom(접근속도÷거리) 3.5↑면 튄다. 옛 규칙은 고정 100px.
+        if (s.phase !== "leave") {
+          const th = threat(p, s.x, s.y);
+          const spooked = th.rate < 60 ? th.d < 70 : th.d < 90 || (th.rate > 220 && th.d < 220) || (th.loom > 3.5 && th.d < 300);
+          if (spooked) squirrelFlee(t);
+        }
         if (s.phase === "sniff") {
           if (t - s.t0 > 1.2) {
             if (s.target >= 0 && s.target < leaves.length && leaves[s.target].sp === ACORN && leaves[s.target].fade === 0) {
@@ -410,6 +600,8 @@ export function createAutumn(seed: number): Scene {
               else if (grabbed > s.target) grabbed--;
               s.target = -1;
               s.carry = true;
+              s.fakes = 0;
+              s.taken++;
               stolen++;
               s.phase = "grab";
               s.t0 = t;
@@ -417,35 +609,138 @@ export function createAutumn(seed: number): Scene {
           }
         } else if (s.phase === "grab") {
           s.ph += dt * 26; // 물고 한 번 통통
-          if (t - s.t0 > 0.45) squirrelLeave(t);
-        } else {
-          const dx = s.tx - s.x;
-          const dy = s.ty - s.y;
-          const d = Math.hypot(dx, dy);
-          const sp = s.phase === "leave" ? 300 : 250;
-          if (d < 6) {
-            if (s.phase === "run") {
-              s.phase = "sniff";
+          if (t - s.t0 > 0.45) {
+            // 분산 저장 — 65%(여력 .5↑)는 묻으러 가고, 나머지는 물고 그냥 나간다.
+            if (!(rand() < 0.65 && load >= 0.5 && goCache(f, t))) squirrelLeave(t);
+          }
+        } else if (s.phase === "dig") {
+          // 파기 — 앞발로 잎을 헤치고(반경 40) 흙알갱이를 뒤로 튀긴다(6~10개, 0.7초에 걸쳐).
+          shove(s.x, s.y, 40, 30 * dt * 60, true);
+          if (s.specksLeft > 0 && t > s.nextSpeck) {
+            spawnSpeck(s);
+            s.specksLeft--;
+            s.nextSpeck = t + 0.07;
+          }
+          if (t - s.t0 > 0.7) {
+            if (s.dig === "cache") s.phase = "bury";
+            else if (s.dig === "fake") {
+              // 속임수 — 묻지 않고 다지는 시늉만.
+              s.phase = "pat";
               s.t0 = t;
             } else {
-              squirrel = null;
-              nextSquirrel = t + 30 + rand() * 40;
+              // 회수 — 기억한 자리를 파 도토리를 문다. 사용자가 먼저 파 갔으면 빈손.
+              const ci = nearestCache(s.x, s.y, 30);
+              if (ci >= 0) {
+                caches.splice(ci, 1);
+                s.carry = true;
+                s.fakes = 0;
+                retrieved++;
+              }
+              if (!(s.carry && rand() < 0.3 && goCache(f, t))) squirrelLeave(t);
             }
-          } else {
-            const want = Math.atan2(dy, dx);
-            let diff = want - s.dir;
-            while (diff > Math.PI) diff -= TAU;
-            while (diff < -Math.PI) diff += TAU;
-            s.dir += clamp(diff, -5 * dt, 5 * dt);
-            // 몸이 목표 쪽을 향할 때까지는 제자리에서 돈다(휙 순간 회전 대신 돌아서는 동작).
-            if (Math.abs(diff) < 0.7) {
-              const step = Math.min(d, sp * dt);
-              s.x += Math.cos(s.dir) * step;
-              s.y += Math.sin(s.dir) * step;
-              s.ph += dt * 22;
-              shove(s.x, s.y, 44, 60 * dt * 60);
-            } else s.ph += dt * 8;
           }
+        } else if (s.phase === "bury") {
+          // 묻기(즉시) — 도토리를 앞발 자리에 놓고 흙더미를 남긴다. 저장소는 최대 8, 오래된 것부터 잊는다.
+          s.carry = false;
+          caches.push({ x: s.x + Math.cos(s.dir) * 12, y: s.y + Math.sin(s.dir) * 12, t });
+          while (caches.length > CACHE_MAX) caches.shift();
+          s.phase = "pat";
+          s.t0 = t;
+        } else if (s.phase === "pat") {
+          s.ph += dt * 26; // 다지기 — 잡을 때처럼 통통
+          if (t - s.t0 > 0.35) {
+            if (s.dig === "fake") {
+              if (!goCache(f, t)) squirrelLeave(t);
+            } else {
+              s.phase = "look";
+              s.t0 = t;
+            }
+          }
+        } else if (s.phase === "look") {
+          // 경계 — 두리번(고개 ±0.3rad, draw). 끝나면 도토리가 더 있고 이번 방문 3개 미만이면 다음 도토리로.
+          if (t - s.t0 > 0.6) {
+            const n = s.taken < 3 ? nearestAcorn(s.x, s.y) : -1;
+            if (n >= 0) {
+              s.target = n;
+              s.tx = leaves[n].x;
+              s.ty = leaves[n].y;
+              s.phase = "run";
+              s.t0 = t;
+            } else squirrelLeave(t);
+          }
+        } else if (s.phase === "pause") {
+          // 얼어붙기 — 몸은 멈추고 꼬리만 떤다(draw). 포인터가 200px 안이면 도망.
+          if (p.inside && Math.hypot(s.x - p.x, s.y - p.y) < 200) squirrelFlee(t);
+          else if (t - s.t0 > s.pauseDur) s.phase = s.prev;
+        } else {
+          // run · cache · retrieve · leave — 목표로 달린다.
+          // 노리는 도토리가 굴러가면(던져지면) 따라간다.
+          if (s.phase === "run" && s.target >= 0 && s.target < leaves.length && leaves[s.target].sp === ACORN) {
+            s.tx = leaves[s.target].x;
+            s.ty = leaves[s.target].y;
+          }
+          // 경계 — 달리는 중 2~4초마다 20%로 0.3~0.6s 멈춘다(도망 중엔 안 멈춘다).
+          if (s.phase !== "leave" && t > s.nextPause) {
+            s.nextPause = t + 2 + rand() * 2;
+            if (rand() < 0.2) {
+              s.prev = s.phase;
+              s.phase = "pause";
+              s.t0 = t;
+              s.pauseDur = 0.3 + rand() * 0.3;
+              pauses++;
+            }
+          }
+          if (s.phase !== "pause") {
+            const dx = s.tx - s.x;
+            const dy = s.ty - s.y;
+            const d = Math.hypot(dx, dy);
+            const sp = s.phase === "leave" ? 300 : 250;
+            const arrive = s.phase === "leave" && s.wps.length ? 24 : 6; // 지그재그 경유점은 모서리를 깎듯 지난다
+            if (d < arrive) {
+              if (s.phase === "run") {
+                s.phase = "sniff";
+                s.t0 = t;
+              } else if (s.phase === "cache") {
+                // 속임수 묻기(Steele et al. 2008) — 파려는 순간 누가 보고 있으면(포인터 260px 안) 시늉만(도토리당 최대 2번).
+                const watched = threat(p, s.x, s.y).d < 260;
+                if (watched && s.fakes < 2) {
+                  s.fakes++;
+                  fakes++;
+                  beginDig(t, "fake");
+                } else beginDig(t, "cache");
+              } else if (s.phase === "retrieve") beginDig(t, "retrieve");
+              else if (s.wps.length) [s.tx, s.ty] = s.wps.shift()!;
+              else {
+                squirrel = null;
+                nextSquirrel = t + 30 + rand() * 40;
+              }
+            } else {
+              const want = Math.atan2(dy, dx);
+              const diff = angleDiff(want, s.dir);
+              s.dir += clamp(diff, -5 * dt, 5 * dt);
+              // 몸이 목표 쪽을 향할 때까지는 제자리에서 돈다(휙 순간 회전 대신 돌아서는 동작).
+              if (Math.abs(diff) < 0.7) {
+                const step = Math.min(d, sp * dt);
+                s.x += Math.cos(s.dir) * step;
+                s.y += Math.sin(s.dir) * step;
+                s.ph += dt * 22;
+                shove(s.x, s.y, 44, 60 * dt * 60, true);
+              } else s.ph += dt * 8;
+            }
+          }
+        }
+      }
+      // 흙알갱이 — 짧게 날다 멎고 0.6초에 스러진다.
+      if (specks.length) {
+        const speckFr = Math.pow(0.03, dt);
+        for (let i = specks.length - 1; i >= 0; i--) {
+          const k = specks[i];
+          k.x += k.vx * dt;
+          k.y += k.vy * dt;
+          k.vx *= speckFr;
+          k.vy *= speckFr;
+          k.life -= dt / 0.6;
+          if (k.life <= 0) specks.splice(i, 1);
         }
       }
       // 회오리 — 여력 0.6부터, 25~60초 간격, 4.5초. 반경 170 안의 잎이 접선 방향으로 돌며 떠오른다.
@@ -652,6 +947,14 @@ export function createAutumn(seed: number): Scene {
       mist.addColorStop(1, "rgb(234 238 242 / 0)");
       g.fillStyle = mist;
       g.fillRect(0, 0, f.w, f.h * 0.34);
+      // 흙더미 — 바탕 위, 잎 **아래**(잎이 덮을 수 있다 — 찾는 게 놀이). 묻은 직후 0.6초에 걸쳐 드러난다.
+      if (moundSpr && caches.length) {
+        for (const c of caches) {
+          g.globalAlpha = clamp((f.t - c.t) / 0.6, 0, 1);
+          g.drawImage(moundSpr, c.x - 11, c.y - 7);
+        }
+        g.globalAlpha = 1;
+      }
       const drawLeaf = (l: Leaf, shadow: boolean) => {
         const acorn = l.sp === ACORN;
         if (acorn && (!acornSpr || !acornShadow)) return;
@@ -684,12 +987,30 @@ export function createAutumn(seed: number): Scene {
         drawLeaf(leaves[grabbed], true);
         drawLeaf(leaves[grabbed], false);
       }
-      // 다람쥐 — 달릴 땐 몸이 위아래로 통통, 물고 갈 땐 머리 앞에 도토리.
+      // 흙알갱이 — 작은 갈색 점, 스러지며 옅어진다.
+      for (const k of specks) {
+        g.fillStyle = `rgb(96 74 52 / ${(clamp(k.life, 0, 1) * 0.85).toFixed(2)})`;
+        g.beginPath();
+        g.arc(k.x, k.y, 1.6, 0, TAU);
+        g.fill();
+      }
+      // 다람쥐 — 달릴 땐 몸이 위아래로 통통, 물고 갈 땐 머리 앞에 도토리. 단계별 몸짓: sniff 킁킁 · dig 앞발질 · grab/pat 통통 ·
+      // look 두리번(±0.3) · pause 얼어붙어 꼬리 떨기(±0.2).
       if (squirrel && squirrelSpr) {
         const s = squirrel;
-        const running = s.phase === "run" || s.phase === "leave";
-        const bounce = running ? Math.abs(Math.sin(s.ph)) : s.phase === "grab" ? Math.abs(Math.sin(s.ph)) * 1.3 : 0;
-        const wig = s.phase === "sniff" ? Math.sin(f.t * 12) * 0.12 : 0;
+        const running = s.phase === "run" || s.phase === "cache" || s.phase === "retrieve" || s.phase === "leave";
+        const hop = s.phase === "grab" || s.phase === "pat";
+        const bounce = running ? Math.abs(Math.sin(s.ph)) : hop ? Math.abs(Math.sin(s.ph)) * 1.3 : s.phase === "dig" ? Math.abs(Math.sin(f.t * 16)) * 0.35 : 0;
+        const wig =
+          s.phase === "sniff"
+            ? Math.sin(f.t * 12) * 0.12
+            : s.phase === "dig"
+              ? Math.sin(f.t * 30) * 0.07
+              : s.phase === "look"
+                ? Math.sin(f.t * 5) * 0.3
+                : s.phase === "pause"
+                  ? Math.sin(f.t * 20) * 0.2
+                  : 0;
         if (sqShadow) {
           g.save();
           g.globalAlpha = 0.3;
@@ -715,9 +1036,9 @@ export function createAutumn(seed: number): Scene {
       }
     },
     pointerDown(f, onBackground) {
-      // 다람쥐를 누르면 놀라 달아난다(어디서든).
+      // 다람쥐를 누르면 놀라 지그재그로 달아난다(어디서든).
       if (squirrel && squirrel.phase !== "leave" && Math.hypot(squirrel.x - f.p.x, squirrel.y - f.p.y) < 30) {
-        squirrelLeave(f.t);
+        squirrelFlee(f.t);
         return true;
       }
       if (!onBackground) return false;
@@ -732,7 +1053,16 @@ export function createAutumn(seed: number): Scene {
           best = i;
         }
       }
-      if (best < 0) return false;
+      if (best < 0) {
+        // 찾기 놀이 — 잎이 없는 자리의 흙더미(16px 안)를 누르면 묻힌 도토리가 튀어나온다(잎이 덮고 있으면 먼저 치워야 한다).
+        const ci = nearestCache(f.p.x, f.p.y, 16);
+        if (ci < 0) return false;
+        const c = caches[ci];
+        caches.splice(ci, 1);
+        pushAcorn(c.x, c.y, 0.5, f.t);
+        dugUp++;
+        return true;
+      }
       grabbed = best;
       gox = leaves[best].x - f.p.x;
       goy = leaves[best].y - f.p.y;
@@ -761,9 +1091,16 @@ export function createAutumn(seed: number): Scene {
         acornSprite: !!acornSpr,
         ground: !!ground,
         squirrel: squirrel ? [Math.round(squirrel.x), Math.round(squirrel.y), squirrel.phase, squirrel.carry ? 1 : 0] : null,
+        sqPhase: squirrel ? squirrel.phase : null,
         squirrels,
         squirrelSprite: !!squirrelSpr,
         stolen,
+        caches: caches.map((c) => [Math.round(c.x), Math.round(c.y)]),
+        fakes,
+        dugUp,
+        retrieved,
+        flees,
+        pauses,
         whirl: whirl ? [Math.round(whirl.x), Math.round(whirl.y)] : null,
         whirls,
         grabbed,

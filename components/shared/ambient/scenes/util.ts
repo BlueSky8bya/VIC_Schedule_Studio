@@ -18,6 +18,28 @@ export const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > h
 export const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 export const TAU = Math.PI * 2;
 
+/** 두 각의 최단 차(−π..π). */
+export function angleDiff(want: number, cur: number): number {
+  let d = want - cur;
+  while (d > Math.PI) d -= TAU;
+  while (d < -Math.PI) d += TAU;
+  return d;
+}
+
+/** 생물의 위협 지각(2026-09-04, 동물 행동 연구 기반) — 포인터가 (x,y)로 **얼마나 빨리 다가오나**(looming).
+ *  물고기·토끼·다람쥐의 도망 개시 거리(flight initiation distance)는 고정 반경이 아니라 접근 속도에 따라 늘어난다:
+ *  천천히 오면 꽤 가까이 두고, 휙 덤비면 멀리서 튄다(Ydenberg & Dill 1986; Domenici & Hale 2019 물고기 C-start —
+ *  '시각 각의 팽창률'이 가장 좋은 예측자). loom = 접근 속도 ÷ 거리(1/s): 값이 클수록 '덮쳐온다'.
+ *  d = 거리, rate = 접근 속도(px/s, 양수 = 다가옴), loom = rate / max(d, 24). 포인터가 밖이면 전부 0. */
+export function threat(p: { x: number; y: number; vx: number; vy: number; inside: boolean }, x: number, y: number): { d: number; rate: number; loom: number } {
+  if (!p.inside) return { d: Infinity, rate: 0, loom: 0 };
+  const dx = x - p.x;
+  const dy = y - p.y;
+  const d = Math.hypot(dx, dy) || 0.001;
+  const rate = (p.vx * dx + p.vy * dy) / d;
+  return { d, rate, loom: rate / Math.max(d, 24) };
+}
+
 /** 오프스크린 캔버스 — 스프라이트·바탕을 한 번 굽는 용도. */
 export function makeCanvas(w: number, h: number): { c: HTMLCanvasElement; g: CanvasRenderingContext2D } {
   const c = document.createElement("canvas");

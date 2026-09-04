@@ -1,26 +1,64 @@
-// 여름 — 물결(.gs-tide, CSS/SVG caustic) 위의 캔버스: ① 포인터 **항적**(제트스키) ② 물 위에 둥둥 뜬 **장난감 오리**(늘) ③ 가끔
-// 가장자리에서 **밀려오는 튜브**(랜덤 이벤트) — 둘 다 집어 끌고 던질 수 있고, 빨리 끌면 제 항적을 남긴다.
+// 여름 — 물결(.gs-tide, CSS/SVG caustic) 위의 캔버스: ① 포인터 **항적**(제트스키) ② 물 위에 둥둥 뜬 **오리**(늘) ③ 가끔
+// 가장자리에서 **밀려오는 튜브**(랜덤 이벤트) — 둘 다 집어 끌고 던질 수 있고, 빨리 끌면 제 항적을 남긴다. ④ 물 밑 **물고기 그림자**.
 //
 // 항적(2026-09-04 사용자: 선 몇 줄은 "이게 뭐야") — 벤치마크 = 항공 사진의 제트스키 항적: 몸통은 뒤로 넓게 번지며 천천히
 // 가라앉는 **흰 거품 띠**(turbulent wash), V자 두 팔은 그 바깥의 옅은 잔물결, 팔 사이엔 가로 마루. 구현 = **LOD 레이어**:
-// 저해상(0.35~0.5×) 오프스크린 캔버스에 거품 도장(소프트 스프라이트 — 나이 들수록 커지고 옅어진다)·팔·마루·고리를 그리고
-// 확대 합성한다 — 흐릿해야 하는 것은 흐릿하게 그려야 싸고 자연스럽다(사용자: "이목이 가는 곳만 선명하게, 나머지는 해상도를
-// 낮춰라"). 도장은 나이별 알파를 직접 계산한다(잔상 버퍼의 8bit 양자화 고스트가 없다). 소품·뱃머리는 본 캔버스에 또렷하게.
-// 여력(f.load): 도장 간격·기억 시간·저해상 배율·글로우/마루·튜브 이벤트·소품 항적이 load에 따라 늘고 준다.
-// 원형 잔물결은 **누를 때만**. 캔버스는 투명 — 아래 caustic이 그대로 비친다.
+// 저해상(0.28~0.36×) 오프스크린 캔버스에 거품 도장(소프트 스프라이트 — 나이 들수록 커지고 옅어진다)·팔·마루·고리·물고기
+// 그림자를 그리고 확대 합성한다 — 흐릿해야 하는 것은 흐릿하게 그려야 싸고 자연스럽다. 소품·뱃머리는 본 캔버스에 또렷하게.
+//
+// 물고기(2026-09-04 사용자: "위에서 내려다보는 시점인데 옆모습 물고기가 누워 다니니 어색 — 동물의 숲 그림자처럼") — 물고기는
+// **물 밑 그림자**다. 퍼블릭 도메인 top-view 도안에서 구운 실루엣(assets.ts fishShadow*)을 저해상 층에 흐릿하게 찍는다: 몸통과
+// 꼬리를 관절에서 나눠 꼬리가 좌우로 젓고, 수면에 가까울수록(depth) 크고 짙다. 행동은 연구 기반(scenes/util.ts threat):
+//  · 도망(C-start, Domenici & Hale 2019): 거리가 아니라 **덮쳐오는 속도**(loom)로 판단 — 천천히 오면 코앞까지 두고, 휙 덤비면
+//    멀리서 튄다. 튈 땐 반대쪽 ±, 가끔 옆으로(protean), 순간 4.5배로 치고 나가 1초 안에 잦아들며 깊이 숨는다(그림자 옅어짐).
+//  · 놀람 전염: 한 마리가 튀면 90px 안의 이웃도 같은 곳에서 튄다(무리의 startle wave).
+//  · 머리 위에 멈춘 그림자(포인터)는 새다 — 폭발 없이 슬금슬금 비켜간다.
+//  · 먹이 학습(잉어·코이): 물이 튀면(누르기) 1초 뒤부터 겁먹지 않은 놈들이 모여들어 수면에서 맴돌며 뻐끔댄다(작은 고리).
+//    누른 자리 140px 안의 물고기는 반대로 놀란다(물보라).
+//  · 무리(boids): 정렬·응집·분리 + 몇 초마다 옮겨지는 무리 목표. 큰 놈은 혼자 느긋하게 순찰, 더 대담하다.
+// 오리(Noto 🦆, 옆모습) — 위에서 보는 시점에 옆모습을 진행 방향으로 눕히면 "누워 다닌다"(사용자). 그래서 **세워 그린다**(좌우만
+// 뒤집음, 3/4 시점 소품처럼) — top-view 오리 에셋은 공개 라이선스로 어디에도 없었다(openclipart 0건·OGA·Commons·itch 확인).
+// 행동은 청둥오리 에토그램(휴식 ~65% · 먹이 ~15% · 깃 다듬기·목욕 ~5% · 이동 ~8%): 둥둥 쉬기 → 노 젓기 → 자맥질(엉덩이만
+// 남는 tip-up, 머리 쪽 고리) → 깃 다듬기(흔들) → 목욕(머리 담그기 + 물방울) → 몸 털기. 사람 = 먹이 주는 손: 포인터가 느리게
+// 다가와 머물면 다가와서 기다린다(호기심); 물 튀는 곳(먹이)으로 헤엄쳐 가 자맥질; 덮쳐오면(loom) 퍼덕이며 달아난다.
+// 여력(f.load): 도장 간격·기억 시간·저해상 배율·글로우/마루·튜브·물고기 수·오리 잔행동이 load에 따라 늘고 준다.
 
 import type { Frame, Scene } from "../scene-engine";
-import { ASSET, drawFacing, drawSprite, loadSprite, type Sprite } from "../assets";
-import { clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU } from "./util";
+import { ASSET, drawSprite, loadSprite, type Sprite } from "../assets";
+import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: number }; // n = 진행 직각 단위벡터
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
 type Ring = { x: number; y: number; life: number; dur: number; maxR: number; a: number; w: number };
 type PropKind = "duck" | "ring";
-// 물 밑 물고기(2026-09-04 사용자: "아열대 물고기가 물 밑을 헤엄치듯 비친다") — 저해상 층에 흐릿한 청록 그림자로. 무리(3~6)가
-// 같은 목표를 향해 헤엄치고, 포인터가 다가오면 흩어져 달아난다. 여력 ≥.7이면 큰 놈 하나.
-// col = 색 변종(0 청록 원본 · 1 슬레이트 블루 · 2 올리브 골드, 채도 낮춤), spd = 개체별 기본 속도, dart = 갑작스런 질주(초).
-type Fish = { x: number; y: number; hd: number; spd: number; k: number; ph: number; big: boolean; flee: number; col: number; dart: number };
+type DuckState = "drift" | "paddle" | "dabble" | "preen" | "bathe" | "shake" | "curious" | "wait" | "alarm";
+// 물고기 그림자. shape 0 = 날씬한 잉어형 · 1 = 부채꼬리(금붕어형). depth 0(깊다) ~ 1(수면) — 클수록 크고 짙다.
+// flee = 남은 도망 시간, burst = 순간 가속 잔량, avoidT = 슬금슬금 비켜가기, curious = 먹이 쪽으로 가는 중, scare = 놀란 기억(예민).
+type Fish = {
+  x: number;
+  y: number;
+  hd: number;
+  spd: number;
+  cruise: number;
+  k: number;
+  shape: 0 | 1;
+  big: boolean;
+  ph: number;
+  depth: number;
+  depthT: number;
+  flee: number;
+  burst: number;
+  avoid: number;
+  avoidT: number;
+  curious: number;
+  scare: number;
+  bold: number;
+  side: number;
+  nextGulp: number;
+  wag: number;
+};
+type Crumb = { x: number; y: number; t0: number; food: number };
+type Drop = { x: number; y: number; vx: number; vy: number; life: number };
 type Bubble = { x: number; y: number; t0: number };
 type Glint = { x: number; y: number; ph: number; r: number };
 type Prop = {
@@ -29,7 +67,7 @@ type Prop = {
   y: number;
   vx: number;
   vy: number;
-  a: number; // 회전(스프라이트 앞 = 위)
+  a: number; // 회전(튜브 자전용)
   ph: number; // 흔들림 위상
   k: number;
   grab: boolean;
@@ -38,14 +76,27 @@ type Prop = {
   lift: number;
   born: number;
   entered: boolean;
-  dvx: number; // 해류(목표 속도)
+  dvx: number; // 해류/노 젓기(목표 속도)
   dvy: number;
   lx: number; // 마지막 항적 도장 위치
   ly: number;
   nextRing: number;
+  // 오리 행동
+  state: DuckState;
+  until: number;
+  face: 1 | -1; // -1 = 왼쪽을 본다(스프라이트 원본)
+  tx: number;
+  ty: number;
+  nextCurious: number;
+  curiousT: number;
+  nextTick: number;
+  crumb: Crumb | null;
 };
+type FishParts = { body: HTMLCanvasElement; tail: HTMLCanvasElement; jx: number };
 
 const STAMP_SPR = 96;
+const FISH_SPR = 80; // 그림자 스프라이트 한 변(CSS px). k 0.45~0.7 → 36~56px, 큰 놈 1.05~1.2
+const JOINT = 0.56; // 머리(왼쪽 끝 = 0)에서 꼬리 관절까지의 비율
 
 export function createSummer(seed: number): Scene {
   const rand = rng(seed);
@@ -61,7 +112,7 @@ export function createSummer(seed: number): Scene {
   let shadow: HTMLCanvasElement | null = null;
   let duckSpr: Sprite | null = null;
   let ringSpr: Sprite | null = null;
-  const fishSprs: (Sprite | null)[] = [null, null, null]; // 🐠 열대어 · 🐟 물고기 · 🐡 복어(Noto Emoji)
+  const fishParts: (FishParts | null)[] = [null, null];
   let lastX = -9999;
   let lastY = -9999;
   let sx = -9999;
@@ -71,34 +122,76 @@ export function createSummer(seed: number): Scene {
   let nextTube = 10;
   let tubes = 0;
   const fish: Fish[] = [];
+  const crumbs: Crumb[] = [];
+  const drops: Drop[] = [];
   let schoolX = 0;
   let schoolY = 0;
   let schoolNext = 0;
-  let fishFled = 0;
+  let startles = 0;
+  let contagions = 0;
+  let gulps = 0;
+  let avoids = 0;
+  let alarms = 0;
+  let curiosities = 0;
+  const duckStates: Record<DuckState, number> = { drift: 0, paddle: 0, dabble: 0, preen: 0, bathe: 0, shake: 0, curious: 0, wait: 0, alarm: 0 };
   const bubbles: Bubble[] = [];
   let nextBubble = 4;
   const glints: Glint[] = [];
   let w = 0;
   let h = 0;
 
+  // 실루엣을 **한 번** 부드럽게 흐린 뒤(그림자는 가장자리가 없어야 한다 — 저해상 층에 또렷한 실루엣을 찍으면 계단이 드러났다,
+  // 2026-09-04 실측) 몸통/꼬리 두 장으로 나눠 굽는다 — 꼬리는 관절(jx)에서 따로 돌린다(매 프레임 clip 없이 drawImage 둘).
+  // 흐림은 굽는 순간 한 번뿐(프레임마다 filter 금지 규칙과 충돌 없음); canvas filter가 없는 브라우저는 고리 겹치기로 대신한다.
+  function soften(s: Sprite): HTMLCanvasElement {
+    const { c, g } = makeCanvas(s.c.width, s.c.height);
+    const ctx = g as CanvasRenderingContext2D & { filter?: string };
+    if (typeof ctx.filter === "string") {
+      ctx.filter = "blur(7px)";
+      g.drawImage(s.c, 0, 0);
+      ctx.filter = "none";
+    } else {
+      for (const [r, n, a] of [
+        [16, 12, 0.05],
+        [10, 10, 0.07],
+        [5, 8, 0.1]
+      ] as const) {
+        g.globalAlpha = a;
+        for (let i = 0; i < n; i++) g.drawImage(s.c, Math.cos((i / n) * TAU) * r, Math.sin((i / n) * TAU) * r);
+      }
+      g.globalAlpha = 0.5;
+      g.drawImage(s.c, 0, 0);
+    }
+    return c;
+  }
+  function splitFish(s: Sprite): FishParts {
+    const soft = soften(s);
+    const W = soft.width;
+    const H = soft.height;
+    const jp = Math.round(W * JOINT);
+    const body = makeCanvas(W, H);
+    body.g.drawImage(soft, 0, 0, jp + 1, H, 0, 0, jp + 1, H);
+    const tail = makeCanvas(W, H);
+    tail.g.drawImage(soft, jp - 1, 0, W - jp + 1, H, jp - 1, 0, W - jp + 1, H);
+    return { body: body.c, tail: tail.c, jx: (JOINT - 0.5) * FISH_SPR };
+  }
   function bake() {
     if (stampSpr) return;
-    // 거품 도장 — 바깥 물빛 무리 + 안쪽 흰 거품. 한 장으로 두 겹.
-    const { c, g } = makeCanvas(STAMP_SPR, STAMP_SPR);
     // 거품 = 옅은 물빛 무리 + 흰 거품(2026-09-04 사용자: "너무 진해서 어색한 부분이 보인다 — 흐릿하게 글러듯"). 진한 파랑은
     // 쓰지 않고, 흐림은 저해상 레이어 배율(ensureLo)로 낸다.
+    const { c, g } = makeCanvas(STAMP_SPR, STAMP_SPR);
     softBlob(g, STAMP_SPR / 2, STAMP_SPR / 2, STAMP_SPR / 2, "150 195 228", 0.28, 0);
     softBlob(g, STAMP_SPR / 2, STAMP_SPR / 2, STAMP_SPR * 0.3, "255 255 252", 0.7, 0);
     stampSpr = c;
     shadow = shadowSprite(96, 64, "30 60 90", 0.4);
     void loadSprite(ASSET.duck, 56, 56).then((s) => (duckSpr = s)).catch(() => {});
     void loadSprite(ASSET.ring, 92, 92).then((s) => (ringSpr = s)).catch(() => {});
-    void loadSprite(ASSET.fishTropical, 34, 34).then((s) => (fishSprs[0] = s)).catch(() => {});
-    void loadSprite(ASSET.fish, 32, 32).then((s) => (fishSprs[1] = s)).catch(() => {});
-    void loadSprite(ASSET.blowfish, 30, 30).then((s) => (fishSprs[2] = s)).catch(() => {});
+    const tint = "rgb(28 58 88)";
+    void loadSprite(ASSET.fishShadowSlim, FISH_SPR, FISH_SPR, 2, tint).then((s) => (fishParts[0] = splitFish(s))).catch(() => {});
+    void loadSprite(ASSET.fishShadowFantail, FISH_SPR, FISH_SPR, 2, tint).then((s) => (fishParts[1] = splitFish(s))).catch(() => {});
   }
   function ensureLo(f: Frame) {
-    // 항적은 일부러 흐리게(0.28~0.36×) — 또렷한 가장자리가 어색함을 드러낸다(사용자 2026-09-04).
+    // 항적·그림자는 일부러 흐리게(0.28~0.36×) — 또렷한 가장자리가 어색함을 드러낸다(사용자 2026-09-04).
     const want = f.load >= 0.6 ? 0.36 : f.load >= 0.3 ? 0.32 : 0.28;
     if (lo && Math.abs(want - loS) < 0.001 && loW === f.w && loH === f.h) return;
     loS = want;
@@ -134,7 +227,16 @@ export function createSummer(seed: number): Scene {
       dvy: 0,
       lx: 0,
       ly: 0,
-      nextRing: t + 1 + rand() * 2
+      nextRing: t + 1 + rand() * 2,
+      state: "drift",
+      until: t + 3 + rand() * 4,
+      face: rand() < 0.5 ? -1 : 1,
+      tx: 0,
+      ty: 0,
+      nextCurious: t + 6,
+      curiousT: 0,
+      nextTick: 0,
+      crumb: null
     };
   }
   // 튜브 — 가장자리 밖에서 천천히 들어와 가로질러 나간다("가끔 밀려온다").
@@ -160,18 +262,56 @@ export function createSummer(seed: number): Scene {
   const radiusOf = (p: Prop) => (p.kind === "duck" ? 27 * p.k : 46);
   const fishTarget = (load: number) => (load >= 0.4 ? Math.round(lerp(3, 6, clamp((load - 0.4) / 0.6, 0, 1))) : 0);
   function newFish(big: boolean): Fish {
+    const cruise = big ? 16 + rand() * 8 : 26 + rand() * 30; // 개체마다 다른 걸음 — 큰 놈은 느긋하게
     return {
       x: rand() * w,
       y: rand() * h,
       hd: rand() * TAU,
-      spd: big ? 20 + rand() * 8 : 30 + rand() * 40, // 개체마다 다른 걸음(30~70) — 큰 놈은 느긋하게
-      k: big ? 2.1 + rand() * 0.4 : 0.7 + rand() * 0.5,
-      ph: rand() * TAU,
+      spd: cruise,
+      cruise,
+      k: big ? 1.05 + rand() * 0.15 : 0.45 + rand() * 0.25,
+      shape: big ? 0 : rand() < 0.65 ? 0 : 1,
       big,
+      ph: rand() * TAU,
+      depth: 0.5,
+      depthT: 0.5,
       flee: 0,
-      col: big ? 1 : Math.floor(rand() * 3), // 큰 놈은 🐟, 작은 놈은 🐠🐟🐡 섞어서
-      dart: 0
+      burst: 0,
+      avoid: 0,
+      avoidT: 0,
+      curious: 0,
+      scare: 0,
+      bold: big ? 1.7 : 0.8 + rand() * 0.5, // 대담함 — 클수록 늦게, 가까이서 튄다
+      side: rand() < 0.5 ? 1 : -1,
+      nextGulp: 0,
+      wag: 0
     };
+  }
+  // C-start — 자극 반대쪽으로 순간 가속(가끔 옆으로 튀는 protean), 깊이 숨는다.
+  function startle(q: Fish, fromX: number, fromY: number, strong: boolean) {
+    const away = Math.atan2(q.y - fromY, q.x - fromX);
+    const side = rand() < 0.14 ? (rand() < 0.5 ? 1 : -1) * (Math.PI / 2) : 0;
+    q.hd = away + side + (rand() - 0.5) * 0.8;
+    q.flee = (strong ? 1.1 : 0.7) + rand() * 0.5;
+    q.burst = 1;
+    q.spd = q.cruise * 4.5;
+    q.curious = 0;
+    q.avoidT = 0;
+    q.scare = Math.min(1, q.scare + 0.6);
+    q.depthT = 0.08;
+    startles++;
+  }
+  function duckSet(d: Prop, state: DuckState, dur: number, t: number) {
+    d.state = state;
+    d.until = t + dur;
+    duckStates[state]++;
+  }
+  function splash(x: number, y: number, n: number) {
+    for (let i = 0; i < n; i++) {
+      const a = rand() * TAU;
+      const sp = 40 + rand() * 90;
+      drops.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, life: 0.55 + rand() * 0.3 });
+    }
   }
 
   return {
@@ -244,6 +384,20 @@ export function createSummer(seed: number): Scene {
         r.life += dt / r.dur;
         if (r.life >= 1) rings.splice(i, 1);
       }
+      // 먹이(누른 자리) — 12초 또는 다 먹히면 사라진다.
+      for (let i = crumbs.length - 1; i >= 0; i--) {
+        const c = crumbs[i];
+        c.food -= dt * 0.06;
+        if (c.food <= 0 || t - c.t0 > 12) crumbs.splice(i, 1);
+      }
+      for (let i = drops.length - 1; i >= 0; i--) {
+        const q = drops[i];
+        q.life -= dt;
+        q.x += q.vx * dt;
+        q.y += q.vy * dt;
+        q.vy += 320 * dt;
+        if (q.life <= 0) drops.splice(i, 1);
+      }
       // ② 소품 — 해류 따라 둥둥, 잡히면 손을 따라, 놓으면 물의 저항으로 멈춘다. 튜브는 여력이 있을 때만 가끔.
       if (load >= 0.5 && t > nextTube && !props.some((q) => q.kind === "ring")) {
         spawnTube(t);
@@ -264,8 +418,123 @@ export function createSummer(seed: number): Scene {
           q.lift = Math.min(1, q.lift + dt * 6);
         } else {
           if (q.kind === "duck") {
-            q.dvx = 7 * Math.sin(q.y * 0.004 + t * 0.11) + 3 * Math.cos(t * 0.07 + q.ph);
-            q.dvy = 6 * Math.cos(q.x * 0.005 + t * 0.09) + 3 * Math.sin(t * 0.05 + q.ph);
+            // 해류 — 늘 조금은 흐른다.
+            const cx = 7 * Math.sin(q.y * 0.004 + t * 0.11) + 3 * Math.cos(t * 0.07 + q.ph);
+            const cy = 6 * Math.cos(q.x * 0.005 + t * 0.09) + 3 * Math.sin(t * 0.05 + q.ph);
+            q.dvx = cx;
+            q.dvy = cy;
+            const th = threat(p, q.x, q.y);
+            // 덮쳐오면(loom·급접근·코앞) 퍼덕이며 달아난다 — 느린 접근은 참는다.
+            if (q.state !== "alarm" && ((th.loom > 2.6 && th.d < 240) || (th.rate > 320 && th.d < 200) || th.d < 24)) {
+              duckSet(q, "alarm", 1.4, t);
+              const away = Math.atan2(q.y - p.y, q.x - p.x);
+              q.tx = clamp(q.x + Math.cos(away) * 260, 40, w - 40);
+              q.ty = clamp(q.y + Math.sin(away) * 260, 40, h - 40);
+              q.curiousT = 0;
+              q.crumb = null;
+              q.nextCurious = t + 10;
+              alarms++;
+              splash(q.x, q.y, 6);
+            }
+            // 먹이가 튀면(누르기) 220px 안이면 그리로 헤엄쳐 간다 — 사람 손 = 먹이.
+            if ((q.state === "drift" || q.state === "paddle" || q.state === "wait" || q.state === "preen") && !q.crumb) {
+              let best: Crumb | null = null;
+              let bd = 220;
+              for (const c of crumbs) {
+                const d = Math.hypot(c.x - q.x, c.y - q.y);
+                if (d < bd && t - c.t0 < 6) {
+                  bd = d;
+                  best = c;
+                }
+              }
+              if (best) {
+                q.crumb = best;
+                q.tx = best.x;
+                q.ty = best.y;
+                duckSet(q, "paddle", 20, t);
+              }
+            }
+            // 호기심 — 포인터가 느리게 다가와 근처에 1초쯤 머물면 "먹이 주나?" 하고 다가온다(오리는 사람을 먹이와 연결한다).
+            if ((q.state === "drift" || q.state === "paddle") && !q.crumb && p.inside && t > q.nextCurious && th.d < 280 && th.d > 90 && p.speed < 160 && th.rate > -60) {
+              q.curiousT += dt;
+              if (q.curiousT > 1.0) {
+                duckSet(q, "curious", 8, t);
+                q.curiousT = 0;
+                curiosities++;
+              }
+            } else q.curiousT = 0;
+            const state = q.state;
+            if (state === "drift") {
+              if (t > q.until) {
+                const r = rand();
+                if (r < 0.32) duckSet(q, "drift", 3 + rand() * 4, t);
+                else if (r < 0.56) {
+                  duckSet(q, "paddle", 12, t);
+                  q.tx = 40 + rand() * (w - 80);
+                  q.ty = 40 + rand() * (h - 80);
+                } else if (r < 0.74) duckSet(q, "dabble", 2 + rand() * 1.5, t);
+                else if (r < 0.88) duckSet(q, "preen", 1.6 + rand() * 1.2, t);
+                else duckSet(q, "bathe", 1.4, t);
+              }
+            } else if (state === "paddle" || state === "curious" || state === "alarm") {
+              if (state === "curious") {
+                q.tx = p.x;
+                q.ty = p.y;
+              }
+              const dx = q.tx - q.x;
+              const dy = q.ty - q.y;
+              const d = Math.hypot(dx, dy);
+              const stop = state === "curious" ? 70 : 14;
+              const sp = state === "alarm" ? 130 : state === "curious" ? 32 : 26;
+              if (d > stop) {
+                q.dvx += (dx / d) * sp;
+                q.dvy += (dy / d) * sp;
+                if (state !== "alarm") q.face = dx > 0 ? 1 : -1;
+              } else if (state === "paddle") {
+                if (q.crumb) duckSet(q, "dabble", 2.5 + rand() * 1.5, t);
+                else duckSet(q, "drift", 2 + rand() * 3, t);
+              } else if (state === "curious") duckSet(q, "wait", 3.5, t);
+              if (t > q.until) {
+                if (state === "alarm") q.nextCurious = t + 10;
+                duckSet(q, "drift", 2 + rand() * 3, t);
+                q.crumb = null;
+              }
+              if (state === "alarm") q.face = q.dvx > 0 ? 1 : -1;
+            } else if (state === "wait") {
+              // 포인터를 바라보며 기다린다 — 먹이가 안 오면 실망하고 흘러간다.
+              if (p.inside) q.face = p.x > q.x ? 1 : -1;
+              if (t > q.until) {
+                duckSet(q, "drift", 3 + rand() * 3, t);
+                q.nextCurious = t + 14;
+              }
+            } else if (state === "dabble") {
+              // 자맥질 — 머리를 물속에 박고(엉덩이만 남는다) 머리 쪽에서 고리가 번진다.
+              if (t > q.nextTick) {
+                ring(q.x + q.face * -1 * 16 * q.k, q.y + 2, 26, 0.3, 0, 1.4, 1.2);
+                if (q.crumb) q.crumb.food -= 0.12;
+                q.nextTick = t + 0.5 + rand() * 0.3;
+              }
+              if (t > q.until) {
+                q.crumb = null;
+                duckSet(q, "drift", 2 + rand() * 3, t);
+              }
+            } else if (state === "preen") {
+              if (t > q.until) duckSet(q, "drift", 2 + rand() * 3, t);
+            } else if (state === "bathe") {
+              // 목욕 — 머리를 담갔다 들며 물방울이 튄다.
+              if (t > q.nextTick) {
+                ring(q.x + q.face * -1 * 14 * q.k, q.y, 22, 0.35, 0, 1.0, 1.4);
+                splash(q.x + q.face * -1 * 10, q.y - 6, 5);
+                q.nextTick = t + 0.28;
+              }
+              if (t > q.until) duckSet(q, "shake", 0.55, t);
+            } else if (state === "shake") {
+              if (t > q.nextTick) {
+                splash(q.x, q.y - 8, 3);
+                q.nextTick = t + 0.12;
+              }
+              if (t > q.until) duckSet(q, "drift", 3 + rand() * 3, t);
+            }
             // 핫 존(달력·포스터 표면) 위에선 집을 수 없고 칸을 가리니 — 가장 가까운 가장자리 밖으로 살살 밀려난다.
             const hot = f.hot;
             if (hot) {
@@ -307,6 +576,11 @@ export function createSummer(seed: number): Scene {
               q.y = h - m;
               q.vy = -Math.abs(q.vy) - 4;
             }
+            // 흐름만으로도 조금 움직이면 그쪽을 본다(히스테리시스).
+            if (q.state === "drift" || q.state === "paddle") {
+              if (q.vx > 9) q.face = 1;
+              else if (q.vx < -9) q.face = -1;
+            }
           } else {
             const inside = q.x > -60 && q.x < w + 60 && q.y > -60 && q.y < h + 60;
             if (inside) q.entered = true;
@@ -317,23 +591,18 @@ export function createSummer(seed: number): Scene {
             }
           }
         }
-        // 뱃머리 방향 — 움직이는 쪽으로 천천히 돈다(오리), 튜브는 느리게 자전.
         const sp = Math.hypot(q.vx, q.vy);
         if (q.kind === "duck") {
-          if (sp > 12) {
-            const want = Math.atan2(q.vy, q.vx) + Math.PI / 2;
-            let diff = want - q.a;
-            while (diff > Math.PI) diff -= TAU;
-            while (diff < -Math.PI) diff += TAU;
-            q.a += diff * Math.min(1, dt * (q.grab ? 6 : 1.4));
-          }
+          if (q.grab) q.face = q.vx > 20 ? 1 : q.vx < -20 ? -1 : q.face;
         } else q.a += (0.12 + (q.grab ? 0 : sp * 0.002)) * dt;
         q.ph += dt * 1.7;
-        // 소품 항적 — 빠르게 끌거나 던지면 거품 띠를 남긴다.
-        if (load >= 0.4 && sp > 70) {
+        // 소품 항적 — 빠르게 끌거나 던지면 거품 띠를, 노를 저으면 옅은 띠를 남긴다.
+        const paddling = q.kind === "duck" && !q.grab && sp > 18 && sp <= 70 && (q.state === "paddle" || q.state === "curious");
+        if (load >= 0.4 && (sp > 70 || paddling)) {
           const dd = Math.hypot(q.x - q.lx, q.y - q.ly);
-          if (dd > 7) {
-            stamp(q.x + (rand() - 0.5) * 4, q.y + (rand() - 0.5) * 4, t, clamp(sp / 900, 0.15, 1), 5 + 10 * clamp(sp / 900, 0.15, 1));
+          if (dd > (paddling ? 14 : 7)) {
+            const sf = paddling ? 0.12 : clamp(sp / 900, 0.15, 1);
+            stamp(q.x + (rand() - 0.5) * 4, q.y + (rand() - 0.5) * 4, t, sf, paddling ? 6 : 5 + 10 * sf);
             q.lx = q.x;
             q.ly = q.y;
           }
@@ -347,7 +616,7 @@ export function createSummer(seed: number): Scene {
           q.nextRing = t + 2.2 + rand() * 2.4;
         }
       }
-      // ③ 물고기 무리 — 목표점(schoolX/Y)이 몇 초마다 옮겨지고 각자 흔들리며 따라간다. 포인터 120px 안이면 흩어져 달아난다.
+      // ③ 물고기 — 수는 여력으로(3~6 + 큰 놈), 무리 목표가 몇 초마다 옮겨진다.
       const wantFish = fishTarget(load);
       const smallFish = fish.filter((q) => !q.big).length;
       if (smallFish < wantFish) fish.push(newFish(false));
@@ -364,37 +633,138 @@ export function createSummer(seed: number): Scene {
           schoolX = w * (0.15 + rand() * 0.7);
           schoolY = h * (0.15 + rand() * 0.7);
           schoolNext = t + 6 + rand() * 8;
-          // 무리가 방향을 바꿀 때 몇 마리는 먼저 질주한다(0.5초 ×2.4).
-          for (const q of fish) if (!q.big && rand() < 0.5) q.dart = 0.5;
         }
+        const justStartled: Fish[] = [];
         for (const q of fish) {
-          if (p.inside) {
-            const dx = q.x - p.x;
-            const dy = q.y - p.y;
-            const d = Math.hypot(dx, dy);
-            if (d < (q.big ? 160 : 120) && d > 0.01 && q.flee <= 0) {
-              q.flee = 1.4;
-              q.hd = Math.atan2(dy, dx) + (rand() - 0.5) * 0.8;
-              fishFled++;
+          q.scare = Math.max(0, q.scare - dt * 0.12);
+          const th = threat(p, q.x, q.y);
+          const sens = (1 / q.bold) * (1 + q.scare * 0.8); // 방금 놀란 놈은 더 예민하다
+          if (q.flee <= 0 && p.inside) {
+            const touch = th.d < 26 + 14 * q.k;
+            const fast = (th.loom * sens > 3.0 && th.d < 260) || (th.rate * sens > 300 && th.d < 190);
+            if (touch || fast) {
+              startle(q, p.x, p.y, fast);
+              justStartled.push(q);
+            } else if (th.d < 80 && th.rate > -30 && q.avoidT <= 0 && q.curious <= 0) {
+              // 머리 위에 멈춘 그림자(새) — 폭발 없이 슬금슬금 비켜간다.
+              q.avoid = Math.atan2(q.y - p.y, q.x - p.x) + (rand() - 0.5) * 0.6;
+              q.avoidT = 0.6;
+              avoids++;
             }
           }
-          if (q.flee > 0) q.flee -= dt;
-          else {
-            const tx = q.big ? schoolX + Math.cos(q.ph) * 120 : schoolX + Math.cos(q.ph + t * 0.3) * 60;
-            const ty = q.big ? schoolY + Math.sin(q.ph) * 120 : schoolY + Math.sin(q.ph + t * 0.27) * 60;
-            const want = Math.atan2(ty - q.y, tx - q.x);
-            let diff = want - q.hd;
-            while (diff > Math.PI) diff -= TAU;
-            while (diff < -Math.PI) diff += TAU;
-            q.hd += clamp(diff, -1.6 * dt, 1.6 * dt) + Math.sin(t * 2.1 + q.ph) * 0.5 * dt;
+        }
+        // 놀람 전염 — 튄 놈 90px 안의 이웃도 같은 곳에서 튄다.
+        for (const s of justStartled) {
+          for (const o of fish) {
+            if (o === s || o.flee > 0) continue;
+            if (Math.hypot(o.x - s.x, o.y - s.y) < 90) {
+              startle(o, p.x, p.y, false);
+              contagions++;
+            }
           }
-          if (q.dart > 0) q.dart -= dt;
-          // 헤엄은 꼬리질 박자에 맞춰 밀렸다 미끄러진다(등속 아님).
-          const pulse = 0.75 + 0.5 * Math.max(0, Math.sin(t * (q.flee > 0 ? 22 : 9) + q.ph));
-          const sp = q.spd * (q.flee > 0 ? 3.2 : q.dart > 0 ? 2.4 : 1) * pulse;
-          q.x += Math.cos(q.hd) * sp * dt;
-          q.y += Math.sin(q.hd) * sp * dt;
+        }
+        for (const q of fish) {
+          // 먹이 — 겁먹지 않은 놈이 380px 안의 가라앉은(1초 지난) 먹이로.
+          let crumb: Crumb | null = null;
+          if (q.flee <= 0 && q.scare < 0.35 && crumbs.length) {
+            let bd = 380;
+            for (const c of crumbs) {
+              if (t - c.t0 < 1.0) continue;
+              const d = Math.hypot(c.x - q.x, c.y - q.y);
+              if (d < bd) {
+                bd = d;
+                crumb = c;
+              }
+            }
+          }
+          q.curious = crumb ? 1 : 0;
+          let freq = 9;
+          if (q.flee > 0) {
+            q.flee -= dt;
+            q.burst = Math.max(0, q.burst - dt / 0.9);
+            q.hd += Math.sin(t * 30 + q.ph) * 0.4 * dt;
+            freq = 24;
+          } else if (q.avoidT > 0) {
+            q.avoidT -= dt;
+            q.hd += clamp(angleDiff(q.avoid, q.hd), -2.5 * dt, 2.5 * dt);
+            q.depthT = 0.3;
+          } else if (crumb) {
+            const dx = crumb.x - q.x;
+            const dy = crumb.y - q.y;
+            const d = Math.hypot(dx, dy);
+            freq = 12;
+            if (d < 26 + 10 * q.k) {
+              // 먹이 둘레를 맴돌며 수면에서 뻐끔 — 작은 고리.
+              const tang = Math.atan2(dy, dx) + (Math.PI / 2) * q.side;
+              q.hd += clamp(angleDiff(tang, q.hd), -3.5 * dt, 3.5 * dt);
+              q.depthT = 1;
+              crumb.food -= dt * 0.25;
+              if (t > q.nextGulp) {
+                ring(q.x + Math.cos(q.hd) * 8 * q.k, q.y + Math.sin(q.hd) * 8 * q.k, 14 + 8 * q.k, 0.32, 0, 1.1, 1);
+                q.nextGulp = t + 0.6 + rand() * 0.6;
+                gulps++;
+              }
+            } else {
+              q.hd += clamp(angleDiff(Math.atan2(dy, dx), q.hd), -3 * dt, 3 * dt);
+              q.depthT = 0.7;
+            }
+          } else if (q.big) {
+            // 큰 놈 — 혼자 느긋하게 순찰(무리 목표 둘레 큰 원).
+            const tx = schoolX + Math.cos(q.ph) * 140;
+            const ty = schoolY + Math.sin(q.ph) * 140;
+            q.hd += clamp(angleDiff(Math.atan2(ty - q.y, tx - q.x), q.hd), -1.2 * dt, 1.2 * dt) + Math.sin(t * 1.3 + q.ph) * 0.3 * dt;
+            q.depthT = 0.4 + 0.15 * Math.sin(t * 0.25 + q.ph);
+          } else {
+            // 무리(boids): 목표 + 정렬 + 응집 + 분리.
+            const tx = schoolX + Math.cos(q.ph + t * 0.3) * 60;
+            const ty = schoolY + Math.sin(q.ph + t * 0.27) * 60;
+            let dx = tx - q.x;
+            let dy = ty - q.y;
+            const dl = Math.hypot(dx, dy) || 1;
+            dx /= dl;
+            dy /= dl;
+            let ax = 0;
+            let ay = 0;
+            let cx = 0;
+            let cy = 0;
+            let n = 0;
+            let sepx = 0;
+            let sepy = 0;
+            for (const o of fish) {
+              if (o === q || o.big) continue;
+              const ox = o.x - q.x;
+              const oy = o.y - q.y;
+              const d = Math.hypot(ox, oy);
+              if (d > 110 || d < 0.01) continue;
+              n++;
+              ax += Math.cos(o.hd);
+              ay += Math.sin(o.hd);
+              cx += ox;
+              cy += oy;
+              if (d < 30) {
+                sepx -= (ox / d) * (1 - d / 30);
+                sepy -= (oy / d) * (1 - d / 30);
+              }
+            }
+            let vx = dx;
+            let vy = dy;
+            if (n) {
+              const cl = Math.hypot(cx, cy) || 1;
+              vx += 0.8 * (ax / n) + 0.5 * (cx / cl) + 1.6 * sepx;
+              vy += 0.8 * (ay / n) + 0.5 * (cy / cl) + 1.6 * sepy;
+            }
+            q.hd += clamp(angleDiff(Math.atan2(vy, vx), q.hd), -1.8 * dt, 1.8 * dt) + Math.sin(t * 2.1 + q.ph) * 0.5 * dt;
+            q.depthT = 0.45 + 0.15 * Math.sin(t * 0.3 + q.ph);
+          }
+          // 헤엄은 꼬리질 박자에 맞춰 밀렸다 미끄러진다(등속 아님). 튈 땐 순간 4.5배에서 1초 안에 잦아든다.
+          const pulse = 0.75 + 0.5 * Math.max(0, Math.sin(t * freq + q.ph));
+          const want = q.cruise * (q.flee > 0 ? 1 + 3.5 * q.burst : crumb ? 1.35 : 1) * pulse;
+          q.spd += (want - q.spd) * Math.min(1, dt * (q.flee > 0 ? 3 : 8));
+          q.x += Math.cos(q.hd) * q.spd * dt;
+          q.y += Math.sin(q.hd) * q.spd * dt;
           q.ph += dt * (q.flee > 0 ? 3 : 1);
+          q.depth += (q.depthT - q.depth) * Math.min(1, dt * (q.flee > 0 ? 4 : 1.2));
+          q.wag = Math.sin(t * freq + q.ph) * (q.flee > 0 ? 0.42 : 0.18 + 0.12 * clamp(q.spd / (q.cruise * 2), 0, 1));
           const m = 60;
           if (q.x < -m) q.x = w + m - 1;
           else if (q.x > w + m) q.x = -m + 1;
@@ -452,13 +822,20 @@ export function createSummer(seed: number): Scene {
       L.setTransform(loS, 0, 0, loS, 0, 0);
       L.lineCap = "round";
       L.lineJoin = "round";
-      // 물고기 '깊이' — 저해상 층엔 몸 아래 물빛 그늘만(물 밑에 있다는 신호). 몸은 본 캔버스에 에셋으로.
+      // 물고기 그림자(동물의 숲) — 저해상 층이라 절로 흐릿하다. 수면에 가까울수록(depth) 크고 짙게, 꼬리는 관절에서 젓는다.
       for (const q of fish) {
+        const parts = fishParts[q.shape];
+        if (!parts) continue;
+        const size = q.k * (0.86 + 0.28 * q.depth);
         L.save();
+        L.globalAlpha = 0.18 + 0.3 * q.depth;
         L.translate(q.x, q.y);
-        L.rotate(q.hd);
-        L.scale(q.k, q.k);
-        softBlob(L, 2, 6, 22, "40 95 125", 0.26, 0);
+        L.rotate(q.hd + Math.PI); // 실루엣의 머리 = 왼쪽(−x)
+        L.scale(size, size);
+        L.drawImage(parts.body, -FISH_SPR / 2, -FISH_SPR / 2, FISH_SPR, FISH_SPR);
+        L.translate(parts.jx, 0);
+        L.rotate(q.wag);
+        L.drawImage(parts.tail, -FISH_SPR / 2 - parts.jx, -FISH_SPR / 2, FISH_SPR, FISH_SPR);
         L.restore();
       }
       // 물방울 — 커지는 고리, 끝에 톡(작은 십자 튐).
@@ -552,7 +929,7 @@ export function createSummer(seed: number): Scene {
           }
         }
       }
-      // 원형 잔물결(누름) — 부드러운 저해상 층에서.
+      // 원형 잔물결(누름·뻐끔·자맥질) — 부드러운 저해상 층에서.
       for (const r of rings) {
         if (r.life < 0) continue;
         const e = 1 - Math.pow(1 - r.life, 2.4);
@@ -573,16 +950,6 @@ export function createSummer(seed: number): Scene {
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = "medium";
       g.drawImage(lo.c, 0, 0, f.w, f.h);
-      // 물고기(Noto Emoji 🐠🐟🐡, 옆모습) — 물 밑이라 반투명, 진행 방향으로 뒤집고 기울이며 헤엄 박자에 맞춰 살짝 까딱인다.
-      for (const q of fish) {
-        const spr = fishSprs[q.col];
-        if (!spr) continue;
-        const wag = Math.sin(t * (q.flee > 0 ? 22 : 9) + q.ph) * (q.flee > 0 ? 0.14 : 0.07);
-        g.save();
-        g.globalAlpha = q.big ? 0.55 : 0.7;
-        drawFacing(g, spr, q.x, q.y, q.hd, q.k, wag);
-        g.restore();
-      }
       // 햇빛 반짝임 — 물결 위의 작은 별(숨쉬듯 밝아졌다 사라짐), 본 캔버스에 또렷하게.
       for (const gl of glints) {
         const a = Math.max(0, Math.sin(t * 1.4 + gl.ph));
@@ -627,14 +994,51 @@ export function createSummer(seed: number): Scene {
           g.save();
           g.globalAlpha = 0.28 + 0.12 * q.lift;
           g.translate(q.x + 4 + 10 * q.lift, q.y + 6 + 12 * q.lift);
-          g.rotate(q.a);
-          const sw = q.kind === "duck" ? 70 : 100;
-          const sh = q.kind === "duck" ? 76 : 100;
+          if (q.kind === "ring") g.rotate(q.a);
+          const sw = q.kind === "duck" ? 62 : 100;
+          const sh = q.kind === "duck" ? 40 : 100;
           g.drawImage(shadow, (-sw / 2) * size, (-sh / 2) * size, sw * size, sh * size);
           g.restore();
         }
-        if (q.kind === "duck") drawFacing(g, spr, q.x, q.y, q.a - Math.PI / 2, size, Math.sin(q.ph * 0.7) * 0.05);
-        else drawSprite(g, spr, q.x, q.y, q.a + Math.sin(q.ph * 0.7) * 0.05, size);
+        if (q.kind === "duck") {
+          // 세워 그린다(좌우만 뒤집음). 자맥질 = 납작하게 눌리며 앞으로 기울고, 목욕·털기 = 잔떨림, 놀람 = 퍼덕(크기 맥동),
+          // 깃 다듬기 = 좌우로 갸웃.
+          const s = q.state;
+          let sxk = 1;
+          let syk = 1;
+          let tilt = Math.sin(q.ph * 0.7) * 0.05;
+          let dy = 0;
+          if (s === "dabble") {
+            const e = clamp((t - (q.until - 3)) * 2, 0, 1);
+            syk = 1 - 0.28 * e;
+            sxk = 1 + 0.05 * e;
+            tilt += q.face * -0.35 * e;
+            dy = 6 * e;
+          } else if (s === "shake") {
+            sxk = 1 + 0.07 * Math.sin(t * 46);
+            syk = 1 - 0.07 * Math.sin(t * 46);
+          } else if (s === "bathe") {
+            tilt += q.face * -0.18 * Math.abs(Math.sin(t * 5));
+            dy = 3 * Math.abs(Math.sin(t * 5));
+          } else if (s === "preen") tilt += Math.sin(t * 6) * 0.1;
+          else if (s === "alarm") {
+            const fl = Math.abs(Math.sin(t * 24));
+            sxk = 1 + 0.14 * fl;
+            syk = 1 + 0.1 * fl;
+          } else if (s === "wait") tilt += Math.sin(t * 2.2) * 0.06;
+          g.save();
+          g.translate(q.x, q.y + dy);
+          g.scale(sxk, syk);
+          drawSprite(g, spr, 0, 0, tilt, size, q.face > 0);
+          g.restore();
+        } else drawSprite(g, spr, q.x, q.y, q.a + Math.sin(q.ph * 0.7) * 0.05, size);
+      }
+      // 물방울(목욕·털기·놀람) — 흰 점, 튀었다 떨어진다.
+      for (const d of drops) {
+        g.fillStyle = `rgb(255 255 255 / ${clamp(d.life * 1.6, 0, 0.9)})`;
+        g.beginPath();
+        g.arc(d.x, d.y, 1.4, 0, TAU);
+        g.fill();
       }
     },
     pointerDown(f, onBackground) {
@@ -657,6 +1061,10 @@ export function createSummer(seed: number): Scene {
           q.gox = q.x - x;
           q.goy = q.y - y;
           q.lift = 0.4;
+          if (q.kind === "duck") {
+            q.crumb = null;
+            q.curiousT = 0;
+          }
           ring(q.x, q.y, radiusOf(q) + 30, 0.35, 0, 1.2, 1.6);
           return true;
         }
@@ -668,6 +1076,12 @@ export function createSummer(seed: number): Scene {
         ring(x, y, 190, 0.5, 0.18, 2.3, 2.6);
         ring(x, y, 230, 0.32, 0.4, 2.6, 2);
       }
+      // 물보라 = 먹이 신호이자 놀람: 140px 안의 물고기는 튀고, 나머지는 1초 뒤부터 모여든다.
+      crumbs.push({ x, y, t0: f.t, food: 1 });
+      if (crumbs.length > 4) crumbs.shift();
+      for (const q of fish) {
+        if (q.flee <= 0 && Math.hypot(q.x - x, q.y - y) < 140) startle(q, x, y, true);
+      }
       return onBackground;
     },
     pointerUp(f) {
@@ -677,9 +1091,16 @@ export function createSummer(seed: number): Scene {
         q.vx = clamp(f.p.vx * 0.85, -1400, 1400);
         q.vy = clamp(f.p.vy * 0.85, -1400, 1400);
         ring(q.x, q.y, radiusOf(q) + 40, 0.3, 0, 1.6, 1.4);
+        if (q.kind === "duck") {
+          // 손에서 놓이면 잠깐 퍼덕이고 진정한다.
+          duckSet(q, "alarm", 0.8, f.t);
+          q.tx = q.x;
+          q.ty = q.y;
+        }
       }
     },
     debug() {
+      const duck = props.find((q) => q.kind === "duck");
       return {
         path: path.length,
         stamps: stamps.length,
@@ -691,10 +1112,21 @@ export function createSummer(seed: number): Scene {
         tubes,
         sprites: { duck: !!duckSpr, ring: !!ringSpr },
         fish: fish.map((q) => [Math.round(q.x), Math.round(q.y), q.big ? 1 : 0, q.flee > 0 ? 1 : 0]),
-        fishCols: fish.map((q) => q.col),
-        fishSpds: fish.map((q) => Math.round(q.spd)),
-        fishFled,
-        fishSprite: fishSprs.every((s) => !!s),
+        fishShapes: fish.map((q) => q.shape),
+        fishSpds: fish.map((q) => Math.round(q.cruise)),
+        fishDepth: fish.map((q) => Math.round(q.depth * 100) / 100),
+        fishCurious: fish.filter((q) => q.curious > 0).length,
+        fishFled: startles,
+        startles,
+        contagions,
+        avoids,
+        gulps,
+        crumbs: crumbs.length,
+        fishShadow: fishParts.every((s) => !!s),
+        duck: duck ? { state: duck.state, face: duck.face, x: Math.round(duck.x), y: Math.round(duck.y) } : null,
+        duckStates: { ...duckStates },
+        alarms,
+        curiosities,
         bubbles: bubbles.length,
         glints: glints.length
       };

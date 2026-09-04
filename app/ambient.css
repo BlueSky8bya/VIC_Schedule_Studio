@@ -195,56 +195,111 @@ html[data-reduce-motion] .showcase-exit {
     display: inline-flex;
   }
 }
-/* 시청자 레일의 [감상하기 | 배경 끄기] 묶음 — 시청자는 설정 화면이 없어 여기서 끈다. 끄기 토글은 배경 OFF에도 남는다(다시 켜는
-   유일한 손잡이). 모바일은 배경 자체가 없으니 통째로 숨긴다. */
+/* 시청자 레일·아바타 자리의 [감상하기 | 켜기·흐리게·끄기] 묶음 — 시청자는 설정 화면이 없어 여기서 바꾼다. 세그먼트는 배경 OFF에도
+   남는다(다시 켜는 유일한 손잡이). 좁은 레일에선 두 줄로 접힌다(wrap). 모바일은 배경 자체가 없으니 통째로 숨긴다. */
 .viewer-ambient-ctl {
   display: none;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  max-width: 100%;
 }
 @media (min-width: 641px) {
   .viewer-ambient-ctl {
     display: inline-flex;
   }
 }
-.ambient-toggle {
+/* 세 상태 세그먼트(2026-09-04 사용자: "흐리게 ↔ 켜기 ↔ 끄기 어디서든 한 번에") — 유리 알약 하나에 라디오 셋. 지금 상태는
+   물빛으로 채워지고(켜짐 = 초록빛, 흐리게 = 보랏빛, 끔 = 회색), 나머지는 조용한 글자. transform/opacity·색만 움직인다. */
+.ambient-seg {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
   height: 36px;
-  padding: 0 12px;
+  padding: 3px;
   border: 1px solid rgb(180 190 205 / 80%);
   border-radius: 999px;
   background: rgb(255 253 249 / 78%);
+  box-shadow: 0 4px 12px rgb(60 50 90 / 10%);
+}
+.ambient-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
   color: var(--ink-soft, #3d414c);
   font: inherit;
-  font-size: var(--text-label, 13px);
+  font-size: var(--text-caption, 12px);
   font-weight: 800;
   white-space: nowrap;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgb(60 50 90 / 10%);
+  opacity: 0.72;
   transition:
     transform var(--dur-1, 0.15s) var(--ease),
     background var(--dur-1, 0.15s) var(--ease),
-    border-color var(--dur-1, 0.15s) var(--ease);
+    color var(--dur-1, 0.15s) var(--ease),
+    opacity var(--dur-1, 0.15s) var(--ease);
 }
-.ambient-toggle:hover {
-  background: #fff;
-  border-color: #c3ccd6;
+.ambient-seg-btn svg {
+  color: currentColor;
+  opacity: 0.85;
 }
-.ambient-toggle:active {
-  transform: scale(0.96);
+.ambient-seg-btn:hover {
+  background: rgb(60 50 90 / 6%);
+  opacity: 1;
 }
-.ambient-toggle.mode-on svg {
-  color: #4d7a48;
+.ambient-seg-btn:active {
+  transform: scale(0.94);
 }
-.ambient-toggle.mode-dim svg {
-  color: #6b5b8a;
+.ambient-seg-btn:focus-visible {
+  outline: 2px solid var(--selection-border, #b7a8ef);
+  outline-offset: 1px;
 }
-.ambient-toggle.mode-off {
-  border-style: dashed;
+.ambient-seg-btn.on {
+  opacity: 1;
+  cursor: default;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 60%);
 }
-html[data-showcase] .ambient-toggle {
+.ambient-seg-btn.on.mode-on {
+  background: rgb(150 196 120 / 32%);
+  color: #3f6a3a;
+}
+.ambient-seg-btn.on.mode-dim {
+  background: rgb(160 145 210 / 30%);
+  color: #5a4b7e;
+}
+.ambient-seg-btn.on.mode-off {
+  background: rgb(120 128 140 / 22%);
+  color: #4a505a;
+}
+/* 설정 줄 안(금 문법) — 헤어라인·작은 라운드·윗면 광택, 주변 스위치·셀렉트와 같은 높이. */
+.ambient-seg.metal {
+  height: 32px;
+  padding: 2px;
+  gap: 1px;
+  border: 1px solid var(--gs-metal-line, var(--line, #e6e2f0));
+  border-radius: var(--gs-metal-radius, var(--r-md, 8px));
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 70%), rgb(255 255 255 / 0%) 55%),
+    var(--surface, #fff);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 75%),
+    0 1px 2px rgb(60 50 80 / 6%);
+}
+.ambient-seg.metal .ambient-seg-btn {
+  height: 26px;
+  padding: 0 9px;
+  border-radius: calc(var(--gs-metal-radius, var(--r-md, 8px)) - 2px);
+  font-size: var(--text-body, 13px);
+  font-weight: 700;
+  color: var(--gs-metal-ink, var(--ink, #2c2740));
+}
+html[data-showcase] .ambient-seg {
   display: none;
 }
 

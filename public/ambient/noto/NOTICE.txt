@@ -5,5 +5,6 @@ Artwork: Apache License 2.0 (see LICENSE alongside; the repository also ships th
 Copyright 2013 Google LLC.
 
 Used in VIC Schedule Studio's seasonal ambient scenes (components/shared/ambient/scenes/*):
-  emoji_u1f407 rabbit · emoji_u1f43f chipmunk · emoji_u1f420 tropical fish · emoji_u1f41f fish · emoji_u1f421 blowfish ·
-  emoji_u1f986 duck · emoji_u1f41e lady beetle · emoji_u1f41d honeybee · emoji_u1f98b butterfly · emoji_u1f330 chestnut.
+  emoji_u1f407 rabbit · emoji_u1f43f chipmunk · emoji_u1f986 duck · emoji_u1f41e lady beetle · emoji_u1f41d honeybee ·
+  emoji_u1f98b butterfly · emoji_u1f330 chestnut.
+(The three side-view fish emoji were retired 2026-09-04 — fish are now top-down shadows, see ../NOTICE.txt.)

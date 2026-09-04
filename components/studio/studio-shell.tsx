@@ -2125,6 +2125,13 @@ export function StudioShell({
   const workspaceRef = useRef<HTMLElement | null>(null);
   const editorPanelRef = useRef<HTMLElement | null>(null);
   const shellRef = useRef<HTMLElement | null>(null);
+  // 셸 요소를 **상태**로도 쥔다(콜백 ref) — 시청자 미리보기는 셸을 통째로 언마운트했다 다시 그리므로, 단계 측정 effect가
+  // 새 요소에 다시 붙어야 한다(2026-09-04 사용자: "미리보기 갔다 오면 창이 넓은데도 아이콘만 남는다").
+  const [shellEl, setShellEl] = useState<HTMLElement | null>(null);
+  const setShellRef = useCallback((el: HTMLElement | null) => {
+    shellRef.current = el;
+    setShellEl(el);
+  }, []);
   const bottomRowRef = useRef<HTMLDivElement | null>(null);
   // 크롬 압축 단계(2026-09-04 사용자: "창 비율을 억지로 망가뜨려도 대응") — 0 정상 · 1 미리보기 라벨 짧게 ·
   // 2 라벨→기호("?"·눈·나가기·"저장됨"만) · 3 저장 점만·버전 숨김·제목/달 축소. 단계별 CSS는 studio-calm-layer.css ⑤,
@@ -2134,20 +2141,24 @@ export function StudioShell({
   // 겹침(제목 칸은 min-width:0이라 1fr 열이 min-content 아래로 줄어 달 라벨 밑으로 파고들 수 있다).
   const [chromeTier, setChromeTier] = useState(0);
   useLayoutEffect(() => {
-    const shell = shellRef.current;
+    const shell = shellEl;
     if (!shell) return;
     if (isNarrow) {
       shell.removeAttribute("data-chrome");
       setChromeTier(0);
       return;
     }
+    // 레이아웃이 없는 상단바(언마운트됐거나 display:none)는 절대 재지 않는다 — 0×0 rect는 모든 단계에서 '겹침'으로 읽혀
+    // 3단계까지 올라간 값이 굳는다(2026-09-04 근본 원인: 시청자 미리보기로 셸이 언마운트되는 순간 ResizeObserver가 0 크기로
+    // 한 번 더 울렸고, 돌아온 새 셸은 관찰 대상이 아니라 다시 재지 않았다).
+    const measurable = (bar: HTMLElement) => bar.isConnected && bar.clientWidth > 0 && bar.getClientRects().length > 0;
     const overflows = (bar: HTMLElement) => {
       if (bar.scrollWidth > bar.clientWidth + 1) return true;
       const l = bar.querySelector(".studio-left")?.getBoundingClientRect();
       const m = bar.querySelector(".studio-month-label")?.getBoundingClientRect();
       const r = bar.querySelector(".studio-role-tools")?.getBoundingClientRect();
-      if (l && m && m.left < l.right + 4) return true;
-      if (m && r && r.left < m.right + 4) return true;
+      if (l && m && l.width > 0 && m.width > 0 && m.left < l.right + 4) return true;
+      if (m && r && m.width > 0 && r.width > 0 && r.left < m.right + 4) return true;
       // 계정 카드는 rail 폭으로 고정·등분(studio-calm-layer.css ⑦) — 칸보다 긴 라벨은 칸 안에서 넘친다(overflow hidden이라
       // 보이진 않지만 scrollWidth로 드러난다). 그것도 '넘침'으로 쳐서 단계를 올린다.
       for (const cell of bar.querySelectorAll<HTMLElement>(
@@ -2159,7 +2170,7 @@ export function StudioShell({
     };
     const measure = () => {
       const bar = shell.querySelector<HTMLElement>(".studio-topbar");
-      if (!bar) return;
+      if (!bar || !measurable(bar)) return; // 잴 수 없으면 이전 값을 건드리지 않는다(다시 보이면 RO·remount가 다시 잰다)
       let tier = 0;
       for (;;) {
         if (tier === 0) shell.removeAttribute("data-chrome");
@@ -2187,18 +2198,24 @@ export function StudioShell({
     // 창 크기 이벤트 없이도 상단바 폭은 바뀐다(세로 스크롤바 생김/사라짐, rail 열림·닫힘 슬라이드, 웹폰트 교체) — 그때 잰 단계가
     // 그대로 굳어 "창이 넓은데도 아이콘만"이 됐다(2026-09-04 사용자). 상단바·계정 카드 자체를 지켜보며 다시 잰다.
     const ro = new ResizeObserver(schedule);
+    ro.observe(shell);
     const bar = shell.querySelector<HTMLElement>(".studio-topbar");
     if (bar) ro.observe(bar);
     const card = shell.querySelector<HTMLElement>(".studio-role-tools");
     if (card) ro.observe(card);
+    // 탭이 다시 보이거나(숨겨진 동안의 리사이즈는 RO가 못 본다) 창 포커스가 돌아오면 한 번 더.
+    document.addEventListener("visibilitychange", schedule);
+    window.addEventListener("pageshow", schedule);
     return () => {
       cancelled = true;
       if (raf) cancelAnimationFrame(raf);
       ro.disconnect();
       window.removeEventListener("resize", schedule);
+      document.removeEventListener("visibilitychange", schedule);
+      window.removeEventListener("pageshow", schedule);
     };
-    // 헤더 내용이 바뀌는 조건들(역할·미리보기·로그인 상태·저장 상태 글자)에서 다시 잰다.
-  }, [isNarrow, isDeveloper, previewRole, actor.isAuthenticated, isEffectivelyOwner, saveState]);
+    // 헤더 내용이 바뀌는 조건들(셸 remount·역할·미리보기·로그인 상태·저장 상태 글자)에서 다시 잰다.
+  }, [shellEl, isNarrow, isDeveloper, previewRole, actor.isAuthenticated, isEffectivelyOwner, saveState]);
   // 미리보기 이동 카드(.viewer-preview-actions) = 포스터 레일(.public-right) 폭·오른쪽 끝(2026-09-04 사용자: 편집실 계정 카드와
   // 같은 지적). 오버레이와 레일이 같은 문서에 있으니 여기서 둘 다 재서 카드에 --pv-w/--pv-mr(레이아웃 px = rect ÷ zoom)을
   // 준다(studio-shell.css). 레일이 접힌 아바타 scene에선 변수를 지워 기본 폭. 레일 폭이 바뀌는 순간(포스터 배율·아바타 토글)은
@@ -5968,7 +5985,7 @@ export function StudioShell({
         avatarReady ? "" : " avatar-no-anim"
       }`}
       data-chrome={chromeTier || undefined}
-      ref={shellRef}
+      ref={setShellRef}
     >
       {/* 아바타 rail — 하나의 fixed flex-column 박스에 [색상필터(위, 스크롤) | 아바타(아래, 고정비율)].
           flex-column이라 둘이 절대 안 겹친다. scene일 때만 필터를 여기 담는다. */}
