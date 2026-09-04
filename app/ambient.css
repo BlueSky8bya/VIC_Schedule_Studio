@@ -24,8 +24,12 @@
   z-index: -1;
   pointer-events: none;
   contain: strict;
-  /* 달을 넘겨 계절이 바뀌면 새 장면이 스르르 — opacity만(합성기). fill은 backwards: both면 끝값(1)이 캐스케이드의 opacity
-     (집중 모드 옅어짐)를 영원히 덮는다. */
+  /* 달을 넘겨 계절이 바뀌면 새 장면이 스르르 — opacity만(합성기). fill은 backwards: both면 끝값이 캐스케이드의
+     opacity(집중 모드 옅어짐)를 영원히 덮는다.
+     끝값은 **고정 1이 아니라 --amb-op** — 애니메이션은 캐스케이드보다 세서, 1로 끝나면 '흐리게'로 맞춰 둔 상태에서
+     달을 넘길 때 0.9초 동안 짙게 보였다가 툭 어두워진다(2026-09-04 소유자). 모드가 끝값을 정한다. */
+  --amb-op: 1;
+  opacity: var(--amb-op);
   animation: gs-season-in 0.9s ease-out backwards;
   transition: opacity 0.45s var(--ease, ease);
 }
@@ -34,10 +38,14 @@
 .gs-tide {
   transition: opacity 0.45s var(--ease, ease);
 }
+/* 캔버스 장면은 **끝값 변수**로 — 입장 애니메이션이 그 값으로 끝난다(깜빡임 없음). */
 html[data-ambient-dim] .gs-season,
-html[data-ambient-dim] .gs-tide,
 /* 설정 '흐리게'(vic.ambient = dim) — 늘 옅게. 감상 모드에선 잠시 걷어 온전히 본다. */
-html[data-ambient="dim"]:not([data-showcase]) .gs-season,
+html[data-ambient="dim"]:not([data-showcase]) .gs-season {
+  --amb-op: 0.28;
+}
+/* 물결(퇴역)은 입장 애니메이션이 없어 opacity 그대로. */
+html[data-ambient-dim] .gs-tide,
 html[data-ambient="dim"]:not([data-showcase]) .gs-tide {
   opacity: 0.28;
 }
@@ -46,7 +54,7 @@ html[data-ambient="dim"]:not([data-showcase]) .gs-tide {
     opacity: 0;
   }
   to {
-    opacity: 1;
+    opacity: var(--amb-op);
   }
 }
 
