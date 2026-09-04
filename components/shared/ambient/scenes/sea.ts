@@ -123,10 +123,68 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
       }
       if (water) g.drawImage(water, 0, 0, f.w, f.h);
       if (horizon && !deep) g.drawImage(horizon, 0, 0, f.w, horizon.height);
-      // 너울(큰 것 2겹) — 옅은 밝은 띠가 천천히 내려온다.
-      if (!deep) drawWaves(g, t, f.w, { top: top(), bottom: f.h, bands: 3, speed: 0.045, amp: 16, alpha: 0.22, foam: pal.foam });
-      // 거품 선(잔물결) — 조금 빠르고 가늘게.
+      // 먼바다 = 파장 14~100m → 한 화면에 마루 여럿. 깊은 바다 = 225~624m → **큰 너울 한 번**.
+      // (2026-09-04 조사. 옛 코드는 깊은 바다에 수면 문법을 아예 안 그려 두 화면이 '불투명도만 다른 같은 그림'이었다 —
+      //  검토 라운드2 미관 #4.)
+      drawWaves(g, t, f.w, {
+        top: deep ? 0 : top(),
+        bottom: f.h,
+        bands: deep ? 1 : 7,
+        speed: deep ? 0.014 : 0.05,
+        amp: deep ? 52 : 15,
+        alpha: deep ? 0.07 : 0.2,
+        foam: pal.foam
+      });
+      // 거품 선(잔물결) — 조금 빠르고 가늘게. 깊은 바다엔 없다(수면이 아니다).
       if (!deep) drawWaves(g, t * 1.6, f.w, { top: top(), bottom: f.h, bands: 9, speed: 0.07, amp: 5, alpha: 0.1, foam: pal.foam });
+      // 계절 신호 — 넷이 같은 청회색 판이면 계절이 안 읽힌다(검토 라운드2 미관 #4). 표면에 계절의 표류물을 띄운다.
+      if (!deep) {
+        const drift = Math.round(lerp(6, 20, f.load));
+        for (let i = 0; i < drift; i++) {
+          const ph = i * 2.399;
+          const u = (ph * 0.137 + t * (0.004 + 0.002 * (i % 3))) % 1;
+          const v = (ph * 0.0731 + t * 0.006 + i * 0.041) % 1;
+          const y = top() + 24 + v * (f.h - top() - 30);
+          const x = ((u * 1.6 - 0.3) * f.w + Math.sin(t * 0.5 + ph) * 12 + f.w) % f.w;
+          const k = 0.5 + 0.9 * ((y - top()) / Math.max(1, f.h - top()));
+          g.save();
+          g.translate(x, y);
+          g.scale(1, GROUND_SQUASH);
+          g.rotate(ph);
+          if (season === "autumn") {
+            // 떠내려온 마른 잎 — 탁한 갈색(선명한 주황·빨강 금지).
+            g.fillStyle = `rgb(122 96 66 / ${0.32 + 0.18 * k})`;
+            g.beginPath();
+            g.ellipse(0, 0, 5.5 * k, 2.4 * k, 0, 0, TAU);
+            g.fill();
+          } else if (season === "winter") {
+            // 성에 조각 — 각진 흰 판.
+            g.fillStyle = `rgb(240 248 255 / ${0.4 + 0.24 * k})`;
+            g.beginPath();
+            g.moveTo(-6 * k, -2 * k);
+            g.lineTo(3 * k, -4 * k);
+            g.lineTo(7 * k, 1 * k);
+            g.lineTo(-2 * k, 4 * k);
+            g.closePath();
+            g.fill();
+          } else if (season === "spring") {
+            // 꽃가루·거품 띠 — 가늘고 긴 크림색 선.
+            g.strokeStyle = `rgb(238 236 214 / ${0.2 + 0.16 * k})`;
+            g.lineWidth = 1.6 * k;
+            g.beginPath();
+            g.moveTo(-14 * k, 0);
+            g.quadraticCurveTo(0, -3 * k, 14 * k, 0);
+            g.stroke();
+          } else {
+            // 여름 — 잔거품 알갱이.
+            g.fillStyle = `rgb(255 255 255 / ${0.22 + 0.2 * k})`;
+            g.beginPath();
+            g.arc(0, 0, 1.6 * k, 0, TAU);
+            g.fill();
+          }
+          g.restore();
+        }
+      }
       // (깊은 바다엔 수면 문법을 그리지 않는다 — 물속인데 파도가 가로지르면 카메라가 둘이다.)
       // 물고기 떼 그림자 — 실루엣을 눌러서(3/4 시점) 찍는다. 멀수록 작고 옅게.
       if (!fishAsked) {

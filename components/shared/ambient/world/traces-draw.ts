@@ -226,10 +226,16 @@ function drawSapling(g: CanvasRenderingContext2D, season: SeasonKey, b: TraceBak
 // 기슭 띠의 아래 끝(정규화 세로). 0.115는 지평선(HORIZON_V 0.12)보다 **위**라 기슭 전체가 안개 띠 밑에 깔려
 // "하늘에 뜬 풀"과 물가 이중선으로 보였다(2026-09-04 검토 1차) → 지평선 아래로 내린다.
 export const SHORE_V = 0.21;
+/** 물가 선의 만·곶(정규화 x → px 낙차). 좌우 끝의 만곡과 별개로 **가운데에도** 굴곡이 있어야 한다 —
+ *  옛 물가는 화면 폭 1400 내내 두께 일정한 수평 띠라 "수직벽 수조"로 읽혔다(검토 라운드2, 세 명 모두). */
+export function shoreWave(x: number, w: number): number {
+  const u = x / Math.max(1, w);
+  return Math.sin(u * 5.1 + 0.6) * 21 + Math.sin(u * 11.3 + 2.2) * 9 + Math.sin(u * 2.3 - 0.9) * 13;
+}
 /** 기슭 띠 — 지평선(hz)에서 시작해 h*SHORE_V까지. 좌우 가장자리는 아래로 내려와 연못을 감싼다(만곡). */
 export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): HTMLCanvasElement {
   const hz = horizonY(h);
-  const H = Math.round(h * SHORE_V - hz) + 24 + 52; // 만곡(최대 44px)까지 담을 여유 — 없으면 좌우 끝이 납작하게 잘린다
+  const H = Math.round(h * SHORE_V - hz) + 24 + 52 + 56; // 만곡(44px) + 만·곶(±43px)까지 담을 여유
   const { c, g } = makeCanvas(Math.max(1, w), H);
   const r = rng(77 + w);
   const edge = H - 24;
@@ -263,7 +269,7 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   g.moveTo(0, -8);
   for (let x = 0; x <= w + 12; x += 12) {
     const xx = Math.min(x, w);
-    g.lineTo(xx, edge + ((t) => (1 - t) * (1 - t) * 44)(Math.min(1, Math.min(xx, w - xx) / (w * 0.3))));
+    g.lineTo(xx, edge + ((t) => (1 - t) * (1 - t) * 44)(Math.min(1, Math.min(xx, w - xx) / (w * 0.3))) + shoreWave(xx, w));
   }
   g.lineTo(w, -8);
   g.closePath();
@@ -273,7 +279,7 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
     const t = Math.min(1, Math.min(x, w - x) / (w * 0.3));
     return (1 - t) * (1 - t) * 44;
   };
-  const shoreLine = (x: number) => edge + bay(x) + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5;
+  const shoreLine = (x: number) => edge + bay(x) + shoreWave(x, w) + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5;
   g.beginPath();
   for (let x = 0; x <= w + 12; x += 12) {
     const y = shoreLine(Math.min(x, w));
@@ -290,7 +296,8 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   const tufts = Math.round(w / 14);
   for (let i = 0; i < tufts; i++) {
     const x = r() * w;
-    const y = r() * (edge - 6);
+    // 물가가 굽이치므로 풀·자갈도 **그 곡선을 따라** 놓여야 한다(수평 기준선이면 만에서는 물 위에 뜬다).
+    const y = r() * (shoreLine(x) - 6);
     for (let k = 0; k < 3; k++) {
       const len = 5 + r() * 7;
       const a = -Math.PI / 2 + (r() - 0.5) * 1.4;
@@ -307,7 +314,7 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   const pebbles = Math.round(w / 90);
   for (let i = 0; i < pebbles; i++) {
     const x = r() * w;
-    const y = edge - 4 - r() * 14;
+    const y = shoreLine(x) - 4 - r() * 14;
     const rr = 2 + r() * 2.5;
     g.fillStyle = r() < 0.5 ? "rgb(178 172 160)" : "rgb(160 150 138)";
     g.beginPath();

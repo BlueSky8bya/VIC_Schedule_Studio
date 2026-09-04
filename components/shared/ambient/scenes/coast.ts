@@ -134,31 +134,48 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           const x = sx + dx * t2 + nx * wob;
           const y = sy + dy * t2 + ny * wob;
           // 세계 폭은 바다 쪽으로 3~4배(실제 배수망), 화면 폭 = 세계 폭 × 원근.
-          const world = order === 3 ? 14 + 70 * t2 * t2 : order === 2 ? 8 + 26 * t2 * t2 : 4 + 11 * t2 * t2;
+          const world = order === 3 ? 7 + 96 * t2 * t2 : order === 2 ? 5 + 32 * t2 * t2 : 2.5 + 13 * t2 * t2;
           pts.push({ x, y, hw: Math.max(0.6, world * landK(y)) });
         }
         chanPts.push(pts);
         return pts;
       };
-      // 본류 둘 — 화면 아래(육지) 밖에서 물가까지. 각 본류에 지류 셋, 지류마다 잔가지 둘(가지치기 ≈ 3.5, 3단).
-      for (let i = 0; i < 2; i++) {
-        const bx = w * (0.3 + 0.4 * i) + (r() - 0.5) * w * 0.08;
-        const main = chan(bx + (r() - 0.5) * 70, VIS + 50, bx + (r() - 0.5) * 40, 54, 3, i * 2.1);
+      // 배수망은 **비대칭 한 벌**이다: 큰 본류 하나가 화면을 비스듬히 가로지르고, 작은 본류 하나가 반대쪽에서
+      // 짧게 들어와 다른 지점으로 빠진다. 옛 구조(폭 0.3·0.7에 같은 길이의 수직 본류 둘)는 세 검토자 모두
+      // "사람 다리 두 짝 / 타일 반복"으로 읽었다(검토 라운드2). 하구는 위(바다)이므로 위로 갈수록 넓다.
+      const outletBase = 0.24 + r() * 0.2; // 큰 갯골이 바다로 빠지는 자리
+      {
+        // ① 큰 본류 — 육지 쪽 시작점과 하구의 x가 크게 다르다(대각선). 이것만으로 "수직 기둥"이 사라진다.
+        const ex = w * outletBase;
+        const sx = ex + w * (0.2 + r() * 0.22);
+        const main = chan(sx, VIS + 60, ex, 50, 3, 0.4);
         for (let b2 = 0; b2 < 3; b2++) {
-          const at = Math.round(main.length * (0.22 + 0.24 * b2 + r() * 0.08));
+          const at = Math.round(main.length * (0.2 + 0.26 * b2 + r() * 0.08));
           const node = main[Math.min(main.length - 1, at)];
           if (!node) continue;
-          const side = b2 % 2 === 0 ? -1 : 1;
-          const run = 90 + r() * 90;
-          const sub = chan(node.x + side * run, node.y + run * 0.85, node.x, node.y, 2, i + b2);
+          const side = b2 === 1 ? 1 : -1;
+          const run = 70 + r() * 130; // 길이를 크게 흩는다(옛 90~180은 지류가 서로 복제로 보였다)
+          const sub = chan(node.x + side * run, node.y + run * (0.5 + r() * 0.7), node.x, node.y, 2, b2 * 1.7);
           for (let c2 = 0; c2 < 2; c2++) {
-            const at2 = Math.round(sub.length * (0.3 + 0.3 * c2 + r() * 0.1));
+            const at2 = Math.round(sub.length * (0.28 + 0.34 * c2 + r() * 0.12));
             const n3 = sub[Math.min(sub.length - 1, at2)];
             if (!n3) continue;
             const s3 = c2 % 2 === 0 ? -1 : 1;
-            const run2 = 46 + r() * 44;
-            chan(n3.x + s3 * run2, n3.y + run2 * 0.8, n3.x, n3.y, 1, b2 + c2 * 1.3);
+            const run2 = 30 + r() * 70;
+            chan(n3.x + s3 * run2, n3.y + run2 * (0.5 + r() * 0.6), n3.x, n3.y, 1, b2 + c2 * 1.3);
           }
+        }
+      }
+      {
+        // ② 작은 본류 — 반대쪽, 짧고 가늘게. 차수를 한 단 낮춰(2) 폭·사행이 확실히 다르다.
+        const ex2 = w * (0.72 + r() * 0.16);
+        const main2 = chan(ex2 - w * (0.12 + r() * 0.14), VIS * (0.72 + r() * 0.2), ex2, 52, 2, 2.6);
+        for (let b2 = 0; b2 < 2; b2++) {
+          const at = Math.round(main2.length * (0.3 + 0.32 * b2 + r() * 0.1));
+          const node = main2[Math.min(main2.length - 1, at)];
+          if (!node) continue;
+          const run2 = 34 + r() * 56;
+          chan(node.x + (b2 ? 1 : -1) * run2, node.y + run2 * (0.5 + r() * 0.6), node.x, node.y, 1, b2 * 2.2);
         }
       }
       const drawChan = (kw: number, col: string) => {
@@ -192,6 +209,8 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 젖은 뻘 둔치 → 물(하늘을 비춘다) → 안쪽 가장자리 반짝. 굽이 바깥이 공격사면이라 조금 더 넓게 잡는다.
       drawChan(1.55, "rgb(104 96 82 / 0.32)");
       drawChan(1, "rgb(126 146 158 / 0.5)");
+      // 잔류수 — 골 바닥에 남은 물. 둔치보다 **어둡고** 그 위에 하늘 반사가 한 줄(검토 라운드2 현실성 #4).
+      drawChan(0.52, season === "winter" ? "rgb(74 92 108 / 0.5)" : "rgb(62 78 88 / 0.5)");
       drawChan(0.3, "rgb(210 226 234 / 0.16)");
       // 갈라진 뻘(펄) — 순수 펄에는 잔물결이 아니라 **건열 다각형**(장축 평균 37cm). 위(바다) 쪽 모래질엔 없다.
       {
@@ -362,13 +381,31 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 해송(곰솔) 방풍림 — 반사형 모래해안의 후빈·사구 뒤에는 거의 언제나 솔숲 띠가 있다(한국 동해안 표준 경관).
       // 화면 맨 아래(가까움)에서 잘리며 액자를 만든다(동물의 숲 카메라). 사구 풀보다 **먼저** 그려 풀이 앞에 온다.
       {
-        const belt = 8;
-        for (let i = 0; i < belt; i++) {
-          const x = -30 + (i + 0.5 + (r() - 0.5) * 0.4) * ((w + 60) / belt);
-          const y = VH * (0.93 + r() * 0.08);
-          const k = 0.75 + r() * 0.28;
-          softBlob(g, x + 7, y - 5, 40 * k, "92 90 72", 0.15, 0, GROUND_SQUASH);
-          drawProp(g, art, season === "winter" ? "tree-pine-winter" : "tree-pine", x, y, { k, r: r(), flip: r() < 0.5 });
+        // 곰솔은 사구 풀(무릎 높이)의 **10배가 넘는다** — 옛 k 0.75~1.03은 사초의 3배뿐이라 관목 울타리로 읽혔다.
+        // 또 등간격·같은 y·같은 크기가 울타리 인상을 굳혔다(검토 라운드2 세 명 모두). 두 무리로 뭉치고,
+        // 크기·깊이를 크게 흩고, 서로 겹치게 놓는다.
+        const pineId = season === "winter" ? "tree-pine-winter" : "tree-pine";
+        const clumps = [
+          { c: w * (0.1 + r() * 0.16), n: 5, sp: w * 0.2 },
+          { c: w * (0.58 + r() * 0.3), n: 4, sp: w * 0.17 }
+        ];
+        type P = { x: number; y: number; k: number };
+        const belt: P[] = [];
+        for (const cl of clumps) {
+          for (let i = 0; i < cl.n; i++) {
+            belt.push({
+              x: cl.c + (r() - 0.5) * cl.sp * 2,
+              y: VH * (0.9 + r() * 0.18),
+              k: 1.25 + r() * 0.85
+            });
+          }
+        }
+        // 무리 사이를 잇는 낮은 몇 그루(띠가 끊겨 보이지 않게, 그러나 작게).
+        for (let i = 0; i < 3; i++) belt.push({ x: r() * w, y: VH * (0.86 + r() * 0.08), k: 0.7 + r() * 0.3 });
+        belt.sort((a2, b2) => a2.y - b2.y); // 뒤가 앞에 가려진다
+        for (const t2 of belt) {
+          softBlob(g, t2.x + 8, t2.y - 4, 46 * t2.k, "92 90 72", 0.16, 0, GROUND_SQUASH * 0.5);
+          drawProp(g, art, pineId, t2.x, t2.y, { k: t2.k, r: r(), flip: r() < 0.5 });
         }
       }
       // 모래언덕 풀 — 화면 아래(가까움) 가장자리에만.
@@ -424,7 +461,9 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         pools.push([x, y, rx, ry]);
         const k = depthScale(shoreY() - 60 + y, h);
         // 웅덩이는 "칠한 구멍"이 아니라 하늘을 비추는 물 — 옅게 깔고 안에 하늘빛 줄 두 개.
-        g.fillStyle = season === "winter" ? "rgb(178 196 208 / 0.7)" : "rgb(120 145 160 / 0.55)";
+        // 고인 물은 암반보다 **어둡다**(하늘 반사만 국부적으로 밝다) — 옛 밝은 하늘색은 스티커로 읽혔다
+        // (검토 라운드2 현실성 #6 · 경계 #10).
+        g.fillStyle = season === "winter" ? "rgb(96 116 132 / 0.72)" : "rgb(58 78 90 / 0.62)";
         g.beginPath();
         g.ellipse(x, y, rx * k, ry * k, 0, 0, TAU);
         g.fill();
@@ -432,12 +471,14 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         g.beginPath();
         g.ellipse(x, y, rx * k, ry * k, 0, 0, TAU);
         g.clip();
-        softBlob(g, x - rx * 0.15 * k, y - ry * 0.5 * k, rx * 0.9 * k, "226 238 246", 0.22, 0, 0.5);
-        softBlob(g, x + rx * 0.3 * k, y + ry * 0.35 * k, rx * 0.7 * k, "88 110 124", 0.3, 0, 0.5);
+        softBlob(g, x - rx * 0.2 * k, y - ry * 0.55 * k, rx * 0.66 * k, "226 238 246", 0.3, 0, 0.5);
+        softBlob(g, x + rx * 0.3 * k, y + ry * 0.4 * k, rx * 0.8 * k, "24 40 48", 0.34, 0, 0.5);
+        // 웅덩이 안의 해조 — 어두운 초록 몇 점(빈 파란 타원이 아니게).
+        for (let q = 0; q < 3; q++) softBlob(g, x + (r() - 0.5) * rx * 1.2 * k, y + (r() - 0.5) * ry * 1.2 * k, (3 + r() * 5) * k, "44 74 56", 0.5, 0, 0.6);
         g.restore();
         // 바위 턱 — 웅덩이 위쪽 테두리는 어둡고 아래는 밝다(깊이).
-        g.strokeStyle = "rgb(70 78 82 / 0.22)";
-        g.lineWidth = 1.6;
+        g.strokeStyle = "rgb(52 58 62 / 0.45)";
+        g.lineWidth = 2.2;
         g.beginPath();
         g.ellipse(x, y, rx * k, ry * k, 0, Math.PI, TAU);
         g.stroke();
@@ -446,13 +487,37 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         g.ellipse(x, y, rx * k * 0.94, ry * k * 0.94, 0, 0, Math.PI);
         g.stroke();
       }
-      // 바위 무리 — 클립 경계(위 40px)와 웅덩이를 피해서 놓는다.
-      for (let i = 0; i < Math.round(w / 55); i++) {
-        const x = r() * w;
-        const y = 110 + r() * (VIS - 160);
-        if (pools.some(([px, py, prx, pry]) => Math.abs(x - px) < prx + 14 && Math.abs(y - py) < pry + 12)) continue;
-        const k = (0.85 + r() * 0.5) * landK(y) * 1.5;
-        drawProp(g, art, "rock", x, y, { k, r: r(), flip: r() < 0.5 });
+      // 바위는 **노두(露頭) 단위로 뭉친다** — 균등 난수 산포는 크기 위계도 방향성도 없어 "돌 스티커 뿌리기"로
+      // 읽혔다(검토 라운드2 세 명). 노두 4곳에 큰 것 하나 + 붙은 작은 것들, 그리고 근경에 초점 바위 하나.
+      {
+        type R2 = { x: number; y: number; k: number };
+        const rocks: R2[] = [];
+        const outcrops = 4;
+        for (let o = 0; o < outcrops; o++) {
+          const cx2 = w * (0.1 + 0.26 * o + (r() - 0.5) * 0.12);
+          const cy2 = 120 + r() * (VIS - 190);
+          const dir = r() * Math.PI; // 노두마다 결의 방향이 있다
+          const big = (1.5 + r() * 0.7) * landK(cy2) * 1.5;
+          rocks.push({ x: cx2, y: cy2, k: big });
+          const n2 = 3 + Math.floor(r() * 3);
+          for (let i = 0; i < n2; i++) {
+            const d = 22 + r() * 54;
+            rocks.push({
+              x: cx2 + Math.cos(dir + (r() - 0.5) * 1.1) * d,
+              y: cy2 + Math.sin(dir + (r() - 0.5) * 1.1) * d * GROUND_SQUASH,
+              k: big * (0.3 + r() * 0.4)
+            });
+          }
+        }
+        // 근경 초점 — 화면 아래쪽의 큰 바위 하나(가까움의 신호).
+        rocks.push({ x: w * (0.2 + r() * 0.6), y: VIS * (0.86 + r() * 0.1), k: 2.6 + r() * 0.8 });
+        rocks.sort((a2, b2) => a2.y - b2.y);
+        for (const rk of rocks) {
+          if (rk.y < 110 || rk.y > VIS - 6) continue;
+          if (pools.some(([px, py, prx, pry]) => Math.abs(rk.x - px) < prx + 14 && Math.abs(rk.y - py) < pry + 12)) continue;
+          softBlob(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, "58 64 68", 0.18, 0, GROUND_SQUASH * 0.5);
+          drawProp(g, art, "rock", rk.x, rk.y, { k: rk.k, r: r(), flip: r() < 0.5 });
+        }
       }
       // 조류대(해조 띠) — 물가 선 바로 아래 **검은 가로 띠**. 실제 암석해안에서 대비가 가장 센 요소이고,
       // 이게 있어야 "바다의 바위"로 읽힌다(없으면 산의 바위처럼 보인다, 2026-09-04 조사).
@@ -586,7 +651,10 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       if (land) {
         // 물가 선은 자로 그은 가로선이 아니다 — 완만하게 굽이치는 곡선(만·곶). 뭍 클립·젖은 띠·거품이 같은 곡선을 쓴다.
         const mp = mode === "tidal" ? 0 : mode === "sandy" ? 2.1 : 4.2; // 해안별 위상
-        const lineY = (x: number) => sy + Math.sin(x * 0.0021 + 0.7 + mp) * 22 + Math.sin(x * 0.0067 + 2.1 + mp * 1.3) * 9 + Math.sin(x * 0.02 + t * 1.1) * 2.5;
+        // 모래해안엔 **비치 커습**의 리듬이 정선 자체에 있다(주기 ~240px의 초승달 만입/뿔) — 단일 장주기 곡선만
+        // 있으면 반사형 해빈으로 안 읽힌다(검토 라운드2 현실성 #7b).
+        const cusp = mode === "sandy" ? (x: number) => Math.sin(x * 0.026 + 1.1) * 7 + Math.sin(x * 0.052 + 0.3) * 2.5 : () => 0;
+        const lineY = (x: number) => sy + Math.sin(x * 0.0021 + 0.7 + mp) * 22 + Math.sin(x * 0.0067 + 2.1 + mp * 1.3) * 9 + Math.sin(x * 0.02 + t * 1.1) * 2.5 + cusp(x);
         const shorePath = (extend: number) => {
           g.beginPath();
           g.moveTo(-12, lineY(-12) + extend);
@@ -609,7 +677,9 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         g.fillRect(0, sy - 24, f.w, wet2 + 50);
         g.restore();
         // 물가 거품 — 두 줄(짙은 안쪽 선 + 옅은 바깥 여운).
-        for (const [off, a, lw] of [[0, 0.6, 1.4], [-5, 0.24, 1] ] as const) {
+        // 반사형 해빈은 쇄파대가 없는 대신 물가에서 파도가 **붕괴**한다 — 그 자리의 포말이 두껍고 밝다.
+        const foamRows = mode === "sandy" ? ([[0, 0.85, 3.4], [-7, 0.4, 2], [4, 0.3, 1.2]] as const) : ([[0, 0.6, 1.4], [-5, 0.24, 1]] as const);
+        for (const [off, a, lw] of foamRows) {
           g.strokeStyle = `rgb(${pal.foam} / ${a})`;
           g.lineWidth = lw;
           g.beginPath();

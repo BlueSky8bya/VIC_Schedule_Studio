@@ -103,7 +103,7 @@ export function ySort<T extends { y: number }>(items: T[]): T[] {
 const HZ_COLORS: Record<SeasonKey, { haze: string; hill: string; hill2: string; tree: string }> = {
   spring: { haze: "232 240 226", hill: "#c2d6b0", hill2: "#b0c89e", tree: "#8fae7c" },
   summer: { haze: "226 236 222", hill: "#a9c79a", hill2: "#96b888", tree: "#6f9a62" },
-  autumn: { haze: "224 226 222", hill: "#c3c0ac", hill2: "#aeae9a", tree: "#8a7256" },
+  autumn: { haze: "228 224 214", hill: "#c1b7a0", hill2: "#a99d86", tree: "#8a7256" },
   winter: { haze: "240 243 247", hill: "#e6ebf1", hill2: "#dbe2ea", tree: "#8a8f86" }
 };
 
@@ -113,15 +113,20 @@ export type HorizonProfile = "land" | "sea";
 /** profile "sea" = 먼 언덕·나무 줄 없이 안개 띠와 수평선만(바다·해안은 뭍의 능선이 있으면 거짓말이 된다). */
 export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, profile: HorizonProfile = "land"): HTMLCanvasElement {
   const hz = horizonY(h);
-  const H = Math.ceil(hz + 24);
+  // 띠는 지평선 아래로 **길게** 이어진다(옛 24px). 24px 안에서 안개를 0으로 떨어뜨리면 그 끝이 44장 전부에
+  // 전폭 가로 이음매로 보였다(검토 라운드2 #1: "흐린 원경 띠가 뚝 끝나고 지면이 시작한다"). 화면 높이의 16%에
+  // 걸쳐 서서히 사라지면 띠와 땅이 경계선 없이 섞인다.
+  const H = Math.ceil(hz + Math.max(48, h * 0.16));
   const { c, g } = makeCanvas(Math.max(1, Math.ceil(w * dpr)), Math.ceil(H * dpr));
   g.scale(dpr, dpr);
   const col = HZ_COLORS[season];
   const r = rng(311 + Math.round(w) * 3 + season.length);
   // 안개 — 위는 짙게, 지평선 아래로 옅어진다(대기 원근).
   const grad = g.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, `rgb(${col.haze} / 0.6)`);
-  grad.addColorStop(hz / H, `rgb(${col.haze} / 0.34)`);
+  grad.addColorStop(0, `rgb(${col.haze} / 0.55)`);
+  // 지평선에서의 값은 엔진의 대기 안개(drawDepthHaze, HAZE_ALPHA 0.17)와 **같아야** 계단이 안 생긴다.
+  grad.addColorStop(hz / H, `rgb(${col.haze} / ${HAZE_ALPHA})`);
+  grad.addColorStop(0.62, `rgb(${col.haze} / ${HAZE_ALPHA * 0.4})`);
   grad.addColorStop(1, `rgb(${col.haze} / 0)`);
   g.fillStyle = grad;
   g.fillRect(0, 0, w, H);
@@ -178,13 +183,15 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, pr
   // 지평선 선 — 아주 옅은 밝은 줄(하늘과 땅의 경계 느낌). 반경이 캔버스 높이보다 크면 **아래에서 뭉텅 잘려**
   // 44장 전부에 y=hz+24 가로선이 생긴다(2026-09-04 검토 4차) → 세로로 눌러 띠 안에서 끝내고, 아래 24행은 지운다.
   softBlob(g, w / 2, hz * 0.5, w * 0.6, "255 255 255", 0.12, 0, (hz * 0.55) / (w * 0.6));
-  const fade = g.createLinearGradient(0, H - 26, 0, H);
+  const fh = H - hz;
+  const fade = g.createLinearGradient(0, hz, 0, H);
   fade.addColorStop(0, "rgb(0 0 0 / 0)");
+  fade.addColorStop(0.55, "rgb(0 0 0 / 0.55)");
   fade.addColorStop(1, "rgb(0 0 0 / 1)");
   g.save();
   g.globalCompositeOperation = "destination-out";
   g.fillStyle = fade;
-  g.fillRect(0, H - 26, w, 26);
+  g.fillRect(0, hz, w, fh + 1);
   g.restore();
   return c;
 }

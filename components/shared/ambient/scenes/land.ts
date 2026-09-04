@@ -25,10 +25,10 @@ const SEASON_SEED: Record<SeasonKey, number> = { spring: 0, summer: 977, autumn:
 // 땅 그라데이션 — 위(멀다)는 밝고 아래(가깝다)는 확실히 짙게(≈45 L 폭). 폭이 좁으면 원근을 안개가 혼자 지고
 // 열 바이옴이 "같은 뿌연 판"이 된다(2026-09-04 검토 5차: 숲만 σ 30+, 나머지는 9~16).
 const GROUND: Record<LandKind, Record<SeasonKey, [string, string]>> = {
-  forest: { spring: ["#c6dbaf", "#6f8f61"], summer: ["#b0cc9a", "#5f7f52"], autumn: ["#b6ab86", "#6b6244"], winter: ["#f4f8fd", "#a6bcd2"] },
-  hill: { spring: ["#dbe8c6", "#93b077"], summer: ["#c6dea8", "#77985c"], autumn: ["#d0c8a8", "#8a8462"], winter: ["#f4f9ff", "#a8c0d8"] },
-  valley: { spring: ["#cfe0c8", "#86a583"], summer: ["#bcd6b6", "#6d9068"], autumn: ["#c2c0a2", "#79795e"], winter: ["#f0f6fd", "#a4bcd4"] },
-  mountain: { spring: ["#d6dbd0", "#94a08f"], summer: ["#cbd4c6", "#869180"], autumn: ["#c8c4b6", "#807d6e"], winter: ["#f6faff", "#aec2d6"] }
+  forest: { spring: ["#c6dbaf", "#6f8f61"], summer: ["#b0cc9a", "#5f7f52"], autumn: ["#b6ab86", "#514a34"], winter: ["#f4f8fd", "#a6bcd2"] },
+  hill: { spring: ["#dbe8c6", "#93b077"], summer: ["#c6dea8", "#77985c"], autumn: ["#d0c8a8", "#6b6647"], winter: ["#f4f9ff", "#a8c0d8"] },
+  valley: { spring: ["#cfe0c8", "#86a583"], summer: ["#bcd6b6", "#6d9068"], autumn: ["#c2c0a2", "#5d5d44"], winter: ["#f0f6fd", "#a4bcd4"] },
+  mountain: { spring: ["#d6dbd0", "#94a08f"], summer: ["#cbd4c6", "#869180"], autumn: ["#c8c4b6", "#63604f"], winter: ["#f6faff", "#aec2d6"] }
 };
 
 export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKind }): Scene {
@@ -51,6 +51,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
   const foam: { u: number; lane: number; sp: number }[] = [];
   const gy = () => horizonY(h);
   const groundY = (r: number) => gy() + r * (h - gy());
+  /** 작은 식물(풀포기·꽃)의 추가 원근 테이퍼 — 0.3(지평선) → 1.0(발치). 큰 물체(나무·바위)에는 쓰지 않는다. */
+  const smallK = (y: number) => 0.3 + 0.7 * Math.min(1, Math.max(0, (y - gy()) / Math.max(1, h - gy())));
   // 발밑 그림자 — 딱딱한 검은 타원은 밝은 땅(눈·모래)에서 "기름 웅덩이"로 읽혔다(2026-09-04 검토 1차).
   // 좁게·옅게·가장자리가 풀리게, 겨울엔 청회색(눈 그늘).
   const shColor = season === "winter" ? "92 106 124" : "60 66 58";
@@ -66,9 +68,9 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     const dx = hour < 12 ? -8 : 8;
     if (pine) {
       // 소나무 — 폭은 참나무(2R)보다 좁고(1.45R) 키는 조금 크다. 실루엣이 갈려야 "혼효림"으로 읽힌다.
-      shadow(g, x + dx * 0.34, y - 2, R * 0.82, 0.16);
+      shadow(g, x + dx * 0.34, y - 2, R * 0.95, 0.16);
       drawProp(g, art, season === "winter" ? "tree-pine-winter" : "tree-pine", x, y, {
-        k: (R * 1.45) / 92,
+        k: (R * 1.78) / 92,
         r: ((x * 7919) % 997) / 997,
         flip: (Math.round(x) & 1) === 1
       });
@@ -104,7 +106,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     const spread = 26 + r() * 54;
     const x = clumpX + (r() - 0.5) * spread * 2;
     const y = clumpY + (r() - 0.5) * spread;
-    tuftAt(g, x, y, k0 * (0.55 + r() * 1.0) * depthScale(y, h), r(), r() < 0.5, alpha * (0.75 + r() * 0.25));
+    tuftAt(g, x, y, k0 * (0.55 + r() * 1.0) * depthScale(y, h) * smallK(y), r(), r() < 0.5, alpha * (0.75 + r() * 0.25));
   }
   function tuftAt(g: CanvasRenderingContext2D, x: number, y: number, k: number, v: number, flip: boolean, alpha = 1) {
     const tk = season === "winter" ? k * 0.6 : k;
@@ -272,7 +274,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       softBlob(g, w / 2, groundY(0.55), Math.min(w, h) * 0.42, cc0, ca0, 0, GROUND_SQUASH);
       for (const sx of [0.04, 0.96]) softBlob(g, w * sx, groundY(0.5), Math.min(w, h) * 0.5, cc1, ca1, 0, GROUND_SQUASH);
       // 숲 바닥 — 낙엽·솔잎 부스러기(가을엔 두껍게). 큰 것 없이 작은 점만, 오행 팔레트(갈색·와인·올리브).
-      const litter = Math.round((w * h) / (season === "autumn" ? 900 : 2600));
+      const litter = Math.round((w * h) / (season === "autumn" ? 900 : season === "winter" ? 11000 : 2600));
       const LIT: Record<string, string[]> = {
         spring: ["120 140 96", "104 124 84", "150 140 108"],
         summer: ["96 122 78", "84 108 70", "132 128 96"],
@@ -341,23 +343,26 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       //  · 계곡 벽은 35° 사면이 **먼 땅을 가린다**(가장자리 비네팅이 아니라 실루엣).
       const nS = 44;
       const wNear = w * 0.135; // 하폭(발치) — 화면 폭의 12~16%가 실제 비율
-      const chW = (t: number) => wNear * (0.42 + 0.58 * t); // t: 0 상류(멀다) → 1 하류(가깝다)
+      // 원근 테이퍼를 세게(0.42 → 0.26): 옛 값은 상·하류 폭 차가 작아 "평행 두 줄 = 도로"로 읽혔다(검토 라운드2 #6).
+      const chW = (t: number) => wNear * (0.26 + 0.74 * t); // t: 0 상류(멀다) → 1 하류(가깝다)
       const cxAxis = (t: number) => w * (0.3 + 0.42 * t);
       stream.length = 0;
       const bends: { i: number; side: number }[] = [];
       {
         let phase = 1.1;
-        let prevY = groundY(-0.05);
+        // 물길은 **지평선에서 시작**한다. 옛 -0.05는 지평선 위(하늘)에서 시작해 원경 언덕 위에 삼각 쐐기가
+        // 남았다(검토 라운드2 #4 — 땅에 붙는 것은 지평선 아래에만). 상류 끝은 아래 ⑧에서 안개에 녹인다.
+        let prevY = groundY(0);
         for (let i2 = 0; i2 <= nS; i2++) {
           const t = i2 / nS;
-          const y = groundY(-0.05 + 1.12 * t);
+          const y = groundY(1.14 * t);
           const W2 = chW(t);
           const lam = 5.5 * W2;
           phase += ((y - prevY) / lam) * TAU;
           prevY = y;
           const off = Math.sin(phase) * 1.1 * W2;
           stream.push({ x: cxAxis(t) + off, y });
-          if (i2 > 0 && Math.abs(Math.cos(phase)) < 0.16) bends.push({ i: i2, side: Math.sin(phase) > 0 ? 1 : -1 });
+          if (i2 > 3 && Math.abs(Math.cos(phase)) < 0.16) bends.push({ i: i2, side: Math.sin(phase) > 0 ? 1 : -1 });
         }
       }
       const halfAt = (i2: number) => chW(Math.min(1, i2 / nS)) / 2;
@@ -457,7 +462,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         spring: ["rgb(154 146 120 / 0.4)", "rgb(63 125 118 / 0.95)"],
         summer: ["rgb(150 142 116 / 0.4)", "rgb(58 120 112 / 0.95)"],
         autumn: ["rgb(146 134 106 / 0.4)", "rgb(72 122 114 / 0.93)"],
-        winter: ["rgb(196 206 214 / 0.45)", "rgb(214 228 238 / 0.95)"]
+        // 옛 214/228/238은 설원(#f0f6fd~#a4bcd4)과 명도가 같아 물길이 활주로로 보였다(검토 라운드2 #6·#9).
+        winter: ["rgb(178 190 202 / 0.5)", "rgb(146 174 196 / 0.95)"]
       };
       const [wGravel, wShallow] = WATER[season];
       const ribbon = (kw: number, col: string) => {
@@ -504,8 +510,8 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         g.save();
         ribbonPath(1);
         g.clip();
-        softBlob(g, px, py, hw * 1.5, season === "winter" ? "170 194 210" : "40 88 88", 0.5, 0, GROUND_SQUASH);
-        softBlob(g, px, py, hw * 0.85, season === "winter" ? "150 178 198" : "24 58 60", 0.45, 0, GROUND_SQUASH);
+        softBlob(g, px, py, hw * 1.5, season === "winter" ? "112 142 168" : "40 88 88", 0.5, 0, GROUND_SQUASH);
+        softBlob(g, px, py, hw * 0.85, season === "winter" ? "86 116 144" : "24 58 60", 0.45, 0, GROUND_SQUASH);
         g.restore();
       }
       // ⑥ 여울 — 변곡점에서 흰 부서진 물이 물길을 가로지른다(겨울엔 얼어 없다).
@@ -536,15 +542,41 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           g.restore();
         }
       }
-      // ⑦ 젖은 바위 띠 — 물가를 따라 30~40% 어두운 선.
-      g.save();
-      ribbonPath(1.34);
-      g.clip();
-      ribbonPath(1.03);
-      g.strokeStyle = "rgb(133 125 123 / 0.5)";
-      g.lineWidth = 7;
-      g.stroke();
-      g.restore();
+      // ⑦ 물가 마감. 여름·봄·가을 = 젖은 바위 띠(마른 바위보다 30~40% 어둡다).
+      //    겨울 = **눈 두둑**(양안에 소복이) + 부분 결빙 구멍. 옛 균일 회색 두 줄은 좌우 대칭이라 차선으로
+      //    읽혔다(검토 라운드2 #6·#9).
+      if (season !== "winter") {
+        g.save();
+        ribbonPath(1.34);
+        g.clip();
+        ribbonPath(1.03);
+        g.strokeStyle = "rgb(133 125 123 / 0.5)";
+        g.lineWidth = 7;
+        g.stroke();
+        g.restore();
+      } else {
+        // 눈 두둑 — 양안을 따라 끊어진 흰 덩이(굵기가 들쭉날쭉해야 '쌓인 눈'으로 읽힌다).
+        for (let i2 = 2; i2 < stream.length - 1; i2 += 2) {
+          const [nx, ny] = normalAt(i2);
+          const hw = halfAt(i2);
+          for (const sd of [-1, 1]) {
+            if (g0() < 0.22) continue;
+            const px = stream[i2].x + nx * sd * hw * (1.02 + g0() * 0.18);
+            const py = stream[i2].y + ny * sd * hw * (1.02 + g0() * 0.18);
+            softBlob(g, px, py, hw * (0.3 + g0() * 0.34), "250 253 255", 0.55 + g0() * 0.3, 0, GROUND_SQUASH);
+          }
+        }
+        // 부분 결빙 — 얼음이 깨져 검은 물이 드러난 구멍 둘(얼음이 '면'이라는 신호).
+        for (let k2 = 0; k2 < 2; k2++) {
+          const ii = Math.round(stream.length * (0.42 + k2 * 0.3));
+          const hw = halfAt(ii);
+          g.save();
+          ribbonPath(0.92);
+          g.clip();
+          softBlob(g, stream[ii].x + (g0() - 0.5) * hw, stream[ii].y, hw * (0.42 + g0() * 0.3), "40 62 82", 0.62, 0, GROUND_SQUASH);
+          g.restore();
+        }
+      }
       // ⑧ 바위 — 굽이 **바깥**에만 모인다(직선 구간엔 없다).
       for (const b of bends) {
         const [nx, ny] = normalAt(b.i);
@@ -612,11 +644,22 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           }
         }
         if (near) continue;
-        tuftAt(g, x, y, (0.55 + g0() * 1.0) * depthScale(y, h), g0(), g0() < 0.5, 0.85);
+        tuftAt(g, x, y, (0.55 + g0() * 1.0) * depthScale(y, h) * smallK(y), g0(), g0() < 0.5, 0.85);
       }
-      // 물길을 자리 점유 필드에 먼저 등록 — 안 그러면 관목·바위가 물 위에 선다.
-      for (let i2 = 0; i2 < stream.length; i2 += 2) claimSpot(stream[i2].x, stream[i2].y, halfAt(i2) * 1.5);
+      // 물길을 자리 점유 필드에 먼저 등록 — 안 그러면 관목·바위·나무가 물 위에 선다. 점을 건너뛰면 사이가
+      // 뚫려 그 틈에 소품이 앉았다(검토 라운드2 #13) → 모든 점, 자갈 둔치까지 덮는 넓은 반경.
+      for (let i2 = 0; i2 < stream.length; i2++) claimSpot(stream[i2].x, stream[i2].y, halfAt(i2) * 2.4);
       scatterProps(g, art, w, h, g0, [{ id: "rock", n: 5, band: "any" }, { id: `shrub-${season}`, n: 5, band: "any" }]);
+      // ⑪ 상류 끝을 안개에 녹인다 — 물길이 지평선 바로 아래에서 딱 끝나면 "잘린 리본"이 된다.
+      {
+        const HZC: Record<SeasonKey, string> = { spring: "232 240 226", summer: "226 236 222", autumn: "228 224 214", winter: "240 243 247" };
+        const veil = g.createLinearGradient(0, gy(), 0, groundY(0.2));
+        veil.addColorStop(0, `rgb(${HZC[season]} / 0.92)`);
+        veil.addColorStop(0.45, `rgb(${HZC[season]} / 0.4)`);
+        veil.addColorStop(1, `rgb(${HZC[season]} / 0)`);
+        g.fillStyle = veil;
+        g.fillRect(0, gy(), w, groundY(0.2) - gy());
+      }
       foam.length = 0;
       for (let i2 = 0; i2 < 26; i2++) foam.push({ u: g0(), lane: (g0() - 0.5) * 0.6, sp: 0.06 + g0() * 0.05 });
     } else {
@@ -715,7 +758,13 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       peak(0.2, h * 0.34, PEAK[season][0], 0.5, 1.2, 0.3, false);
       peak(0.32, h * 0.26, PEAK[season][1], 0.88, 3.4, 0.42, capSnow);
       // 발치 — 자락이 땅에 닿는 자리(너덜 띠). 알파 0으로 사라지면 "공중에 뜬 구름"이다.
-      softBlob(gp, w * 0.5, groundY(0.48), w * 0.75, season === "winter" ? "196 208 220" : "150 150 138", 0.1, 0, GROUND_SQUASH);
+      // 너덜 자락 — 옛 코드는 화면 폭 0.75짜리 **밝은 원 하나**라 "렌즈 얼룩"으로 보였다(검토 라운드2 미관 #12).
+      // 봉우리 발치를 따라 낮고 넓게 깔린 어두운(밝지 않은) 애추 띠로 바꾼다.
+      for (let i = 0; i < 9; i++) {
+        const x = w * (i / 8) + (g0() - 0.5) * w * 0.08;
+        const y = groundY(0.4 + Math.sin(i * 1.7) * 0.05);
+        softBlob(gp, x, y, w * (0.1 + g0() * 0.07), season === "winter" ? "170 186 202" : "112 112 102", 0.12, 0, GROUND_SQUASH * 0.55);
+      }
       // 침엽수 고지 — 두 번째 봉우리 발치에 실루엣 줄(산을 산으로 읽히게 하는 두 번째 신호).
       {
         // 침엽수 줄 — 기준선 둘, 단 셋(사다리꼴), 밑동, 겹침 허용. 하나짜리 이등변삼각형 줄은 "톱니 테두리"였다.
@@ -750,13 +799,42 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       }
       if (snowy) for (let i = 0; i < Math.round((w * h) / 50000); i++) softBlob(g, g0() * w, groundY(0.35 + g0() * 0.6), 60 + g0() * 120, "255 255 255", season === "winter" ? 0.18 : 0.14, 0, GROUND_SQUASH);
       // 너덜지대 — 큰 바위 무리(대체물도 그림자·지면 접점이 있다). 옛 임시 그라데이션 타원은 "공중의 검은 얼룩"이라 철거.
-      scatterProps(g, art, w, h, g0, [{ id: "rock", n: 16, band: "any", minV: 0.46 }, { id: "grass-dry", n: 40, band: "any", minV: 0.46 }]);
-      for (let i = 0; i < 7; i++) {
+      scatterProps(g, art, w, h, g0, [{ id: "rock", n: 10, band: "any", minV: 0.3 }, { id: "grass-dry", n: 34, band: "any", minV: 0.34 }]);
+      // 큰 바위 — 크기가 y와 무상관하게 흩어져 "먼 것이 가까운 것보다 크다"가 됐다(검토 라운드2 현실성 #9a).
+      // 개체 편차를 줄여 depthScale이 이기게 한다.
+      for (let i = 0; i < 6; i++) {
         const x = 40 + g0() * (w - 80);
-        const y = groundY(0.5 + g0() * 0.46);
-        const k = (1.3 + g0() * 1.1) * depthScale(y, h);
+        const y = groundY(0.38 + g0() * 0.4);
+        const k = (1.0 + g0() * 0.45) * depthScale(y, h);
         shadow(g, x + 2 * k, y + 1.5 * k, Math.min(36, 22 * k), 0.14);
         drawProp(g, art, "rock", x, y, { k, r: g0(), flip: g0() < 0.5 });
+      }
+      // 산지림 띠 — 고도가 낮을수록(= 화면 아래일수록) 숲이다. 침엽수를 근경에 무리로 세워 "평지 + 배경 그림판"을
+      // 벗어난다(검토 라운드2 현실성 #5). 위(고지)는 나지·애추 그대로 둔다.
+      {
+        const pineId = season === "winter" ? "tree-pine-winter" : "tree-pine";
+        type MT = { x: number; y: number; k: number };
+        const belt: MT[] = [];
+        for (let c2 = 0; c2 < 4; c2++) {
+          const cx3 = w * (0.06 + 0.28 * c2 + (g0() - 0.5) * 0.12);
+          const cy3 = groundY(0.6 + g0() * 0.34);
+          const n2 = 3 + Math.floor(g0() * 3);
+          for (let i = 0; i < n2; i++) {
+            const y = cy3 + (g0() - 0.5) * h * 0.14;
+            belt.push({ x: cx3 + (g0() - 0.5) * w * 0.2, y, k: (0.75 + g0() * 0.8) * depthScale(y, h) });
+          }
+        }
+        // 중턱의 성긴 몇 그루 — 숲과 나지 사이를 잇는다(경계가 자로 그은 선이 되지 않게).
+        for (let i = 0; i < 6; i++) {
+          const y = groundY(0.42 + g0() * 0.18);
+          belt.push({ x: g0() * w, y, k: (0.4 + g0() * 0.3) * depthScale(y, h) });
+        }
+        belt.sort((a2, b2) => a2.y - b2.y);
+        for (const t2 of belt) {
+          if (!claimSpot(t2.x, t2.y, 26 * t2.k)) continue;
+          shadow(g, t2.x + 6 * t2.k, t2.y - 2, 40 * t2.k, 0.15);
+          drawProp(g, art, pineId, t2.x, t2.y, { k: t2.k, r: g0(), flip: g0() < 0.5 });
+        }
       }
     }
     ground = c;
@@ -765,8 +843,22 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     trees.length = 0;
     const pineMix = () => g0() < 0.45;
     if (kind === "forest") {
-      const n = 6 + Math.round(w / 260);
-      for (let i = 0; i < n; i++) trees.push({ x: (i + 0.5) * (w / n) + (g0() - 0.5) * 40, y: groundY(0.06 + g0() * 0.1), R: Math.round(SIZE.treeCrownW / 2 * (0.75 + g0() * 0.35)), pine: pineMix() });
+      // 뒷줄은 **무리**로 — 등간격 일렬은 자연림이 아니라 방풍림 열로 읽힌다(검토 라운드2 경계 #9 · 미관 #13).
+      {
+        const clumps = 3 + Math.round(w / 640);
+        for (let c2 = 0; c2 < clumps; c2++) {
+          const cx3 = w * ((c2 + 0.5) / clumps) + (g0() - 0.5) * w * 0.16;
+          const n2 = 3 + Math.floor(g0() * 3);
+          for (let i = 0; i < n2; i++) {
+            trees.push({
+              x: cx3 + (g0() - 0.5) * w * 0.14,
+              y: groundY(0.03 + g0() * 0.16),
+              R: Math.round((SIZE.treeCrownW / 2) * (0.55 + g0() * 0.62)),
+              pine: pineMix()
+            });
+          }
+        }
+      }
       for (const side of [0.06, 0.94]) for (let i = 0; i < 3; i++) trees.push({ x: w * side + (g0() - 0.5) * 50, y: groundY(0.3 + i * 0.22 + g0() * 0.1), R: Math.round(SIZE.treeCrownW / 2 * (0.8 + g0() * 0.3)), pine: pineMix() });
       // 중간 깊이 — 앞줄과 뒷줄 사이가 텅 비어 "울타리 친 마당"으로 읽혔다. 빈터는 가운데(u 0.36~0.64)만 비운다.
       // 혼효림의 수관 틈은 30~40%라 참나무 순림보다 성기다(8 → 6).

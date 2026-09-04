@@ -39,7 +39,7 @@ export const SIZE = {
   printRabbitHind: 10,
   printRabbitFore: 7,
   // 생물(주민 1칸 감각)
-  duck: 44,
+  duck: 58, // 청둥오리 50cm — 연잎(25cm)보다 커야 한다(검토 라운드2 현실성 #10: 옛 44는 연잎의 절반으로 보였다)
   rabbit: 40,
   chipmunk: 36,
   cat: 48,

@@ -36,7 +36,8 @@ import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, t
 const WINGS = [
   { a: "#c9b9ee", b: "#a08fd8", rim: "#6f5db3", spot: "#ffffff", eye: "#4a3f7a" },
   { a: "#f7d3e2", b: "#e2a9c4", rim: "#b7708f", spot: "#fff8fb", eye: "#7a4a62" },
-  { a: "#fbe9b0", b: "#e2c874", rim: "#a68a3a", spot: "#ffffff", eye: "#6b5a26" },
+  // 옛 #fbe9b0/#e2c874는 초원에서 채도가 가장 높은 물체였다(검토 라운드2 #14) — 크림·올리브로 낮춘다.
+  { a: "#efe8cf", b: "#d2c9a2", rim: "#8d8459", spot: "#ffffff", eye: "#5f5a3c" },
   { a: "#bfe0ec", b: "#8ec3d8", rim: "#5a93ad", spot: "#f6fcff", eye: "#2f5b6e" }
 ];
 // 풀포기 층 타일(가로 24 × 세로 12) — 타일마다 옆으로 밀어 그린다. 흔들림은 **꽃잎 무리가 지나가는 x 앞머리 둘레**에서만
@@ -156,6 +157,9 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   // 땅의 위 끝(지평선) — 꽃·풀·벌레·나비·민들레는 이 아래에서만(지평선 띠는 먼 곳).
   const gy = () => horizonY(h);
   const groundY = (r: number) => gy() + r * (h - gy());
+  /** 작은 식물의 추가 원근 테이퍼 — 0.3(지평선) → 1.0(발치). depthScale(0.6~1.0)만으로는 지평선 근처 풀포기가
+   *  근경의 0.75배로 남아 "키 3~5m 짜리 풀"이 됐다(검토 라운드2 현실성 #9b). */
+  const smallK = (y: number) => 0.3 + 0.7 * Math.min(1, Math.max(0, (y - gy()) / Math.max(1, h - gy())));
   let shadow: HTMLCanvasElement | null = null;
   let traceBakes: TraceBakes | null = null; // 연대기(지난 가을 저장소의 싹·나무·두더지 흙더미) 렌더
   let petalSpr: HTMLCanvasElement | null = null;
@@ -241,7 +245,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     for (let i = 0; i < clovers; i++) {
       const x = g0() * w;
       const y = groundY(g0());
-      drawProp(g, groundArt, "clover", x, y, { k: (0.8 + g0() * 0.5) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
+      drawProp(g, groundArt, "clover", x, y, { k: (0.8 + g0() * 0.5) * depthScale(y, h) * smallK(y), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
     daisies.length = 0;
     const nd = Math.round((w * h) / (summer ? 200000 : 80000)); // 여름 초원은 꽃이 드물다
@@ -287,15 +291,16 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       left--;
       const spread = 26 + g0() * 54;
       const x = cx + (g0() - 0.5) * spread * 2;
-      const y = cy + (g0() - 0.5) * spread;
-      drawProp(b.g, groundArt, "grass-tuft", x, y, { k: (summer ? 0.9 + g0() * 1.3 : 0.5 + g0() * 0.85) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.7 + g0() * 0.3 });
+      // 무리의 세로 퍼짐을 늘려 원경 밴드(v 0~0.35)까지 덮는다 — 화면 위 40%가 빈 초록 벽이었다(미관 #10).
+      const y = cy + (g0() - 0.5) * spread * 1.9;
+      drawProp(b.g, groundArt, "grass-tuft", x, y, { k: (summer ? 0.9 + g0() * 1.3 : 0.5 + g0() * 0.85) * depthScale(y, h) * smallK(y), r: g0(), flip: g0() < 0.5, alpha: 0.7 + g0() * 0.3 });
     }
     if (summer) {
       // 키큰 풀(강아지풀) — 여름 초원의 표지. 흔들리는 층(blades)에 같이 심어 바람에 함께 눕는다.
       const tall = Math.round((w * h) / 9000);
       for (let i = 0; i < tall; i++) {
         const y = groundY(0.06 + g0() * 0.96);
-        drawProp(b.g, groundArt, "grass-tall", g0() * w, y, { k: (0.85 + g0() * 0.75) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.82 + g0() * 0.18 });
+        drawProp(b.g, groundArt, "grass-tall", g0() * w, y, { k: (0.85 + g0() * 0.75) * depthScale(y, h) * smallK(y), r: g0(), flip: g0() < 0.5, alpha: 0.82 + g0() * 0.18 });
       }
     }
     blades = b.c;

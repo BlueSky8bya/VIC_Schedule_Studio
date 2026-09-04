@@ -137,6 +137,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   let stampSpr: HTMLCanvasElement | null = null;
   let shadow: HTMLCanvasElement | null = null;
   let traces: TraceBakes | null = null; // 연대기(연잎·기슭의 데뷔 나무) 렌더 스프라이트
+  let nearBank: HTMLCanvasElement | null = null; // 화면 **아래**의 가까운 기슭(2026-09-04 검토 라운드2)
+  let nearW = 0;
   let shore: HTMLCanvasElement | null = null; // 위 띠의 기슭(뭍) — 땅 흔적이 물 위에 떠 보이지 않게
   let shoreW = 0;
   // 기슭 소품 아트(갈대·통나무·바위·관목 — 있을 때만 기슭에 선다)와 오리 아트(있으면 Noto 오리 대신).
@@ -329,7 +331,9 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   const radiusOf = (p: Prop) => (p.kind === "duck" ? 27 * p.k : 46);
   // 물가 선(캔버스 px) — 위 띠는 뭍(기슭)이라 물고기·오리·빗방울·글린트는 이 아래에서만.
   const shoreY = () => h * SHORE_V + 6;
-  const waterY = (r: number) => shoreY() + r * (h - shoreY());
+  const waterY = (r: number) => shoreY() + r * (waterBottom() - shoreY());
+  /** 열린 물의 아래 끝 — 이보다 아래는 가까운 기슭(화면 앞)이라 생물이 가면 가려져 사라진다. */
+  const waterBottom = () => h - h * 0.3 * 0.36;
   // 물고기 수 = 여력에 비례(2026-09-04 사용자: "컴퓨터 능력에 따라 늘리거나 줄여라") × 화면 넓이. 가볍게(load .3)도 4마리쯤은
   // 보인다(lite는 계절이 알아보여야 한다). 큰 놈은 .6부터 하나, .9부터 둘. 늘 땐 가장자리에서 헤엄쳐 들어오고 줄 땐 가장자리로
   // 나간다(순간 등장·소멸 금지 — 소품 원칙).
@@ -448,6 +452,125 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           stand(`shrub-${season}`, 3, 0.75);
         }
       }
+      // ── 가까운 기슭(2026-09-04 검토 라운드2: "물이 화면의 65~70%인 빈 판", "汀線이 자로 그은 직선",
+      //    "수심 그라데이션 없는 수직벽 수조"). 연못을 **양쪽 기슭 사이**에 두면 근경이 생기고 깊이가 3단이 된다:
+      //    먼 기슭(위) → 열린 물(가운데) → 가까운 기슭과 정수식물(아래, 화면 밖으로 잘린다).
+      if (!nearBank || nearW !== w) {
+        const NH = Math.round(h * 0.3);
+        const nb = makeCanvas(w, NH);
+        const ng = nb.g;
+        const r1 = rng(613 + w + SEASON_SEED[season]);
+        // 근경 물가 선 — 위쪽으로 굽이친다(만·곶). 캔버스 위 40%는 물, 아래는 뭍.
+        const top = (x: number) => NH * 0.34 + Math.sin((x / w) * 4.2 + 1.9) * NH * 0.1 + Math.sin((x / w) * 9.7 + 0.4) * NH * 0.045;
+        const NB: Record<SeasonKey, [string, string]> = {
+          spring: ["#9fb783", "#7d9668"],
+          summer: ["#8fae76", "#66875a"],
+          autumn: ["#ab9a72", "#867757"],
+          winter: ["#dde6ee", "#c2ccd6"]
+        };
+        const [nb0, nb1] = NB[season];
+        // 얕은 물 — 기슭 바로 앞은 바닥이 비쳐 밝고 탁하다(연안대). 이게 없으면 물이 수직벽이 된다.
+        const lg = ng.createLinearGradient(0, 0, 0, NH * 0.5);
+        lg.addColorStop(0, season === "winter" ? "rgb(206 220 232 / 0)" : "rgb(150 186 158 / 0)");
+        lg.addColorStop(1, season === "winter" ? "rgb(206 220 232 / 0.5)" : "rgb(150 186 158 / 0.45)");
+        ng.fillStyle = lg;
+        ng.beginPath();
+        ng.moveTo(0, 0);
+        for (let x = 0; x <= w; x += 10) ng.lineTo(x, top(x));
+        ng.lineTo(w, 0);
+        ng.closePath();
+        ng.fill();
+        // 뭍.
+        const bg2 = ng.createLinearGradient(0, NH * 0.2, 0, NH);
+        bg2.addColorStop(0, nb0);
+        bg2.addColorStop(1, nb1);
+        ng.fillStyle = bg2;
+        ng.beginPath();
+        ng.moveTo(0, NH);
+        for (let x = 0; x <= w; x += 10) ng.lineTo(x, top(x));
+        ng.lineTo(w, NH);
+        ng.closePath();
+        ng.fill();
+        // 젖은 띠 + 물가 선.
+        ng.save();
+        ng.beginPath();
+        ng.moveTo(0, NH);
+        for (let x = 0; x <= w; x += 10) ng.lineTo(x, top(x));
+        ng.lineTo(w, NH);
+        ng.closePath();
+        ng.clip();
+        for (let x = 0; x <= w; x += 8) softBlob(ng, x, top(x) + 7, 16, season === "winter" ? "150 168 186" : "92 106 74", 0.16, 0, GROUND_SQUASH);
+        ng.restore();
+        ng.strokeStyle = season === "winter" ? "rgb(240 248 255 / 0.8)" : "rgb(255 255 250 / 0.75)";
+        ng.lineWidth = 2;
+        ng.beginPath();
+        for (let x = 0; x <= w; x += 8) {
+          if (x === 0) ng.moveTo(x, top(x));
+          else ng.lineTo(x, top(x));
+        }
+        ng.stroke();
+        // 근경 뭍의 결 — 평평한 초록 판이 되지 않게 얼룩과 짧은 풀획.
+        for (let i = 0; i < 40; i++) {
+          const x = r1() * w;
+          const y = top(x) + NH * (0.1 + r1() * 0.9);
+          softBlob(ng, x, y, 26 + r1() * 50, season === "winter" ? "255 255 255" : r1() < 0.5 ? "108 134 84" : "170 194 140", 0.14, 0, GROUND_SQUASH);
+        }
+        if (season !== "winter") {
+          ng.lineCap = "round";
+          for (let i = 0; i < 260; i++) {
+            const x = r1() * w;
+            const y = top(x) + NH * (0.08 + r1() * 0.94);
+            const len = 6 + r1() * 12;
+            const a = -Math.PI / 2 + (r1() - 0.5) * 1.2;
+            ng.strokeStyle = r1() < 0.5 ? "rgb(126 158 96 / 0.55)" : "rgb(96 128 78 / 0.5)";
+            ng.lineWidth = 1.3;
+            ng.beginPath();
+            ng.moveTo(x, y);
+            ng.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+            ng.stroke();
+          }
+        }
+        // 정수식물 — **무리**로 자란다. 균등 간격·같은 키로 세우면 말뚝 울타리가 된다(2026-09-04 자체 검토).
+        // 무리 4~6곳, 무리마다 키·굵기가 다르고 물가 선을 걸쳐 밑동이 물에 잠긴다.
+        {
+          const reedR = season === "autumn" || season === "winter" ? 0.7 : 0.2;
+          const stands = 4 + Math.floor(r1() * 3);
+          for (let c2 = 0; c2 < stands; c2++) {
+            const cx3 = r1() * w;
+            const spread = 40 + r1() * 130;
+            const base = 1.1 + r1() * 1.3; // 무리마다 키가 다르다
+            const n2 = 4 + Math.floor(r1() * 7);
+            for (let i = 0; i < n2; i++) {
+              const x = cx3 + (r1() - 0.5) * spread * 2;
+              const y = top(x) + (r1() - 0.45) * NH * 0.24;
+              drawProp(ng, shoreArt, "reed", x, y, { k: base * (0.6 + r1() * 0.8), r: reedR, flip: r1() < 0.5, alpha: 0.82 + r1() * 0.18 });
+            }
+          }
+        }
+        for (let i = 0; i < 5; i++) {
+          const x = r1() * w;
+          const y = top(x) + NH * (0.18 + r1() * 0.6);
+          const k = 1.4 + r1() * 1.1;
+          softBlob(ng, x + 4 * k, y - 2, 24 * k, season === "winter" ? "150 168 186" : "70 78 58", 0.16, 0, GROUND_SQUASH * 0.5);
+          drawProp(ng, shoreArt, "rock", x, y, { k, r: r1(), flip: r1() < 0.5 });
+        }
+        {
+          const x = w * (0.12 + r1() * 0.7);
+          const y = top(x) + NH * 0.5;
+          drawProp(ng, shoreArt, "log", x, y, { k: 1.9, r: r1(), flip: r1() < 0.5 });
+        }
+        if (season !== "winter") {
+          for (let i = 0; i < 3; i++) {
+            const x = r1() * w;
+            const y = top(x) + NH * (0.4 + r1() * 0.5);
+            drawProp(ng, shoreArt, `shrub-${season}`, x, y, { k: 1.5 + r1() * 0.7, r: r1(), flip: r1() < 0.5 });
+          }
+        } else {
+          for (let i = 0; i < 8; i++) softBlob(ng, r1() * w, NH * (0.5 + r1() * 0.5), 30 + r1() * 50, "252 255 255", 0.4, 0, GROUND_SQUASH);
+        }
+        nearBank = nb.c;
+        nearW = w;
+      }
       if (!winter && !props.some((p) => p.kind === "duck")) {
         const d = newProp("duck", f.t);
         d.x = w * (0.3 + rand() * 0.4);
@@ -542,7 +665,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
               duckSet(q, "alarm", 1.4, t);
               const away = Math.atan2(q.y - p.y, q.x - p.x);
               q.tx = clamp(q.x + Math.cos(away) * 260, 40, w - 40);
-              q.ty = clamp(q.y + Math.sin(away) * 260, 40, h - 40);
+              q.ty = clamp(q.y + Math.sin(away) * 260, 40, waterBottom() - 40);
               q.curiousT = 0;
               q.crumb = null;
               q.nextCurious = t + 10;
@@ -687,8 +810,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             if (q.y < shoreY() + m) {
               q.y = shoreY() + m; // 물가 선 위(기슭)로는 못 올라간다
               q.vy = Math.abs(q.vy) + 4;
-            } else if (q.y > h - m) {
-              q.y = h - m;
+            } else if (q.y > waterBottom() - m) {
+              q.y = waterBottom() - m; // 가까운 기슭 뒤로는 못 내려간다(가려져 사라진다)
               q.vy = -Math.abs(q.vy) - 4;
             }
             // 흐름만으로도 조금 움직이면 그쪽을 본다(히스테리시스).
@@ -1295,6 +1418,8 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         g.arc(d.x, d.y, 1.4, 0, TAU);
         g.fill();
       }
+      // 가까운 기슭 — 모든 생물보다 **앞**(연못이 양쪽 기슭 사이에 놓인다). 화면 아래에서 잘린다.
+      if (nearBank) g.drawImage(nearBank, 0, f.h - nearBank.height, f.w, nearBank.height);
     },
     pointerDown(f, onBackground) {
       const { x, y } = f.p;

@@ -137,18 +137,38 @@ export function drawWaves(g: CanvasRenderingContext2D, t: number, w: number, o: 
     const near = Math.pow(p, 1.2);
     const a = o.alpha * (0.25 + 0.75 * near) * (p > 0.92 ? (1 - p) / 0.08 : 1);
     if (a < 0.01) continue;
-    g.strokeStyle = `rgb(${o.foam} / ${a})`;
     g.lineWidth = 0.8 + near * (o.shore ? 3.2 : 2.2);
-    g.beginPath();
     const amp = o.amp * (0.3 + 0.7 * near);
-    for (let x = -10; x <= w + 10; x += 14) {
-      // 파장도 원근을 탄다 — 먼 선이 가까운 선과 같은 파장이면 바다가 "나뭇결 판"이 된다(검토 3차).
+    // 마루는 **끊어져야 한다**: x=0에서 x=w까지 한 획으로 이으면 화면을 가로지르는 1px 흰 선이 되어
+    // 파도가 아니라 실수로 남은 선으로 읽힌다(검토 라운드2 #5, 12장에서 지적). 부서지는 자리를 게이트로 뚫고,
+    // 조각마다 알파를 흩고, 양 끝은 가늘게 사라진다.
+    const yAt = (x: number) => {
       const fk = 1 / (0.45 + 0.55 * near);
-      const y = y0 + Math.sin(x * 0.012 * fk + t * 0.9 + i * 1.7) * amp + Math.sin(x * 0.031 * fk - t * 1.3 + i) * amp * 0.35;
-      if (x === -10) g.moveTo(x, y);
-      else g.lineTo(x, y);
+      return y0 + Math.sin(x * 0.012 * fk + t * 0.9 + i * 1.7) * amp + Math.sin(x * 0.031 * fk - t * 1.3 + i) * amp * 0.35;
+    };
+    let seg: number[][] = [];
+    const flush = () => {
+      if (seg.length > 1) {
+        // 조각 중앙이 화면 끝에 가까우면 옅게(끝에서 뚝 끊긴 인상을 지운다).
+        const mid = seg[Math.floor(seg.length / 2)][0];
+        const edge = Math.min(1, Math.min(mid + 20, w + 20 - mid) / (w * 0.16));
+        g.strokeStyle = `rgb(${o.foam} / ${a * (0.55 + 0.45 * Math.sin(seg[0][0] * 0.007 + i)) * edge})`;
+        g.beginPath();
+        g.moveTo(seg[0][0], seg[0][1]);
+        for (let k = 1; k < seg.length; k++) g.lineTo(seg[k][0], seg[k][1]);
+        g.stroke();
+      }
+      seg = [];
+    };
+    for (let x = -10; x <= w + 10; x += 14) {
+      const gate = Math.sin(x * 0.0043 + i * 2.3 + t * 0.07) + 0.42 * Math.sin(x * 0.0131 - i * 1.1);
+      if (gate < -0.22) {
+        flush();
+        continue;
+      }
+      seg.push([x, yAt(x)]);
     }
-    g.stroke();
+    flush();
   }
   g.restore();
 }

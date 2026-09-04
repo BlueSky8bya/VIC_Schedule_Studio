@@ -31,19 +31,19 @@
     box-shadow: none;
   }
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-day:not(.today) {
-    background: rgb(255 254 251 / 64%);
+    background: rgb(255 254 251 / 48%);
   }
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-day.outside {
-    background: rgb(241 233 216 / 58%);
+    background: rgb(241 233 216 / 44%);
   }
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .weekday-row {
-    background: rgb(251 247 238 / 80%);
+    background: rgb(251 247 238 / 72%);
   }
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .rail-info-card,
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-legend-vertical,
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-ambient-ctl.rail-showcase,
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-ambient-ctl.slot-showcase {
-    background: rgb(255 253 246 / 84%);
+    background: rgb(255 253 246 / 80%);
   }
 }
 

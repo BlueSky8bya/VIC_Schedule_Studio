@@ -6,7 +6,7 @@
 import { artSlot } from "./manifest";
 import { drawArt, type ArtSet, type ArtSprite } from "./load";
 import { makeCanvas, rng, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
-import { depthScale, HORIZON_V } from "@/components/shared/ambient/world/view";
+import { depthScale, GROUND_SQUASH, HORIZON_V } from "@/components/shared/ambient/world/view";
 
 const cache = new Map<string, HTMLCanvasElement | null>();
 // 발밑 그림자 색 — 장면이 계절에 맞춰 바꾼다. 눈 위의 따뜻한 갈색 그림자는 "어두운 얼룩"으로 읽힌다.
@@ -271,7 +271,14 @@ const PAINT: Record<string, Painter> = {
     g.beginPath();
     g.ellipse(x, b - H * 0.62, rw, rw * 0.42, 0, 0, TAU);
     g.fill();
-    dither(g, x - rw, b - H * 0.62, rw * 2, H * 0.6, "#54402c", 24, 77);
+    dither(g, x - rw, b - H * 0.62, rw * 2, H * 0.6, "#54402c", 24, 77, () => {
+      g.beginPath();
+      g.moveTo(x - rw, b - H * 0.62);
+      g.lineTo(x - rw * 0.94, b - 3);
+      g.quadraticCurveTo(x, b + 2, x + rw * 0.94, b - 3);
+      g.lineTo(x + rw, b - H * 0.62);
+      g.closePath();
+    });
     g.strokeStyle = "#8a6c4a";
     g.lineWidth = 1.2;
     for (const k of [0.66, 0.34]) {
@@ -301,7 +308,15 @@ const PAINT: Record<string, Painter> = {
     g.beginPath();
     g.ellipse(W * 0.14, y, H * 0.06, rr * 0.5, 0, 0, TAU);
     g.stroke();
-    dither(g, W * 0.14, y - rr, W * 0.74, rr * 2, "#57422d", 30, 91);
+    dither(g, W * 0.14, y - rr, W * 0.74, rr * 2, "#57422d", 30, 91, () => {
+      g.beginPath();
+      g.moveTo(W * 0.14, y - rr);
+      g.lineTo(W * 0.88, y - rr);
+      g.quadraticCurveTo(W * 0.95, y, W * 0.88, y + rr);
+      g.lineTo(W * 0.14, y + rr);
+      g.quadraticCurveTo(W * 0.07, y, W * 0.14, y - rr);
+      g.closePath();
+    });
     // 껍질 결 두 줄.
     g.strokeStyle = "rgb(72 56 38 / 0.4)";
     g.beginPath();
@@ -448,71 +463,81 @@ const PAINT: Record<string, Painter> = {
 function pine(g: CanvasRenderingContext2D, W: number, H: number, r: () => number, snowy: boolean) {
   const b = H - 1;
   const cx = W / 2;
-  const line = snowy ? "#1b2820" : "#1d3123";
-  const mid = snowy ? "#33482f" : "#3c6342";
-  const light = snowy ? "#455e3d" : "#547f57";
-  // 줄기 — 짧고 굵게. 아래 단이 덮으므로 조금만 보인다.
-  const tw = Math.max(2, Math.round(W * 0.1));
-  g.fillStyle = "#5b4d3d";
-  g.fillRect(Math.round(cx - tw / 2), Math.round(b - H * 0.17), tw, Math.round(H * 0.17));
-  g.strokeStyle = line;
+  const line = snowy ? "#16241c" : "#18291d";
+  const dark = snowy ? "#26382a" : "#2a4830";
+  const mid = snowy ? "#35492f" : "#3b6240";
+  const light = snowy ? "#4a6440" : "#57855a";
+  // 줄기 — 짧고 굵은 회갈색(밝은 땅 위의 붉은 줄기는 가장 시끄럽다, 2026-09-04 소유자 규칙).
+  const tw = Math.max(3, Math.round(W * 0.12));
+  const th = Math.round(H * 0.16);
+  g.fillStyle = "#5c4e3e";
+  g.fillRect(Math.round(cx - tw / 2), b - th, tw, th);
+  g.fillStyle = "#75654f";
+  g.fillRect(Math.round(cx - tw / 2), b - th, Math.max(1, Math.round(tw * 0.38)), th);
+  g.strokeStyle = "#3a3025";
   g.lineWidth = 1;
-  g.strokeRect(Math.round(cx - tw / 2) + 0.5, Math.round(b - H * 0.17) + 0.5, tw - 1, Math.round(H * 0.17));
-  // 원뿔 3단 — 위에서부터 그리면 아래 단이 덮으므로 **아래부터**. 가지 끝은 톱니 4개.
+  g.strokeRect(Math.round(cx - tw / 2) + 0.5, b - th + 0.5, tw - 1, th);
+  // 원뿔 3단. **위 단부터** 그린다 — 아래 단이 나중에 덮어야 층이 겹쳐 보인다(반대로 그리면 세 단이
+  // 한 덩어리 삼각형으로 뭉쳐 매끈한 실루엣이 된다, 2026-09-04 1차 검토).
   const tiers = [
-    { base: b - H * 0.1, hw: W * 0.47, hh: H * 0.36 },
-    { base: b - H * 0.36, hw: W * 0.37, hh: H * 0.33 },
-    { base: b - H * 0.62, hw: W * 0.25, hh: H * 0.34 }
+    { base: b - H * 0.6, hw: W * 0.26, hh: H * 0.34 },
+    { base: b - H * 0.34, hw: W * 0.38, hh: H * 0.33 },
+    { base: b - H * 0.09, hw: W * 0.48, hh: H * 0.36 }
   ];
   for (const tr of tiers) {
-    const edge = (sd: number) => {
-      // 꼭대기 → 밑단으로 내려오며 가지 끝이 4번 튀어나온다(톱니).
+    // 가지 끝 톱니 — 꼭대기에서 밑단까지 네 번 튀어나온다.
+    const path = () => {
+      g.beginPath();
+      g.moveTo(cx, tr.base - tr.hh);
+      for (const sd of [1, -1]) {
+        if (sd < 0) g.lineTo(cx, tr.base - tr.hh);
+        for (let k = 1; k <= 4; k++) {
+          const t = k / 4;
+          const jag = 0.7 + 0.3 * (k % 2);
+          g.lineTo(cx + sd * tr.hw * t * jag, tr.base - tr.hh * (1 - t) - tr.hh * 0.06);
+          g.lineTo(cx + sd * tr.hw * t, tr.base - tr.hh * (1 - t) * 0.84);
+        }
+        g.lineTo(cx + sd * tr.hw * 0.45, tr.base);
+      }
+      g.closePath();
+    };
+    flatBody(g, mid, line, path, tr.base);
+    // 왼쪽 위 = 밝은 면, 오른쪽 아래 = 그늘 면. 잎 덩이가 **면**으로 갈려야 픽셀 참나무와 같은 화풍이 된다.
+    g.save();
+    path();
+    g.clip();
+    g.fillStyle = light;
+    g.beginPath();
+    g.moveTo(cx, tr.base - tr.hh * 1.1);
+    g.lineTo(cx - tr.hw * 1.2, tr.base - tr.hh * 0.1);
+    g.lineTo(cx - tr.hw * 0.1, tr.base + 2);
+    g.lineTo(cx + tr.hw * 0.05, tr.base - tr.hh * 1.1);
+    g.closePath();
+    g.fill();
+    g.fillStyle = dark;
+    g.beginPath();
+    g.moveTo(cx + tr.hw * 0.34, tr.base - tr.hh * 0.9);
+    g.lineTo(cx + tr.hw * 1.3, tr.base - tr.hh * 0.05);
+    g.lineTo(cx + tr.hw * 1.3, tr.base + 3);
+    g.lineTo(cx + tr.hw * 0.2, tr.base + 3);
+    g.closePath();
+    g.fill();
+    // 밑단 그늘 입술 — 다음(아래) 단과 층이 갈린다.
+    g.fillStyle = line;
+    g.globalAlpha = 0.35;
+    g.fillRect(cx - tr.hw * 1.3, tr.base - 2, tr.hw * 2.6, 3);
+    g.globalAlpha = 1;
+    if (snowy) {
+      // 눈은 가지 **윗면에만** 얇게(통짜로 덮으면 눈사람이 된다).
+      g.fillStyle = "#eef4fa";
       for (let k = 1; k <= 4; k++) {
         const t = k / 4;
-        const jag = 0.72 + 0.28 * (k % 2);
-        g.lineTo(cx + sd * tr.hw * t * jag, tr.base - tr.hh * (1 - t) - tr.hh * 0.05);
-        g.lineTo(cx + sd * tr.hw * t, tr.base - tr.hh * (1 - t) * 0.86);
-      }
-    };
-    flatBody(g, mid, line, () => {
-      g.beginPath();
-      g.moveTo(cx, tr.base - tr.hh);
-      edge(1);
-      g.lineTo(cx + tr.hw * 0.5, tr.base);
-      g.lineTo(cx - tr.hw * 0.5, tr.base);
-      g.moveTo(cx, tr.base - tr.hh);
-      edge(-1);
-      g.lineTo(cx - tr.hw * 0.5, tr.base);
-      g.closePath();
-    }, tr.base);
-    // 왼쪽 위 밝은 면 — 한 덩이가 아니라 가지 끝을 따라 몇 조각.
-    g.fillStyle = light;
-    for (let k = 0; k < 3; k++) {
-      const t = 0.3 + k * 0.24;
-      g.beginPath();
-      g.moveTo(cx - tr.hw * t * 0.2, tr.base - tr.hh * (1 - t * 0.75));
-      g.lineTo(cx - tr.hw * t * 0.82, tr.base - tr.hh * (1 - t) * 0.9);
-      g.lineTo(cx - tr.hw * t * 0.3, tr.base - tr.hh * (1 - t) * 0.86);
-      g.closePath();
-      g.fill();
-    }
-    if (snowy) {
-      // 눈은 **윗면에만** — 가지 위에 얹힌 얇은 띠(통짜로 덮으면 눈사람이 된다).
-      g.fillStyle = "rgb(246 250 255 / 0.9)";
-      for (let k = 1; k <= 3; k++) {
-        const t = k / 4;
-        g.beginPath();
-        g.moveTo(cx - tr.hw * t * 0.86, tr.base - tr.hh * (1 - t) * 0.9);
-        g.lineTo(cx, tr.base - tr.hh * (1 - t * 0.7));
-        g.lineTo(cx + tr.hw * t * 0.86, tr.base - tr.hh * (1 - t) * 0.9);
-        g.lineTo(cx + tr.hw * t * 0.7, tr.base - tr.hh * (1 - t) * 0.9 - 1.6);
-        g.lineTo(cx, tr.base - tr.hh * (1 - t * 0.7) - 1.8);
-        g.lineTo(cx - tr.hw * t * 0.7, tr.base - tr.hh * (1 - t) * 0.9 - 1.6);
-        g.closePath();
-        g.fill();
+        const yTop = tr.base - tr.hh * (1 - t) - tr.hh * 0.06;
+        g.fillRect(cx - tr.hw * t * 0.9, yTop - 2, tr.hw * t * 1.8, 2.6);
       }
     }
-    dither(g, cx - tr.hw, tr.base - tr.hh, tr.hw * 2, tr.hh, line, 18, 71 + Math.round(tr.hw));
+    g.restore();
+    dither(g, cx - tr.hw, tr.base - tr.hh, tr.hw * 2, tr.hh, line, 34, 71 + Math.round(tr.hw), path);
   }
   void r;
 }
@@ -592,7 +617,14 @@ function flatBody(g: CanvasRenderingContext2D, fill: string, line: string, path:
 }
 
 /** 디더 점 — 픽셀 아트의 계조. 상자 안에 같은 색조의 어두운 점을 성기게 찍어 평면을 깬다. */
-function dither(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, n: number, seed: number) {
+function dither(g: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, color: string, n: number, seed: number, clip?: () => void) {
+  // clip을 주면 그 안에만 찍는다 — 안 주면 상자 전체에 뿌려져 실루엣 밖 땅에 **어두운 직사각**이 남는다
+  // (검토 라운드2 현실성 #8). 새 소품은 반드시 몸통 path를 넘긴다.
+  g.save();
+  if (clip) {
+    clip();
+    g.clip();
+  }
   const r = rng(seed);
   g.save();
   g.fillStyle = color;
@@ -600,6 +632,7 @@ function dither(g: CanvasRenderingContext2D, x: number, y: number, w: number, h:
     g.globalAlpha = 0.16 + r() * 0.2;
     g.fillRect(Math.round(x + r() * w), Math.round(y + r() * h), 1.4, 1.4);
   }
+  g.restore();
   g.restore();
 }
 
@@ -610,11 +643,8 @@ function rockShape(g: CanvasRenderingContext2D, W: number, H: number, variant: n
   const b = H - 1;
   const rw = W * (0.36 + rr() * 0.16);
   const rh = H * (0.6 + rr() * 0.34);
-  g.save();
-  g.translate(x, b);
-  g.scale(1, 0.3);
-  softBlob(g, 1, 0, rw * 1.1, shadowRGB, 0.2, 0);
-  g.restore();
+  // (발밑 그림자는 여기서 굽지 않는다 — 슬롯 해상도(40×30)에서 구운 부드러운 그림자를 보간 없이 2배로
+  //  키우면 계단진 사각형이 된다. 그림자는 호출부/scatterProps가 화면 해상도로 그린다, 검토 라운드2 #8.)
   // 밑변에서 시작해 시계방향으로 5~7개의 각진 꼭짓점.
   const n = 5 + Math.floor(rr() * 3);
   const pts: [number, number][] = [[x - rw, b]];
@@ -644,7 +674,12 @@ function rockShape(g: CanvasRenderingContext2D, W: number, H: number, variant: n
   g.beginPath();
   g.ellipse(x + rw * 0.35, b - rh * 0.16, rw * 0.26, rh * 0.1, 0, 0, TAU);
   g.fill();
-  dither(g, x - rw, b - rh, rw * 2, rh, cols[2], 26, 41 + variant * 7);
+  dither(g, x - rw, b - rh, rw * 2, rh, cols[2], 26, 41 + variant * 7, () => {
+    g.beginPath();
+    g.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+    g.closePath();
+  });
 }
 
 function shrub(g: CanvasRenderingContext2D, W: number, H: number, r: () => number, light: string, mid: string, line: string, dot?: string) {
@@ -696,7 +731,13 @@ function shrub(g: CanvasRenderingContext2D, W: number, H: number, r: () => numbe
   g.moveTo(cx, b);
   g.lineTo(cx - 1, b - rh * 0.22);
   g.stroke();
-  dither(g, cx - rw, b - rh, rw * 2, rh, line, 30, 55);
+  dither(g, cx - rw, b - rh, rw * 2, rh, line, 30, 55, () => {
+    g.beginPath();
+    g.moveTo(cx - rw, b);
+    for (const [px, py] of pts) g.lineTo(px, py);
+    g.lineTo(cx + rw, b);
+    g.closePath();
+  });
   if (dot) {
     g.fillStyle = dot;
     for (let i = 0; i < 5; i++) {
@@ -775,7 +816,7 @@ export function scatterProps(
       const slot = artSlot(it.id);
       // 겹침 방지 — 찬 자리면 이 개체는 거른다(같은 rng 소비를 유지하려고 재추첨은 하지 않는다).
       if (!claimSpot(x, y, ((slot?.px[0] ?? 32) * k) / 2)) continue;
-      if (slot?.view === "stand" && it.id !== "rock") softBlob(g, x + 2, y - 2, slot.px[0] * 0.45 * k, shadowRGB, 0.14, 0);
+      if (slot?.view === "stand") softBlob(g, x + 2, y - 2, slot.px[0] * 0.45 * k, shadowRGB, 0.16, 0, GROUND_SQUASH * 0.5);
       drawProp(g, art, it.id, x, y, { k, r: v, flip });
     }
   }
