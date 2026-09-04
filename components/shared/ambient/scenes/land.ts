@@ -195,7 +195,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         }
         g.stroke();
       }
-      const tufts = Math.round((w * h) / (season === "winter" ? 3200 : 1400));
+      const tufts = Math.round((w * h) / (season === "winter" ? 6400 : 3400));
       clumpLeft = 0;
       for (let i = 0; i < tufts; i++) tuftClump(g, g0, 1.1, 0.9);
       if (season === "spring") {
@@ -206,15 +206,47 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           drawProp(g, art, "daisy", x, y + 8, { k: (0.9 + g0() * 0.3) * (SIZE.flower / 18) * depthScale(y, h), r: g0(), flip: g0() < 0.5 });
         }
       }
-      // 억새 — 언덕 능선의 표지(가을·겨울). reed 자리를 대체물로 빌려 쓴다(아트가 오면 억새 자리로 승격).
-      if (season === "autumn" || season === "winter") {
-        for (let i = 0; i < 14; i++) {
-          const x = g0() * w;
-          const y = groundY(0.2 + g0() * 0.75);
-          drawProp(g, art, "reed", x, y, { k: (0.34 + g0() * 0.2) * depthScale(y, h), r: 0.5 + g0() * 0.49, flip: g0() < 0.5, alpha: 0.75 });
+      // 억새 밭(2026-09-04 조사) — 억새는 **포기**로 자란다: 지름 0.9~1.8m 덩이가 1.5m 간격으로 거의 맞닿아
+      // 언덕 전체를 덮는다. 그 울퉁불퉁한 결이 곧 억새 언덕의 표지다(매끈한 잔디 돔이 가장 흔한 오류).
+      // 이삭은 **9월~2월만**(여름엔 없다), 색은 자주빛 → 은빛 → 황금 갈색 → 베이지로 흐른다.
+      {
+        const plume = season === "autumn" || season === "winter";
+        const clumps = Math.round((w * h) / 5200);
+        for (let i2 = 0; i2 < clumps; i2++) {
+          const cx5 = g0() * w;
+          const cy5 = groundY(0.06 + g0() * 0.94);
+          const ds = depthScale(cy5, h);
+          const rr = (16 + g0() * 14) * ds; // 포기 반지름
+          // 잎 덩이 — 부채꼴로 벌어진 가닥 여럿(포기 하나가 하나의 덩이로 읽혀야 한다).
+          const leaf = season === "winter" ? "rgb(178 164 132" : season === "autumn" ? "rgb(186 158 108" : "rgb(132 149 45";
+          for (let k2 = 0; k2 < 7; k2++) {
+            const a2 = -Math.PI / 2 + (k2 - 3) * 0.3 + (g0() - 0.5) * 0.22;
+            const len = rr * (1.5 + g0() * 0.9);
+            g.strokeStyle = `${leaf} / ${0.4 + g0() * 0.35})`;
+            g.lineWidth = 1.1 + g0() * 1.1;
+            g.lineCap = "round";
+            g.beginPath();
+            g.moveTo(cx5, cy5);
+            g.quadraticCurveTo(cx5 + Math.cos(a2) * len * 0.5, cy5 + Math.sin(a2) * len * 0.55, cx5 + Math.cos(a2) * len * 0.9, cy5 + Math.sin(a2) * len);
+            g.stroke();
+          }
+          if (plume && g0() < 0.72) {
+            // 이삭 — 잎 덩이보다 30~50cm 위에 뜬 반투명 층.
+            const py2 = cy5 - rr * 2.2;
+            const pc2 = season === "winter" ? "rgb(206 196 176" : "rgb(216 210 196";
+            for (let k2 = 0; k2 < 3; k2++) {
+              const a2 = -Math.PI / 2 + (k2 - 1) * 0.34;
+              g.strokeStyle = `${pc2} / ${0.5 + g0() * 0.3})`;
+              g.lineWidth = 2.4 * ds;
+              g.beginPath();
+              g.moveTo(cx5 + (k2 - 1) * 2, cy5 - rr * 0.8);
+              g.quadraticCurveTo(cx5 + Math.cos(a2) * rr * 0.7, py2, cx5 + Math.cos(a2) * rr * 1.5, py2 + rr * 0.3);
+              g.stroke();
+            }
+          }
         }
       }
-      scatterProps(g, art, w, h, g0, [{ id: "rock", n: 9, band: "any" }, { id: `shrub-${season}`, n: 5, band: "any" }]);
+            scatterProps(g, art, w, h, g0, [{ id: "rock", n: 9, band: "any" }, { id: `shrub-${season}`, n: 5, band: "any" }]);
     } else if (kind === "forest") {
       // 빈터 — 가운데는 그늘(이끼·솔잎), 가장자리는 어둡게. 나무 그늘이 좌우에서 안쪽으로 번진다.
       // 빈터 그늘 — 계절색(초록 고정이면 눈밭·가을 숲 한가운데 초록 얼룩이 생긴다, 검토 3차).
@@ -656,10 +688,12 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
           const line = groundY(row ? 0.38 : 0.3) + (g0() - 0.5) * 120;
           const x = cx2 + (g0() - 0.5) * 70;
           if (g0() < 0.14) continue;
-          const hh = ((row ? 20 : 14) + g0() * 40) * depthScale(line, h);
-          const wr = 0.22 + g0() * 0.2;
+          // 아고산 침엽수는 **짧고 굵다**(9~10m에 수관 폭 1:3) — 가느다란 첨탑이 가장 흔한 오류.
+          const hh = ((row ? 16 : 12) + g0() * 26) * depthScale(line, h);
+          const wr = 0.3 + g0() * 0.16;
           gp.globalAlpha = (row ? 0.42 : 0.3) + g0() * 0.18;
-          gp.fillStyle = season === "winter" ? "#7f8a92" : season === "autumn" ? "#6a6f5e" : "#5f7060";
+          // 10% 남짓은 죽은 회색 고사목(구상나무 고사 — 실제 풍경의 일부).
+          gp.fillStyle = g0() < 0.12 ? "#9aa0a0" : season === "winter" ? "#7f8a92" : season === "autumn" ? "#6a6f5e" : "#5f7060";
           for (let tier = 0; tier < 3; tier++) {
             const tw = hh * wr * (1 - tier * 0.28);
             const ty = line - hh * (tier * 0.3);

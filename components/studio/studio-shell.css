@@ -846,9 +846,12 @@ html[data-showcase] .studio-shell.avatar-scene .avatar-rail {
   left: 50%;
   transform: translateX(-50%);
   pointer-events: auto;
-  /* [감상하기 | 켜기·흐리게·끄기]가 rail보다 넓으면 두 줄로(absolute라 폭을 줘야 wrap이 된다). */
-  width: max-content;
-  max-width: calc(100% - 12px);
+  /* 도구 카드(.studio-tools)와 **같은 폭**으로 — 카드 둘이 나란히 놓이므로 폭이 다르면 어긋나 보인다
+     (2026-09-04 소유자). 아바타 자리 안쪽 여백만 남기고 꽉 채운다. */
+  left: 0;
+  right: 0;
+  transform: none;
+  width: auto;
 }
 /* 설정 줄의 작은 링크 버튼(멤버 관리 '열기', 2026-09-04) — 스위치 줄과 같은 높이의 조용한 칩. */
 .rhh-link {
@@ -8769,6 +8772,14 @@ html[data-reduce-motion] .modal-close:active {
   top: 72px;
   max-height: calc(100vh - 88px);
   overflow-y: auto;
+  /* 스크롤바는 숨긴다 — 필터 카드 오른쪽 모서리에 회색 막대가 혼자 튀어나와 있었다(2026-09-04 소유자).
+     휠·터치 스크롤은 그대로. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.studio-left-panel::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 .studio-left-panel > section:first-child {
   flex: 0 0 auto;

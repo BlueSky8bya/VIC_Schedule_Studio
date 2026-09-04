@@ -21,7 +21,10 @@ export type CoastMode = "tidal" | "sandy" | "rocky";
 const SEASON_SEED: Record<SeasonKey, number> = { spring: 0, summer: 977, autumn: 1861, winter: 2749 };
 
 
-const LAND_V = 0.64; // 물가 선(정규화) — 그 아래가 뭍
+// 물가 선(정규화) — 그 아래가 뭍. **실제 사진 비율**(2026-09-04 조사): 갯벌은 바다가 가느다란 띠(3~5%)이고
+// 뻘이 화면의 58~63%, 모래해안은 바다 22~26%·모래 38%, 암석해안은 바다 30~35%·바위 25~32%.
+// 옛 0.64 하나로는 셋 다 "물 반 땅 반"이라 갯벌이 갯벌로 안 읽혔다.
+const LAND_V_BY: Record<CoastMode, number> = { tidal: 0.34, sandy: 0.47, rocky: 0.56 };
 // 뭍 캔버스 여분 — 물가 선이 조석·숨·만곡으로 최대 ±(0.06h + 34)px 움직인다. 정적 shoreY()로 높이를 잡으면
 // 화면 맨 아래에 물이 새어 나온다(2026-09-04 검토 1차: "해안마다 바닥에 파란 실선").
 const PAD = 140;
@@ -67,7 +70,7 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
   let av = -1;
   const pal = waterPalette(season);
   const top = () => horizonY(h);
-  const shoreY = () => h * LAND_V;
+  const shoreY = () => h * LAND_V_BY[mode];
   // 조석(갯벌) — 새벽·저녁 썰물(뻘 넓음), 점심 밀물. 물가 선이 ±6% 움직인다.
   const tide = (f: Frame) => {
     const b = f.time.band;
@@ -331,6 +334,24 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         drawProp(g, art, "grass-dry", x, y, { k: 1 + r() * 0.6, r: r(), flip: r() < 0.5, alpha: 0.8 });
       }
     } else {
+      // 시스택 — 옛 절벽 자리를 표시하므로 **바다와 나란히 한 줄**로, 뭍에서 멀수록 작다(흩뿌리면 신호가 죽는다).
+      {
+        const line = 24 + r() * 16;
+        let sx2 = w * (0.08 + r() * 0.12);
+        for (let i2 = 0; i2 < 5; i2++) {
+          const k = (1.9 - i2 * 0.3) * landK(line);
+          const sy2 = line - i2 * 3;
+          softBlob(g, sx2 + 4, sy2 + 4, 26 * k, "60 66 70", 0.2, 0, GROUND_SQUASH);
+          drawProp(g, art, "rock", sx2, sy2, { k, r: r(), flip: i2 % 2 === 0 });
+          // 발치의 흰 물살 고리 — 파도가 늘 같은 자리에서 부서진다.
+          g.strokeStyle = "rgb(250 253 255 / 0.5)";
+          g.lineWidth = 1.6;
+          g.beginPath();
+          g.ellipse(sx2, sy2 + 3 * k, 20 * k, 7 * k, 0, 0, TAU);
+          g.stroke();
+          sx2 += (110 + r() * 90) * (1 - i2 * 0.12);
+        }
+      }
       // 바위 선반의 결 — 평평한 회색 판이 되지 않게 밝고 어두운 층 + 젖은 광택 + 해조 얼룩.
       for (let i = 0; i < 22; i++) softBlob(g, r() * w, 40 + r() * (VIS - 60), 40 + r() * 70, "228 232 236", 0.06, 0, GROUND_SQUASH);
       // 바위 결 — 굵고 긴 획은 "회색 붓자국"으로 읽힌다. 가늘게·옅게·끊어서.
@@ -388,6 +409,23 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         if (pools.some(([px, py, prx, pry]) => Math.abs(x - px) < prx + 14 && Math.abs(y - py) < pry + 12)) continue;
         const k = (0.85 + r() * 0.5) * landK(y) * 1.5;
         drawProp(g, art, "rock", x, y, { k, r: r(), flip: r() < 0.5 });
+      }
+      // 조류대(해조 띠) — 물가 선 바로 아래 **검은 가로 띠**. 실제 암석해안에서 대비가 가장 센 요소이고,
+      // 이게 있어야 "바다의 바위"로 읽힌다(없으면 산의 바위처럼 보인다, 2026-09-04 조사).
+      {
+        const belt = 30 + r() * 14;
+        const bg2 = g.createLinearGradient(0, 58, 0, 58 + belt);
+        bg2.addColorStop(0, "rgb(8 8 5 / 0.5)");
+        bg2.addColorStop(0.55, "rgb(47 50 49 / 0.42)");
+        bg2.addColorStop(1, "rgb(47 50 49 / 0)");
+        g.fillStyle = bg2;
+        g.fillRect(0, 58, w, belt);
+        // 위쪽 물보라 띠 — 표백돼 밝다.
+        const sp2 = g.createLinearGradient(0, 58 + belt, 0, 58 + belt + 26);
+        sp2.addColorStop(0, "rgb(236 240 242 / 0.3)");
+        sp2.addColorStop(1, "rgb(236 240 242 / 0)");
+        g.fillStyle = sp2;
+        g.fillRect(0, 58 + belt, w, 26);
       }
       // 따개비·자갈 — 바위 사이 빈 회색 판을 메운다.
       for (let i = 0; i < 70; i++) {

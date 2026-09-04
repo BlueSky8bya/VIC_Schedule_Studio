@@ -6,7 +6,7 @@
 // 그린다(소유자 2026-09-04: 사철 초원, 여름의 억지 기슭 폐기). 계절 배경 스위치 OFF(html[data-ambient="off"])면 전부 내려간다.
 // 게이트(생동감·gfx·계절 스위치·≥641px)는 CSS(app/ambient.css `.gs-season`)가 쥔다. `force`는 fixture/검증용(계절 강제).
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registry";
 import { SeasonCanvas } from "@/components/shared/ambient/season-canvas";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
@@ -27,5 +27,20 @@ export function AmbientLayer({
   worldForce?: WorldCtx["force"];
 }) {
   const pick = useMemo(() => pickAmbient(month, force ?? null), [month, force]);
+  // 스크롤바 자리 폭을 CSS 변수로 — `html { scrollbar-gutter: stable }`이 예약한 띠(보통 15px)만큼
+  // 캔버스가 좁아 오른쪽 모서리에 배경이 안 깔린 줄이 남았다(2026-09-04 소유자). 100%도 100vw도
+  // 그 띠를 뺀 값이라, 실제로 재서 넓혀 준다.
+  useEffect(() => {
+    const set = () => {
+      // clientWidth는 gutter가 예약돼 있어도 뷰포트 폭을 그대로 보고한다(헤드리스 실측) —
+      // 실제로 레이아웃이 쓰는 폭은 루트의 경계 상자다.
+      const root = document.documentElement.getBoundingClientRect().width;
+      const gap = Math.max(0, Math.round(window.innerWidth - root));
+      document.documentElement.style.setProperty("--amb-gutter", `${gap}px`);
+    };
+    set();
+    window.addEventListener("resize", set);
+    return () => window.removeEventListener("resize", set);
+  }, []);
   return <SeasonCanvas key={pick.season} season={pick.season} slug={slug} year={year} month={month} force={worldForce} />;
 }

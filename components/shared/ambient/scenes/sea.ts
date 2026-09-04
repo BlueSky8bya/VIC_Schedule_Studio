@@ -126,7 +126,7 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
       // 너울(큰 것 2겹) — 옅은 밝은 띠가 천천히 내려온다.
       if (!deep) drawWaves(g, t, f.w, { top: top(), bottom: f.h, bands: 3, speed: 0.045, amp: 16, alpha: 0.22, foam: pal.foam });
       // 거품 선(잔물결) — 조금 빠르고 가늘게.
-      if (!deep) drawWaves(g, t * 1.6, f.w, { top: top(), bottom: f.h, bands: 5, speed: 0.06, amp: 6, alpha: 0.1, foam: pal.foam });
+      if (!deep) drawWaves(g, t * 1.6, f.w, { top: top(), bottom: f.h, bands: 9, speed: 0.07, amp: 5, alpha: 0.1, foam: pal.foam });
       // (깊은 바다엔 수면 문법을 그리지 않는다 — 물속인데 파도가 가로지르면 카메라가 둘이다.)
       // 물고기 떼 그림자 — 실루엣을 눌러서(3/4 시점) 찍는다. 멀수록 작고 옅게.
       if (!fishAsked) {

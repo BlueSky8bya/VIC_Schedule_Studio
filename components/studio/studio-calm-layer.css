@@ -95,8 +95,21 @@
   color: inherit;
 }
 .stool:hover:not(:disabled) {
-  background: #f4f2fb;
-  border-color: #e6e1f4;
+  /* 하이라이팅이 약해 "지금 어디에 있는지" 안 보였다(2026-09-04 소유자) — 면·테두리·그림자를 함께. */
+  background: #f1eefb;
+  border-color: #d8d0f0;
+  box-shadow: 0 2px 8px rgb(96 76 190 / 12%);
+}
+.stool:focus-visible {
+  outline: 2px solid var(--selection-border, #b7a8ef);
+  outline-offset: 1px;
+}
+/* 열려 있는 도구(모달·팝오버가 이 타일에서 나왔다) — 눌린 상태가 또렷하게. */
+.stool[aria-expanded="true"],
+.stool.is-open {
+  background: #e9e3fb;
+  border-color: #c9bdf0;
+  box-shadow: inset 0 1px 3px rgb(80 60 160 / 14%);
 }
 .stool:active:not(:disabled) {
   transform: scale(0.95);
