@@ -248,7 +248,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
     const duckArtSub = duckSlot ? artFile("duck.png", duckSlot, 2, "rgb(150 190 222 / 0.78)") : Promise.resolve(null);
     void duckArt.then((a) => {
       if (a) duckSpr = { c: a.c, w: a.w, h: a.h };
-      else void loadSprite(ASSET.duck, 56, 56).then((s) => (duckSpr = s)).catch(() => {});
+      else void loadSprite(ASSET.duck, 56, 56, 2, undefined, 0.42).then((s) => (duckSpr = s)).catch(() => {});
     });
     void duckArtSub.then((a) => {
       if (a) duckSub = { c: a.c, w: a.w, h: a.h };
@@ -619,8 +619,12 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             const n2 = 4 + Math.floor(r1() * 7);
             for (let i = 0; i < n2; i++) {
               const x = cx3 + (r1() - 0.5) * spread * 2;
-              const y = top(x) + (r1() - 0.45) * NH * 0.24;
-              drawProp(ng, shoreArt, "reed", x, y, { k: base * (0.6 + r1() * 0.8), r: reedR, flip: r1() < 0.5, alpha: 0.82 + r1() * 0.18 });
+              // 밑동은 **물가 곡선 아래**(뭍)에만 — 위에 두면 얼음/물 위에 떠 보인다. 세로 흩뜨림도 넓게
+              // (같은 y에서 일제히 잘리면 울타리 말뚝이 된다, 사이클4 경계 #7).
+              const y = top(x) + 4 + r1() * NH * 0.4;
+              const kk = base * (0.6 + r1() * 0.8);
+              softBlob(ng, x + 3, y - 1, 9 * kk, season === "winter" ? "150 168 186" : "70 86 58", 0.2, 0, GROUND_SQUASH * 0.5);
+              drawProp(ng, shoreArt, "reed", x, y, { k: kk, r: reedR, flip: r1() < 0.5, alpha: 0.82 + r1() * 0.18 });
             }
           }
         }

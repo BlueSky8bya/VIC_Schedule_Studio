@@ -50,10 +50,20 @@ export function loadImage(url: string): Promise<HTMLImageElement> {
 
 /** 에셋을 (w×h CSS px) × scale 해상도의 스프라이트로 굽는다. scale은 DPR(최대 2) — 회전·확대해도 또렷하다.
  *  tint를 주면 불투명 부분을 그 색으로 물들인다(실루엣 → 물빛 그림자). */
-export async function loadSprite(url: string, w: number, h: number, scale = 2, tint?: string): Promise<Sprite> {
+export async function loadSprite(url: string, w: number, h: number, scale = 2, tint?: string, desat = 0): Promise<Sprite> {
   const im = await loadImage(url);
   const { c, g } = makeCanvas(w * scale, h * scale);
   g.drawImage(im, 0, 0, c.width, c.height);
+  if (desat > 0) {
+    // 채도만 낮춘다(형태·명암은 그대로) — 오행 팔레트에 맞추려고 에셋을 바꾸지 않는다. 0 = 원본, 1 = 무채색.
+    g.save();
+    g.globalCompositeOperation = "saturation";
+    g.globalAlpha = Math.min(1, desat);
+    g.fillStyle = "#808080";
+    g.fillRect(0, 0, c.width, c.height);
+    g.restore();
+    g.globalCompositeOperation = "source-over";
+  }
   if (tint) {
     g.globalCompositeOperation = "source-atop";
     g.fillStyle = tint;

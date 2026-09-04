@@ -268,10 +268,12 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   landPath();
   g.clip();
   // 위 가장자리는 안개 띠 속으로 스며든다 — 불투명하게 시작하면 지평선에 전폭 직선 자국이 남는다(검토 2차).
+  // 정지점을 부드럽게 — 0.22에서 불투명으로 튀면 그 자리가 전폭 수평 색 계단으로 보인다(사이클4 경계 #2).
   grad.addColorStop(0, `${s0}00`);
-  grad.addColorStop(0.22, s0);
-  grad.addColorStop(0.62, s1);
-  grad.addColorStop(0.88, s2);
+  grad.addColorStop(0.12, `${s0}66`);
+  grad.addColorStop(0.4, s0);
+  grad.addColorStop(0.7, s1);
+  grad.addColorStop(0.92, s2);
   grad.addColorStop(1, s2);
   g.fillStyle = grad;
   g.fillRect(0, 0, w, H);
@@ -279,20 +281,8 @@ export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): H
   // 만곡 채움 — 위 모서리를 캔버스 밖에서 시작해 "칠한 리본의 곧은 윗변"이 생기지 않게(검토 4차).
   // 만곡 채움도 위에서 투명하게 시작해야 한다 — 불투명 다각형이면 그라데이션의 페이드를 덮어
   // 지평선에 전폭 직선 절단이 남는다(2026-09-04 검토 5차: ΔRGB 최대 128).
-  const bayFill = g.createLinearGradient(0, 0, 0, H);
-  bayFill.addColorStop(0, `${s1}00`);
-  bayFill.addColorStop(0.22, s1);
-  bayFill.addColorStop(1, s1);
-  g.fillStyle = bayFill;
-  g.beginPath();
-  g.moveTo(0, -8);
-  for (let x = 0; x <= w + 12; x += 12) {
-    const xx = Math.min(x, w);
-    g.lineTo(xx, landEdge(xx));
-  }
-  g.lineTo(w, -8);
-  g.closePath();
-  g.fill();
+  // (옛 만곡 채움 폴리곤 철거 — 물가 곡선 클립이 같은 일을 하고, 폴리곤의 0.22 정지점이 전폭 계단을 만들었다.)
+
   // 물가 선 — 좌우 끝이 아래로 내려와(코사인 낙차) 연못을 두르는 만곡이 된다.
   const shoreLine = landEdge;
   g.beginPath();

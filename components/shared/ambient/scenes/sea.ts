@@ -149,6 +149,29 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
       });
       // 거품 선(잔물결) — 조금 빠르고 가늘게. 깊은 바다엔 없다(수면이 아니다).
       if (!deep) drawWaves(g, t * 1.6, f.w, { top: top(), bottom: f.h, bands: 9, speed: 0.07, amp: 5, alpha: 0.1, foam: pal.foam });
+      // 너울의 명암 — 파장 100~200m짜리 완만한 기복. 선이 아니라 **넓은 면**이라야 물이 덩어리로 읽힌다
+      // (검토 라운드2: 바다 4장이 "빈 판").
+      {
+        const bands = deep ? 2 : 4;
+        for (let i = 0; i < bands; i++) {
+          const ph = i * 2.1 + t * (deep ? 0.012 : 0.028);
+          const y0 = top() + ((i + 0.5) / bands) * (f.h - top());
+          const amp = deep ? 70 : 46;
+          g.fillStyle = `rgb(${deep ? "10 26 44" : "42 74 104"} / ${deep ? 0.06 : 0.05})`;
+          g.beginPath();
+          for (let x = -10; x <= f.w + 10; x += 20) {
+            const y = y0 + Math.sin(x * 0.0022 + ph) * amp + Math.sin(x * 0.0051 + ph * 1.4) * amp * 0.4;
+            if (x === -10) g.moveTo(x, y);
+            else g.lineTo(x, y);
+          }
+          for (let x = f.w + 10; x >= -10; x -= 20) {
+            const y = y0 + 44 + Math.sin(x * 0.0022 + ph) * amp + Math.sin(x * 0.0051 + ph * 1.4) * amp * 0.4;
+            g.lineTo(x, y);
+          }
+          g.closePath();
+          g.fill();
+        }
+      }
       // 계절 신호 — 넷이 같은 청회색 판이면 계절이 안 읽힌다(검토 라운드2 미관 #4). 표면에 계절의 표류물을 띄운다.
       if (!deep) {
         const drift = Math.round(lerp(6, 20, f.load));
@@ -212,7 +235,10 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
         const k = s.k * (0.45 + 0.55 * near);
         // 부채꼬리 실루엣은 작게 그리면 지느러미가 별 모양으로 깨진다 — 큰 놈에만.
         // 부채꼬리는 **그려지는 크기**가 40px 넘을 때만(작게 그리면 지느러미가 별 모양으로 깨진다).
-        const spr = s.k * 46 >= SIZE.fishBig ? fishSpr[1] || fishSpr[0] : fishSpr[0];
+        // 큰 놈은 몸통 축이 뚜렷한 slim 실루엣으로 — fantail은 크게 그리면 방사형 덩어리(불가사리)로 읽힌다
+        // (검토 라운드2 사이클3 현실성 #11). fantail은 중간 크기에만.
+        const px2 = s.k * 46;
+        const spr = px2 >= SIZE.fishBig * 0.9 ? fishSpr[0] : px2 >= SIZE.fishMid ? fishSpr[1] || fishSpr[0] : fishSpr[0];
         const a = deep ? 0.1 + 0.12 * near : 0.16 + 0.24 * near;
         g.save();
         g.translate(s.x, s.y);
@@ -234,6 +260,22 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
       drawTrail(g, trail, t, GROUND_SQUASH, pal.foam);
       drawGlints(g, t, glints);
       if (deep) {
+        // 수면 빛줄기 — 위쪽 1/3에 비스듬히 내려오는 옅은 빛기둥 넷. "위가 수면"이라는 유일한 단서다.
+        for (let i = 0; i < 4; i++) {
+          const x0 = f.w * (0.1 + 0.24 * i) + Math.sin(t * 0.16 + i) * 30;
+          const wtop = 26 + 14 * Math.sin(t * 0.21 + i * 2);
+          const lg = g.createLinearGradient(0, 0, 0, f.h * 0.5);
+          lg.addColorStop(0, "rgb(214 236 246 / 0.16)");
+          lg.addColorStop(1, "rgb(214 236 246 / 0)");
+          g.fillStyle = lg;
+          g.beginPath();
+          g.moveTo(x0 - wtop / 2, 0);
+          g.lineTo(x0 + wtop / 2, 0);
+          g.lineTo(x0 + wtop * 1.6, f.h * 0.5);
+          g.lineTo(x0 + wtop * 0.5, f.h * 0.5);
+          g.closePath();
+          g.fill();
+        }
         // 바다눈 — 천천히 내려오는 흰 알갱이(깊은 바다의 유일한 질감).
         const nSnow = Math.round(lerp(120, 360, f.load));
         const rs = rng(seed * 3 + 7);
@@ -245,13 +287,65 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
           g.fillRect(sx, sy2, 1.4, 1.4);
         }
       }
-      // 깊은 바다 — 발광 해파리 세 개(P2에서 종으로 승격): 숨쉬듯 밝아지는 옅은 청록 얼룩.
+      // 큰 그림자 하나 — 화면을 가로지르는 거대한 무언가(깊은 바다의 크기를 말하는 유일한 장치).
+      if (deep) {
+        const gx = ((t * 7) % (f.w + 900)) - 450;
+        const gy2 = top() + (f.h - top()) * 0.62;
+        g.save();
+        g.globalAlpha = 0.14;
+        g.fillStyle = "rgb(6 16 30)";
+        g.beginPath();
+        g.ellipse(gx, gy2, 300, 46, 0.06, 0, TAU);
+        g.fill();
+        g.beginPath();
+        g.moveTo(gx - 300, gy2);
+        g.lineTo(gx - 400, gy2 - 44);
+        g.lineTo(gx - 392, gy2 + 40);
+        g.closePath();
+        g.fill();
+        g.restore();
+      }
+      // 깊은 바다의 어둠 — 위는 옅고 아래로 갈수록 확실히 어둡다. 값 폭이 좁으면 먼바다와 구분되지 않는다
+      // (검토 라운드2 사이클3 미관 #6).
+      if (deep) {
+        const dg = g.createLinearGradient(0, top(), 0, f.h);
+        dg.addColorStop(0, "rgb(8 20 38 / 0)");
+        dg.addColorStop(0.45, "rgb(8 20 38 / 0.18)");
+        dg.addColorStop(1, "rgb(6 14 28 / 0.46)");
+        g.fillStyle = dg;
+        g.fillRect(0, top(), f.w, f.h - top());
+      }
+      // 발광 해파리 — 크기·깊이가 제각각이라야 깊이가 읽힌다(전부 지름 40px면 종이에 찍은 점). 갓 아래로
+      // 촉수가 늘어져 "무엇인지" 알아볼 수 있게 한다.
       if (deep && f.load >= 0.1) {
         for (let i = 0; i < 7; i++) {
+          const dv = (i * 0.37) % 1;
           const x = f.w * (0.08 + 0.13 * i + 0.05 * Math.sin(i * 2.3)) + Math.sin(t * 0.3 + i) * 30;
-          const y = top() + (f.h - top()) * (0.2 + 0.62 * ((i * 0.37) % 1) + 0.08 * Math.sin(t * 0.2 + i * 2));
-          const a = 0.18 + 0.14 * Math.sin(t * 1.3 + i * 1.9);
-          softBlob(g, x, y, 22 + 6 * Math.sin(t * 1.3 + i), "150 220 210", a, 0);
+          const y = top() + (f.h - top()) * (0.2 + 0.62 * dv + 0.08 * Math.sin(t * 0.2 + i * 2));
+          const near = 0.45 + 0.85 * dv; // 아래(가까움)일수록 크다
+          const pulse = 0.5 + 0.5 * Math.sin(t * 1.3 + i * 1.9);
+          const R = (10 + 22 * near) * (0.9 + 0.14 * pulse);
+          const a = (0.14 + 0.16 * pulse) * (0.6 + 0.5 * near);
+          // 촉수 — 갓 아래로 흔들리며 늘어진다.
+          g.strokeStyle = `rgb(150 220 210 / ${a * 0.7})`;
+          g.lineWidth = Math.max(0.8, R * 0.07);
+          for (let q = -2; q <= 2; q++) {
+            g.beginPath();
+            g.moveTo(x + q * R * 0.22, y + R * 0.2);
+            g.quadraticCurveTo(
+              x + q * R * 0.28 + Math.sin(t * 1.1 + q + i) * R * 0.2,
+              y + R * 1.0,
+              x + q * R * 0.2 + Math.sin(t * 0.8 + q * 1.7 + i) * R * 0.34,
+              y + R * 1.9
+            );
+            g.stroke();
+          }
+          // 갓 — 위가 둥근 종.
+          softBlob(g, x, y, R, "150 220 210", a, 0);
+          g.fillStyle = `rgb(196 240 232 / ${a * 1.2})`;
+          g.beginPath();
+          g.ellipse(x, y, R * 0.6, R * 0.42, 0, Math.PI, TAU);
+          g.fill();
         }
       }
     },

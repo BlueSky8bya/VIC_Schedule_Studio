@@ -535,6 +535,40 @@ function pine(g: CanvasRenderingContext2D, W: number, H: number, r: () => number
     g.lineTo(cx + tr.hw * 0.16, tr.base + 4);
     g.closePath();
     g.fill();
+    // 가지 단의 밝은 윗면 — 겨울의 눈 쐐기와 같은 자리. 이게 없으면 잎 덩이가 단색 삼각형이라 매끈한
+    // 벡터로 읽힌다(사이클4 미관 #7: "침엽수만 매끈 벡터"). 눈이 있는 겨울은 아래에서 흰색으로 덮는다.
+    if (!snowy) {
+      g.fillStyle = light;
+      for (let k = 1; k <= 4; k++) {
+        const t = k / 4;
+        const yTip = apexY + tr.hh * t - tr.hh * 0.06;
+        const yIn = apexY + tr.hh * (t - 0.25) * 0.94;
+        for (const sd of [-1, 1]) {
+          g.beginPath();
+          g.moveTo(cx + sd * tr.hw * t * 0.96, yTip);
+          g.lineTo(cx + sd * tr.hw * (t - 0.22) * 0.5, yIn);
+          g.lineTo(cx + sd * tr.hw * (t - 0.22) * 0.5, yIn + 2.2);
+          g.lineTo(cx + sd * tr.hw * t * 0.96, yTip + 2.4);
+          g.closePath();
+          g.fill();
+        }
+      }
+      // 그늘 입술 — 밝은 띠 바로 아래(계단이 확실히 읽히게).
+      g.fillStyle = dark;
+      for (let k = 1; k <= 4; k++) {
+        const t = k / 4;
+        const yTip = apexY + tr.hh * t - tr.hh * 0.06;
+        for (const sd of [-1, 1]) {
+          g.beginPath();
+          g.moveTo(cx + sd * tr.hw * t * 0.96, yTip + 2.4);
+          g.lineTo(cx + sd * tr.hw * (t - 0.22) * 0.5, yTip + 3.4);
+          g.lineTo(cx + sd * tr.hw * (t - 0.22) * 0.5, yTip + 5.2);
+          g.lineTo(cx + sd * tr.hw * t * 0.96, yTip + 4.6);
+          g.closePath();
+          g.fill();
+        }
+      }
+    }
     if (snowy) {
       // 눈은 가지 **윗면**에 얹힌다 — 가로 막대로 그으면 케이크 층 줄무늬가 된다(2026-09-04 자체 검토 cc3).
       // 가지의 경사를 따라 기운 쐐기로, 좌우 각각.

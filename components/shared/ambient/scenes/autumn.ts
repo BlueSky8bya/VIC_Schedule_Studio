@@ -327,7 +327,7 @@ export function createAutumn(seed: number): Scene {
         const cx2 = w * (0.12 + 0.38 * c2 + (g0() - 0.5) * 0.14);
         const n2 = 2 + Math.floor(g0() * 3);
         for (let i = 0; i < n2; i++) {
-          const y = groundY(0.02 + g0() * 0.16);
+          const y = groundY(0.05 + g0() * 0.16); // 지평선에 걸치지 않게
           spots.push({ x: cx2 + (g0() - 0.5) * w * 0.16, y, k: (0.85 + g0() * 0.6) * depthScale(y, h) });
         }
       }
@@ -335,7 +335,8 @@ export function createAutumn(seed: number): Scene {
       spots.push({ x: w * (0.05 + g0() * 0.12), y: groundY(1.02), k: 1.15 + g0() * 0.2 });
       spots.sort((a2, b2) => a2.y - b2.y);
       for (const t2 of spots) {
-        softBlob(g, t2.x + 6, t2.y - 3, 60 * t2.k, "70 58 46", 0.14, 0, GROUND_SQUASH * 0.5);
+        // 그림자는 수관보다 좁고 발밑에 붙는다 — 옛 60*k는 수관보다 넓어 지면 얼룩으로 보였다(사이클4 경계 #8).
+        softBlob(g, t2.x + 4 * t2.k, t2.y - 1, 26 * t2.k, "70 58 46", 0.2, 0, GROUND_SQUASH * 0.45);
         drawProp(g, groundArt, g0() < 0.25 ? "tree-pine-autumn" : "tree-oak-autumn", t2.x, t2.y, { k: t2.k, r: g0(), flip: g0() < 0.5 });
         // 발치의 낙엽 더미 — 여기가 낙엽의 출처다.
         for (let q = 0; q < 5; q++) {

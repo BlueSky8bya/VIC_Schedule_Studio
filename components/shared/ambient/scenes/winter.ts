@@ -377,11 +377,12 @@ export function createWinter(seed: number): Scene {
         g.beginPath();
         // 두께를 양 끝에서 0으로 좁혀 끝이 보이지 않게 한다(합성 마스크를 쓰면 바탕 캔버스가 지워진다).
         for (let x = xa; x <= xb; x += 12) {
-          const y = ridge(x) + dTop * span(x);
+          // 양끝을 0폭으로 수렴시키면 렌즈형 "흰 나뭇잎"이 된다(사이클4 경계 #4) — 두께는 40%까지만 줄인다.
+          const y = ridge(x) + dTop * (0.4 + 0.6 * span(x));
           if (x === xa) g.moveTo(x, y);
           else g.lineTo(x, y);
         }
-        for (let x = xb; x >= xa; x -= 12) g.lineTo(x, ridge(x) + dBot * span(x));
+        for (let x = xb; x >= xa; x -= 12) g.lineTo(x, ridge(x) + dBot * (0.4 + 0.6 * span(x)));
         g.closePath();
         g.fill();
       };
