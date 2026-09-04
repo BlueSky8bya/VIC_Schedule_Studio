@@ -7,7 +7,7 @@ import type { Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
 import { SIZE } from "../world/scale";
-import { horizonY, GROUND_SQUASH, bakeHorizon, ySort } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, horizonY, moveScale, ySort } from "../world/view";
 import { ASSET, loadSprite, type Sprite } from "../assets";
 import { bakeWater, drawGlints, drawTrail, drawWaves, newTrail, stepTrail, waterPalette } from "./water";
 
@@ -101,8 +101,9 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
           s.spd = Math.min(90, s.spd + 60 * dt);
         } else s.spd += ((deep ? 10 : 30) - s.spd) * dt * 0.8;
         s.hd += Math.sin(t * 0.6 + s.ph) * 0.4 * dt;
-        s.x += Math.cos(s.hd) * s.spd * dt;
-        s.y += Math.sin(s.hd) * s.spd * dt * 0.5;
+        const mk = moveScale(s.y, h);
+        s.x += Math.cos(s.hd) * s.spd * dt * mk;
+        s.y += Math.sin(s.hd) * s.spd * dt * 0.5 * mk;
         if (s.x < -80) s.x = w + 60;
         if (s.x > w + 80) s.x = -60;
         s.y = clamp(s.y, top() + 30, h - 30);

@@ -30,7 +30,7 @@ import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
 import { drawProp, resetPropField, scatterProps } from "../art/props";
 import { SIZE } from "../world/scale";
-import { bakeHorizon, depthScale, GROUND_SQUASH, horizonY } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 const WINGS = [
@@ -752,8 +752,9 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         const dist = Math.hypot(b.tx - b.x, b.ty - b.y);
         let sp = b.spd * (fleeing ? 2.6 : 1) * (b.loop > 0 ? 0.6 : 1) * (1 + 0.18 * Math.sin(t * 1.7 + b.w1));
         if (b.state === "land") sp = Math.max(18, Math.min(sp, dist * 1.6));
-        b.x += Math.cos(b.hd) * sp * dt;
-        b.y += Math.sin(b.hd) * sp * dt;
+        const mk = moveScale(b.y, h);
+        b.x += Math.cos(b.hd) * sp * dt * mk;
+        b.y += Math.sin(b.hd) * sp * dt * mk;
         b.ph += (fleeing ? 44 : b.state === "land" ? 26 : 20) * dt;
         // 도망 중엔 최고점까지 솟아 그 높이를 유지한다(그림자가 멀어짐); 평소엔 위아래로 너울거린다.
         if (fleeing) b.bob = Math.min(b.bob + 3.8 * dt, Math.PI / 2);
@@ -802,8 +803,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         if (b.state === "off") {
           // 날아오름 — 사라지지 않고 날개를 편 채 화면 밖까지 날아간다(2026-09-04 사용자: "순간이동 금지").
           b.off = Math.min(1, b.off + dt / 0.5);
-          b.x += Math.cos(b.hd) * 260 * dt;
-          b.y += Math.sin(b.hd) * 260 * dt;
+          b.x += Math.cos(b.hd) * 260 * dt * moveScale(b.y, h);
+          b.y += Math.sin(b.hd) * 260 * dt * moveScale(b.y, h);
           b.ph += 40 * dt;
           if (b.x < -30 || b.x > w + 30 || b.y < -30 || b.y > h + 30) {
             bugsLeftScreen++;
@@ -865,8 +866,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         if (b.state !== "pause") {
           const sp = b.spd * (b.state === "flee" ? 2.6 : 1);
           b.hd += (rand() - 0.5) * 1.4 * dt;
-          b.x += Math.cos(b.hd) * sp * dt;
-          b.y += Math.sin(b.hd) * sp * dt;
+          b.x += Math.cos(b.hd) * sp * dt * moveScale(b.y, h);
+          b.y += Math.sin(b.hd) * sp * dt * moveScale(b.y, h);
           b.ph += sp * 0.5 * dt;
           const m = 10;
           if (b.x < -m || b.x > w + m || b.y < gy() - m || b.y > h + m) b.hd = Math.atan2(groundY(0.5) - b.y, w / 2 - b.x) + (rand() - 0.5) * 0.4;
@@ -897,8 +898,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           petals.splice(i, 1);
           continue;
         }
-        q.x += q.vx * dt;
-        q.y += Math.sin(t * 1.3 + q.ph) * 26 * dt;
+        q.x += q.vx * dt * moveScale(q.y, h);
+        q.y += Math.sin(t * 1.3 + q.ph) * 26 * dt * moveScale(q.y, h);
         q.a += q.va * dt;
       }
       // 민들레 — 날린 뒤 25~40초면 다시 핀다(통통 커지며).
@@ -997,8 +998,8 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           } else {
             b.hd += clamp(angleDiff(Math.atan2(dy, dx), b.hd), -6 * dt, 6 * dt) + Math.sin(t * 13 + b.ph) * 1.6 * dt;
             const sp = b.state === "flee" ? 260 : b.state === "home" ? 150 : 110;
-            b.x += Math.cos(b.hd) * sp * dt;
-            b.y += Math.sin(b.hd) * sp * dt;
+            b.x += Math.cos(b.hd) * sp * dt * moveScale(b.y, h);
+            b.y += Math.sin(b.hd) * sp * dt * moveScale(b.y, h);
           }
         }
       }
@@ -1130,7 +1131,11 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
             g.restore();
           }
           const wob = b.state === "pause" || dead || flying ? 0 : Math.sin(b.ph) * 0.12;
+          // 거리 흐림 — 지평선 쪽 생물은 옅어진다(안개에 잠긴다). 2026-09-04 소유자.
+          g.save();
+          g.globalAlpha *= depthFade(b.y, f.h);
           drawSprite(g, bugSpr, b.x, b.y, b.hd + Math.PI / 2 + wob, k);
+          g.restore();
           g.restore();
         }
       }
@@ -1197,7 +1202,11 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           g.restore();
         }
         const bob = feeding ? Math.sin(t * 6 + b.ph) * 0.5 : Math.sin(t * 40 + b.ph) * 0.8 * buzz;
+        // 거리 흐림 — 지평선 쪽 생물은 옅어진다(안개에 잠긴다). 2026-09-04 소유자.
+        g.save();
+        g.globalAlpha *= depthFade(b.y, f.h);
         drawFacing(g, beeSpr, b.x, b.y + bob, b.hd, depthScale(b.y, f.h), Math.sin(t * 13 + b.ph) * 0.08 * buzz);
+        g.restore();
       }
       for (const b of flies) {
         const grounded = b.state === "sit" || b.state === "bask";

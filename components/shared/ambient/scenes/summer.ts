@@ -31,9 +31,9 @@ import { ArtSet, artFile } from "../art/load";
 import { artSlot } from "../art/manifest";
 import { drawProp } from "../art/props";
 import { SIZE } from "../world/scale";
-import { bakeHorizon, depthScale, GROUND_SQUASH, horizonY } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 import type { SeasonKey } from "../registry";
-import { bakeWater, drawGlints, waterPalette } from "./water";
+import { bakeWater, drawGlints, drawTrail, newTrail, stepTrail, waterPalette } from "./water";
 
 type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: number }; // n = 진행 직각 단위벡터
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
@@ -128,6 +128,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   const path: Node[] = [];
   const stamps: Stamp[] = [];
   const rings: Ring[] = [];
+  const trail = newTrail(); // 포인터 물결 — 바다·해안과 같은 공용 판
   const props: Prop[] = [];
   let lo: { c: HTMLCanvasElement; g: CanvasRenderingContext2D } | null = null;
   let loS = 0.5;
@@ -147,13 +148,14 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
   let duckSub: Sprite | null = null; // 물속 부분용 — 물빛으로 물든 사본(수면선 아래를 이걸로 그린다)
   let ringSpr: Sprite | null = null;
   const fishParts: (FishParts | null)[] = [null, null];
-  let lastX = -9999;
-  let lastY = -9999;
-  let sx = -9999;
-  let sy = -9999;
-  let spawned = 0;
+  // (옛 제트스키 항적의 상태 — 방출을 멈춘 뒤로 쓰이지 않는다. 여름 한정 이벤트로 되살릴 때 그대로 쓴다.)
+  const lastX = -9999;
+  const lastY = -9999;
+  const sx = -9999;
+  const sy = -9999;
+  const spawned = 0;
   let stamped = 0;
-  let nextTube = 10;
+  const nextTube = 10;
   let tubes = 0;
   const fish: Fish[] = [];
   const crumbs: Crumb[] = [];
@@ -476,34 +478,12 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       lastTraces = f.traces.filter((tr) => tr.kind === "lilypad").length;
       ensureLo(f);
       const ttl = lerp(1.0, 1.9, load); // 항적 수명 — 더 빨리 흩어지게(2026-09-04 소유자)
-      const gapPx = lerp(9, 4, load);
-      // ① 포인터 항적 — 길(팔·마루용 노드) + 거품 도장(길 위 몇 px마다). 집중 모드(끌기 중)엔 쉰다 — 끌기 스프링에 프레임 양보.
-      if (!f.dim && p.inside && p.moved && p.speed > 40) {
-        const sp = clamp(p.speed, 40, 2400);
-        const sf = clamp((sp - 40) / 1400, 0.12, 1);
-        const moved = Math.hypot(p.x - lastX, p.y - lastY);
-        if (moved > gapPx * 1.6) {
-          const dx = p.vx / (p.speed || 1);
-          const dy = p.vy / (p.speed || 1);
-          path.push({ x: p.x, y: p.y, t0: t, nx: -dy, ny: dx, sf });
-          spawned++;
-          lastX = p.x;
-          lastY = p.y;
-          if (path.length > 360) path.shift();
-        }
-        if (sx < -9000 || Math.hypot(p.x - sx, p.y - sy) > 90) {
-          sx = p.x;
-          sy = p.y;
-        }
-        let d = Math.hypot(p.x - sx, p.y - sy);
-        while (d >= gapPx) {
-          const k = gapPx / d;
-          sx += (p.x - sx) * k;
-          sy += (p.y - sy) * k;
-          stamp(sx + (rand() - 0.5) * 3, sy + (rand() - 0.5) * 3, t, sf, 8 + 22 * sf);
-          d = Math.hypot(p.x - sx, p.y - sy);
-        }
-      }
+      void [lastX, lastY, sx, sy, spawned];
+      // ① 포인터 물결 — **바다·해안과 같은 공용 판**(water.ts stepTrail/drawTrail)으로 통일했다
+      // (2026-09-04 소유자: "민물의 마우스 물결도 바다처럼 연하게 똑같이"). 옛 제트스키 항적(길·거품 도장)은
+      // 더 이상 방출하지 않는다 — 코드는 남겨 두되 배열이 비어 있어 그리지 않는다.
+      // 얼음판(겨울)에는 물결이 생기지 않고, 물가 선 위(기슭·뭍)에도 생기지 않는다.
+      if (!f.dim && !winter) stepTrail(trail, p, t, shoreY() + 6, h);
       while (path.length && t - path[0].t0 > ttl) path.shift();
       const sttl = ttl * 0.9; // 거품 띠도 조금 짧게(2026-09-04 사용자: 항적이 너무 오래 남는다)
       while (stamps.length && t - stamps[0].t0 > sttl) stamps.shift();
@@ -531,11 +511,11 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         q.vy += 320 * dt;
         if (q.life <= 0) drops.splice(i, 1);
       }
-      // ② 소품 — 해류 따라 둥둥, 잡히면 손을 따라, 놓으면 물의 저항으로 멈춘다. 튜브는 여력이 있을 때만 가끔.
-      if (load >= 0.5 && t > nextTube && !props.some((q) => q.kind === "ring")) {
-        spawnTube(t);
-        nextTube = t + 40 + rand() * 40;
-      }
+      // ② 소품 — 해류 따라 둥둥, 잡히면 손을 따라, 놓으면 물의 저항으로 멈춘다.
+      // 튜브는 **철수**(2026-09-04 소유자: "겨울에 얼었는데 튜브가 왜 떠다녀 — 다 빼고 생물 위주로").
+      // spawnTube/ringSpr/ASSET.ring은 남겨 둔다(여름 한정 이벤트로 되살릴 때 그대로 쓰면 된다).
+      void nextTube;
+      void spawnTube;
       const drag = Math.pow(0.28, dt);
       for (let i = props.length - 1; i >= 0; i--) {
         const q = props[i];
@@ -938,8 +918,9 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           const pulse = 0.75 + 0.5 * Math.max(0, Math.sin(t * freq + q.ph));
           const want = q.cruise * (q.flee > 0 ? 1 + 3.5 * q.burst : crumb ? 1.35 : q.leave ? 1.3 : 1) * pulse;
           q.spd += (want - q.spd) * Math.min(1, dt * (q.flee > 0 ? 3 : 8));
-          q.x += Math.cos(q.hd) * q.spd * dt;
-          q.y += Math.sin(q.hd) * q.spd * dt;
+          const mk = moveScale(q.y, h);
+          q.x += Math.cos(q.hd) * q.spd * dt * mk;
+          q.y += Math.sin(q.hd) * q.spd * dt * mk;
           q.ph += dt * (q.flee > 0 ? 3 : 1);
           q.depth += (q.depthT - q.depth) * Math.min(1, dt * (q.flee > 0 ? 4 : 1.2));
           // 꼬리 파형 — 진폭(꼬리 끝 변위, 스프라이트 px)과 위상. 그리기(composeFish)가 조각마다 위상을 늦춰 파도가 뒤로 흘러가게 한다.
@@ -1049,7 +1030,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           }
         }
       }
-      // 거품 띠 — 나이 들수록 넓게 번지고 옅어진다(에너지가 흩어짐).
+      // (거품 띠 — 옛 항적. 지금은 방출하지 않아 배열이 비어 있다.)
       for (const s of stamps) {
         const age = t - s.t0;
         const k = 1 - age / sttl;
@@ -1119,6 +1100,11 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         }
       }
       // 원형 잔물결(누름·뻐끔·자맥질) — 부드러운 저해상 층에서.
+      // 파문 고리 — 물 위에서만(옛 코드는 화면 전체에 그려 기슭·땅에도 소용돌이가 생겼다).
+      L.save();
+      L.beginPath();
+      L.rect(0, shoreY(), f.w, f.h - shoreY());
+      L.clip();
       for (const r of rings) {
         if (r.life < 0) continue;
         const e = 1 - Math.pow(1 - r.life, 2.4);
@@ -1136,6 +1122,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         L.ellipse(r.x, r.y, rad, rad * GROUND_SQUASH, 0, 0, TAU);
         L.stroke();
       }
+      L.restore();
       if (waterBase) g.drawImage(waterBase, 0, 0, f.w, f.h);
       g.imageSmoothingEnabled = true;
       g.imageSmoothingQuality = "medium";
@@ -1184,6 +1171,15 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       if (shore) g.drawImage(shore, 0, horizonY(f.h));
       if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true });
       // 햇빛 반짝임 — 공용 drawGlints(가로 렌즈). 옛 4획 십자는 화면에서 × · + 글리프로 읽혔다(검토 3차).
+      // 포인터 물결 — 물 구역(물가 선 아래)만. 얼음판에는 그리지 않는다.
+      if (!winter) {
+        g.save();
+        g.beginPath();
+        g.rect(0, shoreY(), f.w, f.h - shoreY());
+        g.clip();
+        drawTrail(g, trail, t, GROUND_SQUASH, "255 255 252");
+        g.restore();
+      }
       drawGlints(g, t, glints);
       // 뱃머리 — 빠르게 움직이는 포인터 앞의 밝은 물마루(본 캔버스, 또렷하게).
       const p = f.p;
@@ -1201,6 +1197,9 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
       for (const q of props) {
         const spr = q.kind === "duck" ? duckSpr : ringSpr;
         if (!spr) continue;
+        // 거리 흐림 — 먼 물 위의 오리는 옅어진다(2026-09-04 소유자).
+        g.save();
+        g.globalAlpha *= depthFade(q.y, f.h);
         const bob = Math.sin(q.ph) * 0.03;
         // 축척(오리 56 → 44, 튜브 92 → 64) × 3/4 시점 거리 축소.
         const size = q.k * (1 + bob + 0.1 * q.lift) * (q.kind === "duck" ? SIZE.duck / 56 : SIZE.swimRing / 92) * depthScale(q.y, f.h);
@@ -1287,6 +1286,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             g.restore();
           }
         } else drawSprite(g, spr, q.x, q.y, q.a + Math.sin(q.ph * 0.7) * 0.05, size);
+        g.restore();
       }
       // 물방울(목욕·털기·놀람) — 흰 점, 튀었다 떨어진다.
       for (const d of drops) {

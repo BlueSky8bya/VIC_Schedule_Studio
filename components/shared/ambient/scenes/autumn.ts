@@ -17,7 +17,7 @@ import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import { ArtSet } from "../art/load";
 import { drawProp, resetPropField, scatterProps } from "../art/props";
 import { LEAF_K, SIZE } from "../world/scale";
-import { bakeHorizon, depthScale, flatXform, GROUND_SQUASH, horizonY } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, flatXform, horizonY, moveScale } from "../world/view";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -455,7 +455,8 @@ export function createAutumn(seed: number): Scene {
     const target = nearestAcorn(x, y);
     let phase: SqPhase = "run";
     let tx = w * (0.2 + rand() * 0.6);
-    let ty = groundY(0.2 + rand() * 0.6);
+    // 먼 띠(v < 0.28)는 화면에서 거의 안 움직이는 곳이라 목표로 잡지 않는다 — 지평선 쪽으로 몰리지 않게.
+    let ty = groundY(0.32 + rand() * 0.6);
     if (target >= 0) {
       tx = leaves[target].x;
       ty = leaves[target].y;
@@ -716,7 +717,8 @@ export function createAutumn(seed: number): Scene {
               s.dir += clamp(diff, -5 * dt, 5 * dt);
               // 몸이 목표 쪽을 향할 때까지는 제자리에서 돈다(휙 순간 회전 대신 돌아서는 동작).
               if (Math.abs(diff) < 0.7) {
-                const step = Math.min(d, sp * dt);
+                // 원근 — 멀리 있을수록 화면에서 느리게(같은 걸음도 지평선 쪽에선 픽셀이 덜 움직인다).
+                const step = Math.min(d, sp * dt * moveScale(s.y, h));
                 s.x += Math.cos(s.dir) * step;
                 s.y += Math.sin(s.dir) * step;
                 s.ph += dt * 22;
@@ -1031,7 +1033,11 @@ export function createAutumn(seed: number): Scene {
           g.drawImage(sqShadow, -28 * sds, -22 * sds * GROUND_SQUASH, 56 * sds, 44 * sds * GROUND_SQUASH);
           g.restore();
         }
+        // 거리 흐림 — 지평선 쪽 생물은 옅어진다(안개에 잠긴다). 2026-09-04 소유자.
+        g.save();
+        g.globalAlpha *= depthFade(s.y, f.h);
         drawFacing(g, squirrelSpr, s.x, s.y - 6 * bounce, s.dir, (1 + 0.1 * bounce) * sds, wig);
+        g.restore();
         if (s.carry && acornSpr) {
           // 입에 문 도토리 — 코 끝(앞 22px)에, 몸과 같은 각도로.
           g.save();

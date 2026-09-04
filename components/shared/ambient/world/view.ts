@@ -56,6 +56,14 @@ export function footShadow(g: CanvasRenderingContext2D, x: number, y: number, w:
   g.restore();
 }
 
+/** 원근 이동 배율 — **화면에서의** 속도(0.22 → 1.00). 지평선 쪽으로 갈수록 한 픽셀 가는 데 오래 걸린다.
+ *  같은 걸음이라도 멀리 있으면 화면에서 천천히 움직여야 한다(2026-09-04 소유자: "토끼가 1초 뛰면 몇 백 미터를
+ *  간 것처럼 지평선까지 닿는다"). 생물의 위치 적분 `v * dt`에 이 값을 곱한다. depthScale의 세제곱 = 약 4.6배 차. */
+export function moveScale(y: number, h: number): number {
+  const d = depthScale(y, h);
+  return d * d * d;
+}
+
 /** 거리 흐림 — 지평선에서 0.55, 아래에서 1(개별 소품의 알파에 곱할 때). 화면 전체의 안개는 drawDepthHaze가 맡는다. */
 export function depthFade(y: number, h: number): number {
   const hz = horizonY(h);

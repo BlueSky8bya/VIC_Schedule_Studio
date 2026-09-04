@@ -173,6 +173,21 @@ function goTo(target: BiomeKey | Dir): boolean {
 
 /** 바이옴 내비(감상 중에만, body 포털) — 가장자리 쉐브론 4 · 미니맵(3×3 + 아래 2) · 도착 알약. 입력은 ShowcaseExit의 키 핸들러와 여기의
  *  스와이프가 goTo로 넣는다. 상태의 진실은 엔진(__vicAmbient.biome/exits) + vic:biome 이벤트. */
+// 지도 칸에 적는 짧은 이름 — 62px 칸에 들어가야 한다(긴 이름은 머리줄이 맡는다).
+const SHORT: Record<BiomeKey, string> = {
+  valley: "계곡",
+  pond: "민물",
+  mountain: "산",
+  hill: "언덕",
+  meadow: "초원",
+  forest: "숲",
+  tidal: "갯벌",
+  sandy: "모래",
+  rocky: "암석",
+  sea: "먼바다",
+  deep: "깊은바다"
+};
+
 function ShowcaseNav() {
   const [biome, setBiome] = useState<BiomeKey>("meadow");
   const [exits, setExits] = useState<Record<Dir, BiomeKey | null>>({ up: null, down: null, left: null, right: null });
@@ -281,43 +296,52 @@ function ShowcaseNav() {
       {chev("down", ChevronDown)}
       {chev("left", ChevronLeft)}
       {chev("right", ChevronRight)}
-      {/* 지도 — 현재 자리를 링으로 강조하고, 카드 머리에 지금 있는 곳 이름을 적는다(2026-09-04 소유자:
-          "현재 위치 테두리 하이라이트", "애플 형식으로 감성 있게"). 안 가 본 칸은 옅고 이름이 없다. */}
+      {/* 지도 — 계산기 버튼 판이 아니라 **읽히는 지도**로(2026-09-04 소유자). 머리줄에 지금 있는 곳과 진행 막대,
+          칸마다 이름(안 가 본 곳은 ?), 뭍/바다 구역을 나눠 적는다. 현재 칸은 링 + 굵은 이름. */}
       <nav aria-label="바이옴 지도" className="biome-map" data-biome={biome}>
         <div className="biome-map-head">
-          <span className="biome-map-here" style={{ background: BIOMES[biome].land ? "var(--map-land)" : "var(--map-water)" }} />
+          <span className="biome-map-here" data-water={BIOMES[biome].land ? undefined : "1"} />
           <span className="biome-map-title">{BIOMES[biome].nameKo}</span>
           <span className="biome-map-count">
             {visited.length}<i>/{Object.keys(BIOMES).length}</i>
           </span>
         </div>
-        <div className="biome-map-grid">
-          {BIOME_ROWS.map((row, i) => (
-            <div className={`biome-map-row${row.length === 1 ? " wide" : ""}`} key={i}>
-              {row.map((k) => {
-                const def = BIOMES[k];
-                const on = k === biome;
-                const seen = visited.includes(k);
-                const near = (Object.keys(exits) as Dir[]).some((d) => exits[d] === k);
-                return (
-                  <button
-                    aria-current={on ? "location" : undefined}
-                    aria-label={def.nameKo}
-                    className={`biome-dot${on ? " on" : ""}${seen ? " seen" : ""}${near ? " near" : ""} biome-dot-${k}`}
-                    data-act="biome-map-pick"
-                    data-biome={k}
-                    key={k}
-                    onClick={() => goTo(k)}
-                    title={def.nameKo}
-                    type="button"
-                  >
-                    <span className="biome-dot-name">{def.nameKo}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
+        <div className="biome-map-bar">
+          <i style={{ width: `${(visited.length / Object.keys(BIOMES).length) * 100}%` }} />
         </div>
+        {BIOME_ROWS.map((row, i) => {
+          const sea = row.length === 1;
+          const firstSea = sea && BIOME_ROWS.findIndex((r) => r.length === 1) === i;
+          return (
+            <div key={i}>
+              {i === 0 ? <p className="biome-map-cap">뭍</p> : null}
+              {firstSea ? <p className="biome-map-cap sea">바다</p> : null}
+              <div className={`biome-map-row${sea ? " wide" : ""}`}>
+                {row.map((k) => {
+                  const def = BIOMES[k];
+                  const on = k === biome;
+                  const seen = visited.includes(k);
+                  const near = (Object.keys(exits) as Dir[]).some((d) => exits[d] === k);
+                  return (
+                    <button
+                      aria-current={on ? "location" : undefined}
+                      aria-label={seen ? def.nameKo : "아직 못 가 본 곳"}
+                      className={`biome-dot${on ? " on" : ""}${seen ? " seen" : ""}${near ? " near" : ""} biome-dot-${k}`}
+                      data-act="biome-map-pick"
+                      data-biome={k}
+                      key={k}
+                      onClick={() => goTo(k)}
+                      title={seen ? def.nameKo : "아직 못 가 본 곳"}
+                      type="button"
+                    >
+                      <span className="biome-dot-name">{seen ? SHORT[k] : "?"}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
       </nav>
       {pill ? (
         <div className="biome-pill" key={pill.key} role="status">

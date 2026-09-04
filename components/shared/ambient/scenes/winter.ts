@@ -22,7 +22,7 @@ import type { Weather } from "../world/weather";
 import { ArtSet } from "../art/load";
 import { drawProp, resetPropField, scatterProps } from "../art/props";
 import { PRINT_K, SIZE } from "../world/scale";
-import { bakeHorizon, depthScale, GROUND_SQUASH, horizonY } from "../world/view";
+import { GROUND_SQUASH, bakeHorizon, depthFade, depthScale, horizonY, moveScale } from "../world/view";
 
 // 날씨(날짜 시드)별 눈송이 배수 — 눈 오는 날은 촘촘히, 맑은 날은 가끔 한 송이.
 const WEATHER_FLAKES: Record<Weather, number> = { snow: 1.8, cloud: 0.8, clear: 0.35, fog: 0.6, wind: 1.2, rain: 0.5 };
@@ -818,8 +818,9 @@ export function createWinter(seed: number): Scene {
       for (let i = dust.length - 1; i >= 0; i--) {
         const q = dust[i];
         q.life -= dt / 0.85;
-        q.x += q.vx * dt;
-        q.y += q.vy * dt;
+        const mk = moveScale(q.y, h);
+        q.x += q.vx * dt * mk;
+        q.y += q.vy * dt * mk;
         q.vx *= Math.pow(0.05, dt);
         q.vy = q.vy * Math.pow(0.05, dt) + 26 * dt; // 살짝 가라앉는다
         if (q.life <= 0) dust.splice(i, 1);
@@ -923,7 +924,11 @@ export function createWinter(seed: number): Scene {
           g.scale(bx, by);
           g.translate(-r.x, -r.y);
         }
+        // 거리 흐림 — 지평선 쪽 생물은 옅어진다(안개에 잠긴다). 2026-09-04 소유자.
+        g.save();
+        g.globalAlpha *= depthFade(r.y, f.h);
         drawFacing(g, rabbitSpr, r.x + Math.cos(r.dir) * dig * 30, r.y - 10 * up + Math.sin(r.dir) * dig * 30, r.dir, k * (1 + 0.22 * up), ear + look * 0.4 + twist);
+        g.restore();
         g.restore();
       }
       for (const s of flakes) {
