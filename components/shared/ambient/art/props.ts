@@ -395,8 +395,127 @@ const PAINT: Record<string, Painter> = {
     g.beginPath();
     g.arc(x, y - 2, 1.8, 0, TAU);
     g.fill();
-  }
+  },
+  "grass-tall": (g, W, H, r, variant) => {
+    // 여름 초원의 표지 — 무릎 높이의 활처럼 휜 잎 + 고개 숙인 원통 이삭(강아지풀). 봄의 짧은 잔디 포기와
+    // 실루엣이 확실히 달라야 두 계절이 갈린다(2026-09-04 소유자).
+    const b = H - 1;
+    const cx = W / 2;
+    g.lineCap = "round";
+    for (let i = 0; i < 6; i++) {
+      const sd = i % 2 ? 1 : -1;
+      const len = H * (0.5 + r() * 0.48);
+      const bend = sd * W * (0.2 + r() * 0.3);
+      g.strokeStyle = `rgb(${i % 3 === 0 ? "104 148 86" : "78 122 70"} / ${0.72 + r() * 0.28})`;
+      g.lineWidth = 1.4 + r() * 0.9;
+      g.beginPath();
+      g.moveTo(cx + sd * 1.5, b);
+      g.quadraticCurveTo(cx + bend * 0.4, b - len * 0.65, cx + bend, b - len);
+      g.stroke();
+    }
+    // 이삭 — 고개 숙인 원통 하나(변형 3은 둘).
+    const spikes = variant === 2 ? 2 : 1;
+    for (let i = 0; i < spikes; i++) {
+      const sd = i ? 1 : -1;
+      const tipx = cx + sd * W * (0.1 + r() * 0.16);
+      const tipy = b - H * (0.78 + r() * 0.16);
+      g.strokeStyle = "rgb(88 124 74 / 0.9)";
+      g.lineWidth = 1.3;
+      g.beginPath();
+      g.moveTo(cx, b);
+      g.quadraticCurveTo(cx + sd * 2, b - H * 0.5, tipx, tipy);
+      g.stroke();
+      g.fillStyle = "#b3c184";
+      g.save();
+      g.translate(tipx, tipy);
+      g.rotate(sd * 0.5);
+      g.beginPath();
+      g.ellipse(0, -H * 0.06, W * 0.1, H * 0.12, 0, 0, TAU);
+      g.fill();
+      g.strokeStyle = "rgb(126 138 88 / 0.85)";
+      g.lineWidth = 1;
+      g.stroke();
+      g.restore();
+    }
+  },
+  "tree-pine": (g, W, H, r) => pine(g, W, H, r, false),
+  "tree-pine-winter": (g, W, H, r) => pine(g, W, H, r, true)
 };
+
+/** 침엽수(소나무·곰솔) 대체물 — 동물의 숲 카메라(3/4)에서 본 톱니 원뿔 3단 + 짧고 굵은 줄기.
+ *  참나무(둥근 잎 덩이)와 실루엣이 확실히 갈려야 "혼효림"으로 읽힌다. 밝은 땅(눈·모래) 위에서 붉은 줄기는
+ *  가장 시끄러운 요소라 회갈색 고정(2026-09-04 소유자 규칙). */
+function pine(g: CanvasRenderingContext2D, W: number, H: number, r: () => number, snowy: boolean) {
+  const b = H - 1;
+  const cx = W / 2;
+  const line = snowy ? "#1b2820" : "#1d3123";
+  const mid = snowy ? "#33482f" : "#3c6342";
+  const light = snowy ? "#455e3d" : "#547f57";
+  // 줄기 — 짧고 굵게. 아래 단이 덮으므로 조금만 보인다.
+  const tw = Math.max(2, Math.round(W * 0.1));
+  g.fillStyle = "#5b4d3d";
+  g.fillRect(Math.round(cx - tw / 2), Math.round(b - H * 0.17), tw, Math.round(H * 0.17));
+  g.strokeStyle = line;
+  g.lineWidth = 1;
+  g.strokeRect(Math.round(cx - tw / 2) + 0.5, Math.round(b - H * 0.17) + 0.5, tw - 1, Math.round(H * 0.17));
+  // 원뿔 3단 — 위에서부터 그리면 아래 단이 덮으므로 **아래부터**. 가지 끝은 톱니 4개.
+  const tiers = [
+    { base: b - H * 0.1, hw: W * 0.47, hh: H * 0.36 },
+    { base: b - H * 0.36, hw: W * 0.37, hh: H * 0.33 },
+    { base: b - H * 0.62, hw: W * 0.25, hh: H * 0.34 }
+  ];
+  for (const tr of tiers) {
+    const edge = (sd: number) => {
+      // 꼭대기 → 밑단으로 내려오며 가지 끝이 4번 튀어나온다(톱니).
+      for (let k = 1; k <= 4; k++) {
+        const t = k / 4;
+        const jag = 0.72 + 0.28 * (k % 2);
+        g.lineTo(cx + sd * tr.hw * t * jag, tr.base - tr.hh * (1 - t) - tr.hh * 0.05);
+        g.lineTo(cx + sd * tr.hw * t, tr.base - tr.hh * (1 - t) * 0.86);
+      }
+    };
+    flatBody(g, mid, line, () => {
+      g.beginPath();
+      g.moveTo(cx, tr.base - tr.hh);
+      edge(1);
+      g.lineTo(cx + tr.hw * 0.5, tr.base);
+      g.lineTo(cx - tr.hw * 0.5, tr.base);
+      g.moveTo(cx, tr.base - tr.hh);
+      edge(-1);
+      g.lineTo(cx - tr.hw * 0.5, tr.base);
+      g.closePath();
+    }, tr.base);
+    // 왼쪽 위 밝은 면 — 한 덩이가 아니라 가지 끝을 따라 몇 조각.
+    g.fillStyle = light;
+    for (let k = 0; k < 3; k++) {
+      const t = 0.3 + k * 0.24;
+      g.beginPath();
+      g.moveTo(cx - tr.hw * t * 0.2, tr.base - tr.hh * (1 - t * 0.75));
+      g.lineTo(cx - tr.hw * t * 0.82, tr.base - tr.hh * (1 - t) * 0.9);
+      g.lineTo(cx - tr.hw * t * 0.3, tr.base - tr.hh * (1 - t) * 0.86);
+      g.closePath();
+      g.fill();
+    }
+    if (snowy) {
+      // 눈은 **윗면에만** — 가지 위에 얹힌 얇은 띠(통짜로 덮으면 눈사람이 된다).
+      g.fillStyle = "rgb(246 250 255 / 0.9)";
+      for (let k = 1; k <= 3; k++) {
+        const t = k / 4;
+        g.beginPath();
+        g.moveTo(cx - tr.hw * t * 0.86, tr.base - tr.hh * (1 - t) * 0.9);
+        g.lineTo(cx, tr.base - tr.hh * (1 - t * 0.7));
+        g.lineTo(cx + tr.hw * t * 0.86, tr.base - tr.hh * (1 - t) * 0.9);
+        g.lineTo(cx + tr.hw * t * 0.7, tr.base - tr.hh * (1 - t) * 0.9 - 1.6);
+        g.lineTo(cx, tr.base - tr.hh * (1 - t * 0.7) - 1.8);
+        g.lineTo(cx - tr.hw * t * 0.7, tr.base - tr.hh * (1 - t) * 0.9 - 1.6);
+        g.closePath();
+        g.fill();
+      }
+    }
+    dither(g, cx - tr.hw, tr.base - tr.hh, tr.hw * 2, tr.hh, line, 18, 71 + Math.round(tr.hw));
+  }
+  void r;
+}
 
 function tuft(g: CanvasRenderingContext2D, W: number, H: number, r: () => number, cols: string[]) {
   g.lineCap = "round";

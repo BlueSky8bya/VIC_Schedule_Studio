@@ -18,26 +18,32 @@
   }
 }
 
-/* 물결이 모래 위로 비치게 — 물결이 보이는 상태에선 표면·달력 칸·요일 머리·레일 카드를 **반투명**으로(색은
-   원래 크림 그대로, 알파만). 오늘(골드) 칸·일정 카드·띠·하트는 불투명(물 위의 물건). 공식 PNG 내보내기는
-   철수(ADR-0015)됐고, 비주얼 테스트는 동작 줄이기 ON(물결 숨김 → 불투명)이라 결정성 그대로. 조건 밖
-   (동작 줄이기·약한 기기·모바일)에선 원래 불투명. */
+/* 계절 배경이 그대로 비치게 — 2026-09-04 소유자: "달력·날짜·태그 필터를 **감싸는 레이아웃이 하나** 있어서
+   켜기를 눌러도 한 차례 필터링돼 뿌옇고, 흐리게를 누르면 끄기와 구분이 안 된다. 이 감싸는 레이아웃을 아예 없애줘."
+   → 표면(달력이 앉는 큰 카드)의 **면과 그림자를 완전히 없앤다**. 배경을 가리는 겹은 이제 하나뿐 — 글자가 실제로
+   앉는 **칸**이다. 그래서 칸·요일 머리·레일 카드의 알파는 오히려 올려(46→64 · 70→80 · 76→84) 가독성을 칸 단위에서
+   지키고, 칸 사이 여백·표면 안팎 여백에서는 계절 배경이 **100%**로 보인다. 이렇게 해야 켜기/흐리게/끄기 세 단계가
+   실제로 다르게 보인다. 오늘(골드) 칸·일정 카드·띠·하트는 그대로 불투명(물 위의 물건).
+   조건 밖(동작 줄이기·약한 기기·모바일·배경 끔)에선 public-poster.css의 원래 불투명 크림 그대로. */
 @media (min-width: 641px) {
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .poster-surface {
-    background: linear-gradient(180deg, rgb(255 253 246 / 56%), rgb(253 246 228 / 56%));
+    background: none;
+    box-shadow: none;
   }
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-day:not(.today) {
-    background: rgb(255 254 251 / 46%);
+    background: rgb(255 254 251 / 64%);
   }
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-day.outside {
-    background: rgb(241 233 216 / 52%);
+    background: rgb(241 233 216 / 58%);
   }
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .weekday-row {
-    background: rgb(251 247 238 / 70%);
+    background: rgb(251 247 238 / 80%);
   }
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .rail-info-card,
-  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-legend-vertical {
-    background: rgb(255 253 246 / 76%);
+  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .public-legend-vertical,
+  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-ambient-ctl.rail-showcase,
+  html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .viewer-ambient-ctl.slot-showcase {
+    background: rgb(255 253 246 / 84%);
   }
 }
 

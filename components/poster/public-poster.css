@@ -6917,22 +6917,32 @@ html:is([data-pchrome="2"], [data-pchrome="3"]) .poster-chrome-title .title-spar
 html[data-pchrome="3"] .poster-chrome-title {
   font-size: 24px;
 }
-/* 감상 버튼 자리 — 레일 맨 아래(가운데), 아바타 scene에선 아바타 자리 위쪽 중앙. */
+/* 계절 배경 카드(2026-09-04 소유자: "시청자 화면·미리보기 것도 같이 통일") — 구조는 app/ambient.css의 공용 규격,
+   여기선 **색만** 시청자 크림 톤으로 바꾸고 폭을 바로 위 카드에 맞춘다.
+   · 레일(아바타 끔): 태그 필터 카드(.public-legend-vertical)와 같은 폭·같은 테두리·같은 라운드 → 세로로 두 장이 한 벌.
+   · 아바타 자리(아바타 켬): 점선 박스 안 절대 배치를 걷어내고 자리의 첫 줄로(편집실과 같은 이유 — 박스 윗변이 삐져나온다). */
+.poster-page .viewer-ambient-ctl.rail-showcase,
+.poster-page .viewer-ambient-ctl.slot-showcase {
+  --amb-card-bg: #fffdf6;
+  --amb-card-line: #ece2cd;
+  --amb-card-r: var(--r-lg);
+  --amb-tile-hover: #f7f1e4;
+  --amb-tile-hover-line: #e8dcc2;
+  box-shadow: var(--shadow-2);
+}
 .public-right .rail-showcase {
-  align-self: center;
+  align-self: stretch;
   margin-top: 2px;
 }
 .poster-page .avatar-slot .avatar-dock-inner {
   position: relative;
+  min-height: 0;
 }
 .poster-page .avatar-slot .slot-showcase {
-  position: absolute;
-  top: 14px;
-  left: 50%;
-  transform: translateX(-50%);
-  pointer-events: auto;
-  width: max-content;
-  max-width: calc(100% - 12px);
+  position: static;
+  flex: none;
+  width: auto;
+  max-width: none;
 }
 /* 계정 카드 안의 버튼은 카드가 테두리·면을 쥔다 — `.poster-readonly .viewer-actions .button`(유리 면, 특이도 3)이 위의 카드 칸
    규칙(특이도 2)을 이겨 버튼에 면·테두리가 한 번 더 그려졌다(2026-09-04 사용자 사진 4: 로그인 버튼 하나가 2중 상자). */

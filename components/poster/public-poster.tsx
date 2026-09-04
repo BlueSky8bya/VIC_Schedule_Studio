@@ -5247,9 +5247,10 @@ export function PublicPoster({
                 <SoopLiveBeacon inRail live={soopLive} />
               </div>
             ) : null}
+            {/* 아바타 scene에선 계절 배경 카드가 아바타 자리 위쪽으로(레일이 접히므로). 점선 박스 **밖·위** —
+                안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자, 편집실과 동일). */}
+            {avatarOn && interactive ? <ViewerAmbientControl className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
             <div className="avatar-dock-inner">
-              {/* 아바타 scene에선 감상 버튼이 아바타 자리 위쪽으로(레일이 접히므로). */}
-              {avatarOn && interactive ? <ViewerAmbientControl className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
               {/* ("아바타 자리" 안내 글자 제거 — 2026-09-04 사용자 결정, 편집실과 동일.) */}
             </div>
           </aside>

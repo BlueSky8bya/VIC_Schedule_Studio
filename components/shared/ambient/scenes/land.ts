@@ -1,8 +1,10 @@
 // 육지 바이옴 얇은 판(2026-09-04, PLAN-004 §3.3~3.5) — 숲(forest)·들판·언덕(hill)·계곡(valley)·산(mountain). P1에서는 바탕·지평선·소품만
 // (생물은 P2 에이전트, 소나무·억새·고사리·절벽 아트는 P3 자리). 3/4 시점·축척·안개는 엔진과 view.ts가 준다.
-//  · forest: 참나무(아트 tree-oak-*)가 위·좌우를 두르고 가운데는 그늘진 빈터, 그루터기·통나무·바위·버섯(가을)·마른 풀.
+//  · forest: **소나무-참나무 혼효림**(2026-09-04 웹 레퍼런스 — 한국 산림의 대표 임상). 참나무(둥근 잎 덩이)와
+//    소나무(톱니 원뿔)가 45:55로 섞이고, 수관 틈 30~40%라 바닥에 볕 얼룩이 여럿 진다. 바닥은 낙엽 + 솔가리(솔잎 깔개).
 //  · hill: 완만한 언덕 띠 두 겹(밝기 차로 원근), 풀포기 빽빽, 바위 무리, 봄엔 꽃, 가을엔 마른 풀(억새 자리는 P3).
-//  · valley: 바위 사이를 굽이치는 시내(밝은 물 띠 + 흐르는 거품 점), 이끼 바위.
+//  · valley: 바위 사이를 굽이치는 시내(밝은 물 띠 + 흐르는 거품 점), 이끼 바위. 사면은 **참나무 극상림**(수관 틈
+//    0~20% — 하늘이 열리는 곳은 물길뿐)이라 숲보다 나무가 빽빽하고 어둡다.
 //  · mountain: 위 띠에 큰 봉우리 실루엣, 바위·눈 얼룩(겨울·초봄엔 눈이 초원보다 오래).
 
 import type { Scene } from "../scene-engine";
@@ -41,10 +43,10 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
   let gdpr = 0;
   let av = -1;
   const art = new ArtSet(
-    ["tree-oak-spring", "tree-oak-summer", "tree-oak-autumn", "tree-oak-winter", "rock", "stump", "log", "mushroom", "grass-dry", "grass-tuft", "daisy", "shrub-spring", "shrub-summer", "shrub-autumn", "shrub-winter"],
-    { scaleOf: { "tree-oak-spring": 3, "tree-oak-summer": 3, "tree-oak-autumn": 3, "tree-oak-winter": 3 } }
+    ["tree-oak-spring", "tree-oak-summer", "tree-oak-autumn", "tree-oak-winter", "tree-pine", "tree-pine-winter", "rock", "stump", "log", "mushroom", "grass-dry", "grass-tuft", "daisy", "shrub-spring", "shrub-summer", "shrub-autumn", "shrub-winter"],
+    { scaleOf: { "tree-oak-spring": 3, "tree-oak-summer": 3, "tree-oak-autumn": 3, "tree-oak-winter": 3, "tree-pine": 3, "tree-pine-winter": 3 } }
   );
-  const trees: { x: number; y: number; R: number }[] = [];
+  const trees: { x: number; y: number; R: number; pine?: boolean }[] = [];
   const stream: { x: number; y: number }[] = [];
   const foam: { u: number; lane: number; sp: number }[] = [];
   const gy = () => horizonY(h);
@@ -60,8 +62,18 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     g.restore();
   };
 
-  function drawTree(g: CanvasRenderingContext2D, x: number, y: number, R: number, hour: number) {
+  function drawTree(g: CanvasRenderingContext2D, x: number, y: number, R: number, hour: number, pine = false) {
     const dx = hour < 12 ? -8 : 8;
+    if (pine) {
+      // 소나무 — 폭은 참나무(2R)보다 좁고(1.45R) 키는 조금 크다. 실루엣이 갈려야 "혼효림"으로 읽힌다.
+      shadow(g, x + dx * 0.34, y - 2, R * 0.82, 0.16);
+      drawProp(g, art, season === "winter" ? "tree-pine-winter" : "tree-pine", x, y, {
+        k: (R * 1.45) / 92,
+        r: ((x * 7919) % 997) / 997,
+        flip: (Math.round(x) & 1) === 1
+      });
+      return;
+    }
     const a = art.get(`tree-oak-${season}`);
     if (a) {
       shadow(g, x + dx * 0.4, y - 2, R * 1.05, 0.16);
@@ -280,6 +292,33 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
         g.ellipse(0, 0, (2.2 + g0() * 3.6) * k, (1.2 + g0() * 1.8) * k, 0, 0, TAU);
         g.fill();
         g.restore();
+      }
+      // 볕 얼룩 — 소나무-참나무 혼효림의 수관 틈은 30~40%(순림보다 훨씬 밝다). 바닥에 밝은 얼룩 넷이
+      // 흩어져야 "빛이 새는 숲"으로 읽힌다(겨울엔 눈이 이미 밝으니 약하게).
+      {
+        const sun = season === "winter" ? 0.05 : 0.1;
+        for (let i = 0; i < 4; i++) {
+          const x = w * (0.1 + g0() * 0.8);
+          const y = groundY(0.2 + g0() * 0.7);
+          softBlob(g, x, y, (60 + g0() * 110) * depthScale(y, h), season === "winter" ? "255 255 255" : "246 240 202", sun, 0, GROUND_SQUASH);
+        }
+      }
+      // 솔가리(솔잎 깔개) — 침엽수 밑의 마른 갈색 바늘. 짧고 가는 선이라 낙엽 점과 결이 다르다.
+      {
+        const needles = Math.round((w * h) / (season === "winter" ? 5200 : 1800));
+        g.lineCap = "butt";
+        for (let i = 0; i < needles; i++) {
+          const y = groundY(0.08 + g0() * 0.94);
+          const x = g0() * w;
+          const k = depthScale(y, h);
+          const a2 = g0() * Math.PI;
+          g.strokeStyle = `rgb(${season === "winter" ? "146 140 132" : "126 100 66"} / ${0.16 + g0() * 0.22})`;
+          g.lineWidth = 0.9;
+          g.beginPath();
+          g.moveTo(x, y);
+          g.lineTo(x + Math.cos(a2) * 6 * k, y + Math.sin(a2) * 6 * k * GROUND_SQUASH);
+          g.stroke();
+        }
       }
       const tufts = Math.round((w * h) / 3200);
       clumpLeft = 0;
@@ -722,21 +761,41 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
     }
     ground = c;
     horizon = bakeHorizon(season, w, h, 1);
-    // 숲의 나무 자리(결정적) — 위 줄 + 좌우 기둥, 가운데는 비운다.
+    // 숲의 나무 자리(결정적) — 위 줄 + 좌우 기둥, 가운데는 비운다. 45%는 소나무(혼효림).
     trees.length = 0;
+    const pineMix = () => g0() < 0.45;
     if (kind === "forest") {
       const n = 6 + Math.round(w / 260);
-      for (let i = 0; i < n; i++) trees.push({ x: (i + 0.5) * (w / n) + (g0() - 0.5) * 40, y: groundY(0.06 + g0() * 0.1), R: Math.round(SIZE.treeCrownW / 2 * (0.75 + g0() * 0.35)) });
-      for (const side of [0.06, 0.94]) for (let i = 0; i < 3; i++) trees.push({ x: w * side + (g0() - 0.5) * 50, y: groundY(0.3 + i * 0.22 + g0() * 0.1), R: Math.round(SIZE.treeCrownW / 2 * (0.8 + g0() * 0.3)) });
+      for (let i = 0; i < n; i++) trees.push({ x: (i + 0.5) * (w / n) + (g0() - 0.5) * 40, y: groundY(0.06 + g0() * 0.1), R: Math.round(SIZE.treeCrownW / 2 * (0.75 + g0() * 0.35)), pine: pineMix() });
+      for (const side of [0.06, 0.94]) for (let i = 0; i < 3; i++) trees.push({ x: w * side + (g0() - 0.5) * 50, y: groundY(0.3 + i * 0.22 + g0() * 0.1), R: Math.round(SIZE.treeCrownW / 2 * (0.8 + g0() * 0.3)), pine: pineMix() });
       // 중간 깊이 — 앞줄과 뒷줄 사이가 텅 비어 "울타리 친 마당"으로 읽혔다. 빈터는 가운데(u 0.36~0.64)만 비운다.
-      for (let i = 0; i < 8; i++) {
+      // 혼효림의 수관 틈은 30~40%라 참나무 순림보다 성기다(8 → 6).
+      for (let i = 0; i < 6; i++) {
         const u = g0() < 0.5 ? 0.05 + g0() * 0.3 : 0.65 + g0() * 0.3;
-        trees.push({ x: w * u, y: groundY(0.26 + g0() * 0.62), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.4)) });
+        trees.push({ x: w * u, y: groundY(0.26 + g0() * 0.62), R: Math.round((SIZE.treeCrownW / 2) * (0.8 + g0() * 0.4)), pine: pineMix() });
       }
       // 가운데도 **가까운 쪽**엔 나무가 선다 — 안 그러면 한가운데가 밝은 도넛 구멍이 된다(검토 4차).
-      for (let i = 0; i < 3; i++) trees.push({ x: w * (0.38 + g0() * 0.24), y: groundY(0.82 + g0() * 0.18), R: Math.round((SIZE.treeCrownW / 2) * (1.05 + g0() * 0.25)) });
-      // 코앞 두 그루 — 화면 아래에서 잘린다(가까움의 신호, 동물의 숲 카메라).
-      for (const side of [0.1, 0.88]) trees.push({ x: w * side + (g0() - 0.5) * 40, y: groundY(1.02), R: Math.round(SIZE.treeCrownW / 2 * (1.1 + g0() * 0.25)) });
+      for (let i = 0; i < 3; i++) trees.push({ x: w * (0.38 + g0() * 0.24), y: groundY(0.82 + g0() * 0.18), R: Math.round((SIZE.treeCrownW / 2) * (1.05 + g0() * 0.25)), pine: pineMix() });
+      // 코앞 두 그루 — 화면 아래에서 잘린다(가까움의 신호, 동물의 숲 카메라). 하나는 소나무로 고정해 실루엣 대비를 준다.
+      for (const [i2, side] of [0.1, 0.88].entries()) trees.push({ x: w * side + (g0() - 0.5) * 40, y: groundY(1.02), R: Math.round(SIZE.treeCrownW / 2 * (1.1 + g0() * 0.25)), pine: i2 === 0 });
+      trees.sort((a, b) => a.y - b.y);
+    } else if (kind === "valley") {
+      // 계곡 사면 = 참나무 극상림(수관 틈 0~20%) — 하늘이 열리는 곳은 물길뿐이다. 물 위에 서지 않게
+      // 자리 점유 필드(물길이 이미 등록돼 있다)로 거른다.
+      for (let i = 0; i < 30; i++) {
+        const x = g0() * w;
+        const y = groundY(0.02 + g0() * 0.52);
+        const R = Math.round((SIZE.treeCrownW / 2) * (0.5 + g0() * 0.32) * depthScale(y, h));
+        if (!claimSpot(x, y, R * 0.7)) continue;
+        trees.push({ x, y, R, pine: g0() < 0.18 });
+      }
+      // 양쪽 벽 위 — 계곡을 액자처럼 두르는 두 줄(벽이 넓은 위쪽 절반에만).
+      for (const side of [0.03, 0.97]) {
+        for (let i = 0; i < 4; i++) {
+          const y = groundY(0.08 + i * 0.11 + g0() * 0.06);
+          trees.push({ x: w * side + (g0() - 0.5) * 70, y, R: Math.round((SIZE.treeCrownW / 2) * (0.7 + g0() * 0.3) * depthScale(y, h)), pine: g0() < 0.25 });
+        }
+      }
       trees.sort((a, b) => a.y - b.y);
     }
     gw = w;
@@ -778,7 +837,7 @@ export function createLand(seed: number, opts: { season: SeasonKey; kind: LandKi
       for (const tr of trees) {
         g.save();
         g.globalAlpha *= depthFade(tr.y, f.h);
-        drawTree(g, tr.x, tr.y, Math.round((tr.R * depthScale(tr.y, f.h)) / 4) * 4, f.time.hour);
+        drawTree(g, tr.x, tr.y, Math.round((tr.R * depthScale(tr.y, f.h)) / 4) * 4, f.time.hour, tr.pine);
         g.restore();
       }
       void clamp;

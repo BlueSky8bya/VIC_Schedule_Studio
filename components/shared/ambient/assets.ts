@@ -19,6 +19,9 @@ export const ASSET = {
   fishShadowFantail: "/ambient/fish-shadow-fantail.png",
   duck: "/ambient/noto/emoji_u1f986.svg",
   ladybug: "/ambient/noto/emoji_u1f41e.svg",
+  // 여름 초원의 곤충(2026-09-04 소유자: "봄·여름이 너무 같다 — 풀 구성도 곤충 종류도 갈라라").
+  beetle: "/ambient/noto/emoji_u1fab2.svg", // 딱정벌레(위에서 본 모습, 무당벌레와 같은 기계)
+  hopper: "/ambient/noto/emoji_u1f997.svg", // 메뚜기(옆모습 — drawFacing)
   bee: "/ambient/noto/emoji_u1f41d.svg",
   butterfly: "/ambient/noto/emoji_u1f98b.svg",
   // 연대기(Phase A) — 도토리에서 난 싹·묘목(식물, Noto).

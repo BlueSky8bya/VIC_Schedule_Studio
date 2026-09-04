@@ -6005,13 +6005,12 @@ export function StudioShell({
           {/* 서쪽 도구 카드 — 필터와 아바타 자리 사이(2026-09-03 배치 대개편). */}
           {avatarSceneOn ? studioToolsPanel : null}
           <div className="avatar-slot">
+            {/* [켜기 | 흐리게 | 끄기] + 감상하기 — 시청자 레일과 같은 묶음(2026-09-04 사용자: 설정 열지 않고 바꾸기). onChange가
+                설정의 셀렉트·배경 효과 잠금과 같은 경로(changeAmbientMode)를 타서 설정 안 상태와 한 몸.
+                점선 박스 **밖·위**에 둔다 — 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자 사진).
+                감상 진입은 개발자만 — 세계가 다 만들어지기 전엔 관리자에게 배경으로만 보인다. */}
+            <ViewerAmbientControl className="slot-showcase" onChange={changeAmbientMode} season={ambientSeason} showcase={effectiveRole === "developer"} />
             <div className="avatar-dock-inner">
-              {/* 배경 감상 진입(2026-09-04 사용자: "누가 봐도 한 번 눌러보고 싶게, 설정 밖에") — 빈 아바타 자리 위쪽의
-                  큰 계절 버튼. 슬롯은 pointer-events:none이라 버튼만 되살린다(CSS .slot-showcase). */}
-              {/* [감상하기 | 배경 흐리게/끄기/켜기] — 시청자 레일과 같은 묶음(2026-09-04 사용자: 설정 열지 않고 바꾸기). onChange가
-                  설정의 셀렉트·배경 효과 잠금과 같은 경로(changeAmbientMode)를 타서 설정 안 상태와 한 몸. */}
-              {/* 감상 진입은 개발자만 — 세계가 다 만들어지기 전엔 관리자에게 배경으로만 보인다(2026-09-04 소유자). */}
-              <ViewerAmbientControl className="slot-showcase" onChange={changeAmbientMode} season={ambientSeason} showcase={effectiveRole === "developer"} />
               {/* 좌/우 세그먼트는 하단 중앙 플로팅 행(bottom-float-row)에 — 박스 안에 두면 rail과 함께
                   반대편으로 이동해 되돌릴 때 마우스 왕복이 화면 폭만큼(2026-09-03 사용자). */}
               {/* ("아바타 자리" 안내 글자는 2026-09-04 사용자 결정으로 제거 — 빈 자리 자체가 안내. aria-label은 aside에.) */}

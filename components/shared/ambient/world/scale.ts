@@ -47,6 +47,8 @@ export const SIZE = {
   butterfly: 18,
   bee: 14,
   ladybug: 12,
+  hopper: 17, // 메뚜기(여름 초원) — 무당벌레보다 크고 나비보다 작다
+
   dragonfly: 20,
   fishSmall: 28,
   fishMid: 44,

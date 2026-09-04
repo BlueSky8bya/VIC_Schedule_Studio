@@ -607,26 +607,47 @@ html[data-showcase] {
   overflow: hidden;
 }
 
-/* ── 편집실 아바타 자리의 계절 배경 조작(2026-09-04 소유자: "도구 카드와 폭·디자인이 안 어울린다") ──
-   위 도구 카드(.studio-tools: 흰 카드 · 18px 라운드 · #ece9f5 테두리 · 등분 타일)와 **같은 규격**으로 맞춘다.
-   나중에 '감상하기'가 들어오면 같은 카드 안 아래 줄에 전폭으로 붙는다(자리를 미리 비워 둔 구조). */
-.viewer-ambient-ctl.slot-showcase {
+/* ── 계절 배경 조작 카드(2026-09-04 소유자: "도구 카드와 폭·디자인이 안 어울린다", 이어서 "시청자 화면·미리보기 것도
+   같이 통일") ── 세 자리가 **한 규격**을 쓴다:
+     · .slot-showcase  = 편집실 아바타 자리 / 시청자 아바타 자리(위쪽, 자리 폭 전체)
+     · .rail-showcase  = 시청자 오른쪽 레일(태그 필터 카드 바로 아래, 레일 폭 전체)
+   구조(전폭 카드 · 등분 타일 · 아이콘 위/글자 아래 · 아래 줄에 감상하기)는 여기서 한 번만 정하고, **색만** 호스트가
+   토큰으로 바꾼다(편집실 = 흰 카드·연보라 선, 시청자 = 크림 카드·베이지 선). 폭은 바로 위 카드(도구 카드·태그 필터)에
+   맞춰 늘어난다 — 가운데로 몰린 좁은 알약이 "짜친다"는 지적의 원인이었다. */
+.viewer-ambient-ctl.slot-showcase,
+.viewer-ambient-ctl.rail-showcase {
+  --amb-card-bg: #fff;
+  --amb-card-line: #ece9f5;
+  --amb-card-r: 18px;
+  --amb-tile-hover: #f4f2fb;
+  --amb-tile-hover-line: #e6e1f4;
   display: grid;
   /* 기본 규칙의 justify-content:center가 남아 있으면 암시 열이 내용 폭으로 줄어 카드 안에서 가운데로 몰린다. */
   grid-template-columns: 1fr;
   justify-content: stretch;
   justify-items: stretch;
   align-items: stretch;
+  align-self: stretch;
   gap: 6px;
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid #ece9f5;
-  border-radius: 18px;
-  background: #fff;
+  border: 1px solid var(--amb-card-line);
+  border-radius: var(--amb-card-r);
+  background: var(--amb-card-bg);
   padding: 6px;
   box-shadow: 0 8px 24px rgb(70 50 110 / 12%);
+  /* 아바타 자리는 pointer-events:none인 빈 자리 — 카드만 되살린다. */
+  pointer-events: auto;
 }
-.viewer-ambient-ctl.slot-showcase .ambient-seg {
+/* 모바일엔 배경 자체가 없다 — 기본 규칙의 display:none을 카드가 덮지 않게 한 번 더 못 박는다. */
+@media (max-width: 640px) {
+  .viewer-ambient-ctl.slot-showcase,
+  .viewer-ambient-ctl.rail-showcase {
+    display: none;
+  }
+}
+.viewer-ambient-ctl.slot-showcase .ambient-seg,
+.viewer-ambient-ctl.rail-showcase .ambient-seg {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(0, 1fr);
@@ -639,7 +660,8 @@ html[data-showcase] {
   box-shadow: none;
 }
 /* 타일 — 도구 카드의 .stool과 같은 문법(아이콘 위, 글자 아래). */
-.viewer-ambient-ctl.slot-showcase .ambient-seg-btn {
+.viewer-ambient-ctl.slot-showcase .ambient-seg-btn,
+.viewer-ambient-ctl.rail-showcase .ambient-seg-btn {
   display: grid;
   justify-items: center;
   align-content: center;
@@ -654,29 +676,34 @@ html[data-showcase] {
   font-weight: 800;
   line-height: 1;
 }
-.viewer-ambient-ctl.slot-showcase .ambient-seg-btn:hover {
-  background: #f4f2fb;
-  border-color: #e6e1f4;
+.viewer-ambient-ctl.slot-showcase .ambient-seg-btn:hover,
+.viewer-ambient-ctl.rail-showcase .ambient-seg-btn:hover {
+  background: var(--amb-tile-hover);
+  border-color: var(--amb-tile-hover-line);
 }
 /* 지금 상태 — 면·테두리·글자를 한꺼번에 올려 "여기가 켜져 있다"가 버튼만 봐도 보이게(소유자: 하이라이팅이 약하다). */
-.viewer-ambient-ctl.slot-showcase .ambient-seg-btn.on {
+.viewer-ambient-ctl.slot-showcase .ambient-seg-btn.on,
+.viewer-ambient-ctl.rail-showcase .ambient-seg-btn.on {
   border-color: #cfc4f0;
   background: #efeafd;
   color: #3d2f8f;
   box-shadow: inset 0 0 0 1px rgb(255 255 255 / 70%), 0 2px 8px rgb(96 76 190 / 14%);
 }
-.viewer-ambient-ctl.slot-showcase .ambient-seg-btn.on.mode-on {
+.viewer-ambient-ctl.slot-showcase .ambient-seg-btn.on.mode-on,
+.viewer-ambient-ctl.rail-showcase .ambient-seg-btn.on.mode-on {
   border-color: #bcd9ac;
   background: #eaf5e2;
   color: #2f6a2c;
 }
-.viewer-ambient-ctl.slot-showcase .ambient-seg-btn.on.mode-off {
+.viewer-ambient-ctl.slot-showcase .ambient-seg-btn.on.mode-off,
+.viewer-ambient-ctl.rail-showcase .ambient-seg-btn.on.mode-off {
   border-color: #d9dbe2;
   background: #f1f2f6;
   color: #55596a;
 }
 /* 감상하기(개발자) — 같은 카드 안, 아래 줄 전폭. */
-.viewer-ambient-ctl.slot-showcase .showcase-btn {
+.viewer-ambient-ctl.slot-showcase .showcase-btn,
+.viewer-ambient-ctl.rail-showcase .showcase-btn {
   width: 100%;
   justify-content: center;
   height: 34px;

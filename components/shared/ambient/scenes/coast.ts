@@ -66,7 +66,9 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
   const glints: { x: number; y: number; ph: number; r: number }[] = [];
   const spray: { x: number; y: number; vx: number; vy: number; life: number }[] = [];
   const trail = newTrail();
-  const art = new ArtSet(["rock", "log", "reed", "pebble", "shell-clam", "starfish", "driftwood"]);
+  const art = new ArtSet(["rock", "log", "reed", "pebble", "shell-clam", "starfish", "driftwood", "tree-pine", "tree-pine-winter"], {
+    scaleOf: { "tree-pine": 3, "tree-pine-winter": 3 }
+  });
   let av = -1;
   const pal = waterPalette(season);
   const top = () => horizonY(h);
@@ -270,15 +272,45 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 젖은 광택 얼룩 — 뻘이 통짜 갈색 판이 되지 않게.
       for (let i = 0; i < 26; i++) softBlob(g, r() * w, 50 + r() * (VIS - 80), 70 + r() * 190, r() < 0.45 ? "196 208 214" : r() < 0.7 ? "104 98 86" : "138 130 110", 0.16, 0, GROUND_SQUASH);
     } else if (mode === "sandy") {
-      // 젖은 모래 → 마른 모래(위가 젖어 어둡고 아래로 갈수록 마르고 밝다) — 평평한 크림 슬래브가 아니라 두 톤.
-      const dg = g.createLinearGradient(0, 40, 0, H * 0.62);
-      dg.addColorStop(0, "rgb(150 138 112 / 0.34)");
+      // 반사형(reflective) 해빈 단면 — 2026-09-04 웹 레퍼런스. 한국 동해안형 모래해안은 해빈 경사 5.5~10.6°로
+      // **가파르고**, 그래서 쇄파대(surf zone)가 없다(파도가 물가에서 바로 부서진다). 화면 문법:
+      //   젖은 급경사 전빈(좁다) → **범(berm) 마루** 한 줄 → 평평하고 밝은 후빈(넓다) → 사구 → 해송림.
+      // 옛 코드는 젖은 띠가 뭍의 62%라 단면이 없는 "물 반 모래 반" 판이었다.
+      const faceH = VIS * 0.24; // 급경사 전빈
+      const bermY = 60 + faceH; // 범 마루
+      const dg = g.createLinearGradient(0, 40, 0, bermY);
+      dg.addColorStop(0, "rgb(128 116 92 / 0.44)");
+      dg.addColorStop(0.72, "rgb(146 134 108 / 0.2)");
       dg.addColorStop(1, "rgb(150 138 112 / 0)");
       g.fillStyle = dg;
-      g.fillRect(0, 40, w, H * 0.62);
-      // 물결 자국 — 젖은 띠에 남은 잔물결 능선 몇 줄(가로로 길고 아주 옅게).
+      g.fillRect(0, 40, w, bermY - 40);
+      // 비치 커습(beach cusp) — 반사형 해빈의 표지. 물이 남는 어두운 초승달 만입과, 굵은 모래가 쌓여
+      // 밝게 튀어나온 뿔이 규칙적으로 번갈아 선다. 평행한 가로 띠만 있으면 절대 안 나오는 리듬이다.
+      {
+        const horns = 5 + Math.floor(r() * 3);
+        const step = w / horns;
+        for (let i2 = 0; i2 <= horns; i2++) {
+          const cx2 = i2 * step;
+          softBlob(g, cx2 + step * 0.5, 60 + faceH * 0.4, step * 0.36, "104 94 74", 0.17, 0, GROUND_SQUASH);
+          softBlob(g, cx2, 60 + faceH * 0.14, step * 0.19, "255 250 236", 0.22, 0, GROUND_SQUASH);
+        }
+      }
+      // 범 마루 — 전빈과 후빈을 가르는 유일한 선. 밝은 능선 한 줄 + 바로 아래 옅은 그늘.
+      {
+        g.strokeStyle = "rgb(255 251 240 / 0.42)";
+        g.lineWidth = 2;
+        g.beginPath();
+        for (let x = -10; x <= w + 10; x += 12) g.lineTo(x, bermY + Math.sin(x * 0.0024 + 1.2) * 9 + Math.sin(x * 0.009 + 0.4) * 3.5);
+        g.stroke();
+        g.strokeStyle = "rgb(126 112 86 / 0.18)";
+        g.lineWidth = 4;
+        g.beginPath();
+        for (let x = -10; x <= w + 10; x += 12) g.lineTo(x, bermY + 4 + Math.sin(x * 0.0024 + 1.2) * 9 + Math.sin(x * 0.009 + 0.4) * 3.5);
+        g.stroke();
+      }
+      // 물결 자국 — 젖은 전빈 안에만(그 아래 후빈은 평평하고 마른 면이다).
       for (let i = 0; i < 7; i++) {
-        const y0 = 74 + i * (13 + r() * 10);
+        const y0 = 66 + (i / 7) * faceH * 0.86 + r() * 3;
         g.strokeStyle = `rgb(255 250 236 / ${0.26 - i * 0.028})`;
         g.lineWidth = 1.3;
         // 만 곡선과 같은 파형을 따라간다(가로 직선 격자로 보이지 않게) + 끊어 그린다.
@@ -291,11 +323,11 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         }
         g.stroke();
       }
-      // 모래 알갱이.
-      for (let i = 0; i < Math.round(w / 3); i++) {
-        g.fillStyle = r() < 0.5 ? "rgb(255 250 235 / 0.5)" : "rgb(190 175 140 / 0.35)";
+      // 모래 알갱이 — 반사형 해빈은 입자가 **굵다**(그래서 물이 빨리 빠지고 경사가 선다). 알갱이를 키우고 수를 줄인다.
+      for (let i = 0; i < Math.round(w / 4); i++) {
+        g.fillStyle = r() < 0.5 ? "rgb(255 250 235 / 0.5)" : "rgb(186 170 134 / 0.38)";
         g.beginPath();
-        g.arc(r() * w, r() * H, 0.8 + r() * 1.2, 0, TAU);
+        g.arc(r() * w, r() * H, 1.1 + r() * 1.7, 0, TAU);
         g.fill();
       }
       // 조개·조약돌·유목 — 아래(가까움)로 갈수록 크게.
@@ -326,6 +358,18 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         const k = 0.9 * landK(y);
         softBlob(g, x + 3 * k, y + 2 * k, 16 * k, "112 98 72", 0.13, 0, GROUND_SQUASH);
         drawProp(g, art, "log", x, y, { k, r: r(), flip: r() < 0.5 });
+      }
+      // 해송(곰솔) 방풍림 — 반사형 모래해안의 후빈·사구 뒤에는 거의 언제나 솔숲 띠가 있다(한국 동해안 표준 경관).
+      // 화면 맨 아래(가까움)에서 잘리며 액자를 만든다(동물의 숲 카메라). 사구 풀보다 **먼저** 그려 풀이 앞에 온다.
+      {
+        const belt = 8;
+        for (let i = 0; i < belt; i++) {
+          const x = -30 + (i + 0.5 + (r() - 0.5) * 0.4) * ((w + 60) / belt);
+          const y = VH * (0.93 + r() * 0.08);
+          const k = 0.75 + r() * 0.28;
+          softBlob(g, x + 7, y - 5, 40 * k, "92 90 72", 0.15, 0, GROUND_SQUASH);
+          drawProp(g, art, season === "winter" ? "tree-pine-winter" : "tree-pine", x, y, { k, r: r(), flip: r() < 0.5 });
+        }
       }
       // 모래언덕 풀 — 화면 아래(가까움) 가장자리에만.
       for (let i = 0; i < 26; i++) {
@@ -531,7 +575,11 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       const sy = shoreY() - tide(f) * f.h * 0.02 - Math.sin(t * 0.5) * 3;
       // 파도 — 수평선에서 물가까지, 마지막 선은 물가에서 거품이 된다.
       // 파도는 물가 곡선의 가장 높은 지점보다 위에서 끝난다(곡선이 파도 선을 덮어 잘라내지 않게).
-      drawWaves(g, t, f.w, { top: top(), bottom: sy - 30, bands: 4, speed: 0.05, amp: 12, alpha: 0.15, foam: pal.foam, shore: true });
+      // 파도 띠 수 = 해안형(2026-09-04 조사). 갯벌은 소산형(dissipative) — 경사가 완만해 쇄파대가 넓고 잔파도 여러 줄.
+      // 모래는 반사형(reflective) — 경사가 가팔라 **쇄파대가 없고** 물가에서 한 번에 부서진다(줄 둘, 크고 느리게).
+      // 셋이 같은 4줄이면 흑백에서 같은 그림이 된다.
+      const WV = mode === "tidal" ? { bands: 7, amp: 8, speed: 0.034 } : mode === "sandy" ? { bands: 2, amp: 17, speed: 0.062 } : { bands: 3, amp: 13, speed: 0.055 };
+      drawWaves(g, t, f.w, { top: top(), bottom: sy - 30, bands: WV.bands, speed: WV.speed, amp: WV.amp, alpha: 0.15, foam: pal.foam, shore: true });
       drawTrail(g, trail, t, GROUND_SQUASH, pal.foam);
       drawGlints(g, t, glints);
       // 뭍 — 물가 선 아래. 젖은 띠(어두운 반투명)가 물가 위로 살짝.

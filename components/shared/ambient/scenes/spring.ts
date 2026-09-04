@@ -83,6 +83,27 @@ type Fly = {
 type Spark = { x: number; y: number; vx: number; vy: number; life: number; r: number; col: string; a: number; va: number; star: boolean };
 type Press = { x: number; y: number; life: number; r: number; blades: { a: number; r0: number; len: number; w: number; col: string }[] };
 type BugState = "walk" | "pause" | "flee" | "dead" | "off";
+// 메뚜기(여름 초원, 2026-09-04) — 실제 행동: 메뚜기목의 1차 방어는 **은신(crypsis)**이라 웬만하면 꼼짝 않는다.
+// 다가오는 물체가 도피개시거리(FID) 안에 들면 짧게 웅크렸다가(도약 준비) **탄도 도약**으로 벗어나며,
+// FID는 접근 속도가 빠를수록 커진다(느린 접근은 참는다). 착지하면 방향을 틀어 다시 굳고, 사이사이 줄기 사이를 조금 기어간다.
+type HopState = "still" | "crawl" | "crouch" | "air";
+type Hopper = {
+  x: number;
+  y: number;
+  hd: number;
+  k: number;
+  state: HopState;
+  until: number;
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+  t0: number;
+  dur: number;
+  peak: number;
+  hop: number; // 지금 떠 있는 높이(px) — 그림자는 땅에 남는다
+  ph: number;
+};
 type Bug = { x: number; y: number; hd: number; spd: number; state: BugState; until: number; k: number; ph: number; off: number; respawn: number; deadAt: number };
 type Petal = { x: number; y: number; vx: number; ph: number; a: number; va: number; born: number; dur: number; k: number };
 type Dandelion = { x: number; y: number; k: number; puffed: number; regrow: number; born: number }; // puffed = 홀씨 날린 시각(0 = 핀 상태)
@@ -112,7 +133,14 @@ function sunAt(t: number, w: number, h: number): [number, number][] {
   ];
 }
 
-/** 초원 — 봄(기본) 또는 **여름 변주**(PLAN-004: 사철 기본 화면 = 초원; 여름 초원 = 짙은 초록·꽃 적게·꽃잎 바람 없음, 물은 연못 바이옴으로). */
+/** 초원 — 봄(기본) 또는 **여름 변주**(PLAN-004: 사철 기본 화면 = 초원).
+ *  2026-09-04 소유자: "봄과 여름 초원이 느낌이 너무 같다 — 풀의 색감·종류 구성부터 돌아다니는 곤충 종류까지 갈라라."
+ *  갈라놓은 축 넷:
+ *   ① 색 — 봄은 **화사한 연둣빛 새 잔디**(밝고 노란 기), 여름은 **짙고 푸른 무성한 풀**(어둡고 청록 기, 명도 폭도 넓다).
+ *   ② 풀의 종류 — 봄은 짧은 잔디 포기가 성기게(맨땅·클로버·꽃이 보인다), 여름은 포기가 두 배로 빽빽하고 크며
+ *      **키큰 풀(강아지풀, art 자리 grass-tall)**이 섞여 무릎 높이의 풀숲이 된다.
+ *   ③ 꽃 — 봄은 데이지·민들레·클로버가 흔하고, 여름은 드물다(대신 이삭).
+ *   ④ 곤충 — 봄은 무당벌레·나비 셋·꿀벌, 여름은 **딱정벌레·메뚜기**에 나비는 한둘. */
 export function createSpring(seed: number, variant: "spring" | "summer" = "spring"): Scene {
   const rand = rng(seed);
   const summer = variant === "summer";
@@ -122,7 +150,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   let gh = 0;
   let gdpr = 0;
   // 바탕 소품 아트(클로버·데이지·풀포기·민들레 + 있으면 관목·바위·그루터기·민들레 꽃) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
-  const groundArt = new ArtSet(["clover", "daisy", "grass-tuft", "dandelion-puff", "dandelion-flower", "shrub-spring", "rock", "stump"]);
+  const groundArt = new ArtSet(["clover", "daisy", "grass-tuft", "grass-tall", "dandelion-puff", "dandelion-flower", "shrub-spring", "shrub-summer", "rock", "stump"]);
   let gav = -1;
   let horizon: HTMLCanvasElement | null = null; // 3/4 시점의 지평선 띠
   // 땅의 위 끝(지평선) — 꽃·풀·벌레·나비·민들레는 이 아래에서만(지평선 띠는 먼 곳).
@@ -134,12 +162,14 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   let dandSpr: HTMLCanvasElement | null = null;
   let seedSpr: HTMLCanvasElement | null = null;
   let bugSpr: Sprite | null = null;
+  let hopSpr: Sprite | null = null;
   let beeSpr: Sprite | null = null;
   const daisies: [number, number][] = [];
   const flies: Fly[] = [];
   const sparks: Spark[] = [];
   const presses: Press[] = [];
   const bugs: Bug[] = [];
+  const hoppers: Hopper[] = [];
   const petals: Petal[] = [];
   const dands: Dandelion[] = [];
   const seeds: Seed[] = [];
@@ -148,6 +178,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
   let nextBreeze = 9;
   let breezes = 0;
   let bugsFled = 0;
+  let hops = 0;
   let puffs = 0;
   let wind = 0; // 0~1 풀 흔들림 세기(꽃잎 바람 중 1로, 끝나면 서서히 0)
   let windDir = 1;
@@ -191,8 +222,10 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     // 불투명 잔디 바탕 — 반투명이면 페이지의 흰색이 비쳐 "물 빠진 연둣빛 벽지"가 된다(2026-09-04 검토 2차).
     // 위(멀다)는 옅고 아래(가깝다)는 짙다.
     const bg = g.createLinearGradient(0, gy(), 0, h);
-    bg.addColorStop(0, summer ? "#bcd8a4" : "#d3e6bd");
-    bg.addColorStop(1, summer ? "#74975f" : "#86a86e");
+    // 봄 = 화사한 새 잔디(밝고 노란 기), 여름 = 무성한 짙은 풀(어둡고 청록 기). 두 계절이 같은 그림으로
+    // 읽히던 원인이 여기였다 — 명도 폭도 여름을 더 넓게 잡아 깊이가 살게(2026-09-04 소유자).
+    bg.addColorStop(0, summer ? "#a8cd8c" : "#dcefc4");
+    bg.addColorStop(1, summer ? "#4d7647" : "#8fb573");
     g.fillStyle = bg;
     g.fillRect(0, 0, w, h);
     const patches = Math.round((w * h) / 46000);
@@ -200,11 +233,11 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       const py = groundY(g0());
       const pk = depthScale(py, h) * depthScale(py, h); // 멀수록 작은 얼룩 — 같은 반경이면 "안개 뭉치"
       const pick = g0();
-      softBlob(g, g0() * w, py, (120 + g0() * 260) * pk, pick < 0.45 ? (summer ? "110 165 95" : "150 196 120") : pick < 0.75 ? (summer ? "205 228 180" : "232 244 214") : "196 214 200", 0.15, 0, GROUND_SQUASH);
+      softBlob(g, g0() * w, py, (120 + g0() * 260) * pk, pick < 0.45 ? (summer ? "70 122 66" : "162 208 126") : pick < 0.75 ? (summer ? "150 194 128" : "240 250 220") : (summer ? "126 168 138" : "202 220 204"), summer ? 0.19 : 0.15, 0, GROUND_SQUASH);
     }
     // 소품은 전부 drawProp(art/props.ts) — 아트 파일이 있으면 그 그림, 없으면 대체물(옛 도형). 자리는 결정적(같은 g0 순서).
     // 3/4 시점: 클로버(납작)는 세로로 눌리고, 데이지·풀포기(서 있음)는 위(멀다)에서 작다. 꽃은 축척표대로 과장(SIZE.flower 26).
-    const clovers = Math.round((w * h) / 60000);
+    const clovers = Math.round((w * h) / (summer ? 110000 : 42000)); // 봄 잔디엔 클로버가 흔하고, 여름 풀숲에선 키큰 풀에 묻힌다
     for (let i = 0; i < clovers; i++) {
       const x = g0() * w;
       const y = groundY(g0());
@@ -230,7 +263,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     }
     // 있을 때만 놓이는 큰 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
     scatterProps(g, groundArt, w, h, g0, [
-      { id: "shrub-spring", n: 3 },
+      { id: summer ? "shrub-summer" : "shrub-spring", n: 3 },
       { id: "rock", n: 2 },
       { id: "stump", n: 1 },
       { id: "dandelion-flower", n: 6, band: "any" }
@@ -241,7 +274,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     b.g.scale(dpr, dpr);
     // 풀포기 — 완전 무작위로 뿌리면 "균일한 벽지"가 된다(검토 2·3차). 절반은 무리(clump)로 모아 심고
     // 크기를 크게 흩는다: 뭉친 곳과 트인 곳이 생겨야 들판으로 읽힌다.
-    const tufts = Math.round((w * h) / 1500);
+    const tufts = Math.round((w * h) / (summer ? 780 : 1700)); // 여름 = 맨땅이 안 보이는 풀숲, 봄 = 성긴 새 잔디
     let cx = 0;
     let cy = 0;
     let left = 0;
@@ -255,7 +288,15 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       const spread = 26 + g0() * 54;
       const x = cx + (g0() - 0.5) * spread * 2;
       const y = cy + (g0() - 0.5) * spread;
-      drawProp(b.g, groundArt, "grass-tuft", x, y, { k: (0.55 + g0() * 1.0) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.7 + g0() * 0.3 });
+      drawProp(b.g, groundArt, "grass-tuft", x, y, { k: (summer ? 0.9 + g0() * 1.3 : 0.5 + g0() * 0.85) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.7 + g0() * 0.3 });
+    }
+    if (summer) {
+      // 키큰 풀(강아지풀) — 여름 초원의 표지. 흔들리는 층(blades)에 같이 심어 바람에 함께 눕는다.
+      const tall = Math.round((w * h) / 9000);
+      for (let i = 0; i < tall; i++) {
+        const y = groundY(0.06 + g0() * 0.96);
+        drawProp(b.g, groundArt, "grass-tall", g0() * w, y, { k: (0.85 + g0() * 0.75) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.82 + g0() * 0.18 });
+      }
     }
     blades = b.c;
     horizon = bakeHorizon(variant, w, h, 1);
@@ -342,11 +383,16 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       seedSpr = c;
     }
     // 축척(PLAN-004 §2): 무당벌레 12 · 꿀벌 14(옛 20 · 24).
-    void loadSprite(ASSET.ladybug, SIZE.ladybug, SIZE.ladybug).then((s) => (bugSpr = s)).catch(() => {});
+    // 여름 초원의 딱정벌레는 무당벌레와 **같은 기계**(걷기·멈춤·죽은 척)에 그림만 다르다 — 딱정벌레류의 의사(擬死)는
+    // 실제로 널리 알려진 방어행동이라 행동을 바꿀 이유가 없다.
+    void loadSprite(summer ? ASSET.beetle : ASSET.ladybug, SIZE.ladybug + (summer ? 3 : 0), SIZE.ladybug + (summer ? 3 : 0)).then((s) => (bugSpr = s)).catch(() => {});
+    if (summer) void loadSprite(ASSET.hopper, SIZE.hopper, SIZE.hopper).then((s) => (hopSpr = s)).catch(() => {});
     void loadSprite(ASSET.bee, SIZE.bee, SIZE.bee).then((s) => (beeSpr = s)).catch(() => {});
   }
 
-  const flyTarget = (f: Frame) => clamp(1 + Math.round(f.load * 2.4), 1, 3);
+  // 나비는 봄 초원의 주인공(1~3), 여름엔 한둘로 물러나고 그 자리를 메뚜기·딱정벌레가 채운다.
+  const flyTarget = (f: Frame) => (summer ? clamp(Math.round(f.load * 2), 0, 2) : clamp(1 + Math.round(f.load * 2.4), 1, 3));
+  const hopTarget = (load: number) => (summer ? (load >= 0.75 ? 3 : load >= 0.35 ? 2 : 1) : 0);
   function newFly(t: number, fromEdge: boolean): Fly {
     const b: Fly = {
       x: rand() * w,
@@ -446,6 +492,38 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       const sp = 90 + rand() * 230;
       sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1, r: 2 + rand() * 3.5, col: i % 3 === 0 ? "#ffffff" : i % 3 === 1 ? c.a : c.b, a: rand() * TAU, va: (rand() - 0.5) * 12, star: i % 4 === 0 });
     }
+  }
+  function newHopper(t: number): Hopper {
+    const y = groundY(0.3 + rand() * 0.66);
+    return {
+      x: 40 + rand() * Math.max(1, w - 80),
+      y,
+      hd: rand() < 0.5 ? Math.PI : 0,
+      k: 0.85 + rand() * 0.3,
+      state: "still",
+      until: t + 1.5 + rand() * 4,
+      x0: 0,
+      y0: 0,
+      x1: 0,
+      y1: 0,
+      t0: 0,
+      dur: 0,
+      peak: 0,
+      hop: 0,
+      ph: rand() * TAU
+    };
+  }
+  function hopJump(b: Hopper, t: number, ang: number, dist: number) {
+    b.state = "air";
+    b.t0 = t;
+    b.dur = 0.4 + dist / 900;
+    b.x0 = b.x;
+    b.y0 = b.y;
+    b.x1 = clamp(b.x + Math.cos(ang) * dist, 16, Math.max(17, w - 16));
+    b.y1 = clamp(b.y + Math.sin(ang) * dist * GROUND_SQUASH, groundY(0.24), h - 8);
+    b.peak = 14 + dist * 0.16;
+    b.hd = ang;
+    hops++;
   }
   const bugTarget = (load: number) => (load >= 0.85 ? 2 : load >= 0.45 ? 1 : 0);
   function newBug(t: number): Bug {
@@ -787,7 +865,59 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           if (rand() < 0.3) startChase(pair[0], pair[1], t);
         }
       }
-      // 무당벌레 — 수는 여력으로(0~2). 걷기 ↔ 멈춤. 위협엔 죽은 척(thanatosis), 닿이면 종종걸음, 들키면 날아오름.
+      // 메뚜기(여름만) — 은신 → 도피개시거리 안이면 웅크림 → 탄도 도약. 도약 중엔 몸만 뜨고 그림자는 땅에 남는다.
+      if (summer) {
+        const want2 = hopTarget(load);
+        while (hoppers.length < want2) hoppers.push(newHopper(t));
+        if (hoppers.length > want2) hoppers.pop();
+        for (const b of hoppers) {
+          if (b.state === "air") {
+            const u = clamp((t - b.t0) / b.dur, 0, 1);
+            b.x = lerp(b.x0, b.x1, u);
+            b.y = lerp(b.y0, b.y1, u);
+            b.hop = b.peak * 4 * u * (1 - u);
+            if (u >= 1) {
+              b.hop = 0;
+              b.state = "still";
+              b.until = t + 1.2 + rand() * 3.5;
+              b.hd += (rand() - 0.5) * 1.4; // 착지하면 방향을 틀고 다시 굳는다
+            }
+            continue;
+          }
+          if (b.state === "crouch") {
+            if (t > b.until) hopJump(b, t, b.hd, 120 + rand() * 140);
+            continue;
+          }
+          const th2 = threat(p, b.x, b.y);
+          // 도피개시거리 — 접근 속도가 빠를수록 커진다(천천히 다가오면 그대로 숨어 있는다).
+          const fid = 28 + Math.min(62, Math.max(0, th2.rate) * 0.34) + (th2.loom > 0.4 ? 22 : 0);
+          if (p.inside && th2.d < fid && load >= 0.3) {
+            b.hd = Math.atan2((b.y - p.y) / GROUND_SQUASH, b.x - p.x) + (rand() - 0.5) * 0.7;
+            b.state = "crouch";
+            b.until = t + 0.09 + rand() * 0.07;
+            continue;
+          }
+          if (b.state === "crawl") {
+            const ms = moveScale(b.y, h);
+            b.x += Math.cos(b.hd) * 15 * dt * ms;
+            b.y += Math.sin(b.hd) * 15 * dt * ms * GROUND_SQUASH;
+            b.ph += dt * 9;
+            if (t > b.until) {
+              b.state = "still";
+              b.until = t + 1.5 + rand() * 4;
+            }
+          } else if (t > b.until) {
+            if (rand() < 0.45) {
+              b.state = "crawl";
+              b.until = t + 0.6 + rand() * 1.2;
+              b.hd = rand() * TAU;
+            } else b.until = t + 1.5 + rand() * 3.5;
+          }
+          b.x = clamp(b.x, 12, Math.max(13, w - 12));
+          b.y = clamp(b.y, groundY(0.22), h - 6);
+        }
+      }
+      // 무당벌레(봄) / 딱정벌레(여름) — 수는 여력으로(0~2). 걷기 ↔ 멈춤. 위협엔 죽은 척(thanatosis), 닿이면 종종걸음, 들키면 날아오름.
       const bt = bugTarget(load);
       while (bugs.length < bt) bugs.push(newBug(t));
       if (bugs.length > bt) {
@@ -1026,7 +1156,7 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       // 풀포기 층 — 타일(24×12). 꽃잎 앞머리(front) 둘레 ±280px에서만 바람 방향으로 눕고 진행파로 일렁인다(꽃잎 열과 함께
       // 지나간다). 평소엔 여력이 있을 때 아주 미세한 숨쉬기(0.8px)만. 필터 없음, drawImage 288번.
       if (blades) {
-        const idle = load >= 0.5 ? 0.8 : 0;
+        const idle = load >= 0.5 ? (summer ? 1.9 : 0.8) : 0; // 여름 풀숲은 키가 커서 늘 살짝 일렁인다
         if (wind > 0.02 || idle > 0) {
           const tw = f.w / COLS;
           const th = f.h / ROWS;
@@ -1097,6 +1227,25 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
           g.moveTo(bx, by);
           g.quadraticCurveTo(cx, cy, tipx, tipy);
           g.stroke();
+        }
+      }
+      // 메뚜기 — 옆모습 에셋이라 drawFacing(진행 방향으로 뒤집기). 도약 중엔 몸만 hop만큼 뜨고 그림자는 땅에 남아
+      // 얼마나 떴는지가 보인다(그림자가 같이 뜨면 "미끄러지는 스티커"가 된다).
+      if (hopSpr) {
+        for (const b of hoppers) {
+          const sc = depthScale(b.y, f.h) * b.k * (b.state === "crouch" ? 0.93 : 1);
+          g.save();
+          g.globalAlpha *= depthFade(b.y, f.h);
+          if (shadow) {
+            g.save();
+            g.globalAlpha *= 0.26 * clamp(1 - b.hop / 70, 0.25, 1);
+            g.translate(b.x, b.y);
+            g.scale(1, GROUND_SQUASH);
+            g.drawImage(shadow, -11 * sc, -8 * sc, 22 * sc, 16 * sc);
+            g.restore();
+          }
+          drawFacing(g, hopSpr, b.x, b.y - b.hop, b.hd, sc, b.state === "air" ? -0.35 * Math.cos(clamp((t - b.t0) / b.dur, 0, 1) * Math.PI) : Math.sin(b.ph) * 0.05);
+          g.restore();
         }
       }
       if (bugSpr) {
@@ -1331,6 +1480,10 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
         daisies: daisies.length,
         bugs: bugs.map((b) => [Math.round(b.x), Math.round(b.y), b.state]),
         bugsFled,
+        hoppers: hoppers.map((b) => [Math.round(b.x), Math.round(b.y), b.state]),
+        hops,
+        hopSprite: !!hopSpr,
+        meadow: variant,
         bugSprite: !!bugSpr,
         beeSprite: !!beeSpr,
         petals: petals.length,
