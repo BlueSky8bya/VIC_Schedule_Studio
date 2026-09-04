@@ -146,11 +146,13 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
       // 짧게 들어와 다른 지점으로 빠진다. 옛 구조(폭 0.3·0.7에 같은 길이의 수직 본류 둘)는 세 검토자 모두
       // "사람 다리 두 짝 / 타일 반복"으로 읽었다(검토 라운드2). 하구는 위(바다)이므로 위로 갈수록 넓다.
       const outletBase = 0.24 + r() * 0.2; // 큰 갯골이 바다로 빠지는 자리
+      let mainPts: { x: number; y: number; hw: number }[] = [];
       {
         // ① 큰 본류 — 육지 쪽 시작점과 하구의 x가 크게 다르다(대각선). 이것만으로 "수직 기둥"이 사라진다.
         const ex = w * outletBase;
         const sx = ex + w * (0.2 + r() * 0.22);
         const main = chan(sx, VIS + 60, ex, 30, 3, 0.4);
+        mainPts = main;
         for (let b2 = 0; b2 < 3; b2++) {
           const at = Math.round(main.length * (0.2 + 0.26 * b2 + r() * 0.08));
           const node = main[Math.min(main.length - 1, at)];
@@ -169,9 +171,10 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         }
       }
       {
-        // ② 작은 본류 — 반대쪽에서 들어와 **큰 본류의 하구 근처에 합류**한다(하구가 둘이면 배수망이 아니다).
-        const ex2 = w * outletBase + w * 0.06;
-        const main2 = chan(w * (0.78 + r() * 0.14), VIS * (0.62 + r() * 0.22), ex2, 88, 2, 2.6);
+        // ② 작은 본류 — 반대쪽 뭍에서 들어와 **큰 본류의 중간에 합류**한다. 하구 근처에서 나란히 내려오면
+        // 두 줄기가 "다리 두 짝/위시본"으로 읽힌다(사이클4 미관 #2 재발).
+        const jn = mainPts[Math.max(1, Math.round(mainPts.length * (0.42 + r() * 0.18)))];
+        const main2 = chan(w * (0.8 + r() * 0.14), Math.min(VIS + 20, jn.y + 150 + r() * 120), jn.x, jn.y, 2, 2.6);
         for (let b2 = 0; b2 < 2; b2++) {
           const at = Math.round(main2.length * (0.3 + 0.32 * b2 + r() * 0.1));
           const node = main2[Math.min(main2.length - 1, at)];
@@ -216,19 +219,17 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
           g.fill();
         }
       };
-      // 젖은 뻘 둔치 → 물(하늘을 비춘다) → 안쪽 가장자리 반짝. 굽이 바깥이 공격사면이라 조금 더 넓게 잡는다.
-      // 둔치는 좁게(1.55 → 1.24) — 넓은 반투명 회색 판은 "지형"이 아니라 렌더 찌꺼기로 읽혔다.
+      // 물길 표현은 셋뿐이다: **둔치(넓고 어두운 스트로크)** → **물(폴리곤 채움)** → **젖은 가장자리(가는 밝은 스트로크)**.
+      // 오프셋 폴리곤을 여러 겹 겹치면 굽이에서 자기교차해 본선과 어긋난 띠가 생긴다(검토 라운드2 반복 지적).
       {
-        // 둔치 — 중심선을 따라 굵게 한 번 긋는다(오프셋 폴리곤은 굽이에서 자기교차해 본선과 어긋난 띠가 됐다).
         g.save();
         g.lineCap = "round";
         g.lineJoin = "round";
-        // 굵기는 **구간마다** 물길 폭을 따라간다 — 한 값으로 그으면 좁은 상류에서 본선 옆에 넓은 띠가 겹쳐
-        // 물길과 방향이 어긋나 보인다(사이클3 경계 #9).
+        // 둔치 — 물길 폭의 2.4배, 뻘보다 조금 어둡다.
         g.strokeStyle = "rgb(58 62 60 / 0.13)";
         for (const pts of chanPts) {
           for (let jj = 1; jj < pts.length; jj++) {
-            g.lineWidth = Math.max(2, (pts[jj].hw + pts[jj - 1].hw) * 1.3);
+            g.lineWidth = Math.max(2, (pts[jj].hw + pts[jj - 1].hw) * 2.4);
             g.beginPath();
             g.moveTo(pts[jj - 1].x, pts[jj - 1].y);
             g.lineTo(pts[jj].x, pts[jj].y);
@@ -237,15 +238,25 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         }
         g.restore();
       }
-      // 물길의 물은 뻘보다 **확실히 어둡다** — 옅은 반투명이면 지형이 아니라 유리 긁힘으로 읽힌다(사이클4 미관 #2).
       drawChan(1, "rgb(66 84 96 / 0.62)");
-      // 젖은 가장자리 하이라이트 — 물이 닿는 선이 밝아야 물길로 읽힌다.
-      drawChan(1.06, "rgb(206 220 228 / 0.24)", true);
-      // 하안(河岸) 선 — 물길에 **가장자리**가 있어야 물길로 읽힌다.
-      drawChan(1, "rgb(74 74 66 / 0.34)", true);
-      // 잔류수 — 골 바닥에 남은 물. 둔치보다 **어둡고** 그 위에 하늘 반사가 한 줄(검토 라운드2 현실성 #4).
+      // 잔류수 — 골 바닥에 남은 물(둔치보다 어둡고 하늘을 비춘다).
       drawChan(0.5, season === "winter" ? "rgb(96 124 146 / 0.5)" : "rgb(88 112 126 / 0.45)");
-      drawChan(0.3, "rgb(210 226 234 / 0.16)");
+      {
+        // 젖은 가장자리 — 물이 닿는 선이 밝아야 물길로 읽힌다. 가늘게, 물길 폭을 따라.
+        g.save();
+        g.lineCap = "round";
+        g.strokeStyle = "rgb(206 220 228 / 0.3)";
+        for (const pts of chanPts) {
+          for (let jj = 1; jj < pts.length; jj++) {
+            g.lineWidth = Math.max(1, (pts[jj].hw + pts[jj - 1].hw) * 0.16);
+            g.beginPath();
+            g.moveTo(pts[jj - 1].x, pts[jj - 1].y);
+            g.lineTo(pts[jj].x, pts[jj].y);
+            g.stroke();
+          }
+        }
+        g.restore();
+      }
       // 소품 군집 — 갯벌의 생물 흔적은 **밭**을 이룬다(균등 산포는 잡티로 읽힌다, 사이클4 미관 #2).
       for (let c2 = 0; c2 < 4; c2++) {
         const cx3 = r() * w;
@@ -757,12 +768,29 @@ export function createCoast(seed: number, opts: { season: SeasonKey; mode: Coast
         }
         // 근경 초점 — 화면 아래쪽의 큰 바위 하나(가까움의 신호).
         rocks.push({ x: w * (0.2 + r() * 0.6), y: VIS * (0.86 + r() * 0.1), k: 2.6 + r() * 0.8 });
+        // **바다에 닿은 바위** — 물가 선에 걸친 노두가 없으면 "모래해안 위에 바위를 뿌린 것"으로 읽힌다
+        // (사이클4 현실성 #10). 물가 바로 아래에 두 무리, 발치엔 흰 물살.
+        for (let o = 0; o < 2; o++) {
+          const cx3 = w * (0.16 + 0.5 * o + (r() - 0.5) * 0.2);
+          for (let i = 0; i < 4; i++) {
+            const y = 62 + r() * 42;
+            rocks.push({ x: cx3 + (r() - 0.5) * 130, y, k: (0.9 + r() * 1.1) * landK(y) * 1.5 });
+          }
+        }
         rocks.sort((a2, b2) => a2.y - b2.y);
         for (const rk of rocks) {
-          if (rk.y < 110 || rk.y > VIS - 6) continue;
+          if (rk.y < 56 || rk.y > VIS - 6) continue;
           if (pools.some(([px, py, prx, pry]) => Math.abs(rk.x - px) < prx + 14 && Math.abs(rk.y - py) < pry + 12)) continue;
           softBlob(g, rk.x + 3 * rk.k, rk.y - 1, 22 * rk.k, "58 64 68", 0.18, 0, GROUND_SQUASH * 0.5);
           drawProp(g, art, "rock", rk.x, rk.y, { k: rk.k, r: r(), flip: r() < 0.5 });
+          // 물가에 걸친 바위는 발치가 늘 젖어 있고 흰 물살이 부딪친다.
+          if (rk.y < 110) {
+            g.strokeStyle = "rgb(252 254 255 / 0.6)";
+            g.lineWidth = 2;
+            g.beginPath();
+            g.ellipse(rk.x, rk.y + 2, 20 * rk.k, 6 * rk.k, 0, 0, TAU);
+            g.stroke();
+          }
         }
       }
       // 조류대(해조 띠) — 물가 선 바로 아래 **검은 가로 띠**. 실제 암석해안에서 대비가 가장 센 요소이고,

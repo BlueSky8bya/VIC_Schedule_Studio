@@ -83,7 +83,9 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
     const x = solo ? rand() * w : Math.max(-40, Math.min(w + 40, sc.x * w + (rand() - 0.5) * w * 0.42));
     // 크기 등급 — 무리는 작은 놈, 홀로는 큰 놈(깊이와 위계가 같이 읽힌다).
     const cls = rand();
-    const px = solo ? SIZE.fishBig * (1.1 + rand() * 0.4) : deep ? (cls < 0.5 ? SIZE.fishSmall : SIZE.fishMid) : cls < 0.7 ? SIZE.fishSmall : SIZE.fishMid;
+    // 큰 놈은 **가까운 쪽**에만 — 원경에 큰 놈이 섞이면 원근이 무너진다(사이클4 현실성 #3).
+    const vv = (y - top()) / Math.max(1, h - top());
+    const px = solo && vv > 0.45 ? SIZE.fishBig * (1.1 + rand() * 0.3) : vv < 0.35 ? SIZE.fishSmall : cls < 0.6 ? SIZE.fishSmall : SIZE.fishMid;
     return { x, y, hd: rand() < 0.5 ? 0 : Math.PI, spd: deep ? 8 + rand() * 6 : 22 + rand() * 18, k: px / 46, ph: rand() * TAU };
   }
 
@@ -232,12 +234,14 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
       for (let i = 0; i < shadows.length; i++) {
         const s = shadows[i];
         const near = (s.y - top()) / Math.max(1, f.h - top());
-        const k = s.k * (0.45 + 0.55 * near);
+        // 원근 축척을 세게(0.45 → 0.3): 크기 등급의 무작위가 원근을 덮어 "바다면이 수직 벽지"로 읽혔다
+        // (사이클4 현실성 #3).
+        const k = s.k * (0.3 + 0.7 * near);
         // 부채꼬리 실루엣은 작게 그리면 지느러미가 별 모양으로 깨진다 — 큰 놈에만.
         // 부채꼬리는 **그려지는 크기**가 40px 넘을 때만(작게 그리면 지느러미가 별 모양으로 깨진다).
         // 큰 놈은 몸통 축이 뚜렷한 slim 실루엣으로 — fantail은 크게 그리면 방사형 덩어리(불가사리)로 읽힌다
         // (검토 라운드2 사이클3 현실성 #11). fantail은 중간 크기에만.
-        const px2 = s.k * 46;
+        const px2 = 46 * k;
         const spr = px2 >= SIZE.fishBig * 0.9 ? fishSpr[0] : px2 >= SIZE.fishMid ? fishSpr[1] || fishSpr[0] : fishSpr[0];
         const a = deep ? 0.1 + 0.12 * near : 0.16 + 0.24 * near;
         g.save();

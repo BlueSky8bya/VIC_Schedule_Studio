@@ -497,22 +497,47 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           mg2.clip();
           drawProp(mg2, shoreArt, "rock", x, y + 8 * k, { k, r: r2(), flip: r2() < 0.5 });
           mg2.restore();
-          mg2.strokeStyle = season === "winter" ? "rgb(236 244 250 / 0.6)" : "rgb(255 255 255 / 0.5)";
-          mg2.lineWidth = 1.4;
-          mg2.beginPath();
-          mg2.ellipse(x, y, 17 * k, 5 * k, 0, 0, TAU);
-          mg2.stroke();
+          if (season === "winter") {
+            // 얼음판 위에는 수면선이 없다 — 대신 얼어붙은 테두리 + 윗면의 눈(사이클4 현실성 #1).
+            mg2.strokeStyle = "rgb(226 238 248 / 0.85)";
+            mg2.lineWidth = 3;
+            mg2.beginPath();
+            mg2.ellipse(x, y + 2, 19 * k, 6 * k, 0, 0, TAU);
+            mg2.stroke();
+            mg2.fillStyle = "rgb(250 253 255 / 0.85)";
+            mg2.beginPath();
+            mg2.ellipse(x, y - 13 * k, 12 * k, 4 * k, 0, Math.PI, TAU);
+            mg2.fill();
+          } else {
+            mg2.strokeStyle = "rgb(255 255 255 / 0.5)";
+            mg2.lineWidth = 1.4;
+            mg2.beginPath();
+            mg2.ellipse(x, y, 17 * k, 5 * k, 0, 0, TAU);
+            mg2.stroke();
+          }
         }
         // 뜬 통나무 하나 — 화면의 초점.
         {
           const x = w * (0.28 + r2() * 0.44);
           const y = MH * (0.42 + r2() * 0.34);
           drawProp(mg2, shoreArt, "log", x, y, { k: 1.5, r: r2(), flip: r2() < 0.5 });
-          mg2.strokeStyle = "rgb(255 255 255 / 0.45)";
-          mg2.lineWidth = 1.6;
-          mg2.beginPath();
-          mg2.ellipse(x, y + 2, 44, 8, 0, 0, TAU);
-          mg2.stroke();
+          if (season === "winter") {
+            mg2.strokeStyle = "rgb(226 238 248 / 0.85)";
+            mg2.lineWidth = 3.4;
+            mg2.beginPath();
+            mg2.ellipse(x, y + 3, 48, 10, 0, 0, TAU);
+            mg2.stroke();
+            mg2.fillStyle = "rgb(250 253 255 / 0.85)";
+            mg2.beginPath();
+            mg2.ellipse(x, y - 16, 34, 6, 0, Math.PI, TAU);
+            mg2.fill();
+          } else {
+            mg2.strokeStyle = "rgb(255 255 255 / 0.45)";
+            mg2.lineWidth = 1.6;
+            mg2.beginPath();
+            mg2.ellipse(x, y + 2, 44, 8, 0, 0, TAU);
+            mg2.stroke();
+          }
         }
         midWater = mw.c;
       }

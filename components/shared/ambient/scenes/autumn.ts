@@ -336,7 +336,9 @@ export function createAutumn(seed: number): Scene {
       spots.sort((a2, b2) => a2.y - b2.y);
       for (const t2 of spots) {
         // 그림자는 수관보다 좁고 발밑에 붙는다 — 옛 60*k는 수관보다 넓어 지면 얼룩으로 보였다(사이클4 경계 #8).
-        softBlob(g, t2.x + 4 * t2.k, t2.y - 1, 26 * t2.k, "70 58 46", 0.2, 0, GROUND_SQUASH * 0.45);
+        // 그림자도 거리만큼 옅어져야 한다 — 안개에 표백된 수관 밑에 진한 그림자만 남으면 지면 얼룩이 된다
+        // (사이클4 현실성 #6).
+        softBlob(g, t2.x + 4 * t2.k, t2.y - 1, 24 * t2.k, "70 58 46", 0.2 * depthFade(t2.y, h), 0, GROUND_SQUASH * 0.45);
         drawProp(g, groundArt, g0() < 0.25 ? "tree-pine-autumn" : "tree-oak-autumn", t2.x, t2.y, { k: t2.k, r: g0(), flip: g0() < 0.5 });
         // 발치의 낙엽 더미 — 여기가 낙엽의 출처다.
         for (let q = 0; q < 5; q++) {
