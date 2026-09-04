@@ -956,7 +956,7 @@ export function StudioShell({
   // 개발자 세계 시간 여행(2026-09-04 소유자): 개발자 계정만 띠·날씨·날을 강제해 연대기·빛 톤·날씨 훅을 검사한다 — 세션 한정, 저장 없음,
   // 관리자·시청자는 실제 시간만. fixture 강제(ambientWorldForce)가 있으면 그것이 우선.
   const [devWorld, setDevWorld] = useState<DevWorldForce>({});
-  const worldForce = ambientWorldForce ?? (isDeveloper && (devWorld.band || devWorld.weather || devWorld.day !== undefined) ? devWorld : undefined);
+  const worldForce = ambientWorldForce ?? (effectiveRole === "developer" && (devWorld.band || devWorld.weather || devWorld.day !== undefined) ? devWorld : undefined);
   const [ambientModeState, setAmbientModeState] = useState<AmbientMode>("on");
   useEffect(() => {
     const read = () => setAmbientModeState(ambientMode());
@@ -1195,7 +1195,11 @@ export function StudioShell({
         posterTheme={actor.role === "owner" ? posterThemeLocal : null}
         posterThemeSaving={posterThemeSaving}
         reduceMotion={reduceMotion}
-        devWorld={isDeveloper ? { force: devWorld, onChange: setDevWorld } : null}
+        devMonth={view.month}
+        devYear={view.year}
+        // 개발자 전용 줄은 **미리보기 중인 역할**에도 안 보여야 한다 — raw isDeveloper면 개발자가 관리자로
+        // 미리보기 중일 때 그대로 노출된다(2026-09-05 소유자 사진 2).
+        devWorld={effectiveRole === "developer" ? { force: devWorld, onChange: setDevWorld } : null}
       />
     );
   }

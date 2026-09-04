@@ -4,9 +4,10 @@
 // 이모지·실루엣) ↔ 납품된 PNG(`public/ambient/art/<id>.png`), 자리 규격(계절·카메라·크기·변형), 코덱스 프롬프트 복사(전체·1차·2차·
 // 자리별). 파일을 폴더에 넣고 새로고침하면 상태가 바뀐다(서버가 폴더를 읽는다). 개발자 전용(라우트가 막는다).
 
+import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { ArrowLeft, Check, ClipboardCopy, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Check, ClipboardCopy, Image as ImageIcon, Search } from "lucide-react";
 import "./ambient-art-board.css";
 import {
   ART_DIR,
@@ -89,7 +90,7 @@ function NowPreview({ slot }: { slot: ArtSlot }) {
   return <div ref={ref} style={{ display: "contents" }} />;
 }
 
-function Card({ slot, files, stamp, onCopy }: { slot: ArtSlot; files: ArtFileInfo[]; stamp: number; onCopy: (t: string) => void }) {
+function Card({ slot, files, stamp, onCopy, i }: { slot: ArtSlot; files: ArtFileInfo[]; stamp: number; onCopy: (t: string) => void; i: number }) {
   const want = slotFiles(slot);
   const done = files.length >= want.length;
   const partial = files.length > 0 && !done;
@@ -98,7 +99,12 @@ function Card({ slot, files, stamp, onCopy }: { slot: ArtSlot; files: ArtFileInf
   const edge = targetEdge(slot.px);
   const heavy = files.some((f) => Math.max(f.w, f.h) > edge * 1.3 || f.bytes > 160 * 1024);
   return (
-    <article className={`art-card${done ? " done" : ""}`} data-slot={slot.id} data-state={done ? "done" : partial ? "partial" : "todo"}>
+    <article
+      className={`art-card${done ? " done" : ""}`}
+      data-slot={slot.id}
+      data-state={done ? "done" : partial ? "partial" : "todo"}
+      style={{ "--i": Math.min(i, 24) } as React.CSSProperties}
+    >
       <div className="art-card-title">
         <div>
           <strong>{slot.nameKo}</strong> <code>{slot.id}</code>
@@ -178,8 +184,19 @@ export function AmbientArtBoard({ present, stamp }: Props) {
   const [season, setSeason] = useState<SeasonKey | "all">("all");
   const [cat, setCat] = useState<ArtCategory | "all">("all");
   const [state, setState] = useState<"all" | "todo" | "done">("all");
+  const [q, setQ] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
+  // 스티키 도구 줄 — 붙는 순간에만 배경·그림자를 켠다(늘 켜 두면 머리글이 답답하다).
+  const barRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const onScroll = () => el.setAttribute("data-stuck", el.getBoundingClientRect().top <= 0.5 ? "1" : "0");
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const stats = useMemo(() => {
     let done = 0;
@@ -204,9 +221,13 @@ export function AmbientArtBoard({ present, stamp }: Props) {
         const ok = (present[s.id]?.length ?? 0) >= slotFiles(s).length;
         if (state === "done" && !ok) return false;
         if (state === "todo" && ok) return false;
+        if (q) {
+          const n = q.trim().toLowerCase();
+          if (!s.id.includes(n) && !s.nameKo.includes(q.trim()) && !s.nameEn.toLowerCase().includes(n)) return false;
+        }
         return true;
       }),
-    [season, cat, state, present]
+    [season, cat, state, q, present]
   );
 
   const say = (msg: string) => {
@@ -242,18 +263,28 @@ export function AmbientArtBoard({ present, stamp }: Props) {
         <div className="art-board-stats">
           <div className="art-stat">
             <b>
-              {stats.p1done}/{stats.p1}
+              {stats.p1done}
+              <i>/{stats.p1}</i>
             </b>
             <span>1차 · 초목·지형</span>
+            <span className="art-bar">
+              <i style={{ width: `${Math.round((stats.p1done / Math.max(1, stats.p1)) * 100)}%` }} />
+            </span>
           </div>
           <div className="art-stat">
             <b>
-              {stats.done}/{stats.total}
+              {stats.done}
+              <i>/{stats.total}</i>
             </b>
             <span>전체 자리</span>
+            <span className="art-bar">
+              <i style={{ width: `${Math.round((stats.done / Math.max(1, stats.total)) * 100)}%` }} />
+            </span>
           </div>
         </div>
       </header>
+      <div className="art-board-bar" ref={barRef}>
+      <div className="art-board-bar-inner">
       <div className="art-board-actions">
         <button className="art-btn primary" data-act="art-prompt-copy-1" onClick={() => copy(codexMasterPrompt(1), "1차 프롬프트")} type="button">
           <ClipboardCopy aria-hidden="true" size={14} /> 코덱스 프롬프트 — 1차(초목·지형)
@@ -266,33 +297,43 @@ export function AmbientArtBoard({ present, stamp }: Props) {
         </button>
       </div>
       <div className="art-board-filters" role="group" aria-label="필터">
-        <button aria-pressed={season === "all"} className="art-chip" onClick={() => setSeason("all")} type="button">
-          사철
-        </button>
-        {SEASONS.map((k) => (
-          <button aria-pressed={season === k} className="art-chip" key={k} onClick={() => setSeason(k)} type="button">
-            {SEASON_KO[k]}
+        <div className="art-seg" role="group" aria-label="계절">
+          <button aria-pressed={season === "all"} className="art-chip" onClick={() => setSeason("all")} type="button">
+            사철
           </button>
-        ))}
-        <span className="art-chip-sep" aria-hidden="true" />
-        <button aria-pressed={cat === "all"} className="art-chip" onClick={() => setCat("all")} type="button">
-          전부
-        </button>
-        {CATS.map((k) => (
-          <button aria-pressed={cat === k} className="art-chip" key={k} onClick={() => setCat(k)} type="button">
-            {CATEGORY_KO[k]}
+          {SEASONS.map((k) => (
+            <button aria-pressed={season === k} className="art-chip" key={k} onClick={() => setSeason(k)} type="button">
+              {SEASON_KO[k]}
+            </button>
+          ))}
+        </div>
+        <div className="art-seg" role="group" aria-label="갈래">
+          <button aria-pressed={cat === "all"} className="art-chip" onClick={() => setCat("all")} type="button">
+            전부
           </button>
-        ))}
-        <span className="art-chip-sep" aria-hidden="true" />
-        <button aria-pressed={state === "all"} className="art-chip" onClick={() => setState("all")} type="button">
-          상태 전부
-        </button>
-        <button aria-pressed={state === "todo"} className="art-chip" onClick={() => setState("todo")} type="button">
-          대기
-        </button>
-        <button aria-pressed={state === "done"} className="art-chip" onClick={() => setState("done")} type="button">
-          납품됨
-        </button>
+          {CATS.map((k) => (
+            <button aria-pressed={cat === k} className="art-chip" key={k} onClick={() => setCat(k)} type="button">
+              {CATEGORY_KO[k]}
+            </button>
+          ))}
+        </div>
+        <div className="art-seg" role="group" aria-label="상태">
+          <button aria-pressed={state === "all"} className="art-chip" onClick={() => setState("all")} type="button">
+            상태 전부
+          </button>
+          <button aria-pressed={state === "todo"} className="art-chip" onClick={() => setState("todo")} type="button">
+            대기
+          </button>
+          <button aria-pressed={state === "done"} className="art-chip" onClick={() => setState("done")} type="button">
+            납품됨
+          </button>
+        </div>
+        <label className="art-search">
+          <Search aria-hidden="true" size={13} />
+          <input onChange={(e) => setQ(e.target.value)} placeholder="이름·id 찾기" type="search" value={q} />
+        </label>
+      </div>
+      </div>
       </div>
       {phase1.length ? (
         <section className="art-section">
@@ -300,8 +341,8 @@ export function AmbientArtBoard({ present, stamp }: Props) {
             1차 — 나무·초목·지형·물 <small>{phase1.length}자리</small>
           </h2>
           <div className="art-grid">
-            {phase1.map((s) => (
-              <Card files={present[s.id] ?? []} key={s.id} onCopy={(t) => copy(t, `${s.nameKo} 프롬프트`)} slot={s} stamp={stamp} />
+            {phase1.map((s, i) => (
+              <Card files={present[s.id] ?? []} i={i} key={s.id} onCopy={(t) => copy(t, `${s.nameKo} 프롬프트`)} slot={s} stamp={stamp} />
             ))}
           </div>
         </section>
@@ -312,12 +353,13 @@ export function AmbientArtBoard({ present, stamp }: Props) {
             2차 — 생물(종 레지스트리) <small>{phase2.length}자리 · 이어서 디자인</small>
           </h2>
           <div className="art-grid">
-            {phase2.map((s) => (
-              <Card files={present[s.id] ?? []} key={s.id} onCopy={(t) => copy(t, `${s.nameKo} 프롬프트`)} slot={s} stamp={stamp} />
+            {phase2.map((s, i) => (
+              <Card files={present[s.id] ?? []} i={i} key={s.id} onCopy={(t) => copy(t, `${s.nameKo} 프롬프트`)} slot={s} stamp={stamp} />
             ))}
           </div>
         </section>
       ) : null}
+      {!phase1.length && !phase2.length ? <p className="art-none">조건에 맞는 자리가 없다. 필터를 풀어 보라.</p> : null}
       {toast ? (
         <div className="art-toast" role="status">
           <Check aria-hidden="true" size={14} style={{ verticalAlign: "-2px", marginRight: 6 }} />

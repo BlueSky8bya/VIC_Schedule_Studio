@@ -43,7 +43,7 @@
 html[data-ambient-dim] .gs-season,
 /* 설정 '흐리게'(vic.ambient = dim) — 늘 옅게. 감상 모드에선 잠시 걷어 온전히 본다. */
 html[data-ambient="dim"]:not([data-showcase]) .gs-season {
-  --amb-op: 0.28;
+  --amb-op: 0.5; /* 0.28은 '끄기'와 거의 같아 보였다(2026-09-05 소유자) */
 }
 /* 물결(퇴역)은 입장 애니메이션이 없어 opacity 그대로. */
 html[data-ambient-dim] .gs-tide,

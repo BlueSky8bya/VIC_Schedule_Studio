@@ -459,6 +459,106 @@ const PAINT: Record<string, Painter> = {
       g.restore();
     }
   },
+  // 아래 셋은 장면이 이미 부르는데 자리(매니페스트)가 없어 **아무것도 안 그려지던** 것들이다(2026-09-05).
+  driftwood: (g, W, H, r, variant) => {
+    // 파도에 씻겨 은회색으로 바랜 나무토막 — 껍질 없이 결만, 한쪽 끝이 부러져 뾰족하다.
+    const b = H - 1;
+    const cy = b - H * 0.36;
+    const hh = H * 0.3;
+    const bend = (variant % 2 ? 1 : -1) * H * 0.14;
+    const body = () => {
+      g.beginPath();
+      g.moveTo(W * 0.04, cy + hh * 0.2);
+      g.quadraticCurveTo(W * 0.5, cy - hh + bend, W * 0.94, cy - hh * 0.3);
+      g.lineTo(W * 0.99, cy + hh * 0.2);
+      g.quadraticCurveTo(W * 0.5, cy + hh + bend, W * 0.06, cy + hh * 0.7);
+      g.closePath();
+    };
+    flatBody(g, "#b3ada2", "#6f6a60", body, b);
+    g.save();
+    body();
+    g.clip();
+    // 결 — 길게 갈라진 금 몇 줄(밝은 면은 위, 그늘은 아래).
+    g.fillStyle = "#c9c4b9";
+    g.beginPath();
+    g.moveTo(W * 0.06, cy - hh * 0.2);
+    g.quadraticCurveTo(W * 0.5, cy - hh * 0.8 + bend, W * 0.96, cy - hh * 0.2);
+    g.lineTo(W * 0.96, cy);
+    g.quadraticCurveTo(W * 0.5, cy - hh * 0.45 + bend, W * 0.06, cy);
+    g.closePath();
+    g.fill();
+    g.strokeStyle = "#6f6a60";
+    g.lineWidth = 1;
+    for (let i = 0; i < 3; i++) {
+      const t = 0.2 + i * 0.24;
+      g.beginPath();
+      g.moveTo(W * 0.1, cy + hh * (t - 0.4));
+      g.quadraticCurveTo(W * 0.5, cy + hh * (t - 0.7) + bend, W * 0.92, cy + hh * (t - 0.35));
+      g.stroke();
+    }
+    dither(g, 0, cy - hh, W, hh * 2, "#5d584f", 26, 13 + variant * 5, body);
+    g.restore();
+    // 부러진 끝 — 뾰족한 삼각 두 개.
+    g.fillStyle = "#a49e93";
+    g.beginPath();
+    g.moveTo(W * 0.99, cy - hh * 0.3);
+    g.lineTo(W * 1.0, cy + hh * 0.2);
+    g.lineTo(W * 0.86, cy - hh * 0.05);
+    g.closePath();
+    g.fill();
+    void r;
+  },
+  "shell-clam": (g, W, H, r, variant) => {
+    // 위에서 본 조개 한 짝 — 크림빛 흰색에 부챗살 결.
+    const cx = W / 2;
+    const cy = H / 2;
+    const rw = W * 0.46;
+    const rh = H * 0.42;
+    flatBody(g, "#f3ecdd", "#b6a98d", () => {
+      g.beginPath();
+      g.moveTo(cx - rw, cy + rh * 0.5);
+      g.quadraticCurveTo(cx, cy - rh * 1.5, cx + rw, cy + rh * 0.5);
+      g.quadraticCurveTo(cx, cy + rh * 1.2, cx - rw, cy + rh * 0.5);
+      g.closePath();
+    });
+    g.strokeStyle = "rgb(182 169 141 / 0.85)";
+    g.lineWidth = 1;
+    const ribs = 5 + (variant % 3);
+    for (let i = 0; i <= ribs; i++) {
+      const a = -Math.PI * 0.82 + (i / ribs) * Math.PI * 0.64;
+      g.beginPath();
+      g.moveTo(cx, cy + rh * 0.55);
+      g.lineTo(cx + Math.cos(a) * rw * 0.94, cy + rh * 0.55 + Math.sin(a) * rh * 1.5);
+      g.stroke();
+    }
+    void r;
+  },
+  starfish: (g, W, H, r) => {
+    // 팔 다섯 — 채도 낮은 살구·모래빛(선명한 주황 금지).
+    const cx = W / 2;
+    const cy = H / 2;
+    const R = Math.min(W, H) * 0.46;
+    flatBody(g, "#d9bb9c", "#9c7f62", () => {
+      g.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + (i / 10) * TAU;
+        const rr = i % 2 === 0 ? R : R * 0.4;
+        const x = cx + Math.cos(a) * rr;
+        const y = cy + Math.sin(a) * rr;
+        if (i === 0) g.moveTo(x, y);
+        else g.lineTo(x, y);
+      }
+      g.closePath();
+    });
+    g.fillStyle = "#c2a184";
+    for (let i = 0; i < 14; i++) {
+      const a = r() * TAU;
+      const d = Math.pow(r(), 0.6) * R * 0.8;
+      g.beginPath();
+      g.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 1.1, 0, TAU);
+      g.fill();
+    }
+  },
   "tree-pine": (g, W, H, r) => pine(g, W, H, r, "green"),
   "tree-pine-autumn": (g, W, H, r) => pine(g, W, H, r, "muted"),
   "tree-pine-winter": (g, W, H, r) => pine(g, W, H, r, "snow")

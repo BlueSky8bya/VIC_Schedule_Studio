@@ -86,7 +86,44 @@ const PHASE1: readonly ArtSlot[] = [
   { id: "snowman-3", nameKo: "눈사람(완성)", nameEn: "Snowman, complete", category: "prop", seasons: ["winter"], view: "stand", px: [44, 72], brief: "완성된 눈사람 — 공 셋, 나뭇가지 팔, 조약돌 눈과 단추(무채색), 작은 목도리는 채도 낮은 회청색.", acnhRef: "눈사람", now: "procedural", phase: 1 },
   { id: "snow-pile", nameKo: "눈 무더기", nameEn: "Snow pile", category: "ground", seasons: ["winter"], view: "stand", px: [40, 24], variants: 2, brief: "바람에 쌓인 부드러운 눈 무더기, 위쪽은 희고 그늘은 옅은 청회색. 변형 2개.", now: "none", phase: 1 },
   { id: "acorn", nameKo: "도토리", nameEn: "Acorn", category: "prop", seasons: ["autumn"], view: "flat", px: [20, 26], brief: "위에서 본 도토리 하나 — 갈색 열매와 까슬한 깍정이(모자), 꼭지 짧게.", acnhRef: "도토리", now: "svg", phase: 1 },
-  { id: "swim-ring", nameKo: "튜브", nameEn: "Swim ring", category: "prop", seasons: ["summer"], view: "flat", px: [92, 92], brief: "위에서 본 도넛 튜브 — 채도 낮은 민트·크림 줄무늬(빨강·주황 금지), 옆면 두께가 보인다.", now: "svg", phase: 1 }
+  { id: "swim-ring", nameKo: "튜브", nameEn: "Swim ring", category: "prop", seasons: ["summer"], view: "flat", px: [92, 92], brief: "위에서 본 도넛 튜브 — 채도 낮은 민트·크림 줄무늬(빨강·주황 금지), 옆면 두께가 보인다.", now: "svg", phase: 1 },
+
+  // ── 해안(2026-09-05) — 앞의 셋은 장면이 **이미 부르고 있는데 자리가 없어** 아무것도 안 그려지던 것들이다.
+  { id: "driftwood", nameKo: "유목", nameEn: "Driftwood", category: "ground", seasons: ALL, view: "stand", px: [86, 30], variants: 3, brief: "파도에 씻겨 은회색으로 바랜 나무토막 — 껍질은 벗겨졌고 결이 길게 갈라졌다. 한쪽 끝이 부러져 뾰족하다. 변형 3개는 굽은 방향과 길이가 다르다.", acnhRef: "해변 유목", now: "procedural", phase: 1 },
+  { id: "shell-clam", nameKo: "조개껍데기", nameEn: "Clam shell", category: "ground", seasons: ALL, view: "flat", px: [22, 16], variants: 3, brief: "위에서 본 조개껍데기 한 짝 — 크림빛 흰색에 부챗살 결이 방사로 뻗는다. 가장자리에 옅은 모래 그늘. 변형 3개는 크기와 결의 수가 다르다.", acnhRef: "조개(해변 재료)", now: "procedural", phase: 1 },
+  { id: "starfish", nameKo: "불가사리", nameEn: "Starfish", category: "ground", seasons: ALL, view: "flat", px: [26, 26], brief: "위에서 본 불가사리 — 팔 다섯, 채도 낮은 살구·모래빛(선명한 주황 금지), 표면에 오톨도톨한 점.", acnhRef: "불가사리", now: "procedural", phase: 1 },
+  { id: "sea-stack", nameKo: "시스택(갯바위 기둥)", nameEn: "Sea stack", category: "ground", seasons: ALL, view: "stand", px: [90, 130], variants: 2, brief: "파도가 깎다 남긴 바위 기둥 — 위로 갈수록 좁고 옆면에 가로 층리, 발치는 늘 젖어 어둡고 흰 따개비 띠가 한 줄. 변형 2개는 기울기가 다르다.", now: "none", phase: 1 },
+  { id: "seaweed-clump", nameKo: "해조 뭉치", nameEn: "Seaweed clump", category: "plant", seasons: ALL, view: "flat", px: [40, 26], variants: 2, brief: "물가에 밀려 올라온 미역·모자반 뭉치 — 젖어서 짙은 올리브·암갈색, 납작하게 눌려 있고 가닥이 몇 갈래 삐져나왔다.", now: "none", phase: 1 },
+  { id: "dune-grass", nameKo: "통보리사초", nameEn: "Dune grass", category: "plant", seasons: ALL, view: "stand", px: [34, 44], variants: 3, brief: "모래언덕의 억센 사초 — 뻣뻣하고 곧은 잎 5~7가닥이 위로 벌어지고 끝이 살짝 마른 밀짚색. 밑동에 모래가 조금 쌓였다.", now: "none", phase: 1 },
+  { id: "tide-pool", nameKo: "조수 웅덩이", nameEn: "Tide pool", category: "water", seasons: ALL, view: "flat", px: [70, 40], variants: 2, brief: "위에서 본 암반의 물웅덩이 — 주변 바위보다 **어둡고**, 가장자리는 젖은 검은 테, 안쪽에 하늘이 비친 밝은 조각 하나와 짙은 해조 몇 점.", now: "none", phase: 1 },
+  { id: "gravel-patch", nameKo: "자갈밭", nameEn: "Gravel patch", category: "ground", seasons: ALL, view: "flat", px: [72, 46], variants: 2, brief: "위에서 본 자갈 무리 — 회색·회갈색 각진 돌 열댓 개가 모여 있다. 낱개가 아니라 **한 덩이 얼룩**으로 읽히게.", now: "none", phase: 1 },
+
+  // ── 숲·초목(2026-09-05) — 수종·하층 식생을 넓힌다.
+  { id: "tree-birch-spring", nameKo: "자작나무(봄)", nameEn: "Birch, spring", category: "tree", seasons: ["spring"], view: "stand", px: [96, 160], brief: "참나무보다 **가늘고 곧은 흰 줄기**(검은 가로 눈 무늬 몇 개)가 특징. 잎 덩이는 작고 성글게 3덩이, 연둣빛.", acnhRef: "활엽수", now: "none", phase: 1 },
+  { id: "tree-birch-summer", nameKo: "자작나무(여름)", nameEn: "Birch, summer", category: "tree", seasons: ["summer"], view: "stand", px: [96, 160], brief: "봄과 같은 흰 줄기·같은 실루엣, 잎 덩이만 짙은 초록.", now: "none", phase: 1 },
+  { id: "tree-birch-autumn", nameKo: "자작나무(가을)", nameEn: "Birch, autumn", category: "tree", seasons: ["autumn"], view: "stand", px: [96, 160], brief: "봄과 같은 흰 줄기, 잎 덩이는 탁한 황갈·베이지(선명한 노랑 금지).", now: "none", phase: 1 },
+  { id: "tree-birch-winter", nameKo: "자작나무(겨울)", nameEn: "Birch, winter", category: "tree", seasons: ["winter"], view: "stand", px: [96, 160], brief: "잎 없는 흰 줄기와 가는 가지 몇 갈래. 가지 위에 눈이 얇게.", now: "none", phase: 1 },
+  { id: "fern", nameKo: "고사리", nameEn: "Fern", category: "plant", seasons: ["spring", "summer", "autumn"], view: "stand", px: [44, 40], variants: 3, brief: "숲 바닥의 고사리 한 포기 — 깃 모양 잎 3~5장이 부채꼴로 눕는다. 봄은 연둣빛, 가을은 마른 갈색. 잎맥은 그리지 않는다(128px에서 안 보인다).", acnhRef: "양치식물", now: "none", phase: 1 },
+  { id: "moss-patch", nameKo: "이끼", nameEn: "Moss patch", category: "ground", seasons: ["spring", "summer", "autumn"], view: "flat", px: [40, 26], variants: 2, brief: "위에서 본 이끼 얼룩 — 짙은 이끼초록, 가장자리가 들쭉날쭉하고 표면이 오톨도톨하다.", now: "none", phase: 1 },
+  { id: "silver-grass", nameKo: "억새 포기", nameEn: "Silver grass tussock", category: "plant", seasons: ALL, view: "stand", px: [60, 78], variants: 3, brief: "억새 한 **포기** — 잎이 부채꼴로 크게 벌어지고 끝이 아래로 휜다. 9~2월에는 잎 덩이보다 위로 은빛 이삭 두세 대가 솟는다(여름 변형은 이삭 없음). 색은 은빛 베이지~마른 밀짚.", now: "none", phase: 1 },
+  { id: "sedge", nameKo: "사초", nameEn: "Sedge", category: "plant", seasons: ["spring", "summer", "autumn"], view: "stand", px: [30, 34], variants: 2, brief: "물가·하안의 낮은 사초 포기 — 가는 잎이 촘촘히 곧게 서고 끝만 살짝 휜다. 짙은 청록.", now: "none", phase: 1 },
+  { id: "cattail", nameKo: "부들", nameEn: "Cattail", category: "plant", seasons: ["summer", "autumn", "winter"], view: "stand", px: [26, 72], variants: 2, brief: "긴 곧은 줄기 끝에 **갈색 소시지 모양 이삭**. 잎은 줄기를 따라 두세 장, 칼처럼 곧다. 갈대(reed)와 실루엣이 확실히 달라야 한다.", acnhRef: "물가 풀", now: "none", phase: 1 },
+  { id: "bramble", nameKo: "덤불(가시)", nameEn: "Bramble", category: "plant", seasons: ["summer", "autumn"], view: "stand", px: [56, 44], brief: "낮게 얽힌 가시덤불 — 가는 줄기가 서로 겹쳐 아치를 그리고 작은 잎이 드문드문. 가을 변형엔 검붉은 열매 몇 알(채도 낮게).", now: "none", phase: 1 },
+
+  // ── 초원 야생화(2026-09-05) — 지금은 데이지 한 종뿐이라 봄 초원이 단조롭다.
+  { id: "flower-white", nameKo: "흰 야생화", nameEn: "Wildflower, white", category: "plant", seasons: ["spring", "summer"], view: "stand", px: [18, 22], variants: 2, brief: "흰 꽃잎 다섯에 크림 노랑 가운데, 가는 줄기와 잎 두 장. 데이지보다 작고 여러 송이가 한 대에 달린다.", now: "none", phase: 1 },
+  { id: "flower-violet", nameKo: "보랏빛 야생화", nameEn: "Wildflower, violet", category: "plant", seasons: ["spring", "summer"], view: "stand", px: [18, 24], variants: 2, brief: "연보라 꽃 두세 송이가 한 줄기에 층으로 달린다(제비꽃·꿀풀류). 잎은 아래에 넓게 두 장.", now: "none", phase: 1 },
+  { id: "flower-cream", nameKo: "크림빛 야생화", nameEn: "Wildflower, cream", category: "plant", seasons: ["spring", "summer", "autumn"], view: "stand", px: [20, 26], brief: "크림·연노랑 작은 꽃이 우산처럼 모여 핀다(산형화). 줄기는 가늘고 곧다. 선명한 노랑 금지.", now: "none", phase: 1 },
+
+  // ── 지형·소품(2026-09-05)
+  { id: "boulder", nameKo: "큰 바위", nameEn: "Boulder", category: "ground", seasons: ALL, view: "stand", px: [96, 72], variants: 3, brief: "사람 키만 한 바위 — `rock`(무릎 높이)보다 훨씬 크고 각이 뚜렷하다. 윗면은 밝고 아래·오른쪽은 그늘, 갈라진 금 두어 줄과 이끼 얼룩. 변형 3개는 실루엣이 다르다.", acnhRef: "바위", now: "none", phase: 1 },
+  { id: "snow-drift", nameKo: "눈 이랑", nameEn: "Snow drift", category: "ground", seasons: ["winter"], view: "flat", px: [120, 44], variants: 2, brief: "바람이 쌓아 올린 눈 이랑 — 바람 맞는 쪽은 완만하고 반대쪽은 급하게 떨어진다(비대칭). 마루는 희고 그늘은 옅은 청회색, 가장자리는 지면으로 스민다.", now: "none", phase: 1 },
+  { id: "icicle", nameKo: "고드름", nameEn: "Icicle", category: "prop", seasons: ["winter"], view: "stand", px: [18, 40], variants: 2, brief: "바위 턱·가지 끝에 달린 고드름 두세 개 — 투명한 청백색, 끝으로 갈수록 가늘다.", now: "none", phase: 1 },
+  { id: "pinecone", nameKo: "솔방울", nameEn: "Pine cone", category: "prop", seasons: ["autumn", "winter"], view: "flat", px: [18, 24], variants: 2, brief: "위에서 본 솔방울 — 갈색 비늘이 나선으로 벌어졌다. 도토리와 실루엣이 헷갈리지 않게 길쭉하게.", now: "none", phase: 1 },
+  { id: "feather", nameKo: "깃털", nameEn: "Feather", category: "prop", seasons: ALL, view: "flat", px: [28, 12], variants: 2, brief: "땅에 떨어진 깃털 한 장 — 회백·회갈, 깃대와 갈라진 깃가지가 보인다.", now: "none", phase: 1 },
+  { id: "berry-bush", nameKo: "열매 관목", nameEn: "Berry bush", category: "plant", seasons: ["summer", "autumn"], view: "stand", px: [58, 54], brief: "둥근 관목에 검붉은 작은 열매가 무리로 달렸다(채도 낮게, 선명한 빨강 금지). 잎은 짙은 초록·가을엔 와인.", now: "none", phase: 1 },
+  { id: "puddle", nameKo: "물웅덩이", nameEn: "Puddle", category: "water", seasons: ["spring", "summer", "autumn"], view: "flat", px: [56, 30], variants: 2, brief: "비 온 뒤 땅에 고인 얕은 물 — 가장자리는 젖은 흙으로 어둡고, 안쪽에 하늘이 비쳐 밝다. 아주 얕아 바닥이 비친다.", now: "none", phase: 1 },
+  { id: "footlog", nameKo: "쓰러진 나무", nameEn: "Fallen trunk", category: "ground", seasons: ALL, view: "stand", px: [140, 40], brief: "통째로 쓰러진 큰 나무 — `log`(토막)보다 훨씬 길고 이끼가 앉았다. 부러진 가지 그루터기 두어 개, 한쪽 끝에 나이테.", now: "none", phase: 1 }
 ];
 
 // ── Phase 2: 생물(종 레지스트리에서 파생 — 목록이 둘로 갈라지지 않게) ──────────────────────────────────────

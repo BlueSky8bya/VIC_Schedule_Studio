@@ -491,52 +491,49 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           const x = w * (0.1 + r2() * 0.8);
           const y = MH * (0.22 + r2() * 0.6);
           const k = 0.9 + r2() * 0.9;
+          // 수면선의 뒤 반원 — 바위보다 **먼저**(뒤쪽은 몸에 가려야 한다, 2026-09-05 소유자).
+          const rockRing = (a0: number, a1: number) => {
+            mg2.strokeStyle = season === "winter" ? "rgb(226 238 248 / 0.85)" : "rgb(255 255 255 / 0.5)";
+            mg2.lineWidth = season === "winter" ? 3 : 1.4;
+            mg2.beginPath();
+            mg2.ellipse(x, season === "winter" ? y + 2 : y, (season === "winter" ? 19 : 17) * k, (season === "winter" ? 6 : 5) * k, 0, a0, a1);
+            mg2.stroke();
+          };
+          rockRing(Math.PI, TAU);
           mg2.save();
           mg2.beginPath();
           mg2.rect(x - 60 * k, y - 90 * k, 120 * k, 90 * k);
           mg2.clip();
           drawProp(mg2, shoreArt, "rock", x, y + 8 * k, { k, r: r2(), flip: r2() < 0.5 });
           mg2.restore();
+          rockRing(0, Math.PI); // 앞 반원 — 바위 뒤에
           if (season === "winter") {
-            // 얼음판 위에는 수면선이 없다 — 대신 얼어붙은 테두리 + 윗면의 눈(사이클4 현실성 #1).
-            mg2.strokeStyle = "rgb(226 238 248 / 0.85)";
-            mg2.lineWidth = 3;
-            mg2.beginPath();
-            mg2.ellipse(x, y + 2, 19 * k, 6 * k, 0, 0, TAU);
-            mg2.stroke();
+            // 얼음판 위 — 윗면의 눈(수면선이 아니라 얼어붙은 테두리, 사이클4 현실성 #1).
             mg2.fillStyle = "rgb(250 253 255 / 0.85)";
             mg2.beginPath();
             mg2.ellipse(x, y - 13 * k, 12 * k, 4 * k, 0, Math.PI, TAU);
             mg2.fill();
-          } else {
-            mg2.strokeStyle = "rgb(255 255 255 / 0.5)";
-            mg2.lineWidth = 1.4;
-            mg2.beginPath();
-            mg2.ellipse(x, y, 17 * k, 5 * k, 0, 0, TAU);
-            mg2.stroke();
           }
         }
         // 뜬 통나무 하나 — 화면의 초점.
         {
           const x = w * (0.28 + r2() * 0.44);
           const y = MH * (0.42 + r2() * 0.34);
-          drawProp(mg2, shoreArt, "log", x, y, { k: 1.5, r: r2(), flip: r2() < 0.5 });
-          if (season === "winter") {
-            mg2.strokeStyle = "rgb(226 238 248 / 0.85)";
-            mg2.lineWidth = 3.4;
+          const logRing = (a0: number, a1: number) => {
+            mg2.strokeStyle = season === "winter" ? "rgb(226 238 248 / 0.85)" : "rgb(255 255 255 / 0.45)";
+            mg2.lineWidth = season === "winter" ? 3.4 : 1.6;
             mg2.beginPath();
-            mg2.ellipse(x, y + 3, 48, 10, 0, 0, TAU);
+            mg2.ellipse(x, y + (season === "winter" ? 3 : 2), season === "winter" ? 48 : 44, season === "winter" ? 10 : 8, 0, a0, a1);
             mg2.stroke();
+          };
+          logRing(Math.PI, TAU); // 뒤 반원 — 통나무보다 먼저
+          drawProp(mg2, shoreArt, "log", x, y, { k: 1.5, r: r2(), flip: r2() < 0.5 });
+          logRing(0, Math.PI); // 앞 반원 — 통나무 뒤에
+          if (season === "winter") {
             mg2.fillStyle = "rgb(250 253 255 / 0.85)";
             mg2.beginPath();
             mg2.ellipse(x, y - 16, 34, 6, 0, Math.PI, TAU);
             mg2.fill();
-          } else {
-            mg2.strokeStyle = "rgb(255 255 255 / 0.45)";
-            mg2.lineWidth = 1.6;
-            mg2.beginPath();
-            mg2.ellipse(x, y + 2, 44, 8, 0, 0, TAU);
-            mg2.stroke();
           }
         }
         midWater = mw.c;
@@ -1489,6 +1486,21 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
           } else if (s === "wait") tilt += Math.sin(t * 2.2) * 0.06;
           wl += 40 * q.lift; // 들어 올리면 물 밖
           const waterY = q.y + dy + wl;
+          // 수면선 — 잠긴 자리 둘레의 옅은 흰 타원. **뒤 반원은 몸에 가려야 한다**(한 바퀴 두른 링은
+          // 오리 앞으로 선이 지나가 "종이 오려 붙인 것"으로 보인다, 2026-09-05 소유자).
+          const wlRing = (a0: number, a1: number) => {
+            if (q.lift >= 0.5) return;
+            const rw = (s === "dabble" ? 20 : 24) * q.k * size;
+            g.save();
+            g.globalAlpha = (1 - q.lift * 2) * 0.55;
+            g.strokeStyle = "rgb(255 255 255)";
+            g.lineWidth = 1.2;
+            g.beginPath();
+            g.ellipse(q.x, waterY, rw, rw * 0.22, 0, a0, a1);
+            g.stroke();
+            g.restore();
+          };
+          wlRing(Math.PI, TAU); // 뒤 반원 — 몸보다 먼저
           const drawDuck = (sp: Sprite) => {
             g.save();
             g.translate(q.x, q.y + dy);
@@ -1513,18 +1525,7 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
             drawDuck(duckSub);
             g.restore();
           }
-          // 수면선 — 잠긴 자리 둘레의 옅은 흰 타원(물에 '박혀' 있다는 신호). 들어 올리면 사라진다.
-          if (q.lift < 0.5) {
-            const rw = (s === "dabble" ? 20 : 24) * q.k * size;
-            g.save();
-            g.globalAlpha = (1 - q.lift * 2) * 0.55;
-            g.strokeStyle = "rgb(255 255 255)";
-            g.lineWidth = 1.2;
-            g.beginPath();
-            g.ellipse(q.x, waterY, rw, rw * 0.22, 0, 0, TAU);
-            g.stroke();
-            g.restore();
-          }
+          wlRing(0, Math.PI); // 앞 반원 — 몸 뒤에(물이 몸 앞을 스친다)
         } else drawSprite(g, spr, q.x, q.y, q.a + Math.sin(q.ph * 0.7) * 0.05, size);
         g.restore();
       }

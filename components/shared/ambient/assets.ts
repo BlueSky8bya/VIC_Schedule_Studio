@@ -56,11 +56,16 @@ export async function loadSprite(url: string, w: number, h: number, scale = 2, t
   g.drawImage(im, 0, 0, c.width, c.height);
   if (desat > 0) {
     // 채도만 낮춘다(형태·명암은 그대로) — 오행 팔레트에 맞추려고 에셋을 바꾸지 않는다. 0 = 원본, 1 = 무채색.
+    // `saturation` 블렌드는 **투명한 바탕 위에도** 색을 칠하므로, 칠한 뒤 원본 알파로 다시 마스크해야 한다.
+    // 안 하면 스프라이트 상자만 한 회색 사각형이 그려진다(2026-09-05 소유자: "오리가 박스쳐져 있다").
     g.save();
     g.globalCompositeOperation = "saturation";
     g.globalAlpha = Math.min(1, desat);
     g.fillStyle = "#808080";
     g.fillRect(0, 0, c.width, c.height);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = "destination-in";
+    g.drawImage(im, 0, 0, c.width, c.height);
     g.restore();
     g.globalCompositeOperation = "source-over";
   }

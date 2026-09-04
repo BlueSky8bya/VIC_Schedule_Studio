@@ -21,7 +21,7 @@ import { Clock3 } from "lucide-react";
 export type DevWorldForce = NonNullable<WorldCtx["force"]>;
 type BandOpt = "real" | DayBand;
 type WeatherOpt = "real" | Weather;
-type DayOpt = "real" | "1" | "5" | "10" | "15" | "20" | "25" | "28";
+type DayOpt = string; // "real" | "1".."31"
 
 export type StudioSettingsProps = {
   hapticsSupported: boolean;
@@ -44,8 +44,11 @@ export type StudioSettingsProps = {
   posterTheme: PosterThemeKey | null;
   onChangePosterTheme: (theme: PosterThemeKey) => void;
   posterThemeSaving: boolean;
-  // 개발자 세계 시간 여행 — 개발자 계정(실제 역할)일 때만 넘긴다. null이면 줄을 그리지 않는다(관리자·시청자).
+  // 개발자 월드 강제 — **effectiveRole이 개발자**일 때만 넘긴다(미리보기 중인 역할엔 줄 자체가 없다).
   devWorld?: { force: DevWorldForce; onChange: (force: DevWorldForce) => void } | null;
+  // 지금 보고 있는 연·달 — 월드 날짜 목록의 말일(윤년 포함)과, 그 계절에 가능한 날씨를 정하는 데 쓴다.
+  devMonth?: number;
+  devYear?: number;
 };
 
 export function StudioSettingsList({
@@ -63,8 +66,33 @@ export function StudioSettingsList({
   posterTheme,
   onChangePosterTheme,
   posterThemeSaving,
-  devWorld = null
+  devWorld = null,
+  devMonth = 1,
+  devYear = 2026
 }: StudioSettingsProps) {
+  // 월드 날짜 — 연대기(chronicle)가 날짜로 갈리는 장면을 기다리지 않고 바로 보기 위한 것이다.
+  // 갈리는 날: 12/20·23·27(눈사람 1→2→3단), 2/15(해빙 — 눈 밑 도토리가 드러난다), 2/20·25(눈사람이 녹아 사라진다).
+  const lastDay = new Date(Date.UTC(devYear, devMonth, 0)).getUTCDate();
+  const dayMark: Record<number, string> = devMonth === 12 ? { 20: "눈사람 1단", 23: "눈사람 2단", 27: "눈사람 완성" } : devMonth === 2 ? { 15: "해빙", 20: "눈사람 2단", 25: "눈사람 사라짐" } : {};
+  const dayOptions = [
+    { value: "real", label: "자동" },
+    ...Array.from({ length: lastDay }, (_, i) => {
+      const d = i + 1;
+      return { value: String(d), label: dayMark[d] ? `${d}일 · ${dayMark[d]}` : `${d}일` };
+    })
+  ];
+  // 계절에 없는 날씨는 고를 수 없다 — 여름에 눈을 강제하면 만들지도 않은 "눈 덮인 여름 바이옴"을 보게 된다
+  // (2026-09-05 소유자). 표(world/weather.ts)와 같은 규칙: 눈은 겨울만, 안개는 여름 빼고.
+  const devSeason = devMonth === 12 || devMonth <= 2 ? "winter" : devMonth <= 5 ? "spring" : devMonth <= 8 ? "summer" : "autumn";
+  const weatherOptions: { value: WeatherOpt; label: string }[] = [
+    { value: "real", label: "자동" },
+    { value: "clear", label: "맑음" },
+    { value: "cloud", label: "흐림" },
+    { value: "rain", label: "비" },
+    ...(devSeason === "winter" ? ([{ value: "snow", label: "눈" }] as const) : []),
+    ...(devSeason === "summer" ? [] : ([{ value: "fog", label: "안개" }] as const)),
+    { value: "wind", label: "바람" }
+  ];
   return (
     <>
       {/* 진동 켜기/끄기 — 진동 지원 기기(안드로이드)에서만. */}
@@ -177,21 +205,25 @@ export function StudioSettingsList({
         </div>
       ) : null}
       {/* (멤버 관리 입구는 기능 철수(2026-09-04, ADR-0018)로 제거.) */}
-      {/* 개발자 세계 시간 여행(PLAN-20260904-003) — 띠·날씨·날을 실제와 무관하게 강제해 연대기·빛 톤·날씨 훅을 검사한다. 개발자 계정만,
-          세션 한정(저장 안 함), 관리자·시청자엔 줄 자체가 없다. 연·달은 달력 이동으로 오간다. */}
+      {/* 개발자 월드 강제(PLAN-20260904-003) — 시간대·날씨·날짜를 실제와 무관하게 밀어 넣어 연대기·빛 톤·날씨 훅을
+          기다리지 않고 검사한다. 세션 한정(저장 안 함), effectiveRole이 개발자일 때만 줄이 생긴다. 연·달은 달력 이동으로.
+          · 시간대: 여섯 띠(새벽~밤) — 엔진이 장면 위에 얹는 빛 톤.
+          · 날씨: **실제 기상이 아니라** 날짜 시드 난수다(world/weather.ts, 소유자 결정 — 기상 API 안 씀). 그래서 "자동".
+            계절에 없는 날씨(여름의 눈)는 목록에서 뺀다 — 만들지도 않은 장면을 보게 된다.
+            · 날짜: 연대기(chronicle)가 날짜로 갈리는 장면(눈사람 단계·2월 해빙)을 바로 보려는 것. 갈리는 날엔 이름을 붙였다. */}
       {devWorld ? (
         <>
           <div className="role-help-haptics rhh-ambient rhh-dev">
             <span className="rhh-label">
               <Clock3 aria-hidden="true" size={14} />
-              세계 시간대 <em className="rhh-dev-tag">개발자</em>
+              월드 시간대 <em className="rhh-dev-tag">개발자</em>
             </span>
             <RhhSelect<BandOpt>
-              ariaLabel="세계 시간대 강제(개발자)"
+              ariaLabel="월드 시간대 강제(개발자)"
               dataAct="dev-world-band"
               onChange={(v) => devWorld.onChange({ ...devWorld.force, band: v === "real" ? undefined : v })}
               options={[
-                { value: "real", label: "실제" },
+                { value: "real", label: "자동" },
                 { value: "dawn", label: "새벽" },
                 { value: "morning", label: "아침" },
                 { value: "noon", label: "점심" },
@@ -205,43 +237,26 @@ export function StudioSettingsList({
           <div className="role-help-haptics rhh-ambient rhh-dev">
             <span className="rhh-label">
               <Clock3 aria-hidden="true" size={14} />
-              세계 날씨 <em className="rhh-dev-tag">개발자</em>
+              월드 날씨 <em className="rhh-dev-tag">개발자</em>
             </span>
             <RhhSelect<WeatherOpt>
-              ariaLabel="세계 날씨 강제(개발자)"
+              ariaLabel="월드 날씨 강제(개발자)"
               dataAct="dev-world-weather"
               onChange={(v) => devWorld.onChange({ ...devWorld.force, weather: v === "real" ? undefined : v })}
-              options={[
-                { value: "real", label: "실제(날짜 시드)" },
-                { value: "clear", label: "맑음" },
-                { value: "cloud", label: "흐림" },
-                { value: "rain", label: "비" },
-                { value: "snow", label: "눈" },
-                { value: "fog", label: "안개" },
-                { value: "wind", label: "바람" }
-              ]}
+              options={weatherOptions}
               value={devWorld.force.weather ?? "real"}
             />
           </div>
           <div className="role-help-haptics rhh-ambient rhh-dev">
             <span className="rhh-label">
               <Clock3 aria-hidden="true" size={14} />
-              세계 날 <em className="rhh-dev-tag">개발자</em>
+              월드 날짜 <em className="rhh-dev-tag">개발자</em>
             </span>
             <RhhSelect<DayOpt>
-              ariaLabel="세계 날 강제(개발자)"
+              ariaLabel="월드 날짜 강제(개발자)"
               dataAct="dev-world-day"
               onChange={(v) => devWorld.onChange({ ...devWorld.force, day: v === "real" ? undefined : Number(v) })}
-              options={[
-                { value: "real", label: "실제(오늘/말일/1일)" },
-                { value: "1", label: "1일" },
-                { value: "5", label: "5일" },
-                { value: "10", label: "10일" },
-                { value: "15", label: "15일" },
-                { value: "20", label: "20일" },
-                { value: "25", label: "25일" },
-                { value: "28", label: "28일" }
-              ]}
+              options={dayOptions}
               value={devWorld.force.day !== undefined ? (String(devWorld.force.day) as DayOpt) : "real"}
             />
           </div>
