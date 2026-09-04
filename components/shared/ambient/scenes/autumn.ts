@@ -14,6 +14,8 @@ import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, leafPath, leafVeins, lerp, makeCanvas, pineNeedles, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
+import { ArtSet } from "../art/load";
+import { drawProp, scatterProps } from "../art/props";
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
@@ -112,6 +114,9 @@ export function createAutumn(seed: number): Scene {
   let gw = 0;
   let gh = 0;
   let gdpr = 0;
+  // 바탕 소품 아트(버섯·잔가지·조약돌·마른 풀 + 있으면 관목·바위·그루터기·통나무) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
+  const groundArt = new ArtSet(["mushroom", "twig", "pebble", "grass-dry", "shrub-autumn", "rock", "stump", "log"]);
+  let gav = -1;
   let grabbed = -1;
   let gox = 0;
   let goy = 0;
@@ -241,93 +246,33 @@ export function createAutumn(seed: number): Scene {
     for (let i = 0; i < patches; i++) {
       softBlob(g, g0() * w, g0() * h, 110 + g0() * 240, g0() < 0.5 ? "150 135 95" : "125 100 70", 0.075);
     }
-    g.lineCap = "round";
+    // 소품은 전부 drawProp(art/props.ts) — 아트 파일이 있으면 그 그림, 없으면 대체물(옛 도형). 자리는 결정적.
     const tufts = Math.round((w * h) / 2600);
-    for (let i = 0; i < tufts; i++) {
-      const x = g0() * w;
-      const y = g0() * h;
-      const n = 2 + Math.floor(g0() * 2);
-      for (let k = 0; k < n; k++) {
-        const len = 6 + g0() * 9;
-        const a = -Math.PI / 2 + (g0() - 0.5) * 1.6;
-        g.strokeStyle = g0() < 0.5 ? "rgb(168 140 88 / 0.5)" : "rgb(140 118 74 / 0.45)";
-        g.lineWidth = 1.1 + g0() * 0.7;
-        g.beginPath();
-        g.moveTo(x + k * 2 - 2, y);
-        g.quadraticCurveTo(x + k * 2 - 2 + (g0() - 0.5) * 6, y + Math.sin(a) * len * 0.5, x + k * 2 - 2 + Math.cos(a) * len, y + Math.sin(a) * len);
-        g.stroke();
-      }
-    }
+    for (let i = 0; i < tufts; i++) drawProp(g, groundArt, "grass-dry", g0() * w, g0() * h, { k: 0.7 + g0() * 0.6, r: g0(), flip: g0() < 0.5, alpha: 0.85 });
     const twigs = Math.round((w * h) / 40000);
-    for (let i = 0; i < twigs; i++) {
-      const x = g0() * w;
-      const y = g0() * h;
-      const a = g0() * TAU;
-      const len = 18 + g0() * 30;
-      g.strokeStyle = "rgb(96 74 52 / 0.55)";
-      g.lineWidth = 1.6;
-      g.beginPath();
-      g.moveTo(x, y);
-      const mx = x + Math.cos(a) * len * 0.55;
-      const my = y + Math.sin(a) * len * 0.55;
-      g.lineTo(mx, my);
-      g.lineTo(mx + Math.cos(a + (g0() - 0.5) * 0.9) * len * 0.45, my + Math.sin(a + (g0() - 0.5) * 0.9) * len * 0.45);
-      g.stroke();
-      g.lineWidth = 1;
-      g.beginPath();
-      g.moveTo(mx, my);
-      g.lineTo(mx + Math.cos(a + 0.9) * len * 0.3, my + Math.sin(a + 0.9) * len * 0.3);
-      g.stroke();
-    }
+    for (let i = 0; i < twigs; i++) drawProp(g, groundArt, "twig", g0() * w, g0() * h, { k: 0.8 + g0() * 0.8, rot: g0() * TAU, r: g0() });
     const pebbles = Math.round((w * h) / 70000);
-    for (let i = 0; i < pebbles; i++) {
-      const x = g0() * w;
-      const y = g0() * h;
-      const r = 3 + g0() * 4;
-      const a = g0() * TAU;
-      g.fillStyle = "rgb(60 55 50 / 0.12)";
-      g.beginPath();
-      g.ellipse(x + 1.5, y + 2, r * 1.3, r * 0.9, a, 0, TAU);
-      g.fill();
-      g.fillStyle = g0() < 0.5 ? "rgb(178 172 160)" : "rgb(160 150 138)";
-      g.beginPath();
-      g.ellipse(x, y, r * 1.3, r * 0.9, a, 0, TAU);
-      g.fill();
-      g.fillStyle = "rgb(255 255 250 / 0.35)";
-      g.beginPath();
-      g.ellipse(x - r * 0.3, y - r * 0.3, r * 0.5, r * 0.3, a, 0, TAU);
-      g.fill();
-    }
+    for (let i = 0; i < pebbles; i++) drawProp(g, groundArt, "pebble", g0() * w, g0() * h, { k: 0.7 + g0() * 0.9, rot: g0() * TAU, r: g0() });
     const shrooms = clamp(Math.round((w * h) / 300000), 3, 7);
     for (let i = 0; i < shrooms; i++) {
       const x = 30 + g0() * (w - 60);
       const y = 30 + g0() * (h - 60);
-      const r = 7 + g0() * 6;
-      softBlob(g, x + 3, y + 4, r * 1.6, "43 35 32", 0.22);
-      g.fillStyle = "rgb(236 224 200)";
-      g.beginPath();
-      g.ellipse(x, y + r * 0.5, r * 0.45, r * 0.7, 0, 0, TAU);
-      g.fill();
-      const cap = g.createRadialGradient(x - r * 0.3, y - r * 0.3, 1, x, y, r);
-      cap.addColorStop(0, "#b48864");
-      cap.addColorStop(1, "#7f5a40");
-      g.fillStyle = cap;
-      g.beginPath();
-      g.ellipse(x, y, r, r * 0.86, 0, 0, TAU);
-      g.fill();
-      g.fillStyle = "rgb(245 236 218 / 0.85)";
-      for (let k = 0; k < 4; k++) {
-        const aa = g0() * TAU;
-        const rr = g0() * r * 0.6;
-        g.beginPath();
-        g.arc(x + Math.cos(aa) * rr, y + Math.sin(aa) * rr * 0.86, 1 + g0() * 1.3, 0, TAU);
-        g.fill();
-      }
+      const k = 0.8 + g0() * 0.6;
+      softBlob(g, x + 3, y - 4, 12 * k, "43 35 32", 0.22);
+      drawProp(g, groundArt, "mushroom", x, y + 8 * k, { k, r: g0() });
     }
+    // 있을 때만 놓이는 큰 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
+    scatterProps(g, groundArt, w, h, g0, [
+      { id: "shrub-autumn", n: 3 },
+      { id: "rock", n: 2 },
+      { id: "stump", n: 1 },
+      { id: "log", n: 1 }
+    ]);
     ground = c;
     gw = w;
     gh = h;
     gdpr = dpr;
+    gav = groundArt.version;
   }
 
   const totalWeight = SPECIES.reduce((a, s) => a + s.weight, 0);
@@ -542,7 +487,7 @@ export function createAutumn(seed: number): Scene {
       w = f.w;
       h = f.h;
       bake();
-      if (!ground || gw !== w || gh !== h || gdpr !== f.dpr) bakeGround(f.dpr);
+      if (!ground || gw !== w || gh !== h || gdpr !== f.dpr || gav !== groundArt.version) bakeGround(f.dpr);
       const n = targetCount(f);
       if (!filled) {
         while (leaves.length < n) leaves.push(spawn(f.t));

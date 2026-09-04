@@ -174,8 +174,16 @@ export function chronicle(slug: string, y: number, m: number, d: number): Trace[
   if (m >= 6 && m <= 8) {
     const r = hashSeed(slug, "lily", y);
     const n = Math.min(12, 3 + Math.floor(dayIn(m, d, 6) / 8));
+    // 자리는 서로 떨어뜨린다(2026-09-04 소유자: "개구리밥이 다 겹쳐 있다, 입체감 없이") — 앞선 잎과 가로 .045·세로 .06 안이면 다시 뽑는다(최대 8회).
+    const placed: [number, number][] = [];
     for (let i = 0; i < 12; i++) {
-      const [u, v] = bandPos(r, "water"); // 기슭(위 띠)엔 연잎이 없다
+      let u = 0;
+      let v = 0;
+      for (let tries = 0; tries < 8; tries++) {
+        [u, v] = bandPos(r, "water"); // 기슭(위 띠)엔 연잎이 없다
+        if (placed.every(([pu, pv]) => Math.abs(pu - u) > 0.045 || Math.abs(pv - v) > 0.06)) break;
+      }
+      placed.push([u, v]);
       const k = 0.7 + r() * 0.6;
       if (i < n) out.push({ kind: "lilypad", id: id("lilypad", y, i), u, v, stage: k, cycle: y });
     }

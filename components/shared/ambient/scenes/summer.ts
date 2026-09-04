@@ -27,6 +27,9 @@ import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawSprite, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 import { bakeShore, bakeTraces, drawTraces, SHORE_V, type TraceBakes } from "../world/traces-draw";
+import { ArtSet, artFile } from "../art/load";
+import { artSlot } from "../art/manifest";
+import { drawProp } from "../art/props";
 
 type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: number }; // n = 진행 직각 단위벡터
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
@@ -122,6 +125,9 @@ export function createSummer(seed: number): Scene {
   let traces: TraceBakes | null = null; // 연대기(연잎·기슭의 데뷔 나무) 렌더 스프라이트
   let shore: HTMLCanvasElement | null = null; // 위 띠의 기슭(뭍) — 땅 흔적이 물 위에 떠 보이지 않게
   let shoreW = 0;
+  // 기슭 소품 아트(갈대·통나무·바위·관목 — 있을 때만 기슭에 선다)와 오리 아트(있으면 Noto 오리 대신).
+  const shoreArt = new ArtSet(["reed", "log", "rock", "shrub-summer"]);
+  let shoreArtV = -1;
   let rainRings = 0;
   let duckSpr: Sprite | null = null;
   let duckSub: Sprite | null = null; // 물속 부분용 — 물빛으로 물든 사본(수면선 아래를 이걸로 그린다)
@@ -216,8 +222,19 @@ export function createSummer(seed: number): Scene {
     stampSpr = c;
     shadow = shadowSprite(96, 64, "30 60 90", 0.4);
     traces = bakeTraces();
-    void loadSprite(ASSET.duck, 56, 56).then((s) => (duckSpr = s)).catch(() => {});
-    void loadSprite(ASSET.duck, 56, 56, 2, "rgb(150 190 222 / 0.78)").then((s) => (duckSub = s)).catch(() => {});
+    // 오리 — 아트(public/ambient/art/duck.png, 동물의 숲 카메라)가 있으면 그것, 없으면 Noto 🦆. 둘 다 56×56 상자·가운데 앵커로 그린다
+    // (수면선 자르기는 몸통 중심 기준이라 그대로 맞는다).
+    const duckSlot = artSlot("duck");
+    const duckArt = duckSlot ? artFile("duck.png", duckSlot, 2) : Promise.resolve(null);
+    const duckArtSub = duckSlot ? artFile("duck.png", duckSlot, 2, "rgb(150 190 222 / 0.78)") : Promise.resolve(null);
+    void duckArt.then((a) => {
+      if (a) duckSpr = { c: a.c, w: a.w, h: a.h };
+      else void loadSprite(ASSET.duck, 56, 56).then((s) => (duckSpr = s)).catch(() => {});
+    });
+    void duckArtSub.then((a) => {
+      if (a) duckSub = { c: a.c, w: a.w, h: a.h };
+      else void loadSprite(ASSET.duck, 56, 56, 2, "rgb(150 190 222 / 0.78)").then((s) => (duckSub = s)).catch(() => {});
+    });
     void loadSprite(ASSET.ring, 92, 92).then((s) => (ringSpr = s)).catch(() => {});
     const tint = "rgb(28 58 88)";
     void loadSprite(ASSET.fishShadowSlim, FISH_SPR, FISH_SPR, 2, tint).then((s) => (fishParts[0] = splitFish(s))).catch(() => {});
@@ -388,9 +405,24 @@ export function createSummer(seed: number): Scene {
       h = f.h;
       bake();
       ensureLo(f);
-      if (!shore || shoreW !== w) {
+      if (!shore || shoreW !== w || shoreArtV !== shoreArt.version) {
         shore = bakeShore(w, h);
         shoreW = w;
+        shoreArtV = shoreArt.version;
+        // 기슭 소품(아트가 있을 때만) — 물가 선 위쪽 띠에 결정적으로: 갈대 무리·통나무·바위·관목.
+        const sg = shore.getContext("2d");
+        if (sg) {
+          const r0 = rng(91 + w);
+          const edge = shore.height - 24;
+          const stand = (id: string, n: number, k: number) => {
+            if (!shoreArt.has(id)) return;
+            for (let i = 0; i < n; i++) drawProp(sg, shoreArt, id, 30 + r0() * (w - 60), edge - 2 - r0() * 10, { k: k * (0.85 + r0() * 0.3), r: r0(), flip: r0() < 0.5 });
+          };
+          stand("reed", Math.max(3, Math.round(w / 260)), 0.55);
+          stand("log", 1, 0.9);
+          stand("rock", 2, 0.7);
+          stand("shrub-summer", 2, 0.75);
+        }
       }
       if (!props.some((p) => p.kind === "duck")) {
         const d = newProp("duck", f.t);

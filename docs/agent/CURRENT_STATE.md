@@ -108,6 +108,20 @@ Harness: `agent-harness.yaml` (protocol `project-initializing_260710.md`, 최소
   채널 경로. 등록 입구 = `node scripts/add-guest-vods.mjs YYMMDD=URL …`(SOOP VOD 조회 API `station/video/a/view` —
   제목·호스트·길이·방송 시각·썸네일). 공개 DTO `PublicVodEntry.host`(호스트 닉) → 모바일 칩 '합방' 배지, PC 창 "합방 · ○○
   방송국" 배지(금 문법 칩). 다음 합방 링크도 같은 스크립트로.
+  ㉝ **계절 배경 아트 파이프라인 + 아트 보드(2026-09-04 밤, ADR-0017 ⑮)**: 소유자 "나무·초목을 기본 도형 몇 개 붙이면 어떻게 하냐
+  (겨울 나무 = 말미잘, 봄 초목 = 껌딱지, 가을 흙더미 = 정체불명, 여름 연잎 = 겹침) — 동물의 숲처럼 이어서 디자인, 한 라우트에서 관리".
+  `components/shared/ambient/art/`: `manifest.ts`(자리 65 = 1차 초목·지형 36 + 2차 생물 29(종 레지스트리 파생); 자리마다 id·계절·
+  카메라 stand/flat/shadow·화면 px·변형·그릴 것·동숲 참고·지금 원천; `codexMasterPrompt(phase)`·`slotPrompt`), `load.ts`(ArtSet —
+  `public/ambient/art/<id>.png` 있으면 알파 경계로 잘라 자리 상자에 맞춰 굽고, 404는 세션 기억; 모두 도착하면 version↑ → 바탕 한 번
+  재굽기), `props.ts`(`drawProp` 한 API: 아트 or 옛 도형 대체물 — 흙더미·두더지·풀 얼룩·연잎(두께 추가)·버섯·잔가지·조약돌·풀포기·
+  마른 풀·클로버·데이지·민들레·눈사람 1~3; `scatterProps` = 아트 있을 때만 놓이는 관목·바위·그루터기·통나무·눈 무더기·민들레 꽃),
+  `preview.ts`(보드 '지금' 미리보기). traces-draw는 나무를 아트가 있으면 **세워서**(동숲 카메라, 발 = y+0.9R, 수관 폭 2R, 발밑 타원
+  그림자) 그리고 없으면 옛 캐노피/헐벗은 가지; 봄·가을·겨울·여름 바탕 소품과 오리(duck.png)도 같은 규칙. **라우트**
+  `/studio/ambient-art`(개발자 전용, `lib/ambient/art-files.ts`가 폴더를 읽음; fixture `/visual-fixture/ambient-art`): 자리 카드
+  (지금 대체물 ↔ 납품 PNG, 규격, 상태 납품됨/부분/대기), 계절·분류·상태 필터, 프롬프트 복사(1차/2차/전체/자리별, 토스트+햅틱). 설정 모달
+  개발자 줄 '배경 아트 보드 → 열기'(data-act dev-art-board-open). 연잎은 chronicle에서 재추첨으로 서로 떨어뜨림. 카메라 규칙 완화는
+  ADR-0017 ⑮(납작한 것만 위에서, 서 있는 것은 3/4). **다음**: 소유자가 코덱스로 1차 PNG를 만들어 `public/ambient/art/`에 넣는다 →
+  보드에서 확인 → 2차 생물. 아직 파일 0장(대체물 그대로).
   ㉜ **계절 연대기(PLAN-20260904-003) — 결정 확정 + Phase A 출고(2026-09-04 밤)**: 소유자 결정 7건(여섯 띠 · 전설 순수 확률 ·
   도감은 로그인만 · 공유 없음 · 날씨 랜덤(날짜 시드) · 우선 20종 · 채도 균형). Phase A = `components/shared/ambient/world/`:
   `seed.ts`(FNV-1a → mulberry32), `time.ts`(계절별 일출·일몰로 새벽·아침·점심·노을·저녁·밤 + 빛 톤: 낮 없음·노을 회자·밤 청회),

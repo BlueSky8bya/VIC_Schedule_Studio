@@ -15,4 +15,5 @@
 
 - [`broadcast-panel-inking-research.md`](broadcast-panel-inking-research.md) — 방송 판서 잉크·펜·도구 UX 근거와 저장소 적용/미적용 결정.
 - [`seasonal-ambient-plan.md`](seasonal-ambient-plan.md) — 📋 계절·특정일 앰비언트 배경 설계안(2026-09-04 제안, 미착수): 레지스트리 하나·사주 보정 표·포스터 테마 supersede.
+- [`ambient-art-brief.md`](ambient-art-brief.md) — 📖 **현행 규칙**(2026-09-04 출고): 계절 배경 아트 파이프라인 — 자리 매니페스트 → `public/ambient/art/<id>.png` → 보드 `/studio/ambient-art`(개발자) → 코덱스 프롬프트(동물의 숲 카메라·오행 색). 1차 마스터 프롬프트 사본 포함.
 - [`chrome-compaction-manual.md`](chrome-compaction-manual.md) — 📖 **현행 규칙**(2026-09-04 출고): 창 비율이 망가졌을 때 편집실 크롬 압축 — 가로 실측 3단계(라벨→?/아이콘→점), 세로 rail 예산(필터 132 우선·아바타 자리 양보), 팝오버 ↔ 하단 알약 회피, 새 요소 체크리스트.

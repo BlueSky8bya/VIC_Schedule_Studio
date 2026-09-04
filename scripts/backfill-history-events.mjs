@@ -206,7 +206,7 @@ for (let i = 0; i < rows.length; i += 100) {
   const res = await fetch(`${U}/rest/v1/events`, {
     method: "POST",
     headers: { ...H, "Content-Type": "application/json", Prefer: "return=representation" },
-    body: JSON.stringify(chunk.map(({ _tags, ...row }) => row))
+    body: JSON.stringify(chunk.map((r) => Object.fromEntries(Object.entries(r).filter(([k]) => k !== "_tags"))))
   });
   if (!res.ok) throw new Error(`insert 실패: ${res.status} ${await res.text()}`);
   const got = await res.json();

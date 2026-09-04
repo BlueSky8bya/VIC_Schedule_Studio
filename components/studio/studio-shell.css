@@ -8493,6 +8493,28 @@ html[data-reduce-motion] .modal-close:active {
   color: var(--ink-soft, #4a4466);
   opacity: 0.8;
 }
+/* 설정 줄의 링크 버튼(아트 보드 열기) — 셀렉트 트리거와 같은 금(金) 문법·높이. */
+.rhh-link {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--gs-metal-line-strong, #b9b6ae);
+  border-radius: var(--gs-metal-radius, 10px);
+  background: var(--gs-metal-sheen, #fff);
+  color: var(--gs-metal-ink, #3a3a44);
+  font-size: var(--text-ui);
+  font-weight: 800;
+  text-decoration: none;
+  transition: transform 0.16s var(--ease), background 0.16s var(--ease);
+}
+.rhh-link:hover {
+  background: var(--gs-metal-sheen-hover, #f5f3ee);
+}
+.rhh-link:active {
+  transform: scale(0.97);
+}
 
 /* 시청자 화면 전체보기: 스튜디오 대신 공개 화면만 꽉 채워 보여준다. */
 .viewer-fullscreen {

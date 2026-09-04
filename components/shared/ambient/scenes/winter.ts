@@ -19,6 +19,8 @@ import { ASSET, drawFacing, loadSprite, type Sprite } from "../assets";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import type { Weather } from "../world/weather";
+import { ArtSet } from "../art/load";
+import { scatterProps } from "../art/props";
 
 // 날씨(날짜 시드)별 눈송이 배수 — 눈 오는 날은 촘촘히, 맑은 날은 가끔 한 송이.
 const WEATHER_FLAKES: Record<Weather, number> = { snow: 1.8, cloud: 0.8, clear: 0.35, fog: 0.6, wind: 1.2, rain: 0.5 };
@@ -67,6 +69,9 @@ export function createWinter(seed: number): Scene {
   let gw = 0;
   let gh = 0;
   let gdpr = 0;
+  // 바탕 소품 아트(있으면 눈 무더기·관목·바위·마른 풀·잔가지가 눈밭에 놓인다) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
+  const groundArt = new ArtSet(["snow-pile", "shrub-winter", "rock", "grass-dry", "twig"]);
+  let gav = -1;
   const sprites = new Map<PrintKind, HTMLCanvasElement>();
   let rabbitSpr: Sprite | null = null;
   let shadow: HTMLCanvasElement | null = null;
@@ -326,11 +331,20 @@ export function createWinter(seed: number): Scene {
       g.arc(x, y, r, 0, TAU);
       g.fill();
     }
+    // 있을 때만 놓이는 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로. 눈밭은 비어 있는 게 맛이라 조금만.
+    scatterProps(g, groundArt, w, h, g0, [
+      { id: "snow-pile", n: 4 },
+      { id: "shrub-winter", n: 2 },
+      { id: "rock", n: 1 },
+      { id: "grass-dry", n: 6, band: "any" },
+      { id: "twig", n: 3, band: "any" }
+    ]);
     // (이미 지나간 자국은 바탕에 굽지 않는다 — 살아 있는 자국이어야 포인터로 지울 수 있다. resize에서 산 자국으로 심는다.)
     ground = c;
     gw = w;
     gh = h;
     gdpr = dpr;
+    gav = groundArt.version;
   }
 
   const areaK = () => clamp((w * h) / 1_440_000, 0.6, 1.6);
@@ -462,7 +476,7 @@ export function createWinter(seed: number): Scene {
     resize(f) {
       w = f.w;
       h = f.h;
-      if (!ground || gw !== w || gh !== h || gdpr !== f.dpr) bakeGround(f.dpr);
+      if (!ground || gw !== w || gh !== h || gdpr !== f.dpr || gav !== groundArt.version) bakeGround(f.dpr);
       // 이미 지나간 자국 두 줄 — 산 자국으로(포인터로 지울 수 있게). 한 번만.
       if (!seeded) {
         seeded = true;

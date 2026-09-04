@@ -1,0 +1,323 @@
+/* 앰비언트 아트 보드(2026-09-04, /studio/ambient-art) — 개발자 전용. 계절 배경의 모든 그림 자리를 한 화면에서: 지금 화면이 쓰는
+   대체물 ↔ 납품된 PNG, 자리 규격, 코덱스 프롬프트 복사. 금생수 문법(ADR-0016): 카드·칩 = 금(헤어라인·작은 라운드), 페이지 = 수. */
+.art-board {
+  --ab-gap: var(--space-4);
+  min-height: 100vh;
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  color: var(--gs-metal-ink, #3a3a44);
+  background: #f4f6f9;
+}
+.art-board-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ab-gap);
+  margin-bottom: var(--space-5);
+}
+.art-board-head h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+}
+.art-board-head p {
+  margin: 0;
+  font-size: var(--text-ui, 13px);
+  color: var(--ink-soft, #4a4466);
+  max-width: 68ch;
+}
+.art-board-head code {
+  padding: 1px 5px;
+  border: 1px solid var(--gs-metal-line, #d3d1cb);
+  border-radius: 6px;
+  background: var(--gs-metal-face, #fdfcf9);
+  font-size: 12px;
+}
+.art-board-stats {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.art-stat {
+  display: grid;
+  gap: 2px;
+  min-width: 96px;
+  padding: 10px 14px;
+  border: 1px solid var(--gs-metal-line, #d3d1cb);
+  border-radius: var(--gs-metal-radius, 10px);
+  background: var(--gs-metal-sheen, #fff);
+  box-shadow: var(--shadow-1);
+}
+.art-stat b {
+  font-size: 22px;
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.art-stat span {
+  font-size: var(--text-caption, 11px);
+  color: var(--ink-soft, #4a4466);
+}
+.art-board-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+.art-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--gs-metal-line-strong, #b9b6ae);
+  border-radius: var(--gs-metal-radius, 10px);
+  background: var(--gs-metal-sheen, #fff);
+  color: var(--gs-metal-ink, #3a3a44);
+  font: inherit;
+  font-size: var(--text-ui, 13px);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.16s var(--ease), background 0.16s var(--ease), border-color 0.16s var(--ease);
+}
+.art-btn:hover {
+  background: var(--gs-metal-sheen-hover, #f5f3ee);
+}
+.art-btn:active {
+  transform: scale(0.97);
+}
+.art-btn:focus-visible {
+  outline: 2px solid rgb(var(--gs-sea-rgb, 56 128 190) / 0.6);
+  outline-offset: 2px;
+}
+.art-btn.primary {
+  border-color: rgb(var(--gs-sea-rgb, 56 128 190) / 0.55);
+  background: linear-gradient(180deg, #eef6fc, #dcecf8);
+}
+.art-btn.small {
+  min-height: 28px;
+  padding: 0 9px;
+  font-size: var(--text-caption, 11px);
+}
+.art-board-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: var(--space-4);
+}
+.art-chip {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--gs-metal-line, #d3d1cb);
+  border-radius: 999px;
+  background: var(--gs-metal-face, #fdfcf9);
+  color: var(--ink-soft, #4a4466);
+  font: inherit;
+  font-size: var(--text-caption, 11px);
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.16s var(--ease), color 0.16s var(--ease), transform 0.16s var(--ease);
+}
+.art-chip:active {
+  transform: scale(0.96);
+}
+.art-chip[aria-pressed="true"] {
+  background: rgb(var(--gs-sea-rgb, 56 128 190) / 0.16);
+  border-color: rgb(var(--gs-sea-rgb, 56 128 190) / 0.5);
+  color: #244b6a;
+}
+.art-chip-sep {
+  width: 1px;
+  margin: 4px 4px;
+  background: var(--gs-metal-line, #d3d1cb);
+}
+.art-section {
+  margin: 0 0 var(--space-5);
+}
+.art-section h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0 0 var(--space-3);
+  font-size: 15px;
+  font-weight: 900;
+}
+.art-section h2 small {
+  font-size: var(--text-caption, 11px);
+  font-weight: 700;
+  color: var(--ink-soft, #4a4466);
+}
+.art-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--ab-gap);
+}
+.art-card {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--gs-metal-line, #d3d1cb);
+  border-radius: var(--gs-metal-radius, 10px);
+  background: var(--gs-metal-sheen, #fff);
+  box-shadow: var(--shadow-1);
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+.art-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+.art-card.done {
+  border-color: rgb(92 150 110 / 0.55);
+}
+.art-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.art-card-title strong {
+  font-size: 14px;
+  font-weight: 900;
+}
+.art-card-title code {
+  font-size: 11px;
+  color: var(--ink-soft, #4a4466);
+}
+.art-status {
+  flex: none;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--text-caption, 11px);
+  font-weight: 800;
+  border: 1px solid var(--gs-metal-line, #d3d1cb);
+  background: var(--gs-metal-face, #fdfcf9);
+  color: var(--ink-soft, #4a4466);
+}
+.art-status.done {
+  border-color: rgb(92 150 110 / 0.5);
+  background: rgb(92 150 110 / 0.12);
+  color: #2f5f42;
+}
+.art-status.partial {
+  border-color: rgb(var(--gs-sea-rgb, 56 128 190) / 0.4);
+  background: rgb(var(--gs-sea-rgb, 56 128 190) / 0.1);
+  color: #244b6a;
+}
+.art-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.art-pane {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  gap: 4px;
+}
+.art-pane > span {
+  font-size: var(--text-caption, 11px);
+  font-weight: 800;
+  color: var(--ink-soft, #4a4466);
+}
+.art-cell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 120px;
+  border: 1px solid var(--gs-metal-line, #d3d1cb);
+  border-radius: 8px;
+  overflow: hidden;
+  /* 체크무늬 — 투명 PNG의 여백이 보이게 */
+  background-color: #eef1f5;
+  background-image: linear-gradient(45deg, #e2e6ec 25%, transparent 25%, transparent 75%, #e2e6ec 75%),
+    linear-gradient(45deg, #e2e6ec 25%, transparent 25%, transparent 75%, #e2e6ec 75%);
+  background-size: 14px 14px;
+  background-position: 0 0, 7px 7px;
+}
+.art-cell.ground-spring { background: #dbe9cf; background-image: none; }
+.art-cell.ground-summer { background: #bcd7e8; background-image: none; }
+.art-cell.ground-autumn { background: #e6dcc6; background-image: none; }
+.art-cell.ground-winter { background: #f0f4f9; background-image: none; }
+.art-cell canvas,
+.art-cell img {
+  max-width: 88%;
+  max-height: 88%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  image-rendering: auto;
+}
+.art-cell .art-empty {
+  font-size: var(--text-caption, 11px);
+  color: var(--ink-soft, #4a4466);
+  text-align: center;
+  padding: 0 8px;
+}
+.art-cell .art-files {
+  position: absolute;
+  right: 6px;
+  bottom: 4px;
+  font-size: 10px;
+  color: var(--ink-soft, #4a4466);
+  opacity: 0.8;
+}
+.art-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: var(--text-caption, 11px);
+  color: var(--ink-soft, #4a4466);
+}
+.art-meta b {
+  font-weight: 800;
+  color: var(--gs-metal-ink, #3a3a44);
+}
+.art-brief {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #3f3f4a;
+}
+.art-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.art-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 50;
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border: 1px solid var(--gs-metal-line-strong, #b9b6ae);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.96);
+  box-shadow: var(--shadow-2);
+  font-size: var(--text-ui, 13px);
+  font-weight: 800;
+  animation: art-toast-in 0.24s var(--ease-enter, var(--ease)) both;
+}
+@keyframes art-toast-in {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+html[data-reduce-motion] .art-toast { animation: none; }
+html[data-reduce-motion] .art-card:hover { transform: none; }
+.art-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--text-caption, 11px);
+  font-weight: 800;
+  color: var(--ink-soft, #4a4466);
+  text-decoration: none;
+}
+.art-back:hover { text-decoration: underline; }
+@media (max-width: 640px) {
+  .art-board { padding: var(--space-4); }
+  .art-grid { grid-template-columns: 1fr; }
+  .art-board-head h1 { font-size: 18px; }
+}

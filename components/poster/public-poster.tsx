@@ -4403,6 +4403,8 @@ export function PublicPoster({
                               className={`dvm-cover${dayVodLive.has(vod.titleNo) ? " is-gone" : ""}`}
                             >
                               {vod.thumbQuery ? (
+                                // SOOP 스냅샷은 외부 호스트(원격 패턴 없음)·크기 미정이라 next/image 대신 <img>.
+                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   alt=""
                                   src={`https://videoimg.sooplive.com/php/SnapshotLoad.php?${vod.thumbQuery}`}

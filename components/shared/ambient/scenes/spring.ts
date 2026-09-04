@@ -27,6 +27,8 @@
 import type { Frame, Scene } from "../scene-engine";
 import { ASSET, drawFacing, drawSprite, loadSprite, type Sprite } from "../assets";
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
+import { ArtSet } from "../art/load";
+import { drawProp, scatterProps } from "../art/props";
 import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, threat } from "./util";
 
 const WINGS = [
@@ -115,6 +117,9 @@ export function createSpring(seed: number): Scene {
   let gw = 0;
   let gh = 0;
   let gdpr = 0;
+  // 바탕 소품 아트(클로버·데이지·풀포기·민들레 + 있으면 관목·바위·그루터기·민들레 꽃) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
+  const groundArt = new ArtSet(["clover", "daisy", "grass-tuft", "dandelion-puff", "dandelion-flower", "shrub-spring", "rock", "stump"]);
+  let gav = -1;
   let shadow: HTMLCanvasElement | null = null;
   let traceBakes: TraceBakes | null = null; // 연대기(지난 가을 저장소의 싹·나무·두더지 흙더미) 렌더
   let petalSpr: HTMLCanvasElement | null = null;
@@ -180,35 +185,17 @@ export function createSpring(seed: number): Scene {
     for (let i = 0; i < patches; i++) {
       softBlob(g, g0() * w, g0() * h, 120 + g0() * 260, g0() < 0.5 ? "150 196 120" : "232 244 214", 0.16);
     }
+    // 소품은 전부 drawProp(art/props.ts) — 아트 파일이 있으면 그 그림, 없으면 대체물(옛 도형). 자리는 결정적(같은 g0 순서).
     const clovers = Math.round((w * h) / 60000);
-    for (let i = 0; i < clovers; i++) {
-      const x = g0() * w;
-      const y = g0() * h;
-      g.fillStyle = "rgb(96 150 92 / 0.55)";
-      for (let k = 0; k < 3; k++) {
-        const a = (k / 3) * TAU + g0() * 0.3;
-        g.beginPath();
-        g.ellipse(x + Math.cos(a) * 3.2, y + Math.sin(a) * 3.2, 3.4, 2.6, a, 0, TAU);
-        g.fill();
-      }
-    }
+    for (let i = 0; i < clovers; i++) drawProp(g, groundArt, "clover", g0() * w, g0() * h, { k: 0.8 + g0() * 0.5, rot: g0() * TAU, r: g0() });
     daisies.length = 0;
     const nd = Math.round((w * h) / 80000);
     for (let i = 0; i < nd; i++) {
       const x = g0() * w;
       const y = g0() * h;
       daisies.push([x, y]);
-      g.fillStyle = "rgb(255 255 255 / 0.92)";
-      for (let k = 0; k < 6; k++) {
-        const a = (k / 6) * TAU;
-        g.beginPath();
-        g.ellipse(x + Math.cos(a) * 4.2, y + Math.sin(a) * 4.2, 3.2, 1.9, a, 0, TAU);
-        g.fill();
-      }
-      g.fillStyle = "rgb(240 214 120 / 0.95)";
-      g.beginPath();
-      g.arc(x, y, 2.3, 0, TAU);
-      g.fill();
+      // 데이지의 (x,y) = 꽃 얼굴(벌·나비가 앉는 자리) — 서 있는 그림은 발을 그 아래 8px에 둔다.
+      drawProp(g, groundArt, "daisy", x, y + 8, { k: 0.9 + g0() * 0.3, r: g0(), flip: g0() < 0.5 });
     }
     const nPetals = Math.round((w * h) / 120000);
     for (let i = 0; i < nPetals; i++) {
@@ -217,28 +204,19 @@ export function createSpring(seed: number): Scene {
       g.ellipse(g0() * w, g0() * h, 4, 2.4, g0() * TAU, 0, TAU);
       g.fill();
     }
+    // 있을 때만 놓이는 큰 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
+    scatterProps(g, groundArt, w, h, g0, [
+      { id: "shrub-spring", n: 3 },
+      { id: "rock", n: 2 },
+      { id: "stump", n: 1 },
+      { id: "dandelion-flower", n: 6, band: "any" }
+    ]);
     ground = c;
     // 풀포기 층 — 바람에 흔들리는 것만 따로.
     const b = makeCanvas(w * dpr, h * dpr);
     b.g.scale(dpr, dpr);
-    b.g.lineCap = "round";
     const tufts = Math.round((w * h) / 1500);
-    for (let i = 0; i < tufts; i++) {
-      const x = g0() * w;
-      const y = g0() * h;
-      const n = 2 + Math.floor(g0() * 2);
-      for (let k = 0; k < n; k++) {
-        const len = 6 + g0() * 8;
-        const a = -Math.PI / 2 + (g0() - 0.5) * 1.5;
-        const bend = (g0() - 0.5) * 6;
-        b.g.strokeStyle = g0() < 0.5 ? "rgb(140 190 118 / 0.62)" : "rgb(112 168 104 / 0.55)";
-        b.g.lineWidth = 1.2 + g0() * 0.8;
-        b.g.beginPath();
-        b.g.moveTo(x + k * 2 - 2, y);
-        b.g.quadraticCurveTo(x + k * 2 - 2 + bend, y + Math.sin(a) * len * 0.5, x + k * 2 - 2 + Math.cos(a) * len, y + Math.sin(a) * len);
-        b.g.stroke();
-      }
-    }
+    for (let i = 0; i < tufts; i++) drawProp(b.g, groundArt, "grass-tuft", g0() * w, g0() * h, { k: 0.7 + g0() * 0.6, r: g0(), flip: g0() < 0.5, alpha: 0.9 });
     blades = b.c;
     // 민들레 자리(4~7) — 데이지에서 떨어진 곳.
     dands.length = 0;
@@ -249,6 +227,7 @@ export function createSpring(seed: number): Scene {
     gw = w;
     gh = h;
     gdpr = dpr;
+    gav = groundArt.version;
   }
   function bakeSprites() {
     if (petalSpr) return;
@@ -583,7 +562,7 @@ export function createSpring(seed: number): Scene {
       w = f.w;
       h = f.h;
       bakeSprites();
-      if (!ground || gw !== w || gh !== h || gdpr !== f.dpr) bakeGround(f.dpr);
+      if (!ground || gw !== w || gh !== h || gdpr !== f.dpr || gav !== groundArt.version) bakeGround(f.dpr);
       if (!flies.length) {
         const n = flyTarget(f);
         while (flies.length < n) flies.push(newFly(f.t, false));
@@ -1027,6 +1006,11 @@ export function createSpring(seed: number): Scene {
           const age = t - d.born;
           const pop = age < 0.6 ? 1 + 0.35 * Math.sin((age / 0.6) * Math.PI) : 1;
           const k = d.k * Math.min(1, age / 0.25) * pop;
+          if (groundArt.has("dandelion-puff")) {
+            // 아트 — 홀씨 머리 중심이 (d.x, d.y)에 오게(홀씨는 거기서 날아간다), 발은 그 아래.
+            drawProp(g, groundArt, "dandelion-puff", d.x, d.y + 16 * k, { k: k * 1.25 });
+            continue;
+          }
           g.save();
           g.translate(d.x, d.y);
           g.strokeStyle = "rgb(120 165 100 / 0.7)";

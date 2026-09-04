@@ -1,27 +1,45 @@
 // 연대기 흔적 렌더(2026-09-04, Phase A) — chronicle()이 준 흔적을 계절 장면 위에 그린다. 장면은 바탕을 그린 뒤 생물 전에 한 번
 // `drawTraces(g, f, season, bakes)`를 부른다. 스프라이트는 한 번 굽는다(식물·무생물은 우리 그림 — 동물은 여기 없다).
-//  · 저장소(cache) = 흙더미 · 싹(sprout) = Noto 🌱(세워 그림) · 묘목(sapling) = Noto 🌿 · 나무(tree) = 위에서 본 캐노피(계절색; 겨울은
-//    헐벗은 잔가지) + 발밑 그림자 · 두더지 흙더미(molehill) = 흙더미(여름엔 풀 얼룩) · 눈사람(snowman) = 공 1~3 + 나뭇가지 팔 ·
-//    연잎(lilypad) = 갈라진 둥근 잎 + 물빛 그늘.
+//  · 저장소(cache) = 흙더미 · 싹(sprout) · 묘목(sapling) · 나무(tree) · 두더지 흙더미(molehill, 여름엔 풀 얼룩) · 눈사람(snowman) · 연잎(lilypad).
+//  · **아트 우선(2026-09-04, art/manifest.ts)**: `public/ambient/art/<id>.png`가 있으면 그 그림(나무 = 동물의 숲 카메라로 세운 그림,
+//    발밑 그림자는 여기서), 없으면 옛 대체물(코드 도형·Noto 이모지). 소품은 `drawProp`(art/props.ts)로 한 API.
 // 좌표는 정규화(u,v) → 캔버스 px. 핫 존(달력) 안에 떨어지면 그리지 않는다(어차피 가려진다; 캔버스 비용도 아낀다).
 
 import type { Frame } from "@/components/shared/ambient/scene-engine";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { ASSET, loadSprite, type Sprite } from "@/components/shared/ambient/assets";
-import { makeCanvas, rng, shadowSprite, softBlob, TAU } from "@/components/shared/ambient/scenes/util";
+import { ArtSet, drawArt } from "@/components/shared/ambient/art/load";
+import { drawProp } from "@/components/shared/ambient/art/props";
+import { makeCanvas, rng, shadowSprite, TAU } from "@/components/shared/ambient/scenes/util";
 
 export type TraceBakes = {
-  mound: HTMLCanvasElement;
-  mole: HTMLCanvasElement;
-  patch: HTMLCanvasElement;
   shadow: HTMLCanvasElement;
-  canopy: Map<string, HTMLCanvasElement>; // `${season}:${age}`
+  canopy: Map<string, HTMLCanvasElement>; // `${season}:${R}`
   bare: Map<number, HTMLCanvasElement>;
-  snowman: Map<number, HTMLCanvasElement>;
-  lily: HTMLCanvasElement;
   sprout: Sprite | null;
   sapling: Sprite | null;
+  /** 아트 자리(있는 것만 쓴다) */
+  art: ArtSet;
 };
+
+const TRACE_ART = [
+  "tree-oak-spring",
+  "tree-oak-summer",
+  "tree-oak-autumn",
+  "tree-oak-winter",
+  "sapling-green",
+  "sapling-autumn",
+  "sapling-bare",
+  "sprout",
+  "soil-mound",
+  "molehill",
+  "grass-patch",
+  "lilypad",
+  "lotus",
+  "snowman-1",
+  "snowman-2",
+  "snowman-3"
+] as const;
 
 const CANOPY: Record<SeasonKey, string[]> = {
   spring: ["#8fb07a", "#7aa068", "#a3c08c"],
@@ -31,97 +49,23 @@ const CANOPY: Record<SeasonKey, string[]> = {
 };
 
 export function bakeTraces(): TraceBakes {
-  // 흙더미 — 가을 장면의 것과 같은 문법(작은 갈색 봉우리, 옅은 테).
-  const mound = makeCanvas(26, 16);
-  {
-    const g = mound.g;
-    g.translate(13, 8);
-    g.scale(1, 16 / 26);
-    const rg = g.createRadialGradient(0, 0, 0, 0, 0, 13);
-    rg.addColorStop(0, "rgb(88 66 46 / 0.55)");
-    rg.addColorStop(0.55, "rgb(120 95 70 / 0.5)");
-    rg.addColorStop(0.82, "rgb(152 128 98 / 0.4)");
-    rg.addColorStop(1, "rgb(152 128 98 / 0)");
-    g.fillStyle = rg;
-    g.beginPath();
-    g.arc(0, 0, 13, 0, TAU);
-    g.fill();
-  }
-  // 두더지 흙더미 — 봉긋한 새 흙(따뜻한 갈색, 위쪽 빛·아래쪽 그늘). 잔디 위에서 회색 얼룩으로 읽히지 않게 저장소 흙더미보다 크고 따뜻하다.
-  const mole = makeCanvas(34, 22);
-  {
-    const g = mole.g;
-    g.translate(17, 12);
-    softBlob(g, 1, 3, 15, "60 46 34", 0.22, 0); // 발밑 그늘
-    g.save();
-    g.scale(1, 0.62);
-    const rg = g.createRadialGradient(-4, -5, 1, 0, 0, 14);
-    rg.addColorStop(0, "#a8896a");
-    rg.addColorStop(0.6, "#8a6a4c");
-    rg.addColorStop(1, "#6f543c");
-    g.fillStyle = rg;
-    g.beginPath();
-    g.arc(0, 0, 14, 0, TAU);
-    g.fill();
-    g.restore();
-    // 흙 알갱이 몇 점.
-    g.fillStyle = "rgb(60 46 34 / 0.45)";
-    for (const [x, y] of [[-6, -2], [3, -4], [7, 2], [-2, 4], [1, -1]] as const) {
-      g.beginPath();
-      g.arc(x, y, 0.9, 0, TAU);
-      g.fill();
-    }
-  }
-  // 풀 얼룩(여름 두더지 자리) — 조금 더 진한 초록 얼룩.
-  const patch = makeCanvas(40, 28);
-  softBlob(patch.g, 20, 14, 18, "96 150 92", 0.28, 0);
-  const lily = makeCanvas(64, 64);
-  {
-    const g = lily.g;
-    g.translate(32, 32);
-    // 연잎 — 둥근 잎에 한 곳 V자 갈라짐, 잎맥 몇 줄, 가장자리 살짝 밝게.
-    g.beginPath();
-    g.moveTo(0, 0);
-    g.arc(0, 0, 28, 0.35, TAU - 0.35);
-    g.closePath();
-    const rg = g.createRadialGradient(-6, -6, 2, 0, 0, 28);
-    rg.addColorStop(0, "#8fb894");
-    rg.addColorStop(1, "#5f8f6c");
-    g.fillStyle = rg;
-    g.fill();
-    g.strokeStyle = "rgb(255 255 250 / 0.35)";
-    g.lineWidth = 1.2;
-    g.stroke();
-    g.strokeStyle = "rgb(60 100 70 / 0.35)";
-    g.lineWidth = 0.9;
-    for (let i = 0; i < 7; i++) {
-      const a = 0.9 + (i / 6) * (TAU - 1.8);
-      g.beginPath();
-      g.moveTo(0, 0);
-      g.lineTo(Math.cos(a) * 24, Math.sin(a) * 24);
-      g.stroke();
-    }
-  }
   const bakes: TraceBakes = {
-    mound: mound.c,
-    mole: mole.c,
-    patch: patch.c,
     shadow: shadowSprite(96, 96, "40 34 30", 0.5),
     canopy: new Map(),
     bare: new Map(),
-    snowman: new Map(),
-    lily: lily.c,
     sprout: null,
-    sapling: null
+    sapling: null,
+    // 나무는 키에 따라 크게 확대되므로 3배로 굽는다.
+    art: new ArtSet(TRACE_ART, { scale: 2, scaleOf: { "tree-oak-spring": 3, "tree-oak-summer": 3, "tree-oak-autumn": 3, "tree-oak-winter": 3 } })
   };
   void loadSprite(ASSET.sprout, 28, 28).then((s) => (bakes.sprout = s)).catch(() => {});
   void loadSprite(ASSET.herb, 40, 40).then((s) => (bakes.sapling = s)).catch(() => {});
   return bakes;
 }
 
-// 캐노피 — 위에서 본 나무: 둥근 잎 뭉치 여러 개(반지름 R만큼 큼), 안쪽이 어둡고 바깥이 밝다. 결정적(R·계절별 한 장).
+// 캐노피(대체물) — 위에서 본 나무: 둥근 잎 뭉치 여러 개(반지름 R만큼 큼), 안쪽이 어둡고 바깥이 밝다. 결정적(R·계절별 한 장).
 const treeRadius = (age: number) => 26 + Math.min(5, age) * 8;
-function canopySprite(season: SeasonKey, R: number): HTMLCanvasElement {
+export function canopyTreeSprite(season: SeasonKey, R: number): HTMLCanvasElement {
   const S = R * 2 + 12;
   const { c, g } = makeCanvas(S, S);
   const r = rng(1000 + R * 7);
@@ -137,7 +81,6 @@ function canopySprite(season: SeasonKey, R: number): HTMLCanvasElement {
     g.arc(Math.cos(a) * d, Math.sin(a) * d, rr, 0, TAU);
     g.fill();
   }
-  // 안쪽 그늘·바깥 빛 — 위에서 본 둥근 덩어리 느낌.
   const sh = g.createRadialGradient(0, 0, R * 0.2, 0, 0, R);
   sh.addColorStop(0, "rgb(30 40 24 / 0.22)");
   sh.addColorStop(0.7, "rgb(30 40 24 / 0.05)");
@@ -148,9 +91,9 @@ function canopySprite(season: SeasonKey, R: number): HTMLCanvasElement {
   g.fill();
   return c;
 }
-// 헐벗은 나무(겨울) — 위에서 본 수관(樹冠)은 곧은 살이 아니라 **갈라지는 가지의 그물**이다(곧은 살 8개 = 거미로 읽혔다, 2026-09-04 실측).
-// 줄기에서 주가지 4~5 → 세 번 갈라지며 가늘어진다(끝은 0.6px). 가지 위엔 눈(흰 선 살짝 어긋나게), 안쪽은 옅은 둥근 그늘.
-function bareSprite(R: number): HTMLCanvasElement {
+// 헐벗은 나무(대체물, 겨울) — 위에서 본 수관은 곧은 살이 아니라 **갈라지는 가지의 그물**(곧은 살 8개 = 거미로 읽혔다). 소유자 2026-09-04:
+// "말미잘 같다" → 아트(tree-oak-winter.png)가 오면 그것으로 대체된다.
+export function bareTreeSprite(R: number): HTMLCanvasElement {
   const S = R * 2 + 12;
   const { c, g } = makeCanvas(S, S);
   const r = rng(500 + R * 11);
@@ -169,7 +112,6 @@ function bareSprite(R: number): HTMLCanvasElement {
     g.moveTo(x, y);
     g.quadraticCurveTo(mx, my, ex, ey);
     g.stroke();
-    // 눈 — 가지의 위쪽(화면 위 = 북서쪽 빛) 한 올.
     g.strokeStyle = `rgb(255 255 255 / ${0.55 - depth * 0.08})`;
     g.lineWidth = Math.max(0.5, width * 0.5);
     g.beginPath();
@@ -187,7 +129,6 @@ function bareSprite(R: number): HTMLCanvasElement {
   const mains = 4 + (r() < 0.5 ? 1 : 0);
   const off = r() * TAU;
   for (let i = 0; i < mains; i++) branch(0, 0, off + (i / mains) * TAU + (r() - 0.5) * 0.5, R * (0.42 + r() * 0.14), 0, 2.6);
-  // 줄기 마디 — 위에서 본 줄기 끝(작은 갈색 원)과 그 위의 눈.
   g.fillStyle = "rgb(84 70 60)";
   g.beginPath();
   g.arc(0, 0, 3.2, 0, TAU);
@@ -198,50 +139,28 @@ function bareSprite(R: number): HTMLCanvasElement {
   g.fill();
   return c;
 }
-// 눈사람 — 단계별 공(1~3) + 완성엔 나뭇가지 팔·석탄 눈·(무채색) 단추. 위에서 본 것이 아니라 세워 그린 소품(오리와 같은 규칙).
-function snowmanSprite(stage: number): HTMLCanvasElement {
-  const S = 72;
-  const { c, g } = makeCanvas(S, S);
-  g.translate(S / 2, S - 6);
-  const ball = (cx: number, cy: number, rr: number) => {
-    const rg = g.createRadialGradient(cx - rr * 0.35, cy - rr * 0.4, rr * 0.1, cx, cy, rr);
-    rg.addColorStop(0, "#ffffff");
-    rg.addColorStop(0.8, "#e9eef3");
-    rg.addColorStop(1, "#c9d4de");
-    g.fillStyle = rg;
-    g.beginPath();
-    g.arc(cx, cy, rr, 0, TAU);
-    g.fill();
-  };
-  ball(0, -16, 16);
-  if (stage >= 2) ball(0, -38, 12);
-  if (stage >= 3) {
-    ball(0, -55, 9);
-    g.strokeStyle = "rgb(84 70 60)";
-    g.lineWidth = 2;
-    g.lineCap = "round";
-    g.beginPath();
-    g.moveTo(-11, -40);
-    g.lineTo(-24, -50);
-    g.moveTo(11, -40);
-    g.lineTo(24, -50);
-    g.stroke();
-    g.fillStyle = "#3b3f46";
-    for (const [x, y, r] of [[-3, -57, 1.3], [3, -57, 1.3], [0, -36, 1.2], [0, -30, 1.2]] as const) {
-      g.beginPath();
-      g.arc(x, y, r, 0, TAU);
-      g.fill();
-    }
-  }
-  return c;
-}
 
-// 나무 한 그루(반지름 R) — 겨울은 헐벗은 가지, 그 외는 계절색 캐노피 + 해 방향 그림자(새벽·아침 = 서쪽, 노을·저녁 = 동쪽).
+// 나무 한 그루(수관 반지름 R, (x,y) = 수관 중심 자리) — 아트가 있으면 동물의 숲 카메라로 세운 그림(발은 y + 0.9R, 수관 폭 ≈ 2R,
+// 발밑 타원 그림자 + 해 방향), 없으면 대체물(겨울 = 헐벗은 가지, 그 외 = 계절색 캐노피).
 function drawTree(g: CanvasRenderingContext2D, f: Frame, season: SeasonKey, b: TraceBakes, x: number, y: number, R: number) {
+  const h = f.time.hour;
+  const dx = h < 12 ? -10 - Math.max(0, 11 - h) * 2 : 10 + Math.max(0, h - 13) * 2;
+  const art = b.art.get(`tree-oak-${season}`);
+  if (art) {
+    const k = (2 * R) / art.w;
+    const base = y + R * 0.9;
+    g.save();
+    g.globalAlpha = 0.26;
+    g.translate(x + dx * 0.35, base - 2);
+    g.drawImage(b.shadow, -R * 0.95, -R * 0.3, R * 1.9, R * 0.6);
+    g.restore();
+    drawArt(g, art, x, base, k);
+    return;
+  }
   if (season === "winter") {
     let s = b.bare.get(R);
     if (!s) {
-      s = bareSprite(R);
+      s = bareTreeSprite(R);
       b.bare.set(R, s);
     }
     g.save();
@@ -255,17 +174,42 @@ function drawTree(g: CanvasRenderingContext2D, f: Frame, season: SeasonKey, b: T
   const key = `${season}:${R}`;
   let s = b.canopy.get(key);
   if (!s) {
-    s = canopySprite(season, R);
+    s = canopyTreeSprite(season, R);
     b.canopy.set(key, s);
   }
-  const h = f.time.hour;
-  const dx = h < 12 ? -10 - Math.max(0, 11 - h) * 2 : 10 + Math.max(0, h - 13) * 2;
   g.save();
   g.globalAlpha = 0.28;
   g.translate(x + dx * 0.5, y + 10);
   g.drawImage(b.shadow, -s.width * 0.55, -s.height * 0.5, s.width * 1.1, s.height);
   g.restore();
   g.drawImage(s, x - s.width / 2, y - s.height / 2);
+}
+
+// 싹·묘목 — 아트가 있으면 그것(바닥 접점 = y + 4), 없으면 Noto 이모지(옛 자리 그대로).
+function drawSprout(g: CanvasRenderingContext2D, b: TraceBakes, x: number, y: number, k: number) {
+  g.save();
+  g.globalAlpha = 0.28;
+  g.translate(x + 2, y + 4);
+  g.drawImage(b.shadow, -9 * k, -5 * k, 18 * k, 10 * k);
+  g.restore();
+  if (b.art.has("sprout")) {
+    drawProp(g, b.art, "sprout", x, y + 4, { k });
+    return;
+  }
+  if (b.sprout) g.drawImage(b.sprout.c, x - 14 * k, y - 24 * k, 28 * k, 28 * k);
+}
+function drawSapling(g: CanvasRenderingContext2D, season: SeasonKey, b: TraceBakes, x: number, y: number, k: number) {
+  g.save();
+  g.globalAlpha = 0.3;
+  g.translate(x + 3, y + 5);
+  g.drawImage(b.shadow, -13 * k, -7 * k, 26 * k, 14 * k);
+  g.restore();
+  const id = season === "winter" ? "sapling-bare" : season === "autumn" ? "sapling-autumn" : "sapling-green";
+  if (b.art.has(id)) {
+    drawProp(g, b.art, id, x, y + 5, { k });
+    return;
+  }
+  if (b.sapling) g.drawImage(b.sapling.c, x - 20 * k, y - 34 * k, 40 * k, 40 * k);
 }
 
 // 여름 물가 — 물 장면의 위 띠는 **뭍**이다(계획서 §3.2 "물가": 갈대·통나무가 서는 가장자리). 땅의 흔적(데뷔 나무·나무·싹·흙더미)이
@@ -276,14 +220,12 @@ export function bakeShore(w: number, h: number): HTMLCanvasElement {
   const { c, g } = makeCanvas(Math.max(1, w), H);
   const r = rng(77 + w);
   const edge = H - 24;
-  // 모래빛 바탕 → 물 쪽으로 옅어진다.
   const grad = g.createLinearGradient(0, 0, 0, H);
   grad.addColorStop(0, "rgb(226 216 192 / 0.92)");
   grad.addColorStop(0.7, "rgb(222 212 188 / 0.85)");
   grad.addColorStop(1, "rgb(222 212 188 / 0)");
   g.fillStyle = grad;
   g.fillRect(0, 0, w, H);
-  // 물가 선 — 살짝 굽이치는 흰 거품 선 + 젖은 모래(진한 띠).
   g.beginPath();
   for (let x = 0; x <= w; x += 12) {
     const y = edge + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5;
@@ -296,7 +238,6 @@ export function bakeShore(w: number, h: number): HTMLCanvasElement {
   g.strokeStyle = "rgb(255 255 250 / 0.75)";
   g.lineWidth = 1.6;
   g.stroke();
-  // 풀포기·조약돌 — 봄 바탕과 같은 문법으로 조금만.
   g.lineCap = "round";
   const tufts = Math.round(w / 14);
   for (let i = 0; i < tufts; i++) {
@@ -327,6 +268,7 @@ export function bakeShore(w: number, h: number): HTMLCanvasElement {
 }
 
 const LAND_KINDS = new Set(["cache", "sprout", "sapling", "tree", "molehill", "snowman", "debut"]);
+const hash01 = (a: number, b: number) => (((Math.sin(a * 12.9898 + b * 78.233) * 43758.5453) % 1) + 1) % 1;
 
 /** 흔적을 그린다 — 바탕 뒤·생물 앞. hideCaches = 장면이 저장소를 제 흙더미 시스템으로 그릴 때(가을) 중복을 피한다.
  *  landOnShore = 물 장면(여름): 땅의 흔적은 기슭 띠(v ≤ SHORE_V) 안에 있는 것만 그린다. */
@@ -341,97 +283,54 @@ export function drawTraces(g: CanvasRenderingContext2D, f: Frame, season: Season
     switch (t.kind) {
       case "cache":
         if (opts.hideCaches) break;
-        g.save();
-        g.globalAlpha = t.stage === 1 ? 0.7 : 0.55;
-        g.drawImage(b.mound, x - 13, y - 8);
-        g.restore();
+        drawProp(g, b.art, "soil-mound", x, y, { alpha: t.stage === 1 ? 0.7 : 0.55 });
         break;
       case "molehill":
-        if (t.stage === 1) g.drawImage(b.patch, x - 20, y - 14);
-        else g.drawImage(b.mole, x - 17, y - 12);
+        if (t.stage === 1) drawProp(g, b.art, "grass-patch", x, y);
+        else drawProp(g, b.art, "molehill", x, y + 8);
         break;
       case "sprout":
-        if (b.sprout) {
-          const k = 0.6 + 0.5 * t.stage;
-          g.save();
-          g.globalAlpha = 0.28;
-          g.translate(x + 2, y + 4);
-          g.drawImage(b.shadow, -9 * k, -5 * k, 18 * k, 10 * k);
-          g.restore();
-          g.drawImage(b.sprout.c, x - (14 * k), y - 24 * k, 28 * k, 28 * k);
-        }
+        drawSprout(g, b, x, y, 0.6 + 0.5 * t.stage);
         break;
       case "sapling":
-        if (b.sapling) {
-          const k = 0.7 + 0.5 * t.stage;
-          g.save();
-          g.globalAlpha = 0.3;
-          g.translate(x + 3, y + 5);
-          g.drawImage(b.shadow, -13 * k, -7 * k, 26 * k, 14 * k);
-          g.restore();
-          g.drawImage(b.sapling.c, x - 20 * k, y - 34 * k, 40 * k, 40 * k);
-        }
+        drawSapling(g, season, b, x, y, 0.7 + 0.5 * t.stage);
         break;
       case "tree":
         drawTree(g, f, season, b, x, y, treeRadius(t.stage));
         break;
       case "debut": {
-        // 데뷔 나무 — 2023-05 씨앗(흙더미) → 2025-10-01 싹 → 실제 키(cm)로 자란다: 15cm까지 싹 🌱, 80cm까지 어린 나무 🌿,
-        // 그 뒤는 키에 비례하는 캐노피(위에서 본 수관 반지름 ≈ 키의 1/12, 상한 84px). 겨울엔 헐벗은 가지.
+        // 데뷔 나무 — 2023-05 씨앗(흙더미) → 2025-10-01 싹 → 실제 키(cm)로 자란다: 15cm까지 싹, 80cm까지 어린 나무,
+        // 그 뒤는 키에 비례하는 수관(반지름 ≈ 키의 1/12, 상한 84px). 겨울엔 헐벗은 가지.
         const hcm = t.stage;
-        if (hcm <= 0) {
-          g.save();
-          g.globalAlpha = 0.6;
-          g.drawImage(b.mound, x - 13, y - 8);
-          g.restore();
-        } else if (hcm < 15 && b.sprout) {
-          const k = 0.6 + (hcm / 15) * 0.5;
-          g.save();
-          g.globalAlpha = 0.28;
-          g.translate(x + 2, y + 4);
-          g.drawImage(b.shadow, -9 * k, -5 * k, 18 * k, 10 * k);
-          g.restore();
-          g.drawImage(b.sprout.c, x - 14 * k, y - 24 * k, 28 * k, 28 * k);
-        } else if (hcm < 80 && b.sapling) {
-          const k = 0.8 + ((hcm - 15) / 65) * 0.9;
-          g.save();
-          g.globalAlpha = 0.3;
-          g.translate(x + 3, y + 5);
-          g.drawImage(b.shadow, -13 * k, -7 * k, 26 * k, 14 * k);
-          g.restore();
-          g.drawImage(b.sapling.c, x - 20 * k, y - 34 * k, 40 * k, 40 * k);
-        } else {
+        if (hcm <= 0) drawProp(g, b.art, "soil-mound", x, y, { alpha: 0.6 });
+        else if (hcm < 15) drawSprout(g, b, x, y, 0.6 + (hcm / 15) * 0.5);
+        else if (hcm < 80) drawSapling(g, season, b, x, y, 0.8 + ((hcm - 15) / 65) * 0.9);
+        else {
           const R = Math.round(Math.min(84, 14 + hcm / 12) / 4) * 4;
           drawTree(g, f, season, b, x, y, R);
         }
         break;
       }
       case "snowman": {
-        let s = b.snowman.get(t.stage);
-        if (!s) {
-          s = snowmanSprite(t.stage);
-          b.snowman.set(t.stage, s);
-        }
         g.save();
         g.globalAlpha = 0.25;
         g.translate(x + 2, y + 3);
         g.drawImage(b.shadow, -22, -9, 44, 18);
         g.restore();
-        g.drawImage(s, x - s.width / 2, y - s.height + 8);
+        drawProp(g, b.art, `snowman-${Math.max(1, Math.min(3, t.stage))}`, x, y + 8);
         break;
       }
       case "lilypad": {
+        // 연잎 — 아트(변형 3)나 대체물(두께 있는 잎); 물그늘은 살짝 오른쪽 아래(잎이 물 위에 '떠 있다'). 연꽃 아트가 있으면 3할의 잎에 한 송이.
         const k = t.stage;
+        const v = hash01(t.u, t.v);
         g.save();
-        g.globalAlpha = 0.28;
+        g.globalAlpha = 0.26;
         g.translate(x + 2, y + 3);
-        g.drawImage(b.shadow, -34 * k, -34 * k, 68 * k, 68 * k);
+        g.drawImage(b.shadow, -30 * k, -30 * k, 60 * k, 60 * k);
         g.restore();
-        g.save();
-        g.translate(x, y);
-        g.rotate((t.u * 7 + t.v * 5) % TAU);
-        g.drawImage(b.lily, -32 * k, -32 * k, 64 * k, 64 * k);
-        g.restore();
+        drawProp(g, b.art, "lilypad", x, y, { k, rot: (t.u * 7 + t.v * 5) % TAU, r: v });
+        if (v < 0.3 && b.art.has("lotus")) drawProp(g, b.art, "lotus", x + 4 * k, y + 2 * k, { k: 0.8 + 0.3 * k });
         break;
       }
     }

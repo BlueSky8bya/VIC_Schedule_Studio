@@ -140,6 +140,21 @@ design rule for owner-facing surfaces (studio first, poster only as brand tone):
   spiral-chase each other, bask with open wings in the sun patches; ladybug plays dead (thanatosis) before flying off; bee
   traplines the nearest unvisited daisies, hovers before landing, feeds, goes home after a bout, circles the pointer when
   swatted. New behavior must cite the animal's real ethology in a comment and expose counters in `debug()`.
+- **Art slots + the Animal Crossing camera (2026-09-04, ADR-0017 ⑮).** Every picture the ambient scenes place (trees, saplings,
+  sprouts, shrubs, grass, flowers, mushrooms, reeds, lily pads, mounds, twigs, pebbles, rocks, stumps, logs, snowmen, and — phase 2 —
+  every species) is a **slot** in `components/shared/ambient/art/manifest.ts`, one file per slot: `public/ambient/art/<id>.png`
+  (variants `<id>-n.png`). **If the file exists the scene draws it, otherwise the current stand-in** (procedural shapes, Noto emoji,
+  PD silhouettes) — `art/load.ts` (`ArtSet`: alpha-trimmed, fitted to the slot box, 404 remembered for the session, ground re-baked
+  once when all arrive) and `art/props.ts` (`drawProp` = one API, fallbacks inside; `scatterProps` places big props only when their
+  art exists). The owner rejected shapes-glued-together plants ("winter tree = sea anemone, spring plants = gum on the ground, autumn =
+  unidentifiable mounds, summer lily pads = flat overlap"): **never add a new procedural plant/prop — add a slot, draw the fallback in
+  `props.ts`, and let the art replace it.** Camera rule refined: only things lying on the ground/water are strict top-down (`flat`) or
+  silhouettes (`shadow`); **standing things (trees, shrubs, flowers, snowmen, animals) are `stand` = the Animal Crossing camera** (high
+  3/4 front view, anchor = ground contact, the engine draws the ellipse shadow). Manage everything at **`/studio/ambient-art`**
+  (developer-only route; settings modal dev row "배경 아트 보드 → 열기"): now-vs-delivered per slot, filters, and the Codex prompts
+  (master 1차/2차/전체 + per slot) generated from the manifest so table and prompt never drift. ACNH catalog pages
+  (soopoolleaf Fish/Bugs) are a **style reference only** — original art, no Nintendo asset copies; 오행 palette holds (no vivid
+  red/orange/yellow). Fixture for probes: `/visual-fixture/ambient-art`.
 - **World services (PLAN-20260904-003 Phase A, `components/shared/ambient/world/`).** The scene `Frame` carries `date` (viewed month's
   day: today / last day of a past month / 1st of a future month), `time` (six KST bands — 새벽·아침·점심·노을·저녁·밤 by seasonal
   sunrise/sunset — with a light tint the engine paints over the scene: none by day, grey-violet dusk, blue-grey evening/night, never

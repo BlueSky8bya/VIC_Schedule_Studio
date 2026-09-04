@@ -245,6 +245,16 @@ export function StudioSettingsList({
               value={devWorld.force.day !== undefined ? (String(devWorld.force.day) as DayOpt) : "real"}
             />
           </div>
+          {/* 계절 배경 아트 보드(2026-09-04) — 배경의 모든 그림 자리(나무·초목·지형·생물)와 코덱스 프롬프트를 한 라우트에서 관리한다. 개발자 전용 라우트. */}
+          <div className="role-help-haptics rhh-ambient rhh-dev">
+            <span className="rhh-label">
+              <Palette aria-hidden="true" size={14} />
+              배경 아트 보드 <em className="rhh-dev-tag">개발자</em>
+            </span>
+            <a className="rhh-link" data-act="dev-art-board-open" href="/studio/ambient-art">
+              열기
+            </a>
+          </div>
         </>
       ) : null}
     </>
