@@ -14,7 +14,7 @@ import { ArtSet, drawArt } from "@/components/shared/ambient/art/load";
 import { drawProp } from "@/components/shared/ambient/art/props";
 import { makeCanvas, rng, shadowSprite, TAU } from "@/components/shared/ambient/scenes/util";
 import { SIZE } from "./scale";
-import { depthScale, GROUND_SQUASH, toScreen } from "./view";
+import { depthScale, GROUND_SQUASH, horizonY, toScreen } from "./view";
 
 export type TraceBakes = {
   shadow: HTMLCanvasElement;
@@ -223,23 +223,62 @@ function drawSapling(g: CanvasRenderingContext2D, season: SeasonKey, b: TraceBak
 // 여름 물가 — 물 장면의 위 띠는 **뭍**이다(계획서 §3.2 "물가": 갈대·통나무가 서는 가장자리). 땅의 흔적(데뷔 나무·나무·싹·흙더미)이
 // 물 위에 떠 보이지 않게 모래·풀이 섞인 부드러운 기슭 띠를 한 번 굽고, 그 위에만 땅 흔적을 그린다. (PLAN-004 P1에서 연못·해안
 // 바이옴으로 이사한다 — 초원 여름은 물 없음.)
-export const SHORE_V = 0.115; // 기슭 띠의 아래 끝(정규화 세로)
-export function bakeShore(w: number, h: number): HTMLCanvasElement {
-  const H = Math.round(h * SHORE_V) + 24;
+// 기슭 띠의 아래 끝(정규화 세로). 0.115는 지평선(HORIZON_V 0.12)보다 **위**라 기슭 전체가 안개 띠 밑에 깔려
+// "하늘에 뜬 풀"과 물가 이중선으로 보였다(2026-09-04 검토 1차) → 지평선 아래로 내린다.
+export const SHORE_V = 0.21;
+/** 기슭 띠 — 지평선(hz)에서 시작해 h*SHORE_V까지. 좌우 가장자리는 아래로 내려와 연못을 감싼다(만곡). */
+export function bakeShore(w: number, h: number, season: SeasonKey = "summer"): HTMLCanvasElement {
+  const hz = horizonY(h);
+  const H = Math.round(h * SHORE_V - hz) + 24 + 52; // 만곡(최대 44px)까지 담을 여유 — 없으면 좌우 끝이 납작하게 잘린다
   const { c, g } = makeCanvas(Math.max(1, w), H);
   const r = rng(77 + w);
   const edge = H - 24;
   const grad = g.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, "rgb(226 216 192 / 0.92)");
-  grad.addColorStop(0.7, "rgb(222 212 188 / 0.85)");
-  grad.addColorStop(1, "rgb(222 212 188 / 0)");
+  // 기슭도 계절을 탄다 — 얼어붙은 연못 옆에 초록 잔디가 있으면 세계가 깨진다(2026-09-04 검토 2차).
+  const SH: Record<SeasonKey, [string, string, string]> = {
+    spring: ["#b6c896", "#a2b88a", "#c6bea0"],
+    summer: ["#b0c698", "#a0b88a", "#c6be9e"],
+    autumn: ["#bfae86", "#a89773", "#c2b494"],
+    winter: ["#e6ecf2", "#d6dfe8", "#cdd6de"]
+  };
+  const [s0, s1, s2] = SH[season];
+  // 위 가장자리는 안개 띠 속으로 스며든다 — 불투명하게 시작하면 지평선에 전폭 직선 자국이 남는다(검토 2차).
+  grad.addColorStop(0, `${s0}00`);
+  grad.addColorStop(0.22, s0);
+  grad.addColorStop(0.62, s1);
+  grad.addColorStop(0.88, s2);
+  grad.addColorStop(1, `${s2}00`);
   g.fillStyle = grad;
   g.fillRect(0, 0, w, H);
+  // 좌우 만곡 부분의 뭍을 채운다(그라데이션은 가로로 균일하므로 아래쪽에 한 겹 더).
+  // 만곡 채움 — 위 모서리를 캔버스 밖에서 시작해 "칠한 리본의 곧은 윗변"이 생기지 않게(검토 4차).
+  // 만곡 채움도 위에서 투명하게 시작해야 한다 — 불투명 다각형이면 그라데이션의 페이드를 덮어
+  // 지평선에 전폭 직선 절단이 남는다(2026-09-04 검토 5차: ΔRGB 최대 128).
+  const bayFill = g.createLinearGradient(0, 0, 0, H);
+  bayFill.addColorStop(0, `${s1}00`);
+  bayFill.addColorStop(0.22, s1);
+  bayFill.addColorStop(1, s1);
+  g.fillStyle = bayFill;
   g.beginPath();
-  for (let x = 0; x <= w; x += 12) {
-    const y = edge + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5;
-    if (x === 0) g.moveTo(x, y);
-    else g.lineTo(x, y);
+  g.moveTo(0, -8);
+  for (let x = 0; x <= w + 12; x += 12) {
+    const xx = Math.min(x, w);
+    g.lineTo(xx, edge + ((t) => (1 - t) * (1 - t) * 44)(Math.min(1, Math.min(xx, w - xx) / (w * 0.3))));
+  }
+  g.lineTo(w, -8);
+  g.closePath();
+  g.fill();
+  // 물가 선 — 좌우 끝이 아래로 내려와(코사인 낙차) 연못을 두르는 만곡이 된다.
+  const bay = (x: number) => {
+    const t = Math.min(1, Math.min(x, w - x) / (w * 0.3));
+    return (1 - t) * (1 - t) * 44;
+  };
+  const shoreLine = (x: number) => edge + bay(x) + Math.sin(x * 0.02 + 0.7) * 3 + Math.sin(x * 0.053) * 1.5;
+  g.beginPath();
+  for (let x = 0; x <= w + 12; x += 12) {
+    const y = shoreLine(Math.min(x, w));
+    if (x === 0) g.moveTo(0, y);
+    else g.lineTo(Math.min(x, w), y);
   }
   g.strokeStyle = "rgb(150 135 105 / 0.35)";
   g.lineWidth = 6;
@@ -255,7 +294,9 @@ export function bakeShore(w: number, h: number): HTMLCanvasElement {
     for (let k = 0; k < 3; k++) {
       const len = 5 + r() * 7;
       const a = -Math.PI / 2 + (r() - 0.5) * 1.4;
-      g.strokeStyle = r() < 0.5 ? "rgb(150 178 118 / 0.6)" : "rgb(120 160 104 / 0.55)";
+      g.strokeStyle = season === "winter" ? (r() < 0.5 ? "rgb(196 208 220 / 0.7)" : "rgb(170 186 200 / 0.6)")
+        : season === "autumn" ? (r() < 0.5 ? "rgb(174 156 112 / 0.6)" : "rgb(150 134 96 / 0.55)")
+        : r() < 0.5 ? "rgb(150 178 118 / 0.6)" : "rgb(120 160 104 / 0.55)";
       g.lineWidth = 1.1;
       g.beginPath();
       g.moveTo(x + k * 2 - 2, y);
@@ -288,7 +329,10 @@ export function drawTraces(g: CanvasRenderingContext2D, f: Frame, season: Season
   const items = f.traces
     .filter((t) => (t.kind === "lilypad" ? !!opts.water : true))
     .map((t) => {
-      const [x, y] = opts.landOnShore && LAND_KINDS.has(t.kind) ? [t.u * f.w, t.v * f.h] : toScreen(t.u, t.v, f.w, f.h);
+      const hz0 = horizonY(f.h);
+      const [x, y] = opts.landOnShore && LAND_KINDS.has(t.kind)
+        ? [t.u * f.w, hz0 + Math.min(1, t.v / SHORE_V) * (SHORE_V * f.h - hz0)]
+        : toScreen(t.u, t.v, f.w, f.h);
       return { t, x, y };
     })
     .sort((a, c) => a.y - c.y);

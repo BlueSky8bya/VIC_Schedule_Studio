@@ -9,7 +9,17 @@ export type WaterPalette = { far: string; near: string; web: string; foam: strin
 
 /** 계절·깊이별 물빛. deep = 깊은 바다(진남색, caustic 거의 없음). */
 export function waterPalette(season: SeasonKey, deep = false): WaterPalette {
-  if (deep) return { far: "#5f7f9c", near: "#2b4868", web: "120 150 180", foam: "220 232 242" };
+  // 깊은 바다도 계절을 탄다(상수였던 탓에 네 계절의 깊은 바다가 한 장이었다) — 겨울은 더 차고 여름은 살짝 초록빛.
+  if (deep) {
+    const DEEP: Record<SeasonKey, [string, string]> = {
+      winter: ["#809ab4", "#5a7692"],
+      spring: ["#829bab", "#5c748c"],
+      summer: ["#7b96ab", "#56728c"],
+      autumn: ["#849aa9", "#5e7386"]
+    };
+    const [far, near] = DEEP[season];
+    return { far, near, web: "120 150 180", foam: "220 232 242" };
+  }
   switch (season) {
     case "winter":
       return { far: "#c9d8e4", near: "#9fb8cc", web: "230 240 248", foam: "255 255 255" };
@@ -23,27 +33,81 @@ export function waterPalette(season: SeasonKey, deep = false): WaterPalette {
 }
 
 /** 물 바탕을 굽는다: top(수평선·물가 선)부터 h까지 — 멀수록 옅은 물빛, 가까울수록 짙게; 얕은 물 caustic 그물(옅은 원 고리)은 아래쪽에만. */
-export function bakeWater(w: number, h: number, top: number, dpr: number, pal: WaterPalette, seed = 3): HTMLCanvasElement {
+export function bakeWater(w: number, h: number, top: number, dpr: number, pal: WaterPalette, seed = 3, caustics = true, sky?: string): HTMLCanvasElement {
   const { c, g } = makeCanvas(Math.max(1, Math.ceil(w * dpr)), Math.max(1, Math.ceil(h * dpr)));
   g.scale(dpr, dpr);
   const r = rng(seed * 31 + Math.round(w));
   const grad = g.createLinearGradient(0, top, 0, h);
-  grad.addColorStop(0, pal.far);
+  // 수평선에서 하늘빛 → 물빛으로 20px 안에 섞는다. 없으면 하늘과 물이 한 줄에서 맞붙어 "붙여 놓은 사각형 둘"이 된다
+  // (깊은 바다는 한 행에 ΔRGB 96, 2026-09-04 검토 2차).
+  if (sky) {
+    grad.addColorStop(0, sky);
+    grad.addColorStop(Math.min(0.2, 22 / Math.max(1, h - top)), pal.far);
+  } else grad.addColorStop(0, pal.far);
   grad.addColorStop(1, pal.near);
   g.fillStyle = grad;
   g.fillRect(0, top, w, h - top);
-  // caustic 그물 — 옅은 밝은 고리를 성기게(위는 작고 촘촘, 아래는 크고 성김 — 원근).
-  const n = Math.round((w * (h - top)) / 9000);
-  for (let i = 0; i < n; i++) {
-    const y = top + Math.pow(r(), 0.7) * (h - top);
-    const t = (y - top) / Math.max(1, h - top);
-    const rad = 10 + t * 26 + r() * 12;
-    const x = r() * w;
-    g.strokeStyle = `rgb(${pal.web} / ${0.08 + 0.1 * t})`;
-    g.lineWidth = 1 + t * 1.4;
+  // caustic 그물 — **얕은 물에만**(먼바다·깊은 바다는 바닥이 안 보이니 없다). 닫힌 고리는 "낙서한 동그라미"로 읽혀서
+  // 열린 호(arc) 두어 개로 끊고, 아래(가까움)로 갈수록만 보이게 알파를 깎는다(2026-09-04 검토 1차).
+  if (caustics) {
+    const n = Math.round((w * (h - top)) / 24000);
+    for (let i = 0; i < n; i++) {
+      const t = Math.pow(r(), 0.5);
+      const y = top + t * (h - top);
+      const x = r() * w;
+      const rad = (16 + t * 44 + r() * 20) * (0.7 + r() * 0.6);
+      const a = (0.03 + 0.08 * t) * (0.6 + r() * 0.7);
+      const rg = g.createRadialGradient(x, y, 1, x, y, rad);
+      rg.addColorStop(0, `rgb(${pal.web} / ${a})`);
+      rg.addColorStop(0.55, `rgb(${pal.web} / ${a * 0.55})`);
+      rg.addColorStop(1, `rgb(${pal.web} / 0)`);
+      g.save();
+      g.translate(x, y);
+      g.scale(1, 0.55);
+      g.translate(-x, -y);
+      g.fillStyle = rg;
+      g.beginPath();
+      g.arc(x, y, rad, 0, TAU);
+      g.fill();
+      g.restore();
+    }
+  }
+  // 너울 골 — 값 단계 3~5개(1px 획이 아니라 **띠**). 물이 통짜 그라데이션이면 화면 절반이 빈 판이다(검토 5차).
+  const bands = 5;
+  for (let i = 0; i < bands; i++) {
+    const p0 = Math.pow((i + 0.35) / bands, 1.5);
+    const y = top + p0 * (h - top);
+    const bh = (h - top) * (0.05 + 0.09 * p0);
+    const near = 0.3 + 0.7 * p0;
+    const bg2 = g.createLinearGradient(0, y - bh * 0.5, 0, y + bh * 0.5);
+    bg2.addColorStop(0, `rgb(${pal.web} / 0)`);
+    bg2.addColorStop(0.5, `rgb(${pal.web} / ${0.05 + 0.07 * near})`);
+    bg2.addColorStop(1, `rgb(${pal.web} / 0)`);
+    g.fillStyle = bg2;
     g.beginPath();
-    g.ellipse(x, y, rad, rad * 0.62, r() * 0.6 - 0.3, 0, TAU);
-    g.stroke();
+    g.moveTo(-10, y - bh);
+    for (let x = -10; x <= w + 10; x += 22) g.lineTo(x, y + Math.sin(x * 0.004 + i * 1.7) * bh * 0.5 + Math.sin(x * 0.011 + i) * bh * 0.2 - bh * 0.5);
+    for (let x = w + 10; x >= -10; x -= 22) g.lineTo(x, y + Math.sin(x * 0.004 + i * 1.7) * bh * 0.5 + Math.sin(x * 0.011 + i) * bh * 0.2 + bh * 0.5);
+    g.closePath();
+    g.fill();
+  }
+  // 바람결 — 저해상 잔결(가까울수록 굵게). 매끈한 면에 질감 한 겹.
+  {
+    const rw = Math.max(1, Math.round(w * 0.35));
+    const rh = Math.max(1, Math.round((h - top) * 0.35));
+    const { c: rc, g: rg } = makeCanvas(rw, rh);
+    const r2 = rng(seed * 131 + 7);
+    for (let i = 0; i < Math.round(rw * rh / 90); i++) {
+      const y2 = Math.pow(r2(), 0.7) * rh;
+      const len = 2 + (y2 / rh) * 9;
+      rg.fillStyle = `rgb(${pal.web} / ${0.05 + 0.1 * (y2 / rh)})`;
+      rg.fillRect(r2() * rw, y2, len, 1);
+    }
+    g.save();
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = "low";
+    g.drawImage(rc, 0, top, w, h - top);
+    g.restore();
   }
   // 수평선 바로 아래 — 하늘빛 반사 한 줄.
   softBlob(g, w / 2, top + 6, w * 0.7, "255 255 255", 0.16, 0);
@@ -78,7 +142,9 @@ export function drawWaves(g: CanvasRenderingContext2D, t: number, w: number, o: 
     g.beginPath();
     const amp = o.amp * (0.3 + 0.7 * near);
     for (let x = -10; x <= w + 10; x += 14) {
-      const y = y0 + Math.sin(x * 0.012 + t * 0.9 + i * 1.7) * amp + Math.sin(x * 0.031 - t * 1.3 + i) * amp * 0.35;
+      // 파장도 원근을 탄다 — 먼 선이 가까운 선과 같은 파장이면 바다가 "나뭇결 판"이 된다(검토 3차).
+      const fk = 1 / (0.45 + 0.55 * near);
+      const y = y0 + Math.sin(x * 0.012 * fk + t * 0.9 + i * 1.7) * amp + Math.sin(x * 0.031 * fk - t * 1.3 + i) * amp * 0.35;
       if (x === -10) g.moveTo(x, y);
       else g.lineTo(x, y);
     }
@@ -94,19 +160,14 @@ export function drawGlints(g: CanvasRenderingContext2D, t: number, glints: { x: 
     if (a < 0.05) continue;
     g.save();
     g.translate(gl.x, gl.y);
-    g.rotate(gl.ph);
-    g.strokeStyle = `rgb(255 255 255 / ${a * 0.9})`;
-    g.lineWidth = 1.2;
+    // 십자 4획은 화면에서 × · + 글리프(UI 닫기 버튼)로 읽혔다 — 물 위의 햇빛은 가로로 누운 렌즈다(검토 2차).
+    g.fillStyle = `rgb(255 255 255 / ${a * 0.55})`;
     g.beginPath();
-    for (let k = 0; k < 4; k++) {
-      const ang = (k / 4) * TAU;
-      g.moveTo(0, 0);
-      g.lineTo(Math.cos(ang) * gl.r * 2.2 * a, Math.sin(ang) * gl.r * 2.2 * a);
-    }
-    g.stroke();
-    g.fillStyle = `rgb(255 255 255 / ${a})`;
+    g.ellipse(0, 0, gl.r * 3.2 * a, gl.r * 0.5 * a, 0, 0, TAU);
+    g.fill();
+    g.fillStyle = `rgb(255 255 255 / ${a * 0.75})`;
     g.beginPath();
-    g.arc(0, 0, gl.r * 0.6, 0, TAU);
+    g.ellipse(0, 0, gl.r * 1.2 * a, gl.r * 0.32 * a, 0, 0, TAU);
     g.fill();
     g.restore();
   }

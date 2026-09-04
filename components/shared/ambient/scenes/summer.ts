@@ -31,9 +31,9 @@ import { ArtSet, artFile } from "../art/load";
 import { artSlot } from "../art/manifest";
 import { drawProp } from "../art/props";
 import { SIZE } from "../world/scale";
-import { bakeHorizon, depthScale, GROUND_SQUASH } from "../world/view";
+import { bakeHorizon, depthScale, GROUND_SQUASH, horizonY } from "../world/view";
 import type { SeasonKey } from "../registry";
-import { bakeWater, waterPalette } from "./water";
+import { bakeWater, drawGlints, waterPalette } from "./water";
 
 type Node = { x: number; y: number; t0: number; nx: number; ny: number; sf: number }; // n = 진행 직각 단위벡터
 type Stamp = { x: number; y: number; t0: number; sf: number; r: number };
@@ -424,22 +424,23 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         waterKey = wk;
       }
       if (!shore || shoreW !== w || shoreArtV !== shoreArt.version) {
-        shore = bakeShore(w, h);
+        shore = bakeShore(w, h, season);
         shoreW = w;
         shoreArtV = shoreArt.version;
         // 기슭 소품(아트가 있을 때만) — 물가 선 위쪽 띠에 결정적으로: 갈대 무리·통나무·바위·관목.
         const sg = shore.getContext("2d");
         if (sg) {
-          const r0 = rng(91 + w);
+          const r0 = rng(91 + w + season.length * 977); // 계절마다 다른 배치 — 넷이 같은 그림이면 계절이 안 읽힌다
           const edge = shore.height - 24;
-          const stand = (id: string, n: number, k: number) => {
-            if (!shoreArt.has(id)) return;
-            for (let i = 0; i < n; i++) drawProp(sg, shoreArt, id, 30 + r0() * (w - 60), edge - 2 - r0() * 10, { k: k * (0.85 + r0() * 0.3), r: r0(), flip: r0() < 0.5 });
+          // 아트가 없으면 대체물로 — 옛 코드는 아트 전용이라 기슭이 늘 맨땅이었다(검토 4차).
+          const stand = (id: string, n: number, k: number, rr?: number) => {
+            for (let i = 0; i < n; i++) drawProp(sg, shoreArt, id, 30 + r0() * (w - 60), edge - 2 - r0() * 10, { k: k * (0.85 + r0() * 0.3), r: rr ?? r0(), flip: r0() < 0.5 });
           };
-          stand("reed", Math.max(3, Math.round(w / 260)), 0.55);
+          // 갈대·억새 — 여름·봄은 초록 변형(r < .5), 가을·겨울은 마른 변형(r ≥ .5).
+          stand("reed", Math.max(6, Math.round(w / 120)), 0.5, season === "autumn" || season === "winter" ? 0.7 : 0.2);
           stand("log", 1, 0.9);
-          stand("rock", 2, 0.7);
-          stand("shrub-summer", 2, 0.75);
+          stand("rock", 3, 0.7);
+          stand(`shrub-${season}`, 3, 0.75);
         }
       }
       if (!winter && !props.some((p) => p.kind === "duck")) {
@@ -1144,45 +1145,43 @@ export function createSummer(seed: number, opts: { season?: SeasonKey } = {}): S
         ig.addColorStop(1, "rgb(226 236 246 / 0.6)");
         g.fillStyle = ig;
         g.fillRect(0, iy, f.w, f.h - iy);
-        g.strokeStyle = "rgb(255 255 255 / 0.55)";
-        g.lineWidth = 1;
+        // 균열 — 같은 각도의 평행선은 "그어 놓은 빗금"이다. 결정적 rng로 방향을 흩고 가지를 친다.
+        g.strokeStyle = "rgb(255 255 255 / 0.7)";
+        g.lineWidth = 1.2;
+        const cr = rng(seed * 17 + 5);
         g.beginPath();
-        for (let i = 0; i < 5; i++) {
-          const x0 = f.w * (0.1 + i * 0.2);
-          g.moveTo(x0, iy + 40 + i * 30);
-          g.lineTo(x0 + 90, iy + 120 + i * 40);
-          g.lineTo(x0 + 150, iy + 130 + i * 55);
+        for (let i = 0; i < 7; i++) {
+          let x0 = cr() * f.w;
+          let y0 = iy + 30 + cr() * (f.h - iy - 60);
+          let ang = cr() * TAU;
+          for (let k = 0; k < 4; k++) {
+            const len = 40 + cr() * 90;
+            const x1 = x0 + Math.cos(ang) * len;
+            const y1 = y0 + Math.sin(ang) * len * GROUND_SQUASH;
+            g.moveTo(x0, y0);
+            g.lineTo(x1, y1);
+            if (cr() < 0.45) {
+              const bl = 24 + cr() * 40;
+              const ba = ang + (cr() - 0.5) * 1.6;
+              g.moveTo(x1, y1);
+              g.lineTo(x1 + Math.cos(ba) * bl, y1 + Math.sin(ba) * bl * GROUND_SQUASH);
+            }
+            x0 = x1;
+            y0 = y1;
+            ang += (cr() - 0.5) * 1.1;
+          }
         }
         g.stroke();
       }
-      // 기슭(위 띠의 뭍) + 연대기 — 연잎 군락(6→8월 넓어진다)은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
-      if (shore) g.drawImage(shore, 0, 0);
-      // 3/4 시점의 지평선 띠 — 먼 기슭이 안개에 잠긴다(P1에서 연못·해안 바이옴으로 갈라진다).
+      // 3/4 시점의 지평선 띠 — 먼 것이 안개에 잠긴다. **기슭보다 먼저** 그린다(옛 순서는 안개가 기슭을 덮어
+      // 물가가 이중선으로 보였다, 2026-09-04 검토 1차).
       if (!horizon || horizon.width !== Math.ceil(f.w)) horizon = bakeHorizon(season, f.w, f.h, 1);
       g.drawImage(horizon, 0, 0, f.w, horizon.height);
+      // 기슭(지평선 아래 띠의 뭍) + 연대기 — 연잎 군락은 물 위, 데뷔 나무·싹·흙더미는 기슭 위에만. 항적 위, 생물 아래.
+      if (shore) g.drawImage(shore, 0, horizonY(f.h));
       if (traces) drawTraces(g, f, season, traces, { landOnShore: true, water: true });
-      // 햇빛 반짝임 — 물결 위의 작은 별(숨쉬듯 밝아졌다 사라짐), 본 캔버스에 또렷하게.
-      for (const gl of glints) {
-        const a = Math.max(0, Math.sin(t * 1.4 + gl.ph));
-        if (a < 0.05) continue;
-        g.save();
-        g.translate(gl.x, gl.y);
-        g.rotate(gl.ph);
-        g.strokeStyle = `rgb(255 255 255 / ${a * 0.9})`;
-        g.lineWidth = 1.2;
-        g.beginPath();
-        for (let k = 0; k < 4; k++) {
-          const ang = (k / 4) * TAU;
-          g.moveTo(0, 0);
-          g.lineTo(Math.cos(ang) * gl.r * 2.2 * a, Math.sin(ang) * gl.r * 2.2 * a);
-        }
-        g.stroke();
-        g.fillStyle = `rgb(255 255 255 / ${a})`;
-        g.beginPath();
-        g.arc(0, 0, gl.r * 0.6, 0, TAU);
-        g.fill();
-        g.restore();
-      }
+      // 햇빛 반짝임 — 공용 drawGlints(가로 렌즈). 옛 4획 십자는 화면에서 × · + 글리프로 읽혔다(검토 3차).
+      drawGlints(g, t, glints);
       // 뱃머리 — 빠르게 움직이는 포인터 앞의 밝은 물마루(본 캔버스, 또렷하게).
       const p = f.p;
       if (load >= 0.3 && p.inside && p.speed > 160) {

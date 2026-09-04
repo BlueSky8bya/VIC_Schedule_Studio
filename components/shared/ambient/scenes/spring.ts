@@ -187,11 +187,19 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     const g0 = rng((seed * 7 + 13) >>> 0);
     const { c, g } = makeCanvas(w * dpr, h * dpr);
     g.scale(dpr, dpr);
-    g.fillStyle = summer ? "rgb(178 212 160 / 0.6)" : "rgb(214 232 200 / 0.42)";
+    // 불투명 잔디 바탕 — 반투명이면 페이지의 흰색이 비쳐 "물 빠진 연둣빛 벽지"가 된다(2026-09-04 검토 2차).
+    // 위(멀다)는 옅고 아래(가깝다)는 짙다.
+    const bg = g.createLinearGradient(0, gy(), 0, h);
+    bg.addColorStop(0, summer ? "#bcd8a4" : "#d3e6bd");
+    bg.addColorStop(1, summer ? "#74975f" : "#86a86e");
+    g.fillStyle = bg;
     g.fillRect(0, 0, w, h);
-    const patches = Math.round((w * h) / 70000);
+    const patches = Math.round((w * h) / 46000);
     for (let i = 0; i < patches; i++) {
-      softBlob(g, g0() * w, g0() * h, 120 + g0() * 260, g0() < 0.5 ? (summer ? "110 165 95" : "150 196 120") : summer ? "205 228 180" : "232 244 214", 0.16);
+      const py = groundY(g0());
+      const pk = depthScale(py, h) * depthScale(py, h); // 멀수록 작은 얼룩 — 같은 반경이면 "안개 뭉치"
+      const pick = g0();
+      softBlob(g, g0() * w, py, (120 + g0() * 260) * pk, pick < 0.45 ? (summer ? "110 165 95" : "150 196 120") : pick < 0.75 ? (summer ? "205 228 180" : "232 244 214") : "196 214 200", 0.15, 0, GROUND_SQUASH);
     }
     // 소품은 전부 drawProp(art/props.ts) — 아트 파일이 있으면 그 그림, 없으면 대체물(옛 도형). 자리는 결정적(같은 g0 순서).
     // 3/4 시점: 클로버(납작)는 세로로 눌리고, 데이지·풀포기(서 있음)는 위(멀다)에서 작다. 꽃은 축척표대로 과장(SIZE.flower 26).
@@ -230,11 +238,23 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
     // 풀포기 층 — 바람에 흔들리는 것만 따로.
     const b = makeCanvas(w * dpr, h * dpr);
     b.g.scale(dpr, dpr);
+    // 풀포기 — 완전 무작위로 뿌리면 "균일한 벽지"가 된다(검토 2·3차). 절반은 무리(clump)로 모아 심고
+    // 크기를 크게 흩는다: 뭉친 곳과 트인 곳이 생겨야 들판으로 읽힌다.
     const tufts = Math.round((w * h) / 1500);
+    let cx = 0;
+    let cy = 0;
+    let left = 0;
     for (let i = 0; i < tufts; i++) {
-      const x = g0() * w;
-      const y = groundY(g0());
-      drawProp(b.g, groundArt, "grass-tuft", x, y, { k: (0.7 + g0() * 0.6) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.9 });
+      if (left <= 0) {
+        cx = g0() * w;
+        cy = groundY(g0());
+        left = 1 + Math.floor(g0() * 7);
+      }
+      left--;
+      const spread = 26 + g0() * 54;
+      const x = cx + (g0() - 0.5) * spread * 2;
+      const y = cy + (g0() - 0.5) * spread;
+      drawProp(b.g, groundArt, "grass-tuft", x, y, { k: (0.55 + g0() * 1.0) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.7 + g0() * 0.3 });
     }
     blades = b.c;
     horizon = bakeHorizon(variant, w, h, 1);
@@ -276,23 +296,28 @@ export function createSpring(seed: number, variant: "spring" | "summer" = "sprin
       const { c, g } = makeCanvas(40, 40);
       g.translate(20, 20);
       softBlob(g, 0, 0, 15, "255 255 255", 0.55, 0);
-      g.strokeStyle = "rgb(255 255 255 / 0.85)";
-      g.lineWidth = 0.9;
+      // 26개 살이 균등 방사하면 톱니바퀴·로딩 스피너로 읽힌다(검토 3차) — 각도·길이·알파를 흩고 수를 줄인다.
       g.lineCap = "round";
-      for (let i = 0; i < 26; i++) {
-        const a = (i / 26) * TAU;
+      const dr = rng(4211);
+      for (let i = 0; i < 15; i++) {
+        const a = (i / 15) * TAU + (dr() - 0.5) * 0.26;
+        const len = 9 + dr() * 4.5;
+        g.strokeStyle = `rgb(255 255 255 / ${0.5 + dr() * 0.35})`;
+        g.lineWidth = 0.8 + dr() * 0.5;
         g.beginPath();
-        g.moveTo(Math.cos(a) * 3, Math.sin(a) * 3);
-        g.lineTo(Math.cos(a) * 12.5, Math.sin(a) * 12.5);
+        g.moveTo(Math.cos(a) * 2.6, Math.sin(a) * 2.6);
+        g.lineTo(Math.cos(a) * len, Math.sin(a) * len);
         g.stroke();
-        g.fillStyle = "rgb(255 255 255 / 0.95)";
-        g.beginPath();
-        g.arc(Math.cos(a) * 12.5, Math.sin(a) * 12.5, 1.1, 0, TAU);
-        g.fill();
+        if (i % 2 === 0) {
+          g.fillStyle = "rgb(255 255 255 / 0.9)";
+          g.beginPath();
+          g.arc(Math.cos(a) * len, Math.sin(a) * len, 1.1, 0, TAU);
+          g.fill();
+        }
       }
       g.fillStyle = "rgb(190 210 150)";
       g.beginPath();
-      g.arc(0, 0, 3.2, 0, TAU);
+      g.arc(-1, -1, 3, 0, TAU);
       g.fill();
       dandSpr = c;
     }

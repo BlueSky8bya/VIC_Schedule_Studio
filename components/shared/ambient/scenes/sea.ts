@@ -6,7 +6,9 @@
 import type { Scene } from "../scene-engine";
 import type { SeasonKey } from "../registry";
 import { clamp, lerp, rng, softBlob, TAU } from "./util";
-import { horizonY, GROUND_SQUASH } from "../world/view";
+import { SIZE } from "../world/scale";
+import { horizonY, GROUND_SQUASH, bakeHorizon, ySort } from "../world/view";
+import { ASSET, loadSprite, type Sprite } from "../assets";
 import { bakeWater, drawGlints, drawWaves, waterPalette } from "./water";
 
 type Shadow = { x: number; y: number; hd: number; spd: number; k: number; ph: number };
@@ -18,18 +20,25 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
   let h = 0;
   let water: HTMLCanvasElement | null = null;
   let sky: HTMLCanvasElement | null = null;
+  let horizon: HTMLCanvasElement | null = null;
   let gw = 0;
   let gh = 0;
   let gdpr = 0;
   const glints: { x: number; y: number; ph: number; r: number }[] = [];
   const shadows: Shadow[] = [];
   let stars: { x: number; y: number; r: number; ph: number }[] = [];
+  // 물고기 = **물 밑 실루엣**(연못과 같은 PD top-view 도안). 옛 코드의 타원 두 개는 "얼룩"으로 읽혔다(검토 2차).
+  const FISH_SPR = 80;
+  const fishSpr: (Sprite | null)[] = [null, null];
+  let fishAsked = false;
 
   const top = () => horizonY(h);
   const pal = waterPalette(season, deep);
 
   function bake(dpr: number) {
-    water = bakeWater(w, h, top(), dpr, pal, seed);
+    // 바다는 바닥이 안 보인다 — caustic 없음(얕은 물 문법을 그대로 쓰면 "물 위의 낙서"가 된다).
+    const skyLo = deep ? "#c9d6e2" : "#eef5fa";
+    water = bakeWater(w, h, top(), dpr, pal, seed, false, skyLo);
     // 하늘 한 줄 — 수평선 위 12%: 옅은 하늘빛(밤·노을 톤은 엔진 tint가 얹는다). 깊은 바다는 더 어둑한 하늘.
     const { c, g } = (() => {
       const cv = document.createElement("canvas");
@@ -44,10 +53,9 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
     grad.addColorStop(1, deep ? "#c9d6e2" : "#eef5fa");
     g.fillStyle = grad;
     g.fillRect(0, 0, w, top() + 2);
-    // 수평선 — 아주 옅은 밝은 선(하늘과 물의 경계).
-    g.fillStyle = "rgb(255 255 255 / 0.45)";
-    g.fillRect(0, top() - 1, w, 1.5);
     sky = c;
+    // 수평선 — 뭍 장면과 같은 지평선 띠(sea 프로파일: 안개만). 1.5px 흰 자를 대신한다.
+    horizon = bakeHorizon(season, w, h, 1, "sea");
     stars = [];
     const r0 = rng(seed * 5 + 1);
     for (let i = 0; i < 40; i++) stars.push({ x: r0() * w, y: r0() * top() * 0.85, r: 0.6 + r0() * 1.1, ph: r0() * TAU });
@@ -56,10 +64,13 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
     gdpr = dpr;
   }
   const glintTarget = (load: number) => (deep ? 0 : Math.round(lerp(6, 26, load)));
-  const shadowTarget = (load: number) => (deep ? Math.round(lerp(1, 4, load)) : Math.round(lerp(2, 9, load)));
+  const shadowTarget = (load: number) => (deep ? Math.round(lerp(3, 8, load)) : Math.round(lerp(6, 20, load)));
   function newShadow(): Shadow {
-    const y = top() + 40 + rand() * (h - top() - 80);
-    return { x: rand() * w, y, hd: rand() < 0.5 ? 0 : Math.PI, spd: deep ? 8 + rand() * 6 : 22 + rand() * 18, k: deep ? 1.1 + rand() * 0.7 : 0.5 + rand() * 0.6, ph: rand() * TAU };
+    const y = top() + 40 + Math.pow(rand(), 0.6) * (h - top() - 80);
+    // 크기는 축척표의 세 등급에서 고른다 — 전부 같은 크기면 바다에 깊이가 없다.
+    const cls = rand();
+    const px = deep ? (cls < 0.5 ? SIZE.fishMid : SIZE.fishBig) : cls < 0.55 ? SIZE.fishSmall : cls < 0.9 ? SIZE.fishMid : SIZE.fishBig;
+    return { x: rand() * w, y, hd: rand() < 0.5 ? 0 : Math.PI, spd: deep ? 8 + rand() * 6 : 22 + rand() * 18, k: px / 46, ph: rand() * TAU };
   }
 
   return {
@@ -95,7 +106,7 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
     },
     draw(g, f) {
       const t = f.t;
-      if (sky) g.drawImage(sky, 0, 0, f.w, sky.height / (gdpr || 1));
+      if (sky && !deep) g.drawImage(sky, 0, 0, f.w, sky.height / (gdpr || 1));
       if (f.time.night && stars.length) {
         for (const s of stars) {
           const a = 0.35 + 0.45 * (0.5 + 0.5 * Math.sin(t * 1.1 + s.ph));
@@ -106,32 +117,89 @@ export function createSea(seed: number, opts: { season: SeasonKey; deep: boolean
         }
       }
       if (water) g.drawImage(water, 0, 0, f.w, f.h);
+      if (horizon && !deep) g.drawImage(horizon, 0, 0, f.w, horizon.height);
       // 너울(큰 것 2겹) — 옅은 밝은 띠가 천천히 내려온다.
-      drawWaves(g, t, f.w, { top: top(), bottom: f.h, bands: deep ? 2 : 3, speed: deep ? 0.02 : 0.045, amp: deep ? 10 : 16, alpha: deep ? 0.12 : 0.22, foam: pal.foam });
+      if (!deep) drawWaves(g, t, f.w, { top: top(), bottom: f.h, bands: 3, speed: 0.045, amp: 16, alpha: 0.22, foam: pal.foam });
       // 거품 선(잔물결) — 조금 빠르고 가늘게.
       if (!deep) drawWaves(g, t * 1.6, f.w, { top: top(), bottom: f.h, bands: 5, speed: 0.06, amp: 6, alpha: 0.16, foam: pal.foam });
-      // 물고기 떼 그림자 — 눌린 타원(3/4 시점), 멀수록 작고 옅게.
-      for (const s of shadows) {
+      // (깊은 바다엔 수면 문법을 그리지 않는다 — 물속인데 파도가 가로지르면 카메라가 둘이다.)
+      // 물고기 떼 그림자 — 실루엣을 눌러서(3/4 시점) 찍는다. 멀수록 작고 옅게.
+      if (!fishAsked) {
+        fishAsked = true;
+        const tint = deep ? "rgb(40 60 84)" : "rgb(28 58 88)";
+        void loadSprite(ASSET.fishShadowSlim, FISH_SPR, FISH_SPR, 2, tint).then((sp) => (fishSpr[0] = sp)).catch(() => {});
+        void loadSprite(ASSET.fishShadowFantail, FISH_SPR, FISH_SPR, 2, tint).then((sp) => (fishSpr[1] = sp)).catch(() => {});
+      }
+      ySort(shadows);
+      for (let i = 0; i < shadows.length; i++) {
+        const s = shadows[i];
         const near = (s.y - top()) / Math.max(1, f.h - top());
-        const k = s.k * (0.6 + 0.4 * near);
+        const k = s.k * (0.45 + 0.55 * near);
+        // 부채꼬리 실루엣은 작게 그리면 지느러미가 별 모양으로 깨진다 — 큰 놈에만.
+        // 부채꼬리는 **그려지는 크기**가 40px 넘을 때만(작게 그리면 지느러미가 별 모양으로 깨진다).
+        const spr = s.k * 46 >= SIZE.fishBig ? fishSpr[1] || fishSpr[0] : fishSpr[0];
+        const a = deep ? 0.1 + 0.12 * near : 0.16 + 0.24 * near;
         g.save();
         g.translate(s.x, s.y);
         g.scale(1, GROUND_SQUASH);
-        g.rotate(s.hd);
-        // 깊은 바다의 그림자는 아주 옅게(어두운 얼룩 금지 규칙) — 큰 놈이 "지나간 흔적" 정도로만.
-        g.fillStyle = `rgb(${deep ? "40 60 84" : "28 58 88"} / ${deep ? 0.06 + 0.08 * near : 0.12 + 0.2 * near})`;
-        g.beginPath();
-        g.ellipse(0, 0, 22 * k, 7 * k, 0, 0, TAU);
-        g.ellipse(-24 * k, 0, 8 * k, 5 * k, 0, 0, TAU);
-        g.fill();
+        g.rotate(s.hd + Math.PI); // 실루엣의 머리 = 왼쪽(−x)
+        g.globalAlpha *= a;
+        if (spr) {
+          const size = (46 * k) / FISH_SPR;
+          g.scale(size, size);
+          g.drawImage(spr.c, -FISH_SPR / 2, -FISH_SPR / 2, FISH_SPR, FISH_SPR);
+        } else {
+          g.fillStyle = deep ? "rgb(40 60 84)" : "rgb(28 58 88)";
+          g.beginPath();
+          g.ellipse(0, 0, 24 * k, 11 * k, 0, 0, TAU);
+          g.fill();
+        }
         g.restore();
       }
       drawGlints(g, t, glints);
+      if (deep) {
+        // 광선 줄기 — 수면에서 내려오는 옅은 빛 두 줄기(어두운 판을 깨는 구조).
+        // 가장자리는 **가로 그라데이션**으로 풀어야 한다 — 곧은 모서리면 "반투명 종이 쐐기"가 된다(검토 5차).
+        for (const [ux, wd] of [[0.28, 150], [0.66, 110]] as const) {
+          const cx4 = f.w * ux;
+          const lgx = g.createLinearGradient(cx4 - wd, 0, cx4 + wd, 0);
+          lgx.addColorStop(0, "rgb(226 240 248 / 0)");
+          lgx.addColorStop(0.5, "rgb(226 240 248 / 0.1)");
+          lgx.addColorStop(1, "rgb(226 240 248 / 0)");
+          const vg3 = g.createLinearGradient(0, 0, 0, f.h * 0.85);
+          vg3.addColorStop(0, "rgb(255 255 255 / 1)");
+          vg3.addColorStop(1, "rgb(255 255 255 / 0)");
+          g.save();
+          g.beginPath();
+          g.moveTo(cx4 - wd * 0.25, 0);
+          g.lineTo(cx4 + wd * 0.25, 0);
+          g.lineTo(cx4 + wd, f.h * 0.85);
+          g.lineTo(cx4 - wd, f.h * 0.85);
+          g.closePath();
+          g.clip();
+          g.fillStyle = lgx;
+          g.fillRect(cx4 - wd, 0, wd * 2, f.h * 0.85);
+          g.globalCompositeOperation = "destination-in";
+          g.fillStyle = vg3;
+          g.fillRect(cx4 - wd, 0, wd * 2, f.h * 0.85);
+          g.restore();
+        }
+        // 바다눈 — 천천히 내려오는 흰 알갱이(깊은 바다의 유일한 질감).
+        const nSnow = Math.round(lerp(120, 360, f.load));
+        const rs = rng(seed * 3 + 7);
+        for (let i = 0; i < nSnow; i++) {
+          const sx = rs() * f.w;
+          const sp = 6 + rs() * 14;
+          const sy2 = top() + ((rs() * (f.h - top()) + t * sp) % (f.h - top()));
+          g.fillStyle = `rgb(226 238 244 / ${0.1 + rs() * 0.14})`;
+          g.fillRect(sx, sy2, 1.4, 1.4);
+        }
+      }
       // 깊은 바다 — 발광 해파리 세 개(P2에서 종으로 승격): 숨쉬듯 밝아지는 옅은 청록 얼룩.
-      if (deep && f.load >= 0.3) {
-        for (let i = 0; i < 3; i++) {
-          const x = f.w * (0.2 + 0.3 * i) + Math.sin(t * 0.3 + i) * 30;
-          const y = top() + (f.h - top()) * (0.45 + 0.15 * Math.sin(t * 0.2 + i * 2));
+      if (deep && f.load >= 0.1) {
+        for (let i = 0; i < 7; i++) {
+          const x = f.w * (0.08 + 0.13 * i + 0.05 * Math.sin(i * 2.3)) + Math.sin(t * 0.3 + i) * 30;
+          const y = top() + (f.h - top()) * (0.2 + 0.62 * ((i * 0.37) % 1) + 0.08 * Math.sin(t * 0.2 + i * 2));
           const a = 0.18 + 0.14 * Math.sin(t * 1.3 + i * 1.9);
           softBlob(g, x, y, 22 + 6 * Math.sin(t * 1.3 + i), "150 220 210", a, 0);
         }

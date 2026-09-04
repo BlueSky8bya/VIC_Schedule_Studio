@@ -51,7 +51,15 @@ export function makeCanvas(w: number, h: number): { c: HTMLCanvasElement; g: Can
 }
 
 /** 부드러운 원형 얼룩(그림자·빛). blur 필터 대신 radial gradient. */
-export function softBlob(g: CanvasRenderingContext2D, x: number, y: number, r: number, rgb: string, a0: number, a1 = 0) {
+export function softBlob(g: CanvasRenderingContext2D, x: number, y: number, r: number, rgb: string, a0: number, a1 = 0, sy = 1) {
+  // sy < 1 = 3/4 시점의 바닥 눌림. 땅·물에 **누워 있는** 얼룩(눈밭·이끼·젖은 자국)은 원이 아니라 타원이어야
+  // 평면 위에 놓인 것으로 읽힌다(정원이면 공중의 안개 뭉치로 보였다 — 2026-09-04 검토 3차).
+  if (sy !== 1) {
+    g.save();
+    g.translate(x, y);
+    g.scale(1, sy);
+    g.translate(-x, -y);
+  }
   const grad = g.createRadialGradient(x, y, 0, x, y, r);
   grad.addColorStop(0, `rgb(${rgb} / ${a0})`);
   grad.addColorStop(1, `rgb(${rgb} / ${a1})`);
@@ -59,6 +67,7 @@ export function softBlob(g: CanvasRenderingContext2D, x: number, y: number, r: n
   g.beginPath();
   g.arc(x, y, r, 0, TAU);
   g.fill();
+  if (sy !== 1) g.restore();
 }
 
 /** 부드러운 타원 그림자 스프라이트(가장자리가 흐린 어두운 타원) — 매 프레임 blur 대신 한 번 굽는다. */

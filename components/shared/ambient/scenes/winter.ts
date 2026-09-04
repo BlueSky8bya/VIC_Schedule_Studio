@@ -20,7 +20,7 @@ import { angleDiff, clamp, lerp, makeCanvas, rng, shadowSprite, softBlob, TAU, t
 import { bakeTraces, drawTraces, type TraceBakes } from "../world/traces-draw";
 import type { Weather } from "../world/weather";
 import { ArtSet } from "../art/load";
-import { scatterProps } from "../art/props";
+import { drawProp, scatterProps } from "../art/props";
 import { PRINT_K, SIZE } from "../world/scale";
 import { bakeHorizon, depthScale, GROUND_SQUASH, horizonY } from "../world/view";
 
@@ -175,8 +175,8 @@ export function createWinter(seed: number): Scene {
     g.restore();
     shape(g);
     const grad = g.createRadialGradient(0.5, 0, 1, 0, 0, 14);
-    grad.addColorStop(0, "rgb(168 190 216)");
-    grad.addColorStop(1, "rgb(196 212 232)");
+    grad.addColorStop(0, "rgb(202 216 231)");
+    grad.addColorStop(1, "rgb(226 236 245)");
     g.fillStyle = grad;
     g.fill();
     if (kind === "sole") {
@@ -200,6 +200,9 @@ export function createWinter(seed: number): Scene {
       const { c, g } = makeCanvas(s * 2, s * 2);
       g.scale(2, 2);
       g.translate(s / 2, s / 2);
+      // 자국 도형은 축소 전(PRINT_K 이전) 치수로 그려져 있다 — 상자가 절반이라 발가락·뒤꿈치가 잘려
+      // "파란 테이프 조각"이 됐다(2026-09-04 검토 3차). 그리기 전에 같은 비율로 줄인다.
+      g.scale(PRINT_K, PRINT_K);
       pressed(g, kind);
       sprites.set(kind, c);
     }
@@ -322,17 +325,17 @@ export function createWinter(seed: number): Scene {
     const { c, g } = makeCanvas(w * dpr, h * dpr);
     g.scale(dpr, dpr);
     const base = g.createLinearGradient(0, 0, 0, h);
-    base.addColorStop(0, "rgb(246 249 253 / 0.92)");
-    base.addColorStop(1, "rgb(236 242 249 / 0.94)");
+    base.addColorStop(0, "#f4f9ff");
+    base.addColorStop(1, "#a8c0d8");
     g.fillStyle = base;
     g.fillRect(0, 0, w, h);
     const blobs = Math.round((w * h) / 90000);
     for (let i = 0; i < blobs; i++) {
       const x = g0() * w;
-      const y = g0() * h;
+      const y = groundY(g0());
       const r = 90 + g0() * 220;
-      if (g0() < 0.5) softBlob(g, x, y, r, "205 220 238", 0.24);
-      else softBlob(g, x, y, r, "255 255 255", 0.5);
+      if (g0() < 0.5) softBlob(g, x, y, r, "132 158 190", 0.3, 0, GROUND_SQUASH);
+      else softBlob(g, x, y, r, "255 255 255", 0.34, 0, GROUND_SQUASH);
     }
     const dots = Math.round((w * h) / 9000);
     for (let i = 0; i < dots; i++) {
@@ -348,11 +351,70 @@ export function createWinter(seed: number): Scene {
       g.arc(x, y, r, 0, TAU);
       g.fill();
     }
-    // 있을 때만 놓이는 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로. 눈밭은 비어 있는 게 맛이라 조금만.
+    // 바람에 쌓인 눈 이랑 — 밝은 능선과 청회색 그늘 한 쌍. 옛 화면은 흰 종이에 점 몇 개라 "빈 판"이었다.
+    for (let i = 0; i < 5; i++) {
+      const y0 = groundY(0.12 + i * 0.19 + g0() * 0.05);
+      const amp = 10 + g0() * 16;
+      const ridge = (x: number) => y0 + Math.sin(x * 0.0035 + i * 1.7) * amp + Math.sin(x * 0.011 + i) * amp * 0.4;
+      const sg = g.createLinearGradient(0, y0 - 26, 0, y0 + 60);
+      sg.addColorStop(0, "rgb(255 255 255 / 0.7)");
+      sg.addColorStop(0.35, "rgb(255 255 255 / 0.2)");
+      sg.addColorStop(1, "rgb(255 255 255 / 0)");
+      g.fillStyle = sg;
+      g.beginPath();
+      g.moveTo(0, h);
+      for (let x = 0; x <= w; x += 18) g.lineTo(x, ridge(x));
+      g.lineTo(w, h);
+      g.closePath();
+      g.fill();
+      // 끊어진 호 — 전폭 1.5px 선은 눈밭에 "팽팽한 철선"으로 보였다(검토 2차).
+      g.strokeStyle = "rgb(176 196 218 / 0.26)";
+      g.lineWidth = 1;
+      let pen = false;
+      g.beginPath();
+      for (let x = 0; x <= w; x += 16) {
+        if (Math.sin(x * 0.0045 + i * 1.9) <= -0.15) { pen = false; continue; }
+        if (!pen) { g.moveTo(x, ridge(x) + 3); pen = true; } else g.lineTo(x, ridge(x) + 3);
+      }
+      g.stroke();
+    }
+    // 눈을 뚫고 나온 마른 풀 — 눈밭이 "아무것도 없는 흰 면"이 되지 않게(겨울 언덕은 이것 덕에 살아 보였다).
+    // 무리 심기 — 균일 분포는 "팝콘 벽지"가 된다(검토 2·3차).
+    const tufts = Math.round((w * h) / 4200);
+    let clumpX = 0;
+    let clumpY = 0;
+    let clumpLeft = 0;
+    for (let i = 0; i < tufts; i++) {
+      if (clumpLeft <= 0) {
+        clumpX = g0() * w;
+        clumpY = groundY(0.05 + g0() * 0.95);
+        clumpLeft = 1 + Math.floor(g0() * 6);
+      }
+      clumpLeft--;
+      const spread = 24 + g0() * 50;
+      const x = clumpX + (g0() - 0.5) * spread * 2;
+      const y = clumpY + (g0() - 0.5) * spread;
+      const k = (0.4 + g0() * 0.6) * depthScale(y, h);
+      drawProp(g, groundArt, "grass-dry", x, y, { k, r: g0(), flip: g0() < 0.5, alpha: 0.5 });
+      const ck = (0.7 + g0() * 0.8) * k;
+      g.save();
+      g.globalAlpha = 0.55;
+      g.fillStyle = "rgb(250 253 255)";
+      g.beginPath();
+      g.ellipse(x, y - 7 * k, 5 * ck, 2.4 * ck, 0, Math.PI, TAU);
+      g.fill();
+      g.globalAlpha = 0.38;
+      g.fillStyle = "rgb(198 214 232)";
+      g.beginPath();
+      g.ellipse(x, y - 6.2 * k, 5 * ck, 1.2 * ck, 0, 0, Math.PI);
+      g.fill();
+      g.restore();
+    }
+    // 있을 때만 놓이는 소품(아트가 오면 나타난다) — 바깥 띠(달력 밖)에 결정적으로.
     scatterProps(g, groundArt, w, h, g0, [
-      { id: "snow-pile", n: 4 },
-      { id: "shrub-winter", n: 2 },
-      { id: "rock", n: 1 },
+      { id: "snow-pile", n: 7 },
+      { id: "shrub-winter", n: 4 },
+      { id: "rock", n: 2 },
       { id: "grass-dry", n: 6, band: "any" },
       { id: "twig", n: 3, band: "any" }
     ]);
@@ -780,7 +842,7 @@ export function createWinter(seed: number): Scene {
         const age = t - p.born;
         const a = (age > 70 ? Math.max(0, 1 - (age - 70) / 10) : 1) * (1 - (p.erase ?? 0));
         if (a <= 0.01) continue;
-        drawPrint(g, p, 0.72 * a);
+        drawPrint(g, p, 0.62 * a);
       }
       // 연대기 — 눈사람(12/20부터 손님이 굴려 세움 → 2월 녹음), 헐벗은 나무, 2월 15일 해빙 뒤 드러나는 가을 저장소.
       if (traceBakes) drawTraces(g, f, "winter", traceBakes);

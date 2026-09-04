@@ -21,12 +21,12 @@ import { bakeHorizon, depthScale, flatXform, GROUND_SQUASH, horizonY } from "../
 
 type Species = { shape: number; colors: string[]; size: [number, number]; weight: number; needle?: boolean };
 const SPECIES: Species[] = [
-  { shape: 0, colors: ["#a8744f", "#8f5a48", "#9c6a4a", "#8b5f4a"], size: [34, 60], weight: 3 },
+  { shape: 0, colors: ["#a8744f", "#8f5a48", "#9c6a4a", "#8b5f4a"], size: [34, 60], weight: 4 },
   { shape: 1, colors: ["#b08a55", "#9a8a5c", "#8a7a5a"], size: [30, 52], weight: 2 },
   { shape: 2, colors: ["#9c8a4e", "#7f7a45", "#a08a50"], size: [34, 62], weight: 1.5 },
-  { shape: 3, colors: ["#9a4a4a", "#a6574a", "#8c3e48", "#b06a52"], size: [44, 76], weight: 3.5 },
-  { shape: 4, colors: ["#c9a84c", "#b8973f", "#d3b55e"], size: [36, 60], weight: 3 },
-  { shape: 5, colors: ["#8b6a3f", "#a17a4a", "#7a5a38"], size: [40, 70], weight: 2.5 },
+  { shape: 3, colors: ["#7d4a48", "#6f4340", "#84544c", "#8a5b4e"], size: [44, 76], weight: 2 },
+  { shape: 4, colors: ["#9a8a56", "#8b7d4c", "#a4956a"], size: [36, 60], weight: 1.5 },
+  { shape: 5, colors: ["#8b6a3f", "#a17a4a", "#7a5a38"], size: [40, 70], weight: 3.5 },
   { shape: 6, colors: ["#6b6a3c", "#7a6a3a", "#5f6a40"], size: [26, 40], weight: 2, needle: true }
 ];
 const ACORN = SPECIES.length;
@@ -248,25 +248,50 @@ export function createAutumn(seed: number): Scene {
     const g0 = rng((seed * 7 + 13) >>> 0);
     const { c, g } = makeCanvas(w * dpr, h * dpr);
     g.scale(dpr, dpr);
-    const patches = Math.round((w * h) / 60000);
+    // 흙 바탕 — 이게 없어 지금까지 "가을 땅"이 페이지의 흰색이었고, 낙엽·잔가지가 흰 종이 위의 점으로 보였다.
+    const bg = g.createLinearGradient(0, gy(), 0, h);
+    bg.addColorStop(0, "#d3c7a8");
+    bg.addColorStop(1, "#85795a");
+    g.fillStyle = bg;
+    g.fillRect(0, 0, w, h);
+    const patches = Math.round((w * h) / 42000);
+    // 따뜻한 흙 + **차가운 두 톤**(회녹·회청) — 한 색만 있으면 "흙먼지 폭풍"이 된다(검토 4차).
+    const PATCH = ["158 142 100", "132 108 74", "172 156 114", "118 96 76", "118 126 114", "104 112 118"];
     for (let i = 0; i < patches; i++) {
-      softBlob(g, g0() * w, g0() * h, 110 + g0() * 240, g0() < 0.5 ? "150 135 95" : "125 100 70", 0.075);
+      const pi = Math.floor(g0() * PATCH.length);
+      const cool = pi >= 4; // 차가운 두 톤은 작고 옅게 — 크게 깔면 "때 묻은 얼룩"이 된다(검토 5차)
+      const py2 = groundY(g0());
+      const pk2 = depthScale(py2, h) * depthScale(py2, h);
+      softBlob(g, g0() * w, py2, (cool ? 70 + g0() * 90 : 110 + g0() * 240) * pk2, PATCH[pi], cool ? 0.07 : 0.13, 0, GROUND_SQUASH);
     }
+    // 이끼·마른 잔디 얼룩 — 흙 한 톤짜리 사막이 되지 않게 초록빛 기운을 남긴다.
+    for (let i = 0; i < Math.round((w * h) / 120000); i++) softBlob(g, g0() * w, groundY(0.2 + g0() * 0.8), 60 + g0() * 60, "116 128 88", 0.09, 0, GROUND_SQUASH);
     // 소품은 전부 drawProp(art/props.ts) — 아트 파일이 있으면 그 그림, 없으면 대체물(옛 도형). 자리는 결정적.
     // 3/4 시점: 서 있는 것은 위(멀다)에서 작게(depthScale), 납작한 것(잔가지·조약돌)은 세로로 눌린다(GROUND_SQUASH).
+    // 무리 심기 — 균일 분포는 벽지로 읽힌다(검토 3차).
     const tufts = Math.round((w * h) / 2600);
+    let clumpX = 0;
+    let clumpY = 0;
+    let clumpLeft = 0;
     for (let i = 0; i < tufts; i++) {
-      const x = g0() * w;
-      const y = groundY(g0());
-      drawProp(g, groundArt, "grass-dry", x, y, { k: (0.7 + g0() * 0.6) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.85 });
+      if (clumpLeft <= 0) {
+        clumpX = g0() * w;
+        clumpY = groundY(g0());
+        clumpLeft = 1 + Math.floor(g0() * 7);
+      }
+      clumpLeft--;
+      const spread = 26 + g0() * 54;
+      const x = clumpX + (g0() - 0.5) * spread * 2;
+      const y = clumpY + (g0() - 0.5) * spread;
+      drawProp(g, groundArt, "grass-dry", x, y, { k: (0.55 + g0() * 1.0) * depthScale(y, h), r: g0(), flip: g0() < 0.5, alpha: 0.75 + g0() * 0.25 });
     }
-    const twigs = Math.round((w * h) / 40000);
+    const twigs = Math.round((w * h) / 80000);
     for (let i = 0; i < twigs; i++) {
       const x = g0() * w;
       const y = groundY(g0());
       drawProp(g, groundArt, "twig", x, y, { k: (0.8 + g0() * 0.8) * depthScale(y, h), rot: g0() * TAU, r: g0(), sy: GROUND_SQUASH });
     }
-    const pebbles = Math.round((w * h) / 70000);
+    const pebbles = Math.round((w * h) / 130000);
     for (let i = 0; i < pebbles; i++) {
       const x = g0() * w;
       const y = groundY(g0());

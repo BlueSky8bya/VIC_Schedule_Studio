@@ -14,8 +14,9 @@ export const HORIZON_V = 0.12;
 // 지평선에서의 배율 — 0.8은 소유자 실측에서 "원근이 약하다"(2026-09-04) → 0.6(먼 나무 ≈ 가까운 나무의 6할).
 export const DEPTH_FAR = 0.6;
 // 대기 원근 안개 — 지평선에서 이 알파, 화면 HAZE_END_V까지 0으로. 잔디·물·발자국·생물 전부 멀수록 옅어진다(엔진이 장면 위에 한 겹).
-export const HAZE_ALPHA = 0.34;
-export const HAZE_END_V = 0.58;
+// 0.34/0.58은 화면 절반을 우윳빛으로 덮어 모든 바이옴이 "안개 낀 빈 판"으로 보였다(2026-09-04 검토 1차) → 옅고 짧게.
+export const HAZE_ALPHA = 0.17;
+export const HAZE_END_V = 0.44;
 
 export const horizonY = (h: number) => h * HORIZON_V;
 
@@ -67,19 +68,22 @@ const hazeCache = new Map<string, CanvasGradient>();
 export function drawDepthHaze(g: CanvasRenderingContext2D, season: SeasonKey, w: number, h: number) {
   const key = `${season}:${w}:${h}`;
   let grad = hazeCache.get(key);
+  const hz = horizonY(h);
+  const start = hz * 0.4; // 지평선 **위**에서 0으로 시작 — 지평선에서 바로 0.34로 켜지면 화면을 가로지르는 선이 생기고,
+  //                        지평선을 걸친 물체는 아래(가까운)쪽만 하얘져 원근이 뒤집힌다(2026-09-04 검토 1차).
   if (!grad) {
-    const hz = horizonY(h);
-    grad = g.createLinearGradient(0, hz, 0, h * HAZE_END_V);
+    grad = g.createLinearGradient(0, start, 0, h * HAZE_END_V);
     const c = HZ_COLORS[season].haze;
-    grad.addColorStop(0, `rgb(${c} / ${HAZE_ALPHA})`);
-    grad.addColorStop(0.45, `rgb(${c} / ${HAZE_ALPHA * 0.42})`);
+    grad.addColorStop(0, `rgb(${c} / 0)`);
+    grad.addColorStop(0.16, `rgb(${c} / ${HAZE_ALPHA})`);
+    grad.addColorStop(0.5, `rgb(${c} / ${HAZE_ALPHA * 0.42})`);
     grad.addColorStop(1, `rgb(${c} / 0)`);
     hazeCache.set(key, grad);
     if (hazeCache.size > 12) hazeCache.delete(hazeCache.keys().next().value as string);
   }
   g.save();
   g.fillStyle = grad;
-  g.fillRect(0, horizonY(h) - 1, w, h * HAZE_END_V - horizonY(h) + 2);
+  g.fillRect(0, start, w, h * HAZE_END_V - start + 2);
   g.restore();
 }
 
@@ -91,13 +95,15 @@ export function ySort<T extends { y: number }>(items: T[]): T[] {
 const HZ_COLORS: Record<SeasonKey, { haze: string; hill: string; hill2: string; tree: string }> = {
   spring: { haze: "232 240 226", hill: "#c2d6b0", hill2: "#b0c89e", tree: "#8fae7c" },
   summer: { haze: "226 236 222", hill: "#a9c79a", hill2: "#96b888", tree: "#6f9a62" },
-  autumn: { haze: "236 232 222", hill: "#d2c5a6", hill2: "#c2b494", tree: "#9a7a4c" },
+  autumn: { haze: "224 226 222", hill: "#c3c0ac", hill2: "#aeae9a", tree: "#8a7256" },
   winter: { haze: "240 243 247", hill: "#e6ebf1", hill2: "#dbe2ea", tree: "#8a8f86" }
 };
 
 /** 지평선 띠를 한 번 굽는다(w×(hz+24)) — 안개 그라데이션 + 낮은 언덕 두 겹 + 작은 나무 줄(실루엣). 결정적(폭·계절 시드).
  *  장면은 바탕을 그린 뒤 이것을 위에 얹는다(캔버스 위 12%). 채도가 낮고 밝아 "멀다"로 읽힌다. */
-export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1): HTMLCanvasElement {
+export type HorizonProfile = "land" | "sea";
+/** profile "sea" = 먼 언덕·나무 줄 없이 안개 띠와 수평선만(바다·해안은 뭍의 능선이 있으면 거짓말이 된다). */
+export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, profile: HorizonProfile = "land"): HTMLCanvasElement {
   const hz = horizonY(h);
   const H = Math.ceil(hz + 24);
   const { c, g } = makeCanvas(Math.max(1, Math.ceil(w * dpr)), Math.ceil(H * dpr));
@@ -106,8 +112,8 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1): H
   const r = rng(311 + Math.round(w) * 3 + season.length);
   // 안개 — 위는 짙게, 지평선 아래로 옅어진다(대기 원근).
   const grad = g.createLinearGradient(0, 0, 0, H);
-  grad.addColorStop(0, `rgb(${col.haze} / 0.78)`);
-  grad.addColorStop(hz / H, `rgb(${col.haze} / 0.55)`);
+  grad.addColorStop(0, `rgb(${col.haze} / 0.6)`);
+  grad.addColorStop(hz / H, `rgb(${col.haze} / 0.34)`);
   grad.addColorStop(1, `rgb(${col.haze} / 0)`);
   g.fillStyle = grad;
   g.fillRect(0, 0, w, H);
@@ -131,15 +137,21 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1): H
     g.fill();
     g.restore();
   };
-  hill(hz * 0.5, hz * 0.18, col.hill, 0.5, 1.3);
-  hill(hz * 0.72, hz * 0.14, col.hill2, 0.5, 4.1);
+  if (profile === "land") {
+    hill(hz * 0.5, hz * 0.18, col.hill, 0.5, 1.3);
+    hill(hz * 0.72, hz * 0.14, col.hill2, 0.5, 4.1);
+  }
   // 작은 나무 줄 — 지평선 바로 위에 실루엣(둥근 수관 + 짧은 줄기), 겨울은 나목 점. 드문드문·옅게(먼 숲의 윤곽).
-  const n = Math.round(w / 52);
+  const n = profile === "land" ? Math.round(w / 34) : 0;
   g.fillStyle = col.tree;
+  let skip = 0;
   for (let i = 0; i < n; i++) {
-    if (r() < 0.45) continue;
-    const x = (i + 0.5) * (w / n) + (r() - 0.5) * 24;
-    const s = 4 + r() * 5;
+    // 무리 짓기 — 균일 피치 + 작은 흔들림이면 "점선 자"로 읽힌다(검토 3차).
+    if (skip > 0) { skip--; continue; }
+    if (r() < 0.3) { skip = 1 + Math.floor(r() * 3); continue; }
+    const pitch = w / n;
+    const x = (i + 0.5) * pitch + (r() - 0.5) * pitch * 0.9;
+    const s = 3 + r() * 8;
     const y = hz * (0.74 + r() * 0.12);
     g.globalAlpha = 0.3 + r() * 0.18;
     if (season === "winter") {
@@ -155,7 +167,16 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1): H
     }
   }
   g.globalAlpha = 1;
-  // 지평선 선 — 아주 옅은 밝은 줄(하늘과 땅의 경계 느낌).
-  softBlob(g, w / 2, hz * 0.5, w * 0.6, "255 255 255", 0.12, 0);
+  // 지평선 선 — 아주 옅은 밝은 줄(하늘과 땅의 경계 느낌). 반경이 캔버스 높이보다 크면 **아래에서 뭉텅 잘려**
+  // 44장 전부에 y=hz+24 가로선이 생긴다(2026-09-04 검토 4차) → 세로로 눌러 띠 안에서 끝내고, 아래 24행은 지운다.
+  softBlob(g, w / 2, hz * 0.5, w * 0.6, "255 255 255", 0.12, 0, (hz * 0.55) / (w * 0.6));
+  const fade = g.createLinearGradient(0, H - 26, 0, H);
+  fade.addColorStop(0, "rgb(0 0 0 / 0)");
+  fade.addColorStop(1, "rgb(0 0 0 / 1)");
+  g.save();
+  g.globalCompositeOperation = "destination-out";
+  g.fillStyle = fade;
+  g.fillRect(0, H - 26, w, 26);
+  g.restore();
   return c;
 }

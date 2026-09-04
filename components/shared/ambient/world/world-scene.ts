@@ -175,6 +175,19 @@ export function createWorld(season: SeasonKey, initial: BiomeKey = "meadow"): Sc
           entry.scene.draw(g, f);
           g.restore();
         };
+        if (trans.dy !== 0) {
+          // 세로 이동은 "가까운 땅 ↔ 먼 하늘"이 맞붙어 620ms 동안 어두운 모서리와 옅은 지평선이 붙어 미끄러진다.
+          // 가로는 좌우 가장자리가 서로 닮아 그대로 밀어도 되지만, 세로는 겹쳐 넘긴다(crossfade, 2026-09-04 검토 3차).
+          g.save();
+          g.globalAlpha *= 1 - p;
+          draw(from, 0, 0);
+          g.restore();
+          g.save();
+          g.globalAlpha *= p;
+          draw(to, 0, 0);
+          g.restore();
+          return;
+        }
         draw(from, ox, oy);
         draw(to, ox + trans.dx * f.w, oy + trans.dy * f.h);
       },

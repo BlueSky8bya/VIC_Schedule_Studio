@@ -16,7 +16,9 @@
 .gs-season {
   position: fixed;
   inset: 0;
-  /* canvas는 대체 요소라 inset만으론 안 늘어난다 — 100%(= 뷰포트/zoom 레이아웃 px). 엔진은 offsetWidth로 크기를 잰다. */
+  /* canvas는 대체 요소라 inset만으론 안 늘어난다 — 100%(= 뷰포트/zoom 레이아웃 px). 엔진은 offsetWidth로 크기를 잰다.
+     `scrollbar-gutter: stable`이 15px를 예약하면 100%도 100vw도 그만큼 좁아 오른쪽에 종이색 띠가 남는다
+     (검토 1~3차 내내 살아남음) → **감상 중에는** gutter를 끄고 스크롤을 잠근다(아래 규칙). */
   width: 100%;
   height: 100%;
   z-index: -1;
@@ -464,4 +466,10 @@ html[data-showcase] .private-loading {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.6s var(--ease);
+}
+
+/* 배경 감상 — 스크롤이 없으니 gutter를 반납한다. 이게 없으면 오른쪽 15px에 종이색 띠가 남는다(2026-09-04 검토 3차). */
+html[data-showcase] {
+  scrollbar-gutter: auto;
+  overflow: hidden;
 }
